@@ -217,6 +217,9 @@ class mysql extends sqlrtest {
 		assertTrue(con.getWarnings()==null);
 		con.clearWarnings();
 		System.out.println();
+
+
+		// database meta data
 		System.out.println("DATABASE META DATA:");
 
 		// getMetaData
@@ -1657,6 +1660,8 @@ class mysql extends sqlrtest {
 		assertFalse(boolval);
 		System.out.println();
 
+
+		// statement
 		System.out.println("STATEMENT:");
 
 		// createStatement
@@ -1822,14 +1827,11 @@ class mysql extends sqlrtest {
 		}
 
 
-		// drop existing table
+		// create table
+		System.out.println("CREATE TABLE:");
 		stmt=con.createStatement();
 		assertFalse(stmt.isClosed());
 		stmt.executeUpdate("drop table if exists testtable");
-
-
-		// create temptable
-		System.out.println("CREATE TEMPTABLE:");
 		assertEquals(stmt.executeUpdate(
 			"create table testtable ("+
 			"	testtinyint tinyint, "+
@@ -2712,6 +2714,8 @@ if (issqlrelay) {
 		}
 		System.out.println();
 
+
+		// fetch size 2
 		System.out.println("FETCH SIZE 2:");
 		stmt.setFetchSize(2);
 		assertEquals(stmt.getFetchSize(),2);
@@ -2852,8 +2856,6 @@ if (issqlrelay) {
 
 
 		// commit
-
-		// commit
 		System.out.println("COMMIT:");
 		Connection	secondcon=DriverManager.getConnection(
 							url,user,password);
@@ -2931,6 +2933,7 @@ if (issqlrelay) {
 		secondstmt.close();
 		secondcon.close();
 		con.setAutoCommit(false);
+		stmt.executeUpdate("drop table testtable");
 		System.out.println();
 
 
@@ -3065,10 +3068,6 @@ if (issqlrelay) {
 		System.out.println();
 
 
-		// drop existing table
-		stmt.executeUpdate("drop table if exists testtable");
-
-
 		// temporary tables
 		System.out.println("TEMPORARY TABLES:");
 		stmt.executeUpdate("drop table if exists temptable");
@@ -3188,7 +3187,7 @@ if (issqlrelay) {
 
 
 		// client info properties
-		System.out.println("CLIENT INFO PROPERTIES: ");
+		System.out.println("CLIENT INFO PROPERTIES:");
 		con=DriverManager.getConnection(url,user,password);
 		con.setAutoCommit(false);
 		md=con.getMetaData();
@@ -3210,7 +3209,7 @@ if (issqlrelay) {
 
 
 		// catalog list
-		System.out.println("CATALOG LIST: ");
+		System.out.println("CATALOG LIST:");
 		stmt=con.createStatement();
 		rs=md.getCatalogs();
 		assertTrue((rs!=null));
@@ -3237,7 +3236,7 @@ if (issqlrelay) {
 
 
 		// schema list
-		System.out.println("SCHEMA LIST: ");
+		System.out.println("SCHEMA LIST:");
 		rs=md.getSchemas();
 		assertTrue((rs!=null));
 		rsmd=rs.getMetaData();
@@ -3264,7 +3263,7 @@ if (issqlrelay) {
 
 
 		// table type list
-		System.out.println("TABLE TYPE LIST: ");
+		System.out.println("TABLE TYPE LIST:");
 		rs=md.getTableTypes();
 		assertTrue((rs!=null));
 		rsmd=rs.getMetaData();
@@ -3287,7 +3286,7 @@ if (issqlrelay) {
 
 
 		// table list
-		System.out.println("TABLE LIST: ");
+		System.out.println("TABLE LIST:");
 		stmt.executeUpdate("drop table if exists testtable1");
 		stmt.executeUpdate("drop table if exists testtable2");
 		stmt.executeUpdate("drop table if exists testtable3");
@@ -3350,7 +3349,7 @@ if (issqlrelay) {
 
 		// super table list
 		// mysql doesn't support this
-		System.out.println("SUPER TABLE LIST: ");
+		System.out.println("SUPER TABLE LIST:");
 		try {
 			rs=md.getSuperTables(null,null,"%");
 			// may or may not throw
@@ -3368,8 +3367,10 @@ if (issqlrelay) {
 // SELECT command denied to user 'testuser'@'fedora40x64.firstworks.com' for
 // table 'tables_priv'
 if (issqlrelay) {
+
+
 		// table privilege list
-		System.out.println("TABLE PRIVILEGE LIST: ");
+		System.out.println("TABLE PRIVILEGE LIST:");
 		// sqlrelay doesn't support this yet
 		if (!issqlrelay) {
 			rs=md.getTablePrivileges(null,null,"%");
@@ -3392,7 +3393,7 @@ if (issqlrelay) {
 
 
 		// type info list
-		System.out.println("TYPE INFO LIST: ");
+		System.out.println("TYPE INFO LIST:");
 		rs=md.getTypeInfo();
 		assertTrue((rs!=null));
 		rsmd=rs.getMetaData();
@@ -3422,7 +3423,7 @@ if (issqlrelay) {
 
 
 		// column list
-		System.out.println("COLUMN LIST: ");
+		System.out.println("COLUMN LIST:");
 		stmt.executeUpdate("drop table if exists testtable");
 		stmt.executeUpdate(
 			"create table testtable ("+
@@ -3576,7 +3577,7 @@ if (issqlrelay) {
 
 
 		// pseudo column list
-		System.out.println("PSEUDO COLUMN LIST: ");
+		System.out.println("PSEUDO COLUMN LIST:");
 		// sqlrelay doesn't support this yet
 		if (!issqlrelay) {
 			try {
@@ -3593,7 +3594,7 @@ if (issqlrelay) {
 
 
 		// version column list
-		System.out.println("VERSION COLUMN LIST: ");
+		System.out.println("VERSION COLUMN LIST:");
 		// sqlrelay doesn't support this yet
 		if (!issqlrelay) {
 			rs=md.getVersionColumns(null,null,"%");
@@ -3628,8 +3629,10 @@ if (issqlrelay) {
 // SELECT command denied to user 'testuser'@'fedora40x64.firstworks.com' for
 // table 'columns_priv'
 if (issqlrelay) {
+
+
 		// column privilege list
-		System.out.println("COLUMN PRIVILEGE LIST: ");
+		System.out.println("COLUMN PRIVILEGE LIST:");
 		// sqlrelay doesn't support this yet
 		if (!issqlrelay) {
 			rs=md.getColumnPrivileges(null,null,"%","%");
@@ -3653,7 +3656,7 @@ if (issqlrelay) {
 
 
 		// best row identifier list
-		System.out.println("BEST ROW IDENTIFIER LIST: ");
+		System.out.println("BEST ROW IDENTIFIER LIST:");
 		// sqlrelay doesn't support this yet
 		if (!issqlrelay) {
 			rs=md.getBestRowIdentifier(null,null,"%",
@@ -3686,7 +3689,7 @@ if (issqlrelay) {
 
 
 		// primary key list
-		System.out.println("PRIMARY KEY LIST: ");
+		System.out.println("PRIMARY KEY LIST:");
 		stmt.executeUpdate("drop table if exists testtable");
 		stmt.executeUpdate(
 			"create table testtable ("+
@@ -3716,7 +3719,7 @@ if (issqlrelay) {
 
 
 		// key and index list
-		System.out.println("KEY AND INDEX LIST: ");
+		System.out.println("KEY AND INDEX LIST:");
 		stmt.executeUpdate("drop table if exists testtable");
 		stmt.executeUpdate(
 			"create table testtable ("+
@@ -3774,7 +3777,7 @@ if (issqlrelay) {
 
 
 		// exported key list
-		System.out.println("EXPORTED KEY LIST: ");
+		System.out.println("EXPORTED KEY LIST:");
 		// sqlrelay doesn't support this yet
 		if (!issqlrelay) {
 			rs=md.getExportedKeys(null,null,"%");
@@ -3803,7 +3806,7 @@ if (issqlrelay) {
 
 
 		// imported key list
-		System.out.println("IMPORTED KEY LIST: ");
+		System.out.println("IMPORTED KEY LIST:");
 		// sqlrelay doesn't support this yet
 		if (!issqlrelay) {
 			rs=md.getImportedKeys(null,null,"%");
@@ -3832,7 +3835,7 @@ if (issqlrelay) {
 
 
 		// cross reference list
-		System.out.println("CROSS REFERENCE LIST: ");
+		System.out.println("CROSS REFERENCE LIST:");
 		// sqlrelay doesn't support this yet
 		if (!issqlrelay) {
 			rs=md.getCrossReference(null,null,"%",null,null,"%");
@@ -3861,7 +3864,7 @@ if (issqlrelay) {
 
 
 		// procedure list
-		System.out.println("PROCEDURE LIST: ");
+		System.out.println("PROCEDURE LIST:");
 		stmt.executeUpdate("drop procedure if exists testproc1");
 		stmt.executeUpdate("drop procedure if exists testproc2");
 		stmt.executeUpdate("drop procedure if exists testproc3");
@@ -3943,7 +3946,7 @@ if (issqlrelay) {
 
 
 		// procedure parameter list
-		System.out.println("PROCEDURE PARAMETER LIST: ");
+		System.out.println("PROCEDURE PARAMETER LIST:");
 		rs=md.getProcedureColumns(null,null,
 					"testproc1","%");
 		assertTrue((rs!=null));
@@ -4024,7 +4027,7 @@ if (issqlrelay) {
 
 
 		// function list
-		System.out.println("FUNCTION LIST: ");
+		System.out.println("FUNCTION LIST:");
 		// sqlrelay doesn't support this yet
 		if (!issqlrelay) {
                 	rs=md.getFunctions(null,null,"%");
@@ -4048,7 +4051,7 @@ if (issqlrelay) {
 
 
 		// function parameter list
-		System.out.println("FUNCTION PARAMETER LIST: ");
+		System.out.println("FUNCTION PARAMETER LIST:");
 		// sqlrelay doesn't support this yet
 		if (!issqlrelay) {
 			rs=md.getFunctionColumns(null,null,"%","%");
@@ -4065,7 +4068,7 @@ if (issqlrelay) {
 
 
 		// UDT list
-		System.out.println("UDT LIST: ");
+		System.out.println("UDT LIST:");
 		// mysql doesn't support UDTs
 		try {
                 	rs=md.getUDTs(null,null,"%",null);
@@ -4079,7 +4082,7 @@ if (issqlrelay) {
 
 
 		// super type list
-		System.out.println("SUPER TYPE LIST: ");
+		System.out.println("SUPER TYPE LIST:");
 		try {
 			rs=md.getSuperTypes(null,null,"%");
 			if (rs!=null) {
@@ -4092,7 +4095,7 @@ if (issqlrelay) {
 
 
 		// attribute list
-		System.out.println("ATTRIBUTE LIST: ");
+		System.out.println("ATTRIBUTE LIST:");
 		try {
 			rs=md.getAttributes(null,null,"%","%");
 			if (rs!=null) {

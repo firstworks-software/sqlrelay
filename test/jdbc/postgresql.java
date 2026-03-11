@@ -99,6 +99,8 @@ class postgresql extends sqlrtest {
 		con.clearWarnings();
 		System.out.println();
 
+
+		// database meta data
 		System.out.println("DATABASE META DATA:");
 
 		// getMetaData
@@ -1052,16 +1054,17 @@ class postgresql extends sqlrtest {
 		assertFalse(boolval);
 		System.out.println();
 
+
+		// statement
 		System.out.println("STATEMENT:");
 		stmt=con.createStatement();
 		assertTrue((stmt!=null));
 		System.out.println();
 
-		// drop existing table
-		stmt.executeUpdate("drop table if exists testtable");
 
 		// create table
 		System.out.println("CREATE TABLE:");
+		stmt.executeUpdate("drop table if exists testtable");
 		assertEquals(stmt.executeUpdate(
 			"create table testtable ("+
 			"	testint int, "+
@@ -1077,6 +1080,7 @@ class postgresql extends sqlrtest {
 			"	testbytea bytea, "+
 			"	testurl varchar(60))"),0);
 		System.out.println();
+
 
 		// insert
 		System.out.println("INSERT:");
@@ -1100,6 +1104,7 @@ class postgresql extends sqlrtest {
 		stmt.close();
 		assertTrue(stmt.isClosed());
 		System.out.println();
+
 
 		// bind by position
 		System.out.println("BIND BY POSITION:");
@@ -1183,6 +1188,7 @@ class postgresql extends sqlrtest {
 		assertTrue(pstmt.isClosed());
 		System.out.println();
 
+
 		// select
 		System.out.println("SELECT:");
 		stmt=con.createStatement();
@@ -1203,10 +1209,12 @@ class postgresql extends sqlrtest {
 		assertTrue((rsmd!=null));
 		System.out.println();
 
+
 		// column count
 		System.out.println("COLUMN COUNT:");
 		assertEquals(rsmd.getColumnCount(),12);
 		System.out.println();
+
 
 		// column names
 		System.out.println("COLUMN NAMES:");
@@ -1224,6 +1232,7 @@ class postgresql extends sqlrtest {
 		assertEquals(rsmd.getColumnName(12),"testurl");
 		System.out.println();
 
+
 		// column types
 		System.out.println("COLUMN TYPES:");
 		assertTrue(rsmd.getColumnTypeName(1)!=null);
@@ -1240,6 +1249,7 @@ class postgresql extends sqlrtest {
 		assertTrue(rsmd.getColumnTypeName(12)!=null);
 		System.out.println();
 
+
 		// column length
 		System.out.println("COLUMN LENGTH:");
 		assertTrue(rsmd.getPrecision(1)>=0);
@@ -1255,6 +1265,7 @@ class postgresql extends sqlrtest {
 		assertTrue(rsmd.getPrecision(11)>=0);
 		assertTrue(rsmd.getPrecision(12)>=0);
 		System.out.println();
+
 
 		// fields by index
 		System.out.println("FIELDS BY INDEX:");
@@ -1573,28 +1584,29 @@ class postgresql extends sqlrtest {
 			System.out.println();
 		}
 
+
 		// row count
 		System.out.println("ROW COUNT:");
 		assertEquals(rs.getRow(),4);
 		rs.close();
-		stmt.close();
-		assertTrue(stmt.isClosed());
 		System.out.println();
+
 
 		// commit
 		System.out.println("COMMIT:");
 		con.commit();
+		stmt.executeUpdate("drop table testtable");
+		stmt.close();
+		assertTrue(stmt.isClosed());
 		System.out.println();
+
 
 		// stored procedures
 		System.out.println("STORED PROCEDURES:");
 		stmt=con.createStatement();
 		// return no value
-		try {
-			stmt.executeUpdate("drop function "+
-					"if exists testfunc(int,float,char)");
-		} catch (Exception ex) {
-		}
+		stmt.executeUpdate("drop function if exists "+
+					"testfunc(int,float,char)");
 		assertEquals(stmt.executeUpdate(
 			"create function testfunc(int,float,char(20)) "+
 			"	returns void as "+
@@ -1622,7 +1634,8 @@ class postgresql extends sqlrtest {
 		pstmt.setString(3,"hello");
 		pstmt.execute();
 		pstmt.close();
-		stmt.executeUpdate("drop function testfunc(int,float,char)");
+		stmt.executeUpdate("drop function if exists "+
+					"testfunc(int,float,char)");
 		System.out.println();
 		// return single value (function)
 		assertEquals(stmt.executeUpdate(
@@ -1652,8 +1665,9 @@ class postgresql extends sqlrtest {
 		stmt.executeUpdate("drop function testfunc(int,float,char)");
 		System.out.println();
 
+
 		// catalog list
-		System.out.println("CATALOG LIST: ");
+		System.out.println("CATALOG LIST:");
 		stmt=con.createStatement();
 		rs=md.getCatalogs();
 		assertTrue((rs!=null));
@@ -1667,7 +1681,7 @@ class postgresql extends sqlrtest {
 
 
 		// schema list
-		System.out.println("SCHEMA LIST: ");
+		System.out.println("SCHEMA LIST:");
 		rs=md.getSchemas();
 		assertTrue((rs!=null));
 		rsmd=rs.getMetaData();
@@ -1690,7 +1704,7 @@ class postgresql extends sqlrtest {
 
 
 		// table type list
-		System.out.println("TABLE TYPE LIST: ");
+		System.out.println("TABLE TYPE LIST:");
 		rs=md.getTableTypes();
 		assertTrue((rs!=null));
 		rsmd=rs.getMetaData();
@@ -1712,7 +1726,7 @@ class postgresql extends sqlrtest {
 
 
 		// table list
-		System.out.println("TABLE LIST: ");
+		System.out.println("TABLE LIST:");
 		stmt.executeUpdate("drop table if exists testtable1");
 		stmt.executeUpdate("drop table if exists testtable2");
 		stmt.executeUpdate("drop table if exists testtable3");
@@ -1778,7 +1792,7 @@ class postgresql extends sqlrtest {
 
 
 		// super table list
-		System.out.println("SUPER TABLE LIST: ");
+		System.out.println("SUPER TABLE LIST:");
 		try {
 			rs=md.getSuperTables(null,null,"%");
 			// may or may not throw
@@ -1792,7 +1806,7 @@ class postgresql extends sqlrtest {
 
 
 		// table privilege list
-		System.out.println("TABLE PRIVILEGE LIST: ");
+		System.out.println("TABLE PRIVILEGE LIST:");
 		// sqlrelay doesn't support this yet
 		if (!issqlrelay) {
 			rs=md.getTablePrivileges(null,null,"%");
@@ -1814,7 +1828,7 @@ class postgresql extends sqlrtest {
 
 
 		// type info list
-		System.out.println("TYPE INFO LIST: ");
+		System.out.println("TYPE INFO LIST:");
 		rs=md.getTypeInfo();
 		assertTrue((rs!=null));
 		rsmd=rs.getMetaData();
@@ -1843,14 +1857,10 @@ class postgresql extends sqlrtest {
 		System.out.println();
 
 
-
 		// column list
-		System.out.println("COLUMN LIST: ");
+		System.out.println("COLUMN LIST:");
 		stmt=con.createStatement();
-		try {
-			stmt.executeUpdate("drop table if exists testtable");
-		} catch (Exception ex) {
-		}
+		stmt.executeUpdate("drop table if exists testtable");
 		stmt.executeUpdate(
 			"create table testtable ("+
 			"	testint int, "+
@@ -1943,7 +1953,7 @@ class postgresql extends sqlrtest {
 
 
 		// version column list
-		System.out.println("VERSION COLUMN LIST: ");
+		System.out.println("VERSION COLUMN LIST:");
 		// sqlrelay doesn't support this yet
 		if (!issqlrelay) {
 			rs=md.getVersionColumns(null,null,"%");
@@ -1974,7 +1984,7 @@ class postgresql extends sqlrtest {
 
 
 		// best row identifier list
-		System.out.println("BEST ROW IDENTIFIER LIST: ");
+		System.out.println("BEST ROW IDENTIFIER LIST:");
 		// sqlrelay doesn't support this yet
 		if (!issqlrelay) {
 			rs=md.getBestRowIdentifier(null,null,"%",
@@ -2007,7 +2017,7 @@ class postgresql extends sqlrtest {
 
 
 		// primary key list
-		System.out.println("PRIMARY KEY LIST: ");
+		System.out.println("PRIMARY KEY LIST:");
 		stmt.executeUpdate("drop table if exists testtable");
 		stmt.executeUpdate(
 			"create table testtable ("+
@@ -2040,7 +2050,7 @@ class postgresql extends sqlrtest {
 
 
 		// key and index list
-		System.out.println("KEY AND INDEX LIST: ");
+		System.out.println("KEY AND INDEX LIST:");
 		stmt.executeUpdate("drop table if exists testtable");
 		stmt.executeUpdate(
 			"create table testtable ("+
@@ -2097,7 +2107,7 @@ class postgresql extends sqlrtest {
 
 
 		// exported key list
-		System.out.println("EXPORTED KEY LIST: ");
+		System.out.println("EXPORTED KEY LIST:");
 		// sqlrelay doesn't support this yet
 		if (!issqlrelay) {
 			rs=md.getExportedKeys(null,null,"%");
@@ -2126,7 +2136,7 @@ class postgresql extends sqlrtest {
 
 
 		// imported key list
-		System.out.println("IMPORTED KEY LIST: ");
+		System.out.println("IMPORTED KEY LIST:");
 		// sqlrelay doesn't support this yet
 		if (!issqlrelay) {
 			rs=md.getImportedKeys(null,null,"%");
@@ -2155,7 +2165,7 @@ class postgresql extends sqlrtest {
 
 
 		// cross reference list
-		System.out.println("CROSS REFERENCE LIST: ");
+		System.out.println("CROSS REFERENCE LIST:");
 		// sqlrelay doesn't support this yet
 		if (!issqlrelay) {
 			rs=md.getCrossReference(null,null,"%",null,null,"%");
@@ -2184,11 +2194,15 @@ class postgresql extends sqlrtest {
 
 
 		// procedure list
-		System.out.println("PROCEDURE LIST: ");
-		stmt.executeUpdate("drop function if exists testproc1(int,char,varchar,date)");
-		stmt.executeUpdate("drop function if exists testproc2(int,char,varchar,date)");
-		stmt.executeUpdate("drop function if exists testproc3(int,char,varchar,date)");
-		stmt.executeUpdate("drop function if exists testproc4(int,char,varchar,date)");
+		System.out.println("PROCEDURE LIST:");
+		stmt.executeUpdate("drop function if exists "+
+					"testproc1(int,char,varchar,date)");
+		stmt.executeUpdate("drop function if exists "+
+					"testproc2(int,char,varchar,date)");
+		stmt.executeUpdate("drop function if exists "+
+					"testproc3(int,char,varchar,date)");
+		stmt.executeUpdate("drop function if exists "+
+					"testproc4(int,char,varchar,date)");
 		stmt.executeUpdate(
 			"create function testproc1("+
 			"	in1 int, "+
@@ -2266,7 +2280,7 @@ class postgresql extends sqlrtest {
 
 
 		// procedure parameter list
-		System.out.println("PROCEDURE PARAMETER LIST: ");
+		System.out.println("PROCEDURE PARAMETER LIST:");
 		rs=md.getProcedureColumns(null,null,
 					"testproc1","%");
 		assertTrue((rs!=null));
@@ -2351,7 +2365,7 @@ class postgresql extends sqlrtest {
 
 
 		// function list
-		System.out.println("FUNCTION LIST: ");
+		System.out.println("FUNCTION LIST:");
 		// sqlrelay doesn't support this yet
 		if (!issqlrelay) {
 			rs=md.getFunctions(null,null,"%");
@@ -2372,7 +2386,7 @@ class postgresql extends sqlrtest {
 
 
 		// function parameter list
-		System.out.println("FUNCTION PARAMETER LIST: ");
+		System.out.println("FUNCTION PARAMETER LIST:");
 		// sqlrelay doesn't support this yet
 		if (!issqlrelay) {
 			rs=md.getFunctionColumns(null,null,"%","%");

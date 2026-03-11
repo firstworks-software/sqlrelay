@@ -1817,13 +1817,13 @@ class oracle extends sqlrtest {
 		}
 
 
-		// drop existing table
+		// create table
+		System.out.println("CREATE TABLE:");
 		stmt=con.createStatement();
-		stmt.executeUpdate("drop table testtable");
-
-
-		// create temptable
-		System.out.println("CREATE TEMPTABLE:");
+		try {
+			stmt.executeUpdate("drop table testtable");
+		} catch (Exception ex) {
+		}
 		assertEquals(stmt.executeUpdate(
 			"create table testtable ("+
 			"	testnumber number, "+
@@ -2738,6 +2738,7 @@ class oracle extends sqlrtest {
 		secondstmt.close();
 		secondcon.close();
 		con.setAutoCommit(false);
+		stmt.executeUpdate("drop table testtable");
 		System.out.println();
 
 
@@ -2855,11 +2856,12 @@ class oracle extends sqlrtest {
 		System.out.println();
 
 
-		stmt.executeUpdate("drop table testtable1");
-
-
 		// null and empty clobs and blobs
 		System.out.println("NULL AND EMPTY CLOBS AND BLOBS:");
+		try {
+			stmt.executeUpdate("drop table testtable1");
+		} catch (Exception ex) {
+		}
 		assertEquals(stmt.executeUpdate(
 			"create table testtable1 ("+
 			"	testclob1 clob, "+
@@ -2893,11 +2895,12 @@ class oracle extends sqlrtest {
 		System.out.println();
 
 
-		stmt.executeUpdate("drop table testtable2");
-
-
 		// long varchar
 		System.out.println("LONG VARCHAR:");
+		try {
+			stmt.executeUpdate("drop table testtable2");
+		} catch (Exception ex) {
+		}
 		assertEquals(stmt.executeUpdate(
 			"create table "+
 			"	testtable2 (testvarchar varchar2(1024))"),0);
@@ -2937,6 +2940,10 @@ class oracle extends sqlrtest {
 
 		// long clob
 		System.out.println("LONG CLOB:");
+		try {
+			stmt.executeUpdate("drop table testtable2");
+		} catch (Exception ex) {
+		}
 		assertEquals(stmt.executeUpdate(
 			"create table "+
 			"	testtable2 (testclob clob)"),0);
@@ -3031,10 +3038,6 @@ class oracle extends sqlrtest {
 		rs.close();
 		assertEquals(stmt.executeUpdate("drop table testtable2"),0);
 		System.out.println();
-
-
-		// drop existing table
-		stmt.executeUpdate("drop table testtable");
 
 
 		// temporary tables
@@ -3316,7 +3319,7 @@ class oracle extends sqlrtest {
 
 
 		// client info properties
-		System.out.println("CLIENT INFO PROPERTIES: ");
+		System.out.println("CLIENT INFO PROPERTIES:");
 		con=DriverManager.getConnection(url,user,password);
 		md=con.getMetaData();
 		// sqlrelay doesn't support this yet
@@ -3331,16 +3334,13 @@ class oracle extends sqlrtest {
 			assertEquals(rsmd.getColumnName(col++),"MAX_LEN");
 			assertEquals(rsmd.getColumnName(col++),"DEFAULT_VALUE");
 			assertEquals(rsmd.getColumnName(col++),"DESCRIPTION");
-			//System.out.println();
-			//printColumns(rsmd);
-			//printResultSet(rs);
 			rs.close();
 			System.out.println();
 		}
 
 
 		// catalog list
-		System.out.println("CATALOG LIST: ");
+		System.out.println("CATALOG LIST:");
 		stmt=con.createStatement();
 		rs=md.getCatalogs();
 		assertTrue((rs!=null));
@@ -3355,7 +3355,7 @@ class oracle extends sqlrtest {
 
 
 		// schema list
-		System.out.println("SCHEMA LIST: ");
+		System.out.println("SCHEMA LIST:");
 		rs=md.getSchemas();
 		assertTrue((rs!=null));
 		rsmd=rs.getMetaData();
@@ -3378,7 +3378,7 @@ class oracle extends sqlrtest {
 
 
 		// table type list
-		System.out.println("TABLE TYPE LIST: ");
+		System.out.println("TABLE TYPE LIST:");
 		rs=md.getTableTypes();
 		assertTrue((rs!=null));
 		rsmd=rs.getMetaData();
@@ -3397,7 +3397,7 @@ class oracle extends sqlrtest {
 
 
 		// table list
-		System.out.println("TABLE LIST: ");
+		System.out.println("TABLE LIST:");
 		try {
 			stmt.executeUpdate("drop table testtable1");
 		} catch (Exception ex) {
@@ -3478,7 +3478,7 @@ class oracle extends sqlrtest {
 
 		// super table list
 		// neither oracle, nor sqlrelay support this
-		System.out.println("SUPER TABLE LIST: ");
+		System.out.println("SUPER TABLE LIST:");
 		try {
 			rs=md.getSuperTables(null,null,"%");
 			assertFalse(true);
@@ -3489,7 +3489,7 @@ class oracle extends sqlrtest {
 
 
 		// table privilege list
-		System.out.println("TABLE PRIVILEGE LIST: ");
+		System.out.println("TABLE PRIVILEGE LIST:");
 		// sqlrelay doesn't support this yet
 		if (!issqlrelay) {
 			rs=md.getTablePrivileges(null,null,"%");
@@ -3505,16 +3505,13 @@ class oracle extends sqlrtest {
 			assertEquals(rsmd.getColumnName(col++),"GRANTEE");
 			assertEquals(rsmd.getColumnName(col++),"PRIVILEGE");
 			assertEquals(rsmd.getColumnName(col++),"IS_GRANTABLE");
-			//System.out.println();
-			//printColumns(rsmd);
-			//printResultSet(rs);
 			rs.close();
 			System.out.println();
 		}
 
 
 		// type info list
-		System.out.println("TYPE INFO LIST: ");
+		System.out.println("TYPE INFO LIST:");
 		rs=md.getTypeInfo();
 		assertTrue((rs!=null));
 		rsmd=rs.getMetaData();
@@ -3539,15 +3536,12 @@ class oracle extends sqlrtest {
 		assertEquals(rsmd.getColumnName(col++),"SQL_DATA_TYPE");
 		assertEquals(rsmd.getColumnName(col++),"SQL_DATETIME_SUB");
 		assertEquals(rsmd.getColumnName(col++),"NUM_PREC_RADIX");
-		//System.out.println();
-		//printColumns(rsmd);
-		//printResultSet(rs);
 		rs.close();
 		System.out.println();
 
 
 		// column list
-		System.out.println("COLUMN LIST: ");
+		System.out.println("COLUMN LIST:");
 		try {
 			stmt.executeUpdate("drop table testtable");
 		} catch (Exception ex) {
@@ -3618,7 +3612,7 @@ class oracle extends sqlrtest {
 
 
 		// pseudo column list
-		System.out.println("PSEUDO COLUMN LIST: ");
+		System.out.println("PSEUDO COLUMN LIST:");
 		// sqlrelay doesn't support this yet
 		if (!issqlrelay) {
 			rs=md.getPseudoColumns(null,null,"%","%");
@@ -3651,16 +3645,13 @@ class oracle extends sqlrtest {
 							"CHAR_OCTET_LENGTH");
 			assertEquals(rsmd.getColumnName(col++),
 							"IS_NULLABLE");
-			//System.out.println();
-			//printColumns(rsmd);
-			//printResultSet(rs);
 			rs.close();
 			System.out.println();
 		}
 
 
 		// version column list
-		System.out.println("VERSION COLUMN LIST: ");
+		System.out.println("VERSION COLUMN LIST:");
 		// sqlrelay doesn't support this yet
 		if (!issqlrelay) {
 			rs=md.getVersionColumns(null,null,"%");
@@ -3685,17 +3676,13 @@ class oracle extends sqlrtest {
 							"DECIMAL_DIGITS");
 			assertEquals(rsmd.getColumnName(col++),
 							"PSEUDO_COLUMN");
-			//System.out.println();
-			//printColumns(rsmd);
-			//printResultSet(rs);
 			rs.close();
 			System.out.println();
 		}
 
 
-
 		// column privilege list
-		System.out.println("COLUMN PRIVILEGE LIST: ");
+		System.out.println("COLUMN PRIVILEGE LIST:");
 		// sqlrelay doesn't support this yet
 		if (!issqlrelay) {
 			rs=md.getColumnPrivileges(null,null,"%","%");
@@ -3712,16 +3699,13 @@ class oracle extends sqlrtest {
 			assertEquals(rsmd.getColumnName(col++),"GRANTEE");
 			assertEquals(rsmd.getColumnName(col++),"PRIVILEGE");
 			assertEquals(rsmd.getColumnName(col++),"IS_GRANTABLE");
-			//System.out.println();
-			//printColumns(rsmd);
-			//printResultSet(rs);
 			rs.close();
 			System.out.println();
 		}
 
 
 		// best row identifier list
-		System.out.println("BEST ROW IDENTIFIER LIST: ");
+		System.out.println("BEST ROW IDENTIFIER LIST:");
 		// sqlrelay doesn't support this yet
 		if (!issqlrelay) {
 			rs=md.getBestRowIdentifier(null,null,"%",
@@ -3748,16 +3732,13 @@ class oracle extends sqlrtest {
 							"DECIMAL_DIGITS");
 			assertEquals(rsmd.getColumnName(col++),
 							"PSEUDO_COLUMN");
-			//System.out.println();
-			//printColumns(rsmd);
-			//printResultSet(rs);
 			rs.close();
 			System.out.println();
 		}
 
 
 		// primary key list
-		System.out.println("PRIMARY KEY LIST: ");
+		System.out.println("PRIMARY KEY LIST:");
 		try {
 			stmt.executeUpdate("drop table testtable");
 		} catch (Exception ex) {
@@ -3791,7 +3772,7 @@ class oracle extends sqlrtest {
 
 
 		// key and index list
-		System.out.println("KEY AND INDEX LIST: ");
+		System.out.println("KEY AND INDEX LIST:");
 		try {
 			stmt.executeUpdate("drop table testtable");
 		} catch (Exception ex) {
@@ -3853,7 +3834,7 @@ class oracle extends sqlrtest {
 
 
 		// exported key list
-		System.out.println("EXPORTED KEY LIST: ");
+		System.out.println("EXPORTED KEY LIST:");
 		// sqlrelay doesn't support this yet
 		if (!issqlrelay) {
 			rs=md.getExportedKeys(null,null,"%");
@@ -3876,16 +3857,13 @@ class oracle extends sqlrtest {
 			assertEquals(rsmd.getColumnName(col++),"FK_NAME");
 			assertEquals(rsmd.getColumnName(col++),"PK_NAME");
 			assertEquals(rsmd.getColumnName(col++),"DEFERRABILITY");
-			//System.out.println();
-			//printColumns(rsmd);
-			//printResultSet(rs);
 			rs.close();
 			System.out.println();
 		}
 
 
 		// imported key list
-		System.out.println("IMPORTED KEY LIST: ");
+		System.out.println("IMPORTED KEY LIST:");
 		// sqlrelay doesn't support this yet
 		if (!issqlrelay) {
 			rs=md.getImportedKeys(null,null,"%");
@@ -3908,16 +3886,13 @@ class oracle extends sqlrtest {
 			assertEquals(rsmd.getColumnName(col++),"FK_NAME");
 			assertEquals(rsmd.getColumnName(col++),"PK_NAME");
 			assertEquals(rsmd.getColumnName(col++),"DEFERRABILITY");
-			//System.out.println();
-			//printColumns(rsmd);
-			//printResultSet(rs);
 			rs.close();
 			System.out.println();
 		}
 
 
 		// cross reference list
-		System.out.println("CROSS REFERENCE LIST: ");
+		System.out.println("CROSS REFERENCE LIST:");
 		// sqlrelay doesn't support this yet
 		if (!issqlrelay) {
 			rs=md.getCrossReference(null,null,"%",null,null,"%");
@@ -3940,16 +3915,13 @@ class oracle extends sqlrtest {
 			assertEquals(rsmd.getColumnName(col++),"FK_NAME");
 			assertEquals(rsmd.getColumnName(col++),"PK_NAME");
 			assertEquals(rsmd.getColumnName(col++),"DEFERRABILITY");
-			//System.out.println();
-			//printColumns(rsmd);
-			//printResultSet(rs);
 			rs.close();
 			System.out.println();
 		}
 
 
 		// procedure list
-		System.out.println("PROCEDURE LIST: ");
+		System.out.println("PROCEDURE LIST:");
 		try {
 			stmt.executeUpdate("drop procedure testproc1");
 		} catch (Exception ex) {
@@ -4053,7 +4025,7 @@ class oracle extends sqlrtest {
 
 
 		// procedure parameter list
-		System.out.println("PROCEDURE PARAMETER LIST: ");
+		System.out.println("PROCEDURE PARAMETER LIST:");
 		// oracle jdbc throws:
 		// ORA-00904: "ARG"."TYPE_OBJECT_TYPE": invalid identifier
 		if (issqlrelay) {
@@ -4148,7 +4120,7 @@ class oracle extends sqlrtest {
 
 
 		// function list
-		System.out.println("FUNCTION LIST: ");
+		System.out.println("FUNCTION LIST:");
 		// sqlrelay doesn't support this yet
 		if (!issqlrelay) {
                 	rs=md.getFunctions(null,null,"%");
@@ -4184,16 +4156,13 @@ class oracle extends sqlrtest {
                 		assertEquals(rsmd.getColumnName(col++),
 							"SPECIFIC_NAME");
 			}
-                	//System.out.println();
-			//printColumns(rsmd);
-			//printResultSet(rs);
                 	rs.close();
                 	System.out.println();
 		}
 
 
 		// function parameter list
-		System.out.println("FUNCTION PARAMETER LIST: ");
+		System.out.println("FUNCTION PARAMETER LIST:");
 		// sqlrelay doesn't support this yet
 		if (!issqlrelay) {
 			rs=md.getFunctionColumns(null,null,"%","%");
@@ -4259,16 +4228,13 @@ class oracle extends sqlrtest {
 				assertEquals(rsmd.getColumnName(col++),
 							"DEFAULT_VALUE");
 			}
-			//System.out.println();
-			//printColumns(rsmd);
-			//printResultSet(rs);
 			rs.close();
 			System.out.println();
 		}
 
 
 		// UDT list
-		System.out.println("UDT LIST: ");
+		System.out.println("UDT LIST:");
 		// sqlrelay doesn't support this yet
 		// oracle jdbc throws:
 		// ORA-08177: can't serialize access for this transaction
@@ -4295,9 +4261,6 @@ class oracle extends sqlrtest {
                 		assertEquals(rsmd.getColumnName(col++),
 								"BASE_TYPE");
 			}
-                	//System.out.println();
-			//printColumns(rsmd);
-			//printResultSet(rs);
                 	rs.close();
                 	System.out.println();
 		}
@@ -4305,7 +4268,7 @@ class oracle extends sqlrtest {
 
 		// super type list
 		// neither oracle, nor sqlrelay support this
-		System.out.println("SUPER TYPE LIST: ");
+		System.out.println("SUPER TYPE LIST:");
 		try {
 			rs=md.getSuperTypes(null,null,"%");
 			assertFalse(true);
@@ -4317,7 +4280,7 @@ class oracle extends sqlrtest {
 
 		// attribute list
 		// neither oracle, nor sqlrelay support this
-		System.out.println("ATTRIBUTE LIST: ");
+		System.out.println("ATTRIBUTE LIST:");
 		try {
 			rs=md.getAttributes(null,null,"%","%");
 			assertFalse(true);

@@ -35,7 +35,8 @@ class db2 extends sqlrtest {
 			replaceAll("hppa$","hp").
 			replaceAll("i386$","x86").
 			replaceAll("sparc$","s32").
-			replaceAll("sparc64$","s64");
+			replaceAll("sparc64$","s64").
+			toUpperCase();
 		String driver=null;
 		String host=null;
 		short port=0;
@@ -118,6 +119,8 @@ class db2 extends sqlrtest {
 		con.clearWarnings();
 		System.out.println();
 
+
+		// database meta data
 		System.out.println("DATABASE META DATA:");
 
 		// getMetaData
@@ -1076,15 +1079,19 @@ class db2 extends sqlrtest {
 		assertFalse(boolval);
 		System.out.println();
 
+
+		// statement
 		System.out.println("STATEMENT:");
 		stmt=con.createStatement();
 		assertTrue((stmt!=null));
 		System.out.println();
 
-		// drop existing table
-		stmt.executeUpdate("drop table testtable");
 
 		// create table
+		try {
+			stmt.executeUpdate("drop table testtable");
+		} catch (Exception ex) {
+		}
 		System.out.println("CREATE TABLE:");
 		assertEquals(stmt.executeUpdate(
 			"create table testtable ("+
@@ -1103,6 +1110,7 @@ class db2 extends sqlrtest {
 			"	testblob blob, "+
 			"	testurl varchar(60))"),0);
 		System.out.println();
+
 
 		// insert
 		System.out.println("INSERT:");
@@ -1128,6 +1136,7 @@ class db2 extends sqlrtest {
 		stmt.close();
 		assertTrue(stmt.isClosed());
 		System.out.println();
+
 
 		// bind by position
 		System.out.println("BIND BY POSITION:");
@@ -1189,6 +1198,7 @@ class db2 extends sqlrtest {
 		assertTrue(pstmt.isClosed());
 		System.out.println();
 
+
 		// select
 		System.out.println("SELECT:");
 		stmt=con.createStatement();
@@ -1209,10 +1219,12 @@ class db2 extends sqlrtest {
 		assertTrue((rsmd!=null));
 		System.out.println();
 
+
 		// column count
 		System.out.println("COLUMN COUNT:");
 		assertEquals(rsmd.getColumnCount(),14);
 		System.out.println();
+
 
 		// column names
 		System.out.println("COLUMN NAMES:");
@@ -1232,6 +1244,7 @@ class db2 extends sqlrtest {
 		assertEquals(rsmd.getColumnName(14),"TESTURL");
 		System.out.println();
 
+
 		// column types
 		System.out.println("COLUMN TYPES:");
 		assertTrue(rsmd.getColumnTypeName(1)!=null);
@@ -1249,6 +1262,7 @@ class db2 extends sqlrtest {
 		assertTrue(rsmd.getColumnTypeName(13)!=null);
 		assertTrue(rsmd.getColumnTypeName(14)!=null);
 		System.out.println();
+
 
 		// column length
 		System.out.println("COLUMN LENGTH:");
@@ -1268,6 +1282,7 @@ class db2 extends sqlrtest {
 		//assertTrue(rsmd.getPrecision(13)>=0);
 		assertTrue(rsmd.getPrecision(14)>=0);
 		System.out.println();
+
 
 		// fields by index
 		System.out.println("FIELDS BY INDEX:");
@@ -1584,17 +1599,20 @@ class db2 extends sqlrtest {
 			System.out.println();
 		}
 
+
 		// row count
 		System.out.println("ROW COUNT:");
 		assertEquals(rs.getRow(),4);
 		rs.close();
-		stmt.close();
-		assertTrue(stmt.isClosed());
 		System.out.println();
+
 
 		// commit
 		System.out.println("COMMIT:");
 		con.commit();
+		stmt.executeUpdate("drop table testtable");
+		stmt.close();
+		assertTrue(stmt.isClosed());
 		System.out.println();
 
 
@@ -1638,11 +1656,11 @@ class db2 extends sqlrtest {
 		// clob and blob output bind
 		System.out.println("CLOB AND BLOB OUTPUT BIND:");
 		try {
-			stmt.executeUpdate("drop procedure testproc2");
+			stmt.executeUpdate("drop table testtable1");
 		} catch (Exception ex) {
 		}
 		try {
-			stmt.executeUpdate("drop table testtable1");
+			stmt.executeUpdate("drop procedure testproc2");
 		} catch (Exception ex) {
 		}
 		assertEquals(stmt.executeUpdate(
@@ -1681,6 +1699,7 @@ class db2 extends sqlrtest {
 		stmt.executeUpdate("drop table testtable1");
 		System.out.println();
 
+
 		// stored procedures
 		System.out.println("STORED PROCEDURES:");
 		// return values
@@ -1716,8 +1735,9 @@ class db2 extends sqlrtest {
 		stmt.executeUpdate("drop procedure testproc");
 		System.out.println();
 
+
 		// catalog list
-		System.out.println("CATALOG LIST: ");
+		System.out.println("CATALOG LIST:");
 		stmt=con.createStatement();
 		rs=md.getCatalogs();
 		assertTrue((rs!=null));
@@ -1729,7 +1749,7 @@ class db2 extends sqlrtest {
 		found=false;
 		while (rs.next()) {
 			String	tcat=rs.getString("TABLE_CAT");
-			if (tcat!=null && tcat.equalsIgnoreCase(hostname)) {
+			if (tcat!=null && tcat.equals(hostname)) {
 				found=true;
 				break;
 			}
@@ -1745,7 +1765,7 @@ class db2 extends sqlrtest {
 
 
 		// schema list
-		System.out.println("SCHEMA LIST: ");
+		System.out.println("SCHEMA LIST:");
 		rs=md.getSchemas();
 		assertTrue((rs!=null));
 		rsmd=rs.getMetaData();
@@ -1757,7 +1777,7 @@ class db2 extends sqlrtest {
 		found=false;
 		while (rs.next()) {
 			String	tschem=rs.getString("TABLE_SCHEM");
-			if (tschem!=null && tschem.equalsIgnoreCase(user)) {
+			if (tschem!=null && tschem.equals(user.toUpperCase())) {
 				found=true;
 				break;
 			}
@@ -1768,7 +1788,7 @@ class db2 extends sqlrtest {
 
 
 		// table type list
-		System.out.println("TABLE TYPE LIST: ");
+		System.out.println("TABLE TYPE LIST:");
 		rs=md.getTableTypes();
 		assertTrue((rs!=null));
 		rsmd=rs.getMetaData();
@@ -1796,7 +1816,7 @@ class db2 extends sqlrtest {
 
 
 		// table list
-		System.out.println("TABLE LIST: ");
+		System.out.println("TABLE LIST:");
 		try {
 			stmt.executeUpdate("drop table testtable1");
 		} catch (Exception ex) {
@@ -1861,10 +1881,10 @@ class db2 extends sqlrtest {
 		counter=0;
 		while (rs.next()) {
 			String name=rs.getString("TABLE_NAME");
-			if (name.equalsIgnoreCase("testtable1") ||
-					name.equalsIgnoreCase("testtable2") ||
-					name.equalsIgnoreCase("testtable3") ||
-					name.equalsIgnoreCase("testtable4")) {
+			if (name.equals("TESTTABLE1") ||
+					name.equals("TESTTABLE2") ||
+					name.equals("TESTTABLE3") ||
+					name.equals("TESTTABLE4")) {
 				counter++;
 			}
 		}
@@ -1878,7 +1898,7 @@ class db2 extends sqlrtest {
 
 
 		// super table list
-		System.out.println("SUPER TABLE LIST: ");
+		System.out.println("SUPER TABLE LIST:");
 		try {
 			rs=md.getSuperTables(null,null,"%");
 			// may or may not throw
@@ -1892,7 +1912,7 @@ class db2 extends sqlrtest {
 
 
 		// table privilege list
-		System.out.println("TABLE PRIVILEGE LIST: ");
+		System.out.println("TABLE PRIVILEGE LIST:");
 		// sqlrelay doesn't support this yet
 		if (!issqlrelay) {
 			rs=md.getTablePrivileges(null,null,"%");
@@ -1914,7 +1934,7 @@ class db2 extends sqlrtest {
 
 
 		// type info list
-		System.out.println("TYPE INFO LIST: ");
+		System.out.println("TYPE INFO LIST:");
 		rs=md.getTypeInfo();
 		assertTrue((rs!=null));
 		rsmd=rs.getMetaData();
@@ -1952,9 +1972,8 @@ class db2 extends sqlrtest {
 		System.out.println();
 
 
-
 		// column list
-		System.out.println("COLUMN LIST: ");
+		System.out.println("COLUMN LIST:");
 		stmt=con.createStatement();
 		try {
 			stmt.executeUpdate("drop table testtable");
@@ -2014,73 +2033,58 @@ class db2 extends sqlrtest {
 		assertEquals(rsmd.getColumnName(col++),"IS_GENERATEDCOLUMN");
 		assertTrue(rs.next());
 		assertEquals(rs.getString("COLUMN_NAME"),"TESTSMALLINT");
-		assertTrue(rs.getString("TYPE_NAME").
-					equalsIgnoreCase("SMALLINT"));
+		assertEquals(rs.getString("TYPE_NAME"),"SMALLINT");
 		assertTrue(rs.next());
 		assertEquals(rs.getString("COLUMN_NAME"),"TESTINT");
-		assertTrue(rs.getString("TYPE_NAME").
-					equalsIgnoreCase("INTEGER"));
+		assertEquals(rs.getString("TYPE_NAME"),"INTEGER");
 		assertTrue(rs.next());
 		assertEquals(rs.getString("COLUMN_NAME"),"TESTBIGINT");
-		assertTrue(rs.getString("TYPE_NAME").
-					equalsIgnoreCase("BIGINT"));
+		assertEquals(rs.getString("TYPE_NAME"),"BIGINT");
 		assertTrue(rs.next());
 		assertEquals(rs.getString("COLUMN_NAME"),"TESTDECIMAL");
-		assertTrue(rs.getString("TYPE_NAME").
-					equalsIgnoreCase("DECIMAL"));
+		assertEquals(rs.getString("TYPE_NAME"),"DECIMAL");
 		assertTrue(rs.next());
 		assertEquals(rs.getString("COLUMN_NAME"),"TESTREAL");
-		assertTrue(rs.getString("TYPE_NAME").
-					equalsIgnoreCase("REAL"));
+		assertEquals(rs.getString("TYPE_NAME"),"REAL");
 		assertTrue(rs.next());
 		assertEquals(rs.getString("COLUMN_NAME"),"TESTDOUBLE");
-		assertTrue(rs.getString("TYPE_NAME").
-					equalsIgnoreCase("DOUBLE"));
+		assertEquals(rs.getString("TYPE_NAME"),"DOUBLE");
 		assertTrue(rs.next());
 		assertEquals(rs.getString("COLUMN_NAME"),"TESTCHAR");
 		if (issqlrelay) {
-			assertTrue(rs.getString("TYPE_NAME").
-					equalsIgnoreCase("CHARACTER"));
+			assertEquals(rs.getString("TYPE_NAME"),"CHARACTER");
 		} else {
 			// db2 jdbc returns CHAR
-			assertTrue(rs.getString("TYPE_NAME").
-					equalsIgnoreCase("CHAR"));
+			assertEquals(rs.getString("TYPE_NAME"),"CHAR");
 		}
 		assertTrue(rs.next());
 		assertEquals(rs.getString("COLUMN_NAME"),"TESTVARCHAR");
-		assertTrue(rs.getString("TYPE_NAME").
-					equalsIgnoreCase("VARCHAR"));
+		assertEquals(rs.getString("TYPE_NAME"),"VARCHAR");
 		assertTrue(rs.next());
 		assertEquals(rs.getString("COLUMN_NAME"),"TESTDATE");
-		assertTrue(rs.getString("TYPE_NAME").
-					equalsIgnoreCase("DATE"));
+		assertEquals(rs.getString("TYPE_NAME"),"DATE");
 		assertTrue(rs.next());
 		assertEquals(rs.getString("COLUMN_NAME"),"TESTTIME");
-		assertTrue(rs.getString("TYPE_NAME").
-					equalsIgnoreCase("TIME"));
+		assertEquals(rs.getString("TYPE_NAME"),"TIME");
 		assertTrue(rs.next());
 		assertEquals(rs.getString("COLUMN_NAME"),"TESTTIMESTAMP");
-		assertTrue(rs.getString("TYPE_NAME").
-					equalsIgnoreCase("TIMESTAMP"));
+		assertEquals(rs.getString("TYPE_NAME"),"TIMESTAMP");
 		assertTrue(rs.next());
 		assertEquals(rs.getString("COLUMN_NAME"),"TESTCLOB");
-		assertTrue(rs.getString("TYPE_NAME").
-					equalsIgnoreCase("CLOB"));
+		assertEquals(rs.getString("TYPE_NAME"),"CLOB");
 		assertTrue(rs.next());
 		assertEquals(rs.getString("COLUMN_NAME"),"TESTBLOB");
-		assertTrue(rs.getString("TYPE_NAME").
-					equalsIgnoreCase("BLOB"));
+		assertEquals(rs.getString("TYPE_NAME"),"BLOB");
 		assertTrue(rs.next());
 		assertEquals(rs.getString("COLUMN_NAME"),"TESTURL");
-		assertTrue(rs.getString("TYPE_NAME").
-					equalsIgnoreCase("VARCHAR"));
+		assertEquals(rs.getString("TYPE_NAME"),"VARCHAR");
 		rs.close();
 		stmt.executeUpdate("drop table testtable");
 		System.out.println();
 
 
 		// version column list
-		System.out.println("VERSION COLUMN LIST: ");
+		System.out.println("VERSION COLUMN LIST:");
 		// sqlrelay doesn't support this yet
 		if (!issqlrelay) {
 			rs=md.getVersionColumns(null,null,"%");
@@ -2123,7 +2127,7 @@ class db2 extends sqlrtest {
 
 
 		// best row identifier list
-		System.out.println("BEST ROW IDENTIFIER LIST: ");
+		System.out.println("BEST ROW IDENTIFIER LIST:");
 		// sqlrelay doesn't support this yet
 		if (!issqlrelay) {
 			rs=md.getBestRowIdentifier(null,null,"%",
@@ -2170,7 +2174,7 @@ class db2 extends sqlrtest {
 
 
 		// primary key list
-		System.out.println("PRIMARY KEY LIST: ");
+		System.out.println("PRIMARY KEY LIST:");
 		try {
 			stmt.executeUpdate("drop table testtable");
 		} catch (Exception ex) {
@@ -2192,10 +2196,8 @@ class db2 extends sqlrtest {
 		assertEquals(rsmd.getColumnName(col++),"KEY_SEQ");
 		assertEquals(rsmd.getColumnName(col++),"PK_NAME");
 		assertTrue(rs.next());
-		assertTrue(rs.getString("TABLE_NAME").
-					equalsIgnoreCase("TESTTABLE"));
-		assertTrue(rs.getString("COLUMN_NAME").
-					equalsIgnoreCase("COL1"));
+		assertEquals(rs.getString("TABLE_NAME"),"TESTTABLE");
+		assertEquals(rs.getString("COLUMN_NAME"),"COL1");
 		assertEquals(rs.getString("KEY_SEQ"),"1");
 		assertTrue(rs.getString("PK_NAME")!=null &&
 				rs.getString("PK_NAME").length()>0);
@@ -2206,7 +2208,7 @@ class db2 extends sqlrtest {
 
 
 		// key and index list
-		System.out.println("KEY AND INDEX LIST: ");
+		System.out.println("KEY AND INDEX LIST:");
 		try {
 			stmt.executeUpdate("drop table testtable");
 		} catch (Exception ex) {
@@ -2248,12 +2250,10 @@ class db2 extends sqlrtest {
 		assertEquals(rsmd.getColumnName(col++),
 						"FILTER_CONDITION");
 		assertTrue(rs.next());
-		assertTrue(rs.getString("TABLE_NAME").
-					equalsIgnoreCase("TESTTABLE"));
+		assertEquals(rs.getString("TABLE_NAME"),"TESTTABLE");
 		assertEquals(rs.getString("NON_UNIQUE"),"0");
 		assertEquals(rs.getString("ORDINAL_POSITION"),"1");
-		assertTrue(rs.getString("COLUMN_NAME").
-					equalsIgnoreCase("COL1"));
+		assertEquals(rs.getString("COLUMN_NAME"),"COL1");
 		assertEquals(rs.getString("ASC_OR_DESC"),"A");
 		assertEquals(rs.getString("TYPE"),"3");
 		assertTrue(rs.getString("INDEX_NAME")!=null &&
@@ -2268,7 +2268,7 @@ class db2 extends sqlrtest {
 
 
 		// exported key list
-		System.out.println("EXPORTED KEY LIST: ");
+		System.out.println("EXPORTED KEY LIST:");
 		// sqlrelay doesn't support this yet
 		if (!issqlrelay) {
 			rs=md.getExportedKeys(null,null,"%");
@@ -2297,7 +2297,7 @@ class db2 extends sqlrtest {
 
 
 		// imported key list
-		System.out.println("IMPORTED KEY LIST: ");
+		System.out.println("IMPORTED KEY LIST:");
 		// sqlrelay doesn't support this yet
 		if (!issqlrelay) {
 			rs=md.getImportedKeys(null,null,"%");
@@ -2366,7 +2366,7 @@ class db2 extends sqlrtest {
 
 
 		// cross reference list
-		System.out.println("CROSS REFERENCE LIST: ");
+		System.out.println("CROSS REFERENCE LIST:");
 		// sqlrelay doesn't support this yet
 		if (!issqlrelay) {
 			rs=md.getCrossReference(null,null,"%",null,null,"%");
@@ -2435,7 +2435,7 @@ class db2 extends sqlrtest {
 
 
 		// procedure list
-		System.out.println("PROCEDURE LIST: ");
+		System.out.println("PROCEDURE LIST:");
 		try {
 			stmt.executeUpdate("drop procedure testproc1");
 		} catch (Exception ex) {
@@ -2518,10 +2518,10 @@ class db2 extends sqlrtest {
 		counter=0;
 		while (rs.next()) {
 			String name=rs.getString("PROCEDURE_NAME");
-			if (name.equalsIgnoreCase("testproc1") ||
-					name.equalsIgnoreCase("testproc2") ||
-					name.equalsIgnoreCase("testproc3") ||
-					name.equalsIgnoreCase("testproc4")) {
+			if (name.equals("TESTPROC1") ||
+					name.equals("TESTPROC2") ||
+					name.equals("TESTPROC3") ||
+					name.equals("TESTPROC4")) {
 				counter++;
 			}
 		}
@@ -2531,7 +2531,7 @@ class db2 extends sqlrtest {
 
 
 		// procedure parameter list
-		System.out.println("PROCEDURE PARAMETER LIST: ");
+		System.out.println("PROCEDURE PARAMETER LIST:");
 		rs=md.getProcedureColumns(null,null,
 					"TESTPROC1","%");
 		assertTrue((rs!=null));
@@ -2594,39 +2594,26 @@ class db2 extends sqlrtest {
 						"SPECIFICNAME");
 		}
 		assertTrue(rs.next());
-		assertTrue(rs.getString("COLUMN_NAME").
-					equalsIgnoreCase("in1"));
-		assertTrue(rs.getString("TYPE_NAME").
-					equalsIgnoreCase("INTEGER"));
-		assertEquals(rs.getString("ORDINAL_POSITION"),
-						"1");
+		assertEquals(rs.getString("COLUMN_NAME"),"IN1");
+		assertEquals(rs.getString("TYPE_NAME"),"INTEGER");
+		assertEquals(rs.getString("ORDINAL_POSITION"),"1");
 		assertTrue(rs.next());
-		assertTrue(rs.getString("COLUMN_NAME").
-					equalsIgnoreCase("in2"));
+		assertEquals(rs.getString("COLUMN_NAME"),"IN2");
 		if (issqlrelay) {
-			assertTrue(rs.getString("TYPE_NAME").
-					equalsIgnoreCase("CHARACTER"));
+			assertEquals(rs.getString("TYPE_NAME"),"CHARACTER");
 		} else {
 			// db2 jdbc returns CHAR
-			assertTrue(rs.getString("TYPE_NAME").
-					equalsIgnoreCase("CHAR"));
+			assertEquals(rs.getString("TYPE_NAME"),"CHAR");
 		}
-		assertEquals(rs.getString("ORDINAL_POSITION"),
-						"2");
+		assertEquals(rs.getString("ORDINAL_POSITION"),"2");
 		assertTrue(rs.next());
-		assertTrue(rs.getString("COLUMN_NAME").
-					equalsIgnoreCase("in3"));
-		assertTrue(rs.getString("TYPE_NAME").
-					equalsIgnoreCase("VARCHAR"));
-		assertEquals(rs.getString("ORDINAL_POSITION"),
-						"3");
+		assertEquals(rs.getString("COLUMN_NAME"),"IN3");
+		assertEquals(rs.getString("TYPE_NAME"),"VARCHAR");
+		assertEquals(rs.getString("ORDINAL_POSITION"),"3");
 		assertTrue(rs.next());
-		assertTrue(rs.getString("COLUMN_NAME").
-					equalsIgnoreCase("in4"));
-		assertTrue(rs.getString("TYPE_NAME").
-					equalsIgnoreCase("DATE"));
-		assertEquals(rs.getString("ORDINAL_POSITION"),
-						"4");
+		assertEquals(rs.getString("COLUMN_NAME"),"IN4");
+		assertEquals(rs.getString("TYPE_NAME"),"DATE");
+		assertEquals(rs.getString("ORDINAL_POSITION"),"4");
 		rs.close();
 		System.out.println();
 		try {
@@ -2648,7 +2635,7 @@ class db2 extends sqlrtest {
 
 
 		// function list
-		System.out.println("FUNCTION LIST: ");
+		System.out.println("FUNCTION LIST:");
 		// sqlrelay doesn't support this yet
 		if (!issqlrelay) {
 			rs=md.getFunctions(null,null,"%");
@@ -2694,7 +2681,7 @@ class db2 extends sqlrtest {
 
 
 		// function parameter list
-		System.out.println("FUNCTION PARAMETER LIST: ");
+		System.out.println("FUNCTION PARAMETER LIST:");
 		// sqlrelay doesn't support this yet
 		if (!issqlrelay) {
 			rs=md.getFunctionColumns(null,null,"%","%");
@@ -2758,7 +2745,8 @@ class db2 extends sqlrtest {
 			assertTrue(true);
 		}
 		try {
-			stmt.executeUpdate("insert into nonexistent_table values (1)");
+			stmt.executeUpdate("insert into "+
+						"nonexistent_table values (1)");
 			assertTrue(false);
 		} catch (Exception e) {
 			assertTrue(true);
