@@ -3477,100 +3477,76 @@ if (issqlrelay) {
 		assertEquals(rsmd.getColumnName(col++),"IS_NULLABLE");
 		assertTrue(rs.next());
 		assertEquals(rs.getString("COLUMN_NAME"),"testtinyint");
-		assertTrue(rs.getString("TYPE_NAME").
-					equalsIgnoreCase("TINYINT"));
+		assertEquals(rs.getString("TYPE_NAME"),"TINYINT");
 		assertTrue(rs.next());
 		assertEquals(rs.getString("COLUMN_NAME"),"testsmallint");
-		assertTrue(rs.getString("TYPE_NAME").
-					equalsIgnoreCase("SMALLINT"));
+		assertEquals(rs.getString("TYPE_NAME"),"SMALLINT");
 		assertTrue(rs.next());
 		assertEquals(rs.getString("COLUMN_NAME"),"testmediumint");
-		assertTrue(rs.getString("TYPE_NAME").
-					equalsIgnoreCase("MEDIUMINT"));
+		assertEquals(rs.getString("TYPE_NAME"),"MEDIUMINT");
 		assertTrue(rs.next());
 		assertEquals(rs.getString("COLUMN_NAME"),"testint");
-		assertTrue(rs.getString("TYPE_NAME").
-					equalsIgnoreCase("INT"));
+		assertEquals(rs.getString("TYPE_NAME"),"INT");
 		assertTrue(rs.next());
 		assertEquals(rs.getString("COLUMN_NAME"),"testbigint");
-		assertTrue(rs.getString("TYPE_NAME").
-					equalsIgnoreCase("BIGINT"));
+		assertEquals(rs.getString("TYPE_NAME"),"BIGINT");
 		assertTrue(rs.next());
 		assertEquals(rs.getString("COLUMN_NAME"),"testfloat");
-		assertTrue(rs.getString("TYPE_NAME").
-					equalsIgnoreCase("FLOAT"));
+		assertEquals(rs.getString("TYPE_NAME"),"FLOAT");
 		assertTrue(rs.next());
 		assertEquals(rs.getString("COLUMN_NAME"),"testreal");
-		assertTrue(rs.getString("TYPE_NAME").
-					equalsIgnoreCase("DOUBLE"));
+		assertEquals(rs.getString("TYPE_NAME"),"DOUBLE");
 		assertTrue(rs.next());
 		assertEquals(rs.getString("COLUMN_NAME"),"testdecimal");
-		assertTrue(rs.getString("TYPE_NAME").
-					equalsIgnoreCase("DECIMAL"));
+		assertEquals(rs.getString("TYPE_NAME"),"DECIMAL");
 		assertTrue(rs.next());
 		assertEquals(rs.getString("COLUMN_NAME"),"testdate");
-		assertTrue(rs.getString("TYPE_NAME").
-					equalsIgnoreCase("DATE"));
+		assertEquals(rs.getString("TYPE_NAME"),"DATE");
 		assertTrue(rs.next());
 		assertEquals(rs.getString("COLUMN_NAME"),"testtime");
-		assertTrue(rs.getString("TYPE_NAME").
-					equalsIgnoreCase("TIME"));
+		assertEquals(rs.getString("TYPE_NAME"),"TIME");
 		assertTrue(rs.next());
 		assertEquals(rs.getString("COLUMN_NAME"),"testdatetime");
-		assertTrue(rs.getString("TYPE_NAME").
-					equalsIgnoreCase("DATETIME"));
+		assertEquals(rs.getString("TYPE_NAME"),"DATETIME");
 		assertTrue(rs.next());
 		assertEquals(rs.getString("COLUMN_NAME"),"testyear");
-		assertTrue(rs.getString("TYPE_NAME").
-					equalsIgnoreCase("YEAR"));
+		assertEquals(rs.getString("TYPE_NAME"),"YEAR");
 		assertTrue(rs.next());
 		assertEquals(rs.getString("COLUMN_NAME"),"testchar");
-		assertTrue(rs.getString("TYPE_NAME").
-					equalsIgnoreCase("CHAR"));
+		assertEquals(rs.getString("TYPE_NAME"),"CHAR");
 		assertTrue(rs.next());
 		assertEquals(rs.getString("COLUMN_NAME"),"testvarchar");
-		assertTrue(rs.getString("TYPE_NAME").
-					equalsIgnoreCase("VARCHAR"));
+		assertEquals(rs.getString("TYPE_NAME"),"VARCHAR");
 		assertTrue(rs.next());
 		assertEquals(rs.getString("COLUMN_NAME"),"testtext");
-		assertTrue(rs.getString("TYPE_NAME").
-					equalsIgnoreCase("TEXT"));
+		assertEquals(rs.getString("TYPE_NAME"),"TEXT");
 		assertTrue(rs.next());
 		assertEquals(rs.getString("COLUMN_NAME"),"testtinytext");
-		assertTrue(rs.getString("TYPE_NAME").
-					equalsIgnoreCase("TINYTEXT"));
+		assertEquals(rs.getString("TYPE_NAME"),"TINYTEXT");
 		assertTrue(rs.next());
 		assertEquals(rs.getString("COLUMN_NAME"),"testmediumtext");
-		assertTrue(rs.getString("TYPE_NAME").
-					equalsIgnoreCase("MEDIUMTEXT"));
+		assertEquals(rs.getString("TYPE_NAME"),"MEDIUMTEXT");
 		assertTrue(rs.next());
 		assertEquals(rs.getString("COLUMN_NAME"),"testlongtext");
-		assertTrue(rs.getString("TYPE_NAME").
-					equalsIgnoreCase("LONGTEXT"));
+		assertEquals(rs.getString("TYPE_NAME"),"LONGTEXT");
 		assertTrue(rs.next());
 		assertEquals(rs.getString("COLUMN_NAME"),"testblob");
-		assertTrue(rs.getString("TYPE_NAME").
-					equalsIgnoreCase("BLOB"));
+		assertEquals(rs.getString("TYPE_NAME"),"BLOB");
 		assertTrue(rs.next());
 		assertEquals(rs.getString("COLUMN_NAME"),"testtinyblob");
-		assertTrue(rs.getString("TYPE_NAME").
-					equalsIgnoreCase("TINYBLOB"));
+		assertEquals(rs.getString("TYPE_NAME"),"TINYBLOB");
 		assertTrue(rs.next());
 		assertEquals(rs.getString("COLUMN_NAME"),"testmediumblob");
-		assertTrue(rs.getString("TYPE_NAME").
-					equalsIgnoreCase("MEDIUMBLOB"));
+		assertEquals(rs.getString("TYPE_NAME"),"MEDIUMBLOB");
 		assertTrue(rs.next());
 		assertEquals(rs.getString("COLUMN_NAME"),"testlongblob");
-		assertTrue(rs.getString("TYPE_NAME").
-					equalsIgnoreCase("LONGBLOB"));
+		assertEquals(rs.getString("TYPE_NAME"),"LONGBLOB");
 		assertTrue(rs.next());
 		assertEquals(rs.getString("COLUMN_NAME"),"testtimestamp");
-		assertTrue(rs.getString("TYPE_NAME").
-					equalsIgnoreCase("TIMESTAMP"));
+		assertEquals(rs.getString("TYPE_NAME"),"TIMESTAMP");
 		assertTrue(rs.next());
 		assertEquals(rs.getString("COLUMN_NAME"),"testurl");
-		assertTrue(rs.getString("TYPE_NAME").
-					equalsIgnoreCase("VARCHAR"));
+		assertEquals(rs.getString("TYPE_NAME"),"VARCHAR");
 		rs.close();
 		stmt.executeUpdate("drop table if exists testtable");
 		System.out.println();
@@ -4000,24 +3976,20 @@ if (issqlrelay) {
 						"SPECIFIC_NAME");
 		assertTrue(rs.next());
 		assertEquals(rs.getString("COLUMN_NAME"),"in1");
-		assertTrue(rs.getString("TYPE_NAME").equalsIgnoreCase("INT"));
-		assertEquals(rs.getString("ORDINAL_POSITION"),
-						"1");
+		assertEquals(rs.getString("TYPE_NAME"),"INT");
+		assertEquals(rs.getString("ORDINAL_POSITION"),"1");
 		assertTrue(rs.next());
 		assertEquals(rs.getString("COLUMN_NAME"),"in2");
-		assertTrue(rs.getString("TYPE_NAME").equalsIgnoreCase("CHAR"));
-		assertEquals(rs.getString("ORDINAL_POSITION"),
-						"2");
+		assertEquals(rs.getString("TYPE_NAME"),"CHAR");
+		assertEquals(rs.getString("ORDINAL_POSITION"),"2");
 		assertTrue(rs.next());
 		assertEquals(rs.getString("COLUMN_NAME"),"in3");
-		assertTrue(rs.getString("TYPE_NAME").equalsIgnoreCase("VARCHAR"));
-		assertEquals(rs.getString("ORDINAL_POSITION"),
-						"3");
+		assertEquals(rs.getString("TYPE_NAME"),"VARCHAR");
+		assertEquals(rs.getString("ORDINAL_POSITION"),"3");
 		assertTrue(rs.next());
 		assertEquals(rs.getString("COLUMN_NAME"),"in4");
-		assertTrue(rs.getString("TYPE_NAME").equalsIgnoreCase("DATE"));
-		assertEquals(rs.getString("ORDINAL_POSITION"),
-						"4");
+		assertEquals(rs.getString("TYPE_NAME"),"DATE");
+		assertEquals(rs.getString("ORDINAL_POSITION"),"4");
 		rs.close();
 		System.out.println();
 		stmt.executeUpdate("drop procedure if exists testproc1");

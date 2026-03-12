@@ -1710,7 +1710,7 @@ const char *mysqlconnection::getColumnListQuery(const char *catalog,
 		"	table_name as table_name, "
 		"	column_name, "
 		"	'' as data_type, " // case this...
-		"	data_type as type_name, "
+		"	upper(data_type) as type_name, "
 		"	character_maximum_length as column_size, "
 		"	null as buffer_length, "
 			// length in bytes of data transferred during fetch
@@ -2029,7 +2029,7 @@ const char *mysqlconnection::getProcedureParameterListQuery(
 		"		else 5 "
 		"	end as column_type, "
 		"	'' as data_type, "
-		"	p.data_type as type_name, "
+		"	upper(p.data_type) as type_name, "
 		"	p.character_maximum_length as column_size, "
 		"	null as buffer_length, "
 		"	p.numeric_scale as decimal_digits, "
