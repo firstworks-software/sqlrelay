@@ -763,6 +763,14 @@ class firebird extends sqlrtest {
 		assertTrue(boolval||!boolval);
 		System.out.println();
 
+		// supportsConvert (with types)
+		System.out.println("  supportsConvert (with types)");
+		boolval=md.supportsConvert(Types.INTEGER,Types.VARCHAR);
+		System.out.println("    "+boolval);
+		// not yet tested against native driver
+		assertTrue(boolval||!boolval);
+		System.out.println();
+
 		// supportsCoreSQLGrammar
 		System.out.println("  supportsCoreSQLGrammar");
 		boolval=md.supportsCoreSQLGrammar();

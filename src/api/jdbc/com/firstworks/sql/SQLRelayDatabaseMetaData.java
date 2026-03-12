@@ -1820,9 +1820,11 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 		drv.debugPrintln("from type: "+fromtype);
 		drv.debugPrintln("to type: "+totype);
 
-		boolean	result=true;
-		// FIXME: query the db directly for each, cache
-		drv.debugPrintln("supports convert: "+result);
+		boolean	result=false;
+		if (supportsConvert()) {
+			// FIXME: query the db directly for each, cache
+			result=true;
+		}
 		drv.debugEnd();
 		return result;
 	}

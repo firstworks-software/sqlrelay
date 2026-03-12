@@ -726,6 +726,13 @@ class db2 extends sqlrtest {
 		assertFalse(boolval);
 		System.out.println();
 
+		// supportsConvert (with types)
+		System.out.println("  supportsConvert (with types)");
+		boolval=md.supportsConvert(Types.INTEGER,Types.VARCHAR);
+		System.out.println("    "+boolval);
+		assertFalse(boolval);
+		System.out.println();
+
 		// supportsCoreSQLGrammar
 		System.out.println("  supportsCoreSQLGrammar");
 		boolval=md.supportsCoreSQLGrammar();

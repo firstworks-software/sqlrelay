@@ -683,6 +683,13 @@ class freetds extends sqlrtest {
 		System.out.println("    "+boolval);
 		assertTrue(boolval||!boolval);
 		System.out.println();
+		
+		// supportsConvert (with types)
+		System.out.println("  supportsConvert (with types)");
+		boolval=md.supportsConvert(Types.INTEGER,Types.VARCHAR);
+		System.out.println("    "+boolval);
+		assertTrue(boolval||!boolval);
+		System.out.println();
 
 		// supportsCoreSQLGrammar
 		System.out.println("  supportsCoreSQLGrammar");

@@ -1111,15 +1111,10 @@ class oracle extends sqlrtest {
 		System.out.println();
 
 		// supportsConvert (with types)
-		// sqlrelay doesn't support this yet
 		System.out.println("  supportsConvert (with types)");
-		boolval=md.supportsConvert(Types.INTEGER, Types.VARCHAR);
+		boolval=md.supportsConvert(Types.INTEGER,Types.VARCHAR);
 		System.out.println("    "+boolval);
-		if (issqlrelay) {
-			assertTrue(boolval);
-		} else {
-			assertFalse(boolval);
-		}
+		assertFalse(boolval);
 		System.out.println();
 
 		// supportsCoreSQLGrammar
@@ -3782,8 +3777,7 @@ class oracle extends sqlrtest {
 		// oracle jdbc throws:
 		// ORA-00904: "ARG"."TYPE_OBJECT_TYPE": invalid identifier
 		if (issqlrelay) {
-			rs=md.getProcedureColumns(null,null,
-						"TESTPROC1","%");
+			rs=md.getProcedureColumns(null,null,"TESTPROC1","%");
 			assertTrue((rs!=null));
 			rsmd=rs.getMetaData();
 			assertTrue((rsmd!=null));
