@@ -33,7 +33,8 @@ class sqlrtest {
 		}
 	}
 
-	protected static void assertEquals(String actual, String expected, int length) {
+	protected static void assertEquals(String actual,
+						String expected, int length) {
 
 		if (expected==null) {
 			if (actual==null) {
@@ -73,7 +74,7 @@ class sqlrtest {
 			return;
 		}
 
-		if (actual.equals(expected)) {
+		if (actual!=null && actual.equals(expected)) {
 			System.out.print(success+" ");
 		} else {
 			System.out.println(failure);
@@ -83,7 +84,8 @@ class sqlrtest {
 		}
 	}
 
-	protected static void assertEquals(byte[] actual, String expected, int length) {
+	protected static void assertEquals(byte[] actual,
+						String expected, int length) {
 
 		if (expected==null) {
 			if (actual==null) {

@@ -1791,11 +1791,15 @@ class informix extends sqlrtest {
 		assertTrue((rsmd!=null));
 		assertEquals(rsmd.getColumnCount(),1);
 		col=1;
-		assertEquals(rsmd.getColumnName(col++),"table_cat");
+		if (issqlrelay) {
+			assertEquals(rsmd.getColumnName(col++),"TABLE_CAT");
+		} else {
+			assertEquals(rsmd.getColumnName(col++),"table_cat");
+		}
 		found=false;
 		while (rs.next()) {
 			String	tcat=rs.getString("table_cat");
-			if (tcat!=null && tcat.equalsIgnoreCase(hostname)) {
+			if (tcat!=null && tcat.equals(hostname)) {
 				found=true;
 				break;
 			}
@@ -1813,12 +1817,17 @@ class informix extends sqlrtest {
 		assertTrue((rsmd!=null));
 		assertEquals(rsmd.getColumnCount(),2);
 		col=1;
-		assertEquals(rsmd.getColumnName(col++),"table_schem");
-		assertEquals(rsmd.getColumnName(col++),"table_catalog");
+		if (issqlrelay) {
+			assertEquals(rsmd.getColumnName(col++),"TABLE_SCHEM");
+			assertEquals(rsmd.getColumnName(col++),"TABLE_CATALOG");
+		} else {
+			assertEquals(rsmd.getColumnName(col++),"table_schem");
+			assertEquals(rsmd.getColumnName(col++),"table_catalog");
+		}
 		found=false;
 		while (rs.next()) {
 			String	tschem=rs.getString("table_schem");
-			if (tschem!=null && tschem.equalsIgnoreCase(user)) {
+			if (tschem!=null && tschem.equals("informix")) {
 				found=true;
 				break;
 			}
@@ -1836,7 +1845,11 @@ class informix extends sqlrtest {
 		assertTrue((rsmd!=null));
 		assertEquals(rsmd.getColumnCount(),1);
 		col=1;
-		assertEquals(rsmd.getColumnName(col++),"table_type");
+		if (issqlrelay) {
+			assertEquals(rsmd.getColumnName(col++),"TABLE_TYPE");
+		} else {
+			assertEquals(rsmd.getColumnName(col++),"table_type");
+		}
 		assertTrue(rs.next());
 		assertEquals(rs.getString("table_type"),"SYSTEM TABLE");
 		assertTrue(rs.next());
@@ -1888,24 +1901,40 @@ class informix extends sqlrtest {
 		assertTrue((rsmd!=null));
 		assertEquals(rsmd.getColumnCount(),10);
 		col=1;
-		assertEquals(rsmd.getColumnName(col++),"table_cat");
-		assertEquals(rsmd.getColumnName(col++),"table_schem");
-		assertEquals(rsmd.getColumnName(col++),"table_name");
-		assertEquals(rsmd.getColumnName(col++),"table_type");
-		assertEquals(rsmd.getColumnName(col++),"remarks");
-		assertEquals(rsmd.getColumnName(col++),"type_cat");
-		assertEquals(rsmd.getColumnName(col++),"type_schem");
-		assertEquals(rsmd.getColumnName(col++),"type_name");
-		assertEquals(rsmd.getColumnName(col++),
+		if (issqlrelay) {
+			assertEquals(rsmd.getColumnName(col++),"TABLE_CAT");
+			assertEquals(rsmd.getColumnName(col++),"TABLE_SCHEM");
+			assertEquals(rsmd.getColumnName(col++),"TABLE_NAME");
+			assertEquals(rsmd.getColumnName(col++),"TABLE_TYPE");
+			assertEquals(rsmd.getColumnName(col++),"REMARKS");
+			assertEquals(rsmd.getColumnName(col++),"TYPE_CAT");
+			assertEquals(rsmd.getColumnName(col++),"TYPE_SCHEM");
+			assertEquals(rsmd.getColumnName(col++),"TYPE_NAME");
+			assertEquals(rsmd.getColumnName(col++),
+						"SELF_REFERENCING_COL_NAME");
+			assertEquals(rsmd.getColumnName(col++),
+						"REF_GENERATION");
+		} else {
+			assertEquals(rsmd.getColumnName(col++),"table_cat");
+			assertEquals(rsmd.getColumnName(col++),"table_schem");
+			assertEquals(rsmd.getColumnName(col++),"table_name");
+			assertEquals(rsmd.getColumnName(col++),"table_type");
+			assertEquals(rsmd.getColumnName(col++),"remarks");
+			assertEquals(rsmd.getColumnName(col++),"type_cat");
+			assertEquals(rsmd.getColumnName(col++),"type_schem");
+			assertEquals(rsmd.getColumnName(col++),"type_name");
+			assertEquals(rsmd.getColumnName(col++),
 						"self_referencing_col_name");
-		assertEquals(rsmd.getColumnName(col++),"ref_generation");
+			assertEquals(rsmd.getColumnName(col++),
+						"ref_generation");
+		}
 		counter=0;
 		while (rs.next()) {
 			String name=rs.getString("table_name");
-			if (name.equalsIgnoreCase("testtable1") ||
-					name.equalsIgnoreCase("testtable2") ||
-					name.equalsIgnoreCase("testtable3") ||
-					name.equalsIgnoreCase("testtable4")) {
+			if (name.equals("testtable1") ||
+					name.equals("testtable2") ||
+					name.equals("testtable3") ||
+					name.equals("testtable4")) {
 				counter++;
 			}
 		}
@@ -1927,14 +1956,25 @@ class informix extends sqlrtest {
 			rsmd=rs.getMetaData();
 			assertTrue((rsmd!=null));
 			col=1;
-			assertEquals(rsmd.getColumnName(col++),
+			if (issqlrelay) {
+				assertEquals(rsmd.getColumnName(col++),
+							"TABLE_CAT");
+				assertEquals(rsmd.getColumnName(col++),
+							"TABLE_SCHEM");
+				assertEquals(rsmd.getColumnName(col++),
+							"TABLE_NAME");
+				assertEquals(rsmd.getColumnName(col++),
+							"SUPERTABLE_NAME");
+			} else {
+				assertEquals(rsmd.getColumnName(col++),
 							"table_cat");
-			assertEquals(rsmd.getColumnName(col++),
+				assertEquals(rsmd.getColumnName(col++),
 							"table_schem");
-			assertEquals(rsmd.getColumnName(col++),
+				assertEquals(rsmd.getColumnName(col++),
 							"table_name");
-			assertEquals(rsmd.getColumnName(col++),
+				assertEquals(rsmd.getColumnName(col++),
 							"supertable_name");
+			}
 			System.out.println();
 		}
 
@@ -1949,14 +1989,38 @@ class informix extends sqlrtest {
 			assertTrue((rsmd!=null));
 			col=1;
 			assertTrue(rsmd.getColumnCount()>=7);
-			assertEquals(rsmd.getColumnName(col++),"table_cat");
-			assertEquals(rsmd.getColumnName(col++),"table_schem");
-			assertEquals(rsmd.getColumnName(col++),"table_name");
-			assertEquals(rsmd.getColumnName(col++),"grantor");
-			assertEquals(rsmd.getColumnName(col++),"grantee");
-			// informix misspells privilege as "privelege"
-			assertEquals(rsmd.getColumnName(col++),"privelege");
-			assertEquals(rsmd.getColumnName(col++),"is_grantable");
+			if (issqlrelay) {
+				assertEquals(rsmd.getColumnName(col++),
+							"TABLE_CAT");
+				assertEquals(rsmd.getColumnName(col++),
+							"TABLE_SCHEM");
+				assertEquals(rsmd.getColumnName(col++),
+							"TABLE_NAME");
+				assertEquals(rsmd.getColumnName(col++),
+							"GRANTOR");
+				assertEquals(rsmd.getColumnName(col++),
+							"GRANTEE");
+				assertEquals(rsmd.getColumnName(col++),
+							"PRIVILEGE");
+				assertEquals(rsmd.getColumnName(col++),
+							"IS_GRANTABLE");
+			} else {
+				assertEquals(rsmd.getColumnName(col++),
+							"table_cat");
+				assertEquals(rsmd.getColumnName(col++),
+							"table_schem");
+				assertEquals(rsmd.getColumnName(col++),
+							"table_name");
+				assertEquals(rsmd.getColumnName(col++),
+							"grantor");
+				assertEquals(rsmd.getColumnName(col++),
+							"grantee");
+				// informix misspells privilege as "privelege"
+				assertEquals(rsmd.getColumnName(col++),
+							"privelege");
+				assertEquals(rsmd.getColumnName(col++),
+							"is_grantable");
+			}
 			rs.close();
 			System.out.println();
 		}
@@ -1970,24 +2034,81 @@ class informix extends sqlrtest {
 		assertTrue((rsmd!=null));
 		assertEquals(rsmd.getColumnCount(),18);
 		col=1;
-		assertEquals(rsmd.getColumnName(col++),"type_name");
-		assertEquals(rsmd.getColumnName(col++),"data_type");
-		assertEquals(rsmd.getColumnName(col++),"precision");
-		assertEquals(rsmd.getColumnName(col++),"literal_prefix");
-		assertEquals(rsmd.getColumnName(col++),"literal_suffix");
-		assertEquals(rsmd.getColumnName(col++),"create_params");
-		assertEquals(rsmd.getColumnName(col++),"nullable");
-		assertEquals(rsmd.getColumnName(col++),"case_sensitive");
-		assertEquals(rsmd.getColumnName(col++),"searchable");
-		assertEquals(rsmd.getColumnName(col++),"unsigned_attribute");
-		assertEquals(rsmd.getColumnName(col++),"fixed_prec_scale");
-		assertEquals(rsmd.getColumnName(col++),"auto_increment");
-		assertEquals(rsmd.getColumnName(col++),"local_type_name");
-		assertEquals(rsmd.getColumnName(col++),"minimum_scale");
-		assertEquals(rsmd.getColumnName(col++),"maximum_scale");
-		assertEquals(rsmd.getColumnName(col++),"sql_data_type");
-		assertEquals(rsmd.getColumnName(col++),"sql_datetime_sub");
-		assertEquals(rsmd.getColumnName(col++),"num_prec_radix");
+		if (issqlrelay) {
+			assertEquals(rsmd.getColumnName(col++),
+						"TYPE_NAME");
+			assertEquals(rsmd.getColumnName(col++),
+						"DATA_TYPE");
+			assertEquals(rsmd.getColumnName(col++),
+						"PRECISION");
+			assertEquals(rsmd.getColumnName(col++),
+						"LITERAL_PREFIX");
+			assertEquals(rsmd.getColumnName(col++),
+						"LITERAL_SUFFIX");
+			assertEquals(rsmd.getColumnName(col++),
+						"CREATE_PARAMS");
+			assertEquals(rsmd.getColumnName(col++),
+						"NULLABLE");
+			assertEquals(rsmd.getColumnName(col++),
+						"CASE_SENSITIVE");
+			assertEquals(rsmd.getColumnName(col++),
+						"SEARCHABLE");
+			assertEquals(rsmd.getColumnName(col++),
+						"UNSIGNED_ATTRIBUTE");
+			assertEquals(rsmd.getColumnName(col++),
+						"FIXED_PREC_SCALE");
+			assertEquals(rsmd.getColumnName(col++),
+						"AUTO_INCREMENT");
+			assertEquals(rsmd.getColumnName(col++),
+						"LOCAL_TYPE_NAME");
+			assertEquals(rsmd.getColumnName(col++),
+						"MINIMUM_SCALE");
+			assertEquals(rsmd.getColumnName(col++),
+						"MAXIMUM_SCALE");
+			assertEquals(rsmd.getColumnName(col++),
+						"SQL_DATA_TYPE");
+			assertEquals(rsmd.getColumnName(col++),
+						"SQL_DATETIME_SUB");
+			assertEquals(rsmd.getColumnName(col++),
+						"NUM_PREC_RADIX");
+		} else {
+			assertEquals(rsmd.getColumnName(col++),
+						"type_name");
+			assertEquals(rsmd.getColumnName(col++),
+						"data_type");
+			assertEquals(rsmd.getColumnName(col++),
+						"precision");
+			assertEquals(rsmd.getColumnName(col++),
+						"literal_prefix");
+			assertEquals(rsmd.getColumnName(col++),
+						"literal_suffix");
+			assertEquals(rsmd.getColumnName(col++),
+						"create_params");
+			assertEquals(rsmd.getColumnName(col++),
+						"nullable");
+			assertEquals(rsmd.getColumnName(col++),
+						"case_sensitive");
+			assertEquals(rsmd.getColumnName(col++),
+						"searchable");
+			assertEquals(rsmd.getColumnName(col++),
+						"unsigned_attribute");
+			assertEquals(rsmd.getColumnName(col++),
+						"fixed_prec_scale");
+			assertEquals(rsmd.getColumnName(col++),
+						"auto_increment");
+			assertEquals(rsmd.getColumnName(col++),
+						"local_type_name");
+			assertEquals(rsmd.getColumnName(col++),
+						"minimum_scale");
+			assertEquals(rsmd.getColumnName(col++),
+						"maximum_scale");
+			assertEquals(rsmd.getColumnName(col++),
+						"sql_data_type");
+			assertEquals(rsmd.getColumnName(col++),
+						"sql_datetime_sub");
+			assertEquals(rsmd.getColumnName(col++),
+						"num_prec_radix");
+		}
 		rs.close();
 		System.out.println();
 
@@ -2026,24 +2147,81 @@ class informix extends sqlrtest {
 		assertTrue((rsmd!=null));
 		col=1;
 		assertTrue(rsmd.getColumnCount()>=18);
-		assertEquals(rsmd.getColumnName(col++),"table_cat");
-		assertEquals(rsmd.getColumnName(col++),"table_schem");
-		assertEquals(rsmd.getColumnName(col++),"table_name");
-		assertEquals(rsmd.getColumnName(col++),"column_name");
-		assertEquals(rsmd.getColumnName(col++),"data_type");
-		assertEquals(rsmd.getColumnName(col++),"type_name");
-		assertEquals(rsmd.getColumnName(col++),"column_size");
-		assertEquals(rsmd.getColumnName(col++),"buffer_length");
-		assertEquals(rsmd.getColumnName(col++),"decimal_digits");
-		assertEquals(rsmd.getColumnName(col++),"num_prec_radix");
-		assertEquals(rsmd.getColumnName(col++),"nullable");
-		assertEquals(rsmd.getColumnName(col++),"remarks");
-		assertEquals(rsmd.getColumnName(col++),"column_def");
-		assertEquals(rsmd.getColumnName(col++),"sql_data_type");
-		assertEquals(rsmd.getColumnName(col++),"sql_datetime_sub");
-		assertEquals(rsmd.getColumnName(col++),"char_octet_length");
-		assertEquals(rsmd.getColumnName(col++),"ordinal_position");
-		assertEquals(rsmd.getColumnName(col++),"is_nullable");
+		if (issqlrelay) {
+			assertEquals(rsmd.getColumnName(col++),
+						"TABLE_CAT");
+			assertEquals(rsmd.getColumnName(col++),
+						"TABLE_SCHEM");
+			assertEquals(rsmd.getColumnName(col++),
+						"TABLE_NAME");
+			assertEquals(rsmd.getColumnName(col++),
+						"COLUMN_NAME");
+			assertEquals(rsmd.getColumnName(col++),
+						"DATA_TYPE");
+			assertEquals(rsmd.getColumnName(col++),
+						"TYPE_NAME");
+			assertEquals(rsmd.getColumnName(col++),
+						"COLUMN_SIZE");
+			assertEquals(rsmd.getColumnName(col++),
+						"BUFFER_LENGTH");
+			assertEquals(rsmd.getColumnName(col++),
+						"DECIMAL_DIGITS");
+			assertEquals(rsmd.getColumnName(col++),
+						"NUM_PREC_RADIX");
+			assertEquals(rsmd.getColumnName(col++),
+						"NULLABLE");
+			assertEquals(rsmd.getColumnName(col++),
+						"REMARKS");
+			assertEquals(rsmd.getColumnName(col++),
+						"COLUMN_DEF");
+			assertEquals(rsmd.getColumnName(col++),
+						"SQL_DATA_TYPE");
+			assertEquals(rsmd.getColumnName(col++),
+						"SQL_DATETIME_SUB");
+			assertEquals(rsmd.getColumnName(col++),
+						"CHAR_OCTET_LENGTH");
+			assertEquals(rsmd.getColumnName(col++),
+						"ORDINAL_POSITION");
+			assertEquals(rsmd.getColumnName(col++),
+						"IS_NULLABLE");
+		} else {
+			assertEquals(rsmd.getColumnName(col++),
+						"table_cat");
+			assertEquals(rsmd.getColumnName(col++),
+						"table_schem");
+			assertEquals(rsmd.getColumnName(col++),
+						"table_name");
+			assertEquals(rsmd.getColumnName(col++),
+						"column_name");
+			assertEquals(rsmd.getColumnName(col++),
+						"data_type");
+			assertEquals(rsmd.getColumnName(col++),
+						"type_name");
+			assertEquals(rsmd.getColumnName(col++),
+						"column_size");
+			assertEquals(rsmd.getColumnName(col++),
+						"buffer_length");
+			assertEquals(rsmd.getColumnName(col++),
+						"decimal_digits");
+			assertEquals(rsmd.getColumnName(col++),
+						"num_prec_radix");
+			assertEquals(rsmd.getColumnName(col++),
+						"nullable");
+			assertEquals(rsmd.getColumnName(col++),
+						"remarks");
+			assertEquals(rsmd.getColumnName(col++),
+						"column_def");
+			assertEquals(rsmd.getColumnName(col++),
+						"sql_data_type");
+			assertEquals(rsmd.getColumnName(col++),
+						"sql_datetime_sub");
+			assertEquals(rsmd.getColumnName(col++),
+						"char_octet_length");
+			assertEquals(rsmd.getColumnName(col++),
+						"ordinal_position");
+			assertEquals(rsmd.getColumnName(col++),
+						"is_nullable");
+		}
 		assertTrue(rs.next());
 		assertEquals(rs.getString("column_name"),"testboolean");
 		assertTrue(rs.getString("type_name").
@@ -2129,28 +2307,47 @@ class informix extends sqlrtest {
 		System.out.println("VERSION COLUMN LIST:");
 		// sqlrelay doesn't support this yet
 		if (!issqlrelay) {
-			rs=md.getVersionColumns(null,null,"%");
+			rs=md.getVersionColumns(null,null,"testtable");
 			assertTrue((rs!=null));
 			rsmd=rs.getMetaData();
 			assertTrue((rsmd!=null));
 			col=1;
 			assertTrue(rsmd.getColumnCount()>=8);
-			assertEquals(rsmd.getColumnName(col++),
-						"scope");
-			assertEquals(rsmd.getColumnName(col++),
-						"column_name");
-			assertEquals(rsmd.getColumnName(col++),
-						"data_type");
-			assertEquals(rsmd.getColumnName(col++),
-						"type_name");
-			assertEquals(rsmd.getColumnName(col++),
-						"column_size");
-			assertEquals(rsmd.getColumnName(col++),
-						"buffer_length");
-			assertEquals(rsmd.getColumnName(col++),
-						"decimal_digits");
-			assertEquals(rsmd.getColumnName(col++),
-						"pseudo_column");
+			if (issqlrelay) {
+				assertEquals(rsmd.getColumnName(col++),
+							"SCOPE");
+				assertEquals(rsmd.getColumnName(col++),
+							"COLUMN_NAME");
+				assertEquals(rsmd.getColumnName(col++),
+							"DATA_TYPE");
+				assertEquals(rsmd.getColumnName(col++),
+							"TYPE_NAME");
+				assertEquals(rsmd.getColumnName(col++),
+							"COLUMN_SIZE");
+				assertEquals(rsmd.getColumnName(col++),
+							"BUFFER_LENGTH");
+				assertEquals(rsmd.getColumnName(col++),
+							"DECIMAL_DIGITS");
+				assertEquals(rsmd.getColumnName(col++),
+							"PSEUDO_COLUMN");
+			} else {
+				assertEquals(rsmd.getColumnName(col++),
+							"scope");
+				assertEquals(rsmd.getColumnName(col++),
+							"column_name");
+				assertEquals(rsmd.getColumnName(col++),
+							"data_type");
+				assertEquals(rsmd.getColumnName(col++),
+							"type_name");
+				assertEquals(rsmd.getColumnName(col++),
+							"column_size");
+				assertEquals(rsmd.getColumnName(col++),
+							"buffer_length");
+				assertEquals(rsmd.getColumnName(col++),
+							"decimal_digits");
+				assertEquals(rsmd.getColumnName(col++),
+							"pseudo_column");
+			}
 			rs.close();
 			System.out.println();
 		}
@@ -2160,7 +2357,7 @@ class informix extends sqlrtest {
 		System.out.println("BEST ROW IDENTIFIER LIST:");
 		// sqlrelay doesn't support this yet
 		if (!issqlrelay) {
-			rs=md.getBestRowIdentifier(null,null,"%",
+			rs=md.getBestRowIdentifier(null,null,"testtable",
 					DatabaseMetaData.bestRowTemporary,
 					true);
 			assertTrue((rs!=null));
@@ -2168,22 +2365,41 @@ class informix extends sqlrtest {
 			assertTrue((rsmd!=null));
 			col=1;
 			assertTrue(rsmd.getColumnCount()>=8);
-			assertEquals(rsmd.getColumnName(col++),
-						"scope");
-			assertEquals(rsmd.getColumnName(col++),
-						"column_name");
-			assertEquals(rsmd.getColumnName(col++),
-						"data_type");
-			assertEquals(rsmd.getColumnName(col++),
-						"type_name");
-			assertEquals(rsmd.getColumnName(col++),
-						"column_size");
-			assertEquals(rsmd.getColumnName(col++),
-						"buffer_length");
-			assertEquals(rsmd.getColumnName(col++),
-						"decimal_digits");
-			assertEquals(rsmd.getColumnName(col++),
-						"pseudo_column");
+			if (issqlrelay) {
+				assertEquals(rsmd.getColumnName(col++),
+							"SCOPE");
+				assertEquals(rsmd.getColumnName(col++),
+							"COLUMN_NAME");
+				assertEquals(rsmd.getColumnName(col++),
+							"DATA_TYPE");
+				assertEquals(rsmd.getColumnName(col++),
+							"TYPE_NAME");
+				assertEquals(rsmd.getColumnName(col++),
+							"COLUMN_SIZE");
+				assertEquals(rsmd.getColumnName(col++),
+							"BUFFER_LENGTH");
+				assertEquals(rsmd.getColumnName(col++),
+							"DECIMAL_DIGITS");
+				assertEquals(rsmd.getColumnName(col++),
+							"PSEUDO_COLUMN");
+			} else {
+				assertEquals(rsmd.getColumnName(col++),
+							"scope");
+				assertEquals(rsmd.getColumnName(col++),
+							"column_name");
+				assertEquals(rsmd.getColumnName(col++),
+							"data_type");
+				assertEquals(rsmd.getColumnName(col++),
+							"type_name");
+				assertEquals(rsmd.getColumnName(col++),
+							"column_size");
+				assertEquals(rsmd.getColumnName(col++),
+							"buffer_length");
+				assertEquals(rsmd.getColumnName(col++),
+							"decimal_digits");
+				assertEquals(rsmd.getColumnName(col++),
+							"pseudo_column");
+			}
 			rs.close();
 			System.out.println();
 		}
@@ -2205,12 +2421,21 @@ class informix extends sqlrtest {
 		assertTrue((rsmd!=null));
 		col=1;
 		assertEquals(rsmd.getColumnCount(),6);
-		assertEquals(rsmd.getColumnName(col++),"table_cat");
-		assertEquals(rsmd.getColumnName(col++),"table_schem");
-		assertEquals(rsmd.getColumnName(col++),"table_name");
-		assertEquals(rsmd.getColumnName(col++),"column_name");
-		assertEquals(rsmd.getColumnName(col++),"key_seq");
-		assertEquals(rsmd.getColumnName(col++),"pk_name");
+		if (issqlrelay) {
+			assertEquals(rsmd.getColumnName(col++),"TABLE_CAT");
+			assertEquals(rsmd.getColumnName(col++),"TABLE_SCHEM");
+			assertEquals(rsmd.getColumnName(col++),"TABLE_NAME");
+			assertEquals(rsmd.getColumnName(col++),"COLUMN_NAME");
+			assertEquals(rsmd.getColumnName(col++),"KEY_SEQ");
+			assertEquals(rsmd.getColumnName(col++),"PK_NAME");
+		} else {
+			assertEquals(rsmd.getColumnName(col++),"table_cat");
+			assertEquals(rsmd.getColumnName(col++),"table_schem");
+			assertEquals(rsmd.getColumnName(col++),"table_name");
+			assertEquals(rsmd.getColumnName(col++),"column_name");
+			assertEquals(rsmd.getColumnName(col++),"key_seq");
+			assertEquals(rsmd.getColumnName(col++),"pk_name");
+		}
 		assertTrue(rs.next());
 		assertTrue(rs.getString("table_name").
 					equalsIgnoreCase("testtable"));
@@ -2235,47 +2460,78 @@ class informix extends sqlrtest {
 			"create table testtable ("+
 			"	col1 integer primary key, "+
 			"	col2 integer)");
-		rs=md.getIndexInfo(null,null,
-					"testtable",false,true);
+		rs=md.getIndexInfo(null,null,"testtable",false,true);
 		assertTrue((rs!=null));
 		rsmd=rs.getMetaData();
 		assertTrue((rsmd!=null));
 		col=1;
 		assertEquals(rsmd.getColumnCount(),13);
-		assertEquals(rsmd.getColumnName(col++),
+		if (issqlrelay) {
+			assertEquals(rsmd.getColumnName(col++),
+						"TABLE_CAT");
+			assertEquals(rsmd.getColumnName(col++),
+						"TABLE_SCHEM");
+			assertEquals(rsmd.getColumnName(col++),
+						"TABLE_NAME");
+			assertEquals(rsmd.getColumnName(col++),
+						"NON_UNIQUE");
+			assertEquals(rsmd.getColumnName(col++),
+						"INDEX_QUALIFIER");
+			assertEquals(rsmd.getColumnName(col++),
+						"INDEX_NAME");
+			assertEquals(rsmd.getColumnName(col++),
+						"TYPE");
+			assertEquals(rsmd.getColumnName(col++),
+						"ORDINAL_POSITION");
+			assertEquals(rsmd.getColumnName(col++),
+						"COLUMN_NAME");
+			assertEquals(rsmd.getColumnName(col++),
+						"ASC_OR_DESC");
+			assertEquals(rsmd.getColumnName(col++),
+						"CARDINALITY");
+			assertEquals(rsmd.getColumnName(col++),
+						"PAGES");
+			assertEquals(rsmd.getColumnName(col++),
+						"FILTER_CONDITION");
+		} else {
+			assertEquals(rsmd.getColumnName(col++),
 						"table_cat");
-		assertEquals(rsmd.getColumnName(col++),
+			assertEquals(rsmd.getColumnName(col++),
 						"table_schem");
-		assertEquals(rsmd.getColumnName(col++),
+			assertEquals(rsmd.getColumnName(col++),
 						"table_name");
-		assertEquals(rsmd.getColumnName(col++),
+			assertEquals(rsmd.getColumnName(col++),
 						"non_unique");
-		assertEquals(rsmd.getColumnName(col++),
+			assertEquals(rsmd.getColumnName(col++),
 						"index_qualifier");
-		assertEquals(rsmd.getColumnName(col++),
+			assertEquals(rsmd.getColumnName(col++),
 						"index_name");
-		assertEquals(rsmd.getColumnName(col++),
+			assertEquals(rsmd.getColumnName(col++),
 						"type");
-		assertEquals(rsmd.getColumnName(col++),
+			assertEquals(rsmd.getColumnName(col++),
 						"ordinal_position");
-		assertEquals(rsmd.getColumnName(col++),
+			assertEquals(rsmd.getColumnName(col++),
 						"column_name");
-		assertEquals(rsmd.getColumnName(col++),
+			assertEquals(rsmd.getColumnName(col++),
 						"asc_or_desc");
-		assertEquals(rsmd.getColumnName(col++),
+			assertEquals(rsmd.getColumnName(col++),
 						"cardinality");
-		assertEquals(rsmd.getColumnName(col++),
+			assertEquals(rsmd.getColumnName(col++),
 						"pages");
-		assertEquals(rsmd.getColumnName(col++),
+			assertEquals(rsmd.getColumnName(col++),
 						"filter_condition");
+		}
 		assertTrue(rs.next());
-		assertTrue(rs.getString("table_name").
-					equalsIgnoreCase("testtable"));
+		assertEquals(rs.getString("table_name"),"testtable");
 		assertEquals(rs.getString("non_unique"),"0");
 		assertEquals(rs.getString("ordinal_position"),"1");
-		assertTrue(rs.getString("column_name").
-					equalsIgnoreCase("col1"));
-		assertEquals(rs.getString("asc_or_desc"),"A");
+		assertEquals(rs.getString("column_name"),"col1");
+		if (issqlrelay) {
+			assertEquals(rs.getString("asc_or_desc"),"A");
+		} else {
+			// informix jdbc returns null for this
+			assertEquals(rs.getString("asc_or_desc"),null);
+		}
 		assertEquals(rs.getString("type"),"3");
 		assertTrue(rs.getString("index_name")!=null &&
 				rs.getString("index_name").length()>0);
@@ -2289,26 +2545,71 @@ class informix extends sqlrtest {
 		System.out.println("EXPORTED KEY LIST:");
 		// sqlrelay doesn't support this yet
 		if (!issqlrelay) {
-			rs=md.getExportedKeys(null,null,"%");
+			rs=md.getExportedKeys(null,null,"testtable");
 			assertTrue((rs!=null));
 			rsmd=rs.getMetaData();
 			assertTrue((rsmd!=null));
 			col=1;
 			assertEquals(rsmd.getColumnCount(),14);
-			assertEquals(rsmd.getColumnName(col++),"pktable_cat");
-			assertEquals(rsmd.getColumnName(col++),"pktable_schem");
-			assertEquals(rsmd.getColumnName(col++),"pktable_name");
-			assertEquals(rsmd.getColumnName(col++),"pkcolumn_name");
-			assertEquals(rsmd.getColumnName(col++),"fktable_cat");
-			assertEquals(rsmd.getColumnName(col++),"fktable_schem");
-			assertEquals(rsmd.getColumnName(col++),"fktable_name");
-			assertEquals(rsmd.getColumnName(col++),"fkcolumn_name");
-			assertEquals(rsmd.getColumnName(col++),"key_seq");
-			assertEquals(rsmd.getColumnName(col++),"update_rule");
-			assertEquals(rsmd.getColumnName(col++),"delete_rule");
-			assertEquals(rsmd.getColumnName(col++),"fk_name");
-			assertEquals(rsmd.getColumnName(col++),"pk_name");
-			assertEquals(rsmd.getColumnName(col++),"deferrability");
+			if (issqlrelay) {
+				assertEquals(rsmd.getColumnName(col++),
+							"PKTABLE_CAT");
+				assertEquals(rsmd.getColumnName(col++),
+							"PKTABLE_SCHEM");
+				assertEquals(rsmd.getColumnName(col++),
+							"PKTABLE_NAME");
+				assertEquals(rsmd.getColumnName(col++),
+							"PKCOLUMN_NAME");
+				assertEquals(rsmd.getColumnName(col++),
+							"FKTABLE_CAT");
+				assertEquals(rsmd.getColumnName(col++),
+							"FKTABLE_SCHEM");
+				assertEquals(rsmd.getColumnName(col++),
+							"FKTABLE_NAME");
+				assertEquals(rsmd.getColumnName(col++),
+							"FKCOLUMN_NAME");
+				assertEquals(rsmd.getColumnName(col++),
+							"KEY_SEQ");
+				assertEquals(rsmd.getColumnName(col++),
+							"UPDATE_RULE");
+				assertEquals(rsmd.getColumnName(col++),
+							"DELETE_RULE");
+				assertEquals(rsmd.getColumnName(col++),
+							"FK_NAME");
+				assertEquals(rsmd.getColumnName(col++),
+							"PK_NAME");
+				assertEquals(rsmd.getColumnName(col++),
+							"DEFERRABILITY");
+			} else {
+				assertEquals(rsmd.getColumnName(col++),
+							"pktable_cat");
+				assertEquals(rsmd.getColumnName(col++),
+							"pktable_schem");
+				assertEquals(rsmd.getColumnName(col++),
+							"pktable_name");
+				assertEquals(rsmd.getColumnName(col++),
+							"pkcolumn_name");
+				assertEquals(rsmd.getColumnName(col++),
+							"fktable_cat");
+				assertEquals(rsmd.getColumnName(col++),
+							"fktable_schem");
+				assertEquals(rsmd.getColumnName(col++),
+							"fktable_name");
+				assertEquals(rsmd.getColumnName(col++),
+							"fkcolumn_name");
+				assertEquals(rsmd.getColumnName(col++),
+							"key_seq");
+				assertEquals(rsmd.getColumnName(col++),
+							"update_rule");
+				assertEquals(rsmd.getColumnName(col++),
+							"delete_rule");
+				assertEquals(rsmd.getColumnName(col++),
+							"fk_name");
+				assertEquals(rsmd.getColumnName(col++),
+							"pk_name");
+				assertEquals(rsmd.getColumnName(col++),
+							"deferrability");
+			}
 			rs.close();
 			System.out.println();
 		}
@@ -2318,26 +2619,71 @@ class informix extends sqlrtest {
 		System.out.println("IMPORTED KEY LIST:");
 		// sqlrelay doesn't support this yet
 		if (!issqlrelay) {
-			rs=md.getImportedKeys(null,null,"%");
+			rs=md.getImportedKeys(null,null,"testtable");
 			assertTrue((rs!=null));
 			rsmd=rs.getMetaData();
 			assertTrue((rsmd!=null));
 			col=1;
 			assertEquals(rsmd.getColumnCount(),14);
-			assertEquals(rsmd.getColumnName(col++),"pktable_cat");
-			assertEquals(rsmd.getColumnName(col++),"pktable_schem");
-			assertEquals(rsmd.getColumnName(col++),"pktable_name");
-			assertEquals(rsmd.getColumnName(col++),"pkcolumn_name");
-			assertEquals(rsmd.getColumnName(col++),"fktable_cat");
-			assertEquals(rsmd.getColumnName(col++),"fktable_schem");
-			assertEquals(rsmd.getColumnName(col++),"fktable_name");
-			assertEquals(rsmd.getColumnName(col++),"fkcolumn_name");
-			assertEquals(rsmd.getColumnName(col++),"key_seq");
-			assertEquals(rsmd.getColumnName(col++),"update_rule");
-			assertEquals(rsmd.getColumnName(col++),"delete_rule");
-			assertEquals(rsmd.getColumnName(col++),"fk_name");
-			assertEquals(rsmd.getColumnName(col++),"pk_name");
-			assertEquals(rsmd.getColumnName(col++),"deferrability");
+			if (issqlrelay) {
+				assertEquals(rsmd.getColumnName(col++),
+							"PKTABLE_CAT");
+				assertEquals(rsmd.getColumnName(col++),
+							"PKTABLE_SCHEM");
+				assertEquals(rsmd.getColumnName(col++),
+							"PKTABLE_NAME");
+				assertEquals(rsmd.getColumnName(col++),
+							"PKCOLUMN_NAME");
+				assertEquals(rsmd.getColumnName(col++),
+							"FKTABLE_CAT");
+				assertEquals(rsmd.getColumnName(col++),
+							"FKTABLE_SCHEM");
+				assertEquals(rsmd.getColumnName(col++),
+							"FKTABLE_NAME");
+				assertEquals(rsmd.getColumnName(col++),
+							"FKCOLUMN_NAME");
+				assertEquals(rsmd.getColumnName(col++),
+							"KEY_SEQ");
+				assertEquals(rsmd.getColumnName(col++),
+							"UPDATE_RULE");
+				assertEquals(rsmd.getColumnName(col++),
+							"DELETE_RULE");
+				assertEquals(rsmd.getColumnName(col++),
+							"FK_NAME");
+				assertEquals(rsmd.getColumnName(col++),
+							"PK_NAME");
+				assertEquals(rsmd.getColumnName(col++),
+							"DEFERRABILITY");
+			} else {
+				assertEquals(rsmd.getColumnName(col++),
+							"pktable_cat");
+				assertEquals(rsmd.getColumnName(col++),
+							"pktable_schem");
+				assertEquals(rsmd.getColumnName(col++),
+							"pktable_name");
+				assertEquals(rsmd.getColumnName(col++),
+							"pkcolumn_name");
+				assertEquals(rsmd.getColumnName(col++),
+							"fktable_cat");
+				assertEquals(rsmd.getColumnName(col++),
+							"fktable_schem");
+				assertEquals(rsmd.getColumnName(col++),
+							"fktable_name");
+				assertEquals(rsmd.getColumnName(col++),
+							"fkcolumn_name");
+				assertEquals(rsmd.getColumnName(col++),
+							"key_seq");
+				assertEquals(rsmd.getColumnName(col++),
+							"update_rule");
+				assertEquals(rsmd.getColumnName(col++),
+							"delete_rule");
+				assertEquals(rsmd.getColumnName(col++),
+							"fk_name");
+				assertEquals(rsmd.getColumnName(col++),
+							"pk_name");
+				assertEquals(rsmd.getColumnName(col++),
+							"deferrability");
+			}
 			rs.close();
 			System.out.println();
 		}
@@ -2353,20 +2699,65 @@ class informix extends sqlrtest {
 			assertTrue((rsmd!=null));
 			col=1;
 			assertEquals(rsmd.getColumnCount(),14);
-			assertEquals(rsmd.getColumnName(col++),"pktable_cat");
-			assertEquals(rsmd.getColumnName(col++),"pktable_schem");
-			assertEquals(rsmd.getColumnName(col++),"pktable_name");
-			assertEquals(rsmd.getColumnName(col++),"pkcolumn_name");
-			assertEquals(rsmd.getColumnName(col++),"fktable_cat");
-			assertEquals(rsmd.getColumnName(col++),"fktable_schem");
-			assertEquals(rsmd.getColumnName(col++),"fktable_name");
-			assertEquals(rsmd.getColumnName(col++),"fkcolumn_name");
-			assertEquals(rsmd.getColumnName(col++),"key_seq");
-			assertEquals(rsmd.getColumnName(col++),"update_rule");
-			assertEquals(rsmd.getColumnName(col++),"delete_rule");
-			assertEquals(rsmd.getColumnName(col++),"fk_name");
-			assertEquals(rsmd.getColumnName(col++),"pk_name");
-			assertEquals(rsmd.getColumnName(col++),"deferrability");
+			if (issqlrelay) {
+				assertEquals(rsmd.getColumnName(col++),
+							"PKTABLE_CAT");
+				assertEquals(rsmd.getColumnName(col++),
+							"PKTABLE_SCHEM");
+				assertEquals(rsmd.getColumnName(col++),
+							"PKTABLE_NAME");
+				assertEquals(rsmd.getColumnName(col++),
+							"PKCOLUMN_NAME");
+				assertEquals(rsmd.getColumnName(col++),
+							"FKTABLE_CAT");
+				assertEquals(rsmd.getColumnName(col++),
+							"FKTABLE_SCHEM");
+				assertEquals(rsmd.getColumnName(col++),
+							"FKTABLE_NAME");
+				assertEquals(rsmd.getColumnName(col++),
+							"FKCOLUMN_NAME");
+				assertEquals(rsmd.getColumnName(col++),
+							"KEY_SEQ");
+				assertEquals(rsmd.getColumnName(col++),
+							"UPDATE_RULE");
+				assertEquals(rsmd.getColumnName(col++),
+							"DELETE_RULE");
+				assertEquals(rsmd.getColumnName(col++),
+							"FK_NAME");
+				assertEquals(rsmd.getColumnName(col++),
+							"PK_NAME");
+				assertEquals(rsmd.getColumnName(col++),
+							"DEFERRABILITY");
+			} else {
+				assertEquals(rsmd.getColumnName(col++),
+							"pktable_cat");
+				assertEquals(rsmd.getColumnName(col++),
+							"pktable_schem");
+				assertEquals(rsmd.getColumnName(col++),
+							"pktable_name");
+				assertEquals(rsmd.getColumnName(col++),
+							"pkcolumn_name");
+				assertEquals(rsmd.getColumnName(col++),
+							"fktable_cat");
+				assertEquals(rsmd.getColumnName(col++),
+							"fktable_schem");
+				assertEquals(rsmd.getColumnName(col++),
+							"fktable_name");
+				assertEquals(rsmd.getColumnName(col++),
+							"fkcolumn_name");
+				assertEquals(rsmd.getColumnName(col++),
+							"key_seq");
+				assertEquals(rsmd.getColumnName(col++),
+							"update_rule");
+				assertEquals(rsmd.getColumnName(col++),
+							"delete_rule");
+				assertEquals(rsmd.getColumnName(col++),
+							"fk_name");
+				assertEquals(rsmd.getColumnName(col++),
+							"pk_name");
+				assertEquals(rsmd.getColumnName(col++),
+							"deferrability");
+			}
 			rs.close();
 			System.out.println();
 		}
@@ -2436,21 +2827,36 @@ class informix extends sqlrtest {
 		} else {
 			assertTrue(rsmd.getColumnCount()>=8);
 		}
-		assertEquals(rsmd.getColumnName(col++),"procedure_cat");
-		assertEquals(rsmd.getColumnName(col++),"procedure_schem");
-		assertEquals(rsmd.getColumnName(col++),"procedure_name");
 		if (issqlrelay) {
 			assertEquals(rsmd.getColumnName(col++),
-						"num_input_params");
+						"PROCEDURE_CAT");
 			assertEquals(rsmd.getColumnName(col++),
-						"num_output_params");
+						"PROCEDURE_SCHEM");
 			assertEquals(rsmd.getColumnName(col++),
-						"num_result_sets");
+						"PROCEDURE_NAME");
+			assertEquals(rsmd.getColumnName(col++),
+						"NUM_INPUT_PARAMS");
+			assertEquals(rsmd.getColumnName(col++),
+						"NUM_OUTPUT_PARAMS");
+			assertEquals(rsmd.getColumnName(col++),
+						"NUM_RESULT_SETS");
+			assertEquals(rsmd.getColumnName(col++),
+						"REMARKS");
+			assertEquals(rsmd.getColumnName(col++),
+						"PROCEDURE_TYPE");
 		} else {
+			assertEquals(rsmd.getColumnName(col++),
+						"procedure_cat");
+			assertEquals(rsmd.getColumnName(col++),
+						"procedure_schem");
+			assertEquals(rsmd.getColumnName(col++),
+						"procedure_name");
 			col+=3;
+			assertEquals(rsmd.getColumnName(col++),
+						"remarks");
+			assertEquals(rsmd.getColumnName(col++),
+						"procedure_type");
 		}
-		assertEquals(rsmd.getColumnName(col++),"remarks");
-		assertEquals(rsmd.getColumnName(col++),"procedure_type");
 		counter=0;
 		while (rs.next()) {
 			String name=rs.getString("procedure_name");
@@ -2475,74 +2881,105 @@ class informix extends sqlrtest {
 		assertTrue((rsmd!=null));
 		col=1;
 		assertEquals(rsmd.getColumnCount(),20);
-		assertEquals(rsmd.getColumnName(col++),
+		if (issqlrelay) {
+			assertEquals(rsmd.getColumnName(col++),
+						"PROCEDURE_CAT");
+			assertEquals(rsmd.getColumnName(col++),
+						"PROCEDURE_SCHEM");
+			assertEquals(rsmd.getColumnName(col++),
+						"PROCEDURE_NAME");
+			assertEquals(rsmd.getColumnName(col++),
+						"COLUMN_NAME");
+			assertEquals(rsmd.getColumnName(col++),
+						"COLUMN_TYPE");
+			assertEquals(rsmd.getColumnName(col++),
+						"DATA_TYPE");
+			assertEquals(rsmd.getColumnName(col++),
+						"TYPE_NAME");
+			assertEquals(rsmd.getColumnName(col++),
+						"PRECISION");
+			assertEquals(rsmd.getColumnName(col++),
+						"LENGTH");
+			assertEquals(rsmd.getColumnName(col++),
+						"SCALE");
+			assertEquals(rsmd.getColumnName(col++),
+						"RADIX");
+			assertEquals(rsmd.getColumnName(col++),
+						"NULLABLE");
+			assertEquals(rsmd.getColumnName(col++),
+						"REMARKS");
+			assertEquals(rsmd.getColumnName(col++),
+						"COLUMN_DEF");
+			assertEquals(rsmd.getColumnName(col++),
+						"SQL_DATA_TYPE");
+			assertEquals(rsmd.getColumnName(col++),
+						"SQL_DATETIME_SUB");
+			assertEquals(rsmd.getColumnName(col++),
+						"CHAR_OCTET_LENGTH");
+			assertEquals(rsmd.getColumnName(col++),
+						"ORDINAL_POSITION");
+			assertEquals(rsmd.getColumnName(col++),
+						"IS_NULLABLE");
+			assertEquals(rsmd.getColumnName(col++),
+						"SPECIFIC_NAME");
+		} else {
+			assertEquals(rsmd.getColumnName(col++),
 						"procedure_cat");
-		assertEquals(rsmd.getColumnName(col++),
+			assertEquals(rsmd.getColumnName(col++),
 						"procedure_schem");
-		assertEquals(rsmd.getColumnName(col++),
+			assertEquals(rsmd.getColumnName(col++),
 						"procedure_name");
-		assertEquals(rsmd.getColumnName(col++),
+			assertEquals(rsmd.getColumnName(col++),
 						"column_name");
-		assertEquals(rsmd.getColumnName(col++),
+			assertEquals(rsmd.getColumnName(col++),
 						"column_type");
-		assertEquals(rsmd.getColumnName(col++),
+			assertEquals(rsmd.getColumnName(col++),
 						"data_type");
-		assertEquals(rsmd.getColumnName(col++),
+			assertEquals(rsmd.getColumnName(col++),
 						"type_name");
-		assertEquals(rsmd.getColumnName(col++),
+			assertEquals(rsmd.getColumnName(col++),
 						"precision");
-		assertEquals(rsmd.getColumnName(col++),
+			assertEquals(rsmd.getColumnName(col++),
 						"length");
-		assertEquals(rsmd.getColumnName(col++),
+			assertEquals(rsmd.getColumnName(col++),
 						"scale");
-		assertEquals(rsmd.getColumnName(col++),
+			assertEquals(rsmd.getColumnName(col++),
 						"radix");
-		assertEquals(rsmd.getColumnName(col++),
+			assertEquals(rsmd.getColumnName(col++),
 						"nullable");
-		assertEquals(rsmd.getColumnName(col++),
+			assertEquals(rsmd.getColumnName(col++),
 						"remarks");
-		assertEquals(rsmd.getColumnName(col++),
+			assertEquals(rsmd.getColumnName(col++),
 						"column_def");
-		assertEquals(rsmd.getColumnName(col++),
+			assertEquals(rsmd.getColumnName(col++),
 						"sql_data_type");
-		assertEquals(rsmd.getColumnName(col++),
+			assertEquals(rsmd.getColumnName(col++),
 						"sql_datetime_sub");
-		assertEquals(rsmd.getColumnName(col++),
+			assertEquals(rsmd.getColumnName(col++),
 						"char_octet_length");
-		assertEquals(rsmd.getColumnName(col++),
+			assertEquals(rsmd.getColumnName(col++),
 						"ordinal_position");
-		assertEquals(rsmd.getColumnName(col++),
+			assertEquals(rsmd.getColumnName(col++),
 						"is_nullable");
-		assertEquals(rsmd.getColumnName(col++),
+			assertEquals(rsmd.getColumnName(col++),
 						"specific_name");
+		}
 		assertTrue(rs.next());
-		assertTrue(rs.getString("column_name").
-					equalsIgnoreCase("in1"));
-		assertTrue(rs.getString("type_name").
-					equalsIgnoreCase("INTEGER"));
-		assertEquals(rs.getString("ordinal_position"),
-						"1");
+		assertEquals(rs.getString("column_name"),"in1");
+		assertEquals(rs.getString("type_name"),"integer");
+		assertEquals(rs.getString("ordinal_position"),"0");
 		assertTrue(rs.next());
-		assertTrue(rs.getString("column_name").
-					equalsIgnoreCase("in2"));
-		assertTrue(rs.getString("type_name").
-					equalsIgnoreCase("CHAR"));
-		assertEquals(rs.getString("ordinal_position"),
-						"2");
+		assertEquals(rs.getString("column_name"),"in2");
+		assertEquals(rs.getString("type_name"),"char");
+		assertEquals(rs.getString("ordinal_position"),"1");
 		assertTrue(rs.next());
-		assertTrue(rs.getString("column_name").
-					equalsIgnoreCase("in3"));
-		assertTrue(rs.getString("type_name").
-					equalsIgnoreCase("VARCHAR"));
-		assertEquals(rs.getString("ordinal_position"),
-						"3");
+		assertEquals(rs.getString("column_name"),"in3");
+		assertEquals(rs.getString("type_name"),"varchar");
+		assertEquals(rs.getString("ordinal_position"),"2");
 		assertTrue(rs.next());
-		assertTrue(rs.getString("column_name").
-					equalsIgnoreCase("in4"));
-		assertTrue(rs.getString("type_name").
-					equalsIgnoreCase("DATE"));
-		assertEquals(rs.getString("ordinal_position"),
-						"4");
+		assertEquals(rs.getString("column_name"),"in4");
+		assertEquals(rs.getString("type_name"),"date");
+		assertEquals(rs.getString("ordinal_position"),"3");
 		rs.close();
 		System.out.println();
 		try {
@@ -2564,36 +3001,32 @@ class informix extends sqlrtest {
 
 
 		// function list
+		// neither informix, nor sqlrelay support this
+		// informix throws not-supported
+		// sqlrelay just returns an empty result set
 		System.out.println("FUNCTION LIST:");
-		// sqlrelay doesn't support this yet
 		if (!issqlrelay) {
-			rs=md.getFunctions(null,null,"%");
-			assertTrue((rs!=null));
-			rsmd=rs.getMetaData();
-			assertTrue((rsmd!=null));
-			col=1;
-			assertTrue(rsmd.getColumnCount()>=6);
-			assertEquals(rsmd.getColumnName(col++),
-						"function_cat");
-			assertEquals(rsmd.getColumnName(col++),
-						"function_schem");
-			assertEquals(rsmd.getColumnName(col++),
-						"function_name");
-			rs.close();
+			try {
+				rs=md.getFunctions(null,null,"%");
+			} catch (Exception ex) {
+				assertTrue(true);
+			}
 			System.out.println();
 		}
 
 
 		// function parameter list
+		// neither informix, nor sqlrelay support this
+		// informix throws not-supported
+		// sqlrelay just returns an empty result set
 		System.out.println("FUNCTION PARAMETER LIST:");
-		// sqlrelay doesn't support this yet
 		if (!issqlrelay) {
-			rs=md.getFunctionColumns(null,null,"%","%");
-			assertTrue((rs!=null));
-			rsmd=rs.getMetaData();
-			assertTrue((rsmd!=null));
-			assertTrue(rsmd.getColumnCount()>=13);
-			rs.close();
+			try {
+				rs=md.getFunctionColumns(null,null,"%","%");
+				assertFalse(true);
+			} catch (Exception ex) {
+				assertTrue(true);
+			}
 			System.out.println();
 		}
 

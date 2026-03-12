@@ -1436,11 +1436,25 @@ class sqlrcursor:
         """
         return CSQLRelay.getField(self.cursor, row, col)
 
+    def getFieldIgnoringCase(self, row, col):
+        """
+        Returns the specified field as a string,
+        ignoring the case of "col".
+        """
+        return CSQLRelay.getFieldIgnoringCase(self.cursor, row, col)
+
     def getFieldAsInteger(self, row, col):
         """
         Returns the specified field as a long integer.
         """
         return CSQLRelay.getFieldAsInteger(self.cursor, row, col)
+
+    def getFieldAsIntegerIgnoringCase(self, row, col):
+        """
+        Returns the specified field as a long integer,
+        ignoring the case of "col".
+        """
+        return CSQLRelay.getFieldAsIntegerIgnoringCase(self.cursor, row, col)
 
     def getFieldAsDouble(self, row, col):
         """
@@ -1449,11 +1463,25 @@ class sqlrcursor:
         """
         return CSQLRelay.getFieldAsDouble(self.cursor, row, col)
 
+    def getFieldAsDoubleIgnoringCase(self, row, col):
+        """
+        Returns the specified field as a double precision
+        floating point number, ignoring the case of "col".
+        """
+        return CSQLRelay.getFieldAsDoubleIgnoringCase(self.cursor, row, col)
+
     def getFieldAsBoolean(self, row, col):
         """
         Returns the specified field as a boolean.
         """
         return CSQLRelay.getFieldAsBoolean(self.cursor, row, col)
+
+    def getFieldAsBooleanIgnoringCase(self, row, col):
+        """
+        Returns the specified field as a boolean,
+        ignoring the case of "col".
+        """
+        return CSQLRelay.getFieldAsBooleanIgnoringCase(self.cursor, row, col)
 
     def getFieldAsDateYear(self, row, col,
 			ddmm=None, yyyyddmm=None,
@@ -1467,6 +1495,21 @@ class sqlrcursor:
 			self.cursor, row, col,
 			ddmm, yyyyddmm, datedelimiters)
         return CSQLRelay.getFieldAsDateYear(
+			self.cursor, row, col)
+
+    def getFieldAsDateYearIgnoringCase(self, row, col,
+			ddmm=None, yyyyddmm=None,
+			datedelimiters=None):
+        """
+        Interprets the specified field as a date
+        and returns the year component,
+        ignoring the case of "col".
+        """
+        if ddmm is not None:
+            return CSQLRelay.getFieldAsDateYearIgnoringCase(
+			self.cursor, row, col,
+			ddmm, yyyyddmm, datedelimiters)
+        return CSQLRelay.getFieldAsDateYearIgnoringCase(
 			self.cursor, row, col)
 
     def getFieldAsDateMonth(self, row, col,
@@ -1483,6 +1526,21 @@ class sqlrcursor:
         return CSQLRelay.getFieldAsDateMonth(
 			self.cursor, row, col)
 
+    def getFieldAsDateMonthIgnoringCase(self, row, col,
+			ddmm=None, yyyyddmm=None,
+			datedelimiters=None):
+        """
+        Interprets the specified field as a date
+        and returns the month component,
+        ignoring the case of "col".
+        """
+        if ddmm is not None:
+            return CSQLRelay.getFieldAsDateMonthIgnoringCase(
+			self.cursor, row, col,
+			ddmm, yyyyddmm, datedelimiters)
+        return CSQLRelay.getFieldAsDateMonthIgnoringCase(
+			self.cursor, row, col)
+
     def getFieldAsDateDay(self, row, col,
 			ddmm=None, yyyyddmm=None,
 			datedelimiters=None):
@@ -1495,6 +1553,21 @@ class sqlrcursor:
 			self.cursor, row, col,
 			ddmm, yyyyddmm, datedelimiters)
         return CSQLRelay.getFieldAsDateDay(
+			self.cursor, row, col)
+
+    def getFieldAsDateDayIgnoringCase(self, row, col,
+			ddmm=None, yyyyddmm=None,
+			datedelimiters=None):
+        """
+        Interprets the specified field as a date
+        and returns the day component,
+        ignoring the case of "col".
+        """
+        if ddmm is not None:
+            return CSQLRelay.getFieldAsDateDayIgnoringCase(
+			self.cursor, row, col,
+			ddmm, yyyyddmm, datedelimiters)
+        return CSQLRelay.getFieldAsDateDayIgnoringCase(
 			self.cursor, row, col)
 
     def getFieldAsDateHour(self, row, col,
@@ -1511,6 +1584,21 @@ class sqlrcursor:
         return CSQLRelay.getFieldAsDateHour(
 			self.cursor, row, col)
 
+    def getFieldAsDateHourIgnoringCase(self, row, col,
+			ddmm=None, yyyyddmm=None,
+			datedelimiters=None):
+        """
+        Interprets the specified field as a date
+        and returns the hour component,
+        ignoring the case of "col".
+        """
+        if ddmm is not None:
+            return CSQLRelay.getFieldAsDateHourIgnoringCase(
+			self.cursor, row, col,
+			ddmm, yyyyddmm, datedelimiters)
+        return CSQLRelay.getFieldAsDateHourIgnoringCase(
+			self.cursor, row, col)
+
     def getFieldAsDateMinute(self, row, col,
 			ddmm=None, yyyyddmm=None,
 			datedelimiters=None):
@@ -1523,6 +1611,21 @@ class sqlrcursor:
 			self.cursor, row, col,
 			ddmm, yyyyddmm, datedelimiters)
         return CSQLRelay.getFieldAsDateMinute(
+			self.cursor, row, col)
+
+    def getFieldAsDateMinuteIgnoringCase(self, row, col,
+			ddmm=None, yyyyddmm=None,
+			datedelimiters=None):
+        """
+        Interprets the specified field as a date
+        and returns the minute component,
+        ignoring the case of "col".
+        """
+        if ddmm is not None:
+            return CSQLRelay.getFieldAsDateMinuteIgnoringCase(
+			self.cursor, row, col,
+			ddmm, yyyyddmm, datedelimiters)
+        return CSQLRelay.getFieldAsDateMinuteIgnoringCase(
 			self.cursor, row, col)
 
     def getFieldAsDateSecond(self, row, col,
@@ -1539,6 +1642,21 @@ class sqlrcursor:
         return CSQLRelay.getFieldAsDateSecond(
 			self.cursor, row, col)
 
+    def getFieldAsDateSecondIgnoringCase(self, row, col,
+			ddmm=None, yyyyddmm=None,
+			datedelimiters=None):
+        """
+        Interprets the specified field as a date
+        and returns the second component,
+        ignoring the case of "col".
+        """
+        if ddmm is not None:
+            return CSQLRelay.getFieldAsDateSecondIgnoringCase(
+			self.cursor, row, col,
+			ddmm, yyyyddmm, datedelimiters)
+        return CSQLRelay.getFieldAsDateSecondIgnoringCase(
+			self.cursor, row, col)
+
     def getFieldAsDateMicrosecond(self, row, col,
 			ddmm=None, yyyyddmm=None,
 			datedelimiters=None):
@@ -1551,6 +1669,21 @@ class sqlrcursor:
 			self.cursor, row, col,
 			ddmm, yyyyddmm, datedelimiters)
         return CSQLRelay.getFieldAsDateMicrosecond(
+			self.cursor, row, col)
+
+    def getFieldAsDateMicrosecondIgnoringCase(self, row, col,
+			ddmm=None, yyyyddmm=None,
+			datedelimiters=None):
+        """
+        Interprets the specified field as a date
+        and returns the microsecond component,
+        ignoring the case of "col".
+        """
+        if ddmm is not None:
+            return CSQLRelay.getFieldAsDateMicrosecondIgnoringCase(
+			self.cursor, row, col,
+			ddmm, yyyyddmm, datedelimiters)
+        return CSQLRelay.getFieldAsDateMicrosecondIgnoringCase(
 			self.cursor, row, col)
 
     def getFieldAsDateIsNegative(self, row, col,
@@ -1566,6 +1699,21 @@ class sqlrcursor:
 			self.cursor, row, col,
 			ddmm, yyyyddmm, datedelimiters)
         return CSQLRelay.getFieldAsDateIsNegative(
+			self.cursor, row, col)
+
+    def getFieldAsDateIsNegativeIgnoringCase(self, row, col,
+			ddmm=None, yyyyddmm=None,
+			datedelimiters=None):
+        """
+        Interprets the specified field as a date
+        and returns whether the hour component
+        is negative, ignoring the case of "col".
+        """
+        if ddmm is not None:
+            return CSQLRelay.getFieldAsDateIsNegativeIgnoringCase(
+			self.cursor, row, col,
+			ddmm, yyyyddmm, datedelimiters)
+        return CSQLRelay.getFieldAsDateIsNegativeIgnoringCase(
 			self.cursor, row, col)
 
     def getFieldLength(self, row, col):

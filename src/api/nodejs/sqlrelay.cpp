@@ -295,6 +295,7 @@ class SQLRCursor : public ObjectWrap {
 		static RET	getNullsAsEmptyStrings(const ARGS &args);
 		static RET	getNullsAsNulls(const ARGS &args);
 		static RET	getField(const ARGS &args);
+		static RET	getFieldIgnoringCase(const ARGS &args);
 		static RET	getFieldAsInteger(const ARGS &args);
 		static RET	getFieldAsDouble(const ARGS &args);
 		static RET	getFieldAsBoolean(const ARGS &args);
@@ -306,6 +307,17 @@ class SQLRCursor : public ObjectWrap {
 		static RET	getFieldAsDateSecond(const ARGS &args);
 		static RET	getFieldAsDateMicrosecond(const ARGS &args);
 		static RET	getFieldAsDateIsNegative(const ARGS &args);
+		static RET	getFieldAsIntegerIgnoringCase(const ARGS &args);
+		static RET	getFieldAsDoubleIgnoringCase(const ARGS &args);
+		static RET	getFieldAsBooleanIgnoringCase(const ARGS &args);
+		static RET	getFieldAsDateYearIgnoringCase(const ARGS &args);
+		static RET	getFieldAsDateMonthIgnoringCase(const ARGS &args);
+		static RET	getFieldAsDateDayIgnoringCase(const ARGS &args);
+		static RET	getFieldAsDateHourIgnoringCase(const ARGS &args);
+		static RET	getFieldAsDateMinuteIgnoringCase(const ARGS &args);
+		static RET	getFieldAsDateSecondIgnoringCase(const ARGS &args);
+		static RET	getFieldAsDateMicrosecondIgnoringCase(const ARGS &args);
+		static RET	getFieldAsDateIsNegativeIgnoringCase(const ARGS &args);
 		static RET	getFieldLength(const ARGS &args);
 		static RET	getRow(const ARGS &args);
 		static RET	getRowLengths(const ARGS &args);
@@ -1179,6 +1191,8 @@ void SQLRCursor::Init(Handle<Object> exports) {
 						getNullsAsEmptyStrings);
 	NODE_SET_PROTOTYPE_METHOD(tpl,"getNullsAsNulls",getNullsAsNulls);
 	NODE_SET_PROTOTYPE_METHOD(tpl,"getField",getField);
+	NODE_SET_PROTOTYPE_METHOD(tpl,"getFieldIgnoringCase",
+						getFieldIgnoringCase);
 	NODE_SET_PROTOTYPE_METHOD(tpl,"getFieldAsInteger",getFieldAsInteger);
 	NODE_SET_PROTOTYPE_METHOD(tpl,"getFieldAsDouble",getFieldAsDouble);
 	NODE_SET_PROTOTYPE_METHOD(tpl,"getFieldAsBoolean",getFieldAsBoolean);
@@ -1198,6 +1212,28 @@ void SQLRCursor::Init(Handle<Object> exports) {
 						getFieldAsDateMicrosecond);
 	NODE_SET_PROTOTYPE_METHOD(tpl,"getFieldAsDateIsNegative",
 						getFieldAsDateIsNegative);
+	NODE_SET_PROTOTYPE_METHOD(tpl,"getFieldAsIntegerIgnoringCase",
+						getFieldAsIntegerIgnoringCase);
+	NODE_SET_PROTOTYPE_METHOD(tpl,"getFieldAsDoubleIgnoringCase",
+						getFieldAsDoubleIgnoringCase);
+	NODE_SET_PROTOTYPE_METHOD(tpl,"getFieldAsBooleanIgnoringCase",
+						getFieldAsBooleanIgnoringCase);
+	NODE_SET_PROTOTYPE_METHOD(tpl,"getFieldAsDateYearIgnoringCase",
+						getFieldAsDateYearIgnoringCase);
+	NODE_SET_PROTOTYPE_METHOD(tpl,"getFieldAsDateMonthIgnoringCase",
+						getFieldAsDateMonthIgnoringCase);
+	NODE_SET_PROTOTYPE_METHOD(tpl,"getFieldAsDateDayIgnoringCase",
+						getFieldAsDateDayIgnoringCase);
+	NODE_SET_PROTOTYPE_METHOD(tpl,"getFieldAsDateHourIgnoringCase",
+						getFieldAsDateHourIgnoringCase);
+	NODE_SET_PROTOTYPE_METHOD(tpl,"getFieldAsDateMinuteIgnoringCase",
+						getFieldAsDateMinuteIgnoringCase);
+	NODE_SET_PROTOTYPE_METHOD(tpl,"getFieldAsDateSecondIgnoringCase",
+						getFieldAsDateSecondIgnoringCase);
+	NODE_SET_PROTOTYPE_METHOD(tpl,"getFieldAsDateMicrosecondIgnoringCase",
+						getFieldAsDateMicrosecondIgnoringCase);
+	NODE_SET_PROTOTYPE_METHOD(tpl,"getFieldAsDateIsNegativeIgnoringCase",
+						getFieldAsDateIsNegativeIgnoringCase);
 	NODE_SET_PROTOTYPE_METHOD(tpl,"getFieldLength",getFieldLength);
 	NODE_SET_PROTOTYPE_METHOD(tpl,"getRow",getRow);
 	NODE_SET_PROTOTYPE_METHOD(tpl,"getRowLengths",getRowLengths);
@@ -2388,6 +2424,25 @@ RET SQLRCursor::getField(const ARGS &args) {
 	returnString(result);
 }
 
+RET SQLRCursor::getFieldIgnoringCase(const ARGS &args) {
+
+	initLocalScope();
+
+	checkArgCount(args,2);
+
+	const char	*result=NULL;
+
+	if (args[1]->IsString()) {
+		result=sqlrcur(args)->getFieldIgnoringCase(
+						toInteger(args[0]),
+						toString(args[1]));
+	} else {
+		throwInvalidArgumentType();
+	}
+
+	returnString(result);
+}
+
 RET SQLRCursor::getFieldAsInteger(const ARGS &args) {
 
 	initLocalScope();
@@ -2791,6 +2846,319 @@ RET SQLRCursor::getFieldAsDateIsNegative(const ARGS &args) {
 							(bool)toInt32(args[2]),
 							(bool)toInt32(args[3]),
 							toString(args[4]));
+		} else {
+			throwInvalidArgumentType();
+		}
+	} else {
+		throwWrongNumberOfArguments();
+	}
+
+	returnBoolean(result);
+}
+
+RET SQLRCursor::getFieldAsIntegerIgnoringCase(const ARGS &args) {
+
+	initLocalScope();
+
+	checkArgCount(args,2);
+
+	int64_t	result=0;
+
+	if (args[1]->IsString()) {
+		result=sqlrcur(args)->getFieldAsIntegerIgnoringCase(
+						toInteger(args[0]),
+						toString(args[1]));
+	} else {
+		throwInvalidArgumentType();
+	}
+
+	returnInteger(result);
+}
+
+RET SQLRCursor::getFieldAsDoubleIgnoringCase(const ARGS &args) {
+
+	initLocalScope();
+
+	checkArgCount(args,2);
+
+	double	result=0;
+
+	if (args[1]->IsString()) {
+		result=sqlrcur(args)->getFieldAsDoubleIgnoringCase(
+						toInteger(args[0]),
+						toString(args[1]));
+	} else {
+		throwInvalidArgumentType();
+	}
+
+	returnNumber(result);
+}
+
+RET SQLRCursor::getFieldAsBooleanIgnoringCase(const ARGS &args) {
+
+	initLocalScope();
+
+	checkArgCount(args,2);
+
+	bool	result=false;
+
+	if (args[1]->IsString()) {
+		result=sqlrcur(args)->getFieldAsBooleanIgnoringCase(
+						toInteger(args[0]),
+						toString(args[1]));
+	} else {
+		throwInvalidArgumentType();
+	}
+
+	returnBoolean(result);
+}
+
+RET SQLRCursor::getFieldAsDateYearIgnoringCase(const ARGS &args) {
+
+	initLocalScope();
+
+	int16_t	result=0;
+
+	if (args.Length()==2) {
+		if (args[1]->IsString()) {
+			result=sqlrcur(args)->getFieldAsDateYearIgnoringCase(
+						toInteger(args[0]),
+						toString(args[1]));
+		} else {
+			throwInvalidArgumentType();
+		}
+	} else if (args.Length()==5) {
+		if (args[1]->IsString()) {
+			result=sqlrcur(args)->getFieldAsDateYearIgnoringCase(
+						toInteger(args[0]),
+						toString(args[1]),
+						(bool)toInt32(args[2]),
+						(bool)toInt32(args[3]),
+						toString(args[4]));
+		} else {
+			throwInvalidArgumentType();
+		}
+	} else {
+		throwWrongNumberOfArguments();
+	}
+
+	returnInteger(result);
+}
+
+RET SQLRCursor::getFieldAsDateMonthIgnoringCase(const ARGS &args) {
+
+	initLocalScope();
+
+	int16_t	result=0;
+
+	if (args.Length()==2) {
+		if (args[1]->IsString()) {
+			result=sqlrcur(args)->getFieldAsDateMonthIgnoringCase(
+						toInteger(args[0]),
+						toString(args[1]));
+		} else {
+			throwInvalidArgumentType();
+		}
+	} else if (args.Length()==5) {
+		if (args[1]->IsString()) {
+			result=sqlrcur(args)->getFieldAsDateMonthIgnoringCase(
+						toInteger(args[0]),
+						toString(args[1]),
+						(bool)toInt32(args[2]),
+						(bool)toInt32(args[3]),
+						toString(args[4]));
+		} else {
+			throwInvalidArgumentType();
+		}
+	} else {
+		throwWrongNumberOfArguments();
+	}
+
+	returnInteger(result);
+}
+
+RET SQLRCursor::getFieldAsDateDayIgnoringCase(const ARGS &args) {
+
+	initLocalScope();
+
+	int16_t	result=0;
+
+	if (args.Length()==2) {
+		if (args[1]->IsString()) {
+			result=sqlrcur(args)->getFieldAsDateDayIgnoringCase(
+						toInteger(args[0]),
+						toString(args[1]));
+		} else {
+			throwInvalidArgumentType();
+		}
+	} else if (args.Length()==5) {
+		if (args[1]->IsString()) {
+			result=sqlrcur(args)->getFieldAsDateDayIgnoringCase(
+						toInteger(args[0]),
+						toString(args[1]),
+						(bool)toInt32(args[2]),
+						(bool)toInt32(args[3]),
+						toString(args[4]));
+		} else {
+			throwInvalidArgumentType();
+		}
+	} else {
+		throwWrongNumberOfArguments();
+	}
+
+	returnInteger(result);
+}
+
+RET SQLRCursor::getFieldAsDateHourIgnoringCase(const ARGS &args) {
+
+	initLocalScope();
+
+	int16_t	result=0;
+
+	if (args.Length()==2) {
+		if (args[1]->IsString()) {
+			result=sqlrcur(args)->getFieldAsDateHourIgnoringCase(
+						toInteger(args[0]),
+						toString(args[1]));
+		} else {
+			throwInvalidArgumentType();
+		}
+	} else if (args.Length()==5) {
+		if (args[1]->IsString()) {
+			result=sqlrcur(args)->getFieldAsDateHourIgnoringCase(
+						toInteger(args[0]),
+						toString(args[1]),
+						(bool)toInt32(args[2]),
+						(bool)toInt32(args[3]),
+						toString(args[4]));
+		} else {
+			throwInvalidArgumentType();
+		}
+	} else {
+		throwWrongNumberOfArguments();
+	}
+
+	returnInteger(result);
+}
+
+RET SQLRCursor::getFieldAsDateMinuteIgnoringCase(const ARGS &args) {
+
+	initLocalScope();
+
+	int16_t	result=0;
+
+	if (args.Length()==2) {
+		if (args[1]->IsString()) {
+			result=sqlrcur(args)->getFieldAsDateMinuteIgnoringCase(
+						toInteger(args[0]),
+						toString(args[1]));
+		} else {
+			throwInvalidArgumentType();
+		}
+	} else if (args.Length()==5) {
+		if (args[1]->IsString()) {
+			result=sqlrcur(args)->getFieldAsDateMinuteIgnoringCase(
+						toInteger(args[0]),
+						toString(args[1]),
+						(bool)toInt32(args[2]),
+						(bool)toInt32(args[3]),
+						toString(args[4]));
+		} else {
+			throwInvalidArgumentType();
+		}
+	} else {
+		throwWrongNumberOfArguments();
+	}
+
+	returnInteger(result);
+}
+
+RET SQLRCursor::getFieldAsDateSecondIgnoringCase(const ARGS &args) {
+
+	initLocalScope();
+
+	int16_t	result=0;
+
+	if (args.Length()==2) {
+		if (args[1]->IsString()) {
+			result=sqlrcur(args)->getFieldAsDateSecondIgnoringCase(
+						toInteger(args[0]),
+						toString(args[1]));
+		} else {
+			throwInvalidArgumentType();
+		}
+	} else if (args.Length()==5) {
+		if (args[1]->IsString()) {
+			result=sqlrcur(args)->getFieldAsDateSecondIgnoringCase(
+						toInteger(args[0]),
+						toString(args[1]),
+						(bool)toInt32(args[2]),
+						(bool)toInt32(args[3]),
+						toString(args[4]));
+		} else {
+			throwInvalidArgumentType();
+		}
+	} else {
+		throwWrongNumberOfArguments();
+	}
+
+	returnInteger(result);
+}
+
+RET SQLRCursor::getFieldAsDateMicrosecondIgnoringCase(const ARGS &args) {
+
+	initLocalScope();
+
+	int32_t	result=0;
+
+	if (args.Length()==2) {
+		if (args[1]->IsString()) {
+			result=sqlrcur(args)->getFieldAsDateMicrosecondIgnoringCase(
+						toInteger(args[0]),
+						toString(args[1]));
+		} else {
+			throwInvalidArgumentType();
+		}
+	} else if (args.Length()==5) {
+		if (args[1]->IsString()) {
+			result=sqlrcur(args)->getFieldAsDateMicrosecondIgnoringCase(
+						toInteger(args[0]),
+						toString(args[1]),
+						(bool)toInt32(args[2]),
+						(bool)toInt32(args[3]),
+						toString(args[4]));
+		} else {
+			throwInvalidArgumentType();
+		}
+	} else {
+		throwWrongNumberOfArguments();
+	}
+
+	returnInt32(result);
+}
+
+RET SQLRCursor::getFieldAsDateIsNegativeIgnoringCase(const ARGS &args) {
+
+	initLocalScope();
+
+	bool	result=false;
+
+	if (args.Length()==2) {
+		if (args[1]->IsString()) {
+			result=sqlrcur(args)->getFieldAsDateIsNegativeIgnoringCase(
+						toInteger(args[0]),
+						toString(args[1]));
+		} else {
+			throwInvalidArgumentType();
+		}
+	} else if (args.Length()==5) {
+		if (args[1]->IsString()) {
+			result=sqlrcur(args)->getFieldAsDateIsNegativeIgnoringCase(
+						toInteger(args[0]),
+						toString(args[1]),
+						(bool)toInt32(args[2]),
+						(bool)toInt32(args[3]),
+						toString(args[4]));
 		} else {
 			throwInvalidArgumentType();
 		}

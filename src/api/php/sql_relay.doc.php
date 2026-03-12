@@ -1118,7 +1118,12 @@ function sqlrcur_getNullsAsNulls($sqlrcurref){}
  *  column name or number. */
 function sqlrcur_getField($sqlrcurref, $row, $col){}
 
-/** 
+/**
+ *  Returns the specified field as a string, ignoring the case of "col".
+ *  "col" must be a column name. */
+function sqlrcur_getFieldIgnoringCase($sqlrcurref, $row, $col){}
+
+/**
  *  Returns the specified field as an integer. "col" may be specified as the
  *  column name or number. */
 function sqlrcur_getFieldAsInteger($sqlrcurref, $row, $col){}
@@ -1173,6 +1178,58 @@ function sqlrcur_getFieldAsDateMicrosecond($sqlrcurref, $row, $col){}
  *  component is negative.  "col" may be specified as the column name or
  *  number. */
 function sqlrcur_getFieldAsDateIsNegative($sqlrcurref, $row, $col){}
+
+/**
+ *  Returns the specified field as an integer, ignoring case of "col". */
+function sqlrcur_getFieldAsIntegerIgnoringCase($sqlrcurref, $row, $col){}
+
+/**
+ *  Returns the specified field as a decimal, ignoring case of "col". */
+function sqlrcur_getFieldAsDoubleIgnoringCase($sqlrcurref, $row, $col){}
+
+/**
+ *  Returns the specified field as a boolean, ignoring case of "col". */
+function sqlrcur_getFieldAsBooleanIgnoringCase($sqlrcurref, $row, $col){}
+
+/**
+ *  Interprets the specified field as a date and returns the year component,
+ *  ignoring case of "col". */
+function sqlrcur_getFieldAsDateYearIgnoringCase($sqlrcurref, $row, $col){}
+
+/**
+ *  Interprets the specified field as a date and returns the month component,
+ *  ignoring case of "col". */
+function sqlrcur_getFieldAsDateMonthIgnoringCase($sqlrcurref, $row, $col){}
+
+/**
+ *  Interprets the specified field as a date and returns the day component,
+ *  ignoring case of "col". */
+function sqlrcur_getFieldAsDateDayIgnoringCase($sqlrcurref, $row, $col){}
+
+/**
+ *  Interprets the specified field as a date and returns the hour component,
+ *  ignoring case of "col". */
+function sqlrcur_getFieldAsDateHourIgnoringCase($sqlrcurref, $row, $col){}
+
+/**
+ *  Interprets the specified field as a date and returns the minute component,
+ *  ignoring case of "col". */
+function sqlrcur_getFieldAsDateMinuteIgnoringCase($sqlrcurref, $row, $col){}
+
+/**
+ *  Interprets the specified field as a date and returns the second component,
+ *  ignoring case of "col". */
+function sqlrcur_getFieldAsDateSecondIgnoringCase($sqlrcurref, $row, $col){}
+
+/**
+ *  Interprets the specified field as a date and returns the microsecond
+ *  component, ignoring case of "col". */
+function sqlrcur_getFieldAsDateMicrosecondIgnoringCase($sqlrcurref, $row, $col){}
+
+/**
+ *  Interprets the specified field as a date and returns whether the hour
+ *  component is negative, ignoring case of "col". */
+function sqlrcur_getFieldAsDateIsNegativeIgnoringCase($sqlrcurref, $row, $col){}
 
 
 

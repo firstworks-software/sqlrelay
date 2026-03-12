@@ -3654,7 +3654,7 @@ class oracle extends sqlrtest {
 		System.out.println("VERSION COLUMN LIST:");
 		// sqlrelay doesn't support this yet
 		if (!issqlrelay) {
-			rs=md.getVersionColumns(null,null,"%");
+			rs=md.getVersionColumns(null,null,"TESTTABLE");
 			assertTrue((rs!=null));
 			rsmd=rs.getMetaData();
 			assertTrue((rsmd!=null));
@@ -3708,7 +3708,7 @@ class oracle extends sqlrtest {
 		System.out.println("BEST ROW IDENTIFIER LIST:");
 		// sqlrelay doesn't support this yet
 		if (!issqlrelay) {
-			rs=md.getBestRowIdentifier(null,null,"%",
+			rs=md.getBestRowIdentifier(null,null,"TESTTABLE",
 					DatabaseMetaData.bestRowTemporary,
 					true);
 			assertTrue((rs!=null));
@@ -3785,7 +3785,7 @@ class oracle extends sqlrtest {
 		// ORA-17068: Invalid arguments in call
 		if (issqlrelay) {
 			rs=md.getIndexInfo(null,null,
-						"TESTTABLE",false,true);
+					"TESTTABLE",false,true);
 			assertTrue((rs!=null));
 			rsmd=rs.getMetaData();
 			assertTrue((rsmd!=null));
@@ -3837,7 +3837,7 @@ class oracle extends sqlrtest {
 		System.out.println("EXPORTED KEY LIST:");
 		// sqlrelay doesn't support this yet
 		if (!issqlrelay) {
-			rs=md.getExportedKeys(null,null,"%");
+			rs=md.getExportedKeys(null,null,"TESTTABLE");
 			assertTrue((rs!=null));
 			rsmd=rs.getMetaData();
 			assertTrue((rsmd!=null));
@@ -3866,7 +3866,7 @@ class oracle extends sqlrtest {
 		System.out.println("IMPORTED KEY LIST:");
 		// sqlrelay doesn't support this yet
 		if (!issqlrelay) {
-			rs=md.getImportedKeys(null,null,"%");
+			rs=md.getImportedKeys(null,null,"TESTTABLE");
 			assertTrue((rs!=null));
 			rsmd=rs.getMetaData();
 			assertTrue((rsmd!=null));

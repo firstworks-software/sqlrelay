@@ -919,6 +919,30 @@ public class SQLRCursor : IDisposable
         return System.Text.Encoding.Default.GetString(field);
     }
 
+    /** Returns the specified field as a string, ignoring the case of "col". */
+    public String getFieldIgnoringCase(UInt64 row, String col)
+    {
+        // if we're getting nulls as nulls or we've run off the end of the result set,
+        // return a null for a null field
+        IntPtr ptr = sqlrcur_getFieldByNameIgnoringCase(sqlrcurref, row, col);
+        if (ptr == IntPtr.Zero)
+        {
+            return null;
+        }
+
+        // get the field length to handle binary data
+        Int32 size = (Int32)sqlrcur_getFieldLengthByName(sqlrcurref, row, col);
+        if (size == 0)
+        {
+            return "";
+        }
+
+        // copy the field data and return as a string
+        Byte[] field = new Byte[size];
+        Marshal.Copy(ptr, field, 0, size);
+        return System.Text.Encoding.Default.GetString(field);
+    }
+
     /** Returns the specified field as an integer. */
     public Int64 getFieldAsInteger(UInt64 row, UInt32 col)
     {
@@ -929,6 +953,12 @@ public class SQLRCursor : IDisposable
     public Int64 getFieldAsInteger(UInt64 row, String col)
     {
         return sqlrcur_getFieldAsIntegerByName(sqlrcurref, row, col);
+    }
+
+    /** Returns the specified field as an integer, ignoring the case of "col". */
+    public Int64 getFieldAsIntegerIgnoringCase(UInt64 row, String col)
+    {
+        return sqlrcur_getFieldAsIntegerByNameIgnoringCase(sqlrcurref, row, col);
     }
 
     /** Returns the specified field as an decimal. */
@@ -955,6 +985,12 @@ public class SQLRCursor : IDisposable
         return sqlrcur_getFieldAsBooleanByName(sqlrcurref, row, col) != 0;
     }
 
+    /** Returns the specified field as a boolean, ignoring the case of "col". */
+    public Boolean getFieldAsBooleanIgnoringCase(UInt64 row, String col)
+    {
+        return sqlrcur_getFieldAsBooleanByNameIgnoringCase(sqlrcurref, row, col) != 0;
+    }
+
     /** Interprets the specified field as a date and returns the year component. */
     public Int16 getFieldAsDateYear(UInt64 row, UInt32 col)
     {
@@ -973,10 +1009,22 @@ public class SQLRCursor : IDisposable
         return sqlrcur_getFieldAsDateYearByName(sqlrcurref, row, col);
     }
 
+    /** Interprets the specified field as a date and returns the year component, ignoring the case of "col". */
+    public Int16 getFieldAsDateYearIgnoringCase(UInt64 row, String col)
+    {
+        return sqlrcur_getFieldAsDateYearByNameIgnoringCase(sqlrcurref, row, col);
+    }
+
     /** Interprets the specified field as a date and returns the year component. */
     public Int16 getFieldAsDateYear(UInt64 row, String col, Boolean ddmm, Boolean yyyyddmm, String datedelimiters)
     {
         return sqlrcur_getFieldAsDateYearByNameWithDdMm(sqlrcurref, row, col, (ddmm) ? 1 : 0, (yyyyddmm) ? 1 : 0, datedelimiters);
+    }
+
+    /** Interprets the specified field as a date and returns the year component, ignoring the case of "col". */
+    public Int16 getFieldAsDateYearIgnoringCase(UInt64 row, String col, Boolean ddmm, Boolean yyyyddmm, String datedelimiters)
+    {
+        return sqlrcur_getFieldAsDateYearByNameWithDdMmIgnoringCase(sqlrcurref, row, col, (ddmm) ? 1 : 0, (yyyyddmm) ? 1 : 0, datedelimiters);
     }
 
     /** Interprets the specified field as a date and returns the month component. */
@@ -997,10 +1045,22 @@ public class SQLRCursor : IDisposable
         return sqlrcur_getFieldAsDateMonthByName(sqlrcurref, row, col);
     }
 
+    /** Interprets the specified field as a date and returns the month component, ignoring the case of "col". */
+    public Int16 getFieldAsDateMonthIgnoringCase(UInt64 row, String col)
+    {
+        return sqlrcur_getFieldAsDateMonthByNameIgnoringCase(sqlrcurref, row, col);
+    }
+
     /** Interprets the specified field as a date and returns the month component. */
     public Int16 getFieldAsDateMonth(UInt64 row, String col, Boolean ddmm, Boolean yyyyddmm, String datedelimiters)
     {
         return sqlrcur_getFieldAsDateMonthByNameWithDdMm(sqlrcurref, row, col, (ddmm) ? 1 : 0, (yyyyddmm) ? 1 : 0, datedelimiters);
+    }
+
+    /** Interprets the specified field as a date and returns the month component, ignoring the case of "col". */
+    public Int16 getFieldAsDateMonthIgnoringCase(UInt64 row, String col, Boolean ddmm, Boolean yyyyddmm, String datedelimiters)
+    {
+        return sqlrcur_getFieldAsDateMonthByNameWithDdMmIgnoringCase(sqlrcurref, row, col, (ddmm) ? 1 : 0, (yyyyddmm) ? 1 : 0, datedelimiters);
     }
 
     /** Interprets the specified field as a date and returns the day component. */
@@ -1021,10 +1081,22 @@ public class SQLRCursor : IDisposable
         return sqlrcur_getFieldAsDateDayByName(sqlrcurref, row, col);
     }
 
+    /** Interprets the specified field as a date and returns the day component, ignoring the case of "col". */
+    public Int16 getFieldAsDateDayIgnoringCase(UInt64 row, String col)
+    {
+        return sqlrcur_getFieldAsDateDayByNameIgnoringCase(sqlrcurref, row, col);
+    }
+
     /** Interprets the specified field as a date and returns the day component. */
     public Int16 getFieldAsDateDay(UInt64 row, String col, Boolean ddmm, Boolean yyyyddmm, String datedelimiters)
     {
         return sqlrcur_getFieldAsDateDayByNameWithDdMm(sqlrcurref, row, col, (ddmm) ? 1 : 0, (yyyyddmm) ? 1 : 0, datedelimiters);
+    }
+
+    /** Interprets the specified field as a date and returns the day component, ignoring the case of "col". */
+    public Int16 getFieldAsDateDayIgnoringCase(UInt64 row, String col, Boolean ddmm, Boolean yyyyddmm, String datedelimiters)
+    {
+        return sqlrcur_getFieldAsDateDayByNameWithDdMmIgnoringCase(sqlrcurref, row, col, (ddmm) ? 1 : 0, (yyyyddmm) ? 1 : 0, datedelimiters);
     }
 
     /** Interprets the specified field as a date and returns the hour component. */
@@ -1045,10 +1117,22 @@ public class SQLRCursor : IDisposable
         return sqlrcur_getFieldAsDateHourByName(sqlrcurref, row, col);
     }
 
+    /** Interprets the specified field as a date and returns the hour component, ignoring the case of "col". */
+    public Int16 getFieldAsDateHourIgnoringCase(UInt64 row, String col)
+    {
+        return sqlrcur_getFieldAsDateHourByNameIgnoringCase(sqlrcurref, row, col);
+    }
+
     /** Interprets the specified field as a date and returns the hour component. */
     public Int16 getFieldAsDateHour(UInt64 row, String col, Boolean ddmm, Boolean yyyyddmm, String datedelimiters)
     {
         return sqlrcur_getFieldAsDateHourByNameWithDdMm(sqlrcurref, row, col, (ddmm) ? 1 : 0, (yyyyddmm) ? 1 : 0, datedelimiters);
+    }
+
+    /** Interprets the specified field as a date and returns the hour component, ignoring the case of "col". */
+    public Int16 getFieldAsDateHourIgnoringCase(UInt64 row, String col, Boolean ddmm, Boolean yyyyddmm, String datedelimiters)
+    {
+        return sqlrcur_getFieldAsDateHourByNameWithDdMmIgnoringCase(sqlrcurref, row, col, (ddmm) ? 1 : 0, (yyyyddmm) ? 1 : 0, datedelimiters);
     }
 
     /** Interprets the specified field as a date and returns the minute component. */
@@ -1069,10 +1153,22 @@ public class SQLRCursor : IDisposable
         return sqlrcur_getFieldAsDateMinuteByName(sqlrcurref, row, col);
     }
 
+    /** Interprets the specified field as a date and returns the minute component, ignoring the case of "col". */
+    public Int16 getFieldAsDateMinuteIgnoringCase(UInt64 row, String col)
+    {
+        return sqlrcur_getFieldAsDateMinuteByNameIgnoringCase(sqlrcurref, row, col);
+    }
+
     /** Interprets the specified field as a date and returns the minute component. */
     public Int16 getFieldAsDateMinute(UInt64 row, String col, Boolean ddmm, Boolean yyyyddmm, String datedelimiters)
     {
         return sqlrcur_getFieldAsDateMinuteByNameWithDdMm(sqlrcurref, row, col, (ddmm) ? 1 : 0, (yyyyddmm) ? 1 : 0, datedelimiters);
+    }
+
+    /** Interprets the specified field as a date and returns the minute component, ignoring the case of "col". */
+    public Int16 getFieldAsDateMinuteIgnoringCase(UInt64 row, String col, Boolean ddmm, Boolean yyyyddmm, String datedelimiters)
+    {
+        return sqlrcur_getFieldAsDateMinuteByNameWithDdMmIgnoringCase(sqlrcurref, row, col, (ddmm) ? 1 : 0, (yyyyddmm) ? 1 : 0, datedelimiters);
     }
 
     /** Interprets the specified field as a date and returns the second component. */
@@ -1093,10 +1189,22 @@ public class SQLRCursor : IDisposable
         return sqlrcur_getFieldAsDateSecondByName(sqlrcurref, row, col);
     }
 
+    /** Interprets the specified field as a date and returns the second component, ignoring the case of "col". */
+    public Int16 getFieldAsDateSecondIgnoringCase(UInt64 row, String col)
+    {
+        return sqlrcur_getFieldAsDateSecondByNameIgnoringCase(sqlrcurref, row, col);
+    }
+
     /** Interprets the specified field as a date and returns the second component. */
     public Int16 getFieldAsDateSecond(UInt64 row, String col, Boolean ddmm, Boolean yyyyddmm, String datedelimiters)
     {
         return sqlrcur_getFieldAsDateSecondByNameWithDdMm(sqlrcurref, row, col, (ddmm) ? 1 : 0, (yyyyddmm) ? 1 : 0, datedelimiters);
+    }
+
+    /** Interprets the specified field as a date and returns the second component, ignoring the case of "col". */
+    public Int16 getFieldAsDateSecondIgnoringCase(UInt64 row, String col, Boolean ddmm, Boolean yyyyddmm, String datedelimiters)
+    {
+        return sqlrcur_getFieldAsDateSecondByNameWithDdMmIgnoringCase(sqlrcurref, row, col, (ddmm) ? 1 : 0, (yyyyddmm) ? 1 : 0, datedelimiters);
     }
 
     /** Interprets the specified field as a date and returns the microsecond component. */
@@ -1117,10 +1225,22 @@ public class SQLRCursor : IDisposable
         return sqlrcur_getFieldAsDateMicrosecondByName(sqlrcurref, row, col);
     }
 
+    /** Interprets the specified field as a date and returns the microsecond component, ignoring the case of "col". */
+    public Int32 getFieldAsDateMicrosecondIgnoringCase(UInt64 row, String col)
+    {
+        return sqlrcur_getFieldAsDateMicrosecondByNameIgnoringCase(sqlrcurref, row, col);
+    }
+
     /** Interprets the specified field as a date and returns the microsecond component. */
     public Int32 getFieldAsDateMicrosecond(UInt64 row, String col, Boolean ddmm, Boolean yyyyddmm, String datedelimiters)
     {
         return sqlrcur_getFieldAsDateMicrosecondByNameWithDdMm(sqlrcurref, row, col, (ddmm) ? 1 : 0, (yyyyddmm) ? 1 : 0, datedelimiters);
+    }
+
+    /** Interprets the specified field as a date and returns the microsecond component, ignoring the case of "col". */
+    public Int32 getFieldAsDateMicrosecondIgnoringCase(UInt64 row, String col, Boolean ddmm, Boolean yyyyddmm, String datedelimiters)
+    {
+        return sqlrcur_getFieldAsDateMicrosecondByNameWithDdMmIgnoringCase(sqlrcurref, row, col, (ddmm) ? 1 : 0, (yyyyddmm) ? 1 : 0, datedelimiters);
     }
 
     /** Interprets the specified field as a date and returns whether it is negative. */
@@ -1141,10 +1261,22 @@ public class SQLRCursor : IDisposable
         return sqlrcur_getFieldAsDateIsNegativeByName(sqlrcurref, row, col) != 0;
     }
 
+    /** Interprets the specified field as a date and returns whether it is negative, ignoring the case of "col". */
+    public Boolean getFieldAsDateIsNegativeIgnoringCase(UInt64 row, String col)
+    {
+        return sqlrcur_getFieldAsDateIsNegativeByNameIgnoringCase(sqlrcurref, row, col) != 0;
+    }
+
     /** Interprets the specified field as a date and returns whether it is negative. */
     public Boolean getFieldAsDateIsNegative(UInt64 row, String col, Boolean ddmm, Boolean yyyyddmm, String datedelimiters)
     {
         return sqlrcur_getFieldAsDateIsNegativeByNameWithDdMm(sqlrcurref, row, col, (ddmm) ? 1 : 0, (yyyyddmm) ? 1 : 0, datedelimiters) != 0;
+    }
+
+    /** Interprets the specified field as a date and returns whether it is negative, ignoring the case of "col". */
+    public Boolean getFieldAsDateIsNegativeIgnoringCase(UInt64 row, String col, Boolean ddmm, Boolean yyyyddmm, String datedelimiters)
+    {
+        return sqlrcur_getFieldAsDateIsNegativeByNameWithDdMmIgnoringCase(sqlrcurref, row, col, (ddmm) ? 1 : 0, (yyyyddmm) ? 1 : 0, datedelimiters) != 0;
     }
 
     /** Returns the specified field as a string. */
@@ -1709,10 +1841,16 @@ public class SQLRCursor : IDisposable
     private static extern IntPtr sqlrcur_getFieldByName(IntPtr sqlrcurref, UInt64 row, String col);
 
     [DllImport("libsqlrclientwrapper.dll", CallingConvention = CallingConvention.Cdecl)]
+    private static extern IntPtr sqlrcur_getFieldByNameIgnoringCase(IntPtr sqlrcurref, UInt64 row, String col);
+
+    [DllImport("libsqlrclientwrapper.dll", CallingConvention = CallingConvention.Cdecl)]
     private static extern Int64 sqlrcur_getFieldAsIntegerByIndex(IntPtr sqlrcurref, UInt64 row, UInt32 col);
 
     [DllImport("libsqlrclientwrapper.dll", CallingConvention = CallingConvention.Cdecl)]
     private static extern Int64 sqlrcur_getFieldAsIntegerByName(IntPtr sqlrcurref, UInt64 row, String col);
+
+    [DllImport("libsqlrclientwrapper.dll", CallingConvention = CallingConvention.Cdecl)]
+    private static extern Int64 sqlrcur_getFieldAsIntegerByNameIgnoringCase(IntPtr sqlrcurref, UInt64 row, String col);
 
     [DllImport("libsqlrclientwrapper.dll", CallingConvention = CallingConvention.Cdecl)]
     private static extern Double sqlrcur_getFieldAsDoubleByIndex(IntPtr sqlrcurref, UInt64 row, UInt32 col);
@@ -1721,10 +1859,16 @@ public class SQLRCursor : IDisposable
     private static extern Double sqlrcur_getFieldAsDoubleByName(IntPtr sqlrcurref, UInt64 row, String col);
 
     [DllImport("libsqlrclientwrapper.dll", CallingConvention = CallingConvention.Cdecl)]
+    private static extern Double sqlrcur_getFieldAsDoubleByNameIgnoringCase(IntPtr sqlrcurref, UInt64 row, String col);
+
+    [DllImport("libsqlrclientwrapper.dll", CallingConvention = CallingConvention.Cdecl)]
     private static extern Int32 sqlrcur_getFieldAsBooleanByIndex(IntPtr sqlrcurref, UInt64 row, UInt32 col);
 
     [DllImport("libsqlrclientwrapper.dll", CallingConvention = CallingConvention.Cdecl)]
     private static extern Int32 sqlrcur_getFieldAsBooleanByName(IntPtr sqlrcurref, UInt64 row, String col);
+
+    [DllImport("libsqlrclientwrapper.dll", CallingConvention = CallingConvention.Cdecl)]
+    private static extern Int32 sqlrcur_getFieldAsBooleanByNameIgnoringCase(IntPtr sqlrcurref, UInt64 row, String col);
 
     [DllImport("libsqlrclientwrapper.dll", CallingConvention = CallingConvention.Cdecl)]
     private static extern Int16 sqlrcur_getFieldAsDateYearByIndex(IntPtr sqlrcurref, UInt64 row, UInt32 col);
@@ -1736,7 +1880,13 @@ public class SQLRCursor : IDisposable
     private static extern Int16 sqlrcur_getFieldAsDateYearByName(IntPtr sqlrcurref, UInt64 row, String col);
 
     [DllImport("libsqlrclientwrapper.dll", CallingConvention = CallingConvention.Cdecl)]
+    private static extern Int16 sqlrcur_getFieldAsDateYearByNameIgnoringCase(IntPtr sqlrcurref, UInt64 row, String col);
+
+    [DllImport("libsqlrclientwrapper.dll", CallingConvention = CallingConvention.Cdecl)]
     private static extern Int16 sqlrcur_getFieldAsDateYearByNameWithDdMm(IntPtr sqlrcurref, UInt64 row, String col, Int32 ddmm, Int32 yyyyddmm, String datedelimiters);
+
+    [DllImport("libsqlrclientwrapper.dll", CallingConvention = CallingConvention.Cdecl)]
+    private static extern Int16 sqlrcur_getFieldAsDateYearByNameWithDdMmIgnoringCase(IntPtr sqlrcurref, UInt64 row, String col, Int32 ddmm, Int32 yyyyddmm, String datedelimiters);
 
     [DllImport("libsqlrclientwrapper.dll", CallingConvention = CallingConvention.Cdecl)]
     private static extern Int16 sqlrcur_getFieldAsDateMonthByIndex(IntPtr sqlrcurref, UInt64 row, UInt32 col);
@@ -1748,7 +1898,13 @@ public class SQLRCursor : IDisposable
     private static extern Int16 sqlrcur_getFieldAsDateMonthByName(IntPtr sqlrcurref, UInt64 row, String col);
 
     [DllImport("libsqlrclientwrapper.dll", CallingConvention = CallingConvention.Cdecl)]
+    private static extern Int16 sqlrcur_getFieldAsDateMonthByNameIgnoringCase(IntPtr sqlrcurref, UInt64 row, String col);
+
+    [DllImport("libsqlrclientwrapper.dll", CallingConvention = CallingConvention.Cdecl)]
     private static extern Int16 sqlrcur_getFieldAsDateMonthByNameWithDdMm(IntPtr sqlrcurref, UInt64 row, String col, Int32 ddmm, Int32 yyyyddmm, String datedelimiters);
+
+    [DllImport("libsqlrclientwrapper.dll", CallingConvention = CallingConvention.Cdecl)]
+    private static extern Int16 sqlrcur_getFieldAsDateMonthByNameWithDdMmIgnoringCase(IntPtr sqlrcurref, UInt64 row, String col, Int32 ddmm, Int32 yyyyddmm, String datedelimiters);
 
     [DllImport("libsqlrclientwrapper.dll", CallingConvention = CallingConvention.Cdecl)]
     private static extern Int16 sqlrcur_getFieldAsDateDayByIndex(IntPtr sqlrcurref, UInt64 row, UInt32 col);
@@ -1760,7 +1916,13 @@ public class SQLRCursor : IDisposable
     private static extern Int16 sqlrcur_getFieldAsDateDayByName(IntPtr sqlrcurref, UInt64 row, String col);
 
     [DllImport("libsqlrclientwrapper.dll", CallingConvention = CallingConvention.Cdecl)]
+    private static extern Int16 sqlrcur_getFieldAsDateDayByNameIgnoringCase(IntPtr sqlrcurref, UInt64 row, String col);
+
+    [DllImport("libsqlrclientwrapper.dll", CallingConvention = CallingConvention.Cdecl)]
     private static extern Int16 sqlrcur_getFieldAsDateDayByNameWithDdMm(IntPtr sqlrcurref, UInt64 row, String col, Int32 ddmm, Int32 yyyyddmm, String datedelimiters);
+
+    [DllImport("libsqlrclientwrapper.dll", CallingConvention = CallingConvention.Cdecl)]
+    private static extern Int16 sqlrcur_getFieldAsDateDayByNameWithDdMmIgnoringCase(IntPtr sqlrcurref, UInt64 row, String col, Int32 ddmm, Int32 yyyyddmm, String datedelimiters);
 
     [DllImport("libsqlrclientwrapper.dll", CallingConvention = CallingConvention.Cdecl)]
     private static extern Int16 sqlrcur_getFieldAsDateHourByIndex(IntPtr sqlrcurref, UInt64 row, UInt32 col);
@@ -1772,7 +1934,13 @@ public class SQLRCursor : IDisposable
     private static extern Int16 sqlrcur_getFieldAsDateHourByName(IntPtr sqlrcurref, UInt64 row, String col);
 
     [DllImport("libsqlrclientwrapper.dll", CallingConvention = CallingConvention.Cdecl)]
+    private static extern Int16 sqlrcur_getFieldAsDateHourByNameIgnoringCase(IntPtr sqlrcurref, UInt64 row, String col);
+
+    [DllImport("libsqlrclientwrapper.dll", CallingConvention = CallingConvention.Cdecl)]
     private static extern Int16 sqlrcur_getFieldAsDateHourByNameWithDdMm(IntPtr sqlrcurref, UInt64 row, String col, Int32 ddmm, Int32 yyyyddmm, String datedelimiters);
+
+    [DllImport("libsqlrclientwrapper.dll", CallingConvention = CallingConvention.Cdecl)]
+    private static extern Int16 sqlrcur_getFieldAsDateHourByNameWithDdMmIgnoringCase(IntPtr sqlrcurref, UInt64 row, String col, Int32 ddmm, Int32 yyyyddmm, String datedelimiters);
 
     [DllImport("libsqlrclientwrapper.dll", CallingConvention = CallingConvention.Cdecl)]
     private static extern Int16 sqlrcur_getFieldAsDateMinuteByIndex(IntPtr sqlrcurref, UInt64 row, UInt32 col);
@@ -1784,7 +1952,13 @@ public class SQLRCursor : IDisposable
     private static extern Int16 sqlrcur_getFieldAsDateMinuteByName(IntPtr sqlrcurref, UInt64 row, String col);
 
     [DllImport("libsqlrclientwrapper.dll", CallingConvention = CallingConvention.Cdecl)]
+    private static extern Int16 sqlrcur_getFieldAsDateMinuteByNameIgnoringCase(IntPtr sqlrcurref, UInt64 row, String col);
+
+    [DllImport("libsqlrclientwrapper.dll", CallingConvention = CallingConvention.Cdecl)]
     private static extern Int16 sqlrcur_getFieldAsDateMinuteByNameWithDdMm(IntPtr sqlrcurref, UInt64 row, String col, Int32 ddmm, Int32 yyyyddmm, String datedelimiters);
+
+    [DllImport("libsqlrclientwrapper.dll", CallingConvention = CallingConvention.Cdecl)]
+    private static extern Int16 sqlrcur_getFieldAsDateMinuteByNameWithDdMmIgnoringCase(IntPtr sqlrcurref, UInt64 row, String col, Int32 ddmm, Int32 yyyyddmm, String datedelimiters);
 
     [DllImport("libsqlrclientwrapper.dll", CallingConvention = CallingConvention.Cdecl)]
     private static extern Int16 sqlrcur_getFieldAsDateSecondByIndex(IntPtr sqlrcurref, UInt64 row, UInt32 col);
@@ -1796,7 +1970,13 @@ public class SQLRCursor : IDisposable
     private static extern Int16 sqlrcur_getFieldAsDateSecondByName(IntPtr sqlrcurref, UInt64 row, String col);
 
     [DllImport("libsqlrclientwrapper.dll", CallingConvention = CallingConvention.Cdecl)]
+    private static extern Int16 sqlrcur_getFieldAsDateSecondByNameIgnoringCase(IntPtr sqlrcurref, UInt64 row, String col);
+
+    [DllImport("libsqlrclientwrapper.dll", CallingConvention = CallingConvention.Cdecl)]
     private static extern Int16 sqlrcur_getFieldAsDateSecondByNameWithDdMm(IntPtr sqlrcurref, UInt64 row, String col, Int32 ddmm, Int32 yyyyddmm, String datedelimiters);
+
+    [DllImport("libsqlrclientwrapper.dll", CallingConvention = CallingConvention.Cdecl)]
+    private static extern Int16 sqlrcur_getFieldAsDateSecondByNameWithDdMmIgnoringCase(IntPtr sqlrcurref, UInt64 row, String col, Int32 ddmm, Int32 yyyyddmm, String datedelimiters);
 
     [DllImport("libsqlrclientwrapper.dll", CallingConvention = CallingConvention.Cdecl)]
     private static extern Int32 sqlrcur_getFieldAsDateMicrosecondByIndex(IntPtr sqlrcurref, UInt64 row, UInt32 col);
@@ -1808,7 +1988,13 @@ public class SQLRCursor : IDisposable
     private static extern Int32 sqlrcur_getFieldAsDateMicrosecondByName(IntPtr sqlrcurref, UInt64 row, String col);
 
     [DllImport("libsqlrclientwrapper.dll", CallingConvention = CallingConvention.Cdecl)]
+    private static extern Int32 sqlrcur_getFieldAsDateMicrosecondByNameIgnoringCase(IntPtr sqlrcurref, UInt64 row, String col);
+
+    [DllImport("libsqlrclientwrapper.dll", CallingConvention = CallingConvention.Cdecl)]
     private static extern Int32 sqlrcur_getFieldAsDateMicrosecondByNameWithDdMm(IntPtr sqlrcurref, UInt64 row, String col, Int32 ddmm, Int32 yyyyddmm, String datedelimiters);
+
+    [DllImport("libsqlrclientwrapper.dll", CallingConvention = CallingConvention.Cdecl)]
+    private static extern Int32 sqlrcur_getFieldAsDateMicrosecondByNameWithDdMmIgnoringCase(IntPtr sqlrcurref, UInt64 row, String col, Int32 ddmm, Int32 yyyyddmm, String datedelimiters);
 
     [DllImport("libsqlrclientwrapper.dll", CallingConvention = CallingConvention.Cdecl)]
     private static extern Int32 sqlrcur_getFieldAsDateIsNegativeByIndex(IntPtr sqlrcurref, UInt64 row, UInt32 col);
@@ -1820,7 +2006,13 @@ public class SQLRCursor : IDisposable
     private static extern Int32 sqlrcur_getFieldAsDateIsNegativeByName(IntPtr sqlrcurref, UInt64 row, String col);
 
     [DllImport("libsqlrclientwrapper.dll", CallingConvention = CallingConvention.Cdecl)]
+    private static extern Int32 sqlrcur_getFieldAsDateIsNegativeByNameIgnoringCase(IntPtr sqlrcurref, UInt64 row, String col);
+
+    [DllImport("libsqlrclientwrapper.dll", CallingConvention = CallingConvention.Cdecl)]
     private static extern Int32 sqlrcur_getFieldAsDateIsNegativeByNameWithDdMm(IntPtr sqlrcurref, UInt64 row, String col, Int32 ddmm, Int32 yyyyddmm, String datedelimiters);
+
+    [DllImport("libsqlrclientwrapper.dll", CallingConvention = CallingConvention.Cdecl)]
+    private static extern Int32 sqlrcur_getFieldAsDateIsNegativeByNameWithDdMmIgnoringCase(IntPtr sqlrcurref, UInt64 row, String col, Int32 ddmm, Int32 yyyyddmm, String datedelimiters);
 
     [DllImport("libsqlrclientwrapper.dll", CallingConvention = CallingConvention.Cdecl)]
     private static extern UInt32 sqlrcur_getFieldLengthByIndex(IntPtr sqlrcurref, UInt64 row, UInt32 col);

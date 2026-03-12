@@ -3246,12 +3246,50 @@ DLEXPORT ZEND_FUNCTION(sqlrcur_getfield) {
 	RETURN_NULL();
 }
 
+DLEXPORT ZEND_FUNCTION(sqlrcur_getfieldignoringcase) {
+	ZVAL sqlrcur;
+	ZVAL row;
+	ZVAL col;
+	const char *r=NULL;
+	uint32_t rl;
+	if (ZEND_NUM_ARGS() != 3 ||
+		GET_PARAMETERS(
+				ZEND_NUM_ARGS() TSRMLS_CC,
+				PARAMS("zzz")
+				&sqlrcur,
+				&row,
+				&col) == FAILURE) {
+		WRONG_PARAM_COUNT;
+	}
+	convert_to_long_ex(row);
+	sqlrcursor *cursor=NULL;
+	ZEND_FETCH_RESOURCE(cursor,
+				sqlrcursor *,
+				sqlrcur,
+				-1,
+				"sqlrelay cursor",
+				sqlrelay_cursor);
+	if (cursor) {
+		if (TYPE(col)==IS_STRING) {
+			convert_to_string_ex(col);
+			r=cursor->getFieldIgnoringCase(LVAL(row),
+						SVAL(col));
+			rl=cursor->getFieldLength(LVAL(row),
+						SVAL(col));
+		}
+		if (r) {
+			RET_STRINGL(const_cast<char *>(r),rl,1);
+		}
+	}
+	RETURN_NULL();
+}
+
 DLEXPORT ZEND_FUNCTION(sqlrcur_getfieldasinteger) {
 	ZVAL sqlrcur;
 	ZVAL row;
 	ZVAL col;
 	int64_t r=0;
-	if (ZEND_NUM_ARGS() != 3 || 
+	if (ZEND_NUM_ARGS() != 3 ||
 		GET_PARAMETERS(
 				ZEND_NUM_ARGS() TSRMLS_CC,
 				PARAMS("zzz")
@@ -4018,6 +4056,673 @@ DLEXPORT ZEND_FUNCTION(sqlrcur_getfieldasdateisnegative) {
 			} else if (TYPE(col)==IS_STRING) {
 				convert_to_string_ex(col);
 				r=cursor->getFieldAsDateIsNegative(
+						LVAL(row),
+						SVAL(col));
+			}
+			RETURN_LONG(r);
+		}
+	} else {
+		WRONG_PARAM_COUNT;
+	}
+	RETURN_LONG(0);
+}
+
+DLEXPORT ZEND_FUNCTION(sqlrcur_getfieldasintegerignoringcase) {
+	ZVAL sqlrcur;
+	ZVAL row;
+	ZVAL col;
+	int64_t r=0;
+	if (ZEND_NUM_ARGS() != 3 ||
+		GET_PARAMETERS(
+				ZEND_NUM_ARGS() TSRMLS_CC,
+				PARAMS("zzz")
+				&sqlrcur,
+				&row,
+				&col) == FAILURE) {
+		WRONG_PARAM_COUNT;
+	}
+	convert_to_long_ex(row);
+	sqlrcursor *cursor=NULL;
+	ZEND_FETCH_RESOURCE(cursor,
+				sqlrcursor *,
+				sqlrcur,
+				-1,
+				"sqlrelay cursor",
+				sqlrelay_cursor);
+	if (cursor) {
+		if (TYPE(col)==IS_STRING) {
+			convert_to_string_ex(col);
+			r=cursor->getFieldAsIntegerIgnoringCase(LVAL(row),
+							SVAL(col));
+		}
+		RETURN_LONG(r);
+	}
+	RETURN_LONG(0);
+}
+
+DLEXPORT ZEND_FUNCTION(sqlrcur_getfieldasdoubleignoringcase) {
+	ZVAL sqlrcur;
+	ZVAL row;
+	ZVAL col;
+	double r=0.0;
+	if (ZEND_NUM_ARGS() != 3 ||
+		GET_PARAMETERS(
+				ZEND_NUM_ARGS() TSRMLS_CC,
+				PARAMS("zzz")
+				&sqlrcur,
+				&row,
+				&col) == FAILURE) {
+		WRONG_PARAM_COUNT;
+	}
+	convert_to_long_ex(row);
+	sqlrcursor *cursor=NULL;
+	ZEND_FETCH_RESOURCE(cursor,
+				sqlrcursor *,
+				sqlrcur,
+				-1,
+				"sqlrelay cursor",
+				sqlrelay_cursor);
+	if (cursor) {
+		if (TYPE(col)==IS_STRING) {
+			convert_to_string_ex(col);
+			r=cursor->getFieldAsDoubleIgnoringCase(LVAL(row),
+							SVAL(col));
+		}
+		RETURN_DOUBLE(r);
+	}
+	RETURN_DOUBLE(0.0);
+}
+
+DLEXPORT ZEND_FUNCTION(sqlrcur_getfieldasbooleanignoringcase) {
+	ZVAL sqlrcur;
+	ZVAL row;
+	ZVAL col;
+	bool r=false;
+	if (ZEND_NUM_ARGS() != 3 ||
+		GET_PARAMETERS(
+				ZEND_NUM_ARGS() TSRMLS_CC,
+				PARAMS("zzz")
+				&sqlrcur,
+				&row,
+				&col) == FAILURE) {
+		WRONG_PARAM_COUNT;
+	}
+	convert_to_long_ex(row);
+	sqlrcursor *cursor=NULL;
+	ZEND_FETCH_RESOURCE(cursor,
+				sqlrcursor *,
+				sqlrcur,
+				-1,
+				"sqlrelay cursor",
+				sqlrelay_cursor);
+	if (cursor) {
+		if (TYPE(col)==IS_STRING) {
+			convert_to_string_ex(col);
+			r=cursor->getFieldAsBooleanIgnoringCase(LVAL(row),
+							SVAL(col));
+		}
+		RETURN_BOOL(r);
+	}
+	RETURN_BOOL(false);
+}
+
+DLEXPORT ZEND_FUNCTION(sqlrcur_getfieldasdateyearignoringcase) {
+	ZVAL sqlrcur;
+	ZVAL row;
+	ZVAL col;
+	ZVAL ddmm;
+	ZVAL yyyyddmm;
+	ZVAL datedelimiters;
+	int16_t r=0;
+	if (ZEND_NUM_ARGS()==6 &&
+		GET_PARAMETERS(
+				ZEND_NUM_ARGS() TSRMLS_CC,
+				PARAMS("zzzzzz")
+				&sqlrcur,
+				&row,
+				&col,
+				&ddmm,
+				&yyyyddmm,
+				&datedelimiters) != FAILURE) {
+		convert_to_long_ex(row);
+		convert_to_long_ex(ddmm);
+		convert_to_long_ex(yyyyddmm);
+		convert_to_string_ex(datedelimiters);
+		sqlrcursor *cursor=NULL;
+		ZEND_FETCH_RESOURCE(cursor,
+				sqlrcursor *,
+				sqlrcur,
+				-1,
+				"sqlrelay cursor",
+				sqlrelay_cursor);
+		if (cursor) {
+			if (TYPE(col)==IS_STRING) {
+				convert_to_string_ex(col);
+				r=cursor->getFieldAsDateYearIgnoringCase(
+						LVAL(row),
+						SVAL(col),
+						LVAL(ddmm)!=0,
+						LVAL(yyyyddmm)!=0,
+						SVAL(datedelimiters));
+			}
+			RETURN_LONG(r);
+		}
+	} else if (ZEND_NUM_ARGS()==3 &&
+		GET_PARAMETERS(
+				ZEND_NUM_ARGS() TSRMLS_CC,
+				PARAMS("zzz")
+				&sqlrcur,
+				&row,
+				&col) != FAILURE) {
+		convert_to_long_ex(row);
+		sqlrcursor *cursor=NULL;
+		ZEND_FETCH_RESOURCE(cursor,
+				sqlrcursor *,
+				sqlrcur,
+				-1,
+				"sqlrelay cursor",
+				sqlrelay_cursor);
+		if (cursor) {
+			if (TYPE(col)==IS_STRING) {
+				convert_to_string_ex(col);
+				r=cursor->getFieldAsDateYearIgnoringCase(
+						LVAL(row),
+						SVAL(col));
+			}
+			RETURN_LONG(r);
+		}
+	} else {
+		WRONG_PARAM_COUNT;
+	}
+	RETURN_LONG(0);
+}
+
+DLEXPORT ZEND_FUNCTION(sqlrcur_getfieldasdatemonthignoringcase) {
+	ZVAL sqlrcur;
+	ZVAL row;
+	ZVAL col;
+	ZVAL ddmm;
+	ZVAL yyyyddmm;
+	ZVAL datedelimiters;
+	int16_t r=0;
+	if (ZEND_NUM_ARGS()==6 &&
+		GET_PARAMETERS(
+				ZEND_NUM_ARGS() TSRMLS_CC,
+				PARAMS("zzzzzz")
+				&sqlrcur,
+				&row,
+				&col,
+				&ddmm,
+				&yyyyddmm,
+				&datedelimiters) != FAILURE) {
+		convert_to_long_ex(row);
+		convert_to_long_ex(ddmm);
+		convert_to_long_ex(yyyyddmm);
+		convert_to_string_ex(datedelimiters);
+		sqlrcursor *cursor=NULL;
+		ZEND_FETCH_RESOURCE(cursor,
+				sqlrcursor *,
+				sqlrcur,
+				-1,
+				"sqlrelay cursor",
+				sqlrelay_cursor);
+		if (cursor) {
+			if (TYPE(col)==IS_STRING) {
+				convert_to_string_ex(col);
+				r=cursor->getFieldAsDateMonthIgnoringCase(
+						LVAL(row),
+						SVAL(col),
+						LVAL(ddmm)!=0,
+						LVAL(yyyyddmm)!=0,
+						SVAL(datedelimiters));
+			}
+			RETURN_LONG(r);
+		}
+	} else if (ZEND_NUM_ARGS()==3 &&
+		GET_PARAMETERS(
+				ZEND_NUM_ARGS() TSRMLS_CC,
+				PARAMS("zzz")
+				&sqlrcur,
+				&row,
+				&col) != FAILURE) {
+		convert_to_long_ex(row);
+		sqlrcursor *cursor=NULL;
+		ZEND_FETCH_RESOURCE(cursor,
+				sqlrcursor *,
+				sqlrcur,
+				-1,
+				"sqlrelay cursor",
+				sqlrelay_cursor);
+		if (cursor) {
+			if (TYPE(col)==IS_STRING) {
+				convert_to_string_ex(col);
+				r=cursor->getFieldAsDateMonthIgnoringCase(
+						LVAL(row),
+						SVAL(col));
+			}
+			RETURN_LONG(r);
+		}
+	} else {
+		WRONG_PARAM_COUNT;
+	}
+	RETURN_LONG(0);
+}
+
+DLEXPORT ZEND_FUNCTION(sqlrcur_getfieldasdatedayignoringcase) {
+	ZVAL sqlrcur;
+	ZVAL row;
+	ZVAL col;
+	ZVAL ddmm;
+	ZVAL yyyyddmm;
+	ZVAL datedelimiters;
+	int16_t r=0;
+	if (ZEND_NUM_ARGS()==6 &&
+		GET_PARAMETERS(
+				ZEND_NUM_ARGS() TSRMLS_CC,
+				PARAMS("zzzzzz")
+				&sqlrcur,
+				&row,
+				&col,
+				&ddmm,
+				&yyyyddmm,
+				&datedelimiters) != FAILURE) {
+		convert_to_long_ex(row);
+		convert_to_long_ex(ddmm);
+		convert_to_long_ex(yyyyddmm);
+		convert_to_string_ex(datedelimiters);
+		sqlrcursor *cursor=NULL;
+		ZEND_FETCH_RESOURCE(cursor,
+				sqlrcursor *,
+				sqlrcur,
+				-1,
+				"sqlrelay cursor",
+				sqlrelay_cursor);
+		if (cursor) {
+			if (TYPE(col)==IS_STRING) {
+				convert_to_string_ex(col);
+				r=cursor->getFieldAsDateDayIgnoringCase(
+						LVAL(row),
+						SVAL(col),
+						LVAL(ddmm)!=0,
+						LVAL(yyyyddmm)!=0,
+						SVAL(datedelimiters));
+			}
+			RETURN_LONG(r);
+		}
+	} else if (ZEND_NUM_ARGS()==3 &&
+		GET_PARAMETERS(
+				ZEND_NUM_ARGS() TSRMLS_CC,
+				PARAMS("zzz")
+				&sqlrcur,
+				&row,
+				&col) != FAILURE) {
+		convert_to_long_ex(row);
+		sqlrcursor *cursor=NULL;
+		ZEND_FETCH_RESOURCE(cursor,
+				sqlrcursor *,
+				sqlrcur,
+				-1,
+				"sqlrelay cursor",
+				sqlrelay_cursor);
+		if (cursor) {
+			if (TYPE(col)==IS_STRING) {
+				convert_to_string_ex(col);
+				r=cursor->getFieldAsDateDayIgnoringCase(
+						LVAL(row),
+						SVAL(col));
+			}
+			RETURN_LONG(r);
+		}
+	} else {
+		WRONG_PARAM_COUNT;
+	}
+	RETURN_LONG(0);
+}
+
+DLEXPORT ZEND_FUNCTION(sqlrcur_getfieldasdatehourignoringcase) {
+	ZVAL sqlrcur;
+	ZVAL row;
+	ZVAL col;
+	ZVAL ddmm;
+	ZVAL yyyyddmm;
+	ZVAL datedelimiters;
+	int16_t r=0;
+	if (ZEND_NUM_ARGS()==6 &&
+		GET_PARAMETERS(
+				ZEND_NUM_ARGS() TSRMLS_CC,
+				PARAMS("zzzzzz")
+				&sqlrcur,
+				&row,
+				&col,
+				&ddmm,
+				&yyyyddmm,
+				&datedelimiters) != FAILURE) {
+		convert_to_long_ex(row);
+		convert_to_long_ex(ddmm);
+		convert_to_long_ex(yyyyddmm);
+		convert_to_string_ex(datedelimiters);
+		sqlrcursor *cursor=NULL;
+		ZEND_FETCH_RESOURCE(cursor,
+				sqlrcursor *,
+				sqlrcur,
+				-1,
+				"sqlrelay cursor",
+				sqlrelay_cursor);
+		if (cursor) {
+			if (TYPE(col)==IS_STRING) {
+				convert_to_string_ex(col);
+				r=cursor->getFieldAsDateHourIgnoringCase(
+						LVAL(row),
+						SVAL(col),
+						LVAL(ddmm)!=0,
+						LVAL(yyyyddmm)!=0,
+						SVAL(datedelimiters));
+			}
+			RETURN_LONG(r);
+		}
+	} else if (ZEND_NUM_ARGS()==3 &&
+		GET_PARAMETERS(
+				ZEND_NUM_ARGS() TSRMLS_CC,
+				PARAMS("zzz")
+				&sqlrcur,
+				&row,
+				&col) != FAILURE) {
+		convert_to_long_ex(row);
+		sqlrcursor *cursor=NULL;
+		ZEND_FETCH_RESOURCE(cursor,
+				sqlrcursor *,
+				sqlrcur,
+				-1,
+				"sqlrelay cursor",
+				sqlrelay_cursor);
+		if (cursor) {
+			if (TYPE(col)==IS_STRING) {
+				convert_to_string_ex(col);
+				r=cursor->getFieldAsDateHourIgnoringCase(
+						LVAL(row),
+						SVAL(col));
+			}
+			RETURN_LONG(r);
+		}
+	} else {
+		WRONG_PARAM_COUNT;
+	}
+	RETURN_LONG(0);
+}
+
+DLEXPORT ZEND_FUNCTION(sqlrcur_getfieldasdateminuteignoringcase) {
+	ZVAL sqlrcur;
+	ZVAL row;
+	ZVAL col;
+	ZVAL ddmm;
+	ZVAL yyyyddmm;
+	ZVAL datedelimiters;
+	int16_t r=0;
+	if (ZEND_NUM_ARGS()==6 &&
+		GET_PARAMETERS(
+				ZEND_NUM_ARGS() TSRMLS_CC,
+				PARAMS("zzzzzz")
+				&sqlrcur,
+				&row,
+				&col,
+				&ddmm,
+				&yyyyddmm,
+				&datedelimiters) != FAILURE) {
+		convert_to_long_ex(row);
+		convert_to_long_ex(ddmm);
+		convert_to_long_ex(yyyyddmm);
+		convert_to_string_ex(datedelimiters);
+		sqlrcursor *cursor=NULL;
+		ZEND_FETCH_RESOURCE(cursor,
+				sqlrcursor *,
+				sqlrcur,
+				-1,
+				"sqlrelay cursor",
+				sqlrelay_cursor);
+		if (cursor) {
+			if (TYPE(col)==IS_STRING) {
+				convert_to_string_ex(col);
+				r=cursor->getFieldAsDateMinuteIgnoringCase(
+						LVAL(row),
+						SVAL(col),
+						LVAL(ddmm)!=0,
+						LVAL(yyyyddmm)!=0,
+						SVAL(datedelimiters));
+			}
+			RETURN_LONG(r);
+		}
+	} else if (ZEND_NUM_ARGS()==3 &&
+		GET_PARAMETERS(
+				ZEND_NUM_ARGS() TSRMLS_CC,
+				PARAMS("zzz")
+				&sqlrcur,
+				&row,
+				&col) != FAILURE) {
+		convert_to_long_ex(row);
+		sqlrcursor *cursor=NULL;
+		ZEND_FETCH_RESOURCE(cursor,
+				sqlrcursor *,
+				sqlrcur,
+				-1,
+				"sqlrelay cursor",
+				sqlrelay_cursor);
+		if (cursor) {
+			if (TYPE(col)==IS_STRING) {
+				convert_to_string_ex(col);
+				r=cursor->getFieldAsDateMinuteIgnoringCase(
+						LVAL(row),
+						SVAL(col));
+			}
+			RETURN_LONG(r);
+		}
+	} else {
+		WRONG_PARAM_COUNT;
+	}
+	RETURN_LONG(0);
+}
+
+DLEXPORT ZEND_FUNCTION(sqlrcur_getfieldasdatesecondignoringcase) {
+	ZVAL sqlrcur;
+	ZVAL row;
+	ZVAL col;
+	ZVAL ddmm;
+	ZVAL yyyyddmm;
+	ZVAL datedelimiters;
+	int16_t r=0;
+	if (ZEND_NUM_ARGS()==6 &&
+		GET_PARAMETERS(
+				ZEND_NUM_ARGS() TSRMLS_CC,
+				PARAMS("zzzzzz")
+				&sqlrcur,
+				&row,
+				&col,
+				&ddmm,
+				&yyyyddmm,
+				&datedelimiters) != FAILURE) {
+		convert_to_long_ex(row);
+		convert_to_long_ex(ddmm);
+		convert_to_long_ex(yyyyddmm);
+		convert_to_string_ex(datedelimiters);
+		sqlrcursor *cursor=NULL;
+		ZEND_FETCH_RESOURCE(cursor,
+				sqlrcursor *,
+				sqlrcur,
+				-1,
+				"sqlrelay cursor",
+				sqlrelay_cursor);
+		if (cursor) {
+			if (TYPE(col)==IS_STRING) {
+				convert_to_string_ex(col);
+				r=cursor->getFieldAsDateSecondIgnoringCase(
+						LVAL(row),
+						SVAL(col),
+						LVAL(ddmm)!=0,
+						LVAL(yyyyddmm)!=0,
+						SVAL(datedelimiters));
+			}
+			RETURN_LONG(r);
+		}
+	} else if (ZEND_NUM_ARGS()==3 &&
+		GET_PARAMETERS(
+				ZEND_NUM_ARGS() TSRMLS_CC,
+				PARAMS("zzz")
+				&sqlrcur,
+				&row,
+				&col) != FAILURE) {
+		convert_to_long_ex(row);
+		sqlrcursor *cursor=NULL;
+		ZEND_FETCH_RESOURCE(cursor,
+				sqlrcursor *,
+				sqlrcur,
+				-1,
+				"sqlrelay cursor",
+				sqlrelay_cursor);
+		if (cursor) {
+			if (TYPE(col)==IS_STRING) {
+				convert_to_string_ex(col);
+				r=cursor->getFieldAsDateSecondIgnoringCase(
+						LVAL(row),
+						SVAL(col));
+			}
+			RETURN_LONG(r);
+		}
+	} else {
+		WRONG_PARAM_COUNT;
+	}
+	RETURN_LONG(0);
+}
+
+DLEXPORT ZEND_FUNCTION(sqlrcur_getfieldasdatemicrosecondignoringcase) {
+	ZVAL sqlrcur;
+	ZVAL row;
+	ZVAL col;
+	ZVAL ddmm;
+	ZVAL yyyyddmm;
+	ZVAL datedelimiters;
+	int32_t r=0;
+	if (ZEND_NUM_ARGS()==6 &&
+		GET_PARAMETERS(
+				ZEND_NUM_ARGS() TSRMLS_CC,
+				PARAMS("zzzzzz")
+				&sqlrcur,
+				&row,
+				&col,
+				&ddmm,
+				&yyyyddmm,
+				&datedelimiters) != FAILURE) {
+		convert_to_long_ex(row);
+		convert_to_long_ex(ddmm);
+		convert_to_long_ex(yyyyddmm);
+		convert_to_string_ex(datedelimiters);
+		sqlrcursor *cursor=NULL;
+		ZEND_FETCH_RESOURCE(cursor,
+				sqlrcursor *,
+				sqlrcur,
+				-1,
+				"sqlrelay cursor",
+				sqlrelay_cursor);
+		if (cursor) {
+			if (TYPE(col)==IS_STRING) {
+				convert_to_string_ex(col);
+				r=cursor->getFieldAsDateMicrosecondIgnoringCase(
+						LVAL(row),
+						SVAL(col),
+						LVAL(ddmm)!=0,
+						LVAL(yyyyddmm)!=0,
+						SVAL(datedelimiters));
+			}
+			RETURN_LONG(r);
+		}
+	} else if (ZEND_NUM_ARGS()==3 &&
+		GET_PARAMETERS(
+				ZEND_NUM_ARGS() TSRMLS_CC,
+				PARAMS("zzz")
+				&sqlrcur,
+				&row,
+				&col) != FAILURE) {
+		convert_to_long_ex(row);
+		sqlrcursor *cursor=NULL;
+		ZEND_FETCH_RESOURCE(cursor,
+				sqlrcursor *,
+				sqlrcur,
+				-1,
+				"sqlrelay cursor",
+				sqlrelay_cursor);
+		if (cursor) {
+			if (TYPE(col)==IS_STRING) {
+				convert_to_string_ex(col);
+				r=cursor->getFieldAsDateMicrosecondIgnoringCase(
+						LVAL(row),
+						SVAL(col));
+			}
+			RETURN_LONG(r);
+		}
+	} else {
+		WRONG_PARAM_COUNT;
+	}
+	RETURN_LONG(0);
+}
+
+DLEXPORT ZEND_FUNCTION(sqlrcur_getfieldasdateisnegativeignoringcase) {
+	ZVAL sqlrcur;
+	ZVAL row;
+	ZVAL col;
+	ZVAL ddmm;
+	ZVAL yyyyddmm;
+	ZVAL datedelimiters;
+	bool r=false;
+	if (ZEND_NUM_ARGS()==6 &&
+		GET_PARAMETERS(
+				ZEND_NUM_ARGS() TSRMLS_CC,
+				PARAMS("zzzzzz")
+				&sqlrcur,
+				&row,
+				&col,
+				&ddmm,
+				&yyyyddmm,
+				&datedelimiters) != FAILURE) {
+		convert_to_long_ex(row);
+		convert_to_long_ex(ddmm);
+		convert_to_long_ex(yyyyddmm);
+		convert_to_string_ex(datedelimiters);
+		sqlrcursor *cursor=NULL;
+		ZEND_FETCH_RESOURCE(cursor,
+				sqlrcursor *,
+				sqlrcur,
+				-1,
+				"sqlrelay cursor",
+				sqlrelay_cursor);
+		if (cursor) {
+			if (TYPE(col)==IS_STRING) {
+				convert_to_string_ex(col);
+				r=cursor->getFieldAsDateIsNegativeIgnoringCase(
+						LVAL(row),
+						SVAL(col),
+						LVAL(ddmm)!=0,
+						LVAL(yyyyddmm)!=0,
+						SVAL(datedelimiters));
+			}
+			RETURN_LONG(r);
+		}
+	} else if (ZEND_NUM_ARGS()==3 &&
+		GET_PARAMETERS(
+				ZEND_NUM_ARGS() TSRMLS_CC,
+				PARAMS("zzz")
+				&sqlrcur,
+				&row,
+				&col) != FAILURE) {
+		convert_to_long_ex(row);
+		sqlrcursor *cursor=NULL;
+		ZEND_FETCH_RESOURCE(cursor,
+				sqlrcursor *,
+				sqlrcur,
+				-1,
+				"sqlrelay cursor",
+				sqlrelay_cursor);
+		if (cursor) {
+			if (TYPE(col)==IS_STRING) {
+				convert_to_string_ex(col);
+				r=cursor->getFieldAsDateIsNegativeIgnoringCase(
 						LVAL(row),
 						SVAL(col));
 			}
@@ -5859,6 +6564,9 @@ ZEND_END_ARG_INFO()
 ZEND_BEGIN_ARG_INFO_EX(arginfo_sqlrcur_getfield,0,0,0)
 ZEND_END_ARG_INFO()
 
+ZEND_BEGIN_ARG_INFO_EX(arginfo_sqlrcur_getfieldignoringcase,0,0,3)
+ZEND_END_ARG_INFO()
+
 ZEND_BEGIN_ARG_INFO_EX(arginfo_sqlrcur_getfieldasinteger,0,0,0)
 ZEND_END_ARG_INFO()
 
@@ -5890,6 +6598,39 @@ ZEND_BEGIN_ARG_INFO_EX(arginfo_sqlrcur_getfieldasdatemicrosecond,0,0,0)
 ZEND_END_ARG_INFO()
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_sqlrcur_getfieldasdateisnegative,0,0,0)
+ZEND_END_ARG_INFO()
+
+ZEND_BEGIN_ARG_INFO_EX(arginfo_sqlrcur_getfieldasintegerignoringcase,0,0,0)
+ZEND_END_ARG_INFO()
+
+ZEND_BEGIN_ARG_INFO_EX(arginfo_sqlrcur_getfieldasdoubleignoringcase,0,0,0)
+ZEND_END_ARG_INFO()
+
+ZEND_BEGIN_ARG_INFO_EX(arginfo_sqlrcur_getfieldasbooleanignoringcase,0,0,0)
+ZEND_END_ARG_INFO()
+
+ZEND_BEGIN_ARG_INFO_EX(arginfo_sqlrcur_getfieldasdateyearignoringcase,0,0,0)
+ZEND_END_ARG_INFO()
+
+ZEND_BEGIN_ARG_INFO_EX(arginfo_sqlrcur_getfieldasdatemonthignoringcase,0,0,0)
+ZEND_END_ARG_INFO()
+
+ZEND_BEGIN_ARG_INFO_EX(arginfo_sqlrcur_getfieldasdatedayignoringcase,0,0,0)
+ZEND_END_ARG_INFO()
+
+ZEND_BEGIN_ARG_INFO_EX(arginfo_sqlrcur_getfieldasdatehourignoringcase,0,0,0)
+ZEND_END_ARG_INFO()
+
+ZEND_BEGIN_ARG_INFO_EX(arginfo_sqlrcur_getfieldasdateminuteignoringcase,0,0,0)
+ZEND_END_ARG_INFO()
+
+ZEND_BEGIN_ARG_INFO_EX(arginfo_sqlrcur_getfieldasdatesecondignoringcase,0,0,0)
+ZEND_END_ARG_INFO()
+
+ZEND_BEGIN_ARG_INFO_EX(arginfo_sqlrcur_getfieldasdatemicrosecondignoringcase,0,0,0)
+ZEND_END_ARG_INFO()
+
+ZEND_BEGIN_ARG_INFO_EX(arginfo_sqlrcur_getfieldasdateisnegativeignoringcase,0,0,0)
 ZEND_END_ARG_INFO()
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_sqlrcur_getfieldlength,0,0,0)
@@ -6260,6 +7001,8 @@ zend_function_entry sql_relay_functions[] = {
 		ARGINFO(arginfo_sqlrcur_getnullsasnulls))
 	ZEND_FE(sqlrcur_getfield,
 		ARGINFO(arginfo_sqlrcur_getfield))
+	ZEND_FE(sqlrcur_getfieldignoringcase,
+		ARGINFO(arginfo_sqlrcur_getfieldignoringcase))
 	ZEND_FE(sqlrcur_getfieldasinteger,
 		ARGINFO(arginfo_sqlrcur_getfieldasinteger))
 	ZEND_FE(sqlrcur_getfieldasdouble,
@@ -6282,6 +7025,28 @@ zend_function_entry sql_relay_functions[] = {
 		ARGINFO(arginfo_sqlrcur_getfieldasdatemicrosecond))
 	ZEND_FE(sqlrcur_getfieldasdateisnegative,
 		ARGINFO(arginfo_sqlrcur_getfieldasdateisnegative))
+	ZEND_FE(sqlrcur_getfieldasintegerignoringcase,
+		ARGINFO(arginfo_sqlrcur_getfieldasintegerignoringcase))
+	ZEND_FE(sqlrcur_getfieldasdoubleignoringcase,
+		ARGINFO(arginfo_sqlrcur_getfieldasdoubleignoringcase))
+	ZEND_FE(sqlrcur_getfieldasbooleanignoringcase,
+		ARGINFO(arginfo_sqlrcur_getfieldasbooleanignoringcase))
+	ZEND_FE(sqlrcur_getfieldasdateyearignoringcase,
+		ARGINFO(arginfo_sqlrcur_getfieldasdateyearignoringcase))
+	ZEND_FE(sqlrcur_getfieldasdatemonthignoringcase,
+		ARGINFO(arginfo_sqlrcur_getfieldasdatemonthignoringcase))
+	ZEND_FE(sqlrcur_getfieldasdatedayignoringcase,
+		ARGINFO(arginfo_sqlrcur_getfieldasdatedayignoringcase))
+	ZEND_FE(sqlrcur_getfieldasdatehourignoringcase,
+		ARGINFO(arginfo_sqlrcur_getfieldasdatehourignoringcase))
+	ZEND_FE(sqlrcur_getfieldasdateminuteignoringcase,
+		ARGINFO(arginfo_sqlrcur_getfieldasdateminuteignoringcase))
+	ZEND_FE(sqlrcur_getfieldasdatesecondignoringcase,
+		ARGINFO(arginfo_sqlrcur_getfieldasdatesecondignoringcase))
+	ZEND_FE(sqlrcur_getfieldasdatemicrosecondignoringcase,
+		ARGINFO(arginfo_sqlrcur_getfieldasdatemicrosecondignoringcase))
+	ZEND_FE(sqlrcur_getfieldasdateisnegativeignoringcase,
+		ARGINFO(arginfo_sqlrcur_getfieldasdateisnegativeignoringcase))
 	ZEND_FE(sqlrcur_getfieldlength,
 		ARGINFO(arginfo_sqlrcur_getfieldlength))
 	ZEND_FE(sqlrcur_getrow,

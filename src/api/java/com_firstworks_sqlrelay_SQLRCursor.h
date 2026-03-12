@@ -569,6 +569,14 @@ JNIEXPORT jstring JNICALL Java_com_firstworks_sqlrelay_SQLRCursor_getField__JLja
 
 /*
  * Class:     com_firstworks_sqlrelay_SQLRCursor
+ * Method:    getFieldIgnoringCase
+ * Signature: (JLjava/lang/String;)Ljava/lang/String;
+ */
+JNIEXPORT jstring JNICALL Java_com_firstworks_sqlrelay_SQLRCursor_getFieldIgnoringCase
+  (JNIEnv *, jobject, jlong, jstring);
+
+/*
+ * Class:     com_firstworks_sqlrelay_SQLRCursor
  * Method:    getFieldAsInteger
  * Signature: (JI)J
  */
@@ -581,6 +589,14 @@ JNIEXPORT jlong JNICALL Java_com_firstworks_sqlrelay_SQLRCursor_getFieldAsIntege
  * Signature: (JLjava/lang/String;)J
  */
 JNIEXPORT jlong JNICALL Java_com_firstworks_sqlrelay_SQLRCursor_getFieldAsInteger__JLjava_lang_String_2
+  (JNIEnv *, jobject, jlong, jstring);
+
+/*
+ * Class:     com_firstworks_sqlrelay_SQLRCursor
+ * Method:    getFieldAsIntegerIgnoringCase
+ * Signature: (JLjava/lang/String;)J
+ */
+JNIEXPORT jlong JNICALL Java_com_firstworks_sqlrelay_SQLRCursor_getFieldAsIntegerIgnoringCase
   (JNIEnv *, jobject, jlong, jstring);
 
 /*
@@ -601,6 +617,14 @@ JNIEXPORT jdouble JNICALL Java_com_firstworks_sqlrelay_SQLRCursor_getFieldAsDoub
 
 /*
  * Class:     com_firstworks_sqlrelay_SQLRCursor
+ * Method:    getFieldAsDoubleIgnoringCase
+ * Signature: (JLjava/lang/String;)D
+ */
+JNIEXPORT jdouble JNICALL Java_com_firstworks_sqlrelay_SQLRCursor_getFieldAsDoubleIgnoringCase
+  (JNIEnv *, jobject, jlong, jstring);
+
+/*
+ * Class:     com_firstworks_sqlrelay_SQLRCursor
  * Method:    getFieldAsBoolean
  * Signature: (JI)Z
  */
@@ -614,6 +638,142 @@ JNIEXPORT jboolean JNICALL Java_com_firstworks_sqlrelay_SQLRCursor_getFieldAsBoo
  */
 JNIEXPORT jboolean JNICALL Java_com_firstworks_sqlrelay_SQLRCursor_getFieldAsBoolean__JLjava_lang_String_2
   (JNIEnv *, jobject, jlong, jstring);
+
+/*
+ * Class:     com_firstworks_sqlrelay_SQLRCursor
+ * Method:    getFieldAsBooleanIgnoringCase
+ * Signature: (JLjava/lang/String;)Z
+ */
+JNIEXPORT jboolean JNICALL Java_com_firstworks_sqlrelay_SQLRCursor_getFieldAsBooleanIgnoringCase
+  (JNIEnv *, jobject, jlong, jstring);
+
+/*
+ * Class:     com_firstworks_sqlrelay_SQLRCursor
+ * Method:    getFieldAsDateYearIgnoringCase
+ * Signature: (JLjava/lang/String;)S
+ */
+JNIEXPORT jshort JNICALL Java_com_firstworks_sqlrelay_SQLRCursor_getFieldAsDateYearIgnoringCase__JLjava_lang_String_2
+  (JNIEnv *, jobject, jlong, jstring);
+
+/*
+ * Class:     com_firstworks_sqlrelay_SQLRCursor
+ * Method:    getFieldAsDateYearIgnoringCase
+ * Signature: (JLjava/lang/String;ZZLjava/lang/String;)S
+ */
+JNIEXPORT jshort JNICALL Java_com_firstworks_sqlrelay_SQLRCursor_getFieldAsDateYearIgnoringCase__JLjava_lang_String_2ZZLjava_lang_String_2
+  (JNIEnv *, jobject, jlong, jstring, jboolean, jboolean, jstring);
+
+/*
+ * Class:     com_firstworks_sqlrelay_SQLRCursor
+ * Method:    getFieldAsDateMonthIgnoringCase
+ * Signature: (JLjava/lang/String;)S
+ */
+JNIEXPORT jshort JNICALL Java_com_firstworks_sqlrelay_SQLRCursor_getFieldAsDateMonthIgnoringCase__JLjava_lang_String_2
+  (JNIEnv *, jobject, jlong, jstring);
+
+/*
+ * Class:     com_firstworks_sqlrelay_SQLRCursor
+ * Method:    getFieldAsDateMonthIgnoringCase
+ * Signature: (JLjava/lang/String;ZZLjava/lang/String;)S
+ */
+JNIEXPORT jshort JNICALL Java_com_firstworks_sqlrelay_SQLRCursor_getFieldAsDateMonthIgnoringCase__JLjava_lang_String_2ZZLjava_lang_String_2
+  (JNIEnv *, jobject, jlong, jstring, jboolean, jboolean, jstring);
+
+/*
+ * Class:     com_firstworks_sqlrelay_SQLRCursor
+ * Method:    getFieldAsDateDayIgnoringCase
+ * Signature: (JLjava/lang/String;)S
+ */
+JNIEXPORT jshort JNICALL Java_com_firstworks_sqlrelay_SQLRCursor_getFieldAsDateDayIgnoringCase__JLjava_lang_String_2
+  (JNIEnv *, jobject, jlong, jstring);
+
+/*
+ * Class:     com_firstworks_sqlrelay_SQLRCursor
+ * Method:    getFieldAsDateDayIgnoringCase
+ * Signature: (JLjava/lang/String;ZZLjava/lang/String;)S
+ */
+JNIEXPORT jshort JNICALL Java_com_firstworks_sqlrelay_SQLRCursor_getFieldAsDateDayIgnoringCase__JLjava_lang_String_2ZZLjava_lang_String_2
+  (JNIEnv *, jobject, jlong, jstring, jboolean, jboolean, jstring);
+
+/*
+ * Class:     com_firstworks_sqlrelay_SQLRCursor
+ * Method:    getFieldAsDateHourIgnoringCase
+ * Signature: (JLjava/lang/String;)S
+ */
+JNIEXPORT jshort JNICALL Java_com_firstworks_sqlrelay_SQLRCursor_getFieldAsDateHourIgnoringCase__JLjava_lang_String_2
+  (JNIEnv *, jobject, jlong, jstring);
+
+/*
+ * Class:     com_firstworks_sqlrelay_SQLRCursor
+ * Method:    getFieldAsDateHourIgnoringCase
+ * Signature: (JLjava/lang/String;ZZLjava/lang/String;)S
+ */
+JNIEXPORT jshort JNICALL Java_com_firstworks_sqlrelay_SQLRCursor_getFieldAsDateHourIgnoringCase__JLjava_lang_String_2ZZLjava_lang_String_2
+  (JNIEnv *, jobject, jlong, jstring, jboolean, jboolean, jstring);
+
+/*
+ * Class:     com_firstworks_sqlrelay_SQLRCursor
+ * Method:    getFieldAsDateMinuteIgnoringCase
+ * Signature: (JLjava/lang/String;)S
+ */
+JNIEXPORT jshort JNICALL Java_com_firstworks_sqlrelay_SQLRCursor_getFieldAsDateMinuteIgnoringCase__JLjava_lang_String_2
+  (JNIEnv *, jobject, jlong, jstring);
+
+/*
+ * Class:     com_firstworks_sqlrelay_SQLRCursor
+ * Method:    getFieldAsDateMinuteIgnoringCase
+ * Signature: (JLjava/lang/String;ZZLjava/lang/String;)S
+ */
+JNIEXPORT jshort JNICALL Java_com_firstworks_sqlrelay_SQLRCursor_getFieldAsDateMinuteIgnoringCase__JLjava_lang_String_2ZZLjava_lang_String_2
+  (JNIEnv *, jobject, jlong, jstring, jboolean, jboolean, jstring);
+
+/*
+ * Class:     com_firstworks_sqlrelay_SQLRCursor
+ * Method:    getFieldAsDateSecondIgnoringCase
+ * Signature: (JLjava/lang/String;)S
+ */
+JNIEXPORT jshort JNICALL Java_com_firstworks_sqlrelay_SQLRCursor_getFieldAsDateSecondIgnoringCase__JLjava_lang_String_2
+  (JNIEnv *, jobject, jlong, jstring);
+
+/*
+ * Class:     com_firstworks_sqlrelay_SQLRCursor
+ * Method:    getFieldAsDateSecondIgnoringCase
+ * Signature: (JLjava/lang/String;ZZLjava/lang/String;)S
+ */
+JNIEXPORT jshort JNICALL Java_com_firstworks_sqlrelay_SQLRCursor_getFieldAsDateSecondIgnoringCase__JLjava_lang_String_2ZZLjava_lang_String_2
+  (JNIEnv *, jobject, jlong, jstring, jboolean, jboolean, jstring);
+
+/*
+ * Class:     com_firstworks_sqlrelay_SQLRCursor
+ * Method:    getFieldAsDateMicrosecondIgnoringCase
+ * Signature: (JLjava/lang/String;)I
+ */
+JNIEXPORT jint JNICALL Java_com_firstworks_sqlrelay_SQLRCursor_getFieldAsDateMicrosecondIgnoringCase__JLjava_lang_String_2
+  (JNIEnv *, jobject, jlong, jstring);
+
+/*
+ * Class:     com_firstworks_sqlrelay_SQLRCursor
+ * Method:    getFieldAsDateMicrosecondIgnoringCase
+ * Signature: (JLjava/lang/String;ZZLjava/lang/String;)I
+ */
+JNIEXPORT jint JNICALL Java_com_firstworks_sqlrelay_SQLRCursor_getFieldAsDateMicrosecondIgnoringCase__JLjava_lang_String_2ZZLjava_lang_String_2
+  (JNIEnv *, jobject, jlong, jstring, jboolean, jboolean, jstring);
+
+/*
+ * Class:     com_firstworks_sqlrelay_SQLRCursor
+ * Method:    getFieldAsDateIsNegativeIgnoringCase
+ * Signature: (JLjava/lang/String;)Z
+ */
+JNIEXPORT jboolean JNICALL Java_com_firstworks_sqlrelay_SQLRCursor_getFieldAsDateIsNegativeIgnoringCase__JLjava_lang_String_2
+  (JNIEnv *, jobject, jlong, jstring);
+
+/*
+ * Class:     com_firstworks_sqlrelay_SQLRCursor
+ * Method:    getFieldAsDateIsNegativeIgnoringCase
+ * Signature: (JLjava/lang/String;ZZLjava/lang/String;)Z
+ */
+JNIEXPORT jboolean JNICALL Java_com_firstworks_sqlrelay_SQLRCursor_getFieldAsDateIsNegativeIgnoringCase__JLjava_lang_String_2ZZLjava_lang_String_2
+  (JNIEnv *, jobject, jlong, jstring, jboolean, jboolean, jstring);
 
 /*
  * Class:     com_firstworks_sqlrelay_SQLRCursor

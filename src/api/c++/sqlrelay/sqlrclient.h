@@ -1365,8 +1365,13 @@ class SQLRCLIENT_DLLSPEC sqlrcursor : public object {
 		/** Returns the specified field as a string. */
 		const char	*getField(uint64_t row, uint32_t col);
 
-		/** Returns the specified field as a string */
+		/** Returns the specified field as a string. */
 		const char	*getField(uint64_t row, const char *col);
+
+		/** Returns the specified field as a string, ignoring
+		 *  the case of "col". */
+		const char	*getFieldIgnoringCase(
+					uint64_t row, const char *col);
 
 		/** Returns the specified field as an integer. */
 		int64_t	getFieldAsInteger(uint64_t row, uint32_t col);
@@ -1374,17 +1379,32 @@ class SQLRCLIENT_DLLSPEC sqlrcursor : public object {
 		/** Returns the specified field as an integer. */
 		int64_t	getFieldAsInteger(uint64_t row, const char *col);
 
+		/** Returns the specified field as an integer, ignoring
+		 *  the case of "col". */
+		int64_t	getFieldAsIntegerIgnoringCase(
+					uint64_t row, const char *col);
+
 		/** Returns the specified field as a decimal. */
 		double	getFieldAsDouble(uint64_t row, uint32_t col);
 
 		/** Returns the specified field as a decimal. */
 		double	getFieldAsDouble(uint64_t row, const char *col);
 
+		/** Returns the specified field as a decimal, ignoring
+		 *  the case of "col". */
+		double	getFieldAsDoubleIgnoringCase(
+					uint64_t row, const char *col);
+
 		/** Returns the specified field as a boolean. */
 		bool	getFieldAsBoolean(uint64_t row, uint32_t col);
 
 		/** Returns the specified field as a boolean. */
 		bool	getFieldAsBoolean(uint64_t row, const char *col);
+
+		/** Returns the specified field as a boolean, ignoring
+		 *  the case of "col". */
+		bool	getFieldAsBooleanIgnoringCase(
+					uint64_t row, const char *col);
 
 		/** Interprets the specified field as a date and
 		 *  populates its broken-down parts.
@@ -1442,6 +1462,20 @@ class SQLRCLIENT_DLLSPEC sqlrcursor : public object {
 					bool *isnegative);
 
 		/** Interprets the specified field as a date and
+		 *  populates its broken-down parts, ignoring
+		 *  the case of "col".
+		 *
+		 *  Returns true if it was able to interpret the
+		 *  field as a date, and false otherwise. */
+		bool	getFieldAsDateIgnoringCase(
+					uint64_t row, const char *col,
+					int16_t *year, int16_t *month,
+					int16_t *day, int16_t *hour,
+					int16_t *minute, int16_t *second,
+					int32_t *microsecond,
+					bool *isnegative);
+
+		/** Interprets the specified field as a date and
 		 *  populates its broken-down parts.
 		 *
 		 *  If "ddmm" is set true then the date format
@@ -1464,6 +1498,39 @@ class SQLRCLIENT_DLLSPEC sqlrcursor : public object {
 		 *  Returns true if it was able to interpret the
 		 *  field as a date, and false otherwise. */
 		bool	getFieldAsDate(uint64_t row, const char *col,
+					bool ddmm, bool yyyyddmm,
+					const char *datedelimiters,
+					int16_t *year, int16_t *month,
+					int16_t *day, int16_t *hour,
+					int16_t *minute, int16_t *second,
+					int32_t *microsecond,
+					bool *isnegative);
+
+		/** Interprets the specified field as a date and
+		 *  populates its broken-down parts, ignoring
+		 *  the case of "col".
+		 *
+		 *  If "ddmm" is set true then the date format
+		 *  is assumed to be dd/mm/yyyy rather than
+		 *  mm/dd/yyyy when a date with a trailing year
+		 *  is encountered.
+		 *
+		 *  If "yyyyddmm" is set true then the date
+		 *  format is assumed to be yyyy/dd/mm rather
+		 *  than yyyy/mm/dd when a date with a leading
+		 *  year is encountered.
+		 *
+		 *  "datedelimiters" may be set to a set of
+		 *  valid date delimiters and may contain any
+		 *  combination of '/', '-', '.', and ':'.
+		 *  Eg. "/-" would mean that only '/' and '-'
+		 *  are valid date delimiters.  If left NULL
+		 *  then it defaults to "/-.:".
+		 *
+		 *  Returns true if it was able to interpret the
+		 *  field as a date, and false otherwise. */
+		bool	getFieldAsDateIgnoringCase(
+					uint64_t row, const char *col,
 					bool ddmm, bool yyyyddmm,
 					const char *datedelimiters,
 					int16_t *year, int16_t *month,
@@ -1505,6 +1572,13 @@ class SQLRCLIENT_DLLSPEC sqlrcursor : public object {
 					const char *col);
 
 		/** Interprets the specified field as a date
+		 *  and returns the year component, ignoring
+		 *  the case of "col". */
+		int16_t	getFieldAsDateYearIgnoringCase(
+					uint64_t row,
+					const char *col);
+
+		/** Interprets the specified field as a date
 		 *  and returns the year component.
 		 *
 		 *  If "ddmm" is set true then the date format
@@ -1524,6 +1598,32 @@ class SQLRCLIENT_DLLSPEC sqlrcursor : public object {
 		 *  are valid date delimiters.  If left NULL
 		 *  then it defaults to "/-.:". */
 		int16_t	getFieldAsDateYear(uint64_t row,
+					const char *col,
+					bool ddmm, bool yyyyddmm,
+					const char *datedelimiters);
+
+		/** Interprets the specified field as a date
+		 *  and returns the year component, ignoring
+		 *  the case of "col".
+		 *
+		 *  If "ddmm" is set true then the date format
+		 *  is assumed to be dd/mm/yyyy rather than
+		 *  mm/dd/yyyy when a date with a trailing year
+		 *  is encountered.
+		 *
+		 *  If "yyyyddmm" is set true then the date
+		 *  format is assumed to be yyyy/dd/mm rather
+		 *  than yyyy/mm/dd when a date with a leading
+		 *  year is encountered.
+		 *
+		 *  "datedelimiters" may be set to a set of
+		 *  valid date delimiters and may contain any
+		 *  combination of '/', '-', '.', and ':'.
+		 *  Eg. "/-" would mean that only '/' and '-'
+		 *  are valid date delimiters.  If left NULL
+		 *  then it defaults to "/-.:". */
+		int16_t	getFieldAsDateYearIgnoringCase(
+					uint64_t row,
 					const char *col,
 					bool ddmm, bool yyyyddmm,
 					const char *datedelimiters);
@@ -1561,6 +1661,13 @@ class SQLRCLIENT_DLLSPEC sqlrcursor : public object {
 					const char *col);
 
 		/** Interprets the specified field as a date
+		 *  and returns the month component, ignoring
+		 *  the case of "col". */
+		int16_t	getFieldAsDateMonthIgnoringCase(
+					uint64_t row,
+					const char *col);
+
+		/** Interprets the specified field as a date
 		 *  and returns the month component.
 		 *
 		 *  If "ddmm" is set true then the date format
@@ -1580,6 +1687,32 @@ class SQLRCLIENT_DLLSPEC sqlrcursor : public object {
 		 *  are valid date delimiters.  If left NULL
 		 *  then it defaults to "/-.:". */
 		int16_t	getFieldAsDateMonth(uint64_t row,
+					const char *col,
+					bool ddmm, bool yyyyddmm,
+					const char *datedelimiters);
+
+		/** Interprets the specified field as a date
+		 *  and returns the month component, ignoring
+		 *  the case of "col".
+		 *
+		 *  If "ddmm" is set true then the date format
+		 *  is assumed to be dd/mm/yyyy rather than
+		 *  mm/dd/yyyy when a date with a trailing year
+		 *  is encountered.
+		 *
+		 *  If "yyyyddmm" is set true then the date
+		 *  format is assumed to be yyyy/dd/mm rather
+		 *  than yyyy/mm/dd when a date with a leading
+		 *  year is encountered.
+		 *
+		 *  "datedelimiters" may be set to a set of
+		 *  valid date delimiters and may contain any
+		 *  combination of '/', '-', '.', and ':'.
+		 *  Eg. "/-" would mean that only '/' and '-'
+		 *  are valid date delimiters.  If left NULL
+		 *  then it defaults to "/-.:". */
+		int16_t	getFieldAsDateMonthIgnoringCase(
+					uint64_t row,
 					const char *col,
 					bool ddmm, bool yyyyddmm,
 					const char *datedelimiters);
@@ -1617,6 +1750,13 @@ class SQLRCLIENT_DLLSPEC sqlrcursor : public object {
 					const char *col);
 
 		/** Interprets the specified field as a date
+		 *  and returns the day component, ignoring
+		 *  the case of "col". */
+		int16_t	getFieldAsDateDayIgnoringCase(
+					uint64_t row,
+					const char *col);
+
+		/** Interprets the specified field as a date
 		 *  and returns the day component.
 		 *
 		 *  If "ddmm" is set true then the date format
@@ -1636,6 +1776,32 @@ class SQLRCLIENT_DLLSPEC sqlrcursor : public object {
 		 *  are valid date delimiters.  If left NULL
 		 *  then it defaults to "/-.:". */
 		int16_t	getFieldAsDateDay(uint64_t row,
+					const char *col,
+					bool ddmm, bool yyyyddmm,
+					const char *datedelimiters);
+
+		/** Interprets the specified field as a date
+		 *  and returns the day component, ignoring
+		 *  the case of "col".
+		 *
+		 *  If "ddmm" is set true then the date format
+		 *  is assumed to be dd/mm/yyyy rather than
+		 *  mm/dd/yyyy when a date with a trailing year
+		 *  is encountered.
+		 *
+		 *  If "yyyyddmm" is set true then the date
+		 *  format is assumed to be yyyy/dd/mm rather
+		 *  than yyyy/mm/dd when a date with a leading
+		 *  year is encountered.
+		 *
+		 *  "datedelimiters" may be set to a set of
+		 *  valid date delimiters and may contain any
+		 *  combination of '/', '-', '.', and ':'.
+		 *  Eg. "/-" would mean that only '/' and '-'
+		 *  are valid date delimiters.  If left NULL
+		 *  then it defaults to "/-.:". */
+		int16_t	getFieldAsDateDayIgnoringCase(
+					uint64_t row,
 					const char *col,
 					bool ddmm, bool yyyyddmm,
 					const char *datedelimiters);
@@ -1673,6 +1839,13 @@ class SQLRCLIENT_DLLSPEC sqlrcursor : public object {
 					const char *col);
 
 		/** Interprets the specified field as a date
+		 *  and returns the hour component, ignoring
+		 *  the case of "col". */
+		int16_t	getFieldAsDateHourIgnoringCase(
+					uint64_t row,
+					const char *col);
+
+		/** Interprets the specified field as a date
 		 *  and returns the hour component.
 		 *
 		 *  If "ddmm" is set true then the date format
@@ -1692,6 +1865,32 @@ class SQLRCLIENT_DLLSPEC sqlrcursor : public object {
 		 *  are valid date delimiters.  If left NULL
 		 *  then it defaults to "/-.:". */
 		int16_t	getFieldAsDateHour(uint64_t row,
+					const char *col,
+					bool ddmm, bool yyyyddmm,
+					const char *datedelimiters);
+
+		/** Interprets the specified field as a date
+		 *  and returns the hour component, ignoring
+		 *  the case of "col".
+		 *
+		 *  If "ddmm" is set true then the date format
+		 *  is assumed to be dd/mm/yyyy rather than
+		 *  mm/dd/yyyy when a date with a trailing year
+		 *  is encountered.
+		 *
+		 *  If "yyyyddmm" is set true then the date
+		 *  format is assumed to be yyyy/dd/mm rather
+		 *  than yyyy/mm/dd when a date with a leading
+		 *  year is encountered.
+		 *
+		 *  "datedelimiters" may be set to a set of
+		 *  valid date delimiters and may contain any
+		 *  combination of '/', '-', '.', and ':'.
+		 *  Eg. "/-" would mean that only '/' and '-'
+		 *  are valid date delimiters.  If left NULL
+		 *  then it defaults to "/-.:". */
+		int16_t	getFieldAsDateHourIgnoringCase(
+					uint64_t row,
 					const char *col,
 					bool ddmm, bool yyyyddmm,
 					const char *datedelimiters);
@@ -1729,6 +1928,13 @@ class SQLRCLIENT_DLLSPEC sqlrcursor : public object {
 					const char *col);
 
 		/** Interprets the specified field as a date
+		 *  and returns the minute component, ignoring
+		 *  the case of "col". */
+		int16_t	getFieldAsDateMinuteIgnoringCase(
+					uint64_t row,
+					const char *col);
+
+		/** Interprets the specified field as a date
 		 *  and returns the minute component.
 		 *
 		 *  If "ddmm" is set true then the date format
@@ -1748,6 +1954,32 @@ class SQLRCLIENT_DLLSPEC sqlrcursor : public object {
 		 *  are valid date delimiters.  If left NULL
 		 *  then it defaults to "/-.:". */
 		int16_t	getFieldAsDateMinute(uint64_t row,
+					const char *col,
+					bool ddmm, bool yyyyddmm,
+					const char *datedelimiters);
+
+		/** Interprets the specified field as a date
+		 *  and returns the minute component, ignoring
+		 *  the case of "col".
+		 *
+		 *  If "ddmm" is set true then the date format
+		 *  is assumed to be dd/mm/yyyy rather than
+		 *  mm/dd/yyyy when a date with a trailing year
+		 *  is encountered.
+		 *
+		 *  If "yyyyddmm" is set true then the date
+		 *  format is assumed to be yyyy/dd/mm rather
+		 *  than yyyy/mm/dd when a date with a leading
+		 *  year is encountered.
+		 *
+		 *  "datedelimiters" may be set to a set of
+		 *  valid date delimiters and may contain any
+		 *  combination of '/', '-', '.', and ':'.
+		 *  Eg. "/-" would mean that only '/' and '-'
+		 *  are valid date delimiters.  If left NULL
+		 *  then it defaults to "/-.:". */
+		int16_t	getFieldAsDateMinuteIgnoringCase(
+					uint64_t row,
 					const char *col,
 					bool ddmm, bool yyyyddmm,
 					const char *datedelimiters);
@@ -1785,6 +2017,13 @@ class SQLRCLIENT_DLLSPEC sqlrcursor : public object {
 					const char *col);
 
 		/** Interprets the specified field as a date
+		 *  and returns the second component, ignoring
+		 *  the case of "col". */
+		int16_t	getFieldAsDateSecondIgnoringCase(
+					uint64_t row,
+					const char *col);
+
+		/** Interprets the specified field as a date
 		 *  and returns the second component.
 		 *
 		 *  If "ddmm" is set true then the date format
@@ -1809,6 +2048,32 @@ class SQLRCLIENT_DLLSPEC sqlrcursor : public object {
 					const char *datedelimiters);
 
 		/** Interprets the specified field as a date
+		 *  and returns the second component, ignoring
+		 *  the case of "col".
+		 *
+		 *  If "ddmm" is set true then the date format
+		 *  is assumed to be dd/mm/yyyy rather than
+		 *  mm/dd/yyyy when a date with a trailing year
+		 *  is encountered.
+		 *
+		 *  If "yyyyddmm" is set true then the date
+		 *  format is assumed to be yyyy/dd/mm rather
+		 *  than yyyy/mm/dd when a date with a leading
+		 *  year is encountered.
+		 *
+		 *  "datedelimiters" may be set to a set of
+		 *  valid date delimiters and may contain any
+		 *  combination of '/', '-', '.', and ':'.
+		 *  Eg. "/-" would mean that only '/' and '-'
+		 *  are valid date delimiters.  If left NULL
+		 *  then it defaults to "/-.:". */
+		int16_t	getFieldAsDateSecondIgnoringCase(
+					uint64_t row,
+					const char *col,
+					bool ddmm, bool yyyyddmm,
+					const char *datedelimiters);
+
+		/** Interprets the specified field as a date
 		 *  and returns the microsecond component. */
 		int32_t	getFieldAsDateMicrosecond(uint64_t row,
 						uint32_t col);
@@ -1843,6 +2108,13 @@ class SQLRCLIENT_DLLSPEC sqlrcursor : public object {
 						const char *col);
 
 		/** Interprets the specified field as a date
+		 *  and returns the microsecond component, ignoring
+		 *  the case of "col". */
+		int32_t	getFieldAsDateMicrosecondIgnoringCase(
+						uint64_t row,
+						const char *col);
+
+		/** Interprets the specified field as a date
 		 *  and returns the microsecond component.
 		 *
 		 *  If "ddmm" is set true then the date format
@@ -1862,6 +2134,32 @@ class SQLRCLIENT_DLLSPEC sqlrcursor : public object {
 		 *  are valid date delimiters.  If left NULL
 		 *  then it defaults to "/-.:". */
 		int32_t	getFieldAsDateMicrosecond(uint64_t row,
+					const char *col,
+					bool ddmm, bool yyyyddmm,
+					const char *datedelimiters);
+
+		/** Interprets the specified field as a date
+		 *  and returns the microsecond component, ignoring
+		 *  the case of "col".
+		 *
+		 *  If "ddmm" is set true then the date format
+		 *  is assumed to be dd/mm/yyyy rather than
+		 *  mm/dd/yyyy when a date with a trailing year
+		 *  is encountered.
+		 *
+		 *  If "yyyyddmm" is set true then the date
+		 *  format is assumed to be yyyy/dd/mm rather
+		 *  than yyyy/mm/dd when a date with a leading
+		 *  year is encountered.
+		 *
+		 *  "datedelimiters" may be set to a set of
+		 *  valid date delimiters and may contain any
+		 *  combination of '/', '-', '.', and ':'.
+		 *  Eg. "/-" would mean that only '/' and '-'
+		 *  are valid date delimiters.  If left NULL
+		 *  then it defaults to "/-.:". */
+		int32_t	getFieldAsDateMicrosecondIgnoringCase(
+					uint64_t row,
 					const char *col,
 					bool ddmm, bool yyyyddmm,
 					const char *datedelimiters);
@@ -1905,6 +2203,13 @@ class SQLRCLIENT_DLLSPEC sqlrcursor : public object {
 
 		/** Interprets the specified field as a date
 		 *  and returns whether the hour component
+		 *  is negative, ignoring the case of "col". */
+		bool	getFieldAsDateIsNegativeIgnoringCase(
+						uint64_t row,
+						const char *col);
+
+		/** Interprets the specified field as a date
+		 *  and returns whether the hour component
 		 *  is negative.
 		 *
 		 *  If "ddmm" is set true then the date format
@@ -1924,6 +2229,32 @@ class SQLRCLIENT_DLLSPEC sqlrcursor : public object {
 		 *  are valid date delimiters.  If left NULL
 		 *  then it defaults to "/-.:". */
 		bool	getFieldAsDateIsNegative(uint64_t row,
+					const char *col,
+					bool ddmm, bool yyyyddmm,
+					const char *datedelimiters);
+
+		/** Interprets the specified field as a date
+		 *  and returns whether the hour component
+		 *  is negative, ignoring the case of "col".
+		 *
+		 *  If "ddmm" is set true then the date format
+		 *  is assumed to be dd/mm/yyyy rather than
+		 *  mm/dd/yyyy when a date with a trailing year
+		 *  is encountered.
+		 *
+		 *  If "yyyyddmm" is set true then the date
+		 *  format is assumed to be yyyy/dd/mm rather
+		 *  than yyyy/mm/dd when a date with a leading
+		 *  year is encountered.
+		 *
+		 *  "datedelimiters" may be set to a set of
+		 *  valid date delimiters and may contain any
+		 *  combination of '/', '-', '.', and ':'.
+		 *  Eg. "/-" would mean that only '/' and '-'
+		 *  are valid date delimiters.  If left NULL
+		 *  then it defaults to "/-.:". */
+		bool	getFieldAsDateIsNegativeIgnoringCase(
+					uint64_t row,
 					const char *col,
 					bool ddmm, bool yyyyddmm,
 					const char *datedelimiters);

@@ -1754,7 +1754,7 @@ class sqlite extends sqlrtest {
 		System.out.println("VERSION COLUMN LIST:");
 		// sqlrelay doesn't support this yet
 		if (!issqlrelay) {
-			rs=md.getVersionColumns(null,null,"%");
+			rs=md.getVersionColumns(null,null,"testtable");
 			assertTrue((rs!=null));
 			rsmd=rs.getMetaData();
 			assertTrue((rsmd!=null));
@@ -1785,7 +1785,7 @@ class sqlite extends sqlrtest {
 		System.out.println("BEST ROW IDENTIFIER LIST:");
 		// sqlrelay doesn't support this yet
 		if (!issqlrelay) {
-			rs=md.getBestRowIdentifier(null,null,"%",
+			rs=md.getBestRowIdentifier(null,null,"testtable",
 					DatabaseMetaData.bestRowTemporary,
 					true);
 			assertTrue((rs!=null));
@@ -1914,7 +1914,7 @@ class sqlite extends sqlrtest {
 		System.out.println("EXPORTED KEY LIST:");
 		// sqlrelay doesn't support this yet
 		if (!issqlrelay) {
-			rs=md.getExportedKeys(null,null,"%");
+			rs=md.getExportedKeys(null,null,"testtable");
 			assertTrue((rs!=null));
 			rsmd=rs.getMetaData();
 			assertTrue((rsmd!=null));
@@ -1943,7 +1943,7 @@ class sqlite extends sqlrtest {
 		System.out.println("IMPORTED KEY LIST:");
 		// sqlrelay doesn't support this yet
 		if (!issqlrelay) {
-			rs=md.getImportedKeys(null,null,"%");
+			rs=md.getImportedKeys(null,null,"testtable");
 			assertTrue((rs!=null));
 			rsmd=rs.getMetaData();
 			assertTrue((rsmd!=null));

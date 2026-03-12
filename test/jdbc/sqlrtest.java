@@ -28,7 +28,7 @@ class sqlrtest {
 			return;
 		}
 
-		if (actual.equals(expected)) {
+		if (actual!=null && actual.equals(expected)) {
 			System.out.print(success+" ");
 		} else {
 			System.out.println(failure);
@@ -52,7 +52,7 @@ class sqlrtest {
 			return;
 		}
 
-		if (actual.regionMatches(0,expected,0,length)) {
+		if (actual!=null && actual.regionMatches(0,expected,0,length)) {
 			System.out.print(success+" ");
 		} else {
 			System.out.println(failure);
@@ -75,7 +75,7 @@ class sqlrtest {
 			return;
 		}
 
-		if (actual.equals(expected)) {
+		if (actual!=null && actual.equals(expected)) {
 			System.out.print(success+" ");
 		} else {
 			System.out.println(failure);

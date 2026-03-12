@@ -349,13 +349,19 @@ proc errorNumber {}
 proc getFieldByIndex {row  col} 
 
 # Returns the specified field as a string
-proc getFieldByName {row col} 
+proc getFieldByName {row col}
+
+# Returns the specified field as a string, ignoring the case of "col".
+proc getFieldByNameIgnoringCase {row col}
 
 # Returns the specified field as an integer.
 proc getFieldAsIntegerByIndex {row  col} 
 
 # Returns the specified field as an integer.
-proc getFieldAsIntegerByName {row col} 
+proc getFieldAsIntegerByName {row col}
+
+# Returns the specified field as an integer, ignoring the case of "col".
+proc getFieldAsIntegerByNameIgnoringCase {row col} 
 
 # Returns the specified field as a decimal.
 proc getFieldAsDoubleByIndex {row  col} 
@@ -363,11 +369,17 @@ proc getFieldAsDoubleByIndex {row  col}
 # Returns the specified field as a decimal.
 proc getFieldAsDoubleByName {row col}
 
+# Returns the specified field as a decimal, ignoring the case of "col".
+proc getFieldAsDoubleByNameIgnoringCase {row col}
+
 # Returns the specified field as a boolean.
 proc getFieldAsBooleanByIndex {row col}
 
 # Returns the specified field as a boolean.
 proc getFieldAsBooleanByName {row col}
+
+# Returns the specified field as a boolean, ignoring the case of "col".
+proc getFieldAsBooleanByNameIgnoringCase {row col}
 
 # Interprets the specified field as a date
 # and returns the year component.
@@ -378,12 +390,20 @@ proc getFieldAsDateYearByIndex {row col}
 proc getFieldAsDateYearByName {row col}
 
 # Interprets the specified field as a date
+# and returns the year component, ignoring the case of "col".
+proc getFieldAsDateYearByNameIgnoringCase {row col}
+
+# Interprets the specified field as a date
 # and returns the year component.
 proc getFieldAsDateYearByIndexWithDdMm {row col ddmm yyyyddmm datedelimiters}
 
 # Interprets the specified field as a date
 # and returns the year component.
 proc getFieldAsDateYearByNameWithDdMm {row col ddmm yyyyddmm datedelimiters}
+
+# Interprets the specified field as a date
+# and returns the year component, ignoring the case of "col".
+proc getFieldAsDateYearByNameWithDdMmIgnoringCase {row col ddmm yyyyddmm datedelimiters}
 
 # Interprets the specified field as a date
 # and returns the month component.
@@ -394,12 +414,20 @@ proc getFieldAsDateMonthByIndex {row col}
 proc getFieldAsDateMonthByName {row col}
 
 # Interprets the specified field as a date
+# and returns the month component, ignoring the case of "col".
+proc getFieldAsDateMonthByNameIgnoringCase {row col}
+
+# Interprets the specified field as a date
 # and returns the month component.
 proc getFieldAsDateMonthByIndexWithDdMm {row col ddmm yyyyddmm datedelimiters}
 
 # Interprets the specified field as a date
 # and returns the month component.
 proc getFieldAsDateMonthByNameWithDdMm {row col ddmm yyyyddmm datedelimiters}
+
+# Interprets the specified field as a date
+# and returns the month component, ignoring the case of "col".
+proc getFieldAsDateMonthByNameWithDdMmIgnoringCase {row col ddmm yyyyddmm datedelimiters}
 
 # Interprets the specified field as a date
 # and returns the day component.
@@ -410,12 +438,20 @@ proc getFieldAsDateDayByIndex {row col}
 proc getFieldAsDateDayByName {row col}
 
 # Interprets the specified field as a date
+# and returns the day component, ignoring the case of "col".
+proc getFieldAsDateDayByNameIgnoringCase {row col}
+
+# Interprets the specified field as a date
 # and returns the day component.
 proc getFieldAsDateDayByIndexWithDdMm {row col ddmm yyyyddmm datedelimiters}
 
 # Interprets the specified field as a date
 # and returns the day component.
 proc getFieldAsDateDayByNameWithDdMm {row col ddmm yyyyddmm datedelimiters}
+
+# Interprets the specified field as a date
+# and returns the day component, ignoring the case of "col".
+proc getFieldAsDateDayByNameWithDdMmIgnoringCase {row col ddmm yyyyddmm datedelimiters}
 
 # Interprets the specified field as a date
 # and returns the hour component.
@@ -426,12 +462,20 @@ proc getFieldAsDateHourByIndex {row col}
 proc getFieldAsDateHourByName {row col}
 
 # Interprets the specified field as a date
+# and returns the hour component, ignoring the case of "col".
+proc getFieldAsDateHourByNameIgnoringCase {row col}
+
+# Interprets the specified field as a date
 # and returns the hour component.
 proc getFieldAsDateHourByIndexWithDdMm {row col ddmm yyyyddmm datedelimiters}
 
 # Interprets the specified field as a date
 # and returns the hour component.
 proc getFieldAsDateHourByNameWithDdMm {row col ddmm yyyyddmm datedelimiters}
+
+# Interprets the specified field as a date
+# and returns the hour component, ignoring the case of "col".
+proc getFieldAsDateHourByNameWithDdMmIgnoringCase {row col ddmm yyyyddmm datedelimiters}
 
 # Interprets the specified field as a date
 # and returns the minute component.
@@ -442,12 +486,20 @@ proc getFieldAsDateMinuteByIndex {row col}
 proc getFieldAsDateMinuteByName {row col}
 
 # Interprets the specified field as a date
+# and returns the minute component, ignoring the case of "col".
+proc getFieldAsDateMinuteByNameIgnoringCase {row col}
+
+# Interprets the specified field as a date
 # and returns the minute component.
 proc getFieldAsDateMinuteByIndexWithDdMm {row col ddmm yyyyddmm datedelimiters}
 
 # Interprets the specified field as a date
 # and returns the minute component.
 proc getFieldAsDateMinuteByNameWithDdMm {row col ddmm yyyyddmm datedelimiters}
+
+# Interprets the specified field as a date
+# and returns the minute component, ignoring the case of "col".
+proc getFieldAsDateMinuteByNameWithDdMmIgnoringCase {row col ddmm yyyyddmm datedelimiters}
 
 # Interprets the specified field as a date
 # and returns the second component.
@@ -458,12 +510,20 @@ proc getFieldAsDateSecondByIndex {row col}
 proc getFieldAsDateSecondByName {row col}
 
 # Interprets the specified field as a date
+# and returns the second component, ignoring the case of "col".
+proc getFieldAsDateSecondByNameIgnoringCase {row col}
+
+# Interprets the specified field as a date
 # and returns the second component.
 proc getFieldAsDateSecondByIndexWithDdMm {row col ddmm yyyyddmm datedelimiters}
 
 # Interprets the specified field as a date
 # and returns the second component.
 proc getFieldAsDateSecondByNameWithDdMm {row col ddmm yyyyddmm datedelimiters}
+
+# Interprets the specified field as a date
+# and returns the second component, ignoring the case of "col".
+proc getFieldAsDateSecondByNameWithDdMmIgnoringCase {row col ddmm yyyyddmm datedelimiters}
 
 # Interprets the specified field as a date
 # and returns the microsecond component.
@@ -474,12 +534,20 @@ proc getFieldAsDateMicrosecondByIndex {row col}
 proc getFieldAsDateMicrosecondByName {row col}
 
 # Interprets the specified field as a date
+# and returns the microsecond component, ignoring the case of "col".
+proc getFieldAsDateMicrosecondByNameIgnoringCase {row col}
+
+# Interprets the specified field as a date
 # and returns the microsecond component.
 proc getFieldAsDateMicrosecondByIndexWithDdMm {row col ddmm yyyyddmm datedelimiters}
 
 # Interprets the specified field as a date
 # and returns the microsecond component.
 proc getFieldAsDateMicrosecondByNameWithDdMm {row col ddmm yyyyddmm datedelimiters}
+
+# Interprets the specified field as a date
+# and returns the microsecond component, ignoring the case of "col".
+proc getFieldAsDateMicrosecondByNameWithDdMmIgnoringCase {row col ddmm yyyyddmm datedelimiters}
 
 # Interprets the specified field as a date
 # and returns whether the hour component
@@ -493,6 +561,11 @@ proc getFieldAsDateIsNegativeByName {row col}
 
 # Interprets the specified field as a date
 # and returns whether the hour component
+# is negative, ignoring the case of "col".
+proc getFieldAsDateIsNegativeByNameIgnoringCase {row col}
+
+# Interprets the specified field as a date
+# and returns whether the hour component
 # is negative.
 proc getFieldAsDateIsNegativeByIndexWithDdMm {row col ddmm yyyyddmm datedelimiters}
 
@@ -500,6 +573,11 @@ proc getFieldAsDateIsNegativeByIndexWithDdMm {row col ddmm yyyyddmm datedelimite
 # and returns whether the hour component
 # is negative.
 proc getFieldAsDateIsNegativeByNameWithDdMm {row col ddmm yyyyddmm datedelimiters}
+
+# Interprets the specified field as a date
+# and returns whether the hour component
+# is negative, ignoring the case of "col".
+proc getFieldAsDateIsNegativeByNameWithDdMmIgnoringCase {row col ddmm yyyyddmm datedelimiters}
 
 
 

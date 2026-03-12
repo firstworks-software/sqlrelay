@@ -1716,6 +1716,31 @@ static PyObject *getField(PyObject *self, PyObject *args) {
   return buildConstPyStringT(rc, rl, type);
 }
 
+static PyObject *getFieldIgnoringCase(PyObject *self, PyObject *args) {
+  long sqlrcur;
+  const char *rc=NULL;
+  uint64_t row;
+  PyObject *col;
+  if (!PyArg_ParseTuple(args,
+#ifdef SUPPORTS_UNSIGNED
+        "lKO",
+#else
+        "lLO",
+#endif
+        &sqlrcur, &row, &col))
+    return NULL;
+  Py_BEGIN_ALLOW_THREADS
+  if (PyString_Check(col)) {
+    rc=((sqlrcursor *)sqlrcur)->getFieldIgnoringCase(row, PyString_AsString(col));
+  }
+  Py_END_ALLOW_THREADS
+  if (!rc) {
+    Py_INCREF(Py_None);
+    return Py_None;
+  }
+  return Py_BuildValue("s", rc);
+}
+
 static PyObject *getFieldAsInteger(PyObject *self, PyObject *args) {
   long sqlrcur;
   int64_t rc=0;
@@ -1734,6 +1759,28 @@ static PyObject *getFieldAsInteger(PyObject *self, PyObject *args) {
     rc=((sqlrcursor *)sqlrcur)->getFieldAsInteger(row, PyString_AsString(col));
   } else if (PyInt_Check(col)) {
     rc=((sqlrcursor *)sqlrcur)->getFieldAsInteger(row, PyInt_AsLong(col));
+  }
+  Py_END_ALLOW_THREADS
+  // FIXME: lame, python doesn't support building values from int64_t's
+  return Py_BuildValue("l", (long)rc);
+}
+
+static PyObject *getFieldAsIntegerIgnoringCase(PyObject *self, PyObject *args) {
+  long sqlrcur;
+  int64_t rc=0;
+  uint64_t row;
+  PyObject *col;
+  if (!PyArg_ParseTuple(args,
+#ifdef SUPPORTS_UNSIGNED
+        "lKO",
+#else
+        "lLO",
+#endif
+        &sqlrcur, &row, &col))
+    return NULL;
+  Py_BEGIN_ALLOW_THREADS
+  if (PyString_Check(col)) {
+    rc=((sqlrcursor *)sqlrcur)->getFieldAsIntegerIgnoringCase(row, PyString_AsString(col));
   }
   Py_END_ALLOW_THREADS
   // FIXME: lame, python doesn't support building values from int64_t's
@@ -1763,6 +1810,27 @@ static PyObject *getFieldAsDouble(PyObject *self, PyObject *args) {
   return Py_BuildValue("d", rc);
 }
 
+static PyObject *getFieldAsDoubleIgnoringCase(PyObject *self, PyObject *args) {
+  long sqlrcur;
+  double rc=0.0;
+  uint64_t row;
+  PyObject *col;
+  if (!PyArg_ParseTuple(args,
+#ifdef SUPPORTS_UNSIGNED
+        "lKO",
+#else
+        "lLO",
+#endif
+        &sqlrcur, &row, &col))
+    return NULL;
+  Py_BEGIN_ALLOW_THREADS
+  if (PyString_Check(col)) {
+    rc=((sqlrcursor *)sqlrcur)->getFieldAsDoubleIgnoringCase(row, PyString_AsString(col));
+  }
+  Py_END_ALLOW_THREADS
+  return Py_BuildValue("d", rc);
+}
+
 static PyObject *getFieldAsBoolean(PyObject *self, PyObject *args) {
   long sqlrcur;
   bool rc=false;
@@ -1781,6 +1849,27 @@ static PyObject *getFieldAsBoolean(PyObject *self, PyObject *args) {
     rc=((sqlrcursor *)sqlrcur)->getFieldAsBoolean(row, PyString_AsString(col));
   } else if (PyInt_Check(col)) {
     rc=((sqlrcursor *)sqlrcur)->getFieldAsBoolean(row, PyInt_AsLong(col));
+  }
+  Py_END_ALLOW_THREADS
+  return PyBool_FromLong(rc);
+}
+
+static PyObject *getFieldAsBooleanIgnoringCase(PyObject *self, PyObject *args) {
+  long sqlrcur;
+  bool rc=false;
+  uint64_t row;
+  PyObject *col;
+  if (!PyArg_ParseTuple(args,
+#ifdef SUPPORTS_UNSIGNED
+        "lKO",
+#else
+        "lLO",
+#endif
+        &sqlrcur, &row, &col))
+    return NULL;
+  Py_BEGIN_ALLOW_THREADS
+  if (PyString_Check(col)) {
+    rc=((sqlrcursor *)sqlrcur)->getFieldAsBooleanIgnoringCase(row, PyString_AsString(col));
   }
   Py_END_ALLOW_THREADS
   return PyBool_FromLong(rc);
@@ -1829,6 +1918,48 @@ static PyObject *getFieldAsDateYear(PyObject *self, PyObject *args) {
     } else if (PyInt_Check(col)) {
       rc=((sqlrcursor *)sqlrcur)->getFieldAsDateYear(row,
 			PyInt_AsLong(col));
+    }
+    Py_END_ALLOW_THREADS
+  }
+  return Py_BuildValue("h", rc);
+}
+
+static PyObject *getFieldAsDateYearIgnoringCase(PyObject *self, PyObject *args) {
+  long sqlrcur;
+  int16_t rc=0;
+  uint64_t row;
+  PyObject *col;
+  int ddmm=0;
+  int yyyyddmm=0;
+  const char *datedelimiters=NULL;
+  if (PyArg_ParseTuple(args,
+#ifdef SUPPORTS_UNSIGNED
+        "lKOiis",
+#else
+        "lLOiis",
+#endif
+        &sqlrcur, &row, &col, &ddmm, &yyyyddmm, &datedelimiters)) {
+    Py_BEGIN_ALLOW_THREADS
+    if (PyString_Check(col)) {
+      rc=((sqlrcursor *)sqlrcur)->getFieldAsDateYearIgnoringCase(row,
+			PyString_AsString(col),
+			ddmm!=0,yyyyddmm!=0,datedelimiters);
+    }
+    Py_END_ALLOW_THREADS
+  } else {
+    PyErr_Clear();
+    if (!PyArg_ParseTuple(args,
+#ifdef SUPPORTS_UNSIGNED
+          "lKO",
+#else
+          "lLO",
+#endif
+          &sqlrcur, &row, &col))
+      return NULL;
+    Py_BEGIN_ALLOW_THREADS
+    if (PyString_Check(col)) {
+      rc=((sqlrcursor *)sqlrcur)->getFieldAsDateYearIgnoringCase(row,
+			PyString_AsString(col));
     }
     Py_END_ALLOW_THREADS
   }
@@ -1884,6 +2015,48 @@ static PyObject *getFieldAsDateMonth(PyObject *self, PyObject *args) {
   return Py_BuildValue("h", rc);
 }
 
+static PyObject *getFieldAsDateMonthIgnoringCase(PyObject *self, PyObject *args) {
+  long sqlrcur;
+  int16_t rc=0;
+  uint64_t row;
+  PyObject *col;
+  int ddmm=0;
+  int yyyyddmm=0;
+  const char *datedelimiters=NULL;
+  if (PyArg_ParseTuple(args,
+#ifdef SUPPORTS_UNSIGNED
+        "lKOiis",
+#else
+        "lLOiis",
+#endif
+        &sqlrcur, &row, &col, &ddmm, &yyyyddmm, &datedelimiters)) {
+    Py_BEGIN_ALLOW_THREADS
+    if (PyString_Check(col)) {
+      rc=((sqlrcursor *)sqlrcur)->getFieldAsDateMonthIgnoringCase(row,
+			PyString_AsString(col),
+			ddmm!=0,yyyyddmm!=0,datedelimiters);
+    }
+    Py_END_ALLOW_THREADS
+  } else {
+    PyErr_Clear();
+    if (!PyArg_ParseTuple(args,
+#ifdef SUPPORTS_UNSIGNED
+          "lKO",
+#else
+          "lLO",
+#endif
+          &sqlrcur, &row, &col))
+      return NULL;
+    Py_BEGIN_ALLOW_THREADS
+    if (PyString_Check(col)) {
+      rc=((sqlrcursor *)sqlrcur)->getFieldAsDateMonthIgnoringCase(row,
+			PyString_AsString(col));
+    }
+    Py_END_ALLOW_THREADS
+  }
+  return Py_BuildValue("h", rc);
+}
+
 static PyObject *getFieldAsDateDay(PyObject *self, PyObject *args) {
   long sqlrcur;
   int16_t rc=0;
@@ -1927,6 +2100,48 @@ static PyObject *getFieldAsDateDay(PyObject *self, PyObject *args) {
     } else if (PyInt_Check(col)) {
       rc=((sqlrcursor *)sqlrcur)->getFieldAsDateDay(row,
 			PyInt_AsLong(col));
+    }
+    Py_END_ALLOW_THREADS
+  }
+  return Py_BuildValue("h", rc);
+}
+
+static PyObject *getFieldAsDateDayIgnoringCase(PyObject *self, PyObject *args) {
+  long sqlrcur;
+  int16_t rc=0;
+  uint64_t row;
+  PyObject *col;
+  int ddmm=0;
+  int yyyyddmm=0;
+  const char *datedelimiters=NULL;
+  if (PyArg_ParseTuple(args,
+#ifdef SUPPORTS_UNSIGNED
+        "lKOiis",
+#else
+        "lLOiis",
+#endif
+        &sqlrcur, &row, &col, &ddmm, &yyyyddmm, &datedelimiters)) {
+    Py_BEGIN_ALLOW_THREADS
+    if (PyString_Check(col)) {
+      rc=((sqlrcursor *)sqlrcur)->getFieldAsDateDayIgnoringCase(row,
+			PyString_AsString(col),
+			ddmm!=0,yyyyddmm!=0,datedelimiters);
+    }
+    Py_END_ALLOW_THREADS
+  } else {
+    PyErr_Clear();
+    if (!PyArg_ParseTuple(args,
+#ifdef SUPPORTS_UNSIGNED
+          "lKO",
+#else
+          "lLO",
+#endif
+          &sqlrcur, &row, &col))
+      return NULL;
+    Py_BEGIN_ALLOW_THREADS
+    if (PyString_Check(col)) {
+      rc=((sqlrcursor *)sqlrcur)->getFieldAsDateDayIgnoringCase(row,
+			PyString_AsString(col));
     }
     Py_END_ALLOW_THREADS
   }
@@ -1982,6 +2197,48 @@ static PyObject *getFieldAsDateHour(PyObject *self, PyObject *args) {
   return Py_BuildValue("h", rc);
 }
 
+static PyObject *getFieldAsDateHourIgnoringCase(PyObject *self, PyObject *args) {
+  long sqlrcur;
+  int16_t rc=0;
+  uint64_t row;
+  PyObject *col;
+  int ddmm=0;
+  int yyyyddmm=0;
+  const char *datedelimiters=NULL;
+  if (PyArg_ParseTuple(args,
+#ifdef SUPPORTS_UNSIGNED
+        "lKOiis",
+#else
+        "lLOiis",
+#endif
+        &sqlrcur, &row, &col, &ddmm, &yyyyddmm, &datedelimiters)) {
+    Py_BEGIN_ALLOW_THREADS
+    if (PyString_Check(col)) {
+      rc=((sqlrcursor *)sqlrcur)->getFieldAsDateHourIgnoringCase(row,
+			PyString_AsString(col),
+			ddmm!=0,yyyyddmm!=0,datedelimiters);
+    }
+    Py_END_ALLOW_THREADS
+  } else {
+    PyErr_Clear();
+    if (!PyArg_ParseTuple(args,
+#ifdef SUPPORTS_UNSIGNED
+          "lKO",
+#else
+          "lLO",
+#endif
+          &sqlrcur, &row, &col))
+      return NULL;
+    Py_BEGIN_ALLOW_THREADS
+    if (PyString_Check(col)) {
+      rc=((sqlrcursor *)sqlrcur)->getFieldAsDateHourIgnoringCase(row,
+			PyString_AsString(col));
+    }
+    Py_END_ALLOW_THREADS
+  }
+  return Py_BuildValue("h", rc);
+}
+
 static PyObject *getFieldAsDateMinute(PyObject *self, PyObject *args) {
   long sqlrcur;
   int16_t rc=0;
@@ -2025,6 +2282,48 @@ static PyObject *getFieldAsDateMinute(PyObject *self, PyObject *args) {
     } else if (PyInt_Check(col)) {
       rc=((sqlrcursor *)sqlrcur)->getFieldAsDateMinute(row,
 			PyInt_AsLong(col));
+    }
+    Py_END_ALLOW_THREADS
+  }
+  return Py_BuildValue("h", rc);
+}
+
+static PyObject *getFieldAsDateMinuteIgnoringCase(PyObject *self, PyObject *args) {
+  long sqlrcur;
+  int16_t rc=0;
+  uint64_t row;
+  PyObject *col;
+  int ddmm=0;
+  int yyyyddmm=0;
+  const char *datedelimiters=NULL;
+  if (PyArg_ParseTuple(args,
+#ifdef SUPPORTS_UNSIGNED
+        "lKOiis",
+#else
+        "lLOiis",
+#endif
+        &sqlrcur, &row, &col, &ddmm, &yyyyddmm, &datedelimiters)) {
+    Py_BEGIN_ALLOW_THREADS
+    if (PyString_Check(col)) {
+      rc=((sqlrcursor *)sqlrcur)->getFieldAsDateMinuteIgnoringCase(row,
+			PyString_AsString(col),
+			ddmm!=0,yyyyddmm!=0,datedelimiters);
+    }
+    Py_END_ALLOW_THREADS
+  } else {
+    PyErr_Clear();
+    if (!PyArg_ParseTuple(args,
+#ifdef SUPPORTS_UNSIGNED
+          "lKO",
+#else
+          "lLO",
+#endif
+          &sqlrcur, &row, &col))
+      return NULL;
+    Py_BEGIN_ALLOW_THREADS
+    if (PyString_Check(col)) {
+      rc=((sqlrcursor *)sqlrcur)->getFieldAsDateMinuteIgnoringCase(row,
+			PyString_AsString(col));
     }
     Py_END_ALLOW_THREADS
   }
@@ -2080,6 +2379,48 @@ static PyObject *getFieldAsDateSecond(PyObject *self, PyObject *args) {
   return Py_BuildValue("h", rc);
 }
 
+static PyObject *getFieldAsDateSecondIgnoringCase(PyObject *self, PyObject *args) {
+  long sqlrcur;
+  int16_t rc=0;
+  uint64_t row;
+  PyObject *col;
+  int ddmm=0;
+  int yyyyddmm=0;
+  const char *datedelimiters=NULL;
+  if (PyArg_ParseTuple(args,
+#ifdef SUPPORTS_UNSIGNED
+        "lKOiis",
+#else
+        "lLOiis",
+#endif
+        &sqlrcur, &row, &col, &ddmm, &yyyyddmm, &datedelimiters)) {
+    Py_BEGIN_ALLOW_THREADS
+    if (PyString_Check(col)) {
+      rc=((sqlrcursor *)sqlrcur)->getFieldAsDateSecondIgnoringCase(row,
+			PyString_AsString(col),
+			ddmm!=0,yyyyddmm!=0,datedelimiters);
+    }
+    Py_END_ALLOW_THREADS
+  } else {
+    PyErr_Clear();
+    if (!PyArg_ParseTuple(args,
+#ifdef SUPPORTS_UNSIGNED
+          "lKO",
+#else
+          "lLO",
+#endif
+          &sqlrcur, &row, &col))
+      return NULL;
+    Py_BEGIN_ALLOW_THREADS
+    if (PyString_Check(col)) {
+      rc=((sqlrcursor *)sqlrcur)->getFieldAsDateSecondIgnoringCase(row,
+			PyString_AsString(col));
+    }
+    Py_END_ALLOW_THREADS
+  }
+  return Py_BuildValue("h", rc);
+}
+
 static PyObject *getFieldAsDateMicrosecond(PyObject *self, PyObject *args) {
   long sqlrcur;
   int32_t rc=0;
@@ -2129,6 +2470,48 @@ static PyObject *getFieldAsDateMicrosecond(PyObject *self, PyObject *args) {
   return Py_BuildValue("l", (long)rc);
 }
 
+static PyObject *getFieldAsDateMicrosecondIgnoringCase(PyObject *self, PyObject *args) {
+  long sqlrcur;
+  int32_t rc=0;
+  uint64_t row;
+  PyObject *col;
+  int ddmm=0;
+  int yyyyddmm=0;
+  const char *datedelimiters=NULL;
+  if (PyArg_ParseTuple(args,
+#ifdef SUPPORTS_UNSIGNED
+        "lKOiis",
+#else
+        "lLOiis",
+#endif
+        &sqlrcur, &row, &col, &ddmm, &yyyyddmm, &datedelimiters)) {
+    Py_BEGIN_ALLOW_THREADS
+    if (PyString_Check(col)) {
+      rc=((sqlrcursor *)sqlrcur)->getFieldAsDateMicrosecondIgnoringCase(row,
+			PyString_AsString(col),
+			ddmm!=0,yyyyddmm!=0,datedelimiters);
+    }
+    Py_END_ALLOW_THREADS
+  } else {
+    PyErr_Clear();
+    if (!PyArg_ParseTuple(args,
+#ifdef SUPPORTS_UNSIGNED
+          "lKO",
+#else
+          "lLO",
+#endif
+          &sqlrcur, &row, &col))
+      return NULL;
+    Py_BEGIN_ALLOW_THREADS
+    if (PyString_Check(col)) {
+      rc=((sqlrcursor *)sqlrcur)->getFieldAsDateMicrosecondIgnoringCase(row,
+			PyString_AsString(col));
+    }
+    Py_END_ALLOW_THREADS
+  }
+  return Py_BuildValue("l", (long)rc);
+}
+
 static PyObject *getFieldAsDateIsNegative(PyObject *self, PyObject *args) {
   long sqlrcur;
   bool rc=false;
@@ -2172,6 +2555,48 @@ static PyObject *getFieldAsDateIsNegative(PyObject *self, PyObject *args) {
     } else if (PyInt_Check(col)) {
       rc=((sqlrcursor *)sqlrcur)->getFieldAsDateIsNegative(row,
 			PyInt_AsLong(col));
+    }
+    Py_END_ALLOW_THREADS
+  }
+  return PyBool_FromLong(rc);
+}
+
+static PyObject *getFieldAsDateIsNegativeIgnoringCase(PyObject *self, PyObject *args) {
+  long sqlrcur;
+  bool rc=false;
+  uint64_t row;
+  PyObject *col;
+  int ddmm=0;
+  int yyyyddmm=0;
+  const char *datedelimiters=NULL;
+  if (PyArg_ParseTuple(args,
+#ifdef SUPPORTS_UNSIGNED
+        "lKOiis",
+#else
+        "lLOiis",
+#endif
+        &sqlrcur, &row, &col, &ddmm, &yyyyddmm, &datedelimiters)) {
+    Py_BEGIN_ALLOW_THREADS
+    if (PyString_Check(col)) {
+      rc=((sqlrcursor *)sqlrcur)->getFieldAsDateIsNegativeIgnoringCase(row,
+			PyString_AsString(col),
+			ddmm!=0,yyyyddmm!=0,datedelimiters);
+    }
+    Py_END_ALLOW_THREADS
+  } else {
+    PyErr_Clear();
+    if (!PyArg_ParseTuple(args,
+#ifdef SUPPORTS_UNSIGNED
+          "lKO",
+#else
+          "lLO",
+#endif
+          &sqlrcur, &row, &col))
+      return NULL;
+    Py_BEGIN_ALLOW_THREADS
+    if (PyString_Check(col)) {
+      rc=((sqlrcursor *)sqlrcur)->getFieldAsDateIsNegativeIgnoringCase(row,
+			PyString_AsString(col));
     }
     Py_END_ALLOW_THREADS
   }
@@ -2946,17 +3371,29 @@ static PyMethodDef SQLRMethods[] = {
   {"getNullsAsEmptyStrings", getNullsAsEmptyStrings, METH_VARARGS},
   {"getNullsAsNone", getNullsAsNone, METH_VARARGS},
   {"getField", getField, METH_VARARGS},
+  {"getFieldIgnoringCase", getFieldIgnoringCase, METH_VARARGS},
   {"getFieldAsInteger", getFieldAsInteger, METH_VARARGS},
+  {"getFieldAsIntegerIgnoringCase", getFieldAsIntegerIgnoringCase, METH_VARARGS},
   {"getFieldAsDouble", getFieldAsDouble, METH_VARARGS},
+  {"getFieldAsDoubleIgnoringCase", getFieldAsDoubleIgnoringCase, METH_VARARGS},
   {"getFieldAsBoolean", getFieldAsBoolean, METH_VARARGS},
+  {"getFieldAsBooleanIgnoringCase", getFieldAsBooleanIgnoringCase, METH_VARARGS},
   {"getFieldAsDateYear", getFieldAsDateYear, METH_VARARGS},
+  {"getFieldAsDateYearIgnoringCase", getFieldAsDateYearIgnoringCase, METH_VARARGS},
   {"getFieldAsDateMonth", getFieldAsDateMonth, METH_VARARGS},
+  {"getFieldAsDateMonthIgnoringCase", getFieldAsDateMonthIgnoringCase, METH_VARARGS},
   {"getFieldAsDateDay", getFieldAsDateDay, METH_VARARGS},
+  {"getFieldAsDateDayIgnoringCase", getFieldAsDateDayIgnoringCase, METH_VARARGS},
   {"getFieldAsDateHour", getFieldAsDateHour, METH_VARARGS},
+  {"getFieldAsDateHourIgnoringCase", getFieldAsDateHourIgnoringCase, METH_VARARGS},
   {"getFieldAsDateMinute", getFieldAsDateMinute, METH_VARARGS},
+  {"getFieldAsDateMinuteIgnoringCase", getFieldAsDateMinuteIgnoringCase, METH_VARARGS},
   {"getFieldAsDateSecond", getFieldAsDateSecond, METH_VARARGS},
+  {"getFieldAsDateSecondIgnoringCase", getFieldAsDateSecondIgnoringCase, METH_VARARGS},
   {"getFieldAsDateMicrosecond", getFieldAsDateMicrosecond, METH_VARARGS},
+  {"getFieldAsDateMicrosecondIgnoringCase", getFieldAsDateMicrosecondIgnoringCase, METH_VARARGS},
   {"getFieldAsDateIsNegative", getFieldAsDateIsNegative, METH_VARARGS},
+  {"getFieldAsDateIsNegativeIgnoringCase", getFieldAsDateIsNegativeIgnoringCase, METH_VARARGS},
   {"getFieldLength", getFieldLength, METH_VARARGS},
   {"getRow", getRow, METH_VARARGS},
   {"getRowDictionary", getRowDictionary, METH_VARARGS},

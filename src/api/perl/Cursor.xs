@@ -596,6 +596,23 @@ sqlrcursor::getField(row,...)
 			ST(0)=&sv_undef;
 		}
 
+const char *
+sqlrcursor::getFieldIgnoringCase(row,...)
+		uint64_t	row
+	CODE:
+		const char	*field=NULL;
+		uint32_t	length=0;
+		ST(0)=sv_newmortal();
+		if (SvPOK(ST(2))) {
+			field=THIS->getFieldIgnoringCase(row,SvPV(ST(2),na));
+			length=THIS->getFieldLength(row,SvPV(ST(2),na));
+		}
+		if (field) {
+			sv_setpvn(ST(0),field,length);
+		} else {
+			ST(0)=&sv_undef;
+		}
+
 int64_t
 sqlrcursor::getFieldAsInteger(row,...)
 		uint64_t	row
@@ -608,6 +625,17 @@ sqlrcursor::getFieldAsInteger(row,...)
 		} else if (SvPOK(ST(2))) {
 			field=THIS->getFieldAsInteger(row,SvPV(ST(2),na));
 		} 
+		sv_setiv(ST(0),field);
+
+int64_t
+sqlrcursor::getFieldAsIntegerIgnoringCase(row,...)
+		uint64_t	row
+	CODE:
+		int64_t	field=0;
+		ST(0)=sv_newmortal();
+		if (SvPOK(ST(2))) {
+			field=THIS->getFieldAsIntegerIgnoringCase(row,SvPV(ST(2),na));
+		}
 		sv_setiv(ST(0),field);
 
 double
@@ -623,6 +651,17 @@ sqlrcursor::getFieldAsDouble(row,...)
 		} 
 		sv_setnv(ST(0),field);
 
+double
+sqlrcursor::getFieldAsDoubleIgnoringCase(row,...)
+		uint64_t	row
+	CODE:
+		double	field=0.0;
+		ST(0)=sv_newmortal();
+		if (SvPOK(ST(2))) {
+			field=THIS->getFieldAsDoubleIgnoringCase(row,SvPV(ST(2),na));
+		}
+		sv_setnv(ST(0),field);
+
 bool
 sqlrcursor::getFieldAsBoolean(row,...)
 		uint64_t	row
@@ -633,6 +672,17 @@ sqlrcursor::getFieldAsBoolean(row,...)
 			field=THIS->getFieldAsBoolean(row,(uint32_t)SvIV(ST(2)));
 		} else if (SvPOK(ST(2))) {
 			field=THIS->getFieldAsBoolean(row,SvPV(ST(2),na));
+		}
+		sv_setiv(ST(0),field?1:0);
+
+bool
+sqlrcursor::getFieldAsBooleanIgnoringCase(row,...)
+		uint64_t	row
+	CODE:
+		bool	field=false;
+		ST(0)=sv_newmortal();
+		if (SvPOK(ST(2))) {
+			field=THIS->getFieldAsBooleanIgnoringCase(row,SvPV(ST(2),na));
 		}
 		sv_setiv(ST(0),field?1:0);
 
@@ -659,6 +709,28 @@ sqlrcursor::getFieldAsDateYear(row,...)
 						SvPV(ST(5),na));
 			} else if (SvPOK(ST(2))) {
 				field=THIS->getFieldAsDateYear(row,
+						SvPV(ST(2),na),
+						SvTRUE(ST(3)),
+						SvTRUE(ST(4)),
+						SvPV(ST(5),na));
+			}
+		}
+		sv_setiv(ST(0),field);
+
+int16_t
+sqlrcursor::getFieldAsDateYearIgnoringCase(row,...)
+		uint64_t	row
+	CODE:
+		int16_t	field=0;
+		ST(0)=sv_newmortal();
+		if (items==3) {
+			if (SvPOK(ST(2))) {
+				field=THIS->getFieldAsDateYearIgnoringCase(row,
+						SvPV(ST(2),na));
+			}
+		} else if (items==6) {
+			if (SvPOK(ST(2))) {
+				field=THIS->getFieldAsDateYearIgnoringCase(row,
 						SvPV(ST(2),na),
 						SvTRUE(ST(3)),
 						SvTRUE(ST(4)),
@@ -699,6 +771,28 @@ sqlrcursor::getFieldAsDateMonth(row,...)
 		sv_setiv(ST(0),field);
 
 int16_t
+sqlrcursor::getFieldAsDateMonthIgnoringCase(row,...)
+		uint64_t	row
+	CODE:
+		int16_t	field=0;
+		ST(0)=sv_newmortal();
+		if (items==3) {
+			if (SvPOK(ST(2))) {
+				field=THIS->getFieldAsDateMonthIgnoringCase(row,
+						SvPV(ST(2),na));
+			}
+		} else if (items==6) {
+			if (SvPOK(ST(2))) {
+				field=THIS->getFieldAsDateMonthIgnoringCase(row,
+						SvPV(ST(2),na),
+						SvTRUE(ST(3)),
+						SvTRUE(ST(4)),
+						SvPV(ST(5),na));
+			}
+		}
+		sv_setiv(ST(0),field);
+
+int16_t
 sqlrcursor::getFieldAsDateDay(row,...)
 		uint64_t	row
 	CODE:
@@ -721,6 +815,28 @@ sqlrcursor::getFieldAsDateDay(row,...)
 						SvPV(ST(5),na));
 			} else if (SvPOK(ST(2))) {
 				field=THIS->getFieldAsDateDay(row,
+						SvPV(ST(2),na),
+						SvTRUE(ST(3)),
+						SvTRUE(ST(4)),
+						SvPV(ST(5),na));
+			}
+		}
+		sv_setiv(ST(0),field);
+
+int16_t
+sqlrcursor::getFieldAsDateDayIgnoringCase(row,...)
+		uint64_t	row
+	CODE:
+		int16_t	field=0;
+		ST(0)=sv_newmortal();
+		if (items==3) {
+			if (SvPOK(ST(2))) {
+				field=THIS->getFieldAsDateDayIgnoringCase(row,
+						SvPV(ST(2),na));
+			}
+		} else if (items==6) {
+			if (SvPOK(ST(2))) {
+				field=THIS->getFieldAsDateDayIgnoringCase(row,
 						SvPV(ST(2),na),
 						SvTRUE(ST(3)),
 						SvTRUE(ST(4)),
@@ -761,6 +877,28 @@ sqlrcursor::getFieldAsDateHour(row,...)
 		sv_setiv(ST(0),field);
 
 int16_t
+sqlrcursor::getFieldAsDateHourIgnoringCase(row,...)
+		uint64_t	row
+	CODE:
+		int16_t	field=0;
+		ST(0)=sv_newmortal();
+		if (items==3) {
+			if (SvPOK(ST(2))) {
+				field=THIS->getFieldAsDateHourIgnoringCase(row,
+						SvPV(ST(2),na));
+			}
+		} else if (items==6) {
+			if (SvPOK(ST(2))) {
+				field=THIS->getFieldAsDateHourIgnoringCase(row,
+						SvPV(ST(2),na),
+						SvTRUE(ST(3)),
+						SvTRUE(ST(4)),
+						SvPV(ST(5),na));
+			}
+		}
+		sv_setiv(ST(0),field);
+
+int16_t
 sqlrcursor::getFieldAsDateMinute(row,...)
 		uint64_t	row
 	CODE:
@@ -783,6 +921,28 @@ sqlrcursor::getFieldAsDateMinute(row,...)
 						SvPV(ST(5),na));
 			} else if (SvPOK(ST(2))) {
 				field=THIS->getFieldAsDateMinute(row,
+						SvPV(ST(2),na),
+						SvTRUE(ST(3)),
+						SvTRUE(ST(4)),
+						SvPV(ST(5),na));
+			}
+		}
+		sv_setiv(ST(0),field);
+
+int16_t
+sqlrcursor::getFieldAsDateMinuteIgnoringCase(row,...)
+		uint64_t	row
+	CODE:
+		int16_t	field=0;
+		ST(0)=sv_newmortal();
+		if (items==3) {
+			if (SvPOK(ST(2))) {
+				field=THIS->getFieldAsDateMinuteIgnoringCase(row,
+						SvPV(ST(2),na));
+			}
+		} else if (items==6) {
+			if (SvPOK(ST(2))) {
+				field=THIS->getFieldAsDateMinuteIgnoringCase(row,
 						SvPV(ST(2),na),
 						SvTRUE(ST(3)),
 						SvTRUE(ST(4)),
@@ -822,6 +982,28 @@ sqlrcursor::getFieldAsDateSecond(row,...)
 		}
 		sv_setiv(ST(0),field);
 
+int16_t
+sqlrcursor::getFieldAsDateSecondIgnoringCase(row,...)
+		uint64_t	row
+	CODE:
+		int16_t	field=0;
+		ST(0)=sv_newmortal();
+		if (items==3) {
+			if (SvPOK(ST(2))) {
+				field=THIS->getFieldAsDateSecondIgnoringCase(row,
+						SvPV(ST(2),na));
+			}
+		} else if (items==6) {
+			if (SvPOK(ST(2))) {
+				field=THIS->getFieldAsDateSecondIgnoringCase(row,
+						SvPV(ST(2),na),
+						SvTRUE(ST(3)),
+						SvTRUE(ST(4)),
+						SvPV(ST(5),na));
+			}
+		}
+		sv_setiv(ST(0),field);
+
 int32_t
 sqlrcursor::getFieldAsDateMicrosecond(row,...)
 		uint64_t	row
@@ -853,6 +1035,28 @@ sqlrcursor::getFieldAsDateMicrosecond(row,...)
 		}
 		sv_setiv(ST(0),field);
 
+int32_t
+sqlrcursor::getFieldAsDateMicrosecondIgnoringCase(row,...)
+		uint64_t	row
+	CODE:
+		int32_t	field=0;
+		ST(0)=sv_newmortal();
+		if (items==3) {
+			if (SvPOK(ST(2))) {
+				field=THIS->getFieldAsDateMicrosecondIgnoringCase(row,
+						SvPV(ST(2),na));
+			}
+		} else if (items==6) {
+			if (SvPOK(ST(2))) {
+				field=THIS->getFieldAsDateMicrosecondIgnoringCase(row,
+						SvPV(ST(2),na),
+						SvTRUE(ST(3)),
+						SvTRUE(ST(4)),
+						SvPV(ST(5),na));
+			}
+		}
+		sv_setiv(ST(0),field);
+
 bool
 sqlrcursor::getFieldAsDateIsNegative(row,...)
 		uint64_t	row
@@ -875,6 +1079,28 @@ sqlrcursor::getFieldAsDateIsNegative(row,...)
 						SvPV(ST(5),na));
 			} else if (SvPOK(ST(2))) {
 				RETVAL=THIS->getFieldAsDateIsNegative(row,
+						SvPV(ST(2),na),
+						SvTRUE(ST(3)),
+						SvTRUE(ST(4)),
+						SvPV(ST(5),na));
+			}
+		}
+	OUTPUT:
+		RETVAL
+
+bool
+sqlrcursor::getFieldAsDateIsNegativeIgnoringCase(row,...)
+		uint64_t	row
+	CODE:
+		RETVAL=0;
+		if (items==3) {
+			if (SvPOK(ST(2))) {
+				RETVAL=THIS->getFieldAsDateIsNegativeIgnoringCase(row,
+						SvPV(ST(2),na));
+			}
+		} else if (items==6) {
+			if (SvPOK(ST(2))) {
+				RETVAL=THIS->getFieldAsDateIsNegativeIgnoringCase(row,
 						SvPV(ST(2),na),
 						SvTRUE(ST(3)),
 						SvTRUE(ST(4)),

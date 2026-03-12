@@ -120,6 +120,9 @@
 		void	createFields();
 		void	createFieldLengths();
 
+		const char	*getField(uint64_t row,
+						const char *col,
+						bool ignorecase);
 		char		*getFieldInternal(uint64_t row,
 							uint32_t col);
 		uint32_t	getFieldLengthInternal(uint64_t row,

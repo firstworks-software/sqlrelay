@@ -6470,6 +6470,16 @@ bool sqlrcursor::getFieldAsDate(uint64_t row, uint32_t col,
 }
 
 const char *sqlrcursor::getField(uint64_t row, const char *col) {
+	return getField(row,col,false);
+}
+
+const char *sqlrcursor::getFieldIgnoringCase(uint64_t row, const char *col) {
+	return getField(row,col,true);
+}
+
+const char *sqlrcursor::getField(uint64_t row,
+					const char *col,
+					bool ignorecase) {
 
 	// bail if no column info was sent
 	if (pvt->_sendcolumninfo!=SEND_COLUMN_INFO || 
@@ -6477,10 +6487,19 @@ const char *sqlrcursor::getField(uint64_t row, const char *col) {
 		return NULL;
 	}
 
-	// get the column index, by name
+	// find the column index, by name
+	bool	matches;
 	for (uint32_t i=0; i<pvt->_colcount; i++) {
-		if (!charstring::compare(getColumnInternal(i)->name,col)) {
 
+		// do case-sensitive or case-insensitive match, as specified
+		if (ignorecase) {
+			matches=!charstring::compareIgnoringCase(
+					getColumnInternal(i)->name,col);
+		} else {
+			matches=!charstring::compare(
+					getColumnInternal(i)->name,col);
+		}
+		if (matches) {
 			// fetch and return the field
 			uint64_t	rowbufferindex;
 			if (fetchRowIntoBuffer(row,&rowbufferindex)) {
@@ -6497,8 +6516,20 @@ int64_t sqlrcursor::getFieldAsInteger(uint64_t row, const char *col) {
 	return (field)?charstring::convertToInteger(field):0;
 }
 
+int64_t sqlrcursor::getFieldAsIntegerIgnoringCase(
+					uint64_t row, const char *col) {
+	const char	*field=getFieldIgnoringCase(row,col);
+	return (field)?charstring::convertToInteger(field):0;
+}
+
 double sqlrcursor::getFieldAsDouble(uint64_t row, const char *col) {
 	const char	*field=getField(row,col);
+	return (field)?charstring::convertToFloatC(field):0.0;
+}
+
+double sqlrcursor::getFieldAsDoubleIgnoringCase(
+					uint64_t row, const char *col) {
+	const char	*field=getFieldIgnoringCase(row,col);
 	return (field)?charstring::convertToFloatC(field):0.0;
 }
 
@@ -6507,7 +6538,14 @@ bool sqlrcursor::getFieldAsBoolean(uint64_t row, const char *col) {
 	return (field)?charstring::isYes(field):false;
 }
 
-bool sqlrcursor::getFieldAsDate(uint64_t row, const char *col,
+bool sqlrcursor::getFieldAsBooleanIgnoringCase(
+					uint64_t row, const char *col) {
+	const char	*field=getFieldIgnoringCase(row,col);
+	return (field)?charstring::isYes(field):false;
+}
+
+bool sqlrcursor::getFieldAsDate(
+			uint64_t row, const char *col,
 			int16_t *year, int16_t *month, int16_t *day,
 			int16_t *hour, int16_t *minute, int16_t *second,
 			int32_t *microsecond, bool *isnegative) {
@@ -6517,13 +6555,41 @@ bool sqlrcursor::getFieldAsDate(uint64_t row, const char *col,
 				microsecond,isnegative);
 }
 
-bool sqlrcursor::getFieldAsDate(uint64_t row, const char *col,
+bool sqlrcursor::getFieldAsDateIgnoringCase(
+			uint64_t row, const char *col,
+			int16_t *year, int16_t *month, int16_t *day,
+			int16_t *hour, int16_t *minute, int16_t *second,
+			int32_t *microsecond, bool *isnegative) {
+	return getFieldAsDateIgnoringCase(row,col,false,false,NULL,
+				year,month,day,
+				hour,minute,second,
+				microsecond,isnegative);
+}
+
+bool sqlrcursor::getFieldAsDate(
+			uint64_t row, const char *col,
 			bool ddmm, bool yyyyddmm,
 			const char *datedelimiters,
 			int16_t *year, int16_t *month, int16_t *day,
 			int16_t *hour, int16_t *minute, int16_t *second,
 			int32_t *microsecond, bool *isnegative) {
 	const char	*field=getField(row,col);
+	if (!field) {
+		return false;
+	}
+	return datetime::parse(field,ddmm,yyyyddmm,datedelimiters,true,
+				year,month,day,hour,minute,second,
+				microsecond,isnegative);
+}
+
+bool sqlrcursor::getFieldAsDateIgnoringCase(
+			uint64_t row, const char *col,
+			bool ddmm, bool yyyyddmm,
+			const char *datedelimiters,
+			int16_t *year, int16_t *month, int16_t *day,
+			int16_t *hour, int16_t *minute, int16_t *second,
+			int32_t *microsecond, bool *isnegative) {
+	const char	*field=getFieldIgnoringCase(row,col);
 	if (!field) {
 		return false;
 	}
@@ -6548,9 +6614,9 @@ int16_t sqlrcursor::getFieldAsDateYear(uint64_t row, uint32_t col,
 	int32_t	microsecond;
 	bool	isnegative;
 	getFieldAsDate(row,col,ddmm,yyyyddmm,datedelimiters,
-				&year,&month,&day,
-				&hour,&minute,&second,
-				&microsecond,&isnegative);
+						&year,&month,&day,
+						&hour,&minute,&second,
+						&microsecond,&isnegative);
 	return year;
 }
 
@@ -6558,9 +6624,14 @@ int16_t sqlrcursor::getFieldAsDateYear(uint64_t row, const char *col) {
 	return getFieldAsDateYear(row,col,false,false,NULL);
 }
 
+int16_t sqlrcursor::getFieldAsDateYearIgnoringCase(
+					uint64_t row, const char *col) {
+	return getFieldAsDateYearIgnoringCase(row,col,false,false,NULL);
+}
+
 int16_t sqlrcursor::getFieldAsDateYear(uint64_t row, const char *col,
-			bool ddmm, bool yyyyddmm,
-			const char *datedelimiters) {
+					bool ddmm, bool yyyyddmm,
+					const char *datedelimiters) {
 	int16_t	year=0;
 	int16_t	month;
 	int16_t	day;
@@ -6570,9 +6641,28 @@ int16_t sqlrcursor::getFieldAsDateYear(uint64_t row, const char *col,
 	int32_t	microsecond;
 	bool	isnegative;
 	getFieldAsDate(row,col,ddmm,yyyyddmm,datedelimiters,
-				&year,&month,&day,
-				&hour,&minute,&second,
-				&microsecond,&isnegative);
+						&year,&month,&day,
+						&hour,&minute,&second,
+						&microsecond,&isnegative);
+	return year;
+}
+
+int16_t sqlrcursor::getFieldAsDateYearIgnoringCase(
+					uint64_t row, const char *col,
+					bool ddmm, bool yyyyddmm,
+					const char *datedelimiters) {
+	int16_t	year=0;
+	int16_t	month;
+	int16_t	day;
+	int16_t	hour;
+	int16_t	minute;
+	int16_t	second;
+	int32_t	microsecond;
+	bool	isnegative;
+	getFieldAsDateIgnoringCase(row,col,ddmm,yyyyddmm,datedelimiters,
+						&year,&month,&day,
+						&hour,&minute,&second,
+						&microsecond,&isnegative);
 	return year;
 }
 
@@ -6581,8 +6671,8 @@ int16_t sqlrcursor::getFieldAsDateMonth(uint64_t row, uint32_t col) {
 }
 
 int16_t sqlrcursor::getFieldAsDateMonth(uint64_t row, uint32_t col,
-			bool ddmm, bool yyyyddmm,
-			const char *datedelimiters) {
+					bool ddmm, bool yyyyddmm,
+					const char *datedelimiters) {
 	int16_t	year;
 	int16_t	month=0;
 	int16_t	day;
@@ -6592,9 +6682,9 @@ int16_t sqlrcursor::getFieldAsDateMonth(uint64_t row, uint32_t col,
 	int32_t	microsecond;
 	bool	isnegative;
 	getFieldAsDate(row,col,ddmm,yyyyddmm,datedelimiters,
-				&year,&month,&day,
-				&hour,&minute,&second,
-				&microsecond,&isnegative);
+						&year,&month,&day,
+						&hour,&minute,&second,
+						&microsecond,&isnegative);
 	return month;
 }
 
@@ -6602,9 +6692,14 @@ int16_t sqlrcursor::getFieldAsDateMonth(uint64_t row, const char *col) {
 	return getFieldAsDateMonth(row,col,false,false,NULL);
 }
 
+int16_t sqlrcursor::getFieldAsDateMonthIgnoringCase(
+					uint64_t row, const char *col) {
+	return getFieldAsDateMonthIgnoringCase(row,col,false,false,NULL);
+}
+
 int16_t sqlrcursor::getFieldAsDateMonth(uint64_t row, const char *col,
-			bool ddmm, bool yyyyddmm,
-			const char *datedelimiters) {
+					bool ddmm, bool yyyyddmm,
+					const char *datedelimiters) {
 	int16_t	year;
 	int16_t	month=0;
 	int16_t	day;
@@ -6614,9 +6709,28 @@ int16_t sqlrcursor::getFieldAsDateMonth(uint64_t row, const char *col,
 	int32_t	microsecond;
 	bool	isnegative;
 	getFieldAsDate(row,col,ddmm,yyyyddmm,datedelimiters,
-				&year,&month,&day,
-				&hour,&minute,&second,
-				&microsecond,&isnegative);
+						&year,&month,&day,
+						&hour,&minute,&second,
+						&microsecond,&isnegative);
+	return month;
+}
+
+int16_t sqlrcursor::getFieldAsDateMonthIgnoringCase(
+					uint64_t row, const char *col,
+					bool ddmm, bool yyyyddmm,
+					const char *datedelimiters) {
+	int16_t	year;
+	int16_t	month=0;
+	int16_t	day;
+	int16_t	hour;
+	int16_t	minute;
+	int16_t	second;
+	int32_t	microsecond;
+	bool	isnegative;
+	getFieldAsDateIgnoringCase(row,col,ddmm,yyyyddmm,datedelimiters,
+						&year,&month,&day,
+						&hour,&minute,&second,
+						&microsecond,&isnegative);
 	return month;
 }
 
@@ -6625,8 +6739,8 @@ int16_t sqlrcursor::getFieldAsDateDay(uint64_t row, uint32_t col) {
 }
 
 int16_t sqlrcursor::getFieldAsDateDay(uint64_t row, uint32_t col,
-			bool ddmm, bool yyyyddmm,
-			const char *datedelimiters) {
+					bool ddmm, bool yyyyddmm,
+					const char *datedelimiters) {
 	int16_t	year;
 	int16_t	month;
 	int16_t	day=0;
@@ -6636,9 +6750,9 @@ int16_t sqlrcursor::getFieldAsDateDay(uint64_t row, uint32_t col,
 	int32_t	microsecond;
 	bool	isnegative;
 	getFieldAsDate(row,col,ddmm,yyyyddmm,datedelimiters,
-				&year,&month,&day,
-				&hour,&minute,&second,
-				&microsecond,&isnegative);
+						&year,&month,&day,
+						&hour,&minute,&second,
+						&microsecond,&isnegative);
 	return day;
 }
 
@@ -6646,9 +6760,14 @@ int16_t sqlrcursor::getFieldAsDateDay(uint64_t row, const char *col) {
 	return getFieldAsDateDay(row,col,false,false,NULL);
 }
 
+int16_t sqlrcursor::getFieldAsDateDayIgnoringCase(
+					uint64_t row, const char *col) {
+	return getFieldAsDateDayIgnoringCase(row,col,false,false,NULL);
+}
+
 int16_t sqlrcursor::getFieldAsDateDay(uint64_t row, const char *col,
-			bool ddmm, bool yyyyddmm,
-			const char *datedelimiters) {
+					bool ddmm, bool yyyyddmm,
+					const char *datedelimiters) {
 	int16_t	year;
 	int16_t	month;
 	int16_t	day=0;
@@ -6658,9 +6777,28 @@ int16_t sqlrcursor::getFieldAsDateDay(uint64_t row, const char *col,
 	int32_t	microsecond;
 	bool	isnegative;
 	getFieldAsDate(row,col,ddmm,yyyyddmm,datedelimiters,
-				&year,&month,&day,
-				&hour,&minute,&second,
-				&microsecond,&isnegative);
+						&year,&month,&day,
+						&hour,&minute,&second,
+						&microsecond,&isnegative);
+	return day;
+}
+
+int16_t sqlrcursor::getFieldAsDateDayIgnoringCase(
+					uint64_t row, const char *col,
+					bool ddmm, bool yyyyddmm,
+					const char *datedelimiters) {
+	int16_t	year;
+	int16_t	month;
+	int16_t	day=0;
+	int16_t	hour;
+	int16_t	minute;
+	int16_t	second;
+	int32_t	microsecond;
+	bool	isnegative;
+	getFieldAsDateIgnoringCase(row,col,ddmm,yyyyddmm,datedelimiters,
+						&year,&month,&day,
+						&hour,&minute,&second,
+						&microsecond,&isnegative);
 	return day;
 }
 
@@ -6669,8 +6807,8 @@ int16_t sqlrcursor::getFieldAsDateHour(uint64_t row, uint32_t col) {
 }
 
 int16_t sqlrcursor::getFieldAsDateHour(uint64_t row, uint32_t col,
-			bool ddmm, bool yyyyddmm,
-			const char *datedelimiters) {
+					bool ddmm, bool yyyyddmm,
+					const char *datedelimiters) {
 	int16_t	year;
 	int16_t	month;
 	int16_t	day;
@@ -6680,9 +6818,9 @@ int16_t sqlrcursor::getFieldAsDateHour(uint64_t row, uint32_t col,
 	int32_t	microsecond;
 	bool	isnegative;
 	getFieldAsDate(row,col,ddmm,yyyyddmm,datedelimiters,
-				&year,&month,&day,
-				&hour,&minute,&second,
-				&microsecond,&isnegative);
+						&year,&month,&day,
+						&hour,&minute,&second,
+						&microsecond,&isnegative);
 	return hour;
 }
 
@@ -6690,9 +6828,14 @@ int16_t sqlrcursor::getFieldAsDateHour(uint64_t row, const char *col) {
 	return getFieldAsDateHour(row,col,false,false,NULL);
 }
 
+int16_t sqlrcursor::getFieldAsDateHourIgnoringCase(
+					uint64_t row, const char *col) {
+	return getFieldAsDateHourIgnoringCase(row,col,false,false,NULL);
+}
+
 int16_t sqlrcursor::getFieldAsDateHour(uint64_t row, const char *col,
-			bool ddmm, bool yyyyddmm,
-			const char *datedelimiters) {
+					bool ddmm, bool yyyyddmm,
+					const char *datedelimiters) {
 	int16_t	year;
 	int16_t	month;
 	int16_t	day;
@@ -6702,9 +6845,28 @@ int16_t sqlrcursor::getFieldAsDateHour(uint64_t row, const char *col,
 	int32_t	microsecond;
 	bool	isnegative;
 	getFieldAsDate(row,col,ddmm,yyyyddmm,datedelimiters,
-				&year,&month,&day,
-				&hour,&minute,&second,
-				&microsecond,&isnegative);
+						&year,&month,&day,
+						&hour,&minute,&second,
+						&microsecond,&isnegative);
+	return hour;
+}
+
+int16_t sqlrcursor::getFieldAsDateHourIgnoringCase(
+					uint64_t row, const char *col,
+					bool ddmm, bool yyyyddmm,
+					const char *datedelimiters) {
+	int16_t	year;
+	int16_t	month;
+	int16_t	day;
+	int16_t	hour=0;
+	int16_t	minute;
+	int16_t	second;
+	int32_t	microsecond;
+	bool	isnegative;
+	getFieldAsDateIgnoringCase(row,col,ddmm,yyyyddmm,datedelimiters,
+						&year,&month,&day,
+						&hour,&minute,&second,
+						&microsecond,&isnegative);
 	return hour;
 }
 
@@ -6713,8 +6875,8 @@ int16_t sqlrcursor::getFieldAsDateMinute(uint64_t row, uint32_t col) {
 }
 
 int16_t sqlrcursor::getFieldAsDateMinute(uint64_t row, uint32_t col,
-			bool ddmm, bool yyyyddmm,
-			const char *datedelimiters) {
+					bool ddmm, bool yyyyddmm,
+					const char *datedelimiters) {
 	int16_t	year;
 	int16_t	month;
 	int16_t	day;
@@ -6724,9 +6886,9 @@ int16_t sqlrcursor::getFieldAsDateMinute(uint64_t row, uint32_t col,
 	int32_t	microsecond;
 	bool	isnegative;
 	getFieldAsDate(row,col,ddmm,yyyyddmm,datedelimiters,
-				&year,&month,&day,
-				&hour,&minute,&second,
-				&microsecond,&isnegative);
+						&year,&month,&day,
+						&hour,&minute,&second,
+						&microsecond,&isnegative);
 	return minute;
 }
 
@@ -6734,9 +6896,14 @@ int16_t sqlrcursor::getFieldAsDateMinute(uint64_t row, const char *col) {
 	return getFieldAsDateMinute(row,col,false,false,NULL);
 }
 
+int16_t sqlrcursor::getFieldAsDateMinuteIgnoringCase(
+					uint64_t row, const char *col) {
+	return getFieldAsDateMinuteIgnoringCase(row,col,false,false,NULL);
+}
+
 int16_t sqlrcursor::getFieldAsDateMinute(uint64_t row, const char *col,
-			bool ddmm, bool yyyyddmm,
-			const char *datedelimiters) {
+					bool ddmm, bool yyyyddmm,
+					const char *datedelimiters) {
 	int16_t	year;
 	int16_t	month;
 	int16_t	day;
@@ -6746,9 +6913,28 @@ int16_t sqlrcursor::getFieldAsDateMinute(uint64_t row, const char *col,
 	int32_t	microsecond;
 	bool	isnegative;
 	getFieldAsDate(row,col,ddmm,yyyyddmm,datedelimiters,
-				&year,&month,&day,
-				&hour,&minute,&second,
-				&microsecond,&isnegative);
+						&year,&month,&day,
+						&hour,&minute,&second,
+						&microsecond,&isnegative);
+	return minute;
+}
+
+int16_t sqlrcursor::getFieldAsDateMinuteIgnoringCase(
+					uint64_t row, const char *col,
+					bool ddmm, bool yyyyddmm,
+					const char *datedelimiters) {
+	int16_t	year;
+	int16_t	month;
+	int16_t	day;
+	int16_t	hour;
+	int16_t	minute=0;
+	int16_t	second;
+	int32_t	microsecond;
+	bool	isnegative;
+	getFieldAsDateIgnoringCase(row,col,ddmm,yyyyddmm,datedelimiters,
+						&year,&month,&day,
+						&hour,&minute,&second,
+						&microsecond,&isnegative);
 	return minute;
 }
 
@@ -6757,8 +6943,8 @@ int16_t sqlrcursor::getFieldAsDateSecond(uint64_t row, uint32_t col) {
 }
 
 int16_t sqlrcursor::getFieldAsDateSecond(uint64_t row, uint32_t col,
-			bool ddmm, bool yyyyddmm,
-			const char *datedelimiters) {
+					bool ddmm, bool yyyyddmm,
+					const char *datedelimiters) {
 	int16_t	year;
 	int16_t	month;
 	int16_t	day;
@@ -6768,9 +6954,9 @@ int16_t sqlrcursor::getFieldAsDateSecond(uint64_t row, uint32_t col,
 	int32_t	microsecond;
 	bool	isnegative;
 	getFieldAsDate(row,col,ddmm,yyyyddmm,datedelimiters,
-				&year,&month,&day,
-				&hour,&minute,&second,
-				&microsecond,&isnegative);
+						&year,&month,&day,
+						&hour,&minute,&second,
+						&microsecond,&isnegative);
 	return second;
 }
 
@@ -6778,9 +6964,14 @@ int16_t sqlrcursor::getFieldAsDateSecond(uint64_t row, const char *col) {
 	return getFieldAsDateSecond(row,col,false,false,NULL);
 }
 
+int16_t sqlrcursor::getFieldAsDateSecondIgnoringCase(
+					uint64_t row, const char *col) {
+	return getFieldAsDateSecondIgnoringCase(row,col,false,false,NULL);
+}
+
 int16_t sqlrcursor::getFieldAsDateSecond(uint64_t row, const char *col,
-			bool ddmm, bool yyyyddmm,
-			const char *datedelimiters) {
+					bool ddmm, bool yyyyddmm,
+					const char *datedelimiters) {
 	int16_t	year;
 	int16_t	month;
 	int16_t	day;
@@ -6790,9 +6981,28 @@ int16_t sqlrcursor::getFieldAsDateSecond(uint64_t row, const char *col,
 	int32_t	microsecond;
 	bool	isnegative;
 	getFieldAsDate(row,col,ddmm,yyyyddmm,datedelimiters,
-				&year,&month,&day,
-				&hour,&minute,&second,
-				&microsecond,&isnegative);
+						&year,&month,&day,
+						&hour,&minute,&second,
+						&microsecond,&isnegative);
+	return second;
+}
+
+int16_t sqlrcursor::getFieldAsDateSecondIgnoringCase(
+					uint64_t row, const char *col,
+					bool ddmm, bool yyyyddmm,
+					const char *datedelimiters) {
+	int16_t	year;
+	int16_t	month;
+	int16_t	day;
+	int16_t	hour;
+	int16_t	minute;
+	int16_t	second=0;
+	int32_t	microsecond;
+	bool	isnegative;
+	getFieldAsDateIgnoringCase(row,col,ddmm,yyyyddmm,datedelimiters,
+						&year,&month,&day,
+						&hour,&minute,&second,
+						&microsecond,&isnegative);
 	return second;
 }
 
@@ -6801,8 +7011,8 @@ int32_t sqlrcursor::getFieldAsDateMicrosecond(uint64_t row, uint32_t col) {
 }
 
 int32_t sqlrcursor::getFieldAsDateMicrosecond(uint64_t row, uint32_t col,
-			bool ddmm, bool yyyyddmm,
-			const char *datedelimiters) {
+					bool ddmm, bool yyyyddmm,
+					const char *datedelimiters) {
 	int16_t	year;
 	int16_t	month;
 	int16_t	day;
@@ -6812,9 +7022,9 @@ int32_t sqlrcursor::getFieldAsDateMicrosecond(uint64_t row, uint32_t col,
 	int32_t	microsecond=0;
 	bool	isnegative;
 	getFieldAsDate(row,col,ddmm,yyyyddmm,datedelimiters,
-				&year,&month,&day,
-				&hour,&minute,&second,
-				&microsecond,&isnegative);
+						&year,&month,&day,
+						&hour,&minute,&second,
+						&microsecond,&isnegative);
 	return microsecond;
 }
 
@@ -6823,10 +7033,16 @@ int32_t sqlrcursor::getFieldAsDateMicrosecond(uint64_t row,
 	return getFieldAsDateMicrosecond(row,col,false,false,NULL);
 }
 
+int32_t sqlrcursor::getFieldAsDateMicrosecondIgnoringCase(
+					uint64_t row,
+					const char *col) {
+	return getFieldAsDateMicrosecondIgnoringCase(row,col,false,false,NULL);
+}
+
 int32_t sqlrcursor::getFieldAsDateMicrosecond(uint64_t row,
-			const char *col,
-			bool ddmm, bool yyyyddmm,
-			const char *datedelimiters) {
+					const char *col,
+					bool ddmm, bool yyyyddmm,
+					const char *datedelimiters) {
 	int16_t	year;
 	int16_t	month;
 	int16_t	day;
@@ -6836,9 +7052,28 @@ int32_t sqlrcursor::getFieldAsDateMicrosecond(uint64_t row,
 	int32_t	microsecond=0;
 	bool	isnegative;
 	getFieldAsDate(row,col,ddmm,yyyyddmm,datedelimiters,
-				&year,&month,&day,
-				&hour,&minute,&second,
-				&microsecond,&isnegative);
+						&year,&month,&day,
+						&hour,&minute,&second,
+						&microsecond,&isnegative);
+	return microsecond;
+}
+
+int32_t sqlrcursor::getFieldAsDateMicrosecondIgnoringCase(
+					uint64_t row, const char *col,
+					bool ddmm, bool yyyyddmm,
+					const char *datedelimiters) {
+	int16_t	year;
+	int16_t	month;
+	int16_t	day;
+	int16_t	hour;
+	int16_t	minute;
+	int16_t	second;
+	int32_t	microsecond=0;
+	bool	isnegative;
+	getFieldAsDateIgnoringCase(row,col,ddmm,yyyyddmm,datedelimiters,
+						&year,&month,&day,
+						&hour,&minute,&second,
+						&microsecond,&isnegative);
 	return microsecond;
 }
 
@@ -6847,8 +7082,8 @@ bool sqlrcursor::getFieldAsDateIsNegative(uint64_t row, uint32_t col) {
 }
 
 bool sqlrcursor::getFieldAsDateIsNegative(uint64_t row, uint32_t col,
-			bool ddmm, bool yyyyddmm,
-			const char *datedelimiters) {
+					bool ddmm, bool yyyyddmm,
+					const char *datedelimiters) {
 	int16_t	year;
 	int16_t	month;
 	int16_t	day;
@@ -6858,9 +7093,9 @@ bool sqlrcursor::getFieldAsDateIsNegative(uint64_t row, uint32_t col,
 	int32_t	microsecond;
 	bool	isnegative=false;
 	getFieldAsDate(row,col,ddmm,yyyyddmm,datedelimiters,
-				&year,&month,&day,
-				&hour,&minute,&second,
-				&microsecond,&isnegative);
+						&year,&month,&day,
+						&hour,&minute,&second,
+						&microsecond,&isnegative);
 	return isnegative;
 }
 
@@ -6868,9 +7103,14 @@ bool sqlrcursor::getFieldAsDateIsNegative(uint64_t row, const char *col) {
 	return getFieldAsDateIsNegative(row,col,false,false,NULL);
 }
 
+bool sqlrcursor::getFieldAsDateIsNegativeIgnoringCase(
+					uint64_t row, const char *col) {
+	return getFieldAsDateIsNegativeIgnoringCase(row,col,false,false,NULL);
+}
+
 bool sqlrcursor::getFieldAsDateIsNegative(uint64_t row, const char *col,
-			bool ddmm, bool yyyyddmm,
-			const char *datedelimiters) {
+					bool ddmm, bool yyyyddmm,
+					const char *datedelimiters) {
 	int16_t	year;
 	int16_t	month;
 	int16_t	day;
@@ -6880,9 +7120,28 @@ bool sqlrcursor::getFieldAsDateIsNegative(uint64_t row, const char *col,
 	int32_t	microsecond;
 	bool	isnegative=false;
 	getFieldAsDate(row,col,ddmm,yyyyddmm,datedelimiters,
-				&year,&month,&day,
-				&hour,&minute,&second,
-				&microsecond,&isnegative);
+						&year,&month,&day,
+						&hour,&minute,&second,
+						&microsecond,&isnegative);
+	return isnegative;
+}
+
+bool sqlrcursor::getFieldAsDateIsNegativeIgnoringCase(
+					uint64_t row, const char *col,
+					bool ddmm, bool yyyyddmm,
+					const char *datedelimiters) {
+	int16_t	year;
+	int16_t	month;
+	int16_t	day;
+	int16_t	hour;
+	int16_t	minute;
+	int16_t	second;
+	int32_t	microsecond;
+	bool	isnegative=false;
+	getFieldAsDateIgnoringCase(row,col,ddmm,yyyyddmm,datedelimiters,
+						&year,&month,&day,
+						&hour,&minute,&second,
+						&microsecond,&isnegative);
 	return isnegative;
 }
 

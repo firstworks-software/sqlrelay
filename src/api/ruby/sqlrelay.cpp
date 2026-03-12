@@ -3270,7 +3270,35 @@ static VALUE sqlrcur_getField(VALUE self, VALUE row, VALUE col) {
 		return Qnil;
 	}
 }
-  
+
+static void getFieldIgnoringCaseStr(params *p) {
+	p->result.ccpr=p->sqlrc.sqlrcur->getFieldIgnoringCase(
+					NUM2INT(p->one),STR2CSTR(p->two));
+}
+static void getFieldLengthIgnoringCaseStr(params *p) {
+	p->result.u64r=p->sqlrc.sqlrcur->getFieldLength(
+					NUM2INT(p->one),STR2CSTR(p->two));
+}
+/**
+ *  call-seq:
+ *  getFieldIgnoringCase(row,col)
+ *
+ *  Returns the specified field as a string, ignoring the case of "col".
+ *  "col" must be specified as a column name. */
+static VALUE sqlrcur_getFieldIgnoringCase(VALUE self, VALUE row, VALUE col) {
+	sqlrcursordata	*sqlrcurdata;
+	const char	*result;
+	uint64_t	length;
+	Data_Get_Struct(self,sqlrcursordata,sqlrcurdata);
+	RCUR2(result,ccpr,sqlrcurdata->cur,getFieldIgnoringCaseStr,row,col);
+	RCUR2(length,u64r,sqlrcurdata->cur,getFieldLengthIgnoringCaseStr,row,col);
+	if (result) {
+		return rb_str_new(result,length);
+	} else {
+		return Qnil;
+	}
+}
+
 static void getFieldAsIntegerStr(params *p) {
 	p->result.u64r=p->sqlrc.sqlrcur->getFieldAsInteger(
 					NUM2INT(p->one),STR2CSTR(p->two));
@@ -3294,6 +3322,24 @@ static VALUE sqlrcur_getFieldAsInteger(VALUE self, VALUE row, VALUE col) {
 	} else {
 		RCUR2(result,u64r,sqlrcurdata->cur,getFieldAsIntegerInt,row,col);
 	}
+	return INT2NUM(result);
+}
+
+static void getFieldAsIntegerIgnoringCaseStr(params *p) {
+	p->result.u64r=p->sqlrc.sqlrcur->getFieldAsIntegerIgnoringCase(
+					NUM2INT(p->one),STR2CSTR(p->two));
+}
+/**
+ *  call-seq:
+ *  getFieldAsIntegerIgnoringCase(row,col)
+ *
+ *  Returns the specified field as an integer, ignoring the case of "col".
+ *  "col" must be specified as a column name. */
+static VALUE sqlrcur_getFieldAsIntegerIgnoringCase(VALUE self, VALUE row, VALUE col) {
+	sqlrcursordata	*sqlrcurdata;
+	Data_Get_Struct(self,sqlrcursordata,sqlrcurdata);
+	int64_t	result;
+	RCUR2(result,u64r,sqlrcurdata->cur,getFieldAsIntegerIgnoringCaseStr,row,col);
 	return INT2NUM(result);
 }
 
@@ -3323,6 +3369,24 @@ static VALUE sqlrcur_getFieldAsDouble(VALUE self, VALUE row, VALUE col) {
 	return rb_float_new(result);
 }
 
+static void getFieldAsDoubleIgnoringCaseStr(params *p) {
+	p->result.dr=p->sqlrc.sqlrcur->getFieldAsDoubleIgnoringCase(
+					NUM2INT(p->one),STR2CSTR(p->two));
+}
+/**
+ *  call-seq:
+ *  getFieldAsDoubleIgnoringCase(row,col)
+ *
+ *  Returns the specified field as a decimal, ignoring the case of "col".
+ *  "col" must be specified as a column name. */
+static VALUE sqlrcur_getFieldAsDoubleIgnoringCase(VALUE self, VALUE row, VALUE col) {
+	sqlrcursordata	*sqlrcurdata;
+	Data_Get_Struct(self,sqlrcursordata,sqlrcurdata);
+	double	result;
+	RCUR2(result,dr,sqlrcurdata->cur,getFieldAsDoubleIgnoringCaseStr,row,col);
+	return rb_float_new(result);
+}
+
 static void getFieldAsBooleanStr(params *p) {
 	p->result.u64r=p->sqlrc.sqlrcur->getFieldAsBoolean(
 					NUM2INT(p->one),STR2CSTR(p->two));
@@ -3346,6 +3410,24 @@ static VALUE sqlrcur_getFieldAsBoolean(VALUE self, VALUE row, VALUE col) {
 	} else {
 		RCUR2(result,u64r,sqlrcurdata->cur,getFieldAsBooleanInt,row,col);
 	}
+	return (result)?Qtrue:Qfalse;
+}
+
+static void getFieldAsBooleanIgnoringCaseStr(params *p) {
+	p->result.u64r=p->sqlrc.sqlrcur->getFieldAsBooleanIgnoringCase(
+					NUM2INT(p->one),STR2CSTR(p->two));
+}
+/**
+ *  call-seq:
+ *  getFieldAsBooleanIgnoringCase(row,col)
+ *
+ *  Returns the specified field as a boolean, ignoring the case of "col".
+ *  "col" must be specified as a column name. */
+static VALUE sqlrcur_getFieldAsBooleanIgnoringCase(VALUE self, VALUE row, VALUE col) {
+	sqlrcursordata	*sqlrcurdata;
+	Data_Get_Struct(self,sqlrcursordata,sqlrcurdata);
+	bool	result;
+	RCUR2(result,u64r,sqlrcurdata->cur,getFieldAsBooleanIgnoringCaseStr,row,col);
 	return (result)?Qtrue:Qfalse;
 }
 
@@ -3407,6 +3489,42 @@ static VALUE sqlrcur_getFieldAsDateYear(int argc,
 				argv[0],argv[1],argv[2],
 				argv[3],argv[4]);
 		}
+	}
+	return INT2NUM(result);
+}
+
+static void getFieldAsDateYearIgnoringCaseStr(params *p) {
+	p->result.i16r=p->sqlrc.sqlrcur->getFieldAsDateYearIgnoringCase(
+					NUM2INT(p->one),STR2CSTR(p->two));
+}
+static void getFieldAsDateYearIgnoringCaseStrDdMm(params *p) {
+	p->result.i16r=p->sqlrc.sqlrcur->getFieldAsDateYearIgnoringCase(
+					NUM2INT(p->one),STR2CSTR(p->two),
+					NUM2INT(p->three)!=0,
+					NUM2INT(p->four)!=0,
+					STR2CSTR(p->five));
+}
+/**
+ *  call-seq:
+ *  getFieldAsDateYearIgnoringCase(row,col)
+ *  getFieldAsDateYearIgnoringCase(row,col,ddmm,yyyyddmm,datedelimiters)
+ *
+ *  Interprets the specified field as a date and returns the year
+ *  component, ignoring the case of "col". */
+static VALUE sqlrcur_getFieldAsDateYearIgnoringCase(int argc,
+					VALUE *argv, VALUE self) {
+	sqlrcursordata	*sqlrcurdata;
+	Data_Get_Struct(self,sqlrcursordata,sqlrcurdata);
+	int16_t	result=0;
+	if (argc==2) {
+		RCUR2(result,i16r,sqlrcurdata->cur,
+			getFieldAsDateYearIgnoringCaseStr,
+			argv[0],argv[1]);
+	} else if (argc==5) {
+		RCUR5(result,i16r,sqlrcurdata->cur,
+			getFieldAsDateYearIgnoringCaseStrDdMm,
+			argv[0],argv[1],argv[2],
+			argv[3],argv[4]);
 	}
 	return INT2NUM(result);
 }
@@ -3473,6 +3591,42 @@ static VALUE sqlrcur_getFieldAsDateMonth(int argc,
 	return INT2NUM(result);
 }
 
+static void getFieldAsDateMonthIgnoringCaseStr(params *p) {
+	p->result.i16r=p->sqlrc.sqlrcur->getFieldAsDateMonthIgnoringCase(
+					NUM2INT(p->one),STR2CSTR(p->two));
+}
+static void getFieldAsDateMonthIgnoringCaseStrDdMm(params *p) {
+	p->result.i16r=p->sqlrc.sqlrcur->getFieldAsDateMonthIgnoringCase(
+					NUM2INT(p->one),STR2CSTR(p->two),
+					NUM2INT(p->three)!=0,
+					NUM2INT(p->four)!=0,
+					STR2CSTR(p->five));
+}
+/**
+ *  call-seq:
+ *  getFieldAsDateMonthIgnoringCase(row,col)
+ *  getFieldAsDateMonthIgnoringCase(row,col,ddmm,yyyyddmm,datedelimiters)
+ *
+ *  Interprets the specified field as a date and returns the month
+ *  component, ignoring the case of "col". */
+static VALUE sqlrcur_getFieldAsDateMonthIgnoringCase(int argc,
+					VALUE *argv, VALUE self) {
+	sqlrcursordata	*sqlrcurdata;
+	Data_Get_Struct(self,sqlrcursordata,sqlrcurdata);
+	int16_t	result=0;
+	if (argc==2) {
+		RCUR2(result,i16r,sqlrcurdata->cur,
+			getFieldAsDateMonthIgnoringCaseStr,
+			argv[0],argv[1]);
+	} else if (argc==5) {
+		RCUR5(result,i16r,sqlrcurdata->cur,
+			getFieldAsDateMonthIgnoringCaseStrDdMm,
+			argv[0],argv[1],argv[2],
+			argv[3],argv[4]);
+	}
+	return INT2NUM(result);
+}
+
 static void getFieldAsDateDayStr(params *p) {
 	p->result.i16r=p->sqlrc.sqlrcur->getFieldAsDateDay(
 					NUM2INT(p->one),STR2CSTR(p->two));
@@ -3531,6 +3685,42 @@ static VALUE sqlrcur_getFieldAsDateDay(int argc,
 				argv[0],argv[1],argv[2],
 				argv[3],argv[4]);
 		}
+	}
+	return INT2NUM(result);
+}
+
+static void getFieldAsDateDayIgnoringCaseStr(params *p) {
+	p->result.i16r=p->sqlrc.sqlrcur->getFieldAsDateDayIgnoringCase(
+					NUM2INT(p->one),STR2CSTR(p->two));
+}
+static void getFieldAsDateDayIgnoringCaseStrDdMm(params *p) {
+	p->result.i16r=p->sqlrc.sqlrcur->getFieldAsDateDayIgnoringCase(
+					NUM2INT(p->one),STR2CSTR(p->two),
+					NUM2INT(p->three)!=0,
+					NUM2INT(p->four)!=0,
+					STR2CSTR(p->five));
+}
+/**
+ *  call-seq:
+ *  getFieldAsDateDayIgnoringCase(row,col)
+ *  getFieldAsDateDayIgnoringCase(row,col,ddmm,yyyyddmm,datedelimiters)
+ *
+ *  Interprets the specified field as a date and returns the day
+ *  component, ignoring the case of "col". */
+static VALUE sqlrcur_getFieldAsDateDayIgnoringCase(int argc,
+					VALUE *argv, VALUE self) {
+	sqlrcursordata	*sqlrcurdata;
+	Data_Get_Struct(self,sqlrcursordata,sqlrcurdata);
+	int16_t	result=0;
+	if (argc==2) {
+		RCUR2(result,i16r,sqlrcurdata->cur,
+			getFieldAsDateDayIgnoringCaseStr,
+			argv[0],argv[1]);
+	} else if (argc==5) {
+		RCUR5(result,i16r,sqlrcurdata->cur,
+			getFieldAsDateDayIgnoringCaseStrDdMm,
+			argv[0],argv[1],argv[2],
+			argv[3],argv[4]);
 	}
 	return INT2NUM(result);
 }
@@ -3597,6 +3787,42 @@ static VALUE sqlrcur_getFieldAsDateHour(int argc,
 	return INT2NUM(result);
 }
 
+static void getFieldAsDateHourIgnoringCaseStr(params *p) {
+	p->result.i16r=p->sqlrc.sqlrcur->getFieldAsDateHourIgnoringCase(
+					NUM2INT(p->one),STR2CSTR(p->two));
+}
+static void getFieldAsDateHourIgnoringCaseStrDdMm(params *p) {
+	p->result.i16r=p->sqlrc.sqlrcur->getFieldAsDateHourIgnoringCase(
+					NUM2INT(p->one),STR2CSTR(p->two),
+					NUM2INT(p->three)!=0,
+					NUM2INT(p->four)!=0,
+					STR2CSTR(p->five));
+}
+/**
+ *  call-seq:
+ *  getFieldAsDateHourIgnoringCase(row,col)
+ *  getFieldAsDateHourIgnoringCase(row,col,ddmm,yyyyddmm,datedelimiters)
+ *
+ *  Interprets the specified field as a date and returns the hour
+ *  component, ignoring the case of "col". */
+static VALUE sqlrcur_getFieldAsDateHourIgnoringCase(int argc,
+					VALUE *argv, VALUE self) {
+	sqlrcursordata	*sqlrcurdata;
+	Data_Get_Struct(self,sqlrcursordata,sqlrcurdata);
+	int16_t	result=0;
+	if (argc==2) {
+		RCUR2(result,i16r,sqlrcurdata->cur,
+			getFieldAsDateHourIgnoringCaseStr,
+			argv[0],argv[1]);
+	} else if (argc==5) {
+		RCUR5(result,i16r,sqlrcurdata->cur,
+			getFieldAsDateHourIgnoringCaseStrDdMm,
+			argv[0],argv[1],argv[2],
+			argv[3],argv[4]);
+	}
+	return INT2NUM(result);
+}
+
 static void getFieldAsDateMinuteStr(params *p) {
 	p->result.i16r=p->sqlrc.sqlrcur->getFieldAsDateMinute(
 					NUM2INT(p->one),STR2CSTR(p->two));
@@ -3655,6 +3881,42 @@ static VALUE sqlrcur_getFieldAsDateMinute(int argc,
 				argv[0],argv[1],argv[2],
 				argv[3],argv[4]);
 		}
+	}
+	return INT2NUM(result);
+}
+
+static void getFieldAsDateMinuteIgnoringCaseStr(params *p) {
+	p->result.i16r=p->sqlrc.sqlrcur->getFieldAsDateMinuteIgnoringCase(
+					NUM2INT(p->one),STR2CSTR(p->two));
+}
+static void getFieldAsDateMinuteIgnoringCaseStrDdMm(params *p) {
+	p->result.i16r=p->sqlrc.sqlrcur->getFieldAsDateMinuteIgnoringCase(
+					NUM2INT(p->one),STR2CSTR(p->two),
+					NUM2INT(p->three)!=0,
+					NUM2INT(p->four)!=0,
+					STR2CSTR(p->five));
+}
+/**
+ *  call-seq:
+ *  getFieldAsDateMinuteIgnoringCase(row,col)
+ *  getFieldAsDateMinuteIgnoringCase(row,col,ddmm,yyyyddmm,datedelimiters)
+ *
+ *  Interprets the specified field as a date and returns the minute
+ *  component, ignoring the case of "col". */
+static VALUE sqlrcur_getFieldAsDateMinuteIgnoringCase(int argc,
+					VALUE *argv, VALUE self) {
+	sqlrcursordata	*sqlrcurdata;
+	Data_Get_Struct(self,sqlrcursordata,sqlrcurdata);
+	int16_t	result=0;
+	if (argc==2) {
+		RCUR2(result,i16r,sqlrcurdata->cur,
+			getFieldAsDateMinuteIgnoringCaseStr,
+			argv[0],argv[1]);
+	} else if (argc==5) {
+		RCUR5(result,i16r,sqlrcurdata->cur,
+			getFieldAsDateMinuteIgnoringCaseStrDdMm,
+			argv[0],argv[1],argv[2],
+			argv[3],argv[4]);
 	}
 	return INT2NUM(result);
 }
@@ -3721,6 +3983,42 @@ static VALUE sqlrcur_getFieldAsDateSecond(int argc,
 	return INT2NUM(result);
 }
 
+static void getFieldAsDateSecondIgnoringCaseStr(params *p) {
+	p->result.i16r=p->sqlrc.sqlrcur->getFieldAsDateSecondIgnoringCase(
+					NUM2INT(p->one),STR2CSTR(p->two));
+}
+static void getFieldAsDateSecondIgnoringCaseStrDdMm(params *p) {
+	p->result.i16r=p->sqlrc.sqlrcur->getFieldAsDateSecondIgnoringCase(
+					NUM2INT(p->one),STR2CSTR(p->two),
+					NUM2INT(p->three)!=0,
+					NUM2INT(p->four)!=0,
+					STR2CSTR(p->five));
+}
+/**
+ *  call-seq:
+ *  getFieldAsDateSecondIgnoringCase(row,col)
+ *  getFieldAsDateSecondIgnoringCase(row,col,ddmm,yyyyddmm,datedelimiters)
+ *
+ *  Interprets the specified field as a date and returns the second
+ *  component, ignoring the case of "col". */
+static VALUE sqlrcur_getFieldAsDateSecondIgnoringCase(int argc,
+					VALUE *argv, VALUE self) {
+	sqlrcursordata	*sqlrcurdata;
+	Data_Get_Struct(self,sqlrcursordata,sqlrcurdata);
+	int16_t	result=0;
+	if (argc==2) {
+		RCUR2(result,i16r,sqlrcurdata->cur,
+			getFieldAsDateSecondIgnoringCaseStr,
+			argv[0],argv[1]);
+	} else if (argc==5) {
+		RCUR5(result,i16r,sqlrcurdata->cur,
+			getFieldAsDateSecondIgnoringCaseStrDdMm,
+			argv[0],argv[1],argv[2],
+			argv[3],argv[4]);
+	}
+	return INT2NUM(result);
+}
+
 static void getFieldAsDateMicrosecondStr(params *p) {
 	p->result.i32r=p->sqlrc.sqlrcur->getFieldAsDateMicrosecond(
 					NUM2INT(p->one),STR2CSTR(p->two));
@@ -3783,6 +4081,42 @@ static VALUE sqlrcur_getFieldAsDateMicrosecond(int argc,
 	return INT2NUM(result);
 }
 
+static void getFieldAsDateMicrosecondIgnoringCaseStr(params *p) {
+	p->result.i32r=p->sqlrc.sqlrcur->getFieldAsDateMicrosecondIgnoringCase(
+					NUM2INT(p->one),STR2CSTR(p->two));
+}
+static void getFieldAsDateMicrosecondIgnoringCaseStrDdMm(params *p) {
+	p->result.i32r=p->sqlrc.sqlrcur->getFieldAsDateMicrosecondIgnoringCase(
+					NUM2INT(p->one),STR2CSTR(p->two),
+					NUM2INT(p->three)!=0,
+					NUM2INT(p->four)!=0,
+					STR2CSTR(p->five));
+}
+/**
+ *  call-seq:
+ *  getFieldAsDateMicrosecondIgnoringCase(row,col)
+ *  getFieldAsDateMicrosecondIgnoringCase(row,col,ddmm,yyyyddmm,datedelimiters)
+ *
+ *  Interprets the specified field as a date and returns the microsecond
+ *  component, ignoring the case of "col". */
+static VALUE sqlrcur_getFieldAsDateMicrosecondIgnoringCase(int argc,
+					VALUE *argv, VALUE self) {
+	sqlrcursordata	*sqlrcurdata;
+	Data_Get_Struct(self,sqlrcursordata,sqlrcurdata);
+	int32_t	result=0;
+	if (argc==2) {
+		RCUR2(result,i32r,sqlrcurdata->cur,
+			getFieldAsDateMicrosecondIgnoringCaseStr,
+			argv[0],argv[1]);
+	} else if (argc==5) {
+		RCUR5(result,i32r,sqlrcurdata->cur,
+			getFieldAsDateMicrosecondIgnoringCaseStrDdMm,
+			argv[0],argv[1],argv[2],
+			argv[3],argv[4]);
+	}
+	return INT2NUM(result);
+}
+
 static void getFieldAsDateIsNegativeStr(params *p) {
 	p->result.br=p->sqlrc.sqlrcur->getFieldAsDateIsNegative(
 					NUM2INT(p->one),STR2CSTR(p->two));
@@ -3841,6 +4175,42 @@ static VALUE sqlrcur_getFieldAsDateIsNegative(int argc,
 				argv[0],argv[1],argv[2],
 				argv[3],argv[4]);
 		}
+	}
+	return (result)?Qtrue:Qfalse;
+}
+
+static void getFieldAsDateIsNegativeIgnoringCaseStr(params *p) {
+	p->result.br=p->sqlrc.sqlrcur->getFieldAsDateIsNegativeIgnoringCase(
+					NUM2INT(p->one),STR2CSTR(p->two));
+}
+static void getFieldAsDateIsNegativeIgnoringCaseStrDdMm(params *p) {
+	p->result.br=p->sqlrc.sqlrcur->getFieldAsDateIsNegativeIgnoringCase(
+					NUM2INT(p->one),STR2CSTR(p->two),
+					NUM2INT(p->three)!=0,
+					NUM2INT(p->four)!=0,
+					STR2CSTR(p->five));
+}
+/**
+ *  call-seq:
+ *  getFieldAsDateIsNegativeIgnoringCase(row,col)
+ *  getFieldAsDateIsNegativeIgnoringCase(row,col,ddmm,yyyyddmm,datedelimiters)
+ *
+ *  Interprets the specified field as a date and returns whether the
+ *  hour component is negative, ignoring the case of "col". */
+static VALUE sqlrcur_getFieldAsDateIsNegativeIgnoringCase(int argc,
+					VALUE *argv, VALUE self) {
+	sqlrcursordata	*sqlrcurdata;
+	Data_Get_Struct(self,sqlrcursordata,sqlrcurdata);
+	bool	result=false;
+	if (argc==2) {
+		RCUR2(result,br,sqlrcurdata->cur,
+			getFieldAsDateIsNegativeIgnoringCaseStr,
+			argv[0],argv[1]);
+	} else if (argc==5) {
+		RCUR5(result,br,sqlrcurdata->cur,
+			getFieldAsDateIsNegativeIgnoringCaseStrDdMm,
+			argv[0],argv[1],argv[2],
+			argv[3],argv[4]);
 	}
 	return (result)?Qtrue:Qfalse;
 }
@@ -4575,28 +4945,52 @@ void Init_SQLRCursor() {
 				(CAST)sqlrcur_getNullsAsNils,0);
 	rb_define_method(csqlrcursor,"getField",
 				(CAST)sqlrcur_getField,2);
+	rb_define_method(csqlrcursor,"getFieldIgnoringCase",
+				(CAST)sqlrcur_getFieldIgnoringCase,2);
 	rb_define_method(csqlrcursor,"getFieldAsInteger",
 				(CAST)sqlrcur_getFieldAsInteger,2);
+	rb_define_method(csqlrcursor,"getFieldAsIntegerIgnoringCase",
+				(CAST)sqlrcur_getFieldAsIntegerIgnoringCase,2);
 	rb_define_method(csqlrcursor,"getFieldAsDouble",
 				(CAST)sqlrcur_getFieldAsDouble,2);
+	rb_define_method(csqlrcursor,"getFieldAsDoubleIgnoringCase",
+				(CAST)sqlrcur_getFieldAsDoubleIgnoringCase,2);
 	rb_define_method(csqlrcursor,"getFieldAsBoolean",
 				(CAST)sqlrcur_getFieldAsBoolean,2);
+	rb_define_method(csqlrcursor,"getFieldAsBooleanIgnoringCase",
+				(CAST)sqlrcur_getFieldAsBooleanIgnoringCase,2);
 	rb_define_method(csqlrcursor,"getFieldAsDateYear",
 				(CAST)sqlrcur_getFieldAsDateYear,-1);
+	rb_define_method(csqlrcursor,"getFieldAsDateYearIgnoringCase",
+				(CAST)sqlrcur_getFieldAsDateYearIgnoringCase,-1);
 	rb_define_method(csqlrcursor,"getFieldAsDateMonth",
 				(CAST)sqlrcur_getFieldAsDateMonth,-1);
+	rb_define_method(csqlrcursor,"getFieldAsDateMonthIgnoringCase",
+				(CAST)sqlrcur_getFieldAsDateMonthIgnoringCase,-1);
 	rb_define_method(csqlrcursor,"getFieldAsDateDay",
 				(CAST)sqlrcur_getFieldAsDateDay,-1);
+	rb_define_method(csqlrcursor,"getFieldAsDateDayIgnoringCase",
+				(CAST)sqlrcur_getFieldAsDateDayIgnoringCase,-1);
 	rb_define_method(csqlrcursor,"getFieldAsDateHour",
 				(CAST)sqlrcur_getFieldAsDateHour,-1);
+	rb_define_method(csqlrcursor,"getFieldAsDateHourIgnoringCase",
+				(CAST)sqlrcur_getFieldAsDateHourIgnoringCase,-1);
 	rb_define_method(csqlrcursor,"getFieldAsDateMinute",
 				(CAST)sqlrcur_getFieldAsDateMinute,-1);
+	rb_define_method(csqlrcursor,"getFieldAsDateMinuteIgnoringCase",
+				(CAST)sqlrcur_getFieldAsDateMinuteIgnoringCase,-1);
 	rb_define_method(csqlrcursor,"getFieldAsDateSecond",
 				(CAST)sqlrcur_getFieldAsDateSecond,-1);
+	rb_define_method(csqlrcursor,"getFieldAsDateSecondIgnoringCase",
+				(CAST)sqlrcur_getFieldAsDateSecondIgnoringCase,-1);
 	rb_define_method(csqlrcursor,"getFieldAsDateMicrosecond",
 				(CAST)sqlrcur_getFieldAsDateMicrosecond,-1);
+	rb_define_method(csqlrcursor,"getFieldAsDateMicrosecondIgnoringCase",
+				(CAST)sqlrcur_getFieldAsDateMicrosecondIgnoringCase,-1);
 	rb_define_method(csqlrcursor,"getFieldAsDateIsNegative",
 				(CAST)sqlrcur_getFieldAsDateIsNegative,-1);
+	rb_define_method(csqlrcursor,"getFieldAsDateIsNegativeIgnoringCase",
+				(CAST)sqlrcur_getFieldAsDateIsNegativeIgnoringCase,-1);
 	rb_define_method(csqlrcursor,"getFieldLength",
 				(CAST)sqlrcur_getFieldLength,2);
 	rb_define_method(csqlrcursor,"getRow",

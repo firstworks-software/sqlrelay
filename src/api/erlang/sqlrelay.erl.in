@@ -37,26 +37,26 @@
 -export([colCount/0, rowCount/0, totalRows/0, affectedRows/0]).
 -export([firstRowIndex/0, endOfResultSet/0, nextResultSet/0]).
 -export([getNullsAsEmptyStrings/0, getNullsAsNulls/0]).
--export([getFieldByIndex/2, getFieldByName/2]).
--export([getFieldAsIntegerByIndex/2, getFieldAsIntegerByName/2]).
--export([getFieldAsDoubleByIndex/2, getFieldAsDoubleByName/2]).
--export([getFieldAsBooleanByIndex/2, getFieldAsBooleanByName/2]).
--export([getFieldAsDateYearByIndex/2, getFieldAsDateYearByName/2]).
--export([getFieldAsDateYearByIndexWithDdMm/5, getFieldAsDateYearByNameWithDdMm/5]).
--export([getFieldAsDateMonthByIndex/2, getFieldAsDateMonthByName/2]).
--export([getFieldAsDateMonthByIndexWithDdMm/5, getFieldAsDateMonthByNameWithDdMm/5]).
--export([getFieldAsDateDayByIndex/2, getFieldAsDateDayByName/2]).
--export([getFieldAsDateDayByIndexWithDdMm/5, getFieldAsDateDayByNameWithDdMm/5]).
--export([getFieldAsDateHourByIndex/2, getFieldAsDateHourByName/2]).
--export([getFieldAsDateHourByIndexWithDdMm/5, getFieldAsDateHourByNameWithDdMm/5]).
--export([getFieldAsDateMinuteByIndex/2, getFieldAsDateMinuteByName/2]).
--export([getFieldAsDateMinuteByIndexWithDdMm/5, getFieldAsDateMinuteByNameWithDdMm/5]).
--export([getFieldAsDateSecondByIndex/2, getFieldAsDateSecondByName/2]).
--export([getFieldAsDateSecondByIndexWithDdMm/5, getFieldAsDateSecondByNameWithDdMm/5]).
--export([getFieldAsDateMicrosecondByIndex/2, getFieldAsDateMicrosecondByName/2]).
--export([getFieldAsDateMicrosecondByIndexWithDdMm/5, getFieldAsDateMicrosecondByNameWithDdMm/5]).
--export([getFieldAsDateIsNegativeByIndex/2, getFieldAsDateIsNegativeByName/2]).
--export([getFieldAsDateIsNegativeByIndexWithDdMm/5, getFieldAsDateIsNegativeByNameWithDdMm/5]).
+-export([getFieldByIndex/2, getFieldByName/2, getFieldByNameIgnoringCase/2]).
+-export([getFieldAsIntegerByIndex/2, getFieldAsIntegerByName/2, getFieldAsIntegerByNameIgnoringCase/2]).
+-export([getFieldAsDoubleByIndex/2, getFieldAsDoubleByName/2, getFieldAsDoubleByNameIgnoringCase/2]).
+-export([getFieldAsBooleanByIndex/2, getFieldAsBooleanByName/2, getFieldAsBooleanByNameIgnoringCase/2]).
+-export([getFieldAsDateYearByIndex/2, getFieldAsDateYearByName/2, getFieldAsDateYearByNameIgnoringCase/2]).
+-export([getFieldAsDateYearByIndexWithDdMm/5, getFieldAsDateYearByNameWithDdMm/5, getFieldAsDateYearByNameWithDdMmIgnoringCase/5]).
+-export([getFieldAsDateMonthByIndex/2, getFieldAsDateMonthByName/2, getFieldAsDateMonthByNameIgnoringCase/2]).
+-export([getFieldAsDateMonthByIndexWithDdMm/5, getFieldAsDateMonthByNameWithDdMm/5, getFieldAsDateMonthByNameWithDdMmIgnoringCase/5]).
+-export([getFieldAsDateDayByIndex/2, getFieldAsDateDayByName/2, getFieldAsDateDayByNameIgnoringCase/2]).
+-export([getFieldAsDateDayByIndexWithDdMm/5, getFieldAsDateDayByNameWithDdMm/5, getFieldAsDateDayByNameWithDdMmIgnoringCase/5]).
+-export([getFieldAsDateHourByIndex/2, getFieldAsDateHourByName/2, getFieldAsDateHourByNameIgnoringCase/2]).
+-export([getFieldAsDateHourByIndexWithDdMm/5, getFieldAsDateHourByNameWithDdMm/5, getFieldAsDateHourByNameWithDdMmIgnoringCase/5]).
+-export([getFieldAsDateMinuteByIndex/2, getFieldAsDateMinuteByName/2, getFieldAsDateMinuteByNameIgnoringCase/2]).
+-export([getFieldAsDateMinuteByIndexWithDdMm/5, getFieldAsDateMinuteByNameWithDdMm/5, getFieldAsDateMinuteByNameWithDdMmIgnoringCase/5]).
+-export([getFieldAsDateSecondByIndex/2, getFieldAsDateSecondByName/2, getFieldAsDateSecondByNameIgnoringCase/2]).
+-export([getFieldAsDateSecondByIndexWithDdMm/5, getFieldAsDateSecondByNameWithDdMm/5, getFieldAsDateSecondByNameWithDdMmIgnoringCase/5]).
+-export([getFieldAsDateMicrosecondByIndex/2, getFieldAsDateMicrosecondByName/2, getFieldAsDateMicrosecondByNameIgnoringCase/2]).
+-export([getFieldAsDateMicrosecondByIndexWithDdMm/5, getFieldAsDateMicrosecondByNameWithDdMm/5, getFieldAsDateMicrosecondByNameWithDdMmIgnoringCase/5]).
+-export([getFieldAsDateIsNegativeByIndex/2, getFieldAsDateIsNegativeByName/2, getFieldAsDateIsNegativeByNameIgnoringCase/2]).
+-export([getFieldAsDateIsNegativeByIndexWithDdMm/5, getFieldAsDateIsNegativeByNameWithDdMm/5, getFieldAsDateIsNegativeByNameWithDdMmIgnoringCase/5]).
 -export([getFieldLengthByIndex/2, getFieldLengthByName/2]).
 -export([getRow/1, getRowLengths/1]).
 -export([getColumnNames/0, getColumnName/1]).
@@ -725,16 +725,24 @@ getFieldByIndex(Row, Col) when is_integer(Row), is_integer(Col) ->
 	call_port({getFieldByIndex, Row, Col}).
 
 %% @doc Returns the specified field as a string.
-getFieldByName(Row, Col) when is_integer(Row), is_list(Col) -> 
+getFieldByName(Row, Col) when is_integer(Row), is_list(Col) ->
 	call_port({getFieldByName, Row, Col}).
+
+%% @doc Returns the specified field as a string, ignoring the case of "col".
+getFieldByNameIgnoringCase(Row, Col) when is_integer(Row), is_list(Col) ->
+	call_port({getFieldByNameIgnoringCase, Row, Col}).
 
 %% @doc Returns the specified field as an integer.
 getFieldAsIntegerByIndex(Row, Col) when is_integer(Row), is_integer(Col) -> 
 	call_port({getFieldAsIntegerByIndex, Row, Col}).
 
 %% @doc Returns the specified field as an integer.
-getFieldAsIntegerByName(Row, Col) when is_integer(Row), is_list(Col) -> 
+getFieldAsIntegerByName(Row, Col) when is_integer(Row), is_list(Col) ->
 	call_port({getFieldAsIntegerByName, Row, Col}).
+
+%% @doc Returns the specified field as an integer, ignoring the case of "col".
+getFieldAsIntegerByNameIgnoringCase(Row, Col) when is_integer(Row), is_list(Col) ->
+	call_port({getFieldAsIntegerByNameIgnoringCase, Row, Col}).
 
 %% @doc Returns the specified field as a decimal.
 getFieldAsDoubleByIndex(Row, Col) when is_integer(Row), is_integer(Col) -> 
@@ -744,6 +752,10 @@ getFieldAsDoubleByIndex(Row, Col) when is_integer(Row), is_integer(Col) ->
 getFieldAsDoubleByName(Row, Col) when is_integer(Row), is_list(Col) ->
 	call_port({getFieldAsDoubleByName, Row, Col}).
 
+%% @doc Returns the specified field as a decimal, ignoring the case of "col".
+getFieldAsDoubleByNameIgnoringCase(Row, Col) when is_integer(Row), is_list(Col) ->
+	call_port({getFieldAsDoubleByNameIgnoringCase, Row, Col}).
+
 %% @doc Returns the specified field as a boolean.
 getFieldAsBooleanByIndex(Row, Col) when is_integer(Row), is_integer(Col) ->
 	call_port({getFieldAsBooleanByIndex, Row, Col}).
@@ -751,6 +763,10 @@ getFieldAsBooleanByIndex(Row, Col) when is_integer(Row), is_integer(Col) ->
 %% @doc Returns the specified field as a boolean.
 getFieldAsBooleanByName(Row, Col) when is_integer(Row), is_list(Col) ->
 	call_port({getFieldAsBooleanByName, Row, Col}).
+
+%% @doc Returns the specified field as a boolean, ignoring the case of "col".
+getFieldAsBooleanByNameIgnoringCase(Row, Col) when is_integer(Row), is_list(Col) ->
+	call_port({getFieldAsBooleanByNameIgnoringCase, Row, Col}).
 
 %% @doc Interprets the specified field as a date and returns the year component.
 getFieldAsDateYearByIndex(Row, Col) when is_integer(Row), is_integer(Col) ->
@@ -760,6 +776,10 @@ getFieldAsDateYearByIndex(Row, Col) when is_integer(Row), is_integer(Col) ->
 getFieldAsDateYearByName(Row, Col) when is_integer(Row), is_list(Col) ->
 	call_port({getFieldAsDateYearByName, Row, Col}).
 
+%% @doc Interprets the specified field as a date and returns the year component, ignoring the case of "col".
+getFieldAsDateYearByNameIgnoringCase(Row, Col) when is_integer(Row), is_list(Col) ->
+	call_port({getFieldAsDateYearByNameIgnoringCase, Row, Col}).
+
 %% @doc Interprets the specified field as a date and returns the year component, with ddmm, yyyyddmm, and datedelimiters hints.
 getFieldAsDateYearByIndexWithDdMm(Row, Col, DdMm, YyyyDdMm, DateDelimiters) when is_integer(Row), is_integer(Col), is_integer(DdMm), is_integer(YyyyDdMm), is_list(DateDelimiters) ->
 	call_port({getFieldAsDateYearByIndexWithDdMm, Row, Col, DdMm, YyyyDdMm, DateDelimiters}).
@@ -767,6 +787,10 @@ getFieldAsDateYearByIndexWithDdMm(Row, Col, DdMm, YyyyDdMm, DateDelimiters) when
 %% @doc Interprets the specified field as a date and returns the year component, with ddmm, yyyyddmm, and datedelimiters hints.
 getFieldAsDateYearByNameWithDdMm(Row, Col, DdMm, YyyyDdMm, DateDelimiters) when is_integer(Row), is_list(Col), is_integer(DdMm), is_integer(YyyyDdMm), is_list(DateDelimiters) ->
 	call_port({getFieldAsDateYearByNameWithDdMm, Row, Col, DdMm, YyyyDdMm, DateDelimiters}).
+
+%% @doc Interprets the specified field as a date and returns the year component, ignoring the case of "col", with ddmm, yyyyddmm, and datedelimiters hints.
+getFieldAsDateYearByNameWithDdMmIgnoringCase(Row, Col, DdMm, YyyyDdMm, DateDelimiters) when is_integer(Row), is_list(Col), is_integer(DdMm), is_integer(YyyyDdMm), is_list(DateDelimiters) ->
+	call_port({getFieldAsDateYearByNameWithDdMmIgnoringCase, Row, Col, DdMm, YyyyDdMm, DateDelimiters}).
 
 %% @doc Interprets the specified field as a date and returns the month component.
 getFieldAsDateMonthByIndex(Row, Col) when is_integer(Row), is_integer(Col) ->
@@ -776,6 +800,10 @@ getFieldAsDateMonthByIndex(Row, Col) when is_integer(Row), is_integer(Col) ->
 getFieldAsDateMonthByName(Row, Col) when is_integer(Row), is_list(Col) ->
 	call_port({getFieldAsDateMonthByName, Row, Col}).
 
+%% @doc Interprets the specified field as a date and returns the month component, ignoring the case of "col".
+getFieldAsDateMonthByNameIgnoringCase(Row, Col) when is_integer(Row), is_list(Col) ->
+	call_port({getFieldAsDateMonthByNameIgnoringCase, Row, Col}).
+
 %% @doc Interprets the specified field as a date and returns the month component, with ddmm, yyyyddmm, and datedelimiters hints.
 getFieldAsDateMonthByIndexWithDdMm(Row, Col, DdMm, YyyyDdMm, DateDelimiters) when is_integer(Row), is_integer(Col), is_integer(DdMm), is_integer(YyyyDdMm), is_list(DateDelimiters) ->
 	call_port({getFieldAsDateMonthByIndexWithDdMm, Row, Col, DdMm, YyyyDdMm, DateDelimiters}).
@@ -783,6 +811,10 @@ getFieldAsDateMonthByIndexWithDdMm(Row, Col, DdMm, YyyyDdMm, DateDelimiters) whe
 %% @doc Interprets the specified field as a date and returns the month component, with ddmm, yyyyddmm, and datedelimiters hints.
 getFieldAsDateMonthByNameWithDdMm(Row, Col, DdMm, YyyyDdMm, DateDelimiters) when is_integer(Row), is_list(Col), is_integer(DdMm), is_integer(YyyyDdMm), is_list(DateDelimiters) ->
 	call_port({getFieldAsDateMonthByNameWithDdMm, Row, Col, DdMm, YyyyDdMm, DateDelimiters}).
+
+%% @doc Interprets the specified field as a date and returns the month component, ignoring the case of "col", with ddmm, yyyyddmm, and datedelimiters hints.
+getFieldAsDateMonthByNameWithDdMmIgnoringCase(Row, Col, DdMm, YyyyDdMm, DateDelimiters) when is_integer(Row), is_list(Col), is_integer(DdMm), is_integer(YyyyDdMm), is_list(DateDelimiters) ->
+	call_port({getFieldAsDateMonthByNameWithDdMmIgnoringCase, Row, Col, DdMm, YyyyDdMm, DateDelimiters}).
 
 %% @doc Interprets the specified field as a date and returns the day component.
 getFieldAsDateDayByIndex(Row, Col) when is_integer(Row), is_integer(Col) ->
@@ -792,6 +824,10 @@ getFieldAsDateDayByIndex(Row, Col) when is_integer(Row), is_integer(Col) ->
 getFieldAsDateDayByName(Row, Col) when is_integer(Row), is_list(Col) ->
 	call_port({getFieldAsDateDayByName, Row, Col}).
 
+%% @doc Interprets the specified field as a date and returns the day component, ignoring the case of "col".
+getFieldAsDateDayByNameIgnoringCase(Row, Col) when is_integer(Row), is_list(Col) ->
+	call_port({getFieldAsDateDayByNameIgnoringCase, Row, Col}).
+
 %% @doc Interprets the specified field as a date and returns the day component, with ddmm, yyyyddmm, and datedelimiters hints.
 getFieldAsDateDayByIndexWithDdMm(Row, Col, DdMm, YyyyDdMm, DateDelimiters) when is_integer(Row), is_integer(Col), is_integer(DdMm), is_integer(YyyyDdMm), is_list(DateDelimiters) ->
 	call_port({getFieldAsDateDayByIndexWithDdMm, Row, Col, DdMm, YyyyDdMm, DateDelimiters}).
@@ -799,6 +835,10 @@ getFieldAsDateDayByIndexWithDdMm(Row, Col, DdMm, YyyyDdMm, DateDelimiters) when 
 %% @doc Interprets the specified field as a date and returns the day component, with ddmm, yyyyddmm, and datedelimiters hints.
 getFieldAsDateDayByNameWithDdMm(Row, Col, DdMm, YyyyDdMm, DateDelimiters) when is_integer(Row), is_list(Col), is_integer(DdMm), is_integer(YyyyDdMm), is_list(DateDelimiters) ->
 	call_port({getFieldAsDateDayByNameWithDdMm, Row, Col, DdMm, YyyyDdMm, DateDelimiters}).
+
+%% @doc Interprets the specified field as a date and returns the day component, ignoring the case of "col", with ddmm, yyyyddmm, and datedelimiters hints.
+getFieldAsDateDayByNameWithDdMmIgnoringCase(Row, Col, DdMm, YyyyDdMm, DateDelimiters) when is_integer(Row), is_list(Col), is_integer(DdMm), is_integer(YyyyDdMm), is_list(DateDelimiters) ->
+	call_port({getFieldAsDateDayByNameWithDdMmIgnoringCase, Row, Col, DdMm, YyyyDdMm, DateDelimiters}).
 
 %% @doc Interprets the specified field as a date and returns the hour component.
 getFieldAsDateHourByIndex(Row, Col) when is_integer(Row), is_integer(Col) ->
@@ -808,6 +848,10 @@ getFieldAsDateHourByIndex(Row, Col) when is_integer(Row), is_integer(Col) ->
 getFieldAsDateHourByName(Row, Col) when is_integer(Row), is_list(Col) ->
 	call_port({getFieldAsDateHourByName, Row, Col}).
 
+%% @doc Interprets the specified field as a date and returns the hour component, ignoring the case of "col".
+getFieldAsDateHourByNameIgnoringCase(Row, Col) when is_integer(Row), is_list(Col) ->
+	call_port({getFieldAsDateHourByNameIgnoringCase, Row, Col}).
+
 %% @doc Interprets the specified field as a date and returns the hour component, with ddmm, yyyyddmm, and datedelimiters hints.
 getFieldAsDateHourByIndexWithDdMm(Row, Col, DdMm, YyyyDdMm, DateDelimiters) when is_integer(Row), is_integer(Col), is_integer(DdMm), is_integer(YyyyDdMm), is_list(DateDelimiters) ->
 	call_port({getFieldAsDateHourByIndexWithDdMm, Row, Col, DdMm, YyyyDdMm, DateDelimiters}).
@@ -815,6 +859,10 @@ getFieldAsDateHourByIndexWithDdMm(Row, Col, DdMm, YyyyDdMm, DateDelimiters) when
 %% @doc Interprets the specified field as a date and returns the hour component, with ddmm, yyyyddmm, and datedelimiters hints.
 getFieldAsDateHourByNameWithDdMm(Row, Col, DdMm, YyyyDdMm, DateDelimiters) when is_integer(Row), is_list(Col), is_integer(DdMm), is_integer(YyyyDdMm), is_list(DateDelimiters) ->
 	call_port({getFieldAsDateHourByNameWithDdMm, Row, Col, DdMm, YyyyDdMm, DateDelimiters}).
+
+%% @doc Interprets the specified field as a date and returns the hour component, ignoring the case of "col", with ddmm, yyyyddmm, and datedelimiters hints.
+getFieldAsDateHourByNameWithDdMmIgnoringCase(Row, Col, DdMm, YyyyDdMm, DateDelimiters) when is_integer(Row), is_list(Col), is_integer(DdMm), is_integer(YyyyDdMm), is_list(DateDelimiters) ->
+	call_port({getFieldAsDateHourByNameWithDdMmIgnoringCase, Row, Col, DdMm, YyyyDdMm, DateDelimiters}).
 
 %% @doc Interprets the specified field as a date and returns the minute component.
 getFieldAsDateMinuteByIndex(Row, Col) when is_integer(Row), is_integer(Col) ->
@@ -824,6 +872,10 @@ getFieldAsDateMinuteByIndex(Row, Col) when is_integer(Row), is_integer(Col) ->
 getFieldAsDateMinuteByName(Row, Col) when is_integer(Row), is_list(Col) ->
 	call_port({getFieldAsDateMinuteByName, Row, Col}).
 
+%% @doc Interprets the specified field as a date and returns the minute component, ignoring the case of "col".
+getFieldAsDateMinuteByNameIgnoringCase(Row, Col) when is_integer(Row), is_list(Col) ->
+	call_port({getFieldAsDateMinuteByNameIgnoringCase, Row, Col}).
+
 %% @doc Interprets the specified field as a date and returns the minute component, with ddmm, yyyyddmm, and datedelimiters hints.
 getFieldAsDateMinuteByIndexWithDdMm(Row, Col, DdMm, YyyyDdMm, DateDelimiters) when is_integer(Row), is_integer(Col), is_integer(DdMm), is_integer(YyyyDdMm), is_list(DateDelimiters) ->
 	call_port({getFieldAsDateMinuteByIndexWithDdMm, Row, Col, DdMm, YyyyDdMm, DateDelimiters}).
@@ -831,6 +883,10 @@ getFieldAsDateMinuteByIndexWithDdMm(Row, Col, DdMm, YyyyDdMm, DateDelimiters) wh
 %% @doc Interprets the specified field as a date and returns the minute component, with ddmm, yyyyddmm, and datedelimiters hints.
 getFieldAsDateMinuteByNameWithDdMm(Row, Col, DdMm, YyyyDdMm, DateDelimiters) when is_integer(Row), is_list(Col), is_integer(DdMm), is_integer(YyyyDdMm), is_list(DateDelimiters) ->
 	call_port({getFieldAsDateMinuteByNameWithDdMm, Row, Col, DdMm, YyyyDdMm, DateDelimiters}).
+
+%% @doc Interprets the specified field as a date and returns the minute component, ignoring the case of "col", with ddmm, yyyyddmm, and datedelimiters hints.
+getFieldAsDateMinuteByNameWithDdMmIgnoringCase(Row, Col, DdMm, YyyyDdMm, DateDelimiters) when is_integer(Row), is_list(Col), is_integer(DdMm), is_integer(YyyyDdMm), is_list(DateDelimiters) ->
+	call_port({getFieldAsDateMinuteByNameWithDdMmIgnoringCase, Row, Col, DdMm, YyyyDdMm, DateDelimiters}).
 
 %% @doc Interprets the specified field as a date and returns the second component.
 getFieldAsDateSecondByIndex(Row, Col) when is_integer(Row), is_integer(Col) ->
@@ -840,6 +896,10 @@ getFieldAsDateSecondByIndex(Row, Col) when is_integer(Row), is_integer(Col) ->
 getFieldAsDateSecondByName(Row, Col) when is_integer(Row), is_list(Col) ->
 	call_port({getFieldAsDateSecondByName, Row, Col}).
 
+%% @doc Interprets the specified field as a date and returns the second component, ignoring the case of "col".
+getFieldAsDateSecondByNameIgnoringCase(Row, Col) when is_integer(Row), is_list(Col) ->
+	call_port({getFieldAsDateSecondByNameIgnoringCase, Row, Col}).
+
 %% @doc Interprets the specified field as a date and returns the second component, with ddmm, yyyyddmm, and datedelimiters hints.
 getFieldAsDateSecondByIndexWithDdMm(Row, Col, DdMm, YyyyDdMm, DateDelimiters) when is_integer(Row), is_integer(Col), is_integer(DdMm), is_integer(YyyyDdMm), is_list(DateDelimiters) ->
 	call_port({getFieldAsDateSecondByIndexWithDdMm, Row, Col, DdMm, YyyyDdMm, DateDelimiters}).
@@ -847,6 +907,10 @@ getFieldAsDateSecondByIndexWithDdMm(Row, Col, DdMm, YyyyDdMm, DateDelimiters) wh
 %% @doc Interprets the specified field as a date and returns the second component, with ddmm, yyyyddmm, and datedelimiters hints.
 getFieldAsDateSecondByNameWithDdMm(Row, Col, DdMm, YyyyDdMm, DateDelimiters) when is_integer(Row), is_list(Col), is_integer(DdMm), is_integer(YyyyDdMm), is_list(DateDelimiters) ->
 	call_port({getFieldAsDateSecondByNameWithDdMm, Row, Col, DdMm, YyyyDdMm, DateDelimiters}).
+
+%% @doc Interprets the specified field as a date and returns the second component, ignoring the case of "col", with ddmm, yyyyddmm, and datedelimiters hints.
+getFieldAsDateSecondByNameWithDdMmIgnoringCase(Row, Col, DdMm, YyyyDdMm, DateDelimiters) when is_integer(Row), is_list(Col), is_integer(DdMm), is_integer(YyyyDdMm), is_list(DateDelimiters) ->
+	call_port({getFieldAsDateSecondByNameWithDdMmIgnoringCase, Row, Col, DdMm, YyyyDdMm, DateDelimiters}).
 
 %% @doc Interprets the specified field as a date and returns the microsecond component.
 getFieldAsDateMicrosecondByIndex(Row, Col) when is_integer(Row), is_integer(Col) ->
@@ -856,6 +920,10 @@ getFieldAsDateMicrosecondByIndex(Row, Col) when is_integer(Row), is_integer(Col)
 getFieldAsDateMicrosecondByName(Row, Col) when is_integer(Row), is_list(Col) ->
 	call_port({getFieldAsDateMicrosecondByName, Row, Col}).
 
+%% @doc Interprets the specified field as a date and returns the microsecond component, ignoring the case of "col".
+getFieldAsDateMicrosecondByNameIgnoringCase(Row, Col) when is_integer(Row), is_list(Col) ->
+	call_port({getFieldAsDateMicrosecondByNameIgnoringCase, Row, Col}).
+
 %% @doc Interprets the specified field as a date and returns the microsecond component, with ddmm, yyyyddmm, and datedelimiters hints.
 getFieldAsDateMicrosecondByIndexWithDdMm(Row, Col, DdMm, YyyyDdMm, DateDelimiters) when is_integer(Row), is_integer(Col), is_integer(DdMm), is_integer(YyyyDdMm), is_list(DateDelimiters) ->
 	call_port({getFieldAsDateMicrosecondByIndexWithDdMm, Row, Col, DdMm, YyyyDdMm, DateDelimiters}).
@@ -863,6 +931,10 @@ getFieldAsDateMicrosecondByIndexWithDdMm(Row, Col, DdMm, YyyyDdMm, DateDelimiter
 %% @doc Interprets the specified field as a date and returns the microsecond component, with ddmm, yyyyddmm, and datedelimiters hints.
 getFieldAsDateMicrosecondByNameWithDdMm(Row, Col, DdMm, YyyyDdMm, DateDelimiters) when is_integer(Row), is_list(Col), is_integer(DdMm), is_integer(YyyyDdMm), is_list(DateDelimiters) ->
 	call_port({getFieldAsDateMicrosecondByNameWithDdMm, Row, Col, DdMm, YyyyDdMm, DateDelimiters}).
+
+%% @doc Interprets the specified field as a date and returns the microsecond component, ignoring the case of "col", with ddmm, yyyyddmm, and datedelimiters hints.
+getFieldAsDateMicrosecondByNameWithDdMmIgnoringCase(Row, Col, DdMm, YyyyDdMm, DateDelimiters) when is_integer(Row), is_list(Col), is_integer(DdMm), is_integer(YyyyDdMm), is_list(DateDelimiters) ->
+	call_port({getFieldAsDateMicrosecondByNameWithDdMmIgnoringCase, Row, Col, DdMm, YyyyDdMm, DateDelimiters}).
 
 %% @doc Interprets the specified field as a date and returns whether the hour component is negative.
 getFieldAsDateIsNegativeByIndex(Row, Col) when is_integer(Row), is_integer(Col) ->
@@ -872,6 +944,10 @@ getFieldAsDateIsNegativeByIndex(Row, Col) when is_integer(Row), is_integer(Col) 
 getFieldAsDateIsNegativeByName(Row, Col) when is_integer(Row), is_list(Col) ->
 	call_port({getFieldAsDateIsNegativeByName, Row, Col}).
 
+%% @doc Interprets the specified field as a date and returns whether the hour component is negative, ignoring the case of "col".
+getFieldAsDateIsNegativeByNameIgnoringCase(Row, Col) when is_integer(Row), is_list(Col) ->
+	call_port({getFieldAsDateIsNegativeByNameIgnoringCase, Row, Col}).
+
 %% @doc Interprets the specified field as a date and returns whether the hour component is negative, with ddmm, yyyyddmm, and datedelimiters hints.
 getFieldAsDateIsNegativeByIndexWithDdMm(Row, Col, DdMm, YyyyDdMm, DateDelimiters) when is_integer(Row), is_integer(Col), is_integer(DdMm), is_integer(YyyyDdMm), is_list(DateDelimiters) ->
 	call_port({getFieldAsDateIsNegativeByIndexWithDdMm, Row, Col, DdMm, YyyyDdMm, DateDelimiters}).
@@ -879,6 +955,10 @@ getFieldAsDateIsNegativeByIndexWithDdMm(Row, Col, DdMm, YyyyDdMm, DateDelimiters
 %% @doc Interprets the specified field as a date and returns whether the hour component is negative, with ddmm, yyyyddmm, and datedelimiters hints.
 getFieldAsDateIsNegativeByNameWithDdMm(Row, Col, DdMm, YyyyDdMm, DateDelimiters) when is_integer(Row), is_list(Col), is_integer(DdMm), is_integer(YyyyDdMm), is_list(DateDelimiters) ->
 	call_port({getFieldAsDateIsNegativeByNameWithDdMm, Row, Col, DdMm, YyyyDdMm, DateDelimiters}).
+
+%% @doc Interprets the specified field as a date and returns whether the hour component is negative, ignoring the case of "col", with ddmm, yyyyddmm, and datedelimiters hints.
+getFieldAsDateIsNegativeByNameWithDdMmIgnoringCase(Row, Col, DdMm, YyyyDdMm, DateDelimiters) when is_integer(Row), is_list(Col), is_integer(DdMm), is_integer(YyyyDdMm), is_list(DateDelimiters) ->
+	call_port({getFieldAsDateIsNegativeByNameWithDdMmIgnoringCase, Row, Col, DdMm, YyyyDdMm, DateDelimiters}).
 
 %% @doc Returns the length of the specified field.
 getFieldLengthByIndex(Row, Col) when is_integer(Row), is_integer(Col) -> 

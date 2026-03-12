@@ -543,18 +543,30 @@ public class SQLRCursor {
 	/** Returns a pointer to the value of the 
 	 *  specified row and column.  */
 	public native String	getField(long row, String col);
+	/** Returns the specified field as a string,
+	 *  ignoring the case of "col". */
+	public native String	getFieldIgnoringCase(long row, String col);
 	/** Returns the specified field as a long integer */
 	public native long	getFieldAsInteger(long row, int col);
 	/** Returns the specified field as a long integer */
 	public native long	getFieldAsInteger(long row, String col);
+	/** Returns the specified field as a long integer,
+	 *  ignoring the case of "col". */
+	public native long	getFieldAsIntegerIgnoringCase(long row, String col);
 	/** Returns the specified field as a double floating point number */
 	public native double	getFieldAsDouble(long row, int col);
 	/** Returns the specified field as a double floating point number */
 	public native double	getFieldAsDouble(long row, String col);
+	/** Returns the specified field as a double floating point number,
+	 *  ignoring the case of "col". */
+	public native double	getFieldAsDoubleIgnoringCase(long row, String col);
 	/** Returns the specified field as a boolean */
 	public native boolean	getFieldAsBoolean(long row, int col);
 	/** Returns the specified field as a boolean */
 	public native boolean	getFieldAsBoolean(long row, String col);
+	/** Returns the specified field as a boolean,
+	 *  ignoring the case of "col". */
+	public native boolean	getFieldAsBooleanIgnoringCase(long row, String col);
 	/** Interprets the specified field as a date
 	 *  and returns the year component. */
 	public native short	getFieldAsDateYear(long row, int col);
@@ -569,6 +581,16 @@ public class SQLRCursor {
 	/** Interprets the specified field as a date
 	 *  and returns the year component. */
 	public native short	getFieldAsDateYear(long row, String col,
+					boolean ddmm, boolean yyyyddmm,
+					String datedelimiters);
+	/** Interprets the specified field as a date
+	 *  and returns the year component,
+	 *  ignoring the case of "col". */
+	public native short	getFieldAsDateYearIgnoringCase(long row, String col);
+	/** Interprets the specified field as a date
+	 *  and returns the year component,
+	 *  ignoring the case of "col". */
+	public native short	getFieldAsDateYearIgnoringCase(long row, String col,
 					boolean ddmm, boolean yyyyddmm,
 					String datedelimiters);
 	/** Interprets the specified field as a date
@@ -588,6 +610,16 @@ public class SQLRCursor {
 					boolean ddmm, boolean yyyyddmm,
 					String datedelimiters);
 	/** Interprets the specified field as a date
+	 *  and returns the month component,
+	 *  ignoring the case of "col". */
+	public native short	getFieldAsDateMonthIgnoringCase(long row, String col);
+	/** Interprets the specified field as a date
+	 *  and returns the month component,
+	 *  ignoring the case of "col". */
+	public native short	getFieldAsDateMonthIgnoringCase(long row, String col,
+					boolean ddmm, boolean yyyyddmm,
+					String datedelimiters);
+	/** Interprets the specified field as a date
 	 *  and returns the day component. */
 	public native short	getFieldAsDateDay(long row, int col);
 	/** Interprets the specified field as a date
@@ -601,6 +633,16 @@ public class SQLRCursor {
 	/** Interprets the specified field as a date
 	 *  and returns the day component. */
 	public native short	getFieldAsDateDay(long row, String col,
+					boolean ddmm, boolean yyyyddmm,
+					String datedelimiters);
+	/** Interprets the specified field as a date
+	 *  and returns the day component,
+	 *  ignoring the case of "col". */
+	public native short	getFieldAsDateDayIgnoringCase(long row, String col);
+	/** Interprets the specified field as a date
+	 *  and returns the day component,
+	 *  ignoring the case of "col". */
+	public native short	getFieldAsDateDayIgnoringCase(long row, String col,
 					boolean ddmm, boolean yyyyddmm,
 					String datedelimiters);
 	/** Interprets the specified field as a date
@@ -620,6 +662,16 @@ public class SQLRCursor {
 					boolean ddmm, boolean yyyyddmm,
 					String datedelimiters);
 	/** Interprets the specified field as a date
+	 *  and returns the hour component,
+	 *  ignoring the case of "col". */
+	public native short	getFieldAsDateHourIgnoringCase(long row, String col);
+	/** Interprets the specified field as a date
+	 *  and returns the hour component,
+	 *  ignoring the case of "col". */
+	public native short	getFieldAsDateHourIgnoringCase(long row, String col,
+					boolean ddmm, boolean yyyyddmm,
+					String datedelimiters);
+	/** Interprets the specified field as a date
 	 *  and returns the minute component. */
 	public native short	getFieldAsDateMinute(long row, int col);
 	/** Interprets the specified field as a date
@@ -633,6 +685,16 @@ public class SQLRCursor {
 	/** Interprets the specified field as a date
 	 *  and returns the minute component. */
 	public native short	getFieldAsDateMinute(long row, String col,
+					boolean ddmm, boolean yyyyddmm,
+					String datedelimiters);
+	/** Interprets the specified field as a date
+	 *  and returns the minute component,
+	 *  ignoring the case of "col". */
+	public native short	getFieldAsDateMinuteIgnoringCase(long row, String col);
+	/** Interprets the specified field as a date
+	 *  and returns the minute component,
+	 *  ignoring the case of "col". */
+	public native short	getFieldAsDateMinuteIgnoringCase(long row, String col,
 					boolean ddmm, boolean yyyyddmm,
 					String datedelimiters);
 	/** Interprets the specified field as a date
@@ -652,6 +714,16 @@ public class SQLRCursor {
 					boolean ddmm, boolean yyyyddmm,
 					String datedelimiters);
 	/** Interprets the specified field as a date
+	 *  and returns the second component,
+	 *  ignoring the case of "col". */
+	public native short	getFieldAsDateSecondIgnoringCase(long row, String col);
+	/** Interprets the specified field as a date
+	 *  and returns the second component,
+	 *  ignoring the case of "col". */
+	public native short	getFieldAsDateSecondIgnoringCase(long row, String col,
+					boolean ddmm, boolean yyyyddmm,
+					String datedelimiters);
+	/** Interprets the specified field as a date
 	 *  and returns the microsecond component. */
 	public native int	getFieldAsDateMicrosecond(long row, int col);
 	/** Interprets the specified field as a date
@@ -668,6 +740,16 @@ public class SQLRCursor {
 					boolean ddmm, boolean yyyyddmm,
 					String datedelimiters);
 	/** Interprets the specified field as a date
+	 *  and returns the microsecond component,
+	 *  ignoring the case of "col". */
+	public native int	getFieldAsDateMicrosecondIgnoringCase(long row, String col);
+	/** Interprets the specified field as a date
+	 *  and returns the microsecond component,
+	 *  ignoring the case of "col". */
+	public native int	getFieldAsDateMicrosecondIgnoringCase(long row, String col,
+					boolean ddmm, boolean yyyyddmm,
+					String datedelimiters);
+	/** Interprets the specified field as a date
 	 *  and returns whether the value is negative. */
 	public native boolean	getFieldAsDateIsNegative(long row, int col);
 	/** Interprets the specified field as a date
@@ -681,6 +763,16 @@ public class SQLRCursor {
 	/** Interprets the specified field as a date
 	 *  and returns whether the value is negative. */
 	public native boolean	getFieldAsDateIsNegative(long row, String col,
+					boolean ddmm, boolean yyyyddmm,
+					String datedelimiters);
+	/** Interprets the specified field as a date
+	 *  and returns whether the value is negative,
+	 *  ignoring the case of "col". */
+	public native boolean	getFieldAsDateIsNegativeIgnoringCase(long row, String col);
+	/** Interprets the specified field as a date
+	 *  and returns whether the value is negative,
+	 *  ignoring the case of "col". */
+	public native boolean	getFieldAsDateIsNegativeIgnoringCase(long row, String col,
 					boolean ddmm, boolean yyyyddmm,
 					String datedelimiters);
 	/** Returns a pointer to the value of the

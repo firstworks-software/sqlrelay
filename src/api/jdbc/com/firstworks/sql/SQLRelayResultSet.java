@@ -436,7 +436,8 @@ public class SQLRelayResultSet implements ResultSet {
 		validateColumn(columnlabel);
 		String	field=null;
 		synchronized (networklock) {
-			field=sqlrcur.getField(currentrow-1,columnlabel);
+			field=sqlrcur.getFieldIgnoringCase(
+						currentrow-1,columnlabel);
 		}
 		field=truncateField(isCharBinaryCol(columnlabel),field);
 		wasnull=(field==null);
@@ -494,7 +495,8 @@ public class SQLRelayResultSet implements ResultSet {
 		validateColumn(columnlabel);
 		String	field=null;
 		synchronized (networklock) {
-			field=sqlrcur.getField(currentrow-1,columnlabel);
+			field=sqlrcur.getFieldIgnoringCase(
+						currentrow-1,columnlabel);
 		}
 		wasnull=(field==null);
 		drv.debugPrintln("column: "+columnlabel);
@@ -513,7 +515,8 @@ public class SQLRelayResultSet implements ResultSet {
 		validateColumn(columnlabel);
 		String	field=null;
 		synchronized (networklock) {
-			field=sqlrcur.getField(currentrow-1,columnlabel);
+			field=sqlrcur.getFieldIgnoringCase(
+						currentrow-1,columnlabel);
 		}
 		wasnull=(field==null);
 		drv.debugPrintln("column: "+columnlabel);
@@ -645,10 +648,11 @@ public class SQLRelayResultSet implements ResultSet {
 		validateColumn(columnlabel);
 		boolean	field=false;
 		synchronized (networklock) {
-			field=sqlrcur.getFieldAsBoolean(
-					currentrow-1,columnlabel);
-			wasnull=(sqlrcur.getField(
-					currentrow-1,columnlabel)==null);
+			field=sqlrcur.getFieldAsBooleanIgnoringCase(
+						currentrow-1,columnlabel);
+			wasnull=(sqlrcur.getFieldIgnoringCase(
+						currentrow-1,columnlabel)==
+						null);
 		}
 		drv.debugPrintln("column: "+columnlabel);
 		drv.debugPrintln("field: "+field);
@@ -685,10 +689,11 @@ public class SQLRelayResultSet implements ResultSet {
 		validateColumn(columnlabel);
 		long	field=0;
 		synchronized (networklock) {
-			field=sqlrcur.getFieldAsInteger(
-					currentrow-1,columnlabel);
-			wasnull=(sqlrcur.getField(
-					currentrow-1,columnlabel)==null);
+			field=sqlrcur.getFieldAsIntegerIgnoringCase(
+						currentrow-1,columnlabel);
+			wasnull=(sqlrcur.getFieldIgnoringCase(
+						currentrow-1,columnlabel)==
+						null);
 		}
 		drv.debugPrintln("column: "+columnlabel);
 		drv.debugPrintln("field: "+field);
@@ -764,7 +769,8 @@ public class SQLRelayResultSet implements ResultSet {
 		validateColumn(columnlabel);
 		String	field=null;
 		synchronized (networklock) {
-			field=sqlrcur.getField(currentrow-1,columnlabel);
+			field=sqlrcur.getFieldIgnoringCase(
+						currentrow-1,columnlabel);
 		}
 		field=truncateField(isCharBinaryCol(columnlabel),field);
 		wasnull=(field==null);
@@ -967,7 +973,8 @@ public class SQLRelayResultSet implements ResultSet {
 		validateColumn(columnlabel);
 		String	field=null;
 		synchronized (networklock) {
-			field=sqlrcur.getField(currentrow-1,columnlabel);
+			field=sqlrcur.getFieldIgnoringCase(
+						currentrow-1,columnlabel);
 		}
 		wasnull=(field==null);
 		drv.debugPrintln("column: "+columnlabel);
@@ -1007,10 +1014,11 @@ public class SQLRelayResultSet implements ResultSet {
 		validateColumn(columnlabel);
 		double	field=0.0;
 		synchronized (networklock) {
-			field=sqlrcur.getFieldAsDouble(
-					currentrow-1,columnlabel);
-			wasnull=(sqlrcur.getField(
-					currentrow-1,columnlabel)==null);
+			field=sqlrcur.getFieldAsDoubleIgnoringCase(
+						currentrow-1,columnlabel);
+			wasnull=(sqlrcur.getFieldIgnoringCase(
+						currentrow-1,columnlabel)==
+						null);
 		}
 		drv.debugPrintln("column: "+columnlabel);
 		drv.debugPrintln("field: "+field);
@@ -1066,10 +1074,11 @@ public class SQLRelayResultSet implements ResultSet {
 		validateColumn(columnlabel);
 		float	field=0.0f;
 		synchronized (networklock) {
-			field=(float)sqlrcur.getFieldAsDouble(
-					currentrow-1,columnlabel);
-			wasnull=(sqlrcur.getField(
-					currentrow-1,columnlabel)==null);
+			field=(float)sqlrcur.getFieldAsDoubleIgnoringCase(
+						currentrow-1,columnlabel);
+			wasnull=(sqlrcur.getFieldIgnoringCase(
+						currentrow-1,columnlabel)==
+						null);
 		}
 		drv.debugPrintln("column: "+columnlabel);
 		drv.debugPrintln("field: "+field);
@@ -1117,10 +1126,11 @@ public class SQLRelayResultSet implements ResultSet {
 		validateColumn(columnlabel);
 		int	field=0;
 		synchronized (networklock) {
-			field=(int)sqlrcur.getFieldAsInteger(
-					currentrow-1,columnlabel);
-			wasnull=(sqlrcur.getField(
-					currentrow-1,columnlabel)==null);
+			field=(int)sqlrcur.getFieldAsIntegerIgnoringCase(
+						currentrow-1,columnlabel);
+			wasnull=(sqlrcur.getFieldIgnoringCase(
+						currentrow-1,columnlabel)==
+						null);
 		}
 		drv.debugPrintln("column: "+columnlabel);
 		drv.debugPrintln("field: "+field);
@@ -1157,10 +1167,11 @@ public class SQLRelayResultSet implements ResultSet {
 		validateColumn(columnlabel);
 		long	field=0;
 		synchronized (networklock) {
-			field=sqlrcur.getFieldAsInteger(
-					currentrow-1,columnlabel);
-			wasnull=(sqlrcur.getField(
-					currentrow-1,columnlabel)==null);
+			field=sqlrcur.getFieldAsIntegerIgnoringCase(
+						currentrow-1,columnlabel);
+			wasnull=(sqlrcur.getFieldIgnoringCase(
+						currentrow-1,columnlabel)==
+						null);
 		}
 		drv.debugPrintln("column: "+columnlabel);
 		drv.debugPrintln("field: "+field);
@@ -1409,8 +1420,8 @@ public class SQLRelayResultSet implements ResultSet {
 		validateColumn(columnlabel);
 		conn.throwFeatureNotSupportedException();
 		// FIXME: create an instance of "type", call its readSQL()
-		// method on getField(currentrow-1,columnlabel) and return it,
-		// or return a String if "type" is null
+		// method on getFieldIgnoringCase(currentrow-1,columnlabel)
+		// and return it, or return a String if "type" is null
 		drv.debugEnd();
 		return null;
 	}
@@ -1510,10 +1521,11 @@ public class SQLRelayResultSet implements ResultSet {
 		drv.debugPrintln("column label: "+columnlabel);
 		short	field=0;
 		synchronized (networklock) {
-			field=(short)sqlrcur.getFieldAsInteger(
-					currentrow-1,columnlabel);
-			wasnull=(sqlrcur.getField(
-					currentrow-1,columnlabel)==null);
+			field=(short)sqlrcur.getFieldAsIntegerIgnoringCase(
+						currentrow-1,columnlabel);
+			wasnull=(sqlrcur.getFieldIgnoringCase(
+						currentrow-1,columnlabel)==
+						null);
 		}
 		drv.debugPrintln("column: "+columnlabel);
 		drv.debugPrintln("field: "+field);
@@ -1555,7 +1567,8 @@ public class SQLRelayResultSet implements ResultSet {
 		validateColumn(columnlabel);
 		String	field=null;
 		synchronized (networklock) {
-			field=sqlrcur.getField(currentrow-1,columnlabel);
+			field=sqlrcur.getFieldIgnoringCase(
+						currentrow-1,columnlabel);
 		}
 		wasnull=(field==null);
 		drv.debugPrintln("column label: "+columnlabel);
@@ -1603,7 +1616,8 @@ public class SQLRelayResultSet implements ResultSet {
 		validateColumn(columnlabel);
 		String	field=null;
 		synchronized (networklock) {
-			field=sqlrcur.getField(currentrow-1,columnlabel);
+			field=sqlrcur.getFieldIgnoringCase(
+						currentrow-1,columnlabel);
 		}
 		field=truncateField(isCharBinaryCol(columnlabel),field);
 		wasnull=(field==null);
@@ -1725,7 +1739,8 @@ public class SQLRelayResultSet implements ResultSet {
 		validateColumn(columnlabel);
 		String	field=null;
 		synchronized (networklock) {
-			field=sqlrcur.getField(currentrow-1,columnlabel);
+			field=sqlrcur.getFieldIgnoringCase(
+						currentrow-1,columnlabel);
 		}
 		wasnull=(field==null);
 		drv.debugPrintln("column: "+columnlabel);
@@ -1888,7 +1903,8 @@ public class SQLRelayResultSet implements ResultSet {
 		validateColumn(columnlabel);
 		String	field=null;
 		synchronized (networklock) {
-			field=sqlrcur.getField(currentrow-1,columnlabel);
+			field=sqlrcur.getFieldIgnoringCase(
+						currentrow-1,columnlabel);
 		}
 		wasnull=(field==null);
 		drv.debugPrintln("column: "+columnlabel);
@@ -1938,7 +1954,8 @@ public class SQLRelayResultSet implements ResultSet {
 		validateColumn(columnlabel);
 		String	field=null;
 		synchronized (networklock) {
-			field=sqlrcur.getField(currentrow-1,columnlabel);
+			field=sqlrcur.getFieldIgnoringCase(
+						currentrow-1,columnlabel);
 		}
 		field=truncateField(isCharBinaryCol(columnlabel),field);
 		wasnull=(field==null);
@@ -1984,7 +2001,8 @@ public class SQLRelayResultSet implements ResultSet {
 		validateColumn(columnlabel);
 		String	field=null;
 		synchronized (networklock) {
-			field=sqlrcur.getField(currentrow-1,columnlabel);
+			field=sqlrcur.getFieldIgnoringCase(
+						currentrow-1,columnlabel);
 		}
 		wasnull=(field==null);
 		drv.debugPrintln("column: "+columnlabel);

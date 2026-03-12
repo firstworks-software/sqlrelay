@@ -723,6 +723,12 @@ const char *sqlrcur_getFieldByName(sqlrcur sqlrcurref, uint64_t row,
 	return sqlrcurref->getField(row,col);
 }
 
+const char *sqlrcur_getFieldByNameIgnoringCase(sqlrcur sqlrcurref,
+						uint64_t row,
+						const char *col) {
+	return sqlrcurref->getFieldIgnoringCase(row,col);
+}
+
 int64_t sqlrcur_getFieldAsIntegerByIndex(sqlrcur sqlrcurref,
 					uint64_t row, uint32_t col) {
 	return sqlrcurref->getFieldAsInteger(row,col);
@@ -731,6 +737,12 @@ int64_t sqlrcur_getFieldAsIntegerByIndex(sqlrcur sqlrcurref,
 int64_t sqlrcur_getFieldAsIntegerByName(sqlrcur sqlrcurref, uint64_t row,
 							const char *col) {
 	return sqlrcurref->getFieldAsInteger(row,col);
+}
+
+int64_t sqlrcur_getFieldAsIntegerByNameIgnoringCase(sqlrcur sqlrcurref,
+						uint64_t row,
+						const char *col) {
+	return sqlrcurref->getFieldAsIntegerIgnoringCase(row,col);
 }
 
 double sqlrcur_getFieldAsDoubleByIndex(sqlrcur sqlrcurref, uint64_t row,
@@ -743,6 +755,12 @@ double sqlrcur_getFieldAsDoubleByName(sqlrcur sqlrcurref, uint64_t row,
 	return sqlrcurref->getFieldAsDouble(row,col);
 }
 
+double sqlrcur_getFieldAsDoubleByNameIgnoringCase(sqlrcur sqlrcurref,
+						uint64_t row,
+						const char *col) {
+	return sqlrcurref->getFieldAsDoubleIgnoringCase(row,col);
+}
+
 int sqlrcur_getFieldAsBooleanByIndex(sqlrcur sqlrcurref, uint64_t row,
 							uint32_t col) {
 	return sqlrcurref->getFieldAsBoolean(row,col);
@@ -751,6 +769,12 @@ int sqlrcur_getFieldAsBooleanByIndex(sqlrcur sqlrcurref, uint64_t row,
 int sqlrcur_getFieldAsBooleanByName(sqlrcur sqlrcurref, uint64_t row,
 							const char *col) {
 	return sqlrcurref->getFieldAsBoolean(row,col);
+}
+
+int sqlrcur_getFieldAsBooleanByNameIgnoringCase(sqlrcur sqlrcurref,
+						uint64_t row,
+						const char *col) {
+	return sqlrcurref->getFieldAsBooleanIgnoringCase(row,col);
 }
 
 int sqlrcur_getFieldAsDateByIndex(sqlrcur sqlrcurref,
@@ -802,6 +826,21 @@ int sqlrcur_getFieldAsDateByName(sqlrcur sqlrcurref,
 	return (retval)?1:0;
 }
 
+int sqlrcur_getFieldAsDateByNameIgnoringCase(sqlrcur sqlrcurref,
+				uint64_t row, const char *col,
+				int16_t *year, int16_t *month, int16_t *day,
+				int16_t *hour, int16_t *minute,
+				int16_t *second,
+				int32_t *microsecond, int *isnegative) {
+	bool	isneg;
+	bool	retval=sqlrcurref->getFieldAsDateIgnoringCase(row,col,
+					year,month,day,
+					hour,minute,second,
+					microsecond,&isneg);
+	*isnegative=(isneg)?1:0;
+	return (retval)?1:0;
+}
+
 int sqlrcur_getFieldAsDateByNameWithDdMm(sqlrcur sqlrcurref,
 				uint64_t row, const char *col,
 				int ddmm, int yyyyddmm,
@@ -812,6 +851,25 @@ int sqlrcur_getFieldAsDateByNameWithDdMm(sqlrcur sqlrcurref,
 				int32_t *microsecond, int *isnegative) {
 	bool	isneg;
 	bool	retval=sqlrcurref->getFieldAsDate(row,col,
+					ddmm!=0,yyyyddmm!=0,
+					datedelimiters,
+					year,month,day,
+					hour,minute,second,
+					microsecond,&isneg);
+	*isnegative=(isneg)?1:0;
+	return (retval)?1:0;
+}
+
+int sqlrcur_getFieldAsDateByNameWithDdMmIgnoringCase(sqlrcur sqlrcurref,
+				uint64_t row, const char *col,
+				int ddmm, int yyyyddmm,
+				const char *datedelimiters,
+				int16_t *year, int16_t *month, int16_t *day,
+				int16_t *hour, int16_t *minute,
+				int16_t *second,
+				int32_t *microsecond, int *isnegative) {
+	bool	isneg;
+	bool	retval=sqlrcurref->getFieldAsDateIgnoringCase(row,col,
 					ddmm!=0,yyyyddmm!=0,
 					datedelimiters,
 					year,month,day,
@@ -840,11 +898,26 @@ int16_t sqlrcur_getFieldAsDateYearByName(sqlrcur sqlrcurref,
 	return sqlrcurref->getFieldAsDateYear(row,col);
 }
 
+int16_t sqlrcur_getFieldAsDateYearByNameIgnoringCase(sqlrcur sqlrcurref,
+					uint64_t row, const char *col) {
+	return sqlrcurref->getFieldAsDateYearIgnoringCase(row,col);
+}
+
 int16_t sqlrcur_getFieldAsDateYearByNameWithDdMm(sqlrcur sqlrcurref,
 					uint64_t row, const char *col,
 					int ddmm, int yyyyddmm,
 					const char *datedelimiters) {
 	return sqlrcurref->getFieldAsDateYear(row,col,
+					ddmm!=0,yyyyddmm!=0,
+					datedelimiters);
+}
+
+int16_t sqlrcur_getFieldAsDateYearByNameWithDdMmIgnoringCase(
+					sqlrcur sqlrcurref,
+					uint64_t row, const char *col,
+					int ddmm, int yyyyddmm,
+					const char *datedelimiters) {
+	return sqlrcurref->getFieldAsDateYearIgnoringCase(row,col,
 					ddmm!=0,yyyyddmm!=0,
 					datedelimiters);
 }
@@ -868,11 +941,26 @@ int16_t sqlrcur_getFieldAsDateMonthByName(sqlrcur sqlrcurref,
 	return sqlrcurref->getFieldAsDateMonth(row,col);
 }
 
+int16_t sqlrcur_getFieldAsDateMonthByNameIgnoringCase(sqlrcur sqlrcurref,
+					uint64_t row, const char *col) {
+	return sqlrcurref->getFieldAsDateMonthIgnoringCase(row,col);
+}
+
 int16_t sqlrcur_getFieldAsDateMonthByNameWithDdMm(sqlrcur sqlrcurref,
 					uint64_t row, const char *col,
 					int ddmm, int yyyyddmm,
 					const char *datedelimiters) {
 	return sqlrcurref->getFieldAsDateMonth(row,col,
+					ddmm!=0,yyyyddmm!=0,
+					datedelimiters);
+}
+
+int16_t sqlrcur_getFieldAsDateMonthByNameWithDdMmIgnoringCase(
+					sqlrcur sqlrcurref,
+					uint64_t row, const char *col,
+					int ddmm, int yyyyddmm,
+					const char *datedelimiters) {
+	return sqlrcurref->getFieldAsDateMonthIgnoringCase(row,col,
 					ddmm!=0,yyyyddmm!=0,
 					datedelimiters);
 }
@@ -896,11 +984,26 @@ int16_t sqlrcur_getFieldAsDateDayByName(sqlrcur sqlrcurref,
 	return sqlrcurref->getFieldAsDateDay(row,col);
 }
 
+int16_t sqlrcur_getFieldAsDateDayByNameIgnoringCase(sqlrcur sqlrcurref,
+					uint64_t row, const char *col) {
+	return sqlrcurref->getFieldAsDateDayIgnoringCase(row,col);
+}
+
 int16_t sqlrcur_getFieldAsDateDayByNameWithDdMm(sqlrcur sqlrcurref,
 					uint64_t row, const char *col,
 					int ddmm, int yyyyddmm,
 					const char *datedelimiters) {
 	return sqlrcurref->getFieldAsDateDay(row,col,
+					ddmm!=0,yyyyddmm!=0,
+					datedelimiters);
+}
+
+int16_t sqlrcur_getFieldAsDateDayByNameWithDdMmIgnoringCase(
+					sqlrcur sqlrcurref,
+					uint64_t row, const char *col,
+					int ddmm, int yyyyddmm,
+					const char *datedelimiters) {
+	return sqlrcurref->getFieldAsDateDayIgnoringCase(row,col,
 					ddmm!=0,yyyyddmm!=0,
 					datedelimiters);
 }
@@ -924,11 +1027,26 @@ int16_t sqlrcur_getFieldAsDateHourByName(sqlrcur sqlrcurref,
 	return sqlrcurref->getFieldAsDateHour(row,col);
 }
 
+int16_t sqlrcur_getFieldAsDateHourByNameIgnoringCase(sqlrcur sqlrcurref,
+					uint64_t row, const char *col) {
+	return sqlrcurref->getFieldAsDateHourIgnoringCase(row,col);
+}
+
 int16_t sqlrcur_getFieldAsDateHourByNameWithDdMm(sqlrcur sqlrcurref,
 					uint64_t row, const char *col,
 					int ddmm, int yyyyddmm,
 					const char *datedelimiters) {
 	return sqlrcurref->getFieldAsDateHour(row,col,
+					ddmm!=0,yyyyddmm!=0,
+					datedelimiters);
+}
+
+int16_t sqlrcur_getFieldAsDateHourByNameWithDdMmIgnoringCase(
+					sqlrcur sqlrcurref,
+					uint64_t row, const char *col,
+					int ddmm, int yyyyddmm,
+					const char *datedelimiters) {
+	return sqlrcurref->getFieldAsDateHourIgnoringCase(row,col,
 					ddmm!=0,yyyyddmm!=0,
 					datedelimiters);
 }
@@ -952,11 +1070,26 @@ int16_t sqlrcur_getFieldAsDateMinuteByName(sqlrcur sqlrcurref,
 	return sqlrcurref->getFieldAsDateMinute(row,col);
 }
 
+int16_t sqlrcur_getFieldAsDateMinuteByNameIgnoringCase(sqlrcur sqlrcurref,
+					uint64_t row, const char *col) {
+	return sqlrcurref->getFieldAsDateMinuteIgnoringCase(row,col);
+}
+
 int16_t sqlrcur_getFieldAsDateMinuteByNameWithDdMm(sqlrcur sqlrcurref,
 					uint64_t row, const char *col,
 					int ddmm, int yyyyddmm,
 					const char *datedelimiters) {
 	return sqlrcurref->getFieldAsDateMinute(row,col,
+					ddmm!=0,yyyyddmm!=0,
+					datedelimiters);
+}
+
+int16_t sqlrcur_getFieldAsDateMinuteByNameWithDdMmIgnoringCase(
+					sqlrcur sqlrcurref,
+					uint64_t row, const char *col,
+					int ddmm, int yyyyddmm,
+					const char *datedelimiters) {
+	return sqlrcurref->getFieldAsDateMinuteIgnoringCase(row,col,
 					ddmm!=0,yyyyddmm!=0,
 					datedelimiters);
 }
@@ -980,11 +1113,26 @@ int16_t sqlrcur_getFieldAsDateSecondByName(sqlrcur sqlrcurref,
 	return sqlrcurref->getFieldAsDateSecond(row,col);
 }
 
+int16_t sqlrcur_getFieldAsDateSecondByNameIgnoringCase(sqlrcur sqlrcurref,
+					uint64_t row, const char *col) {
+	return sqlrcurref->getFieldAsDateSecondIgnoringCase(row,col);
+}
+
 int16_t sqlrcur_getFieldAsDateSecondByNameWithDdMm(sqlrcur sqlrcurref,
 					uint64_t row, const char *col,
 					int ddmm, int yyyyddmm,
 					const char *datedelimiters) {
 	return sqlrcurref->getFieldAsDateSecond(row,col,
+					ddmm!=0,yyyyddmm!=0,
+					datedelimiters);
+}
+
+int16_t sqlrcur_getFieldAsDateSecondByNameWithDdMmIgnoringCase(
+					sqlrcur sqlrcurref,
+					uint64_t row, const char *col,
+					int ddmm, int yyyyddmm,
+					const char *datedelimiters) {
+	return sqlrcurref->getFieldAsDateSecondIgnoringCase(row,col,
 					ddmm!=0,yyyyddmm!=0,
 					datedelimiters);
 }
@@ -1008,11 +1156,27 @@ int32_t sqlrcur_getFieldAsDateMicrosecondByName(sqlrcur sqlrcurref,
 	return sqlrcurref->getFieldAsDateMicrosecond(row,col);
 }
 
+int32_t sqlrcur_getFieldAsDateMicrosecondByNameIgnoringCase(
+					sqlrcur sqlrcurref,
+					uint64_t row, const char *col) {
+	return sqlrcurref->getFieldAsDateMicrosecondIgnoringCase(row,col);
+}
+
 int32_t sqlrcur_getFieldAsDateMicrosecondByNameWithDdMm(sqlrcur sqlrcurref,
 					uint64_t row, const char *col,
 					int ddmm, int yyyyddmm,
 					const char *datedelimiters) {
 	return sqlrcurref->getFieldAsDateMicrosecond(row,col,
+					ddmm!=0,yyyyddmm!=0,
+					datedelimiters);
+}
+
+int32_t sqlrcur_getFieldAsDateMicrosecondByNameWithDdMmIgnoringCase(
+					sqlrcur sqlrcurref,
+					uint64_t row, const char *col,
+					int ddmm, int yyyyddmm,
+					const char *datedelimiters) {
+	return sqlrcurref->getFieldAsDateMicrosecondIgnoringCase(row,col,
 					ddmm!=0,yyyyddmm!=0,
 					datedelimiters);
 }
@@ -1036,11 +1200,26 @@ int sqlrcur_getFieldAsDateIsNegativeByName(sqlrcur sqlrcurref,
 	return (sqlrcurref->getFieldAsDateIsNegative(row,col))?1:0;
 }
 
+int sqlrcur_getFieldAsDateIsNegativeByNameIgnoringCase(sqlrcur sqlrcurref,
+					uint64_t row, const char *col) {
+	return (sqlrcurref->getFieldAsDateIsNegativeIgnoringCase(row,col))?1:0;
+}
+
 int sqlrcur_getFieldAsDateIsNegativeByNameWithDdMm(sqlrcur sqlrcurref,
 					uint64_t row, const char *col,
 					int ddmm, int yyyyddmm,
 					const char *datedelimiters) {
 	return (sqlrcurref->getFieldAsDateIsNegative(row,col,
+					ddmm!=0,yyyyddmm!=0,
+					datedelimiters))?1:0;
+}
+
+int sqlrcur_getFieldAsDateIsNegativeByNameWithDdMmIgnoringCase(
+					sqlrcur sqlrcurref,
+					uint64_t row, const char *col,
+					int ddmm, int yyyyddmm,
+					const char *datedelimiters) {
+	return (sqlrcurref->getFieldAsDateIsNegativeIgnoringCase(row,col,
 					ddmm!=0,yyyyddmm!=0,
 					datedelimiters))?1:0;
 }
