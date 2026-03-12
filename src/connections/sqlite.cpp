@@ -366,7 +366,11 @@ const char *sqliteconnection::getTableTypeListQuery(
 	// from clause
 	tabletypelistquery.append(
 		"from "
-		"(select 'TABLE' as table_type "
+		"(select 'GLOBAL TEMPORARY' as table_type "
+		"union "
+		"select 'SYSTEM TABLE' as table_type "
+		"union "
+		"select 'TABLE' as table_type "
 		"union "
 		"select 'VIEW' as table_type) ");
 
@@ -951,7 +955,11 @@ const char *sqliteconnection::getColumnListQuery(const char *catalog,
 		"	'")->append(table)->append("' as table_name, "
 		"	p.name as column_name, "
 		"	null as data_type, "
-		"	lower(p.type) as type_name, "
+		"	case instr(p.type,'(') "
+		"		when 0 then upper(p.type) "
+		"		else upper(substr(p.type,1,"
+					"instr(p.type,'(')-1)) "
+		"	end as type_name, "
 		"	null as column_size, "
 		"	null as buffer_length, "
 		"	null as decimal_digits, "
@@ -1025,7 +1033,7 @@ const char *sqliteconnection::getPrimaryKeysListQuery(const char *catalog,
 		"	'")->append(table)->append("' as table_name, "
 		"	p.name as column_name, "
 		"	p.pk as key_seq, "
-		"	'' as pk_name, "
+		"	null as pk_name, "
 		"	null ");
 
 	// from clause
@@ -1068,9 +1076,10 @@ const char *sqliteconnection::getKeyAndIndexListQuery(const char *catalog,
 		"	3 as type, "
 		"	ii.seqno+1 as ordinal_position, "
 		"	ii.name as column_name, "
-		"	case il.'unique' "
-		"		when 1 then 'A' "
-		"		else 'A' "
+		"	case ii.desc "
+		"		when 1 then 'D' "
+		"		when 0 then 'A' "
+		"		else null "
 		"	end as asc_or_desc, "
 		"	null as cardinality, "
 		"	null as pages, "
@@ -1085,7 +1094,9 @@ const char *sqliteconnection::getKeyAndIndexListQuery(const char *catalog,
 		"	from "
 		"		pragma_index_list('")->
 					append(table)->append("')) il, "
-		"	pragma_index_info(il.name) ii ");
+		"	pragma_index_xinfo(il.name) ii "
+		"where "
+		"	ii.key=1 ");
 
 	// order by clause
 	keyandindexlistquery.append(

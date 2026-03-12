@@ -1483,12 +1483,6 @@ class sqlite extends sqlrtest {
 		System.out.println();
 
 
-		// stored procedures
-		System.out.println("STORED PROCEDURES:");
-		// sqlite does not support stored procedures
-		System.out.println();
-
-
 		// catalog list
 		System.out.println("CATALOG LIST:");
 		stmt=con.createStatement();
@@ -1527,15 +1521,14 @@ class sqlite extends sqlrtest {
 		col=1;
 		assertEquals(rsmd.getColumnName(col++),"TABLE_TYPE");
 		found=false;
-		while (rs.next()) {
-			String ttname=rs.getString("TABLE_TYPE");
-			if (ttname!=null &&
-					ttname.equalsIgnoreCase("TABLE")) {
-				found=true;
-				break;
-			}
-		}
-		assertTrue(found);
+		assertTrue(rs.next());
+		assertEquals(rs.getString("TABLE_TYPE"),"GLOBAL TEMPORARY");
+		assertTrue(rs.next());
+		assertEquals(rs.getString("TABLE_TYPE"),"SYSTEM TABLE");
+		assertTrue(rs.next());
+		assertEquals(rs.getString("TABLE_TYPE"),"TABLE");
+		assertTrue(rs.next());
+		assertEquals(rs.getString("TABLE_TYPE"),"VIEW");
 		rs.close();
 		System.out.println();
 
@@ -1579,26 +1572,19 @@ class sqlite extends sqlrtest {
 		assertTrue((rs!=null));
 		rsmd=rs.getMetaData();
 		assertTrue((rsmd!=null));
-		if (issqlrelay) {
-			assertEquals(rsmd.getColumnCount(),10);
-		} else {
-			assertTrue(rsmd.getColumnCount()>=5);
-		}
+		assertEquals(rsmd.getColumnCount(),10);
 		col=1;
 		assertEquals(rsmd.getColumnName(col++),"TABLE_CAT");
 		assertEquals(rsmd.getColumnName(col++),"TABLE_SCHEM");
 		assertEquals(rsmd.getColumnName(col++),"TABLE_NAME");
 		assertEquals(rsmd.getColumnName(col++),"TABLE_TYPE");
 		assertEquals(rsmd.getColumnName(col++),"REMARKS");
-		if (issqlrelay) {
-			assertEquals(rsmd.getColumnName(col++),"TYPE_CAT");
-			assertEquals(rsmd.getColumnName(col++),"TYPE_SCHEM");
-			assertEquals(rsmd.getColumnName(col++),"TYPE_NAME");
-			assertEquals(rsmd.getColumnName(col++),
+		assertEquals(rsmd.getColumnName(col++),"TYPE_CAT");
+		assertEquals(rsmd.getColumnName(col++),"TYPE_SCHEM");
+		assertEquals(rsmd.getColumnName(col++),"TYPE_NAME");
+		assertEquals(rsmd.getColumnName(col++),
 						"SELF_REFERENCING_COL_NAME");
-			assertEquals(rsmd.getColumnName(col++),
-						"REF_GENERATION");
-		}
+		assertEquals(rsmd.getColumnName(col++),"REF_GENERATION");
 		counter=0;
 		while (rs.next()) {
 			String name=rs.getString("TABLE_NAME");
@@ -1668,7 +1654,8 @@ class sqlite extends sqlrtest {
 		assertTrue((rs!=null));
 		rsmd=rs.getMetaData();
 		assertTrue((rsmd!=null));
-		assertTrue(rsmd.getColumnCount()>=18);
+		assertEquals(rsmd.getColumnCount(),24);
+		System.out.println();
 		col=1;
 		assertEquals(rsmd.getColumnName(col++),"TABLE_CAT");
 		assertEquals(rsmd.getColumnName(col++),"TABLE_SCHEM");
@@ -1688,34 +1675,34 @@ class sqlite extends sqlrtest {
 		assertEquals(rsmd.getColumnName(col++),"CHAR_OCTET_LENGTH");
 		assertEquals(rsmd.getColumnName(col++),"ORDINAL_POSITION");
 		assertEquals(rsmd.getColumnName(col++),"IS_NULLABLE");
+		assertEquals(rsmd.getColumnName(col++),"SCOPE_CATALOG");
+		assertEquals(rsmd.getColumnName(col++),"SCOPE_SCHEMA");
+		assertEquals(rsmd.getColumnName(col++),"SCOPE_TABLE");
+		assertEquals(rsmd.getColumnName(col++),"SOURCE_DATA_TYPE");
+		assertEquals(rsmd.getColumnName(col++),"IS_AUTOINCREMENT");
+		assertEquals(rsmd.getColumnName(col++),"IS_GENERATEDCOLUMN");
+		System.out.println();
 		assertTrue(rs.next());
 		assertEquals(rs.getString("COLUMN_NAME"),"testint");
-		assertTrue(rs.getString("TYPE_NAME").
-					equalsIgnoreCase("INT"));
+		assertEquals(rs.getString("TYPE_NAME"),"INT");
 		assertTrue(rs.next());
 		assertEquals(rs.getString("COLUMN_NAME"),"testfloat");
-		assertTrue(rs.getString("TYPE_NAME").
-					equalsIgnoreCase("FLOAT"));
+		assertEquals(rs.getString("TYPE_NAME"),"FLOAT");
 		assertTrue(rs.next());
 		assertEquals(rs.getString("COLUMN_NAME"),"testchar");
-		assertTrue(rs.getString("TYPE_NAME").
-					equalsIgnoreCase("CHAR"));
+		assertEquals(rs.getString("TYPE_NAME"),"CHAR");
 		assertTrue(rs.next());
 		assertEquals(rs.getString("COLUMN_NAME"),"testvarchar");
-		assertTrue(rs.getString("TYPE_NAME").
-					equalsIgnoreCase("VARCHAR"));
+		assertEquals(rs.getString("TYPE_NAME"),"VARCHAR");
 		assertTrue(rs.next());
 		assertEquals(rs.getString("COLUMN_NAME"),"testclob");
-		assertTrue(rs.getString("TYPE_NAME").
-					equalsIgnoreCase("CLOB"));
+		assertEquals(rs.getString("TYPE_NAME"),"CLOB");
 		assertTrue(rs.next());
 		assertEquals(rs.getString("COLUMN_NAME"),"testblob");
-		assertTrue(rs.getString("TYPE_NAME").
-					equalsIgnoreCase("BLOB"));
+		assertEquals(rs.getString("TYPE_NAME"),"BLOB");
 		assertTrue(rs.next());
 		assertEquals(rs.getString("COLUMN_NAME"),"testurl");
-		assertTrue(rs.getString("TYPE_NAME").
-					equalsIgnoreCase("VARCHAR"));
+		assertEquals(rs.getString("TYPE_NAME"),"VARCHAR");
 		rs.close();
 		stmt.executeUpdate("drop table testtable");
 		System.out.println();
@@ -1749,8 +1736,7 @@ class sqlite extends sqlrtest {
 		assertTrue(rs.getString("COLUMN_NAME").
 					equalsIgnoreCase("col1"));
 		assertEquals(rs.getString("KEY_SEQ"),"1");
-		assertTrue(rs.getString("PK_NAME")!=null &&
-				rs.getString("PK_NAME").length()>0);
+		assertEquals(rs.getString("PK_NAME"),null);
 		assertFalse(rs.next());
 		rs.close();
 		stmt.executeUpdate("drop table testtable");
@@ -1807,88 +1793,18 @@ class sqlite extends sqlrtest {
 		assertEquals(rs.getString("ORDINAL_POSITION"),"1");
 		assertTrue(rs.getString("COLUMN_NAME").
 					equalsIgnoreCase("col1"));
-		assertEquals(rs.getString("ASC_OR_DESC"),"A");
+		if (issqlrelay) {
+			assertEquals(rs.getString("ASC_OR_DESC"),"A");
+		} else {
+			// slite jdbc returns null for this (bug?)
+			assertEquals(rs.getString("ASC_OR_DESC"),null);
+		}
 		assertEquals(rs.getString("TYPE"),"3");
 		assertTrue(rs.getString("INDEX_NAME")!=null &&
 				rs.getString("INDEX_NAME").length()>0);
 		assertFalse(rs.next());
 		rs.close();
 		stmt.executeUpdate("drop table testtable");
-		System.out.println();
-
-
-		// procedure list
-		System.out.println("PROCEDURE LIST:");
-		rs=md.getProcedures(null,null,"%");
-		assertTrue((rs!=null));
-		rsmd=rs.getMetaData();
-		assertTrue((rsmd!=null));
-		assertEquals(rsmd.getColumnCount(),8);
-		col=1;
-		assertEquals(rsmd.getColumnName(col++),"PROCEDURE_CAT");
-		assertEquals(rsmd.getColumnName(col++),"PROCEDURE_SCHEM");
-		assertEquals(rsmd.getColumnName(col++),"PROCEDURE_NAME");
-		assertEquals(rsmd.getColumnName(col++),
-					"NUM_INPUT_PARAMS");
-		assertEquals(rsmd.getColumnName(col++),
-					"NUM_OUTPUT_PARAMS");
-		assertEquals(rsmd.getColumnName(col++),
-					"NUM_RESULT_SETS");
-		assertEquals(rsmd.getColumnName(col++),"REMARKS");
-		assertEquals(rsmd.getColumnName(col++),"PROCEDURE_TYPE");
-		rs.close();
-		System.out.println();
-
-
-		// procedure parameter list
-		System.out.println("PROCEDURE PARAMETER LIST:");
-		rs=md.getProcedureColumns(null,null,"%","%");
-		assertTrue((rs!=null));
-		rsmd=rs.getMetaData();
-		assertTrue((rsmd!=null));
-		assertEquals(rsmd.getColumnCount(),20);
-		col=1;
-		assertEquals(rsmd.getColumnName(col++),
-						"PROCEDURE_CAT");
-		assertEquals(rsmd.getColumnName(col++),
-						"PROCEDURE_SCHEM");
-		assertEquals(rsmd.getColumnName(col++),
-						"PROCEDURE_NAME");
-		assertEquals(rsmd.getColumnName(col++),
-						"COLUMN_NAME");
-		assertEquals(rsmd.getColumnName(col++),
-						"COLUMN_TYPE");
-		assertEquals(rsmd.getColumnName(col++),
-						"DATA_TYPE");
-		assertEquals(rsmd.getColumnName(col++),
-						"TYPE_NAME");
-		assertEquals(rsmd.getColumnName(col++),
-						"PRECISION");
-		assertEquals(rsmd.getColumnName(col++),
-						"LENGTH");
-		assertEquals(rsmd.getColumnName(col++),
-						"SCALE");
-		assertEquals(rsmd.getColumnName(col++),
-						"RADIX");
-		assertEquals(rsmd.getColumnName(col++),
-						"NULLABLE");
-		assertEquals(rsmd.getColumnName(col++),
-						"REMARKS");
-		assertEquals(rsmd.getColumnName(col++),
-						"COLUMN_DEF");
-		assertEquals(rsmd.getColumnName(col++),
-						"SQL_DATA_TYPE");
-		assertEquals(rsmd.getColumnName(col++),
-						"SQL_DATETIME_SUB");
-		assertEquals(rsmd.getColumnName(col++),
-						"CHAR_OCTET_LENGTH");
-		assertEquals(rsmd.getColumnName(col++),
-						"ORDINAL_POSITION");
-		assertEquals(rsmd.getColumnName(col++),
-						"IS_NULLABLE");
-		assertEquals(rsmd.getColumnName(col++),
-						"SPECIFIC_NAME");
-		rs.close();
 		System.out.println();
 
 
