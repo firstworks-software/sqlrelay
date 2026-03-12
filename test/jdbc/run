@@ -15,6 +15,7 @@ else
 			firebird)
 				;;
 			freetds)
+				jar=`ls jtds*.jar | tail -1`
 				;;
 			informix)
 				jar=/opt/informix/jdbc/lib/ifxjdbc.jar

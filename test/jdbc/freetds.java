@@ -35,9 +35,9 @@ class freetds extends sqlrtest {
 			user="testuser";
 			password="testpassword";
 			issqlrelay=true;
-		} else if (classpath.contains("mssql-jdbc")) {
-			driver="com.microsoft.sqlserver.jdbc.SQLServerDriver";
-			url="jdbc:sqlserver://freetds:1433;databaseName="+
+		} else if (classpath.contains("jtds")) {
+			driver="net.sourceforge.jtds.jdbc.Driver";
+			url="jdbc:jtds:sybase://sap:5000;databaseName="+
 								hostname;
 			user="testuser";
 			password="testpassword";
@@ -131,10 +131,13 @@ class freetds extends sqlrtest {
 
 		// autoCommitFailureClosesAllResultSets
 		System.out.println("  autoCommitFailureClosesAllResultSets");
-		boolval=md.autoCommitFailureClosesAllResultSets();
-		System.out.println("    "+boolval);
-		assertTrue(boolval||!boolval);
-		System.out.println();
+		if (issqlrelay) {
+			// jtds doesn't support this
+			boolval=md.autoCommitFailureClosesAllResultSets();
+			System.out.println("    "+boolval);
+			assertTrue(boolval||!boolval);
+			System.out.println();
+		}
 
 		// dataDefinitionCausesTransactionCommit
 		System.out.println("  dataDefinitionCausesTransactionCommit");
@@ -159,10 +162,13 @@ class freetds extends sqlrtest {
 
 		// generatedKeyAlwaysReturned
 		System.out.println("  generatedKeyAlwaysReturned");
-		boolval=md.generatedKeyAlwaysReturned();
-		System.out.println("    "+boolval);
-		assertTrue(boolval||!boolval);
-		System.out.println();
+		if (issqlrelay) {
+			// jtds doesn't support this
+			boolval=md.generatedKeyAlwaysReturned();
+			System.out.println("    "+boolval);
+			assertTrue(boolval||!boolval);
+			System.out.println();
+		}
 
 		// getCatalogSeparator
 		System.out.println("  getCatalogSeparator");
@@ -952,10 +958,13 @@ class freetds extends sqlrtest {
 
 		// supportsStoredFunctionsUsingCallSyntax
 		System.out.println("  supportsStoredFunctionsUsingCallSyntax");
-		boolval=md.supportsStoredFunctionsUsingCallSyntax();
-		System.out.println("    "+boolval);
-		assertTrue(boolval||!boolval);
-		System.out.println();
+		if (issqlrelay) {
+			// jtds doesn't support this
+			boolval=md.supportsStoredFunctionsUsingCallSyntax();
+			System.out.println("    "+boolval);
+			assertTrue(boolval||!boolval);
+			System.out.println();
+		}
 
 		// supportsStoredProcedures
 		System.out.println("  supportsStoredProcedures");
