@@ -1873,7 +1873,10 @@ const char *mysqlconnection::getKeyAndIndexListQuery(const char *catalog,
 		"	s.table_catalog as table_cat, "
 		"	s.table_schema as table_schem, "
 		"	s.table_name, "
-		"	s.non_unique, "
+		"	case s.non_unique "
+		"		when 1 then 'true' "
+		"		else 'false' "
+		"	end as non_unique, "
 		"	s.table_schema as index_qualifier, "
 		"	s.index_name, "
 		"	3 as type, "
@@ -2620,7 +2623,7 @@ const char * const *mysqlconnection::getDatabaseFeatures() {
 		charstring::duplicate("true");
 
 	databasefeatures[FEATURE_SUPPORTS_NAMED_PARAMETERS]=
-		charstring::duplicate("true");
+		charstring::duplicate("false");
 
 	databasefeatures[FEATURE_SUPPORTS_NON_NULLABLE_COLUMNS]=
 		charstring::duplicate("true");
