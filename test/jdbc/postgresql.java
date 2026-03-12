@@ -1884,31 +1884,70 @@ class postgresql extends sqlrtest {
                 assertEquals(rsmd.getColumnName(col++),"IS_GENERATEDCOLUMN");
 		assertTrue(rs.next());
 		assertEquals(rs.getString("COLUMN_NAME"),"testint");
-		assertEquals(rs.getString("TYPE_NAME"),"int4");
+		// sqlrelay gets the data type directly from the
+		// information_schema.columns table, odd that they're not
+		// standard postgresql types, maybe they should be mapped...
+		if (issqlrelay) {
+			assertEquals(rs.getString("TYPE_NAME"),"integer");
+		} else {
+			assertEquals(rs.getString("TYPE_NAME"),"int4");
+		}
 		assertTrue(rs.next());
 		assertEquals(rs.getString("COLUMN_NAME"),"testfloat");
-		assertEquals(rs.getString("TYPE_NAME"),"float8");
+		if (issqlrelay) {
+			assertEquals(rs.getString("TYPE_NAME"),
+							"double precision");
+		} else {
+			assertEquals(rs.getString("TYPE_NAME"),"float8");
+		}
 		assertTrue(rs.next());
 		assertEquals(rs.getString("COLUMN_NAME"),"testreal");
-		assertEquals(rs.getString("TYPE_NAME"),"float4");
+		if (issqlrelay) {
+			assertEquals(rs.getString("TYPE_NAME"),"real");
+		} else {
+			assertEquals(rs.getString("TYPE_NAME"),"float4");
+		}
 		assertTrue(rs.next());
 		assertEquals(rs.getString("COLUMN_NAME"),"testsmallint");
-		assertEquals(rs.getString("TYPE_NAME"),"int2");
+		if (issqlrelay) {
+			assertEquals(rs.getString("TYPE_NAME"),"smallint");
+		} else {
+			assertEquals(rs.getString("TYPE_NAME"),"int2");
+		}
 		assertTrue(rs.next());
 		assertEquals(rs.getString("COLUMN_NAME"),"testchar");
-		assertEquals(rs.getString("TYPE_NAME"),"bpchar");
+		if (issqlrelay) {
+			assertEquals(rs.getString("TYPE_NAME"),"character");
+		} else {
+			assertEquals(rs.getString("TYPE_NAME"),"bpchar");
+		}
 		assertTrue(rs.next());
 		assertEquals(rs.getString("COLUMN_NAME"),"testvarchar");
-		assertEquals(rs.getString("TYPE_NAME"),"varchar");
+		if (issqlrelay) {
+			assertEquals(rs.getString("TYPE_NAME"),
+							"character varying");
+		} else {
+			assertEquals(rs.getString("TYPE_NAME"),"varchar");
+		}
 		assertTrue(rs.next());
 		assertEquals(rs.getString("COLUMN_NAME"),"testdate");
 		assertEquals(rs.getString("TYPE_NAME"),"date");
 		assertTrue(rs.next());
 		assertEquals(rs.getString("COLUMN_NAME"),"testtime");
-		assertEquals(rs.getString("TYPE_NAME"),"time");
+		if (issqlrelay) {
+			assertEquals(rs.getString("TYPE_NAME"),
+						"time without time zone");
+		} else {
+			assertEquals(rs.getString("TYPE_NAME"),"time");
+		}
 		assertTrue(rs.next());
 		assertEquals(rs.getString("COLUMN_NAME"),"testtimestamp");
-		assertEquals(rs.getString("TYPE_NAME"),"timestamp");
+		if (issqlrelay) {
+			assertEquals(rs.getString("TYPE_NAME"),
+						"timestamp without time zone");
+		} else {
+			assertEquals(rs.getString("TYPE_NAME"),"timestamp");
+		}
 		assertTrue(rs.next());
 		assertEquals(rs.getString("COLUMN_NAME"),"testtext");
 		assertEquals(rs.getString("TYPE_NAME"),"text");
@@ -1917,7 +1956,12 @@ class postgresql extends sqlrtest {
 		assertEquals(rs.getString("TYPE_NAME"),"bytea");
 		assertTrue(rs.next());
 		assertEquals(rs.getString("COLUMN_NAME"),"testurl");
-		assertEquals(rs.getString("TYPE_NAME"),"varchar");
+		if (issqlrelay) {
+			assertEquals(rs.getString("TYPE_NAME"),
+							"character varying");
+		} else {
+			assertEquals(rs.getString("TYPE_NAME"),"varchar");
+		}
 		rs.close();
 		stmt.executeUpdate("drop table testtable");
 		System.out.println();
@@ -1968,7 +2012,12 @@ class postgresql extends sqlrtest {
 		assertTrue((rs!=null));
 		rsmd=rs.getMetaData();
 		assertTrue((rsmd!=null));
-		assertEquals(rsmd.getColumnCount(),14);
+		if (issqlrelay) {
+			assertEquals(rsmd.getColumnCount(),13);
+		} else {
+			// postgresql jdbc returns 14 columns
+			assertEquals(rsmd.getColumnCount(),14);
+		}
 		col=1;
 		assertEquals(rsmd.getColumnName(col++),
 						"TABLE_CAT");
@@ -1996,8 +2045,11 @@ class postgresql extends sqlrtest {
 						"PAGES");
 		assertEquals(rsmd.getColumnName(col++),
 						"FILTER_CONDITION");
-		assertEquals(rsmd.getColumnName(col++),
-						"REMARKS");
+		if (!issqlrelay) {
+			// postgresql jdbc returns this column
+			assertEquals(rsmd.getColumnName(col++),
+							"REMARKS");
+		}
 		assertTrue(rs.next());
 		assertTrue(rs.getString("TABLE_NAME").
 					equalsIgnoreCase("testtable"));
@@ -2068,6 +2120,7 @@ class postgresql extends sqlrtest {
 		if (issqlrelay) {
 			assertEquals(rsmd.getColumnCount(),8);
 		} else {
+			// postgresql jdbc returns 9 columns
 			assertEquals(rsmd.getColumnCount(),9);
 		}
 		col=1;
@@ -2163,20 +2216,40 @@ class postgresql extends sqlrtest {
 		assertEquals(rsmd.getColumnName(col++),
 						"SPECIFIC_NAME");
 		assertTrue(rs.next());
-		assertEquals(rs.getString("COLUMN_NAME"),"returnValue");
-		assertEquals(rs.getString("TYPE_NAME"),"void");
-		assertEquals(rs.getString("ORDINAL_POSITION"),"0");
-		assertTrue(rs.next());
+		if (!issqlrelay) {
+			// postgresql jdbc returns the returnValue as the
+			// first column
+			assertEquals(rs.getString("COLUMN_NAME"),"returnValue");
+			assertEquals(rs.getString("TYPE_NAME"),"void");
+			assertEquals(rs.getString("ORDINAL_POSITION"),"0");
+			assertTrue(rs.next());
+		}
 		assertEquals(rs.getString("COLUMN_NAME"),"in1");
-		assertEquals(rs.getString("TYPE_NAME"),"int4");
+		// sqlrelay gets the data type directly from the
+		// information_schema.columns table, odd that they're not
+		// standard postgresql types, maybe they should be mapped...
+		if (issqlrelay) {
+			assertEquals(rs.getString("TYPE_NAME"),"integer");
+		} else {
+			assertEquals(rs.getString("TYPE_NAME"),"int4");
+		}
 		assertEquals(rs.getString("ORDINAL_POSITION"),"1");
 		assertTrue(rs.next());
 		assertEquals(rs.getString("COLUMN_NAME"),"in2");
-		assertEquals(rs.getString("TYPE_NAME"),"bpchar");
+		if (issqlrelay) {
+			assertEquals(rs.getString("TYPE_NAME"),"character");
+		} else {
+			assertEquals(rs.getString("TYPE_NAME"),"bpchar");
+		}
 		assertEquals(rs.getString("ORDINAL_POSITION"),"2");
 		assertTrue(rs.next());
 		assertEquals(rs.getString("COLUMN_NAME"),"in3");
-		assertEquals(rs.getString("TYPE_NAME"),"varchar");
+		if (issqlrelay) {
+			assertEquals(rs.getString("TYPE_NAME"),
+							"character varying");
+		} else {
+			assertEquals(rs.getString("TYPE_NAME"),"varchar");
+		}
 		assertEquals(rs.getString("ORDINAL_POSITION"),"3");
 		assertTrue(rs.next());
 		assertEquals(rs.getString("COLUMN_NAME"),"in4");
