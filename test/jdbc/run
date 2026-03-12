@@ -15,24 +15,24 @@ else
 			firebird)
 				;;
 			freetds)
-				jar=`ls jtds*.jar | tail -1`
+				jar=`ls drivers/jtds*.jar | tail -1`
 				;;
 			informix)
 				jar=/opt/informix/jdbc/lib/ifxjdbc.jar
 				;;
 			mysql)
-				jar=`ls mysql-connector-j-*.jar | tail -1`
+				jar=`ls drivers/mysql-connector-j-*.jar | tail -1`
 				;;
 			oracle)
-				jar=`ls ojdbc*.jar | tail -1`
+				jar=`ls drivers/ojdbc*.jar | tail -1`
 				;;
 			postgresql)
-				jar=`ls postgresql-*.jar | tail -1`
+				jar=`ls drivers/postgresql-*.jar | tail -1`
 				;;
 			sap)
 				;;
 			sqlite)
-				jar=`ls sqlite-jdbc-*.jar | tail -1`
+				jar=`ls drivers/sqlite-jdbc-*.jar | tail -1`
 				;;
 		esac
 		export CLASSPATH=$CLASSPATH:$jar
