@@ -3442,8 +3442,8 @@ class oracle extends sqlrtest {
 		assertEquals(rsmd.getColumnName(col++),"TABLE_NAME");
 		assertEquals(rsmd.getColumnName(col++),"TABLE_TYPE");
 		assertEquals(rsmd.getColumnName(col++),"REMARKS");
-		// oracle jdbc doesn't return these columns
 		if (issqlrelay) {
+			// oracle jdbc doesn't return these columns
 			assertEquals(rsmd.getColumnName(col++),"TYPE_CAT");
 			assertEquals(rsmd.getColumnName(col++),"TYPE_SCHEM");
 			assertEquals(rsmd.getColumnName(col++),"TYPE_NAME");

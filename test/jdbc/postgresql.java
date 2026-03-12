@@ -1133,6 +1133,7 @@ class postgresql extends sqlrtest {
 				"	$10, "+
 				"	$11)");
 		} else {
+			// postgresql jdbc requires ? format
 			pstmt=con.prepareStatement(
 				"insert into "+
 				"	testtable "+
@@ -1171,23 +1172,12 @@ class postgresql extends sqlrtest {
 						cal.getTimeInMillis()));
 			pstmt.setTime(8,java.sql.Time.valueOf(
 						"0"+i+":00:00"));
-			if (issqlrelay) {
-				pstmt.setString(9,"text"+i);
-				pstmt.setBytes(10,
-					(new String("bytea"+i)).
-					getBytes(StandardCharsets.UTF_8));
-				pstmt.setString(11,
-					"http://www.firstworks.com"+
-					":8080/testurl"+i);
-			} else {
-				pstmt.setString(9,"text"+i);
-				pstmt.setBytes(10,
-					(new String("bytea"+i)).
-					getBytes(StandardCharsets.UTF_8));
-				pstmt.setString(11,
-					"http://www.firstworks.com"+
-					":8080/testurl"+i);
-			}
+			pstmt.setString(9,"text"+i);
+			pstmt.setBytes(10,
+				(new String("bytea"+i)).
+				getBytes(StandardCharsets.UTF_8));
+			pstmt.setString(11,
+				"http://www.firstworks.com:8080/testurl"+i);
 			assertEquals(pstmt.executeUpdate(),1);
 			System.out.println();
 		}
@@ -1353,6 +1343,8 @@ class postgresql extends sqlrtest {
 			// text as clob
 			System.out.println("  row "+i+" - text as clob");
 			if (issqlrelay) {
+				// postgresql jdbc fails with:
+				// "Bad value for long"
 				clob=rs.getClob(10);
 				assertEquals(clob.getSubString(
 						1,(int)clob.length()),
@@ -1382,11 +1374,13 @@ class postgresql extends sqlrtest {
 			// bytea as bytes
 			System.out.println("  row "+i+" - bytea as bytes");
 			if (issqlrelay) {
+				// sqlrelay jdbc returns hex format
 				assertEquals(new String(
 					rs.getBytes(11),"UTF-8"),
 					"\\x6279746561"+
 					Integer.toHexString(48+i));
 			} else {
+				// postgresql jdbc returns raw bytes
 				assertEquals(new String(
 					rs.getBytes(11),"UTF-8"),
 					"bytea"+i);
@@ -1398,12 +1392,14 @@ class postgresql extends sqlrtest {
 			System.out.println("  row "+i+
 						" - bytea as binary stream");
 			if (issqlrelay) {
+				// sqlrelay jdbc returns hex format
 				assertEquals(new String(
 					rs.getBinaryStream(11).
 					readAllBytes(),"UTF-8"),
 					"\\x6279746561"+
 					Integer.toHexString(48+i));
 			} else {
+				// postgresql jdbc returns raw bytes
 				assertEquals(new String(
 					rs.getBinaryStream(11).
 					readAllBytes(),"UTF-8"),
@@ -1415,6 +1411,7 @@ class postgresql extends sqlrtest {
 			// url
 			System.out.println("  row "+i+" - url");
 			if (issqlrelay) {
+				// postgresql jdbc doesn't support getURL
 				URL	urlvar=rs.getURL(12);
 				assertEquals(urlvar.getProtocol(),"http");
 				assertEquals(urlvar.getHost(),
@@ -1518,6 +1515,8 @@ class postgresql extends sqlrtest {
 			// text as clob
 			System.out.println("  row "+i+" - text as clob");
 			if (issqlrelay) {
+				// postgresql jdbc fails with:
+				// "Bad value for long"
 				clob=rs.getClob("testtext");
 				assertEquals(clob.getSubString(
 						1,(int)clob.length()),
@@ -1547,11 +1546,13 @@ class postgresql extends sqlrtest {
 			// bytea as bytes
 			System.out.println("  row "+i+" - bytea as bytes");
 			if (issqlrelay) {
+				// sqlrelay jdbc returns hex format
 				assertEquals(new String(
 					rs.getBytes("testbytea"),"UTF-8"),
 					"\\x6279746561"+
 					Integer.toHexString(48+i));
 			} else {
+				// postgresql jdbc returns raw bytes
 				assertEquals(new String(
 					rs.getBytes("testbytea"),"UTF-8"),
 					"bytea"+i);
@@ -1563,12 +1564,14 @@ class postgresql extends sqlrtest {
 			System.out.println("  row "+i
 						+" - bytea as binary stream");
 			if (issqlrelay) {
+				// sqlrelay jdbc returns hex format
 				assertEquals(new String(
 					rs.getBinaryStream("testbytea").
 					readAllBytes(),"UTF-8"),
 					"\\x6279746561"+
 					Integer.toHexString(48+i));
 			} else {
+				// postgresql jdbc returns raw bytes
 				assertEquals(new String(
 					rs.getBinaryStream("testbytea").
 					readAllBytes(),"UTF-8"),
@@ -1580,6 +1583,7 @@ class postgresql extends sqlrtest {
 			// url
 			System.out.println("  row "+i+" - url");
 			if (issqlrelay) {
+				// postgresql jdbc doesn't support getURL
 				URL	urlvar=rs.getURL("testurl");
 				assertEquals(urlvar.getProtocol(),"http");
 				assertEquals(urlvar.getHost(),
@@ -1632,6 +1636,7 @@ class postgresql extends sqlrtest {
 			pstmt=con.prepareStatement(
 				"select testfunc($1,$2,$3)");
 		} else {
+			// postgresql jdbc requires ? format
 			pstmt=con.prepareStatement(
 				"select testfunc(?,?,?)");
 		}
@@ -1656,6 +1661,7 @@ class postgresql extends sqlrtest {
 			pstmt=con.prepareStatement(
 				"select testfunc($1,$2,$3)");
 		} else {
+			// postgresql jdbc requires ? format
 			pstmt=con.prepareStatement(
 				"select testfunc(?,?,?)");
 		}
@@ -1683,6 +1689,15 @@ class postgresql extends sqlrtest {
 		assertEquals(rsmd.getColumnCount(),1);
 		col=1;
 		assertEquals(rsmd.getColumnName(col++),"TABLE_CAT");
+		found=false;
+		while (rs.next()) {
+			String	tcat=rs.getString("TABLE_CAT");
+			if (tcat!=null && tcat.equals(hostname)) {
+				found=true;
+				break;
+			}
+		}
+		assertTrue(found);
 		rs.close();
 		System.out.println();
 
@@ -1698,14 +1713,12 @@ class postgresql extends sqlrtest {
 		assertEquals(rsmd.getColumnName(col++),"TABLE_SCHEM");
 		assertEquals(rsmd.getColumnName(col++),"TABLE_CATALOG");
 		found=false;
-		while (rs.next()) {
-			String	tschem=rs.getString("TABLE_SCHEM");
-			if (tschem!=null && tschem.equalsIgnoreCase(hostname)) {
-				found=true;
-				break;
-			}
-		}
-		assertTrue(found);
+		assertTrue(rs.next());
+		assertEquals(rs.getString("TABLE_SCHEM"),"information_schema");
+		assertTrue(rs.next());
+		assertEquals(rs.getString("TABLE_SCHEM"),"pg_catalog");
+		assertTrue(rs.next());
+		assertEquals(rs.getString("TABLE_SCHEM"),"public");
 		rs.close();
 		System.out.println();
 
@@ -1759,26 +1772,19 @@ class postgresql extends sqlrtest {
 		assertTrue((rs!=null));
 		rsmd=rs.getMetaData();
 		assertTrue((rsmd!=null));
-		if (issqlrelay) {
-			assertEquals(rsmd.getColumnCount(),10);
-		} else {
-			assertTrue(rsmd.getColumnCount()>=5);
-		}
+		assertEquals(rsmd.getColumnCount(),10);
 		col=1;
 		assertEquals(rsmd.getColumnName(col++),"TABLE_CAT");
 		assertEquals(rsmd.getColumnName(col++),"TABLE_SCHEM");
 		assertEquals(rsmd.getColumnName(col++),"TABLE_NAME");
 		assertEquals(rsmd.getColumnName(col++),"TABLE_TYPE");
 		assertEquals(rsmd.getColumnName(col++),"REMARKS");
-		if (issqlrelay) {
-			assertEquals(rsmd.getColumnName(col++),"TYPE_CAT");
-			assertEquals(rsmd.getColumnName(col++),"TYPE_SCHEM");
-			assertEquals(rsmd.getColumnName(col++),"TYPE_NAME");
-			assertEquals(rsmd.getColumnName(col++),
-						"SELF_REFERENCING_COL_NAME");
-			assertEquals(rsmd.getColumnName(col++),
-						"REF_GENERATION");
-		}
+		assertEquals(rsmd.getColumnName(col++),"TYPE_CAT");
+		assertEquals(rsmd.getColumnName(col++),"TYPE_SCHEM");
+		assertEquals(rsmd.getColumnName(col++),"TYPE_NAME");
+		assertEquals(rsmd.getColumnName(col++),
+					"SELF_REFERENCING_COL_NAME");
+		assertEquals(rsmd.getColumnName(col++),"REF_GENERATION");
 		counter=0;
 		while (rs.next()) {
 			String name=rs.getString("TABLE_NAME");
@@ -1850,7 +1856,7 @@ class postgresql extends sqlrtest {
 		assertTrue((rs!=null));
 		rsmd=rs.getMetaData();
 		assertTrue((rsmd!=null));
-		assertTrue(rsmd.getColumnCount()>=18);
+		assertEquals(rsmd.getColumnCount(),24);
 		col=1;
 		assertEquals(rsmd.getColumnName(col++),"TABLE_CAT");
 		assertEquals(rsmd.getColumnName(col++),"TABLE_SCHEM");
@@ -1870,54 +1876,48 @@ class postgresql extends sqlrtest {
 		assertEquals(rsmd.getColumnName(col++),"CHAR_OCTET_LENGTH");
 		assertEquals(rsmd.getColumnName(col++),"ORDINAL_POSITION");
 		assertEquals(rsmd.getColumnName(col++),"IS_NULLABLE");
+                assertEquals(rsmd.getColumnName(col++),"SCOPE_CATALOG");
+                assertEquals(rsmd.getColumnName(col++),"SCOPE_SCHEMA");
+                assertEquals(rsmd.getColumnName(col++),"SCOPE_TABLE");
+                assertEquals(rsmd.getColumnName(col++),"SOURCE_DATA_TYPE");
+                assertEquals(rsmd.getColumnName(col++),"IS_AUTOINCREMENT");
+                assertEquals(rsmd.getColumnName(col++),"IS_GENERATEDCOLUMN");
 		assertTrue(rs.next());
 		assertEquals(rs.getString("COLUMN_NAME"),"testint");
-		assertTrue(rs.getString("TYPE_NAME").
-					equalsIgnoreCase("INT4"));
+		assertEquals(rs.getString("TYPE_NAME"),"int4");
 		assertTrue(rs.next());
 		assertEquals(rs.getString("COLUMN_NAME"),"testfloat");
-		assertTrue(rs.getString("TYPE_NAME").
-					equalsIgnoreCase("FLOAT8"));
+		assertEquals(rs.getString("TYPE_NAME"),"float8");
 		assertTrue(rs.next());
 		assertEquals(rs.getString("COLUMN_NAME"),"testreal");
-		assertTrue(rs.getString("TYPE_NAME").
-					equalsIgnoreCase("FLOAT4"));
+		assertEquals(rs.getString("TYPE_NAME"),"float4");
 		assertTrue(rs.next());
 		assertEquals(rs.getString("COLUMN_NAME"),"testsmallint");
-		assertTrue(rs.getString("TYPE_NAME").
-					equalsIgnoreCase("INT2"));
+		assertEquals(rs.getString("TYPE_NAME"),"int2");
 		assertTrue(rs.next());
 		assertEquals(rs.getString("COLUMN_NAME"),"testchar");
-		assertTrue(rs.getString("TYPE_NAME").
-					equalsIgnoreCase("BPCHAR"));
+		assertEquals(rs.getString("TYPE_NAME"),"bpchar");
 		assertTrue(rs.next());
 		assertEquals(rs.getString("COLUMN_NAME"),"testvarchar");
-		assertTrue(rs.getString("TYPE_NAME").
-					equalsIgnoreCase("VARCHAR"));
+		assertEquals(rs.getString("TYPE_NAME"),"varchar");
 		assertTrue(rs.next());
 		assertEquals(rs.getString("COLUMN_NAME"),"testdate");
-		assertTrue(rs.getString("TYPE_NAME").
-					equalsIgnoreCase("DATE"));
+		assertEquals(rs.getString("TYPE_NAME"),"date");
 		assertTrue(rs.next());
 		assertEquals(rs.getString("COLUMN_NAME"),"testtime");
-		assertTrue(rs.getString("TYPE_NAME").
-					equalsIgnoreCase("TIME"));
+		assertEquals(rs.getString("TYPE_NAME"),"time");
 		assertTrue(rs.next());
 		assertEquals(rs.getString("COLUMN_NAME"),"testtimestamp");
-		assertTrue(rs.getString("TYPE_NAME").
-					equalsIgnoreCase("TIMESTAMP"));
+		assertEquals(rs.getString("TYPE_NAME"),"timestamp");
 		assertTrue(rs.next());
 		assertEquals(rs.getString("COLUMN_NAME"),"testtext");
-		assertTrue(rs.getString("TYPE_NAME").
-					equalsIgnoreCase("TEXT"));
+		assertEquals(rs.getString("TYPE_NAME"),"text");
 		assertTrue(rs.next());
 		assertEquals(rs.getString("COLUMN_NAME"),"testbytea");
-		assertTrue(rs.getString("TYPE_NAME").
-					equalsIgnoreCase("BYTEA"));
+		assertEquals(rs.getString("TYPE_NAME"),"bytea");
 		assertTrue(rs.next());
 		assertEquals(rs.getString("COLUMN_NAME"),"testurl");
-		assertTrue(rs.getString("TYPE_NAME").
-					equalsIgnoreCase("VARCHAR"));
+		assertEquals(rs.getString("TYPE_NAME"),"varchar");
 		rs.close();
 		stmt.executeUpdate("drop table testtable");
 		System.out.println();
@@ -1968,7 +1968,7 @@ class postgresql extends sqlrtest {
 		assertTrue((rs!=null));
 		rsmd=rs.getMetaData();
 		assertTrue((rsmd!=null));
-		assertEquals(rsmd.getColumnCount(),13);
+		assertEquals(rsmd.getColumnCount(),14);
 		col=1;
 		assertEquals(rsmd.getColumnName(col++),
 						"TABLE_CAT");
@@ -1996,10 +1996,12 @@ class postgresql extends sqlrtest {
 						"PAGES");
 		assertEquals(rsmd.getColumnName(col++),
 						"FILTER_CONDITION");
+		assertEquals(rsmd.getColumnName(col++),
+						"REMARKS");
 		assertTrue(rs.next());
 		assertTrue(rs.getString("TABLE_NAME").
 					equalsIgnoreCase("testtable"));
-		assertEquals(rs.getString("NON_UNIQUE"),"0");
+		assertEquals(rs.getString("NON_UNIQUE"),"f");
 		assertEquals(rs.getString("ORDINAL_POSITION"),"1");
 		assertTrue(rs.getString("COLUMN_NAME").
 					equalsIgnoreCase("col1"));
@@ -2066,7 +2068,7 @@ class postgresql extends sqlrtest {
 		if (issqlrelay) {
 			assertEquals(rsmd.getColumnCount(),8);
 		} else {
-			assertTrue(rsmd.getColumnCount()>=8);
+			assertEquals(rsmd.getColumnCount(),9);
 		}
 		col=1;
 		assertEquals(rsmd.getColumnName(col++),"PROCEDURE_CAT");
@@ -2074,27 +2076,39 @@ class postgresql extends sqlrtest {
 		assertEquals(rsmd.getColumnName(col++),"PROCEDURE_NAME");
 		if (issqlrelay) {
 			assertEquals(rsmd.getColumnName(col++),
-						"NUM_INPUT_PARAMS");
+							"NUM_INPUT_PARAMS");
 			assertEquals(rsmd.getColumnName(col++),
-						"NUM_OUTPUT_PARAMS");
+							"NUM_OUTPUT_PARAMS");
 			assertEquals(rsmd.getColumnName(col++),
-						"NUM_RESULT_SETS");
+							"NUM_RESULT_SETS");
 		} else {
-			col+=3;
+			// postgresql jdbc returns unnamed columns
+			assertEquals(rsmd.getColumnName(col++),"?column?");
+			assertEquals(rsmd.getColumnName(col++),"?column?");
+			assertEquals(rsmd.getColumnName(col++),"?column?");
 		}
 		assertEquals(rsmd.getColumnName(col++),"REMARKS");
 		assertEquals(rsmd.getColumnName(col++),"PROCEDURE_TYPE");
+		if (!issqlrelay) {
+			// postgresql jdbc returns this column
+			assertEquals(rsmd.getColumnName(col++),"SPECIFIC_NAME");
+		}
 		counter=0;
 		while (rs.next()) {
 			String name=rs.getString("PROCEDURE_NAME");
-			if (name.equalsIgnoreCase("testproc1") ||
-					name.equalsIgnoreCase("testproc2") ||
-					name.equalsIgnoreCase("testproc3") ||
-					name.equalsIgnoreCase("testproc4")) {
+			if (name.equals("testproc1") ||
+					name.equals("testproc2") ||
+					name.equals("testproc3") ||
+					name.equals("testproc4")) {
 				counter++;
 			}
 		}
-		assertEquals(counter,4);
+		if (issqlrelay) {
+			assertEquals(counter,4);
+		} else {
+			// postgresl jdbc returns an empty result set (bug?)
+			assertEquals(counter,0);
+		}
 		rs.close();
 		System.out.println();
 
@@ -2149,33 +2163,25 @@ class postgresql extends sqlrtest {
 		assertEquals(rsmd.getColumnName(col++),
 						"SPECIFIC_NAME");
 		assertTrue(rs.next());
-		assertTrue(rs.getString("COLUMN_NAME").
-					equalsIgnoreCase("in1"));
-		assertTrue(rs.getString("TYPE_NAME").
-					equalsIgnoreCase("integer"));
-		assertEquals(rs.getString("ORDINAL_POSITION"),
-						"1");
+		assertEquals(rs.getString("COLUMN_NAME"),"returnValue");
+		assertEquals(rs.getString("TYPE_NAME"),"void");
+		assertEquals(rs.getString("ORDINAL_POSITION"),"0");
 		assertTrue(rs.next());
-		assertTrue(rs.getString("COLUMN_NAME").
-					equalsIgnoreCase("in2"));
-		assertTrue(rs.getString("TYPE_NAME").
-					equalsIgnoreCase("character"));
-		assertEquals(rs.getString("ORDINAL_POSITION"),
-						"2");
+		assertEquals(rs.getString("COLUMN_NAME"),"in1");
+		assertEquals(rs.getString("TYPE_NAME"),"int4");
+		assertEquals(rs.getString("ORDINAL_POSITION"),"1");
 		assertTrue(rs.next());
-		assertTrue(rs.getString("COLUMN_NAME").
-					equalsIgnoreCase("in3"));
-		assertTrue(rs.getString("TYPE_NAME").
-					equalsIgnoreCase("character varying"));
-		assertEquals(rs.getString("ORDINAL_POSITION"),
-						"3");
+		assertEquals(rs.getString("COLUMN_NAME"),"in2");
+		assertEquals(rs.getString("TYPE_NAME"),"bpchar");
+		assertEquals(rs.getString("ORDINAL_POSITION"),"2");
 		assertTrue(rs.next());
-		assertTrue(rs.getString("COLUMN_NAME").
-					equalsIgnoreCase("in4"));
-		assertTrue(rs.getString("TYPE_NAME").
-					equalsIgnoreCase("date"));
-		assertEquals(rs.getString("ORDINAL_POSITION"),
-						"4");
+		assertEquals(rs.getString("COLUMN_NAME"),"in3");
+		assertEquals(rs.getString("TYPE_NAME"),"varchar");
+		assertEquals(rs.getString("ORDINAL_POSITION"),"3");
+		assertTrue(rs.next());
+		assertEquals(rs.getString("COLUMN_NAME"),"in4");
+		assertEquals(rs.getString("TYPE_NAME"),"date");
+		assertEquals(rs.getString("ORDINAL_POSITION"),"4");
 		rs.close();
 		stmt.executeUpdate("drop function "+
 					"testproc1(int,char,varchar,date)");
