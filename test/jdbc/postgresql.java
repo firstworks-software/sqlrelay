@@ -70,6 +70,7 @@ class postgresql extends sqlrtest {
 
 		// getConnection
 		System.out.println("  getConnection");
+		DriverManager.getDrivers();
 		Class.forName(driver);
 		con=DriverManager.getConnection(url,user,password);
 		assertTrue((con!=null));
@@ -149,6 +150,31 @@ class postgresql extends sqlrtest {
 		assertFalse(boolval);
 		System.out.println();
 
+		// deletesAreDetected
+		System.out.println("  deletesAreDetected "+
+					"(forward only)");
+		boolval=md.deletesAreDetected(
+					ResultSet.TYPE_FORWARD_ONLY);
+		System.out.println("    "+boolval);
+		assertFalse(boolval);
+		System.out.println();
+
+		System.out.println("  deletesAreDetected "+
+					"(scroll insensitive)");
+		boolval=md.deletesAreDetected(
+					ResultSet.TYPE_SCROLL_INSENSITIVE);
+		System.out.println("    "+boolval);
+		assertFalse(boolval);
+		System.out.println();
+
+		System.out.println("  deletesAreDetected "+
+					"(scroll sensitive)");
+		boolval=md.deletesAreDetected(
+					ResultSet.TYPE_SCROLL_SENSITIVE);
+		System.out.println("    "+boolval);
+		assertFalse(boolval);
+		System.out.println();
+
 		// doesMaxRowSizeIncludeBlobs
 		System.out.println("  doesMaxRowSizeIncludeBlobs");
 		boolval=md.doesMaxRowSizeIncludeBlobs();
@@ -223,7 +249,7 @@ class postgresql extends sqlrtest {
 		System.out.println("  getDriverMajorVersion");
 		intval=md.getDriverMajorVersion();
 		System.out.println("    "+intval);
-		// varies by driver jar version
+		// varies by driver version
 		assertTrue(intval>=0);
 		System.out.println();
 
@@ -231,7 +257,7 @@ class postgresql extends sqlrtest {
 		System.out.println("  getDriverMinorVersion");
 		intval=md.getDriverMinorVersion();
 		System.out.println("    "+intval);
-		// varies by driver jar version
+		// varies by driver version
 		assertTrue(intval>=0);
 		System.out.println();
 
@@ -242,7 +268,7 @@ class postgresql extends sqlrtest {
 		if (issqlrelay) {
 			assertEquals(stringval,"SQL Relay JDBC driver");
 		} else {
-			// varies by driver jar version
+			// varies by driver version
 			assertTrue(stringval!=null);
 		}
 		System.out.println();
@@ -452,6 +478,17 @@ class postgresql extends sqlrtest {
 		assertEquals(intval,1);
 		System.out.println();
 
+		// getRowIdLifetime
+		System.out.println("  getRowIdLifetime");
+		if (issqlrelay) {
+			// postgresql jdbc doesn't support this
+			RowIdLifetime	rowidlifetimeval=md.getRowIdLifetime();
+			System.out.println("  "+rowidlifetimeval);
+			assertEquals(rowidlifetimeval,
+					RowIdLifetime.ROWID_UNSUPPORTED);
+			System.out.println();
+		}
+
 		// getSchemaTerm
 		System.out.println("  getSchemaTerm");
 		stringval=md.getSchemaTerm();
@@ -529,6 +566,31 @@ class postgresql extends sqlrtest {
 		assertFalse(boolval);
 		System.out.println();
 
+		// insertsAreDetected
+		System.out.println("  insertsAreDetected "+
+					"(forward only)");
+		boolval=md.insertsAreDetected(
+					ResultSet.TYPE_FORWARD_ONLY);
+		System.out.println("    "+boolval);
+		assertFalse(boolval);
+		System.out.println();
+
+		System.out.println("  insertsAreDetected "+
+					"(scroll insensitive)");
+		boolval=md.insertsAreDetected(
+					ResultSet.TYPE_SCROLL_INSENSITIVE);
+		System.out.println("    "+boolval);
+		assertFalse(boolval);
+		System.out.println();
+
+		System.out.println("  insertsAreDetected "+
+					"(scroll sensitive)");
+		boolval=md.insertsAreDetected(
+					ResultSet.TYPE_SCROLL_SENSITIVE);
+		System.out.println("    "+boolval);
+		assertFalse(boolval);
+		System.out.println();
+
 		// locatorsUpdateCopy
 		System.out.println("  locatorsUpdateCopy");
 		boolval=md.locatorsUpdateCopy();
@@ -572,6 +634,168 @@ class postgresql extends sqlrtest {
 		System.out.println();
 
 		// statement
+
+		// othersDeletesAreVisible
+		System.out.println("  othersDeletesAreVisible "+
+					"(forward only)");
+		boolval=md.othersDeletesAreVisible(
+					ResultSet.TYPE_FORWARD_ONLY);
+		System.out.println("    "+boolval);
+		assertFalse(boolval);
+		System.out.println();
+
+		System.out.println("  othersDeletesAreVisible "+
+					"(scroll insensitive)");
+		boolval=md.othersDeletesAreVisible(
+					ResultSet.TYPE_SCROLL_INSENSITIVE);
+		System.out.println("    "+boolval);
+		assertFalse(boolval);
+		System.out.println();
+
+		System.out.println("  othersDeletesAreVisible "+
+					"(scroll sensitive)");
+		boolval=md.othersDeletesAreVisible(
+					ResultSet.TYPE_SCROLL_SENSITIVE);
+		System.out.println("    "+boolval);
+		assertFalse(boolval);
+		System.out.println();
+
+		// othersInsertsAreVisible
+		System.out.println("  othersInsertsAreVisible "+
+					"(forward only)");
+		boolval=md.othersInsertsAreVisible(
+					ResultSet.TYPE_FORWARD_ONLY);
+		System.out.println("    "+boolval);
+		assertFalse(boolval);
+		System.out.println();
+
+		System.out.println("  othersInsertsAreVisible "+
+					"(scroll insensitive)");
+		boolval=md.othersInsertsAreVisible(
+					ResultSet.TYPE_SCROLL_INSENSITIVE);
+		System.out.println("    "+boolval);
+		assertFalse(boolval);
+		System.out.println();
+
+		System.out.println("  othersInsertsAreVisible "+
+					"(scroll sensitive)");
+		boolval=md.othersInsertsAreVisible(
+					ResultSet.TYPE_SCROLL_SENSITIVE);
+		System.out.println("    "+boolval);
+		assertFalse(boolval);
+		System.out.println();
+
+		// othersUpdatesAreVisible
+		System.out.println("  othersUpdatesAreVisible "+
+					"(forward only)");
+		boolval=md.othersUpdatesAreVisible(
+					ResultSet.TYPE_FORWARD_ONLY);
+		System.out.println("    "+boolval);
+		assertFalse(boolval);
+		System.out.println();
+
+		System.out.println("  othersUpdatesAreVisible "+
+					"(scroll insensitive)");
+		boolval=md.othersUpdatesAreVisible(
+					ResultSet.TYPE_SCROLL_INSENSITIVE);
+		System.out.println("    "+boolval);
+		assertFalse(boolval);
+		System.out.println();
+
+		System.out.println("  othersUpdatesAreVisible "+
+					"(scroll sensitive)");
+		boolval=md.othersUpdatesAreVisible(
+					ResultSet.TYPE_SCROLL_SENSITIVE);
+		System.out.println("    "+boolval);
+		assertFalse(boolval);
+		System.out.println();
+
+		// ownDeletesAreVisible
+		System.out.println("  ownDeletesAreVisible "+
+					"(forward only)");
+		boolval=md.ownDeletesAreVisible(
+					ResultSet.TYPE_FORWARD_ONLY);
+		System.out.println("    "+boolval);
+		assertTrue(boolval);
+		System.out.println();
+
+		System.out.println("  ownDeletesAreVisible "+
+					"(scroll insensitive)");
+		boolval=md.ownDeletesAreVisible(
+					ResultSet.TYPE_SCROLL_INSENSITIVE);
+		System.out.println("    "+boolval);
+		assertTrue(boolval);
+		System.out.println();
+
+		System.out.println("  ownDeletesAreVisible "+
+					"(scroll sensitive)");
+		boolval=md.ownDeletesAreVisible(
+					ResultSet.TYPE_SCROLL_SENSITIVE);
+		System.out.println("    "+boolval);
+		if (issqlrelay) {
+			assertFalse(boolval);
+		} else {
+			assertTrue(boolval);
+		}
+		System.out.println();
+
+		// ownInsertsAreVisible
+		System.out.println("  ownInsertsAreVisible "+
+					"(forward only)");
+		boolval=md.ownInsertsAreVisible(
+					ResultSet.TYPE_FORWARD_ONLY);
+		System.out.println("    "+boolval);
+		assertTrue(boolval);
+		System.out.println();
+
+		System.out.println("  ownInsertsAreVisible "+
+					"(scroll insensitive)");
+		boolval=md.ownInsertsAreVisible(
+					ResultSet.TYPE_SCROLL_INSENSITIVE);
+		System.out.println("    "+boolval);
+		assertTrue(boolval);
+		System.out.println();
+
+		System.out.println("  ownInsertsAreVisible "+
+					"(scroll sensitive)");
+		boolval=md.ownInsertsAreVisible(
+					ResultSet.TYPE_SCROLL_SENSITIVE);
+		System.out.println("    "+boolval);
+		if (issqlrelay) {
+			assertFalse(boolval);
+		} else {
+			assertTrue(boolval);
+		}
+		System.out.println();
+
+		// ownUpdatesAreVisible
+		System.out.println("  ownUpdatesAreVisible "+
+					"(forward only)");
+		boolval=md.ownUpdatesAreVisible(
+					ResultSet.TYPE_FORWARD_ONLY);
+		System.out.println("    "+boolval);
+		assertTrue(boolval);
+		System.out.println();
+
+		System.out.println("  ownUpdatesAreVisible "+
+					"(scroll insensitive)");
+		boolval=md.ownUpdatesAreVisible(
+					ResultSet.TYPE_SCROLL_INSENSITIVE);
+		System.out.println("    "+boolval);
+		assertTrue(boolval);
+		System.out.println();
+
+		System.out.println("  ownUpdatesAreVisible "+
+					"(scroll sensitive)");
+		boolval=md.ownUpdatesAreVisible(
+					ResultSet.TYPE_SCROLL_SENSITIVE);
+		System.out.println("    "+boolval);
+		if (issqlrelay) {
+			assertFalse(boolval);
+		} else {
+			assertTrue(boolval);
+		}
+		System.out.println();
 
 		// storesLowerCaseIdentifiers
 		System.out.println("  storesLowerCaseIdentifiers");
@@ -725,6 +949,13 @@ class postgresql extends sqlrtest {
 		boolval=md.supportsCorrelatedSubqueries();
 		System.out.println("    "+boolval);
 		assertTrue(boolval);
+		System.out.println();
+
+		// supportsDataManipulationTransactionsOnly
+		System.out.println("  supportsDataManipulationTransactionsOnly");
+		boolval=md.supportsDataManipulationTransactionsOnly();
+		System.out.println("    "+boolval);
+		assertFalse(boolval);
 		System.out.println();
 
 		// supportsDifferentTableCorrelationNames
@@ -916,6 +1147,118 @@ class postgresql extends sqlrtest {
 		assertFalse(boolval);
 		System.out.println();
 
+		// supportsResultSetConcurrency
+		System.out.println("  supportsResultSetConcurrency "+
+					"(forward only, read only)");
+		boolval=md.supportsResultSetConcurrency(
+					ResultSet.TYPE_FORWARD_ONLY,
+					ResultSet.CONCUR_READ_ONLY);
+		System.out.println("    "+boolval);
+		assertTrue(boolval);
+		System.out.println();
+
+		System.out.println("  supportsResultSetConcurrency "+
+					"(forward only, updatable)");
+		boolval=md.supportsResultSetConcurrency(
+					ResultSet.TYPE_FORWARD_ONLY,
+					ResultSet.CONCUR_UPDATABLE);
+		System.out.println("    "+boolval);
+		if (issqlrelay) {
+			// sqlrelay doesn't support CONCUR_UPDATABLE
+			assertFalse(boolval);
+		} else {
+			assertTrue(boolval);
+		}
+		System.out.println();
+
+		System.out.println("  supportsResultSetConcurrency "+
+					"(scroll insensitive, read only)");
+		boolval=md.supportsResultSetConcurrency(
+					ResultSet.TYPE_SCROLL_INSENSITIVE,
+					ResultSet.CONCUR_READ_ONLY);
+		System.out.println("    "+boolval);
+		assertTrue(boolval);
+		System.out.println();
+
+		System.out.println("  supportsResultSetConcurrency "+
+					"(scroll insensitive, updatable)");
+		boolval=md.supportsResultSetConcurrency(
+					ResultSet.TYPE_SCROLL_INSENSITIVE,
+					ResultSet.CONCUR_UPDATABLE);
+		System.out.println("    "+boolval);
+		if (issqlrelay) {
+			// sqlrelay doesn't support CONCUR_UPDATABLE
+			assertFalse(boolval);
+		} else {
+			assertTrue(boolval);
+		}
+		System.out.println();
+
+		System.out.println("  supportsResultSetConcurrency "+
+					"(scroll sensitive, read only)");
+		boolval=md.supportsResultSetConcurrency(
+					ResultSet.TYPE_SCROLL_SENSITIVE,
+					ResultSet.CONCUR_READ_ONLY);
+		System.out.println("    "+boolval);
+		assertFalse(boolval);
+		System.out.println();
+
+		System.out.println("  supportsResultSetConcurrency "+
+					"(scroll sensitive, updatable)");
+		boolval=md.supportsResultSetConcurrency(
+					ResultSet.TYPE_SCROLL_SENSITIVE,
+					ResultSet.CONCUR_UPDATABLE);
+		System.out.println("    "+boolval);
+		assertFalse(boolval);
+		System.out.println();
+
+		// supportsResultSetHoldability
+		System.out.println("  supportsResultSetHoldability "+
+					"(hold cursors over commit)");
+		boolval=md.supportsResultSetHoldability(
+					ResultSet.HOLD_CURSORS_OVER_COMMIT);
+		System.out.println("    "+boolval);
+		assertTrue(boolval);
+		System.out.println();
+
+		System.out.println("  supportsResultSetHoldability "+
+					"(close cursors at commit)");
+		boolval=md.supportsResultSetHoldability(
+					ResultSet.CLOSE_CURSORS_AT_COMMIT);
+		System.out.println("    "+boolval);
+		if (issqlrelay) {
+			// sqlrelay doesn't support CLOSE_CURSORS_AT_COMMIT
+			assertFalse(boolval);
+		} else {
+			assertTrue(boolval);
+		}
+		System.out.println();
+
+		// supportsResultSetType
+		System.out.println("  supportsResultSetType "+
+					"(forward only)");
+		boolval=md.supportsResultSetType(
+					ResultSet.TYPE_FORWARD_ONLY);
+		System.out.println("    "+boolval);
+		assertTrue(boolval);
+		System.out.println();
+
+		System.out.println("  supportsResultSetType "+
+					"(scroll insensitive)");
+		boolval=md.supportsResultSetType(
+					ResultSet.TYPE_SCROLL_INSENSITIVE);
+		System.out.println("    "+boolval);
+		assertTrue(boolval);
+		System.out.println();
+
+		System.out.println("  supportsResultSetType "+
+					"(scroll sensitive)");
+		boolval=md.supportsResultSetType(
+					ResultSet.TYPE_SCROLL_SENSITIVE);
+		System.out.println("    "+boolval);
+		assertFalse(boolval);
+		System.out.println();
+
 		// supportsSavepoints
 		System.out.println("  supportsSavepoints");
 		boolval=md.supportsSavepoints();
@@ -1026,6 +1369,47 @@ class postgresql extends sqlrtest {
 		assertTrue(boolval);
 		System.out.println();
 
+		// supportsTransactionIsolationLevel
+		System.out.println("  supportsTransactionIsolationLevel "+
+							"(none)");
+		boolval=md.supportsTransactionIsolationLevel(
+				Connection.TRANSACTION_NONE);
+		System.out.println("    "+boolval);
+		assertFalse(boolval);
+		System.out.println();
+
+		System.out.println("  supportsTransactionIsolationLevel "+
+							"(read uncommitted)");
+		boolval=md.supportsTransactionIsolationLevel(
+				Connection.TRANSACTION_READ_UNCOMMITTED);
+		System.out.println("    "+boolval);
+		assertTrue(boolval);
+		System.out.println();
+
+		System.out.println("  supportsTransactionIsolationLevel "+
+							"(read committed)");
+		boolval=md.supportsTransactionIsolationLevel(
+				Connection.TRANSACTION_READ_COMMITTED);
+		System.out.println("    "+boolval);
+		assertTrue(boolval);
+		System.out.println();
+
+		System.out.println("  supportsTransactionIsolationLevel "+
+							"(repeatable read)");
+		boolval=md.supportsTransactionIsolationLevel(
+				Connection.TRANSACTION_REPEATABLE_READ);
+		System.out.println("    "+boolval);
+		assertTrue(boolval);
+		System.out.println();
+
+		System.out.println("  supportsTransactionIsolationLevel "+
+							"(serializable)");
+		boolval=md.supportsTransactionIsolationLevel(
+				Connection.TRANSACTION_SERIALIZABLE);
+		System.out.println("    "+boolval);
+		assertTrue(boolval);
+		System.out.println();
+
 		// supportsTransactions
 		System.out.println("  supportsTransactions");
 		boolval=md.supportsTransactions();
@@ -1045,6 +1429,31 @@ class postgresql extends sqlrtest {
 		boolval=md.supportsUnionAll();
 		System.out.println("    "+boolval);
 		assertTrue(boolval);
+		System.out.println();
+
+		// updatesAreDetected
+		System.out.println("  updatesAreDetected "+
+					"(forward only)");
+		boolval=md.updatesAreDetected(
+					ResultSet.TYPE_FORWARD_ONLY);
+		System.out.println("    "+boolval);
+		assertFalse(boolval);
+		System.out.println();
+
+		System.out.println("  updatesAreDetected "+
+					"(scroll insensitive)");
+		boolval=md.updatesAreDetected(
+					ResultSet.TYPE_SCROLL_INSENSITIVE);
+		System.out.println("    "+boolval);
+		assertFalse(boolval);
+		System.out.println();
+
+		System.out.println("  updatesAreDetected "+
+					"(scroll sensitive)");
+		boolval=md.updatesAreDetected(
+					ResultSet.TYPE_SCROLL_SENSITIVE);
+		System.out.println("    "+boolval);
+		assertFalse(boolval);
 		System.out.println();
 
 		// usesLocalFilePerTable

@@ -30,6 +30,7 @@ else
 				jar=`ls drivers/postgresql-*.jar | tail -1`
 				;;
 			sap)
+				jar=`ls /opt/sap/jConnect-*/classes/jconn*.jar | tail -1`
 				;;
 			sqlite)
 				jar=`ls drivers/sqlite-jdbc-*.jar | tail -1`

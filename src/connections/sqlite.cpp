@@ -1366,7 +1366,7 @@ const char * const *sqliteconnection::getDatabaseFeatures() {
 
 
 	databasefeatures[FEATURE_ISOLATION_LEVELS]=
-		charstring::duplicate("NONE,READ_UNCOMMITTED,READ_COMMITTED,REPEATABLE_READ,SERIALIZABLE");
+		charstring::duplicate("SERIALIZABLE");
 
 	databasefeatures[FEATURE_LOCAL_FILE_USAGE]=
 		charstring::duplicate("LOCAL_FILES");

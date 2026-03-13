@@ -2264,13 +2264,13 @@ const char * const *postgresqlconnection::getDatabaseFeatures() {
 		charstring::duplicate("BASIC,FULL,LIMITED");
 
 	databasefeatures[FEATURE_OWN_DELETES_ARE_VISIBLE]=
-		charstring::duplicate("");
+		charstring::duplicate("FORWARD_ONLY,SCROLL_INSENSITIVE,SCROLL_SENSITIVE");
 
 	databasefeatures[FEATURE_OWN_INSERTS_ARE_VISIBLE]=
-		charstring::duplicate("");
+		charstring::duplicate("FORWARD_ONLY,SCROLL_INSENSITIVE,SCROLL_SENSITIVE");
 
 	databasefeatures[FEATURE_OWN_UPDATES_ARE_VISIBLE]=
-		charstring::duplicate("");
+		charstring::duplicate("FORWARD_ONLY,SCROLL_INSENSITIVE,SCROLL_SENSITIVE");
 
 	databasefeatures[FEATURE_PREDICATES]=
 		charstring::duplicate("");
@@ -2285,13 +2285,16 @@ const char * const *postgresqlconnection::getDatabaseFeatures() {
 		charstring::duplicate("");
 
 	databasefeatures[FEATURE_RESULT_SET_CONCURRENCIES]=
-		charstring::duplicate("");
+		charstring::duplicate(
+				"FORWARD_ONLY/READ_ONLY,FORWARD_ONLY/UPDATABLE,"
+				"SCROLL_INSENSITIVE/READ_ONLY,"
+				"SCROLL_INSENSITIVE/UPDATABLE");
 
 	databasefeatures[FEATURE_RESULT_SET_HOLDABILITIES]=
-		charstring::duplicate("");
+		charstring::duplicate("HOLD_CURSORS_OVER_COMMIT,CLOSE_CURSORS_AT_COMMIT");
 
 	databasefeatures[FEATURE_RESULT_SET_TYPES]=
-		charstring::duplicate("");
+		charstring::duplicate("FORWARD_ONLY,SCROLL_INSENSITIVE");
 
 	databasefeatures[FEATURE_REVOKE_CLAUSES]=
 		charstring::duplicate("");

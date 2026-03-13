@@ -3181,7 +3181,7 @@ const char * const *freetdsconnection::getDatabaseFeatures() {
 		charstring::duplicate("HOLD_CURSORS_OVER_COMMIT");
 
 	databasefeatures[FEATURE_DELETES_ARE_DETECTED]=
-		charstring::duplicate("");
+		charstring::duplicate("FORWARD_ONLY,SCROLL_INSENSITIVE,SCROLL_SENSITIVE");
 
 	databasefeatures[FEATURE_DOES_MAX_ROW_SIZE_INCLUDE_BLOBS]=
 		charstring::duplicate("false");
@@ -3254,7 +3254,7 @@ const char * const *freetdsconnection::getDatabaseFeatures() {
 
 
 	databasefeatures[FEATURE_ISOLATION_LEVELS]=
-		charstring::duplicate("");
+		charstring::duplicate("READ_UNCOMMITTED,READ_COMMITTED,REPEATABLE_READ,SERIALIZABLE");
 
 	databasefeatures[FEATURE_LOCAL_FILE_USAGE]=
 		charstring::duplicate("");
@@ -3353,25 +3353,25 @@ const char * const *freetdsconnection::getDatabaseFeatures() {
 		charstring::duplicate("COMMIT,ROLLBACK");
 
 	databasefeatures[FEATURE_OTHERS_DELETES_ARE_VISIBLE]=
-		charstring::duplicate("");
+		charstring::duplicate("SCROLL_SENSITIVE");
 
 	databasefeatures[FEATURE_OTHERS_INSERTS_ARE_VISIBLE]=
 		charstring::duplicate("");
 
 	databasefeatures[FEATURE_OTHERS_UPDATES_ARE_VISIBLE]=
-		charstring::duplicate("");
+		charstring::duplicate("SCROLL_SENSITIVE");
 
 	databasefeatures[FEATURE_OUTER_JOINS]=
 		charstring::duplicate("BASIC,FULL,LIMITED");
 
 	databasefeatures[FEATURE_OWN_DELETES_ARE_VISIBLE]=
-		charstring::duplicate("");
+		charstring::duplicate("FORWARD_ONLY,SCROLL_INSENSITIVE,SCROLL_SENSITIVE");
 
 	databasefeatures[FEATURE_OWN_INSERTS_ARE_VISIBLE]=
-		charstring::duplicate("");
+		charstring::duplicate("FORWARD_ONLY,SCROLL_INSENSITIVE,SCROLL_SENSITIVE");
 
 	databasefeatures[FEATURE_OWN_UPDATES_ARE_VISIBLE]=
-		charstring::duplicate("");
+		charstring::duplicate("FORWARD_ONLY,SCROLL_INSENSITIVE,SCROLL_SENSITIVE");
 
 	databasefeatures[FEATURE_PREDICATES]=
 		charstring::duplicate("");
@@ -3386,19 +3386,22 @@ const char * const *freetdsconnection::getDatabaseFeatures() {
 		charstring::duplicate("");
 
 	databasefeatures[FEATURE_RESULT_SET_CONCURRENCIES]=
-		charstring::duplicate("");
+		charstring::duplicate(
+				"FORWARD_ONLY/READ_ONLY,FORWARD_ONLY/UPDATABLE,"
+				"SCROLL_INSENSITIVE/READ_ONLY,SCROLL_SENSITIVE/READ_ONLY,"
+				"SCROLL_SENSITIVE/UPDATABLE");
 
 	databasefeatures[FEATURE_RESULT_SET_HOLDABILITIES]=
 		charstring::duplicate("");
 
 	databasefeatures[FEATURE_RESULT_SET_TYPES]=
-		charstring::duplicate("");
+		charstring::duplicate("FORWARD_ONLY,SCROLL_INSENSITIVE,SCROLL_SENSITIVE");
 
 	databasefeatures[FEATURE_REVOKE_CLAUSES]=
 		charstring::duplicate("");
 
 	databasefeatures[FEATURE_ROW_ID_LIFETIME]=
-		charstring::duplicate("");
+		charstring::duplicate("ROWID_UNSUPPORTED");
 
 	databasefeatures[FEATURE_ROW_VALUE_CONSTRUCTOR_EXPRESSIONS]=
 		charstring::duplicate("");

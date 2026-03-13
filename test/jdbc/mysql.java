@@ -74,6 +74,7 @@ class mysql extends sqlrtest {
 
 		// getConnection
 		System.out.println("  getConnection");
+		DriverManager.getDrivers();
 		Class.forName(driver);
 		con=DriverManager.getConnection(url,user,password);
 		assertTrue((con!=null));
@@ -339,7 +340,7 @@ class mysql extends sqlrtest {
 		System.out.println("  getDatabaseMajorVersion");
 		intval=md.getDatabaseMajorVersion();
 		System.out.println("    "+intval);
-		// varies by server installation
+		// varies by server version
 		assertTrue(intval>=0);
 		System.out.println();
 
@@ -347,7 +348,7 @@ class mysql extends sqlrtest {
 		System.out.println("  getDatabaseMinorVersion");
 		intval=md.getDatabaseMinorVersion();
 		System.out.println("    "+intval);
-		// varies by server installation
+		// varies by server version
 		assertTrue(intval>=0);
 		System.out.println();
 
@@ -366,7 +367,7 @@ class mysql extends sqlrtest {
 		System.out.println("  getDatabaseProductVersion");
 		stringval=md.getDatabaseProductVersion();
 		System.out.println("    "+stringval);
-		// varies by server installation
+		// varies by server version
 		assertTrue(stringval!=null && stringval.length()>0);
 		System.out.println();
 
@@ -381,7 +382,7 @@ class mysql extends sqlrtest {
 		System.out.println("  getDriverMajorVersion");
 		intval=md.getDriverMajorVersion();
 		System.out.println("    "+intval);
-		// varies by driver jar version
+		// varies by driver ersion
 		assertTrue(intval>=0);
 		System.out.println();
 
@@ -389,7 +390,7 @@ class mysql extends sqlrtest {
 		System.out.println("  getDriverMinorVersion");
 		intval=md.getDriverMinorVersion();
 		System.out.println("    "+intval);
-		// varies by driver jar version
+		// varies by driver version
 		assertTrue(intval>=0);
 		System.out.println();
 
@@ -408,7 +409,7 @@ class mysql extends sqlrtest {
 		System.out.println("  getDriverVersion");
 		stringval=md.getDriverVersion();
 		System.out.println("    "+stringval);
-		// varies by driver jar version
+		// varies by driver version
 		assertTrue(stringval!=null);
 		System.out.println();
 
@@ -1102,7 +1103,12 @@ class mysql extends sqlrtest {
 		System.out.println("  supportsConvert (with types)");
 		boolval=md.supportsConvert(Types.INTEGER, Types.VARCHAR);
 		System.out.println("    "+boolval);
-		assertTrue(boolval);
+		if (issqlrelay) {
+			// sqlrelay jdbc doesn't currently support this
+			assertFalse(boolval);
+		} else {
+			assertTrue(boolval);
+		}
 		System.out.println();
 
 		// supportsCoreSQLGrammar

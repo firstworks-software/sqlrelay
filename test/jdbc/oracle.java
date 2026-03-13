@@ -75,6 +75,7 @@ class oracle extends sqlrtest {
 
 		// getConnection
 		System.out.println("  getConnection");
+		DriverManager.getDrivers();
 		Class.forName(driver);
 		con=DriverManager.getConnection(url,user,password);
 		assertTrue((con!=null));
@@ -407,7 +408,7 @@ class oracle extends sqlrtest {
 		System.out.println("  getDriverMajorVersion");
 		intval=md.getDriverMajorVersion();
 		System.out.println("    "+intval);
-		// varies by driver jar version
+		// varies by driver version
 		assertTrue(intval>=0);
 		System.out.println();
 
@@ -415,7 +416,7 @@ class oracle extends sqlrtest {
 		System.out.println("  getDriverMinorVersion");
 		intval=md.getDriverMinorVersion();
 		System.out.println("    "+intval);
-		// varies by driver jar version
+		// varies by driver version
 		assertTrue(intval>=0);
 		System.out.println();
 
@@ -426,7 +427,7 @@ class oracle extends sqlrtest {
 		if (issqlrelay) {
 			assertEquals(stringval,"SQL Relay JDBC driver");
 		} else {
-			// varies by driver jar version
+			// varies by driver version
 			assertTrue(stringval!=null);
 		}
 		System.out.println();
@@ -640,7 +641,8 @@ class oracle extends sqlrtest {
 		System.out.println("  getRowIdLifetime");
 		RowIdLifetime	rowidlifetimeval=md.getRowIdLifetime();
 		System.out.println("  "+rowidlifetimeval);
-		assertEquals(rowidlifetimeval.name(),"ROWID_VALID_FOREVER");
+		assertEquals(rowidlifetimeval,
+				RowIdLifetime.ROWID_VALID_FOREVER);
 		System.out.println();
 
 		// getSchemaTerm
