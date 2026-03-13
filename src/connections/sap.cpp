@@ -131,6 +131,7 @@ class SQLRSERVER_DLLSPEC sapconnection : public sqlrserverconnection {
 
 		stringbuffer	loginerror;
 
+		stringbuffer	cataloglistquery;
 		stringbuffer	schemalistquery;
 		stringbuffer	tabletypelistquery;
 		stringbuffer	tablelistquery;
@@ -607,13 +608,39 @@ const char *sapconnection::getDbHostNameQuery() {
 }
 
 const char *sapconnection::getCatalogListQuery(const char *catalog) {
-	return "select "
-		"	'' as table_cat, "
+
+	cataloglistquery.clear();
+
+	// select clause
+	cataloglistquery.append(
+		"select "
+		"	name as table_cat, "
 		"	'' as table_schem, "
 		"	'' as table_name, "
 		"	'' as table_type, "
 		"	'' as remarks, "
-		"	null";
+		"	null ");
+
+	// from clause
+	cataloglistquery.append(
+		"from "
+		"	master..sysdatabases ");
+
+	// where clause
+	if (catalog) {
+		cataloglistquery.append(
+			"where "
+			"	name like '");
+		cataloglistquery.append(catalog);
+		cataloglistquery.append("' ");
+	}
+
+	// order by clause
+	cataloglistquery.append(
+		"order by "
+		"	name");
+
+	return cataloglistquery.getString();
 }
 
 const char *sapconnection::getSchemaListQuery(const char *catalog,
@@ -675,7 +702,9 @@ const char *sapconnection::getTableTypeListQuery(const char *catalog,
 	// from clause
 	tabletypelistquery.append(
 		"from "
-		"(select 'TABLE' as table_type "
+		"(select 'SYSTEM TABLE' as table_type "
+		"union "
+		"select 'TABLE' as table_type "
 		"union "
 		"select 'VIEW' as table_type) dt ");
 
@@ -1669,12 +1698,12 @@ const char *sapconnection::getKeyAndIndexListQuery(const char *catalog,
 		"	user_name(o.uid) as table_schem, "
 		"	o.name as table_name, "
 		"	case "
-		"		when i.status & 2 = 2 then 0 "
-		"		else 1 "
+		"		when i.status & 2 = 2 then 'FALSE' "
+		"		else 'TRUE' "
 		"	end as non_unique, "
 		"	'' as index_qualifier, "
 		"	i.name as index_name, "
-		"	3 as type, "
+		"	1 as type, "
 		"	c.colid as ordinal_position, "
 		"	index_col(o.name,i.indid,c.colid) as column_name, "
 		"	'A' as asc_or_desc, "
@@ -3222,7 +3251,8 @@ bool sapcursor::executeQuery(const char *query, uint32_t size) {
 }
 
 uint64_t sapcursor::getAffectedRows() {
-	return affectedrows;
+        // sap can set affectedrows to -1 when a DDL query is run
+        return (affectedrows>=0)?affectedrows:0;
 }
 
 uint32_t sapcursor::colCount() {

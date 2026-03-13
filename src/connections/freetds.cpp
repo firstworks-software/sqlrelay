@@ -757,14 +757,34 @@ const char *freetdsconnection::getCatalogListQuerySybase(
 
 	cataloglistquery.clear();
 
+	// select clause
 	cataloglistquery.append(
 		"select "
-		"	'' as table_cat, "
+		"	name as table_cat, "
 		"	'' as table_schem, "
 		"	'' as table_name, "
 		"	'' as table_type, "
 		"	'' as remarks, "
-		"	null");
+		"	null ");
+
+	// from clause
+	cataloglistquery.append(
+		"from "
+		"	master..sysdatabases ");
+
+	// where clause
+	if (catalog) {
+		cataloglistquery.append(
+			"where "
+			"	name like '");
+		cataloglistquery.append(catalog);
+		cataloglistquery.append("' ");
+	}
+
+	// order by clause
+	cataloglistquery.append(
+		"order by "
+		"	name");
 
 	return cataloglistquery.getString();
 }
@@ -935,7 +955,9 @@ const char *freetdsconnection::getTableTypeListQuerySybase(
 	// from clause
 	tabletypelistquery.append(
 		"from "
-		"(select 'TABLE' as table_type "
+		"(select 'SYSTEM TABLE' as table_type "
+		"union "
+		"select 'TABLE' as table_type "
 		"union "
 		"select 'VIEW' as table_type) as t ");
 
@@ -2437,7 +2459,7 @@ const char *freetdsconnection::getKeyAndIndexListQuerySybase(
 		"	end as non_unique, "
 		"	'' as index_qualifier, "
 		"	i.name as index_name, "
-		"	3 as type, "
+		"	1 as type, "
 		"	c.colid as ordinal_position, "
 		"	index_col(o.name,i.indid,c.colid) as column_name, "
 		"	'A' as asc_or_desc, "
@@ -3096,6 +3118,8 @@ const char *freetdsconnection::mapIsolationLevel(
 }
 
 const char * const *freetdsconnection::getDatabaseFeatures() {
+
+	// FIXME: we need separate methods for sybase and mssql
 
 	if (databasefeatures) {
 		return databasefeatures;
@@ -4510,7 +4534,8 @@ bool freetdscursor::knowsAffectedRows() {
 }
 
 uint64_t freetdscursor::getAffectedRows() {
-	return affectedrows;
+        // freetds can set affectedrows to -1 when a DDL query is run
+        return (affectedrows>=0)?affectedrows:0;
 }
 
 uint32_t freetdscursor::colCount() {

@@ -640,8 +640,6 @@ class informix extends sqlrtest {
 		assertTrue(boolval);
 		System.out.println();
 
-		// statement
-
 		// othersDeletesAreVisible
 		System.out.println("  othersDeletesAreVisible "+
 					"(forward only)");

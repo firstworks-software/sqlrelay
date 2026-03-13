@@ -13,6 +13,8 @@ import java.math.BigDecimal;
 import java.util.Calendar;
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.GregorianCalendar;
@@ -161,13 +163,26 @@ public class SQLRelayPreparedStatement
 
 		drv.debugPrintln("parameter count: "+params.size());
 
-		for (Map.Entry<String,SQLRelayParameter> entry:
-							params.entrySet()) {
+		ArrayList<String> keys=
+				new ArrayList<String>(params.keySet());
+		Collections.sort(keys, new Comparator<String>() {
+			public int compare(String a, String b) {
+				try {
+					return Integer.valueOf(
+						Integer.parseInt(a)).
+						compareTo(
+						Integer.valueOf(
+						Integer.parseInt(b)));
+				} catch (NumberFormatException e) {
+					return a.compareTo(b);
+				}
+			}
+		});
 
-			String	key=entry.getKey();
+		for (String key: keys) {
 			drv.debugStart("parameter: "+key);
 
-			SQLRelayParameter	value=entry.getValue();
+			SQLRelayParameter	value=params.get(key);
 			BindType		bindtype=value.getBindType();
 
 			switch (value.getMode()) {

@@ -671,8 +671,6 @@ class firebird extends sqlrtest {
 		assertTrue(boolval||!boolval);
 		System.out.println();
 
-		// statement
-
 		// othersDeletesAreVisible
 		System.out.println("  othersDeletesAreVisible "+
 					"(forward only)");

@@ -964,8 +964,6 @@ class mysql extends sqlrtest {
 		}
 		System.out.println();
 
-		// statement
-
 		// storesLowerCaseIdentifiers
 		System.out.println("  storesLowerCaseIdentifiers");
 		boolval=md.storesLowerCaseIdentifiers();

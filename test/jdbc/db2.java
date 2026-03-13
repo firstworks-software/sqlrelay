@@ -650,8 +650,6 @@ class db2 extends sqlrtest {
 		assertFalse(boolval);
 		System.out.println();
 
-		// statement
-
 		// othersDeletesAreVisible
 		System.out.println("  othersDeletesAreVisible "+
 					"(forward only)");

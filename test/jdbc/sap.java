@@ -1,4 +1,5 @@
 import java.sql.*;
+import java.math.BigDecimal;
 import com.firstworks.sqlrelay.*;
 import com.firstworks.sql.*;
 import java.util.Calendar;
@@ -93,6 +94,7 @@ class sap extends sqlrtest {
 		assertTrue(con.getAutoCommit());
 		con.setAutoCommit(false);
 		assertFalse(con.getAutoCommit());
+		con.setAutoCommit(true);
 		System.out.println();
 
 		// warnings
@@ -226,7 +228,7 @@ class sap extends sqlrtest {
 		stringval=md.getDatabaseProductName();
 		System.out.println("    "+stringval);
 		if (issqlrelay) {
-			assertEquals(stringval,"sybase");
+			assertEquals(stringval,"sap");
 		} else {
 			assertEquals(stringval,"Adaptive Server Enterprise");
 		}
@@ -631,8 +633,6 @@ class sap extends sqlrtest {
 		assertTrue(boolval);
 		System.out.println();
 
-		// statement
-
 		// othersDeletesAreVisible
 		System.out.println("  othersDeletesAreVisible "+
 					"(forward only)");
@@ -920,8 +920,11 @@ class sap extends sqlrtest {
 		System.out.println("  supportsConvert (with types)");
 		boolval=md.supportsConvert(Types.INTEGER,Types.VARCHAR);
 		System.out.println("    "+boolval);
-		// varies by driver
-		assertTrue(boolval||!boolval);
+		if (issqlrelay) {
+			assertTrue(boolval);
+		} else {
+			assertFalse(boolval);
+		}
 		System.out.println();
 
 		// supportsCoreSQLGrammar
@@ -1464,6 +1467,7 @@ class sap extends sqlrtest {
 
 		// create table
 		System.out.println("CREATE TABLE:");
+		con.setAutoCommit(true);
 		try {
 			stmt.executeUpdate("drop table testtable");
 		} catch (Exception ex) {
@@ -1486,6 +1490,7 @@ class sap extends sqlrtest {
 			"	testbit bit, "+
 			"	testtext text, "+
 			"	testurl varchar(60))"),0);
+		con.setAutoCommit(false);
 		System.out.println();
 
 
@@ -1502,8 +1507,8 @@ class sap extends sqlrtest {
 			"	1.1, "+
 			"	1.1, "+
 			"	1.1, "+
-			"	1.00, "+
-			"	1.00, "+
+			"	1.10, "+
+			"	1.10, "+
 			"	'2001-01-01 01:00:00', "+
 			"	'2001-01-01 01:00:00', "+
 			"	'char1', "+
@@ -1519,26 +1524,49 @@ class sap extends sqlrtest {
 
 		// bind by position
 		System.out.println("BIND BY POSITION:");
-		pstmt=con.prepareStatement(
-			"insert into "+
-			"	testtable "+
-			"values ("+
-			"	?, "+
-			"	?, "+
-			"	?, "+
-			"	?, "+
-			"	?, "+
-			"	?, "+
-			"	?, "+
-			"	?, "+
-			"	?, "+
-			"	?, "+
-			"	?, "+
-			"	?, "+
-			"	?, "+
-			"	?, "+
-			"	?, "+
-			"	?)");
+		if (issqlrelay) {
+			pstmt=con.prepareStatement(
+				"insert into "+
+				"	testtable "+
+				"values ("+
+				"	@var1, "+
+				"	@var2, "+
+				"	@var3, "+
+				"	@var4, "+
+				"	@var5, "+
+				"	@var6, "+
+				"	@var7, "+
+				"	@var8, "+
+				"	@var9, "+
+				"	@var10, "+
+				"	@var11, "+
+				"	@var12, "+
+				"	@var13, "+
+				"	@var14, "+
+				"	@var15, "+
+				"	@var16)");
+		} else {
+			pstmt=con.prepareStatement(
+				"insert into "+
+				"	testtable "+
+				"values ("+
+				"	?, "+
+				"	?, "+
+				"	?, "+
+				"	?, "+
+				"	?, "+
+				"	?, "+
+				"	?, "+
+				"	?, "+
+				"	?, "+
+				"	?, "+
+				"	?, "+
+				"	?, "+
+				"	?, "+
+				"	?, "+
+				"	?, "+
+				"	?)");
+		}
 		assertFalse(pstmt.isClosed());
 		for (int i=2; i<=4; i++) {
 			pstmt.clearParameters();
@@ -1547,10 +1575,10 @@ class sap extends sqlrtest {
 			pstmt.setInt(3,i);
 			pstmt.setDouble(4,i+0.1);
 			pstmt.setDouble(5,i+0.1);
-			pstmt.setDouble(6,i+0.1);
-			pstmt.setDouble(7,i+0.1);
-			pstmt.setDouble(8,i+0.1);
-			pstmt.setDouble(9,i+0.1);
+			pstmt.setBigDecimal(6,new BigDecimal(i+".1"));
+			pstmt.setBigDecimal(7,new BigDecimal(i+".1"));
+			pstmt.setBigDecimal(8,new BigDecimal(i+".10"));
+			pstmt.setBigDecimal(9,new BigDecimal(i+".10"));
 
 			cal.set(Calendar.YEAR,2000+i);
 			cal.set(Calendar.MONTH,Calendar.JANUARY);
@@ -1737,13 +1765,15 @@ class sap extends sqlrtest {
 
 			// money
 			System.out.println("  row "+i+" - money");
-			assertEquals(rs.getString(8),i+".0000");
+			assertEquals(rs.getString(8),
+				i+((issqlrelay)?".10":".1000"));
 			assertFalse(rs.wasNull());
 			System.out.println();
 
 			// smallmoney
 			System.out.println("  row "+i+" - smallmoney");
-			assertEquals(rs.getString(9),i+".0000");
+			assertEquals(rs.getString(9),
+				i+((issqlrelay)?".10":".1000"));
 			assertFalse(rs.wasNull());
 			System.out.println();
 
@@ -1772,7 +1802,7 @@ class sap extends sqlrtest {
 
 			// bit
 			System.out.println("  row "+i+" - bit");
-			assertEquals(rs.getInt(14),1);
+			assertEquals(rs.getInt(14),i%2);
 			assertFalse(rs.wasNull());
 			System.out.println();
 
@@ -1791,7 +1821,8 @@ class sap extends sqlrtest {
 			System.out.println();
 
 			// text as ascii stream
-			System.out.println("  row "+i+" - text as ascii stream");
+			System.out.println("  row "+i+
+					" - text as ascii stream");
 			assertEquals(new String(rs.getAsciiStream(15).
 						readAllBytes(),"UTF-8"),
 						"text"+i);
@@ -1799,7 +1830,8 @@ class sap extends sqlrtest {
 			System.out.println();
 
 			// text as character stream
-			System.out.println("  row "+i+" - text as character stream");
+			System.out.println("  row "+i+
+					" - text as character stream");
 			StringWriter sw=new StringWriter();
 			rs.getCharacterStream(15).transferTo(sw);
 			assertEquals(sw.toString(),"text"+i);
@@ -1808,12 +1840,16 @@ class sap extends sqlrtest {
 
 			// url
 			System.out.println("  row "+i+" - url");
-			URL	urlvar=rs.getURL(16);
-			assertEquals(urlvar.getProtocol(),"http");
-			assertEquals(urlvar.getHost(),"www.firstworks.com");
-			assertEquals(urlvar.getPort(),8080);
-			assertEquals(urlvar.getPath(),"/testurl"+i);
-			assertFalse(rs.wasNull());
+			if (issqlrelay) {
+				// sap jdbc doesn't implement getURL
+				URL	urlvar=rs.getURL(16);
+				assertEquals(urlvar.getProtocol(),"http");
+				assertEquals(urlvar.getHost(),
+						"www.firstworks.com");
+				assertEquals(urlvar.getPort(),8080);
+				assertEquals(urlvar.getPath(),"/testurl"+i);
+				assertFalse(rs.wasNull());
+			}
 			System.out.println();
 		}
 		rs.close();
@@ -1891,13 +1927,15 @@ class sap extends sqlrtest {
 
 			// money
 			System.out.println("  row "+i+" - money");
-			assertEquals(rs.getString("testmoney"),i+".0000");
+			assertEquals(rs.getString("testmoney"),
+				i+((issqlrelay)?".10":".1000"));
 			assertFalse(rs.wasNull());
 			System.out.println();
 
 			// smallmoney
 			System.out.println("  row "+i+" - smallmoney");
-			assertEquals(rs.getString("testsmallmoney"),i+".0000");
+			assertEquals(rs.getString("testsmallmoney"),
+				i+((issqlrelay)?".10":".1000"));
 			assertFalse(rs.wasNull());
 			System.out.println();
 
@@ -1926,7 +1964,7 @@ class sap extends sqlrtest {
 
 			// bit
 			System.out.println("  row "+i+" - bit");
-			assertEquals(rs.getInt("testbit"),1);
+			assertEquals(rs.getInt("testbit"),i%2);
 			assertFalse(rs.wasNull());
 			System.out.println();
 
@@ -1945,7 +1983,8 @@ class sap extends sqlrtest {
 			System.out.println();
 
 			// text as ascii stream
-			System.out.println("  row "+i+" - text as ascii stream");
+			System.out.println("  row "+i+
+					" - text as ascii stream");
 			assertEquals(new String(rs.getAsciiStream("testtext").
 						readAllBytes(),"UTF-8"),
 						"text"+i);
@@ -1953,7 +1992,8 @@ class sap extends sqlrtest {
 			System.out.println();
 
 			// text as character stream
-			System.out.println("  row "+i+" - text as character stream");
+			System.out.println("  row "+i+
+					" - text as character stream");
 			StringWriter sw=new StringWriter();
 			rs.getCharacterStream("testtext").transferTo(sw);
 			assertEquals(sw.toString(),"text"+i);
@@ -1962,12 +2002,16 @@ class sap extends sqlrtest {
 
 			// url
 			System.out.println("  row "+i+" - url");
-			URL	urlvar=rs.getURL("testurl");
-			assertEquals(urlvar.getProtocol(),"http");
-			assertEquals(urlvar.getHost(),"www.firstworks.com");
-			assertEquals(urlvar.getPort(),8080);
-			assertEquals(urlvar.getPath(),"/testurl"+i);
-			assertFalse(rs.wasNull());
+			if (issqlrelay) {
+				// sap jdbc doesn't implement getURL
+				URL	urlvar=rs.getURL("testurl");
+				assertEquals(urlvar.getProtocol(),"http");
+				assertEquals(urlvar.getHost(),
+						"www.firstworks.com");
+				assertEquals(urlvar.getPort(),8080);
+				assertEquals(urlvar.getPath(),"/testurl"+i);
+				assertFalse(rs.wasNull());
+			}
 			System.out.println();
 		}
 
@@ -1989,6 +2033,8 @@ class sap extends sqlrtest {
 
 		// output bind by position
 		System.out.println("OUTPUT BIND BY POSITION:");
+		stmt=con.createStatement();
+		con.setAutoCommit(true);
 		try {
 			stmt.executeUpdate("drop procedure testproc2");
 		} catch (Exception ex) {
@@ -2005,58 +2051,84 @@ class sap extends sqlrtest {
 			"	select @out1=@in1, "+
 			"	@out2=@in2, "+
 			"	@out3=@in3"),0);
-		cstmt=con.prepareCall("exec testproc2 ?,?,?,?,?,?");
-		cstmt.setInt(1,1);
-		cstmt.setDouble(2,1.1);
-		cstmt.setString(3,"hello");
-		cstmt.registerOutParameter(4,Types.INTEGER);
-		cstmt.registerOutParameter(5,Types.DOUBLE);
-		cstmt.registerOutParameter(6,Types.VARCHAR);
-		assertFalse(cstmt.execute());
-		assertEquals(cstmt.getInt(4),1);
-		assertEquals(cstmt.getDouble(5),1.1);
-		assertEquals(cstmt.getString(6),"hello");
+		if (issqlrelay) {
+			cstmt=con.prepareCall("exec testproc2");
+			cstmt.setInt("in1",1);
+			cstmt.setDouble("in2",1.1);
+			cstmt.setString("in3","hello");
+			cstmt.registerOutParameter("out1",Types.INTEGER);
+			cstmt.registerOutParameter("out2",Types.DOUBLE);
+			cstmt.registerOutParameter("out3",Types.VARCHAR);
+			assertFalse(cstmt.execute());
+			assertEquals(cstmt.getInt("out1"),1);
+			assertEquals(cstmt.getDouble("out2"),1.1);
+			assertEquals(cstmt.getString("out3"),"hello");
+		} else {
+			cstmt=con.prepareCall(
+				"exec testproc2 ?,?,?,?,?,?");
+			cstmt.setInt(1,1);
+			cstmt.setDouble(2,1.1);
+			cstmt.setString(3,"hello");
+			cstmt.registerOutParameter(4,Types.INTEGER);
+			cstmt.registerOutParameter(5,Types.DOUBLE);
+			cstmt.registerOutParameter(6,Types.VARCHAR);
+			assertFalse(cstmt.execute());
+			assertEquals(cstmt.getInt(4),1);
+			assertEquals(cstmt.getDouble(5),1.1);
+			assertEquals(cstmt.getString(6),"hello");
+		}
 		cstmt.close();
 		stmt.executeUpdate("drop procedure testproc2");
+		con.setAutoCommit(false);
 		System.out.println();
 
 
 		// output bind by name
 		System.out.println("OUTPUT BIND BY NAME:");
-		try {
+		if (issqlrelay) {
+			con.setAutoCommit(true);
+			try {
+				stmt.executeUpdate(
+						"drop procedure testproc2");
+			} catch (Exception ex) {
+			}
+			assertEquals(stmt.executeUpdate(
+				"create procedure testproc2 "+
+				"	@in1 int, "+
+				"	@in2 float, "+
+				"	@in3 varchar(20), "+
+				"	@out1 int output, "+
+				"	@out2 float output, "+
+				"	@out3 varchar(20) output "+
+				"as "+
+				"	select @out1=@in1, "+
+				"	@out2=@in2, "+
+				"	@out3=@in3"),0);
+			cstmt=con.prepareCall("exec testproc2");
+			cstmt.setInt("in1",1);
+			cstmt.setDouble("in2",1.1);
+			cstmt.setString("in3","hello");
+			cstmt.registerOutParameter("out1",Types.INTEGER);
+			cstmt.registerOutParameter("out2",Types.DOUBLE);
+			cstmt.registerOutParameter("out3",Types.VARCHAR);
+			assertFalse(cstmt.execute());
+			assertEquals(cstmt.getInt("out1"),1);
+			assertEquals(cstmt.getDouble("out2"),1.1);
+			assertEquals(cstmt.getString("out3"),"hello");
+			cstmt.close();
 			stmt.executeUpdate("drop procedure testproc2");
-		} catch (Exception ex) {
+			con.setAutoCommit(false);
+		} else {
+			// sap jdbc doesn't allow mixing parameter
+			// setting by index and by name
+			assertTrue(true);
 		}
-		assertEquals(stmt.executeUpdate(
-			"create procedure testproc2 "+
-			"	@in1 int, "+
-			"	@in2 float, "+
-			"	@in3 varchar(20), "+
-			"	@out1 int output, "+
-			"	@out2 float output, "+
-			"	@out3 varchar(20) output "+
-			"as "+
-			"	select @out1=@in1, "+
-			"	@out2=@in2, "+
-			"	@out3=@in3"),0);
-		cstmt=con.prepareCall("exec testproc2 ?,?,?,?,?,?");
-		cstmt.setInt(1,1);
-		cstmt.setDouble(2,1.1);
-		cstmt.setString(3,"hello");
-		cstmt.registerOutParameter("out1",Types.INTEGER);
-		cstmt.registerOutParameter("out2",Types.DOUBLE);
-		cstmt.registerOutParameter("out3",Types.VARCHAR);
-		assertFalse(cstmt.execute());
-		assertEquals(cstmt.getInt("out1"),1);
-		assertEquals(cstmt.getDouble("out2"),1.1);
-		assertEquals(cstmt.getString("out3"),"hello");
-		cstmt.close();
-		stmt.executeUpdate("drop procedure testproc2");
 		System.out.println();
 
 
 		// stored procedures
 		System.out.println("STORED PROCEDURES:");
+		con.setAutoCommit(true);
 		try {
 			stmt.executeUpdate("drop procedure testproc");
 		} catch (Exception ex) {
@@ -2072,18 +2144,33 @@ class sap extends sqlrtest {
 			"as select @out1=@in1, "+
 			"	@out2=@in2, "+
 			"	@out3=@in3"),0);
-		cstmt=con.prepareCall("{call testproc(?,?,?,?,?,?)}");
-		cstmt.setInt(1,1);
-		cstmt.setDouble(2,1.1);
-		cstmt.setString(3,"hello");
-		cstmt.registerOutParameter(4,Types.INTEGER);
-		cstmt.registerOutParameter(5,Types.DOUBLE);
-		cstmt.registerOutParameter(6,Types.VARCHAR);
-		cstmt.execute();
-		assertEquals(cstmt.getInt(4),1);
-		assertEquals(cstmt.getString(6),"hello");
+		if (issqlrelay) {
+			cstmt=con.prepareCall("exec testproc");
+			cstmt.setInt("in1",1);
+			cstmt.setDouble("in2",1.1);
+			cstmt.setString("in3","hello");
+			cstmt.registerOutParameter("out1",Types.INTEGER);
+			cstmt.registerOutParameter("out2",Types.DOUBLE);
+			cstmt.registerOutParameter("out3",Types.VARCHAR);
+			cstmt.execute();
+			assertEquals(cstmt.getInt("out1"),1);
+			assertEquals(cstmt.getString("out3"),"hello");
+		} else {
+			cstmt=con.prepareCall(
+				"{call testproc(?,?,?,?,?,?)}");
+			cstmt.setInt(1,1);
+			cstmt.setDouble(2,1.1);
+			cstmt.setString(3,"hello");
+			cstmt.registerOutParameter(4,Types.INTEGER);
+			cstmt.registerOutParameter(5,Types.DOUBLE);
+			cstmt.registerOutParameter(6,Types.VARCHAR);
+			cstmt.execute();
+			assertEquals(cstmt.getInt(4),1);
+			assertEquals(cstmt.getString(6),"hello");
+		}
 		cstmt.close();
 		stmt.executeUpdate("drop procedure testproc");
+		con.setAutoCommit(false);
 		System.out.println();
 
 
@@ -2096,7 +2183,21 @@ class sap extends sqlrtest {
 		assertTrue((rsmd!=null));
 		assertEquals(rsmd.getColumnCount(),1);
 		col=1;
-		assertEquals(rsmd.getColumnName(col++),"TABLE_CAT");
+		if (issqlrelay) {
+			assertEquals(rsmd.getColumnName(col++),"TABLE_CAT");
+		} else {
+			// sap jdbc names this column differently
+			assertEquals(rsmd.getColumnName(col++),"name");
+		}
+		found=false;
+		while (rs.next()) {
+			String	tschem=rs.getString(1);
+			if (tschem!=null && tschem.equals(hostname)) {
+				found=true;
+				break;
+			}
+		}
+		assertTrue(found);
 		rs.close();
 		System.out.println();
 
@@ -2109,8 +2210,22 @@ class sap extends sqlrtest {
 		assertTrue((rsmd!=null));
 		assertEquals(rsmd.getColumnCount(),2);
 		col=1;
-		assertEquals(rsmd.getColumnName(col++),"TABLE_SCHEM");
+		if (issqlrelay) {
+			assertEquals(rsmd.getColumnName(col++),"TABLE_SCHEM");
+		} else {
+			// sap jdbc names this column differently
+			assertEquals(rsmd.getColumnName(col++),"name");
+		}
 		assertEquals(rsmd.getColumnName(col++),"TABLE_CATALOG");
+		found=false;
+		while (rs.next()) {
+			String	tschem=rs.getString(1);
+			if (tschem!=null && tschem.equals(user)) {
+				found=true;
+				break;
+			}
+		}
+		assertTrue(found);
 		rs.close();
 		System.out.println();
 
@@ -2124,21 +2239,23 @@ class sap extends sqlrtest {
 		assertEquals(rsmd.getColumnCount(),1);
 		col=1;
 		assertEquals(rsmd.getColumnName(col++),"TABLE_TYPE");
-		found=false;
+		counter=0;
 		while (rs.next()) {
-			String ttname=rs.getString("TABLE_TYPE");
-			if (ttname!=null && ttname.equalsIgnoreCase("TABLE")) {
-				found=true;
-				break;
+			String ttname=rs.getString(1).trim();
+			if (ttname.equals("TABLE") ||
+				ttname.equals("SYSTEM TABLE") ||
+				ttname.equals("VIEW")) {
+				counter++;
 			}
 		}
-		assertTrue(found);
+		assertEquals(counter,3);
 		rs.close();
 		System.out.println();
 
 
 		// table list
 		System.out.println("TABLE LIST:");
+		con.setAutoCommit(true);
 		try {
 			stmt.executeUpdate("drop table testtable1");
 		} catch (Exception ex) {
@@ -2171,6 +2288,7 @@ class sap extends sqlrtest {
 			"create table testtable4 ("+
 			"	col1 int, "+
 			"	col2 int)");
+		con.setAutoCommit(false);
 		rs=md.getTables(null,null,"%",
 				new String[] {"TABLE"});
 		assertTrue((rs!=null));
@@ -2179,7 +2297,7 @@ class sap extends sqlrtest {
 		if (issqlrelay) {
 			assertEquals(rsmd.getColumnCount(),10);
 		} else {
-			assertTrue(rsmd.getColumnCount()>=5);
+			assertEquals(rsmd.getColumnCount(),5);
 		}
 		col=1;
 		assertEquals(rsmd.getColumnName(col++),"TABLE_CAT");
@@ -2199,19 +2317,21 @@ class sap extends sqlrtest {
 		counter=0;
 		while (rs.next()) {
 			String name=rs.getString("TABLE_NAME");
-			if (name.equalsIgnoreCase("testtable1") ||
-					name.equalsIgnoreCase("testtable2") ||
-					name.equalsIgnoreCase("testtable3") ||
-					name.equalsIgnoreCase("testtable4")) {
+			if (name.equals("testtable1") ||
+					name.equals("testtable2") ||
+					name.equals("testtable3") ||
+					name.equals("testtable4")) {
 				counter++;
 			}
 		}
 		assertEquals(counter,4);
 		rs.close();
+		con.setAutoCommit(true);
 		stmt.executeUpdate("drop table testtable1");
 		stmt.executeUpdate("drop table testtable2");
 		stmt.executeUpdate("drop table testtable3");
 		stmt.executeUpdate("drop table testtable4");
+		con.setAutoCommit(false);
 		System.out.println();
 
 
@@ -2221,26 +2341,88 @@ class sap extends sqlrtest {
 		assertTrue((rs!=null));
 		rsmd=rs.getMetaData();
 		assertTrue((rsmd!=null));
-		assertEquals(rsmd.getColumnCount(),18);
-		col=1;
-		assertEquals(rsmd.getColumnName(col++),"TYPE_NAME");
-		assertEquals(rsmd.getColumnName(col++),"DATA_TYPE");
-		assertEquals(rsmd.getColumnName(col++),"PRECISION");
-		assertEquals(rsmd.getColumnName(col++),"LITERAL_PREFIX");
-		assertEquals(rsmd.getColumnName(col++),"LITERAL_SUFFIX");
-		assertEquals(rsmd.getColumnName(col++),"CREATE_PARAMS");
-		assertEquals(rsmd.getColumnName(col++),"NULLABLE");
-		assertEquals(rsmd.getColumnName(col++),"CASE_SENSITIVE");
-		assertEquals(rsmd.getColumnName(col++),"SEARCHABLE");
-		assertEquals(rsmd.getColumnName(col++),"UNSIGNED_ATTRIBUTE");
-		assertEquals(rsmd.getColumnName(col++),"FIXED_PREC_SCALE");
-		assertEquals(rsmd.getColumnName(col++),"AUTO_INCREMENT");
-		assertEquals(rsmd.getColumnName(col++),"LOCAL_TYPE_NAME");
-		assertEquals(rsmd.getColumnName(col++),"MINIMUM_SCALE");
-		assertEquals(rsmd.getColumnName(col++),"MAXIMUM_SCALE");
-		assertEquals(rsmd.getColumnName(col++),"SQL_DATA_TYPE");
-		assertEquals(rsmd.getColumnName(col++),"SQL_DATETIME_SUB");
-		assertEquals(rsmd.getColumnName(col++),"NUM_PREC_RADIX");
+		if (issqlrelay) {
+			assertEquals(rsmd.getColumnCount(),18);
+			col=1;
+			assertEquals(rsmd.getColumnName(col++),
+						"TYPE_NAME");
+			assertEquals(rsmd.getColumnName(col++),
+						"DATA_TYPE");
+			assertEquals(rsmd.getColumnName(col++),
+						"PRECISION");
+			assertEquals(rsmd.getColumnName(col++),
+						"LITERAL_PREFIX");
+			assertEquals(rsmd.getColumnName(col++),
+						"LITERAL_SUFFIX");
+			assertEquals(rsmd.getColumnName(col++),
+						"CREATE_PARAMS");
+			assertEquals(rsmd.getColumnName(col++),
+						"NULLABLE");
+			assertEquals(rsmd.getColumnName(col++),
+						"CASE_SENSITIVE");
+			assertEquals(rsmd.getColumnName(col++),
+						"SEARCHABLE");
+			assertEquals(rsmd.getColumnName(col++),
+						"UNSIGNED_ATTRIBUTE");
+			assertEquals(rsmd.getColumnName(col++),
+						"FIXED_PREC_SCALE");
+			assertEquals(rsmd.getColumnName(col++),
+						"AUTO_INCREMENT");
+			assertEquals(rsmd.getColumnName(col++),
+						"LOCAL_TYPE_NAME");
+			assertEquals(rsmd.getColumnName(col++),
+						"MINIMUM_SCALE");
+			assertEquals(rsmd.getColumnName(col++),
+						"MAXIMUM_SCALE");
+			assertEquals(rsmd.getColumnName(col++),
+						"SQL_DATA_TYPE");
+			assertEquals(rsmd.getColumnName(col++),
+						"SQL_DATETIME_SUB");
+			assertEquals(rsmd.getColumnName(col++),
+						"NUM_PREC_RADIX");
+		} else {
+			// sap jdbc returns 19 columns with different names
+			assertEquals(rsmd.getColumnCount(),19);
+			col=1;
+			assertEquals(rsmd.getColumnName(col++),
+						"TYPE_NAME");
+			assertEquals(rsmd.getColumnName(col++),
+						"data_type");
+			assertEquals(rsmd.getColumnName(col++),
+						"PRECISION");
+			assertEquals(rsmd.getColumnName(col++),
+						"literal_prefix");
+			assertEquals(rsmd.getColumnName(col++),
+						"literal_suffix");
+			assertEquals(rsmd.getColumnName(col++),
+						"create_params");
+			assertEquals(rsmd.getColumnName(col++),
+						"nullable");
+			assertEquals(rsmd.getColumnName(col++),
+						"case_sensitive");
+			assertEquals(rsmd.getColumnName(col++),
+						"searchable");
+			assertEquals(rsmd.getColumnName(col++),
+						"unsigned_attribute");
+			assertEquals(rsmd.getColumnName(col++),
+						"money");
+			assertEquals(rsmd.getColumnName(col++),
+						"auto_increment");
+			assertEquals(rsmd.getColumnName(col++),
+						"local_type_name");
+			assertEquals(rsmd.getColumnName(col++),
+						"minimum_scale");
+			assertEquals(rsmd.getColumnName(col++),
+						"maximum_scale");
+			assertEquals(rsmd.getColumnName(col++),
+						"sql_data_type");
+			assertEquals(rsmd.getColumnName(col++),
+						"sql_datetime_sub");
+			assertEquals(rsmd.getColumnName(col++),
+						"num_prec_radix");
+			assertEquals(rsmd.getColumnName(col++),
+						"interval_precision");
+		}
 		rs.close();
 		System.out.println();
 
@@ -2248,6 +2430,7 @@ class sap extends sqlrtest {
 		// column list
 		System.out.println("COLUMN LIST:");
 		stmt=con.createStatement();
+		con.setAutoCommit(true);
 		try {
 			stmt.executeUpdate("drop table testtable");
 		} catch (Exception ex) {
@@ -2268,8 +2451,8 @@ class sap extends sqlrtest {
 			"	testchar char(40), "+
 			"	testvarchar varchar(40), "+
 			"	testbit bit, "+
-			"	testtext text, "+
 			"	testurl varchar(60))");
+		con.setAutoCommit(false);
 		rs=md.getColumns(null,null,"testtable","%");
 		assertTrue((rs!=null));
 		rsmd=rs.getMetaData();
@@ -2296,75 +2479,74 @@ class sap extends sqlrtest {
 		assertEquals(rsmd.getColumnName(col++),"IS_NULLABLE");
 		assertTrue(rs.next());
 		assertEquals(rs.getString("COLUMN_NAME"),"testint");
-		assertTrue(rs.getString("TYPE_NAME").
-					equalsIgnoreCase("INT"));
+		assertEquals(rs.getString("TYPE_NAME"),
+					"int");
 		assertTrue(rs.next());
 		assertEquals(rs.getString("COLUMN_NAME"),"testsmallint");
-		assertTrue(rs.getString("TYPE_NAME").
-					equalsIgnoreCase("SMALLINT"));
+		assertEquals(rs.getString("TYPE_NAME"),
+					"smallint");
 		assertTrue(rs.next());
 		assertEquals(rs.getString("COLUMN_NAME"),"testtinyint");
-		assertTrue(rs.getString("TYPE_NAME").
-					equalsIgnoreCase("TINYINT"));
+		assertEquals(rs.getString("TYPE_NAME"),
+					"tinyint");
 		assertTrue(rs.next());
 		assertEquals(rs.getString("COLUMN_NAME"),"testreal");
-		assertTrue(rs.getString("TYPE_NAME").
-					equalsIgnoreCase("REAL"));
+		assertEquals(rs.getString("TYPE_NAME"),
+					"real");
 		assertTrue(rs.next());
 		assertEquals(rs.getString("COLUMN_NAME"),"testfloat");
-		assertTrue(rs.getString("TYPE_NAME").
-					equalsIgnoreCase("FLOAT"));
+		assertEquals(rs.getString("TYPE_NAME"),
+					"float");
 		assertTrue(rs.next());
 		assertEquals(rs.getString("COLUMN_NAME"),"testdecimal");
-		assertTrue(rs.getString("TYPE_NAME").
-					equalsIgnoreCase("DECIMAL"));
+		assertEquals(rs.getString("TYPE_NAME"),
+					"decimal");
 		assertTrue(rs.next());
 		assertEquals(rs.getString("COLUMN_NAME"),"testnumeric");
-		assertTrue(rs.getString("TYPE_NAME").
-					equalsIgnoreCase("NUMERIC"));
+		assertEquals(rs.getString("TYPE_NAME"),
+					"numeric");
 		assertTrue(rs.next());
 		assertEquals(rs.getString("COLUMN_NAME"),"testmoney");
-		assertTrue(rs.getString("TYPE_NAME").
-					equalsIgnoreCase("MONEY"));
+		assertEquals(rs.getString("TYPE_NAME"),
+					"money");
 		assertTrue(rs.next());
 		assertEquals(rs.getString("COLUMN_NAME"),"testsmallmoney");
-		assertTrue(rs.getString("TYPE_NAME").
-					equalsIgnoreCase("SMALLMONEY"));
+		assertEquals(rs.getString("TYPE_NAME"),
+					"smallmoney");
 		assertTrue(rs.next());
 		assertEquals(rs.getString("COLUMN_NAME"),"testdatetime");
-		assertTrue(rs.getString("TYPE_NAME").
-					equalsIgnoreCase("DATETIME"));
+		assertEquals(rs.getString("TYPE_NAME"),
+					"datetime");
 		assertTrue(rs.next());
 		assertEquals(rs.getString("COLUMN_NAME"),"testsmalldatetime");
-		assertTrue(rs.getString("TYPE_NAME").
-					equalsIgnoreCase("SMALLDATETIME"));
+		assertEquals(rs.getString("TYPE_NAME"),
+				"smalldatetime");
 		assertTrue(rs.next());
 		assertEquals(rs.getString("COLUMN_NAME"),"testchar");
-		assertTrue(rs.getString("TYPE_NAME").
-					equalsIgnoreCase("CHAR"));
+		assertEquals(rs.getString("TYPE_NAME"),
+					"char");
 		assertTrue(rs.next());
 		assertEquals(rs.getString("COLUMN_NAME"),"testvarchar");
-		assertTrue(rs.getString("TYPE_NAME").
-					equalsIgnoreCase("VARCHAR"));
+		assertEquals(rs.getString("TYPE_NAME"),
+					"varchar");
 		assertTrue(rs.next());
 		assertEquals(rs.getString("COLUMN_NAME"),"testbit");
-		assertTrue(rs.getString("TYPE_NAME").
-					equalsIgnoreCase("BIT"));
-		assertTrue(rs.next());
-		assertEquals(rs.getString("COLUMN_NAME"),"testtext");
-		assertTrue(rs.getString("TYPE_NAME").
-					equalsIgnoreCase("TEXT"));
+		assertEquals(rs.getString("TYPE_NAME"),
+					"bit");
 		assertTrue(rs.next());
 		assertEquals(rs.getString("COLUMN_NAME"),"testurl");
-		assertTrue(rs.getString("TYPE_NAME").
-					equalsIgnoreCase("VARCHAR"));
+		assertEquals(rs.getString("TYPE_NAME"),
+					"varchar");
 		rs.close();
+		con.setAutoCommit(true);
 		stmt.executeUpdate("drop table testtable");
+		con.setAutoCommit(false);
 		System.out.println();
 
 
 		// primary key list
 		System.out.println("PRIMARY KEY LIST:");
+		con.setAutoCommit(true);
 		try {
 			stmt.executeUpdate("drop table testtable");
 		} catch (Exception ex) {
@@ -2373,6 +2555,7 @@ class sap extends sqlrtest {
 			"create table testtable ("+
 			"	col1 int primary key, "+
 			"	col2 int)");
+		con.setAutoCommit(false);
 		rs=md.getPrimaryKeys(null,null,"testtable");
 		assertTrue((rs!=null));
 		rsmd=rs.getMetaData();
@@ -2386,21 +2569,27 @@ class sap extends sqlrtest {
 		assertEquals(rsmd.getColumnName(col++),"KEY_SEQ");
 		assertEquals(rsmd.getColumnName(col++),"PK_NAME");
 		assertTrue(rs.next());
-		assertTrue(rs.getString("TABLE_NAME").
-					equalsIgnoreCase("testtable"));
-		assertTrue(rs.getString("COLUMN_NAME").
-					equalsIgnoreCase("col1"));
+		assertEquals(rs.getString("TABLE_NAME"),"testtable");
+		assertEquals(rs.getString("COLUMN_NAME"),"col1");
 		assertEquals(rs.getString("KEY_SEQ"),"1");
-		assertTrue(rs.getString("PK_NAME")!=null &&
-				rs.getString("PK_NAME").length()>0);
+		if (issqlrelay) {
+			assertTrue(rs.getString("PK_NAME")!=null &&
+					rs.getString("PK_NAME").length()>0);
+		} else {
+			// sap jdbc may return null for PK_NAME
+			assertTrue(true);
+		}
 		assertFalse(rs.next());
 		rs.close();
+		con.setAutoCommit(true);
 		stmt.executeUpdate("drop table testtable");
+		con.setAutoCommit(false);
 		System.out.println();
 
 
 		// key and index list
 		System.out.println("KEY AND INDEX LIST:");
+		con.setAutoCommit(true);
 		try {
 			stmt.executeUpdate("drop table testtable");
 		} catch (Exception ex) {
@@ -2409,6 +2598,7 @@ class sap extends sqlrtest {
 			"create table testtable ("+
 			"	col1 int primary key, "+
 			"	col2 int)");
+		con.setAutoCommit(false);
 		rs=md.getIndexInfo(null,null,
 					"testtable",false,true);
 		assertTrue((rs!=null));
@@ -2442,25 +2632,34 @@ class sap extends sqlrtest {
 						"PAGES");
 		assertEquals(rsmd.getColumnName(col++),
 						"FILTER_CONDITION");
-		assertTrue(rs.next());
-		assertTrue(rs.getString("TABLE_NAME").
-					equalsIgnoreCase("testtable"));
-		assertEquals(rs.getString("NON_UNIQUE"),"0");
+		// skip statistics rows (TYPE=0) returned by sap jdbc
+		boolean foundindex=false;
+		while (rs.next()) {
+			if (!(rs.getString("TYPE").equals("0"))) {
+				foundindex=true;
+				break;
+			}
+		}
+		assertTrue(foundindex);
+		assertEquals(rs.getString("TABLE_NAME"),"testtable");
+		assertEquals(rs.getString("NON_UNIQUE"),"FALSE");
 		assertEquals(rs.getString("ORDINAL_POSITION"),"1");
-		assertTrue(rs.getString("COLUMN_NAME").
-					equalsIgnoreCase("col1"));
+		assertEquals(rs.getString("COLUMN_NAME"),"col1");
 		assertEquals(rs.getString("ASC_OR_DESC"),"A");
-		assertEquals(rs.getString("TYPE"),"3");
+		assertEquals(rs.getString("TYPE"),"1");
 		assertTrue(rs.getString("INDEX_NAME")!=null &&
 				rs.getString("INDEX_NAME").length()>0);
 		assertFalse(rs.next());
 		rs.close();
+		con.setAutoCommit(true);
 		stmt.executeUpdate("drop table testtable");
+		con.setAutoCommit(false);
 		System.out.println();
 
 
 		// procedure list
 		System.out.println("PROCEDURE LIST:");
+		con.setAutoCommit(true);
 		try {
 			stmt.executeUpdate("drop procedure testproc1");
 		} catch (Exception ex) {
@@ -2505,6 +2704,7 @@ class sap extends sqlrtest {
 			"	@in3 varchar(20), "+
 			"	@in4 datetime "+
 			"as select 1");
+		con.setAutoCommit(false);
 		rs=md.getProcedures(null,null,"%");
 		assertTrue((rs!=null));
 		rsmd=rs.getMetaData();
@@ -2512,7 +2712,7 @@ class sap extends sqlrtest {
 		if (issqlrelay) {
 			assertEquals(rsmd.getColumnCount(),8);
 		} else {
-			assertTrue(rsmd.getColumnCount()>=8);
+			assertEquals(rsmd.getColumnCount(),9);
 		}
 		col=1;
 		assertEquals(rsmd.getColumnName(col++),"PROCEDURE_CAT");
@@ -2526,18 +2726,39 @@ class sap extends sqlrtest {
 			assertEquals(rsmd.getColumnName(col++),
 						"NUM_RESULT_SETS");
 		} else {
-			col+=3;
+			// sap jdbc returns these columns with lowercase names
+			assertEquals(rsmd.getColumnName(col++),
+						"num_input_params");
+			assertEquals(rsmd.getColumnName(col++),
+						"num_output_params");
+			assertEquals(rsmd.getColumnName(col++),
+						"num_result_sets");
 		}
 		assertEquals(rsmd.getColumnName(col++),"REMARKS");
 		assertEquals(rsmd.getColumnName(col++),"PROCEDURE_TYPE");
+		if (!issqlrelay) {
+			// sap jdbc returns this column too
+			assertEquals(rsmd.getColumnName(col++),"SPECIFIC_NAME");
+		}
 		counter=0;
 		while (rs.next()) {
 			String name=rs.getString("PROCEDURE_NAME");
-			if (name.equalsIgnoreCase("testproc1") ||
-					name.equalsIgnoreCase("testproc2") ||
-					name.equalsIgnoreCase("testproc3") ||
-					name.equalsIgnoreCase("testproc4")) {
-				counter++;
+			if (issqlrelay) {
+				if (name.equals("testproc1") ||
+					name.equals("testproc2") ||
+					name.equals("testproc3") ||
+					name.equals("testproc4")) {
+					counter++;
+				}
+			} else {
+				// sap jdbc may append version
+				// suffixes like ";1"
+				if (name.startsWith("testproc1") ||
+					name.startsWith("testproc2") ||
+					name.startsWith("testproc3") ||
+					name.startsWith("testproc4")) {
+					counter++;
+				}
 			}
 		}
 		assertEquals(counter,4);
@@ -2547,86 +2768,71 @@ class sap extends sqlrtest {
 
 		// procedure parameter list
 		System.out.println("PROCEDURE PARAMETER LIST:");
-		rs=md.getProcedureColumns(null,null,
-					"testproc1","%");
+		rs=md.getProcedureColumns(null,null,"testproc1","%");
 		assertTrue((rs!=null));
 		rsmd=rs.getMetaData();
 		assertTrue((rsmd!=null));
 		assertEquals(rsmd.getColumnCount(),20);
 		col=1;
-		assertEquals(rsmd.getColumnName(col++),
-						"PROCEDURE_CAT");
-		assertEquals(rsmd.getColumnName(col++),
-						"PROCEDURE_SCHEM");
-		assertEquals(rsmd.getColumnName(col++),
-						"PROCEDURE_NAME");
-		assertEquals(rsmd.getColumnName(col++),
-						"COLUMN_NAME");
-		assertEquals(rsmd.getColumnName(col++),
-						"COLUMN_TYPE");
-		assertEquals(rsmd.getColumnName(col++),
-						"DATA_TYPE");
-		assertEquals(rsmd.getColumnName(col++),
-						"TYPE_NAME");
-		assertEquals(rsmd.getColumnName(col++),
-						"PRECISION");
-		assertEquals(rsmd.getColumnName(col++),
-						"LENGTH");
-		assertEquals(rsmd.getColumnName(col++),
-						"SCALE");
-		assertEquals(rsmd.getColumnName(col++),
-						"RADIX");
-		assertEquals(rsmd.getColumnName(col++),
-						"NULLABLE");
-		assertEquals(rsmd.getColumnName(col++),
-						"REMARKS");
-		assertEquals(rsmd.getColumnName(col++),
-						"COLUMN_DEF");
-		assertEquals(rsmd.getColumnName(col++),
-						"SQL_DATA_TYPE");
-		assertEquals(rsmd.getColumnName(col++),
-						"SQL_DATETIME_SUB");
-		assertEquals(rsmd.getColumnName(col++),
-						"CHAR_OCTET_LENGTH");
-		assertEquals(rsmd.getColumnName(col++),
-						"ORDINAL_POSITION");
-		assertEquals(rsmd.getColumnName(col++),
-						"IS_NULLABLE");
-		assertEquals(rsmd.getColumnName(col++),
-						"SPECIFIC_NAME");
+		assertEquals(rsmd.getColumnName(col++),"PROCEDURE_CAT");
+		assertEquals(rsmd.getColumnName(col++),"PROCEDURE_SCHEM");
+		assertEquals(rsmd.getColumnName(col++),"PROCEDURE_NAME");
+		assertEquals(rsmd.getColumnName(col++),"COLUMN_NAME");
+		assertEquals(rsmd.getColumnName(col++),"COLUMN_TYPE");
+		assertEquals(rsmd.getColumnName(col++),"DATA_TYPE");
+		assertEquals(rsmd.getColumnName(col++),"TYPE_NAME");
+		assertEquals(rsmd.getColumnName(col++),"PRECISION");
+		assertEquals(rsmd.getColumnName(col++),"LENGTH");
+		assertEquals(rsmd.getColumnName(col++),"SCALE");
+		assertEquals(rsmd.getColumnName(col++),"RADIX");
+		assertEquals(rsmd.getColumnName(col++),"NULLABLE");
+		assertEquals(rsmd.getColumnName(col++),"REMARKS");
+		assertEquals(rsmd.getColumnName(col++),"COLUMN_DEF");
+		assertEquals(rsmd.getColumnName(col++),"SQL_DATA_TYPE");
+		assertEquals(rsmd.getColumnName(col++),"SQL_DATETIME_SUB");
+		assertEquals(rsmd.getColumnName(col++),"CHAR_OCTET_LENGTH");
+		assertEquals(rsmd.getColumnName(col++),"ORDINAL_POSITION");
+		assertEquals(rsmd.getColumnName(col++),"IS_NULLABLE");
+		assertEquals(rsmd.getColumnName(col++),"SPECIFIC_NAME");
+		if (!issqlrelay) {
+			// skip RETURN_VALUE row returned by sap jdbc
+			assertTrue(rs.next());
+		}
 		assertTrue(rs.next());
-		assertTrue(rs.getString("COLUMN_NAME").
-					equalsIgnoreCase("@in1"));
-		assertTrue(rs.getString("TYPE_NAME").
-					equalsIgnoreCase("int"));
-		assertEquals(rs.getString("ORDINAL_POSITION"),
-						"1");
+		assertEquals(rs.getString("COLUMN_NAME"),"@in1");
+		assertEquals(rs.getString("TYPE_NAME"),"int");
+		if (issqlrelay) {
+			// sap jdbc doesn't return this column
+			assertEquals(rs.getString("ORDINAL_POSITION"),"1");
+		}
 		assertTrue(rs.next());
-		assertTrue(rs.getString("COLUMN_NAME").
-					equalsIgnoreCase("@in2"));
-		assertTrue(rs.getString("TYPE_NAME").
-					equalsIgnoreCase("char"));
-		assertEquals(rs.getString("ORDINAL_POSITION"),
-						"2");
+		assertEquals(rs.getString("COLUMN_NAME"),"@in2");
+		assertEquals(rs.getString("TYPE_NAME"),"char");
+		if (issqlrelay) {
+			// sap jdbc doesn't return this column
+			assertEquals(rs.getString("ORDINAL_POSITION"),"2");
+		}
 		assertTrue(rs.next());
-		assertTrue(rs.getString("COLUMN_NAME").
-					equalsIgnoreCase("@in3"));
-		assertTrue(rs.getString("TYPE_NAME").
-					equalsIgnoreCase("varchar"));
-		assertEquals(rs.getString("ORDINAL_POSITION"),
-						"3");
+		assertEquals(rs.getString("COLUMN_NAME"),"@in3");
+		assertEquals(rs.getString("TYPE_NAME"),"varchar");
+		if (issqlrelay) {
+			// sap jdbc doesn't return this column
+			assertEquals(rs.getString("ORDINAL_POSITION"),"3");
+		}
 		assertTrue(rs.next());
-		assertTrue(rs.getString("COLUMN_NAME").
-					equalsIgnoreCase("@in4"));
-		assertTrue(rs.getString("TYPE_NAME").
-					equalsIgnoreCase("datetime"));
-		assertEquals(rs.getString("ORDINAL_POSITION"),
-						"4");
+		assertEquals(rs.getString("COLUMN_NAME"),"@in4");
+		assertEquals(rs.getString("TYPE_NAME"),"datetime");
+		if (issqlrelay) {
+			// sap jdbc doesn't return this column
+			assertEquals(rs.getString("ORDINAL_POSITION"),"4");
+		}
 		rs.close();
+		con.setAutoCommit(true);
 		stmt.executeUpdate("drop procedure testproc1");
 		stmt.executeUpdate("drop procedure testproc2");
 		stmt.executeUpdate("drop procedure testproc3");
 		stmt.executeUpdate("drop procedure testproc4");
+		con.setAutoCommit(false);
 		System.out.println();
 
 
