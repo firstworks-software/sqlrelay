@@ -530,7 +530,7 @@ class sqlite extends sqlrtest {
 		System.out.println("  getSQLStateType");
 		intval=md.getSQLStateType();
 		System.out.println("    "+intval);
-		assertEquals(intval,2);
+		assertEquals(intval,DatabaseMetaData.sqlStateSQL);
 		System.out.println();
 
 		// getStringFunctions
@@ -1310,7 +1310,7 @@ class sqlite extends sqlrtest {
 		boolval=md.supportsStatementPooling();
 		System.out.println("    "+boolval);
 		if (issqlrelay) {
-			// sqlrelay pools statements
+                        // sqlrelay jdbc supports statement pooling
 			assertTrue(boolval);
 		} else {
 			assertFalse(boolval);

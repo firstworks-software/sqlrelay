@@ -13,6 +13,7 @@ else
 				jar=`ls /opt/ibm/db2/*/java/db2jcc4.jar | tail -1`
 				;;
 			firebird)
+				jar=`ls drivers/jaybird*.jar | tail -1`
 				;;
 			freetds)
 				jar=`ls drivers/jtds*.jar | tail -1`

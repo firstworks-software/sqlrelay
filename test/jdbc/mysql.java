@@ -655,7 +655,7 @@ class mysql extends sqlrtest {
 		System.out.println("  getSQLStateType");
 		intval=md.getSQLStateType();
 		System.out.println("    "+intval);
-		assertEquals(intval,2);
+		assertEquals(intval,DatabaseMetaData.sqlStateSQL);
 		System.out.println();
 
 		// getStringFunctions

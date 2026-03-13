@@ -514,7 +514,7 @@ class sap extends sqlrtest {
 		System.out.println("  getSQLStateType");
 		intval=md.getSQLStateType();
 		System.out.println("    "+intval);
-		assertEquals(intval,2);
+		assertEquals(intval,DatabaseMetaData.sqlStateSQL);
 		System.out.println();
 
 		// getStringFunctions
@@ -1302,6 +1302,7 @@ class sap extends sqlrtest {
 		boolval=md.supportsStatementPooling();
 		System.out.println("    "+boolval);
 		if (issqlrelay) {
+                        // sqlrelay jdbc supports statement pooling
 			assertTrue(boolval);
 		} else {
 			assertFalse(boolval);

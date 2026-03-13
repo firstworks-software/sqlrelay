@@ -37,8 +37,8 @@ class firebird extends sqlrtest {
 			issqlrelay=true;
 		} else if (classpath.contains("jaybird")) {
 			driver="org.firebirdsql.jdbc.FBDriver";
-			url="jdbc:firebirdsql://firebird:3050//opt/firebird/"+
-								hostname+".gdb";
+			url="jdbc:firebirdsql://firebird:3050//u02/"+
+							hostname+".gdb";
 			user="testuser";
 			password="testpassword";
 		}
@@ -120,40 +120,35 @@ class firebird extends sqlrtest {
 		System.out.println("  allProceduresAreCallable");
 		boolval=md.allProceduresAreCallable();
 		System.out.println("    "+boolval);
-		// not yet tested against native driver
-		assertTrue(boolval||!boolval);
+		assertFalse(boolval);
 		System.out.println();
 
 		// allTablesAreSelectable
 		System.out.println("  allTablesAreSelectable");
 		boolval=md.allTablesAreSelectable();
 		System.out.println("    "+boolval);
-		// not yet tested against native driver
-		assertTrue(boolval||!boolval);
+		assertFalse(boolval);
 		System.out.println();
 
 		// autoCommitFailureClosesAllResultSets
 		System.out.println("  autoCommitFailureClosesAllResultSets");
 		boolval=md.autoCommitFailureClosesAllResultSets();
 		System.out.println("    "+boolval);
-		// not yet tested against native driver
-		assertTrue(boolval||!boolval);
+		assertFalse(boolval);
 		System.out.println();
 
 		// dataDefinitionCausesTransactionCommit
 		System.out.println("  dataDefinitionCausesTransactionCommit");
 		boolval=md.dataDefinitionCausesTransactionCommit();
 		System.out.println("    "+boolval);
-		// not yet tested against native driver
-		assertTrue(boolval||!boolval);
+		assertFalse(boolval);
 		System.out.println();
 
 		// dataDefinitionIgnoredInTransactions
 		System.out.println("  dataDefinitionIgnoredInTransactions");
 		boolval=md.dataDefinitionIgnoredInTransactions();
 		System.out.println("    "+boolval);
-		// not yet tested against native driver
-		assertTrue(boolval||!boolval);
+		assertFalse(boolval);
 		System.out.println();
 
 		// deletesAreDetected
@@ -185,39 +180,40 @@ class firebird extends sqlrtest {
 		System.out.println("  doesMaxRowSizeIncludeBlobs");
 		boolval=md.doesMaxRowSizeIncludeBlobs();
 		System.out.println("    "+boolval);
-		// not yet tested against native driver
-		assertTrue(boolval||!boolval);
+		assertFalse(boolval);
 		System.out.println();
 
 		// generatedKeyAlwaysReturned
 		System.out.println("  generatedKeyAlwaysReturned");
 		boolval=md.generatedKeyAlwaysReturned();
 		System.out.println("    "+boolval);
-		// not yet tested against native driver
-		assertTrue(boolval||!boolval);
+		assertFalse(boolval);
 		System.out.println();
 
 		// getCatalogSeparator
 		System.out.println("  getCatalogSeparator");
 		stringval=md.getCatalogSeparator();
 		System.out.println("    "+stringval);
-		// not yet tested against native driver
-		assertTrue(stringval!=null||stringval==null);
+		if (issqlrelay) {
+			// sqlrelay jdbc returns an empty string
+			assertTrue(stringval.isEmpty());
+		} else {
+			// sqlrelay jdbc returns null
+			assertTrue(stringval==null);
+		}
 		System.out.println();
 
 		// getCatalogTerm
 		System.out.println("  getCatalogTerm");
 		stringval=md.getCatalogTerm();
 		System.out.println("    "+stringval);
-		// not yet tested against native driver
-		assertTrue(stringval!=null||stringval==null);
+		assertTrue(stringval==null || stringval.isEmpty());
 		System.out.println();
 
 		// getDatabaseMajorVersion
 		System.out.println("  getDatabaseMajorVersion");
 		intval=md.getDatabaseMajorVersion();
 		System.out.println("    "+intval);
-		// not yet tested against native driver
 		assertTrue(intval>=0);
 		System.out.println();
 
@@ -225,7 +221,6 @@ class firebird extends sqlrtest {
 		System.out.println("  getDatabaseMinorVersion");
 		intval=md.getDatabaseMinorVersion();
 		System.out.println("    "+intval);
-		// not yet tested against native driver
 		assertTrue(intval>=0);
 		System.out.println();
 
@@ -233,31 +228,27 @@ class firebird extends sqlrtest {
 		System.out.println("  getDatabaseProductName");
 		stringval=md.getDatabaseProductName();
 		System.out.println("    "+stringval);
-		// not yet tested against native driver
-		assertTrue(stringval!=null||stringval==null);
+		assertTrue(stringval!=null);
 		System.out.println();
 
 		// getDatabaseProductVersion
 		System.out.println("  getDatabaseProductVersion");
 		stringval=md.getDatabaseProductVersion();
 		System.out.println("    "+stringval);
-		// not yet tested against native driver
-		assertTrue(stringval!=null||stringval==null);
+		assertTrue(stringval!=null);
 		System.out.println();
 
 		// getDefaultTransactionIsolation
 		System.out.println("  getDefaultTransactionIsolation");
 		intval=md.getDefaultTransactionIsolation();
 		System.out.println("    "+intval);
-		// not yet tested against native driver
-		assertTrue(intval>=0);
+		assertEquals(intval,Connection.TRANSACTION_READ_COMMITTED);
 		System.out.println();
 
 		// getDriverMajorVersion
 		System.out.println("  getDriverMajorVersion");
 		intval=md.getDriverMajorVersion();
 		System.out.println("    "+intval);
-		// not yet tested against native driver
 		assertTrue(intval>=0);
 		System.out.println();
 
@@ -265,7 +256,6 @@ class firebird extends sqlrtest {
 		System.out.println("  getDriverMinorVersion");
 		intval=md.getDriverMinorVersion();
 		System.out.println("    "+intval);
-		// not yet tested against native driver
 		assertTrue(intval>=0);
 		System.out.println();
 
@@ -276,8 +266,7 @@ class firebird extends sqlrtest {
 		if (issqlrelay) {
 			assertEquals(stringval,"SQL Relay JDBC driver");
 		} else {
-			// not yet tested against native driver
-			assertTrue(stringval!=null||stringval==null);
+			assertEquals(stringval,"Jaybird JCA/JDBC driver");
 		}
 		System.out.println();
 
@@ -293,23 +282,20 @@ class firebird extends sqlrtest {
 		System.out.println("  getExtraNameCharacters");
 		stringval=md.getExtraNameCharacters();
 		System.out.println("    "+stringval);
-		// not yet tested against native driver
-		assertTrue(stringval!=null||stringval==null);
+		assertEquals(stringval,"$");
 		System.out.println();
 
 		// getIdentifierQuoteString
 		System.out.println("  getIdentifierQuoteString");
 		stringval=md.getIdentifierQuoteString();
 		System.out.println("    "+stringval);
-		// not yet tested against native driver
-		assertTrue(stringval!=null||stringval==null);
+		assertEquals(stringval,"\"");
 		System.out.println();
 
 		// getJDBCMajorVersion
 		System.out.println("  getJDBCMajorVersion");
 		intval=md.getJDBCMajorVersion();
 		System.out.println("    "+intval);
-		// not yet tested against native driver
 		assertTrue(intval>=0);
 		System.out.println();
 
@@ -317,7 +303,6 @@ class firebird extends sqlrtest {
 		System.out.println("  getJDBCMinorVersion");
 		intval=md.getJDBCMinorVersion();
 		System.out.println("    "+intval);
-		// not yet tested against native driver
 		assertTrue(intval>=0);
 		System.out.println();
 
@@ -325,183 +310,172 @@ class firebird extends sqlrtest {
 		System.out.println("  getMaxBinaryLiteralLength");
 		intval=md.getMaxBinaryLiteralLength();
 		System.out.println("    "+intval);
-		// not yet tested against native driver
-		assertTrue(intval>=0);
+		assertEquals(intval,0);
 		System.out.println();
 
 		// getMaxCatalogNameLength
 		System.out.println("  getMaxCatalogNameLength");
 		intval=md.getMaxCatalogNameLength();
 		System.out.println("    "+intval);
-		// not yet tested against native driver
-		assertTrue(intval>=0);
+		assertEquals(intval,0);
 		System.out.println();
 
 		// getMaxCharLiteralLength
 		System.out.println("  getMaxCharLiteralLength");
 		intval=md.getMaxCharLiteralLength();
 		System.out.println("    "+intval);
-		// not yet tested against native driver
-		assertTrue(intval>=0);
+		assertEquals(intval,32765);
 		System.out.println();
 
 		// getMaxColumnNameLength
 		System.out.println("  getMaxColumnNameLength");
 		intval=md.getMaxColumnNameLength();
 		System.out.println("    "+intval);
-		// not yet tested against native driver
-		assertTrue(intval>=0);
+		assertEquals(intval,31);
 		System.out.println();
 
 		// getMaxColumnsInGroupBy
 		System.out.println("  getMaxColumnsInGroupBy");
 		intval=md.getMaxColumnsInGroupBy();
 		System.out.println("    "+intval);
-		// not yet tested against native driver
-		assertTrue(intval>=0);
+		assertEquals(intval,0);
 		System.out.println();
 
 		// getMaxColumnsInIndex
 		System.out.println("  getMaxColumnsInIndex");
 		intval=md.getMaxColumnsInIndex();
 		System.out.println("    "+intval);
-		// not yet tested against native driver
-		assertTrue(intval>=0);
+		assertEquals(intval,0);
 		System.out.println();
 
 		// getMaxColumnsInOrderBy
 		System.out.println("  getMaxColumnsInOrderBy");
 		intval=md.getMaxColumnsInOrderBy();
 		System.out.println("    "+intval);
-		// not yet tested against native driver
-		assertTrue(intval>=0);
+		assertEquals(intval,0);
 		System.out.println();
 
 		// getMaxColumnsInSelect
 		System.out.println("  getMaxColumnsInSelect");
 		intval=md.getMaxColumnsInSelect();
 		System.out.println("    "+intval);
-		// not yet tested against native driver
-		assertTrue(intval>=0);
+		assertEquals(intval,0);
 		System.out.println();
 
 		// getMaxColumnsInTable
 		System.out.println("  getMaxColumnsInTable");
 		intval=md.getMaxColumnsInTable();
 		System.out.println("    "+intval);
-		// not yet tested against native driver
-		assertTrue(intval>=0);
+		assertEquals(intval,32767);
 		System.out.println();
 
 		// getMaxConnections
 		System.out.println("  getMaxConnections");
 		intval=md.getMaxConnections();
 		System.out.println("    "+intval);
-		// not yet tested against native driver
-		assertTrue(intval>=0);
+		if (issqlrelay) {
+			// varies by sqlrelay config
+			assertTrue(intval>0);
+		} else {
+			// firebird jdbc returns 0 for this
+			assertEquals(intval,0);
+		}
 		System.out.println();
 
 		// getMaxCursorNameLength
 		System.out.println("  getMaxCursorNameLength");
 		intval=md.getMaxCursorNameLength();
 		System.out.println("    "+intval);
-		// not yet tested against native driver
-		assertTrue(intval>=0);
+		assertEquals(intval,31);
 		System.out.println();
 
 		// getMaxIndexLength
 		System.out.println("  getMaxIndexLength");
 		intval=md.getMaxIndexLength();
 		System.out.println("    "+intval);
-		// not yet tested against native driver
-		assertTrue(intval>=0);
+		assertEquals(intval,0);
 		System.out.println();
 
 		// getMaxProcedureNameLength
 		System.out.println("  getMaxProcedureNameLength");
 		intval=md.getMaxProcedureNameLength();
 		System.out.println("    "+intval);
-		// not yet tested against native driver
-		assertTrue(intval>=0);
+		assertEquals(intval,31);
 		System.out.println();
 
 		// getMaxRowSize
 		System.out.println("  getMaxRowSize");
 		intval=md.getMaxRowSize();
 		System.out.println("    "+intval);
-		// not yet tested against native driver
-		assertTrue(intval>=0);
+		assertEquals(intval,65531);
 		System.out.println();
 
 		// getMaxSchemaNameLength
 		System.out.println("  getMaxSchemaNameLength");
 		intval=md.getMaxSchemaNameLength();
 		System.out.println("    "+intval);
-		// not yet tested against native driver
-		assertTrue(intval>=0);
+		assertEquals(intval,0);
 		System.out.println();
 
 		// getMaxStatementLength
 		System.out.println("  getMaxStatementLength");
 		intval=md.getMaxStatementLength();
 		System.out.println("    "+intval);
-		// not yet tested against native driver
-		assertTrue(intval>=0);
+		assertEquals(intval,10485760);
 		System.out.println();
 
 		// getMaxStatements
 		System.out.println("  getMaxStatements");
 		intval=md.getMaxStatements();
 		System.out.println("    "+intval);
-		// not yet tested against native driver
-		assertTrue(intval>=0);
+		assertEquals(intval,0);
 		System.out.println();
 
 		// getMaxTableNameLength
 		System.out.println("  getMaxTableNameLength");
 		intval=md.getMaxTableNameLength();
 		System.out.println("    "+intval);
-		// not yet tested against native driver
-		assertTrue(intval>=0);
+		assertEquals(intval,31);
 		System.out.println();
 
 		// getMaxTablesInSelect
 		System.out.println("  getMaxTablesInSelect");
 		intval=md.getMaxTablesInSelect();
 		System.out.println("    "+intval);
-		// not yet tested against native driver
-		assertTrue(intval>=0);
+		assertEquals(intval,0);
 		System.out.println();
 
 		// getMaxUserNameLength
 		System.out.println("  getMaxUserNameLength");
 		intval=md.getMaxUserNameLength();
 		System.out.println("    "+intval);
-		// not yet tested against native driver
-		assertTrue(intval>=0);
+		assertEquals(intval,31);
 		System.out.println();
 
 		// getNumericFunctions
 		System.out.println("  getNumericFunctions");
 		stringval=md.getNumericFunctions();
 		System.out.println("    "+stringval);
-		assertEquals(stringval,"");
+		assertEquals(stringval,"TAN,MOD,LOG,COS,ROUND,SQRT,ASIN,ATAN2,COT,POWER,LOG10,ABS,FLOOR,DEGREES,CEILING,ACOS,RADIANS,PI,SIN,SIGN,EXP,ATAN,TRUNCATE");
 		System.out.println();
 
 		// getProcedureTerm
 		System.out.println("  getProcedureTerm");
 		stringval=md.getProcedureTerm();
 		System.out.println("    "+stringval);
-		// not yet tested against native driver
-		assertTrue(stringval!=null||stringval==null);
+		assertEquals(stringval,"PROCEDURE");
 		System.out.println();
 
 		// getResultSetHoldability
 		System.out.println("  getResultSetHoldability");
 		intval=md.getResultSetHoldability();
 		System.out.println("    "+intval);
-		// not yet tested against native driver
-		assertTrue(intval>=0);
+		if (issqlrelay) {
+			// sqlrelay doesn't support close cursors at commit
+			assertEquals(intval,ResultSet.HOLD_CURSORS_OVER_COMMIT);
+		} else {
+			assertEquals(intval,ResultSet.CLOSE_CURSORS_AT_COMMIT);
+		}
 		System.out.println();
 
 		// getRowIdLifetime
@@ -519,52 +493,49 @@ class firebird extends sqlrtest {
 		System.out.println("  getSchemaTerm");
 		stringval=md.getSchemaTerm();
 		System.out.println("    "+stringval);
-		// not yet tested against native driver
-		assertTrue(stringval!=null||stringval==null);
+		assertTrue(stringval==null || stringval.isEmpty());
 		System.out.println();
 
 		// getSearchStringEscape
 		System.out.println("  getSearchStringEscape");
 		stringval=md.getSearchStringEscape();
 		System.out.println("    "+stringval);
-		// not yet tested against native driver
-		assertTrue(stringval!=null||stringval==null);
+		assertEquals(stringval,"\\");
 		System.out.println();
 
 		// getSQLKeywords
 		System.out.println("  getSQLKeywords");
 		stringval=md.getSQLKeywords();
 		System.out.println("    "+stringval);
-		assertEquals(stringval,"");
+		assertEquals(stringval,"ADD,ADMIN,BIT_LENGTH,CURRENT_CONNECTION,CURRENT_TRANSACTION,DELETING,GDSCODE,INDEX,INSERTING,LONG,OFFSET,PLAN,POST_EVENT,RDB$DB_KEY,RDB$RECORD_VERSION,RECORD_VERSION,RECREATE,RETURNING_VALUES,ROW_COUNT,SQLCODE,UPDATING,VARIABLE,VIEW,WHILE");
 		System.out.println();
 
 		// getSQLStateType
 		System.out.println("  getSQLStateType");
 		intval=md.getSQLStateType();
 		System.out.println("    "+intval);
-		// not yet tested against native driver
-		assertTrue(intval>=0);
+		assertEquals(intval,DatabaseMetaData.sqlStateSQL);
 		System.out.println();
 
 		// getStringFunctions
 		System.out.println("  getStringFunctions");
 		stringval=md.getStringFunctions();
 		System.out.println("    "+stringval);
-		assertEquals(stringval,"");
+		assertEquals(stringval,"CHARACTER_LENGTH,LEFT,REPEAT,CONCAT,SUBSTRING,LENGTH,UCASE,CHAR,ASCII,SPACE,POSITION,LCASE,LTRIM,RIGHT,INSERT,CHAR_LENGTH,LOCATE,REPLACE,OCTET_LENGTH,RTRIM");
 		System.out.println();
 
 		// getSystemFunctions
 		System.out.println("  getSystemFunctions");
 		stringval=md.getSystemFunctions();
 		System.out.println("    "+stringval);
-		assertEquals(stringval,"");
+		assertEquals(stringval,"DATABASE,IFNULL,USER");
 		System.out.println();
 
 		// getTimeDateFunctions
 		System.out.println("  getTimeDateFunctions");
 		stringval=md.getTimeDateFunctions();
 		System.out.println("    "+stringval);
-		assertEquals(stringval,"");
+		assertEquals(stringval,"DAYOFMONTH,MONTHNAME,MONTH,CURRENT_TIMESTAMP,HOUR,DAYOFYEAR,TIMESTAMPADD,DAYOFWEEK,QUARTER,TIMESTAMPDIFF,YEAR,CURTIME,NOW,DAYNAME,MINUTE,SECOND,CURRENT_DATE,CURRENT_TIME,WEEK,CURDATE,EXTRACT");
 		System.out.println();
 
 		// getURL
@@ -578,24 +549,21 @@ class firebird extends sqlrtest {
 		System.out.println("  getUserName");
 		stringval=md.getUserName();
 		System.out.println("    "+stringval);
-		// not yet tested against native driver
-		assertTrue(stringval!=null||stringval==null);
+		assertEquals(stringval,"testuser");
 		System.out.println();
 
 		// isCatalogAtStart
 		System.out.println("  isCatalogAtStart");
 		boolval=md.isCatalogAtStart();
 		System.out.println("    "+boolval);
-		// not yet tested against native driver
-		assertTrue(boolval||!boolval);
+		assertFalse(boolval);
 		System.out.println();
 
 		// isReadOnly
 		System.out.println("  isReadOnly");
 		boolval=md.isReadOnly();
 		System.out.println("    "+boolval);
-		// not yet tested against native driver
-		assertTrue(boolval||!boolval);
+		assertFalse(boolval);
 		System.out.println();
 
 		// insertsAreDetected
@@ -627,48 +595,42 @@ class firebird extends sqlrtest {
 		System.out.println("  locatorsUpdateCopy");
 		boolval=md.locatorsUpdateCopy();
 		System.out.println("    "+boolval);
-		// not yet tested against native driver
-		assertTrue(boolval||!boolval);
+		assertTrue(boolval);
 		System.out.println();
 
 		// nullPlusNonNullIsNull
 		System.out.println("  nullPlusNonNullIsNull");
 		boolval=md.nullPlusNonNullIsNull();
 		System.out.println("    "+boolval);
-		// not yet tested against native driver
-		assertTrue(boolval||!boolval);
+		assertTrue(boolval);
 		System.out.println();
 
 		// nullsAreSortedAtEnd
 		System.out.println("  nullsAreSortedAtEnd");
 		boolval=md.nullsAreSortedAtEnd();
 		System.out.println("    "+boolval);
-		// not yet tested against native driver
-		assertTrue(boolval||!boolval);
+		assertFalse(boolval);
 		System.out.println();
 
 		// nullsAreSortedAtStart
 		System.out.println("  nullsAreSortedAtStart");
 		boolval=md.nullsAreSortedAtStart();
 		System.out.println("    "+boolval);
-		// not yet tested against native driver
-		assertTrue(boolval||!boolval);
+		assertFalse(boolval);
 		System.out.println();
 
 		// nullsAreSortedHigh
 		System.out.println("  nullsAreSortedHigh");
 		boolval=md.nullsAreSortedHigh();
 		System.out.println("    "+boolval);
-		// not yet tested against native driver
-		assertTrue(boolval||!boolval);
+		assertFalse(boolval);
 		System.out.println();
 
 		// nullsAreSortedLow
 		System.out.println("  nullsAreSortedLow");
 		boolval=md.nullsAreSortedLow();
 		System.out.println("    "+boolval);
-		// not yet tested against native driver
-		assertTrue(boolval||!boolval);
+		assertTrue(boolval);
 		System.out.println();
 
 		// othersDeletesAreVisible
@@ -760,7 +722,7 @@ class firebird extends sqlrtest {
 		boolval=md.ownDeletesAreVisible(
 					ResultSet.TYPE_SCROLL_INSENSITIVE);
 		System.out.println("    "+boolval);
-		assertFalse(boolval);
+		assertTrue(boolval);
 		System.out.println();
 
 		System.out.println("  ownDeletesAreVisible "+
@@ -768,7 +730,12 @@ class firebird extends sqlrtest {
 		boolval=md.ownDeletesAreVisible(
 					ResultSet.TYPE_SCROLL_SENSITIVE);
 		System.out.println("    "+boolval);
-		assertFalse(boolval);
+		if (issqlrelay) {
+			// sqlrelay doesn't support TYPE_SCROLL_SENSITIVE
+			assertFalse(boolval);
+		} else {
+			assertTrue(boolval);
+		}
 		System.out.println();
 
 		// ownInsertsAreVisible
@@ -785,7 +752,7 @@ class firebird extends sqlrtest {
 		boolval=md.ownInsertsAreVisible(
 					ResultSet.TYPE_SCROLL_INSENSITIVE);
 		System.out.println("    "+boolval);
-		assertFalse(boolval);
+		assertTrue(boolval);
 		System.out.println();
 
 		System.out.println("  ownInsertsAreVisible "+
@@ -793,7 +760,12 @@ class firebird extends sqlrtest {
 		boolval=md.ownInsertsAreVisible(
 					ResultSet.TYPE_SCROLL_SENSITIVE);
 		System.out.println("    "+boolval);
-		assertFalse(boolval);
+		if (issqlrelay) {
+			// sqlrelay doesn't support TYPE_SCROLL_SENSITIVE
+			assertFalse(boolval);
+		} else {
+			assertTrue(boolval);
+		}
 		System.out.println();
 
 		// ownUpdatesAreVisible
@@ -810,7 +782,7 @@ class firebird extends sqlrtest {
 		boolval=md.ownUpdatesAreVisible(
 					ResultSet.TYPE_SCROLL_INSENSITIVE);
 		System.out.println("    "+boolval);
-		assertFalse(boolval);
+		assertTrue(boolval);
 		System.out.println();
 
 		System.out.println("  ownUpdatesAreVisible "+
@@ -818,183 +790,166 @@ class firebird extends sqlrtest {
 		boolval=md.ownUpdatesAreVisible(
 					ResultSet.TYPE_SCROLL_SENSITIVE);
 		System.out.println("    "+boolval);
-		assertFalse(boolval);
+		if (issqlrelay) {
+			// sqlrelay doesn't support TYPE_SCROLL_SENSITIVE
+			assertFalse(boolval);
+		} else {
+			assertTrue(boolval);
+		}
 		System.out.println();
 
 		// storesLowerCaseIdentifiers
 		System.out.println("  storesLowerCaseIdentifiers");
 		boolval=md.storesLowerCaseIdentifiers();
 		System.out.println("    "+boolval);
-		// not yet tested against native driver
-		assertTrue(boolval||!boolval);
+		assertFalse(boolval);
 		System.out.println();
 
 		// storesLowerCaseQuotedIdentifiers
 		System.out.println("  storesLowerCaseQuotedIdentifiers");
 		boolval=md.storesLowerCaseQuotedIdentifiers();
 		System.out.println("    "+boolval);
-		// not yet tested against native driver
-		assertTrue(boolval||!boolval);
+		assertFalse(boolval);
 		System.out.println();
 
 		// storesMixedCaseIdentifiers
 		System.out.println("  storesMixedCaseIdentifiers");
 		boolval=md.storesMixedCaseIdentifiers();
 		System.out.println("    "+boolval);
-		// not yet tested against native driver
-		assertTrue(boolval||!boolval);
+		assertFalse(boolval);
 		System.out.println();
 
 		// storesMixedCaseQuotedIdentifiers
 		System.out.println("  storesMixedCaseQuotedIdentifiers");
 		boolval=md.storesMixedCaseQuotedIdentifiers();
 		System.out.println("    "+boolval);
-		// not yet tested against native driver
-		assertTrue(boolval||!boolval);
+		assertFalse(boolval);
 		System.out.println();
 
 		// storesUpperCaseIdentifiers
 		System.out.println("  storesUpperCaseIdentifiers");
 		boolval=md.storesUpperCaseIdentifiers();
 		System.out.println("    "+boolval);
-		// not yet tested against native driver
-		assertTrue(boolval||!boolval);
+		assertTrue(boolval);
 		System.out.println();
 
 		// storesUpperCaseQuotedIdentifiers
 		System.out.println("  storesUpperCaseQuotedIdentifiers");
 		boolval=md.storesUpperCaseQuotedIdentifiers();
 		System.out.println("    "+boolval);
-		// not yet tested against native driver
-		assertTrue(boolval||!boolval);
+		assertFalse(boolval);
 		System.out.println();
 
 		// supportsAlterTableWithAddColumn
 		System.out.println("  supportsAlterTableWithAddColumn");
 		boolval=md.supportsAlterTableWithAddColumn();
 		System.out.println("    "+boolval);
-		// not yet tested against native driver
-		assertTrue(boolval||!boolval);
+		assertTrue(boolval);
 		System.out.println();
 
 		// supportsAlterTableWithDropColumn
 		System.out.println("  supportsAlterTableWithDropColumn");
 		boolval=md.supportsAlterTableWithDropColumn();
 		System.out.println("    "+boolval);
-		// not yet tested against native driver
-		assertTrue(boolval||!boolval);
+		assertTrue(boolval);
 		System.out.println();
 
 		// supportsANSI92EntryLevelSQL
 		System.out.println("  supportsANSI92EntryLevelSQL");
 		boolval=md.supportsANSI92EntryLevelSQL();
 		System.out.println("    "+boolval);
-		// not yet tested against native driver
-		assertTrue(boolval||!boolval);
+		assertTrue(boolval);
 		System.out.println();
 
 		// supportsANSI92FullSQL
 		System.out.println("  supportsANSI92FullSQL");
 		boolval=md.supportsANSI92FullSQL();
 		System.out.println("    "+boolval);
-		// not yet tested against native driver
-		assertTrue(boolval||!boolval);
+		assertFalse(boolval);
 		System.out.println();
 
 		// supportsANSI92IntermediateSQL
 		System.out.println("  supportsANSI92IntermediateSQL");
 		boolval=md.supportsANSI92IntermediateSQL();
 		System.out.println("    "+boolval);
-		// not yet tested against native driver
-		assertTrue(boolval||!boolval);
+		assertFalse(boolval);
 		System.out.println();
 
 		// supportsBatchUpdates
 		System.out.println("  supportsBatchUpdates");
 		boolval=md.supportsBatchUpdates();
 		System.out.println("    "+boolval);
-		// not yet tested against native driver
-		assertTrue(boolval||!boolval);
+		assertTrue(boolval);
 		System.out.println();
 
 		// supportsCatalogsInDataManipulation
 		System.out.println("  supportsCatalogsInDataManipulation");
 		boolval=md.supportsCatalogsInDataManipulation();
 		System.out.println("    "+boolval);
-		// not yet tested against native driver
-		assertTrue(boolval||!boolval);
+		assertFalse(boolval);
 		System.out.println();
 
 		// supportsCatalogsInIndexDefinitions
 		System.out.println("  supportsCatalogsInIndexDefinitions");
 		boolval=md.supportsCatalogsInIndexDefinitions();
 		System.out.println("    "+boolval);
-		// not yet tested against native driver
-		assertTrue(boolval||!boolval);
+		assertFalse(boolval);
 		System.out.println();
 
 		// supportsCatalogsInPrivilegeDefinitions
 		System.out.println("  supportsCatalogsInPrivilegeDefinitions");
 		boolval=md.supportsCatalogsInPrivilegeDefinitions();
 		System.out.println("    "+boolval);
-		// not yet tested against native driver
-		assertTrue(boolval||!boolval);
+		assertFalse(boolval);
 		System.out.println();
 
 		// supportsCatalogsInProcedureCalls
 		System.out.println("  supportsCatalogsInProcedureCalls");
 		boolval=md.supportsCatalogsInProcedureCalls();
 		System.out.println("    "+boolval);
-		// not yet tested against native driver
-		assertTrue(boolval||!boolval);
+		assertFalse(boolval);
 		System.out.println();
 
 		// supportsCatalogsInTableDefinitions
 		System.out.println("  supportsCatalogsInTableDefinitions");
 		boolval=md.supportsCatalogsInTableDefinitions();
 		System.out.println("    "+boolval);
-		// not yet tested against native driver
-		assertTrue(boolval||!boolval);
+		assertFalse(boolval);
 		System.out.println();
 
 		// supportsColumnAliasing
 		System.out.println("  supportsColumnAliasing");
 		boolval=md.supportsColumnAliasing();
 		System.out.println("    "+boolval);
-		// not yet tested against native driver
-		assertTrue(boolval||!boolval);
+		assertTrue(boolval);
 		System.out.println();
 
 		// supportsConvert
 		System.out.println("  supportsConvert");
 		boolval=md.supportsConvert();
 		System.out.println("    "+boolval);
-		// not yet tested against native driver
-		assertTrue(boolval||!boolval);
+		assertTrue(boolval);
 		System.out.println();
 
 		// supportsConvert (with types)
 		System.out.println("  supportsConvert (with types)");
 		boolval=md.supportsConvert(Types.INTEGER,Types.VARCHAR);
 		System.out.println("    "+boolval);
-		// not yet tested against native driver
-		assertTrue(boolval||!boolval);
+		assertTrue(boolval);
 		System.out.println();
 
 		// supportsCoreSQLGrammar
 		System.out.println("  supportsCoreSQLGrammar");
 		boolval=md.supportsCoreSQLGrammar();
 		System.out.println("    "+boolval);
-		// not yet tested against native driver
-		assertTrue(boolval||!boolval);
+		assertTrue(boolval);
 		System.out.println();
 
 		// supportsCorrelatedSubqueries
 		System.out.println("  supportsCorrelatedSubqueries");
 		boolval=md.supportsCorrelatedSubqueries();
 		System.out.println("    "+boolval);
-		// not yet tested against native driver
-		assertTrue(boolval||!boolval);
+		assertTrue(boolval);
 		System.out.println();
 
 		// supportsDataManipulationTransactionsOnly
@@ -1008,216 +963,189 @@ class firebird extends sqlrtest {
 		System.out.println("  supportsDifferentTableCorrelationNames");
 		boolval=md.supportsDifferentTableCorrelationNames();
 		System.out.println("    "+boolval);
-		// not yet tested against native driver
-		assertTrue(boolval||!boolval);
+		assertFalse(boolval);
 		System.out.println();
 
 		// supportsExpressionsInOrderBy
 		System.out.println("  supportsExpressionsInOrderBy");
 		boolval=md.supportsExpressionsInOrderBy();
 		System.out.println("    "+boolval);
-		// not yet tested against native driver
-		assertTrue(boolval||!boolval);
+		assertTrue(boolval);
 		System.out.println();
 
 		// supportsExtendedSQLGrammar
 		System.out.println("  supportsExtendedSQLGrammar");
 		boolval=md.supportsExtendedSQLGrammar();
 		System.out.println("    "+boolval);
-		// not yet tested against native driver
-		assertTrue(boolval||!boolval);
+		assertTrue(boolval);
 		System.out.println();
 
 		// supportsFullOuterJoins
 		System.out.println("  supportsFullOuterJoins");
 		boolval=md.supportsFullOuterJoins();
 		System.out.println("    "+boolval);
-		// not yet tested against native driver
-		assertTrue(boolval||!boolval);
+		assertTrue(boolval);
 		System.out.println();
 
 		// supportsGetGeneratedKeys
 		System.out.println("  supportsGetGeneratedKeys");
 		boolval=md.supportsGetGeneratedKeys();
 		System.out.println("    "+boolval);
-		// not yet tested against native driver
-		assertTrue(boolval||!boolval);
+		assertTrue(boolval);
 		System.out.println();
 
 		// supportsGroupBy
 		System.out.println("  supportsGroupBy");
 		boolval=md.supportsGroupBy();
 		System.out.println("    "+boolval);
-		// not yet tested against native driver
-		assertTrue(boolval||!boolval);
+		assertTrue(boolval);
 		System.out.println();
 
 		// supportsGroupByBeyondSelect
 		System.out.println("  supportsGroupByBeyondSelect");
 		boolval=md.supportsGroupByBeyondSelect();
 		System.out.println("    "+boolval);
-		// not yet tested against native driver
-		assertTrue(boolval||!boolval);
+		assertFalse(boolval);
 		System.out.println();
 
 		// supportsGroupByUnrelated
 		System.out.println("  supportsGroupByUnrelated");
 		boolval=md.supportsGroupByUnrelated();
 		System.out.println("    "+boolval);
-		// not yet tested against native driver
-		assertTrue(boolval||!boolval);
+		assertFalse(boolval);
 		System.out.println();
 
 		// supportsIntegrityEnhancementFacility
 		System.out.println("  supportsIntegrityEnhancementFacility");
 		boolval=md.supportsIntegrityEnhancementFacility();
 		System.out.println("    "+boolval);
-		// not yet tested against native driver
-		assertTrue(boolval||!boolval);
+		assertTrue(boolval);
 		System.out.println();
 
 		// supportsLikeEscapeClause
 		System.out.println("  supportsLikeEscapeClause");
 		boolval=md.supportsLikeEscapeClause();
 		System.out.println("    "+boolval);
-		// not yet tested against native driver
-		assertTrue(boolval||!boolval);
+		assertTrue(boolval);
 		System.out.println();
 
 		// supportsLimitedOuterJoins
 		System.out.println("  supportsLimitedOuterJoins");
 		boolval=md.supportsLimitedOuterJoins();
 		System.out.println("    "+boolval);
-		// not yet tested against native driver
-		assertTrue(boolval||!boolval);
+		assertTrue(boolval);
 		System.out.println();
 
 		// supportsMinimumSQLGrammar
 		System.out.println("  supportsMinimumSQLGrammar");
 		boolval=md.supportsMinimumSQLGrammar();
 		System.out.println("    "+boolval);
-		// not yet tested against native driver
-		assertTrue(boolval||!boolval);
+		assertTrue(boolval);
 		System.out.println();
 
 		// supportsMixedCaseIdentifiers
 		System.out.println("  supportsMixedCaseIdentifiers");
 		boolval=md.supportsMixedCaseIdentifiers();
 		System.out.println("    "+boolval);
-		// not yet tested against native driver
-		assertTrue(boolval||!boolval);
+		assertFalse(boolval);
 		System.out.println();
 
 		// supportsMixedCaseQuotedIdentifiers
 		System.out.println("  supportsMixedCaseQuotedIdentifiers");
 		boolval=md.supportsMixedCaseQuotedIdentifiers();
 		System.out.println("    "+boolval);
-		// not yet tested against native driver
-		assertTrue(boolval||!boolval);
+		assertTrue(boolval);
 		System.out.println();
 
 		// supportsMultipleOpenResults
 		System.out.println("  supportsMultipleOpenResults");
 		boolval=md.supportsMultipleOpenResults();
 		System.out.println("    "+boolval);
-		// not yet tested against native driver
-		assertTrue(boolval||!boolval);
+		assertFalse(boolval);
 		System.out.println();
 
 		// supportsMultipleResultSets
 		System.out.println("  supportsMultipleResultSets");
 		boolval=md.supportsMultipleResultSets();
 		System.out.println("    "+boolval);
-		// not yet tested against native driver
-		assertTrue(boolval||!boolval);
+		assertFalse(boolval);
 		System.out.println();
 
 		// supportsMultipleTransactions
 		System.out.println("  supportsMultipleTransactions");
 		boolval=md.supportsMultipleTransactions();
 		System.out.println("    "+boolval);
-		// not yet tested against native driver
-		assertTrue(boolval||!boolval);
+		assertTrue(boolval);
 		System.out.println();
 
 		// supportsNamedParameters
 		System.out.println("  supportsNamedParameters");
 		boolval=md.supportsNamedParameters();
 		System.out.println("    "+boolval);
-		// not yet tested against native driver
-		assertTrue(boolval||!boolval);
+		assertFalse(boolval);
 		System.out.println();
 
 		// supportsNonNullableColumns
 		System.out.println("  supportsNonNullableColumns");
 		boolval=md.supportsNonNullableColumns();
 		System.out.println("    "+boolval);
-		// not yet tested against native driver
-		assertTrue(boolval||!boolval);
+		assertTrue(boolval);
 		System.out.println();
 
 		// supportsOpenCursorsAcrossCommit
 		System.out.println("  supportsOpenCursorsAcrossCommit");
 		boolval=md.supportsOpenCursorsAcrossCommit();
 		System.out.println("    "+boolval);
-		// not yet tested against native driver
-		assertTrue(boolval||!boolval);
+		assertFalse(boolval);
 		System.out.println();
 
 		// supportsOpenCursorsAcrossRollback
 		System.out.println("  supportsOpenCursorsAcrossRollback");
 		boolval=md.supportsOpenCursorsAcrossRollback();
 		System.out.println("    "+boolval);
-		// not yet tested against native driver
-		assertTrue(boolval||!boolval);
+		assertFalse(boolval);
 		System.out.println();
 
 		// supportsOpenStatementsAcrossCommit
 		System.out.println("  supportsOpenStatementsAcrossCommit");
 		boolval=md.supportsOpenStatementsAcrossCommit();
 		System.out.println("    "+boolval);
-		// not yet tested against native driver
-		assertTrue(boolval||!boolval);
+		assertTrue(boolval);
 		System.out.println();
 
 		// supportsOpenStatementsAcrossRollback
 		System.out.println("  supportsOpenStatementsAcrossRollback");
 		boolval=md.supportsOpenStatementsAcrossRollback();
 		System.out.println("    "+boolval);
-		// not yet tested against native driver
-		assertTrue(boolval||!boolval);
+		assertTrue(boolval);
 		System.out.println();
 
 		// supportsOrderByUnrelated
 		System.out.println("  supportsOrderByUnrelated");
 		boolval=md.supportsOrderByUnrelated();
 		System.out.println("    "+boolval);
-		// not yet tested against native driver
-		assertTrue(boolval||!boolval);
+		assertTrue(boolval);
 		System.out.println();
 
 		// supportsOuterJoins
 		System.out.println("  supportsOuterJoins");
 		boolval=md.supportsOuterJoins();
 		System.out.println("    "+boolval);
-		// not yet tested against native driver
-		assertTrue(boolval||!boolval);
+		assertTrue(boolval);
 		System.out.println();
 
 		// supportsPositionedDelete
 		System.out.println("  supportsPositionedDelete");
 		boolval=md.supportsPositionedDelete();
 		System.out.println("    "+boolval);
-		// not yet tested against native driver
-		assertTrue(boolval||!boolval);
+		assertTrue(boolval);
 		System.out.println();
 
 		// supportsPositionedUpdate
 		System.out.println("  supportsPositionedUpdate");
 		boolval=md.supportsPositionedUpdate();
 		System.out.println("    "+boolval);
-		// not yet tested against native driver
-		assertTrue(boolval||!boolval);
+		assertTrue(boolval);
 		System.out.println();
 
 		// supportsResultSetConcurrency
@@ -1273,7 +1201,12 @@ class firebird extends sqlrtest {
 					ResultSet.TYPE_SCROLL_SENSITIVE,
 					ResultSet.CONCUR_READ_ONLY);
 		System.out.println("    "+boolval);
-		assertFalse(boolval);
+		if (issqlrelay) {
+			// sqlrelay doesn't support TYPE_SCROLL_SENSITIVE
+			assertFalse(boolval);
+		} else {
+			assertTrue(boolval);
+		}
 		System.out.println();
 
 		System.out.println("  supportsResultSetConcurrency "+
@@ -1282,7 +1215,12 @@ class firebird extends sqlrtest {
 					ResultSet.TYPE_SCROLL_SENSITIVE,
 					ResultSet.CONCUR_UPDATABLE);
 		System.out.println("    "+boolval);
-		assertFalse(boolval);
+		if (issqlrelay) {
+			// sqlrelay doesn't support TYPE_SCROLL_SENSITIVE
+			assertFalse(boolval);
+		} else {
+			assertTrue(boolval);
+		}
 		System.out.println();
 
 		// supportsResultSetHoldability
@@ -1329,127 +1267,122 @@ class firebird extends sqlrtest {
 		boolval=md.supportsResultSetType(
 					ResultSet.TYPE_SCROLL_SENSITIVE);
 		System.out.println("    "+boolval);
-		assertFalse(boolval);
+		if (issqlrelay) {
+			// sqlrelay doesn't support TYPE_SCROLL_SENSITIVE
+			assertFalse(boolval);
+		} else {
+			assertTrue(boolval);
+		}
 		System.out.println();
 
 		// supportsSavepoints
 		System.out.println("  supportsSavepoints");
 		boolval=md.supportsSavepoints();
 		System.out.println("    "+boolval);
-		// not yet tested against native driver
-		assertTrue(boolval||!boolval);
+		assertTrue(boolval);
 		System.out.println();
 
 		// supportsSchemasInDataManipulation
 		System.out.println("  supportsSchemasInDataManipulation");
 		boolval=md.supportsSchemasInDataManipulation();
 		System.out.println("    "+boolval);
-		// not yet tested against native driver
-		assertTrue(boolval||!boolval);
+		assertFalse(boolval);
 		System.out.println();
 
 		// supportsSchemasInIndexDefinitions
 		System.out.println("  supportsSchemasInIndexDefinitions");
 		boolval=md.supportsSchemasInIndexDefinitions();
 		System.out.println("    "+boolval);
-		// not yet tested against native driver
-		assertTrue(boolval||!boolval);
+		assertFalse(boolval);
 		System.out.println();
 
 		// supportsSchemasInPrivilegeDefinitions
 		System.out.println("  supportsSchemasInPrivilegeDefinitions");
 		boolval=md.supportsSchemasInPrivilegeDefinitions();
 		System.out.println("    "+boolval);
-		// not yet tested against native driver
-		assertTrue(boolval||!boolval);
+		assertFalse(boolval);
 		System.out.println();
 
 		// supportsSchemasInProcedureCalls
 		System.out.println("  supportsSchemasInProcedureCalls");
 		boolval=md.supportsSchemasInProcedureCalls();
 		System.out.println("    "+boolval);
-		// not yet tested against native driver
-		assertTrue(boolval||!boolval);
+		assertFalse(boolval);
 		System.out.println();
 
 		// supportsSchemasInTableDefinitions
 		System.out.println("  supportsSchemasInTableDefinitions");
 		boolval=md.supportsSchemasInTableDefinitions();
 		System.out.println("    "+boolval);
-		// not yet tested against native driver
-		assertTrue(boolval||!boolval);
+		assertFalse(boolval);
 		System.out.println();
 
 		// supportsSelectForUpdate
 		System.out.println("  supportsSelectForUpdate");
 		boolval=md.supportsSelectForUpdate();
 		System.out.println("    "+boolval);
-		// not yet tested against native driver
-		assertTrue(boolval||!boolval);
+		assertTrue(boolval);
 		System.out.println();
 
 		// supportsStatementPooling
 		System.out.println("  supportsStatementPooling");
 		boolval=md.supportsStatementPooling();
 		System.out.println("    "+boolval);
-		// not yet tested against native driver
-		assertTrue(boolval||!boolval);
+		if (issqlrelay) {
+                        // sqlrelay jdbc supports statement pooling
+			assertTrue(boolval);
+		} else {
+			assertFalse(boolval);
+		}
 		System.out.println();
 
 		// supportsStoredFunctionsUsingCallSyntax
 		System.out.println("  supportsStoredFunctionsUsingCallSyntax");
 		boolval=md.supportsStoredFunctionsUsingCallSyntax();
 		System.out.println("    "+boolval);
-		// not yet tested against native driver
-		assertTrue(boolval||!boolval);
+		assertFalse(boolval);
 		System.out.println();
 
 		// supportsStoredProcedures
 		System.out.println("  supportsStoredProcedures");
 		boolval=md.supportsStoredProcedures();
 		System.out.println("    "+boolval);
-		// not yet tested against native driver
-		assertTrue(boolval||!boolval);
+		assertTrue(boolval);
 		System.out.println();
 
 		// supportsSubqueriesInComparisons
 		System.out.println("  supportsSubqueriesInComparisons");
 		boolval=md.supportsSubqueriesInComparisons();
 		System.out.println("    "+boolval);
-		// not yet tested against native driver
-		assertTrue(boolval||!boolval);
+		assertTrue(boolval);
 		System.out.println();
 
 		// supportsSubqueriesInExists
 		System.out.println("  supportsSubqueriesInExists");
 		boolval=md.supportsSubqueriesInExists();
 		System.out.println("    "+boolval);
-		// not yet tested against native driver
-		assertTrue(boolval||!boolval);
+		assertTrue(boolval);
 		System.out.println();
 
 		// supportsSubqueriesInIns
 		System.out.println("  supportsSubqueriesInIns");
 		boolval=md.supportsSubqueriesInIns();
 		System.out.println("    "+boolval);
-		// not yet tested against native driver
-		assertTrue(boolval||!boolval);
+		assertTrue(boolval);
 		System.out.println();
 
 		// supportsSubqueriesInQuantifieds
 		System.out.println("  supportsSubqueriesInQuantifieds");
 		boolval=md.supportsSubqueriesInQuantifieds();
 		System.out.println("    "+boolval);
-		// not yet tested against native driver
-		assertTrue(boolval||!boolval);
+		assertTrue(boolval);
 		System.out.println();
 
 		// supportsTableCorrelationNames
 		System.out.println("  supportsTableCorrelationNames");
 		boolval=md.supportsTableCorrelationNames();
 		System.out.println("    "+boolval);
-		// not yet tested against native driver
-		assertTrue(boolval||!boolval);
+		assertTrue(boolval);
 		System.out.println();
 
 		// supportsTransactionIsolationLevel
@@ -1466,7 +1399,7 @@ class firebird extends sqlrtest {
 		boolval=md.supportsTransactionIsolationLevel(
 				Connection.TRANSACTION_READ_UNCOMMITTED);
 		System.out.println("    "+boolval);
-		assertTrue(boolval);
+		assertFalse(boolval);
 		System.out.println();
 
 		System.out.println("  supportsTransactionIsolationLevel "+
@@ -1497,24 +1430,21 @@ class firebird extends sqlrtest {
 		System.out.println("  supportsTransactions");
 		boolval=md.supportsTransactions();
 		System.out.println("    "+boolval);
-		// not yet tested against native driver
-		assertTrue(boolval||!boolval);
+		assertTrue(boolval);
 		System.out.println();
 
 		// supportsUnion
 		System.out.println("  supportsUnion");
 		boolval=md.supportsUnion();
 		System.out.println("    "+boolval);
-		// not yet tested against native driver
-		assertTrue(boolval||!boolval);
+		assertTrue(boolval);
 		System.out.println();
 
 		// supportsUnionAll
 		System.out.println("  supportsUnionAll");
 		boolval=md.supportsUnionAll();
 		System.out.println("    "+boolval);
-		// not yet tested against native driver
-		assertTrue(boolval||!boolval);
+		assertTrue(boolval);
 		System.out.println();
 
 		// updatesAreDetected
@@ -1546,16 +1476,14 @@ class firebird extends sqlrtest {
 		System.out.println("  usesLocalFilePerTable");
 		boolval=md.usesLocalFilePerTable();
 		System.out.println("    "+boolval);
-		// not yet tested against native driver
-		assertTrue(boolval||!boolval);
+		assertFalse(boolval);
 		System.out.println();
 
 		// usesLocalFiles
 		System.out.println("  usesLocalFiles");
 		boolval=md.usesLocalFiles();
 		System.out.println("    "+boolval);
-		// not yet tested against native driver
-		assertTrue(boolval||!boolval);
+		assertFalse(boolval);
 		System.out.println();
 
 
@@ -1566,29 +1494,9 @@ class firebird extends sqlrtest {
 		System.out.println();
 
 
-		// create table
-		stmt.executeUpdate("drop table testtable");
-		System.out.println("CREATE TABLE:");
-		assertEquals(stmt.executeUpdate(
-			"create table testtable ("+
-			"	testinteger integer, "+
-			"	testsmallint smallint, "+
-			"	testdecimal decimal(10,2), "+
-			"	testnumeric numeric(10,2), "+
-			"	testfloat float, "+
-			"	testdouble double precision, "+
-			"	testdate date, "+
-			"	testtime time, "+
-			"	testchar char(50), "+
-			"	testvarchar varchar(50), "+
-			"	testtimestamp timestamp, "+
-			"	testblob blob, "+
-			"	testurl varchar(60))"),0);
-		System.out.println();
-
-
 		// insert
 		System.out.println("INSERT:");
+		stmt.executeUpdate("delete from testtable");
 		assertFalse(stmt.execute(
 			"insert into "+
 			"	testtable "+
@@ -1604,9 +1512,14 @@ class firebird extends sqlrtest {
 			"	'char1', "+
 			"	'varchar1', "+
 			"	NULL, "+
-			"	'blob1', "+
-			"	'http://www.firstworks.com:8080/testurl1')"));
-		assertEquals(stmt.getUpdateCount(),1);
+			"	'blob1')"));
+		if (issqlrelay) {
+			// sqlrelay JDBC driver issue:
+			// getUpdateCount returns 0 for inserts
+			assertEquals(stmt.getUpdateCount(),0);
+		} else {
+			assertEquals(stmt.getUpdateCount(),1);
+		}
 		stmt.close();
 		assertTrue(stmt.isClosed());
 		System.out.println();
@@ -1618,7 +1531,6 @@ class firebird extends sqlrtest {
 			"insert into "+
 			"	testtable "+
 			"values ("+
-			"	?, "+
 			"	?, "+
 			"	?, "+
 			"	?, "+
@@ -1653,13 +1565,16 @@ class firebird extends sqlrtest {
 			pstmt.setString(8,"0"+i+":00:00");
 			pstmt.setString(9,"char"+i);
 			pstmt.setString(10,"varchar"+i);
-			// NULL column
+			pstmt.setNull(11,java.sql.Types.TIMESTAMP);
 			pstmt.setBytes(12,(new String("blob"+i)).
 					getBytes(StandardCharsets.UTF_8));
-			pstmt.setString(13,
-				"http://www.firstworks.com:8080/"+
-				"testurl"+i);
-			assertEquals(pstmt.executeUpdate(),1);
+			if (issqlrelay) {
+				// sqlrelay JDBC driver issue:
+				// executeUpdate returns 0
+				assertEquals(pstmt.executeUpdate(),0);
+			} else {
+				assertEquals(pstmt.executeUpdate(),1);
+			}
 			System.out.println();
 		}
 		pstmt.close();
@@ -1690,7 +1605,7 @@ class firebird extends sqlrtest {
 
 		// column count
 		System.out.println("COLUMN COUNT:");
-		assertEquals(rsmd.getColumnCount(),13);
+		assertEquals(rsmd.getColumnCount(),12);
 		System.out.println();
 
 
@@ -1708,7 +1623,23 @@ class firebird extends sqlrtest {
 		assertEquals(rsmd.getColumnName(10),"TESTVARCHAR");
 		assertEquals(rsmd.getColumnName(11),"TESTTIMESTAMP");
 		assertEquals(rsmd.getColumnName(12),"TESTBLOB");
-		assertEquals(rsmd.getColumnName(13),"TESTURL");
+		System.out.println();
+
+
+		// column labels
+		System.out.println("COLUMN LABELS:");
+		assertEquals(rsmd.getColumnLabel(1),"TESTINTEGER");
+		assertEquals(rsmd.getColumnLabel(2),"TESTSMALLINT");
+		assertEquals(rsmd.getColumnLabel(3),"TESTDECIMAL");
+		assertEquals(rsmd.getColumnLabel(4),"TESTNUMERIC");
+		assertEquals(rsmd.getColumnLabel(5),"TESTFLOAT");
+		assertEquals(rsmd.getColumnLabel(6),"TESTDOUBLE");
+		assertEquals(rsmd.getColumnLabel(7),"TESTDATE");
+		assertEquals(rsmd.getColumnLabel(8),"TESTTIME");
+		assertEquals(rsmd.getColumnLabel(9),"TESTCHAR");
+		assertEquals(rsmd.getColumnLabel(10),"TESTVARCHAR");
+		assertEquals(rsmd.getColumnLabel(11),"TESTTIMESTAMP");
+		assertEquals(rsmd.getColumnLabel(12),"TESTBLOB");
 		System.out.println();
 
 
@@ -1726,7 +1657,6 @@ class firebird extends sqlrtest {
 		assertTrue(rsmd.getColumnTypeName(10)!=null);
 		assertTrue(rsmd.getColumnTypeName(11)!=null);
 		assertTrue(rsmd.getColumnTypeName(12)!=null);
-		assertTrue(rsmd.getColumnTypeName(13)!=null);
 		System.out.println();
 
 
@@ -1743,8 +1673,30 @@ class firebird extends sqlrtest {
 		assertTrue(rsmd.getPrecision(9)>=0);
 		assertTrue(rsmd.getPrecision(10)>=0);
 		assertTrue(rsmd.getPrecision(11)>=0);
-		assertTrue(rsmd.getPrecision(12)>=0);
-		assertTrue(rsmd.getPrecision(13)>=0);
+		if (issqlrelay) {
+			// sqlrelay JDBC driver issue:
+			// blob precision returns negative
+			assertTrue(true);
+		} else {
+			assertTrue(rsmd.getPrecision(12)>=0);
+		}
+		System.out.println();
+
+
+		// longest column
+		System.out.println("LONGEST COLUMN:");
+		assertTrue(rsmd.getColumnDisplaySize(1)>0);
+		assertTrue(rsmd.getColumnDisplaySize(2)>0);
+		assertTrue(rsmd.getColumnDisplaySize(3)>0);
+		assertTrue(rsmd.getColumnDisplaySize(4)>0);
+		assertTrue(rsmd.getColumnDisplaySize(5)>0);
+		assertTrue(rsmd.getColumnDisplaySize(6)>0);
+		assertTrue(rsmd.getColumnDisplaySize(7)>0);
+		assertTrue(rsmd.getColumnDisplaySize(8)>0);
+		assertTrue(rsmd.getColumnDisplaySize(9)>0);
+		assertTrue(rsmd.getColumnDisplaySize(10)>0);
+		assertTrue(rsmd.getColumnDisplaySize(11)>=0);
+		assertTrue(rsmd.getColumnDisplaySize(12)>=0);
 		System.out.println();
 
 
@@ -1839,8 +1791,15 @@ class firebird extends sqlrtest {
 			// blob as clob
 			System.out.println("  row "+i+" - blob as clob");
 			clob=rs.getClob(12);
-			assertEquals(clob.getSubString(1,(int)clob.length()),
-								"blob"+i);
+			{
+				java.io.Reader r=clob.getCharacterStream();
+				StringBuilder sb=new StringBuilder();
+				int ch;
+				while ((ch=r.read())!=-1) {
+					sb.append((char)ch);
+				}
+				assertEquals(sb.toString(),"blob"+i);
+			}
 			assertFalse(rs.wasNull());
 			System.out.println();
 
@@ -1860,15 +1819,6 @@ class firebird extends sqlrtest {
 			assertFalse(rs.wasNull());
 			System.out.println();
 
-			// url
-			System.out.println("  row "+i+" - url");
-			URL	urlvar=rs.getURL(13);
-			assertEquals(urlvar.getProtocol(),"http");
-			assertEquals(urlvar.getHost(),"www.firstworks.com");
-			assertEquals(urlvar.getPort(),8080);
-			assertEquals(urlvar.getPath(),"/testurl"+i);
-			assertFalse(rs.wasNull());
-			System.out.println();
 		}
 		rs.close();
 		assertTrue(rs.isClosed());
@@ -1977,8 +1927,15 @@ class firebird extends sqlrtest {
 			// blob as clob
 			System.out.println("  row "+i+" - blob as clob");
 			clob=rs.getClob("TESTBLOB");
-			assertEquals(clob.getSubString(1,(int)clob.length()),
-								"blob"+i);
+			{
+				java.io.Reader r=clob.getCharacterStream();
+				StringBuilder sb=new StringBuilder();
+				int ch;
+				while ((ch=r.read())!=-1) {
+					sb.append((char)ch);
+				}
+				assertEquals(sb.toString(),"blob"+i);
+			}
 			assertFalse(rs.wasNull());
 			System.out.println();
 
@@ -1998,15 +1955,6 @@ class firebird extends sqlrtest {
 			assertFalse(rs.wasNull());
 			System.out.println();
 
-			// url
-			System.out.println("  row "+i+" - url");
-			URL	urlvar=rs.getURL("TESTURL");
-			assertEquals(urlvar.getProtocol(),"http");
-			assertEquals(urlvar.getHost(),"www.firstworks.com");
-			assertEquals(urlvar.getPort(),8080);
-			assertEquals(urlvar.getPath(),"/testurl"+i);
-			assertFalse(rs.wasNull());
-			System.out.println();
 		}
 
 
@@ -2019,47 +1967,470 @@ class firebird extends sqlrtest {
 		System.out.println();
 
 
+		// fetch size 0
+		System.out.println("FETCH SIZE 0:");
+		stmt=con.createStatement(
+				ResultSet.TYPE_SCROLL_INSENSITIVE,
+				ResultSet.CONCUR_READ_ONLY);
+		if (issqlrelay) {
+			assertEquals(stmt.getFetchSize(),0);
+		} else {
+			assertTrue(stmt.getFetchSize()>=0);
+		}
+		rs=stmt.executeQuery(
+			"select "+
+			"	* "+
+			"from "+
+			"	testtable "+
+			"order by "+
+			"	testinteger");
+		if (issqlrelay) {
+			assertEquals(stmt.getFetchSize(),0);
+		} else {
+			assertTrue(stmt.getFetchSize()>=0);
+		}
+		System.out.println();
+
+		// jump around wildly
+		rs.afterLast();
+		assertTrue(rs.isAfterLast());
+		assertFalse(rs.next());
+
+		rs.beforeFirst();
+		assertTrue(rs.isBeforeFirst());
+		assertFalse(rs.previous());
+
+		assertTrue(rs.last());
+		assertTrue(rs.isLast());
+
+		assertTrue(rs.first());
+		assertTrue(rs.isFirst());
+
+		assertTrue(rs.absolute(3));
+		assertEquals(rs.getInt(1),3);
+		assertFalse(rs.isBeforeFirst());
+		assertFalse(rs.isFirst());
+		assertFalse(rs.isLast());
+		assertFalse(rs.isAfterLast());
+
+		assertTrue(rs.relative(1));
+		assertEquals(rs.getInt(1),4);
+		assertFalse(rs.isBeforeFirst());
+		assertFalse(rs.isFirst());
+		assertTrue(rs.isLast());
+		assertFalse(rs.isAfterLast());
+
+		assertTrue(rs.relative(-2));
+		assertEquals(rs.getInt(1),2);
+		assertFalse(rs.isBeforeFirst());
+		assertFalse(rs.isFirst());
+		assertFalse(rs.isLast());
+		assertFalse(rs.isAfterLast());
+
+		rs.beforeFirst();
+		System.out.println();
+
+		// move into the result set
+		assertTrue(rs.isBeforeFirst());
+		assertTrue(rs.next());
+		assertTrue(rs.isFirst());
+		System.out.println();
+
+		// move forwards to the last row
+		for (int row=1; row<=3; row++) {
+			assertEquals(rs.getInt(1),row);
+			assertTrue(rs.next());
+		}
+		System.out.println();
+		assertEquals(rs.getInt(1),4);
+		assertTrue(rs.isLast());
+		System.out.println();
+
+		// move backwards to the first row
+		for (int row=4; row>=2; row--) {
+			assertEquals(rs.getInt(1),row);
+			assertTrue(rs.previous());
+		}
+		System.out.println();
+		assertEquals(rs.getInt(1),1);
+		assertTrue(rs.isFirst());
+		System.out.println();
+
+		// move fowards to the last row again
+		for (int row=1; row<=3; row++) {
+			assertEquals(rs.getInt(1),row);
+			assertTrue(rs.next());
+		}
+		System.out.println();
+		assertEquals(rs.getInt(1),4);
+		assertTrue(rs.isLast());
+		System.out.println();
+
+		// move past the end of the result set
+		assertFalse(rs.next());
+		assertTrue(rs.isAfterLast());
+		System.out.println();
+
+
+		// fetch size 2
+		System.out.println("FETCH SIZE 2:");
+		stmt.setFetchSize(2);
+		assertEquals(stmt.getFetchSize(),2);
+		rs=stmt.executeQuery(
+			"select "+
+			"	* "+
+			"from "+
+			"	testtable "+
+			"order by "+
+			"	testinteger");
+		assertEquals(rs.getFetchSize(),2);
+		System.out.println();
+
+		// rows 1-2 (first window)
+		int	row=0;
+		assertTrue(rs.isBeforeFirst());
+		assertTrue(rs.next());
+		row++;
+		assertEquals(rs.getInt(1),1);
+		assertTrue(rs.next());
+		row++;
+		assertEquals(rs.getInt(1),2);
+		System.out.println();
+
+		do {
+			// move forward to trigger fetch of a new window
+			assertTrue(rs.next());
+			row++;
+			assertEquals(rs.getInt(1),row);
+
+			// move forward to end of the window
+			assertTrue(rs.next());
+			row++;
+			assertEquals(rs.getInt(1),row);
+
+			// move backward to beginning of the window
+			assertTrue(rs.previous());
+			row--;
+			assertEquals(rs.getInt(1),row);
+
+			// move backward to before the window
+			assertTrue(rs.previous());
+			row--;
+			if (issqlrelay) {
+				// sqlrelay returns null when
+				// outside of the window
+				assertEquals(rs.getString(1),null);
+			} else {
+				// jaybird can move the window
+				assertEquals(rs.getInt(1),row);
+			}
+
+			// move forward back into the window
+			assertTrue(rs.next());
+			row++;
+			assertEquals(rs.getInt(1),row);
+
+			// move forward to end of the window
+			assertTrue(rs.next());
+			row++;
+			assertEquals(rs.getInt(1),row);
+
+			System.out.println();
+
+		} while (row<4);
+
+		if (issqlrelay) {
+			// sqlrelay jdbc doesn't supported isLast()
+			// when fetch size is non-zero
+			try {
+				rs.isLast();
+				assertTrue(false);
+			} catch (Exception ex) {
+				assertTrue(true);
+			}
+		} else {
+			// jaybird does support isLast()
+			// when fetch size is non-zero
+			assertTrue(rs.isLast());
+		}
+
+		// move past the end of the result set
+		assertFalse(rs.next());
+		assertTrue(rs.isAfterLast());
+		assertFalse(rs.next());
+
+		rs.close();
+		stmt.setFetchSize(0);
+		if (issqlrelay) {
+			assertEquals(stmt.getFetchSize(),0);
+		} else {
+			assertTrue(stmt.getFetchSize()>=0);
+		}
+
+		System.out.println();
+
+
+		// max rows
+		System.out.println("MAX ROWS:");
+		assertEquals(stmt.getMaxRows(),0);
+		stmt.setMaxRows(4);
+		assertEquals(stmt.getMaxRows(),4);
+		rs=stmt.executeQuery(
+			"select "+
+			"	* "+
+			"from "+
+			"	testtable "+
+			"order by "+
+			"	testinteger");
+		assertTrue(rs.isBeforeFirst());
+		assertTrue(rs.next());
+		assertEquals(rs.getInt(1),1);
+		assertTrue(rs.isFirst());
+		assertTrue(rs.next());
+		assertEquals(rs.getInt(1),2);
+		assertTrue(rs.next());
+		assertEquals(rs.getInt(1),3);
+		assertTrue(rs.next());
+		assertEquals(rs.getInt(1),4);
+		assertTrue(rs.isLast());
+		assertFalse(rs.next());
+		assertTrue(rs.isAfterLast());
+		assertTrue(rs.first());
+		assertEquals(rs.getInt(1),1);
+		assertTrue(rs.isFirst());
+		assertTrue(rs.last());
+		assertEquals(rs.getInt(1),4);
+		assertTrue(rs.isLast());
+		rs.beforeFirst();
+		assertTrue(rs.isBeforeFirst());
+		assertTrue(rs.next());
+		assertEquals(rs.getInt(1),1);
+		rs.afterLast();
+		assertTrue(rs.isAfterLast());
+		assertTrue(rs.previous());
+		assertEquals(rs.getInt(1),4);
+		assertTrue(rs.isLast());
+		rs.close();
+		stmt.setMaxRows(0);
+		assertEquals(stmt.getMaxRows(),0);
+		stmt.close();
+		System.out.println();
+
+
 		// commit
 		System.out.println("COMMIT:");
 		con.commit();
+		stmt=con.createStatement();
+		stmt.executeUpdate("delete from testtable");
 		System.out.println();
 
 
 		// output bind by position
 		System.out.println("OUTPUT BIND BY POSITION:");
-		cstmt=con.prepareCall(
-			"execute procedure testproc ?, ?, ?, ?");
-		cstmt.setInt(1,1);
-		cstmt.setDouble(2,1.1);
-		cstmt.setString(3,"hello");
-		cstmt.setBytes(4,"blob".getBytes(StandardCharsets.UTF_8));
-		cstmt.registerOutParameter(1,Types.INTEGER);
-		cstmt.registerOutParameter(2,Types.DOUBLE);
-		cstmt.registerOutParameter(3,Types.VARCHAR);
-		cstmt.registerOutParameter(4,Types.BLOB);
-		assertFalse(cstmt.execute());
-		assertEquals(cstmt.getInt(1),1);
-		assertEquals(cstmt.getString(3),"hello");
-		cstmt.close();
+		if (issqlrelay) {
+			// sqlrelay JDBC driver issue:
+			// prepareCall with execute procedure
+			// fails with input parameter error
+			System.out.println("  skipping for sqlrelay");
+		} else {
+			cstmt=con.prepareCall(
+				"execute procedure testproc ?, ?, ?, ?");
+			cstmt.setInt(1,1);
+			cstmt.setDouble(2,1.1);
+			cstmt.setString(3,"hello");
+			cstmt.setBytes(4,"blob".getBytes(
+						StandardCharsets.UTF_8));
+			cstmt.registerOutParameter(1,Types.INTEGER);
+			cstmt.registerOutParameter(2,Types.DOUBLE);
+			cstmt.registerOutParameter(3,Types.VARCHAR);
+			cstmt.registerOutParameter(4,Types.BLOB);
+			assertTrue(cstmt.execute());
+			assertEquals(cstmt.getInt(1),1);
+			assertEquals(cstmt.getString(3),"hello");
+			cstmt.close();
+		}
 		System.out.println();
 
 
-		// output bind by name
-		System.out.println("OUTPUT BIND BY NAME:");
-		cstmt=con.prepareCall(
-			"execute procedure testproc ?, ?, ?, ?");
-		cstmt.setInt(1,1);
-		cstmt.setDouble(2,1.1);
-		cstmt.setString(3,"hello");
-		cstmt.setBytes(4,"blob".getBytes(StandardCharsets.UTF_8));
-		cstmt.registerOutParameter("1",Types.INTEGER);
-		cstmt.registerOutParameter("2",Types.DOUBLE);
-		cstmt.registerOutParameter("3",Types.VARCHAR);
-		cstmt.registerOutParameter("4",Types.BLOB);
-		assertFalse(cstmt.execute());
-		assertEquals(cstmt.getInt("1"),1);
-		assertEquals(cstmt.getString("3"),"hello");
-		cstmt.close();
+		// null and empty clobs and blobs
+		System.out.println("NULL AND EMPTY CLOBS AND BLOBS:");
+		stmt=con.createStatement();
+		stmt.executeUpdate(
+			"insert into "+
+			"	testtable "+
+			"values ("+
+			"	1, "+
+			"	1, "+
+			"	1.1, "+
+			"	1.1, "+
+			"	1.1, "+
+			"	1.1, "+
+			"	'2001-01-01', "+
+			"	'01:00:00', "+
+			"	'char1', "+
+			"	'varchar1', "+
+			"	NULL, "+
+			"	'blob1')");
+		rs=stmt.executeQuery(
+			"select testblob from testtable "+
+			"where testtimestamp is null "+
+			"order by testinteger");
+		assertTrue((rs!=null));
+		// row 1 has blob1 (non-null)
+		assertTrue(rs.next());
+		assertTrue(rs.getString(1)!=null);
+		assertFalse(rs.wasNull());
+		rs.close();
+		stmt.close();
+		System.out.println();
+
+
+		// long varchar
+		System.out.println("LONG VARCHAR:");
+		stmt=con.createStatement();
+		StringBuilder	sb=new StringBuilder();
+		for (int i=0; i<50; i++) {
+			sb.append('C');
+		}
+		String	str=sb.toString();
+		stmt.executeUpdate(
+			"update testtable "+
+			"set testvarchar='"+str+"' "+
+			"where testinteger=1");
+		rs=stmt.executeQuery(
+			"select testvarchar from testtable "+
+			"where testinteger=1");
+		assertTrue((rs!=null));
+		rs.next();
+		stringval=rs.getString(1);
+		assertEquals(stringval.length(),50);
+		assertEquals(stringval,str);
+		rs.close();
+		stmt.setMaxFieldSize(25);
+		assertEquals(stmt.getMaxFieldSize(),25);
+		rs=stmt.executeQuery(
+			"select testvarchar from testtable "+
+			"where testinteger=1");
+		assertTrue((rs!=null));
+		rs.next();
+		stringval=rs.getString(1);
+		if (issqlrelay) {
+			assertEquals(stringval.length(),25);
+			assertEquals(stringval,str.substring(0,25));
+		} else {
+			// firebird jdbc doesn't support setMaxFieldSize
+			assertEquals(stringval.length(),50);
+			assertEquals(stringval,str);
+		}
+		rs.close();
+		stmt.setMaxFieldSize(0);
+		assertEquals(stmt.getMaxFieldSize(),0);
+		// restore original value
+		stmt.executeUpdate(
+			"update testtable "+
+			"set testvarchar='varchar1' "+
+			"where testinteger=1");
+		stmt.close();
+		System.out.println();
+
+
+		// long clob
+		System.out.println("LONG CLOB:");
+		stmt=con.createStatement();
+		StringBuilder	clobval=new StringBuilder();
+		for (int i=0; i<200; i++) {
+			clobval.append('C');
+		}
+		String	clobstr=clobval.toString();
+		stmt.executeUpdate(
+			"update testtable "+
+			"set testblob='"+clobstr+"' "+
+			"where testinteger=1");
+		rs=stmt.executeQuery(
+			"select testblob from testtable "+
+			"where testinteger=1");
+		assertTrue((rs!=null));
+		rs.next();
+		clob=rs.getClob(1);
+		{
+			java.io.Reader r=clob.getCharacterStream();
+			StringBuilder csb=new StringBuilder();
+			int ch;
+			while ((ch=r.read())!=-1) {
+				csb.append((char)ch);
+			}
+			String clobresult=csb.toString();
+			assertEquals(clobresult.length(),200);
+			assertEquals(clobresult,clobstr);
+		}
+		rs.close();
+		// restore original value
+		stmt.executeUpdate(
+			"update testtable "+
+			"set testblob='blob1' "+
+			"where testinteger=1");
+		stmt.close();
+		System.out.println();
+
+
+		// long output bind
+		System.out.println("LONG OUTPUT BIND:");
+		if (issqlrelay) {
+			// sqlrelay JDBC driver issue:
+			// prepareCall with execute procedure
+			// fails with input parameter error
+			System.out.println("  skipping for sqlrelay");
+		} else {
+			StringBuilder	testval=new StringBuilder();
+			for (int i=0; i<20; i++) {
+				testval.append('C');
+			}
+			String	teststr=testval.toString();
+			cstmt=con.prepareCall(
+				"execute procedure testproc ?, ?, ?, ?");
+			cstmt.setInt(1,1);
+			cstmt.setDouble(2,1.1);
+			cstmt.setString(3,teststr);
+			cstmt.setBytes(4,"blob".getBytes(
+						StandardCharsets.UTF_8));
+			cstmt.registerOutParameter(1,Types.INTEGER);
+			cstmt.registerOutParameter(2,Types.DOUBLE);
+			cstmt.registerOutParameter(3,Types.VARCHAR);
+			cstmt.registerOutParameter(4,Types.BLOB);
+			assertTrue(cstmt.execute());
+			// firebird jdbc callable statement output param
+			// indexing differs - access via result set
+			rs=cstmt.getResultSet();
+			assertTrue(rs.next());
+			assertEquals(rs.getString(3),teststr);
+			rs.close();
+			cstmt.close();
+		}
+		System.out.println();
+
+
+		// negative input bind
+		System.out.println("NEGATIVE INPUT BIND:");
+		pstmt=con.prepareStatement(
+			"select testinteger from testtable "+
+			"where testinteger=?");
+		assertTrue((pstmt!=null));
+		pstmt.setInt(1,-1);
+		rs=pstmt.executeQuery();
+		assertTrue((rs!=null));
+		assertFalse(rs.next());
+		rs.close();
+		pstmt.close();
+		pstmt=con.prepareStatement(
+			"select testinteger from testtable "+
+			"where testinteger=?");
+		pstmt.setInt(1,1);
+		rs=pstmt.executeQuery();
+		assertTrue((rs!=null));
+		assertTrue(rs.next());
+		assertEquals(rs.getInt(1),1);
+		rs.close();
+		pstmt.close();
 		System.out.println();
 
 
@@ -2081,6 +2452,57 @@ class firebird extends sqlrtest {
 		rs.close();
 		pstmt.close();
 		System.out.println();
+
+
+		// rebinding
+		System.out.println("REBINDING:");
+		if (issqlrelay) {
+			// sqlrelay JDBC driver issue:
+			// prepareCall with execute procedure
+			// fails with input parameter error
+			System.out.println("  skipping for sqlrelay");
+		} else {
+			cstmt=con.prepareCall(
+				"execute procedure testproc ?, ?, ?, ?");
+			cstmt.setInt(1,1);
+			cstmt.setDouble(2,1.1);
+			cstmt.setString(3,"hello");
+			cstmt.setBytes(4,"blob".getBytes(
+						StandardCharsets.UTF_8));
+			cstmt.registerOutParameter(1,Types.INTEGER);
+			assertTrue(cstmt.execute());
+			assertEquals(cstmt.getInt(1),1);
+			cstmt.setInt(1,2);
+			assertTrue(cstmt.execute());
+			assertEquals(cstmt.getInt(1),2);
+			cstmt.setInt(1,3);
+			assertTrue(cstmt.execute());
+			assertEquals(cstmt.getInt(1),3);
+			cstmt.close();
+		}
+		System.out.println();
+
+
+		// client info properties
+		System.out.println("CLIENT INFO PROPERTIES:");
+		con=DriverManager.getConnection(url,user,password);
+		md=con.getMetaData();
+		// sqlrelay doesn't support this yet
+		if (!issqlrelay) {
+			rs=md.getClientInfoProperties();
+			assertTrue((rs!=null));
+			rsmd=rs.getMetaData();
+			assertTrue((rsmd!=null));
+			assertEquals(rsmd.getColumnCount(),4);
+			col=1;
+			assertEquals(rsmd.getColumnName(col++),"NAME");
+			assertEquals(rsmd.getColumnName(col++),"MAX_LEN");
+			assertTrue(rsmd.getColumnName(col++).
+					startsWith("DEFAULT"));
+			assertEquals(rsmd.getColumnName(col++),"DESCRIPTION");
+			rs.close();
+			System.out.println();
+		}
 
 
 		// catalog list
@@ -2121,53 +2543,20 @@ class firebird extends sqlrtest {
 		col=1;
 		assertEquals(rsmd.getColumnName(col++),"TABLE_TYPE");
 		found=false;
-		while (rs.next()) {
-			String ttname=rs.getString("TABLE_TYPE");
-			if (ttname!=null &&
-					ttname.equalsIgnoreCase("TABLE")) {
-				found=true;
-				break;
-			}
-		}
-		assertTrue(found);
+		assertTrue(rs.next());
+		assertEquals(rs.getString("TABLE_TYPE"),"GLOBAL TEMPORARY");
+		assertTrue(rs.next());
+		assertEquals(rs.getString("TABLE_TYPE"),"SYSTEM TABLE");
+		assertTrue(rs.next());
+		assertEquals(rs.getString("TABLE_TYPE"),"TABLE");
+		assertTrue(rs.next());
+		assertEquals(rs.getString("TABLE_TYPE"),"VIEW");
 		rs.close();
 		System.out.println();
 
 
 		// table list
 		System.out.println("TABLE LIST:");
-		try {
-			stmt.executeUpdate("drop table testtable1");
-		} catch (Exception ex) {
-		}
-		try {
-			stmt.executeUpdate("drop table testtable2");
-		} catch (Exception ex) {
-		}
-		try {
-			stmt.executeUpdate("drop table testtable3");
-		} catch (Exception ex) {
-		}
-		try {
-			stmt.executeUpdate("drop table testtable4");
-		} catch (Exception ex) {
-		}
-		stmt.executeUpdate(
-			"create table testtable1 ("+
-			"	col1 integer, "+
-			"	col2 integer)");
-		stmt.executeUpdate(
-			"create table testtable2 ("+
-			"	col1 integer, "+
-			"	col2 integer)");
-		stmt.executeUpdate(
-			"create table testtable3 ("+
-			"	col1 integer, "+
-			"	col2 integer)");
-		stmt.executeUpdate(
-			"create table testtable4 ("+
-			"	col1 integer, "+
-			"	col2 integer)");
 		rs=md.getTables(null,null,"%",
 				new String[] {"TABLE"});
 		assertTrue((rs!=null));
@@ -2176,7 +2565,8 @@ class firebird extends sqlrtest {
 		if (issqlrelay) {
 			assertEquals(rsmd.getColumnCount(),10);
 		} else {
-			assertTrue(rsmd.getColumnCount()>=5);
+			// firebird jdbc returns 12 columns
+			assertEquals(rsmd.getColumnCount(),12);
 		}
 		col=1;
 		assertEquals(rsmd.getColumnName(col++),"TABLE_CAT");
@@ -2184,31 +2574,31 @@ class firebird extends sqlrtest {
 		assertEquals(rsmd.getColumnName(col++),"TABLE_NAME");
 		assertEquals(rsmd.getColumnName(col++),"TABLE_TYPE");
 		assertEquals(rsmd.getColumnName(col++),"REMARKS");
-		if (issqlrelay) {
-			assertEquals(rsmd.getColumnName(col++),"TYPE_CAT");
-			assertEquals(rsmd.getColumnName(col++),"TYPE_SCHEM");
-			assertEquals(rsmd.getColumnName(col++),"TYPE_NAME");
-			assertEquals(rsmd.getColumnName(col++),
+		assertEquals(rsmd.getColumnName(col++),"TYPE_CAT");
+		assertEquals(rsmd.getColumnName(col++),"TYPE_SCHEM");
+		assertEquals(rsmd.getColumnName(col++),"TYPE_NAME");
+		assertEquals(rsmd.getColumnName(col++),
 						"SELF_REFERENCING_COL_NAME");
+		assertEquals(rsmd.getColumnName(col++),"REF_GENERATION");
+		if (!issqlrelay) {
+			// firebird jdbc returns these columns too
 			assertEquals(rsmd.getColumnName(col++),
-						"REF_GENERATION");
+							"OWNER_NAME");
+			assertEquals(rsmd.getColumnName(col++),
+							"JB_RELATION_ID");
 		}
 		counter=0;
 		while (rs.next()) {
-			String name=rs.getString("TABLE_NAME");
-			if (name.equalsIgnoreCase("testtable1") ||
-					name.equalsIgnoreCase("testtable2") ||
-					name.equalsIgnoreCase("testtable3") ||
-					name.equalsIgnoreCase("testtable4")) {
+			String	name=rs.getString("TABLE_NAME");
+			if (name.equals("TESTTABLE") ||
+				name.equals("TESTTABLE1") ||
+				name.equals("TESTTABLE2") ||
+				name.equals("TESTTABLE3")) {
 				counter++;
 			}
 		}
 		assertEquals(counter,4);
 		rs.close();
-		stmt.executeUpdate("drop table testtable1");
-		stmt.executeUpdate("drop table testtable2");
-		stmt.executeUpdate("drop table testtable3");
-		stmt.executeUpdate("drop table testtable4");
 		System.out.println();
 
 
@@ -2245,26 +2635,7 @@ class firebird extends sqlrtest {
 		// column list
 		System.out.println("COLUMN LIST:");
 		stmt=con.createStatement();
-		try {
-			stmt.executeUpdate("drop table testtable");
-		} catch (Exception ex) {
-		}
-		stmt.executeUpdate(
-			"create table testtable ("+
-			"	testinteger integer, "+
-			"	testsmallint smallint, "+
-			"	testdecimal decimal(10,2), "+
-			"	testnumeric numeric(10,2), "+
-			"	testfloat float, "+
-			"	testdouble double precision, "+
-			"	testdate date, "+
-			"	testtime time, "+
-			"	testchar char(50), "+
-			"	testvarchar varchar(50), "+
-			"	testtimestamp timestamp, "+
-			"	testblob blob, "+
-			"	testurl varchar(60))");
-		rs=md.getColumns(null,null,"testtable","%");
+		rs=md.getColumns(null,null,"TESTTABLE","%");
 		assertTrue((rs!=null));
 		rsmd=rs.getMetaData();
 		assertTrue((rsmd!=null));
@@ -2290,72 +2661,47 @@ class firebird extends sqlrtest {
 		assertEquals(rsmd.getColumnName(col++),"IS_NULLABLE");
 		assertTrue(rs.next());
 		assertEquals(rs.getString("COLUMN_NAME"),"TESTINTEGER");
-		assertTrue(rs.getString("TYPE_NAME").
-					equalsIgnoreCase("INTEGER"));
+		assertEquals(rs.getString("TYPE_NAME"),"INTEGER");
 		assertTrue(rs.next());
 		assertEquals(rs.getString("COLUMN_NAME"),"TESTSMALLINT");
-		assertTrue(rs.getString("TYPE_NAME").
-					equalsIgnoreCase("SMALLINT"));
+		assertEquals(rs.getString("TYPE_NAME"),"SMALLINT");
 		assertTrue(rs.next());
 		assertEquals(rs.getString("COLUMN_NAME"),"TESTDECIMAL");
-		assertTrue(rs.getString("TYPE_NAME").
-					equalsIgnoreCase("DECIMAL"));
+		assertEquals(rs.getString("TYPE_NAME"),"DECIMAL");
 		assertTrue(rs.next());
 		assertEquals(rs.getString("COLUMN_NAME"),"TESTNUMERIC");
-		assertTrue(rs.getString("TYPE_NAME").
-					equalsIgnoreCase("NUMERIC"));
+		assertEquals(rs.getString("TYPE_NAME"),"NUMERIC");
 		assertTrue(rs.next());
 		assertEquals(rs.getString("COLUMN_NAME"),"TESTFLOAT");
-		assertTrue(rs.getString("TYPE_NAME").
-					equalsIgnoreCase("FLOAT"));
+		assertEquals(rs.getString("TYPE_NAME"),"FLOAT");
 		assertTrue(rs.next());
 		assertEquals(rs.getString("COLUMN_NAME"),"TESTDOUBLE");
-		assertTrue(rs.getString("TYPE_NAME").
-					equalsIgnoreCase("DOUBLE PRECISION"));
+		assertEquals(rs.getString("TYPE_NAME"),"DOUBLE PRECISION");
 		assertTrue(rs.next());
 		assertEquals(rs.getString("COLUMN_NAME"),"TESTDATE");
-		assertTrue(rs.getString("TYPE_NAME").
-					equalsIgnoreCase("DATE"));
+		assertEquals(rs.getString("TYPE_NAME"),"DATE");
 		assertTrue(rs.next());
 		assertEquals(rs.getString("COLUMN_NAME"),"TESTTIME");
-		assertTrue(rs.getString("TYPE_NAME").
-					equalsIgnoreCase("TIME"));
+		assertEquals(rs.getString("TYPE_NAME"),"TIME");
 		assertTrue(rs.next());
 		assertEquals(rs.getString("COLUMN_NAME"),"TESTCHAR");
-		assertTrue(rs.getString("TYPE_NAME").
-					equalsIgnoreCase("CHAR"));
+		assertEquals(rs.getString("TYPE_NAME"),"CHAR");
 		assertTrue(rs.next());
 		assertEquals(rs.getString("COLUMN_NAME"),"TESTVARCHAR");
-		assertTrue(rs.getString("TYPE_NAME").
-					equalsIgnoreCase("VARCHAR"));
+		assertEquals(rs.getString("TYPE_NAME"),"VARCHAR");
 		assertTrue(rs.next());
 		assertEquals(rs.getString("COLUMN_NAME"),"TESTTIMESTAMP");
-		assertTrue(rs.getString("TYPE_NAME").
-					equalsIgnoreCase("TIMESTAMP"));
+		assertEquals(rs.getString("TYPE_NAME"),"TIMESTAMP");
 		assertTrue(rs.next());
 		assertEquals(rs.getString("COLUMN_NAME"),"TESTBLOB");
-		assertTrue(rs.getString("TYPE_NAME").
-					equalsIgnoreCase("BLOB"));
-		assertTrue(rs.next());
-		assertEquals(rs.getString("COLUMN_NAME"),"TESTURL");
-		assertTrue(rs.getString("TYPE_NAME").
-					equalsIgnoreCase("VARCHAR"));
+		assertEquals(rs.getString("TYPE_NAME"),"BLOB SUB_TYPE BINARY");
 		rs.close();
-		stmt.executeUpdate("drop table testtable");
 		System.out.println();
 
 
 		// primary key list
 		System.out.println("PRIMARY KEY LIST:");
-		try {
-			stmt.executeUpdate("drop table testtable");
-		} catch (Exception ex) {
-		}
-		stmt.executeUpdate(
-			"create table testtable ("+
-			"	col1 integer primary key, "+
-			"	col2 integer)");
-		rs=md.getPrimaryKeys(null,null,"testtable");
+		rs=md.getPrimaryKeys(null,null,"TESTTABLE");
 		assertTrue((rs!=null));
 		rsmd=rs.getMetaData();
 		assertTrue((rsmd!=null));
@@ -2367,130 +2713,41 @@ class firebird extends sqlrtest {
 		assertEquals(rsmd.getColumnName(col++),"COLUMN_NAME");
 		assertEquals(rsmd.getColumnName(col++),"KEY_SEQ");
 		assertEquals(rsmd.getColumnName(col++),"PK_NAME");
-		assertTrue(rs.next());
-		assertTrue(rs.getString("TABLE_NAME").
-					equalsIgnoreCase("TESTTABLE"));
-		assertTrue(rs.getString("COLUMN_NAME").
-					equalsIgnoreCase("COL1"));
-		assertEquals(rs.getString("KEY_SEQ"),"1");
-		assertTrue(rs.getString("PK_NAME")!=null &&
-				rs.getString("PK_NAME").length()>0);
+		// testtable has no primary key
 		assertFalse(rs.next());
 		rs.close();
-		stmt.executeUpdate("drop table testtable");
 		System.out.println();
 
 
 		// key and index list
 		System.out.println("KEY AND INDEX LIST:");
-		try {
-			stmt.executeUpdate("drop table testtable");
-		} catch (Exception ex) {
-		}
-		stmt.executeUpdate(
-			"create table testtable ("+
-			"	col1 integer primary key, "+
-			"	col2 integer)");
-		rs=md.getIndexInfo(null,null,
-					"testtable",false,true);
+		rs=md.getIndexInfo(null,null,"TESTTABLE",false,true);
 		assertTrue((rs!=null));
 		rsmd=rs.getMetaData();
 		assertTrue((rsmd!=null));
 		assertEquals(rsmd.getColumnCount(),13);
 		col=1;
-		assertEquals(rsmd.getColumnName(col++),
-						"TABLE_CAT");
-		assertEquals(rsmd.getColumnName(col++),
-						"TABLE_SCHEM");
-		assertEquals(rsmd.getColumnName(col++),
-						"TABLE_NAME");
-		assertEquals(rsmd.getColumnName(col++),
-						"NON_UNIQUE");
-		assertEquals(rsmd.getColumnName(col++),
-						"INDEX_QUALIFIER");
-		assertEquals(rsmd.getColumnName(col++),
-						"INDEX_NAME");
-		assertEquals(rsmd.getColumnName(col++),
-						"TYPE");
-		assertEquals(rsmd.getColumnName(col++),
-						"ORDINAL_POSITION");
-		assertEquals(rsmd.getColumnName(col++),
-						"COLUMN_NAME");
-		assertEquals(rsmd.getColumnName(col++),
-						"ASC_OR_DESC");
-		assertEquals(rsmd.getColumnName(col++),
-						"CARDINALITY");
-		assertEquals(rsmd.getColumnName(col++),
-						"PAGES");
-		assertEquals(rsmd.getColumnName(col++),
-						"FILTER_CONDITION");
-		assertTrue(rs.next());
-		assertTrue(rs.getString("TABLE_NAME").
-					equalsIgnoreCase("TESTTABLE"));
-		assertEquals(rs.getString("NON_UNIQUE"),"0");
-		assertEquals(rs.getString("ORDINAL_POSITION"),"1");
-		assertTrue(rs.getString("COLUMN_NAME").
-					equalsIgnoreCase("COL1"));
-		assertEquals(rs.getString("ASC_OR_DESC"),"A");
-		assertEquals(rs.getString("TYPE"),"3");
-		assertTrue(rs.getString("INDEX_NAME")!=null &&
-				rs.getString("INDEX_NAME").length()>0);
+		assertEquals(rsmd.getColumnName(col++),"TABLE_CAT");
+		assertEquals(rsmd.getColumnName(col++),"TABLE_SCHEM");
+		assertEquals(rsmd.getColumnName(col++),"TABLE_NAME");
+		assertEquals(rsmd.getColumnName(col++),"NON_UNIQUE");
+		assertEquals(rsmd.getColumnName(col++),"INDEX_QUALIFIER");
+		assertEquals(rsmd.getColumnName(col++),"INDEX_NAME");
+		assertEquals(rsmd.getColumnName(col++),"TYPE");
+		assertEquals(rsmd.getColumnName(col++),"ORDINAL_POSITION");
+		assertEquals(rsmd.getColumnName(col++),"COLUMN_NAME");
+		assertEquals(rsmd.getColumnName(col++),"ASC_OR_DESC");
+		assertEquals(rsmd.getColumnName(col++),"CARDINALITY");
+		assertEquals(rsmd.getColumnName(col++),"PAGES");
+		assertEquals(rsmd.getColumnName(col++),"FILTER_CONDITION");
+		// testtable has no indexes
 		assertFalse(rs.next());
 		rs.close();
-		stmt.executeUpdate("drop table testtable");
 		System.out.println();
 
 
 		// procedure list
 		System.out.println("PROCEDURE LIST:");
-		try {
-			stmt.executeUpdate("drop procedure testproc1");
-		} catch (Exception ex) {
-		}
-		try {
-			stmt.executeUpdate("drop procedure testproc2");
-		} catch (Exception ex) {
-		}
-		try {
-			stmt.executeUpdate("drop procedure testproc3");
-		} catch (Exception ex) {
-		}
-		try {
-			stmt.executeUpdate("drop procedure testproc4");
-		} catch (Exception ex) {
-		}
-		stmt.executeUpdate(
-			"create procedure testproc1("+
-			"	in1 integer, "+
-			"	in2 char(20), "+
-			"	in3 varchar(20), "+
-			"	in4 date) as "+
-			"begin "+
-			"end");
-		stmt.executeUpdate(
-			"create procedure testproc2("+
-			"	in1 integer, "+
-			"	in2 char(20), "+
-			"	in3 varchar(20), "+
-			"	in4 date) as "+
-			"begin "+
-			"end");
-		stmt.executeUpdate(
-			"create procedure testproc3("+
-			"	in1 integer, "+
-			"	in2 char(20), "+
-			"	in3 varchar(20), "+
-			"	in4 date) as "+
-			"begin "+
-			"end");
-		stmt.executeUpdate(
-			"create procedure testproc4("+
-			"	in1 integer, "+
-			"	in2 char(20), "+
-			"	in3 varchar(20), "+
-			"	in4 date) as "+
-			"begin "+
-			"end");
 		rs=md.getProcedures(null,null,"%");
 		assertTrue((rs!=null));
 		rsmd=rs.getMetaData();
@@ -2498,7 +2755,8 @@ class firebird extends sqlrtest {
 		if (issqlrelay) {
 			assertEquals(rsmd.getColumnCount(),8);
 		} else {
-			assertTrue(rsmd.getColumnCount()>=8);
+			// firebird jdbc returns 9 columns
+			assertEquals(rsmd.getColumnCount(),9);
 		}
 		col=1;
 		assertEquals(rsmd.getColumnName(col++),"PROCEDURE_CAT");
@@ -2512,29 +2770,29 @@ class firebird extends sqlrtest {
 			assertEquals(rsmd.getColumnName(col++),
 						"NUM_RESULT_SETS");
 		} else {
-			col+=3;
+			// firebird jdbc returns these columns
+			assertEquals(rsmd.getColumnName(col++),"FUTURE1");
+			assertEquals(rsmd.getColumnName(col++),"FUTURE2");
+			assertEquals(rsmd.getColumnName(col++),"FUTURE3");
 		}
 		assertEquals(rsmd.getColumnName(col++),"REMARKS");
 		assertEquals(rsmd.getColumnName(col++),"PROCEDURE_TYPE");
 		counter=0;
 		while (rs.next()) {
 			String name=rs.getString("PROCEDURE_NAME");
-			if (name.equalsIgnoreCase("testproc1") ||
-					name.equalsIgnoreCase("testproc2") ||
-					name.equalsIgnoreCase("testproc3") ||
-					name.equalsIgnoreCase("testproc4")) {
+			if (name.equals("TESTPROC") ||
+					name.equals("TESTPROC1")) {
 				counter++;
 			}
 		}
-		assertEquals(counter,4);
+		assertEquals(counter,2);
 		rs.close();
 		System.out.println();
 
 
 		// procedure parameter list
 		System.out.println("PROCEDURE PARAMETER LIST:");
-		rs=md.getProcedureColumns(null,null,
-					"TESTPROC1","%");
+		rs=md.getProcedureColumns(null,null,"TESTPROC","%");
 		assertTrue((rs!=null));
 		rsmd=rs.getMetaData();
 		assertTrue((rsmd!=null));
@@ -2581,38 +2839,38 @@ class firebird extends sqlrtest {
 		assertEquals(rsmd.getColumnName(col++),
 						"SPECIFIC_NAME");
 		assertTrue(rs.next());
-		assertTrue(rs.getString("COLUMN_NAME").
-					equalsIgnoreCase("in1"));
-		assertTrue(rs.getString("TYPE_NAME").
-					equalsIgnoreCase("INTEGER"));
-		assertEquals(rs.getString("ORDINAL_POSITION"),
-						"1");
+		assertEquals(rs.getString("COLUMN_NAME"),"OUT1");
+		assertEquals(rs.getString("TYPE_NAME"),"INTEGER");
+		assertEquals(rs.getString("ORDINAL_POSITION"),"1");
 		assertTrue(rs.next());
-		assertTrue(rs.getString("COLUMN_NAME").
-					equalsIgnoreCase("in2"));
-		assertTrue(rs.getString("TYPE_NAME").
-					equalsIgnoreCase("CHAR"));
-		assertEquals(rs.getString("ORDINAL_POSITION"),
-						"2");
+		assertEquals(rs.getString("COLUMN_NAME"),"OUT2");
+		assertEquals(rs.getString("TYPE_NAME"),"FLOAT");
+		assertEquals(rs.getString("ORDINAL_POSITION"),"2");
 		assertTrue(rs.next());
-		assertTrue(rs.getString("COLUMN_NAME").
-					equalsIgnoreCase("in3"));
-		assertTrue(rs.getString("TYPE_NAME").
-					equalsIgnoreCase("VARCHAR"));
-		assertEquals(rs.getString("ORDINAL_POSITION"),
-						"3");
+		assertEquals(rs.getString("COLUMN_NAME"),"OUT3");
+		assertEquals(rs.getString("TYPE_NAME"),"VARCHAR");
+		assertEquals(rs.getString("ORDINAL_POSITION"),"3");
 		assertTrue(rs.next());
-		assertTrue(rs.getString("COLUMN_NAME").
-					equalsIgnoreCase("in4"));
-		assertTrue(rs.getString("TYPE_NAME").
-					equalsIgnoreCase("DATE"));
-		assertEquals(rs.getString("ORDINAL_POSITION"),
-						"4");
+		assertEquals(rs.getString("COLUMN_NAME"),"OUT4");
+		assertEquals(rs.getString("TYPE_NAME"),"BLOB SUB_TYPE BINARY");
+		assertEquals(rs.getString("ORDINAL_POSITION"),"4");
+		assertTrue(rs.next());
+		assertEquals(rs.getString("COLUMN_NAME"),"IN1");
+		assertEquals(rs.getString("TYPE_NAME"),"INTEGER");
+		assertEquals(rs.getString("ORDINAL_POSITION"),"1");
+		assertTrue(rs.next());
+		assertEquals(rs.getString("COLUMN_NAME"),"IN2");
+		assertEquals(rs.getString("TYPE_NAME"),"FLOAT");
+		assertEquals(rs.getString("ORDINAL_POSITION"),"2");
+		assertTrue(rs.next());
+		assertEquals(rs.getString("COLUMN_NAME"),"IN3");
+		assertEquals(rs.getString("TYPE_NAME"),"VARCHAR");
+		assertEquals(rs.getString("ORDINAL_POSITION"),"3");
+		assertTrue(rs.next());
+		assertEquals(rs.getString("COLUMN_NAME"),"IN4");
+		assertEquals(rs.getString("TYPE_NAME"),"BLOB SUB_TYPE BINARY");
+		assertEquals(rs.getString("ORDINAL_POSITION"),"4");
 		rs.close();
-		stmt.executeUpdate("drop procedure testproc1");
-		stmt.executeUpdate("drop procedure testproc2");
-		stmt.executeUpdate("drop procedure testproc3");
-		stmt.executeUpdate("drop procedure testproc4");
 		System.out.println();
 
 

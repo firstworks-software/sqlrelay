@@ -517,7 +517,7 @@ class freetds extends sqlrtest {
 		System.out.println("  getSQLStateType");
 		intval=md.getSQLStateType();
 		System.out.println("    "+intval);
-		assertEquals(intval,1);
+		assertEquals(intval,DatabaseMetaData.sqlStateXOpen);
 		System.out.println();
 
 		// getStringFunctions
