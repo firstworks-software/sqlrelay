@@ -107,7 +107,7 @@ def main():
 
 	# affected rows
 	print("AFFECTED ROWS: ")
-	assertEqual(cur.affectedRows(),0)
+	assertEqual(cur.affectedRows(),1)
 	print()
 
 

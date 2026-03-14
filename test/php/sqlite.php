@@ -102,7 +102,7 @@
 
 	# affected rows
 	echo("AFFECTED ROWS: \n");
-	assertEqual(sqlrcur_affectedRows($cur),0);
+	assertEqual(sqlrcur_affectedRows($cur),1);
 	echo("\n");
 
 

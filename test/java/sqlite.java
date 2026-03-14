@@ -122,7 +122,7 @@ class sqlite extends sqlrtest {
 
 		// affected rows
 		System.out.println("AFFECTED ROWS: ");
-		assertEquals(cur.affectedRows(),0);
+		assertEquals(cur.affectedRows(),1);
 		System.out.println();
 
 

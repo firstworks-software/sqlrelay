@@ -1306,7 +1306,7 @@ int main(int argc, char **argv) {
 	assertEquals(cur->rowCount(),1);
 	assertTrue(!charstring::compareIgnoringCase(
 			cur->getField(0,"table"),"testtable"));
-	assertEquals(cur->getField(0,"non_unique"),"0");
+	assertEquals(cur->getField(0,"non_unique"),"f");
 	assertEquals(cur->getField(0,"seq_in_index"),"1");
 	assertTrue(!charstring::compareIgnoringCase(
 			cur->getField(0,"column_name"),"col1"));

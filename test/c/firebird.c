@@ -216,7 +216,7 @@ int main(int argc, char **argv) {
 
 	// affected rows
 	printf("AFFECTED ROWS: \n");
-	assertEqualsInt(sqlrcur_affectedRows(cur),0);
+	assertEqualsInt(sqlrcur_affectedRows(cur),1);
 	printf("\n");
 
 

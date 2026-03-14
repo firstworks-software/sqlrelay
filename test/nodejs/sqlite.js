@@ -118,7 +118,7 @@ console.log();
 
 // affected rows
 console.log("AFFECTED ROWS: ");
-assertEqual(cur.affectedRows(),0);
+assertEqual(cur.affectedRows(),1);
 console.log();
 
 

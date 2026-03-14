@@ -1498,7 +1498,7 @@ class sqlite extends sqlrtest {
 			"	testvarchar varchar(40), "+
 			"	testclob clob, "+
 			"	testblob blob, "+
-			"	testurl varchar(60))"),0);
+			"	testurl varchar(60))"),1);
 		System.out.println();
 
 

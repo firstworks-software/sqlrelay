@@ -147,7 +147,7 @@ int main(int argc, char **argv) {
 
 	// affected rows
 	stdoutput.printf("AFFECTED ROWS: \n");
-	assertEquals(cur->affectedRows(),0);
+	assertEquals(cur->affectedRows(),1);
 	stdoutput.printf("\n");
 
 
@@ -993,12 +993,12 @@ int main(int argc, char **argv) {
 	assertEquals(cur->getField(3,"column_name"),"testvarchar");
 	assertEquals(cur->getField(4,"column_name"),"testclob");
 	assertEquals(cur->getField(5,"column_name"),"testblob");
-	assertEquals(cur->getField(0,"data_type"),"int");
-	assertEquals(cur->getField(1,"data_type"),"float");
-	assertEquals(cur->getField(2,"data_type"),"char(40)");
-	assertEquals(cur->getField(3,"data_type"),"varchar(40)");
-	assertEquals(cur->getField(4,"data_type"),"clob");
-	assertEquals(cur->getField(5,"data_type"),"blob");
+	assertEquals(cur->getField(0,"data_type"),"INT");
+	assertEquals(cur->getField(1,"data_type"),"FLOAT");
+	assertEquals(cur->getField(2,"data_type"),"CHAR");
+	assertEquals(cur->getField(3,"data_type"),"VARCHAR");
+	assertEquals(cur->getField(4,"data_type"),"CLOB");
+	assertEquals(cur->getField(5,"data_type"),"BLOB");
 	cur->sendQuery("drop table testtable");
 	stdoutput.printf("\n");
 

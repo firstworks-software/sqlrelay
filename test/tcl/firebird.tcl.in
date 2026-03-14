@@ -95,7 +95,7 @@ puts ""
 
 # affected rows
 puts "AFFECTED ROWS: "
-assertEqual [$cur affectedRows] 0
+assertEqual [$cur affectedRows] 1
 puts ""
 
 

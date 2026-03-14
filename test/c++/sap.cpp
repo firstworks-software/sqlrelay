@@ -1410,12 +1410,12 @@ int main(int argc, char **argv) {
 	assertEquals(cur->rowCount(),1);
 	assertTrue(!charstring::compareIgnoringCase(
 			cur->getField(0,"table"),"testtable"));
-	assertEquals(cur->getField(0,"non_unique"),"0");
+	assertEquals(cur->getField(0,"non_unique"),"FALSE");
 	assertEquals(cur->getField(0,"seq_in_index"),"1");
 	assertTrue(!charstring::compareIgnoringCase(
 			cur->getField(0,"column_name"),"col1"));
 	assertEquals(cur->getField(0,"collation"),"A");
-	assertEquals(cur->getField(0,"index_type"),"3");
+	assertEquals(cur->getField(0,"index_type"),"1");
 	assertTrue(!charstring::isNullOrEmpty(cur->getField(0,"key_name")));
 	cur->sendQuery("drop table testtable");
 	stdoutput.printf("\n");

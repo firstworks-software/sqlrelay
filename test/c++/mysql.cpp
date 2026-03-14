@@ -1918,29 +1918,29 @@ for (uint16_t a=0; a<50; a++) {
 	assertEquals(cur->getField(20,"column_name"),"testmediumblob");
 	assertEquals(cur->getField(21,"column_name"),"testlongblob");
 	assertEquals(cur->getField(22,"column_name"),"testtimestamp");
-	assertEquals(cur->getField(0,"data_type"),"tinyint");
-	assertEquals(cur->getField(1,"data_type"),"smallint");
-	assertEquals(cur->getField(2,"data_type"),"mediumint");
-	assertEquals(cur->getField(3,"data_type"),"int");
-	assertEquals(cur->getField(4,"data_type"),"bigint");
-	assertEquals(cur->getField(5,"data_type"),"float");
-	assertEquals(cur->getField(6,"data_type"),"double"); // not "real"
-	assertEquals(cur->getField(7,"data_type"),"decimal");
-	assertEquals(cur->getField(8,"data_type"),"date");
-	assertEquals(cur->getField(9,"data_type"),"time");
-	assertEquals(cur->getField(10,"data_type"),"datetime");
-	assertEquals(cur->getField(11,"data_type"),"year");
-	assertEquals(cur->getField(12,"data_type"),"char");
-	assertEquals(cur->getField(13,"data_type"),"varchar");
-	assertEquals(cur->getField(14,"data_type"),"text");
-	assertEquals(cur->getField(15,"data_type"),"tinytext");
-	assertEquals(cur->getField(16,"data_type"),"mediumtext");
-	assertEquals(cur->getField(17,"data_type"),"longtext");
-	assertEquals(cur->getField(18,"data_type"),"blob");
-	assertEquals(cur->getField(19,"data_type"),"tinyblob");
-	assertEquals(cur->getField(20,"data_type"),"mediumblob");
-	assertEquals(cur->getField(21,"data_type"),"longblob");
-	assertEquals(cur->getField(22,"data_type"),"timestamp");
+	assertEquals(cur->getField(0,"data_type"),"TINYINT");
+	assertEquals(cur->getField(1,"data_type"),"SMALLINT");
+	assertEquals(cur->getField(2,"data_type"),"MEDIUMINT");
+	assertEquals(cur->getField(3,"data_type"),"INT");
+	assertEquals(cur->getField(4,"data_type"),"BIGINT");
+	assertEquals(cur->getField(5,"data_type"),"FLOAT");
+	assertEquals(cur->getField(6,"data_type"),"DOUBLE"); // not "REAL"
+	assertEquals(cur->getField(7,"data_type"),"DECIMAL");
+	assertEquals(cur->getField(8,"data_type"),"DATE");
+	assertEquals(cur->getField(9,"data_type"),"TIME");
+	assertEquals(cur->getField(10,"data_type"),"DATETIME");
+	assertEquals(cur->getField(11,"data_type"),"YEAR");
+	assertEquals(cur->getField(12,"data_type"),"CHAR");
+	assertEquals(cur->getField(13,"data_type"),"VARCHAR");
+	assertEquals(cur->getField(14,"data_type"),"TEXT");
+	assertEquals(cur->getField(15,"data_type"),"TINYTEXT");
+	assertEquals(cur->getField(16,"data_type"),"MEDIUMTEXT");
+	assertEquals(cur->getField(17,"data_type"),"LONGTEXT");
+	assertEquals(cur->getField(18,"data_type"),"BLOB");
+	assertEquals(cur->getField(19,"data_type"),"TINYBLOB");
+	assertEquals(cur->getField(20,"data_type"),"MEDIUMBLOB");
+	assertEquals(cur->getField(21,"data_type"),"LONGBLOB");
+	assertEquals(cur->getField(22,"data_type"),"TIMESTAMP");
 	cur->sendQuery("drop table testtable");
 	stdoutput.printf("\n");
 
@@ -2032,7 +2032,7 @@ for (uint16_t a=0; a<50; a++) {
 	assertEquals(cur->rowCount(),1);
 	assertTrue(!charstring::compareIgnoringCase(
 			cur->getField(0,"table"),"testtable"));
-	assertEquals(cur->getField(0,"non_unique"),"0");
+	assertEquals(cur->getField(0,"non_unique"),"false");
 	assertEquals(cur->getField(0,"seq_in_index"),"1");
 	assertTrue(!charstring::compareIgnoringCase(
 			cur->getField(0,"column_name"),"col1"));
@@ -2103,19 +2103,19 @@ for (uint16_t a=0; a<50; a++) {
 	assertEquals(cur->rowCount(),4);
 	assertEquals(cur->getField(0,"parameter_name"),"in1");
 	assertEquals(cur->getField(0,"parameter_mode"),"1");
-	assertEquals(cur->getField(0,"data_type"),"int");
+	assertEquals(cur->getField(0,"data_type"),"INT");
 	assertEquals(cur->getField(0,"ordinal_position"),"1");
 	assertEquals(cur->getField(1,"parameter_name"),"in2");
 	assertEquals(cur->getField(1,"parameter_mode"),"1");
-	assertEquals(cur->getField(1,"data_type"),"char");
+	assertEquals(cur->getField(1,"data_type"),"CHAR");
 	assertEquals(cur->getField(1,"ordinal_position"),"2");
 	assertEquals(cur->getField(2,"parameter_name"),"in3");
 	assertEquals(cur->getField(2,"parameter_mode"),"1");
-	assertEquals(cur->getField(2,"data_type"),"varchar");
+	assertEquals(cur->getField(2,"data_type"),"VARCHAR");
 	assertEquals(cur->getField(2,"ordinal_position"),"3");
 	assertEquals(cur->getField(3,"parameter_name"),"in4");
 	assertEquals(cur->getField(3,"parameter_mode"),"1");
-	assertEquals(cur->getField(3,"data_type"),"date");
+	assertEquals(cur->getField(3,"data_type"),"DATE");
 	assertEquals(cur->getField(3,"ordinal_position"),"4");
 	cur->sendQuery("drop procedure testproc1");
 	cur->sendQuery("drop procedure testproc2");

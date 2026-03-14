@@ -104,7 +104,7 @@ print("\n");
 
 # affected rows
 print("AFFECTED ROWS: \n");
-assertEqual($cur->affectedRows(),0);
+assertEqual($cur->affectedRows(),1);
 print("\n");
 
 

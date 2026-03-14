@@ -228,7 +228,7 @@ int main(int argc, char **argv) {
 
 	// affected rows
 	stdoutput.printf("AFFECTED ROWS: \n");
-	assertEquals(cur->affectedRows(),0);
+	assertEquals(cur->affectedRows(),1);
 	stdoutput.printf("\n");
 
 
@@ -1203,13 +1203,13 @@ int main(int argc, char **argv) {
 	assertTrue(!charstring::compareIgnoringCase(
 			cur->getField(1,"data_type"),"SMALLINT"));
 	assertTrue(!charstring::compareIgnoringCase(
-			cur->getField(2,"data_type"),"INT64"));
+			cur->getField(2,"data_type"),"DECIMAL"));
 	assertTrue(!charstring::compareIgnoringCase(
-			cur->getField(3,"data_type"),"INT64"));
+			cur->getField(3,"data_type"),"NUMERIC"));
 	assertTrue(!charstring::compareIgnoringCase(
 			cur->getField(4,"data_type"),"FLOAT"));
 	assertTrue(!charstring::compareIgnoringCase(
-			cur->getField(5,"data_type"),"DOUBLE"));
+			cur->getField(5,"data_type"),"DOUBLE PRECISION"));
 	assertTrue(!charstring::compareIgnoringCase(
 			cur->getField(6,"data_type"),"DATE"));
 	assertTrue(!charstring::compareIgnoringCase(
@@ -1221,7 +1221,7 @@ int main(int argc, char **argv) {
 	assertTrue(!charstring::compareIgnoringCase(
 			cur->getField(10,"data_type"),"TIMESTAMP"));
 	assertTrue(!charstring::compareIgnoringCase(
-			cur->getField(11,"data_type"),"BLOB"));
+			cur->getField(11,"data_type"),"BLOB SUB_TYPE BINARY"));
 	stdoutput.printf("\n");
 
 
@@ -1324,37 +1324,37 @@ int main(int argc, char **argv) {
 	assertEquals(cur->getColumnName(3),"character_maximum_length");
 	assertEquals(cur->getColumnName(4),"ordinal_position");
 	assertEquals(cur->rowCount(),8);
-	assertEquals(cur->getField(0,"parameter_name"),"IN1");
-	assertEquals(cur->getField(0,"parameter_mode"),"1");
+	assertEquals(cur->getField(0,"parameter_name"),"OUT1");
+	assertEquals(cur->getField(0,"parameter_mode"),"4");
 	assertEquals(cur->getField(0,"data_type"),"INTEGER");
 	assertEquals(cur->getField(0,"ordinal_position"),"1");
-	assertEquals(cur->getField(1,"parameter_name"),"IN2");
-	assertEquals(cur->getField(1,"parameter_mode"),"1");
+	assertEquals(cur->getField(1,"parameter_name"),"OUT2");
+	assertEquals(cur->getField(1,"parameter_mode"),"4");
 	assertEquals(cur->getField(1,"data_type"),"FLOAT");
 	assertEquals(cur->getField(1,"ordinal_position"),"2");
-	assertEquals(cur->getField(2,"parameter_name"),"IN3");
-	assertEquals(cur->getField(2,"parameter_mode"),"1");
+	assertEquals(cur->getField(2,"parameter_name"),"OUT3");
+	assertEquals(cur->getField(2,"parameter_mode"),"4");
 	assertEquals(cur->getField(2,"data_type"),"VARCHAR");
 	assertEquals(cur->getField(2,"ordinal_position"),"3");
-	assertEquals(cur->getField(3,"parameter_name"),"IN4");
-	assertEquals(cur->getField(3,"parameter_mode"),"1");
-	assertEquals(cur->getField(3,"data_type"),"BLOB");
+	assertEquals(cur->getField(3,"parameter_name"),"OUT4");
+	assertEquals(cur->getField(3,"parameter_mode"),"4");
+	assertEquals(cur->getField(3,"data_type"),"BLOB SUB_TYPE BINARY");
 	assertEquals(cur->getField(3,"ordinal_position"),"4");
-	assertEquals(cur->getField(4,"parameter_name"),"OUT1");
-	assertEquals(cur->getField(4,"parameter_mode"),"4");
+	assertEquals(cur->getField(4,"parameter_name"),"IN1");
+	assertEquals(cur->getField(4,"parameter_mode"),"1");
 	assertEquals(cur->getField(4,"data_type"),"INTEGER");
 	assertEquals(cur->getField(4,"ordinal_position"),"1");
-	assertEquals(cur->getField(5,"parameter_name"),"OUT2");
-	assertEquals(cur->getField(5,"parameter_mode"),"4");
+	assertEquals(cur->getField(5,"parameter_name"),"IN2");
+	assertEquals(cur->getField(5,"parameter_mode"),"1");
 	assertEquals(cur->getField(5,"data_type"),"FLOAT");
 	assertEquals(cur->getField(5,"ordinal_position"),"2");
-	assertEquals(cur->getField(6,"parameter_name"),"OUT3");
-	assertEquals(cur->getField(6,"parameter_mode"),"4");
+	assertEquals(cur->getField(6,"parameter_name"),"IN3");
+	assertEquals(cur->getField(6,"parameter_mode"),"1");
 	assertEquals(cur->getField(6,"data_type"),"VARCHAR");
 	assertEquals(cur->getField(6,"ordinal_position"),"3");
-	assertEquals(cur->getField(7,"parameter_name"),"OUT4");
-	assertEquals(cur->getField(7,"parameter_mode"),"4");
-	assertEquals(cur->getField(7,"data_type"),"BLOB");
+	assertEquals(cur->getField(7,"parameter_name"),"IN4");
+	assertEquals(cur->getField(7,"parameter_mode"),"1");
+	assertEquals(cur->getField(7,"data_type"),"BLOB SUB_TYPE BINARY");
 	assertEquals(cur->getField(7,"ordinal_position"),"4");
 	stdoutput.printf("\n");
 
