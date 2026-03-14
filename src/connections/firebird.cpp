@@ -2409,6 +2409,14 @@ bool firebirdcursor::prepareQuery(const char *query, uint32_t size) {
 		return false;
 	}
 
+	// null output bind sqldata pointers so we can detect
+	// which ones were set by outputBind later
+	if (queryisexecsp) {
+		for (uint16_t i=0; i<outbindsqlda->sqld; i++) {
+			outbindsqlda->sqlvar[i].sqldata=NULL;
+		}
+	}
+
 	// get the cursor type
 	char	typeitem[]={isc_info_sql_stmt_type};
 	char	resbuffer[1024];
@@ -2959,13 +2967,52 @@ bool firebirdcursor::executeQuery(const char *query, uint32_t size) {
 	} else if (queryisexecsp) {
 
 		// handle stored procedures...
+
+		// allocate dummy buffers for any unbound output
+		// params so isc_dsql_execute2 has somewhere to write
+		bool		*isdummy=NULL;
+		memorypool	*bindpool=conn->cont->getBindPool(this);
+		for (uint16_t i=0; i<outbindsqlda->sqld; i++) {
+
+			if (outbindsqlda->sqlvar[i].sqldata) {
+				continue;
+			}
+
+			if (!isdummy) {
+				isdummy=(bool *)bindpool->allocate(
+					sizeof(bool)*outbindsqlda->sqld);
+				bytestring::zero(isdummy,
+					sizeof(bool)*outbindsqlda->sqld);
+			}
+			isdummy[i]=true;
+
+			uint16_t	len=outbindsqlda->sqlvar[i].sqllen;
+			outbindsqlda->sqlvar[i].sqldata=
+					(char *)bindpool->allocate((len)?len:1);
+		}
+
+		// execute the stored procedure
 		bool	retval=!isc_dsql_execute2(firebirdconn->error,
 							&firebirdconn->tr,
 							&stmt,1,
 							inbindsqlda,
 							outbindsqlda);
 
+		// null-out dummy sqldata pointers
+		if (isdummy) {
+			for (uint16_t i=0; i<outbindsqlda->sqld; i++) {
+				if (isdummy[i]) {
+					outbindsqlda->sqlvar[i].sqldata=NULL;
+				}
+			}
+		}
+
 		for (uint16_t i=0; i<outbindsqlda->sqld; i++) {
+
+			// skip unregistered output params
+			if (!outbindsqlda->sqlvar[i].sqldata) {
+				continue;
+			}
 
 			if (outbindsqlda->sqlvar[i].
 					sqltype==SQL_TEXT+1) {
