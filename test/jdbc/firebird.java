@@ -2227,28 +2227,28 @@ class firebird extends sqlrtest {
 
 		// output bind by position
 		System.out.println("OUTPUT BIND BY POSITION:");
+		cstmt=con.prepareCall(
+			"execute procedure testproc ?, ?, ?, ?");
+		cstmt.setInt(1,1);
+		cstmt.setDouble(2,1.1);
+		cstmt.setString(3,"hello");
+		cstmt.setBytes(4,"blob".getBytes(StandardCharsets.UTF_8));
+		cstmt.registerOutParameter(1,Types.INTEGER);
+		cstmt.registerOutParameter(2,Types.DOUBLE);
+		cstmt.registerOutParameter(3,Types.VARCHAR);
+		cstmt.registerOutParameter(4,Types.BLOB);
 		if (issqlrelay) {
-			// sqlrelay JDBC driver issue:
-			// prepareCall with execute procedure
-			// fails with input parameter error
-			System.out.println("  skipping for sqlrelay");
+			assertFalse(cstmt.execute());
 		} else {
-			cstmt=con.prepareCall(
-				"execute procedure testproc ?, ?, ?, ?");
-			cstmt.setInt(1,1);
-			cstmt.setDouble(2,1.1);
-			cstmt.setString(3,"hello");
-			cstmt.setBytes(4,"blob".getBytes(
-						StandardCharsets.UTF_8));
-			cstmt.registerOutParameter(1,Types.INTEGER);
-			cstmt.registerOutParameter(2,Types.DOUBLE);
-			cstmt.registerOutParameter(3,Types.VARCHAR);
-			cstmt.registerOutParameter(4,Types.BLOB);
 			assertTrue(cstmt.execute());
-			assertEquals(cstmt.getInt(1),1);
-			assertEquals(cstmt.getString(3),"hello");
-			cstmt.close();
 		}
+		assertEquals(cstmt.getInt(1),1);
+		if (issqlrelay) {
+			assertEquals(cstmt.getString(3).trim(),"hello");
+		} else {
+			assertEquals(cstmt.getString(3),"hello");
+		}
+		cstmt.close();
 		System.out.println();
 
 
@@ -2375,12 +2375,7 @@ class firebird extends sqlrtest {
 
 		// long output bind
 		System.out.println("LONG OUTPUT BIND:");
-		if (issqlrelay) {
-			// sqlrelay JDBC driver issue:
-			// prepareCall with execute procedure
-			// fails with input parameter error
-			System.out.println("  skipping for sqlrelay");
-		} else {
+		{
 			StringBuilder	testval=new StringBuilder();
 			for (int i=0; i<20; i++) {
 				testval.append('C');
@@ -2397,13 +2392,17 @@ class firebird extends sqlrtest {
 			cstmt.registerOutParameter(2,Types.DOUBLE);
 			cstmt.registerOutParameter(3,Types.VARCHAR);
 			cstmt.registerOutParameter(4,Types.BLOB);
-			assertTrue(cstmt.execute());
-			// firebird jdbc callable statement output param
-			// indexing differs - access via result set
-			rs=cstmt.getResultSet();
-			assertTrue(rs.next());
-			assertEquals(rs.getString(3),teststr);
-			rs.close();
+			if (issqlrelay) {
+				assertFalse(cstmt.execute());
+			} else {
+				assertTrue(cstmt.execute());
+			}
+			if (issqlrelay) {
+				assertEquals(cstmt.getString(3).trim(),
+								teststr);
+			} else {
+				assertEquals(cstmt.getString(3),teststr);
+			}
 			cstmt.close();
 		}
 		System.out.println();
@@ -2456,30 +2455,34 @@ class firebird extends sqlrtest {
 
 		// rebinding
 		System.out.println("REBINDING:");
+		cstmt=con.prepareCall(
+			"execute procedure testproc ?, ?, ?, ?");
+		cstmt.setInt(1,1);
+		cstmt.setDouble(2,1.1);
+		cstmt.setString(3,"hello");
+		cstmt.setBytes(4,"blob".getBytes(StandardCharsets.UTF_8));
+		cstmt.registerOutParameter(1,Types.INTEGER);
 		if (issqlrelay) {
-			// sqlrelay JDBC driver issue:
-			// prepareCall with execute procedure
-			// fails with input parameter error
-			System.out.println("  skipping for sqlrelay");
+			assertFalse(cstmt.execute());
 		} else {
-			cstmt=con.prepareCall(
-				"execute procedure testproc ?, ?, ?, ?");
-			cstmt.setInt(1,1);
-			cstmt.setDouble(2,1.1);
-			cstmt.setString(3,"hello");
-			cstmt.setBytes(4,"blob".getBytes(
-						StandardCharsets.UTF_8));
-			cstmt.registerOutParameter(1,Types.INTEGER);
 			assertTrue(cstmt.execute());
-			assertEquals(cstmt.getInt(1),1);
-			cstmt.setInt(1,2);
-			assertTrue(cstmt.execute());
-			assertEquals(cstmt.getInt(1),2);
-			cstmt.setInt(1,3);
-			assertTrue(cstmt.execute());
-			assertEquals(cstmt.getInt(1),3);
-			cstmt.close();
 		}
+		assertEquals(cstmt.getInt(1),1);
+		cstmt.setInt(1,2);
+		if (issqlrelay) {
+			assertFalse(cstmt.execute());
+		} else {
+			assertTrue(cstmt.execute());
+		}
+		assertEquals(cstmt.getInt(1),2);
+		cstmt.setInt(1,3);
+		if (issqlrelay) {
+			assertFalse(cstmt.execute());
+		} else {
+			assertTrue(cstmt.execute());
+		}
+		assertEquals(cstmt.getInt(1),3);
+		cstmt.close();
 		System.out.println();
 
 

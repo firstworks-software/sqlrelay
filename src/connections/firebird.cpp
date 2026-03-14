@@ -360,7 +360,7 @@ firebirdconnection::firebirdconnection(sqlrservercontroller *cont) :
 }
 
 firebirdconnection::~firebirdconnection() {
-	delete dbversion;
+	delete[] dbversion;
 	if (databasefeatures) {
 		for (int i=0; i<FEATURE_COUNT; i++) {
 			delete[] databasefeatures[i];

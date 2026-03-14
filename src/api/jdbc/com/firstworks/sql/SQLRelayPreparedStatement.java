@@ -28,7 +28,8 @@ public class SQLRelayPreparedStatement
 		implements PreparedStatement {
 
 	private ArrayList<HashMap<String,SQLRelayParameter>>	batch;
-	protected HashMap<String,SQLRelayParameter>		parameters;
+	protected HashMap<String,SQLRelayParameter>		inparams;
+	protected HashMap<String,SQLRelayParameter>		outparams;
 
 
 	public
@@ -36,7 +37,8 @@ public class SQLRelayPreparedStatement
 		super(driver);
 		drv.debugFunction(this);
 		batch=new ArrayList<HashMap<String,SQLRelayParameter>>();
-		parameters=new HashMap<String,SQLRelayParameter>();
+		inparams=new HashMap<String,SQLRelayParameter>();
+		outparams=new HashMap<String,SQLRelayParameter>();
 		drv.debugEnd();
 	}
 
@@ -44,8 +46,8 @@ public class SQLRelayPreparedStatement
 	void addBatch() throws SQLException {
 		drv.debugFunction(this);
 		throwExceptionIfClosed();
-		batch.add(parameters);
-		parameters=new HashMap<String,SQLRelayParameter>();
+		batch.add(inparams);
+		inparams=new HashMap<String,SQLRelayParameter>();
 		drv.debugEnd();
 	}
 
@@ -55,7 +57,8 @@ public class SQLRelayPreparedStatement
 		throwExceptionIfClosed();
 		sqlrcur.clearBinds();
 		batch.clear();
-		parameters.clear();
+		inparams.clear();
+		outparams.clear();
 		drv.debugEnd();
 	}
 
@@ -70,9 +73,9 @@ public class SQLRelayPreparedStatement
 
 		// bind variables
 		if (batch.size()==0) {
-			bind(parameters);
+			bind(inparams,outparams);
 		} else {
-			bind(batch.get(0));
+			bind(batch.get(0),outparams);
 		}
 
 		// set the result set buffer size
@@ -124,7 +127,7 @@ public class SQLRelayPreparedStatement
 		int	count=0;
 
 		for (HashMap<String,SQLRelayParameter> params: batch) {
-			bind(params);
+			bind(params,outparams);
 			results[count++]=executeUpdate();
 		}
 
@@ -149,23 +152,14 @@ public class SQLRelayPreparedStatement
 	}
 
 	private
-	void bind(HashMap<String,SQLRelayParameter> params)
+	void bind(HashMap<String,SQLRelayParameter> inparams,
+			HashMap<String,SQLRelayParameter> outparams)
 							throws SQLException {
 		drv.debugFunction(this);
 
 		sqlrcur.clearBinds();
 
-		if (params==null) {
-			drv.debugPrintln("parameters: null");
-			drv.debugEnd();
-			return;
-		}
-
-		drv.debugPrintln("parameter count: "+params.size());
-
-		ArrayList<String> keys=
-				new ArrayList<String>(params.keySet());
-		Collections.sort(keys, new Comparator<String>() {
+		Comparator<String> cmp=new Comparator<String>() {
 			public int compare(String a, String b) {
 				try {
 					return Integer.valueOf(
@@ -177,30 +171,46 @@ public class SQLRelayPreparedStatement
 					return a.compareTo(b);
 				}
 			}
-		});
+		};
 
-		for (String key: keys) {
-			drv.debugStart("parameter: "+key);
+		// input binds
+		if (inparams!=null && inparams.size()>0) {
 
-			SQLRelayParameter	value=params.get(key);
-			BindType		bindtype=value.getBindType();
+			drv.debugPrintln("input parameter count: "+
+							inparams.size());
 
-			switch (value.getMode()) {
-				case ParameterMetaData.parameterModeIn:
-					inputBind(key,value,bindtype);
-					break;
-				case ParameterMetaData.parameterModeInOut:
-					// FIXME: implement this...
-					break;
-				case ParameterMetaData.parameterModeOut:
-					defineOutputBind(key,value,bindtype);
-					break;
-				default:
-					break;
+			ArrayList<String> keys=
+				new ArrayList<String>(inparams.keySet());
+			Collections.sort(keys,cmp);
+
+			for (String key: keys) {
+				drv.debugStart("input parameter: "+key);
+				SQLRelayParameter	value=
+							inparams.get(key);
+				inputBind(key,value,value.getBindType());
+				drv.debugEnd();
 			}
-
-			drv.debugEnd();
 		}
+
+		// output binds
+		if (outparams!=null && outparams.size()>0) {
+
+			drv.debugPrintln("output parameter count: "+
+							outparams.size());
+
+			ArrayList<String> keys=
+				new ArrayList<String>(outparams.keySet());
+			Collections.sort(keys,cmp);
+
+			for (String key: keys) {
+				drv.debugStart("output parameter: "+key);
+				SQLRelayParameter	value=
+							outparams.get(key);
+				defineOutputBind(key,value,value.getBindType());
+				drv.debugEnd();
+			}
+		}
+
 		drv.debugEnd();
 	}
 
@@ -652,28 +662,22 @@ public class SQLRelayPreparedStatement
 	void getOutputBindValues() {
 		drv.debugFunction(this);
 
-		if (parameters==null) {
-			drv.debugPrintln("parameters; null");
+		if (outparams==null || outparams.size()==0) {
+			drv.debugPrintln("output parameters: none");
 			drv.debugEnd();
 			return;
 		}
 
-		drv.debugPrintln("parameters count: "+parameters.size());
+		drv.debugPrintln("output parameters count: "+
+							outparams.size());
 
 		for (Map.Entry<String,SQLRelayParameter> entry:
-							parameters.entrySet()) {
+							outparams.entrySet()) {
 
 			String			key=entry.getKey();
 			SQLRelayParameter	value=entry.getValue();
-			int			mode=value.getMode();
 
 			drv.debugPrintln("key: "+key);
-			drv.debugPrintln("mode: "+mode);
-
-			if (mode!=ParameterMetaData.parameterModeOut &&
-				mode!=ParameterMetaData.parameterModeInOut) {
-				continue;
-			}
 
 			getOutputBindValue(key,value);
 		}
@@ -843,10 +847,11 @@ public class SQLRelayPreparedStatement
 		SQLRelayParameterMetaData	pmd=
 				new SQLRelayParameterMetaData(drv);
 		if (batch.size()==0) {
-			pmd.setParameters(parameters);
+			pmd.setInParams(inparams);
 		} else {
-			pmd.setParameters(batch.get(0));
+			pmd.setInParams(batch.get(0));
 		}
+		pmd.setOutParams(outparams);
 		drv.debugEnd();
 		return pmd;
 	}
@@ -907,7 +912,7 @@ public class SQLRelayPreparedStatement
 		param.setCalendar(null);
 		param.setBindType(BindType.AsciiStream);
 
-		parameters.put(parametername,param);
+		inparams.put(parametername,param);
 
 		drv.debugEnd();
 	}
@@ -947,7 +952,7 @@ public class SQLRelayPreparedStatement
 		param.setCalendar(null);
 		param.setBindType(BindType.AsciiStreamWithIntLength);
 
-		parameters.put(parametername,param);
+		inparams.put(parametername,param);
 
 		drv.debugEnd();
 	}
@@ -987,7 +992,7 @@ public class SQLRelayPreparedStatement
 		param.setCalendar(null);
 		param.setBindType(BindType.AsciiStreamWithLongLength);
 
-		parameters.put(parametername,param);
+		inparams.put(parametername,param);
 
 		drv.debugEnd();
 	}
@@ -1027,7 +1032,7 @@ public class SQLRelayPreparedStatement
 		param.setCalendar(null);
 		param.setBindType(BindType.BigDecimal);
 
-		parameters.put(parametername,param);
+		inparams.put(parametername,param);
 
 		drv.debugEnd();
 	}
@@ -1067,7 +1072,7 @@ public class SQLRelayPreparedStatement
 		param.setCalendar(null);
 		param.setBindType(BindType.BinaryStream);
 
-		parameters.put(parametername,param);
+		inparams.put(parametername,param);
 
 		drv.debugEnd();
 	}
@@ -1107,7 +1112,7 @@ public class SQLRelayPreparedStatement
 		param.setCalendar(null);
 		param.setBindType(BindType.BinaryStreamWithIntLength);
 
-		parameters.put(parametername,param);
+		inparams.put(parametername,param);
 
 		drv.debugEnd();
 	}
@@ -1147,7 +1152,7 @@ public class SQLRelayPreparedStatement
 		param.setCalendar(null);
 		param.setBindType(BindType.BinaryStreamWithLongLength);
 
-		parameters.put(parametername,param);
+		inparams.put(parametername,param);
 
 		drv.debugEnd();
 	}
@@ -1185,7 +1190,7 @@ public class SQLRelayPreparedStatement
 		param.setCalendar(null);
 		param.setBindType(BindType.Blob);
 
-		parameters.put(parametername,param);
+		inparams.put(parametername,param);
 
 		drv.debugEnd();
 	}
@@ -1225,7 +1230,7 @@ public class SQLRelayPreparedStatement
 		param.setCalendar(null);
 		param.setBindType(BindType.BlobInputStream);
 
-		parameters.put(parametername,param);
+		inparams.put(parametername,param);
 
 		drv.debugEnd();
 	}
@@ -1265,7 +1270,7 @@ public class SQLRelayPreparedStatement
 		param.setCalendar(null);
 		param.setBindType(BindType.BlobInputStreamWithLongLength);
 
-		parameters.put(parametername,param);
+		inparams.put(parametername,param);
 
 		drv.debugEnd();
 	}
@@ -1304,7 +1309,7 @@ public class SQLRelayPreparedStatement
 		param.setCalendar(null);
 		param.setBindType(BindType.Boolean);
 
-		parameters.put(parametername,param);
+		inparams.put(parametername,param);
 
 		drv.debugEnd();
 	}
@@ -1343,7 +1348,7 @@ public class SQLRelayPreparedStatement
 		param.setCalendar(null);
 		param.setBindType(BindType.Byte);
 
-		parameters.put(parametername,param);
+		inparams.put(parametername,param);
 
 		drv.debugEnd();
 	}
@@ -1385,7 +1390,7 @@ public class SQLRelayPreparedStatement
 		param.setCalendar(null);
 		param.setBindType(BindType.Bytes);
 
-		parameters.put(parametername,param);
+		inparams.put(parametername,param);
 
 		drv.debugEnd();
 	}
@@ -1425,7 +1430,7 @@ public class SQLRelayPreparedStatement
 		param.setCalendar(null);
 		param.setBindType(BindType.CharacterStream);
 
-		parameters.put(parametername,param);
+		inparams.put(parametername,param);
 
 		drv.debugEnd();
 	}
@@ -1465,7 +1470,7 @@ public class SQLRelayPreparedStatement
 		param.setCalendar(null);
 		param.setBindType(BindType.CharacterStreamWithIntLength);
 
-		parameters.put(parametername,param);
+		inparams.put(parametername,param);
 
 		drv.debugEnd();
 	}
@@ -1505,7 +1510,7 @@ public class SQLRelayPreparedStatement
 		param.setCalendar(null);
 		param.setBindType(BindType.CharacterStreamWithLongLength);
 
-		parameters.put(parametername,param);
+		inparams.put(parametername,param);
 
 		drv.debugEnd();
 	}
@@ -1543,7 +1548,7 @@ public class SQLRelayPreparedStatement
 		param.setCalendar(null);
 		param.setBindType(BindType.Clob);
 
-		parameters.put(parametername,param);
+		inparams.put(parametername,param);
 
 		drv.debugEnd();
 	}
@@ -1581,7 +1586,7 @@ public class SQLRelayPreparedStatement
 		param.setCalendar(null);
 		param.setBindType(BindType.ClobReader);
 
-		parameters.put(parametername,param);
+		inparams.put(parametername,param);
 
 		drv.debugEnd();
 	}
@@ -1621,7 +1626,7 @@ public class SQLRelayPreparedStatement
 		param.setCalendar(null);
 		param.setBindType(BindType.ClobReaderWithLength);
 
-		parameters.put(parametername,param);
+		inparams.put(parametername,param);
 
 		drv.debugEnd();
 	}
@@ -1659,7 +1664,7 @@ public class SQLRelayPreparedStatement
 		param.setCalendar(null);
 		param.setBindType(BindType.Date);
 
-		parameters.put(parametername,param);
+		inparams.put(parametername,param);
 		drv.debugEnd();
 	}
 
@@ -1698,7 +1703,7 @@ public class SQLRelayPreparedStatement
 		param.setCalendar(cal);
 		param.setBindType(BindType.DateWithCalendar);
 
-		parameters.put(parametername,param);
+		inparams.put(parametername,param);
 
 		drv.debugEnd();
 	}
@@ -1737,7 +1742,7 @@ public class SQLRelayPreparedStatement
 		param.setCalendar(null);
 		param.setBindType(BindType.Double);
 
-		parameters.put(parametername,param);
+		inparams.put(parametername,param);
 
 		drv.debugEnd();
 	}
@@ -1776,7 +1781,7 @@ public class SQLRelayPreparedStatement
 		param.setCalendar(null);
 		param.setBindType(BindType.Float);
 
-		parameters.put(parametername,param);
+		inparams.put(parametername,param);
 
 		drv.debugEnd();
 	}
@@ -1815,7 +1820,7 @@ public class SQLRelayPreparedStatement
 		param.setCalendar(null);
 		param.setBindType(BindType.Int);
 
-		parameters.put(parametername,param);
+		inparams.put(parametername,param);
 
 		drv.debugEnd();
 	}
@@ -1854,7 +1859,7 @@ public class SQLRelayPreparedStatement
 		param.setCalendar(null);
 		param.setBindType(BindType.Long);
 
-		parameters.put(parametername,param);
+		inparams.put(parametername,param);
 
 		drv.debugEnd();
 	}
@@ -1894,7 +1899,7 @@ public class SQLRelayPreparedStatement
 		param.setCalendar(null);
 		param.setBindType(BindType.NCharStream);
 
-		parameters.put(parametername,param);
+		inparams.put(parametername,param);
 
 		drv.debugEnd();
 	}
@@ -1934,7 +1939,7 @@ public class SQLRelayPreparedStatement
 		param.setCalendar(null);
 		param.setBindType(BindType.NCharStreamWithLength);
 
-		parameters.put(parametername,param);
+		inparams.put(parametername,param);
 
 		drv.debugEnd();
 	}
@@ -1972,7 +1977,7 @@ public class SQLRelayPreparedStatement
 		param.setCalendar(null);
 		param.setBindType(BindType.NClob);
 
-		parameters.put(parametername,param);
+		inparams.put(parametername,param);
 
 		drv.debugEnd();
 	}
@@ -2010,7 +2015,7 @@ public class SQLRelayPreparedStatement
 		param.setCalendar(null);
 		param.setBindType(BindType.NClobReader);
 
-		parameters.put(parametername,param);
+		inparams.put(parametername,param);
 
 		drv.debugEnd();
 	}
@@ -2050,7 +2055,7 @@ public class SQLRelayPreparedStatement
 		param.setCalendar(null);
 		param.setBindType(BindType.NClobReaderWithLength);
 
-		parameters.put(parametername,param);
+		inparams.put(parametername,param);
 
 		drv.debugEnd();
 	}
@@ -2088,7 +2093,7 @@ public class SQLRelayPreparedStatement
 		param.setCalendar(null);
 		param.setBindType(BindType.NString);
 
-		parameters.put(parametername,param);
+		inparams.put(parametername,param);
 
 		drv.debugEnd();
 	}
@@ -2253,7 +2258,7 @@ public class SQLRelayPreparedStatement
 		param.setCalendar(null);
 		param.setBindType(BindType.Null);
 
-		parameters.put(parametername,param);
+		inparams.put(parametername,param);
 
 		drv.debugEnd();
 	}
@@ -2421,7 +2426,7 @@ public class SQLRelayPreparedStatement
 		param.setCalendar(null);
 		param.setBindType(BindType.NullWithTypeName);
 
-		parameters.put(parametername,param);
+		inparams.put(parametername,param);
 
 		drv.debugEnd();
 	}
@@ -2572,7 +2577,7 @@ public class SQLRelayPreparedStatement
 		param.setCalendar(null);
 		param.setBindType(BindType.Short);
 
-		parameters.put(parametername,param);
+		inparams.put(parametername,param);
 
 		drv.debugEnd();
 	}
@@ -2610,7 +2615,7 @@ public class SQLRelayPreparedStatement
 		param.setCalendar(null);
 		param.setBindType(BindType.String);
 
-		parameters.put(parametername,param);
+		inparams.put(parametername,param);
 
 		drv.debugEnd();
 	}
@@ -2671,7 +2676,7 @@ public class SQLRelayPreparedStatement
 		param.setCalendar(null);
 		param.setBindType(BindType.Time);
 
-		parameters.put(parametername,param);
+		inparams.put(parametername,param);
 		drv.debugEnd();
 	}
 
@@ -2710,7 +2715,7 @@ public class SQLRelayPreparedStatement
 		param.setCalendar(cal);
 		param.setBindType(BindType.TimeWithCalendar);
 
-		parameters.put(parametername,param);
+		inparams.put(parametername,param);
 
 		drv.debugEnd();
 	}
@@ -2749,7 +2754,7 @@ public class SQLRelayPreparedStatement
 		param.setCalendar(null);
 		param.setBindType(BindType.Timestamp);
 
-		parameters.put(parametername,param);
+		inparams.put(parametername,param);
 		drv.debugEnd();
 	}
 
@@ -2788,7 +2793,7 @@ public class SQLRelayPreparedStatement
 		param.setCalendar(cal);
 		param.setBindType(BindType.TimestampWithCalendar);
 
-		parameters.put(parametername,param);
+		inparams.put(parametername,param);
 
 		drv.debugEnd();
 	}
@@ -2828,7 +2833,7 @@ public class SQLRelayPreparedStatement
 		param.setCalendar(null);
 		param.setBindType(BindType.UnicodeStream);
 
-		parameters.put(parametername,param);
+		inparams.put(parametername,param);
 
 		drv.debugEnd();
 	}

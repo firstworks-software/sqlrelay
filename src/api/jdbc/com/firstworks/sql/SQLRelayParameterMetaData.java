@@ -12,21 +12,31 @@ public class SQLRelayParameterMetaData implements ParameterMetaData {
 
 	private	SQLRelayDriver	drv;
 
-	private HashMap<String,SQLRelayParameter>	parameters;
+	private HashMap<String,SQLRelayParameter>	inparams;
+	private HashMap<String,SQLRelayParameter>	outparams;
 
 
 	public
 	SQLRelayParameterMetaData(SQLRelayDriver driver) {
 		this.drv=driver;
 		drv.debugFunction(this);
-		parameters=null;
+		inparams=null;
+		outparams=null;
 		drv.debugEnd();
 	}
 
-	void setParameters(HashMap<String,SQLRelayParameter> parameters) {
+	void setInParams(HashMap<String,SQLRelayParameter> inparams) {
 		drv.debugFunction(this);
-		this.parameters=parameters;
-		drv.debugPrintln("parameter count: "+parameters.size());
+		this.inparams=inparams;
+		drv.debugPrintln("input parameter count: "+inparams.size());
+		drv.debugEnd();
+	}
+
+	void setOutParams(HashMap<String,SQLRelayParameter> outparams) {
+		drv.debugFunction(this);
+		this.outparams=outparams;
+		drv.debugPrintln("output parameter count: "+
+							outparams.size());
 		drv.debugEnd();
 	}
 
@@ -44,9 +54,14 @@ public class SQLRelayParameterMetaData implements ParameterMetaData {
 	private
 	SQLRelayParameter getParameter(int param) {
 		drv.debugFunction(this);
-		SQLRelayParameter	p=(parameters!=null)?
-					parameters.get(String.valueOf(param)):
-					null;
+		String	key=String.valueOf(param);
+		SQLRelayParameter	p=null;
+		if (inparams!=null) {
+			p=inparams.get(key);
+		}
+		if (p==null && outparams!=null) {
+			p=outparams.get(key);
+		}
 		drv.debugPrintln("param: "+param);
 		drv.debugEnd();
 		return p;
@@ -55,10 +70,16 @@ public class SQLRelayParameterMetaData implements ParameterMetaData {
 	public
 	int getParameterCount() {
 		drv.debugFunction(this);
-		int	p=(parameters!=null)?parameters.size():0;
-		drv.debugPrintln("parameter count: "+p);
+		int	count=0;
+		if (inparams!=null) {
+			count+=inparams.size();
+		}
+		if (outparams!=null) {
+			count+=outparams.size();
+		}
+		drv.debugPrintln("parameter count: "+count);
 		drv.debugEnd();
-		return p;
+		return count;
 	}
 
 	public
