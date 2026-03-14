@@ -37,6 +37,7 @@
 	added getDatabaseIsSchema() methods/functions and abstracted
 		"database" to be either catalog or schema, depending on how
 		the database backend interprets it
+	fixed a longstanding issue with unbound firebird output binds
 
 2.1.0 - refactored debugging
 
