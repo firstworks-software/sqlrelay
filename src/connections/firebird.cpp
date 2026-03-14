@@ -158,7 +158,7 @@ class SQLRSERVER_DLLSPEC firebirdcursor : public sqlrservercursor {
 							uint32_t size);
 		bool		queryIsNotSelect();
 		bool		queryIsCommitOrRollback();
-		bool		knowsAffectedRows();
+		uint64_t	getAffectedRows();
 		uint32_t	colCount();
 		const char	*getColumnName(uint32_t col);
 		uint16_t	getColumnNameSize(uint32_t col);
@@ -3266,8 +3266,64 @@ bool firebirdcursor::queryIsCommitOrRollback() {
 		querytype==isc_info_sql_stmt_rollback);
 }
 
-bool firebirdcursor::knowsAffectedRows() {
-	return false;
+uint64_t firebirdcursor::getAffectedRows() {
+
+	char	infoitems[]={isc_info_sql_records};
+	char	resbuffer[256];
+
+	if (isc_dsql_sql_info(firebirdconn->error,&stmt,
+				sizeof(infoitems),infoitems,
+				sizeof(resbuffer),resbuffer)) {
+		return 0;
+	}
+
+	uint64_t	affectedrows=0;
+
+	for (const char *p=resbuffer; *p!=isc_info_end;) {
+
+		char	itemtype=*p;
+		p++;
+
+		// (modern versions of isc_vax_integer take a const char *
+		// parameter, but old versions take char * and this cast
+		// works with both)
+		uint16_t	itemlength=
+				(uint16_t)isc_vax_integer((char *)p,2);
+		p=p+2;
+
+		if (itemtype==isc_info_sql_records) {
+
+			// parse sub-items
+			const char	*end=p+itemlength;
+			while (p<end && *p!=isc_info_end) {
+
+				char	subtype=*p;
+				p++;
+
+				uint16_t	sublength=
+					(uint16_t)isc_vax_integer(
+							(char *)p,2);
+				p=p+2;
+
+				uint64_t	count=
+					(uint64_t)isc_vax_integer(
+							(char *)p,sublength);
+				p=p+sublength;
+
+				switch (subtype) {
+					case isc_info_req_insert_count:
+					case isc_info_req_update_count:
+					case isc_info_req_delete_count:
+						affectedrows+=count;
+						break;
+				}
+			}
+		} else {
+			p=p+itemlength;
+		}
+	}
+
+	return affectedrows;
 }
 
 uint32_t firebirdcursor::colCount() {

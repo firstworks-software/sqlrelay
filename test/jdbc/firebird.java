@@ -1513,13 +1513,7 @@ class firebird extends sqlrtest {
 			"	'varchar1', "+
 			"	NULL, "+
 			"	'blob1')"));
-		if (issqlrelay) {
-			// sqlrelay JDBC driver issue:
-			// getUpdateCount returns 0 for inserts
-			assertEquals(stmt.getUpdateCount(),0);
-		} else {
-			assertEquals(stmt.getUpdateCount(),1);
-		}
+		assertEquals(stmt.getUpdateCount(),1);
 		stmt.close();
 		assertTrue(stmt.isClosed());
 		System.out.println();
@@ -1568,13 +1562,7 @@ class firebird extends sqlrtest {
 			pstmt.setNull(11,java.sql.Types.TIMESTAMP);
 			pstmt.setBytes(12,(new String("blob"+i)).
 					getBytes(StandardCharsets.UTF_8));
-			if (issqlrelay) {
-				// sqlrelay JDBC driver issue:
-				// executeUpdate returns 0
-				assertEquals(pstmt.executeUpdate(),0);
-			} else {
-				assertEquals(pstmt.executeUpdate(),1);
-			}
+			assertEquals(pstmt.executeUpdate(),1);
 			System.out.println();
 		}
 		pstmt.close();
@@ -2240,14 +2228,12 @@ class firebird extends sqlrtest {
 		if (issqlrelay) {
 			assertFalse(cstmt.execute());
 		} else {
+			// firebird jdbc returns the output binds as
+			// a result set, so execute() returns true
 			assertTrue(cstmt.execute());
 		}
 		assertEquals(cstmt.getInt(1),1);
-		if (issqlrelay) {
-			assertEquals(cstmt.getString(3).trim(),"hello");
-		} else {
-			assertEquals(cstmt.getString(3),"hello");
-		}
+		assertEquals(cstmt.getString(3).trim(),"hello");
 		cstmt.close();
 		System.out.println();
 
@@ -2395,14 +2381,11 @@ class firebird extends sqlrtest {
 			if (issqlrelay) {
 				assertFalse(cstmt.execute());
 			} else {
+				// firebird jdbc returns the output binds as
+				// a result set, so execute() returns true
 				assertTrue(cstmt.execute());
 			}
-			if (issqlrelay) {
-				assertEquals(cstmt.getString(3).trim(),
-								teststr);
-			} else {
-				assertEquals(cstmt.getString(3),teststr);
-			}
+			assertEquals(cstmt.getString(3).trim(),teststr);
 			cstmt.close();
 		}
 		System.out.println();
@@ -2465,6 +2448,8 @@ class firebird extends sqlrtest {
 		if (issqlrelay) {
 			assertFalse(cstmt.execute());
 		} else {
+			// firebird jdbc returns the output binds as
+			// a result set, so execute() returns true
 			assertTrue(cstmt.execute());
 		}
 		assertEquals(cstmt.getInt(1),1);
@@ -2472,6 +2457,8 @@ class firebird extends sqlrtest {
 		if (issqlrelay) {
 			assertFalse(cstmt.execute());
 		} else {
+			// firebird jdbc returns the output binds as
+			// a result set, so execute() returns true
 			assertTrue(cstmt.execute());
 		}
 		assertEquals(cstmt.getInt(1),2);
@@ -2479,6 +2466,8 @@ class firebird extends sqlrtest {
 		if (issqlrelay) {
 			assertFalse(cstmt.execute());
 		} else {
+			// firebird jdbc returns the output binds as
+			// a result set, so execute() returns true
 			assertTrue(cstmt.execute());
 		}
 		assertEquals(cstmt.getInt(1),3);
