@@ -474,6 +474,13 @@ public class SQLRConnection : IDisposable
         return (sqlrcon_rollback(sqlrconref) == 1);
     }
 
+    /** Returns the database-specific default isolation level,
+     *  or null if an error occurred. */
+    public String getDefaultIsolationLevel()
+    {
+        return sqlrcon_getDefaultIsolationLevel(sqlrconref);
+    }
+
     /** Sets the isolation level to "isolationlevel", the database-secific
      *  isolation level.  Returns true if setting the isolation level
      *  succeeded, false if it failed. */
@@ -538,7 +545,6 @@ public class SQLRConnection : IDisposable
      *   * list - CAUSES_COMMIT,IGNORED_IN_TRANSACTIONS
      *  * ddl_index_operations
      *   * list - CREATE_INDEX,DROP_INDEX
-     *  * default_isolation_level
      *   * string
      *  * default_result_set_holdability
      *   * string
@@ -985,6 +991,9 @@ public class SQLRConnection : IDisposable
     
     [DllImport("libsqlrclientwrapper.dll", CallingConvention = CallingConvention.Cdecl)]
     private static extern Int32 sqlrcon_rollback(IntPtr sqlrconref);
+
+    [DllImport("libsqlrclientwrapper.dll", CallingConvention = CallingConvention.Cdecl)]
+    private static extern String sqlrcon_getDefaultIsolationLevel(IntPtr sqlrconref);
 
     [DllImport("libsqlrclientwrapper.dll", CallingConvention = CallingConvention.Cdecl)]
     private static extern Int32 sqlrcon_setIsolationLevel(IntPtr sqlrconref, String isolationlevel);

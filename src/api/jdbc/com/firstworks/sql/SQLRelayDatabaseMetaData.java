@@ -444,7 +444,7 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 	int getDefaultTransactionIsolation() throws SQLException {
 		drv.debugFunction(this);
 		int	isolation=getTransactionIsolationLevel(
-				getString("default_isolation_level"));
+			conn.getSQLRConnection().getDefaultIsolationLevel(3));
 		drv.debugPrintln("isolation: "+isolation);
 		drv.debugEnd();
 		return isolation;

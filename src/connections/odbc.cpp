@@ -1546,17 +1546,6 @@ const char * const *odbcconnection::getDatabaseFeatures() {
 	flagsToNames(&sb,uintbuf,di);
 	databasefeatures[FEATURE_DDL_INDEX_OPERATIONS]=sb.detachString();
 
-	// SQL_DEFAULT_TXN_ISOLATION -> bitmask
-	uintbuf=0;
-	SQLGetInfo(dbc,SQL_DEFAULT_TXN_ISOLATION,
-					&uintbuf,sizeof(uintbuf),&size);
-	databasefeatures[FEATURE_DEFAULT_ISOLATION_LEVEL]=
-		charstring::duplicate(
-			(uintbuf==SQL_TXN_SERIALIZABLE)?"SERIALIZABLE":
-			(uintbuf==SQL_TXN_REPEATABLE_READ)?"REPEATABLE_READ":
-			(uintbuf==SQL_TXN_READ_COMMITTED)?"READ_COMMITTED":
-			(uintbuf==SQL_TXN_READ_UNCOMMITTED)?"UNCOMMITTED":"");
-
 	// no obvious ODBC equivalent
 	databasefeatures[FEATURE_DEFAULT_RESULT_SET_HOLDABILITY]=
 					charstring::duplicate("");

@@ -97,6 +97,7 @@ class sqlrconnectionprivate {
 
 		// isolation level
 		char		*_isolationlevel;
+		char		*_defaultisolationlevel;
 
 		// database features
 		dictionary<const char *, char *>	_dbfeatures;
@@ -232,6 +233,7 @@ void sqlrconnection::init(const char *server, uint16_t port,
 
 	// isolation level
 	pvt->_isolationlevel=NULL;
+	pvt->_defaultisolationlevel=NULL;
 
 	// database features
 	pvt->_dbfeatures.setManageArrayValues(true);
@@ -323,6 +325,7 @@ sqlrconnection::~sqlrconnection() {
 
 	// deallocate isolation level
 	delete[] pvt->_isolationlevel;
+	delete[] pvt->_defaultisolationlevel;
 
 	// deallocate server version
 	delete[] pvt->_serverversion;
@@ -2111,6 +2114,68 @@ bool sqlrconnection::rollback() {
 	flushWriteBuffer();
 
 	return !gotError();
+}
+
+const char *sqlrconnection::getDefaultIsolationLevel() {
+	return	getDefaultIsolationLevel(SQLRCLIENTISOLATIONLEVELFORMAT_NATIVE);
+}
+
+const char *sqlrconnection::getDefaultIsolationLevel(
+				sqlrclientisolationlevelformat_t format) {
+
+	if (!openSession()) {
+		return NULL;
+	}
+
+	clearError();
+
+	if (pvt->_debug) {
+		debugPreStart();
+		debugPrint("Getting default isolation level...");
+		debugPrint("\n");
+		debugPreEnd();
+	}
+
+	// tell the server we want to get the default isolation level
+	pvt->_cs->write((uint16_t)GET_DEFAULT_ISOLATION_LEVEL);
+
+	// send the format
+	pvt->_cs->write((uint16_t)format);
+
+	flushWriteBuffer();
+
+	if (gotError()) {
+		return NULL;
+	}
+
+	// get the default isolation level size
+	uint16_t	size;
+	if (pvt->_cs->read(&size,pvt->_responsetimeoutsec,
+				pvt->_responsetimeoutusec)!=sizeof(uint16_t)) {
+		setError("Failed to get default isolation level.\n"
+				"A network error may have occurred.");
+		return NULL;
+	}
+
+	// get the default isolation level
+	delete[] pvt->_defaultisolationlevel;
+	pvt->_defaultisolationlevel=new char[size+1];
+	if (pvt->_cs->read(pvt->_defaultisolationlevel,size)!=size) {
+		setError("Failed to get default isolation level.\n"
+				"A network error may have occurred.");
+		delete[] pvt->_defaultisolationlevel;
+		pvt->_defaultisolationlevel=NULL;
+		return NULL;
+	}
+	pvt->_defaultisolationlevel[size]='\0';
+
+	if (pvt->_debug) {
+		debugPreStart();
+		debugPrint(pvt->_defaultisolationlevel);
+		debugPrint("\n");
+		debugPreEnd();
+	}
+	return pvt->_defaultisolationlevel;
 }
 
 bool sqlrconnection::setIsolationLevel(const char *isolationlevel) {

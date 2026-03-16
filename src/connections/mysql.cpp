@@ -259,6 +259,7 @@ class SQLRSERVER_DLLSPEC mysqlconnection : public sqlrserverconnection {
 		char		*getCurrentCatalog();
 		const char	*selectSchemaQuery();
 		const char	*getCurrentSchemaQuery();
+		const char	*getDefaultIsolationLevel();
 		const char	*setIsolationLevelQuery();
 		const char	*getIsolationLevelQuery();
 		const char	*mapIsolationLevel(
@@ -2112,6 +2113,10 @@ const char *mysqlconnection::getCurrentSchemaQuery() {
 	return "select database()";
 }
 
+const char *mysqlconnection::getDefaultIsolationLevel() {
+	return "REPEATABLE_READ";
+}
+
 const char *mysqlconnection::setIsolationLevelQuery() {
 	return "set @@session.tx_isolation='%s'";
 }
@@ -2281,9 +2286,6 @@ const char * const *mysqlconnection::getDatabaseFeatures() {
 
 	databasefeatures[FEATURE_DDL_INDEX_OPERATIONS]=
 		charstring::duplicate("");
-
-	databasefeatures[FEATURE_DEFAULT_ISOLATION_LEVEL]=
-		charstring::duplicate("REPEATABLE_READ");
 
 	databasefeatures[FEATURE_DEFAULT_RESULT_SET_HOLDABILITY]=
 		charstring::duplicate("HOLD_CURSORS_OVER_COMMIT");

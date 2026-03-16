@@ -3198,9 +3198,6 @@ const char * const *freetdsconnection::getDatabaseFeatures() {
 	databasefeatures[FEATURE_DDL_INDEX_OPERATIONS]=
 		charstring::duplicate("");
 
-	databasefeatures[FEATURE_DEFAULT_ISOLATION_LEVEL]=
-		charstring::duplicate("READ_COMMITTED");
-
 	databasefeatures[FEATURE_DEFAULT_RESULT_SET_HOLDABILITY]=
 		charstring::duplicate("HOLD_CURSORS_OVER_COMMIT");
 

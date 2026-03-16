@@ -74,6 +74,7 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_sqlrclient : public sqlrprotocol {
 		void	dbIpAddressCommand();
 		void	setIsolationLevelCommand();
 		void	getIsolationLevelCommand();
+		void	getDefaultIsolationLevelCommand();
 		void	getDatabaseFeaturesCommand();
 		bool	newQueryCommand(sqlrservercursor *cursor);
 		bool	reExecuteQueryCommand(sqlrservercursor *cursor);
@@ -519,6 +520,9 @@ clientsessionexitstatus_t sqlrprotocol_sqlrclient::clientSession(
 		} else if (command==GET_ISOLATION_LEVEL) {
 			//cont->incrementGetIsolationLevelCount();
 			getIsolationLevelCommand();
+			continue;
+		} else if (command==GET_DEFAULT_ISOLATION_LEVEL) {
+			getDefaultIsolationLevelCommand();
 			continue;
 		} else if (command==GET_DATABASE_FEATURES) {
 			//cont->incrementGetDatabaseFeaturesCount();
@@ -1735,6 +1739,49 @@ void sqlrprotocol_sqlrclient::getIsolationLevelCommand() {
 		clientsock->flushWriteBuffer(-1,-1);
 
 		debugWrite("isolation level: %.*s",isolevelsize,isolevel);
+
+	} else {
+		debugWrite("failed");
+		returnError(false);
+	}
+
+	debugEnd();
+}
+
+void sqlrprotocol_sqlrclient::getDefaultIsolationLevelCommand() {
+
+	debugStart("getting default isolation level");
+
+	// get format
+	uint16_t	format;
+	ssize_t		result=clientsock->read(&format,
+						idleclienttimeout,0);
+	if (result!=sizeof(uint16_t)) {
+		clientsock->write(false);
+		cont->raiseClientProtocolErrorEvent(NULL,result,
+				"get default isolation level failed: "
+				"failed to get isolation level format");
+		debugWrite("failed to get isolation level format");
+		debugEnd();
+		return;
+	}
+
+
+	// get the default isolation level
+	const char	*isolevel=cont->getDefaultIsolationLevel(
+				(sqlrserverisolationlevelformat_t)format);
+	if (isolevel) {
+		debugWrite("success");
+		clientsock->write((uint16_t)NO_ERROR_OCCURRED);
+
+		// send it to the client
+		uint16_t	isolevelsize=charstring::getLength(isolevel);
+		clientsock->write(isolevelsize);
+		clientsock->write(isolevel,isolevelsize);
+		clientsock->flushWriteBuffer(-1,-1);
+
+		debugWrite("default isolation level: %.*s",
+						isolevelsize,isolevel);
 
 	} else {
 		debugWrite("failed");

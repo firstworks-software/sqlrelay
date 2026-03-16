@@ -234,6 +234,10 @@ int sqlrcon_rollback(sqlrcon sqlrconref) {
 	return sqlrconref->rollback();
 }
 
+const char *sqlrcon_getDefaultIsolationLevel(sqlrcon sqlrconref) {
+	return sqlrconref->getDefaultIsolationLevel();
+}
+
 int sqlrcon_setIsolationLevel(sqlrcon sqlrconref, const char *isolationlevel) {
 	return sqlrconref->setIsolationLevel(isolationlevel);
 }

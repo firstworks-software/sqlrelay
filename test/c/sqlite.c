@@ -67,7 +67,7 @@ int main(int argc, char **argv) {
 
 	// drop existing table
 	sqlrcur_sendQuery(cur,"begin transaction");
-	sqlrcur_sendQuery(cur,"drop table testtable");
+	sqlrcur_sendQuery(cur,"drop table if exists testtable");
 	sqlrcon_commit(con);
 
 	// create a new table
@@ -361,7 +361,7 @@ int main(int argc, char **argv) {
 
 	// individual substitutions
 	printf("INDIVIDUAL SUBSTITUTIONS: \n");
-	sqlrcur_sendQuery(cur,"drop table testtable1");
+	sqlrcur_sendQuery(cur,"drop table if exists testtable1");
 	assertTrue(sqlrcur_sendQuery(cur,
 		"create table testtable1 ("
 		"	col1 int, "
@@ -859,7 +859,7 @@ int main(int argc, char **argv) {
 	printf("\n");
 
 	// drop existing table
-	sqlrcur_sendQuery(cur,"drop table testtable");
+	sqlrcur_sendQuery(cur,"drop table if exists testtable");
 
 
 	// invalid queries

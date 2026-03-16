@@ -2748,6 +2748,14 @@ const char *sqlrservercontroller::getNoopQuery() {
 	return pvt->_conn->getNoopQuery();
 }
 
+const char *sqlrservercontroller::getDefaultIsolationLevel(
+				sqlrserverisolationlevelformat_t format) {
+	return pvt->_conn->mapIsolationLevel(
+				pvt->_conn->getDefaultIsolationLevel(),
+				SQLRSERVERISOLATIONLEVELFORMAT_NATIVE,
+				format);
+}
+
 bool sqlrservercontroller::setIsolationLevel(const char *isolevel,
 				sqlrserverisolationlevelformat_t fromformat) {
 	const char	*mappedisolevel=

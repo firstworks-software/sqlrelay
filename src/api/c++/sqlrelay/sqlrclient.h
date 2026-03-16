@@ -366,6 +366,10 @@ class SQLRCLIENT_DLLSPEC sqlrconnection : public object {
 
 
 
+		/** Returns the database-specific default isolation level,
+		 *  or NULL if an error occurred. */
+		const char	*getDefaultIsolationLevel();
+
 		/** Sets the isolation level to "isolationlevel", the
 		 *  database-secific isolation level.  Returns true if setting
 		 *  the isolation level succeeded, false if it failed. */
@@ -427,7 +431,6 @@ class SQLRCLIENT_DLLSPEC sqlrconnection : public object {
 		 *   * list - CAUSES_COMMIT,IGNORED_IN_TRANSACTIONS
 		 *  * ddl_index_operations
 		 *   * list - CREATE_INDEX,DROP_INDEX
-		 *  * default_isolation_level
 		 *   * string
 		 *  * default_result_set_holdability
 		 *   * string

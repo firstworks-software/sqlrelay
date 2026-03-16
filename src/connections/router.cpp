@@ -905,9 +905,6 @@ const char * const *routerconnection::getDatabaseFeatures() {
 	databasefeatures[FEATURE_DDL_INDEX_OPERATIONS]=
 		charstring::duplicate("");
 
-	databasefeatures[FEATURE_DEFAULT_ISOLATION_LEVEL]=
-		charstring::duplicate("");
-
 	databasefeatures[FEATURE_DEFAULT_RESULT_SET_HOLDABILITY]=
 		charstring::duplicate("");
 

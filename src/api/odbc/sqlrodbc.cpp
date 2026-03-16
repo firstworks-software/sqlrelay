@@ -9056,12 +9056,26 @@ SQLRETURN SQL_API SQLGetInfo(SQLHDBC connectionhandle,
 			type=0;
 			break;
 		case SQL_DEFAULT_TXN_ISOLATION:
-			// FIXME: default_isolation_level
+			{
 			debugPrintf("  infotype: "
 					"SQL_DEFAULT_TXN_ISOLATION\n");
-			// FIXME: db-specific
-			val.uintval=SQL_TXN_READ_COMMITTED;
+			const char	*dilstr=
+				conn->con->getDefaultIsolationLevel(
+				SQLRCLIENTISOLATIONLEVELFORMAT_ODBC);
+			if (!charstring::compare(dilstr,
+						"SQL_TXN_SERIALIZABLE")) {
+				val.uintval=SQL_TXN_SERIALIZABLE;
+			} else if (!charstring::compare(dilstr,
+						"SQL_TXN_REPEATABLE_READ")) {
+				val.uintval=SQL_TXN_REPEATABLE_READ;
+			} else if (!charstring::compare(dilstr,
+						"SQL_TXN_READ_UNCOMMITTED")) {
+				val.uintval=SQL_TXN_READ_UNCOMMITTED;
+			} else {
+				val.uintval=SQL_TXN_READ_COMMITTED;
+			}
 			type=1;
+			}
 			break;
 		case SQL_IDENTIFIER_CASE:
 			debugPrintf("  infotype: "

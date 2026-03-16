@@ -349,6 +349,10 @@ function sqlrcon_commit($sqlrconref){}
 function sqlrcon_rollback($sqlrconref){}
 
 
+/** Returns the database-specific default isolation level,
+ *  or NULL if an error occurred. */
+function sqlrcon_getDefaultIsolationLevel($sqlrconref){}
+
 /**
  *  Sets the isolation level to "isolationlevel", the database-secific
  *  isolation level.  Returns 1 if setting the isolation level succeeded,
@@ -409,7 +413,6 @@ function sqlrcon_getIsolationLevel($sqlrconref){}
  *   * list - CAUSES_COMMIT,IGNORED_IN_TRANSACTIONS
  *  * ddl_index_operations
  *   * list - CREATE_INDEX,DROP_INDEX
- *  * default_isolation_level
  *   * string
  *  * default_result_set_holdability
  *   * string

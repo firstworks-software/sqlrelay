@@ -87,6 +87,7 @@ class SQLRSERVER_DLLSPEC sqliteconnection : public sqlrserverconnection {
 						const char *schema,
 						const char *procedure);
 		#ifdef SQLITE_TRANSACTIONAL
+		const char	*getDefaultIsolationLevel();
 		const char	*setIsolationLevelQuery();
 		const char	*getIsolationLevelQuery();
 		const char	*mapIsolationLevel(
@@ -1155,6 +1156,10 @@ const char *sqliteconnection::getProcedureParameterListQuery(
 }
 
 #ifdef SQLITE_TRANSACTIONAL
+const char *sqliteconnection::getDefaultIsolationLevel() {
+	return "SERIALIZABLE";
+}
+
 const char *sqliteconnection::setIsolationLevelQuery() {
 	return "pragma read_uncommitted=%s";
 }
@@ -1285,9 +1290,6 @@ const char * const *sqliteconnection::getDatabaseFeatures() {
 
 	databasefeatures[FEATURE_DDL_INDEX_OPERATIONS]=
 		charstring::duplicate("");
-
-	databasefeatures[FEATURE_DEFAULT_ISOLATION_LEVEL]=
-		charstring::duplicate("SERIALIZABLE");
 
 	databasefeatures[FEATURE_DEFAULT_RESULT_SET_HOLDABILITY]=
 		charstring::duplicate("CLOSE_CURSORS_AT_COMMIT");

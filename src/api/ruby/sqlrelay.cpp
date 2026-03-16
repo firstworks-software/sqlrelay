@@ -1123,7 +1123,6 @@ static void getDatabaseFeature(params *p) {
  *   * list - CAUSES_COMMIT,IGNORED_IN_TRANSACTIONS
  *  * ddl_index_operations
  *   * list - CREATE_INDEX,DROP_INDEX
- *  * default_isolation_level
  *   * string
  *  * default_result_set_holdability
  *   * string

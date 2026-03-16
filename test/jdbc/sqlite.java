@@ -1486,10 +1486,7 @@ class sqlite extends sqlrtest {
 
 		// create table
 		System.out.println("CREATE TABLE:");
-		try {
-			stmt.executeUpdate("drop table testtable");
-		} catch (Exception ex) {
-		}
+		stmt.executeUpdate("drop table if exists testtable");
 		assertEquals(stmt.executeUpdate(
 			"create table testtable ("+
 			"	testint int, "+
@@ -1862,7 +1859,7 @@ class sqlite extends sqlrtest {
 		// commit
 		System.out.println("COMMIT:");
 		con.commit();
-		stmt.executeUpdate("drop table testtable");
+		stmt.executeUpdate("drop table if exists testtable");
 		stmt.close();
 		assertTrue(stmt.isClosed());
 		System.out.println();
@@ -1920,22 +1917,10 @@ class sqlite extends sqlrtest {
 
 		// table list
 		System.out.println("TABLE LIST:");
-		try {
-			stmt.executeUpdate("drop table testtable1");
-		} catch (Exception ex) {
-		}
-		try {
-			stmt.executeUpdate("drop table testtable2");
-		} catch (Exception ex) {
-		}
-		try {
-			stmt.executeUpdate("drop table testtable3");
-		} catch (Exception ex) {
-		}
-		try {
-			stmt.executeUpdate("drop table testtable4");
-		} catch (Exception ex) {
-		}
+		stmt.executeUpdate("drop table if exists testtable1");
+		stmt.executeUpdate("drop table if exists testtable2");
+		stmt.executeUpdate("drop table if exists testtable3");
+		stmt.executeUpdate("drop table if exists testtable4");
 		stmt.executeUpdate(
 			"create table testtable1 ("+
 			"	col1 int, "+
@@ -1982,10 +1967,10 @@ class sqlite extends sqlrtest {
 		}
 		assertEquals(counter,4);
 		rs.close();
-		stmt.executeUpdate("drop table testtable1");
-		stmt.executeUpdate("drop table testtable2");
-		stmt.executeUpdate("drop table testtable3");
-		stmt.executeUpdate("drop table testtable4");
+		stmt.executeUpdate("drop table if exists testtable1");
+		stmt.executeUpdate("drop table if exists testtable2");
+		stmt.executeUpdate("drop table if exists testtable3");
+		stmt.executeUpdate("drop table if exists testtable4");
 		System.out.println();
 
 
@@ -2022,10 +2007,7 @@ class sqlite extends sqlrtest {
 		// column list
 		System.out.println("COLUMN LIST:");
 		stmt=con.createStatement();
-		try {
-			stmt.executeUpdate("drop table testtable");
-		} catch (Exception ex) {
-		}
+		stmt.executeUpdate("drop table if exists testtable");
 		stmt.executeUpdate(
 			"create table testtable ("+
 			"	testint int, "+
@@ -2089,16 +2071,13 @@ class sqlite extends sqlrtest {
 		assertEquals(rs.getString("COLUMN_NAME"),"testurl");
 		assertEquals(rs.getString("TYPE_NAME"),"VARCHAR");
 		rs.close();
-		stmt.executeUpdate("drop table testtable");
+		stmt.executeUpdate("drop table if exists testtable");
 		System.out.println();
 
 
 		// primary key list
 		System.out.println("PRIMARY KEY LIST:");
-		try {
-			stmt.executeUpdate("drop table testtable");
-		} catch (Exception ex) {
-		}
+		stmt.executeUpdate("drop table if exists testtable");
 		stmt.executeUpdate(
 			"create table testtable ("+
 			"	col1 int primary key, "+
@@ -2124,16 +2103,13 @@ class sqlite extends sqlrtest {
 		assertEquals(rs.getString("PK_NAME"),null);
 		assertFalse(rs.next());
 		rs.close();
-		stmt.executeUpdate("drop table testtable");
+		stmt.executeUpdate("drop table if exists testtable");
 		System.out.println();
 
 
 		// key and index list
 		System.out.println("KEY AND INDEX LIST:");
-		try {
-			stmt.executeUpdate("drop table testtable");
-		} catch (Exception ex) {
-		}
+		stmt.executeUpdate("drop table if exists testtable");
 		stmt.executeUpdate(
 			"create table testtable ("+
 			"	col1 int primary key, "+
@@ -2189,7 +2165,7 @@ class sqlite extends sqlrtest {
 				rs.getString("INDEX_NAME").length()>0);
 		assertFalse(rs.next());
 		rs.close();
-		stmt.executeUpdate("drop table testtable");
+		stmt.executeUpdate("drop table if exists testtable");
 		System.out.println();
 
 

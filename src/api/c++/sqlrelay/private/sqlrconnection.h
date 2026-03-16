@@ -71,7 +71,9 @@
 		static	bool	isYes(const char *str);
 		static	bool	isNo(const char *str);
 
-		bool	setIsolationLevel(const char *isolationlevel,
+		const char	*getDefaultIsolationLevel(
+				sqlrclientisolationlevelformat_t format);
+		bool		setIsolationLevel(const char *isolationlevel,
 				sqlrclientisolationlevelformat_t format);
 		const char	*getIsolationLevel(
 				sqlrclientisolationlevelformat_t format);

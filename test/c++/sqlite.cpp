@@ -75,7 +75,7 @@ int main(int argc, char **argv) {
 
 	// drop existing table
 	cur->sendQuery("begin transaction");
-	cur->sendQuery("drop table testtable");
+	cur->sendQuery("drop table if exists testtable");
 	con->commit();
 
 
@@ -422,7 +422,7 @@ int main(int argc, char **argv) {
 
 	// individual substitutions
 	stdoutput.printf("INDIVIDUAL SUBSTITUTIONS: \n");
-	cur->sendQuery("drop table testtable1");
+	cur->sendQuery("drop table if exists testtable1");
 	assertTrue(cur->sendQuery(
 		"create table testtable1 ("
 		"	col1 int, "
@@ -544,7 +544,7 @@ int main(int argc, char **argv) {
 	assertEquals(cur->getField(0,1),"");
 	assertEquals(cur->getField(0,2),"");
 	cur->getNullsAsNulls();
-	cur->sendQuery("drop table testtable1");
+	cur->sendQuery("drop table if exists testtable1");
 	stdoutput.printf("\n");
 
 
@@ -817,12 +817,12 @@ int main(int argc, char **argv) {
 	stdoutput.printf("\n");
 
 	// drop existing table
-	cur->sendQuery("drop table testtable");
+	cur->sendQuery("drop table if exists testtable");
 
 
 	// temporary tables
 	stdoutput.printf("TEMPORARY TABLES: \n");
-	cur->sendQuery("drop table temptable\n");
+	cur->sendQuery("drop table if exists temptable\n");
 	cur->sendQuery("create temporary table temptable (col1 int)");
 	assertTrue(cur->sendQuery("insert into temptable values (1)"));
 	assertTrue(cur->sendQuery("select count(*) from temptable"));
@@ -830,7 +830,7 @@ int main(int argc, char **argv) {
 	con->endSession();
 	stdoutput.printf("\n");
 	assertFalse(cur->sendQuery("select count(*) from temptable"));
-	cur->sendQuery("drop table temptable\n");
+	cur->sendQuery("drop table if exists temptable\n");
 	stdoutput.printf("\n");
 
 
@@ -883,10 +883,10 @@ int main(int argc, char **argv) {
 
 	// table list
 	stdoutput.printf("TABLE LIST: \n");
-	cur->sendQuery("drop table testtable1");
-	cur->sendQuery("drop table testtable2");
-	cur->sendQuery("drop table testtable3");
-	cur->sendQuery("drop table testtable4");
+	cur->sendQuery("drop table if exists testtable1");
+	cur->sendQuery("drop table if exists testtable2");
+	cur->sendQuery("drop table if exists testtable3");
+	cur->sendQuery("drop table if exists testtable4");
 	assertTrue(cur->sendQuery(
 		"create table testtable1 ("
 		"	col1 int, "
@@ -915,10 +915,10 @@ int main(int argc, char **argv) {
 		}
 	}
 	assertEquals(counter,4);
-	cur->sendQuery("drop table testtable1");
-	cur->sendQuery("drop table testtable2");
-	cur->sendQuery("drop table testtable3");
-	cur->sendQuery("drop table testtable4");
+	cur->sendQuery("drop table if exists testtable1");
+	cur->sendQuery("drop table if exists testtable2");
+	cur->sendQuery("drop table if exists testtable3");
+	cur->sendQuery("drop table if exists testtable4");
 	stdoutput.printf("\n");
 
 
@@ -968,7 +968,7 @@ int main(int argc, char **argv) {
 
 	// column list
 	stdoutput.printf("COLUMN LIST: \n");
-	cur->sendQuery("drop table testtable");
+	cur->sendQuery("drop table if exists testtable");
 	assertTrue(cur->sendQuery(
 		"create table testtable ("
 		"	testint int, "
@@ -999,13 +999,13 @@ int main(int argc, char **argv) {
 	assertEquals(cur->getField(3,"data_type"),"VARCHAR");
 	assertEquals(cur->getField(4,"data_type"),"CLOB");
 	assertEquals(cur->getField(5,"data_type"),"BLOB");
-	cur->sendQuery("drop table testtable");
+	cur->sendQuery("drop table if exists testtable");
 	stdoutput.printf("\n");
 
 
 	// column list - auto_increment, primary key
 	stdoutput.printf("COLUMN LIST - auto_increment, primary key: \n");
-	cur->sendQuery("drop table testtable");
+	cur->sendQuery("drop table if exists testtable");
 	assertTrue(cur->sendQuery(
 		"create table testtable ("
 		"	col1 integer primary key autoincrement, "
@@ -1020,7 +1020,7 @@ int main(int argc, char **argv) {
 	assertFalse(charstring::containsIgnoringCase(
 			cur->getField(1,"column_key"),"PRI"));
 	stdoutput.printf("\n");
-	assertTrue(cur->sendQuery("drop table testtable"));
+	assertTrue(cur->sendQuery("drop table if exists testtable"));
 	assertTrue(cur->sendQuery(
 		"create table testtable ("
 		"	col1 int primary key, "
@@ -1030,13 +1030,13 @@ int main(int argc, char **argv) {
 			cur->getField(0,"extra"),"auto_increment"));
 	assertTrue(charstring::containsIgnoringCase(
 			cur->getField(0,"column_key"),"PRI"));
-	assertTrue(cur->sendQuery("drop table testtable"));
+	assertTrue(cur->sendQuery("drop table if exists testtable"));
 	stdoutput.printf("\n");
 
 
 	// primary keys list
 	stdoutput.printf("PRIMARY KEYS LIST: \n");
-	cur->sendQuery("drop table testtable");
+	cur->sendQuery("drop table if exists testtable");
 	assertTrue(cur->sendQuery(
 		"create table testtable ("
 		"	col1 int primary key, "
@@ -1061,13 +1061,13 @@ int main(int argc, char **argv) {
 	assertEquals(cur->getField(0,"seq_in_index"),"1");
 	assertTrue(!charstring::compareIgnoringCase(
 			cur->getField(0,"column_name"),"col1"));
-	cur->sendQuery("drop table testtable");
+	cur->sendQuery("drop table if exists testtable");
 	stdoutput.printf("\n");
 
 
 	// key and index list
 	stdoutput.printf("KEY AND INDEX LIST: \n");
-	cur->sendQuery("drop table testtable");
+	cur->sendQuery("drop table if exists testtable");
 	assertTrue(cur->sendQuery(
 		"create table testtable ("
 		"	col1 int primary key, "
@@ -1096,7 +1096,7 @@ int main(int argc, char **argv) {
 	assertEquals(cur->getField(0,"collation"),"A");
 	assertEquals(cur->getField(0,"index_type"),"3");
 	assertTrue(!charstring::isNullOrEmpty(cur->getField(0,"key_name")));
-	cur->sendQuery("drop table testtable");
+	cur->sendQuery("drop table if exists testtable");
 	stdoutput.printf("\n");
 
 

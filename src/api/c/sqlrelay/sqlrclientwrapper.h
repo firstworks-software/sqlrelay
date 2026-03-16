@@ -442,6 +442,12 @@ SQLRCLIENT_DLLSPEC
 int	sqlrcon_rollback(sqlrcon sqlrconref);
 
 /** @ingroup sqlrclientwrapper
+ *  Returns the database-specific default isolation level,
+ *  or NULL if an error occurred. */
+SQLRCLIENT_DLLSPEC
+const char	*sqlrcon_getDefaultIsolationLevel(sqlrcon sqlrconref);
+
+/** @ingroup sqlrclientwrapper
  *  Sets the isolation level to "isolationlevel", the database-secific
  *  isolation level.  Returns 1 if setting the isolation level succeeded,
  *  0 if it failed. */
@@ -505,7 +511,6 @@ const char	*sqlrcon_getIsolationLevel(sqlrcon sqlrconref);
  *   * list - CAUSES_COMMIT,IGNORED_IN_TRANSACTIONS
  *  * ddl_index_operations
  *   * list - CREATE_INDEX,DROP_INDEX
- *  * default_isolation_level
  *   * string
  *  * default_result_set_holdability
  *   * string

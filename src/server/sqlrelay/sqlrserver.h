@@ -639,6 +639,14 @@ class SQLRSERVER_DLLSPEC sqlrservercontroller : public sqlrserverbase {
 		 *  setNeedsCommitOrRollback(). */
 		bool	getNeedsCommitOrRollback();
 
+		/** Returns the default isolation level for the database,
+		 *  in the specified format.
+		 *
+		 *  Returns NULL if the default isolation level could
+		 *  not be determined. */
+		const char	*getDefaultIsolationLevel(
+				sqlrserverisolationlevelformat_t format);
+
 		/** Sets the isolation level to "isolevel".
 		 *
 		 *  If "fromformat" is SQLRSERVERISOLATIONLEVELFORMAT_NATIVE,
@@ -3348,6 +3356,14 @@ class SQLRSERVER_DLLSPEC sqlrserverconnection : public sqlrserverbase {
 		 *  overridden by a child class to return a more appropriate
 		 *  query for this database. */
 		virtual const char	*getNoopQuery();
+
+		/** Returns the default isolation level for the database,
+		 *  in native format.
+		 *
+		 *  This implementation returns "READ_COMMITTED", but
+		 *  it may be overridden by a child class to return
+		 *  a different default isolation level. */
+		virtual const char	*getDefaultIsolationLevel();
 
 		/** Sets the transaction isolation level to "isolevel".
 		 *

@@ -2292,9 +2292,6 @@ const char * const *informixconnection::getDatabaseFeatures() {
 	databasefeatures[FEATURE_DDL_INDEX_OPERATIONS]=
 		charstring::duplicate("");
 
-	databasefeatures[FEATURE_DEFAULT_ISOLATION_LEVEL]=
-		charstring::duplicate("READ_COMMITTED");
-
 	databasefeatures[FEATURE_DEFAULT_RESULT_SET_HOLDABILITY]=
 		charstring::duplicate("CLOSE_CURSORS_AT_COMMIT");
 

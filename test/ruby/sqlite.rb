@@ -46,7 +46,7 @@ print "\n"
 
 # drop existing table
 cur.sendQuery("begin")
-cur.sendQuery("drop table testtable")
+cur.sendQuery("drop table if exists testtable")
 con.commit()
 
 # create a new table
@@ -347,7 +347,7 @@ print "\n"
 
 # individual substitutions
 print "INDIVIDUAL SUBSTITUTIONS: \n"
-cur.sendQuery("drop table testtable1")
+cur.sendQuery("drop table if exists testtable1")
 assertTrue(cur.sendQuery(
 	"create table testtable1 ("+
 	"	col1 int, "+
@@ -695,7 +695,7 @@ assertEqual(cur.getField(7,0),nil)
 print "\n"
 
 # drop existing table
-cur.sendQuery("drop table testtable")
+cur.sendQuery("drop table if exists testtable")
 
 
 # invalid queries

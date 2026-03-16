@@ -48,7 +48,7 @@ def main():
 
 	# drop existing table
 	cur.sendQuery("begin transaction")
-	cur.sendQuery("drop table testtable")
+	cur.sendQuery("drop table if exists testtable")
 	con.commit()
 
 	# create a new table
@@ -356,7 +356,7 @@ def main():
 
 	# individual substitutions
 	print("INDIVIDUAL SUBSTITUTIONS: ")
-	cur.sendQuery("drop table testtable1")
+	cur.sendQuery("drop table if exists testtable1")
 	assertTrue(cur.sendQuery(
 		"create table testtable1 ("
 		"	col1 int, "
@@ -754,7 +754,7 @@ def main():
 	print()
 
 	# drop existing table
-	cur.sendQuery("drop table testtable")
+	cur.sendQuery("drop table if exists testtable")
 
 
 	# invalid queries

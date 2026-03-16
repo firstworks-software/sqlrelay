@@ -5947,6 +5947,32 @@ DLEXPORT ZEND_FUNCTION(sqlrcon_rollback) {
 	RETURN_LONG(0);
 }
 
+DLEXPORT ZEND_FUNCTION(sqlrcon_getDefaultIsolationLevel) {
+	ZVAL sqlrcon;
+	const char *r;
+	if (ZEND_NUM_ARGS() != 1 ||
+		GET_PARAMETERS(
+				ZEND_NUM_ARGS() TSRMLS_CC,
+				PARAMS("z")
+				&sqlrcon) == FAILURE) {
+		WRONG_PARAM_COUNT;
+	}
+	sqlrconnection *connection=NULL;
+	ZEND_FETCH_RESOURCE(connection,
+				sqlrconnection *,
+				sqlrcon,
+				-1,
+				"sqlrelay connection",
+				sqlrelay_connection);
+	if (connection) {
+		r=connection->getDefaultIsolationLevel();
+		if (r) {
+			RET_STRING(const_cast<char *>(r),1);
+		}
+	}
+	RETURN_FALSE;
+}
+
 DLEXPORT ZEND_FUNCTION(sqlrcon_setIsolationLevel) {
 	ZVAL sqlrcon;
 	ZVAL isolationlevel;
@@ -6753,6 +6779,9 @@ ZEND_END_ARG_INFO()
 ZEND_BEGIN_ARG_INFO_EX(arginfo_sqlrcon_rollback,0,0,0)
 ZEND_END_ARG_INFO()
 
+ZEND_BEGIN_ARG_INFO_EX(arginfo_sqlrcon_getDefaultIsolationLevel,0,0,0)
+ZEND_END_ARG_INFO()
+
 ZEND_BEGIN_ARG_INFO_EX(arginfo_sqlrcon_setIsolationLevel,0,0,0)
 ZEND_END_ARG_INFO()
 
@@ -7127,6 +7156,8 @@ zend_function_entry sql_relay_functions[] = {
 		ARGINFO(arginfo_sqlrcon_commit))
 	ZEND_FE(sqlrcon_rollback,
 		ARGINFO(arginfo_sqlrcon_rollback))
+	ZEND_FE(sqlrcon_getDefaultIsolationLevel,
+		ARGINFO(arginfo_sqlrcon_getDefaultIsolationLevel))
 	ZEND_FE(sqlrcon_setIsolationLevel,
 		ARGINFO(arginfo_sqlrcon_setIsolationLevel))
 	ZEND_FE(sqlrcon_getIsolationLevel,

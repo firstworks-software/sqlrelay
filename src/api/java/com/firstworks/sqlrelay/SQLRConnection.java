@@ -354,6 +354,10 @@ public class SQLRConnection {
 	 *  it failed. */
 	public native boolean	rollback();
 
+	/** Returns the database-specific default isolation level,
+	 *  or null if an error occurred. */
+	public native String	getDefaultIsolationLevel();
+
 	/** Sets the isolation level to "isolationlevel", the database-secific
 	 *  isolation level.  Returns true if setting the isolation level
 	 *  succeeded, false if it failed. */
@@ -412,7 +416,6 @@ public class SQLRConnection {
 	 *   * list - CAUSES_COMMIT,IGNORED_IN_TRANSACTIONS
 	 *  * ddl_index_operations
 	 *   * list - CREATE_INDEX,DROP_INDEX
-	 *  * default_isolation_level
 	 *   * string
 	 *  * default_result_set_holdability
 	 *   * string
@@ -696,6 +699,7 @@ public class SQLRConnection {
 						String socket, String user, 
 						String password, 
 						int retrytime, int tries);
+	public native String	getDefaultIsolationLevel(int format);
 	public native boolean	setIsolationLevel(String isolationlevel,
 								int format);
 	public native String	getIsolationLevel(int format);

@@ -43,7 +43,7 @@
 
 	# drop existing table
 	sqlrcur_sendQuery($cur,"begin");
-	sqlrcur_sendQuery($cur,"drop table testtable");
+	sqlrcur_sendQuery($cur,"drop table if exists testtable");
 	sqlrcon_commit($con);
 
 	# create a new table
@@ -360,7 +360,7 @@
 
 	# individual substitutions
 	echo("INDIVIDUAL SUBSTITUTIONS: \n");
-	sqlrcur_sendQuery($cur,"drop table testtable1");
+	sqlrcur_sendQuery($cur,"drop table if exists testtable1");
 	assertTrue(sqlrcur_sendQuery($cur,
 		"create table testtable1 (".
 		"	col1 int, ".
@@ -779,7 +779,7 @@
 	echo("\n");
 
 	# drop existing table
-	sqlrcur_sendQuery($cur,"drop table testtable");
+	sqlrcur_sendQuery($cur,"drop table if exists testtable");
 
 
 	# invalid queries

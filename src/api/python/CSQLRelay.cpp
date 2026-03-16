@@ -565,6 +565,13 @@ static PyObject *rollback(PyObject *self, PyObject *args) {
   return Py_BuildValue("h", (short)rc);
 }
 
+static PyObject *getDefaultIsolationLevel(PyObject *self, PyObject *args) {
+  long sqlrcon;
+  if (!PyArg_ParseTuple(args, "l", &sqlrcon))
+    return NULL;
+  return Py_BuildValue("s", ((sqlrconnection *)sqlrcon)->getDefaultIsolationLevel());
+}
+
 static PyObject *setIsolationLevel(PyObject *self, PyObject *args) {
   long sqlrcon;
   const char *isolationlevel;
@@ -3280,6 +3287,7 @@ static PyMethodDef SQLRMethods[] = {
   {"begin", begin, METH_VARARGS},
   {"commit", commit, METH_VARARGS},
   {"rollback", rollback, METH_VARARGS},
+  {"getDefaultIsolationLevel", getDefaultIsolationLevel, METH_VARARGS},
   {"setIsolationLevel", setIsolationLevel, METH_VARARGS},
   {"getIsolationLevel", getIsolationLevel, METH_VARARGS},
   {"getDatabaseFeature", getDatabaseFeature, METH_VARARGS},

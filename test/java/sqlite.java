@@ -63,7 +63,7 @@ class sqlite extends sqlrtest {
 
 		// drop existing table
 		cur.sendQuery("begin transaction");
-		cur.sendQuery("drop table testtable");
+		cur.sendQuery("drop table if exists testtable");
 		con.commit();
 
 		// create a new table
@@ -342,7 +342,7 @@ class sqlite extends sqlrtest {
 
 		// individual substitutions
 		System.out.println("INDIVIDUAL SUBSTITUTIONS: ");
-		cur.sendQuery("drop table testtable1");
+		cur.sendQuery("drop table if exists testtable1");
 		assertTrue(cur.sendQuery(
 			"create table testtable1 ("+
 			"	col1 int, "+
@@ -834,7 +834,7 @@ class sqlite extends sqlrtest {
 		System.out.println();
 
 		// drop existing table
-		cur.sendQuery("drop table testtable");
+		cur.sendQuery("drop table if exists testtable");
 
 
 		// invalid queries

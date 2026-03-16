@@ -626,6 +626,10 @@ const char *sqlrserverconnection::getNoopQuery() {
 	return "";
 }
 
+const char *sqlrserverconnection::getDefaultIsolationLevel() {
+	return "READ_COMMITTED";
+}
+
 bool sqlrserverconnection::setIsolationLevel(const char *isolevel) {
 
 	// if no isolation level was passed in then bail

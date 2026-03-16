@@ -468,6 +468,13 @@ class sqlrconnection:
         """
         return CSQLRelay.rollback(self.connection)
 
+    def getDefaultIsolationLevel(self):
+        """
+        Returns the database-specific default isolation level,
+        or None if an error occurred.
+        """
+        return CSQLRelay.getDefaultIsolationLevel(self.connection)
+
     def setIsolationLevel(self, isolationlevel):
         """
         Sets the isolation level to "isolationlevel", the
@@ -534,7 +541,6 @@ class sqlrconnection:
          * list - CAUSES_COMMIT,IGNORED_IN_TRANSACTIONS
         * ddl_index_operations
          * list - CREATE_INDEX,DROP_INDEX
-        * default_isolation_level
          * string
         * default_result_set_holdability
          * string
