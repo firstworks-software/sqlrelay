@@ -43,7 +43,7 @@ or Solaris with PHP installed from a package, then the installation process
 should have configured PHP correctly and you can probably ignore the rest of
 this section.</p>
 
-<p>But on other operating sytems, or if you built PHP from source, or if the
+<p>But on other operating systems, or if you built PHP from source, or if the
 installation process didn't go smoothly, then you may have to configure PHP
 manually.</p>
 
@@ -141,7 +141,7 @@ http://www.gnu.org/software/src-highlite -->
   <li><b>retrytime</b> - If a connection fails, it will be retried on this interval (in seconds).</li>
   <li><b>db</b> - The database to switch to when logging into SQL Relay.  May be left empty or omitted to accept the default database that SQL Relay is already connected to.</li>
   <li><b>debug</b> - If this is set to 1 or to a file name then debug is enabled.  If set to a file name then debug will be written to the file.  If set to 1 then debug will be written to the browser.  Defaults to 0.</li>
-  <li><b>lazyconnect</b> - By default, the SQL Relay client does "lazy connects".  I.e. the connection to the SQL Relay server isn't established until the first query or other operation is run.  This optimizes availability of the connection pool but is inconstent with most other database API's.  Setting this parameter to 0 causes the connection to the SQL Relay server to be established immediately and the constructor to fail, returning 0, if the connection cannot be established.  Defaults to 1.</li>
+  <li><b>lazyconnect</b> - By default, the SQL Relay client does "lazy connects".  I.e. the connection to the SQL Relay server isn't established until the first query or other operation is run.  This optimizes availability of the connection pool but is inconsistent with most other database API's.  Setting this parameter to 0 causes the connection to the SQL Relay server to be established immediately and the constructor to fail, returning 0, if the connection cannot be established.  Defaults to 1.</li>
 </ul>
 
 <p>In addition, the following connect string variables can be used to establish Kerberos or Active Directory encryption and authentication with the server:</p>
@@ -178,7 +178,7 @@ http://www.gnu.org/software/src-highlite -->
   <li><b>columnnamecase</b> - Indicates the case to convert column names to.  May be set to "mixed", "upper", or "lower".  Defaults to "mixed".</li>
   <li><b>dontgetcolumninfo</b> - If this is set to 1 then column info is not fetched with the result set.  If set to 0 then column info is fetched.  Defaults to 0.</li>
   <li><b>nullsasnulls</b> - If this is set to 1 then NULL values are returned as nulls.  If set to 0 then NULL values are returned as empty strings.  Defaults to 0.</li>
-  <li><b>fetchlobsasstrings</b> - If set to 0 then lob columns are returned as lobs.  If set to 1 then lob columns are returned as strings.  Useful if your application expects expects to deal with all results as strings.  Defaults to 0.</li>
+  <li><b>fetchlobsasstrings</b> - If set to 0 then lob columns are returned as lobs.  If set to 1 then lob columns are returned as strings.  Useful if your application expects to deal with all results as strings.  Defaults to 0.</li>
 </ul>
 
 <p>Setting one of the statement attribute connect string variables has the same effect as if the corresponding statement handle attribute were set immediately after creating each statement.  See <a href="#driverspecific">Driver-Specific Attributes</a> below.</p>
@@ -407,7 +407,7 @@ array into the execute() method.  See the official PDO documentation for info
 on those methods.</p>
 
 <dl>
-  <dt>Output bind variables can be used too.  Just or the PDO</dt>
+  <dt>Output bind variables can be used too.  Just use the PDO</dt>
   <dd>PARAM_INPUT_OUTPUT
 flag with the variable type.</dd>
 </dl>
@@ -1451,7 +1451,7 @@ http://www.gnu.org/software/src-highlite -->
 </tt></pre>
 
 </blockquote>
-<p>To execeute the procedure from an SQL Relay program, use code like the
+<p>To execute the procedure from an SQL Relay program, use code like the
 following.</p>
 
 <blockquote>
@@ -1489,7 +1489,7 @@ http://www.gnu.org/software/src-highlite -->
 </tt></pre>
 
 </blockquote>
-<p>To execeute the procedure from an SQL Relay program, use code like the
+<p>To execute the procedure from an SQL Relay program, use code like the
 following.</p>
 
 <blockquote>
@@ -1883,7 +1883,7 @@ http://www.gnu.org/software/src-highlite -->
 </tt></pre>
 
 </blockquote>
-<p>To exceute the stored procedure from an SQL Relay program, ue code like the
+<p>To execute the stored procedure from an SQL Relay program, use code like the
 following.</p>
 
 <blockquote>

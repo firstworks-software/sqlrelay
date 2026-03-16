@@ -1,0 +1,7 @@
+sqlrelay:prepareQuery("execute procedure exampleproc ?, ?, ?"),
+sqlrelay:inputBindLong("1", 1),
+sqlrelay:inputBindDouble("2", 1.1, 2, 1),
+sqlrelay:inputBindString("3", "hello"),
+sqlrelay:defineOutputBindInteger("1"),
+sqlrelay:executeQuery(),
+Result = sqlrelay:getOutputBindInteger("1"),

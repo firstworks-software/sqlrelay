@@ -733,7 +733,7 @@ http://www.gnu.org/software/src-highlite -->
 </blockquote>
 <a name="columns"/><h2>Getting Column Information</h2>
 
-<p>After executing a query, the column count is stored in the FieldCount property of the SQLRelayDataReader class.  Column names are accessible via the GetName() method.  Column types are available from the GetDataTypeName().  The native .NET data type for the field is avialable from the GetFieldType() method.  They may be used as follows:</p>
+<p>After executing a query, the column count is stored in the FieldCount property of the SQLRelayDataReader class.  Column names are accessible via the GetName() method.  Column types are available from the GetDataTypeName().  The native .NET data type for the field is available from the GetFieldType() method.  They may be used as follows:</p>
 
 <blockquote>
 <!-- Generator: GNU source-highlight 3.1.9
@@ -1787,7 +1787,7 @@ datareader<font color="#990000">.</font><b><font color="#000000">Read</font></b>
 
 </blockquote>
 <p>Alternatively, you can run a query like the following and receive the result
-using a output bind variables.  Note that in Firebird, input and
+using output bind variables.  Note that in Firebird, input and
 output bind variable indices are distict from one another.  The index of the
 first output bind variable is 1 rather than 4, even though there were 3 input
 bind variables.</p>
@@ -2169,7 +2169,7 @@ http://www.gnu.org/software/src-highlite -->
 </tt></pre>
 
 </blockquote>
-<p>To exceute the stored procedure from an SQL Relay program, ue code like the
+<p>To execute the stored procedure from an SQL Relay program, use code like the
 following.</p>
 
 <blockquote>

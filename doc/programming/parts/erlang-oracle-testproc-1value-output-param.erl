@@ -1,0 +1,7 @@
+sqlrelay:prepareQuery("begin exampleproc(:in1,:in2,:in3,:out1); end;"),
+sqlrelay:inputBindLong("in1", 1),
+sqlrelay:inputBindDouble("in2", 1.1, 2, 1),
+sqlrelay:inputBindString("in3", "hello"),
+sqlrelay:defineOutputBindInteger("out1"),
+sqlrelay:executeQuery(),
+Result = sqlrelay:getOutputBindInteger("out1"),

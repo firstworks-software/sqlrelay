@@ -23,7 +23,7 @@ Driver<font color="#990000">=/</font>usr<font color="#990000">/</font>local<font
 FileUsage<font color="#990000">=</font><font color="#993399">0</font></tt></pre>
 
 </blockquote>
-<p>Note that the Driver attribute must bet set to the full pathname of the libsqlrodbc.so driver.  Note also that on Mac OS X you'll need to replace the <b>.so</b> suffix with <b>.dylib</b></p>
+<p>Note that the Driver attribute must be set to the full pathname of the libsqlrodbc.so driver.  Note also that on Mac OS X you'll need to replace the <b>.so</b> suffix with <b>.dylib</b></p>
 
 <p>Once the instance is defined you can add a DSN for SQL Relay by adding an entry like the following to your ODBC INI file (usually /etc/odbc.ini)</p>
 
@@ -97,7 +97,7 @@ Password<font color="#990000">=</font>examplepass</tt></pre>
   <li><b>ColumnNameCase</b> - Indicates the case to convert column names to.  May be set to "mixed", "upper", or "lower".  Defaults to "mixed".</li>
   <li><b>DontGetColumnInfo</b> - If this is set to 1 then column info is not fetched with the result set. If set to 0 then column info is fetched. Defaults to 0.</li>
   <li><b>NullsAsNulls</b> - If this is set to 1 then NULL values are returned as NULLs. If set to 0 then NULL values are returned as empty strings. Defaults to 0.</li>
-  <li><b>LazyConnect</b> - By default, the SQL Relay client does "lazy connects". I.e. the connection to the SQL Relay server isn't established until the first query or other operation is run. This optimizes availability of the connection pool but is inconstent with most other database API's. Setting this parameter to 0 causes the connection to the SQL Relay server to be established immediately and the constructor to fail, returning undef, if the connection cannot be established. Defaults to 1.</li>
+  <li><b>LazyConnect</b> - By default, the SQL Relay client does "lazy connects". I.e. the connection to the SQL Relay server isn't established until the first query or other operation is run. This optimizes availability of the connection pool but is inconsistent with most other database API's. Setting this parameter to 0 causes the connection to the SQL Relay server to be established immediately and the constructor to fail, returning undef, if the connection cannot be established. Defaults to 1.</li>
 </ul>
 
 <p>The following attributes can be used to establish Kerberos or Active Directory encryption and authentication with the server:</p>
@@ -218,7 +218,7 @@ http://www.gnu.org/software/src-highlite -->
 </blockquote>
 <p>Similarly, you could use SQL Relay via ODBC with PHP/PDO, PHP/ADODB, Java/JDBC (<a href="jdbc.html">using the JDBC-ODBC bridge</a>), with the ODBC Adapter for Ruby on Rails, and so on.</p>
 
-<p>Developing applications which use ODBC is beyond the scope if this document but many examples and tutorials can be found on the web.</p>
+<p>Developing applications which use ODBC is beyond the scope of this document but many examples and tutorials can be found on the web.</p>
 
 <!--#include virtual="../contentend.html"-->
 

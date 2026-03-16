@@ -1,0 +1,5 @@
+sqlrelay:prepareQuery("select examplefunc($1,$2,$3)"),
+sqlrelay:inputBindLong("1", 1),
+sqlrelay:inputBindDouble("2", 1.1, 2, 1),
+sqlrelay:inputBindString("3", "hello"),
+sqlrelay:executeQuery(),

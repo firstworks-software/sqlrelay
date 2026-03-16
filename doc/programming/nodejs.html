@@ -271,7 +271,7 @@ cur<font color="#990000">.</font><b><font color="#000000">executeQuery</font></b
 </tt></pre>
 
 </blockquote>
-<p>Likewise, you can retreive BLOB or CLOB data using
+<p>Likewise, you can retrieve BLOB or CLOB data using
 defineOutputBindBlob()/getOutputBindBlob() and
 defineOutputBindClob()/getOutputBindClob().</p>
 
@@ -285,24 +285,20 @@ http://www.gnu.org/software/src-highlite -->
 <font color="#008080">var</font>	con<font color="#990000">=</font><b><font color="#0000FF">new</font></b> sqlrelay<font color="#990000">.</font><b><font color="#000000">SQLRConnection</font></b><font color="#990000">(</font><font color="#FF0000">"sqlrserver"</font><font color="#990000">,</font><font color="#993399">9000</font><font color="#990000">,</font><font color="#FF0000">"/tmp/example.socket"</font><font color="#990000">,</font><font color="#FF0000">"user"</font><font color="#990000">,</font><font color="#FF0000">"password"</font><font color="#990000">,</font><font color="#993399">0</font><font color="#990000">,</font><font color="#993399">1</font><font color="#990000">);</font>
 <font color="#008080">var</font>	cur<font color="#990000">=</font><b><font color="#0000FF">new</font></b> sqlrelay<font color="#990000">.</font><b><font color="#000000">SQLRCursor</font></b><font color="#990000">(</font>con<font color="#990000">);</font>
 
-cur<font color="#990000">.</font><b><font color="#000000">executeQuery</font></b><font color="#990000">(</font><font color="#FF0000">"create table images (image blob, description clob)"</font><font color="#990000">);</font>
-
-<font color="#008080">var</font>	imagedata<font color="#990000">;</font>
-<font color="#008080">var</font>	imagelength<font color="#990000">;</font>
-
-<font color="#990000">...</font> read an image from a file into imagedata and the length of the file
-<font color="#008080">into</font> imagelength <font color="#990000">...</font>
-
-<font color="#008080">var</font>	description<font color="#990000">;</font>
-<font color="#008080">var</font>	desclength<font color="#990000">;</font>
-
-<font color="#990000">...</font> read a description from a file into description and the length of
-the file <font color="#008080">into</font> desclength <font color="#990000">...</font>
-
-cur<font color="#990000">.</font><b><font color="#000000">prepareQuery</font></b><font color="#990000">(</font><font color="#FF0000">"insert into images values (:image,:desc)"</font><font color="#990000">);</font>
-cur<font color="#990000">.</font><b><font color="#000000">inputBindBlob</font></b><font color="#990000">(</font><font color="#FF0000">"image"</font><font color="#990000">,</font>imagedata<font color="#990000">,</font>imagelength<font color="#990000">);</font>
-cur<font color="#990000">.</font><b><font color="#000000">inputBindClob</font></b><font color="#990000">(</font><font color="#FF0000">"desc"</font><font color="#990000">,</font>description<font color="#990000">,</font>desclength<font color="#990000">);</font>
+cur<font color="#990000">.</font><b><font color="#000000">prepareQuery</font></b><font color="#990000">(</font><font color="#FF0000">"begin  select image into :image from images;  select description into :desc from images;  end;"</font><font color="#990000">);</font>
+cur<font color="#990000">.</font><b><font color="#000000">defineOutputBindBlob</font></b><font color="#990000">(</font><font color="#FF0000">"image"</font><font color="#990000">);</font>
+cur<font color="#990000">.</font><b><font color="#000000">defineOutputBindClob</font></b><font color="#990000">(</font><font color="#FF0000">"desc"</font><font color="#990000">);</font>
 cur<font color="#990000">.</font><b><font color="#000000">executeQuery</font></b><font color="#990000">();</font>
+
+<font color="#008080">var</font>	image<font color="#990000">=</font>cur<font color="#990000">.</font><b><font color="#000000">getOutputBindBlob</font></b><font color="#990000">(</font><font color="#FF0000">"image"</font><font color="#990000">);</font>
+<font color="#008080">var</font>	imagelength<font color="#990000">=</font>cur<font color="#990000">.</font><b><font color="#000000">getOutputBindLength</font></b><font color="#990000">(</font><font color="#FF0000">"image"</font><font color="#990000">);</font>
+
+<font color="#008080">var</font>	desc<font color="#990000">=</font>cur<font color="#990000">.</font><b><font color="#000000">getOutputBindClob</font></b><font color="#990000">(</font><font color="#FF0000">"desc"</font><font color="#990000">);</font>
+<font color="#008080">var</font>	desclength<font color="#990000">=</font>cur<font color="#990000">.</font><b><font color="#000000">getOutputBindLength</font></b><font color="#990000">(</font><font color="#FF0000">"desc"</font><font color="#990000">);</font>
+
+con<font color="#990000">.</font><b><font color="#000000">endSession</font></b><font color="#990000">();</font>
+
+<font color="#990000">...</font> <b><font color="#0000FF">do</font></b> something with image <font color="#008080">and</font> desc <font color="#990000">...</font>
 </tt></pre>
 
 </blockquote>
@@ -1320,7 +1316,7 @@ http://www.gnu.org/software/src-highlite -->
 </tt></pre>
 
 </blockquote>
-<p>To execeute the procedure from an SQL Relay program, use code like the
+<p>To execute the procedure from an SQL Relay program, use code like the
 following.</p>
 
 <blockquote>
@@ -1358,7 +1354,7 @@ http://www.gnu.org/software/src-highlite -->
 </tt></pre>
 
 </blockquote>
-<p>To execeute the procedure from an SQL Relay program, use code like the
+<p>To execute the procedure from an SQL Relay program, use code like the
 following.</p>
 
 <blockquote>
@@ -1534,7 +1530,7 @@ cur<font color="#990000">.</font><b><font color="#000000">executeQuery</font></b
 
 </blockquote>
 <p>Alternatively, you can run a query like the following and receive the result
-using a output bind variables.  Note that in Firebird, input and
+using output bind variables.  Note that in Firebird, input and
 output bind variable indices are distict from one another.  The index of the
 first output bind variable is 1 rather than 4, even though there were 3 input
 bind variables.</p>
@@ -1833,7 +1829,7 @@ http://www.gnu.org/software/src-highlite -->
 </tt></pre>
 
 </blockquote>
-<p>To exceute the stored procedure from an SQL Relay program, ue code like the
+<p>To execute the stored procedure from an SQL Relay program, use code like the
 following.</p>
 
 <blockquote>

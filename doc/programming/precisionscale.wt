@@ -96,7 +96,7 @@ ORA-01438: value larger than specified precision allows for this column
 == Arithmetic Involving Numbers With Different Precision And Scale ==
 
 When 2 columns with different precision and/or scale are involved in 
-arithmentic, the precision and scale of the result are not limited by the
+arithmetic, the precision and scale of the result are not limited by the
 precision and scale of the factors.  The result will have whatever precision
 and scale are necessary to represent the number.
 

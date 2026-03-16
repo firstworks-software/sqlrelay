@@ -15,7 +15,7 @@
 * [#bindvars Substitution and Bind Variables]
 * [#rebinding Re-Binding and Re-Executing]
 * [#fields Accessing Fields in the Result Set]
-* [#largeresultsets Dealing With Large Result Set]
+* [#largeresultsets Dealing With Large Result Sets]
 * [#cursors Cursors]
 * [#columns Getting Column Information]
 * [#storedprocedures Stored Procedures]
@@ -232,7 +232,7 @@ You can insert data into BLOB and CLOB columns using the inputBindBlob(), inputB
 }}}
 }}}
 
-Likewise, you can retreive BLOB or CLOB data using
+Likewise, you can retrieve BLOB or CLOB data using
 defineOutputBindBlob()/getOutputBindBlob() and
 defineOutputBindClob()/getOutputBindClob().
 
@@ -835,7 +835,7 @@ To create the procedure, run a query like the following.
 }}}
 }}}
 
-To execeute the procedure from an SQL Relay program, use code like the
+To execute the procedure from an SQL Relay program, use code like the
 following.
 
 {{{#!blockquote
@@ -863,7 +863,7 @@ To create the procedure, run a query like the following.
 }}}
 }}}
 
-To execeute the procedure from an SQL Relay program, use code like the
+To execute the procedure from an SQL Relay program, use code like the
 following.
 
 {{{#!blockquote
@@ -969,7 +969,7 @@ following.
 }}}
 
 Alternatively, you can run a query like the following and receive the result
-using a output bind variables.  Note that in Firebird, input and
+using output bind variables.  Note that in Firebird, input and
 output bind variable indices are distict from one another.  The index of the
 first output bind variable is 1 rather than 4, even though there were 3 input
 bind variables.
@@ -1148,7 +1148,7 @@ To create the stored procedure, run a query like the following.
 }}}
 }}}
 
-To exceute the stored procedure from an SQL Relay program, ue code like the
+To execute the stored procedure from an SQL Relay program, use code like the
 following.
 
 {{{#!blockquote

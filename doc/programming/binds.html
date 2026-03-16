@@ -53,13 +53,13 @@ END<font color="#990000">;</font>
 
 <p>Output bind variables may appear in the RETURNING clause of a SELECT or as variables in a block of procedural code.</p>
 
-<p>Substitution variables may appear anywhere in the query.  They are frequently used to ammend WHERE clauses with additional constraints and specify schemas or databases.  A substitution value may even contain bind variables or other substitution variables.</p>
+<p>Substitution variables may appear anywhere in the query.  They are frequently used to amend WHERE clauses with additional constraints and specify schemas or databases.  A substitution value may even contain bind variables or other substitution variables.</p>
 
 <h2>Bind Variable Syntax</h2>
 
-<p>Different databases have different syntax for bind variables.  Oracle bind variables are names preceeded by a colon.  In <a href="MySQL">MySQL</a>/MariaDB, DB2 and Firebird, bind variables are represented by question marks.  In Sybase and MS SQL Server, bind variables are names preceeded by an @ sign.  In <a href="PostgreSQL">PostgreSQL</a>, bind variables are numbers preceeded by a $ sign.</p>
+<p>Different databases have different syntax for bind variables.  Oracle bind variables are names preceded by a colon.  In <a href="MySQL">MySQL</a>/MariaDB, DB2 and Firebird, bind variables are represented by question marks.  In Sybase and MS SQL Server, bind variables are names preceded by an @ sign.  In <a href="PostgreSQL">PostgreSQL</a>, bind variables are numbers preceded by a $ sign.</p>
 
-<p>When using SQL Relay bind functions, to refer to an Oracle, Sybase or MS SQL Server bind variable, you should use its name without the preceeding colon.  To refer to bind variables when using other databases, you should use the bind variable's position number.</p>
+<p>When using SQL Relay bind functions, to refer to an Oracle, Sybase or MS SQL Server bind variable, you should use its name without the preceding colon.  To refer to bind variables when using other databases, you should use the bind variable's position number.</p>
 
 <p>For example...</p>
 
@@ -99,7 +99,7 @@ http://www.gnu.org/software/src-highlite -->
 
 <p>Using input bind variables improves performance.  A query can be prepared once and executed multiple times, changing the bind variable values between each execution.</p>
 
-<p>Using bind variables improves the cache-hit rate for databases which cache prepred queries as well.  Databases which support bind variables parse the query then plug input bind variables into the already parsed code.  If the same query is run a bunch of times, even with different values for the input bind variables, the databse will have the code cached and won't have to parse the query again.  If you don't use input bind variables, the database will parse the query	each time because the where clause will be slightly different each time and the code for all those slightly different queries will clog the cache.</p>
+<p>Using bind variables improves the cache-hit rate for databases which cache prepared queries as well.  Databases which support bind variables parse the query then plug input bind variables into the already parsed code.  If the same query is run a bunch of times, even with different values for the input bind variables, the database will have the code cached and won't have to parse the query again.  If you don't use input bind variables, the database will parse the query	each time because the where clause will be slightly different each time and the code for all those slightly different queries will clog the cache.</p>
 
 <p>As a rule of thumb, you should use input bind variables instead of substitutions in the WHERE clause of SELECT statements whenever you can.</p>
 

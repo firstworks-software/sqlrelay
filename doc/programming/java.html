@@ -25,7 +25,7 @@
   <li><a href="#lastinsertid">Getting the Last Insert ID</a></li>
 </ul>
 
-<br/><a name="compiling"/><h1>Compiling an SQL Relay Client Program</h1>
+<br/><a name="compiling"/><h2>Compiling an SQL Relay Client Program</h2>
 
 <p>When writing an SQL Relay client program using the Java API, you need to
 include /usr/local/firstworks/java in your CLASSPATH.</p>
@@ -49,7 +49,7 @@ java MyProgram
 </pre>
 
 </blockquote>
-<a name="session"/><h1>Establishing a Session</h1>
+<a name="session"/><h2>Establishing a Session</h2>
 
 <p>To use SQL Relay, you have to identify the connection that you intend to 
 use.</p>
@@ -85,7 +85,7 @@ session.</p>
 
 <p>See the <a href="../api/java/com/firstworks/sqlrelay/SQLRConnection.html">SQLRConnection class reference</a> for information about these methods and the SQL Relay Configuration Guide for more information about <a href="../admin/configguide.html#krb">Kerberos/Active Directory</a> and <a href="../admin/configguide.html#tls">TLS/SSL</a> configurations.  In particular, note that user and password are not typically used when using Kerberos/AD.</p>
 
-<a name="query"/><h1>Executing Queries</h1>
+<a name="query"/><h2>Executing Queries</h2>
 
 <p>Allocate a cursor, then call sendQuery() or sendFileQuery() to run a 
 query.  The same cursor may be used over and over.</p>
@@ -133,7 +133,7 @@ establishes another session.  Since the program does some stuff that takes a
 short time between the first two queries, it's OK to leave the session open 
 between them.</p>
 
-<a name="commit"/><h1>Commits and Rollbacks</h1>
+<a name="commit"/><h2>Commits and Rollbacks</h2>
 
 <p>If you need to execute a commit or rollback, you should use the commit()
 and rollback() methods of the SQLRConnection class rather than sending a 
@@ -153,7 +153,7 @@ Autocommit is off, the database commits when the client instructs it to, or
 (by default) when a client disconnects.  For databases that don't support 
 Autocommit, autoCommitOn() and autoCommitOff() have no effect.</p>
 
-<a name="temptables"/><h1>Temporary Tables</h1>
+<a name="temptables"/><h2>Temporary Tables</h2>
 
 <p>Some databases support temporary tables.  That is, tables which are
 automatically dropped or truncated when an application closes its connection
@@ -177,7 +177,7 @@ according to the rules for that database.</p>
 SQL Relay in the same manner that they would work if the application connected
 directly to the database.</p>
 
-<a name="errors"/><h1>Catching Errors</h1>
+<a name="errors"/><h2>Catching Errors</h2>
 
 <p>If your call to sendQuery() or sendFileQuery() returns a 0, the query failed.
 You can find out why by calling errorMessage().</p>
@@ -207,7 +207,7 @@ http://www.gnu.org/software/src-highlite -->
 </tt></pre>
 
 </blockquote>
-<br/><a name="bindvars"/><h1>Substitution and Bind Variables</h1>
+<br/><a name="bindvars"/><h2>Substitution and Bind Variables</h2>
 
 <p>Programs rarely execute fixed queries.  More often than not, some part
 of the query is dynamically generated.  The SQL Relay API provides methods for
@@ -340,7 +340,7 @@ http://www.gnu.org/software/src-highlite -->
 </tt></pre>
 
 </blockquote>
-<p>Likewise, you can retreive BLOB or CLOB data using
+<p>Likewise, you can retrieve BLOB or CLOB data using
 defineOutputBindBlob()/getOutputBindBlob() and
 defineOutputBindClob()/getOutputBindClob().</p>
 
@@ -388,7 +388,7 @@ before actually binding it, preventing those kinds of errors.   You can also
 call validBind() to see if a specific variable is valid.  However there is
 a performance cost associated with calling validateBinds() and validBind().</p>
 
-<a name="rebinding"/><h1>Re-Binding and Re-Execution</h1>
+<a name="rebinding"/><h2>Re-Binding and Re-Execution</h2>
 
 <p>Another feature of the prepare/bind/execute paradigm is the ability to 
 prepare, bind and execute a query once, then re-bind and re-execute the query 
@@ -434,7 +434,7 @@ http://www.gnu.org/software/src-highlite -->
 </tt></pre>
 
 </blockquote>
-<a name="fields"/><h1>Accessing Fields in the Result Set</h1>
+<a name="fields"/><h2>Accessing Fields in the Result Set</h2>
 
 <p>The rowCount(), colCount() and getField() methods are useful for processing
 result sets.</p>
@@ -523,7 +523,7 @@ in a performance improvement, especially when many queries with small
 result sets are executed in rapid succession.  You can call getColumnInfo()
 again later to turn off this feature.</p>
 
-<a name="largeresultsets"/><h1>Dealing With Large Result Sets</h1>
+<a name="largeresultsets"/><h2>Dealing With Large Result Sets</h2>
 
 <p>SQL Relay normally buffers the entire result set.  This can speed things up 
 at the cost of memory.  With large enough result sets, it makes sense to buffer the result set in chunks instead of all at once.</p>
@@ -601,7 +601,7 @@ http://www.gnu.org/software/src-highlite -->
 </tt></pre>
 
 </blockquote>
-<a name="cursors"/><h1>Cursors</h1>
+<a name="cursors"/><h2>Cursors</h2>
 
 <p>Cursors make it possible to execute queries while processing the result
 set of another query.  You can select rows from a table in one query, then 
@@ -693,7 +693,7 @@ http://www.gnu.org/software/src-highlite -->
 <p>The number of cursors simultaneously available per-connection is set at 
 compile time and defaults to 5.</p>
 
-<a name="columns"/><h1>Getting Column Information</h1>
+<a name="columns"/><h2>Getting Column Information</h2>
 
 <p>For each column, the API supports getting the name, type and length of each
 field.  All databases support these attributes.  The API also supports
@@ -1471,7 +1471,7 @@ http://www.gnu.org/software/src-highlite -->
 </tt></pre>
 
 </blockquote>
-<p>To execeute the procedure from an SQL Relay program, use code like the
+<p>To execute the procedure from an SQL Relay program, use code like the
 following.</p>
 
 <blockquote>
@@ -1509,7 +1509,7 @@ http://www.gnu.org/software/src-highlite -->
 </tt></pre>
 
 </blockquote>
-<p>To execeute the procedure from an SQL Relay program, use code like the
+<p>To execute the procedure from an SQL Relay program, use code like the
 following.</p>
 
 <blockquote>
@@ -1685,7 +1685,7 @@ cur<font color="#990000">.</font><b><font color="#000000">executeQuery</font></b
 
 </blockquote>
 <p>Alternatively, you can run a query like the following and receive the result
-using a output bind variables.  Note that in Firebird, input and
+using output bind variables.  Note that in Firebird, input and
 output bind variable indices are distict from one another.  The index of the
 first output bind variable is 1 rather than 4, even though there were 3 input
 bind variables.</p>
@@ -1984,7 +1984,7 @@ http://www.gnu.org/software/src-highlite -->
 </tt></pre>
 
 </blockquote>
-<p>To exceute the stored procedure from an SQL Relay program, ue code like the
+<p>To execute the stored procedure from an SQL Relay program, use code like the
 following.</p>
 
 <blockquote>
@@ -2124,7 +2124,7 @@ http://www.gnu.org/software/src-highlite -->
 </tt></pre>
 
 </blockquote>
-<br/><a name="caching"/><h1>Caching The Result Set</h1>
+<br/><a name="caching"/><h2>Caching The Result Set</h2>
 
 <p>Say you're writing a web-based report where a query with a huge result set
 is executed and 20 rows are displayed per page.  Rather than rerunning the 
@@ -2294,7 +2294,7 @@ http://www.gnu.org/software/src-highlite -->
 <pre><tt><font color="#990000">/</font>etc<font color="#990000">/</font>init<font color="#990000">.</font>d<font color="#990000">/</font>sqlrcachemanager start</tt></pre>
 
 </blockquote>
-<br/><a name="suspending"/><h1>Suspending and Resuming Sessions</h1>
+<br/><a name="suspending"/><h2>Suspending and Resuming Sessions</h2>
 
 <p>Sometimes web-based applications need a single database transaction to span
 multiple pages.  Since SQL Relay sessions can be suspended and resumed, this
@@ -2372,7 +2372,7 @@ result set and suspend your session.  When you resume the session, you can
 continue caching the result set.  You must use resumeCachedResultSet()
 instead of resumeResultSet() however.</p>
 
-<a name="lastinsertid"/><h1>Getting the Last Insert ID</h1>
+<a name="lastinsertid"/><h2>Getting the Last Insert ID</h2>
 
 <p>Databases with autoincrement or identity columns often provide functions which return the "last insert id"; the value of the autoincrement column that was generated during the insert into the database.</p>
 

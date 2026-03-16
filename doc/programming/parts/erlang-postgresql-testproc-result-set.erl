@@ -1,0 +1,7 @@
+sqlrelay:sendQuery("select * from examplefunc() as (exampleint int, examplefloat float, examplechar char(40))"),
+Field00 = sqlrelay:getFieldByIndex(0, 0),
+Field01 = sqlrelay:getFieldByIndex(0, 1),
+Field02 = sqlrelay:getFieldByIndex(0, 2),
+Field10 = sqlrelay:getFieldByIndex(1, 0),
+Field11 = sqlrelay:getFieldByIndex(1, 1),
+Field12 = sqlrelay:getFieldByIndex(1, 2),

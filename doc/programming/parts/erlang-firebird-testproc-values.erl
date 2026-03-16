@@ -1,0 +1,8 @@
+sqlrelay:prepareQuery("select * from exampleproc(?,?,?)"),
+sqlrelay:inputBindLong("in1", 1),
+sqlrelay:inputBindDouble("in2", 1.1, 4, 2),
+sqlrelay:inputBindString("in3", "hello"),
+sqlrelay:executeQuery(),
+Out1 = sqlrelay:getFieldByIndex(0, 0),
+Out2 = sqlrelay:getFieldByIndex(0, 1),
+Out3 = sqlrelay:getFieldByIndex(0, 2),

@@ -1,0 +1,6 @@
+sqlrelay:sendQuery("set @out1=0, @out2=0.0, @out3=''"),
+sqlrelay:sendQuery("call exampleproc(@out1,@out2,@out3)"),
+sqlrelay:sendQuery("select @out1,@out2,@out3"),
+Out1 = sqlrelay:getFieldByIndex(0, 0),
+Out2 = sqlrelay:getFieldByIndex(0, 1),
+Out3 = sqlrelay:getFieldByIndex(0, 2),

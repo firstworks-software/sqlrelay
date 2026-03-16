@@ -304,7 +304,7 @@ For example:
 [=#columns]
 == Getting Column Information ==
 
-After executing a query, the column count is stored in the !FieldCount property of the SQLRelayDataReader class.  Column names are accessible via the !GetName() method.  Column types are available from the !GetDataTypeName().  The native .NET data type for the field is avialable from the !GetFieldType() method.  They may be used as follows:
+After executing a query, the column count is stored in the !FieldCount property of the SQLRelayDataReader class.  Column names are accessible via the !GetName() method.  Column types are available from the !GetDataTypeName().  The native .NET data type for the field is available from the !GetFieldType() method.  They may be used as follows:
 
 {{{#!blockquote
 {{{#!code
@@ -890,7 +890,7 @@ following.
 }}}
 
 Alternatively, you can run a query like the following and receive the result
-using a output bind variables.  Note that in Firebird, input and
+using output bind variables.  Note that in Firebird, input and
 output bind variable indices are distict from one another.  The index of the
 first output bind variable is 1 rather than 4, even though there were 3 input
 bind variables.
@@ -1083,7 +1083,7 @@ To create the stored procedure, run a query like the following.
 }}}
 }}}
 
-To exceute the stored procedure from an SQL Relay program, ue code like the
+To execute the stored procedure from an SQL Relay program, use code like the
 following.
 
 {{{#!blockquote

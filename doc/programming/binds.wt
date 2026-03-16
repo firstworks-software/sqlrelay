@@ -34,13 +34,13 @@ Input bind variables may appear as values in the WHERE clause of a SELECT, UPDAT
 
 Output bind variables may appear in the RETURNING clause of a SELECT or as variables in a block of procedural code.
 
-Substitution variables may appear anywhere in the query.  They are frequently used to ammend WHERE clauses with additional constraints and specify schemas or databases.  A substitution value may even contain bind variables or other substitution variables.
+Substitution variables may appear anywhere in the query.  They are frequently used to amend WHERE clauses with additional constraints and specify schemas or databases.  A substitution value may even contain bind variables or other substitution variables.
 
 == Bind Variable Syntax ==
 
-Different databases have different syntax for bind variables.  Oracle bind variables are names preceeded by a colon.  In MySQL/MariaDB, DB2 and Firebird, bind variables are represented by question marks.  In Sybase and MS SQL Server, bind variables are names preceeded by an @ sign.  In PostgreSQL, bind variables are numbers preceeded by a $ sign.
+Different databases have different syntax for bind variables.  Oracle bind variables are names preceded by a colon.  In MySQL/MariaDB, DB2 and Firebird, bind variables are represented by question marks.  In Sybase and MS SQL Server, bind variables are names preceded by an @ sign.  In PostgreSQL, bind variables are numbers preceded by a $ sign.
 
-When using SQL Relay bind functions, to refer to an Oracle, Sybase or MS SQL Server bind variable, you should use its name without the preceeding colon.  To refer to bind variables when using other databases, you should use the bind variable's position number.
+When using SQL Relay bind functions, to refer to an Oracle, Sybase or MS SQL Server bind variable, you should use its name without the preceding colon.  To refer to bind variables when using other databases, you should use the bind variable's position number.
 
 For example...
 
@@ -64,7 +64,7 @@ In this query, you should use "1", "2" and "3" as variable names in the inputBin
 
 Using input bind variables improves performance.  A query can be prepared once and executed multiple times, changing the bind variable values between each execution.
 
-Using bind variables improves the cache-hit rate for databases which cache prepred queries as well.  Databases which support bind variables parse the query then plug input bind variables into the already parsed code.  If the same query is run a bunch of times, even with different values for the input bind variables, the databse will have the code cached and won't have to parse the query again.  If you don't use input bind variables, the database will parse the query	each time because the where clause will be slightly different each time and the code for all those slightly different queries will clog the cache.
+Using bind variables improves the cache-hit rate for databases which cache prepared queries as well.  Databases which support bind variables parse the query then plug input bind variables into the already parsed code.  If the same query is run a bunch of times, even with different values for the input bind variables, the database will have the code cached and won't have to parse the query again.  If you don't use input bind variables, the database will parse the query	each time because the where clause will be slightly different each time and the code for all those slightly different queries will clog the cache.
 
 As a rule of thumb, you should use input bind variables instead of substitutions in the WHERE clause of SELECT statements whenever you can.
 

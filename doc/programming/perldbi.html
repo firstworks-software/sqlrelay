@@ -55,7 +55,7 @@ http://www.gnu.org/software/src-highlite -->
   <li><b>retrytime</b> - If a connection fails, it will be retried on this interval (in seconds).</li>
   <li><b>db</b> - The database to switch to when logging into SQL Relay.  May be left empty or omitted to accept the default database that SQL Relay is already connected to.</li>
   <li><b>debug</b> - If this is set to 1 or to a file name then debug is enabled.  If set to a file name then debug will be written to the file.  If set to 1 then debug will be written to standard output.  Defaults to 0.</li>
-  <li><b>lazyconnect</b> - By default, the SQL Relay client does "lazy connects".  I.e. the connection to the SQL Relay server isn't established until the first query or other operation is run.  This optimizes availability of the connection pool but is inconstent with most other database API's.  Setting this parameter to 0 causes the connection to the SQL Relay server to be established immediately and the constructor to fail, returning undef, if the connection cannot be established.  Defaults to 1.</li>
+  <li><b>lazyconnect</b> - By default, the SQL Relay client does "lazy connects".  I.e. the connection to the SQL Relay server isn't established until the first query or other operation is run.  This optimizes availability of the connection pool but is inconsistent with most other database API's.  Setting this parameter to 0 causes the connection to the SQL Relay server to be established immediately and the constructor to fail, returning undef, if the connection cannot be established.  Defaults to 1.</li>
 </ul>
 
 <p>In addition, the following connect string variables can be used to establish Kerberos or Active Directory encryption and authentication with the server:</p>
@@ -102,7 +102,7 @@ http://www.gnu.org/software/src-highlite -->
   <li><b>DBD::SQLRelay::ResultSetBufferSize</b> - Sets the number of rows to buffer at a time.  See <a href="#largeresultsets">Dealing With Large Result Sets</a> below.  If set to 0 (the default) then the entire result set is buffered.</li>
   <li><b>DBD::SQLRelay::ColumnNameCase</b> - Indicates the case to convert column names to.  May be set to "mixed", "upper", or "lower".  Defaults to "mixed".</li>
   <li><b>DBD::SQLRelay::DontGetColumnInfo</b> - If this is set to 1 then column info is not fetched with the result set.  If set to 0 then column info is fetched.  Defaults to 0.</li>
-  <li><b>DBD::SQLRelay::GetNullsaAsEmptyStrings</b> - If this is set to 1 then NULL values are returned as empty strings.  If set to 0 then NULL values are returned as nulls.  Defaults to 0.</li>
+  <li><b>DBD::SQLRelay::GetNullsAsEmptyStrings</b> - If this is set to 1 then NULL values are returned as empty strings.  If set to 0 then NULL values are returned as nulls.  Defaults to 0.</li>
 </ul>
 
 <p>Setting one of the statement attribute connect string variables has the same effect as if the corresponding statement handle attribute were set immediately after creating each statement.  See <a href="#driverspecific">Driver-Specific Attributes</a> below.</p>
@@ -1332,7 +1332,7 @@ http://www.gnu.org/software/src-highlite -->
 </tt></pre>
 
 </blockquote>
-<p>To execeute the procedure from an SQL Relay program, use code like the
+<p>To execute the procedure from an SQL Relay program, use code like the
 following.</p>
 
 <blockquote>
@@ -1372,7 +1372,7 @@ http://www.gnu.org/software/src-highlite -->
 </tt></pre>
 
 </blockquote>
-<p>To execeute the procedure from an SQL Relay program, use code like the
+<p>To execute the procedure from an SQL Relay program, use code like the
 following.</p>
 
 <blockquote>
@@ -1553,7 +1553,7 @@ $sth<font color="#990000">-&gt;</font><b><font color="#000000">fetch</font></b><
 
 </blockquote>
 <p>Alternatively, you can run a query like the following and receive the result
-using a output bind variables.  Note that in Firebird, input and
+using output bind variables.  Note that in Firebird, input and
 output bind variable indices are distict from one another.  The index of the
 first output bind variable is 1 rather than 4, even though there were 3 input
 bind variables.</p>
@@ -1812,7 +1812,7 @@ http://www.gnu.org/software/src-highlite -->
 </tt></pre>
 
 </blockquote>
-<p>To exceute the stored procedure from an SQL Relay program, ue code like the
+<p>To execute the stored procedure from an SQL Relay program, use code like the
 following.</p>
 
 <blockquote>
