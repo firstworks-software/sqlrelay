@@ -126,9 +126,9 @@
 #define FEATURE_AUTO_COMMIT_FAILURE_CLOSES_ALL_RESULT_SETS 6
 #define FEATURE_BATCH_OPERATIONS 7
 #define FEATURE_BATCH_ROW_COUNTS 8
-#define FEATURE_DATABASE_SEPARATOR 9
-#define FEATURE_DATABASE_TERM 10
-#define FEATURE_DATABASE_USAGE 11
+#define FEATURE_CATALOG_SEPARATOR 9
+#define FEATURE_CATALOG_TERM 10
+#define FEATURE_CATALOG_USAGE 11
 #define FEATURE_COLLATION_SEQ 12
 #define FEATURE_CREATE_ASSERTION_CLAUSES 13
 #define FEATURE_CREATE_CHARACTER_SET_CLAUSES 14
@@ -162,22 +162,22 @@
 #define FEATURE_IDENTIFIER_QUOTE_STRING 42
 #define FEATURE_INDEX_KEYWORDS 43
 #define FEATURE_INFO_SCHEMA_VIEWS 44
-#define FEATURE_INSERT_OPERATIONS 45
-#define FEATURE_INSERTS_ARE_DETECTED 46
-#define FEATURE_IS_DATABASE_AT_START 47
-#define FEATURE_ISOLATION_LEVELS 48
+#define FEATURE_INSERTS_ARE_DETECTED 45
+#define FEATURE_INSERT_OPERATIONS 46
+#define FEATURE_ISOLATION_LEVELS 47
+#define FEATURE_IS_CATALOG_AT_START 48
 #define FEATURE_LOCAL_FILE_USAGE 49
 #define FEATURE_LOCATORS_UPDATE_COPY 50
 #define FEATURE_LOCK_TYPES 51
 #define FEATURE_MAX_BINARY_LITERAL_LENGTH 52
-#define FEATURE_MAX_DATABASE_NAME_LENGTH 53
+#define FEATURE_MAX_CATALOG_NAME_LENGTH 53
 #define FEATURE_MAX_CHAR_LITERAL_LENGTH 54
-#define FEATURE_MAX_COLUMN_NAME_LENGTH 55
-#define FEATURE_MAX_COLUMNS_IN_GROUP_BY 56
-#define FEATURE_MAX_COLUMNS_IN_INDEX 57
-#define FEATURE_MAX_COLUMNS_IN_ORDER_BY 58
-#define FEATURE_MAX_COLUMNS_IN_SELECT 59
-#define FEATURE_MAX_COLUMNS_IN_TABLE 60
+#define FEATURE_MAX_COLUMNS_IN_GROUP_BY 55
+#define FEATURE_MAX_COLUMNS_IN_INDEX 56
+#define FEATURE_MAX_COLUMNS_IN_ORDER_BY 57
+#define FEATURE_MAX_COLUMNS_IN_SELECT 58
+#define FEATURE_MAX_COLUMNS_IN_TABLE 59
+#define FEATURE_MAX_COLUMN_NAME_LENGTH 60
 #define FEATURE_MAX_CONNECTIONS 61
 #define FEATURE_MAX_CURSOR_NAME_LENGTH 62
 #define FEATURE_MAX_IDENTIFIER_LENGTH 63
@@ -185,10 +185,10 @@
 #define FEATURE_MAX_PROCEDURE_NAME_LENGTH 65
 #define FEATURE_MAX_ROW_SIZE 66
 #define FEATURE_MAX_SCHEMA_NAME_LENGTH 67
-#define FEATURE_MAX_STATEMENT_LENGTH 68
-#define FEATURE_MAX_STATEMENTS 69
-#define FEATURE_MAX_TABLE_NAME_LENGTH 70
-#define FEATURE_MAX_TABLES_IN_SELECT 71
+#define FEATURE_MAX_STATEMENTS 68
+#define FEATURE_MAX_STATEMENT_LENGTH 69
+#define FEATURE_MAX_TABLES_IN_SELECT 70
+#define FEATURE_MAX_TABLE_NAME_LENGTH 71
 #define FEATURE_MAX_USER_NAME_LENGTH 72
 #define FEATURE_MIXED_CASE_IDENTIFIERS 73
 #define FEATURE_NEED_LONG_DATA_LENGTH 74
@@ -267,9 +267,9 @@ static const char *dbfeaturenames[]={
 	"auto_commit_failure_closes_all_result_sets",
 	"batch_operations",
 	"batch_row_counts",
-	"database_separator",
-	"database_term",
-	"database_usage",
+	"catalog_separator",
+	"catalog_term",
+	"catalog_usage",
 	"collation_seq",
 	"create_assertion_clauses",
 	"create_character_set_clauses",
@@ -305,13 +305,13 @@ static const char *dbfeaturenames[]={
 	"info_schema_views",
 	"insert_operations",
 	"inserts_are_detected",
-	"is_database_at_start",
+	"is_catalog_at_start",
 	"isolation_levels",
 	"local_file_usage",
 	"locators_update_copy",
 	"lock_types",
 	"max_binary_literal_length",
-	"max_database_name_length",
+	"max_catalog_name_length",
 	"max_char_literal_length",
 	"max_column_name_length",
 	"max_columns_in_group_by",

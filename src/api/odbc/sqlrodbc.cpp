@@ -6978,7 +6978,7 @@ static SQLUINTEGER SQLR_QualifierUsage(CONN *conn) {
 	SQLUINTEGER	retval=0;
 
 	const char	*cu=
-		conn->con->getDatabaseFeature("database_usage");
+		conn->con->getDatabaseFeature("catalog_usage");
 	if (!cu) {
 		return retval;
 	}
@@ -7150,7 +7150,7 @@ static SQLUINTEGER SQLR_TimeDateDiffIntervals(CONN *conn) {
 
 static SQLUSMALLINT SQLR_QualifierLocation(CONN *conn) {
 	if (sqlrconnection::isYes(
-		conn->con->getDatabaseFeature("is_database_at_start"))) {
+		conn->con->getDatabaseFeature("is_catalog_at_start"))) {
 		return SQL_CL_START;
 	}
 	return SQL_CL_END;
@@ -9152,7 +9152,7 @@ SQLRETURN SQL_API SQLGetInfo(SQLHDBC connectionhandle,
 				(SQLUSMALLINT)
 				charstring::convertToUnsignedInteger(
 					conn->con->getDatabaseFeature(
-						"max_database_name_length"));
+						"max_catalog_name_length"));
 			type=2;
 			break;
 		case SQL_MAX_TABLE_NAME_LEN:
@@ -9403,7 +9403,7 @@ SQLRETURN SQL_API SQLGetInfo(SQLHDBC connectionhandle,
 			debugPrintf("  infotype: "
 					"SQL_CATALOG_NAME\n");
 			val.strval=conn->con->getDatabaseFeature(
-							"database_term");
+							"catalog_term");
 			type=0;
 			break;
 		case SQL_COLLATION_SEQ:
@@ -9580,7 +9580,7 @@ SQLRETURN SQL_API SQLGetInfo(SQLHDBC connectionhandle,
 					"SQL_QUALIFIER_NAME_SEPARATOR/"
 					"SQL_CATALOG_NAME_SEPARATOR\n");
 			val.strval=conn->con->getDatabaseFeature(
-						"database_separator");
+						"catalog_separator");
 			type=0;
 			break;
 		case SQL_QUALIFIER_TERM:
@@ -9589,7 +9589,7 @@ SQLRETURN SQL_API SQLGetInfo(SQLHDBC connectionhandle,
 					"SQL_QUALIFIER_TERM/"
 					"SQL_CATALOG_TERM\n");
 			val.strval=conn->con->getDatabaseFeature(
-							"database_term");
+							"catalog_term");
 			type=0;
 			break;
 		case SQL_SCROLL_OPTIONS:

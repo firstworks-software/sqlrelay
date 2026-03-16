@@ -513,11 +513,11 @@ class sqlrconnection:
          * list - SELECT_EXPLICIT,ROW_COUNT_EXPLICIT,SELECT_PROC,ROW_COUNT_PROC
         * batch_row_counts
          * list - PROCEDURES,EXPLICIT,ROLLED_UP
-        * database_separator
+        * catalog_separator
          * string
-        * database_term
+        * catalog_term
          * string
-        * database_usage
+        * catalog_usage
          * list - DATA_MANIPULATION,INDEX_DEFINITIONS,...
         * collation_seq
          * string
@@ -590,7 +590,7 @@ class sqlrconnection:
          * list - INSERT_LITERALS,INSERT_SEARCHED,SELECT_INTO
         * inserts_are_detected
          * list - FORWARD_ONLY,SCROLL_INSENSITIVE,SCROLL_SENSITIVE
-        * is_database_at_start
+        * is_catalog_at_start
          * true/false
         * isolation_levels
          * list - READ_UNCOMMITTED,READ_COMMITTED,...
@@ -602,7 +602,7 @@ class sqlrconnection:
          * list - NO_CHANGE,EXCLUSIVE,UNLOCK
         * max_binary_literal_length
          * number
-        * max_database_name_length
+        * max_catalog_name_length
          * number
         * max_char_literal_length
          * number

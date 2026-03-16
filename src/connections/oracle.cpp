@@ -3073,13 +3073,13 @@ const char * const * oracleconnection::getDatabaseFeatures() {
 	databasefeatures[FEATURE_BATCH_ROW_COUNTS]=
 		charstring::duplicate("");
 
-	databasefeatures[FEATURE_DATABASE_SEPARATOR]=
+	databasefeatures[FEATURE_CATALOG_SEPARATOR]=
 		charstring::duplicate("");
 
-	databasefeatures[FEATURE_DATABASE_TERM]=
+	databasefeatures[FEATURE_CATALOG_TERM]=
 		charstring::duplicate("");
 
-	databasefeatures[FEATURE_DATABASE_USAGE]=
+	databasefeatures[FEATURE_CATALOG_USAGE]=
 		charstring::duplicate("");
 
 	databasefeatures[FEATURE_COLLATION_SEQ]=
@@ -3189,18 +3189,18 @@ const char * const * oracleconnection::getDatabaseFeatures() {
 	databasefeatures[FEATURE_INFO_SCHEMA_VIEWS]=
 		charstring::duplicate("");
 
+	databasefeatures[FEATURE_INSERTS_ARE_DETECTED]=
+		charstring::duplicate("");
+
 	databasefeatures[FEATURE_INSERT_OPERATIONS]=
 		charstring::duplicate(
 			"INSERT_LITERALS,INSERT_SEARCHED,SELECT_INTO");
 
-	databasefeatures[FEATURE_INSERTS_ARE_DETECTED]=
-		charstring::duplicate("");
-
-	databasefeatures[FEATURE_IS_DATABASE_AT_START]=
-		charstring::duplicate("false");
-
 	databasefeatures[FEATURE_ISOLATION_LEVELS]=
 		charstring::duplicate("READ_COMMITTED,SERIALIZABLE");
+
+	databasefeatures[FEATURE_IS_CATALOG_AT_START]=
+		charstring::duplicate("false");
 
 	databasefeatures[FEATURE_LOCAL_FILE_USAGE]=
 		charstring::duplicate("");
@@ -3214,14 +3214,11 @@ const char * const * oracleconnection::getDatabaseFeatures() {
 	databasefeatures[FEATURE_MAX_BINARY_LITERAL_LENGTH]=
 		charstring::duplicate("1000");
 
-	databasefeatures[FEATURE_MAX_DATABASE_NAME_LENGTH]=
+	databasefeatures[FEATURE_MAX_CATALOG_NAME_LENGTH]=
 		charstring::duplicate("0");
 
 	databasefeatures[FEATURE_MAX_CHAR_LITERAL_LENGTH]=
 		charstring::duplicate("2000");
-
-	databasefeatures[FEATURE_MAX_COLUMN_NAME_LENGTH]=
-		charstring::duplicate("128");
 
 	databasefeatures[FEATURE_MAX_COLUMNS_IN_GROUP_BY]=
 		charstring::duplicate("0");
@@ -3238,14 +3235,12 @@ const char * const * oracleconnection::getDatabaseFeatures() {
 	databasefeatures[FEATURE_MAX_COLUMNS_IN_TABLE]=
 		charstring::duplicate("1000");
 
-	databasefeatures[FEATURE_MAX_CONNECTIONS]=
-		charstring::parseNumber(cont->getConfig()->getMaxConnections());
+	databasefeatures[FEATURE_MAX_COLUMN_NAME_LENGTH]=
+		charstring::duplicate("128");
 
 	databasefeatures[FEATURE_MAX_CURSOR_NAME_LENGTH]=
 		charstring::duplicate("0");
 
-	// FIXME: actually 128 bytes if the "COMPATIBLE" initialization
-	// parameter is set to 12.2 or higher, and 30 otherwise
 	databasefeatures[FEATURE_MAX_IDENTIFIER_LENGTH]=
 		charstring::duplicate("30");
 
@@ -3261,17 +3256,17 @@ const char * const * oracleconnection::getDatabaseFeatures() {
 	databasefeatures[FEATURE_MAX_SCHEMA_NAME_LENGTH]=
 		charstring::duplicate("128");
 
+	databasefeatures[FEATURE_MAX_STATEMENTS]=
+		charstring::duplicate("0");
+
 	databasefeatures[FEATURE_MAX_STATEMENT_LENGTH]=
 		charstring::duplicate("65535");
 
-	databasefeatures[FEATURE_MAX_STATEMENTS]=
+	databasefeatures[FEATURE_MAX_TABLES_IN_SELECT]=
 		charstring::duplicate("0");
 
 	databasefeatures[FEATURE_MAX_TABLE_NAME_LENGTH]=
 		charstring::duplicate("128");
-
-	databasefeatures[FEATURE_MAX_TABLES_IN_SELECT]=
-		charstring::duplicate("0");
 
 	databasefeatures[FEATURE_MAX_USER_NAME_LENGTH]=
 		charstring::duplicate("128");
@@ -3482,7 +3477,6 @@ const char * const * oracleconnection::getDatabaseFeatures() {
 	databasefeatures[FEATURE_TIME_DATE_ADD_INTERVALS]=
 		charstring::duplicate("");
 
-	// FIXME: oracle 12+ does support intervals
 	databasefeatures[FEATURE_TIME_DATE_DIFF_INTERVALS]=
 		charstring::duplicate("");
 
@@ -3491,7 +3485,6 @@ const char * const * oracleconnection::getDatabaseFeatures() {
 			"CURRENT_DATE,CURRENT_TIMESTAMP,CURDATE,EXTRACT,"
 			"HOUR,MINUTE,MONTH,SECOND,YEAR");
 
-	// FIXME: oracle 12+ does support intervals
 	databasefeatures[FEATURE_TIME_DATE_LITERALS]=
 		charstring::duplicate(
 			"DATE,TIMESTAMP,"

@@ -863,13 +863,13 @@ const char * const *routerconnection::getDatabaseFeatures() {
 	databasefeatures[FEATURE_BATCH_ROW_COUNTS]=
 		charstring::duplicate("");
 
-	databasefeatures[FEATURE_DATABASE_SEPARATOR]=
+	databasefeatures[FEATURE_CATALOG_SEPARATOR]=
 		charstring::duplicate("");
 
-	databasefeatures[FEATURE_DATABASE_TERM]=
+	databasefeatures[FEATURE_CATALOG_TERM]=
 		charstring::duplicate("");
 
-	databasefeatures[FEATURE_DATABASE_USAGE]=
+	databasefeatures[FEATURE_CATALOG_USAGE]=
 		charstring::duplicate("");
 
 	databasefeatures[FEATURE_COLLATION_SEQ]=
@@ -971,17 +971,16 @@ const char * const *routerconnection::getDatabaseFeatures() {
 	databasefeatures[FEATURE_INFO_SCHEMA_VIEWS]=
 		charstring::duplicate("");
 
-	databasefeatures[FEATURE_INSERT_OPERATIONS]=
-		charstring::duplicate("");
-
 	databasefeatures[FEATURE_INSERTS_ARE_DETECTED]=
 		charstring::duplicate("");
 
-	databasefeatures[FEATURE_IS_DATABASE_AT_START]=
+	databasefeatures[FEATURE_INSERT_OPERATIONS]=
 		charstring::duplicate("");
 
-
 	databasefeatures[FEATURE_ISOLATION_LEVELS]=
+		charstring::duplicate("");
+
+	databasefeatures[FEATURE_IS_CATALOG_AT_START]=
 		charstring::duplicate("");
 
 	databasefeatures[FEATURE_LOCAL_FILE_USAGE]=
@@ -996,13 +995,10 @@ const char * const *routerconnection::getDatabaseFeatures() {
 	databasefeatures[FEATURE_MAX_BINARY_LITERAL_LENGTH]=
 		charstring::duplicate("");
 
-	databasefeatures[FEATURE_MAX_DATABASE_NAME_LENGTH]=
+	databasefeatures[FEATURE_MAX_CATALOG_NAME_LENGTH]=
 		charstring::duplicate("");
 
 	databasefeatures[FEATURE_MAX_CHAR_LITERAL_LENGTH]=
-		charstring::duplicate("");
-
-	databasefeatures[FEATURE_MAX_COLUMN_NAME_LENGTH]=
 		charstring::duplicate("");
 
 	databasefeatures[FEATURE_MAX_COLUMNS_IN_GROUP_BY]=
@@ -1020,8 +1016,8 @@ const char * const *routerconnection::getDatabaseFeatures() {
 	databasefeatures[FEATURE_MAX_COLUMNS_IN_TABLE]=
 		charstring::duplicate("");
 
-	databasefeatures[FEATURE_MAX_CONNECTIONS]=
-		charstring::parseNumber(cont->getConfig()->getMaxConnections());
+	databasefeatures[FEATURE_MAX_COLUMN_NAME_LENGTH]=
+		charstring::duplicate("");
 
 	databasefeatures[FEATURE_MAX_CURSOR_NAME_LENGTH]=
 		charstring::duplicate("");
@@ -1041,16 +1037,16 @@ const char * const *routerconnection::getDatabaseFeatures() {
 	databasefeatures[FEATURE_MAX_SCHEMA_NAME_LENGTH]=
 		charstring::duplicate("");
 
-	databasefeatures[FEATURE_MAX_STATEMENT_LENGTH]=
-		charstring::duplicate("");
-
 	databasefeatures[FEATURE_MAX_STATEMENTS]=
 		charstring::duplicate("");
 
-	databasefeatures[FEATURE_MAX_TABLE_NAME_LENGTH]=
+	databasefeatures[FEATURE_MAX_STATEMENT_LENGTH]=
 		charstring::duplicate("");
 
 	databasefeatures[FEATURE_MAX_TABLES_IN_SELECT]=
+		charstring::duplicate("");
+
+	databasefeatures[FEATURE_MAX_TABLE_NAME_LENGTH]=
 		charstring::duplicate("");
 
 	databasefeatures[FEATURE_MAX_USER_NAME_LENGTH]=

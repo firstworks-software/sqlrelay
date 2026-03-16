@@ -2250,13 +2250,13 @@ const char * const *informixconnection::getDatabaseFeatures() {
 	databasefeatures[FEATURE_BATCH_ROW_COUNTS]=
 		charstring::duplicate("");
 
-	databasefeatures[FEATURE_DATABASE_SEPARATOR]=
+	databasefeatures[FEATURE_CATALOG_SEPARATOR]=
 		charstring::duplicate(":");
 
-	databasefeatures[FEATURE_DATABASE_TERM]=
+	databasefeatures[FEATURE_CATALOG_TERM]=
 		charstring::duplicate("database");
 
-	databasefeatures[FEATURE_DATABASE_USAGE]=
+	databasefeatures[FEATURE_CATALOG_USAGE]=
 		charstring::duplicate("DATA_MANIPULATION,PROCEDURE_CALLS");
 
 	databasefeatures[FEATURE_COLLATION_SEQ]=
@@ -2358,20 +2358,19 @@ const char * const *informixconnection::getDatabaseFeatures() {
 	databasefeatures[FEATURE_INFO_SCHEMA_VIEWS]=
 		charstring::duplicate("");
 
-	databasefeatures[FEATURE_INSERT_OPERATIONS]=
-		charstring::duplicate("");
-
 	databasefeatures[FEATURE_INSERTS_ARE_DETECTED]=
 		charstring::duplicate("");
 
-	databasefeatures[FEATURE_IS_DATABASE_AT_START]=
-		charstring::duplicate("true");
-
+	databasefeatures[FEATURE_INSERT_OPERATIONS]=
+		charstring::duplicate("");
 
 	databasefeatures[FEATURE_ISOLATION_LEVELS]=
 		charstring::duplicate(
 			"READ_UNCOMMITTED,READ_COMMITTED,"
 			"REPEATABLE_READ,SERIALIZABLE");
+
+	databasefeatures[FEATURE_IS_CATALOG_AT_START]=
+		charstring::duplicate("true");
 
 	databasefeatures[FEATURE_LOCAL_FILE_USAGE]=
 		charstring::duplicate("");
@@ -2385,14 +2384,11 @@ const char * const *informixconnection::getDatabaseFeatures() {
 	databasefeatures[FEATURE_MAX_BINARY_LITERAL_LENGTH]=
 		charstring::duplicate("0");
 
-	databasefeatures[FEATURE_MAX_DATABASE_NAME_LENGTH]=
+	databasefeatures[FEATURE_MAX_CATALOG_NAME_LENGTH]=
 		charstring::duplicate("128");
 
 	databasefeatures[FEATURE_MAX_CHAR_LITERAL_LENGTH]=
 		charstring::duplicate("256");
-
-	databasefeatures[FEATURE_MAX_COLUMN_NAME_LENGTH]=
-		charstring::duplicate("128");
 
 	databasefeatures[FEATURE_MAX_COLUMNS_IN_GROUP_BY]=
 		charstring::duplicate("32767");
@@ -2409,8 +2405,8 @@ const char * const *informixconnection::getDatabaseFeatures() {
 	databasefeatures[FEATURE_MAX_COLUMNS_IN_TABLE]=
 		charstring::duplicate("32767");
 
-	databasefeatures[FEATURE_MAX_CONNECTIONS]=
-		charstring::parseNumber(cont->getConfig()->getMaxConnections());
+	databasefeatures[FEATURE_MAX_COLUMN_NAME_LENGTH]=
+		charstring::duplicate("128");
 
 	databasefeatures[FEATURE_MAX_CURSOR_NAME_LENGTH]=
 		charstring::duplicate("128");
@@ -2430,17 +2426,17 @@ const char * const *informixconnection::getDatabaseFeatures() {
 	databasefeatures[FEATURE_MAX_SCHEMA_NAME_LENGTH]=
 		charstring::duplicate("128");
 
+	databasefeatures[FEATURE_MAX_STATEMENTS]=
+		charstring::duplicate("0");
+
 	databasefeatures[FEATURE_MAX_STATEMENT_LENGTH]=
 		charstring::duplicate("2147483647");
 
-	databasefeatures[FEATURE_MAX_STATEMENTS]=
+	databasefeatures[FEATURE_MAX_TABLES_IN_SELECT]=
 		charstring::duplicate("0");
 
 	databasefeatures[FEATURE_MAX_TABLE_NAME_LENGTH]=
 		charstring::duplicate("128");
-
-	databasefeatures[FEATURE_MAX_TABLES_IN_SELECT]=
-		charstring::duplicate("0");
 
 	databasefeatures[FEATURE_MAX_USER_NAME_LENGTH]=
 		charstring::duplicate("32");

@@ -1349,13 +1349,13 @@ const char * const *odbcconnection::getDatabaseFeatures() {
 	strbuf[0]='\0';
 	SQLGetInfo(dbc,SQL_QUALIFIER_NAME_SEPARATOR,
 					strbuf,sizeof(strbuf),&size);
-	databasefeatures[FEATURE_DATABASE_SEPARATOR]=
+	databasefeatures[FEATURE_CATALOG_SEPARATOR]=
 				charstring::duplicate(strbuf);
 
 	// SQL_QUALIFIER_TERM -> string
 	strbuf[0]='\0';
 	SQLGetInfo(dbc,SQL_QUALIFIER_TERM,strbuf,sizeof(strbuf),&size);
-	databasefeatures[FEATURE_DATABASE_TERM]=charstring::duplicate(strbuf);
+	databasefeatures[FEATURE_CATALOG_TERM]=charstring::duplicate(strbuf);
 
 	// SQL_QUALIFIER_USAGE -> bitmask
 	uintbuf=0;
@@ -1369,7 +1369,7 @@ const char * const *odbcconnection::getDatabaseFeatures() {
 		{0,NULL}
 	};
 	flagsToNames(&sb,uintbuf,cu);
-	databasefeatures[FEATURE_DATABASE_USAGE]=sb.detachString();
+	databasefeatures[FEATURE_CATALOG_USAGE]=sb.detachString();
 
 	// SQL_COLLATION_SEQ -> string
 	strbuf[0]='\0';
@@ -1831,7 +1831,7 @@ const char * const *odbcconnection::getDatabaseFeatures() {
 	usmallintbuf=0;
 	SQLGetInfo(dbc,SQL_QUALIFIER_LOCATION,
 				&usmallintbuf,sizeof(usmallintbuf),&size);
-	databasefeatures[FEATURE_IS_DATABASE_AT_START]=
+	databasefeatures[FEATURE_IS_CATALOG_AT_START]=
 		charstring::duplicate(
 			(usmallintbuf==SQL_CL_START)?"true":"false");
 
@@ -1886,7 +1886,7 @@ const char * const *odbcconnection::getDatabaseFeatures() {
 	usmallintbuf=0;
 	SQLGetInfo(dbc,SQL_MAX_CATALOG_NAME_LEN,
 				&usmallintbuf,sizeof(usmallintbuf),&size);
-	databasefeatures[FEATURE_MAX_DATABASE_NAME_LENGTH]=
+	databasefeatures[FEATURE_MAX_CATALOG_NAME_LENGTH]=
 		charstring::parseNumber(usmallintbuf);
 
 	// SQL_MAX_CHAR_LITERAL_LEN -> uintval
