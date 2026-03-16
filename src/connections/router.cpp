@@ -1019,6 +1019,9 @@ const char * const *routerconnection::getDatabaseFeatures() {
 	databasefeatures[FEATURE_MAX_COLUMN_NAME_LENGTH]=
 		charstring::duplicate("");
 
+	databasefeatures[FEATURE_MAX_CONNECTIONS]=
+		charstring::parseNumber(cont->getConfig()->getMaxConnections());
+
 	databasefeatures[FEATURE_MAX_CURSOR_NAME_LENGTH]=
 		charstring::duplicate("");
 

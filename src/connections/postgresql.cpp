@@ -2187,6 +2187,9 @@ const char * const *postgresqlconnection::getDatabaseFeatures() {
 	databasefeatures[FEATURE_MAX_COLUMN_NAME_LENGTH]=
 		charstring::duplicate("63");
 
+	databasefeatures[FEATURE_MAX_CONNECTIONS]=
+		charstring::parseNumber(cont->getConfig()->getMaxConnections());
+
 	databasefeatures[FEATURE_MAX_CURSOR_NAME_LENGTH]=
 		charstring::duplicate("63");
 
