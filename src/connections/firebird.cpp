@@ -222,6 +222,7 @@ class SQLRSERVER_DLLSPEC firebirdconnection : public sqlrserverconnection {
 		firebirdconnection(sqlrservercontroller *cont);
 		~firebirdconnection();
 	private:
+		void	initDatabaseFeatures();
 		void	handleConnectString();
 		bool	logIn(const char **error, const char **warning);
 		sqlrservercursor	*newCursor(uint16_t id);
@@ -309,7 +310,6 @@ class SQLRSERVER_DLLSPEC firebirdconnection : public sqlrserverconnection {
 		bool		droptemptables;
 
 		char		*dbversion;
-		char		**databasefeatures;
 
 		char		*lastinsertidquery;
 
@@ -328,6 +328,9 @@ class SQLRSERVER_DLLSPEC firebirdconnection : public sqlrserverconnection {
 		stringbuffer	errormsg;
 
 		bool		autocommit;
+
+		char		*maxconnections;
+		const char	*databasefeatures[FEATURE_COUNT];
 };
 
 static char tpb[] = {
@@ -352,24 +355,454 @@ static char tpbac[] = {
 firebirdconnection::firebirdconnection(sqlrservercontroller *cont) :
 						sqlrserverconnection(cont) {
 	dbversion=NULL;
-	databasefeatures=NULL;
 	lastinsertidquery=NULL;
 	database=NULL;
 	host=NULL;
 	autocommit=false;
+	initDatabaseFeatures();
 }
 
 firebirdconnection::~firebirdconnection() {
 	delete[] dbversion;
-	if (databasefeatures) {
-		for (int i=0; i<FEATURE_COUNT; i++) {
-			delete[] databasefeatures[i];
-		}
-		delete[] databasefeatures;
-	}
 	delete[] lastinsertidquery;
 	delete[] database;
 	delete[] host;
+	delete[] maxconnections;
+}
+
+void firebirdconnection::initDatabaseFeatures() {
+
+	maxconnections=
+		charstring::parseNumber(cont->getConfig()->getMaxConnections());
+
+	databasefeatures[FEATURE_AGGREGATE_FUNCTIONS]=
+		"";
+
+	databasefeatures[FEATURE_ALL_PROCEDURES_ARE_CALLABLE]=
+		"false";
+
+	databasefeatures[FEATURE_ALL_TABLES_ARE_SELECTABLE]=
+		"false";
+
+	databasefeatures[FEATURE_ALTER_DOMAIN_CLAUSES]=
+		"";
+
+	databasefeatures[FEATURE_ALTER_TABLE_OPERATIONS]=
+		"ADD_COLUMN,DROP_COLUMN";
+
+	databasefeatures[FEATURE_ANSI92_SQL_LEVELS]=
+		"ENTRY_LEVEL";
+
+	databasefeatures[FEATURE_AUTO_COMMIT_FAILURE_CLOSES_ALL_RESULT_SETS]=
+		"false";
+
+	databasefeatures[FEATURE_BATCH_OPERATIONS]=
+		"";
+
+	databasefeatures[FEATURE_BATCH_ROW_COUNTS]=
+		"";
+
+	databasefeatures[FEATURE_CATALOG_SEPARATOR]=
+		"";
+
+	databasefeatures[FEATURE_CATALOG_TERM]=
+		"";
+
+	databasefeatures[FEATURE_CATALOG_USAGE]=
+		"";
+
+	databasefeatures[FEATURE_COLLATION_SEQ]=
+		"";
+
+	databasefeatures[FEATURE_CREATE_ASSERTION_CLAUSES]=
+		"";
+
+	databasefeatures[FEATURE_CREATE_CHARACTER_SET_CLAUSES]=
+		"";
+
+	databasefeatures[FEATURE_CREATE_COLLATION_CLAUSES]=
+		"";
+
+	databasefeatures[FEATURE_CREATE_DOMAIN_CLAUSES]=
+		"";
+
+	databasefeatures[FEATURE_CREATE_SCHEMA_CLAUSES]=
+		"";
+
+	databasefeatures[FEATURE_CREATE_TABLE_CLAUSES]=
+		"";
+
+	databasefeatures[FEATURE_CREATE_TRANSLATION_CLAUSES]=
+		"";
+
+	databasefeatures[FEATURE_CREATE_VIEW_CLAUSES]=
+		"";
+
+	databasefeatures[FEATURE_DATA_DEFINITION_TRANSACTION_BEHAVIOR]=
+		"";
+
+	databasefeatures[FEATURE_DDL_INDEX_OPERATIONS]=
+		"";
+
+	databasefeatures[FEATURE_DEFAULT_RESULT_SET_HOLDABILITY]=
+		"HOLD_CURSORS_OVER_COMMIT";
+
+	databasefeatures[FEATURE_DELETES_ARE_DETECTED]=
+		"";
+
+	databasefeatures[FEATURE_DOES_MAX_ROW_SIZE_INCLUDE_BLOBS]=
+		"false";
+
+	databasefeatures[FEATURE_DROP_ASSERTION_CLAUSES]=
+		"";
+
+	databasefeatures[FEATURE_DROP_CHARACTER_SET_CLAUSES]=
+		"";
+
+	databasefeatures[FEATURE_DROP_COLLATION_CLAUSES]=
+		"";
+
+	databasefeatures[FEATURE_DROP_DOMAIN_CLAUSES]=
+		"";
+
+	databasefeatures[FEATURE_DROP_SCHEMA_CLAUSES]=
+		"";
+
+	databasefeatures[FEATURE_DROP_TABLE_CLAUSES]=
+		"";
+
+	databasefeatures[FEATURE_DROP_TRANSLATION_CLAUSES]=
+		"";
+
+	databasefeatures[FEATURE_DROP_VIEW_CLAUSES]=
+		"";
+
+	databasefeatures[FEATURE_EXTRA_NAME_CHARACTERS]=
+		"$";
+
+	databasefeatures[FEATURE_FOREIGN_KEY_DELETE_RULES]=
+		"";
+
+	databasefeatures[FEATURE_FOREIGN_KEY_UPDATE_RULES]=
+		"";
+
+	databasefeatures[FEATURE_FORWARD_ONLY_CURSOR_ATTRIBUTES]=
+		"";
+
+	databasefeatures[FEATURE_GENERATED_KEY_ALWAYS_RETURNED]=
+		"false";
+
+	databasefeatures[FEATURE_GRANT_CLAUSES]=
+		"";
+
+	databasefeatures[FEATURE_GROUP_BY_CLAUSES]=
+		"BASIC";
+
+	databasefeatures[FEATURE_IDENTIFIER_CASE_STORAGE]=
+		"UPPER";
+
+	databasefeatures[FEATURE_IDENTIFIER_QUOTE_STRING]=
+		"\"";
+
+	databasefeatures[FEATURE_INDEX_KEYWORDS]=
+		"";
+
+	databasefeatures[FEATURE_INFO_SCHEMA_VIEWS]=
+		"";
+
+	databasefeatures[FEATURE_INSERTS_ARE_DETECTED]=
+		"";
+
+	databasefeatures[FEATURE_INSERT_OPERATIONS]=
+		"";
+
+	databasefeatures[FEATURE_ISOLATION_LEVELS]=
+		"READ_COMMITTED,REPEATABLE_READ,SERIALIZABLE";
+
+	databasefeatures[FEATURE_IS_CATALOG_AT_START]=
+		"false";
+
+	databasefeatures[FEATURE_LOCAL_FILE_USAGE]=
+		"";
+
+	databasefeatures[FEATURE_LOCATORS_UPDATE_COPY]=
+		"true";
+
+	databasefeatures[FEATURE_LOCK_TYPES]=
+		"";
+
+	databasefeatures[FEATURE_MAX_BINARY_LITERAL_LENGTH]=
+		"0";
+
+	databasefeatures[FEATURE_MAX_CATALOG_NAME_LENGTH]=
+		"0";
+
+	databasefeatures[FEATURE_MAX_CHAR_LITERAL_LENGTH]=
+		"32765";
+
+	databasefeatures[FEATURE_MAX_COLUMNS_IN_GROUP_BY]=
+		"0";
+
+	databasefeatures[FEATURE_MAX_COLUMNS_IN_INDEX]=
+		"0";
+
+	databasefeatures[FEATURE_MAX_COLUMNS_IN_ORDER_BY]=
+		"0";
+
+	databasefeatures[FEATURE_MAX_COLUMNS_IN_SELECT]=
+		"0";
+
+	databasefeatures[FEATURE_MAX_COLUMNS_IN_TABLE]=
+		"32767";
+
+	databasefeatures[FEATURE_MAX_COLUMN_NAME_LENGTH]=
+		"31";
+
+	databasefeatures[FEATURE_MAX_CONNECTIONS]=maxconnections;
+
+	databasefeatures[FEATURE_MAX_CURSOR_NAME_LENGTH]=
+		"31";
+
+	databasefeatures[FEATURE_MAX_IDENTIFIER_LENGTH]=
+		"31";
+
+	databasefeatures[FEATURE_MAX_INDEX_LENGTH]=
+		"0";
+
+	databasefeatures[FEATURE_MAX_PROCEDURE_NAME_LENGTH]=
+		"31";
+
+	databasefeatures[FEATURE_MAX_ROW_SIZE]=
+		"65531";
+
+	databasefeatures[FEATURE_MAX_SCHEMA_NAME_LENGTH]=
+		"0";
+
+	databasefeatures[FEATURE_MAX_STATEMENTS]=
+		"0";
+
+	databasefeatures[FEATURE_MAX_STATEMENT_LENGTH]=
+		"10485760";
+
+	databasefeatures[FEATURE_MAX_TABLES_IN_SELECT]=
+		"0";
+
+	databasefeatures[FEATURE_MAX_TABLE_NAME_LENGTH]=
+		"31";
+
+	databasefeatures[FEATURE_MAX_USER_NAME_LENGTH]=
+		"31";
+
+	databasefeatures[FEATURE_MIXED_CASE_IDENTIFIERS]=
+		"QUOTED_IDENTIFIERS";
+
+	databasefeatures[FEATURE_NEED_LONG_DATA_LENGTH]=
+		"false";
+
+	databasefeatures[FEATURE_NULL_PLUS_NON_NULL_IS_NULL]=
+		"true";
+
+	databasefeatures[FEATURE_NULL_SORT_ORDER]=
+		"LOW";
+
+	databasefeatures[FEATURE_NUMERIC_FUNCTIONS]=
+		"TAN,MOD,LOG,COS,ROUND,SQRT,ASIN,ATAN2,COT,"
+			"POWER,LOG10,ABS,FLOOR,DEGREES,CEILING,ACOS,"
+			"RADIANS,PI,SIN,SIGN,EXP,ATAN,TRUNCATE";
+
+	databasefeatures[FEATURE_OPEN_CURSORS_ACROSS]=
+		"";
+
+	databasefeatures[FEATURE_OPEN_STATEMENTS_ACROSS]=
+		"COMMIT,ROLLBACK";
+
+	databasefeatures[FEATURE_OTHERS_DELETES_ARE_VISIBLE]=
+		"";
+
+	databasefeatures[FEATURE_OTHERS_INSERTS_ARE_VISIBLE]=
+		"";
+
+	databasefeatures[FEATURE_OTHERS_UPDATES_ARE_VISIBLE]=
+		"";
+
+	databasefeatures[FEATURE_OUTER_JOINS]=
+		"BASIC,FULL,LIMITED";
+
+	databasefeatures[FEATURE_OWN_DELETES_ARE_VISIBLE]=
+		"SCROLL_INSENSITIVE,SCROLL_SENSITIVE";
+
+	databasefeatures[FEATURE_OWN_INSERTS_ARE_VISIBLE]=
+		"SCROLL_INSENSITIVE,SCROLL_SENSITIVE";
+
+	databasefeatures[FEATURE_OWN_UPDATES_ARE_VISIBLE]=
+		"SCROLL_INSENSITIVE,SCROLL_SENSITIVE";
+
+	databasefeatures[FEATURE_PREDICATES]=
+		"";
+
+	databasefeatures[FEATURE_PROCEDURE_TERM]=
+		"PROCEDURE";
+
+	databasefeatures[FEATURE_QUOTED_IDENTIFIER_CASE_STORAGE]=
+		"";
+
+	databasefeatures[FEATURE_RELATIONAL_JOIN_OPERATORS]=
+		"";
+
+	databasefeatures[FEATURE_RESULT_SET_CONCURRENCIES]=
+		"FORWARD_ONLY/READ_ONLY,FORWARD_ONLY/UPDATABLE,"
+				"SCROLL_INSENSITIVE/READ_ONLY,"
+				"SCROLL_INSENSITIVE/UPDATABLE,"
+				"SCROLL_SENSITIVE/READ_ONLY,"
+				"SCROLL_SENSITIVE/UPDATABLE";
+
+	databasefeatures[FEATURE_RESULT_SET_HOLDABILITIES]=
+		"HOLD_CURSORS_OVER_COMMIT,CLOSE_CURSORS_AT_COMMIT";
+
+	databasefeatures[FEATURE_RESULT_SET_TYPES]=
+		"FORWARD_ONLY,SCROLL_INSENSITIVE,SCROLL_SENSITIVE";
+
+	databasefeatures[FEATURE_REVOKE_CLAUSES]=
+		"";
+
+	databasefeatures[FEATURE_ROW_ID_LIFETIME]=
+		"ROWID_UNSUPPORTED";
+
+	databasefeatures[FEATURE_ROW_VALUE_CONSTRUCTOR_EXPRESSIONS]=
+		"";
+
+	databasefeatures[FEATURE_SCHEMA_TERM]=
+		"";
+
+	databasefeatures[FEATURE_SCHEMA_USAGE]=
+		"";
+
+	databasefeatures[FEATURE_SCROLL_CONCURRENCIES]=
+		"";
+
+	databasefeatures[FEATURE_SEARCH_STRING_ESCAPE]=
+		"\\";
+
+	databasefeatures[FEATURE_SQL_GRAMMAR_LEVELS]=
+		"MINIMUM,CORE,EXTENDED";
+
+	databasefeatures[FEATURE_SQL_KEYWORDS]=
+		"ADD,ADMIN,BIT_LENGTH,CURRENT_CONNECTION,"
+			"CURRENT_TRANSACTION,DELETING,GDSCODE,INDEX,"
+			"INSERTING,LONG,OFFSET,PLAN,POST_EVENT,"
+			"RDB$DB_KEY,RDB$RECORD_VERSION,RECORD_VERSION,"
+			"RECREATE,RETURNING_VALUES,ROW_COUNT,SQLCODE,"
+			"UPDATING,VARIABLE,VIEW,WHILE";
+
+	databasefeatures[FEATURE_SQL_STATE_TYPE]=
+		"2";
+
+	databasefeatures[FEATURE_STATIC_CURSOR_ATTRIBUTES]=
+		"";
+
+	databasefeatures[FEATURE_STORED_PROGRAMS]=
+		"PROCEDURES";
+
+	databasefeatures[FEATURE_STRING_FUNCTIONS]=
+		"CHARACTER_LENGTH,LEFT,REPEAT,CONCAT,SUBSTRING,"
+			"LENGTH,UCASE,CHAR,ASCII,SPACE,POSITION,LCASE,"
+			"LTRIM,RIGHT,INSERT,CHAR_LENGTH,LOCATE,REPLACE,"
+			"OCTET_LENGTH,RTRIM";
+
+	databasefeatures[FEATURE_SUBQUERY_USAGE]=
+		"COMPARISONS,EXISTS,INS,QUANTIFIEDS";
+
+	databasefeatures[FEATURE_SUPPORTS_BATCH_UPDATES]=
+		"true";
+
+	databasefeatures[FEATURE_SUPPORTS_COLUMN_ALIASING]=
+		"true";
+
+	databasefeatures[FEATURE_SUPPORTS_CONVERT]=
+		"true";
+
+	databasefeatures[FEATURE_SUPPORTS_CORRELATED_SUBQUERIES]=
+		"true";
+
+	databasefeatures[FEATURE_SUPPORTS_DESCRIBE_PARAMETER]=
+		"false";
+
+	databasefeatures[FEATURE_SUPPORTS_EXPRESSIONS_IN_ORDER_BY]=
+		"true";
+
+	databasefeatures[FEATURE_SUPPORTS_GET_GENERATED_KEYS]=
+		"true";
+
+	databasefeatures[FEATURE_SUPPORTS_INTEGRITY_ENHANCEMENT_FACILITY]=
+		"true";
+
+	databasefeatures[FEATURE_SUPPORTS_LIKE_ESCAPE_CLAUSE]=
+		"true";
+
+	databasefeatures[FEATURE_SUPPORTS_MULTIPLE_RESULT_SETS]=
+		"false";
+
+	databasefeatures[FEATURE_SUPPORTS_MULTIPLE_TRANSACTIONS]=
+		"true";
+
+	databasefeatures[FEATURE_SUPPORTS_NAMED_PARAMETERS]=
+		"false";
+
+	databasefeatures[FEATURE_SUPPORTS_NON_NULLABLE_COLUMNS]=
+		"true";
+
+	databasefeatures[FEATURE_SUPPORTS_ORDER_BY_UNRELATED]=
+		"true";
+
+	databasefeatures[FEATURE_SUPPORTS_SAVEPOINTS]=
+		"true";
+
+	databasefeatures[FEATURE_SUPPORTS_SELECT_FOR_UPDATE]=
+		"true";
+
+	databasefeatures[FEATURE_SUPPORTS_TRANSACTIONS]=
+		"true";
+
+	databasefeatures[FEATURE_SYSTEM_FUNCTIONS]=
+		"DATABASE,IFNULL,USER";
+
+	databasefeatures[FEATURE_TABLE_CORRELATION_NAMES]=
+		"BASIC";
+
+	databasefeatures[FEATURE_TABLE_TERM]=
+		"table";
+
+	databasefeatures[FEATURE_TIME_DATE_ADD_INTERVALS]=
+		"";
+
+	databasefeatures[FEATURE_TIME_DATE_DIFF_INTERVALS]=
+		"";
+
+	databasefeatures[FEATURE_TIME_DATE_FUNCTIONS]=
+		"DAYOFMONTH,MONTHNAME,MONTH,CURRENT_TIMESTAMP,"
+			"HOUR,DAYOFYEAR,TIMESTAMPADD,DAYOFWEEK,QUARTER,"
+			"TIMESTAMPDIFF,YEAR,CURTIME,NOW,DAYNAME,MINUTE,"
+			"SECOND,CURRENT_DATE,CURRENT_TIME,WEEK,CURDATE,"
+			"EXTRACT";
+
+	databasefeatures[FEATURE_TIME_DATE_LITERALS]=
+		"";
+
+	databasefeatures[FEATURE_TRANSACTION_DDL_DML]=
+		"";
+
+	databasefeatures[FEATURE_UNION_CLAUSES]=
+		"UNION,UNION_ALL";
+
+	databasefeatures[FEATURE_UPDATES_ARE_DETECTED]=
+		"";
+
+	databasefeatures[FEATURE_VALUE_EXPRESSIONS]=
+		"";
+
+	databasefeatures[FEATURE_WHERE_CURRENT_OF_OPERATIONS]=
+		"DELETE,UPDATE";
+
 }
 
 void firebirdconnection::handleConnectString() {
@@ -1828,446 +2261,6 @@ const char *firebirdconnection::mapIsolationLevel(
 }
 
 const char * const *firebirdconnection::getDatabaseFeatures() {
-
-	if (databasefeatures) {
-		return databasefeatures;
-	}
-
-	databasefeatures=new char *[FEATURE_COUNT];
-	databasefeatures[FEATURE_AGGREGATE_FUNCTIONS]=
-		charstring::duplicate("");
-
-	databasefeatures[FEATURE_ALL_PROCEDURES_ARE_CALLABLE]=
-		charstring::duplicate("false");
-
-	databasefeatures[FEATURE_ALL_TABLES_ARE_SELECTABLE]=
-		charstring::duplicate("false");
-
-	databasefeatures[FEATURE_ALTER_DOMAIN_CLAUSES]=
-		charstring::duplicate("");
-
-	databasefeatures[FEATURE_ALTER_TABLE_OPERATIONS]=
-		charstring::duplicate("ADD_COLUMN,DROP_COLUMN");
-
-	databasefeatures[FEATURE_ANSI92_SQL_LEVELS]=
-		charstring::duplicate("ENTRY_LEVEL");
-
-	databasefeatures[FEATURE_AUTO_COMMIT_FAILURE_CLOSES_ALL_RESULT_SETS]=
-		charstring::duplicate("false");
-
-	databasefeatures[FEATURE_BATCH_OPERATIONS]=
-		charstring::duplicate("");
-
-	databasefeatures[FEATURE_BATCH_ROW_COUNTS]=
-		charstring::duplicate("");
-
-	databasefeatures[FEATURE_CATALOG_SEPARATOR]=
-		charstring::duplicate("");
-
-	databasefeatures[FEATURE_CATALOG_TERM]=
-		charstring::duplicate("");
-
-	databasefeatures[FEATURE_CATALOG_USAGE]=
-		charstring::duplicate("");
-
-	databasefeatures[FEATURE_COLLATION_SEQ]=
-		charstring::duplicate("");
-
-	databasefeatures[FEATURE_CREATE_ASSERTION_CLAUSES]=
-		charstring::duplicate("");
-
-	databasefeatures[FEATURE_CREATE_CHARACTER_SET_CLAUSES]=
-		charstring::duplicate("");
-
-	databasefeatures[FEATURE_CREATE_COLLATION_CLAUSES]=
-		charstring::duplicate("");
-
-	databasefeatures[FEATURE_CREATE_DOMAIN_CLAUSES]=
-		charstring::duplicate("");
-
-	databasefeatures[FEATURE_CREATE_SCHEMA_CLAUSES]=
-		charstring::duplicate("");
-
-	databasefeatures[FEATURE_CREATE_TABLE_CLAUSES]=
-		charstring::duplicate("");
-
-	databasefeatures[FEATURE_CREATE_TRANSLATION_CLAUSES]=
-		charstring::duplicate("");
-
-	databasefeatures[FEATURE_CREATE_VIEW_CLAUSES]=
-		charstring::duplicate("");
-
-	databasefeatures[FEATURE_DATA_DEFINITION_TRANSACTION_BEHAVIOR]=
-		charstring::duplicate("");
-
-	databasefeatures[FEATURE_DDL_INDEX_OPERATIONS]=
-		charstring::duplicate("");
-
-	databasefeatures[FEATURE_DEFAULT_RESULT_SET_HOLDABILITY]=
-		charstring::duplicate("HOLD_CURSORS_OVER_COMMIT");
-
-	databasefeatures[FEATURE_DELETES_ARE_DETECTED]=
-		charstring::duplicate("");
-
-	databasefeatures[FEATURE_DOES_MAX_ROW_SIZE_INCLUDE_BLOBS]=
-		charstring::duplicate("false");
-
-	databasefeatures[FEATURE_DROP_ASSERTION_CLAUSES]=
-		charstring::duplicate("");
-
-	databasefeatures[FEATURE_DROP_CHARACTER_SET_CLAUSES]=
-		charstring::duplicate("");
-
-	databasefeatures[FEATURE_DROP_COLLATION_CLAUSES]=
-		charstring::duplicate("");
-
-	databasefeatures[FEATURE_DROP_DOMAIN_CLAUSES]=
-		charstring::duplicate("");
-
-	databasefeatures[FEATURE_DROP_SCHEMA_CLAUSES]=
-		charstring::duplicate("");
-
-	databasefeatures[FEATURE_DROP_TABLE_CLAUSES]=
-		charstring::duplicate("");
-
-	databasefeatures[FEATURE_DROP_TRANSLATION_CLAUSES]=
-		charstring::duplicate("");
-
-	databasefeatures[FEATURE_DROP_VIEW_CLAUSES]=
-		charstring::duplicate("");
-
-	databasefeatures[FEATURE_EXTRA_NAME_CHARACTERS]=
-		charstring::duplicate("$");
-
-	databasefeatures[FEATURE_FOREIGN_KEY_DELETE_RULES]=
-		charstring::duplicate("");
-
-	databasefeatures[FEATURE_FOREIGN_KEY_UPDATE_RULES]=
-		charstring::duplicate("");
-
-	databasefeatures[FEATURE_FORWARD_ONLY_CURSOR_ATTRIBUTES]=
-		charstring::duplicate("");
-
-	databasefeatures[FEATURE_GENERATED_KEY_ALWAYS_RETURNED]=
-		charstring::duplicate("false");
-
-	databasefeatures[FEATURE_GRANT_CLAUSES]=
-		charstring::duplicate("");
-
-	databasefeatures[FEATURE_GROUP_BY_CLAUSES]=
-		charstring::duplicate("BASIC");
-
-	databasefeatures[FEATURE_IDENTIFIER_CASE_STORAGE]=
-		charstring::duplicate("UPPER");
-
-	databasefeatures[FEATURE_IDENTIFIER_QUOTE_STRING]=
-		charstring::duplicate("\"");
-
-	databasefeatures[FEATURE_INDEX_KEYWORDS]=
-		charstring::duplicate("");
-
-	databasefeatures[FEATURE_INFO_SCHEMA_VIEWS]=
-		charstring::duplicate("");
-
-	databasefeatures[FEATURE_INSERTS_ARE_DETECTED]=
-		charstring::duplicate("");
-
-	databasefeatures[FEATURE_INSERT_OPERATIONS]=
-		charstring::duplicate("");
-
-	databasefeatures[FEATURE_ISOLATION_LEVELS]=
-		charstring::duplicate("READ_COMMITTED,REPEATABLE_READ,SERIALIZABLE");
-
-	databasefeatures[FEATURE_IS_CATALOG_AT_START]=
-		charstring::duplicate("false");
-
-	databasefeatures[FEATURE_LOCAL_FILE_USAGE]=
-		charstring::duplicate("");
-
-	databasefeatures[FEATURE_LOCATORS_UPDATE_COPY]=
-		charstring::duplicate("true");
-
-	databasefeatures[FEATURE_LOCK_TYPES]=
-		charstring::duplicate("");
-
-	databasefeatures[FEATURE_MAX_BINARY_LITERAL_LENGTH]=
-		charstring::duplicate("0");
-
-	databasefeatures[FEATURE_MAX_CATALOG_NAME_LENGTH]=
-		charstring::duplicate("0");
-
-	databasefeatures[FEATURE_MAX_CHAR_LITERAL_LENGTH]=
-		charstring::duplicate("32765");
-
-	databasefeatures[FEATURE_MAX_COLUMNS_IN_GROUP_BY]=
-		charstring::duplicate("0");
-
-	databasefeatures[FEATURE_MAX_COLUMNS_IN_INDEX]=
-		charstring::duplicate("0");
-
-	databasefeatures[FEATURE_MAX_COLUMNS_IN_ORDER_BY]=
-		charstring::duplicate("0");
-
-	databasefeatures[FEATURE_MAX_COLUMNS_IN_SELECT]=
-		charstring::duplicate("0");
-
-	databasefeatures[FEATURE_MAX_COLUMNS_IN_TABLE]=
-		charstring::duplicate("32767");
-
-	databasefeatures[FEATURE_MAX_COLUMN_NAME_LENGTH]=
-		charstring::duplicate("31");
-
-	databasefeatures[FEATURE_MAX_CONNECTIONS]=
-		charstring::parseNumber(cont->getConfig()->getMaxConnections());
-
-	databasefeatures[FEATURE_MAX_CURSOR_NAME_LENGTH]=
-		charstring::duplicate("31");
-
-	databasefeatures[FEATURE_MAX_IDENTIFIER_LENGTH]=
-		charstring::duplicate("31");
-
-	databasefeatures[FEATURE_MAX_INDEX_LENGTH]=
-		charstring::duplicate("0");
-
-	databasefeatures[FEATURE_MAX_PROCEDURE_NAME_LENGTH]=
-		charstring::duplicate("31");
-
-	databasefeatures[FEATURE_MAX_ROW_SIZE]=
-		charstring::duplicate("65531");
-
-	databasefeatures[FEATURE_MAX_SCHEMA_NAME_LENGTH]=
-		charstring::duplicate("0");
-
-	databasefeatures[FEATURE_MAX_STATEMENTS]=
-		charstring::duplicate("0");
-
-	databasefeatures[FEATURE_MAX_STATEMENT_LENGTH]=
-		charstring::duplicate("10485760");
-
-	databasefeatures[FEATURE_MAX_TABLES_IN_SELECT]=
-		charstring::duplicate("0");
-
-	databasefeatures[FEATURE_MAX_TABLE_NAME_LENGTH]=
-		charstring::duplicate("31");
-
-	databasefeatures[FEATURE_MAX_USER_NAME_LENGTH]=
-		charstring::duplicate("31");
-
-	databasefeatures[FEATURE_MIXED_CASE_IDENTIFIERS]=
-		charstring::duplicate("QUOTED_IDENTIFIERS");
-
-	databasefeatures[FEATURE_NEED_LONG_DATA_LENGTH]=
-		charstring::duplicate("false");
-
-	databasefeatures[FEATURE_NULL_PLUS_NON_NULL_IS_NULL]=
-		charstring::duplicate("true");
-
-	databasefeatures[FEATURE_NULL_SORT_ORDER]=
-		charstring::duplicate("LOW");
-
-	databasefeatures[FEATURE_NUMERIC_FUNCTIONS]=
-		charstring::duplicate(
-			"TAN,MOD,LOG,COS,ROUND,SQRT,ASIN,ATAN2,COT,"
-			"POWER,LOG10,ABS,FLOOR,DEGREES,CEILING,ACOS,"
-			"RADIANS,PI,SIN,SIGN,EXP,ATAN,TRUNCATE");
-
-	databasefeatures[FEATURE_OPEN_CURSORS_ACROSS]=
-		charstring::duplicate("");
-
-	databasefeatures[FEATURE_OPEN_STATEMENTS_ACROSS]=
-		charstring::duplicate("COMMIT,ROLLBACK");
-
-	databasefeatures[FEATURE_OTHERS_DELETES_ARE_VISIBLE]=
-		charstring::duplicate("");
-
-	databasefeatures[FEATURE_OTHERS_INSERTS_ARE_VISIBLE]=
-		charstring::duplicate("");
-
-	databasefeatures[FEATURE_OTHERS_UPDATES_ARE_VISIBLE]=
-		charstring::duplicate("");
-
-	databasefeatures[FEATURE_OUTER_JOINS]=
-		charstring::duplicate("BASIC,FULL,LIMITED");
-
-	databasefeatures[FEATURE_OWN_DELETES_ARE_VISIBLE]=
-		charstring::duplicate("SCROLL_INSENSITIVE,SCROLL_SENSITIVE");
-
-	databasefeatures[FEATURE_OWN_INSERTS_ARE_VISIBLE]=
-		charstring::duplicate("SCROLL_INSENSITIVE,SCROLL_SENSITIVE");
-
-	databasefeatures[FEATURE_OWN_UPDATES_ARE_VISIBLE]=
-		charstring::duplicate("SCROLL_INSENSITIVE,SCROLL_SENSITIVE");
-
-	databasefeatures[FEATURE_PREDICATES]=
-		charstring::duplicate("");
-
-	databasefeatures[FEATURE_PROCEDURE_TERM]=
-		charstring::duplicate("PROCEDURE");
-
-	databasefeatures[FEATURE_QUOTED_IDENTIFIER_CASE_STORAGE]=
-		charstring::duplicate("");
-
-	databasefeatures[FEATURE_RELATIONAL_JOIN_OPERATORS]=
-		charstring::duplicate("");
-
-	databasefeatures[FEATURE_RESULT_SET_CONCURRENCIES]=
-		charstring::duplicate(
-				"FORWARD_ONLY/READ_ONLY,FORWARD_ONLY/UPDATABLE,"
-				"SCROLL_INSENSITIVE/READ_ONLY,"
-				"SCROLL_INSENSITIVE/UPDATABLE,"
-				"SCROLL_SENSITIVE/READ_ONLY,"
-				"SCROLL_SENSITIVE/UPDATABLE");
-
-	databasefeatures[FEATURE_RESULT_SET_HOLDABILITIES]=
-		charstring::duplicate("HOLD_CURSORS_OVER_COMMIT,CLOSE_CURSORS_AT_COMMIT");
-
-	databasefeatures[FEATURE_RESULT_SET_TYPES]=
-		charstring::duplicate("FORWARD_ONLY,SCROLL_INSENSITIVE,SCROLL_SENSITIVE");
-
-	databasefeatures[FEATURE_REVOKE_CLAUSES]=
-		charstring::duplicate("");
-
-	databasefeatures[FEATURE_ROW_ID_LIFETIME]=
-		charstring::duplicate("ROWID_UNSUPPORTED");
-
-	databasefeatures[FEATURE_ROW_VALUE_CONSTRUCTOR_EXPRESSIONS]=
-		charstring::duplicate("");
-
-	databasefeatures[FEATURE_SCHEMA_TERM]=
-		charstring::duplicate("");
-
-	databasefeatures[FEATURE_SCHEMA_USAGE]=
-		charstring::duplicate("");
-
-	databasefeatures[FEATURE_SCROLL_CONCURRENCIES]=
-		charstring::duplicate("");
-
-	databasefeatures[FEATURE_SEARCH_STRING_ESCAPE]=
-		charstring::duplicate("\\");
-
-	databasefeatures[FEATURE_SQL_GRAMMAR_LEVELS]=
-		charstring::duplicate("MINIMUM,CORE,EXTENDED");
-
-	databasefeatures[FEATURE_SQL_KEYWORDS]=
-		charstring::duplicate(
-			"ADD,ADMIN,BIT_LENGTH,CURRENT_CONNECTION,"
-			"CURRENT_TRANSACTION,DELETING,GDSCODE,INDEX,"
-			"INSERTING,LONG,OFFSET,PLAN,POST_EVENT,"
-			"RDB$DB_KEY,RDB$RECORD_VERSION,RECORD_VERSION,"
-			"RECREATE,RETURNING_VALUES,ROW_COUNT,SQLCODE,"
-			"UPDATING,VARIABLE,VIEW,WHILE");
-
-	databasefeatures[FEATURE_SQL_STATE_TYPE]=
-		charstring::duplicate("2");
-
-	databasefeatures[FEATURE_STATIC_CURSOR_ATTRIBUTES]=
-		charstring::duplicate("");
-
-	databasefeatures[FEATURE_STORED_PROGRAMS]=
-		charstring::duplicate("PROCEDURES");
-
-	databasefeatures[FEATURE_STRING_FUNCTIONS]=
-		charstring::duplicate(
-			"CHARACTER_LENGTH,LEFT,REPEAT,CONCAT,SUBSTRING,"
-			"LENGTH,UCASE,CHAR,ASCII,SPACE,POSITION,LCASE,"
-			"LTRIM,RIGHT,INSERT,CHAR_LENGTH,LOCATE,REPLACE,"
-			"OCTET_LENGTH,RTRIM");
-
-	databasefeatures[FEATURE_SUBQUERY_USAGE]=
-		charstring::duplicate("COMPARISONS,EXISTS,INS,QUANTIFIEDS");
-
-	databasefeatures[FEATURE_SUPPORTS_BATCH_UPDATES]=
-		charstring::duplicate("true");
-
-	databasefeatures[FEATURE_SUPPORTS_COLUMN_ALIASING]=
-		charstring::duplicate("true");
-
-	databasefeatures[FEATURE_SUPPORTS_CONVERT]=
-		charstring::duplicate("true");
-
-	databasefeatures[FEATURE_SUPPORTS_CORRELATED_SUBQUERIES]=
-		charstring::duplicate("true");
-
-	databasefeatures[FEATURE_SUPPORTS_DESCRIBE_PARAMETER]=
-		charstring::duplicate("false");
-
-	databasefeatures[FEATURE_SUPPORTS_EXPRESSIONS_IN_ORDER_BY]=
-		charstring::duplicate("true");
-
-	databasefeatures[FEATURE_SUPPORTS_GET_GENERATED_KEYS]=
-		charstring::duplicate("true");
-
-	databasefeatures[FEATURE_SUPPORTS_INTEGRITY_ENHANCEMENT_FACILITY]=
-		charstring::duplicate("true");
-
-	databasefeatures[FEATURE_SUPPORTS_LIKE_ESCAPE_CLAUSE]=
-		charstring::duplicate("true");
-
-	databasefeatures[FEATURE_SUPPORTS_MULTIPLE_RESULT_SETS]=
-		charstring::duplicate("false");
-
-	databasefeatures[FEATURE_SUPPORTS_MULTIPLE_TRANSACTIONS]=
-		charstring::duplicate("true");
-
-	databasefeatures[FEATURE_SUPPORTS_NAMED_PARAMETERS]=
-		charstring::duplicate("false");
-
-	databasefeatures[FEATURE_SUPPORTS_NON_NULLABLE_COLUMNS]=
-		charstring::duplicate("true");
-
-	databasefeatures[FEATURE_SUPPORTS_ORDER_BY_UNRELATED]=
-		charstring::duplicate("true");
-
-	databasefeatures[FEATURE_SUPPORTS_SAVEPOINTS]=
-		charstring::duplicate("true");
-
-	databasefeatures[FEATURE_SUPPORTS_SELECT_FOR_UPDATE]=
-		charstring::duplicate("true");
-
-	databasefeatures[FEATURE_SUPPORTS_TRANSACTIONS]=
-		charstring::duplicate("true");
-
-	databasefeatures[FEATURE_SYSTEM_FUNCTIONS]=
-		charstring::duplicate("DATABASE,IFNULL,USER");
-
-	databasefeatures[FEATURE_TABLE_CORRELATION_NAMES]=
-		charstring::duplicate("BASIC");
-
-	databasefeatures[FEATURE_TABLE_TERM]=
-		charstring::duplicate("table");
-
-	databasefeatures[FEATURE_TIME_DATE_ADD_INTERVALS]=
-		charstring::duplicate("");
-
-	databasefeatures[FEATURE_TIME_DATE_DIFF_INTERVALS]=
-		charstring::duplicate("");
-
-	databasefeatures[FEATURE_TIME_DATE_FUNCTIONS]=
-		charstring::duplicate(
-			"DAYOFMONTH,MONTHNAME,MONTH,CURRENT_TIMESTAMP,"
-			"HOUR,DAYOFYEAR,TIMESTAMPADD,DAYOFWEEK,QUARTER,"
-			"TIMESTAMPDIFF,YEAR,CURTIME,NOW,DAYNAME,MINUTE,"
-			"SECOND,CURRENT_DATE,CURRENT_TIME,WEEK,CURDATE,"
-			"EXTRACT");
-
-	databasefeatures[FEATURE_TIME_DATE_LITERALS]=
-		charstring::duplicate("");
-
-	databasefeatures[FEATURE_TRANSACTION_DDL_DML]=
-		charstring::duplicate("");
-
-	databasefeatures[FEATURE_UNION_CLAUSES]=
-		charstring::duplicate("UNION,UNION_ALL");
-
-	databasefeatures[FEATURE_UPDATES_ARE_DETECTED]=
-		charstring::duplicate("");
-
-	databasefeatures[FEATURE_VALUE_EXPRESSIONS]=
-		charstring::duplicate("");
-
-	databasefeatures[FEATURE_WHERE_CURRENT_OF_OPERATIONS]=
-		charstring::duplicate("DELETE,UPDATE");
-
 	return databasefeatures;
 }
 

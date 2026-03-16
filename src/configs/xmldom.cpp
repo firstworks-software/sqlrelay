@@ -1997,7 +1997,8 @@ void sqlrconfig_xmldom::getTreeValues() {
 		}
 	}
 	if (!maxconnections) {
-		maxconnections=charstring::convertToInteger(DEFAULT_CONNECTIONS);
+		maxconnections=charstring::convertToInteger(
+						DEFAULT_CONNECTIONS);
 	}
 	attr=instance->getAttribute("maxqueuelength");
 	if (!attr->isNullNode()) {
