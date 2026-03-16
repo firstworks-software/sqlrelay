@@ -1763,8 +1763,7 @@ class postgresql extends sqlrtest {
 			// text as ascii stream
 			System.out.println("  row "+i+
 						" - text as ascii stream");
-			assertEquals(new String(rs.getAsciiStream(10).
-						readAllBytes(),"UTF-8"),
+			assertEquals(new String(streamToBytes(rs.getAsciiStream(10)),"UTF-8"),
 						"text"+i);
 			assertFalse(rs.wasNull());
 			System.out.println();
@@ -1773,7 +1772,7 @@ class postgresql extends sqlrtest {
 			System.out.println("  row "+i
 						+" - text as character stream");
 			StringWriter sw=new StringWriter();
-			rs.getCharacterStream(10).transferTo(sw);
+			readerToWriter(rs.getCharacterStream(10),sw);
 			assertEquals(sw.toString(),"text"+i);
 			assertFalse(rs.wasNull());
 			System.out.println();
@@ -1800,16 +1799,14 @@ class postgresql extends sqlrtest {
 						" - bytea as binary stream");
 			if (issqlrelay) {
 				// sqlrelay jdbc returns hex format
-				assertEquals(new String(
-					rs.getBinaryStream(11).
-					readAllBytes(),"UTF-8"),
+				assertEquals(new String(streamToBytes(
+					rs.getBinaryStream(11)),"UTF-8"),
 					"\\x6279746561"+
 					Integer.toHexString(48+i));
 			} else {
 				// postgresql jdbc returns raw bytes
-				assertEquals(new String(
-					rs.getBinaryStream(11).
-					readAllBytes(),"UTF-8"),
+				assertEquals(new String(streamToBytes(
+					rs.getBinaryStream(11)),"UTF-8"),
 					"bytea"+i);
 			}
 			assertFalse(rs.wasNull());
@@ -1935,8 +1932,7 @@ class postgresql extends sqlrtest {
 			// text as ascii stream
 			System.out.println("  row "+i+
 						" - text as ascii stream");
-			assertEquals(new String(rs.getAsciiStream("testtext").
-						readAllBytes(),"UTF-8"),
+			assertEquals(new String(streamToBytes(rs.getAsciiStream("testtext")),"UTF-8"),
 						"text"+i);
 			assertFalse(rs.wasNull());
 			System.out.println();
@@ -1945,7 +1941,7 @@ class postgresql extends sqlrtest {
 			System.out.println("  row "+i
 						+" - text as character stream");
 			StringWriter sw=new StringWriter();
-			rs.getCharacterStream("testtext").transferTo(sw);
+			readerToWriter(rs.getCharacterStream("testtext"),sw);
 			assertEquals(sw.toString(),"text"+i);
 			assertFalse(rs.wasNull());
 			System.out.println();
@@ -1972,16 +1968,14 @@ class postgresql extends sqlrtest {
 						+" - bytea as binary stream");
 			if (issqlrelay) {
 				// sqlrelay jdbc returns hex format
-				assertEquals(new String(
-					rs.getBinaryStream("testbytea").
-					readAllBytes(),"UTF-8"),
+				assertEquals(new String(streamToBytes(
+					rs.getBinaryStream("testbytea")),"UTF-8"),
 					"\\x6279746561"+
 					Integer.toHexString(48+i));
 			} else {
 				// postgresql jdbc returns raw bytes
-				assertEquals(new String(
-					rs.getBinaryStream("testbytea").
-					readAllBytes(),"UTF-8"),
+				assertEquals(new String(streamToBytes(
+					rs.getBinaryStream("testbytea")),"UTF-8"),
 					"bytea"+i);
 			}
 			assertFalse(rs.wasNull());

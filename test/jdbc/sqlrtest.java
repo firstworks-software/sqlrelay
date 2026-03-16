@@ -185,6 +185,32 @@ class sqlrtest {
 		}
 	}
 
+	// Java 7 compatible replacement for InputStream.readAllBytes()
+	// (added in Java 9)
+	protected static byte[] streamToBytes(java.io.InputStream is)
+							throws Exception {
+		java.io.ByteArrayOutputStream buf=
+					new java.io.ByteArrayOutputStream();
+		byte[]	b=new byte[4096];
+		int	len;
+		while ((len=is.read(b))!=-1) {
+			buf.write(b,0,len);
+		}
+		return buf.toByteArray();
+	}
+
+	// Java 7 compatible replacement for Reader.transferTo(Writer)
+	// (added in Java 10)
+	protected static void readerToWriter(java.io.Reader r,
+						java.io.Writer w)
+						throws Exception {
+		char[]	buf=new char[4096];
+		int	len;
+		while ((len=r.read(buf))!=-1) {
+			w.write(buf,0,len);
+		}
+	}
+
 	protected static void reportTestStatus() {
 
 		if (status==0) {

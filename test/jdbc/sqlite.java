@@ -1673,8 +1673,7 @@ class sqlite extends sqlrtest {
 			// clob as ascii stream
 			System.out.println("  row "+i+
 						" - clob as ascii stream");
-			assertEquals(new String(rs.getAsciiStream(5).
-						readAllBytes(),"UTF-8"),
+			assertEquals(new String(streamToBytes(rs.getAsciiStream(5)),"UTF-8"),
 						"clob"+i);
 			assertFalse(rs.wasNull());
 			System.out.println();
@@ -1683,7 +1682,7 @@ class sqlite extends sqlrtest {
 			System.out.println("  row "+i
 						+" - clob as character stream");
 			StringWriter sw=new StringWriter();
-			rs.getCharacterStream(5).transferTo(sw);
+			readerToWriter(rs.getCharacterStream(5),sw);
 			assertEquals(sw.toString(),"clob"+i);
 			assertFalse(rs.wasNull());
 			System.out.println();
@@ -1705,8 +1704,7 @@ class sqlite extends sqlrtest {
 			// blob as binary stream
 			System.out.println("  row "+i
 						+" - blob as binary stream");
-			assertEquals(new String(rs.getBinaryStream(6).
-						readAllBytes(),"UTF-8"),
+			assertEquals(new String(streamToBytes(rs.getBinaryStream(6)),"UTF-8"),
 						"blob"+i);
 			assertFalse(rs.wasNull());
 			System.out.println();
@@ -1796,8 +1794,7 @@ class sqlite extends sqlrtest {
 			// clob as ascii stream
 			System.out.println("  row "+i+
 						" - clob as ascii stream");
-			assertEquals(new String(rs.getAsciiStream("testclob").
-						readAllBytes(),"UTF-8"),
+			assertEquals(new String(streamToBytes(rs.getAsciiStream("testclob")),"UTF-8"),
 						"clob"+i);
 			assertFalse(rs.wasNull());
 			System.out.println();
@@ -1806,7 +1803,7 @@ class sqlite extends sqlrtest {
 			System.out.println("  row "+i+
 						" - clob as character stream");
 			StringWriter sw=new StringWriter();
-			rs.getCharacterStream("testclob").transferTo(sw);
+			readerToWriter(rs.getCharacterStream("testclob"),sw);
 			assertEquals(sw.toString(),"clob"+i);
 			assertFalse(rs.wasNull());
 			System.out.println();
@@ -1828,8 +1825,7 @@ class sqlite extends sqlrtest {
 			// blob as binary stream
 			System.out.println("  row "+i+
 						" - blob as binary stream");
-			assertEquals(new String(rs.getBinaryStream("testblob").
-						readAllBytes(),"UTF-8"),
+			assertEquals(new String(streamToBytes(rs.getBinaryStream("testblob")),"UTF-8"),
 						"blob"+i);
 			assertFalse(rs.wasNull());
 			System.out.println();

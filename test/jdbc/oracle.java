@@ -2153,8 +2153,7 @@ class oracle extends sqlrtest {
 
 			// clob as ascii stream
 			System.out.println("  row "+i+" - clob as ascii stream");
-			assertEquals(new String(rs.getAsciiStream(6).
-							readAllBytes(),"UTF-8"),
+			assertEquals(new String(streamToBytes(rs.getAsciiStream(6)),"UTF-8"),
 							"testclob"+i);
 			assertFalse(rs.wasNull());
 			System.out.println();
@@ -2163,7 +2162,7 @@ class oracle extends sqlrtest {
 			System.out.println("  row "+i+
 					" - clob as character stream");
 			StringWriter sw=new StringWriter();
-			rs.getCharacterStream(6).transferTo(sw);
+			readerToWriter(rs.getCharacterStream(6),sw);
 			assertEquals(sw.toString(),"testclob"+i);
 			assertFalse(rs.wasNull());
 			System.out.println();
@@ -2172,7 +2171,7 @@ class oracle extends sqlrtest {
 			System.out.println("  row "+i+
 					" - clob as ncharacter stream");
 			sw=new StringWriter();
-			rs.getNCharacterStream(6).transferTo(sw);
+			readerToWriter(rs.getNCharacterStream(6),sw);
 			assertEquals(sw.toString(),"testclob"+i);
 			assertFalse(rs.wasNull());
 			System.out.println();
@@ -2184,8 +2183,7 @@ class oracle extends sqlrtest {
 				System.out.println("  row "+i+
 					" - clob as unicode stream");
 				assertEquals(new String(
-						rs.getUnicodeStream(6).
-							readAllBytes(),"UTF-8"),
+						streamToBytes(rs.getUnicodeStream(6)),"UTF-8"),
 							"testclob"+i);
 				assertFalse(rs.wasNull());
 				System.out.println();
@@ -2213,8 +2211,7 @@ class oracle extends sqlrtest {
 			// blob as binary stream
 			System.out.println("  row "+i+
 					" - blob as binary stream");
-			assertEquals(new String(rs.getBinaryStream(7).
-						readAllBytes(),"UTF-8"),
+			assertEquals(new String(streamToBytes(rs.getBinaryStream(7)),"UTF-8"),
 						(i==1)?"":"testblob"+i);
 			assertFalse(rs.wasNull());
 			System.out.println();
@@ -2337,8 +2334,7 @@ class oracle extends sqlrtest {
 			// clob as ascii stream
 			System.out.println("  row "+i+
 					" - clob as ascii stream");
-			assertEquals(new String(rs.getAsciiStream("TESTCLOB").
-							readAllBytes(),"UTF-8"),
+			assertEquals(new String(streamToBytes(rs.getAsciiStream("TESTCLOB")),"UTF-8"),
 							"testclob"+i);
 			assertFalse(rs.wasNull());
 			System.out.println();
@@ -2347,7 +2343,7 @@ class oracle extends sqlrtest {
 			System.out.println("  row "+i+
 					" - clob as character stream");
 			StringWriter sw=new StringWriter();
-			rs.getCharacterStream("TESTCLOB").transferTo(sw);
+			readerToWriter(rs.getCharacterStream("TESTCLOB"),sw);
 			assertEquals(sw.toString(),"testclob"+i);
 			assertFalse(rs.wasNull());
 			System.out.println();
@@ -2356,7 +2352,7 @@ class oracle extends sqlrtest {
 			System.out.println("  row "+i+
 					" - clob as ncharacter stream");
 			sw=new StringWriter();
-			rs.getNCharacterStream("TESTCLOB").transferTo(sw);
+			readerToWriter(rs.getNCharacterStream("TESTCLOB"),sw);
 			assertEquals(sw.toString(),"testclob"+i);
 			assertFalse(rs.wasNull());
 			System.out.println();
@@ -2368,8 +2364,7 @@ class oracle extends sqlrtest {
 				System.out.println("  row "+i+
 					" - clob as unicode stream");
 				assertEquals(new String(
-						rs.getUnicodeStream("TESTCLOB").
-							readAllBytes(),"UTF-8"),
+						streamToBytes(rs.getUnicodeStream("TESTCLOB")),"UTF-8"),
 							"testclob"+i);
 				assertFalse(rs.wasNull());
 				System.out.println();
@@ -2397,8 +2392,7 @@ class oracle extends sqlrtest {
 			// blob as binary stream
 			System.out.println("  row "+i+
 					" - blob as binary stream");
-			assertEquals(new String(rs.getBinaryStream("TESTBLOB").
-						readAllBytes(),"UTF-8"),
+			assertEquals(new String(streamToBytes(rs.getBinaryStream("TESTBLOB")),"UTF-8"),
 						(i==1)?"":"testblob"+i);
 			assertFalse(rs.wasNull());
 			System.out.println();

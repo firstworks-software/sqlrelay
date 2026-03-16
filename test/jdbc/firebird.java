@@ -1801,8 +1801,7 @@ class firebird extends sqlrtest {
 
 			// blob as binary stream
 			System.out.println("  row "+i+" - blob as binary stream");
-			assertEquals(new String(rs.getBinaryStream(12).
-						readAllBytes(),"UTF-8"),
+			assertEquals(new String(streamToBytes(rs.getBinaryStream(12)),"UTF-8"),
 						"blob"+i);
 			assertFalse(rs.wasNull());
 			System.out.println();
@@ -1937,8 +1936,7 @@ class firebird extends sqlrtest {
 
 			// blob as binary stream
 			System.out.println("  row "+i+" - blob as binary stream");
-			assertEquals(new String(rs.getBinaryStream("TESTBLOB").
-						readAllBytes(),"UTF-8"),
+			assertEquals(new String(streamToBytes(rs.getBinaryStream("TESTBLOB")),"UTF-8"),
 						"blob"+i);
 			assertFalse(rs.wasNull());
 			System.out.println();

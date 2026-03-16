@@ -2294,8 +2294,7 @@ class mysql extends sqlrtest {
 
 			// text as ascii stream
 			System.out.println("  row "+i+" - text as ascii stream");
-			assertEquals(new String(rs.getAsciiStream(15).
-							readAllBytes(),"UTF-8"),
+			assertEquals(new String(streamToBytes(rs.getAsciiStream(15)),"UTF-8"),
 							"text"+i);
 			assertFalse(rs.wasNull());
 			System.out.println();
@@ -2304,7 +2303,7 @@ class mysql extends sqlrtest {
 			System.out.println("  row "+i+
 					" - text as character stream");
 			StringWriter sw=new StringWriter();
-			rs.getCharacterStream(15).transferTo(sw);
+			readerToWriter(rs.getCharacterStream(15),sw);
 			assertEquals(sw.toString(),"text"+i);
 			assertFalse(rs.wasNull());
 			System.out.println();
@@ -2315,7 +2314,7 @@ if (issqlrelay) {
 			System.out.println("  row "+i+
 					" - text as ncharacter stream");
 			sw=new StringWriter();
-			rs.getNCharacterStream(15).transferTo(sw);
+			readerToWriter(rs.getNCharacterStream(15),sw);
 			assertEquals(sw.toString(),"text"+i);
 			assertFalse(rs.wasNull());
 			System.out.println();
@@ -2330,8 +2329,7 @@ if (issqlrelay) {
 			System.out.println("  row "+i+
 					" - text as unicode stream");
 			assertEquals(new String(
-					rs.getUnicodeStream(15).
-						readAllBytes(),"UTF-8"),
+					streamToBytes(rs.getUnicodeStream(15)),"UTF-8"),
 						"text"+i);
 			assertFalse(rs.wasNull());
 			System.out.println();
@@ -2376,8 +2374,7 @@ if (issqlrelay) {
 			// blob as binary stream
 			System.out.println("  row "+i+
 					" - blob as binary stream");
-			assertEquals(new String(rs.getBinaryStream(19).
-						readAllBytes(),"UTF-8"),
+			assertEquals(new String(streamToBytes(rs.getBinaryStream(19)),"UTF-8"),
 						"blob"+i);
 			assertFalse(rs.wasNull());
 			System.out.println();
@@ -2555,8 +2552,7 @@ if (issqlrelay) {
 			// text as ascii stream
 			System.out.println("  row "+i+
 					" - text as ascii stream");
-			assertEquals(new String(rs.getAsciiStream("testtext").
-							readAllBytes(),"UTF-8"),
+			assertEquals(new String(streamToBytes(rs.getAsciiStream("testtext")),"UTF-8"),
 							"text"+i);
 			assertFalse(rs.wasNull());
 			System.out.println();
@@ -2565,7 +2561,7 @@ if (issqlrelay) {
 			System.out.println("  row "+i+
 					" - text as character stream");
 			StringWriter sw=new StringWriter();
-			rs.getCharacterStream("testtext").transferTo(sw);
+			readerToWriter(rs.getCharacterStream("testtext"),sw);
 			assertEquals(sw.toString(),"text"+i);
 			assertFalse(rs.wasNull());
 			System.out.println();
@@ -2577,7 +2573,7 @@ if (issqlrelay) {
 			System.out.println("  row "+i+
 					" - text as ncharacter stream");
 			sw=new StringWriter();
-			rs.getNCharacterStream("testtext").transferTo(sw);
+			readerToWriter(rs.getNCharacterStream("testtext"),sw);
 			assertEquals(sw.toString(),"text"+i);
 			assertFalse(rs.wasNull());
 			System.out.println();
@@ -2593,8 +2589,7 @@ if (issqlrelay) {
 				System.out.println("  row "+i+
 					" - text as unicode stream");
 				assertEquals(new String(
-						rs.getUnicodeStream("testtext").
-							readAllBytes(),"UTF-8"),
+						streamToBytes(rs.getUnicodeStream("testtext")),"UTF-8"),
 							"text"+i);
 				assertFalse(rs.wasNull());
 				System.out.println();
@@ -2640,8 +2635,7 @@ if (issqlrelay) {
 			// blob as binary stream
 			System.out.println("  row "+i+
 					" - blob as binary stream");
-			assertEquals(new String(rs.getBinaryStream("testblob").
-						readAllBytes(),"UTF-8"),
+			assertEquals(new String(streamToBytes(rs.getBinaryStream("testblob")),"UTF-8"),
 						"blob"+i);
 			assertFalse(rs.wasNull());
 			System.out.println();

@@ -2,7 +2,7 @@
 %{!?tcl_sitearch: %global tcl_sitearch %{_libdir}/tcl%{tcl_version}}
 
 Name: sqlrelay
-Version: 2.1.1
+Version: 2.1.2
 Release: 1%{?dist}
 Summary: Database proxy
 
@@ -218,6 +218,16 @@ Requires: java-headless, javapackages-tools
 
 %description -n java-%{name}
 Java bindings for the SQL Relay client API.
+
+
+%package -n jdbc-%{name}
+License: LGPLv2
+Summary: JDBC driver for SQL Relay
+BuildRequires: java-devel
+Requires: java-headless, javapackages-tools, java-%{name}%{?_isa} = %{version}-%{release}
+
+%description -n jdbc-%{name}
+JDBC driver for SQL Relay.
 
 
 %package -n tcl-%{name}
@@ -674,9 +684,12 @@ cp -r %{buildroot}%{_docdir}/%{name}/api/java %{buildroot}%{_javadocdir}/%{name}
 %{php_inidir}/pdo_%{name}.ini
 
 %files -n java-%{name}
-%{_javadir}/*.jar
+%{_javadir}/sqlrelay.jar
 %dir %{_libdir}/%{name}
 %{_libdir}/%{name}/*.so
+
+%files -n jdbc-%{name}
+%{_javadir}/sqlrelayjdbc.jar
 
 %files -n tcl-%{name}
 %{tcl_sitearch}/%{name}
@@ -750,6 +763,10 @@ cp -r %{buildroot}%{_docdir}/%{name}/api/java %{buildroot}%{_javadocdir}/%{name}
 %{_javadocdir}/%{name}
 
 %changelog
+* Mon Mar 16 2026 David Muse <david.muse@firstworks.com> - 2.1.2-1
+- Added jdbc driver.
+- Updated to version 2.1.2.
+
 * Mon Jan 20 2025 David Muse <david.muse@firstworks.com> - 2.1.1-1
 - Updated to version 2.1.1.
 

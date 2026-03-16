@@ -1824,8 +1824,7 @@ class sap extends sqlrtest {
 			// text as ascii stream
 			System.out.println("  row "+i+
 					" - text as ascii stream");
-			assertEquals(new String(rs.getAsciiStream(15).
-						readAllBytes(),"UTF-8"),
+			assertEquals(new String(streamToBytes(rs.getAsciiStream(15)),"UTF-8"),
 						"text"+i);
 			assertFalse(rs.wasNull());
 			System.out.println();
@@ -1834,7 +1833,7 @@ class sap extends sqlrtest {
 			System.out.println("  row "+i+
 					" - text as character stream");
 			StringWriter sw=new StringWriter();
-			rs.getCharacterStream(15).transferTo(sw);
+			readerToWriter(rs.getCharacterStream(15),sw);
 			assertEquals(sw.toString(),"text"+i);
 			assertFalse(rs.wasNull());
 			System.out.println();
@@ -1986,8 +1985,7 @@ class sap extends sqlrtest {
 			// text as ascii stream
 			System.out.println("  row "+i+
 					" - text as ascii stream");
-			assertEquals(new String(rs.getAsciiStream("testtext").
-						readAllBytes(),"UTF-8"),
+			assertEquals(new String(streamToBytes(rs.getAsciiStream("testtext")),"UTF-8"),
 						"text"+i);
 			assertFalse(rs.wasNull());
 			System.out.println();
@@ -1996,7 +1994,7 @@ class sap extends sqlrtest {
 			System.out.println("  row "+i+
 					" - text as character stream");
 			StringWriter sw=new StringWriter();
-			rs.getCharacterStream("testtext").transferTo(sw);
+			readerToWriter(rs.getCharacterStream("testtext"),sw);
 			assertEquals(sw.toString(),"text"+i);
 			assertFalse(rs.wasNull());
 			System.out.println();
