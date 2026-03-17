@@ -29,6 +29,7 @@ disableperl=false
 disablepython=false
 disableruby=false
 disablejava=false
+disablejdbc=false
 disablephp=false
 disabletcl=false
 disablenodejs=false
@@ -81,6 +82,7 @@ if WScript.Arguments.Count>0 then
 		WScript.Echo("  --disable-python       Don't build Python api")
 		WScript.Echo("  --disable-ruby         Don't build Ruby api")
 		WScript.Echo("  --disable-java         Don't build Java api")
+		WScript.Echo("  --disable-jdbc         Don't build JDBC api")
 		WScript.Echo("  --disable-php          Don't build PHP api")
 		WScript.Echo("  --disable-tcl          Don't build TCL api")
 		WScript.Echo("  --disable-nodejs       Don't build node.js api")
@@ -800,10 +802,17 @@ if JAVAPREFIX="" then
 end if
 
 if disablejava=false then
-	APIALLSUBDIRS=APIALLSUBDIRS+" all-java all-jdbc"
-	APICLEANSUBDIRS=APICLEANSUBDIRS+" clean-java clean-jdbc"
-	APIINSTALLSUBDIRS=APIINSTALLSUBDIRS+" install-java install-jdbc"
-	APIUNINSTALLSUBDIRS=APIUNINSTALLSUBDIRS+ " uninstall-java uninstall-jdbc"
+	APIALLSUBDIRS=APIALLSUBDIRS+" all-java"
+	APICLEANSUBDIRS=APICLEANSUBDIRS+" clean-java"
+	APIINSTALLSUBDIRS=APIINSTALLSUBDIRS+" install-java"
+	APIUNINSTALLSUBDIRS=APIUNINSTALLSUBDIRS+ " uninstall-java"
+
+	if disablejdbc=false then
+		APIALLSUBDIRS=APIALLSUBDIRS+" all-jdbc"
+		APICLEANSUBDIRS=APICLEANSUBDIRS+" clean-jdbc"
+		APIINSTALLSUBDIRS=APIINSTALLSUBDIRS+" install-jdbc"
+		APIUNINSTALLSUBDIRS=APIUNINSTALLSUBDIRS+ " uninstall-jdbc"
+	end if
 
 	WScript.Echo("Java prefix... " & JAVAPREFIX)
 else
@@ -937,6 +946,7 @@ PHPBUILD="no "
 PHPPDOBUILD="no "
 ODBCDRIVERBUILD="no "
 JAVABUILD="no "
+JDBCBUILD="no "
 TCLBUILD="no "
 CSBUILD="no "
 NODEJSBUILD="no "
@@ -974,6 +984,14 @@ end if
 if disablejava=false then
 	JAVABUILD="yes"
 	TESTAPIS=TESTAPIS & """java"","
+end if
+if disablejdbc=false then
+	JDBCBUILD="yes"
+	TESTAPIS=TESTAPIS & """jdbc"","
+end if
+if disablejdbc=false then
+	JDBCBUILD="yes"
+	TESTAPIS=TESTAPIS & """jdbc"","
 end if
 if disabletcl=false then
 	TCLBUILD="yes"
@@ -1309,7 +1327,7 @@ WSCript.Echo("                Python      " & PYTHONBUILD & "           Ruby    
 WSCript.Echo("                PHP         " & PHPBUILD & "           Java       " & JAVABUILD)
 WSCript.Echo("                PHP PDO     " & PHPPDOBUILD & "           ODBC       " & ODBCDRIVERBUILD)
 WSCript.Echo("                TCL         " & TCLBUILD & "           C#         " & CSBUILD)
-WScript.Echo("                node.js     " & NODEJSBUILD)
+WScript.Echo("                node.js     " & NODEJSBUILD & "           JDBC       " & JDBCBUILD)
 WSCript.Echo("")
 WScript.Echo(" Databases    : Oracle8     " & ORACLE8BUILD & "       MySQL      " & MYSQLBUILD)
 WScript.Echo("                PostgreSQL  " & POSTGRESQLBUILD & "       SAP/Sybase " & SYBASEBUILD)

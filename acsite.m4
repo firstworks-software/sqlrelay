@@ -2622,8 +2622,10 @@ if ( test "$ENABLE_JAVA" = "yes" )
 then
 
 	HAVE_JAVA=""
+	HAVE_JDBC=""
 	JAVAC=""
 	JAVAINCLUDES=""
+	JAVAMAJORVERSION=""
 
 	if ( test "$cross_compiling" = "yes" )
 	then
@@ -2809,7 +2811,27 @@ EOF
 #endif
 #include <jni.h>],[JNIEnv *env; jobjectArray a=(jobjectArray)env->NewObjectArray(0,NULL,NULL);],[$JAVAINCLUDES],[AC_DEFINE(CAST_NEW_OBJECT_ARRAY,1,On some platforms NewObjectArray requires a cast)],[])
 	else
-		AC_MSG_WARN(The Java API will not be built.)
+		AC_MSG_WARN(The Java and JDBC APIs will not be built.)
+	fi
+
+	if ( test -n "$HAVE_JAVA" -a -n "$ENABLE_JDBC" )
+	then
+		AC_MSG_CHECKING(for java major version)
+		JAVAVERSION=`$JAVAC -version 2>&1 | cut -d' ' -f2`
+		JAVAMAJORVERSION=`echo $JAVAVERSION | cut -d'.' -f1`
+		if ( test "$JAVAMAJORVERSION" = "1" )
+		then
+			dnl prior to java 9 were 1.X
+			JAVAMAJORVERSION=`echo $JAVAVERSION | cut -d'.' -f2`
+		fi
+		AC_MSG_RESULT($JAVAMAJORVERSION)
+
+		if ( test -n "$JAVAMAJORVERSION" -a "$JAVAMAJORVERSION" -ge "7" )
+		then
+			HAVE_JDBC="yes"
+		else
+			AC_MSG_WARN(The JDBC API will not be built (Java version < 7))
+		fi
 	fi
 
 	FW_INCLUDES(java,[$JAVAINCLUDES])
@@ -2821,6 +2843,7 @@ EOF
 	fi
 		
 	AC_SUBST(HAVE_JAVA)
+	AC_SUBST(HAVE_JDBC)
 	AC_SUBST(JAVAC)
 	AC_SUBST(JAR)
 	AC_SUBST(JAVAINCLUDES)

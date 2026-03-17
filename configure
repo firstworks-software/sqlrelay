@@ -719,6 +719,7 @@ CURSORCLASSPATH
 JAVAINCLUDES
 JAR
 JAVAC
+HAVE_JDBC
 HAVE_JAVA
 RUBYLIB
 HAVE_RUBY
@@ -1048,6 +1049,7 @@ with_ruby_site_arch_dir
 with_java_prefix
 enable_java
 enable_java_rpath
+enable_jdbc
 with_php_prefix
 enable_php
 enable_php_rpath
@@ -1768,6 +1770,7 @@ Optional Features:
   --enable-ruby-rpath           Use -rpath when linking the Ruby library against the SQL Relay client library
   --disable-java                Don't build Java api
   --enable-java-rpath           Use -rpath when linking the Java library against the SQL Relay client library
+  --disable-jdbc                Don't build JDBC api
   --disable-php                 Don't build PHP api
   --enable-php-rpath            Use -rpath when linking the PHP library against the SQL Relay client library
   --disable-tcl                 Don't build TCL api
@@ -3920,6 +3923,14 @@ then :
   enableval=$enable_java_rpath; JAVAUSERPATH="yes"
 else $as_nop
   JAVAUSERPATH=""
+fi
+
+# Check whether --enable-jdbc was given.
+if test ${enable_jdbc+y}
+then :
+  enableval=$enable_jdbc; ENABLE_JDBC=""
+else $as_nop
+  ENABLE_JDBC="yes"
 fi
 
 
@@ -39992,8 +40003,10 @@ if ( test "$ENABLE_JAVA" = "yes" )
 then
 
 	HAVE_JAVA=""
+	HAVE_JDBC=""
 	JAVAC=""
 	JAVAINCLUDES=""
+	JAVAMAJORVERSION=""
 
 	if ( test "$cross_compiling" = "yes" )
 	then
@@ -40253,8 +40266,30 @@ rm -f core conftest.err conftest.$ac_objext conftest.beam conftest.$ac_ext
 CPPFLAGS="$SAVECPPFLAGS"
 
 	else
-		{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: WARNING: The Java API will not be built." >&5
-printf "%s\n" "$as_me: WARNING: The Java API will not be built." >&2;}
+		{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: WARNING: The Java and JDBC APIs will not be built." >&5
+printf "%s\n" "$as_me: WARNING: The Java and JDBC APIs will not be built." >&2;}
+	fi
+
+	if ( test -n "$HAVE_JAVA" -a -n "$ENABLE_JDBC" )
+	then
+		{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for java major version" >&5
+printf %s "checking for java major version... " >&6; }
+		JAVAVERSION=`$JAVAC -version 2>&1 | cut -d' ' -f2`
+		JAVAMAJORVERSION=`echo $JAVAVERSION | cut -d'.' -f1`
+		if ( test "$JAVAMAJORVERSION" = "1" )
+		then
+						JAVAMAJORVERSION=`echo $JAVAVERSION | cut -d'.' -f2`
+		fi
+		{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $JAVAMAJORVERSION" >&5
+printf "%s\n" "$JAVAMAJORVERSION" >&6; }
+
+		if ( test -n "$JAVAMAJORVERSION" -a "$JAVAMAJORVERSION" -ge "7" )
+		then
+			HAVE_JDBC="yes"
+		else
+			{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: WARNING: The JDBC API will not be built (Java version < 7)" >&5
+printf "%s\n" "$as_me: WARNING: The JDBC API will not be built (Java version < 7)" >&2;}
+		fi
 	fi
 
 
@@ -40269,6 +40304,7 @@ fi
 	then
 		CURSORCLASSPATH="-classpath \$(top_builddir)/src/api/java"
 	fi
+
 
 
 
@@ -42557,6 +42593,7 @@ RUBYBUILD="no "
 PHPBUILD="no "
 PHPPDOBUILD="no "
 JAVABUILD="no "
+JDBCBUILD="no "
 TCLBUILD="no "
 ERLANGBUILD="no "
 MONOBUILD="no "
@@ -42589,7 +42626,11 @@ if ( test -n "$HAVE_PHP_PDO" ); then
 fi
 if ( test -n "$HAVE_JAVA" ); then
 	JAVABUILD="yes"
-	TESTAPIS="$TESTAPIS java jdbc"
+	TESTAPIS="$TESTAPIS java"
+fi
+if ( test -n "$HAVE_JDBC" ); then
+	JDBCBUILD="yes"
+	TESTAPIS="$TESTAPIS jdbc"
 fi
 if ( test -n "$HAVE_TCL" ); then
 	TCLBUILD="yes"
@@ -45218,12 +45259,13 @@ echo " Branding     : $SQL_RELAY / $SQLRELAY / $SQLR"
 echo
 echo " Command Line : Clients     $CMDLINEBUILD"
 echo
-echo " APIs         : C/C++       $CPPBUILD           Perl       $PERLBUILD"
-echo "                Python      $PYTHONBUILD           Ruby       $RUBYBUILD"
-echo "                PHP         $PHPBUILD           Java       $JAVABUILD"
-echo "                PHP PDO     $PHPPDOBUILD           ODBC       $ODBCDRIVERBUILD"
-echo "                TCL         $TCLBUILD           Erlang     $ERLANGBUILD"
-echo "                Mono        $MONOBUILD           node.js    $NODEJSBUILD"
+echo " APIs         : C/C++       $CPPBUILD           Ruby       $RUBYBUILD"
+echo "                Perl        $PERLBUILD           ODBC       $ODBCDRIVERBUILD"
+echo "                Python      $PYTHONBUILD           Java       $JAVABUILD"
+echo "                PHP         $PHPBUILD           JDBC       $JDBCBUILD"
+echo "                PHP PDO     $PHPPDOBUILD           Erlang     $ERLANGBUILD"
+echo "                TCL         $TCLBUILD           node.js    $NODEJSBUILD"
+echo "                Mono        $MONOBUILD"
 echo
 echo " Databases    : Oracle      $ORACLEBUILD    MySQL      $MYSQLBUILD"
 echo "                PostgreSQL  $POSTGRESQLBUILD    SQLite     $SQLITEBUILD"

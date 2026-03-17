@@ -315,6 +315,7 @@ endif
 
 # java
 HAVE_JAVA = @HAVE_JAVA@
+HAVE_JDBC = @HAVE_JDBC@
 JAVAC = @JAVAC@
 JAR = @JAR@
 JAVAINCLUDES = @JAVAINCLUDES@
@@ -800,9 +801,15 @@ endif
 
 
 # tests
-TESTALLSUBDIRS = all-c all-cpp all-java all-jdbc all-protocol all-stress all-tcl all-crud
+TESTALLSUBDIRS = all-c all-cpp all-protocol all-stress all-tcl all-crud
 ifneq ($(HAVE_MONO),)
 TESTALLSUBDIRS += all-cs
+endif
+ifneq ($(HAVE_JAVA),)
+TESTALLSUBDIRS += all-java
+endif
+ifneq ($(HAVE_JDBC),)
+TESTALLSUBDIRS += all-jdbc
 endif
 TESTPROTOCOLSUBDIRS =
 ifneq ($(strip $(MYSQLLIBS)),)
@@ -934,8 +941,12 @@ APIINSTALLSUBDIRS += install-phppdo
 APIUNINSTALLSUBDIRS += uninstall-phppdo
 endif
 ifneq ($(HAVE_JAVA),)
-APIALLSUBDIRS += all-java all-jdbc
-APIINSTALLSUBDIRS += install-java install-jdbc
+APIALLSUBDIRS += all-java
+APIINSTALLSUBDIRS += install-java
+endif
+ifneq ($(HAVE_JDBC),)
+APIALLSUBDIRS += all-jdbc
+APIINSTALLSUBDIRS += install-jdbc
 endif
 ifneq ($(HAVE_TCL),)
 APIALLSUBDIRS += all-tcl

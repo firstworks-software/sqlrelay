@@ -296,6 +296,10 @@ AC_ARG_ENABLE(java-rpath,
 	[  --enable-java-rpath           Use -rpath when linking the Java library against the SQL Relay client library],
 	JAVAUSERPATH="yes",
 	JAVAUSERPATH="")
+AC_ARG_ENABLE(jdbc,
+	[  --disable-jdbc                Don't build JDBC api],
+	ENABLE_JDBC="",
+	ENABLE_JDBC="yes")
 AC_ARG_WITH(php-prefix,
 	[  --with-php-prefix             Location of PHP],
 	PHPPATH="$withval",
@@ -927,6 +931,7 @@ RUBYBUILD="no "
 PHPBUILD="no "
 PHPPDOBUILD="no "
 JAVABUILD="no "
+JDBCBUILD="no "
 TCLBUILD="no "
 ERLANGBUILD="no "
 MONOBUILD="no "
@@ -959,7 +964,11 @@ if ( test -n "$HAVE_PHP_PDO" ); then
 fi
 if ( test -n "$HAVE_JAVA" ); then
 	JAVABUILD="yes"
-	TESTAPIS="$TESTAPIS java jdbc"
+	TESTAPIS="$TESTAPIS java"
+fi
+if ( test -n "$HAVE_JDBC" ); then
+	JDBCBUILD="yes"
+	TESTAPIS="$TESTAPIS jdbc"
 fi
 if ( test -n "$HAVE_TCL" ); then
 	TCLBUILD="yes"
@@ -1150,12 +1159,13 @@ echo " Branding     : $SQL_RELAY / $SQLRELAY / $SQLR"
 echo
 echo " Command Line : Clients     $CMDLINEBUILD"
 echo
-echo " APIs         : C/C++       $CPPBUILD           Perl       $PERLBUILD"
-echo "                Python      $PYTHONBUILD           Ruby       $RUBYBUILD"
-echo "                PHP         $PHPBUILD           Java       $JAVABUILD"
-echo "                PHP PDO     $PHPPDOBUILD           ODBC       $ODBCDRIVERBUILD"
-echo "                TCL         $TCLBUILD           Erlang     $ERLANGBUILD"
-echo "                Mono        $MONOBUILD           node.js    $NODEJSBUILD"
+echo " APIs         : C/C++       $CPPBUILD           Ruby       $RUBYBUILD"
+echo "                Perl        $PERLBUILD           ODBC       $ODBCDRIVERBUILD"
+echo "                Python      $PYTHONBUILD           Java       $JAVABUILD"
+echo "                PHP         $PHPBUILD           JDBC       $JDBCBUILD"
+echo "                PHP PDO     $PHPPDOBUILD           Erlang     $ERLANGBUILD"
+echo "                TCL         $TCLBUILD           node.js    $NODEJSBUILD"
+echo "                Mono        $MONOBUILD"
 echo
 echo " Databases    : Oracle      $ORACLEBUILD    MySQL      $MYSQLBUILD"
 echo "                PostgreSQL  $POSTGRESQLBUILD    SQLite     $SQLITEBUILD"
