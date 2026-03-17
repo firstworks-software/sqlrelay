@@ -30,6 +30,7 @@
 	fixed a longstanding issue with unbound firebird output binds
 	added proper erlang docs
 	added jdbc driver to redhat/debian packaging
+	added getCurrentUser() and implemented odbc SQL_USER_NAME with it
 
 2.1.1 - added tns_admin support
 	fixed sqlr-start ... -strace ...
