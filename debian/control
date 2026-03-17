@@ -263,6 +263,13 @@ Architecture: any
 Depends: java-sqlrelay (= ${source:Version})
 Description: Debug symbols for java-sqlrelay.
 
+Package: jdbc-sqlrelay
+Section: libdevel
+Architecture: all
+Depends: java-sqlrelay (= ${binary:Version}), ${misc:Depends}
+Description: JDBC driver for SQL Relay
+ JDBC driver for SQL Relay.
+
 Package: tcl-sqlrelay
 Section: libdevel
 Architecture: any
