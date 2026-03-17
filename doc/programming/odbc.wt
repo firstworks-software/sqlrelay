@@ -6,11 +6,29 @@
 
 = Programming with SQL Relay using ODBC =
 
-The SQL Relay distribution provides an ODBC driver, enabling applications which use ODBC to access SQL Relay.
+The SQL Relay distribution provides an ODBC driver, enabling ODBC applications to access a database through SQL Relay.
 
-== Unix/Linux ==
+* [#dsn Configuring a DSN]
+* [#compiling Compiling an ODBC Program]
+* [#session Establishing a Session]
+* [#query Executing Queries]
+* [#commit Commits and Rollbacks]
+* [#temptables Temporary Tables]
+* [#errors Catching Errors]
+* [#bindvars Bind Variables]
+* [#rebinding Re-Binding and Re-Executing]
+* [#fields Accessing Fields in the Result Set]
+* [#cursors Cursors]
+* [#columns Getting Column Information]
+* [#storedprocedures Stored Procedures]
 
-On Unix or Linux platforms, using unixODBC or iODBC, you can create an instance for the SQL Relay driver by adding an entry like the following to your ODBC instances file (usually /etc/odbcinst.ini)
+== Configuring a DSN ==
+
+Whether you're developing your own ODBC application, or you want an existing ODBC application to be able to talk to SQL Relay, you'll have to configure a DSN (Data Source Name) for the application to use.  The DSN provides the paraemters that are necessary for connecting to an instance of SQL Relay such as host, port, socket, etc.
+
+=== Unix/Linux ===
+
+On Unix or Linux platforms, using unixODBC or iODBC, before creating a DSN, you must first create an instance for the SQL Relay driver by adding an entry like the following to your ODBC instances file (usually /etc/odbcinst.ini)
 
 {{{#!blockquote
 {{{#!code
@@ -56,13 +74,13 @@ Password=examplepass
 }}}
 }}}
 
-== Windows ==
+=== Windows ===
 
 On Windows, just use the ODBC control panel to create a DSN.
 
-== Attributes ==
+=== Attributes ===
 
-The following attributes can be configured:
+The ODBC driver for SQL Relay supports the following DSN attributes:
 
 * '''Description''' - A user-friendly description of this configuration.
 * '''Driver'''
@@ -112,20 +130,21 @@ See the [../admin/configguide.html#tls SQL Relay Configuration Guide] for more i
 
 Note that the supported Tlscert and Tlsca file formats may vary between platforms.  A variety of file formats are generally supported on Linux/Unix platfoms (.pem, .pfx, etc.) but only the .pfx format is currently supported on Windows.
 
-== Sample Session ==
+=== Sample Session ===
 
-Now you can use the //isql// command line utility that comes with iODBC
-or unixODBC to access the database through SQL Relay as follows:
+After creating a DSN, on Linux/Unix, you can use a command line utility like //isql// that comes with iODBC or unixODBC, to access the database through SQL Relay as follows:
 
 {{{#!blockquote
-'''isql sqlrexample'''
+'''isql sqlrexample exampleuser examplepass'''
 }}}
+
+'''NOTE''': The user and password are stored in the DSN, but most versions of isql require that they also be passed in on the command line.
 
 Here is a sample session:
 
 {{{#!blockquote
 {{{#!code
-[dmuse@fedora ~]$ isql sqlrodbc
+[dmuse@fedora ~]$ isql sqlrexample exampleuser examplepass
 +---------------------------------------+
 | Connected!                            |
 |                                       |
@@ -186,7 +205,9 @@ export ODBCINI=/sw/etc/odbc.ini
 }}}
 }}}
 
-Any program that uses ODBC can be configured to use SQL Relay via ODBC by setting its DSN to the SQL Relay DSN that you defined. 
+=== Other Applications ===
+
+Any application that uses ODBC can be configured to use SQL Relay via ODBC by setting its DSN to the SQL Relay DSN that you defined. 
 
 You can also use SQL Relay with any language that supports ODBC directly or has a database abstraction layer that supports ODBC.  For example, lets say you have an existing PHP app that uses MDB2 to connect to Oracle and you want to use SQL Relay with it.  There is no PHP MDB2 driver for SQL Relay, but since MDB2 suppots ODBC, you could use:
 
@@ -196,9 +217,948 @@ PHP -> MDB2 -> ODBC -> SQL Relay -> Oracle
 }}}
 }}}
 
-Similarly, you could use SQL Relay via ODBC with PHP/PDO, PHP/ADODB, Java/JDBC ([jdbc.html using the JDBC-ODBC bridge]), with the ODBC Adapter for Ruby on Rails, and so on.
+[=#compiling]
+== Compiling an ODBC Program ==
 
-Developing applications which use ODBC is beyond the scope of this document but many examples and tutorials can be found on the web.
+When writing an ODBC application, you need to include the sql.h and sqlext.h header files.
+
+{{{#!blockquote
+{{{#!code
+@parts/odbc-include.c@
+}}}
+}}}
+
+You'll also need to link against the ODBC library (-lodbc on most Unix/Linux platforms using unixODBC, or -liodbc if using iODBC).
+
+On most Unix/Linux platforms, the header files are found in /usr/include and the libraries are found in /usr/lib or /usr/lib64.  If unixODBC or iODBC was installed under a non-standard prefix, you may need to specify the prefix in your compiler and linker flags.
+
+The command to compile your .c file to object code will look something like this (assuming you're using GCC on Linux or Unix):
+
+{{{#!blockquote
+{{{
+gcc -c myprogram.c
+}}}
+}}}
+
+The command to compile your .o file to an executable will look something like this:
+
+{{{#!blockquote
+{{{
+gcc -o myprogram myprogram.o -lodbc
+}}}
+}}}
+
+
+[=#session]
+== Establishing a Session ==
+
+To use ODBC, you must allocate an environment handle, a connection handle, and then connect using the DSN that you configured.
+
+{{{#!blockquote
+{{{#!code
+@parts/odbc-session.c@
+}}}
+}}}
+
+SQLAllocHandle() allocates a handle of the specified type.  SQL_HANDLE_ENV allocates an environment handle and SQL_HANDLE_DBC allocates a connection handle.  SQLSetEnvAttr() is used to set the ODBC version to ODBC 3.  SQLConnect() connects to the DSN, passing the username and password.
+
+For the duration of the session, the client occupies one of the database connections, so care should be taken to minimize the length of a session.
+
+Encryption and authentication options (Kerberos/Active Directory and TLS/SSL) are configured in the DSN, as described above.
+
+
+[=#query]
+== Executing Queries ==
+
+Allocate a statement handle, then call SQLExecDirect() to execute a query.  The same statement handle may be reused after calling SQLFreeStmt() with SQL_CLOSE to close the cursor.
+
+{{{#!blockquote
+{{{#!code
+@parts/odbc-execute.c@
+}}}
+}}}
+
+
+[=#commit]
+== Commits and Rollbacks ==
+
+If you need to execute a commit or rollback, you should use SQLEndTran() with SQL_COMMIT or SQL_ROLLBACK rather than sending a "commit" or "rollback" query.
+
+You can also turn Autocommit on or off using SQLSetConnectAttr() with the SQL_ATTR_AUTOCOMMIT attribute.  When Autocommit is on, the database performs a commit after each successful DML or DDL query.  When Autocommit is off, the database commits when the client instructs it to, or (by default) when a client disconnects.
+
+{{{#!blockquote
+{{{#!code
+@parts/odbc-commit-rollback.c@
+}}}
+}}}
+
+
+[=#temptables]
+== Temporary Tables ==
+
+Some databases support temporary tables.  That is, tables which are automatically dropped or truncated when an application closes its connection to the database or when a transaction is committed or rolled back.
+
+For databases which drop or truncate tables when a transaction is committed or rolled back, temporary tables work naturally.
+
+However, for databases which drop or truncate tables when an application closes its connection to the database, there is an issue.  Since SQL Relay maintains persistent database connections, when an application disconnects from SQL Relay, the connection between SQL Relay and the database remains, so the database does not know to drop or truncate the table.  To remedy this situation, SQL Relay parses each query to see if it created a temporary table, keeps a list of temporary tables and drops (or truncates them) when the application disconnects from SQL Relay.  Since each database has slightly different syntax for creating a temporary table, SQL Relay parses each query according to the rules for that database.
+
+In effect, temporary tables should work when an application connects to SQL Relay in the same manner that they would work if the application connected directly to the database.
+
+[=#errors]
+== Catching Errors ==
+
+If your call to SQLExecDirect() or SQLExecute() returns something other than SQL_SUCCESS, you can find out why by calling SQLGetDiagRec().
+
+{{{#!blockquote
+{{{#!code
+@parts/odbc-errors.c@
+}}}
+}}}
+
+[=#bindvars]
+== Bind Variables ==
+
+Programs rarely execute fixed queries.  More often than not, some part of the query is dynamically generated.  ODBC provides SQLBindParameter() for binding values to parameter markers (?) in queries.
+
+You call SQLPrepare() to prepare the query, SQLBindParameter() to bind each parameter, and SQLExecute() to execute the query.
+
+When passing a floating point number as a bind variable, ODBC handles the precision and scale through the SQL type specification.  See [precisionscale.html this page] for a discussion of precision and scale.
+
+{{{#!blockquote
+{{{#!code
+@parts/odbc-bind.c@
+}}}
+}}}
+
+ODBC also supports output bind variables via SQLBindParameter() with the SQL_PARAM_OUTPUT direction.  This is useful for retrieving data from stored procedure calls.
+
+{{{#!blockquote
+{{{#!code
+@parts/odbc-bind-out.c@
+}}}
+}}}
+
+The SQLGetData() method returns a NULL value as an empty string by default.  To receive NULLs, check whether the length/indicator variable is set to SQL_NULL_DATA after calling SQLGetData().
+
+You can insert data into BLOB and CLOB columns using SQLBindParameter() with SQL_C_BINARY/SQL_LONGVARBINARY types for BLOBs and SQL_C_CHAR/SQL_LONGVARCHAR types for CLOBs.
+
+{{{#!blockquote
+{{{#!code
+@parts/odbc-bind-lob.c@
+}}}
+}}}
+
+Likewise, you can retrieve BLOB or CLOB data using SQLGetData() with the appropriate type.
+
+{{{#!blockquote
+{{{#!code
+@parts/odbc-bind-lob-out.c@
+}}}
+}}}
+
+
+[=#rebinding]
+== Re-Binding and Re-Executing ==
+
+Another feature of the prepare/bind/execute paradigm is the ability to prepare and bind a query once, then re-execute the query over and over with different values without re-preparing it.  Since the bind variables point to application buffers, you can simply update the buffer values and call SQLExecute() again.  If your back-end database natively supports this paradigm, you can reap a substantial performance improvement.
+
+{{{#!blockquote
+{{{#!code
+@parts/odbc-reexecute.c@
+}}}
+}}}
+
+[=#fields]
+== Accessing Fields in the Result Set ==
+
+SQLNumResultCols(), SQLFetch() and SQLGetData() are useful for processing result sets.
+
+{{{#!blockquote
+{{{#!code
+@parts/odbc-fields.c@
+}}}
+}}}
+
+Alternatively, you can use SQLBindCol() to bind columns to application buffers before fetching.  Each call to SQLFetch() will then populate the bound buffers automatically.
+
+{{{#!blockquote
+{{{#!code
+@parts/odbc-fields-bindcol.c@
+}}}
+}}}
+
+
+[=#cursors]
+== Cursors ==
+
+Cursors make it possible to execute queries while processing the result set of another query.  In ODBC, each statement handle (HSTMT) acts as a cursor.  You can allocate multiple statement handles on the same connection, allowing you to select rows from one table in one statement, iterate through its result set, and insert rows into another table using a second statement, all using a single database connection.
+
+For example:
+
+{{{#!blockquote
+{{{#!code
+@parts/odbc-cursors.c@
+}}}
+}}}
+
+
+[=#columns]
+== Getting Column Information ==
+
+For each column, the ODBC API supports getting the name, type, size, decimal digits, and nullability via SQLDescribeCol().  Additional attributes such as display size, whether the column is auto-incrementing, and whether the column is unsigned can be retrieved using SQLColAttribute().
+
+{{{#!blockquote
+{{{#!code
+@parts/odbc-columninfo.c@
+}}}
+}}}
+
+
+[=#storedprocedures]
+== Stored Procedures ==
+
+Many databases support stored procedures.  Stored procedures are sets of queries and procedural code that are executed inside of the database itself.  For example, a stored procedure may select rows from one table, iterate through the result set and, based on the values in each row, insert, update or delete rows in other tables.  A client program could do this as well, but a stored procedure is generally more efficient because queries and result sets don't have to be sent back and forth between the client and database.  Also, stored procedures are generally stored in the database in a compiled state, while queries may have to be re-parsed and re-compiled each time they are sent.
+
+While many databases support stored procedures.  The syntax for creating and executing stored procedures varies greatly between databases.
+
+Stored procedures typically take input paramters from client programs through input bind variables and return values back to client programs either through bind variables or result sets.  Stored procedures can be broken down into several categories, based on the values that they return.  Some stored procedures don't return any values, some return a single value, some return multiple values and some return entire result sets.
+
+In the ODBC examples below, the variable "stmt" refers to an SQLHSTMT statement handle that has already been allocated.
+
+=== No Values ===
+
+Some stored procedures don't return any values.  Below are examples, illustrating how to create, execute and drop this kind of stored procedure for each database that SQL Relay supports.
+
+==== Oracle ====
+
+To create the stored procedure, run a query like the following.
+
+{{{#!blockquote
+{{{#!code
+@parts/oracle-create-testproc.sql@
+}}}
+}}}
+
+To execute the stored procedure from an ODBC program, use code like the following.
+
+{{{#!blockquote
+{{{#!code
+@parts/odbc-oracle-testproc.c@
+}}}
+}}}
+
+To drop the stored procedure, run a query like the following.
+
+{{{#!blockquote
+{{{#!code
+@parts/oracle-drop-testproc.sql@
+}}}
+}}}
+
+
+==== Sybase and Microsoft SQL Server ====
+
+To create the stored procedure, run a query like the following.
+
+{{{#!blockquote
+{{{#!code
+@parts/sybase-create-testproc.sql@
+}}}
+}}}
+
+To execute the stored procedure from an ODBC program, use code like the following.
+
+{{{#!blockquote
+{{{#!code
+@parts/odbc-sybase-testproc.c@
+}}}
+}}}
+
+To drop the stored procedure, run a query like the following.
+
+{{{#!blockquote
+{{{#!code
+@parts/sybase-drop-testproc.sql@
+}}}
+}}}
+
+==== Firebird ====
+
+To create the stored procedure, run a query like the following.
+
+{{{#!blockquote
+{{{#!code
+@parts/firebird-create-testproc.sql@
+}}}
+}}}
+
+To execute the stored procedure from an ODBC program, use code like the following.
+
+{{{#!blockquote
+{{{#!code
+@parts/odbc-firebird-testproc.c@
+}}}
+}}}
+
+To drop the stored procedure, run a query like the following.
+
+{{{#!blockquote
+{{{#!code
+@parts/firebird-drop-testproc.sql@
+}}}
+}}}
+
+==== DB2 ====
+
+To create the stored procedure, run a query like the following.
+
+{{{#!blockquote
+{{{#!code
+@parts/db2-create-testproc.sql@
+}}}
+}}}
+
+To execute the stored procedure from an ODBC program, use code like the following.
+
+{{{#!blockquote
+{{{#!code
+@parts/odbc-db2-testproc.c@
+}}}
+}}}
+
+To drop the stored procedure, run a query like the following.
+
+{{{#!blockquote
+{{{#!code
+@parts/db2-drop-testproc.sql@
+}}}
+}}}
+
+==== Postgresql ====
+
+To create the stored procedure, run a query like the following.
+
+{{{#!blockquote
+{{{#!code
+@parts/postgresql-create-testproc.sql@
+}}}
+}}}
+
+To execute the stored procedure from an ODBC program, use code like the following.
+
+{{{#!blockquote
+{{{#!code
+@parts/odbc-postgresql-testproc.c@
+}}}
+}}}
+
+To drop the stored procedure, run a query like the following.
+
+{{{#!blockquote
+{{{#!code
+@parts/postgresql-drop-testproc.sql@
+}}}
+}}}
+
+==== !MySQL/MariaDB ====
+
+To create the stored procedure, run a query like the following.
+
+{{{#!blockquote
+{{{#!code
+@parts/mysql-create-testproc.sql@
+}}}
+}}}
+
+To execute the stored procedure from an ODBC program, use code like the following.
+
+{{{#!blockquote
+{{{#!code
+@parts/odbc-mysql-testproc.c@
+}}}
+}}}
+
+To drop the stored procedure, run a query like the following.
+
+{{{#!blockquote
+{{{#!code
+@parts/mysql-drop-testproc.sql@
+}}}
+}}}
+
+
+
+=== Single Values ===
+
+Some stored procedures return single values.  Below are examples, illustrating how to create, execute and drop this kind of stored procedure for each database that SQL Relay supports.
+
+==== Oracle ====
+
+In Oracle, stored procedures can return values through output parameters or as return values of the procedure itself.
+
+Here is an example where the procedure itself returns a value.  Note that Oracle calls these functions.
+
+To create the stored procedure, run a query like the following.
+
+{{{#!blockquote
+{{{#!code
+@parts/oracle-create-testproc-1value.sql@
+}}}
+}}}
+
+To execute the stored procedure from an ODBC program, use code like the following.
+
+{{{#!blockquote
+{{{#!code
+@parts/odbc-oracle-testproc-1value.c@
+}}}
+}}}
+
+To drop the stored procedure, run a query like the following.
+
+{{{#!blockquote
+{{{#!code
+@parts/oracle-drop-testproc.sql@
+}}}
+}}}
+
+Here is an example where the value is returned through an output parameter.
+
+To create the stored procedure, run a query like the following.
+
+{{{#!blockquote
+{{{#!code
+@parts/oracle-create-testproc-1value-output-param.sql@
+}}}
+}}}
+
+To execute the stored procedure from an ODBC program, use code like the following.
+
+{{{#!blockquote
+{{{#!code
+@parts/odbc-oracle-testproc-1value-output-param.c@
+}}}
+}}}
+
+To drop the stored procedure, run a query like the following.
+
+{{{#!blockquote
+{{{#!code
+@parts/oracle-drop-testproc.sql@
+}}}
+}}}
+
+
+==== Sybase and Microsoft SQL Server ====
+
+In Sybase and Microsoft SQL Server, stored procedures return values through output parameters rather than as return values of the procedure itself.
+
+To create the stored procedure, run a query like the following.
+
+{{{#!blockquote
+{{{#!code
+@parts/sybase-create-testproc-1value.sql@
+}}}
+}}}
+
+To execute the stored procedure from an ODBC program, use code like the following.
+
+{{{#!blockquote
+{{{#!code
+@parts/odbc-sybase-testproc-1value.c@
+}}}
+}}}
+
+To drop the stored procedure, run a query like the following.
+
+{{{#!blockquote
+{{{#!code
+@parts/sybase-drop-testproc.sql@
+}}}
+}}}
+
+
+==== Firebird ====
+
+To create the stored procedure, run a query like the following.
+
+{{{#!blockquote
+{{{#!code
+@parts/firebird-create-testproc-1value.sql@
+}}}
+}}}
+
+To execute the stored procedure from an ODBC program, use code like the following.
+
+{{{#!blockquote
+{{{#!code
+@parts/odbc-firebird-testproc-1value.c@
+}}}
+}}}
+
+To drop the stored procedure, run a query like the following.
+
+{{{#!blockquote
+{{{#!code
+@parts/firebird-drop-testproc.sql@
+}}}
+}}}
+
+
+==== DB2 ====
+
+In DB2, stored procedures return values through output parameters rather than as return values of the procedure itself.
+
+To create the stored procedure, run a query like the following.
+
+{{{#!blockquote
+{{{#!code
+@parts/db2-create-testproc-1value.sql@
+}}}
+}}}
+
+To execute the stored procedure from an ODBC program, use code like the following.
+
+{{{#!blockquote
+{{{#!code
+@parts/odbc-db2-testproc-1value.c@
+}}}
+}}}
+
+To drop the stored procedure, run a query like the following.
+
+{{{#!blockquote
+{{{#!code
+@parts/db2-drop-testproc.sql@
+}}}
+}}}
+
+
+==== Postgresql ====
+
+To create the stored procedure, run a query like the following.
+
+{{{#!blockquote
+{{{#!code
+@parts/postgresql-create-testproc-1value.sql@
+}}}
+}}}
+
+To execute the stored procedure from an ODBC program, use code like the following.
+
+{{{#!blockquote
+{{{#!code
+@parts/odbc-postgresql-testproc-1value.c@
+}}}
+}}}
+
+To drop the stored procedure, run a query like the following.
+
+{{{#!blockquote
+{{{#!code
+@parts/postgresql-drop-testproc-1value.sql@
+}}}
+}}}
+
+==== !MySQL/MariaDB ====
+
+A single value can be returned from a !MySQL/MariaDB function.
+
+To create the function, run a query like the following.
+
+{{{#!blockquote
+{{{#!code
+@parts/mysql-create-testproc-1value.sql@
+}}}
+}}}
+
+To execute the function from an ODBC program, use code like the following.
+
+{{{#!blockquote
+{{{#!code
+@parts/odbc-mysql-testproc-1value.c@
+}}}
+}}}
+
+To drop the function, run a query like the following.
+
+{{{#!blockquote
+{{{#!code
+@parts/mysql-drop-testproc.sql@
+}}}
+}}}
+
+A single value can be returned in the result set of a !MySQL/MariaDB procedure.
+
+To create the procedure, run a query like the following.
+
+{{{#!blockquote
+{{{#!code
+@parts/mysql-create-testproc-1value-result-set.sql@
+}}}
+}}}
+
+To execute the procedure from an ODBC program, use code like the following.
+
+{{{#!blockquote
+{{{#!code
+@parts/odbc-mysql-testproc-1value-result-set.c@
+}}}
+}}}
+
+To drop the procedure, run a query like the following.
+
+{{{#!blockquote
+{{{#!code
+@parts/mysql-drop-testproc.sql@
+}}}
+}}}
+
+A single value can be returned using the output variable of a !MySQL/MariaDB procedure.
+
+To create the procedure, run a query like the following.
+
+{{{#!blockquote
+{{{#!code
+@parts/mysql-create-testproc-1value-output-param.sql@
+}}}
+}}}
+
+To execute the procedure from an ODBC program, use code like the following.
+
+{{{#!blockquote
+{{{#!code
+@parts/odbc-mysql-testproc-1value-output-param.c@
+}}}
+}}}
+
+To drop the procedure, run a query like the following.
+
+{{{#!blockquote
+{{{#!code
+@parts/mysql-drop-testproc.sql@
+}}}
+}}}
+
+
+
+=== Multiple Values ===
+
+Some stored procedures return multiple values.  Below are examples, illustrating how to create, execute and drop this kind of stored procedure for each database that SQL Relay supports.
+
+==== Oracle ====
+
+In Oracle, stored procedures can return values through output parameters or as return values of the procedure itself.  If a procedure needs to return multiple values, it can return one of them as the return value of the procedure itself, but the rest must be returned through output parameters.
+
+To create the stored procedure, run a query like the following.
+
+{{{#!blockquote
+{{{#!code
+@parts/oracle-create-testproc-values.sql@
+}}}
+}}}
+
+To execute the stored procedure from an ODBC program, use code like the following.
+
+{{{#!blockquote
+{{{#!code
+@parts/odbc-oracle-testproc-values.c@
+}}}
+}}}
+
+To drop the stored procedure, run a query like the following.
+
+{{{#!blockquote
+{{{#!code
+@parts/oracle-drop-testproc.sql@
+}}}
+}}}
+
+
+==== Sybase and Microsoft SQL Server ====
+
+To create the stored procedure, run a query like the following.
+
+{{{#!blockquote
+{{{#!code
+@parts/sybase-create-testproc-values.sql@
+}}}
+}}}
+
+To execute the stored procedure from an ODBC program, use code like the following.
+
+{{{#!blockquote
+{{{#!code
+@parts/odbc-sybase-testproc-values.c@
+}}}
+}}}
+
+To drop the stored procedure, run a query like the following.
+
+{{{#!blockquote
+{{{#!code
+@parts/sybase-drop-testproc.sql@
+}}}
+}}}
+
+
+==== Firebird ====
+
+To create the stored procedure, run a query like the following.
+
+{{{#!blockquote
+{{{#!code
+@parts/firebird-create-testproc-values.sql@
+}}}
+}}}
+
+To execute the stored procedure from an ODBC program, use code like the following.
+
+{{{#!blockquote
+{{{#!code
+@parts/odbc-firebird-testproc-values.c@
+}}}
+}}}
+
+To drop the stored procedure, run a query like the following.
+
+{{{#!blockquote
+{{{#!code
+@parts/firebird-drop-testproc.sql@
+}}}
+}}}
+
+
+==== DB2 ====
+
+To create the stored procedure, run a query like the following.
+
+{{{#!blockquote
+{{{#!code
+@parts/db2-create-testproc-values.sql@
+}}}
+}}}
+
+To execute the stored procedure from an ODBC program, use code like the following.
+
+{{{#!blockquote
+{{{#!code
+@parts/odbc-db2-testproc-values.c@
+}}}
+}}}
+
+To drop the stored procedure, run a query like the following.
+
+{{{#!blockquote
+{{{#!code
+@parts/db2-drop-testproc.sql@
+}}}
+}}}
+
+
+==== Postgresql ====
+
+To create the stored procedure, run a query like the following.
+
+{{{#!blockquote
+{{{#!code
+@parts/postgresql-create-testproc-values.sql@
+}}}
+}}}
+
+To execute the stored procedure from an ODBC program, use code like the following.
+
+{{{#!blockquote
+{{{#!code
+@parts/odbc-postgresql-testproc-values.c@
+}}}
+}}}
+
+To drop the stored procedure, run a query like the following.
+
+{{{#!blockquote
+{{{#!code
+@parts/postgresql-drop-testproc-values.sql@
+}}}
+}}}
+
+==== !MySQL/MariaDB ====
+
+Here's how you can get multiple values from the result set of a !MySQL/MariaDB procedure.
+
+To create the stored procedure, run a query like the following.
+
+{{{#!blockquote
+{{{#!code
+@parts/mysql-create-testproc-values.sql@
+}}}
+}}}
+
+To execute the stored procedure from an ODBC program, use code like the following.
+
+{{{#!blockquote
+{{{#!code
+@parts/odbc-mysql-testproc-values.c@
+}}}
+}}}
+
+To drop the stored procedure, run a query like the following.
+
+{{{#!blockquote
+{{{#!code
+@parts/mysql-drop-testproc.sql@
+}}}
+}}}
+
+Here's how you can get multiple values from the output variables of a !MySQL/MariaDB procedure.
+
+To create the stored procedure, run a query like the following.
+
+{{{#!blockquote
+{{{#!code
+@parts/mysql-create-testproc-values-output-params.sql@
+}}}
+}}}
+
+To execute the stored procedure from an ODBC program, use code like the following.
+
+{{{#!blockquote
+{{{#!code
+@parts/odbc-mysql-testproc-values-output-params.c@
+}}}
+}}}
+
+To drop the stored procedure, run a query like the following.
+
+{{{#!blockquote
+{{{#!code
+@parts/mysql-drop-testproc.sql@
+}}}
+}}}
+
+
+
+=== Result Sets ===
+
+Some stored procedures return entire result sets.  Below are examples, illustrating how to create, execute and drop this kind of stored procedure for each database that SQL Relay supports.
+
+==== Oracle ====
+
+To create the stored procedure, run a query like the following.
+
+{{{#!blockquote
+{{{#!code
+@parts/oracle-create-testproc-result-set.sql@
+}}}
+}}}
+
+To execute the stored procedure from an ODBC program, use code like the following.
+
+{{{#!blockquote
+{{{#!code
+@parts/odbc-oracle-testproc-result-set.c@
+}}}
+}}}
+
+To drop the stored procedure, run a query like the following.
+
+{{{#!blockquote
+{{{#!code
+@parts/oracle-drop-testproc-result-set.sql@
+}}}
+}}}
+
+
+==== Sybase and Microsoft SQL Server ====
+
+To create the stored procedure, run a query like the following.
+
+{{{#!blockquote
+{{{#!code
+@parts/sybase-create-testproc-result-set.sql@
+}}}
+}}}
+
+To execute the stored procedure from an ODBC program, use code like the following.
+
+{{{#!blockquote
+{{{#!code
+@parts/odbc-sybase-testproc-result-set.c@
+}}}
+}}}
+
+To drop the stored procedure, run a query like the following.
+
+{{{#!blockquote
+{{{#!code
+@parts/sybase-drop-testproc.sql@
+}}}
+}}}
+
+
+==== Firebird ====
+
+Stored procedures in Firebird can return a result set if a select query in the procedure selects values into the output parameters and then issues a suspend command, however SQL Relay doesn't currently support stored procedures that return result sets.
+
+==== DB2 ====
+
+Stored procedures in DB2 can return a result set if the procedure is declared to return one, however SQL Relay doesn't currently support stored procedures that return result sets.
+
+==== Postgresql ====
+
+To create the stored procedure, run a query like the following.
+
+{{{#!blockquote
+{{{#!code
+@parts/postgresql-create-testproc-result-set.sql@
+}}}
+}}}
+
+To execute the stored procedure from an ODBC program, use code like the following.
+
+{{{#!blockquote
+{{{#!code
+@parts/odbc-postgresql-testproc-result-set.c@
+}}}
+}}}
+
+To drop the stored procedure, run a query like the following.
+
+{{{#!blockquote
+{{{#!code
+@parts/postgresql-drop-testproc-result-set.sql@
+}}}
+}}}
+
+==== !MySQL/MariaDB ====
+
+The result sets of all select statements called within !MySQL/MariaDB stored procedures (that aren't selected into variables) are returned from the procedure call.  Though !MySQL/MariaDB stored procedures can return multiple result sets, currently SQL Relay can only fetch the first result set.
+
+To create the stored procedure which returns a result set, run a query like the following.
+
+{{{#!blockquote
+{{{#!code
+@parts/mysql-create-testproc-result-set.sql@
+}}}
+}}}
+
+To execute the stored procedure from an ODBC program, use code like the following.
+
+{{{#!blockquote
+{{{#!code
+@parts/odbc-mysql-testproc-result-set.c@
+}}}
+}}}
+
+To drop the stored procedure, run a query like the following.
+
+{{{#!blockquote
+{{{#!code
+@parts/mysql-drop-testproc.sql@
+}}}
+}}}
+
+
 
 {{{#!include ../contentend.html}}}
 
