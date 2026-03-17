@@ -164,6 +164,7 @@ class SQLRSERVER_DLLSPEC oracleconnection : public sqlrserverconnection {
 		bool		getDatabaseIsSchema();
 		const char	*selectSchemaQuery();
 		const char	*getCurrentSchemaQuery();
+		const char	*getCurrentUserQuery();
 		const char	*getLastInsertIdQuery();
 		const char	*getIsolationLevelQuery();
 		const char	*mapIsolationLevel(
@@ -1039,8 +1040,8 @@ bool oracleconnection::tempTableTruncateBeforeDrop() {
 bool oracleconnection::logIn(const char **error, const char **warning) {
 
 	// get user/password
-	const char	*user=cont->getUser();
-	const char	*password=cont->getPassword();
+	const char	*user=cont->getLoginUser();
+	const char	*password=cont->getLoginPassword();
 
 	// handle ORACLE_SID
 	if (sid) {
@@ -3412,6 +3413,10 @@ const char *oracleconnection::selectSchemaQuery() {
 
 const char *oracleconnection::getCurrentSchemaQuery() {
 	return "select sys_context('userenv','current_schema') from dual";
+}
+
+const char *oracleconnection::getCurrentUserQuery() {
+	return "select user from dual";
 }
 
 const char *oracleconnection::getLastInsertIdQuery() {

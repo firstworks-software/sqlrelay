@@ -286,6 +286,7 @@ class SQLRSERVER_DLLSPEC firebirdconnection : public sqlrserverconnection {
 						const char *procedure);
 		const char	*getBindFormat();
 		const char	*getNextvalFormat();
+		const char	*getCurrentUserQuery();
 		const char	*getLastInsertIdQuery();
 		const char	*setIsolationLevelQuery();
 		const char	*getIsolationLevelQuery();
@@ -890,11 +891,11 @@ bool firebirdconnection::logIn(const char **err, const char **warning) {
 	dpbsize=dpbptr-dpb;
 
 	// handle user/password parameters
-	const char	*user=cont->getUser();
+	const char	*user=cont->getLoginUser();
 	if (user) {
 		environment::setValue("ISC_USER",user);
 	}
-	const char	*password=cont->getPassword();
+	const char	*password=cont->getLoginPassword();
 	if (password) {
 		environment::setValue("ISC_PASSWORD",password);
 	}
@@ -2155,6 +2156,10 @@ const char *firebirdconnection::getBindFormat() {
 
 const char *firebirdconnection::getNextvalFormat() {
 	return "next value for %s";
+}
+
+const char *firebirdconnection::getCurrentUserQuery() {
+	return "select current_user from rdb$database";
 }
 
 const char *firebirdconnection::getLastInsertIdQuery() {

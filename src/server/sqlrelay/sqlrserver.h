@@ -188,41 +188,42 @@ class SQLRSERVER_DLLSPEC sqlrservercontroller : public sqlrserverbase {
 		 *  attribute, of the connection tag, in the config file. */
 		const char	*getConnectStringValue(const char *variable);
 
-		/** Sets the user that will be used to connect to the database
-		 *  to "user".
+		/** Sets the user that will be used to log in, when connecting
+		 *  to the database to "user".
 		 * 
 		 *  During initialization of the sqlr-connection, this is set
 		 *  to the value of the "user" parameter, of the string
 		 *  attribute, of the connection tag, in the config file.
 		 *
 		 *  This method may be called by a module to override that. */
-		void	setUser(const char *user);
+		void	setLoginUser(const char *user);
 
-		/** Returns the user that will be used to connect to the
-		 *  database.
+		/** Returns the user that will be used to log in, when
+		 *  connecting to the database.
 		 *
-		 *  Unless overridden by a call to setUser(), this will be the
-		 *  value of the "user" parameter, of the string attribute, of
-		 *  the connection tag, in the config file. */
-		const char	*getUser();
+		 *  Unless overridden by a call to setLoginUser(), this will
+		 *  be the value of the "user" parameter, of the string
+		 *  attribute, of the connection tag, in the config file. */
+		const char	*getLoginUser();
 
-		/** Sets the password that will be used to connect to the
-		 *  database to "password".
+		/** Sets the password that will be used to log in, when
+		 *  connecting to the database to "password".
 		 * 
 		 *  During initialization of the sqlr-connection, this is set
 		 *  to the value of the "password" parameter, of the string
 		 *  attribute, of the connection tag, in the config file.
 		 *
 		 *  This method may be called by a module to override that. */
-		void	setPassword(const char *password);
+		void	setLoginPassword(const char *password);
 
-		/** Returns the password that will be used to connect to the
-		 *  database.
+		/** Returns the password that will be used to log in, when
+		 *  connecting to the database.
 		 *
-		 *  Unless overridden by a call to setPassword(), this will be
-		 *  the value of the "password" parameter, of the string
-		 *  attribute, of the connection tag, in the config file. */
-		const char	*getPassword();
+		 *  Unless overridden by a call to setLoginPassword(), this
+		 *  will be the value of the "password" parameter, of the
+		 *  string attribute, of the connection tag, in the config
+		 *  file. */
+		const char	*getLoginPassword();
 
 		/** Sets the connect timeout.
 		 * 
@@ -571,6 +572,16 @@ class SQLRSERVER_DLLSPEC sqlrservercontroller : public sqlrserverbase {
 		 *  value internally and returns it.  The calling method must
 		 *  deallocate this buffer. */
 		char	*getCurrentSchema();
+
+
+
+		/** Returns the current user, or NULL if the current
+		 *  user could not be determined.
+		 *
+		 *  Note that this method allocates a buffer for the return
+		 *  value internally and returns it.  The calling method must
+		 *  deallocate this buffer. */
+		char	*getCurrentUser();
 
 
 
@@ -1190,8 +1201,8 @@ class SQLRSERVER_DLLSPEC sqlrservercontroller : public sqlrserverbase {
 		 *  started. */
 		void	incrementNextResultSetAvailableCount();
 
-		/** Returns the current user. */
-		const char	*getCurrentUser();
+		/** Returns the authenticated user. */
+		const char	*getAuthenticatedUser();
 
 		/** Sets the current query by copying "querysize" bytes of
 		 *  "query" into the statistics buffer. */
@@ -3329,6 +3340,24 @@ class SQLRSERVER_DLLSPEC sqlrserverconnection : public sqlrserverbase {
 		 *  This implementation just returns getNoopQuery(), but it may
 		 *  be overridden by a child class to return the query. */
 		virtual const char	*getCurrentSchemaQuery();
+
+		/** Returns the current user, or NULL if the current
+		 *  user could not be determined.
+		 *
+		 *  The default implementation runs the query returned
+		 *  by getCurrentUserQuery() and returns the first field
+		 *  of the first row.
+		 *
+		 *  Note that this method allocates a buffer for the return
+		 *  value internally and returns it.  The calling method must
+		 *  deallocate this buffer. */
+		virtual char		*getCurrentUser();
+
+		/** Returns the query to use to get the current user.
+		 *
+		 *  This implementation returns NULL, but it may be
+		 *  overridden by a child class to return the query. */
+		virtual const char	*getCurrentUserQuery();
 
 		/** Returns the last-insert-id.  That is, if an insert was
 		 *  performed into a table with an auto-increment field, then

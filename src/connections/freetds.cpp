@@ -359,6 +359,7 @@ class SQLRSERVER_DLLSPEC freetdsconnection : public sqlrserverconnection {
 		const char	*selectCatalogQuery();
 		const char	*getCurrentCatalogQuery();
 		const char	*getCurrentSchemaQuery();
+		const char	*getCurrentUserQuery();
 		const char	*getLastInsertIdQuery();
 		const char	*getIsolationLevelQuery();
 		const char	*mapIsolationLevel(
@@ -1005,7 +1006,7 @@ bool freetdsconnection::logIn(const char **error, const char **warning) {
 
 
 	// set the user to use
-	const char	*user=cont->getUser();
+	const char	*user=cont->getLoginUser();
 	if (ct_con_props(dbconn,CS_SET,CS_USERNAME,
 		(CS_VOID *)((!charstring::isNullOrEmpty(user))?user:""),
 		CS_NULLTERM,(CS_INT *)NULL)!=CS_SUCCEED) {
@@ -1015,7 +1016,7 @@ bool freetdsconnection::logIn(const char **error, const char **warning) {
 
 
 	// set the password to use
-	const char	*password=cont->getPassword();
+	const char	*password=cont->getLoginPassword();
 	if (ct_con_props(dbconn,CS_SET,CS_PASSWORD,
 		(CS_VOID *)((!charstring::isNullOrEmpty(password))?password:""),
 		CS_NULLTERM,(CS_INT *)NULL)!=CS_SUCCEED) {
@@ -3371,6 +3372,10 @@ const char *freetdsconnection::getCurrentCatalogQuery() {
 
 const char *freetdsconnection::getCurrentSchemaQuery() {
 	return "select user_name()";
+}
+
+const char *freetdsconnection::getCurrentUserQuery() {
+	return "select suser_sname()";
 }
 
 const char *freetdsconnection::getLastInsertIdQuery() {

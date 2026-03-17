@@ -544,6 +544,7 @@ int sqlrsh::commandType(const char *command) {
 		!charstring::compareIgnoringCase(ptr,"use ",4) ||
 		!charstring::compareIgnoringCase(ptr,"currentdb") ||
 		!charstring::compareIgnoringCase(ptr,"currentschema") ||
+		!charstring::compareIgnoringCase(ptr,"currentuser") ||
 		!charstring::compareIgnoringCase(ptr,"run",3) ||
 		!charstring::compareIgnoringCase(ptr,"@",1) ||
 		!charstring::compareIgnoringCase(ptr,"delimiter",9) ||
@@ -657,6 +658,19 @@ bool sqlrsh::internalCommand(sqlrconnection *sqlrcon, sqlrcursor *sqlrcur,
 		const char	*currentschema=sqlrcon->getCurrentSchema();
 		if (currentschema) {
 			stdoutput.printf("%s\n",currentschema);
+		} else if (sqlrcon->errorMessage()) {
+			displayError(env,NULL,
+					sqlrcon->errorMessage(),
+					sqlrcon->errorNumber());
+			return false;
+		} else {
+			stdoutput.printf("\n");
+		}
+		return true;
+	} else if (!charstring::compareIgnoringCase(ptr,"currentuser")) {	
+		const char	*currentuser=sqlrcon->getCurrentUser();
+		if (currentuser) {
+			stdoutput.printf("%s\n",currentuser);
 		} else if (sqlrcon->errorMessage()) {
 			displayError(env,NULL,
 					sqlrcon->errorMessage(),

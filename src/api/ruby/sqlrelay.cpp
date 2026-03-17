@@ -846,7 +846,13 @@ static void selectDatabase(params *p) {
  *  call-seq:
  *  selectDatabase(database)
  *
- *  Sets the current database (catalog) to "database" */
+ *  Sets the current database to "database".
+ *
+ *  May set the current catalog or schema, depending on
+ *  whether the backend database equates "database" with
+ *  catalog or schema.
+ *
+ *  See getDatabaseIsSchema(). */
 static VALUE sqlrcon_selectDatabase(VALUE self, VALUE db) {
 	sqlrconnection	*sqlrcon;
 	bool		result;
@@ -858,7 +864,13 @@ static VALUE sqlrcon_selectDatabase(VALUE self, VALUE db) {
 static void getCurrentDatabase(params *p) {
 	p->result.ccpr=p->sqlrc.sqlrcon->getCurrentDatabase();
 }
-/** Returns the database (catalog) that is currently in use. */
+/** Returns the database that is currently in use.
+ *
+ *  May return the current catalog or schema, depending on
+ *  whether the backend database equates "database" with
+ *  catalog or schema.
+ *
+ *  See getDatabaseIsSchema(). */
 static VALUE sqlrcon_getCurrentDatabase(VALUE self) {
 	sqlrconnection	*sqlrcon;
 	const char	*result;
@@ -869,6 +881,23 @@ static VALUE sqlrcon_getCurrentDatabase(VALUE self) {
 	} else {
 		return Qnil;
 	}
+}
+
+static void getDatabaseIsSchema(params *p) {
+	p->result.br=p->sqlrc.sqlrcon->getDatabaseIsSchema();
+}
+/**
+ *  call-seq:
+ *  getDatabaseIsSchema()
+ *
+ *  Returns true if the backend database equates "database" with
+ *  "schema", and false if it equates "database" with "catalog". */
+static VALUE sqlrcon_getDatabaseIsSchema(VALUE self) {
+	sqlrconnection	*sqlrcon;
+	bool		result;
+	Data_Get_Struct(self,sqlrconnection,sqlrcon);
+	RCON(result,br,sqlrcon,getDatabaseIsSchema);
+	return INT2NUM(result);
 }
 
 static void selectCatalog(params *p) {
@@ -890,7 +919,11 @@ static VALUE sqlrcon_selectCatalog(VALUE self, VALUE catalog) {
 static void getCurrentCatalog(params *p) {
 	p->result.ccpr=p->sqlrc.sqlrcon->getCurrentCatalog();
 }
-/** Returns the catalog that is currently in use. */
+/**
+ *  call-seq:
+ *  getCurrentCatalog()
+ *
+ *  Returns the catalog that is currently in use. */
 static VALUE sqlrcon_getCurrentCatalog(VALUE self) {
 	sqlrconnection	*sqlrcon;
 	const char	*result;
@@ -922,7 +955,11 @@ static VALUE sqlrcon_selectSchema(VALUE self, VALUE schema) {
 static void getCurrentSchema(params *p) {
 	p->result.ccpr=p->sqlrc.sqlrcon->getCurrentSchema();
 }
-/** Returns the schema that is currently in use. */
+/**
+ *  call-seq:
+ *  getCurrentSchema()
+ *
+ *  Returns the schema that is currently in use. */
 static VALUE sqlrcon_getCurrentSchema(VALUE self) {
 	sqlrconnection	*sqlrcon;
 	const char	*result;
@@ -935,23 +972,36 @@ static VALUE sqlrcon_getCurrentSchema(VALUE self) {
 	}
 }
 
-static void getDatabaseIsSchema(params *p) {
-	p->result.br=p->sqlrc.sqlrcon->getDatabaseIsSchema();
+static void getCurrentUser(params *p) {
+	p->result.ccpr=p->sqlrc.sqlrcon->getCurrentUser();
 }
-/** Returns true if the backend database equates "database" with
- *  "schema", and false if it equates "database" with "catalog". */
-static VALUE sqlrcon_getDatabaseIsSchema(VALUE self) {
+/**
+ *  call-seq:
+ *  getCurrentUser()
+ *
+ *  Returns the user that sqlrelay is currently logged in to
+ *  the database as, or NULL if no user could be determined
+ *  or if an error occurred. */
+static VALUE sqlrcon_getCurrentUser(VALUE self) {
 	sqlrconnection	*sqlrcon;
-	bool		result;
+	const char	*result;
 	Data_Get_Struct(self,sqlrconnection,sqlrcon);
-	RCON(result,br,sqlrcon,getDatabaseIsSchema);
-	return INT2NUM(result);
+	RCON(result,ccpr,sqlrcon,getCurrentUser);
+	if (result) {
+		return rb_str_new2(result);
+	} else {
+		return Qnil;
+	}
 }
 
 static void getLastInsertId(params *p) {
 	p->result.u64r=p->sqlrc.sqlrcon->getLastInsertId();
 }
-/** Returns the value of the autoincrement column for the last insert */
+/**
+ *  call-seq:
+ *  getLastInsertId()
+ *
+ *  Returns the value of the autoincrement column for the last insert. */
 static VALUE sqlrcon_getLastInsertId(VALUE self) {
 	sqlrconnection	*sqlrcon;
 	uint64_t	result;
@@ -1557,6 +1607,8 @@ void Init_SQLRConnection() {
 				(CAST)sqlrcon_selectDatabase,1);
 	rb_define_method(csqlrconnection,"getCurrentDatabase",
 				(CAST)sqlrcon_getCurrentDatabase,0);
+	rb_define_method(csqlrconnection,"getDatabaseIsSchema",
+				(CAST)sqlrcon_getDatabaseIsSchema,0);
 	rb_define_method(csqlrconnection,"selectCatalog",
 				(CAST)sqlrcon_selectCatalog,1);
 	rb_define_method(csqlrconnection,"getCurrentCatalog",
@@ -1565,8 +1617,8 @@ void Init_SQLRConnection() {
 				(CAST)sqlrcon_selectSchema,1);
 	rb_define_method(csqlrconnection,"getCurrentSchema",
 				(CAST)sqlrcon_getCurrentSchema,0);
-	rb_define_method(csqlrconnection,"getDatabaseIsSchema",
-				(CAST)sqlrcon_getDatabaseIsSchema,0);
+	rb_define_method(csqlrconnection,"getCurrentUser",
+				(CAST)sqlrcon_getCurrentUser,0);
 	rb_define_method(csqlrconnection,"getLastInsertId",
 				(CAST)sqlrcon_getLastInsertId,0);
 	rb_define_method(csqlrconnection,"autoCommitOn",

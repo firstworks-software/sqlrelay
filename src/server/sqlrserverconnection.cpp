@@ -77,8 +77,8 @@ void sqlrserverconnection::handleConnectString() {
 	// get some parameters that are common to most db's
 
 	// user and password
-	cont->setUser(cont->getConnectStringValue("user"));
-	cont->setPassword(cont->getConnectStringValue("password"));
+	cont->setLoginUser(cont->getConnectStringValue("user"));
+	cont->setLoginPassword(cont->getConnectStringValue("password"));
 
 	// autocommit
 	const char	*autocommit=cont->getConnectStringValue("autocommit");
@@ -559,6 +559,47 @@ char *sqlrserverconnection::getCurrentSchema() {
 
 const char *sqlrserverconnection::getCurrentSchemaQuery() {
 	return getNoopQuery();
+}
+
+char *sqlrserverconnection::getCurrentUser() {
+
+	// get the get current user query
+	const char	*gcuquery=getCurrentUserQuery();
+
+	// bail if there is no query for this
+	if (!gcuquery) {
+		return NULL;
+	}
+
+	size_t	gcuquerysize=charstring::getLength(gcuquery);
+
+	// run the query...
+	char	*retval=NULL;
+	sqlrservercursor	*gcucur=cont->newCursor();
+	if (gcucur->open() &&
+		gcucur->prepareQuery(gcuquery,gcuquerysize) &&
+		gcucur->executeQuery(gcuquery,gcuquerysize)) {
+
+		bool	error=false;
+		if (!gcucur->noRowsToReturn() && gcucur->fetchRow(&error)) {
+
+			// get the first field of the row and return it
+			const char	*field=NULL;
+			uint64_t	fieldsize=0;
+			bool		lob=false;
+			bool		null=false;
+			gcucur->getField(0,&field,&fieldsize,&lob,&null);
+			retval=charstring::duplicate(field);
+		}
+	}
+	gcucur->closeResultSet();
+	gcucur->close();
+	cont->deleteCursor(gcucur);
+	return retval;
+}
+
+const char *sqlrserverconnection::getCurrentUserQuery() {
+	return NULL;
 }
 
 bool sqlrserverconnection::getLastInsertId(uint64_t *id) {

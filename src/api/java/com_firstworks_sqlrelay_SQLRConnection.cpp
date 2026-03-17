@@ -341,6 +341,16 @@ JNIEXPORT jstring JNICALL Java_com_firstworks_sqlrelay_SQLRConnection_getCurrent
 
 /*
  * Class:     com_firstworks_sqlrelay_SQLRConnection
+ * Method:    getDatabaseIsSchema
+ * Signature: ()Z
+ */
+JNIEXPORT jboolean JNICALL Java_com_firstworks_sqlrelay_SQLRConnection_getDatabaseIsSchema
+  (JNIEnv *env, jobject self) {
+	return (jboolean)getSqlrConnection(env,self)->getDatabaseIsSchema();
+}
+
+/*
+ * Class:     com_firstworks_sqlrelay_SQLRConnection
  * Method:    selectCatalog
  * Signature: (Ljava/lang/String;)Z
  */
@@ -389,12 +399,12 @@ JNIEXPORT jstring JNICALL Java_com_firstworks_sqlrelay_SQLRConnection_getCurrent
 
 /*
  * Class:     com_firstworks_sqlrelay_SQLRConnection
- * Method:    getDatabaseIsSchema
- * Signature: ()Z
+ * Method:    getCurrentUser
+ * Signature: ()Ljava/lang/String;
  */
-JNIEXPORT jboolean JNICALL Java_com_firstworks_sqlrelay_SQLRConnection_getDatabaseIsSchema
+JNIEXPORT jstring JNICALL Java_com_firstworks_sqlrelay_SQLRConnection_getCurrentUser
   (JNIEnv *env, jobject self) {
-	return (jboolean)getSqlrConnection(env,self)->getDatabaseIsSchema();
+	return conNewStringUTF(env,getSqlrConnection(env,self)->getCurrentUser());
 }
 
 /*

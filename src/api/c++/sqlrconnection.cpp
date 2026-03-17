@@ -114,6 +114,9 @@ class sqlrconnectionprivate {
 		// current schema name
 		char		*_currentschemaname;
 
+		// current user
+		char		*_currentdbuser;
+
 		// bind format
 		char		*_bindformat;
 
@@ -250,6 +253,9 @@ void sqlrconnection::init(const char *server, uint16_t port,
 	// current schema name
 	pvt->_currentschemaname=NULL;
 
+	// current user
+	pvt->_currentdbuser=NULL;
+
 	// bind format
 	pvt->_bindformat=NULL;
 
@@ -338,6 +344,9 @@ sqlrconnection::~sqlrconnection() {
 
 	// deallocate current schema name
 	delete[] pvt->_currentschemaname;
+
+	// deallocate current user
+	delete[] pvt->_currentdbuser;
 
 	// deallocate bindformat
 	delete[] pvt->_bindformat;
@@ -1730,6 +1739,49 @@ const char *sqlrconnection::getCurrentDatabase() {
 	return pvt->_currentdbname;
 }
 
+
+bool sqlrconnection::getDatabaseIsSchema() {
+
+	if (!openSession()) {
+		return false;
+	}
+
+	clearError();
+
+	if (pvt->_debug) {
+		debugPreStart();
+		debugPrint("Getting database is schema...\n");
+		debugPreEnd();
+	}
+
+	clearError();
+
+	// tell the server we want to get database is schema
+	pvt->_cs->write((uint16_t)GET_DATABASE_IS_SCHEMA);
+	flushWriteBuffer();
+
+	if (gotError()) {
+		return false;
+	}
+
+	// get the result
+	uint16_t	result;
+	if (pvt->_cs->read(&result,pvt->_responsetimeoutsec,
+				pvt->_responsetimeoutusec)!=sizeof(uint16_t)) {
+		setError("Failed to get database is schema.\n"
+				"A network error may have occurred.");
+		return false;
+	}
+
+	if (pvt->_debug) {
+		debugPreStart();
+		debugPrint((int64_t)result);
+		debugPrint("\n");
+		debugPreEnd();
+	}
+	return (result!=0);
+}
+
 bool sqlrconnection::selectCatalog(const char *catalog) {
 
 	if (!charstring::getLength(catalog)) {
@@ -1905,47 +1957,56 @@ const char *sqlrconnection::getCurrentSchema() {
 	}
 	return pvt->_currentschemaname;
 }
-
-bool sqlrconnection::getDatabaseIsSchema() {
+const char *sqlrconnection::getCurrentUser() {
 
 	if (!openSession()) {
-		return false;
+		return NULL;
 	}
 
 	clearError();
 
 	if (pvt->_debug) {
 		debugPreStart();
-		debugPrint("Getting database is schema...\n");
+		debugPrint("Getting the current user...\n");
 		debugPreEnd();
 	}
 
-	clearError();
-
-	// tell the server we want to get database is schema
-	pvt->_cs->write((uint16_t)GET_DATABASE_IS_SCHEMA);
+	// tell the server we want to get the current user
+	pvt->_cs->write((uint16_t)GET_CURRENT_USER);
 	flushWriteBuffer();
 
 	if (gotError()) {
-		return false;
+		return NULL;
 	}
 
-	// get the result
-	uint16_t	result;
-	if (pvt->_cs->read(&result,pvt->_responsetimeoutsec,
+	// get the current user size
+	uint16_t	size;
+	if (pvt->_cs->read(&size,pvt->_responsetimeoutsec,
 				pvt->_responsetimeoutusec)!=sizeof(uint16_t)) {
-		setError("Failed to get database is schema.\n"
+		setError("Failed to get the current user.\n"
 				"A network error may have occurred.");
-		return false;
+		return NULL;
 	}
+
+	// get the current user
+	delete[] pvt->_currentdbuser;
+	pvt->_currentdbuser=new char[size+1];
+	if (pvt->_cs->read(pvt->_currentdbuser,size)!=size) {
+		setError("Failed to get the current user.\n"
+				"A network error may have occurred.");
+		delete[] pvt->_currentdbuser;
+		pvt->_currentdbuser=NULL;
+		return NULL;
+	}
+	pvt->_currentdbuser[size]='\0';
 
 	if (pvt->_debug) {
 		debugPreStart();
-		debugPrint((int64_t)result);
+		debugPrint(pvt->_currentdbuser);
 		debugPrint("\n");
 		debugPreEnd();
 	}
-	return (result!=0);
+	return pvt->_currentdbuser;
 }
 
 uint64_t sqlrconnection::getLastInsertId() {

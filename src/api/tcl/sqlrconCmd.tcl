@@ -274,11 +274,27 @@ proc nextvalFormat {}
 
 
 
-# Sets the current database (catalog) to "database"
+# Sets the current database to "database".
+#
+# May set the current catalog or schema, depending on
+# whether the backend database equates "database" with
+# catalog or schema.
+#
+# See getDatabaseIsSchema().
 proc selectDatabase {database}
 
-# Returns the database (catalog) that is currently in use.
+# Returns the database that is currently in use.
+#
+# May return the current catalog or schema, depending on
+# whether the backend database equates "database" with
+# catalog or schema.
+#
+# See getDatabaseIsSchema().
 proc getCurrentDatabase {}
+
+# Returns true if the backend database equates "database" with
+# "schema", and false if it equates "database" with "catalog".
+proc getDatabaseIsSchema {}
 
 # Sets the current catalog to "catalog"
 proc selectCatalog {catalog}
@@ -292,9 +308,10 @@ proc selectSchema {schema}
 # Returns the schema that is currently in use.
 proc getCurrentSchema {}
 
-# Returns true if the backend database equates "database" with
-# "schema", and false if it equates "database" with "catalog".
-proc getDatabaseIsSchema {}
+# Returns the user that sqlrelay is currently logged in to
+# the database as, or an empty string if no user could be
+# determined or if an error occurred.
+proc getCurrentUser {}
 
 
 

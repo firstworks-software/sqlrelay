@@ -360,14 +360,32 @@ const char	*sqlrcon_nextvalFormat(sqlrcon sqlrconref);
 
 
 /** @ingroup sqlrclientwrapper
- *  Sets the current database (catalog) to "database" */
+ *  Sets the current database to "database".
+ *
+ *  May set the current catalog or schema, depending on
+ *  whether the backend database equates "database" with
+ *  catalog or schema.
+ *
+ *  See getDatabaseIsSchema(). */
 SQLRCLIENT_DLLSPEC
 int	sqlrcon_selectDatabase(sqlrcon sqlrconref, const char *database);
 
 /** @ingroup sqlrclientwrapper
- *  Returns the database (catalog) that is currently in use. */
+ *  Returns the database that is currently in use.
+ *
+ *  May return the current catalog or schema, depending on
+ *  whether the backend database equates "database" with
+ *  catalog or schema.
+ *
+ *  See getDatabaseIsSchema(). */
 SQLRCLIENT_DLLSPEC
 const char	*sqlrcon_getCurrentDatabase(sqlrcon sqlrconref);
+
+/** @ingroup sqlrclientwrapper
+ *  Returns true if the backend database equates "database" with "schema",
+ *  and false if it equates "database" with "catalog". */
+SQLRCLIENT_DLLSPEC
+int	sqlrcon_getDatabaseIsSchema(sqlrcon sqlrconref);
 
 /** @ingroup sqlrclientwrapper
  *  Sets the current catalog to "catalog" */
@@ -390,10 +408,11 @@ SQLRCLIENT_DLLSPEC
 const char	*sqlrcon_getCurrentSchema(sqlrcon sqlrconref);
 
 /** @ingroup sqlrclientwrapper
- *  Returns true if the backend database equates "database" with "schema",
- *  and false if it equates "database" with "catalog". */
+ *  Returns the user that sqlrelay is currently logged in to
+ *  the database as, or NULL if no user could be determined
+ *  or if an error occurred. */
 SQLRCLIENT_DLLSPEC
-int	sqlrcon_getDatabaseIsSchema(sqlrcon sqlrconref);
+const char	*sqlrcon_getCurrentUser(sqlrcon sqlrconref);
 
 
 

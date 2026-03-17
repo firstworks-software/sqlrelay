@@ -2401,13 +2401,13 @@ bool sqlrservercontroller::auth(sqlrcredentials *cred) {
 	}
 	if (autheduser) {
 
-		setCurrentUser(autheduser,charstring::getLength(autheduser));
+		setAuthenticatedUser(autheduser,charstring::getLength(autheduser));
 
 		// consult connection schedules
 		if (pvt->_sqlrs &&
-			!pvt->_sqlrs->allowed(pvt->_conn,getCurrentUser())) {
+			!pvt->_sqlrs->allowed(pvt->_conn,getAuthenticatedUser())) {
 			debugWrite("connection schedule violation");
-			raiseScheduleViolationEvent(getCurrentUser());
+			raiseScheduleViolationEvent(getAuthenticatedUser());
 			debugEnd();
 			return false;
 		}
@@ -2428,8 +2428,8 @@ bool sqlrservercontroller::changeUser(const char *newuser,
 	debugStart("change user");
 	closeCursors(false);
 	logOut();
-	setUser(newuser);
-	setPassword(newpassword);
+	setLoginUser(newuser);
+	setLoginPassword(newpassword);
 	bool	retval=(logIn(false) && initCursors(pvt->_cursorcount));
 	debugEnd();
 	return retval;
@@ -2738,6 +2738,10 @@ bool sqlrservercontroller::selectSchema(const char *schema) {
 
 char *sqlrservercontroller::getCurrentSchema() {
 	return pvt->_conn->getCurrentSchema();
+}
+
+char *sqlrservercontroller::getCurrentUser() {
+	return pvt->_conn->getCurrentUser();
 }
 
 bool sqlrservercontroller::getLastInsertId(uint64_t *id) {
@@ -9365,8 +9369,8 @@ void sqlrservercontroller::setClientSessionStartTime() {
 	pvt->_connstats->clientsessionusec=dt.getMicrosecond();
 }
 
-void sqlrservercontroller::setCurrentUser(const char *user,
-						uint32_t usersize) {
+void sqlrservercontroller::setAuthenticatedUser(const char *user,
+							uint32_t usersize) {
 	if (!pvt->_connstats) {
 		return;
 	}
@@ -9988,7 +9992,7 @@ void sqlrservercontroller::incrementNextResultSetAvailableCount() {
 	pvt->_connstats->nnextresultsetavailable++;
 }
 
-const char *sqlrservercontroller::getCurrentUser() {
+const char *sqlrservercontroller::getAuthenticatedUser() {
 	return (pvt->_connstats)?pvt->_connstats->user:NULL;
 }
 
@@ -10070,19 +10074,19 @@ const char *sqlrservercontroller::getConnectStringValue(const char *variable) {
 	return pvt->_constr->getConnectStringValue(variable);
 }
 
-void sqlrservercontroller::setUser(const char *user) {
+void sqlrservercontroller::setLoginUser(const char *user) {
 	pvt->_user=user;
 }
 
-void sqlrservercontroller::setPassword(const char *password) {
+void sqlrservercontroller::setLoginPassword(const char *password) {
 	pvt->_password=password;
 }
 
-const char *sqlrservercontroller::getUser() {
+const char *sqlrservercontroller::getLoginUser() {
 	return pvt->_user;
 }
 
-const char *sqlrservercontroller::getPassword() {
+const char *sqlrservercontroller::getLoginPassword() {
 	return pvt->_password;
 }
 

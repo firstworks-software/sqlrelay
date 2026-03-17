@@ -303,11 +303,28 @@ class SQLRCLIENT_DLLSPEC sqlrconnection : public object {
 
 
 
-		/** Sets the current database (catalog) to "database" */
+		/** Sets the current database to "database".
+		 *
+		 *  May set the current catalog or schema, depending on
+                 *  whether the backend database equates "database" with
+                 *  catalog or schema.
+                 *
+                 *  See getDatabaseIsSchema(). */
 		bool	selectDatabase(const char *database);
 
-		/** Returns the database (catalog) that is currently in use. */
+		/** Returns the database that is currently in use.
+		 *
+		 *  May return the current catalog or schema, depending on
+                 *  whether the backend database equates "database" with
+                 *  catalog or schema.
+                 *
+                 *  See getDatabaseIsSchema(). */
 		const char	*getCurrentDatabase();
+
+		/** Returns true if the backend database equates
+		 *  "database" with "schema", and false if it equates
+		 *  "database" with "catalog". */
+		bool	getDatabaseIsSchema();
 
 		/** Sets the current catalog to "catalog" */
 		bool	selectCatalog(const char *catalog);
@@ -321,10 +338,10 @@ class SQLRCLIENT_DLLSPEC sqlrconnection : public object {
 		/** Returns the schema that is currently in use. */
 		const char	*getCurrentSchema();
 
-		/** Returns true if the backend database equates
-		 *  "database" with "schema", and false if it equates
-		 *  "database" with "catalog". */
-		bool	getDatabaseIsSchema();
+		/** Returns the user that sqlrelay is currently logged in to
+		 *  the database as, or NULL if no user could be determined
+		 *  or if an error occurred. */
+		const char	*getCurrentUser();
 
 
 

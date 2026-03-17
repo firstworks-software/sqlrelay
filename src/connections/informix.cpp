@@ -288,6 +288,7 @@ class SQLRSERVER_DLLSPEC informixconnection : public sqlrserverconnection {
 		const char	*selectCatalogQuery();
 		const char	*getCurrentCatalogQuery();
 		const char	*getCurrentSchemaQuery();
+		const char	*getCurrentUserQuery();
 		const char	*getLastInsertIdQuery();
 		const char	*setIsolationLevelQuery();
 		const char	*getIsolationLevelQuery();
@@ -814,14 +815,14 @@ void informixconnection::handleConnectString() {
 		}
 		dsn.append("Database=")->append(db);
 	}
-	const char	*user=cont->getUser();
+	const char	*user=cont->getLoginUser();
 	if (!charstring::isNullOrEmpty(user)) {
 		if (dsn.getSize()) {
 			dsn.append(";");
 		}
 		dsn.append("LogonID=")->append(user);
 	}
-	const char	*pass=cont->getPassword();
+	const char	*pass=cont->getLoginPassword();
 	if (!charstring::isNullOrEmpty(pass)) {
 		if (dsn.getSize()) {
 			dsn.append(";");
@@ -2554,6 +2555,10 @@ const char *informixconnection::getCurrentCatalogQuery() {
 
 const char *informixconnection::getCurrentSchemaQuery() {
 	return "select trim(user) from sysmaster:sysdual";
+}
+
+const char *informixconnection::getCurrentUserQuery() {
+	return "select user from systables where tabid=1";
 }
 
 const char *informixconnection::getLastInsertIdQuery() {

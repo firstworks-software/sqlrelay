@@ -277,7 +277,7 @@ char *sqlrnotification::substitutions(sqlrlistener *sqlrl,
 			ch+=12;
 		} else if (!charstring::compare(ch,"@user@",6)) {
 			debugPrintf("user: ");
-			value=(sqlrcon)?sqlrcon->cont->getCurrentUser():"";
+			value=(sqlrcon)?sqlrcon->cont->getAuthenticatedUser():"";
 			ch+=6;
 		} else if (!charstring::compare(ch,"@query@",7)) {
 			debugPrintf("query: ");

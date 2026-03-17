@@ -3102,6 +3102,7 @@ void sqlrconDelete(ClientData data) {
  *  $con selectSchema schema
  *  $con getCurrentSchema
  *  $con getDatabaseIsSchema
+ *  $con getCurrentUser
  *  $con getLastInsertId
  *  $con autoCommit bool
  *  $con begin
@@ -3156,6 +3157,7 @@ int sqlrconObjCmd(ClientData data, Tcl_Interp *interp,
     "selectSchema",
     "getCurrentSchema",
     "getDatabaseIsSchema",
+    "getCurrentUser",
     "getLastInsertId",
     "autoCommit",
     "getAutoCommit",
@@ -3210,6 +3212,7 @@ int sqlrconObjCmd(ClientData data, Tcl_Interp *interp,
     SQLR_SELECTSCHEMA,
     SQLR_GETCURRENTSCHEMA,
     SQLR_GETDATABASEISSCHEMA,
+    SQLR_GETCURRENTUSER,
     SQLR_GETLASTINSERTID,
     SQLR_AUTOCOMMIT,
     SQLR_GETAUTOCOMMIT,
@@ -3601,6 +3604,14 @@ int sqlrconObjCmd(ClientData data, Tcl_Interp *interp,
       return TCL_ERROR;
     }
     Tcl_SetObjResult(interp, Tcl_NewIntObj(con->getDatabaseIsSchema()));
+    break;
+  }
+  case SQLR_GETCURRENTUSER: {
+    if (objc > 2) {
+      Tcl_WrongNumArgs(interp, 2, objv, NULL);
+      return TCL_ERROR;
+    }
+    Tcl_SetObjResult(interp,_Tcl_NewStringObj(con->getCurrentUser(), -1));
     break;
   }
   case SQLR_GETLASTINSERTID: {

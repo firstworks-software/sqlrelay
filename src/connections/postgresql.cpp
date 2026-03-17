@@ -83,6 +83,7 @@ class SQLRSERVER_DLLSPEC postgresqlconnection : public sqlrserverconnection {
 		const char	*getCurrentCatalogQuery();
 		const char	*selectSchemaQuery();
 		const char	*getCurrentSchemaQuery();
+		const char	*getCurrentUserQuery();
 		const char	*getIsolationLevelQuery();
 		const char	*mapIsolationLevel(
 				const char *isolevel,
@@ -840,8 +841,8 @@ bool postgresqlconnection::logIn(const char **error,
 	// log in
 #ifdef HAVE_POSTGRESQL_PQCONNECTDB
 	conninfo.clear();
-	conninfo.append("user=")->append(cont->getUser());
-	conninfo.append(" password=")->append(cont->getPassword());
+	conninfo.append("user=")->append(cont->getLoginUser());
+	conninfo.append(" password=")->append(cont->getLoginPassword());
 	if (!charstring::isNullOrEmpty(host)) {
 		conninfo.append(" host=")->append(host);
 	}
@@ -864,7 +865,7 @@ bool postgresqlconnection::logIn(const char **error,
 	pgconn=PQconnectdb(conninfo.getString());
 #else
 	pgconn=PQsetdbLogin(host,port,options,NULL,database,
-				cont->getUser(),cont->getPassword());
+				cont->getLoginUser(),cont->getLoginPassword());
 #endif
 
 	// check the status of the login
@@ -2363,6 +2364,10 @@ const char *postgresqlconnection::selectSchemaQuery() {
 
 const char *postgresqlconnection::getCurrentSchemaQuery() {
 	return "select current_schema()";
+}
+
+const char *postgresqlconnection::getCurrentUserQuery() {
+	return "select current_user";
 }
 
 const char *postgresqlconnection::getIsolationLevelQuery() {

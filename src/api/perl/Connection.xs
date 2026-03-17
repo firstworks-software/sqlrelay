@@ -194,6 +194,9 @@ const char *
 sqlrconnection::getCurrentDatabase()
 
 bool
+sqlrconnection::getDatabaseIsSchema()
+
+bool
 sqlrconnection::selectCatalog(catalog)
 		const char	*catalog
 
@@ -206,9 +209,6 @@ sqlrconnection::selectSchema(schema)
 
 const char *
 sqlrconnection::getCurrentSchema()
-
-bool
-sqlrconnection::getDatabaseIsSchema()
 
 uint64_t
 sqlrconnection::getLastInsertId()

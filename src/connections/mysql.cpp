@@ -260,6 +260,7 @@ class SQLRSERVER_DLLSPEC mysqlconnection : public sqlrserverconnection {
 		char		*getCurrentCatalog();
 		const char	*selectSchemaQuery();
 		const char	*getCurrentSchemaQuery();
+		const char	*getCurrentUserQuery();
 		const char	*getDefaultIsolationLevel();
 		const char	*setIsolationLevelQuery();
 		const char	*getIsolationLevelQuery();
@@ -941,8 +942,8 @@ bool mysqlconnection::logIn(const char **error, const char **warning) {
 	const char	*dbval=(!charstring::isNullOrEmpty(db))?db:"";
 	
 	// log in
-	const char	*user=cont->getUser();
-	const char	*password=cont->getPassword();
+	const char	*user=cont->getLoginUser();
+	const char	*password=cont->getLoginPassword();
 #ifdef HAVE_MYSQL_REAL_CONNECT_FOR_SURE
 	// Handle port and socket.
 	int		portval=
@@ -2579,6 +2580,10 @@ const char *mysqlconnection::selectSchemaQuery() {
 
 const char *mysqlconnection::getCurrentSchemaQuery() {
 	return "select database()";
+}
+
+const char *mysqlconnection::getCurrentUserQuery() {
+	return "select current_user()";
 }
 
 const char *mysqlconnection::getDefaultIsolationLevel() {

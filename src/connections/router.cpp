@@ -119,6 +119,7 @@ class SQLRSERVER_DLLSPEC routerconnection : public sqlrserverconnection {
 		char		*getCurrentCatalog();
 		bool		selectSchema(const char *schema);
 		char		*getCurrentSchema();
+		char		*getCurrentUser();
 		bool		getLastInsertId(uint64_t *id);
 		void		endSession();
 
@@ -1520,6 +1521,11 @@ bool routerconnection::selectSchema(const char *schema) {
 char *routerconnection::getCurrentSchema() {
 	return (currentcon)?
 		charstring::duplicate(currentcon->getCurrentSchema()):NULL;
+}
+
+char *routerconnection::getCurrentUser() {
+	return (currentcon)?
+		charstring::duplicate(currentcon->getCurrentUser()):NULL;
 }
 
 bool routerconnection::getLastInsertId(uint64_t *id) {

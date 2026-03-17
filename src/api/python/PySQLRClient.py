@@ -374,15 +374,35 @@ class sqlrconnection:
 
     def selectDatabase(self,database):
         """
-        Sets the current database (catalog) to "database"
+        Sets the current database to "database".
+
+        May set the current catalog or schema, depending on
+        whether the backend database equates "database" with
+        catalog or schema.
+
+        See getDatabaseIsSchema().
         """
         return CSQLRelay.selectDatabase(self.connection,database)
 
     def getCurrentDatabase(self):
         """
-        Returns the database (catalog) that is currently in use.
+        Returns the database that is currently in use.
+
+        May return the current catalog or schema, depending on
+        whether the backend database equates "database" with
+        catalog or schema.
+
+        See getDatabaseIsSchema().
         """
         return CSQLRelay.getCurrentDatabase(self.connection)
+
+    def getDatabaseIsSchema(self):
+        """
+        Returns true if the backend database equates "database"
+        with "schema", and false if it equates "database" with
+        "catalog".
+        """
+        return CSQLRelay.getDatabaseIsSchema(self.connection)
 
     def selectCatalog(self,catalog):
         """
@@ -408,13 +428,13 @@ class sqlrconnection:
         """
         return CSQLRelay.getCurrentSchema(self.connection)
 
-    def getDatabaseIsSchema(self):
+    def getCurrentUser(self):
         """
-        Returns true if the backend database equates "database"
-        with "schema", and false if it equates "database" with
-        "catalog".
+        Returns the user that sqlrelay is currently logged in to
+        the database as, or None if no user could be determined
+        or if an error occurred.
         """
-        return CSQLRelay.getDatabaseIsSchema(self.connection)
+        return CSQLRelay.getCurrentUser(self.connection)
 
     def getLastInsertId(self):
         """

@@ -5653,6 +5653,29 @@ DLEXPORT ZEND_FUNCTION(sqlrcon_getcurrentdatabase) {
 	RETURN_FALSE;
 }
 
+
+DLEXPORT ZEND_FUNCTION(sqlrcon_getdatabaseisschema) {
+	ZVAL sqlrcon;
+	if (ZEND_NUM_ARGS() != 1 ||
+		GET_PARAMETERS(
+				ZEND_NUM_ARGS() TSRMLS_CC,
+				PARAMS("z")
+				&sqlrcon) == FAILURE) {
+		WRONG_PARAM_COUNT;
+	}
+	sqlrconnection *connection=NULL;
+	ZEND_FETCH_RESOURCE(connection,
+				sqlrconnection *,
+				sqlrcon,
+				-1,
+				"sqlrelay connection",
+				sqlrelay_connection);
+	if (connection) {
+		RETURN_LONG(connection->getDatabaseIsSchema());
+	}
+	RETURN_LONG(0);
+}
+
 DLEXPORT ZEND_FUNCTION(sqlrcon_selectcatalog) {
 	ZVAL sqlrcon;
 	ZVAL catalog;
@@ -5758,9 +5781,9 @@ DLEXPORT ZEND_FUNCTION(sqlrcon_getcurrentschema) {
 	}
 	RETURN_FALSE;
 }
-
-DLEXPORT ZEND_FUNCTION(sqlrcon_getdatabaseisschema) {
+DLEXPORT ZEND_FUNCTION(sqlrcon_getcurrentuser) {
 	ZVAL sqlrcon;
+	const char *r;
 	if (ZEND_NUM_ARGS() != 1 ||
 		GET_PARAMETERS(
 				ZEND_NUM_ARGS() TSRMLS_CC,
@@ -5776,9 +5799,12 @@ DLEXPORT ZEND_FUNCTION(sqlrcon_getdatabaseisschema) {
 				"sqlrelay connection",
 				sqlrelay_connection);
 	if (connection) {
-		RETURN_LONG(connection->getDatabaseIsSchema());
+		r=connection->getCurrentUser();
+		if (r) {
+			RET_STRING(const_cast<char *>(r),1);
+		}
 	}
-	RETURN_LONG(0);
+	RETURN_FALSE;
 }
 
 DLEXPORT ZEND_FUNCTION(sqlrcon_getlastinsertid) {
@@ -6743,6 +6769,9 @@ ZEND_END_ARG_INFO()
 ZEND_BEGIN_ARG_INFO_EX(arginfo_sqlrcon_getcurrentdatabase,0,0,0)
 ZEND_END_ARG_INFO()
 
+ZEND_BEGIN_ARG_INFO_EX(arginfo_sqlrcon_getdatabaseisschema,0,0,0)
+ZEND_END_ARG_INFO()
+
 ZEND_BEGIN_ARG_INFO_EX(arginfo_sqlrcon_selectcatalog,0,0,0)
 ZEND_END_ARG_INFO()
 
@@ -6755,7 +6784,7 @@ ZEND_END_ARG_INFO()
 ZEND_BEGIN_ARG_INFO_EX(arginfo_sqlrcon_getcurrentschema,0,0,0)
 ZEND_END_ARG_INFO()
 
-ZEND_BEGIN_ARG_INFO_EX(arginfo_sqlrcon_getdatabaseisschema,0,0,0)
+ZEND_BEGIN_ARG_INFO_EX(arginfo_sqlrcon_getcurrentuser,0,0,0)
 ZEND_END_ARG_INFO()
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_sqlrcon_getlastinsertid,0,0,0)
@@ -7142,6 +7171,8 @@ zend_function_entry sql_relay_functions[] = {
 		ARGINFO(arginfo_sqlrcon_getcurrentschema))
 	ZEND_FE(sqlrcon_getdatabaseisschema,
 		ARGINFO(arginfo_sqlrcon_getdatabaseisschema))
+	ZEND_FE(sqlrcon_getcurrentuser,
+		ARGINFO(arginfo_sqlrcon_getcurrentuser))
 	ZEND_FE(sqlrcon_getlastinsertid,
 		ARGINFO(arginfo_sqlrcon_getlastinsertid))
 	ZEND_FE(sqlrcon_autocommiton,

@@ -377,16 +377,35 @@ public class SQLRConnection : IDisposable
     
     
     
-    /** Sets the current database (catalog) to "database" */
+    /** Sets the current database to "database".
+     *
+     *  May set the current catalog or schema, depending on
+     *  whether the backend database equates "database" with
+     *  catalog or schema.
+     *
+     *  See getDatabaseIsSchema(). */
     public Boolean selectDatabase(String database)
     {
         return sqlrcon_selectDatabase(sqlrconref, database)!=0;
     }
 
-    /** Returns the database (catalog) that is currently in use. */
+    /** Returns the database that is currently in use.
+     *
+     *  May return the current catalog or schema, depending on
+     *  whether the backend database equates "database" with
+     *  catalog or schema.
+     *
+     *  See getDatabaseIsSchema(). */
     public String getCurrentDatabase()
     {
         return sqlrcon_getCurrentDatabase(sqlrconref);
+    }
+
+    /** Returns true if the backend database equates "database" with
+     *  "schema", and false if it equates "database" with "catalog". */
+    public Boolean getDatabaseIsSchema()
+    {
+        return sqlrcon_getDatabaseIsSchema(sqlrconref)!=0;
     }
 
     /** Sets the current catalog to "catalog" */
@@ -413,14 +432,15 @@ public class SQLRConnection : IDisposable
         return sqlrcon_getCurrentSchema(sqlrconref);
     }
 
-    /** Returns true if the backend database equates "database" with
-     *  "schema", and false if it equates "database" with "catalog". */
-    public Boolean getDatabaseIsSchema()
+
+
+    /** Returns the user that sqlrelay is currently logged in to
+     *  the database as, or null if no user could be determined
+     *  or if an error occurred. */
+    public String getCurrentUser()
     {
-        return sqlrcon_getDatabaseIsSchema(sqlrconref)!=0;
+        return sqlrcon_getCurrentUser(sqlrconref);
     }
-
-
 
     /** Returns the value of the autoincrement column for the last insert */
     public UInt64 getLastInsertId()
@@ -957,6 +977,9 @@ public class SQLRConnection : IDisposable
     private static extern String sqlrcon_getCurrentDatabase(IntPtr sqlrconref);
 
     [DllImport("libsqlrclientwrapper.dll", CallingConvention = CallingConvention.Cdecl)]
+    private static extern Int32 sqlrcon_getDatabaseIsSchema(IntPtr sqlrconref);
+
+    [DllImport("libsqlrclientwrapper.dll", CallingConvention = CallingConvention.Cdecl)]
     private static extern Int32 sqlrcon_selectCatalog(IntPtr sqlrconref, String catalog);
 
     [DllImport("libsqlrclientwrapper.dll", CallingConvention = CallingConvention.Cdecl)]
@@ -969,7 +992,7 @@ public class SQLRConnection : IDisposable
     private static extern String sqlrcon_getCurrentSchema(IntPtr sqlrconref);
 
     [DllImport("libsqlrclientwrapper.dll", CallingConvention = CallingConvention.Cdecl)]
-    private static extern Int32 sqlrcon_getDatabaseIsSchema(IntPtr sqlrconref);
+    private static extern String sqlrcon_getCurrentUser(IntPtr sqlrconref);
 
     [DllImport("libsqlrclientwrapper.dll", CallingConvention = CallingConvention.Cdecl)]
     private static extern UInt64 sqlrcon_getLastInsertId(IntPtr sqlrconref);

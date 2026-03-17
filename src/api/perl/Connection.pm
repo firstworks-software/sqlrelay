@@ -296,9 +296,26 @@ __END__
 
 
         selectDatabase(database);
-            # Sets the current database (catalog) to "database"
+            # Sets the current database to "database".
+            #
+            # May set the current catalog or schema, depending on
+            # whether the backend database equates "database" with
+            # catalog or schema.
+            #
+            # See getDatabaseIsSchema().
         getCurrentDatabase();
-            # Returns the database (catalog) that is currently in use.
+            # Returns the database that is currently in use.
+            #
+            # May return the current catalog or schema, depending on
+            # whether the backend database equates "database" with
+            # catalog or schema.
+            #
+            # See getDatabaseIsSchema().
+
+        getDatabaseIsSchema();
+            # Returns true if the backend database equates
+            # "database" with "schema", and false if it
+            # equates "database" with "catalog".
 
         selectCatalog(catalog);
             # Sets the current catalog to "catalog"
@@ -310,10 +327,11 @@ __END__
         getCurrentSchema();
             # Returns the schema that is currently in use.
 
-        getDatabaseIsSchema();
-            # Returns true if the backend database equates
-            # "database" with "schema", and false if it
-            # equates "database" with "catalog".
+        getCurrentUser();
+            # Returns the user that sqlrelay is currently
+            # logged in to the database as, or undef if
+            # no user could be determined or if an error
+            # occurred.
 
         getLastInsertId();
             # Returns the value of the autoincrement

@@ -431,6 +431,17 @@ static PyObject *getCurrentDatabase(PyObject *self, PyObject *args) {
   return Py_BuildValue("s", rc);
 }
 
+static PyObject *getDatabaseIsSchema(PyObject *self, PyObject *args) {
+  long sqlrcon;
+  bool rc;
+  if (!PyArg_ParseTuple(args, "l", &sqlrcon))
+    return NULL;
+  Py_BEGIN_ALLOW_THREADS
+  rc=((sqlrconnection *)sqlrcon)->getDatabaseIsSchema();
+  Py_END_ALLOW_THREADS
+  return Py_BuildValue("h", (short)rc);
+}
+
 static PyObject *selectCatalog(PyObject *self, PyObject *args) {
   char *catalog;
   long sqlrcon;
@@ -477,15 +488,11 @@ static PyObject *getCurrentSchema(PyObject *self, PyObject *args) {
   return Py_BuildValue("s", rc);
 }
 
-static PyObject *getDatabaseIsSchema(PyObject *self, PyObject *args) {
+static PyObject *getCurrentUser(PyObject *self, PyObject *args) {
   long sqlrcon;
-  bool rc;
   if (!PyArg_ParseTuple(args, "l", &sqlrcon))
     return NULL;
-  Py_BEGIN_ALLOW_THREADS
-  rc=((sqlrconnection *)sqlrcon)->getDatabaseIsSchema();
-  Py_END_ALLOW_THREADS
-  return Py_BuildValue("h", (short)rc);
+  return Py_BuildValue("s", ((sqlrconnection *)sqlrcon)->getCurrentUser());
 }
 
 static PyObject *getLastInsertId(PyObject *self, PyObject *args) {
@@ -3275,11 +3282,12 @@ static PyMethodDef SQLRMethods[] = {
   {"nextvalFormat", nextvalFormat, METH_VARARGS},
   {"selectDatabase", selectDatabase, METH_VARARGS},
   {"getCurrentDatabase", getCurrentDatabase, METH_VARARGS},
+  {"getDatabaseIsSchema", getDatabaseIsSchema, METH_VARARGS},
   {"selectCatalog", selectCatalog, METH_VARARGS},
   {"getCurrentCatalog", getCurrentCatalog, METH_VARARGS},
   {"selectSchema", selectSchema, METH_VARARGS},
   {"getCurrentSchema", getCurrentSchema, METH_VARARGS},
-  {"getDatabaseIsSchema", getDatabaseIsSchema, METH_VARARGS},
+  {"getCurrentUser", getCurrentUser, METH_VARARGS},
   {"getLastInsertId", getLastInsertId, METH_VARARGS},
   {"autoCommitOn", autoCommitOn, METH_VARARGS},
   {"autoCommitOff", autoCommitOff, METH_VARARGS},
@@ -3287,6 +3295,7 @@ static PyMethodDef SQLRMethods[] = {
   {"begin", begin, METH_VARARGS},
   {"commit", commit, METH_VARARGS},
   {"rollback", rollback, METH_VARARGS},
+  {"getDefaultIsolationLevel", getDefaultIsolationLevel, METH_VARARGS},
   {"getDefaultIsolationLevel", getDefaultIsolationLevel, METH_VARARGS},
   {"setIsolationLevel", setIsolationLevel, METH_VARARGS},
   {"getIsolationLevel", getIsolationLevel, METH_VARARGS},

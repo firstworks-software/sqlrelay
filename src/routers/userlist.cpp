@@ -53,7 +53,7 @@ const char *sqlrrouter_userlist::route(sqlrserverconnection *sqlrcon,
 	debugWrite("route");
 
 	// get the user
-	const char	*user=sqlrcon->cont->getCurrentUser();
+	const char	*user=sqlrcon->cont->getAuthenticatedUser();
 	if (charstring::isNullOrEmpty(user)) {
 		debugWrite("routing null/empty user");
 		return NULL;

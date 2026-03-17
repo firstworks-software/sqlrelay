@@ -300,6 +300,7 @@ class SQLRSERVER_DLLSPEC db2connection : public sqlrserverconnection {
 		const char	*getCurrentCatalogQuery();
 		const char	*selectSchemaQuery();
 		const char	*getCurrentSchemaQuery();
+		const char	*getCurrentUserQuery();
 		const char	*getLastInsertIdQuery();
 		const char	*setIsolationLevelQuery();
 		const char	*getIsolationLevelQuery();
@@ -905,8 +906,8 @@ bool db2connection::logIn(const char **error, const char **warning) {
 
 	// connect to the database
 	erg=SQLConnect(dbc,(SQLCHAR *)server,SQL_NTS,
-				(SQLCHAR *)cont->getUser(),SQL_NTS,
-				(SQLCHAR *)cont->getPassword(),SQL_NTS);
+				(SQLCHAR *)cont->getLoginUser(),SQL_NTS,
+				(SQLCHAR *)cont->getLoginPassword(),SQL_NTS);
 	if (erg==SQL_SUCCESS_WITH_INFO) {
 		*warning=logInError(NULL);
 	} else if (erg!=SQL_SUCCESS) {
@@ -2220,6 +2221,10 @@ const char *db2connection::selectSchemaQuery() {
 
 const char *db2connection::getCurrentSchemaQuery() {
 	return "values current schema";
+}
+
+const char *db2connection::getCurrentUserQuery() {
+	return "values current user";
 }
 
 const char *db2connection::getLastInsertIdQuery() {

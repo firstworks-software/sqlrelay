@@ -178,11 +178,12 @@ class SQLRConnection : public ObjectWrap {
 		static RET	nextvalFormat(const ARGS &args);
 		static RET	selectDatabase(const ARGS &args);
 		static RET	getCurrentDatabase(const ARGS &args);
+		static RET	getDatabaseIsSchema(const ARGS &args);
 		static RET	selectCatalog(const ARGS &args);
 		static RET	getCurrentCatalog(const ARGS &args);
 		static RET	selectSchema(const ARGS &args);
 		static RET	getCurrentSchema(const ARGS &args);
-		static RET	getDatabaseIsSchema(const ARGS &args);
+		static RET	getCurrentUser(const ARGS &args);
 		static RET	getLastInsertId(const ARGS &args);
 		static RET	autoCommitOn(const ARGS &args);
 		static RET	autoCommitOff(const ARGS &args);
@@ -412,11 +413,12 @@ void SQLRConnection::Init(Handle<Object> exports) {
 	NODE_SET_PROTOTYPE_METHOD(tpl,"nextvalFormat",nextvalFormat);
 	NODE_SET_PROTOTYPE_METHOD(tpl,"selectDatabase",selectDatabase);
 	NODE_SET_PROTOTYPE_METHOD(tpl,"getCurrentDatabase",getCurrentDatabase);
+	NODE_SET_PROTOTYPE_METHOD(tpl,"getDatabaseIsSchema",getDatabaseIsSchema);
 	NODE_SET_PROTOTYPE_METHOD(tpl,"selectCatalog",selectCatalog);
 	NODE_SET_PROTOTYPE_METHOD(tpl,"getCurrentCatalog",getCurrentCatalog);
 	NODE_SET_PROTOTYPE_METHOD(tpl,"selectSchema",selectSchema);
 	NODE_SET_PROTOTYPE_METHOD(tpl,"getCurrentSchema",getCurrentSchema);
-	NODE_SET_PROTOTYPE_METHOD(tpl,"getDatabaseIsSchema",getDatabaseIsSchema);
+	NODE_SET_PROTOTYPE_METHOD(tpl,"getCurrentUser",getCurrentUser);
 	NODE_SET_PROTOTYPE_METHOD(tpl,"getLastInsertId",getLastInsertId);
 	NODE_SET_PROTOTYPE_METHOD(tpl,"autoCommitOn",autoCommitOn);
 	NODE_SET_PROTOTYPE_METHOD(tpl,"autoCommitOff",autoCommitOff);
@@ -817,6 +819,17 @@ RET SQLRConnection::getCurrentDatabase(const ARGS &args) {
 	returnString(result);
 }
 
+RET SQLRConnection::getDatabaseIsSchema(const ARGS &args) {
+
+	initLocalScope();
+
+	checkArgCount(args,0);
+
+	bool	result=sqlrcon(args)->getDatabaseIsSchema();
+
+	returnBoolean(result);
+}
+
 RET SQLRConnection::selectCatalog(const ARGS &args) {
 
 	initLocalScope();
@@ -861,15 +874,16 @@ RET SQLRConnection::getCurrentSchema(const ARGS &args) {
 	returnString(result);
 }
 
-RET SQLRConnection::getDatabaseIsSchema(const ARGS &args) {
+
+RET SQLRConnection::getCurrentUser(const ARGS &args) {
 
 	initLocalScope();
 
 	checkArgCount(args,0);
 
-	bool	result=sqlrcon(args)->getDatabaseIsSchema();
+	const char	*result=sqlrcon(args)->getCurrentUser();
 
-	returnBoolean(result);
+	returnString(result);
 }
 
 RET SQLRConnection::getLastInsertId(const ARGS &args) {

@@ -282,11 +282,23 @@ function sqlrcon_nextvalFormat($sqlrconref){}
 
 
 /** 
- *  Sets the current database (catalog) to "database" */
+ *  Sets the current database to "database".
+ *
+ *  May set the current catalog or schema, depending on
+ *  whether the backend database equates "database" with
+ *  catalog or schema.
+ *
+ *  See getDatabaseIsSchema(). */
 function sqlrcon_selectDatabase($sqlrconref, $database){}
 
 /**
- *  Returns the database (catalog) that is currently in use. */
+ *  Returns the database that is currently in use.
+ *
+ *  May return the current catalog or schema, depending on
+ *  whether the backend database equates "database" with
+ *  catalog or schema.
+ *
+ *  See getDatabaseIsSchema(). */
 function sqlrcon_getCurrentDatabase($sqlrconref){}
 
 /**
@@ -311,6 +323,12 @@ function sqlrcon_getCurrentSchema($sqlrconref){}
 function sqlrcon_getDatabaseIsSchema($sqlrconref){}
 
 
+
+/**
+ *  Returns the user that sqlrelay is currently logged in to
+ *  the database as, or NULL if no user could be determined
+ *  or if an error occurred. */
+function sqlrcon_getCurrentUser($sqlrconref){}
 
 /**
  *  Returns the value of the autoincrement column for the last insert */

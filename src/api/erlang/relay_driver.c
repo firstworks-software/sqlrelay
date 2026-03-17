@@ -721,12 +721,23 @@ int main() {
 			}
 		}
 
+		if (strcmp("getCurrentUser", command) == TRUE) {
+			// check number of arguments
+		    	if (arity != 0) return ERR_NUMBER_OF_ARGS;
+
+			// encode result
+			if (ei_x_encode_atom(&result, "ok") ||
+				ei_x_encode_string(&result, sqlrcon_getCurrentUser(con))) {
+				return ERR_ENCODING_ARGS;
+			}
+		}
+
 		if (strcmp("getLastInsertId", command) == TRUE) {
 			// check number of arguments
 		    	if (arity != 0) return ERR_NUMBER_OF_ARGS;
 
-			// encode result 
-			if (ei_x_encode_atom(&result, "ok") || 
+			// encode result
+			if (ei_x_encode_atom(&result, "ok") ||
 				ei_x_encode_long(&result, sqlrcon_getLastInsertId(con))) {
 				return ERR_ENCODING_ARGS;
 			}

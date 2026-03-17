@@ -34,8 +34,8 @@ const char *sqlrauth_sqlrclient_database::auth(sqlrcredentials *cred) {
 	// from the user/password that was originally used to log in to the
 	// database
 	if (first) {
-		lastuser.append(cont->getUser());
-		lastpassword.append(cont->getPassword());
+		lastuser.append(cont->getLoginUser());
+		lastpassword.append(cont->getLoginPassword());
 		first=false;
 	}
 

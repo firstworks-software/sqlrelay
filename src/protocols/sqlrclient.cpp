@@ -69,6 +69,7 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_sqlrclient : public sqlrprotocol {
 		void	getCurrentCatalogCommand();
 		void	selectSchemaCommand();
 		void	getCurrentSchemaCommand();
+		void	getCurrentUserCommand();
 		void	getLastInsertIdCommand();
 		void	dbHostNameCommand();
 		void	dbIpAddressCommand();
@@ -500,6 +501,10 @@ clientsessionexitstatus_t sqlrprotocol_sqlrclient::clientSession(
 			// FIXME: add this
 			//cont->incrementGetCurrentSchemaCount();
 			getCurrentSchemaCommand();
+			continue;
+		} else if (command==GET_CURRENT_USER) {
+			//cont->incrementGetIsolationLevelCount();
+			getCurrentUserCommand();
 			continue;
 		} else if (command==GET_LAST_INSERT_ID) {
 			cont->incrementGetLastInsertIdCount();
@@ -1565,6 +1570,28 @@ void sqlrprotocol_sqlrclient::getCurrentSchemaCommand() {
 
 	// clean up
 	delete[] currentschema;
+
+	debugEnd();
+}
+
+void sqlrprotocol_sqlrclient::getCurrentUserCommand() {
+
+	debugStart("get current user");
+
+	// get the current user
+	char	*currentuser=cont->getCurrentUser();
+
+	// send it to the client
+	clientsock->write((uint16_t)NO_ERROR_OCCURRED);
+	uint16_t	currentusersize=charstring::getLength(currentuser);
+	clientsock->write(currentusersize);
+	clientsock->write(currentuser,currentusersize);
+	clientsock->flushWriteBuffer(-1,-1);
+
+	debugWrite("current user: %.*s",currentusersize,currentuser);
+
+	// clean up
+	delete[] currentuser;
 
 	debugEnd();
 }

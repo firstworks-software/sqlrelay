@@ -80,6 +80,7 @@ class SQLRSERVER_DLLSPEC sapconnection : public sqlrserverconnection {
 		const char	*selectCatalogQuery();
 		const char	*getCurrentCatalogQuery();
 		const char	*getCurrentSchemaQuery();
+		const char	*getCurrentUserQuery();
 		const char	*getLastInsertIdQuery();
 		const char	*getIsolationLevelQuery();
 		const char	*mapIsolationLevel(
@@ -859,7 +860,7 @@ bool sapconnection::logIn(const char **error, const char **warning) {
 
 
 	// set the user to use
-	const char	*user=cont->getUser();
+	const char	*user=cont->getLoginUser();
 	if (ct_con_props(dbconn,CS_SET,CS_USERNAME,
 		(CS_VOID *)((!charstring::isNullOrEmpty(user))?user:""),
 		(CS_INT)charstring::getLength(user),
@@ -870,7 +871,7 @@ bool sapconnection::logIn(const char **error, const char **warning) {
 
 
 	// set the password to use
-	const char	*password=cont->getPassword();
+	const char	*password=cont->getLoginPassword();
 	if (ct_con_props(dbconn,CS_SET,CS_PASSWORD,
 		(CS_VOID *)((!charstring::isNullOrEmpty(password))?password:""),
 		(CS_INT)charstring::getLength(password),
@@ -2337,6 +2338,10 @@ const char *sapconnection::getCurrentCatalogQuery() {
 
 const char *sapconnection::getCurrentSchemaQuery() {
 	return "select user_name()";
+}
+
+const char *sapconnection::getCurrentUserQuery() {
+	return "select suser_sname()";
 }
 
 const char *sapconnection::getLastInsertIdQuery() {

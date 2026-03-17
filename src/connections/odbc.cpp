@@ -382,6 +382,7 @@ class SQLRSERVER_DLLSPEC odbcconnection : public sqlrserverconnection {
 		const char	*selectCatalogQuery();
 		char		*getCurrentCatalog();
 		char		*getCurrentSchema();
+		char		*getCurrentUser();
 		bool		setIsolationLevel(const char *isolevel);
 		const char	*getDbHostNameQuery();
 		const char	*getDbIpAddressQuery();
@@ -801,8 +802,8 @@ bool odbcconnection::logIn(const char **error, const char **warning) {
 	}
 
 	// connect to the database
-	const char	*userasc=cont->getUser();
-	const char	*passwordasc=cont->getPassword();
+	const char	*userasc=cont->getLoginUser();
+	const char	*passwordasc=cont->getLoginPassword();
 
 	if (!charstring::isNullOrEmpty(driver)) {
 
@@ -3253,6 +3254,16 @@ char *odbcconnection::getCurrentSchema() {
 			(SQLSMALLINT)256,
 			&currentschemalen);
 	return currentschema;
+}
+
+char *odbcconnection::getCurrentUser() {
+	char	*currentuser=new char[256];
+	SQLSMALLINT	currentuserlen;
+	SQLGetInfo(dbc,SQL_USER_NAME,
+			(SQLPOINTER)currentuser,
+			(SQLSMALLINT)256,
+			&currentuserlen);
+	return currentuser;
 }
 
 #if (ODBCVER >= 0x0300)
