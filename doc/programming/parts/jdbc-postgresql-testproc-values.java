@@ -1,0 +1,11 @@
+PreparedStatement stmt=con.prepareStatement("select * from examplefunc(?,?,?) as (col1 int, col2 float, col3 char(20))");
+stmt.setInt(1,1);
+stmt.setDouble(2,1.1);
+stmt.setString(3,"hello");
+ResultSet rs=stmt.executeQuery();
+rs.next();
+String out1=rs.getString(1);
+String out2=rs.getString(2);
+String out3=rs.getString(3);
+rs.close();
+stmt.close();

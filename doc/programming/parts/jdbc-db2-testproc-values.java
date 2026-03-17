@@ -1,0 +1,12 @@
+CallableStatement stmt=con.prepareCall("{call exampleproc(?,?,?,?,?,?)}");
+stmt.setInt(1,1);
+stmt.setDouble(2,1.1);
+stmt.setString(3,"hello");
+stmt.registerOutParameter(4,Types.INTEGER);
+stmt.registerOutParameter(5,Types.DOUBLE);
+stmt.registerOutParameter(6,Types.VARCHAR);
+stmt.execute();
+int out1=stmt.getInt(4);
+double out2=stmt.getDouble(5);
+String out3=stmt.getString(6);
+stmt.close();
