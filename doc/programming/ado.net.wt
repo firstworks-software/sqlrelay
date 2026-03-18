@@ -4,7 +4,7 @@
 
 {{{#!include ../contentstart.html}}}
 
-= Programming with SQL Relay using the ADO.NET API =
+= Programming with SQL Relay using ADO.NET =
 
 * [#languages Language Compatibility]
 * [#session Establishing a Session]

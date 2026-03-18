@@ -4,7 +4,7 @@
 
 {{{#!include ../contentstart.html}}}
 
-= Programming with SQL Relay using the PHP PDO API =
+= Programming with SQL Relay using PHP PDO =
 
 * [#intro Introduction]
 * [#config Configuring PHP]
@@ -273,9 +273,9 @@ directly to the database.
 Most PDO methods return a value indicating that they failed.  There are 3
 options for error handling too that can be set using setAttribute().
 
-* PDO::ERRMODE_WARNING - raise an E_WARNING on error
-* PDO::ERRMODE_EXCEPTION - throw an exception on error
-* PDO::ERRMODE_SILENT - just set error codes
+* PDO: :ERRMODE_WARNING - raise an E_WARNING on error
+* PDO: :ERRMODE_EXCEPTION - throw an exception on error
+* PDO: :ERRMODE_SILENT - just set error codes
 
 After determining that an error has occurred you can find out why by
 calling errorCode() or errorInfo() on the database handle or statement
@@ -293,9 +293,6 @@ objects.
 Programs rarely execute fixed queries.  More often than not, some part
 of the query is dynamically generated.  The PDO API provides means for
 using bind variables (also known as parameters) in those queries.
-
-For a detailed discussion of substitutions and binds, see
-[binds.html this document].
 
 PDO provides several means for using bind variables but in all cases, you
 must bind variable/value pairs to the statement.  Here is an example of using
@@ -317,7 +314,7 @@ PDO also provides a bindParam() method and allows you to pass an associative
 array into the execute() method.  See the official PDO documentation for info
 on those methods.
 
-Output bind variables can be used too.  Just use the PDO::PARAM_INPUT_OUTPUT
+Output bind variables can be used too.  Just use the PDO: :PARAM_INPUT_OUTPUT
 flag with the variable type.
 
 {{{#!blockquote
@@ -371,7 +368,7 @@ insert into exampletable values (@var1,@var2,@var3,@var4)
 }}}
 }}}
 
-With DB2, MySQL/MariaDB and Firebird:
+With DB2, !MySQL/MariaDB and Firebird:
 
 {{{#!blockquote
 {{{#!code
@@ -379,7 +376,7 @@ insert into exampletable values (?,?,?,?)
 }}}
 }}}
 
-With PostgreSQL:
+With !PostgreSQL:
 
 {{{#!blockquote
 {{{#!code
@@ -408,7 +405,7 @@ However...
 
 Another solution is to configure SQL Relay to translate bind variables by setting translatebindvariables="yes" in the sqlrelay.conf file for the instance you're using.  Simply put, this parameter makes every database support every bind variable format.  See the [../admin/configreference.html SQL Relay Configuration Reference] for more information on this parameter.
 
-A third solution is to configure PDO to emulate prepares by setting the PDO::ATTR_EMULATE_PREPARES attribute to true.  When the SQL Relay driver sees that this is set true, it rewrites the queries and translates the bind variables to substitution variables.  This solution also makes every database support every bind variable format, but the translation is done on the client-side.  Unfortunately it doesn't work with output bind variables.
+A third solution is to configure PDO to emulate prepares by setting the PDO: :ATTR_EMULATE_PREPARES attribute to true.  When the SQL Relay driver sees that this is set true, it rewrites the queries and translates the bind variables to substitution variables.  This solution also makes every database support every bind variable format, but the translation is done on the client-side.  Unfortunately it doesn't work with output bind variables.
 
 [=#rebinding]
 == Re-Binding and Re-Execution ==
@@ -429,9 +426,9 @@ supports this paradigm, you can reap a substantial performance improvement.
 
 To fetch a row from a statement that has been executed, call the fetch()
 method.  When called with no parameters, fetch() returns an array of fields
-with both numeric and associative entries.  When called with the PDO::FETCH_NUM
+with both numeric and associative entries.  When called with the PDO: :FETCH_NUM
 flag, it returns an array with only numeric entries.  When called with the
-PDO::FETCH_ASSOC flag, it returns an array with only associative entries.
+PDO: :FETCH_ASSOC flag, it returns an array with only associative entries.
 
 LOB values are returned as streams, just like output bind parameters.
 
@@ -444,7 +441,7 @@ arrays (the default).
 }}}
 }}}
 
-The bindColumn() method and PDO::FETCH_BOUND flag can be used to fetch
+The bindColumn() method and PDO: :FETCH_BOUND flag can be used to fetch
 values into preallocated variables.
 
 {{{#!blockquote
@@ -478,7 +475,7 @@ SQL Relay normally buffers the entire result set.  This can speed things up
 at the cost of memory.  With large enough result sets, it makes sense to buffer the result set in chunks instead of all at once.
 
 Use the connect string variable "resultsetbuffersize" or the statement
-attribute PDO::SQLRELAY_ATTR_RESULT_SET_BUFFER_SIZE to set the number of rows
+attribute PDO: :SQLRELAY_ATTR_RESULT_SET_BUFFER_SIZE to set the number of rows
 to buffer at a time.  Calls to fetch() cause the chunk containing the requested
 field to be fetched.  Rows in that chunk are accessible but rows before it are
 not.
@@ -1231,7 +1228,7 @@ each database that SQL Relay supports.
 
 ==== Oracle ====
 
-In Oracle, for a result set to be fetched from a stored procedure, the result set must be bound to an output parameter of type cursor. PDO had a PDO::PARAM_STMT type that could theoretically be used to get one of these but it is currently unimplemented by any driver, including the SQL Relay driver. Quirks in the implementation of PDO itself make it impossible (or at least very difficult) to implement. Specifically, there's no obvious way of creating an instance of the PDO statement type to set the bound parameter to. Hopefully this will be remedied in a future version of PDO.
+In Oracle, for a result set to be fetched from a stored procedure, the result set must be bound to an output parameter of type cursor. PDO had a PDO: :PARAM_STMT type that could theoretically be used to get one of these but it is currently unimplemented by any driver, including the SQL Relay driver. Quirks in the implementation of PDO itself make it impossible (or at least very difficult) to implement. Specifically, there's no obvious way of creating an instance of the PDO statement type to set the bound parameter to. Hopefully this will be remedied in a future version of PDO.
 
 ==== Sybase and Microsoft SQL Server ====
 
@@ -1340,7 +1337,7 @@ To drop the stored procedure, run a query like the following.
 
 Databases with autoincrement or identity columns often provide functions which return the "last insert id"; the value of the autoincrement column that was generated during the insert into the database.
 
-PDO provides the PDO::lastInsertId() method to get this value.
+PDO provides the PDO: :lastInsertId() method to get this value.
 
 When using the SQLite database, you can also get the last insert id by running the query:
 
@@ -1355,18 +1352,18 @@ PHP PDO allows drivers to define their own attributes for database handles and s
 
 Database handle attributes defined by the SQL Relay driver:
 
-* '''PDO::SQLRELAY_ATTR_DB_TYPE''' - get-only, returns database type
-* '''PDO::SQLRELAY_ATTR_DB_VERSION''' - get-only, returns database version string
-* '''PDO::SQLRELAY_ATTR_DB_HOST_NAME''' - get-only, returns the host name of the machine the database is running on
-* '''PDO::SQLRELAY_ATTR_DB_IP_ADDRESS''' - get-only, returns the ip address of the machine the database is running on
-* '''PDO::SQLRELAY_ATTR_BIND_FORMAT''' - get-only, returns a string representing the bind-format accepted by the database
-* '''PDO::SQLRELAY_ATTR_CURRENT_DB''' - get/set, returns or sets the current database/schema
+* '''PDO: :SQLRELAY_ATTR_DB_TYPE''' - get-only, returns database type
+* '''PDO: :SQLRELAY_ATTR_DB_VERSION''' - get-only, returns database version string
+* '''PDO: :SQLRELAY_ATTR_DB_HOST_NAME''' - get-only, returns the host name of the machine the database is running on
+* '''PDO: :SQLRELAY_ATTR_DB_IP_ADDRESS''' - get-only, returns the ip address of the machine the database is running on
+* '''PDO: :SQLRELAY_ATTR_BIND_FORMAT''' - get-only, returns a string representing the bind-format accepted by the database
+* '''PDO: :SQLRELAY_ATTR_CURRENT_DB''' - get/set, returns or sets the current database/schema
 
 Statement handle attributes defined by the SQL Relay driver:
 
-* '''PDO::SQLRELAY_ATTR_RESULT_SET_BUFFER_SIZE''' - get/set, returns or sets the result set buffer size as described [#largeresultsets above].
-* '''PDO::SQLRELAY_ATTR_DONT_GET_COLUMN_INFO''' - set-only (1 or 0), sets whether or not to fetch column info with the result set, default (0) is to return column info
-* '''PDO::SQLRELAY_ATTR_GET_NULLS_AS_EMPTY_STRINGS''' - set-only (1 or 0), sets whether to return NULL values as empty strings or nulls, default (1) is to return NULL values as empty strings
+* '''PDO: :SQLRELAY_ATTR_RESULT_SET_BUFFER_SIZE''' - get/set, returns or sets the result set buffer size as described [#largeresultsets above].
+* '''PDO: :SQLRELAY_ATTR_DONT_GET_COLUMN_INFO''' - set-only (1 or 0), sets whether or not to fetch column info with the result set, default (0) is to return column info
+* '''PDO: :SQLRELAY_ATTR_GET_NULLS_AS_EMPTY_STRINGS''' - set-only (1 or 0), sets whether to return NULL values as empty strings or nulls, default (1) is to return NULL values as empty strings
 
 Default values for the statement handle attributes can be set in the connect string.  Setting the corresponding connect string variable has the same effect as if the statement handle attribute were set immediately after creating the statement.  See [#session Establishing a Session] above.
 

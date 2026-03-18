@@ -254,7 +254,7 @@ class SQLRSERVER_DLLSPEC postgresqlcursor : public sqlrservercursor {
 		defined(HAVE_POSTGRESQL_PQSETSINGLEROWMODE))
 		char		*cursorid;
 		stringbuffer	deallocatecursorid;
-		bool		allocated;
+		bool		namedstmtallocated;
 		uint16_t	maxbindcount;
 		char		**bindvalues;
 		int		*bindsizes;
@@ -2507,7 +2507,7 @@ postgresqlcursor::postgresqlcursor(sqlrserverconnection *conn, uint16_t id) :
 	charstring::printf(&cursorid,"%s-%d",conn->cont->getConnectionId(),id);
 	charstring::replace(cursorid,'-','_');
 	deallocatecursorid.append("deallocate ")->append(cursorid);
-	allocated=false;
+	namedstmtallocated=false;
 	maxbindcount=conn->cont->getConfig()->getMaxBindCount();
 	bindvalues=new char *[maxbindcount];
 	bytestring::zero(bindvalues,maxbindcount*sizeof(char *));
@@ -2567,7 +2567,6 @@ bool postgresqlcursor::prepareQuery(const char *query, uint32_t size) {
 
 	// prepare the query
 	pgresult=PQprepare(postgresqlconn->pgconn,cursorid,query,0,NULL);
-	allocated=true;
 
 	// handle some kind of outright failure
 	if (!pgresult) {
@@ -2581,6 +2580,11 @@ bool postgresqlcursor::prepareQuery(const char *query, uint32_t size) {
 		pgstatus==PGRES_NONFATAL_ERROR ||
 		pgstatus==PGRES_FATAL_ERROR) {
 		result=false;
+	}
+
+	// mark the named statement allocated
+	if (pgstatus==PGRES_COMMAND_OK) {
+		namedstmtallocated=true;
 	}
 
 #if defined(HAVE_POSTGRESQL_PQDESCRIBEPREPARED)
@@ -3451,12 +3455,12 @@ void postgresqlcursor::closeResultSet() {
 		(defined(HAVE_POSTGRESQL_PQSENDQUERYPREPARED) && \
 		defined(HAVE_POSTGRESQL_PQSETSINGLEROWMODE))
 void postgresqlcursor::deallocateNamedStatement() {
-	if (allocated) {
+	if (namedstmtallocated) {
 		pgresult=PQexec(postgresqlconn->pgconn,
 				deallocatecursorid.getString());
 		PQclear(pgresult);
 		pgresult=NULL;
-		allocated=false;
+		namedstmtallocated=false;
 	}
 }
 #endif

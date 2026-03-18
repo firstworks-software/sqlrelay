@@ -1468,7 +1468,6 @@ class postgresql extends sqlrtest {
 		assertFalse(boolval);
 		System.out.println();
 
-
 		// statement
 		System.out.println("STATEMENT:");
 		stmt=con.createStatement();
@@ -2092,8 +2091,8 @@ class postgresql extends sqlrtest {
 		assertEquals(rsmd.getColumnName(col++),"TABLE_CAT");
 		found=false;
 		while (rs.next()) {
-			String	tcat=rs.getString("TABLE_CAT");
-			if (tcat!=null && tcat.equals(hostname)) {
+			String	cat=rs.getString("TABLE_CAT");
+			if (cat!=null && cat.equals(hostname)) {
 				found=true;
 				break;
 			}
@@ -2113,13 +2112,22 @@ class postgresql extends sqlrtest {
 		col=1;
 		assertEquals(rsmd.getColumnName(col++),"TABLE_SCHEM");
 		assertEquals(rsmd.getColumnName(col++),"TABLE_CATALOG");
-		found=false;
-		assertTrue(rs.next());
-		assertEquals(rs.getString("TABLE_SCHEM"),"information_schema");
-		assertTrue(rs.next());
-		assertEquals(rs.getString("TABLE_SCHEM"),"pg_catalog");
-		assertTrue(rs.next());
-		assertEquals(rs.getString("TABLE_SCHEM"),"public");
+		// We can't just look for these schemas in order, the c++
+		// test creates temporary tables, which postgresql creates
+		// in their own pg_temp_# schemas, which persist until
+		// the database session ends.  Since sqlrelay keeps persistent
+		// database sessions, they will be visisble to future clients,
+		// including (possibly) this test.
+		counter=0;
+		while (rs.next()) {
+			String	schem=rs.getString("TABLE_SCHEM");
+			if (schem.equals("information_schema") ||
+					schem.equals("pg_catalog") ||
+					schem.equals("public")) {
+				counter++;
+			}
+		}
+		assertEquals(counter,3);
 		rs.close();
 		System.out.println();
 
@@ -2135,8 +2143,8 @@ class postgresql extends sqlrtest {
 		assertEquals(rsmd.getColumnName(col++),"TABLE_TYPE");
 		found=false;
 		while (rs.next()) {
-			String ttname=rs.getString("TABLE_TYPE");
-			if (ttname!=null && ttname.equalsIgnoreCase("TABLE")) {
+			String	name=rs.getString("TABLE_TYPE");
+			if (name!=null && name.equalsIgnoreCase("TABLE")) {
 				found=true;
 				break;
 			}

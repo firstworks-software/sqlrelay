@@ -4,7 +4,7 @@
 
 {{{#!include ../contentstart.html}}}
 
-= Programming with SQL Relay using the Python DB-API =
+= Programming with SQL Relay using Python DB =
 
 * [#session Establishing a Session]
 * [#query Executing Queries]

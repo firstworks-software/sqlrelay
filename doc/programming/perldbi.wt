@@ -4,7 +4,7 @@
 
 {{{#!include ../contentstart.html}}}
 
-= Programming with SQL Relay using the Perl DBI API =
+= Programming with SQL Relay using Perl DBI =
 
 * [#session Establishing a Session]
 * [#query Executing Queries]
