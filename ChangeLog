@@ -31,6 +31,7 @@
 	added proper erlang docs
 	added jdbc driver to redhat/debian packaging
 	added getCurrentUser() and implemented odbc SQL_USER_NAME with it
+	added odbc and jdbc programming docs
 
 2.1.1 - added tns_admin support
 	fixed sqlr-start ... -strace ...
