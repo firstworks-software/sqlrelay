@@ -32,6 +32,10 @@
 	added jdbc driver to redhat/debian packaging
 	added getCurrentUser() and implemented odbc SQL_USER_NAME with it
 	added odbc and jdbc programming docs
+	fixed a case where the postgresql named statement could get
+		deallocated even though it wasn't created, which would
+		immediately abort each subsequent transaction when the
+		first query was run
 
 2.1.1 - added tns_admin support
 	fixed sqlr-start ... -strace ...
