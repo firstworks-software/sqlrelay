@@ -1013,13 +1013,13 @@ int main(int argc, char **argv) {
 		"	col1 int generated always as identity primary key, "
 		"	col2 int)"));
 	assertTrue(cur->getColumnList("testtable",NULL));
-	assertTrue(charstring::containsIgnoringCase(
+	assertTrue(charstring::contains(
 			cur->getField(0,"extra"),"auto_increment"));
-	assertTrue(charstring::containsIgnoringCase(
+	assertTrue(charstring::contains(
 			cur->getField(0,"column_key"),"PRI"));
-	assertFalse(charstring::containsIgnoringCase(
+	assertFalse(charstring::contains(
 			cur->getField(1,"extra"),"auto_increment"));
-	assertFalse(charstring::containsIgnoringCase(
+	assertFalse(charstring::contains(
 			cur->getField(1,"column_key"),"PRI"));
 	stdoutput.printf("\n");
 	assertTrue(cur->sendQuery("drop table testtable"));
@@ -1028,9 +1028,9 @@ int main(int argc, char **argv) {
 		"	col1 int not null primary key, "
 		"	col2 int)"));
 	assertTrue(cur->getColumnList("testtable",NULL));
-	assertFalse(charstring::containsIgnoringCase(
+	assertFalse(charstring::contains(
 			cur->getField(0,"extra"),"auto_increment"));
-	assertTrue(charstring::containsIgnoringCase(
+	assertTrue(charstring::contains(
 			cur->getField(0,"column_key"),"PRI"));
 	assertTrue(cur->sendQuery("drop table testtable"));
 	stdoutput.printf("\n");

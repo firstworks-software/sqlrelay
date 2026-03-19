@@ -1074,9 +1074,8 @@ int main(int argc, char **argv) {
 	assertEquals(cur->getColumnName(0),"Database");
         bool    found=false;
         for (uint64_t i=0; i<cur->rowCount(); i++) {
-                if (!charstring::compareIgnoringCase(
-                                cur->getField(i,"Database"),
-                                "testuser")) {
+                if (!charstring::compare(
+                                cur->getField(i,"Database"),"TESTUSER")) {
                         found=true;
                         break;
                 }
@@ -1091,9 +1090,8 @@ int main(int argc, char **argv) {
 	assertEquals(cur->getColumnName(0),"table_type");
 	found=false;
 	for (uint64_t i=0; i<cur->rowCount(); i++) {
-		if (!charstring::compareIgnoringCase(
-				cur->getField(i,"table_type"),
-				"TABLE")) {
+		if (!charstring::compare(
+				cur->getField(i,"table_type"),"TABLE")) {
 			found=true;
 			break;
 		}
@@ -1108,9 +1106,9 @@ int main(int argc, char **argv) {
 	counter=0;
 	for (uint64_t i=0; i<cur->rowCount(); i++) {
 		const char	*name=cur->getField(i,"Tables_in_xxx");
-		if (!charstring::compareIgnoringCase(name,"testtable1") ||
-			!charstring::compareIgnoringCase(name,"testtable2") ||
-			!charstring::compareIgnoringCase(name,"testtable3")) {
+		if (!charstring::compare(name,"TESTTABLE1") ||
+			!charstring::compare(name,"TESTTABLE2") ||
+			!charstring::compare(name,"TESTTABLE3")) {
 			counter++;
 		}
 	}
@@ -1174,53 +1172,53 @@ int main(int argc, char **argv) {
 	assertEquals(cur->getColumnName(6),"column_key");
 	assertEquals(cur->getColumnName(7),"column_default");
 	assertEquals(cur->getColumnName(8),"extra");
-	assertTrue(!charstring::compareIgnoringCase(
+	assertTrue(!charstring::compare(
 			cur->getField(0,"column_name"),"TESTINTEGER"));
-	assertTrue(!charstring::compareIgnoringCase(
+	assertTrue(!charstring::compare(
 			cur->getField(1,"column_name"),"TESTSMALLINT"));
-	assertTrue(!charstring::compareIgnoringCase(
+	assertTrue(!charstring::compare(
 			cur->getField(2,"column_name"),"TESTDECIMAL"));
-	assertTrue(!charstring::compareIgnoringCase(
+	assertTrue(!charstring::compare(
 			cur->getField(3,"column_name"),"TESTNUMERIC"));
-	assertTrue(!charstring::compareIgnoringCase(
+	assertTrue(!charstring::compare(
 			cur->getField(4,"column_name"),"TESTFLOAT"));
-	assertTrue(!charstring::compareIgnoringCase(
+	assertTrue(!charstring::compare(
 			cur->getField(5,"column_name"),"TESTDOUBLE"));
-	assertTrue(!charstring::compareIgnoringCase(
+	assertTrue(!charstring::compare(
 			cur->getField(6,"column_name"),"TESTDATE"));
-	assertTrue(!charstring::compareIgnoringCase(
+	assertTrue(!charstring::compare(
 			cur->getField(7,"column_name"),"TESTTIME"));
-	assertTrue(!charstring::compareIgnoringCase(
+	assertTrue(!charstring::compare(
 			cur->getField(8,"column_name"),"TESTCHAR"));
-	assertTrue(!charstring::compareIgnoringCase(
+	assertTrue(!charstring::compare(
 			cur->getField(9,"column_name"),"TESTVARCHAR"));
-	assertTrue(!charstring::compareIgnoringCase(
+	assertTrue(!charstring::compare(
 			cur->getField(10,"column_name"),"TESTTIMESTAMP"));
-	assertTrue(!charstring::compareIgnoringCase(
+	assertTrue(!charstring::compare(
 			cur->getField(11,"column_name"),"TESTBLOB"));
-	assertTrue(!charstring::compareIgnoringCase(
+	assertTrue(!charstring::compare(
 			cur->getField(0,"data_type"),"INTEGER"));
-	assertTrue(!charstring::compareIgnoringCase(
+	assertTrue(!charstring::compare(
 			cur->getField(1,"data_type"),"SMALLINT"));
-	assertTrue(!charstring::compareIgnoringCase(
+	assertTrue(!charstring::compare(
 			cur->getField(2,"data_type"),"DECIMAL"));
-	assertTrue(!charstring::compareIgnoringCase(
+	assertTrue(!charstring::compare(
 			cur->getField(3,"data_type"),"NUMERIC"));
-	assertTrue(!charstring::compareIgnoringCase(
+	assertTrue(!charstring::compare(
 			cur->getField(4,"data_type"),"FLOAT"));
-	assertTrue(!charstring::compareIgnoringCase(
+	assertTrue(!charstring::compare(
 			cur->getField(5,"data_type"),"DOUBLE PRECISION"));
-	assertTrue(!charstring::compareIgnoringCase(
+	assertTrue(!charstring::compare(
 			cur->getField(6,"data_type"),"DATE"));
-	assertTrue(!charstring::compareIgnoringCase(
+	assertTrue(!charstring::compare(
 			cur->getField(7,"data_type"),"TIME"));
-	assertTrue(!charstring::compareIgnoringCase(
+	assertTrue(!charstring::compare(
 			cur->getField(8,"data_type"),"CHAR"));
-	assertTrue(!charstring::compareIgnoringCase(
+	assertTrue(!charstring::compare(
 			cur->getField(9,"data_type"),"VARCHAR"));
-	assertTrue(!charstring::compareIgnoringCase(
+	assertTrue(!charstring::compare(
 			cur->getField(10,"data_type"),"TIMESTAMP"));
-	assertTrue(!charstring::compareIgnoringCase(
+	assertTrue(!charstring::compare(
 			cur->getField(11,"data_type"),"BLOB SUB_TYPE BINARY"));
 	stdoutput.printf("\n");
 
@@ -1228,19 +1226,19 @@ int main(int argc, char **argv) {
 	// column list - auto_increment, primary key
 	stdoutput.printf("COLUMN LIST - auto_increment, primary key: \n");
 	assertTrue(cur->getColumnList("testtable2",NULL));
-	assertTrue(charstring::containsIgnoringCase(
+	assertTrue(charstring::contains(
 			cur->getField(0,"extra"),"auto_increment"));
-	assertTrue(charstring::containsIgnoringCase(
+	assertTrue(charstring::contains(
 			cur->getField(0,"column_key"),"PRI"));
-	assertFalse(charstring::containsIgnoringCase(
+	assertFalse(charstring::contains(
 			cur->getField(1,"extra"),"auto_increment"));
-	assertFalse(charstring::containsIgnoringCase(
+	assertFalse(charstring::contains(
 			cur->getField(1,"column_key"),"PRI"));
 	stdoutput.printf("\n");
 	assertTrue(cur->getColumnList("testtable3",NULL));
-	assertFalse(charstring::containsIgnoringCase(
+	assertFalse(charstring::contains(
 			cur->getField(0,"extra"),"auto_increment"));
-	assertTrue(charstring::containsIgnoringCase(
+	assertTrue(charstring::contains(
 			cur->getField(0,"column_key"),"PRI"));
 	stdoutput.printf("\n");
 
@@ -1262,11 +1260,9 @@ int main(int argc, char **argv) {
 	assertEquals(cur->getColumnName(11),"comment");
 	assertEquals(cur->getColumnName(12),"index_comment");
 	assertEquals(cur->rowCount(),1);
-	assertTrue(!charstring::compareIgnoringCase(
-			cur->getField(0,"table"),"testtable2"));
+	assertTrue(!charstring::compare(cur->getField(0,"table"),"TESTTABLE2"));
 	assertEquals(cur->getField(0,"seq_in_index"),"1");
-	assertTrue(!charstring::compareIgnoringCase(
-			cur->getField(0,"column_name"),"col1"));
+	assertTrue(!charstring::compare(cur->getField(0,"column_name"),"COL1"));
 	assertTrue(!charstring::isNullOrEmpty(cur->getField(0,"key_name")));
 	stdoutput.printf("\n");
 
@@ -1288,12 +1284,10 @@ int main(int argc, char **argv) {
 	assertEquals(cur->getColumnName(11),"comment");
 	assertEquals(cur->getColumnName(12),"index_comment");
 	assertEquals(cur->rowCount(),1);
-	assertTrue(!charstring::compareIgnoringCase(
-			cur->getField(0,"table"),"testtable2"));
+	assertTrue(!charstring::compare(cur->getField(0,"table"),"TESTTABLE2"));
 	assertEquals(cur->getField(0,"non_unique"),"0");
 	assertEquals(cur->getField(0,"seq_in_index"),"1");
-	assertTrue(!charstring::compareIgnoringCase(
-			cur->getField(0,"column_name"),"col1"));
+	assertTrue(!charstring::compare(cur->getField(0,"column_name"),"COL1"));
 	assertEquals(cur->getField(0,"collation"),"A");
 	assertEquals(cur->getField(0,"index_type"),"3");
 	assertTrue(!charstring::isNullOrEmpty(cur->getField(0,"key_name")));
@@ -1306,8 +1300,8 @@ int main(int argc, char **argv) {
 	counter=0;
 	for (uint64_t i=0; i<cur->rowCount(); i++) {
 		const char	*name=cur->getField(i,"routine_name");
-		if (!charstring::compareIgnoringCase(name,"testproc") ||
-			!charstring::compareIgnoringCase(name,"testproc1")) {
+		if (!charstring::compare(name,"TESTPROC") ||
+			!charstring::compare(name,"TESTPROC1")) {
 			counter++;
 		}
 	}

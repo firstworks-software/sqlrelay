@@ -1555,10 +1555,10 @@ int main(int argc, char **argv) {
 	counter=0;
 	for (uint64_t i=0; i<cur->rowCount(); i++) {
 		const char	*name=cur->getField(i,"Tables_in_xxx");
-		if (!charstring::compareIgnoringCase(name,"testtable1") ||
-			!charstring::compareIgnoringCase(name,"testtable2") ||
-			!charstring::compareIgnoringCase(name,"testtable3") ||
-			!charstring::compareIgnoringCase(name,"testtable4")) {
+		if (!charstring::compare(name,"TESTTABLE1") ||
+			!charstring::compare(name,"TESTTABLE2") ||
+			!charstring::compare(name,"TESTTABLE3") ||
+			!charstring::compare(name,"TESTTABLE4")) {
 			counter++;
 		}
 	}
@@ -1661,10 +1661,8 @@ int main(int argc, char **argv) {
 		"	col1 number primary key, "
 		"	col2 number)"));
 	assertTrue(cur->getColumnList("testtable",NULL));
-	assertTrue(charstring::containsIgnoringCase(
-			cur->getField(0,"column_key"),"PRI"));
-	assertFalse(charstring::containsIgnoringCase(
-			cur->getField(1,"column_key"),"PRI"));
+	assertTrue(charstring::contains(cur->getField(0,"column_key"),"PRI"));
+	assertFalse(charstring::contains(cur->getField(1,"column_key"),"PRI"));
 	assertTrue(cur->sendQuery("drop table testtable"));
 	stdoutput.printf("\n");
 
@@ -1778,10 +1776,10 @@ int main(int argc, char **argv) {
 	counter=0;
 	for (uint64_t i=0; i<cur->rowCount(); i++) {
 		const char	*name=cur->getField(i,"routine_name");
-		if (!charstring::compareIgnoringCase(name,"testproc1") ||
-			!charstring::compareIgnoringCase(name,"testproc2") ||
-			!charstring::compareIgnoringCase(name,"testproc3") ||
-			!charstring::compareIgnoringCase(name,"testproc4")) {
+		if (!charstring::compare(name,"TESTPROC1") ||
+			!charstring::compare(name,"TESTPROC2") ||
+			!charstring::compare(name,"TESTPROC3") ||
+			!charstring::compare(name,"TESTPROC4")) {
 			counter++;
 		}
 	}
