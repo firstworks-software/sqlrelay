@@ -1342,8 +1342,8 @@ for (uint16_t a=0; a<50; a++) {
 	stdoutput.printf("\n");
 
 
-	// commit
-	stdoutput.printf("COMMIT: \n");
+	// commit and rollback
+	stdoutput.printf("COMMIT and ROLLBACK: \n");
 	// Note: Mysql's default isolation level is repeatable-read,
 	// not read-committed like most other db's.  Both sessions must
 	// commit to see the changes that each other has made.
@@ -1357,6 +1357,39 @@ for (uint16_t a=0; a<50; a++) {
 		assertEquals(secondcur->getField(0,(uint32_t)0),"8");
 	}
 	assertTrue(con->commit());
+	assertTrue(secondcon->commit());
+	assertTrue(secondcur->sendQuery("select count(*) from testtable"));
+	assertEquals(secondcur->getField(0,(uint32_t)0),"8");
+	assertTrue(con->begin());
+	assertTrue(secondcon->begin());
+	assertTrue(cur->sendQuery(
+		"insert into "
+		"	testtable "
+		"values ("
+		"	10, "
+		"	10, "
+		"	10, "
+		"	10, "
+		"	10, "
+		"	10.1, "
+		"	10.1, "
+		"	1.1, "
+		"	'2010-01-01', "
+		"	'10:00:00', "
+		"	'2010-01-01 10:00:00', "
+		"	'2010', "
+		"	'char10', "
+		"	'varchar10', "
+		"	'text10', "
+		"	'tinytext10', "
+		"	'mediumtext10', "
+		"	'longtext10', "
+		"	'blob10', "
+		"	'tinyblob10', "
+		"	'mediumblob10', "
+		"	'longblob10', "
+		"	NULL)"));
+	assertTrue(con->rollback());
 	assertTrue(secondcon->commit());
 	assertTrue(secondcur->sendQuery("select count(*) from testtable"));
 	assertEquals(secondcur->getField(0,(uint32_t)0),"8");
