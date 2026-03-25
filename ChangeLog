@@ -36,6 +36,10 @@
 		deallocated even though it wasn't created, which would
 		immediately abort each subsequent transaction when the
 		first query was run
+	implemented methods for getting the next result set in the various
+		database abstraction layers
+	added getAutoCommit() to all apis and update db abstraction layers to
+		use it
 
 2.1.1 - added tns_admin support
 	fixed sqlr-start ... -strace ...

@@ -235,6 +235,16 @@ class SQLRCursor:
             rc.append(row)
         return rc
 
+    def nextset(self):
+        if not CSQLRelay.nextResultSet(self.cursor):
+            return None
+        self.__set_description()
+        self.cur_row=0
+        self.rowcount=CSQLRelay.totalRows(self.cursor)
+        if CSQLRelay.affectedRows(self.cursor)>0:
+                self.rowcount=CSQLRelay.affectedRows(self.cursor)
+        return True
+
     def close(self):
         if self.cursor is not None:
                 CSQLRelay.sqlrcur_free(self.cursor)

@@ -411,7 +411,6 @@ sub STORE {
 
 	# handle special cases...
 	if ($attr eq 'AutoCommit') {
-		$dbh->{'driver_AutoCommit'}=$val;
 		my $connection=$dbh->FETCH('driver_connection');
 		if ($val) {
 			$connection->autoCommitOn();
@@ -452,7 +451,7 @@ sub FETCH {
 
 	# handle special cases...
 	if ($attr eq 'AutoCommit') {
-		return $dbh->{'driver_AutoCommit'};
+		return $dbh->FETCH('driver_connection')->getAutoCommit();
 	}
 	elsif ($attr eq 'RowCacheSize') {
 		return $dbh->{'driver_RowCacheSize'};
@@ -712,8 +711,43 @@ sub rows {
 	return $sth->FETCH('driver_cursor')->affectedRows();
 }
 
+sub more_results {
+
+	# get parameters
+	my ($sth)=@_;
+
+	# get the cursor
+	my $cursor=$sth->FETCH('driver_cursor');
+
+	# move to the next result set
+	if (not $cursor->nextResultSet()) {
+		return 0;
+	}
+
+	# refresh result set info
+	my $colcount=$cursor->colCount();
+	my $rowcount=$cursor->rowCount();
+	my @colnames=map {$cursor->getColumnName($_)} (0..$colcount-1);
+	my @coltypes=map {$cursor->getColumnType($_)} (0..$colcount-1);
+	my @colprecision=map {$cursor->getColumnPrecision($_)} (0..$colcount-1);
+	my @colscale=map {$cursor->getColumnScale($_)} (0..$colcount-1);
+	my @colnullable=map {$cursor->getColumnIsNullable($_)} (0..$colcount-1);
+	$sth->STORE('NUM_OF_FIELDS',$colcount);
+	$sth->{NAME}=\@colnames;
+	$sth->{TYPE}=\@coltypes;
+	$sth->{PRECISION}=\@colprecision;
+	$sth->{SCALE}=\@colscale;
+	$sth->{NULLABLE}=\@colnullable;
+
+	# reset row tracking
+	$sth->STORE('driver_FETCHED_ROWS',0);
+	$sth->STORE('driver_RowsInCache',$cursor->rowCount());
+
+	return 1;
+}
+
 sub finish {
-	
+
 	# get parameters
 	my ($sth)=@_;
 

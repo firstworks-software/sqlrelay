@@ -1026,6 +1026,18 @@ static int sqlrcursorClose(pdo_stmt_t *stmt TSRMLS_DC) {
 	return 1;
 }
 
+static int sqlrcursorNextRowset(pdo_stmt_t *stmt TSRMLS_DC) {
+	sqlrstatement	*sqlrstmt=(sqlrstatement *)stmt->driver_data;
+	sqlrcursor	*sqlrcur=sqlrstmt->sqlrcur;
+	if (!sqlrcur->nextResultSet()) {
+		return 0;
+	}
+	sqlrstmt->currentrow=-1;
+	stmt->column_count=sqlrcur->colCount();
+	stmt->row_count=sqlrcur->affectedRows();
+	return 1;
+}
+
 static struct pdo_stmt_methods sqlrcursorMethods={
 	sqlrcursorDestructor,
 	sqlrcursorExecute,
@@ -1036,7 +1048,7 @@ static struct pdo_stmt_methods sqlrcursorMethods={
 	sqlrcursorSetAttribute,
 	sqlrcursorGetAttribute,
 	sqlrcursorColumnMetadata,
-	NULL, // next rowset
+	sqlrcursorNextRowset,
 	sqlrcursorClose
 };
 
@@ -1461,6 +1473,8 @@ sqlrconnectionSetAttribute(pdo_dbh_t *dbh,
 			// use to turn on or off auto-commit mode
 			convert_to_boolean(val);
 			if (dbh->auto_commit!=ISTRUE(val)) {
+				// update the local flag for the PDO
+				// framework, which reads it directly
 				dbh->auto_commit=ISTRUE(val);
 				if (ISTRUE(val)) {
 					sqlrcon->autoCommitOn();
@@ -1636,8 +1650,9 @@ static int sqlrconnectionGetAttribute(pdo_dbh_t *dbh,
 	long double	timeout;
 	switch (attr) {
 		case PDO_ATTR_AUTOCOMMIT:
-			// use to turn on or off auto-commit mode
-			ZVAL_BOOL(retval,dbh->auto_commit);
+			// query the server for the actual state
+			// rather than returning the local flag
+			ZVAL_BOOL(retval,sqlrcon->getAutoCommit());
 			return 1;
 		case PDO_ATTR_PREFETCH:
 			// configure the prefetch size for drivers

@@ -5833,10 +5833,6 @@ void sqlrservercontroller::setCatalogListFormat(
 	}
 
 	switch (listformat) {
-		case SQLRSERVERLISTFORMAT_NULL:
-			pvt->_columnmap=NULL;
-			pvt->_columnnamemap=NULL;
-			break;
 		case SQLRSERVERLISTFORMAT_MYSQL:
 			pvt->_columnmap=
 				&(pvt->_mysqlcatalogscolumnmap);
@@ -5881,10 +5877,6 @@ void sqlrservercontroller::setSchemaListFormat(
 	// currently only iplemented for oracle
 	// FIXME: ...and probably not correctly
 	switch (listformat) {
-		case SQLRSERVERLISTFORMAT_NULL:
-			pvt->_columnmap=NULL;
-			pvt->_columnnamemap=NULL;
-			break;
 		case SQLRSERVERLISTFORMAT_MYSQL:
 			pvt->_columnmap=
 				&(pvt->_mysqlschemascolumnmap);
@@ -5928,10 +5920,6 @@ void sqlrservercontroller::setTableTypeListFormat(
 
 	// currently only implemented for oracle
 	switch (listformat) {
-		case SQLRSERVERLISTFORMAT_NULL:
-			pvt->_columnmap=NULL;
-			pvt->_columnnamemap=NULL;
-			break;
 		case SQLRSERVERLISTFORMAT_MYSQL:
 			pvt->_columnmap=
 				&(pvt->_mysqltabletypescolumnmap);
@@ -5974,10 +5962,6 @@ void sqlrservercontroller::setTableListFormat(
 	}
 
 	switch (listformat) {
-		case SQLRSERVERLISTFORMAT_NULL:
-			pvt->_columnmap=NULL;
-			pvt->_columnnamemap=NULL;
-			break;
 		case SQLRSERVERLISTFORMAT_MYSQL:
 			pvt->_columnmap=
 				&(pvt->_mysqltablescolumnmap);
@@ -6021,10 +6005,6 @@ void sqlrservercontroller::setTypeInfoListFormat(
 
 	// currently only implemented for oracle
 	switch (listformat) {
-		case SQLRSERVERLISTFORMAT_NULL:
-			pvt->_columnmap=NULL;
-			pvt->_columnnamemap=NULL;
-			break;
 		case SQLRSERVERLISTFORMAT_MYSQL:
 			pvt->_columnmap=
 				&(pvt->_mysqltypeinfocolumnmap);
@@ -6067,10 +6047,6 @@ void sqlrservercontroller::setColumnListFormat(
 	}
 
 	switch (listformat) {
-		case SQLRSERVERLISTFORMAT_NULL:
-			pvt->_columnmap=NULL;
-			pvt->_columnnamemap=NULL;
-			break;
 		case SQLRSERVERLISTFORMAT_MYSQL:
 			pvt->_columnmap=
 				&(pvt->_mysqlcolumnscolumnmap);
@@ -6113,10 +6089,6 @@ void sqlrservercontroller::setPrimaryKeyListFormat(
 	}
 
 	switch (listformat) {
-		case SQLRSERVERLISTFORMAT_NULL:
-			pvt->_columnmap=NULL;
-			pvt->_columnnamemap=NULL;
-			break;
 		case SQLRSERVERLISTFORMAT_MYSQL:
 			pvt->_columnmap=
 				&(pvt->_mysqlprimarykeyscolumnmap);
@@ -6159,10 +6131,6 @@ void sqlrservercontroller::setKeyAndIndexListFormat(
 	}
 
 	switch (listformat) {
-		case SQLRSERVERLISTFORMAT_NULL:
-			pvt->_columnmap=NULL;
-			pvt->_columnnamemap=NULL;
-			break;
 		case SQLRSERVERLISTFORMAT_MYSQL:
 			pvt->_columnmap=
 				&(pvt->_mysqlkeyandindexcolumnmap);
@@ -6206,10 +6174,6 @@ void sqlrservercontroller::setProcedureListFormat(
 
 	// currently only implemented for oracle
 	switch (listformat) {
-		case SQLRSERVERLISTFORMAT_NULL:
-			pvt->_columnmap=NULL;
-			pvt->_columnnamemap=NULL;
-			break;
 		case SQLRSERVERLISTFORMAT_MYSQL:
 			pvt->_columnmap=
 				&(pvt->_mysqlprocedurescolumnmap);
@@ -6252,10 +6216,6 @@ void sqlrservercontroller::setProcedureParameterListFormat(
 	}
 
 	switch (listformat) {
-		case SQLRSERVERLISTFORMAT_NULL:
-			pvt->_columnmap=NULL;
-			pvt->_columnnamemap=NULL;
-			break;
 		case SQLRSERVERLISTFORMAT_MYSQL:
 			pvt->_columnmap=
 				&(pvt->_mysqlprocedureparametercolumnmap);
