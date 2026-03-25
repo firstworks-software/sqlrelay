@@ -846,8 +846,8 @@ int main(int argc, char **argv) {
 	stdoutput.printf("\n");
 
 
-	// commit
-	stdoutput.printf("COMMIT: \n");
+	// commit and rollback
+	stdoutput.printf("COMMIT AND ROLLBACK: \n");
 	secondcon=new sqlrconnection("sqlrelay",9000,"/tmp/test.socket",
 							NULL,NULL,0,1);
 	secondcur=new sqlrcursor(secondcon);
@@ -855,6 +855,20 @@ int main(int argc, char **argv) {
 	assertTrue(secondcur->sendQuery("select count(*) from testtable"));
 	assertEquals(secondcur->getField(0,(uint32_t)0),"0");
 	assertTrue(con->commit());
+	assertTrue(secondcur->sendQuery("select count(*) from testtable"));
+	assertEquals(secondcur->getField(0,(uint32_t)0),"8");
+	assertTrue(cur->sendQuery(
+		"insert into "
+		"	testtable "
+		"values ("
+		"	10, "
+		"	'testchar10', "
+		"	'testvarchar10', "
+		"	'01-JAN-2010', "
+		"	'testlong10', "
+		"	'testclob10', "
+		"	NULL)"));
+	assertTrue(con->rollback());
 	assertTrue(secondcur->sendQuery("select count(*) from testtable"));
 	assertEquals(secondcur->getField(0,(uint32_t)0),"8");
 	assertTrue(con->autoCommitOn());

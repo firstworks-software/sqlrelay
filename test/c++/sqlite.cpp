@@ -74,14 +74,14 @@ int main(int argc, char **argv) {
 	stdoutput.printf("\n");
 
 	// drop existing table
-	cur->sendQuery("begin transaction");
+	con->begin();
 	cur->sendQuery("drop table if exists testtable");
 	con->commit();
 
 
 	// create temptable
 	stdoutput.printf("CREATE TEMPTABLE: \n");
-	cur->sendQuery("begin transaction");
+	con->begin();
 	assertTrue(cur->sendQuery(
 		"create table testtable ("
 		"	testint int, "
@@ -96,7 +96,7 @@ int main(int argc, char **argv) {
 
 	// begin tranaction
 	stdoutput.printf("BEGIN TRANACTION: \n");
-	cur->sendQuery("begin transaction");
+	con->begin();
 	stdoutput.printf("\n");
 
 
@@ -771,8 +771,8 @@ int main(int argc, char **argv) {
 	stdoutput.printf("\n");
 
 
-	// commit
-	stdoutput.printf("COMMIT: \n");
+	// commit and rollback
+	stdoutput.printf("COMMIT AND ROLLBACK: \n");
 	secondcon=new sqlrconnection("sqlrelay",9000,"/tmp/test.socket",
 						"testuser","testpassword",0,1);
 	secondcur=new sqlrcursor(secondcon);
@@ -781,6 +781,21 @@ int main(int argc, char **argv) {
 	assertTrue(con->commit());
 	assertTrue(secondcur->sendQuery("select count(*) from testtable"));
 	assertEquals(secondcur->getField(0,(uint32_t)0),"8");
+	assertTrue(con->begin());
+	assertTrue(cur->sendQuery(
+		"insert into "
+		"	testtable "
+		"values ("
+		"	10, "
+		"	10.1, "
+		"	'testchar10', "
+		"	'testvarchar10', "
+		"	'testclob10', "
+		"	'testblob10')"));
+	assertTrue(con->rollback());
+	assertTrue(secondcur->sendQuery("select count(*) from testtable"));
+	assertEquals(secondcur->getField(0,(uint32_t)0),"8");
+	assertTrue(con->autoCommitOn());
 	assertTrue(cur->sendQuery(
 		"insert into "
 		"	testtable "
@@ -793,6 +808,7 @@ int main(int argc, char **argv) {
 		"	'testblob10')"));
 	assertTrue(secondcur->sendQuery("select count(*) from testtable"));
 	assertEquals(secondcur->getField(0,(uint32_t)0),"9");
+	assertTrue(con->autoCommitOff());
 	stdoutput.printf("\n");
 
 
