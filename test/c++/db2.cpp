@@ -1079,7 +1079,7 @@ int main(int argc, char **argv) {
 
 
 	// commit and rollback
-	/*stdoutput.printf("COMMIT AND ROLLBACK: \n");
+	stdoutput.printf("COMMIT AND ROLLBACK: \n");
 	secondcon=new sqlrconnection("sqlrelay",9000,"/tmp/test.socket",
 						"db2inst1","testpassword",0,1);
 	secondcur=new sqlrcursor(secondcon);
@@ -1128,9 +1128,9 @@ int main(int argc, char **argv) {
 		"	blob('testblob10'))"));
 	assertTrue(secondcur->sendQuery("select count(*) from testtable"));
 	assertEquals(secondcur->getField(0,(uint32_t)0),"9");
-	assertTrue(con->autoCommitOff());*/
+	assertTrue(con->autoCommitOff());
 	cur->sendQuery("drop table testtable");
-	/*stdoutput.printf("\n");*/
+	stdoutput.printf("\n");
 
 
 	// database is schema

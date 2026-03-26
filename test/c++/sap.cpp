@@ -1087,15 +1087,14 @@ int main(int argc, char **argv) {
 
 	// commit and rollback
 	stdoutput.printf("COMMIT AND ROLLBACK: \n");
-	/*secondcon=new sqlrconnection("sqlrelay",9000,"/tmp/test.socket",
+	secondcon=new sqlrconnection("sqlrelay",9000,"/tmp/test.socket",
 						"testuser","testpassword",0,1);
 	secondcur=new sqlrcursor(secondcon);
 	assertTrue(secondcur->sendQuery("select count(*) from testtable"));
-	assertEquals(secondcur->getField(0,(uint32_t)0),"0");*/
+	assertEquals(secondcur->getField(0,(uint32_t)0),"0");
 	assertTrue(con->commit());
-	/*assertTrue(secondcur->sendQuery("select count(*) from testtable"));
+	assertTrue(secondcur->sendQuery("select count(*) from testtable"));
 	assertEquals(secondcur->getField(0,(uint32_t)0),"8");
-	assertTrue(con->begin());
 	assertTrue(cur->sendQuery(
 		"insert into "
 		"	testtable "
@@ -1118,6 +1117,7 @@ int main(int argc, char **argv) {
 	assertTrue(con->rollback());
 	assertTrue(secondcur->sendQuery("select count(*) from testtable"));
 	assertEquals(secondcur->getField(0,(uint32_t)0),"8");
+	assertTrue(con->autoCommitOn());
 	assertTrue(cur->sendQuery(
 		"insert into "
 		"	testtable "
@@ -1138,7 +1138,8 @@ int main(int argc, char **argv) {
 		"	10, "
 		"	'testtext10')"));
 	assertTrue(secondcur->sendQuery("select count(*) from testtable"));
-	assertEquals(secondcur->getField(0,(uint32_t)0),"9");*/
+	assertEquals(secondcur->getField(0,(uint32_t)0),"9");
+	assertTrue(con->autoCommitOff());
 	assertTrue(cur->sendQuery("drop table testtable"));
 	stdoutput.printf("\n");
 
