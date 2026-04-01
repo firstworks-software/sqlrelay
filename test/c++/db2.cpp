@@ -1134,8 +1134,8 @@ int main(int argc, char **argv) {
 	assertTrue(cur->executeQuery());
 	assertEquals(cur->getOutputBindLength("2"),20*1024);
 	assertEquals(cur->getOutputBindClob("2"),clobval);
-	assertTrue(cur->sendQuery("drop table testtable1"));
 	assertTrue(cur->sendQuery("drop procedure testproc"));
+	assertTrue(cur->sendQuery("drop table testtable1"));
 	assertTrue(con->commit());
 	stdoutput.printf("\n");
 

@@ -107,6 +107,7 @@ int main(int argc, char **argv) {
 		"	testdatetime datetime year to second, "
 		"	testtext text, "
 		"	testbyte byte)"));
+	assertTrue(con->commit());
 	stdoutput.printf("\n");
 
 
@@ -330,95 +331,6 @@ int main(int argc, char **argv) {
 	// affected rows
 	stdoutput.printf("AFFECTED ROWS: \n");
 	assertEquals(cur->affectedRows(),1);
-	stdoutput.printf("\n");
-
-
-	// stored procedure
-	stdoutput.printf("STORED PROCEDURE: \n");
-	// return multiple values
-	cur->sendQuery("drop procedure testproc");
-	assertTrue(cur->sendQuery(
-		"create procedure testproc("
-		"	in1 int, "
-		"	in2 float, "
-		"	in3 varchar(20), "
-		"	out out1 int, "
-		"	out out2 float, "
-		"	out out3 varchar(20)) "
-		"let out1 = in1; "
-		"	let out2 = in2; "
-		"	let out3 = in3; "
-		"end procedure;"));
-	cur->prepareQuery("{call testproc(?,?,?,?,?,?)}");
-	cur->inputBind("1",1);
-	cur->inputBind("2",1.1,2,1);
-	cur->inputBind("3","hello");
-	cur->defineOutputBindInteger("4");
-	cur->defineOutputBindDouble("5");
-	cur->defineOutputBindString("6",20);
-	assertTrue(cur->executeQuery());
-	assertEquals(cur->getOutputBindInteger("4"),1);
-	assertEquals(cur->getOutputBindDouble("5"),1.1);
-	assertEquals(cur->getOutputBindString("6"),"hello");
-	assertTrue(cur->sendQuery("drop procedure testproc"));
-	stdoutput.printf("\n");
-
-
-	// stored procedure returning result set
-	stdoutput.printf("STORED PROCEDURE RETURNING RESULT SET: \n");
-	assertTrue(cur->sendQuery(
-		"create procedure testproc() "
-		"returning boolean, smallint, varchar(40); "
-		"	define out1 boolean; "
-		"	define out2 smallint; "
-		"	define out3 varchar(40); "
-		"	foreach "
-		"		select "
-		"			testboolean, "
-		"			testsmallint, "
-		"			testvarchar "
-		"		into out1,out2,out3 "
-		"		from testtable "
-		"	return out1,out2,out3 "
-		"	with resume; "
-		"	end foreach; "
-		"	end procedure;"));
-	assertTrue(cur->sendQuery("{call testproc()}"));
-	assertEquals(cur->rowCount(),8);
-	assertTrue(cur->sendQuery("drop procedure testproc"));
-	stdoutput.printf("\n");
-
-
-	// long blob
-	stdoutput.printf("LONG BLOB: \n");
-	cur->sendQuery("drop table testtable1");
-	cur->sendQuery("create table testtable1 (testtext text)");
-	cur->prepareQuery("insert into testtable1 values (?)");
-	char	textval[20*1024+1];
-	for (int i=0; i<20*1024; i++) {
-		textval[i]='C';
-	}
-	textval[20*1024]='\0';
-	cur->inputBindClob("1",textval,20*1024);
-	assertTrue(cur->executeQuery());
-	cur->sendQuery("select testtext from testtable1");
-	assertEquals(cur->getFieldLength(0,"testtext"),20*1024);
-	assertEquals(cur->getField(0,"testtext"),textval);
-	// for some reason stored procedures can only use clob types,
-	// rather than text
-	assertTrue(cur->sendQuery(
-		"create procedure testproc("
-		"	in1 clob, "
-		"	out out1 clob) "
-		"let out1 = in1; "
-		"	end procedure;"));
-	cur->prepareQuery("{call testproc(?,?)}");
-	cur->inputBindClob("1",textval,20*1024);
-	cur->defineOutputBindClob("2");
-	assertTrue(cur->executeQuery());
-	assertEquals(cur->getOutputBindLength("2"),20*1024);
-	assertEquals(cur->getOutputBindClob("2"),textval);
-	assertTrue(cur->sendQuery("drop procedure testproc"));
 	stdoutput.printf("\n");
 
 
@@ -942,31 +854,18 @@ int main(int argc, char **argv) {
 
 	// nulls as nulls
 	stdoutput.printf("NULLS AS NULLS: \n");
-	cur->sendQuery("drop table testtable1");
-	cur->sendQuery(
-		"create table testtable1 ("
-		"	col1 char(1), "
-		"	col2 char(1), "
-		"	col3 char(1))");
 	cur->getNullsAsNulls();
 	assertTrue(cur->sendQuery(
-		"insert into "
-		"	testtable1 "
-		"values ("
-		"	'1', "
-		"	NULL, "
-		"	NULL)"));
-	assertTrue(cur->sendQuery("select * from testtable1"));
-	assertEquals(cur->getField(0,(uint32_t)0),"1");
-	assertEquals(cur->getField(0,1),NULL);
+		"select NULL::int,1,NULL::int from sysmaster:sysdual"));
+	assertEquals(cur->getField(0,(uint32_t)0),NULL);
+	assertEquals(cur->getField(0,1),"1");
 	assertEquals(cur->getField(0,2),NULL);
 	cur->getNullsAsEmptyStrings();
-	assertTrue(cur->sendQuery("select * from testtable1"));
-	assertEquals(cur->getField(0,(uint32_t)0),"1");
-	assertEquals(cur->getField(0,1),"");
+	assertTrue(cur->sendQuery(
+		"select NULL::int,1,NULL::int from sysmaster:sysdual"));
+	assertEquals(cur->getField(0,(uint32_t)0),"");
+	assertEquals(cur->getField(0,1),"1");
 	assertEquals(cur->getField(0,2),"");
-	assertTrue(cur->sendQuery("drop table testtable1"));
-	cur->getNullsAsNulls();
 	stdoutput.printf("\n");
 
 
@@ -1325,8 +1224,228 @@ int main(int argc, char **argv) {
 	assertEquals(cur->getField(7,(uint32_t)1),NULL);
 	stdoutput.printf("\n");
 
-	// drop existing table
+
+	// commit and rollback
+	stdoutput.printf("COMMIT AND ROLLBACK: \n");
+	secondcon=new sqlrconnection("sqlrelay",9000,"/tmp/test.socket",
+						"testuser","testpassword",0,1);
+	secondcur=new sqlrcursor(secondcon);
+	// Informix has no MVCC option.  You can either set the isolation level
+	// to dirty reads where it'll just see the rows, or set it to committed
+	// read where it will block or throw an error when the rows are locked.
+	// So, bypass this test with informix.
+	//assertTrue(secondcur->sendQuery("select count(*) from testtable"));
+	//assertEquals(secondcur->getField(0,(uint32_t)0),"0");
+	assertTrue(con->commit());
+	assertTrue(secondcur->sendQuery("select count(*) from testtable"));
+	assertEquals(secondcur->getField(0,(uint32_t)0),"8");
+	assertTrue(cur->sendQuery(
+		"insert into "
+		"	testtable "
+		"values ("
+		"	't', "
+		"	10, "
+		"	10, "
+		"	10, "
+		"	10, "
+		"	10.1, "
+		"	10.1, "
+		"	10.1, "
+		"	10.1, "
+		"	'testchar10', "
+		"	'testnchar10', "
+		"	'testvarchar10', "
+		"	'testnvarchar10', "
+		"	'testlvarchar10', "
+		"	'01/01/2010', "
+		"	'2010-01-01 10:00:00', "
+		"	'testtext10', "
+		"	null)"));
+	assertTrue(con->rollback());
+	assertTrue(secondcur->sendQuery("select count(*) from testtable"));
+	assertEquals(secondcur->getField(0,(uint32_t)0),"8");
+	assertTrue(con->autoCommitOn());
+	assertTrue(cur->sendQuery(
+		"insert into "
+		"	testtable "
+		"values ("
+		"	't', "
+		"	10, "
+		"	10, "
+		"	10, "
+		"	10, "
+		"	10.1, "
+		"	10.1, "
+		"	10.1, "
+		"	10.1, "
+		"	'testchar10', "
+		"	'testnchar10', "
+		"	'testvarchar10', "
+		"	'testnvarchar10', "
+		"	'testlvarchar10', "
+		"	'01/01/2010', "
+		"	'2010-01-01 10:00:00', "
+		"	'testtext10', "
+		"	null)"));
+	assertTrue(secondcur->sendQuery("select count(*) from testtable"));
+	assertEquals(secondcur->getField(0,(uint32_t)0),"9");
+	assertTrue(con->autoCommitOff());
 	cur->sendQuery("drop table testtable");
+	assertTrue(con->commit());
+	stdoutput.printf("\n");
+
+
+	// stored procedure
+	stdoutput.printf("STORED PROCEDURE: \n");
+	// return multiple values
+	cur->sendQuery("drop procedure testproc");
+	assertTrue(cur->sendQuery(
+		"create procedure testproc("
+		"	in1 int, "
+		"	in2 float, "
+		"	in3 varchar(20), "
+		"	out out1 int, "
+		"	out out2 float, "
+		"	out out3 varchar(20)) "
+		"let out1 = in1; "
+		"	let out2 = in2; "
+		"	let out3 = in3; "
+		"end procedure;"));
+	assertTrue(con->commit());
+	cur->prepareQuery("{call testproc(?,?,?,?,?,?)}");
+	cur->inputBind("1",1);
+	cur->inputBind("2",1.1,2,1);
+	cur->inputBind("3","hello");
+	cur->defineOutputBindInteger("4");
+	cur->defineOutputBindDouble("5");
+	cur->defineOutputBindString("6",20);
+	assertTrue(cur->executeQuery());
+	assertEquals(cur->getOutputBindInteger("4"),1);
+	assertEquals(cur->getOutputBindDouble("5"),1.1);
+	assertEquals(cur->getOutputBindString("6"),"hello");
+	assertTrue(cur->sendQuery("drop procedure testproc"));
+	assertTrue(con->commit());
+	stdoutput.printf("\n");
+
+
+	// stored procedure returning result set
+	stdoutput.printf("STORED PROCEDURE RETURNING RESULT SET: \n");
+	assertTrue(cur->sendQuery(
+		"create procedure testproc() "
+		"returning boolean, smallint, varchar(40); "
+		"	define out1 boolean; "
+		"	define out2 smallint; "
+		"	define out3 varchar(40); "
+		"	foreach "
+		"		select "
+		"			testboolean, "
+		"			testsmallint, "
+		"			testvarchar "
+		"		into out1,out2,out3 "
+		"		from ( "
+		"			select "
+		"				't' as testboolean, "
+		"				1 as testsmallint, "
+		"				'1' as testvarchar "
+		"			from "
+		"				sysmaster:sysdual "
+		"			union "
+		"			select "
+		"				't' as testboolean, "
+		"				2 as testsmallint, "
+		"				'2' as testvarchar "
+		"			from "
+		"				sysmaster:sysdual "
+		"			union "
+		"			select "
+		"				't' as testboolean, "
+		"				3 as testsmallint, "
+		"				'3' as testvarchar "
+		"			from "
+		"				sysmaster:sysdual "
+		"			union "
+		"			select "
+		"				't' as testboolean, "
+		"				4 as testsmallint, "
+		"				'4' as testvarchar "
+		"			from "
+		"				sysmaster:sysdual "
+		"			union "
+		"			select "
+		"				't' as testboolean, "
+		"				5 as testsmallint, "
+		"				'5' as testvarchar "
+		"			from "
+		"				sysmaster:sysdual "
+		"			union "
+		"			select "
+		"				't' as testboolean, "
+		"				6 as testsmallint, "
+		"				'6' as testvarchar "
+		"			from "
+		"				sysmaster:sysdual "
+		"			union "
+		"			select "
+		"				't' as testboolean, "
+		"				7 as testsmallint, "
+		"				'7' as testvarchar "
+		"			from "
+		"				sysmaster:sysdual "
+		"			union "
+		"			select "
+		"				't' as testboolean, "
+		"				8 as testsmallint, "
+		"				'8' as testvarchar "
+		"			from "
+		"				sysmaster:sysdual "
+		"		) "
+		"	return out1,out2,out3 "
+		"	with resume; "
+		"	end foreach; "
+		"	end procedure;"));
+	assertTrue(con->commit());
+	assertTrue(cur->sendQuery("{call testproc()}"));
+	assertEquals(cur->rowCount(),8);
+	assertTrue(cur->sendQuery("drop procedure testproc"));
+	assertTrue(con->commit());
+	stdoutput.printf("\n");
+
+
+	// long blob
+	stdoutput.printf("LONG BLOB: \n");
+	cur->sendQuery("drop table testtable1");
+	cur->sendQuery("create table testtable1 (testtext text)");
+	assertTrue(con->commit());
+	cur->prepareQuery("insert into testtable1 values (?)");
+	char	textval[20*1024+1];
+	for (int i=0; i<20*1024; i++) {
+		textval[i]='C';
+	}
+	textval[20*1024]='\0';
+	cur->inputBindClob("1",textval,20*1024);
+	assertTrue(cur->executeQuery());
+	cur->sendQuery("select testtext from testtable1");
+	assertEquals(cur->getFieldLength(0,"testtext"),20*1024);
+	assertEquals(cur->getField(0,"testtext"),textval);
+	// for some reason stored procedures can only use clob types,
+	// rather than text
+	assertTrue(cur->sendQuery(
+		"create procedure testproc("
+		"	in1 clob, "
+		"	out out1 clob) "
+		"let out1 = in1; "
+		"	end procedure;"));
+	assertTrue(con->commit());
+	cur->prepareQuery("{call testproc(?,?)}");
+	cur->inputBindClob("1",textval,20*1024);
+	cur->defineOutputBindClob("2");
+	assertTrue(cur->executeQuery());
+	assertEquals(cur->getOutputBindLength("2"),20*1024);
+	assertEquals(cur->getOutputBindClob("2"),textval);
+	assertTrue(cur->sendQuery("drop procedure testproc"));
+	assertTrue(cur->sendQuery("drop table testtable1"));
+	assertTrue(con->commit());
+	stdoutput.printf("\n");
 
 
 	// clob/blob
@@ -1335,6 +1454,7 @@ int main(int argc, char **argv) {
 		"create table testtable ("
 		"	testclob clob, "
 		"	testblob blob)"));
+	assertTrue(con->commit());
 	cur->prepareQuery("insert into testtable values (?,?)");
 	cur->inputBindClob("1","testclobvalue",13);
 	cur->inputBindBlob("2","testblobvalue",13);
@@ -1350,6 +1470,7 @@ int main(int argc, char **argv) {
 		"	into out1,out2 "
 		"	from testtable; "
 		"	end procedure;"));
+	assertTrue(con->commit());
 	cur->prepareQuery("{call testproc(?,?)}");
 	cur->defineOutputBindClob("1");
 	cur->defineOutputBindBlob("2");
@@ -1357,6 +1478,7 @@ int main(int argc, char **argv) {
 	assertEquals(cur->getOutputBindClob("1"),"testclobvalue");
 	assertEquals(cur->getOutputBindBlob("2"),"testblobvalue");
 	cur->sendQuery("drop table testtable");
+	assertTrue(con->commit());
 	stdoutput.printf("\n");
 
 
@@ -1383,10 +1505,12 @@ int main(int argc, char **argv) {
 		"create table testtable ("
 		"	col1 integer, "
 		"	col2 integer)"));
+	assertTrue(con->commit());
 	assertTrue(cur->getSchemaList(NULL));
 	assertEquals(cur->getColumnName(0),"Database");
 	assertTrue(cur->rowCount()>0);
 	cur->sendQuery("drop table testtable");
+	assertTrue(con->commit());
 	stdoutput.printf("\n");
 
 
@@ -1428,6 +1552,7 @@ int main(int argc, char **argv) {
 		"create table testtable4 ("
 		"	col1 integer, "
 		"	col2 integer)"));
+	assertTrue(con->commit());
 	assertTrue(cur->getTableList(NULL));
 	counter=0;
 	for (uint64_t i=0; i<cur->rowCount(); i++) {
@@ -1444,6 +1569,7 @@ int main(int argc, char **argv) {
 	cur->sendQuery("drop table testtable2");
 	cur->sendQuery("drop table testtable3");
 	cur->sendQuery("drop table testtable4");
+	assertTrue(con->commit());
 	stdoutput.printf("\n");
 
 
@@ -1514,6 +1640,7 @@ int main(int argc, char **argv) {
 		"	testdatetime datetime year to second, "
 		"	testtext text, "
 		"	testbyte byte)"));
+	assertTrue(con->commit());
 	assertTrue(cur->getColumnList("testtable",NULL));
 	assertEquals(cur->getColumnName(0),"column_name");
 	assertEquals(cur->getColumnName(1),"data_type");
@@ -1561,6 +1688,7 @@ int main(int argc, char **argv) {
 	assertEquals(cur->getField(16,"data_type"),"TEXT");
 	assertEquals(cur->getField(17,"data_type"),"BYTE");
 	cur->sendQuery("drop table testtable");
+	assertTrue(con->commit());
 	stdoutput.printf("\n");
 
 
@@ -1571,6 +1699,7 @@ int main(int argc, char **argv) {
 		"create table testtable ("
 		"	col1 serial primary key, "
 		"	col2 int)"));
+	assertTrue(con->commit());
 	assertTrue(cur->getColumnList("testtable",NULL));
 	assertTrue(charstring::contains(
 			cur->getField(0,"extra"),"auto_increment"));
@@ -1582,6 +1711,7 @@ int main(int argc, char **argv) {
 			cur->getField(1,"column_key"),"PRI"));
 	stdoutput.printf("\n");
 	assertTrue(cur->sendQuery("drop table testtable"));
+	assertTrue(con->commit());
 	assertTrue(cur->sendQuery(
 		"create table testtable ("
 		"	col1 int primary key, "
@@ -1592,6 +1722,7 @@ int main(int argc, char **argv) {
 	assertTrue(charstring::contains(
 			cur->getField(0,"column_key"),"PRI"));
 	assertTrue(cur->sendQuery("drop table testtable"));
+	assertTrue(con->commit());
 	stdoutput.printf("\n");
 
 
@@ -1602,6 +1733,7 @@ int main(int argc, char **argv) {
 		"create table testtable ("
 		"	col1 integer primary key, "
 		"	col2 integer)"));
+	assertTrue(con->commit());
 	assertTrue(cur->getPrimaryKeysList("testtable",NULL));
 	assertEquals(cur->getColumnName(0),"table");
 	assertEquals(cur->getColumnName(1),"non_unique");
@@ -1622,6 +1754,7 @@ int main(int argc, char **argv) {
 	assertTrue(!charstring::compare(cur->getField(0,"column_name"),"col1"));
 	assertTrue(!charstring::isNullOrEmpty(cur->getField(0,"key_name")));
 	cur->sendQuery("drop table testtable");
+	assertTrue(con->commit());
 	stdoutput.printf("\n");
 
 
@@ -1632,6 +1765,7 @@ int main(int argc, char **argv) {
 		"create table testtable ("
 		"	col1 integer primary key, "
 		"	col2 integer)"));
+	assertTrue(con->commit());
 	assertTrue(cur->getKeyAndIndexList("testtable",NULL));
 	assertEquals(cur->getColumnName(0),"table");
 	assertEquals(cur->getColumnName(1),"non_unique");
@@ -1655,6 +1789,7 @@ int main(int argc, char **argv) {
 	assertEquals(cur->getField(0,"index_type"),"3");
 	assertTrue(!charstring::isNullOrEmpty(cur->getField(0,"key_name")));
 	cur->sendQuery("drop table testtable");
+	assertTrue(con->commit());
 	stdoutput.printf("\n");
 
 
@@ -1700,6 +1835,7 @@ int main(int argc, char **argv) {
 		"define x integer; "
 		"let x = 1; "
 		"end procedure;"));
+	assertTrue(con->commit());
 	assertTrue(cur->getProcedureList(NULL));
 	counter=0;
 	for (uint64_t i=0; i<cur->rowCount(); i++) {
@@ -1744,6 +1880,7 @@ int main(int argc, char **argv) {
 	cur->sendQuery("drop procedure testproc2");
 	cur->sendQuery("drop procedure testproc3");
 	cur->sendQuery("drop procedure testproc4");
+	assertTrue(con->commit());
 	stdoutput.printf("\n");
 
 
