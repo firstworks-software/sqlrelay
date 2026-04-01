@@ -509,7 +509,7 @@ assertEqual(cur.getField(0,1),"10.556");
 assertEqual(cur.getField(0,2),"10.5556");
 console.log();
 
-console.log("nullS as Nulls: ");
+console.log("NULLS AS NULLS: ");
 cur.getNullsAsNulls();
 assertEqual(cur.sendQuery("select null,1,null"),1);
 assertEqual(cur.getField(0,0),null);

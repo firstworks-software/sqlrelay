@@ -7,10 +7,10 @@
 
 #include "asserts.cpp"
 
-sqlrconnection	*con;
-sqlrcursor	*cur;
-sqlrconnection	*secondcon;
-sqlrcursor	*secondcur;
+sqlrconnection	*con=NULL;
+sqlrcursor	*cur=NULL;
+sqlrconnection	*secondcon=NULL;
+sqlrcursor	*secondcur=NULL;
 
 int main(int argc, char **argv) {
 
@@ -657,7 +657,7 @@ int main(int argc, char **argv) {
 
 
 	// nulls as nulls
-	stdoutput.printf("NULLS as Nulls: \n");
+	stdoutput.printf("NULLS AS NULLS: \n");
 	cur->getNullsAsNulls();
 	assertTrue(cur->sendQuery("select 1,NULL,NULL from rdb$database"));
 	assertEquals(cur->getField(0,(uint32_t)0),"1");

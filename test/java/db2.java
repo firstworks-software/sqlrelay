@@ -601,7 +601,7 @@ class db2 extends sqlrtest {
 		assertEquals(cur.getField(0,2),"10.5556");
 		System.out.println();
 
-		System.out.println("nullS as Nulls: ");
+		System.out.println("NULLS AS NULLS: ");
 		cur.sendQuery("drop table testtable1");
 		cur.sendQuery(
 			"create table testtable1 ("+

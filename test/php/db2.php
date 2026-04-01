@@ -609,7 +609,7 @@
 
 
 	# nulls as nulls
-	echo("NULLS as Nulls: \n");
+	echo("NULLS AS NULLS: \n");
 	sqlrcur_sendQuery($cur,"drop table testtable1");
 	sqlrcur_sendQuery($cur,
 		"create table testtable1 (".

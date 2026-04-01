@@ -7,10 +7,10 @@
 
 #include "asserts.cpp"
 
-sqlrconnection	*con;
-sqlrcursor	*cur;
-sqlrconnection	*secondcon;
-sqlrcursor	*secondcur;
+sqlrconnection	*con=NULL;
+sqlrcursor	*cur=NULL;
+sqlrconnection	*secondcon=NULL;
+sqlrcursor	*secondcur=NULL;
 
 int main(int argc, char **argv) {
 
@@ -36,8 +36,8 @@ int main(int argc, char **argv) {
 	char		*filename;
 
 	// instantiation
-	con=new sqlrconnection("redhat62",9000,"/tmp/test.socket",
-						"testuser","testpassword",0,1);
+	con=new sqlrconnection("sqlrelay",9000,"/tmp/test.socket",
+						"db2inst1","testpassword",0,1);
 	cur=new sqlrcursor(con);
 
 
@@ -76,12 +76,10 @@ int main(int argc, char **argv) {
 	assertTrue(con->setIsolationLevel(isolationlevels[0]));
 	stdoutput.printf("\n");
 
-	// drop existing table
-	cur->sendQuery("drop table testtable");
-
 
 	// create temptable
 	stdoutput.printf("CREATE TEMPTABLE: \n");
+	cur->sendQuery("drop table testtable");
 	assertTrue(cur->sendQuery(
 		"create table testtable ("
 		"	testsmallint smallint, "
@@ -97,6 +95,7 @@ int main(int argc, char **argv) {
 		"	testtimestamp timestamp, "
 		"	testclob clob(1K), "
 		"	testblob blob(1K))"));
+	assertTrue(con->commit());
 	stdoutput.printf("\n");
 
 
@@ -258,134 +257,6 @@ int main(int argc, char **argv) {
 	assertEquals(cur->affectedRows(),1);
 	stdoutput.printf("\n");
 
-
-	// stored procedure
-	stdoutput.printf("STORED PROCEDURE: \n");
-	// return multiple values
-	cur->sendQuery("drop procedure testproc");
-	/*assertEquals(cur->sendQuery(
-		"create procedure testproc("
-		"	in in1 int, "
-		"	in in2 double, "
-		"	in in3 varchar(20), "
-		"	in in4 clob(1K), "
-		"	in in5 blob(1K), "
-		"	out out1 int, "
-		"	out out2 double, "
-		"	out out3 varchar(20), "
-		"	out out4 clob(1K), "
-		"	out out5 blob(1K)) "
-		"language sql "
-		"begin "
-		"	set out1 = in1; "
-		"	set out2 = in2; "
-		"	set out3 = in3; "
-		"	set out4 = in4; "
-		"	set out5 = in5; "
-		"end"),1);
-	cur->prepareQuery(
-		"call testproc(?,?,?,?,blob(cast(? "
-		"	as char(4))),?,?,?,?,?)");
-	cur->inputBind("1",1);
-	cur->inputBind("2",1.1,2,1);
-	cur->inputBind("3","hello");
-	cur->inputBindClob("4","clob",4);
-	cur->inputBind("5","blob");
-	cur->defineOutputBindInteger("6");
-	cur->defineOutputBindDouble("7");
-	cur->defineOutputBindString("8",20);
-	cur->defineOutputBindClob("9");
-	cur->defineOutputBindBlob("10");
-	assertTrue(cur->executeQuery());
-	assertEquals(cur->getOutputBindInteger("6"),1);
-	assertEquals(cur->getOutputBindDouble("7"),1.1);
-	assertEquals(cur->getOutputBindString("8"),"hello");
-	assertEquals(cur->getOutputBindClob("9"),"clob");
-	assertEquals(cur->getOutputBindBlob("10"),"blob");
-	assertTrue(cur->sendQuery("drop procedure testproc"));*/
-	assertTrue(cur->sendQuery(
-		"create procedure testproc("
-		"	in in1 int, "
-		"	in in2 double, "
-		"	in in3 varchar(20), "
-		"	in in4 clob(1K), "
-		"	out out1 int, "
-		"	out out2 double, "
-		"	out out3 varchar(20), "
-		"	out out4 clob(1K)) "
-		"language sql "
-		"begin "
-		"	set out1 = in1; "
-		"	set out2 = in2; "
-		"	set out3 = in3; "
-		"	set out4 = in4; "
-		"end"));
-	cur->prepareQuery("call testproc(?,?,?,?,?,?,?,?)");
-	cur->inputBind("1",1);
-	cur->inputBind("2",1.1,2,1);
-	cur->inputBind("3","hello");
-	cur->inputBindClob("4","clob",4);
-	cur->defineOutputBindInteger("5");
-	cur->defineOutputBindDouble("6");
-	cur->defineOutputBindString("7",20);
-	cur->defineOutputBindClob("8");
-	assertTrue(cur->executeQuery());
-	assertEquals(cur->getOutputBindInteger("5"),1);
-	assertEquals(cur->getOutputBindDouble("6"),1.1);
-	assertEquals(cur->getOutputBindString("7"),"hello");
-	assertEquals(cur->getOutputBindClob("8"),"clob");
-	assertTrue(cur->sendQuery("drop procedure testproc"));
-	stdoutput.printf("\n");
-
-
-	// stored procedure returning result set
-	stdoutput.printf("STORED PROCEDURE RETURNING RESULT SET: \n");
-	assertTrue(cur->sendQuery(
-		"create procedure testproc() "
-		"result set 1 "
-		"language sql "
-		"begin "
-		"	declare c1 cursor with return for "
-		"		select * from testtable; "
-		"	open c1; "
-		"end"));
-	assertTrue(cur->sendQuery("call testproc()"));
-	assertEquals(cur->rowCount(),8);
-	assertTrue(cur->sendQuery("drop procedure testproc"));
-	stdoutput.printf("\n");
-
-
-	// long blob
-	stdoutput.printf("LONG BLOB: \n");
-	cur->sendQuery("drop table testtable1");
-	cur->sendQuery("create table testtable1 (testclob clob(25K))");
-	cur->prepareQuery("insert into testtable1 values (?)");
-	char	clobval[20*1024+1];
-	for (int i=0; i<20*1024; i++) {
-		clobval[i]='C';
-	}
-	clobval[20*1024]='\0';
-	cur->inputBindClob("1",clobval,20*1024);
-	assertTrue(cur->executeQuery());
-	cur->sendQuery("select testclob from testtable1");
-	assertEquals(cur->getFieldLength(0,"testclob"),20*1024);
-	assertEquals(cur->getField(0,"testclob"),clobval);
-	assertTrue(cur->sendQuery(
-		"create procedure testproc("
-		"	in in1 clob(25K), "
-		"	out out1 clob(25K)) "
-		"language sql "
-		"begin "
-		"	set out1 = in1; "
-		"end"));
-	cur->prepareQuery("call testproc(?,?)");
-	cur->inputBindClob("1",clobval,20*1024);
-	cur->defineOutputBindClob("2");
-	assertTrue(cur->executeQuery());
-	assertEquals(cur->getOutputBindLength("2"),20*1024);
-	assertEquals(cur->getOutputBindClob("2"),clobval);
-	assertTrue(cur->sendQuery("drop procedure testproc"));
-	stdoutput.printf("\n");
 
 
 	// select
@@ -740,32 +611,17 @@ int main(int argc, char **argv) {
 
 
 	// nulls as nulls
-	stdoutput.printf("NULLS as Nulls: \n");
-	cur->sendQuery("drop table testtable1");
-	cur->sendQuery(
-		"create table testtable1 ("
-		"	col1 char(1), "
-		"	col2 char(1), "
-		"	col3 char(1))");
+	stdoutput.printf("NULLS AS NULLS: \n");
 	cur->getNullsAsNulls();
-	assertTrue(cur->sendQuery(
-		"insert into "
-		"	testtable1 "
-		"values ("
-		"	'1', "
-		"	NULL, "
-		"	NULL)"));
-	assertTrue(cur->sendQuery("select * from testtable1"));
-	assertEquals(cur->getField(0,(uint32_t)0),"1");
-	assertEquals(cur->getField(0,1),NULL);
+	assertTrue(cur->sendQuery("select NULL,1,NULL from sysibm.sysdummy1"));
+	assertEquals(cur->getField(0,(uint32_t)0),NULL);
+	assertEquals(cur->getField(0,1),"1");
 	assertEquals(cur->getField(0,2),NULL);
 	cur->getNullsAsEmptyStrings();
-	assertTrue(cur->sendQuery("select * from testtable1"));
-	assertEquals(cur->getField(0,(uint32_t)0),"1");
-	assertEquals(cur->getField(0,1),"");
+	assertTrue(cur->sendQuery("select NULL,1,NULL from sysibm.sysdummy1"));
+	assertEquals(cur->getField(0,(uint32_t)0),"");
+	assertEquals(cur->getField(0,1),"1");
 	assertEquals(cur->getField(0,2),"");
-	assertTrue(cur->sendQuery("drop table testtable1"));
-	cur->getNullsAsNulls();
 	stdoutput.printf("\n");
 
 
@@ -1110,9 +966,214 @@ int main(int argc, char **argv) {
 	assertEquals(cur->getField(7,(uint32_t)0),NULL);
 	stdoutput.printf("\n");
 
-	// drop existing table
+
+	// commit and rollback
+	stdoutput.printf("COMMIT AND ROLLBACK: \n");
+	secondcon=new sqlrconnection("sqlrelay",9000,"/tmp/test.socket",
+						"db2inst1","testpassword",0,1);
+	secondcur=new sqlrcursor(secondcon);
+	assertTrue(secondcur->sendQuery("select count(*) from testtable"));
+	assertEquals(secondcur->getField(0,(uint32_t)0),"0");
+	assertTrue(con->commit());
+	assertTrue(secondcur->sendQuery("select count(*) from testtable"));
+	assertEquals(secondcur->getField(0,(uint32_t)0),"8");
+	assertTrue(cur->sendQuery(
+		"insert into "
+		"	testtable "
+		"values ("
+		"	10, "
+		"	10, "
+		"	10, "
+		"	10.1, "
+		"	10.1, "
+		"	10.1, "
+		"	'testchar10', "
+		"	'testvarchar10', "
+		"	'01/01/2010', "
+		"	'10:00:00', "
+		"	NULL, "
+		"	'testclob10', "
+		"	blob('testblob10'))"));
+	assertTrue(con->rollback());
+	assertTrue(secondcur->sendQuery("select count(*) from testtable"));
+	assertEquals(secondcur->getField(0,(uint32_t)0),"8");
+	assertTrue(con->autoCommitOn());
+	assertTrue(cur->sendQuery(
+		"insert into "
+		"	testtable "
+		"values ("
+		"	10, "
+		"	10, "
+		"	10, "
+		"	10.1, "
+		"	10.1, "
+		"	10.1, "
+		"	'testchar10', "
+		"	'testvarchar10', "
+		"	'01/01/2010', "
+		"	'10:00:00', "
+		"	NULL, "
+		"	'testclob10', "
+		"	blob('testblob10'))"));
+	assertTrue(secondcur->sendQuery("select count(*) from testtable"));
+	assertEquals(secondcur->getField(0,(uint32_t)0),"9");
+	assertTrue(con->autoCommitOff());
 	cur->sendQuery("drop table testtable");
+	assertTrue(con->commit());
 	stdoutput.printf("\n");
+
+
+	// stored procedure
+	stdoutput.printf("STORED PROCEDURE: \n");
+	// return multiple values
+	cur->sendQuery("drop procedure testproc");
+	assertTrue(con->commit());
+	/*assertEquals(cur->sendQuery(
+		"create procedure testproc("
+		"	in in1 int, "
+		"	in in2 double, "
+		"	in in3 varchar(20), "
+		"	in in4 clob(1K), "
+		"	in in5 blob(1K), "
+		"	out out1 int, "
+		"	out out2 double, "
+		"	out out3 varchar(20), "
+		"	out out4 clob(1K), "
+		"	out out5 blob(1K)) "
+		"language sql "
+		"begin "
+		"	set out1 = in1; "
+		"	set out2 = in2; "
+		"	set out3 = in3; "
+		"	set out4 = in4; "
+		"	set out5 = in5; "
+		"end"),1);
+	cur->prepareQuery(
+		"call testproc(?,?,?,?,blob(cast(? "
+		"	as char(4))),?,?,?,?,?)");
+	cur->inputBind("1",1);
+	cur->inputBind("2",1.1,2,1);
+	cur->inputBind("3","hello");
+	cur->inputBindClob("4","clob",4);
+	cur->inputBind("5","blob");
+	cur->defineOutputBindInteger("6");
+	cur->defineOutputBindDouble("7");
+	cur->defineOutputBindString("8",20);
+	cur->defineOutputBindClob("9");
+	cur->defineOutputBindBlob("10");
+	assertTrue(cur->executeQuery());
+	assertEquals(cur->getOutputBindInteger("6"),1);
+	assertEquals(cur->getOutputBindDouble("7"),1.1);
+	assertEquals(cur->getOutputBindString("8"),"hello");
+	assertEquals(cur->getOutputBindClob("9"),"clob");
+	assertEquals(cur->getOutputBindBlob("10"),"blob");
+	assertTrue(cur->sendQuery("drop procedure testproc"));*/
+	assertTrue(cur->sendQuery(
+		"create procedure testproc("
+		"	in in1 int, "
+		"	in in2 double, "
+		"	in in3 varchar(20), "
+		"	in in4 clob(1K), "
+		"	out out1 int, "
+		"	out out2 double, "
+		"	out out3 varchar(20), "
+		"	out out4 clob(1K)) "
+		"language sql "
+		"begin "
+		"	set out1 = in1; "
+		"	set out2 = in2; "
+		"	set out3 = in3; "
+		"	set out4 = in4; "
+		"end"));
+	assertTrue(con->commit());
+	cur->prepareQuery("call testproc(?,?,?,?,?,?,?,?)");
+	cur->inputBind("1",1);
+	cur->inputBind("2",1.1,2,1);
+	cur->inputBind("3","hello");
+	cur->inputBindClob("4","clob",4);
+	cur->defineOutputBindInteger("5");
+	cur->defineOutputBindDouble("6");
+	cur->defineOutputBindString("7",20);
+	cur->defineOutputBindClob("8");
+	assertTrue(cur->executeQuery());
+	assertEquals(cur->getOutputBindInteger("5"),1);
+	assertEquals(cur->getOutputBindDouble("6"),1.1);
+	assertEquals(cur->getOutputBindString("7"),"hello");
+	assertEquals(cur->getOutputBindClob("8"),"clob");
+	assertTrue(cur->sendQuery("drop procedure testproc"));
+	assertTrue(con->commit());
+	stdoutput.printf("\n");
+
+
+	// stored procedure returning result set
+	stdoutput.printf("STORED PROCEDURE RETURNING RESULT SET: \n");
+	assertTrue(cur->sendQuery(
+		"create procedure testproc() "
+		"result set 1 "
+		"language sql "
+		"begin "
+		"	declare c1 cursor with return for "
+                "               select 1 from sysibm.sysdummy1 "
+                "               union "
+                "               select 2 from sysibm.sysdummy1 "
+                "               union "
+                "               select 3 from sysibm.sysdummy1 "
+                "               union "
+                "               select 4 from sysibm.sysdummy1 "
+                "               union "
+                "               select 5 from sysibm.sysdummy1 "
+                "               union "
+                "               select 6 from sysibm.sysdummy1 "
+                "               union "
+                "               select 7 from sysibm.sysdummy1 "
+                "               union "
+                "               select 8 from sysibm.sysdummy1; "
+		"	open c1; "
+		"end"));
+	assertTrue(con->commit());
+	assertTrue(cur->sendQuery("call testproc()"));
+	assertEquals(cur->rowCount(),8);
+	assertTrue(cur->sendQuery("drop procedure testproc"));
+	assertTrue(con->commit());
+	stdoutput.printf("\n");
+
+
+	// long blob
+	stdoutput.printf("LONG BLOB: \n");
+	cur->sendQuery("drop table testtable1");
+	cur->sendQuery("create table testtable1 (testclob clob(25K))");
+	assertTrue(con->commit());
+	cur->prepareQuery("insert into testtable1 values (?)");
+	char	clobval[20*1024+1];
+	for (int i=0; i<20*1024; i++) {
+		clobval[i]='C';
+	}
+	clobval[20*1024]='\0';
+	cur->inputBindClob("1",clobval,20*1024);
+	assertTrue(cur->executeQuery());
+	cur->sendQuery("select testclob from testtable1");
+	assertEquals(cur->getFieldLength(0,"testclob"),20*1024);
+	assertEquals(cur->getField(0,"testclob"),clobval);
+	assertTrue(cur->sendQuery(
+		"create procedure testproc("
+		"	in in1 clob(25K), "
+		"	out out1 clob(25K)) "
+		"language sql "
+		"begin "
+		"	set out1 = in1; "
+		"end"));
+	assertTrue(con->commit());
+	cur->prepareQuery("call testproc(?,?)");
+	cur->inputBindClob("1",clobval,20*1024);
+	cur->defineOutputBindClob("2");
+	assertTrue(cur->executeQuery());
+	assertEquals(cur->getOutputBindLength("2"),20*1024);
+	assertEquals(cur->getOutputBindClob("2"),clobval);
+	assertTrue(cur->sendQuery("drop procedure testproc"));
+	assertTrue(cur->sendQuery("drop table testtable1"));
+	assertTrue(con->commit());
+	stdoutput.printf("\n");
+
 
 
 	// column list - auto_increment, primary key
@@ -1122,6 +1183,7 @@ int main(int argc, char **argv) {
 		"create table testtable ("
 		"	col1 int generated always as identity primary key, "
 		"	col2 int)"));
+	assertTrue(con->commit());
 	assertTrue(cur->getColumnList("testtable",NULL));
 	assertTrue(charstring::contains(
 			cur->getField(0,"extra"),"auto_increment"));
@@ -1137,12 +1199,14 @@ int main(int argc, char **argv) {
 		"create table testtable ("
 		"	col1 int not null primary key, "
 		"	col2 int)"));
+	assertTrue(con->commit());
 	assertTrue(cur->getColumnList("testtable",NULL));
 	assertFalse(charstring::contains(
 			cur->getField(0,"extra"),"auto_increment"));
 	assertTrue(charstring::contains(
 			cur->getField(0,"column_key"),"PRI"));
 	assertTrue(cur->sendQuery("drop table testtable"));
+	assertTrue(con->commit());
 	stdoutput.printf("\n");
 
 

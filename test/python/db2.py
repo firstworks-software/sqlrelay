@@ -611,7 +611,7 @@ def main():
 
 
 	# nulls as nones
-	print("NULLS as Nones: ")
+	print("NULLS AS NONES: ")
 	cur.getNullsAsNone()
 	cur.sendQuery("drop table testtable1")
 	assertTrue(cur.sendQuery(

@@ -592,7 +592,7 @@ print("\n");
 
 
 # nulls as undef
-print("NULLS as Undef: \n");
+print("NULLS AS UNDEF: \n");
 $cur->getNullsAsUndefined();
 assertTrue($cur->sendQuery("select 1,NULL,NULL from rdb\$database"));
 assertEqualString($cur->getField(0,0),"1");

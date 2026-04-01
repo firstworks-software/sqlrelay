@@ -479,7 +479,7 @@ print "\n"
 
 
 # nulls as nils
-print "NULLS as nils: \n"
+print "NULLS AS NILS: \n"
 cur.getNullsAsNils()
 assertTrue(cur.sendQuery("select NULL,1,NULL from dual"))
 assertEqual(cur.getField(0,0),nil)

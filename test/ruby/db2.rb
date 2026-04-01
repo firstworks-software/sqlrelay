@@ -589,7 +589,7 @@ print "\n"
 
 
 # nulls as nils
-print "NULLS as nils: \n"
+print "NULLS AS NILS: \n"
 cur.getNullsAsNils()
 cur.sendQuery("drop table testtable1")
 assertTrue(cur.sendQuery(

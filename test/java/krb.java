@@ -508,7 +508,7 @@ class krb extends sqlrtest {
 		assertEquals(cur.getField(0,2),"10.5556");
 		System.out.println();
 
-		System.out.println("nullS as Nulls: ");
+		System.out.println("NULLS AS NULLS: ");
 		cur.getNullsAsNulls();
 		assertTrue(cur.sendQuery("select null,1,null from dual"));
 		assertEquals(cur.getField(0,0),null);

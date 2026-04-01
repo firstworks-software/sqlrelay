@@ -464,7 +464,7 @@ int main(int argc, char **argv) {
 
 
 	// nulls as nulls
-	printf("NULLS as Nulls: \n");
+	printf("NULLS AS NULLS: \n");
 	sqlrcur_getNullsAsNulls(cur);
 	assertTrue(sqlrcur_sendQuery(cur,
 		"insert into "

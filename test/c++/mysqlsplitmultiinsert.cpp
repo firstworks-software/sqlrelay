@@ -8,10 +8,10 @@
 
 #include "asserts.cpp"
 
-sqlrconnection	*con;
-sqlrcursor	*cur;
-sqlrconnection	*secondcon;
-sqlrcursor	*secondcur;
+sqlrconnection	*con=NULL;
+sqlrcursor	*cur=NULL;
+sqlrconnection	*secondcon=NULL;
+sqlrcursor	*secondcur=NULL;
 
 int main(int argc, char **argv) {
 
@@ -20,12 +20,9 @@ int main(int argc, char **argv) {
 						"testuser","testpassword",0,1);
 	cur=new sqlrcursor(con);
 
-	// drop existing table
-	cur->sendQuery("drop table testtable");
-
-
 	// create temptable
 	stdoutput.printf("CREATE TEMPTABLE: \n");
+	cur->sendQuery("drop table testtable");
 	assertTrue(cur->sendQuery(
 		"create table testtable ("
 		"	testtinyint tinyint, "

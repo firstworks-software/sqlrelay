@@ -409,7 +409,7 @@ assertEqual(cur.sendQuery("delete from testtable1"),1);
 console.log();
 
 
-console.log("nullS as Nulls: ");
+console.log("NULLS AS NULLS: ");
 cur.getNullsAsNulls();
 assertEqual(cur.sendQuery("insert into testtable1 values (1,null,null)"),1);
 assertEqual(cur.sendQuery("select * from testtable1"),1);

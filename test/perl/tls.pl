@@ -471,7 +471,7 @@ print("\n");
 
 
 # nulls as undef
-print("NULLS as Undef: \n");
+print("NULLS AS UNDEF: \n");
 $cur->getNullsAsUndefined();
 assertTrue($cur->sendQuery("select NULL,1,NULL from dual"));
 assertUndef($cur->getField(0,0));

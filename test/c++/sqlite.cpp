@@ -9,10 +9,10 @@
 
 #include "asserts.cpp"
 
-sqlrconnection	*con;
-sqlrcursor	*cur;
-sqlrconnection	*secondcon;
-sqlrcursor	*secondcur;
+sqlrconnection	*con=NULL;
+sqlrcursor	*cur=NULL;
+sqlrconnection	*secondcon=NULL;
+sqlrcursor	*secondcur=NULL;
 
 int main(int argc, char **argv) {
 
@@ -73,15 +73,11 @@ int main(int argc, char **argv) {
 	assertTrue(con->setIsolationLevel(isolationlevels[0]));
 	stdoutput.printf("\n");
 
-	// drop existing table
-	con->begin();
-	cur->sendQuery("drop table if exists testtable");
-	con->commit();
-
 
 	// create temptable
 	stdoutput.printf("CREATE TEMPTABLE: \n");
 	con->begin();
+	cur->sendQuery("drop table if exists testtable");
 	assertTrue(cur->sendQuery(
 		"create table testtable ("
 		"	testint int, "
@@ -525,7 +521,7 @@ int main(int argc, char **argv) {
 
 
 	// nulls as nulls
-	stdoutput.printf("NULLS as Nulls: \n");
+	stdoutput.printf("NULLS AS NULLS: \n");
 	cur->getNullsAsNulls();
 	assertTrue(cur->sendQuery(
 		"insert into "

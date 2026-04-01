@@ -593,7 +593,7 @@ print("\n");
 
 
 # nulls as undef
-print("NULLS as Undef: \n");
+print("NULLS AS UNDEF: \n");
 $cur->getNullsAsUndefined();
 $cur->sendQuery("drop table testtable1");
 assertTrue($cur->sendQuery(

@@ -12,10 +12,10 @@
 
 #include "asserts.cpp"
 
-sqlrconnection	*con;
-sqlrcursor	*cur;
-sqlrconnection	*secondcon;
-sqlrcursor	*secondcur;
+sqlrconnection	*con=NULL;
+sqlrcursor	*cur=NULL;
+sqlrconnection	*secondcon=NULL;
+sqlrcursor	*secondcur=NULL;
 
 int main(int argc, char **argv) {
 
@@ -114,6 +114,7 @@ int main(int argc, char **argv) {
 	stdoutput.printf("\n");
 	assertTrue(cur->sendQuery("drop table student"));
 	delete secondcur;
+	secondcur=NULL;
 	delete cur;
 	delete con;
 	stdoutput.printf("\n\n");

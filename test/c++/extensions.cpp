@@ -12,10 +12,10 @@
 
 #include "asserts.cpp"
 
-sqlrconnection	*con;
-sqlrcursor	*cur;
-sqlrconnection	*secondcon;
-sqlrcursor	*secondcur;
+sqlrconnection	*con=NULL;
+sqlrcursor	*cur=NULL;
+sqlrconnection	*secondcon=NULL;
+sqlrcursor	*secondcur=NULL;
 
 int main(int argc, char **argv) {
 
@@ -214,7 +214,9 @@ int main(int argc, char **argv) {
 
 	// clean up
 	delete secondcur;
+	secondcur=NULL;
 	delete secondcon;
+	secondcon=NULL;
 	delete cur;
 	delete con;
 	con=new sqlrconnection("sqlrelay",9000,"/tmp/test.socket",
@@ -526,6 +528,7 @@ int main(int argc, char **argv) {
 	assertTrue(cur->sendQuery("drop table student"));
 	assertTrue(cur->sendQuery("drop sequence student_id"));
 	delete secondcur;
+	secondcur=NULL;
 	stdoutput.printf("\n\n");
 
 

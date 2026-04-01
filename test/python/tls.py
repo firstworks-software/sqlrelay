@@ -500,7 +500,7 @@ def main():
 
 
 	# nulls as nones
-	print("NULLS as Nones: ")
+	print("NULLS AS NONES: ")
 	cur.getNullsAsNone()
 	assertTrue(cur.sendQuery("select NULL,1,NULL from dual"))
 	assertEqual(cur.getField(0,0),None)

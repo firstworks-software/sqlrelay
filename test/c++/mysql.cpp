@@ -23,10 +23,10 @@
 
 #include "asserts.cpp"
 
-sqlrconnection	*con;
-sqlrcursor	*cur;
-sqlrconnection	*secondcon;
-sqlrcursor	*secondcur;
+sqlrconnection	*con=NULL;
+sqlrcursor	*cur=NULL;
+sqlrconnection	*secondcon=NULL;
+sqlrcursor	*secondcur=NULL;
 
 int main(int argc, char **argv) {
 
@@ -101,12 +101,10 @@ for (uint16_t a=0; a<50; a++) {
 	assertTrue(con->setIsolationLevel(isolationlevels[0]));
 	stdoutput.printf("\n");
 
-	// drop existing table
-	cur->sendQuery("drop table testtable");
-
 
 	// create temptable
 	stdoutput.printf("CREATE TEMPTABLE: \n");
+	cur->sendQuery("drop table testtable");
 	assertTrue(cur->sendQuery(
 		"create table testtable ("
 		"	testtinyint tinyint, "
@@ -983,7 +981,7 @@ for (uint16_t a=0; a<50; a++) {
 
 
 	// nulls as nulls
-	stdoutput.printf("NULLS as Nulls: \n");
+	stdoutput.printf("NULLS AS NULLS: \n");
 	cur->getNullsAsNulls();
 	assertTrue(cur->sendQuery("select NULL,1,NULL"));
 	assertEquals(cur->getField(0,(uint32_t)0),NULL);
@@ -2195,7 +2193,9 @@ for (uint16_t a=0; a<50; a++) {
 	stdoutput.printf("\n");
 
 	delete secondcur;
+	secondcur=NULL;
 	delete secondcon;
+	secondcon=NULL;
 	delete cur;
 	delete con;
 

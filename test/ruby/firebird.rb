@@ -585,7 +585,7 @@ print "\n"
 
 
 # nulls as nils
-print "NULLS as nils: \n"
+print "NULLS AS NILS: \n"
 cur.getNullsAsNils()
 assertTrue(cur.sendQuery("select 1,NULL,NULL from rdb$database"))
 assertEqual(cur.getField(0,0),"1")

@@ -408,7 +408,7 @@ print("\n");
 
 
 # nulls as undef
-print("NULLS as Undef: \n");
+print("NULLS AS UNDEF: \n");
 $cur->getNullsAsUndefined();
 assertTrue($cur->sendQuery("insert into testtable1 values (1,NULL,NULL)"));
 assertTrue($cur->sendQuery("select * from testtable1"));

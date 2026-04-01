@@ -8,10 +8,10 @@
 
 #include "asserts.cpp"
 
-sqlrconnection	*con;
-sqlrcursor	*cur;
-sqlrconnection	*secondcon;
-sqlrcursor	*secondcur;
+sqlrconnection	*con=NULL;
+sqlrcursor	*cur=NULL;
+sqlrconnection	*secondcon=NULL;
+sqlrcursor	*secondcur=NULL;
 
 int main(int argc, char **argv) {
 
@@ -75,12 +75,10 @@ int main(int argc, char **argv) {
 	assertTrue(con->ping());
 	stdoutput.printf("\n\n");
 
-	// drop existing table
-	cur->sendQuery("drop table testtable");
-
 
 	// create temptable
 	stdoutput.printf("CREATE TEMPTABLE: \n");
+	cur->sendQuery("drop table testtable");
 	assertTrue(cur->sendQuery(
 		"create table testtable ("
 		"	testnumber number, "
@@ -883,7 +881,9 @@ int main(int argc, char **argv) {
 	assertEquals(secondcur->getField(0,(uint32_t)0),"9");
 	assertTrue(con->autoCommitOff());
 	delete secondcur;
+	secondcur=NULL;
 	delete secondcon;
+	secondcon=NULL;
 	stdoutput.printf("\n\n");
 
 

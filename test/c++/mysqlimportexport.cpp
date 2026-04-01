@@ -34,8 +34,10 @@
 //#define DEBUG_IMPORT 1
 
 stringbuffer	createquery;
-sqlrconnection	*con;
-sqlrcursor	*cur;
+sqlrconnection	*con=NULL;
+sqlrcursor	*cur=NULL;
+sqlrconnection	*secondcon=NULL;
+sqlrcursor	*secondcur=NULL;
 
 // define the fields for the table that we're going to export
 struct field_t {

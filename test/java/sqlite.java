@@ -444,7 +444,7 @@ class sqlite extends sqlrtest {
 		System.out.println();
 
 
-		System.out.println("nullS as Nulls: ");
+		System.out.println("NULLS AS NULLS: ");
 		cur.getNullsAsNulls();
 		assertTrue(cur.sendQuery(
 			"insert into "+

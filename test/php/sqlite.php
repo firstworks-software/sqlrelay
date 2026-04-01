@@ -419,7 +419,7 @@
 
 
 	# nulls as nulls
-	echo("NULLS as Nulls: \n");
+	echo("NULLS AS NULLS: \n");
 	sqlrcur_getNullsAsNulls($cur);
 	assertTrue(sqlrcur_sendQuery($cur,
 		"insert into ".

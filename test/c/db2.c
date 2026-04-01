@@ -605,7 +605,7 @@ int main(int argc, char **argv) {
 
 
 	// nulls as nulls
-	printf("NULLS as Nulls: \n");
+	printf("NULLS AS NULLS: \n");
 	sqlrcur_sendQuery(cur,"drop table testtable1");
 	assertTrue(sqlrcur_sendQuery(cur,
 		"create table testtable1 ("

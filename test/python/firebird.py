@@ -609,7 +609,7 @@ def main():
 
 
 	# nulls as nones
-	print("NULLS as Nones: ")
+	print("NULLS AS NONES: ")
 	cur.getNullsAsNone()
 	assertTrue(cur.sendQuery("select 1,NULL,NULL from rdb$database"))
 	assertEqual(cur.getField(0,0),1)

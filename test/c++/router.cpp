@@ -9,10 +9,10 @@
 
 #include "asserts.cpp"
 
-sqlrconnection	*con;
-sqlrcursor	*cur;
-sqlrconnection	*secondcon;
-sqlrcursor	*secondcur;
+sqlrconnection	*con=NULL;
+sqlrcursor	*cur=NULL;
+sqlrconnection	*secondcon=NULL;
+sqlrcursor	*secondcur=NULL;
 
 int main(int argc, char **argv) {
 
@@ -53,13 +53,11 @@ int main(int argc, char **argv) {
 	assertFalse(cur->sendQuery("drop table junktable (col1 int)"));
 	stdoutput.printf("\n");
 
-	// drop existing table
-	cur->sendQuery("drop table if exists testtable1");
-	cur->sendQuery("drop table if exists testtable2");
-
 
 	// create testtables
 	stdoutput.printf("CREATE TESTTABLES: \n");
+	cur->sendQuery("drop table if exists testtable1");
+	cur->sendQuery("drop table if exists testtable2");
 	assertTrue(cur->sendQuery(
 		"create table testtable1 ("
 		"	testint int, "

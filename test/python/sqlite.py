@@ -412,7 +412,7 @@ def main():
 
 
 	# nulls as nones
-	print("NULLS as Nones: ")
+	print("NULLS AS NONES: ")
 	cur.getNullsAsNone()
 	assertTrue(cur.sendQuery("insert into testtable1 values (1,NULL,NULL)"))
 	assertTrue(cur.sendQuery("select * from testtable1"))
