@@ -882,6 +882,34 @@ int main(int argc, char **argv) {
 	stdoutput.printf("\n");
 
 
+	// finished suspended session
+	stdoutput.printf("FINISHED SUSPENDED SESSION: \n");
+	assertTrue(cur->sendQuery(
+		"select "
+		"	* "
+		"from "
+		"	testtable "
+		"order by "
+		"	testnumber"));
+	assertEquals(cur->getField(4,(uint32_t)0),"5");
+	assertEquals(cur->getField(5,(uint32_t)0),"6");
+	assertEquals(cur->getField(6,(uint32_t)0),"7");
+	assertEquals(cur->getField(7,(uint32_t)0),"8");
+	id=cur->getResultSetId();
+	cur->suspendResultSet();
+	assertTrue(con->suspendSession());
+	port=con->getConnectionPort();
+	socket=charstring::duplicate(con->getConnectionSocket());
+	assertTrue(con->resumeSession(port,socket));
+	delete[] socket;
+	assertTrue(cur->resumeResultSet(id));
+	assertEquals(cur->getField(4,(uint32_t)0),NULL);
+	assertEquals(cur->getField(5,(uint32_t)0),NULL);
+	assertEquals(cur->getField(6,(uint32_t)0),NULL);
+	assertEquals(cur->getField(7,(uint32_t)0),NULL);
+	stdoutput.printf("\n");
+
+
 	// commit and rollback
 	stdoutput.printf("COMMIT AND ROLLBACK: \n");
 	secondcon=new sqlrconnection("sqlrelay",9000,"/tmp/test.socket",
@@ -921,34 +949,7 @@ int main(int argc, char **argv) {
 	assertTrue(secondcur->sendQuery("select count(*) from testtable"));
 	assertEquals(secondcur->getField(0,(uint32_t)0),"9");
 	assertTrue(con->autoCommitOff());
-	stdoutput.printf("\n");
-
-
-	// finished suspended session
-	stdoutput.printf("FINISHED SUSPENDED SESSION: \n");
-	assertTrue(cur->sendQuery(
-		"select "
-		"	* "
-		"from "
-		"	testtable "
-		"order by "
-		"	testnumber"));
-	assertEquals(cur->getField(4,(uint32_t)0),"5");
-	assertEquals(cur->getField(5,(uint32_t)0),"6");
-	assertEquals(cur->getField(6,(uint32_t)0),"7");
-	assertEquals(cur->getField(7,(uint32_t)0),"8");
-	id=cur->getResultSetId();
-	cur->suspendResultSet();
-	assertTrue(con->suspendSession());
-	port=con->getConnectionPort();
-	socket=charstring::duplicate(con->getConnectionSocket());
-	assertTrue(con->resumeSession(port,socket));
-	delete[] socket;
-	assertTrue(cur->resumeResultSet(id));
-	assertEquals(cur->getField(4,(uint32_t)0),NULL);
-	assertEquals(cur->getField(5,(uint32_t)0),NULL);
-	assertEquals(cur->getField(6,(uint32_t)0),NULL);
-	assertEquals(cur->getField(7,(uint32_t)0),NULL);
+	cur->sendQuery("drop table testtable");
 	stdoutput.printf("\n");
 
 
@@ -1130,7 +1131,23 @@ int main(int argc, char **argv) {
 		"		select "
 		"			* "
 		"		from "
-		"			testtable "
+		"			( "
+		"			select 1 as testnumber from dual "
+		"			union "
+		"			select 2 as testnumber from dual "
+		"			union "
+		"			select 3 as testnumber from dual "
+		"			union "
+		"			select 4 as testnumber from dual "
+		"			union "
+		"			select 5 as testnumber from dual "
+		"			union "
+		"			select 6 as testnumber from dual "
+		"			union "
+		"			select 7 as testnumber from dual "
+		"			union "
+		"			select 8 as testnumber from dual "
+		"			) "
 		"		where "
 		"			testnumber>value; "
 		"	return l_cursor; "
@@ -1156,7 +1173,6 @@ int main(int argc, char **argv) {
 	assertEquals(bindcur2->getField(2,(uint32_t)0),"3");
 	delete bindcur2;
 	assertTrue(cur->sendQuery("drop package types"));
-	cur->sendQuery("drop table testtable");
 	stdoutput.printf("\n");
 
 

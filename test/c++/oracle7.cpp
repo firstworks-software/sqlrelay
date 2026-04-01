@@ -74,8 +74,10 @@ int main(int argc, char **argv) {
 		// oracle requires the isolation level to
 		// be the first query of the transaction
 		assertTrue(con->commit());
+                // you can set the isolation level, but to get it, you have to
+                // have permisisons to read from sys.v_$session and
+                // sys.v_$transaction
 		assertTrue(con->setIsolationLevel(*il));
-		assertEquals(con->getIsolationLevel(),*il);
 		stdoutput.printf("\n");
 	}
 	// reset to the default isolation level
@@ -808,6 +810,45 @@ int main(int argc, char **argv) {
 	stdoutput.printf("\n");
 
 
+	// commit and rollback
+	stdoutput.printf("COMMIT AND ROLLBACK: \n");
+	secondcon=new sqlrconnection("sqlrelay",9000,"/tmp/test.socket",
+						"testuser","testpassword",0,1);
+	secondcur=new sqlrcursor(secondcon);
+	assertTrue(secondcur->sendQuery("select count(*) from testtable"));
+	assertEquals(secondcur->getField(0,(uint32_t)0),"0");
+	assertTrue(con->commit());
+	assertTrue(secondcur->sendQuery("select count(*) from testtable"));
+	assertEquals(secondcur->getField(0,(uint32_t)0),"8");
+	assertTrue(cur->sendQuery(
+		"insert into "
+		"	testtable "
+		"values ("
+		"	10, "
+		"	'testchar10', "
+		"	'testvarchar10', "
+		"	'01-JAN-2010', "
+		"	'testlong10')"));
+	assertTrue(con->rollback());
+	assertTrue(secondcur->sendQuery("select count(*) from testtable"));
+	assertEquals(secondcur->getField(0,(uint32_t)0),"8");
+	assertTrue(con->autoCommitOn());
+	assertTrue(cur->sendQuery(
+		"insert into "
+		"	testtable "
+		"values ("
+		"	10, "
+		"	'testchar10', "
+		"	'testvarchar10', "
+		"	'01-JAN-2010', "
+		"	'testlong10')"));
+	assertTrue(secondcur->sendQuery("select count(*) from testtable"));
+	assertEquals(secondcur->getField(0,(uint32_t)0),"9");
+	assertTrue(con->autoCommitOff());
+	cur->sendQuery("drop table testtable");
+	stdoutput.printf("\n");
+
+
 	// output bind by position
 	stdoutput.printf("OUTPUT BIND BY POSITION: \n");
 	cur->prepareQuery(
@@ -977,9 +1018,6 @@ int main(int argc, char **argv) {
 	assertTrue(cur->executeQuery());
 	cur->sendQuery("drop table testtable1");
 	stdoutput.printf("\n");
-
-	// drop existing table
-	cur->sendQuery("drop table testtable");
 
 
 	// stored procedure
