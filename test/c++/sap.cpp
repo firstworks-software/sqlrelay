@@ -1064,10 +1064,10 @@ int main(int argc, char **argv) {
 		"	@in3 varchar(20), "
 		"	@out1 int output, "
 		"	@out2 float output, "
-		"	@out3 varchar(20) output as select @out1=@in1, "
+		"	@out3 varchar(20) output as "
+		"select @out1=@in1, "
 		"	@out2=@in2, "
 		"	@out3=@in3"));
-	cur->sendQuery("drop procedure testselectproc");
 	cur->prepareQuery("exec testproc");
 	cur->inputBind("in1",1);
 	cur->inputBind("in2",1.1,2,1);
@@ -1087,8 +1087,8 @@ int main(int argc, char **argv) {
 	stdoutput.printf("STORED PROCEDURE WITH RESULT SET: \n");
 	cur->sendQuery("drop procedure testselectproc");
 	assertTrue(cur->sendQuery(
-		"create procedure testselectproc as select "
-		"	* from testtable order by testint"));
+		"create procedure testselectproc as "
+		"	select * from testtable order by testint"));
 	assertTrue(cur->sendQuery("exec testselectproc"));
 	stdoutput.printf("\n");
 	assertEquals(cur->getField(0,(uint32_t)0),"1");
@@ -1146,8 +1146,7 @@ int main(int argc, char **argv) {
 	stdoutput.printf("NESTED SELECTS: \n");
 	//cur->setResultSetBufferSize(1);
 	assertTrue(cur->sendQuery("select * from testtable"));
-	uint32_t i=0;
-	while (cur->getRow(i++)) {
+	for (uint32_t i=0; cur->getRow(i); i++) {
 		secondcur=new sqlrcursor(con);
 		//secondcur->setResultSetBufferSize(1);
 		assertTrue(secondcur->sendQuery("select * from testtable"));
