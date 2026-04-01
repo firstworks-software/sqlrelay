@@ -101,7 +101,7 @@ int main(int argc, char **argv) {
 
 	// begin transction
 	stdoutput.printf("BEGIN TRANSCTION: \n");
-	assertTrue(cur->sendQuery("begin"));
+	assertTrue(con->begin());
 	stdoutput.printf("\n");
 
 
@@ -866,36 +866,6 @@ int main(int argc, char **argv) {
 	stdoutput.printf("\n");
 
 
-	// commit
-	stdoutput.printf("COMMIT: \n");
-	secondcon=new sqlrconnection("sqlrelay",9000,"/tmp/test.socket",
-						"testuser","testpassword",0,1);
-	secondcur=new sqlrcursor(secondcon);
-	assertTrue(secondcur->sendQuery("select count(*) from testtable"));
-	assertEquals(secondcur->getField(0,(uint32_t)0),"0");
-	assertTrue(con->commit());
-	assertTrue(secondcur->sendQuery("select count(*) from testtable"));
-	assertEquals(secondcur->getField(0,(uint32_t)0),"8");
-	//assertEquals(con->autoCommitOn(),1);
-	assertTrue(cur->sendQuery(
-		"insert into "
-		"	testtable "
-		"values ("
-		"	10, "
-		"	10.1, "
-		"	10.1, "
-		"	10, "
-		"	'testchar10', "
-		"	'testvarchar10', "
-		"	'01/01/2010', "
-		"	'10:00:00', "
-		"	NULL)"));
-	assertTrue(secondcur->sendQuery("select count(*) from testtable"));
-	assertEquals(secondcur->getField(0,(uint32_t)0),"9");
-	//assertEquals(con->autoCommitOff(),1);
-	stdoutput.printf("\n");
-
-
 	// finished suspended session
 	stdoutput.printf("FINISHED SUSPENDED SESSION: \n");
 	assertTrue(cur->sendQuery("select * from testtable order by testint"));
@@ -914,6 +884,52 @@ int main(int argc, char **argv) {
 	assertEquals(cur->getField(5,(uint32_t)0),NULL);
 	assertEquals(cur->getField(6,(uint32_t)0),NULL);
 	assertEquals(cur->getField(7,(uint32_t)0),NULL);
+	stdoutput.printf("\n");
+
+
+	// commit and rollback
+	stdoutput.printf("COMMIT AND ROLLBACK: \n");
+	secondcon=new sqlrconnection("sqlrelay",9000,"/tmp/test.socket",
+						"testuser","testpassword",0,1);
+	secondcur=new sqlrcursor(secondcon);
+	assertTrue(secondcur->sendQuery("select count(*) from testtable"));
+	assertEquals(secondcur->getField(0,(uint32_t)0),"0");
+	assertTrue(con->commit());
+	assertTrue(secondcur->sendQuery("select count(*) from testtable"));
+	assertEquals(secondcur->getField(0,(uint32_t)0),"8");
+	assertTrue(con->begin());
+	assertTrue(cur->sendQuery(
+		"insert into "
+		"	testtable "
+		"values ("
+		"	10, "
+		"	10.1, "
+		"	10.1, "
+		"	10, "
+		"	'testchar10', "
+		"	'testvarchar10', "
+		"	'01/01/2010', "
+		"	'10:00:00', "
+		"	NULL)"));
+	assertTrue(con->rollback());
+	assertTrue(secondcur->sendQuery("select count(*) from testtable"));
+	assertEquals(secondcur->getField(0,(uint32_t)0),"8");
+	assertTrue(cur->sendQuery(
+		"insert into "
+		"	testtable "
+		"values ("
+		"	10, "
+		"	10.1, "
+		"	10.1, "
+		"	10, "
+		"	'testchar10', "
+		"	'testvarchar10', "
+		"	'01/01/2010', "
+		"	'10:00:00', "
+		"	NULL)"));
+	assertTrue(secondcur->sendQuery("select count(*) from testtable"));
+	assertEquals(secondcur->getField(0,(uint32_t)0),"9");
+	cur->sendQuery("drop table testtable");
 	stdoutput.printf("\n");
 
 
@@ -1000,7 +1016,10 @@ int main(int argc, char **argv) {
 	assertEquals(cur->getField(0,2),"hello");
 	cur->sendQuery("drop function testfunc(int,float,char(20))");
 	stdoutput.printf("\n");
-	// return result set
+
+
+	// stored procedure returning result set
+	stdoutput.printf("STORED PROCEDURE RETURNING RESULT SET: \n");
 	cur->sendQuery("drop function testfunc()");
 	assertTrue(cur->sendQuery(
 		"create function testfunc() "
@@ -1008,7 +1027,21 @@ int main(int argc, char **argv) {
 		"	declare output record; "
 		"begin "
 		"	for output in "
-		"		select * from testtable "
+		"		select 1 "
+		"		union "
+		"		select 2 "
+		"		union "
+		"		select 3 "
+		"		union "
+		"		select 4 "
+		"		union "
+		"		select 5 "
+		"		union "
+		"		select 6 "
+		"		union "
+		"		select 7 "
+		"		union "
+		"		select 8 "
 		"	loop "
 		"		return next output; "
 		"	end loop; "
@@ -1019,26 +1052,10 @@ int main(int argc, char **argv) {
 		"	* "
 		"from "
 		"	testfunc() "
-		"	as (testint int, "
-		"		testfloat float, "
-		"		testreal real, "
-		"		testsmallint smallint, "
-		"		testchar char(40), "
-		"		testvarchar varchar(40), "
-		"		testdate date, "
-		"		testtime time, "
-		"		testtimestamp timestamp, "
-		"		testtext text, "
-		"		testbytea bytea) "));
-	assertEquals(cur->getField(4,(uint32_t)0),"5");
-	assertEquals(cur->getField(5,(uint32_t)0),"6");
-	assertEquals(cur->getField(6,(uint32_t)0),"7");
-	assertEquals(cur->getField(7,(uint32_t)0),"8");
+		"	as (testint int)"));
+	assertEquals(cur->rowCount(),8);
 	cur->sendQuery("drop function testfunc()");
 	stdoutput.printf("\n");
-
-	// drop existing table
-	cur->sendQuery("drop table testtable");
 
 
 	// database is schema

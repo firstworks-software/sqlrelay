@@ -767,6 +767,27 @@ int main(int argc, char **argv) {
 	stdoutput.printf("\n");
 
 
+	// finished suspended session
+	stdoutput.printf("FINISHED SUSPENDED SESSION: \n");
+	assertTrue(cur->sendQuery("select * from testtable"));
+	assertEquals(cur->getField(4,(uint32_t)0),"5");
+	assertEquals(cur->getField(5,(uint32_t)0),"6");
+	assertEquals(cur->getField(6,(uint32_t)0),"7");
+	assertEquals(cur->getField(7,(uint32_t)0),"8");
+	id=cur->getResultSetId();
+	cur->suspendResultSet();
+	assertTrue(con->suspendSession());
+	port=con->getConnectionPort();
+	socket=charstring::duplicate(con->getConnectionSocket());
+	assertTrue(con->resumeSession(port,socket));
+	assertTrue(cur->resumeResultSet(id));
+	assertEquals(cur->getField(4,(uint32_t)0),NULL);
+	assertEquals(cur->getField(5,(uint32_t)0),NULL);
+	assertEquals(cur->getField(6,(uint32_t)0),NULL);
+	assertEquals(cur->getField(7,(uint32_t)0),NULL);
+	stdoutput.printf("\n");
+
+
 	// commit and rollback
 	stdoutput.printf("COMMIT AND ROLLBACK: \n");
 	secondcon=new sqlrconnection("sqlrelay",9000,"/tmp/test.socket",
@@ -791,7 +812,6 @@ int main(int argc, char **argv) {
 	assertTrue(con->rollback());
 	assertTrue(secondcur->sendQuery("select count(*) from testtable"));
 	assertEquals(secondcur->getField(0,(uint32_t)0),"8");
-	assertTrue(con->autoCommitOn());
 	assertTrue(cur->sendQuery(
 		"insert into "
 		"	testtable "
@@ -804,32 +824,8 @@ int main(int argc, char **argv) {
 		"	'testblob10')"));
 	assertTrue(secondcur->sendQuery("select count(*) from testtable"));
 	assertEquals(secondcur->getField(0,(uint32_t)0),"9");
-	assertTrue(con->autoCommitOff());
-	stdoutput.printf("\n");
-
-
-	// finished suspended session
-	stdoutput.printf("FINISHED SUSPENDED SESSION: \n");
-	assertTrue(cur->sendQuery("select * from testtable"));
-	assertEquals(cur->getField(4,(uint32_t)0),"5");
-	assertEquals(cur->getField(5,(uint32_t)0),"6");
-	assertEquals(cur->getField(6,(uint32_t)0),"7");
-	assertEquals(cur->getField(7,(uint32_t)0),"8");
-	id=cur->getResultSetId();
-	cur->suspendResultSet();
-	assertTrue(con->suspendSession());
-	port=con->getConnectionPort();
-	socket=charstring::duplicate(con->getConnectionSocket());
-	assertTrue(con->resumeSession(port,socket));
-	assertTrue(cur->resumeResultSet(id));
-	assertEquals(cur->getField(4,(uint32_t)0),NULL);
-	assertEquals(cur->getField(5,(uint32_t)0),NULL);
-	assertEquals(cur->getField(6,(uint32_t)0),NULL);
-	assertEquals(cur->getField(7,(uint32_t)0),NULL);
-	stdoutput.printf("\n");
-
-	// drop existing table
 	cur->sendQuery("drop table if exists testtable");
+	stdoutput.printf("\n");
 
 
 	// temporary tables

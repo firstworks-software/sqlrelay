@@ -1072,6 +1072,7 @@ int main(int argc, char **argv) {
 
 	// stored procedure returning result set
 	stdoutput.printf("STORED PROCEDURE RETURNING RESULT SET: \n");
+	assertTrue(cur->sendQuery("drop procedure testproc"));
 	assertTrue(cur->sendQuery(
 		"create procedure testproc() "
 		"result set 1 "
