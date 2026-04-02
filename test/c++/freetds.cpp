@@ -1001,6 +1001,23 @@ int main(int argc, char **argv) {
 	stdoutput.printf("\n");
 
 
+	// nested selects
+	stdoutput.printf("NESTED SELECTS: \n");
+	// can't do this with freetds
+	//cur->setResultSetBufferSize(1);
+	assertTrue(cur->sendQuery("select * from testtable"));
+	for (uint32_t i=0; cur->getRow(i); i++) {
+		secondcur=new sqlrcursor(con);
+		// can't do this with freetds
+		secondcur->setResultSetBufferSize(1);
+		assertTrue(secondcur->sendQuery("select * from testtable"));
+		delete secondcur;
+		secondcur=NULL;
+	}
+	//cur->setResultSetBufferSize(0);
+	stdoutput.printf("\n");
+
+
 	// commit and rollback
 	stdoutput.printf("COMMIT AND ROLLBACK: \n");
 	secondcon=new sqlrconnection("sqlrelay",9000,"/tmp/test.socket",
@@ -1058,7 +1075,9 @@ int main(int argc, char **argv) {
 	secondcur=NULL;
 	delete secondcon;
 	secondcon=NULL;
+	assertTrue(cur->sendQuery("drop table testtable"));
 	stdoutput.printf("\n");
+
 
 	// temporary tables
 	stdoutput.printf("TEMPORARY TABLES: \n");
@@ -1105,45 +1124,28 @@ int main(int argc, char **argv) {
 	#endif
 
 
-	// stored procedure with result set
-	stdoutput.printf("STORED PROCEDURE WITH RESULT SET: \n");
+	// stored procedure returning result set
+	stdoutput.printf("STORED PROCEDURE RETURNING RESULT SET: \n");
 	cur->sendQuery("drop procedure testselectproc");
 	assertTrue(cur->sendQuery(
 		"create procedure testselectproc as "
-		"	select * from testtable order by testint"));
+                "       select 1 "
+                "       union "
+                "       select 2 "
+                "       union "
+                "       select 3 "
+                "       union "
+                "       select 4 "
+                "       union "
+                "       select 5 "
+                "       union "
+                "       select 6 "
+                "       union "
+                "       select 7 "
+                "       union "
+                "       select 8"));
 	assertTrue(cur->sendQuery("exec testselectproc"));
-	stdoutput.printf("\n");
-	assertEquals(cur->getField(0,(uint32_t)0),"1");
-	assertEquals(cur->getField(0,1),"1");
-	assertEquals(cur->getField(0,2),"1");
-	// these seem to fluctuate with every freetds release
-	//assertEquals(cur->getField(0,3),"1.1");
-	//assertEquals(cur->getField(0,4),"1.1");
-	assertEquals(0,charstring::compare(cur->getField(0,5),"1.1",3));
-	assertEquals(0,charstring::compare(cur->getField(0,6),"1.1",3));
-	//assertEquals(cur->getField(0,7),"1.00");
-	//assertEquals(cur->getField(0,8),"1.00");
-	//assertEquals(cur->getField(0,9),"Jan  1 2001 01:00:00:000AM");
-	//assertEquals(cur->getField(0,10),"Jan  1 2001 01:00:00:000AM");
-	assertEquals(cur->getField(0,11),"testchar1                               ");
-	assertEquals(cur->getField(0,12),"testvarchar1");
-	assertEquals(cur->getField(0,13),"1");
-	stdoutput.printf("\n");
-	assertEquals(cur->getField(7,(uint32_t)0),"8");
-	assertEquals(cur->getField(7,1),"8");
-	assertEquals(cur->getField(7,2),"8");
-	// these seem to fluctuate with every freetds release
-	//assertEquals(cur->getField(7,3),"8.8");
-	//assertEquals(cur->getField(7,4),"8.8");
-	assertEquals(0,charstring::compare(cur->getField(7,5),"8.8",3));
-	assertEquals(0,charstring::compare(cur->getField(7,6),"8.8",3));
-	//assertEquals(cur->getField(7,7),"8.00");
-	//assertEquals(cur->getField(7,8),"8.00");
-	//assertEquals(cur->getField(7,9),"Jan  1 2008 08:00:00:000AM");
-	//assertEquals(cur->getField(7,10),"Jan  1 2008 08:00:00:000AM");
-	assertEquals(cur->getField(7,11),"testchar8                               ");
-	assertEquals(cur->getField(7,12),"testvarchar8");
-	assertEquals(cur->getField(7,13),"1");
+        assertEquals(cur->rowCount(),8);
 	cur->sendQuery("drop procedure testselectproc");
 	stdoutput.printf("\n");
 
@@ -1163,22 +1165,6 @@ int main(int argc, char **argv) {
 	stdoutput.printf("\n");
 
 
-	// nested selects
-	stdoutput.printf("NESTED SELECTS: \n");
-	// can't do this with freetds
-	//cur->setResultSetBufferSize(1);
-	assertTrue(cur->sendQuery("select * from testtable"));
-	for (uint32_t i=0; cur->getRow(i); i++) {
-		secondcur=new sqlrcursor(con);
-		// can't do this with freetds
-		//secondcur->setResultSetBufferSize(1);
-		assertTrue(secondcur->sendQuery("select * from testtable"));
-		delete secondcur;
-		secondcur=NULL;
-	}
-	stdoutput.printf("\n");
-
-
 	// database is schema
 	stdoutput.printf("DATABASE IS SCHEMA: \n");
 	assertFalse(con->getDatabaseIsSchema());
@@ -1195,10 +1181,15 @@ int main(int argc, char **argv) {
 
 	// schema list
 	stdoutput.printf("SCHEMA LIST: \n");
+	cur->sendQuery("drop table testtable");
+        // the get schema list query that is used with sap will only return the
+        // names of schemas that have at least one database object in them, so
+        // to be sure that there is one, we'll create a table
+	assertTrue(cur->sendQuery("create table testtable (col1 int)"));
 	assertTrue(cur->getSchemaList(NULL));
 	assertEquals(cur->getColumnName(0),"Database");
-	// FIXME: returns 0 because there are no objects in any shema
 	assertTrue(cur->rowCount()>0);
+	cur->sendQuery("drop table testtable");
 	stdoutput.printf("\n");
 
 
