@@ -1342,7 +1342,8 @@ for (uint16_t a=0; a<50; a++) {
 
 	// nested selects
 	stdoutput.printf("NESTED SELECTS: \n");
-	cur->setResultSetBufferSize(1);
+	// can't do this with mysql
+	//cur->setResultSetBufferSize(1);
 	assertTrue(cur->sendQuery("select * from testtable"));
 	for (uint32_t i=0; cur->getRow(i); i++) {
 		secondcur=new sqlrcursor(con);
@@ -1351,7 +1352,7 @@ for (uint16_t a=0; a<50; a++) {
 		delete secondcur;
 		secondcur=NULL;
 	}
-	cur->setResultSetBufferSize(0);
+	//cur->setResultSetBufferSize(0);
 	stdoutput.printf("\n");
 
 

@@ -1008,7 +1008,6 @@ int main(int argc, char **argv) {
 	assertTrue(cur->sendQuery("select * from testtable"));
 	for (uint32_t i=0; cur->getRow(i); i++) {
 		secondcur=new sqlrcursor(con);
-		// can't do this with freetds
 		secondcur->setResultSetBufferSize(1);
 		assertTrue(secondcur->sendQuery("select * from testtable"));
 		delete secondcur;
