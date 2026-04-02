@@ -1032,6 +1032,10 @@ int main(int argc, char **argv) {
 		"	blob('testblob10'))"));
 	assertTrue(secondcur->sendQuery("select count(*) from testtable"));
 	assertEquals(secondcur->getField(0,(uint32_t)0),"9");
+	delete secondcur;
+	secondcur=NULL;
+	delete secondcon;
+	secondcon=NULL;
 	assertTrue(con->autoCommitOff());
 	cur->sendQuery("drop table testtable");
 	assertTrue(con->commit());

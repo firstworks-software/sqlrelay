@@ -963,6 +963,10 @@ int main(int argc, char **argv) {
 		"	NULL)"));
 	assertTrue(secondcur->sendQuery("select count(*) from testtable"));
 	assertEquals(secondcur->getField(0,(uint32_t)0),"9");
+	delete secondcur;
+	secondcur=NULL;
+	delete secondcon;
+	secondcon=NULL;
 	assertTrue(con->autoCommitOff());
 	cur->sendQuery("drop table testtable");
 	stdoutput.printf("\n");

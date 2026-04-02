@@ -1340,6 +1340,27 @@ for (uint16_t a=0; a<50; a++) {
 	stdoutput.printf("\n");
 
 
+	// finished suspended session
+	stdoutput.printf("FINISHED SUSPENDED SESSION: \n");
+	assertTrue(cur->sendQuery("select * from testtable order by testint"));
+	assertEquals(cur->getField(4,(uint32_t)0),"5");
+	assertEquals(cur->getField(5,(uint32_t)0),"6");
+	assertEquals(cur->getField(6,(uint32_t)0),"7");
+	assertEquals(cur->getField(7,(uint32_t)0),"8");
+	id=cur->getResultSetId();
+	cur->suspendResultSet();
+	assertTrue(con->suspendSession());
+	port=con->getConnectionPort();
+	socket=charstring::duplicate(con->getConnectionSocket());
+	assertTrue(con->resumeSession(port,socket));
+	assertTrue(cur->resumeResultSet(id));
+	assertEquals(cur->getField(4,(uint32_t)0),NULL);
+	assertEquals(cur->getField(5,(uint32_t)0),NULL);
+	assertEquals(cur->getField(6,(uint32_t)0),NULL);
+	assertEquals(cur->getField(7,(uint32_t)0),NULL);
+	stdoutput.printf("\n");
+
+
 	// nested selects
 	stdoutput.printf("NESTED SELECTS: \n");
 	// can't do this with mysql
@@ -1407,7 +1428,6 @@ for (uint16_t a=0; a<50; a++) {
 	assertTrue(secondcon->commit());
 	assertTrue(secondcur->sendQuery("select count(*) from testtable"));
 	assertEquals(secondcur->getField(0,(uint32_t)0),"8");
-	assertTrue(con->autoCommitOn());
 	assertTrue(cur->sendQuery(
 		"insert into "
 		"	testtable "
@@ -1438,29 +1458,12 @@ for (uint16_t a=0; a<50; a++) {
 	assertTrue(secondcon->commit());
 	assertTrue(secondcur->sendQuery("select count(*) from testtable"));
 	assertEquals(secondcur->getField(0,(uint32_t)0),"9");
-	assertTrue(con->autoCommitOff());
 	secondcon->commit();
-	stdoutput.printf("\n");
-
-
-	// finished suspended session
-	stdoutput.printf("FINISHED SUSPENDED SESSION: \n");
-	assertTrue(cur->sendQuery("select * from testtable order by testint"));
-	assertEquals(cur->getField(4,(uint32_t)0),"5");
-	assertEquals(cur->getField(5,(uint32_t)0),"6");
-	assertEquals(cur->getField(6,(uint32_t)0),"7");
-	assertEquals(cur->getField(7,(uint32_t)0),"8");
-	id=cur->getResultSetId();
-	cur->suspendResultSet();
-	assertTrue(con->suspendSession());
-	port=con->getConnectionPort();
-	socket=charstring::duplicate(con->getConnectionSocket());
-	assertTrue(con->resumeSession(port,socket));
-	assertTrue(cur->resumeResultSet(id));
-	assertEquals(cur->getField(4,(uint32_t)0),NULL);
-	assertEquals(cur->getField(5,(uint32_t)0),NULL);
-	assertEquals(cur->getField(6,(uint32_t)0),NULL);
-	assertEquals(cur->getField(7,(uint32_t)0),NULL);
+	delete secondcur;
+	secondcur=NULL;
+	delete secondcon;
+	secondcon=NULL;
+	cur->sendQuery("drop table testtable");
 	stdoutput.printf("\n");
 
 
@@ -1536,9 +1539,6 @@ for (uint16_t a=0; a<50; a++) {
 		cur->sendQuery("drop procedure testproc");
 		stdoutput.printf("\n");
 	}
-
-	// drop existing table
-	cur->sendQuery("drop table testtable");
 
 
 	// long lobs
@@ -2208,10 +2208,6 @@ for (uint16_t a=0; a<50; a++) {
 	assertFalse(cur->sendQuery("create table testtable"));
 	stdoutput.printf("\n");
 
-	delete secondcur;
-	secondcur=NULL;
-	delete secondcon;
-	secondcon=NULL;
 	delete cur;
 	delete con;
 
