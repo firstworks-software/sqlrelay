@@ -1075,6 +1075,8 @@ int main(int argc, char **argv) {
 
 
         // stored procedure
+        // FreeTDS needs to support cursors for this to work
+        #if 0
         stdoutput.printf("STORED PROCEDURE: \n");
         cur->sendQuery("drop procedure testproc");
         assertTrue(cur->sendQuery(
@@ -1100,6 +1102,7 @@ int main(int argc, char **argv) {
         assertEquals(cur->getOutputBindString("out3"),"hello");
         cur->sendQuery("drop procedure testproc");
         stdoutput.printf("\n");
+	#endif
 
 
 	// stored procedure with result set
