@@ -967,6 +967,21 @@ int main(int argc, char **argv) {
 	stdoutput.printf("\n");
 
 
+	// nested selects
+	stdoutput.printf("NESTED SELECTS: \n");
+	cur->setResultSetBufferSize(1);
+	assertTrue(cur->sendQuery("select * from testtable"));
+	for (uint32_t i=0; cur->getRow(i); i++) {
+		secondcur=new sqlrcursor(con);
+		secondcur->setResultSetBufferSize(1);
+		assertTrue(secondcur->sendQuery("select * from testtable"));
+		delete secondcur;
+		secondcur=NULL;
+	}
+	cur->setResultSetBufferSize(0);
+	stdoutput.printf("\n");
+
+
 	// commit and rollback
 	stdoutput.printf("COMMIT AND ROLLBACK: \n");
 	secondcon=new sqlrconnection("sqlrelay",9000,"/tmp/test.socket",
