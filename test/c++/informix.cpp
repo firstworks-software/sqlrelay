@@ -1327,6 +1327,7 @@ int main(int argc, char **argv) {
 	// long output bind
 	// for some reason stored procedures can only use clob types,
 	// rather than text
+	stdoutput.printf("LONG OUTPUT BIND: \n");
 	cur->sendQuery("drop procedure testproc");
 	assertTrue(cur->sendQuery(
 		"create procedure testproc("
@@ -1508,7 +1509,6 @@ int main(int argc, char **argv) {
 
 	// clob/blob
 	stdoutput.printf("CLOB/BLOB: \n");
-	cur->sendQuery("drop procedure testproc");
 	assertTrue(cur->sendQuery(
 		"create table testtable ("
 		"	testclob clob, "
@@ -1521,7 +1521,7 @@ int main(int argc, char **argv) {
 	assertTrue(cur->sendQuery("select * from testtable"));
 	assertEquals(cur->getField(0,(uint32_t)0),"testclobvalue");
 	assertEquals(cur->getField(0,1),"testblobvalue");
-	assertTrue(cur->sendQuery("drop procedure testproc"));
+	cur->sendQuery("drop procedure testproc");
 	assertTrue(cur->sendQuery(
 		"create procedure testproc("
 		"	out out1 clob, "
@@ -1537,7 +1537,8 @@ int main(int argc, char **argv) {
 	assertTrue(cur->executeQuery());
 	assertEquals(cur->getOutputBindClob("1"),"testclobvalue");
 	assertEquals(cur->getOutputBindBlob("2"),"testblobvalue");
-	cur->sendQuery("drop table testtable");
+	assertTrue(cur->sendQuery("drop procedure testproc"));
+	assertTrue(cur->sendQuery("drop table testtable"));
 	assertTrue(con->commit());
 	stdoutput.printf("\n");
 
