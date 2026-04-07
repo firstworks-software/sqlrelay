@@ -57,6 +57,9 @@ int main(int argc, char **argv) {
 	uint32_t	blobvarlength;
 	uint16_t	counter;
 
+	#define	LARGE_BUFFER_LENGTH	8192
+	char		largebuffer[LARGE_BUFFER_LENGTH+1];
+
 	const char	*service=NULL;
 	#ifdef _WIN32
 		service="sqlrelay/fedora24x64.firstworks.com@AD.FIRSTWORKS.COM";
@@ -954,12 +957,13 @@ int main(int argc, char **argv) {
 	// null and empty lobs
 	stdoutput.printf("NULL AND EMPTY LOBS: \n");
 	cur->getNullsAsNulls();
-	cur->sendQuery(
+	cur->sendQuery("drop table testtable");
+	assertTrue(cur->sendQuery(
 		"create table testtable ("
 		"	testclob1 clob, "
 		"	testclob2 clob, "
 		"	testblob1 blob, "
-		"	testblob2 blob)");
+		"	testblob2 blob)"));
 	cur->prepareQuery(
 		"insert into "
 		"	testtable "
@@ -974,6 +978,8 @@ int main(int argc, char **argv) {
 	cur->inputBindBlob("var4",NULL,0);
 	assertTrue(cur->executeQuery());
 	cur->sendQuery("select * from testtable");
+	// oracle treats empty strings as NULL, so even though we bound
+	// "" to var1 and var3, we still need to test for NULL
 	assertEquals(cur->getField(0,(uint32_t)0),NULL);
 	assertEquals(cur->getField(0,1),NULL);
 	assertEquals(cur->getField(0,2),NULL);
@@ -982,33 +988,20 @@ int main(int argc, char **argv) {
 	stdoutput.printf("\n");
 
 
-	// long lob
-	stdoutput.printf("LONG LOB: \n");
+	// long lobs
+	stdoutput.printf("LONG LOBS: \n");
 	cur->sendQuery("drop table testtable");
 	cur->sendQuery("create table testtable (testclob clob)");
 	cur->prepareQuery("insert into testtable values (:clobval)");
-	char	clobval[8*1024+1];
-	for (int i=0; i<8*1024; i++) {
-		clobval[i]='C';
+	for (int i=0; i<LARGE_BUFFER_LENGTH; i++) {
+		largebuffer[i]='C';
 	}
-	clobval[8*1024]='\0';
-	cur->inputBindClob("clobval",clobval,8*1024);
+	largebuffer[LARGE_BUFFER_LENGTH]='\0';
+	cur->inputBindClob("clobval",largebuffer,LARGE_BUFFER_LENGTH);
 	assertTrue(cur->executeQuery());
-
 	cur->sendQuery("select testclob from testtable");
-	assertEquals(clobval,cur->getField(0,"TESTCLOB"));
-	cur->prepareQuery(
-		"begin "
-		"	select "
-		"		testclob into :clobbindval "
-		"	from "
-		"		testtable; "
-		"end;");
-	cur->defineOutputBindClob("clobbindval");
-	assertTrue(cur->executeQuery());
-	const char	*clobbindvar=cur->getOutputBindClob("clobbindval");
-	assertEquals(cur->getOutputBindLength("clobbindval"),8*1024);
-	assertEquals(clobval,clobbindvar);
+	assertEquals(cur->getFieldLength(0,"TESTCLOB"),LARGE_BUFFER_LENGTH);
+	assertEquals(largebuffer,cur->getField(0,"TESTCLOB"));
 	cur->sendQuery("drop table testtable");
 	stdoutput.printf("\n");
 
@@ -1144,27 +1137,18 @@ int main(int argc, char **argv) {
 
 	// long output bind
 	stdoutput.printf("LONG OUTPUT BIND\n");
-	cur->sendQuery("drop table testtable");
-	cur->sendQuery("create table testtable (testval varchar2(4000))");
-	char	testval[4001];
-	testval[4000]='\0';
-	cur->prepareQuery("insert into testtable values (:testval)");
-	for (int i=0; i<4000; i++) {
-		testval[i]='C';
+	for (int i=0; i<LARGE_BUFFER_LENGTH; i++) {
+		largebuffer[i]='C';
 	}
-	cur->inputBind("testval",testval);
-	assertTrue(cur->executeQuery());
-	cur->sendQuery("select testval from testtable");
-	assertEquals(testval,cur->getField(0,"TESTVAL"));
-	char	query[4000+25];
+	largebuffer[LARGE_BUFFER_LENGTH]='\0';
+	char	query[LARGE_BUFFER_LENGTH+25];
 	charstring::printf(query,sizeof(query),
-				"begin :bindval:='%s'; end;",testval);
+				"begin :bindval:='%s'; end;",largebuffer);
 	cur->prepareQuery(query);
-	cur->defineOutputBindString("bindval",4000);
+	cur->defineOutputBindString("bindval",LARGE_BUFFER_LENGTH);
 	assertTrue(cur->executeQuery());
-	assertEquals(cur->getOutputBindLength("bindval"),4000);
-	assertEquals(cur->getOutputBindString("bindval"),testval);
-	cur->sendQuery("drop table testtable");
+	assertEquals(cur->getOutputBindLength("bindval"),LARGE_BUFFER_LENGTH);
+	assertEquals(cur->getOutputBindString("bindval"),largebuffer);
 	stdoutput.printf("\n");
 
 
@@ -1399,6 +1383,10 @@ int main(int argc, char **argv) {
 	assertTrue(cur->sendQuery("drop function testproc"));
 	assertTrue(cur->sendQuery("drop package types"));
 	stdoutput.printf("\n");
+
+
+	// direct transactsql
+	// FIXME: ...
 
 
 	// temporary tables
@@ -1659,8 +1647,9 @@ int main(int argc, char **argv) {
 	stdoutput.printf("\n");
 
 
-	// column list - primary key
-	stdoutput.printf("COLUMN LIST - primary key: \n");
+	// column list - auto_increment, primary key
+	// oracle doesn't support auto_increment
+	stdoutput.printf("COLUMN LIST - auto_increment, primary key: \n");
 	assertTrue(cur->sendQuery(
 		"create table testtable ("
 		"	col1 number primary key, "

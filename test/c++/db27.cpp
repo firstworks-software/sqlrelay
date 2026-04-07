@@ -50,7 +50,9 @@ int main(int argc, char **argv) {
 	char		*socket;
 	uint16_t	id;
 	char		*filename;
-	char		clobval[20*1024+1];
+
+	#define	LARGE_BUFFER_LENGTH	(20*1024)
+	char		largebuffer[LARGE_BUFFER_LENGTH+1];
 
 
 	// instantiation
@@ -201,6 +203,18 @@ int main(int argc, char **argv) {
 	cur->inputBinds(bindvars,bindvals);
 	assertTrue(cur->executeQuery());
 	stdoutput.printf("\n");
+
+
+	// bind by name
+	// db2 doesn't support bind by name
+
+
+	// array of binds by name
+	// db2 doesn't support bind by name
+
+
+	// bind by name with validation
+	// db2 doesn't support bind by name
 
 
 	// insert
@@ -640,6 +654,7 @@ int main(int argc, char **argv) {
 	port=con->getConnectionPort();
 	socket=charstring::duplicate(con->getConnectionSocket());
 	assertTrue(con->resumeSession(port,socket));
+	delete[] socket;
 	stdoutput.printf("\n");
 	assertEquals(cur->getField(0,(uint32_t)0),"1");
 	assertEquals(cur->getField(1,(uint32_t)0),"2");
@@ -662,6 +677,7 @@ int main(int argc, char **argv) {
 	port=con->getConnectionPort();
 	socket=charstring::duplicate(con->getConnectionSocket());
 	assertTrue(con->resumeSession(port,socket));
+	delete[] socket;
 	stdoutput.printf("\n");
 	assertEquals(cur->getField(0,(uint32_t)0),"1");
 	assertEquals(cur->getField(1,(uint32_t)0),"2");
@@ -684,6 +700,7 @@ int main(int argc, char **argv) {
 	port=con->getConnectionPort();
 	socket=charstring::duplicate(con->getConnectionSocket());
 	assertTrue(con->resumeSession(port,socket));
+	delete[] socket;
 	stdoutput.printf("\n");
 	assertEquals(cur->getField(0,(uint32_t)0),"1");
 	assertEquals(cur->getField(1,(uint32_t)0),"2");
@@ -713,6 +730,7 @@ int main(int argc, char **argv) {
 	port=con->getConnectionPort();
 	socket=charstring::duplicate(con->getConnectionSocket());
 	assertTrue(con->resumeSession(port,socket));
+	delete[] socket;
 	assertTrue(cur->resumeResultSet(id));
 	stdoutput.printf("\n");
 	assertEquals(cur->firstRowIndex(),4);
@@ -857,6 +875,7 @@ int main(int argc, char **argv) {
 	socket=charstring::duplicate(con->getConnectionSocket());
 	stdoutput.printf("\n");
 	assertTrue(con->resumeSession(port,socket));
+	delete[] socket;
 	assertTrue(cur->resumeCachedResultSet(id,filename));
 	stdoutput.printf("\n");
 	assertEquals(cur->firstRowIndex(),4);
@@ -895,6 +914,7 @@ int main(int argc, char **argv) {
 	port=con->getConnectionPort();
 	socket=charstring::duplicate(con->getConnectionSocket());
 	assertTrue(con->resumeSession(port,socket));
+	delete[] socket;
 	assertTrue(cur->resumeResultSet(id));
 	assertEquals(cur->getField(4,(uint32_t)0),NULL);
 	assertEquals(cur->getField(5,(uint32_t)0),NULL);
@@ -1035,12 +1055,12 @@ int main(int argc, char **argv) {
 	stdoutput.printf("NULL AND EMPTY LOBS: \n");
 	cur->getNullsAsNulls();
 	cur->sendQuery("drop table testtable");
-	cur->sendQuery(
+	assertTrue(cur->sendQuery(
 		"create table testtable ("
 		"	testclob1 clob(1K), "
 		"	testclob2 clob(1K), "
 		"	testblob1 blob(1K), "
-		"	testblob2 blob(1K))");
+		"	testblob2 blob(1K))"));
 	assertTrue(con->commit());
 	cur->prepareQuery(
 		"insert into "
@@ -1065,23 +1085,23 @@ int main(int argc, char **argv) {
 	stdoutput.printf("\n");
 
 
-	// long lob
+	// long lobs
 	// fails for no obvious reason
 #if 0
-	stdoutput.printf("LONG LOB: \n");
+	stdoutput.printf("LONG LOBS: \n");
 	cur->sendQuery("drop table testtable");
 	cur->sendQuery("create table testtable (testclob clob(25K))");
 	assertTrue(con->commit());
 	cur->prepareQuery("insert into testtable values (?)");
-	for (int i=0; i<20*1024; i++) {
-		clobval[i]='C';
+	for (int i=0; i<LARGE_BUFFER_LENGTH; i++) {
+		largebuffer[i]='C';
 	}
-	clobval[20*1024]='\0';
-	cur->inputBindClob("1",clobval,20*1024);
+	largebuffer[LARGE_BUFFER_LENGTH]='\0';
+	cur->inputBindClob("1",largebuffer,LARGE_BUFFER_LENGTH);
 	assertTrue(cur->executeQuery());
 	cur->sendQuery("select testclob from testtable");
-	assertEquals(cur->getFieldLength(0,"testclob"),20*1024);
-	assertEquals(cur->getField(0,"testclob"),clobval);
+	assertEquals(cur->getFieldLength(0,"testclob"),LARGE_BUFFER_LENGTH);
+	assertEquals(cur->getField(0,"testclob"),largebuffer);
 	assertTrue(cur->sendQuery("drop table testtable"));
 	assertTrue(con->commit());
 	stdoutput.printf("\n");
@@ -1137,6 +1157,14 @@ int main(int argc, char **argv) {
 	stdoutput.printf("\n");
 
 
+	// output bind by name
+	// FIXME: ...
+
+
+	// output bind by name with validation
+	// FIXME: ...
+
+
 	// lob output bind
 	stdoutput.printf("LOB OUTPUT BIND: \n");
 	cur->sendQuery("drop table testtable");
@@ -1188,16 +1216,16 @@ int main(int argc, char **argv) {
 		"	set out1 = in1; "
 		"end"));
 	assertTrue(con->commit());
-	for (int i=0; i<20*1024; i++) {
-		clobval[i]='C';
+	for (int i=0; i<LARGE_BUFFER_LENGTH; i++) {
+		largebuffer[i]='C';
 	}
-	clobval[20*1024]='\0';
+	largebuffer[LARGE_BUFFER_LENGTH]='\0';
 	cur->prepareQuery("call testproc(?,?)");
-	cur->inputBindClob("1",clobval,20*1024);
+	cur->inputBindClob("1",largebuffer,LARGE_BUFFER_LENGTH);
 	cur->defineOutputBindClob("2");
 	assertTrue(cur->executeQuery());
-	assertEquals(cur->getOutputBindLength("2"),20*1024);
-	assertEquals(cur->getOutputBindClob("2"),clobval);
+	assertEquals(cur->getOutputBindLength("2"),LARGE_BUFFER_LENGTH);
+	assertEquals(cur->getOutputBindClob("2"),largebuffer);
 	assertTrue(cur->sendQuery("drop procedure testproc"));
 	assertTrue(con->commit());
 	stdoutput.printf("\n");
@@ -1216,6 +1244,10 @@ int main(int argc, char **argv) {
 	cur->sendQuery("drop table testtable");
 	assertTrue(con->commit());
 	stdoutput.printf("\n");
+
+
+	// bind validation
+	// FIXME: ...
 
 
 	// rebinding
@@ -1384,21 +1416,21 @@ int main(int argc, char **argv) {
 		"language sql "
 		"begin "
 		"	declare c1 cursor with return for "
-                "               select 1 from sysibm.sysdummy1 "
-                "               union "
-                "               select 2 from sysibm.sysdummy1 "
-                "               union "
-                "               select 3 from sysibm.sysdummy1 "
-                "               union "
-                "               select 4 from sysibm.sysdummy1 "
-                "               union "
-                "               select 5 from sysibm.sysdummy1 "
-                "               union "
-                "               select 6 from sysibm.sysdummy1 "
-                "               union "
-                "               select 7 from sysibm.sysdummy1 "
-                "               union "
-                "               select 8 from sysibm.sysdummy1; "
+		"               select 1 from sysibm.sysdummy1 "
+		"               union "
+		"               select 2 from sysibm.sysdummy1 "
+		"               union "
+		"               select 3 from sysibm.sysdummy1 "
+		"               union "
+		"               select 4 from sysibm.sysdummy1 "
+		"               union "
+		"               select 5 from sysibm.sysdummy1 "
+		"               union "
+		"               select 6 from sysibm.sysdummy1 "
+		"               union "
+		"               select 7 from sysibm.sysdummy1 "
+		"               union "
+		"               select 8 from sysibm.sysdummy1; "
 		"	open c1; "
 		"end"));
 	assertTrue(con->commit());
@@ -1407,6 +1439,10 @@ int main(int argc, char **argv) {
 	assertTrue(cur->sendQuery("drop procedure testproc"));
 	assertTrue(con->commit());
 	stdoutput.printf("\n");
+
+
+	// direct transactsql
+	// FIXME: ...
 
 	// temporary tables
 	// the declare below fails with:
@@ -1429,6 +1465,54 @@ int main(int argc, char **argv) {
 		"select count(*) from session.temptable"));
 	stdoutput.printf("\n");
 #endif
+
+
+	// database is schema
+	// FIXME: ...
+
+
+	// catalog list
+	// FIXME: ...
+
+
+	// schema list
+	// FIXME: ...
+
+
+	// table type list
+	// FIXME: ...
+
+
+	// table list
+	// FIXME: ...
+
+
+	// type info list
+	// FIXME: ...
+
+
+	// column list
+	// FIXME: ...
+
+
+	// column list - auto_increment, primary key
+	// FIXME: ...
+
+
+	// primary keys list
+	// FIXME: ...
+
+
+	// key and index list
+	// FIXME: ...
+
+
+	// procedure list
+	// FIXME: ...
+
+
+	// procedure parameter list
+	// FIXME: ...
 
 
 	// invalid queries

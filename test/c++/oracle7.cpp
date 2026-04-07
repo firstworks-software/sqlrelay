@@ -50,6 +50,9 @@ int main(int argc, char **argv) {
 	uint16_t	id;
 	const char	*filename;
 
+	#define	LARGE_BUFFER_LENGTH	2000
+	char		largebuffer[LARGE_BUFFER_LENGTH+1];
+
 
 	// instantiation
 	con=new sqlrconnection("sqlrelay",9000,"/tmp/test.socket",
@@ -87,9 +90,9 @@ int main(int argc, char **argv) {
 		// oracle requires the isolation level to
 		// be the first query of the transaction
 		assertTrue(con->commit());
-                // you can set the isolation level, but to get it, you have to
-                // have permisisons to read from sys.v_$session and
-                // sys.v_$transaction
+		// you can set the isolation level, but to get it, you have to
+		// have permisisons to read from sys.v_$session and
+		// sys.v_$transaction
 		assertTrue(con->setIsolationLevel(*il));
 		stdoutput.printf("\n");
 	}
@@ -485,6 +488,7 @@ int main(int argc, char **argv) {
 	port=con->getConnectionPort();
 	socket=charstring::duplicate(con->getConnectionSocket());
 	assertTrue(con->resumeSession(port,socket));
+	delete[] socket;
 	stdoutput.printf("\n");
 	assertEquals(cur->getField(0,(uint32_t)0),"1");
 	assertEquals(cur->getField(1,(uint32_t)0),"2");
@@ -507,6 +511,7 @@ int main(int argc, char **argv) {
 	port=con->getConnectionPort();
 	socket=charstring::duplicate(con->getConnectionSocket());
 	assertTrue(con->resumeSession(port,socket));
+	delete[] socket;
 	stdoutput.printf("\n");
 	assertEquals(cur->getField(0,(uint32_t)0),"1");
 	assertEquals(cur->getField(1,(uint32_t)0),"2");
@@ -529,6 +534,7 @@ int main(int argc, char **argv) {
 	port=con->getConnectionPort();
 	socket=charstring::duplicate(con->getConnectionSocket());
 	assertTrue(con->resumeSession(port,socket));
+	delete[] socket;
 	stdoutput.printf("\n");
 	assertEquals(cur->getField(0,(uint32_t)0),"1");
 	assertEquals(cur->getField(1,(uint32_t)0),"2");
@@ -558,6 +564,7 @@ int main(int argc, char **argv) {
 	port=con->getConnectionPort();
 	socket=charstring::duplicate(con->getConnectionSocket());
 	assertTrue(con->resumeSession(port,socket));
+	delete[] socket;
 	assertTrue(cur->resumeResultSet(id));
 	stdoutput.printf("\n");
 	assertEquals(cur->firstRowIndex(),4);
@@ -690,6 +697,7 @@ int main(int argc, char **argv) {
 	socket=charstring::duplicate(con->getConnectionSocket());
 	stdoutput.printf("\n");
 	assertTrue(con->resumeSession(port,socket));
+	delete[] socket;
 	assertTrue(cur->resumeCachedResultSet(id,filename));
 	stdoutput.printf("\n");
 	assertEquals(cur->firstRowIndex(),4);
@@ -734,6 +742,7 @@ int main(int argc, char **argv) {
 	port=con->getConnectionPort();
 	socket=charstring::duplicate(con->getConnectionSocket());
 	assertTrue(con->resumeSession(port,socket));
+	delete[] socket;
 	assertTrue(cur->resumeResultSet(id));
 	assertEquals(cur->getField(4,(uint32_t)0),NULL);
 	assertEquals(cur->getField(5,(uint32_t)0),NULL);
@@ -853,6 +862,14 @@ int main(int argc, char **argv) {
 	stdoutput.printf("\n");
 
 
+	// null and empty lobs
+	// FIXME: ...
+
+
+	// long lobs
+	// FIXME: ...
+
+
 	// output bind by position
 	stdoutput.printf("OUTPUT BIND BY POSITION: \n");
 	cur->prepareQuery(
@@ -945,21 +962,24 @@ int main(int argc, char **argv) {
 	stdoutput.printf("\n");
 
 
+	// lob output bind
+	// FIXME: ...
+
+
 	// long output bind
 	stdoutput.printf("LONG OUTPUT BIND: \n");
-	char	testval[2001];
-	testval[2000]='\0';
-	for (int i=0; i<2000; i++) {
-		testval[i]='C';
+	for (int i=0; i<LARGE_BUFFER_LENGTH; i++) {
+		largebuffer[i]='C';
 	}
-	char	query[2000+25];
+	largebuffer[LARGE_BUFFER_LENGTH]='\0';
+	char	query[LARGE_BUFFER_LENGTH+25];
 	charstring::printf(query,sizeof(query),
-				"begin :bindval:='%s'; end;",testval);
+				"begin :bindval:='%s'; end;",largebuffer);
 	cur->prepareQuery(query);
-	cur->defineOutputBindString("bindval",2000);
+	cur->defineOutputBindString("bindval",LARGE_BUFFER_LENGTH);
 	assertTrue(cur->executeQuery());
-	assertEquals(cur->getOutputBindLength("bindval"),2000);
-	assertEquals(cur->getOutputBindString("bindval"),testval);
+	assertEquals(cur->getOutputBindLength("bindval"),LARGE_BUFFER_LENGTH);
+	assertEquals(cur->getOutputBindString("bindval"),largebuffer);
 	stdoutput.printf("\n");
 
 
@@ -1124,6 +1144,66 @@ int main(int argc, char **argv) {
 	assertEquals(cur->getOutputBindString("out3"),"hello");
 	cur->sendQuery("drop procedure testproc");
 	stdoutput.printf("\n");
+
+
+	// stored procedure returning result set
+	// FIXME: ...
+
+
+	// direct transactsql
+	// FIXME: ...
+
+
+	// temporary tables
+	// FIXME: ...
+
+
+	// database is schema
+	// FIXME: ...
+
+
+	// catalog list
+	// FIXME: ...
+
+
+	// schema list
+	// FIXME: ...
+
+
+	// table type list
+	// FIXME: ...
+
+
+	// table list
+	// FIXME: ...
+
+
+	// type info list
+	// FIXME: ...
+
+
+	// column list
+	// FIXME: ...
+
+
+	// column list - auto_increment, primary key
+	// FIXME: ...
+
+
+	// primary keys list
+	// FIXME: ...
+
+
+	// key and index list
+	// FIXME: ...
+
+
+	// procedure list
+	// FIXME: ...
+
+
+	// procedure parameter list
+	// FIXME: ...
 
 
 	// invalid queries

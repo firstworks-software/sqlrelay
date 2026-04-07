@@ -25,10 +25,10 @@ int main(int argc, char **argv) {
 	con=new sqlrconnection("sqlrelay",9000,"/tmp/test.socket",
 						"testuser","testpassword",0,1);
 
-        // get the db version and bail for < 5, as the query to get the column
-        // info doesn't work for < 5, making upserts also not work
-        const char      *dbversion=con->dbVersion();
-        uint32_t        majorversion=dbversion[0]-'0';
+	// get the db version and bail for < 5, as the query to get the column
+	// info doesn't work for < 5, making upserts also not work
+	const char      *dbversion=con->dbVersion();
+	uint32_t	majorversion=dbversion[0]-'0';
 	if (majorversion<5) {
 		stdoutput.printf("MySQL version < 5, skipping tests\n\n");
 		delete con;

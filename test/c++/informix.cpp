@@ -41,6 +41,9 @@ int main(int argc, char **argv) {
 	char		*filename;
 	uint64_t	counter=0;
 
+	#define	LARGE_BUFFER_LENGTH	(20*1024)
+	char		largebuffer[LARGE_BUFFER_LENGTH+1];
+
 
 	// instantiation
 	con=new sqlrconnection("sqlrelay",9000,"/tmp/test.socket",
@@ -240,6 +243,18 @@ int main(int argc, char **argv) {
 	cur->inputBinds(bindvars,bindvals);
 	assertTrue(cur->executeQuery());
 	stdoutput.printf("\n");
+
+
+	// bind by name
+	// informix doesn't support bind by name
+
+
+	// array of binds by name
+	// informix doesn't support bind by name
+
+
+	// bind by name with validation
+	// informix doesn't support bind by name
 
 
 	// insert
@@ -842,6 +857,7 @@ int main(int argc, char **argv) {
 	port=con->getConnectionPort();
 	socket=charstring::duplicate(con->getConnectionSocket());
 	assertTrue(con->resumeSession(port,socket));
+	delete[] socket;
 	stdoutput.printf("\n");
 	assertEquals(cur->getField(0,(uint32_t)1),"1");
 	assertEquals(cur->getField(1,(uint32_t)1),"2");
@@ -864,6 +880,7 @@ int main(int argc, char **argv) {
 	port=con->getConnectionPort();
 	socket=charstring::duplicate(con->getConnectionSocket());
 	assertTrue(con->resumeSession(port,socket));
+	delete[] socket;
 	stdoutput.printf("\n");
 	assertEquals(cur->getField(0,(uint32_t)1),"1");
 	assertEquals(cur->getField(1,(uint32_t)1),"2");
@@ -886,6 +903,7 @@ int main(int argc, char **argv) {
 	port=con->getConnectionPort();
 	socket=charstring::duplicate(con->getConnectionSocket());
 	assertTrue(con->resumeSession(port,socket));
+	delete[] socket;
 	stdoutput.printf("\n");
 	assertEquals(cur->getField(0,(uint32_t)1),"1");
 	assertEquals(cur->getField(1,(uint32_t)1),"2");
@@ -915,6 +933,7 @@ int main(int argc, char **argv) {
 	port=con->getConnectionPort();
 	socket=charstring::duplicate(con->getConnectionSocket());
 	assertTrue(con->resumeSession(port,socket));
+	delete[] socket;
 	assertTrue(cur->resumeResultSet(id));
 	stdoutput.printf("\n");
 	assertEquals(cur->firstRowIndex(),4);
@@ -1073,6 +1092,7 @@ int main(int argc, char **argv) {
 	socket=charstring::duplicate(con->getConnectionSocket());
 	stdoutput.printf("\n");
 	assertTrue(con->resumeSession(port,socket));
+	delete[] socket;
 	assertTrue(cur->resumeCachedResultSet(id,filename));
 	stdoutput.printf("\n");
 	assertEquals(cur->firstRowIndex(),4);
@@ -1111,6 +1131,7 @@ int main(int argc, char **argv) {
 	port=con->getConnectionPort();
 	socket=charstring::duplicate(con->getConnectionSocket());
 	assertTrue(con->resumeSession(port,socket));
+	delete[] socket;
 	assertTrue(cur->resumeResultSet(id));
 	assertEquals(cur->getField(4,(uint32_t)1),NULL);
 	assertEquals(cur->getField(5,(uint32_t)1),NULL);
@@ -1287,6 +1308,64 @@ int main(int argc, char **argv) {
 	stdoutput.printf("\n");
 
 
+	// output bind by position
+	// FIXME: ...
+
+
+	// output bind by name
+	// FIXME: ...
+
+
+	// output bind by name with validation
+	// FIXME: ...
+
+
+	// lob output bind
+	// FIXME: ...
+
+
+	// long output bind
+	// for some reason stored procedures can only use clob types,
+	// rather than text
+	cur->sendQuery("drop procedure testproc");
+	assertTrue(cur->sendQuery(
+		"create procedure testproc("
+		"	in1 clob, "
+		"	out out1 clob) "
+		"let out1 = in1; "
+		"	end procedure;"));
+	assertTrue(con->commit());
+	cur->prepareQuery("{call testproc(?,?)}");
+	cur->inputBindClob("1",largebuffer,LARGE_BUFFER_LENGTH);
+	cur->defineOutputBindClob("2");
+	assertTrue(cur->executeQuery());
+	assertEquals(cur->getOutputBindLength("2"),LARGE_BUFFER_LENGTH);
+	assertEquals(cur->getOutputBindClob("2"),largebuffer);
+	assertTrue(cur->sendQuery("drop procedure testproc"));
+	assertTrue(con->commit());
+	stdoutput.printf("\n");
+
+
+	// negative input bind
+	// FIXME: ...
+
+
+	// bind validation
+	// FIXME: ...
+
+
+	// rebinding
+	// FIXME: ...
+
+
+	// stored procedure returning no value
+	// FIXME: ...
+
+
+	// stored procedure returning single value
+	// FIXME: ...
+
+
 	// stored procedure returning multiple values
 	stdoutput.printf("STORED PROCEDURE RETURNING MULTIPLE VALUES: \n");
 	cur->sendQuery("drop procedure testproc");
@@ -1403,41 +1482,26 @@ int main(int argc, char **argv) {
 	stdoutput.printf("\n");
 
 
-	// long lob
-	stdoutput.printf("LONG LOB: \n");
+	// null and empty lobs
+	// FIXME: ...
+
+
+	// long lobs
+	stdoutput.printf("LONG LOBS: \n");
 	cur->sendQuery("drop table testtable");
 	cur->sendQuery("create table testtable (testtext text)");
 	assertTrue(con->commit());
 	cur->prepareQuery("insert into testtable values (?)");
-	char	textval[20*1024+1];
-	for (int i=0; i<20*1024; i++) {
-		textval[i]='C';
+	for (int i=0; i<LARGE_BUFFER_LENGTH; i++) {
+		largebuffer[i]='C';
 	}
-	textval[20*1024]='\0';
-	cur->inputBindClob("1",textval,20*1024);
+	largebuffer[LARGE_BUFFER_LENGTH]='\0';
+	cur->inputBindClob("1",largebuffer,LARGE_BUFFER_LENGTH);
 	assertTrue(cur->executeQuery());
 	cur->sendQuery("select testtext from testtable");
-	assertEquals(cur->getFieldLength(0,"testtext"),20*1024);
-	assertEquals(cur->getField(0,"testtext"),textval);
+	assertEquals(cur->getFieldLength(0,"testtext"),LARGE_BUFFER_LENGTH);
+	assertEquals(cur->getField(0,"testtext"),largebuffer);
 	assertTrue(cur->sendQuery("drop table testtable"));
-	assertTrue(con->commit());
-	// for some reason stored procedures can only use clob types,
-	// rather than text
-	cur->sendQuery("drop procedure testproc");
-	assertTrue(cur->sendQuery(
-		"create procedure testproc("
-		"	in1 clob, "
-		"	out out1 clob) "
-		"let out1 = in1; "
-		"	end procedure;"));
-	assertTrue(con->commit());
-	cur->prepareQuery("{call testproc(?,?)}");
-	cur->inputBindClob("1",textval,20*1024);
-	cur->defineOutputBindClob("2");
-	assertTrue(cur->executeQuery());
-	assertEquals(cur->getOutputBindLength("2"),20*1024);
-	assertEquals(cur->getOutputBindClob("2"),textval);
-	assertTrue(cur->sendQuery("drop procedure testproc"));
 	assertTrue(con->commit());
 	stdoutput.printf("\n");
 
@@ -1476,6 +1540,14 @@ int main(int argc, char **argv) {
 	cur->sendQuery("drop table testtable");
 	assertTrue(con->commit());
 	stdoutput.printf("\n");
+
+
+	// direct transactsql
+	// FIXME: ...
+
+
+	// temporary tables
+	// FIXME: ...
 
 
 	// database is schema

@@ -234,6 +234,23 @@ int main(int argc, char **argv) {
 	stdoutput.printf("\n");
 
 
+	// array of binds by position
+	// postgresql doesn't support implicit conversion of string binds to
+	// other data types, so arrays of binds don't generally work.
+
+
+	// bind by name
+	// postgresql doesn't support bind by name
+
+
+	// array of binds by name
+	// postgresql doesn't support bind by name
+
+
+	// bind by name with validation
+	// postgresql doesn't support bind by name
+
+
 	// bind by position with validation
 	stdoutput.printf("BIND BY POSITION WITH VALIDATION: \n");
 	cur->clearBinds();
@@ -379,6 +396,10 @@ int main(int argc, char **argv) {
 	/*stdoutput.printf("TOTAL ROWS: \n");
 	assertEquals(cur->totalRows(),8);
 	stdoutput.printf("\n");*/
+
+
+	// total rows
+	// FIXME: ...
 
 
 	// first row index
@@ -584,6 +605,7 @@ int main(int argc, char **argv) {
 	port=con->getConnectionPort();
 	socket=charstring::duplicate(con->getConnectionSocket());
 	assertTrue(con->resumeSession(port,socket));
+	delete[] socket;
 	stdoutput.printf("\n");
 	assertEquals(cur->getField(0,(uint32_t)0),"1");
 	assertEquals(cur->getField(1,(uint32_t)0),"2");
@@ -600,6 +622,7 @@ int main(int argc, char **argv) {
 	port=con->getConnectionPort();
 	socket=charstring::duplicate(con->getConnectionSocket());
 	assertTrue(con->resumeSession(port,socket));
+	delete[] socket;
 	stdoutput.printf("\n");
 	assertEquals(cur->getField(0,(uint32_t)0),"1");
 	assertEquals(cur->getField(1,(uint32_t)0),"2");
@@ -616,6 +639,7 @@ int main(int argc, char **argv) {
 	port=con->getConnectionPort();
 	socket=charstring::duplicate(con->getConnectionSocket());
 	assertTrue(con->resumeSession(port,socket));
+	delete[] socket;
 	stdoutput.printf("\n");
 	assertEquals(cur->getField(0,(uint32_t)0),"1");
 	assertEquals(cur->getField(1,(uint32_t)0),"2");
@@ -639,6 +663,7 @@ int main(int argc, char **argv) {
 	port=con->getConnectionPort();
 	socket=charstring::duplicate(con->getConnectionSocket());
 	assertTrue(con->resumeSession(port,socket));
+	delete[] socket;
 	assertTrue(cur->resumeResultSet(id));
 	stdoutput.printf("\n");
 	assertEquals(cur->firstRowIndex(),4);
@@ -761,6 +786,7 @@ int main(int argc, char **argv) {
 	socket=charstring::duplicate(con->getConnectionSocket());
 	stdoutput.printf("\n");
 	assertTrue(con->resumeSession(port,socket));
+	delete[] socket;
 	assertTrue(cur->resumeCachedResultSet(id,filename));
 	stdoutput.printf("\n");
 	assertEquals(cur->firstRowIndex(),4);
@@ -799,6 +825,7 @@ int main(int argc, char **argv) {
 	port=con->getConnectionPort();
 	socket=charstring::duplicate(con->getConnectionSocket());
 	assertTrue(con->resumeSession(port,socket));
+	delete[] socket;
 	assertTrue(cur->resumeResultSet(id));
 	assertEquals(cur->getField(4,(uint32_t)0),NULL);
 	assertEquals(cur->getField(5,(uint32_t)0),NULL);
@@ -926,6 +953,46 @@ int main(int argc, char **argv) {
 	stdoutput.printf("\n");
 
 
+	// null and empty lobs
+	// FIXME: ...
+
+
+	// long lobs
+	// FIXME: ...
+
+
+	// output bind by position
+	// FIXME: ...
+
+
+	// output bind by name
+	// FIXME: ...
+
+
+	// output bind by name with validation
+	// FIXME: ...
+
+
+	// lob output bind
+	// FIXME: ...
+
+
+	// long output bind
+	// FIXME: ...
+
+
+	// negative input bind
+	// FIXME: ...
+
+
+	// bind validation
+	// FIXME: ...
+
+
+	// rebinding
+	// FIXME: ...
+
+
 	// stored procedure returning no value
 	stdoutput.printf("STORED PROCEDURE RETURNING NO VALUE: \n");
 	cur->sendQuery("drop function testfunc(int,float,char(20))");
@@ -1036,6 +1103,10 @@ int main(int argc, char **argv) {
 	assertEquals(cur->rowCount(),8);
 	cur->sendQuery("drop function testfunc()");
 	stdoutput.printf("\n");
+
+
+	// direct transactsql
+	// FIXME: ...
 
 
 	// temporary tables

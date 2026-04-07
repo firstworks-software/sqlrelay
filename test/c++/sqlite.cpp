@@ -148,6 +148,15 @@ int main(int argc, char **argv) {
 	stdoutput.printf("\n");
 
 
+	// bind by position
+	// FIXME: ...
+
+
+	// array of binds by position
+	// sqlite doesn't support implicit conversion of string binds to other
+	// data types, so arrays of binds don't generally work.
+
+
 	// bind by name
 	stdoutput.printf("BIND BY NAME: \n");
 	cur->prepareQuery(
@@ -185,6 +194,11 @@ int main(int argc, char **argv) {
 	cur->inputBindBlob("var6","testblob7",9);
 	assertTrue(cur->executeQuery());
 	stdoutput.printf("\n");
+
+
+	// array of binds by name
+	// sqlite doesn't support implicit conversion of string binds to other
+	// data types, so arrays of binds don't generally work.
 
 
 	// bind by name with validation
@@ -476,6 +490,7 @@ int main(int argc, char **argv) {
 	port=con->getConnectionPort();
 	socket=charstring::duplicate(con->getConnectionSocket());
 	assertTrue(con->resumeSession(port,socket));
+	delete[] socket;
 	stdoutput.printf("\n");
 	assertEquals(cur->getField(0,(uint32_t)0),"1");
 	assertEquals(cur->getField(1,(uint32_t)0),"2");
@@ -499,6 +514,7 @@ int main(int argc, char **argv) {
 	port=con->getConnectionPort();
 	socket=charstring::duplicate(con->getConnectionSocket());
 	assertTrue(con->resumeSession(port,socket));
+	delete[] socket;
 	assertTrue(cur->resumeResultSet(id));
 	stdoutput.printf("\n");
 	assertEquals(cur->firstRowIndex(),4);
@@ -615,6 +631,7 @@ int main(int argc, char **argv) {
 	socket=charstring::duplicate(con->getConnectionSocket());
 	stdoutput.printf("\n");
 	assertTrue(con->resumeSession(port,socket));
+	delete[] socket;
 	assertTrue(cur->resumeCachedResultSet(id,filename));
 	stdoutput.printf("\n");
 	assertEquals(cur->firstRowIndex(),4);
@@ -653,6 +670,7 @@ int main(int argc, char **argv) {
 	port=con->getConnectionPort();
 	socket=charstring::duplicate(con->getConnectionSocket());
 	assertTrue(con->resumeSession(port,socket));
+	delete[] socket;
 	assertTrue(cur->resumeResultSet(id));
 	assertEquals(cur->getField(4,(uint32_t)0),NULL);
 	assertEquals(cur->getField(5,(uint32_t)0),NULL);
@@ -828,6 +846,66 @@ int main(int argc, char **argv) {
 	assertEquals(cur->getColumnName(0),"LASTINSERTROWID");
 	assertFalse(charstring::isNullOrEmpty(cur->getField(0,(uint32_t)0)));
 	stdoutput.printf("\n");
+
+
+	// null and empty lobs
+	// FIXME: ...
+
+
+	// long lobs
+	// FIXME: ...
+
+
+	// output bind by position
+	// FIXME: ...
+
+
+	// output bind by name
+	// FIXME: ...
+
+
+	// output bind by name with validation
+	// FIXME: ...
+
+
+	// lob output bind
+	// FIXME: ...
+
+
+	// long output bind
+	// FIXME: ...
+
+
+	// negative input bind
+	// FIXME: ...
+
+
+	// bind validation
+	// FIXME: ...
+
+
+	// rebinding
+	// FIXME: ...
+
+
+	// stored procedure returning no value
+	// FIXME: ...
+
+
+	// stored procedure returning single value
+	// FIXME: ...
+
+
+	// stored procedure returning multiple values
+	// FIXME: ...
+
+
+	// stored procedure returning result set
+	// FIXME: ...
+
+
+	// direct transactsql
+	// FIXME: ...
 
 
 	// temporary tables

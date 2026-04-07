@@ -31,6 +31,9 @@ int main(int argc, char **argv) {
 	char		*filename;
 	uint64_t	counter=0;
 
+	#define	LARGE_BUFFER_LENGTH	255
+	char		largebuffer[LARGE_BUFFER_LENGTH+1];
+
 
 	// instantiation
 	con=new sqlrconnection("sqlrelay",9000,"/tmp/test.socket",
@@ -208,6 +211,12 @@ int main(int argc, char **argv) {
 	stdoutput.printf("\n");
 
 
+	// array of binds by position
+	// sap doesn't support implicit conversion of string binds to other
+	// data types, so arrays of binds don't generally work.
+	// Omitting the test.
+
+
 	// bind by name
 	stdoutput.printf("BIND BY NAME: \n");
 	cur->clearBinds();
@@ -262,6 +271,12 @@ int main(int argc, char **argv) {
 	cur->inputBindClob("var15","testtext7",9);
 	assertTrue(cur->executeQuery());
 	stdoutput.printf("\n");
+
+
+	// array of binds by name
+	// sap doesn't support implicit conversion of string binds to other
+	// data types, so arrays of binds don't generally work.
+	// Omitting the test.
 
 
 	// bind by name with validation
@@ -688,6 +703,7 @@ int main(int argc, char **argv) {
 	port=con->getConnectionPort();
 	socket=charstring::duplicate(con->getConnectionSocket());
 	assertTrue(con->resumeSession(port,socket));
+	delete[] socket;
 	stdoutput.printf("\n");
 	assertEquals(cur->getField(0,(uint32_t)0),"1");
 	assertEquals(cur->getField(1,(uint32_t)0),"2");
@@ -704,6 +720,7 @@ int main(int argc, char **argv) {
 	port=con->getConnectionPort();
 	socket=charstring::duplicate(con->getConnectionSocket());
 	assertTrue(con->resumeSession(port,socket));
+	delete[] socket;
 	assertEquals(cur->getField(0,(uint32_t)0),"1");
 	assertEquals(cur->getField(1,(uint32_t)0),"2");
 	assertEquals(cur->getField(2,(uint32_t)0),"3");
@@ -719,6 +736,7 @@ int main(int argc, char **argv) {
 	port=con->getConnectionPort();
 	socket=charstring::duplicate(con->getConnectionSocket());
 	assertTrue(con->resumeSession(port,socket));
+	delete[] socket;
 	stdoutput.printf("\n");
 	assertEquals(cur->getField(0,(uint32_t)0),"1");
 	assertEquals(cur->getField(1,(uint32_t)0),"2");
@@ -742,6 +760,7 @@ int main(int argc, char **argv) {
 	port=con->getConnectionPort();
 	socket=charstring::duplicate(con->getConnectionSocket());
 	assertTrue(con->resumeSession(port,socket));
+	delete[] socket;
 	assertTrue(cur->resumeResultSet(id));
 	stdoutput.printf("\n");
 	assertEquals(cur->firstRowIndex(),4);
@@ -874,6 +893,7 @@ int main(int argc, char **argv) {
 	socket=charstring::duplicate(con->getConnectionSocket());
 	stdoutput.printf("\n");
 	assertTrue(con->resumeSession(port,socket));
+	delete[] socket;
 	assertTrue(cur->resumeCachedResultSet(id,filename));
 	stdoutput.printf("\n");
 	assertEquals(cur->firstRowIndex(),4);
@@ -899,25 +919,26 @@ int main(int argc, char **argv) {
 	stdoutput.printf("\n");
 
 
-        // finished suspended session
-        stdoutput.printf("FINISHED SUSPENDED SESSION: \n");
-        assertTrue(cur->sendQuery("select * from testtable order by testint"));
-        assertEquals(cur->getField(4,(uint32_t)0),"5");
-        assertEquals(cur->getField(5,(uint32_t)0),"6");
-        assertEquals(cur->getField(6,(uint32_t)0),"7");
-        assertEquals(cur->getField(7,(uint32_t)0),"8");
-        id=cur->getResultSetId();
-        cur->suspendResultSet();
-        assertTrue(con->suspendSession());
-        port=con->getConnectionPort();
-        socket=charstring::duplicate(con->getConnectionSocket());
-        assertTrue(con->resumeSession(port,socket));
-        assertTrue(cur->resumeResultSet(id));
-        assertEquals(cur->getField(4,(uint32_t)0),NULL);
-        assertEquals(cur->getField(5,(uint32_t)0),NULL);
-        assertEquals(cur->getField(6,(uint32_t)0),NULL);
-        assertEquals(cur->getField(7,(uint32_t)0),NULL);
-        stdoutput.printf("\n");
+	// finished suspended session
+	stdoutput.printf("FINISHED SUSPENDED SESSION: \n");
+	assertTrue(cur->sendQuery("select * from testtable order by testint"));
+	assertEquals(cur->getField(4,(uint32_t)0),"5");
+	assertEquals(cur->getField(5,(uint32_t)0),"6");
+	assertEquals(cur->getField(6,(uint32_t)0),"7");
+	assertEquals(cur->getField(7,(uint32_t)0),"8");
+	id=cur->getResultSetId();
+	cur->suspendResultSet();
+	assertTrue(con->suspendSession());
+	port=con->getConnectionPort();
+	socket=charstring::duplicate(con->getConnectionSocket());
+	assertTrue(con->resumeSession(port,socket));
+	delete[] socket;
+	assertTrue(cur->resumeResultSet(id));
+	assertEquals(cur->getField(4,(uint32_t)0),NULL);
+	assertEquals(cur->getField(5,(uint32_t)0),NULL);
+	assertEquals(cur->getField(6,(uint32_t)0),NULL);
+	assertEquals(cur->getField(7,(uint32_t)0),NULL);
+	stdoutput.printf("\n");
 
 
 	// nested selects
@@ -1050,6 +1071,97 @@ int main(int argc, char **argv) {
 	assertEquals(cur->getField(0,2),"");
 	cur->getNullsAsNulls();
 	stdoutput.printf("\n");
+
+
+
+	// null and empty lobs
+	stdoutput.printf("NULL AND EMPTY LOBS: \n");
+	cur->getNullsAsNulls();
+	cur->sendQuery("drop table testtable");
+	assertTrue(cur->sendQuery(
+		"create table testtable ("
+		"	testclob1 text NULL, "
+		"	testclob2 text NULL, "
+		"	testblob1 image NULL, "
+		"	testblob2 image NULL)"));
+	cur->prepareQuery(
+		"insert into "
+		"	testtable "
+		"values ("
+		"	@var1, "
+		"	@var2, "
+		"	@var3, "
+		"	@var4)");
+	cur->inputBindClob("var1","",0);
+	cur->inputBindClob("var2",NULL,0);
+	cur->inputBindBlob("var3","",0);
+	cur->inputBindBlob("var4",NULL,0);
+	assertTrue(cur->executeQuery());
+	cur->sendQuery("select * from testtable");
+	assertEquals(cur->getField(0,(uint32_t)0),NULL);
+	assertEquals(cur->getField(0,1),NULL);
+	assertEquals(cur->getField(0,2),NULL);
+	assertEquals(cur->getField(0,3),NULL);
+	cur->sendQuery("drop table testtable");
+	stdoutput.printf("\n");
+
+
+	// long lobs
+	stdoutput.printf("LONG LOBS: \n");
+	cur->sendQuery("drop table testtable");
+	cur->sendQuery("create table testtable (testclob text NULL)");
+	cur->prepareQuery("insert into testtable values (@var1)");
+	for (int i=0; i<LARGE_BUFFER_LENGTH; i++) {
+		largebuffer[i]='C';
+	}
+	largebuffer[LARGE_BUFFER_LENGTH]='\0';
+	cur->inputBindClob("var1",largebuffer,LARGE_BUFFER_LENGTH);
+	assertTrue(cur->executeQuery());
+	cur->sendQuery("select testclob from testtable");
+	assertEquals(cur->getFieldLength(0,"testclob"),LARGE_BUFFER_LENGTH);
+	assertEquals(largebuffer,cur->getField(0,"testclob"));
+	cur->sendQuery("drop table testtable");
+	stdoutput.printf("\n");
+
+
+	// output bind by position
+	// FIXME: ...
+
+
+	// output bind by name
+	// FIXME: ...
+
+
+	// output bind by name with validation
+	// FIXME: ...
+
+
+	// lob output bind
+	// FIXME: ...
+
+
+	// long output bind
+	// FIXME: ...
+
+
+	// negative input bind
+	// FIXME: ...
+
+
+	// bind validation
+	// FIXME: ...
+
+
+	// rebinding
+	// FIXME: ...
+
+
+	// stored procedure returning no value
+	// FIXME: ...
+
+
+	// stored procedure returning single value
+	// FIXME: ...
 
 
 	// stored procedure returning multiple values
