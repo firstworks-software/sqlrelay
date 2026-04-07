@@ -1321,6 +1321,7 @@ int main(int argc, char **argv) {
 
 	// stored procedure returning result set
 	stdoutput.printf("STORED PROCEDURE RETURNING RESULT SET: \n");
+	cur->sendQuery("drop procedure testproc");
 	assertTrue(cur->sendQuery(
 		"create procedure testproc() "
 		"returning boolean, smallint, varchar(40); "
@@ -1418,8 +1419,11 @@ int main(int argc, char **argv) {
 	cur->sendQuery("select testtext from testtable");
 	assertEquals(cur->getFieldLength(0,"testtext"),20*1024);
 	assertEquals(cur->getField(0,"testtext"),textval);
+	assertTrue(cur->sendQuery("drop table testtable"));
+	assertTrue(con->commit());
 	// for some reason stored procedures can only use clob types,
 	// rather than text
+	cur->sendQuery("drop procedure testproc");
 	assertTrue(cur->sendQuery(
 		"create procedure testproc("
 		"	in1 clob, "
@@ -1434,13 +1438,13 @@ int main(int argc, char **argv) {
 	assertEquals(cur->getOutputBindLength("2"),20*1024);
 	assertEquals(cur->getOutputBindClob("2"),textval);
 	assertTrue(cur->sendQuery("drop procedure testproc"));
-	assertTrue(cur->sendQuery("drop table testtable"));
 	assertTrue(con->commit());
 	stdoutput.printf("\n");
 
 
 	// clob/blob
 	stdoutput.printf("CLOB/BLOB: \n");
+	cur->sendQuery("drop procedure testproc");
 	assertTrue(cur->sendQuery(
 		"create table testtable ("
 		"	testclob clob, "
@@ -1453,6 +1457,7 @@ int main(int argc, char **argv) {
 	assertTrue(cur->sendQuery("select * from testtable"));
 	assertEquals(cur->getField(0,(uint32_t)0),"testclobvalue");
 	assertEquals(cur->getField(0,1),"testblobvalue");
+	assertTrue(cur->sendQuery("drop procedure testproc"));
 	assertTrue(cur->sendQuery(
 		"create procedure testproc("
 		"	out out1 clob, "

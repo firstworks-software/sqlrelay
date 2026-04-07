@@ -76,13 +76,10 @@ int main(int argc, char **argv) {
 	stdoutput.printf("\n");
 
 
-	// clean up table
-	cur->sendQuery("delete from testtable");
-	con->commit();
-
-
 	// insert
 	stdoutput.printf("INSERT: \n");
+	cur->sendQuery("delete from testtable");
+	con->commit();
 	assertTrue(cur->sendQuery(
 		"insert into "
 		"	testtable "
@@ -231,58 +228,6 @@ int main(int argc, char **argv) {
 		"	'testvarchar8', "
 		"	NULL, "
 		"	'testblob8')"));
-	stdoutput.printf("\n");
-
-
-	// stored procedure returning multiple values
-	stdoutput.printf("STORED PROCEDURE RETURNING MULTIPLE VALUES: \n");
-	cur->prepareQuery("select * from testproc(?,?,?,?)");
-	cur->inputBind("1",1);
-	cur->inputBind("2",1.1,2,1);
-	cur->inputBind("3","hello");
-	cur->inputBindBlob("4","blob",4);
-	assertTrue(cur->executeQuery());
-	assertEquals(cur->getField(0,(uint32_t)0),"1");
-	assertEquals(cur->getField(0,1),"1.1000");
-	assertEquals(cur->getField(0,2),"hello");
-	assertEquals(cur->getField(0,3),"blob");
-	cur->prepareQuery("execute procedure testproc ?, ?, ?, ?");
-	cur->inputBind("1",1);
-	cur->inputBind("2",1.1,2,1);
-	cur->inputBind("3","hello");
-	cur->inputBindBlob("4","blob",4);
-	cur->defineOutputBindInteger("1");
-	cur->defineOutputBindDouble("2");
-	cur->defineOutputBindString("3",20);
-	cur->defineOutputBindBlob("4");
-	assertTrue(cur->executeQuery());
-	assertEquals(cur->getOutputBindInteger("1"),1);
-	//assertEquals(cur->getOutputBindDouble("2"),1.1);
-	assertEquals(cur->getOutputBindString("3"),"hello               ");
-	assertEquals(cur->getOutputBindBlob("4"),"blob");
-	stdoutput.printf("\n");
-
-
-	// long lob
-	stdoutput.printf("LONG LOB: \n");
-	cur->sendQuery("delete from testtable1");
-	cur->prepareQuery("insert into testtable1 values (?)");
-	char	blobval[20*1024+1];
-	for (int i=0; i<20*1024; i++) {
-		blobval[i]='C';
-	}
-	blobval[20*1024]='\0';
-	cur->inputBindClob("1",blobval,20*1024);
-	assertTrue(cur->executeQuery());
-	cur->sendQuery("select testblob from testtable1");
-	assertEquals(cur->getFieldLength(0,"TESTBLOB"),20*1024);
-	assertEquals(cur->getField(0,"TESTBLOB"),blobval);
-	cur->prepareQuery("execute procedure testproc1 ?");
-	cur->inputBindBlob("1",blobval,20*1024);
-	cur->defineOutputBindBlob("1");
-	assertTrue(cur->executeQuery());
-	assertEquals(cur->getOutputBindLength("1"),20*1024);
-	assertEquals(cur->getOutputBindBlob("1"),blobval);
 	stdoutput.printf("\n");
 
 
@@ -1004,6 +949,8 @@ int main(int argc, char **argv) {
 	delete secondcon;
 	secondcon=NULL;
 	assertTrue(con->autoCommitOff());
+	assertTrue(cur->sendQuery("delete from testtable"));
+	con->commit();
 	stdoutput.printf("\n");
 
 
@@ -1064,6 +1011,59 @@ int main(int argc, char **argv) {
 	assertEquals(cur->getField(0,1),"");
 	assertEquals(cur->getField(0,2),"");
 	cur->getNullsAsNulls();
+	stdoutput.printf("\n");
+
+
+	// long lob
+	stdoutput.printf("LONG LOB: \n");
+	cur->sendQuery("delete from testtable1");
+	cur->prepareQuery("insert into testtable1 values (?)");
+	char	blobval[20*1024+1];
+	for (int i=0; i<20*1024; i++) {
+		blobval[i]='C';
+	}
+	blobval[20*1024]='\0';
+	cur->inputBindClob("1",blobval,20*1024);
+	assertTrue(cur->executeQuery());
+	cur->sendQuery("select testblob from testtable1");
+	assertEquals(cur->getFieldLength(0,"TESTBLOB"),20*1024);
+	assertEquals(cur->getField(0,"TESTBLOB"),blobval);
+	cur->prepareQuery("execute procedure testproc1 ?");
+	cur->inputBindBlob("1",blobval,20*1024);
+	cur->defineOutputBindBlob("1");
+	assertTrue(cur->executeQuery());
+	assertEquals(cur->getOutputBindLength("1"),20*1024);
+	assertEquals(cur->getOutputBindBlob("1"),blobval);
+	assertTrue(cur->sendQuery("delete from testtable1"));
+	stdoutput.printf("\n");
+
+
+	// stored procedure returning multiple values
+	stdoutput.printf("STORED PROCEDURE RETURNING MULTIPLE VALUES: \n");
+	cur->prepareQuery("select * from testproc(?,?,?,?)");
+	cur->inputBind("1",1);
+	cur->inputBind("2",1.1,2,1);
+	cur->inputBind("3","hello");
+	cur->inputBindBlob("4","blob",4);
+	assertTrue(cur->executeQuery());
+	assertEquals(cur->getField(0,(uint32_t)0),"1");
+	assertEquals(cur->getField(0,1),"1.1000");
+	assertEquals(cur->getField(0,2),"hello");
+	assertEquals(cur->getField(0,3),"blob");
+	cur->prepareQuery("execute procedure testproc ?, ?, ?, ?");
+	cur->inputBind("1",1);
+	cur->inputBind("2",1.1,2,1);
+	cur->inputBind("3","hello");
+	cur->inputBindBlob("4","blob",4);
+	cur->defineOutputBindInteger("1");
+	cur->defineOutputBindDouble("2");
+	cur->defineOutputBindString("3",20);
+	cur->defineOutputBindBlob("4");
+	assertTrue(cur->executeQuery());
+	assertEquals(cur->getOutputBindInteger("1"),1);
+	//assertEquals(cur->getOutputBindDouble("2"),1.1);
+	assertEquals(cur->getOutputBindString("3"),"hello               ");
+	assertEquals(cur->getOutputBindBlob("4"),"blob");
 	stdoutput.printf("\n");
 
 
