@@ -36,8 +36,8 @@ int main(int argc, char **argv) {
 	cur=new sqlrcursor(con);
 
 
-	// create temptable
-	stdoutput.printf("CREATE TEMPTABLE: \n");
+	// create testtable
+	stdoutput.printf("CREATE TESTTABLE: \n");
 	cur->sendQuery("drop table testtable");
 	assertTrue(cur->sendQuery(
 		"create table testtable ("

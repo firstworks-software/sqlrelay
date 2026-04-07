@@ -50,6 +50,7 @@ int main(int argc, char **argv) {
 	uint16_t	id;
 	const char	*filename;
 
+
 	// instantiation
 	con=new sqlrconnection("sqlrelay",9000,"/tmp/test.socket",
 						"testuser","testpassword",0,1);
@@ -65,6 +66,18 @@ int main(int argc, char **argv) {
 	// ping
 	stdoutput.printf("PING: \n");
 	assertTrue(con->ping());
+	stdoutput.printf("\n");
+
+
+	// bind format
+	stdoutput.printf("BIND FORMAT: \n");
+	assertEquals(con->bindFormat(),":*");
+	stdoutput.printf("\n");
+
+
+	// nextval format
+	stdoutput.printf("NEXTVAL FORMAT: \n");
+	assertEquals(con->nextvalFormat(),"%s.nextval");
 	stdoutput.printf("\n");
 
 
@@ -86,8 +99,8 @@ int main(int argc, char **argv) {
 	stdoutput.printf("\n");
 
 
-	// create temptable
-	stdoutput.printf("CREATE TEMPTABLE: \n");
+	// create testtable
+	stdoutput.printf("CREATE TESTTABLE: \n");
 	cur->sendQuery("drop table testtable");
 	assertTrue(cur->sendQuery(
 		"create table testtable ("
@@ -391,87 +404,6 @@ int main(int argc, char **argv) {
 	assertEquals(fieldlens[2],12);
 	assertEquals(fieldlens[3],9);
 	assertEquals(fieldlens[4],9);
-	stdoutput.printf("\n");
-
-
-	// individual substitutions
-	stdoutput.printf("INDIVIDUAL SUBSTITUTIONS: \n");
-	cur->prepareQuery("select $(var1),'$(var2)',$(var3) from dual");
-	cur->substitution("var1",1);
-	cur->substitution("var2","hello");
-	cur->substitution("var3",10.5556,6,4);
-	assertTrue(cur->executeQuery());
-	stdoutput.printf("\n");
-
-
-	// fields
-	stdoutput.printf("FIELDS: \n");
-	assertEquals(cur->getField(0,(uint32_t)0),"1");
-	assertEquals(cur->getField(0,1),"hello");
-	assertEquals(cur->getField(0,2),"10.5556");
-	stdoutput.printf("\n");
-
-
-	// array substitutions
-	stdoutput.printf("ARRAY SUBSTITUTIONS: \n");
-	cur->prepareQuery("select $(var1),$(var2),$(var3) from dual");
-	cur->substitutions(subvars,subvallongs);
-	assertTrue(cur->executeQuery());
-	stdoutput.printf("\n");
-
-
-	// fields
-	stdoutput.printf("FIELDS: \n");
-	assertEquals(cur->getField(0,(uint32_t)0),"1");
-	assertEquals(cur->getField(0,1),"2");
-	assertEquals(cur->getField(0,2),"3");
-	stdoutput.printf("\n");
-
-
-	// array substitutions
-	stdoutput.printf("ARRAY SUBSTITUTIONS: \n");
-	cur->prepareQuery("select '$(var1)','$(var2)','$(var3)' from dual");
-	cur->substitutions(subvars,subvalstrings);
-	assertTrue(cur->executeQuery());
-	stdoutput.printf("\n");
-
-
-	// fields
-	stdoutput.printf("FIELDS: \n");
-	assertEquals(cur->getField(0,(uint32_t)0),"hi");
-	assertEquals(cur->getField(0,1),"hello");
-	assertEquals(cur->getField(0,2),"bye");
-	stdoutput.printf("\n");
-
-
-	// array substitutions
-	stdoutput.printf("ARRAY SUBSTITUTIONS: \n");
-	cur->prepareQuery("select $(var1),$(var2),$(var3) from dual");
-	cur->substitutions(subvars,subvaldoubles,precs,scales);
-	assertTrue(cur->executeQuery());
-	stdoutput.printf("\n");
-
-
-	// fields
-	stdoutput.printf("FIELDS: \n");
-	assertEquals(cur->getField(0,(uint32_t)0),"10.55");
-	assertEquals(cur->getField(0,1),"10.556");
-	assertEquals(cur->getField(0,2),"10.5556");
-	stdoutput.printf("\n");
-
-
-	// nulls as nulls
-	stdoutput.printf("NULLS AS NULLS: \n");
-	cur->getNullsAsNulls();
-	assertTrue(cur->sendQuery("select NULL,1,NULL from dual"));
-	assertEquals(cur->getField(0,(uint32_t)0),NULL);
-	assertEquals(cur->getField(0,1),"1");
-	assertEquals(cur->getField(0,2),NULL);
-	cur->getNullsAsEmptyStrings();
-	assertTrue(cur->sendQuery("select NULL,1,NULL from dual"));
-	assertEquals(cur->getField(0,(uint32_t)0),"");
-	assertEquals(cur->getField(0,1),"1");
-	assertEquals(cur->getField(0,2),"");
 	stdoutput.printf("\n");
 
 
@@ -868,6 +800,59 @@ int main(int argc, char **argv) {
 	stdoutput.printf("\n");
 
 
+	// individual substitutions
+	stdoutput.printf("INDIVIDUAL SUBSTITUTIONS: \n");
+	cur->prepareQuery("select $(var1),'$(var2)',$(var3) from dual");
+	cur->substitution("var1",1);
+	cur->substitution("var2","hello");
+	cur->substitution("var3",10.5556,6,4);
+	assertTrue(cur->executeQuery());
+	assertEquals(cur->getField(0,(uint32_t)0),"1");
+	assertEquals(cur->getField(0,1),"hello");
+	assertEquals(cur->getField(0,2),"10.5556");
+	stdoutput.printf("\n");
+
+
+	// array substitutions
+	stdoutput.printf("ARRAY SUBSTITUTIONS: \n");
+	cur->prepareQuery("select $(var1),$(var2),$(var3) from dual");
+	cur->substitutions(subvars,subvallongs);
+	assertTrue(cur->executeQuery());
+	assertEquals(cur->getField(0,(uint32_t)0),"1");
+	assertEquals(cur->getField(0,1),"2");
+	assertEquals(cur->getField(0,2),"3");
+	stdoutput.printf("\n");
+	cur->prepareQuery("select '$(var1)','$(var2)','$(var3)' from dual");
+	cur->substitutions(subvars,subvalstrings);
+	assertTrue(cur->executeQuery());
+	assertEquals(cur->getField(0,(uint32_t)0),"hi");
+	assertEquals(cur->getField(0,1),"hello");
+	assertEquals(cur->getField(0,2),"bye");
+	stdoutput.printf("\n");
+	cur->prepareQuery("select $(var1),$(var2),$(var3) from dual");
+	cur->substitutions(subvars,subvaldoubles,precs,scales);
+	assertTrue(cur->executeQuery());
+	assertEquals(cur->getField(0,(uint32_t)0),"10.55");
+	assertEquals(cur->getField(0,1),"10.556");
+	assertEquals(cur->getField(0,2),"10.5556");
+	stdoutput.printf("\n");
+
+
+	// nulls as nulls
+	stdoutput.printf("NULLS AS NULLS: \n");
+	cur->getNullsAsNulls();
+	assertTrue(cur->sendQuery("select NULL,1,NULL from dual"));
+	assertEquals(cur->getField(0,(uint32_t)0),NULL);
+	assertEquals(cur->getField(0,1),"1");
+	assertEquals(cur->getField(0,2),NULL);
+	cur->getNullsAsEmptyStrings();
+	assertTrue(cur->sendQuery("select NULL,1,NULL from dual"));
+	assertEquals(cur->getField(0,(uint32_t)0),"");
+	assertEquals(cur->getField(0,1),"1");
+	assertEquals(cur->getField(0,2),"");
+	stdoutput.printf("\n");
+
+
 	// output bind by position
 	stdoutput.printf("OUTPUT BIND BY POSITION: \n");
 	cur->prepareQuery(
@@ -962,18 +947,11 @@ int main(int argc, char **argv) {
 
 	// long output bind
 	stdoutput.printf("LONG OUTPUT BIND: \n");
-	cur->sendQuery("drop table testtable2");
-	cur->sendQuery("create table testtable2 (testval varchar2(2000))");
 	char	testval[2001];
 	testval[2000]='\0';
-	cur->prepareQuery("insert into testtable2 values (:testval)");
 	for (int i=0; i<2000; i++) {
 		testval[i]='C';
 	}
-	cur->inputBind("testval",testval);
-	assertTrue(cur->executeQuery());
-	cur->sendQuery("select testval from testtable2");
-	assertEquals(testval,cur->getField(0,"TESTVAL"));
 	char	query[2000+25];
 	charstring::printf(query,sizeof(query),
 				"begin :bindval:='%s'; end;",testval);
@@ -982,34 +960,33 @@ int main(int argc, char **argv) {
 	assertTrue(cur->executeQuery());
 	assertEquals(cur->getOutputBindLength("bindval"),2000);
 	assertEquals(cur->getOutputBindString("bindval"),testval);
-	cur->sendQuery("drop table testtable2");
 	stdoutput.printf("\n");
 
 
 	// negative input bind
 	stdoutput.printf("NEGATIVE INPUT BIND: \n");
-	cur->sendQuery("drop table testtable2");
-	cur->sendQuery("create table testtable2 (testval number)");
-	cur->prepareQuery("insert into testtable2 values (:testval)");
+	cur->sendQuery("drop table testtable");
+	cur->sendQuery("create table testtable (testval number)");
+	cur->prepareQuery("insert into testtable values (:testval)");
 	cur->inputBind("testval",-1);
 	assertTrue(cur->executeQuery());
-	cur->sendQuery("select testval from testtable2");
+	cur->sendQuery("select testval from testtable");
 	assertEquals(cur->getField(0,"TESTVAL"),"-1");
-	cur->sendQuery("drop table testtable2");
+	cur->sendQuery("drop table testtable");
 	stdoutput.printf("\n");
 
 
 	// bind validation
 	stdoutput.printf("BIND VALIDATION: \n");
-	cur->sendQuery("drop table testtable1");
+	cur->sendQuery("drop table testtable");
 	cur->sendQuery(
-		"create table testtable1 ("
+		"create table testtable ("
 		"	col1 varchar2(20), "
 		"	col2 varchar2(20), "
 		"	col3 varchar2(20))");
 	cur->prepareQuery(
 		"insert into "
-		"	testtable1 "
+		"	testtable "
 		"values ("
 		"	$(var1), "
 		"	$(var2), "
@@ -1035,13 +1012,31 @@ int main(int argc, char **argv) {
 	assertTrue(cur->validBind("var3"));
 	assertFalse(cur->validBind("var4"));
 	assertTrue(cur->executeQuery());
-	cur->sendQuery("drop table testtable1");
+	cur->sendQuery("drop table testtable");
 	stdoutput.printf("\n");
 
 
-	// stored procedure
-	stdoutput.printf("STORED PROCEDURE: \n");
-	// return no value
+	// rebinding
+	stdoutput.printf("REBINDING: \n");
+	cur->prepareQuery(
+		"begin "
+		"	:out:= :in; "
+		"end;");
+	cur->inputBind("in",1);
+	cur->defineOutputBindInteger("out");
+	assertTrue(cur->executeQuery());
+	assertEquals(cur->getOutputBindInteger("out"),1);
+	cur->inputBind("in",2);
+	assertTrue(cur->executeQuery());
+	assertEquals(cur->getOutputBindInteger("out"),2);
+	cur->inputBind("in",3);
+	assertTrue(cur->executeQuery());
+	assertEquals(cur->getOutputBindInteger("out"),3);
+	stdoutput.printf("\n");
+
+
+	// stored procedure returning no value
+	stdoutput.printf("STORED PROCEDURE RETURNING NO VALUE: \n");
 	cur->sendQuery("drop function testproc");
 	cur->sendQuery("drop procedure testproc");
 	assertTrue(cur->sendQuery(
@@ -1059,7 +1054,12 @@ int main(int argc, char **argv) {
 	cur->inputBind("in2",1.1,2,1);
 	cur->inputBind("in3","hello");
 	assertTrue(cur->executeQuery());
-	// return single value
+	cur->sendQuery("drop procedure testproc");
+	stdoutput.printf("\n");
+
+
+	// stored procedure returning single value
+	stdoutput.printf("STORED PROCEDURE RETURNING SINGLE VALUE: \n");
 	cur->sendQuery("drop function testproc");
 	cur->sendQuery("drop procedure testproc");
 	assertTrue(cur->sendQuery(
@@ -1086,7 +1086,12 @@ int main(int argc, char **argv) {
 	cur->defineOutputBindInteger("out1");
 	assertTrue(cur->executeQuery());
 	assertEquals(cur->getOutputBindInteger("out1"),1);
-	// return multiple values
+	cur->sendQuery("drop function testproc");
+	stdoutput.printf("\n");
+
+
+	// stored procedure returning multiple values
+	stdoutput.printf("STORED PROCEDURE RETURNING MULTIPLE VALUES: \n");
 	cur->sendQuery("drop function testproc");
 	cur->sendQuery("drop procedure testproc");
 	assertTrue(cur->sendQuery(
@@ -1117,71 +1122,7 @@ int main(int argc, char **argv) {
 	assertEquals(cur->getOutputBindInteger("out1"),1);
 	assertEquals(cur->getOutputBindDouble("out2"),1.1);
 	assertEquals(cur->getOutputBindString("out3"),"hello");
-	cur->sendQuery("drop function testproc");
 	cur->sendQuery("drop procedure testproc");
-	stdoutput.printf("\n");
-
-
-	// in/out variables
-	/*stdoutput.printf("IN/OUT VARIABLES: \n");
-	cur->sendQuery("drop procedure testproc");
-	assertEquals(cur->sendQuery(
-		"create or replace "
-		"procedure testproc("
-		"	inout in out number) "
-		"is "
-		"begin "
-		"	inout:=inout+1; "
-		"	return; "
-		"end;"),1);
-	cur->prepareQuery("begin testproc(:inout); end;");
-	cur->inputBind("inout",1);
-	cur->defineOutputBindInteger("inout");
-	assertTrue(cur->executeQuery());
-	assertEquals(cur->getOutputBindInteger("inout"),2);
-	cur->sendQuery("drop procedure testproc");
-	stdoutput.printf("\n");*/
-
-
-	// rebinding
-	stdoutput.printf("REBINDING: \n");
-	cur->sendQuery("drop procedure testproc");
-	assertTrue(cur->sendQuery(
-		"create or replace "
-		"procedure testproc("
-		"	in1 in number, "
-		"	out1 out number) "
-		"is "
-		"begin "
-		"	out1:=in1; "
-		"	return; "
-		"end;"));
-	cur->prepareQuery("begin testproc(:in,:out); end;");
-	cur->inputBind("in",1);
-	cur->defineOutputBindInteger("out");
-	assertTrue(cur->executeQuery());
-	assertEquals(cur->getOutputBindInteger("out"),1);
-	cur->inputBind("in",2);
-	assertTrue(cur->executeQuery());
-	assertEquals(cur->getOutputBindInteger("out"),2);
-	cur->inputBind("in",3);
-	assertTrue(cur->executeQuery());
-	assertEquals(cur->getOutputBindInteger("out"),3);
-	cur->sendQuery("drop procedure testproc");
-	stdoutput.printf("\n");
-
-
-	// column list - primary key
-	stdoutput.printf("COLUMN LIST - primary key: \n");
-	cur->sendQuery("drop table testtable");
-	assertTrue(cur->sendQuery(
-		"create table testtable ("
-		"	col1 number primary key, "
-		"	col2 number)"));
-	assertTrue(cur->getColumnList("testtable",NULL));
-	assertTrue(charstring::contains(cur->getField(0,"column_key"),"PRI"));
-	assertFalse(charstring::contains(cur->getField(1,"column_key"),"PRI"));
-	assertTrue(cur->sendQuery("drop table testtable"));
 	stdoutput.printf("\n");
 
 

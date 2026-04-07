@@ -31,6 +31,7 @@ int main(int argc, char **argv) {
 	char		*filename;
 	uint64_t	counter=0;
 
+
 	// instantiation
 	con=new sqlrconnection("sqlrelay",9000,"/tmp/test.socket",
 						"testuser","testpassword",0,1);
@@ -73,8 +74,8 @@ int main(int argc, char **argv) {
 	stdoutput.printf("\n");
 
 
-	// create temptable
-	stdoutput.printf("CREATE TEMPTABLE: \n");
+	// create testtable
+	stdoutput.printf("CREATE TESTTABLE: \n");
 	cur->sendQuery("drop table testtable");
 	assertTrue(cur->sendQuery(
 		"create table testtable ("
@@ -653,88 +654,6 @@ int main(int argc, char **argv) {
 	stdoutput.printf("\n");
 
 
-	// individual substitutions
-	stdoutput.printf("INDIVIDUAL SUBSTITUTIONS: \n");
-	cur->prepareQuery("select $(var1),'$(var2)',$(var3)");
-	cur->substitution("var1",1);
-	cur->substitution("var2","hello");
-	cur->substitution("var3",10.5556,6,4);
-	assertTrue(cur->executeQuery());
-	stdoutput.printf("\n");
-
-
-	// fields
-	stdoutput.printf("FIELDS: \n");
-	assertEquals(cur->getField(0,(uint32_t)0),"1");
-	assertEquals(cur->getField(0,1),"hello");
-	assertEquals(cur->getField(0,2),"10.5556");
-	stdoutput.printf("\n");
-
-
-	// array substitutions
-	stdoutput.printf("ARRAY SUBSTITUTIONS: \n");
-	cur->prepareQuery("select $(var1),$(var2),$(var3)");
-	cur->substitutions(subvars,subvallongs);
-	assertTrue(cur->executeQuery());
-	stdoutput.printf("\n");
-
-
-	// fields
-	stdoutput.printf("FIELDS: \n");
-	assertEquals(cur->getField(0,(uint32_t)0),"1");
-	assertEquals(cur->getField(0,1),"2");
-	assertEquals(cur->getField(0,2),"3");
-	stdoutput.printf("\n");
-
-
-	// array substitutions
-	stdoutput.printf("ARRAY SUBSTITUTIONS: \n");
-	cur->prepareQuery("select '$(var1)','$(var2)','$(var3)'");
-	cur->substitutions(subvars,subvalstrings);
-	assertTrue(cur->executeQuery());
-	stdoutput.printf("\n");
-
-
-	// fields
-	stdoutput.printf("FIELDS: \n");
-	assertEquals(cur->getField(0,(uint32_t)0),"hi");
-	assertEquals(cur->getField(0,1),"hello");
-	assertEquals(cur->getField(0,2),"bye");
-	stdoutput.printf("\n");
-
-
-	// array substitutions
-	stdoutput.printf("ARRAY SUBSTITUTIONS: \n");
-	cur->prepareQuery("select $(var1),$(var2),$(var3)");
-	cur->substitutions(subvars,subvaldoubles,precs,scales);
-	assertTrue(cur->executeQuery());
-	stdoutput.printf("\n");
-
-
-	// fields
-	stdoutput.printf("FIELDS: \n");
-	assertEquals(cur->getField(0,(uint32_t)0),"10.55");
-	assertEquals(cur->getField(0,1),"10.556");
-	assertEquals(cur->getField(0,2),"10.5556");
-	stdoutput.printf("\n");
-
-
-	// nulls as nulls
-	stdoutput.printf("NULLS AS NULLS: \n");
-	cur->getNullsAsNulls();
-	assertTrue(cur->sendQuery("select NULL,1,NULL"));
-	assertEquals(cur->getField(0,(uint32_t)0),NULL);
-	assertEquals(cur->getField(0,1),"1");
-	assertEquals(cur->getField(0,2),NULL);
-	cur->getNullsAsEmptyStrings();
-	assertTrue(cur->sendQuery("select NULL,1,NULL"));
-	assertEquals(cur->getField(0,(uint32_t)0),"");
-	assertEquals(cur->getField(0,1),"1");
-	assertEquals(cur->getField(0,2),"");
-	cur->getNullsAsNulls();
-	stdoutput.printf("\n");
-
-
 	// result set buffer size
 	stdoutput.printf("RESULT SET BUFFER SIZE: \n");
 	assertEquals(cur->getResultSetBufferSize(),0);
@@ -1001,6 +920,27 @@ int main(int argc, char **argv) {
 	stdoutput.printf("\n");
 
 
+        // finished suspended session
+        stdoutput.printf("FINISHED SUSPENDED SESSION: \n");
+        assertTrue(cur->sendQuery("select * from testtable order by testint"));
+        assertEquals(cur->getField(4,(uint32_t)0),"5");
+        assertEquals(cur->getField(5,(uint32_t)0),"6");
+        assertEquals(cur->getField(6,(uint32_t)0),"7");
+        assertEquals(cur->getField(7,(uint32_t)0),"8");
+        id=cur->getResultSetId();
+        cur->suspendResultSet();
+        assertTrue(con->suspendSession());
+        port=con->getConnectionPort();
+        socket=charstring::duplicate(con->getConnectionSocket());
+        assertTrue(con->resumeSession(port,socket));
+        assertTrue(cur->resumeResultSet(id));
+        assertEquals(cur->getField(4,(uint32_t)0),NULL);
+        assertEquals(cur->getField(5,(uint32_t)0),NULL);
+        assertEquals(cur->getField(6,(uint32_t)0),NULL);
+        assertEquals(cur->getField(7,(uint32_t)0),NULL);
+        stdoutput.printf("\n");
+
+
 	// nested selects
 	stdoutput.printf("NESTED SELECTS: \n");
 	// can't do this with freetds
@@ -1078,49 +1018,58 @@ int main(int argc, char **argv) {
 	stdoutput.printf("\n");
 
 
-	// temporary tables
-	stdoutput.printf("TEMPORARY TABLES: \n");
-	cur->sendQuery("drop table #temptable");
-	cur->sendQuery("create table #temptable (col1 int)");
-	assertTrue(cur->sendQuery("insert into #temptable values (1)"));
-	assertTrue(cur->sendQuery("select count(*) from #temptable"));
+	// individual substitutions
+	stdoutput.printf("INDIVIDUAL SUBSTITUTIONS: \n");
+	cur->prepareQuery("select $(var1),'$(var2)',$(var3)");
+	cur->substitution("var1",1);
+	cur->substitution("var2","hello");
+	cur->substitution("var3",10.5556,6,4);
+	assertTrue(cur->executeQuery());
 	assertEquals(cur->getField(0,(uint32_t)0),"1");
-	con->endSession();
-	stdoutput.printf("\n");
-	assertFalse(cur->sendQuery("select count(*) from #temptable"));
-	cur->sendQuery("drop table #temptable\n");
+	assertEquals(cur->getField(0,1),"hello");
+	assertEquals(cur->getField(0,2),"10.5556");
 	stdoutput.printf("\n");
 
 
-        // stored procedure
-        // FreeTDS needs to support cursors for this to work
-        #if 0
-        stdoutput.printf("STORED PROCEDURE: \n");
-        cur->sendQuery("drop procedure testproc");
-        assertTrue(cur->sendQuery(
-                "create procedure testproc @in1 int, "
-                "       @in2 float, "
-                "       @in3 varchar(20), "
-                "       @out1 int output, "
-                "       @out2 float output, "
-                "       @out3 varchar(20) output as "
-		"select @out1=@in1, "
-                "       @out2=@in2, "
-                "       @out3=@in3"));
-        cur->prepareQuery("exec testproc");
-        cur->inputBind("in1",1);
-        cur->inputBind("in2",1.1,2,1);
-        cur->inputBind("in3","hello");
-        cur->defineOutputBindInteger("out1");
-        cur->defineOutputBindDouble("out2");
-        cur->defineOutputBindString("out3",20);
-        assertTrue(cur->executeQuery());
-        assertEquals(cur->getOutputBindInteger("out1"),1);
-        assertEquals(cur->getOutputBindDouble("out2"),1.1);
-        assertEquals(cur->getOutputBindString("out3"),"hello");
-        cur->sendQuery("drop procedure testproc");
-        stdoutput.printf("\n");
-	#endif
+	// array substitutions
+	stdoutput.printf("ARRAY SUBSTITUTIONS: \n");
+	cur->prepareQuery("select $(var1),$(var2),$(var3)");
+	cur->substitutions(subvars,subvallongs);
+	assertTrue(cur->executeQuery());
+	assertEquals(cur->getField(0,(uint32_t)0),"1");
+	assertEquals(cur->getField(0,1),"2");
+	assertEquals(cur->getField(0,2),"3");
+	stdoutput.printf("\n");
+	cur->prepareQuery("select '$(var1)','$(var2)','$(var3)'");
+	cur->substitutions(subvars,subvalstrings);
+	assertTrue(cur->executeQuery());
+	assertEquals(cur->getField(0,(uint32_t)0),"hi");
+	assertEquals(cur->getField(0,1),"hello");
+	assertEquals(cur->getField(0,2),"bye");
+	stdoutput.printf("\n");
+	cur->prepareQuery("select $(var1),$(var2),$(var3)");
+	cur->substitutions(subvars,subvaldoubles,precs,scales);
+	assertTrue(cur->executeQuery());
+	assertEquals(cur->getField(0,(uint32_t)0),"10.55");
+	assertEquals(cur->getField(0,1),"10.556");
+	assertEquals(cur->getField(0,2),"10.5556");
+	stdoutput.printf("\n");
+
+
+	// nulls as nulls
+	stdoutput.printf("NULLS AS NULLS: \n");
+	cur->getNullsAsNulls();
+	assertTrue(cur->sendQuery("select NULL,1,NULL"));
+	assertEquals(cur->getField(0,(uint32_t)0),NULL);
+	assertEquals(cur->getField(0,1),"1");
+	assertEquals(cur->getField(0,2),NULL);
+	cur->getNullsAsEmptyStrings();
+	assertTrue(cur->sendQuery("select NULL,1,NULL"));
+	assertEquals(cur->getField(0,(uint32_t)0),"");
+	assertEquals(cur->getField(0,1),"1");
+	assertEquals(cur->getField(0,2),"");
+	cur->getNullsAsNulls();
+	stdoutput.printf("\n");
 
 
 	// stored procedure returning result set
@@ -1162,6 +1111,51 @@ int main(int argc, char **argv) {
 	assertEquals(cur->getField(0,"s"),"hello");
 	assertEquals(cur->getField(0,"e"),"goodbye");
 	stdoutput.printf("\n");
+
+
+	// temporary tables
+	stdoutput.printf("TEMPORARY TABLES: \n");
+	cur->sendQuery("drop table #temptable");
+	cur->sendQuery("create table #temptable (col1 int)");
+	assertTrue(cur->sendQuery("insert into #temptable values (1)"));
+	assertTrue(cur->sendQuery("select count(*) from #temptable"));
+	assertEquals(cur->getField(0,(uint32_t)0),"1");
+	con->endSession();
+	stdoutput.printf("\n");
+	assertFalse(cur->sendQuery("select count(*) from #temptable"));
+	cur->sendQuery("drop table #temptable\n");
+	stdoutput.printf("\n");
+
+
+        // stored procedure returning multiple values
+        // FreeTDS needs to support cursors for this to work
+        #if 0
+        stdoutput.printf("STORED PROCEDURE RETURNING MULTIPLE VALUES: \n");
+        cur->sendQuery("drop procedure testproc");
+        assertTrue(cur->sendQuery(
+                "create procedure testproc @in1 int, "
+                "       @in2 float, "
+                "       @in3 varchar(20), "
+                "       @out1 int output, "
+                "       @out2 float output, "
+                "       @out3 varchar(20) output as "
+		"select @out1=@in1, "
+                "       @out2=@in2, "
+                "       @out3=@in3"));
+        cur->prepareQuery("exec testproc");
+        cur->inputBind("in1",1);
+        cur->inputBind("in2",1.1,2,1);
+        cur->inputBind("in3","hello");
+        cur->defineOutputBindInteger("out1");
+        cur->defineOutputBindDouble("out2");
+        cur->defineOutputBindString("out3",20);
+        assertTrue(cur->executeQuery());
+        assertEquals(cur->getOutputBindInteger("out1"),1);
+        assertEquals(cur->getOutputBindDouble("out2"),1.1);
+        assertEquals(cur->getOutputBindString("out3"),"hello");
+        cur->sendQuery("drop procedure testproc");
+        stdoutput.printf("\n");
+	#endif
 
 
 	// database is schema

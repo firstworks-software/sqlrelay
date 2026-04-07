@@ -33,6 +33,7 @@ int main(int argc, char **argv) {
 	char		*filename;
 	uint64_t	counter=0;
 
+
 	// instantiation
 	con=new sqlrconnection("sqlrelay",9000,"/tmp/test.socket",
 						"testuser","testpassword",0,1);
@@ -62,6 +63,7 @@ int main(int argc, char **argv) {
 	assertEquals(con->nextvalFormat(),"nextval('%s')");
 	stdoutput.printf("\n");
 
+
 	// isolation levels
 	/*stdoutput.printf("ISOLATION LEVELS: \n");
 	for (const char **il=isolationlevels; *il; il++) {
@@ -80,8 +82,8 @@ int main(int argc, char **argv) {
 	stdoutput.printf("\n");*/
 
 
-	// create temptable
-	stdoutput.printf("CREATE TEMPTABLE: \n");
+	// create testtable
+	stdoutput.printf("CREATE TESTTABLE: \n");
 	cur->sendQuery("drop table testtable");
 	assertTrue(cur->sendQuery(
 		"create table testtable ("
@@ -527,88 +529,6 @@ int main(int argc, char **argv) {
 	stdoutput.printf("\n");
 
 
-	// individual substitutions
-	stdoutput.printf("INDIVIDUAL SUBSTITUTIONS: \n");
-	cur->prepareQuery("select $(var1),'$(var2)',$(var3)");
-	cur->substitution("var1",1);
-	cur->substitution("var2","hello");
-	cur->substitution("var3",10.5556,6,4);
-	assertTrue(cur->executeQuery());
-	stdoutput.printf("\n");
-
-
-	// fields
-	stdoutput.printf("FIELDS: \n");
-	assertEquals(cur->getField(0,(uint32_t)0),"1");
-	assertEquals(cur->getField(0,1),"hello");
-	assertEquals(cur->getField(0,2),"10.5556");
-	stdoutput.printf("\n");
-
-
-	// array substitutions
-	stdoutput.printf("ARRAY SUBSTITUTIONS: \n");
-	cur->prepareQuery("select $(var1),$(var2),$(var3)");
-	cur->substitutions(subvars,subvallongs);
-	assertTrue(cur->executeQuery());
-	stdoutput.printf("\n");
-
-
-	// fields
-	stdoutput.printf("FIELDS: \n");
-	assertEquals(cur->getField(0,(uint32_t)0),"1");
-	assertEquals(cur->getField(0,1),"2");
-	assertEquals(cur->getField(0,2),"3");
-	stdoutput.printf("\n");
-
-
-	// array substitutions
-	stdoutput.printf("ARRAY SUBSTITUTIONS: \n");
-	cur->prepareQuery("select '$(var1)','$(var2)','$(var3)'");
-	cur->substitutions(subvars,subvalstrings);
-	assertTrue(cur->executeQuery());
-	stdoutput.printf("\n");
-
-
-	// fields
-	stdoutput.printf("FIELDS: \n");
-	assertEquals(cur->getField(0,(uint32_t)0),"hi");
-	assertEquals(cur->getField(0,1),"hello");
-	assertEquals(cur->getField(0,2),"bye");
-	stdoutput.printf("\n");
-
-
-	// array substitutions
-	stdoutput.printf("ARRAY SUBSTITUTIONS: \n");
-	cur->prepareQuery("select $(var1),$(var2),$(var3)");
-	cur->substitutions(subvars,subvaldoubles,precs,scales);
-	assertTrue(cur->executeQuery());
-	stdoutput.printf("\n");
-
-
-	// fields
-	stdoutput.printf("FIELDS: \n");
-	assertEquals(cur->getField(0,(uint32_t)0),"10.55");
-	assertEquals(cur->getField(0,1),"10.556");
-	assertEquals(cur->getField(0,2),"10.5556");
-	stdoutput.printf("\n");
-
-
-	// nulls as nulls
-	stdoutput.printf("NULLS AS NULLS: \n");
-	cur->getNullsAsNulls();
-	assertTrue(cur->sendQuery("select NULL,1,NULL"));
-	assertEquals(cur->getField(0,(uint32_t)0),NULL);
-	assertEquals(cur->getField(0,1),"1");
-	assertEquals(cur->getField(0,2),NULL);
-	cur->getNullsAsEmptyStrings();
-	assertTrue(cur->sendQuery("select NULL,1,NULL"));
-	assertEquals(cur->getField(0,(uint32_t)0),"");
-	assertEquals(cur->getField(0,1),"1");
-	assertEquals(cur->getField(0,2),"");
-	cur->getNullsAsNulls();
-	stdoutput.printf("\n");
-
-
 	// result set buffer size
 	stdoutput.printf("RESULT SET BUFFER SIZE: \n");
 	assertEquals(cur->getResultSetBufferSize(),0);
@@ -952,27 +872,62 @@ int main(int argc, char **argv) {
 	stdoutput.printf("\n");
 
 
-	// temporary tables
-	stdoutput.printf("TEMPORARY TABLES: \n");
-	cur->sendQuery("drop table temptable\n");
-	cur->sendQuery("-- this should be skipped\n"
-			"-- so should this\n"
-			"-- and the whitespace below too\n"
-			"        				\n\n"
-			"create temporary table temptable (col1 int)");
-	assertTrue(cur->sendQuery("insert into temptable values (1)"));
-	assertTrue(cur->sendQuery("select count(*) from temptable"));
+	// individual substitutions
+	stdoutput.printf("INDIVIDUAL SUBSTITUTIONS: \n");
+	cur->prepareQuery("select $(var1),'$(var2)',$(var3)");
+	cur->substitution("var1",1);
+	cur->substitution("var2","hello");
+	cur->substitution("var3",10.5556,6,4);
+	assertTrue(cur->executeQuery());
 	assertEquals(cur->getField(0,(uint32_t)0),"1");
-	con->endSession();
-	stdoutput.printf("\n");
-	assertFalse(cur->sendQuery("select count(*) from temptable"));
-	cur->sendQuery("drop table temptable\n");
+	assertEquals(cur->getField(0,1),"hello");
+	assertEquals(cur->getField(0,2),"10.5556");
 	stdoutput.printf("\n");
 
 
-	// stored procedures
-	stdoutput.printf("STORED PROCEDURES: \n");
-	// return no values
+	// array substitutions
+	stdoutput.printf("ARRAY SUBSTITUTIONS: \n");
+	cur->prepareQuery("select $(var1),$(var2),$(var3)");
+	cur->substitutions(subvars,subvallongs);
+	assertTrue(cur->executeQuery());
+	assertEquals(cur->getField(0,(uint32_t)0),"1");
+	assertEquals(cur->getField(0,1),"2");
+	assertEquals(cur->getField(0,2),"3");
+	stdoutput.printf("\n");
+	cur->prepareQuery("select '$(var1)','$(var2)','$(var3)'");
+	cur->substitutions(subvars,subvalstrings);
+	assertTrue(cur->executeQuery());
+	assertEquals(cur->getField(0,(uint32_t)0),"hi");
+	assertEquals(cur->getField(0,1),"hello");
+	assertEquals(cur->getField(0,2),"bye");
+	stdoutput.printf("\n");
+	cur->prepareQuery("select $(var1),$(var2),$(var3)");
+	cur->substitutions(subvars,subvaldoubles,precs,scales);
+	assertTrue(cur->executeQuery());
+	assertEquals(cur->getField(0,(uint32_t)0),"10.55");
+	assertEquals(cur->getField(0,1),"10.556");
+	assertEquals(cur->getField(0,2),"10.5556");
+	stdoutput.printf("\n");
+
+
+	// nulls as nulls
+	stdoutput.printf("NULLS AS NULLS: \n");
+	cur->getNullsAsNulls();
+	assertTrue(cur->sendQuery("select NULL,1,NULL"));
+	assertEquals(cur->getField(0,(uint32_t)0),NULL);
+	assertEquals(cur->getField(0,1),"1");
+	assertEquals(cur->getField(0,2),NULL);
+	cur->getNullsAsEmptyStrings();
+	assertTrue(cur->sendQuery("select NULL,1,NULL"));
+	assertEquals(cur->getField(0,(uint32_t)0),"");
+	assertEquals(cur->getField(0,1),"1");
+	assertEquals(cur->getField(0,2),"");
+	cur->getNullsAsNulls();
+	stdoutput.printf("\n");
+
+
+	// stored procedure returning no value
+	stdoutput.printf("STORED PROCEDURE RETURNING NO VALUE: \n");
 	cur->sendQuery("drop function testfunc(int,float,char(20))");
 	assertTrue(cur->sendQuery(
 		"create function testfunc("
@@ -994,7 +949,10 @@ int main(int argc, char **argv) {
 	assertTrue(cur->executeQuery());
 	cur->sendQuery("drop function testfunc(int,float,char(20))");
 	stdoutput.printf("\n");
-	// return single value
+
+
+	// stored procedure returning single value
+	stdoutput.printf("STORED PROCEDURE RETURNING SINGLE VALUE: \n");
 	cur->sendQuery("drop function testfunc(int,float,char(20))");
 	assertTrue(cur->sendQuery(
 		"create function testfunc(int,float,char(20)) returns int as "
@@ -1007,8 +965,11 @@ int main(int argc, char **argv) {
 	assertEquals(cur->getField(0,(uint32_t)0),"1");
 	cur->sendQuery("drop function testfunc(int,float,char(20))");
 	stdoutput.printf("\n");
-	// return multiple values
-	cur->sendQuery("drop function testfunc(int,char(20))");
+
+
+	// stored procedure returning multiple values
+	stdoutput.printf("STORED PROCEDURE RETURNING MULTIPLE VALUES: \n");
+	cur->sendQuery("drop function testfunc(int,float,char(20))");
 	assertTrue(cur->sendQuery(
 		"create function testfunc("
 		"	int,float,char(20)) "
@@ -1074,6 +1035,24 @@ int main(int argc, char **argv) {
 		"	as (testint int)"));
 	assertEquals(cur->rowCount(),8);
 	cur->sendQuery("drop function testfunc()");
+	stdoutput.printf("\n");
+
+
+	// temporary tables
+	stdoutput.printf("TEMPORARY TABLES: \n");
+	cur->sendQuery("drop table temptable\n");
+	cur->sendQuery("-- this should be skipped\n"
+			"-- so should this\n"
+			"-- and the whitespace below too\n"
+			"        				\n\n"
+			"create temporary table temptable (col1 int)");
+	assertTrue(cur->sendQuery("insert into temptable values (1)"));
+	assertTrue(cur->sendQuery("select count(*) from temptable"));
+	assertEquals(cur->getField(0,(uint32_t)0),"1");
+	con->endSession();
+	stdoutput.printf("\n");
+	assertFalse(cur->sendQuery("select count(*) from temptable"));
+	cur->sendQuery("drop table temptable\n");
 	stdoutput.printf("\n");
 
 

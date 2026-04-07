@@ -41,6 +41,7 @@ int main(int argc, char **argv) {
 	char		*filename;
 	uint64_t	counter=0;
 
+
 	// instantiation
 	con=new sqlrconnection("sqlrelay",9000,"/tmp/test.socket",
 						"testuser","testpassword",0,1);
@@ -84,8 +85,8 @@ int main(int argc, char **argv) {
 	stdoutput.printf("\n");
 
 
-	// create temptable
-	stdoutput.printf("CREATE TEMPTABLE: \n");
+	// create testtable
+	stdoutput.printf("CREATE TESTTABLE: \n");
 	cur->sendQuery("drop table testtable");
 	assertTrue(cur->sendQuery(
 		"create table testtable ("
@@ -135,6 +136,12 @@ int main(int argc, char **argv) {
 		"	'2001-01-01 01:00:00', "
 		"	'testtext1', "
 		"	null)"));
+	stdoutput.printf("\n");
+
+
+	// affected rows
+	stdoutput.printf("AFFECTED ROWS: \n");
+	assertEquals(cur->affectedRows(),1);
 	stdoutput.printf("\n");
 
 
@@ -325,12 +332,6 @@ int main(int argc, char **argv) {
 		"	'2008-01-01 08:00:00', "
 		"	'testtext8', "
 		"	null)"));
-	stdoutput.printf("\n");
-
-
-	// affected rows
-	stdoutput.printf("AFFECTED ROWS: \n");
-	assertEquals(cur->affectedRows(),1);
 	stdoutput.printf("\n");
 
 
@@ -759,113 +760,6 @@ int main(int argc, char **argv) {
 	assertEquals(fieldlens[15],19);
 	assertEquals(fieldlens[16],9);
 	assertEquals(fieldlens[17],0);
-	stdoutput.printf("\n");
-
-
-	// individual substitutions
-	stdoutput.printf("INDIVIDUAL SUBSTITUTIONS: \n");
-	cur->prepareQuery(
-		"select "
-		"	$(var1), "
-		"	'$(var2)', "
-		"	'$(var3)' "
-		"from "
-		"	sysmaster:sysdual ");
-	cur->substitution("var1",1);
-	cur->substitution("var2","hello");
-	cur->substitution("var3",10.5556,6,4);
-	assertTrue(cur->executeQuery());
-	stdoutput.printf("\n");
-
-
-	// fields
-	stdoutput.printf("FIELDS: \n");
-	assertEquals(cur->getField(0,(uint32_t)0),"1");
-	assertEquals(cur->getField(0,1),"hello");
-	assertEquals(cur->getField(0,2),"10.5556");
-	stdoutput.printf("\n");
-
-
-	// array substitutions
-	stdoutput.printf("ARRAY SUBSTITUTIONS: \n");
-	cur->prepareQuery(
-		"select "
-		"	'$(var1)', "
-		"	'$(var2)', "
-		"	'$(var3)' "
-		"from "
-		"	sysmaster:sysdual ");
-	cur->substitutions(subvars,subvalstrings);
-	assertTrue(cur->executeQuery());
-	stdoutput.printf("\n");
-
-
-	// fields
-	stdoutput.printf("FIELDS: \n");
-	assertEquals(cur->getField(0,(uint32_t)0),"hi");
-	assertEquals(cur->getField(0,1),"hello");
-	assertEquals(cur->getField(0,2),"bye");
-	stdoutput.printf("\n");
-
-
-	// array substitutions
-	stdoutput.printf("ARRAY SUBSTITUTIONS: \n");
-	cur->prepareQuery(
-		"select "
-		"	$(var1), "
-		"	$(var2), "
-		"	$(var3) "
-		"from "
-		"	sysmaster:sysdual ");
-	cur->substitutions(subvars,subvallongs);
-	assertTrue(cur->executeQuery());
-	stdoutput.printf("\n");
-
-
-	// fields
-	stdoutput.printf("FIELDS: \n");
-	assertEquals(cur->getField(0,(uint32_t)0),"1");
-	assertEquals(cur->getField(0,1),"2");
-	assertEquals(cur->getField(0,2),"3");
-	stdoutput.printf("\n");
-
-
-	// array substitutions
-	stdoutput.printf("ARRAY SUBSTITUTIONS: \n");
-	cur->prepareQuery(
-		"select "
-		"	$(var1), "
-		"	$(var2), "
-		"	$(var3) "
-		"from "
-		"	sysmaster:sysdual ");
-	cur->substitutions(subvars,subvaldoubles,precs,scales);
-	assertTrue(cur->executeQuery());
-	stdoutput.printf("\n");
-
-
-	// fields
-	stdoutput.printf("FIELDS: \n");
-	assertEquals(cur->getField(0,(uint32_t)0),"10.55");
-	assertEquals(cur->getField(0,1),"10.556");
-	assertEquals(cur->getField(0,2),"10.5556");
-	stdoutput.printf("\n");
-
-
-	// nulls as nulls
-	stdoutput.printf("NULLS AS NULLS: \n");
-	cur->getNullsAsNulls();
-	assertTrue(cur->sendQuery(
-		"select NULL::int,1,NULL::int from sysmaster:sysdual"));
-	assertEquals(cur->getField(0,(uint32_t)0),NULL);
-	assertEquals(cur->getField(0,1),"1");
-	assertEquals(cur->getField(0,2),NULL);
-	cur->getNullsAsEmptyStrings();
-	assertTrue(cur->sendQuery(
-		"select NULL::int,1,NULL::int from sysmaster:sysdual"));
-	assertEquals(cur->getField(0,(uint32_t)0),"");
-	assertEquals(cur->getField(0,1),"1");
-	assertEquals(cur->getField(0,2),"");
 	stdoutput.printf("\n");
 
 
@@ -1314,9 +1208,87 @@ int main(int argc, char **argv) {
 	stdoutput.printf("\n");
 
 
-	// stored procedure
-	stdoutput.printf("STORED PROCEDURE: \n");
-	// return multiple values
+	// individual substitutions
+	stdoutput.printf("INDIVIDUAL SUBSTITUTIONS: \n");
+	cur->prepareQuery(
+		"select "
+		"	$(var1), "
+		"	'$(var2)', "
+		"	'$(var3)' "
+		"from "
+		"	sysmaster:sysdual ");
+	cur->substitution("var1",1);
+	cur->substitution("var2","hello");
+	cur->substitution("var3",10.5556,6,4);
+	assertTrue(cur->executeQuery());
+	assertEquals(cur->getField(0,(uint32_t)0),"1");
+	assertEquals(cur->getField(0,1),"hello");
+	assertEquals(cur->getField(0,2),"10.5556");
+	stdoutput.printf("\n");
+
+
+	// array substitutions
+	stdoutput.printf("ARRAY SUBSTITUTIONS: \n");
+	cur->prepareQuery(
+		"select "
+		"	'$(var1)', "
+		"	'$(var2)', "
+		"	'$(var3)' "
+		"from "
+		"	sysmaster:sysdual ");
+	cur->substitutions(subvars,subvalstrings);
+	assertTrue(cur->executeQuery());
+	assertEquals(cur->getField(0,(uint32_t)0),"hi");
+	assertEquals(cur->getField(0,1),"hello");
+	assertEquals(cur->getField(0,2),"bye");
+	stdoutput.printf("\n");
+	cur->prepareQuery(
+		"select "
+		"	$(var1), "
+		"	$(var2), "
+		"	$(var3) "
+		"from "
+		"	sysmaster:sysdual ");
+	cur->substitutions(subvars,subvallongs);
+	assertTrue(cur->executeQuery());
+	assertEquals(cur->getField(0,(uint32_t)0),"1");
+	assertEquals(cur->getField(0,1),"2");
+	assertEquals(cur->getField(0,2),"3");
+	stdoutput.printf("\n");
+	cur->prepareQuery(
+		"select "
+		"	$(var1), "
+		"	$(var2), "
+		"	$(var3) "
+		"from "
+		"	sysmaster:sysdual ");
+	cur->substitutions(subvars,subvaldoubles,precs,scales);
+	assertTrue(cur->executeQuery());
+	assertEquals(cur->getField(0,(uint32_t)0),"10.55");
+	assertEquals(cur->getField(0,1),"10.556");
+	assertEquals(cur->getField(0,2),"10.5556");
+	stdoutput.printf("\n");
+
+
+	// nulls as nulls
+	stdoutput.printf("NULLS AS NULLS: \n");
+	cur->getNullsAsNulls();
+	assertTrue(cur->sendQuery(
+		"select NULL::int,1,NULL::int from sysmaster:sysdual"));
+	assertEquals(cur->getField(0,(uint32_t)0),NULL);
+	assertEquals(cur->getField(0,1),"1");
+	assertEquals(cur->getField(0,2),NULL);
+	cur->getNullsAsEmptyStrings();
+	assertTrue(cur->sendQuery(
+		"select NULL::int,1,NULL::int from sysmaster:sysdual"));
+	assertEquals(cur->getField(0,(uint32_t)0),"");
+	assertEquals(cur->getField(0,1),"1");
+	assertEquals(cur->getField(0,2),"");
+	stdoutput.printf("\n");
+
+
+	// stored procedure returning multiple values
+	stdoutput.printf("STORED PROCEDURE RETURNING MULTIPLE VALUES: \n");
 	cur->sendQuery("drop procedure testproc");
 	assertTrue(cur->sendQuery(
 		"create procedure testproc("
@@ -1430,12 +1402,12 @@ int main(int argc, char **argv) {
 	stdoutput.printf("\n");
 
 
-	// long blob
-	stdoutput.printf("LONG BLOB: \n");
-	cur->sendQuery("drop table testtable1");
-	cur->sendQuery("create table testtable1 (testtext text)");
+	// long lob
+	stdoutput.printf("LONG LOB: \n");
+	cur->sendQuery("drop table testtable");
+	cur->sendQuery("create table testtable (testtext text)");
 	assertTrue(con->commit());
-	cur->prepareQuery("insert into testtable1 values (?)");
+	cur->prepareQuery("insert into testtable values (?)");
 	char	textval[20*1024+1];
 	for (int i=0; i<20*1024; i++) {
 		textval[i]='C';
@@ -1443,7 +1415,7 @@ int main(int argc, char **argv) {
 	textval[20*1024]='\0';
 	cur->inputBindClob("1",textval,20*1024);
 	assertTrue(cur->executeQuery());
-	cur->sendQuery("select testtext from testtable1");
+	cur->sendQuery("select testtext from testtable");
 	assertEquals(cur->getFieldLength(0,"testtext"),20*1024);
 	assertEquals(cur->getField(0,"testtext"),textval);
 	// for some reason stored procedures can only use clob types,
@@ -1462,7 +1434,7 @@ int main(int argc, char **argv) {
 	assertEquals(cur->getOutputBindLength("2"),20*1024);
 	assertEquals(cur->getOutputBindClob("2"),textval);
 	assertTrue(cur->sendQuery("drop procedure testproc"));
-	assertTrue(cur->sendQuery("drop table testtable1"));
+	assertTrue(cur->sendQuery("drop table testtable"));
 	assertTrue(con->commit());
 	stdoutput.printf("\n");
 

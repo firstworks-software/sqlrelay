@@ -32,6 +32,7 @@ int main(int argc, char **argv) {
 	uint64_t	counter=0;
 	uint32_t	*fieldlens;
 
+
 	// instantiation
 	con=new sqlrconnection("sqlrelay",9000,"/tmp/test.socket",
 						"testuser","testpassword",0,1);
@@ -74,8 +75,8 @@ int main(int argc, char **argv) {
 	stdoutput.printf("\n");
 
 
-	// create temptable
-	stdoutput.printf("CREATE TEMPTABLE: \n");
+	// create testtable
+	stdoutput.printf("CREATE TESTTABLE: \n");
 	con->begin();
 	cur->sendQuery("drop table if exists testtable");
 	assertTrue(cur->sendQuery(
@@ -416,134 +417,6 @@ int main(int argc, char **argv) {
 	stdoutput.printf("\n");
 
 
-	// individual substitutions
-	stdoutput.printf("INDIVIDUAL SUBSTITUTIONS: \n");
-	cur->sendQuery("drop table if exists testtable1");
-	assertTrue(cur->sendQuery(
-		"create table testtable1 ("
-		"	col1 int, "
-		"	col2 char, "
-		"	col3 float)"));
-	cur->prepareQuery(
-		"insert into "
-		"	testtable1 "
-		"values ("
-		"	$(var1), "
-		"	'$(var2)', "
-		"	$(var3))");
-	cur->substitution("var1",1);
-	cur->substitution("var2","hello");
-	cur->substitution("var3",10.5556,6,4);
-	assertTrue(cur->executeQuery());
-	stdoutput.printf("\n");
-
-
-	// fields
-	stdoutput.printf("FIELDS: \n");
-	assertTrue(cur->sendQuery("select * from testtable1"));
-	assertEquals(cur->getField(0,(uint32_t)0),"1");
-	assertEquals(cur->getField(0,1),"hello");
-	assertEquals(cur->getField(0,2),"10.5556");
-	assertTrue(cur->sendQuery("delete from testtable1"));
-	stdoutput.printf("\n");
-
-
-	// array substitutions
-	stdoutput.printf("ARRAY SUBSTITUTIONS: \n");
-	cur->prepareQuery(
-		"insert into "
-		"	testtable1 "
-		"values ("
-		"	'$(var1)', "
-		"	'$(var2)', "
-		"	'$(var3)')");
-	cur->substitutions(subvars,subvalstrings);
-	assertTrue(cur->executeQuery());
-	stdoutput.printf("\n");
-
-
-	// fields
-	stdoutput.printf("FIELDS: \n");
-	assertTrue(cur->sendQuery("select * from testtable1"));
-	assertEquals(cur->getField(0,(uint32_t)0),"hi");
-	assertEquals(cur->getField(0,1),"hello");
-	assertEquals(cur->getField(0,2),"bye");
-	assertTrue(cur->sendQuery("delete from testtable1"));
-	stdoutput.printf("\n");
-
-
-	// array substitutions
-	stdoutput.printf("ARRAY SUBSTITUTIONS: \n");
-	cur->prepareQuery(
-		"insert into "
-		"	testtable1 "
-		"values ("
-		"	$(var1), "
-		"	'$(var2)', "
-		"	$(var3))");
-	cur->substitutions(subvars,subvallongs);
-	assertTrue(cur->executeQuery());
-	stdoutput.printf("\n");
-
-
-	// fields
-	stdoutput.printf("FIELDS: \n");
-	assertTrue(cur->sendQuery("select * from testtable1"));
-	assertEquals(cur->getField(0,(uint32_t)0),"1");
-	assertEquals(cur->getField(0,1),"2");
-	assertEquals(cur->getField(0,2),"3.0");
-	assertTrue(cur->sendQuery("delete from testtable1"));
-	stdoutput.printf("\n");
-
-
-	// array substitutions
-	stdoutput.printf("ARRAY SUBSTITUTIONS: \n");
-	cur->prepareQuery(
-		"insert into "
-		"	testtable1 "
-		"values ("
-		"	$(var1), "
-		"	'$(var2)', "
-		"	$(var3))");
-	cur->substitutions(subvars,subvaldoubles,precs,scales);
-	assertTrue(cur->executeQuery());
-	stdoutput.printf("\n");
-
-
-	// fields
-	stdoutput.printf("FIELDS: \n");
-	assertTrue(cur->sendQuery("select * from testtable1"));
-	assertEquals(cur->getField(0,(uint32_t)0),"10.55");
-	assertEquals(cur->getField(0,1),"10.556");
-	assertEquals(cur->getField(0,2),"10.5556");
-	assertTrue(cur->sendQuery("delete from testtable1"));
-	stdoutput.printf("\n");
-
-
-	// nulls as nulls
-	stdoutput.printf("NULLS AS NULLS: \n");
-	cur->getNullsAsNulls();
-	assertTrue(cur->sendQuery(
-		"insert into "
-		"	testtable1 "
-		"values ("
-		"	1, "
-		"	NULL, "
-		"	NULL)"));
-	assertTrue(cur->sendQuery("select * from testtable1"));
-	assertEquals(cur->getField(0,(uint32_t)0),"1");
-	assertEquals(cur->getField(0,1),NULL);
-	assertEquals(cur->getField(0,2),NULL);
-	cur->getNullsAsEmptyStrings();
-	assertTrue(cur->sendQuery("select * from testtable1"));
-	assertEquals(cur->getField(0,(uint32_t)0),"1");
-	assertEquals(cur->getField(0,1),"");
-	assertEquals(cur->getField(0,2),"");
-	cur->getNullsAsNulls();
-	cur->sendQuery("drop table if exists testtable1");
-	stdoutput.printf("\n");
-
-
 	// result set buffer size
 	stdoutput.printf("RESULT SET BUFFER SIZE: \n");
 	assertEquals(cur->getResultSetBufferSize(),0);
@@ -847,6 +720,116 @@ int main(int argc, char **argv) {
 	stdoutput.printf("\n");
 
 
+	// individual substitutions
+	stdoutput.printf("INDIVIDUAL SUBSTITUTIONS: \n");
+	cur->sendQuery("drop table if exists testtable");
+	assertTrue(cur->sendQuery(
+		"create table testtable ("
+		"	col1 int, "
+		"	col2 char, "
+		"	col3 float)"));
+	cur->prepareQuery(
+		"insert into "
+		"	testtable "
+		"values ("
+		"	$(var1), "
+		"	'$(var2)', "
+		"	$(var3))");
+	cur->substitution("var1",1);
+	cur->substitution("var2","hello");
+	cur->substitution("var3",10.5556,6,4);
+	assertTrue(cur->executeQuery());
+	assertTrue(cur->sendQuery("select * from testtable"));
+	assertEquals(cur->getField(0,(uint32_t)0),"1");
+	assertEquals(cur->getField(0,1),"hello");
+	assertEquals(cur->getField(0,2),"10.5556");
+	assertTrue(cur->sendQuery("delete from testtable"));
+	stdoutput.printf("\n");
+
+
+	// array substitutions
+	stdoutput.printf("ARRAY SUBSTITUTIONS: \n");
+	cur->prepareQuery(
+		"insert into "
+		"	testtable "
+		"values ("
+		"	'$(var1)', "
+		"	'$(var2)', "
+		"	'$(var3)')");
+	cur->substitutions(subvars,subvalstrings);
+	assertTrue(cur->executeQuery());
+	assertTrue(cur->sendQuery("select * from testtable"));
+	assertEquals(cur->getField(0,(uint32_t)0),"hi");
+	assertEquals(cur->getField(0,1),"hello");
+	assertEquals(cur->getField(0,2),"bye");
+	assertTrue(cur->sendQuery("delete from testtable"));
+	stdoutput.printf("\n");
+	cur->prepareQuery(
+		"insert into "
+		"	testtable "
+		"values ("
+		"	$(var1), "
+		"	'$(var2)', "
+		"	$(var3))");
+	cur->substitutions(subvars,subvallongs);
+	assertTrue(cur->executeQuery());
+	assertTrue(cur->sendQuery("select * from testtable"));
+	assertEquals(cur->getField(0,(uint32_t)0),"1");
+	assertEquals(cur->getField(0,1),"2");
+	assertEquals(cur->getField(0,2),"3.0");
+	assertTrue(cur->sendQuery("delete from testtable"));
+	stdoutput.printf("\n");
+	cur->prepareQuery(
+		"insert into "
+		"	testtable "
+		"values ("
+		"	$(var1), "
+		"	'$(var2)', "
+		"	$(var3))");
+	cur->substitutions(subvars,subvaldoubles,precs,scales);
+	assertTrue(cur->executeQuery());
+	assertTrue(cur->sendQuery("select * from testtable"));
+	assertEquals(cur->getField(0,(uint32_t)0),"10.55");
+	assertEquals(cur->getField(0,1),"10.556");
+	assertEquals(cur->getField(0,2),"10.5556");
+	assertTrue(cur->sendQuery("delete from testtable"));
+	stdoutput.printf("\n");
+
+
+	// nulls as nulls
+	stdoutput.printf("NULLS AS NULLS: \n");
+	cur->getNullsAsNulls();
+	assertTrue(cur->sendQuery(
+		"insert into "
+		"	testtable "
+		"values ("
+		"	1, "
+		"	NULL, "
+		"	NULL)"));
+	assertTrue(cur->sendQuery("select * from testtable"));
+	assertEquals(cur->getField(0,(uint32_t)0),"1");
+	assertEquals(cur->getField(0,1),NULL);
+	assertEquals(cur->getField(0,2),NULL);
+	cur->getNullsAsEmptyStrings();
+	assertTrue(cur->sendQuery("select * from testtable"));
+	assertEquals(cur->getField(0,(uint32_t)0),"1");
+	assertEquals(cur->getField(0,1),"");
+	assertEquals(cur->getField(0,2),"");
+	cur->getNullsAsNulls();
+	cur->sendQuery("drop table if exists testtable");
+	stdoutput.printf("\n");
+
+
+	// last insert row id
+	stdoutput.printf("LAST INSERT ROW ID: \n");
+	assertTrue(cur->sendQuery("select last insert rowid"));
+	assertEquals(cur->colCount(),1);
+	assertEquals(cur->rowCount(),1);
+	assertEquals(cur->getColumnName(0),"LASTINSERTROWID");
+	assertFalse(charstring::isNullOrEmpty(cur->getField(0,(uint32_t)0)));
+	stdoutput.printf("\n");
+
+
 	// temporary tables
 	stdoutput.printf("TEMPORARY TABLES: \n");
 	cur->sendQuery("drop table if exists temptable\n");
@@ -858,16 +841,6 @@ int main(int argc, char **argv) {
 	stdoutput.printf("\n");
 	assertFalse(cur->sendQuery("select count(*) from temptable"));
 	cur->sendQuery("drop table if exists temptable\n");
-	stdoutput.printf("\n");
-
-
-	// last insert row id
-	stdoutput.printf("LAST INSERT ROW ID: \n");
-	assertTrue(cur->sendQuery("select last insert rowid"));
-	assertEquals(cur->colCount(),1);
-	assertEquals(cur->rowCount(),1);
-	assertEquals(cur->getColumnName(0),"LASTINSERTROWID");
-	assertFalse(charstring::isNullOrEmpty(cur->getField(0,(uint32_t)0)));
 	stdoutput.printf("\n");
 
 
