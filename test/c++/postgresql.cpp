@@ -169,6 +169,7 @@ int main(int argc, char **argv) {
 		"	NULL, "
 		"	'testtext4', "
 		"	'testbytea4')"));
+	assertEquals(cur->countBindVariables(),0);
 	stdoutput.printf("\n");
 
 

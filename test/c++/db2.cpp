@@ -139,6 +139,7 @@ int main(int argc, char **argv) {
 		"	NULL, "
 		"	'testclob1', "
 		"	blob('testblob1'))"));
+	assertEquals(cur->countBindVariables(),0);
 	stdoutput.printf("\n");
 
 

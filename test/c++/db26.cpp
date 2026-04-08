@@ -138,6 +138,7 @@ int main(int argc, char **argv) {
 		"	NULL, "
 		"	'testclob1', "
 		"	blob('testblob1'))"));
+	assertEquals(cur->countBindVariables(),0);
 	stdoutput.printf("\n");
 
 
@@ -1158,11 +1159,11 @@ int main(int argc, char **argv) {
 
 
 	// output bind by name
-	// FIXME: ...
+	// db2 doesn't support bind by name
 
 
 	// output bind by name with validation
-	// FIXME: ...
+	// db2 doesn't support bind by name
 
 
 	// lob output bind

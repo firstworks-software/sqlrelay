@@ -253,6 +253,7 @@ for (uint16_t a=0; a<50; a++) {
 		"	'mediumblob4', "
 		"	'longblob4', "
 		"	NULL)"));
+	assertEquals(cur->countBindVariables(),0);
 	stdoutput.printf("\n");
 
 

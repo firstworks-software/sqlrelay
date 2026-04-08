@@ -139,6 +139,7 @@ int main(int argc, char **argv) {
 		"	'2001-01-01 01:00:00', "
 		"	'testtext1', "
 		"	null)"));
+	assertEquals(cur->countBindVariables(),0);
 	stdoutput.printf("\n");
 
 

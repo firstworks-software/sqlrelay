@@ -139,6 +139,7 @@ int main(int argc, char **argv) {
 		"	'testvarchar4', "
 		"	'testclob4', "
 		"	'testblob4')"));
+	assertEquals(cur->countBindVariables(),0);
 	stdoutput.printf("\n");
 
 

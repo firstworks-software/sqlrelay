@@ -174,15 +174,8 @@ int main(int argc, char **argv) {
 
 	// bind by name
 	stdoutput.printf("BIND BY NAME: \n");
-	cur->prepareQuery(
-		"insert into "
-		"	testtable "
-		"values ("
-		"	:var1, "
-		"	:var2, "
-		"	:var3, "
-		"	:var4, "
-		"	:var5)");
+	cur->clearBinds();
+	assertEquals(cur->countBindVariables(),5);
 	cur->inputBind("var1",5);
 	cur->inputBind("var2","testchar5");
 	cur->inputBind("var3","testvarchar5");

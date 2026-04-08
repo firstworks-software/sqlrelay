@@ -127,6 +127,7 @@ int main(int argc, char **argv) {
 		"	'testvarchar1', "
 		"	1, "
 		"	'testtext1')"));
+	assertEquals(cur->countBindVariables(),0);
 	stdoutput.printf("\n");
 
 
@@ -220,6 +221,7 @@ int main(int argc, char **argv) {
 	// bind by name
 	stdoutput.printf("BIND BY NAME: \n");
 	cur->clearBinds();
+	assertEquals(cur->countBindVariables(),15);
 	cur->inputBind("var1",5);
 	cur->inputBind("var2",5);
 	cur->inputBind("var3",5);
