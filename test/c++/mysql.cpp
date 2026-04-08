@@ -263,8 +263,8 @@ for (uint16_t a=0; a<50; a++) {
 	stdoutput.printf("\n");
 
 
-	// bind by position
-	stdoutput.printf("BIND BY POSITION: \n");
+	// input bind by position
+	stdoutput.printf("INPUT BIND BY POSITION: \n");
 	cur->prepareQuery(
 		"insert into "
 		"	testtable "
@@ -367,12 +367,12 @@ for (uint16_t a=0; a<50; a++) {
 	stdoutput.printf("\n");
 
 
-	// array of binds by position
+	// array of input binds by position
 	// mysql doesn't support implicit conversion of string binds to other
 	// data types, so arrays of binds don't generally work.
 
 
-	// bind by position with validation
+	// input bind by position with validation
 	stdoutput.printf("BIND BY POSITION WITH VALIDATION: \n");
 	cur->clearBinds();
 	cur->inputBind("1",8);
@@ -402,15 +402,15 @@ for (uint16_t a=0; a<50; a++) {
 	stdoutput.printf("\n");
 
 
-	// bind by name
+	// input bind by name
 	// mysql doesn't support bind by name
 
 
-	// array of binds by name
+	// array of input binds by name
 	// mysql doesn't support bind by name
 
 
-	// bind by name with validation
+	// input bind by name with validation
 	// mysql doesn't support bind by name
 
 
@@ -1409,7 +1409,7 @@ for (uint16_t a=0; a<50; a++) {
 	secondcur=NULL;
 	delete secondcon;
 	secondcon=NULL;
-	cur->sendQuery("drop table testtable");
+	assertTrue(cur->sendQuery("drop table testtable"));
 	stdoutput.printf("\n");
 
 
@@ -1491,7 +1491,7 @@ for (uint16_t a=0; a<50; a++) {
 	assertEquals(cur->getField(0,"testtext"),largebuffer);
 	assertEquals(cur->getFieldLength(0,"testblob"),LARGE_BUFFER_LENGTH);
 	assertEquals(cur->getField(0,"testblob"),largebuffer);
-	cur->sendQuery("drop table testtable");
+	assertTrue(cur->sendQuery("drop table testtable"));
 	stdoutput.printf("\n");
 
 
@@ -1713,11 +1713,11 @@ for (uint16_t a=0; a<50; a++) {
 
 
 	// output bind by name
-	// FIXME: ...
+	// mysql doesn't support bind by name
 
 
 	// output bind by name with validation
-	// FIXME: ...
+	// mysql doesn't support bind by name
 
 
 	// lob output bind
@@ -1733,7 +1733,7 @@ for (uint16_t a=0; a<50; a++) {
 
 
 	// bind validation
-	// FIXME: ...
+	// mysql doesn't support bind by name
 
 
 	// rebinding
@@ -1756,13 +1756,9 @@ for (uint16_t a=0; a<50; a++) {
 	// FIXME: ...
 
 
-	// direct transactsql
-	// FIXME: ...
-
-
 	// temporary tables
 	stdoutput.printf("TEMPORARY TABLES: \n");
-	cur->sendQuery("drop table temptable\n");
+	cur->sendQuery("drop table temptable");
 	cur->sendQuery("create temporary table temptable (col1 int)");
 	assertTrue(cur->sendQuery("insert into temptable values (1)"));
 	assertTrue(cur->sendQuery("select count(*) from temptable"));
@@ -1770,7 +1766,6 @@ for (uint16_t a=0; a<50; a++) {
 	con->endSession();
 	stdoutput.printf("\n");
 	assertFalse(cur->sendQuery("select count(*) from temptable"));
-	cur->sendQuery("drop table temptable\n");
 	stdoutput.printf("\n");
 
 	if (majorversion>3) {
@@ -1909,10 +1904,10 @@ for (uint16_t a=0; a<50; a++) {
 		}
 	}
 	assertEquals(counter,4);
-	cur->sendQuery("drop table testtable1");
-	cur->sendQuery("drop table testtable2");
-	cur->sendQuery("drop table testtable3");
-	cur->sendQuery("drop table testtable4");
+	assertTrue(cur->sendQuery("drop table testtable1"));
+	assertTrue(cur->sendQuery("drop table testtable2"));
+	assertTrue(cur->sendQuery("drop table testtable3"));
+	assertTrue(cur->sendQuery("drop table testtable4"));
 	stdoutput.printf("\n");
 
 
@@ -2044,7 +2039,7 @@ for (uint16_t a=0; a<50; a++) {
 	assertEquals(cur->getField(20,"data_type"),"MEDIUMBLOB");
 	assertEquals(cur->getField(21,"data_type"),"LONGBLOB");
 	assertEquals(cur->getField(22,"data_type"),"TIMESTAMP");
-	cur->sendQuery("drop table testtable");
+	assertTrue(cur->sendQuery("drop table testtable"));
 	stdoutput.printf("\n");
 
 
@@ -2105,7 +2100,7 @@ for (uint16_t a=0; a<50; a++) {
 	assertEquals(cur->getField(0,"seq_in_index"),"1");
 	assertTrue(!charstring::compare(cur->getField(0,"column_name"),"col1"));
 	assertEquals(cur->getField(0,"key_name"),"PRIMARY");
-	cur->sendQuery("drop table testtable");
+	assertTrue(cur->sendQuery("drop table testtable"));
 	stdoutput.printf("\n");
 
 
@@ -2138,7 +2133,7 @@ for (uint16_t a=0; a<50; a++) {
 	assertEquals(cur->getField(0,"collation"),"A");
 	assertEquals(cur->getField(0,"index_type"),"3");
 	assertEquals(cur->getField(0,"key_name"),"PRIMARY");
-	cur->sendQuery("drop table testtable");
+	assertTrue(cur->sendQuery("drop table testtable"));
 	stdoutput.printf("\n");
 
 
@@ -2216,10 +2211,10 @@ for (uint16_t a=0; a<50; a++) {
 	assertEquals(cur->getField(3,"parameter_mode"),"1");
 	assertEquals(cur->getField(3,"data_type"),"DATE");
 	assertEquals(cur->getField(3,"ordinal_position"),"4");
-	cur->sendQuery("drop procedure testproc1");
-	cur->sendQuery("drop procedure testproc2");
-	cur->sendQuery("drop procedure testproc3");
-	cur->sendQuery("drop procedure testproc4");
+	assertTrue(cur->sendQuery("drop procedure testproc1"));
+	assertTrue(cur->sendQuery("drop procedure testproc2"));
+	assertTrue(cur->sendQuery("drop procedure testproc3"));
+	assertTrue(cur->sendQuery("drop procedure testproc4"));
 	stdoutput.printf("\n");
 
 

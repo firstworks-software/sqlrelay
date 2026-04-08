@@ -79,10 +79,6 @@ int main(int argc, char **argv) {
 	stdoutput.printf("\n");
 
 
-	// create testtable
-	// FIXME: ...
-
-
 	// insert
 	stdoutput.printf("INSERT: \n");
 	cur->sendQuery("delete from testtable");
@@ -113,8 +109,8 @@ int main(int argc, char **argv) {
 	stdoutput.printf("\n");
 
 
-	// bind by position
-	stdoutput.printf("BIND BY POSITION: \n");
+	// input bind by position
+	stdoutput.printf("INPUT BIND BY POSITION: \n");
 	cur->prepareQuery(
 		"insert into "
 		"	testtable "
@@ -162,23 +158,23 @@ int main(int argc, char **argv) {
 	stdoutput.printf("\n");
 
 
-	// array of binds by position
-	stdoutput.printf("ARRAY OF BINDS BY POSITION: \n");
+	// array of input binds by position
+	stdoutput.printf("ARRAY OF INPUT BINDS BY POSITION: \n");
 	cur->clearBinds();
 	cur->inputBinds(bindvars,bindvals);
 	assertTrue(cur->executeQuery());
 	stdoutput.printf("\n");
 
 
-	// bind by name
+	// input bind by name
 	// firebird doesn't support bind by name
 
 
-	// array of binds by name
+	// array of input binds by name
 	// firebird doesn't support bind by name
 
 
-	// bind by name with validation
+	// input bind by name with validation
 	// firebird doesn't support bind by name
 
 
@@ -1066,11 +1062,11 @@ int main(int argc, char **argv) {
 
 
 	// output bind by name
-	// FIXME: ...
+	// firebird doesn't support bind by name
 
 
 	// output bind by name with validation
-	// FIXME: ...
+	// firebird doesn't support bind by name
 
 
 	// lob output bind
@@ -1086,7 +1082,46 @@ int main(int argc, char **argv) {
 
 
 	// bind validation
-	// FIXME: ...
+// #7996
+#if 0
+	stdoutput.printf("BIND VALIDATION: \n");
+	cur->sendQuery("drop table testtable");
+	cur->sendQuery(
+		"create table testtable ("
+		"	col1 varchar(20), "
+		"	col2 varchar(20), "
+		"	col3 varchar(20))");
+	cur->prepareQuery(
+		"insert into "
+		"	testtable "
+		"values ("
+		"	$(var1), "
+		"	$(var2), "
+		"	$(var3))");
+	cur->inputBind("var1",1);
+	cur->inputBind("var2",2);
+	cur->inputBind("var3",3);
+	cur->substitution("var1","?");
+	assertTrue(cur->validBind("var1"));
+	assertFalse(cur->validBind("var2"));
+	assertFalse(cur->validBind("var3"));
+	assertFalse(cur->validBind("var4"));
+	stdoutput.printf("\n");
+	cur->substitution("var2","?");
+	assertTrue(cur->validBind("var1"));
+	assertTrue(cur->validBind("var2"));
+	assertFalse(cur->validBind("var3"));
+	assertFalse(cur->validBind("var4"));
+	stdoutput.printf("\n");
+	cur->substitution("var3","?");
+	assertTrue(cur->validBind("var1"));
+	assertTrue(cur->validBind("var2"));
+	assertTrue(cur->validBind("var3"));
+	assertFalse(cur->validBind("var4"));
+	assertTrue(cur->executeQuery());
+	assertTrue(cur->sendQuery("drop table testtable"));
+	stdoutput.printf("\n");
+#endif
 
 
 	// rebinding
@@ -1131,10 +1166,6 @@ int main(int argc, char **argv) {
 
 
 	// stored procedure returning result set
-	// FIXME: ...
-
-
-	// direct transactsql
 	// FIXME: ...
 
 

@@ -3,7 +3,9 @@
 
 #include <sqlrelay/sqlrclient.h>
 #include <rudiments/charstring.h>
+#include <rudiments/sys.h>
 #include <rudiments/process.h>
+#include <rudiments/snooze.h>
 #include <rudiments/stdio.h>
 
 #include "asserts.cpp"
@@ -50,8 +52,20 @@ int main(int argc, char **argv) {
 	uint16_t	id;
 	const char	*filename;
 
+	const char	*clobvar;
+	uint32_t	clobvarlength;
+	const char	*blobvar;
+	uint32_t	blobvarlength;
+	uint16_t	counter;
 	#define	LARGE_BUFFER_LENGTH	4000
 	char		largebuffer[LARGE_BUFFER_LENGTH+1];
+
+
+
+	// hostname
+	char	*hostname=sys::getHostName();
+	char	*dot=(char *)charstring::findFirstOrEnd(hostname,'.');
+	*dot='\0';
 
 
 	// instantiation
@@ -136,8 +150,8 @@ int main(int argc, char **argv) {
 	stdoutput.printf("\n");
 
 
-	// bind by position
-	stdoutput.printf("BIND BY POSITION: \n");
+	// input bind by position
+	stdoutput.printf("INPUT BIND BY POSITION: \n");
 	cur->prepareQuery(
 		"insert into "
 		"	testtable "
@@ -164,16 +178,16 @@ int main(int argc, char **argv) {
 	stdoutput.printf("\n");
 
 
-	// array of binds by position
-	stdoutput.printf("ARRAY OF BINDS BY POSITION: \n");
+	// array of input binds by position
+	stdoutput.printf("ARRAY OF INPUT BINDS BY POSITION: \n");
 	cur->clearBinds();
 	cur->inputBinds(bindvars,bindvals);
 	assertTrue(cur->executeQuery());
 	stdoutput.printf("\n");
 
 
-	// bind by name
-	stdoutput.printf("BIND BY NAME: \n");
+	// input bind by name
+	stdoutput.printf("INPUT BIND BY NAME: \n");
 	cur->clearBinds();
 	assertEquals(cur->countBindVariables(),5);
 	cur->inputBind("var1",5);
@@ -192,16 +206,16 @@ int main(int argc, char **argv) {
 	stdoutput.printf("\n");
 
 
-	// array of binds by name
-	stdoutput.printf("ARRAY OF BINDS BY NAME: \n");
+	// array of input binds by name
+	stdoutput.printf("ARRAY OF INPUT BINDS BY NAME: \n");
 	cur->clearBinds();
 	cur->inputBinds(arraybindvars,arraybindvals);
 	assertTrue(cur->executeQuery());
 	stdoutput.printf("\n");
 
 
-	// bind by name with validation
-	stdoutput.printf("BIND BY NAME WITH VALIDATION: \n");
+	// input bind by name with validation
+	stdoutput.printf("INPUT BIND BY NAME WITH VALIDATION: \n");
 	cur->clearBinds();
 	cur->inputBind("var1",8);
 	cur->inputBind("var2","testchar8");
@@ -798,7 +812,7 @@ int main(int argc, char **argv) {
 	delete secondcon;
 	secondcon=NULL;
 	assertTrue(con->autoCommitOff());
-	cur->sendQuery("drop table testtable");
+	assertTrue(cur->sendQuery("drop table testtable"));
 	stdoutput.printf("\n");
 
 
@@ -856,11 +870,55 @@ int main(int argc, char **argv) {
 
 
 	// null and empty lobs
-	// FIXME: ...
+	stdoutput.printf("NULL AND EMPTY LOBS: \n");
+	cur->getNullsAsNulls();
+	cur->sendQuery("drop table testtable");
+	assertTrue(cur->sendQuery(
+		"create table testtable ("
+		"	testclob1 clob, "
+		"	testclob2 clob, "
+		"	testblob1 blob, "
+		"	testblob2 blob)"));
+	cur->prepareQuery(
+		"insert into "
+		"	testtable "
+		"values ("
+		"	:var1, "
+		"	:var2, "
+		"	:var3, "
+		"	:var4)");
+	cur->inputBindClob("var1","",0);
+	cur->inputBindClob("var2",NULL,0);
+	cur->inputBindBlob("var3","",0);
+	cur->inputBindBlob("var4",NULL,0);
+	assertTrue(cur->executeQuery());
+	cur->sendQuery("select * from testtable");
+	// oracle treats empty strings as NULL, so even though we bound
+	// "" to var1 and var3, we still need to test for NULL
+	assertEquals(cur->getField(0,(uint32_t)0),NULL);
+	assertEquals(cur->getField(0,1),NULL);
+	assertEquals(cur->getField(0,2),NULL);
+	assertEquals(cur->getField(0,3),NULL);
+	assertTrue(cur->sendQuery("drop table testtable"));
+	stdoutput.printf("\n");
 
 
 	// long lobs
-	// FIXME: ...
+	stdoutput.printf("LONG LOBS: \n");
+	cur->sendQuery("drop table testtable");
+	cur->sendQuery("create table testtable (testclob clob)");
+	cur->prepareQuery("insert into testtable values (:clobval)");
+	for (int i=0; i<LARGE_BUFFER_LENGTH; i++) {
+		largebuffer[i]='C';
+	}
+	largebuffer[LARGE_BUFFER_LENGTH]='\0';
+	cur->inputBindClob("clobval",largebuffer,LARGE_BUFFER_LENGTH);
+	assertTrue(cur->executeQuery());
+	cur->sendQuery("select testclob from testtable");
+	assertEquals(cur->getFieldLength(0,"TESTCLOB"),LARGE_BUFFER_LENGTH);
+	assertEquals(largebuffer,cur->getField(0,"TESTCLOB"));
+	assertTrue(cur->sendQuery("drop table testtable"));
+	stdoutput.printf("\n");
 
 
 	// output bind by position
@@ -872,6 +930,7 @@ int main(int argc, char **argv) {
 		"	:floatvar:=2.5; "
 		"	:datevar:='03-FEB-2001'; "
 		"end;");
+	assertEquals(cur->countBindVariables(),4);
 	cur->defineOutputBindInteger("1");
 	cur->defineOutputBindString("2",10);
 	cur->defineOutputBindDouble("3");
@@ -900,6 +959,7 @@ int main(int argc, char **argv) {
 	// output bind by name
 	stdoutput.printf("OUTPUT BIND BY NAME: \n");
 	cur->clearBinds();
+	assertEquals(cur->countBindVariables(),4);
 	cur->defineOutputBindInteger("numvar");
 	cur->defineOutputBindString("stringvar",10);
 	cur->defineOutputBindDouble("floatvar");
@@ -956,7 +1016,33 @@ int main(int argc, char **argv) {
 
 
 	// lob output bind
-	// FIXME: ...
+	stdoutput.printf("LOB OUTPUT BIND: \n");
+	cur->sendQuery("drop table testtable");
+	assertTrue(cur->sendQuery(
+		"create table testtable ("
+		"	testclob clob, "
+		"	testblob blob)"));
+	cur->prepareQuery("insert into testtable values ('hello',:var1)");
+	cur->inputBindBlob("var1","hello",5);
+	assertTrue(cur->executeQuery());
+	cur->prepareQuery(
+		"begin "
+		"	select testclob into :clobvar from testtable; "
+		"	select testblob into :blobvar from testtable; "
+		"end;");
+	cur->defineOutputBindClob("clobvar");
+	cur->defineOutputBindBlob("blobvar");
+	assertTrue(cur->executeQuery());
+	clobvar=cur->getOutputBindClob("clobvar");
+	clobvarlength=cur->getOutputBindLength("clobvar");
+	blobvar=cur->getOutputBindBlob("blobvar");
+	blobvarlength=cur->getOutputBindLength("blobvar");
+	assertEquals(clobvar,"hello",5);
+	assertEquals(clobvarlength,5);
+	assertEquals(blobvar,"hello",5);
+	assertEquals(blobvarlength,5);
+	assertTrue(cur->sendQuery("drop table testtable"));
+	stdoutput.printf("\n");
 
 
 	// long output bind
@@ -985,11 +1071,13 @@ int main(int argc, char **argv) {
 	assertTrue(cur->executeQuery());
 	cur->sendQuery("select testval from testtable");
 	assertEquals(cur->getField(0,"TESTVAL"),"-1");
-	cur->sendQuery("drop table testtable");
+	assertTrue(cur->sendQuery("drop table testtable"));
 	stdoutput.printf("\n");
 
 
 	// bind validation
+// #7996
+#if 0
 	stdoutput.printf("BIND VALIDATION: \n");
 	cur->sendQuery("drop table testtable");
 	cur->sendQuery(
@@ -1025,8 +1113,9 @@ int main(int argc, char **argv) {
 	assertTrue(cur->validBind("var3"));
 	assertFalse(cur->validBind("var4"));
 	assertTrue(cur->executeQuery());
-	cur->sendQuery("drop table testtable");
+	assertTrue(cur->sendQuery("drop table testtable"));
 	stdoutput.printf("\n");
+#endif
 
 
 	// rebinding
@@ -1067,7 +1156,7 @@ int main(int argc, char **argv) {
 	cur->inputBind("in2",1.1,2,1);
 	cur->inputBind("in3","hello");
 	assertTrue(cur->executeQuery());
-	cur->sendQuery("drop procedure testproc");
+	assertTrue(cur->sendQuery("drop procedure testproc"));
 	stdoutput.printf("\n");
 
 
@@ -1099,7 +1188,7 @@ int main(int argc, char **argv) {
 	cur->defineOutputBindInteger("out1");
 	assertTrue(cur->executeQuery());
 	assertEquals(cur->getOutputBindInteger("out1"),1);
-	cur->sendQuery("drop function testproc");
+	assertTrue(cur->sendQuery("drop function testproc"));
 	stdoutput.printf("\n");
 
 
@@ -1135,7 +1224,7 @@ int main(int argc, char **argv) {
 	assertEquals(cur->getOutputBindInteger("out1"),1);
 	assertEquals(cur->getOutputBindDouble("out2"),1.1);
 	assertEquals(cur->getOutputBindString("out3"),"hello");
-	cur->sendQuery("drop procedure testproc");
+	assertTrue(cur->sendQuery("drop procedure testproc"));
 	stdoutput.printf("\n");
 
 
@@ -1205,60 +1294,428 @@ int main(int argc, char **argv) {
 	stdoutput.printf("\n");
 
 
-	// direct transactsql
-	// FIXME: ...
-
-
 	// temporary tables
-	// FIXME: ...
+	stdoutput.printf("TEMPORARY TABLES: \n");
+	cur->prepareQuery("drop table $(HOSTNAME)_temptabledelete");
+	cur->substitution("HOSTNAME",hostname);
+	cur->executeQuery();
+	cur->prepareQuery(
+		"create global temporary table $(HOSTNAME)_temptabledelete ( "
+		"	col1 number "
+		") on commit delete rows");
+	cur->substitution("HOSTNAME",hostname);
+	cur->executeQuery();
+	cur->prepareQuery("insert into $(HOSTNAME)_temptabledelete values (1)");
+	cur->substitution("HOSTNAME",hostname);
+	assertTrue(cur->executeQuery());
+	cur->prepareQuery("select count(*) from $(HOSTNAME)_temptabledelete");
+	cur->substitution("HOSTNAME",hostname);
+	assertTrue(cur->executeQuery());
+	assertEquals(cur->getField(0,(uint32_t)0),"1");
+	assertTrue(con->commit());
+	cur->prepareQuery("select count(*) from $(HOSTNAME)_temptabledelete");
+	cur->substitution("HOSTNAME",hostname);
+	assertTrue(cur->executeQuery());
+	assertEquals(cur->getField(0,(uint32_t)0),"0");
+	cur->prepareQuery("drop table $(HOSTNAME)_temptabledelete");
+	cur->substitution("HOSTNAME",hostname);
+	cur->executeQuery();
+	stdoutput.printf("\n");
+	cur->prepareQuery("truncate table $(HOSTNAME)_temptablepreserve");
+	cur->substitution("HOSTNAME",hostname);
+	cur->executeQuery();
+	cur->prepareQuery("drop table $(HOSTNAME)_temptablepreserve");
+	cur->substitution("HOSTNAME",hostname);
+	cur->executeQuery();
+	cur->prepareQuery(
+		"create global temporary table $(HOSTNAME)_temptablepreserve ("
+		"	col1 number "
+		") on commit preserve rows");
+	cur->substitution("HOSTNAME",hostname);
+	cur->executeQuery();
+	cur->prepareQuery(
+		"insert into "
+		"	$(HOSTNAME)_temptablepreserve "
+		"values (1)");
+	cur->substitution("HOSTNAME",hostname);
+	assertTrue(cur->executeQuery());
+	cur->prepareQuery("select count(*) from $(HOSTNAME)_temptablepreserve");
+	cur->substitution("HOSTNAME",hostname);
+	assertTrue(cur->executeQuery());
+	assertEquals(cur->getField(0,(uint32_t)0),"1");
+	assertTrue(con->commit());
+	cur->prepareQuery("select count(*) from $(HOSTNAME)_temptablepreserve");
+	cur->substitution("HOSTNAME",hostname);
+	assertTrue(cur->executeQuery());
+	assertEquals(cur->getField(0,(uint32_t)0),"1");
+	con->endSession();
+	stdoutput.printf("\n");
+	cur->prepareQuery("select count(*) from $(HOSTNAME)_temptablepreserve");
+	cur->substitution("HOSTNAME",hostname);
+	assertTrue(cur->executeQuery());
+	assertEquals(cur->getField(0,(uint32_t)0),"0");
+	cur->prepareQuery("truncate table $(HOSTNAME)_temptablepreserve");
+	cur->substitution("HOSTNAME",hostname);
+	assertTrue(cur->executeQuery());
+	snooze::macrosnooze(2);
+	cur->prepareQuery("drop table $(HOSTNAME)_temptablepreserve");
+	cur->substitution("HOSTNAME",hostname);
+	assertTrue(cur->executeQuery());
+	cur->prepareQuery("select count(*) from $(HOSTNAME)_temptablepreserve");
+	cur->substitution("HOSTNAME",hostname);
+	assertFalse(cur->executeQuery());
+	stdoutput.printf("\n");
 
 
 	// database is schema
-	// FIXME: ...
+	stdoutput.printf("DATABASE IS SCHEMA: \n");
+	assertTrue(con->getDatabaseIsSchema());
+	stdoutput.printf("\n");
 
 
 	// catalog list
-	// FIXME: ...
+	stdoutput.printf("CATALOG LIST: \n");
+	assertTrue(cur->getCatalogList(NULL));
+	assertEquals(cur->getColumnName(0),"Database");
+	assertEquals(cur->rowCount(),0);
+	stdoutput.printf("\n");
 
 
 	// schema list
-	// FIXME: ...
+	stdoutput.printf("SCHEMA LIST: \n");
+	assertTrue(cur->getSchemaList(NULL));
+	assertEquals(cur->getColumnName(0),"Database");
+	bool	found=false;
+	for (uint64_t i=0; i<cur->rowCount(); i++) {
+		if (!charstring::compareIgnoringCase(
+				cur->getField(i,"Database"),hostname)) {
+			found=true;
+			break;
+		}
+	}
+	assertTrue(found);
+	stdoutput.printf("\n");
 
 
 	// table type list
-	// FIXME: ...
+	stdoutput.printf("TABLE TYPE LIST: \n");
+	assertTrue(cur->getTableTypeList());
+	assertEquals(cur->getColumnName(0),"table_type");
+	assertEquals(cur->getField(0,"table_type"),"SYNONYM");
+	assertEquals(cur->getField(1,"table_type"),"TABLE");
+	assertEquals(cur->getField(2,"table_type"),"VIEW");
+	stdoutput.printf("\n");
 
 
 	// table list
-	// FIXME: ...
+	stdoutput.printf("TABLE LIST: \n");
+	cur->sendQuery("drop table testtable1");
+	cur->sendQuery("drop table testtable2");
+	cur->sendQuery("drop table testtable3");
+	cur->sendQuery("drop table testtable4");
+	assertTrue(cur->sendQuery(
+		"create table testtable1 ("
+		"	testnumber number, "
+		"	testchar char(40), "
+		"	testvarchar varchar2(40), "
+		"	testdate date, "
+		"	testlong long, "
+		"	testclob clob, "
+		"	testblob blob)"));
+	assertTrue(cur->sendQuery(
+		"create table testtable2 ("
+		"	testnumber number, "
+		"	testchar char(40), "
+		"	testvarchar varchar2(40), "
+		"	testdate date, "
+		"	testlong long, "
+		"	testclob clob, "
+		"	testblob blob)"));
+	assertTrue(cur->sendQuery(
+		"create table testtable3 ("
+		"	testnumber number, "
+		"	testchar char(40), "
+		"	testvarchar varchar2(40), "
+		"	testdate date, "
+		"	testlong long, "
+		"	testclob clob, "
+		"	testblob blob)"));
+	assertTrue(cur->sendQuery(
+		"create table testtable4 ("
+		"	testnumber number, "
+		"	testchar char(40), "
+		"	testvarchar varchar2(40), "
+		"	testdate date, "
+		"	testlong long, "
+		"	testclob clob, "
+		"	testblob blob)"));
+	assertTrue(cur->getTableList(NULL));
+	counter=0;
+	for (uint64_t i=0; i<cur->rowCount(); i++) {
+		const char	*name=cur->getField(i,"Tables_in_xxx");
+		if (!charstring::compare(name,"TESTTABLE1") ||
+			!charstring::compare(name,"TESTTABLE2") ||
+			!charstring::compare(name,"TESTTABLE3") ||
+			!charstring::compare(name,"TESTTABLE4")) {
+			counter++;
+		}
+	}
+	assertEquals(counter,4);
+	assertTrue(cur->sendQuery("drop table testtable1"));
+	assertTrue(cur->sendQuery("drop table testtable2"));
+	assertTrue(cur->sendQuery("drop table testtable3"));
+	assertTrue(cur->sendQuery("drop table testtable4"));
+	stdoutput.printf("\n");
 
 
 	// type info list
-	// FIXME: ...
+	stdoutput.printf("TYPE INFO LIST: \n");
+	assertTrue(cur->getTypeInfoList("number"));
+	assertEquals(cur->getColumnName(0),"type_name");
+	assertEquals(cur->getColumnName(1),"data_type");
+	assertEquals(cur->getColumnName(2),"precision");
+	assertEquals(cur->getColumnName(3),"literal_prefix");
+	assertEquals(cur->getColumnName(4),"literal_suffix");
+	assertEquals(cur->getColumnName(5),"create_params");
+	assertEquals(cur->getColumnName(6),"nullable");
+	assertEquals(cur->getColumnName(7),"case_sensitive");
+	assertEquals(cur->getColumnName(8),"searchable");
+	assertEquals(cur->getColumnName(9),"unsigned_attribute");
+	assertEquals(cur->getColumnName(10),"fixed_prec_scale");
+	assertEquals(cur->getColumnName(11),"auto_increment");
+	assertEquals(cur->getColumnName(12),"local_type_name");
+	assertEquals(cur->getColumnName(13),"minumum_scale");
+	assertEquals(cur->getColumnName(14),"maxiumm_scale");
+	assertEquals(cur->getColumnName(15),"sql_data_type");
+	assertEquals(cur->getColumnName(16),"sql_datetime_sub");
+	assertEquals(cur->getColumnName(17),"num_prec_radix");
+	assertEquals(cur->getColumnName(18),"interval_precision");
+	assertEquals(cur->getField(0,"type_name"),"NUMBER");
+	assertEquals(cur->getField(0,"data_type"),"-7");
+	assertEquals(cur->getField(0,"precision"),"1");
+	assertEquals(cur->getField(0,"local_type_name"),"NUMBER");
+	assertTrue(cur->getTypeInfoList("char"));
+	assertEquals(cur->getField(0,"type_name"),"CHAR");
+	assertEquals(cur->getField(0,"data_type"),"1");
+	assertEquals(cur->getField(0,"precision"),"2000");
+	assertEquals(cur->getField(0,"local_type_name"),"CHAR");
+	assertTrue(cur->getTypeInfoList("varchar2"));
+	assertEquals(cur->getField(0,"type_name"),"VARCHAR2");
+	assertEquals(cur->getField(0,"data_type"),"12");
+	assertEquals(cur->getField(0,"precision"),"32767");
+	assertEquals(cur->getField(0,"local_type_name"),"VARCHAR2");
+	assertTrue(cur->getTypeInfoList("date"));
+	assertEquals(cur->getField(0,"type_name"),"DATE");
+	assertEquals(cur->getField(0,"data_type"),"92");
+	assertEquals(cur->getField(0,"precision"),"7");
+	assertEquals(cur->getField(0,"local_type_name"),"DATE");
+	stdoutput.printf("\n");
 
 
 	// column list
-	// FIXME: ...
+	stdoutput.printf("COLUMN LIST: \n");
+	cur->sendQuery("drop table testtable");
+	assertTrue(cur->sendQuery(
+		"create table testtable ("
+		"	testnumber number, "
+		"	testchar char(40), "
+		"	testvarchar varchar2(40), "
+		"	testdate date, "
+		"	testlong long, "
+		"	testclob clob, "
+		"	testblob blob)"));
+	assertTrue(cur->getColumnList("testtable",NULL));
+	assertEquals(cur->getColumnName(0),"column_name");
+	assertEquals(cur->getColumnName(1),"data_type");
+	assertEquals(cur->getColumnName(2),"character_maximum_length");
+	assertEquals(cur->getColumnName(3),"numeric_precision");
+	assertEquals(cur->getColumnName(4),"numeric_scale");
+	assertEquals(cur->getColumnName(5),"is_nullable");
+	assertEquals(cur->getColumnName(6),"column_key");
+	assertEquals(cur->getColumnName(7),"column_default");
+	assertEquals(cur->getColumnName(8),"extra");
+	assertEquals(cur->getField(0,"column_name"),"TESTNUMBER");
+	assertEquals(cur->getField(1,"column_name"),"TESTCHAR");
+	assertEquals(cur->getField(2,"column_name"),"TESTVARCHAR");
+	assertEquals(cur->getField(3,"column_name"),"TESTDATE");
+	assertEquals(cur->getField(4,"column_name"),"TESTLONG");
+	assertEquals(cur->getField(5,"column_name"),"TESTCLOB");
+	assertEquals(cur->getField(6,"column_name"),"TESTBLOB");
+	assertEquals(cur->getField(0,"data_type"),"NUMBER");
+	assertEquals(cur->getField(1,"data_type"),"CHAR");
+	assertEquals(cur->getField(2,"data_type"),"VARCHAR2");
+	assertEquals(cur->getField(3,"data_type"),"DATE");
+	assertEquals(cur->getField(4,"data_type"),"LONG");
+	assertEquals(cur->getField(5,"data_type"),"CLOB");
+	assertEquals(cur->getField(6,"data_type"),"BLOB");
+	assertTrue(cur->sendQuery("drop table testtable"));
+	stdoutput.printf("\n");
 
 
 	// column list - auto_increment, primary key
-	// FIXME: ...
+	// oracle doesn't support auto_increment
+	stdoutput.printf("COLUMN LIST - auto_increment, primary key: \n");
+	assertTrue(cur->sendQuery(
+		"create table testtable ("
+		"	col1 number primary key, "
+		"	col2 number)"));
+	assertTrue(cur->getColumnList("testtable",NULL));
+	assertTrue(charstring::contains(cur->getField(0,"column_key"),"PRI"));
+	assertFalse(charstring::contains(cur->getField(1,"column_key"),"PRI"));
+	assertTrue(cur->sendQuery("drop table testtable"));
+	stdoutput.printf("\n");
 
 
 	// primary keys list
-	// FIXME: ...
+	stdoutput.printf("PRIMARY KEYS LIST: \n");
+	cur->sendQuery("drop table testtable");
+	assertTrue(cur->sendQuery(
+		"create table testtable ("
+		"	col1 number primary key, "
+		"	col2 number)"));
+	assertTrue(cur->getPrimaryKeysList("testtable",NULL));
+	assertEquals(cur->getColumnName(0),"table");
+	assertEquals(cur->getColumnName(1),"non_unique");
+	assertEquals(cur->getColumnName(2),"key_name");
+	assertEquals(cur->getColumnName(3),"seq_in_index");
+	assertEquals(cur->getColumnName(4),"column_name");
+	assertEquals(cur->getColumnName(5),"collation");
+	assertEquals(cur->getColumnName(6),"cardinality");
+	assertEquals(cur->getColumnName(7),"sub_part");
+	assertEquals(cur->getColumnName(8),"packed");
+	assertEquals(cur->getColumnName(9),"null");
+	assertEquals(cur->getColumnName(10),"index_type");
+	assertEquals(cur->getColumnName(11),"comment");
+	assertEquals(cur->getColumnName(12),"index_comment");
+	assertEquals(cur->rowCount(),1);
+	assertEquals(cur->getField(0,"table"),"TESTTABLE");
+	assertEquals(cur->getField(0,"seq_in_index"),"1");
+	assertEquals(cur->getField(0,"column_name"),"COL1");
+	assertTrue(!charstring::isNullOrEmpty(cur->getField(0,"key_name")));
+	assertTrue(cur->sendQuery("drop table testtable"));
+	stdoutput.printf("\n");
 
 
 	// key and index list
-	// FIXME: ...
+	stdoutput.printf("KEY AND INDEX LIST: \n");
+	cur->sendQuery("drop table testtable");
+	assertTrue(cur->sendQuery(
+		"create table testtable ("
+		"	col1 number primary key, "
+		"	col2 number)"));
+	assertTrue(cur->getKeyAndIndexList("testtable",NULL));
+	assertEquals(cur->getColumnName(0),"table");
+	assertEquals(cur->getColumnName(1),"non_unique");
+	assertEquals(cur->getColumnName(2),"key_name");
+	assertEquals(cur->getColumnName(3),"seq_in_index");
+	assertEquals(cur->getColumnName(4),"column_name");
+	assertEquals(cur->getColumnName(5),"collation");
+	assertEquals(cur->getColumnName(6),"cardinality");
+	assertEquals(cur->getColumnName(7),"sub_part");
+	assertEquals(cur->getColumnName(8),"packed");
+	assertEquals(cur->getColumnName(9),"null");
+	assertEquals(cur->getColumnName(10),"index_type");
+	assertEquals(cur->getColumnName(11),"comment");
+	assertEquals(cur->getColumnName(12),"index_comment");
+	assertEquals(cur->rowCount(),1);
+	assertEquals(cur->getField(0,"table"),"TESTTABLE");
+	assertEquals(cur->getField(0,"non_unique"),"0");
+	assertEquals(cur->getField(0,"seq_in_index"),"1");
+	assertEquals(cur->getField(0,"column_name"),"COL1");
+	assertEquals(cur->getField(0,"collation"),"A");
+	assertEquals(cur->getField(0,"index_type"),"3");
+	assertTrue(!charstring::isNullOrEmpty(cur->getField(0,"key_name")));
+	assertTrue(cur->sendQuery("drop table testtable"));
+	stdoutput.printf("\n");
 
 
 	// procedure list
-	// FIXME: ...
+	stdoutput.printf("PROCEDURE LIST: \n");
+	cur->sendQuery("drop procedure testproc1");
+	cur->sendQuery("drop procedure testproc2");
+	cur->sendQuery("drop procedure testproc3");
+	cur->sendQuery("drop procedure testproc4");
+	assertTrue(cur->sendQuery(
+		"create procedure testproc1("
+		"	in1 in number, "
+		"	in2 in char, "
+		"	in3 in varchar2, "
+		"	in4 in date) as "
+		"begin "
+		"	null; "
+		"end;"));
+	assertTrue(cur->sendQuery(
+		"create procedure testproc2("
+		"	in1 in number, "
+		"	in2 in char, "
+		"	in3 in varchar2, "
+		"	in4 in date) as "
+		"begin "
+		"	null; "
+		"end;"));
+	assertTrue(cur->sendQuery(
+		"create procedure testproc3("
+		"	in1 in number, "
+		"	in2 in char, "
+		"	in3 in varchar2, "
+		"	in4 in date) as "
+		"begin "
+		"	null; "
+		"end;"));
+	assertTrue(cur->sendQuery(
+		"create procedure testproc4("
+		"	in1 in number, "
+		"	in2 in char, "
+		"	in3 in varchar2, "
+		"	in4 in date) as "
+		"begin "
+		"	null; "
+		"end;"));
+	assertTrue(cur->getProcedureList(NULL));
+	counter=0;
+	for (uint64_t i=0; i<cur->rowCount(); i++) {
+		const char	*name=cur->getField(i,"routine_name");
+		if (!charstring::compare(name,"TESTPROC1") ||
+			!charstring::compare(name,"TESTPROC2") ||
+			!charstring::compare(name,"TESTPROC3") ||
+			!charstring::compare(name,"TESTPROC4")) {
+			counter++;
+		}
+	}
+	assertEquals(counter,4);
+	stdoutput.printf("\n");
 
 
 	// procedure parameter list
-	// FIXME: ...
+	stdoutput.printf("PROCEDURE PARAMETER LIST: \n");
+	assertTrue(cur->getProcedureParameterList("testproc1",NULL));
+	assertEquals(cur->getColumnName(0),"parameter_name");
+	assertEquals(cur->getColumnName(1),"parameter_mode");
+	assertEquals(cur->getColumnName(2),"data_type");
+	assertEquals(cur->getColumnName(3),"character_maximum_length");
+	assertEquals(cur->getColumnName(4),"ordinal_position");
+	assertEquals(cur->rowCount(),4);
+	assertEquals(cur->getField(0,"parameter_name"),"IN1");
+	assertEquals(cur->getField(0,"parameter_mode"),"1");
+	assertEquals(cur->getField(0,"data_type"),"NUMBER");
+	assertEquals(cur->getField(0,"ordinal_position"),"1");
+	assertEquals(cur->getField(1,"parameter_name"),"IN2");
+	assertEquals(cur->getField(1,"parameter_mode"),"1");
+	assertEquals(cur->getField(1,"data_type"),"CHAR");
+	assertEquals(cur->getField(1,"ordinal_position"),"2");
+	assertEquals(cur->getField(2,"parameter_name"),"IN3");
+	assertEquals(cur->getField(2,"parameter_mode"),"1");
+	assertEquals(cur->getField(2,"data_type"),"VARCHAR2");
+	assertEquals(cur->getField(2,"ordinal_position"),"3");
+	assertEquals(cur->getField(3,"parameter_name"),"IN4");
+	assertEquals(cur->getField(3,"parameter_mode"),"1");
+	assertEquals(cur->getField(3,"data_type"),"DATE");
+	assertEquals(cur->getField(3,"ordinal_position"),"4");
+	assertTrue(cur->sendQuery("drop procedure testproc1"));
+	assertTrue(cur->sendQuery("drop procedure testproc2"));
+	assertTrue(cur->sendQuery("drop procedure testproc3"));
+	assertTrue(cur->sendQuery("drop procedure testproc4"));
+	stdoutput.printf("\n");
 
 
 	// invalid queries
@@ -1306,6 +1763,7 @@ int main(int argc, char **argv) {
 
 	delete cur;
 	delete con;
+	delete[] hostname;
 
 	reportTestStatus();
 

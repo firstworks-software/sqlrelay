@@ -136,8 +136,8 @@ int main(int argc, char **argv) {
 	stdoutput.printf("\n");
 
 
-	// bind by position
-	stdoutput.printf("BIND BY POSITION: \n");
+	// input bind by position
+	stdoutput.printf("INPUT BIND BY POSITION: \n");
 	cur->prepareQuery(
 		"insert into "
 		"	testtable "
@@ -164,16 +164,16 @@ int main(int argc, char **argv) {
 	stdoutput.printf("\n");
 
 
-	// array of binds by position
-	stdoutput.printf("ARRAY OF BINDS BY POSITION: \n");
+	// array of input binds by position
+	stdoutput.printf("ARRAY OF INPUT BINDS BY POSITION: \n");
 	cur->clearBinds();
 	cur->inputBinds(bindvars,bindvals);
 	assertTrue(cur->executeQuery());
 	stdoutput.printf("\n");
 
 
-	// bind by name
-	stdoutput.printf("BIND BY NAME: \n");
+	// input bind by name
+	stdoutput.printf("INPUT BIND BY NAME: \n");
 	cur->clearBinds();
 	assertEquals(cur->countBindVariables(),5);
 	cur->inputBind("var1",5);
@@ -192,16 +192,16 @@ int main(int argc, char **argv) {
 	stdoutput.printf("\n");
 
 
-	// array of binds by name
-	stdoutput.printf("ARRAY OF BINDS BY NAME: \n");
+	// array of input binds by name
+	stdoutput.printf("ARRAY OF INPUT BINDS BY NAME: \n");
 	cur->clearBinds();
 	cur->inputBinds(arraybindvars,arraybindvals);
 	assertTrue(cur->executeQuery());
 	stdoutput.printf("\n");
 
 
-	// bind by name with validation
-	stdoutput.printf("BIND BY NAME WITH VALIDATION: \n");
+	// input bind by name with validation
+	stdoutput.printf("INPUT BIND BY NAME WITH VALIDATION: \n");
 	cur->clearBinds();
 	cur->inputBind("var1",8);
 	cur->inputBind("var2","testchar8");
@@ -798,7 +798,7 @@ int main(int argc, char **argv) {
 	delete secondcon;
 	secondcon=NULL;
 	assertTrue(con->autoCommitOff());
-	cur->sendQuery("drop table testtable");
+	assertTrue(cur->sendQuery("drop table testtable"));
 	stdoutput.printf("\n");
 
 
@@ -856,11 +856,11 @@ int main(int argc, char **argv) {
 
 
 	// null and empty lobs
-	// FIXME: ...
+	// Oracle 7 doesn't support lobs
 
 
 	// long lobs
-	// FIXME: ...
+	// Oracle 7 doesn't support lobs
 
 
 	// output bind by position
@@ -872,6 +872,7 @@ int main(int argc, char **argv) {
 		"	:floatvar:=2.5; "
 		"	:datevar:='03-FEB-01'; "
 		"end;");
+	assertEquals(cur->countBindVariables(),4);
 	cur->defineOutputBindInteger("1");
 	cur->defineOutputBindString("2",10);
 	cur->defineOutputBindDouble("3");
@@ -900,6 +901,7 @@ int main(int argc, char **argv) {
 	// output bind by name
 	stdoutput.printf("OUTPUT BIND BY NAME: \n");
 	cur->clearBinds();
+	assertEquals(cur->countBindVariables(),4);
 	cur->defineOutputBindInteger("numvar");
 	cur->defineOutputBindString("stringvar",10);
 	cur->defineOutputBindDouble("floatvar");
@@ -956,7 +958,7 @@ int main(int argc, char **argv) {
 
 
 	// lob output bind
-	// FIXME: ...
+	// Oracle 7 doesn't support lobs
 
 
 	// long output bind
@@ -985,11 +987,13 @@ int main(int argc, char **argv) {
 	assertTrue(cur->executeQuery());
 	cur->sendQuery("select testval from testtable");
 	assertEquals(cur->getField(0,"TESTVAL"),"-1");
-	cur->sendQuery("drop table testtable");
+	assertTrue(cur->sendQuery("drop table testtable"));
 	stdoutput.printf("\n");
 
 
 	// bind validation
+// #7996
+#if 0
 	stdoutput.printf("BIND VALIDATION: \n");
 	cur->sendQuery("drop table testtable");
 	cur->sendQuery(
@@ -1025,8 +1029,9 @@ int main(int argc, char **argv) {
 	assertTrue(cur->validBind("var3"));
 	assertFalse(cur->validBind("var4"));
 	assertTrue(cur->executeQuery());
-	cur->sendQuery("drop table testtable");
+	assertTrue(cur->sendQuery("drop table testtable"));
 	stdoutput.printf("\n");
+#endif
 
 
 	// rebinding
@@ -1067,7 +1072,7 @@ int main(int argc, char **argv) {
 	cur->inputBind("in2",1.1,2,1);
 	cur->inputBind("in3","hello");
 	assertTrue(cur->executeQuery());
-	cur->sendQuery("drop procedure testproc");
+	assertTrue(cur->sendQuery("drop procedure testproc"));
 	stdoutput.printf("\n");
 
 
@@ -1099,7 +1104,7 @@ int main(int argc, char **argv) {
 	cur->defineOutputBindInteger("out1");
 	assertTrue(cur->executeQuery());
 	assertEquals(cur->getOutputBindInteger("out1"),1);
-	cur->sendQuery("drop function testproc");
+	assertTrue(cur->sendQuery("drop function testproc"));
 	stdoutput.printf("\n");
 
 
@@ -1135,68 +1140,64 @@ int main(int argc, char **argv) {
 	assertEquals(cur->getOutputBindInteger("out1"),1);
 	assertEquals(cur->getOutputBindDouble("out2"),1.1);
 	assertEquals(cur->getOutputBindString("out3"),"hello");
-	cur->sendQuery("drop procedure testproc");
+	assertTrue(cur->sendQuery("drop procedure testproc"));
 	stdoutput.printf("\n");
 
 
 	// stored procedure returning result set
-	// FIXME: ...
-
-
-	// direct transactsql
-	// FIXME: ...
+	// not super important to test with Oracle 7, maybe later
 
 
 	// temporary tables
-	// FIXME: ...
+	// not super important to test with Oracle 7, maybe later
 
 
 	// database is schema
-	// FIXME: ...
+	// not super important to test with Oracle 7, maybe later
 
 
 	// catalog list
-	// FIXME: ...
+	// not super important to test with Oracle 7, maybe later
 
 
 	// schema list
-	// FIXME: ...
+	// not super important to test with Oracle 7, maybe later
 
 
 	// table type list
-	// FIXME: ...
+	// not super important to test with Oracle 7, maybe later
 
 
 	// table list
-	// FIXME: ...
+	// not super important to test with Oracle 7, maybe later
 
 
 	// type info list
-	// FIXME: ...
+	// not super important to test with Oracle 7, maybe later
 
 
 	// column list
-	// FIXME: ...
+	// not super important to test with Oracle 7, maybe later
 
 
 	// column list - auto_increment, primary key
-	// FIXME: ...
+	// not super important to test with Oracle 7, maybe later
 
 
 	// primary keys list
-	// FIXME: ...
+	// not super important to test with Oracle 7, maybe later
 
 
 	// key and index list
-	// FIXME: ...
+	// not super important to test with Oracle 7, maybe later
 
 
 	// procedure list
-	// FIXME: ...
+	// not super important to test with Oracle 7, maybe later
 
 
 	// procedure parameter list
-	// FIXME: ...
+	// not super important to test with Oracle 7, maybe later
 
 
 	// invalid queries

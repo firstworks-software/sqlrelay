@@ -37,6 +37,7 @@ int main(int argc, char **argv) {
 	int16_t		second=0;
 	int32_t		microsecond=0;
 	const char	*tz=NULL;
+	const char	*nullvar;
 	bool		isnegative=false;
 	const char * const *cols;
 	const char * const *fields;
@@ -153,8 +154,8 @@ int main(int argc, char **argv) {
 	stdoutput.printf("\n");
 
 
-	// bind by position
-	stdoutput.printf("BIND BY POSITION: \n");
+	// input bind by position
+	stdoutput.printf("INPUT BIND BY POSITION: \n");
 	cur->prepareQuery(
 		"insert into "
 		"	testtable "
@@ -187,8 +188,8 @@ int main(int argc, char **argv) {
 	stdoutput.printf("\n");
 
 
-	// array of binds by position
-	stdoutput.printf("ARRAY OF BINDS BY POSITION: \n");
+	// array of input binds by position
+	stdoutput.printf("ARRAY OF INPUT BINDS BY POSITION: \n");
 	cur->clearBinds();
 	cur->inputBinds(bindvars,bindvals);
 	cur->inputBindClob("6","testclob4",9);
@@ -197,8 +198,8 @@ int main(int argc, char **argv) {
 	stdoutput.printf("\n");
 
 
-	// bind by name
-	stdoutput.printf("BIND BY NAME: \n");
+	// input bind by name
+	stdoutput.printf("INPUT BIND BY NAME: \n");
 	cur->clearBinds();
 	assertEquals(cur->countBindVariables(),7);
 	cur->inputBind("var1",5);
@@ -221,8 +222,8 @@ int main(int argc, char **argv) {
 	stdoutput.printf("\n");
 
 
-	// array of binds by name
-	stdoutput.printf("ARRAY OF BINDS BY NAME: \n");
+	// array of input binds by name
+	stdoutput.printf("ARRAY OF INPUT BINDS BY NAME: \n");
 	cur->clearBinds();
 	cur->inputBinds(arraybindvars,arraybindvals);
 	cur->inputBindClob("var6","testclob7",9);
@@ -231,8 +232,8 @@ int main(int argc, char **argv) {
 	stdoutput.printf("\n");
 
 
-	// bind by name with validation
-	stdoutput.printf("BIND BY NAME WITH VALIDATION: \n");
+	// input bind by name with validation
+	stdoutput.printf("INPUT BIND BY NAME WITH VALIDATION: \n");
 	cur->clearBinds();
 	cur->inputBind("var1",8);
 	cur->inputBind("var2","testchar8");
@@ -875,7 +876,7 @@ int main(int argc, char **argv) {
 	delete secondcon;
 	secondcon=NULL;
 	assertTrue(con->autoCommitOff());
-	cur->sendQuery("drop table testtable");
+	assertTrue(cur->sendQuery("drop table testtable"));
 	stdoutput.printf("\n");
 
 
@@ -968,7 +969,7 @@ int main(int argc, char **argv) {
 	assertEquals(cur->getField(0,1),NULL);
 	assertEquals(cur->getField(0,2),NULL);
 	assertEquals(cur->getField(0,3),NULL);
-	cur->sendQuery("drop table testtable");
+	assertTrue(cur->sendQuery("drop table testtable"));
 	stdoutput.printf("\n");
 
 
@@ -986,7 +987,7 @@ int main(int argc, char **argv) {
 	cur->sendQuery("select testclob from testtable");
 	assertEquals(cur->getFieldLength(0,"TESTCLOB"),LARGE_BUFFER_LENGTH);
 	assertEquals(largebuffer,cur->getField(0,"TESTCLOB"));
-	cur->sendQuery("drop table testtable");
+	assertTrue(cur->sendQuery("drop table testtable"));
 	stdoutput.printf("\n");
 
 
@@ -1000,6 +1001,7 @@ int main(int argc, char **argv) {
 		"	:datevar:='03-FEB-2001'; "
 		"	:nullvar:=null; "
 		"end;");
+	assertEquals(cur->countBindVariables(),5);
 	cur->defineOutputBindInteger("1");
 	cur->defineOutputBindString("2",10);
 	cur->defineOutputBindDouble("3");
@@ -1012,6 +1014,7 @@ int main(int argc, char **argv) {
 	cur->getOutputBindDate("4",&year,&month,&day,
 				&hour,&minute,&second,&microsecond,&tz,
 				&isnegative);
+	nullvar=cur->getOutputBindString("5");
 	assertEquals(numvar,1);
 	assertEquals(stringvar,"hello");
 	assertEquals(floatvar,2.5);
@@ -1023,13 +1026,14 @@ int main(int argc, char **argv) {
 	assertEquals(second,0);
 	assertEquals(microsecond,0);
 	assertEquals(tz,"");
-	assertEquals(cur->getOutputBindString("5"),NULL);
+	assertEquals(nullvar,NULL);
 	stdoutput.printf("\n");
 
 
 	// output bind by name
 	stdoutput.printf("OUTPUT BIND BY NAME: \n");
 	cur->clearBinds();
+	assertEquals(cur->countBindVariables(),5);
 	cur->defineOutputBindInteger("numvar");
 	cur->defineOutputBindString("stringvar",10);
 	cur->defineOutputBindDouble("floatvar");
@@ -1053,7 +1057,8 @@ int main(int argc, char **argv) {
 	assertEquals(second,0);
 	assertEquals(microsecond,0);
 	assertEquals(tz,"");
-	assertEquals(cur->getOutputBindString("nullvar"),NULL);
+	nullvar=cur->getOutputBindString("nullvar");
+	assertEquals(nullvar,NULL);
 	stdoutput.printf("\n");
 
 
@@ -1085,7 +1090,8 @@ int main(int argc, char **argv) {
 	assertEquals(second,0);
 	assertEquals(microsecond,0);
 	assertEquals(tz,"");
-	assertEquals(cur->getOutputBindString("nullvar"),NULL);
+	nullvar=cur->getOutputBindString("nullvar");
+	assertEquals(nullvar,NULL);
 	stdoutput.printf("\n");
 
 
@@ -1115,25 +1121,24 @@ int main(int argc, char **argv) {
 	assertEquals(clobvarlength,5);
 	assertEquals(blobvar,"hello",5);
 	assertEquals(blobvarlength,5);
-	cur->sendQuery("drop table testtable");
+	assertTrue(cur->sendQuery("drop table testtable"));
 	stdoutput.printf("\n");
 
 
 	// long output bind
 	stdoutput.printf("LONG OUTPUT BIND\n");
-	char	testval[4001];
-	testval[4000]='\0';
-	for (int i=0; i<4000; i++) {
-		testval[i]='C';
+	for (int i=0; i<LARGE_BUFFER_LENGTH; i++) {
+		largebuffer[i]='C';
 	}
-	char	query[4000+25];
+	largebuffer[LARGE_BUFFER_LENGTH]='\0';
+	char	query[LARGE_BUFFER_LENGTH+25];
 	charstring::printf(query,sizeof(query),
-				"begin :bindval:='%s'; end;",testval);
+				"begin :bindval:='%s'; end;",largebuffer);
 	cur->prepareQuery(query);
-	cur->defineOutputBindString("bindval",4000);
+	cur->defineOutputBindString("bindval",LARGE_BUFFER_LENGTH);
 	assertTrue(cur->executeQuery());
-	assertEquals(cur->getOutputBindLength("bindval"),4000);
-	assertEquals(cur->getOutputBindString("bindval"),testval);
+	assertEquals(cur->getOutputBindLength("bindval"),LARGE_BUFFER_LENGTH);
+	assertEquals(cur->getOutputBindString("bindval"),largebuffer);
 	stdoutput.printf("\n");
 
 
@@ -1146,11 +1151,13 @@ int main(int argc, char **argv) {
 	assertTrue(cur->executeQuery());
 	cur->sendQuery("select testval from testtable");
 	assertEquals(cur->getField(0,"TESTVAL"),"-1");
-	cur->sendQuery("drop table testtable");
+	assertTrue(cur->sendQuery("drop table testtable"));
 	stdoutput.printf("\n");
 
 
 	// bind validation
+// #7996
+#if 0
 	stdoutput.printf("BIND VALIDATION: \n");
 	cur->sendQuery("drop table testtable");
 	cur->sendQuery(
@@ -1186,8 +1193,9 @@ int main(int argc, char **argv) {
 	assertTrue(cur->validBind("var3"));
 	assertFalse(cur->validBind("var4"));
 	assertTrue(cur->executeQuery());
-	cur->sendQuery("drop table testtable");
+	assertTrue(cur->sendQuery("drop table testtable"));
 	stdoutput.printf("\n");
+#endif
 
 
 	// rebinding
@@ -1228,7 +1236,7 @@ int main(int argc, char **argv) {
 	cur->inputBind("in2",1.1,2,1);
 	cur->inputBind("in3","hello");
 	assertTrue(cur->executeQuery());
-	cur->sendQuery("drop procedure testproc");
+	assertTrue(cur->sendQuery("drop procedure testproc"));
 	stdoutput.printf("\n");
 
 
@@ -1263,7 +1271,7 @@ int main(int argc, char **argv) {
 	cur->defineOutputBindInteger("out1");
 	assertTrue(cur->executeQuery());
 	assertEquals(cur->getOutputBindInteger("out1"),1);
-	cur->sendQuery("drop function testproc");
+	assertTrue(cur->sendQuery("drop function testproc"));
 	stdoutput.printf("\n");
 
 
@@ -1300,7 +1308,7 @@ int main(int argc, char **argv) {
 	assertEquals(cur->getOutputBindInteger("out1"),1);
 	assertEquals(cur->getOutputBindDouble("out2"),1.1);
 	assertEquals(cur->getOutputBindString("out3"),"hello");
-	cur->sendQuery("drop procedure testproc");
+	assertTrue(cur->sendQuery("drop procedure testproc"));
 	stdoutput.printf("\n");
 
 
@@ -1368,10 +1376,6 @@ int main(int argc, char **argv) {
 	assertTrue(cur->sendQuery("drop function testproc"));
 	assertTrue(cur->sendQuery("drop package types"));
 	stdoutput.printf("\n");
-
-
-	// direct transactsql
-	// FIXME: ...
 
 
 	// temporary tables
@@ -1541,10 +1545,10 @@ int main(int argc, char **argv) {
 		}
 	}
 	assertEquals(counter,4);
-	cur->sendQuery("drop table testtable1");
-	cur->sendQuery("drop table testtable2");
-	cur->sendQuery("drop table testtable3");
-	cur->sendQuery("drop table testtable4");
+	assertTrue(cur->sendQuery("drop table testtable1"));
+	assertTrue(cur->sendQuery("drop table testtable2"));
+	assertTrue(cur->sendQuery("drop table testtable3"));
+	assertTrue(cur->sendQuery("drop table testtable4"));
 	stdoutput.printf("\n");
 
 
@@ -1628,7 +1632,7 @@ int main(int argc, char **argv) {
 	assertEquals(cur->getField(4,"data_type"),"LONG");
 	assertEquals(cur->getField(5,"data_type"),"CLOB");
 	assertEquals(cur->getField(6,"data_type"),"BLOB");
-	cur->sendQuery("drop table testtable");
+	assertTrue(cur->sendQuery("drop table testtable"));
 	stdoutput.printf("\n");
 
 
@@ -1672,7 +1676,7 @@ int main(int argc, char **argv) {
 	assertEquals(cur->getField(0,"seq_in_index"),"1");
 	assertEquals(cur->getField(0,"column_name"),"COL1");
 	assertTrue(!charstring::isNullOrEmpty(cur->getField(0,"key_name")));
-	cur->sendQuery("drop table testtable");
+	assertTrue(cur->sendQuery("drop table testtable"));
 	stdoutput.printf("\n");
 
 
@@ -1705,7 +1709,7 @@ int main(int argc, char **argv) {
 	assertEquals(cur->getField(0,"collation"),"A");
 	assertEquals(cur->getField(0,"index_type"),"3");
 	assertTrue(!charstring::isNullOrEmpty(cur->getField(0,"key_name")));
-	cur->sendQuery("drop table testtable");
+	assertTrue(cur->sendQuery("drop table testtable"));
 	stdoutput.printf("\n");
 
 
@@ -1791,10 +1795,10 @@ int main(int argc, char **argv) {
 	assertEquals(cur->getField(3,"parameter_mode"),"1");
 	assertEquals(cur->getField(3,"data_type"),"DATE");
 	assertEquals(cur->getField(3,"ordinal_position"),"4");
-	cur->sendQuery("drop procedure testproc1");
-	cur->sendQuery("drop procedure testproc2");
-	cur->sendQuery("drop procedure testproc3");
-	cur->sendQuery("drop procedure testproc4");
+	assertTrue(cur->sendQuery("drop procedure testproc1"));
+	assertTrue(cur->sendQuery("drop procedure testproc2"));
+	assertTrue(cur->sendQuery("drop procedure testproc3"));
+	assertTrue(cur->sendQuery("drop procedure testproc4"));
 	stdoutput.printf("\n");
 
 

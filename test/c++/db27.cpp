@@ -32,6 +32,7 @@ int main(int argc, char **argv) {
 	uint32_t	scales[]={2,3,4};
 	int64_t		numvar;
 	const char	*stringvar;
+	const char	*nullvar;
 	double		floatvar;
 	int16_t		year=0;
 	int16_t		month=0;
@@ -148,8 +149,8 @@ int main(int argc, char **argv) {
 	stdoutput.printf("\n");
 
 
-	// bind by position
-	stdoutput.printf("BIND BY POSITION: \n");
+	// input bind by position
+	stdoutput.printf("INPUT BIND BY POSITION: \n");
 	cur->prepareQuery(
 		"insert into "
 		"	testtable "
@@ -198,23 +199,23 @@ int main(int argc, char **argv) {
 	stdoutput.printf("\n");
 
 
-	// array of binds by position
-	stdoutput.printf("ARRAY OF BINDS BY POSITION: \n");
+	// array of input binds by position
+	stdoutput.printf("ARRAY OF INPUT BINDS BY POSITION: \n");
 	cur->clearBinds();
 	cur->inputBinds(bindvars,bindvals);
 	assertTrue(cur->executeQuery());
 	stdoutput.printf("\n");
 
 
-	// bind by name
+	// input bind by name
 	// db2 doesn't support bind by name
 
 
-	// array of binds by name
+	// array of input binds by name
 	// db2 doesn't support bind by name
 
 
-	// bind by name with validation
+	// input bind by name with validation
 	// db2 doesn't support bind by name
 
 
@@ -994,7 +995,7 @@ int main(int argc, char **argv) {
 	delete secondcon;
 	secondcon=NULL;
 	assertTrue(con->autoCommitOff());
-	cur->sendQuery("drop table testtable");
+	assertTrue(cur->sendQuery("drop table testtable"));
 	assertTrue(con->commit());
 	stdoutput.printf("\n");
 
@@ -1081,7 +1082,7 @@ int main(int argc, char **argv) {
 	assertEquals(cur->getField(0,1),NULL);
 	assertEquals(cur->getField(0,2),NULL);
 	assertEquals(cur->getField(0,3),NULL);
-	cur->sendQuery("drop table testtable");
+	assertTrue(cur->sendQuery("drop table testtable"));
 	assertTrue(con->commit());
 	stdoutput.printf("\n");
 
@@ -1129,6 +1130,7 @@ int main(int argc, char **argv) {
 		"end"));
 	assertTrue(con->commit());
 	cur->prepareQuery("call testproc(?,?,?,?,?)");
+	assertEquals(cur->countBindVariables(),5);
 	cur->defineOutputBindInteger("1");
 	cur->defineOutputBindString("2",20);
 	cur->defineOutputBindDouble("3");
@@ -1152,18 +1154,19 @@ int main(int argc, char **argv) {
 	assertEquals(second,0);
 	assertEquals(microsecond,0);
 	assertEquals(tz,"");
-	assertEquals(cur->getOutputBindString("5"),NULL);
+	nullvar=cur->getOutputBindString("5");
+	assertEquals(nullvar,NULL);
 	assertTrue(cur->sendQuery("drop procedure testproc"));
 	assertTrue(con->commit());
 	stdoutput.printf("\n");
 
 
 	// output bind by name
-	// FIXME: ...
+	// db2 doesn't support bind by name
 
 
 	// output bind by name with validation
-	// FIXME: ...
+	// db2 doesn't support bind by name
 
 
 	// lob output bind
@@ -1201,7 +1204,7 @@ int main(int argc, char **argv) {
 	assertEquals(blobvar,"hello",5);
 	assertEquals(blobvarlength,5);
 	assertTrue(cur->sendQuery("drop procedure testproc"));
-	cur->sendQuery("drop table testtable");
+	assertTrue(cur->sendQuery("drop table testtable"));
 	assertTrue(con->commit());
 	stdoutput.printf("\n");
 
@@ -1242,13 +1245,52 @@ int main(int argc, char **argv) {
 	assertTrue(cur->executeQuery());
 	cur->sendQuery("select testval from testtable");
 	assertEquals(cur->getField(0,"TESTVAL"),"-1");
-	cur->sendQuery("drop table testtable");
+	assertTrue(cur->sendQuery("drop table testtable"));
 	assertTrue(con->commit());
 	stdoutput.printf("\n");
 
 
 	// bind validation
-	// FIXME: ...
+// #7996
+#if 0
+	stdoutput.printf("BIND VALIDATION: \n");
+	cur->sendQuery("drop table testtable");
+	cur->sendQuery(
+		"create table testtable ("
+		"	col1 varchar(20), "
+		"	col2 varchar(20), "
+		"	col3 varchar(20))");
+	cur->prepareQuery(
+		"insert into "
+		"	testtable "
+		"values ("
+		"	$(var1), "
+		"	$(var2), "
+		"	$(var3))");
+	cur->inputBind("var1",1);
+	cur->inputBind("var2",2);
+	cur->inputBind("var3",3);
+	cur->substitution("var1","?");
+	assertTrue(cur->validBind("var1"));
+	assertFalse(cur->validBind("var2"));
+	assertFalse(cur->validBind("var3"));
+	assertFalse(cur->validBind("var4"));
+	stdoutput.printf("\n");
+	cur->substitution("var2","?");
+	assertTrue(cur->validBind("var1"));
+	assertTrue(cur->validBind("var2"));
+	assertFalse(cur->validBind("var3"));
+	assertFalse(cur->validBind("var4"));
+	stdoutput.printf("\n");
+	cur->substitution("var3","?");
+	assertTrue(cur->validBind("var1"));
+	assertTrue(cur->validBind("var2"));
+	assertTrue(cur->validBind("var3"));
+	assertFalse(cur->validBind("var4"));
+	assertTrue(cur->executeQuery());
+	assertTrue(cur->sendQuery("drop table testtable"));
+	stdoutput.printf("\n");
+#endif
 
 
 	// rebinding
@@ -1442,13 +1484,8 @@ int main(int argc, char **argv) {
 	stdoutput.printf("\n");
 
 
-	// direct transactsql
-	// FIXME: ...
-
 	// temporary tables
-	// the declare below fails with:
-	// requires a user temporary table space with a page size
-	// of at least 4096 that the user is authorized to use
+// #7997
 #if 0
 	stdoutput.printf("TEMPORARY TABLES: \n");
 	cur->sendQuery("drop table session.temptable");
@@ -1469,51 +1506,51 @@ int main(int argc, char **argv) {
 
 
 	// database is schema
-	// FIXME: ...
+        // not super important to test with DB2 7, maybe later
 
 
 	// catalog list
-	// FIXME: ...
+        // not super important to test with DB2 7, maybe later
 
 
 	// schema list
-	// FIXME: ...
+        // not super important to test with DB2 7, maybe later
 
 
 	// table type list
-	// FIXME: ...
+        // not super important to test with DB2 7, maybe later
 
 
 	// table list
-	// FIXME: ...
+        // not super important to test with DB2 7, maybe later
 
 
 	// type info list
-	// FIXME: ...
+        // not super important to test with DB2 7, maybe later
 
 
 	// column list
-	// FIXME: ...
+        // not super important to test with DB2 7, maybe later
 
 
 	// column list - auto_increment, primary key
-	// FIXME: ...
+        // not super important to test with DB2 7, maybe later
 
 
 	// primary keys list
-	// FIXME: ...
+        // not super important to test with DB2 7, maybe later
 
 
 	// key and index list
-	// FIXME: ...
+        // not super important to test with DB2 7, maybe later
 
 
 	// procedure list
-	// FIXME: ...
+        // not super important to test with DB2 7, maybe later
 
 
 	// procedure parameter list
-	// FIXME: ...
+        // not super important to test with DB2 7, maybe later
 
 
 	// invalid queries
