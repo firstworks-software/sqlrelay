@@ -1148,22 +1148,195 @@ int main(int argc, char **argv) {
 
 
 	// output bind by position
-	// FIXME: ...
+	// FreeTDS needs to support cursors for this to work
+	#if 0
+	stdoutput.printf("OUTPUT BIND BY POSITION: \n");
+	cur->sendQuery("drop procedure testproc");
+	assertTrue(cur->sendQuery(
+		"create procedure testproc "
+		"	@out1 int output, "
+		"	@out2 varchar(20) output, "
+		"	@out3 float output, "
+		"	@out4 datetime output, "
+		"	@out5 varchar(20) output as "
+		"select @out1=1, "
+		"	@out2='hello', "
+		"	@out3=2.5, "
+		"	@out4='2001-02-03', "
+		"	@out5=null"));
+	cur->prepareQuery("exec testproc");
+	assertEquals(cur->countBindVariables(),0);
+	cur->defineOutputBindInteger("1");
+	cur->defineOutputBindString("2",20);
+	cur->defineOutputBindDouble("3");
+	cur->defineOutputBindDate("4");
+	cur->defineOutputBindString("5",20);
+	assertTrue(cur->executeQuery());
+	numvar=cur->getOutputBindInteger("1");
+	stringvar=cur->getOutputBindString("2");
+	floatvar=cur->getOutputBindDouble("3");
+	cur->getOutputBindDate("4",&year,&month,&day,
+				&hour,&minute,&second,&microsecond,&tz,
+				&isnegative);
+	assertEquals(numvar,1);
+	assertEquals(stringvar,"hello");
+	assertEquals(floatvar,2.5);
+	assertEquals(year,2001);
+	assertEquals(month,2);
+	assertEquals(day,3);
+	assertEquals(hour,0);
+	assertEquals(minute,0);
+	assertEquals(second,0);
+	assertEquals(microsecond,0);
+	assertEquals(tz,"");
+	nullvar=cur->getOutputBindString("5");
+	assertEquals(nullvar,NULL);
+	assertTrue(cur->sendQuery("drop procedure testproc"));
+	stdoutput.printf("\n");
+	#endif
+
 
 	// output bind by name
-	// FIXME: ...
+	// FreeTDS needs to support cursors for this to work
+	#if 0
+	stdoutput.printf("OUTPUT BIND BY NAME: \n");
+	cur->sendQuery("drop procedure testproc");
+	assertTrue(cur->sendQuery(
+		"create procedure testproc "
+		"	@out1 int output, "
+		"	@out2 varchar(20) output, "
+		"	@out3 float output, "
+		"	@out4 datetime output, "
+		"	@out5 varchar(20) output as "
+		"select @out1=1, "
+		"	@out2='hello', "
+		"	@out3=2.5, "
+		"	@out4='2001-02-03', "
+		"	@out5=null"));
+	cur->prepareQuery("exec testproc");
+	assertEquals(cur->countBindVariables(),0);
+	cur->defineOutputBindInteger("out1");
+	cur->defineOutputBindString("out2",20);
+	cur->defineOutputBindDouble("out3");
+	cur->defineOutputBindDate("out4");
+	cur->defineOutputBindString("out5",20);
+	assertTrue(cur->executeQuery());
+	numvar=cur->getOutputBindInteger("out1");
+	stringvar=cur->getOutputBindString("out2");
+	floatvar=cur->getOutputBindDouble("out3");
+	cur->getOutputBindDate("out4",&year,&month,&day,
+				&hour,&minute,&second,&microsecond,&tz,
+				&isnegative);
+	assertEquals(numvar,1);
+	assertEquals(stringvar,"hello");
+	assertEquals(floatvar,2.5);
+	assertEquals(year,2001);
+	assertEquals(month,2);
+	assertEquals(day,3);
+	assertEquals(hour,0);
+	assertEquals(minute,0);
+	assertEquals(second,0);
+	assertEquals(microsecond,0);
+	assertEquals(tz,"");
+	nullvar=cur->getOutputBindString("out5");
+	assertEquals(nullvar,NULL);
+	assertTrue(cur->sendQuery("drop procedure testproc"));
+	stdoutput.printf("\n");
+	#endif
+
 
 	// output bind by name with validation
-	// FIXME: ...
+	// FreeTDS needs to support cursors for this to work
+	#if 0
+	stdoutput.printf("OUTPUT BIND BY NAME WITH VALIDATION: \n");
+	cur->sendQuery("drop procedure testproc");
+	assertTrue(cur->sendQuery(
+		"create procedure testproc "
+		"	@out1 int output, "
+		"	@out2 varchar(20) output, "
+		"	@out3 float output, "
+		"	@out4 datetime output, "
+		"	@out5 varchar(20) output as "
+		"select @out1=1, "
+		"	@out2='hello', "
+		"	@out3=2.5, "
+		"	@out4='2001-02-03', "
+		"	@out5=null"));
+	cur->prepareQuery("exec testproc");
+	cur->defineOutputBindInteger("out1");
+	cur->defineOutputBindString("out2",20);
+	cur->defineOutputBindDouble("out3");
+	cur->defineOutputBindDate("out4");
+	cur->defineOutputBindString("out5",20);
+	cur->defineOutputBindString("dummyvar",20);
+	cur->validateBinds();
+	assertTrue(cur->executeQuery());
+	numvar=cur->getOutputBindInteger("out1");
+	stringvar=cur->getOutputBindString("out2");
+	floatvar=cur->getOutputBindDouble("out3");
+	cur->getOutputBindDate("out4",&year,&month,&day,
+				&hour,&minute,&second,&microsecond,&tz,
+				&isnegative);
+	assertEquals(numvar,1);
+	assertEquals(stringvar,"hello");
+	assertEquals(floatvar,2.5);
+	assertEquals(year,2001);
+	assertEquals(month,2);
+	assertEquals(day,3);
+	assertEquals(hour,0);
+	assertEquals(minute,0);
+	assertEquals(second,0);
+	assertEquals(microsecond,0);
+	assertEquals(tz,"");
+	nullvar=cur->getOutputBindString("out5");
+	assertEquals(nullvar,NULL);
+	assertTrue(cur->sendQuery("drop procedure testproc"));
+	stdoutput.printf("\n");
+	#endif
+
 
 	// lob output bind
-	// FIXME: ...
+	// sap doesn't support lobs as output parameters to stored procedures,
+	// and there's no way to directly select into a lob bind variable
+
 
 	// long output bind
-	// FIXME: ...
+	// FreeTDS needs to support cursors for this to work
+	#if 0
+	stdoutput.printf("LONG OUTPUT BIND\n");
+	cur->sendQuery("drop procedure testproc");
+	for (int i=0; i<LARGE_BUFFER_LENGTH; i++) {
+		largebuffer[i]='C';
+	}
+	largebuffer[LARGE_BUFFER_LENGTH]='\0';
+	char	query[LARGE_BUFFER_LENGTH+256];
+	charstring::printf(query,sizeof(query),
+		"create procedure testproc "
+		"@bindval varchar(%d) output as "
+		"set @bindval='%s'",LARGE_BUFFER_LENGTH,largebuffer);
+	assertTrue(cur->sendQuery(query));
+	cur->prepareQuery("exec testproc");
+	cur->defineOutputBindString("bindval",LARGE_BUFFER_LENGTH);
+	assertTrue(cur->executeQuery());
+	assertEquals(cur->getOutputBindLength("bindval"),LARGE_BUFFER_LENGTH);
+	assertEquals(cur->getOutputBindString("bindval"),largebuffer);
+	assertTrue(cur->sendQuery("drop procedure testproc"));
+	stdoutput.printf("\n");
+	#endif
+
 
 	// negative input bind
-	// FIXME: ...
+	stdoutput.printf("NEGATIVE INPUT BIND\n");
+	cur->sendQuery("drop table testtable");
+	cur->sendQuery("create table testtable (testval int)");
+	cur->prepareQuery("insert into testtable values (@testval)");
+	cur->inputBind("testval",-1);
+	assertTrue(cur->executeQuery());
+	cur->sendQuery("select testval from testtable");
+	assertEquals(cur->getField(0,"testval"),"-1");
+	assertTrue(cur->sendQuery("drop table testtable"));
+	stdoutput.printf("\n");
+
 
 	// bind validation
 // #7996
@@ -1207,14 +1380,107 @@ int main(int argc, char **argv) {
 	stdoutput.printf("\n");
 #endif
 
+
 	// rebinding
-	// FIXME: ...
+	// FreeTDS needs to support cursors for this to work
+	#if 0
+	stdoutput.printf("REBINDING: \n");
+	cur->sendQuery("drop procedure testproc");
+	assertTrue(cur->sendQuery(
+		"create procedure testproc "
+		"	@in1 int, "
+		"	@out1 int output as "
+		"select @out1=@in1"));
+	cur->prepareQuery("exec testproc");
+	cur->inputBind("in1",1);
+	cur->defineOutputBindInteger("out1");
+	assertTrue(cur->executeQuery());
+	assertEquals(cur->getOutputBindInteger("out1"),1);
+	cur->inputBind("in1",2);
+	assertTrue(cur->executeQuery());
+	assertEquals(cur->getOutputBindInteger("out1"),2);
+	cur->inputBind("in1",3);
+	assertTrue(cur->executeQuery());
+	assertEquals(cur->getOutputBindInteger("out1"),3);
+	assertTrue(cur->sendQuery("drop procedure testproc"));
+	stdoutput.printf("\n");
+	#endif
+
 
 	// stored procedure returning no value
-	// FIXME: ...
+	// FreeTDS needs to support cursors for this to work
+	#if 0
+	stdoutput.printf("STORED PROCEDURE RETURNING NO VALUE: \n");
+	cur->sendQuery("drop procedure testproc");
+	assertTrue(cur->sendQuery(
+		"create procedure testproc "
+		"	@in1 int, "
+		"	@in2 float, "
+		"	@in3 varchar(20) as "
+		"return"));
+	cur->prepareQuery("exec testproc");
+	cur->inputBind("in1",1);
+	cur->inputBind("in2",1.1,2,1);
+	cur->inputBind("in3","hello");
+	assertTrue(cur->executeQuery());
+	assertTrue(cur->sendQuery("drop procedure testproc"));
+	stdoutput.printf("\n");
+	#endif
+
 
 	// stored procedure returning single value
-	// FIXME: ...
+	// FreeTDS needs to support cursors for this to work
+	#if 0
+	stdoutput.printf("STORED PROCEDURE RETURNING SINGLE VALUE: \n");
+	cur->sendQuery("drop procedure testproc");
+	assertTrue(cur->sendQuery(
+		"create procedure testproc "
+		"	@in1 int, "
+		"	@in2 float, "
+		"	@in3 varchar(20), "
+		"	@out1 int output as "
+		"select @out1=@in1"));
+	cur->prepareQuery("exec testproc");
+	cur->inputBind("in1",1);
+	cur->inputBind("in2",1.1,2,1);
+	cur->inputBind("in3","hello");
+	cur->defineOutputBindInteger("out1");
+	assertTrue(cur->executeQuery());
+	assertEquals(cur->getOutputBindInteger("out1"),1);
+	assertTrue(cur->sendQuery("drop procedure testproc"));
+	stdoutput.printf("\n");
+	#endif
+
+
+	// stored procedure returning multiple values
+	// FreeTDS needs to support cursors for this to work
+	#if 0
+	stdoutput.printf("STORED PROCEDURE RETURNING MULTIPLE VALUES: \n");
+	cur->sendQuery("drop procedure testproc");
+	assertTrue(cur->sendQuery(
+		"create procedure testproc @in1 int, "
+		"       @in2 float, "
+		"       @in3 varchar(20), "
+		"       @out1 int output, "
+		"       @out2 float output, "
+		"       @out3 varchar(20) output as "
+		"select @out1=@in1, "
+		"       @out2=@in2, "
+		"       @out3=@in3"));
+	cur->prepareQuery("exec testproc");
+	cur->inputBind("in1",1);
+	cur->inputBind("in2",1.1,2,1);
+	cur->inputBind("in3","hello");
+	cur->defineOutputBindInteger("out1");
+	cur->defineOutputBindDouble("out2");
+	cur->defineOutputBindString("out3",20);
+	assertTrue(cur->executeQuery());
+	assertEquals(cur->getOutputBindInteger("out1"),1);
+	assertEquals(cur->getOutputBindDouble("out2"),1.1);
+	assertEquals(cur->getOutputBindString("out3"),"hello");
+	assertTrue(cur->sendQuery("drop procedure testproc"));
+	stdoutput.printf("\n");
+	#endif
 
 
 	// stored procedure returning result set
@@ -1269,37 +1535,6 @@ int main(int argc, char **argv) {
 	stdoutput.printf("\n");
 	assertFalse(cur->sendQuery("select count(*) from #temptable"));
 	stdoutput.printf("\n");
-
-
-	// stored procedure returning multiple values
-	// FreeTDS needs to support cursors for this to work
-	#if 0
-	stdoutput.printf("STORED PROCEDURE RETURNING MULTIPLE VALUES: \n");
-	cur->sendQuery("drop procedure testproc");
-	assertTrue(cur->sendQuery(
-		"create procedure testproc @in1 int, "
-		"       @in2 float, "
-		"       @in3 varchar(20), "
-		"       @out1 int output, "
-		"       @out2 float output, "
-		"       @out3 varchar(20) output as "
-		"select @out1=@in1, "
-		"       @out2=@in2, "
-		"       @out3=@in3"));
-	cur->prepareQuery("exec testproc");
-	cur->inputBind("in1",1);
-	cur->inputBind("in2",1.1,2,1);
-	cur->inputBind("in3","hello");
-	cur->defineOutputBindInteger("out1");
-	cur->defineOutputBindDouble("out2");
-	cur->defineOutputBindString("out3",20);
-	assertTrue(cur->executeQuery());
-	assertEquals(cur->getOutputBindInteger("out1"),1);
-	assertEquals(cur->getOutputBindDouble("out2"),1.1);
-	assertEquals(cur->getOutputBindString("out3"),"hello");
-	assertTrue(cur->sendQuery("drop procedure testproc"));
-	stdoutput.printf("\n");
-	#endif
 
 
 	// database is schema

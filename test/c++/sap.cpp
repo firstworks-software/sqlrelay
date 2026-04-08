@@ -1377,15 +1377,65 @@ int main(int argc, char **argv) {
 
 
 	// rebinding
-	// FIXME: ...
+	stdoutput.printf("REBINDING: \n");
+	cur->sendQuery("drop procedure testproc");
+	assertTrue(cur->sendQuery(
+		"create procedure testproc "
+		"	@in1 int, "
+		"	@out1 int output as "
+		"select @out1=@in1"));
+	cur->prepareQuery("exec testproc");
+	cur->inputBind("in1",1);
+	cur->defineOutputBindInteger("out1");
+	assertTrue(cur->executeQuery());
+	assertEquals(cur->getOutputBindInteger("out1"),1);
+	cur->inputBind("in1",2);
+	assertTrue(cur->executeQuery());
+	assertEquals(cur->getOutputBindInteger("out1"),2);
+	cur->inputBind("in1",3);
+	assertTrue(cur->executeQuery());
+	assertEquals(cur->getOutputBindInteger("out1"),3);
+	assertTrue(cur->sendQuery("drop procedure testproc"));
+	stdoutput.printf("\n");
 
 
 	// stored procedure returning no value
-	// FIXME: ...
+	stdoutput.printf("STORED PROCEDURE RETURNING NO VALUE: \n");
+	cur->sendQuery("drop procedure testproc");
+	assertTrue(cur->sendQuery(
+		"create procedure testproc "
+		"	@in1 int, "
+		"	@in2 float, "
+		"	@in3 varchar(20) as "
+		"return"));
+	cur->prepareQuery("exec testproc");
+	cur->inputBind("in1",1);
+	cur->inputBind("in2",1.1,2,1);
+	cur->inputBind("in3","hello");
+	assertTrue(cur->executeQuery());
+	assertTrue(cur->sendQuery("drop procedure testproc"));
+	stdoutput.printf("\n");
 
 
 	// stored procedure returning single value
-	// FIXME: ...
+	stdoutput.printf("STORED PROCEDURE RETURNING SINGLE VALUE: \n");
+	cur->sendQuery("drop procedure testproc");
+	assertTrue(cur->sendQuery(
+		"create procedure testproc "
+		"	@in1 int, "
+		"	@in2 float, "
+		"	@in3 varchar(20), "
+		"	@out1 int output as "
+		"select @out1=@in1"));
+	cur->prepareQuery("exec testproc");
+	cur->inputBind("in1",1);
+	cur->inputBind("in2",1.1,2,1);
+	cur->inputBind("in3","hello");
+	cur->defineOutputBindInteger("out1");
+	assertTrue(cur->executeQuery());
+	assertEquals(cur->getOutputBindInteger("out1"),1);
+	assertTrue(cur->sendQuery("drop procedure testproc"));
+	stdoutput.printf("\n");
 
 
 	// stored procedure returning multiple values
