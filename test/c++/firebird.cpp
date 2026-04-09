@@ -1037,7 +1037,25 @@ int main(int argc, char **argv) {
 
 
 	// null and empty lobs
-	// FIXME: ...
+	stdoutput.printf("NULL AND EMPTY LOBS: \n");
+	cur->getNullsAsNulls();
+	cur->sendQuery("delete from testtable1");
+	cur->prepareQuery("insert into testtable1 (testblob) values (?)");
+	cur->inputBindBlob("1","",0);
+	assertTrue(cur->executeQuery());
+	cur->sendQuery("select testblob from testtable1");
+	assertEquals(cur->getField(0,"TESTBLOB"),"");
+	cur->sendQuery("delete from testtable1");
+	cur->prepareQuery("insert into testtable1 (testblob) values (?)");
+	cur->inputBindBlob("1",NULL,0);
+	assertTrue(cur->executeQuery());
+	cur->sendQuery("select testblob from testtable1");
+// #8005
+#if 0
+	assertEquals(cur->getField(0,"TESTBLOB"),NULL);
+#endif
+	assertTrue(cur->sendQuery("delete from testtable1"));
+	stdoutput.printf("\n");
 
 
 	// long lobs
@@ -1058,7 +1076,22 @@ int main(int argc, char **argv) {
 
 
 	// output bind by position
-	// FIXME: ...
+	stdoutput.printf("OUTPUT BIND BY POSITION: \n");
+	cur->prepareQuery("execute procedure testproc ?, ?, ?, ?");
+	cur->inputBind("1",1);
+	cur->inputBind("2",1.1,2,1);
+	cur->inputBind("3","hello");
+	cur->inputBindBlob("4","blob",4);
+	cur->defineOutputBindInteger("1");
+	cur->defineOutputBindDouble("2");
+	cur->defineOutputBindString("3",20);
+	cur->defineOutputBindBlob("4");
+	assertTrue(cur->executeQuery());
+	assertEquals(cur->getOutputBindInteger("1"),1);
+	//assertEquals(cur->getOutputBindDouble("2"),1.1);
+	assertEquals(cur->getOutputBindString("3"),"hello               ");
+	assertEquals(cur->getOutputBindBlob("4"),"blob");
+	stdoutput.printf("\n");
 
 
 	// output bind by name
@@ -1070,15 +1103,33 @@ int main(int argc, char **argv) {
 
 
 	// lob output bind
-	// FIXME: ...
+	stdoutput.printf("LOB OUTPUT BIND: \n");
+	cur->prepareQuery("execute procedure testproc ?, ?, ?, ?");
+	cur->inputBind("1",1);
+	cur->inputBind("2",1.1,2,1);
+	cur->inputBind("3","hello");
+	cur->inputBindBlob("4","hello",5);
+	cur->defineOutputBindInteger("1");
+	cur->defineOutputBindDouble("2");
+	cur->defineOutputBindString("3",20);
+	cur->defineOutputBindBlob("4");
+	assertTrue(cur->executeQuery());
+	assertEquals(cur->getOutputBindBlob("4"),"hello",5);
+	assertEquals(cur->getOutputBindLength("4"),5);
+	stdoutput.printf("\n");
 
 
 	// long output bind
-	// FIXME: ...
+	// FIXME: requires creating a new procedure
 
 
 	// negative input bind
-	// FIXME: ...
+	stdoutput.printf("NEGATIVE INPUT BIND\n");
+	cur->prepareQuery("select cast(? as integer) from rdb$database");
+	cur->inputBind("1",-1);
+	assertTrue(cur->executeQuery());
+	assertEquals(cur->getField(0,(uint32_t)0),"-1");
+	stdoutput.printf("\n");
 
 
 	// bind validation
@@ -1125,15 +1176,32 @@ int main(int argc, char **argv) {
 
 
 	// rebinding
-	// FIXME: ...
+	stdoutput.printf("REBINDING: \n");
+	cur->prepareQuery("execute procedure testproc ?, ?, ?, ?");
+	cur->inputBind("1",1);
+	cur->inputBind("2",1.1,2,1);
+	cur->inputBind("3","hello");
+	cur->inputBindBlob("4","blob",4);
+	cur->defineOutputBindInteger("1");
+	cur->defineOutputBindDouble("2");
+	cur->defineOutputBindString("3",20);
+	cur->defineOutputBindBlob("4");
+	assertTrue(cur->executeQuery());
+	assertEquals(cur->getOutputBindInteger("1"),1);
+	cur->inputBind("1",2);
+	assertTrue(cur->executeQuery());
+	assertEquals(cur->getOutputBindInteger("1"),2);
+	cur->inputBind("1",3);
+	assertTrue(cur->executeQuery());
+	assertEquals(cur->getOutputBindInteger("1"),3);
+	stdoutput.printf("\n");
 
 
 	// stored procedure returning no value
-	// FIXME: ...
-
+	// FIXME: requires creating a new procedure
 
 	// stored procedure returning single value
-	// FIXME: ...
+	// FIXME: requires creating a new procedure
 
 
 	// stored procedure returning multiple values
@@ -1166,11 +1234,11 @@ int main(int argc, char **argv) {
 
 
 	// stored procedure returning result set
-	// FIXME: ...
+	// FIXME: requires creating a new procedure
 
 
 	// temporary tables
-	// FIXME: ...
+	// FIXME: requires creating a new table
 
 
 	// database is schema
