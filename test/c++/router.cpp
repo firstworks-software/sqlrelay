@@ -83,14 +83,9 @@ int main(int argc, char **argv) {
 	stdoutput.printf("\n");
 
 
-	// begin transaction
-	stdoutput.printf("BEGIN TRANSACTION: \n");
-	assertTrue(cur->sendQuery("begin"));
-	stdoutput.printf("\n");
-
-
 	// insert
 	stdoutput.printf("INSERT: \n");
+	assertTrue(cur->sendQuery("begin"));
 	assertTrue(cur->sendQuery(
 		"insert into "
 		"	testtable1 "

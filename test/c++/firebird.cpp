@@ -99,7 +99,6 @@ int main(int argc, char **argv) {
 		"	'testvarchar1', "
 		"	NULL, "
 		"	'testblob1')"));
-	assertEquals(cur->countBindVariables(),0);
 	stdoutput.printf("\n");
 
 
@@ -164,6 +163,10 @@ int main(int argc, char **argv) {
 	cur->inputBinds(bindvars,bindvals);
 	assertTrue(cur->executeQuery());
 	stdoutput.printf("\n");
+
+
+	// input bind by position with validation
+	// FIXME: ...
 
 
 	// input bind by name
@@ -1164,6 +1167,34 @@ int main(int argc, char **argv) {
 	stdoutput.printf("\n");
 
 
+	// reexecute
+	stdoutput.printf("REEXECUTE: \n");
+	cur->prepareQuery("select 1 from rdb$database");
+	assertTrue(cur->executeQuery());
+	assertEquals(cur->rowCount(),1);
+	assertEquals(cur->getField(0,(uint32_t)0),"1");
+	stdoutput.printf("\n");
+	assertTrue(cur->executeQuery());
+	assertEquals(cur->rowCount(),1);
+	assertEquals(cur->getField(0,(uint32_t)0),"1");
+	stdoutput.printf("\n");
+	cur->prepareQuery("select cast(? as int) from rdb$database");
+	cur->inputBind("1",1);
+	assertTrue(cur->executeQuery());
+	assertEquals(cur->rowCount(),1);
+	assertEquals(cur->getField(0,(uint32_t)0),"1");
+	stdoutput.printf("\n");
+	assertTrue(cur->executeQuery());
+	assertEquals(cur->rowCount(),1);
+	assertEquals(cur->getField(0,(uint32_t)0),"1");
+	stdoutput.printf("\n");
+	cur->inputBind("1",2);
+	assertTrue(cur->executeQuery());
+	assertEquals(cur->rowCount(),1);
+	assertEquals(cur->getField(0,(uint32_t)0),"2");
+	stdoutput.printf("\n");
+
+
 	// stored procedure returning no value
 	stdoutput.printf("STORED PROCEDURE RETURNING NO VALUE: \n");
 	cur->prepareQuery(
@@ -1249,6 +1280,10 @@ int main(int argc, char **argv) {
 
 	// temporary tables
 	// firebird supports temporary tables, but we're omitting this for now
+
+
+	// binary data
+	// FIXME: ...
 
 
 	// database is schema

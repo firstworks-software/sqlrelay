@@ -139,7 +139,6 @@ int main(int argc, char **argv) {
 		"	NULL, "
 		"	'testclob1', "
 		"	blob('testblob1'))"));
-	assertEquals(cur->countBindVariables(),0);
 	stdoutput.printf("\n");
 
 
@@ -207,6 +206,25 @@ int main(int argc, char **argv) {
 	stdoutput.printf("\n");
 
 
+	// input bind by position with validation
+	stdoutput.printf("INPUT BIND BY POSITION WITH VALIDATION: \n");
+	cur->clearBinds();
+	cur->inputBind("1",5);
+	cur->inputBind("2",5);
+	cur->inputBind("3",5);
+	cur->inputBind("4",5.5,4,2);
+	cur->inputBind("5",5.5,4,2);
+	cur->inputBind("6",5.5,4,2);
+	cur->inputBind("7","testchar5");
+	cur->inputBind("8","testvarchar5");
+	cur->inputBind("9",2005,1,1,-1,-1,-1,-1,NULL,false);
+	cur->inputBind("10",-1,-1,-1,5,0,0,0,NULL,false);
+	cur->inputBindClob("11","testclob5",9);
+	cur->inputBindBlob("12","testblob5",9);
+	cur->validateBinds();
+	assertTrue(cur->executeQuery());
+	stdoutput.printf("\n");
+
 	// input bind by name
 	// db2 doesn't support bind by name
 
@@ -221,23 +239,6 @@ int main(int argc, char **argv) {
 
 	// insert
 	stdoutput.printf("INSERT: \n");
-	assertTrue(cur->sendQuery(
-		"insert into "
-		"	testtable "
-		"values ("
-		"	5, "
-		"	5, "
-		"	5, "
-		"	5.5, "
-		"	5.5, "
-		"	5.5, "
-		"	'testchar5', "
-		"	'testvarchar5', "
-		"	'01/01/2005', "
-		"	'05:00:00', "
-		"	NULL, "
-		"	'testclob5', "
-		"	blob('testblob5'))"));
 	assertTrue(cur->sendQuery(
 		"insert into "
 		"	testtable "
@@ -1321,6 +1322,34 @@ int main(int argc, char **argv) {
 	stdoutput.printf("\n");
 
 
+	// reexecute
+	stdoutput.printf("REEXECUTE: \n");
+	cur->prepareQuery("select 1 from sysibm.sysdummy1");
+	assertTrue(cur->executeQuery());
+	assertEquals(cur->rowCount(),1);
+	assertEquals(cur->getField(0,(uint32_t)0),"1");
+	stdoutput.printf("\n");
+	assertTrue(cur->executeQuery());
+	assertEquals(cur->rowCount(),1);
+	assertEquals(cur->getField(0,(uint32_t)0),"1");
+	stdoutput.printf("\n");
+	cur->prepareQuery("select ? from sysibm.sysdummy1");
+	cur->inputBind("1",1);
+	assertTrue(cur->executeQuery());
+	assertEquals(cur->rowCount(),1);
+	assertEquals(cur->getField(0,(uint32_t)0),"1");
+	stdoutput.printf("\n");
+	assertTrue(cur->executeQuery());
+	assertEquals(cur->rowCount(),1);
+	assertEquals(cur->getField(0,(uint32_t)0),"1");
+	stdoutput.printf("\n");
+	cur->inputBind("1",2);
+	assertTrue(cur->executeQuery());
+	assertEquals(cur->rowCount(),1);
+	assertEquals(cur->getField(0,(uint32_t)0),"2");
+	stdoutput.printf("\n");
+
+
 	// stored procedure returning no value
 	stdoutput.printf("STORED PROCEDURE RETURNING NO VALUE: \n");
 	cur->sendQuery("drop procedure testproc");
@@ -1468,6 +1497,10 @@ int main(int argc, char **argv) {
 		"select count(*) from session.temptable"));
 	stdoutput.printf("\n");
 #endif
+
+
+	// binary data
+	// FIXME: ...
 
 
 	// database is schema

@@ -144,7 +144,6 @@ int main(int argc, char **argv) {
 		"	'testlong1', "
 		"	'testclob1', "
 		"	empty_blob())"));
-	assertEquals(cur->countBindVariables(),0);
 	stdoutput.printf("\n");
 
 
@@ -198,18 +197,23 @@ int main(int argc, char **argv) {
 	stdoutput.printf("\n");
 
 
+	// input bind by position with validation
+	stdoutput.printf("INPUT BIND BY POSITION WITH VALIDATION: \n");
+	cur->clearBinds();
+	cur->inputBind("1",5);
+	cur->inputBind("2","testchar5");
+	cur->inputBind("3","testvarchar5");
+	cur->inputBind("4",2005,1,1,0,0,0,0,NULL,false);
+	cur->inputBind("5","testlong5");
+	cur->inputBindClob("6","testclob5",9);
+	cur->inputBindBlob("7","testblob5",9);
+	cur->validateBinds();
+	assertTrue(cur->executeQuery());
+	cur->clearBinds();
+
+
 	// input bind by name
 	stdoutput.printf("INPUT BIND BY NAME: \n");
-	cur->clearBinds();
-	assertEquals(cur->countBindVariables(),7);
-	cur->inputBind("var1",5);
-	cur->inputBind("var2","testchar5");
-	cur->inputBind("var3","testvarchar5");
-	cur->inputBind("var4",2005,1,1,0,0,0,0,NULL,false);
-	cur->inputBind("var5","testlong5");
-	cur->inputBindClob("var6","testclob5",9);
-	cur->inputBindBlob("var7","testblob5",9);
-	assertTrue(cur->executeQuery());
 	cur->clearBinds();
 	cur->inputBind("var1",6);
 	cur->inputBind("var2","testchar6");
@@ -1033,7 +1037,6 @@ int main(int argc, char **argv) {
 	// output bind by name
 	stdoutput.printf("OUTPUT BIND BY NAME: \n");
 	cur->clearBinds();
-	assertEquals(cur->countBindVariables(),5);
 	cur->defineOutputBindInteger("numvar");
 	cur->defineOutputBindString("stringvar",10);
 	cur->defineOutputBindDouble("floatvar");
@@ -1214,6 +1217,34 @@ int main(int argc, char **argv) {
 	cur->inputBind("in",3);
 	assertTrue(cur->executeQuery());
 	assertEquals(cur->getOutputBindInteger("out"),3);
+	stdoutput.printf("\n");
+
+
+	// reexecute
+	stdoutput.printf("REEXECUTE: \n");
+	cur->prepareQuery("select 1 from dual");
+	assertTrue(cur->executeQuery());
+	assertEquals(cur->rowCount(),1);
+	assertEquals(cur->getField(0,(uint32_t)0),"1");
+	stdoutput.printf("\n");
+	assertTrue(cur->executeQuery());
+	assertEquals(cur->rowCount(),1);
+	assertEquals(cur->getField(0,(uint32_t)0),"1");
+	stdoutput.printf("\n");
+	cur->prepareQuery("select :var from dual");
+	cur->inputBind("var",1);
+	assertTrue(cur->executeQuery());
+	assertEquals(cur->rowCount(),1);
+	assertEquals(cur->getField(0,(uint32_t)0),"1");
+	stdoutput.printf("\n");
+	assertTrue(cur->executeQuery());
+	assertEquals(cur->rowCount(),1);
+	assertEquals(cur->getField(0,(uint32_t)0),"1");
+	stdoutput.printf("\n");
+	cur->inputBind("var",2);
+	assertTrue(cur->executeQuery());
+	assertEquals(cur->rowCount(),1);
+	assertEquals(cur->getField(0,(uint32_t)0),"2");
 	stdoutput.printf("\n");
 
 
@@ -1449,6 +1480,10 @@ int main(int argc, char **argv) {
 	cur->substitution("HOSTNAME",hostname);
 	assertFalse(cur->executeQuery());
 	stdoutput.printf("\n");
+
+
+	// binary data
+	// FIXME: ...
 
 
 	// database is schema

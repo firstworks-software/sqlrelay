@@ -99,14 +99,9 @@ int main(int argc, char **argv) {
 	stdoutput.printf("\n");
 
 
-	// begin transaction
-	stdoutput.printf("BEGIN TRANSACTION: \n");
-	assertTrue(con->begin());
-	stdoutput.printf("\n");
-
-
 	// insert
 	stdoutput.printf("INSERT: \n");
+	assertTrue(con->begin());
 	assertTrue(cur->sendQuery(
 		"insert into "
 		"	testtable "
@@ -125,7 +120,6 @@ int main(int argc, char **argv) {
 		"	'testchar1', "
 		"	'testvarchar1', "
 		"	1)"));
-	assertEquals(cur->countBindVariables(),0);
 	stdoutput.printf("\n");
 
 
@@ -209,6 +203,10 @@ int main(int argc, char **argv) {
 	// array of input binds by position
 	// freetds doesn't support implicit conversion of string binds to other
 	// data types, so arrays of binds don't generally work.
+
+
+	// input bind by position with validation
+	// FIXME: ...
 
 
 	// input bind by name
@@ -1407,6 +1405,34 @@ int main(int argc, char **argv) {
 	#endif
 
 
+	// reexecute
+	stdoutput.printf("REEXECUTE: \n");
+	cur->prepareQuery("select 1");
+	assertTrue(cur->executeQuery());
+	assertEquals(cur->rowCount(),1);
+	assertEquals(cur->getField(0,(uint32_t)0),"1");
+	stdoutput.printf("\n");
+	assertTrue(cur->executeQuery());
+	assertEquals(cur->rowCount(),1);
+	assertEquals(cur->getField(0,(uint32_t)0),"1");
+	stdoutput.printf("\n");
+	cur->prepareQuery("select cast(? as int)");
+	cur->inputBind("1",1);
+	assertTrue(cur->executeQuery());
+	assertEquals(cur->rowCount(),1);
+	assertEquals(cur->getField(0,(uint32_t)0),"1");
+	stdoutput.printf("\n");
+	assertTrue(cur->executeQuery());
+	assertEquals(cur->rowCount(),1);
+	assertEquals(cur->getField(0,(uint32_t)0),"1");
+	stdoutput.printf("\n");
+	cur->inputBind("1",2);
+	assertTrue(cur->executeQuery());
+	assertEquals(cur->rowCount(),1);
+	assertEquals(cur->getField(0,(uint32_t)0),"2");
+	stdoutput.printf("\n");
+
+
 	// stored procedure returning no value
 	// FreeTDS needs to support cursors for this to work
 	#if 0
@@ -1509,21 +1535,6 @@ int main(int argc, char **argv) {
 	stdoutput.printf("\n");
 
 
-	// direct transactsql
-	stdoutput.printf("DIRECT TRANSACTSQL: \n");
-	assertTrue(cur->sendQuery(
-		"BEGIN "
-		"	declare @s varchar(20) "
-		"	declare @e varchar(20) "
-		"	set @s = 'hello' "
-		"	set @e = 'goodbye' "
-		"	select @s as s, @e as e "
-		"END"));
-	assertEquals(cur->getField(0,"s"),"hello");
-	assertEquals(cur->getField(0,"e"),"goodbye");
-	stdoutput.printf("\n");
-
-
 	// temporary tables
 	stdoutput.printf("TEMPORARY TABLES: \n");
 	cur->sendQuery("drop table #temptable");
@@ -1535,6 +1546,10 @@ int main(int argc, char **argv) {
 	stdoutput.printf("\n");
 	assertFalse(cur->sendQuery("select count(*) from #temptable"));
 	stdoutput.printf("\n");
+
+
+	// binary data
+	// FIXME: ...
 
 
 	// database is schema

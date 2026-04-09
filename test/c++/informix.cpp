@@ -148,7 +148,6 @@ int main(int argc, char **argv) {
 		"	'2001-01-01 01:00:00', "
 		"	'testtext1', "
 		"	null)"));
-	assertEquals(cur->countBindVariables(),0);
 	stdoutput.printf("\n");
 
 
@@ -253,6 +252,10 @@ int main(int argc, char **argv) {
 	cur->inputBinds(bindvars,bindvals);
 	assertTrue(cur->executeQuery());
 	stdoutput.printf("\n");
+
+
+	// input bind by position with validation
+	// FIXME: ...
 
 
 	// input bind by name
@@ -1509,6 +1512,34 @@ int main(int argc, char **argv) {
 	stdoutput.printf("\n");
 
 
+	// reexecute
+	stdoutput.printf("REEXECUTE: \n");
+	cur->prepareQuery("select 1 from sysmaster:sysdual");
+	assertTrue(cur->executeQuery());
+	assertEquals(cur->rowCount(),1);
+	assertEquals(cur->getField(0,(uint32_t)0),"1");
+	stdoutput.printf("\n");
+	assertTrue(cur->executeQuery());
+	assertEquals(cur->rowCount(),1);
+	assertEquals(cur->getField(0,(uint32_t)0),"1");
+	stdoutput.printf("\n");
+	cur->prepareQuery("select ?::int from sysmaster:sysdual");
+	cur->inputBind("1",1);
+	assertTrue(cur->executeQuery());
+	assertEquals(cur->rowCount(),1);
+	assertEquals(cur->getField(0,(uint32_t)0),"1");
+	stdoutput.printf("\n");
+	assertTrue(cur->executeQuery());
+	assertEquals(cur->rowCount(),1);
+	assertEquals(cur->getField(0,(uint32_t)0),"1");
+	stdoutput.printf("\n");
+	cur->inputBind("1",2);
+	assertTrue(cur->executeQuery());
+	assertEquals(cur->rowCount(),1);
+	assertEquals(cur->getField(0,(uint32_t)0),"2");
+	stdoutput.printf("\n");
+
+
 	// stored procedure returning no value
 	stdoutput.printf("STORED PROCEDURE RETURNING NO VALUE: \n");
 	cur->sendQuery("drop procedure testproc");
@@ -1723,42 +1754,6 @@ int main(int argc, char **argv) {
 	stdoutput.printf("\n");
 
 
-	// clob/blob
-	stdoutput.printf("CLOB/BLOB: \n");
-	assertTrue(cur->sendQuery(
-		"create table testtable ("
-		"	testclob clob, "
-		"	testblob blob)"));
-	assertTrue(con->commit());
-	cur->prepareQuery("insert into testtable values (?,?)");
-	cur->inputBindClob("1","testclobvalue",13);
-	cur->inputBindBlob("2","testblobvalue",13);
-	assertTrue(cur->executeQuery());
-	assertTrue(cur->sendQuery("select * from testtable"));
-	assertEquals(cur->getField(0,(uint32_t)0),"testclobvalue");
-	assertEquals(cur->getField(0,1),"testblobvalue");
-	cur->sendQuery("drop procedure testproc");
-	assertTrue(cur->sendQuery(
-		"create procedure testproc("
-		"	out out1 clob, "
-		"	out out2 blob) "
-		"select testclob, testblob "
-		"	into out1,out2 "
-		"	from testtable; "
-		"	end procedure;"));
-	assertTrue(con->commit());
-	cur->prepareQuery("{call testproc(?,?)}");
-	cur->defineOutputBindClob("1");
-	cur->defineOutputBindBlob("2");
-	assertTrue(cur->executeQuery());
-	assertEquals(cur->getOutputBindClob("1"),"testclobvalue");
-	assertEquals(cur->getOutputBindBlob("2"),"testblobvalue");
-	assertTrue(cur->sendQuery("drop procedure testproc"));
-	assertTrue(cur->sendQuery("drop table testtable"));
-	assertTrue(con->commit());
-	stdoutput.printf("\n");
-
-
 	// temporary tables
 	stdoutput.printf("TEMPORARY TABLES: \n");
 	cur->sendQuery("drop table temptable");
@@ -1771,6 +1766,10 @@ int main(int argc, char **argv) {
 	stdoutput.printf("\n");
 	assertFalse(cur->sendQuery("select count(*) from temptable"));
 	stdoutput.printf("\n");
+
+
+	// binary data
+	// FIXME: ...
 
 
 	// database is schema

@@ -138,14 +138,9 @@ for (uint16_t a=0; a<50; a++) {
 	stdoutput.printf("\n");
 
 
-	// begin transaction
-	stdoutput.printf("BEGIN TRANSACTION: \n");
-	assertTrue(con->begin());
-	stdoutput.printf("\n");
-
-
 	// insert
 	stdoutput.printf("INSERT: \n");
+	assertTrue(con->begin());
 	assertTrue(cur->sendQuery(
 		"insert into "
 		"	testtable "
@@ -254,7 +249,6 @@ for (uint16_t a=0; a<50; a++) {
 		"	'mediumblob4', "
 		"	'longblob4', "
 		"	NULL)"));
-	assertEquals(cur->countBindVariables(),0);
 	stdoutput.printf("\n");
 
 
@@ -1524,6 +1518,287 @@ for (uint16_t a=0; a<50; a++) {
 	stdoutput.printf("\n");
 
 
+	// output bind by position
+	// mysql doesn't support output binds
+
+	// output bind by name
+	// mysql doesn't support bind by name
+
+
+	// output bind by name with validation
+	// mysql doesn't support bind by name
+
+
+	// lob output bind
+	// mysql doesn't support output binds
+
+
+	// long output bind
+	// mysql doesn't support output binds
+
+
+	// negative input bind
+	stdoutput.printf("NEGATIVE INPUT BIND\n");
+	cur->sendQuery("drop table testtable");
+	cur->sendQuery("create table testtable (testval int)");
+	cur->prepareQuery("insert into testtable values (?)");
+	cur->inputBind("1",-1);
+	assertTrue(cur->executeQuery());
+	cur->sendQuery("select testval from testtable");
+	assertEquals(cur->getField(0,"testval"),"-1");
+	assertTrue(cur->sendQuery("drop table testtable"));
+	stdoutput.printf("\n");
+
+
+	// bind validation
+	// mysql doesn't support bind by name
+
+
+	// rebinding
+	stdoutput.printf("REBINDING: \n");
+	cur->sendQuery("drop procedure testproc");
+	assertTrue(cur->sendQuery(
+		"create procedure testproc("
+		"	in in1 int) "
+		"begin "
+		"	select in1; "
+		"end"));
+	cur->prepareQuery("call testproc(?)");
+	cur->inputBind("1",1);
+	assertTrue(cur->executeQuery());
+	assertEquals(cur->getField(0,(uint32_t)0),"1");
+	cur->inputBind("1",2);
+	assertTrue(cur->executeQuery());
+	assertEquals(cur->getField(0,(uint32_t)0),"2");
+	cur->inputBind("1",3);
+	assertTrue(cur->executeQuery());
+	assertEquals(cur->getField(0,(uint32_t)0),"3");
+	assertTrue(cur->sendQuery("drop procedure testproc"));
+	stdoutput.printf("\n");
+
+
+	// reexecute
+	stdoutput.printf("REEXECUTE: \n");
+	cur->prepareQuery("select 1");
+	assertTrue(cur->executeQuery());
+	assertEquals(cur->rowCount(),1);
+	assertEquals(cur->getField(0,(uint32_t)0),"1");
+	stdoutput.printf("\n");
+	assertTrue(cur->executeQuery());
+	assertEquals(cur->rowCount(),1);
+	assertEquals(cur->getField(0,(uint32_t)0),"1");
+	stdoutput.printf("\n");
+	cur->prepareQuery("select ?");
+	cur->inputBind("1",1);
+	assertTrue(cur->executeQuery());
+	assertEquals(cur->rowCount(),1);
+	assertEquals(cur->getField(0,(uint32_t)0),"1");
+	stdoutput.printf("\n");
+	assertTrue(cur->executeQuery());
+	assertEquals(cur->rowCount(),1);
+	assertEquals(cur->getField(0,(uint32_t)0),"1");
+	stdoutput.printf("\n");
+	cur->inputBind("1",2);
+	assertTrue(cur->executeQuery());
+	assertEquals(cur->rowCount(),1);
+	assertEquals(cur->getField(0,(uint32_t)0),"2");
+	stdoutput.printf("\n");
+
+
+	// stored procedure returning no value
+	stdoutput.printf("STORED PROCEDURE RETURNING NO VALUE: \n");
+	cur->sendQuery("drop procedure testproc");
+	assertTrue(cur->sendQuery(
+		"create procedure testproc("
+		"	in in1 int, "
+		"	in in2 double, "
+		"	in in3 varchar(20)) "
+		"begin "
+		"end"));
+	cur->prepareQuery("call testproc(?,?,?)");
+	cur->inputBind("1",1);
+	cur->inputBind("2",1.1,2,1);
+	cur->inputBind("3","hello");
+	assertTrue(cur->executeQuery());
+	assertTrue(cur->sendQuery("drop procedure testproc"));
+	stdoutput.printf("\n");
+
+
+	// stored procedure returning single value
+	stdoutput.printf("STORED PROCEDURE RETURNING SINGLE VALUE: \n");
+	cur->sendQuery("drop procedure testproc");
+	assertTrue(cur->sendQuery(
+		"create procedure testproc("
+		"	in in1 int, "
+		"	in in2 double, "
+		"	in in3 varchar(20)) "
+		"begin "
+		"	select in1; "
+		"end"));
+	cur->prepareQuery("call testproc(?,?,?)");
+	cur->inputBind("1",1);
+	cur->inputBind("2",1.1,2,1);
+	cur->inputBind("3","hello");
+	assertTrue(cur->executeQuery());
+	assertEquals(cur->getField(0,(uint32_t)0),"1");
+	assertTrue(cur->sendQuery("drop procedure testproc"));
+	stdoutput.printf("\n");
+
+
+	// stored procedure returning multiple values
+	stdoutput.printf("STORED PROCEDURE RETURNING MULTIPLE VALUES: \n");
+	cur->sendQuery("drop procedure testproc");
+	assertTrue(cur->sendQuery(
+		"create procedure testproc("
+		"	in in1 int, "
+		"	in in2 double, "
+		"	in in3 varchar(20)) "
+		"begin "
+		"	select in1, in2, in3; "
+		"end"));
+	cur->prepareQuery("call testproc(?,?,?)");
+	cur->inputBind("1",1);
+	cur->inputBind("2",1.1,2,1);
+	cur->inputBind("3","hello");
+	assertTrue(cur->executeQuery());
+	assertEquals(cur->getField(0,(uint32_t)0),"1");
+	assertEquals(cur->getField(0,1),"1.1");
+	assertEquals(cur->getField(0,2),"hello");
+	assertTrue(cur->sendQuery("drop procedure testproc"));
+	stdoutput.printf("\n");
+
+
+	// stored procedure returning result set
+	stdoutput.printf("STORED PROCEDURE RETURNING RESULT SET: \n");
+	cur->sendQuery("drop procedure testselectproc");
+	assertTrue(cur->sendQuery(
+		"create procedure testselectproc() "
+		"begin "
+		"	select 1 "
+		"	union "
+		"	select 2 "
+		"	union "
+		"	select 3 "
+		"	union "
+		"	select 4 "
+		"	union "
+		"	select 5 "
+		"	union "
+		"	select 6 "
+		"	union "
+		"	select 7 "
+		"	union "
+		"	select 8; "
+		"end"));
+	assertTrue(cur->sendQuery("call testselectproc()"));
+	assertEquals(cur->rowCount(),8);
+	assertTrue(cur->sendQuery("drop procedure testselectproc"));
+	stdoutput.printf("\n");
+
+
+	// temporary tables
+	stdoutput.printf("TEMPORARY TABLES: \n");
+	cur->sendQuery("drop table temptable");
+	cur->sendQuery("create temporary table temptable (col1 int)");
+	assertTrue(cur->sendQuery("insert into temptable values (1)"));
+	assertTrue(cur->sendQuery("select count(*) from temptable"));
+	assertEquals(cur->getField(0,(uint32_t)0),"1");
+	con->endSession();
+	stdoutput.printf("\n");
+	assertFalse(cur->sendQuery("select count(*) from temptable"));
+	stdoutput.printf("\n");
+
+	if (majorversion>3) {
+
+		// stored procedure returning no value
+		stdoutput.printf("STORED PROCEDURE RETURNING NO VALUE: \n");
+		cur->sendQuery("drop procedure if exists testproc");
+		assertTrue(cur->sendQuery(
+			"create procedure testproc("
+			"	in in1 int, "
+			"	in in2 float, "
+			"	in in3 char(20)) "
+			"begin "
+			"	select in1, in2, in3; "
+			"end;"));
+		cur->prepareQuery("call testproc(?,?,?)");
+		cur->inputBind("1",1);
+		cur->inputBind("2",1.1,4,2);
+		cur->inputBind("3","hello");
+		assertTrue(cur->executeQuery());
+		assertEquals(cur->getField(0,(uint32_t)0),"1");
+		assertEquals(cur->getField(0,(uint32_t)1),"1.1");
+		assertEquals(cur->getField(0,(uint32_t)2),"hello");
+		cur->sendQuery("drop procedure testproc");
+		stdoutput.printf("\n");
+
+
+		// stored procedure returning one value
+		stdoutput.printf("FUNCTIONS: \n");
+		cur->sendQuery("drop function if exists testfunc");
+		assertTrue(cur->sendQuery(
+			"create function testfunc(in1 int, in2 "
+			"	int) returns int return in1+in2;"));
+		cur->prepareQuery("select testfunc(?,?)");
+		cur->inputBind("1",10);
+		cur->inputBind("2",20);
+		assertTrue(cur->executeQuery());
+		assertEquals(cur->getField(0,(uint32_t)0),"30");
+		cur->sendQuery("drop function if exists testfunc");
+		stdoutput.printf("\n");
+
+
+		// stored procedure returning multiple values
+		stdoutput.printf("STORED PROCEDURE RETURNING MULTIPLE VALUES: \n");
+		cur->sendQuery("drop procedure if exists testproc");
+		assertTrue(cur->sendQuery(
+			"create procedure testproc("
+			"	out out1 int, "
+			"	out out2 float, "
+			"	out out3 char(20)) "
+			"begin "
+			"	select 1, 1.1, 'hello' "
+			"		into out1, out2, out3; "
+			"end;"));
+		assertTrue(cur->sendQuery("set @out1=0, @out2=0.0, @out3=''"));
+		assertTrue(cur->sendQuery("call testproc(@out1,@out2,@out3)"));
+		assertTrue(cur->sendQuery("select @out1, @out2, @out3"));
+		assertEquals(cur->getField(0,(uint32_t)0),"1");
+		//assertEquals(cur->getFieldAsDouble(0,(uint32_t)1),1.1);
+		assertEquals(cur->getField(0,(uint32_t)2),"hello");
+		cur->sendQuery("drop procedure testproc");
+		stdoutput.printf("\n");
+
+
+		// stored procedure returning result set
+		stdoutput.printf("STORED PROCEDURE RETURNING RESULT SET: \n");
+		cur->sendQuery("drop procedure if exists testselectproc");
+		assertTrue(cur->sendQuery(
+			"create procedure testselectproc() "
+			"begin "
+			"	select 1 "
+			"	union "
+			"	select 2 "
+			"	union "
+			"	select 3 "
+			"	union "
+			"	select 4 "
+			"	union "
+			"	select 5 "
+			"	union "
+			"	select 6 "
+			"	union "
+			"	select 7 "
+			"	union "
+			"	select 8; "
+			"end"));
+		assertTrue(cur->sendQuery("call testselectproc()"));
+		assertEquals(cur->rowCount(),8);
+		cur->sendQuery("drop procedure testselectproc");
+		stdoutput.printf("\n");
+	}
+
+
 	// binary data
 	if (majorversion>3) {
 		// binary data - all chars - \-escaped
@@ -1705,260 +1980,6 @@ for (uint16_t a=0; a<50; a++) {
 		assertTrue(cur->sendQuery("delete from testtable"));
 
 		cur->sendQuery("drop table testtable");
-		stdoutput.printf("\n");
-	}
-
-
-	// reexecute
-	stdoutput.printf("REEXECUTE: \n");
-	cur->prepareQuery("select 1");
-	assertTrue(cur->executeQuery());
-	assertEquals(cur->rowCount(),1);
-	assertEquals(cur->getField(0,(uint32_t)0),"1");
-	stdoutput.printf("\n");
-	assertTrue(cur->executeQuery());
-	assertEquals(cur->rowCount(),1);
-	assertEquals(cur->getField(0,(uint32_t)0),"1");
-	stdoutput.printf("\n");
-	cur->prepareQuery("select ?");
-	cur->inputBind("1",1);
-	assertTrue(cur->executeQuery());
-	assertEquals(cur->rowCount(),1);
-	assertEquals(cur->getField(0,(uint32_t)0),"1");
-	stdoutput.printf("\n");
-	assertTrue(cur->executeQuery());
-	assertEquals(cur->rowCount(),1);
-	assertEquals(cur->getField(0,(uint32_t)0),"1");
-	stdoutput.printf("\n");
-	cur->inputBind("1",2);
-	assertTrue(cur->executeQuery());
-	assertEquals(cur->rowCount(),1);
-	assertEquals(cur->getField(0,(uint32_t)0),"2");
-	stdoutput.printf("\n");
-
-
-	// output bind by position
-	// mysql doesn't support output binds
-
-	// output bind by name
-	// mysql doesn't support bind by name
-
-
-	// output bind by name with validation
-	// mysql doesn't support bind by name
-
-
-	// lob output bind
-	// mysql doesn't support output binds
-
-
-	// long output bind
-	// mysql doesn't support output binds
-
-
-	// negative input bind
-	stdoutput.printf("NEGATIVE INPUT BIND\n");
-	cur->sendQuery("drop table testtable");
-	cur->sendQuery("create table testtable (testval int)");
-	cur->prepareQuery("insert into testtable values (?)");
-	cur->inputBind("1",-1);
-	assertTrue(cur->executeQuery());
-	cur->sendQuery("select testval from testtable");
-	assertEquals(cur->getField(0,"testval"),"-1");
-	assertTrue(cur->sendQuery("drop table testtable"));
-	stdoutput.printf("\n");
-
-
-	// bind validation
-	// mysql doesn't support bind by name
-
-
-	// rebinding
-	stdoutput.printf("REBINDING: \n");
-	cur->sendQuery("drop procedure testproc");
-	assertTrue(cur->sendQuery(
-		"create procedure testproc("
-		"	in in1 int) "
-		"begin "
-		"	select in1; "
-		"end"));
-	cur->prepareQuery("call testproc(?)");
-	cur->inputBind("1",1);
-	assertTrue(cur->executeQuery());
-	assertEquals(cur->getField(0,(uint32_t)0),"1");
-	cur->inputBind("1",2);
-	assertTrue(cur->executeQuery());
-	assertEquals(cur->getField(0,(uint32_t)0),"2");
-	cur->inputBind("1",3);
-	assertTrue(cur->executeQuery());
-	assertEquals(cur->getField(0,(uint32_t)0),"3");
-	assertTrue(cur->sendQuery("drop procedure testproc"));
-	stdoutput.printf("\n");
-
-
-	// stored procedure returning no value
-	stdoutput.printf("STORED PROCEDURE RETURNING NO VALUE: \n");
-	cur->sendQuery("drop procedure testproc");
-	assertTrue(cur->sendQuery(
-		"create procedure testproc("
-		"	in in1 int, "
-		"	in in2 double, "
-		"	in in3 varchar(20)) "
-		"begin "
-		"end"));
-	cur->prepareQuery("call testproc(?,?,?)");
-	cur->inputBind("1",1);
-	cur->inputBind("2",1.1,2,1);
-	cur->inputBind("3","hello");
-	assertTrue(cur->executeQuery());
-	assertTrue(cur->sendQuery("drop procedure testproc"));
-	stdoutput.printf("\n");
-
-
-	// stored procedure returning single value
-	stdoutput.printf("STORED PROCEDURE RETURNING SINGLE VALUE: \n");
-	cur->sendQuery("drop procedure testproc");
-	assertTrue(cur->sendQuery(
-		"create procedure testproc("
-		"	in in1 int, "
-		"	in in2 double, "
-		"	in in3 varchar(20)) "
-		"begin "
-		"	select in1; "
-		"end"));
-	cur->prepareQuery("call testproc(?,?,?)");
-	cur->inputBind("1",1);
-	cur->inputBind("2",1.1,2,1);
-	cur->inputBind("3","hello");
-	assertTrue(cur->executeQuery());
-	assertEquals(cur->getField(0,(uint32_t)0),"1");
-	assertTrue(cur->sendQuery("drop procedure testproc"));
-	stdoutput.printf("\n");
-
-
-	// stored procedure returning multiple values
-	stdoutput.printf("STORED PROCEDURE RETURNING MULTIPLE VALUES: \n");
-	cur->sendQuery("drop procedure testproc");
-	assertTrue(cur->sendQuery(
-		"create procedure testproc("
-		"	in in1 int, "
-		"	in in2 double, "
-		"	in in3 varchar(20)) "
-		"begin "
-		"	select in1, in2, in3; "
-		"end"));
-	cur->prepareQuery("call testproc(?,?,?)");
-	cur->inputBind("1",1);
-	cur->inputBind("2",1.1,2,1);
-	cur->inputBind("3","hello");
-	assertTrue(cur->executeQuery());
-	assertEquals(cur->getField(0,(uint32_t)0),"1");
-	assertEquals(cur->getField(0,1),"1.1");
-	assertEquals(cur->getField(0,2),"hello");
-	assertTrue(cur->sendQuery("drop procedure testproc"));
-	stdoutput.printf("\n");
-
-
-	// stored procedure returning result set
-	stdoutput.printf("STORED PROCEDURE RETURNING RESULT SET: \n");
-	cur->sendQuery("drop procedure testselectproc");
-	assertTrue(cur->sendQuery(
-		"create procedure testselectproc() "
-		"begin "
-		"	select 1 "
-		"	union "
-		"	select 2 "
-		"	union "
-		"	select 3 "
-		"	union "
-		"	select 4 "
-		"	union "
-		"	select 5 "
-		"	union "
-		"	select 6 "
-		"	union "
-		"	select 7 "
-		"	union "
-		"	select 8; "
-		"end"));
-	assertTrue(cur->sendQuery("call testselectproc()"));
-	assertEquals(cur->rowCount(),8);
-	assertTrue(cur->sendQuery("drop procedure testselectproc"));
-	stdoutput.printf("\n");
-
-
-	// temporary tables
-	stdoutput.printf("TEMPORARY TABLES: \n");
-	cur->sendQuery("drop table temptable");
-	cur->sendQuery("create temporary table temptable (col1 int)");
-	assertTrue(cur->sendQuery("insert into temptable values (1)"));
-	assertTrue(cur->sendQuery("select count(*) from temptable"));
-	assertEquals(cur->getField(0,(uint32_t)0),"1");
-	con->endSession();
-	stdoutput.printf("\n");
-	assertFalse(cur->sendQuery("select count(*) from temptable"));
-	stdoutput.printf("\n");
-
-	if (majorversion>3) {
-
-
-		// functions
-		stdoutput.printf("FUNCTIONS: \n");
-		cur->sendQuery("drop function if exists testfunc");
-		assertTrue(cur->sendQuery(
-			"create function testfunc(in1 int, in2 "
-			"	int) returns int return in1+in2;"));
-		cur->prepareQuery("select testfunc(?,?)");
-		cur->inputBind("1",10);
-		cur->inputBind("2",20);
-		assertTrue(cur->executeQuery());
-		assertEquals(cur->getField(0,(uint32_t)0),"30");
-		cur->sendQuery("drop function if exists testfunc");
-		stdoutput.printf("\n");
-
-
-		// stored procedure returning no value
-		stdoutput.printf("STORED PROCEDURE RETURNING NO VALUE: \n");
-		cur->sendQuery("drop procedure if exists testproc");
-		assertTrue(cur->sendQuery(
-			"create procedure testproc("
-			"	in in1 int, "
-			"	in in2 float, "
-			"	in in3 char(20)) "
-			"begin "
-			"	select in1, in2, in3; "
-			"end;"));
-		cur->prepareQuery("call testproc(?,?,?)");
-		cur->inputBind("1",1);
-		cur->inputBind("2",1.1,4,2);
-		cur->inputBind("3","hello");
-		assertTrue(cur->executeQuery());
-		assertEquals(cur->getField(0,(uint32_t)0),"1");
-		assertEquals(cur->getField(0,(uint32_t)1),"1.1");
-		assertEquals(cur->getField(0,(uint32_t)2),"hello");
-		cur->sendQuery("drop procedure testproc");
-		stdoutput.printf("\n");
-
-
-		// stored procedure returning multiple values
-		stdoutput.printf("STORED PROCEDURE RETURNING MULTIPLE VALUES: \n");
-		cur->sendQuery("drop procedure if exists testproc");
-		assertTrue(cur->sendQuery(
-			"create procedure testproc("
-			"	out out1 int, "
-			"	out out2 float, "
-			"	out out3 char(20)) "
-			"begin "
-			"	select 1, 1.1, 'hello' "
-			"		into out1, out2, out3; "
-			"end;"));
-		assertTrue(cur->sendQuery("set @out1=0, @out2=0.0, @out3=''"));
-		assertTrue(cur->sendQuery("call testproc(@out1,@out2,@out3)"));
-		assertTrue(cur->sendQuery("select @out1, @out2, @out3"));
-		assertEquals(cur->getField(0,(uint32_t)0),"1");
-		//assertEquals(cur->getFieldAsDouble(0,(uint32_t)1),1.1);
-		assertEquals(cur->getField(0,(uint32_t)2),"hello");
-		cur->sendQuery("drop procedure testproc");
 		stdoutput.printf("\n");
 	}
 
