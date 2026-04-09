@@ -2715,10 +2715,17 @@ void sapcursor::encodeBlob(stringbuffer *buffer,
 	// sybase wants each byte of blob data to be converted to two
 	// hex characters and the whole thing to start with 0x
 	// eg: hello - > 0x68656C6C6F
+        // just "0x" is illegal though, so for empty data, use 0x00, which
+        // technically is a single \0, not truly empty data, but that's the
+        // best that we can do
 
 	buffer->append("0x");
-	for (uint32_t i=0; i<datasize; i++) {
-		buffer->append(conn->cont->asciiToHex(data[i]));
+	if (!datasize) {
+		buffer->append("00");
+	} else {
+		for (uint32_t i=0; i<datasize; i++) {
+			buffer->append(conn->cont->asciiToHex(data[i]));
+		}
 	}
 }
 

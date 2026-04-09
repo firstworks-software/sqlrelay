@@ -97,6 +97,7 @@ class SQLRSERVER_DLLSPEC freetdscursor : public sqlrservercursor {
 		void		encodeBlob(stringbuffer *buffer,
 							const char *data,
 							uint32_t datasize);
+		void		decodeBlob(char **data, uint32_t *datasize);
 		#ifdef FREETDS_SUPPORTS_CURSORS
 		bool		inputBind(const char *variable,
 						uint16_t variablesize,
@@ -3928,11 +3929,37 @@ void freetdscursor::encodeBlob(stringbuffer *buffer,
 	// sybase/mssqlserver wants each byte of blob data to be converted to
 	// two hex characters and the whole thing to start with 0x
 	// eg: hello - > 0x68656C6C6F
+	// just "0x" is illegal though, so for empty data, use 0x00, which
+	// technically is a single \0, not truly empty data, but that's the
+	// best that we can do
 
 	buffer->append("0x");
-	for (uint32_t i=0; i<datasize; i++) {
-		buffer->append(conn->cont->asciiToHex(data[i]));
+	if (!datasize) {
+		buffer->append("00");
+	} else {
+		for (uint32_t i=0; i<datasize; i++) {
+			buffer->append(conn->cont->asciiToHex(data[i]));
+		}
 	}
+}
+
+void freetdscursor::decodeBlob(char **data, uint32_t *datasize) {
+
+	// decodes *data of *datasize, in sybase encoded binary format,
+	// to raw binary, in place
+	// eg: 68656C6C6F -> hello
+
+	char	*write=*data;
+	char	*end=write+*datasize;
+	char	buf[3];
+	buf[2]='\0';
+	for (char *read=write; read!=end; read+=2) {
+		buf[0]=read[0];
+		buf[1]=read[1];
+		*write=(char)charstring::convertToUnsignedInteger(buf,16);
+		write++;
+	}
+	*datasize=write-*data;
 }
 
 void freetdscursor::checkRePrepare() {
@@ -4792,18 +4819,21 @@ void freetdscursor::getField(uint32_t col,
 		return;
 	}
 
-	uint32_t	maxfieldsize=conn->cont->getMaxFieldSize();
+	// handle normal datatypes...
 
-	// Empty TEXT fields don't get properly converted
-	// to null-terminated strings.  Handle them.
-	if (column[col].datatype==CS_TEXT_TYPE && !datasize[col][row]) {
-		data[col][row*maxfieldsize]='\0';
-		datasize[col][row]=1;
+	// get the data and data size for this field,
+	// trimming the null terminator
+	char		*d=&data[col][row*conn->cont->getMaxFieldSize()];
+	uint32_t	ds=datasize[col][row]-1;
+
+	// decode text-encoded binary data
+	if (column[col].datatype==CS_IMAGE_TYPE) {
+		decodeBlob(&d,&ds);
 	}
 
-	// handle normal datatypes
-	*field=&data[col][row*maxfieldsize];
-	*fieldsize=datasize[col][row]-1;
+	// return the field and field size
+	*field=d;
+	*fieldsize=ds;
 }
 
 void freetdscursor::nextRow() {

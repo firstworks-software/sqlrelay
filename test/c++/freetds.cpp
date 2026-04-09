@@ -1093,8 +1093,6 @@ int main(int argc, char **argv) {
 
 
 	// null and empty lobs
-// #7994
-#if 0
 	stdoutput.printf("NULL AND EMPTY LOBS: \n");
 	cur->getNullsAsNulls();
 	cur->sendQuery("drop table testtable");
@@ -1118,13 +1116,20 @@ int main(int argc, char **argv) {
 	cur->inputBindBlob("4",NULL,0);
 	assertTrue(cur->executeQuery());
 	cur->sendQuery("select * from testtable");
-	assertEquals(cur->getField(0,(uint32_t)0),"");
+	// sap converts empty strings to a single space.  It's possible that
+	// if we had true input bind support on the backend, then this would
+	// work correctly, but for now we're faking binds, and inserting an
+	// empty string, so we have to check for a single space here.
+	assertEquals(cur->getField(0,(uint32_t)0)," ");
 	assertEquals(cur->getField(0,1),NULL);
+	// sap doesn't really support inserting an empty string into a binary
+	// column.  The minimum that can be inserted is a single \0.  That ends
+	// up being interpreted as an empty string here, but it's actualy a
+	// single \0 character, not zero characters.
 	assertEquals(cur->getField(0,2),"");
 	assertEquals(cur->getField(0,3),NULL);
 	assertTrue(cur->sendQuery("drop table testtable"));
 	stdoutput.printf("\n");
-#endif
 
 
 	// long lobs
@@ -1145,12 +1150,9 @@ int main(int argc, char **argv) {
 	cur->sendQuery("select * from testtable");
 	assertEquals(cur->getFieldLength(0,"testclob"),LARGE_BUFFER_LENGTH);
 	assertEquals(cur->getField(0,"testclob"),largebuffer);
-// #8010
-#if 0
 	assertEquals(cur->getFieldLength(0,"testblob"),LARGE_BUFFER_LENGTH);
 	assertEquals(cur->getField(0,"testblob"),largebuffer,
 						LARGE_BUFFER_LENGTH);
-#endif
 	assertTrue(cur->sendQuery("drop table testtable"));
 	stdoutput.printf("\n");
 
