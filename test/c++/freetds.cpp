@@ -101,7 +101,7 @@ int main(int argc, char **argv) {
 
 	// begin transaction
 	stdoutput.printf("BEGIN TRANSACTION: \n");
-	assertTrue(cur->sendQuery("begin tran"));
+	assertTrue(con->begin());
 	stdoutput.printf("\n");
 
 

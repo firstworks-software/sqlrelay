@@ -140,7 +140,7 @@ for (uint16_t a=0; a<50; a++) {
 
 	// begin transaction
 	stdoutput.printf("BEGIN TRANSACTION: \n");
-	assertTrue(cur->sendQuery("begin"));
+	assertTrue(con->begin());
 	stdoutput.printf("\n");
 
 

@@ -96,7 +96,7 @@ int main(int argc, char **argv) {
 
 	// begin tranaction
 	stdoutput.printf("BEGIN TRANSACTION: \n");
-	con->begin();
+	assertTrue(con->begin());
 	stdoutput.printf("\n");
 
 
