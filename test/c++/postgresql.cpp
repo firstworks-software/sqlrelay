@@ -33,6 +33,9 @@ int main(int argc, char **argv) {
 	char		*filename;
 	uint64_t	counter=0;
 
+	#define	LARGE_BUFFER_LENGTH	8192
+	char		largebuffer[LARGE_BUFFER_LENGTH+1];
+
 
 	// instantiation
 	con=new sqlrconnection("sqlrelay",9000,"/tmp/test.socket",
@@ -101,8 +104,8 @@ int main(int argc, char **argv) {
 	stdoutput.printf("\n");
 
 
-	// begin transction
-	stdoutput.printf("BEGIN TRANSCTION: \n");
+	// begin transaction
+	stdoutput.printf("BEGIN TRANSACTION: \n");
 	assertTrue(con->begin());
 	stdoutput.printf("\n");
 
@@ -394,13 +397,11 @@ int main(int argc, char **argv) {
 	assertEquals(cur->rowCount(),8);
 	stdoutput.printf("\n");
 
-	/*stdoutput.printf("TOTAL ROWS: \n");
-	assertEquals(cur->totalRows(),8);
-	stdoutput.printf("\n");*/
-
 
 	// total rows
-	// FIXME: ...
+	stdoutput.printf("TOTAL ROWS: \n");
+	assertEquals(cur->totalRows(),8);
+	stdoutput.printf("\n");
 
 
 	// first row index
@@ -955,35 +956,92 @@ int main(int argc, char **argv) {
 
 
 	// null and empty lobs
-	// FIXME: ...
+	stdoutput.printf("NULL AND EMPTY LOBS: \n");
+	cur->getNullsAsNulls();
+	cur->sendQuery("drop table testtable");
+	assertTrue(cur->sendQuery(
+		"create table testtable ("
+		"	testclob1 text, "
+		"	testclob2 text, "
+		"	testblob1 bytea, "
+		"	testblob2 bytea)"));
+	cur->prepareQuery(
+		"insert into "
+		"	testtable "
+		"values ("
+		"	$1, "
+		"	$2, "
+		"	$3, "
+		"	$4)");
+	cur->inputBindClob("1","",0);
+	cur->inputBindClob("2",NULL,0);
+	cur->inputBindBlob("3","",0);
+	cur->inputBindBlob("4",NULL,0);
+	assertTrue(cur->executeQuery());
+	cur->sendQuery("select * from testtable");
+// #8003
+#if 0
+	assertEquals(cur->getField(0,(uint32_t)0),"");
+#endif
+	assertEquals(cur->getField(0,1),NULL);
+// #8003
+#if 0
+	assertEquals(cur->getField(0,2),"");
+#endif
+	assertEquals(cur->getField(0,3),NULL);
+	assertTrue(cur->sendQuery("drop table testtable"));
+	stdoutput.printf("\n");
 
 
 	// long lobs
-	// FIXME: ...
+	stdoutput.printf("LONG LOBS: \n");
+	cur->sendQuery("drop table testtable");
+	cur->sendQuery("create table testtable (testtext text)");
+	cur->prepareQuery("insert into testtable values ($1)");
+	for (int i=0; i<LARGE_BUFFER_LENGTH; i++) {
+		largebuffer[i]='C';
+	}
+	largebuffer[LARGE_BUFFER_LENGTH]='\0';
+	cur->inputBindClob("1",largebuffer,LARGE_BUFFER_LENGTH);
+	assertTrue(cur->executeQuery());
+	cur->sendQuery("select testtext from testtable");
+	assertEquals(cur->getFieldLength(0,"testtext"),LARGE_BUFFER_LENGTH);
+	assertEquals(cur->getField(0,"testtext"),largebuffer);
+	assertTrue(cur->sendQuery("drop table testtable"));
+	stdoutput.printf("\n");
 
 
 	// output bind by position
-	// FIXME: ...
+	// postgresql doesn't support output binds
 
 
 	// output bind by name
-	// FIXME: ...
+	// postgresql doesn't support output binds
 
 
 	// output bind by name with validation
-	// FIXME: ...
+	// postgresql doesn't support output binds
 
 
 	// lob output bind
-	// FIXME: ...
+	// postgresql doesn't support output binds
 
 
 	// long output bind
-	// FIXME: ...
+	// postgresql doesn't support output binds
 
 
 	// negative input bind
-	// FIXME: ...
+	stdoutput.printf("NEGATIVE INPUT BIND\n");
+	cur->sendQuery("drop table testtable");
+	cur->sendQuery("create table testtable (testval int)");
+	cur->prepareQuery("insert into testtable values ($1)");
+	cur->inputBind("1",-1);
+	assertTrue(cur->executeQuery());
+	cur->sendQuery("select testval from testtable");
+	assertEquals(cur->getField(0,"testval"),"-1");
+	assertTrue(cur->sendQuery("drop table testtable"));
+	stdoutput.printf("\n");
 
 
 	// bind validation
@@ -1030,7 +1088,23 @@ int main(int argc, char **argv) {
 
 
 	// rebinding
-	// FIXME: ...
+	stdoutput.printf("REBINDING: \n");
+	cur->sendQuery("drop function testfunc(int)");
+	assertTrue(cur->sendQuery(
+		"create function testfunc(int) returns int as "
+		"	' begin return $1; end;' language plpgsql"));
+	cur->prepareQuery("select * from testfunc($1)");
+	cur->inputBind("1",1);
+	assertTrue(cur->executeQuery());
+	assertEquals(cur->getField(0,(uint32_t)0),"1");
+	cur->inputBind("1",2);
+	assertTrue(cur->executeQuery());
+	assertEquals(cur->getField(0,(uint32_t)0),"2");
+	cur->inputBind("1",3);
+	assertTrue(cur->executeQuery());
+	assertEquals(cur->getField(0,(uint32_t)0),"3");
+	assertTrue(cur->sendQuery("drop function testfunc(int)"));
+	stdoutput.printf("\n");
 
 
 	// stored procedure returning no value

@@ -32,6 +32,9 @@ int main(int argc, char **argv) {
 	uint64_t	counter=0;
 	uint32_t	*fieldlens;
 
+	#define	LARGE_BUFFER_LENGTH	8192
+	char		largebuffer[LARGE_BUFFER_LENGTH+1];
+
 
 	// instantiation
 	con=new sqlrconnection("sqlrelay",9000,"/tmp/test.socket",
@@ -92,7 +95,7 @@ int main(int argc, char **argv) {
 
 
 	// begin tranaction
-	stdoutput.printf("BEGIN TRANACTION: \n");
+	stdoutput.printf("BEGIN TRANSACTION: \n");
 	con->begin();
 	stdoutput.printf("\n");
 
@@ -150,7 +153,7 @@ int main(int argc, char **argv) {
 
 
 	// input bind by position
-	// FIXME: ...
+	// sqlite doesn't support bind by position
 
 
 	// array of input binds by position
@@ -850,35 +853,92 @@ int main(int argc, char **argv) {
 
 
 	// null and empty lobs
-	// FIXME: ...
+	stdoutput.printf("NULL AND EMPTY LOBS: \n");
+	cur->getNullsAsNulls();
+	cur->sendQuery("drop table testtable");
+	assertTrue(cur->sendQuery(
+		"create table testtable ("
+		"	testclob1 clob, "
+		"	testclob2 clob, "
+		"	testblob1 blob, "
+		"	testblob2 blob)"));
+	cur->prepareQuery(
+		"insert into "
+		"	testtable "
+		"values ("
+		"	:var1, "
+		"	:var2, "
+		"	:var3, "
+		"	:var4)");
+	cur->inputBindClob("var1","",0);
+	cur->inputBindClob("var2",NULL,0);
+	cur->inputBindBlob("var3","",0);
+	cur->inputBindBlob("var4",NULL,0);
+	assertTrue(cur->executeQuery());
+	cur->sendQuery("select * from testtable");
+	assertEquals(cur->getField(0,(uint32_t)0),"");
+// #8004
+#if 0
+	assertEquals(cur->getField(0,1),NULL);
+#endif
+	assertEquals(cur->getField(0,2),"");
+// #8004
+#if 0
+	assertEquals(cur->getField(0,3),NULL);
+#endif
+	assertTrue(cur->sendQuery("drop table testtable"));
+	stdoutput.printf("\n");
 
 
 	// long lobs
-	// FIXME: ...
+	stdoutput.printf("LONG LOBS: \n");
+	cur->sendQuery("drop table testtable");
+	cur->sendQuery("create table testtable (testclob clob)");
+	cur->prepareQuery("insert into testtable values (:clobval)");
+	for (int i=0; i<LARGE_BUFFER_LENGTH; i++) {
+		largebuffer[i]='C';
+	}
+	largebuffer[LARGE_BUFFER_LENGTH]='\0';
+	cur->inputBindClob("clobval",largebuffer,LARGE_BUFFER_LENGTH);
+	assertTrue(cur->executeQuery());
+	cur->sendQuery("select testclob from testtable");
+	assertEquals(cur->getFieldLength(0,"testclob"),LARGE_BUFFER_LENGTH);
+	assertEquals(largebuffer,cur->getField(0,"testclob"));
+	assertTrue(cur->sendQuery("drop table testtable"));
+	stdoutput.printf("\n");
 
 
 	// output bind by position
-	// FIXME: ...
+	// sqlite doesn't support output binds
 
 
 	// output bind by name
-	// FIXME: ...
+	// sqlite doesn't support output binds
 
 
 	// output bind by name with validation
-	// FIXME: ...
+	// sqlite doesn't support output binds
 
 
 	// lob output bind
-	// FIXME: ...
+	// sqlite doesn't support output binds
 
 
 	// long output bind
-	// FIXME: ...
+	// sqlite doesn't support output binds
 
 
 	// negative input bind
-	// FIXME: ...
+	stdoutput.printf("NEGATIVE INPUT BIND\n");
+	cur->sendQuery("drop table testtable");
+	cur->sendQuery("create table testtable (testval int)");
+	cur->prepareQuery("insert into testtable values (:testval)");
+	cur->inputBind("testval",-1);
+	assertTrue(cur->executeQuery());
+	cur->sendQuery("select testval from testtable");
+	assertEquals(cur->getField(0,"testval"),"-1");
+	assertTrue(cur->sendQuery("drop table testtable"));
+	stdoutput.printf("\n");
 
 
 	// bind validation
@@ -925,23 +985,34 @@ int main(int argc, char **argv) {
 
 
 	// rebinding
-	// FIXME: ...
+	stdoutput.printf("REBINDING: \n");
+	cur->prepareQuery("select :val");
+	cur->inputBind("val",1);
+	assertTrue(cur->executeQuery());
+	assertEquals(cur->getField(0,(uint32_t)0),"1");
+	cur->inputBind("val",2);
+	assertTrue(cur->executeQuery());
+	assertEquals(cur->getField(0,(uint32_t)0),"2");
+	cur->inputBind("val",3);
+	assertTrue(cur->executeQuery());
+	assertEquals(cur->getField(0,(uint32_t)0),"3");
+	stdoutput.printf("\n");
 
 
 	// stored procedure returning no value
-	// FIXME: ...
+	// sqlite doesn't support stored procedures
 
 
 	// stored procedure returning single value
-	// FIXME: ...
+	// sqlite doesn't support stored procedures
 
 
 	// stored procedure returning multiple values
-	// FIXME: ...
+	// sqlite doesn't support stored procedures
 
 
 	// stored procedure returning result set
-	// FIXME: ...
+	// sqlite doesn't support stored procedures
 
 
 	// temporary tables

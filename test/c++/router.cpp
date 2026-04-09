@@ -83,8 +83,8 @@ int main(int argc, char **argv) {
 	stdoutput.printf("\n");
 
 
-	// begin transction
-	stdoutput.printf("BEGIN TRANSCTION: \n");
+	// begin transaction
+	stdoutput.printf("BEGIN TRANSACTION: \n");
 	assertTrue(cur->sendQuery("begin"));
 	stdoutput.printf("\n");
 
