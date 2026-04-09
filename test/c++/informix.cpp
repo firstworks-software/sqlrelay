@@ -2,6 +2,7 @@
 // See the file COPYING for more information.
 
 #include <sqlrelay/sqlrclient.h>
+#include <rudiments/charstring.h>
 #include <rudiments/process.h>
 #include <rudiments/stdio.h>
 
@@ -35,6 +36,14 @@ int main(int argc, char **argv) {
 	double		subvaldoubles[]={10.55,10.556,10.5556};
 	uint32_t	precs[]={4,5,6};
 	uint32_t	scales[]={2,3,4};
+	int64_t		numvar;
+	const char	*stringvar;
+	const char	*nullvar;
+	const char	*clobvar;
+	uint32_t	clobvarlength;
+	const char	*blobvar;
+	uint32_t	blobvarlength;
+	double		floatvar;
 	uint16_t	port;
 	char		*socket;
 	uint16_t	id;
@@ -1310,7 +1319,41 @@ int main(int argc, char **argv) {
 
 
 	// output bind by position
-	// FIXME: ...
+	stdoutput.printf("OUTPUT BIND BY POSITION: \n");
+	cur->sendQuery("drop procedure testproc");
+	assertTrue(cur->sendQuery(
+		"create procedure testproc("
+		"	out out1 int, "
+		"	out out2 varchar(20), "
+		"	out out3 float, "
+		"	out out4 varchar(20)) "
+		"let out1 = 1; "
+		"	let out2 = 'hello'; "
+		"	let out3 = 2.5; "
+		"	let out4 = null; "
+		"end procedure;"));
+	assertTrue(con->commit());
+	cur->prepareQuery("{call testproc(?,?,?,?)}");
+	assertEquals(cur->countBindVariables(),4);
+	cur->defineOutputBindInteger("1");
+	cur->defineOutputBindString("2",20);
+	cur->defineOutputBindDouble("3");
+	cur->defineOutputBindString("4",20);
+	assertTrue(cur->executeQuery());
+	numvar=cur->getOutputBindInteger("1");
+	stringvar=cur->getOutputBindString("2");
+	floatvar=cur->getOutputBindDouble("3");
+	nullvar=cur->getOutputBindString("4");
+	assertEquals(numvar,1);
+	assertEquals(stringvar,"hello");
+	assertEquals(floatvar,2.5);
+// #8000
+#if 0
+	assertEquals(nullvar,NULL);
+#endif
+	assertTrue(cur->sendQuery("drop procedure testproc"));
+	assertTrue(con->commit());
+	stdoutput.printf("\n");
 
 
 	// output bind by name
@@ -1322,7 +1365,43 @@ int main(int argc, char **argv) {
 
 
 	// lob output bind
-	// FIXME: ...
+	stdoutput.printf("LOB OUTPUT BIND: \n");
+	cur->sendQuery("drop table testtable");
+	assertTrue(cur->sendQuery(
+		"create table testtable ("
+		"	testclob clob, "
+		"	testblob blob)"));
+	assertTrue(con->commit());
+	cur->prepareQuery("insert into testtable values (?,?)");
+	cur->inputBindClob("1","hello",5);
+	cur->inputBindBlob("2","hello",5);
+	assertTrue(cur->executeQuery());
+	cur->sendQuery("drop procedure testproc");
+	assertTrue(cur->sendQuery(
+		"create procedure testproc("
+		"	out out1 clob, "
+		"	out out2 blob) "
+		"select testclob, testblob "
+		"	into out1, out2 "
+		"	from testtable; "
+		"end procedure;"));
+	assertTrue(con->commit());
+	cur->prepareQuery("{call testproc(?,?)}");
+	cur->defineOutputBindClob("1");
+	cur->defineOutputBindBlob("2");
+	assertTrue(cur->executeQuery());
+	clobvar=cur->getOutputBindClob("1");
+	clobvarlength=cur->getOutputBindLength("1");
+	blobvar=cur->getOutputBindBlob("2");
+	blobvarlength=cur->getOutputBindLength("2");
+	assertEquals(clobvar,"hello",5);
+	assertEquals(clobvarlength,5);
+	assertEquals(blobvar,"hello",5);
+	assertEquals(blobvarlength,5);
+	assertTrue(cur->sendQuery("drop procedure testproc"));
+	assertTrue(cur->sendQuery("drop table testtable"));
+	assertTrue(con->commit());
+	stdoutput.printf("\n");
 
 
 	// long output bind
@@ -1347,7 +1426,18 @@ int main(int argc, char **argv) {
 
 
 	// negative input bind
-	// FIXME: ...
+	stdoutput.printf("NEGATIVE INPUT BIND\n");
+	cur->sendQuery("drop table testtable");
+	cur->sendQuery("create table testtable (testval int)");
+	assertTrue(con->commit());
+	cur->prepareQuery("insert into testtable values (?)");
+	cur->inputBind("1",-1);
+	assertTrue(cur->executeQuery());
+	cur->sendQuery("select testval from testtable");
+	assertEquals(cur->getField(0,"testval"),"-1");
+	assertTrue(cur->sendQuery("drop table testtable"));
+	assertTrue(con->commit());
+	stdoutput.printf("\n");
 
 
 	// bind validation
@@ -1394,15 +1484,73 @@ int main(int argc, char **argv) {
 
 
 	// rebinding
-	// FIXME: ...
+	stdoutput.printf("REBINDING: \n");
+	cur->sendQuery("drop procedure testproc");
+	assertTrue(cur->sendQuery(
+		"create procedure testproc("
+		"	in1 int, "
+		"	out out1 int) "
+		"let out1 = in1; "
+		"end procedure;"));
+	assertTrue(con->commit());
+	cur->prepareQuery("{call testproc(?,?)}");
+	cur->inputBind("1",1);
+	cur->defineOutputBindInteger("2");
+	assertTrue(cur->executeQuery());
+	assertEquals(cur->getOutputBindInteger("2"),1);
+	cur->inputBind("1",2);
+	assertTrue(cur->executeQuery());
+	assertEquals(cur->getOutputBindInteger("2"),2);
+	cur->inputBind("1",3);
+	assertTrue(cur->executeQuery());
+	assertEquals(cur->getOutputBindInteger("2"),3);
+	assertTrue(cur->sendQuery("drop procedure testproc"));
+	assertTrue(con->commit());
+	stdoutput.printf("\n");
 
 
 	// stored procedure returning no value
-	// FIXME: ...
+	stdoutput.printf("STORED PROCEDURE RETURNING NO VALUE: \n");
+	cur->sendQuery("drop procedure testproc");
+	assertTrue(cur->sendQuery(
+		"create procedure testproc("
+		"	in1 int, "
+		"	in2 float, "
+		"	in3 varchar(20)) "
+		"end procedure;"));
+	assertTrue(con->commit());
+	cur->prepareQuery("{call testproc(?,?,?)}");
+	cur->inputBind("1",1);
+	cur->inputBind("2",1.1,2,1);
+	cur->inputBind("3","hello");
+	assertTrue(cur->executeQuery());
+	assertTrue(cur->sendQuery("drop procedure testproc"));
+	assertTrue(con->commit());
+	stdoutput.printf("\n");
 
 
 	// stored procedure returning single value
-	// FIXME: ...
+	stdoutput.printf("STORED PROCEDURE RETURNING SINGLE VALUE: \n");
+	cur->sendQuery("drop procedure testproc");
+	assertTrue(cur->sendQuery(
+		"create procedure testproc("
+		"	in1 int, "
+		"	in2 float, "
+		"	in3 varchar(20), "
+		"	out out1 int) "
+		"let out1 = in1; "
+		"end procedure;"));
+	assertTrue(con->commit());
+	cur->prepareQuery("{call testproc(?,?,?,?)}");
+	cur->inputBind("1",1);
+	cur->inputBind("2",1.1,2,1);
+	cur->inputBind("3","hello");
+	cur->defineOutputBindInteger("4");
+	assertTrue(cur->executeQuery());
+	assertEquals(cur->getOutputBindInteger("4"),1);
+	assertTrue(cur->sendQuery("drop procedure testproc"));
+	assertTrue(con->commit());
+	stdoutput.printf("\n");
 
 
 	// stored procedure returning multiple values
@@ -1522,7 +1670,37 @@ int main(int argc, char **argv) {
 
 
 	// null and empty lobs
-	// FIXME: ...
+	stdoutput.printf("NULL AND EMPTY LOBS: \n");
+	cur->getNullsAsNulls();
+	cur->sendQuery("drop table testtable");
+	assertTrue(cur->sendQuery(
+		"create table testtable ("
+		"	testclob1 clob, "
+		"	testclob2 clob, "
+		"	testblob1 blob, "
+		"	testblob2 blob)"));
+	assertTrue(con->commit());
+	cur->prepareQuery(
+		"insert into "
+		"	testtable "
+		"values ("
+		"	?, "
+		"	?, "
+		"	?, "
+		"	?)");
+	cur->inputBindClob("1","",0);
+	cur->inputBindClob("2",NULL,0);
+	cur->inputBindBlob("3","",0);
+	cur->inputBindBlob("4",NULL,0);
+	assertTrue(cur->executeQuery());
+	cur->sendQuery("select * from testtable");
+	assertEquals(cur->getField(0,(uint32_t)0),NULL);
+	assertEquals(cur->getField(0,1),NULL);
+	assertEquals(cur->getField(0,2),NULL);
+	assertEquals(cur->getField(0,3),NULL);
+	assertTrue(cur->sendQuery("drop table testtable"));
+	assertTrue(con->commit());
+	stdoutput.printf("\n");
 
 
 	// long lobs
@@ -1582,7 +1760,17 @@ int main(int argc, char **argv) {
 
 
 	// temporary tables
-	// FIXME: ...
+	stdoutput.printf("TEMPORARY TABLES: \n");
+	cur->sendQuery("drop table temptable");
+	cur->sendQuery(
+		"create temp table temptable (col1 int)");
+	assertTrue(cur->sendQuery("insert into temptable values (1)"));
+	assertTrue(cur->sendQuery("select count(*) from temptable"));
+	assertEquals(cur->getField(0,(uint32_t)0),"1");
+	con->endSession();
+	stdoutput.printf("\n");
+	assertFalse(cur->sendQuery("select count(*) from temptable"));
+	stdoutput.printf("\n");
 
 
 	// database is schema
