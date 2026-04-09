@@ -990,17 +990,27 @@ int main(int argc, char **argv) {
 	// long lobs
 	stdoutput.printf("LONG LOBS: \n");
 	cur->sendQuery("drop table testtable");
-	cur->sendQuery("create table testtable (testtext text)");
-	cur->prepareQuery("insert into testtable values ($1)");
+	cur->sendQuery(
+		"create table testtable ("
+		"	testtext text, "
+		"	testbytea bytea)");
+	cur->prepareQuery("insert into testtable values ($1,$2)");
 	for (int i=0; i<LARGE_BUFFER_LENGTH; i++) {
 		largebuffer[i]='C';
 	}
 	largebuffer[LARGE_BUFFER_LENGTH]='\0';
 	cur->inputBindClob("1",largebuffer,LARGE_BUFFER_LENGTH);
+	cur->inputBindBlob("2",largebuffer,LARGE_BUFFER_LENGTH);
 	assertTrue(cur->executeQuery());
-	cur->sendQuery("select testtext from testtable");
+	cur->sendQuery("select * from testtable");
 	assertEquals(cur->getFieldLength(0,"testtext"),LARGE_BUFFER_LENGTH);
 	assertEquals(cur->getField(0,"testtext"),largebuffer);
+// #8009
+#if 0
+	assertEquals(cur->getFieldLength(0,"testbytea"),LARGE_BUFFER_LENGTH);
+	assertEquals(cur->getField(0,"testbytea"),largebuffer,
+						LARGE_BUFFER_LENGTH);
+#endif
 	assertTrue(cur->sendQuery("drop table testtable"));
 	stdoutput.printf("\n");
 

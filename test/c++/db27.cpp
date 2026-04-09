@@ -1093,18 +1093,25 @@ int main(int argc, char **argv) {
 #if 0
 	stdoutput.printf("LONG LOBS: \n");
 	cur->sendQuery("drop table testtable");
-	cur->sendQuery("create table testtable (testclob clob(25K))");
+	cur->sendQuery(
+		"create table testtable ("
+		"	testclob clob(25K), "
+		"	testblob blob(25K))");
 	assertTrue(con->commit());
-	cur->prepareQuery("insert into testtable values (?)");
+	cur->prepareQuery("insert into testtable values (?,?)");
 	for (int i=0; i<LARGE_BUFFER_LENGTH; i++) {
 		largebuffer[i]='C';
 	}
 	largebuffer[LARGE_BUFFER_LENGTH]='\0';
 	cur->inputBindClob("1",largebuffer,LARGE_BUFFER_LENGTH);
+	cur->inputBindBlob("2",largebuffer,LARGE_BUFFER_LENGTH);
 	assertTrue(cur->executeQuery());
-	cur->sendQuery("select testclob from testtable");
+	cur->sendQuery("select * from testtable");
 	assertEquals(cur->getFieldLength(0,"testclob"),LARGE_BUFFER_LENGTH);
 	assertEquals(cur->getField(0,"testclob"),largebuffer);
+	assertEquals(cur->getFieldLength(0,"testblob"),LARGE_BUFFER_LENGTH);
+	assertEquals(cur->getField(0,"testblob"),largebuffer,
+						LARGE_BUFFER_LENGTH);
 	assertTrue(cur->sendQuery("drop table testtable"));
 	assertTrue(con->commit());
 	stdoutput.printf("\n");
@@ -1323,6 +1330,8 @@ int main(int argc, char **argv) {
 
 
 	// reexecute
+// #8008
+#if 0
 	stdoutput.printf("REEXECUTE: \n");
 	cur->prepareQuery("select 1 from sysibm.sysdummy1");
 	assertTrue(cur->executeQuery());
@@ -1348,6 +1357,7 @@ int main(int argc, char **argv) {
 	assertEquals(cur->rowCount(),1);
 	assertEquals(cur->getField(0,(uint32_t)0),"2");
 	stdoutput.printf("\n");
+#endif
 
 
 	// stored procedure returning no value

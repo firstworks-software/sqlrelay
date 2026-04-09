@@ -1130,17 +1130,27 @@ int main(int argc, char **argv) {
 	// long lobs
 	stdoutput.printf("LONG LOBS: \n");
 	cur->sendQuery("drop table testtable");
-	cur->sendQuery("create table testtable (testclob text)");
-	cur->prepareQuery("insert into testtable values (?)");
+	cur->sendQuery(
+		"create table testtable ("
+		"	testclob text, "
+		"	testblob image) lock datarows");
+	cur->prepareQuery("insert into testtable values (?,?)");
 	for (int i=0; i<LARGE_BUFFER_LENGTH; i++) {
 		largebuffer[i]='C';
 	}
 	largebuffer[LARGE_BUFFER_LENGTH]='\0';
 	cur->inputBindClob("1",largebuffer,LARGE_BUFFER_LENGTH);
+	cur->inputBindBlob("2",largebuffer,LARGE_BUFFER_LENGTH);
 	assertTrue(cur->executeQuery());
-	cur->sendQuery("select testclob from testtable");
+	cur->sendQuery("select * from testtable");
 	assertEquals(cur->getFieldLength(0,"testclob"),LARGE_BUFFER_LENGTH);
-	assertEquals(largebuffer,cur->getField(0,"testclob"));
+	assertEquals(cur->getField(0,"testclob"),largebuffer);
+// #8010
+#if 0
+	assertEquals(cur->getFieldLength(0,"testblob"),LARGE_BUFFER_LENGTH);
+	assertEquals(cur->getField(0,"testblob"),largebuffer,
+						LARGE_BUFFER_LENGTH);
+#endif
 	assertTrue(cur->sendQuery("drop table testtable"));
 	stdoutput.printf("\n");
 
