@@ -17,10 +17,10 @@ int main(int argc, char **argv) {
 	const char	*isolationlevels[]={"CS","UR","RS","RR",NULL};
 	const char	*bindvars[]={"1","2","3","4","5","6",
 				"7","8","9","10","11","12",NULL};
-	const char	*bindvals[]={"4","4","4","4.4","4.4","4.4",
-				"testchar4","testvarchar4",
-				"01/01/2004","04:00:00",
-				"testclob4",NULL};
+	const char	*bindvals[]={"7","7","7","7.7","7.7","7.7",
+				"testchar7","testvarchar7",
+				"01/01/2007","07:00:00",
+				"testclob7",NULL};
 	const char * const *cols;
 	const char * const *fields;
 	uint32_t	*fieldlens;
@@ -196,6 +196,48 @@ int main(int argc, char **argv) {
 	cur->inputBindClob("11","testclob3",9);
 	cur->inputBindBlob("12","testblob3",9);
 	assertTrue(cur->executeQuery());
+	cur->clearBinds();
+	cur->inputBind("1",4);
+	cur->inputBind("2",4);
+	cur->inputBind("3",4);
+	cur->inputBind("4",4.4,4,2);
+	cur->inputBind("5",4.4,4,2);
+	cur->inputBind("6",4.4,4,2);
+	cur->inputBind("7","testchar4");
+	cur->inputBind("8","testvarchar4");
+	cur->inputBind("9",2004,1,1,-1,-1,-1,-1,NULL,false);
+	cur->inputBind("10",-1,-1,-1,4,0,0,0,NULL,false);
+	cur->inputBindClob("11","testclob4",9);
+	cur->inputBindBlob("12","testblob4",9);
+	assertTrue(cur->executeQuery());
+	cur->clearBinds();
+	cur->inputBind("1",5);
+	cur->inputBind("2",5);
+	cur->inputBind("3",5);
+	cur->inputBind("4",5.5,4,2);
+	cur->inputBind("5",5.5,4,2);
+	cur->inputBind("6",5.5,4,2);
+	cur->inputBind("7","testchar5");
+	cur->inputBind("8","testvarchar5");
+	cur->inputBind("9",2005,1,1,-1,-1,-1,-1,NULL,false);
+	cur->inputBind("10",-1,-1,-1,5,0,0,0,NULL,false);
+	cur->inputBindClob("11","testclob5",9);
+	cur->inputBindBlob("12","testblob5",9);
+	assertTrue(cur->executeQuery());
+	cur->clearBinds();
+	cur->inputBind("1",6);
+	cur->inputBind("2",6);
+	cur->inputBind("3",6);
+	cur->inputBind("4",6.6,4,2);
+	cur->inputBind("5",6.6,4,2);
+	cur->inputBind("6",6.6,4,2);
+	cur->inputBind("7","testchar6");
+	cur->inputBind("8","testvarchar6");
+	cur->inputBind("9",2006,1,1,-1,-1,-1,-1,NULL,false);
+	cur->inputBind("10",-1,-1,-1,6,0,0,0,NULL,false);
+	cur->inputBindClob("11","testclob6",9);
+	cur->inputBindBlob("12","testblob6",9);
+	assertTrue(cur->executeQuery());
 	stdoutput.printf("\n");
 
 
@@ -210,18 +252,18 @@ int main(int argc, char **argv) {
 	// input bind by position with validation
 	stdoutput.printf("INPUT BIND BY POSITION WITH VALIDATION: \n");
 	cur->clearBinds();
-	cur->inputBind("1",5);
-	cur->inputBind("2",5);
-	cur->inputBind("3",5);
-	cur->inputBind("4",5.5,4,2);
-	cur->inputBind("5",5.5,4,2);
-	cur->inputBind("6",5.5,4,2);
-	cur->inputBind("7","testchar5");
-	cur->inputBind("8","testvarchar5");
-	cur->inputBind("9",2005,1,1,-1,-1,-1,-1,NULL,false);
-	cur->inputBind("10",-1,-1,-1,5,0,0,0,NULL,false);
-	cur->inputBindClob("11","testclob5",9);
-	cur->inputBindBlob("12","testblob5",9);
+	cur->inputBind("1",8);
+	cur->inputBind("2",8);
+	cur->inputBind("3",8);
+	cur->inputBind("4",8.8,4,2);
+	cur->inputBind("5",8.8,4,2);
+	cur->inputBind("6",8.8,4,2);
+	cur->inputBind("7","testchar8");
+	cur->inputBind("8","testvarchar8");
+	cur->inputBind("9",2008,1,1,-1,-1,-1,-1,NULL,false);
+	cur->inputBind("10",-1,-1,-1,8,0,0,0,NULL,false);
+	cur->inputBindClob("11","testclob8",9);
+	cur->inputBindBlob("12","testblob8",9);
 	cur->validateBinds();
 	assertTrue(cur->executeQuery());
 	stdoutput.printf("\n");
@@ -236,62 +278,6 @@ int main(int argc, char **argv) {
 
 	// input bind by name with validation
 	// db2 doesn't support bind by name
-
-
-	// insert
-	stdoutput.printf("INSERT: \n");
-	assertTrue(cur->sendQuery(
-		"insert into "
-		"	testtable "
-		"values ("
-		"	6, "
-		"	6, "
-		"	6, "
-		"	6.6, "
-		"	6.6, "
-		"	6.6, "
-		"	'testchar6', "
-		"	'testvarchar6', "
-		"	'01/01/2006', "
-		"	'06:00:00', "
-		"	NULL, "
-		"	'testclob6', "
-		"	blob('testblob6'))"));
-	assertTrue(cur->sendQuery(
-		"insert into "
-		"	testtable "
-		"values ("
-		"	7, "
-		"	7, "
-		"	7, "
-		"	7.7, "
-		"	7.7, "
-		"	7.7, "
-		"	'testchar7', "
-		"	'testvarchar7', "
-		"	'01/01/2007', "
-		"	'07:00:00', "
-		"	NULL, "
-		"	'testclob7', "
-		"	blob('testblob7'))"));
-	assertTrue(cur->sendQuery(
-		"insert into "
-		"	testtable "
-		"values ("
-		"	8, "
-		"	8, "
-		"	8, "
-		"	8.8, "
-		"	8.8, "
-		"	8.8, "
-		"	'testchar8', "
-		"	'testvarchar8', "
-		"	'01/01/2008', "
-		"	'08:00:00', "
-		"	NULL, "
-		"	'testclob8', "
-		"	blob('testblob8'))"));
-	stdoutput.printf("\n");
 
 
 	// select

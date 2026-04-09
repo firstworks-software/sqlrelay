@@ -16,9 +16,9 @@ int main(int argc, char **argv) {
 
 	const char	*bindvars[]={"1","2","3","4","5","6",
 				"7","8","9","10","11","12",NULL};
-	const char	*bindvals[]={"4","4","4.4","4.4","4.4","4.4",
-				"01-JAN-2004","04:00:00",
-				"testchar4","testvarchar4",NULL,"testblob4"};
+	const char	*bindvals[]={"7","7","7.7","7.7","7.7","7.7",
+				"01-JAN-2007","07:00:00",
+				"testchar7","testvarchar7",NULL,"testblob7"};
 	const char * const *cols;
 	const char * const *fields;
 	uint32_t	*fieldlens;
@@ -73,7 +73,7 @@ int main(int argc, char **argv) {
 	// though firebird does support a "set transaction ..." statement to
 	// set the isolation level, it looks like, in firebird, you can really
 	// only set it through the TPB at the start of a transaction, so
-	// attempts to set it shoud fail
+	// attempts to set it should fail
 	assertFalse(con->setIsolationLevel("read committed"));
 	assertEquals(con->getIsolationLevel(),"read committed");
 	stdoutput.printf("\n");
@@ -152,7 +152,49 @@ int main(int argc, char **argv) {
 	cur->inputBind("9","testchar3");
 	cur->inputBind("10","testvarchar3");
 	cur->inputBind("11",(char *)NULL);
-	cur->inputBindBlob("13","testblob3",9);
+	cur->inputBindBlob("12","testblob3",9);
+	assertTrue(cur->executeQuery());
+	cur->clearBinds();
+	cur->inputBind("1",4);
+	cur->inputBind("2",4);
+	cur->inputBind("3",4.4,2,1);
+	cur->inputBind("4",4.4,2,1);
+	cur->inputBind("5",4.4,2,1);
+	cur->inputBind("6",4.4,2,1);
+	cur->inputBind("7",2004,1,1,-1,-1,-1,-1,NULL,false);
+	cur->inputBind("8",-1,-1,-1,4,0,0,0,NULL,false);
+	cur->inputBind("9","testchar4");
+	cur->inputBind("10","testvarchar4");
+	cur->inputBind("11",(char *)NULL);
+	cur->inputBindBlob("12","testblob4",9);
+	assertTrue(cur->executeQuery());
+	cur->clearBinds();
+	cur->inputBind("1",5);
+	cur->inputBind("2",5);
+	cur->inputBind("3",5.5,2,1);
+	cur->inputBind("4",5.5,2,1);
+	cur->inputBind("5",5.5,2,1);
+	cur->inputBind("6",5.5,2,1);
+	cur->inputBind("7",2005,1,1,-1,-1,-1,-1,NULL,false);
+	cur->inputBind("8",-1,-1,-1,5,0,0,0,NULL,false);
+	cur->inputBind("9","testchar5");
+	cur->inputBind("10","testvarchar5");
+	cur->inputBind("11",(char *)NULL);
+	cur->inputBindBlob("12","testblob5",9);
+	assertTrue(cur->executeQuery());
+	cur->clearBinds();
+	cur->inputBind("1",6);
+	cur->inputBind("2",6);
+	cur->inputBind("3",6.6,2,1);
+	cur->inputBind("4",6.6,2,1);
+	cur->inputBind("5",6.6,2,1);
+	cur->inputBind("6",6.6,2,1);
+	cur->inputBind("7",2006,1,1,-1,-1,-1,-1,NULL,false);
+	cur->inputBind("8",-1,-1,-1,6,0,0,0,NULL,false);
+	cur->inputBind("9","testchar6");
+	cur->inputBind("10","testvarchar6");
+	cur->inputBind("11",(char *)NULL);
+	cur->inputBindBlob("12","testblob6",9);
 	assertTrue(cur->executeQuery());
 	stdoutput.printf("\n");
 
@@ -166,7 +208,23 @@ int main(int argc, char **argv) {
 
 
 	// input bind by position with validation
-	// FIXME: ...
+	stdoutput.printf("INPUT BIND BY POSITION WITH VALIDATION: \n");
+	cur->clearBinds();
+	cur->inputBind("1",8);
+	cur->inputBind("2",8);
+	cur->inputBind("3",8.8,2,1);
+	cur->inputBind("4",8.8,2,1);
+	cur->inputBind("5",8.8,2,1);
+	cur->inputBind("6",8.8,2,1);
+	cur->inputBind("7",2008,1,1,-1,-1,-1,-1,NULL,false);
+	cur->inputBind("8",-1,-1,-1,8,0,0,0,NULL,false);
+	cur->inputBind("9","testchar8");
+	cur->inputBind("10","testvarchar8");
+	cur->inputBind("11",(char *)NULL);
+	cur->inputBindBlob("12","testblob8",9);
+	cur->validateBinds();
+	assertTrue(cur->executeQuery());
+	stdoutput.printf("\n");
 
 
 	// input bind by name
@@ -179,75 +237,6 @@ int main(int argc, char **argv) {
 
 	// input bind by name with validation
 	// firebird doesn't support bind by name
-
-
-	// insert
-	stdoutput.printf("INSERT: \n");
-	assertTrue(cur->sendQuery(
-		"insert into "
-		"	testtable "
-		"values ("
-		"	5, "
-		"	5, "
-		"	5.5, "
-		"	5.5, "
-		"	5.5, "
-		"	5.5, "
-		"	'01-JAN-2005', "
-		"	'05:00:00', "
-		"	'testchar5', "
-		"	'testvarchar5', "
-		"	NULL, "
-		"	'testblob5')"));
-	assertTrue(cur->sendQuery(
-		"insert into "
-		"	testtable "
-		"values ("
-		"	6, "
-		"	6, "
-		"	6.6, "
-		"	6.6, "
-		"	6.6, "
-		"	6.6, "
-		"	'01-JAN-2006', "
-		"	'06:00:00', "
-		"	'testchar6', "
-		"	'testvarchar6', "
-		"	NULL, "
-		"	'testblob6')"));
-	assertTrue(cur->sendQuery(
-		"insert into "
-		"	testtable "
-		"values ("
-		"	7, "
-		"	7, "
-		"	7.7, "
-		"	7.7, "
-		"	7.7, "
-		"	7.7, "
-		"	'01-JAN-2007', "
-		"	'07:00:00', "
-		"	'testchar7', "
-		"	'testvarchar7', "
-		"	NULL, "
-		"	'testblob7')"));
-	assertTrue(cur->sendQuery(
-		"insert into "
-		"	testtable "
-		"values ("
-		"	8, "
-		"	8, "
-		"	8.8, "
-		"	8.8, "
-		"	8.8, "
-		"	8.8, "
-		"	'01-JAN-2008', "
-		"	'08:00:00', "
-		"	'testchar8', "
-		"	'testvarchar8', "
-		"	NULL, "
-		"	'testblob8')"));
-	stdoutput.printf("\n");
 
 
 	// select
