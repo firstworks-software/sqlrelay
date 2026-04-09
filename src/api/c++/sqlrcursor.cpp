@@ -1847,15 +1847,8 @@ void sqlrcursor::lobVar(sqlrclientbindvar *var,
 					uint32_t size,
 					sqlrclientbindvartype_t type) {
 
-#if 0
-	// Store the value, handle NULL values too.
-	// For LOB's empty strings are handled as NULL's as well, this is
-	// probably not right, but I can't get empty string lob binds to work.
-	if (value && size>0) {
-#else
 	// Store the value, handle NULL values too.
 	if (value) {
-#endif
 		if (pvt->_copyrefs) {
 			var->value.lobval=new char[size];
 			bytestring::copy(var->value.lobval,value,size);
