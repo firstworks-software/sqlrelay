@@ -1366,7 +1366,10 @@ int main(int argc, char **argv) {
 	assertEquals(cur->rowCount(),1);
 	assertEquals(cur->getField(0,(uint32_t)0),"1");
 	stdoutput.printf("\n");
-	cur->prepareQuery("select cast(@var1 as int)");
+	cur->prepareQuery(
+		"begin "
+		"	select cast(@var1 as int) "
+		"end");
 	cur->inputBind("var1",1);
 	assertTrue(cur->executeQuery());
 	assertEquals(cur->rowCount(),1);
