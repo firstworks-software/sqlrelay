@@ -42,7 +42,8 @@
 		use it
 	overhauled c++ api tests to be consistent with each other and test
 		more things
-	fixed some freetds lob quirks
+	null and empty lob fixes
+	text-encoded blob fixes
 
 2.1.1 - added tns_admin support
 	fixed sqlr-start ... -strace ...
