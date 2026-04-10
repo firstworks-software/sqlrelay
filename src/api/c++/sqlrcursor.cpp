@@ -2839,7 +2839,7 @@ bool sqlrcursor::validateBind(const char *variable) {
 			continue;
 		}
 
-		// copy anything in quotes verbatim
+		// skip anything in quotes
 		if (parsestate==IN_QUOTES) {
 
 			// if we find a quote, but not an escaped quote,

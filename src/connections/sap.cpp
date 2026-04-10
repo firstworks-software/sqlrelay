@@ -282,6 +282,7 @@ class SQLRSERVER_DLLSPEC sapcursor : public sqlrservercursor {
 		int64_t		**outbindints;
 		double		**outbinddoubles;
 		datebind	*outbinddates;
+		int16_t		**outbindisnulls;
 		uint16_t	outbindindex;
 
 		int32_t		columncount;
@@ -2459,15 +2460,16 @@ sapcursor::sapcursor(sqlrserverconnection *conn, uint16_t id) :
 	maxbindcount=conn->cont->getConfig()->getMaxBindCount();
 	parameter=new CS_DATAFMT[maxbindcount];
 	inbindts=new char *[maxbindcount];
+	for (uint16_t i=0; i<maxbindcount; i++) {
+		inbindts[i]=new char[27];
+	}
 	outbindtype=new CS_INT[maxbindcount];
 	outbindstrings=new char *[maxbindcount];
 	outbindstringsizes=new uint32_t[maxbindcount];
 	outbindints=new int64_t *[maxbindcount];
 	outbinddoubles=new double *[maxbindcount];
 	outbinddates=new datebind[maxbindcount];
-	for (uint16_t i=0; i<maxbindcount; i++) {
-		inbindts[i]=new char[27];
-	}
+	outbindisnulls=new int16_t *[maxbindcount];
 
 	// replace the regular expression used to detect creation of a
 	// temporary table
@@ -2505,6 +2507,7 @@ sapcursor::~sapcursor() {
 	delete[] outbindints;
 	delete[] outbinddoubles;
 	delete[] outbinddates;
+	delete[] outbindisnulls;
 
 	deallocateResultSetBuffers();
 }
@@ -2766,7 +2769,6 @@ bool sapcursor::inputBind(const char *variable,
 				const char *value,
 				uint32_t valuesize,
 				int16_t *isnull) {
-
 	checkRePrepare();
 
 	bytestring::zero(&parameter[paramindex],sizeof(parameter[paramindex]));
@@ -2793,7 +2795,6 @@ bool sapcursor::inputBind(const char *variable,
 bool sapcursor::inputBind(const char *variable,
 				uint16_t variablesize,
 				int64_t *value) {
-
 	checkRePrepare();
 
 	bytestring::zero(&parameter[paramindex],sizeof(parameter[paramindex]));
@@ -2821,7 +2822,6 @@ bool sapcursor::inputBind(const char *variable,
 				double *value,
 				uint32_t precision,
 				uint32_t scale) {
-
 	checkRePrepare();
 
 	bytestring::zero(&parameter[paramindex],sizeof(parameter[paramindex]));
@@ -2864,7 +2864,6 @@ bool sapcursor::inputBind(const char *variable,
 				const char *tz,
 				bool isnegative,
 				int16_t *isnull) {
-
 	checkRePrepare();
 
 	// Sybase requires this format: "Jan 2 2012 4:5:3:000PM"
@@ -2907,12 +2906,12 @@ bool sapcursor::outputBind(const char *variable,
 				char *value, 
 				uint32_t valuesize, 
 				int16_t *isnull) {
-
 	checkRePrepare();
 
 	outbindtype[outbindindex]=CS_CHAR_TYPE;
 	outbindstrings[outbindindex]=value;
 	outbindstringsizes[outbindindex]=valuesize;
+	outbindisnulls[outbindindex]=isnull;
 	outbindindex++;
 
 	bytestring::zero(&parameter[paramindex],sizeof(parameter[paramindex]));
@@ -2940,11 +2939,11 @@ bool sapcursor::outputBind(const char *variable,
 				uint16_t variablesize,
 				int64_t *value,
 				int16_t *isnull) {
-
 	checkRePrepare();
 
 	outbindtype[outbindindex]=CS_INT_TYPE;
 	outbindints[outbindindex]=value;
+	outbindisnulls[outbindindex]=isnull;
 	outbindindex++;
 
 	bytestring::zero(&parameter[paramindex],sizeof(parameter[paramindex]));
@@ -2974,11 +2973,11 @@ bool sapcursor::outputBind(const char *variable,
 				uint32_t *precision,
 				uint32_t *scale,
 				int16_t *isnull) {
-
 	checkRePrepare();
 
 	outbindtype[outbindindex]=CS_FLOAT_TYPE;
 	outbinddoubles[outbindindex]=value;
+	outbindisnulls[outbindindex]=isnull;
 	outbindindex++;
 
 	bytestring::zero(&parameter[paramindex],sizeof(parameter[paramindex]));
@@ -3026,6 +3025,7 @@ bool sapcursor::outputBind(const char *variable,
 	outbinddates[outbindindex].microsecond=microsecond;
 	outbinddates[outbindindex].tz=tz;
 	outbinddates[outbindindex].isnegative=isnegative;
+	outbindisnulls[outbindindex]=isnull;
 	outbindindex++;
 
 	bytestring::zero(&parameter[paramindex],sizeof(parameter[paramindex]));
@@ -3050,6 +3050,8 @@ bool sapcursor::outputBind(const char *variable,
 }
 
 bool sapcursor::executeQuery(const char *query, uint32_t size) {
+
+	checkRePrepare();
 
 	// clear out any errors
 	sapconn->errorcode=0;
@@ -3232,6 +3234,7 @@ bool sapcursor::executeQuery(const char *query, uint32_t size) {
 		}
 		for (CS_INT i=0; i<maxindex; i++) {
 			if (outbindtype[i]==CS_CHAR_TYPE) {
+				*(outbindisnulls[i])=*nullindicator[i];
 				CS_INT	size=outbindstringsizes[i];
 				if (datasize[i][0]<size) {
 					size=datasize[i][0];
@@ -3465,6 +3468,7 @@ void sapcursor::nextRow() {
 }
 
 void sapcursor::closeResultSet() {
+
 
 	if (clean) {
 		return;

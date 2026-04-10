@@ -1177,6 +1177,7 @@ int main(int argc, char **argv) {
 	cur->getOutputBindDate("4",&year,&month,&day,
 				&hour,&minute,&second,&microsecond,&tz,
 				&isnegative);
+	nullvar=cur->getOutputBindString("5");
 	assertEquals(numvar,1);
 	assertEquals(stringvar,"hello");
 	assertEquals(floatvar,2.5);
@@ -1188,11 +1189,7 @@ int main(int argc, char **argv) {
 	assertEquals(second,0);
 	assertEquals(microsecond,0);
 	assertEquals(tz,"");
-	nullvar=cur->getOutputBindString("5");
-// #7991
-#if 0
 	assertEquals(nullvar,NULL);
-#endif
 	assertTrue(cur->sendQuery("drop procedure testproc"));
 	stdoutput.printf("\n");
 
@@ -1226,6 +1223,7 @@ int main(int argc, char **argv) {
 	cur->getOutputBindDate("out4",&year,&month,&day,
 				&hour,&minute,&second,&microsecond,&tz,
 				&isnegative);
+	nullvar=cur->getOutputBindString("out5");
 	assertEquals(numvar,1);
 	assertEquals(stringvar,"hello");
 	assertEquals(floatvar,2.5);
@@ -1237,66 +1235,18 @@ int main(int argc, char **argv) {
 	assertEquals(second,0);
 	assertEquals(microsecond,0);
 	assertEquals(tz,"");
-	nullvar=cur->getOutputBindString("out5");
-// #7991
-#if 0
 	assertEquals(nullvar,NULL);
-#endif
 	assertTrue(cur->sendQuery("drop procedure testproc"));
 	stdoutput.printf("\n");
 
 
 	// output bind by name with validation
-// #7999
-#if 0
-	stdoutput.printf("OUTPUT BIND BY NAME WITH VALIDATION: \n");
-	cur->sendQuery("drop procedure testproc");
-	assertTrue(cur->sendQuery(
-		"create procedure testproc "
-		"	@out1 int output, "
-		"	@out2 varchar(20) output, "
-		"	@out3 float output, "
-		"	@out4 datetime output, "
-		"	@out5 varchar(20) output as "
-		"select @out1=1, "
-		"	@out2='hello', "
-		"	@out3=2.5, "
-		"	@out4='2001-02-03', "
-		"	@out5=null"));
-	cur->prepareQuery("exec testproc");
-	cur->defineOutputBindInteger("out1");
-	cur->defineOutputBindString("out2",20);
-	cur->defineOutputBindDouble("out3");
-	cur->defineOutputBindDate("out4");
-	cur->defineOutputBindString("out5",20);
-	cur->defineOutputBindString("dummyvar",20);
-	cur->validateBinds();
-	assertTrue(cur->executeQuery());
-	numvar=cur->getOutputBindInteger("out1");
-	stringvar=cur->getOutputBindString("out2");
-	floatvar=cur->getOutputBindDouble("out3");
-	cur->getOutputBindDate("out4",&year,&month,&day,
-				&hour,&minute,&second,&microsecond,&tz,
-				&isnegative);
-	assertEquals(numvar,1);
-	assertEquals(stringvar,"hello");
-	assertEquals(floatvar,2.5);
-	assertEquals(year,2001);
-	assertEquals(month,2);
-	assertEquals(day,3);
-	assertEquals(hour,0);
-	assertEquals(minute,0);
-	assertEquals(second,0);
-	assertEquals(microsecond,0);
-	assertEquals(tz,"");
-	nullvar=cur->getOutputBindString("out5");
-// #7991
-#if 0
-	assertEquals(nullvar,NULL);
-#endif
-	assertTrue(cur->sendQuery("drop procedure testproc"));
-	stdoutput.printf("\n");
-#endif
+	// validateBinds() can't be used for output binds, with sap.  In sap,
+	// when executing a procedure, you don't declare any bind variable
+	// delimiters in the query.  eg, you just do: "exec testproc", not
+	// "exec testproc(@out1,@out2)".  If you call validateBinds(), it won't
+	// find any binds in the query, and will filter out any binds that you
+	// declare.
 
 
 	// lob output bind
@@ -1406,8 +1356,6 @@ int main(int argc, char **argv) {
 
 
 	// reexecute
-// #8007
-#if 0
 	stdoutput.printf("REEXECUTE: \n");
 	cur->prepareQuery("select 1");
 	assertTrue(cur->executeQuery());
@@ -1418,8 +1366,8 @@ int main(int argc, char **argv) {
 	assertEquals(cur->rowCount(),1);
 	assertEquals(cur->getField(0,(uint32_t)0),"1");
 	stdoutput.printf("\n");
-	cur->prepareQuery("select cast(? as int)");
-	cur->inputBind("1",1);
+	cur->prepareQuery("select cast(@var1 as int)");
+	cur->inputBind("var1",1);
 	assertTrue(cur->executeQuery());
 	assertEquals(cur->rowCount(),1);
 	assertEquals(cur->getField(0,(uint32_t)0),"1");
@@ -1428,12 +1376,11 @@ int main(int argc, char **argv) {
 	assertEquals(cur->rowCount(),1);
 	assertEquals(cur->getField(0,(uint32_t)0),"1");
 	stdoutput.printf("\n");
-	cur->inputBind("1",2);
+	cur->inputBind("var1",2);
 	assertTrue(cur->executeQuery());
 	assertEquals(cur->rowCount(),1);
 	assertEquals(cur->getField(0,(uint32_t)0),"2");
 	stdoutput.printf("\n");
-#endif
 
 
 	// stored procedure returning no value

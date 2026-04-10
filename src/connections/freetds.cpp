@@ -3978,7 +3978,6 @@ bool freetdscursor::inputBind(const char *variable,
 				const char *value,
 				uint32_t valuesize,
 				int16_t *isnull) {
-
 	checkRePrepare();
 
 	(CS_VOID)bytestring::zero(&parameter[paramindex],
@@ -4005,7 +4004,6 @@ bool freetdscursor::inputBind(const char *variable,
 bool freetdscursor::inputBind(const char *variable,
 				uint16_t variablesize,
 				int64_t *value) {
-
 	checkRePrepare();
 
 	(CS_VOID)bytestring::zero(&parameter[paramindex],
@@ -4034,7 +4032,6 @@ bool freetdscursor::inputBind(const char *variable,
 				double *value,
 				uint32_t precision,
 				uint32_t scale) {
-
 	checkRePrepare();
 
 	(CS_VOID)bytestring::zero(&parameter[paramindex],
@@ -4078,7 +4075,6 @@ bool freetdscursor::inputBind(const char *variable,
 				const char *tz,
 				bool isnegative,
 				int16_t *isnull) {
-
 	checkRePrepare();
 
 	// Sybase requires this format: "Jan 2 2012 4:5:3:000PM"
@@ -4121,7 +4117,6 @@ bool freetdscursor::outputBind(const char *variable,
 				char *value, 
 				uint32_t valuesize, 
 				int16_t *isnull) {
-
 	checkRePrepare();
 
 	outbindtype[outbindindex]=CS_CHAR_TYPE;
@@ -4155,7 +4150,6 @@ bool freetdscursor::outputBind(const char *variable,
 				uint16_t variablesize,
 				int64_t *value,
 				int16_t *isnull) {
-
 	checkRePrepare();
 
 	outbindtype[outbindindex]=CS_INT_TYPE;
@@ -4190,7 +4184,6 @@ bool freetdscursor::outputBind(const char *variable,
 				uint32_t *precision,
 				uint32_t *scale,
 				int16_t *isnull) {
-
 	checkRePrepare();
 
 	outbindtype[outbindindex]=CS_FLOAT_TYPE;
@@ -4231,7 +4224,6 @@ bool freetdscursor::outputBind(const char *variable,
 				const char **tz,
 				bool *isnegative,
 				int16_t *isnull) {
-
 	checkRePrepare();
 
 	outbindtype[outbindindex]=CS_DATETIME_TYPE;
