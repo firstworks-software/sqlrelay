@@ -2979,6 +2979,20 @@ bool informixcursor::inputBindBlob(const char *variable,
 		return false;
 	}
 
+	// Informix doesn't like it if you bind a string of size zero.
+	// It can actually cause SQLBindParameter to hang (at least with
+	// 12.10 client against 12.10 server).  So, if we're trying to bind an
+	// empty string (value="" and valuesize=0) then fudge things so that
+	// we're binding a known empty string and size (number of bytes, not
+	// string length) of 1 (empty strings actually have a size of 1,
+	// including the null terminator).  Setting value="" shouldnt' be
+	// strictly necessary, because well behaved protocol modules ought
+	// to null terminate "value", but we'll do this just in case.
+	if (!valuesize) {
+		value="";
+		valuesize=1;
+	}
+
 	lobbindsize[pos-1]=valuesize;
 	erg=SQLBindParameter(stmt,
 				pos,
@@ -3003,6 +3017,20 @@ bool informixcursor::inputBindClob(const char *variable,
 	if (!pos || pos>maxbindcount) {
 		bindformaterror=true;
 		return false;
+	}
+
+	// Informix doesn't like it if you bind a string of size zero.
+	// It can actually cause SQLBindParameter to hang (at least with
+	// 12.10 client against 12.10 server).  So, if we're trying to bind an
+	// empty string (value="" and valuesize=0) then fudge things so that
+	// we're binding a known empty string and size (number of bytes, not
+	// string length) of 1 (empty strings actually have a size of 1,
+	// including the null terminator).  Setting value="" shouldnt' be
+	// strictly necessary, because well behaved protocol modules ought
+	// to null terminate "value", but we'll do this just in case.
+	if (!valuesize) {
+		value="";
+		valuesize=1;
 	}
 
 	lobbindsize[pos-1]=valuesize;
