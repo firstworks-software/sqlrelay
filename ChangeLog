@@ -40,6 +40,9 @@
 		database abstraction layers
 	added getAutoCommit() to all apis and update db abstraction layers to
 		use it
+	overhauled c++ api tests to be consistent with each other and test
+		more things
+	fixed some freetds lob quirks
 
 2.1.1 - added tns_admin support
 	fixed sqlr-start ... -strace ...

@@ -173,6 +173,8 @@ class SQLRSERVER_DLLSPEC sapcursor : public sqlrservercursor {
 		void		encodeBlob(stringbuffer *buffer,
 						const char *data,
 						uint32_t datasize);
+		void		decodeBlob(char **data,
+						uint32_t *datasize);
 		bool		inputBind(const char *variable,
 						uint16_t variablesize,
 						const char *value,
@@ -2729,9 +2731,28 @@ void sapcursor::encodeBlob(stringbuffer *buffer,
 	}
 }
 
+void sapcursor::decodeBlob(char **data, uint32_t *datasize) {
+
+	// decodes *data of *datasize, in sybase encoded binary format,
+	// to raw binary, in place
+	// eg: 68656C6C6F -> hello
+
+	char	*write=*data;
+	char	*end=write+*datasize;
+	char	buf[3];
+	buf[2]='\0';
+	for (char *read=write; read!=end; read+=2) {
+		buf[0]=read[0];
+		buf[1]=read[1];
+		*write=(char)charstring::convertToUnsignedInteger(buf,16);
+		write++;
+	}
+	*datasize=write-*data;
+}
+
 void sapcursor::checkRePrepare() {
 
-	// Sybase doesn't allow you to rebind and re-execute when using 
+	// Sybase doesn't allow you to rebind and re-execute when using
 	// ct_command.  You have to re-prepare too.  I'll make this transparent
 	// to the user.
 	// FIXME: skip if cmd==cursorcmd?
@@ -2761,7 +2782,8 @@ bool sapcursor::inputBind(const char *variable,
 	parameter[paramindex].status=CS_INPUTVALUE;
 	parameter[paramindex].locale=NULL;
 	if (ct_param(cmd,&parameter[paramindex],
-		(CS_VOID *)value,valuesize,0)!=CS_SUCCEED) {
+		(CS_VOID *)value,valuesize,
+		(*isnull==conn->cont->getNullBindValue())?-1:0)!=CS_SUCCEED) {
 		return false;
 	}
 	paramindex++;
@@ -3423,8 +3445,19 @@ void sapcursor::getField(uint32_t col,
 	}
 
 	// handle normal datatypes
-	*field=&data[col][row*conn->cont->getMaxFieldSize()];
-	*fieldsize=datasize[col][row]-1;
+	char		*d=&data[col][row*conn->cont->getMaxFieldSize()];
+	uint64_t	ds=datasize[col][row]-1;
+
+	// decode text-encoded binary data
+	if (column[col].datatype==CS_IMAGE_TYPE) {
+		uint32_t	blobsize=(uint32_t)ds;
+		decodeBlob(&d,&blobsize);
+		ds=(uint64_t)blobsize;
+	}
+
+	// return the field and field size
+	*field=d;
+	*fieldsize=ds;
 }
 
 void sapcursor::nextRow() {
