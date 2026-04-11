@@ -17,7 +17,7 @@
 #ifndef HAVE_SQLGETPRIVATEPROFILESTRING
 	#include <rudiments/inidom.h>
 #endif
-/*#ifdef _WIN32
+#if 0
 	#define DEBUG_MESSAGES 1
 	#define DEBUG_TO_FILE 1
 	#ifdef _WIN32
@@ -25,7 +25,7 @@
 	#else
 		static const char debugfile[]="/tmp/sqlrodbcdebug.txt";
 	#endif
-#endif*/
+#endif
 #include <rudiments/debugprint.h>
 
 // windows needs this (don't include for __CYGWIN__ though)
