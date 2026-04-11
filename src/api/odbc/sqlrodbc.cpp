@@ -1389,7 +1389,9 @@ static SQLSMALLINT SQLR_MapColumnType(sqlrcursor *cur, uint32_t col) {
 	return SQL_CHAR;
 }
 
-static SQLSMALLINT SQLR_MapCColumnType(sqlrcursor *cur, uint32_t col) {
+static SQLSMALLINT SQLR_MapCColumnType(sqlrcursor *cur,
+					uint32_t col,
+					SQLLEN bufferlength) {
 	switch (SQLR_MapColumnType(cur,col)) {
 		case SQL_UNKNOWN_TYPE:
 			return SQL_C_CHAR;
@@ -1412,11 +1414,10 @@ static SQLSMALLINT SQLR_MapCColumnType(sqlrcursor *cur, uint32_t col) {
 		case SQL_DATE:
 		// case SQL_DATETIME:
 		// 	(ODBC 3 dup of SQL_DATE)
-			// FIXME: need parameter indicating whether
-			// to map this to SQL_C_DATE or SQL_C_TIMESTAMP.
-			// MySQL, for example, may use DATE for dates and
-			// TIMESTAMP for datetimes.
-			return SQL_C_TIMESTAMP;
+			if (bufferlength==sizeof(TIMESTAMP_STRUCT)) {
+				return SQL_C_TIMESTAMP;
+			}
+			return SQL_C_DATE;
 		case SQL_VARCHAR:
 			return SQL_C_CHAR;
 		case SQL_TYPE_DATE:
@@ -4840,7 +4841,7 @@ static SQLRETURN SQLR_SQLGetData(SQLHSTMT statementhandle,
 
 	// reset targettype based on column type
 	if (targettype==SQL_C_DEFAULT) {
-		targettype=SQLR_MapCColumnType(stmt->cur,col);
+		targettype=SQLR_MapCColumnType(stmt->cur,col,bufferlength);
 		debugPrintf("  targettype SQL_C_DEFAULT, "
 						"mapped to: %d (from %s)\n",
 						(int)targettype,
