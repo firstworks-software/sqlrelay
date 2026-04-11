@@ -1324,6 +1324,7 @@ int main(int argc, char **argv) {
 	// output bind by position
 	stdoutput.printf("OUTPUT BIND BY POSITION: \n");
 	cur->sendQuery("drop procedure testproc");
+	cur->getNullsAsNulls();
 	assertTrue(cur->sendQuery(
 		"create procedure testproc("
 		"	out out1 int, "
@@ -1350,10 +1351,8 @@ int main(int argc, char **argv) {
 	assertEquals(numvar,1);
 	assertEquals(stringvar,"hello");
 	assertEquals(floatvar,2.5);
-// #8000
-#if 0
 	assertEquals(nullvar,NULL);
-#endif
+	cur->getNullsAsEmptyStrings();
 	assertTrue(cur->sendQuery("drop procedure testproc"));
 	assertTrue(con->commit());
 	stdoutput.printf("\n");
@@ -1702,8 +1701,8 @@ int main(int argc, char **argv) {
 
 	// null and empty lobs
 	stdoutput.printf("NULL AND EMPTY LOBS: \n");
-	cur->getNullsAsNulls();
 	cur->sendQuery("drop table testtable");
+	cur->getNullsAsNulls();
 	assertTrue(cur->sendQuery(
 		"create table testtable ("
 		"	testclob1 clob, "
@@ -1729,6 +1728,7 @@ int main(int argc, char **argv) {
 	assertEquals(cur->getField(0,1),NULL);
 	assertEquals(cur->getField(0,2),"");
 	assertEquals(cur->getField(0,3),NULL);
+	cur->getNullsAsEmptyStrings();
 	assertTrue(cur->sendQuery("drop table testtable"));
 	assertTrue(con->commit());
 	stdoutput.printf("\n");

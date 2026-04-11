@@ -869,6 +869,7 @@ int main(int argc, char **argv) {
 
 	// output bind by position
 	stdoutput.printf("OUTPUT BIND BY POSITION: \n");
+	cur->getNullsAsNulls();
 	cur->prepareQuery(
 		"begin "
 		"	:numvar:=1; "
@@ -899,6 +900,7 @@ int main(int argc, char **argv) {
 	assertEquals(second,0);
 	assertEquals(microsecond,0);
 	assertEquals(tz,"");
+	cur->getNullsAsEmptyStrings();
 	stdoutput.printf("\n");
 
 

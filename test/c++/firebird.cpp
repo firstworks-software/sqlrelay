@@ -1024,7 +1024,6 @@ int main(int argc, char **argv) {
 	assertEquals(cur->getField(0,(uint32_t)0),"1");
 	assertEquals(cur->getField(0,1),"");
 	assertEquals(cur->getField(0,2),"");
-	cur->getNullsAsNulls();
 	stdoutput.printf("\n");
 
 
@@ -1046,6 +1045,7 @@ int main(int argc, char **argv) {
 #if 0
 	assertEquals(cur->getField(0,"TESTBLOB"),NULL);
 #endif
+	cur->getNullsAsEmptyStrings();
 	assertTrue(cur->sendQuery("delete from testtable1"));
 	stdoutput.printf("\n");
 
@@ -1069,6 +1069,7 @@ int main(int argc, char **argv) {
 
 	// output bind by position
 	stdoutput.printf("OUTPUT BIND BY POSITION: \n");
+	cur->getNullsAsNulls();
 	cur->prepareQuery("execute procedure testproc ?, ?, ?, ?");
 	cur->inputBind("1",1);
 	cur->inputBind("2",1.1,2,1);
@@ -1083,6 +1084,7 @@ int main(int argc, char **argv) {
 	//assertEquals(cur->getOutputBindDouble("2"),1.1);
 	assertEquals(cur->getOutputBindString("3"),"hello               ");
 	assertEquals(cur->getOutputBindBlob("4"),"blob");
+	cur->getNullsAsEmptyStrings();
 	stdoutput.printf("\n");
 
 

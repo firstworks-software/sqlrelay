@@ -3075,8 +3075,7 @@ bool informixcursor::outputBind(const char *variable,
 				0,
 				value,
 				valuesize,
-				&(outisnull[pos-1])
-				);
+				&(outisnull[pos-1]));
 	return (erg==SQL_SUCCESS || erg==SQL_SUCCESS_WITH_INFO);
 }
 
@@ -3105,8 +3104,7 @@ bool informixcursor::outputBind(const char *variable,
 				0,
 				value,
 				sizeof(int64_t),
-				&(outisnull[pos-1])
-				);
+				&(outisnull[pos-1]));
 	return (erg==SQL_SUCCESS || erg==SQL_SUCCESS_WITH_INFO);
 }
 
@@ -3137,8 +3135,7 @@ bool informixcursor::outputBind(const char *variable,
 				0,
 				value,
 				sizeof(double),
-				&(outisnull[pos-1])
-				);
+				&(outisnull[pos-1]));
 	return (erg==SQL_SUCCESS || erg==SQL_SUCCESS_WITH_INFO);
 }
 
@@ -3185,8 +3182,7 @@ bool informixcursor::outputBind(const char *variable,
 				0,
 				&(db->buffer),
 				0,
-				&(outisnull[pos-1])
-				);
+				&(outisnull[pos-1]));
 	return (erg==SQL_SUCCESS || erg==SQL_SUCCESS_WITH_INFO);
 }
 

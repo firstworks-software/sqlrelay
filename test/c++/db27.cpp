@@ -1069,6 +1069,7 @@ int main(int argc, char **argv) {
 	assertEquals(cur->getField(0,1),NULL);
 	assertEquals(cur->getField(0,2),NULL);
 	assertEquals(cur->getField(0,3),NULL);
+	cur->getNullsAsEmptyStrings();
 	assertTrue(cur->sendQuery("drop table testtable"));
 	assertTrue(con->commit());
 	stdoutput.printf("\n");
@@ -1107,6 +1108,7 @@ int main(int argc, char **argv) {
 	// output bind by position
 	stdoutput.printf("OUTPUT BIND BY POSITION: \n");
 	cur->sendQuery("drop procedure testproc");
+	cur->getNullsAsNulls();
 	assertTrue(cur->sendQuery(
 		"create procedure testproc("
 		"	out out1 int, "
@@ -1150,6 +1152,7 @@ int main(int argc, char **argv) {
 	assertEquals(tz,"");
 	nullvar=cur->getOutputBindString("5");
 	assertEquals(nullvar,NULL);
+	cur->getNullsAsEmptyStrings();
 	assertTrue(cur->sendQuery("drop procedure testproc"));
 	assertTrue(con->commit());
 	stdoutput.printf("\n");

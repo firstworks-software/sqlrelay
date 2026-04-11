@@ -982,6 +982,7 @@ int main(int argc, char **argv) {
 	assertEquals(cur->getField(0,1),NULL);
 	assertEquals(cur->getField(0,2),NULL);
 	assertEquals(cur->getField(0,3),NULL);
+	cur->getNullsAsEmptyStrings();
 	assertTrue(cur->sendQuery("drop table testtable"));
 	stdoutput.printf("\n");
 
@@ -1013,6 +1014,7 @@ int main(int argc, char **argv) {
 
 	// output bind by position
 	stdoutput.printf("OUTPUT BIND BY POSITION: \n");
+	cur->getNullsAsNulls();
 	cur->prepareQuery(
 		"begin "
 		"	:numvar:=1; "
@@ -1047,6 +1049,7 @@ int main(int argc, char **argv) {
 	assertEquals(tz,"");
 	nullvar=cur->getOutputBindString("5");
 	assertEquals(nullvar,NULL);
+	cur->getNullsAsEmptyStrings();
 	stdoutput.printf("\n");
 
 

@@ -1081,7 +1081,6 @@ int main(int argc, char **argv) {
 	assertEquals(cur->getField(0,(uint32_t)0),"");
 	assertEquals(cur->getField(0,1),"1");
 	assertEquals(cur->getField(0,2),"");
-	cur->getNullsAsNulls();
 	stdoutput.printf("\n");
 
 
@@ -1119,6 +1118,7 @@ int main(int argc, char **argv) {
         // see note above for why we're checking for a single space
 	assertEquals(cur->getField(0,2)," ");
 	assertEquals(cur->getField(0,3),NULL);
+	cur->getNullsAsEmptyStrings();
 	assertTrue(cur->sendQuery("drop table testtable"));
 	stdoutput.printf("\n");
 
@@ -1151,6 +1151,7 @@ int main(int argc, char **argv) {
 	// output bind by position
 	stdoutput.printf("OUTPUT BIND BY POSITION: \n");
 	cur->sendQuery("drop procedure testproc");
+	cur->getNullsAsNulls();
 	assertTrue(cur->sendQuery(
 		"create procedure testproc "
 		"	@out1 int output, "
@@ -1190,6 +1191,7 @@ int main(int argc, char **argv) {
 	assertEquals(microsecond,0);
 	assertEquals(tz,"");
 	assertEquals(nullvar,NULL);
+	cur->getNullsAsEmptyStrings();
 	assertTrue(cur->sendQuery("drop procedure testproc"));
 	stdoutput.printf("\n");
 

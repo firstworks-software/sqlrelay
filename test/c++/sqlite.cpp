@@ -835,7 +835,6 @@ int main(int argc, char **argv) {
 	assertEquals(cur->getField(0,(uint32_t)0),"1");
 	assertEquals(cur->getField(0,1),"");
 	assertEquals(cur->getField(0,2),"");
-	cur->getNullsAsNulls();
 	assertTrue(cur->sendQuery("drop table if exists testtable"));
 	stdoutput.printf("\n");
 
@@ -874,6 +873,7 @@ int main(int argc, char **argv) {
 #if 0
 	assertEquals(cur->getField(0,3),NULL);
 #endif
+	cur->getNullsAsEmptyStrings();
 	assertTrue(cur->sendQuery("drop table testtable"));
 	stdoutput.printf("\n");
 
