@@ -1053,6 +1053,7 @@ int main(int argc, char **argv) {
 
 	// output bind by name
 	stdoutput.printf("OUTPUT BIND BY NAME: \n");
+	cur->getNullsAsNulls();
 	cur->clearBinds();
 	cur->defineOutputBindInteger("numvar");
 	cur->defineOutputBindString("stringvar",10);
@@ -1079,11 +1080,13 @@ int main(int argc, char **argv) {
 	assertEquals(tz,"");
 	nullvar=cur->getOutputBindString("nullvar");
 	assertEquals(nullvar,NULL);
+	cur->getNullsAsEmptyStrings();
 	stdoutput.printf("\n");
 
 
 	// output bind by name with validation
 	stdoutput.printf("OUTPUT BIND BY NAME WITH VALIDATION: \n");
+	cur->getNullsAsNulls();
 	cur->clearBinds();
 	cur->defineOutputBindInteger("numvar");
 	cur->defineOutputBindString("stringvar",10);
@@ -1112,6 +1115,7 @@ int main(int argc, char **argv) {
 	assertEquals(tz,"");
 	nullvar=cur->getOutputBindString("nullvar");
 	assertEquals(nullvar,NULL);
+	cur->getNullsAsEmptyStrings();
 	stdoutput.printf("\n");
 
 

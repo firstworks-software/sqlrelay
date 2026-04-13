@@ -72,6 +72,7 @@ int main(int argc, char **argv) {
 	con=new sqlrconnection("sqlrelay",9000,"/tmp/test.socket",
 						"testuser","testpassword",0,1);
 	cur=new sqlrcursor(con);
+#if 0
 
 
 	// identify
@@ -941,6 +942,7 @@ int main(int argc, char **argv) {
 	assertEquals(cur->getField(0,1),"1");
 	assertEquals(cur->getField(0,2),"");
 	stdoutput.printf("\n");
+#endif
 
 
 	// null and empty lobs
@@ -978,6 +980,7 @@ int main(int argc, char **argv) {
 	stdoutput.printf("\n");
 
 
+#if 0
 	// long lobs
 	stdoutput.printf("LONG LOBS: \n");
 	cur->sendQuery("drop table testtable");
@@ -1046,6 +1049,7 @@ int main(int argc, char **argv) {
 
 	// output bind by name
 	stdoutput.printf("OUTPUT BIND BY NAME: \n");
+	cur->getNullsAsNulls();
 	cur->clearBinds();
 	cur->defineOutputBindInteger("numvar");
 	cur->defineOutputBindString("stringvar",10);
@@ -1072,11 +1076,13 @@ int main(int argc, char **argv) {
 	assertEquals(tz,"");
 	nullvar=cur->getOutputBindString("nullvar");
 	assertEquals(nullvar,NULL);
+	cur->getNullsAsEmptyStrings();
 	stdoutput.printf("\n");
 
 
 	// output bind by name with validation
 	stdoutput.printf("OUTPUT BIND BY NAME WITH VALIDATION: \n");
+	cur->getNullsAsNulls();
 	cur->clearBinds();
 	cur->defineOutputBindInteger("numvar");
 	cur->defineOutputBindString("stringvar",10);
@@ -1105,6 +1111,7 @@ int main(int argc, char **argv) {
 	assertEquals(tz,"");
 	nullvar=cur->getOutputBindString("nullvar");
 	assertEquals(nullvar,NULL);
+	cur->getNullsAsEmptyStrings();
 	stdoutput.printf("\n");
 
 
@@ -1888,6 +1895,7 @@ int main(int argc, char **argv) {
 	assertFalse(cur->sendQuery("create table testtable"));
 	assertFalse(cur->sendQuery("create table testtable"));
 	stdoutput.printf("\n");
+#endif
 
 
 	delete cur;

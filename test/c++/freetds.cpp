@@ -1213,6 +1213,7 @@ int main(int argc, char **argv) {
 	#if 0
 	stdoutput.printf("OUTPUT BIND BY NAME: \n");
 	cur->sendQuery("drop procedure testproc");
+	cur->getNullsAsNulls();
 	assertTrue(cur->sendQuery(
 		"create procedure testproc "
 		"	@out1 int output, "
@@ -1252,6 +1253,7 @@ int main(int argc, char **argv) {
 	assertEquals(tz,"");
 	nullvar=cur->getOutputBindString("out5");
 	assertEquals(nullvar,NULL);
+	cur->getNullsAsEmptyStrings();
 	assertTrue(cur->sendQuery("drop procedure testproc"));
 	stdoutput.printf("\n");
 	#endif
