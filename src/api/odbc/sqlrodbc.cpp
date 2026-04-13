@@ -4199,9 +4199,17 @@ static SQLRETURN SQLR_Fetch(SQLHSTMT statementhandle,
 				// handle the targetvalue
 				byte_t	*targetvalue=NULL;
 				if (field->targetvalue) {
-					targetvalue=((byte_t *)
-						field->targetvalue)+
-						(field->bufferlength*row);
+					targetvalue=
+					((byte_t *)field->targetvalue)+
+					(field->bufferlength*row);
+				}
+
+				// handle the strlen_or_ind
+				SQLLEN	*strlen_or_ind=NULL;
+				if (field->strlen_or_ind) {
+					strlen_or_ind=(SQLLEN *)(
+					((byte_t *)field->strlen_or_ind)+
+					(sizeof(SQLLEN *)*row));
 				}
 
 				// get the data into the bound column
@@ -4212,7 +4220,7 @@ static SQLRETURN SQLR_Fetch(SQLHSTMT statementhandle,
 						field->targettype,
 						targetvalue,
 						field->bufferlength,
-						&(field->strlen_or_ind[row]));
+						strlen_or_ind);
 				if (getdataresult!=SQL_SUCCESS) {
 					return getdataresult;
 				}
