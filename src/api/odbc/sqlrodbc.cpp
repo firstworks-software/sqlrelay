@@ -4119,7 +4119,7 @@ static SQLRETURN SQLR_Fetch(SQLHSTMT statementhandle,
 	stmt->cur->setResultSetBufferSize(rowstofetch);
 
 	// fetch the row(s)
-	debugPrintf("  currentfetchrow: %lld\n",stmt->currentfetchrow);
+	debugPrintf("  currentfetchrow : %lld\n",stmt->currentfetchrow);
 	SQLRETURN	fetchresult=
 			(stmt->cur->getRow(stmt->currentfetchrow))?
 					SQL_SUCCESS:SQL_NO_DATA_FOUND;
