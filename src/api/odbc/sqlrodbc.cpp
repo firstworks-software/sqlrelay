@@ -613,6 +613,8 @@ static const char *SQLR_GetCColumnTypeName(SQLSMALLINT targettype) {
 			return "SQL_C_INTERVAL_MINUTE_TO_SECOND";
 		case SQL_C_GUID:
 			return "SQL_C_GUID";
+		case SQL_C_DEFAULT:
+			return "SQL_C_DEFAULT";
 		default:
 			return "unknown";
 	}
