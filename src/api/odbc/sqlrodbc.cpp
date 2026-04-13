@@ -4207,9 +4207,8 @@ static SQLRETURN SQLR_Fetch(SQLHSTMT statementhandle,
 				// handle the strlen_or_ind
 				SQLLEN	*strlen_or_ind=NULL;
 				if (field->strlen_or_ind) {
-					strlen_or_ind=(SQLLEN *)(
-					((byte_t *)field->strlen_or_ind)+
-					(sizeof(SQLLEN *)*row));
+					strlen_or_ind=
+					&(field->strlen_or_ind[row]);
 				}
 
 				// get the data into the bound column
