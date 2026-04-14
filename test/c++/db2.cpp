@@ -1483,8 +1483,6 @@ int main(int argc, char **argv) {
 
 
 	// temporary tables
-// #7997
-#if 0
 	stdoutput.printf("TEMPORARY TABLES: \n");
 	cur->sendQuery("drop table session.temptable");
 	assertTrue(cur->sendQuery(
@@ -1500,7 +1498,6 @@ int main(int argc, char **argv) {
 	assertFalse(cur->sendQuery(
 		"select count(*) from session.temptable"));
 	stdoutput.printf("\n");
-#endif
 
 
 	// binary data

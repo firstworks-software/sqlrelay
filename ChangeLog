@@ -43,7 +43,7 @@
 	overhauled c++ api tests to be consistent with each other and test
 		more things
 	null and empty lob fixes
-	text-encoded blob fixes
+	text-encoded binary data fixes
 	ODBC driver now maps SQL_DATE to SQL_C_DATE or SQL_C_TIMESTAMP based on
 		the buffersize that was passed in
 
