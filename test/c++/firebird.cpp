@@ -1273,7 +1273,7 @@ int main(int argc, char **argv) {
 	// firebird supports temporary tables, but we're omitting this for now
 
 
-	// binary data
+	// encoded binary data
 	// FIXME: ...
 
 

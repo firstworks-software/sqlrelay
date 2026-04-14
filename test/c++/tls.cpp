@@ -5,6 +5,8 @@
 #include <rudiments/charstring.h>
 #include <rudiments/sys.h>
 #include <rudiments/process.h>
+#include <rudiments/bytestring.h>
+#include <rudiments/stringbuffer.h>
 #include <rudiments/snooze.h>
 #include <rudiments/stdio.h>
 
@@ -1503,8 +1505,41 @@ int main(int argc, char **argv) {
 	stdoutput.printf("\n");
 
 
-	// binary data
-	// FIXME: ...
+	// encoded binary data
+	stdoutput.printf("ENCODED BINARY DATA: \n");
+	cur->sendQuery("drop table testtable");
+	assertTrue(cur->sendQuery("create table testtable (col1 blob)"));
+	byte_t	buffer[256];
+	for (uint16_t i=0; i<256; i++) {
+		buffer[i]=i;
+	}
+	stringbuffer	querystr;
+	querystr.append("insert into testtable values ('");
+	char	hex[3];
+	for (uint64_t i=0; i<sizeof(buffer); i++) {
+		charstring::printf(hex,sizeof(hex),"%02x",buffer[i]);
+		querystr.append(hex);
+	}
+	querystr.append("')");
+	assertTrue(cur->sendQuery(querystr.getString()));
+	assertTrue(cur->sendQuery("select col1 from testtable"));
+	assertEquals(cur->getFieldLength(0,(uint32_t)0),sizeof(buffer));
+	assertEquals(bytestring::compare(cur->getField(0,(uint32_t)0),
+						buffer,sizeof(buffer)),0);
+	assertTrue(cur->sendQuery("drop table testtable"));
+	stdoutput.printf("\n");
+
+
+	// quotes
+	stdoutput.printf("QUOTES: \n");
+	cur->sendQuery("drop table testtable");
+	assertTrue(cur->sendQuery("create table testtable (col1 varchar2(4))"));
+	assertTrue(cur->sendQuery("insert into testtable values ('''''')"));
+	assertTrue(cur->sendQuery("select col1 from testtable"));
+	assertEquals(cur->getFieldLength(0,(uint32_t)0),2);
+	assertEquals(charstring::compare(cur->getField(0,(uint32_t)0),"''"),0);
+	assertTrue(cur->sendQuery("drop table testtable"));
+	stdoutput.printf("\n");
 
 
 	// database is schema

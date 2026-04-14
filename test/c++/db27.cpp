@@ -2,7 +2,10 @@
 // See the file COPYING for more information.
 
 #include <sqlrelay/sqlrclient.h>
+#include <rudiments/charstring.h>
 #include <rudiments/process.h>
+#include <rudiments/bytestring.h>
+#include <rudiments/stringbuffer.h>
 #include <rudiments/stdio.h>
 
 #include "asserts.cpp"
@@ -1513,28 +1516,54 @@ int main(int argc, char **argv) {
 
 
 	// temporary tables
-// #7997
-#if 0
 	stdoutput.printf("TEMPORARY TABLES: \n");
 	cur->sendQuery("drop table session.temptable");
-	assertTrue(cur->sendQuery(
-		"declare global temporary table temptable "
-		"(col1 int) not logged"));
-	assertTrue(cur->sendQuery(
-		"insert into session.temptable values (1)"));
-	assertTrue(cur->sendQuery(
-		"select count(*) from session.temptable"));
+	assertTrue(cur->sendQuery("declare global temporary table temptable "
+						"(col1 int) not logged"));
+	assertTrue(cur->sendQuery("insert into session.temptable values (1)"));
+	assertTrue(cur->sendQuery("select count(*) from session.temptable"));
 	assertEquals(cur->getField(0,(uint32_t)0),"1");
 	con->endSession();
 	stdoutput.printf("\n");
-	assertFalse(cur->sendQuery(
-		"select count(*) from session.temptable"));
+	assertFalse(cur->sendQuery("select count(*) from session.temptable"));
 	stdoutput.printf("\n");
-#endif
 
 
-	// binary data
-	// FIXME: ...
+	// encoded binary data
+	stdoutput.printf("ENCODED BINARY DATA: \n");
+	cur->sendQuery("drop table testtable");
+	assertTrue(cur->sendQuery("create table testtable (col1 blob)"));
+	byte_t	buffer[256];
+	for (uint16_t i=0; i<256; i++) {
+		buffer[i]=i;
+	}
+	stringbuffer	query;
+	query.append("insert into testtable values (blob(X'");
+	char	hex[3];
+	for (uint64_t i=0; i<sizeof(buffer); i++) {
+		charstring::printf(hex,sizeof(hex),"%02x",buffer[i]);
+		query.append(hex);
+	}
+	query.append("'))");
+	assertTrue(cur->sendQuery(query.getString()));
+	assertTrue(cur->sendQuery("select col1 from testtable"));
+	assertEquals(cur->getFieldLength(0,(uint32_t)0),sizeof(buffer));
+	assertEquals(bytestring::compare(cur->getField(0,(uint32_t)0),
+						buffer,sizeof(buffer)),0);
+	assertTrue(cur->sendQuery("drop table testtable"));
+	stdoutput.printf("\n");
+
+
+	// quotes
+	stdoutput.printf("QUOTES: \n");
+	cur->sendQuery("drop table testtable");
+	assertTrue(cur->sendQuery("create table testtable (col1 varchar(4))"));
+	assertTrue(cur->sendQuery("insert into testtable values ('''''')"));
+	assertTrue(cur->sendQuery("select col1 from testtable"));
+	assertEquals(cur->getFieldLength(0,(uint32_t)0),2);
+	assertEquals(charstring::compare(cur->getField(0,(uint32_t)0),"''"),0);
+	assertTrue(cur->sendQuery("drop table testtable"));
+	stdoutput.printf("\n");
 
 
 	// database is schema

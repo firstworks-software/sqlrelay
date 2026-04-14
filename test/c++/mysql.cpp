@@ -1799,15 +1799,14 @@ for (uint16_t a=0; a<50; a++) {
 	}
 
 
-	// binary data
 	if (majorversion>3) {
-		// binary data - all chars - \-escaped
-		stdoutput.printf("BINARY DATA - all chars - \\-escaped: \n");
 
+		// encoded binary data - all chars - \-escaped
+		stdoutput.printf("ENCODED BINARY DATA - "
+					"all chars - \\-escaped: \n");
+		cur->sendQuery("drop table testtable");
 		assertTrue(cur->sendQuery(
 			"create table testtable (col1 longblob)"));
-
-		// binary 0-255 (slash-escaped)
 		byte_t	buffer[256];
 		for (uint16_t i=0; i<256; i++) {
 			buffer[i]=i;
@@ -1831,79 +1830,34 @@ for (uint16_t a=0; a<50; a++) {
 		assertEquals(bytestring::compare(
 					cur->getField(0,(uint32_t)0),
 					buffer,sizeof(buffer)),0);
-		assertTrue(cur->sendQuery("delete from testtable"));
+		assertTrue(cur->sendQuery("drop table testtable"));
 		stdoutput.printf("\n");
 
 
-		// binary data - '' - ''-escaped
-		stdoutput.printf("BINARY DATA - '' - ''-escaped: \n");
+		// encoded binary data - (null)"" - unescaped
+		stdoutput.printf("ENCODED BINARY DATA - "
+					"(null)\"\" - unescaped: \n");
+		cur->sendQuery("drop table testtable");
 		assertTrue(cur->sendQuery(
-			"insert into testtable values (_binary'''''')"));
-		assertTrue(cur->sendQuery("select col1 from testtable"));
-		assertEquals(cur->getFieldLength(0,(uint32_t)0),2);
-		assertEquals(charstring::compare(
-					cur->getField(0,(uint32_t)0),
-					"''"),0);
-		assertTrue(cur->sendQuery("delete from testtable"));
-		stdoutput.printf("\n");
-
-
-		// binary data - '' - '',\-escaped
-		stdoutput.printf("BINARY DATA - '' - '',\\-escaped: \n");
+			"create table testtable (col1 longblob)"));
 		assertTrue(cur->sendQuery(
-			"insert into testtable values (_binary'''\\'')"));
-		assertTrue(cur->sendQuery("select col1 from testtable"));
-		assertEquals(cur->getFieldLength(0,(uint32_t)0),2);
-		assertEquals(charstring::compare(
-					cur->getField(0,(uint32_t)0),
-					"''"),0);
-		assertTrue(cur->sendQuery("delete from testtable"));
-		stdoutput.printf("\n");
-
-
-		// binary data - '' - \,''-escaped
-		stdoutput.printf("BINARY DATA - '' - \\,''-escaped: \n");
-		assertTrue(cur->sendQuery(
-			"insert into testtable values (_binary'\\'''')"));
-		assertTrue(cur->sendQuery("select col1 from testtable"));
-		assertEquals(cur->getFieldLength(0,(uint32_t)0),2);
-		assertEquals(charstring::compare(
-					cur->getField(0,(uint32_t)0),
-					"''"),0);
-		assertTrue(cur->sendQuery("delete from testtable"));
-		stdoutput.printf("\n");
-
-
-		// binary data - "" - unescaped
-		stdoutput.printf("BINARY DATA - \"\" - unescaped: \n");
-		assertTrue(cur->sendQuery(
-			"insert into testtable values (_binary'\"\"')"));
-		assertTrue(cur->sendQuery("select col1 from testtable"));
-		assertEquals(cur->getFieldLength(0,(uint32_t)0),2);
-		assertEquals(charstring::compare(
-					cur->getField(0,(uint32_t)0),
-					"\"\""),0);
-		assertTrue(cur->sendQuery("delete from testtable"));
-		stdoutput.printf("\n");
-
-
-		// binary data - (null)"" - unescaped
-		stdoutput.printf("BINARY DATA - (null)\"\" - unescaped: \n");
-		assertTrue(cur->sendQuery(
-			"insert into testtable values "
-			"(_binary'\0\"\"')",43));
+			"insert into testtable values (_binary'\0\"\"')",
+			43));
 		assertTrue(cur->sendQuery("select col1 from testtable"));
 		assertEquals(cur->getFieldLength(0,(uint32_t)0),3);
 		assertEquals(bytestring::compare(
 					cur->getField(0,(uint32_t)0),
 					"\0\"\"",3),0);
-		assertTrue(cur->sendQuery("delete from testtable"));
+		assertTrue(cur->sendQuery("drop table testtable"));
 		stdoutput.printf("\n");
 
 
-		// binary data - \(null)\"\" - \-escaped
-		stdoutput.printf(
-			"BINARY DATA - \\(null)\\\"\\\" - \\-escaped: \n");
+		// encoded binary data - (null)"" - \-escaped
+		stdoutput.printf("ENCODED BINARY DATA - "
+					"\\(null)\\\"\\\" - \\-escaped: \n");
+		cur->sendQuery("drop table testtable");
+		assertTrue(cur->sendQuery(
+			"create table testtable (col1 longblob)"));
 		assertTrue(cur->sendQuery(
 			"insert into testtable values (_binary'\\\0\\\"\\\"')",
 			46));
@@ -1912,76 +1866,124 @@ for (uint16_t a=0; a<50; a++) {
 		assertEquals(bytestring::compare(
 					cur->getField(0,(uint32_t)0),
 					"\0\"\"",3),0);
-		assertTrue(cur->sendQuery("delete from testtable"));
-		stdoutput.printf("\n");
-
-
-		// binary data - \\' - \-escaped
-		stdoutput.printf("BINARY DATA - \\\\' - \\-escaped: \n");
-		assertTrue(cur->sendQuery(
-			"insert into testtable values (_binary'\\\\\\'')",
-			44));
-		assertTrue(cur->sendQuery("select col1 from testtable"));
-		assertEquals(cur->getFieldLength(0,(uint32_t)0),2);
-		assertEquals(bytestring::compare(
-					cur->getField(0,(uint32_t)0),
-					"\\\'",2),0);
-		assertTrue(cur->sendQuery("delete from testtable"));
-		stdoutput.printf("\n");
-
-
-		// binary data - random - '',\-escaped
-		stdoutput.printf("BINARY DATA - random - '',\\-escaped: \n");
-		randomnumber	r1;
-		randomnumber	r2;
-		r1.setSeed(r1.getSeed());
-		r2.setSeed(r2.getSeed());
-		char	ch[]={'\'','"','\\','\0'};
-		for (uint16_t i=0; i<sizeof(buffer); i++) {
-			uint32_t	result1;
-			r1.generate(&result1);
-			r1.setSeed(result1);
-			buffer[i]=ch[r1.scale(result1,0,3)];
-		}
-		query.clear();
-		query.append("insert into testtable values (_binary'");
-		for (uint64_t i=0; i<sizeof(buffer); i++) {
-			uint32_t	result2;
-			r2.generate(&result2);
-			r2.setSeed(result2);
-			if (buffer[i]=='\'') {
-				// randomly escape with \ or ''
-				if (r2.scale(result2,0,1)) {
-					query.append('\'');
-				} else {
-					query.append('\\');
-				}
-			}
-			if (buffer[i]=='"') {
-				// randomly escape with \ or don't escape
-				if (r2.scale(result2,0,1)) {
-					query.append('\\');
-				}
-			}
-			if (buffer[i]=='\\') {
-				// escape with backslash
-				query.append('\\');
-			}
-			query.append(buffer[i]);
-		}
-		query.append("')");
-		assertTrue(cur->sendQuery(
-				query.getString(),query.getSize()));
-		assertTrue(cur->sendQuery("select col1 from testtable"));
-		assertEquals(cur->getFieldLength(0,(uint32_t)0),sizeof(buffer));
-		assertEquals(bytestring::compare(
-					cur->getField(0,(uint32_t)0),
-					buffer,sizeof(buffer)),0);
-		assertTrue(cur->sendQuery("delete from testtable"));
-
-		cur->sendQuery("drop table testtable");
+		assertTrue(cur->sendQuery("drop table testtable"));
 		stdoutput.printf("\n");
 	}
+
+
+	// quotes - '' - ''-escaped
+	stdoutput.printf("QUOTES - '' - ''-escaped: \n");
+	cur->sendQuery("drop table testtable");
+	assertTrue(cur->sendQuery("create table testtable (col1 varchar(4))"));
+	assertTrue(cur->sendQuery("insert into testtable values ('''''')"));
+	assertTrue(cur->sendQuery("select col1 from testtable"));
+	assertEquals(cur->getFieldLength(0,(uint32_t)0),2);
+	assertEquals(charstring::compare(cur->getField(0,(uint32_t)0),"''"),0);
+	assertTrue(cur->sendQuery("drop table testtable"));
+	stdoutput.printf("\n");
+
+
+	// quotes - '' - '',\-escaped
+	stdoutput.printf("QUOTES - '' - '',\\-escaped: \n");
+	cur->sendQuery("drop table testtable");
+	assertTrue(cur->sendQuery("create table testtable (col1 varchar(4))"));
+	assertTrue(cur->sendQuery("insert into testtable values ('''\\'')"));
+	assertTrue(cur->sendQuery("select col1 from testtable"));
+	assertEquals(cur->getFieldLength(0,(uint32_t)0),2);
+	assertEquals(charstring::compare(cur->getField(0,(uint32_t)0),"''"),0);
+	assertTrue(cur->sendQuery("drop table testtable"));
+	stdoutput.printf("\n");
+
+
+	// quotes - '' - \,''-escaped
+	stdoutput.printf("QUOTES - '' - \\,''-escaped: \n");
+	cur->sendQuery("drop table testtable");
+	assertTrue(cur->sendQuery("create table testtable (col1 varchar(4))"));
+	assertTrue(cur->sendQuery("insert into testtable values ('\\'''')"));
+	assertTrue(cur->sendQuery("select col1 from testtable"));
+	assertEquals(cur->getFieldLength(0,(uint32_t)0),2);
+	assertEquals(charstring::compare(cur->getField(0,(uint32_t)0),"''"),0);
+	assertTrue(cur->sendQuery("drop table testtable"));
+	stdoutput.printf("\n");
+
+
+	// quotes - \\' - \-escaped
+	stdoutput.printf("QUOTES - \\\\' - \\-escaped: \n");
+	cur->sendQuery("drop table testtable");
+	assertTrue(cur->sendQuery("create table testtable (col1 varchar(4))"));
+	assertTrue(cur->sendQuery("insert into testtable values ('\\\\\\'')"));
+	assertTrue(cur->sendQuery("select col1 from testtable"));
+	assertEquals(cur->getFieldLength(0,(uint32_t)0),2);
+	assertEquals(bytestring::compare(
+				cur->getField(0,(uint32_t)0),"\\\'",2),0);
+	assertTrue(cur->sendQuery("drop table testtable"));
+	stdoutput.printf("\n");
+
+
+	// quotes - "" - unescaped
+	stdoutput.printf("QUOTES - \"\" - unescaped: \n");
+	cur->sendQuery("drop table testtable");
+	assertTrue(cur->sendQuery("create table testtable (col1 varchar(4))"));
+	assertTrue(cur->sendQuery("insert into testtable values ('\"\"')"));
+	assertTrue(cur->sendQuery("select col1 from testtable"));
+	assertEquals(cur->getFieldLength(0,(uint32_t)0),2);
+	assertEquals(charstring::compare(
+				cur->getField(0,(uint32_t)0),"\"\""),0);
+	assertTrue(cur->sendQuery("drop table testtable"));
+	stdoutput.printf("\n");
+
+
+	// quotes - random - '',\-escaped
+	stdoutput.printf("QUOTES - random - '',\\-escaped: \n");
+	cur->sendQuery("drop table testtable");
+	assertTrue(cur->sendQuery("create table testtable "
+					"(col1 varchar(512))"));
+	randomnumber	r1;
+	randomnumber	r2;
+	r1.setSeed(r1.getSeed());
+	r2.setSeed(r2.getSeed());
+	byte_t	buffer[256];
+	char	ch[]={'\'','"','\\','\0'};
+	for (uint16_t i=0; i<sizeof(buffer); i++) {
+		uint32_t	result1;
+		r1.generate(&result1);
+		r1.setSeed(result1);
+		buffer[i]=ch[r1.scale(result1,0,3)];
+	}
+	stringbuffer	query;
+	query.append("insert into testtable values ('");
+	for (uint64_t i=0; i<sizeof(buffer); i++) {
+		uint32_t	result2;
+		r2.generate(&result2);
+		r2.setSeed(result2);
+		if (buffer[i]=='\'') {
+			// randomly escape with \ or ''
+			if (r2.scale(result2,0,1)) {
+				query.append('\'');
+			} else {
+				query.append('\\');
+			}
+		}
+		if (buffer[i]=='"') {
+			// randomly escape with \ or don't escape
+			if (r2.scale(result2,0,1)) {
+				query.append('\\');
+			}
+		}
+		if (buffer[i]=='\\') {
+			// escape with backslash
+			query.append('\\');
+		}
+		query.append(buffer[i]);
+	}
+	query.append("')");
+	assertTrue(cur->sendQuery(query.getString(),query.getSize()));
+	assertTrue(cur->sendQuery("select col1 from testtable"));
+	assertEquals(cur->getFieldLength(0,(uint32_t)0),sizeof(buffer));
+	assertEquals(bytestring::compare(cur->getField(0,(uint32_t)0),
+						buffer,sizeof(buffer)),0);
+	assertTrue(cur->sendQuery("drop table testtable"));
+	stdoutput.printf("\n");
 
 
 	// database is schema
