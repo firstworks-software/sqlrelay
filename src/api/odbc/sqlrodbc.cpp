@@ -9550,7 +9550,7 @@ SQLRETURN SQL_API SQLGetInfo(SQLHDBC connectionhandle,
 			debugPrintf("  infotype: "
 					"SQL_OUTER_JOINS\n");
 			val.strval=SQLR_FeatureContains(conn,
-				"outer_joins","BASIC")?
+					"outer_joins","BASIC")?
 							"Y":"N";
 			type=0;
 			break;
