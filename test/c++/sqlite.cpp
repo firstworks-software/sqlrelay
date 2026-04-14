@@ -934,7 +934,7 @@ int main(int argc, char **argv) {
 
 	// bind validation
 // #7996
-#if 0
+#if 1
 	stdoutput.printf("BIND VALIDATION: \n");
 	cur->sendQuery("drop table testtable");
 	cur->sendQuery(

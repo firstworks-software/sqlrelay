@@ -1444,47 +1444,7 @@ int main(int argc, char **argv) {
 
 
 	// bind validation
-// #7996
-#if 0
-	stdoutput.printf("BIND VALIDATION: \n");
-	cur->sendQuery("drop table testtable");
-	cur->sendQuery(
-		"create table testtable ("
-		"	col1 varchar(20), "
-		"	col2 varchar(20), "
-		"	col3 varchar(20))");
-	cur->prepareQuery(
-		"insert into "
-		"	testtable "
-		"values ("
-		"	$(var1), "
-		"	$(var2), "
-		"	$(var3))");
-	cur->inputBind("var1","1");
-	cur->inputBind("var2","2");
-	cur->inputBind("var3","3");
-	cur->substitution("var1","?");
-	assertTrue(cur->validBind("var1"));
-	assertFalse(cur->validBind("var2"));
-	assertFalse(cur->validBind("var3"));
-	assertFalse(cur->validBind("var4"));
-	stdoutput.printf("\n");
-	cur->substitution("var2","?");
-	assertTrue(cur->validBind("var1"));
-	assertTrue(cur->validBind("var2"));
-	assertFalse(cur->validBind("var3"));
-	assertFalse(cur->validBind("var4"));
-	stdoutput.printf("\n");
-	cur->substitution("var3","?");
-	assertTrue(cur->validBind("var1"));
-	assertTrue(cur->validBind("var2"));
-	assertTrue(cur->validBind("var3"));
-	assertFalse(cur->validBind("var4"));
-	assertTrue(cur->executeQuery());
-	assertTrue(cur->sendQuery("drop table testtable"));
-	stdoutput.printf("\n");
-#endif
-
+	// informix doesn't support bind by name
 
 	// rebinding
 	stdoutput.printf("REBINDING: \n");
