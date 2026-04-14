@@ -22,12 +22,12 @@ int main(int argc, char **argv) {
 	const char	*bindvars[]={"1","2","3","4",
 				"5","6","7","8","9","10",
 				"11","12","13","14","15","16",NULL};
-	const char	*bindvals[]={"t","4","4","4","4",
-				"4.4","4.4","4.4","4.4",
-				"testchar4","testnchar4",
-				"testvarchar4","testnvarchar4",
-				"testlvarchar4","01/01/2004",
-				"2004-01-01 04:00:00",NULL};
+	const char	*bindvals[]={"t","7","7","7","7",
+				"7.7","7.7","7.7","7.7",
+				"testchar7","testnchar7",
+				"testvarchar7","testnvarchar7",
+				"testlvarchar7","01/01/2007",
+				"2007-01-01 07:00:00",NULL};
 	const char * const *cols;
 	const char * const *fields;
 	uint32_t	*fieldlens;
@@ -195,8 +195,8 @@ int main(int argc, char **argv) {
 	cur->inputBind("10","testchar2");
 	cur->inputBind("11","testnchar2");
 	cur->inputBind("12","testvarchar2");
-	cur->inputBind("13","testvarnchar2");
-	cur->inputBind("14","testvarlchar2");
+	cur->inputBind("13","testnvarchar2");
+	cur->inputBind("14","testlvarchar2");
 	cur->inputBind("15",2002,1,1,-1,-1,-1,-1,NULL,false);
 	cur->inputBind("16",2002,1,1,2,0,0,0,NULL,false);
 	cur->inputBindClob("17","testtext2",9);
@@ -215,12 +215,72 @@ int main(int argc, char **argv) {
 	cur->inputBind("10","testchar3");
 	cur->inputBind("11","testnchar3");
 	cur->inputBind("12","testvarchar3");
-	cur->inputBind("13","testvarnchar3");
-	cur->inputBind("14","testvarlchar3");
+	cur->inputBind("13","testnvarchar3");
+	cur->inputBind("14","testlvarchar3");
 	cur->inputBind("15",2003,1,1,-1,-1,-1,-1,NULL,false);
 	cur->inputBind("16",2003,1,1,3,0,0,0,NULL,false);
 	cur->inputBindClob("17","testtext3",9);
 	cur->inputBindBlob("18","testbyte3",9);
+	assertTrue(cur->executeQuery());
+	cur->clearBinds();
+	cur->inputBind("1","t");
+	cur->inputBind("2",4);
+	cur->inputBind("3",4);
+	cur->inputBind("4",4);
+	cur->inputBind("5",4);
+	cur->inputBind("6",4.4,4,2);
+	cur->inputBind("7",4.4,4,2);
+	cur->inputBind("8",4.4,4,2);
+	cur->inputBind("9",4.4,4,2);
+	cur->inputBind("10","testchar4");
+	cur->inputBind("11","testnchar4");
+	cur->inputBind("12","testvarchar4");
+	cur->inputBind("13","testnvarchar4");
+	cur->inputBind("14","testlvarchar4");
+	cur->inputBind("15",2004,1,1,-1,-1,-1,-1,NULL,false);
+	cur->inputBind("16",2004,1,1,4,0,0,0,NULL,false);
+	cur->inputBindClob("17","testtext4",9);
+	cur->inputBindBlob("18","testbyte4",9);
+	assertTrue(cur->executeQuery());
+	cur->clearBinds();
+	cur->inputBind("1","t");
+	cur->inputBind("2",5);
+	cur->inputBind("3",5);
+	cur->inputBind("4",5);
+	cur->inputBind("5",5);
+	cur->inputBind("6",5.5,4,2);
+	cur->inputBind("7",5.5,4,2);
+	cur->inputBind("8",5.5,4,2);
+	cur->inputBind("9",5.5,4,2);
+	cur->inputBind("10","testchar5");
+	cur->inputBind("11","testnchar5");
+	cur->inputBind("12","testvarchar5");
+	cur->inputBind("13","testnvarchar5");
+	cur->inputBind("14","testlvarchar5");
+	cur->inputBind("15",2005,1,1,-1,-1,-1,-1,NULL,false);
+	cur->inputBind("16",2005,1,1,5,0,0,0,NULL,false);
+	cur->inputBindClob("17","testtext5",9);
+	cur->inputBindBlob("18","testbyte5",9);
+	assertTrue(cur->executeQuery());
+	cur->clearBinds();
+	cur->inputBind("1","t");
+	cur->inputBind("2",6);
+	cur->inputBind("3",6);
+	cur->inputBind("4",6);
+	cur->inputBind("5",6);
+	cur->inputBind("6",6.6,4,2);
+	cur->inputBind("7",6.6,4,2);
+	cur->inputBind("8",6.6,4,2);
+	cur->inputBind("9",6.6,4,2);
+	cur->inputBind("10","testchar6");
+	cur->inputBind("11","testnchar6");
+	cur->inputBind("12","testvarchar6");
+	cur->inputBind("13","testnvarchar6");
+	cur->inputBind("14","testlvarchar6");
+	cur->inputBind("15",2006,1,1,-1,-1,-1,-1,NULL,false);
+	cur->inputBind("16",2006,1,1,6,0,0,0,NULL,false);
+	cur->inputBindClob("17","testtext6",9);
+	cur->inputBindBlob("18","testbyte6",9);
 	assertTrue(cur->executeQuery());
 	stdoutput.printf("\n");
 
@@ -256,7 +316,29 @@ int main(int argc, char **argv) {
 
 
 	// input bind by position with validation
-	// FIXME: ...
+	stdoutput.printf("INPUT BIND BY POSITION WITH VALIDATION: \n");
+	cur->clearBinds();
+	cur->inputBind("1","t");
+	cur->inputBind("2",8);
+	cur->inputBind("3",8);
+	cur->inputBind("4",8);
+	cur->inputBind("5",8);
+	cur->inputBind("6",8.8,4,2);
+	cur->inputBind("7",8.8,4,2);
+	cur->inputBind("8",8.8,4,2);
+	cur->inputBind("9",8.8,4,2);
+	cur->inputBind("10","testchar8");
+	cur->inputBind("11","testnchar8");
+	cur->inputBind("12","testvarchar8");
+	cur->inputBind("13","testnvarchar8");
+	cur->inputBind("14","testlvarchar8");
+	cur->inputBind("15",2008,1,1,-1,-1,-1,-1,NULL,false);
+	cur->inputBind("16",2008,1,1,8,0,0,0,NULL,false);
+	cur->inputBindClob("17","testtext8",9);
+	cur->inputBindBlob("18","testbyte8",9);
+	cur->validateBinds();
+	assertTrue(cur->executeQuery());
+	stdoutput.printf("\n");
 
 
 	// input bind by name
@@ -269,99 +351,6 @@ int main(int argc, char **argv) {
 
 	// input bind by name with validation
 	// informix doesn't support bind by name
-
-
-	// insert
-	stdoutput.printf("INSERT: \n");
-	assertTrue(cur->sendQuery(
-		"insert into "
-		"	testtable "
-		"values ("
-		"	't', "
-		"	5, "
-		"	5, "
-		"	5, "
-		"	5, "
-		"	5.5, "
-		"	5.5, "
-		"	5.5, "
-		"	5.5, "
-		"	'testchar5', "
-		"	'testnchar5', "
-		"	'testvarchar5', "
-		"	'testnvarchar5', "
-		"	'testlvarchar5', "
-		"	'01/01/2005', "
-		"	'2005-01-01 05:00:00', "
-		"	'testtext5', "
-		"	null)"));
-	assertTrue(cur->sendQuery(
-		"insert into "
-		"	testtable "
-		"values ("
-		"	't', "
-		"	6, "
-		"	6, "
-		"	6, "
-		"	6, "
-		"	6.6, "
-		"	6.6, "
-		"	6.6, "
-		"	6.6, "
-		"	'testchar6', "
-		"	'testnchar6', "
-		"	'testvarchar6', "
-		"	'testnvarchar6', "
-		"	'testlvarchar6', "
-		"	'01/01/2006', "
-		"	'2006-01-01 06:00:00', "
-		"	'testtext6', "
-		"	null)"));
-	assertTrue(cur->sendQuery(
-		"insert into "
-		"	testtable "
-		"values ("
-		"	't', "
-		"	7, "
-		"	7, "
-		"	7, "
-		"	7, "
-		"	7.7, "
-		"	7.7, "
-		"	7.7, "
-		"	7.7, "
-		"	'testchar7', "
-		"	'testnchar7', "
-		"	'testvarchar7', "
-		"	'testnvarchar7', "
-		"	'testlvarchar7', "
-		"	'01/01/2007', "
-		"	'2007-01-01 07:00:00', "
-		"	'testtext7', "
-		"	null)"));
-	assertTrue(cur->sendQuery(
-		"insert into "
-		"	testtable "
-		"values ("
-		"	't', "
-		"	8, "
-		"	8, "
-		"	8, "
-		"	8, "
-		"	8.8, "
-		"	8.8, "
-		"	8.8, "
-		"	8.8, "
-		"	'testchar8', "
-		"	'testnchar8', "
-		"	'testvarchar8', "
-		"	'testnvarchar8', "
-		"	'testlvarchar8', "
-		"	'01/01/2008', "
-		"	'2008-01-01 08:00:00', "
-		"	'testtext8', "
-		"	null)"));
-	stdoutput.printf("\n");
 
 
 	// select
@@ -616,7 +605,7 @@ int main(int argc, char **argv) {
 	assertEquals(cur->getField(7,13),"testlvarchar8");
 	assertEquals(cur->getField(7,14),"2008-01-01");
 	assertEquals(cur->getField(7,15),"2008-01-01 08:00:00");
-	assertEquals(cur->getField(7,16),"testtext8");
+	assertEquals(cur->getField(7,16),"");
 	assertEquals(cur->getField(7,17),"");
 	stdoutput.printf("\n");
 
@@ -656,7 +645,7 @@ int main(int argc, char **argv) {
 	assertEquals(cur->getFieldLength(7,12),13);
 	assertEquals(cur->getFieldLength(7,14),10);
 	assertEquals(cur->getFieldLength(7,15),19);
-	assertEquals(cur->getFieldLength(7,16),9);
+	assertEquals(cur->getFieldLength(7,16),0);
 	assertEquals(cur->getFieldLength(7,17),0);
 	stdoutput.printf("\n");
 
@@ -698,7 +687,7 @@ int main(int argc, char **argv) {
 	assertEquals(cur->getField(7,"testlvarchar"),"testlvarchar8");
 	assertEquals(cur->getField(7,"testdate"),"2008-01-01");
 	assertEquals(cur->getField(7,"testdatetime"),"2008-01-01 08:00:00");
-	assertEquals(cur->getField(7,"testtext"),"testtext8");
+	assertEquals(cur->getField(7,"testtext"),"");
 	assertEquals(cur->getField(7,"testbyte"),"");
 	stdoutput.printf("\n");
 
@@ -740,7 +729,7 @@ int main(int argc, char **argv) {
 	assertEquals(cur->getFieldLength(7,"testlvarchar"),13);
 	assertEquals(cur->getFieldLength(7,"testdate"),10);
 	assertEquals(cur->getFieldLength(7,"testdatetime"),19);
-	assertEquals(cur->getFieldLength(7,"testtext"),9);
+	assertEquals(cur->getFieldLength(7,"testtext"),0);
 	assertEquals(cur->getFieldLength(7,"testbyte"),0);
 	stdoutput.printf("\n");
 

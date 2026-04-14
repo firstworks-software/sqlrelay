@@ -153,12 +153,11 @@ int main(int argc, char **argv) {
 
 
 	// array of input binds by position
-	// sqlite doesn't support implicit conversion of string binds to other
-	// data types, so arrays of binds don't generally work.
+	// sqlite doesn't support bind by position
 
 
 	// input bind by position with validation
-	// FIXME: ...
+	// sqlite doesn't support bind by position
 
 
 	// input bind by name
