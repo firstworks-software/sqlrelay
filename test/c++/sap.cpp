@@ -201,6 +201,17 @@ int main(int argc, char **argv) {
 	cur->inputBind("14",1);
 	cur->inputBindClob("15","testtext3",9);
 	assertTrue(cur->executeQuery());
+	stdoutput.printf("\n");
+
+
+	// array of input binds by position
+	// sap doesn't support implicit conversion of string binds to other
+	// data types, so arrays of binds don't generally work.
+	// Omitting the test.
+
+
+	// input bind by position with validation
+	stdoutput.printf("INPUT BIND BY POSITION WITH VALIDATION: \n");
 	cur->clearBinds();
 	cur->inputBind("1",4);
 	cur->inputBind("2",4);
@@ -217,18 +228,9 @@ int main(int argc, char **argv) {
 	cur->inputBind("13","testvarchar4");
 	cur->inputBind("14",1);
 	cur->inputBindClob("15","testtext4",9);
+	cur->validateBinds();
 	assertTrue(cur->executeQuery());
 	stdoutput.printf("\n");
-
-
-	// array of input binds by position
-	// sap doesn't support implicit conversion of string binds to other
-	// data types, so arrays of binds don't generally work.
-	// Omitting the test.
-
-
-	// input bind by position with validation
-	// FIXME: ...
 
 
 	// input bind by name
