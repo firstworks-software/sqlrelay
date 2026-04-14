@@ -1327,8 +1327,6 @@ int main(int argc, char **argv) {
 
 
 	// reexecute
-// #8008
-#if 0
 	stdoutput.printf("REEXECUTE: \n");
 	cur->prepareQuery("select 1 from sysibm.sysdummy1");
 	assertTrue(cur->executeQuery());
@@ -1339,7 +1337,7 @@ int main(int argc, char **argv) {
 	assertEquals(cur->rowCount(),1);
 	assertEquals(cur->getField(0,(uint32_t)0),"1");
 	stdoutput.printf("\n");
-	cur->prepareQuery("select ? from sysibm.sysdummy1");
+	cur->prepareQuery("select cast(? as integer) from sysibm.sysdummy1");
 	cur->inputBind("1",1);
 	assertTrue(cur->executeQuery());
 	assertEquals(cur->rowCount(),1);
@@ -1354,7 +1352,6 @@ int main(int argc, char **argv) {
 	assertEquals(cur->rowCount(),1);
 	assertEquals(cur->getField(0,(uint32_t)0),"2");
 	stdoutput.printf("\n");
-#endif
 
 
 	// stored procedure returning no value
