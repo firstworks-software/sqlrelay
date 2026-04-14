@@ -864,15 +864,9 @@ int main(int argc, char **argv) {
 	assertTrue(cur->executeQuery());
 	cur->sendQuery("select * from testtable");
 	assertEquals(cur->getField(0,(uint32_t)0),"");
-// #8004
-#if 0
 	assertEquals(cur->getField(0,1),NULL);
-#endif
 	assertEquals(cur->getField(0,2),"");
-// #8004
-#if 0
 	assertEquals(cur->getField(0,3),NULL);
-#endif
 	cur->getNullsAsEmptyStrings();
 	assertTrue(cur->sendQuery("drop table testtable"));
 	stdoutput.printf("\n");

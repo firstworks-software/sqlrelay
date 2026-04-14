@@ -738,7 +738,6 @@ bool sqlrservercursor::inputBindBlob(const char *variable,
 					const char *value,
 					uint32_t valuesize,
 					int16_t *isnull) {
-stdoutput.printf("sqlrservercursor::inputBindBlob()\n");
 	// fall back to string bind implementation
 	return inputBind(variable,variablesize,value,valuesize,isnull);
 }
@@ -748,7 +747,6 @@ bool sqlrservercursor::inputBindClob(const char *variable,
 					const char *value,
 					uint32_t valuesize,
 					int16_t *isnull) {
-stdoutput.printf("sqlrservercursor::inputBindClob()\n");
 	// fall back to string bind implementation
 	return inputBind(variable,variablesize,value,valuesize,isnull);
 }

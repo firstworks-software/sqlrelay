@@ -1859,9 +1859,15 @@ bool sqlitecursor::inputBind(const char *variable,
 				const char *value,
 				uint32_t valuesize,
 				int16_t *isnull) {
-	return (sqlite3_bind_text(stmt,
+	if (*isnull==conn->getNullBindValue()) {
+		return (sqlite3_bind_text(stmt,
+				getBindVariableIndex(variable,variablesize),
+				NULL,0,SQLITE_STATIC)==SQLITE_OK);
+	} else {
+		return (sqlite3_bind_text(stmt,
 				getBindVariableIndex(variable,variablesize),
 				value,valuesize,SQLITE_STATIC)==SQLITE_OK);
+	}
 }
 
 bool sqlitecursor::inputBind(const char *variable,
@@ -2244,14 +2250,43 @@ void sqlitecursor::getField(uint32_t col,
 		return;
 	}
 
-	// Get the type before calling sqlite3_column_text.
-	// sqlite3_column_text does a type conversion and the result of
-	// sqlite3_column_type is undefined after the conversion.
-	int	dtype=sqlite3_column_type(stmt,col);
-	*field=(const char *)((dtype==SQLITE_BLOB)?
-				sqlite3_column_blob(stmt,col):
-				sqlite3_column_text(stmt,col));
+	// get the field size
 	*fieldsize=sqlite3_column_bytes(stmt,col);
+
+	// get the field data, with special handling for blobs...
+	//
+	// * if a blob has a value then:
+	//   sqlite3_column_type() returns SQLITE_BLOB
+	//   sqlite3_column_bytes() returns the size
+	//   sqlite3_column_blob() returns that value
+	//   we want to return that value and that size
+	//   (we can handle this with sqlite3_column_blob)
+	// * if a blob is empty then:
+	//   sqlite3_column_type() returns SQLITE_BLOB
+	//   sqlite3_column_bytes() returns 0
+	//   sqlite3_column_blob() returns NULL
+	//   we want to return something other than NULL (a "" will do) and 0
+	//   (this is the weird case)
+	// * if a blob is NULL then:
+	//   sqlite3_column_type() returns SQLITE_NULL
+	//   sqlite3_column_bytes() returns 0
+	//   sqlite3_column_text() returns NULL
+	//   we want to return NULL and 0
+	//   (we can let sqlite3_column_text handle this)
+	//
+	// non-blobs are handled as-expected with sqlite3_column_text
+	if (sqlite3_column_type(stmt,col)==SQLITE_BLOB) {
+		if (*fieldsize) {
+			*field=(const char *)sqlite3_column_blob(stmt,col);
+		} else {
+			*field="";
+		}
+
+	} else {
+		*field=(const char *)sqlite3_column_text(stmt,col);
+	}
+
+	// set the null indicator
 	*null=(*field==NULL);
 
 	// set the lob indiciator false, otherwise we'll have to implement
