@@ -1041,10 +1041,7 @@ int main(int argc, char **argv) {
 	cur->inputBindBlob("1",NULL,0);
 	assertTrue(cur->executeQuery());
 	cur->sendQuery("select testblob from testtable1");
-// #8005
-#if 0
 	assertEquals(cur->getField(0,"TESTBLOB"),NULL);
-#endif
 	cur->getNullsAsEmptyStrings();
 	assertTrue(cur->sendQuery("delete from testtable1"));
 	stdoutput.printf("\n");

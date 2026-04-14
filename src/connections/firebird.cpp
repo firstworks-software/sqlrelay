@@ -3165,9 +3165,8 @@ bool firebirdcursor::executeQuery(const char *query, uint32_t size) {
 					(char *)&field[i].datebuffer;
 			field[i].sqlrtype=DATE_DATATYPE;
 		#endif
-		} else if (outsqlda->sqlvar[i].sqltype==SQL_BLOB || 
+		} else if (outsqlda->sqlvar[i].sqltype==SQL_BLOB ||
 				outsqlda->sqlvar[i].sqltype==SQL_BLOB+1) {
-			outsqlda->sqlvar[i].sqltype=SQL_BLOB;
 			outsqlda->sqlvar[i].sqldata=(char *)&field[i].blobid;
 			outsqlda->sqlvar[i].sqllen=sizeof(ISC_QUAD);
 			field[i].sqlrtype=BLOB_DATATYPE;
