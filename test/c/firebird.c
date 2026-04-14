@@ -44,7 +44,7 @@ int main(int argc, char **argv) {
 
 	// identify
 	printf("IDENTIFY: \n");
-	assertEqualsString(sqlrcon_identify(con),"firebird");
+	assertEqStr(sqlrcon_identify(con),"firebird");
 	printf("\n");
 
 
@@ -61,7 +61,7 @@ int main(int argc, char **argv) {
 	// only set it through the TPB at the start of a transaction, so
 	// attempts to set it should fail
 	assertFalse(sqlrcon_setIsolationLevel(con,"read committed"));
-	assertEqualsString(sqlrcon_getIsolationLevel(con),"read committed");
+	assertEqStr(sqlrcon_getIsolationLevel(con),"read committed");
 	printf("\n");
 
 	// clean up table
@@ -108,7 +108,7 @@ int main(int argc, char **argv) {
 		"	?, "
 		"	?, "
 		"	NULL)");
-	assertEqualsInt(sqlrcur_countBindVariables(cur),11);
+	assertEqInt(sqlrcur_countBindVariables(cur),11);
 	sqlrcur_inputBindLong(cur,"1",2);
 	sqlrcur_inputBindLong(cur,"2",2);
 	sqlrcur_inputBindDouble(cur,"3",2.2,2,1);
@@ -216,7 +216,7 @@ int main(int argc, char **argv) {
 
 	// affected rows
 	printf("AFFECTED ROWS: \n");
-	assertEqualsInt(sqlrcur_affectedRows(cur),1);
+	assertEqInt(sqlrcur_affectedRows(cur),1);
 	printf("\n");
 
 
@@ -227,9 +227,9 @@ int main(int argc, char **argv) {
 	sqlrcur_inputBindDouble(cur,"2",1.1,2,1);
 	sqlrcur_inputBindString(cur,"3","hello");
 	assertTrue(sqlrcur_executeQuery(cur));
-	assertEqualsString(sqlrcur_getFieldByIndex(cur,0,(uint32_t)0),"1");
-	assertEqualsString(sqlrcur_getFieldByIndex(cur,0,1),"1.1000");
-	assertEqualsString(sqlrcur_getFieldByIndex(cur,0,2),"hello");
+	assertEqStr(sqlrcur_getFieldByIndex(cur,0,(uint32_t)0),"1");
+	assertEqStr(sqlrcur_getFieldByIndex(cur,0,1),"1.1000");
+	assertEqStr(sqlrcur_getFieldByIndex(cur,0,2),"hello");
 	sqlrcur_prepareQuery(cur,"execute procedure testproc ?, ?, ?, NULL");
 	sqlrcur_inputBindLong(cur,"1",1);
 	sqlrcur_inputBindDouble(cur,"2",1.1,2,1);
@@ -239,9 +239,9 @@ int main(int argc, char **argv) {
 	sqlrcur_defineOutputBindString(cur,"3",20);
 	sqlrcur_defineOutputBindBlob(cur,"4");
 	assertTrue(sqlrcur_executeQuery(cur));
-	assertEqualsInt(sqlrcur_getOutputBindInteger(cur,"1"),1);
-	//assertEqualsDouble(sqlrcur_getOutputBindDouble(cur,"2"),1.1);
-	assertEqualsString(sqlrcur_getOutputBindString(cur,"3"),"hello               ");
+	assertEqInt(sqlrcur_getOutputBindInteger(cur,"1"),1);
+	//assertEqDbl(sqlrcur_getOutputBindDouble(cur,"2"),1.1);
+	assertEqStr(sqlrcur_getOutputBindString(cur,"3"),"hello               ");
 	printf("\n");
 
 
@@ -259,134 +259,134 @@ int main(int argc, char **argv) {
 
 	// column count
 	printf("COLUMN COUNT: \n");
-	assertEqualsInt(sqlrcur_colCount(cur),12);
+	assertEqInt(sqlrcur_colCount(cur),12);
 	printf("\n");
 
 
 	// column names
 	printf("COLUMN NAMES: \n");
-	assertEqualsString(sqlrcur_getColumnName(cur,0),"TESTINTEGER");
-	assertEqualsString(sqlrcur_getColumnName(cur,1),"TESTSMALLINT");
-	assertEqualsString(sqlrcur_getColumnName(cur,2),"TESTDECIMAL");
-	assertEqualsString(sqlrcur_getColumnName(cur,3),"TESTNUMERIC");
-	assertEqualsString(sqlrcur_getColumnName(cur,4),"TESTFLOAT");
-	assertEqualsString(sqlrcur_getColumnName(cur,5),"TESTDOUBLE");
-	assertEqualsString(sqlrcur_getColumnName(cur,6),"TESTDATE");
-	assertEqualsString(sqlrcur_getColumnName(cur,7),"TESTTIME");
-	assertEqualsString(sqlrcur_getColumnName(cur,8),"TESTCHAR");
-	assertEqualsString(sqlrcur_getColumnName(cur,9),"TESTVARCHAR");
-	assertEqualsString(sqlrcur_getColumnName(cur,10),"TESTTIMESTAMP");
+	assertEqStr(sqlrcur_getColumnName(cur,0),"TESTINTEGER");
+	assertEqStr(sqlrcur_getColumnName(cur,1),"TESTSMALLINT");
+	assertEqStr(sqlrcur_getColumnName(cur,2),"TESTDECIMAL");
+	assertEqStr(sqlrcur_getColumnName(cur,3),"TESTNUMERIC");
+	assertEqStr(sqlrcur_getColumnName(cur,4),"TESTFLOAT");
+	assertEqStr(sqlrcur_getColumnName(cur,5),"TESTDOUBLE");
+	assertEqStr(sqlrcur_getColumnName(cur,6),"TESTDATE");
+	assertEqStr(sqlrcur_getColumnName(cur,7),"TESTTIME");
+	assertEqStr(sqlrcur_getColumnName(cur,8),"TESTCHAR");
+	assertEqStr(sqlrcur_getColumnName(cur,9),"TESTVARCHAR");
+	assertEqStr(sqlrcur_getColumnName(cur,10),"TESTTIMESTAMP");
 	cols=sqlrcur_getColumnNames(cur);
-	assertEqualsString(cols[0],"TESTINTEGER");
-	assertEqualsString(cols[1],"TESTSMALLINT");
-	assertEqualsString(cols[2],"TESTDECIMAL");
-	assertEqualsString(cols[3],"TESTNUMERIC");
-	assertEqualsString(cols[4],"TESTFLOAT");
-	assertEqualsString(cols[5],"TESTDOUBLE");
-	assertEqualsString(cols[6],"TESTDATE");
-	assertEqualsString(cols[7],"TESTTIME");
-	assertEqualsString(cols[8],"TESTCHAR");
-	assertEqualsString(cols[9],"TESTVARCHAR");
-	assertEqualsString(cols[10],"TESTTIMESTAMP");
+	assertEqStr(cols[0],"TESTINTEGER");
+	assertEqStr(cols[1],"TESTSMALLINT");
+	assertEqStr(cols[2],"TESTDECIMAL");
+	assertEqStr(cols[3],"TESTNUMERIC");
+	assertEqStr(cols[4],"TESTFLOAT");
+	assertEqStr(cols[5],"TESTDOUBLE");
+	assertEqStr(cols[6],"TESTDATE");
+	assertEqStr(cols[7],"TESTTIME");
+	assertEqStr(cols[8],"TESTCHAR");
+	assertEqStr(cols[9],"TESTVARCHAR");
+	assertEqStr(cols[10],"TESTTIMESTAMP");
 	printf("\n");
 
 
 	// column types
 	printf("COLUMN TYPES: \n");
-	assertEqualsString(sqlrcur_getColumnTypeByIndex(cur,0),"INTEGER");
-	assertEqualsString(sqlrcur_getColumnTypeByName(cur,"TESTINTEGER"),"INTEGER");
-	assertEqualsString(sqlrcur_getColumnTypeByIndex(cur,1),"SMALLINT");
-	assertEqualsString(sqlrcur_getColumnTypeByName(cur,"TESTSMALLINT"),"SMALLINT");
-	assertEqualsString(sqlrcur_getColumnTypeByIndex(cur,2),"DECIMAL");
-	assertEqualsString(sqlrcur_getColumnTypeByName(cur,"TESTDECIMAL"),"DECIMAL");
-	assertEqualsString(sqlrcur_getColumnTypeByIndex(cur,3),"NUMERIC");
-	assertEqualsString(sqlrcur_getColumnTypeByName(cur,"TESTNUMERIC"),"NUMERIC");
-	assertEqualsString(sqlrcur_getColumnTypeByIndex(cur,4),"FLOAT");
-	assertEqualsString(sqlrcur_getColumnTypeByName(cur,"TESTFLOAT"),"FLOAT");
-	assertEqualsString(sqlrcur_getColumnTypeByIndex(cur,5),"DOUBLE PRECISION");
-	assertEqualsString(sqlrcur_getColumnTypeByName(cur,"TESTDOUBLE"),"DOUBLE PRECISION");
-	assertEqualsString(sqlrcur_getColumnTypeByIndex(cur,6),"DATE");
-	assertEqualsString(sqlrcur_getColumnTypeByName(cur,"TESTDATE"),"DATE");
-	assertEqualsString(sqlrcur_getColumnTypeByIndex(cur,7),"TIME");
-	assertEqualsString(sqlrcur_getColumnTypeByName(cur,"TESTTIME"),"TIME");
-	assertEqualsString(sqlrcur_getColumnTypeByIndex(cur,8),"CHAR");
-	assertEqualsString(sqlrcur_getColumnTypeByName(cur,"TESTCHAR"),"CHAR");
-	assertEqualsString(sqlrcur_getColumnTypeByIndex(cur,9),"VARCHAR");
-	assertEqualsString(sqlrcur_getColumnTypeByName(cur,"TESTVARCHAR"),"VARCHAR");
-	assertEqualsString(sqlrcur_getColumnTypeByIndex(cur,10),"TIMESTAMP");
-	assertEqualsString(sqlrcur_getColumnTypeByName(cur,"TESTTIMESTAMP"),"TIMESTAMP");
+	assertEqStr(sqlrcur_getColumnTypeByIndex(cur,0),"INTEGER");
+	assertEqStr(sqlrcur_getColumnTypeByName(cur,"TESTINTEGER"),"INTEGER");
+	assertEqStr(sqlrcur_getColumnTypeByIndex(cur,1),"SMALLINT");
+	assertEqStr(sqlrcur_getColumnTypeByName(cur,"TESTSMALLINT"),"SMALLINT");
+	assertEqStr(sqlrcur_getColumnTypeByIndex(cur,2),"DECIMAL");
+	assertEqStr(sqlrcur_getColumnTypeByName(cur,"TESTDECIMAL"),"DECIMAL");
+	assertEqStr(sqlrcur_getColumnTypeByIndex(cur,3),"NUMERIC");
+	assertEqStr(sqlrcur_getColumnTypeByName(cur,"TESTNUMERIC"),"NUMERIC");
+	assertEqStr(sqlrcur_getColumnTypeByIndex(cur,4),"FLOAT");
+	assertEqStr(sqlrcur_getColumnTypeByName(cur,"TESTFLOAT"),"FLOAT");
+	assertEqStr(sqlrcur_getColumnTypeByIndex(cur,5),"DOUBLE PRECISION");
+	assertEqStr(sqlrcur_getColumnTypeByName(cur,"TESTDOUBLE"),"DOUBLE PRECISION");
+	assertEqStr(sqlrcur_getColumnTypeByIndex(cur,6),"DATE");
+	assertEqStr(sqlrcur_getColumnTypeByName(cur,"TESTDATE"),"DATE");
+	assertEqStr(sqlrcur_getColumnTypeByIndex(cur,7),"TIME");
+	assertEqStr(sqlrcur_getColumnTypeByName(cur,"TESTTIME"),"TIME");
+	assertEqStr(sqlrcur_getColumnTypeByIndex(cur,8),"CHAR");
+	assertEqStr(sqlrcur_getColumnTypeByName(cur,"TESTCHAR"),"CHAR");
+	assertEqStr(sqlrcur_getColumnTypeByIndex(cur,9),"VARCHAR");
+	assertEqStr(sqlrcur_getColumnTypeByName(cur,"TESTVARCHAR"),"VARCHAR");
+	assertEqStr(sqlrcur_getColumnTypeByIndex(cur,10),"TIMESTAMP");
+	assertEqStr(sqlrcur_getColumnTypeByName(cur,"TESTTIMESTAMP"),"TIMESTAMP");
 	printf("\n");
 
 
 	// column length
 	printf("COLUMN LENGTH: \n");
-	assertEqualsInt(sqlrcur_getColumnLengthByIndex(cur,0),4);
-	assertEqualsInt(sqlrcur_getColumnLengthByName(cur,"TESTINTEGER"),4);
-	assertEqualsInt(sqlrcur_getColumnLengthByIndex(cur,1),2);
-	assertEqualsInt(sqlrcur_getColumnLengthByName(cur,"TESTSMALLINT"),2);
-	assertEqualsInt(sqlrcur_getColumnLengthByIndex(cur,2),8);
-	assertEqualsInt(sqlrcur_getColumnLengthByName(cur,"TESTDECIMAL"),8);
-	assertEqualsInt(sqlrcur_getColumnLengthByIndex(cur,3),8);
-	assertEqualsInt(sqlrcur_getColumnLengthByName(cur,"TESTNUMERIC"),8);
-	assertEqualsInt(sqlrcur_getColumnLengthByIndex(cur,4),4);
-	assertEqualsInt(sqlrcur_getColumnLengthByName(cur,"TESTFLOAT"),4);
-	assertEqualsInt(sqlrcur_getColumnLengthByIndex(cur,5),8);
-	assertEqualsInt(sqlrcur_getColumnLengthByName(cur,"TESTDOUBLE"),8);
-	assertEqualsInt(sqlrcur_getColumnLengthByIndex(cur,6),4);
-	assertEqualsInt(sqlrcur_getColumnLengthByName(cur,"TESTDATE"),4);
-	assertEqualsInt(sqlrcur_getColumnLengthByIndex(cur,7),4);
-	assertEqualsInt(sqlrcur_getColumnLengthByName(cur,"TESTTIME"),4);
-	assertEqualsInt(sqlrcur_getColumnLengthByIndex(cur,8),50);
-	assertEqualsInt(sqlrcur_getColumnLengthByName(cur,"TESTCHAR"),50);
-	assertEqualsInt(sqlrcur_getColumnLengthByIndex(cur,9),50);
-	assertEqualsInt(sqlrcur_getColumnLengthByName(cur,"TESTVARCHAR"),50);
-	assertEqualsInt(sqlrcur_getColumnLengthByIndex(cur,10),8);
-	assertEqualsInt(sqlrcur_getColumnLengthByName(cur,"TESTTIMESTAMP"),8);
+	assertEqInt(sqlrcur_getColumnLengthByIndex(cur,0),4);
+	assertEqInt(sqlrcur_getColumnLengthByName(cur,"TESTINTEGER"),4);
+	assertEqInt(sqlrcur_getColumnLengthByIndex(cur,1),2);
+	assertEqInt(sqlrcur_getColumnLengthByName(cur,"TESTSMALLINT"),2);
+	assertEqInt(sqlrcur_getColumnLengthByIndex(cur,2),8);
+	assertEqInt(sqlrcur_getColumnLengthByName(cur,"TESTDECIMAL"),8);
+	assertEqInt(sqlrcur_getColumnLengthByIndex(cur,3),8);
+	assertEqInt(sqlrcur_getColumnLengthByName(cur,"TESTNUMERIC"),8);
+	assertEqInt(sqlrcur_getColumnLengthByIndex(cur,4),4);
+	assertEqInt(sqlrcur_getColumnLengthByName(cur,"TESTFLOAT"),4);
+	assertEqInt(sqlrcur_getColumnLengthByIndex(cur,5),8);
+	assertEqInt(sqlrcur_getColumnLengthByName(cur,"TESTDOUBLE"),8);
+	assertEqInt(sqlrcur_getColumnLengthByIndex(cur,6),4);
+	assertEqInt(sqlrcur_getColumnLengthByName(cur,"TESTDATE"),4);
+	assertEqInt(sqlrcur_getColumnLengthByIndex(cur,7),4);
+	assertEqInt(sqlrcur_getColumnLengthByName(cur,"TESTTIME"),4);
+	assertEqInt(sqlrcur_getColumnLengthByIndex(cur,8),50);
+	assertEqInt(sqlrcur_getColumnLengthByName(cur,"TESTCHAR"),50);
+	assertEqInt(sqlrcur_getColumnLengthByIndex(cur,9),50);
+	assertEqInt(sqlrcur_getColumnLengthByName(cur,"TESTVARCHAR"),50);
+	assertEqInt(sqlrcur_getColumnLengthByIndex(cur,10),8);
+	assertEqInt(sqlrcur_getColumnLengthByName(cur,"TESTTIMESTAMP"),8);
 	printf("\n");
 
 
 	// longest column
 	printf("LONGEST COLUMN: \n");
-	assertEqualsInt(sqlrcur_getLongestByIndex(cur,0),1);
-	assertEqualsInt(sqlrcur_getLongestByName(cur,"TESTINTEGER"),1);
-	assertEqualsInt(sqlrcur_getLongestByIndex(cur,1),1);
-	assertEqualsInt(sqlrcur_getLongestByName(cur,"TESTSMALLINT"),1);
-	assertEqualsInt(sqlrcur_getLongestByIndex(cur,2),4);
-	assertEqualsInt(sqlrcur_getLongestByName(cur,"TESTDECIMAL"),4);
-	assertEqualsInt(sqlrcur_getLongestByIndex(cur,3),4);
-	assertEqualsInt(sqlrcur_getLongestByName(cur,"TESTNUMERIC"),4);
-	assertEqualsInt(sqlrcur_getLongestByIndex(cur,4),6);
-	assertEqualsInt(sqlrcur_getLongestByName(cur,"TESTFLOAT"),6);
-	assertEqualsInt(sqlrcur_getLongestByIndex(cur,5),6);
-	assertEqualsInt(sqlrcur_getLongestByName(cur,"TESTDOUBLE"),6);
-	assertEqualsInt(sqlrcur_getLongestByIndex(cur,6),10);
-	assertEqualsInt(sqlrcur_getLongestByName(cur,"TESTDATE"),10);
-	assertEqualsInt(sqlrcur_getLongestByIndex(cur,7),8);
-	assertEqualsInt(sqlrcur_getLongestByName(cur,"TESTTIME"),8);
-	assertEqualsInt(sqlrcur_getLongestByIndex(cur,8),50);
-	assertEqualsInt(sqlrcur_getLongestByName(cur,"TESTCHAR"),50);
-	assertEqualsInt(sqlrcur_getLongestByIndex(cur,9),12);
-	assertEqualsInt(sqlrcur_getLongestByName(cur,"TESTVARCHAR"),12);
-	assertEqualsInt(sqlrcur_getLongestByIndex(cur,10),0);
-	assertEqualsInt(sqlrcur_getLongestByName(cur,"TESTTIMESTAMP"),0);
+	assertEqInt(sqlrcur_getLongestByIndex(cur,0),1);
+	assertEqInt(sqlrcur_getLongestByName(cur,"TESTINTEGER"),1);
+	assertEqInt(sqlrcur_getLongestByIndex(cur,1),1);
+	assertEqInt(sqlrcur_getLongestByName(cur,"TESTSMALLINT"),1);
+	assertEqInt(sqlrcur_getLongestByIndex(cur,2),4);
+	assertEqInt(sqlrcur_getLongestByName(cur,"TESTDECIMAL"),4);
+	assertEqInt(sqlrcur_getLongestByIndex(cur,3),4);
+	assertEqInt(sqlrcur_getLongestByName(cur,"TESTNUMERIC"),4);
+	assertEqInt(sqlrcur_getLongestByIndex(cur,4),6);
+	assertEqInt(sqlrcur_getLongestByName(cur,"TESTFLOAT"),6);
+	assertEqInt(sqlrcur_getLongestByIndex(cur,5),6);
+	assertEqInt(sqlrcur_getLongestByName(cur,"TESTDOUBLE"),6);
+	assertEqInt(sqlrcur_getLongestByIndex(cur,6),10);
+	assertEqInt(sqlrcur_getLongestByName(cur,"TESTDATE"),10);
+	assertEqInt(sqlrcur_getLongestByIndex(cur,7),8);
+	assertEqInt(sqlrcur_getLongestByName(cur,"TESTTIME"),8);
+	assertEqInt(sqlrcur_getLongestByIndex(cur,8),50);
+	assertEqInt(sqlrcur_getLongestByName(cur,"TESTCHAR"),50);
+	assertEqInt(sqlrcur_getLongestByIndex(cur,9),12);
+	assertEqInt(sqlrcur_getLongestByName(cur,"TESTVARCHAR"),12);
+	assertEqInt(sqlrcur_getLongestByIndex(cur,10),0);
+	assertEqInt(sqlrcur_getLongestByName(cur,"TESTTIMESTAMP"),0);
 	printf("\n");
 
 
 	// row count
 	printf("ROW COUNT: \n");
-	assertEqualsInt(sqlrcur_rowCount(cur),8);
+	assertEqInt(sqlrcur_rowCount(cur),8);
 	printf("\n");
 
 
 	// total rows
 	printf("TOTAL ROWS: \n");
-	assertEqualsInt(sqlrcur_totalRows(cur),0);
+	assertEqInt(sqlrcur_totalRows(cur),0);
 	printf("\n");
 
 
 	// first row index
 	printf("FIRST ROW INDEX: \n");
-	assertEqualsInt(sqlrcur_firstRowIndex(cur),0);
+	assertEqInt(sqlrcur_firstRowIndex(cur),0);
 	printf("\n");
 
 
@@ -398,137 +398,137 @@ int main(int argc, char **argv) {
 
 	// fields by index
 	printf("FIELDS BY INDEX: \n");
-	assertEqualsString(sqlrcur_getFieldByIndex(cur,0,0),"1");
-	assertEqualsString(sqlrcur_getFieldByIndex(cur,0,1),"1");
-	assertEqualsString(sqlrcur_getFieldByIndex(cur,0,2),"1.10");
-	assertEqualsString(sqlrcur_getFieldByIndex(cur,0,3),"1.10");
-	assertEqualsString(sqlrcur_getFieldByIndex(cur,0,4),"1.1000");
-	assertEqualsString(sqlrcur_getFieldByIndex(cur,0,5),"1.1000");
-	assertEqualsString(sqlrcur_getFieldByIndex(cur,0,6),"2001:01:01");
-	assertEqualsString(sqlrcur_getFieldByIndex(cur,0,7),"01:00:00");
-	assertEqualsString(sqlrcur_getFieldByIndex(cur,0,8),"testchar1                                         ");
-	assertEqualsString(sqlrcur_getFieldByIndex(cur,0,9),"testvarchar1");
+	assertEqStr(sqlrcur_getFieldByIndex(cur,0,0),"1");
+	assertEqStr(sqlrcur_getFieldByIndex(cur,0,1),"1");
+	assertEqStr(sqlrcur_getFieldByIndex(cur,0,2),"1.10");
+	assertEqStr(sqlrcur_getFieldByIndex(cur,0,3),"1.10");
+	assertEqStr(sqlrcur_getFieldByIndex(cur,0,4),"1.1000");
+	assertEqStr(sqlrcur_getFieldByIndex(cur,0,5),"1.1000");
+	assertEqStr(sqlrcur_getFieldByIndex(cur,0,6),"2001:01:01");
+	assertEqStr(sqlrcur_getFieldByIndex(cur,0,7),"01:00:00");
+	assertEqStr(sqlrcur_getFieldByIndex(cur,0,8),"testchar1                                         ");
+	assertEqStr(sqlrcur_getFieldByIndex(cur,0,9),"testvarchar1");
 	printf("\n");
-	assertEqualsString(sqlrcur_getFieldByIndex(cur,7,0),"8");
-	assertEqualsString(sqlrcur_getFieldByIndex(cur,7,1),"8");
-	assertEqualsString(sqlrcur_getFieldByIndex(cur,7,2),"8.80");
-	assertEqualsString(sqlrcur_getFieldByIndex(cur,7,3),"8.80");
-	assertEqualsString(sqlrcur_getFieldByIndex(cur,7,4),"8.8000");
-	assertEqualsString(sqlrcur_getFieldByIndex(cur,7,5),"8.8000");
-	assertEqualsString(sqlrcur_getFieldByIndex(cur,7,6),"2008:01:01");
-	assertEqualsString(sqlrcur_getFieldByIndex(cur,7,7),"08:00:00");
-	assertEqualsString(sqlrcur_getFieldByIndex(cur,7,8),"testchar8                                         ");
-	assertEqualsString(sqlrcur_getFieldByIndex(cur,7,9),"testvarchar8");
+	assertEqStr(sqlrcur_getFieldByIndex(cur,7,0),"8");
+	assertEqStr(sqlrcur_getFieldByIndex(cur,7,1),"8");
+	assertEqStr(sqlrcur_getFieldByIndex(cur,7,2),"8.80");
+	assertEqStr(sqlrcur_getFieldByIndex(cur,7,3),"8.80");
+	assertEqStr(sqlrcur_getFieldByIndex(cur,7,4),"8.8000");
+	assertEqStr(sqlrcur_getFieldByIndex(cur,7,5),"8.8000");
+	assertEqStr(sqlrcur_getFieldByIndex(cur,7,6),"2008:01:01");
+	assertEqStr(sqlrcur_getFieldByIndex(cur,7,7),"08:00:00");
+	assertEqStr(sqlrcur_getFieldByIndex(cur,7,8),"testchar8                                         ");
+	assertEqStr(sqlrcur_getFieldByIndex(cur,7,9),"testvarchar8");
 	printf("\n");
 
 
 	// field lengths by index
 	printf("FIELD LENGTHS BY INDEX: \n");
-	assertEqualsInt(sqlrcur_getFieldLengthByIndex(cur,0,0),1);
-	assertEqualsInt(sqlrcur_getFieldLengthByIndex(cur,0,1),1);
-	assertEqualsInt(sqlrcur_getFieldLengthByIndex(cur,0,2),4);
-	assertEqualsInt(sqlrcur_getFieldLengthByIndex(cur,0,3),4);
-	assertEqualsInt(sqlrcur_getFieldLengthByIndex(cur,0,4),6);
-	assertEqualsInt(sqlrcur_getFieldLengthByIndex(cur,0,5),6);
-	assertEqualsInt(sqlrcur_getFieldLengthByIndex(cur,0,6),10);
-	assertEqualsInt(sqlrcur_getFieldLengthByIndex(cur,0,7),8);
-	assertEqualsInt(sqlrcur_getFieldLengthByIndex(cur,0,8),50);
-	assertEqualsInt(sqlrcur_getFieldLengthByIndex(cur,0,9),12);
+	assertEqInt(sqlrcur_getFieldLengthByIndex(cur,0,0),1);
+	assertEqInt(sqlrcur_getFieldLengthByIndex(cur,0,1),1);
+	assertEqInt(sqlrcur_getFieldLengthByIndex(cur,0,2),4);
+	assertEqInt(sqlrcur_getFieldLengthByIndex(cur,0,3),4);
+	assertEqInt(sqlrcur_getFieldLengthByIndex(cur,0,4),6);
+	assertEqInt(sqlrcur_getFieldLengthByIndex(cur,0,5),6);
+	assertEqInt(sqlrcur_getFieldLengthByIndex(cur,0,6),10);
+	assertEqInt(sqlrcur_getFieldLengthByIndex(cur,0,7),8);
+	assertEqInt(sqlrcur_getFieldLengthByIndex(cur,0,8),50);
+	assertEqInt(sqlrcur_getFieldLengthByIndex(cur,0,9),12);
 	printf("\n");
-	assertEqualsInt(sqlrcur_getFieldLengthByIndex(cur,7,0),1);
-	assertEqualsInt(sqlrcur_getFieldLengthByIndex(cur,7,1),1);
-	assertEqualsInt(sqlrcur_getFieldLengthByIndex(cur,7,2),4);
-	assertEqualsInt(sqlrcur_getFieldLengthByIndex(cur,7,3),4);
-	assertEqualsInt(sqlrcur_getFieldLengthByIndex(cur,7,4),6);
-	assertEqualsInt(sqlrcur_getFieldLengthByIndex(cur,7,5),6);
-	assertEqualsInt(sqlrcur_getFieldLengthByIndex(cur,7,6),10);
-	assertEqualsInt(sqlrcur_getFieldLengthByIndex(cur,7,7),8);
-	assertEqualsInt(sqlrcur_getFieldLengthByIndex(cur,7,8),50);
-	assertEqualsInt(sqlrcur_getFieldLengthByIndex(cur,7,9),12);
+	assertEqInt(sqlrcur_getFieldLengthByIndex(cur,7,0),1);
+	assertEqInt(sqlrcur_getFieldLengthByIndex(cur,7,1),1);
+	assertEqInt(sqlrcur_getFieldLengthByIndex(cur,7,2),4);
+	assertEqInt(sqlrcur_getFieldLengthByIndex(cur,7,3),4);
+	assertEqInt(sqlrcur_getFieldLengthByIndex(cur,7,4),6);
+	assertEqInt(sqlrcur_getFieldLengthByIndex(cur,7,5),6);
+	assertEqInt(sqlrcur_getFieldLengthByIndex(cur,7,6),10);
+	assertEqInt(sqlrcur_getFieldLengthByIndex(cur,7,7),8);
+	assertEqInt(sqlrcur_getFieldLengthByIndex(cur,7,8),50);
+	assertEqInt(sqlrcur_getFieldLengthByIndex(cur,7,9),12);
 	printf("\n");
 
 
 	// fields by name
 	printf("FIELDS BY NAME: \n");
-	assertEqualsString(sqlrcur_getFieldByName(cur,0,"TESTINTEGER"),"1");
-	assertEqualsString(sqlrcur_getFieldByName(cur,0,"TESTSMALLINT"),"1");
-	assertEqualsString(sqlrcur_getFieldByName(cur,0,"TESTDECIMAL"),"1.10");
-	assertEqualsString(sqlrcur_getFieldByName(cur,0,"TESTNUMERIC"),"1.10");
-	assertEqualsString(sqlrcur_getFieldByName(cur,0,"TESTFLOAT"),"1.1000");
-	assertEqualsString(sqlrcur_getFieldByName(cur,0,"TESTDOUBLE"),"1.1000");
-	assertEqualsString(sqlrcur_getFieldByName(cur,0,"TESTDATE"),"2001:01:01");
-	assertEqualsString(sqlrcur_getFieldByName(cur,0,"TESTTIME"),"01:00:00");
-	assertEqualsString(sqlrcur_getFieldByName(cur,0,"TESTCHAR"),"testchar1                                         ");
-	assertEqualsString(sqlrcur_getFieldByName(cur,0,"TESTVARCHAR"),"testvarchar1");
+	assertEqStr(sqlrcur_getFieldByName(cur,0,"TESTINTEGER"),"1");
+	assertEqStr(sqlrcur_getFieldByName(cur,0,"TESTSMALLINT"),"1");
+	assertEqStr(sqlrcur_getFieldByName(cur,0,"TESTDECIMAL"),"1.10");
+	assertEqStr(sqlrcur_getFieldByName(cur,0,"TESTNUMERIC"),"1.10");
+	assertEqStr(sqlrcur_getFieldByName(cur,0,"TESTFLOAT"),"1.1000");
+	assertEqStr(sqlrcur_getFieldByName(cur,0,"TESTDOUBLE"),"1.1000");
+	assertEqStr(sqlrcur_getFieldByName(cur,0,"TESTDATE"),"2001:01:01");
+	assertEqStr(sqlrcur_getFieldByName(cur,0,"TESTTIME"),"01:00:00");
+	assertEqStr(sqlrcur_getFieldByName(cur,0,"TESTCHAR"),"testchar1                                         ");
+	assertEqStr(sqlrcur_getFieldByName(cur,0,"TESTVARCHAR"),"testvarchar1");
 	printf("\n");
-	assertEqualsString(sqlrcur_getFieldByName(cur,7,"TESTINTEGER"),"8");
-	assertEqualsString(sqlrcur_getFieldByName(cur,7,"TESTSMALLINT"),"8");
-	assertEqualsString(sqlrcur_getFieldByName(cur,7,"TESTDECIMAL"),"8.80");
-	assertEqualsString(sqlrcur_getFieldByName(cur,7,"TESTNUMERIC"),"8.80");
-	assertEqualsString(sqlrcur_getFieldByName(cur,7,"TESTFLOAT"),"8.8000");
-	assertEqualsString(sqlrcur_getFieldByName(cur,7,"TESTDOUBLE"),"8.8000");
-	assertEqualsString(sqlrcur_getFieldByName(cur,7,"TESTDATE"),"2008:01:01");
-	assertEqualsString(sqlrcur_getFieldByName(cur,7,"TESTTIME"),"08:00:00");
-	assertEqualsString(sqlrcur_getFieldByName(cur,7,"TESTCHAR"),"testchar8                                         ");
-	assertEqualsString(sqlrcur_getFieldByName(cur,7,"TESTVARCHAR"),"testvarchar8");
+	assertEqStr(sqlrcur_getFieldByName(cur,7,"TESTINTEGER"),"8");
+	assertEqStr(sqlrcur_getFieldByName(cur,7,"TESTSMALLINT"),"8");
+	assertEqStr(sqlrcur_getFieldByName(cur,7,"TESTDECIMAL"),"8.80");
+	assertEqStr(sqlrcur_getFieldByName(cur,7,"TESTNUMERIC"),"8.80");
+	assertEqStr(sqlrcur_getFieldByName(cur,7,"TESTFLOAT"),"8.8000");
+	assertEqStr(sqlrcur_getFieldByName(cur,7,"TESTDOUBLE"),"8.8000");
+	assertEqStr(sqlrcur_getFieldByName(cur,7,"TESTDATE"),"2008:01:01");
+	assertEqStr(sqlrcur_getFieldByName(cur,7,"TESTTIME"),"08:00:00");
+	assertEqStr(sqlrcur_getFieldByName(cur,7,"TESTCHAR"),"testchar8                                         ");
+	assertEqStr(sqlrcur_getFieldByName(cur,7,"TESTVARCHAR"),"testvarchar8");
 	printf("\n");
 
 
 	// field lengths by name
 	printf("FIELD LENGTHS BY NAME: \n");
-	assertEqualsInt(sqlrcur_getFieldLengthByName(cur,0,"TESTINTEGER"),1);
-	assertEqualsInt(sqlrcur_getFieldLengthByName(cur,0,"TESTSMALLINT"),1);
-	assertEqualsInt(sqlrcur_getFieldLengthByName(cur,0,"TESTDECIMAL"),4);
-	assertEqualsInt(sqlrcur_getFieldLengthByName(cur,0,"TESTNUMERIC"),4);
-	assertEqualsInt(sqlrcur_getFieldLengthByName(cur,0,"TESTFLOAT"),6);
-	assertEqualsInt(sqlrcur_getFieldLengthByName(cur,0,"TESTDOUBLE"),6);
-	assertEqualsInt(sqlrcur_getFieldLengthByName(cur,0,"TESTDATE"),10);
-	assertEqualsInt(sqlrcur_getFieldLengthByName(cur,0,"TESTTIME"),8);
-	assertEqualsInt(sqlrcur_getFieldLengthByName(cur,0,"TESTCHAR"),50);
-	assertEqualsInt(sqlrcur_getFieldLengthByName(cur,0,"TESTVARCHAR"),12);
+	assertEqInt(sqlrcur_getFieldLengthByName(cur,0,"TESTINTEGER"),1);
+	assertEqInt(sqlrcur_getFieldLengthByName(cur,0,"TESTSMALLINT"),1);
+	assertEqInt(sqlrcur_getFieldLengthByName(cur,0,"TESTDECIMAL"),4);
+	assertEqInt(sqlrcur_getFieldLengthByName(cur,0,"TESTNUMERIC"),4);
+	assertEqInt(sqlrcur_getFieldLengthByName(cur,0,"TESTFLOAT"),6);
+	assertEqInt(sqlrcur_getFieldLengthByName(cur,0,"TESTDOUBLE"),6);
+	assertEqInt(sqlrcur_getFieldLengthByName(cur,0,"TESTDATE"),10);
+	assertEqInt(sqlrcur_getFieldLengthByName(cur,0,"TESTTIME"),8);
+	assertEqInt(sqlrcur_getFieldLengthByName(cur,0,"TESTCHAR"),50);
+	assertEqInt(sqlrcur_getFieldLengthByName(cur,0,"TESTVARCHAR"),12);
 	printf("\n");
-	assertEqualsInt(sqlrcur_getFieldLengthByName(cur,7,"TESTINTEGER"),1);
-	assertEqualsInt(sqlrcur_getFieldLengthByName(cur,7,"TESTSMALLINT"),1);
-	assertEqualsInt(sqlrcur_getFieldLengthByName(cur,7,"TESTDECIMAL"),4);
-	assertEqualsInt(sqlrcur_getFieldLengthByName(cur,7,"TESTNUMERIC"),4);
-	assertEqualsInt(sqlrcur_getFieldLengthByName(cur,7,"TESTFLOAT"),6);
-	assertEqualsInt(sqlrcur_getFieldLengthByName(cur,7,"TESTDOUBLE"),6);
-	assertEqualsInt(sqlrcur_getFieldLengthByName(cur,7,"TESTDATE"),10);
-	assertEqualsInt(sqlrcur_getFieldLengthByName(cur,7,"TESTTIME"),8);
-	assertEqualsInt(sqlrcur_getFieldLengthByName(cur,7,"TESTCHAR"),50);
-	assertEqualsInt(sqlrcur_getFieldLengthByName(cur,7,"TESTVARCHAR"),12);
+	assertEqInt(sqlrcur_getFieldLengthByName(cur,7,"TESTINTEGER"),1);
+	assertEqInt(sqlrcur_getFieldLengthByName(cur,7,"TESTSMALLINT"),1);
+	assertEqInt(sqlrcur_getFieldLengthByName(cur,7,"TESTDECIMAL"),4);
+	assertEqInt(sqlrcur_getFieldLengthByName(cur,7,"TESTNUMERIC"),4);
+	assertEqInt(sqlrcur_getFieldLengthByName(cur,7,"TESTFLOAT"),6);
+	assertEqInt(sqlrcur_getFieldLengthByName(cur,7,"TESTDOUBLE"),6);
+	assertEqInt(sqlrcur_getFieldLengthByName(cur,7,"TESTDATE"),10);
+	assertEqInt(sqlrcur_getFieldLengthByName(cur,7,"TESTTIME"),8);
+	assertEqInt(sqlrcur_getFieldLengthByName(cur,7,"TESTCHAR"),50);
+	assertEqInt(sqlrcur_getFieldLengthByName(cur,7,"TESTVARCHAR"),12);
 	printf("\n");
 
 
 	// fields by array
 	printf("FIELDS BY ARRAY: \n");
 	fields=sqlrcur_getRow(cur,0);
-	assertEqualsString(fields[0],"1");
-	assertEqualsString(fields[1],"1");
-	assertEqualsString(fields[2],"1.10");
-	assertEqualsString(fields[3],"1.10");
-	assertEqualsString(fields[4],"1.1000");
-	assertEqualsString(fields[5],"1.1000");
-	assertEqualsString(fields[6],"2001:01:01");
-	assertEqualsString(fields[7],"01:00:00");
-	assertEqualsString(fields[8],"testchar1                                         ");
-	assertEqualsString(fields[9],"testvarchar1");
+	assertEqStr(fields[0],"1");
+	assertEqStr(fields[1],"1");
+	assertEqStr(fields[2],"1.10");
+	assertEqStr(fields[3],"1.10");
+	assertEqStr(fields[4],"1.1000");
+	assertEqStr(fields[5],"1.1000");
+	assertEqStr(fields[6],"2001:01:01");
+	assertEqStr(fields[7],"01:00:00");
+	assertEqStr(fields[8],"testchar1                                         ");
+	assertEqStr(fields[9],"testvarchar1");
 	printf("\n");
 
 
 	// field lengths by array
 	printf("FIELD LENGTHS BY ARRAY: \n");
 	fieldlens=sqlrcur_getRowLengths(cur,0);
-	assertEqualsInt(fieldlens[0],1);
-	assertEqualsInt(fieldlens[1],1);
-	assertEqualsInt(fieldlens[2],4);
-	assertEqualsInt(fieldlens[3],4);
-	assertEqualsInt(fieldlens[4],6);
-	assertEqualsInt(fieldlens[5],6);
-	assertEqualsInt(fieldlens[6],10);
-	assertEqualsInt(fieldlens[7],8);
-	assertEqualsInt(fieldlens[8],50);
-	assertEqualsInt(fieldlens[9],12);
+	assertEqInt(fieldlens[0],1);
+	assertEqInt(fieldlens[1],1);
+	assertEqInt(fieldlens[2],4);
+	assertEqInt(fieldlens[3],4);
+	assertEqInt(fieldlens[4],6);
+	assertEqInt(fieldlens[5],6);
+	assertEqInt(fieldlens[6],10);
+	assertEqInt(fieldlens[7],8);
+	assertEqInt(fieldlens[8],50);
+	assertEqInt(fieldlens[9],12);
 	printf("\n");
 
 
@@ -550,9 +550,9 @@ int main(int argc, char **argv) {
 
 	// fields
 	printf("FIELDS: \n");
-	assertEqualsString(sqlrcur_getFieldByIndex(cur,0,0),"1");
-	assertEqualsString(sqlrcur_getFieldByIndex(cur,0,1),"hello");
-	assertEqualsString(sqlrcur_getFieldByIndex(cur,0,2),"10.5556");
+	assertEqStr(sqlrcur_getFieldByIndex(cur,0,0),"1");
+	assertEqStr(sqlrcur_getFieldByIndex(cur,0,1),"hello");
+	assertEqStr(sqlrcur_getFieldByIndex(cur,0,2),"10.5556");
 	printf("\n");
 
 
@@ -572,9 +572,9 @@ int main(int argc, char **argv) {
 
 	// fields
 	printf("FIELDS: \n");
-	assertEqualsString(sqlrcur_getFieldByIndex(cur,0,0),"hi");
-	assertEqualsString(sqlrcur_getFieldByIndex(cur,0,1),"hello");
-	assertEqualsString(sqlrcur_getFieldByIndex(cur,0,2),"bye");
+	assertEqStr(sqlrcur_getFieldByIndex(cur,0,0),"hi");
+	assertEqStr(sqlrcur_getFieldByIndex(cur,0,1),"hello");
+	assertEqStr(sqlrcur_getFieldByIndex(cur,0,2),"bye");
 	printf("\n");
 
 
@@ -594,9 +594,9 @@ int main(int argc, char **argv) {
 
 	// fields
 	printf("FIELDS: \n");
-	assertEqualsString(sqlrcur_getFieldByIndex(cur,0,0),"1");
-	assertEqualsString(sqlrcur_getFieldByIndex(cur,0,1),"2");
-	assertEqualsString(sqlrcur_getFieldByIndex(cur,0,2),"3");
+	assertEqStr(sqlrcur_getFieldByIndex(cur,0,0),"1");
+	assertEqStr(sqlrcur_getFieldByIndex(cur,0,1),"2");
+	assertEqStr(sqlrcur_getFieldByIndex(cur,0,2),"3");
 	printf("\n");
 
 
@@ -616,9 +616,9 @@ int main(int argc, char **argv) {
 
 	// fields
 	printf("FIELDS: \n");
-	assertEqualsString(sqlrcur_getFieldByIndex(cur,0,0),"10.55");
-	assertEqualsString(sqlrcur_getFieldByIndex(cur,0,1),"10.556");
-	assertEqualsString(sqlrcur_getFieldByIndex(cur,0,2),"10.5556");
+	assertEqStr(sqlrcur_getFieldByIndex(cur,0,0),"10.55");
+	assertEqStr(sqlrcur_getFieldByIndex(cur,0,1),"10.556");
+	assertEqStr(sqlrcur_getFieldByIndex(cur,0,2),"10.5556");
 	printf("\n");
 
 
@@ -632,9 +632,9 @@ int main(int argc, char **argv) {
 		"	NULL "
 		"from "
 		"	rdb$database "));
-	assertEqualsString(sqlrcur_getFieldByIndex(cur,0,0),"1");
-	assertEqualsString(sqlrcur_getFieldByIndex(cur,0,1),NULL);
-	assertEqualsString(sqlrcur_getFieldByIndex(cur,0,2),NULL);
+	assertEqStr(sqlrcur_getFieldByIndex(cur,0,0),"1");
+	assertEqStr(sqlrcur_getFieldByIndex(cur,0,1),NULL);
+	assertEqStr(sqlrcur_getFieldByIndex(cur,0,2),NULL);
 	sqlrcur_getNullsAsEmptyStrings(cur);
 	assertTrue(sqlrcur_sendQuery(cur,
 		"select "
@@ -643,16 +643,16 @@ int main(int argc, char **argv) {
 		"	NULL "
 		"from "
 		"	rdb$database "));
-	assertEqualsString(sqlrcur_getFieldByIndex(cur,0,0),"1");
-	assertEqualsString(sqlrcur_getFieldByIndex(cur,0,1),"");
-	assertEqualsString(sqlrcur_getFieldByIndex(cur,0,2),"");
+	assertEqStr(sqlrcur_getFieldByIndex(cur,0,0),"1");
+	assertEqStr(sqlrcur_getFieldByIndex(cur,0,1),"");
+	assertEqStr(sqlrcur_getFieldByIndex(cur,0,2),"");
 	sqlrcur_getNullsAsNulls(cur);
 	printf("\n");
 
 
 	// result set buffer size
 	printf("RESULT SET BUFFER SIZE: \n");
-	assertEqualsInt(sqlrcur_getResultSetBufferSize(cur),0);
+	assertEqInt(sqlrcur_getResultSetBufferSize(cur),0);
 	sqlrcur_setResultSetBufferSize(cur,2);
 	assertTrue(sqlrcur_sendQuery(cur,
 		"select "
@@ -661,29 +661,29 @@ int main(int argc, char **argv) {
 		"	testtable "
 		"order by "
 		"	testinteger "));
-	assertEqualsInt(sqlrcur_getResultSetBufferSize(cur),2);
+	assertEqInt(sqlrcur_getResultSetBufferSize(cur),2);
 	printf("\n");
-	assertEqualsInt(sqlrcur_firstRowIndex(cur),0);
+	assertEqInt(sqlrcur_firstRowIndex(cur),0);
 	assertFalse(sqlrcur_endOfResultSet(cur));
-	assertEqualsInt(sqlrcur_rowCount(cur),2);
-	assertEqualsString(sqlrcur_getFieldByIndex(cur,0,0),"1");
-	assertEqualsString(sqlrcur_getFieldByIndex(cur,1,0),"2");
-	assertEqualsString(sqlrcur_getFieldByIndex(cur,2,0),"3");
+	assertEqInt(sqlrcur_rowCount(cur),2);
+	assertEqStr(sqlrcur_getFieldByIndex(cur,0,0),"1");
+	assertEqStr(sqlrcur_getFieldByIndex(cur,1,0),"2");
+	assertEqStr(sqlrcur_getFieldByIndex(cur,2,0),"3");
 	printf("\n");
-	assertEqualsInt(sqlrcur_firstRowIndex(cur),2);
+	assertEqInt(sqlrcur_firstRowIndex(cur),2);
 	assertFalse(sqlrcur_endOfResultSet(cur));
-	assertEqualsInt(sqlrcur_rowCount(cur),4);
-	assertEqualsString(sqlrcur_getFieldByIndex(cur,6,0),"7");
-	assertEqualsString(sqlrcur_getFieldByIndex(cur,7,0),"8");
+	assertEqInt(sqlrcur_rowCount(cur),4);
+	assertEqStr(sqlrcur_getFieldByIndex(cur,6,0),"7");
+	assertEqStr(sqlrcur_getFieldByIndex(cur,7,0),"8");
 	printf("\n");
-	assertEqualsInt(sqlrcur_firstRowIndex(cur),6);
+	assertEqInt(sqlrcur_firstRowIndex(cur),6);
 	assertFalse(sqlrcur_endOfResultSet(cur));
-	assertEqualsInt(sqlrcur_rowCount(cur),8);
-	assertEqualsString(sqlrcur_getFieldByIndex(cur,8,0),NULL);
+	assertEqInt(sqlrcur_rowCount(cur),8);
+	assertEqStr(sqlrcur_getFieldByIndex(cur,8,0),NULL);
 	printf("\n");
-	assertEqualsInt(sqlrcur_firstRowIndex(cur),8);
+	assertEqInt(sqlrcur_firstRowIndex(cur),8);
 	assertTrue(sqlrcur_endOfResultSet(cur));
-	assertEqualsInt(sqlrcur_rowCount(cur),8);
+	assertEqInt(sqlrcur_rowCount(cur),8);
 	sqlrcur_setResultSetBufferSize(cur,0);
 	printf("\n");
 
@@ -698,9 +698,9 @@ int main(int argc, char **argv) {
 		"	testtable "
 		"order by "
 		"	testinteger "));
-	assertEqualsString(sqlrcur_getColumnName(cur,0),NULL);
-	assertEqualsInt(sqlrcur_getColumnLengthByIndex(cur,0),0);
-	assertEqualsString(sqlrcur_getColumnTypeByIndex(cur,0),NULL);
+	assertEqStr(sqlrcur_getColumnName(cur,0),NULL);
+	assertEqInt(sqlrcur_getColumnLengthByIndex(cur,0),0);
+	assertEqStr(sqlrcur_getColumnTypeByIndex(cur,0),NULL);
 	sqlrcur_getColumnInfo(cur);
 	assertTrue(sqlrcur_sendQuery(cur,
 		"select "
@@ -709,9 +709,9 @@ int main(int argc, char **argv) {
 		"	testtable "
 		"order by "
 		"	testinteger "));
-	assertEqualsString(sqlrcur_getColumnName(cur,0),"TESTINTEGER");
-	assertEqualsInt(sqlrcur_getColumnLengthByIndex(cur,0),4);
-	assertEqualsString(sqlrcur_getColumnTypeByIndex(cur,0),"INTEGER");
+	assertEqStr(sqlrcur_getColumnName(cur,0),"TESTINTEGER");
+	assertEqInt(sqlrcur_getColumnLengthByIndex(cur,0),4);
+	assertEqStr(sqlrcur_getColumnTypeByIndex(cur,0),"INTEGER");
 	printf("\n");
 
 
@@ -730,14 +730,14 @@ int main(int argc, char **argv) {
 	socket=strdup(sqlrcon_getConnectionSocket(con));
 	assertTrue(sqlrcon_resumeSession(con,port,socket));
 	printf("\n");
-	assertEqualsString(sqlrcur_getFieldByIndex(cur,0,0),"1");
-	assertEqualsString(sqlrcur_getFieldByIndex(cur,1,0),"2");
-	assertEqualsString(sqlrcur_getFieldByIndex(cur,2,0),"3");
-	assertEqualsString(sqlrcur_getFieldByIndex(cur,3,0),"4");
-	assertEqualsString(sqlrcur_getFieldByIndex(cur,4,0),"5");
-	assertEqualsString(sqlrcur_getFieldByIndex(cur,5,0),"6");
-	assertEqualsString(sqlrcur_getFieldByIndex(cur,6,0),"7");
-	assertEqualsString(sqlrcur_getFieldByIndex(cur,7,0),"8");
+	assertEqStr(sqlrcur_getFieldByIndex(cur,0,0),"1");
+	assertEqStr(sqlrcur_getFieldByIndex(cur,1,0),"2");
+	assertEqStr(sqlrcur_getFieldByIndex(cur,2,0),"3");
+	assertEqStr(sqlrcur_getFieldByIndex(cur,3,0),"4");
+	assertEqStr(sqlrcur_getFieldByIndex(cur,4,0),"5");
+	assertEqStr(sqlrcur_getFieldByIndex(cur,5,0),"6");
+	assertEqStr(sqlrcur_getFieldByIndex(cur,6,0),"7");
+	assertEqStr(sqlrcur_getFieldByIndex(cur,7,0),"8");
 	printf("\n");
 	assertTrue(sqlrcur_sendQuery(cur,
 		"select "
@@ -752,14 +752,14 @@ int main(int argc, char **argv) {
 	socket=strdup(sqlrcon_getConnectionSocket(con));
 	assertTrue(sqlrcon_resumeSession(con,port,socket));
 	printf("\n");
-	assertEqualsString(sqlrcur_getFieldByIndex(cur,0,0),"1");
-	assertEqualsString(sqlrcur_getFieldByIndex(cur,1,0),"2");
-	assertEqualsString(sqlrcur_getFieldByIndex(cur,2,0),"3");
-	assertEqualsString(sqlrcur_getFieldByIndex(cur,3,0),"4");
-	assertEqualsString(sqlrcur_getFieldByIndex(cur,4,0),"5");
-	assertEqualsString(sqlrcur_getFieldByIndex(cur,5,0),"6");
-	assertEqualsString(sqlrcur_getFieldByIndex(cur,6,0),"7");
-	assertEqualsString(sqlrcur_getFieldByIndex(cur,7,0),"8");
+	assertEqStr(sqlrcur_getFieldByIndex(cur,0,0),"1");
+	assertEqStr(sqlrcur_getFieldByIndex(cur,1,0),"2");
+	assertEqStr(sqlrcur_getFieldByIndex(cur,2,0),"3");
+	assertEqStr(sqlrcur_getFieldByIndex(cur,3,0),"4");
+	assertEqStr(sqlrcur_getFieldByIndex(cur,4,0),"5");
+	assertEqStr(sqlrcur_getFieldByIndex(cur,5,0),"6");
+	assertEqStr(sqlrcur_getFieldByIndex(cur,6,0),"7");
+	assertEqStr(sqlrcur_getFieldByIndex(cur,7,0),"8");
 	printf("\n");
 	assertTrue(sqlrcur_sendQuery(cur,
 		"select "
@@ -774,14 +774,14 @@ int main(int argc, char **argv) {
 	socket=strdup(sqlrcon_getConnectionSocket(con));
 	assertTrue(sqlrcon_resumeSession(con,port,socket));
 	printf("\n");
-	assertEqualsString(sqlrcur_getFieldByIndex(cur,0,0),"1");
-	assertEqualsString(sqlrcur_getFieldByIndex(cur,1,0),"2");
-	assertEqualsString(sqlrcur_getFieldByIndex(cur,2,0),"3");
-	assertEqualsString(sqlrcur_getFieldByIndex(cur,3,0),"4");
-	assertEqualsString(sqlrcur_getFieldByIndex(cur,4,0),"5");
-	assertEqualsString(sqlrcur_getFieldByIndex(cur,5,0),"6");
-	assertEqualsString(sqlrcur_getFieldByIndex(cur,6,0),"7");
-	assertEqualsString(sqlrcur_getFieldByIndex(cur,7,0),"8");
+	assertEqStr(sqlrcur_getFieldByIndex(cur,0,0),"1");
+	assertEqStr(sqlrcur_getFieldByIndex(cur,1,0),"2");
+	assertEqStr(sqlrcur_getFieldByIndex(cur,2,0),"3");
+	assertEqStr(sqlrcur_getFieldByIndex(cur,3,0),"4");
+	assertEqStr(sqlrcur_getFieldByIndex(cur,4,0),"5");
+	assertEqStr(sqlrcur_getFieldByIndex(cur,5,0),"6");
+	assertEqStr(sqlrcur_getFieldByIndex(cur,6,0),"7");
+	assertEqStr(sqlrcur_getFieldByIndex(cur,7,0),"8");
 	printf("\n");
 
 
@@ -795,7 +795,7 @@ int main(int argc, char **argv) {
 		"	testtable "
 		"order by "
 		"	testinteger "));
-	assertEqualsString(sqlrcur_getFieldByIndex(cur,2,0),"3");
+	assertEqStr(sqlrcur_getFieldByIndex(cur,2,0),"3");
 	id=sqlrcur_getResultSetId(cur);
 	sqlrcur_suspendResultSet(cur);
 	assertTrue(sqlrcon_suspendSession(con));
@@ -804,19 +804,19 @@ int main(int argc, char **argv) {
 	assertTrue(sqlrcon_resumeSession(con,port,socket));
 	assertTrue(sqlrcur_resumeResultSet(cur,id));
 	printf("\n");
-	assertEqualsInt(sqlrcur_firstRowIndex(cur),4);
+	assertEqInt(sqlrcur_firstRowIndex(cur),4);
 	assertFalse(sqlrcur_endOfResultSet(cur));
-	assertEqualsInt(sqlrcur_rowCount(cur),6);
-	assertEqualsString(sqlrcur_getFieldByIndex(cur,7,0),"8");
+	assertEqInt(sqlrcur_rowCount(cur),6);
+	assertEqStr(sqlrcur_getFieldByIndex(cur,7,0),"8");
 	printf("\n");
-	assertEqualsInt(sqlrcur_firstRowIndex(cur),6);
+	assertEqInt(sqlrcur_firstRowIndex(cur),6);
 	assertFalse(sqlrcur_endOfResultSet(cur));
-	assertEqualsInt(sqlrcur_rowCount(cur),8);
-	assertEqualsString(sqlrcur_getFieldByIndex(cur,8,0),NULL);
+	assertEqInt(sqlrcur_rowCount(cur),8);
+	assertEqStr(sqlrcur_getFieldByIndex(cur,8,0),NULL);
 	printf("\n");
-	assertEqualsInt(sqlrcur_firstRowIndex(cur),8);
+	assertEqInt(sqlrcur_firstRowIndex(cur),8);
 	assertTrue(sqlrcur_endOfResultSet(cur));
-	assertEqualsInt(sqlrcur_rowCount(cur),8);
+	assertEqInt(sqlrcur_rowCount(cur),8);
 	sqlrcur_setResultSetBufferSize(cur,0);
 	printf("\n");
 
@@ -833,45 +833,45 @@ int main(int argc, char **argv) {
 		"order by "
 		"	testinteger "));
 	filename=strdup(sqlrcur_getCacheFileName(cur));
-	assertEqualsString(filename,"cachefile1");
+	assertEqStr(filename,"cachefile1");
 	sqlrcur_cacheOff(cur);
 	assertTrue(sqlrcur_openCachedResultSet(cur,filename));
-	assertEqualsString(sqlrcur_getFieldByIndex(cur,7,0),"8");
+	assertEqStr(sqlrcur_getFieldByIndex(cur,7,0),"8");
 	free(filename);
 	printf("\n");
 
 
 	// column count for cached result set
 	printf("COLUMN COUNT FOR CACHED RESULT SET: \n");
-	assertEqualsInt(sqlrcur_colCount(cur),12);
+	assertEqInt(sqlrcur_colCount(cur),12);
 	printf("\n");
 
 
 	// column names for cached result set
 	printf("COLUMN NAMES FOR CACHED RESULT SET: \n");
-	assertEqualsString(sqlrcur_getColumnName(cur,0),"TESTINTEGER");
-	assertEqualsString(sqlrcur_getColumnName(cur,1),"TESTSMALLINT");
-	assertEqualsString(sqlrcur_getColumnName(cur,2),"TESTDECIMAL");
-	assertEqualsString(sqlrcur_getColumnName(cur,3),"TESTNUMERIC");
-	assertEqualsString(sqlrcur_getColumnName(cur,4),"TESTFLOAT");
-	assertEqualsString(sqlrcur_getColumnName(cur,5),"TESTDOUBLE");
-	assertEqualsString(sqlrcur_getColumnName(cur,6),"TESTDATE");
-	assertEqualsString(sqlrcur_getColumnName(cur,7),"TESTTIME");
-	assertEqualsString(sqlrcur_getColumnName(cur,8),"TESTCHAR");
-	assertEqualsString(sqlrcur_getColumnName(cur,9),"TESTVARCHAR");
-	assertEqualsString(sqlrcur_getColumnName(cur,10),"TESTTIMESTAMP");
+	assertEqStr(sqlrcur_getColumnName(cur,0),"TESTINTEGER");
+	assertEqStr(sqlrcur_getColumnName(cur,1),"TESTSMALLINT");
+	assertEqStr(sqlrcur_getColumnName(cur,2),"TESTDECIMAL");
+	assertEqStr(sqlrcur_getColumnName(cur,3),"TESTNUMERIC");
+	assertEqStr(sqlrcur_getColumnName(cur,4),"TESTFLOAT");
+	assertEqStr(sqlrcur_getColumnName(cur,5),"TESTDOUBLE");
+	assertEqStr(sqlrcur_getColumnName(cur,6),"TESTDATE");
+	assertEqStr(sqlrcur_getColumnName(cur,7),"TESTTIME");
+	assertEqStr(sqlrcur_getColumnName(cur,8),"TESTCHAR");
+	assertEqStr(sqlrcur_getColumnName(cur,9),"TESTVARCHAR");
+	assertEqStr(sqlrcur_getColumnName(cur,10),"TESTTIMESTAMP");
 	cols=sqlrcur_getColumnNames(cur);
-	assertEqualsString(cols[0],"TESTINTEGER");
-	assertEqualsString(cols[1],"TESTSMALLINT");
-	assertEqualsString(cols[2],"TESTDECIMAL");
-	assertEqualsString(cols[3],"TESTNUMERIC");
-	assertEqualsString(cols[4],"TESTFLOAT");
-	assertEqualsString(cols[5],"TESTDOUBLE");
-	assertEqualsString(cols[6],"TESTDATE");
-	assertEqualsString(cols[7],"TESTTIME");
-	assertEqualsString(cols[8],"TESTCHAR");
-	assertEqualsString(cols[9],"TESTVARCHAR");
-	assertEqualsString(cols[10],"TESTTIMESTAMP");
+	assertEqStr(cols[0],"TESTINTEGER");
+	assertEqStr(cols[1],"TESTSMALLINT");
+	assertEqStr(cols[2],"TESTDECIMAL");
+	assertEqStr(cols[3],"TESTNUMERIC");
+	assertEqStr(cols[4],"TESTFLOAT");
+	assertEqStr(cols[5],"TESTDOUBLE");
+	assertEqStr(cols[6],"TESTDATE");
+	assertEqStr(cols[7],"TESTTIME");
+	assertEqStr(cols[8],"TESTCHAR");
+	assertEqStr(cols[9],"TESTVARCHAR");
+	assertEqStr(cols[10],"TESTTIMESTAMP");
 	printf("\n");
 
 
@@ -888,11 +888,11 @@ int main(int argc, char **argv) {
 		"order by "
 		"	testinteger "));
 	filename=strdup(sqlrcur_getCacheFileName(cur));
-	assertEqualsString(filename,"cachefile1");
+	assertEqStr(filename,"cachefile1");
 	sqlrcur_cacheOff(cur);
 	assertTrue(sqlrcur_openCachedResultSet(cur,filename));
-	assertEqualsString(sqlrcur_getFieldByIndex(cur,7,0),"8");
-	assertEqualsString(sqlrcur_getFieldByIndex(cur,8,0),NULL);
+	assertEqStr(sqlrcur_getFieldByIndex(cur,7,0),"8");
+	assertEqStr(sqlrcur_getFieldByIndex(cur,8,0),NULL);
 	sqlrcur_setResultSetBufferSize(cur,0);
 	free(filename);
 	printf("\n");
@@ -904,8 +904,8 @@ int main(int argc, char **argv) {
 	assertTrue(sqlrcur_openCachedResultSet(cur,"cachefile1"));
 	sqlrcur_cacheOff(cur);
 	assertTrue(sqlrcur_openCachedResultSet(cur,"cachefile2"));
-	assertEqualsString(sqlrcur_getFieldByIndex(cur,7,0),"8");
-	assertEqualsString(sqlrcur_getFieldByIndex(cur,8,0),NULL);
+	assertEqStr(sqlrcur_getFieldByIndex(cur,7,0),"8");
+	assertEqStr(sqlrcur_getFieldByIndex(cur,8,0),NULL);
 	printf("\n");
 
 
@@ -917,8 +917,8 @@ int main(int argc, char **argv) {
 	assertTrue(sqlrcur_openCachedResultSet(cur,"cachefile1"));
 	sqlrcur_cacheOff(cur);
 	assertTrue(sqlrcur_openCachedResultSet(cur,"cachefile2"));
-	assertEqualsString(sqlrcur_getFieldByIndex(cur,7,0),"8");
-	assertEqualsString(sqlrcur_getFieldByIndex(cur,8,0),NULL);
+	assertEqStr(sqlrcur_getFieldByIndex(cur,7,0),"8");
+	assertEqStr(sqlrcur_getFieldByIndex(cur,8,0),NULL);
 	sqlrcur_setResultSetBufferSize(cur,0);
 	printf("\n");
 
@@ -936,9 +936,9 @@ int main(int argc, char **argv) {
 		"	testtable "
 		"order by "
 		"	testinteger "));
-	assertEqualsString(sqlrcur_getFieldByIndex(cur,2,0),"3");
+	assertEqStr(sqlrcur_getFieldByIndex(cur,2,0),"3");
 	filename=strdup(sqlrcur_getCacheFileName(cur));
-	assertEqualsString(filename,"cachefile1");
+	assertEqStr(filename,"cachefile1");
 	id=sqlrcur_getResultSetId(cur);
 	sqlrcur_suspendResultSet(cur);
 	assertTrue(sqlrcon_suspendSession(con));
@@ -948,24 +948,24 @@ int main(int argc, char **argv) {
 	assertTrue(sqlrcon_resumeSession(con,port,socket));
 	assertTrue(sqlrcur_resumeCachedResultSet(cur,id,filename));
 	printf("\n");
-	assertEqualsInt(sqlrcur_firstRowIndex(cur),4);
+	assertEqInt(sqlrcur_firstRowIndex(cur),4);
 	assertFalse(sqlrcur_endOfResultSet(cur));
-	assertEqualsInt(sqlrcur_rowCount(cur),6);
-	assertEqualsString(sqlrcur_getFieldByIndex(cur,7,0),"8");
+	assertEqInt(sqlrcur_rowCount(cur),6);
+	assertEqStr(sqlrcur_getFieldByIndex(cur,7,0),"8");
 	printf("\n");
-	assertEqualsInt(sqlrcur_firstRowIndex(cur),6);
+	assertEqInt(sqlrcur_firstRowIndex(cur),6);
 	assertFalse(sqlrcur_endOfResultSet(cur));
-	assertEqualsInt(sqlrcur_rowCount(cur),8);
-	assertEqualsString(sqlrcur_getFieldByIndex(cur,8,0),NULL);
+	assertEqInt(sqlrcur_rowCount(cur),8);
+	assertEqStr(sqlrcur_getFieldByIndex(cur,8,0),NULL);
 	printf("\n");
-	assertEqualsInt(sqlrcur_firstRowIndex(cur),8);
+	assertEqInt(sqlrcur_firstRowIndex(cur),8);
 	assertTrue(sqlrcur_endOfResultSet(cur));
-	assertEqualsInt(sqlrcur_rowCount(cur),8);
+	assertEqInt(sqlrcur_rowCount(cur),8);
 	sqlrcur_cacheOff(cur);
 	printf("\n");
 	assertTrue(sqlrcur_openCachedResultSet(cur,filename));
-	assertEqualsString(sqlrcur_getFieldByIndex(cur,7,0),"8");
-	assertEqualsString(sqlrcur_getFieldByIndex(cur,8,0),NULL);
+	assertEqStr(sqlrcur_getFieldByIndex(cur,7,0),"8");
+	assertEqStr(sqlrcur_getFieldByIndex(cur,8,0),NULL);
 	sqlrcur_setResultSetBufferSize(cur,0);
 	free(filename);
 	printf("\n");
@@ -981,14 +981,14 @@ int main(int argc, char **argv) {
 		"	count(*) "
 		"from "
 		"	testtable "));
-	assertEqualsString(sqlrcur_getFieldByIndex(secondcur,0,0),"0");
+	assertEqStr(sqlrcur_getFieldByIndex(secondcur,0,0),"0");
 	assertTrue(sqlrcon_commit(con));
 	assertTrue(sqlrcur_sendQuery(secondcur,
 		"select "
 		"	count(*) "
 		"from "
 		"	testtable "));
-	assertEqualsString(sqlrcur_getFieldByIndex(secondcur,0,0),"8");
+	assertEqStr(sqlrcur_getFieldByIndex(secondcur,0,0),"8");
 	assertTrue(sqlrcon_autoCommitOn(con));
 	assertTrue(sqlrcur_sendQuery(cur,
 		"insert into "
@@ -1011,7 +1011,7 @@ int main(int argc, char **argv) {
 		"	count(*) "
 		"from "
 		"	testtable "));
-	assertEqualsString(sqlrcur_getFieldByIndex(secondcur,0,0),"9");
+	assertEqStr(sqlrcur_getFieldByIndex(secondcur,0,0),"9");
 	assertTrue(sqlrcon_autoCommitOff(con));
 	printf("\n");
 
@@ -1025,10 +1025,10 @@ int main(int argc, char **argv) {
 		"	testtable "
 		"order by "
 		"	testinteger "));
-	assertEqualsString(sqlrcur_getFieldByIndex(cur,4,0),"5");
-	assertEqualsString(sqlrcur_getFieldByIndex(cur,5,0),"6");
-	assertEqualsString(sqlrcur_getFieldByIndex(cur,6,0),"7");
-	assertEqualsString(sqlrcur_getFieldByIndex(cur,7,0),"8");
+	assertEqStr(sqlrcur_getFieldByIndex(cur,4,0),"5");
+	assertEqStr(sqlrcur_getFieldByIndex(cur,5,0),"6");
+	assertEqStr(sqlrcur_getFieldByIndex(cur,6,0),"7");
+	assertEqStr(sqlrcur_getFieldByIndex(cur,7,0),"8");
 	id=sqlrcur_getResultSetId(cur);
 	sqlrcur_suspendResultSet(cur);
 	assertTrue(sqlrcon_suspendSession(con));
@@ -1036,10 +1036,10 @@ int main(int argc, char **argv) {
 	socket=strdup(sqlrcon_getConnectionSocket(con));
 	assertTrue(sqlrcon_resumeSession(con,port,socket));
 	assertTrue(sqlrcur_resumeResultSet(cur,id));
-	assertEqualsString(sqlrcur_getFieldByIndex(cur,4,0),NULL);
-	assertEqualsString(sqlrcur_getFieldByIndex(cur,5,0),NULL);
-	assertEqualsString(sqlrcur_getFieldByIndex(cur,6,0),NULL);
-	assertEqualsString(sqlrcur_getFieldByIndex(cur,7,0),NULL);
+	assertEqStr(sqlrcur_getFieldByIndex(cur,4,0),NULL);
+	assertEqStr(sqlrcur_getFieldByIndex(cur,5,0),NULL);
+	assertEqStr(sqlrcur_getFieldByIndex(cur,6,0),NULL);
+	assertEqStr(sqlrcur_getFieldByIndex(cur,7,0),NULL);
 	printf("\n");
 
 	// clean up table
