@@ -949,9 +949,9 @@ int main(int argc, char **argv) {
 		"	$(var1), "
 		"	$(var2), "
 		"	$(var3))");
-	cur->inputBind("var1",1);
-	cur->inputBind("var2",2);
-	cur->inputBind("var3",3);
+	cur->inputBind("var1","1");
+	cur->inputBind("var2","2");
+	cur->inputBind("var3","3");
 	cur->substitution("var1",":var1");
 	assertTrue(cur->validBind("var1"));
 	assertFalse(cur->validBind("var2"));

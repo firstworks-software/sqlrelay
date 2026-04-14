@@ -1156,8 +1156,6 @@ int main(int argc, char **argv) {
 
 
 	// reexecute
-// #8006
-#if 1
 	stdoutput.printf("REEXECUTE: \n");
 	cur->prepareQuery("select 1 from rdb$database");
 	assertTrue(cur->executeQuery());
@@ -1183,7 +1181,6 @@ int main(int argc, char **argv) {
 	assertEquals(cur->rowCount(),1);
 	assertEquals(cur->getField(0,(uint32_t)0),"2");
 	stdoutput.printf("\n");
-#endif
 
 
 	// stored procedure returning no value

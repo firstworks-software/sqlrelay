@@ -1298,8 +1298,6 @@ int main(int argc, char **argv) {
 
 
 	// bind validation
-// #7996
-#if 0
 	stdoutput.printf("BIND VALIDATION: \n");
 	cur->sendQuery("drop table testtable");
 	cur->sendQuery(
@@ -1314,9 +1312,9 @@ int main(int argc, char **argv) {
 		"	$(var1), "
 		"	$(var2), "
 		"	$(var3))");
-	cur->inputBind("var1",1);
-	cur->inputBind("var2",2);
-	cur->inputBind("var3",3);
+	cur->inputBind("var1","1");
+	cur->inputBind("var2","2");
+	cur->inputBind("var3","3");
 	cur->substitution("var1","@var1");
 	assertTrue(cur->validBind("var1"));
 	assertFalse(cur->validBind("var2"));
@@ -1337,7 +1335,6 @@ int main(int argc, char **argv) {
 	assertTrue(cur->executeQuery());
 	assertTrue(cur->sendQuery("drop table testtable"));
 	stdoutput.printf("\n");
-#endif
 
 
 	// rebinding
