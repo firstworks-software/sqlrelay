@@ -4368,7 +4368,7 @@ bool oraclecursor::inputBindGenericLob(const char *variable,
 
 	checkRePrepare();
 
-	// create a temporary lob, write the value to it
+	// create a temporary lob
 	if (OCIDescriptorAlloc((dvoid *)oracleconn->env,
 			(dvoid **)&inbind_lob[orainbindlobcount],
 			(ub4)OCI_DTYPE_LOB,
@@ -4395,20 +4395,25 @@ bool oraclecursor::inputBindGenericLob(const char *variable,
 		return false;
 	}
 
+	// write the value to it, unless the value is an empty string,
+	// then just leave it empty, attempts to write 0 bytes will fail
 	ub4	size=valuesize;
-	if (OCILobWrite(oracleconn->svc,oracleconn->err,
-			inbind_lob[orainbindlobcount],&size,1,
-			(void *)value,valuesize,
-			OCI_ONE_PIECE,(dvoid *)0,
-			(sb4 (*)(dvoid*,dvoid*,ub4*,ub1 *))0,
-			0,SQLCS_IMPLICIT)!=OCI_SUCCESS) {
+	if (valuesize) {
+		if (OCILobWrite(oracleconn->svc,oracleconn->err,
+				inbind_lob[orainbindlobcount],&size,1,
+				(void *)value,valuesize,
+				OCI_ONE_PIECE,(dvoid *)0,
+				(sb4 (*)(dvoid*,dvoid*,ub4*,ub1 *))0,
+				0,SQLCS_IMPLICIT)!=OCI_SUCCESS) {
 
-		OCILobClose(oracleconn->svc,oracleconn->err,
+			OCILobClose(oracleconn->svc,oracleconn->err,
 					inbind_lob[orainbindlobcount]);
-		OCILobFreeTemporary(oracleconn->svc,oracleconn->err,
+			OCILobFreeTemporary(oracleconn->svc,oracleconn->err,
 					inbind_lob[orainbindlobcount]);
-		OCIDescriptorFree(inbind_lob[orainbindlobcount],OCI_DTYPE_LOB);
-		return false;
+			OCIDescriptorFree(inbind_lob[orainbindlobcount],
+					OCI_DTYPE_LOB);
+			return false;
+		}
 	}
 
 	// bind the temporary lob
