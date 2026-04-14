@@ -160,6 +160,8 @@ class SQLRSERVER_DLLSPEC postgresqlcursor : public sqlrservercursor {
 		void		encodeBlob(stringbuffer *buffer,
 							const char *data,
 							uint32_t datasize);
+		void		decodeBlob(char **data,
+							uint64_t *datasize);
 #if (defined(HAVE_POSTGRESQL_PQPREPARE) && \
 		defined(HAVE_POSTGRESQL_PQEXECPREPARED)) || \
 		(defined(HAVE_POSTGRESQL_PQSENDQUERYPREPARED) && \
@@ -2816,6 +2818,75 @@ void postgresqlcursor::encodeBlob(stringbuffer *buffer,
 	buffer->append("'");
 }
 
+void postgresqlcursor::decodeBlob(char **data, uint64_t *datasize) {
+
+	// decodes *data of *datasize, in postgresql bytea text format,
+	// to raw binary, in place
+	// handles both hex format (\xDEADBEEF) and escape format (\NNN octal)
+
+	char	*write=*data;
+	char	*read=*data;
+	char	*end=read+*datasize;
+
+	if (*datasize>=2 && read[0]=='\\' && read[1]=='x') {
+
+		// skip past \x
+		read+=2;
+
+		// decode hex format...
+		char	buf[3];
+		buf[2]='\0';
+		for (; read+1<end; read+=2) {
+			buf[0]=read[0];
+			buf[1]=read[1];
+			*write=
+			(char)charstring::convertToUnsignedInteger(buf,16);
+			write++;
+		}
+
+	} else {
+
+		// decode escape format...
+		for (; read<end; read++) {
+
+			if (*read=='\\') {
+
+				// decode escaped octal...
+
+				// skip past backslash
+				read++;
+
+				// there should either be another backslash
+				// or 3 octal digits...
+
+				// handle another backslash
+				if (read<end && *read=='\\') {
+					*write='\\';
+				} else
+
+				// handle 3 octal digits
+				if (read+2<end) {
+					*write=(char)(
+						(read[0]-'0')*64+
+						(read[1]-'0')*8+
+						(read[2]-'0'));
+					read+=2;
+				}
+
+			} else {
+
+				// copy out non-encoded character
+				*write=*read;
+			}
+
+			// move on
+			write++;
+		}
+	}
+
+	*datasize=write-*data;
+}
+
 bool postgresqlcursor::executeQuery(const char *query, uint32_t size) {
 
 	// initialize the row counts
@@ -3409,6 +3480,11 @@ void postgresqlcursor::getField(uint32_t col,
 	// handle normal datatypes
 	*field=PQgetvalue(pgresult,currentrow,col);
 	*fieldsize=PQgetlength(pgresult,currentrow,col);
+
+	// decode encoded binary data
+	if (PQftype(pgresult,col)==17) {
+		decodeBlob((char **)field,fieldsize);
+	}
 }
 
 void postgresqlcursor::closeResultSet() {

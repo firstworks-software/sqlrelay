@@ -3953,7 +3953,7 @@ void freetdscursor::decodeBlob(char **data, uint32_t *datasize) {
 	char	*end=write+*datasize;
 	char	buf[3];
 	buf[2]='\0';
-	for (char *read=write; read!=end; read+=2) {
+	for (char *read=write; read+1<end; read+=2) {
 		buf[0]=read[0];
 		buf[1]=read[1];
 		*write=(char)charstring::convertToUnsignedInteger(buf,16);

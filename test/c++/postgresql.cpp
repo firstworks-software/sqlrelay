@@ -41,7 +41,6 @@ int main(int argc, char **argv) {
 	con=new sqlrconnection("sqlrelay",9000,"/tmp/test.socket",
 						"testuser","testpassword",0,1);
 	cur=new sqlrcursor(con);
-#if 0
 
 
 	// identify
@@ -382,8 +381,8 @@ int main(int argc, char **argv) {
 	assertEquals(cur->getLongest("testtime"),8);
 	assertEquals(cur->getLongest(9),9);
 	assertEquals(cur->getLongest("testtext"),9);
-	assertEquals(cur->getLongest(10),22);
-	assertEquals(cur->getLongest("testbytea"),22);
+	assertEquals(cur->getLongest(10),10);
+	assertEquals(cur->getLongest("testbytea"),10);
 	stdoutput.printf("\n");
 
 
@@ -422,7 +421,7 @@ int main(int argc, char **argv) {
 	assertEquals(cur->getField(0,6),"2001-01-01");
 	assertEquals(cur->getField(0,7),"01:00:00");
 	assertEquals(cur->getField(0,9),"testtext1");
-	assertEquals(cur->getField(0,10),"\\x74657374627974656131");
+	assertEquals(cur->getField(0,10),"testbytea1");
 	stdoutput.printf("\n");
 	assertEquals(cur->getField(7,(uint32_t)0),"8");
 	assertEquals(cur->getField(7,1),"8.8");
@@ -433,7 +432,7 @@ int main(int argc, char **argv) {
 	assertEquals(cur->getField(7,6),"2008-01-01");
 	assertEquals(cur->getField(7,7),"08:00:00");
 	assertEquals(cur->getField(7,9),"testtext8");
-	assertEquals(cur->getField(7,10),"\\x74657374627974656138");
+	assertEquals(cur->getField(7,10),"testbytea8");
 	stdoutput.printf("\n");
 
 
@@ -448,7 +447,7 @@ int main(int argc, char **argv) {
 	assertEquals(cur->getFieldLength(0,6),10);
 	assertEquals(cur->getFieldLength(0,7),8);
 	assertEquals(cur->getFieldLength(0,9),9);
-	assertEquals(cur->getFieldLength(0,10),22);
+	assertEquals(cur->getFieldLength(0,10),10);
 	stdoutput.printf("\n");
 	assertEquals(cur->getFieldLength(7,(uint32_t)0),1);
 	assertEquals(cur->getFieldLength(7,1),3);
@@ -459,7 +458,7 @@ int main(int argc, char **argv) {
 	assertEquals(cur->getFieldLength(7,6),10);
 	assertEquals(cur->getFieldLength(7,7),8);
 	assertEquals(cur->getFieldLength(7,9),9);
-	assertEquals(cur->getFieldLength(7,10),22);
+	assertEquals(cur->getFieldLength(7,10),10);
 	stdoutput.printf("\n");
 
 
@@ -474,7 +473,7 @@ int main(int argc, char **argv) {
 	assertEquals(cur->getField(0,"testdate"),"2001-01-01");
 	assertEquals(cur->getField(0,"testtime"),"01:00:00");
 	assertEquals(cur->getField(0,"testtext"),"testtext1");
-	assertEquals(cur->getField(0,"testbytea"),"\\x74657374627974656131");
+	assertEquals(cur->getField(0,"testbytea"),"testbytea1");
 	stdoutput.printf("\n");
 	assertEquals(cur->getField(7,"testint"),"8");
 	assertEquals(cur->getField(7,"testfloat"),"8.8");
@@ -485,7 +484,7 @@ int main(int argc, char **argv) {
 	assertEquals(cur->getField(7,"testdate"),"2008-01-01");
 	assertEquals(cur->getField(7,"testtime"),"08:00:00");
 	assertEquals(cur->getField(7,"testtext"),"testtext8");
-	assertEquals(cur->getField(7,"testbytea"),"\\x74657374627974656138");
+	assertEquals(cur->getField(7,"testbytea"),"testbytea8");
 	stdoutput.printf("\n");
 
 
@@ -500,7 +499,7 @@ int main(int argc, char **argv) {
 	assertEquals(cur->getFieldLength(0,"testdate"),10);
 	assertEquals(cur->getFieldLength(0,"testtime"),8);
 	assertEquals(cur->getFieldLength(0,"testtext"),9);
-	assertEquals(cur->getFieldLength(0,"testbytea"),22);
+	assertEquals(cur->getFieldLength(0,"testbytea"),10);
 	stdoutput.printf("\n");
 	assertEquals(cur->getFieldLength(7,"testint"),1);
 	assertEquals(cur->getFieldLength(7,"testfloat"),3);
@@ -511,7 +510,7 @@ int main(int argc, char **argv) {
 	assertEquals(cur->getFieldLength(7,"testdate"),10);
 	assertEquals(cur->getFieldLength(7,"testtime"),8);
 	assertEquals(cur->getFieldLength(7,"testtext"),9);
-	assertEquals(cur->getFieldLength(7,"testbytea"),22);
+	assertEquals(cur->getFieldLength(7,"testbytea"),10);
 	stdoutput.printf("\n");
 
 
@@ -527,7 +526,7 @@ int main(int argc, char **argv) {
 	assertEquals(fields[6],"2001-01-01");
 	assertEquals(fields[7],"01:00:00");
 	assertEquals(fields[9],"testtext1");
-	assertEquals(fields[10],"\\x74657374627974656131");
+	assertEquals(fields[10],"testbytea1");
 	stdoutput.printf("\n");
 
 
@@ -543,7 +542,7 @@ int main(int argc, char **argv) {
 	assertEquals(fieldlens[6],10);
 	assertEquals(fieldlens[7],8);
 	assertEquals(fieldlens[9],9);
-	assertEquals(fieldlens[10],22);
+	assertEquals(fieldlens[10],10);
 	stdoutput.printf("\n");
 
 
@@ -947,7 +946,6 @@ int main(int argc, char **argv) {
 	assertEquals(cur->getField(0,1),"1");
 	assertEquals(cur->getField(0,2),"");
 	stdoutput.printf("\n");
-#endif
 
 
 	// null and empty lobs
@@ -983,7 +981,6 @@ int main(int argc, char **argv) {
 	stdoutput.printf("\n");
 
 
-#if 0
 	// long lobs
 	stdoutput.printf("LONG LOBS: \n");
 	cur->sendQuery("drop table testtable");
@@ -1002,12 +999,9 @@ int main(int argc, char **argv) {
 	cur->sendQuery("select * from testtable");
 	assertEquals(cur->getFieldLength(0,"testtext"),LARGE_BUFFER_LENGTH);
 	assertEquals(cur->getField(0,"testtext"),largebuffer);
-// #8009
-#if 0
 	assertEquals(cur->getFieldLength(0,"testbytea"),LARGE_BUFFER_LENGTH);
 	assertEquals(cur->getField(0,"testbytea"),largebuffer,
 						LARGE_BUFFER_LENGTH);
-#endif
 	assertTrue(cur->sendQuery("drop table testtable"));
 	stdoutput.printf("\n");
 
@@ -1646,7 +1640,6 @@ int main(int argc, char **argv) {
 	stdoutput.printf("\n");
 
 	reportTestStatus();
-#endif
 
 	return status;
 }
