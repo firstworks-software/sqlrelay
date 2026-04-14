@@ -790,12 +790,13 @@ void postgresqlconnection::handleConnectString() {
 	charset=cont->getConnectStringValue("charset");
 	const char	*lastinsertidfunc=
 			cont->getConnectStringValue("lastinsertidfunction");
-	if (lastinsertidfunc) {
-		stringbuffer	liiquery;
-		liiquery.append("select ");
-		liiquery.append(lastinsertidfunc);
-		lastinsertidquery=liiquery.detachString();
+	if (charstring::isNullOrEmpty(lastinsertidfunc)) {
+		lastinsertidfunc="lastval()";
 	}
+	stringbuffer	liiquery;
+	liiquery.append("select ");
+	liiquery.append(lastinsertidfunc);
+	lastinsertidquery=liiquery.detachString();
 
 	// Re-process the fetchatonce parameter.  In the parent class, it ends
 	// up being set to 1 if it was configured to be 0.  However, with

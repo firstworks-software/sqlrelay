@@ -1527,6 +1527,22 @@ int main(int argc, char **argv) {
 	stdoutput.printf("\n");
 
 
+	// last insert id
+	stdoutput.printf("LAST INSERT ID: \n");
+	cur->sendQuery("drop table testtable");
+	assertTrue(cur->sendQuery(
+			"create table testtable "
+			"	(col1 int not null "
+			"	generated always as identity, "
+			"	col2 int, "
+			"	primary key(col1))"));
+	assertTrue(cur->sendQuery(
+			"insert into testtable (col2) values (1)"));
+	assertEquals(con->getLastInsertId(),(uint64_t)1);
+	assertTrue(cur->sendQuery("drop table testtable"));
+	stdoutput.printf("\n");
+
+
 	// database is schema
         // not super important to test with DB2 7, maybe later
 

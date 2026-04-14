@@ -933,8 +933,6 @@ int main(int argc, char **argv) {
 
 
 	// bind validation
-// #7996
-#if 1
 	stdoutput.printf("BIND VALIDATION: \n");
 	cur->sendQuery("drop table testtable");
 	cur->sendQuery(
@@ -972,7 +970,6 @@ int main(int argc, char **argv) {
 	assertTrue(cur->executeQuery());
 	assertTrue(cur->sendQuery("drop table testtable"));
 	stdoutput.printf("\n");
-#endif
 
 
 	// rebinding
@@ -1081,6 +1078,21 @@ int main(int argc, char **argv) {
 	assertTrue(cur->sendQuery("select col1 from testtable"));
 	assertEquals(cur->getFieldLength(0,(uint32_t)0),2);
 	assertEquals(charstring::compare(cur->getField(0,(uint32_t)0),"''"),0);
+	assertTrue(cur->sendQuery("drop table testtable"));
+	stdoutput.printf("\n");
+
+
+	// last insert id
+	stdoutput.printf("LAST INSERT ID: \n");
+	cur->sendQuery("drop table testtable");
+	assertTrue(cur->sendQuery(
+			"create table testtable "
+			"	(col1 integer primary key "
+			"	autoincrement, "
+			"	col2 int)"));
+	assertTrue(cur->sendQuery(
+			"insert into testtable values (null,1)"));
+	assertEquals(con->getLastInsertId(),(uint64_t)1);
 	assertTrue(cur->sendQuery("drop table testtable"));
 	stdoutput.printf("\n");
 

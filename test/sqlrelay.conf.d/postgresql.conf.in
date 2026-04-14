@@ -6,7 +6,7 @@
 			<listener port="9000" socket="/tmp/test.socket"/>
 		</listeners>
 		<connections>
-			<connection string="host=postgresql;user=testuser;password=testpassword;db=@HOSTNAME@;lastinsertidfunction=testfunc();typemangling=lookup;tablemangling=lookup"/>
+			<connection string="host=postgresql;user=testuser;password=testpassword;db=@HOSTNAME@;typemangling=lookup;tablemangling=lookup"/>
 		</connections>
 	</instance>
 
@@ -15,7 +15,7 @@
 			<listener port="9000" socket="/tmp/test.socket"/>
 		</listeners>
 		<connections>
-			<connection string="host=postgresql7;user=testuser;password=testpassword;db=@HOSTNAME@;lastinsertidfunction=testfunc();typemangling=lookup;tablemangling=lookup"/>
+			<connection string="host=postgresql7;user=testuser;password=testpassword;db=@HOSTNAME@;lastinsertidfunction=lastval();typemangling=lookup;tablemangling=lookup"/>
 		</connections>
 	</instance>
 
@@ -24,7 +24,7 @@
 			<listener port="9000" socket="/tmp/test.socket"/>
 		</listeners>
 		<connections>
-			<connection string="host=postgresql12;user=testuser;password=testpassword;db=@HOSTNAME@;lastinsertidfunction=testfunc();typemangling=lookup;tablemangling=lookup"/>
+			<connection string="host=postgresql12;user=testuser;password=testpassword;db=@HOSTNAME@;typemangling=lookup;tablemangling=lookup"/>
 		</connections>
 	</instance>
 
@@ -33,7 +33,7 @@
 			<listener port="9000" socket="/tmp/test.socket"/>
 		</listeners>
 		<connections>
-			<connection string="host=postgresql15;user=testuser;password=testpassword;db=@HOSTNAME@;lastinsertidfunction=testfunc();typemangling=lookup;tablemangling=lookup"/>
+			<connection string="host=postgresql15;user=testuser;password=testpassword;db=@HOSTNAME@;typemangling=lookup;tablemangling=lookup"/>
 		</connections>
 	</instance>
 

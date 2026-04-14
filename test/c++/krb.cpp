@@ -1537,6 +1537,10 @@ int main(int argc, char **argv) {
 	stdoutput.printf("\n");
 
 
+	// last insert id
+	// oracle doesn't support auto-increment
+
+
 	// database is schema
 	stdoutput.printf("DATABASE IS SCHEMA: \n");
 	assertTrue(con->getDatabaseIsSchema());

@@ -1271,7 +1271,24 @@ int main(int argc, char **argv) {
 
 
 	// encoded binary data
-	// FIXME: ...
+	// firebird doesn't support encoded binary data
+
+
+	// quotes
+	stdoutput.printf("QUOTES: \n");
+	cur->sendQuery("delete from table testtable1");
+	assertTrue(cur->sendQuery(
+			"insert into testtable1 values ('''''')"));
+	assertTrue(cur->sendQuery("select col1 from testtable1"));
+	assertEquals(cur->getFieldLength(0,(uint32_t)0),2);
+	assertEquals(charstring::compare(
+			cur->getField(0,(uint32_t)0),"''"),0);
+	assertTrue(cur->sendQuery("delete from table testtable1"));
+	stdoutput.printf("\n");
+
+
+	// last insert id
+	// firebird doesn't support auto-increment
 
 
 	// database is schema

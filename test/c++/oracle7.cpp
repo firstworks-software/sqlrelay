@@ -1225,6 +1225,10 @@ int main(int argc, char **argv) {
 	stdoutput.printf("\n");
 
 
+	// last insert id
+	// oracle doesn't support auto-increment
+
+
 	// database is schema
 	// not super important to test with Oracle 7, maybe later
 
