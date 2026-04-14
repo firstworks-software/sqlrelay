@@ -967,8 +967,6 @@ int main(int argc, char **argv) {
 	cur->inputBindBlob("var4",NULL,0);
 	assertTrue(cur->executeQuery());
 	cur->sendQuery("select * from testtable");
-	// oracle treats empty strings as NULL, so even though we bound
-	// "" to var1 and var3, we still need to test for NULL
 	assertEquals(cur->getField(0,(uint32_t)0),"");
 	assertEquals(cur->getField(0,1),NULL);
 	assertEquals(cur->getField(0,2),"");

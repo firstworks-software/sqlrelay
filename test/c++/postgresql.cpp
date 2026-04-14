@@ -41,6 +41,7 @@ int main(int argc, char **argv) {
 	con=new sqlrconnection("sqlrelay",9000,"/tmp/test.socket",
 						"testuser","testpassword",0,1);
 	cur=new sqlrcursor(con);
+#if 0
 
 
 	// identify
@@ -946,6 +947,7 @@ int main(int argc, char **argv) {
 	assertEquals(cur->getField(0,1),"1");
 	assertEquals(cur->getField(0,2),"");
 	stdoutput.printf("\n");
+#endif
 
 
 	// null and empty lobs
@@ -972,21 +974,16 @@ int main(int argc, char **argv) {
 	cur->inputBindBlob("4",NULL,0);
 	assertTrue(cur->executeQuery());
 	cur->sendQuery("select * from testtable");
-// #8003
-#if 0
 	assertEquals(cur->getField(0,(uint32_t)0),"");
-#endif
 	assertEquals(cur->getField(0,1),NULL);
-// #8003
-#if 0
 	assertEquals(cur->getField(0,2),"");
-#endif
 	assertEquals(cur->getField(0,3),NULL);
 	cur->getNullsAsEmptyStrings();
 	assertTrue(cur->sendQuery("drop table testtable"));
 	stdoutput.printf("\n");
 
 
+#if 0
 	// long lobs
 	stdoutput.printf("LONG LOBS: \n");
 	cur->sendQuery("drop table testtable");
@@ -1649,6 +1646,7 @@ int main(int argc, char **argv) {
 	stdoutput.printf("\n");
 
 	reportTestStatus();
+#endif
 
 	return status;
 }

@@ -2725,8 +2725,26 @@ bool postgresqlcursor::inputBindBlob(const char *variable,
 		bindvalues[pos]=NULL;
 		bindsizes[pos]=0;
 	} else {
-		bindvalues[pos]=static_cast<char *>
+		// It's tricky to bind an "empty blob" in postgresql.
+		// * if we bytesstring::duplicate(value,0), then it returns
+		//   NULL because it can't create a byte_t array of length 0
+		// * if bindvalues[pos] is NULL, then postgresql will bind a
+		//   NULL
+		// * postgresql doesn't have a null indicator that we can use
+		//   to tell it that, even though we passed in a
+		//   bindvalues[pos] of NULL, and a bindsizes[pos] of 0, we
+		//   really mean "empty blob", not NULL
+		// * so, if bindsizes[pos] is 0, then bindvalues[pos] needs to
+		//   be some non-null value - we'll use an empty string
+		// * we can't just use charstring::duplicate(value,valuesize)
+		//   in all cases, though - it will stop copying at the first
+		//   \0 that it encounters, and that will truncate binary data
+		if (valuesize) {
+			bindvalues[pos]=static_cast<char *>
 				(bytestring::duplicate(value,valuesize));
+		} else {
+			bindvalues[pos]=charstring::duplicate("",0);
+		}
 		bindsizes[pos]=valuesize;
 	}
 	bindformats[pos]=1;
