@@ -1157,7 +1157,7 @@ int main(int argc, char **argv) {
 
 	// reexecute
 // #8006
-#if 0
+#if 1
 	stdoutput.printf("REEXECUTE: \n");
 	cur->prepareQuery("select 1 from rdb$database");
 	assertTrue(cur->executeQuery());

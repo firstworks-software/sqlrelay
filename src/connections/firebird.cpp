@@ -3771,6 +3771,9 @@ void firebirdcursor::closeLobField(uint32_t col) {
 
 void firebirdcursor::closeResultSet() {
 	outbindcount=0;
+	if (stmt) {
+		isc_dsql_free_statement(firebirdconn->error,&stmt,DSQL_close);
+	}
 	if (!conn->cont->getMaxColumnCount()) {
 		deallocateResultSetBuffers();
 	}
