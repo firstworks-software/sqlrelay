@@ -2173,6 +2173,11 @@ JNIEXPORT jlong JNICALL Java_com_firstworks_sqlrelay_SQLRCursor_getFieldLength__
  */
 JNIEXPORT jobjectArray JNICALL Java_com_firstworks_sqlrelay_SQLRCursor_getRow
   (JNIEnv *env, jobject self, jlong row) {
+	const char * const *field=getSqlrCursor(env,self)->
+					getRow((uint64_t)row);
+	if (!field) {
+		return NULL;
+	}
 	uint32_t	colcount=getSqlrCursor(env,self)->colCount();
 	jobjectArray	retarray=
 #ifdef CAST_NEW_OBJECT_ARRAY
@@ -2183,8 +2188,6 @@ JNIEXPORT jobjectArray JNICALL Java_com_firstworks_sqlrelay_SQLRCursor_getRow
 			env->NewObjectArray(colcount,
 					env->FindClass("java/lang/String"),
 					curNewStringUTF(env,""));
-	const char * const *field=getSqlrCursor(env,self)->
-					getRow((uint64_t)row);
 	for (uint32_t i=0; i<colcount; i++) {
 		env->SetObjectArrayElement(retarray,i,
 					curNewStringUTF(env,field[i]));

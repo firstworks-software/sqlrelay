@@ -47,6 +47,7 @@
 	ODBC driver now maps SQL_DATE to SQL_C_DATE or SQL_C_TIMESTAMP based on
 		the buffersize that was passed in
 	ODBC driver defaults to autocommit-on now
+	fixed a potential crash in the jni getRow() implementation
 
 2.1.1 - added tns_admin support
 	fixed sqlr-start ... -strace ...
