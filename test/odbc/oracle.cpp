@@ -257,39 +257,46 @@ int main(int argc, char **argv) {
 	assertSuccessStmt(stmt,erg);
 	assertEqualStmt(stmt,(int)bindvarcount,7);
 
+	// FIXME: why the different types?  can we bind DATE_STRUCT?
 	SQLSMALLINT	datesqltype=(issqlrelay)?SQL_TYPE_DATE:SQL_CHAR;
+
+	// OCI appears to convert data bound to clob columns to UCS2, even if
+	// the clob column isn't an NCLOB.  It does the conversion in-place, in
+	// the buffer that the value is stored in, so if the buffer contains
+	// ascii data, then it needs to be at least 4 times as large as the
+	// length of the data.  The buffer also needs to be writable, it can't
+	// just be a string constant.  The value passed in to the bufferlength
+	// parameter needs to be the size of the buffer, in bytes, not just the
+	// length of the string in the buffer.  That's why clobval and cloblen
+	// below are like they are, and why we're copying into clobval.
 
 	SQLINTEGER	intval;
 	SQLCHAR		*charval;
 	SQLCHAR		*varcharval;
 	SQLCHAR		*dateval;
 	SQLCHAR		*longval;
-	SQLCHAR		*clobval;
+	SQLCHAR		clobval[40];
 	SQLCHAR		*blobval;
+	SQLLEN		intlen=sizeof(SQLINTEGER);
 	SQLLEN		charlen=SQL_NTS;
 	SQLLEN		varcharlen=SQL_NTS;
 	SQLLEN		datelen=SQL_NTS;
 	SQLLEN		longlen=SQL_NTS;
-	SQLLEN		cloblen=SQL_NTS;
-	SQLLEN		bloblen=SQL_NTS;
-
-	if (!issqlrelay) {
-		cloblen=SQL_NULL_DATA;
-	}
-	bloblen=9;
+	SQLLEN		cloblen=sizeof(clobval);
+	SQLLEN		bloblen=9;
 
 	intval=2;
 	charval=(SQLCHAR *)"testchar2";
 	varcharval=(SQLCHAR *)"testvarchar2";
 	dateval=(SQLCHAR *)"01-JAN-2002";
 	longval=(SQLCHAR *)"testlong2";
-	clobval=(SQLCHAR *)"testclob2";
+	charstring::copy((char *)clobval,"testclob2");
 	blobval=(SQLCHAR *)"testblob2";
 	erg=SQLBindParameter(stmt,1,SQL_PARAM_INPUT,
 				SQL_C_SLONG,SQL_INTEGER,
 				0,0,
 				(SQLPOINTER)&intval,
-				sizeof(SQLINTEGER),NULL);
+				intlen,&intlen);
 	assertSuccessStmt(stmt,erg);
 	erg=SQLBindParameter(stmt,2,SQL_PARAM_INPUT,
 				SQL_C_CHAR,SQL_CHAR,
@@ -319,13 +326,13 @@ int main(int argc, char **argv) {
 				SQL_C_CHAR,SQL_LONGVARCHAR,
 				0,0,
 				(SQLPOINTER)clobval,
-				0,&cloblen);
+				cloblen,&cloblen);
 	assertSuccessStmt(stmt,erg);
 	erg=SQLBindParameter(stmt,7,SQL_PARAM_INPUT,
 				SQL_C_BINARY,SQL_LONGVARBINARY,
-				9,0,
+				0,0,
 				(SQLPOINTER)blobval,
-				9,&bloblen);
+				bloblen,&bloblen);
 	assertSuccessStmt(stmt,erg);
 	erg=SQLExecute(stmt);
 	assertSuccessStmt(stmt,erg);
@@ -335,13 +342,13 @@ int main(int argc, char **argv) {
 	varcharval=(SQLCHAR *)"testvarchar3";
 	dateval=(SQLCHAR *)"01-JAN-2003";
 	longval=(SQLCHAR *)"testlong3";
-	clobval=(SQLCHAR *)"testclob3";
+	charstring::copy((char *)clobval,"testclob3");
 	blobval=(SQLCHAR *)"testblob3";
 	erg=SQLBindParameter(stmt,1,SQL_PARAM_INPUT,
 				SQL_C_SLONG,SQL_INTEGER,
 				0,0,
 				(SQLPOINTER)&intval,
-				sizeof(SQLINTEGER),NULL);
+				intlen,&intlen);
 	assertSuccessStmt(stmt,erg);
 	erg=SQLBindParameter(stmt,2,SQL_PARAM_INPUT,
 				SQL_C_CHAR,SQL_CHAR,
@@ -371,13 +378,13 @@ int main(int argc, char **argv) {
 				SQL_C_CHAR,SQL_LONGVARCHAR,
 				0,0,
 				(SQLPOINTER)clobval,
-				0,&cloblen);
+				cloblen,&cloblen);
 	assertSuccessStmt(stmt,erg);
 	erg=SQLBindParameter(stmt,7,SQL_PARAM_INPUT,
 				SQL_C_BINARY,SQL_LONGVARBINARY,
-				9,0,
+				0,0,
 				(SQLPOINTER)blobval,
-				9,&bloblen);
+				bloblen,&bloblen);
 	assertSuccessStmt(stmt,erg);
 	erg=SQLExecute(stmt);
 	assertSuccessStmt(stmt,erg);
@@ -387,13 +394,13 @@ int main(int argc, char **argv) {
 	varcharval=(SQLCHAR *)"testvarchar4";
 	dateval=(SQLCHAR *)"01-JAN-2004";
 	longval=(SQLCHAR *)"testlong4";
-	clobval=(SQLCHAR *)"testclob4";
+	charstring::copy((char *)clobval,"testclob4");
 	blobval=(SQLCHAR *)"testblob4";
 	erg=SQLBindParameter(stmt,1,SQL_PARAM_INPUT,
 				SQL_C_SLONG,SQL_INTEGER,
 				0,0,
 				(SQLPOINTER)&intval,
-				sizeof(SQLINTEGER),NULL);
+				intlen,&intlen);
 	assertSuccessStmt(stmt,erg);
 	erg=SQLBindParameter(stmt,2,SQL_PARAM_INPUT,
 				SQL_C_CHAR,SQL_CHAR,
@@ -423,13 +430,13 @@ int main(int argc, char **argv) {
 				SQL_C_CHAR,SQL_LONGVARCHAR,
 				0,0,
 				(SQLPOINTER)clobval,
-				0,&cloblen);
+				cloblen,&cloblen);
 	assertSuccessStmt(stmt,erg);
 	erg=SQLBindParameter(stmt,7,SQL_PARAM_INPUT,
 				SQL_C_BINARY,SQL_LONGVARBINARY,
-				9,0,
+				0,0,
 				(SQLPOINTER)blobval,
-				9,&bloblen);
+				bloblen,&bloblen);
 	assertSuccessStmt(stmt,erg);
 	erg=SQLExecute(stmt);
 	assertSuccessStmt(stmt,erg);
@@ -439,13 +446,13 @@ int main(int argc, char **argv) {
 	varcharval=(SQLCHAR *)"testvarchar5";
 	dateval=(SQLCHAR *)"01-JAN-2005";
 	longval=(SQLCHAR *)"testlong5";
-	clobval=(SQLCHAR *)"testclob5";
+	charstring::copy((char *)clobval,"testclob5");
 	blobval=(SQLCHAR *)"testblob5";
 	erg=SQLBindParameter(stmt,1,SQL_PARAM_INPUT,
 				SQL_C_SLONG,SQL_INTEGER,
 				0,0,
 				(SQLPOINTER)&intval,
-				sizeof(SQLINTEGER),NULL);
+				intlen,&intlen);
 	assertSuccessStmt(stmt,erg);
 	erg=SQLBindParameter(stmt,2,SQL_PARAM_INPUT,
 				SQL_C_CHAR,SQL_CHAR,
@@ -475,13 +482,13 @@ int main(int argc, char **argv) {
 				SQL_C_CHAR,SQL_LONGVARCHAR,
 				0,0,
 				(SQLPOINTER)clobval,
-				0,&cloblen);
+				cloblen,&cloblen);
 	assertSuccessStmt(stmt,erg);
 	erg=SQLBindParameter(stmt,7,SQL_PARAM_INPUT,
 				SQL_C_BINARY,SQL_LONGVARBINARY,
-				9,0,
+				0,0,
 				(SQLPOINTER)blobval,
-				9,&bloblen);
+				bloblen,&bloblen);
 	assertSuccessStmt(stmt,erg);
 	erg=SQLExecute(stmt);
 	assertSuccessStmt(stmt,erg);
@@ -491,13 +498,13 @@ int main(int argc, char **argv) {
 	varcharval=(SQLCHAR *)"testvarchar6";
 	dateval=(SQLCHAR *)"01-JAN-2006";
 	longval=(SQLCHAR *)"testlong6";
-	clobval=(SQLCHAR *)"testclob6";
+	charstring::copy((char *)clobval,"testclob6");
 	blobval=(SQLCHAR *)"testblob6";
 	erg=SQLBindParameter(stmt,1,SQL_PARAM_INPUT,
 				SQL_C_SLONG,SQL_INTEGER,
 				0,0,
 				(SQLPOINTER)&intval,
-				sizeof(SQLINTEGER),NULL);
+				intlen,&intlen);
 	assertSuccessStmt(stmt,erg);
 	erg=SQLBindParameter(stmt,2,SQL_PARAM_INPUT,
 				SQL_C_CHAR,SQL_CHAR,
@@ -527,13 +534,13 @@ int main(int argc, char **argv) {
 				SQL_C_CHAR,SQL_LONGVARCHAR,
 				0,0,
 				(SQLPOINTER)clobval,
-				0,&cloblen);
+				cloblen,&cloblen);
 	assertSuccessStmt(stmt,erg);
 	erg=SQLBindParameter(stmt,7,SQL_PARAM_INPUT,
 				SQL_C_BINARY,SQL_LONGVARBINARY,
-				9,0,
+				0,0,
 				(SQLPOINTER)blobval,
-				9,&bloblen);
+				bloblen,&bloblen);
 	assertSuccessStmt(stmt,erg);
 	erg=SQLExecute(stmt);
 	assertSuccessStmt(stmt,erg);
@@ -543,13 +550,13 @@ int main(int argc, char **argv) {
 	varcharval=(SQLCHAR *)"testvarchar7";
 	dateval=(SQLCHAR *)"01-JAN-2007";
 	longval=(SQLCHAR *)"testlong7";
-	clobval=(SQLCHAR *)"testclob7";
+	charstring::copy((char *)clobval,"testclob7");
 	blobval=(SQLCHAR *)"testblob7";
 	erg=SQLBindParameter(stmt,1,SQL_PARAM_INPUT,
 				SQL_C_SLONG,SQL_INTEGER,
 				0,0,
 				(SQLPOINTER)&intval,
-				sizeof(SQLINTEGER),NULL);
+				intlen,&intlen);
 	assertSuccessStmt(stmt,erg);
 	erg=SQLBindParameter(stmt,2,SQL_PARAM_INPUT,
 				SQL_C_CHAR,SQL_CHAR,
@@ -579,13 +586,13 @@ int main(int argc, char **argv) {
 				SQL_C_CHAR,SQL_LONGVARCHAR,
 				0,0,
 				(SQLPOINTER)clobval,
-				0,&cloblen);
+				cloblen,&cloblen);
 	assertSuccessStmt(stmt,erg);
 	erg=SQLBindParameter(stmt,7,SQL_PARAM_INPUT,
 				SQL_C_BINARY,SQL_LONGVARBINARY,
-				9,0,
+				0,0,
 				(SQLPOINTER)blobval,
-				9,&bloblen);
+				bloblen,&bloblen);
 	assertSuccessStmt(stmt,erg);
 	erg=SQLExecute(stmt);
 	assertSuccessStmt(stmt,erg);
@@ -595,13 +602,13 @@ int main(int argc, char **argv) {
 	varcharval=(SQLCHAR *)"testvarchar8";
 	dateval=(SQLCHAR *)"01-JAN-2008";
 	longval=(SQLCHAR *)"testlong8";
-	clobval=(SQLCHAR *)"testclob8";
+	charstring::copy((char *)clobval,"testclob8");
 	blobval=(SQLCHAR *)"testblob8";
 	erg=SQLBindParameter(stmt,1,SQL_PARAM_INPUT,
 				SQL_C_SLONG,SQL_INTEGER,
 				0,0,
 				(SQLPOINTER)&intval,
-				sizeof(SQLINTEGER),NULL);
+				intlen,&intlen);
 	assertSuccessStmt(stmt,erg);
 	erg=SQLBindParameter(stmt,2,SQL_PARAM_INPUT,
 				SQL_C_CHAR,SQL_CHAR,
@@ -631,13 +638,13 @@ int main(int argc, char **argv) {
 				SQL_C_CHAR,SQL_LONGVARCHAR,
 				0,0,
 				(SQLPOINTER)clobval,
-				0,&cloblen);
+				cloblen,&cloblen);
 	assertSuccessStmt(stmt,erg);
 	erg=SQLBindParameter(stmt,7,SQL_PARAM_INPUT,
 				SQL_C_BINARY,SQL_LONGVARBINARY,
-				9,0,
+				0,0,
 				(SQLPOINTER)blobval,
-				9,&bloblen);
+				bloblen,&bloblen);
 	assertSuccessStmt(stmt,erg);
 	erg=SQLExecute(stmt);
 	assertSuccessStmt(stmt,erg);
@@ -738,168 +745,265 @@ int main(int argc, char **argv) {
 			&numval,sizeof(numval),&numind);
 	assertSuccessStmt(stmt,erg);
 	erg=SQLBindCol(stmt,2,SQL_C_CHAR,
-			charfield,sizeof(charfield),
-			&charind);
+			charfield,sizeof(charfield),&charind);
 	assertSuccessStmt(stmt,erg);
 	erg=SQLBindCol(stmt,3,SQL_C_CHAR,
-			varcharfield,
-			sizeof(varcharfield),
-			&varcharind);
+			varcharfield,sizeof(varcharfield),&varcharind);
 	assertSuccessStmt(stmt,erg);
 	erg=SQLBindCol(stmt,4,SQL_C_CHAR,
-			datefield,sizeof(datefield),
-			&dateind);
+			datefield,sizeof(datefield),&dateind);
 	assertSuccessStmt(stmt,erg);
 	erg=SQLBindCol(stmt,5,SQL_C_CHAR,
-			longfield,sizeof(longfield),
-			&longind);
+			longfield,sizeof(longfield),&longind);
 	assertSuccessStmt(stmt,erg);
 	erg=SQLBindCol(stmt,6,SQL_C_CHAR,
-			clobfield,sizeof(clobfield),
-			&clobind);
+			clobfield,sizeof(clobfield),&clobind);
 	assertSuccessStmt(stmt,erg);
 	erg=SQLBindCol(stmt,7,SQL_C_BINARY,
-			blobfield,sizeof(blobfield),
-			&blobind);
+			blobfield,sizeof(blobfield),&blobind);
 	assertSuccessStmt(stmt,erg);
 
 	// row 1 (direct insert)
 	erg=SQLFetch(stmt);
 	assertSuccessStmt(stmt,erg);
+	assertEqualStmt(stmt,(int)numind,(int)sizeof(SQLINTEGER));
 	assertEqualStmt(stmt,(int)numval,1);
-	assertEqualStmt(stmt,
-		(const char *)charfield,
-		"testchar1"
-		"                               ");
-	assertEqualStmt(stmt,
-		(const char *)varcharfield,
-		"testvarchar1");
+	assertEqualStmt(stmt,(int)charind,40);
+	assertEqualStmt(stmt,(const char *)charfield,
+			"testchar1                               ");
+	assertEqualStmt(stmt,(int)varcharind,12);
+	assertEqualStmt(stmt,(const char *)varcharfield,"testvarchar1");
 	if (issqlrelay) {
+		assertEqualStmt(stmt,(int)dateind,9);
 		assertEqualStmt(stmt,
-			(const char *)datefield,
-			"01-JAN-01");
+			(const char *)datefield,"01-JAN-01");
 	} else {
+		assertEqualStmt(stmt,(int)dateind,19);
 		assertEqualStmt(stmt,
-			(const char *)datefield,
-			"2001-01-01 00:00:00");
+			(const char *)datefield,"2001-01-01 00:00:00");
 	}
-	assertEqualStmt(stmt,
-		(const char *)longfield,"testlong1");
-	assertEqualStmt(stmt,
-		(const char *)clobfield,"testclob1");
-	assertEqualStmt(stmt,
-		(int)blobind,(int)SQL_NULL_DATA);
+	assertEqualStmt(stmt,(int)longind,9);
+	assertEqualStmt(stmt,(const char *)longfield,"testlong1");
+	assertEqualStmt(stmt,(int)clobind,9);
+	assertEqualStmt(stmt,(const char *)clobfield,"testclob1");
+	assertEqualStmt(stmt,(int)blobind,(int)SQL_NULL_DATA);
 
 	// row 2
 	erg=SQLFetch(stmt);
 	assertSuccessStmt(stmt,erg);
+	assertEqualStmt(stmt,(int)numind,(int)sizeof(SQLINTEGER));
 	assertEqualStmt(stmt,(int)numval,2);
-	assertEqualStmt(stmt,
-		(const char *)charfield,
-		"testchar2"
-		"                               ");
-	assertEqualStmt(stmt,
-		(const char *)varcharfield,
-		"testvarchar2");
-	assertEqualStmt(stmt,
-		(const char *)longfield,"testlong2");
+	assertEqualStmt(stmt,(int)charind,40);
+	assertEqualStmt(stmt,(const char *)charfield,
+			"testchar2                               ");
+	assertEqualStmt(stmt,(int)varcharind,12);
+	assertEqualStmt(stmt,(const char *)varcharfield,"testvarchar2");
 	if (issqlrelay) {
+		assertEqualStmt(stmt,(int)dateind,9);
 		assertEqualStmt(stmt,
-			(const char *)clobfield,
-			"testclob2");
+			(const char *)datefield,"01-JAN-02");
 	} else {
+		assertEqualStmt(stmt,(int)dateind,19);
 		assertEqualStmt(stmt,
-			(int)clobind,
-			(int)SQL_NULL_DATA);
+			(const char *)datefield,"2002-01-01 00:00:00");
 	}
+	assertEqualStmt(stmt,(int)longind,9);
+	assertEqualStmt(stmt,(const char *)longfield,"testlong2");
+	if (issqlrelay) {
+		assertEqualStmt(stmt,(int)clobind,9);
+	} else {
+		assertEqualStmt(stmt,(int)clobind,(int)sizeof(clobval));
+	}
+	assertEqualStmt(stmt,
+		(const char *)clobfield,"testclob2");
 	assertEqualStmt(stmt,(int)blobind,9);
-	assertTrueStmt(stmt,
-		!bytestring::compare(blobfield,"testblob2",9));
+	assertTrueStmt(stmt,!bytestring::compare(blobfield,"testblob2",9));
 
 	// row 3
 	erg=SQLFetch(stmt);
 	assertSuccessStmt(stmt,erg);
+	assertEqualStmt(stmt,(int)numind,(int)sizeof(SQLINTEGER));
 	assertEqualStmt(stmt,(int)numval,3);
+	assertEqualStmt(stmt,(int)charind,40);
+	assertEqualStmt(stmt,(const char *)charfield,
+			"testchar3                               ");
+	assertEqualStmt(stmt,(int)varcharind,12);
+	assertEqualStmt(stmt,(const char *)varcharfield,"testvarchar3");
+	if (issqlrelay) {
+		assertEqualStmt(stmt,(int)dateind,9);
+		assertEqualStmt(stmt,
+			(const char *)datefield,"01-JAN-03");
+	} else {
+		assertEqualStmt(stmt,(int)dateind,19);
+		assertEqualStmt(stmt,
+			(const char *)datefield,"2003-01-01 00:00:00");
+	}
+	assertEqualStmt(stmt,(int)longind,9);
+	assertEqualStmt(stmt,(const char *)longfield,"testlong3");
+	if (issqlrelay) {
+		assertEqualStmt(stmt,(int)clobind,9);
+	} else {
+		assertEqualStmt(stmt,(int)clobind,(int)sizeof(clobval));
+	}
 	assertEqualStmt(stmt,
-		(const char *)varcharfield,
-		"testvarchar3");
-	assertEqualStmt(stmt,
-		(const char *)longfield,"testlong3");
+		(const char *)clobfield,"testclob3");
+	assertEqualStmt(stmt,(int)blobind,9);
+	assertTrueStmt(stmt,!bytestring::compare(blobfield,"testblob3",9));
 
 	// row 4
 	erg=SQLFetch(stmt);
 	assertSuccessStmt(stmt,erg);
+	assertEqualStmt(stmt,(int)numind,(int)sizeof(SQLINTEGER));
 	assertEqualStmt(stmt,(int)numval,4);
+	assertEqualStmt(stmt,(int)charind,40);
+	assertEqualStmt(stmt,(const char *)charfield,
+			"testchar4                               ");
+	assertEqualStmt(stmt,(int)varcharind,12);
+	assertEqualStmt(stmt,(const char *)varcharfield,"testvarchar4");
+	if (issqlrelay) {
+		assertEqualStmt(stmt,(int)dateind,9);
+		assertEqualStmt(stmt,
+			(const char *)datefield,"01-JAN-04");
+	} else {
+		assertEqualStmt(stmt,(int)dateind,19);
+		assertEqualStmt(stmt,
+			(const char *)datefield,"2004-01-01 00:00:00");
+	}
+	assertEqualStmt(stmt,(int)longind,9);
+	assertEqualStmt(stmt,(const char *)longfield,"testlong4");
+	if (issqlrelay) {
+		assertEqualStmt(stmt,(int)clobind,9);
+	} else {
+		assertEqualStmt(stmt,(int)clobind,(int)sizeof(clobval));
+	}
 	assertEqualStmt(stmt,
-		(const char *)varcharfield,
-		"testvarchar4");
-	assertEqualStmt(stmt,
-		(const char *)longfield,"testlong4");
+		(const char *)clobfield,"testclob4");
+	assertEqualStmt(stmt,(int)blobind,9);
+	assertTrueStmt(stmt,!bytestring::compare(blobfield,"testblob4",9));
 
 	// row 5
 	erg=SQLFetch(stmt);
 	assertSuccessStmt(stmt,erg);
+	assertEqualStmt(stmt,(int)numind,(int)sizeof(SQLINTEGER));
 	assertEqualStmt(stmt,(int)numval,5);
+	assertEqualStmt(stmt,(int)charind,40);
+	assertEqualStmt(stmt,(const char *)charfield,
+			"testchar5                               ");
+	assertEqualStmt(stmt,(int)varcharind,12);
+	assertEqualStmt(stmt,(const char *)varcharfield,"testvarchar5");
+	if (issqlrelay) {
+		assertEqualStmt(stmt,(int)dateind,9);
+		assertEqualStmt(stmt,
+			(const char *)datefield,"01-JAN-05");
+	} else {
+		assertEqualStmt(stmt,(int)dateind,19);
+		assertEqualStmt(stmt,
+			(const char *)datefield,"2005-01-01 00:00:00");
+	}
+	assertEqualStmt(stmt,(int)longind,9);
+	assertEqualStmt(stmt,(const char *)longfield,"testlong5");
+	if (issqlrelay) {
+		assertEqualStmt(stmt,(int)clobind,9);
+	} else {
+		assertEqualStmt(stmt,(int)clobind,(int)sizeof(clobval));
+	}
 	assertEqualStmt(stmt,
-		(const char *)varcharfield,
-		"testvarchar5");
-	assertEqualStmt(stmt,
-		(const char *)longfield,"testlong5");
+		(const char *)clobfield,"testclob5");
+	assertEqualStmt(stmt,(int)blobind,9);
+	assertTrueStmt(stmt,!bytestring::compare(blobfield,"testblob5",9));
 
 	// row 6
 	erg=SQLFetch(stmt);
 	assertSuccessStmt(stmt,erg);
+	assertEqualStmt(stmt,(int)numind,(int)sizeof(SQLINTEGER));
 	assertEqualStmt(stmt,(int)numval,6);
+	assertEqualStmt(stmt,(int)charind,40);
+	assertEqualStmt(stmt,(const char *)charfield,
+			"testchar6                               ");
+	assertEqualStmt(stmt,(int)varcharind,12);
+	assertEqualStmt(stmt,(const char *)varcharfield,"testvarchar6");
+	if (issqlrelay) {
+		assertEqualStmt(stmt,(int)dateind,9);
+		assertEqualStmt(stmt,
+			(const char *)datefield,"01-JAN-06");
+	} else {
+		assertEqualStmt(stmt,(int)dateind,19);
+		assertEqualStmt(stmt,
+			(const char *)datefield,"2006-01-01 00:00:00");
+	}
+	assertEqualStmt(stmt,(int)longind,9);
+	assertEqualStmt(stmt,(const char *)longfield,"testlong6");
+	if (issqlrelay) {
+		assertEqualStmt(stmt,(int)clobind,9);
+	} else {
+		assertEqualStmt(stmt,(int)clobind,(int)sizeof(clobval));
+	}
 	assertEqualStmt(stmt,
-		(const char *)varcharfield,
-		"testvarchar6");
-	assertEqualStmt(stmt,
-		(const char *)longfield,"testlong6");
+		(const char *)clobfield,"testclob6");
+	assertEqualStmt(stmt,(int)blobind,9);
+	assertTrueStmt(stmt,!bytestring::compare(blobfield,"testblob6",9));
 
 	// row 7
 	erg=SQLFetch(stmt);
 	assertSuccessStmt(stmt,erg);
+	assertEqualStmt(stmt,(int)numind,(int)sizeof(SQLINTEGER));
 	assertEqualStmt(stmt,(int)numval,7);
+	assertEqualStmt(stmt,(int)charind,40);
+	assertEqualStmt(stmt,(const char *)charfield,
+			"testchar7                               ");
+	assertEqualStmt(stmt,(int)varcharind,12);
+	assertEqualStmt(stmt,(const char *)varcharfield,"testvarchar7");
+	if (issqlrelay) {
+		assertEqualStmt(stmt,(int)dateind,9);
+		assertEqualStmt(stmt,
+			(const char *)datefield,"01-JAN-07");
+	} else {
+		assertEqualStmt(stmt,(int)dateind,19);
+		assertEqualStmt(stmt,
+			(const char *)datefield,"2007-01-01 00:00:00");
+	}
+	assertEqualStmt(stmt,(int)longind,9);
+	assertEqualStmt(stmt,(const char *)longfield,"testlong7");
+	if (issqlrelay) {
+		assertEqualStmt(stmt,(int)clobind,9);
+	} else {
+		assertEqualStmt(stmt,(int)clobind,(int)sizeof(clobval));
+	}
 	assertEqualStmt(stmt,
-		(const char *)varcharfield,
-		"testvarchar7");
-	assertEqualStmt(stmt,
-		(const char *)longfield,"testlong7");
+		(const char *)clobfield,"testclob7");
+	assertEqualStmt(stmt,(int)blobind,9);
+	assertTrueStmt(stmt,!bytestring::compare(blobfield,"testblob7",9));
 
 	// row 8
 	erg=SQLFetch(stmt);
 	assertSuccessStmt(stmt,erg);
+	assertEqualStmt(stmt,(int)numind,(int)sizeof(SQLINTEGER));
 	assertEqualStmt(stmt,(int)numval,8);
-	assertEqualStmt(stmt,
-		(const char *)charfield,
-		"testchar8"
-		"                               ");
-	assertEqualStmt(stmt,
-		(const char *)varcharfield,
-		"testvarchar8");
+	assertEqualStmt(stmt,(int)charind,40);
+	assertEqualStmt(stmt,(const char *)charfield,
+			"testchar8                               ");
+	assertEqualStmt(stmt,(int)varcharind,12);
+	assertEqualStmt(stmt,(const char *)varcharfield,"testvarchar8");
 	if (issqlrelay) {
+		assertEqualStmt(stmt,(int)dateind,9);
 		assertEqualStmt(stmt,
-			(const char *)datefield,
-			"01-JAN-08");
+			(const char *)datefield,"01-JAN-08");
 	} else {
+		assertEqualStmt(stmt,(int)dateind,19);
 		assertEqualStmt(stmt,
-			(const char *)datefield,
-			"2008-01-01 00:00:00");
+			(const char *)datefield,"2008-01-01 00:00:00");
+	}
+	assertEqualStmt(stmt,(int)longind,9);
+	assertEqualStmt(stmt,(const char *)longfield,"testlong8");
+	if (issqlrelay) {
+		assertEqualStmt(stmt,(int)clobind,9);
+	} else {
+		assertEqualStmt(stmt,(int)clobind,(int)sizeof(clobval));
 	}
 	assertEqualStmt(stmt,
-		(const char *)longfield,"testlong8");
-	if (issqlrelay) {
-		assertEqualStmt(stmt,
-			(const char *)clobfield,
-			"testclob8");
-	} else {
-		assertEqualStmt(stmt,
-			(int)clobind,
-			(int)SQL_NULL_DATA);
-	}
+		(const char *)clobfield,"testclob8");
 	assertEqualStmt(stmt,(int)blobind,9);
-	assertTrueStmt(stmt,
-		!bytestring::compare(blobfield,"testblob8",9));
+	assertTrueStmt(stmt,!bytestring::compare(blobfield,"testblob8",9));
 
 	// no more rows
 	erg=SQLFetch(stmt);
