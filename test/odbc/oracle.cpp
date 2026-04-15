@@ -1,12 +1,11 @@
 // Copyright (c) David Muse
 // See the file COPYING for more information.
 
+#include <rudiments/sys.h>
+#include <rudiments/charstring.h>
+#include <rudiments/bytestring.h>
+
 #include "../../config.h"
-
-// windows needs this and it doesn't appear to hurt on other platforms
-#include <rudiments/private/winsock.h>
-
-#include <rudiments/private/inttypes.h>
 
 #include <sql.h>
 #include <sqlext.h>
@@ -15,8 +14,6 @@
 
 #include "asserts.cpp"
 
-//#define	USEDSN	1
-
 SQLRETURN	erg;
 SQLHENV		env;
 SQLHDBC		dbc;
@@ -24,9 +21,14 @@ SQLHSTMT	stmt;
 
 int main(int argc, char **argv) {
 
+	// hostname
+	char    *hostname=sys::getHostName();
+	char    *dot=(char *)charstring::findFirstOrEnd(hostname,'.');
+	*dot='\0';
 
-	// env handle
-	stdoutput.printf("ENV HANDLE: \n");
+
+	// environment handle
+	stdoutput.printf("ENVIRONMENT HANDLE: \n");
 	#if (ODBCVER >= 0x3000)
 		erg=SQLAllocHandle(SQL_HANDLE_ENV,SQL_NULL_HANDLE,&env);
 		assertSuccessEnv(env,erg);
@@ -50,6 +52,10 @@ int main(int argc, char **argv) {
 	stdoutput.printf("\n");
 
 
+	// environment attributes
+	// FIXME:...
+
+
 	// connection handle
 	stdoutput.printf("CONNECTION HANDLE: \n");
 	#if (ODBCVER >= 0x0300)
@@ -62,33 +68,42 @@ int main(int argc, char **argv) {
 	stdoutput.printf("\n");
 
 
+	// connection attributes
+	// FIXME:...
+
+
 	// connect
 	stdoutput.printf("CONNECT: \n");
-	#ifdef USEDSN
-		SQLCHAR	*dsn=(SQLCHAR *)"sqlrodbc";
-		SQLCHAR	*user=(SQLCHAR *)"testuser";
-		SQLCHAR	*password=(SQLCHAR *)"testpassword";
-		erg=SQLConnect(dbc,dsn,SQL_NTS,user,SQL_NTS,password,SQL_NTS);
-	#else
-		SQLCHAR		*incstring=(SQLCHAR *)
-				"Driver={SQL Relay};"
-				"Server=sqlrelay;Port=9000;"
-				"Socket=/tmp/test.socket;"
-				"User=testuser;Password=testpassword;"
-				"NullsAsNulls=yes";
+	bool	issqlrelay=!(argc==2 && !charstring::compare(argv[1],"native"));
+	SQLCHAR	*dsn;
+	SQLCHAR	*user;
+	SQLCHAR	*password;
+	SQLCHAR	*incstring;
+	if (issqlrelay) {
+		incstring=(SQLCHAR *)
+			"Driver={SQL Relay};"
+			"Server=sqlrelay;Port=9000;"
+			"Socket=/tmp/test.socket;"
+			"User=testuser;Password=testpassword;"
+			"NullsAsNulls=yes";
 		SQLCHAR		outcstring[1024];
 		SQLSMALLINT	outcstringlen;
 		erg=SQLDriverConnect(dbc,NULL,
 				incstring,SQL_NTS,
 				outcstring,sizeof(outcstring),&outcstringlen,
 				SQL_DRIVER_NOPROMPT);
-	#endif
+	} else {
+		dsn=(SQLCHAR *)"oracle";
+		user=(SQLCHAR *)hostname;
+		password=(SQLCHAR *)"testpassword";
+		erg=SQLConnect(dbc,dsn,SQL_NTS,user,SQL_NTS,password,SQL_NTS);
+	}
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
 
 
-	// sqlgetinfo
-	stdoutput.printf("SQLGETINFO: \n");
+	// get info
+	stdoutput.printf("GET INFO: \n");
 	SQLUINTEGER	uintval;
 	SQLCHAR		strval[2048];
 	SQLSMALLINT	vallen;
@@ -96,7 +111,11 @@ int main(int argc, char **argv) {
 			(SQLPOINTER)strval,
 			(SQLSMALLINT)sizeof(strval),
 			&vallen);
-	assertEqualDbc(dbc,(const char *)strval,"oracle");
+	if (issqlrelay) {
+		assertEqualDbc(dbc,(const char *)strval,"oracle");
+	} else {
+		assertEqualDbc(dbc,(const char *)strval,"Oracle");
+	}
 	assertSuccessDbc(dbc,erg);
 	erg=SQLGetInfo(dbc,SQL_DEFAULT_TXN_ISOLATION,
 			(SQLPOINTER)&uintval,
@@ -110,16 +129,9 @@ int main(int argc, char **argv) {
 	// isolation levels
 	stdoutput.printf("ISOLATION LEVELS: \n");
 
-	// oracle requires the isolation level to
-	// be the first query of the transaction
-	erg=SQLEndTran(SQL_HANDLE_DBC,dbc,SQL_COMMIT);
-	assertSuccessDbc(dbc,erg);
-
 	// you can set the isolation level, but to get it, you
 	// have to have permisisons to read from sys.v_$session
 	// and sys.v_$transaction, so we'll just set them here
-	erg=SQLEndTran(SQL_HANDLE_DBC,dbc,SQL_COMMIT);
-	assertSuccessDbc(dbc,erg);
 	erg=SQLSetConnectAttr(dbc,SQL_ATTR_TXN_ISOLATION,
 			(SQLPOINTER)(uintptr_t)SQL_TXN_READ_UNCOMMITTED,0);
 	assertFailureDbc(dbc,erg);
@@ -128,21 +140,15 @@ int main(int argc, char **argv) {
 			(SQLPOINTER)(uintptr_t)SQL_TXN_READ_COMMITTED,0);
 	assertSuccessDbc(dbc,erg);
 
-	erg=SQLEndTran(SQL_HANDLE_DBC,dbc,SQL_COMMIT);
-	assertSuccessDbc(dbc,erg);
 	erg=SQLSetConnectAttr(dbc,SQL_ATTR_TXN_ISOLATION,
 			(SQLPOINTER)(uintptr_t)SQL_TXN_REPEATABLE_READ,0);
 	assertFailureDbc(dbc,erg);
 
-	erg=SQLEndTran(SQL_HANDLE_DBC,dbc,SQL_COMMIT);
-	assertSuccessDbc(dbc,erg);
 	erg=SQLSetConnectAttr(dbc,SQL_ATTR_TXN_ISOLATION,
 			(SQLPOINTER)(uintptr_t)SQL_TXN_SERIALIZABLE,0);
 	assertSuccessDbc(dbc,erg);
 
 	// reset to default isolation level
-	erg=SQLEndTran(SQL_HANDLE_DBC,dbc,SQL_COMMIT);
-	assertSuccessDbc(dbc,erg);
 	erg=SQLSetConnectAttr(dbc,SQL_ATTR_TXN_ISOLATION,
 			(SQLPOINTER)(uintptr_t)SQL_TXN_READ_COMMITTED,0);
 	assertSuccessDbc(dbc,erg);
@@ -155,38 +161,46 @@ int main(int argc, char **argv) {
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
 
-	// drop existing table
-	erg=SQLExecDirect(stmt,(SQLCHAR *)"drop table testtable",SQL_NTS);
+
+	// statement attributes
+	// FIXME:...
 
 
-	// create temptable
-	stdoutput.printf("CREATE TEMPTABLE: \n");
-	erg=SQLExecDirect(stmt,
-		(SQLCHAR *)"create table testtable ("
+	// create testtable
+	stdoutput.printf("CREATE TESTTABLE: \n");
+	erg=SQLSetConnectAttr(dbc,SQL_ATTR_AUTOCOMMIT,
+		(SQLPOINTER)SQL_AUTOCOMMIT_OFF,0);
+	assertSuccessDbc(dbc,erg);
+	SQLExecDirect(stmt,
+		(SQLCHAR *)"drop table testtable",
+		SQL_NTS);
+	erg=SQLExecDirect(stmt,(SQLCHAR *)
+		"create table testtable ("
 		"	testnumber number, "
 		"	testchar char(40), "
 		"	testvarchar varchar2(40), "
-		"	testdate date)",
+		"	testdate date, "
+		"	testlong long, "
+		"	testclob clob, "
+		"	testblob blob)",
 		SQL_NTS);
 	assertSuccessStmt(stmt,erg);
 	stdoutput.printf("\n");
 
 
-	// begin transaction
-	stdoutput.printf("BEGIN TRANSACTION: \n");
-	erg=SQLSetConnectAttr(dbc,SQL_ATTR_AUTOCOMMIT,
-				(SQLPOINTER)SQL_AUTOCOMMIT_OFF,
-				sizeof(SQLINTEGER));
-	assertSuccessDbc(dbc,erg);
-	stdoutput.printf("\n");
-
-
 	// insert
 	stdoutput.printf("INSERT: \n");
-	erg=SQLExecDirect(stmt,
-		(SQLCHAR *)"insert into testtable "
-		"values (1,'testchar1',"
-		"'testvarchar1','01-JAN-2001')",
+	erg=SQLExecDirect(stmt,(SQLCHAR *)
+		"insert into "
+		"	testtable "
+		"values ("
+		"	1, "
+		"	'testchar1', "
+		"	'testvarchar1', "
+		"	'01-JAN-2001', "
+		"	'testlong1', "
+		"	'testclob1', "
+		"	empty_blob())",
 		SQL_NTS);
 	assertSuccessStmt(stmt,erg);
 	stdoutput.printf("\n");
@@ -205,30 +219,72 @@ int main(int argc, char **argv) {
 	stdoutput.printf("\n");
 
 
-	// bind by position
-	stdoutput.printf("BIND BY POSITION: \n");
+	// input bind by position
+	stdoutput.printf("INPUT BIND BY POSITION: \n");
 	erg=SQLFreeStmt(stmt,SQL_CLOSE);
-	erg=SQLPrepare(stmt,
-		(SQLCHAR *)"insert into testtable "
-		"values (:1,:2,:3,:4)",
-		SQL_NTS);
+	erg=SQLFreeStmt(stmt,SQL_UNBIND);
+	erg=SQLFreeStmt(stmt,SQL_RESET_PARAMS);
+	if (issqlrelay) {
+		erg=SQLPrepare(stmt,(SQLCHAR *)
+			"insert into "
+			"	testtable "
+			"values ( "
+			"	:1, "
+			"	:2, "
+			"	:3, "
+			"	:4, "
+			"	:5, "
+			"	:6, "
+			"	:7)",
+			SQL_NTS);
+	} else {
+		erg=SQLPrepare(stmt,(SQLCHAR *)
+			"insert into "
+			"	testtable "
+			"values ( "
+			"	?, "
+			"	?, "
+			"	?, "
+			"	?, "
+			"	?, "
+			"	?, "
+			"	?)",
+			SQL_NTS);
+	}
 	assertSuccessStmt(stmt,erg);
 	SQLSMALLINT	bindvarcount;
 	erg=SQLNumParams(stmt,&bindvarcount);
 	assertSuccessStmt(stmt,erg);
-	assertEqualStmt(stmt,(int)bindvarcount,4);
+	assertEqualStmt(stmt,(int)bindvarcount,7);
 
-	SQLINTEGER	intval=2;
+	SQLSMALLINT	datesqltype=(issqlrelay)?SQL_TYPE_DATE:SQL_CHAR;
+
+	SQLINTEGER	intval;
 	SQLCHAR		*charval;
 	SQLCHAR		*varcharval;
 	SQLCHAR		*dateval;
+	SQLCHAR		*longval;
+	SQLCHAR		*clobval;
+	SQLCHAR		*blobval;
 	SQLLEN		charlen=SQL_NTS;
 	SQLLEN		varcharlen=SQL_NTS;
 	SQLLEN		datelen=SQL_NTS;
+	SQLLEN		longlen=SQL_NTS;
+	SQLLEN		cloblen=SQL_NTS;
+	SQLLEN		bloblen=SQL_NTS;
 
+	if (!issqlrelay) {
+		cloblen=SQL_NULL_DATA;
+	}
+	bloblen=9;
+
+	intval=2;
 	charval=(SQLCHAR *)"testchar2";
 	varcharval=(SQLCHAR *)"testvarchar2";
 	dateval=(SQLCHAR *)"01-JAN-2002";
+	longval=(SQLCHAR *)"testlong2";
+	clobval=(SQLCHAR *)"testclob2";
+	blobval=(SQLCHAR *)"testblob2";
 	erg=SQLBindParameter(stmt,1,SQL_PARAM_INPUT,
 				SQL_C_SLONG,SQL_INTEGER,
 				0,0,
@@ -248,10 +304,28 @@ int main(int argc, char **argv) {
 				0,&varcharlen);
 	assertSuccessStmt(stmt,erg);
 	erg=SQLBindParameter(stmt,4,SQL_PARAM_INPUT,
-				SQL_C_CHAR,SQL_TYPE_DATE,
+				SQL_C_CHAR,datesqltype,
 				11,0,
 				(SQLPOINTER)dateval,
 				0,&datelen);
+	assertSuccessStmt(stmt,erg);
+	erg=SQLBindParameter(stmt,5,SQL_PARAM_INPUT,
+				SQL_C_CHAR,SQL_LONGVARCHAR,
+				0,0,
+				(SQLPOINTER)longval,
+				0,&longlen);
+	assertSuccessStmt(stmt,erg);
+	erg=SQLBindParameter(stmt,6,SQL_PARAM_INPUT,
+				SQL_C_CHAR,SQL_LONGVARCHAR,
+				0,0,
+				(SQLPOINTER)clobval,
+				0,&cloblen);
+	assertSuccessStmt(stmt,erg);
+	erg=SQLBindParameter(stmt,7,SQL_PARAM_INPUT,
+				SQL_C_BINARY,SQL_LONGVARBINARY,
+				9,0,
+				(SQLPOINTER)blobval,
+				9,&bloblen);
 	assertSuccessStmt(stmt,erg);
 	erg=SQLExecute(stmt);
 	assertSuccessStmt(stmt,erg);
@@ -260,6 +334,9 @@ int main(int argc, char **argv) {
 	charval=(SQLCHAR *)"testchar3";
 	varcharval=(SQLCHAR *)"testvarchar3";
 	dateval=(SQLCHAR *)"01-JAN-2003";
+	longval=(SQLCHAR *)"testlong3";
+	clobval=(SQLCHAR *)"testclob3";
+	blobval=(SQLCHAR *)"testblob3";
 	erg=SQLBindParameter(stmt,1,SQL_PARAM_INPUT,
 				SQL_C_SLONG,SQL_INTEGER,
 				0,0,
@@ -279,10 +356,28 @@ int main(int argc, char **argv) {
 				0,&varcharlen);
 	assertSuccessStmt(stmt,erg);
 	erg=SQLBindParameter(stmt,4,SQL_PARAM_INPUT,
-				SQL_C_CHAR,SQL_TYPE_DATE,
+				SQL_C_CHAR,datesqltype,
 				11,0,
 				(SQLPOINTER)dateval,
 				0,&datelen);
+	assertSuccessStmt(stmt,erg);
+	erg=SQLBindParameter(stmt,5,SQL_PARAM_INPUT,
+				SQL_C_CHAR,SQL_LONGVARCHAR,
+				0,0,
+				(SQLPOINTER)longval,
+				0,&longlen);
+	assertSuccessStmt(stmt,erg);
+	erg=SQLBindParameter(stmt,6,SQL_PARAM_INPUT,
+				SQL_C_CHAR,SQL_LONGVARCHAR,
+				0,0,
+				(SQLPOINTER)clobval,
+				0,&cloblen);
+	assertSuccessStmt(stmt,erg);
+	erg=SQLBindParameter(stmt,7,SQL_PARAM_INPUT,
+				SQL_C_BINARY,SQL_LONGVARBINARY,
+				9,0,
+				(SQLPOINTER)blobval,
+				9,&bloblen);
 	assertSuccessStmt(stmt,erg);
 	erg=SQLExecute(stmt);
 	assertSuccessStmt(stmt,erg);
@@ -291,6 +386,9 @@ int main(int argc, char **argv) {
 	charval=(SQLCHAR *)"testchar4";
 	varcharval=(SQLCHAR *)"testvarchar4";
 	dateval=(SQLCHAR *)"01-JAN-2004";
+	longval=(SQLCHAR *)"testlong4";
+	clobval=(SQLCHAR *)"testclob4";
+	blobval=(SQLCHAR *)"testblob4";
 	erg=SQLBindParameter(stmt,1,SQL_PARAM_INPUT,
 				SQL_C_SLONG,SQL_INTEGER,
 				0,0,
@@ -310,10 +408,28 @@ int main(int argc, char **argv) {
 				0,&varcharlen);
 	assertSuccessStmt(stmt,erg);
 	erg=SQLBindParameter(stmt,4,SQL_PARAM_INPUT,
-				SQL_C_CHAR,SQL_TYPE_DATE,
+				SQL_C_CHAR,datesqltype,
 				11,0,
 				(SQLPOINTER)dateval,
 				0,&datelen);
+	assertSuccessStmt(stmt,erg);
+	erg=SQLBindParameter(stmt,5,SQL_PARAM_INPUT,
+				SQL_C_CHAR,SQL_LONGVARCHAR,
+				0,0,
+				(SQLPOINTER)longval,
+				0,&longlen);
+	assertSuccessStmt(stmt,erg);
+	erg=SQLBindParameter(stmt,6,SQL_PARAM_INPUT,
+				SQL_C_CHAR,SQL_LONGVARCHAR,
+				0,0,
+				(SQLPOINTER)clobval,
+				0,&cloblen);
+	assertSuccessStmt(stmt,erg);
+	erg=SQLBindParameter(stmt,7,SQL_PARAM_INPUT,
+				SQL_C_BINARY,SQL_LONGVARBINARY,
+				9,0,
+				(SQLPOINTER)blobval,
+				9,&bloblen);
 	assertSuccessStmt(stmt,erg);
 	erg=SQLExecute(stmt);
 	assertSuccessStmt(stmt,erg);
@@ -322,6 +438,9 @@ int main(int argc, char **argv) {
 	charval=(SQLCHAR *)"testchar5";
 	varcharval=(SQLCHAR *)"testvarchar5";
 	dateval=(SQLCHAR *)"01-JAN-2005";
+	longval=(SQLCHAR *)"testlong5";
+	clobval=(SQLCHAR *)"testclob5";
+	blobval=(SQLCHAR *)"testblob5";
 	erg=SQLBindParameter(stmt,1,SQL_PARAM_INPUT,
 				SQL_C_SLONG,SQL_INTEGER,
 				0,0,
@@ -341,10 +460,28 @@ int main(int argc, char **argv) {
 				0,&varcharlen);
 	assertSuccessStmt(stmt,erg);
 	erg=SQLBindParameter(stmt,4,SQL_PARAM_INPUT,
-				SQL_C_CHAR,SQL_TYPE_DATE,
+				SQL_C_CHAR,datesqltype,
 				11,0,
 				(SQLPOINTER)dateval,
 				0,&datelen);
+	assertSuccessStmt(stmt,erg);
+	erg=SQLBindParameter(stmt,5,SQL_PARAM_INPUT,
+				SQL_C_CHAR,SQL_LONGVARCHAR,
+				0,0,
+				(SQLPOINTER)longval,
+				0,&longlen);
+	assertSuccessStmt(stmt,erg);
+	erg=SQLBindParameter(stmt,6,SQL_PARAM_INPUT,
+				SQL_C_CHAR,SQL_LONGVARCHAR,
+				0,0,
+				(SQLPOINTER)clobval,
+				0,&cloblen);
+	assertSuccessStmt(stmt,erg);
+	erg=SQLBindParameter(stmt,7,SQL_PARAM_INPUT,
+				SQL_C_BINARY,SQL_LONGVARBINARY,
+				9,0,
+				(SQLPOINTER)blobval,
+				9,&bloblen);
 	assertSuccessStmt(stmt,erg);
 	erg=SQLExecute(stmt);
 	assertSuccessStmt(stmt,erg);
@@ -353,6 +490,9 @@ int main(int argc, char **argv) {
 	charval=(SQLCHAR *)"testchar6";
 	varcharval=(SQLCHAR *)"testvarchar6";
 	dateval=(SQLCHAR *)"01-JAN-2006";
+	longval=(SQLCHAR *)"testlong6";
+	clobval=(SQLCHAR *)"testclob6";
+	blobval=(SQLCHAR *)"testblob6";
 	erg=SQLBindParameter(stmt,1,SQL_PARAM_INPUT,
 				SQL_C_SLONG,SQL_INTEGER,
 				0,0,
@@ -372,10 +512,28 @@ int main(int argc, char **argv) {
 				0,&varcharlen);
 	assertSuccessStmt(stmt,erg);
 	erg=SQLBindParameter(stmt,4,SQL_PARAM_INPUT,
-				SQL_C_CHAR,SQL_TYPE_DATE,
+				SQL_C_CHAR,datesqltype,
 				11,0,
 				(SQLPOINTER)dateval,
 				0,&datelen);
+	assertSuccessStmt(stmt,erg);
+	erg=SQLBindParameter(stmt,5,SQL_PARAM_INPUT,
+				SQL_C_CHAR,SQL_LONGVARCHAR,
+				0,0,
+				(SQLPOINTER)longval,
+				0,&longlen);
+	assertSuccessStmt(stmt,erg);
+	erg=SQLBindParameter(stmt,6,SQL_PARAM_INPUT,
+				SQL_C_CHAR,SQL_LONGVARCHAR,
+				0,0,
+				(SQLPOINTER)clobval,
+				0,&cloblen);
+	assertSuccessStmt(stmt,erg);
+	erg=SQLBindParameter(stmt,7,SQL_PARAM_INPUT,
+				SQL_C_BINARY,SQL_LONGVARBINARY,
+				9,0,
+				(SQLPOINTER)blobval,
+				9,&bloblen);
 	assertSuccessStmt(stmt,erg);
 	erg=SQLExecute(stmt);
 	assertSuccessStmt(stmt,erg);
@@ -384,6 +542,9 @@ int main(int argc, char **argv) {
 	charval=(SQLCHAR *)"testchar7";
 	varcharval=(SQLCHAR *)"testvarchar7";
 	dateval=(SQLCHAR *)"01-JAN-2007";
+	longval=(SQLCHAR *)"testlong7";
+	clobval=(SQLCHAR *)"testclob7";
+	blobval=(SQLCHAR *)"testblob7";
 	erg=SQLBindParameter(stmt,1,SQL_PARAM_INPUT,
 				SQL_C_SLONG,SQL_INTEGER,
 				0,0,
@@ -403,10 +564,28 @@ int main(int argc, char **argv) {
 				0,&varcharlen);
 	assertSuccessStmt(stmt,erg);
 	erg=SQLBindParameter(stmt,4,SQL_PARAM_INPUT,
-				SQL_C_CHAR,SQL_TYPE_DATE,
+				SQL_C_CHAR,datesqltype,
 				11,0,
 				(SQLPOINTER)dateval,
 				0,&datelen);
+	assertSuccessStmt(stmt,erg);
+	erg=SQLBindParameter(stmt,5,SQL_PARAM_INPUT,
+				SQL_C_CHAR,SQL_LONGVARCHAR,
+				0,0,
+				(SQLPOINTER)longval,
+				0,&longlen);
+	assertSuccessStmt(stmt,erg);
+	erg=SQLBindParameter(stmt,6,SQL_PARAM_INPUT,
+				SQL_C_CHAR,SQL_LONGVARCHAR,
+				0,0,
+				(SQLPOINTER)clobval,
+				0,&cloblen);
+	assertSuccessStmt(stmt,erg);
+	erg=SQLBindParameter(stmt,7,SQL_PARAM_INPUT,
+				SQL_C_BINARY,SQL_LONGVARBINARY,
+				9,0,
+				(SQLPOINTER)blobval,
+				9,&bloblen);
 	assertSuccessStmt(stmt,erg);
 	erg=SQLExecute(stmt);
 	assertSuccessStmt(stmt,erg);
@@ -415,6 +594,9 @@ int main(int argc, char **argv) {
 	charval=(SQLCHAR *)"testchar8";
 	varcharval=(SQLCHAR *)"testvarchar8";
 	dateval=(SQLCHAR *)"01-JAN-2008";
+	longval=(SQLCHAR *)"testlong8";
+	clobval=(SQLCHAR *)"testclob8";
+	blobval=(SQLCHAR *)"testblob8";
 	erg=SQLBindParameter(stmt,1,SQL_PARAM_INPUT,
 				SQL_C_SLONG,SQL_INTEGER,
 				0,0,
@@ -434,20 +616,31 @@ int main(int argc, char **argv) {
 				0,&varcharlen);
 	assertSuccessStmt(stmt,erg);
 	erg=SQLBindParameter(stmt,4,SQL_PARAM_INPUT,
-				SQL_C_CHAR,SQL_TYPE_DATE,
+				SQL_C_CHAR,datesqltype,
 				11,0,
 				(SQLPOINTER)dateval,
 				0,&datelen);
 	assertSuccessStmt(stmt,erg);
+	erg=SQLBindParameter(stmt,5,SQL_PARAM_INPUT,
+				SQL_C_CHAR,SQL_LONGVARCHAR,
+				0,0,
+				(SQLPOINTER)longval,
+				0,&longlen);
+	assertSuccessStmt(stmt,erg);
+	erg=SQLBindParameter(stmt,6,SQL_PARAM_INPUT,
+				SQL_C_CHAR,SQL_LONGVARCHAR,
+				0,0,
+				(SQLPOINTER)clobval,
+				0,&cloblen);
+	assertSuccessStmt(stmt,erg);
+	erg=SQLBindParameter(stmt,7,SQL_PARAM_INPUT,
+				SQL_C_BINARY,SQL_LONGVARBINARY,
+				9,0,
+				(SQLPOINTER)blobval,
+				9,&bloblen);
+	assertSuccessStmt(stmt,erg);
 	erg=SQLExecute(stmt);
 	assertSuccessStmt(stmt,erg);
-	stdoutput.printf("\n");
-
-
-	// commit
-	stdoutput.printf("COMMIT: \n");
-	erg=SQLEndTran(SQL_HANDLE_DBC,dbc,SQL_COMMIT);
-	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
 
 
@@ -456,8 +649,8 @@ int main(int argc, char **argv) {
 	erg=SQLFreeStmt(stmt,SQL_CLOSE);
 	erg=SQLFreeStmt(stmt,SQL_UNBIND);
 	erg=SQLFreeStmt(stmt,SQL_RESET_PARAMS);
-	erg=SQLExecDirect(stmt,
-		(SQLCHAR *)"select "
+	erg=SQLExecDirect(stmt,(SQLCHAR *)
+		"select "
 		"	* "
 		"from "
 		"	testtable "
@@ -473,7 +666,7 @@ int main(int argc, char **argv) {
 	SQLSMALLINT	colcount;
 	erg=SQLNumResultCols(stmt,&colcount);
 	assertSuccessStmt(stmt,erg);
-	assertEqualStmt(stmt,(int)colcount,4);
+	assertEqualStmt(stmt,(int)colcount,7);
 	stdoutput.printf("\n");
 
 
@@ -501,7 +694,27 @@ int main(int argc, char **argv) {
 				&datatype,&colsize,&decdigits,&nullable);
 	assertSuccessStmt(stmt,erg);
 	assertEqualStmt(stmt,(const char *)colname,"TESTDATE");
+	erg=SQLDescribeCol(stmt,5,colname,sizeof(colname),&colnamelen,
+				&datatype,&colsize,&decdigits,&nullable);
+	assertSuccessStmt(stmt,erg);
+	assertEqualStmt(stmt,(const char *)colname,"TESTLONG");
+	erg=SQLDescribeCol(stmt,6,colname,sizeof(colname),&colnamelen,
+				&datatype,&colsize,&decdigits,&nullable);
+	assertSuccessStmt(stmt,erg);
+	assertEqualStmt(stmt,(const char *)colname,"TESTCLOB");
+	erg=SQLDescribeCol(stmt,7,colname,sizeof(colname),&colnamelen,
+				&datatype,&colsize,&decdigits,&nullable);
+	assertSuccessStmt(stmt,erg);
+	assertEqualStmt(stmt,(const char *)colname,"TESTBLOB");
 	stdoutput.printf("\n");
+
+
+	// column types
+	// FIXME:...
+
+
+	// column length
+	// FIXME:...
 
 
 	// fetch rows
@@ -509,110 +722,307 @@ int main(int argc, char **argv) {
 	SQLINTEGER	numval;
 	SQLCHAR		charfield[41];
 	SQLCHAR		varcharfield[41];
-	SQLCHAR		datefield[12];
+	SQLCHAR		datefield[64];
+	SQLCHAR		longfield[256];
+	SQLCHAR		clobfield[256];
+	SQLCHAR		blobfield[256];
 	SQLLEN		numind;
 	SQLLEN		charind;
 	SQLLEN		varcharind;
 	SQLLEN		dateind;
+	SQLLEN		longind;
+	SQLLEN		clobind;
+	SQLLEN		blobind;
 
-	erg=SQLBindCol(stmt,1,SQL_C_SLONG,&numval,sizeof(numval),&numind);
+	erg=SQLBindCol(stmt,1,SQL_C_SLONG,
+			&numval,sizeof(numval),&numind);
 	assertSuccessStmt(stmt,erg);
-	erg=SQLBindCol(stmt,2,SQL_C_CHAR,charfield,sizeof(charfield),&charind);
+	erg=SQLBindCol(stmt,2,SQL_C_CHAR,
+			charfield,sizeof(charfield),
+			&charind);
 	assertSuccessStmt(stmt,erg);
-	erg=SQLBindCol(stmt,3,SQL_C_CHAR,varcharfield,sizeof(varcharfield),&varcharind);
+	erg=SQLBindCol(stmt,3,SQL_C_CHAR,
+			varcharfield,
+			sizeof(varcharfield),
+			&varcharind);
 	assertSuccessStmt(stmt,erg);
-	erg=SQLBindCol(stmt,4,SQL_C_CHAR,datefield,sizeof(datefield),&dateind);
+	erg=SQLBindCol(stmt,4,SQL_C_CHAR,
+			datefield,sizeof(datefield),
+			&dateind);
+	assertSuccessStmt(stmt,erg);
+	erg=SQLBindCol(stmt,5,SQL_C_CHAR,
+			longfield,sizeof(longfield),
+			&longind);
+	assertSuccessStmt(stmt,erg);
+	erg=SQLBindCol(stmt,6,SQL_C_CHAR,
+			clobfield,sizeof(clobfield),
+			&clobind);
+	assertSuccessStmt(stmt,erg);
+	erg=SQLBindCol(stmt,7,SQL_C_BINARY,
+			blobfield,sizeof(blobfield),
+			&blobind);
 	assertSuccessStmt(stmt,erg);
 
+	// row 1 (direct insert)
 	erg=SQLFetch(stmt);
 	assertSuccessStmt(stmt,erg);
 	assertEqualStmt(stmt,(int)numval,1);
-	assertEqualStmt(stmt,(const char *)varcharfield,"testvarchar1");
+	assertEqualStmt(stmt,
+		(const char *)charfield,
+		"testchar1"
+		"                               ");
+	assertEqualStmt(stmt,
+		(const char *)varcharfield,
+		"testvarchar1");
+	if (issqlrelay) {
+		assertEqualStmt(stmt,
+			(const char *)datefield,
+			"01-JAN-01");
+	} else {
+		assertEqualStmt(stmt,
+			(const char *)datefield,
+			"2001-01-01 00:00:00");
+	}
+	assertEqualStmt(stmt,
+		(const char *)longfield,"testlong1");
+	assertEqualStmt(stmt,
+		(const char *)clobfield,"testclob1");
+	assertEqualStmt(stmt,
+		(int)blobind,(int)SQL_NULL_DATA);
+
+	// row 2
 	erg=SQLFetch(stmt);
 	assertSuccessStmt(stmt,erg);
 	assertEqualStmt(stmt,(int)numval,2);
-	assertEqualStmt(stmt,(const char *)varcharfield,"testvarchar2");
+	assertEqualStmt(stmt,
+		(const char *)charfield,
+		"testchar2"
+		"                               ");
+	assertEqualStmt(stmt,
+		(const char *)varcharfield,
+		"testvarchar2");
+	assertEqualStmt(stmt,
+		(const char *)longfield,"testlong2");
+	if (issqlrelay) {
+		assertEqualStmt(stmt,
+			(const char *)clobfield,
+			"testclob2");
+	} else {
+		assertEqualStmt(stmt,
+			(int)clobind,
+			(int)SQL_NULL_DATA);
+	}
+	assertEqualStmt(stmt,(int)blobind,9);
+	assertTrueStmt(stmt,
+		!bytestring::compare(blobfield,"testblob2",9));
+
+	// row 3
 	erg=SQLFetch(stmt);
 	assertSuccessStmt(stmt,erg);
 	assertEqualStmt(stmt,(int)numval,3);
-	assertEqualStmt(stmt,(const char *)varcharfield,"testvarchar3");
+	assertEqualStmt(stmt,
+		(const char *)varcharfield,
+		"testvarchar3");
+	assertEqualStmt(stmt,
+		(const char *)longfield,"testlong3");
+
+	// row 4
 	erg=SQLFetch(stmt);
 	assertSuccessStmt(stmt,erg);
 	assertEqualStmt(stmt,(int)numval,4);
-	assertEqualStmt(stmt,(const char *)varcharfield,"testvarchar4");
+	assertEqualStmt(stmt,
+		(const char *)varcharfield,
+		"testvarchar4");
+	assertEqualStmt(stmt,
+		(const char *)longfield,"testlong4");
+
+	// row 5
 	erg=SQLFetch(stmt);
 	assertSuccessStmt(stmt,erg);
 	assertEqualStmt(stmt,(int)numval,5);
-	assertEqualStmt(stmt,(const char *)varcharfield,"testvarchar5");
+	assertEqualStmt(stmt,
+		(const char *)varcharfield,
+		"testvarchar5");
+	assertEqualStmt(stmt,
+		(const char *)longfield,"testlong5");
+
+	// row 6
 	erg=SQLFetch(stmt);
 	assertSuccessStmt(stmt,erg);
 	assertEqualStmt(stmt,(int)numval,6);
-	assertEqualStmt(stmt,(const char *)varcharfield,"testvarchar6");
+	assertEqualStmt(stmt,
+		(const char *)varcharfield,
+		"testvarchar6");
+	assertEqualStmt(stmt,
+		(const char *)longfield,"testlong6");
+
+	// row 7
 	erg=SQLFetch(stmt);
 	assertSuccessStmt(stmt,erg);
 	assertEqualStmt(stmt,(int)numval,7);
-	assertEqualStmt(stmt,(const char *)varcharfield,"testvarchar7");
+	assertEqualStmt(stmt,
+		(const char *)varcharfield,
+		"testvarchar7");
+	assertEqualStmt(stmt,
+		(const char *)longfield,"testlong7");
+
+	// row 8
 	erg=SQLFetch(stmt);
 	assertSuccessStmt(stmt,erg);
 	assertEqualStmt(stmt,(int)numval,8);
-	assertEqualStmt(stmt,(const char *)varcharfield,"testvarchar8");
+	assertEqualStmt(stmt,
+		(const char *)charfield,
+		"testchar8"
+		"                               ");
+	assertEqualStmt(stmt,
+		(const char *)varcharfield,
+		"testvarchar8");
+	if (issqlrelay) {
+		assertEqualStmt(stmt,
+			(const char *)datefield,
+			"01-JAN-08");
+	} else {
+		assertEqualStmt(stmt,
+			(const char *)datefield,
+			"2008-01-01 00:00:00");
+	}
+	assertEqualStmt(stmt,
+		(const char *)longfield,"testlong8");
+	if (issqlrelay) {
+		assertEqualStmt(stmt,
+			(const char *)clobfield,
+			"testclob8");
+	} else {
+		assertEqualStmt(stmt,
+			(int)clobind,
+			(int)SQL_NULL_DATA);
+	}
+	assertEqualStmt(stmt,(int)blobind,9);
+	assertTrueStmt(stmt,
+		!bytestring::compare(blobfield,"testblob8",9));
+
+	// no more rows
 	erg=SQLFetch(stmt);
 	assertEqualStmt(stmt,(int)erg,(int)SQL_NO_DATA);
 	stdoutput.printf("\n");
 
 
-	// rollback
-	stdoutput.printf("ROLLBACK: \n");
+	// nested selects
+	// FIXME:...
+
+
+	// commit and rollback
+	stdoutput.printf("COMMIT AND ROLLBACK: \n");
 	erg=SQLFreeStmt(stmt,SQL_CLOSE);
 	erg=SQLFreeStmt(stmt,SQL_UNBIND);
-	erg=SQLExecDirect(stmt,
-		(SQLCHAR *)"insert into testtable "
-		"values (9,'testchar9',"
-		"'testvarchar9','01-JAN-2009')",
+	SQLHDBC		dbc2;
+	SQLHSTMT	stmt2;
+	erg=SQLAllocHandle(SQL_HANDLE_DBC,env,&dbc2);
+	assertSuccessEnv(env,erg);
+	if (issqlrelay) {
+		SQLCHAR		outcstring2[1024];
+		SQLSMALLINT	outcstringlen2;
+		erg=SQLDriverConnect(dbc2,NULL,
+				incstring,SQL_NTS,
+				outcstring2,
+				sizeof(outcstring2),
+				&outcstringlen2,
+				SQL_DRIVER_NOPROMPT);
+	} else {
+		erg=SQLConnect(dbc2,
+				dsn,SQL_NTS,
+				user,SQL_NTS,
+				password,SQL_NTS);
+	}
+	assertSuccessDbc(dbc2,erg);
+	erg=SQLAllocHandle(SQL_HANDLE_STMT,dbc2,&stmt2);
+	assertSuccessDbc(dbc2,erg);
+	SQLINTEGER	rowcount;
+	SQLLEN		rowcountind;
+	erg=SQLExecDirect(stmt2,(SQLCHAR *)
+		"select count(*) from testtable",
+		SQL_NTS);
+	assertSuccessStmt(stmt2,erg);
+	erg=SQLBindCol(stmt2,1,SQL_C_SLONG,
+		&rowcount,sizeof(rowcount),&rowcountind);
+	erg=SQLFetch(stmt2);
+	assertSuccessStmt(stmt2,erg);
+	assertEqualStmt(stmt2,(int)rowcount,0);
+	erg=SQLEndTran(SQL_HANDLE_DBC,dbc,SQL_COMMIT);
+	assertSuccessDbc(dbc,erg);
+	erg=SQLFreeStmt(stmt2,SQL_CLOSE);
+	erg=SQLFreeStmt(stmt2,SQL_UNBIND);
+	erg=SQLExecDirect(stmt2,(SQLCHAR *)
+		"select count(*) from testtable",
+		SQL_NTS);
+	assertSuccessStmt(stmt2,erg);
+	erg=SQLBindCol(stmt2,1,SQL_C_SLONG,
+		&rowcount,sizeof(rowcount),&rowcountind);
+	erg=SQLFetch(stmt2);
+	assertSuccessStmt(stmt2,erg);
+	assertEqualStmt(stmt2,(int)rowcount,8);
+	erg=SQLExecDirect(stmt,(SQLCHAR *)
+		"insert into "
+		"	testtable "
+		"values ("
+		"	10, "
+		"	'testchar10', "
+		"	'testvarchar10', "
+		"	'01-JAN-2010', "
+		"	'testlong10', "
+		"	'testclob10', "
+		"	NULL)",
 		SQL_NTS);
 	assertSuccessStmt(stmt,erg);
 	erg=SQLEndTran(SQL_HANDLE_DBC,dbc,SQL_ROLLBACK);
 	assertSuccessDbc(dbc,erg);
-	erg=SQLExecDirect(stmt,
-		(SQLCHAR *)"select count(*) "
-		"from testtable",
+	erg=SQLFreeStmt(stmt2,SQL_CLOSE);
+	erg=SQLFreeStmt(stmt2,SQL_UNBIND);
+	erg=SQLExecDirect(stmt2,(SQLCHAR *)
+		"select count(*) from testtable",
 		SQL_NTS);
-	assertSuccessStmt(stmt,erg);
-	SQLINTEGER	rowcount;
-	SQLLEN		rowcountind;
-	erg=SQLBindCol(stmt,1,SQL_C_SLONG,&rowcount,sizeof(rowcount),&rowcountind);
-	erg=SQLFetch(stmt);
-	assertSuccessStmt(stmt,erg);
-	assertEqualStmt(stmt,(int)rowcount,8);
-	stdoutput.printf("\n");
-
-
-	// autocommit on
-	stdoutput.printf("AUTOCOMMIT ON: \n");
+	assertSuccessStmt(stmt2,erg);
+	erg=SQLBindCol(stmt2,1,SQL_C_SLONG,
+		&rowcount,sizeof(rowcount),&rowcountind);
+	erg=SQLFetch(stmt2);
+	assertSuccessStmt(stmt2,erg);
+	assertEqualStmt(stmt2,(int)rowcount,8);
 	erg=SQLSetConnectAttr(dbc,SQL_ATTR_AUTOCOMMIT,
-				(SQLPOINTER)SQL_AUTOCOMMIT_ON,
-				sizeof(SQLINTEGER));
+		(SQLPOINTER)SQL_AUTOCOMMIT_ON,0);
 	assertSuccessDbc(dbc,erg);
-	erg=SQLFreeStmt(stmt,SQL_CLOSE);
-	erg=SQLFreeStmt(stmt,SQL_UNBIND);
-	erg=SQLExecDirect(stmt,
-		(SQLCHAR *)"insert into testtable "
-		"values (9,'testchar9',"
-		"'testvarchar9','01-JAN-2009')",
+	erg=SQLExecDirect(stmt,(SQLCHAR *)
+		"insert into "
+		"	testtable "
+		"values ("
+		"	10, "
+		"	'testchar10', "
+		"	'testvarchar10', "
+		"	'01-JAN-2010', "
+		"	'testlong10', "
+		"	'testclob10', "
+		"	NULL)",
 		SQL_NTS);
 	assertSuccessStmt(stmt,erg);
-	erg=SQLExecDirect(stmt,
-		(SQLCHAR *)"select count(*) "
-		"from testtable",
+	erg=SQLFreeStmt(stmt2,SQL_CLOSE);
+	erg=SQLFreeStmt(stmt2,SQL_UNBIND);
+	erg=SQLExecDirect(stmt2,(SQLCHAR *)
+		"select count(*) from testtable",
 		SQL_NTS);
-	assertSuccessStmt(stmt,erg);
-	erg=SQLBindCol(stmt,1,SQL_C_SLONG,&rowcount,sizeof(rowcount),&rowcountind);
-	erg=SQLFetch(stmt);
-	assertSuccessStmt(stmt,erg);
-	assertEqualStmt(stmt,(int)rowcount,9);
+	assertSuccessStmt(stmt2,erg);
+	erg=SQLBindCol(stmt2,1,SQL_C_SLONG,
+		&rowcount,sizeof(rowcount),&rowcountind);
+	erg=SQLFetch(stmt2);
+	assertSuccessStmt(stmt2,erg);
+	assertEqualStmt(stmt2,(int)rowcount,9);
+	SQLFreeHandle(SQL_HANDLE_STMT,stmt2);
+	SQLDisconnect(dbc2);
+	SQLFreeHandle(SQL_HANDLE_DBC,dbc2);
 	erg=SQLSetConnectAttr(dbc,SQL_ATTR_AUTOCOMMIT,
-				(SQLPOINTER)SQL_AUTOCOMMIT_OFF,
-				sizeof(SQLINTEGER));
+		(SQLPOINTER)SQL_AUTOCOMMIT_OFF,0);
+	assertSuccessDbc(dbc,erg);
+	erg=SQLExecDirect(stmt,(SQLCHAR *)
+		"drop table testtable",SQL_NTS);
+	assertSuccessStmt(stmt,erg);
 	stdoutput.printf("\n");
 
 
@@ -620,9 +1030,8 @@ int main(int argc, char **argv) {
 	stdoutput.printf("NULL VALUES: \n");
 	erg=SQLFreeStmt(stmt,SQL_CLOSE);
 	erg=SQLFreeStmt(stmt,SQL_UNBIND);
-	erg=SQLExecDirect(stmt,
-		(SQLCHAR *)"select NULL,1,NULL "
-		"from dual",
+	erg=SQLExecDirect(stmt,(SQLCHAR *)
+		"select NULL,1,NULL from dual",
 		SQL_NTS);
 	assertSuccessStmt(stmt,erg);
 	SQLCHAR		nullfield1[10];
@@ -631,9 +1040,12 @@ int main(int argc, char **argv) {
 	SQLLEN		intind;
 	SQLCHAR		nullfield2[10];
 	SQLLEN		nullind2;
-	erg=SQLBindCol(stmt,1,SQL_C_CHAR,nullfield1,sizeof(nullfield1),&nullind1);
-	erg=SQLBindCol(stmt,2,SQL_C_SLONG,&intfield,sizeof(intfield),&intind);
-	erg=SQLBindCol(stmt,3,SQL_C_CHAR,nullfield2,sizeof(nullfield2),&nullind2);
+	erg=SQLBindCol(stmt,1,SQL_C_CHAR,
+			nullfield1,sizeof(nullfield1),&nullind1);
+	erg=SQLBindCol(stmt,2,SQL_C_SLONG,
+			&intfield,sizeof(intfield),&intind);
+	erg=SQLBindCol(stmt,3,SQL_C_CHAR,
+			nullfield2,sizeof(nullfield2),&nullind2);
 	erg=SQLFetch(stmt);
 	assertSuccessStmt(stmt,erg);
 	assertEqualStmt(stmt,(int)nullind1,(int)SQL_NULL_DATA);
@@ -642,19 +1054,96 @@ int main(int argc, char **argv) {
 	stdoutput.printf("\n");
 
 
-	// drop table
-	stdoutput.printf("DROP TABLE: \n");
-	erg=SQLFreeStmt(stmt,SQL_CLOSE);
-	erg=SQLFreeStmt(stmt,SQL_UNBIND);
-	erg=SQLExecDirect(stmt,(SQLCHAR *)"drop table testtable",SQL_NTS);
-	assertSuccessStmt(stmt,erg);
-	stdoutput.printf("\n");
+	// null and empty lobs
+	// FIXME:...
+
+
+	// long lobs
+	// FIXME:...
+
+
+	// output bind by position
+	// FIXME:...
+
+
+	// lob output bind
+	// FIXME:...
+
+
+	// long output bind
+	// FIXME:...
+
+
+	// negative input bind
+	// FIXME:...
+
+
+	// rebinding
+	// FIXME:...
+
+
+	// reexecute
+	// FIXME:...
+
+
+	// encoded binary data
+	// FIXME:...
+
+
+	// quotes
+	// FIXME:...
+
+
+	// catalog list
+	// FIXME:...
+
+
+	// schema list
+	// FIXME:...
+
+
+	// table type list
+	// FIXME:...
+
+
+	// table list
+	// FIXME:...
+
+
+	// type info list
+	// FIXME:...
+
+
+	// column list
+	// FIXME:...
+
+
+	// column list - auto_increment, primary key
+	// FIXME:...
+
+
+	// primary keys list
+	// FIXME:...
+
+
+	// key and index list
+	// FIXME:...
+
+
+	// procedure list
+	// FIXME:...
+
+
+	// procedure parameter list
+	// FIXME:...
 
 
 	// invalid queries
 	stdoutput.printf("INVALID QUERIES: \n");
-	erg=SQLExecDirect(stmt,
-		(SQLCHAR *)"select "
+	erg=SQLFreeStmt(stmt,SQL_CLOSE);
+	erg=SQLFreeStmt(stmt,SQL_UNBIND);
+	erg=SQLExecDirect(stmt,(SQLCHAR *)
+		"select "
 		"	* "
 		"from "
 		"	testtable "
@@ -662,8 +1151,8 @@ int main(int argc, char **argv) {
 		"	testnumber",
 		SQL_NTS);
 	assertEqualStmt(stmt,(int)erg,(int)SQL_ERROR);
-	erg=SQLExecDirect(stmt,
-		(SQLCHAR *)"select "
+	erg=SQLExecDirect(stmt,(SQLCHAR *)
+		"select "
 		"	* "
 		"from "
 		"	testtable "
@@ -671,9 +1160,14 @@ int main(int argc, char **argv) {
 		"	testnumber",
 		SQL_NTS);
 	assertEqualStmt(stmt,(int)erg,(int)SQL_ERROR);
-	erg=SQLExecDirect(stmt,
-		(SQLCHAR *)"insert into testtable "
-		"values (1,2,3,4)",
+	erg=SQLExecDirect(stmt,(SQLCHAR *)
+		"insert into "
+		"	testtable "
+		"values ("
+		"	1, "
+		"	2, "
+		"	3, "
+		"	4)",
 		SQL_NTS);
 	assertEqualStmt(stmt,(int)erg,(int)SQL_ERROR);
 	erg=SQLExecDirect(stmt,(SQLCHAR *)"create table testtable",SQL_NTS);
@@ -683,27 +1177,29 @@ int main(int argc, char **argv) {
 
 	// cleanup and disconnect
 	stdoutput.printf("CLEANUP AND DISCONNECT: \n");
+	SQLEndTran(SQL_HANDLE_DBC,dbc,SQL_ROLLBACK);
 	#if (ODBCVER >= 0x0300)
-	erg=SQLFreeHandle(SQL_HANDLE_STMT,stmt);
-	assertSuccessStmt(stmt,erg);
+		erg=SQLFreeHandle(SQL_HANDLE_STMT,stmt);
+		assertSuccessStmt(stmt,erg);
 	#else
-	erg=SQLFreeStmt(stmt,SQL_DROP);
-	assertSuccessStmt(stmt,erg);
+		erg=SQLFreeStmt(stmt,SQL_DROP);
+		assertSuccessStmt(stmt,erg);
 	#endif
 	erg=SQLDisconnect(dbc);
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
 	#if (ODBCVER >= 0x0300)
-	erg=SQLFreeHandle(SQL_HANDLE_DBC,dbc);
-	assertSuccessDbc(dbc,erg);
-	erg=SQLFreeHandle(SQL_HANDLE_ENV,env);
-	assertSuccessEnv(env,erg);
+		erg=SQLFreeHandle(SQL_HANDLE_DBC,dbc);
+		assertSuccessDbc(dbc,erg);
+		erg=SQLFreeHandle(SQL_HANDLE_ENV,env);
+		assertSuccessEnv(env,erg);
 	#else
-	erg=SQLFreeConnect(dbc);
-	assertSuccessDbc(dbc,erg);
-	erg=SQLFreeEnv(env);
-	assertSuccessEnv(env,erg);
+		erg=SQLFreeConnect(dbc);
+		assertSuccessDbc(dbc,erg);
+		erg=SQLFreeEnv(env);
+		assertSuccessEnv(env,erg);
 	#endif
+	delete[] hostname;
 	stdoutput.printf("\n");
 
 	reportTestStatus();

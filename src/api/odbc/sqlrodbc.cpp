@@ -345,7 +345,7 @@ static SQLRETURN SQLR_SQLAllocHandle(SQLSMALLINT handletype,
 				SQLR_CONNClearError(conn);
 				env->connlist.append(conn);
 				conn->attrmetadataid=false;
-				conn->setautocommiton=false;
+				conn->setautocommiton=true;
 				conn->setautocommitoff=false;
 				conn->setisolationlevel=false;
 			}
@@ -2709,19 +2709,13 @@ static SQLRETURN SQLR_SQLConnect(SQLHDBC connectionhandle,
 	conn->con->debugOn();
 	#endif
 
-	// set autocommit on/off
-	//
-	// The client may have called SQLSetConnectAttr(autoconf-on/off)
+	// Set autocommit on/off per the flag that was set when conn was
+	// created or by a call to SQLSetConnectAttr(autoconf-on/off)
 	// after creating a connection handle, but before calling this
-	// function.  In that case, conn was valid, but conn->con was not
-	// and all we could do was set flags in the conn to enable/disable
-	// autoconf when conn->con becomes valid.
-	//
-	// At this point, conn->con has just become valid.  If either flag
-	// is set, then set autocommit here.
+	// function.
 	// 
-	// If fails, we don't want the entire connection to fail.  Just set
-	// the error and return SUCCESS_WITH_INFO.
+	// If this fails, we don't want the entire connection to fail.  Just
+	// set the error and return SUCCESS_WITH_INFO.
 	if (conn->setautocommiton) {
 		if (conn->con->autoCommitOn()) {
 			debugPrintf("  Set Auto-Commit On: success\n");
