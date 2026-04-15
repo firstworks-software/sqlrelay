@@ -576,15 +576,23 @@ JNIEXPORT void JNICALL Java_com_firstworks_sqlrelay_SQLRCursor_inputBind__Ljava_
 JNIEXPORT void JNICALL Java_com_firstworks_sqlrelay_SQLRCursor_inputBindBlob
   (JNIEnv *env, jobject self, jstring variable, jbyteArray value, jlong size) {
 	char	*variablestring=curGetStringUTFChars(env,variable,0);
-	if (size) {
-		jbyte	*valuebytes=new jbyte[size];
-		env->GetByteArrayRegion(value,0,size,valuebytes);
-		getSqlrCursor(env,self)->inputBindBlob(variablestring,
-						(char *)valuebytes,
-						(uint32_t)size);
-		delete[] valuebytes;
+	if (value) {
+		if (size) {
+			jbyte	*valuebytes=new jbyte[size];
+			env->GetByteArrayRegion(value,0,size,valuebytes);
+			getSqlrCursor(env,self)->inputBindBlob(
+							variablestring,
+							(char *)valuebytes,
+							(uint32_t)size);
+			delete[] valuebytes;
+		} else {
+			getSqlrCursor(env,self)->inputBindBlob(
+							variablestring,
+							"",0);
+		}
 	} else {
-		getSqlrCursor(env,self)->inputBindBlob(variablestring,NULL,0);
+		getSqlrCursor(env,self)->inputBindBlob(
+						variablestring,NULL,0);
 	}
 	curReleaseStringUTFChars(env,variable,variablestring);
 }

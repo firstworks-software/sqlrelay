@@ -48,6 +48,7 @@
 		the buffersize that was passed in
 	ODBC driver defaults to autocommit-on now
 	fixed a potential crash in the jni getRow() implementation
+	java api was binding NULLs for empty strings, fixed that
 
 2.1.1 - added tns_admin support
 	fixed sqlr-start ... -strace ...
