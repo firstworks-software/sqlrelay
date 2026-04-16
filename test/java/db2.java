@@ -107,7 +107,8 @@ class db2 extends sqlrtest {
 
 		// insert
 		System.out.println("INSERT: ");
-		assertTrue(cur.sendQuery("insert into "+
+		assertTrue(cur.sendQuery(
+			"insert into "+
 			"	testtable "+
 			"values ("+
 			"	1, "+
@@ -134,7 +135,8 @@ class db2 extends sqlrtest {
 
 		// input bind by position
 		System.out.println("INPUT BIND BY POSITION: ");
-		cur.prepareQuery("insert into "+
+		cur.prepareQuery(
+			"insert into "+
 			"	testtable "+
 			"values ("+
 			"	?, "+
@@ -289,7 +291,8 @@ class db2 extends sqlrtest {
 
 		// select
 		System.out.println("SELECT: ");
-		assertTrue(cur.sendQuery("select "+
+		assertTrue(cur.sendQuery(
+			"select "+
 			"	* "+
 			"from "+
 			"	testtable "+
@@ -668,7 +671,8 @@ class db2 extends sqlrtest {
 			"	testblob1 blob, "+
 			"	testblob2 blob)"));
 		assertTrue(con.commit());
-		cur.prepareQuery("insert into "+
+		cur.prepareQuery(
+			"insert into "+
 			"	testtable "+
 			"values ("+
 			"	?, "+
@@ -871,7 +875,8 @@ class db2 extends sqlrtest {
 		// rebinding
 		System.out.println("REBINDING: ");
 		cur.sendQuery("drop procedure testproc");
-		assertTrue(cur.sendQuery("create procedure testproc("+
+		assertTrue(cur.sendQuery(
+			"create procedure testproc("+
 			"	in in1 int, "+
 			"	out out1 int) "+
 			"language sql begin "+
@@ -926,7 +931,8 @@ class db2 extends sqlrtest {
 		// stored procedure returning no value
 		System.out.println("STORED PROCEDURE RETURNING NO VALUE: ");
 		cur.sendQuery("drop procedure testproc");
-		assertTrue(cur.sendQuery("create procedure testproc("+
+		assertTrue(cur.sendQuery(
+			"create procedure testproc("+
 			"	in in1 int, "+
 			"	in in2 double, "+
 			"	in in3 varchar(20)) "+
@@ -947,7 +953,8 @@ class db2 extends sqlrtest {
 		// stored procedure returning single value
 		System.out.println("STORED PROCEDURE RETURNING SINGLE VALUE: ");
 		cur.sendQuery("drop function testfunc");
-		assertTrue(cur.sendQuery("create function testfunc("+
+		assertTrue(cur.sendQuery(
+			"create function testfunc("+
 			"	in1 int, "+
 			"	in2 double, "+
 			"	in3 varchar(20)) "+
@@ -971,7 +978,8 @@ class db2 extends sqlrtest {
 		System.out.println("STORED PROCEDURE RETURNING MULTIPLE "+
 			"VALUES: ");
 		cur.sendQuery("drop procedure testproc");
-		assertTrue(cur.sendQuery("create procedure testproc("+
+		assertTrue(cur.sendQuery(
+			"create procedure testproc("+
 			"	in in1 int, "+
 			"	in in2 double, "+
 			"	in in3 varchar(20), "+
@@ -1116,7 +1124,8 @@ class db2 extends sqlrtest {
 		// last insert id
 		System.out.println("LAST INSERT ID: ");
 		cur.sendQuery("drop table testtable");
-		assertTrue(cur.sendQuery("create table testtable "+
+		assertTrue(cur.sendQuery(
+			"create table testtable "+
 			"	(col1 int not null "+
 			"	generated always "+
 			"	as identity, "+
@@ -1181,16 +1190,20 @@ class db2 extends sqlrtest {
 		cur.sendQuery("drop table testtable2");
 		cur.sendQuery("drop table testtable3");
 		cur.sendQuery("drop table testtable4");
-		assertTrue(cur.sendQuery("create table testtable1 ("+
+		assertTrue(cur.sendQuery(
+			"create table testtable1 ("+
 			"	col1 integer, "+
 			"	col2 integer)"));
-		assertTrue(cur.sendQuery("create table testtable2 ("+
+		assertTrue(cur.sendQuery(
+			"create table testtable2 ("+
 			"	col1 integer, "+
 			"	col2 integer)"));
-		assertTrue(cur.sendQuery("create table testtable3 ("+
+		assertTrue(cur.sendQuery(
+			"create table testtable3 ("+
 			"	col1 integer, "+
 			"	col2 integer)"));
-		assertTrue(cur.sendQuery("create table testtable4 ("+
+		assertTrue(cur.sendQuery(
+			"create table testtable4 ("+
 			"	col1 integer, "+
 			"	col2 integer)"));
 		assertTrue(con.commit());
@@ -1261,7 +1274,8 @@ class db2 extends sqlrtest {
 		// column list
 		System.out.println("COLUMN LIST: ");
 		cur.sendQuery("drop table testtable");
-		assertTrue(cur.sendQuery("create table testtable ("+
+		assertTrue(cur.sendQuery(
+			"create table testtable ("+
 			"	testsmallint smallint, "+
 			"	testint integer, "+
 			"	testbigint bigint, "+
@@ -1324,7 +1338,8 @@ class db2 extends sqlrtest {
 		System.out.println("COLUMN LIST - auto_increment, "+
 			"primary key: ");
 		cur.sendQuery("drop table testtable");
-		assertTrue(cur.sendQuery("create table testtable ("+
+		assertTrue(cur.sendQuery(
+			"create table testtable ("+
 			"	col1 int generated "+
 			"	always as identity "+
 			"	primary key, "+
@@ -1337,7 +1352,8 @@ class db2 extends sqlrtest {
 		assertFalse(cur.getField(1,"column_key").contains("PRI"));
 		System.out.println();
 		assertTrue(cur.sendQuery("drop table testtable"));
-		assertTrue(cur.sendQuery("create table testtable ("+
+		assertTrue(cur.sendQuery(
+			"create table testtable ("+
 			"	col1 int not null "+
 			"	primary key, "+
 			"	col2 int)"));
@@ -1353,7 +1369,8 @@ class db2 extends sqlrtest {
 		// primary keys list
 		System.out.println("PRIMARY KEYS LIST: ");
 		cur.sendQuery("drop table testtable");
-		assertTrue(cur.sendQuery("create table testtable ("+
+		assertTrue(cur.sendQuery(
+			"create table testtable ("+
 			"	col1 int not null "+
 			"	primary key, "+
 			"	col2 int)"));
@@ -1386,7 +1403,8 @@ class db2 extends sqlrtest {
 		// key and index list
 		System.out.println("KEY AND INDEX LIST: ");
 		cur.sendQuery("drop table testtable");
-		assertTrue(cur.sendQuery("create table testtable ("+
+		assertTrue(cur.sendQuery(
+			"create table testtable ("+
 			"	col1 int not null "+
 			"	primary key, "+
 			"	col2 int)"));
@@ -1425,25 +1443,29 @@ class db2 extends sqlrtest {
 		cur.sendQuery("drop procedure testproc2");
 		cur.sendQuery("drop procedure testproc3");
 		cur.sendQuery("drop procedure testproc4");
-		assertTrue(cur.sendQuery("create procedure testproc1("+
+		assertTrue(cur.sendQuery(
+			"create procedure testproc1("+
 			"	in in1 integer, "+
 			"	in in2 char(20), "+
 			"	in in3 varchar(20), "+
 			"	in in4 date) "+
 			"language sql begin end"));
-		assertTrue(cur.sendQuery("create procedure testproc2("+
+		assertTrue(cur.sendQuery(
+			"create procedure testproc2("+
 			"	in in1 integer, "+
 			"	in in2 char(20), "+
 			"	in in3 varchar(20), "+
 			"	in in4 date) "+
 			"language sql begin end"));
-		assertTrue(cur.sendQuery("create procedure testproc3("+
+		assertTrue(cur.sendQuery(
+			"create procedure testproc3("+
 			"	in in1 integer, "+
 			"	in in2 char(20), "+
 			"	in in3 varchar(20), "+
 			"	in in4 date) "+
 			"language sql begin end"));
-		assertTrue(cur.sendQuery("create procedure testproc4("+
+		assertTrue(cur.sendQuery(
+			"create procedure testproc4("+
 			"	in in1 integer, "+
 			"	in in2 char(20), "+
 			"	in in3 varchar(20), "+
@@ -1502,7 +1524,8 @@ class db2 extends sqlrtest {
 		System.out.println("RESULT SET BUFFER SIZE: ");
 		assertEquals(cur.getResultSetBufferSize(),0);
 		cur.setResultSetBufferSize(2);
-		assertTrue(cur.sendQuery("select "+
+		assertTrue(cur.sendQuery(
+			"select "+
 			"	* "+
 			"from "+
 			"	testtable "+
@@ -1538,7 +1561,8 @@ class db2 extends sqlrtest {
 		// dont get column info
 		System.out.println("DONT GET COLUMN INFO: ");
 		cur.dontGetColumnInfo();
-		assertTrue(cur.sendQuery("select "+
+		assertTrue(cur.sendQuery(
+			"select "+
 			"	* "+
 			"from "+
 			"	testtable "+
@@ -1548,7 +1572,8 @@ class db2 extends sqlrtest {
 		assertEquals(cur.getColumnLength(0),0);
 		assertEquals(cur.getColumnType(0),null);
 		cur.getColumnInfo();
-		assertTrue(cur.sendQuery("select "+
+		assertTrue(cur.sendQuery(
+			"select "+
 			"	* "+
 			"from "+
 			"	testtable "+
@@ -1562,7 +1587,8 @@ class db2 extends sqlrtest {
 
 		// suspended session
 		System.out.println("SUSPENDED SESSION: ");
-		assertTrue(cur.sendQuery("select "+
+		assertTrue(cur.sendQuery(
+			"select "+
 			"	* "+
 			"from "+
 			"	testtable "+
@@ -1583,7 +1609,8 @@ class db2 extends sqlrtest {
 		assertEquals(cur.getField(6,0),"7");
 		assertEquals(cur.getField(7,0),"8");
 		System.out.println();
-		assertTrue(cur.sendQuery("select "+
+		assertTrue(cur.sendQuery(
+			"select "+
 			"	* "+
 			"from "+
 			"	testtable "+
@@ -1604,7 +1631,8 @@ class db2 extends sqlrtest {
 		assertEquals(cur.getField(6,0),"7");
 		assertEquals(cur.getField(7,0),"8");
 		System.out.println();
-		assertTrue(cur.sendQuery("select "+
+		assertTrue(cur.sendQuery(
+			"select "+
 			"	* "+
 			"from "+
 			"	testtable "+
@@ -1630,7 +1658,8 @@ class db2 extends sqlrtest {
 		// suspended result set
 		System.out.println("SUSPENDED RESULT SET: ");
 		cur.setResultSetBufferSize(2);
-		assertTrue(cur.sendQuery("select "+
+		assertTrue(cur.sendQuery(
+			"select "+
 			"	* "+
 			"from "+
 			"	testtable "+
@@ -1666,7 +1695,8 @@ class db2 extends sqlrtest {
 		System.out.println("CACHED RESULT SET: ");
 		cur.cacheToFile("cachefile1");
 		cur.setCacheTtl(200);
-		assertTrue(cur.sendQuery("select "+
+		assertTrue(cur.sendQuery(
+			"select "+
 			"	* "+
 			"from "+
 			"	testtable "+
@@ -1720,7 +1750,8 @@ class db2 extends sqlrtest {
 		cur.setResultSetBufferSize(2);
 		cur.cacheToFile("cachefile1");
 		cur.setCacheTtl(200);
-		assertTrue(cur.sendQuery("select "+
+		assertTrue(cur.sendQuery(
+			"select "+
 			"	* "+
 			"from "+
 			"	testtable "+
@@ -1767,7 +1798,8 @@ class db2 extends sqlrtest {
 		cur.setResultSetBufferSize(2);
 		cur.cacheToFile("cachefile1");
 		cur.setCacheTtl(200);
-		assertTrue(cur.sendQuery("select "+
+		assertTrue(cur.sendQuery(
+			"select "+
 			"	* "+
 			"from "+
 			"	testtable "+
@@ -1809,7 +1841,8 @@ class db2 extends sqlrtest {
 
 		// finished suspended session
 		System.out.println("FINISHED SUSPENDED SESSION: ");
-		assertTrue(cur.sendQuery("select "+
+		assertTrue(cur.sendQuery(
+			"select "+
 			"	* "+
 			"from "+
 			"	testtable "+
@@ -1860,7 +1893,8 @@ class db2 extends sqlrtest {
 		assertTrue(secondcur.sendQuery("select count(*) "+
 			"from testtable"));
 		assertEquals(secondcur.getField(0,0),"8");
-		assertTrue(cur.sendQuery("insert into "+
+		assertTrue(cur.sendQuery(
+			"insert into "+
 			"	testtable "+
 			"values ("+
 			"	10, "+
@@ -1881,7 +1915,8 @@ class db2 extends sqlrtest {
 			"from testtable"));
 		assertEquals(secondcur.getField(0,0),"8");
 		assertTrue(con.autoCommitOn());
-		assertTrue(cur.sendQuery("insert into "+
+		assertTrue(cur.sendQuery(
+			"insert into "+
 			"	testtable "+
 			"values ("+
 			"	10, "+
@@ -1908,25 +1943,29 @@ class db2 extends sqlrtest {
 
 		// invalid queries
 		System.out.println("INVALID QUERIES: ");
-		assertFalse(cur.sendQuery("select "+
+		assertFalse(cur.sendQuery(
+			"select "+
 			"	* "+
 			"from "+
 			"	testtable "+
 			"order by "+
 			"	testsmallint "));
-		assertFalse(cur.sendQuery("select "+
+		assertFalse(cur.sendQuery(
+			"select "+
 			"	* "+
 			"from "+
 			"	testtable "+
 			"order by "+
 			"	testsmallint "));
-		assertFalse(cur.sendQuery("select "+
+		assertFalse(cur.sendQuery(
+			"select "+
 			"	* "+
 			"from "+
 			"	testtable "+
 			"order by "+
 			"	testsmallint "));
-		assertFalse(cur.sendQuery("select "+
+		assertFalse(cur.sendQuery(
+			"select "+
 			"	* "+
 			"from "+
 			"	testtable "+

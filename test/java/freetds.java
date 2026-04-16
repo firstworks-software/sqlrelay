@@ -75,7 +75,8 @@ class freetds extends sqlrtest {
 		// create testtable
 		System.out.println("CREATE TESTTABLE: ");
 		cur.sendQuery("drop table testtable");
-		assertTrue(cur.sendQuery("create table testtable ("+
+		assertTrue(cur.sendQuery(
+			"create table testtable ("+
 			"	testint int, "+
 			"	testsmallint smallint, "+
 			"	testtinyint tinyint, "+
@@ -98,7 +99,8 @@ class freetds extends sqlrtest {
 		// insert
 		System.out.println("INSERT: ");
 		assertTrue(con.begin());
-		assertTrue(cur.sendQuery("insert into "+
+		assertTrue(cur.sendQuery(
+			"insert into "+
 			"	testtable "+
 			"values ("+
 			"	1, "+
@@ -126,7 +128,8 @@ class freetds extends sqlrtest {
 
 		// input bind by position
 		System.out.println("INPUT BIND BY POSITION: ");
-		cur.prepareQuery("insert into "+
+		cur.prepareQuery(
+			"insert into "+
 			"	testtable "+
 			"values ("+
 			"	?, "+
@@ -209,7 +212,8 @@ class freetds extends sqlrtest {
 		// input bind by name
 		System.out.println("INPUT BIND BY NAME: ");
 		cur.clearBinds();
-		cur.prepareQuery("insert into "+
+		cur.prepareQuery(
+			"insert into "+
 			"	testtable "+
 			"values ("+
 			"	@var1, "+
@@ -1111,7 +1115,8 @@ class freetds extends sqlrtest {
 			"from testtable"));
 		assertEquals(secondcur.getField(0,0),"8");
 		assertTrue(con.begin());
-		assertTrue(cur.sendQuery("insert into "+
+		assertTrue(cur.sendQuery(
+			"insert into "+
 			"	testtable "+
 			"values ("+
 			"	10, "+
@@ -1132,7 +1137,8 @@ class freetds extends sqlrtest {
 		assertTrue(secondcur.sendQuery("select count(*) "+
 			"from testtable"));
 		assertEquals(secondcur.getField(0,0),"8");
-		assertTrue(cur.sendQuery("insert into "+
+		assertTrue(cur.sendQuery(
+			"insert into "+
 			"	testtable "+
 			"values ("+
 			"	10, "+
@@ -1219,12 +1225,14 @@ class freetds extends sqlrtest {
 		System.out.println("NULL AND EMPTY LOBS: ");
 		cur.getNullsAsNulls();
 		cur.sendQuery("drop table testtable");
-		assertTrue(cur.sendQuery("create table testtable ("+
+		assertTrue(cur.sendQuery(
+			"create table testtable ("+
 			"	testclob1 text NULL, "+
 			"	testclob2 text NULL, "+
 			"	testblob1 image NULL, "+
 			"	testblob2 image NULL)"));
-		cur.prepareQuery("insert into "+
+		cur.prepareQuery(
+			"insert into "+
 			"	testtable "+
 			"values ("+
 			"	?, "+
@@ -1262,7 +1270,8 @@ class freetds extends sqlrtest {
 		// long lobs
 		System.out.println("LONG LOBS: ");
 		cur.sendQuery("drop table testtable");
-		cur.sendQuery("create table testtable ("+
+		cur.sendQuery(
+			"create table testtable ("+
 			"	testclob text, "+
 			"	testblob image) "+
 			"lock datarows");
@@ -1291,7 +1300,8 @@ class freetds extends sqlrtest {
 		/*System.out.println("OUTPUT BIND BY POSITION: ");
 		cur.sendQuery("drop procedure testproc");
 		cur.getNullsAsNulls();
-		assertTrue(cur.sendQuery("create procedure testproc "+
+		assertTrue(cur.sendQuery(
+			"create procedure testproc "+
 			"	@out1 int output, "+
 			"	@out2 varchar(20) "+
 			"		output, "+
@@ -1341,7 +1351,8 @@ class freetds extends sqlrtest {
 		/*System.out.println("OUTPUT BIND BY NAME: ");
 		cur.sendQuery("drop procedure testproc");
 		cur.getNullsAsNulls();
-		assertTrue(cur.sendQuery("create procedure testproc "+
+		assertTrue(cur.sendQuery(
+			"create procedure testproc "+
 			"	@out1 int output, "+
 			"	@out2 varchar(20) "+
 			"		output, "+
@@ -1445,11 +1456,13 @@ class freetds extends sqlrtest {
 		// bind validation
 		System.out.println("BIND VALIDATION: ");
 		cur.sendQuery("drop table testtable");
-		cur.sendQuery("create table testtable ("+
+		cur.sendQuery(
+			"create table testtable ("+
 			"	col1 varchar(20), "+
 			"	col2 varchar(20), "+
 			"	col3 varchar(20))");
-		cur.prepareQuery("insert into "+
+		cur.prepareQuery(
+			"insert into "+
 			"	testtable "+
 			"values ("+
 			"	$(var1), "+
@@ -1483,7 +1496,8 @@ class freetds extends sqlrtest {
 		// rebinding FreeTDS needs to support cursors for this to work
 		/*System.out.println("REBINDING: ");
 		cur.sendQuery("drop procedure testproc");
-		assertTrue(cur.sendQuery("create procedure testproc "+
+		assertTrue(cur.sendQuery(
+			"create procedure testproc "+
 			"	@in1 int, "+
 			"	@out1 int output as "+
 			"select @out1=@in1"));
@@ -1535,7 +1549,8 @@ class freetds extends sqlrtest {
 		// FreeTDS needs to support cursors for this to work
 		/*System.out.println("STORED PROCEDURE RETURNING NO VALUE: ");
 		cur.sendQuery("drop procedure testproc");
-		assertTrue(cur.sendQuery("create procedure testproc "+
+		assertTrue(cur.sendQuery(
+			"create procedure testproc "+
 			"	@in1 int, "+
 			"	@in2 float, "+
 			"	@in3 varchar(20) as "+
@@ -1555,7 +1570,8 @@ class freetds extends sqlrtest {
 		/*System.out.println("STORED PROCEDURE "+
 			"RETURNING SINGLE VALUE: ");
 		cur.sendQuery("drop procedure testproc");
-		assertTrue(cur.sendQuery("create procedure testproc "+
+		assertTrue(cur.sendQuery(
+			"create procedure testproc "+
 			"	@in1 int, "+
 			"	@in2 float, "+
 			"	@in3 varchar(20), "+
@@ -1671,7 +1687,8 @@ class freetds extends sqlrtest {
 		// last insert id
 		System.out.println("LAST INSERT ID: ");
 		cur.sendQuery("drop table testtable");
-		assertTrue(cur.sendQuery("create table testtable "+
+		assertTrue(cur.sendQuery(
+			"create table testtable "+
 			"	(col1 int identity "+
 			"primary key, "+
 			"	col2 int)"));
@@ -1734,16 +1751,20 @@ class freetds extends sqlrtest {
 		cur.sendQuery("drop table testtable2");
 		cur.sendQuery("drop table testtable3");
 		cur.sendQuery("drop table testtable4");
-		assertTrue(cur.sendQuery("create table testtable1 ("+
+		assertTrue(cur.sendQuery(
+			"create table testtable1 ("+
 			"	col1 int, "+
 			"	col2 int)"));
-		assertTrue(cur.sendQuery("create table testtable2 ("+
+		assertTrue(cur.sendQuery(
+			"create table testtable2 ("+
 			"	col1 int, "+
 			"	col2 int)"));
-		assertTrue(cur.sendQuery("create table testtable3 ("+
+		assertTrue(cur.sendQuery(
+			"create table testtable3 ("+
 			"	col1 int, "+
 			"	col2 int)"));
-		assertTrue(cur.sendQuery("create table testtable4 ("+
+		assertTrue(cur.sendQuery(
+			"create table testtable4 ("+
 			"	col1 int, "+
 			"	col2 int)"));
 		assertTrue(cur.getTableList(null));
@@ -1811,7 +1832,8 @@ class freetds extends sqlrtest {
 		// column list
 		System.out.println("COLUMN LIST: ");
 		cur.sendQuery("drop table testtable");
-		assertTrue(cur.sendQuery("create table testtable ("+
+		assertTrue(cur.sendQuery(
+			"create table testtable ("+
 			"	testint int, "+
 			"	testsmallint smallint, "+
 			"	testtinyint tinyint, "+
@@ -1875,7 +1897,8 @@ class freetds extends sqlrtest {
 		System.out.println("COLUMN LIST - auto_increment, "+
 			"primary key: ");
 		cur.sendQuery("drop table testtable");
-		assertTrue(cur.sendQuery("create table testtable ("+
+		assertTrue(cur.sendQuery(
+			"create table testtable ("+
 			"	col1 int identity "+
 			"primary key, "+
 			"	col2 int)"));
@@ -1886,7 +1909,8 @@ class freetds extends sqlrtest {
 		assertFalse(cur.getField(1,"column_key").contains("PRI"));
 		System.out.println();
 		assertTrue(cur.sendQuery("drop table testtable"));
-		assertTrue(cur.sendQuery("create table testtable ("+
+		assertTrue(cur.sendQuery(
+			"create table testtable ("+
 			"	col1 int primary key, "+
 			"	col2 int)"));
 		assertTrue(cur.getColumnList("testtable",null));
@@ -1899,7 +1923,8 @@ class freetds extends sqlrtest {
 		// primary keys list
 		System.out.println("PRIMARY KEYS LIST: ");
 		cur.sendQuery("drop table testtable");
-		assertTrue(cur.sendQuery("create table testtable ("+
+		assertTrue(cur.sendQuery(
+			"create table testtable ("+
 			"	col1 int primary key, "+
 			"	col2 int)"));
 		assertTrue(cur.getPrimaryKeysList("testtable",null));
@@ -1929,7 +1954,8 @@ class freetds extends sqlrtest {
 		// key and index list
 		System.out.println("KEY AND INDEX LIST: ");
 		cur.sendQuery("drop table testtable");
-		assertTrue(cur.sendQuery("create table testtable ("+
+		assertTrue(cur.sendQuery(
+			"create table testtable ("+
 			"	col1 int primary key, "+
 			"	col2 int)"));
 		assertTrue(cur.getKeyAndIndexList("testtable",null));
@@ -1965,25 +1991,29 @@ class freetds extends sqlrtest {
 		cur.sendQuery("drop procedure testproc2");
 		cur.sendQuery("drop procedure testproc3");
 		cur.sendQuery("drop procedure testproc4");
-		assertTrue(cur.sendQuery("create procedure testproc1 "+
+		assertTrue(cur.sendQuery(
+			"create procedure testproc1 "+
 			"	@in1 int, "+
 			"	@in2 char(20), "+
 			"	@in3 varchar(20), "+
 			"	@in4 datetime "+
 			"as select 1"));
-		assertTrue(cur.sendQuery("create procedure testproc2 "+
+		assertTrue(cur.sendQuery(
+			"create procedure testproc2 "+
 			"	@in1 int, "+
 			"	@in2 char(20), "+
 			"	@in3 varchar(20), "+
 			"	@in4 datetime "+
 			"as select 1"));
-		assertTrue(cur.sendQuery("create procedure testproc3 "+
+		assertTrue(cur.sendQuery(
+			"create procedure testproc3 "+
 			"	@in1 int, "+
 			"	@in2 char(20), "+
 			"	@in3 varchar(20), "+
 			"	@in4 datetime "+
 			"as select 1"));
-		assertTrue(cur.sendQuery("create procedure testproc4 "+
+		assertTrue(cur.sendQuery(
+			"create procedure testproc4 "+
 			"	@in1 int, "+
 			"	@in2 char(20), "+
 			"	@in3 varchar(20), "+

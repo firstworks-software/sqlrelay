@@ -120,7 +120,8 @@ class tls extends sqlrtest {
 		// create testtable
 		System.out.println("CREATE TESTTABLE: ");
 		cur.sendQuery("drop table testtable");
-		assertTrue(cur.sendQuery("create table testtable ("+
+		assertTrue(cur.sendQuery(
+			"create table testtable ("+
 			"	testnumber number, "+
 			"	testchar char(40), "+
 			"	testvarchar varchar2(40), "+
@@ -133,7 +134,8 @@ class tls extends sqlrtest {
 
 		// insert
 		System.out.println("INSERT: ");
-		assertTrue(cur.sendQuery("insert into "+
+		assertTrue(cur.sendQuery(
+			"insert into "+
 			"	testtable "+
 			"values ("+
 			"	1, "+
@@ -154,7 +156,8 @@ class tls extends sqlrtest {
 
 		// input bind by position
 		System.out.println("INPUT BIND BY POSITION: ");
-		cur.prepareQuery("insert into "+
+		cur.prepareQuery(
+			"insert into "+
 			"	testtable "+
 			"values ("+
 			"	:var1, "+
@@ -255,7 +258,8 @@ class tls extends sqlrtest {
 
 		// select
 		System.out.println("SELECT: ");
-		assertTrue(cur.sendQuery("select "+
+		assertTrue(cur.sendQuery(
+			"select "+
 			"	* "+
 			"from "+
 			"	testtable "+
@@ -486,7 +490,8 @@ class tls extends sqlrtest {
 		System.out.println("RESULT SET BUFFER SIZE: ");
 		assertEquals(cur.getResultSetBufferSize(),0);
 		cur.setResultSetBufferSize(2);
-		assertTrue(cur.sendQuery("select "+
+		assertTrue(cur.sendQuery(
+			"select "+
 			"	* "+
 			"from "+
 			"	testtable "+
@@ -521,7 +526,8 @@ class tls extends sqlrtest {
 		// dont get column info
 		System.out.println("DONT GET COLUMN INFO: ");
 		cur.dontGetColumnInfo();
-		assertTrue(cur.sendQuery("select "+
+		assertTrue(cur.sendQuery(
+			"select "+
 			"	* "+
 			"from "+
 			"	testtable "+
@@ -531,7 +537,8 @@ class tls extends sqlrtest {
 		assertEquals(cur.getColumnLength(0),0);
 		assertEquals(cur.getColumnType(0),null);
 		cur.getColumnInfo();
-		assertTrue(cur.sendQuery("select "+
+		assertTrue(cur.sendQuery(
+			"select "+
 			"	* "+
 			"from "+
 			"	testtable "+
@@ -545,7 +552,8 @@ class tls extends sqlrtest {
 
 		// suspended session
 		System.out.println("SUSPENDED SESSION: ");
-		assertTrue(cur.sendQuery("select "+
+		assertTrue(cur.sendQuery(
+			"select "+
 			"	* "+
 			"from "+
 			"	testtable "+
@@ -566,7 +574,8 @@ class tls extends sqlrtest {
 		assertEquals(cur.getField(6,0),"7");
 		assertEquals(cur.getField(7,0),"8");
 		System.out.println();
-		assertTrue(cur.sendQuery("select "+
+		assertTrue(cur.sendQuery(
+			"select "+
 			"	* "+
 			"from "+
 			"	testtable "+
@@ -587,7 +596,8 @@ class tls extends sqlrtest {
 		assertEquals(cur.getField(6,0),"7");
 		assertEquals(cur.getField(7,0),"8");
 		System.out.println();
-		assertTrue(cur.sendQuery("select "+
+		assertTrue(cur.sendQuery(
+			"select "+
 			"	* "+
 			"from "+
 			"	testtable "+
@@ -613,7 +623,8 @@ class tls extends sqlrtest {
 		// suspended result set
 		System.out.println("SUSPENDED RESULT SET: ");
 		cur.setResultSetBufferSize(2);
-		assertTrue(cur.sendQuery("select "+
+		assertTrue(cur.sendQuery(
+			"select "+
 			"	* "+
 			"from "+
 			"	testtable "+
@@ -649,7 +660,8 @@ class tls extends sqlrtest {
 		System.out.println("CACHED RESULT SET: ");
 		cur.cacheToFile("cachefile1");
 		cur.setCacheTtl(200);
-		assertTrue(cur.sendQuery("select "+
+		assertTrue(cur.sendQuery(
+			"select "+
 			"	* "+
 			"from "+
 			"	testtable "+
@@ -695,7 +707,8 @@ class tls extends sqlrtest {
 		cur.setResultSetBufferSize(2);
 		cur.cacheToFile("cachefile1");
 		cur.setCacheTtl(200);
-		assertTrue(cur.sendQuery("select "+
+		assertTrue(cur.sendQuery(
+			"select "+
 			"	* "+
 			"from "+
 			"	testtable "+
@@ -742,7 +755,8 @@ class tls extends sqlrtest {
 		cur.setResultSetBufferSize(2);
 		cur.cacheToFile("cachefile1");
 		cur.setCacheTtl(200);
-		assertTrue(cur.sendQuery("select "+
+		assertTrue(cur.sendQuery(
+			"select "+
 			"	* "+
 			"from "+
 			"	testtable "+
@@ -784,7 +798,8 @@ class tls extends sqlrtest {
 
 		// finished suspended session
 		System.out.println("FINISHED SUSPENDED SESSION: ");
-		assertTrue(cur.sendQuery("select "+
+		assertTrue(cur.sendQuery(
+			"select "+
 			"	* "+
 			"from "+
 			"	testtable "+
@@ -836,7 +851,8 @@ class tls extends sqlrtest {
 		assertTrue(secondcur.sendQuery("select count(*) "+
 			"from testtable"));
 		assertEquals(secondcur.getField(0,0),"8");
-		assertTrue(cur.sendQuery("insert into "+
+		assertTrue(cur.sendQuery(
+			"insert into "+
 			"	testtable "+
 			"values ("+
 			"	10, "+
@@ -851,7 +867,8 @@ class tls extends sqlrtest {
 			"from testtable"));
 		assertEquals(secondcur.getField(0,0),"8");
 		assertTrue(con.autoCommitOn());
-		assertTrue(cur.sendQuery("insert into "+
+		assertTrue(cur.sendQuery(
+			"insert into "+
 			"	testtable "+
 			"values ("+
 			"	10, "+
@@ -933,12 +950,14 @@ class tls extends sqlrtest {
 		System.out.println("NULL AND EMPTY LOBS: ");
 		cur.getNullsAsNulls();
 		cur.sendQuery("drop table testtable");
-		assertTrue(cur.sendQuery("create table testtable ("+
+		assertTrue(cur.sendQuery(
+			"create table testtable ("+
 			"	testclob1 clob, "+
 			"	testclob2 clob, "+
 			"	testblob1 blob, "+
 			"	testblob2 blob)"));
-		cur.prepareQuery("insert into "+
+		cur.prepareQuery(
+			"insert into "+
 			"	testtable "+
 			"values ("+
 			"	:var1, "+
@@ -963,7 +982,8 @@ class tls extends sqlrtest {
 		// long lobs
 		System.out.println("LONG LOBS: ");
 		cur.sendQuery("drop table testtable");
-		cur.sendQuery("create table testtable ("+
+		cur.sendQuery(
+			"create table testtable ("+
 			"	testclob clob, "+
 			"	testblob blob)");
 		cur.prepareQuery("insert into testtable "+
@@ -993,7 +1013,8 @@ class tls extends sqlrtest {
 		// output bind by position
 		System.out.println("OUTPUT BIND BY POSITION: ");
 		cur.getNullsAsNulls();
-		cur.prepareQuery("begin "+
+		cur.prepareQuery(
+			"begin "+
 			"	:numvar:=1; "+
 			"	:stringvar:='hello'; "+
 			"	:floatvar:=2.5; "+
@@ -1068,14 +1089,16 @@ class tls extends sqlrtest {
 		// lob output bind
 		System.out.println("LOB OUTPUT BIND: ");
 		cur.sendQuery("drop table testtable");
-		assertTrue(cur.sendQuery("create table testtable ("+
+		assertTrue(cur.sendQuery(
+			"create table testtable ("+
 			"	testclob clob, "+
 			"	testblob blob)"));
 		cur.prepareQuery("insert into testtable "+
 			"values ('hello',:var1)");
 		cur.inputBindBlob("var1",(new String("hello")).getBytes(),5);
 		assertTrue(cur.executeQuery());
-		cur.prepareQuery("begin "+
+		cur.prepareQuery(
+			"begin "+
 			"	select testclob "+
 			"		into :clobvar "+
 			"		from testtable; "+
@@ -1134,11 +1157,13 @@ class tls extends sqlrtest {
 		// bind validation
 		System.out.println("BIND VALIDATION: ");
 		cur.sendQuery("drop table testtable");
-		cur.sendQuery("create table testtable ("+
+		cur.sendQuery(
+			"create table testtable ("+
 			"	col1 varchar2(20), "+
 			"	col2 varchar2(20), "+
 			"	col3 varchar2(20))");
-		cur.prepareQuery("insert into "+
+		cur.prepareQuery(
+			"insert into "+
 			"	testtable "+
 			"values ("+
 			"	$(var1), "+
@@ -1171,7 +1196,8 @@ class tls extends sqlrtest {
 
 		// rebinding
 		System.out.println("REBINDING: ");
-		cur.prepareQuery("begin "+
+		cur.prepareQuery(
+			"begin "+
 			"	:out:= :in; "+
 			"end;");
 		cur.inputBind("in",1);
@@ -1240,7 +1266,8 @@ class tls extends sqlrtest {
 		System.out.println("STORED PROCEDURE RETURNING SINGLE VALUE: ");
 		cur.sendQuery("drop function testproc");
 		cur.sendQuery("drop procedure testproc");
-		assertTrue(cur.sendQuery("create or replace function testproc("+
+		assertTrue(cur.sendQuery(
+			"create or replace function testproc("+
 			"	in1 in number, "+
 			"	in2 in number, "+
 			"	in3 in varchar2) "+
@@ -1253,7 +1280,8 @@ class tls extends sqlrtest {
 		cur.inputBind("in3","hello");
 		assertTrue(cur.executeQuery());
 		assertEquals(cur.getField(0,0),"1");
-		cur.prepareQuery("begin "+
+		cur.prepareQuery(
+			"begin "+
 			"	:out1:="+
 			"testproc(:in1,:in2,:in3); end;");
 		cur.inputBind("in1",1);
@@ -1284,7 +1312,8 @@ class tls extends sqlrtest {
 			"	out2:=in2; "+
 			"	out3:=in3; "+
 			"end;"));
-		cur.prepareQuery("begin "+
+		cur.prepareQuery(
+			"begin "+
 			"	testproc("+
 			":in1,:in2,:in3,:out1,:out2,:out3); end;");
 		cur.inputBind("in1",1);
@@ -1306,7 +1335,8 @@ class tls extends sqlrtest {
 		cur.sendQuery("drop package types");
 		cur.sendQuery("drop function testproc");
 		cur.sendQuery("drop procedure testproc");
-		assertTrue(cur.sendQuery("create or replace package types is "+
+		assertTrue(cur.sendQuery(
+			"create or replace package types is "+
 			"	type cursorType "+
 			"is ref cursor; end;"));
 		assertTrue(cur.sendQuery("create or replace function testproc("+
@@ -1349,7 +1379,8 @@ class tls extends sqlrtest {
 			"value; "+
 			"	return l_cursor; "+
 			"end;"));
-		cur.prepareQuery("begin "+
+		cur.prepareQuery(
+			"begin "+
 			"	:curs1:=testproc(5); "+
 			"	:curs2:=testproc(0); "+
 			"end;");
@@ -1414,7 +1445,8 @@ class tls extends sqlrtest {
 			") on commit preserve rows");
 		cur.substitution("HOSTNAME",hostname);
 		cur.executeQuery();
-		cur.prepareQuery("insert into "+
+		cur.prepareQuery(
+			"insert into "+
 			"	$(HOSTNAME)"+
 			"_temptablepreserve values (1)");
 		cur.substitution("HOSTNAME",hostname);
@@ -1539,7 +1571,8 @@ class tls extends sqlrtest {
 		cur.sendQuery("drop table testtable2");
 		cur.sendQuery("drop table testtable3");
 		cur.sendQuery("drop table testtable4");
-		assertTrue(cur.sendQuery("create table testtable1 ("+
+		assertTrue(cur.sendQuery(
+			"create table testtable1 ("+
 			"	testnumber number, "+
 			"	testchar char(40), "+
 			"	testvarchar varchar2(40), "+
@@ -1547,7 +1580,8 @@ class tls extends sqlrtest {
 			"	testlong long, "+
 			"	testclob clob, "+
 			"	testblob blob)"));
-		assertTrue(cur.sendQuery("create table testtable2 ("+
+		assertTrue(cur.sendQuery(
+			"create table testtable2 ("+
 			"	testnumber number, "+
 			"	testchar char(40), "+
 			"	testvarchar varchar2(40), "+
@@ -1555,7 +1589,8 @@ class tls extends sqlrtest {
 			"	testlong long, "+
 			"	testclob clob, "+
 			"	testblob blob)"));
-		assertTrue(cur.sendQuery("create table testtable3 ("+
+		assertTrue(cur.sendQuery(
+			"create table testtable3 ("+
 			"	testnumber number, "+
 			"	testchar char(40), "+
 			"	testvarchar varchar2(40), "+
@@ -1563,7 +1598,8 @@ class tls extends sqlrtest {
 			"	testlong long, "+
 			"	testclob clob, "+
 			"	testblob blob)"));
-		assertTrue(cur.sendQuery("create table testtable4 ("+
+		assertTrue(cur.sendQuery(
+			"create table testtable4 ("+
 			"	testnumber number, "+
 			"	testchar char(40), "+
 			"	testvarchar varchar2(40), "+
@@ -1637,7 +1673,8 @@ class tls extends sqlrtest {
 		// column list
 		System.out.println("COLUMN LIST: ");
 		cur.sendQuery("drop table testtable");
-		assertTrue(cur.sendQuery("create table testtable ("+
+		assertTrue(cur.sendQuery(
+			"create table testtable ("+
 			"	testnumber number, "+
 			"	testchar char(40), "+
 			"	testvarchar varchar2(40), "+
@@ -1677,7 +1714,8 @@ class tls extends sqlrtest {
 		// oracle doesn't support auto_increment
 		System.out.println("COLUMN LIST - auto_increment, primary "+
 					"key: ");
-		assertTrue(cur.sendQuery("create table testtable ("+
+		assertTrue(cur.sendQuery(
+			"create table testtable ("+
 			"	col1 number primary key, "+
 			"	col2 number)"));
 		assertTrue(cur.getColumnList("testtable",null));
@@ -1692,7 +1730,8 @@ class tls extends sqlrtest {
 		// primary keys list
 		System.out.println("PRIMARY KEYS LIST: ");
 		cur.sendQuery("drop table testtable");
-		assertTrue(cur.sendQuery("create table testtable ("+
+		assertTrue(cur.sendQuery(
+			"create table testtable ("+
 			"	col1 number primary key, "+
 			"	col2 number)"));
 		assertTrue(cur.getPrimaryKeysList("testtable",null));
@@ -1722,7 +1761,8 @@ class tls extends sqlrtest {
 		// key and index list
 		System.out.println("KEY AND INDEX LIST: ");
 		cur.sendQuery("drop table testtable");
-		assertTrue(cur.sendQuery("create table testtable ("+
+		assertTrue(cur.sendQuery(
+			"create table testtable ("+
 			"	col1 number primary key, "+
 			"	col2 number)"));
 		assertTrue(cur.getKeyAndIndexList("testtable",null));
@@ -1758,7 +1798,8 @@ class tls extends sqlrtest {
 		cur.sendQuery("drop procedure testproc2");
 		cur.sendQuery("drop procedure testproc3");
 		cur.sendQuery("drop procedure testproc4");
-		assertTrue(cur.sendQuery("create procedure testproc1("+
+		assertTrue(cur.sendQuery(
+			"create procedure testproc1("+
 			"	in1 in number, "+
 			"	in2 in char, "+
 			"	in3 in varchar2, "+
@@ -1766,7 +1807,8 @@ class tls extends sqlrtest {
 			"begin "+
 			"	null; "+
 			"end;"));
-		assertTrue(cur.sendQuery("create procedure testproc2("+
+		assertTrue(cur.sendQuery(
+			"create procedure testproc2("+
 			"	in1 in number, "+
 			"	in2 in char, "+
 			"	in3 in varchar2, "+
@@ -1774,7 +1816,8 @@ class tls extends sqlrtest {
 			"begin "+
 			"	null; "+
 			"end;"));
-		assertTrue(cur.sendQuery("create procedure testproc3("+
+		assertTrue(cur.sendQuery(
+			"create procedure testproc3("+
 			"	in1 in number, "+
 			"	in2 in char, "+
 			"	in3 in varchar2, "+
@@ -1782,7 +1825,8 @@ class tls extends sqlrtest {
 			"begin "+
 			"	null; "+
 			"end;"));
-		assertTrue(cur.sendQuery("create procedure testproc4("+
+		assertTrue(cur.sendQuery(
+			"create procedure testproc4("+
 			"	in1 in number, "+
 			"	in2 in char, "+
 			"	in3 in varchar2, "+
@@ -1839,25 +1883,29 @@ class tls extends sqlrtest {
 
 		// invalid queries
 		System.out.println("INVALID QUERIES: ");
-		assertFalse(cur.sendQuery("select "+
+		assertFalse(cur.sendQuery(
+			"select "+
 			"	* "+
 			"from "+
 			"	testtable "+
 			"order by "+
 			"	testnumber"));
-		assertFalse(cur.sendQuery("select "+
+		assertFalse(cur.sendQuery(
+			"select "+
 			"	* "+
 			"from "+
 			"	testtable "+
 			"order by "+
 			"	testnumber"));
-		assertFalse(cur.sendQuery("select "+
+		assertFalse(cur.sendQuery(
+			"select "+
 			"	* "+
 			"from "+
 			"	testtable "+
 			"order by "+
 			"	testnumber"));
-		assertFalse(cur.sendQuery("select "+
+		assertFalse(cur.sendQuery(
+			"select "+
 			"	* "+
 			"from "+
 			"	testtable "+
