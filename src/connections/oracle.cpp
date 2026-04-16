@@ -949,7 +949,7 @@ void oracleconnection::initDatabaseFeatures() {
 			"INTERVAL_DAY_TO_SECOND";
 
 	databasefeatures[FEATURE_TRANSACTION_DDL_DML]=
-		"DDL_AND_DML,DML_ONLY";
+		"DML_ONLY";
 
 	databasefeatures[FEATURE_UNION_CLAUSES]=
 		"UNION,UNION_ALL";

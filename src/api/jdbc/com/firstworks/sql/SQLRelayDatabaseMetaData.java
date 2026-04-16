@@ -106,7 +106,8 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 	boolean dataDefinitionCausesTransactionCommit() throws SQLException {
 		drv.debugFunction(this);
 		boolean	result=listContains(
-				"data_definition_transaction_behavior","CAUSES_COMMIT");
+				"data_definition_transaction_behavior",
+				"CAUSES_COMMIT");
 		drv.debugPrintln("data definition causes "+
 					"transaction commit: "+result);
 		drv.debugEnd();
@@ -117,7 +118,8 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 	boolean dataDefinitionIgnoredInTransactions() throws SQLException {
 		drv.debugFunction(this);
 		boolean	result=listContains(
-				"data_definition_transaction_behavior","IGNORED_IN_TRANSACTIONS");
+				"data_definition_transaction_behavior",
+				"IGNORED_IN_TRANSACTIONS");
 		drv.debugPrintln("data definition ignored "+
 					"in transactions: "+result);
 		drv.debugEnd();

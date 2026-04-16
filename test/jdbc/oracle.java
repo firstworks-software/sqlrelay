@@ -1139,7 +1139,12 @@ class oracle extends sqlrtest {
 		boolval=
 		md.supportsDataDefinitionAndDataManipulationTransactions();
 		System.out.println("    "+boolval);
-		assertTrue(boolval);
+		if (issqlrelay) {
+			assertFalse(boolval);
+		} else {
+			// oracle jdbc incorrectly reports true for this
+			assertTrue(boolval);
+		}
 		System.out.println();
 
 		// supportsDataManipulationTransactionsOnly

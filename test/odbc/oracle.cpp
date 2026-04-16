@@ -616,8 +616,6 @@ int main(int argc, char **argv) {
 	erg=SQLGetInfo(dbc,SQL_MAX_CURSOR_NAME_LEN,
 			(SQLPOINTER)&usmallintval,
 			(SQLSMALLINT)sizeof(usmallintval),&vallen);
-	// FIXME:
-	// this should be 30 prior to oracle 12.2 and 128 for oracle 12.2+
 	if (issqlrelay) {
 		assertEqualDbc(dbc,(int)usmallintval,0);
 	} else {
@@ -678,12 +676,7 @@ int main(int argc, char **argv) {
 	erg=SQLGetInfo(dbc,SQL_TXN_CAPABLE,
 			(SQLPOINTER)&usmallintval,
 			(SQLSMALLINT)sizeof(usmallintval),&vallen);
-	if (issqlrelay) {
-		assertEqualDbc(dbc,(int)usmallintval,(int)SQL_TC_ALL);
-	} else {
-		// FIXME: is this different from jdbc?
-		assertEqualDbc(dbc,(int)usmallintval,(int)SQL_TC_DDL_COMMIT);
-	}
+	assertEqualDbc(dbc,(int)usmallintval,(int)SQL_TC_DDL_COMMIT);
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
 
@@ -852,7 +845,6 @@ int main(int argc, char **argv) {
 			(SQLPOINTER)&usmallintval,
 			(SQLSMALLINT)sizeof(usmallintval),&vallen);
 	if (issqlrelay) {
-		// FIXME: in sqlrelay this is configurable
 		assertEqualDbc(dbc,(int)usmallintval,0);
 	} else {
 		// oracle odbc helpfully returns 1000 for this
@@ -900,7 +892,6 @@ int main(int argc, char **argv) {
 			(SQLPOINTER)&uintval,(SQLSMALLINT)sizeof(uintval),
 			&vallen);
 	if (issqlrelay) {
-		// FIXME: in sqlrelay this is configurable
 		assertEqualDbc(dbc,(int)uintval,65535);
 	} else {
 		// oracle odbc unhelpfully returns 0 for this
