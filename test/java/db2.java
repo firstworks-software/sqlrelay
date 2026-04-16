@@ -1984,6 +1984,7 @@ class db2 extends sqlrtest {
 			"	testtable"));
 		assertEquals(secondcur.getField(0,0),"9");
 		assertTrue(con.autoCommitOff());
+		secondcon.endSession();
 		assertTrue(cur.sendQuery("drop table testtable"));
 		assertTrue(con.commit());
 		System.out.println();

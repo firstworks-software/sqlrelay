@@ -958,12 +958,12 @@ int main(int argc, char **argv) {
 	secondcon=sqlrcon_alloc("sqlrelay",9000,"/tmp/test.socket",
 					"db2inst1","testpassword",0,1);
 	secondcur=sqlrcur_alloc(secondcon);
-	assertTrue(sqlrcur_sendQuery(secondcur,"select count(*) "
-		"from testtable"));
+	assertTrue(sqlrcur_sendQuery(
+			secondcur,"select count(*) from testtable"));
 	assertEqStr(sqlrcur_getFieldByIndex(secondcur,0,0),"0");
 	assertTrue(sqlrcon_commit(con));
-	assertTrue(sqlrcur_sendQuery(secondcur,"select count(*) "
-		"from testtable"));
+	assertTrue(sqlrcur_sendQuery(
+			secondcur,"select count(*) from testtable"));
 	assertEqStr(sqlrcur_getFieldByIndex(secondcur,0,0),"8");
 	assertTrue(sqlrcur_sendQuery(cur,
 		"insert into "
@@ -983,8 +983,8 @@ int main(int argc, char **argv) {
 		"	'testclob10', "
 		"	blob('testblob10'))"));
 	assertTrue(sqlrcon_rollback(con));
-	assertTrue(sqlrcur_sendQuery(secondcur,
-		"select count(*) from testtable"));
+	assertTrue(sqlrcur_sendQuery(
+			secondcur,"select count(*) from testtable"));
 	assertEqStr(sqlrcur_getFieldByIndex(secondcur,0,0),"8");
 	assertTrue(sqlrcon_autoCommitOn(con));
 	assertTrue(sqlrcur_sendQuery(cur,
@@ -1004,8 +1004,8 @@ int main(int argc, char **argv) {
 		"	NULL, "
 		"	'testclob10', "
 		"	blob('testblob10'))"));
-	assertTrue(sqlrcur_sendQuery(secondcur,"select count(*) "
-		"from testtable"));
+	assertTrue(sqlrcur_sendQuery(
+			secondcur,"select count(*) from testtable"));
 	assertEqStr(sqlrcur_getFieldByIndex(secondcur,0,0),"9");
 	sqlrcur_free(secondcur);
 	sqlrcon_free(secondcon);
@@ -1463,25 +1463,26 @@ int main(int argc, char **argv) {
 	// temporary tables
 	printf("TEMPORARY TABLES: \n");
 	sqlrcur_sendQuery(cur,"drop table session.temptable");
-	assertTrue(sqlrcur_sendQuery(cur,"declare global temporary table "
-		"temptable ""(col1 int) not logged"));
-	assertTrue(sqlrcur_sendQuery(cur,"insert into session.temptable "
-		"values (1)"));
-	assertTrue(sqlrcur_sendQuery(cur,"select count(*) "
-		"from session.temptable"));
+	assertTrue(sqlrcur_sendQuery(cur,
+		"declare global temporary table temptable ("
+		"	col1 int "
+		") not logged"));
+	assertTrue(sqlrcur_sendQuery(
+			cur,"insert into session.temptable values (1)"));
+	assertTrue(sqlrcur_sendQuery(
+			cur,"select count(*) from session.temptable"));
 	assertEqStr(sqlrcur_getFieldByIndex(cur,0,0),"1");
 	sqlrcon_endSession(con);
 	printf("\n");
-	assertFalse(sqlrcur_sendQuery(cur,"select count(*) "
-		"from session.temptable"));
+	assertFalse(sqlrcur_sendQuery(
+			cur,"select count(*) from session.temptable"));
 	printf("\n");
 
 
 	// encoded binary data
 	printf("ENCODED BINARY DATA: \n");
 	sqlrcur_sendQuery(cur,"drop table testtable");
-	assertTrue(sqlrcur_sendQuery(cur,"create table testtable "
-		"(col1 blob)"));
+	assertTrue(sqlrcur_sendQuery(cur,"create table testtable (col1 blob)"));
 	for (j=0; j<256; j++) {
 		buffer[j]=(unsigned char)j;
 	}
@@ -1495,7 +1496,7 @@ int main(int argc, char **argv) {
 	assertTrue(sqlrcur_sendQuery(cur,"select col1 from testtable"));
 	assertEqInt(sqlrcur_getFieldLengthByIndex(cur,0,0),sizeof(buffer));
 	assertEqInt(memcmp(sqlrcur_getFieldByIndex(cur,0,0),
-		buffer,sizeof(buffer)),0);
+					buffer,sizeof(buffer)),0);
 	assertTrue(sqlrcur_sendQuery(cur,"drop table testtable"));
 	printf("\n");
 
@@ -1703,7 +1704,7 @@ int main(int argc, char **argv) {
 	assertEqStr(sqlrcur_getFieldByName(cur,8,"column_name"),"TESTDATE");
 	assertEqStr(sqlrcur_getFieldByName(cur,9,"column_name"),"TESTTIME");
 	assertEqStr(sqlrcur_getFieldByName(cur,10,"column_name"),
-		"TESTTIMESTAMP");
+							"TESTTIMESTAMP");
 	assertEqStr(sqlrcur_getFieldByName(cur,11,"column_name"),"TESTCLOB");
 	assertEqStr(sqlrcur_getFieldByName(cur,12,"column_name"),"TESTBLOB");
 	assertEqStr(sqlrcur_getFieldByName(cur,0,"data_type"),"SMALLINT");

@@ -885,6 +885,7 @@ class krb extends sqlrtest {
 			"select count(*) from testtable"));
 		assertEquals(secondcur.getField(0,0),"9");
 		assertTrue(con.autoCommitOff());
+		secondcon.endSession();
 		assertTrue(cur.sendQuery("drop table testtable"));
 		System.out.println();
 

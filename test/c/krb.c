@@ -29,7 +29,6 @@ int main(int argc, char **argv) {
 				"testvarchar7","01-JAN-2007","testlong7"};
 	int64_t		numvar;
 	const char	*stringvar;
-	const char	*nullvar;
 	double		floatvar;
 	int16_t		year=0;
 	int16_t		month=0;
@@ -39,6 +38,7 @@ int main(int argc, char **argv) {
 	int16_t		second=0;
 	int32_t		microsecond=0;
 	const char	*tz=NULL;
+	const char	*nullvar;
 	int		isnegative=0;
 	const char * const *cols;
 	const char * const *fields;
@@ -75,8 +75,7 @@ int main(int argc, char **argv) {
 
 	const char	*service=NULL;
 	#ifdef _WIN32
-		service="sqlrelay/fedora24x64.firstworks.com"
-			"@AD.FIRSTWORKS.COM";
+		service="sqlrelay/fedora24x64.firstworks.com@AD.FIRSTWORKS.COM";
 	#endif
 
 
@@ -90,7 +89,8 @@ int main(int argc, char **argv) {
 
 
 	// instantiation
-	con=sqlrcon_alloc("sqlrelay",9000,"/tmp/test.socket",NULL,NULL,0,1);
+	con=sqlrcon_alloc("sqlrelay",9000,"/tmp/test.socket",
+						NULL,NULL,0,1);
 	cur=sqlrcur_alloc(con);
 	sqlrcon_enableKerberos(con,service,NULL,NULL);
 
@@ -125,9 +125,8 @@ int main(int argc, char **argv) {
 		// oracle requires the isolation level to
 		// be the first query of the transaction
 		assertTrue(sqlrcon_commit(con));
-		// you can set the isolation level, but to
-		// get it, you have to have permisisons to
-		// read from sys.v_$session and
+		// you can set the isolation level, but to get it, you have to
+		// have permisisons to read from sys.v_$session and
 		// sys.v_$transaction
 		assertTrue(sqlrcon_setIsolationLevel(con,*il));
 		printf("\n");
@@ -220,7 +219,7 @@ int main(int argc, char **argv) {
 
 
 	// input bind by position with validation
-	printf("INPUT BIND BY POSITION ""WITH VALIDATION: \n");
+	printf("INPUT BIND BY POSITION WITH VALIDATION: \n");
 	sqlrcur_clearBinds(cur);
 	sqlrcur_inputBindLong(cur,"1",5);
 	sqlrcur_inputBindString(cur,"2","testchar5");
@@ -259,7 +258,7 @@ int main(int argc, char **argv) {
 
 
 	// input bind by name with validation
-	printf("INPUT BIND BY NAME ""WITH VALIDATION: \n");
+	printf("INPUT BIND BY NAME WITH VALIDATION: \n");
 	sqlrcur_clearBinds(cur);
 	sqlrcur_inputBindLong(cur,"var1",8);
 	sqlrcur_inputBindString(cur,"var2","testchar8");
@@ -396,8 +395,8 @@ int main(int argc, char **argv) {
 	// fields by index
 	printf("FIELDS BY INDEX: \n");
 	assertEqStr(sqlrcur_getFieldByIndex(cur,0,0),"1");
-	assertEqStr(sqlrcur_getFieldByIndex(cur,0,1),"testchar1"
-		"                               ");
+	assertEqStr(sqlrcur_getFieldByIndex(cur,0,1),
+			"testchar1                               ");
 	assertEqStr(sqlrcur_getFieldByIndex(cur,0,2),"testvarchar1");
 	assertEqStr(sqlrcur_getFieldByIndex(cur,0,3),"01-JAN-01");
 	assertEqStr(sqlrcur_getFieldByIndex(cur,0,4),"testlong1");
@@ -405,8 +404,8 @@ int main(int argc, char **argv) {
 	assertEqStr(sqlrcur_getFieldByIndex(cur,0,6),"");
 	printf("\n");
 	assertEqStr(sqlrcur_getFieldByIndex(cur,7,0),"8");
-	assertEqStr(sqlrcur_getFieldByIndex(cur,7,1),"testchar8"
-		"                               ");
+	assertEqStr(sqlrcur_getFieldByIndex(cur,7,1),
+			"testchar8                               ");
 	assertEqStr(sqlrcur_getFieldByIndex(cur,7,2),"testvarchar8");
 	assertEqStr(sqlrcur_getFieldByIndex(cur,7,3),"01-JAN-08");
 	assertEqStr(sqlrcur_getFieldByIndex(cur,7,4),"testlong8");
@@ -438,8 +437,8 @@ int main(int argc, char **argv) {
 	// fields by name
 	printf("FIELDS BY NAME: \n");
 	assertEqStr(sqlrcur_getFieldByName(cur,0,"TESTNUMBER"),"1");
-	assertEqStr(sqlrcur_getFieldByName(cur,0,"TESTCHAR"),"testchar1"
-		"                               ");
+	assertEqStr(sqlrcur_getFieldByName(cur,0,"TESTCHAR"),
+			"testchar1                               ");
 	assertEqStr(sqlrcur_getFieldByName(cur,0,"TESTVARCHAR"),"testvarchar1");
 	assertEqStr(sqlrcur_getFieldByName(cur,0,"TESTDATE"),"01-JAN-01");
 	assertEqStr(sqlrcur_getFieldByName(cur,0,"TESTLONG"),"testlong1");
@@ -447,8 +446,8 @@ int main(int argc, char **argv) {
 	assertEqStr(sqlrcur_getFieldByName(cur,0,"TESTBLOB"),"");
 	printf("\n");
 	assertEqStr(sqlrcur_getFieldByName(cur,7,"TESTNUMBER"),"8");
-	assertEqStr(sqlrcur_getFieldByName(cur,7,"TESTCHAR"),"testchar8"
-		"                               ");
+	assertEqStr(sqlrcur_getFieldByName(cur,7,"TESTCHAR"),
+			"testchar8                               ");
 	assertEqStr(sqlrcur_getFieldByName(cur,7,"TESTVARCHAR"),"testvarchar8");
 	assertEqStr(sqlrcur_getFieldByName(cur,7,"TESTDATE"),"01-JAN-08");
 	assertEqStr(sqlrcur_getFieldByName(cur,7,"TESTLONG"),"testlong8");
@@ -481,7 +480,7 @@ int main(int argc, char **argv) {
 	printf("FIELDS BY ARRAY: \n");
 	fields=sqlrcur_getRow(cur,0);
 	assertEqStr(fields[0],"1");
-	assertEqStr(fields[1],"testchar1""                               ");
+	assertEqStr(fields[1],"testchar1                               ");
 	assertEqStr(fields[2],"testvarchar1");
 	assertEqStr(fields[3],"01-JAN-01");
 	assertEqStr(fields[4],"testlong1");
@@ -698,13 +697,13 @@ int main(int argc, char **argv) {
 
 
 	// column count for cached result set
-	printf("COLUMN COUNT FOR ""CACHED RESULT SET: \n");
+	printf("COLUMN COUNT FOR CACHED RESULT SET: \n");
 	assertEqInt(sqlrcur_colCount(cur),7);
 	printf("\n");
 
 
 	// column names for cached result set
-	printf("COLUMN NAMES FOR ""CACHED RESULT SET: \n");
+	printf("COLUMN NAMES FOR CACHED RESULT SET: \n");
 	assertEqStr(sqlrcur_getColumnName(cur,0),"TESTNUMBER");
 	assertEqStr(sqlrcur_getColumnName(cur,1),"TESTCHAR");
 	assertEqStr(sqlrcur_getColumnName(cur,2),"TESTVARCHAR");
@@ -724,7 +723,7 @@ int main(int argc, char **argv) {
 
 
 	// cached result set with result set buffer size
-	printf("CACHED RESULT SET WITH ""RESULT SET BUFFER SIZE: \n");
+	printf("CACHED RESULT SET WITH RESULT SET BUFFER SIZE: \n");
 	sqlrcur_setResultSetBufferSize(cur,2);
 	sqlrcur_cacheToFile(cur,"cachefile1");
 	sqlrcur_setCacheTtl(cur,200);
@@ -747,7 +746,7 @@ int main(int argc, char **argv) {
 
 
 	// from one cache file to another
-	printf("FROM ONE CACHE FILE ""TO ANOTHER: \n");
+	printf("FROM ONE CACHE FILE TO ANOTHER: \n");
 	sqlrcur_cacheToFile(cur,"cachefile2");
 	assertTrue(sqlrcur_openCachedResultSet(cur,"cachefile1"));
 	sqlrcur_cacheOff(cur);
@@ -757,10 +756,9 @@ int main(int argc, char **argv) {
 	printf("\n");
 
 
-	// from one cache file to another
-	// with result set buffer size
+	// from one cache file to another with result set buffer size
 	printf("FROM ONE CACHE FILE TO ANOTHER "
-		"WITH RESULT SET BUFFER SIZE: \n");
+				"WITH RESULT SET BUFFER SIZE: \n");
 	sqlrcur_setResultSetBufferSize(cur,2);
 	sqlrcur_cacheToFile(cur,"cachefile2");
 	assertTrue(sqlrcur_openCachedResultSet(cur,"cachefile1"));
@@ -772,10 +770,9 @@ int main(int argc, char **argv) {
 	printf("\n");
 
 
-	// cached result set with suspend
-	// and result set buffer size
+	// cached result set with suspend and result set buffer size
 	printf("CACHED RESULT SET WITH SUSPEND "
-		"AND RESULT SET BUFFER SIZE: \n");
+				"AND RESULT SET BUFFER SIZE: \n");
 	sqlrcur_setResultSetBufferSize(cur,2);
 	sqlrcur_cacheToFile(cur,"cachefile1");
 	sqlrcur_setCacheTtl(cur,200);
@@ -857,8 +854,8 @@ int main(int argc, char **argv) {
 	for (i=0; sqlrcur_getRow(cur,i); i++) {
 		secondcur=sqlrcur_alloc(con);
 		sqlrcur_setResultSetBufferSize(secondcur,1);
-		assertTrue(sqlrcur_sendQuery(secondcur,
-			"select * from testtable"));
+		assertTrue(sqlrcur_sendQuery(
+				secondcur,"select * from testtable"));
 		sqlrcur_free(secondcur);
 	}
 	sqlrcur_setResultSetBufferSize(cur,0);
@@ -867,16 +864,16 @@ int main(int argc, char **argv) {
 
 	// commit and rollback
 	printf("COMMIT AND ROLLBACK: \n");
-	secondcon=sqlrcon_alloc("sqlrelay",9000,
-				"/tmp/test.socket",NULL,NULL,0,1);
+	secondcon=sqlrcon_alloc("sqlrelay",9000,"/tmp/test.socket",
+						NULL,NULL,0,1);
 	secondcur=sqlrcur_alloc(secondcon);
 	sqlrcon_enableKerberos(secondcon,service,NULL,NULL);
-	assertTrue(sqlrcur_sendQuery(secondcur,
-		"select count(*) from testtable"));
+	assertTrue(sqlrcur_sendQuery(
+			secondcur,"select count(*) from testtable"));
 	assertEqStr(sqlrcur_getFieldByIndex(secondcur,0,0),"0");
 	assertTrue(sqlrcon_commit(con));
-	assertTrue(sqlrcur_sendQuery(secondcur,
-		"select count(*) from testtable"));
+	assertTrue(sqlrcur_sendQuery(
+			secondcur,"select count(*) from testtable"));
 	assertEqStr(sqlrcur_getFieldByIndex(secondcur,0,0),"8");
 	assertTrue(sqlrcur_sendQuery(cur,
 		"insert into "
@@ -890,8 +887,8 @@ int main(int argc, char **argv) {
 		"	'testclob10', "
 		"	NULL)"));
 	assertTrue(sqlrcon_rollback(con));
-	assertTrue(sqlrcur_sendQuery(secondcur,
-		"select count(*) from testtable"));
+	assertTrue(sqlrcur_sendQuery(
+			secondcur,"select count(*) from testtable"));
 	assertEqStr(sqlrcur_getFieldByIndex(secondcur,0,0),"8");
 	assertTrue(sqlrcon_autoCommitOn(con));
 	assertTrue(sqlrcur_sendQuery(cur,
@@ -905,8 +902,8 @@ int main(int argc, char **argv) {
 		"	'testlong10', "
 		"	'testclob10', "
 		"	NULL)"));
-	assertTrue(sqlrcur_sendQuery(secondcur,
-		"select count(*) from testtable"));
+	assertTrue(sqlrcur_sendQuery(
+			secondcur,"select count(*) from testtable"));
 	assertEqStr(sqlrcur_getFieldByIndex(secondcur,0,0),"9");
 	sqlrcur_free(secondcur);
 	sqlrcon_free(secondcon);
@@ -917,8 +914,7 @@ int main(int argc, char **argv) {
 
 	// individual substitutions
 	printf("INDIVIDUAL SUBSTITUTIONS: \n");
-	sqlrcur_prepareQuery(cur,"select $(var1),'$(var2)',$(var3) "
-		"from dual");
+	sqlrcur_prepareQuery(cur,"select $(var1),'$(var2)',$(var3) from dual");
 	sqlrcur_subString(cur,"var1","$(var11)");
 	sqlrcur_subString(cur,"var2","$(var21)");
 	sqlrcur_subString(cur,"var3","$(var31)");
@@ -937,22 +933,22 @@ int main(int argc, char **argv) {
 
 	// array substitutions
 	printf("ARRAY SUBSTITUTIONS: \n");
-	sqlrcur_prepareQuery(cur,"select $(var1),$(var2),$(var3) ""from dual");
+	sqlrcur_prepareQuery(cur,"select $(var1),$(var2),$(var3) from dual");
 	sqlrcur_subLongs(cur,subvars,subvallongs);
 	assertTrue(sqlrcur_executeQuery(cur));
 	assertEqStr(sqlrcur_getFieldByIndex(cur,0,0),"1");
 	assertEqStr(sqlrcur_getFieldByIndex(cur,0,1),"2");
 	assertEqStr(sqlrcur_getFieldByIndex(cur,0,2),"3");
 	printf("\n");
-	sqlrcur_prepareQuery(cur,"select '$(var1)','$(var2)',"
-		"'$(var3)' from dual");
+	sqlrcur_prepareQuery(cur,
+			"select '$(var1)','$(var2)','$(var3)' from dual");
 	sqlrcur_subStrings(cur,subvars,subvalstrings);
 	assertTrue(sqlrcur_executeQuery(cur));
 	assertEqStr(sqlrcur_getFieldByIndex(cur,0,0),"hi");
 	assertEqStr(sqlrcur_getFieldByIndex(cur,0,1),"hello");
 	assertEqStr(sqlrcur_getFieldByIndex(cur,0,2),"bye");
 	printf("\n");
-	sqlrcur_prepareQuery(cur,"select $(var1),$(var2),$(var3) ""from dual");
+	sqlrcur_prepareQuery(cur,"select $(var1),$(var2),$(var3) from dual");
 	sqlrcur_subDoubles(cur,subvars,subvaldoubles,precs,scales);
 	assertTrue(sqlrcur_executeQuery(cur));
 	assertEqStr(sqlrcur_getFieldByIndex(cur,0,0),"10.55");
@@ -1016,8 +1012,8 @@ int main(int argc, char **argv) {
 		"create table testtable ("
 		"	testclob clob, "
 		"	testblob blob)");
-	sqlrcur_prepareQuery(cur,"insert into testtable "
-		"values (:clobval,:blobval)");
+	sqlrcur_prepareQuery(cur,
+			"insert into testtable values (:clobval,:blobval)");
 	for (i=0; i<LARGE_BUFFER_LENGTH; i++) {
 		largebuffer[i]='C';
 	}
@@ -1027,12 +1023,12 @@ int main(int argc, char **argv) {
 	assertTrue(sqlrcur_executeQuery(cur));
 	sqlrcur_sendQuery(cur,"select * from testtable");
 	assertEqInt(sqlrcur_getFieldLengthByName(cur,0,"TESTCLOB"),
-		LARGE_BUFFER_LENGTH);
+			LARGE_BUFFER_LENGTH);
 	assertEqStr(sqlrcur_getFieldByName(cur,0,"TESTCLOB"),largebuffer);
 	assertEqInt(sqlrcur_getFieldLengthByName(cur,0,"TESTBLOB"),
-		LARGE_BUFFER_LENGTH);
+			LARGE_BUFFER_LENGTH);
 	assertEqStrLen(sqlrcur_getFieldByName(cur,0,"TESTBLOB"),
-		largebuffer,LARGE_BUFFER_LENGTH);
+			largebuffer,LARGE_BUFFER_LENGTH);
 	assertTrue(sqlrcur_sendQuery(cur,"drop table testtable"));
 	printf("\n");
 
@@ -1046,7 +1042,8 @@ int main(int argc, char **argv) {
 		"	:stringvar:='hello'; "
 		"	:floatvar:=2.5; "
 		"	:datevar:='03-FEB-2001'; "
-		"	:nullvar:=null; ""end;");
+		"	:nullvar:=null; "
+		"end;");
 	assertEqInt(sqlrcur_countBindVariables(cur),5);
 	sqlrcur_defineOutputBindInteger(cur,"1");
 	sqlrcur_defineOutputBindString(cur,"2",10);
@@ -1058,7 +1055,9 @@ int main(int argc, char **argv) {
 	stringvar=sqlrcur_getOutputBindString(cur,"2");
 	floatvar=sqlrcur_getOutputBindDouble(cur,"3");
 	sqlrcur_getOutputBindDate(cur,"4",&year,&month,&day,
-		&hour,&minute,&second,&microsecond,&tz,&isnegative);
+				&hour,&minute,&second,&microsecond,&tz,
+				&isnegative);
+	nullvar=sqlrcur_getOutputBindString(cur,"5");
 	assertEqInt(numvar,1);
 	assertEqStr(stringvar,"hello");
 	assertEqDbl(floatvar,2.5);
@@ -1070,7 +1069,6 @@ int main(int argc, char **argv) {
 	assertEqInt(second,0);
 	assertEqInt(microsecond,0);
 	assertEqStr(tz,"");
-	nullvar=sqlrcur_getOutputBindString(cur,"5");
 	assertEqStr(nullvar,NULL);
 	sqlrcur_getNullsAsEmptyStrings(cur);
 	printf("\n");
@@ -1090,7 +1088,8 @@ int main(int argc, char **argv) {
 	stringvar=sqlrcur_getOutputBindString(cur,"stringvar");
 	floatvar=sqlrcur_getOutputBindDouble(cur,"floatvar");
 	sqlrcur_getOutputBindDate(cur,"datevar",&year,&month,&day,
-		&hour,&minute,&second,&microsecond,&tz,&isnegative);
+				&hour,&minute,&second,&microsecond,&tz,
+				&isnegative);
 	assertEqInt(numvar,1);
 	assertEqStr(stringvar,"hello");
 	assertEqDbl(floatvar,2.5);
@@ -1109,7 +1108,7 @@ int main(int argc, char **argv) {
 
 
 	// output bind by name with validation
-	printf("OUTPUT BIND BY NAME ""WITH VALIDATION: \n");
+	printf("OUTPUT BIND BY NAME WITH VALIDATION: \n");
 	sqlrcur_getNullsAsNulls(cur);
 	sqlrcur_clearBinds(cur);
 	sqlrcur_defineOutputBindInteger(cur,"numvar");
@@ -1124,7 +1123,8 @@ int main(int argc, char **argv) {
 	stringvar=sqlrcur_getOutputBindString(cur,"stringvar");
 	floatvar=sqlrcur_getOutputBindDouble(cur,"floatvar");
 	sqlrcur_getOutputBindDate(cur,"datevar",&year,&month,&day,
-		&hour,&minute,&second,&microsecond,&tz,&isnegative);
+				&hour,&minute,&second,&microsecond,&tz,
+				&isnegative);
 	assertEqInt(numvar,1);
 	assertEqStr(stringvar,"hello");
 	assertEqDbl(floatvar,2.5);
@@ -1149,15 +1149,14 @@ int main(int argc, char **argv) {
 		"create table testtable ("
 		"	testclob clob, "
 		"	testblob blob)"));
-	sqlrcur_prepareQuery(cur,"insert into testtable "
-		"values ('hello',:var1)");
+	sqlrcur_prepareQuery(cur,
+			"insert into testtable values ('hello',:var1)");
 	sqlrcur_inputBindBlob(cur,"var1","hello",5);
 	assertTrue(sqlrcur_executeQuery(cur));
 	sqlrcur_prepareQuery(cur,
 		"begin "
-		"	select testclob into :clobvar "
-		"from testtable; "
-		"	select testblob into :blobvar ""from testtable; "
+		"	select testclob into :clobvar from testtable; "
+		"	select testblob into :blobvar from testtable; "
 		"end;");
 	sqlrcur_defineOutputBindClob(cur,"clobvar");
 	sqlrcur_defineOutputBindBlob(cur,"blobvar");
@@ -1180,12 +1179,13 @@ int main(int argc, char **argv) {
 		largebuffer[i]='C';
 	}
 	largebuffer[LARGE_BUFFER_LENGTH]='\0';
-	snprintf(query,sizeof(query),"begin :bindval:='%s'; end;",largebuffer);
+	snprintf(query,sizeof(query),
+				"begin :bindval:='%s'; end;",largebuffer);
 	sqlrcur_prepareQuery(cur,query);
 	sqlrcur_defineOutputBindString(cur,"bindval",LARGE_BUFFER_LENGTH);
 	assertTrue(sqlrcur_executeQuery(cur));
 	assertEqInt(sqlrcur_getOutputBindLength(cur,"bindval"),
-		LARGE_BUFFER_LENGTH);
+			LARGE_BUFFER_LENGTH);
 	assertEqStr(sqlrcur_getOutputBindString(cur,"bindval"),largebuffer);
 	printf("\n");
 
@@ -1193,8 +1193,8 @@ int main(int argc, char **argv) {
 	// negative input bind
 	printf("NEGATIVE INPUT BIND: \n");
 	sqlrcur_sendQuery(cur,"drop table testtable");
-	sqlrcur_sendQuery(cur,"create table testtable ""(testval number)");
-	sqlrcur_prepareQuery(cur,"insert into testtable ""values (:testval)");
+	sqlrcur_sendQuery(cur,"create table testtable (testval number)");
+	sqlrcur_prepareQuery(cur,"insert into testtable values (:testval)");
 	sqlrcur_inputBindLong(cur,"testval",-1);
 	assertTrue(sqlrcur_executeQuery(cur));
 	sqlrcur_sendQuery(cur,"select testval from testtable");
@@ -1247,7 +1247,8 @@ int main(int argc, char **argv) {
 	printf("REBINDING: \n");
 	sqlrcur_prepareQuery(cur,
 		"begin "
-		"	:out:= :in; ""end;");
+		"	:out:= :in; "
+		"end;");
 	sqlrcur_inputBindLong(cur,"in",1);
 	sqlrcur_defineOutputBindInteger(cur,"out");
 	assertTrue(sqlrcur_executeQuery(cur));
@@ -1290,17 +1291,20 @@ int main(int argc, char **argv) {
 
 
 	// stored procedure returning no value
-	printf("STORED PROCEDURE ""RETURNING NO VALUE: \n");
+	printf("STORED PROCEDURE RETURNING NO VALUE: \n");
 	sqlrcur_sendQuery(cur,"drop function testproc");
 	sqlrcur_sendQuery(cur,"drop procedure testproc");
-	assertTrue(sqlrcur_sendQuery(cur,"create or replace "
+	assertTrue(sqlrcur_sendQuery(cur,
+		"create or replace "
 		"procedure testproc("
 		"	in1 in number, "
 		"	in2 in number, "
-		"	in3 in varchar2) ""is "
+		"	in3 in varchar2) "
+		"is "
 		"begin "
-		"	return; ""end;"));
-	sqlrcur_prepareQuery(cur,"begin testproc(:in1,:in2,:in3); ""end;");
+		"	return; "
+		"end;"));
+	sqlrcur_prepareQuery(cur,"begin testproc(:in1,:in2,:in3); end;");
 	sqlrcur_inputBindLong(cur,"in1",1);
 	sqlrcur_inputBindDouble(cur,"in2",1.1,2,1);
 	sqlrcur_inputBindString(cur,"in3","hello");
@@ -1310,17 +1314,21 @@ int main(int argc, char **argv) {
 
 
 	// stored procedure returning single value
-	printf("STORED PROCEDURE ""RETURNING SINGLE VALUE: \n");
+	printf("STORED PROCEDURE RETURNING SINGLE VALUE: \n");
 	sqlrcur_sendQuery(cur,"drop function testproc");
 	sqlrcur_sendQuery(cur,"drop procedure testproc");
-	assertTrue(sqlrcur_sendQuery(cur,"create or replace "
+	assertTrue(sqlrcur_sendQuery(cur,
+		"create or replace "
 		"function testproc("
 		"	in1 in number, "
 		"	in2 in number, "
-		"	in3 in varchar2) ""return number ""is "
+		"	in3 in varchar2) "
+		"	return number "
+		"is "
 		"begin "
-		"	return in1; ""end;"));
-	sqlrcur_prepareQuery(cur,"select testproc(:in1,:in2,:in3) ""from dual");
+		"	return in1; "
+		"end;"));
+	sqlrcur_prepareQuery(cur,"select testproc(:in1,:in2,:in3) from dual");
 	sqlrcur_inputBindLong(cur,"in1",1);
 	sqlrcur_inputBindDouble(cur,"in2",1.1,2,1);
 	sqlrcur_inputBindString(cur,"in3","hello");
@@ -1328,7 +1336,8 @@ int main(int argc, char **argv) {
 	assertEqStr(sqlrcur_getFieldByIndex(cur,0,0),"1");
 	sqlrcur_prepareQuery(cur,
 		"begin "
-		"	:out1:=testproc("":in1,:in2,:in3); ""end;");
+		"	:out1:=testproc(:in1,:in2,:in3); "
+		"end;");
 	sqlrcur_inputBindLong(cur,"in1",1);
 	sqlrcur_inputBindDouble(cur,"in2",1.1,2,1);
 	sqlrcur_inputBindString(cur,"in3","hello");
@@ -1340,24 +1349,28 @@ int main(int argc, char **argv) {
 
 
 	// stored procedure returning multiple values
-	printf("STORED PROCEDURE ""RETURNING MULTIPLE VALUES: \n");
+	printf("STORED PROCEDURE RETURNING MULTIPLE VALUES: \n");
 	sqlrcur_sendQuery(cur,"drop function testproc");
 	sqlrcur_sendQuery(cur,"drop procedure testproc");
-	assertTrue(sqlrcur_sendQuery(cur,"create or replace "
+	assertTrue(sqlrcur_sendQuery(cur,
+		"create or replace "
 		"procedure testproc("
 		"	in1 in number, "
 		"	in2 in number, "
 		"	in3 in varchar2, "
 		"	out1 out number, "
 		"	out2 out number, "
-		"	out3 out varchar2) ""is "
+		"	out3 out varchar2) "
+		"is "
 		"begin "
 		"	out1:=in1; "
 		"	out2:=in2; "
-		"	out3:=in3; ""end;"));
+		"	out3:=in3; "
+		"end;"));
 	sqlrcur_prepareQuery(cur,
 		"begin "
-		"	testproc(:in1,:in2,:in3,"":out1,:out2,:out3); ""end;");
+		"	testproc(:in1,:in2,:in3,:out1,:out2,:out3); "
+		"end;");
 	sqlrcur_inputBindLong(cur,"in1",1);
 	sqlrcur_inputBindDouble(cur,"in2",1.1,2,1);
 	sqlrcur_inputBindString(cur,"in3","hello");
@@ -1373,14 +1386,16 @@ int main(int argc, char **argv) {
 
 
 	// stored procedure returning result set
-	printf("STORED PROCEDURE ""RETURNING RESULT SET: \n");
+	printf("STORED PROCEDURE RETURNING RESULT SET: \n");
 	sqlrcur_sendQuery(cur,"drop package types");
 	sqlrcur_sendQuery(cur,"drop function testproc");
 	sqlrcur_sendQuery(cur,"drop procedure testproc");
 	assertTrue(sqlrcur_sendQuery(cur,
 		"create or replace package types is "
-		"	type cursorType is ref cursor; ""end;"));
-	assertTrue(sqlrcur_sendQuery(cur,"create or replace "
+		"	type cursorType is ref cursor; "
+		"end;"));
+	assertTrue(sqlrcur_sendQuery(cur,
+		"create or replace "
 		"function testproc(value in number) "
 		"	return types.cursortype "
 		"is "
@@ -1391,37 +1406,31 @@ int main(int argc, char **argv) {
 		"			* "
 		"		from "
 		"			( "
-		"			select 1 as "
-		"testnumber from dual "
+		"			select 1 as testnumber from dual "
 		"			union "
-		"			select 2 as "
-		"testnumber from dual "
+		"			select 2 as testnumber from dual "
 		"			union "
-		"			select 3 as "
-		"testnumber from dual "
+		"			select 3 as testnumber from dual "
 		"			union "
-		"			select 4 as "
-		"testnumber from dual "
+		"			select 4 as testnumber from dual "
 		"			union "
-		"			select 5 as "
-		"testnumber from dual "
+		"			select 5 as testnumber from dual "
 		"			union "
-		"			select 6 as "
-		"testnumber from dual "
+		"			select 6 as testnumber from dual "
 		"			union "
-		"			select 7 as "
-		"testnumber from dual "
+		"			select 7 as testnumber from dual "
 		"			union "
-		"			select 8 as "
-		"testnumber from dual "
+		"			select 8 as testnumber from dual "
 		"			) "
 		"		where "
 		"			testnumber>value; "
-		"	return l_cursor; ""end;"));
+		"	return l_cursor; "
+		"end;"));
 	sqlrcur_prepareQuery(cur,
 		"begin "
 		"	:curs1:=testproc(5); "
-		"	:curs2:=testproc(0); ""end;");
+		"	:curs2:=testproc(0); "
+		"end;");
 	sqlrcur_defineOutputBindCursor(cur,"curs1");
 	sqlrcur_defineOutputBindCursor(cur,"curs2");
 	assertTrue(sqlrcur_executeQuery(cur));
@@ -1444,78 +1453,81 @@ int main(int argc, char **argv) {
 
 	// temporary tables
 	printf("TEMPORARY TABLES: \n");
-	sqlrcur_prepareQuery(cur,"drop table ""$(HOSTNAME)_temptabledelete");
+	sqlrcur_prepareQuery(cur,"drop table $(HOSTNAME)_temptabledelete");
 	sqlrcur_subString(cur,"HOSTNAME",hostname);
 	sqlrcur_executeQuery(cur);
-	sqlrcur_prepareQuery(cur,"create global temporary table "
-		"$(HOSTNAME)_temptabledelete ( "
-		"	col1 number "") on commit delete rows");
+	sqlrcur_prepareQuery(cur,
+		"create global temporary table $(HOSTNAME)_temptabledelete ( "
+		"	col1 number "
+		") on commit delete rows");
 	sqlrcur_subString(cur,"HOSTNAME",hostname);
 	sqlrcur_executeQuery(cur);
-	sqlrcur_prepareQuery(cur,"insert into ""$(HOSTNAME)_temptabledelete "
-		"values (1)");
+	sqlrcur_prepareQuery(cur,
+			"insert into $(HOSTNAME)_temptabledelete values (1)");
 	sqlrcur_subString(cur,"HOSTNAME",hostname);
 	assertTrue(sqlrcur_executeQuery(cur));
-	sqlrcur_prepareQuery(cur,"select count(*) from "
-		"$(HOSTNAME)_temptabledelete");
+	sqlrcur_prepareQuery(cur,
+			"select count(*) from $(HOSTNAME)_temptabledelete");
 	sqlrcur_subString(cur,"HOSTNAME",hostname);
 	assertTrue(sqlrcur_executeQuery(cur));
 	assertEqStr(sqlrcur_getFieldByIndex(cur,0,0),"1");
 	assertTrue(sqlrcon_commit(con));
-	sqlrcur_prepareQuery(cur,"select count(*) from "
-		"$(HOSTNAME)_temptabledelete");
+	sqlrcur_prepareQuery(cur,
+			"select count(*) from $(HOSTNAME)_temptabledelete");
 	sqlrcur_subString(cur,"HOSTNAME",hostname);
 	assertTrue(sqlrcur_executeQuery(cur));
 	assertEqStr(sqlrcur_getFieldByIndex(cur,0,0),"0");
-	sqlrcur_prepareQuery(cur,"drop table ""$(HOSTNAME)_temptabledelete");
+	sqlrcur_prepareQuery(cur,"drop table $(HOSTNAME)_temptabledelete");
 	sqlrcur_subString(cur,"HOSTNAME",hostname);
 	sqlrcur_executeQuery(cur);
 	printf("\n");
-	sqlrcur_prepareQuery(cur,"truncate table "
-		"$(HOSTNAME)_temptablepreserve");
+	sqlrcur_prepareQuery(cur,
+			"truncate table $(HOSTNAME)_temptablepreserve");
 	sqlrcur_subString(cur,"HOSTNAME",hostname);
 	sqlrcur_executeQuery(cur);
-	sqlrcur_prepareQuery(cur,"drop table ""$(HOSTNAME)_temptablepreserve");
+	sqlrcur_prepareQuery(cur,"drop table $(HOSTNAME)_temptablepreserve");
 	sqlrcur_subString(cur,"HOSTNAME",hostname);
 	sqlrcur_executeQuery(cur);
-	sqlrcur_prepareQuery(cur,"create global temporary table "
-		"$(HOSTNAME)_temptablepreserve ("
-		"	col1 number "") on commit preserve rows");
+	sqlrcur_prepareQuery(cur,
+		"create global temporary table $(HOSTNAME)_temptablepreserve ("
+		"	col1 number "
+		") on commit preserve rows");
 	sqlrcur_subString(cur,"HOSTNAME",hostname);
 	sqlrcur_executeQuery(cur);
 	sqlrcur_prepareQuery(cur,
 		"insert into "
-		"	$(HOSTNAME)_temptablepreserve ""values (1)");
+		"	$(HOSTNAME)_temptablepreserve "
+		"values (1)");
 	sqlrcur_subString(cur,"HOSTNAME",hostname);
 	assertTrue(sqlrcur_executeQuery(cur));
-	sqlrcur_prepareQuery(cur,"select count(*) from "
-		"$(HOSTNAME)_temptablepreserve");
+	sqlrcur_prepareQuery(cur,
+			"select count(*) from $(HOSTNAME)_temptablepreserve");
 	sqlrcur_subString(cur,"HOSTNAME",hostname);
 	assertTrue(sqlrcur_executeQuery(cur));
 	assertEqStr(sqlrcur_getFieldByIndex(cur,0,0),"1");
 	assertTrue(sqlrcon_commit(con));
-	sqlrcur_prepareQuery(cur,"select count(*) from "
-		"$(HOSTNAME)_temptablepreserve");
+	sqlrcur_prepareQuery(cur,
+			"select count(*) from $(HOSTNAME)_temptablepreserve");
 	sqlrcur_subString(cur,"HOSTNAME",hostname);
 	assertTrue(sqlrcur_executeQuery(cur));
 	assertEqStr(sqlrcur_getFieldByIndex(cur,0,0),"1");
 	sqlrcon_endSession(con);
 	printf("\n");
-	sqlrcur_prepareQuery(cur,"select count(*) from "
-		"$(HOSTNAME)_temptablepreserve");
+	sqlrcur_prepareQuery(cur,
+			"select count(*) from $(HOSTNAME)_temptablepreserve");
 	sqlrcur_subString(cur,"HOSTNAME",hostname);
 	assertTrue(sqlrcur_executeQuery(cur));
 	assertEqStr(sqlrcur_getFieldByIndex(cur,0,0),"0");
-	sqlrcur_prepareQuery(cur,"truncate table "
-		"$(HOSTNAME)_temptablepreserve");
+	sqlrcur_prepareQuery(cur,
+			"truncate table $(HOSTNAME)_temptablepreserve");
 	sqlrcur_subString(cur,"HOSTNAME",hostname);
 	assertTrue(sqlrcur_executeQuery(cur));
 	sleep(2);
-	sqlrcur_prepareQuery(cur,"drop table ""$(HOSTNAME)_temptablepreserve");
+	sqlrcur_prepareQuery(cur,"drop table $(HOSTNAME)_temptablepreserve");
 	sqlrcur_subString(cur,"HOSTNAME",hostname);
 	assertTrue(sqlrcur_executeQuery(cur));
-	sqlrcur_prepareQuery(cur,"select count(*) from "
-		"$(HOSTNAME)_temptablepreserve");
+	sqlrcur_prepareQuery(cur,
+			"select count(*) from $(HOSTNAME)_temptablepreserve");
 	sqlrcur_subString(cur,"HOSTNAME",hostname);
 	assertFalse(sqlrcur_executeQuery(cur));
 	printf("\n");
@@ -1524,8 +1536,7 @@ int main(int argc, char **argv) {
 	// encoded binary data
 	printf("ENCODED BINARY DATA: \n");
 	sqlrcur_sendQuery(cur,"drop table testtable");
-	assertTrue(sqlrcur_sendQuery(cur,"create table testtable "
-		"(col1 blob)"));
+	assertTrue(sqlrcur_sendQuery(cur,"create table testtable (col1 blob)"));
 	for (i=0; i<256; i++) {
 		buffer[i]=(unsigned char)i;
 	}
@@ -1539,7 +1550,7 @@ int main(int argc, char **argv) {
 	assertTrue(sqlrcur_sendQuery(cur,"select col1 from testtable"));
 	assertEqInt(sqlrcur_getFieldLengthByIndex(cur,0,0),sizeof(buffer));
 	assertEqInt(memcmp(sqlrcur_getFieldByIndex(cur,0,0),
-			buffer,sizeof(buffer)),0);
+						buffer,sizeof(buffer)),0);
 	assertTrue(sqlrcur_sendQuery(cur,"drop table testtable"));
 	printf("\n");
 
@@ -1547,10 +1558,10 @@ int main(int argc, char **argv) {
 	// quotes
 	printf("QUOTES: \n");
 	sqlrcur_sendQuery(cur,"drop table testtable");
-	assertTrue(sqlrcur_sendQuery(cur,"create table testtable "
-		"(col1 varchar2(4))"));
-	assertTrue(sqlrcur_sendQuery(cur,"insert into testtable "
-		"values ('''''')"));
+	assertTrue(sqlrcur_sendQuery(
+			cur,"create table testtable (col1 varchar2(4))"));
+	assertTrue(sqlrcur_sendQuery(
+			cur,"insert into testtable values ('''''')"));
 	assertTrue(sqlrcur_sendQuery(cur,"select col1 from testtable"));
 	assertEqInt(sqlrcur_getFieldLengthByIndex(cur,0,0),2);
 	assertEqInt(strcmp(sqlrcur_getFieldByIndex(cur,0,0),"''"),0);
@@ -1582,8 +1593,10 @@ int main(int argc, char **argv) {
 	assertEqStr(sqlrcur_getColumnName(cur,0),"Database");
 	found=0;
 	for (i=0; i<sqlrcur_rowCount(cur); i++) {
-		if (!strcasecmp(sqlrcur_getFieldByName(cur,i,"Database"),
-			hostname)) {
+		if (!strcasecmp(
+				sqlrcur_getFieldByName(
+					cur,i,"Database"),
+				hostname)) {
 			found=1;
 			break;
 		}
@@ -1648,7 +1661,8 @@ int main(int argc, char **argv) {
 	counter=0;
 	for (i=0; i<sqlrcur_rowCount(cur); i++) {
 		name=sqlrcur_getFieldByName(cur,i,"Tables_in_xxx");
-		if (!strcmp(name,"TESTTABLE1") ||!strcmp(name,"TESTTABLE2") ||
+		if (!strcmp(name,"TESTTABLE1") ||
+			!strcmp(name,"TESTTABLE2") ||
 			!strcmp(name,"TESTTABLE3") ||
 			!strcmp(name,"TESTTABLE4")) {
 			counter++;
@@ -1748,7 +1762,7 @@ int main(int argc, char **argv) {
 
 	// column list - auto_increment, primary key
 	// oracle doesn't support auto_increment
-	printf("COLUMN LIST - ""auto_increment, primary key: \n");
+	printf("COLUMN LIST - auto_increment, primary key: \n");
 	assertTrue(sqlrcur_sendQuery(cur,
 		"create table testtable ("
 		"	col1 number primary key, "
@@ -1787,8 +1801,10 @@ int main(int argc, char **argv) {
 	assertEqStr(sqlrcur_getFieldByName(cur,0,"table"),"TESTTABLE");
 	assertEqStr(sqlrcur_getFieldByName(cur,0,"seq_in_index"),"1");
 	assertEqStr(sqlrcur_getFieldByName(cur,0,"column_name"),"COL1");
-	assertTrue(sqlrcur_getFieldByName(cur,0,"key_name")!=NULL &&
-		strlen(sqlrcur_getFieldByName(cur,0,"key_name"))>0);
+	{
+		const char *keyname=sqlrcur_getFieldByName(cur,0,"key_name");
+		assertTrue(keyname && keyname[0]);
+	}
 	assertTrue(sqlrcur_sendQuery(cur,"drop table testtable"));
 	printf("\n");
 
@@ -1821,8 +1837,10 @@ int main(int argc, char **argv) {
 	assertEqStr(sqlrcur_getFieldByName(cur,0,"column_name"),"COL1");
 	assertEqStr(sqlrcur_getFieldByName(cur,0,"collation"),"A");
 	assertEqStr(sqlrcur_getFieldByName(cur,0,"index_type"),"3");
-	assertTrue(sqlrcur_getFieldByName(cur,0,"key_name")!=NULL &&
-		strlen(sqlrcur_getFieldByName(cur,0,"key_name"))>0);
+	{
+		const char *keyname=sqlrcur_getFieldByName(cur,0,"key_name");
+		assertTrue(keyname && keyname[0]);
+	}
 	assertTrue(sqlrcur_sendQuery(cur,"drop table testtable"));
 	printf("\n");
 
@@ -1840,7 +1858,8 @@ int main(int argc, char **argv) {
 		"	in3 in varchar2, "
 		"	in4 in date) as "
 		"begin "
-		"	null; ""end;"));
+		"	null; "
+		"end;"));
 	assertTrue(sqlrcur_sendQuery(cur,
 		"create procedure testproc2("
 		"	in1 in number, "
@@ -1848,7 +1867,8 @@ int main(int argc, char **argv) {
 		"	in3 in varchar2, "
 		"	in4 in date) as "
 		"begin "
-		"	null; ""end;"));
+		"	null; "
+		"end;"));
 	assertTrue(sqlrcur_sendQuery(cur,
 		"create procedure testproc3("
 		"	in1 in number, "
@@ -1856,7 +1876,8 @@ int main(int argc, char **argv) {
 		"	in3 in varchar2, "
 		"	in4 in date) as "
 		"begin "
-		"	null; ""end;"));
+		"	null; "
+		"end;"));
 	assertTrue(sqlrcur_sendQuery(cur,
 		"create procedure testproc4("
 		"	in1 in number, "
@@ -1864,13 +1885,16 @@ int main(int argc, char **argv) {
 		"	in3 in varchar2, "
 		"	in4 in date) as "
 		"begin "
-		"	null; ""end;"));
+		"	null; "
+		"end;"));
 	assertTrue(sqlrcur_getProcedureList(cur,NULL));
 	counter=0;
 	for (i=0; i<sqlrcur_rowCount(cur); i++) {
 		name=sqlrcur_getFieldByName(cur,i,"routine_name");
-		if (!strcmp(name,"TESTPROC1") ||!strcmp(name,"TESTPROC2") ||
-			!strcmp(name,"TESTPROC3") ||!strcmp(name,"TESTPROC4")) {
+		if (!strcmp(name,"TESTPROC1") ||
+			!strcmp(name,"TESTPROC2") ||
+			!strcmp(name,"TESTPROC3") ||
+			!strcmp(name,"TESTPROC4")) {
 			counter++;
 		}
 	}
@@ -1941,14 +1965,14 @@ int main(int argc, char **argv) {
 		"order by "
 		"	testnumber"));
 	printf("\n");
-	assertFalse(sqlrcur_sendQuery(cur,"insert into testtable "
-		"values (1,2,3,4)"));
-	assertFalse(sqlrcur_sendQuery(cur,"insert into testtable "
-		"values (1,2,3,4)"));
-	assertFalse(sqlrcur_sendQuery(cur,"insert into testtable "
-		"values (1,2,3,4)"));
-	assertFalse(sqlrcur_sendQuery(cur,"insert into testtable "
-		"values (1,2,3,4)"));
+	assertFalse(sqlrcur_sendQuery(
+			cur,"insert into testtable values (1,2,3,4)"));
+	assertFalse(sqlrcur_sendQuery(
+			cur,"insert into testtable values (1,2,3,4)"));
+	assertFalse(sqlrcur_sendQuery(
+			cur,"insert into testtable values (1,2,3,4)"));
+	assertFalse(sqlrcur_sendQuery(
+			cur,"insert into testtable values (1,2,3,4)"));
 	printf("\n");
 	assertFalse(sqlrcur_sendQuery(cur,"create table testtable"));
 	assertFalse(sqlrcur_sendQuery(cur,"create table testtable"));

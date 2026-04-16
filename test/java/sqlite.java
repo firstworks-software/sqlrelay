@@ -774,6 +774,7 @@ class sqlite extends sqlrtest {
 			"from "+
 			"	testtable"));
 		assertEquals(secondcur.getField(0,0),"9");
+		secondcon.endSession();
 		assertTrue(cur.sendQuery("drop table if exists testtable"));
 		System.out.println();
 
@@ -1107,7 +1108,7 @@ class sqlite extends sqlrtest {
 		assertTrue(cur.sendQuery("select col1 from testtable"));
 		assertEquals(cur.getFieldLength(0,0),buffer.length);
 		assertEquals(cur.getFieldAsByteArray(0,0),
-				new String(buffer),buffer.length);
+				buffer,buffer.length);
 		assertTrue(cur.sendQuery("drop table testtable"));
 		System.out.println();
 

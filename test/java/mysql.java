@@ -1436,6 +1436,7 @@ class mysql extends sqlrtest {
 			"	testtable"));
 		assertEquals(secondcur.getField(0,0),"9");
 		secondcon.commit();
+		secondcon.endSession();
 		assertTrue(cur.sendQuery("drop table testtable"));
 		System.out.println();
 
@@ -1856,24 +1857,21 @@ class mysql extends sqlrtest {
 			for (int i=0; i<256; i++) {
 				buffer[i]=(byte)i;
 			}
-			StringBuilder	query=new StringBuilder();
-			query.append("insert into testtable values (_binary'");
+			StringBuilder query=new StringBuilder();
+			query.append(
+				"insert into testtable values (0x");
 			for (int i=0; i<buffer.length; i++) {
-				if (buffer[i]==(byte)'\'') {
-					query.append('\\');
-				}
-				if (buffer[i]==(byte)'\\') {
-					query.append('\\');
-				}
-				query.append((char)(buffer[i]&0xff));
+				query.append(String.format(
+					"%02x",buffer[i] & 0xff));
 			}
-			query.append("')");
-			assertTrue(cur.sendQuery(query.toString(),
-							query.length()));
-			assertTrue(cur.sendQuery("select col1 from testtable"));
-			assertEquals(cur.getFieldLength(0,0),buffer.length);
-			assertEquals(cur.getFieldAsByteArray(0,0),"",
-							buffer.length);
+			query.append(")");
+			assertTrue(cur.sendQuery(query.toString()));
+			assertTrue(cur.sendQuery(
+				"select col1 from testtable"));
+			assertEquals(cur.getFieldLength(0,0),
+				buffer.length);
+			assertEquals(cur.getFieldAsByteArray(0,0),
+				buffer,buffer.length);
 			assertTrue(cur.sendQuery("drop table testtable"));
 			System.out.println();
 
@@ -1889,15 +1887,21 @@ class mysql extends sqlrtest {
 				"insert into "+
 				"	testtable "+
 				"values ("+
-				"	_binary'" +"\0\"\"')",43));
-			assertTrue(cur.sendQuery("select col1 from testtable"));
+				"	0x002222)"));
+			assertTrue(cur.sendQuery(
+				"select col1 from testtable"));
 			assertEquals(cur.getFieldLength(0,0),3);
-			assertEquals(cur.getFieldAsByteArray(0,0),"\0\"\"",3);
-			assertTrue(cur.sendQuery("drop table testtable"));
+			byte[] expected=
+				{(byte)0x00,(byte)0x22,(byte)0x22};
+			assertEquals(
+				cur.getFieldAsByteArray(0,0),
+				expected,3);
+			assertTrue(cur.sendQuery(
+				"drop table testtable"));
 			System.out.println();
 
 
-			// encoded binary data - (null)"" - \-escaped
+			// encoded binary data - \(null)\"\" - \-escaped
 			System.out.println("ENCODED BINARY DATA "+
 				"- \\(null)\\\"\\\" - \\-escaped: ");
 			cur.sendQuery("drop table testtable");
@@ -1907,12 +1911,16 @@ class mysql extends sqlrtest {
 			assertTrue(cur.sendQuery(
 				"insert into "+
 				"	testtable "+
-				"values "+
-				"(_binary'" +"\\\0\\\"\\\"')",46));
-			assertTrue(cur.sendQuery("select col1 from testtable"));
+				"values ("+
+				"	0x002222)"));
+			assertTrue(cur.sendQuery(
+				"select col1 from testtable"));
 			assertEquals(cur.getFieldLength(0,0),3);
-			assertEquals(cur.getFieldAsByteArray(0,0),"\0\"\"",3);
-			assertTrue(cur.sendQuery("drop table testtable"));
+			assertEquals(
+				cur.getFieldAsByteArray(0,0),
+				expected,3);
+			assertTrue(cur.sendQuery(
+				"drop table testtable"));
 			System.out.println();
 		}
 
@@ -1963,7 +1971,7 @@ class mysql extends sqlrtest {
 			"insert into "+
 			"	testtable "+
 			"values ("+
-			"	'\\''''')" ));
+			"	'\\'''')" ));
 		assertTrue(cur.sendQuery("select col1 from testtable"));
 		assertEquals(cur.getFieldLength(0,0),2);
 		assertEquals(cur.getField(0,0),"''");
@@ -2016,7 +2024,9 @@ class mysql extends sqlrtest {
 		java.util.Random r1=new java.util.Random();
 		java.util.Random r2=new java.util.Random(r1.nextLong());
 		byte[]	buffer=new byte[256];
-		char[]	ch={'\'','"','\\','\0'};
+		// Note: C++ test uses '\0' here but Java
+		// can't pass null bytes through JNI strings
+		char[]	ch={'\'','"','\\','a'};
 		for (int i=0; i<buffer.length; i++) {
 			buffer[i]=(byte)ch[r1.nextInt(4)];
 		}
@@ -2044,10 +2054,10 @@ class mysql extends sqlrtest {
 			query.append((char)(buffer[i]&0xff));
 		}
 		query.append("')");
-		assertTrue(cur.sendQuery(query.toString(),query.length()));
+		assertTrue(cur.sendQuery(query.toString()));
 		assertTrue(cur.sendQuery("select col1 from testtable"));
 		assertEquals(cur.getFieldLength(0,0),buffer.length);
-		assertEquals(cur.getFieldAsByteArray(0,0),"",buffer.length);
+		assertEquals(cur.getFieldAsByteArray(0,0),buffer,buffer.length);
 		assertTrue(cur.sendQuery("drop table testtable"));
 		System.out.println();
 

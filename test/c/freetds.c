@@ -1045,12 +1045,12 @@ int main(int argc, char **argv) {
 	secondcon=sqlrcon_alloc("sqlrelay",9000,"/tmp/test.socket",
 		"testuser","testpassword",0,1);
 	secondcur=sqlrcur_alloc(secondcon);
-	assertTrue(sqlrcur_sendQuery(secondcur,"select count(*) "
-		"from testtable"));
+	assertTrue(sqlrcur_sendQuery(
+			secondcur,"select count(*) from testtable"));
 	assertEqStr(sqlrcur_getFieldByIndex(secondcur,0,0),"0");
 	assertTrue(sqlrcon_commit(con));
-	assertTrue(sqlrcur_sendQuery(secondcur,"select count(*) "
-		"from testtable"));
+	assertTrue(sqlrcur_sendQuery(
+			secondcur,"select count(*) from testtable"));
 	assertEqStr(sqlrcur_getFieldByIndex(secondcur,0,0),"8");
 	assertTrue(sqlrcon_begin(con));
 	assertTrue(sqlrcur_sendQuery(cur,
@@ -1072,8 +1072,8 @@ int main(int argc, char **argv) {
 		"	'testvarchar10', "
 		"	10)"));
 	assertTrue(sqlrcon_rollback(con));
-	assertTrue(sqlrcur_sendQuery(secondcur,"select count(*) "
-		"from testtable"));
+	assertTrue(sqlrcur_sendQuery(
+			secondcur,"select count(*) from testtable"));
 	assertEqStr(sqlrcur_getFieldByIndex(secondcur,0,0),"8");
 	assertTrue(sqlrcur_sendQuery(cur,
 		"insert into "
@@ -1094,8 +1094,8 @@ int main(int argc, char **argv) {
 		"	'testvarchar10', "
 		"	10)"));
 	assertTrue(sqlrcon_commit(con));
-	assertTrue(sqlrcur_sendQuery(secondcur,"select count(*) "
-		"from testtable"));
+	assertTrue(sqlrcur_sendQuery(
+			secondcur,"select count(*) from testtable"));
 	assertEqStr(sqlrcur_getFieldByIndex(secondcur,0,0),"9");
 	sqlrcur_free(secondcur);
 	sqlrcon_free(secondcon);

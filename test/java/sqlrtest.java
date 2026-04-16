@@ -113,6 +113,33 @@ class sqlrtest {
 		System.out.print(success+" ");
 	}
 
+	protected static void assertEquals(byte[] actual,
+						byte[] expected, int length) {
+
+		if (expected==null) {
+			if (actual==null) {
+				System.out.print(success+" ");
+				return;
+			} else {
+				System.out.println(failure);
+				printErrors();
+				status=1;
+			}
+			return;
+		}
+
+		for (int index=0; index<length; index++) {
+			if (actual[index]!=expected[index]) {
+				System.out.println(failure);
+				printErrors();
+				status=1;
+				return;
+			}
+		}
+
+		System.out.print(success+" ");
+	}
+
 	protected static void assertEquals(long actual, int expected) {
 
 		if (actual==expected) {

@@ -1126,6 +1126,7 @@ class sap extends sqlrtest {
 			"from "+
 			"	testtable "));
 		assertEquals(secondcur.getField(0,0),"9");
+		secondcon.endSession();
 		assertTrue(cur.sendQuery("drop table testtable"));
 		System.out.println();
 
@@ -1631,9 +1632,7 @@ class sap extends sqlrtest {
 		assertTrue(cur.sendQuery("select col1 from testtable"));
 		assertEquals(cur.getFieldLength(0,0),buffer.length);
 		assertEquals(cur.getFieldAsByteArray(0,0),
-			new String(buffer,
-				java.nio.charset.StandardCharsets.ISO_8859_1),
-				buffer.length);
+			buffer,buffer.length);
 		assertTrue(cur.sendQuery("drop table testtable"));
 		System.out.println();
 
