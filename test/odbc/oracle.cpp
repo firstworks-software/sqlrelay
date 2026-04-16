@@ -285,6 +285,7 @@ int main(int argc, char **argv) {
 	SQLLEN		cloblen=sizeof(clobval);
 	SQLLEN		bloblen=9;
 
+	// row 2
 	intval=2;
 	charval=(SQLCHAR *)"testchar2";
 	varcharval=(SQLCHAR *)"testvarchar2";
@@ -337,6 +338,7 @@ int main(int argc, char **argv) {
 	erg=SQLExecute(stmt);
 	assertSuccessStmt(stmt,erg);
 
+	// row 3
 	intval=3;
 	charval=(SQLCHAR *)"testchar3";
 	varcharval=(SQLCHAR *)"testvarchar3";
@@ -389,6 +391,7 @@ int main(int argc, char **argv) {
 	erg=SQLExecute(stmt);
 	assertSuccessStmt(stmt,erg);
 
+	// row 4
 	intval=4;
 	charval=(SQLCHAR *)"testchar4";
 	varcharval=(SQLCHAR *)"testvarchar4";
@@ -441,6 +444,7 @@ int main(int argc, char **argv) {
 	erg=SQLExecute(stmt);
 	assertSuccessStmt(stmt,erg);
 
+	// row 5
 	intval=5;
 	charval=(SQLCHAR *)"testchar5";
 	varcharval=(SQLCHAR *)"testvarchar5";
@@ -493,6 +497,7 @@ int main(int argc, char **argv) {
 	erg=SQLExecute(stmt);
 	assertSuccessStmt(stmt,erg);
 
+	// row 6
 	intval=6;
 	charval=(SQLCHAR *)"testchar6";
 	varcharval=(SQLCHAR *)"testvarchar6";
@@ -545,6 +550,7 @@ int main(int argc, char **argv) {
 	erg=SQLExecute(stmt);
 	assertSuccessStmt(stmt,erg);
 
+	// row 7
 	intval=7;
 	charval=(SQLCHAR *)"testchar7";
 	varcharval=(SQLCHAR *)"testvarchar7";
@@ -597,6 +603,7 @@ int main(int argc, char **argv) {
 	erg=SQLExecute(stmt);
 	assertSuccessStmt(stmt,erg);
 
+	// row 8
 	intval=8;
 	charval=(SQLCHAR *)"testchar8";
 	varcharval=(SQLCHAR *)"testvarchar8";
@@ -697,6 +704,9 @@ int main(int argc, char **argv) {
 		assertEqualStmt(stmt,(int)colsize,22);
 		assertEqualStmt(stmt,(int)decdigits,129);
 	} else {
+		// I think oracle odbc returns the wrong type here,
+		// this is a numeric column, which is fixed point,
+		// not floating point
 		assertEqualStmt(stmt,(int)datatype,SQL_FLOAT);
 		assertEqualStmt(stmt,(int)colsize,38);
 		assertEqualStmt(stmt,(int)decdigits,0);
@@ -753,8 +763,7 @@ int main(int argc, char **argv) {
 		assertEqualStmt(stmt,(int)colsize,32768);
 	} else {
 		assertEqualStmt(stmt,(int)datatype,SQL_LONGVARCHAR);
-		assertEqualStmt(stmt,
-			(int)colsize,2147483647);
+		assertEqualStmt(stmt,(int)colsize,2147483647);
 	}
 	assertEqualStmt(stmt,(int)decdigits,0);
 	assertEqualStmt(stmt,(int)nullable,SQL_NULLABLE);
@@ -769,8 +778,7 @@ int main(int argc, char **argv) {
 	if (issqlrelay) {
 		assertEqualStmt(stmt,(int)colsize,32768);
 	} else {
-		assertEqualStmt(stmt,
-			(int)colsize,2147483647);
+		assertEqualStmt(stmt,(int)colsize,2147483647);
 	}
 	assertEqualStmt(stmt,(int)decdigits,0);
 	assertEqualStmt(stmt,(int)nullable,SQL_NULLABLE);
@@ -786,8 +794,7 @@ int main(int argc, char **argv) {
 		assertEqualStmt(stmt,(int)colsize,32768);
 	} else {
 		assertEqualStmt(stmt,(int)datatype,SQL_LONGVARBINARY);
-		assertEqualStmt(stmt,
-			(int)colsize,2147483647);
+		assertEqualStmt(stmt,(int)colsize,2147483647);
 	}
 	assertEqualStmt(stmt,(int)decdigits,0);
 	assertEqualStmt(stmt,(int)nullable,SQL_NULLABLE);
@@ -875,13 +882,13 @@ int main(int argc, char **argv) {
 	assertEqualStmt(stmt,(int)datefield.day,1);
 	assertEqualStmt(stmt,(int)longind,9);
 	assertEqualStmt(stmt,(const char *)longfield,"testlong2");
+	// FIXME: IDK which of these is correct
 	if (issqlrelay) {
 		assertEqualStmt(stmt,(int)clobind,9);
 	} else {
 		assertEqualStmt(stmt,(int)clobind,(int)sizeof(clobval));
 	}
-	assertEqualStmt(stmt,
-		(const char *)clobfield,"testclob2");
+	assertEqualStmt(stmt,(const char *)clobfield,"testclob2");
 	assertEqualStmt(stmt,(int)blobind,9);
 	assertTrueStmt(stmt,!bytestring::compare(blobfield,"testblob2",9));
 
@@ -906,8 +913,7 @@ int main(int argc, char **argv) {
 	} else {
 		assertEqualStmt(stmt,(int)clobind,(int)sizeof(clobval));
 	}
-	assertEqualStmt(stmt,
-		(const char *)clobfield,"testclob3");
+	assertEqualStmt(stmt,(const char *)clobfield,"testclob3");
 	assertEqualStmt(stmt,(int)blobind,9);
 	assertTrueStmt(stmt,!bytestring::compare(blobfield,"testblob3",9));
 
@@ -932,8 +938,7 @@ int main(int argc, char **argv) {
 	} else {
 		assertEqualStmt(stmt,(int)clobind,(int)sizeof(clobval));
 	}
-	assertEqualStmt(stmt,
-		(const char *)clobfield,"testclob4");
+	assertEqualStmt(stmt,(const char *)clobfield,"testclob4");
 	assertEqualStmt(stmt,(int)blobind,9);
 	assertTrueStmt(stmt,!bytestring::compare(blobfield,"testblob4",9));
 
@@ -958,8 +963,7 @@ int main(int argc, char **argv) {
 	} else {
 		assertEqualStmt(stmt,(int)clobind,(int)sizeof(clobval));
 	}
-	assertEqualStmt(stmt,
-		(const char *)clobfield,"testclob5");
+	assertEqualStmt(stmt,(const char *)clobfield,"testclob5");
 	assertEqualStmt(stmt,(int)blobind,9);
 	assertTrueStmt(stmt,!bytestring::compare(blobfield,"testblob5",9));
 
@@ -984,8 +988,7 @@ int main(int argc, char **argv) {
 	} else {
 		assertEqualStmt(stmt,(int)clobind,(int)sizeof(clobval));
 	}
-	assertEqualStmt(stmt,
-		(const char *)clobfield,"testclob6");
+	assertEqualStmt(stmt,(const char *)clobfield,"testclob6");
 	assertEqualStmt(stmt,(int)blobind,9);
 	assertTrueStmt(stmt,!bytestring::compare(blobfield,"testblob6",9));
 
@@ -1010,8 +1013,7 @@ int main(int argc, char **argv) {
 	} else {
 		assertEqualStmt(stmt,(int)clobind,(int)sizeof(clobval));
 	}
-	assertEqualStmt(stmt,
-		(const char *)clobfield,"testclob7");
+	assertEqualStmt(stmt,(const char *)clobfield,"testclob7");
 	assertEqualStmt(stmt,(int)blobind,9);
 	assertTrueStmt(stmt,!bytestring::compare(blobfield,"testblob7",9));
 
@@ -1036,8 +1038,7 @@ int main(int argc, char **argv) {
 	} else {
 		assertEqualStmt(stmt,(int)clobind,(int)sizeof(clobval));
 	}
-	assertEqualStmt(stmt,
-		(const char *)clobfield,"testclob8");
+	assertEqualStmt(stmt,(const char *)clobfield,"testclob8");
 	assertEqualStmt(stmt,(int)blobind,9);
 	assertTrueStmt(stmt,!bytestring::compare(blobfield,"testblob8",9));
 
