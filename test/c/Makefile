@@ -25,6 +25,9 @@ freetds: freetds.c freetds.$(OBJ)
 firebird: firebird.c firebird.$(OBJ)
 	$(LTLINK) $(LINK) $(LDFLAGS) $(OUT)$@$(EXE) firebird.$(OBJ) $(CTESTLIBS)
 
+informix: informix.c informix.$(OBJ)
+	$(LTLINK) $(LINK) $(LDFLAGS) $(OUT)$@$(EXE) informix.$(OBJ) $(CTESTLIBS)
+
 mysql: mysql.c mysql.$(OBJ)
 	$(LTLINK) $(LINK) $(LDFLAGS) $(OUT)$@$(EXE) mysql.$(OBJ) $(CTESTLIBS)
 

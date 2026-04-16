@@ -26,6 +26,9 @@ freetds.class: sqlrtest.java freetds.java
 firebird.class: sqlrtest.java firebird.java
 	$(JAVAC) -classpath $(javadir)/sqlrelay.jar sqlrtest.java firebird.java
 
+informix.class: sqlrtest.java informix.java
+	$(JAVAC) -classpath $(javadir)/sqlrelay.jar sqlrtest.java informix.java
+
 mysql.class: sqlrtest.java mysql.java
 	$(JAVAC) -classpath $(javadir)/sqlrelay.jar sqlrtest.java mysql.java
 
