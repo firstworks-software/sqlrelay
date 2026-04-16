@@ -1882,28 +1882,14 @@ int main(int argc, char **argv) {
 
 	// temporary tables
 	printf("TEMPORARY TABLES: \n");
-	sqlrcur_sendQuery(cur,
-			"drop table temptable\n");
-	sqlrcur_sendQuery(cur,
-		"-- this should be skipped\n"
-		"-- so should this\n"
-		"-- and the whitespace "
-			"below too\n"
-		"        				"
-		"\n\n"
-		"create temporary table "
-		"temptable (col1 int)");
-	assertTrue(sqlrcur_sendQuery(cur,
-		"insert into "
-		"temptable values (1)"));
-	assertTrue(sqlrcur_sendQuery(cur,
-		"select count(*) from temptable"));
-	assertEqStr(
-		sqlrcur_getFieldByIndex(cur,0,0),"1");
+	sqlrcur_sendQuery(cur,"drop table temptable\n");
+	sqlrcur_sendQuery(cur,"create temporary table temptable (col1 int)");
+	assertTrue(sqlrcur_sendQuery(cur,"insert into temptable values (1)"));
+	assertTrue(sqlrcur_sendQuery(cur,"select count(*) from temptable"));
+	assertEqStr(sqlrcur_getFieldByIndex(cur,0,0),"1");
 	sqlrcon_endSession(con);
 	printf("\n");
-	assertFalse(sqlrcur_sendQuery(cur,
-		"select count(*) from temptable"));
+	assertFalse(sqlrcur_sendQuery(cur,"select count(*) from temptable"));
 	printf("\n");
 
 

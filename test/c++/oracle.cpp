@@ -1060,6 +1060,7 @@ int main(int argc, char **argv) {
 	cur->getOutputBindDate("datevar",&year,&month,&day,
 				&hour,&minute,&second,&microsecond,&tz,
 				&isnegative);
+	nullvar=cur->getOutputBindString("nullvar");
 	assertEquals(numvar,1);
 	assertEquals(stringvar,"hello");
 	assertEquals(floatvar,2.5);
@@ -1071,7 +1072,6 @@ int main(int argc, char **argv) {
 	assertEquals(second,0);
 	assertEquals(microsecond,0);
 	assertEquals(tz,"");
-	nullvar=cur->getOutputBindString("nullvar");
 	assertEquals(nullvar,NULL);
 	cur->getNullsAsEmptyStrings();
 	stdoutput.printf("\n");
@@ -1095,6 +1095,7 @@ int main(int argc, char **argv) {
 	cur->getOutputBindDate("datevar",&year,&month,&day,
 				&hour,&minute,&second,&microsecond,&tz,
 				&isnegative);
+	nullvar=cur->getOutputBindString("nullvar");
 	assertEquals(numvar,1);
 	assertEquals(stringvar,"hello");
 	assertEquals(floatvar,2.5);
@@ -1106,7 +1107,6 @@ int main(int argc, char **argv) {
 	assertEquals(second,0);
 	assertEquals(microsecond,0);
 	assertEquals(tz,"");
-	nullvar=cur->getOutputBindString("nullvar");
 	assertEquals(nullvar,NULL);
 	cur->getNullsAsEmptyStrings();
 	stdoutput.printf("\n");

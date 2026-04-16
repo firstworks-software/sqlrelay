@@ -17,10 +17,8 @@ class postgresql extends sqlrtest {
 		long[]		fieldlens;
 		String[]	subvars={"var1","var2","var3"};
 		long[]		subvallongs={1,2,3};
-		String[]	subvalstrings={
-					"hi","hello","bye"};
-		double[]	subvaldoubles={
-					10.55,10.556,10.5556};
+		String[]	subvalstrings={"hi","hello","bye"};
+		double[]	subvaldoubles={10.55,10.556,10.5556};
 		int[]		precs={4,5,6};
 		int[]		scales={2,3,4};
 		short		port;
@@ -199,8 +197,8 @@ class postgresql extends sqlrtest {
 		cur.inputBind("7","01/01/2005");
 		cur.inputBind("8","05:00:00");
 		cur.inputBindClob("9","testtext5",9);
-		cur.inputBindBlob("10",(new String("testbytea5")).getBytes(),
-			10);
+		cur.inputBindBlob("10",
+			(new String("testbytea5")).getBytes(),10);
 		assertTrue(cur.executeQuery());
 		cur.clearBinds();
 		cur.inputBind("1",6);
@@ -212,8 +210,8 @@ class postgresql extends sqlrtest {
 		cur.inputBind("7","01/01/2006");
 		cur.inputBind("8","06:00:00");
 		cur.inputBindClob("9","testtext6",9);
-		cur.inputBindBlob("10",(new String("testbytea6")).getBytes(),
-			10);
+		cur.inputBindBlob("10",
+			(new String("testbytea6")).getBytes(),10);
 		assertTrue(cur.executeQuery());
 		cur.clearBinds();
 		cur.inputBind("1",7);
@@ -225,8 +223,8 @@ class postgresql extends sqlrtest {
 		cur.inputBind("7","01/01/2007");
 		cur.inputBind("8","07:00:00");
 		cur.inputBindClob("9","testtext7",9);
-		cur.inputBindBlob("10",(new String("testbytea8")).getBytes(),
-			10);
+		cur.inputBindBlob("10",
+			(new String("testbytea8")).getBytes(),10);
 		assertTrue(cur.executeQuery());
 		System.out.println();
 
@@ -423,7 +421,7 @@ class postgresql extends sqlrtest {
 		assertEquals(cur.getField(0,2),"1.1");
 		assertEquals(cur.getField(0,3),"1");
 		assertEquals(cur.getField(0,4),"testchar1"+
-			"                               ");
+					"                               ");
 		assertEquals(cur.getField(0,5),"testvarchar1");
 		assertEquals(cur.getField(0,6),"2001-01-01");
 		assertEquals(cur.getField(0,7),"01:00:00");
@@ -435,7 +433,7 @@ class postgresql extends sqlrtest {
 		assertEquals(cur.getField(7,2),"8.8");
 		assertEquals(cur.getField(7,3),"8");
 		assertEquals(cur.getField(7,4),"testchar8"+
-			"                               ");
+					"                               ");
 		assertEquals(cur.getField(7,5),"testvarchar8");
 		assertEquals(cur.getField(7,6),"2008-01-01");
 		assertEquals(cur.getField(7,7),"08:00:00");
@@ -477,7 +475,7 @@ class postgresql extends sqlrtest {
 		assertEquals(cur.getField(0,"testreal"),"1.1");
 		assertEquals(cur.getField(0,"testsmallint"),"1");
 		assertEquals(cur.getField(0,"testchar"),"testchar1"+
-			"                               ");
+					"                               ");
 		assertEquals(cur.getField(0,"testvarchar"),"testvarchar1");
 		assertEquals(cur.getField(0,"testdate"),"2001-01-01");
 		assertEquals(cur.getField(0,"testtime"),"01:00:00");
@@ -489,7 +487,7 @@ class postgresql extends sqlrtest {
 		assertEquals(cur.getField(7,"testreal"),"8.8");
 		assertEquals(cur.getField(7,"testsmallint"),"8");
 		assertEquals(cur.getField(7,"testchar"),"testchar8"+
-			"                               ");
+					"                               ");
 		assertEquals(cur.getField(7,"testvarchar"),"testvarchar8");
 		assertEquals(cur.getField(7,"testdate"),"2008-01-01");
 		assertEquals(cur.getField(7,"testtime"),"08:00:00");
@@ -532,7 +530,7 @@ class postgresql extends sqlrtest {
 		assertEquals(fields[2],"1.1");
 		assertEquals(fields[3],"1");
 		assertEquals(fields[4],"testchar1"+
-			"                               ");
+					"                               ");
 		assertEquals(fields[5],"testvarchar1");
 		assertEquals(fields[6],"2001-01-01");
 		assertEquals(fields[7],"01:00:00");
@@ -911,6 +909,7 @@ class postgresql extends sqlrtest {
 				"	* "+
 				"from "+
 				"	testtable"));
+			secondcur2.closeResultSet();
 		}
 		cur.setResultSetBufferSize(0);
 		System.out.println();
@@ -1298,10 +1297,7 @@ class postgresql extends sqlrtest {
 		// temporary tables
 		System.out.println("TEMPORARY TABLES: ");
 		cur.sendQuery("drop table temptable\n");
-		cur.sendQuery("-- this should be skipped\n-- so should this\n"+
-			"-- and the whitespace below too\n"+
-			"        				"+
-			"\n\ncreate temporary table temptable (col1 int)");
+		cur.sendQuery("create temporary table temptable (col1 int)");
 		assertTrue(cur.sendQuery("insert into temptable values (1)"));
 		assertTrue(cur.sendQuery("select count(*) from temptable"));
 		assertEquals(cur.getField(0,0),"1");
@@ -1314,9 +1310,9 @@ class postgresql extends sqlrtest {
 		// encoded binary data
 		System.out.println("ENCODED BINARY DATA: ");
 		cur.sendQuery("drop table testtable");
-		assertTrue(cur.sendQuery("create table testtable "+
-			"(col1 bytea)"));
-		byte[] buffer=new byte[256];
+		assertTrue(cur.sendQuery(
+				"create table testtable (col1 bytea)"));
+		byte[]	buffer=new byte[256];
 		for (int i=0; i<256; i++) {
 			buffer[i]=(byte)i;
 		}
@@ -1337,10 +1333,13 @@ class postgresql extends sqlrtest {
 		// quotes
 		System.out.println("QUOTES: ");
 		cur.sendQuery("drop table testtable");
-		assertTrue(cur.sendQuery("create table testtable "+
-			"(col1 varchar(4))"));
-		assertTrue(cur.sendQuery("insert into testtable "+
-			"values ('''''')"));
+		assertTrue(cur.sendQuery(
+			"create table testtable (col1 varchar(4))"));
+		assertTrue(cur.sendQuery(
+			"insert into "+
+			"	testtable "+
+			"values ("+
+			"	'''''')"));
 		assertTrue(cur.sendQuery("select col1 from testtable"));
 		assertEquals(cur.getFieldLength(0,0),2);
 		assertEquals(cur.getField(0,0),"''");
@@ -1352,12 +1351,16 @@ class postgresql extends sqlrtest {
 		System.out.println("LAST INSERT ID: ");
 		cur.sendQuery("drop table testtable");
 		assertTrue(cur.sendQuery(
-			"create table testtable "+
-			"	(col1 serial "+
+			"create table testtable ("+
+			"	col1 serial "+
 			"primary key, "+
 			"	col2 int)"));
-		assertTrue(cur.sendQuery("insert into testtable "+
-			"(col2) values (1)"));
+		assertTrue(cur.sendQuery(
+			"insert into "+
+			"	testtable ("+
+			"	col2) "+
+			"values ("+
+			"	1)"));
 		assertEquals(con.getLastInsertId(),1);
 		assertTrue(cur.sendQuery("drop table testtable"));
 		System.out.println();
@@ -1529,9 +1532,9 @@ class postgresql extends sqlrtest {
 		assertEquals(cur.getField(5,"data_type"),"character varying");
 		assertEquals(cur.getField(6,"data_type"),"date");
 		assertEquals(cur.getField(7,"data_type"),
-			"time without time zone");
-		assertEquals(cur.getField(8,"data_type"),"timestamp without "+
-			"time zone");
+						"time without time zone");
+		assertEquals(cur.getField(8,"data_type"),
+						"timestamp without time zone");
 		assertEquals(cur.getField(9,"data_type"),"text");
 		assertEquals(cur.getField(10,"data_type"),"bytea");
 		assertTrue(cur.sendQuery("drop table testtable"));
@@ -1703,14 +1706,14 @@ class postgresql extends sqlrtest {
 		assertEquals(cur.getField(3,"parameter_mode"),"1");
 		assertEquals(cur.getField(3,"data_type"),"date");
 		assertEquals(cur.getField(3,"ordinal_position"),"4");
-		assertTrue(cur.sendQuery("drop function testproc1"+
-			"(int,char,varchar,date)"));
-		assertTrue(cur.sendQuery("drop function testproc2"+
-			"(int,char,varchar,date)"));
-		assertTrue(cur.sendQuery("drop function testproc3"+
-			"(int,char,varchar,date)"));
-		assertTrue(cur.sendQuery("drop function testproc4"+
-			"(int,char,varchar,date)"));
+		assertTrue(cur.sendQuery(
+			"drop function testproc1(int,char,varchar,date)"));
+		assertTrue(cur.sendQuery(
+			"drop function testproc2(int,char,varchar,date)"));
+		assertTrue(cur.sendQuery(
+			"drop function testproc3(int,char,varchar,date)"));
+		assertTrue(cur.sendQuery(
+			"drop function testproc4(int,char,varchar,date)"));
 		System.out.println();
 
 

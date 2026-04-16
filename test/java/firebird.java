@@ -421,7 +421,7 @@ class firebird extends sqlrtest {
 		assertEquals(cur.getField(0,6),"2001:01:01");
 		assertEquals(cur.getField(0,7),"01:00:00");
 		assertEquals(cur.getField(0,8),"testchar1"+
-			"                                         ");
+				"                                         ");
 		assertEquals(cur.getField(0,9),"testvarchar1");
 		assertEquals(cur.getField(0,11),"testblob1");
 		System.out.println();
@@ -434,7 +434,7 @@ class firebird extends sqlrtest {
 		assertEquals(cur.getField(7,6),"2008:01:01");
 		assertEquals(cur.getField(7,7),"08:00:00");
 		assertEquals(cur.getField(7,8),"testchar8"+
-			"                                         ");
+				"                                         ");
 		assertEquals(cur.getField(7,9),"testvarchar8");
 		assertEquals(cur.getField(7,11),"testblob8");
 		System.out.println();
@@ -477,7 +477,7 @@ class firebird extends sqlrtest {
 		assertEquals(cur.getField(0,"TESTDATE"),"2001:01:01");
 		assertEquals(cur.getField(0,"TESTTIME"),"01:00:00");
 		assertEquals(cur.getField(0,"TESTCHAR"),"testchar1"+
-			"                                         ");
+				"                                         ");
 		assertEquals(cur.getField(0,"TESTVARCHAR"),"testvarchar1");
 		assertEquals(cur.getField(0,"TESTBLOB"),"testblob1");
 		System.out.println();
@@ -490,7 +490,7 @@ class firebird extends sqlrtest {
 		assertEquals(cur.getField(7,"TESTDATE"),"2008:01:01");
 		assertEquals(cur.getField(7,"TESTTIME"),"08:00:00");
 		assertEquals(cur.getField(7,"TESTCHAR"),"testchar8"+
-			"                                         ");
+				"                                         ");
 		assertEquals(cur.getField(7,"TESTVARCHAR"),"testvarchar8");
 		assertEquals(cur.getField(7,"TESTBLOB"),"testblob8");
 		System.out.println();
@@ -534,7 +534,7 @@ class firebird extends sqlrtest {
 		assertEquals(fields[6],"2001:01:01");
 		assertEquals(fields[7],"01:00:00");
 		assertEquals(fields[8],"testchar1"+
-			"                                         ");
+				"                                         ");
 		assertEquals(fields[9],"testvarchar1");
 		assertEquals(fields[11],"testblob1");
 		System.out.println();
@@ -917,7 +917,7 @@ class firebird extends sqlrtest {
 				"	* "+
 				"from "+
 				"	testtable"));
-			secondcur2=null;
+			secondcur2.closeResultSet();
 		}
 		cur.setResultSetBufferSize(0);
 		System.out.println();
@@ -988,8 +988,6 @@ class firebird extends sqlrtest {
 			"from "+
 			"	testtable"));
 		assertEquals(secondcur.getField(0,0),"9");
-		secondcur=null;
-		secondcon=null;
 		assertTrue(con.autoCommitOff());
 		assertTrue(cur.sendQuery("delete from testtable"));
 		con.commit();
@@ -1324,8 +1322,11 @@ class firebird extends sqlrtest {
 		// quotes
 		System.out.println("QUOTES: ");
 		cur.sendQuery("delete from table testtable1");
-		assertTrue(cur.sendQuery("insert into testtable1 "+
-			"values ('''''')"));
+		assertTrue(cur.sendQuery(
+			"insert into "+
+			"	testtable1 "+
+			"values ("+
+			"	'''''')"));
 		assertTrue(cur.sendQuery("select testblob from testtable1"));
 		assertEquals(cur.getFieldLength(0,0),2);
 		assertTrue(cur.getField(0,0).equals("''"));
@@ -1645,14 +1646,26 @@ class firebird extends sqlrtest {
 			"order by "+
 			"	testinteger "));
 		System.out.println();
-		assertFalse(cur.sendQuery("insert into testtable1 "+
-			"values (1,2,3,4)"));
-		assertFalse(cur.sendQuery("insert into testtable1 "+
-			"values (1,2,3,4)"));
-		assertFalse(cur.sendQuery("insert into testtable1 "+
-			"values (1,2,3,4)"));
-		assertFalse(cur.sendQuery("insert into testtable1 "+
-			"values (1,2,3,4)"));
+		assertFalse(cur.sendQuery(
+			"insert into "+
+			"	testtable1 "+
+			"values ("+
+			"	1,2,3,4)"));
+		assertFalse(cur.sendQuery(
+			"insert into "+
+			"	testtable1 "+
+			"values ("+
+			"	1,2,3,4)"));
+		assertFalse(cur.sendQuery(
+			"insert into "+
+			"	testtable1 "+
+			"values ("+
+			"	1,2,3,4)"));
+		assertFalse(cur.sendQuery(
+			"insert into "+
+			"	testtable1 "+
+			"values ("+
+			"	1,2,3,4)"));
 		System.out.println();
 		assertFalse(cur.sendQuery("create table testtable"));
 		assertFalse(cur.sendQuery("create table testtable"));

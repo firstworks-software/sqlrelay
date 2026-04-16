@@ -17,10 +17,8 @@ class mysql extends sqlrtest {
 		long[]		fieldlens;
 		String[]	subvars={"var1","var2","var3"};
 		long[]		subvallongs={1,2,3};
-		String[]	subvalstrings={
-					"hi","hello","bye"};
-		double[]	subvaldoubles={
-					10.55,10.556,10.5556};
+		String[]	subvalstrings={"hi","hello","bye"};
+		double[]	subvaldoubles={10.55,10.556,10.5556};
 		int[]		precs={4,5,6};
 		int[]		scales={2,3,4};
 		short		port;
@@ -281,11 +279,14 @@ class mysql extends sqlrtest {
 		cur.inputBindClob("16","tinytext5",9);
 		cur.inputBindClob("17","mediumtext5",11);
 		cur.inputBindClob("18","longtext5",9);
-		cur.inputBindBlob("19",(new String("blob5")).getBytes(),5);
-		cur.inputBindBlob("20",(new String("tinyblob5")).getBytes(),9);
-		cur.inputBindBlob("21",(new String("mediumblob5")).getBytes(),
-			11);
-		cur.inputBindBlob("22",(new String("longblob5")).getBytes(),9);
+		cur.inputBindBlob("19",
+			(new String("blob5")).getBytes(),5);
+		cur.inputBindBlob("20",
+			(new String("tinyblob5")).getBytes(),9);
+		cur.inputBindBlob("21",
+			(new String("mediumblob5")).getBytes(),11);
+		cur.inputBindBlob("22",
+			(new String("longblob5")).getBytes(),9);
 		assertTrue(cur.executeQuery());
 		cur.clearBinds();
 		cur.inputBind("1",6);
@@ -308,11 +309,14 @@ class mysql extends sqlrtest {
 		cur.inputBindClob("16","tinytext6",9);
 		cur.inputBindClob("17","mediumtext6",11);
 		cur.inputBindClob("18","longtext6",9);
-		cur.inputBindBlob("19",(new String("blob6")).getBytes(),5);
-		cur.inputBindBlob("20",(new String("tinyblob6")).getBytes(),9);
-		cur.inputBindBlob("21",(new String("mediumblob6")).getBytes(),
-			11);
-		cur.inputBindBlob("22",(new String("longblob6")).getBytes(),9);
+		cur.inputBindBlob("19",
+			(new String("blob6")).getBytes(),5);
+		cur.inputBindBlob("20",
+			(new String("tinyblob6")).getBytes(),9);
+		cur.inputBindBlob("21",
+			(new String("mediumblob6")).getBytes(),11);
+		cur.inputBindBlob("22",
+			(new String("longblob6")).getBytes(),9);
 		assertTrue(cur.executeQuery());
 		cur.clearBinds();
 		cur.inputBind("1",7);
@@ -335,11 +339,14 @@ class mysql extends sqlrtest {
 		cur.inputBindClob("16","tinytext7",9);
 		cur.inputBindClob("17","mediumtext7",11);
 		cur.inputBindClob("18","longtext7",9);
-		cur.inputBindBlob("19",(new String("blob7")).getBytes(),5);
-		cur.inputBindBlob("20",(new String("tinyblob7")).getBytes(),9);
-		cur.inputBindBlob("21",(new String("mediumblob7")).getBytes(),
-			11);
-		cur.inputBindBlob("22",(new String("longblob7")).getBytes(),9);
+		cur.inputBindBlob("19",
+			(new String("blob7")).getBytes(),5);
+		cur.inputBindBlob("20",
+			(new String("tinyblob7")).getBytes(),9);
+		cur.inputBindBlob("21",
+			(new String("mediumblob7")).getBytes(),11);
+		cur.inputBindBlob("22",
+			(new String("longblob7")).getBytes(),9);
 		assertTrue(cur.executeQuery());
 		System.out.println();
 
@@ -373,11 +380,14 @@ class mysql extends sqlrtest {
 		cur.inputBindClob("16","tinytext8",9);
 		cur.inputBindClob("17","mediumtext8",11);
 		cur.inputBindClob("18","longtext8",9);
-		cur.inputBindBlob("19",(new String("blob8")).getBytes(),5);
-		cur.inputBindBlob("20",(new String("tinyblob8")).getBytes(),9);
-		cur.inputBindBlob("21",(new String("mediumblob8")).getBytes(),
-			11);
-		cur.inputBindBlob("22",(new String("longblob8")).getBytes(),9);
+		cur.inputBindBlob("19",
+			(new String("blob8")).getBytes(),5);
+		cur.inputBindBlob("20",
+			(new String("tinyblob8")).getBytes(),9);
+		cur.inputBindBlob("21",
+			(new String("mediumblob8")).getBytes(),11);
+		cur.inputBindBlob("22",
+			(new String("longblob8")).getBytes(),9);
 		cur.validateBinds();
 		assertTrue(cur.executeQuery());
 		System.out.println();
@@ -788,7 +798,7 @@ class mysql extends sqlrtest {
 		assertEquals(cur.getField(0,"testdate"),"2001-01-01");
 		assertEquals(cur.getField(0,"testtime"),"01:00:00");
 		assertEquals(cur.getField(0,"testdatetime"),
-			"2001-01-01 01:00:00");
+						"2001-01-01 01:00:00");
 		assertEquals(cur.getField(0,"testyear"),"2001");
 		assertEquals(cur.getField(0,"testchar"),"char1");
 		assertEquals(cur.getField(0,"testvarchar"),"varchar1");
@@ -814,7 +824,7 @@ class mysql extends sqlrtest {
 		assertEquals(cur.getField(7,"testdate"),"2008-01-01");
 		assertEquals(cur.getField(7,"testtime"),"08:00:00");
 		assertEquals(cur.getField(7,"testdatetime"),
-			"2008-01-01 08:00:00");
+						"2008-01-01 08:00:00");
 		assertEquals(cur.getField(7,"testyear"),"2008");
 		assertEquals(cur.getField(7,"testchar"),"char8");
 		assertEquals(cur.getField(7,"testvarchar"),"varchar8");
@@ -1321,6 +1331,7 @@ class mysql extends sqlrtest {
 				"	* "+
 				"from "+
 				"	testtable"));
+			secondcur.closeResultSet();
 		}
 		//cur.setResultSetBufferSize(0);
 		System.out.println();
@@ -1532,10 +1543,10 @@ class mysql extends sqlrtest {
 		assertTrue(cur.executeQuery());
 		cur.sendQuery("select * from testtable");
 		assertEquals(cur.getFieldLength(0,"testtext"),
-			LARGE_BUFFER_LENGTH);
+						LARGE_BUFFER_LENGTH);
 		assertEquals(cur.getField(0,"testtext"),largestr);
 		assertEquals(cur.getFieldLength(0,"testblob"),
-			LARGE_BUFFER_LENGTH);
+						LARGE_BUFFER_LENGTH);
 		assertEquals(cur.getField(0,"testblob"),largestr);
 		assertTrue(cur.sendQuery("drop table testtable"));
 		System.out.println();
@@ -1691,7 +1702,8 @@ class mysql extends sqlrtest {
 		// stored procedure returning result set
 		System.out.println("STORED PROCEDURE RETURNING RESULT SET: ");
 		cur.sendQuery("drop procedure testselectproc");
-		assertTrue(cur.sendQuery("create procedure testselectproc() "+
+		assertTrue(cur.sendQuery(
+			"create procedure testselectproc() "+
 			"begin "+
 			"	select 1 "+
 			"	union "+
@@ -1758,10 +1770,10 @@ class mysql extends sqlrtest {
 			// stored procedure returning one value
 			System.out.println("FUNCTIONS: ");
 			cur.sendQuery("drop function if exists testfunc");
-			assertTrue(cur.sendQuery("create function testfunc("+
-				"in1 int, in2 "+
-				"	int) returns "+
-				"int return in1+in2;"));
+			assertTrue(cur.sendQuery(
+				"create function testfunc(in1 int, in2 int) "+
+				"returns int "+
+				"return in1+in2;"));
 			cur.prepareQuery("select testfunc(?,?)");
 			cur.inputBind("1",10);
 			cur.inputBind("2",20);
@@ -1804,8 +1816,8 @@ class mysql extends sqlrtest {
 			// stored procedure returning result set
 			System.out.println("STORED PROCEDURE RETURNING RESULT "+
 						"SET: ");
-			cur.sendQuery("drop procedure if exists "+
-				"testselectproc");
+			cur.sendQuery(
+				"drop procedure if exists testselectproc");
 			assertTrue(cur.sendQuery("create procedure "+
 				"testselectproc() begin "+
 				"	select 1 "+
@@ -1837,8 +1849,9 @@ class mysql extends sqlrtest {
 			System.out.println("ENCODED BINARY DATA - all chars - "+
 						"\\-escaped: ");
 			cur.sendQuery("drop table testtable");
-			assertTrue(cur.sendQuery("create table testtable "+
-				"(col1 longblob)"));
+			assertTrue(cur.sendQuery(
+				"create table testtable ("+
+				"	col1 longblob)"));
 			byte[] buffer=new byte[256];
 			for (int i=0; i<256; i++) {
 				buffer[i]=(byte)i;
@@ -1856,11 +1869,11 @@ class mysql extends sqlrtest {
 			}
 			query.append("')");
 			assertTrue(cur.sendQuery(query.toString(),
-				query.length()));
+							query.length()));
 			assertTrue(cur.sendQuery("select col1 from testtable"));
 			assertEquals(cur.getFieldLength(0,0),buffer.length);
 			assertEquals(cur.getFieldAsByteArray(0,0),"",
-				buffer.length);
+							buffer.length);
 			assertTrue(cur.sendQuery("drop table testtable"));
 			System.out.println();
 
@@ -1869,10 +1882,14 @@ class mysql extends sqlrtest {
 			System.out.println("ENCODED BINARY DATA - (null)\"\" "+
 						"- unescaped: ");
 			cur.sendQuery("drop table testtable");
-			assertTrue(cur.sendQuery("create table testtable "+
-				"(col1 longblob)"));
-			assertTrue(cur.sendQuery("insert into "+
-				"testtable values (_binary'" +"\0\"\"')",43));
+			assertTrue(cur.sendQuery(
+				"create table testtable ("+
+				"	col1 longblob)"));
+			assertTrue(cur.sendQuery(
+				"insert into "+
+				"	testtable "+
+				"values ("+
+				"	_binary'" +"\0\"\"')",43));
 			assertTrue(cur.sendQuery("select col1 from testtable"));
 			assertEquals(cur.getFieldLength(0,0),3);
 			assertEquals(cur.getFieldAsByteArray(0,0),"\0\"\"",3);
@@ -1884,10 +1901,13 @@ class mysql extends sqlrtest {
 			System.out.println("ENCODED BINARY DATA "+
 				"- \\(null)\\\"\\\" - \\-escaped: ");
 			cur.sendQuery("drop table testtable");
-			assertTrue(cur.sendQuery("create table testtable "+
-				"(col1 longblob)"));
-			assertTrue(cur.sendQuery("insert into "+
-				"testtable values "+
+			assertTrue(cur.sendQuery(
+				"create table testtable ("+
+				"	col1 longblob)"));
+			assertTrue(cur.sendQuery(
+				"insert into "+
+				"	testtable "+
+				"values "+
 				"(_binary'" +"\\\0\\\"\\\"')",46));
 			assertTrue(cur.sendQuery("select col1 from testtable"));
 			assertEquals(cur.getFieldLength(0,0),3);
@@ -1900,10 +1920,14 @@ class mysql extends sqlrtest {
 		// quotes - '' - ''-escaped
 		System.out.println("QUOTES - '' - ''-escaped: ");
 		cur.sendQuery("drop table testtable");
-		assertTrue(cur.sendQuery("create table testtable "+
-			"(col1 varchar(4))"));
-		assertTrue(cur.sendQuery("insert into testtable "+
-			"values ('''''')"));
+		assertTrue(cur.sendQuery(
+			"create table testtable ("+
+			"	col1 varchar(4))"));
+		assertTrue(cur.sendQuery(
+			"insert into "+
+			"	testtable "+
+			"values ("+
+			"	'''''')"));
 		assertTrue(cur.sendQuery("select col1 from testtable"));
 		assertEquals(cur.getFieldLength(0,0),2);
 		assertEquals(cur.getField(0,0),"''");
@@ -1914,10 +1938,14 @@ class mysql extends sqlrtest {
 		// quotes - '' - '',\-escaped
 		System.out.println("QUOTES - '' - '',\\-escaped: ");
 		cur.sendQuery("drop table testtable");
-		assertTrue(cur.sendQuery("create table testtable "+
-			"(col1 varchar(4))"));
-		assertTrue(cur.sendQuery("insert into testtable "+
-			"values ('''\\'')" ));
+		assertTrue(cur.sendQuery(
+			"create table testtable ("+
+			"	col1 varchar(4))"));
+		assertTrue(cur.sendQuery(
+			"insert into "+
+			"	testtable "+
+			"values ("+
+			"	'''\\'')" ));
 		assertTrue(cur.sendQuery("select col1 from testtable"));
 		assertEquals(cur.getFieldLength(0,0),2);
 		assertEquals(cur.getField(0,0),"''");
@@ -1928,10 +1956,14 @@ class mysql extends sqlrtest {
 		// quotes - '' - \,''-escaped
 		System.out.println("QUOTES - '' - \\,''-escaped: ");
 		cur.sendQuery("drop table testtable");
-		assertTrue(cur.sendQuery("create table testtable "+
-			"(col1 varchar(4))"));
-		assertTrue(cur.sendQuery("insert into testtable "+
-			"values ('\\''''')" ));
+		assertTrue(cur.sendQuery(
+			"create table testtable ("+
+			"	col1 varchar(4))"));
+		assertTrue(cur.sendQuery(
+			"insert into "+
+			"	testtable "+
+			"values ("+
+			"	'\\''''')" ));
 		assertTrue(cur.sendQuery("select col1 from testtable"));
 		assertEquals(cur.getFieldLength(0,0),2);
 		assertEquals(cur.getField(0,0),"''");
@@ -1942,10 +1974,14 @@ class mysql extends sqlrtest {
 		// quotes - \\' - \-escaped
 		System.out.println("QUOTES - \\\\' - \\-escaped: ");
 		cur.sendQuery("drop table testtable");
-		assertTrue(cur.sendQuery("create table testtable "+
-			"(col1 varchar(4))"));
-		assertTrue(cur.sendQuery("insert into testtable "+
-			"values ('\\\\\\'')"));
+		assertTrue(cur.sendQuery(
+			"create table testtable ("+
+			"	col1 varchar(4))"));
+		assertTrue(cur.sendQuery(
+			"insert into "+
+			"	testtable "+
+			"values ("+
+			"	'\\\\\\'')"));
 		assertTrue(cur.sendQuery("select col1 from testtable"));
 		assertEquals(cur.getFieldLength(0,0),2);
 		assertEquals(cur.getField(0,0),"\\'");
@@ -1956,10 +1992,14 @@ class mysql extends sqlrtest {
 		// quotes - "" - unescaped
 		System.out.println("QUOTES - \"\" - unescaped: ");
 		cur.sendQuery("drop table testtable");
-		assertTrue(cur.sendQuery("create table testtable "+
-			"(col1 varchar(4))"));
-		assertTrue(cur.sendQuery("insert into testtable "+
-			"values ('\"\"')"));
+		assertTrue(cur.sendQuery(
+			"create table testtable ("+
+			"	col1 varchar(4))"));
+		assertTrue(cur.sendQuery(
+			"insert into "+
+			"	testtable "+
+			"values ("+
+			"	'\"\"')"));
 		assertTrue(cur.sendQuery("select col1 from testtable"));
 		assertEquals(cur.getFieldLength(0,0),2);
 		assertEquals(cur.getField(0,0),"\"\"");
@@ -1970,11 +2010,12 @@ class mysql extends sqlrtest {
 		// quotes - random - '',\-escaped
 		System.out.println("QUOTES - random - '',\\-escaped: ");
 		cur.sendQuery("drop table testtable");
-		assertTrue(cur.sendQuery("create table testtable "+
-			"(col1 varchar(512))"));
+		assertTrue(cur.sendQuery(
+			"create table testtable ("+
+			"	col1 varchar(512))"));
 		java.util.Random r1=new java.util.Random();
 		java.util.Random r2=new java.util.Random(r1.nextLong());
-		byte[] buffer=new byte[256];
+		byte[]	buffer=new byte[256];
 		char[]	ch={'\'','"','\\','\0'};
 		for (int i=0; i<buffer.length; i++) {
 			buffer[i]=(byte)ch[r1.nextInt(4)];
@@ -2015,12 +2056,15 @@ class mysql extends sqlrtest {
 		System.out.println("LAST INSERT ID: ");
 		cur.sendQuery("drop table testtable");
 		assertTrue(cur.sendQuery(
-			"create table testtable "+
-			"	(col1 int primary key "+
+			"create table testtable ("+
+			"	col1 int primary key "+
 			"	auto_increment, "+
 			"	col2 int)"));
-		assertTrue(cur.sendQuery("insert into testtable "+
-			"values (null,1)"));
+		assertTrue(cur.sendQuery(
+			"insert into "+
+			"	testtable "+
+			"values ("+
+			"	null,1)"));
 		assertEquals(con.getLastInsertId(),1);
 		assertTrue(cur.sendQuery("drop table testtable"));
 		System.out.println();
@@ -2090,10 +2134,10 @@ class mysql extends sqlrtest {
 		counter=0;
 		for (long i=0; i<cur.rowCount(); i++) {
 			String	name=cur.getField(i,"Tables_in_xxx");
-			if (name!=null &&(name.equals("testtable1") ||
-				name.equals("testtable2") ||name.equals(
-					"testtable3") ||name.equals(
-					"testtable4"))) {
+			if (name!=null && (name.equals("testtable1") ||
+						name.equals("testtable2") ||
+						name.equals("testtable3") ||
+						name.equals("testtable4"))) {
 				counter++;
 			}
 		}
@@ -2157,32 +2201,32 @@ class mysql extends sqlrtest {
 			"	testtinyint tinyint, "+
 			"	testsmallint smallint, "+
 			"	testmediumint "+
-			"		mediumint, "+
+			"	mediumint, "+
 			"	testint int, "+
 			"	testbigint bigint, "+
 			"	testfloat float, "+
 			"	testreal real, "+
 			"	testdecimal "+
-			"		decimal(2,1), "+
+			"	decimal(2,1), "+
 			"	testdate date, "+
 			"	testtime time, "+
 			"	testdatetime datetime, "+
 			"	testyear year, "+
 			"	testchar char(40), "+
 			"	testvarchar "+
-			"		varchar(40), "+
+			"	varchar(40), "+
 			"	testtext text, "+
 			"	testtinytext tinytext, "+
 			"	testmediumtext "+
-			"		mediumtext, "+
+			"	mediumtext, "+
 			"	testlongtext longtext, "+
 			"	testblob blob, "+
 			"	testtinyblob tinyblob, "+
 			"	testmediumblob "+
-			"		mediumblob, "+
+			"	mediumblob, "+
 			"	testlongblob longblob, "+
 			"	testtimestamp "+
-			"		timestamp)"));
+			"	timestamp)"));
 		assertTrue(cur.getColumnList("testtable",null));
 		assertEquals(cur.getColumnName(0),"column_name");
 		assertEquals(cur.getColumnName(1),"data_type");
@@ -2222,10 +2266,9 @@ class mysql extends sqlrtest {
 		assertEquals(cur.getField(3,"data_type"),"INT");
 		assertEquals(cur.getField(4,"data_type"),"BIGINT");
 		assertEquals(cur.getField(5,"data_type"),"FLOAT");
-		assertEquals(cur.getField(6,"data_type"),
-			"DOUBLE"); // not "REAL"
-			assertEquals(cur.getField(
-				7,"data_type"),"DECIMAL");
+		assertEquals(cur.getField(6,"data_type"),"DOUBLE");
+		// not "REAL"
+		assertEquals(cur.getField(7,"data_type"),"DECIMAL");
 		assertEquals(cur.getField(8,"data_type"),"DATE");
 		assertEquals(cur.getField(9,"data_type"),"TIME");
 		assertEquals(cur.getField(10,"data_type"),"DATETIME");
@@ -2258,12 +2301,12 @@ class mysql extends sqlrtest {
 		assertTrue(cur.getColumnList("testtable",null));
 		assertTrue(cur.getField(0,"extra")!=null &&
 			cur.getField(0,"extra").contains("auto_increment"));
-		assertTrue(cur.getField(0,"column_key")!=null &&cur.getField(
-				0,"column_key").contains("PRI"));
+		assertTrue(cur.getField(0,"column_key")!=null &&
+			cur.getField(0,"column_key").contains("PRI"));
 		assertFalse(cur.getField(1,"extra")!=null &&
 			cur.getField(1,"extra").contains("auto_increment"));
-		assertFalse(cur.getField(1,"column_key")!=null &&cur.getField(
-				1,"column_key").contains("PRI"));
+		assertFalse(cur.getField(1,"column_key")!=null &&
+			cur.getField(1,"column_key").contains("PRI"));
 		System.out.println();
 		assertTrue(cur.sendQuery("drop table testtable"));
 		assertTrue(cur.sendQuery(
@@ -2274,8 +2317,8 @@ class mysql extends sqlrtest {
 		assertTrue(cur.getColumnList("testtable",null));
 		assertFalse(cur.getField(0,"extra")!=null &&
 			cur.getField(0,"extra").contains("auto_increment"));
-		assertTrue(cur.getField(0,"column_key")!=null &&cur.getField(
-				0,"column_key").contains("PRI"));
+		assertTrue(cur.getField(0,"column_key")!=null &&
+			cur.getField(0,"column_key").contains("PRI"));
 		assertTrue(cur.sendQuery("drop table testtable"));
 		System.out.println();
 
@@ -2304,10 +2347,10 @@ class mysql extends sqlrtest {
 		assertEquals(cur.getColumnName(12),"index_comment");
 		assertEquals(cur.rowCount(),1);
 		assertTrue(cur.getField(0,"table")!=null &&
-			cur.getField(0,"table").equals("testtable"));
+				cur.getField(0,"table").equals("testtable"));
 		assertEquals(cur.getField(0,"seq_in_index"),"1");
-		assertTrue(cur.getField(0,"column_name")!=null &&cur.getField(
-				0,"column_name").equals("col1"));
+		assertTrue(cur.getField(0,"column_name")!=null &&
+				cur.getField(0,"column_name").equals("col1"));
 		assertEquals(cur.getField(0,"key_name"),"PRIMARY");
 		assertTrue(cur.sendQuery("drop table testtable"));
 		System.out.println();
@@ -2337,11 +2380,11 @@ class mysql extends sqlrtest {
 		assertEquals(cur.getColumnName(12),"index_comment");
 		assertEquals(cur.rowCount(),1);
 		assertTrue(cur.getField(0,"table")!=null &&
-			cur.getField(0,"table").equals("testtable"));
+				cur.getField(0,"table").equals("testtable"));
 		assertEquals(cur.getField(0,"non_unique"),"false");
 		assertEquals(cur.getField(0,"seq_in_index"),"1");
-		assertTrue(cur.getField(0,"column_name")!=null &&cur.getField(
-				0,"column_name").equals("col1"));
+		assertTrue(cur.getField(0,"column_name")!=null &&
+				cur.getField(0,"column_name").equals("col1"));
 		assertEquals(cur.getField(0,"collation"),"A");
 		assertEquals(cur.getField(0,"index_type"),"3");
 		assertEquals(cur.getField(0,"key_name"),"PRIMARY");
@@ -2387,10 +2430,10 @@ class mysql extends sqlrtest {
 		counter=0;
 		for (long i=0; i<cur.rowCount(); i++) {
 			String	name=cur.getField(i,"routine_name");
-			if (name!=null &&(name.equals("testproc1") ||
-				name.equals("testproc2") ||name.equals(
-					"testproc3") ||name.equals(
-					"testproc4"))) {
+			if (name!=null && (name.equals("testproc1") ||
+						name.equals("testproc2") ||
+						name.equals("testproc3") ||
+						name.equals("testproc4"))) {
 				counter++;
 			}
 		}
@@ -2461,14 +2504,26 @@ class mysql extends sqlrtest {
 			"order by "+
 			"	testtinyint "));
 		System.out.println();
-		assertFalse(cur.sendQuery("insert into testtable "+
-			"values (1,2,3,4)"));
-		assertFalse(cur.sendQuery("insert into testtable "+
-			"values (1,2,3,4)"));
-		assertFalse(cur.sendQuery("insert into testtable "+
-			"values (1,2,3,4)"));
-		assertFalse(cur.sendQuery("insert into testtable "+
-			"values (1,2,3,4)"));
+		assertFalse(cur.sendQuery(
+			"insert into "+
+			"	testtable "+
+			"values ("+
+			"	1,2,3,4)"));
+		assertFalse(cur.sendQuery(
+			"insert into "+
+			"	testtable "+
+			"values ("+
+			"	1,2,3,4)"));
+		assertFalse(cur.sendQuery(
+			"insert into "+
+			"	testtable "+
+			"values ("+
+			"	1,2,3,4)"));
+		assertFalse(cur.sendQuery(
+			"insert into "+
+			"	testtable "+
+			"values ("+
+			"	1,2,3,4)"));
 		System.out.println();
 		assertFalse(cur.sendQuery("create table testtable"));
 		assertFalse(cur.sendQuery("create table testtable"));

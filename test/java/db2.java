@@ -451,7 +451,7 @@ class db2 extends sqlrtest {
 		//assertEquals(
 		//	cur.getField(0,5),"1.1");
 		assertEquals(cur.getField(0,6),"testchar1"+
-			"                               ");
+					"                               ");
 		assertEquals(cur.getField(0,7),"testvarchar1");
 		assertEquals(cur.getField(0,8),"2001-01-01");
 		assertEquals(cur.getField(0,9),"01:00:00");
@@ -465,7 +465,7 @@ class db2 extends sqlrtest {
 		//assertEquals(
 		//	cur.getField(7,5),"8.8");
 		assertEquals(cur.getField(7,6),"testchar8"+
-			"                               ");
+					"                               ");
 		assertEquals(cur.getField(7,7),"testvarchar8");
 		assertEquals(cur.getField(7,8),"2008-01-01");
 		assertEquals(cur.getField(7,9),"08:00:00");
@@ -515,7 +515,7 @@ class db2 extends sqlrtest {
 		//	cur.getField(0,
 		//		"TESTDOUBLE"),"1.1");
 		assertEquals(cur.getField(0,"TESTCHAR"),"testchar1"+
-			"                               ");
+					"                               ");
 		assertEquals(cur.getField(0,"TESTVARCHAR"),"testvarchar1");
 		assertEquals(cur.getField(0,"TESTDATE"),"2001-01-01");
 		assertEquals(cur.getField(0,"TESTTIME"),"01:00:00");
@@ -531,7 +531,7 @@ class db2 extends sqlrtest {
 		//	cur.getField(7,
 		//		"TESTDOUBLE"),"8.8");
 		assertEquals(cur.getField(7,"TESTCHAR"),"testchar8"+
-			"                               ");
+					"                               ");
 		assertEquals(cur.getField(7,"TESTVARCHAR"),"testvarchar8");
 		assertEquals(cur.getField(7,"TESTDATE"),"2008-01-01");
 		assertEquals(cur.getField(7,"TESTTIME"),"08:00:00");
@@ -582,7 +582,7 @@ class db2 extends sqlrtest {
 		//assertEquals(fields[4],"1.1");
 		//assertEquals(fields[5],"1.1");
 		assertEquals(fields[6],"testchar1"+
-			"                               ");
+					"                               ");
 		assertEquals(fields[7],"testvarchar1");
 		assertEquals(fields[8],"2001-01-01");
 		assertEquals(fields[9],"01:00:00");
@@ -1075,10 +1075,16 @@ class db2 extends sqlrtest {
 		// temporary tables
 		System.out.println("TEMPORARY TABLES: ");
 		cur.sendQuery("drop table session.temptable");
-		assertTrue(cur.sendQuery("declare global temporary "+
-			"table temptable (col1 int) not logged"));
-		assertTrue(cur.sendQuery("insert into session.temptable "+
-			"values (1)"));
+		assertTrue(cur.sendQuery(
+			"declare global temporary "+
+			"table temptable ( "+
+			"	col1 int) "+
+			"not logged"));
+		assertTrue(cur.sendQuery(
+			"insert into "+
+			"	session.temptable "+
+			"values ("+
+			"	1)"));
 		assertTrue(cur.sendQuery(
 			"select "+
 			"	count(*) "+
@@ -1128,10 +1134,14 @@ class db2 extends sqlrtest {
 		// quotes
 		System.out.println("QUOTES: ");
 		cur.sendQuery("drop table testtable");
-		assertTrue(cur.sendQuery("create table testtable "+
-			"(col1 varchar(4))"));
-		assertTrue(cur.sendQuery("insert into testtable "+
-			"values ('''''')"));
+		assertTrue(cur.sendQuery(
+			"create table testtable ("+
+			"	col1 varchar(4))"));
+		assertTrue(cur.sendQuery(
+			"insert into "+
+			"	testtable "+
+			"values ("+
+			"	'''''')"));
 		assertTrue(cur.sendQuery("select col1 from testtable"));
 		assertEquals(cur.getFieldLength(0,0),2);
 		assertEquals(cur.getField(0,0),"''");
@@ -1143,14 +1153,18 @@ class db2 extends sqlrtest {
 		System.out.println("LAST INSERT ID: ");
 		cur.sendQuery("drop table testtable");
 		assertTrue(cur.sendQuery(
-			"create table testtable "+
-			"	(col1 int not null "+
+			"create table testtable ("+
+			"	col1 int not null "+
 			"	generated always "+
 			"	as identity, "+
 			"	col2 int, "+
 			"	primary key(col1))"));
-		assertTrue(cur.sendQuery("insert into testtable "+
-			"(col2) values (1)"));
+		assertTrue(cur.sendQuery(
+			"insert into "+
+			"	testtable ("+
+			"	col2) "+
+			"values ("+
+			"	1)"));
 		assertEquals(con.getLastInsertId(),1);
 		assertTrue(cur.sendQuery("drop table testtable"));
 		System.out.println();
@@ -1896,6 +1910,7 @@ class db2 extends sqlrtest {
 				"	* "+
 				"from "+
 				"	testtable"));
+			secondcur.closeResultSet();
 		}
 		cur.setResultSetBufferSize(0);
 		System.out.println();
@@ -2005,14 +2020,26 @@ class db2 extends sqlrtest {
 			"order by "+
 			"	testsmallint "));
 		System.out.println();
-		assertFalse(cur.sendQuery("insert into testtable "+
-			"values (1,2,3,4)"));
-		assertFalse(cur.sendQuery("insert into testtable "+
-			"values (1,2,3,4)"));
-		assertFalse(cur.sendQuery("insert into testtable "+
-			"values (1,2,3,4)"));
-		assertFalse(cur.sendQuery("insert into testtable "+
-			"values (1,2,3,4)"));
+		assertFalse(cur.sendQuery(
+			"insert into "+
+			"	testtable "+
+			"values ("+
+			"	1,2,3,4)"));
+		assertFalse(cur.sendQuery(
+			"insert into "+
+			"	testtable "+
+			"values ("+
+			"	1,2,3,4)"));
+		assertFalse(cur.sendQuery(
+			"insert into "+
+			"	testtable "+
+			"values ("+
+			"	1,2,3,4)"));
+		assertFalse(cur.sendQuery(
+			"insert into "+
+			"	testtable "+
+			"values ("+
+			"	1,2,3,4)"));
 		System.out.println();
 		assertFalse(cur.sendQuery("create table testtable"));
 		assertFalse(cur.sendQuery("create table testtable"));

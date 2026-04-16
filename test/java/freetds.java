@@ -386,7 +386,7 @@ class freetds extends sqlrtest {
 		assertEquals(cur.getColumnType("testdatetime"),"DATETIME");
 		assertEquals(cur.getColumnType(10),"SMALLDATETIME");
 		assertEquals(cur.getColumnType("testsmalldatetime"),
-			"SMALLDATETIME");
+							"SMALLDATETIME");
 		assertEquals(cur.getColumnType(11),"CHAR");
 		assertEquals(cur.getColumnType("testchar"),"CHAR");
 		assertEquals(cur.getColumnType(12),"CHAR");
@@ -533,7 +533,7 @@ class freetds extends sqlrtest {
 		//assertEquals(cur.getField(0,10),
 		//	"Jan  1 2001 01:00:00:000AM");
 		assertEquals(cur.getField(0,11),"testchar1"+
-			"                               ");
+					"                               ");
 		assertEquals(cur.getField(0,12),"testvarchar1");
 		assertEquals(cur.getField(0,13),"1");
 		System.out.println();
@@ -556,7 +556,7 @@ class freetds extends sqlrtest {
 		//assertEquals(cur.getField(7,10),
 		//	"Jan  1 2008 08:00:00:000AM");
 		assertEquals(cur.getField(7,11),"testchar8"+
-			"                               ");
+					"                               ");
 		assertEquals(cur.getField(7,12),"testvarchar8");
 		assertEquals(cur.getField(7,13),"1");
 		System.out.println();
@@ -642,7 +642,7 @@ class freetds extends sqlrtest {
 		//		"testsmalldatetime"),
 		//	"Jan  1 2001 01:00:00:000AM");
 		assertEquals(cur.getField(0,"testchar"),"testchar1"+
-			"                               ");
+					"                               ");
 		assertEquals(cur.getField(0,"testvarchar"),"testvarchar1");
 		assertEquals(cur.getField(0,"testbit"),"1");
 		System.out.println();
@@ -672,7 +672,7 @@ class freetds extends sqlrtest {
 		//		"testsmalldatetime"),
 		//	"Jan  1 2008 08:00:00:000AM");
 		assertEquals(cur.getField(7,"testchar"),"testchar8"+
-			"                               ");
+					"                               ");
 		assertEquals(cur.getField(7,"testvarchar"),"testvarchar8");
 		assertEquals(cur.getField(7,"testbit"),"1");
 		System.out.println();
@@ -766,7 +766,7 @@ class freetds extends sqlrtest {
 		//assertEquals(fields[10],
 		//	"Jan  1 2001 01:00:00:000AM");
 		assertEquals(fields[11],"testchar1"+
-			"                               ");
+					"                               ");
 		assertEquals(fields[12],"testvarchar1");
 		assertEquals(fields[13],"1");
 		System.out.println();
@@ -1157,8 +1157,7 @@ class freetds extends sqlrtest {
 				"	* "+
 				"from "+
 				"	testtable"));
-			secondcur.delete();
-			secondcur=null;
+			secondcur.closeResultSet();
 		}
 		//cur.setResultSetBufferSize(0);
 		System.out.println();
@@ -1234,10 +1233,6 @@ class freetds extends sqlrtest {
 			"from "+
 			"	testtable"));
 		assertEquals(secondcur.getField(0,0),"9");
-		secondcur.delete();
-		secondcur=null;
-		secondcon.delete();
-		secondcon=null;
 		assertTrue(cur.sendQuery("drop table testtable"));
 		System.out.println();
 
@@ -1695,12 +1690,23 @@ class freetds extends sqlrtest {
 		// stored procedure returning result set
 		System.out.println("STORED PROCEDURE RETURNING RESULT SET: ");
 		cur.sendQuery("drop procedure testselectproc");
-		assertTrue(cur.sendQuery("create procedure testselectproc as "+
-			"       select 1        union        select 2 "+
-			"       union        select 3        union "+
-			"       select 4        union        select 5 "+
-			"       union        select 6        union "+
-			"       select 7        union        select 8"));
+		assertTrue(cur.sendQuery(
+			"create procedure testselectproc as "+
+			"	select 1 "+
+			"	union "+
+			"	select 2 "+
+			"	union "+
+			"	select 3 "+
+			"	union "+
+			"	select 4 "+
+			"	union "+
+			"	select 5 "+
+			"	union "+
+			"	select 6 "+
+			"	union "+
+			"	select 7 "+
+			"	union "+
+			"	select 8"));
 		assertTrue(cur.sendQuery("exec testselectproc"));
 		assertEquals(cur.rowCount(),8);
 		assertTrue(cur.sendQuery("drop procedure testselectproc"));
@@ -1723,8 +1729,9 @@ class freetds extends sqlrtest {
 		// encoded binary data
 		System.out.println("ENCODED BINARY DATA: ");
 		cur.sendQuery("drop table testtable");
-		assertTrue(cur.sendQuery("create table testtable "+
-			"(col1 image)"));
+		assertTrue(cur.sendQuery(
+			"create table testtable ("+
+			"	col1 image)"));
 		byte[]	buffer=new byte[256];
 		for (int i=0; i<256; i++) {
 			buffer[i]=(byte)i;
@@ -1748,10 +1755,14 @@ class freetds extends sqlrtest {
 		// quotes
 		System.out.println("QUOTES: ");
 		cur.sendQuery("drop table testtable");
-		assertTrue(cur.sendQuery("create table testtable "+
-			"(col1 varchar(4))"));
-		assertTrue(cur.sendQuery("insert into testtable "+
-			"values ('''''')"));
+		assertTrue(cur.sendQuery(
+			"create table testtable ("+
+			"	col1 varchar(4))"));
+		assertTrue(cur.sendQuery(
+			"insert into "+
+			"	testtable "+
+			"values ("+
+			"	'''''')"));
 		assertTrue(cur.sendQuery("select col1 from testtable"));
 		assertEquals(cur.getFieldLength(0,0),2);
 		assertEquals(cur.getField(0,0),"''");
@@ -1763,12 +1774,16 @@ class freetds extends sqlrtest {
 		System.out.println("LAST INSERT ID: ");
 		cur.sendQuery("drop table testtable");
 		assertTrue(cur.sendQuery(
-			"create table testtable "+
-			"	(col1 int identity "+
+			"create table testtable ("+
+			"	col1 int identity "+
 			"primary key, "+
 			"	col2 int)"));
-		assertTrue(cur.sendQuery("insert into testtable "+
-			"(col2) values (1)"));
+		assertTrue(cur.sendQuery(
+			"insert into "+
+			"	testtable ("+
+			"	col2) "+
+			"values ("+
+			"	1)"));
 		assertEquals(con.getLastInsertId(),1);
 		assertTrue(cur.sendQuery("drop table testtable"));
 		System.out.println();
@@ -2171,14 +2186,26 @@ class freetds extends sqlrtest {
 			"order by "+
 			"	testint "));
 		System.out.println();
-		assertFalse(cur.sendQuery("insert into testtable "+
-			"values (1,2,3,4)"));
-		assertFalse(cur.sendQuery("insert into testtable "+
-			"values (1,2,3,4)"));
-		assertFalse(cur.sendQuery("insert into testtable "+
-			"values (1,2,3,4)"));
-		assertFalse(cur.sendQuery("insert into testtable "+
-			"values (1,2,3,4)"));
+		assertFalse(cur.sendQuery(
+			"insert into "+
+			"	testtable "+
+			"values ("+
+			"	1,2,3,4)"));
+		assertFalse(cur.sendQuery(
+			"insert into "+
+			"	testtable "+
+			"values ("+
+			"	1,2,3,4)"));
+		assertFalse(cur.sendQuery(
+			"insert into "+
+			"	testtable "+
+			"values ("+
+			"	1,2,3,4)"));
+		assertFalse(cur.sendQuery(
+			"insert into "+
+			"	testtable "+
+			"values ("+
+			"	1,2,3,4)"));
 		System.out.println();
 		assertFalse(cur.sendQuery("create table testtable"));
 		assertFalse(cur.sendQuery("create table testtable"));

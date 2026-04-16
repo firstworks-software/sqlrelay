@@ -22,7 +22,7 @@ int main(int argc, char **argv) {
 	const char	*isolationlevels[]={
 				"READ COMMITTED","SERIALIZABLE",NULL};
 	const char	*bindvars[]={"1","2","3","4","5",NULL};
-	const char	*bindvals[]={"4", "testchar4",
+	const char	*bindvals[]={"4","testchar4",
 				"testvarchar4","01-JAN-2004","testlong4"};
 	const char	*arraybindvars[]={"var1","var2","var3",
 					"var4","var5",NULL};
@@ -30,7 +30,6 @@ int main(int argc, char **argv) {
 				"testvarchar7","01-JAN-2007","testlong7"};
 	int64_t		numvar;
 	const char	*stringvar;
-	const char	*nullvar;
 	double		floatvar;
 	int16_t		year=0;
 	int16_t		month=0;
@@ -40,6 +39,7 @@ int main(int argc, char **argv) {
 	int16_t		second=0;
 	int32_t		microsecond=0;
 	const char	*tz=NULL;
+	const char	*nullvar;
 	bool		isnegative=false;
 	const char * const *cols;
 	const char * const *fields;
@@ -1034,6 +1034,7 @@ int main(int argc, char **argv) {
 	cur->getOutputBindDate("4",&year,&month,&day,
 				&hour,&minute,&second,&microsecond,&tz,
 				&isnegative);
+	nullvar=cur->getOutputBindString("5");
 	assertEquals(numvar,1);
 	assertEquals(stringvar,"hello");
 	assertEquals(floatvar,2.5);
@@ -1045,7 +1046,6 @@ int main(int argc, char **argv) {
 	assertEquals(second,0);
 	assertEquals(microsecond,0);
 	assertEquals(tz,"");
-	nullvar=cur->getOutputBindString("5");
 	assertEquals(nullvar,NULL);
 	cur->getNullsAsEmptyStrings();
 	stdoutput.printf("\n");
@@ -1067,6 +1067,7 @@ int main(int argc, char **argv) {
 	cur->getOutputBindDate("datevar",&year,&month,&day,
 				&hour,&minute,&second,&microsecond,&tz,
 				&isnegative);
+	nullvar=cur->getOutputBindString("nullvar");
 	assertEquals(numvar,1);
 	assertEquals(stringvar,"hello");
 	assertEquals(floatvar,2.5);
@@ -1078,7 +1079,6 @@ int main(int argc, char **argv) {
 	assertEquals(second,0);
 	assertEquals(microsecond,0);
 	assertEquals(tz,"");
-	nullvar=cur->getOutputBindString("nullvar");
 	assertEquals(nullvar,NULL);
 	cur->getNullsAsEmptyStrings();
 	stdoutput.printf("\n");
@@ -1102,6 +1102,7 @@ int main(int argc, char **argv) {
 	cur->getOutputBindDate("datevar",&year,&month,&day,
 				&hour,&minute,&second,&microsecond,&tz,
 				&isnegative);
+	nullvar=cur->getOutputBindString("nullvar");
 	assertEquals(numvar,1);
 	assertEquals(stringvar,"hello");
 	assertEquals(floatvar,2.5);
@@ -1113,7 +1114,6 @@ int main(int argc, char **argv) {
 	assertEquals(second,0);
 	assertEquals(microsecond,0);
 	assertEquals(tz,"");
-	nullvar=cur->getOutputBindString("nullvar");
 	assertEquals(nullvar,NULL);
 	cur->getNullsAsEmptyStrings();
 	stdoutput.printf("\n");
@@ -1299,7 +1299,7 @@ int main(int argc, char **argv) {
 		"	in1 in number, "
 		"	in2 in number, "
 		"	in3 in varchar2) "
-		"return number "
+		"	return number "
 		"is "
 		"begin "
 		"	return in1; "

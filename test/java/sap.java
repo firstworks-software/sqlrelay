@@ -93,8 +93,7 @@ class sap extends sqlrtest {
 			"	testmoney money, "+
 			"	testsmallmoney smallmoney, "+
 			"	testdatetime datetime, "+
-			"	testsmalldatetime "+
-			"		smalldatetime, "+
+			"	testsmalldatetime smalldatetime, "+
 			"	testchar char(40), "+
 			"	testvarchar varchar(40), "+
 			"	testbit bit, "+
@@ -385,7 +384,7 @@ class sap extends sqlrtest {
 		assertEquals(cur.getColumnType("testdatetime"),"DATETIME");
 		assertEquals(cur.getColumnType(10),"SMALLDATETIME");
 		assertEquals(cur.getColumnType("testsmalldatetime"),
-			"SMALLDATETIME");
+							"SMALLDATETIME");
 		assertEquals(cur.getColumnType(11),"CHAR");
 		assertEquals(cur.getColumnType("testchar"),"CHAR");
 		assertEquals(cur.getColumnType(12),"CHAR");
@@ -499,7 +498,7 @@ class sap extends sqlrtest {
 		assertEquals(cur.getField(0,9),"Jan  1 2001  1:00AM");
 		assertEquals(cur.getField(0,10),"Jan  1 2001  1:00AM");
 		assertEquals(cur.getField(0,11),"testchar1"+
-			"                               ");
+					"                               ");
 		assertEquals(cur.getField(0,12),"testvarchar1");
 		assertEquals(cur.getField(0,13),"1");
 		System.out.println();
@@ -515,7 +514,7 @@ class sap extends sqlrtest {
 		assertEquals(cur.getField(7,9),"Jan  1 2008  8:00AM");
 		assertEquals(cur.getField(7,10),"Jan  1 2008  8:00AM");
 		assertEquals(cur.getField(7,11),"testchar8"+
-			"                               ");
+					"                               ");
 		assertEquals(cur.getField(7,12),"testvarchar8");
 		assertEquals(cur.getField(7,13),"1");
 		System.out.println();
@@ -571,11 +570,11 @@ class sap extends sqlrtest {
 		assertEquals(cur.getField(0,"testmoney"),"1.00");
 		assertEquals(cur.getField(0,"testsmallmoney"),"1.00");
 		assertEquals(cur.getField(0,"testdatetime"),
-			"Jan  1 2001  1:00AM");
+						"Jan  1 2001  1:00AM");
 		assertEquals(cur.getField(0,"testsmalldatetime"),
-			"Jan  1 2001  1:00AM");
+						"Jan  1 2001  1:00AM");
 		assertEquals(cur.getField(0,"testchar"),"testchar1"+
-			"                               ");
+					"                               ");
 		assertEquals(cur.getField(0,"testvarchar"),"testvarchar1");
 		assertEquals(cur.getField(0,"testbit"),"1");
 		System.out.println();
@@ -593,11 +592,11 @@ class sap extends sqlrtest {
 		assertEquals(cur.getField(7,"testmoney"),"8.00");
 		assertEquals(cur.getField(7,"testsmallmoney"),"8.00");
 		assertEquals(cur.getField(7,"testdatetime"),
-			"Jan  1 2008  8:00AM");
+						"Jan  1 2008  8:00AM");
 		assertEquals(cur.getField(7,"testsmalldatetime"),
-			"Jan  1 2008  8:00AM");
+						"Jan  1 2008  8:00AM");
 		assertEquals(cur.getField(7,"testchar"),"testchar8"+
-			"                               ");
+					"                               ");
 		assertEquals(cur.getField(7,"testvarchar"),"testvarchar8");
 		assertEquals(cur.getField(7,"testbit"),"1");
 		System.out.println();
@@ -660,7 +659,7 @@ class sap extends sqlrtest {
 		assertEquals(fields[9],"Jan  1 2001  1:00AM");
 		assertEquals(fields[10],"Jan  1 2001  1:00AM");
 		assertEquals(fields[11],"testchar1"+
-			"                               ");
+					"                               ");
 		assertEquals(fields[12],"testvarchar1");
 		assertEquals(fields[13],"1");
 		System.out.println();
@@ -1042,7 +1041,6 @@ class sap extends sqlrtest {
 		cur.setResultSetBufferSize(1);
 		assertTrue(cur.sendQuery("select * from testtable"));
 		for (int i=0; cur.getRow(i)!=null; i++) {
-
 			SQLRCursor secondcur2=new SQLRCursor(con);
 			secondcur2.setResultSetBufferSize(1);
 			assertTrue(secondcur2.sendQuery(
@@ -1050,6 +1048,7 @@ class sap extends sqlrtest {
 				"	* "+
 				"from "+
 				"	testtable"));
+			secondcur2.closeResultSet();
 		}
 		cur.setResultSetBufferSize(0);
 		System.out.println();
@@ -1238,19 +1237,23 @@ class sap extends sqlrtest {
 		for (int i=0; i<LARGE_BUFFER_LENGTH; i++) {
 			largebuffer.append('C');
 		}
-		cur.inputBindClob("var1",largebuffer.toString(),
-			LARGE_BUFFER_LENGTH);
-		cur.inputBindBlob("var2",(new String(largebuffer.toString())).
-				getBytes(),LARGE_BUFFER_LENGTH);
+		cur.inputBindClob("var1",
+				largebuffer.toString(),
+				LARGE_BUFFER_LENGTH);
+		cur.inputBindBlob("var2",
+				(new String(largebuffer.toString())).getBytes(),
+				LARGE_BUFFER_LENGTH);
 		assertTrue(cur.executeQuery());
 		cur.sendQuery("select * from testtable");
 		assertEquals(cur.getFieldLength(0,"testclob"),
-			LARGE_BUFFER_LENGTH);
-		assertEquals(cur.getField(0,"testclob"),largebuffer.toString());
+					LARGE_BUFFER_LENGTH);
+		assertEquals(cur.getField(0,"testclob"),
+					largebuffer.toString());
 		assertEquals(cur.getFieldLength(0,"testblob"),
-			LARGE_BUFFER_LENGTH);
-		assertEquals(cur.getField(0,"testblob"),largebuffer.toString(),
-			LARGE_BUFFER_LENGTH);
+					LARGE_BUFFER_LENGTH);
+		assertEquals(cur.getField(0,"testblob"),
+					largebuffer.toString(),
+					LARGE_BUFFER_LENGTH);
 		assertTrue(cur.sendQuery("drop table testtable"));
 		System.out.println();
 
@@ -1385,9 +1388,9 @@ class sap extends sqlrtest {
 		cur.defineOutputBindString("bindval",LARGE_BUFFER_LENGTH);
 		assertTrue(cur.executeQuery());
 		assertEquals(cur.getOutputBindLength("bindval"),
-			LARGE_BUFFER_LENGTH);
+						LARGE_BUFFER_LENGTH);
 		assertEquals(cur.getOutputBindString("bindval"),
-			largebuffer.toString());
+						largebuffer.toString());
 		assertTrue(cur.sendQuery("drop procedure testproc"));
 		System.out.println();
 
@@ -1611,8 +1614,9 @@ class sap extends sqlrtest {
 		// encoded binary data
 		System.out.println("ENCODED BINARY DATA: ");
 		cur.sendQuery("drop table testtable");
-		assertTrue(cur.sendQuery("create table testtable "+
-			"(col1 image)"));
+		assertTrue(cur.sendQuery(
+			"create table testtable ("+
+			"	col1 image)"));
 		byte[]	buffer=new byte[256];
 		for (int i=0; i<256; i++) {
 			buffer[i]=(byte)i;
@@ -1626,9 +1630,10 @@ class sap extends sqlrtest {
 		assertTrue(cur.sendQuery(querystr.toString()));
 		assertTrue(cur.sendQuery("select col1 from testtable"));
 		assertEquals(cur.getFieldLength(0,0),buffer.length);
-		assertEquals(cur.getFieldAsByteArray(0,0),new String(buffer,
-			java.nio.charset.StandardCharsets.ISO_8859_1),
-			buffer.length);
+		assertEquals(cur.getFieldAsByteArray(0,0),
+			new String(buffer,
+				java.nio.charset.StandardCharsets.ISO_8859_1),
+				buffer.length);
 		assertTrue(cur.sendQuery("drop table testtable"));
 		System.out.println();
 
@@ -1636,10 +1641,14 @@ class sap extends sqlrtest {
 		// quotes
 		System.out.println("QUOTES: ");
 		cur.sendQuery("drop table testtable");
-		assertTrue(cur.sendQuery("create table testtable "+
-			"(col1 varchar(4))"));
-		assertTrue(cur.sendQuery("insert into testtable "+
-			"values ('''''')"));
+		assertTrue(cur.sendQuery(
+			"create table testtable ("+
+			"	col1 varchar(4))"));
+		assertTrue(cur.sendQuery(
+			"insert into "+
+			"	testtable "+
+			"values ("+
+			"	'''''')"));
 		assertTrue(cur.sendQuery("select col1 from testtable"));
 		assertEquals(cur.getFieldLength(0,0),2);
 		assertEquals(cur.getField(0,0),"''");
@@ -1651,12 +1660,16 @@ class sap extends sqlrtest {
 		System.out.println("LAST INSERT ID: ");
 		cur.sendQuery("drop table testtable");
 		assertTrue(cur.sendQuery(
-			"create table testtable "+
-			"	(col1 int identity "+
+			"create table testtable ("+
+			"	col1 int identity "+
 			"primary key, "+
 			"	col2 int)"));
-		assertTrue(cur.sendQuery("insert into testtable "+
-			"(col2) values (1)"));
+		assertTrue(cur.sendQuery(
+			"insert into "+
+			"	testtable ("+
+			"	col2) "+
+			"values ("+
+			"	1)"));
 		assertEquals(con.getLastInsertId(),1);
 		assertTrue(cur.sendQuery("drop table testtable"));
 		System.out.println();
@@ -1836,7 +1849,7 @@ class sap extends sqlrtest {
 		assertEquals(cur.getField(8,"column_name"),"testsmallmoney");
 		assertEquals(cur.getField(9,"column_name"),"testdatetime");
 		assertEquals(cur.getField(10,"column_name"),
-			"testsmalldatetime");
+						"testsmalldatetime");
 		assertEquals(cur.getField(11,"column_name"),"testchar");
 		assertEquals(cur.getField(12,"column_name"),"testvarchar");
 		assertEquals(cur.getField(13,"column_name"),"testbit");
@@ -1872,12 +1885,12 @@ class sap extends sqlrtest {
 		assertTrue(cur.getColumnList("testtable",null));
 		assertTrue(cur.getField(0,"extra")!=null &&
 			cur.getField(0,"extra").contains("auto_increment"));
-		assertTrue(cur.getField(0,"column_key")!=null &&cur.getField(
-				0,"column_key").contains("PRI"));
+		assertTrue(cur.getField(0,"column_key")!=null &&
+			cur.getField(0,"column_key").contains("PRI"));
 		assertFalse(cur.getField(1,"extra")!=null &&
 			cur.getField(1,"extra").contains("auto_increment"));
-		assertFalse(cur.getField(1,"column_key")!=null &&cur.getField(
-				1,"column_key").contains("PRI"));
+		assertFalse(cur.getField(1,"column_key")!=null &&
+			cur.getField(1,"column_key").contains("PRI"));
 		System.out.println();
 		assertTrue(cur.sendQuery("drop table testtable"));
 		assertTrue(cur.sendQuery(
@@ -1887,8 +1900,8 @@ class sap extends sqlrtest {
 		assertTrue(cur.getColumnList("testtable",null));
 		assertFalse(cur.getField(0,"extra")!=null &&
 			cur.getField(0,"extra").contains("auto_increment"));
-		assertTrue(cur.getField(0,"column_key")!=null &&cur.getField(
-				0,"column_key").contains("PRI"));
+		assertTrue(cur.getField(0,"column_key")!=null &&
+			cur.getField(0,"column_key").contains("PRI"));
 		assertTrue(cur.sendQuery("drop table testtable"));
 		System.out.println();
 
@@ -1919,7 +1932,7 @@ class sap extends sqlrtest {
 		assertEquals(cur.getField(0,"seq_in_index"),"1");
 		assertEquals(cur.getField(0,"column_name"),"col1");
 		assertTrue(cur.getField(0,"key_name")!=null &&
-			!cur.getField(0,"key_name").isEmpty());
+				!cur.getField(0,"key_name").isEmpty());
 		assertTrue(cur.sendQuery("drop table testtable"));
 		System.out.println();
 
@@ -1953,7 +1966,7 @@ class sap extends sqlrtest {
 		assertEquals(cur.getField(0,"collation"),"A");
 		assertEquals(cur.getField(0,"index_type"),"1");
 		assertTrue(cur.getField(0,"key_name")!=null &&
-			!cur.getField(0,"key_name").isEmpty());
+				!cur.getField(0,"key_name").isEmpty());
 		assertTrue(cur.sendQuery("drop table testtable"));
 		System.out.println();
 
@@ -1996,10 +2009,10 @@ class sap extends sqlrtest {
 		counter=0;
 		for (long i=0; i<cur.rowCount(); i++) {
 			String	name=cur.getField(i,"routine_name");
-			if (name!=null &&(name.equals("testproc1") ||
-				name.equals("testproc2") ||name.equals(
-					"testproc3") ||name.equals(
-					"testproc4"))) {
+			if (name!=null && (name.equals("testproc1") ||
+						name.equals("testproc2") ||
+						name.equals("testproc3") ||
+						name.equals("testproc4"))) {
 				counter++;
 			}
 		}

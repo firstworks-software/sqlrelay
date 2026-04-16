@@ -13,11 +13,11 @@ class oracle extends sqlrtest {
 					"READ COMMITTED","SERIALIZABLE"};
 		String[]	bindvars={"1","2","3","4","5"};
 		String[]	bindvals={"4","testchar4","testvarchar4",
-					"01-JAN-2004","testlong4"};
+						"01-JAN-2004","testlong4"};
 		String[]	arraybindvars={"var1","var2","var3",
-					"var4","var5"};
+						"var4","var5"};
 		String[]	arraybindvals={"7","testchar7","testvarchar7",
-					"01-JAN-2007","testlong7"};
+						"01-JAN-2007","testlong7"};
 		long		numvar;
 		String		stringvar;
 		double		floatvar;
@@ -372,7 +372,7 @@ class oracle extends sqlrtest {
 		System.out.println("FIELDS BY INDEX: ");
 		assertEquals(cur.getField(0,0),"1");
 		assertEquals(cur.getField(0,1),"testchar1"+
-			"                               ");
+					"                               ");
 		assertEquals(cur.getField(0,2),"testvarchar1");
 		assertEquals(cur.getField(0,3),"01-JAN-01");
 		assertEquals(cur.getField(0,4),"testlong1");
@@ -381,7 +381,7 @@ class oracle extends sqlrtest {
 		System.out.println();
 		assertEquals(cur.getField(7,0),"8");
 		assertEquals(cur.getField(7,1),"testchar8"+
-			"                               ");
+					"                               ");
 		assertEquals(cur.getField(7,2),"testvarchar8");
 		assertEquals(cur.getField(7,3),"01-JAN-08");
 		assertEquals(cur.getField(7,4),"testlong8");
@@ -414,7 +414,7 @@ class oracle extends sqlrtest {
 		System.out.println("FIELDS BY NAME: ");
 		assertEquals(cur.getField(0,"TESTNUMBER"),"1");
 		assertEquals(cur.getField(0,"TESTCHAR"),"testchar1"+
-			"                               ");
+					"                               ");
 		assertEquals(cur.getField(0,"TESTVARCHAR"),"testvarchar1");
 		assertEquals(cur.getField(0,"TESTDATE"),"01-JAN-01");
 		assertEquals(cur.getField(0,"TESTLONG"),"testlong1");
@@ -423,7 +423,7 @@ class oracle extends sqlrtest {
 		System.out.println();
 		assertEquals(cur.getField(7,"TESTNUMBER"),"8");
 		assertEquals(cur.getField(7,"TESTCHAR"),"testchar8"+
-			"                               ");
+					"                               ");
 		assertEquals(cur.getField(7,"TESTVARCHAR"),"testvarchar8");
 		assertEquals(cur.getField(7,"TESTDATE"),"01-JAN-08");
 		assertEquals(cur.getField(7,"TESTLONG"),"testlong8");
@@ -457,7 +457,7 @@ class oracle extends sqlrtest {
 		fields=cur.getRow(0);
 		assertEquals(fields[0],"1");
 		assertEquals(fields[1],"testchar1"+
-			"                               ");
+					"                               ");
 		assertEquals(fields[2],"testvarchar1");
 		assertEquals(fields[3],"01-JAN-01");
 		assertEquals(fields[4],"testlong1");
@@ -822,19 +822,12 @@ class oracle extends sqlrtest {
 		cur.setResultSetBufferSize(1);
 		assertTrue(cur.sendQuery("select * from testtable"));
 		for (int i=0; cur.getRow(i)!=null; i++) {
-System.out.println("row "+i);
-System.out.println("  here 1");
 			SQLRCursor secondcur2=new SQLRCursor(con);
-System.out.println("  here 2");
 			secondcur2.setResultSetBufferSize(1);
-System.out.println("  here 3");
 			assertTrue(secondcur2.sendQuery(
 				"select * from testtable"));
-System.out.println("  here 4");
-			secondcur2.delete();
-System.out.println("  here 5");
+			secondcur2.closeResultSet();
 		}
-System.out.println("now here");
 		cur.setResultSetBufferSize(0);
 		System.out.println();
 
@@ -917,7 +910,9 @@ System.out.println("now here");
 		System.out.println();
 		cur.prepareQuery(
 			"select "+
-			"	'$(var1)','$(var2)','$(var3)' "+
+			"	'$(var1)', "+
+			"	'$(var2)', "+
+			"	'$(var3)' "+
 			"from "+
 			"	dual");
 		cur.substitutions(subvars,subvalstrings);
@@ -990,8 +985,12 @@ System.out.println("now here");
 			"create table testtable ("+
 			"	testclob clob, "+
 			"	testblob blob)");
-		cur.prepareQuery("insert into testtable "+
-			"values (:clobval,:blobval)");
+		cur.prepareQuery(
+			"insert into "+
+			"	testtable "+
+			"values ("+
+			"	:clobval, "+
+			"	:blobval)");
 		StringBuilder largebuffer=new StringBuilder();
 		for (int i=0; i<LARGE_BUFFER_LENGTH; i++) {
 			largebuffer.append('C');
@@ -1093,8 +1092,12 @@ System.out.println("now here");
 			"create table testtable ("+
 			"	testclob clob, "+
 			"	testblob blob)"));
-		cur.prepareQuery("insert into testtable "+
-			"values ('hello',:var1)");
+		cur.prepareQuery(
+			"insert into "+
+			"	testtable "+
+			"values ("+
+			"	'hello', "+
+			"	:var1)");
 		cur.inputBindBlob("var1",(new String("hello")).getBytes(),5);
 		assertTrue(cur.executeQuery());
 		cur.prepareQuery(
@@ -1135,9 +1138,9 @@ System.out.println("now here");
 		cur.defineOutputBindString("bindval",LARGE_BUFFER_LENGTH);
 		assertTrue(cur.executeQuery());
 		assertEquals(cur.getOutputBindLength("bindval"),
-			LARGE_BUFFER_LENGTH);
+						LARGE_BUFFER_LENGTH);
 		assertEquals(cur.getOutputBindString("bindval"),
-			lobuf.toString());
+						lobuf.toString());
 		System.out.println();
 
 
@@ -1283,8 +1286,8 @@ System.out.println("now here");
 		assertEquals(cur.getField(0,0),"1");
 		cur.prepareQuery(
 			"begin "+
-			"	:out1:=testproc("+
-			":in1,:in2,:in3); end;");
+			"	:out1:=testproc(:in1,:in2,:in3); "+
+			"end;");
 		cur.inputBind("in1",1);
 		cur.inputBind("in2",1.1,2,1);
 		cur.inputBind("in3","hello");
@@ -1339,41 +1342,43 @@ System.out.println("now here");
 		assertTrue(cur.sendQuery(
 			"create or replace package types is "+
 			"	type cursorType "+
-			"is ref cursor; end;"));
-		assertTrue(cur.sendQuery("create or replace function testproc("+
-			"value in number) "+
+			"is "+
+			"	ref cursor; "+
+			"end;"));
+		assertTrue(cur.sendQuery(
+			"create or replace function testproc(value in number) "+
 			"	return types.cursortype "+
 			"is "+
-			"	l_cursor    "+
-			"types.cursorType; begin "+
+			"	l_cursor	types.cursorType; "+
+			"begin "+
 			"	open l_cursor for "+
 			"		select "+
 			"			* "+
 			"		from "+
 			"			( "+
 			"			select 1 as "+
-			"testnumber from dual "+
+			"				testnumber from dual "+
 			"			union "+
 			"			select 2 as "+
-			"testnumber from dual "+
+			"				testnumber from dual "+
 			"			union "+
 			"			select 3 as "+
-			"testnumber from dual "+
+			"				testnumber from dual "+
 			"			union "+
 			"			select 4 as "+
-			"testnumber from dual "+
+			"				testnumber from dual "+
 			"			union "+
 			"			select 5 as "+
-			"testnumber from dual "+
+			"				testnumber from dual "+
 			"			union "+
 			"			select 6 as "+
-			"testnumber from dual "+
+			"				testnumber from dual "+
 			"			union "+
 			"			select 7 as "+
-			"testnumber from dual "+
+			"				testnumber from dual "+
 			"			union "+
 			"			select 8 as "+
-			"testnumber from dual "+
+			"				testnumber from dual "+
 			"			) "+
 			"		where "+
 			"			testnumber>value; "+
@@ -1407,14 +1412,18 @@ System.out.println("now here");
 		cur.prepareQuery("drop table $(HOSTNAME)_temptabledelete");
 		cur.substitution("HOSTNAME",hostname);
 		cur.executeQuery();
-		cur.prepareQuery("create global temporary table "+
+		cur.prepareQuery(
+			"create global temporary table "+
 			"$(HOSTNAME)_temptabledelete ( "+
 			"	col1 number "+
 			") on commit delete rows");
 		cur.substitution("HOSTNAME",hostname);
 		cur.executeQuery();
-		cur.prepareQuery("insert into $(HOSTNAME)_temptabledelete "+
-			"values (1)");
+		cur.prepareQuery(
+			"insert into "+
+			"	$(HOSTNAME)_temptabledelete "+
+			"values ("+
+			"	1)");
 		cur.substitution("HOSTNAME",hostname);
 		assertTrue(cur.executeQuery());
 		cur.prepareQuery(
@@ -1438,14 +1447,15 @@ System.out.println("now here");
 		cur.substitution("HOSTNAME",hostname);
 		cur.executeQuery();
 		System.out.println();
-		cur.prepareQuery("truncate table "+
-			"$(HOSTNAME)_temptablepreserve");
+		cur.prepareQuery(
+			"truncate table $(HOSTNAME)_temptablepreserve");
 		cur.substitution("HOSTNAME",hostname);
 		cur.executeQuery();
 		cur.prepareQuery("drop table $(HOSTNAME)_temptablepreserve");
 		cur.substitution("HOSTNAME",hostname);
 		cur.executeQuery();
-		cur.prepareQuery("create global temporary table "+
+		cur.prepareQuery(
+			"create global temporary table "+
 			"$(HOSTNAME)_temptablepreserve ("+
 			"	col1 number "+
 			") on commit preserve rows");
@@ -1454,7 +1464,8 @@ System.out.println("now here");
 		cur.prepareQuery(
 			"insert into "+
 			"	$(HOSTNAME)_temptablepreserve "+
-			"values (1)");
+			"values ("+
+			"	1)");
 		cur.substitution("HOSTNAME",hostname);
 		assertTrue(cur.executeQuery());
 		cur.prepareQuery(
@@ -1484,12 +1495,14 @@ System.out.println("now here");
 		cur.substitution("HOSTNAME",hostname);
 		assertTrue(cur.executeQuery());
 		assertEquals(cur.getField(0,0),"0");
-		cur.prepareQuery("truncate table "+
-			"$(HOSTNAME)_temptablepreserve");
+		cur.prepareQuery(
+			"truncate table $(HOSTNAME)_temptablepreserve");
 		cur.substitution("HOSTNAME",hostname);
 		assertTrue(cur.executeQuery());
-		try { Thread.sleep(2000); }
-			catch (Exception e) {}
+		try {
+			Thread.sleep(2000);
+		} catch (Exception e) {
+		}
 		cur.prepareQuery("drop table $(HOSTNAME)_temptablepreserve");
 		cur.substitution("HOSTNAME",hostname);
 		assertTrue(cur.executeQuery());
@@ -1527,10 +1540,14 @@ System.out.println("now here");
 		// quotes
 		System.out.println("QUOTES: ");
 		cur.sendQuery("drop table testtable");
-		assertTrue(cur.sendQuery("create table testtable "+
-			"(col1 varchar2(4))"));
-		assertTrue(cur.sendQuery("insert into testtable "+
-			"values ('''''')"));
+		assertTrue(cur.sendQuery(
+			"create table testtable ("+
+			"	col1 varchar2(4))"));
+		assertTrue(cur.sendQuery(
+			"insert into "+
+			"	testtable "+
+			"values ("+
+			"	'''''')"));
 		assertTrue(cur.sendQuery("select col1 from testtable"));
 		assertEquals(cur.getFieldLength(0,0),2);
 		assertEquals(cur.getField(0,0),"''");
@@ -1767,8 +1784,8 @@ System.out.println("now here");
 		assertEquals(cur.getField(0,"table"),"TESTTABLE");
 		assertEquals(cur.getField(0,"seq_in_index"),"1");
 		assertEquals(cur.getField(0,"column_name"),"COL1");
-		assertTrue(cur.getField(0,"key_name")!=null&&
-			!cur.getField(0,"key_name").isEmpty());
+		assertTrue(cur.getField(0,"key_name")!=null &&
+				!cur.getField(0,"key_name").isEmpty());
 		assertTrue(cur.sendQuery("drop table testtable"));
 		System.out.println();
 
@@ -1801,8 +1818,8 @@ System.out.println("now here");
 		assertEquals(cur.getField(0,"column_name"),"COL1");
 		assertEquals(cur.getField(0,"collation"),"A");
 		assertEquals(cur.getField(0,"index_type"),"3");
-		assertTrue(cur.getField(0,"key_name")!=null&&
-			!cur.getField(0,"key_name").isEmpty());
+		assertTrue(cur.getField(0,"key_name")!=null &&
+				!cur.getField(0,"key_name").isEmpty());
 		assertTrue(cur.sendQuery("drop table testtable"));
 		System.out.println();
 
@@ -1927,14 +1944,26 @@ System.out.println("now here");
 			"order by "+
 			"	testnumber"));
 		System.out.println();
-		assertFalse(cur.sendQuery("insert into testtable "+
-			"values (1,2,3,4)"));
-		assertFalse(cur.sendQuery("insert into testtable "+
-			"values (1,2,3,4)"));
-		assertFalse(cur.sendQuery("insert into testtable "+
-			"values (1,2,3,4)"));
-		assertFalse(cur.sendQuery("insert into testtable "+
-			"values (1,2,3,4)"));
+		assertFalse(cur.sendQuery(
+			"insert into "+
+			"	testtable "+
+			"values ("+
+			"	1,2,3,4)"));
+		assertFalse(cur.sendQuery(
+			"insert into "+
+			"	testtable "+
+			"values ("+
+			"	1,2,3,4)"));
+		assertFalse(cur.sendQuery(
+			"insert into "+
+			"	testtable "+
+			"values ("+
+			"	1,2,3,4)"));
+		assertFalse(cur.sendQuery(
+			"insert into "+
+			"	testtable "+
+			"values ("+
+			"	1,2,3,4)"));
 		System.out.println();
 		assertFalse(cur.sendQuery("create table testtable"));
 		assertFalse(cur.sendQuery("create table testtable"));
