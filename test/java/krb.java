@@ -820,8 +820,11 @@ class krb extends sqlrtest {
 		for (int i=0; cur.getRow(i)!=null; i++) {
 			SQLRCursor secondcur2=new SQLRCursor(con);
 			secondcur2.setResultSetBufferSize(1);
-			assertTrue(secondcur2.sendQuery("select * "+
-				"from testtable"));
+			assertTrue(secondcur2.sendQuery(
+				"select "+
+				"	* "+
+				"from "+
+				"	testtable"));
 		}
 		cur.setResultSetBufferSize(0);
 		System.out.println();
@@ -833,12 +836,18 @@ class krb extends sqlrtest {
 				(short)9000,"/tmp/test.socket",null,null,0,1);
 		SQLRCursor secondcur=new SQLRCursor(secondcon);
 		secondcon.enableKerberos(null,null,null);
-		assertTrue(secondcur.sendQuery("select count(*) "+
-			"from testtable"));
+		assertTrue(secondcur.sendQuery(
+			"select "+
+			"	count(*) "+
+			"from "+
+			"	testtable"));
 		assertEquals(secondcur.getField(0,0),"0");
 		assertTrue(con.commit());
-		assertTrue(secondcur.sendQuery("select count(*) "+
-			"from testtable"));
+		assertTrue(secondcur.sendQuery(
+			"select "+
+			"	count(*) "+
+			"from "+
+			"	testtable"));
 		assertEquals(secondcur.getField(0,0),"8");
 		assertTrue(cur.sendQuery(
 			"insert into "+
@@ -852,8 +861,11 @@ class krb extends sqlrtest {
 			"	'testclob10', "+
 			"	NULL)"));
 		assertTrue(con.rollback());
-		assertTrue(secondcur.sendQuery("select count(*) "+
-			"from testtable"));
+		assertTrue(secondcur.sendQuery(
+			"select "+
+			"	count(*) "+
+			"from "+
+			"	testtable"));
 		assertEquals(secondcur.getField(0,0),"8");
 		assertTrue(con.autoCommitOn());
 		assertTrue(cur.sendQuery(
@@ -867,8 +879,11 @@ class krb extends sqlrtest {
 			"	'testlong10', "+
 			"	'testclob10', "+
 			"	NULL)"));
-		assertTrue(secondcur.sendQuery("select count(*) "+
-			"from testtable"));
+		assertTrue(secondcur.sendQuery(
+			"select "+
+			"	count(*) "+
+			"from "+
+			"	testtable"));
 		assertEquals(secondcur.getField(0,0),"9");
 		assertTrue(con.autoCommitOff());
 		assertTrue(cur.sendQuery("drop table testtable"));
@@ -903,8 +918,11 @@ class krb extends sqlrtest {
 		assertEquals(cur.getField(0,1),"2");
 		assertEquals(cur.getField(0,2),"3");
 		System.out.println();
-		cur.prepareQuery("select '$(var1)','$(var2)',"+
-			"'$(var3)' from dual");
+		cur.prepareQuery(
+			"select "+
+			"	'$(var1)','$(var2)','$(var3)' "+
+			"from "+
+			"	dual");
 		cur.substitutions(subvars,subvalstrings);
 		assertTrue(cur.executeQuery());
 		assertEquals(cur.getField(0,0),"hi");
@@ -1401,14 +1419,20 @@ class krb extends sqlrtest {
 			"values (1)");
 		cur.substitution("HOSTNAME",hostname);
 		assertTrue(cur.executeQuery());
-		cur.prepareQuery("select count(*) from "+
-			"$(HOSTNAME)_temptabledelete");
+		cur.prepareQuery(
+			"select "+
+			"	count(*) "+
+			"from "+
+			"	$(HOSTNAME)_temptabledelete");
 		cur.substitution("HOSTNAME",hostname);
 		assertTrue(cur.executeQuery());
 		assertEquals(cur.getField(0,0),"1");
 		assertTrue(con.commit());
-		cur.prepareQuery("select count(*) from "+
-			"$(HOSTNAME)_temptabledelete");
+		cur.prepareQuery(
+			"select "+
+			"	count(*) "+
+			"from "+
+			"	$(HOSTNAME)_temptabledelete");
 		cur.substitution("HOSTNAME",hostname);
 		assertTrue(cur.executeQuery());
 		assertEquals(cur.getField(0,0),"0");
@@ -1435,21 +1459,30 @@ class krb extends sqlrtest {
 			"_temptablepreserve values (1)");
 		cur.substitution("HOSTNAME",hostname);
 		assertTrue(cur.executeQuery());
-		cur.prepareQuery("select count(*) from "+
-			"$(HOSTNAME)_temptablepreserve");
+		cur.prepareQuery(
+			"select "+
+			"	count(*) "+
+			"from "+
+			"	$(HOSTNAME)_temptablepreserve");
 		cur.substitution("HOSTNAME",hostname);
 		assertTrue(cur.executeQuery());
 		assertEquals(cur.getField(0,0),"1");
 		assertTrue(con.commit());
-		cur.prepareQuery("select count(*) from "+
-			"$(HOSTNAME)_temptablepreserve");
+		cur.prepareQuery(
+			"select "+
+			"	count(*) "+
+			"from "+
+			"	$(HOSTNAME)_temptablepreserve");
 		cur.substitution("HOSTNAME",hostname);
 		assertTrue(cur.executeQuery());
 		assertEquals(cur.getField(0,0),"1");
 		con.endSession();
 		System.out.println();
-		cur.prepareQuery("select count(*) from "+
-			"$(HOSTNAME)_temptablepreserve");
+		cur.prepareQuery(
+			"select "+
+			"	count(*) "+
+			"from "+
+			"	$(HOSTNAME)_temptablepreserve");
 		cur.substitution("HOSTNAME",hostname);
 		assertTrue(cur.executeQuery());
 		assertEquals(cur.getField(0,0),"0");
@@ -1463,8 +1496,11 @@ class krb extends sqlrtest {
 		cur.prepareQuery("drop table $(HOSTNAME)_temptablepreserve");
 		cur.substitution("HOSTNAME",hostname);
 		assertTrue(cur.executeQuery());
-		cur.prepareQuery("select count(*) from "+
-			"$(HOSTNAME)_temptablepreserve");
+		cur.prepareQuery(
+			"select "+
+			"	count(*) "+
+			"from "+
+			"	$(HOSTNAME)_temptablepreserve");
 		cur.substitution("HOSTNAME",hostname);
 		assertFalse(cur.executeQuery());
 		System.out.println();

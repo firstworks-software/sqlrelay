@@ -646,14 +646,20 @@ class db2 extends sqlrtest {
 		// nulls as nulls
 		System.out.println("NULLS AS NULLS: ");
 		cur.getNullsAsNulls();
-		assertTrue(cur.sendQuery("select NULL,1,NULL "+
-			"from sysibm.sysdummy1"));
+		assertTrue(cur.sendQuery(
+			"select "+
+			"	NULL,1,NULL "+
+			"from "+
+			"	sysibm.sysdummy1"));
 		assertEquals(cur.getField(0,0),null);
 		assertEquals(cur.getField(0,1),"1");
 		assertEquals(cur.getField(0,2),null);
 		cur.getNullsAsEmptyStrings();
-		assertTrue(cur.sendQuery("select NULL,1,NULL "+
-			"from sysibm.sysdummy1"));
+		assertTrue(cur.sendQuery(
+			"select "+
+			"	NULL,1,NULL "+
+			"from "+
+			"	sysibm.sysdummy1"));
 		assertEquals(cur.getField(0,0),"");
 		assertEquals(cur.getField(0,1),"1");
 		assertEquals(cur.getField(0,2),"");
@@ -910,8 +916,11 @@ class db2 extends sqlrtest {
 		assertEquals(cur.rowCount(),1);
 		assertEquals(cur.getField(0,0),"1");
 		System.out.println();
-		cur.prepareQuery("select cast(? as integer) "+
-			"from sysibm.sysdummy1");
+		cur.prepareQuery(
+			"select "+
+			"	cast(? as integer) "+
+			"from "+
+			"	sysibm.sysdummy1");
 		cur.inputBind("1",1);
 		assertTrue(cur.executeQuery());
 		assertEquals(cur.rowCount(),1);
@@ -962,8 +971,11 @@ class db2 extends sqlrtest {
 			"	return in1; "+
 			"end"));
 		assertTrue(con.commit());
-		cur.prepareQuery("select testfunc(?,?,?) "+
-			"from sysibm.sysdummy1");
+		cur.prepareQuery(
+			"select "+
+			"	testfunc(?,?,?) "+
+			"from "+
+			"	sysibm.sysdummy1");
 		cur.inputBind("1",1);
 		cur.inputBind("2",1.1,2,1);
 		cur.inputBind("3","hello");
@@ -1067,13 +1079,19 @@ class db2 extends sqlrtest {
 			"table temptable (col1 int) not logged"));
 		assertTrue(cur.sendQuery("insert into session.temptable "+
 			"values (1)"));
-		assertTrue(cur.sendQuery("select count(*) from "+
-			"session.temptable"));
+		assertTrue(cur.sendQuery(
+			"select "+
+			"	count(*) "+
+			"from "+
+			"	session.temptable"));
 		assertEquals(cur.getField(0,0),"1");
 		con.endSession();
 		System.out.println();
-		assertFalse(cur.sendQuery("select count(*) from "+
-			"session.temptable"));
+		assertFalse(cur.sendQuery(
+			"select "+
+			"	count(*) "+
+			"from "+
+			"	session.temptable"));
 		System.out.println();
 
 
@@ -1873,8 +1891,11 @@ class db2 extends sqlrtest {
 		for (int i=0; cur.getRow(i)!=null; i++) {
 			SQLRCursor secondcur=new SQLRCursor(con);
 			secondcur.setResultSetBufferSize(1);
-			assertTrue(secondcur.sendQuery("select * "+
-				"from testtable"));
+			assertTrue(secondcur.sendQuery(
+				"select "+
+				"	* "+
+				"from "+
+				"	testtable"));
 		}
 		cur.setResultSetBufferSize(0);
 		System.out.println();
@@ -1886,12 +1907,18 @@ class db2 extends sqlrtest {
 				(short)9000,"/tmp/test.socket","db2inst1",
 				"testpassword",0,1);
 		SQLRCursor secondcur=new SQLRCursor(secondcon);
-		assertTrue(secondcur.sendQuery("select count(*) "+
-			"from testtable"));
+		assertTrue(secondcur.sendQuery(
+			"select "+
+			"	count(*) "+
+			"from "+
+			"	testtable"));
 		assertEquals(secondcur.getField(0,0),"0");
 		assertTrue(con.commit());
-		assertTrue(secondcur.sendQuery("select count(*) "+
-			"from testtable"));
+		assertTrue(secondcur.sendQuery(
+			"select "+
+			"	count(*) "+
+			"from "+
+			"	testtable"));
 		assertEquals(secondcur.getField(0,0),"8");
 		assertTrue(cur.sendQuery(
 			"insert into "+
@@ -1911,8 +1938,11 @@ class db2 extends sqlrtest {
 			"	'testclob10', "+
 			"	blob('testblob10'))"));
 		assertTrue(con.rollback());
-		assertTrue(secondcur.sendQuery("select count(*) "+
-			"from testtable"));
+		assertTrue(secondcur.sendQuery(
+			"select "+
+			"	count(*) "+
+			"from "+
+			"	testtable"));
 		assertEquals(secondcur.getField(0,0),"8");
 		assertTrue(con.autoCommitOn());
 		assertTrue(cur.sendQuery(
@@ -1932,8 +1962,11 @@ class db2 extends sqlrtest {
 			"	NULL, "+
 			"	'testclob10', "+
 			"	blob('testblob10'))"));
-		assertTrue(secondcur.sendQuery("select count(*) "+
-			"from testtable"));
+		assertTrue(secondcur.sendQuery(
+			"select "+
+			"	count(*) "+
+			"from "+
+			"	testtable"));
 		assertEquals(secondcur.getField(0,0),"9");
 		assertTrue(con.autoCommitOff());
 		assertTrue(cur.sendQuery("drop table testtable"));

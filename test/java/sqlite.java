@@ -216,8 +216,13 @@ class sqlite extends sqlrtest {
 
 		// select
 		System.out.println("SELECT: ");
-		assertTrue(cur.sendQuery("select * from testtable "+
-			"order by testint"));
+		assertTrue(cur.sendQuery(
+			"select "+
+			"	* "+
+			"from "+
+			"	testtable "+
+			"order by "+
+			"	testint "));
 		System.out.println();
 
 
@@ -416,8 +421,13 @@ class sqlite extends sqlrtest {
 		System.out.println("RESULT SET BUFFER SIZE: ");
 		assertEquals(cur.getResultSetBufferSize(),0);
 		cur.setResultSetBufferSize(2);
-		assertTrue(cur.sendQuery("select * from testtable "+
-			"order by testint"));
+		assertTrue(cur.sendQuery(
+			"select "+
+			"	* "+
+			"from "+
+			"	testtable "+
+			"order by "+
+			"	testint "));
 		assertEquals(cur.getResultSetBufferSize(),2);
 		System.out.println();
 		assertEquals(cur.firstRowIndex(),0);
@@ -448,14 +458,24 @@ class sqlite extends sqlrtest {
 		// dont get column info
 		System.out.println("DONT GET COLUMN INFO: ");
 		cur.dontGetColumnInfo();
-		assertTrue(cur.sendQuery("select * from testtable "+
-			"order by testint"));
+		assertTrue(cur.sendQuery(
+			"select "+
+			"	* "+
+			"from "+
+			"	testtable "+
+			"order by "+
+			"	testint "));
 		assertEquals(cur.getColumnName(0),null);
 		assertEquals(cur.getColumnLength(0),0);
 		assertEquals(cur.getColumnType(0),null);
 		cur.getColumnInfo();
-		assertTrue(cur.sendQuery("select * from testtable "+
-			"order by testint"));
+		assertTrue(cur.sendQuery(
+			"select "+
+			"	* "+
+			"from "+
+			"	testtable "+
+			"order by "+
+			"	testint "));
 		assertEquals(cur.getColumnName(0),"testint");
 		assertEquals(cur.getColumnLength(0),0);
 		assertEquals(cur.getColumnType(0),"INTEGER");
@@ -464,8 +484,13 @@ class sqlite extends sqlrtest {
 
 		// suspended session
 		System.out.println("SUSPENDED SESSION: ");
-		assertTrue(cur.sendQuery("select * from testtable "+
-			"order by testint"));
+		assertTrue(cur.sendQuery(
+			"select "+
+			"	* "+
+			"from "+
+			"	testtable "+
+			"order by "+
+			"	testint "));
 		cur.suspendResultSet();
 		assertTrue(con.suspendSession());
 		port=con.getConnectionPort();
@@ -486,8 +511,13 @@ class sqlite extends sqlrtest {
 		// suspended result set
 		System.out.println("SUSPENDED RESULT SET: ");
 		cur.setResultSetBufferSize(2);
-		assertTrue(cur.sendQuery("select * from testtable "+
-			"order by testint"));
+		assertTrue(cur.sendQuery(
+			"select "+
+			"	* "+
+			"from "+
+			"	testtable "+
+			"order by "+
+			"	testint "));
 		assertEquals(cur.getField(2,0),"3");
 		id=cur.getResultSetId();
 		cur.suspendResultSet();
@@ -518,8 +548,13 @@ class sqlite extends sqlrtest {
 		System.out.println("CACHED RESULT SET: ");
 		cur.cacheToFile("cachefile1");
 		cur.setCacheTtl(200);
-		assertTrue(cur.sendQuery("select * from testtable "+
-			"order by testint"));
+		assertTrue(cur.sendQuery(
+			"select "+
+			"	* "+
+			"from "+
+			"	testtable "+
+			"order by "+
+			"	testint "));
 		filename=cur.getCacheFileName();
 		assertEquals(filename,"cachefile1");
 		cur.cacheOff();
@@ -558,8 +593,13 @@ class sqlite extends sqlrtest {
 		cur.setResultSetBufferSize(2);
 		cur.cacheToFile("cachefile1");
 		cur.setCacheTtl(200);
-		assertTrue(cur.sendQuery("select * from testtable "+
-			"order by testint"));
+		assertTrue(cur.sendQuery(
+			"select "+
+			"	* "+
+			"from "+
+			"	testtable "+
+			"order by "+
+			"	testint "));
 		filename=cur.getCacheFileName();
 		assertEquals(filename,"cachefile1");
 		cur.cacheOff();
@@ -601,8 +641,13 @@ class sqlite extends sqlrtest {
 		cur.setResultSetBufferSize(2);
 		cur.cacheToFile("cachefile1");
 		cur.setCacheTtl(200);
-		assertTrue(cur.sendQuery("select * from testtable "+
-			"order by testint"));
+		assertTrue(cur.sendQuery(
+			"select "+
+			"	* "+
+			"from "+
+			"	testtable "+
+			"order by "+
+			"	testint "));
 		assertEquals(cur.getField(2,0),"3");
 		filename=cur.getCacheFileName();
 		assertEquals(filename,"cachefile1");
@@ -665,8 +710,11 @@ class sqlite extends sqlrtest {
 		for (int i=0; cur.getRow(i)!=null; i++) {
 			SQLRCursor secondcur2=new SQLRCursor(con);
 			secondcur2.setResultSetBufferSize(1);
-			assertTrue(secondcur2.sendQuery("select * from "+
-				"testtable"));
+			assertTrue(secondcur2.sendQuery(
+				"select "+
+				"	* "+
+				"from "+
+				"	testtable"));
 			secondcur2.delete();
 		}
 		cur.setResultSetBufferSize(0);
@@ -679,12 +727,18 @@ class sqlite extends sqlrtest {
 				(short)9000,"/tmp/test.socket","testuser",
 				"testpassword",0,1);
 		SQLRCursor secondcur=new SQLRCursor(secondcon);
-		assertTrue(secondcur.sendQuery("select count(*) "+
-			"from testtable"));
+		assertTrue(secondcur.sendQuery(
+			"select "+
+			"	count(*) "+
+			"from "+
+			"	testtable"));
 		assertEquals(secondcur.getField(0,0),"0");
 		assertTrue(con.commit());
-		assertTrue(secondcur.sendQuery("select count(*) "+
-			"from testtable"));
+		assertTrue(secondcur.sendQuery(
+			"select "+
+			"	count(*) "+
+			"from "+
+			"	testtable"));
 		assertEquals(secondcur.getField(0,0),"8");
 		assertTrue(con.begin());
 		assertTrue(cur.sendQuery(
@@ -698,8 +752,11 @@ class sqlite extends sqlrtest {
 			"	'testclob10', "+
 			"	'testblob10')"));
 		assertTrue(con.rollback());
-		assertTrue(secondcur.sendQuery("select count(*) "+
-			"from testtable"));
+		assertTrue(secondcur.sendQuery(
+			"select "+
+			"	count(*) "+
+			"from "+
+			"	testtable"));
 		assertEquals(secondcur.getField(0,0),"8");
 		assertTrue(cur.sendQuery(
 			"insert into "+
@@ -711,8 +768,11 @@ class sqlite extends sqlrtest {
 			"	'testvarchar10', "+
 			"	'testclob10', "+
 			"	'testblob10')"));
-		assertTrue(secondcur.sendQuery("select count(*) "+
-			"from testtable"));
+		assertTrue(secondcur.sendQuery(
+			"select "+
+			"	count(*) "+
+			"from "+
+			"	testtable"));
 		assertEquals(secondcur.getField(0,0),"9");
 		secondcur.delete();
 		secondcon.delete();

@@ -915,8 +915,11 @@ System.out.println("now here");
 		assertEquals(cur.getField(0,1),"2");
 		assertEquals(cur.getField(0,2),"3");
 		System.out.println();
-		cur.prepareQuery("select '$(var1)','$(var2)',"+
-			"'$(var3)' from dual");
+		cur.prepareQuery(
+			"select "+
+			"	'$(var1)','$(var2)','$(var3)' "+
+			"from "+
+			"	dual");
 		cur.substitutions(subvars,subvalstrings);
 		assertTrue(cur.executeQuery());
 		assertEquals(cur.getField(0,0),"hi");
@@ -1414,14 +1417,20 @@ System.out.println("now here");
 			"values (1)");
 		cur.substitution("HOSTNAME",hostname);
 		assertTrue(cur.executeQuery());
-		cur.prepareQuery("select count(*) from "+
-			"$(HOSTNAME)_temptabledelete");
+		cur.prepareQuery(
+			"select "+
+			"	count(*) "+
+			"from "+
+			"	$(HOSTNAME)_temptabledelete");
 		cur.substitution("HOSTNAME",hostname);
 		assertTrue(cur.executeQuery());
 		assertEquals(cur.getField(0,0),"1");
 		assertTrue(con.commit());
-		cur.prepareQuery("select count(*) from "+
-			"$(HOSTNAME)_temptabledelete");
+		cur.prepareQuery(
+			"select "+
+			"	count(*) "+
+			"from "+
+			"	$(HOSTNAME)_temptabledelete");
 		cur.substitution("HOSTNAME",hostname);
 		assertTrue(cur.executeQuery());
 		assertEquals(cur.getField(0,0),"0");
@@ -1448,21 +1457,30 @@ System.out.println("now here");
 			"values (1)");
 		cur.substitution("HOSTNAME",hostname);
 		assertTrue(cur.executeQuery());
-		cur.prepareQuery("select count(*) from "+
-			"$(HOSTNAME)_temptablepreserve");
+		cur.prepareQuery(
+			"select "+
+			"	count(*) "+
+			"from "+
+			"	$(HOSTNAME)_temptablepreserve");
 		cur.substitution("HOSTNAME",hostname);
 		assertTrue(cur.executeQuery());
 		assertEquals(cur.getField(0,0),"1");
 		assertTrue(con.commit());
-		cur.prepareQuery("select count(*) from "+
-			"$(HOSTNAME)_temptablepreserve");
+		cur.prepareQuery(
+			"select "+
+			"	count(*) "+
+			"from "+
+			"	$(HOSTNAME)_temptablepreserve");
 		cur.substitution("HOSTNAME",hostname);
 		assertTrue(cur.executeQuery());
 		assertEquals(cur.getField(0,0),"1");
 		con.endSession();
 		System.out.println();
-		cur.prepareQuery("select count(*) from "+
-			"$(HOSTNAME)_temptablepreserve");
+		cur.prepareQuery(
+			"select "+
+			"	count(*) "+
+			"from "+
+			"	$(HOSTNAME)_temptablepreserve");
 		cur.substitution("HOSTNAME",hostname);
 		assertTrue(cur.executeQuery());
 		assertEquals(cur.getField(0,0),"0");
@@ -1475,8 +1493,11 @@ System.out.println("now here");
 		cur.prepareQuery("drop table $(HOSTNAME)_temptablepreserve");
 		cur.substitution("HOSTNAME",hostname);
 		assertTrue(cur.executeQuery());
-		cur.prepareQuery("select count(*) from "+
-			"$(HOSTNAME)_temptablepreserve");
+		cur.prepareQuery(
+			"select "+
+			"	count(*) "+
+			"from "+
+			"	$(HOSTNAME)_temptablepreserve");
 		cur.substitution("HOSTNAME",hostname);
 		assertFalse(cur.executeQuery());
 		System.out.println();

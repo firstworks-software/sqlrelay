@@ -912,8 +912,11 @@ class firebird extends sqlrtest {
 
 			SQLRCursor secondcur2=new SQLRCursor(con);
 			secondcur2.setResultSetBufferSize(1);
-			assertTrue(secondcur2.sendQuery("select * "+
-				"from testtable"));
+			assertTrue(secondcur2.sendQuery(
+				"select "+
+				"	* "+
+				"from "+
+				"	testtable"));
 			secondcur2=null;
 		}
 		cur.setResultSetBufferSize(0);
@@ -926,12 +929,18 @@ class firebird extends sqlrtest {
 				(short)9000,"/tmp/test.socket","testuser",
 				"testpassword",0,1);
 		SQLRCursor secondcur=new SQLRCursor(secondcon);
-		assertTrue(secondcur.sendQuery("select count(*) "+
-			"from testtable"));
+		assertTrue(secondcur.sendQuery(
+			"select "+
+			"	count(*) "+
+			"from "+
+			"	testtable"));
 		assertEquals(secondcur.getField(0,0),"0");
 		assertTrue(con.commit());
-		assertTrue(secondcur.sendQuery("select count(*) "+
-			"from testtable"));
+		assertTrue(secondcur.sendQuery(
+			"select "+
+			"	count(*) "+
+			"from "+
+			"	testtable"));
 		assertEquals(secondcur.getField(0,0),"8");
 		assertTrue(cur.sendQuery(
 			"insert into "+
@@ -950,8 +959,11 @@ class firebird extends sqlrtest {
 			"	NULL, "+
 			"	NULL)"));
 		assertTrue(con.rollback());
-		assertTrue(secondcur.sendQuery("select count(*) "+
-			"from testtable"));
+		assertTrue(secondcur.sendQuery(
+			"select "+
+			"	count(*) "+
+			"from "+
+			"	testtable"));
 		assertEquals(secondcur.getField(0,0),"8");
 		assertTrue(con.autoCommitOn());
 		assertTrue(cur.sendQuery(
@@ -970,8 +982,11 @@ class firebird extends sqlrtest {
 			"	'testvarchar10', "+
 			"	NULL, "+
 			"	NULL)"));
-		assertTrue(secondcur.sendQuery("select count(*) "+
-			"from testtable"));
+		assertTrue(secondcur.sendQuery(
+			"select "+
+			"	count(*) "+
+			"from "+
+			"	testtable"));
 		assertEquals(secondcur.getField(0,0),"9");
 		secondcur=null;
 		secondcon=null;
@@ -983,8 +998,11 @@ class firebird extends sqlrtest {
 
 		// individual substitutions
 		System.out.println("INDIVIDUAL SUBSTITUTIONS: ");
-		cur.prepareQuery("select $(var1),'$(var2)',$(var3) "+
-			"from rdb$database");
+		cur.prepareQuery(
+			"select "+
+			"	$(var1),'$(var2)',$(var3) "+
+			"from "+
+			"	rdb$database");
 		cur.substitution("var1",1);
 		cur.substitution("var2","hello");
 		cur.substitution("var3",10.5556,6,4);
@@ -1010,16 +1028,22 @@ class firebird extends sqlrtest {
 		assertEquals(cur.getField(0,1),"hello");
 		assertEquals(cur.getField(0,2),"bye");
 		System.out.println();
-		cur.prepareQuery("select $(var1),$(var2),"+
-			"$(var3) from rdb$database");
+		cur.prepareQuery(
+			"select "+
+			"	$(var1),$(var2),$(var3) "+
+			"from "+
+			"	rdb$database");
 		cur.substitutions(subvars,subvallongs);
 		assertTrue(cur.executeQuery());
 		assertEquals(cur.getField(0,0),"1");
 		assertEquals(cur.getField(0,1),"2");
 		assertEquals(cur.getField(0,2),"3");
 		System.out.println();
-		cur.prepareQuery("select $(var1),$(var2),"+
-			"$(var3) from rdb$database");
+		cur.prepareQuery(
+			"select "+
+			"	$(var1),$(var2),$(var3) "+
+			"from "+
+			"	rdb$database");
 		cur.substitutions(subvars,subvaldoubles,precs,scales);
 		assertTrue(cur.executeQuery());
 		assertEquals(cur.getField(0,0),"10.55");
@@ -1031,14 +1055,20 @@ class firebird extends sqlrtest {
 		// nulls as nulls
 		System.out.println("NULLS AS NULLS: ");
 		cur.getNullsAsNulls();
-		assertTrue(cur.sendQuery("select 1,NULL,NULL "+
-			"from rdb$database"));
+		assertTrue(cur.sendQuery(
+			"select "+
+			"	1,NULL,NULL "+
+			"from "+
+			"	rdb$database"));
 		assertEquals(cur.getField(0,0),"1");
 		assertEquals(cur.getField(0,1),null);
 		assertEquals(cur.getField(0,2),null);
 		cur.getNullsAsEmptyStrings();
-		assertTrue(cur.sendQuery("select 1,NULL,NULL "+
-			"from rdb$database"));
+		assertTrue(cur.sendQuery(
+			"select "+
+			"	1,NULL,NULL "+
+			"from "+
+			"	rdb$database"));
 		assertEquals(cur.getField(0,0),"1");
 		assertEquals(cur.getField(0,1),"");
 		assertEquals(cur.getField(0,2),"");

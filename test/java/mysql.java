@@ -1283,8 +1283,13 @@ class mysql extends sqlrtest {
 
 		// finished suspended session
 		System.out.println("FINISHED SUSPENDED SESSION: ");
-		assertTrue(cur.sendQuery("select * from testtable "+
-			"order by testint"));
+		assertTrue(cur.sendQuery(
+			"select "+
+			"	* "+
+			"from "+
+			"	testtable "+
+			"order by "+
+			"	testint "));
 		assertEquals(cur.getField(4,0),"5");
 		assertEquals(cur.getField(5,0),"6");
 		assertEquals(cur.getField(6,0),"7");
@@ -1311,8 +1316,11 @@ class mysql extends sqlrtest {
 		for (int i=0; cur.getRow(i)!=null; i++) {
 			SQLRCursor secondcur=new SQLRCursor(con);
 			secondcur.setResultSetBufferSize(1);
-			assertTrue(secondcur.sendQuery("select * from "+
-					"testtable"));
+			assertTrue(secondcur.sendQuery(
+				"select "+
+				"	* "+
+				"from "+
+				"	testtable"));
 		}
 		//cur.setResultSetBufferSize(0);
 		System.out.println();
@@ -1327,8 +1335,11 @@ class mysql extends sqlrtest {
 				(short)9000,"/tmp/test.socket","testuser",
 				"testpassword",0,1);
 		SQLRCursor secondcur=new SQLRCursor(secondcon);
-		assertTrue(secondcur.sendQuery("select count(*) "+
-			"from testtable"));
+		assertTrue(secondcur.sendQuery(
+			"select "+
+			"	count(*) "+
+			"from "+
+			"	testtable"));
 		if (majorversion>3) {
 			assertEquals(secondcur.getField(0,0),"0");
 		} else {
@@ -1336,8 +1347,11 @@ class mysql extends sqlrtest {
 		}
 		assertTrue(con.commit());
 		assertTrue(secondcon.commit());
-		assertTrue(secondcur.sendQuery("select count(*) "+
-			"from testtable"));
+		assertTrue(secondcur.sendQuery(
+			"select "+
+			"	count(*) "+
+			"from "+
+			"	testtable"));
 		assertEquals(secondcur.getField(0,0),"8");
 		assertTrue(con.begin());
 		assertTrue(secondcon.begin());
@@ -1370,8 +1384,11 @@ class mysql extends sqlrtest {
 			"	NULL)"));
 		assertTrue(con.rollback());
 		assertTrue(secondcon.commit());
-		assertTrue(secondcur.sendQuery("select count(*) "+
-			"from testtable"));
+		assertTrue(secondcur.sendQuery(
+			"select "+
+			"	count(*) "+
+			"from "+
+			"	testtable"));
 		assertEquals(secondcur.getField(0,0),"8");
 		assertTrue(cur.sendQuery(
 			"insert into "+
@@ -1401,8 +1418,11 @@ class mysql extends sqlrtest {
 			"	'longblob10', "+
 			"	NULL)"));
 		assertTrue(secondcon.commit());
-		assertTrue(secondcur.sendQuery("select count(*) "+
-			"from testtable"));
+		assertTrue(secondcur.sendQuery(
+			"select "+
+			"	count(*) "+
+			"from "+
+			"	testtable"));
 		assertEquals(secondcur.getField(0,0),"9");
 		secondcon.commit();
 		assertTrue(cur.sendQuery("drop table testtable"));
