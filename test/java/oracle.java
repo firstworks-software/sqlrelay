@@ -18,28 +18,28 @@ class oracle extends sqlrtest {
 					"var4","var5"};
 		String[]	arraybindvals={"7","testchar7","testvarchar7",
 					"01-JAN-2007","testlong7"};
-		long	numvar;
-		String	stringvar;
-		double	floatvar;
+		long		numvar;
+		String		stringvar;
+		double		floatvar;
 		String[]	cols;
 		String[]	fields;
-		long[]	fieldlens;
+		long[]		fieldlens;
 		String[]	subvars={"var1","var2","var3"};
-		long[]	subvallongs={1,2,3};
+		long[]		subvallongs={1,2,3};
 		String[]	subvalstrings={"hi","hello","bye"};
 		double[]	subvaldoubles={10.55,10.556,10.5556};
-		int[]	precs={4,5,6};
-		int[]	scales={2,3,4};
-		short	port;
-		String	socket;
-		short	id;
-		String	filename;
-		String	clobvar;
-		long	clobvarlength;
-		byte[]	blobvar;
-		long	blobvarlength;
-		short	counter;
-		int	LARGE_BUFFER_LENGTH=8192;
+		int[]		precs={4,5,6};
+		int[]		scales={2,3,4};
+		short		port;
+		String		socket;
+		short		id;
+		String		filename;
+		String		clobvar;
+		long		clobvarlength;
+		byte[]		blobvar;
+		long		blobvarlength;
+		short		counter;
+		int		LARGE_BUFFER_LENGTH=8192;
 
 
 		// hostname
@@ -973,7 +973,7 @@ System.out.println("now here");
 		cur.prepareQuery("insert into testtable "+
 			"values (:clobval,:blobval)");
 		StringBuilder largebuffer=new StringBuilder();
-		for (int i=0;i<LARGE_BUFFER_LENGTH; i++) {
+		for (int i=0; i<LARGE_BUFFER_LENGTH; i++) {
 			largebuffer.append('C');
 		}
 		cur.inputBindClob("clobval",largebuffer.toString(),
@@ -1101,7 +1101,7 @@ System.out.println("now here");
 		// long output bind
 		System.out.println("LONG OUTPUT BIND: ");
 		StringBuilder lobuf=new StringBuilder();
-		for (int i=0;i<LARGE_BUFFER_LENGTH; i++) {
+		for (int i=0; i<LARGE_BUFFER_LENGTH; i++) {
 			lobuf.append('C');
 		}
 		StringBuilder loquery=new StringBuilder();
@@ -1809,7 +1809,7 @@ System.out.println("now here");
 			"end;"));
 		assertTrue(cur.getProcedureList(null));
 		counter=0;
-		for (long i=0;i<cur.rowCount(); i++) {
+		for (long i=0; i<cur.rowCount(); i++) {
 			String name=cur.getField((int)i,"routine_name");
 			if ("TESTPROC1".equals(name) ||
 				"TESTPROC2".equals(name) ||

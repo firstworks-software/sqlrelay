@@ -14,22 +14,22 @@ class mysql extends sqlrtest {
 					"READ-COMMITTED","SERIALIZABLE"};
 		String[]	cols;
 		String[]	fields;
-		long[]	fieldlens;
+		long[]		fieldlens;
 		String[]	subvars={"var1","var2","var3"};
-		long[]	subvallongs={1,2,3};
+		long[]		subvallongs={1,2,3};
 		String[]	subvalstrings={
 					"hi","hello","bye"};
 		double[]	subvaldoubles={
 					10.55,10.556,10.5556};
-		int[]	precs={4,5,6};
-		int[]	scales={2,3,4};
-		short	port;
-		String	socket;
-		short	id;
-		String	filename;
-		long	counter=0;
+		int[]		precs={4,5,6};
+		int[]		scales={2,3,4};
+		short		port;
+		String		socket;
+		short		id;
+		String		filename;
+		long		counter=0;
 
-		int	LARGE_BUFFER_LENGTH=8192;
+		int		LARGE_BUFFER_LENGTH=8192;
 		StringBuilder	largebuffer=new StringBuilder();
 
 
@@ -1291,7 +1291,7 @@ class mysql extends sqlrtest {
 		// can't do this with mysql
 		//cur.setResultSetBufferSize(1);
 		assertTrue(cur.sendQuery("select * from testtable"));
-		for (int i=0;cur.getRow(i)!=null; i++) {
+		for (int i=0; cur.getRow(i)!=null; i++) {
 			SQLRCursor secondcur=new SQLRCursor(con);
 			secondcur.setResultSetBufferSize(1);
 			assertTrue(secondcur.sendQuery("select * "+
@@ -1487,7 +1487,7 @@ class mysql extends sqlrtest {
 			"	testblob longblob)");
 		cur.prepareQuery("insert into testtable "+
 			"values (?,?)");
-		for (int i=0;i<LARGE_BUFFER_LENGTH; i++) {
+		for (int i=0; i<LARGE_BUFFER_LENGTH; i++) {
 			largebuffer.append('C');
 		}
 		String	largestr=largebuffer.toString();
@@ -1833,7 +1833,7 @@ class mysql extends sqlrtest {
 			query.append("insert into "+
 				"testtable values "+
 				"(_binary'");
-			for (int i=0;i<buffer.length; i++) {
+			for (int i=0; i<buffer.length; i++) {
 				if (buffer[i]==(byte)'\'') {
 					query.append('\\');
 				}
@@ -1979,13 +1979,13 @@ class mysql extends sqlrtest {
 		java.util.Random r2=new java.util.Random(r1.nextLong());
 		byte[] buffer=new byte[256];
 		char[]	ch={'\'','"','\\','\0'};
-		for (int i=0;i<buffer.length; i++) {
+		for (int i=0; i<buffer.length; i++) {
 			buffer[i]=(byte)ch[r1.nextInt(4)];
 		}
 		StringBuilder	query=new StringBuilder();
 		query.append("insert into testtable "+
 			"values ('");
-		for (int i=0;i<buffer.length; i++) {
+		for (int i=0; i<buffer.length; i++) {
 			if (buffer[i]==(byte)'\'') {
 				// randomly escape with \ or ''
 				if (r2.nextInt(2)==1) {
@@ -2057,7 +2057,7 @@ class mysql extends sqlrtest {
 		assertTrue(cur.getTableTypeList());
 		assertEquals(cur.getColumnName(0),"table_type");
 		boolean	found=false;
-		for (long i=0;i<cur.rowCount(); i++) {
+		for (long i=0; i<cur.rowCount(); i++) {
 			String	tt=cur.getField(i,"table_type");
 			if (tt!=null &&tt.equals("TABLE")) {
 				found=true;
@@ -2088,7 +2088,7 @@ class mysql extends sqlrtest {
 			"	col2 int)"));
 		assertTrue(cur.getTableList(null));
 		counter=0;
-		for (long i=0;i<cur.rowCount(); i++) {
+		for (long i=0; i<cur.rowCount(); i++) {
 			String	name=cur.getField(i,"Tables_in_xxx");
 			if (name!=null &&(name.equals("testtable1") ||
 				name.equals("testtable2") ||name.equals(
@@ -2380,7 +2380,7 @@ class mysql extends sqlrtest {
 			"begin end"));
 		assertTrue(cur.getProcedureList(null));
 		counter=0;
-		for (long i=0;i<cur.rowCount(); i++) {
+		for (long i=0; i<cur.rowCount(); i++) {
 			String	name=cur.getField(i,"routine_name");
 			if (name!=null &&(name.equals("testproc1") ||
 				name.equals("testproc2") ||name.equals(

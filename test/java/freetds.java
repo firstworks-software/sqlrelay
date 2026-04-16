@@ -12,21 +12,21 @@ class freetds extends sqlrtest {
 		String[]	isolationlevels={"1","0","2","3"};
 		String[]	cols;
 		String[]	fields;
-		long[]	fieldlens;
+		long[]		fieldlens;
 		String[]	subvars={"var1","var2","var3"};
-		long[]	subvallongs={1,2,3};
+		long[]		subvallongs={1,2,3};
 		String[]	subvalstrings={"hi","hello","bye"};
 		double[]	subvaldoubles={10.55,10.556,10.5556};
-		int[]	precs={4,5,6};
-		int[]	scales={2,3,4};
-		short	port;
-		String	socket;
-		short	id;
-		String	filename;
-		long	counter=0;
+		int[]		precs={4,5,6};
+		int[]		scales={2,3,4};
+		short		port;
+		String		socket;
+		short		id;
+		String		filename;
+		long		counter=0;
 
-		int	LARGE_BUFFER_LENGTH=8192;
-		char[]	largebuffer=new char[LARGE_BUFFER_LENGTH];
+		int		LARGE_BUFFER_LENGTH=8192;
+		char[]		largebuffer=new char[LARGE_BUFFER_LENGTH];
 
 
 		// instantiation
@@ -1090,7 +1090,7 @@ class freetds extends sqlrtest {
 		// can't do this with freetds
 		//cur.setResultSetBufferSize(1);
 		assertTrue(cur.sendQuery("select * from testtable"));
-		for (long i=0;cur.getRow(i)!=null; i++) {
+		for (long i=0; cur.getRow(i)!=null; i++) {
 			SQLRCursor secondcur=new SQLRCursor(con);
 			secondcur.setResultSetBufferSize(1);
 			assertTrue(secondcur.sendQuery("select * "+
@@ -1277,7 +1277,7 @@ class freetds extends sqlrtest {
 			"lock datarows");
 		cur.prepareQuery("insert into testtable "+
 			"values (?,?)");
-		for (int i=0;i<LARGE_BUFFER_LENGTH; i++) {
+		for (int i=0; i<LARGE_BUFFER_LENGTH; i++) {
 			largebuffer[i]='C';
 		}
 		String	largestr=new String(largebuffer);
@@ -1420,7 +1420,7 @@ class freetds extends sqlrtest {
 		// for this to work
 		/*System.out.println("LONG OUTPUT BIND: ");
 		cur.sendQuery("drop procedure testproc");
-		for (int i=0;i<LARGE_BUFFER_LENGTH; i++) {
+		for (int i=0; i<LARGE_BUFFER_LENGTH; i++) {
 			largebuffer[i]='C';
 		}
 		String	query="create procedure testproc "+
@@ -1759,7 +1759,7 @@ class freetds extends sqlrtest {
 		assertTrue(cur.getTableTypeList());
 		assertEquals(cur.getColumnName(0),"table_type");
 		boolean	found=false;
-		for (long i=0;i<cur.rowCount(); i++) {
+		for (long i=0; i<cur.rowCount(); i++) {
 			String	tt=cur.getField(i,"table_type");
 			if (tt!=null &&tt.equals("TABLE")) {
 				found=true;
@@ -1790,7 +1790,7 @@ class freetds extends sqlrtest {
 			"	col2 int)"));
 		assertTrue(cur.getTableList(null));
 		counter=0;
-		for (long i=0;i<cur.rowCount(); i++) {
+		for (long i=0; i<cur.rowCount(); i++) {
 			String	name=cur.getField(i,"Tables_in_xxx");
 			if (name!=null &&(name.equals("testtable1") ||
 				name.equals("testtable2") ||name.equals(
@@ -2034,7 +2034,7 @@ class freetds extends sqlrtest {
 			"as select 1"));
 		assertTrue(cur.getProcedureList(null));
 		counter=0;
-		for (long i=0;i<cur.rowCount(); i++) {
+		for (long i=0; i<cur.rowCount(); i++) {
 			String	name=cur.getField(i,"routine_name");
 			if (name!=null &&(name.equals("testproc1") ||
 				name.equals("testproc2") ||name.equals(

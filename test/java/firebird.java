@@ -17,20 +17,20 @@ class firebird extends sqlrtest {
 					null,"testblob7"};
 		String[]	cols;
 		String[]	fields;
-		long[]	fieldlens;
+		long[]		fieldlens;
 		String[]	subvars={"var1","var2","var3"};
-		long[]	subvallongs={1,2,3};
+		long[]		subvallongs={1,2,3};
 		String[]	subvalstrings={"hi","hello","bye"};
 		double[]	subvaldoubles={10.55,10.556,10.5556};
-		int[]	precs={4,5,6};
-		int[]	scales={2,3,4};
-		short	port;
-		String	socket;
-		short	id;
-		String	filename;
-		long	counter=0;
+		int[]		precs={4,5,6};
+		int[]		scales={2,3,4};
+		short		port;
+		String		socket;
+		short		id;
+		String		filename;
+		long		counter=0;
 
-		int	LARGE_BUFFER_LENGTH=20*1024;
+		int		LARGE_BUFFER_LENGTH=20*1024;
 		StringBuilder	largebuffer=new StringBuilder();
 
 
@@ -898,7 +898,7 @@ class firebird extends sqlrtest {
 		System.out.println("NESTED SELECTS: ");
 		cur.setResultSetBufferSize(1);
 		assertTrue(cur.sendQuery("select * from testtable"));
-		for (int i=0;cur.getRow(i)!=null; i++) {
+		for (int i=0; cur.getRow(i)!=null; i++) {
 
 			SQLRCursor secondcur2=new SQLRCursor(con);
 			secondcur2.setResultSetBufferSize(1);
@@ -1062,7 +1062,7 @@ class firebird extends sqlrtest {
 		cur.sendQuery("delete from testtable1");
 		cur.prepareQuery("insert into "+
 			"testtable1 values (?)");
-		for (int i=0;i<LARGE_BUFFER_LENGTH; i++) {
+		for (int i=0; i<LARGE_BUFFER_LENGTH; i++) {
 			largebuffer.append('C');
 		}
 		cur.inputBindClob("1",largebuffer.toString(),
@@ -1126,7 +1126,7 @@ class firebird extends sqlrtest {
 		// long output bind
 		System.out.println("LONG OUTPUT BIND: ");
 		largebuffer=new StringBuilder();
-		for (int i=0;i<LARGE_BUFFER_LENGTH; i++) {
+		for (int i=0; i<LARGE_BUFFER_LENGTH; i++) {
 			largebuffer.append('C');
 		}
 		cur.prepareQuery("execute procedure "+
@@ -1337,7 +1337,7 @@ class firebird extends sqlrtest {
 		assertTrue(cur.getSchemaList(null));
 		assertEquals(cur.getColumnName(0),"Database");
 		boolean found=false;
-		for (long i=0;i<cur.rowCount(); i++) {
+		for (long i=0; i<cur.rowCount(); i++) {
 			String val=cur.getField(i,"Database");
 			if (val!=null &&val.equals("TESTUSER")) {
 				found=true;
@@ -1353,7 +1353,7 @@ class firebird extends sqlrtest {
 		assertTrue(cur.getTableTypeList());
 		assertEquals(cur.getColumnName(0),"table_type");
 		found=false;
-		for (long i=0;i<cur.rowCount(); i++) {
+		for (long i=0; i<cur.rowCount(); i++) {
 			String val=cur.getField(i,"table_type");
 			if (val!=null &&val.equals("TABLE")) {
 				found=true;
@@ -1368,7 +1368,7 @@ class firebird extends sqlrtest {
 		System.out.println("TABLE LIST: ");
 		assertTrue(cur.getTableList(null));
 		counter=0;
-		for (long i=0;i<cur.rowCount(); i++) {
+		for (long i=0; i<cur.rowCount(); i++) {
 			String name=cur.getField(i,"Tables_in_xxx");
 			if (name!=null &&(name.equals("TESTTABLE1") ||
 				name.equals("TESTTABLE2") ||name.equals(
@@ -1540,7 +1540,7 @@ class firebird extends sqlrtest {
 		System.out.println("PROCEDURE LIST: ");
 		assertTrue(cur.getProcedureList(null));
 		counter=0;
-		for (long i=0;i<cur.rowCount(); i++) {
+		for (long i=0; i<cur.rowCount(); i++) {
 			String name=cur.getField(i,"routine_name");
 			if (name!=null &&(name.equals("TESTPROC") ||name.equals(
 					"TESTPROC1"))) {

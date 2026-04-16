@@ -12,20 +12,20 @@ class sqlite extends sqlrtest {
 		String[]	isolationlevels={"0","1"};
 		String[]	cols;
 		String[]	fields;
-		long[]	fieldlens;
+		long[]		fieldlens;
 		String[]	subvars={"var1","var2","var3"};
-		long[]	subvallongs={1,2,3};
+		long[]		subvallongs={1,2,3};
 		String[]	subvalstrings={"hi","hello","bye"};
 		double[]	subvaldoubles={10.55,10.556,10.5556};
-		int[]	precs={4,5,6};
-		int[]	scales={2,3,4};
-		short	port;
-		String	socket;
-		short	id;
-		String	filename;
-		long	counter=0;
+		int[]		precs={4,5,6};
+		int[]		scales={2,3,4};
+		short		port;
+		String		socket;
+		short		id;
+		String		filename;
+		long		counter=0;
 
-		int	LARGE_BUFFER_LENGTH=8192;
+		int		LARGE_BUFFER_LENGTH=8192;
 
 
 		// instantiation
@@ -656,7 +656,7 @@ class sqlite extends sqlrtest {
 		System.out.println("NESTED SELECTS: ");
 		cur.setResultSetBufferSize(1);
 		assertTrue(cur.sendQuery("select * from testtable"));
-		for (int i=0;cur.getRow(i)!=null; i++) {
+		for (int i=0; cur.getRow(i)!=null; i++) {
 			SQLRCursor secondcur2=new SQLRCursor(con);
 			secondcur2.setResultSetBufferSize(1);
 			assertTrue(secondcur2.sendQuery("select * from "+
@@ -847,7 +847,7 @@ class sqlite extends sqlrtest {
 		cur.prepareQuery("insert into testtable "+
 			"values (:clobval,:blobval)");
 		StringBuilder largebuffer=new StringBuilder();
-		for (int i=0;i<LARGE_BUFFER_LENGTH; i++) {
+		for (int i=0; i<LARGE_BUFFER_LENGTH; i++) {
 			largebuffer.append('C');
 		}
 		String largestr=largebuffer.toString();
@@ -1099,7 +1099,7 @@ class sqlite extends sqlrtest {
 		assertTrue(cur.getTableTypeList());
 		assertEquals(cur.getColumnName(0),"table_type");
 		boolean found=false;
-		for (long i=0;i<cur.rowCount(); i++) {
+		for (long i=0; i<cur.rowCount(); i++) {
 			String val=cur.getField((int)i,"table_type");
 			if (val!=null &&val.equals("TABLE")) {
 				found=true;
@@ -1134,7 +1134,7 @@ class sqlite extends sqlrtest {
 			"	col2 int)"));
 		assertTrue(cur.getTableList(null));
 		counter=0;
-		for (long i=0;i<cur.rowCount(); i++) {
+		for (long i=0; i<cur.rowCount(); i++) {
 			String name=cur.getField((int)i,"Tables_in_xxx");
 			if (name!=null &&(name.equals("testtable1") ||
 				name.equals("testtable2") ||name.equals(

@@ -18,35 +18,35 @@ class tls extends sqlrtest {
 					"var3","var4","var5"};
 		String[]	arraybindvals={"7","testchar7","testvarchar7",
 					"01-JAN-2007","testlong7"};
-		long	numvar;
-		String	stringvar;
-		String	nullvar;
-		double	floatvar;
+		long		numvar;
+		String		stringvar;
+		String		nullvar;
+		double		floatvar;
 		String[]	cols;
 		String[]	fields;
-		long[]	fieldlens;
+		long[]		fieldlens;
 		String[]	subvars={"var1","var2","var3"};
-		long[]	subvallongs={1,2,3};
+		long[]		subvallongs={1,2,3};
 		String[]	subvalstrings={
 					"hi","hello","bye"};
 		double[]	subvaldoubles={
 					10.55,10.556,10.5556};
-		int[]	precs={4,5,6};
-		int[]	scales={2,3,4};
-		short	port;
-		String	socket;
-		short	id;
-		String	filename;
-		String	clobvar;
-		long	clobvarlength;
-		byte[]	blobvar;
-		long	blobvarlength;
-		int	counter;
+		int[]		precs={4,5,6};
+		int[]		scales={2,3,4};
+		short		port;
+		String		socket;
+		short		id;
+		String		filename;
+		String		clobvar;
+		long		clobvarlength;
+		byte[]		blobvar;
+		long		blobvarlength;
+		int		counter;
 
-		int	LARGE_BUFFER_LENGTH=8192;
+		int		LARGE_BUFFER_LENGTH=8192;
 
-		String	cert="../sqlrelay.conf.d/tls/client.pem";
-		String	ca="../sqlrelay.conf.d/tls/ca.pem";
+		String		cert="../sqlrelay.conf.d/tls/client.pem";
+		String		ca="../sqlrelay.conf.d/tls/ca.pem";
 		if (System.getProperty("os.name").
 			toLowerCase().indexOf("win")>=0) {
 			cert="..\\sqlrelay.conf.d\\tls\\client.pfx";
@@ -100,7 +100,7 @@ class tls extends sqlrtest {
 
 		// isolation levels
 		System.out.println("ISOLATION LEVELS: ");
-		for (int il=0;il<isolationlevels.length; il++) {
+		for (int il=0; il<isolationlevels.length; il++) {
 			// oracle requires the isolation level
 			// to be the first query of the transaction
 			assertTrue(con.commit());
@@ -812,7 +812,7 @@ class tls extends sqlrtest {
 		System.out.println("NESTED SELECTS: ");
 		cur.setResultSetBufferSize(1);
 		assertTrue(cur.sendQuery("select * from testtable"));
-		for (int i=0;cur.getRow(i)!=null; i++) {
+		for (int i=0; cur.getRow(i)!=null; i++) {
 			SQLRCursor secondcur2=new SQLRCursor(con);
 			secondcur2.setResultSetBufferSize(1);
 			assertTrue(secondcur2.sendQuery(
@@ -972,7 +972,7 @@ class tls extends sqlrtest {
 		cur.prepareQuery("insert into testtable "+
 			"values (:clobval,:blobval)");
 		StringBuilder	largebuffer=new StringBuilder();
-		for (int i=0;i<LARGE_BUFFER_LENGTH; i++) {
+		for (int i=0; i<LARGE_BUFFER_LENGTH; i++) {
 			largebuffer.append('C');
 		}
 		cur.inputBindClob("clobval",largebuffer.toString(),
@@ -1104,7 +1104,7 @@ class tls extends sqlrtest {
 		// long output bind
 		System.out.println("LONG OUTPUT BIND: ");
 		StringBuilder	longval=new StringBuilder();
-		for (int i=0;i<LARGE_BUFFER_LENGTH; i++) {
+		for (int i=0; i<LARGE_BUFFER_LENGTH; i++) {
 			longval.append('C');
 		}
 		StringBuilder	longquery=new StringBuilder();
@@ -1541,7 +1541,7 @@ class tls extends sqlrtest {
 		assertTrue(cur.getSchemaList(null));
 		assertEquals(cur.getColumnName(0),"Database");
 		boolean	found=false;
-		for (long i=0;i<cur.rowCount(); i++) {
+		for (long i=0; i<cur.rowCount(); i++) {
 			if (cur.getField(i,"Database")!=null &&cur.getField(i,
 				"Database").equalsIgnoreCase(hostname)) {
 				found=true;
@@ -1602,7 +1602,7 @@ class tls extends sqlrtest {
 			"	testblob blob)"));
 		assertTrue(cur.getTableList(null));
 		counter=0;
-		for (long i=0;i<cur.rowCount(); i++) {
+		for (long i=0; i<cur.rowCount(); i++) {
 			String	name=cur.getField(i,"Tables_in_xxx");
 			if ("TESTTABLE1".equals(name) ||
 				"TESTTABLE2".equals(name) ||
@@ -1821,7 +1821,7 @@ class tls extends sqlrtest {
 			"end;"));
 		assertTrue(cur.getProcedureList(null));
 		counter=0;
-		for (long i=0;i<cur.rowCount(); i++) {
+		for (long i=0; i<cur.rowCount(); i++) {
 			String	name=cur.getField(i,"routine_name");
 			if ("TESTPROC1".equals(name) ||
 				"TESTPROC2".equals(name) ||

@@ -712,7 +712,7 @@ class db2 extends sqlrtest {
 		cur.prepareQuery("insert into testtable "+
 			"values (?,?)");
 		StringBuilder	largebuffer=new StringBuilder();
-		for (int i=0;i<LARGE_BUFFER_LENGTH; i++) {
+		for (int i=0; i<LARGE_BUFFER_LENGTH; i++) {
 			largebuffer.append('C');
 		}
 		cur.inputBindClob("1",largebuffer.toString(),
@@ -848,7 +848,7 @@ class db2 extends sqlrtest {
 			"end"));
 		assertTrue(con.commit());
 		StringBuilder	largebuffer2=new StringBuilder();
-		for (int i=0;i<LARGE_BUFFER_LENGTH; i++) {
+		for (int i=0; i<LARGE_BUFFER_LENGTH; i++) {
 			largebuffer2.append('C');
 		}
 		cur.prepareQuery("call testproc(?,?)");
@@ -1186,7 +1186,7 @@ class db2 extends sqlrtest {
 		assertTrue(cur.getSchemaList(null));
 		assertEquals(cur.getColumnName(0),"Database");
 		boolean	found=false;
-		for (long i=0;i<cur.rowCount(); i++) {
+		for (long i=0; i<cur.rowCount(); i++) {
 			String val=cur.getField(i,"Database");
 			if (val!=null &&val.equals("DB2INST1")) {
 				found=true;
@@ -1202,7 +1202,7 @@ class db2 extends sqlrtest {
 		assertTrue(cur.getTableTypeList());
 		assertEquals(cur.getColumnName(0),"table_type");
 		found=false;
-		for (long i=0;i<cur.rowCount(); i++) {
+		for (long i=0; i<cur.rowCount(); i++) {
 			String val=cur.getField(i,"table_type");
 			if (val!=null &&val.equals("TABLE")) {
 				found=true;
@@ -1234,7 +1234,7 @@ class db2 extends sqlrtest {
 		assertTrue(con.commit());
 		assertTrue(cur.getTableList(null));
 		counter=0;
-		for (long i=0;i<cur.rowCount(); i++) {
+		for (long i=0; i<cur.rowCount(); i++) {
 			String name=cur.getField(i,"Tables_in_xxx");
 			if (name!=null &&(name.equals("TESTTABLE1") ||
 				name.equals("TESTTABLE2") ||name.equals(
@@ -1495,7 +1495,7 @@ class db2 extends sqlrtest {
 		assertTrue(con.commit());
 		assertTrue(cur.getProcedureList(null));
 		counter=0;
-		for (long i=0;i<cur.rowCount(); i++) {
+		for (long i=0; i<cur.rowCount(); i++) {
 			String name=cur.getField(i,"routine_name");
 			if (name!=null &&(name.equals("TESTPROC1") ||
 				name.equals("TESTPROC2") ||name.equals(
@@ -1890,7 +1890,7 @@ class db2 extends sqlrtest {
 		System.out.println("NESTED SELECTS: ");
 		cur.setResultSetBufferSize(1);
 		assertTrue(cur.sendQuery("select * from testtable"));
-		for (int i=0;cur.getRow(i)!=null; i++) {
+		for (int i=0; cur.getRow(i)!=null; i++) {
 			SQLRCursor secondcur=new SQLRCursor(con);
 			secondcur.setResultSetBufferSize(1);
 			assertTrue(secondcur.sendQuery("select * "+

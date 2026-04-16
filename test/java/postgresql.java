@@ -14,23 +14,23 @@ class postgresql extends sqlrtest {
 					"repeatable read","serializable"};
 		String[]	cols;
 		String[]	fields;
-		long[]	fieldlens;
+		long[]		fieldlens;
 		String[]	subvars={"var1","var2","var3"};
-		long[]	subvallongs={1,2,3};
+		long[]		subvallongs={1,2,3};
 		String[]	subvalstrings={
 					"hi","hello","bye"};
 		double[]	subvaldoubles={
 					10.55,10.556,10.5556};
-		int[]	precs={4,5,6};
-		int[]	scales={2,3,4};
-		short	port;
-		String	socket;
-		short	id;
-		String	filename;
-		long	counter=0;
+		int[]		precs={4,5,6};
+		int[]		scales={2,3,4};
+		short		port;
+		String		socket;
+		short		id;
+		String		filename;
+		long		counter=0;
 
-		int	LARGE_BUFFER_LENGTH=8192;
-		char[]	largebuffer=new char[LARGE_BUFFER_LENGTH];
+		int		LARGE_BUFFER_LENGTH=8192;
+		char[]		largebuffer=new char[LARGE_BUFFER_LENGTH];
 
 		// instantiation
 		SQLRConnection con=new SQLRConnection("sqlrelay",(short)9000,
@@ -837,7 +837,7 @@ class postgresql extends sqlrtest {
 		System.out.println("NESTED SELECTS: ");
 		cur.setResultSetBufferSize(1);
 		assertTrue(cur.sendQuery("select * from testtable"));
-		for (int i=0;cur.getRow(i)!=null; i++) {
+		for (int i=0; cur.getRow(i)!=null; i++) {
 			SQLRCursor secondcur2=new SQLRCursor(con);
 			secondcur2.setResultSetBufferSize(1);
 			assertTrue(secondcur2.sendQuery("select * "+
@@ -992,7 +992,7 @@ class postgresql extends sqlrtest {
 			"	testbytea bytea)");
 		cur.prepareQuery("insert into testtable "+
 			"values ($1,$2)");
-		for (int i=0;i<LARGE_BUFFER_LENGTH; i++) {
+		for (int i=0; i<LARGE_BUFFER_LENGTH; i++) {
 			largebuffer[i]='C';
 		}
 		String largestr=new String(largebuffer);
@@ -1324,7 +1324,7 @@ class postgresql extends sqlrtest {
 		assertTrue(cur.getTableTypeList());
 		assertEquals(cur.getColumnName(0),"table_type");
 		boolean found=false;
-		for (long i=0;i<cur.rowCount(); i++) {
+		for (long i=0; i<cur.rowCount(); i++) {
 			if ("TABLE".equals(cur.getField(i,"table_type"))) {
 				found=true;
 				break;
@@ -1354,7 +1354,7 @@ class postgresql extends sqlrtest {
 			"	col2 int)"));
 		assertTrue(cur.getTableList(null));
 		counter=0;
-		for (long i=0;i<cur.rowCount(); i++) {
+		for (long i=0; i<cur.rowCount(); i++) {
 			String name=cur.getField(i,"Tables_in_xxx");
 			if ("testtable1".equals(name) ||"testtable2".equals(
 					name) ||"testtable3".equals(name) ||
@@ -1600,7 +1600,7 @@ class postgresql extends sqlrtest {
 			"language plpgsql"));
 		assertTrue(cur.getProcedureList(null));
 		counter=0;
-		for (long i=0;i<cur.rowCount(); i++) {
+		for (long i=0; i<cur.rowCount(); i++) {
 			String name=cur.getField(i,"routine_name");
 			if ("testproc1".equals(name) ||"testproc2".equals(
 					name) ||"testproc3".equals(name) ||
