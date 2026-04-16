@@ -677,51 +677,121 @@ int main(int argc, char **argv) {
 	stdoutput.printf("\n");
 
 
-	// column names
-	stdoutput.printf("COLUMN NAMES: \n");
+	// column info
+	stdoutput.printf("COLUMN INFO: \n");
 	SQLCHAR		colname[256];
 	SQLSMALLINT	colnamelen;
 	SQLSMALLINT	datatype;
 	SQLULEN		colsize;
 	SQLSMALLINT	decdigits;
 	SQLSMALLINT	nullable;
+
+	// col 1
 	erg=SQLDescribeCol(stmt,1,colname,sizeof(colname),&colnamelen,
 				&datatype,&colsize,&decdigits,&nullable);
 	assertSuccessStmt(stmt,erg);
 	assertEqualStmt(stmt,(const char *)colname,"TESTNUMBER");
+	assertEqualStmt(stmt,(int)colnamelen,10);
+	if (issqlrelay) {
+		assertEqualStmt(stmt,(int)datatype,SQL_NUMERIC);
+		assertEqualStmt(stmt,(int)colsize,22);
+		assertEqualStmt(stmt,(int)decdigits,129);
+	} else {
+		assertEqualStmt(stmt,(int)datatype,SQL_FLOAT);
+		assertEqualStmt(stmt,(int)colsize,38);
+		assertEqualStmt(stmt,(int)decdigits,0);
+	}
+	assertEqualStmt(stmt,(int)nullable,SQL_NULLABLE);
+
+	// col 2
 	erg=SQLDescribeCol(stmt,2,colname,sizeof(colname),&colnamelen,
 				&datatype,&colsize,&decdigits,&nullable);
 	assertSuccessStmt(stmt,erg);
 	assertEqualStmt(stmt,(const char *)colname,"TESTCHAR");
+	assertEqualStmt(stmt,(int)colnamelen,8);
+	assertEqualStmt(stmt,(int)datatype,SQL_CHAR);
+	assertEqualStmt(stmt,(int)colsize,40);
+	assertEqualStmt(stmt,(int)decdigits,0);
+	assertEqualStmt(stmt,(int)nullable,SQL_NULLABLE);
+
+	// col 3
 	erg=SQLDescribeCol(stmt,3,colname,sizeof(colname),&colnamelen,
 				&datatype,&colsize,&decdigits,&nullable);
 	assertSuccessStmt(stmt,erg);
 	assertEqualStmt(stmt,(const char *)colname,"TESTVARCHAR");
+	assertEqualStmt(stmt,(int)colnamelen,11);
+	assertEqualStmt(stmt,(int)datatype,SQL_VARCHAR);
+	assertEqualStmt(stmt,(int)colsize,40);
+	assertEqualStmt(stmt,(int)decdigits,0);
+	assertEqualStmt(stmt,(int)nullable,SQL_NULLABLE);
+
+	// col 4
 	erg=SQLDescribeCol(stmt,4,colname,sizeof(colname),&colnamelen,
 				&datatype,&colsize,&decdigits,&nullable);
 	assertSuccessStmt(stmt,erg);
 	assertEqualStmt(stmt,(const char *)colname,"TESTDATE");
+	assertEqualStmt(stmt,(int)colnamelen,8);
+	if (issqlrelay) {
+		assertEqualStmt(stmt,(int)datatype,SQL_DATE);
+		assertEqualStmt(stmt,(int)colsize,25);
+		assertEqualStmt(stmt,(int)decdigits,0);
+	} else {
+		assertEqualStmt(stmt,(int)datatype,SQL_TIMESTAMP);
+		assertEqualStmt(stmt,(int)colsize,19);
+		assertEqualStmt(stmt,(int)decdigits,0);
+	}
+	assertEqualStmt(stmt,(int)nullable,SQL_NULLABLE);
+
+	// col 5
 	erg=SQLDescribeCol(stmt,5,colname,sizeof(colname),&colnamelen,
 				&datatype,&colsize,&decdigits,&nullable);
 	assertSuccessStmt(stmt,erg);
 	assertEqualStmt(stmt,(const char *)colname,"TESTLONG");
+	assertEqualStmt(stmt,(int)colnamelen,8);
+	if (issqlrelay) {
+		assertEqualStmt(stmt,(int)datatype,SQL_CHAR);
+		assertEqualStmt(stmt,(int)colsize,32768);
+	} else {
+		assertEqualStmt(stmt,(int)datatype,SQL_LONGVARCHAR);
+		assertEqualStmt(stmt,
+			(int)colsize,2147483647);
+	}
+	assertEqualStmt(stmt,(int)decdigits,0);
+	assertEqualStmt(stmt,(int)nullable,SQL_NULLABLE);
+
+	// col 6
 	erg=SQLDescribeCol(stmt,6,colname,sizeof(colname),&colnamelen,
 				&datatype,&colsize,&decdigits,&nullable);
 	assertSuccessStmt(stmt,erg);
 	assertEqualStmt(stmt,(const char *)colname,"TESTCLOB");
+	assertEqualStmt(stmt,(int)colnamelen,8);
+	assertEqualStmt(stmt,(int)datatype,SQL_LONGVARCHAR);
+	if (issqlrelay) {
+		assertEqualStmt(stmt,(int)colsize,32768);
+	} else {
+		assertEqualStmt(stmt,
+			(int)colsize,2147483647);
+	}
+	assertEqualStmt(stmt,(int)decdigits,0);
+	assertEqualStmt(stmt,(int)nullable,SQL_NULLABLE);
+
+	// col 7
 	erg=SQLDescribeCol(stmt,7,colname,sizeof(colname),&colnamelen,
 				&datatype,&colsize,&decdigits,&nullable);
 	assertSuccessStmt(stmt,erg);
 	assertEqualStmt(stmt,(const char *)colname,"TESTBLOB");
+	assertEqualStmt(stmt,(int)colnamelen,8);
+	if (issqlrelay) {
+		assertEqualStmt(stmt,(int)datatype,SQL_BINARY);
+		assertEqualStmt(stmt,(int)colsize,32768);
+	} else {
+		assertEqualStmt(stmt,(int)datatype,SQL_LONGVARBINARY);
+		assertEqualStmt(stmt,
+			(int)colsize,2147483647);
+	}
+	assertEqualStmt(stmt,(int)decdigits,0);
+	assertEqualStmt(stmt,(int)nullable,SQL_NULLABLE);
 	stdoutput.printf("\n");
-
-
-	// column types
-	// FIXME:...
-
-
-	// column length
-	// FIXME:...
 
 
 	// fetch rows
@@ -781,7 +851,13 @@ int main(int argc, char **argv) {
 	assertEqualStmt(stmt,(const char *)longfield,"testlong1");
 	assertEqualStmt(stmt,(int)clobind,9);
 	assertEqualStmt(stmt,(const char *)clobfield,"testclob1");
-	assertEqualStmt(stmt,(int)blobind,(int)SQL_NULL_DATA);
+	if (issqlrelay) {
+		assertEqualStmt(stmt,(int)blobind,0);
+	} else {
+		// oracle odbc actually returns this incorrectly,
+		// NULL and empty blobs are not the same
+		assertEqualStmt(stmt,(int)blobind,(int)SQL_NULL_DATA);
+	}
 
 	// row 2
 	erg=SQLFetch(stmt);
