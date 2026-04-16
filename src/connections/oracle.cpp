@@ -553,7 +553,7 @@ void oracleconnection::initDatabaseFeatures() {
 		"";
 
 	databasefeatures[FEATURE_COLLATION_SEQ]=
-		"BINARY";
+		"";
 
 	databasefeatures[FEATURE_CREATE_ASSERTION_CLAUSES]=
 		"";
@@ -696,6 +696,7 @@ void oracleconnection::initDatabaseFeatures() {
 	databasefeatures[FEATURE_MAX_COLUMNS_IN_ORDER_BY]=
 		"0";
 
+	// FIXME: configurable, but limited to 1000 (oracle limit)
 	databasefeatures[FEATURE_MAX_COLUMNS_IN_SELECT]=
 		"0";
 
@@ -707,11 +708,12 @@ void oracleconnection::initDatabaseFeatures() {
 
 	databasefeatures[FEATURE_MAX_CONNECTIONS]=maxconnections;
 
+	// FIXME: 30 prior to oracle 12.2, 128 for oracle 12.2+
 	databasefeatures[FEATURE_MAX_CURSOR_NAME_LENGTH]=
 		"0";
 
 	databasefeatures[FEATURE_MAX_IDENTIFIER_LENGTH]=
-		"30";
+		"128";
 
 	databasefeatures[FEATURE_MAX_INDEX_LENGTH]=
 		"0";
@@ -728,6 +730,7 @@ void oracleconnection::initDatabaseFeatures() {
 	databasefeatures[FEATURE_MAX_STATEMENTS]=
 		"0";
 
+	// FIXME: configurable, but limited to 65535 (oracle limit)
 	databasefeatures[FEATURE_MAX_STATEMENT_LENGTH]=
 		"65535";
 
@@ -836,7 +839,7 @@ void oracleconnection::initDatabaseFeatures() {
 			"TABLE_DEFINITIONS";
 
 	databasefeatures[FEATURE_SCROLL_CONCURRENCIES]=
-		"";
+		"READ_ONLY,LOCK,OPT_ROWVER";
 
 	databasefeatures[FEATURE_SEARCH_STRING_ESCAPE]=
 		"/";

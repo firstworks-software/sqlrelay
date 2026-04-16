@@ -9232,7 +9232,8 @@ SQLRETURN SQL_API SQLGetInfo(SQLHDBC connectionhandle,
 			debugPrintf("  infotype: "
 					"SQL_ORDER_BY_COLUMNS_IN_SELECT\n");
 			val.strval=sqlrconnection::isYes(
-				conn->con->getDatabaseFeature("supports_order_by_unrelated"))?
+				conn->con->getDatabaseFeature(
+				"supports_order_by_unrelated"))?
 							"N":"Y";
 			type=0;
 			break;
@@ -9394,8 +9395,9 @@ SQLRETURN SQL_API SQLGetInfo(SQLHDBC connectionhandle,
 		case SQL_CATALOG_NAME:
 			debugPrintf("  infotype: "
 					"SQL_CATALOG_NAME\n");
-			val.strval=conn->con->getDatabaseFeature(
-							"catalog_term");
+			val.strval=charstring::isNullOrEmpty(
+					conn->con->getDatabaseFeature(
+						"catalog_term"))?"N":"Y";
 			type=0;
 			break;
 		case SQL_COLLATION_SEQ:

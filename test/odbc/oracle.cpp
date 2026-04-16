@@ -26,10 +26,14 @@ int main(int argc, char **argv) {
 	char    *dot=(char *)charstring::findFirstOrEnd(hostname,'.');
 	*dot='\0';
 
+	// sqlrelay-vs-native flag
+	bool	issqlrelay=!(argc==2 && !charstring::compare(argv[1],"native"));
+
+
 
 	// environment handle
 	stdoutput.printf("ENVIRONMENT HANDLE: \n");
-	#if (ODBCVER >= 0x3000)
+	#if (ODBCVER >= 0x0300)
 		erg=SQLAllocHandle(SQL_HANDLE_ENV,SQL_NULL_HANDLE,&env);
 		assertSuccessEnv(env,erg);
 		#if defined(SQL_OV_ODBC3_80)
@@ -52,8 +56,146 @@ int main(int argc, char **argv) {
 	stdoutput.printf("\n");
 
 
-	// environment attributes
-	// FIXME:...
+
+	// environment attributes (pre-connect, handled by driver manager)
+	stdoutput.printf("ENVIRONMENT ATTRIBUTES (pre-connect): \n");
+	SQLUINTEGER	envuintval;
+	SQLINTEGER	envstrlen;
+	SQLUINTEGER	initial;
+
+
+	// SQL_ATTR_ODBC_VERSION
+	stdoutput.printf("  SQL_ATTR_ODBC_VERSION\n");
+	// save initial value
+	erg=SQLGetEnvAttr(env,SQL_ATTR_ODBC_VERSION,
+			(SQLPOINTER)&initial,0,&envstrlen);
+	assertSuccessEnv(env,erg);
+	// SQL_OV_ODBC2
+	erg=SQLSetEnvAttr(env,SQL_ATTR_ODBC_VERSION,
+			(SQLPOINTER)(uintptr_t)SQL_OV_ODBC2,0);
+	assertSuccessEnv(env,erg);
+	erg=SQLGetEnvAttr(env,SQL_ATTR_ODBC_VERSION,
+			(SQLPOINTER)&envuintval,0,&envstrlen);
+	assertSuccessEnv(env,erg);
+	assertEqualEnv(env,(int)envuintval,(int)SQL_OV_ODBC2);
+	// SQL_ATTR_ODBC_VERSION
+	#if defined(SQL_OV_ODBC3)
+	erg=SQLSetEnvAttr(env,SQL_ATTR_ODBC_VERSION,
+			(SQLPOINTER)(uintptr_t)SQL_OV_ODBC3,0);
+	assertSuccessEnv(env,erg);
+	erg=SQLGetEnvAttr(env,SQL_ATTR_ODBC_VERSION,
+			(SQLPOINTER)&envuintval,0,&envstrlen);
+	assertSuccessEnv(env,erg);
+	assertEqualEnv(env,(int)envuintval,(int)SQL_OV_ODBC3);
+	#endif
+	// restore initial value
+	erg=SQLSetEnvAttr(env,SQL_ATTR_ODBC_VERSION,
+			(SQLPOINTER)(uintptr_t)initial,0);
+	assertSuccessEnv(env,erg);
+	stdoutput.printf("\n");
+
+
+	// SQL_ATTR_OUTPUT_NTS
+	stdoutput.printf("  SQL_ATTR_OUTPUT_NTS\n");
+	// save initial value (default is SQL_TRUE)
+	erg=SQLGetEnvAttr(env,SQL_ATTR_OUTPUT_NTS,
+			(SQLPOINTER)&initial,0,&envstrlen);
+	assertSuccessEnv(env,erg);
+	assertEqualEnv(env,(int)initial,(int)SQL_TRUE);
+	// SQL_TRUE
+	erg=SQLSetEnvAttr(env,SQL_ATTR_OUTPUT_NTS,
+			(SQLPOINTER)(uintptr_t)SQL_TRUE,0);
+	assertSuccessEnv(env,erg);
+	erg=SQLGetEnvAttr(env,SQL_ATTR_OUTPUT_NTS,
+			(SQLPOINTER)&envuintval,0,&envstrlen);
+	assertSuccessEnv(env,erg);
+	assertEqualEnv(env,(int)envuintval,(int)SQL_TRUE);
+	// SQL_FALSE (rejected, value unchanged)
+	erg=SQLSetEnvAttr(env,SQL_ATTR_OUTPUT_NTS,
+			(SQLPOINTER)(uintptr_t)SQL_FALSE,0);
+	assertFailureEnv(env,erg);
+	erg=SQLGetEnvAttr(env,SQL_ATTR_OUTPUT_NTS,
+			(SQLPOINTER)&envuintval,0,&envstrlen);
+	assertSuccessEnv(env,erg);
+	assertEqualEnv(env,(int)envuintval,(int)SQL_TRUE);
+	// restore initial value
+	erg=SQLSetEnvAttr(env,SQL_ATTR_OUTPUT_NTS,
+			(SQLPOINTER)(uintptr_t)initial,0);
+	assertSuccessEnv(env,erg);
+	stdoutput.printf("\n");
+
+
+	#if (ODBCVER >= 0x0300)
+	// SQL_ATTR_CONNECTION_POOLING
+	stdoutput.printf("  SQL_ATTR_CONNECTION_POOLING\n");
+	// save initial value (default is SQL_CP_OFF)
+	erg=SQLGetEnvAttr(env,SQL_ATTR_CONNECTION_POOLING,
+			(SQLPOINTER)&initial,0,&envstrlen);
+	assertSuccessEnv(env,erg);
+	assertEqualEnv(env,(int)initial,(int)SQL_CP_OFF);
+	// SQL_CP_OFF
+	erg=SQLSetEnvAttr(env,SQL_ATTR_CONNECTION_POOLING,
+			(SQLPOINTER)(uintptr_t)SQL_CP_OFF,0);
+	assertSuccessEnv(env,erg);
+	erg=SQLGetEnvAttr(env,SQL_ATTR_CONNECTION_POOLING,
+			(SQLPOINTER)&envuintval,0,&envstrlen);
+	assertSuccessEnv(env,erg);
+	assertEqualEnv(env,(int)envuintval,(int)SQL_CP_OFF);
+	// SQL_CP_ONE_PER_DRIVER
+	erg=SQLSetEnvAttr(env,SQL_ATTR_CONNECTION_POOLING,
+			(SQLPOINTER)(uintptr_t)SQL_CP_ONE_PER_DRIVER,0);
+	assertSuccessEnv(env,erg);
+	erg=SQLGetEnvAttr(env,SQL_ATTR_CONNECTION_POOLING,
+			(SQLPOINTER)&envuintval,0,&envstrlen);
+	assertSuccessEnv(env,erg);
+	assertEqualEnv(env,(int)envuintval,(int)SQL_CP_ONE_PER_DRIVER);
+	// SQL_CP_ONE_PER_HENV
+	erg=SQLSetEnvAttr(env,SQL_ATTR_CONNECTION_POOLING,
+			(SQLPOINTER)(uintptr_t)SQL_CP_ONE_PER_HENV,0);
+	assertSuccessEnv(env,erg);
+	erg=SQLGetEnvAttr(env,SQL_ATTR_CONNECTION_POOLING,
+			(SQLPOINTER)&envuintval,0,&envstrlen);
+	assertSuccessEnv(env,erg);
+	assertEqualEnv(env,(int)envuintval,(int)SQL_CP_ONE_PER_HENV);
+	// restore initial value
+	erg=SQLSetEnvAttr(env,SQL_ATTR_CONNECTION_POOLING,
+			(SQLPOINTER)(uintptr_t)initial,0);
+	assertSuccessEnv(env,erg);
+	stdoutput.printf("\n");
+	#endif
+
+
+	#if (ODBCVER >= 0x0300)
+	// SQL_ATTR_CP_MATCH
+	stdoutput.printf("  SQL_ATTR_CP_MATCH\n");
+	// save initial value (default is SQL_CP_MATCH_DEFAULT)
+	erg=SQLGetEnvAttr(env,SQL_ATTR_CP_MATCH,
+			(SQLPOINTER)&initial,0,&envstrlen);
+	assertSuccessEnv(env,erg);
+	assertEqualEnv(env,(int)initial,(int)SQL_CP_MATCH_DEFAULT);
+	// SQL_CP_STRICT_MATCH
+	erg=SQLSetEnvAttr(env,SQL_ATTR_CP_MATCH,
+			(SQLPOINTER)(uintptr_t)SQL_CP_STRICT_MATCH,0);
+	assertSuccessEnv(env,erg);
+	erg=SQLGetEnvAttr(env,SQL_ATTR_CP_MATCH,
+			(SQLPOINTER)&envuintval,0,&envstrlen);
+	assertSuccessEnv(env,erg);
+	assertEqualEnv(env,(int)envuintval,(int)SQL_CP_STRICT_MATCH);
+	// SQL_CP_RELAXED_MATCH
+	erg=SQLSetEnvAttr(env,SQL_ATTR_CP_MATCH,
+			(SQLPOINTER)(uintptr_t)SQL_CP_RELAXED_MATCH,0);
+	assertSuccessEnv(env,erg);
+	erg=SQLGetEnvAttr(env,SQL_ATTR_CP_MATCH,
+			(SQLPOINTER)&envuintval,0,&envstrlen);
+	assertSuccessEnv(env,erg);
+	assertEqualEnv(env,(int)envuintval,(int)SQL_CP_RELAXED_MATCH);
+	// restore initial value
+	erg=SQLSetEnvAttr(env,SQL_ATTR_CP_MATCH,
+			(SQLPOINTER)(uintptr_t)initial,0);
+	assertSuccessEnv(env,erg);
+	stdoutput.printf("\n");
+	#endif
+
 
 
 	// connection handle
@@ -68,13 +210,9 @@ int main(int argc, char **argv) {
 	stdoutput.printf("\n");
 
 
-	// connection attributes
-	// FIXME:...
-
 
 	// connect
 	stdoutput.printf("CONNECT: \n");
-	bool	issqlrelay=!(argc==2 && !charstring::compare(argv[1],"native"));
 	SQLCHAR	*dsn;
 	SQLCHAR	*user;
 	SQLCHAR	*password;
@@ -102,14 +240,255 @@ int main(int argc, char **argv) {
 	stdoutput.printf("\n");
 
 
+
+	// environment attributes (post-connect, forwarded to driver)
+	stdoutput.printf("ENVIRONMENT ATTRIBUTES (post-connect): \n");
+
+
+	// SQL_ATTR_ODBC_VERSION
+	// cannot be set once a connection handle exists (HY010);
+	// value stays at whatever was set pre-connect
+	stdoutput.printf("  SQL_ATTR_ODBC_VERSION\n");
+	// get initial value
+	erg=SQLGetEnvAttr(env,SQL_ATTR_ODBC_VERSION,
+			(SQLPOINTER)&initial,0,&envstrlen);
+	assertSuccessEnv(env,erg);
+	// SQL_OV_ODBC2 (rejected, value unchanged)
+	erg=SQLSetEnvAttr(env,SQL_ATTR_ODBC_VERSION,
+			(SQLPOINTER)(uintptr_t)SQL_OV_ODBC2,0);
+	assertFailureEnv(env,erg);
+	erg=SQLGetEnvAttr(env,SQL_ATTR_ODBC_VERSION,
+			(SQLPOINTER)&envuintval,0,&envstrlen);
+	assertSuccessEnv(env,erg);
+	assertEqualEnv(env,(int)envuintval,(int)initial);
+	#if defined(SQL_OV_ODBC3)
+	// SQL_OV_ODBC3 (rejected, value unchanged)
+	erg=SQLSetEnvAttr(env,SQL_ATTR_ODBC_VERSION,
+			(SQLPOINTER)(uintptr_t)SQL_OV_ODBC3,0);
+	assertFailureEnv(env,erg);
+	erg=SQLGetEnvAttr(env,SQL_ATTR_ODBC_VERSION,
+			(SQLPOINTER)&envuintval,0,&envstrlen);
+	assertSuccessEnv(env,erg);
+	assertEqualEnv(env,(int)envuintval,(int)initial);
+	#endif
+	stdoutput.printf("\n");
+
+
+	// SQL_ATTR_OUTPUT_NTS
+	stdoutput.printf("  SQL_ATTR_OUTPUT_NTS\n");
+	// save initial value (default is SQL_TRUE)
+	erg=SQLGetEnvAttr(env,SQL_ATTR_OUTPUT_NTS,
+			(SQLPOINTER)&initial,0,&envstrlen);
+	assertSuccessEnv(env,erg);
+	assertEqualEnv(env,(int)initial,(int)SQL_TRUE);
+	// SQL_TRUE
+	erg=SQLSetEnvAttr(env,SQL_ATTR_OUTPUT_NTS,
+			(SQLPOINTER)(uintptr_t)SQL_TRUE,0);
+	assertSuccessEnv(env,erg);
+	erg=SQLGetEnvAttr(env,SQL_ATTR_OUTPUT_NTS,
+			(SQLPOINTER)&envuintval,0,&envstrlen);
+	assertSuccessEnv(env,erg);
+	assertEqualEnv(env,(int)envuintval,(int)SQL_TRUE);
+	// SQL_FALSE (rejected, value unchanged)
+	erg=SQLSetEnvAttr(env,SQL_ATTR_OUTPUT_NTS,
+			(SQLPOINTER)(uintptr_t)SQL_FALSE,0);
+	assertFailureEnv(env,erg);
+	erg=SQLGetEnvAttr(env,SQL_ATTR_OUTPUT_NTS,
+			(SQLPOINTER)&envuintval,0,&envstrlen);
+	assertSuccessEnv(env,erg);
+	assertEqualEnv(env,(int)envuintval,(int)SQL_TRUE);
+	// restore initial value
+	erg=SQLSetEnvAttr(env,SQL_ATTR_OUTPUT_NTS,
+			(SQLPOINTER)(uintptr_t)initial,0);
+	assertSuccessEnv(env,erg);
+	stdoutput.printf("\n");
+
+
+	#if (ODBCVER >= 0x0300)
+	// SQL_ATTR_CONNECTION_POOLING
+	stdoutput.printf("  SQL_ATTR_CONNECTION_POOLING\n");
+	// save initial value (default is SQL_CP_OFF)
+	erg=SQLGetEnvAttr(env,SQL_ATTR_CONNECTION_POOLING,
+			(SQLPOINTER)&initial,0,&envstrlen);
+	assertSuccessEnv(env,erg);
+	assertEqualEnv(env,(int)initial,(int)SQL_CP_OFF);
+	// SQL_CP_OFF
+	erg=SQLSetEnvAttr(env,SQL_ATTR_CONNECTION_POOLING,
+			(SQLPOINTER)(uintptr_t)SQL_CP_OFF,0);
+	assertSuccessEnv(env,erg);
+	erg=SQLGetEnvAttr(env,SQL_ATTR_CONNECTION_POOLING,
+			(SQLPOINTER)&envuintval,0,&envstrlen);
+	assertSuccessEnv(env,erg);
+	assertEqualEnv(env,(int)envuintval,(int)SQL_CP_OFF);
+	// SQL_CP_ONE_PER_DRIVER
+	erg=SQLSetEnvAttr(env,SQL_ATTR_CONNECTION_POOLING,
+			(SQLPOINTER)(uintptr_t)SQL_CP_ONE_PER_DRIVER,0);
+	assertSuccessEnv(env,erg);
+	erg=SQLGetEnvAttr(env,SQL_ATTR_CONNECTION_POOLING,
+			(SQLPOINTER)&envuintval,0,&envstrlen);
+	assertSuccessEnv(env,erg);
+	assertEqualEnv(env,(int)envuintval,(int)SQL_CP_ONE_PER_DRIVER);
+	// SQL_CP_ONE_PER_HENV
+	erg=SQLSetEnvAttr(env,SQL_ATTR_CONNECTION_POOLING,
+			(SQLPOINTER)(uintptr_t)SQL_CP_ONE_PER_HENV,0);
+	assertSuccessEnv(env,erg);
+	erg=SQLGetEnvAttr(env,SQL_ATTR_CONNECTION_POOLING,
+			(SQLPOINTER)&envuintval,0,&envstrlen);
+	assertSuccessEnv(env,erg);
+	assertEqualEnv(env,(int)envuintval,(int)SQL_CP_ONE_PER_HENV);
+	// restore initial value
+	erg=SQLSetEnvAttr(env,SQL_ATTR_CONNECTION_POOLING,
+			(SQLPOINTER)(uintptr_t)initial,0);
+	assertSuccessEnv(env,erg);
+	stdoutput.printf("\n");
+	#endif
+
+
+	#if (ODBCVER >= 0x0300)
+	// SQL_ATTR_CP_MATCH
+	stdoutput.printf("  SQL_ATTR_CP_MATCH\n");
+	// save initial value (default is SQL_CP_MATCH_DEFAULT)
+	erg=SQLGetEnvAttr(env,SQL_ATTR_CP_MATCH,
+			(SQLPOINTER)&initial,0,&envstrlen);
+	assertSuccessEnv(env,erg);
+	assertEqualEnv(env,(int)initial,(int)SQL_CP_MATCH_DEFAULT);
+	// SQL_CP_STRICT_MATCH
+	erg=SQLSetEnvAttr(env,SQL_ATTR_CP_MATCH,
+			(SQLPOINTER)(uintptr_t)SQL_CP_STRICT_MATCH,0);
+	assertSuccessEnv(env,erg);
+	erg=SQLGetEnvAttr(env,SQL_ATTR_CP_MATCH,
+			(SQLPOINTER)&envuintval,0,&envstrlen);
+	assertSuccessEnv(env,erg);
+	assertEqualEnv(env,(int)envuintval,(int)SQL_CP_STRICT_MATCH);
+	// SQL_CP_RELAXED_MATCH
+	erg=SQLSetEnvAttr(env,SQL_ATTR_CP_MATCH,
+			(SQLPOINTER)(uintptr_t)SQL_CP_RELAXED_MATCH,0);
+	assertSuccessEnv(env,erg);
+	erg=SQLGetEnvAttr(env,SQL_ATTR_CP_MATCH,
+			(SQLPOINTER)&envuintval,0,&envstrlen);
+	assertSuccessEnv(env,erg);
+	assertEqualEnv(env,(int)envuintval,(int)SQL_CP_RELAXED_MATCH);
+	// restore initial value
+	erg=SQLSetEnvAttr(env,SQL_ATTR_CP_MATCH,
+			(SQLPOINTER)(uintptr_t)initial,0);
+	assertSuccessEnv(env,erg);
+	stdoutput.printf("\n");
+	#endif
+
+
+
+	// connection attributes
+	// FIXME:...
+
+
+
 	// get info
 	stdoutput.printf("GET INFO: \n");
 	SQLUINTEGER	uintval;
+	SQLUSMALLINT	usmallintval;
 	SQLCHAR		strval[2048];
 	SQLSMALLINT	vallen;
+
+
+	#if (ODBCVER >= 0x0300)
+	// SQL_MAX_DRIVER_CONNECTIONS
+	stdoutput.printf("  SQL_MAX_DRIVER_CONNECTIONS\n");
+	erg=SQLGetInfo(dbc,SQL_MAX_DRIVER_CONNECTIONS,
+			(SQLPOINTER)&usmallintval,
+			(SQLSMALLINT)sizeof(usmallintval),&vallen);
+	if (issqlrelay) {
+		assertEqualDbc(dbc,(int)usmallintval,5);
+	} else {
+		assertEqualDbc(dbc,(int)usmallintval,0);
+	}
+	assertSuccessDbc(dbc,erg);
+	stdoutput.printf("\n");
+	#endif
+
+
+	#if (ODBCVER >= 0x0300)
+	// SQL_MAX_CONCURRENT_ACTIVITIES
+	stdoutput.printf("  SQL_MAX_CONCURRENT_ACTIVITIES\n");
+	erg=SQLGetInfo(dbc,SQL_MAX_CONCURRENT_ACTIVITIES,
+			(SQLPOINTER)&usmallintval,
+			(SQLSMALLINT)sizeof(usmallintval),&vallen);
+	assertEqualDbc(dbc,(int)usmallintval,0);
+	assertSuccessDbc(dbc,erg);
+	stdoutput.printf("\n");
+	#endif
+
+
+	// SQL_DATA_SOURCE_NAME
+	stdoutput.printf("  SQL_DATA_SOURCE_NAME\n");
+	erg=SQLGetInfo(dbc,SQL_DATA_SOURCE_NAME,
+			(SQLPOINTER)strval,(SQLSMALLINT)sizeof(strval),
+			&vallen);
+	if (issqlrelay) {
+		// sqlrelay uses SQLDriverConnect without a DSN
+		assertEqualDbc(dbc,(const char *)strval,"");
+	} else {
+		assertEqualDbc(dbc,(const char *)strval,"oracle");
+	}
+	assertSuccessDbc(dbc,erg);
+	stdoutput.printf("\n");
+
+
+	// SQL_FETCH_DIRECTION
+	stdoutput.printf("  SQL_FETCH_DIRECTION\n");
+	erg=SQLGetInfo(dbc,SQL_FETCH_DIRECTION,
+			(SQLPOINTER)&uintval,(SQLSMALLINT)sizeof(uintval),
+			&vallen);
+	if (issqlrelay) {
+		// sqlrelay only supports SQL_FD_FETCH_NEXT
+		assertEqualDbc(dbc,(int)uintval,(int)SQL_FD_FETCH_NEXT);
+	} else {
+		assertEqualDbc(dbc,(int)uintval,
+			(int)(SQL_FD_FETCH_NEXT|SQL_FD_FETCH_FIRST|
+				SQL_FD_FETCH_LAST|SQL_FD_FETCH_PRIOR|
+				SQL_FD_FETCH_ABSOLUTE|SQL_FD_FETCH_RELATIVE|
+				SQL_FD_FETCH_BOOKMARK));
+	}
+	assertSuccessDbc(dbc,erg);
+	stdoutput.printf("\n");
+
+
+	// SQL_SERVER_NAME
+	stdoutput.printf("  SQL_SERVER_NAME\n");
+	erg=SQLGetInfo(dbc,SQL_SERVER_NAME,
+			(SQLPOINTER)strval,(SQLSMALLINT)sizeof(strval),
+			&vallen);
+	if (issqlrelay) {
+		assertEqualDbc(dbc,(const char *)strval,"sqlrelay");
+	} else {
+		// oracle returns the full TNS description string,
+		// which is unwieldy to match exactly; just verify non-empty
+		assertTrueDbc(dbc,vallen>0);
+	}
+	assertSuccessDbc(dbc,erg);
+	stdoutput.printf("\n");
+
+
+	// SQL_SEARCH_PATTERN_ESCAPE
+	stdoutput.printf("  SQL_SEARCH_PATTERN_ESCAPE\n");
+	erg=SQLGetInfo(dbc,SQL_SEARCH_PATTERN_ESCAPE,
+			(SQLPOINTER)strval,(SQLSMALLINT)sizeof(strval),
+			&vallen);
+	if (issqlrelay) {
+		assertEqualDbc(dbc,(const char *)strval,"/");
+	} else {
+		// oracle odbc incorrectly returns "\\" for this
+		// oracle jdbc correctly returns "/" for:
+		// getSearchStringEscape()
+		assertEqualDbc(dbc,(const char *)strval,"\\");
+	}
+	assertSuccessDbc(dbc,erg);
+	stdoutput.printf("\n");
+
+
+	// SQL_DBMS_NAME
+	stdoutput.printf("  SQL_DBMS_NAME\n");
 	erg=SQLGetInfo(dbc,SQL_DBMS_NAME,
-			(SQLPOINTER)strval,
-			(SQLSMALLINT)sizeof(strval),
+			(SQLPOINTER)strval,(SQLSMALLINT)sizeof(strval),
 			&vallen);
 	if (issqlrelay) {
 		assertEqualDbc(dbc,(const char *)strval,"oracle");
@@ -117,13 +496,542 @@ int main(int argc, char **argv) {
 		assertEqualDbc(dbc,(const char *)strval,"Oracle");
 	}
 	assertSuccessDbc(dbc,erg);
+	stdoutput.printf("\n");
+
+
+	// SQL_DBMS_VER
+	stdoutput.printf("  SQL_DBMS_VER\n");
+	erg=SQLGetInfo(dbc,SQL_DBMS_VER,
+			(SQLPOINTER)strval,(SQLSMALLINT)sizeof(strval),
+			&vallen);
+	// version string varies; just verify non-empty
+	assertTrueDbc(dbc,vallen>0);
+	assertSuccessDbc(dbc,erg);
+	stdoutput.printf("\n");
+
+
+	// SQL_ACCESSIBLE_TABLES
+	stdoutput.printf("  SQL_ACCESSIBLE_TABLES\n");
+	erg=SQLGetInfo(dbc,SQL_ACCESSIBLE_TABLES,
+			(SQLPOINTER)strval,(SQLSMALLINT)sizeof(strval),
+			&vallen);
+	if (issqlrelay) {
+		assertEqualDbc(dbc,(const char *)strval,"N");
+	} else {
+		// oracle odbc incorrectly returns "Y" for this
+		// oracle jdbc correctly returns false for:
+		// allTablesAreSelectable()
+		assertEqualDbc(dbc,(const char *)strval,"Y");
+	}
+	assertSuccessDbc(dbc,erg);
+	stdoutput.printf("\n");
+
+
+	// SQL_ACCESSIBLE_PROCEDURES
+	stdoutput.printf("  SQL_ACCESSIBLE_PROCEDURES\n");
+	erg=SQLGetInfo(dbc,SQL_ACCESSIBLE_PROCEDURES,
+			(SQLPOINTER)strval,(SQLSMALLINT)sizeof(strval),
+			&vallen);
+	if (issqlrelay) {
+		assertEqualDbc(dbc,(const char *)strval,"N");
+	} else {
+		// oracle odbc incorrectly returns "Y" for this
+		// oracle jdbc correctly returns false for:
+		// allProceduresAreCallable()
+		assertEqualDbc(dbc,(const char *)strval,"Y");
+	}
+	assertSuccessDbc(dbc,erg);
+	stdoutput.printf("\n");
+
+
+	// SQL_CURSOR_COMMIT_BEHAVIOR
+	stdoutput.printf("  SQL_CURSOR_COMMIT_BEHAVIOR\n");
+	erg=SQLGetInfo(dbc,SQL_CURSOR_COMMIT_BEHAVIOR,
+			(SQLPOINTER)&usmallintval,
+			(SQLSMALLINT)sizeof(usmallintval),&vallen);
+	if (issqlrelay) {
+		assertEqualDbc(dbc,(int)usmallintval,(int)SQL_CB_CLOSE);
+	} else {
+		// oracle odbc incorrectly returns SQL_CB_PRESERVE for this
+		// oracle jdbc correctly returns false for:
+		// supportsOpenCursorsAcrossCommit()
+		assertEqualDbc(dbc,(int)usmallintval,(int)SQL_CB_PRESERVE);
+	}
+	assertSuccessDbc(dbc,erg);
+	stdoutput.printf("\n");
+
+
+	// SQL_DATA_SOURCE_READ_ONLY
+	stdoutput.printf("  SQL_DATA_SOURCE_READ_ONLY\n");
+	erg=SQLGetInfo(dbc,SQL_DATA_SOURCE_READ_ONLY,
+			(SQLPOINTER)strval,(SQLSMALLINT)sizeof(strval),
+			&vallen);
+	assertEqualDbc(dbc,(const char *)strval,"N");
+	assertSuccessDbc(dbc,erg);
+	stdoutput.printf("\n");
+
+
+	// SQL_DEFAULT_TXN_ISOLATION
+	stdoutput.printf("  SQL_DEFAULT_TXN_ISOLATION\n");
 	erg=SQLGetInfo(dbc,SQL_DEFAULT_TXN_ISOLATION,
-			(SQLPOINTER)&uintval,
-			(SQLSMALLINT)sizeof(uintval),
+			(SQLPOINTER)&uintval,(SQLSMALLINT)sizeof(uintval),
 			&vallen);
 	assertEqualDbc(dbc,(int)uintval,(int)SQL_TXN_READ_COMMITTED);
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
+
+
+	// SQL_IDENTIFIER_CASE
+	stdoutput.printf("  SQL_IDENTIFIER_CASE\n");
+	erg=SQLGetInfo(dbc,SQL_IDENTIFIER_CASE,
+			(SQLPOINTER)&usmallintval,
+			(SQLSMALLINT)sizeof(usmallintval),&vallen);
+	assertEqualDbc(dbc,(int)usmallintval,(int)SQL_IC_UPPER);
+	assertSuccessDbc(dbc,erg);
+	stdoutput.printf("\n");
+
+
+	// SQL_IDENTIFIER_QUOTE_CHAR
+	stdoutput.printf("  SQL_IDENTIFIER_QUOTE_CHAR\n");
+	erg=SQLGetInfo(dbc,SQL_IDENTIFIER_QUOTE_CHAR,
+			(SQLPOINTER)strval,(SQLSMALLINT)sizeof(strval),
+			&vallen);
+	assertEqualDbc(dbc,(const char *)strval,"\"");
+	assertSuccessDbc(dbc,erg);
+	stdoutput.printf("\n");
+
+
+	// SQL_MAX_COLUMN_NAME_LEN
+	stdoutput.printf("  SQL_MAX_COLUMN_NAME_LEN\n");
+	erg=SQLGetInfo(dbc,SQL_MAX_COLUMN_NAME_LEN,
+			(SQLPOINTER)&usmallintval,
+			(SQLSMALLINT)sizeof(usmallintval),&vallen);
+	assertEqualDbc(dbc,(int)usmallintval,128);
+	assertSuccessDbc(dbc,erg);
+	stdoutput.printf("\n");
+
+
+	// SQL_MAX_CURSOR_NAME_LEN
+	stdoutput.printf("  SQL_MAX_CURSOR_NAME_LEN\n");
+	erg=SQLGetInfo(dbc,SQL_MAX_CURSOR_NAME_LEN,
+			(SQLPOINTER)&usmallintval,
+			(SQLSMALLINT)sizeof(usmallintval),&vallen);
+	// FIXME:
+	// this should be 30 prior to oracle 12.2 and 128 for oracle 12.2+
+	if (issqlrelay) {
+		assertEqualDbc(dbc,(int)usmallintval,0);
+	} else {
+		assertEqualDbc(dbc,(int)usmallintval,128);
+	}
+	assertSuccessDbc(dbc,erg);
+	stdoutput.printf("\n");
+
+
+	// SQL_MAX_SCHEMA_NAME_LEN
+	stdoutput.printf("  SQL_MAX_SCHEMA_NAME_LEN\n");
+	erg=SQLGetInfo(dbc,SQL_MAX_SCHEMA_NAME_LEN,
+			(SQLPOINTER)&usmallintval,
+			(SQLSMALLINT)sizeof(usmallintval),&vallen);
+	assertEqualDbc(dbc,(int)usmallintval,128);
+	assertSuccessDbc(dbc,erg);
+	stdoutput.printf("\n");
+
+
+	// SQL_MAX_CATALOG_NAME_LEN
+	stdoutput.printf("  SQL_MAX_CATALOG_NAME_LEN\n");
+	erg=SQLGetInfo(dbc,SQL_MAX_CATALOG_NAME_LEN,
+			(SQLPOINTER)&usmallintval,
+			(SQLSMALLINT)sizeof(usmallintval),&vallen);
+	assertEqualDbc(dbc,(int)usmallintval,0);
+	assertSuccessDbc(dbc,erg);
+	stdoutput.printf("\n");
+
+
+	// SQL_MAX_TABLE_NAME_LEN
+	stdoutput.printf("  SQL_MAX_TABLE_NAME_LEN\n");
+	erg=SQLGetInfo(dbc,SQL_MAX_TABLE_NAME_LEN,
+			(SQLPOINTER)&usmallintval,
+			(SQLSMALLINT)sizeof(usmallintval),&vallen);
+	assertEqualDbc(dbc,(int)usmallintval,128);
+	assertSuccessDbc(dbc,erg);
+	stdoutput.printf("\n");
+
+
+	// SQL_SCROLL_CONCURRENCY
+	stdoutput.printf("  SQL_SCROLL_CONCURRENCY\n");
+	erg=SQLGetInfo(dbc,SQL_SCROLL_CONCURRENCY,
+			(SQLPOINTER)&uintval,(SQLSMALLINT)sizeof(uintval),
+			&vallen);
+	if (issqlrelay) {
+		assertEqualDbc(dbc,(int)uintval,(int)SQL_SCCO_READ_ONLY);
+	} else {
+		assertEqualDbc(dbc,(int)uintval,
+			(int)(SQL_SCCO_READ_ONLY|SQL_SCCO_LOCK|
+				SQL_SCCO_OPT_ROWVER));
+	}
+	assertSuccessDbc(dbc,erg);
+	stdoutput.printf("\n");
+
+
+	// SQL_TXN_CAPABLE
+	stdoutput.printf("  SQL_TXN_CAPABLE\n");
+	erg=SQLGetInfo(dbc,SQL_TXN_CAPABLE,
+			(SQLPOINTER)&usmallintval,
+			(SQLSMALLINT)sizeof(usmallintval),&vallen);
+	if (issqlrelay) {
+		assertEqualDbc(dbc,(int)usmallintval,(int)SQL_TC_ALL);
+	} else {
+		// FIXME: is this different from jdbc?
+		assertEqualDbc(dbc,(int)usmallintval,(int)SQL_TC_DDL_COMMIT);
+	}
+	assertSuccessDbc(dbc,erg);
+	stdoutput.printf("\n");
+
+
+	// SQL_USER_NAME
+	stdoutput.printf("  SQL_USER_NAME\n");
+	erg=SQLGetInfo(dbc,SQL_USER_NAME,
+			(SQLPOINTER)strval,(SQLSMALLINT)sizeof(strval),
+			&vallen);
+	assertTrueDbc(dbc,!charstring::compareIgnoringCase(
+					(const char *)strval,hostname));
+	assertSuccessDbc(dbc,erg);
+	stdoutput.printf("\n");
+
+
+	// SQL_TXN_ISOLATION_OPTION
+	stdoutput.printf("  SQL_TXN_ISOLATION_OPTION\n");
+	erg=SQLGetInfo(dbc,SQL_TXN_ISOLATION_OPTION,
+			(SQLPOINTER)&uintval,(SQLSMALLINT)sizeof(uintval),
+			&vallen);
+	assertEqualDbc(dbc,(int)uintval,
+			(int)(SQL_TXN_READ_COMMITTED|SQL_TXN_SERIALIZABLE));
+	assertSuccessDbc(dbc,erg);
+	stdoutput.printf("\n");
+
+
+	// SQL_INTEGRITY
+	stdoutput.printf("  SQL_INTEGRITY\n");
+	erg=SQLGetInfo(dbc,SQL_INTEGRITY,
+			(SQLPOINTER)strval,(SQLSMALLINT)sizeof(strval),
+			&vallen);
+	if (issqlrelay) {
+		assertEqualDbc(dbc,(const char *)strval,"Y");
+	} else {
+		// oracle odbc incorrectly returns "N" for this
+		// oracle jdbc correctly returns true for:
+		// supportsIntegrityEnhancementFacility()
+		assertEqualDbc(dbc,(const char *)strval,"N");
+	}
+	assertSuccessDbc(dbc,erg);
+	stdoutput.printf("\n");
+
+
+	// SQL_GETDATA_EXTENSIONS
+	stdoutput.printf("  SQL_GETDATA_EXTENSIONS\n");
+	erg=SQLGetInfo(dbc,SQL_GETDATA_EXTENSIONS,
+			(SQLPOINTER)&uintval,(SQLSMALLINT)sizeof(uintval),
+			&vallen);
+	assertEqualDbc(dbc,(int)uintval,
+			(int)(SQL_GD_ANY_COLUMN|SQL_GD_ANY_ORDER|
+				SQL_GD_BOUND|SQL_GD_BLOCK));
+	assertSuccessDbc(dbc,erg);
+	stdoutput.printf("\n");
+
+
+	// SQL_NULL_COLLATION
+	stdoutput.printf("  SQL_NULL_COLLATION\n");
+	erg=SQLGetInfo(dbc,SQL_NULL_COLLATION,
+			(SQLPOINTER)&usmallintval,
+			(SQLSMALLINT)sizeof(usmallintval),&vallen);
+	if (issqlrelay) {
+		assertEqualDbc(dbc,(int)usmallintval,(int)SQL_NC_HIGH);
+	} else {
+		// oracle odbc incorrectly returns SQL_NC_LOW for this
+		// oracle jdbc correctly returns true for:
+		// nullsAreSortedHigh()
+		assertEqualDbc(dbc,(int)usmallintval,(int)SQL_NC_LOW);
+	}
+	assertSuccessDbc(dbc,erg);
+	stdoutput.printf("\n");
+
+
+	// SQL_ALTER_TABLE
+	stdoutput.printf("  SQL_ALTER_TABLE\n");
+	erg=SQLGetInfo(dbc,SQL_ALTER_TABLE,
+			(SQLPOINTER)&uintval,(SQLSMALLINT)sizeof(uintval),
+			&vallen);
+	if (issqlrelay) {
+		// sqlrelay bundles these bits whenever the backend
+		// reports ADD_COLUMN in alter_table_operations, even
+		// though most of them are orthogonal to ADD COLUMN.
+		// It also omits DROP_COLUMN bits because the oracle
+		// backend module doesn't report DROP_COLUMN (even
+		// though oracle has supported it since 8i).
+		assertEqualDbc(dbc,(int)uintval,
+			(int)(SQL_AT_ADD_COLUMN|
+				SQL_AT_ADD_COLUMN_SINGLE|
+				SQL_AT_ADD_COLUMN_DEFAULT|
+				SQL_AT_ADD_COLUMN_COLLATION|
+				SQL_AT_SET_COLUMN_DEFAULT|
+				SQL_AT_ADD_TABLE_CONSTRAINT|
+				SQL_AT_CONSTRAINT_NAME_DEFINITION|
+				SQL_AT_CONSTRAINT_INITIALLY_DEFERRED|
+				SQL_AT_CONSTRAINT_INITIALLY_IMMEDIATE|
+				SQL_AT_CONSTRAINT_DEFERRABLE|
+				SQL_AT_CONSTRAINT_NON_DEFERRABLE));
+	} else {
+		// oracle odbc (and jdbc) incorrectly doesn't return any
+		// drop-column feautures, though oracle 8i+ supports them
+		assertEqualDbc(dbc,(int)uintval,(int)SQL_AT_ADD_COLUMN);
+	}
+	assertSuccessDbc(dbc,erg);
+	stdoutput.printf("\n");
+
+
+	// SQL_ORDER_BY_COLUMNS_IN_SELECT
+	stdoutput.printf("  SQL_ORDER_BY_COLUMNS_IN_SELECT\n");
+	erg=SQLGetInfo(dbc,SQL_ORDER_BY_COLUMNS_IN_SELECT,
+			(SQLPOINTER)strval,(SQLSMALLINT)sizeof(strval),
+			&vallen);
+	assertEqualDbc(dbc,(const char *)strval,"N");
+	assertSuccessDbc(dbc,erg);
+	stdoutput.printf("\n");
+
+
+	// SQL_SPECIAL_CHARACTERS
+	stdoutput.printf("  SQL_SPECIAL_CHARACTERS\n");
+	erg=SQLGetInfo(dbc,SQL_SPECIAL_CHARACTERS,
+			(SQLPOINTER)strval,(SQLSMALLINT)sizeof(strval),
+			&vallen);
+	assertEqualDbc(dbc,(const char *)strval,"$#");
+	assertSuccessDbc(dbc,erg);
+	stdoutput.printf("\n");
+
+
+	// SQL_MAX_COLUMNS_IN_GROUP_BY
+	stdoutput.printf("  SQL_MAX_COLUMNS_IN_GROUP_BY\n");
+	erg=SQLGetInfo(dbc,SQL_MAX_COLUMNS_IN_GROUP_BY,
+			(SQLPOINTER)&usmallintval,
+			(SQLSMALLINT)sizeof(usmallintval),&vallen);
+	assertEqualDbc(dbc,(int)usmallintval,0);
+	assertSuccessDbc(dbc,erg);
+	stdoutput.printf("\n");
+
+
+	// SQL_MAX_COLUMNS_IN_INDEX
+	stdoutput.printf("  SQL_MAX_COLUMNS_IN_INDEX\n");
+	erg=SQLGetInfo(dbc,SQL_MAX_COLUMNS_IN_INDEX,
+			(SQLPOINTER)&usmallintval,
+			(SQLSMALLINT)sizeof(usmallintval),&vallen);
+	if (issqlrelay) {
+		assertEqualDbc(dbc,(int)usmallintval,32);
+	} else {
+		// oracle odbc unhelpfully returns 0 for this
+		// oracle jdbc helpfully returns 32 for:
+		// getMaxColumnsInIndex()
+		assertEqualDbc(dbc,(int)usmallintval,0);
+	}
+	assertSuccessDbc(dbc,erg);
+	stdoutput.printf("\n");
+
+
+	// SQL_MAX_COLUMNS_IN_ORDER_BY
+	stdoutput.printf("  SQL_MAX_COLUMNS_IN_ORDER_BY\n");
+	erg=SQLGetInfo(dbc,SQL_MAX_COLUMNS_IN_ORDER_BY,
+			(SQLPOINTER)&usmallintval,
+			(SQLSMALLINT)sizeof(usmallintval),&vallen);
+	assertEqualDbc(dbc,(int)usmallintval,0);
+	assertSuccessDbc(dbc,erg);
+	stdoutput.printf("\n");
+
+
+	// SQL_MAX_COLUMNS_IN_SELECT
+	stdoutput.printf("  SQL_MAX_COLUMNS_IN_SELECT\n");
+	erg=SQLGetInfo(dbc,SQL_MAX_COLUMNS_IN_SELECT,
+			(SQLPOINTER)&usmallintval,
+			(SQLSMALLINT)sizeof(usmallintval),&vallen);
+	if (issqlrelay) {
+		// FIXME: in sqlrelay this is configurable
+		assertEqualDbc(dbc,(int)usmallintval,0);
+	} else {
+		// oracle odbc helpfully returns 1000 for this
+		// oracle jdbc unhelpfully returns 0 for:
+		// getMaxColumnsInSelect()
+		assertEqualDbc(dbc,(int)usmallintval,1000);
+	}
+	assertSuccessDbc(dbc,erg);
+	stdoutput.printf("\n");
+
+
+	// SQL_MAX_COLUMNS_IN_TABLE
+	stdoutput.printf("  SQL_MAX_COLUMNS_IN_TABLE\n");
+	erg=SQLGetInfo(dbc,SQL_MAX_COLUMNS_IN_TABLE,
+			(SQLPOINTER)&usmallintval,
+			(SQLSMALLINT)sizeof(usmallintval),&vallen);
+	assertEqualDbc(dbc,(int)usmallintval,1000);
+	assertSuccessDbc(dbc,erg);
+	stdoutput.printf("\n");
+
+
+	// SQL_MAX_INDEX_SIZE
+	stdoutput.printf("  SQL_MAX_INDEX_SIZE\n");
+	erg=SQLGetInfo(dbc,SQL_MAX_INDEX_SIZE,
+			(SQLPOINTER)&uintval,(SQLSMALLINT)sizeof(uintval),
+			&vallen);
+	assertEqualDbc(dbc,(int)uintval,0);
+	assertSuccessDbc(dbc,erg);
+	stdoutput.printf("\n");
+
+
+	// SQL_MAX_ROW_SIZE
+	stdoutput.printf("  SQL_MAX_ROW_SIZE\n");
+	erg=SQLGetInfo(dbc,SQL_MAX_ROW_SIZE,
+			(SQLPOINTER)&uintval,(SQLSMALLINT)sizeof(uintval),
+			&vallen);
+	assertEqualDbc(dbc,(int)uintval,0);
+	assertSuccessDbc(dbc,erg);
+	stdoutput.printf("\n");
+
+
+	// SQL_MAX_STATEMENT_LEN
+	stdoutput.printf("  SQL_MAX_STATEMENT_LEN\n");
+	erg=SQLGetInfo(dbc,SQL_MAX_STATEMENT_LEN,
+			(SQLPOINTER)&uintval,(SQLSMALLINT)sizeof(uintval),
+			&vallen);
+	if (issqlrelay) {
+		// FIXME: in sqlrelay this is configurable
+		assertEqualDbc(dbc,(int)uintval,65535);
+	} else {
+		// oracle odbc unhelpfully returns 0 for this
+		// oracle jdbc helpfully returns 65535 for:
+		// getMaxStatementLength()
+		assertEqualDbc(dbc,(int)uintval,0);
+	}
+	assertSuccessDbc(dbc,erg);
+	stdoutput.printf("\n");
+
+
+	// SQL_MAX_TABLES_IN_SELECT
+	stdoutput.printf("  SQL_MAX_TABLES_IN_SELECT\n");
+	erg=SQLGetInfo(dbc,SQL_MAX_TABLES_IN_SELECT,
+			(SQLPOINTER)&usmallintval,
+			(SQLSMALLINT)sizeof(usmallintval),&vallen);
+	assertEqualDbc(dbc,(int)usmallintval,0);
+	assertSuccessDbc(dbc,erg);
+	stdoutput.printf("\n");
+
+
+	// SQL_MAX_USER_NAME_LEN
+	stdoutput.printf("  SQL_MAX_USER_NAME_LEN\n");
+	erg=SQLGetInfo(dbc,SQL_MAX_USER_NAME_LEN,
+			(SQLPOINTER)&usmallintval,
+			(SQLSMALLINT)sizeof(usmallintval),&vallen);
+	assertEqualDbc(dbc,(int)usmallintval,128);
+	assertSuccessDbc(dbc,erg);
+	stdoutput.printf("\n");
+
+
+	#if (ODBCVER >= 0x0300)
+	// SQL_OJ_CAPABILITIES
+	stdoutput.printf("  SQL_OJ_CAPABILITIES\n");
+	erg=SQLGetInfo(dbc,SQL_OJ_CAPABILITIES,
+			(SQLPOINTER)&uintval,(SQLSMALLINT)sizeof(uintval),
+			&vallen);
+	if (issqlrelay) {
+		assertEqualDbc(dbc,(int)uintval,
+			(int)(SQL_OJ_LEFT|SQL_OJ_RIGHT|SQL_OJ_FULL|
+				SQL_OJ_NESTED|SQL_OJ_NOT_ORDERED|
+				SQL_OJ_INNER|SQL_OJ_ALL_COMPARISON_OPS));
+	} else {
+		// oracle odbc incorrectly doesn't include SQL_OJ_FULL for this
+		// oracle jdbc correctly returns true for:
+		// supportsFullOuterJoins()
+		assertEqualDbc(dbc,(int)uintval,
+			(int)(SQL_OJ_LEFT|SQL_OJ_RIGHT|
+				SQL_OJ_NESTED|SQL_OJ_NOT_ORDERED|
+				SQL_OJ_INNER|SQL_OJ_ALL_COMPARISON_OPS));
+	}
+	assertSuccessDbc(dbc,erg);
+	stdoutput.printf("\n");
+	#endif
+
+
+	#if (ODBCVER >= 0x0300)
+	// SQL_XOPEN_CLI_YEAR
+	stdoutput.printf("  SQL_XOPEN_CLI_YEAR\n");
+	erg=SQLGetInfo(dbc,SQL_XOPEN_CLI_YEAR,
+			(SQLPOINTER)strval,(SQLSMALLINT)sizeof(strval),
+			&vallen);
+	assertEqualDbc(dbc,(const char *)strval,"1995");
+	assertSuccessDbc(dbc,erg);
+	stdoutput.printf("\n");
+	#endif
+
+
+	#if (ODBCVER >= 0x0300)
+	// SQL_CURSOR_SENSITIVITY
+	stdoutput.printf("  SQL_CURSOR_SENSITIVITY\n");
+	erg=SQLGetInfo(dbc,SQL_CURSOR_SENSITIVITY,
+			(SQLPOINTER)&uintval,(SQLSMALLINT)sizeof(uintval),
+			&vallen);
+	if (issqlrelay) {
+		assertEqualDbc(dbc,(int)uintval,(int)SQL_UNSPECIFIED);
+	} else {
+		assertEqualDbc(dbc,(int)uintval,(int)SQL_INSENSITIVE);
+	}
+	assertSuccessDbc(dbc,erg);
+	stdoutput.printf("\n");
+	#endif
+
+
+	#if (ODBCVER >= 0x0300)
+	// SQL_DESCRIBE_PARAMETER
+	stdoutput.printf("  SQL_DESCRIBE_PARAMETER\n");
+	erg=SQLGetInfo(dbc,SQL_DESCRIBE_PARAMETER,
+			(SQLPOINTER)strval,(SQLSMALLINT)sizeof(strval),
+			&vallen);
+	assertEqualDbc(dbc,(const char *)strval,"Y");
+	assertSuccessDbc(dbc,erg);
+	stdoutput.printf("\n");
+	#endif
+
+
+	#if (ODBCVER >= 0x0300)
+	// SQL_CATALOG_NAME
+	stdoutput.printf("  SQL_CATALOG_NAME\n");
+	erg=SQLGetInfo(dbc,SQL_CATALOG_NAME,
+			(SQLPOINTER)strval,(SQLSMALLINT)sizeof(strval),
+			&vallen);
+	assertEqualDbc(dbc,(const char *)strval,"N");
+	assertSuccessDbc(dbc,erg);
+	stdoutput.printf("\n");
+	#endif
+
+
+	#if (ODBCVER >= 0x0300)
+	// SQL_COLLATION_SEQ
+	stdoutput.printf("  SQL_COLLATION_SEQ\n");
+	erg=SQLGetInfo(dbc,SQL_COLLATION_SEQ,
+			(SQLPOINTER)strval,(SQLSMALLINT)sizeof(strval),
+			&vallen);
+	assertEqualDbc(dbc,(const char *)strval,"");
+	assertSuccessDbc(dbc,erg);
+	stdoutput.printf("\n");
+	#endif
+
+
+	#if (ODBCVER >= 0x0300)
+	// SQL_MAX_IDENTIFIER_LEN
+	stdoutput.printf("  SQL_MAX_IDENTIFIER_LEN\n");
+	erg=SQLGetInfo(dbc,SQL_MAX_IDENTIFIER_LEN,
+			(SQLPOINTER)&usmallintval,
+			(SQLSMALLINT)sizeof(usmallintval),&vallen);
+	assertEqualDbc(dbc,(int)usmallintval,128);
+	assertSuccessDbc(dbc,erg);
+	stdoutput.printf("\n");
+	#endif
+
 
 
 	// isolation levels
@@ -155,6 +1063,7 @@ int main(int argc, char **argv) {
 	stdoutput.printf("\n");
 
 
+
 	// statement handle
 	stdoutput.printf("STATEMENT HANDLE: \n");
 	erg=SQLAllocHandle(SQL_HANDLE_STMT,dbc,&stmt);
@@ -162,8 +1071,10 @@ int main(int argc, char **argv) {
 	stdoutput.printf("\n");
 
 
+
 	// statement attributes
 	// FIXME:...
+
 
 
 	// create testtable
@@ -188,6 +1099,7 @@ int main(int argc, char **argv) {
 	stdoutput.printf("\n");
 
 
+
 	// insert
 	stdoutput.printf("INSERT: \n");
 	erg=SQLExecDirect(stmt,(SQLCHAR *)
@@ -206,6 +1118,7 @@ int main(int argc, char **argv) {
 	stdoutput.printf("\n");
 
 
+
 	// affected rows
 	stdoutput.printf("AFFECTED ROWS: \n");
 	#ifdef SQLROWCOUNT_SQLLEN
@@ -217,6 +1130,7 @@ int main(int argc, char **argv) {
 	assertSuccessStmt(stmt,erg);
 	assertEqualStmt(stmt,(int)affectedrows,1);
 	stdoutput.printf("\n");
+
 
 
 	// input bind by position
@@ -658,6 +1572,7 @@ int main(int argc, char **argv) {
 	stdoutput.printf("\n");
 
 
+
 	// select
 	stdoutput.printf("SELECT: \n");
 	erg=SQLFreeStmt(stmt,SQL_CLOSE);
@@ -675,6 +1590,7 @@ int main(int argc, char **argv) {
 	stdoutput.printf("\n");
 
 
+
 	// column count
 	stdoutput.printf("COLUMN COUNT: \n");
 	SQLSMALLINT	colcount;
@@ -682,6 +1598,7 @@ int main(int argc, char **argv) {
 	assertSuccessStmt(stmt,erg);
 	assertEqualStmt(stmt,(int)colcount,7);
 	stdoutput.printf("\n");
+
 
 
 	// column info
@@ -742,11 +1659,19 @@ int main(int argc, char **argv) {
 	assertEqualStmt(stmt,(const char *)colname,"TESTDATE");
 	assertEqualStmt(stmt,(int)colnamelen,8);
 	if (issqlrelay) {
+		#if (ODBCVER >= 0x0300)
+		assertEqualStmt(stmt,(int)datatype,SQL_TYPE_DATE);
+		#else
 		assertEqualStmt(stmt,(int)datatype,SQL_DATE);
+		#endif
 		assertEqualStmt(stmt,(int)colsize,25);
 		assertEqualStmt(stmt,(int)decdigits,0);
 	} else {
+		#if (ODBCVER >= 0x0300)
+		assertEqualStmt(stmt,(int)datatype,SQL_TYPE_TIMESTAMP);
+		#else
 		assertEqualStmt(stmt,(int)datatype,SQL_TIMESTAMP);
+		#endif
 		assertEqualStmt(stmt,(int)colsize,19);
 		assertEqualStmt(stmt,(int)decdigits,0);
 	}
@@ -799,6 +1724,7 @@ int main(int argc, char **argv) {
 	assertEqualStmt(stmt,(int)decdigits,0);
 	assertEqualStmt(stmt,(int)nullable,SQL_NULLABLE);
 	stdoutput.printf("\n");
+
 
 
 	// fetch rows
@@ -1048,8 +1974,10 @@ int main(int argc, char **argv) {
 	stdoutput.printf("\n");
 
 
+
 	// nested selects
 	// FIXME:...
+
 
 
 	// commit and rollback
@@ -1167,6 +2095,7 @@ int main(int argc, char **argv) {
 	stdoutput.printf("\n");
 
 
+
 	// null values
 	stdoutput.printf("NULL VALUES: \n");
 	erg=SQLFreeStmt(stmt,SQL_CLOSE);
@@ -1195,88 +2124,110 @@ int main(int argc, char **argv) {
 	stdoutput.printf("\n");
 
 
+
 	// null and empty lobs
 	// FIXME:...
+
 
 
 	// long lobs
 	// FIXME:...
 
 
+
 	// output bind by position
 	// FIXME:...
+
 
 
 	// lob output bind
 	// FIXME:...
 
 
+
 	// long output bind
 	// FIXME:...
+
 
 
 	// negative input bind
 	// FIXME:...
 
 
+
 	// rebinding
 	// FIXME:...
+
 
 
 	// reexecute
 	// FIXME:...
 
 
+
 	// encoded binary data
 	// FIXME:...
+
 
 
 	// quotes
 	// FIXME:...
 
 
+
 	// catalog list
 	// FIXME:...
+
 
 
 	// schema list
 	// FIXME:...
 
 
+
 	// table type list
 	// FIXME:...
+
 
 
 	// table list
 	// FIXME:...
 
 
+
 	// type info list
 	// FIXME:...
+
 
 
 	// column list
 	// FIXME:...
 
 
+
 	// column list - auto_increment, primary key
 	// FIXME:...
+
 
 
 	// primary keys list
 	// FIXME:...
 
 
+
 	// key and index list
 	// FIXME:...
+
 
 
 	// procedure list
 	// FIXME:...
 
 
+
 	// procedure parameter list
 	// FIXME:...
+
 
 
 	// invalid queries
