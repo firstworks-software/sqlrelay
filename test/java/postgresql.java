@@ -898,8 +898,7 @@ class postgresql extends sqlrtest {
 
 		// individual substitutions
 		System.out.println("INDIVIDUAL SUBSTITUTIONS: ");
-		cur.prepareQuery("select $(var1),"+
-			"'$(var2)',$(var3)");
+		cur.prepareQuery("select $(var1),'$(var2)',$(var3)");
 		cur.substitution("var1",1);
 		cur.substitution("var2","hello");
 		cur.substitution("var3",10.5556,6,4);
@@ -912,24 +911,21 @@ class postgresql extends sqlrtest {
 
 		// array substitutions
 		System.out.println("ARRAY SUBSTITUTIONS: ");
-		cur.prepareQuery("select $(var1),"+
-			"$(var2),$(var3)");
+		cur.prepareQuery("select $(var1),$(var2),$(var3)");
 		cur.substitutions(subvars,subvallongs);
 		assertTrue(cur.executeQuery());
 		assertEquals(cur.getField(0,0),"1");
 		assertEquals(cur.getField(0,1),"2");
 		assertEquals(cur.getField(0,2),"3");
 		System.out.println();
-		cur.prepareQuery("select '$(var1)',"+
-			"'$(var2)','$(var3)'");
+		cur.prepareQuery("select '$(var1)','$(var2)','$(var3)'");
 		cur.substitutions(subvars,subvalstrings);
 		assertTrue(cur.executeQuery());
 		assertEquals(cur.getField(0,0),"hi");
 		assertEquals(cur.getField(0,1),"hello");
 		assertEquals(cur.getField(0,2),"bye");
 		System.out.println();
-		cur.prepareQuery("select $(var1),"+
-			"$(var2),$(var3)");
+		cur.prepareQuery("select $(var1),$(var2),$(var3)");
 		cur.substitutions(subvars,subvaldoubles,precs,scales);
 		assertTrue(cur.executeQuery());
 		assertEquals(cur.getField(0,0),"10.55");
@@ -990,8 +986,7 @@ class postgresql extends sqlrtest {
 		cur.sendQuery("create table testtable ("+
 			"	testtext text, "+
 			"	testbytea bytea)");
-		cur.prepareQuery("insert into testtable "+
-			"values ($1,$2)");
+		cur.prepareQuery("insert into testtable values ($1,$2)");
 		for (int i=0; i<LARGE_BUFFER_LENGTH; i++) {
 			largebuffer[i]='C';
 		}
@@ -1035,14 +1030,11 @@ class postgresql extends sqlrtest {
 		// negative input bind
 		System.out.println("NEGATIVE INPUT BIND: ");
 		cur.sendQuery("drop table testtable");
-		cur.sendQuery("create table testtable "+
-			"(testval int)");
-		cur.prepareQuery("insert into testtable "+
-			"values ($1)");
+		cur.sendQuery("create table testtable (testval int)");
+		cur.prepareQuery("insert into testtable values ($1)");
 		cur.inputBind("1",-1);
 		assertTrue(cur.executeQuery());
-		cur.sendQuery("select testval "+
-			"from testtable");
+		cur.sendQuery("select testval from testtable");
 		assertEquals(cur.getField(0,"testval"),"-1");
 		assertTrue(cur.sendQuery("drop table testtable"));
 		System.out.println();
@@ -1055,8 +1047,7 @@ class postgresql extends sqlrtest {
 		// rebinding
 		System.out.println("REBINDING: ");
 		cur.sendQuery("drop function testfunc(int)");
-		assertTrue(cur.sendQuery("create function "+
-			"testfunc(int) "+
+		assertTrue(cur.sendQuery("create function testfunc(int) "+
 			"returns int as "+
 			"	' begin return $1; "+
 			"end;' language plpgsql"));
@@ -1104,8 +1095,7 @@ class postgresql extends sqlrtest {
 
 		// stored procedure returning no value
 		System.out.println("STORED PROCEDURE RETURNING NO VALUE: ");
-		cur.sendQuery("drop function "+
-			"testfunc(int,float,char(20))");
+		cur.sendQuery("drop function testfunc(int,float,char(20))");
 		assertTrue(cur.sendQuery("create function testfunc("+
 			"	int,float,char(20)) "+
 			"returns void as ' "+
@@ -1123,30 +1113,25 @@ class postgresql extends sqlrtest {
 		cur.inputBind("2",1.1,4,2);
 		cur.inputBind("3","hello");
 		assertTrue(cur.executeQuery());
-		assertTrue(cur.sendQuery("drop function "+
-			"testfunc(int,float,"+
+		assertTrue(cur.sendQuery("drop function testfunc(int,float,"+
 			"char(20))"));
 		System.out.println();
 
 
 		// stored procedure returning single value
 		System.out.println("STORED PROCEDURE RETURNING SINGLE VALUE: ");
-		cur.sendQuery("drop function "+
-			"testfunc(int,float,char(20))");
+		cur.sendQuery("drop function testfunc(int,float,char(20))");
 		assertTrue(cur.sendQuery("create function testfunc("+
-			"int,float,char(20)) "+
-			"returns int as "+
+			"int,float,char(20)) returns int as "+
 			"	' begin return $1; "+
 			"end;' language plpgsql"));
-		cur.prepareQuery("select * from "+
-			"testfunc($1,$2,$3)");
+		cur.prepareQuery("select * from testfunc($1,$2,$3)");
 		cur.inputBind("1",1);
 		cur.inputBind("2",1.1,4,2);
 		cur.inputBind("3","hello");
 		assertTrue(cur.executeQuery());
 		assertEquals(cur.getField(0,0),"1");
-		assertTrue(cur.sendQuery("drop function "+
-			"testfunc(int,float,"+
+		assertTrue(cur.sendQuery("drop function testfunc(int,float,"+
 			"char(20))"));
 		System.out.println();
 
@@ -1154,8 +1139,7 @@ class postgresql extends sqlrtest {
 		// stored procedure returning multiple values
 		System.out.println("STORED PROCEDURE RETURNING MULTIPLE "+
 					"VALUES: ");
-		cur.sendQuery("drop function "+
-			"testfunc(int,float,char(20))");
+		cur.sendQuery("drop function testfunc(int,float,char(20))");
 		assertTrue(cur.sendQuery("create function testfunc("+
 			"	int,float,char(20)) "+
 			"returns record as ' "+
@@ -1178,8 +1162,7 @@ class postgresql extends sqlrtest {
 		assertTrue(cur.executeQuery());
 		assertEquals(cur.getField(0,0),"1");
 		assertEquals(cur.getField(0,2),"hello");
-		assertTrue(cur.sendQuery("drop function "+
-			"testfunc(int,float,"+
+		assertTrue(cur.sendQuery("drop function testfunc(int,float,"+
 			"char(20))"));
 		System.out.println();
 
@@ -1225,23 +1208,16 @@ class postgresql extends sqlrtest {
 		// temporary tables
 		System.out.println("TEMPORARY TABLES: ");
 		cur.sendQuery("drop table temptable\n");
-		cur.sendQuery("-- this should be skipped\n"+
-			"-- so should this\n"+
-			"-- and the whitespace "+
-			"below too\n"+
+		cur.sendQuery("-- this should be skipped\n-- so should this\n"+
+			"-- and the whitespace below too\n"+
 			"        				"+
-			"\n\n"+
-			"create temporary table "+
-			"temptable (col1 int)");
-		assertTrue(cur.sendQuery("insert into temptable "+
-			"values (1)"));
-		assertTrue(cur.sendQuery("select count(*) "+
-			"from temptable"));
+			"\n\ncreate temporary table temptable (col1 int)");
+		assertTrue(cur.sendQuery("insert into temptable values (1)"));
+		assertTrue(cur.sendQuery("select count(*) from temptable"));
 		assertEquals(cur.getField(0,0),"1");
 		con.endSession();
 		System.out.println();
-		assertFalse(cur.sendQuery("select count(*) "+
-			"from temptable"));
+		assertFalse(cur.sendQuery("select count(*) from temptable"));
 		System.out.println();
 
 
@@ -1255,8 +1231,7 @@ class postgresql extends sqlrtest {
 			buffer[i]=(byte)i;
 		}
 		StringBuilder querystr=new StringBuilder();
-		querystr.append("insert into testtable "+
-			"values (decode('");
+		querystr.append("insert into testtable values (decode('");
 		for (int i=0; i<buffer.length; i++) {
 			querystr.append(String.format("%02x",buffer[i]&0xff));
 		}
@@ -1470,8 +1445,7 @@ class postgresql extends sqlrtest {
 		// column list - auto_increment, primary key
 		System.out.println("COLUMN LIST - auto_increment, primary "+
 					"key: ");
-		cur.sendQuery("drop table if exists "+
-			"testtable");
+		cur.sendQuery("drop table if exists testtable");
 		assertTrue(cur.sendQuery("create table testtable ("+
 			"	col1 serial "+
 			"primary key, "+
@@ -1558,46 +1532,34 @@ class postgresql extends sqlrtest {
 
 		// procedure list
 		System.out.println("PROCEDURE LIST: ");
-		cur.sendQuery("drop function testproc1"+
-			"(int,char,varchar,date)");
-		cur.sendQuery("drop function testproc2"+
-			"(int,char,varchar,date)");
-		cur.sendQuery("drop function testproc3"+
-			"(int,char,varchar,date)");
-		cur.sendQuery("drop function testproc4"+
-			"(int,char,varchar,date)");
+		cur.sendQuery("drop function testproc1(int,char,varchar,date)");
+		cur.sendQuery("drop function testproc2(int,char,varchar,date)");
+		cur.sendQuery("drop function testproc3(int,char,varchar,date)");
+		cur.sendQuery("drop function testproc4(int,char,varchar,date)");
 		assertTrue(cur.sendQuery("create function testproc1("+
 			"	in1 int, "+
 			"	in2 char(20), "+
 			"	in3 varchar(20), "+
 			"	in4 date) "+
-			"returns void "+
-			"as 'begin end;' "+
-			"language plpgsql"));
+			"returns void as 'begin end;' language plpgsql"));
 		assertTrue(cur.sendQuery("create function testproc2("+
 			"	in1 int, "+
 			"	in2 char(20), "+
 			"	in3 varchar(20), "+
 			"	in4 date) "+
-			"returns void "+
-			"as 'begin end;' "+
-			"language plpgsql"));
+			"returns void as 'begin end;' language plpgsql"));
 		assertTrue(cur.sendQuery("create function testproc3("+
 			"	in1 int, "+
 			"	in2 char(20), "+
 			"	in3 varchar(20), "+
 			"	in4 date) "+
-			"returns void "+
-			"as 'begin end;' "+
-			"language plpgsql"));
+			"returns void as 'begin end;' language plpgsql"));
 		assertTrue(cur.sendQuery("create function testproc4("+
 			"	in1 int, "+
 			"	in2 char(20), "+
 			"	in3 varchar(20), "+
 			"	in4 date) "+
-			"returns void "+
-			"as 'begin end;' "+
-			"language plpgsql"));
+			"returns void as 'begin end;' language plpgsql"));
 		assertTrue(cur.getProcedureList(null));
 		counter=0;
 		for (long i=0; i<cur.rowCount(); i++) {

@@ -860,9 +860,7 @@ class krb extends sqlrtest {
 
 		// individual substitutions
 		System.out.println("INDIVIDUAL SUBSTITUTIONS: ");
-		cur.prepareQuery("select $(var1),"+
-			"'$(var2)',"+
-			"$(var3) from dual");
+		cur.prepareQuery("select $(var1),'$(var2)',$(var3) from dual");
 		cur.substitution("var1","$(var11)");
 		cur.substitution("var2","$(var21)");
 		cur.substitution("var3","$(var31)");
@@ -881,17 +879,14 @@ class krb extends sqlrtest {
 
 		// array substitutions
 		System.out.println("ARRAY SUBSTITUTIONS: ");
-		cur.prepareQuery("select $(var1),"+
-			"$(var2),"+
-			"$(var3) from dual");
+		cur.prepareQuery("select $(var1),$(var2),$(var3) from dual");
 		cur.substitutions(subvars,subvallongs);
 		assertTrue(cur.executeQuery());
 		assertEquals(cur.getField(0,0),"1");
 		assertEquals(cur.getField(0,1),"2");
 		assertEquals(cur.getField(0,2),"3");
 		System.out.println();
-		cur.prepareQuery("select '$(var1)',"+
-			"'$(var2)',"+
+		cur.prepareQuery("select '$(var1)','$(var2)',"+
 			"'$(var3)' from dual");
 		cur.substitutions(subvars,subvalstrings);
 		assertTrue(cur.executeQuery());
@@ -899,9 +894,7 @@ class krb extends sqlrtest {
 		assertEquals(cur.getField(0,1),"hello");
 		assertEquals(cur.getField(0,2),"bye");
 		System.out.println();
-		cur.prepareQuery("select $(var1),"+
-			"$(var2),"+
-			"$(var3) from dual");
+		cur.prepareQuery("select $(var1),$(var2),$(var3) from dual");
 		cur.substitutions(subvars,subvaldoubles,precs,scales);
 		assertTrue(cur.executeQuery());
 		assertEquals(cur.getField(0,0),"10.55");
@@ -1112,14 +1105,11 @@ class krb extends sqlrtest {
 		// negative input bind
 		System.out.println("NEGATIVE INPUT BIND: ");
 		cur.sendQuery("drop table testtable");
-		cur.sendQuery("create table testtable "+
-			"(testval number)");
-		cur.prepareQuery("insert into testtable "+
-			"values (:testval)");
+		cur.sendQuery("create table testtable (testval number)");
+		cur.prepareQuery("insert into testtable values (:testval)");
 		cur.inputBind("testval",-1);
 		assertTrue(cur.executeQuery());
-		cur.sendQuery("select testval "+
-			"from testtable");
+		cur.sendQuery("select testval from testtable");
 		assertEquals(cur.getField(0,"TESTVAL"),"-1");
 		assertTrue(cur.sendQuery("drop table testtable"));
 		System.out.println();
@@ -1218,13 +1208,10 @@ class krb extends sqlrtest {
 			"	in1 in number, "+
 			"	in2 in number, "+
 			"	in3 in varchar2) "+
-			"is "+
-			"begin "+
+			"is begin "+
 			"	return; "+
 			"end;"));
-		cur.prepareQuery("begin "+
-			"testproc(:in1,:in2,:in3); "+
-			"end;");
+		cur.prepareQuery("begin testproc(:in1,:in2,:in3); end;");
 		cur.inputBind("in1",1);
 		cur.inputBind("in2",1.1,2,1);
 		cur.inputBind("in3","hello");
@@ -1237,19 +1224,14 @@ class krb extends sqlrtest {
 		System.out.println("STORED PROCEDURE RETURNING SINGLE VALUE: ");
 		cur.sendQuery("drop function testproc");
 		cur.sendQuery("drop procedure testproc");
-		assertTrue(cur.sendQuery("create or replace "+
-			"function testproc("+
+		assertTrue(cur.sendQuery("create or replace function testproc("+
 			"	in1 in number, "+
 			"	in2 in number, "+
 			"	in3 in varchar2) "+
-			"return number "+
-			"is "+
-			"begin "+
+			"return number is begin "+
 			"	return in1; "+
 			"end;"));
-		cur.prepareQuery("select "+
-			"testproc(:in1,:in2,:in3) "+
-			"from dual");
+		cur.prepareQuery("select testproc(:in1,:in2,:in3) from dual");
 		cur.inputBind("in1",1);
 		cur.inputBind("in2",1.1,2,1);
 		cur.inputBind("in3","hello");
@@ -1257,8 +1239,7 @@ class krb extends sqlrtest {
 		assertEquals(cur.getField(0,0),"1");
 		cur.prepareQuery("begin "+
 			"	:out1:=testproc("+
-			":in1,:in2,:in3); "+
-			"end;");
+			":in1,:in2,:in3); end;");
 		cur.inputBind("in1",1);
 		cur.inputBind("in2",1.1,2,1);
 		cur.inputBind("in3","hello");
@@ -1282,16 +1263,14 @@ class krb extends sqlrtest {
 			"	out1 out number, "+
 			"	out2 out number, "+
 			"	out3 out varchar2) "+
-			"is "+
-			"begin "+
+			"is begin "+
 			"	out1:=in1; "+
 			"	out2:=in2; "+
 			"	out3:=in3; "+
 			"end;"));
 		cur.prepareQuery("begin "+
 			"	testproc(:in1,:in2,:in3,"+
-			":out1,:out2,:out3); "+
-			"end;");
+			":out1,:out2,:out3); end;");
 		cur.inputBind("in1",1);
 		cur.inputBind("in2",1.1,2,1);
 		cur.inputBind("in3","hello");
@@ -1311,20 +1290,15 @@ class krb extends sqlrtest {
 		cur.sendQuery("drop package types");
 		cur.sendQuery("drop function testproc");
 		cur.sendQuery("drop procedure testproc");
-		assertTrue(cur.sendQuery("create or replace "+
-			"package types is "+
+		assertTrue(cur.sendQuery("create or replace package types is "+
 			"	type cursorType "+
-			"is ref cursor; "+
-			"end;"));
-		assertTrue(cur.sendQuery("create or replace "+
-			"function "+
+			"is ref cursor; end;"));
+		assertTrue(cur.sendQuery("create or replace function "+
 			"testproc(value in number) "+
 			"	return "+
-			"types.cursortype "+
-			"is "+
+			"types.cursortype is "+
 			"	l_cursor    "+
-			"types.cursorType; "+
-			"begin "+
+			"types.cursorType; begin "+
 			"	open l_cursor for "+
 			"		select "+
 			"			* "+
@@ -1383,8 +1357,7 @@ class krb extends sqlrtest {
 
 		// temporary tables
 		System.out.println("TEMPORARY TABLES: ");
-		cur.prepareQuery("drop table "+
-			"$(HOSTNAME)_temptabledelete");
+		cur.prepareQuery("drop table $(HOSTNAME)_temptabledelete");
 		cur.substitution("HOSTNAME",hostname);
 		cur.executeQuery();
 		cur.prepareQuery("create global temporary table "+
@@ -1393,8 +1366,7 @@ class krb extends sqlrtest {
 			") on commit delete rows");
 		cur.substitution("HOSTNAME",hostname);
 		cur.executeQuery();
-		cur.prepareQuery("insert into "+
-			"$(HOSTNAME)_temptabledelete "+
+		cur.prepareQuery("insert into $(HOSTNAME)_temptabledelete "+
 			"values (1)");
 		cur.substitution("HOSTNAME",hostname);
 		assertTrue(cur.executeQuery());
@@ -1409,8 +1381,7 @@ class krb extends sqlrtest {
 		cur.substitution("HOSTNAME",hostname);
 		assertTrue(cur.executeQuery());
 		assertEquals(cur.getField(0,0),"0");
-		cur.prepareQuery("drop table "+
-			"$(HOSTNAME)_temptabledelete");
+		cur.prepareQuery("drop table $(HOSTNAME)_temptabledelete");
 		cur.substitution("HOSTNAME",hostname);
 		cur.executeQuery();
 		System.out.println();
@@ -1418,8 +1389,7 @@ class krb extends sqlrtest {
 			"$(HOSTNAME)_temptablepreserve");
 		cur.substitution("HOSTNAME",hostname);
 		cur.executeQuery();
-		cur.prepareQuery("drop table "+
-			"$(HOSTNAME)_temptablepreserve");
+		cur.prepareQuery("drop table $(HOSTNAME)_temptablepreserve");
 		cur.substitution("HOSTNAME",hostname);
 		cur.executeQuery();
 		cur.prepareQuery("create global temporary table "+
@@ -1430,8 +1400,7 @@ class krb extends sqlrtest {
 		cur.executeQuery();
 		cur.prepareQuery("insert into "+
 			"	$(HOSTNAME)"+
-			"_temptablepreserve "+
-			"values (1)");
+			"_temptablepreserve values (1)");
 		cur.substitution("HOSTNAME",hostname);
 		assertTrue(cur.executeQuery());
 		cur.prepareQuery("select count(*) from "+
@@ -1459,8 +1428,7 @@ class krb extends sqlrtest {
 		try {
 			Thread.sleep(2000);
 		} catch (Exception e) {}
-		cur.prepareQuery("drop table "+
-			"$(HOSTNAME)_temptablepreserve");
+		cur.prepareQuery("drop table $(HOSTNAME)_temptablepreserve");
 		cur.substitution("HOSTNAME",hostname);
 		assertTrue(cur.executeQuery());
 		cur.prepareQuery("select count(*) from "+
@@ -1473,15 +1441,13 @@ class krb extends sqlrtest {
 		// encoded binary data
 		System.out.println("ENCODED BINARY DATA: ");
 		cur.sendQuery("drop table testtable");
-		assertTrue(cur.sendQuery("create table testtable "+
-			"(col1 blob)"));
+		assertTrue(cur.sendQuery("create table testtable (col1 blob)"));
 		byte[]	buffer=new byte[256];
 		for (int i=0; i<256; i++) {
 			buffer[i]=(byte)i;
 		}
 		StringBuilder	querystr=new StringBuilder();
-		querystr.append("insert into testtable "+
-			"values ('");
+		querystr.append("insert into testtable values ('");
 		for (int i=0; i<buffer.length; i++) {
 			querystr.append(String.format("%02x",buffer[i]&0xff));
 		}

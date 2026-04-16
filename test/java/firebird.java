@@ -215,8 +215,7 @@ class firebird extends sqlrtest {
 
 
 		// input bind by position with validation
-		System.out.println("INPUT BIND BY POSITION "+
-			"WITH VALIDATION: ");
+		System.out.println("INPUT BIND BY POSITION WITH VALIDATION: ");
 		cur.clearBinds();
 		cur.inputBind("1",8);
 		cur.inputBind("2",8);
@@ -737,15 +736,13 @@ class firebird extends sqlrtest {
 
 
 		// column count for cached result set
-		System.out.println("COLUMN COUNT FOR "+
-			"CACHED RESULT SET: ");
+		System.out.println("COLUMN COUNT FOR CACHED RESULT SET: ");
 		assertEquals(cur.colCount(),12);
 		System.out.println();
 
 
 		// column names for cached result set
-		System.out.println("COLUMN NAMES FOR "+
-			"CACHED RESULT SET: ");
+		System.out.println("COLUMN NAMES FOR CACHED RESULT SET: ");
 		assertEquals(cur.getColumnName(0),"TESTINTEGER");
 		assertEquals(cur.getColumnName(1),"TESTSMALLINT");
 		assertEquals(cur.getColumnName(2),"TESTDECIMAL");
@@ -797,8 +794,7 @@ class firebird extends sqlrtest {
 
 
 		// from one cache file to another
-		System.out.println("FROM ONE CACHE FILE "+
-			"TO ANOTHER: ");
+		System.out.println("FROM ONE CACHE FILE TO ANOTHER: ");
 		cur.cacheToFile("cachefile2");
 		assertTrue(cur.openCachedResultSet("cachefile1"));
 		cur.cacheOff();
@@ -971,8 +967,7 @@ class firebird extends sqlrtest {
 
 		// individual substitutions
 		System.out.println("INDIVIDUAL SUBSTITUTIONS: ");
-		cur.prepareQuery("select $(var1),"+
-			"'$(var2)',$(var3) "+
+		cur.prepareQuery("select $(var1),'$(var2)',$(var3) "+
 			"from rdb$database");
 		cur.substitution("var1",1);
 		cur.substitution("var2","hello");
@@ -1037,20 +1032,16 @@ class firebird extends sqlrtest {
 		System.out.println("NULL AND EMPTY LOBS: ");
 		cur.getNullsAsNulls();
 		cur.sendQuery("delete from testtable1");
-		cur.prepareQuery("insert into "+
-			"testtable1 values (?)");
+		cur.prepareQuery("insert into testtable1 values (?)");
 		cur.inputBindBlob("1",(new String("")).getBytes(),0);
 		assertTrue(cur.executeQuery());
-		cur.sendQuery("select testblob "+
-			"from testtable1");
+		cur.sendQuery("select testblob from testtable1");
 		assertEquals(cur.getField(0,"TESTBLOB"),"");
 		cur.sendQuery("delete from testtable1");
-		cur.prepareQuery("insert into "+
-			"testtable1 values (?)");
+		cur.prepareQuery("insert into testtable1 values (?)");
 		cur.inputBindBlob("1",null,0);
 		assertTrue(cur.executeQuery());
-		cur.sendQuery("select testblob "+
-			"from testtable1");
+		cur.sendQuery("select testblob from testtable1");
 		assertEquals(cur.getField(0,"TESTBLOB"),null);
 		cur.getNullsAsEmptyStrings();
 		assertTrue(cur.sendQuery("delete from testtable1"));
@@ -1060,16 +1051,14 @@ class firebird extends sqlrtest {
 		// long lobs
 		System.out.println("LONG LOBS: ");
 		cur.sendQuery("delete from testtable1");
-		cur.prepareQuery("insert into "+
-			"testtable1 values (?)");
+		cur.prepareQuery("insert into testtable1 values (?)");
 		for (int i=0; i<LARGE_BUFFER_LENGTH; i++) {
 			largebuffer.append('C');
 		}
 		cur.inputBindClob("1",largebuffer.toString(),
 			LARGE_BUFFER_LENGTH);
 		assertTrue(cur.executeQuery());
-		cur.sendQuery("select testblob "+
-			"from testtable1");
+		cur.sendQuery("select testblob from testtable1");
 		assertEquals(cur.getFieldLength(0,"TESTBLOB"),
 			LARGE_BUFFER_LENGTH);
 		assertEquals(cur.getField(0,"TESTBLOB"),largebuffer.toString());
@@ -1080,8 +1069,7 @@ class firebird extends sqlrtest {
 		// output bind by position
 		System.out.println("OUTPUT BIND BY POSITION: ");
 		cur.getNullsAsNulls();
-		cur.prepareQuery("execute procedure testproc "+
-			"?, ?, ?, ?");
+		cur.prepareQuery("execute procedure testproc ?, ?, ?, ?");
 		cur.inputBind("1",1);
 		cur.inputBind("2",1.1,2,1);
 		cur.inputBind("3","hello");
@@ -1113,8 +1101,7 @@ class firebird extends sqlrtest {
 
 		// lob output bind
 		System.out.println("LOB OUTPUT BIND: ");
-		cur.prepareQuery("execute procedure "+
-			"testproc1 ?");
+		cur.prepareQuery("execute procedure testproc1 ?");
 		cur.inputBindBlob("1",(new String("hello")).getBytes(),5);
 		cur.defineOutputBindBlob("1");
 		assertTrue(cur.executeQuery());
@@ -1129,8 +1116,7 @@ class firebird extends sqlrtest {
 		for (int i=0; i<LARGE_BUFFER_LENGTH; i++) {
 			largebuffer.append('C');
 		}
-		cur.prepareQuery("execute procedure "+
-			"testproc1 ?");
+		cur.prepareQuery("execute procedure testproc1 ?");
 		cur.inputBindBlob("1",(new String(largebuffer.toString()
 			)).getBytes(),LARGE_BUFFER_LENGTH);
 		cur.defineOutputBindBlob("1");
@@ -1143,8 +1129,7 @@ class firebird extends sqlrtest {
 
 		// negative input bind
 		System.out.println("NEGATIVE INPUT BIND: ");
-		cur.prepareQuery("select cast(? as integer) "+
-			"from rdb$database");
+		cur.prepareQuery("select cast(? as integer) from rdb$database");
 		cur.inputBind("1",-1);
 		assertTrue(cur.executeQuery());
 		assertEquals(cur.getField(0,0),"-1");
@@ -1157,8 +1142,7 @@ class firebird extends sqlrtest {
 
 		// rebinding
 		System.out.println("REBINDING: ");
-		cur.prepareQuery("execute procedure testproc "+
-			"?, ?, ?, ?");
+		cur.prepareQuery("execute procedure testproc ?, ?, ?, ?");
 		cur.inputBind("1",1);
 		cur.inputBind("2",1.1,2,1);
 		cur.inputBind("3","hello");
@@ -1189,8 +1173,7 @@ class firebird extends sqlrtest {
 		assertEquals(cur.rowCount(),1);
 		assertEquals(cur.getField(0,0),"1");
 		System.out.println();
-		cur.prepareQuery("select cast(? as int) "+
-			"from rdb$database");
+		cur.prepareQuery("select cast(? as int) from rdb$database");
 		cur.inputBind("1",1);
 		assertTrue(cur.executeQuery());
 		assertEquals(cur.rowCount(),1);
@@ -1208,15 +1191,11 @@ class firebird extends sqlrtest {
 
 
 		// stored procedure returning no value
-		System.out.println("STORED PROCEDURE "+
-			"RETURNING NO VALUE: ");
-		cur.prepareQuery("execute block "+
-			"(in1 int = ?, "+
+		System.out.println("STORED PROCEDURE RETURNING NO VALUE: ");
+		cur.prepareQuery("execute block (in1 int = ?, "+
 			"	in2 double precision = ?, "+
 			"	in3 varchar(20) = ?) "+
-			"as "+
-			"begin "+
-			"end");
+			"as begin end");
 		cur.inputBind("1",1);
 		cur.inputBind("2",1.1,2,1);
 		cur.inputBind("3","hello");
@@ -1225,15 +1204,11 @@ class firebird extends sqlrtest {
 
 
 		// stored procedure returning single value
-		System.out.println("STORED PROCEDURE "+
-			"RETURNING SINGLE VALUE: ");
-		cur.prepareQuery("execute block "+
-			"(in1 int = ?, "+
+		System.out.println("STORED PROCEDURE RETURNING SINGLE VALUE: ");
+		cur.prepareQuery("execute block (in1 int = ?, "+
 			"	in2 double precision = ?, "+
 			"	in3 varchar(20) = ?) "+
-			"returns (out1 int) "+
-			"as "+
-			"begin "+
+			"returns (out1 int) as begin "+
 			"	out1 = in1; "+
 			"	suspend; "+
 			"end");
@@ -1248,15 +1223,13 @@ class firebird extends sqlrtest {
 		// stored procedure returning multiple values
 		System.out.println("STORED PROCEDURE "+
 			"RETURNING MULTIPLE VALUES: ");
-		cur.prepareQuery("execute block "+
-			"(in1 int = ?, "+
+		cur.prepareQuery("execute block (in1 int = ?, "+
 			"	in2 double precision = ?, "+
 			"	in3 varchar(20) = ?) "+
 			"returns (out1 int, "+
 			"	out2 double precision, "+
 			"	out3 varchar(20)) "+
-			"as "+
-			"begin "+
+			"as begin "+
 			"	out1 = in1; "+
 			"	out2 = in2; "+
 			"	out3 = in3; "+
@@ -1273,13 +1246,9 @@ class firebird extends sqlrtest {
 
 
 		// stored procedure returning result set
-		System.out.println("STORED PROCEDURE "+
-			"RETURNING RESULT SET: ");
-		cur.prepareQuery("execute block "+
-			"returns (out1 int) "+
-			"as "+
-			"declare i int; "+
-			"begin "+
+		System.out.println("STORED PROCEDURE RETURNING RESULT SET: ");
+		cur.prepareQuery("execute block returns (out1 int) as "+
+			"declare i int; begin "+
 			"	i = 1; "+
 			"	while (i <= 8) do "+
 			"	begin "+
@@ -1307,8 +1276,7 @@ class firebird extends sqlrtest {
 		cur.sendQuery("delete from table testtable1");
 		assertTrue(cur.sendQuery("insert into testtable1 "+
 			"values ('''''')"));
-		assertTrue(cur.sendQuery("select testblob "+
-			"from testtable1"));
+		assertTrue(cur.sendQuery("select testblob from testtable1"));
 		assertEquals(cur.getFieldLength(0,0),2);
 		assertTrue(cur.getField(0,0).equals("''"));
 		assertTrue(cur.sendQuery("delete from testtable1"));
@@ -1468,8 +1436,7 @@ class firebird extends sqlrtest {
 
 
 		// column list - auto_increment, primary key
-		System.out.println("COLUMN LIST - "+
-			"auto_increment, "+
+		System.out.println("COLUMN LIST - auto_increment, "+
 			"primary key: ");
 		assertTrue(cur.getColumnList("testtable2",null));
 		assertTrue(cur.getField(0,"extra").contains("auto_increment"));

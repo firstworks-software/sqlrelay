@@ -1111,8 +1111,7 @@ class sap extends sqlrtest {
 
 		// individual substitutions
 		System.out.println("INDIVIDUAL SUBSTITUTIONS: ");
-		cur.prepareQuery("select "+
-			"$(var1),'$(var2)',$(var3)");
+		cur.prepareQuery("select $(var1),'$(var2)',$(var3)");
 		cur.substitution("var1",1);
 		cur.substitution("var2","hello");
 		cur.substitution("var3",10.5556,6,4);
@@ -1125,24 +1124,21 @@ class sap extends sqlrtest {
 
 		// array substitutions
 		System.out.println("ARRAY SUBSTITUTIONS: ");
-		cur.prepareQuery("select "+
-			"$(var1),$(var2),$(var3)");
+		cur.prepareQuery("select $(var1),$(var2),$(var3)");
 		cur.substitutions(subvars,subvallongs);
 		assertTrue(cur.executeQuery());
 		assertEquals(cur.getField(0,0),"1");
 		assertEquals(cur.getField(0,1),"2");
 		assertEquals(cur.getField(0,2),"3");
 		System.out.println();
-		cur.prepareQuery("select "+
-			"'$(var1)','$(var2)','$(var3)'");
+		cur.prepareQuery("select '$(var1)','$(var2)','$(var3)'");
 		cur.substitutions(subvars,subvalstrings);
 		assertTrue(cur.executeQuery());
 		assertEquals(cur.getField(0,0),"hi");
 		assertEquals(cur.getField(0,1),"hello");
 		assertEquals(cur.getField(0,2),"bye");
 		System.out.println();
-		cur.prepareQuery("select "+
-			"$(var1),$(var2),$(var3)");
+		cur.prepareQuery("select $(var1),$(var2),$(var3)");
 		cur.substitutions(subvars,subvaldoubles,precs,scales);
 		assertTrue(cur.executeQuery());
 		assertEquals(cur.getField(0,0),"10.55");
@@ -1212,8 +1208,7 @@ class sap extends sqlrtest {
 			"	testclob text NULL, "+
 			"	testblob image NULL) "+
 			"lock datarows");
-		cur.prepareQuery("insert into testtable "+
-			"values (@var1,@var2)");
+		cur.prepareQuery("insert into testtable values (@var1,@var2)");
 		StringBuilder	largebuffer=new StringBuilder();
 		for (int i=0; i<LARGE_BUFFER_LENGTH; i++) {
 			largebuffer.append('C');
@@ -1353,11 +1348,9 @@ class sap extends sqlrtest {
 			largebuffer.append('C');
 		}
 		StringBuilder	procquery=new StringBuilder();
-		procquery.append("create procedure testproc "+
-			"@bindval varchar(");
+		procquery.append("create procedure testproc @bindval varchar(");
 		procquery.append(LARGE_BUFFER_LENGTH);
-		procquery.append(") output as "+
-			"set @bindval='");
+		procquery.append(") output as set @bindval='");
 		procquery.append(largebuffer.toString());
 		procquery.append("'");
 		assertTrue(cur.sendQuery(procquery.toString()));
@@ -1375,14 +1368,11 @@ class sap extends sqlrtest {
 		// negative input bind
 		System.out.println("NEGATIVE INPUT BIND: ");
 		cur.sendQuery("drop table testtable");
-		cur.sendQuery("create table testtable "+
-			"(testval int)");
-		cur.prepareQuery("insert into testtable "+
-			"values (@testval)");
+		cur.sendQuery("create table testtable (testval int)");
+		cur.prepareQuery("insert into testtable values (@testval)");
 		cur.inputBind("testval",-1);
 		assertTrue(cur.executeQuery());
-		cur.sendQuery("select testval "+
-			"from testtable");
+		cur.sendQuery("select testval from testtable");
 		assertEquals(cur.getField(0,"testval"),"-1");
 		assertTrue(cur.sendQuery("drop table testtable"));
 		System.out.println();
@@ -1520,8 +1510,7 @@ class sap extends sqlrtest {
 		System.out.println("STORED PROCEDURE RETURNING MULTIPLE "+
 					"VALUES: ");
 		cur.sendQuery("drop procedure testproc");
-		assertTrue(cur.sendQuery("create procedure testproc "+
-			"@in1 int, "+
+		assertTrue(cur.sendQuery("create procedure testproc @in1 int, "+
 			"	@in2 float, "+
 			"	@in3 varchar(20), "+
 			"	@out1 int output, "+
@@ -1548,10 +1537,8 @@ class sap extends sqlrtest {
 
 		// stored procedure returning result set
 		System.out.println("STORED PROCEDURE RETURNING RESULT SET: ");
-		cur.sendQuery("drop procedure "+
-			"testselectproc");
-		assertTrue(cur.sendQuery("create procedure "+
-			"testselectproc as "+
+		cur.sendQuery("drop procedure testselectproc");
+		assertTrue(cur.sendQuery("create procedure testselectproc as "+
 			"	select 1 "+
 			"	union "+
 			"	select 2 "+
@@ -1569,25 +1556,20 @@ class sap extends sqlrtest {
 			"	select 8"));
 		assertTrue(cur.sendQuery("exec testselectproc"));
 		assertEquals(cur.rowCount(),8);
-		assertTrue(cur.sendQuery("drop procedure "+
-			"testselectproc"));
+		assertTrue(cur.sendQuery("drop procedure testselectproc"));
 		System.out.println();
 
 
 		// temporary tables
 		System.out.println("TEMPORARY TABLES: ");
 		cur.sendQuery("drop table #temptable\n");
-		cur.sendQuery("create table #temptable "+
-			"(col1 int)");
-		assertTrue(cur.sendQuery("insert into #temptable "+
-			"values (1)"));
-		assertTrue(cur.sendQuery("select count(*) "+
-			"from #temptable"));
+		cur.sendQuery("create table #temptable (col1 int)");
+		assertTrue(cur.sendQuery("insert into #temptable values (1)"));
+		assertTrue(cur.sendQuery("select count(*) from #temptable"));
 		assertEquals(cur.getField(0,0),"1");
 		con.endSession();
 		System.out.println();
-		assertFalse(cur.sendQuery("select count(*) "+
-			"from #temptable"));
+		assertFalse(cur.sendQuery("select count(*) from #temptable"));
 		System.out.println();
 
 
@@ -1601,8 +1583,7 @@ class sap extends sqlrtest {
 			buffer[i]=(byte)i;
 		}
 		StringBuilder	querystr=new StringBuilder();
-		querystr.append("insert into testtable "+
-			"values (0x");
+		querystr.append("insert into testtable values (0x");
 		for (int i=0; i<buffer.length; i++) {
 			querystr.append(String.format("%02x",buffer[i]&0xff));
 		}
@@ -1667,8 +1648,7 @@ class sap extends sqlrtest {
 		// names of schemas that have at least
 		// one database object in them, so
 		// to be sure that there is one, we'll create a table
-		assertTrue(cur.sendQuery("create table testtable "+
-			"(col1 int)"));
+		assertTrue(cur.sendQuery("create table testtable (col1 int)"));
 		assertTrue(cur.getSchemaList(null));
 		assertEquals(cur.getColumnName(0),"Database");
 		assertTrue(cur.rowCount()>0);

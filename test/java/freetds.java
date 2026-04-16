@@ -185,8 +185,7 @@ class freetds extends sqlrtest {
 
 
 		// input bind by position with validation
-		System.out.println("INPUT BIND BY POSITION "+
-			"WITH VALIDATION: ");
+		System.out.println("INPUT BIND BY POSITION WITH VALIDATION: ");
 		cur.clearBinds();
 		cur.inputBind("1",4);
 		cur.inputBind("2",4);
@@ -285,8 +284,7 @@ class freetds extends sqlrtest {
 
 
 		// input bind by name with validation
-		System.out.println("INPUT BIND BY NAME "+
-			"WITH VALIDATION: ");
+		System.out.println("INPUT BIND BY NAME WITH VALIDATION: ");
 		cur.clearBinds();
 		cur.inputBind("var1",8);
 		cur.inputBind("var2",8);
@@ -936,15 +934,13 @@ class freetds extends sqlrtest {
 
 
 		// column count for cached result set
-		System.out.println("COLUMN COUNT FOR "+
-			"CACHED RESULT SET: ");
+		System.out.println("COLUMN COUNT FOR CACHED RESULT SET: ");
 		assertEquals(cur.colCount(),14);
 		System.out.println();
 
 
 		// column names for cached result set
-		System.out.println("COLUMN NAMES FOR "+
-			"CACHED RESULT SET: ");
+		System.out.println("COLUMN NAMES FOR CACHED RESULT SET: ");
 		assertEquals(cur.getColumnName(0),"testint");
 		assertEquals(cur.getColumnName(1),"testsmallint");
 		assertEquals(cur.getColumnName(2),"testtinyint");
@@ -996,8 +992,7 @@ class freetds extends sqlrtest {
 
 
 		// from one cache file to another
-		System.out.println("FROM ONE CACHE FILE "+
-			"TO ANOTHER: ");
+		System.out.println("FROM ONE CACHE FILE TO ANOTHER: ");
 		cur.cacheToFile("cachefile2");
 		assertTrue(cur.openCachedResultSet("cachefile1"));
 		cur.cacheOff();
@@ -1168,8 +1163,7 @@ class freetds extends sqlrtest {
 
 		// individual substitutions
 		System.out.println("INDIVIDUAL SUBSTITUTIONS: ");
-		cur.prepareQuery("select $(var1),'$(var2)',"+
-			"$(var3)");
+		cur.prepareQuery("select $(var1),'$(var2)',$(var3)");
 		cur.substitution("var1",1);
 		cur.substitution("var2","hello");
 		cur.substitution("var3",10.5556,6,4);
@@ -1182,24 +1176,21 @@ class freetds extends sqlrtest {
 
 		// array substitutions
 		System.out.println("ARRAY SUBSTITUTIONS: ");
-		cur.prepareQuery("select $(var1),"+
-			"$(var2),$(var3)");
+		cur.prepareQuery("select $(var1),$(var2),$(var3)");
 		cur.substitutions(subvars,subvallongs);
 		assertTrue(cur.executeQuery());
 		assertEquals(cur.getField(0,0),"1");
 		assertEquals(cur.getField(0,1),"2");
 		assertEquals(cur.getField(0,2),"3");
 		System.out.println();
-		cur.prepareQuery("select '$(var1)',"+
-			"'$(var2)','$(var3)'");
+		cur.prepareQuery("select '$(var1)','$(var2)','$(var3)'");
 		cur.substitutions(subvars,subvalstrings);
 		assertTrue(cur.executeQuery());
 		assertEquals(cur.getField(0,0),"hi");
 		assertEquals(cur.getField(0,1),"hello");
 		assertEquals(cur.getField(0,2),"bye");
 		System.out.println();
-		cur.prepareQuery("select $(var1),"+
-			"$(var2),$(var3)");
+		cur.prepareQuery("select $(var1),$(var2),$(var3)");
 		cur.substitutions(subvars,subvaldoubles,precs,scales);
 		assertTrue(cur.executeQuery());
 		assertEquals(cur.getField(0,0),"10.55");
@@ -1275,8 +1266,7 @@ class freetds extends sqlrtest {
 			"	testclob text, "+
 			"	testblob image) "+
 			"lock datarows");
-		cur.prepareQuery("insert into testtable "+
-			"values (?,?)");
+		cur.prepareQuery("insert into testtable values (?,?)");
 		for (int i=0; i<LARGE_BUFFER_LENGTH; i++) {
 			largebuffer[i]='C';
 		}
@@ -1423,10 +1413,8 @@ class freetds extends sqlrtest {
 		for (int i=0; i<LARGE_BUFFER_LENGTH; i++) {
 			largebuffer[i]='C';
 		}
-		String	query="create procedure testproc "+
-			"@bindval varchar("+
-			LARGE_BUFFER_LENGTH+") output as "+
-			"set @bindval='"+
+		String	query="create procedure testproc @bindval varchar("+
+			LARGE_BUFFER_LENGTH+") output as set @bindval='"+
 			new String(largebuffer)+"'";
 		assertTrue(cur.sendQuery(query));
 		cur.prepareQuery("exec testproc");
@@ -1444,14 +1432,11 @@ class freetds extends sqlrtest {
 		// negative input bind
 		System.out.println("NEGATIVE INPUT BIND: ");
 		cur.sendQuery("drop table testtable");
-		cur.sendQuery("create table testtable "+
-			"(testval int)");
-		cur.prepareQuery("insert into testtable "+
-			"values (@testval)");
+		cur.sendQuery("create table testtable (testval int)");
+		cur.prepareQuery("insert into testtable values (@testval)");
 		cur.inputBind("testval",-1);
 		assertTrue(cur.executeQuery());
-		cur.sendQuery("select testval "+
-			"from testtable");
+		cur.sendQuery("select testval from testtable");
 		assertEquals(cur.getField(0,"testval"),"-1");
 		assertTrue(cur.sendQuery("drop table testtable"));
 		System.out.println();
@@ -1548,8 +1533,7 @@ class freetds extends sqlrtest {
 
 		// stored procedure returning no value
 		// FreeTDS needs to support cursors for this to work
-		/*System.out.println("STORED PROCEDURE "+
-			"RETURNING NO VALUE: ");
+		/*System.out.println("STORED PROCEDURE RETURNING NO VALUE: ");
 		cur.sendQuery("drop procedure testproc");
 		assertTrue(cur.sendQuery("create procedure testproc "+
 			"	@in1 int, "+
@@ -1594,16 +1578,12 @@ class freetds extends sqlrtest {
 		/*System.out.println("STORED PROCEDURE "+
 			"RETURNING MULTIPLE VALUES: ");
 		cur.sendQuery("drop procedure testproc");
-		assertTrue(cur.sendQuery("create procedure testproc "+
-			"@in1 int, "+
-			"       @in2 float, "+
-			"       @in3 varchar(20), "+
-			"       @out1 int output, "+
-			"       @out2 float output, "+
+		assertTrue(cur.sendQuery("create procedure testproc @in1 int, "+
+			"       @in2 float,        @in3 varchar(20), "+
+			"       @out1 int output,        @out2 float output, "+
 			"       @out3 varchar(20) "+
 			"		output as "+
-			"select @out1=@in1, "+
-			"       @out2=@in2, "+
+			"select @out1=@in1,        @out2=@in2, "+
 			"       @out3=@in3"));
 		cur.prepareQuery("exec testproc");
 		cur.inputBind("in1",1);
@@ -1622,48 +1602,30 @@ class freetds extends sqlrtest {
 
 
 		// stored procedure returning result set
-		System.out.println("STORED PROCEDURE "+
-			"RETURNING RESULT SET: ");
-		cur.sendQuery("drop procedure "+
-			"testselectproc");
-		assertTrue(cur.sendQuery("create procedure "+
-			"testselectproc as "+
-			"       select 1 "+
-			"       union "+
-			"       select 2 "+
-			"       union "+
-			"       select 3 "+
-			"       union "+
-			"       select 4 "+
-			"       union "+
-			"       select 5 "+
-			"       union "+
-			"       select 6 "+
-			"       union "+
-			"       select 7 "+
-			"       union "+
-			"       select 8"));
+		System.out.println("STORED PROCEDURE RETURNING RESULT SET: ");
+		cur.sendQuery("drop procedure testselectproc");
+		assertTrue(cur.sendQuery("create procedure testselectproc as "+
+			"       select 1        union        select 2 "+
+			"       union        select 3        union "+
+			"       select 4        union        select 5 "+
+			"       union        select 6        union "+
+			"       select 7        union        select 8"));
 		assertTrue(cur.sendQuery("exec testselectproc"));
 		assertEquals(cur.rowCount(),8);
-		assertTrue(cur.sendQuery("drop procedure "+
-			"testselectproc"));
+		assertTrue(cur.sendQuery("drop procedure testselectproc"));
 		System.out.println();
 
 
 		// temporary tables
 		System.out.println("TEMPORARY TABLES: ");
 		cur.sendQuery("drop table #temptable");
-		cur.sendQuery("create table #temptable "+
-			"(col1 int)");
-		assertTrue(cur.sendQuery("insert into #temptable "+
-			"values (1)"));
-		assertTrue(cur.sendQuery("select count(*) "+
-			"from #temptable"));
+		cur.sendQuery("create table #temptable (col1 int)");
+		assertTrue(cur.sendQuery("insert into #temptable values (1)"));
+		assertTrue(cur.sendQuery("select count(*) from #temptable"));
 		assertEquals(cur.getField(0,0),"1");
 		con.endSession();
 		System.out.println();
-		assertFalse(cur.sendQuery("select count(*) "+
-			"from #temptable"));
+		assertFalse(cur.sendQuery("select count(*) from #temptable"));
 		System.out.println();
 
 
@@ -1677,15 +1639,13 @@ class freetds extends sqlrtest {
 			buffer[i]=(byte)i;
 		}
 		StringBuilder	query=new StringBuilder();
-		query.append("insert into testtable "+
-			"values (0x");
+		query.append("insert into testtable values (0x");
 		for (int i=0; i<buffer.length; i++) {
 			query.append(String.format("%02x",buffer[i]&0xff));
 		}
 		query.append(")");
 		assertTrue(cur.sendQuery(query.toString()));
-		assertTrue(cur.sendQuery("select col1 "+
-			"from testtable"));
+		assertTrue(cur.sendQuery("select col1 from testtable"));
 		assertEquals(cur.getFieldLength(0,0),buffer.length);
 		assertEquals(cur.getFieldAsByteArray(0,0),new String(buffer,
 			java.nio.charset.StandardCharsets.ISO_8859_1),
@@ -1701,8 +1661,7 @@ class freetds extends sqlrtest {
 			"(col1 varchar(4))"));
 		assertTrue(cur.sendQuery("insert into testtable "+
 			"values ('''''')"));
-		assertTrue(cur.sendQuery("select col1 "+
-			"from testtable"));
+		assertTrue(cur.sendQuery("select col1 from testtable"));
 		assertEquals(cur.getFieldLength(0,0),2);
 		assertEquals(cur.getField(0,0),"''");
 		assertTrue(cur.sendQuery("drop table testtable"));
@@ -1745,8 +1704,7 @@ class freetds extends sqlrtest {
 		// names of schemas that have at least
 		// one database object in them, so to be
 		// sure that there is one, we'll create a table
-		assertTrue(cur.sendQuery("create table testtable "+
-			"(col1 int)"));
+		assertTrue(cur.sendQuery("create table testtable (col1 int)"));
 		assertTrue(cur.getSchemaList(null));
 		assertEquals(cur.getColumnName(0),"Database");
 		assertTrue(cur.rowCount()>0);
@@ -1914,8 +1872,7 @@ class freetds extends sqlrtest {
 
 
 		// column list - auto_increment, primary key
-		System.out.println("COLUMN LIST - "+
-			"auto_increment, "+
+		System.out.println("COLUMN LIST - auto_increment, "+
 			"primary key: ");
 		cur.sendQuery("drop table testtable");
 		assertTrue(cur.sendQuery("create table testtable ("+

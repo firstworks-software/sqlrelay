@@ -708,8 +708,7 @@ class sqlite extends sqlrtest {
 		assertEquals(secondcur.getField(0,0),"9");
 		secondcur.delete();
 		secondcon.delete();
-		assertTrue(cur.sendQuery("drop table if exists "+
-			"testtable"));
+		assertTrue(cur.sendQuery("drop table if exists testtable"));
 		System.out.println();
 
 
@@ -802,8 +801,7 @@ class sqlite extends sqlrtest {
 		assertEquals(cur.getField(0,0),"1");
 		assertEquals(cur.getField(0,1),"");
 		assertEquals(cur.getField(0,2),"");
-		assertTrue(cur.sendQuery("drop table if exists "+
-			"testtable"));
+		assertTrue(cur.sendQuery("drop table if exists testtable"));
 		System.out.println();
 
 
@@ -890,14 +888,11 @@ class sqlite extends sqlrtest {
 		// negative input bind
 		System.out.println("NEGATIVE INPUT BIND: ");
 		cur.sendQuery("drop table testtable");
-		cur.sendQuery("create table testtable "+
-			"(testval int)");
-		cur.prepareQuery("insert into testtable "+
-			"values (:testval)");
+		cur.sendQuery("create table testtable (testval int)");
+		cur.prepareQuery("insert into testtable values (:testval)");
 		cur.inputBind("testval",-1);
 		assertTrue(cur.executeQuery());
-		cur.sendQuery("select testval "+
-			"from testtable");
+		cur.sendQuery("select testval from testtable");
 		assertEquals(cur.getField(0,"testval"),"-1");
 		assertTrue(cur.sendQuery("drop table testtable"));
 		System.out.println();
@@ -1002,36 +997,28 @@ class sqlite extends sqlrtest {
 
 		// temporary tables
 		System.out.println("TEMPORARY TABLES: ");
-		cur.sendQuery("drop table if exists "+
-			"temptable\n");
-		cur.sendQuery("create temporary table "+
-			"temptable (col1 int)");
-		assertTrue(cur.sendQuery("insert into temptable "+
-			"values (1)"));
-		assertTrue(cur.sendQuery("select count(*) "+
-			"from temptable"));
+		cur.sendQuery("drop table if exists temptable\n");
+		cur.sendQuery("create temporary table temptable (col1 int)");
+		assertTrue(cur.sendQuery("insert into temptable values (1)"));
+		assertTrue(cur.sendQuery("select count(*) from temptable"));
 		assertEquals(cur.getField(0,0),"1");
 		con.endSession();
 		System.out.println();
-		assertFalse(cur.sendQuery("select count(*) "+
-			"from temptable"));
-		assertTrue(cur.sendQuery("drop table if exists "+
-			"temptable\n"));
+		assertFalse(cur.sendQuery("select count(*) from temptable"));
+		assertTrue(cur.sendQuery("drop table if exists temptable\n"));
 		System.out.println();
 
 
 		// encoded binary data
 		System.out.println("ENCODED BINARY DATA: ");
 		cur.sendQuery("drop table testtable");
-		assertTrue(cur.sendQuery("create table testtable "+
-			"(col1 blob)"));
+		assertTrue(cur.sendQuery("create table testtable (col1 blob)"));
 		byte[] buffer=new byte[256];
 		for (int i=0; i<256; i++) {
 			buffer[i]=(byte)i;
 		}
 		StringBuilder querystr=new StringBuilder();
-		querystr.append("insert into testtable "+
-			"values (X'");
+		querystr.append("insert into testtable values (X'");
 		for (int i=0; i<buffer.length; i++) {
 			querystr.append(String.format("%02x",buffer[i]&0xff));
 		}
@@ -1112,14 +1099,10 @@ class sqlite extends sqlrtest {
 
 		// table list
 		System.out.println("TABLE LIST: ");
-		cur.sendQuery("drop table if exists "+
-			"testtable1");
-		cur.sendQuery("drop table if exists "+
-			"testtable2");
-		cur.sendQuery("drop table if exists "+
-			"testtable3");
-		cur.sendQuery("drop table if exists "+
-			"testtable4");
+		cur.sendQuery("drop table if exists testtable1");
+		cur.sendQuery("drop table if exists testtable2");
+		cur.sendQuery("drop table if exists testtable3");
+		cur.sendQuery("drop table if exists testtable4");
 		assertTrue(cur.sendQuery("create table testtable1 ("+
 			"	col1 int, "+
 			"	col2 int)"));
@@ -1143,14 +1126,10 @@ class sqlite extends sqlrtest {
 			}
 		}
 		assertEquals(counter,4);
-		assertTrue(cur.sendQuery("drop table if exists "+
-			"testtable1"));
-		assertTrue(cur.sendQuery("drop table if exists "+
-			"testtable2"));
-		assertTrue(cur.sendQuery("drop table if exists "+
-			"testtable3"));
-		assertTrue(cur.sendQuery("drop table if exists "+
-			"testtable4"));
+		assertTrue(cur.sendQuery("drop table if exists testtable1"));
+		assertTrue(cur.sendQuery("drop table if exists testtable2"));
+		assertTrue(cur.sendQuery("drop table if exists testtable3"));
+		assertTrue(cur.sendQuery("drop table if exists testtable4"));
 		System.out.println();
 
 
@@ -1200,8 +1179,7 @@ class sqlite extends sqlrtest {
 
 		// column list
 		System.out.println("COLUMN LIST: ");
-		cur.sendQuery("drop table if exists "+
-			"testtable");
+		cur.sendQuery("drop table if exists testtable");
 		assertTrue(cur.sendQuery("create table testtable ("+
 			"	testint int, "+
 			"	testfloat float, "+
@@ -1232,20 +1210,17 @@ class sqlite extends sqlrtest {
 		assertEquals(cur.getField(3,"data_type"),"VARCHAR");
 		assertEquals(cur.getField(4,"data_type"),"CLOB");
 		assertEquals(cur.getField(5,"data_type"),"BLOB");
-		assertTrue(cur.sendQuery("drop table if exists "+
-			"testtable"));
+		assertTrue(cur.sendQuery("drop table if exists testtable"));
 		System.out.println();
 
 
 		// column list - auto_increment, primary key
 		System.out.println("COLUMN LIST - auto_increment, primary "+
 					"key: ");
-		cur.sendQuery("drop table if exists "+
-			"testtable");
+		cur.sendQuery("drop table if exists testtable");
 		assertTrue(cur.sendQuery("create table testtable ("+
 			"	col1 integer "+
-			"primary key "+
-			"autoincrement, "+
+			"primary key autoincrement, "+
 			"	col2 int)"));
 		assertTrue(cur.getColumnList("testtable",null));
 		String extra0=cur.getField(0,"extra");
@@ -1257,8 +1232,7 @@ class sqlite extends sqlrtest {
 		String colkey1=cur.getField(1,"column_key");
 		assertFalse(colkey1!=null &&colkey1.contains("PRI"));
 		System.out.println();
-		assertTrue(cur.sendQuery("drop table if exists "+
-			"testtable"));
+		assertTrue(cur.sendQuery("drop table if exists testtable"));
 		assertTrue(cur.sendQuery("create table testtable ("+
 			"	col1 int primary key, "+
 			"	col2 int)"));
@@ -1267,15 +1241,13 @@ class sqlite extends sqlrtest {
 		assertFalse(extra0!=null &&extra0.contains("auto_increment"));
 		colkey0=cur.getField(0,"column_key");
 		assertTrue(colkey0!=null &&colkey0.contains("PRI"));
-		assertTrue(cur.sendQuery("drop table if exists "+
-			"testtable"));
+		assertTrue(cur.sendQuery("drop table if exists testtable"));
 		System.out.println();
 
 
 		// primary keys list
 		System.out.println("PRIMARY KEYS LIST: ");
-		cur.sendQuery("drop table if exists "+
-			"testtable");
+		cur.sendQuery("drop table if exists testtable");
 		assertTrue(cur.sendQuery("create table testtable ("+
 			"	col1 int primary key, "+
 			"	col2 int)"));
@@ -1297,15 +1269,13 @@ class sqlite extends sqlrtest {
 		assertEquals(cur.getField(0,"table"),"testtable");
 		assertEquals(cur.getField(0,"seq_in_index"),"1");
 		assertEquals(cur.getField(0,"column_name"),"col1");
-		assertTrue(cur.sendQuery("drop table if exists "+
-			"testtable"));
+		assertTrue(cur.sendQuery("drop table if exists testtable"));
 		System.out.println();
 
 
 		// key and index list
 		System.out.println("KEY AND INDEX LIST: ");
-		cur.sendQuery("drop table if exists "+
-			"testtable");
+		cur.sendQuery("drop table if exists testtable");
 		assertTrue(cur.sendQuery("create table testtable ("+
 			"	col1 int primary key, "+
 			"	col2 int)"));
@@ -1332,8 +1302,7 @@ class sqlite extends sqlrtest {
 		assertEquals(cur.getField(0,"index_type"),"3");
 		String keyname=cur.getField(0,"key_name");
 		assertTrue(keyname!=null &&!keyname.isEmpty());
-		assertTrue(cur.sendQuery("drop table if exists "+
-			"testtable"));
+		assertTrue(cur.sendQuery("drop table if exists testtable"));
 		System.out.println();
 
 
