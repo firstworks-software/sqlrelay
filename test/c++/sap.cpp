@@ -1263,7 +1263,7 @@ int main(int argc, char **argv) {
 
 
 	// long output bind
-	stdoutput.printf("LONG OUTPUT BIND\n");
+	stdoutput.printf("LONG OUTPUT BIND: \n");
 	cur->sendQuery("drop procedure testproc");
 	for (int i=0; i<LARGE_BUFFER_LENGTH; i++) {
 		largebuffer[i]='C';
@@ -1285,7 +1285,7 @@ int main(int argc, char **argv) {
 
 
 	// negative input bind
-	stdoutput.printf("NEGATIVE INPUT BIND\n");
+	stdoutput.printf("NEGATIVE INPUT BIND: \n");
 	cur->sendQuery("drop table testtable");
 	cur->sendQuery("create table testtable (testval int)");
 	cur->prepareQuery("insert into testtable values (@testval)");

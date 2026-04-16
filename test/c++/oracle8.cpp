@@ -1065,7 +1065,7 @@ int main(int argc, char **argv) {
 
 
 	// long output bind
-	stdoutput.printf("LONG OUTPUT BIND\n");
+	stdoutput.printf("LONG OUTPUT BIND: \n");
 	for (int i=0; i<LARGE_BUFFER_LENGTH; i++) {
 		largebuffer[i]='C';
 	}

@@ -1538,7 +1538,7 @@ for (uint16_t a=0; a<50; a++) {
 
 
 	// negative input bind
-	stdoutput.printf("NEGATIVE INPUT BIND\n");
+	stdoutput.printf("NEGATIVE INPUT BIND: \n");
 	cur->sendQuery("drop table testtable");
 	cur->sendQuery("create table testtable (testval int)");
 	cur->prepareQuery("insert into testtable values (?)");

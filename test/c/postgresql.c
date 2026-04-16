@@ -1652,7 +1652,7 @@ int main(int argc, char **argv) {
 
 
 	// negative input bind
-	printf("NEGATIVE INPUT BIND\n");
+	printf("NEGATIVE INPUT BIND: \n");
 	sqlrcur_sendQuery(cur,
 			"drop table testtable");
 	sqlrcur_sendQuery(cur,

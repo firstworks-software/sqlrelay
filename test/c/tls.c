@@ -1683,7 +1683,7 @@ int main(int argc, char **argv) {
 
 
 	// long output bind
-	printf("LONG OUTPUT BIND\n");
+	printf("LONG OUTPUT BIND: \n");
 	for (i=0; i<LARGE_BUFFER_LENGTH; i++) {
 		largebuffer[i]='C';
 	}
@@ -1707,7 +1707,7 @@ int main(int argc, char **argv) {
 
 
 	// negative input bind
-	printf("NEGATIVE INPUT BIND\n");
+	printf("NEGATIVE INPUT BIND: \n");
 	sqlrcur_sendQuery(cur,
 		"drop table testtable");
 	sqlrcur_sendQuery(cur,

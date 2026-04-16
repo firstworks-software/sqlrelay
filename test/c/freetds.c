@@ -2234,7 +2234,7 @@ int main(int argc, char **argv) {
 	// FreeTDS needs to support cursors
 	// for this to work
 	#if 0
-	printf("LONG OUTPUT BIND\n");
+	printf("LONG OUTPUT BIND: \n");
 	sqlrcur_sendQuery(cur,
 		"drop procedure testproc");
 	for (j=0; j<LARGE_BUFFER_LENGTH; j++) {
@@ -2273,7 +2273,7 @@ int main(int argc, char **argv) {
 
 
 	// negative input bind
-	printf("NEGATIVE INPUT BIND\n");
+	printf("NEGATIVE INPUT BIND: \n");
 	sqlrcur_sendQuery(cur,
 		"drop table testtable");
 	sqlrcur_sendQuery(cur,
