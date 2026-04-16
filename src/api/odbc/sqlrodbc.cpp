@@ -4675,7 +4675,7 @@ static void SQLR_ParseDate(DATE_STRUCT *ds, const char *value) {
 	}
 
 	// parse
-	datetime::parse(value,ddmm,yyyyddmm,"/-:",&year,&month,&day,
+	datetime::parse(value,ddmm,yyyyddmm,"/-:",true,&year,&month,&day,
 				&hour,&minute,&second,&usec,&isnegative);
 
 	// copy data out
@@ -4928,7 +4928,7 @@ static SQLRETURN SQLR_SQLGetData(SQLHSTMT statementhandle,
 			if (targetvalue) {
 				*((SQLSMALLINT *)targetvalue)=
 					(SQLSMALLINT)
-						charstring::convertToInteger(field);
+					charstring::convertToInteger(field);
 				debugPrintf("  value: %d\n",
 						*((SQLSMALLINT *)targetvalue));
 			}
@@ -4938,7 +4938,7 @@ static SQLRETURN SQLR_SQLGetData(SQLHSTMT statementhandle,
 			if (targetvalue) {
 				*((SQLUSMALLINT *)targetvalue)=
 					(SQLUSMALLINT)
-						charstring::convertToInteger(field);
+					charstring::convertToInteger(field);
 				debugPrintf("  value: %d\n",
 						*((SQLUSMALLINT *)targetvalue));
 			}
@@ -4949,7 +4949,7 @@ static SQLRETURN SQLR_SQLGetData(SQLHSTMT statementhandle,
 			if (targetvalue) {
 				*((SQLINTEGER *)targetvalue)=
 					(SQLINTEGER)
-						charstring::convertToInteger(field);
+					charstring::convertToInteger(field);
 				debugPrintf("  value: %ld\n",
 						*((SQLINTEGER *)targetvalue));
 			}
@@ -4961,7 +4961,7 @@ static SQLRETURN SQLR_SQLGetData(SQLHSTMT statementhandle,
 			if (targetvalue) {
 				*((SQLUINTEGER *)targetvalue)=
 					(SQLUINTEGER)
-						charstring::convertToInteger(field);
+					charstring::convertToInteger(field);
 				debugPrintf("  value: %ld\n",
 						*((SQLUINTEGER *)targetvalue));
 			}
@@ -4970,7 +4970,8 @@ static SQLRETURN SQLR_SQLGetData(SQLHSTMT statementhandle,
 			debugPrintf("  targettype: SQL_C_FLOAT\n");
 			if (targetvalue) {
 				*((SQLREAL *)targetvalue)=
-					(SQLREAL)charstring::convertToFloatC(field);
+					(SQLREAL)
+					charstring::convertToFloatC(field);
 				debugPrintf("  value: %f\n",
 						*((SQLREAL *)targetvalue));
 			}
@@ -4979,7 +4980,8 @@ static SQLRETURN SQLR_SQLGetData(SQLHSTMT statementhandle,
 			debugPrintf("  targettype: SQL_C_DOUBLE\n");
 			if (targetvalue) {
 				*((SQLDOUBLE *)targetvalue)=
-					(SQLDOUBLE)charstring::convertToFloatC(field);
+					(SQLDOUBLE)
+					charstring::convertToFloatC(field);
 				debugPrintf("  value: %f\n",
 						*((SQLDOUBLE *)targetvalue));
 			}
@@ -4988,8 +4990,8 @@ static SQLRETURN SQLR_SQLGetData(SQLHSTMT statementhandle,
 			debugPrintf("  targettype: SQL_C_BIT\n");
 			if (targetvalue) {
 				((byte_t *)targetvalue)[0]=
-					(charstring::contains("YyTt",field) ||
-					charstring::convertToInteger(field))?'1':'0';
+				(charstring::contains("YyTt",field) ||
+				charstring::convertToInteger(field))?'1':'0';
 				debugPrintf("  value: %c\n",
 					*((byte_t *)targetvalue));
 			}

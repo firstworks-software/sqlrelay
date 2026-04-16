@@ -729,7 +729,7 @@ int main(int argc, char **argv) {
 	SQLINTEGER	numval;
 	SQLCHAR		charfield[41];
 	SQLCHAR		varcharfield[41];
-	SQLCHAR		datefield[64];
+	SQL_DATE_STRUCT	datefield;
 	SQLCHAR		longfield[256];
 	SQLCHAR		clobfield[256];
 	SQLCHAR		blobfield[256];
@@ -750,8 +750,8 @@ int main(int argc, char **argv) {
 	erg=SQLBindCol(stmt,3,SQL_C_CHAR,
 			varcharfield,sizeof(varcharfield),&varcharind);
 	assertSuccessStmt(stmt,erg);
-	erg=SQLBindCol(stmt,4,SQL_C_CHAR,
-			datefield,sizeof(datefield),&dateind);
+	erg=SQLBindCol(stmt,4,SQL_C_TYPE_DATE,
+			&datefield,sizeof(datefield),&dateind);
 	assertSuccessStmt(stmt,erg);
 	erg=SQLBindCol(stmt,5,SQL_C_CHAR,
 			longfield,sizeof(longfield),&longind);
@@ -773,15 +773,10 @@ int main(int argc, char **argv) {
 			"testchar1                               ");
 	assertEqualStmt(stmt,(int)varcharind,12);
 	assertEqualStmt(stmt,(const char *)varcharfield,"testvarchar1");
-	if (issqlrelay) {
-		assertEqualStmt(stmt,(int)dateind,9);
-		assertEqualStmt(stmt,
-			(const char *)datefield,"01-JAN-01");
-	} else {
-		assertEqualStmt(stmt,(int)dateind,19);
-		assertEqualStmt(stmt,
-			(const char *)datefield,"2001-01-01 00:00:00");
-	}
+	assertEqualStmt(stmt,(int)dateind,(int)sizeof(SQL_DATE_STRUCT));
+	assertEqualStmt(stmt,(int)datefield.year,2001);
+	assertEqualStmt(stmt,(int)datefield.month,1);
+	assertEqualStmt(stmt,(int)datefield.day,1);
 	assertEqualStmt(stmt,(int)longind,9);
 	assertEqualStmt(stmt,(const char *)longfield,"testlong1");
 	assertEqualStmt(stmt,(int)clobind,9);
@@ -798,15 +793,10 @@ int main(int argc, char **argv) {
 			"testchar2                               ");
 	assertEqualStmt(stmt,(int)varcharind,12);
 	assertEqualStmt(stmt,(const char *)varcharfield,"testvarchar2");
-	if (issqlrelay) {
-		assertEqualStmt(stmt,(int)dateind,9);
-		assertEqualStmt(stmt,
-			(const char *)datefield,"01-JAN-02");
-	} else {
-		assertEqualStmt(stmt,(int)dateind,19);
-		assertEqualStmt(stmt,
-			(const char *)datefield,"2002-01-01 00:00:00");
-	}
+	assertEqualStmt(stmt,(int)dateind,(int)sizeof(SQL_DATE_STRUCT));
+	assertEqualStmt(stmt,(int)datefield.year,2002);
+	assertEqualStmt(stmt,(int)datefield.month,1);
+	assertEqualStmt(stmt,(int)datefield.day,1);
 	assertEqualStmt(stmt,(int)longind,9);
 	assertEqualStmt(stmt,(const char *)longfield,"testlong2");
 	if (issqlrelay) {
@@ -829,15 +819,10 @@ int main(int argc, char **argv) {
 			"testchar3                               ");
 	assertEqualStmt(stmt,(int)varcharind,12);
 	assertEqualStmt(stmt,(const char *)varcharfield,"testvarchar3");
-	if (issqlrelay) {
-		assertEqualStmt(stmt,(int)dateind,9);
-		assertEqualStmt(stmt,
-			(const char *)datefield,"01-JAN-03");
-	} else {
-		assertEqualStmt(stmt,(int)dateind,19);
-		assertEqualStmt(stmt,
-			(const char *)datefield,"2003-01-01 00:00:00");
-	}
+	assertEqualStmt(stmt,(int)dateind,(int)sizeof(SQL_DATE_STRUCT));
+	assertEqualStmt(stmt,(int)datefield.year,2003);
+	assertEqualStmt(stmt,(int)datefield.month,1);
+	assertEqualStmt(stmt,(int)datefield.day,1);
 	assertEqualStmt(stmt,(int)longind,9);
 	assertEqualStmt(stmt,(const char *)longfield,"testlong3");
 	if (issqlrelay) {
@@ -860,15 +845,10 @@ int main(int argc, char **argv) {
 			"testchar4                               ");
 	assertEqualStmt(stmt,(int)varcharind,12);
 	assertEqualStmt(stmt,(const char *)varcharfield,"testvarchar4");
-	if (issqlrelay) {
-		assertEqualStmt(stmt,(int)dateind,9);
-		assertEqualStmt(stmt,
-			(const char *)datefield,"01-JAN-04");
-	} else {
-		assertEqualStmt(stmt,(int)dateind,19);
-		assertEqualStmt(stmt,
-			(const char *)datefield,"2004-01-01 00:00:00");
-	}
+	assertEqualStmt(stmt,(int)dateind,(int)sizeof(SQL_DATE_STRUCT));
+	assertEqualStmt(stmt,(int)datefield.year,2004);
+	assertEqualStmt(stmt,(int)datefield.month,1);
+	assertEqualStmt(stmt,(int)datefield.day,1);
 	assertEqualStmt(stmt,(int)longind,9);
 	assertEqualStmt(stmt,(const char *)longfield,"testlong4");
 	if (issqlrelay) {
@@ -891,15 +871,10 @@ int main(int argc, char **argv) {
 			"testchar5                               ");
 	assertEqualStmt(stmt,(int)varcharind,12);
 	assertEqualStmt(stmt,(const char *)varcharfield,"testvarchar5");
-	if (issqlrelay) {
-		assertEqualStmt(stmt,(int)dateind,9);
-		assertEqualStmt(stmt,
-			(const char *)datefield,"01-JAN-05");
-	} else {
-		assertEqualStmt(stmt,(int)dateind,19);
-		assertEqualStmt(stmt,
-			(const char *)datefield,"2005-01-01 00:00:00");
-	}
+	assertEqualStmt(stmt,(int)dateind,(int)sizeof(SQL_DATE_STRUCT));
+	assertEqualStmt(stmt,(int)datefield.year,2005);
+	assertEqualStmt(stmt,(int)datefield.month,1);
+	assertEqualStmt(stmt,(int)datefield.day,1);
 	assertEqualStmt(stmt,(int)longind,9);
 	assertEqualStmt(stmt,(const char *)longfield,"testlong5");
 	if (issqlrelay) {
@@ -922,15 +897,10 @@ int main(int argc, char **argv) {
 			"testchar6                               ");
 	assertEqualStmt(stmt,(int)varcharind,12);
 	assertEqualStmt(stmt,(const char *)varcharfield,"testvarchar6");
-	if (issqlrelay) {
-		assertEqualStmt(stmt,(int)dateind,9);
-		assertEqualStmt(stmt,
-			(const char *)datefield,"01-JAN-06");
-	} else {
-		assertEqualStmt(stmt,(int)dateind,19);
-		assertEqualStmt(stmt,
-			(const char *)datefield,"2006-01-01 00:00:00");
-	}
+	assertEqualStmt(stmt,(int)dateind,(int)sizeof(SQL_DATE_STRUCT));
+	assertEqualStmt(stmt,(int)datefield.year,2006);
+	assertEqualStmt(stmt,(int)datefield.month,1);
+	assertEqualStmt(stmt,(int)datefield.day,1);
 	assertEqualStmt(stmt,(int)longind,9);
 	assertEqualStmt(stmt,(const char *)longfield,"testlong6");
 	if (issqlrelay) {
@@ -953,15 +923,10 @@ int main(int argc, char **argv) {
 			"testchar7                               ");
 	assertEqualStmt(stmt,(int)varcharind,12);
 	assertEqualStmt(stmt,(const char *)varcharfield,"testvarchar7");
-	if (issqlrelay) {
-		assertEqualStmt(stmt,(int)dateind,9);
-		assertEqualStmt(stmt,
-			(const char *)datefield,"01-JAN-07");
-	} else {
-		assertEqualStmt(stmt,(int)dateind,19);
-		assertEqualStmt(stmt,
-			(const char *)datefield,"2007-01-01 00:00:00");
-	}
+	assertEqualStmt(stmt,(int)dateind,(int)sizeof(SQL_DATE_STRUCT));
+	assertEqualStmt(stmt,(int)datefield.year,2007);
+	assertEqualStmt(stmt,(int)datefield.month,1);
+	assertEqualStmt(stmt,(int)datefield.day,1);
 	assertEqualStmt(stmt,(int)longind,9);
 	assertEqualStmt(stmt,(const char *)longfield,"testlong7");
 	if (issqlrelay) {
@@ -984,15 +949,10 @@ int main(int argc, char **argv) {
 			"testchar8                               ");
 	assertEqualStmt(stmt,(int)varcharind,12);
 	assertEqualStmt(stmt,(const char *)varcharfield,"testvarchar8");
-	if (issqlrelay) {
-		assertEqualStmt(stmt,(int)dateind,9);
-		assertEqualStmt(stmt,
-			(const char *)datefield,"01-JAN-08");
-	} else {
-		assertEqualStmt(stmt,(int)dateind,19);
-		assertEqualStmt(stmt,
-			(const char *)datefield,"2008-01-01 00:00:00");
-	}
+	assertEqualStmt(stmt,(int)dateind,(int)sizeof(SQL_DATE_STRUCT));
+	assertEqualStmt(stmt,(int)datefield.year,2008);
+	assertEqualStmt(stmt,(int)datefield.month,1);
+	assertEqualStmt(stmt,(int)datefield.day,1);
 	assertEqualStmt(stmt,(int)longind,9);
 	assertEqualStmt(stmt,(const char *)longfield,"testlong8");
 	if (issqlrelay) {
