@@ -50,6 +50,8 @@
 	fixed a potential crash in the jni getRow() implementation
 	java api was binding NULLs for empty strings, fixed that
 	ODBC driver handles short years correctly now, when parsing dates
+	fixed a bug that caused queries including binary data to be truncated
+		at the first \0 in various languages (perl, python, etc.)
 
 2.1.1 - added tns_admin support
 	fixed sqlr-start ... -strace ...
