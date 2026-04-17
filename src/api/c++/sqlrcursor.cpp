@@ -1306,7 +1306,7 @@ void sqlrcursor::prepareQuery(const char *query, uint32_t length) {
 	pvt->_querylen=length;
 	if (pvt->_copyrefs) {
 		initQueryBuffer(pvt->_querylen);
-		charstring::copy(pvt->_querybuffer,query,pvt->_querylen);
+		bytestring::copy(pvt->_querybuffer,query,pvt->_querylen);
 		pvt->_querybuffer[pvt->_querylen]='\0';
 	} else {
 		pvt->_queryptr=query;

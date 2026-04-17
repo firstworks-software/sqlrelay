@@ -1,7 +1,6 @@
 // Copyright (c) David Muse
 // See the file COPYING for more information.
 
-#include "../../config.h"
 #include <sqlrelay/sqlrclientwrapper.h>
 #include <string.h>
 #include <stdlib.h>
@@ -57,6 +56,18 @@ int main(int argc, char **argv) {
 	// identify
 	printf("IDENTIFY: \n");
 	assertEqStr(sqlrcon_identify(con),"sqlite");
+	printf("\n");
+
+
+	// db version
+	printf("DB VERSION: \n");
+	const char	*dbversion=sqlrcon_dbVersion(con);
+	int		issqlite3=1;
+	if (!dbversion ||
+		!strcmp(dbversion,"unknown") ||
+		atoi(dbversion)<3) {
+		issqlite3=0;
+	}
 	printf("\n");
 
 
@@ -258,33 +269,33 @@ int main(int argc, char **argv) {
 
 	// column types
 	printf("COLUMN TYPES: \n");
-	#ifdef HAVE_SQLITE3_STMT
-	assertEqStr(sqlrcur_getColumnTypeByIndex(cur,0),"INTEGER");
-	assertEqStr(sqlrcur_getColumnTypeByName(cur,"testint"),"INTEGER");
-	assertEqStr(sqlrcur_getColumnTypeByIndex(cur,1),"FLOAT");
-	assertEqStr(sqlrcur_getColumnTypeByName(cur,"testfloat"),"FLOAT");
-	assertEqStr(sqlrcur_getColumnTypeByIndex(cur,2),"STRING");
-	assertEqStr(sqlrcur_getColumnTypeByName(cur,"testchar"),"STRING");
-	assertEqStr(sqlrcur_getColumnTypeByIndex(cur,3),"STRING");
-	assertEqStr(sqlrcur_getColumnTypeByName(cur,"testvarchar"),"STRING");
-	assertEqStr(sqlrcur_getColumnTypeByIndex(cur,4),"STRING");
-	assertEqStr(sqlrcur_getColumnTypeByName(cur,"testclob"),"STRING");
-	assertEqStr(sqlrcur_getColumnTypeByIndex(cur,5),"STRING");
-	assertEqStr(sqlrcur_getColumnTypeByName(cur,"testblob"),"STRING");
-	#else
-	assertEqStr(sqlrcur_getColumnTypeByIndex(cur,0),"UNKNOWN");
-	assertEqStr(sqlrcur_getColumnTypeByName(cur,"testint"),"UNKNOWN");
-	assertEqStr(sqlrcur_getColumnTypeByIndex(cur,1),"UNKNOWN");
-	assertEqStr(sqlrcur_getColumnTypeByName(cur,"testfloat"),"UNKNOWN");
-	assertEqStr(sqlrcur_getColumnTypeByIndex(cur,2),"UNKNOWN");
-	assertEqStr(sqlrcur_getColumnTypeByName(cur,"testchar"),"UNKNOWN");
-	assertEqStr(sqlrcur_getColumnTypeByIndex(cur,3),"UNKNOWN");
-	assertEqStr(sqlrcur_getColumnTypeByName(cur,"testvarchar"),"UNKNOWN");
-	assertEqStr(sqlrcur_getColumnTypeByIndex(cur,4),"UNKNOWN");
-	assertEqStr(sqlrcur_getColumnTypeByName(cur,"testclob"),"UNKNOWN");
-	assertEqStr(sqlrcur_getColumnTypeByIndex(cur,5),"UNKNOWN");
-	assertEqStr(sqlrcur_getColumnTypeByName(cur,"testblob"),"UNKNOWN");
-	#endif
+	if (issqlite3) {
+		assertEqStr(sqlrcur_getColumnTypeByIndex(cur,0),"INTEGER");
+		assertEqStr(sqlrcur_getColumnTypeByName(cur,"testint"),"INTEGER");
+		assertEqStr(sqlrcur_getColumnTypeByIndex(cur,1),"FLOAT");
+		assertEqStr(sqlrcur_getColumnTypeByName(cur,"testfloat"),"FLOAT");
+		assertEqStr(sqlrcur_getColumnTypeByIndex(cur,2),"STRING");
+		assertEqStr(sqlrcur_getColumnTypeByName(cur,"testchar"),"STRING");
+		assertEqStr(sqlrcur_getColumnTypeByIndex(cur,3),"STRING");
+		assertEqStr(sqlrcur_getColumnTypeByName(cur,"testvarchar"),"STRING");
+		assertEqStr(sqlrcur_getColumnTypeByIndex(cur,4),"STRING");
+		assertEqStr(sqlrcur_getColumnTypeByName(cur,"testclob"),"STRING");
+		assertEqStr(sqlrcur_getColumnTypeByIndex(cur,5),"STRING");
+		assertEqStr(sqlrcur_getColumnTypeByName(cur,"testblob"),"STRING");
+	} else {
+		assertEqStr(sqlrcur_getColumnTypeByIndex(cur,0),"UNKNOWN");
+		assertEqStr(sqlrcur_getColumnTypeByName(cur,"testint"),"UNKNOWN");
+		assertEqStr(sqlrcur_getColumnTypeByIndex(cur,1),"UNKNOWN");
+		assertEqStr(sqlrcur_getColumnTypeByName(cur,"testfloat"),"UNKNOWN");
+		assertEqStr(sqlrcur_getColumnTypeByIndex(cur,2),"UNKNOWN");
+		assertEqStr(sqlrcur_getColumnTypeByName(cur,"testchar"),"UNKNOWN");
+		assertEqStr(sqlrcur_getColumnTypeByIndex(cur,3),"UNKNOWN");
+		assertEqStr(sqlrcur_getColumnTypeByName(cur,"testvarchar"),"UNKNOWN");
+		assertEqStr(sqlrcur_getColumnTypeByIndex(cur,4),"UNKNOWN");
+		assertEqStr(sqlrcur_getColumnTypeByName(cur,"testclob"),"UNKNOWN");
+		assertEqStr(sqlrcur_getColumnTypeByIndex(cur,5),"UNKNOWN");
+		assertEqStr(sqlrcur_getColumnTypeByName(cur,"testblob"),"UNKNOWN");
+	}
 	printf("\n");
 
 
@@ -330,11 +341,7 @@ int main(int argc, char **argv) {
 
 	// total rows
 	printf("TOTAL ROWS: \n");
-	#ifdef HAVE_SQLITE3_STMT
-	assertEqInt(sqlrcur_totalRows(cur),0);
-	#else
-	assertEqInt(sqlrcur_totalRows(cur),8);
-	#endif
+	assertEqInt(sqlrcur_totalRows(cur),(issqlite3)?0:8);
 	printf("\n");
 
 
@@ -492,11 +499,8 @@ int main(int argc, char **argv) {
 		"order by testint"));
 	assertEqStr(sqlrcur_getColumnName(cur,0),"testint");
 	assertEqInt(sqlrcur_getColumnLengthByIndex(cur,0),0);
-	#ifdef HAVE_SQLITE3_STMT
-	assertEqStr(sqlrcur_getColumnTypeByIndex(cur,0),"INTEGER");
-	#else
-	assertEqStr(sqlrcur_getColumnTypeByIndex(cur,0),"UNKNOWN");
-	#endif
+	assertEqStr(sqlrcur_getColumnTypeByIndex(cur,0),
+				(issqlite3)?"INTEGER":"UNKNOWN");
 	printf("\n");
 
 

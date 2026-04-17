@@ -8,8 +8,6 @@
 #include <rudiments/randomnumber.h>
 #include <rudiments/stdio.h>
 
-#include "../../config.h"
-
 //#define PROFILING 1
 
 #ifdef PROFILING
@@ -68,9 +66,12 @@ for (uint16_t a=0; a<50; a++) {
 	assertEquals(con->identify(),"mysql");
 	stdoutput.printf("\n");
 
-	// get the db version
+
+	// db version
+	stdoutput.printf("DB VERSION: \n");
 	const char      *dbversion=con->dbVersion();
 	uint32_t        majorversion=dbversion[0]-'0';
+	stdoutput.printf("\n");
 
 
 	// ping
@@ -81,11 +82,11 @@ for (uint16_t a=0; a<50; a++) {
 
 	// bind format
 	stdoutput.printf("BIND FORMAT: \n");
-#ifdef HAVE_MYSQL_STMT_PREPARE
-	assertEquals(con->bindFormat(),"?");
-#else
-	assertEquals(con->bindFormat(),":*");
-#endif
+	if (majorversion>3) {
+		assertEquals(con->bindFormat(),"?");
+	} else {
+		assertEquals(con->bindFormat(),":*");
+	}
 	stdoutput.printf("\n");
 
 

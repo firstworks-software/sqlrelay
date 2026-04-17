@@ -43,9 +43,12 @@ class mysql extends sqlrtest {
 		assertEquals(con.identify(),"mysql");
 		System.out.println();
 
-		// get the db version
+
+		// db version
+		System.out.println("DB VERSION: ");
 		String	dbversion=con.dbVersion();
 		int	majorversion=dbversion.charAt(0)-'0';
+		System.out.println();
 
 
 		// ping
@@ -56,7 +59,11 @@ class mysql extends sqlrtest {
 
 		// bind format
 		System.out.println("BIND FORMAT: ");
-		assertEquals(con.bindFormat(),"?");
+		if (majorversion>3) {
+			assertEquals(con.bindFormat(),"?");
+		} else {
+			assertEquals(con.bindFormat(),":*");
+		}
 		System.out.println();
 
 

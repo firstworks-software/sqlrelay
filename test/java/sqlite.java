@@ -41,6 +41,20 @@ class sqlite extends sqlrtest {
 		System.out.println();
 
 
+		// db version
+		System.out.println("DB VERSION: ");
+		String	dbversion=con.dbVersion();
+		boolean	issqlite3=true;
+		if (dbversion==null ||
+			dbversion.equals("unknown") ||
+			dbversion.length()==0 ||
+			!Character.isDigit(dbversion.charAt(0)) ||
+			(dbversion.charAt(0)-'0')<3) {
+			issqlite3=false;
+		}
+		System.out.println();
+
+
 		// ping
 		System.out.println("PING: ");
 		assertTrue(con.ping());
@@ -248,18 +262,33 @@ class sqlite extends sqlrtest {
 
 		// column types
 		System.out.println("COLUMN TYPES: ");
-		assertEquals(cur.getColumnType(0),"INTEGER");
-		assertEquals(cur.getColumnType("testint"),"INTEGER");
-		assertEquals(cur.getColumnType(1),"FLOAT");
-		assertEquals(cur.getColumnType("testfloat"),"FLOAT");
-		assertEquals(cur.getColumnType(2),"STRING");
-		assertEquals(cur.getColumnType("testchar"),"STRING");
-		assertEquals(cur.getColumnType(3),"STRING");
-		assertEquals(cur.getColumnType("testvarchar"),"STRING");
-		assertEquals(cur.getColumnType(4),"STRING");
-		assertEquals(cur.getColumnType("testclob"),"STRING");
-		assertEquals(cur.getColumnType(5),"STRING");
-		assertEquals(cur.getColumnType("testblob"),"STRING");
+		if (issqlite3) {
+			assertEquals(cur.getColumnType(0),"INTEGER");
+			assertEquals(cur.getColumnType("testint"),"INTEGER");
+			assertEquals(cur.getColumnType(1),"FLOAT");
+			assertEquals(cur.getColumnType("testfloat"),"FLOAT");
+			assertEquals(cur.getColumnType(2),"STRING");
+			assertEquals(cur.getColumnType("testchar"),"STRING");
+			assertEquals(cur.getColumnType(3),"STRING");
+			assertEquals(cur.getColumnType("testvarchar"),"STRING");
+			assertEquals(cur.getColumnType(4),"STRING");
+			assertEquals(cur.getColumnType("testclob"),"STRING");
+			assertEquals(cur.getColumnType(5),"STRING");
+			assertEquals(cur.getColumnType("testblob"),"STRING");
+		} else {
+			assertEquals(cur.getColumnType(0),"UNKNOWN");
+			assertEquals(cur.getColumnType("testint"),"UNKNOWN");
+			assertEquals(cur.getColumnType(1),"UNKNOWN");
+			assertEquals(cur.getColumnType("testfloat"),"UNKNOWN");
+			assertEquals(cur.getColumnType(2),"UNKNOWN");
+			assertEquals(cur.getColumnType("testchar"),"UNKNOWN");
+			assertEquals(cur.getColumnType(3),"UNKNOWN");
+			assertEquals(cur.getColumnType("testvarchar"),"UNKNOWN");
+			assertEquals(cur.getColumnType(4),"UNKNOWN");
+			assertEquals(cur.getColumnType("testclob"),"UNKNOWN");
+			assertEquals(cur.getColumnType(5),"UNKNOWN");
+			assertEquals(cur.getColumnType("testblob"),"UNKNOWN");
+		}
 		System.out.println();
 
 
@@ -305,7 +334,7 @@ class sqlite extends sqlrtest {
 
 		// total rows
 		System.out.println("TOTAL ROWS: ");
-		assertEquals(cur.totalRows(),0);
+		assertEquals(cur.totalRows(),(issqlite3)?0:8);
 		System.out.println();
 
 
@@ -478,7 +507,8 @@ class sqlite extends sqlrtest {
 			"	testint "));
 		assertEquals(cur.getColumnName(0),"testint");
 		assertEquals(cur.getColumnLength(0),0);
-		assertEquals(cur.getColumnType(0),"INTEGER");
+		assertEquals(cur.getColumnType(0),
+				(issqlite3)?"INTEGER":"UNKNOWN");
 		System.out.println();
 
 

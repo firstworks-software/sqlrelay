@@ -10,8 +10,6 @@
 #include <stdint.h>
 #include <time.h>
 
-#include "../../config.h"
-
 #include "asserts.c"
 
 sqlrcon	con;
@@ -68,9 +66,12 @@ int main(int argc, char **argv) {
 	assertEqStr(sqlrcon_identify(con),"mysql");
 	printf("\n");
 
-	// get the db version
+
+	// db version
+	printf("DB VERSION: \n");
 	dbversion=sqlrcon_dbVersion(con);
 	majorversion=dbversion[0]-'0';
+	printf("\n");
 
 
 	// ping
@@ -81,11 +82,11 @@ int main(int argc, char **argv) {
 
 	// bind format
 	printf("BIND FORMAT: \n");
-#ifdef HAVE_MYSQL_STMT_PREPARE
-	assertEqStr(sqlrcon_bindFormat(con),"?");
-#else
-	assertEqStr(sqlrcon_bindFormat(con),":*");
-#endif
+	if (majorversion>3) {
+		assertEqStr(sqlrcon_bindFormat(con),"?");
+	} else {
+		assertEqStr(sqlrcon_bindFormat(con),":*");
+	}
 	printf("\n");
 
 

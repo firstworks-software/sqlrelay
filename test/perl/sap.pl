@@ -9,9 +9,15 @@ use SQLRelay::Cursor;
 require "./asserts.pl";
 
 
+@isolationlevels=("1","0","2","3");
+@subvars=("var1","var2","var3");
+@subvallongs=(1,2,3);
+@subvalstrings=("hi","hello","bye");
+@subvaldoubles=(10.55,10.556,10.5556);
+@precs=(4,5,6);
+@scales=(2,3,4);
 
-
-
+$LARGE_BUFFER_LENGTH=255;
 
 
 # instantiation
@@ -19,12 +25,10 @@ $con=SQLRelay::Connection->new("sqlrelay",9000,"/tmp/test.socket",
 						"testuser","testpassword",0,1);
 $cur=SQLRelay::Cursor->new($con);
 
-# get database type
-
 
 # identify
 print("IDENTIFY: \n");
-assertEqualString($con->identify(),"sap");
+assertEquals($con->identify(),"sap");
 print("\n");
 
 
@@ -34,24 +38,33 @@ assertTrue($con->ping());
 print("\n");
 
 
+# bind format
+print("BIND FORMAT: \n");
+assertEquals($con->bindFormat(),"\@*");
+print("\n");
+
+
+# nextval format
+print("NEXTVAL FORMAT: \n");
+assertEquals($con->nextvalFormat(),"%s.nextval");
+print("\n");
+
+
 # isolation levels
 print("ISOLATION LEVELS: \n");
-@isolationlevels=("1","0","2","3");
 foreach $il (@isolationlevels) {
 	assertTrue($con->setIsolationLevel($il));
-	assertEqualString($con->getIsolationLevel(),$il);
+	assertEquals($con->getIsolationLevel(),$il);
 	print("\n");
 }
 # reset to the default isolation level
 assertTrue($con->setIsolationLevel($isolationlevels[0]));
 print("\n");
 
-# drop existing table
+
+# create testtable
+print("CREATE TESTTABLE: \n");
 $cur->sendQuery("drop table testtable");
-
-
-# create temptable
-print("CREATE TEMPTABLE: \n");
 assertTrue($cur->sendQuery(
 	"create table testtable (".
 	"	testint int, ".
@@ -67,18 +80,14 @@ assertTrue($cur->sendQuery(
 	"	testsmalldatetime smalldatetime, ".
 	"	testchar char(40), ".
 	"	testvarchar varchar(40), ".
-	"	testbit bit)"));
-print("\n");
-
-
-# begin transaction
-print("BEGIN TRANSACTION: \n");
-#assertTrue($cur->sendQuery("begin tran"));
+	"	testbit bit, ".
+	"	testtext text) lock datarows"));
 print("\n");
 
 
 # insert
 print("INSERT: \n");
+assertTrue($con->begin());
 assertTrue($cur->sendQuery(
 	"insert into ".
 	"	testtable ".
@@ -96,18 +105,19 @@ assertTrue($cur->sendQuery(
 	"	'01-Jan-2001 01:00:00', ".
 	"	'testchar1', ".
 	"	'testvarchar1', ".
-	"	1)"));
+	"	1, ".
+	"	'testtext1')"));
 print("\n");
 
 
 # affected rows
 print("AFFECTED ROWS: \n");
-assertEqual($cur->affectedRows(),1);
+assertEquals($cur->affectedRows(),1);
 print("\n");
 
 
-# bind by position
-print("BIND BY POSITION: \n");
+# input bind by position
+print("INPUT BIND BY POSITION: \n");
 $cur->prepareQuery(
 	"insert into ".
 	"	testtable ".
@@ -125,8 +135,9 @@ $cur->prepareQuery(
 	"	\@var11, ".
 	"	\@var12, ".
 	"	\@var13, ".
-	"	\@var14)");
-assertEqual($cur->countBindVariables(),14);
+	"	\@var14, ".
+	"	\@var15)");
+assertEquals($cur->countBindVariables(),15);
 $cur->inputBind("1",2);
 $cur->inputBind("2",2);
 $cur->inputBind("3",2);
@@ -141,8 +152,8 @@ $cur->inputBind("11","01-Jan-2002 02:00:00");
 $cur->inputBind("12","testchar2");
 $cur->inputBind("13","testvarchar2");
 $cur->inputBind("14",1);
+$cur->inputBindClob("15","testtext2",9);
 assertTrue($cur->executeQuery());
-$con->debugOff();
 $cur->clearBinds();
 $cur->inputBind("1",3);
 $cur->inputBind("2",3);
@@ -158,26 +169,42 @@ $cur->inputBind("11","01-Jan-2003 03:00:00");
 $cur->inputBind("12","testchar3");
 $cur->inputBind("13","testvarchar3");
 $cur->inputBind("14",1);
+$cur->inputBindClob("15","testtext3",9);
 assertTrue($cur->executeQuery());
 print("\n");
 
 
-# array of binds by position
-print("ARRAY OF BINDS BY POSITION: \n");
+# array of input binds by position
+# sap doesn't support implicit conversion of string binds to other
+# data types, so arrays of binds don't generally work.
+# Omitting the test.
+
+
+# input bind by position with validation
+print("INPUT BIND BY POSITION WITH VALIDATION: \n");
 $cur->clearBinds();
-@vars=("1","2","3","4","5","6","7","8","9","10","11","12","13","14");
-@vals=(4,4,4,4.4,4.4,4.4,4.4,4.00,4.00,
-		"01-Jan-2004 04:00:00","01-Jan-2004 04:00:00",
-		"testchar4","testvarchar4",1);
-@precs=(0,0,0,2,2,2,2,3,3,0,0,0,0,0);
-@scales=(0,0,0,1,1,1,1,2,2,0,0,0,0,0);
-$cur->inputBinds(\@vars,\@vals,\@precs,\@scales);
+$cur->inputBind("1",4);
+$cur->inputBind("2",4);
+$cur->inputBind("3",4);
+$cur->inputBind("4",4.4,2,1);
+$cur->inputBind("5",4.4,2,1);
+$cur->inputBind("6",4.4,2,1);
+$cur->inputBind("7",4.4,2,1);
+$cur->inputBind("8",4.00,3,2);
+$cur->inputBind("9",4.00,3,2);
+$cur->inputBind("10","01-Jan-2004 04:00:00");
+$cur->inputBind("11","01-Jan-2004 04:00:00");
+$cur->inputBind("12","testchar4");
+$cur->inputBind("13","testvarchar4");
+$cur->inputBind("14",1);
+$cur->inputBindClob("15","testtext4",9);
+$cur->validateBinds();
 assertTrue($cur->executeQuery());
 print("\n");
 
 
-# bind by name
-print("BIND BY NAME: \n");
+# input bind by name
+print("INPUT BIND BY NAME: \n");
 $cur->clearBinds();
 $cur->inputBind("var1",5);
 $cur->inputBind("var2",5);
@@ -193,6 +220,7 @@ $cur->inputBind("var11","01-Jan-2005 05:00:00");
 $cur->inputBind("var12","testchar5");
 $cur->inputBind("var13","testvarchar5");
 $cur->inputBind("var14",1);
+$cur->inputBindClob("var15","testtext5",9);
 assertTrue($cur->executeQuery());
 $cur->clearBinds();
 $cur->inputBind("var1",6);
@@ -209,28 +237,36 @@ $cur->inputBind("var11","01-Jan-2006 06:00:00");
 $cur->inputBind("var12","testchar6");
 $cur->inputBind("var13","testvarchar6");
 $cur->inputBind("var14",1);
+$cur->inputBindClob("var15","testtext6",9);
 assertTrue($cur->executeQuery());
-print("\n");
-
-
-# array of binds by name
-print("ARRAY OF BINDS BY NAME: \n");
 $cur->clearBinds();
-@vars=("var1","var2","var3","var4","var5","var6",
-		"var7","var8","var9","var10","var11","var12",
-		"var13","var14");
-@vals=(7,7,7,7.7,7.7,7.7,7.7,7.00,7.00,
-		"01-Jan-2007 07:00:00","01-Jan-2007 07:00:00",
-		"testchar7","testvarchar7",1);
-@precs=(0,0,0,2,2,2,2,3,3,0,0,0,0,0);
-@scales=(0,0,0,1,1,1,1,2,2,0,0,0,0,0);
-$cur->inputBinds(\@vars,\@vals,\@precs,\@scales);
+$cur->inputBind("var1",7);
+$cur->inputBind("var2",7);
+$cur->inputBind("var3",7);
+$cur->inputBind("var4",7.7,2,1);
+$cur->inputBind("var5",7.7,2,1);
+$cur->inputBind("var6",7.7,2,1);
+$cur->inputBind("var7",7.7,2,1);
+$cur->inputBind("var8",7.00,3,2);
+$cur->inputBind("var9",7.00,3,2);
+$cur->inputBind("var10","01-Jan-2007 07:00:00");
+$cur->inputBind("var11","01-Jan-2007 07:00:00");
+$cur->inputBind("var12","testchar7");
+$cur->inputBind("var13","testvarchar7");
+$cur->inputBind("var14",1);
+$cur->inputBindClob("var15","testtext7",9);
 assertTrue($cur->executeQuery());
 print("\n");
 
 
-# bind by name with validation
-print("BIND BY NAME WITH VALIDATION: \n");
+# array of input binds by name
+# sap doesn't support implicit conversion of string binds to other
+# data types, so arrays of binds don't generally work.
+# Omitting the test.
+
+
+# input bind by name with validation
+print("INPUT BIND BY NAME WITH VALIDATION: \n");
 $cur->clearBinds();
 $cur->inputBind("var1",8);
 $cur->inputBind("var2",8);
@@ -246,7 +282,8 @@ $cur->inputBind("var11","01-Jan-2008 08:00:00");
 $cur->inputBind("var12","testchar8");
 $cur->inputBind("var13","testvarchar8");
 $cur->inputBind("var14",1);
-$cur->inputBind("var15","junkvalue");
+$cur->inputBindClob("var15","testtext8",9);
+$cur->inputBind("var16","junkvalue");
 $cur->validateBinds();
 assertTrue($cur->executeQuery());
 print("\n");
@@ -260,158 +297,158 @@ print("\n");
 
 # column count
 print("COLUMN COUNT: \n");
-assertEqual($cur->colCount(),14);
+assertEquals($cur->colCount(),15);
 print("\n");
 
 
 # column names
 print("COLUMN NAMES: \n");
-assertEqualString($cur->getColumnName(0),"testint");
-assertEqualString($cur->getColumnName(1),"testsmallint");
-assertEqualString($cur->getColumnName(2),"testtinyint");
-assertEqualString($cur->getColumnName(3),"testreal");
-assertEqualString($cur->getColumnName(4),"testfloat");
-assertEqualString($cur->getColumnName(5),"testdecimal");
-assertEqualString($cur->getColumnName(6),"testnumeric");
-assertEqualString($cur->getColumnName(7),"testmoney");
-assertEqualString($cur->getColumnName(8),"testsmallmoney");
-assertEqualString($cur->getColumnName(9),"testdatetime");
-assertEqualString($cur->getColumnName(10),"testsmalldatetime");
-assertEqualString($cur->getColumnName(11),"testchar");
-assertEqualString($cur->getColumnName(12),"testvarchar");
-assertEqualString($cur->getColumnName(13),"testbit");
+assertEquals($cur->getColumnName(0),"testint");
+assertEquals($cur->getColumnName(1),"testsmallint");
+assertEquals($cur->getColumnName(2),"testtinyint");
+assertEquals($cur->getColumnName(3),"testreal");
+assertEquals($cur->getColumnName(4),"testfloat");
+assertEquals($cur->getColumnName(5),"testdecimal");
+assertEquals($cur->getColumnName(6),"testnumeric");
+assertEquals($cur->getColumnName(7),"testmoney");
+assertEquals($cur->getColumnName(8),"testsmallmoney");
+assertEquals($cur->getColumnName(9),"testdatetime");
+assertEquals($cur->getColumnName(10),"testsmalldatetime");
+assertEquals($cur->getColumnName(11),"testchar");
+assertEquals($cur->getColumnName(12),"testvarchar");
+assertEquals($cur->getColumnName(13),"testbit");
 @cols=$cur->getColumnNames();
-assertEqualString($cols[0],"testint");
-assertEqualString($cols[1],"testsmallint");
-assertEqualString($cols[2],"testtinyint");
-assertEqualString($cols[3],"testreal");
-assertEqualString($cols[4],"testfloat");
-assertEqualString($cols[5],"testdecimal");
-assertEqualString($cols[6],"testnumeric");
-assertEqualString($cols[7],"testmoney");
-assertEqualString($cols[8],"testsmallmoney");
-assertEqualString($cols[9],"testdatetime");
-assertEqualString($cols[10],"testsmalldatetime");
-assertEqualString($cols[11],"testchar");
-assertEqualString($cols[12],"testvarchar");
-assertEqualString($cols[13],"testbit");
+assertEquals($cols[0],"testint");
+assertEquals($cols[1],"testsmallint");
+assertEquals($cols[2],"testtinyint");
+assertEquals($cols[3],"testreal");
+assertEquals($cols[4],"testfloat");
+assertEquals($cols[5],"testdecimal");
+assertEquals($cols[6],"testnumeric");
+assertEquals($cols[7],"testmoney");
+assertEquals($cols[8],"testsmallmoney");
+assertEquals($cols[9],"testdatetime");
+assertEquals($cols[10],"testsmalldatetime");
+assertEquals($cols[11],"testchar");
+assertEquals($cols[12],"testvarchar");
+assertEquals($cols[13],"testbit");
 print("\n");
 
 
 # column types
 print("COLUMN TYPES: \n");
-assertEqualString($cur->getColumnType(0),"INT");
-assertEqualString($cur->getColumnType('testint'),"INT");
-assertEqualString($cur->getColumnType(1),"SMALLINT");
-assertEqualString($cur->getColumnType('testsmallint'),"SMALLINT");
-assertEqualString($cur->getColumnType(2),"TINYINT");
-assertEqualString($cur->getColumnType('testtinyint'),"TINYINT");
-assertEqualString($cur->getColumnType(3),"REAL");
-assertEqualString($cur->getColumnType('testreal'),"REAL");
-assertEqualString($cur->getColumnType(4),"FLOAT");
-assertEqualString($cur->getColumnType('testfloat'),"FLOAT");
-assertEqualString($cur->getColumnType(5),"DECIMAL");
-assertEqualString($cur->getColumnType('testdecimal'),"DECIMAL");
-assertEqualString($cur->getColumnType(6),"NUMERIC");
-assertEqualString($cur->getColumnType('testnumeric'),"NUMERIC");
-assertEqualString($cur->getColumnType(7),"MONEY");
-assertEqualString($cur->getColumnType('testmoney'),"MONEY");
-assertEqualString($cur->getColumnType(8),"SMALLMONEY");
-assertEqualString($cur->getColumnType('testsmallmoney'),"SMALLMONEY");
-assertEqualString($cur->getColumnType(9),"DATETIME");
-assertEqualString($cur->getColumnType('testdatetime'),"DATETIME");
-assertEqualString($cur->getColumnType(10),"SMALLDATETIME");
-assertEqualString($cur->getColumnType('testsmalldatetime'),"SMALLDATETIME");
-assertEqualString($cur->getColumnType(11),"CHAR");
-assertEqualString($cur->getColumnType('testchar'),"CHAR");
-assertEqualString($cur->getColumnType(12),"CHAR");
-assertEqualString($cur->getColumnType('testvarchar'),"CHAR");
-assertEqualString($cur->getColumnType(13),"BIT");
-assertEqualString($cur->getColumnType('testbit'),"BIT");
+assertEquals($cur->getColumnType(0),"INT");
+assertEquals($cur->getColumnType("testint"),"INT");
+assertEquals($cur->getColumnType(1),"SMALLINT");
+assertEquals($cur->getColumnType("testsmallint"),"SMALLINT");
+assertEquals($cur->getColumnType(2),"TINYINT");
+assertEquals($cur->getColumnType("testtinyint"),"TINYINT");
+assertEquals($cur->getColumnType(3),"REAL");
+assertEquals($cur->getColumnType("testreal"),"REAL");
+assertEquals($cur->getColumnType(4),"FLOAT");
+assertEquals($cur->getColumnType("testfloat"),"FLOAT");
+assertEquals($cur->getColumnType(5),"DECIMAL");
+assertEquals($cur->getColumnType("testdecimal"),"DECIMAL");
+assertEquals($cur->getColumnType(6),"NUMERIC");
+assertEquals($cur->getColumnType("testnumeric"),"NUMERIC");
+assertEquals($cur->getColumnType(7),"MONEY");
+assertEquals($cur->getColumnType("testmoney"),"MONEY");
+assertEquals($cur->getColumnType(8),"SMALLMONEY");
+assertEquals($cur->getColumnType("testsmallmoney"),"SMALLMONEY");
+assertEquals($cur->getColumnType(9),"DATETIME");
+assertEquals($cur->getColumnType("testdatetime"),"DATETIME");
+assertEquals($cur->getColumnType(10),"SMALLDATETIME");
+assertEquals($cur->getColumnType("testsmalldatetime"),"SMALLDATETIME");
+assertEquals($cur->getColumnType(11),"CHAR");
+assertEquals($cur->getColumnType("testchar"),"CHAR");
+assertEquals($cur->getColumnType(12),"CHAR");
+assertEquals($cur->getColumnType("testvarchar"),"CHAR");
+assertEquals($cur->getColumnType(13),"BIT");
+assertEquals($cur->getColumnType("testbit"),"BIT");
 print("\n");
 
 
 # column length
 print("COLUMN LENGTH: \n");
-assertEqual($cur->getColumnLength(0),4);
-assertEqual($cur->getColumnLength('testint'),4);
-assertEqual($cur->getColumnLength(1),2);
-assertEqual($cur->getColumnLength('testsmallint'),2);
-assertEqual($cur->getColumnLength(2),1);
-assertEqual($cur->getColumnLength('testtinyint'),1);
-assertEqual($cur->getColumnLength(3),4);
-assertEqual($cur->getColumnLength('testreal'),4);
-assertEqual($cur->getColumnLength(4),8);
-assertEqual($cur->getColumnLength('testfloat'),8);
-assertEqual($cur->getColumnLength(5),35);
-assertEqual($cur->getColumnLength('testdecimal'),35);
-assertEqual($cur->getColumnLength(6),35);
-assertEqual($cur->getColumnLength('testnumeric'),35);
-assertEqual($cur->getColumnLength(7),8);
-assertEqual($cur->getColumnLength('testmoney'),8);
-assertEqual($cur->getColumnLength(8),4);
-assertEqual($cur->getColumnLength('testsmallmoney'),4);
-assertEqual($cur->getColumnLength(9),8);
-assertEqual($cur->getColumnLength('testdatetime'),8);
-assertEqual($cur->getColumnLength(10),4);
-assertEqual($cur->getColumnLength('testsmalldatetime'),4);
-assertEqual($cur->getColumnLength(11),40);
-assertEqual($cur->getColumnLength('testchar'),40);
-assertEqual($cur->getColumnLength(12),40);
-assertEqual($cur->getColumnLength('testvarchar'),40);
-assertEqual($cur->getColumnLength(13),1);
-assertEqual($cur->getColumnLength('testbit'),1);
+assertEquals($cur->getColumnLength(0),4);
+assertEquals($cur->getColumnLength("testint"),4);
+assertEquals($cur->getColumnLength(1),2);
+assertEquals($cur->getColumnLength("testsmallint"),2);
+assertEquals($cur->getColumnLength(2),1);
+assertEquals($cur->getColumnLength("testtinyint"),1);
+assertEquals($cur->getColumnLength(3),4);
+assertEquals($cur->getColumnLength("testreal"),4);
+assertEquals($cur->getColumnLength(4),8);
+assertEquals($cur->getColumnLength("testfloat"),8);
+assertEquals($cur->getColumnLength(5),35);
+assertEquals($cur->getColumnLength("testdecimal"),35);
+assertEquals($cur->getColumnLength(6),35);
+assertEquals($cur->getColumnLength("testnumeric"),35);
+assertEquals($cur->getColumnLength(7),8);
+assertEquals($cur->getColumnLength("testmoney"),8);
+assertEquals($cur->getColumnLength(8),4);
+assertEquals($cur->getColumnLength("testsmallmoney"),4);
+assertEquals($cur->getColumnLength(9),8);
+assertEquals($cur->getColumnLength("testdatetime"),8);
+assertEquals($cur->getColumnLength(10),4);
+assertEquals($cur->getColumnLength("testsmalldatetime"),4);
+assertEquals($cur->getColumnLength(11),40);
+assertEquals($cur->getColumnLength("testchar"),40);
+assertEquals($cur->getColumnLength(12),40);
+assertEquals($cur->getColumnLength("testvarchar"),40);
+assertEquals($cur->getColumnLength(13),1);
+assertEquals($cur->getColumnLength("testbit"),1);
 print("\n");
 
 
 # longest column
 print("LONGEST COLUMN: \n");
-assertEqual($cur->getLongest(0),1);
-assertEqual($cur->getLongest('testint'),1);
-assertEqual($cur->getLongest(1),1);
-assertEqual($cur->getLongest('testsmallint'),1);
-assertEqual($cur->getLongest(2),1);
-assertEqual($cur->getLongest('testtinyint'),1);
-assertEqual($cur->getLongest(3),18);
-assertEqual($cur->getLongest('testreal'),18);
-assertEqual($cur->getLongest(4),18);
-assertEqual($cur->getLongest('testfloat'),18);
-assertEqual($cur->getLongest(5),3);
-assertEqual($cur->getLongest('testdecimal'),3);
-assertEqual($cur->getLongest(6),3);
-assertEqual($cur->getLongest('testnumeric'),3);
-assertEqual($cur->getLongest(7),4);
-assertEqual($cur->getLongest('testmoney'),4);
-assertEqual($cur->getLongest(8),4);
-assertEqual($cur->getLongest('testsmallmoney'),4);
-assertEqual($cur->getLongest(9),19);
-assertEqual($cur->getLongest('testdatetime'),19);
-assertEqual($cur->getLongest(10),19);
-assertEqual($cur->getLongest('testsmalldatetime'),19);
-assertEqual($cur->getLongest(11),40);
-assertEqual($cur->getLongest('testchar'),40);
-assertEqual($cur->getLongest(12),12);
-assertEqual($cur->getLongest('testvarchar'),12);
-assertEqual($cur->getLongest(13),1);
-assertEqual($cur->getLongest('testbit'),1);
+assertEquals($cur->getLongest(0),1);
+assertEquals($cur->getLongest("testint"),1);
+assertEquals($cur->getLongest(1),1);
+assertEquals($cur->getLongest("testsmallint"),1);
+assertEquals($cur->getLongest(2),1);
+assertEquals($cur->getLongest("testtinyint"),1);
+assertEquals($cur->getLongest(3),18);
+assertEquals($cur->getLongest("testreal"),18);
+assertEquals($cur->getLongest(4),18);
+assertEquals($cur->getLongest("testfloat"),18);
+assertEquals($cur->getLongest(5),3);
+assertEquals($cur->getLongest("testdecimal"),3);
+assertEquals($cur->getLongest(6),3);
+assertEquals($cur->getLongest("testnumeric"),3);
+assertEquals($cur->getLongest(7),4);
+assertEquals($cur->getLongest("testmoney"),4);
+assertEquals($cur->getLongest(8),4);
+assertEquals($cur->getLongest("testsmallmoney"),4);
+assertEquals($cur->getLongest(9),19);
+assertEquals($cur->getLongest("testdatetime"),19);
+assertEquals($cur->getLongest(10),19);
+assertEquals($cur->getLongest("testsmalldatetime"),19);
+assertEquals($cur->getLongest(11),40);
+assertEquals($cur->getLongest("testchar"),40);
+assertEquals($cur->getLongest(12),12);
+assertEquals($cur->getLongest("testvarchar"),12);
+assertEquals($cur->getLongest(13),1);
+assertEquals($cur->getLongest("testbit"),1);
 print("\n");
 
 
 # row count
 print("ROW COUNT: \n");
-assertEqual($cur->rowCount(),8);
+assertEquals($cur->rowCount(),8);
 print("\n");
 
 
 # total rows
 print("TOTAL ROWS: \n");
-assertEqual($cur->totalRows(),0);
+assertEquals($cur->totalRows(),0);
 print("\n");
 
 
 # first row index
 print("FIRST ROW INDEX: \n");
-assertEqual($cur->firstRowIndex(),0);
+assertEquals($cur->firstRowIndex(),0);
 print("\n");
 
 
@@ -423,333 +460,208 @@ print("\n");
 
 # fields by index
 print("FIELDS BY INDEX: \n");
-assertEqualString($cur->getField(0,0),"1");
-assertEqualString($cur->getField(0,1),"1");
-assertEqualString($cur->getField(0,2),"1");
-#assertEqualString($cur->getField(0,3),"1.1");
-#assertEqualString($cur->getField(0,4),"1.1");
-assertEqualString($cur->getField(0,5),"1.1");
-assertEqualString($cur->getField(0,6),"1.1");
-assertEqualString($cur->getField(0,7),"1.00");
-assertEqualString($cur->getField(0,8),"1.00");
-assertEqualString($cur->getField(0,9),"Jan  1 2001  1:00AM");
-assertEqualString($cur->getField(0,10),"Jan  1 2001  1:00AM");
-assertEqualString($cur->getField(0,11),"testchar1                               ");
-assertEqualString($cur->getField(0,12),"testvarchar1");
-assertEqualString($cur->getField(0,13),"1");
+assertEquals($cur->getField(0,0),"1");
+assertEquals($cur->getField(0,1),"1");
+assertEquals($cur->getField(0,2),"1");
+#assertEquals($cur->getField(0,3),"1.1");
+#assertEquals($cur->getField(0,4),"1.1");
+assertEquals($cur->getField(0,5),"1.1");
+assertEquals($cur->getField(0,6),"1.1");
+assertEquals($cur->getField(0,7),"1.00");
+assertEquals($cur->getField(0,8),"1.00");
+assertEquals($cur->getField(0,9),"Jan  1 2001  1:00AM");
+assertEquals($cur->getField(0,10),"Jan  1 2001  1:00AM");
+assertEquals($cur->getField(0,11),"testchar1                               ");
+assertEquals($cur->getField(0,12),"testvarchar1");
+assertEquals($cur->getField(0,13),"1");
 print("\n");
-assertEqualString($cur->getField(7,0),"8");
-assertEqualString($cur->getField(7,1),"8");
-assertEqualString($cur->getField(7,2),"8");
-#assertEqualString($cur->getField(7,3),"8.8");
-#assertEqualString($cur->getField(7,4),"8.8");
-assertEqualString($cur->getField(7,5),"8.8");
-assertEqualString($cur->getField(7,6),"8.8");
-assertEqualString($cur->getField(7,7),"8.00");
-assertEqualString($cur->getField(7,8),"8.00");
-assertEqualString($cur->getField(7,9),"Jan  1 2008  8:00AM");
-assertEqualString($cur->getField(7,10),"Jan  1 2008  8:00AM");
-assertEqualString($cur->getField(7,11),"testchar8                               ");
-assertEqualString($cur->getField(7,12),"testvarchar8");
-assertEqualString($cur->getField(7,13),"1");
+assertEquals($cur->getField(7,0),"8");
+assertEquals($cur->getField(7,1),"8");
+assertEquals($cur->getField(7,2),"8");
+#assertEquals($cur->getField(7,3),"8.8");
+#assertEquals($cur->getField(7,4),"8.8");
+assertEquals($cur->getField(7,5),"8.8");
+assertEquals($cur->getField(7,6),"8.8");
+assertEquals($cur->getField(7,7),"8.00");
+assertEquals($cur->getField(7,8),"8.00");
+assertEquals($cur->getField(7,9),"Jan  1 2008  8:00AM");
+assertEquals($cur->getField(7,10),"Jan  1 2008  8:00AM");
+assertEquals($cur->getField(7,11),"testchar8                               ");
+assertEquals($cur->getField(7,12),"testvarchar8");
+assertEquals($cur->getField(7,13),"1");
 print("\n");
 
 
 # field lengths by index
 print("FIELD LENGTHS BY INDEX: \n");
-assertEqual($cur->getFieldLength(0,0),1);
-assertEqual($cur->getFieldLength(0,1),1);
-assertEqual($cur->getFieldLength(0,2),1);
-assertEqual($cur->getFieldLength(0,3),18);
-assertEqual($cur->getFieldLength(0,4),18);
-assertEqual($cur->getFieldLength(0,5),3);
-assertEqual($cur->getFieldLength(0,6),3);
-assertEqual($cur->getFieldLength(0,7),4);
-assertEqual($cur->getFieldLength(0,8),4);
-assertEqual($cur->getFieldLength(0,9),19);
-assertEqual($cur->getFieldLength(0,10),19);
-assertEqual($cur->getFieldLength(0,11),40);
-assertEqual($cur->getFieldLength(0,12),12);
-assertEqual($cur->getFieldLength(0,13),1);
+assertEquals($cur->getFieldLength(0,0),1);
+assertEquals($cur->getFieldLength(0,1),1);
+assertEquals($cur->getFieldLength(0,2),1);
+assertEquals($cur->getFieldLength(0,3),18);
+assertEquals($cur->getFieldLength(0,4),18);
+assertEquals($cur->getFieldLength(0,5),3);
+assertEquals($cur->getFieldLength(0,6),3);
+assertEquals($cur->getFieldLength(0,7),4);
+assertEquals($cur->getFieldLength(0,8),4);
+assertEquals($cur->getFieldLength(0,9),19);
+assertEquals($cur->getFieldLength(0,10),19);
+assertEquals($cur->getFieldLength(0,11),40);
+assertEquals($cur->getFieldLength(0,12),12);
+assertEquals($cur->getFieldLength(0,13),1);
 print("\n");
-assertEqual($cur->getFieldLength(7,0),1);
-assertEqual($cur->getFieldLength(7,1),1);
-assertEqual($cur->getFieldLength(7,2),1);
-assertEqual($cur->getFieldLength(7,3),18);
-assertEqual($cur->getFieldLength(7,4),18);
-assertEqual($cur->getFieldLength(7,5),3);
-assertEqual($cur->getFieldLength(7,6),3);
-assertEqual($cur->getFieldLength(7,7),4);
-assertEqual($cur->getFieldLength(7,8),4);
-assertEqual($cur->getFieldLength(7,9),19);
-assertEqual($cur->getFieldLength(7,10),19);
-assertEqual($cur->getFieldLength(7,11),40);
-assertEqual($cur->getFieldLength(7,12),12);
-assertEqual($cur->getFieldLength(7,13),1);
+assertEquals($cur->getFieldLength(7,0),1);
+assertEquals($cur->getFieldLength(7,1),1);
+assertEquals($cur->getFieldLength(7,2),1);
+assertEquals($cur->getFieldLength(7,3),18);
+assertEquals($cur->getFieldLength(7,4),18);
+assertEquals($cur->getFieldLength(7,5),3);
+assertEquals($cur->getFieldLength(7,6),3);
+assertEquals($cur->getFieldLength(7,7),4);
+assertEquals($cur->getFieldLength(7,8),4);
+assertEquals($cur->getFieldLength(7,9),19);
+assertEquals($cur->getFieldLength(7,10),19);
+assertEquals($cur->getFieldLength(7,11),40);
+assertEquals($cur->getFieldLength(7,12),12);
+assertEquals($cur->getFieldLength(7,13),1);
 print("\n");
 
 
 # fields by name
 print("FIELDS BY NAME: \n");
-assertEqualString($cur->getField(0,"testint"),"1");
-assertEqualString($cur->getField(0,"testsmallint"),"1");
-assertEqualString($cur->getField(0,"testtinyint"),"1");
-#assertEqualString($cur->getField(0,"testreal"),"1.1");
-#assertEqualString($cur->getField(0,"testfloat"),"1.1");
-assertEqualString($cur->getField(0,"testdecimal"),"1.1");
-assertEqualString($cur->getField(0,"testnumeric"),"1.1");
-assertEqualString($cur->getField(0,"testmoney"),"1.00");
-assertEqualString($cur->getField(0,"testsmallmoney"),"1.00");
-assertEqualString($cur->getField(0,"testdatetime"),"Jan  1 2001  1:00AM");
-assertEqualString($cur->getField(0,"testsmalldatetime"),"Jan  1 2001  1:00AM");
-assertEqualString($cur->getField(0,"testchar"),"testchar1                               ");
-assertEqualString($cur->getField(0,"testvarchar"),"testvarchar1");
-assertEqualString($cur->getField(0,"testbit"),"1");
+assertEquals($cur->getField(0,"testint"),"1");
+assertEquals($cur->getField(0,"testsmallint"),"1");
+assertEquals($cur->getField(0,"testtinyint"),"1");
+#assertEquals($cur->getField(0,"testreal"),"1.1");
+#assertEquals($cur->getField(0,"testfloat"),"1.1");
+assertEquals($cur->getField(0,"testdecimal"),"1.1");
+assertEquals($cur->getField(0,"testnumeric"),"1.1");
+assertEquals($cur->getField(0,"testmoney"),"1.00");
+assertEquals($cur->getField(0,"testsmallmoney"),"1.00");
+assertEquals($cur->getField(0,"testdatetime"),"Jan  1 2001  1:00AM");
+assertEquals($cur->getField(0,"testsmalldatetime"),"Jan  1 2001  1:00AM");
+assertEquals($cur->getField(0,"testchar"),"testchar1                               ");
+assertEquals($cur->getField(0,"testvarchar"),"testvarchar1");
+assertEquals($cur->getField(0,"testbit"),"1");
 print("\n");
-assertEqualString($cur->getField(7,"testint"),"8");
-assertEqualString($cur->getField(7,"testsmallint"),"8");
-assertEqualString($cur->getField(7,"testtinyint"),"8");
-#assertEqualString($cur->getField(7,"testreal"),"8.8");
-#assertEqualString($cur->getField(7,"testfloat"),"8.8");
-assertEqualString($cur->getField(7,"testdecimal"),"8.8");
-assertEqualString($cur->getField(7,"testnumeric"),"8.8");
-assertEqualString($cur->getField(7,"testmoney"),"8.00");
-assertEqualString($cur->getField(7,"testsmallmoney"),"8.00");
-assertEqualString($cur->getField(7,"testdatetime"),"Jan  1 2008  8:00AM");
-assertEqualString($cur->getField(7,"testsmalldatetime"),"Jan  1 2008  8:00AM");
-assertEqualString($cur->getField(7,"testchar"),"testchar8                               ");
-assertEqualString($cur->getField(7,"testvarchar"),"testvarchar8");
-assertEqualString($cur->getField(7,"testbit"),"1");
+assertEquals($cur->getField(7,"testint"),"8");
+assertEquals($cur->getField(7,"testsmallint"),"8");
+assertEquals($cur->getField(7,"testtinyint"),"8");
+#assertEquals($cur->getField(7,"testreal"),"8.8");
+#assertEquals($cur->getField(7,"testfloat"),"8.8");
+assertEquals($cur->getField(7,"testdecimal"),"8.8");
+assertEquals($cur->getField(7,"testnumeric"),"8.8");
+assertEquals($cur->getField(7,"testmoney"),"8.00");
+assertEquals($cur->getField(7,"testsmallmoney"),"8.00");
+assertEquals($cur->getField(7,"testdatetime"),"Jan  1 2008  8:00AM");
+assertEquals($cur->getField(7,"testsmalldatetime"),"Jan  1 2008  8:00AM");
+assertEquals($cur->getField(7,"testchar"),"testchar8                               ");
+assertEquals($cur->getField(7,"testvarchar"),"testvarchar8");
+assertEquals($cur->getField(7,"testbit"),"1");
 print("\n");
 
 
 # field lengths by name
 print("FIELD LENGTHS BY NAME: \n");
-assertEqual($cur->getFieldLength(0,"testint"),1);
-assertEqual($cur->getFieldLength(0,"testsmallint"),1);
-assertEqual($cur->getFieldLength(0,"testtinyint"),1);
-#assertEqual($cur->getFieldLength(0,"testreal"),3);
-#assertEqual($cur->getFieldLength(0,"testfloat"),3);
-assertEqual($cur->getFieldLength(0,"testdecimal"),3);
-assertEqual($cur->getFieldLength(0,"testnumeric"),3);
-assertEqual($cur->getFieldLength(0,"testmoney"),4);
-assertEqual($cur->getFieldLength(0,"testsmallmoney"),4);
-assertEqual($cur->getFieldLength(0,"testdatetime"),19);
-assertEqual($cur->getFieldLength(0,"testsmalldatetime"),19);
-assertEqual($cur->getFieldLength(0,"testchar"),40);
-assertEqual($cur->getFieldLength(0,"testvarchar"),12);
-assertEqual($cur->getFieldLength(0,"testbit"),1);
+assertEquals($cur->getFieldLength(0,"testint"),1);
+assertEquals($cur->getFieldLength(0,"testsmallint"),1);
+assertEquals($cur->getFieldLength(0,"testtinyint"),1);
+#assertEquals($cur->getFieldLength(0,"testreal"),3);
+#assertEquals($cur->getFieldLength(0,"testfloat"),3);
+assertEquals($cur->getFieldLength(0,"testdecimal"),3);
+assertEquals($cur->getFieldLength(0,"testnumeric"),3);
+assertEquals($cur->getFieldLength(0,"testmoney"),4);
+assertEquals($cur->getFieldLength(0,"testsmallmoney"),4);
+assertEquals($cur->getFieldLength(0,"testdatetime"),19);
+assertEquals($cur->getFieldLength(0,"testsmalldatetime"),19);
+assertEquals($cur->getFieldLength(0,"testchar"),40);
+assertEquals($cur->getFieldLength(0,"testvarchar"),12);
+assertEquals($cur->getFieldLength(0,"testbit"),1);
 print("\n");
-assertEqual($cur->getFieldLength(7,"testint"),1);
-assertEqual($cur->getFieldLength(7,"testsmallint"),1);
-assertEqual($cur->getFieldLength(7,"testtinyint"),1);
-#assertEqual($cur->getFieldLength(7,"testreal"),3);
-#assertEqual($cur->getFieldLength(7,"testfloat"),3);
-assertEqual($cur->getFieldLength(7,"testdecimal"),3);
-assertEqual($cur->getFieldLength(7,"testnumeric"),3);
-assertEqual($cur->getFieldLength(7,"testmoney"),4);
-assertEqual($cur->getFieldLength(7,"testsmallmoney"),4);
-assertEqual($cur->getFieldLength(7,"testdatetime"),19);
-assertEqual($cur->getFieldLength(7,"testsmalldatetime"),19);
-assertEqual($cur->getFieldLength(7,"testchar"),40);
-assertEqual($cur->getFieldLength(7,"testvarchar"),12);
-assertEqual($cur->getFieldLength(7,"testbit"),1);
+assertEquals($cur->getFieldLength(7,"testint"),1);
+assertEquals($cur->getFieldLength(7,"testsmallint"),1);
+assertEquals($cur->getFieldLength(7,"testtinyint"),1);
+#assertEquals($cur->getFieldLength(7,"testreal"),3);
+#assertEquals($cur->getFieldLength(7,"testfloat"),3);
+assertEquals($cur->getFieldLength(7,"testdecimal"),3);
+assertEquals($cur->getFieldLength(7,"testnumeric"),3);
+assertEquals($cur->getFieldLength(7,"testmoney"),4);
+assertEquals($cur->getFieldLength(7,"testsmallmoney"),4);
+assertEquals($cur->getFieldLength(7,"testdatetime"),19);
+assertEquals($cur->getFieldLength(7,"testsmalldatetime"),19);
+assertEquals($cur->getFieldLength(7,"testchar"),40);
+assertEquals($cur->getFieldLength(7,"testvarchar"),12);
+assertEquals($cur->getFieldLength(7,"testbit"),1);
 print("\n");
 
 
 # fields by array
 print("FIELDS BY ARRAY: \n");
 @fields=$cur->getRow(0);
-assertEqual($fields[0],1);
-assertEqual($fields[1],1);
-assertEqual($fields[2],1);
-#assertEqual($fields[3],1.1);
-#assertEqual($fields[4],1.1);
-assertEqual($fields[5],1.1);
-assertEqual($fields[6],1.1);
-assertEqual($fields[7],1.0);
-assertEqual($fields[8],1.0);
-assertEqualString($fields[9],"Jan  1 2001  1:00AM");
-assertEqualString($fields[10],"Jan  1 2001  1:00AM");
-assertEqualString($fields[11],"testchar1                               ");
-assertEqualString($fields[12],"testvarchar1");
-assertEqual($fields[13],1);
+assertEquals($fields[0],"1");
+assertEquals($fields[1],"1");
+assertEquals($fields[2],"1");
+#assertEquals($fields[3],"1.1");
+#assertEquals($fields[4],"1.1");
+assertEquals($fields[5],"1.1");
+assertEquals($fields[6],"1.1");
+assertEquals($fields[7],"1.00");
+assertEquals($fields[8],"1.00");
+assertEquals($fields[9],"Jan  1 2001  1:00AM");
+assertEquals($fields[10],"Jan  1 2001  1:00AM");
+assertEquals($fields[11],"testchar1                               ");
+assertEquals($fields[12],"testvarchar1");
+assertEquals($fields[13],"1");
 print("\n");
 
 
 # field lengths by array
 print("FIELD LENGTHS BY ARRAY: \n");
 @fieldlens=$cur->getRowLengths(0);
-assertEqual($fieldlens[0],1);
-assertEqual($fieldlens[1],1);
-assertEqual($fieldlens[2],1);
-#assertEqual($fieldlens[3],3);
-#assertEqual($fieldlens[4],3);
-assertEqual($fieldlens[5],3);
-assertEqual($fieldlens[6],3);
-assertEqual($fieldlens[7],4);
-assertEqual($fieldlens[8],4);
-assertEqual($fieldlens[9],19);
-assertEqual($fieldlens[10],19);
-assertEqual($fieldlens[11],40);
-assertEqual($fieldlens[12],12);
-assertEqual($fieldlens[13],1);
-print("\n");
-
-
-# fields by hash
-print("FIELDS BY HASH: \n");
-%fields=$cur->getRowHash(0);
-assertEqual($fields{"testint"},1);
-assertEqual($fields{"testsmallint"},1);
-assertEqual($fields{"testtinyint"},1);
-#assertEqual($fields{"testreal"},1.1);
-#assertEqual($fields{"testfloat"},1.1);
-assertEqual($fields{"testdecimal"},1.1);
-assertEqual($fields{"testnumeric"},1.1);
-assertEqual($fields{"testmoney"},1.0);
-assertEqual($fields{"testsmallmoney"},1.0);
-assertEqualString($fields{"testdatetime"},"Jan  1 2001  1:00AM");
-assertEqualString($fields{"testsmalldatetime"},"Jan  1 2001  1:00AM");
-assertEqualString($fields{"testchar"},"testchar1                               ");
-assertEqualString($fields{"testvarchar"},"testvarchar1");
-assertEqual($fields{"testbit"},1);
-print("\n");
-%fields=$cur->getRowHash(7);
-assertEqual($fields{"testint"},8);
-assertEqual($fields{"testsmallint"},8);
-assertEqual($fields{"testtinyint"},8);
-#assertEqual($fields{"testreal"},8.8);
-#assertEqual($fields{"testfloat"},8.8);
-assertEqual($fields{"testdecimal"},8.8);
-assertEqual($fields{"testnumeric"},8.8);
-assertEqual($fields{"testmoney"},8.0);
-assertEqual($fields{"testsmallmoney"},8.0);
-assertEqualString($fields{"testdatetime"},"Jan  1 2008  8:00AM");
-assertEqualString($fields{"testsmalldatetime"},"Jan  1 2008  8:00AM");
-assertEqualString($fields{"testchar"},"testchar8                               ");
-assertEqualString($fields{"testvarchar"},"testvarchar8");
-assertEqual($fields{"testbit"},1);
-print("\n");
-
-
-# field lengths by hash
-print("FIELD LENGTHS BY HASH: \n");
-%fieldlengths=$cur->getRowLengthsHash(0);
-assertEqual($fieldlengths{"testint"},1);
-assertEqual($fieldlengths{"testsmallint"},1);
-assertEqual($fieldlengths{"testtinyint"},1);
-#assertEqual($fieldlengths{"testreal"},3);
-#assertEqual($fieldlengths{"testfloat"},3);
-assertEqual($fieldlengths{"testdecimal"},3);
-assertEqual($fieldlengths{"testnumeric"},3);
-assertEqual($fieldlengths{"testmoney"},4);
-assertEqual($fieldlengths{"testsmallmoney"},4);
-assertEqual($fieldlengths{"testdatetime"},19);
-assertEqual($fieldlengths{"testsmalldatetime"},19);
-assertEqual($fieldlengths{"testchar"},40);
-assertEqual($fieldlengths{"testvarchar"},12);
-assertEqual($fieldlengths{"testbit"},1);
-print("\n");
-%fieldlengths=$cur->getRowLengthsHash(7);
-assertEqual($fieldlengths{"testsmallint"},1);
-assertEqual($fieldlengths{"testtinyint"},1);
-#assertEqual($fieldlengths{"testreal"},3);
-#assertEqual($fieldlengths{"testfloat"},3);
-assertEqual($fieldlengths{"testdecimal"},3);
-assertEqual($fieldlengths{"testnumeric"},3);
-assertEqual($fieldlengths{"testmoney"},4);
-assertEqual($fieldlengths{"testsmallmoney"},4);
-assertEqual($fieldlengths{"testdatetime"},19);
-assertEqual($fieldlengths{"testsmalldatetime"},19);
-assertEqual($fieldlengths{"testchar"},40);
-assertEqual($fieldlengths{"testvarchar"},12);
-assertEqual($fieldlengths{"testbit"},1);
-print("\n");
-
-
-# individual substitutions
-print("INDIVIDUAL SUBSTITUTIONS: \n");
-$cur->prepareQuery("select \$(var1),'\$(var2)',\$(var3)");
-$cur->substitution("var1",1);
-$cur->substitution("var2","hello");
-$cur->substitution("var3",10.5556,6,4);
-assertTrue($cur->executeQuery());
-print("\n");
-
-
-# fields
-print("FIELDS: \n");
-assertEqualString($cur->getField(0,0),"1");
-assertEqualString($cur->getField(0,1),"hello");
-assertEqualString($cur->getField(0,2),"10.5556");
-print("\n");
-
-
-# array substitutions
-print("ARRAY SUBSTITUTIONS: \n");
-$cur->prepareQuery("select \$(var1),'\$(var2)',\$(var3)");
-@vars=("var1","var2","var3");
-@vals=(1,"hello",10.5556);
-@precs=(0,0,6);
-@scales=(0,0,4);
-$cur->substitutions(\@vars,\@vals,\@precs,\@scales);
-assertTrue($cur->executeQuery());
-print("\n");
-
-
-# fields
-print("FIELDS: \n");
-assertEqualString($cur->getField(0,0),"1");
-assertEqualString($cur->getField(0,1),"hello");
-assertEqualString($cur->getField(0,2),"10.5556");
-print("\n");
-
-
-# nulls as undef
-print("NULLS AS UNDEF: \n");
-$cur->getNullsAsUndefined();
-assertTrue($cur->sendQuery("select NULL,1,NULL"));
-assertUndef($cur->getField(0,0));
-assertEqualString($cur->getField(0,1),"1");
-assertUndef($cur->getField(0,2));
-$cur->getNullsAsEmptyStrings();
-assertTrue($cur->sendQuery("select NULL,1,NULL"));
-assertEqualString($cur->getField(0,0),"");
-assertEqualString($cur->getField(0,1),"1");
-assertEqualString($cur->getField(0,2),"");
-$cur->getNullsAsUndefined();
+assertEquals($fieldlens[0],1);
+assertEquals($fieldlens[1],1);
+assertEquals($fieldlens[2],1);
+#assertEquals($fieldlens[3],3);
+#assertEquals($fieldlens[4],3);
+assertEquals($fieldlens[5],3);
+assertEquals($fieldlens[6],3);
+assertEquals($fieldlens[7],4);
+assertEquals($fieldlens[8],4);
+assertEquals($fieldlens[9],19);
+assertEquals($fieldlens[10],19);
+assertEquals($fieldlens[11],40);
+assertEquals($fieldlens[12],12);
+assertEquals($fieldlens[13],1);
 print("\n");
 
 
 # result set buffer size
 print("RESULT SET BUFFER SIZE: \n");
-assertEqual($cur->getResultSetBufferSize(),0);
+assertEquals($cur->getResultSetBufferSize(),0);
 $cur->setResultSetBufferSize(2);
 assertTrue($cur->sendQuery("select * from testtable order by testint"));
-assertEqual($cur->getResultSetBufferSize(),2);
+assertEquals($cur->getResultSetBufferSize(),2);
 print("\n");
-assertEqual($cur->firstRowIndex(),0);
+assertEquals($cur->firstRowIndex(),0);
 assertFalse($cur->endOfResultSet());
-assertEqual($cur->rowCount(),2);
-assertEqualString($cur->getField(0,0),"1");
-assertEqualString($cur->getField(1,0),"2");
-assertEqualString($cur->getField(2,0),"3");
+assertEquals($cur->rowCount(),2);
+assertEquals($cur->getField(0,0),"1");
+assertEquals($cur->getField(1,0),"2");
+assertEquals($cur->getField(2,0),"3");
 print("\n");
-assertEqual($cur->firstRowIndex(),2);
+assertEquals($cur->firstRowIndex(),2);
 assertFalse($cur->endOfResultSet());
-assertEqual($cur->rowCount(),4);
-assertEqualString($cur->getField(6,0),"7");
-assertEqualString($cur->getField(7,0),"8");
+assertEquals($cur->rowCount(),4);
+assertEquals($cur->getField(6,0),"7");
+assertEquals($cur->getField(7,0),"8");
 print("\n");
-assertEqual($cur->firstRowIndex(),6);
+assertEquals($cur->firstRowIndex(),6);
 assertFalse($cur->endOfResultSet());
-assertEqual($cur->rowCount(),8);
+assertEquals($cur->rowCount(),8);
 assertUndef($cur->getField(8,0));
 print("\n");
-assertEqual($cur->firstRowIndex(),8);
+assertEquals($cur->firstRowIndex(),8);
 assertTrue($cur->endOfResultSet());
-assertEqual($cur->rowCount(),8);
+assertEquals($cur->rowCount(),8);
 $cur->setResultSetBufferSize(0);
 print("\n");
 
@@ -759,13 +671,13 @@ print("DONT GET COLUMN INFO: \n");
 $cur->dontGetColumnInfo();
 assertTrue($cur->sendQuery("select * from testtable order by testint"));
 assertUndef($cur->getColumnName(0));
-assertEqual($cur->getColumnLength(0),0);
+assertEquals($cur->getColumnLength(0),0);
 assertUndef($cur->getColumnType(0));
 $cur->getColumnInfo();
 assertTrue($cur->sendQuery("select * from testtable order by testint"));
-assertEqualString($cur->getColumnName(0),"testint");
-assertEqual($cur->getColumnLength(0),4);
-assertEqualString($cur->getColumnType(0),"INT");
+assertEquals($cur->getColumnName(0),"testint");
+assertEquals($cur->getColumnLength(0),4);
+assertEquals($cur->getColumnType(0),"INT");
 print("\n");
 
 
@@ -778,14 +690,14 @@ $port=$con->getConnectionPort();
 $socket=$con->getConnectionSocket();
 assertTrue($con->resumeSession($port,$socket));
 print("\n");
-assertEqualString($cur->getField(0,0),"1");
-assertEqualString($cur->getField(1,0),"2");
-assertEqualString($cur->getField(2,0),"3");
-assertEqualString($cur->getField(3,0),"4");
-assertEqualString($cur->getField(4,0),"5");
-assertEqualString($cur->getField(5,0),"6");
-assertEqualString($cur->getField(6,0),"7");
-assertEqualString($cur->getField(7,0),"8");
+assertEquals($cur->getField(0,0),"1");
+assertEquals($cur->getField(1,0),"2");
+assertEquals($cur->getField(2,0),"3");
+assertEquals($cur->getField(3,0),"4");
+assertEquals($cur->getField(4,0),"5");
+assertEquals($cur->getField(5,0),"6");
+assertEquals($cur->getField(6,0),"7");
+assertEquals($cur->getField(7,0),"8");
 print("\n");
 assertTrue($cur->sendQuery("select * from testtable order by testint"));
 $cur->suspendResultSet();
@@ -793,14 +705,14 @@ assertTrue($con->suspendSession());
 $port=$con->getConnectionPort();
 $socket=$con->getConnectionSocket();
 assertTrue($con->resumeSession($port,$socket));
-assertEqualString($cur->getField(0,0),"1");
-assertEqualString($cur->getField(1,0),"2");
-assertEqualString($cur->getField(2,0),"3");
-assertEqualString($cur->getField(3,0),"4");
-assertEqualString($cur->getField(4,0),"5");
-assertEqualString($cur->getField(5,0),"6");
-assertEqualString($cur->getField(6,0),"7");
-assertEqualString($cur->getField(7,0),"8");
+assertEquals($cur->getField(0,0),"1");
+assertEquals($cur->getField(1,0),"2");
+assertEquals($cur->getField(2,0),"3");
+assertEquals($cur->getField(3,0),"4");
+assertEquals($cur->getField(4,0),"5");
+assertEquals($cur->getField(5,0),"6");
+assertEquals($cur->getField(6,0),"7");
+assertEquals($cur->getField(7,0),"8");
 print("\n");
 assertTrue($cur->sendQuery("select * from testtable order by testint"));
 $cur->suspendResultSet();
@@ -809,14 +721,14 @@ $port=$con->getConnectionPort();
 $socket=$con->getConnectionSocket();
 assertTrue($con->resumeSession($port,$socket));
 print("\n");
-assertEqualString($cur->getField(0,0),"1");
-assertEqualString($cur->getField(1,0),"2");
-assertEqualString($cur->getField(2,0),"3");
-assertEqualString($cur->getField(3,0),"4");
-assertEqualString($cur->getField(4,0),"5");
-assertEqualString($cur->getField(5,0),"6");
-assertEqualString($cur->getField(6,0),"7");
-assertEqualString($cur->getField(7,0),"8");
+assertEquals($cur->getField(0,0),"1");
+assertEquals($cur->getField(1,0),"2");
+assertEquals($cur->getField(2,0),"3");
+assertEquals($cur->getField(3,0),"4");
+assertEquals($cur->getField(4,0),"5");
+assertEquals($cur->getField(5,0),"6");
+assertEquals($cur->getField(6,0),"7");
+assertEquals($cur->getField(7,0),"8");
 print("\n");
 
 
@@ -824,7 +736,7 @@ print("\n");
 print("SUSPENDED RESULT SET: \n");
 $cur->setResultSetBufferSize(2);
 assertTrue($cur->sendQuery("select * from testtable order by testint"));
-assertEqualString($cur->getField(2,0),"3");
+assertEquals($cur->getField(2,0),"3");
 $id=$cur->getResultSetId();
 $cur->suspendResultSet();
 assertTrue($con->suspendSession());
@@ -833,19 +745,19 @@ $socket=$con->getConnectionSocket();
 assertTrue($con->resumeSession($port,$socket));
 assertTrue($cur->resumeResultSet($id));
 print("\n");
-assertEqual($cur->firstRowIndex(),4);
+assertEquals($cur->firstRowIndex(),4);
 assertFalse($cur->endOfResultSet());
-assertEqual($cur->rowCount(),6);
-assertEqualString($cur->getField(7,0),"8");
+assertEquals($cur->rowCount(),6);
+assertEquals($cur->getField(7,0),"8");
 print("\n");
-assertEqual($cur->firstRowIndex(),6);
+assertEquals($cur->firstRowIndex(),6);
 assertFalse($cur->endOfResultSet());
-assertEqual($cur->rowCount(),8);
+assertEquals($cur->rowCount(),8);
 assertUndef($cur->getField(8,0));
 print("\n");
-assertEqual($cur->firstRowIndex(),8);
+assertEquals($cur->firstRowIndex(),8);
 assertTrue($cur->endOfResultSet());
-assertEqual($cur->rowCount(),8);
+assertEquals($cur->rowCount(),8);
 $cur->setResultSetBufferSize(0);
 print("\n");
 
@@ -856,50 +768,50 @@ $cur->cacheToFile("cachefile1");
 $cur->setCacheTtl(200);
 assertTrue($cur->sendQuery("select * from testtable order by testint"));
 $filename=$cur->getCacheFileName();
-assertEqualString($filename,"cachefile1");
+assertEquals($filename,"cachefile1");
 $cur->cacheOff();
 assertTrue($cur->openCachedResultSet($filename));
-assertEqualString($cur->getField(7,0),"8");
+assertEquals($cur->getField(7,0),"8");
 print("\n");
 
 
 # column count for cached result set
 print("COLUMN COUNT FOR CACHED RESULT SET: \n");
-assertEqual($cur->colCount(),14);
+assertEquals($cur->colCount(),15);
 print("\n");
 
 
 # column names for cached result set
 print("COLUMN NAMES FOR CACHED RESULT SET: \n");
-assertEqualString($cur->getColumnName(0),"testint");
-assertEqualString($cur->getColumnName(1),"testsmallint");
-assertEqualString($cur->getColumnName(2),"testtinyint");
-assertEqualString($cur->getColumnName(3),"testreal");
-assertEqualString($cur->getColumnName(4),"testfloat");
-assertEqualString($cur->getColumnName(5),"testdecimal");
-assertEqualString($cur->getColumnName(6),"testnumeric");
-assertEqualString($cur->getColumnName(7),"testmoney");
-assertEqualString($cur->getColumnName(8),"testsmallmoney");
-assertEqualString($cur->getColumnName(9),"testdatetime");
-assertEqualString($cur->getColumnName(10),"testsmalldatetime");
-assertEqualString($cur->getColumnName(11),"testchar");
-assertEqualString($cur->getColumnName(12),"testvarchar");
-assertEqualString($cur->getColumnName(13),"testbit");
+assertEquals($cur->getColumnName(0),"testint");
+assertEquals($cur->getColumnName(1),"testsmallint");
+assertEquals($cur->getColumnName(2),"testtinyint");
+assertEquals($cur->getColumnName(3),"testreal");
+assertEquals($cur->getColumnName(4),"testfloat");
+assertEquals($cur->getColumnName(5),"testdecimal");
+assertEquals($cur->getColumnName(6),"testnumeric");
+assertEquals($cur->getColumnName(7),"testmoney");
+assertEquals($cur->getColumnName(8),"testsmallmoney");
+assertEquals($cur->getColumnName(9),"testdatetime");
+assertEquals($cur->getColumnName(10),"testsmalldatetime");
+assertEquals($cur->getColumnName(11),"testchar");
+assertEquals($cur->getColumnName(12),"testvarchar");
+assertEquals($cur->getColumnName(13),"testbit");
 @cols=$cur->getColumnNames();
-assertEqualString($cols[0],"testint");
-assertEqualString($cols[1],"testsmallint");
-assertEqualString($cols[2],"testtinyint");
-assertEqualString($cols[3],"testreal");
-assertEqualString($cols[4],"testfloat");
-assertEqualString($cols[5],"testdecimal");
-assertEqualString($cols[6],"testnumeric");
-assertEqualString($cols[7],"testmoney");
-assertEqualString($cols[8],"testsmallmoney");
-assertEqualString($cols[9],"testdatetime");
-assertEqualString($cols[10],"testsmalldatetime");
-assertEqualString($cols[11],"testchar");
-assertEqualString($cols[12],"testvarchar");
-assertEqualString($cols[13],"testbit");
+assertEquals($cols[0],"testint");
+assertEquals($cols[1],"testsmallint");
+assertEquals($cols[2],"testtinyint");
+assertEquals($cols[3],"testreal");
+assertEquals($cols[4],"testfloat");
+assertEquals($cols[5],"testdecimal");
+assertEquals($cols[6],"testnumeric");
+assertEquals($cols[7],"testmoney");
+assertEquals($cols[8],"testsmallmoney");
+assertEquals($cols[9],"testdatetime");
+assertEquals($cols[10],"testsmalldatetime");
+assertEquals($cols[11],"testchar");
+assertEquals($cols[12],"testvarchar");
+assertEquals($cols[13],"testbit");
 print("\n");
 
 
@@ -910,10 +822,10 @@ $cur->cacheToFile("cachefile1");
 $cur->setCacheTtl(200);
 assertTrue($cur->sendQuery("select * from testtable order by testint"));
 $filename=$cur->getCacheFileName();
-assertEqualString($filename,"cachefile1");
+assertEquals($filename,"cachefile1");
 $cur->cacheOff();
 assertTrue($cur->openCachedResultSet($filename));
-assertEqualString($cur->getField(7,0),"8");
+assertEquals($cur->getField(7,0),"8");
 assertUndef($cur->getField(8,0));
 $cur->setResultSetBufferSize(0);
 print("\n");
@@ -925,20 +837,20 @@ $cur->cacheToFile("cachefile2");
 assertTrue($cur->openCachedResultSet("cachefile1"));
 $cur->cacheOff();
 assertTrue($cur->openCachedResultSet("cachefile2"));
-assertEqualString($cur->getField(7,0),"8");
+assertEquals($cur->getField(7,0),"8");
 assertUndef($cur->getField(8,0));
 print("\n");
 
 
 # from one cache file to another with result set buffer size
 print("FROM ONE CACHE FILE TO ANOTHER ".
-	"WITH RESULT SET BUFFER SIZE: \n");
+			"WITH RESULT SET BUFFER SIZE: \n");
 $cur->setResultSetBufferSize(2);
 $cur->cacheToFile("cachefile2");
 assertTrue($cur->openCachedResultSet("cachefile1"));
 $cur->cacheOff();
 assertTrue($cur->openCachedResultSet("cachefile2"));
-assertEqualString($cur->getField(7,0),"8");
+assertEquals($cur->getField(7,0),"8");
 assertUndef($cur->getField(8,0));
 $cur->setResultSetBufferSize(0);
 print("\n");
@@ -946,14 +858,14 @@ print("\n");
 
 # cached result set with suspend and result set buffer size
 print("CACHED RESULT SET WITH SUSPEND ".
-	"AND RESULT SET BUFFER SIZE: \n");
+			"AND RESULT SET BUFFER SIZE: \n");
 $cur->setResultSetBufferSize(2);
 $cur->cacheToFile("cachefile1");
 $cur->setCacheTtl(200);
 assertTrue($cur->sendQuery("select * from testtable order by testint"));
-assertEqualString($cur->getField(2,0),"3");
+assertEquals($cur->getField(2,0),"3");
 $filename=$cur->getCacheFileName();
-assertEqualString($filename,"cachefile1");
+assertEquals($filename,"cachefile1");
 $id=$cur->getResultSetId();
 $cur->suspendResultSet();
 assertTrue($con->suspendSession());
@@ -963,23 +875,23 @@ print("\n");
 assertTrue($con->resumeSession($port,$socket));
 assertTrue($cur->resumeCachedResultSet($id,$filename));
 print("\n");
-assertEqual($cur->firstRowIndex(),4);
+assertEquals($cur->firstRowIndex(),4);
 assertFalse($cur->endOfResultSet());
-assertEqual($cur->rowCount(),6);
-assertEqualString($cur->getField(7,0),"8");
+assertEquals($cur->rowCount(),6);
+assertEquals($cur->getField(7,0),"8");
 print("\n");
-assertEqual($cur->firstRowIndex(),6);
+assertEquals($cur->firstRowIndex(),6);
 assertFalse($cur->endOfResultSet());
-assertEqual($cur->rowCount(),8);
+assertEquals($cur->rowCount(),8);
 assertUndef($cur->getField(8,0));
 print("\n");
-assertEqual($cur->firstRowIndex(),8);
+assertEquals($cur->firstRowIndex(),8);
 assertTrue($cur->endOfResultSet());
-assertEqual($cur->rowCount(),8);
+assertEquals($cur->rowCount(),8);
 $cur->cacheOff();
 print("\n");
 assertTrue($cur->openCachedResultSet($filename));
-assertEqualString($cur->getField(7,0),"8");
+assertEquals($cur->getField(7,0),"8");
 assertUndef($cur->getField(8,0));
 $cur->setResultSetBufferSize(0);
 print("\n");
@@ -988,10 +900,10 @@ print("\n");
 # finished suspended session
 print("FINISHED SUSPENDED SESSION: \n");
 assertTrue($cur->sendQuery("select * from testtable order by testint"));
-assertEqualString($cur->getField(4,0),"5");
-assertEqualString($cur->getField(5,0),"6");
-assertEqualString($cur->getField(6,0),"7");
-assertEqualString($cur->getField(7,0),"8");
+assertEquals($cur->getField(4,0),"5");
+assertEquals($cur->getField(5,0),"6");
+assertEquals($cur->getField(6,0),"7");
+assertEquals($cur->getField(7,0),"8");
 $id=$cur->getResultSetId();
 $cur->suspendResultSet();
 assertTrue($con->suspendSession());
@@ -1005,8 +917,953 @@ assertUndef($cur->getField(6,0));
 assertUndef($cur->getField(7,0));
 print("\n");
 
-# drop existing table
+
+# nested selects
+print("NESTED SELECTS: \n");
+$cur->setResultSetBufferSize(1);
+assertTrue($cur->sendQuery("select * from testtable"));
+for ($i=0; ; $i++) {
+	@row=$cur->getRow($i);
+	last if (!@row);
+	$secondcur=SQLRelay::Cursor->new($con);
+	$secondcur->setResultSetBufferSize(1);
+	assertTrue($secondcur->sendQuery("select * from testtable"));
+	$secondcur=undef;
+}
+$cur->setResultSetBufferSize(0);
+print("\n");
+
+
+# commit and rollback
+print("COMMIT AND ROLLBACK: \n");
+$secondcon=SQLRelay::Connection->new("sqlrelay",9000,"/tmp/test.socket",
+						"testuser","testpassword",0,1);
+$secondcur=SQLRelay::Cursor->new($secondcon);
+assertTrue($secondcur->sendQuery("select count(*) from testtable"));
+assertEquals($secondcur->getField(0,0),"0");
+assertTrue($con->commit());
+assertTrue($secondcur->sendQuery("select count(*) from testtable"));
+assertEquals($secondcur->getField(0,0),"8");
+assertTrue($con->begin());
+assertTrue($cur->sendQuery(
+	"insert into ".
+	"	testtable ".
+	"values (".
+	"	10, ".
+	"	10, ".
+	"	10, ".
+	"	10.1, ".
+	"	10.1, ".
+	"	10.1, ".
+	"	10.1, ".
+	"	10.00, ".
+	"	10.00, ".
+	"	'01-Jan-2010 10:00:00', ".
+	"	'01-Jan-2010 10:00:00', ".
+	"	'testchar10', ".
+	"	'testvarchar10', ".
+	"	10, ".
+	"	'testtext10')"));
+assertTrue($con->rollback());
+assertTrue($secondcur->sendQuery("select count(*) from testtable"));
+assertEquals($secondcur->getField(0,0),"8");
+assertTrue($cur->sendQuery(
+	"insert into ".
+	"	testtable ".
+	"values (".
+	"	10, ".
+	"	10, ".
+	"	10, ".
+	"	10.1, ".
+	"	10.1, ".
+	"	10.1, ".
+	"	10.1, ".
+	"	10.00, ".
+	"	10.00, ".
+	"	'01-Jan-2010 10:00:00', ".
+	"	'01-Jan-2010 10:00:00', ".
+	"	'testchar10', ".
+	"	'testvarchar10', ".
+	"	10, ".
+	"	'testtext10')"));
+assertTrue($con->commit());
+assertTrue($secondcur->sendQuery("select count(*) from testtable"));
+assertEquals($secondcur->getField(0,0),"9");
+$secondcur=undef;
+$secondcon=undef;
+assertTrue($cur->sendQuery("drop table testtable"));
+print("\n");
+
+
+# individual substitutions
+print("INDIVIDUAL SUBSTITUTIONS: \n");
+$cur->prepareQuery("select \$(var1),'\$(var2)',\$(var3)");
+$cur->substitution("var1",1);
+$cur->substitution("var2","hello");
+$cur->substitution("var3",10.5556,6,4);
+assertTrue($cur->executeQuery());
+assertEquals($cur->getField(0,0),"1");
+assertEquals($cur->getField(0,1),"hello");
+assertEquals($cur->getField(0,2),"10.5556");
+print("\n");
+
+
+# array substitutions
+print("ARRAY SUBSTITUTIONS: \n");
+$cur->prepareQuery("select \$(var1),\$(var2),\$(var3)");
+$cur->substitutions(\@subvars,\@subvallongs);
+assertTrue($cur->executeQuery());
+assertEquals($cur->getField(0,0),"1");
+assertEquals($cur->getField(0,1),"2");
+assertEquals($cur->getField(0,2),"3");
+print("\n");
+$cur->prepareQuery("select '\$(var1)','\$(var2)','\$(var3)'");
+$cur->substitutions(\@subvars,\@subvalstrings);
+assertTrue($cur->executeQuery());
+assertEquals($cur->getField(0,0),"hi");
+assertEquals($cur->getField(0,1),"hello");
+assertEquals($cur->getField(0,2),"bye");
+print("\n");
+$cur->prepareQuery("select \$(var1),\$(var2),\$(var3)");
+$cur->substitutions(\@subvars,\@subvaldoubles,\@precs,\@scales);
+assertTrue($cur->executeQuery());
+assertEquals($cur->getField(0,0),"10.55");
+assertEquals($cur->getField(0,1),"10.556");
+assertEquals($cur->getField(0,2),"10.5556");
+print("\n");
+
+
+# nulls as nulls
+print("NULLS AS NULLS: \n");
+$cur->getNullsAsUndefined();
+assertTrue($cur->sendQuery("select NULL,1,NULL"));
+assertUndef($cur->getField(0,0));
+assertEquals($cur->getField(0,1),"1");
+assertUndef($cur->getField(0,2));
+$cur->getNullsAsEmptyStrings();
+assertTrue($cur->sendQuery("select NULL,1,NULL"));
+assertEquals($cur->getField(0,0),"");
+assertEquals($cur->getField(0,1),"1");
+assertEquals($cur->getField(0,2),"");
+print("\n");
+
+
+
+# null and empty lobs
+print("NULL AND EMPTY LOBS: \n");
+$cur->getNullsAsUndefined();
 $cur->sendQuery("drop table testtable");
+assertTrue($cur->sendQuery(
+	"create table testtable (".
+	"	testclob1 text NULL, ".
+	"	testclob2 text NULL, ".
+	"	testblob1 image NULL, ".
+	"	testblob2 image NULL)"));
+$cur->prepareQuery(
+	"insert into ".
+	"	testtable ".
+	"values (".
+	"	\@var1, ".
+	"	\@var2, ".
+	"	\@var3, ".
+	"	\@var4)");
+$cur->inputBindClob("var1","",0);
+$cur->inputBindClob("var2",undef,0);
+$cur->inputBindBlob("var3","",0);
+$cur->inputBindBlob("var4",undef,0);
+assertTrue($cur->executeQuery());
+$cur->sendQuery("select * from testtable");
+# sap converts empty strings to a single space.  It's possible that
+# if we had true input bind support on the backend, then this would
+# work correctly, but for now we're faking binds, and inserting an
+# empty string, so we have to check for a single space here.
+assertEquals($cur->getField(0,0)," ");
+assertUndef($cur->getField(0,1));
+# see note above for why we're checking for a single space
+assertEquals($cur->getField(0,2)," ");
+assertUndef($cur->getField(0,3));
+$cur->getNullsAsEmptyStrings();
+assertTrue($cur->sendQuery("drop table testtable"));
+print("\n");
+
+
+# long lobs
+print("LONG LOBS: \n");
+$cur->sendQuery("drop table testtable");
+$cur->sendQuery(
+	"create table testtable (".
+	"	testclob text NULL, ".
+	"	testblob image NULL) lock datarows");
+$cur->prepareQuery("insert into testtable values (\@var1,\@var2)");
+$largebuffer=('C' x $LARGE_BUFFER_LENGTH);
+$cur->inputBindClob("var1",$largebuffer,$LARGE_BUFFER_LENGTH);
+$cur->inputBindBlob("var2",$largebuffer,$LARGE_BUFFER_LENGTH);
+assertTrue($cur->executeQuery());
+$cur->sendQuery("select * from testtable");
+assertEquals($cur->getFieldLength(0,"testclob"),$LARGE_BUFFER_LENGTH);
+assertEquals($cur->getField(0,"testclob"),$largebuffer);
+assertEquals($cur->getFieldLength(0,"testblob"),$LARGE_BUFFER_LENGTH);
+assertEqualsBytes($cur->getField(0,"testblob"),$largebuffer,
+					$LARGE_BUFFER_LENGTH);
+assertTrue($cur->sendQuery("drop table testtable"));
+print("\n");
+
+
+# output bind by position
+print("OUTPUT BIND BY POSITION: \n");
+$cur->sendQuery("drop procedure testproc");
+$cur->getNullsAsUndefined();
+assertTrue($cur->sendQuery(
+	"create procedure testproc ".
+	"	\@out1 int output, ".
+	"	\@out2 varchar(20) output, ".
+	"	\@out3 float output, ".
+	"	\@out4 datetime output, ".
+	"	\@out5 varchar(20) output as ".
+	"select \@out1=1, ".
+	"	\@out2='hello', ".
+	"	\@out3=2.5, ".
+	"	\@out4='2001-02-03', ".
+	"	\@out5=null"));
+$cur->prepareQuery("exec testproc");
+assertEquals($cur->countBindVariables(),0);
+$cur->defineOutputBindInteger("1");
+$cur->defineOutputBindString("2",20);
+$cur->defineOutputBindDouble("3");
+$cur->defineOutputBindDate("4");
+$cur->defineOutputBindString("5",20);
+assertTrue($cur->executeQuery());
+$numvar=$cur->getOutputBindInteger("1");
+$stringvar=$cur->getOutputBindString("2");
+$floatvar=$cur->getOutputBindDouble("3");
+$year=$cur->getOutputBindDateYear("4");
+$month=$cur->getOutputBindDateMonth("4");
+$day=$cur->getOutputBindDateDay("4");
+$hour=$cur->getOutputBindDateHour("4");
+$minute=$cur->getOutputBindDateMinute("4");
+$second=$cur->getOutputBindDateSecond("4");
+$microsecond=$cur->getOutputBindDateMicrosecond("4");
+$tz=$cur->getOutputBindDateTz("4");
+$nullvar=$cur->getOutputBindString("5");
+assertEquals($numvar,1);
+assertEquals($stringvar,"hello");
+assertEquals($floatvar,2.5);
+assertEquals($year,2001);
+assertEquals($month,2);
+assertEquals($day,3);
+assertEquals($hour,0);
+assertEquals($minute,0);
+assertEquals($second,0);
+assertEquals($microsecond,0);
+assertEquals($tz,"");
+assertUndef($nullvar);
+$cur->getNullsAsEmptyStrings();
+assertTrue($cur->sendQuery("drop procedure testproc"));
+print("\n");
+
+
+# output bind by name
+print("OUTPUT BIND BY NAME: \n");
+$cur->sendQuery("drop procedure testproc");
+$cur->getNullsAsUndefined();
+assertTrue($cur->sendQuery(
+	"create procedure testproc ".
+	"	\@out1 int output, ".
+	"	\@out2 varchar(20) output, ".
+	"	\@out3 float output, ".
+	"	\@out4 datetime output, ".
+	"	\@out5 varchar(20) output as ".
+	"select \@out1=1, ".
+	"	\@out2='hello', ".
+	"	\@out3=2.5, ".
+	"	\@out4='2001-02-03', ".
+	"	\@out5=null"));
+$cur->prepareQuery("exec testproc");
+assertEquals($cur->countBindVariables(),0);
+$cur->defineOutputBindInteger("out1");
+$cur->defineOutputBindString("out2",20);
+$cur->defineOutputBindDouble("out3");
+$cur->defineOutputBindDate("out4");
+$cur->defineOutputBindString("out5",20);
+assertTrue($cur->executeQuery());
+$numvar=$cur->getOutputBindInteger("out1");
+$stringvar=$cur->getOutputBindString("out2");
+$floatvar=$cur->getOutputBindDouble("out3");
+$year=$cur->getOutputBindDateYear("out4");
+$month=$cur->getOutputBindDateMonth("out4");
+$day=$cur->getOutputBindDateDay("out4");
+$hour=$cur->getOutputBindDateHour("out4");
+$minute=$cur->getOutputBindDateMinute("out4");
+$second=$cur->getOutputBindDateSecond("out4");
+$microsecond=$cur->getOutputBindDateMicrosecond("out4");
+$tz=$cur->getOutputBindDateTz("out4");
+$nullvar=$cur->getOutputBindString("out5");
+assertEquals($numvar,1);
+assertEquals($stringvar,"hello");
+assertEquals($floatvar,2.5);
+assertEquals($year,2001);
+assertEquals($month,2);
+assertEquals($day,3);
+assertEquals($hour,0);
+assertEquals($minute,0);
+assertEquals($second,0);
+assertEquals($microsecond,0);
+assertEquals($tz,"");
+assertUndef($nullvar);
+$cur->getNullsAsEmptyStrings();
+assertTrue($cur->sendQuery("drop procedure testproc"));
+print("\n");
+
+
+# output bind by name with validation
+# validateBinds() can't be used for output binds, with sap.  In sap,
+# when executing a procedure, you don't declare any bind variable
+# delimiters in the query.  eg, you just do: "exec testproc", not
+# "exec testproc(@out1,@out2)".  If you call validateBinds(), it won't
+# find any binds in the query, and will filter out any binds that you
+# declare.
+
+
+# lob output bind
+# sap doesn't support lobs as output parameters to stored procedures,
+# and there's no way to directly select into a lob bind variable
+
+
+# long output bind
+print("LONG OUTPUT BIND: \n");
+$cur->sendQuery("drop procedure testproc");
+$largebuffer=('C' x $LARGE_BUFFER_LENGTH);
+$query="create procedure testproc ".
+	"\@bindval varchar($LARGE_BUFFER_LENGTH) output as ".
+	"set \@bindval='$largebuffer'";
+assertTrue($cur->sendQuery($query));
+$cur->prepareQuery("exec testproc");
+$cur->defineOutputBindString("bindval",$LARGE_BUFFER_LENGTH);
+assertTrue($cur->executeQuery());
+assertEquals($cur->getOutputBindLength("bindval"),$LARGE_BUFFER_LENGTH);
+assertEquals($cur->getOutputBindString("bindval"),$largebuffer);
+assertTrue($cur->sendQuery("drop procedure testproc"));
+print("\n");
+
+
+# negative input bind
+print("NEGATIVE INPUT BIND: \n");
+$cur->sendQuery("drop table testtable");
+$cur->sendQuery("create table testtable (testval int)");
+$cur->prepareQuery("insert into testtable values (\@testval)");
+$cur->inputBind("testval",-1);
+assertTrue($cur->executeQuery());
+$cur->sendQuery("select testval from testtable");
+assertEquals($cur->getField(0,"testval"),"-1");
+assertTrue($cur->sendQuery("drop table testtable"));
+print("\n");
+
+
+# bind validation
+print("BIND VALIDATION: \n");
+$cur->sendQuery("drop table testtable");
+$cur->sendQuery(
+	"create table testtable (".
+	"	col1 varchar(20), ".
+	"	col2 varchar(20), ".
+	"	col3 varchar(20))");
+$cur->prepareQuery(
+	"insert into ".
+	"	testtable ".
+	"values (".
+	"	\$(var1), ".
+	"	\$(var2), ".
+	"	\$(var3))");
+$cur->inputBind("var1","1");
+$cur->inputBind("var2","2");
+$cur->inputBind("var3","3");
+$cur->substitution("var1","\@var1");
+assertTrue($cur->validBind("var1"));
+assertFalse($cur->validBind("var2"));
+assertFalse($cur->validBind("var3"));
+assertFalse($cur->validBind("var4"));
+print("\n");
+$cur->substitution("var2","\@var2");
+assertTrue($cur->validBind("var1"));
+assertTrue($cur->validBind("var2"));
+assertFalse($cur->validBind("var3"));
+assertFalse($cur->validBind("var4"));
+print("\n");
+$cur->substitution("var3","\@var3");
+assertTrue($cur->validBind("var1"));
+assertTrue($cur->validBind("var2"));
+assertTrue($cur->validBind("var3"));
+assertFalse($cur->validBind("var4"));
+assertTrue($cur->executeQuery());
+assertTrue($cur->sendQuery("drop table testtable"));
+print("\n");
+
+
+# rebinding
+print("REBINDING: \n");
+$cur->sendQuery("drop procedure testproc");
+assertTrue($cur->sendQuery(
+	"create procedure testproc ".
+	"	\@in1 int, ".
+	"	\@out1 int output as ".
+	"select \@out1=\@in1"));
+$cur->prepareQuery("exec testproc");
+$cur->inputBind("in1",1);
+$cur->defineOutputBindInteger("out1");
+assertTrue($cur->executeQuery());
+assertEquals($cur->getOutputBindInteger("out1"),1);
+$cur->inputBind("in1",2);
+assertTrue($cur->executeQuery());
+assertEquals($cur->getOutputBindInteger("out1"),2);
+$cur->inputBind("in1",3);
+assertTrue($cur->executeQuery());
+assertEquals($cur->getOutputBindInteger("out1"),3);
+assertTrue($cur->sendQuery("drop procedure testproc"));
+print("\n");
+
+
+# reexecute
+print("REEXECUTE: \n");
+$cur->prepareQuery("select 1");
+assertTrue($cur->executeQuery());
+assertEquals($cur->rowCount(),1);
+assertEquals($cur->getField(0,0),"1");
+print("\n");
+assertTrue($cur->executeQuery());
+assertEquals($cur->rowCount(),1);
+assertEquals($cur->getField(0,0),"1");
+print("\n");
+$cur->prepareQuery(
+	"begin ".
+	"	select cast(\@var1 as int) ".
+	"end");
+$cur->inputBind("var1",1);
+assertTrue($cur->executeQuery());
+assertEquals($cur->rowCount(),1);
+assertEquals($cur->getField(0,0),"1");
+print("\n");
+assertTrue($cur->executeQuery());
+assertEquals($cur->rowCount(),1);
+assertEquals($cur->getField(0,0),"1");
+print("\n");
+$cur->inputBind("var1",2);
+assertTrue($cur->executeQuery());
+assertEquals($cur->rowCount(),1);
+assertEquals($cur->getField(0,0),"2");
+print("\n");
+
+
+# stored procedure returning no value
+print("STORED PROCEDURE RETURNING NO VALUE: \n");
+$cur->sendQuery("drop procedure testproc");
+assertTrue($cur->sendQuery(
+	"create procedure testproc ".
+	"	\@in1 int, ".
+	"	\@in2 float, ".
+	"	\@in3 varchar(20) as ".
+	"return"));
+$cur->prepareQuery("exec testproc");
+$cur->inputBind("in1",1);
+$cur->inputBind("in2",1.1,2,1);
+$cur->inputBind("in3","hello");
+assertTrue($cur->executeQuery());
+assertTrue($cur->sendQuery("drop procedure testproc"));
+print("\n");
+
+
+# stored procedure returning single value
+print("STORED PROCEDURE RETURNING SINGLE VALUE: \n");
+$cur->sendQuery("drop procedure testproc");
+assertTrue($cur->sendQuery(
+	"create procedure testproc ".
+	"	\@in1 int, ".
+	"	\@in2 float, ".
+	"	\@in3 varchar(20), ".
+	"	\@out1 int output as ".
+	"select \@out1=\@in1"));
+$cur->prepareQuery("exec testproc");
+$cur->inputBind("in1",1);
+$cur->inputBind("in2",1.1,2,1);
+$cur->inputBind("in3","hello");
+$cur->defineOutputBindInteger("out1");
+assertTrue($cur->executeQuery());
+assertEquals($cur->getOutputBindInteger("out1"),1);
+assertTrue($cur->sendQuery("drop procedure testproc"));
+print("\n");
+
+
+# stored procedure returning multiple values
+print("STORED PROCEDURE RETURNING MULTIPLE VALUES: \n");
+$cur->sendQuery("drop procedure testproc");
+assertTrue($cur->sendQuery(
+	"create procedure testproc \@in1 int, ".
+	"	\@in2 float, ".
+	"	\@in3 varchar(20), ".
+	"	\@out1 int output, ".
+	"	\@out2 float output, ".
+	"	\@out3 varchar(20) output as ".
+	"select \@out1=\@in1, ".
+	"	\@out2=\@in2, ".
+	"	\@out3=\@in3"));
+$cur->prepareQuery("exec testproc");
+$cur->inputBind("in1",1);
+$cur->inputBind("in2",1.1,2,1);
+$cur->inputBind("in3","hello");
+$cur->defineOutputBindInteger("out1");
+$cur->defineOutputBindDouble("out2");
+$cur->defineOutputBindString("out3",20);
+assertTrue($cur->executeQuery());
+assertEquals($cur->getOutputBindInteger("out1"),1);
+assertEquals($cur->getOutputBindDouble("out2"),1.1);
+assertEquals($cur->getOutputBindString("out3"),"hello");
+assertTrue($cur->sendQuery("drop procedure testproc"));
+print("\n");
+
+
+# stored procedure returning result set
+print("STORED PROCEDURE RETURNING RESULT SET: \n");
+$cur->sendQuery("drop procedure testselectproc");
+assertTrue($cur->sendQuery(
+	"create procedure testselectproc as ".
+	"	select 1 ".
+	"	union ".
+	"	select 2 ".
+	"	union ".
+	"	select 3 ".
+	"	union ".
+	"	select 4 ".
+	"	union ".
+	"	select 5 ".
+	"	union ".
+	"	select 6 ".
+	"	union ".
+	"	select 7 ".
+	"	union ".
+	"	select 8"));
+assertTrue($cur->sendQuery("exec testselectproc"));
+assertEquals($cur->rowCount(),8);
+assertTrue($cur->sendQuery("drop procedure testselectproc"));
+print("\n");
+
+
+# temporary tables
+print("TEMPORARY TABLES: \n");
+$cur->sendQuery("drop table #temptable\n");
+$cur->sendQuery("create table #temptable (col1 int)");
+assertTrue($cur->sendQuery("insert into #temptable values (1)"));
+assertTrue($cur->sendQuery("select count(*) from #temptable"));
+assertEquals($cur->getField(0,0),"1");
+$con->endSession();
+print("\n");
+assertFalse($cur->sendQuery("select count(*) from #temptable"));
+print("\n");
+
+
+# encoded binary data
+print("ENCODED BINARY DATA: \n");
+$cur->sendQuery("drop table testtable");
+assertTrue($cur->sendQuery("create table testtable (col1 image)"));
+$buffer=pack("C*",(0..255));
+$querystr="insert into testtable values (0x";
+$querystr.=unpack("H*",$buffer);
+$querystr.=")";
+assertTrue($cur->sendQuery($querystr));
+assertTrue($cur->sendQuery("select col1 from testtable"));
+assertEquals($cur->getFieldLength(0,0),256);
+assertEqualsBytes($cur->getField(0,0),$buffer,256);
+assertTrue($cur->sendQuery("drop table testtable"));
+print("\n");
+
+
+# quotes
+print("QUOTES: \n");
+$cur->sendQuery("drop table testtable");
+assertTrue($cur->sendQuery("create table testtable (col1 varchar(4))"));
+assertTrue($cur->sendQuery("insert into testtable values ('''''')"));
+assertTrue($cur->sendQuery("select col1 from testtable"));
+assertEquals($cur->getFieldLength(0,0),2);
+assertEquals($cur->getField(0,0),"''");
+assertTrue($cur->sendQuery("drop table testtable"));
+print("\n");
+
+
+# last insert id
+print("LAST INSERT ID: \n");
+$cur->sendQuery("drop table testtable");
+assertTrue($cur->sendQuery(
+		"create table testtable ".
+		"	(col1 int identity primary key, ".
+		"	col2 int)"));
+assertTrue($cur->sendQuery(
+		"insert into testtable (col2) values (1)"));
+assertEquals($con->getLastInsertId(),1);
+assertTrue($cur->sendQuery("drop table testtable"));
+print("\n");
+
+
+# database is schema
+print("DATABASE IS SCHEMA: \n");
+assertFalse($con->getDatabaseIsSchema());
+print("\n");
+
+
+# catalog list
+print("CATALOG LIST: \n");
+assertTrue($cur->getCatalogList(undef));
+assertEquals($cur->getColumnName(0),"Database");
+assertTrue($cur->rowCount()>0);
+print("\n");
+
+
+# schema list
+print("SCHEMA LIST: \n");
+$cur->sendQuery("drop table testtable");
+# the get schema list query that is used with sap will only return the
+# names of schemas that have at least one database object in them, so
+# to be sure that there is one, we'll create a table
+assertTrue($cur->sendQuery("create table testtable (col1 int)"));
+assertTrue($cur->getSchemaList(undef));
+assertEquals($cur->getColumnName(0),"Database");
+assertTrue($cur->rowCount()>0);
+assertTrue($cur->sendQuery("drop table testtable"));
+print("\n");
+
+
+# table type list
+print("TABLE TYPE LIST: \n");
+assertTrue($cur->getTableTypeList());
+assertEquals($cur->getColumnName(0),"table_type");
+$found=0;
+for ($i=0; $i<$cur->rowCount(); $i++) {
+	if ($cur->getField($i,"table_type") eq "TABLE") {
+		$found=1;
+		last;
+	}
+}
+assertTrue($found);
+print("\n");
+
+
+# table list
+print("TABLE LIST: \n");
+$cur->sendQuery("drop table testtable1");
+$cur->sendQuery("drop table testtable2");
+$cur->sendQuery("drop table testtable3");
+$cur->sendQuery("drop table testtable4");
+assertTrue($cur->sendQuery(
+	"create table testtable1 (".
+	"	col1 int, ".
+	"	col2 int)"));
+assertTrue($cur->sendQuery(
+	"create table testtable2 (".
+	"	col1 int, ".
+	"	col2 int)"));
+assertTrue($cur->sendQuery(
+	"create table testtable3 (".
+	"	col1 int, ".
+	"	col2 int)"));
+assertTrue($cur->sendQuery(
+	"create table testtable4 (".
+	"	col1 int, ".
+	"	col2 int)"));
+assertTrue($cur->getTableList(undef));
+$counter=0;
+for ($i=0; $i<$cur->rowCount(); $i++) {
+	$name=$cur->getField($i,"Tables_in_xxx");
+	if (defined($name) &&
+		($name eq "testtable1" ||
+		$name eq "testtable2" ||
+		$name eq "testtable3" ||
+		$name eq "testtable4")) {
+		$counter++;
+	}
+}
+assertEquals($counter,4);
+assertTrue($cur->sendQuery("drop table testtable1"));
+assertTrue($cur->sendQuery("drop table testtable2"));
+assertTrue($cur->sendQuery("drop table testtable3"));
+assertTrue($cur->sendQuery("drop table testtable4"));
+print("\n");
+
+
+# type info list
+print("TYPE INFO LIST: \n");
+assertTrue($cur->getTypeInfoList("int"));
+assertEquals($cur->getColumnName(0),"type_name");
+assertEquals($cur->getColumnName(1),"data_type");
+assertEquals($cur->getColumnName(2),"precision");
+assertEquals($cur->getColumnName(3),"literal_prefix");
+assertEquals($cur->getColumnName(4),"literal_suffix");
+assertEquals($cur->getColumnName(5),"create_params");
+assertEquals($cur->getColumnName(6),"nullable");
+assertEquals($cur->getColumnName(7),"case_sensitive");
+assertEquals($cur->getColumnName(8),"searchable");
+assertEquals($cur->getColumnName(9),"unsigned_attribute");
+assertEquals($cur->getColumnName(10),"fixed_prec_scale");
+assertEquals($cur->getColumnName(11),"auto_increment");
+assertEquals($cur->getColumnName(12),"local_type_name");
+assertEquals($cur->getColumnName(13),"minumum_scale");
+assertEquals($cur->getColumnName(14),"maxiumm_scale");
+assertEquals($cur->getColumnName(15),"sql_data_type");
+assertEquals($cur->getColumnName(16),"sql_datetime_sub");
+assertEquals($cur->getColumnName(17),"num_prec_radix");
+assertEquals($cur->getColumnName(18),"interval_precision");
+assertEquals($cur->getField(0,"type_name"),"INT");
+assertEquals($cur->getField(0,"data_type"),"4");
+assertEquals($cur->getField(0,"precision"),"10");
+assertEquals($cur->getField(0,"local_type_name"),"INT");
+assertTrue($cur->getTypeInfoList("char"));
+assertEquals($cur->getField(0,"type_name"),"CHAR");
+assertEquals($cur->getField(0,"data_type"),"1");
+assertEquals($cur->getField(0,"precision"),"255");
+assertEquals($cur->getField(0,"local_type_name"),"CHAR");
+assertTrue($cur->getTypeInfoList("varchar"));
+assertEquals($cur->getField(0,"type_name"),"VARCHAR");
+assertEquals($cur->getField(0,"data_type"),"12");
+assertEquals($cur->getField(0,"precision"),"255");
+assertEquals($cur->getField(0,"local_type_name"),"VARCHAR");
+assertTrue($cur->getTypeInfoList("datetime"));
+assertEquals($cur->getField(0,"type_name"),"DATETIME");
+assertEquals($cur->getField(0,"data_type"),"93");
+assertEquals($cur->getField(0,"precision"),"23");
+assertEquals($cur->getField(0,"local_type_name"),"DATETIME");
+print("\n");
+
+
+# column list
+print("COLUMN LIST: \n");
+$cur->sendQuery("drop table testtable");
+assertTrue($cur->sendQuery(
+	"create table testtable (".
+	"	testint int, ".
+	"	testsmallint smallint, ".
+	"	testtinyint tinyint, ".
+	"	testreal real, ".
+	"	testfloat float, ".
+	"	testdecimal decimal(4,1), ".
+	"	testnumeric numeric(4,1), ".
+	"	testmoney money, ".
+	"	testsmallmoney smallmoney, ".
+	"	testdatetime datetime, ".
+	"	testsmalldatetime smalldatetime, ".
+	"	testchar char(40), ".
+	"	testvarchar varchar(40), ".
+	"	testbit bit, ".
+	"	testtext text)"));
+assertTrue($cur->getColumnList("testtable",undef));
+assertEquals($cur->getColumnName(0),"column_name");
+assertEquals($cur->getColumnName(1),"data_type");
+assertEquals($cur->getColumnName(2),"character_maximum_length");
+assertEquals($cur->getColumnName(3),"numeric_precision");
+assertEquals($cur->getColumnName(4),"numeric_scale");
+assertEquals($cur->getColumnName(5),"is_nullable");
+assertEquals($cur->getColumnName(6),"column_key");
+assertEquals($cur->getColumnName(7),"column_default");
+assertEquals($cur->getColumnName(8),"extra");
+assertEquals($cur->getField(0,"column_name"),"testint");
+assertEquals($cur->getField(1,"column_name"),"testsmallint");
+assertEquals($cur->getField(2,"column_name"),"testtinyint");
+assertEquals($cur->getField(3,"column_name"),"testreal");
+assertEquals($cur->getField(4,"column_name"),"testfloat");
+assertEquals($cur->getField(5,"column_name"),"testdecimal");
+assertEquals($cur->getField(6,"column_name"),"testnumeric");
+assertEquals($cur->getField(7,"column_name"),"testmoney");
+assertEquals($cur->getField(8,"column_name"),"testsmallmoney");
+assertEquals($cur->getField(9,"column_name"),"testdatetime");
+assertEquals($cur->getField(10,"column_name"),"testsmalldatetime");
+assertEquals($cur->getField(11,"column_name"),"testchar");
+assertEquals($cur->getField(12,"column_name"),"testvarchar");
+assertEquals($cur->getField(13,"column_name"),"testbit");
+assertEquals($cur->getField(14,"column_name"),"testtext");
+assertEquals($cur->getField(0,"data_type"),"int");
+assertEquals($cur->getField(1,"data_type"),"smallint");
+assertEquals($cur->getField(2,"data_type"),"tinyint");
+assertEquals($cur->getField(3,"data_type"),"real");
+assertEquals($cur->getField(4,"data_type"),"float");
+assertEquals($cur->getField(5,"data_type"),"decimal");
+assertEquals($cur->getField(6,"data_type"),"numeric");
+assertEquals($cur->getField(7,"data_type"),"money");
+assertEquals($cur->getField(8,"data_type"),"smallmoney");
+assertEquals($cur->getField(9,"data_type"),"datetime");
+assertEquals($cur->getField(10,"data_type"),"smalldatetime");
+assertEquals($cur->getField(11,"data_type"),"char");
+assertEquals($cur->getField(12,"data_type"),"varchar");
+assertEquals($cur->getField(13,"data_type"),"bit");
+assertEquals($cur->getField(14,"data_type"),"text");
+assertTrue($cur->sendQuery("drop table testtable"));
+print("\n");
+
+
+# column list - auto_increment, primary key
+print("COLUMN LIST - auto_increment, primary key: \n");
+$cur->sendQuery("drop table testtable");
+assertTrue($cur->sendQuery(
+	"create table testtable (".
+	"	col1 int identity primary key, ".
+	"	col2 int)"));
+assertTrue($cur->getColumnList("testtable",undef));
+assertTrue(index($cur->getField(0,"extra"),"auto_increment")>=0);
+assertTrue(index($cur->getField(0,"column_key"),"PRI")>=0);
+assertFalse(index($cur->getField(1,"extra"),"auto_increment")>=0);
+assertFalse(index($cur->getField(1,"column_key"),"PRI")>=0);
+print("\n");
+assertTrue($cur->sendQuery("drop table testtable"));
+assertTrue($cur->sendQuery(
+	"create table testtable (".
+	"	col1 int primary key, ".
+	"	col2 int)"));
+assertTrue($cur->getColumnList("testtable",undef));
+assertFalse(index($cur->getField(0,"extra"),"auto_increment")>=0);
+assertTrue(index($cur->getField(0,"column_key"),"PRI")>=0);
+assertTrue($cur->sendQuery("drop table testtable"));
+print("\n");
+
+
+# primary keys list
+print("PRIMARY KEYS LIST: \n");
+$cur->sendQuery("drop table testtable");
+assertTrue($cur->sendQuery(
+	"create table testtable (".
+	"	col1 int primary key, ".
+	"	col2 int)"));
+assertTrue($cur->getPrimaryKeysList("testtable",undef));
+assertEquals($cur->getColumnName(0),"table");
+assertEquals($cur->getColumnName(1),"non_unique");
+assertEquals($cur->getColumnName(2),"key_name");
+assertEquals($cur->getColumnName(3),"seq_in_index");
+assertEquals($cur->getColumnName(4),"column_name");
+assertEquals($cur->getColumnName(5),"collation");
+assertEquals($cur->getColumnName(6),"cardinality");
+assertEquals($cur->getColumnName(7),"sub_part");
+assertEquals($cur->getColumnName(8),"packed");
+assertEquals($cur->getColumnName(9),"null");
+assertEquals($cur->getColumnName(10),"index_type");
+assertEquals($cur->getColumnName(11),"comment");
+assertEquals($cur->getColumnName(12),"index_comment");
+assertEquals($cur->rowCount(),1);
+assertEquals($cur->getField(0,"table"),"testtable");
+assertEquals($cur->getField(0,"seq_in_index"),"1");
+assertEquals($cur->getField(0,"column_name"),"col1");
+$keyname=$cur->getField(0,"key_name");
+assertTrue(defined($keyname) && $keyname ne "");
+assertTrue($cur->sendQuery("drop table testtable"));
+print("\n");
+
+
+# key and index list
+print("KEY AND INDEX LIST: \n");
+$cur->sendQuery("drop table testtable");
+assertTrue($cur->sendQuery(
+	"create table testtable (".
+	"	col1 int primary key, ".
+	"	col2 int)"));
+assertTrue($cur->getKeyAndIndexList("testtable",undef));
+assertEquals($cur->getColumnName(0),"table");
+assertEquals($cur->getColumnName(1),"non_unique");
+assertEquals($cur->getColumnName(2),"key_name");
+assertEquals($cur->getColumnName(3),"seq_in_index");
+assertEquals($cur->getColumnName(4),"column_name");
+assertEquals($cur->getColumnName(5),"collation");
+assertEquals($cur->getColumnName(6),"cardinality");
+assertEquals($cur->getColumnName(7),"sub_part");
+assertEquals($cur->getColumnName(8),"packed");
+assertEquals($cur->getColumnName(9),"null");
+assertEquals($cur->getColumnName(10),"index_type");
+assertEquals($cur->getColumnName(11),"comment");
+assertEquals($cur->getColumnName(12),"index_comment");
+assertEquals($cur->rowCount(),1);
+assertEquals($cur->getField(0,"table"),"testtable");
+assertEquals($cur->getField(0,"non_unique"),"FALSE");
+assertEquals($cur->getField(0,"seq_in_index"),"1");
+assertEquals($cur->getField(0,"column_name"),"col1");
+assertEquals($cur->getField(0,"collation"),"A");
+assertEquals($cur->getField(0,"index_type"),"1");
+$keyname=$cur->getField(0,"key_name");
+assertTrue(defined($keyname) && $keyname ne "");
+assertTrue($cur->sendQuery("drop table testtable"));
+print("\n");
+
+
+# procedure list
+print("PROCEDURE LIST: \n");
+$cur->sendQuery("drop procedure testproc1");
+$cur->sendQuery("drop procedure testproc2");
+$cur->sendQuery("drop procedure testproc3");
+$cur->sendQuery("drop procedure testproc4");
+assertTrue($cur->sendQuery(
+	"create procedure testproc1 ".
+	"	\@in1 int, ".
+	"	\@in2 char(20), ".
+	"	\@in3 varchar(20), ".
+	"	\@in4 datetime ".
+	"as select 1"));
+assertTrue($cur->sendQuery(
+	"create procedure testproc2 ".
+	"	\@in1 int, ".
+	"	\@in2 char(20), ".
+	"	\@in3 varchar(20), ".
+	"	\@in4 datetime ".
+	"as select 1"));
+assertTrue($cur->sendQuery(
+	"create procedure testproc3 ".
+	"	\@in1 int, ".
+	"	\@in2 char(20), ".
+	"	\@in3 varchar(20), ".
+	"	\@in4 datetime ".
+	"as select 1"));
+assertTrue($cur->sendQuery(
+	"create procedure testproc4 ".
+	"	\@in1 int, ".
+	"	\@in2 char(20), ".
+	"	\@in3 varchar(20), ".
+	"	\@in4 datetime ".
+	"as select 1"));
+assertTrue($cur->getProcedureList(undef));
+$counter=0;
+for ($i=0; $i<$cur->rowCount(); $i++) {
+	$name=$cur->getField($i,"routine_name");
+	if (defined($name) &&
+		($name eq "testproc1" ||
+		$name eq "testproc2" ||
+		$name eq "testproc3" ||
+		$name eq "testproc4")) {
+		$counter++;
+	}
+}
+assertEquals($counter,4);
+print("\n");
+
+
+# procedure parameter list
+print("PROCEDURE PARAMETER LIST: \n");
+assertTrue($cur->getProcedureParameterList("testproc1",undef));
+assertEquals($cur->getColumnName(0),"parameter_name");
+assertEquals($cur->getColumnName(1),"parameter_mode");
+assertEquals($cur->getColumnName(2),"data_type");
+assertEquals($cur->getColumnName(3),"character_maximum_length");
+assertEquals($cur->getColumnName(4),"ordinal_position");
+assertEquals($cur->rowCount(),4);
+assertEquals($cur->getField(0,"parameter_name"),"\@in1");
+assertEquals($cur->getField(0,"parameter_mode"),"1");
+assertEquals($cur->getField(0,"data_type"),"int");
+assertEquals($cur->getField(0,"ordinal_position"),"1");
+assertEquals($cur->getField(1,"parameter_name"),"\@in2");
+assertEquals($cur->getField(1,"parameter_mode"),"1");
+assertEquals($cur->getField(1,"data_type"),"char");
+assertEquals($cur->getField(1,"ordinal_position"),"2");
+assertEquals($cur->getField(2,"parameter_name"),"\@in3");
+assertEquals($cur->getField(2,"parameter_mode"),"1");
+assertEquals($cur->getField(2,"data_type"),"varchar");
+assertEquals($cur->getField(2,"ordinal_position"),"3");
+assertEquals($cur->getField(3,"parameter_name"),"\@in4");
+assertEquals($cur->getField(3,"parameter_mode"),"1");
+assertEquals($cur->getField(3,"data_type"),"datetime");
+assertEquals($cur->getField(3,"ordinal_position"),"4");
+assertTrue($cur->sendQuery("drop procedure testproc1"));
+assertTrue($cur->sendQuery("drop procedure testproc2"));
+assertTrue($cur->sendQuery("drop procedure testproc3"));
+assertTrue($cur->sendQuery("drop procedure testproc4"));
+print("\n");
 
 
 # invalid queries
@@ -1026,6 +1883,7 @@ assertFalse($cur->sendQuery("create table testtable"));
 assertFalse($cur->sendQuery("create table testtable"));
 assertFalse($cur->sendQuery("create table testtable"));
 print("\n");
+
 
 reportTestStatus();
 

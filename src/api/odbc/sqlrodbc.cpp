@@ -11426,11 +11426,13 @@ static SQLRETURN SQLR_SQLSetConnectAttr(SQLHDBC connectionhandle,
 	#endif
 		// MS SQL Server-specific calls...
 		case 1041:
-			debugPrintf("  attribute: 1041 (license file)\n");
+			debugPrintf("  attribute: 1041 "
+					"(license file)\n");
 			// SQL Relay doesn't need to do anything with this
 			return SQL_SUCCESS;
 		case 1042:
-			debugPrintf("  attribute: 1042 (password)\n");
+			debugPrintf("  attribute: 1042 "
+					"(license file password)\n");
 			// SQL Relay doesn't need to do anything with this
 			return SQL_SUCCESS;
 		default:

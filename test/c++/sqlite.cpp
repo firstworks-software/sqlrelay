@@ -1,7 +1,6 @@
 // Copyright (c) David Muse
 // See the file COPYING for more information.
 
-#include "../../config.h"
 #include <sqlrelay/sqlrclient.h>
 #include <rudiments/charstring.h>
 #include <rudiments/process.h>
@@ -47,6 +46,18 @@ int main(int argc, char **argv) {
 	// identify
 	stdoutput.printf("IDENTIFY: \n");
 	assertEquals(con->identify(),"sqlite");
+	stdoutput.printf("\n");
+
+
+	// db version
+	stdoutput.printf("DB VERSION: \n");
+	const char	*dbversion=con->dbVersion();
+	bool		issqlite3=true;
+	if (!dbversion ||
+		!charstring::compare(dbversion,"unknown") ||
+		charstring::convertToInteger(dbversion)<3) {
+		issqlite3=false;
+	}
 	stdoutput.printf("\n");
 
 
@@ -246,33 +257,33 @@ int main(int argc, char **argv) {
 
 	// column types
 	stdoutput.printf("COLUMN TYPES: \n");
-	#ifdef HAVE_SQLITE3_STMT
-	assertEquals(cur->getColumnType((uint32_t)0),"INTEGER");
-	assertEquals(cur->getColumnType("testint"),"INTEGER");
-	assertEquals(cur->getColumnType(1),"FLOAT");
-	assertEquals(cur->getColumnType("testfloat"),"FLOAT");
-	assertEquals(cur->getColumnType(2),"STRING");
-	assertEquals(cur->getColumnType("testchar"),"STRING");
-	assertEquals(cur->getColumnType(3),"STRING");
-	assertEquals(cur->getColumnType("testvarchar"),"STRING");
-	assertEquals(cur->getColumnType(4),"STRING");
-	assertEquals(cur->getColumnType("testclob"),"STRING");
-	assertEquals(cur->getColumnType(5),"STRING");
-	assertEquals(cur->getColumnType("testblob"),"STRING");
-	#else
-	assertEquals(cur->getColumnType((uint32_t)0),"UNKNOWN");
-	assertEquals(cur->getColumnType("testint"),"UNKNOWN");
-	assertEquals(cur->getColumnType(1),"UNKNOWN");
-	assertEquals(cur->getColumnType("testfloat"),"UNKNOWN");
-	assertEquals(cur->getColumnType(2),"UNKNOWN");
-	assertEquals(cur->getColumnType("testchar"),"UNKNOWN");
-	assertEquals(cur->getColumnType(3),"UNKNOWN");
-	assertEquals(cur->getColumnType("testvarchar"),"UNKNOWN");
-	assertEquals(cur->getColumnType(4),"UNKNOWN");
-	assertEquals(cur->getColumnType("testclob"),"UNKNOWN");
-	assertEquals(cur->getColumnType(5),"UNKNOWN");
-	assertEquals(cur->getColumnType("testblob"),"UNKNOWN");
-	#endif
+	if (issqlite3) {
+		assertEquals(cur->getColumnType((uint32_t)0),"INTEGER");
+		assertEquals(cur->getColumnType("testint"),"INTEGER");
+		assertEquals(cur->getColumnType(1),"FLOAT");
+		assertEquals(cur->getColumnType("testfloat"),"FLOAT");
+		assertEquals(cur->getColumnType(2),"STRING");
+		assertEquals(cur->getColumnType("testchar"),"STRING");
+		assertEquals(cur->getColumnType(3),"STRING");
+		assertEquals(cur->getColumnType("testvarchar"),"STRING");
+		assertEquals(cur->getColumnType(4),"STRING");
+		assertEquals(cur->getColumnType("testclob"),"STRING");
+		assertEquals(cur->getColumnType(5),"STRING");
+		assertEquals(cur->getColumnType("testblob"),"STRING");
+	} else {
+		assertEquals(cur->getColumnType((uint32_t)0),"UNKNOWN");
+		assertEquals(cur->getColumnType("testint"),"UNKNOWN");
+		assertEquals(cur->getColumnType(1),"UNKNOWN");
+		assertEquals(cur->getColumnType("testfloat"),"UNKNOWN");
+		assertEquals(cur->getColumnType(2),"UNKNOWN");
+		assertEquals(cur->getColumnType("testchar"),"UNKNOWN");
+		assertEquals(cur->getColumnType(3),"UNKNOWN");
+		assertEquals(cur->getColumnType("testvarchar"),"UNKNOWN");
+		assertEquals(cur->getColumnType(4),"UNKNOWN");
+		assertEquals(cur->getColumnType("testclob"),"UNKNOWN");
+		assertEquals(cur->getColumnType(5),"UNKNOWN");
+		assertEquals(cur->getColumnType("testblob"),"UNKNOWN");
+	}
 	stdoutput.printf("\n");
 
 
@@ -318,11 +329,7 @@ int main(int argc, char **argv) {
 
 	// total rows
 	stdoutput.printf("TOTAL ROWS: \n");
-	#ifdef HAVE_SQLITE3_STMT
-	assertEquals(cur->totalRows(),0);
-	#else
-	assertEquals(cur->totalRows(),8);
-	#endif
+	assertEquals(cur->totalRows(),(issqlite3)?0:8);
 	stdoutput.printf("\n");
 
 
@@ -477,11 +484,8 @@ int main(int argc, char **argv) {
 	assertTrue(cur->sendQuery("select * from testtable order by testint"));
 	assertEquals(cur->getColumnName(0),"testint");
 	assertEquals(cur->getColumnLength((uint32_t)0),0);
-	#ifdef HAVE_SQLITE3_STMT
-	assertEquals(cur->getColumnType((uint32_t)0),"INTEGER");
-	#else
-	assertEquals(cur->getColumnType((uint32_t)0),"UNKNOWN");
-	#endif
+	assertEquals(cur->getColumnType((uint32_t)0),
+				(issqlite3)?"INTEGER":"UNKNOWN");
 	stdoutput.printf("\n");
 
 
