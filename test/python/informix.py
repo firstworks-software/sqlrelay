@@ -1362,8 +1362,9 @@ def main():
 	clobvarlength=cur.getOutputBindLength("1")
 	blobvar=cur.getOutputBindBlob("2")
 	blobvarlength=cur.getOutputBindLength("2")
-	assertEqualsBytes(clobvar,b"hello",5)
+	assertEqualsBytes(clobvar,"hello",5)
 	assertEquals(clobvarlength,5)
+	# blob output bind comes back as bytes in Python
 	assertEqualsBytes(blobvar,b"hello",5)
 	assertEquals(blobvarlength,5)
 	assertTrue(cur.sendQuery("drop procedure testproc"))
@@ -1657,7 +1658,8 @@ def main():
 	# byte here.
 	assertEquals(cur.getField(0,0),"\0")
 	assertNone(cur.getField(0,1))
-	assertEquals(cur.getField(0,2),"\0")
+	# blob column comes back as bytes in Python
+	assertEquals(cur.getField(0,2),b"\0")
 	assertNone(cur.getField(0,3))
 	cur.getNullsAsEmptyStrings()
 	assertTrue(cur.sendQuery("drop table testtable"))
