@@ -1409,6 +1409,7 @@ class freetds extends sqlrtest {
 		assertEquals(second,0);
 		assertEquals(microsecond,0);
 		assertEquals(tz,"");
+		assertFalse(isnegative);
 		nullvar=cur.getOutputBindString("5");
 		assertEquals(nullvar,null);
 		cur.getNullsAsEmptyStrings();
@@ -1460,6 +1461,7 @@ class freetds extends sqlrtest {
 		assertEquals(second,0);
 		assertEquals(microsecond,0);
 		assertEquals(tz,"");
+		assertFalse(isnegative);
 		nullvar=cur.getOutputBindString("out5");
 		assertEquals(nullvar,null);
 		cur.getNullsAsEmptyStrings();

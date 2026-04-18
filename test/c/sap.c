@@ -1240,6 +1240,7 @@ int main(int argc, char **argv) {
 	assertEqInt(second,0);
 	assertEqInt(microsecond,0);
 	assertEqStr(tz,"");
+	assertFalse(isnegative);
 	assertEqStr(nullvar,NULL);
 	sqlrcur_getNullsAsEmptyStrings(cur);
 	assertTrue(sqlrcur_sendQuery(cur,"drop procedure testproc"));
@@ -1288,6 +1289,7 @@ int main(int argc, char **argv) {
 	assertEqInt(second,0);
 	assertEqInt(microsecond,0);
 	assertEqStr(tz,"");
+	assertFalse(isnegative);
 	assertEqStr(nullvar,NULL);
 	sqlrcur_getNullsAsEmptyStrings(cur);
 	assertTrue(sqlrcur_sendQuery(cur,"drop procedure testproc"));

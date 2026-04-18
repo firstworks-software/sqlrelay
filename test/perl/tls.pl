@@ -75,8 +75,8 @@ foreach $il (@isolationlevels) {
 	# be the first query of the transaction
 	assertTrue($con->commit());
 	# you can set the isolation level, but to get it, you have to
-	# have permisisons to read from sys.v_\$session and
-	# sys.v_\$transaction
+	# have permisisons to read from sys.v_$session and
+	# sys.v_$transaction
 	assertTrue($con->setIsolationLevel($il));
 	print("\n");
 }
@@ -988,6 +988,7 @@ $minute=$cur->getOutputBindDateMinute("4");
 $second=$cur->getOutputBindDateSecond("4");
 $microsecond=$cur->getOutputBindDateMicrosecond("4");
 $tz=$cur->getOutputBindDateTz("4");
+$isnegative=$cur->getOutputBindDateIsNegative("4");
 $nullvar=$cur->getOutputBindString("5");
 assertEquals($numvar,1);
 assertEquals($stringvar,"hello");
@@ -1000,6 +1001,7 @@ assertEquals($minute,0);
 assertEquals($second,0);
 assertEquals($microsecond,0);
 assertEquals($tz,"");
+assertFalse($isnegative);
 assertUndef($nullvar);
 $cur->getNullsAsEmptyStrings();
 print("\n");
@@ -1026,6 +1028,7 @@ $minute=$cur->getOutputBindDateMinute("datevar");
 $second=$cur->getOutputBindDateSecond("datevar");
 $microsecond=$cur->getOutputBindDateMicrosecond("datevar");
 $tz=$cur->getOutputBindDateTz("datevar");
+$isnegative=$cur->getOutputBindDateIsNegative("datevar");
 $nullvar=$cur->getOutputBindString("nullvar");
 assertEquals($numvar,1);
 assertEquals($stringvar,"hello");
@@ -1038,6 +1041,7 @@ assertEquals($minute,0);
 assertEquals($second,0);
 assertEquals($microsecond,0);
 assertEquals($tz,"");
+assertFalse($isnegative);
 assertUndef($nullvar);
 $cur->getNullsAsEmptyStrings();
 print("\n");
@@ -1066,6 +1070,7 @@ $minute=$cur->getOutputBindDateMinute("datevar");
 $second=$cur->getOutputBindDateSecond("datevar");
 $microsecond=$cur->getOutputBindDateMicrosecond("datevar");
 $tz=$cur->getOutputBindDateTz("datevar");
+$isnegative=$cur->getOutputBindDateIsNegative("datevar");
 $nullvar=$cur->getOutputBindString("nullvar");
 assertEquals($numvar,1);
 assertEquals($stringvar,"hello");
@@ -1078,6 +1083,7 @@ assertEquals($minute,0);
 assertEquals($second,0);
 assertEquals($microsecond,0);
 assertEquals($tz,"");
+assertFalse($isnegative);
 assertUndef($nullvar);
 $cur->getNullsAsEmptyStrings();
 print("\n");

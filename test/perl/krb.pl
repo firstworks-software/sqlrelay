@@ -12,11 +12,9 @@ require "./asserts.pl";
 
 @isolationlevels=("READ COMMITTED","SERIALIZABLE");
 @bindvars=("1","2","3","4","5");
-@bindvals=("4","testchar4",
-		"testvarchar4","01-JAN-2004","testlong4");
+@bindvals=("4","testchar4","testvarchar4","01-JAN-2004","testlong4");
 @arraybindvars=("var1","var2","var3","var4","var5");
-@arraybindvals=("7","testchar7",
-		"testvarchar7","01-JAN-2007","testlong7");
+@arraybindvals=("7","testchar7","testvarchar7","01-JAN-2007","testlong7");
 @subvars=("var1","var2","var3");
 @subvallongs=(1,2,3);
 @subvalstrings=("hi","hello","bye");
@@ -31,7 +29,7 @@ $service=undef;
 
 # hostname
 $hostname=hostname();
-$hostname=~s/\..*$//;
+$hostname=~s/\..*//;
 
 
 # instantiation
@@ -998,6 +996,7 @@ assertEquals($minute,0);
 assertEquals($second,0);
 assertEquals($microsecond,0);
 assertEquals($tz,"");
+assertFalse($isnegative);
 assertUndef($nullvar);
 $cur->getNullsAsEmptyStrings();
 print("\n");
@@ -1037,6 +1036,7 @@ assertEquals($minute,0);
 assertEquals($second,0);
 assertEquals($microsecond,0);
 assertEquals($tz,"");
+assertFalse($isnegative);
 assertUndef($nullvar);
 $cur->getNullsAsEmptyStrings();
 print("\n");
@@ -1078,6 +1078,7 @@ assertEquals($minute,0);
 assertEquals($second,0);
 assertEquals($microsecond,0);
 assertEquals($tz,"");
+assertFalse($isnegative);
 assertUndef($nullvar);
 $cur->getNullsAsEmptyStrings();
 print("\n");

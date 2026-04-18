@@ -1063,6 +1063,7 @@ int main(int argc, char **argv) {
 	assertEqInt(second,0);
 	assertEqInt(microsecond,0);
 	assertEqStr(tz,"");
+	assertFalse(isnegative);
 	assertEqStr(nullvar,NULL);
 	sqlrcur_getNullsAsEmptyStrings(cur);
 	printf("\n");
@@ -1095,6 +1096,7 @@ int main(int argc, char **argv) {
 	assertEqInt(second,0);
 	assertEqInt(microsecond,0);
 	assertEqStr(tz,"");
+	assertFalse(isnegative);
 	nullvar=sqlrcur_getOutputBindString(cur,"nullvar");
 	assertEqStr(nullvar,NULL);
 	sqlrcur_getNullsAsEmptyStrings(cur);
@@ -1130,6 +1132,7 @@ int main(int argc, char **argv) {
 	assertEqInt(second,0);
 	assertEqInt(microsecond,0);
 	assertEqStr(tz,"");
+	assertFalse(isnegative);
 	nullvar=sqlrcur_getOutputBindString(cur,"nullvar");
 	assertEqStr(nullvar,NULL);
 	sqlrcur_getNullsAsEmptyStrings(cur);

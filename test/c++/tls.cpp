@@ -1048,6 +1048,7 @@ int main(int argc, char **argv) {
 	assertEquals(second,0);
 	assertEquals(microsecond,0);
 	assertEquals(tz,"");
+	assertEquals(isnegative,false);
 	assertEquals(nullvar,NULL);
 	cur->getNullsAsEmptyStrings();
 	stdoutput.printf("\n");
@@ -1081,6 +1082,7 @@ int main(int argc, char **argv) {
 	assertEquals(second,0);
 	assertEquals(microsecond,0);
 	assertEquals(tz,"");
+	assertEquals(isnegative,false);
 	assertEquals(nullvar,NULL);
 	cur->getNullsAsEmptyStrings();
 	stdoutput.printf("\n");
@@ -1116,6 +1118,7 @@ int main(int argc, char **argv) {
 	assertEquals(second,0);
 	assertEquals(microsecond,0);
 	assertEquals(tz,"");
+	assertEquals(isnegative,false);
 	assertEquals(nullvar,NULL);
 	cur->getNullsAsEmptyStrings();
 	stdoutput.printf("\n");

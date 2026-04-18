@@ -1153,6 +1153,7 @@ int main(int argc, char **argv) {
 	assertEquals(second,0);
 	assertEquals(microsecond,0);
 	assertEquals(tz,"");
+	assertEquals(isnegative,false);
 	nullvar=cur->getOutputBindString("5");
 	assertEquals(nullvar,NULL);
 	cur->getNullsAsEmptyStrings();
