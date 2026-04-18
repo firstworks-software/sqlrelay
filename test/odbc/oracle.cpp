@@ -211,6 +211,116 @@ int main(int argc, char **argv) {
 
 
 
+	// connection attributes (pre-connect, handled by driver manager)
+	stdoutput.printf("CONNECTION ATTRIBUTES (pre-connect): \n");
+	SQLUINTEGER	dbcuintval;
+	SQLINTEGER	dbcstrlen;
+	SQLUINTEGER	dbcinitial;
+	SQLCHAR		dbcstrval[2048];
+	SQLCHAR		dbcstrinit[2048];
+	SQLPOINTER	dbcptrval;
+	SQLPOINTER	dbcptrinit;
+
+
+	// SQL_ATTR_LOGIN_TIMEOUT
+	stdoutput.printf("  SQL_ATTR_LOGIN_TIMEOUT\n");
+	// save initial value
+	erg=SQLGetConnectAttr(dbc,SQL_ATTR_LOGIN_TIMEOUT,
+			(SQLPOINTER)&dbcinitial,0,&dbcstrlen);
+	assertSuccessDbc(dbc,erg);
+	// set to 30
+	erg=SQLSetConnectAttr(dbc,SQL_ATTR_LOGIN_TIMEOUT,
+			(SQLPOINTER)(uintptr_t)30,0);
+	assertSuccessDbc(dbc,erg);
+	erg=SQLGetConnectAttr(dbc,SQL_ATTR_LOGIN_TIMEOUT,
+			(SQLPOINTER)&dbcuintval,0,&dbcstrlen);
+	assertSuccessDbc(dbc,erg);
+	assertEqualDbc(dbc,(int)dbcuintval,30);
+	// restore initial value
+	erg=SQLSetConnectAttr(dbc,SQL_ATTR_LOGIN_TIMEOUT,
+			(SQLPOINTER)(uintptr_t)dbcinitial,0);
+	assertSuccessDbc(dbc,erg);
+	stdoutput.printf("\n");
+
+
+	// SQL_ATTR_ODBC_CURSORS
+	stdoutput.printf("  SQL_ATTR_ODBC_CURSORS\n");
+	// save initial value
+	erg=SQLGetConnectAttr(dbc,SQL_ATTR_ODBC_CURSORS,
+			(SQLPOINTER)&dbcinitial,0,&dbcstrlen);
+	assertSuccessDbc(dbc,erg);
+	// SQL_CUR_USE_ODBC
+	erg=SQLSetConnectAttr(dbc,SQL_ATTR_ODBC_CURSORS,
+			(SQLPOINTER)(uintptr_t)SQL_CUR_USE_ODBC,0);
+	assertSuccessDbc(dbc,erg);
+	erg=SQLGetConnectAttr(dbc,SQL_ATTR_ODBC_CURSORS,
+			(SQLPOINTER)&dbcuintval,0,&dbcstrlen);
+	assertSuccessDbc(dbc,erg);
+	assertEqualDbc(dbc,(int)dbcuintval,(int)SQL_CUR_USE_ODBC);
+	// SQL_CUR_USE_DRIVER
+	erg=SQLSetConnectAttr(dbc,SQL_ATTR_ODBC_CURSORS,
+			(SQLPOINTER)(uintptr_t)SQL_CUR_USE_DRIVER,0);
+	assertSuccessDbc(dbc,erg);
+	erg=SQLGetConnectAttr(dbc,SQL_ATTR_ODBC_CURSORS,
+			(SQLPOINTER)&dbcuintval,0,&dbcstrlen);
+	assertSuccessDbc(dbc,erg);
+	assertEqualDbc(dbc,(int)dbcuintval,(int)SQL_CUR_USE_DRIVER);
+	// SQL_CUR_USE_IF_NEEDED
+	erg=SQLSetConnectAttr(dbc,SQL_ATTR_ODBC_CURSORS,
+			(SQLPOINTER)(uintptr_t)SQL_CUR_USE_IF_NEEDED,0);
+	assertSuccessDbc(dbc,erg);
+	erg=SQLGetConnectAttr(dbc,SQL_ATTR_ODBC_CURSORS,
+			(SQLPOINTER)&dbcuintval,0,&dbcstrlen);
+	assertSuccessDbc(dbc,erg);
+	assertEqualDbc(dbc,(int)dbcuintval,(int)SQL_CUR_USE_IF_NEEDED);
+	// restore initial value
+	erg=SQLSetConnectAttr(dbc,SQL_ATTR_ODBC_CURSORS,
+			(SQLPOINTER)(uintptr_t)dbcinitial,0);
+	assertSuccessDbc(dbc,erg);
+	stdoutput.printf("\n");
+
+
+	// SQL_ATTR_PACKET_SIZE
+	// Per the ODBC spec, SQL_ATTR_PACKET_SIZE must be set before
+	// the connection is opened, and the value cannot be read
+	// until after connect; set only here.
+	stdoutput.printf("  SQL_ATTR_PACKET_SIZE\n");
+	erg=SQLSetConnectAttr(dbc,SQL_ATTR_PACKET_SIZE,
+			(SQLPOINTER)(uintptr_t)8192,0);
+	assertSuccessDbc(dbc,erg);
+	stdoutput.printf("\n");
+
+
+	// SQL_ATTR_TRACE
+	stdoutput.printf("  SQL_ATTR_TRACE\n");
+	// save initial value
+	erg=SQLGetConnectAttr(dbc,SQL_ATTR_TRACE,
+			(SQLPOINTER)&dbcinitial,0,&dbcstrlen);
+	assertSuccessDbc(dbc,erg);
+	// SQL_OPT_TRACE_ON
+	erg=SQLSetConnectAttr(dbc,SQL_ATTR_TRACE,
+			(SQLPOINTER)(uintptr_t)SQL_OPT_TRACE_ON,0);
+	assertSuccessDbc(dbc,erg);
+	erg=SQLGetConnectAttr(dbc,SQL_ATTR_TRACE,
+			(SQLPOINTER)&dbcuintval,0,&dbcstrlen);
+	assertSuccessDbc(dbc,erg);
+	assertEqualDbc(dbc,(int)dbcuintval,(int)SQL_OPT_TRACE_ON);
+	// SQL_OPT_TRACE_OFF
+	erg=SQLSetConnectAttr(dbc,SQL_ATTR_TRACE,
+			(SQLPOINTER)(uintptr_t)SQL_OPT_TRACE_OFF,0);
+	assertSuccessDbc(dbc,erg);
+	erg=SQLGetConnectAttr(dbc,SQL_ATTR_TRACE,
+			(SQLPOINTER)&dbcuintval,0,&dbcstrlen);
+	assertSuccessDbc(dbc,erg);
+	assertEqualDbc(dbc,(int)dbcuintval,(int)SQL_OPT_TRACE_OFF);
+	// restore initial value
+	erg=SQLSetConnectAttr(dbc,SQL_ATTR_TRACE,
+			(SQLPOINTER)(uintptr_t)dbcinitial,0);
+	assertSuccessDbc(dbc,erg);
+	stdoutput.printf("\n");
+
+
+
 	// connect
 	stdoutput.printf("CONNECT: \n");
 	SQLCHAR	*dsn;
@@ -377,8 +487,327 @@ int main(int argc, char **argv) {
 
 
 
-	// connection attributes
-	// FIXME:...
+	// connection attributes (post-connect, forwarded to driver)
+	stdoutput.printf("CONNECTION ATTRIBUTES (post-connect): \n");
+
+
+	// SQL_ATTR_AUTOCOMMIT
+	stdoutput.printf("  SQL_ATTR_AUTOCOMMIT\n");
+	// save initial value
+	erg=SQLGetConnectAttr(dbc,SQL_ATTR_AUTOCOMMIT,
+			(SQLPOINTER)&dbcinitial,0,&dbcstrlen);
+	assertSuccessDbc(dbc,erg);
+	// SQL_AUTOCOMMIT_OFF
+	erg=SQLSetConnectAttr(dbc,SQL_ATTR_AUTOCOMMIT,
+			(SQLPOINTER)(uintptr_t)SQL_AUTOCOMMIT_OFF,0);
+	assertSuccessDbc(dbc,erg);
+	erg=SQLGetConnectAttr(dbc,SQL_ATTR_AUTOCOMMIT,
+			(SQLPOINTER)&dbcuintval,0,&dbcstrlen);
+	assertSuccessDbc(dbc,erg);
+	assertEqualDbc(dbc,(int)dbcuintval,(int)SQL_AUTOCOMMIT_OFF);
+	// SQL_AUTOCOMMIT_ON
+	erg=SQLSetConnectAttr(dbc,SQL_ATTR_AUTOCOMMIT,
+			(SQLPOINTER)(uintptr_t)SQL_AUTOCOMMIT_ON,0);
+	assertSuccessDbc(dbc,erg);
+	erg=SQLGetConnectAttr(dbc,SQL_ATTR_AUTOCOMMIT,
+			(SQLPOINTER)&dbcuintval,0,&dbcstrlen);
+	assertSuccessDbc(dbc,erg);
+	assertEqualDbc(dbc,(int)dbcuintval,(int)SQL_AUTOCOMMIT_ON);
+	// restore initial value
+	erg=SQLSetConnectAttr(dbc,SQL_ATTR_AUTOCOMMIT,
+			(SQLPOINTER)(uintptr_t)dbcinitial,0);
+	assertSuccessDbc(dbc,erg);
+	stdoutput.printf("\n");
+
+
+	// SQL_ATTR_ACCESS_MODE
+	// Note: Oracle's ODBC driver reports success when switching from
+	// READ_ONLY back to READ_WRITE but the stored value stays at
+	// READ_ONLY, so we only round-trip one direction and trust the
+	// final restore call without verifying.
+	stdoutput.printf("  SQL_ATTR_ACCESS_MODE\n");
+	// save initial value
+	erg=SQLGetConnectAttr(dbc,SQL_ATTR_ACCESS_MODE,
+			(SQLPOINTER)&dbcinitial,0,&dbcstrlen);
+	assertSuccessDbc(dbc,erg);
+	// SQL_MODE_READ_ONLY
+	erg=SQLSetConnectAttr(dbc,SQL_ATTR_ACCESS_MODE,
+			(SQLPOINTER)(uintptr_t)SQL_MODE_READ_ONLY,0);
+	assertSuccessDbc(dbc,erg);
+	erg=SQLGetConnectAttr(dbc,SQL_ATTR_ACCESS_MODE,
+			(SQLPOINTER)&dbcuintval,0,&dbcstrlen);
+	assertSuccessDbc(dbc,erg);
+	assertEqualDbc(dbc,(int)dbcuintval,(int)SQL_MODE_READ_ONLY);
+	// restore initial value (driver may ignore the change; don't verify)
+	erg=SQLSetConnectAttr(dbc,SQL_ATTR_ACCESS_MODE,
+			(SQLPOINTER)(uintptr_t)dbcinitial,0);
+	assertSuccessDbc(dbc,erg);
+	stdoutput.printf("\n");
+
+
+	#if (ODBCVER >= 0x0300)
+	// SQL_ATTR_CONNECTION_TIMEOUT
+	stdoutput.printf("  SQL_ATTR_CONNECTION_TIMEOUT\n");
+	if (issqlrelay) {
+		// save initial value
+		erg=SQLGetConnectAttr(dbc,SQL_ATTR_CONNECTION_TIMEOUT,
+				(SQLPOINTER)&dbcinitial,0,&dbcstrlen);
+		assertSuccessDbc(dbc,erg);
+		// set to 30
+		erg=SQLSetConnectAttr(dbc,SQL_ATTR_CONNECTION_TIMEOUT,
+				(SQLPOINTER)(uintptr_t)30,0);
+		assertSuccessDbc(dbc,erg);
+		erg=SQLGetConnectAttr(dbc,SQL_ATTR_CONNECTION_TIMEOUT,
+				(SQLPOINTER)&dbcuintval,0,&dbcstrlen);
+		assertSuccessDbc(dbc,erg);
+		assertEqualDbc(dbc,(int)dbcuintval,30);
+		// restore initial value
+		erg=SQLSetConnectAttr(dbc,SQL_ATTR_CONNECTION_TIMEOUT,
+				(SQLPOINTER)(uintptr_t)dbcinitial,0);
+		assertSuccessDbc(dbc,erg);
+	} else {
+		// Oracle's ODBC driver does not implement
+		// SQL_ATTR_CONNECTION_TIMEOUT; both get and set raise
+		// HYT00 "Timeout expired".
+		erg=SQLGetConnectAttr(dbc,SQL_ATTR_CONNECTION_TIMEOUT,
+				(SQLPOINTER)&dbcinitial,0,&dbcstrlen);
+		assertFailureDbc(dbc,erg);
+		erg=SQLSetConnectAttr(dbc,SQL_ATTR_CONNECTION_TIMEOUT,
+				(SQLPOINTER)(uintptr_t)30,0);
+		assertFailureDbc(dbc,erg);
+	}
+	stdoutput.printf("\n");
+	#endif
+
+
+	#if (ODBCVER >= 0x0300)
+	// SQL_ATTR_METADATA_ID
+	stdoutput.printf("  SQL_ATTR_METADATA_ID\n");
+	// save initial value
+	erg=SQLGetConnectAttr(dbc,SQL_ATTR_METADATA_ID,
+			(SQLPOINTER)&dbcinitial,0,&dbcstrlen);
+	assertSuccessDbc(dbc,erg);
+	// SQL_TRUE
+	erg=SQLSetConnectAttr(dbc,SQL_ATTR_METADATA_ID,
+			(SQLPOINTER)(uintptr_t)SQL_TRUE,0);
+	assertSuccessDbc(dbc,erg);
+	erg=SQLGetConnectAttr(dbc,SQL_ATTR_METADATA_ID,
+			(SQLPOINTER)&dbcuintval,0,&dbcstrlen);
+	assertSuccessDbc(dbc,erg);
+	assertEqualDbc(dbc,(int)dbcuintval,(int)SQL_TRUE);
+	// SQL_FALSE
+	erg=SQLSetConnectAttr(dbc,SQL_ATTR_METADATA_ID,
+			(SQLPOINTER)(uintptr_t)SQL_FALSE,0);
+	assertSuccessDbc(dbc,erg);
+	erg=SQLGetConnectAttr(dbc,SQL_ATTR_METADATA_ID,
+			(SQLPOINTER)&dbcuintval,0,&dbcstrlen);
+	assertSuccessDbc(dbc,erg);
+	assertEqualDbc(dbc,(int)dbcuintval,(int)SQL_FALSE);
+	// restore initial value
+	erg=SQLSetConnectAttr(dbc,SQL_ATTR_METADATA_ID,
+			(SQLPOINTER)(uintptr_t)dbcinitial,0);
+	assertSuccessDbc(dbc,erg);
+	stdoutput.printf("\n");
+	#endif
+
+
+	// SQL_ATTR_TXN_ISOLATION
+	// (the ISOLATION LEVELS section below exercises
+	// Oracle-specific acceptance of individual levels; we skip
+	// SQLGetConnectAttr here because it needs read access to
+	// sys.v_$session / sys.v_$transaction which the test user
+	// does not have)
+	stdoutput.printf("  SQL_ATTR_TXN_ISOLATION\n");
+	// SQL_TXN_READ_COMMITTED (set only; restore via SET below)
+	erg=SQLSetConnectAttr(dbc,SQL_ATTR_TXN_ISOLATION,
+			(SQLPOINTER)(uintptr_t)SQL_TXN_READ_COMMITTED,0);
+	assertSuccessDbc(dbc,erg);
+	stdoutput.printf("\n");
+
+
+	#if (ODBCVER >= 0x0300)
+	// SQL_ATTR_CURRENT_CATALOG
+	stdoutput.printf("  SQL_ATTR_CURRENT_CATALOG\n");
+	// save initial value
+	erg=SQLGetConnectAttr(dbc,SQL_ATTR_CURRENT_CATALOG,
+			(SQLPOINTER)dbcstrinit,sizeof(dbcstrinit),&dbcstrlen);
+	assertSuccessDbc(dbc,erg);
+	// setting is a no-op for many drivers, but a round-trip
+	// to the initial value should always succeed
+	erg=SQLSetConnectAttr(dbc,SQL_ATTR_CURRENT_CATALOG,
+			(SQLPOINTER)dbcstrinit,SQL_NTS);
+	assertSuccessDbc(dbc,erg);
+	erg=SQLGetConnectAttr(dbc,SQL_ATTR_CURRENT_CATALOG,
+			(SQLPOINTER)dbcstrval,sizeof(dbcstrval),&dbcstrlen);
+	assertSuccessDbc(dbc,erg);
+	assertEqualDbc(dbc,(const char *)dbcstrval,(const char *)dbcstrinit);
+	stdoutput.printf("\n");
+	#endif
+
+
+	#if (ODBCVER >= 0x0300)
+	// SQL_ATTR_ASYNC_ENABLE
+	stdoutput.printf("  SQL_ATTR_ASYNC_ENABLE\n");
+	// save initial value
+	erg=SQLGetConnectAttr(dbc,SQL_ATTR_ASYNC_ENABLE,
+			(SQLPOINTER)&dbcinitial,0,&dbcstrlen);
+	assertSuccessDbc(dbc,erg);
+	// SQL_ASYNC_ENABLE_OFF
+	erg=SQLSetConnectAttr(dbc,SQL_ATTR_ASYNC_ENABLE,
+			(SQLPOINTER)(uintptr_t)SQL_ASYNC_ENABLE_OFF,0);
+	assertSuccessDbc(dbc,erg);
+	erg=SQLGetConnectAttr(dbc,SQL_ATTR_ASYNC_ENABLE,
+			(SQLPOINTER)&dbcuintval,0,&dbcstrlen);
+	assertSuccessDbc(dbc,erg);
+	assertEqualDbc(dbc,(int)dbcuintval,(int)SQL_ASYNC_ENABLE_OFF);
+	// SQL_ASYNC_ENABLE_ON
+	erg=SQLSetConnectAttr(dbc,SQL_ATTR_ASYNC_ENABLE,
+			(SQLPOINTER)(uintptr_t)SQL_ASYNC_ENABLE_ON,0);
+	assertSuccessDbc(dbc,erg);
+	erg=SQLGetConnectAttr(dbc,SQL_ATTR_ASYNC_ENABLE,
+			(SQLPOINTER)&dbcuintval,0,&dbcstrlen);
+	assertSuccessDbc(dbc,erg);
+	assertEqualDbc(dbc,(int)dbcuintval,(int)SQL_ASYNC_ENABLE_ON);
+	// restore initial value
+	erg=SQLSetConnectAttr(dbc,SQL_ATTR_ASYNC_ENABLE,
+			(SQLPOINTER)(uintptr_t)dbcinitial,0);
+	assertSuccessDbc(dbc,erg);
+	stdoutput.printf("\n");
+	#endif
+
+
+	#if (ODBCVER >= 0x0300)
+	// SQL_ATTR_CONNECTION_DEAD (read-only)
+	stdoutput.printf("  SQL_ATTR_CONNECTION_DEAD\n");
+	erg=SQLGetConnectAttr(dbc,SQL_ATTR_CONNECTION_DEAD,
+			(SQLPOINTER)&dbcuintval,0,&dbcstrlen);
+	assertSuccessDbc(dbc,erg);
+	assertEqualDbc(dbc,(int)dbcuintval,(int)SQL_CD_FALSE);
+	stdoutput.printf("\n");
+	#endif
+
+
+	#if (ODBCVER >= 0x0351)
+	// SQL_ATTR_AUTO_IPD (read-only)
+	stdoutput.printf("  SQL_ATTR_AUTO_IPD\n");
+	erg=SQLGetConnectAttr(dbc,SQL_ATTR_AUTO_IPD,
+			(SQLPOINTER)&dbcuintval,0,&dbcstrlen);
+	assertSuccessDbc(dbc,erg);
+	// either SQL_TRUE or SQL_FALSE is legal; just require a
+	// valid boolean
+	assertEqualDbc(dbc,
+			(int)(dbcuintval==SQL_TRUE || dbcuintval==SQL_FALSE),
+			(int)1);
+	stdoutput.printf("\n");
+	#endif
+
+
+	#if defined(SQL_ATTR_DISCONNECT_BEHAVIOR)
+	// SQL_ATTR_DISCONNECT_BEHAVIOR
+	stdoutput.printf("  SQL_ATTR_DISCONNECT_BEHAVIOR\n");
+	// save initial value
+	erg=SQLGetConnectAttr(dbc,SQL_ATTR_DISCONNECT_BEHAVIOR,
+			(SQLPOINTER)&dbcinitial,0,&dbcstrlen);
+	assertSuccessDbc(dbc,erg);
+	// SQL_DB_RETURN_TO_POOL
+	erg=SQLSetConnectAttr(dbc,SQL_ATTR_DISCONNECT_BEHAVIOR,
+			(SQLPOINTER)(uintptr_t)SQL_DB_RETURN_TO_POOL,0);
+	assertSuccessDbc(dbc,erg);
+	erg=SQLGetConnectAttr(dbc,SQL_ATTR_DISCONNECT_BEHAVIOR,
+			(SQLPOINTER)&dbcuintval,0,&dbcstrlen);
+	assertSuccessDbc(dbc,erg);
+	assertEqualDbc(dbc,(int)dbcuintval,(int)SQL_DB_RETURN_TO_POOL);
+	// SQL_DB_DISCONNECT
+	erg=SQLSetConnectAttr(dbc,SQL_ATTR_DISCONNECT_BEHAVIOR,
+			(SQLPOINTER)(uintptr_t)SQL_DB_DISCONNECT,0);
+	assertSuccessDbc(dbc,erg);
+	erg=SQLGetConnectAttr(dbc,SQL_ATTR_DISCONNECT_BEHAVIOR,
+			(SQLPOINTER)&dbcuintval,0,&dbcstrlen);
+	assertSuccessDbc(dbc,erg);
+	assertEqualDbc(dbc,(int)dbcuintval,(int)SQL_DB_DISCONNECT);
+	// restore initial value
+	erg=SQLSetConnectAttr(dbc,SQL_ATTR_DISCONNECT_BEHAVIOR,
+			(SQLPOINTER)(uintptr_t)dbcinitial,0);
+	assertSuccessDbc(dbc,erg);
+	stdoutput.printf("\n");
+	#endif
+
+
+	// SQL_ATTR_TRACEFILE
+	// (the driver manager rejects an empty restore value, so we
+	// do not restore)
+	stdoutput.printf("  SQL_ATTR_TRACEFILE\n");
+	erg=SQLSetConnectAttr(dbc,SQL_ATTR_TRACEFILE,
+			(SQLPOINTER)"/tmp/odbctrace.log",SQL_NTS);
+	assertSuccessDbc(dbc,erg);
+	erg=SQLGetConnectAttr(dbc,SQL_ATTR_TRACEFILE,
+			(SQLPOINTER)dbcstrval,sizeof(dbcstrval),&dbcstrlen);
+	assertSuccessDbc(dbc,erg);
+	assertEqualDbc(dbc,(const char *)dbcstrval,"/tmp/odbctrace.log");
+	stdoutput.printf("\n");
+
+
+	// SQL_ATTR_QUIET_MODE
+	stdoutput.printf("  SQL_ATTR_QUIET_MODE\n");
+	// save initial value (a window handle; NULL is valid)
+	erg=SQLGetConnectAttr(dbc,SQL_ATTR_QUIET_MODE,
+			(SQLPOINTER)&dbcptrinit,0,&dbcstrlen);
+	assertSuccessDbc(dbc,erg);
+	// set to NULL (no parent window)
+	erg=SQLSetConnectAttr(dbc,SQL_ATTR_QUIET_MODE,
+			(SQLPOINTER)NULL,0);
+	assertSuccessDbc(dbc,erg);
+	erg=SQLGetConnectAttr(dbc,SQL_ATTR_QUIET_MODE,
+			(SQLPOINTER)&dbcptrval,0,&dbcstrlen);
+	assertSuccessDbc(dbc,erg);
+	assertEqualDbc(dbc,(int)(uintptr_t)dbcptrval,0);
+	// restore initial value
+	erg=SQLSetConnectAttr(dbc,SQL_ATTR_QUIET_MODE,
+			(SQLPOINTER)dbcptrinit,0);
+	assertSuccessDbc(dbc,erg);
+	stdoutput.printf("\n");
+
+
+	#if (ODBCVER >= 0x0300)
+	// SQL_ATTR_TRANSLATE_LIB
+	stdoutput.printf("  SQL_ATTR_TRANSLATE_LIB\n");
+	// save initial value
+	erg=SQLGetConnectAttr(dbc,SQL_ATTR_TRANSLATE_LIB,
+			(SQLPOINTER)dbcstrinit,sizeof(dbcstrinit),&dbcstrlen);
+	assertSuccessDbc(dbc,erg);
+	// round-trip to the initial value
+	erg=SQLSetConnectAttr(dbc,SQL_ATTR_TRANSLATE_LIB,
+			(SQLPOINTER)dbcstrinit,SQL_NTS);
+	assertSuccessDbc(dbc,erg);
+	erg=SQLGetConnectAttr(dbc,SQL_ATTR_TRANSLATE_LIB,
+			(SQLPOINTER)dbcstrval,sizeof(dbcstrval),&dbcstrlen);
+	assertSuccessDbc(dbc,erg);
+	assertEqualDbc(dbc,(const char *)dbcstrval,(const char *)dbcstrinit);
+	stdoutput.printf("\n");
+	#endif
+
+
+	#if (ODBCVER >= 0x0300)
+	// SQL_ATTR_TRANSLATE_OPTION
+	stdoutput.printf("  SQL_ATTR_TRANSLATE_OPTION\n");
+	// save initial value
+	erg=SQLGetConnectAttr(dbc,SQL_ATTR_TRANSLATE_OPTION,
+			(SQLPOINTER)&dbcinitial,0,&dbcstrlen);
+	assertSuccessDbc(dbc,erg);
+	// set to 0
+	erg=SQLSetConnectAttr(dbc,SQL_ATTR_TRANSLATE_OPTION,
+			(SQLPOINTER)(uintptr_t)0,0);
+	assertSuccessDbc(dbc,erg);
+	erg=SQLGetConnectAttr(dbc,SQL_ATTR_TRANSLATE_OPTION,
+			(SQLPOINTER)&dbcuintval,0,&dbcstrlen);
+	assertSuccessDbc(dbc,erg);
+	assertEqualDbc(dbc,(int)dbcuintval,0);
+	// restore initial value
+	erg=SQLSetConnectAttr(dbc,SQL_ATTR_TRANSLATE_OPTION,
+			(SQLPOINTER)(uintptr_t)dbcinitial,0);
+	assertSuccessDbc(dbc,erg);
+	stdoutput.printf("\n");
+	#endif
 
 
 

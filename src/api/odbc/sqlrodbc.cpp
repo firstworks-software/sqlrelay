@@ -4513,9 +4513,12 @@ static SQLRETURN SQLR_SQLGetConnectAttr(SQLHDBC connectionhandle,
 			break;
 	#if (ODBCVER >= 0x0300)
 		case SQL_ATTR_CONNECTION_TIMEOUT:
-			debugPrintf("  unsupported attribute: "
+			debugPrintf("  attribute: "
 					"SQL_ATTR_CONNECTION_TIMEOUT\n");
-			// FIXME: implement
+			val.uintval=
+				(SQLUINTEGER)conn->con->
+						getConnectTimeoutSeconds();
+			type=1;
 			break;
 		case SQL_ATTR_DISCONNECT_BEHAVIOR:
 			debugPrintf("  unsupported attribute: "
@@ -11391,9 +11394,10 @@ static SQLRETURN SQLR_SQLSetConnectAttr(SQLHDBC connectionhandle,
 			return SQL_SUCCESS;
 	#if (ODBCVER >= 0x0300)
 		case SQL_ATTR_CONNECTION_TIMEOUT:
-			debugPrintf("  attribute: SQL_ATTR_CONNECTION_TIMEOUT "
-				"(unsupported but returning success)\n");
-			// FIXME: implement...
+			debugPrintf("  attribute: "
+					"SQL_ATTR_CONNECTION_TIMEOUT\n");
+			debugPrintf("  val: %lld\n",(uint64_t)val);
+			conn->con->setConnectTimeout((int32_t)val,0);
 			return SQL_SUCCESS;
 		case SQL_ATTR_DISCONNECT_BEHAVIOR:
 			debugPrintf("  attribute: "
