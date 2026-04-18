@@ -658,14 +658,14 @@ def main():
 	assertEquals(cur.getField(0,11),"2001")
 	assertEquals(cur.getField(0,12),"char1")
 	assertEquals(cur.getField(0,13),"varchar1")
-	assertEquals(cur.getField(0,14),"text1")
-	assertEquals(cur.getField(0,15),"tinytext1")
-	assertEquals(cur.getField(0,16),"mediumtext1")
-	assertEquals(cur.getField(0,17),"longtext1")
-	assertEquals(cur.getField(0,18),"blob1")
-	assertEquals(cur.getField(0,19),"tinyblob1")
-	assertEquals(cur.getField(0,20),"mediumblob1")
-	assertEquals(cur.getField(0,21),"longblob1")
+	assertEquals(cur.getField(0,14),b"text1")
+	assertEquals(cur.getField(0,15),b"tinytext1")
+	assertEquals(cur.getField(0,16),b"mediumtext1")
+	assertEquals(cur.getField(0,17),b"longtext1")
+	assertEquals(cur.getField(0,18),b"blob1")
+	assertEquals(cur.getField(0,19),b"tinyblob1")
+	assertEquals(cur.getField(0,20),b"mediumblob1")
+	assertEquals(cur.getField(0,21),b"longblob1")
 	print()
 	assertEquals(cur.getField(7,0),"8")
 	assertEquals(cur.getField(7,1),"8")
@@ -681,14 +681,14 @@ def main():
 	assertEquals(cur.getField(7,11),"2008")
 	assertEquals(cur.getField(7,12),"char8")
 	assertEquals(cur.getField(7,13),"varchar8")
-	assertEquals(cur.getField(7,14),"text8")
-	assertEquals(cur.getField(7,15),"tinytext8")
-	assertEquals(cur.getField(7,16),"mediumtext8")
-	assertEquals(cur.getField(7,17),"longtext8")
-	assertEquals(cur.getField(7,18),"blob8")
-	assertEquals(cur.getField(7,19),"tinyblob8")
-	assertEquals(cur.getField(7,20),"mediumblob8")
-	assertEquals(cur.getField(7,21),"longblob8")
+	assertEquals(cur.getField(7,14),b"text8")
+	assertEquals(cur.getField(7,15),b"tinytext8")
+	assertEquals(cur.getField(7,16),b"mediumtext8")
+	assertEquals(cur.getField(7,17),b"longtext8")
+	assertEquals(cur.getField(7,18),b"blob8")
+	assertEquals(cur.getField(7,19),b"tinyblob8")
+	assertEquals(cur.getField(7,20),b"mediumblob8")
+	assertEquals(cur.getField(7,21),b"longblob8")
 	print()
 
 
@@ -758,14 +758,14 @@ def main():
 	assertEquals(cur.getField(0,"testyear"),"2001")
 	assertEquals(cur.getField(0,"testchar"),"char1")
 	assertEquals(cur.getField(0,"testvarchar"),"varchar1")
-	assertEquals(cur.getField(0,"testtext"),"text1")
-	assertEquals(cur.getField(0,"testtinytext"),"tinytext1")
-	assertEquals(cur.getField(0,"testmediumtext"),"mediumtext1")
-	assertEquals(cur.getField(0,"testlongtext"),"longtext1")
-	assertEquals(cur.getField(0,"testblob"),"blob1")
-	assertEquals(cur.getField(0,"testlongblob"),"longblob1")
-	assertEquals(cur.getField(0,"testtinyblob"),"tinyblob1")
-	assertEquals(cur.getField(0,"testmediumblob"),"mediumblob1")
+	assertEquals(cur.getField(0,"testtext"),b"text1")
+	assertEquals(cur.getField(0,"testtinytext"),b"tinytext1")
+	assertEquals(cur.getField(0,"testmediumtext"),b"mediumtext1")
+	assertEquals(cur.getField(0,"testlongtext"),b"longtext1")
+	assertEquals(cur.getField(0,"testblob"),b"blob1")
+	assertEquals(cur.getField(0,"testlongblob"),b"longblob1")
+	assertEquals(cur.getField(0,"testtinyblob"),b"tinyblob1")
+	assertEquals(cur.getField(0,"testmediumblob"),b"mediumblob1")
 	print()
 	assertEquals(cur.getField(7,"testtinyint"),"8")
 	assertEquals(cur.getField(7,"testsmallint"),"8")
@@ -781,14 +781,14 @@ def main():
 	assertEquals(cur.getField(7,"testyear"),"2008")
 	assertEquals(cur.getField(7,"testchar"),"char8")
 	assertEquals(cur.getField(7,"testvarchar"),"varchar8")
-	assertEquals(cur.getField(7,"testtext"),"text8")
-	assertEquals(cur.getField(7,"testtinytext"),"tinytext8")
-	assertEquals(cur.getField(7,"testmediumtext"),"mediumtext8")
-	assertEquals(cur.getField(7,"testlongtext"),"longtext8")
-	assertEquals(cur.getField(7,"testblob"),"blob8")
-	assertEquals(cur.getField(7,"testlongblob"),"longblob8")
-	assertEquals(cur.getField(7,"testtinyblob"),"tinyblob8")
-	assertEquals(cur.getField(7,"testmediumblob"),"mediumblob8")
+	assertEquals(cur.getField(7,"testtext"),b"text8")
+	assertEquals(cur.getField(7,"testtinytext"),b"tinytext8")
+	assertEquals(cur.getField(7,"testmediumtext"),b"mediumtext8")
+	assertEquals(cur.getField(7,"testlongtext"),b"longtext8")
+	assertEquals(cur.getField(7,"testblob"),b"blob8")
+	assertEquals(cur.getField(7,"testlongblob"),b"longblob8")
+	assertEquals(cur.getField(7,"testtinyblob"),b"tinyblob8")
+	assertEquals(cur.getField(7,"testmediumblob"),b"mediumblob8")
 	print()
 
 
@@ -859,14 +859,14 @@ def main():
 	assertEquals(fields[11],"2001")
 	assertEquals(fields[12],"char1")
 	assertEquals(fields[13],"varchar1")
-	assertEquals(fields[14],"text1")
-	assertEquals(fields[15],"tinytext1")
-	assertEquals(fields[16],"mediumtext1")
-	assertEquals(fields[17],"longtext1")
-	assertEquals(fields[18],"blob1")
-	assertEquals(fields[19],"tinyblob1")
-	assertEquals(fields[20],"mediumblob1")
-	assertEquals(fields[21],"longblob1")
+	assertEquals(fields[14],b"text1")
+	assertEquals(fields[15],b"tinytext1")
+	assertEquals(fields[16],b"mediumtext1")
+	assertEquals(fields[17],b"longtext1")
+	assertEquals(fields[18],b"blob1")
+	assertEquals(fields[19],b"tinyblob1")
+	assertEquals(fields[20],b"mediumblob1")
+	assertEquals(fields[21],b"longblob1")
 	print()
 
 
@@ -1447,9 +1447,10 @@ def main():
 	cur.inputBindBlob("4",None,0)
 	assertTrue(cur.executeQuery())
 	cur.sendQuery("select * from testtable")
-	assertEquals(cur.getField(0,0),"")
+	# longtext/longblob columns come back as bytes in Python
+	assertEquals(cur.getField(0,0),b"")
 	assertNone(cur.getField(0,1))
-	assertEquals(cur.getField(0,2),"")
+	assertEquals(cur.getField(0,2),b"")
 	assertNone(cur.getField(0,3))
 	cur.getNullsAsEmptyStrings()
 	assertTrue(cur.sendQuery("drop table testtable"))
@@ -1470,9 +1471,10 @@ def main():
 	assertTrue(cur.executeQuery())
 	cur.sendQuery("select * from testtable")
 	assertEquals(cur.getFieldLength(0,"testtext"),LARGE_BUFFER_LENGTH)
-	assertEquals(cur.getField(0,"testtext"),largebuffer)
+	# longtext/longblob columns come back as bytes in Python
+	assertEquals(cur.getField(0,"testtext"),largebuffer.encode())
 	assertEquals(cur.getFieldLength(0,"testblob"),LARGE_BUFFER_LENGTH)
-	assertEquals(cur.getField(0,"testblob"),largebuffer)
+	assertEquals(cur.getField(0,"testblob"),largebuffer.encode())
 	assertTrue(cur.sendQuery("drop table testtable"))
 	print()
 
@@ -1724,7 +1726,8 @@ def main():
 		assertTrue(cur.sendQuery("select @out1, @out2, @out3"))
 		assertEquals(cur.getField(0,0),"1")
 		#assertEquals(cur.getFieldAsDouble(0,1),1.1)
-		assertEquals(cur.getField(0,2),"hello")
+		# char result via user session var comes back as bytes in mysql
+		assertEquals(cur.getField(0,2),b"hello")
 		cur.sendQuery("drop procedure testproc")
 		print()
 
@@ -1766,15 +1769,17 @@ def main():
 		assertTrue(cur.sendQuery(
 			"create table testtable (col1 longblob)"))
 		buffer=bytes(range(256))
-		query="insert into testtable values (_binary'"
+		# build the query as bytes so embedded nulls and high bytes
+		# round-trip to the server without UTF-8 encoding
+		query=b"insert into testtable values (_binary'"
 		for i in range(len(buffer)):
 			byte=buffer[i:i+1]
 			if byte==b"'":
-				query+="\\"
+				query+=b"\\"
 			if byte==b"\\":
-				query+="\\"
-			query+=byte.decode('latin-1')
-		query+="')"
+				query+=b"\\"
+			query+=byte
+		query+=b"')"
 		assertTrue(cur.sendQueryWithLength(query,len(query)))
 		assertTrue(cur.sendQuery("select col1 from testtable"))
 		assertEquals(cur.getFieldLength(0,0),256)
@@ -1789,11 +1794,11 @@ def main():
 		cur.sendQuery("drop table testtable")
 		assertTrue(cur.sendQuery(
 			"create table testtable (col1 longblob)"))
-		query="insert into testtable values (_binary'\0\"\"')"
+		query=b"insert into testtable values (_binary'\0\"\"')"
 		assertTrue(cur.sendQueryWithLength(query,len(query)))
 		assertTrue(cur.sendQuery("select col1 from testtable"))
 		assertEquals(cur.getFieldLength(0,0),3)
-		assertEqualsBytes(cur.getField(0,0),"\0\"\"",3)
+		assertEqualsBytes(cur.getField(0,0),b"\0\"\"",3)
 		assertTrue(cur.sendQuery("drop table testtable"))
 		print()
 
@@ -1804,11 +1809,11 @@ def main():
 		cur.sendQuery("drop table testtable")
 		assertTrue(cur.sendQuery(
 			"create table testtable (col1 longblob)"))
-		query="insert into testtable values (_binary'\\\0\\\"\\\"')"
+		query=b"insert into testtable values (_binary'\\\0\\\"\\\"')"
 		assertTrue(cur.sendQueryWithLength(query,len(query)))
 		assertTrue(cur.sendQuery("select col1 from testtable"))
 		assertEquals(cur.getFieldLength(0,0),3)
-		assertEqualsBytes(cur.getField(0,0),"\0\"\"",3)
+		assertEqualsBytes(cur.getField(0,0),b"\0\"\"",3)
 		assertTrue(cur.sendQuery("drop table testtable"))
 		print()
 

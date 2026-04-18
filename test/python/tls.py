@@ -349,7 +349,7 @@ def main():
 	assertEquals(cur.getField(0,3),"01-JAN-01")
 	assertEquals(cur.getField(0,4),"testlong1")
 	assertEquals(cur.getField(0,5),"testclob1")
-	assertEquals(cur.getField(0,6),"")
+	assertEquals(cur.getField(0,6),b"")  # blob returns bytes
 	print()
 	assertEquals(cur.getField(7,0),"8")
 	assertEquals(cur.getField(7,1),"testchar8                               ")
@@ -357,7 +357,7 @@ def main():
 	assertEquals(cur.getField(7,3),"01-JAN-08")
 	assertEquals(cur.getField(7,4),"testlong8")
 	assertEquals(cur.getField(7,5),"testclob8")
-	assertEquals(cur.getField(7,6),"testblob8")
+	assertEquals(cur.getField(7,6),b"testblob8")
 	print()
 
 
@@ -389,7 +389,7 @@ def main():
 	assertEquals(cur.getField(0,"TESTDATE"),"01-JAN-01")
 	assertEquals(cur.getField(0,"TESTLONG"),"testlong1")
 	assertEquals(cur.getField(0,"TESTCLOB"),"testclob1")
-	assertEquals(cur.getField(0,"TESTBLOB"),"")
+	assertEquals(cur.getField(0,"TESTBLOB"),b"")
 	print()
 	assertEquals(cur.getField(7,"TESTNUMBER"),"8")
 	assertEquals(cur.getField(7,"TESTCHAR"),"testchar8                               ")
@@ -397,7 +397,7 @@ def main():
 	assertEquals(cur.getField(7,"TESTDATE"),"01-JAN-08")
 	assertEquals(cur.getField(7,"TESTLONG"),"testlong8")
 	assertEquals(cur.getField(7,"TESTCLOB"),"testclob8")
-	assertEquals(cur.getField(7,"TESTBLOB"),"testblob8")
+	assertEquals(cur.getField(7,"TESTBLOB"),b"testblob8")
 	print()
 
 
@@ -430,7 +430,7 @@ def main():
 	assertEquals(fields[3],"01-JAN-01")
 	assertEquals(fields[4],"testlong1")
 	assertEquals(fields[5],"testclob1")
-	assertEquals(fields[6],"")
+	assertEquals(fields[6],b"")
 	print()
 
 
@@ -936,7 +936,8 @@ def main():
 	cur.sendQuery("select * from testtable")
 	assertEquals(cur.getField(0,0),"")
 	assertNone(cur.getField(0,1))
-	assertEquals(cur.getField(0,2),"")
+	# blob column comes back as bytes in Python
+	assertEquals(cur.getField(0,2),b"")
 	assertNone(cur.getField(0,3))
 	cur.getNullsAsEmptyStrings()
 	assertTrue(cur.sendQuery("drop table testtable"))
@@ -959,7 +960,8 @@ def main():
 	assertEquals(cur.getFieldLength(0,"TESTCLOB"),LARGE_BUFFER_LENGTH)
 	assertEquals(cur.getField(0,"TESTCLOB"),largebuffer)
 	assertEquals(cur.getFieldLength(0,"TESTBLOB"),LARGE_BUFFER_LENGTH)
-	assertEqualsBytes(cur.getField(0,"TESTBLOB"),largebuffer,
+	# blob column comes back as bytes in Python
+	assertEqualsBytes(cur.getField(0,"TESTBLOB"),largebuffer.encode(),
 						LARGE_BUFFER_LENGTH)
 	assertTrue(cur.sendQuery("drop table testtable"))
 	print()
@@ -1119,7 +1121,8 @@ def main():
 	blobvarlength=cur.getOutputBindLength("blobvar")
 	assertEqualsBytes(clobvar,"hello",5)
 	assertEquals(clobvarlength,5)
-	assertEqualsBytes(blobvar,"hello",5)
+	# blob output bind comes back as bytes in Python
+	assertEqualsBytes(blobvar,b"hello",5)
 	assertEquals(blobvarlength,5)
 	assertTrue(cur.sendQuery("drop table testtable"))
 	print()

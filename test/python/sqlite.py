@@ -854,7 +854,8 @@ def main():
 	cur.sendQuery("select * from testtable")
 	assertEquals(cur.getField(0,0),"")
 	assertNone(cur.getField(0,1))
-	assertEquals(cur.getField(0,2),"")
+	# blob column comes back as bytes in Python
+	assertEquals(cur.getField(0,2),b"")
 	assertNone(cur.getField(0,3))
 	cur.getNullsAsEmptyStrings()
 	assertTrue(cur.sendQuery("drop table testtable"))
@@ -877,7 +878,8 @@ def main():
 	assertEquals(cur.getFieldLength(0,"testclob"),LARGE_BUFFER_LENGTH)
 	assertEquals(cur.getField(0,"testclob"),largebuffer)
 	assertEquals(cur.getFieldLength(0,"testblob"),LARGE_BUFFER_LENGTH)
-	assertEqualsBytes(cur.getField(0,"testblob"),largebuffer,
+	# blob column comes back as bytes in Python
+	assertEqualsBytes(cur.getField(0,"testblob"),largebuffer.encode(),
 						LARGE_BUFFER_LENGTH)
 	assertTrue(cur.sendQuery("drop table testtable"))
 	print()

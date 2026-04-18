@@ -730,6 +730,7 @@ static bool isBinaryTypeChar(const char *type) {
 		!charstring::compareIgnoringCase(type,"OID") ||
 		!charstring::compareIgnoringCase(type,"_OID") ||
 		!charstring::compareIgnoringCase(type,"OIDVECTOR") ||
+		!charstring::compareIgnoringCase(type,"BYTEA") ||
 		!charstring::compareIgnoringCase(type,"_BYTEA") ||
 		!charstring::compareIgnoringCase(type,"TIMESTAMP") ||
 		!charstring::compareIgnoringCase(type,"DATE") ||

@@ -410,7 +410,7 @@ def main():
 	assertEquals(cur.getField(0,6),"2001-01-01")
 	assertEquals(cur.getField(0,7),"01:00:00")
 	assertEquals(cur.getField(0,9),"testtext1")
-	assertEquals(cur.getField(0,10),"testbytea1")
+	assertEquals(cur.getField(0,10),b"testbytea1")
 	print()
 	assertEquals(cur.getField(7,0),"8")
 	assertEquals(cur.getField(7,1),"8.8")
@@ -421,7 +421,7 @@ def main():
 	assertEquals(cur.getField(7,6),"2008-01-01")
 	assertEquals(cur.getField(7,7),"08:00:00")
 	assertEquals(cur.getField(7,9),"testtext8")
-	assertEquals(cur.getField(7,10),"testbytea8")
+	assertEquals(cur.getField(7,10),b"testbytea8")
 	print()
 
 
@@ -462,7 +462,7 @@ def main():
 	assertEquals(cur.getField(0,"testdate"),"2001-01-01")
 	assertEquals(cur.getField(0,"testtime"),"01:00:00")
 	assertEquals(cur.getField(0,"testtext"),"testtext1")
-	assertEquals(cur.getField(0,"testbytea"),"testbytea1")
+	assertEquals(cur.getField(0,"testbytea"),b"testbytea1")
 	print()
 	assertEquals(cur.getField(7,"testint"),"8")
 	assertEquals(cur.getField(7,"testfloat"),"8.8")
@@ -473,7 +473,7 @@ def main():
 	assertEquals(cur.getField(7,"testdate"),"2008-01-01")
 	assertEquals(cur.getField(7,"testtime"),"08:00:00")
 	assertEquals(cur.getField(7,"testtext"),"testtext8")
-	assertEquals(cur.getField(7,"testbytea"),"testbytea8")
+	assertEquals(cur.getField(7,"testbytea"),b"testbytea8")
 	print()
 
 
@@ -515,7 +515,7 @@ def main():
 	assertEquals(fields[6],"2001-01-01")
 	assertEquals(fields[7],"01:00:00")
 	assertEquals(fields[9],"testtext1")
-	assertEquals(fields[10],"testbytea1")
+	assertEquals(fields[10],b"testbytea1")
 	print()
 
 
@@ -959,7 +959,8 @@ def main():
 	cur.sendQuery("select * from testtable")
 	assertEquals(cur.getField(0,0),"")
 	assertNone(cur.getField(0,1))
-	assertEquals(cur.getField(0,2),"")
+	# bytea column comes back as bytes in Python
+	assertEquals(cur.getField(0,2),b"")
 	assertNone(cur.getField(0,3))
 	cur.getNullsAsEmptyStrings()
 	assertTrue(cur.sendQuery("drop table testtable"))
@@ -982,7 +983,8 @@ def main():
 	assertEquals(cur.getFieldLength(0,"testtext"),LARGE_BUFFER_LENGTH)
 	assertEquals(cur.getField(0,"testtext"),largebuffer)
 	assertEquals(cur.getFieldLength(0,"testbytea"),LARGE_BUFFER_LENGTH)
-	assertEqualsBytes(cur.getField(0,"testbytea"),largebuffer,
+	# bytea column comes back as bytes in Python
+	assertEqualsBytes(cur.getField(0,"testbytea"),largebuffer.encode(),
 						LARGE_BUFFER_LENGTH)
 	assertTrue(cur.sendQuery("drop table testtable"))
 	print()

@@ -477,7 +477,7 @@ def main():
 	assertEquals(cur.getField(0,10),"Jan  1 2001  1:00AM")
 	assertEquals(cur.getField(0,11),"testchar1                               ")
 	assertEquals(cur.getField(0,12),"testvarchar1")
-	assertEquals(cur.getField(0,13),"1")
+	assertEquals(cur.getField(0,13),1)  # bit type returns int in Python
 	print()
 	assertEquals(cur.getField(7,0),"8")
 	assertEquals(cur.getField(7,1),"8")
@@ -492,7 +492,7 @@ def main():
 	assertEquals(cur.getField(7,10),"Jan  1 2008  8:00AM")
 	assertEquals(cur.getField(7,11),"testchar8                               ")
 	assertEquals(cur.getField(7,12),"testvarchar8")
-	assertEquals(cur.getField(7,13),"1")
+	assertEquals(cur.getField(7,13),1)  # bit type returns int in Python
 	print()
 
 
@@ -545,7 +545,7 @@ def main():
 	assertEquals(cur.getField(0,"testsmalldatetime"),"Jan  1 2001  1:00AM")
 	assertEquals(cur.getField(0,"testchar"),"testchar1                               ")
 	assertEquals(cur.getField(0,"testvarchar"),"testvarchar1")
-	assertEquals(cur.getField(0,"testbit"),"1")
+	assertEquals(cur.getField(0,"testbit"),1)  # bit type returns int in Python
 	print()
 	assertEquals(cur.getField(7,"testint"),"8")
 	assertEquals(cur.getField(7,"testsmallint"),"8")
@@ -560,7 +560,7 @@ def main():
 	assertEquals(cur.getField(7,"testsmalldatetime"),"Jan  1 2008  8:00AM")
 	assertEquals(cur.getField(7,"testchar"),"testchar8                               ")
 	assertEquals(cur.getField(7,"testvarchar"),"testvarchar8")
-	assertEquals(cur.getField(7,"testbit"),"1")
+	assertEquals(cur.getField(7,"testbit"),1)  # bit type returns int in Python
 	print()
 
 
@@ -614,7 +614,7 @@ def main():
 	assertEquals(fields[10],"Jan  1 2001  1:00AM")
 	assertEquals(fields[11],"testchar1                               ")
 	assertEquals(fields[12],"testvarchar1")
-	assertEquals(fields[13],"1")
+	assertEquals(fields[13],1)  # bit type returns int in Python
 	print()
 
 
@@ -1089,8 +1089,9 @@ def main():
 	# empty string, so we have to check for a single space here.
 	assertEquals(cur.getField(0,0)," ")
 	assertNone(cur.getField(0,1))
-	# see note above for why we're checking for a single space
-	assertEquals(cur.getField(0,2)," ")
+	# see note above for why we're checking for a single space;
+	# image column comes back as bytes in Python
+	assertEquals(cur.getField(0,2),b" ")
 	assertNone(cur.getField(0,3))
 	cur.getNullsAsEmptyStrings()
 	assertTrue(cur.sendQuery("drop table testtable"))
@@ -1113,7 +1114,8 @@ def main():
 	assertEquals(cur.getFieldLength(0,"testclob"),LARGE_BUFFER_LENGTH)
 	assertEquals(cur.getField(0,"testclob"),largebuffer)
 	assertEquals(cur.getFieldLength(0,"testblob"),LARGE_BUFFER_LENGTH)
-	assertEqualsBytes(cur.getField(0,"testblob"),largebuffer,
+	# image column comes back as bytes in Python
+	assertEqualsBytes(cur.getField(0,"testblob"),largebuffer.encode(),
 						LARGE_BUFFER_LENGTH)
 	assertTrue(cur.sendQuery("drop table testtable"))
 	print()
