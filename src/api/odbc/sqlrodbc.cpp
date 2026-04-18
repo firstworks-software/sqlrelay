@@ -148,6 +148,27 @@ struct CONN {
 
 	bool				setisolationlevel;
 	bool				isolationleveltoset;
+
+	SQLUINTEGER			attraccessmode;
+	SQLUINTEGER			attrlogintimeout;
+	SQLUINTEGER			attropttrace;
+	char				attropttracefile[1024];
+	char				attrtranslatedll[1024];
+	SQLUINTEGER			attrtranslateoption;
+	SQLUINTEGER			attrodbccursors;
+	SQLPOINTER			attrquietmode;
+	SQLUINTEGER			attrpacketsize;
+	SQLUINTEGER			attrdisconnectbehavior;
+	SQLPOINTER			attrenlistindtc;
+	SQLPOINTER			attrenlistinxa;
+	SQLUINTEGER			attrautoipd;
+	SQLUINTEGER			attrasyncenable;
+	char				attrcurrentcatalog[1024];
+	SQLUINTEGER			attransiapp;
+	SQLUINTEGER			attrresetconnection;
+	SQLUINTEGER			attrasyncdbcfunctionsenable;
+	SQLUINTEGER			attrdriverthreading;
+	SQLPOINTER			attrdbcinfotoken;
 };
 
 struct rowdesc {
@@ -348,6 +369,41 @@ static SQLRETURN SQLR_SQLAllocHandle(SQLSMALLINT handletype,
 				conn->setautocommiton=true;
 				conn->setautocommitoff=false;
 				conn->setisolationlevel=false;
+				conn->attraccessmode=SQL_MODE_READ_WRITE;
+				conn->attrlogintimeout=0;
+				conn->attropttrace=SQL_OPT_TRACE_OFF;
+				conn->attropttracefile[0]='\0';
+				conn->attrtranslatedll[0]='\0';
+				conn->attrtranslateoption=0;
+				conn->attrodbccursors=SQL_CUR_USE_DRIVER;
+				conn->attrquietmode=NULL;
+				conn->attrpacketsize=4096;
+				#if defined(SQL_DB_DEFAULT)
+				conn->attrdisconnectbehavior=SQL_DB_DEFAULT;
+				#else
+				conn->attrdisconnectbehavior=
+							SQL_DB_RETURN_TO_POOL;
+				#endif
+				conn->attrenlistindtc=NULL;
+				conn->attrenlistinxa=NULL;
+				conn->attrautoipd=SQL_FALSE;
+				conn->attrasyncenable=SQL_ASYNC_ENABLE_OFF;
+				conn->attrcurrentcatalog[0]='\0';
+				#if defined(SQL_AA_TRUE)
+				conn->attransiapp=SQL_AA_TRUE;
+				#else
+				conn->attransiapp=1;
+				#endif
+				conn->attrresetconnection=0;
+				#if defined(SQL_ASYNC_DBC_ENABLE_OFF)
+				conn->attrasyncdbcfunctionsenable=
+						SQL_ASYNC_DBC_ENABLE_OFF;
+				#else
+				conn->attrasyncdbcfunctionsenable=0;
+				#endif
+				// thread-safe per HDBC
+				conn->attrdriverthreading=1;
+				conn->attrdbcinfotoken=NULL;
 			}
 			return SQL_SUCCESS;
 			}
@@ -4435,47 +4491,47 @@ static SQLRETURN SQLR_SQLGetConnectAttr(SQLHDBC connectionhandle,
 	union {
 		const char	*strval;
 		SQLUINTEGER	uintval;
+		SQLPOINTER	ptrval;
 	} val;
 	int16_t	type=-1;
 
 	switch (attribute) {
 		case SQL_ACCESS_MODE:
-			debugPrintf("  unsupported attribute: "
-						"SQL_ACCESS_MODE\n");
-			// FIXME: implement
+			debugPrintf("  attribute: SQL_ACCESS_MODE\n");
+			val.uintval=conn->attraccessmode;
+			type=1;
 			break;
 		case SQL_AUTOCOMMIT:
-			debugPrintf("  unsupported attribute: "
-						"SQL_AUTOCOMMIT\n");
+			debugPrintf("  attribute: SQL_AUTOCOMMIT\n");
 			val.uintval=(conn->con->getAutoCommit())?
 						SQL_AUTOCOMMIT_ON:
 						SQL_AUTOCOMMIT_OFF;
 			type=1;
 			break;
 		case SQL_LOGIN_TIMEOUT:
-			debugPrintf("  unsupported attribute: "
-						"SQL_LOGIN_TIMEOUT\n");
-			// FIXME: implement
+			debugPrintf("  attribute: SQL_LOGIN_TIMEOUT\n");
+			val.uintval=conn->attrlogintimeout;
+			type=1;
 			break;
 		case SQL_OPT_TRACE:
-			debugPrintf("  unsupported attribute: "
-						"SQL_OPT_TRACE\n");
-			// FIXME: implement
+			debugPrintf("  attribute: SQL_OPT_TRACE\n");
+			val.uintval=conn->attropttrace;
+			type=1;
 			break;
 		case SQL_OPT_TRACEFILE:
-			debugPrintf("  unsupported attribute: "
-						"SQL_OPT_TRACEFILE\n");
-			// FIXME: implement
+			debugPrintf("  attribute: SQL_OPT_TRACEFILE\n");
+			val.strval=conn->attropttracefile;
+			type=0;
 			break;
 		case SQL_TRANSLATE_DLL:
-			debugPrintf("  unsupported attribute: "
-						"SQL_TRANSLATE_DLL\n");
-			// FIXME: implement
+			debugPrintf("  attribute: SQL_TRANSLATE_DLL\n");
+			val.strval=conn->attrtranslatedll;
+			type=0;
 			break;
 		case SQL_TRANSLATE_OPTION:
-			debugPrintf("  unsupported attribute: "
-						"SQL_TRANSLATE_OPTION\n");
-			// FIXME: implement
+			debugPrintf("  attribute: SQL_TRANSLATE_OPTION\n");
+			val.uintval=conn->attrtranslateoption;
+			type=1;
 			break;
 		case SQL_TXN_ISOLATION:
 			debugPrintf("  attribute: SQL_TXN_ISOLATION\n");
@@ -4494,22 +4550,25 @@ static SQLRETURN SQLR_SQLGetConnectAttr(SQLHDBC connectionhandle,
 		case SQL_CURRENT_QUALIFIER:
 			debugPrintf("  attribute: SQL_CURRENT_QUALIFIER/"
 						"SQL_ATTR_CURRENT_CATALOG\n");
-			val.strval=conn->con->getCurrentDatabase();
+			val.strval=(conn->attrcurrentcatalog[0])?
+					conn->attrcurrentcatalog:
+					conn->con->getCurrentDatabase();
 			type=0;
 			break;
 		case SQL_ODBC_CURSORS:
-			debugPrintf("  unsupported attribute: "
-						"SQL_ODBC_CURSORS\n");
-			// FIXME: implement
+			debugPrintf("  attribute: SQL_ODBC_CURSORS\n");
+			val.uintval=conn->attrodbccursors;
+			type=1;
 			break;
 		case SQL_QUIET_MODE:
 			debugPrintf("  attribute: SQL_QUIET_MODE\n");
-			// SQL Relay doesn't need to do anything with this
+			val.ptrval=conn->attrquietmode;
+			type=2;
 			break;
 		case SQL_PACKET_SIZE:
-			debugPrintf("  unsupported attribute: "
-						"SQL_PACKET_SIZE\n");
-			// FIXME: implement
+			debugPrintf("  attribute: SQL_PACKET_SIZE\n");
+			val.uintval=conn->attrpacketsize;
+			type=1;
 			break;
 	#if (ODBCVER >= 0x0300)
 		case SQL_ATTR_CONNECTION_TIMEOUT:
@@ -4520,30 +4579,81 @@ static SQLRETURN SQLR_SQLGetConnectAttr(SQLHDBC connectionhandle,
 						getConnectTimeoutSeconds();
 			type=1;
 			break;
+		case SQL_ATTR_CONNECTION_DEAD:
+			debugPrintf("  attribute: "
+					"SQL_ATTR_CONNECTION_DEAD\n");
+			val.uintval=(conn->con && conn->con->ping())?
+						SQL_CD_FALSE:SQL_CD_TRUE;
+			type=1;
+			break;
+		case SQL_ATTR_ASYNC_ENABLE:
+			debugPrintf("  attribute: SQL_ATTR_ASYNC_ENABLE\n");
+			val.uintval=conn->attrasyncenable;
+			type=1;
+			break;
 		case SQL_ATTR_DISCONNECT_BEHAVIOR:
-			debugPrintf("  unsupported attribute: "
+			debugPrintf("  attribute: "
 					"SQL_ATTR_DISCONNECT_BEHAVIOR\n");
-			// FIXME: implement
+			val.uintval=conn->attrdisconnectbehavior;
+			type=1;
 			break;
 		case SQL_ATTR_ENLIST_IN_DTC:
-			debugPrintf("  unsupported attribute: "
-						"SQL_ATTR_ENLIST_IN_DTC\n");
-			// FIXME: implement
+			debugPrintf("  attribute: SQL_ATTR_ENLIST_IN_DTC\n");
+			val.ptrval=conn->attrenlistindtc;
+			type=2;
 			break;
 		case SQL_ATTR_ENLIST_IN_XA:
-			debugPrintf("  unsupported attribute: "
-						"SQL_ATTR_ENLIST_IN_XA\n");
-			// FIXME: implement
+			debugPrintf("  attribute: SQL_ATTR_ENLIST_IN_XA\n");
+			val.ptrval=conn->attrenlistinxa;
+			type=2;
 			break;
 		case SQL_ATTR_AUTO_IPD:
-			debugPrintf("  unsupported attribute: "
-						"SQL_ATTR_AUTO_IPD\n");
-			// FIXME: implement
+			debugPrintf("  attribute: SQL_ATTR_AUTO_IPD\n");
+			val.uintval=conn->attrautoipd;
+			type=1;
 			break;
 		case SQL_ATTR_METADATA_ID:
 			debugPrintf("  attribute: SQL_ATTR_METADATA_ID\n");
 			val.uintval=(conn->attrmetadataid)?SQL_TRUE:SQL_FALSE;
 			type=1;
+			break;
+	#endif
+	#if defined(SQL_ATTR_ANSI_APP)
+		case SQL_ATTR_ANSI_APP:
+			debugPrintf("  attribute: SQL_ATTR_ANSI_APP\n");
+			val.uintval=conn->attransiapp;
+			type=1;
+			break;
+	#endif
+	#if defined(SQL_ATTR_RESET_CONNECTION)
+		case SQL_ATTR_RESET_CONNECTION:
+			debugPrintf("  attribute: "
+					"SQL_ATTR_RESET_CONNECTION\n");
+			val.uintval=conn->attrresetconnection;
+			type=1;
+			break;
+	#endif
+	#if defined(SQL_ATTR_ASYNC_DBC_FUNCTIONS_ENABLE)
+		case SQL_ATTR_ASYNC_DBC_FUNCTIONS_ENABLE:
+			debugPrintf("  attribute: "
+				"SQL_ATTR_ASYNC_DBC_FUNCTIONS_ENABLE\n");
+			val.uintval=conn->attrasyncdbcfunctionsenable;
+			type=1;
+			break;
+	#endif
+	#if defined(SQL_ATTR_DRIVER_THREADING)
+		case SQL_ATTR_DRIVER_THREADING:
+			debugPrintf("  attribute: "
+					"SQL_ATTR_DRIVER_THREADING\n");
+			val.uintval=conn->attrdriverthreading;
+			type=1;
+			break;
+	#endif
+	#if defined(SQL_ATTR_DBC_INFO_TOKEN)
+		case SQL_ATTR_DBC_INFO_TOKEN:
+			debugPrintf("  attribute: SQL_ATTR_DBC_INFO_TOKEN\n");
+			val.ptrval=conn->attrdbcinfotoken;
+			type=2;
 			break;
 	#endif
 		default:
@@ -4597,6 +4707,16 @@ static SQLRETURN SQLR_SQLGetConnectAttr(SQLHDBC connectionhandle,
 			} else {
 				debugPrintf("  NULL value "
 						"(not copying out uintval)\n");
+			}
+			break;
+		case 2:
+			debugPrintf("  ptrval: %p\n",val.ptrval);
+			valuelength=sizeof(SQLPOINTER);
+			if (value) {
+				*((SQLPOINTER *)value)=val.ptrval;
+			} else {
+				debugPrintf("  NULL value "
+						"(not copying out ptrval)\n");
 			}
 			break;
 	}
@@ -11266,9 +11386,12 @@ static SQLRETURN SQLR_SQLSetConnectAttr(SQLHDBC connectionhandle,
 		return SQL_INVALID_HANDLE;
 	}
 
-	// use reinterpret_cast and assignment to smaller
-	// sized value to avoid compiler warnings
-	SQLUINTEGER	val=reinterpret_cast<uint64_t>(value);
+	union {
+		const char	*strval;
+		SQLUINTEGER	uintval;
+		SQLPOINTER	ptrval;
+	} val;
+	val.ptrval=value;
 
 	switch (attribute) {
 		#ifdef SQL_AUTOCOMMIT
@@ -11282,8 +11405,8 @@ static SQLRETURN SQLR_SQLSetConnectAttr(SQLHDBC connectionhandle,
 			// valid.
 
 			debugPrintf("  attribute: SQL_AUTOCOMMIT\n");
-			debugPrintf("  val: %lld\n",(uint64_t)val);
-			if (val==SQL_AUTOCOMMIT_ON) {
+			debugPrintf("  val: %lld\n",(uint64_t)val.uintval);
+			if (val.uintval==SQL_AUTOCOMMIT_ON) {
 				debugPrintf("  ON\n");
 				if (conn->con) {
 					if (conn->con->autoCommitOn()) {
@@ -11299,7 +11422,7 @@ static SQLRETURN SQLR_SQLSetConnectAttr(SQLHDBC connectionhandle,
 					conn->setautocommiton=true;
 					return SQL_SUCCESS;
 				}
-			} else if (val==SQL_AUTOCOMMIT_OFF) {
+			} else if (val.uintval==SQL_AUTOCOMMIT_OFF) {
 				debugPrintf("  OFF\n");
 				if (conn->con) {
 					if (conn->con->autoCommitOff()) {
@@ -11317,40 +11440,48 @@ static SQLRETURN SQLR_SQLSetConnectAttr(SQLHDBC connectionhandle,
 				}
 			}
 			debugPrintf("  unsupported val: %d "
-					"(but returning success)\n",val);
+					"(returning success)\n",
+					val.uintval);
 			return SQL_SUCCESS;
 		}
 		#endif
 
  		case SQL_ACCESS_MODE:
- 			debugPrintf("  attribute: SQL_ACCESS_MODE "
-				"(unsupported but returning success)\n");
-			// FIXME: implement...
+ 			debugPrintf("  attribute: SQL_ACCESS_MODE (stub)\n");
+			debugPrintf("  val: %lld\n",(uint64_t)val.uintval);
+			conn->attraccessmode=val.uintval;
 			return SQL_SUCCESS;
 		case SQL_LOGIN_TIMEOUT:
-			debugPrintf("  attribute: SQL_LOGIN_TIMEOUT "
-				"(unsupported but returning success)\n");
-			// FIXME: implement...
+			debugPrintf("  attribute: SQL_LOGIN_TIMEOUT (stub)\n");
+			debugPrintf("  val: %lld\n",(uint64_t)val.uintval);
+			conn->attrlogintimeout=val.uintval;
 			return SQL_SUCCESS;
 		case SQL_OPT_TRACE:
-			debugPrintf("  attribute: SQL_OPT_TRACE "
-				"(unsupported but returning success)\n");
-			// FIXME: implement...
+			debugPrintf("  attribute: SQL_OPT_TRACE (stub)\n");
+			debugPrintf("  val: %lld\n",(uint64_t)val.uintval);
+			conn->attropttrace=val.uintval;
 			return SQL_SUCCESS;
 		case SQL_OPT_TRACEFILE:
-			debugPrintf("  attribute: SQL_OPT_TRACEFILE "
-				"(unsupported but returning success)\n");
-			// FIXME: implement...
+			debugPrintf("  attribute: SQL_OPT_TRACEFILE (stub)\n");
+			debugPrintf("  val: %s\n",
+					(val.strval)?val.strval:"");
+			charstring::safeCopy(conn->attropttracefile,
+					sizeof(conn->attropttracefile),
+					(val.strval)?val.strval:"");
 			return SQL_SUCCESS;
 		case SQL_TRANSLATE_DLL:
-			debugPrintf("  attribute: SQL_TRANSLATE_DLL "
-				"(unsupported but returning success)\n");
-			// FIXME: implement...
+			debugPrintf("  attribute: SQL_TRANSLATE_DLL (stub)\n");
+			debugPrintf("  val: %s\n",
+					(val.strval)?val.strval:"");
+			charstring::safeCopy(conn->attrtranslatedll,
+					sizeof(conn->attrtranslatedll),
+					(val.strval)?val.strval:"");
 			return SQL_SUCCESS;
 		case SQL_TRANSLATE_OPTION:
 			debugPrintf("  attribute: SQL_TRANSLATE_OPTION "
-				"(unsupported but returning success)\n");
-			// FIXME: implement...
+								"(stub)\n");
+			debugPrintf("  val: %lld\n",(uint64_t)val.uintval);
+			conn->attrtranslateoption=val.uintval;
 			return SQL_SUCCESS;
 		case SQL_TXN_ISOLATION:
 			// If the sqlrelay connection is valid then immediately
@@ -11361,10 +11492,10 @@ static SQLRETURN SQLR_SQLSetConnectAttr(SQLHDBC connectionhandle,
 			// valid.
 
 			debugPrintf("  attribute: SQL_TXN_ISOLATION\n");
-			debugPrintf("  val: %lld\n",(uint64_t)val);
+			debugPrintf("  val: %lld\n",(uint64_t)val.uintval);
 			if (conn->con) {
 				if (!SQLR_SetIsolationLevel(
-						connectionhandle,val)) {
+						connectionhandle,val.uintval)) {
 					SQLR_CONNSetError(conn,
 						conn->con->errorMessage(),
 						conn->con->errorNumber(),NULL);
@@ -11373,60 +11504,121 @@ static SQLRETURN SQLR_SQLSetConnectAttr(SQLHDBC connectionhandle,
 				}
 			} else {
 				conn->setisolationlevel=true;
-				conn->isolationleveltoset=val;
+				conn->isolationleveltoset=val.uintval;
 			}
 			debugPrintf("  success\n");
 			return SQL_SUCCESS;
+		//case SQL_ATTR_CURRENT_CATALOG:
+		//	(dup of SQL_CURRENT_QUALIFIER)
+		case SQL_CURRENT_QUALIFIER:
+			debugPrintf("  attribute: SQL_CURRENT_QUALIFIER/"
+					"SQL_ATTR_CURRENT_CATALOG (stub)\n");
+			debugPrintf("  val: %s\n",
+					(val.strval)?val.strval:"");
+			charstring::safeCopy(conn->attrcurrentcatalog,
+					sizeof(conn->attrcurrentcatalog),
+					(val.strval)?val.strval:"");
+			return SQL_SUCCESS;
 		case SQL_ODBC_CURSORS:
-			debugPrintf("  attribute: SQL_ODBC_CURSORS "
-				"(unsupported but returning success)\n");
-			// FIXME: implement...
+			debugPrintf("  attribute: SQL_ODBC_CURSORS (stub)\n");
+			debugPrintf("  val: %lld\n",(uint64_t)val.uintval);
+			conn->attrodbccursors=val.uintval;
 			return SQL_SUCCESS;
 		case SQL_QUIET_MODE:
-			debugPrintf("  attribute: SQL_QUIET_MODE "
-				"(unsupported but returning success)\n");
-			// FIXME: implement...
+			debugPrintf("  attribute: SQL_QUIET_MODE (stub)\n");
+			debugPrintf("  val: %p\n",val.ptrval);
+			conn->attrquietmode=val.ptrval;
 			return SQL_SUCCESS;
 		case SQL_PACKET_SIZE:
-			debugPrintf("  attribute: SQL_PACKET_SIZE "
-				"(unsupported but returning success)\n");
-			// FIXME: implement...
+			debugPrintf("  attribute: SQL_PACKET_SIZE (stub)\n");
+			debugPrintf("  val: %lld\n",(uint64_t)val.uintval);
+			conn->attrpacketsize=val.uintval;
 			return SQL_SUCCESS;
 	#if (ODBCVER >= 0x0300)
 		case SQL_ATTR_CONNECTION_TIMEOUT:
 			debugPrintf("  attribute: "
 					"SQL_ATTR_CONNECTION_TIMEOUT\n");
-			debugPrintf("  val: %lld\n",(uint64_t)val);
-			conn->con->setConnectTimeout((int32_t)val,0);
+			debugPrintf("  val: %lld\n",(uint64_t)val.uintval);
+			conn->con->setConnectTimeout((int32_t)val.uintval,0);
+			return SQL_SUCCESS;
+		case SQL_ATTR_ASYNC_ENABLE:
+			debugPrintf("  attribute: SQL_ATTR_ASYNC_ENABLE "
+								"(stub)\n");
+			debugPrintf("  val: %lld\n",(uint64_t)val.uintval);
+			conn->attrasyncenable=val.uintval;
 			return SQL_SUCCESS;
 		case SQL_ATTR_DISCONNECT_BEHAVIOR:
-			debugPrintf("  attribute: "
-				"SQL_ATTR_DISCONNECT_BEHAVIOR "
-				"(unsupported but returning success)\n");
-			// FIXME: implement...
+			debugPrintf("  attribute: SQL_ATTR_DISCONNECT_BEHAVIOR "
+								"(stub)\n");
+			debugPrintf("  val: %lld\n",(uint64_t)val.uintval);
+			conn->attrdisconnectbehavior=val.uintval;
 			return SQL_SUCCESS;
 		case SQL_ATTR_ENLIST_IN_DTC:
 			debugPrintf("  attribute: SQL_ATTR_ENLIST_IN_DTC "
-				"(unsupported but returning success)\n");
-			// FIXME: implement...
+								"(stub)\n");
+			debugPrintf("  val: %p\n",val.ptrval);
+			conn->attrenlistindtc=val.ptrval;
 			return SQL_SUCCESS;
 		case SQL_ATTR_ENLIST_IN_XA:
 			debugPrintf("  attribute: SQL_ATTR_ENLIST_IN_XA "
-				"(unsupported but returning success)\n");
-			// FIXME: implement...
+								"(stub)\n");
+			debugPrintf("  val: %p\n",val.ptrval);
+			conn->attrenlistinxa=val.ptrval;
 			return SQL_SUCCESS;
 		case SQL_ATTR_AUTO_IPD:
-			debugPrintf("  attribute: SQL_ATTR_AUTO_IPD "
-				"(unsupported but returning success)\n");
-			// FIXME: implement...
+			debugPrintf("  attribute: SQL_ATTR_AUTO_IPD (stub)\n");
+			debugPrintf("  val: %lld\n",(uint64_t)val.uintval);
+			conn->attrautoipd=val.uintval;
 			return SQL_SUCCESS;
 		case SQL_ATTR_METADATA_ID:
 		{
 			debugPrintf("  attribute: SQL_ATTR_METADATA_ID\n");
-			debugPrintf("  val: %lld\n",(uint64_t)val);
-			conn->attrmetadataid=(val==SQL_TRUE);
+			debugPrintf("  val: %lld\n",(uint64_t)val.uintval);
+			conn->attrmetadataid=(val.uintval==SQL_TRUE);
 			return SQL_SUCCESS;
 		}
+	#endif
+	#if defined(SQL_ATTR_ANSI_APP)
+		case SQL_ATTR_ANSI_APP:
+			debugPrintf("  attribute: SQL_ATTR_ANSI_APP "
+							"(stub)\n");
+			debugPrintf("  val: %lld\n",(uint64_t)val.uintval);
+			conn->attransiapp=val.uintval;
+			return SQL_SUCCESS;
+	#endif
+	#if defined(SQL_ATTR_RESET_CONNECTION)
+		case SQL_ATTR_RESET_CONNECTION:
+			debugPrintf("  attribute: "
+					"SQL_ATTR_RESET_CONNECTION (stub)\n");
+			debugPrintf("  val: %lld\n",(uint64_t)val.uintval);
+			conn->attrresetconnection=val.uintval;
+			return SQL_SUCCESS;
+	#endif
+	#if defined(SQL_ATTR_ASYNC_DBC_FUNCTIONS_ENABLE)
+		case SQL_ATTR_ASYNC_DBC_FUNCTIONS_ENABLE:
+			debugPrintf("  attribute: "
+				"SQL_ATTR_ASYNC_DBC_FUNCTIONS_ENABLE "
+							"(stub)\n");
+			debugPrintf("  val: %lld\n",(uint64_t)val.uintval);
+			conn->attrasyncdbcfunctionsenable=val.uintval;
+			return SQL_SUCCESS;
+	#endif
+	#if defined(SQL_ATTR_DRIVER_THREADING)
+		case SQL_ATTR_DRIVER_THREADING:
+			debugPrintf("  attribute: "
+					"SQL_ATTR_DRIVER_THREADING "
+							"(stub)\n");
+			debugPrintf("  val: %lld\n",(uint64_t)val.uintval);
+			conn->attrdriverthreading=val.uintval;
+			return SQL_SUCCESS;
+	#endif
+	#if defined(SQL_ATTR_DBC_INFO_TOKEN)
+		case SQL_ATTR_DBC_INFO_TOKEN:
+			debugPrintf("  attribute: "
+					"SQL_ATTR_DBC_INFO_TOKEN (stub)\n");
+			debugPrintf("  val: %p\n",val.ptrval);
+			conn->attrdbcinfotoken=val.ptrval;
+			return SQL_SUCCESS;
 	#endif
 		// MS SQL Server-specific calls...
 		case 1041:

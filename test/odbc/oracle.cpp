@@ -648,30 +648,42 @@ int main(int argc, char **argv) {
 	#if (ODBCVER >= 0x0300)
 	// SQL_ATTR_ASYNC_ENABLE
 	stdoutput.printf("  SQL_ATTR_ASYNC_ENABLE\n");
-	// save initial value
-	erg=SQLGetConnectAttr(dbc,SQL_ATTR_ASYNC_ENABLE,
-			(SQLPOINTER)&dbcinitial,0,&dbcstrlen);
-	assertSuccessDbc(dbc,erg);
-	// SQL_ASYNC_ENABLE_OFF
-	erg=SQLSetConnectAttr(dbc,SQL_ATTR_ASYNC_ENABLE,
-			(SQLPOINTER)(uintptr_t)SQL_ASYNC_ENABLE_OFF,0);
-	assertSuccessDbc(dbc,erg);
-	erg=SQLGetConnectAttr(dbc,SQL_ATTR_ASYNC_ENABLE,
-			(SQLPOINTER)&dbcuintval,0,&dbcstrlen);
-	assertSuccessDbc(dbc,erg);
-	assertEqualDbc(dbc,(int)dbcuintval,(int)SQL_ASYNC_ENABLE_OFF);
-	// SQL_ASYNC_ENABLE_ON
-	erg=SQLSetConnectAttr(dbc,SQL_ATTR_ASYNC_ENABLE,
-			(SQLPOINTER)(uintptr_t)SQL_ASYNC_ENABLE_ON,0);
-	assertSuccessDbc(dbc,erg);
-	erg=SQLGetConnectAttr(dbc,SQL_ATTR_ASYNC_ENABLE,
-			(SQLPOINTER)&dbcuintval,0,&dbcstrlen);
-	assertSuccessDbc(dbc,erg);
-	assertEqualDbc(dbc,(int)dbcuintval,(int)SQL_ASYNC_ENABLE_ON);
-	// restore initial value
-	erg=SQLSetConnectAttr(dbc,SQL_ATTR_ASYNC_ENABLE,
-			(SQLPOINTER)(uintptr_t)dbcinitial,0);
-	assertSuccessDbc(dbc,erg);
+	if (issqlrelay) {
+		// save initial value
+		erg=SQLGetConnectAttr(dbc,SQL_ATTR_ASYNC_ENABLE,
+				(SQLPOINTER)&dbcinitial,0,&dbcstrlen);
+		assertSuccessDbc(dbc,erg);
+		// SQL_ASYNC_ENABLE_OFF
+		erg=SQLSetConnectAttr(dbc,SQL_ATTR_ASYNC_ENABLE,
+				(SQLPOINTER)(uintptr_t)SQL_ASYNC_ENABLE_OFF,0);
+		assertSuccessDbc(dbc,erg);
+		erg=SQLGetConnectAttr(dbc,SQL_ATTR_ASYNC_ENABLE,
+				(SQLPOINTER)&dbcuintval,0,&dbcstrlen);
+		assertSuccessDbc(dbc,erg);
+		assertEqualDbc(dbc,(int)dbcuintval,(int)SQL_ASYNC_ENABLE_OFF);
+		// SQL_ASYNC_ENABLE_ON
+		erg=SQLSetConnectAttr(dbc,SQL_ATTR_ASYNC_ENABLE,
+				(SQLPOINTER)(uintptr_t)SQL_ASYNC_ENABLE_ON,0);
+		assertSuccessDbc(dbc,erg);
+		erg=SQLGetConnectAttr(dbc,SQL_ATTR_ASYNC_ENABLE,
+				(SQLPOINTER)&dbcuintval,0,&dbcstrlen);
+		assertSuccessDbc(dbc,erg);
+		assertEqualDbc(dbc,(int)dbcuintval,(int)SQL_ASYNC_ENABLE_ON);
+		// restore initial value
+		erg=SQLSetConnectAttr(dbc,SQL_ATTR_ASYNC_ENABLE,
+				(SQLPOINTER)(uintptr_t)dbcinitial,0);
+		assertSuccessDbc(dbc,erg);
+	} else {
+		// Oracle's ODBC driver does not implement
+		// SQL_ATTR_ASYNC_ENABLE; both get and set raise
+		// HYT00 "Timeout expired".
+		erg=SQLGetConnectAttr(dbc,SQL_ATTR_ASYNC_ENABLE,
+				(SQLPOINTER)&dbcinitial,0,&dbcstrlen);
+		assertFailureDbc(dbc,erg);
+		erg=SQLSetConnectAttr(dbc,SQL_ATTR_ASYNC_ENABLE,
+				(SQLPOINTER)(uintptr_t)SQL_ASYNC_ENABLE_OFF,0);
+		assertFailureDbc(dbc,erg);
+	}
 	stdoutput.printf("\n");
 	#endif
 
@@ -690,14 +702,23 @@ int main(int argc, char **argv) {
 	#if (ODBCVER >= 0x0351)
 	// SQL_ATTR_AUTO_IPD (read-only)
 	stdoutput.printf("  SQL_ATTR_AUTO_IPD\n");
-	erg=SQLGetConnectAttr(dbc,SQL_ATTR_AUTO_IPD,
-			(SQLPOINTER)&dbcuintval,0,&dbcstrlen);
-	assertSuccessDbc(dbc,erg);
-	// either SQL_TRUE or SQL_FALSE is legal; just require a
-	// valid boolean
-	assertEqualDbc(dbc,
+	if (issqlrelay) {
+		erg=SQLGetConnectAttr(dbc,SQL_ATTR_AUTO_IPD,
+				(SQLPOINTER)&dbcuintval,0,&dbcstrlen);
+		assertSuccessDbc(dbc,erg);
+		// either SQL_TRUE or SQL_FALSE is legal; just
+		// require a valid boolean
+		assertEqualDbc(dbc,
 			(int)(dbcuintval==SQL_TRUE || dbcuintval==SQL_FALSE),
 			(int)1);
+	} else {
+		// Oracle's ODBC driver does not implement
+		// SQL_ATTR_AUTO_IPD; get raises HYT00
+		// "Timeout expired".
+		erg=SQLGetConnectAttr(dbc,SQL_ATTR_AUTO_IPD,
+				(SQLPOINTER)&dbcuintval,0,&dbcstrlen);
+		assertFailureDbc(dbc,erg);
+	}
 	stdoutput.printf("\n");
 	#endif
 
@@ -705,30 +726,43 @@ int main(int argc, char **argv) {
 	#if defined(SQL_ATTR_DISCONNECT_BEHAVIOR)
 	// SQL_ATTR_DISCONNECT_BEHAVIOR
 	stdoutput.printf("  SQL_ATTR_DISCONNECT_BEHAVIOR\n");
-	// save initial value
-	erg=SQLGetConnectAttr(dbc,SQL_ATTR_DISCONNECT_BEHAVIOR,
-			(SQLPOINTER)&dbcinitial,0,&dbcstrlen);
-	assertSuccessDbc(dbc,erg);
-	// SQL_DB_RETURN_TO_POOL
-	erg=SQLSetConnectAttr(dbc,SQL_ATTR_DISCONNECT_BEHAVIOR,
-			(SQLPOINTER)(uintptr_t)SQL_DB_RETURN_TO_POOL,0);
-	assertSuccessDbc(dbc,erg);
-	erg=SQLGetConnectAttr(dbc,SQL_ATTR_DISCONNECT_BEHAVIOR,
-			(SQLPOINTER)&dbcuintval,0,&dbcstrlen);
-	assertSuccessDbc(dbc,erg);
-	assertEqualDbc(dbc,(int)dbcuintval,(int)SQL_DB_RETURN_TO_POOL);
-	// SQL_DB_DISCONNECT
-	erg=SQLSetConnectAttr(dbc,SQL_ATTR_DISCONNECT_BEHAVIOR,
-			(SQLPOINTER)(uintptr_t)SQL_DB_DISCONNECT,0);
-	assertSuccessDbc(dbc,erg);
-	erg=SQLGetConnectAttr(dbc,SQL_ATTR_DISCONNECT_BEHAVIOR,
-			(SQLPOINTER)&dbcuintval,0,&dbcstrlen);
-	assertSuccessDbc(dbc,erg);
-	assertEqualDbc(dbc,(int)dbcuintval,(int)SQL_DB_DISCONNECT);
-	// restore initial value
-	erg=SQLSetConnectAttr(dbc,SQL_ATTR_DISCONNECT_BEHAVIOR,
-			(SQLPOINTER)(uintptr_t)dbcinitial,0);
-	assertSuccessDbc(dbc,erg);
+	if (issqlrelay) {
+		// save initial value
+		erg=SQLGetConnectAttr(dbc,SQL_ATTR_DISCONNECT_BEHAVIOR,
+				(SQLPOINTER)&dbcinitial,0,&dbcstrlen);
+		assertSuccessDbc(dbc,erg);
+		// SQL_DB_RETURN_TO_POOL
+		erg=SQLSetConnectAttr(dbc,SQL_ATTR_DISCONNECT_BEHAVIOR,
+				(SQLPOINTER)(uintptr_t)SQL_DB_RETURN_TO_POOL,0);
+		assertSuccessDbc(dbc,erg);
+		erg=SQLGetConnectAttr(dbc,SQL_ATTR_DISCONNECT_BEHAVIOR,
+				(SQLPOINTER)&dbcuintval,0,&dbcstrlen);
+		assertSuccessDbc(dbc,erg);
+		assertEqualDbc(dbc,(int)dbcuintval,(int)SQL_DB_RETURN_TO_POOL);
+		// SQL_DB_DISCONNECT
+		erg=SQLSetConnectAttr(dbc,SQL_ATTR_DISCONNECT_BEHAVIOR,
+				(SQLPOINTER)(uintptr_t)SQL_DB_DISCONNECT,0);
+		assertSuccessDbc(dbc,erg);
+		erg=SQLGetConnectAttr(dbc,SQL_ATTR_DISCONNECT_BEHAVIOR,
+				(SQLPOINTER)&dbcuintval,0,&dbcstrlen);
+		assertSuccessDbc(dbc,erg);
+		assertEqualDbc(dbc,(int)dbcuintval,(int)SQL_DB_DISCONNECT);
+		// restore initial value
+		erg=SQLSetConnectAttr(dbc,SQL_ATTR_DISCONNECT_BEHAVIOR,
+				(SQLPOINTER)(uintptr_t)dbcinitial,0);
+		assertSuccessDbc(dbc,erg);
+	} else {
+		// Oracle's ODBC driver does not implement
+		// SQL_ATTR_DISCONNECT_BEHAVIOR; get raises HYT00
+		// "Timeout expired" and set raises HY003 "Invalid
+		// application buffer type".
+		erg=SQLGetConnectAttr(dbc,SQL_ATTR_DISCONNECT_BEHAVIOR,
+				(SQLPOINTER)&dbcinitial,0,&dbcstrlen);
+		assertFailureDbc(dbc,erg);
+		erg=SQLSetConnectAttr(dbc,SQL_ATTR_DISCONNECT_BEHAVIOR,
+				(SQLPOINTER)(uintptr_t)SQL_DB_RETURN_TO_POOL,0);
+		assertFailureDbc(dbc,erg);
+	}
 	stdoutput.printf("\n");
 	#endif
 
@@ -771,18 +805,31 @@ int main(int argc, char **argv) {
 	#if (ODBCVER >= 0x0300)
 	// SQL_ATTR_TRANSLATE_LIB
 	stdoutput.printf("  SQL_ATTR_TRANSLATE_LIB\n");
-	// save initial value
-	erg=SQLGetConnectAttr(dbc,SQL_ATTR_TRANSLATE_LIB,
-			(SQLPOINTER)dbcstrinit,sizeof(dbcstrinit),&dbcstrlen);
-	assertSuccessDbc(dbc,erg);
-	// round-trip to the initial value
-	erg=SQLSetConnectAttr(dbc,SQL_ATTR_TRANSLATE_LIB,
-			(SQLPOINTER)dbcstrinit,SQL_NTS);
-	assertSuccessDbc(dbc,erg);
-	erg=SQLGetConnectAttr(dbc,SQL_ATTR_TRANSLATE_LIB,
-			(SQLPOINTER)dbcstrval,sizeof(dbcstrval),&dbcstrlen);
-	assertSuccessDbc(dbc,erg);
-	assertEqualDbc(dbc,(const char *)dbcstrval,(const char *)dbcstrinit);
+	if (issqlrelay) {
+		// save initial value
+		erg=SQLGetConnectAttr(dbc,SQL_ATTR_TRANSLATE_LIB,
+				(SQLPOINTER)dbcstrinit,
+				sizeof(dbcstrinit),&dbcstrlen);
+		assertSuccessDbc(dbc,erg);
+		// round-trip to the initial value
+		erg=SQLSetConnectAttr(dbc,SQL_ATTR_TRANSLATE_LIB,
+				(SQLPOINTER)dbcstrinit,SQL_NTS);
+		assertSuccessDbc(dbc,erg);
+		erg=SQLGetConnectAttr(dbc,SQL_ATTR_TRANSLATE_LIB,
+				(SQLPOINTER)dbcstrval,
+				sizeof(dbcstrval),&dbcstrlen);
+		assertSuccessDbc(dbc,erg);
+		assertEqualDbc(dbc,(const char *)dbcstrval,
+				(const char *)dbcstrinit);
+	} else {
+		// Oracle's ODBC driver does not implement
+		// SQL_ATTR_TRANSLATE_LIB; get returns SQL_NO_DATA
+		// (100) and the buffer is left unchanged.
+		erg=SQLGetConnectAttr(dbc,SQL_ATTR_TRANSLATE_LIB,
+				(SQLPOINTER)dbcstrinit,
+				sizeof(dbcstrinit),&dbcstrlen);
+		assertFailureDbc(dbc,erg);
+	}
 	stdoutput.printf("\n");
 	#endif
 
@@ -806,6 +853,165 @@ int main(int argc, char **argv) {
 	erg=SQLSetConnectAttr(dbc,SQL_ATTR_TRANSLATE_OPTION,
 			(SQLPOINTER)(uintptr_t)dbcinitial,0);
 	assertSuccessDbc(dbc,erg);
+	stdoutput.printf("\n");
+	#endif
+
+
+	#if defined(SQL_ATTR_ANSI_APP)
+	// SQL_ATTR_ANSI_APP
+	stdoutput.printf("  SQL_ATTR_ANSI_APP\n");
+	if (issqlrelay) {
+		// save initial value
+		erg=SQLGetConnectAttr(dbc,SQL_ATTR_ANSI_APP,
+				(SQLPOINTER)&dbcinitial,0,&dbcstrlen);
+		assertSuccessDbc(dbc,erg);
+		// SQL_AA_TRUE
+		erg=SQLSetConnectAttr(dbc,SQL_ATTR_ANSI_APP,
+				(SQLPOINTER)(uintptr_t)SQL_AA_TRUE,0);
+		assertSuccessDbc(dbc,erg);
+		erg=SQLGetConnectAttr(dbc,SQL_ATTR_ANSI_APP,
+				(SQLPOINTER)&dbcuintval,0,&dbcstrlen);
+		assertSuccessDbc(dbc,erg);
+		assertEqualDbc(dbc,(int)dbcuintval,(int)SQL_AA_TRUE);
+		// SQL_AA_FALSE
+		erg=SQLSetConnectAttr(dbc,SQL_ATTR_ANSI_APP,
+				(SQLPOINTER)(uintptr_t)SQL_AA_FALSE,0);
+		assertSuccessDbc(dbc,erg);
+		erg=SQLGetConnectAttr(dbc,SQL_ATTR_ANSI_APP,
+				(SQLPOINTER)&dbcuintval,0,&dbcstrlen);
+		assertSuccessDbc(dbc,erg);
+		assertEqualDbc(dbc,(int)dbcuintval,(int)SQL_AA_FALSE);
+		// restore initial value
+		erg=SQLSetConnectAttr(dbc,SQL_ATTR_ANSI_APP,
+				(SQLPOINTER)(uintptr_t)dbcinitial,0);
+		assertSuccessDbc(dbc,erg);
+	} else {
+		// Oracle's ODBC driver does not implement
+		// SQL_ATTR_ANSI_APP; get raises HYT00 "Timeout
+		// expired".  (The driver manager intercepts set
+		// without forwarding to the driver, so set appears
+		// to succeed.)
+		erg=SQLGetConnectAttr(dbc,SQL_ATTR_ANSI_APP,
+				(SQLPOINTER)&dbcinitial,0,&dbcstrlen);
+		assertFailureDbc(dbc,erg);
+	}
+	stdoutput.printf("\n");
+	#endif
+
+
+	#if defined(SQL_ATTR_RESET_CONNECTION)
+	// SQL_ATTR_RESET_CONNECTION
+	stdoutput.printf("  SQL_ATTR_RESET_CONNECTION\n");
+	if (issqlrelay) {
+		// SQL_RESET_CONNECTION_YES (write-only per spec; the
+		// driver manager normally sets this before reusing a
+		// pooled connection)
+		erg=SQLSetConnectAttr(dbc,SQL_ATTR_RESET_CONNECTION,
+				(SQLPOINTER)(uintptr_t)
+				SQL_RESET_CONNECTION_YES,0);
+		assertSuccessDbc(dbc,erg);
+	} else {
+		// Oracle's ODBC driver does not implement
+		// SQL_ATTR_RESET_CONNECTION; set raises HYT00
+		// "Timeout expired".
+		erg=SQLSetConnectAttr(dbc,SQL_ATTR_RESET_CONNECTION,
+				(SQLPOINTER)(uintptr_t)
+				SQL_RESET_CONNECTION_YES,0);
+		assertFailureDbc(dbc,erg);
+	}
+	stdoutput.printf("\n");
+	#endif
+
+
+	#if defined(SQL_ATTR_ASYNC_DBC_FUNCTIONS_ENABLE)
+	// SQL_ATTR_ASYNC_DBC_FUNCTIONS_ENABLE
+	stdoutput.printf("  SQL_ATTR_ASYNC_DBC_FUNCTIONS_ENABLE\n");
+	if (issqlrelay) {
+		// save initial value
+		erg=SQLGetConnectAttr(dbc,
+				SQL_ATTR_ASYNC_DBC_FUNCTIONS_ENABLE,
+				(SQLPOINTER)&dbcinitial,0,&dbcstrlen);
+		assertSuccessDbc(dbc,erg);
+		// SQL_ASYNC_DBC_ENABLE_ON
+		erg=SQLSetConnectAttr(dbc,
+				SQL_ATTR_ASYNC_DBC_FUNCTIONS_ENABLE,
+				(SQLPOINTER)(uintptr_t)
+				SQL_ASYNC_DBC_ENABLE_ON,0);
+		assertSuccessDbc(dbc,erg);
+		erg=SQLGetConnectAttr(dbc,
+				SQL_ATTR_ASYNC_DBC_FUNCTIONS_ENABLE,
+				(SQLPOINTER)&dbcuintval,0,&dbcstrlen);
+		assertSuccessDbc(dbc,erg);
+		assertEqualDbc(dbc,(int)dbcuintval,
+				(int)SQL_ASYNC_DBC_ENABLE_ON);
+		// SQL_ASYNC_DBC_ENABLE_OFF
+		erg=SQLSetConnectAttr(dbc,
+				SQL_ATTR_ASYNC_DBC_FUNCTIONS_ENABLE,
+				(SQLPOINTER)(uintptr_t)
+				SQL_ASYNC_DBC_ENABLE_OFF,0);
+		assertSuccessDbc(dbc,erg);
+		erg=SQLGetConnectAttr(dbc,
+				SQL_ATTR_ASYNC_DBC_FUNCTIONS_ENABLE,
+				(SQLPOINTER)&dbcuintval,0,&dbcstrlen);
+		assertSuccessDbc(dbc,erg);
+		assertEqualDbc(dbc,(int)dbcuintval,
+				(int)SQL_ASYNC_DBC_ENABLE_OFF);
+		// restore initial value
+		erg=SQLSetConnectAttr(dbc,
+				SQL_ATTR_ASYNC_DBC_FUNCTIONS_ENABLE,
+				(SQLPOINTER)(uintptr_t)dbcinitial,0);
+		assertSuccessDbc(dbc,erg);
+	} else {
+		// Oracle's ODBC driver does not implement
+		// SQL_ATTR_ASYNC_DBC_FUNCTIONS_ENABLE; both get and
+		// set raise HYT00 "Timeout expired".
+		erg=SQLGetConnectAttr(dbc,
+				SQL_ATTR_ASYNC_DBC_FUNCTIONS_ENABLE,
+				(SQLPOINTER)&dbcinitial,0,&dbcstrlen);
+		assertFailureDbc(dbc,erg);
+		erg=SQLSetConnectAttr(dbc,
+				SQL_ATTR_ASYNC_DBC_FUNCTIONS_ENABLE,
+				(SQLPOINTER)(uintptr_t)
+				SQL_ASYNC_DBC_ENABLE_ON,0);
+		assertFailureDbc(dbc,erg);
+	}
+	stdoutput.printf("\n");
+	#endif
+
+
+	#if defined(SQL_ATTR_DRIVER_THREADING)
+	// SQL_ATTR_DRIVER_THREADING
+	// (driver-reported threading level; SQL Relay reports 1 =
+	// thread-safe per HDBC)
+	stdoutput.printf("  SQL_ATTR_DRIVER_THREADING\n");
+	if (issqlrelay) {
+		// save initial value
+		erg=SQLGetConnectAttr(dbc,SQL_ATTR_DRIVER_THREADING,
+				(SQLPOINTER)&dbcinitial,0,&dbcstrlen);
+		assertSuccessDbc(dbc,erg);
+		// set to 1
+		erg=SQLSetConnectAttr(dbc,SQL_ATTR_DRIVER_THREADING,
+				(SQLPOINTER)(uintptr_t)1,0);
+		assertSuccessDbc(dbc,erg);
+		erg=SQLGetConnectAttr(dbc,SQL_ATTR_DRIVER_THREADING,
+				(SQLPOINTER)&dbcuintval,0,&dbcstrlen);
+		assertSuccessDbc(dbc,erg);
+		assertEqualDbc(dbc,(int)dbcuintval,1);
+		// restore initial value
+		erg=SQLSetConnectAttr(dbc,SQL_ATTR_DRIVER_THREADING,
+				(SQLPOINTER)(uintptr_t)dbcinitial,0);
+		assertSuccessDbc(dbc,erg);
+	} else {
+		// Oracle's ODBC driver does not implement
+		// SQL_ATTR_DRIVER_THREADING; both get and set raise
+		// HYT00 "Timeout expired".
+		erg=SQLGetConnectAttr(dbc,SQL_ATTR_DRIVER_THREADING,
+				(SQLPOINTER)&dbcinitial,0,&dbcstrlen);
+		assertFailureDbc(dbc,erg);
+		erg=SQLSetConnectAttr(dbc,SQL_ATTR_DRIVER_THREADING,
+				(SQLPOINTER)(uintptr_t)1,0);
+		assertFailureDbc(dbc,erg);
+	}
 	stdoutput.printf("\n");
 	#endif
 
