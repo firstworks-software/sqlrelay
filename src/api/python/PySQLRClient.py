@@ -999,6 +999,37 @@ class sqlrcursor:
         """
         return CSQLRelay.getCatalogList(self.cursor,wild)
 
+    def getSchemaList(self,wild):
+        """
+        Generates a result set containing
+        schemas that match the pattern "wild".
+
+        The result set will contain the following columns:
+        * Database
+
+        If "wild" is empty or None then a result set containing
+        all schemas in the current database will be returned.
+
+        If SQL Relay doesn't support getting a list of schemas
+        for the current database backend (or the database doesn't)
+        then an empty result set will be returned.
+        """
+        return CSQLRelay.getSchemaList(self.cursor,wild)
+
+    def getTableTypeList(self):
+        """
+        Generates a result set containing
+        supported table types.
+
+        The result set will contain the following columns:
+        * table_type
+
+        If SQL Relay doesn't support getting a list of table
+        types for the current database backend (or the database
+        doesn't) then an empty result set will be returned.
+        """
+        return CSQLRelay.getTableTypeList(self.cursor)
+
     def getTableList(self,wild):
         """
         Generates a result set containing the
@@ -1015,9 +1046,24 @@ class sqlrcursor:
         for the current database backend (or the database doesn't)
         then an empty result set will be returned.
         """
-        return CSQLRelay.setTableList(self.cursor,wild)
+        return CSQLRelay.getTableList(self.cursor,wild)
 
-    def getColumnList(sefl,table,wild):
+    def getTypeInfoList(self,type):
+        """
+        Generates a result set containing
+        data type information for "type".
+
+        If "type" is empty or None then a result set containing
+        all data types in the current database/schema will be
+        returned.
+
+        If SQL Relay doesn't support getting type info for the
+        current database backend (or the database doesn't) then
+        an empty result set will be returned.
+        """
+        return CSQLRelay.getTypeInfoList(self.cursor,type)
+
+    def getColumnList(self,table,wild):
         """
         Generates a result set containing the
         columns of "table", which match the pattern "wild".
@@ -1040,7 +1086,68 @@ class sqlrcursor:
         for the current database backend (or the database doesn't)
         then an empty result set will be returned.
         """
-        return CSQLRelay.setColumnList(self.cursor,table,wild)
+        return CSQLRelay.getColumnList(self.cursor,table,wild)
+
+    def getPrimaryKeysList(self,table,wild):
+        """
+        Generates a result set containing
+        the primary keys of "table", which match the pattern
+        "wild".
+
+        If "wild" is empty or None then a result set containing
+        all primary keys of "table" will be returned.
+
+        If SQL Relay doesn't support getting a list of primary
+        keys for the current database backend (or the database
+        doesn't) then an empty result set will be returned.
+        """
+        return CSQLRelay.getPrimaryKeysList(self.cursor,table,wild)
+
+    def getKeyAndIndexList(self,table,wild):
+        """
+        Generates a result set containing
+        the keys and indexes of "table", which match the pattern
+        "wild".
+
+        If "wild" is empty or None then a result set containing
+        all keys and indexes of "table" will be returned.
+
+        If SQL Relay doesn't support getting a list of keys and
+        indexes for the current database backend (or the database
+        doesn't) then an empty result set will be returned.
+        """
+        return CSQLRelay.getKeyAndIndexList(self.cursor,table,wild)
+
+    def getProcedureList(self,wild):
+        """
+        Generates a result set containing
+        procedures that match the pattern "wild".
+
+        If "wild" is empty or None then a result set containing
+        all procedures in the current database/schema will be
+        returned.
+
+        If SQL Relay doesn't support getting a list of procedures
+        for the current database backend (or the database doesn't)
+        then an empty result set will be returned.
+        """
+        return CSQLRelay.getProcedureList(self.cursor,wild)
+
+    def getProcedureParameterList(self,procedure,wild):
+        """
+        Generates a result set containing
+        the parameters of "procedure", which match the pattern
+        "wild".
+
+        If "wild" is empty or None then a result set containing
+        all parameters of "procedure" will be returned.
+
+        If SQL Relay doesn't support getting a list of procedure
+        parameters for the current database backend (or the
+        database doesn't) then an empty result set will be
+        returned.
+        """
+        return CSQLRelay.getProcedureParameterList(self.cursor,procedure,wild)
 
     """
     If you don't need to use substitution or bind variables

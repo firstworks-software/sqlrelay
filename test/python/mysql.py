@@ -3,42 +3,47 @@
 # Copyright (c) David Muse
 # See the file COPYING for more information.
 
+
 from SQLRelay import PySQLRClient
 import sys
+import random
+import asserts
 from asserts import *
-import string
-from decimal import Decimal
 
-
-if sys.version < '3':
-    def btos(x):
-        return x
-else:
-    import codecs
-    def btos(x):
-        return codecs.latin_1_encode(x)[0]
 
 def main():
 
-	PySQLRClient.getNumericFieldsAsNumbers()
+	isolationlevels=["REPEATABLE-READ","READ-UNCOMMITTED",
+				"READ-COMMITTED","SERIALIZABLE"]
+	subvars=["var1","var2","var3"]
+	subvallongs=[1,2,3]
+	subvalstrings=["hi","hello","bye"]
+	subvaldoubles=[10.55,10.556,10.5556]
+	precs=[4,5,6]
+	scales=[2,3,4]
+
+	LARGE_BUFFER_LENGTH=8192
+
 
 	# instantiation
-	con=PySQLRClient.sqlrconnection("sqlrelay",9000,
-						"/tmp/test.socket",
-						"testuser","testpassword")
+	con=PySQLRClient.sqlrconnection("sqlrelay",9000,"/tmp/test.socket",
+						"testuser","testpassword",0,1)
 	cur=PySQLRClient.sqlrcursor(con)
-
-	# get database type
+	asserts.setConnection(con)
+	asserts.setCursor(cur)
 
 
 	# identify
 	print("IDENTIFY: ")
-	assertEqual(con.identify(),"mysql")
+	assertEquals(con.identify(),"mysql")
 	print()
 
-	# get the db version
+
+	# db version
+	print("DB VERSION: ")
 	dbversion=con.dbVersion()
-	majorversion=int(dbversion[0:1])
+	majorversion=int(dbversion[0])
+	print()
 
 
 	# ping
@@ -47,26 +52,35 @@ def main():
 	print()
 
 
+	# bind format
+	print("BIND FORMAT: ")
+	if majorversion>3:
+		assertEquals(con.bindFormat(),"?")
+	else:
+		assertEquals(con.bindFormat(),":*")
+	print()
+
+
+	# nextval format
+	print("NEXTVAL FORMAT: ")
+	assertEquals(con.nextvalFormat(),"")
+	print()
+
+
 	# isolation levels
 	print("ISOLATION LEVELS: ")
-	isolationlevels=["REPEATABLE-READ","READ-UNCOMMITTED",
-			"READ-COMMITTED","SERIALIZABLE"]
 	for il in isolationlevels:
 		assertTrue(con.setIsolationLevel(il))
-		assertEqual(con.getIsolationLevel(),il)
+		assertEquals(con.getIsolationLevel(),il)
 		print()
 	# reset to the default isolation level
 	assertTrue(con.setIsolationLevel(isolationlevels[0]))
 	print()
 
-	# drop existing table
+
+	# create testtable
+	print("CREATE TESTTABLE: ")
 	cur.sendQuery("drop table testtable")
-
-	# create a new table
-
-
-	# create temptable
-	print("CREATE TEMPTABLE: ")
 	assertTrue(cur.sendQuery(
 		"create table testtable ("
 		"	testtinyint tinyint, "
@@ -82,23 +96,22 @@ def main():
 		"	testdatetime datetime, "
 		"	testyear year, "
 		"	testchar char(40), "
-		"	testtext text, "
 		"	testvarchar varchar(40), "
+		"	testtext text, "
 		"	testtinytext tinytext, "
 		"	testmediumtext mediumtext, "
 		"	testlongtext longtext, "
+		"	testblob blob, "
+		"	testtinyblob tinyblob, "
+		"	testmediumblob mediumblob, "
+		"	testlongblob longblob, "
 		"	testtimestamp timestamp)"))
-	print()
-
-
-	# begin transaction
-	print("BEGIN TRANSACTION: ")
-	assertTrue(cur.sendQuery("begin"))
 	print()
 
 
 	# insert
 	print("INSERT: ")
+	assertTrue(con.begin())
 	assertTrue(cur.sendQuery(
 		"insert into "
 		"	testtable "
@@ -116,11 +129,15 @@ def main():
 		"	'2001-01-01 01:00:00', "
 		"	'2001', "
 		"	'char1', "
-		"	'text1', "
 		"	'varchar1', "
+		"	'text1', "
 		"	'tinytext1', "
 		"	'mediumtext1', "
 		"	'longtext1', "
+		"	'blob1', "
+		"	'tinyblob1', "
+		"	'mediumblob1', "
+		"	'longblob1', "
 		"	NULL)"))
 	assertTrue(cur.sendQuery(
 		"insert into "
@@ -139,11 +156,15 @@ def main():
 		"	'2002-01-01 02:00:00', "
 		"	'2002', "
 		"	'char2', "
-		"	'text2', "
 		"	'varchar2', "
+		"	'text2', "
 		"	'tinytext2', "
 		"	'mediumtext2', "
 		"	'longtext2', "
+		"	'blob2', "
+		"	'tinyblob2', "
+		"	'mediumblob2', "
+		"	'longblob2', "
 		"	NULL)"))
 	assertTrue(cur.sendQuery(
 		"insert into "
@@ -162,11 +183,15 @@ def main():
 		"	'2003-01-01 03:00:00', "
 		"	'2003', "
 		"	'char3', "
-		"	'text3', "
 		"	'varchar3', "
+		"	'text3', "
 		"	'tinytext3', "
 		"	'mediumtext3', "
 		"	'longtext3', "
+		"	'blob3', "
+		"	'tinyblob3', "
+		"	'mediumblob3', "
+		"	'longblob3', "
 		"	NULL)"))
 	assertTrue(cur.sendQuery(
 		"insert into "
@@ -185,23 +210,27 @@ def main():
 		"	'2004-01-01 04:00:00', "
 		"	'2004', "
 		"	'char4', "
-		"	'text4', "
 		"	'varchar4', "
+		"	'text4', "
 		"	'tinytext4', "
 		"	'mediumtext4', "
 		"	'longtext4', "
+		"	'blob4', "
+		"	'tinyblob4', "
+		"	'mediumblob4', "
+		"	'longblob4', "
 		"	NULL)"))
 	print()
 
 
 	# affected rows
 	print("AFFECTED ROWS: ")
-	assertEqual(cur.affectedRows(),1)
+	assertEquals(cur.affectedRows(),1)
 	print()
 
 
-	# bind by position
-	print("BIND BY POSITION: ")
+	# input bind by position
+	print("INPUT BIND BY POSITION: ")
 	cur.prepareQuery(
 		"insert into "
 		"	testtable "
@@ -224,8 +253,12 @@ def main():
 		"	?, "
 		"	?, "
 		"	?, "
+		"	?, "
+		"	?, "
+		"	?, "
+		"	?, "
 		"	NULL)")
-	assertEqual(cur.countBindVariables(),18)
+	assertEquals(cur.countBindVariables(),22)
 	cur.inputBind("1",5)
 	cur.inputBind("2",5)
 	cur.inputBind("3",5)
@@ -236,14 +269,18 @@ def main():
 	cur.inputBind("8",5.1,2,1)
 	cur.inputBind("9","2005-01-01")
 	cur.inputBind("10","05:00:00")
-	cur.inputBind("11","2005-01-01 05:00:00")
+	cur.inputBindDate("11",2005,1,1,5,0,0,0,None,False)
 	cur.inputBind("12","2005")
 	cur.inputBind("13","char5")
-	cur.inputBind("14","text5")
-	cur.inputBind("15","varchar5")
-	cur.inputBind("16","tinytext5")
-	cur.inputBind("17","mediumtext5")
-	cur.inputBind("18","longtext5")
+	cur.inputBind("14","varchar5")
+	cur.inputBindClob("15","text5",5)
+	cur.inputBindClob("16","tinytext5",9)
+	cur.inputBindClob("17","mediumtext5",11)
+	cur.inputBindClob("18","longtext5",9)
+	cur.inputBindBlob("19","blob5",5)
+	cur.inputBindBlob("20","tinyblob5",9)
+	cur.inputBindBlob("21","mediumblob5",11)
+	cur.inputBindBlob("22","longblob5",9)
 	assertTrue(cur.executeQuery())
 	cur.clearBinds()
 	cur.inputBind("1",6)
@@ -254,35 +291,54 @@ def main():
 	cur.inputBind("6",6.1,2,1)
 	cur.inputBind("7",6.1,2,1)
 	cur.inputBind("8",6.1,2,1)
-	cur.inputBind("9",'2006-01-01')
-	cur.inputBind("10",'06:00:00')
-	cur.inputBind("11",'2006-01-01 06:00:00')
-	cur.inputBind("12",'2006')
-	cur.inputBind("13",'char6')
-	cur.inputBind("14",'text6')
-	cur.inputBind("15",'varchar6')
-	cur.inputBind("16",'tinytext6')
-	cur.inputBind("17",'mediumtext6')
-	cur.inputBind("18",'longtext6')
+	cur.inputBind("9","2006-01-01")
+	cur.inputBind("10","06:00:00")
+	cur.inputBindDate("11",2006,1,1,6,0,0,0,None,False)
+	cur.inputBind("12","2006")
+	cur.inputBind("13","char6")
+	cur.inputBind("14","varchar6")
+	cur.inputBindClob("15","text6",5)
+	cur.inputBindClob("16","tinytext6",9)
+	cur.inputBindClob("17","mediumtext6",11)
+	cur.inputBindClob("18","longtext6",9)
+	cur.inputBindBlob("19","blob6",5)
+	cur.inputBindBlob("20","tinyblob6",9)
+	cur.inputBindBlob("21","mediumblob6",11)
+	cur.inputBindBlob("22","longblob6",9)
 	assertTrue(cur.executeQuery())
-	print()
-
-
-	# array of binds by position
-	print("ARRAY OF BINDS BY POSITION: ")
 	cur.clearBinds()
-	cur.inputBinds(["1","2","3","4","5","6",
-			"7","8","9","10","11","12",
-			"13","14","15",
-			"16","17","18",],
-		[7,7,7,7,7,7.1,7.1,7.1,'2007-01-01','07:00:00','2007-01-01 07:00:00','2007','char7','text7','varchar7','tinytext7','mediumtext7','longtext7'],
-		[0,0,0,0,0,2,2,2,0,0,0,0,0,0,0,0,0,0],
-		[0,0,0,0,0,1,1,1,0,0,0,0,0,0,0,0,0,0])
+	cur.inputBind("1",7)
+	cur.inputBind("2",7)
+	cur.inputBind("3",7)
+	cur.inputBind("4",7)
+	cur.inputBind("5",7)
+	cur.inputBind("6",7.1,2,1)
+	cur.inputBind("7",7.1,2,1)
+	cur.inputBind("8",7.1,2,1)
+	cur.inputBind("9","2007-01-01")
+	cur.inputBind("10","07:00:00")
+	cur.inputBindDate("11",2007,1,1,7,0,0,0,None,False)
+	cur.inputBind("12","2007")
+	cur.inputBind("13","char7")
+	cur.inputBind("14","varchar7")
+	cur.inputBindClob("15","text7",5)
+	cur.inputBindClob("16","tinytext7",9)
+	cur.inputBindClob("17","mediumtext7",11)
+	cur.inputBindClob("18","longtext7",9)
+	cur.inputBindBlob("19","blob7",5)
+	cur.inputBindBlob("20","tinyblob7",9)
+	cur.inputBindBlob("21","mediumblob7",11)
+	cur.inputBindBlob("22","longblob7",9)
 	assertTrue(cur.executeQuery())
 	print()
 
 
-	# bind by position with validation
+	# array of input binds by position
+	# mysql doesn't support implicit conversion of string binds to other
+	# data types, so arrays of binds don't generally work.
+
+
+	# input bind by position with validation
 	print("BIND BY POSITION WITH VALIDATION: ")
 	cur.clearBinds()
 	cur.inputBind("1",8)
@@ -293,19 +349,35 @@ def main():
 	cur.inputBind("6",8.1,2,1)
 	cur.inputBind("7",8.1,2,1)
 	cur.inputBind("8",8.1,2,1)
-	cur.inputBind("9",'2008-01-01')
-	cur.inputBind("10",'08:00:00')
-	cur.inputBind("11",'2008-01-01 08:00:00')
-	cur.inputBind("12",'2008')
-	cur.inputBind("13",'char8')
-	cur.inputBind("14",'text8')
-	cur.inputBind("15",'varchar8')
-	cur.inputBind("16",'tinytext8')
-	cur.inputBind("17",'mediumtext8')
-	cur.inputBind("18",'longtext8')
+	cur.inputBind("9","2008-01-01")
+	cur.inputBind("10","08:00:00")
+	cur.inputBindDate("11",2008,1,1,8,0,0,0,None,False)
+	cur.inputBind("12","2008")
+	cur.inputBind("13","char8")
+	cur.inputBind("14","varchar8")
+	cur.inputBindClob("15","text8",5)
+	cur.inputBindClob("16","tinytext8",9)
+	cur.inputBindClob("17","mediumtext8",11)
+	cur.inputBindClob("18","longtext8",9)
+	cur.inputBindBlob("19","blob8",5)
+	cur.inputBindBlob("20","tinyblob8",9)
+	cur.inputBindBlob("21","mediumblob8",11)
+	cur.inputBindBlob("22","longblob8",9)
 	cur.validateBinds()
 	assertTrue(cur.executeQuery())
 	print()
+
+
+	# input bind by name
+	# mysql doesn't support bind by name
+
+
+	# array of input binds by name
+	# mysql doesn't support bind by name
+
+
+	# input bind by name with validation
+	# mysql doesn't support bind by name
 
 
 	# select
@@ -322,211 +394,245 @@ def main():
 
 	# column count
 	print("COLUMN COUNT: ")
-	assertEqual(cur.colCount(),19)
+	assertEquals(cur.colCount(),23)
 	print()
 
 
 	# column names
 	print("COLUMN NAMES: ")
-	assertEqual(cur.getColumnName(0),"testtinyint")
-	assertEqual(cur.getColumnName(1),"testsmallint")
-	assertEqual(cur.getColumnName(2),"testmediumint")
-	assertEqual(cur.getColumnName(3),"testint")
-	assertEqual(cur.getColumnName(4),"testbigint")
-	assertEqual(cur.getColumnName(5),"testfloat")
-	assertEqual(cur.getColumnName(6),"testreal")
-	assertEqual(cur.getColumnName(7),"testdecimal")
-	assertEqual(cur.getColumnName(8),"testdate")
-	assertEqual(cur.getColumnName(9),"testtime")
-	assertEqual(cur.getColumnName(10),"testdatetime")
-	assertEqual(cur.getColumnName(11),"testyear")
-	assertEqual(cur.getColumnName(12),"testchar")
-	assertEqual(cur.getColumnName(13),"testtext")
-	assertEqual(cur.getColumnName(14),"testvarchar")
-	assertEqual(cur.getColumnName(15),"testtinytext")
-	assertEqual(cur.getColumnName(16),"testmediumtext")
-	assertEqual(cur.getColumnName(17),"testlongtext")
-	assertEqual(cur.getColumnName(18),"testtimestamp")
+	assertEquals(cur.getColumnName(0),"testtinyint")
+	assertEquals(cur.getColumnName(1),"testsmallint")
+	assertEquals(cur.getColumnName(2),"testmediumint")
+	assertEquals(cur.getColumnName(3),"testint")
+	assertEquals(cur.getColumnName(4),"testbigint")
+	assertEquals(cur.getColumnName(5),"testfloat")
+	assertEquals(cur.getColumnName(6),"testreal")
+	assertEquals(cur.getColumnName(7),"testdecimal")
+	assertEquals(cur.getColumnName(8),"testdate")
+	assertEquals(cur.getColumnName(9),"testtime")
+	assertEquals(cur.getColumnName(10),"testdatetime")
+	assertEquals(cur.getColumnName(11),"testyear")
+	assertEquals(cur.getColumnName(12),"testchar")
+	assertEquals(cur.getColumnName(13),"testvarchar")
+	assertEquals(cur.getColumnName(14),"testtext")
+	assertEquals(cur.getColumnName(15),"testtinytext")
+	assertEquals(cur.getColumnName(16),"testmediumtext")
+	assertEquals(cur.getColumnName(17),"testlongtext")
+	assertEquals(cur.getColumnName(18),"testblob")
+	assertEquals(cur.getColumnName(19),"testtinyblob")
+	assertEquals(cur.getColumnName(20),"testmediumblob")
+	assertEquals(cur.getColumnName(21),"testlongblob")
+	assertEquals(cur.getColumnName(22),"testtimestamp")
 	cols=cur.getColumnNames()
-	assertEqual(cols[0],"testtinyint")
-	assertEqual(cols[1],"testsmallint")
-	assertEqual(cols[2],"testmediumint")
-	assertEqual(cols[3],"testint")
-	assertEqual(cols[4],"testbigint")
-	assertEqual(cols[5],"testfloat")
-	assertEqual(cols[6],"testreal")
-	assertEqual(cols[7],"testdecimal")
-	assertEqual(cols[8],"testdate")
-	assertEqual(cols[9],"testtime")
-	assertEqual(cols[10],"testdatetime")
-	assertEqual(cols[11],"testyear")
-	assertEqual(cols[12],"testchar")
-	assertEqual(cols[13],"testtext")
-	assertEqual(cols[14],"testvarchar")
-	assertEqual(cols[15],"testtinytext")
-	assertEqual(cols[16],"testmediumtext")
-	assertEqual(cols[17],"testlongtext")
-	assertEqual(cols[18],"testtimestamp")
+	assertEquals(cols[0],"testtinyint")
+	assertEquals(cols[1],"testsmallint")
+	assertEquals(cols[2],"testmediumint")
+	assertEquals(cols[3],"testint")
+	assertEquals(cols[4],"testbigint")
+	assertEquals(cols[5],"testfloat")
+	assertEquals(cols[6],"testreal")
+	assertEquals(cols[7],"testdecimal")
+	assertEquals(cols[8],"testdate")
+	assertEquals(cols[9],"testtime")
+	assertEquals(cols[10],"testdatetime")
+	assertEquals(cols[11],"testyear")
+	assertEquals(cols[12],"testchar")
+	assertEquals(cols[13],"testvarchar")
+	assertEquals(cols[14],"testtext")
+	assertEquals(cols[15],"testtinytext")
+	assertEquals(cols[16],"testmediumtext")
+	assertEquals(cols[17],"testlongtext")
+	assertEquals(cols[18],"testblob")
+	assertEquals(cols[19],"testtinyblob")
+	assertEquals(cols[20],"testmediumblob")
+	assertEquals(cols[21],"testlongblob")
+	assertEquals(cols[22],"testtimestamp")
 	print()
 
 
 	# column types
 	print("COLUMN TYPES: ")
-	assertEqual(cur.getColumnType(0),"TINYINT")
-	assertEqual(cur.getColumnType(1),"SMALLINT")
-	assertEqual(cur.getColumnType(2),"MEDIUMINT")
-	assertEqual(cur.getColumnType(3),"INT")
-	assertEqual(cur.getColumnType(4),"BIGINT")
-	assertEqual(cur.getColumnType(5),"FLOAT")
-	assertEqual(cur.getColumnType(6),"REAL")
-	assertEqual(cur.getColumnType(7),"DECIMAL")
-	assertEqual(cur.getColumnType(8),"DATE")
-	assertEqual(cur.getColumnType(9),"TIME")
-	assertEqual(cur.getColumnType(10),"DATETIME")
-	assertEqual(cur.getColumnType(11),"YEAR")
+	assertEquals(cur.getColumnType(0),"TINYINT")
+	assertEquals(cur.getColumnType(1),"SMALLINT")
+	assertEquals(cur.getColumnType(2),"MEDIUMINT")
+	assertEquals(cur.getColumnType(3),"INT")
+	assertEquals(cur.getColumnType(4),"BIGINT")
+	assertEquals(cur.getColumnType(5),"FLOAT")
+	assertEquals(cur.getColumnType(6),"REAL")
+	assertEquals(cur.getColumnType(7),"DECIMAL")
+	assertEquals(cur.getColumnType(8),"DATE")
+	assertEquals(cur.getColumnType(9),"TIME")
+	assertEquals(cur.getColumnType(10),"DATETIME")
+	assertEquals(cur.getColumnType(11),"YEAR")
 	if majorversion==3:
-		assertEqual(cur.getColumnType(12),"VARSTRING")
+		assertEquals(cur.getColumnType(12),"VARSTRING")
 	else:
-		assertEqual(cur.getColumnType(12),"STRING")
-	assertEqual(cur.getColumnType(13),"BLOB")
-	assertEqual(cur.getColumnType(14),"VARSTRING")
-	assertEqual(cur.getColumnType(15),"TINYBLOB")
-	assertEqual(cur.getColumnType(16),"MEDIUMBLOB")
-	assertEqual(cur.getColumnType(17),"LONGBLOB")
-	assertEqual(cur.getColumnType(18),"TIMESTAMP")
-	assertEqual(cur.getColumnType("testtinyint"),"TINYINT")
-	assertEqual(cur.getColumnType("testsmallint"),"SMALLINT")
-	assertEqual(cur.getColumnType("testmediumint"),"MEDIUMINT")
-	assertEqual(cur.getColumnType("testint"),"INT")
-	assertEqual(cur.getColumnType("testbigint"),"BIGINT")
-	assertEqual(cur.getColumnType("testfloat"),"FLOAT")
-	assertEqual(cur.getColumnType("testreal"),"REAL")
-	assertEqual(cur.getColumnType("testdecimal"),"DECIMAL")
-	assertEqual(cur.getColumnType("testdate"),"DATE")
-	assertEqual(cur.getColumnType("testtime"),"TIME")
-	assertEqual(cur.getColumnType("testdatetime"),"DATETIME")
-	assertEqual(cur.getColumnType("testyear"),"YEAR")
+		assertEquals(cur.getColumnType(12),"STRING")
+	assertEquals(cur.getColumnType(13),"VARSTRING")
+	assertEquals(cur.getColumnType(14),"BLOB")
+	assertEquals(cur.getColumnType(15),"TINYBLOB")
+	assertEquals(cur.getColumnType(16),"MEDIUMBLOB")
+	assertEquals(cur.getColumnType(17),"LONGBLOB")
+	assertEquals(cur.getColumnType(18),"BLOB")
+	assertEquals(cur.getColumnType(19),"TINYBLOB")
+	assertEquals(cur.getColumnType(20),"MEDIUMBLOB")
+	assertEquals(cur.getColumnType(21),"LONGBLOB")
+	assertEquals(cur.getColumnType(22),"TIMESTAMP")
+	assertEquals(cur.getColumnType("testtinyint"),"TINYINT")
+	assertEquals(cur.getColumnType("testsmallint"),"SMALLINT")
+	assertEquals(cur.getColumnType("testmediumint"),"MEDIUMINT")
+	assertEquals(cur.getColumnType("testint"),"INT")
+	assertEquals(cur.getColumnType("testbigint"),"BIGINT")
+	assertEquals(cur.getColumnType("testfloat"),"FLOAT")
+	assertEquals(cur.getColumnType("testreal"),"REAL")
+	assertEquals(cur.getColumnType("testdecimal"),"DECIMAL")
+	assertEquals(cur.getColumnType("testdate"),"DATE")
+	assertEquals(cur.getColumnType("testtime"),"TIME")
+	assertEquals(cur.getColumnType("testdatetime"),"DATETIME")
+	assertEquals(cur.getColumnType("testyear"),"YEAR")
 	if majorversion==3:
-		assertEqual(cur.getColumnType("testchar"),"VARSTRING")
+		assertEquals(cur.getColumnType("testchar"),"VARSTRING")
 	else:
-		assertEqual(cur.getColumnType("testchar"),"STRING")
-	assertEqual(cur.getColumnType("testtext"),"BLOB")
-	assertEqual(cur.getColumnType("testvarchar"),"VARSTRING")
-	assertEqual(cur.getColumnType("testtinytext"),"TINYBLOB")
-	assertEqual(cur.getColumnType("testmediumtext"),"MEDIUMBLOB")
-	assertEqual(cur.getColumnType("testlongtext"),"LONGBLOB")
-	assertEqual(cur.getColumnType("testtimestamp"),"TIMESTAMP")
+		assertEquals(cur.getColumnType("testchar"),"STRING")
+	assertEquals(cur.getColumnType("testvarchar"),"VARSTRING")
+	assertEquals(cur.getColumnType("testtext"),"BLOB")
+	assertEquals(cur.getColumnType("testtinytext"),"TINYBLOB")
+	assertEquals(cur.getColumnType("testmediumtext"),"MEDIUMBLOB")
+	assertEquals(cur.getColumnType("testlongtext"),"LONGBLOB")
+	assertEquals(cur.getColumnType("testblob"),"BLOB")
+	assertEquals(cur.getColumnType("testtinyblob"),"TINYBLOB")
+	assertEquals(cur.getColumnType("testmediumblob"),"MEDIUMBLOB")
+	assertEquals(cur.getColumnType("testlongblob"),"LONGBLOB")
+	assertEquals(cur.getColumnType("testtimestamp"),"TIMESTAMP")
 	print()
 
 
 	# column length
 	print("COLUMN LENGTH: ")
-	assertEqual(cur.getColumnLength(0),1)
-	assertEqual(cur.getColumnLength(1),2)
-	assertEqual(cur.getColumnLength(2),3)
-	assertEqual(cur.getColumnLength(3),4)
-	assertEqual(cur.getColumnLength(4),8)
-	assertEqual(cur.getColumnLength(5),4)
-	assertEqual(cur.getColumnLength(6),8)
-	assertEqual(cur.getColumnLength(7),6)
-	assertEqual(cur.getColumnLength(8),3)
-	assertEqual(cur.getColumnLength(9),3)
-	assertEqual(cur.getColumnLength(10),8)
-	assertEqual(cur.getColumnLength(11),1)
-	#assertEqual(cur.getColumnLength(12),40)
-	assertEqual(cur.getColumnLength(13),65535)
-	#assertEqual(cur.getColumnLength(14),41)
-	assertEqual(cur.getColumnLength(15),255)
-	assertEqual(cur.getColumnLength(16),16777215)
-	assertEqual(cur.getColumnLength(17),2147483647)
-	assertEqual(cur.getColumnLength(18),4)
-	assertEqual(cur.getColumnLength("testtinyint"),1)
-	assertEqual(cur.getColumnLength("testsmallint"),2)
-	assertEqual(cur.getColumnLength("testmediumint"),3)
-	assertEqual(cur.getColumnLength("testint"),4)
-	assertEqual(cur.getColumnLength("testbigint"),8)
-	assertEqual(cur.getColumnLength("testfloat"),4)
-	assertEqual(cur.getColumnLength("testreal"),8)
-	assertEqual(cur.getColumnLength("testdecimal"),6)
-	assertEqual(cur.getColumnLength("testdate"),3)
-	assertEqual(cur.getColumnLength("testtime"),3)
-	assertEqual(cur.getColumnLength("testdatetime"),8)
-	assertEqual(cur.getColumnLength("testyear"),1)
-	#assertEqual(cur.getColumnLength("testchar"),40)
-	assertEqual(cur.getColumnLength("testtext"),65535)
-	#assertEqual(cur.getColumnLength("testvarchar"),41)
-	assertEqual(cur.getColumnLength("testtinytext"),255)
-	assertEqual(cur.getColumnLength("testmediumtext"),16777215)
-	assertEqual(cur.getColumnLength("testlongtext"),2147483647)
-	assertEqual(cur.getColumnLength("testtimestamp"),4)
+	assertEquals(cur.getColumnLength(0),1)
+	assertEquals(cur.getColumnLength(1),2)
+	assertEquals(cur.getColumnLength(2),3)
+	assertEquals(cur.getColumnLength(3),4)
+	assertEquals(cur.getColumnLength(4),8)
+	assertEquals(cur.getColumnLength(5),4)
+	assertEquals(cur.getColumnLength(6),8)
+	assertEquals(cur.getColumnLength(7),6)
+	assertEquals(cur.getColumnLength(8),3)
+	assertEquals(cur.getColumnLength(9),3)
+	assertEquals(cur.getColumnLength(10),8)
+	assertEquals(cur.getColumnLength(11),1)
+	# these can be 120/121 if the db charset is utf8
+	#assertEquals(cur.getColumnLength(12),40)
+	#assertEquals(cur.getColumnLength(13),41)
+	assertEquals(cur.getColumnLength(14),65535)
+	assertEquals(cur.getColumnLength(15),255)
+	assertEquals(cur.getColumnLength(16),16777215)
+	assertEquals(cur.getColumnLength(17),2147483647)
+	assertEquals(cur.getColumnLength(18),65535)
+	assertEquals(cur.getColumnLength(19),255)
+	assertEquals(cur.getColumnLength(20),16777215)
+	assertEquals(cur.getColumnLength(21),2147483647)
+	assertEquals(cur.getColumnLength(22),4)
+	assertEquals(cur.getColumnLength("testtinyint"),1)
+	assertEquals(cur.getColumnLength("testsmallint"),2)
+	assertEquals(cur.getColumnLength("testmediumint"),3)
+	assertEquals(cur.getColumnLength("testint"),4)
+	assertEquals(cur.getColumnLength("testbigint"),8)
+	assertEquals(cur.getColumnLength("testfloat"),4)
+	assertEquals(cur.getColumnLength("testreal"),8)
+	assertEquals(cur.getColumnLength("testdecimal"),6)
+	assertEquals(cur.getColumnLength("testdate"),3)
+	assertEquals(cur.getColumnLength("testtime"),3)
+	assertEquals(cur.getColumnLength("testdatetime"),8)
+	assertEquals(cur.getColumnLength("testyear"),1)
+	# these can be 120/121 if the db charset is utf8
+	#assertEquals(cur.getColumnLength("testchar"),40)
+	#assertEquals(cur.getColumnLength("testvarchar"),41)
+	assertEquals(cur.getColumnLength("testtext"),65535)
+	assertEquals(cur.getColumnLength("testtinytext"),255)
+	assertEquals(cur.getColumnLength("testmediumtext"),16777215)
+	assertEquals(cur.getColumnLength("testlongtext"),2147483647)
+	assertEquals(cur.getColumnLength("testblob"),65535)
+	assertEquals(cur.getColumnLength("testtinyblob"),255)
+	assertEquals(cur.getColumnLength("testmediumblob"),16777215)
+	assertEquals(cur.getColumnLength("testlongblob"),2147483647)
+	assertEquals(cur.getColumnLength("testtimestamp"),4)
 	print()
 
 
 	# longest column
 	print("LONGEST COLUMN: ")
-	assertEqual(cur.getLongest(0),1)
-	assertEqual(cur.getLongest(1),1)
-	assertEqual(cur.getLongest(2),1)
-	assertEqual(cur.getLongest(3),1)
-	assertEqual(cur.getLongest(4),1)
-	#assertEqual(cur.getLongest(5),3)
-	assertEqual(cur.getLongest(6),3)
-	assertEqual(cur.getLongest(7),3)
-	assertEqual(cur.getLongest(8),10)
-	assertEqual(cur.getLongest(9),8)
-	assertEqual(cur.getLongest(10),19)
-	assertEqual(cur.getLongest(11),4)
-	assertEqual(cur.getLongest(12),5)
-	assertEqual(cur.getLongest(13),5)
-	assertEqual(cur.getLongest(14),8)
-	assertEqual(cur.getLongest(15),9)
-	assertEqual(cur.getLongest(16),11)
-	assertEqual(cur.getLongest(17),9)
+	assertEquals(cur.getLongest(0),1)
+	assertEquals(cur.getLongest(1),1)
+	assertEquals(cur.getLongest(2),1)
+	assertEquals(cur.getLongest(3),1)
+	assertEquals(cur.getLongest(4),1)
+	#assertEquals(cur.getLongest(5),3)
+	assertEquals(cur.getLongest(6),3)
+	assertEquals(cur.getLongest(7),3)
+	assertEquals(cur.getLongest(8),10)
+	assertEquals(cur.getLongest(9),8)
+	assertEquals(cur.getLongest(10),19)
+	assertEquals(cur.getLongest(11),4)
+	assertEquals(cur.getLongest(12),5)
+	assertEquals(cur.getLongest(13),8)
+	assertEquals(cur.getLongest(14),5)
+	assertEquals(cur.getLongest(15),9)
+	assertEquals(cur.getLongest(16),11)
+	assertEquals(cur.getLongest(17),9)
+	assertEquals(cur.getLongest(18),5)
+	assertEquals(cur.getLongest(19),9)
+	assertEquals(cur.getLongest(20),11)
+	assertEquals(cur.getLongest(21),9)
 	if majorversion==3:
-		assertEqual(cur.getLongest(18),14)
+		assertEquals(cur.getLongest(22),14)
 	else:
-		assertEqual(cur.getLongest(18),19)
-	assertEqual(cur.getLongest("testtinyint"),1)
-	assertEqual(cur.getLongest("testsmallint"),1)
-	assertEqual(cur.getLongest("testmediumint"),1)
-	assertEqual(cur.getLongest("testint"),1)
-	assertEqual(cur.getLongest("testbigint"),1)
-	#assertEqual(cur.getLongest("testfloat"),3)
-	assertEqual(cur.getLongest("testreal"),3)
-	assertEqual(cur.getLongest("testdecimal"),3)
-	assertEqual(cur.getLongest("testdate"),10)
-	assertEqual(cur.getLongest("testtime"),8)
-	assertEqual(cur.getLongest("testdatetime"),19)
-	assertEqual(cur.getLongest("testyear"),4)
-	assertEqual(cur.getLongest("testchar"),5)
-	assertEqual(cur.getLongest("testtext"),5)
-	assertEqual(cur.getLongest("testvarchar"),8)
-	assertEqual(cur.getLongest("testtinytext"),9)
-	assertEqual(cur.getLongest("testmediumtext"),11)
-	assertEqual(cur.getLongest("testlongtext"),9)
+		assertEquals(cur.getLongest(22),19)
+	assertEquals(cur.getLongest("testtinyint"),1)
+	assertEquals(cur.getLongest("testsmallint"),1)
+	assertEquals(cur.getLongest("testmediumint"),1)
+	assertEquals(cur.getLongest("testint"),1)
+	assertEquals(cur.getLongest("testbigint"),1)
+	#assertEquals(cur.getLongest("testfloat"),3)
+	assertEquals(cur.getLongest("testreal"),3)
+	assertEquals(cur.getLongest("testdecimal"),3)
+	assertEquals(cur.getLongest("testdate"),10)
+	assertEquals(cur.getLongest("testtime"),8)
+	assertEquals(cur.getLongest("testdatetime"),19)
+	assertEquals(cur.getLongest("testyear"),4)
+	assertEquals(cur.getLongest("testchar"),5)
+	assertEquals(cur.getLongest("testvarchar"),8)
+	assertEquals(cur.getLongest("testtext"),5)
+	assertEquals(cur.getLongest("testtinytext"),9)
+	assertEquals(cur.getLongest("testmediumtext"),11)
+	assertEquals(cur.getLongest("testlongtext"),9)
+	assertEquals(cur.getLongest("testblob"),5)
+	assertEquals(cur.getLongest("testtinyblob"),9)
+	assertEquals(cur.getLongest("testmediumblob"),11)
+	assertEquals(cur.getLongest("testlongblob"),9)
 	if majorversion==3:
-		assertEqual(cur.getLongest("testtimestamp"),14)
+		assertEquals(cur.getLongest("testtimestamp"),14)
 	else:
-		assertEqual(cur.getLongest("testtimestamp"),19)
+		assertEquals(cur.getLongest("testtimestamp"),19)
 	print()
 
 
 	# row count
 	print("ROW COUNT: ")
-	assertEqual(cur.rowCount(),8)
+	assertEquals(cur.rowCount(),8)
 	print()
 
 
 	# total rows
 	print("TOTAL ROWS: ")
 	# older versions of mysql know this
-	#assertEqual(cur.totalRows(),0)
+	#assertEquals(cur.totalRows(),0)
 	print()
 
 
 	# first row index
 	print("FIRST ROW INDEX: ")
-	assertEqual(cur.firstRowIndex(),0)
+	assertEquals(cur.firstRowIndex(),0)
 	print()
 
 
@@ -538,362 +644,263 @@ def main():
 
 	# fields by index
 	print("FIELDS BY INDEX: ")
-	assertEqual(cur.getField(0,0),1)
-	assertEqual(cur.getField(0,1),1)
-	assertEqual(cur.getField(0,2),1)
-	assertEqual(cur.getField(0,3),1)
-	assertEqual(cur.getField(0,4),1)
-	#assertEqual(cur.getField(0,5),Decimal("1.1"))
-	#assertEqual(cur.getField(0,6),Decimal("1.1"))
-	assertEqual(cur.getField(0,7),Decimal("1.1"))
-	assertEqual(cur.getField(0,8),"2001-01-01")
-	assertEqual(cur.getField(0,9),"01:00:00")
-	assertEqual(cur.getField(0,10),"2001-01-01 01:00:00")
-	assertEqual(cur.getField(0,11),2001)
-	assertEqual(cur.getField(0,12),"char1")
-	assertEqual(cur.getField(0,13),btos("text1"))
-	assertEqual(cur.getField(0,14),"varchar1")
-	assertEqual(cur.getField(0,15),btos("tinytext1"))
-	assertEqual(cur.getField(0,16),btos("mediumtext1"))
-	assertEqual(cur.getField(0,17),btos("longtext1"))
+	assertEquals(cur.getField(0,0),"1")
+	assertEquals(cur.getField(0,1),"1")
+	assertEquals(cur.getField(0,2),"1")
+	assertEquals(cur.getField(0,3),"1")
+	assertEquals(cur.getField(0,4),"1")
+	#assertEquals(cur.getField(0,5),"1.1")
+	assertEquals(cur.getField(0,6),"1.1")
+	assertEquals(cur.getField(0,7),"1.1")
+	assertEquals(cur.getField(0,8),"2001-01-01")
+	assertEquals(cur.getField(0,9),"01:00:00")
+	assertEquals(cur.getField(0,10),"2001-01-01 01:00:00")
+	assertEquals(cur.getField(0,11),"2001")
+	assertEquals(cur.getField(0,12),"char1")
+	assertEquals(cur.getField(0,13),"varchar1")
+	assertEquals(cur.getField(0,14),"text1")
+	assertEquals(cur.getField(0,15),"tinytext1")
+	assertEquals(cur.getField(0,16),"mediumtext1")
+	assertEquals(cur.getField(0,17),"longtext1")
+	assertEquals(cur.getField(0,18),"blob1")
+	assertEquals(cur.getField(0,19),"tinyblob1")
+	assertEquals(cur.getField(0,20),"mediumblob1")
+	assertEquals(cur.getField(0,21),"longblob1")
 	print()
-	assertEqual(cur.getField(7,0),8)
-	assertEqual(cur.getField(7,1),8)
-	assertEqual(cur.getField(7,2),8)
-	assertEqual(cur.getField(7,3),8)
-	assertEqual(cur.getField(7,4),8)
-        #assertEqual(cur.getField(7,5),Decimal("8.1"))
-        #assertEqual(cur.getField(7,6),Decimal("8.1"))
-	assertEqual(cur.getField(7,7),Decimal("8.1"))
-	assertEqual(cur.getField(7,8),"2008-01-01")
-	assertEqual(cur.getField(7,9),"08:00:00")
-	assertEqual(cur.getField(7,10),"2008-01-01 08:00:00")
-	assertEqual(cur.getField(7,11),2008)
-	assertEqual(cur.getField(7,12),"char8")
-	assertEqual(cur.getField(7,13),btos("text8"))
-	assertEqual(cur.getField(7,14),"varchar8")
-	assertEqual(cur.getField(7,15),btos("tinytext8"))
-	assertEqual(cur.getField(7,16),btos("mediumtext8"))
-	assertEqual(cur.getField(7,17),btos("longtext8"))
+	assertEquals(cur.getField(7,0),"8")
+	assertEquals(cur.getField(7,1),"8")
+	assertEquals(cur.getField(7,2),"8")
+	assertEquals(cur.getField(7,3),"8")
+	assertEquals(cur.getField(7,4),"8")
+	#assertEquals(cur.getField(7,5),"8.1")
+	assertEquals(cur.getField(7,6),"8.1")
+	assertEquals(cur.getField(7,7),"8.1")
+	assertEquals(cur.getField(7,8),"2008-01-01")
+	assertEquals(cur.getField(7,9),"08:00:00")
+	assertEquals(cur.getField(7,10),"2008-01-01 08:00:00")
+	assertEquals(cur.getField(7,11),"2008")
+	assertEquals(cur.getField(7,12),"char8")
+	assertEquals(cur.getField(7,13),"varchar8")
+	assertEquals(cur.getField(7,14),"text8")
+	assertEquals(cur.getField(7,15),"tinytext8")
+	assertEquals(cur.getField(7,16),"mediumtext8")
+	assertEquals(cur.getField(7,17),"longtext8")
+	assertEquals(cur.getField(7,18),"blob8")
+	assertEquals(cur.getField(7,19),"tinyblob8")
+	assertEquals(cur.getField(7,20),"mediumblob8")
+	assertEquals(cur.getField(7,21),"longblob8")
 	print()
 
 
 	# field lengths by index
 	print("FIELD LENGTHS BY INDEX: ")
-	assertEqual(cur.getFieldLength(0,0),1)
-	assertEqual(cur.getFieldLength(0,1),1)
-	assertEqual(cur.getFieldLength(0,2),1)
-	assertEqual(cur.getFieldLength(0,3),1)
-	assertEqual(cur.getFieldLength(0,4),1)
-	#assertEqual(cur.getFieldLength(0,5),3)
-	assertEqual(cur.getFieldLength(0,6),3)
-	assertEqual(cur.getFieldLength(0,7),3)
-	assertEqual(cur.getFieldLength(0,8),10)
-	assertEqual(cur.getFieldLength(0,9),8)
-	assertEqual(cur.getFieldLength(0,10),19)
-	assertEqual(cur.getFieldLength(0,11),4)
-	assertEqual(cur.getFieldLength(0,12),5)
-	assertEqual(cur.getFieldLength(0,13),5)
-	assertEqual(cur.getFieldLength(0,14),8)
-	assertEqual(cur.getFieldLength(0,15),9)
-	assertEqual(cur.getFieldLength(0,16),11)
-	assertEqual(cur.getFieldLength(0,17),9)
+	assertEquals(cur.getFieldLength(0,0),1)
+	assertEquals(cur.getFieldLength(0,1),1)
+	assertEquals(cur.getFieldLength(0,2),1)
+	assertEquals(cur.getFieldLength(0,3),1)
+	assertEquals(cur.getFieldLength(0,4),1)
+	#assertEquals(cur.getFieldLength(0,5),3)
+	assertEquals(cur.getFieldLength(0,6),3)
+	assertEquals(cur.getFieldLength(0,7),3)
+	assertEquals(cur.getFieldLength(0,8),10)
+	assertEquals(cur.getFieldLength(0,9),8)
+	assertEquals(cur.getFieldLength(0,10),19)
+	assertEquals(cur.getFieldLength(0,11),4)
+	assertEquals(cur.getFieldLength(0,12),5)
+	assertEquals(cur.getFieldLength(0,13),8)
+	assertEquals(cur.getFieldLength(0,14),5)
+	assertEquals(cur.getFieldLength(0,15),9)
+	assertEquals(cur.getFieldLength(0,16),11)
+	assertEquals(cur.getFieldLength(0,17),9)
+	assertEquals(cur.getFieldLength(0,18),5)
+	assertEquals(cur.getFieldLength(0,19),9)
+	assertEquals(cur.getFieldLength(0,20),11)
+	assertEquals(cur.getFieldLength(0,21),9)
 	print()
-	assertEqual(cur.getFieldLength(7,0),1)
-	assertEqual(cur.getFieldLength(7,1),1)
-	assertEqual(cur.getFieldLength(7,2),1)
-	assertEqual(cur.getFieldLength(7,3),1)
-	assertEqual(cur.getFieldLength(7,4),1)
-	#assertEqual(cur.getFieldLength(7,5),3)
-	assertEqual(cur.getFieldLength(7,6),3)
-	assertEqual(cur.getFieldLength(7,7),3)
-	assertEqual(cur.getFieldLength(7,8),10)
-	assertEqual(cur.getFieldLength(7,9),8)
-	assertEqual(cur.getFieldLength(7,10),19)
-	assertEqual(cur.getFieldLength(7,11),4)
-	assertEqual(cur.getFieldLength(7,12),5)
-	assertEqual(cur.getFieldLength(7,13),5)
-	assertEqual(cur.getFieldLength(7,14),8)
-	assertEqual(cur.getFieldLength(7,15),9)
-	assertEqual(cur.getFieldLength(7,16),11)
-	assertEqual(cur.getFieldLength(7,17),9)
+	assertEquals(cur.getFieldLength(7,0),1)
+	assertEquals(cur.getFieldLength(7,1),1)
+	assertEquals(cur.getFieldLength(7,2),1)
+	assertEquals(cur.getFieldLength(7,3),1)
+	assertEquals(cur.getFieldLength(7,4),1)
+	#assertEquals(cur.getFieldLength(7,5),3)
+	assertEquals(cur.getFieldLength(7,6),3)
+	assertEquals(cur.getFieldLength(7,7),3)
+	assertEquals(cur.getFieldLength(7,8),10)
+	assertEquals(cur.getFieldLength(7,9),8)
+	assertEquals(cur.getFieldLength(7,10),19)
+	assertEquals(cur.getFieldLength(7,11),4)
+	assertEquals(cur.getFieldLength(7,12),5)
+	assertEquals(cur.getFieldLength(7,13),8)
+	assertEquals(cur.getFieldLength(7,14),5)
+	assertEquals(cur.getFieldLength(7,15),9)
+	assertEquals(cur.getFieldLength(7,16),11)
+	assertEquals(cur.getFieldLength(7,17),9)
+	assertEquals(cur.getFieldLength(7,18),5)
+	assertEquals(cur.getFieldLength(7,19),9)
+	assertEquals(cur.getFieldLength(7,20),11)
+	assertEquals(cur.getFieldLength(7,21),9)
 	print()
 
 
 	# fields by name
 	print("FIELDS BY NAME: ")
-	assertEqual(cur.getField(0,"testtinyint"),1)
-	assertEqual(cur.getField(0,"testsmallint"),1)
-	assertEqual(cur.getField(0,"testmediumint"),1)
-	assertEqual(cur.getField(0,"testint"),1)
-	assertEqual(cur.getField(0,"testbigint"),1)
-	#assertEqual(cur.getField(0,"testfloat"),Decimal("1.1"))
-	#assertEqual(cur.getField(0,"testreal"),Decimal("1.1"))
-	assertEqual(cur.getField(0,"testdecimal"),Decimal("1.1"))
-	assertEqual(cur.getField(0,"testdate"),"2001-01-01")
-	assertEqual(cur.getField(0,"testtime"),"01:00:00")
-	assertEqual(cur.getField(0,"testdatetime"),"2001-01-01 01:00:00")
-	assertEqual(cur.getField(0,"testyear"),2001)
-	assertEqual(cur.getField(0,"testchar"),"char1")
-	assertEqual(cur.getField(0,"testtext"),btos("text1"))
-	assertEqual(cur.getField(0,"testvarchar"),"varchar1")
-	assertEqual(cur.getField(0,"testtinytext"),btos("tinytext1"))
-	assertEqual(cur.getField(0,"testmediumtext"),btos("mediumtext1"))
-	assertEqual(cur.getField(0,"testlongtext"),btos("longtext1"))
+	assertEquals(cur.getField(0,"testtinyint"),"1")
+	assertEquals(cur.getField(0,"testsmallint"),"1")
+	assertEquals(cur.getField(0,"testmediumint"),"1")
+	assertEquals(cur.getField(0,"testint"),"1")
+	assertEquals(cur.getField(0,"testbigint"),"1")
+	#assertEquals(cur.getField(0,"testfloat"),"1.1")
+	assertEquals(cur.getField(0,"testreal"),"1.1")
+	assertEquals(cur.getField(0,"testdecimal"),"1.1")
+	assertEquals(cur.getField(0,"testdate"),"2001-01-01")
+	assertEquals(cur.getField(0,"testtime"),"01:00:00")
+	assertEquals(cur.getField(0,"testdatetime"),"2001-01-01 01:00:00")
+	assertEquals(cur.getField(0,"testyear"),"2001")
+	assertEquals(cur.getField(0,"testchar"),"char1")
+	assertEquals(cur.getField(0,"testvarchar"),"varchar1")
+	assertEquals(cur.getField(0,"testtext"),"text1")
+	assertEquals(cur.getField(0,"testtinytext"),"tinytext1")
+	assertEquals(cur.getField(0,"testmediumtext"),"mediumtext1")
+	assertEquals(cur.getField(0,"testlongtext"),"longtext1")
+	assertEquals(cur.getField(0,"testblob"),"blob1")
+	assertEquals(cur.getField(0,"testlongblob"),"longblob1")
+	assertEquals(cur.getField(0,"testtinyblob"),"tinyblob1")
+	assertEquals(cur.getField(0,"testmediumblob"),"mediumblob1")
 	print()
-	assertEqual(cur.getField(7,"testtinyint"),8)
-	assertEqual(cur.getField(7,"testsmallint"),8)
-	assertEqual(cur.getField(7,"testmediumint"),8)
-	assertEqual(cur.getField(7,"testint"),8)
-	assertEqual(cur.getField(7,"testbigint"),8)
-	#assertEqual(cur.getField(7,"testfloat"),Decimal("8.1"))
-	#assertEqual(cur.getField(7,"testreal"),Decimal("8.1"))
-	assertEqual(cur.getField(7,"testdecimal"),Decimal("8.1"))
-	assertEqual(cur.getField(7,"testdate"),"2008-01-01")
-	assertEqual(cur.getField(7,"testtime"),"08:00:00")
-	assertEqual(cur.getField(7,"testdatetime"),"2008-01-01 08:00:00")
-	assertEqual(cur.getField(7,"testyear"),2008)
-	assertEqual(cur.getField(7,"testchar"),"char8")
-	assertEqual(cur.getField(7,"testtext"),btos("text8"))
-	assertEqual(cur.getField(7,"testvarchar"),"varchar8")
-	assertEqual(cur.getField(7,"testtinytext"),btos("tinytext8"))
-	assertEqual(cur.getField(7,"testmediumtext"),btos("mediumtext8"))
-	assertEqual(cur.getField(7,"testlongtext"),btos("longtext8"))
+	assertEquals(cur.getField(7,"testtinyint"),"8")
+	assertEquals(cur.getField(7,"testsmallint"),"8")
+	assertEquals(cur.getField(7,"testmediumint"),"8")
+	assertEquals(cur.getField(7,"testint"),"8")
+	assertEquals(cur.getField(7,"testbigint"),"8")
+	#assertEquals(cur.getField(7,"testfloat"),"8.1")
+	assertEquals(cur.getField(7,"testreal"),"8.1")
+	assertEquals(cur.getField(7,"testdecimal"),"8.1")
+	assertEquals(cur.getField(7,"testdate"),"2008-01-01")
+	assertEquals(cur.getField(7,"testtime"),"08:00:00")
+	assertEquals(cur.getField(7,"testdatetime"),"2008-01-01 08:00:00")
+	assertEquals(cur.getField(7,"testyear"),"2008")
+	assertEquals(cur.getField(7,"testchar"),"char8")
+	assertEquals(cur.getField(7,"testvarchar"),"varchar8")
+	assertEquals(cur.getField(7,"testtext"),"text8")
+	assertEquals(cur.getField(7,"testtinytext"),"tinytext8")
+	assertEquals(cur.getField(7,"testmediumtext"),"mediumtext8")
+	assertEquals(cur.getField(7,"testlongtext"),"longtext8")
+	assertEquals(cur.getField(7,"testblob"),"blob8")
+	assertEquals(cur.getField(7,"testlongblob"),"longblob8")
+	assertEquals(cur.getField(7,"testtinyblob"),"tinyblob8")
+	assertEquals(cur.getField(7,"testmediumblob"),"mediumblob8")
 	print()
 
 
 	# field lengths by name
 	print("FIELD LENGTHS BY NAME: ")
-	assertEqual(cur.getFieldLength(0,"testtinyint"),1)
-	assertEqual(cur.getFieldLength(0,"testsmallint"),1)
-	assertEqual(cur.getFieldLength(0,"testmediumint"),1)
-	assertEqual(cur.getFieldLength(0,"testint"),1)
-	assertEqual(cur.getFieldLength(0,"testbigint"),1)
-	#assertEqual(cur.getFieldLength(0,"testfloat"),3)
-	assertEqual(cur.getFieldLength(0,"testreal"),3)
-	assertEqual(cur.getFieldLength(0,"testdecimal"),3)
-	assertEqual(cur.getFieldLength(0,"testdate"),10)
-	assertEqual(cur.getFieldLength(0,"testtime"),8)
-	assertEqual(cur.getFieldLength(0,"testdatetime"),19)
-	assertEqual(cur.getFieldLength(0,"testyear"),4)
-	assertEqual(cur.getFieldLength(0,"testchar"),5)
-	assertEqual(cur.getFieldLength(0,"testtext"),5)
-	assertEqual(cur.getFieldLength(0,"testvarchar"),8)
-	assertEqual(cur.getFieldLength(0,"testtinytext"),9)
-	assertEqual(cur.getFieldLength(0,"testmediumtext"),11)
-	assertEqual(cur.getFieldLength(0,"testlongtext"),9)
+	assertEquals(cur.getFieldLength(0,"testtinyint"),1)
+	assertEquals(cur.getFieldLength(0,"testsmallint"),1)
+	assertEquals(cur.getFieldLength(0,"testmediumint"),1)
+	assertEquals(cur.getFieldLength(0,"testint"),1)
+	assertEquals(cur.getFieldLength(0,"testbigint"),1)
+	#assertEquals(cur.getFieldLength(0,"testfloat"),3)
+	assertEquals(cur.getFieldLength(0,"testreal"),3)
+	assertEquals(cur.getFieldLength(0,"testdecimal"),3)
+	assertEquals(cur.getFieldLength(0,"testdate"),10)
+	assertEquals(cur.getFieldLength(0,"testtime"),8)
+	assertEquals(cur.getFieldLength(0,"testdatetime"),19)
+	assertEquals(cur.getFieldLength(0,"testyear"),4)
+	assertEquals(cur.getFieldLength(0,"testchar"),5)
+	assertEquals(cur.getFieldLength(0,"testvarchar"),8)
+	assertEquals(cur.getFieldLength(0,"testtext"),5)
+	assertEquals(cur.getFieldLength(0,"testtinytext"),9)
+	assertEquals(cur.getFieldLength(0,"testmediumtext"),11)
+	assertEquals(cur.getFieldLength(0,"testlongtext"),9)
+	assertEquals(cur.getFieldLength(0,"testblob"),5)
+	assertEquals(cur.getFieldLength(0,"testtinyblob"),9)
+	assertEquals(cur.getFieldLength(0,"testmediumblob"),11)
+	assertEquals(cur.getFieldLength(0,"testlongblob"),9)
 	print()
-	assertEqual(cur.getFieldLength(7,"testtinyint"),1)
-	assertEqual(cur.getFieldLength(7,"testsmallint"),1)
-	assertEqual(cur.getFieldLength(7,"testmediumint"),1)
-	assertEqual(cur.getFieldLength(7,"testint"),1)
-	assertEqual(cur.getFieldLength(7,"testbigint"),1)
-	#assertEqual(cur.getFieldLength(7,"testfloat"),3)
-	assertEqual(cur.getFieldLength(7,"testreal"),3)
-	assertEqual(cur.getFieldLength(7,"testdecimal"),3)
-	assertEqual(cur.getFieldLength(7,"testdate"),10)
-	assertEqual(cur.getFieldLength(7,"testtime"),8)
-	assertEqual(cur.getFieldLength(7,"testdatetime"),19)
-	assertEqual(cur.getFieldLength(7,"testyear"),4)
-	assertEqual(cur.getFieldLength(7,"testchar"),5)
-	assertEqual(cur.getFieldLength(7,"testtext"),5)
-	assertEqual(cur.getFieldLength(7,"testvarchar"),8)
-	assertEqual(cur.getFieldLength(7,"testtinytext"),9)
-	assertEqual(cur.getFieldLength(7,"testmediumtext"),11)
-	assertEqual(cur.getFieldLength(7,"testlongtext"),9)
+	assertEquals(cur.getFieldLength(7,"testtinyint"),1)
+	assertEquals(cur.getFieldLength(7,"testsmallint"),1)
+	assertEquals(cur.getFieldLength(7,"testmediumint"),1)
+	assertEquals(cur.getFieldLength(7,"testint"),1)
+	assertEquals(cur.getFieldLength(7,"testbigint"),1)
+	#assertEquals(cur.getFieldLength(7,"testfloat"),3)
+	assertEquals(cur.getFieldLength(7,"testreal"),3)
+	assertEquals(cur.getFieldLength(7,"testdecimal"),3)
+	assertEquals(cur.getFieldLength(7,"testdate"),10)
+	assertEquals(cur.getFieldLength(7,"testtime"),8)
+	assertEquals(cur.getFieldLength(7,"testdatetime"),19)
+	assertEquals(cur.getFieldLength(7,"testyear"),4)
+	assertEquals(cur.getFieldLength(7,"testchar"),5)
+	assertEquals(cur.getFieldLength(7,"testvarchar"),8)
+	assertEquals(cur.getFieldLength(7,"testtext"),5)
+	assertEquals(cur.getFieldLength(7,"testtinytext"),9)
+	assertEquals(cur.getFieldLength(7,"testmediumtext"),11)
+	assertEquals(cur.getFieldLength(7,"testlongtext"),9)
+	assertEquals(cur.getFieldLength(7,"testblob"),5)
+	assertEquals(cur.getFieldLength(7,"testtinyblob"),9)
+	assertEquals(cur.getFieldLength(7,"testmediumblob"),11)
+	assertEquals(cur.getFieldLength(7,"testlongblob"),9)
 	print()
 
 
 	# fields by array
 	print("FIELDS BY ARRAY: ")
 	fields=cur.getRow(0)
-	assertEqual(fields[0],1)
-	assertEqual(fields[1],1)
-	assertEqual(fields[2],1)
-	assertEqual(fields[3],1)
-	assertEqual(fields[4],1)
-	#assertEqual(fields[5],Decimal("1.1"))
-	#assertEqual(fields[6],Decimal("1.1"))
-	assertEqual(fields[7],Decimal("1.1"))
-	assertEqual(fields[8],"2001-01-01")
-	assertEqual(fields[9],"01:00:00")
-	assertEqual(fields[10],"2001-01-01 01:00:00")
-	assertEqual(fields[11],2001)
-	assertEqual(fields[12],"char1")
-	assertEqual(fields[13],btos("text1"))
-	assertEqual(fields[14],"varchar1")
-	assertEqual(fields[15],btos("tinytext1"))
-	assertEqual(fields[16],btos("mediumtext1"))
-	assertEqual(fields[17],btos("longtext1"))
+	assertEquals(fields[0],"1")
+	assertEquals(fields[1],"1")
+	assertEquals(fields[2],"1")
+	assertEquals(fields[3],"1")
+	assertEquals(fields[4],"1")
+	#assertEquals(fields[5],"1.1")
+	assertEquals(fields[6],"1.1")
+	assertEquals(fields[7],"1.1")
+	assertEquals(fields[8],"2001-01-01")
+	assertEquals(fields[9],"01:00:00")
+	assertEquals(fields[10],"2001-01-01 01:00:00")
+	assertEquals(fields[11],"2001")
+	assertEquals(fields[12],"char1")
+	assertEquals(fields[13],"varchar1")
+	assertEquals(fields[14],"text1")
+	assertEquals(fields[15],"tinytext1")
+	assertEquals(fields[16],"mediumtext1")
+	assertEquals(fields[17],"longtext1")
+	assertEquals(fields[18],"blob1")
+	assertEquals(fields[19],"tinyblob1")
+	assertEquals(fields[20],"mediumblob1")
+	assertEquals(fields[21],"longblob1")
 	print()
 
 
 	# field lengths by array
 	print("FIELD LENGTHS BY ARRAY: ")
 	fieldlens=cur.getRowLengths(0)
-	assertEqual(fieldlens[0],1)
-	assertEqual(fieldlens[1],1)
-	assertEqual(fieldlens[2],1)
-	assertEqual(fieldlens[3],1)
-	assertEqual(fieldlens[4],1)
-	#assertEqual(fieldlens[5],3)
-	assertEqual(fieldlens[6],3)
-	assertEqual(fieldlens[7],3)
-	assertEqual(fieldlens[8],10)
-	assertEqual(fieldlens[9],8)
-	assertEqual(fieldlens[10],19)
-	assertEqual(fieldlens[11],4)
-	assertEqual(fieldlens[12],5)
-	assertEqual(fieldlens[13],5)
-	assertEqual(fieldlens[14],8)
-	assertEqual(fieldlens[15],9)
-	assertEqual(fieldlens[16],11)
-	assertEqual(fieldlens[17],9)
-	print()
-
-
-	# fields by dictionary
-	print("FIELDS BY DICTIONARY: ")
-	fields=cur.getRowDictionary(0)
-	assertEqual(fields["testtinyint"],1)
-	assertEqual(fields["testsmallint"],1)
-	assertEqual(fields["testmediumint"],1)
-	assertEqual(fields["testint"],1)
-	assertEqual(fields["testbigint"],1)
-	#assertEqual(fields["testfloat"],Decimal("1.1"))
-	#assertEqual(fields["testreal"],Decimal("1.1"))
-	assertEqual(fields["testdecimal"],Decimal("1.1"))
-	assertEqual(fields["testdate"],"2001-01-01")
-	assertEqual(fields["testtime"],"01:00:00")
-	assertEqual(fields["testdatetime"],"2001-01-01 01:00:00")
-	assertEqual(fields["testyear"],2001)
-	assertEqual(fields["testchar"],"char1")
-	assertEqual(fields["testtext"],btos("text1"))
-	assertEqual(fields["testvarchar"],"varchar1")
-	assertEqual(fields["testtinytext"],btos("tinytext1"))
-	assertEqual(fields["testmediumtext"],btos("mediumtext1"))
-	assertEqual(fields["testlongtext"],btos("longtext1"))
-	print()
-	fields=cur.getRowDictionary(7)
-	assertEqual(fields["testtinyint"],8)
-	assertEqual(fields["testsmallint"],8)
-	assertEqual(fields["testmediumint"],8)
-	assertEqual(fields["testint"],8)
-	assertEqual(fields["testbigint"],8)
-	#assertEqual(fields["testfloat"],Decimal("8.1"))
-	#assertEqual(fields["testreal"],Decimal("8.1"))
-	assertEqual(fields["testdecimal"],Decimal("8.1"))
-	assertEqual(fields["testdate"],"2008-01-01")
-	assertEqual(fields["testtime"],"08:00:00")
-	assertEqual(fields["testdatetime"],"2008-01-01 08:00:00")
-	assertEqual(fields["testyear"],2008)
-	assertEqual(fields["testchar"],"char8")
-	assertEqual(fields["testtext"],btos("text8"))
-	assertEqual(fields["testvarchar"],"varchar8")
-	assertEqual(fields["testtinytext"],btos("tinytext8"))
-	assertEqual(fields["testmediumtext"],btos("mediumtext8"))
-	assertEqual(fields["testlongtext"],btos("longtext8"))
-	print()
-
-
-	# field lengths by dictionary
-	print("FIELD LENGTHS BY DICTIONARY: ")
-	fieldlengths=cur.getRowLengthsDictionary(0)
-	assertEqual(fieldlengths["testtinyint"],1)
-	assertEqual(fieldlengths["testsmallint"],1)
-	assertEqual(fieldlengths["testmediumint"],1)
-	assertEqual(fieldlengths["testint"],1)
-	assertEqual(fieldlengths["testbigint"],1)
-	#assertEqual(fieldlengths["testfloat"],3)
-	assertEqual(fieldlengths["testreal"],3)
-	assertEqual(fieldlengths["testdecimal"],3)
-	assertEqual(fieldlengths["testdate"],10)
-	assertEqual(fieldlengths["testtime"],8)
-	assertEqual(fieldlengths["testdatetime"],19)
-	assertEqual(fieldlengths["testyear"],4)
-	assertEqual(fieldlengths["testchar"],5)
-	assertEqual(fieldlengths["testtext"],5)
-	assertEqual(fieldlengths["testvarchar"],8)
-	assertEqual(fieldlengths["testtinytext"],9)
-	assertEqual(fieldlengths["testmediumtext"],11)
-	assertEqual(fieldlengths["testlongtext"],9)
-	print()
-	fieldlengths=cur.getRowLengthsDictionary(7)
-	assertEqual(fieldlengths["testtinyint"],1)
-	assertEqual(fieldlengths["testsmallint"],1)
-	assertEqual(fieldlengths["testmediumint"],1)
-	assertEqual(fieldlengths["testint"],1)
-	assertEqual(fieldlengths["testbigint"],1)
-	#assertEqual(fieldlengths["testfloat"],3)
-	assertEqual(fieldlengths["testreal"],3)
-	assertEqual(fieldlengths["testdecimal"],3)
-	assertEqual(fieldlengths["testdate"],10)
-	assertEqual(fieldlengths["testtime"],8)
-	assertEqual(fieldlengths["testdatetime"],19)
-	assertEqual(fieldlengths["testyear"],4)
-	assertEqual(fieldlengths["testchar"],5)
-	assertEqual(fieldlengths["testtext"],5)
-	assertEqual(fieldlengths["testvarchar"],8)
-	assertEqual(fieldlengths["testtinytext"],9)
-	assertEqual(fieldlengths["testmediumtext"],11)
-	assertEqual(fieldlengths["testlongtext"],9)
-	print()
-
-
-	# individual substitutions
-	print("INDIVIDUAL SUBSTITUTIONS: ")
-	cur.prepareQuery("select $(var1),'$(var2)',$(var3)")
-	cur.substitution("var1",1)
-	cur.substitution("var2","hello")
-	cur.substitution("var3",10.5556,6,4)
-	assertTrue(cur.executeQuery())
-	print()
-
-
-	# fields
-	print("FIELDS: ")
-	assertEqual(cur.getField(0,0),1)
-	assertEqual(cur.getField(0,1),"hello")
-	assertEqual(cur.getField(0,2),Decimal("10.5556"))
-	print()
-
-
-	# array substitutions
-	print("ARRAY SUBSTITUTIONS: ")
-	cur.prepareQuery("select $(var1),'$(var2)',$(var3)")
-	cur.substitutions(["var1","var2","var3"],
-				[1,"hello",10.5556],[0,0,6],[0,0,4])
-	assertTrue(cur.executeQuery())
-	print()
-
-
-	# fields
-	print("FIELDS: ")
-	assertEqual(cur.getField(0,0),1)
-	assertEqual(cur.getField(0,1),"hello")
-	assertEqual(cur.getField(0,2),Decimal("10.5556"))
-	print()
-
-
-	# nulls as nones
-	print("NULLS AS NONES: ")
-	cur.getNullsAsNone()
-	assertTrue(cur.sendQuery("select NULL,1,NULL"))
-	assertEqual(cur.getField(0,0),None)
-	assertEqual(cur.getField(0,1),1)
-	assertEqual(cur.getField(0,2),None)
-	cur.getNullsAsEmptyStrings()
-	assertTrue(cur.sendQuery("select NULL,1,NULL"))
-	assertEqual(cur.getField(0,0),"")
-	assertEqual(cur.getField(0,1),1)
-	assertEqual(cur.getField(0,2),"")
-	cur.getNullsAsNone()
+	assertEquals(fieldlens[0],1)
+	assertEquals(fieldlens[1],1)
+	assertEquals(fieldlens[2],1)
+	assertEquals(fieldlens[3],1)
+	assertEquals(fieldlens[4],1)
+	#assertEquals(fieldlens[5],3)
+	assertEquals(fieldlens[6],3)
+	assertEquals(fieldlens[7],3)
+	assertEquals(fieldlens[8],10)
+	assertEquals(fieldlens[9],8)
+	assertEquals(fieldlens[10],19)
+	assertEquals(fieldlens[11],4)
+	assertEquals(fieldlens[12],5)
+	assertEquals(fieldlens[13],8)
+	assertEquals(fieldlens[14],5)
+	assertEquals(fieldlens[15],9)
+	assertEquals(fieldlens[16],11)
+	assertEquals(fieldlens[17],9)
+	assertEquals(fieldlens[18],5)
+	assertEquals(fieldlens[19],9)
+	assertEquals(fieldlens[20],11)
+	assertEquals(fieldlens[21],9)
 	print()
 
 
 	# result set buffer size
 	print("RESULT SET BUFFER SIZE: ")
-	assertEqual(cur.getResultSetBufferSize(),0)
+	assertEquals(cur.getResultSetBufferSize(),0)
 	cur.setResultSetBufferSize(2)
 	assertTrue(cur.sendQuery(
 		"select "
@@ -902,29 +909,29 @@ def main():
 		"	testtable "
 		"order by "
 		"	testtinyint "))
-	assertEqual(cur.getResultSetBufferSize(),2)
+	assertEquals(cur.getResultSetBufferSize(),2)
 	print()
-	assertEqual(cur.firstRowIndex(),0)
+	assertEquals(cur.firstRowIndex(),0)
 	assertFalse(cur.endOfResultSet())
-	assertEqual(cur.rowCount(),2)
-	assertEqual(cur.getField(0,0),1)
-	assertEqual(cur.getField(1,0),2)
-	assertEqual(cur.getField(2,0),3)
+	assertEquals(cur.rowCount(),2)
+	assertEquals(cur.getField(0,0),"1")
+	assertEquals(cur.getField(1,0),"2")
+	assertEquals(cur.getField(2,0),"3")
 	print()
-	assertEqual(cur.firstRowIndex(),2)
+	assertEquals(cur.firstRowIndex(),2)
 	assertFalse(cur.endOfResultSet())
-	assertEqual(cur.rowCount(),4)
-	assertEqual(cur.getField(6,0),7)
-	assertEqual(cur.getField(7,0),8)
+	assertEquals(cur.rowCount(),4)
+	assertEquals(cur.getField(6,0),"7")
+	assertEquals(cur.getField(7,0),"8")
 	print()
-	assertEqual(cur.firstRowIndex(),6)
+	assertEquals(cur.firstRowIndex(),6)
 	assertFalse(cur.endOfResultSet())
-	assertEqual(cur.rowCount(),8)
-	assertEqual(cur.getField(8,0),None)
+	assertEquals(cur.rowCount(),8)
+	assertNone(cur.getField(8,0))
 	print()
-	assertEqual(cur.firstRowIndex(),8)
+	assertEquals(cur.firstRowIndex(),8)
 	assertTrue(cur.endOfResultSet())
-	assertEqual(cur.rowCount(),8)
+	assertEquals(cur.rowCount(),8)
 	cur.setResultSetBufferSize(0)
 	print()
 
@@ -939,9 +946,9 @@ def main():
 		"	testtable "
 		"order by "
 		"	testtinyint "))
-	assertEqual(cur.getColumnName(0),None)
-	assertEqual(cur.getColumnLength(0),0)
-	assertEqual(cur.getColumnType(0),None)
+	assertNone(cur.getColumnName(0))
+	assertEquals(cur.getColumnLength(0),0)
+	assertNone(cur.getColumnType(0))
 	print()
 	cur.getColumnInfo()
 	assertTrue(cur.sendQuery(
@@ -951,9 +958,9 @@ def main():
 		"	testtable "
 		"order by "
 		"	testtinyint "))
-	assertEqual(cur.getColumnName(0),"testtinyint")
-	assertEqual(cur.getColumnLength(0),1)
-	assertEqual(cur.getColumnType(0),"TINYINT")
+	assertEquals(cur.getColumnName(0),"testtinyint")
+	assertEquals(cur.getColumnLength(0),1)
+	assertEquals(cur.getColumnType(0),"TINYINT")
 	print()
 
 
@@ -972,14 +979,14 @@ def main():
 	socket=con.getConnectionSocket()
 	assertTrue(con.resumeSession(port,socket))
 	print()
-	assertEqual(cur.getField(0,0),1)
-	assertEqual(cur.getField(1,0),2)
-	assertEqual(cur.getField(2,0),3)
-	assertEqual(cur.getField(3,0),4)
-	assertEqual(cur.getField(4,0),5)
-	assertEqual(cur.getField(5,0),6)
-	assertEqual(cur.getField(6,0),7)
-	assertEqual(cur.getField(7,0),8)
+	assertEquals(cur.getField(0,0),"1")
+	assertEquals(cur.getField(1,0),"2")
+	assertEquals(cur.getField(2,0),"3")
+	assertEquals(cur.getField(3,0),"4")
+	assertEquals(cur.getField(4,0),"5")
+	assertEquals(cur.getField(5,0),"6")
+	assertEquals(cur.getField(6,0),"7")
+	assertEquals(cur.getField(7,0),"8")
 	print()
 	assertTrue(cur.sendQuery(
 		"select "
@@ -994,14 +1001,14 @@ def main():
 	socket=con.getConnectionSocket()
 	assertTrue(con.resumeSession(port,socket))
 	print()
-	assertEqual(cur.getField(0,0),1)
-	assertEqual(cur.getField(1,0),2)
-	assertEqual(cur.getField(2,0),3)
-	assertEqual(cur.getField(3,0),4)
-	assertEqual(cur.getField(4,0),5)
-	assertEqual(cur.getField(5,0),6)
-	assertEqual(cur.getField(6,0),7)
-	assertEqual(cur.getField(7,0),8)
+	assertEquals(cur.getField(0,0),"1")
+	assertEquals(cur.getField(1,0),"2")
+	assertEquals(cur.getField(2,0),"3")
+	assertEquals(cur.getField(3,0),"4")
+	assertEquals(cur.getField(4,0),"5")
+	assertEquals(cur.getField(5,0),"6")
+	assertEquals(cur.getField(6,0),"7")
+	assertEquals(cur.getField(7,0),"8")
 	print()
 	assertTrue(cur.sendQuery(
 		"select "
@@ -1016,14 +1023,14 @@ def main():
 	socket=con.getConnectionSocket()
 	assertTrue(con.resumeSession(port,socket))
 	print()
-	assertEqual(cur.getField(0,0),1)
-	assertEqual(cur.getField(1,0),2)
-	assertEqual(cur.getField(2,0),3)
-	assertEqual(cur.getField(3,0),4)
-	assertEqual(cur.getField(4,0),5)
-	assertEqual(cur.getField(5,0),6)
-	assertEqual(cur.getField(6,0),7)
-	assertEqual(cur.getField(7,0),8)
+	assertEquals(cur.getField(0,0),"1")
+	assertEquals(cur.getField(1,0),"2")
+	assertEquals(cur.getField(2,0),"3")
+	assertEquals(cur.getField(3,0),"4")
+	assertEquals(cur.getField(4,0),"5")
+	assertEquals(cur.getField(5,0),"6")
+	assertEquals(cur.getField(6,0),"7")
+	assertEquals(cur.getField(7,0),"8")
 	print()
 
 
@@ -1037,7 +1044,7 @@ def main():
 		"	testtable "
 		"order by "
 		"	testtinyint "))
-	assertEqual(cur.getField(2,0),3)
+	assertEquals(cur.getField(2,0),"3")
 	id=cur.getResultSetId()
 	cur.suspendResultSet()
 	assertTrue(con.suspendSession())
@@ -1046,19 +1053,19 @@ def main():
 	assertTrue(con.resumeSession(port,socket))
 	assertTrue(cur.resumeResultSet(id))
 	print()
-	assertEqual(cur.firstRowIndex(),4)
+	assertEquals(cur.firstRowIndex(),4)
 	assertFalse(cur.endOfResultSet())
-	assertEqual(cur.rowCount(),6)
-	assertEqual(cur.getField(7,0),8)
+	assertEquals(cur.rowCount(),6)
+	assertEquals(cur.getField(7,0),"8")
 	print()
-	assertEqual(cur.firstRowIndex(),6)
+	assertEquals(cur.firstRowIndex(),6)
 	assertFalse(cur.endOfResultSet())
-	assertEqual(cur.rowCount(),8)
-	assertEqual(cur.getField(8,0),None)
+	assertEquals(cur.rowCount(),8)
+	assertNone(cur.getField(8,0))
 	print()
-	assertEqual(cur.firstRowIndex(),8)
+	assertEquals(cur.firstRowIndex(),8)
 	assertTrue(cur.endOfResultSet())
-	assertEqual(cur.rowCount(),8)
+	assertEquals(cur.rowCount(),8)
 	cur.setResultSetBufferSize(0)
 	print()
 
@@ -1075,58 +1082,66 @@ def main():
 		"order by "
 		"	testtinyint "))
 	filename=cur.getCacheFileName()
-	assertEqual(filename,"cachefile1")
+	assertEquals(filename,"cachefile1")
 	cur.cacheOff()
 	assertTrue(cur.openCachedResultSet(filename))
-	assertEqual(cur.getField(7,0),8)
+	assertEquals(cur.getField(7,0),"8")
 	print()
 
 
 	# column count for cached result set
 	print("COLUMN COUNT FOR CACHED RESULT SET: ")
-	assertEqual(cur.colCount(),19)
+	assertEquals(cur.colCount(),23)
 	print()
 
 
 	# column names for cached result set
 	print("COLUMN NAMES FOR CACHED RESULT SET: ")
-	assertEqual(cur.getColumnName(0),"testtinyint")
-	assertEqual(cur.getColumnName(1),"testsmallint")
-	assertEqual(cur.getColumnName(2),"testmediumint")
-	assertEqual(cur.getColumnName(3),"testint")
-	assertEqual(cur.getColumnName(4),"testbigint")
-	assertEqual(cur.getColumnName(5),"testfloat")
-	assertEqual(cur.getColumnName(6),"testreal")
-	assertEqual(cur.getColumnName(7),"testdecimal")
-	assertEqual(cur.getColumnName(8),"testdate")
-	assertEqual(cur.getColumnName(9),"testtime")
-	assertEqual(cur.getColumnName(10),"testdatetime")
-	assertEqual(cur.getColumnName(11),"testyear")
-	assertEqual(cur.getColumnName(12),"testchar")
-	assertEqual(cur.getColumnName(13),"testtext")
-	assertEqual(cur.getColumnName(14),"testvarchar")
-	assertEqual(cur.getColumnName(15),"testtinytext")
-	assertEqual(cur.getColumnName(16),"testmediumtext")
-	assertEqual(cur.getColumnName(17),"testlongtext")
+	assertEquals(cur.getColumnName(0),"testtinyint")
+	assertEquals(cur.getColumnName(1),"testsmallint")
+	assertEquals(cur.getColumnName(2),"testmediumint")
+	assertEquals(cur.getColumnName(3),"testint")
+	assertEquals(cur.getColumnName(4),"testbigint")
+	assertEquals(cur.getColumnName(5),"testfloat")
+	assertEquals(cur.getColumnName(6),"testreal")
+	assertEquals(cur.getColumnName(7),"testdecimal")
+	assertEquals(cur.getColumnName(8),"testdate")
+	assertEquals(cur.getColumnName(9),"testtime")
+	assertEquals(cur.getColumnName(10),"testdatetime")
+	assertEquals(cur.getColumnName(11),"testyear")
+	assertEquals(cur.getColumnName(12),"testchar")
+	assertEquals(cur.getColumnName(13),"testvarchar")
+	assertEquals(cur.getColumnName(14),"testtext")
+	assertEquals(cur.getColumnName(15),"testtinytext")
+	assertEquals(cur.getColumnName(16),"testmediumtext")
+	assertEquals(cur.getColumnName(17),"testlongtext")
+	assertEquals(cur.getColumnName(18),"testblob")
+	assertEquals(cur.getColumnName(19),"testtinyblob")
+	assertEquals(cur.getColumnName(20),"testmediumblob")
+	assertEquals(cur.getColumnName(21),"testlongblob")
 	cols=cur.getColumnNames()
-	assertEqual(cols[0],"testtinyint")
-	assertEqual(cols[1],"testsmallint")
-	assertEqual(cols[2],"testmediumint")
-	assertEqual(cols[3],"testint")
-	assertEqual(cols[4],"testbigint")
-	assertEqual(cols[5],"testfloat")
-	assertEqual(cols[6],"testreal")
-	assertEqual(cols[7],"testdecimal")
-	assertEqual(cols[8],"testdate")
-	assertEqual(cols[9],"testtime")
-	assertEqual(cols[10],"testdatetime")
-	assertEqual(cols[11],"testyear")
-	assertEqual(cols[12],"testchar")
-	assertEqual(cols[13],"testtext")
-	assertEqual(cols[14],"testvarchar")
-	assertEqual(cols[15],"testtinytext")
-	assertEqual(cols[16],"testmediumtext")
-	assertEqual(cols[17],"testlongtext")
+	assertEquals(cols[0],"testtinyint")
+	assertEquals(cols[1],"testsmallint")
+	assertEquals(cols[2],"testmediumint")
+	assertEquals(cols[3],"testint")
+	assertEquals(cols[4],"testbigint")
+	assertEquals(cols[5],"testfloat")
+	assertEquals(cols[6],"testreal")
+	assertEquals(cols[7],"testdecimal")
+	assertEquals(cols[8],"testdate")
+	assertEquals(cols[9],"testtime")
+	assertEquals(cols[10],"testdatetime")
+	assertEquals(cols[11],"testyear")
+	assertEquals(cols[12],"testchar")
+	assertEquals(cols[13],"testvarchar")
+	assertEquals(cols[14],"testtext")
+	assertEquals(cols[15],"testtinytext")
+	assertEquals(cols[16],"testmediumtext")
+	assertEquals(cols[17],"testlongtext")
+	assertEquals(cols[18],"testblob")
+	assertEquals(cols[19],"testtinyblob")
+	assertEquals(cols[20],"testmediumblob")
+	assertEquals(cols[21],"testlongblob")
 	print()
 
 
@@ -1143,11 +1158,11 @@ def main():
 		"order by "
 		"	testtinyint "))
 	filename=cur.getCacheFileName()
-	assertEqual(filename,"cachefile1")
+	assertEquals(filename,"cachefile1")
 	cur.cacheOff()
 	assertTrue(cur.openCachedResultSet(filename))
-	assertEqual(cur.getField(7,0),8)
-	assertEqual(cur.getField(8,0),None)
+	assertEquals(cur.getField(7,0),"8")
+	assertNone(cur.getField(8,0))
 	cur.setResultSetBufferSize(0)
 	print()
 
@@ -1158,28 +1173,28 @@ def main():
 	assertTrue(cur.openCachedResultSet("cachefile1"))
 	cur.cacheOff()
 	assertTrue(cur.openCachedResultSet("cachefile2"))
-	assertEqual(cur.getField(7,0),8)
-	assertEqual(cur.getField(8,0),None)
+	assertEquals(cur.getField(7,0),"8")
+	assertNone(cur.getField(8,0))
 	print()
 
 
 	# from one cache file to another with result set buffer size
 	print("FROM ONE CACHE FILE TO ANOTHER "
-		"WITH RESULT SET BUFFER SIZE: ")
+				"WITH RESULT SET BUFFER SIZE: ")
 	cur.setResultSetBufferSize(2)
 	cur.cacheToFile("cachefile2")
 	assertTrue(cur.openCachedResultSet("cachefile1"))
 	cur.cacheOff()
 	assertTrue(cur.openCachedResultSet("cachefile2"))
-	assertEqual(cur.getField(7,0),8)
-	assertEqual(cur.getField(8,0),None)
+	assertEquals(cur.getField(7,0),"8")
+	assertNone(cur.getField(8,0))
 	cur.setResultSetBufferSize(0)
 	print()
 
 
 	# cached result set with suspend and result set buffer size
 	print("CACHED RESULT SET WITH SUSPEND "
-		"AND RESULT SET BUFFER SIZE: ")
+				"AND RESULT SET BUFFER SIZE: ")
 	cur.setResultSetBufferSize(2)
 	cur.cacheToFile("cachefile1")
 	cur.setCacheTtl(200)
@@ -1190,9 +1205,9 @@ def main():
 		"	testtable "
 		"order by "
 		"	testtinyint "))
-	assertEqual(cur.getField(2,0),3)
+	assertEquals(cur.getField(2,0),"3")
 	filename=cur.getCacheFileName()
-	assertEqual(filename,"cachefile1")
+	assertEquals(filename,"cachefile1")
 	id=cur.getResultSetId()
 	cur.suspendResultSet()
 	assertTrue(con.suspendSession())
@@ -1202,47 +1217,89 @@ def main():
 	assertTrue(con.resumeSession(port,socket))
 	assertTrue(cur.resumeCachedResultSet(id,filename))
 	print()
-	assertEqual(cur.firstRowIndex(),4)
+	assertEquals(cur.firstRowIndex(),4)
 	assertFalse(cur.endOfResultSet())
-	assertEqual(cur.rowCount(),6)
-	assertEqual(cur.getField(7,0),8)
+	assertEquals(cur.rowCount(),6)
+	assertEquals(cur.getField(7,0),"8")
 	print()
-	assertEqual(cur.firstRowIndex(),6)
+	assertEquals(cur.firstRowIndex(),6)
 	assertFalse(cur.endOfResultSet())
-	assertEqual(cur.rowCount(),8)
-	assertEqual(cur.getField(8,0),None)
+	assertEquals(cur.rowCount(),8)
+	assertNone(cur.getField(8,0))
 	print()
-	assertEqual(cur.firstRowIndex(),8)
+	assertEquals(cur.firstRowIndex(),8)
 	assertTrue(cur.endOfResultSet())
-	assertEqual(cur.rowCount(),8)
+	assertEquals(cur.rowCount(),8)
 	cur.cacheOff()
 	print()
 	assertTrue(cur.openCachedResultSet(filename))
-	assertEqual(cur.getField(7,0),8)
-	assertEqual(cur.getField(8,0),None)
+	assertEquals(cur.getField(7,0),"8")
+	assertNone(cur.getField(8,0))
 	cur.setResultSetBufferSize(0)
 	print()
 
 
-	# commit
-	print("COMMIT: ")
+	# finished suspended session
+	print("FINISHED SUSPENDED SESSION: ")
+	assertTrue(cur.sendQuery("select * from testtable order by testint"))
+	assertEquals(cur.getField(4,0),"5")
+	assertEquals(cur.getField(5,0),"6")
+	assertEquals(cur.getField(6,0),"7")
+	assertEquals(cur.getField(7,0),"8")
+	id=cur.getResultSetId()
+	cur.suspendResultSet()
+	assertTrue(con.suspendSession())
+	port=con.getConnectionPort()
+	socket=con.getConnectionSocket()
+	assertTrue(con.resumeSession(port,socket))
+	assertTrue(cur.resumeResultSet(id))
+	assertNone(cur.getField(4,0))
+	assertNone(cur.getField(5,0))
+	assertNone(cur.getField(6,0))
+	assertNone(cur.getField(7,0))
+	print()
+
+
+	# nested selects
+	print("NESTED SELECTS: ")
+	# can't do this with mysql
+	#cur.setResultSetBufferSize(1)
+	assertTrue(cur.sendQuery("select * from testtable"))
+	i=0
+	while True:
+		row=cur.getRow(i)
+		if not row:
+			break
+		secondcur=PySQLRClient.sqlrcursor(con)
+		secondcur.setResultSetBufferSize(1)
+		assertTrue(secondcur.sendQuery("select * from testtable"))
+		secondcur=None
+		i+=1
+	#cur.setResultSetBufferSize(0)
+	print()
+
+
+	# commit and rollback
+	print("COMMIT AND ROLLBACK: ")
 	# Note: Mysql's default isolation level is repeatable-read,
 	# not read-committed like most other db's.  Both sessions must
 	# commit to see the changes that each other has made.
-	secondcon=PySQLRClient.sqlrconnection("sqlrelay",9000,
-						"/tmp/test.socket",
-						"testuser","testpassword")
+	secondcon=PySQLRClient.sqlrconnection("sqlrelay",9000,"/tmp/test.socket",
+						"testuser","testpassword",0,1)
 	secondcur=PySQLRClient.sqlrcursor(secondcon)
+	asserts.setSecondConnection(secondcon)
+	asserts.setSecondCursor(secondcur)
 	assertTrue(secondcur.sendQuery("select count(*) from testtable"))
 	if majorversion>3:
-		assertEqual(secondcur.getField(0,0),0)
+		assertEquals(secondcur.getField(0,0),"0")
 	else:
-		assertEqual(secondcur.getField(0,0),8)
+		assertEquals(secondcur.getField(0,0),"8")
 	assertTrue(con.commit())
-	assertEqual(secondcon.commit(),1)
+	assertTrue(secondcon.commit())
 	assertTrue(secondcur.sendQuery("select count(*) from testtable"))
-	assertEqual(secondcur.getField(0,0),8)
-	assertTrue(con.autoCommitOn())
+	assertEquals(secondcur.getField(0,0),"8")
+	assertTrue(con.begin())
+	assertTrue(secondcon.begin())
 	assertTrue(cur.sendQuery(
 		"insert into "
 		"	testtable "
@@ -1260,169 +1317,983 @@ def main():
 		"	'2010-01-01 10:00:00', "
 		"	'2010', "
 		"	'char10', "
-		"	'text10', "
 		"	'varchar10', "
+		"	'text10', "
 		"	'tinytext10', "
 		"	'mediumtext10', "
 		"	'longtext10', "
+		"	'blob10', "
+		"	'tinyblob10', "
+		"	'mediumblob10', "
+		"	'longblob10', "
 		"	NULL)"))
-	assertEqual(secondcon.commit(),1)
+	assertTrue(con.rollback())
+	assertTrue(secondcon.commit())
 	assertTrue(secondcur.sendQuery("select count(*) from testtable"))
-	assertEqual(secondcur.getField(0,0),9)
-	assertTrue(con.autoCommitOff())
-	secondcon.commit()
-	print()
-
-
-	# row range
-	print("ROW RANGE:")
+	assertEquals(secondcur.getField(0,0),"8")
 	assertTrue(cur.sendQuery(
-		"select "
-		"	* "
-		"from "
+		"insert into "
 		"	testtable "
-		"order by "
-		"	testtinyint "))
-	print()
-	rows=cur.getRowRange(0,5)
-	assertEqual(rows[0][0],1)
-	assertEqual(rows[0][1],1)
-	assertEqual(rows[0][2],1)
-	assertEqual(rows[0][3],1)
-	assertEqual(rows[0][4],1)
-	#assertEqual(rows[0][5],Decimal("1.1"))
-	#assertEqual(rows[0][6],Decimal("1.1"))
-	assertEqual(rows[0][7],Decimal("1.1"))
-	assertEqual(rows[0][8],"2001-01-01")
-	assertEqual(rows[0][9],"01:00:00")
-	assertEqual(rows[0][10],"2001-01-01 01:00:00")
-	assertEqual(rows[0][11],2001)
-	assertEqual(rows[0][12],"char1")
-	assertEqual(rows[0][13],btos("text1"))
-	assertEqual(rows[0][14],"varchar1")
-	assertEqual(rows[0][15],btos("tinytext1"))
-	assertEqual(rows[0][16],btos("mediumtext1"))
-	assertEqual(rows[0][17],btos("longtext1"))
-	print()
-	assertEqual(rows[1][0],2)
-	assertEqual(rows[1][1],2)
-	assertEqual(rows[1][2],2)
-	assertEqual(rows[1][3],2)
-	assertEqual(rows[1][4],2)
-	#assertEqual(rows[1][5],Decimal("2.1"))
-	#assertEqual(rows[1][6],Decimal("2.1"))
-	assertEqual(rows[1][7],Decimal("2.1"))
-	assertEqual(rows[1][8],"2002-01-01")
-	assertEqual(rows[1][9],"02:00:00")
-	assertEqual(rows[1][10],"2002-01-01 02:00:00")
-	assertEqual(rows[1][11],2002)
-	assertEqual(rows[1][12],"char2")
-	assertEqual(rows[1][13],btos("text2"))
-	assertEqual(rows[1][14],"varchar2")
-	assertEqual(rows[1][15],btos("tinytext2"))
-	assertEqual(rows[1][16],btos("mediumtext2"))
-	assertEqual(rows[1][17],btos("longtext2"))
-	print()
-	assertEqual(rows[2][0],3)
-	assertEqual(rows[2][1],3)
-	assertEqual(rows[2][2],3)
-	assertEqual(rows[2][3],3)
-	assertEqual(rows[2][4],3)
-	#assertEqual(rows[2][5],Decimal("3.1"))
-	#assertEqual(rows[2][6],Decimal("3.1"))
-	assertEqual(rows[2][7],Decimal("3.1"))
-	assertEqual(rows[2][8],"2003-01-01")
-	assertEqual(rows[2][9],"03:00:00")
-	assertEqual(rows[2][10],"2003-01-01 03:00:00")
-	assertEqual(rows[2][11],2003)
-	assertEqual(rows[2][12],"char3")
-	assertEqual(rows[2][13],btos("text3"))
-	assertEqual(rows[2][14],"varchar3")
-	assertEqual(rows[2][15],btos("tinytext3"))
-	assertEqual(rows[2][16],btos("mediumtext3"))
-	assertEqual(rows[2][17],btos("longtext3"))
-	print()
-	assertEqual(rows[3][0],4)
-	assertEqual(rows[3][1],4)
-	assertEqual(rows[3][2],4)
-	assertEqual(rows[3][3],4)
-	assertEqual(rows[3][4],4)
-	#assertEqual(rows[3][5],Decimal("4.1"))
-	#assertEqual(rows[3][6],Decimal("4.1"))
-	assertEqual(rows[3][7],Decimal("4.1"))
-	assertEqual(rows[3][8],"2004-01-01")
-	assertEqual(rows[3][9],"04:00:00")
-	assertEqual(rows[3][10],"2004-01-01 04:00:00")
-	assertEqual(rows[3][11],2004)
-	assertEqual(rows[3][12],"char4")
-	assertEqual(rows[3][13],btos("text4"))
-	assertEqual(rows[3][14],"varchar4")
-	assertEqual(rows[3][15],btos("tinytext4"))
-	assertEqual(rows[3][16],btos("mediumtext4"))
-	assertEqual(rows[3][17],btos("longtext4"))
-	print()
-	assertEqual(rows[4][0],5)
-	assertEqual(rows[4][1],5)
-	assertEqual(rows[4][2],5)
-	assertEqual(rows[4][3],5)
-	assertEqual(rows[4][4],5)
-	#assertEqual(rows[4][5],Decimal("5.1"))
-	#assertEqual(rows[4][6],Decimal("5.1"))
-	assertEqual(rows[4][7],Decimal("5.1"))
-	assertEqual(rows[4][8],"2005-01-01")
-	assertEqual(rows[4][9],"05:00:00")
-	assertEqual(rows[4][10],"2005-01-01 05:00:00")
-	assertEqual(rows[4][11],2005)
-	assertEqual(rows[4][12],"char5")
-	assertEqual(rows[4][13],btos("text5"))
-	assertEqual(rows[4][14],"varchar5")
-	assertEqual(rows[4][15],btos("tinytext5"))
-	assertEqual(rows[4][16],btos("mediumtext5"))
-	assertEqual(rows[4][17],btos("longtext5"))
-	print()
-	assertEqual(rows[5][0],6)
-	assertEqual(rows[5][1],6)
-	assertEqual(rows[5][2],6)
-	assertEqual(rows[5][3],6)
-	assertEqual(rows[5][4],6)
-	#assertEqual(rows[5][5],Decimal("6.1"))
-	#assertEqual(rows[5][6],Decimal("6.1"))
-	assertEqual(rows[5][7],Decimal("6.1"))
-	assertEqual(rows[5][8],"2006-01-01")
-	assertEqual(rows[5][9],"06:00:00")
-	assertEqual(rows[5][10],"2006-01-01 06:00:00")
-	assertEqual(rows[5][11],2006)
-	assertEqual(rows[5][12],"char6")
-	assertEqual(rows[5][13],btos("text6"))
-	assertEqual(rows[5][14],"varchar6")
-	assertEqual(rows[5][15],btos("tinytext6"))
-	assertEqual(rows[5][16],btos("mediumtext6"))
-	assertEqual(rows[5][17],btos("longtext6"))
+		"values ("
+		"	10, "
+		"	10, "
+		"	10, "
+		"	10, "
+		"	10, "
+		"	10.1, "
+		"	10.1, "
+		"	1.1, "
+		"	'2010-01-01', "
+		"	'10:00:00', "
+		"	'2010-01-01 10:00:00', "
+		"	'2010', "
+		"	'char10', "
+		"	'varchar10', "
+		"	'text10', "
+		"	'tinytext10', "
+		"	'mediumtext10', "
+		"	'longtext10', "
+		"	'blob10', "
+		"	'tinyblob10', "
+		"	'mediumblob10', "
+		"	'longblob10', "
+		"	NULL)"))
+	assertTrue(secondcon.commit())
+	assertTrue(secondcur.sendQuery("select count(*) from testtable"))
+	assertEquals(secondcur.getField(0,0),"9")
+	secondcon.commit()
+	secondcur=None
+	secondcon=None
+	asserts.setSecondCursor(None)
+	asserts.setSecondConnection(None)
+	assertTrue(cur.sendQuery("drop table testtable"))
 	print()
 
 
-	# finished suspended session
-	print("FINISHED SUSPENDED SESSION: ")
-	assertTrue(cur.sendQuery("select * from testtable order by testint"))
-	assertEqual(cur.getField(4,0),5)
-	assertEqual(cur.getField(5,0),6)
-	assertEqual(cur.getField(6,0),7)
-	assertEqual(cur.getField(7,0),8)
-	id=cur.getResultSetId()
-	cur.suspendResultSet()
-	assertTrue(con.suspendSession())
-	port=con.getConnectionPort()
-	socket=con.getConnectionSocket()
-	assertTrue(con.resumeSession(port,socket))
-	assertTrue(cur.resumeResultSet(id))
-	assertEqual(cur.getField(4,0),None)
-	assertEqual(cur.getField(5,0),None)
-	assertEqual(cur.getField(6,0),None)
-	assertEqual(cur.getField(7,0),None)
+	# individual substitutions
+	print("INDIVIDUAL SUBSTITUTIONS: ")
+	cur.prepareQuery("select $(var1),'$(var2)',$(var3)")
+	cur.substitution("var1",1)
+	cur.substitution("var2","hello")
+	cur.substitution("var3",10.5556,6,4)
+	assertTrue(cur.executeQuery())
+	assertEquals(cur.getField(0,0),"1")
+	assertEquals(cur.getField(0,1),"hello")
+	assertEquals(cur.getField(0,2),"10.5556")
 	print()
 
-	# drop existing table
+
+	# array substitutions
+	print("ARRAY SUBSTITUTIONS: ")
+	cur.prepareQuery("select $(var1),$(var2),$(var3)")
+	cur.substitutions(subvars,subvallongs)
+	assertTrue(cur.executeQuery())
+	assertEquals(cur.getField(0,0),"1")
+	assertEquals(cur.getField(0,1),"2")
+	assertEquals(cur.getField(0,2),"3")
+	print()
+	cur.prepareQuery("select '$(var1)','$(var2)','$(var3)'")
+	cur.substitutions(subvars,subvalstrings)
+	assertTrue(cur.executeQuery())
+	assertEquals(cur.getField(0,0),"hi")
+	assertEquals(cur.getField(0,1),"hello")
+	assertEquals(cur.getField(0,2),"bye")
+	print()
+	cur.prepareQuery("select $(var1),$(var2),$(var3)")
+	cur.substitutions(subvars,subvaldoubles,precs,scales)
+	assertTrue(cur.executeQuery())
+	assertEquals(cur.getField(0,0),"10.55")
+	assertEquals(cur.getField(0,1),"10.556")
+	assertEquals(cur.getField(0,2),"10.5556")
+	print()
+
+
+	# nulls as nulls
+	print("NULLS AS NULLS: ")
+	cur.getNullsAsNone()
+	assertTrue(cur.sendQuery("select NULL,1,NULL"))
+	assertNone(cur.getField(0,0))
+	assertEquals(cur.getField(0,1),"1")
+	assertNone(cur.getField(0,2))
+	cur.getNullsAsEmptyStrings()
+	assertTrue(cur.sendQuery("select NULL,1,NULL"))
+	assertEquals(cur.getField(0,0),"")
+	assertEquals(cur.getField(0,1),"1")
+	assertEquals(cur.getField(0,2),"")
+	print()
+
+
+	# null and empty lobs
+	print("NULL AND EMPTY LOBS: ")
+	cur.getNullsAsNone()
 	cur.sendQuery("drop table testtable")
+	assertTrue(cur.sendQuery(
+		"create table testtable ("
+		"	testclob1 longtext, "
+		"	testclob2 longtext, "
+		"	testblob1 longblob, "
+		"	testblob2 longblob)"))
+	cur.prepareQuery(
+		"insert into "
+		"	testtable "
+		"values ("
+		"	?, "
+		"	?, "
+		"	?, "
+		"	?)")
+	cur.inputBindClob("1","",0)
+	cur.inputBindClob("2",None,0)
+	cur.inputBindBlob("3","",0)
+	cur.inputBindBlob("4",None,0)
+	assertTrue(cur.executeQuery())
+	cur.sendQuery("select * from testtable")
+	assertEquals(cur.getField(0,0),"")
+	assertNone(cur.getField(0,1))
+	assertEquals(cur.getField(0,2),"")
+	assertNone(cur.getField(0,3))
+	cur.getNullsAsEmptyStrings()
+	assertTrue(cur.sendQuery("drop table testtable"))
+	print()
+
+
+	# long lobs
+	print("LONG LOBS: ")
+	cur.sendQuery("drop table testtable")
+	cur.sendQuery(
+		"create table testtable ("
+		"	testtext longtext, "
+		"	testblob longblob)")
+	cur.prepareQuery("insert into testtable values (?,?)")
+	largebuffer='C'*LARGE_BUFFER_LENGTH
+	cur.inputBindClob("1",largebuffer,LARGE_BUFFER_LENGTH)
+	cur.inputBindBlob("2",largebuffer,LARGE_BUFFER_LENGTH)
+	assertTrue(cur.executeQuery())
+	cur.sendQuery("select * from testtable")
+	assertEquals(cur.getFieldLength(0,"testtext"),LARGE_BUFFER_LENGTH)
+	assertEquals(cur.getField(0,"testtext"),largebuffer)
+	assertEquals(cur.getFieldLength(0,"testblob"),LARGE_BUFFER_LENGTH)
+	assertEquals(cur.getField(0,"testblob"),largebuffer)
+	assertTrue(cur.sendQuery("drop table testtable"))
+	print()
+
+
+	# output bind by position
+	# mysql doesn't support output binds
+
+	# output bind by name
+	# mysql doesn't support bind by name
+
+
+	# output bind by name with validation
+	# mysql doesn't support bind by name
+
+
+	# lob output bind
+	# mysql doesn't support output binds
+
+
+	# long output bind
+	# mysql doesn't support output binds
+
+
+	# negative input bind
+	print("NEGATIVE INPUT BIND: ")
+	cur.sendQuery("drop table testtable")
+	cur.sendQuery("create table testtable (testval int)")
+	cur.prepareQuery("insert into testtable values (?)")
+	cur.inputBind("1",-1)
+	assertTrue(cur.executeQuery())
+	cur.sendQuery("select testval from testtable")
+	assertEquals(cur.getField(0,"testval"),"-1")
+	assertTrue(cur.sendQuery("drop table testtable"))
+	print()
+
+
+	# bind validation
+	# mysql doesn't support bind by name
+
+
+	# rebinding
+	print("REBINDING: ")
+	cur.sendQuery("drop procedure testproc")
+	assertTrue(cur.sendQuery(
+		"create procedure testproc("
+		"	in in1 int) "
+		"begin "
+		"	select in1; "
+		"end"))
+	cur.prepareQuery("call testproc(?)")
+	cur.inputBind("1",1)
+	assertTrue(cur.executeQuery())
+	assertEquals(cur.getField(0,0),"1")
+	cur.inputBind("1",2)
+	assertTrue(cur.executeQuery())
+	assertEquals(cur.getField(0,0),"2")
+	cur.inputBind("1",3)
+	assertTrue(cur.executeQuery())
+	assertEquals(cur.getField(0,0),"3")
+	assertTrue(cur.sendQuery("drop procedure testproc"))
+	print()
+
+
+	# reexecute
+	print("REEXECUTE: ")
+	cur.prepareQuery("select 1")
+	assertTrue(cur.executeQuery())
+	assertEquals(cur.rowCount(),1)
+	assertEquals(cur.getField(0,0),"1")
+	print()
+	assertTrue(cur.executeQuery())
+	assertEquals(cur.rowCount(),1)
+	assertEquals(cur.getField(0,0),"1")
+	print()
+	cur.prepareQuery("select ?")
+	cur.inputBind("1",1)
+	assertTrue(cur.executeQuery())
+	assertEquals(cur.rowCount(),1)
+	assertEquals(cur.getField(0,0),"1")
+	print()
+	assertTrue(cur.executeQuery())
+	assertEquals(cur.rowCount(),1)
+	assertEquals(cur.getField(0,0),"1")
+	print()
+	cur.inputBind("1",2)
+	assertTrue(cur.executeQuery())
+	assertEquals(cur.rowCount(),1)
+	assertEquals(cur.getField(0,0),"2")
+	print()
+
+
+	# stored procedure returning no value
+	print("STORED PROCEDURE RETURNING NO VALUE: ")
+	cur.sendQuery("drop procedure testproc")
+	assertTrue(cur.sendQuery(
+		"create procedure testproc("
+		"	in in1 int, "
+		"	in in2 double, "
+		"	in in3 varchar(20)) "
+		"begin "
+		"end"))
+	cur.prepareQuery("call testproc(?,?,?)")
+	cur.inputBind("1",1)
+	cur.inputBind("2",1.1,2,1)
+	cur.inputBind("3","hello")
+	assertTrue(cur.executeQuery())
+	assertTrue(cur.sendQuery("drop procedure testproc"))
+	print()
+
+
+	# stored procedure returning single value
+	print("STORED PROCEDURE RETURNING SINGLE VALUE: ")
+	cur.sendQuery("drop procedure testproc")
+	assertTrue(cur.sendQuery(
+		"create procedure testproc("
+		"	in in1 int, "
+		"	in in2 double, "
+		"	in in3 varchar(20)) "
+		"begin "
+		"	select in1; "
+		"end"))
+	cur.prepareQuery("call testproc(?,?,?)")
+	cur.inputBind("1",1)
+	cur.inputBind("2",1.1,2,1)
+	cur.inputBind("3","hello")
+	assertTrue(cur.executeQuery())
+	assertEquals(cur.getField(0,0),"1")
+	assertTrue(cur.sendQuery("drop procedure testproc"))
+	print()
+
+
+	# stored procedure returning multiple values
+	print("STORED PROCEDURE RETURNING MULTIPLE VALUES: ")
+	cur.sendQuery("drop procedure testproc")
+	assertTrue(cur.sendQuery(
+		"create procedure testproc("
+		"	in in1 int, "
+		"	in in2 double, "
+		"	in in3 varchar(20)) "
+		"begin "
+		"	select in1, in2, in3; "
+		"end"))
+	cur.prepareQuery("call testproc(?,?,?)")
+	cur.inputBind("1",1)
+	cur.inputBind("2",1.1,2,1)
+	cur.inputBind("3","hello")
+	assertTrue(cur.executeQuery())
+	assertEquals(cur.getField(0,0),"1")
+	assertEquals(cur.getField(0,1),"1.1")
+	assertEquals(cur.getField(0,2),"hello")
+	assertTrue(cur.sendQuery("drop procedure testproc"))
+	print()
+
+
+	# stored procedure returning result set
+	print("STORED PROCEDURE RETURNING RESULT SET: ")
+	cur.sendQuery("drop procedure testselectproc")
+	assertTrue(cur.sendQuery(
+		"create procedure testselectproc() "
+		"begin "
+		"	select 1 "
+		"	union "
+		"	select 2 "
+		"	union "
+		"	select 3 "
+		"	union "
+		"	select 4 "
+		"	union "
+		"	select 5 "
+		"	union "
+		"	select 6 "
+		"	union "
+		"	select 7 "
+		"	union "
+		"	select 8; "
+		"end"))
+	assertTrue(cur.sendQuery("call testselectproc()"))
+	assertEquals(cur.rowCount(),8)
+	assertTrue(cur.sendQuery("drop procedure testselectproc"))
+	print()
+
+
+	# temporary tables
+	print("TEMPORARY TABLES: ")
+	cur.sendQuery("drop table temptable")
+	cur.sendQuery("create temporary table temptable (col1 int)")
+	assertTrue(cur.sendQuery("insert into temptable values (1)"))
+	assertTrue(cur.sendQuery("select count(*) from temptable"))
+	assertEquals(cur.getField(0,0),"1")
+	con.endSession()
+	print()
+	assertFalse(cur.sendQuery("select count(*) from temptable"))
+	print()
+
+	if majorversion>3:
+
+		# stored procedure returning no value
+		print("STORED PROCEDURE RETURNING NO VALUE: ")
+		cur.sendQuery("drop procedure if exists testproc")
+		assertTrue(cur.sendQuery(
+			"create procedure testproc("
+			"	in in1 int, "
+			"	in in2 float, "
+			"	in in3 char(20)) "
+			"begin "
+			"	select in1, in2, in3; "
+			"end;"))
+		cur.prepareQuery("call testproc(?,?,?)")
+		cur.inputBind("1",1)
+		cur.inputBind("2",1.1,4,2)
+		cur.inputBind("3","hello")
+		assertTrue(cur.executeQuery())
+		assertEquals(cur.getField(0,0),"1")
+		assertEquals(cur.getField(0,1),"1.1")
+		assertEquals(cur.getField(0,2),"hello")
+		cur.sendQuery("drop procedure testproc")
+		print()
+
+
+		# stored procedure returning one value
+		print("FUNCTIONS: ")
+		cur.sendQuery("drop function if exists testfunc")
+		assertTrue(cur.sendQuery(
+			"create function testfunc(in1 int, in2 "
+			"	int) returns int return in1+in2;"))
+		cur.prepareQuery("select testfunc(?,?)")
+		cur.inputBind("1",10)
+		cur.inputBind("2",20)
+		assertTrue(cur.executeQuery())
+		assertEquals(cur.getField(0,0),"30")
+		cur.sendQuery("drop function if exists testfunc")
+		print()
+
+
+		# stored procedure returning multiple values
+		print("STORED PROCEDURE RETURNING MULTIPLE VALUES: ")
+		cur.sendQuery("drop procedure if exists testproc")
+		assertTrue(cur.sendQuery(
+			"create procedure testproc("
+			"	out out1 int, "
+			"	out out2 float, "
+			"	out out3 char(20)) "
+			"begin "
+			"	select 1, 1.1, 'hello' "
+			"		into out1, out2, out3; "
+			"end;"))
+		assertTrue(cur.sendQuery("set @out1=0, @out2=0.0, @out3=''"))
+		assertTrue(cur.sendQuery("call testproc(@out1,@out2,@out3)"))
+		assertTrue(cur.sendQuery("select @out1, @out2, @out3"))
+		assertEquals(cur.getField(0,0),"1")
+		#assertEquals(cur.getFieldAsDouble(0,1),1.1)
+		assertEquals(cur.getField(0,2),"hello")
+		cur.sendQuery("drop procedure testproc")
+		print()
+
+
+		# stored procedure returning result set
+		print("STORED PROCEDURE RETURNING RESULT SET: ")
+		cur.sendQuery("drop procedure if exists testselectproc")
+		assertTrue(cur.sendQuery(
+			"create procedure testselectproc() "
+			"begin "
+			"	select 1 "
+			"	union "
+			"	select 2 "
+			"	union "
+			"	select 3 "
+			"	union "
+			"	select 4 "
+			"	union "
+			"	select 5 "
+			"	union "
+			"	select 6 "
+			"	union "
+			"	select 7 "
+			"	union "
+			"	select 8; "
+			"end"))
+		assertTrue(cur.sendQuery("call testselectproc()"))
+		assertEquals(cur.rowCount(),8)
+		cur.sendQuery("drop procedure testselectproc")
+		print()
+
+
+	if majorversion>3:
+
+		# encoded binary data - all chars - \-escaped
+		print("ENCODED BINARY DATA - "
+					"all chars - \\-escaped: ")
+		cur.sendQuery("drop table testtable")
+		assertTrue(cur.sendQuery(
+			"create table testtable (col1 longblob)"))
+		buffer=bytes(range(256))
+		query="insert into testtable values (_binary'"
+		for i in range(len(buffer)):
+			byte=buffer[i:i+1]
+			if byte==b"'":
+				query+="\\"
+			if byte==b"\\":
+				query+="\\"
+			query+=byte.decode('latin-1')
+		query+="')"
+		assertTrue(cur.sendQueryWithLength(query,len(query)))
+		assertTrue(cur.sendQuery("select col1 from testtable"))
+		assertEquals(cur.getFieldLength(0,0),256)
+		assertEqualsBytes(cur.getField(0,0),buffer,256)
+		assertTrue(cur.sendQuery("drop table testtable"))
+		print()
+
+
+		# encoded binary data - (null)"" - unescaped
+		print("ENCODED BINARY DATA - "
+					"(null)\"\" - unescaped: ")
+		cur.sendQuery("drop table testtable")
+		assertTrue(cur.sendQuery(
+			"create table testtable (col1 longblob)"))
+		query="insert into testtable values (_binary'\0\"\"')"
+		assertTrue(cur.sendQueryWithLength(query,len(query)))
+		assertTrue(cur.sendQuery("select col1 from testtable"))
+		assertEquals(cur.getFieldLength(0,0),3)
+		assertEqualsBytes(cur.getField(0,0),"\0\"\"",3)
+		assertTrue(cur.sendQuery("drop table testtable"))
+		print()
+
+
+		# encoded binary data - (null)"" - \-escaped
+		print("ENCODED BINARY DATA - "
+					"\\(null)\\\"\\\" - \\-escaped: ")
+		cur.sendQuery("drop table testtable")
+		assertTrue(cur.sendQuery(
+			"create table testtable (col1 longblob)"))
+		query="insert into testtable values (_binary'\\\0\\\"\\\"')"
+		assertTrue(cur.sendQueryWithLength(query,len(query)))
+		assertTrue(cur.sendQuery("select col1 from testtable"))
+		assertEquals(cur.getFieldLength(0,0),3)
+		assertEqualsBytes(cur.getField(0,0),"\0\"\"",3)
+		assertTrue(cur.sendQuery("drop table testtable"))
+		print()
+
+
+	# quotes - '' - ''-escaped
+	print("QUOTES - '' - ''-escaped: ")
+	cur.sendQuery("drop table testtable")
+	assertTrue(cur.sendQuery("create table testtable (col1 varchar(4))"))
+	assertTrue(cur.sendQuery("insert into testtable values ('''''')"))
+	assertTrue(cur.sendQuery("select col1 from testtable"))
+	assertEquals(cur.getFieldLength(0,0),2)
+	assertEquals(cur.getField(0,0),"''")
+	assertTrue(cur.sendQuery("drop table testtable"))
+	print()
+
+
+	# quotes - '' - '',\-escaped
+	print("QUOTES - '' - '',\\-escaped: ")
+	cur.sendQuery("drop table testtable")
+	assertTrue(cur.sendQuery("create table testtable (col1 varchar(4))"))
+	assertTrue(cur.sendQuery("insert into testtable values ('''\\'')"))
+	assertTrue(cur.sendQuery("select col1 from testtable"))
+	assertEquals(cur.getFieldLength(0,0),2)
+	assertEquals(cur.getField(0,0),"''")
+	assertTrue(cur.sendQuery("drop table testtable"))
+	print()
+
+
+	# quotes - '' - \,''-escaped
+	print("QUOTES - '' - \\,''-escaped: ")
+	cur.sendQuery("drop table testtable")
+	assertTrue(cur.sendQuery("create table testtable (col1 varchar(4))"))
+	assertTrue(cur.sendQuery("insert into testtable values ('\\'''')"))
+	assertTrue(cur.sendQuery("select col1 from testtable"))
+	assertEquals(cur.getFieldLength(0,0),2)
+	assertEquals(cur.getField(0,0),"''")
+	assertTrue(cur.sendQuery("drop table testtable"))
+	print()
+
+
+	# quotes - \\' - \-escaped
+	print("QUOTES - \\\\' - \\-escaped: ")
+	cur.sendQuery("drop table testtable")
+	assertTrue(cur.sendQuery("create table testtable (col1 varchar(4))"))
+	assertTrue(cur.sendQuery("insert into testtable values ('\\\\\\'')"))
+	assertTrue(cur.sendQuery("select col1 from testtable"))
+	assertEquals(cur.getFieldLength(0,0),2)
+	assertEqualsBytes(cur.getField(0,0),"\\\'",2)
+	assertTrue(cur.sendQuery("drop table testtable"))
+	print()
+
+
+	# quotes - "" - unescaped
+	print("QUOTES - \"\" - unescaped: ")
+	cur.sendQuery("drop table testtable")
+	assertTrue(cur.sendQuery("create table testtable (col1 varchar(4))"))
+	assertTrue(cur.sendQuery("insert into testtable values ('\"\"')"))
+	assertTrue(cur.sendQuery("select col1 from testtable"))
+	assertEquals(cur.getFieldLength(0,0),2)
+	assertEquals(cur.getField(0,0),"\"\"")
+	assertTrue(cur.sendQuery("drop table testtable"))
+	print()
+
+
+	# quotes - random - '',\-escaped
+	print("QUOTES - random - '',\\-escaped: ")
+	cur.sendQuery("drop table testtable")
+	assertTrue(cur.sendQuery("create table testtable "
+					"(col1 varchar(512))"))
+	ch=["'","\"","\\","\0"]
+	random.seed(1)
+	choices=[]
+	for i in range(256):
+		choices.append(random.randint(0,3))
+	random.seed(2)
+	escapes=[]
+	for i in range(256):
+		escapes.append(random.randint(0,1))
+	buffer=""
+	for i in range(256):
+		buffer+=ch[choices[i]]
+	query="insert into testtable values ('"
+	for i in range(256):
+		byte=buffer[i]
+		if byte=="'":
+			# randomly escape with \ or ''
+			if escapes[i]:
+				query+="'"
+			else:
+				query+="\\"
+		if byte=="\"":
+			# randomly escape with \ or don't escape
+			if escapes[i]:
+				query+="\\"
+		if byte=="\\":
+			# escape with backslash
+			query+="\\"
+		query+=byte
+	query+="')"
+	assertTrue(cur.sendQueryWithLength(query,len(query)))
+	assertTrue(cur.sendQuery("select col1 from testtable"))
+	assertEquals(cur.getFieldLength(0,0),256)
+	assertEqualsBytes(cur.getField(0,0),buffer,256)
+	assertTrue(cur.sendQuery("drop table testtable"))
+	print()
+
+
+	# last insert id
+	print("LAST INSERT ID: ")
+	cur.sendQuery("drop table testtable")
+	assertTrue(cur.sendQuery(
+			"create table testtable "
+			"	(col1 int primary key auto_increment, "
+			"	col2 int)"))
+	assertTrue(cur.sendQuery("insert into testtable values (null,1)"))
+	assertEquals(con.getLastInsertId(),1)
+	assertTrue(cur.sendQuery("drop table testtable"))
+	print()
+
+
+	# database is schema
+	print("DATABASE IS SCHEMA: ")
+	assertTrue(con.getDatabaseIsSchema())
+	print()
+
+
+	# catalog list
+	print("CATALOG LIST: ")
+	assertTrue(cur.getCatalogList(None))
+	assertEquals(cur.getColumnName(0),"Database")
+	assertTrue(cur.rowCount()>0)
+	print()
+
+
+	# schema list
+	print("SCHEMA LIST: ")
+	assertTrue(cur.getSchemaList(None))
+	assertEquals(cur.getColumnName(0),"Database")
+	assertTrue(cur.rowCount()>0)
+	print()
+
+
+	# table type list
+	print("TABLE TYPE LIST: ")
+	assertTrue(cur.getTableTypeList())
+	assertEquals(cur.getColumnName(0),"table_type")
+	found=False
+	for i in range(cur.rowCount()):
+		if cur.getField(i,"table_type")=="TABLE":
+			found=True
+			break
+	assertTrue(found)
+	print()
+
+
+	# table list
+	print("TABLE LIST: ")
+	cur.sendQuery("drop table testtable1")
+	cur.sendQuery("drop table testtable2")
+	cur.sendQuery("drop table testtable3")
+	cur.sendQuery("drop table testtable4")
+	assertTrue(cur.sendQuery(
+		"create table testtable1 ("
+		"	col1 int, "
+		"	col2 int)"))
+	assertTrue(cur.sendQuery(
+		"create table testtable2 ("
+		"	col1 int, "
+		"	col2 int)"))
+	assertTrue(cur.sendQuery(
+		"create table testtable3 ("
+		"	col1 int, "
+		"	col2 int)"))
+	assertTrue(cur.sendQuery(
+		"create table testtable4 ("
+		"	col1 int, "
+		"	col2 int)"))
+	assertTrue(cur.getTableList(None))
+	counter=0
+	for i in range(cur.rowCount()):
+		name=cur.getField(i,"Tables_in_xxx")
+		if name in ("testtable1","testtable2","testtable3","testtable4"):
+			counter+=1
+	assertEquals(counter,4)
+	assertTrue(cur.sendQuery("drop table testtable1"))
+	assertTrue(cur.sendQuery("drop table testtable2"))
+	assertTrue(cur.sendQuery("drop table testtable3"))
+	assertTrue(cur.sendQuery("drop table testtable4"))
+	print()
+
+
+	# type info list
+	print("TYPE INFO LIST: ")
+	assertTrue(cur.getTypeInfoList("int"))
+	assertEquals(cur.getColumnName(0),"type_name")
+	assertEquals(cur.getColumnName(1),"data_type")
+	assertEquals(cur.getColumnName(2),"precision")
+	assertEquals(cur.getColumnName(3),"literal_prefix")
+	assertEquals(cur.getColumnName(4),"literal_suffix")
+	assertEquals(cur.getColumnName(5),"create_params")
+	assertEquals(cur.getColumnName(6),"nullable")
+	assertEquals(cur.getColumnName(7),"case_sensitive")
+	assertEquals(cur.getColumnName(8),"searchable")
+	assertEquals(cur.getColumnName(9),"unsigned_attribute")
+	assertEquals(cur.getColumnName(10),"fixed_prec_scale")
+	assertEquals(cur.getColumnName(11),"auto_increment")
+	assertEquals(cur.getColumnName(12),"local_type_name")
+	assertEquals(cur.getColumnName(13),"minumum_scale")
+	assertEquals(cur.getColumnName(14),"maxiumm_scale")
+	assertEquals(cur.getColumnName(15),"sql_data_type")
+	assertEquals(cur.getColumnName(16),"sql_datetime_sub")
+	assertEquals(cur.getColumnName(17),"num_prec_radix")
+	assertEquals(cur.getColumnName(18),"interval_precision")
+	assertEquals(cur.getField(0,"type_name"),"INT")
+	assertEquals(cur.getField(0,"data_type"),"4")
+	assertEquals(cur.getField(0,"precision"),"10")
+	assertEquals(cur.getField(0,"local_type_name"),"INT")
+	assertTrue(cur.getTypeInfoList("char"))
+	assertEquals(cur.getField(0,"type_name"),"CHAR")
+	assertEquals(cur.getField(0,"data_type"),"1")
+	assertEquals(cur.getField(0,"precision"),"255")
+	assertEquals(cur.getField(0,"local_type_name"),"CHAR")
+	assertTrue(cur.getTypeInfoList("varchar"))
+	assertEquals(cur.getField(0,"type_name"),"VARCHAR")
+	assertEquals(cur.getField(0,"data_type"),"12")
+	assertEquals(cur.getField(0,"precision"),"65535")
+	assertEquals(cur.getField(0,"local_type_name"),"VARCHAR")
+	assertTrue(cur.getTypeInfoList("date"))
+	assertEquals(cur.getField(0,"type_name"),"DATE")
+	assertEquals(cur.getField(0,"data_type"),"91")
+	assertEquals(cur.getField(0,"precision"),"10")
+	assertEquals(cur.getField(0,"local_type_name"),"DATE")
+	print()
+
+
+	# column list
+	print("COLUMN LIST: ")
+	cur.sendQuery("drop table testtable")
+	assertTrue(cur.sendQuery(
+		"create table testtable ("
+		"	testtinyint tinyint, "
+		"	testsmallint smallint, "
+		"	testmediumint mediumint, "
+		"	testint int, "
+		"	testbigint bigint, "
+		"	testfloat float, "
+		"	testreal real, "
+		"	testdecimal decimal(2,1), "
+		"	testdate date, "
+		"	testtime time, "
+		"	testdatetime datetime, "
+		"	testyear year, "
+		"	testchar char(40), "
+		"	testvarchar varchar(40), "
+		"	testtext text, "
+		"	testtinytext tinytext, "
+		"	testmediumtext mediumtext, "
+		"	testlongtext longtext, "
+		"	testblob blob, "
+		"	testtinyblob tinyblob, "
+		"	testmediumblob mediumblob, "
+		"	testlongblob longblob, "
+		"	testtimestamp timestamp)"))
+	assertTrue(cur.getColumnList("testtable",None))
+	assertEquals(cur.getColumnName(0),"column_name")
+	assertEquals(cur.getColumnName(1),"data_type")
+	assertEquals(cur.getColumnName(2),"character_maximum_length")
+	assertEquals(cur.getColumnName(3),"numeric_precision")
+	assertEquals(cur.getColumnName(4),"numeric_scale")
+	assertEquals(cur.getColumnName(5),"is_nullable")
+	assertEquals(cur.getColumnName(6),"column_key")
+	assertEquals(cur.getColumnName(7),"column_default")
+	assertEquals(cur.getColumnName(8),"extra")
+	assertEquals(cur.getField(0,"column_name"),"testtinyint")
+	assertEquals(cur.getField(1,"column_name"),"testsmallint")
+	assertEquals(cur.getField(2,"column_name"),"testmediumint")
+	assertEquals(cur.getField(3,"column_name"),"testint")
+	assertEquals(cur.getField(4,"column_name"),"testbigint")
+	assertEquals(cur.getField(5,"column_name"),"testfloat")
+	assertEquals(cur.getField(6,"column_name"),"testreal")
+	assertEquals(cur.getField(7,"column_name"),"testdecimal")
+	assertEquals(cur.getField(8,"column_name"),"testdate")
+	assertEquals(cur.getField(9,"column_name"),"testtime")
+	assertEquals(cur.getField(10,"column_name"),"testdatetime")
+	assertEquals(cur.getField(11,"column_name"),"testyear")
+	assertEquals(cur.getField(12,"column_name"),"testchar")
+	assertEquals(cur.getField(13,"column_name"),"testvarchar")
+	assertEquals(cur.getField(14,"column_name"),"testtext")
+	assertEquals(cur.getField(15,"column_name"),"testtinytext")
+	assertEquals(cur.getField(16,"column_name"),"testmediumtext")
+	assertEquals(cur.getField(17,"column_name"),"testlongtext")
+	assertEquals(cur.getField(18,"column_name"),"testblob")
+	assertEquals(cur.getField(19,"column_name"),"testtinyblob")
+	assertEquals(cur.getField(20,"column_name"),"testmediumblob")
+	assertEquals(cur.getField(21,"column_name"),"testlongblob")
+	assertEquals(cur.getField(22,"column_name"),"testtimestamp")
+	assertEquals(cur.getField(0,"data_type"),"TINYINT")
+	assertEquals(cur.getField(1,"data_type"),"SMALLINT")
+	assertEquals(cur.getField(2,"data_type"),"MEDIUMINT")
+	assertEquals(cur.getField(3,"data_type"),"INT")
+	assertEquals(cur.getField(4,"data_type"),"BIGINT")
+	assertEquals(cur.getField(5,"data_type"),"FLOAT")
+	assertEquals(cur.getField(6,"data_type"),"DOUBLE") # not "REAL"
+	assertEquals(cur.getField(7,"data_type"),"DECIMAL")
+	assertEquals(cur.getField(8,"data_type"),"DATE")
+	assertEquals(cur.getField(9,"data_type"),"TIME")
+	assertEquals(cur.getField(10,"data_type"),"DATETIME")
+	assertEquals(cur.getField(11,"data_type"),"YEAR")
+	assertEquals(cur.getField(12,"data_type"),"CHAR")
+	assertEquals(cur.getField(13,"data_type"),"VARCHAR")
+	assertEquals(cur.getField(14,"data_type"),"TEXT")
+	assertEquals(cur.getField(15,"data_type"),"TINYTEXT")
+	assertEquals(cur.getField(16,"data_type"),"MEDIUMTEXT")
+	assertEquals(cur.getField(17,"data_type"),"LONGTEXT")
+	assertEquals(cur.getField(18,"data_type"),"BLOB")
+	assertEquals(cur.getField(19,"data_type"),"TINYBLOB")
+	assertEquals(cur.getField(20,"data_type"),"MEDIUMBLOB")
+	assertEquals(cur.getField(21,"data_type"),"LONGBLOB")
+	assertEquals(cur.getField(22,"data_type"),"TIMESTAMP")
+	assertTrue(cur.sendQuery("drop table testtable"))
+	print()
+
+
+	# column list - auto_increment, primary key
+	print("COLUMN LIST - auto_increment, primary key: ")
+	cur.sendQuery("drop table testtable")
+	assertTrue(cur.sendQuery(
+		"create table testtable ("
+		"	col1 int auto_increment primary key, "
+		"	col2 int)"))
+	assertTrue(cur.getColumnList("testtable",None))
+	assertTrue("auto_increment" in cur.getField(0,"extra"))
+	assertTrue("PRI" in cur.getField(0,"column_key"))
+	assertFalse("auto_increment" in cur.getField(1,"extra"))
+	assertFalse("PRI" in cur.getField(1,"column_key"))
+	print()
+	assertTrue(cur.sendQuery("drop table testtable"))
+	assertTrue(cur.sendQuery(
+		"create table testtable ("
+		"	col1 int primary key, "
+		"	col2 int)"))
+	assertTrue(cur.getColumnList("testtable",None))
+	assertFalse("auto_increment" in cur.getField(0,"extra"))
+	assertTrue("PRI" in cur.getField(0,"column_key"))
+	assertTrue(cur.sendQuery("drop table testtable"))
+	print()
+
+
+	# primary keys list
+	print("PRIMARY KEYS LIST: ")
+	cur.sendQuery("drop table testtable")
+	assertTrue(cur.sendQuery(
+		"create table testtable ("
+		"	col1 int primary key, "
+		"	col2 int)"))
+	assertTrue(cur.getPrimaryKeysList("testtable",None))
+	assertEquals(cur.getColumnName(0),"table")
+	assertEquals(cur.getColumnName(1),"non_unique")
+	assertEquals(cur.getColumnName(2),"key_name")
+	assertEquals(cur.getColumnName(3),"seq_in_index")
+	assertEquals(cur.getColumnName(4),"column_name")
+	assertEquals(cur.getColumnName(5),"collation")
+	assertEquals(cur.getColumnName(6),"cardinality")
+	assertEquals(cur.getColumnName(7),"sub_part")
+	assertEquals(cur.getColumnName(8),"packed")
+	assertEquals(cur.getColumnName(9),"null")
+	assertEquals(cur.getColumnName(10),"index_type")
+	assertEquals(cur.getColumnName(11),"comment")
+	assertEquals(cur.getColumnName(12),"index_comment")
+	assertEquals(cur.rowCount(),1)
+	assertEquals(cur.getField(0,"table"),"testtable")
+	assertEquals(cur.getField(0,"seq_in_index"),"1")
+	assertEquals(cur.getField(0,"column_name"),"col1")
+	assertEquals(cur.getField(0,"key_name"),"PRIMARY")
+	assertTrue(cur.sendQuery("drop table testtable"))
+	print()
+
+
+	# key and index list
+	print("KEY AND INDEX LIST: ")
+	cur.sendQuery("drop table testtable")
+	assertTrue(cur.sendQuery(
+		"create table testtable ("
+		"	col1 int primary key, "
+		"	col2 int)"))
+	assertTrue(cur.getKeyAndIndexList("testtable",None))
+	assertEquals(cur.getColumnName(0),"table")
+	assertEquals(cur.getColumnName(1),"non_unique")
+	assertEquals(cur.getColumnName(2),"key_name")
+	assertEquals(cur.getColumnName(3),"seq_in_index")
+	assertEquals(cur.getColumnName(4),"column_name")
+	assertEquals(cur.getColumnName(5),"collation")
+	assertEquals(cur.getColumnName(6),"cardinality")
+	assertEquals(cur.getColumnName(7),"sub_part")
+	assertEquals(cur.getColumnName(8),"packed")
+	assertEquals(cur.getColumnName(9),"null")
+	assertEquals(cur.getColumnName(10),"index_type")
+	assertEquals(cur.getColumnName(11),"comment")
+	assertEquals(cur.getColumnName(12),"index_comment")
+	assertEquals(cur.rowCount(),1)
+	assertEquals(cur.getField(0,"table"),"testtable")
+	assertEquals(cur.getField(0,"non_unique"),"false")
+	assertEquals(cur.getField(0,"seq_in_index"),"1")
+	assertEquals(cur.getField(0,"column_name"),"col1")
+	assertEquals(cur.getField(0,"collation"),"A")
+	assertEquals(cur.getField(0,"index_type"),"3")
+	assertEquals(cur.getField(0,"key_name"),"PRIMARY")
+	assertTrue(cur.sendQuery("drop table testtable"))
+	print()
+
+
+	# procedure list
+	print("PROCEDURE LIST: ")
+	cur.sendQuery("drop procedure testproc1")
+	cur.sendQuery("drop procedure testproc2")
+	cur.sendQuery("drop procedure testproc3")
+	cur.sendQuery("drop procedure testproc4")
+	assertTrue(cur.sendQuery(
+		"create procedure testproc1("
+		"	in in1 int, "
+		"	in in2 char(20), "
+		"	in in3 varchar(20), "
+		"	in in4 date) "
+		"begin end"))
+	assertTrue(cur.sendQuery(
+		"create procedure testproc2("
+		"	in in1 int, "
+		"	in in2 char(20), "
+		"	in in3 varchar(20), "
+		"	in in4 date) "
+		"begin end"))
+	assertTrue(cur.sendQuery(
+		"create procedure testproc3("
+		"	in in1 int, "
+		"	in in2 char(20), "
+		"	in in3 varchar(20), "
+		"	in in4 date) "
+		"begin end"))
+	assertTrue(cur.sendQuery(
+		"create procedure testproc4("
+		"	in in1 int, "
+		"	in in2 char(20), "
+		"	in in3 varchar(20), "
+		"	in in4 date) "
+		"begin end"))
+	assertTrue(cur.getProcedureList(None))
+	counter=0
+	for i in range(cur.rowCount()):
+		name=cur.getField(i,"routine_name")
+		if name in ("testproc1","testproc2","testproc3","testproc4"):
+			counter+=1
+	assertEquals(counter,4)
+	print()
+
+
+	# procedure parameter list
+	print("PROCEDURE PARAMETER LIST: ")
+	assertTrue(cur.getProcedureParameterList("testproc1",None))
+	assertEquals(cur.getColumnName(0),"parameter_name")
+	assertEquals(cur.getColumnName(1),"parameter_mode")
+	assertEquals(cur.getColumnName(2),"data_type")
+	assertEquals(cur.getColumnName(3),"character_maximum_length")
+	assertEquals(cur.getColumnName(4),"ordinal_position")
+	assertEquals(cur.rowCount(),4)
+	assertEquals(cur.getField(0,"parameter_name"),"in1")
+	assertEquals(cur.getField(0,"parameter_mode"),"1")
+	assertEquals(cur.getField(0,"data_type"),"INT")
+	assertEquals(cur.getField(0,"ordinal_position"),"1")
+	assertEquals(cur.getField(1,"parameter_name"),"in2")
+	assertEquals(cur.getField(1,"parameter_mode"),"1")
+	assertEquals(cur.getField(1,"data_type"),"CHAR")
+	assertEquals(cur.getField(1,"ordinal_position"),"2")
+	assertEquals(cur.getField(2,"parameter_name"),"in3")
+	assertEquals(cur.getField(2,"parameter_mode"),"1")
+	assertEquals(cur.getField(2,"data_type"),"VARCHAR")
+	assertEquals(cur.getField(2,"ordinal_position"),"3")
+	assertEquals(cur.getField(3,"parameter_name"),"in4")
+	assertEquals(cur.getField(3,"parameter_mode"),"1")
+	assertEquals(cur.getField(3,"data_type"),"DATE")
+	assertEquals(cur.getField(3,"ordinal_position"),"4")
+	assertTrue(cur.sendQuery("drop procedure testproc1"))
+	assertTrue(cur.sendQuery("drop procedure testproc2"))
+	assertTrue(cur.sendQuery("drop procedure testproc3"))
+	assertTrue(cur.sendQuery("drop procedure testproc4"))
+	print()
 
 
 	# invalid queries
@@ -1467,7 +2338,9 @@ def main():
 	assertFalse(cur.sendQuery("create table testtable"))
 	print()
 
-if __name__ == "__main__":
-	main()
+
 	reportTestStatus()
-	sys.exit(status)
+	sys.exit(asserts.status)
+
+
+main()

@@ -836,7 +836,7 @@ static PyObject *getCatalogList(PyObject *self, PyObject *args) {
   char *catalogs;
   long sqlrcur;
   bool rc;
-  if (!PyArg_ParseTuple(args, "ls", &sqlrcur, &catalogs))
+  if (!PyArg_ParseTuple(args, "lz", &sqlrcur, &catalogs))
     return NULL;
   Py_BEGIN_ALLOW_THREADS
   rc=((sqlrcursor *)sqlrcur)->getCatalogList(catalogs);
@@ -848,7 +848,7 @@ static PyObject *getSchemaList(PyObject *self, PyObject *args) {
   char *schemas;
   long sqlrcur;
   bool rc;
-  if (!PyArg_ParseTuple(args, "ls", &sqlrcur, &schemas))
+  if (!PyArg_ParseTuple(args, "lz", &sqlrcur, &schemas))
     return NULL;
   Py_BEGIN_ALLOW_THREADS
   rc=((sqlrcursor *)sqlrcur)->getSchemaList(schemas);
@@ -871,7 +871,7 @@ static PyObject *getTableList(PyObject *self, PyObject *args) {
   char *tables;
   long sqlrcur;
   bool rc;
-  if (!PyArg_ParseTuple(args, "ls", &sqlrcur, &tables))
+  if (!PyArg_ParseTuple(args, "lz", &sqlrcur, &tables))
     return NULL;
   Py_BEGIN_ALLOW_THREADS
   rc=((sqlrcursor *)sqlrcur)->getTableList(tables);
@@ -883,7 +883,7 @@ static PyObject *getTypeInfoList(PyObject *self, PyObject *args) {
   char *type;
   long sqlrcur;
   bool rc;
-  if (!PyArg_ParseTuple(args, "ls", &sqlrcur, &type))
+  if (!PyArg_ParseTuple(args, "lz", &sqlrcur, &type))
     return NULL;
   Py_BEGIN_ALLOW_THREADS
   rc=((sqlrcursor *)sqlrcur)->getTypeInfoList(type);
@@ -896,7 +896,7 @@ static PyObject *getColumnList(PyObject *self, PyObject *args) {
   char *columns;
   long sqlrcur;
   bool rc;
-  if (!PyArg_ParseTuple(args, "lss", &sqlrcur, &table, &columns))
+  if (!PyArg_ParseTuple(args, "lsz", &sqlrcur, &table, &columns))
     return NULL;
   Py_BEGIN_ALLOW_THREADS
   rc=((sqlrcursor *)sqlrcur)->getColumnList(table, columns);
@@ -909,7 +909,7 @@ static PyObject *getPrimaryKeysList(PyObject *self, PyObject *args) {
   char *columns;
   long sqlrcur;
   bool rc;
-  if (!PyArg_ParseTuple(args, "lss", &sqlrcur, &table, &columns))
+  if (!PyArg_ParseTuple(args, "lsz", &sqlrcur, &table, &columns))
     return NULL;
   Py_BEGIN_ALLOW_THREADS
   rc=((sqlrcursor *)sqlrcur)->getPrimaryKeysList(table, columns);
@@ -922,7 +922,7 @@ static PyObject *getKeyAndIndexList(PyObject *self, PyObject *args) {
   char *qualifier;
   long sqlrcur;
   bool rc;
-  if (!PyArg_ParseTuple(args, "lss", &sqlrcur, &table, &qualifier))
+  if (!PyArg_ParseTuple(args, "lsz", &sqlrcur, &table, &qualifier))
     return NULL;
   Py_BEGIN_ALLOW_THREADS
   rc=((sqlrcursor *)sqlrcur)->getKeyAndIndexList(table, qualifier);
@@ -934,7 +934,7 @@ static PyObject *getProcedureList(PyObject *self, PyObject *args) {
   char *procedures;
   long sqlrcur;
   bool rc;
-  if (!PyArg_ParseTuple(args, "ls", &sqlrcur, &procedures))
+  if (!PyArg_ParseTuple(args, "lz", &sqlrcur, &procedures))
     return NULL;
   Py_BEGIN_ALLOW_THREADS
   rc=((sqlrcursor *)sqlrcur)->getProcedureList(procedures);
@@ -947,7 +947,7 @@ static PyObject *getProcedureParameterList(PyObject *self, PyObject *args) {
   char *parameters;
   long sqlrcur;
   bool rc;
-  if (!PyArg_ParseTuple(args, "lss", &sqlrcur, &procedure, &parameters))
+  if (!PyArg_ParseTuple(args, "lsz", &sqlrcur, &procedure, &parameters))
     return NULL;
   Py_BEGIN_ALLOW_THREADS
   rc=((sqlrcursor *)sqlrcur)->getProcedureParameterList(procedure, parameters);
@@ -1169,7 +1169,7 @@ static PyObject *inputBindDate(PyObject *self, PyObject *args) {
   char *tz;
   int isnegative;
   long sqlrcur;
-  if (!PyArg_ParseTuple(args, "lshhhhhhhsi",
+  if (!PyArg_ParseTuple(args, "lshhhhhhizi",
         &sqlrcur, &variable, &year, &month, &day,
         &hour, &minute, &second, &microsecond, &tz,
         &isnegative))
