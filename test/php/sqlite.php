@@ -1,25 +1,40 @@
 <html><pre><?php
-	# Copyright (c) David Muse
-	# See the file COPYING for more information.
-	include("./asserts.php");
+# Copyright (c) David Muse
+# See the file COPYING for more information.
+include("./asserts.php");
 
 
-	$host="sqlrelay";
-	$port=9000;
-	$socket="/tmp/test.socket";
-	$user="testuser";
-	$password="testpassword";
+	$subvars=array("var1","var2","var3");
+	$subvalstrings=array("hi","hello","bye");
+	$subvallongs=array(1,2,3);
+	$subvaldoubles=array(10.55,10.556,10.5556);
+	$precs=array(4,5,6);
+	$scales=array(2,3,4);
+
+	$isolationlevels=array("0","1");
+
 
 	# instantiation
-	$con=sqlrcon_alloc($host,$port,$socket,$user,$password,0,1);
+	$con=sqlrcon_alloc("sqlrelay",9000,"/tmp/test.socket",
+			"testuser","testpassword",0,1);
 	$cur=sqlrcur_alloc($con);
-
-	# get database type
 
 
 	# identify
 	echo("IDENTIFY: \n");
-	assertEqual(sqlrcon_identify($con),"sqlite");
+	assertEqStr(sqlrcon_identify($con),"sqlite");
+	echo("\n");
+
+
+	# db version
+	echo("DB VERSION: \n");
+	$dbversion=sqlrcon_dbVersion($con);
+	$issqlite3=1;
+	if (!$dbversion ||
+		strcmp($dbversion,"unknown")==0 ||
+		intval($dbversion)<3) {
+		$issqlite3=0;
+	}
 	echo("\n");
 
 
@@ -29,42 +44,49 @@
 	echo("\n");
 
 
+	# bind format
+	echo("BIND FORMAT: \n");
+	assertEqStr(sqlrcon_bindFormat($con),":*");
+	echo("\n");
+
+
+	# nextval format
+	echo("NEXTVAL FORMAT: \n");
+	assertEqStr(sqlrcon_nextvalFormat($con),"");
+	echo("\n");
+
+
 	# isolation levels
 	echo("ISOLATION LEVELS: \n");
-	$isolationlevels=array("0","1");
 	foreach ($isolationlevels as $il) {
 		assertTrue(sqlrcon_setIsolationLevel($con,$il));
-		assertEqual(sqlrcon_getIsolationLevel($con),$il);
+		assertEqStr(sqlrcon_getIsolationLevel($con),$il);
 		echo("\n");
 	}
 	# reset to the default isolation level
 	assertTrue(sqlrcon_setIsolationLevel($con,$isolationlevels[0]));
 	echo("\n");
 
-	# drop existing table
-	sqlrcur_sendQuery($cur,"begin");
+
+	# create testtable
+	echo("CREATE TESTTABLE: \n");
+	sqlrcon_begin($con);
 	sqlrcur_sendQuery($cur,"drop table if exists testtable");
-	sqlrcon_commit($con);
-
-	# create a new table
-
-
-	# create temptable
-	echo("CREATE TEMPTABLE: \n");
-	sqlrcur_sendQuery($cur,"begin");
 	assertTrue(sqlrcur_sendQuery($cur,
 		"create table testtable (".
 		"	testint int, ".
 		"	testfloat float, ".
 		"	testchar char(40), ".
-		"	testvarchar varchar(40))"));
+		"	testvarchar varchar(40), ".
+		"	testclob clob, ".
+		"	testblob blob)"));
 	sqlrcon_commit($con);
 	echo("\n");
 
 
 	# insert
 	echo("INSERT: \n");
-	sqlrcur_sendQuery($cur,"begin");
+	assertTrue(sqlrcon_begin($con));
 	assertTrue(sqlrcur_sendQuery($cur,
 		"insert into ".
 		"	testtable ".
@@ -72,7 +94,9 @@
 		"	1, ".
 		"	1.1, ".
 		"	'testchar1', ".
-		"	'testvarchar1')"));
+		"	'testvarchar1', ".
+		"	'testclob1', ".
+		"	'testblob1')"));
 	assertTrue(sqlrcur_sendQuery($cur,
 		"insert into ".
 		"	testtable ".
@@ -80,7 +104,9 @@
 		"	2, ".
 		"	2.2, ".
 		"	'testchar2', ".
-		"	'testvarchar2')"));
+		"	'testvarchar2', ".
+		"	'testclob2', ".
+		"	'testblob2')"));
 	assertTrue(sqlrcur_sendQuery($cur,
 		"insert into ".
 		"	testtable ".
@@ -88,7 +114,9 @@
 		"	3, ".
 		"	3.3, ".
 		"	'testchar3', ".
-		"	'testvarchar3')"));
+		"	'testvarchar3', ".
+		"	'testclob3', ".
+		"	'testblob3')"));
 	assertTrue(sqlrcur_sendQuery($cur,
 		"insert into ".
 		"	testtable ".
@@ -96,18 +124,32 @@
 		"	4, ".
 		"	4.4, ".
 		"	'testchar4', ".
-		"	'testvarchar4')"));
+		"	'testvarchar4', ".
+		"	'testclob4', ".
+		"	'testblob4')"));
 	echo("\n");
 
 
 	# affected rows
 	echo("AFFECTED ROWS: \n");
-	assertEqual(sqlrcur_affectedRows($cur),1);
+	assertEqInt(sqlrcur_affectedRows($cur),1);
 	echo("\n");
 
 
-	# bind by name
-	echo("BIND BY NAME: \n");
+	# input bind by position
+	# sqlite doesn't support bind by position
+
+
+	# array of input binds by position
+	# sqlite doesn't support bind by position
+
+
+	# input bind by position with validation
+	# sqlite doesn't support bind by position
+
+
+	# input bind by name
+	echo("INPUT BIND BY NAME: \n");
 	sqlrcur_prepareQuery($cur,
 		"insert into ".
 		"	testtable ".
@@ -115,41 +157,51 @@
 		"	:var1, ".
 		"	:var2, ".
 		"	:var3, ".
-		"	:var4)");
-	assertEqual(sqlrcur_countBindVariables($cur),4);
+		"	:var4, ".
+		"	:var5, ".
+		"	:var6)");
+	assertEqInt(sqlrcur_countBindVariables($cur),6);
 	sqlrcur_inputBind($cur,"var1",5);
 	sqlrcur_inputBind($cur,"var2",5.5,4,1);
 	sqlrcur_inputBind($cur,"var3","testchar5");
 	sqlrcur_inputBind($cur,"var4","testvarchar5");
+	sqlrcur_inputBindClob($cur,"var5","testclob5",strlen("testclob5"));
+	sqlrcur_inputBindBlob($cur,"var6","testblob5",strlen("testblob5"));
 	assertTrue(sqlrcur_executeQuery($cur));
 	sqlrcur_clearBinds($cur);
 	sqlrcur_inputBind($cur,"var1",6);
 	sqlrcur_inputBind($cur,"var2",6.6,4,1);
 	sqlrcur_inputBind($cur,"var3","testchar6");
 	sqlrcur_inputBind($cur,"var4","testvarchar6");
+	sqlrcur_inputBindClob($cur,"var5","testclob6",strlen("testclob6"));
+	sqlrcur_inputBindBlob($cur,"var6","testblob6",strlen("testblob6"));
 	assertTrue(sqlrcur_executeQuery($cur));
-	echo("\n");
-
-
-	# array bind by name
-	echo("ARRAY BIND BY NAME: \n");
 	sqlrcur_clearBinds($cur);
-	$bindvars=array("var1","var2","var3","var4");
-	$bindvals=array(7,7.7,"testchar7","testvarchar7");
-	$precs=array(0,2,0,0);
-	$scales=array(0,1,0,0);
-	sqlrcur_inputBinds($cur,$bindvars,$bindvals,$precs,$scales);
+	sqlrcur_inputBind($cur,"var1",7);
+	sqlrcur_inputBind($cur,"var2",7.7,4,1);
+	sqlrcur_inputBind($cur,"var3","testchar7");
+	sqlrcur_inputBind($cur,"var4","testvarchar7");
+	sqlrcur_inputBindClob($cur,"var5","testclob7",strlen("testclob7"));
+	sqlrcur_inputBindBlob($cur,"var6","testblob7",strlen("testblob7"));
 	assertTrue(sqlrcur_executeQuery($cur));
 	echo("\n");
 
 
-	# bind by name with validation
-	echo("BIND BY NAME WITH VALIDATION: \n");
+	# array of input binds by name
+	# sqlite doesn't support implicit conversion
+	# of string binds to other data types, so
+	# arrays of binds don't generally work.
+
+
+	# input bind by name with validation
+	echo("INPUT BIND BY NAME WITH VALIDATION: \n");
 	sqlrcur_clearBinds($cur);
 	sqlrcur_inputBind($cur,"var1",8);
 	sqlrcur_inputBind($cur,"var2",8.8,4,1);
 	sqlrcur_inputBind($cur,"var3","testchar8");
 	sqlrcur_inputBind($cur,"var4","testvarchar8");
+	sqlrcur_inputBindClob($cur,"var5","testclob8",strlen("testclob8"));
+	sqlrcur_inputBindBlob($cur,"var6","testblob8",strlen("testblob8"));
 	sqlrcur_validateBinds($cur);
 	assertTrue(sqlrcur_executeQuery($cur));
 	echo("\n");
@@ -157,90 +209,112 @@
 
 	# select
 	echo("SELECT: \n");
-	assertTrue(sqlrcur_sendQuery($cur,
-		"select ".
-		"	* ".
-		"from ".
-		"	testtable ".
-		"order by ".
-		"	testint "));
+	assertTrue(sqlrcur_sendQuery($cur,"select * from testtable ".
+		"order by testint"));
 	echo("\n");
 
 
 	# column count
 	echo("COLUMN COUNT: \n");
-	assertEqual(sqlrcur_colCount($cur),4);
+	assertEqInt(sqlrcur_colCount($cur),6);
 	echo("\n");
 
 
 	# column names
 	echo("COLUMN NAMES: \n");
-	assertEqual(sqlrcur_getColumnName($cur,0),"testint");
-	assertEqual(sqlrcur_getColumnName($cur,1),"testfloat");
-	assertEqual(sqlrcur_getColumnName($cur,2),"testchar");
-	assertEqual(sqlrcur_getColumnName($cur,3),"testvarchar");
+	assertEqStr(sqlrcur_getColumnName($cur,0),"testint");
+	assertEqStr(sqlrcur_getColumnName($cur,1),"testfloat");
+	assertEqStr(sqlrcur_getColumnName($cur,2),"testchar");
+	assertEqStr(sqlrcur_getColumnName($cur,3),"testvarchar");
 	$cols=sqlrcur_getColumnNames($cur);
-	assertEqual($cols[0],"testint");
-	assertEqual($cols[1],"testfloat");
-	assertEqual($cols[2],"testchar");
-	assertEqual($cols[3],"testvarchar");
+	assertEqStr($cols[0],"testint");
+	assertEqStr($cols[1],"testfloat");
+	assertEqStr($cols[2],"testchar");
+	assertEqStr($cols[3],"testvarchar");
 	echo("\n");
 
 
 	# column types
 	echo("COLUMN TYPES: \n");
-	assertEqual(sqlrcur_getColumnType($cur,0),"INTEGER");
-	assertEqual(sqlrcur_getColumnType($cur,"testint"),"INTEGER");
-	assertEqual(sqlrcur_getColumnType($cur,1),"FLOAT");
-	assertEqual(sqlrcur_getColumnType($cur,"testfloat"),"FLOAT");
-	assertEqual(sqlrcur_getColumnType($cur,2),"STRING");
-	assertEqual(sqlrcur_getColumnType($cur,"testchar"),"STRING");
-	assertEqual(sqlrcur_getColumnType($cur,3),"STRING");
-	assertEqual(sqlrcur_getColumnType($cur,"testvarchar"),"STRING");
+	if ($issqlite3) {
+		assertEqStr(sqlrcur_getColumnType($cur,0),"INTEGER");
+		assertEqStr(sqlrcur_getColumnType($cur,"testint"),"INTEGER");
+		assertEqStr(sqlrcur_getColumnType($cur,1),"FLOAT");
+		assertEqStr(sqlrcur_getColumnType($cur,"testfloat"),"FLOAT");
+		assertEqStr(sqlrcur_getColumnType($cur,2),"STRING");
+		assertEqStr(sqlrcur_getColumnType($cur,"testchar"),"STRING");
+		assertEqStr(sqlrcur_getColumnType($cur,3),"STRING");
+		assertEqStr(sqlrcur_getColumnType($cur,"testvarchar"),"STRING");
+		assertEqStr(sqlrcur_getColumnType($cur,4),"STRING");
+		assertEqStr(sqlrcur_getColumnType($cur,"testclob"),"STRING");
+		assertEqStr(sqlrcur_getColumnType($cur,5),"STRING");
+		assertEqStr(sqlrcur_getColumnType($cur,"testblob"),"STRING");
+	} else {
+		assertEqStr(sqlrcur_getColumnType($cur,0),"UNKNOWN");
+		assertEqStr(sqlrcur_getColumnType($cur,"testint"),"UNKNOWN");
+		assertEqStr(sqlrcur_getColumnType($cur,1),"UNKNOWN");
+		assertEqStr(sqlrcur_getColumnType($cur,"testfloat"),"UNKNOWN");
+		assertEqStr(sqlrcur_getColumnType($cur,2),"UNKNOWN");
+		assertEqStr(sqlrcur_getColumnType($cur,"testchar"),"UNKNOWN");
+		assertEqStr(sqlrcur_getColumnType($cur,3),"UNKNOWN");
+		assertEqStr(sqlrcur_getColumnType($cur,"testvarchar"),"UNKNOWN");
+		assertEqStr(sqlrcur_getColumnType($cur,4),"UNKNOWN");
+		assertEqStr(sqlrcur_getColumnType($cur,"testclob"),"UNKNOWN");
+		assertEqStr(sqlrcur_getColumnType($cur,5),"UNKNOWN");
+		assertEqStr(sqlrcur_getColumnType($cur,"testblob"),"UNKNOWN");
+	}
 	echo("\n");
 
 
 	# column length
 	echo("COLUMN LENGTH: \n");
-	assertEqual(sqlrcur_getColumnLength($cur,0),0);
-	assertEqual(sqlrcur_getColumnLength($cur,"testint"),0);
-	assertEqual(sqlrcur_getColumnLength($cur,1),0);
-	assertEqual(sqlrcur_getColumnLength($cur,"testfloat"),0);
-	assertEqual(sqlrcur_getColumnLength($cur,2),0);
-	assertEqual(sqlrcur_getColumnLength($cur,"testchar"),0);
-	assertEqual(sqlrcur_getColumnLength($cur,3),0);
-	assertEqual(sqlrcur_getColumnLength($cur,"testvarchar"),0);
+	assertEqInt(sqlrcur_getColumnLength($cur,0),0);
+	assertEqInt(sqlrcur_getColumnLength($cur,"testint"),0);
+	assertEqInt(sqlrcur_getColumnLength($cur,1),0);
+	assertEqInt(sqlrcur_getColumnLength($cur,"testfloat"),0);
+	assertEqInt(sqlrcur_getColumnLength($cur,2),0);
+	assertEqInt(sqlrcur_getColumnLength($cur,"testchar"),0);
+	assertEqInt(sqlrcur_getColumnLength($cur,3),0);
+	assertEqInt(sqlrcur_getColumnLength($cur,"testvarchar"),0);
+	assertEqInt(sqlrcur_getColumnLength($cur,4),0);
+	assertEqInt(sqlrcur_getColumnLength($cur,"testclob"),0);
+	assertEqInt(sqlrcur_getColumnLength($cur,5),0);
+	assertEqInt(sqlrcur_getColumnLength($cur,"testblob"),0);
 	echo("\n");
 
 
 	# longest column
 	echo("LONGEST COLUMN: \n");
-	assertEqual(sqlrcur_getLongest($cur,0),1);
-	assertEqual(sqlrcur_getLongest($cur,"testint"),1);
-	assertEqual(sqlrcur_getLongest($cur,1),3);
-	assertEqual(sqlrcur_getLongest($cur,"testfloat"),3);
-	assertEqual(sqlrcur_getLongest($cur,2),9);
-	assertEqual(sqlrcur_getLongest($cur,"testchar"),9);
-	assertEqual(sqlrcur_getLongest($cur,3),12);
-	assertEqual(sqlrcur_getLongest($cur,"testvarchar"),12);
+	assertEqInt(sqlrcur_getLongest($cur,0),1);
+	assertEqInt(sqlrcur_getLongest($cur,"testint"),1);
+	assertEqInt(sqlrcur_getLongest($cur,1),3);
+	assertEqInt(sqlrcur_getLongest($cur,"testfloat"),3);
+	assertEqInt(sqlrcur_getLongest($cur,2),9);
+	assertEqInt(sqlrcur_getLongest($cur,"testchar"),9);
+	assertEqInt(sqlrcur_getLongest($cur,3),12);
+	assertEqInt(sqlrcur_getLongest($cur,"testvarchar"),12);
+	assertEqInt(sqlrcur_getLongest($cur,4),9);
+	assertEqInt(sqlrcur_getLongest($cur,"testclob"),9);
+	assertEqInt(sqlrcur_getLongest($cur,5),9);
+	assertEqInt(sqlrcur_getLongest($cur,"testblob"),9);
 	echo("\n");
 
 
 	# row count
 	echo("ROW COUNT: \n");
-	assertEqual(sqlrcur_rowCount($cur),8);
+	assertEqInt(sqlrcur_rowCount($cur),8);
 	echo("\n");
 
 
 	# total rows
 	echo("TOTAL ROWS: \n");
-	assertEqual(sqlrcur_totalRows($cur),0);
+	assertEqInt(sqlrcur_totalRows($cur),($issqlite3)?0:8);
 	echo("\n");
 
 
 	# first row index
 	echo("FIRST ROW INDEX: \n");
-	assertEqual(sqlrcur_firstRowIndex($cur),0);
+	assertEqInt(sqlrcur_firstRowIndex($cur),0);
 	echo("\n");
 
 
@@ -252,229 +326,129 @@
 
 	# fields by index
 	echo("FIELDS BY INDEX: \n");
-	assertEqual(sqlrcur_getField($cur,0,0),"1");
-	assertEqual(sqlrcur_getField($cur,0,1),"1.1");
-	assertEqual(sqlrcur_getField($cur,0,2),"testchar1");
-	assertEqual(sqlrcur_getField($cur,0,3),"testvarchar1");
+	assertEqStr(sqlrcur_getField($cur,0,0),"1");
+	assertEqStr(sqlrcur_getField($cur,0,1),"1.1");
+	assertEqStr(sqlrcur_getField($cur,0,2),"testchar1");
+	assertEqStr(sqlrcur_getField($cur,0,3),"testvarchar1");
+	assertEqStr(sqlrcur_getField($cur,0,4),"testclob1");
+	assertEqStr(sqlrcur_getField($cur,0,5),"testblob1");
 	echo("\n");
-	assertEqual(sqlrcur_getField($cur,7,0),"8");
-	assertEqual(sqlrcur_getField($cur,7,1),"8.8");
-	assertEqual(sqlrcur_getField($cur,7,2),"testchar8");
-	assertEqual(sqlrcur_getField($cur,7,3),"testvarchar8");
+	assertEqStr(sqlrcur_getField($cur,7,0),"8");
+	assertEqStr(sqlrcur_getField($cur,7,1),"8.8");
+	assertEqStr(sqlrcur_getField($cur,7,2),"testchar8");
+	assertEqStr(sqlrcur_getField($cur,7,3),"testvarchar8");
+	assertEqStr(sqlrcur_getField($cur,7,4),"testclob8");
+	assertEqStr(sqlrcur_getField($cur,7,5),"testblob8");
 	echo("\n");
 
 
 	# field lengths by index
 	echo("FIELD LENGTHS BY INDEX: \n");
-	assertEqual(sqlrcur_getFieldLength($cur,0,0),1);
-	assertEqual(sqlrcur_getFieldLength($cur,0,1),3);
-	assertEqual(sqlrcur_getFieldLength($cur,0,2),9);
-	assertEqual(sqlrcur_getFieldLength($cur,0,3),12);
+	assertEqInt(sqlrcur_getFieldLength($cur,0,0),1);
+	assertEqInt(sqlrcur_getFieldLength($cur,0,1),3);
+	assertEqInt(sqlrcur_getFieldLength($cur,0,2),9);
+	assertEqInt(sqlrcur_getFieldLength($cur,0,3),12);
+	assertEqInt(sqlrcur_getFieldLength($cur,0,4),9);
+	assertEqInt(sqlrcur_getFieldLength($cur,0,5),9);
 	echo("\n");
-	assertEqual(sqlrcur_getFieldLength($cur,7,0),1);
-	assertEqual(sqlrcur_getFieldLength($cur,7,1),3);
-	assertEqual(sqlrcur_getFieldLength($cur,7,2),9);
-	assertEqual(sqlrcur_getFieldLength($cur,7,3),12);
+	assertEqInt(sqlrcur_getFieldLength($cur,7,0),1);
+	assertEqInt(sqlrcur_getFieldLength($cur,7,1),3);
+	assertEqInt(sqlrcur_getFieldLength($cur,7,2),9);
+	assertEqInt(sqlrcur_getFieldLength($cur,7,3),12);
+	assertEqInt(sqlrcur_getFieldLength($cur,7,4),9);
+	assertEqInt(sqlrcur_getFieldLength($cur,7,5),9);
 	echo("\n");
 
 
 	# fields by name
 	echo("FIELDS BY NAME: \n");
-	assertEqual(sqlrcur_getField($cur,0,"testint"),"1");
-	assertEqual(sqlrcur_getField($cur,0,"testfloat"),"1.1");
-	assertEqual(sqlrcur_getField($cur,0,"testchar"),"testchar1");
-	assertEqual(sqlrcur_getField($cur,0,"testvarchar"),"testvarchar1");
+	assertEqStr(sqlrcur_getField($cur,0,"testint"),"1");
+	assertEqStr(sqlrcur_getField($cur,0,"testfloat"),"1.1");
+	assertEqStr(sqlrcur_getField($cur,0,"testchar"),"testchar1");
+	assertEqStr(sqlrcur_getField($cur,0,"testvarchar"),"testvarchar1");
+	assertEqStr(sqlrcur_getField($cur,0,"testclob"),"testclob1");
+	assertEqStr(sqlrcur_getField($cur,0,"testblob"),"testblob1");
 	echo("\n");
-	assertEqual(sqlrcur_getField($cur,7,"testint"),"8");
-	assertEqual(sqlrcur_getField($cur,7,"testfloat"),"8.8");
-	assertEqual(sqlrcur_getField($cur,7,"testchar"),"testchar8");
-	assertEqual(sqlrcur_getField($cur,7,"testvarchar"),"testvarchar8");
+	assertEqStr(sqlrcur_getField($cur,7,"testint"),"8");
+	assertEqStr(sqlrcur_getField($cur,7,"testfloat"),"8.8");
+	assertEqStr(sqlrcur_getField($cur,7,"testchar"),"testchar8");
+	assertEqStr(sqlrcur_getField($cur,7,"testvarchar"),"testvarchar8");
+	assertEqStr(sqlrcur_getField($cur,7,"testclob"),"testclob8");
+	assertEqStr(sqlrcur_getField($cur,7,"testblob"),"testblob8");
 	echo("\n");
 
 
 	# field lengths by name
 	echo("FIELD LENGTHS BY NAME: \n");
-	assertEqual(sqlrcur_getFieldLength($cur,0,"testint"),1);
-	assertEqual(sqlrcur_getFieldLength($cur,0,"testfloat"),3);
-	assertEqual(sqlrcur_getFieldLength($cur,0,"testchar"),9);
-	assertEqual(sqlrcur_getFieldLength($cur,0,"testvarchar"),12);
+	assertEqInt(sqlrcur_getFieldLength($cur,0,"testint"),1);
+	assertEqInt(sqlrcur_getFieldLength($cur,0,"testfloat"),3);
+	assertEqInt(sqlrcur_getFieldLength($cur,0,"testchar"),9);
+	assertEqInt(sqlrcur_getFieldLength($cur,0,"testvarchar"),12);
+	assertEqInt(sqlrcur_getFieldLength($cur,0,"testclob"),9);
+	assertEqInt(sqlrcur_getFieldLength($cur,0,"testblob"),9);
 	echo("\n");
-	assertEqual(sqlrcur_getFieldLength($cur,7,"testint"),1);
-	assertEqual(sqlrcur_getFieldLength($cur,7,"testfloat"),3);
-	assertEqual(sqlrcur_getFieldLength($cur,7,"testchar"),9);
-	assertEqual(sqlrcur_getFieldLength($cur,7,"testvarchar"),12);
+	assertEqInt(sqlrcur_getFieldLength($cur,7,"testint"),1);
+	assertEqInt(sqlrcur_getFieldLength($cur,7,"testfloat"),3);
+	assertEqInt(sqlrcur_getFieldLength($cur,7,"testchar"),9);
+	assertEqInt(sqlrcur_getFieldLength($cur,7,"testvarchar"),12);
+	assertEqInt(sqlrcur_getFieldLength($cur,7,"testclob"),9);
+	assertEqInt(sqlrcur_getFieldLength($cur,7,"testblob"),9);
 	echo("\n");
 
 
 	# fields by array
 	echo("FIELDS BY ARRAY: \n");
 	$fields=sqlrcur_getRow($cur,0);
-	assertEqual($fields[0],"1");
-	assertEqual($fields[1],"1.1");
-	assertEqual($fields[2],"testchar1");
-	assertEqual($fields[3],"testvarchar1");
+	assertEqStr($fields[0],"1");
+	assertEqStr($fields[1],"1.1");
+	assertEqStr($fields[2],"testchar1");
+	assertEqStr($fields[3],"testvarchar1");
+	assertEqStr($fields[4],"testclob1");
+	assertEqStr($fields[5],"testblob1");
 	echo("\n");
 
 
 	# field lengths by array
 	echo("FIELD LENGTHS BY ARRAY: \n");
 	$fieldlens=sqlrcur_getRowLengths($cur,0);
-	assertEqual($fieldlens[0],1);
-	assertEqual($fieldlens[1],3);
-	assertEqual($fieldlens[2],9);
-	assertEqual($fieldlens[3],12);
-	echo("\n");
-
-
-	# fields by associative array
-	echo("FIELDS BY ASSOCIATIVE ARRAY: \n");
-	$fields=sqlrcur_getRowAssoc($cur,0);
-	assertEqual($fields["testint"],"1");
-	assertEqual($fields["testfloat"],"1.1");
-	assertEqual($fields["testchar"],"testchar1");
-	assertEqual($fields["testvarchar"],"testvarchar1");
-	echo("\n");
-	$fields=sqlrcur_getRowAssoc($cur,7);
-	assertEqual($fields["testint"],"8");
-	assertEqual($fields["testfloat"],"8.8");
-	assertEqual($fields["testchar"],"testchar8");
-	assertEqual($fields["testvarchar"],"testvarchar8");
-	echo("\n");
-
-
-	# field lengths by associative array
-	echo("FIELD LENGTHS BY ASSOCIATIVE ARRAY: \n");
-	$fieldlengths=sqlrcur_getRowLengthsAssoc($cur,0);
-	assertEqual($fieldlengths["testint"],1);
-	assertEqual($fieldlengths["testfloat"],3);
-	assertEqual($fieldlengths["testchar"],9);
-	assertEqual($fieldlengths["testvarchar"],12);
-	echo("\n");
-	$fieldlengths=sqlrcur_getRowLengthsAssoc($cur,7);
-	assertEqual($fieldlengths["testint"],1);
-	assertEqual($fieldlengths["testfloat"],3);
-	assertEqual($fieldlengths["testchar"],9);
-	assertEqual($fieldlengths["testvarchar"],12);
-	echo("\n");
-
-
-	# individual substitutions
-	echo("INDIVIDUAL SUBSTITUTIONS: \n");
-	sqlrcur_sendQuery($cur,"drop table if exists testtable1");
-	assertTrue(sqlrcur_sendQuery($cur,
-		"create table testtable1 (".
-		"	col1 int, ".
-		"	col2 char, ".
-		"	col3 float)"));
-	sqlrcur_prepareQuery($cur,
-		"insert into ".
-		"	testtable1 ".
-		"values (".
-		"	$(var1), ".
-		"	'$(var2)', ".
-		"	$(var3))");
-	sqlrcur_substitution($cur,"var1",1);
-	sqlrcur_substitution($cur,"var2","hello");
-	sqlrcur_substitution($cur,"var3",10.5556,6,4);
-	assertTrue(sqlrcur_executeQuery($cur));
-	echo("\n");
-
-
-	# fields
-	echo("FIELDS: \n");
-	assertTrue(sqlrcur_sendQuery($cur,"select * from testtable1"));
-	assertEqual(sqlrcur_getField($cur,0,0),"1");
-	assertEqual(sqlrcur_getField($cur,0,1),"hello");
-	assertEqual(sqlrcur_getField($cur,0,2),"10.5556");
-	assertTrue(sqlrcur_sendQuery($cur,"delete from testtable1"));
-	echo("\n");
-
-
-	# array substitutions
-	echo("ARRAY SUBSTITUTIONS: \n");
-	sqlrcur_prepareQuery($cur,
-		"insert into ".
-		"	testtable1 ".
-		"values (".
-		"	$(var1), ".
-		"	'$(var2)', ".
-		"	$(var3))");
-	$vars=array("var1","var2","var3");
-	$vals=array(1,"hello",10.5556);
-	$precs=array(0,0,6);
-	$scales=array(0,0,4);
-	sqlrcur_substitutions($cur,$vars,$vals,$precs,$scales);
-	assertTrue(sqlrcur_executeQuery($cur));
-	echo("\n");
-
-
-	# fields
-	echo("FIELDS: \n");
-	assertTrue(sqlrcur_sendQuery($cur,"select * from testtable1"));
-	assertEqual(sqlrcur_getField($cur,0,0),"1");
-	assertEqual(sqlrcur_getField($cur,0,1),"hello");
-	assertEqual(sqlrcur_getField($cur,0,2),"10.5556");
-	assertTrue(sqlrcur_sendQuery($cur,"delete from testtable1"));
-	echo("\n");
-
-
-	# nulls as nulls
-	echo("NULLS AS NULLS: \n");
-	sqlrcur_getNullsAsNulls($cur);
-	assertTrue(sqlrcur_sendQuery($cur,
-		"insert into ".
-		"	testtable1 ".
-		"values (".
-		"	1, ".
-		"	NULL, ".
-		"	NULL)"));
-	assertTrue(sqlrcur_sendQuery($cur,"select * from testtable1"));
-	assertEqual(sqlrcur_getField($cur,0,0),"1");
-	assertEqual(sqlrcur_getField($cur,0,1),NULL);
-	assertEqual(sqlrcur_getField($cur,0,2),NULL);
-	sqlrcur_getNullsAsEmptyStrings($cur);
-	assertTrue(sqlrcur_sendQuery($cur,"select * from testtable1"));
-	assertEqual(sqlrcur_getField($cur,0,0),"1");
-	assertEqual(sqlrcur_getField($cur,0,1),"");
-	assertEqual(sqlrcur_getField($cur,0,2),"");
-	sqlrcur_getNullsAsNulls($cur);
+	assertEqInt($fieldlens[0],1);
+	assertEqInt($fieldlens[1],3);
+	assertEqInt($fieldlens[2],9);
+	assertEqInt($fieldlens[3],12);
+	assertEqInt($fieldlens[4],9);
+	assertEqInt($fieldlens[5],9);
 	echo("\n");
 
 
 	# result set buffer size
 	echo("RESULT SET BUFFER SIZE: \n");
-	assertEqual(sqlrcur_getResultSetBufferSize($cur),0);
+	assertEqInt(sqlrcur_getResultSetBufferSize($cur),0);
 	sqlrcur_setResultSetBufferSize($cur,2);
-	assertTrue(sqlrcur_sendQuery($cur,
-		"select ".
-		"	* ".
-		"from ".
-		"	testtable ".
-		"order by ".
-		"	testint "));
-	assertEqual(sqlrcur_getResultSetBufferSize($cur),2);
+	assertTrue(sqlrcur_sendQuery($cur,"select * from testtable ".
+		"order by testint"));
+	assertEqInt(sqlrcur_getResultSetBufferSize($cur),2);
 	echo("\n");
-	assertEqual(sqlrcur_firstRowIndex($cur),0);
+	assertEqInt(sqlrcur_firstRowIndex($cur),0);
 	assertFalse(sqlrcur_endOfResultSet($cur));
-	assertEqual(sqlrcur_rowCount($cur),2);
-	assertEqual(sqlrcur_getField($cur,0,0),"1");
-	assertEqual(sqlrcur_getField($cur,1,0),"2");
-	assertEqual(sqlrcur_getField($cur,2,0),"3");
+	assertEqInt(sqlrcur_rowCount($cur),2);
+	assertEqStr(sqlrcur_getField($cur,0,0),"1");
+	assertEqStr(sqlrcur_getField($cur,1,0),"2");
+	assertEqStr(sqlrcur_getField($cur,2,0),"3");
 	echo("\n");
-	assertEqual(sqlrcur_firstRowIndex($cur),2);
+	assertEqInt(sqlrcur_firstRowIndex($cur),2);
 	assertFalse(sqlrcur_endOfResultSet($cur));
-	assertEqual(sqlrcur_rowCount($cur),4);
-	assertEqual(sqlrcur_getField($cur,6,0),"7");
-	assertEqual(sqlrcur_getField($cur,7,0),"8");
+	assertEqInt(sqlrcur_rowCount($cur),4);
+	assertEqStr(sqlrcur_getField($cur,6,0),"7");
+	assertEqStr(sqlrcur_getField($cur,7,0),"8");
 	echo("\n");
-	assertEqual(sqlrcur_firstRowIndex($cur),6);
+	assertEqInt(sqlrcur_firstRowIndex($cur),6);
 	assertFalse(sqlrcur_endOfResultSet($cur));
-	assertEqual(sqlrcur_rowCount($cur),8);
-	assertEqual(sqlrcur_getField($cur,8,0),NULL);
+	assertEqInt(sqlrcur_rowCount($cur),8);
+	assertEqStr(sqlrcur_getField($cur,8,0),NULL);
 	echo("\n");
-	assertEqual(sqlrcur_firstRowIndex($cur),8);
+	assertEqInt(sqlrcur_firstRowIndex($cur),8);
 	assertTrue(sqlrcur_endOfResultSet($cur));
-	assertEqual(sqlrcur_rowCount($cur),8);
+	assertEqInt(sqlrcur_rowCount($cur),8);
 	sqlrcur_setResultSetBufferSize($cur,0);
 	echo("\n");
 
@@ -482,132 +456,69 @@
 	# dont get column info
 	echo("DONT GET COLUMN INFO: \n");
 	sqlrcur_dontGetColumnInfo($cur);
-	assertTrue(sqlrcur_sendQuery($cur,
-		"select ".
-		"	* ".
-		"from ".
-		"	testtable ".
-		"order by ".
-		"	testint "));
-	assertEqual(sqlrcur_getColumnName($cur,0),NULL);
-	assertEqual(sqlrcur_getColumnLength($cur,0),0);
-	assertEqual(sqlrcur_getColumnType($cur,0),NULL);
+	assertTrue(sqlrcur_sendQuery($cur,"select * from testtable ".
+		"order by testint"));
+	assertEqStr(sqlrcur_getColumnName($cur,0),NULL);
+	assertEqInt(sqlrcur_getColumnLength($cur,0),0);
+	assertEqStr(sqlrcur_getColumnType($cur,0),NULL);
 	sqlrcur_getColumnInfo($cur);
-	assertTrue(sqlrcur_sendQuery($cur,
-		"select ".
-		"	* ".
-		"from ".
-		"	testtable ".
-		"order by ".
-		"	testint "));
-	assertEqual(sqlrcur_getColumnName($cur,0),"testint");
-	assertEqual(sqlrcur_getColumnLength($cur,0),0);
-	assertEqual(sqlrcur_getColumnType($cur,0),"INTEGER");
+	assertTrue(sqlrcur_sendQuery($cur,"select * from testtable ".
+		"order by testint"));
+	assertEqStr(sqlrcur_getColumnName($cur,0),"testint");
+	assertEqInt(sqlrcur_getColumnLength($cur,0),0);
+	assertEqStr(sqlrcur_getColumnType($cur,0),
+				($issqlite3)?"INTEGER":"UNKNOWN");
 	echo("\n");
 
 
 	# suspended session
 	echo("SUSPENDED SESSION: \n");
-	assertTrue(sqlrcur_sendQuery($cur,
-		"select ".
-		"	* ".
-		"from ".
-		"	testtable ".
-		"order by ".
-		"	testint "));
+	assertTrue(sqlrcur_sendQuery($cur,"select * from testtable ".
+		"order by testint"));
 	sqlrcur_suspendResultSet($cur);
 	assertTrue(sqlrcon_suspendSession($con));
-	$conport=sqlrcon_getConnectionPort($con);
-	$consocket=sqlrcon_getConnectionSocket($con);
-	assertTrue(sqlrcon_resumeSession($con,$conport,$consocket));
+	$port=sqlrcon_getConnectionPort($con);
+	$socket=sqlrcon_getConnectionSocket($con);
+	assertTrue(sqlrcon_resumeSession($con,$port,$socket));
 	echo("\n");
-	assertEqual(sqlrcur_getField($cur,0,0),"1");
-	assertEqual(sqlrcur_getField($cur,1,0),"2");
-	assertEqual(sqlrcur_getField($cur,2,0),"3");
-	assertEqual(sqlrcur_getField($cur,3,0),"4");
-	assertEqual(sqlrcur_getField($cur,4,0),"5");
-	assertEqual(sqlrcur_getField($cur,5,0),"6");
-	assertEqual(sqlrcur_getField($cur,6,0),"7");
-	assertEqual(sqlrcur_getField($cur,7,0),"8");
-	echo("\n");
-	assertTrue(sqlrcur_sendQuery($cur,
-		"select ".
-		"	* ".
-		"from ".
-		"	testtable ".
-		"order by ".
-		"	testint "));
-	sqlrcur_suspendResultSet($cur);
-	assertTrue(sqlrcon_suspendSession($con));
-	$conport=sqlrcon_getConnectionPort($con);
-	$consocket=sqlrcon_getConnectionSocket($con);
-	assertTrue(sqlrcon_resumeSession($con,$conport,$consocket));
-	echo("\n");
-	assertEqual(sqlrcur_getField($cur,0,0),"1");
-	assertEqual(sqlrcur_getField($cur,1,0),"2");
-	assertEqual(sqlrcur_getField($cur,2,0),"3");
-	assertEqual(sqlrcur_getField($cur,3,0),"4");
-	assertEqual(sqlrcur_getField($cur,4,0),"5");
-	assertEqual(sqlrcur_getField($cur,5,0),"6");
-	assertEqual(sqlrcur_getField($cur,6,0),"7");
-	assertEqual(sqlrcur_getField($cur,7,0),"8");
-	echo("\n");
-	assertTrue(sqlrcur_sendQuery($cur,
-		"select ".
-		"	* ".
-		"from ".
-		"	testtable ".
-		"order by ".
-		"	testint "));
-	sqlrcur_suspendResultSet($cur);
-	assertTrue(sqlrcon_suspendSession($con));
-	$conport=sqlrcon_getConnectionPort($con);
-	$consocket=sqlrcon_getConnectionSocket($con);
-	assertTrue(sqlrcon_resumeSession($con,$conport,$consocket));
-	echo("\n");
-	assertEqual(sqlrcur_getField($cur,0,0),"1");
-	assertEqual(sqlrcur_getField($cur,1,0),"2");
-	assertEqual(sqlrcur_getField($cur,2,0),"3");
-	assertEqual(sqlrcur_getField($cur,3,0),"4");
-	assertEqual(sqlrcur_getField($cur,4,0),"5");
-	assertEqual(sqlrcur_getField($cur,5,0),"6");
-	assertEqual(sqlrcur_getField($cur,6,0),"7");
-	assertEqual(sqlrcur_getField($cur,7,0),"8");
+	assertEqStr(sqlrcur_getField($cur,0,0),"1");
+	assertEqStr(sqlrcur_getField($cur,1,0),"2");
+	assertEqStr(sqlrcur_getField($cur,2,0),"3");
+	assertEqStr(sqlrcur_getField($cur,3,0),"4");
+	assertEqStr(sqlrcur_getField($cur,4,0),"5");
+	assertEqStr(sqlrcur_getField($cur,5,0),"6");
+	assertEqStr(sqlrcur_getField($cur,6,0),"7");
+	assertEqStr(sqlrcur_getField($cur,7,0),"8");
 	echo("\n");
 
 
 	# suspended result set
 	echo("SUSPENDED RESULT SET: \n");
 	sqlrcur_setResultSetBufferSize($cur,2);
-	assertTrue(sqlrcur_sendQuery($cur,
-		"select ".
-		"	* ".
-		"from ".
-		"	testtable ".
-		"order by ".
-		"	testint "));
-	assertEqual(sqlrcur_getField($cur,2,0),"3");
+	assertTrue(sqlrcur_sendQuery($cur,"select * from testtable ".
+		"order by testint"));
+	assertEqStr(sqlrcur_getField($cur,2,0),"3");
 	$id=sqlrcur_getResultSetId($cur);
 	sqlrcur_suspendResultSet($cur);
 	assertTrue(sqlrcon_suspendSession($con));
-	$conport=sqlrcon_getConnectionPort($con);
-	$consocket=sqlrcon_getConnectionSocket($con);
-	assertTrue(sqlrcon_resumeSession($con,$conport,$consocket));
+	$port=sqlrcon_getConnectionPort($con);
+	$socket=sqlrcon_getConnectionSocket($con);
+	assertTrue(sqlrcon_resumeSession($con,$port,$socket));
 	assertTrue(sqlrcur_resumeResultSet($cur,$id));
 	echo("\n");
-	assertEqual(sqlrcur_firstRowIndex($cur),4);
+	assertEqInt(sqlrcur_firstRowIndex($cur),4);
 	assertFalse(sqlrcur_endOfResultSet($cur));
-	assertEqual(sqlrcur_rowCount($cur),6);
-	assertEqual(sqlrcur_getField($cur,7,0),"8");
+	assertEqInt(sqlrcur_rowCount($cur),6);
+	assertEqStr(sqlrcur_getField($cur,7,0),"8");
 	echo("\n");
-	assertEqual(sqlrcur_firstRowIndex($cur),6);
+	assertEqInt(sqlrcur_firstRowIndex($cur),6);
 	assertFalse(sqlrcur_endOfResultSet($cur));
-	assertEqual(sqlrcur_rowCount($cur),8);
-	assertEqual(sqlrcur_getField($cur,8,0),NULL);
+	assertEqInt(sqlrcur_rowCount($cur),8);
+	assertEqStr(sqlrcur_getField($cur,8,0),NULL);
 	echo("\n");
-	assertEqual(sqlrcur_firstRowIndex($cur),8);
+	assertEqInt(sqlrcur_firstRowIndex($cur),8);
 	assertTrue(sqlrcur_endOfResultSet($cur));
-	assertEqual(sqlrcur_rowCount($cur),8);
+	assertEqInt(sqlrcur_rowCount($cur),8);
 	sqlrcur_setResultSetBufferSize($cur,0);
 	echo("\n");
 
@@ -616,59 +527,54 @@
 	echo("CACHED RESULT SET: \n");
 	sqlrcur_cacheToFile($cur,"cachefile1");
 	sqlrcur_setCacheTtl($cur,200);
-	assertTrue(sqlrcur_sendQuery($cur,
-		"select ".
-		"	* ".
-		"from ".
-		"	testtable ".
-		"order by ".
-		"	testint "));
+	assertTrue(sqlrcur_sendQuery($cur,"select * from testtable ".
+		"order by testint"));
 	$filename=sqlrcur_getCacheFileName($cur);
-	assertEqual($filename,"cachefile1");
+	assertEqStr($filename,"cachefile1");
 	sqlrcur_cacheOff($cur);
 	assertTrue(sqlrcur_openCachedResultSet($cur,$filename));
-	assertEqual(sqlrcur_getField($cur,7,0),"8");
+	assertEqStr(sqlrcur_getField($cur,7,0),"8");
 	echo("\n");
 
 
 	# column count for cached result set
 	echo("COLUMN COUNT FOR CACHED RESULT SET: \n");
-	assertEqual(sqlrcur_colCount($cur),4);
+	assertEqInt(sqlrcur_colCount($cur),6);
 	echo("\n");
 
 
 	# column names for cached result set
 	echo("COLUMN NAMES FOR CACHED RESULT SET: \n");
-	assertEqual(sqlrcur_getColumnName($cur,0),"testint");
-	assertEqual(sqlrcur_getColumnName($cur,1),"testfloat");
-	assertEqual(sqlrcur_getColumnName($cur,2),"testchar");
-	assertEqual(sqlrcur_getColumnName($cur,3),"testvarchar");
+	assertEqStr(sqlrcur_getColumnName($cur,0),"testint");
+	assertEqStr(sqlrcur_getColumnName($cur,1),"testfloat");
+	assertEqStr(sqlrcur_getColumnName($cur,2),"testchar");
+	assertEqStr(sqlrcur_getColumnName($cur,3),"testvarchar");
+	assertEqStr(sqlrcur_getColumnName($cur,4),"testclob");
+	assertEqStr(sqlrcur_getColumnName($cur,5),"testblob");
 	$cols=sqlrcur_getColumnNames($cur);
-	assertEqual($cols[0],"testint");
-	assertEqual($cols[1],"testfloat");
-	assertEqual($cols[2],"testchar");
-	assertEqual($cols[3],"testvarchar");
+	assertEqStr($cols[0],"testint");
+	assertEqStr($cols[1],"testfloat");
+	assertEqStr($cols[2],"testchar");
+	assertEqStr($cols[3],"testvarchar");
+	assertEqStr($cols[4],"testclob");
+	assertEqStr($cols[5],"testblob");
 	echo("\n");
 
 
-	# cached result set with result set buffer size
+	# cached result set with result set
+	# buffer size
 	echo("CACHED RESULT SET WITH RESULT SET BUFFER SIZE: \n");
 	sqlrcur_setResultSetBufferSize($cur,2);
 	sqlrcur_cacheToFile($cur,"cachefile1");
 	sqlrcur_setCacheTtl($cur,200);
-	assertTrue(sqlrcur_sendQuery($cur,
-		"select ".
-		"	* ".
-		"from ".
-		"	testtable ".
-		"order by ".
-		"	testint "));
+	assertTrue(sqlrcur_sendQuery($cur,"select * from testtable ".
+		"order by testint"));
 	$filename=sqlrcur_getCacheFileName($cur);
-	assertEqual($filename,"cachefile1");
+	assertEqStr($filename,"cachefile1");
 	sqlrcur_cacheOff($cur);
 	assertTrue(sqlrcur_openCachedResultSet($cur,$filename));
-	assertEqual(sqlrcur_getField($cur,7,0),"8");
-	assertEqual(sqlrcur_getField($cur,8,0),NULL);
+	assertEqStr(sqlrcur_getField($cur,7,0),"8");
+	assertEqStr(sqlrcur_getField($cur,8,0),NULL);
 	sqlrcur_setResultSetBufferSize($cur,0);
 	echo("\n");
 
@@ -679,89 +585,116 @@
 	assertTrue(sqlrcur_openCachedResultSet($cur,"cachefile1"));
 	sqlrcur_cacheOff($cur);
 	assertTrue(sqlrcur_openCachedResultSet($cur,"cachefile2"));
-	assertEqual(sqlrcur_getField($cur,7,0),"8");
-	assertEqual(sqlrcur_getField($cur,8,0),NULL);
+	assertEqStr(sqlrcur_getField($cur,7,0),"8");
+	assertEqStr(sqlrcur_getField($cur,8,0),NULL);
 	echo("\n");
 
 
-	# from one cache file to another with result set buffer size
-	echo("FROM ONE CACHE FILE TO ANOTHER ".
-		"WITH RESULT SET BUFFER SIZE: \n");
+	# from one cache file to another
+	# with result set buffer size
+	echo("FROM ONE CACHE FILE TO ANOTHER WITH RESULT SET BUFFER SIZE: \n");
 	sqlrcur_setResultSetBufferSize($cur,2);
 	sqlrcur_cacheToFile($cur,"cachefile2");
 	assertTrue(sqlrcur_openCachedResultSet($cur,"cachefile1"));
 	sqlrcur_cacheOff($cur);
 	assertTrue(sqlrcur_openCachedResultSet($cur,"cachefile2"));
-	assertEqual(sqlrcur_getField($cur,7,0),"8");
-	assertEqual(sqlrcur_getField($cur,8,0),NULL);
+	assertEqStr(sqlrcur_getField($cur,7,0),"8");
+	assertEqStr(sqlrcur_getField($cur,8,0),NULL);
 	sqlrcur_setResultSetBufferSize($cur,0);
 	echo("\n");
 
 
-	# cached result set with suspend and result set buffer size
-	echo("CACHED RESULT SET WITH SUSPEND ".
-		"AND RESULT SET BUFFER SIZE: \n");
+	# cached result set with suspend
+	# and result set buffer size
+	echo("CACHED RESULT SET WITH SUSPEND AND RESULT SET BUFFER SIZE: \n");
 	sqlrcur_setResultSetBufferSize($cur,2);
 	sqlrcur_cacheToFile($cur,"cachefile1");
 	sqlrcur_setCacheTtl($cur,200);
-	assertTrue(sqlrcur_sendQuery($cur,
-		"select ".
-		"	* ".
-		"from ".
-		"	testtable ".
-		"order by ".
-		"	testint "));
-	assertEqual(sqlrcur_getField($cur,2,0),"3");
+	assertTrue(sqlrcur_sendQuery($cur,"select * from testtable ".
+		"order by testint"));
+	assertEqStr(sqlrcur_getField($cur,2,0),"3");
 	$filename=sqlrcur_getCacheFileName($cur);
-	assertEqual($filename,"cachefile1");
+	assertEqStr($filename,"cachefile1");
 	$id=sqlrcur_getResultSetId($cur);
 	sqlrcur_suspendResultSet($cur);
 	assertTrue(sqlrcon_suspendSession($con));
-	$conport=sqlrcon_getConnectionPort($con);
-	$consocket=sqlrcon_getConnectionSocket($con);
+	$port=sqlrcon_getConnectionPort($con);
+	$socket=sqlrcon_getConnectionSocket($con);
 	echo("\n");
-	assertTrue(sqlrcon_resumeSession($con,$conport,$consocket));
+	assertTrue(sqlrcon_resumeSession($con,$port,$socket));
 	assertTrue(sqlrcur_resumeCachedResultSet($cur,$id,$filename));
 	echo("\n");
-	assertEqual(sqlrcur_firstRowIndex($cur),4);
+	assertEqInt(sqlrcur_firstRowIndex($cur),4);
 	assertFalse(sqlrcur_endOfResultSet($cur));
-	assertEqual(sqlrcur_rowCount($cur),6);
-	assertEqual(sqlrcur_getField($cur,7,0),"8");
+	assertEqInt(sqlrcur_rowCount($cur),6);
+	assertEqStr(sqlrcur_getField($cur,7,0),"8");
 	echo("\n");
-	assertEqual(sqlrcur_firstRowIndex($cur),6);
+	assertEqInt(sqlrcur_firstRowIndex($cur),6);
 	assertFalse(sqlrcur_endOfResultSet($cur));
-	assertEqual(sqlrcur_rowCount($cur),8);
-	assertEqual(sqlrcur_getField($cur,8,0),NULL);
+	assertEqInt(sqlrcur_rowCount($cur),8);
+	assertEqStr(sqlrcur_getField($cur,8,0),NULL);
 	echo("\n");
-	assertEqual(sqlrcur_firstRowIndex($cur),8);
+	assertEqInt(sqlrcur_firstRowIndex($cur),8);
 	assertTrue(sqlrcur_endOfResultSet($cur));
-	assertEqual(sqlrcur_rowCount($cur),8);
+	assertEqInt(sqlrcur_rowCount($cur),8);
 	sqlrcur_cacheOff($cur);
 	echo("\n");
 	assertTrue(sqlrcur_openCachedResultSet($cur,$filename));
-	assertEqual(sqlrcur_getField($cur,7,0),"8");
-	assertEqual(sqlrcur_getField($cur,8,0),NULL);
+	assertEqStr(sqlrcur_getField($cur,7,0),"8");
+	assertEqStr(sqlrcur_getField($cur,8,0),NULL);
 	sqlrcur_setResultSetBufferSize($cur,0);
 	echo("\n");
 
 
-	# commit
-	echo("COMMIT: \n");
-	$secondcon=sqlrcon_alloc($host,$port,$socket,$user,$password,0,1);
+	# finished suspended session
+	echo("FINISHED SUSPENDED SESSION: \n");
+	assertTrue(sqlrcur_sendQuery($cur,"select * from testtable"));
+	assertEqStr(sqlrcur_getField($cur,4,0),"5");
+	assertEqStr(sqlrcur_getField($cur,5,0),"6");
+	assertEqStr(sqlrcur_getField($cur,6,0),"7");
+	assertEqStr(sqlrcur_getField($cur,7,0),"8");
+	$id=sqlrcur_getResultSetId($cur);
+	sqlrcur_suspendResultSet($cur);
+	assertTrue(sqlrcon_suspendSession($con));
+	$port=sqlrcon_getConnectionPort($con);
+	$socket=sqlrcon_getConnectionSocket($con);
+	assertTrue(sqlrcon_resumeSession($con,$port,$socket));
+	assertTrue(sqlrcur_resumeResultSet($cur,$id));
+	assertEqStr(sqlrcur_getField($cur,4,0),NULL);
+	assertEqStr(sqlrcur_getField($cur,5,0),NULL);
+	assertEqStr(sqlrcur_getField($cur,6,0),NULL);
+	assertEqStr(sqlrcur_getField($cur,7,0),NULL);
+	echo("\n");
+
+
+	# nested selects
+	echo("NESTED SELECTS: \n");
+	sqlrcur_setResultSetBufferSize($cur,1);
+	assertTrue(sqlrcur_sendQuery($cur,"select * from testtable"));
+	for ($i=0; sqlrcur_getRow($cur,$i); $i++) {
+		$secondcur=sqlrcur_alloc($con);
+		sqlrcur_setResultSetBufferSize($secondcur,1);
+		assertTrue(sqlrcur_sendQuery($secondcur,
+			"select * from testtable"));
+		sqlrcur_closeResultSet($secondcur);
+	}
+	sqlrcur_setResultSetBufferSize($cur,0);
+	echo("\n");
+
+
+	# commit and rollback
+	echo("COMMIT AND ROLLBACK: \n");
+	$secondcon=sqlrcon_alloc("sqlrelay",9000,"/tmp/test.socket",
+			"testuser","testpassword",0,1);
 	$secondcur=sqlrcur_alloc($secondcon);
 	assertTrue(sqlrcur_sendQuery($secondcur,
-		"select ".
-		"	count(*) ".
-		"from ".
-		"	testtable "));
-	assertEqual(sqlrcur_getField($secondcur,0,0),"0");
+		"select count(*) from testtable"));
+	assertEqStr(sqlrcur_getField($secondcur,0,0),"0");
 	assertTrue(sqlrcon_commit($con));
 	assertTrue(sqlrcur_sendQuery($secondcur,
-		"select ".
-		"	count(*) ".
-		"from ".
-		"	testtable "));
-	assertEqual(sqlrcur_getField($secondcur,0,0),"8");
+		"select count(*) from testtable"));
+	assertEqStr(sqlrcur_getField($secondcur,0,0),"8");
+	assertTrue(sqlrcon_begin($con));
 	assertTrue(sqlrcur_sendQuery($cur,
 		"insert into ".
 		"	testtable ".
@@ -769,17 +702,652 @@
 		"	10, ".
 		"	10.1, ".
 		"	'testchar10', ".
-		"	'testvarchar10')"));
+		"	'testvarchar10', ".
+		"	'testclob10', ".
+		"	'testblob10')"));
+	assertTrue(sqlrcon_rollback($con));
 	assertTrue(sqlrcur_sendQuery($secondcur,
-		"select ".
-		"	count(*) ".
-		"from ".
-		"	testtable "));
-	assertEqual(sqlrcur_getField($secondcur,0,0),"9");
+		"select count(*) from testtable"));
+	assertEqStr(sqlrcur_getField($secondcur,0,0),"8");
+	assertTrue(sqlrcur_sendQuery($cur,
+		"insert into ".
+		"	testtable ".
+		"values (".
+		"	10, ".
+		"	10.1, ".
+		"	'testchar10', ".
+		"	'testvarchar10', ".
+		"	'testclob10', ".
+		"	'testblob10')"));
+	assertTrue(sqlrcur_sendQuery($secondcur,
+		"select count(*) from testtable"));
+	assertEqStr(sqlrcur_getField($secondcur,0,0),"9");
+	sqlrcon_endSession($secondcon);
+	assertTrue(sqlrcur_sendQuery($cur,"drop table if exists testtable"));
 	echo("\n");
 
-	# drop existing table
+
+	# individual substitutions
+	echo("INDIVIDUAL SUBSTITUTIONS: \n");
 	sqlrcur_sendQuery($cur,"drop table if exists testtable");
+	assertTrue(sqlrcur_sendQuery($cur,
+		"create table testtable (".
+		"	col1 int, ".
+		"	col2 char, ".
+		"	col3 float)"));
+	sqlrcur_prepareQuery($cur,
+		"insert into ".
+		"	testtable ".
+		"values (".
+		"	$(var1), ".
+		"	'$(var2)', ".
+		"	$(var3))");
+	sqlrcur_substitution($cur,"var1",1);
+	sqlrcur_substitution($cur,"var2","hello");
+	sqlrcur_substitution($cur,"var3",10.5556,6,4);
+	assertTrue(sqlrcur_executeQuery($cur));
+	assertTrue(sqlrcur_sendQuery($cur,"select * from testtable"));
+	assertEqStr(sqlrcur_getField($cur,0,0),"1");
+	assertEqStr(sqlrcur_getField($cur,0,1),"hello");
+	assertEqStr(sqlrcur_getField($cur,0,2),"10.5556");
+	assertTrue(sqlrcur_sendQuery($cur,"delete from testtable"));
+	echo("\n");
+
+
+	# array substitutions
+	echo("ARRAY SUBSTITUTIONS: \n");
+	sqlrcur_prepareQuery($cur,
+		"insert into ".
+		"	testtable ".
+		"values (".
+		"	'$(var1)', ".
+		"	'$(var2)', ".
+		"	'$(var3)')");
+	sqlrcur_substitutions($cur,$subvars,$subvalstrings,NULL,NULL);
+	assertTrue(sqlrcur_executeQuery($cur));
+	assertTrue(sqlrcur_sendQuery($cur,"select * from testtable"));
+	assertEqStr(sqlrcur_getField($cur,0,0),"hi");
+	assertEqStr(sqlrcur_getField($cur,0,1),"hello");
+	assertEqStr(sqlrcur_getField($cur,0,2),"bye");
+	assertTrue(sqlrcur_sendQuery($cur,"delete from testtable"));
+	echo("\n");
+	sqlrcur_prepareQuery($cur,
+		"insert into ".
+		"	testtable ".
+		"values (".
+		"	$(var1), ".
+		"	'$(var2)', ".
+		"	$(var3))");
+	sqlrcur_substitutions($cur,$subvars,$subvallongs,NULL,NULL);
+	assertTrue(sqlrcur_executeQuery($cur));
+	assertTrue(sqlrcur_sendQuery($cur,"select * from testtable"));
+	assertEqStr(sqlrcur_getField($cur,0,0),"1");
+	assertEqStr(sqlrcur_getField($cur,0,1),"2");
+	assertEqStr(sqlrcur_getField($cur,0,2),"3.0");
+	assertTrue(sqlrcur_sendQuery($cur,"delete from testtable"));
+	echo("\n");
+	sqlrcur_prepareQuery($cur,
+		"insert into ".
+		"	testtable ".
+		"values (".
+		"	$(var1), ".
+		"	'$(var2)', ".
+		"	$(var3))");
+	sqlrcur_substitutions($cur,$subvars,$subvaldoubles,$precs,$scales);
+	assertTrue(sqlrcur_executeQuery($cur));
+	assertTrue(sqlrcur_sendQuery($cur,"select * from testtable"));
+	assertEqStr(sqlrcur_getField($cur,0,0),"10.55");
+	assertEqStr(sqlrcur_getField($cur,0,1),"10.556");
+	assertEqStr(sqlrcur_getField($cur,0,2),"10.5556");
+	assertTrue(sqlrcur_sendQuery($cur,"delete from testtable"));
+	echo("\n");
+
+
+	# nulls as nulls
+	echo("NULLS AS NULLS: \n");
+	sqlrcur_getNullsAsNulls($cur);
+	assertTrue(sqlrcur_sendQuery($cur,
+		"insert into ".
+		"	testtable ".
+		"values (".
+		"	1, ".
+		"	NULL, ".
+		"	NULL)"));
+	assertTrue(sqlrcur_sendQuery($cur,"select * from testtable"));
+	assertEqStr(sqlrcur_getField($cur,0,0),"1");
+	assertEqStr(sqlrcur_getField($cur,0,1),NULL);
+	assertEqStr(sqlrcur_getField($cur,0,2),NULL);
+	sqlrcur_getNullsAsEmptyStrings($cur);
+	assertTrue(sqlrcur_sendQuery($cur,"select * from testtable"));
+	assertEqStr(sqlrcur_getField($cur,0,0),"1");
+	assertEqStr(sqlrcur_getField($cur,0,1),"");
+	assertEqStr(sqlrcur_getField($cur,0,2),"");
+	assertTrue(sqlrcur_sendQuery($cur,"drop table if exists testtable"));
+	echo("\n");
+
+
+	# null and empty lobs
+	echo("NULL AND EMPTY LOBS: \n");
+	sqlrcur_getNullsAsNulls($cur);
+	sqlrcur_sendQuery($cur,"drop table testtable");
+	assertTrue(sqlrcur_sendQuery($cur,
+		"create table testtable (".
+		"	testclob1 clob, ".
+		"	testclob2 clob, ".
+		"	testblob1 blob, ".
+		"	testblob2 blob)"));
+	sqlrcur_prepareQuery($cur,
+		"insert into ".
+		"	testtable ".
+		"values (".
+		"	:var1, ".
+		"	:var2, ".
+		"	:var3, ".
+		"	:var4)");
+	sqlrcur_inputBindClob($cur,"var1","",strlen(""));
+	sqlrcur_inputBindClob($cur,"var2",NULL,0);
+	sqlrcur_inputBindBlob($cur,"var3","",strlen(""));
+	sqlrcur_inputBindBlob($cur,"var4",NULL,0);
+	assertTrue(sqlrcur_executeQuery($cur));
+	sqlrcur_sendQuery($cur,"select * from testtable");
+	assertEqStr(sqlrcur_getField($cur,0,0),"");
+	assertEqStr(sqlrcur_getField($cur,0,1),NULL);
+	assertEqStr(sqlrcur_getField($cur,0,2),"");
+	assertEqStr(sqlrcur_getField($cur,0,3),NULL);
+	sqlrcur_getNullsAsEmptyStrings($cur);
+	assertTrue(sqlrcur_sendQuery($cur,"drop table testtable"));
+	echo("\n");
+
+
+	# long lobs
+	echo("LONG LOBS: \n");
+	sqlrcur_sendQuery($cur,"drop table testtable");
+	sqlrcur_sendQuery($cur,
+		"create table testtable (".
+		"	testclob clob, ".
+		"	testblob blob)");
+	sqlrcur_prepareQuery($cur,"insert into testtable ".
+		"values (:clobval,:blobval)");
+	$largebuffer=str_repeat("C",8192);
+	sqlrcur_inputBindClob($cur,"clobval",$largebuffer,strlen($largebuffer));
+	sqlrcur_inputBindBlob($cur,"blobval",$largebuffer,strlen($largebuffer));
+	assertTrue(sqlrcur_executeQuery($cur));
+	sqlrcur_sendQuery($cur,"select * from testtable");
+	assertEqInt(sqlrcur_getFieldLength($cur,0,"testclob"),8192);
+	assertEqStr(sqlrcur_getField($cur,0,"testclob"),$largebuffer);
+	assertEqInt(sqlrcur_getFieldLength($cur,0,"testblob"),8192);
+	assertEqStrLen(sqlrcur_getField($cur,0,"testblob"),$largebuffer,8192);
+	assertTrue(sqlrcur_sendQuery($cur,"drop table testtable"));
+	echo("\n");
+
+
+	# output bind by position
+	# sqlite doesn't support output binds
+
+
+	# output bind by name
+	# sqlite doesn't support output binds
+
+
+	# output bind by name with validation
+	# sqlite doesn't support output binds
+
+
+	# lob output bind
+	# sqlite doesn't support output binds
+
+
+	# long output bind
+	# sqlite doesn't support output binds
+
+
+	# negative input bind
+	echo("NEGATIVE INPUT BIND: \n");
+	sqlrcur_sendQuery($cur,"drop table testtable");
+	sqlrcur_sendQuery($cur,"create table testtable (testval int)");
+	sqlrcur_prepareQuery($cur,"insert into testtable values (:testval)");
+	sqlrcur_inputBind($cur,"testval",-1);
+	assertTrue(sqlrcur_executeQuery($cur));
+	sqlrcur_sendQuery($cur,"select testval from testtable");
+	assertEqStr(sqlrcur_getField($cur,0,"testval"),"-1");
+	assertTrue(sqlrcur_sendQuery($cur,"drop table testtable"));
+	echo("\n");
+
+
+	# bind validation
+	echo("BIND VALIDATION: \n");
+	sqlrcur_sendQuery($cur,"drop table testtable");
+	sqlrcur_sendQuery($cur,
+		"create table testtable (".
+		"	col1 varchar(20), ".
+		"	col2 varchar(20), ".
+		"	col3 varchar(20))");
+	sqlrcur_prepareQuery($cur,
+		"insert into ".
+		"	testtable ".
+		"values (".
+		"	$(var1), ".
+		"	$(var2), ".
+		"	$(var3))");
+	sqlrcur_inputBind($cur,"var1","1");
+	sqlrcur_inputBind($cur,"var2","2");
+	sqlrcur_inputBind($cur,"var3","3");
+	sqlrcur_substitution($cur,"var1",":var1");
+	assertTrue(sqlrcur_validBind($cur,"var1"));
+	assertFalse(sqlrcur_validBind($cur,"var2"));
+	assertFalse(sqlrcur_validBind($cur,"var3"));
+	assertFalse(sqlrcur_validBind($cur,"var4"));
+	echo("\n");
+	sqlrcur_substitution($cur,"var2",":var2");
+	assertTrue(sqlrcur_validBind($cur,"var1"));
+	assertTrue(sqlrcur_validBind($cur,"var2"));
+	assertFalse(sqlrcur_validBind($cur,"var3"));
+	assertFalse(sqlrcur_validBind($cur,"var4"));
+	echo("\n");
+	sqlrcur_substitution($cur,"var3",":var3");
+	assertTrue(sqlrcur_validBind($cur,"var1"));
+	assertTrue(sqlrcur_validBind($cur,"var2"));
+	assertTrue(sqlrcur_validBind($cur,"var3"));
+	assertFalse(sqlrcur_validBind($cur,"var4"));
+	assertTrue(sqlrcur_executeQuery($cur));
+	assertTrue(sqlrcur_sendQuery($cur,"drop table testtable"));
+	echo("\n");
+
+
+	# rebinding
+	echo("REBINDING: \n");
+	sqlrcur_prepareQuery($cur,"select :val");
+	sqlrcur_inputBind($cur,"val",1);
+	assertTrue(sqlrcur_executeQuery($cur));
+	assertEqStr(sqlrcur_getField($cur,0,0),"1");
+	sqlrcur_inputBind($cur,"val",2);
+	assertTrue(sqlrcur_executeQuery($cur));
+	assertEqStr(sqlrcur_getField($cur,0,0),"2");
+	sqlrcur_inputBind($cur,"val",3);
+	assertTrue(sqlrcur_executeQuery($cur));
+	assertEqStr(sqlrcur_getField($cur,0,0),"3");
+	echo("\n");
+
+
+	# reexecute
+	echo("REEXECUTE: \n");
+	sqlrcur_prepareQuery($cur,"select 1");
+	assertTrue(sqlrcur_executeQuery($cur));
+	assertEqInt(sqlrcur_rowCount($cur),1);
+	assertEqStr(sqlrcur_getField($cur,0,0),"1");
+	echo("\n");
+	assertTrue(sqlrcur_executeQuery($cur));
+	assertEqInt(sqlrcur_rowCount($cur),1);
+	assertEqStr(sqlrcur_getField($cur,0,0),"1");
+	echo("\n");
+	sqlrcur_prepareQuery($cur,"select :var");
+	sqlrcur_inputBind($cur,"var",1);
+	assertTrue(sqlrcur_executeQuery($cur));
+	assertEqInt(sqlrcur_rowCount($cur),1);
+	assertEqStr(sqlrcur_getField($cur,0,0),"1");
+	echo("\n");
+	assertTrue(sqlrcur_executeQuery($cur));
+	assertEqInt(sqlrcur_rowCount($cur),1);
+	assertEqStr(sqlrcur_getField($cur,0,0),"1");
+	echo("\n");
+	sqlrcur_inputBind($cur,"var",2);
+	assertTrue(sqlrcur_executeQuery($cur));
+	assertEqInt(sqlrcur_rowCount($cur),1);
+	assertEqStr(sqlrcur_getField($cur,0,0),"2");
+	echo("\n");
+
+
+	# stored procedure returning no value
+	# sqlite doesn't support stored procedures
+
+
+	# stored procedure returning single value
+	# sqlite doesn't support stored procedures
+
+
+	# stored procedure returning multiple values
+	# sqlite doesn't support stored procedures
+
+
+	# stored procedure returning result set
+	# sqlite doesn't support stored procedures
+
+
+	# temporary tables
+	echo("TEMPORARY TABLES: \n");
+	sqlrcur_sendQuery($cur,"drop table if exists temptable\n");
+	sqlrcur_sendQuery($cur,"create temporary table temptable (col1 int)");
+	assertTrue(sqlrcur_sendQuery($cur,"insert into temptable values (1)"));
+	assertTrue(sqlrcur_sendQuery($cur,"select count(*) from temptable"));
+	assertEqStr(sqlrcur_getField($cur,0,0),"1");
+	sqlrcon_endSession($con);
+	echo("\n");
+	assertFalse(sqlrcur_sendQuery($cur,"select count(*) from temptable"));
+	assertTrue(sqlrcur_sendQuery($cur,"drop table if exists temptable\n"));
+	echo("\n");
+
+
+	# encoded binary data
+	echo("ENCODED BINARY DATA: \n");
+	sqlrcur_sendQuery($cur,"drop table testtable");
+	assertTrue(sqlrcur_sendQuery($cur,"create table testtable ".
+		"(col1 blob)"));
+	$buffer="";
+	for ($j=0; $j<256; $j++) {
+		$buffer.=chr($j);
+	}
+	$querystr="insert into testtable values (X'";
+	for ($i=0; $i<256; $i++) {
+		$querystr.=sprintf("%02x",ord($buffer[$i]));
+	}
+	$querystr.="')";
+	assertTrue(sqlrcur_sendQuery($cur,$querystr));
+	assertTrue(sqlrcur_sendQuery($cur,"select col1 from testtable"));
+	assertEqInt(sqlrcur_getFieldLength($cur,0,0),256);
+	assertEqInt(strcmp(sqlrcur_getField($cur,0,0),$buffer),0);
+	assertTrue(sqlrcur_sendQuery($cur,"drop table testtable"));
+	echo("\n");
+
+
+	# quotes
+	echo("QUOTES: \n");
+	sqlrcur_sendQuery($cur,"drop table testtable");
+	assertTrue(sqlrcur_sendQuery($cur,"create table testtable ".
+		"(col1 varchar(4))"));
+	assertTrue(sqlrcur_sendQuery($cur,"insert into testtable ".
+		"values ('''''')"));
+	assertTrue(sqlrcur_sendQuery($cur,"select col1 from testtable"));
+	assertEqInt(sqlrcur_getFieldLength($cur,0,0),2);
+	assertEqInt(strcmp(sqlrcur_getField($cur,0,0),"''"),0);
+	assertTrue(sqlrcur_sendQuery($cur,"drop table testtable"));
+	echo("\n");
+
+
+	# last insert id
+	echo("LAST INSERT ID: \n");
+	sqlrcur_sendQuery($cur,"drop table testtable");
+	assertTrue(sqlrcur_sendQuery($cur,
+		"create table testtable ".
+		"	(col1 integer primary key ".
+		"	autoincrement, ".
+		"	col2 int)"));
+	assertTrue(sqlrcur_sendQuery($cur,"insert into testtable ".
+		"values (null,1)"));
+	assertEqInt(sqlrcon_getLastInsertId($con),1);
+	assertTrue(sqlrcur_sendQuery($cur,"drop table testtable"));
+	echo("\n");
+
+
+	# database is schema
+	echo("DATABASE IS SCHEMA: \n");
+	assertFalse(sqlrcon_getDatabaseIsSchema($con));
+	echo("\n");
+
+
+	# catalog list
+	echo("CATALOG LIST: \n");
+	assertTrue(sqlrcur_getCatalogList($cur,NULL));
+	assertEqStr(sqlrcur_getColumnName($cur,0),"Database");
+	echo("\n");
+
+
+	# schema list
+	echo("SCHEMA LIST: \n");
+	assertTrue(sqlrcur_getSchemaList($cur,NULL));
+	assertEqStr(sqlrcur_getColumnName($cur,0),"Database");
+	echo("\n");
+
+
+	# table type list
+	echo("TABLE TYPE LIST: \n");
+	assertTrue(sqlrcur_getTableTypeList($cur));
+	assertEqStr(sqlrcur_getColumnName($cur,0),"table_type");
+	$found=0;
+	for ($i=0; $i<sqlrcur_rowCount($cur); $i++) {
+		if (strcmp(sqlrcur_getField($cur,$i,"table_type"),
+			"TABLE")==0) {
+			$found=1;
+			break;
+		}
+	}
+	assertTrue($found);
+	echo("\n");
+
+
+	# table list
+	echo("TABLE LIST: \n");
+	sqlrcur_sendQuery($cur,"drop table if exists testtable1");
+	sqlrcur_sendQuery($cur,"drop table if exists testtable2");
+	sqlrcur_sendQuery($cur,"drop table if exists testtable3");
+	sqlrcur_sendQuery($cur,"drop table if exists testtable4");
+	assertTrue(sqlrcur_sendQuery($cur,
+		"create table testtable1 (".
+		"	col1 int, ".
+		"	col2 int)"));
+	assertTrue(sqlrcur_sendQuery($cur,
+		"create table testtable2 (".
+		"	col1 int, ".
+		"	col2 int)"));
+	assertTrue(sqlrcur_sendQuery($cur,
+		"create table testtable3 (".
+		"	col1 int, ".
+		"	col2 int)"));
+	assertTrue(sqlrcur_sendQuery($cur,
+		"create table testtable4 (".
+		"	col1 int, ".
+		"	col2 int)"));
+	assertTrue(sqlrcur_getTableList($cur,NULL));
+	$counter=0;
+	for ($i=0; $i<sqlrcur_rowCount($cur); $i++) {
+		$name=sqlrcur_getField($cur,$i,"Tables_in_xxx");
+		if (strcmp($name,"testtable1")==0 || strcmp($name,"testtable2")==0 ||
+			strcmp($name,"testtable3")==0 ||
+			strcmp($name,"testtable4")==0) {
+			$counter++;
+		}
+	}
+	assertEqInt($counter,4);
+	assertTrue(sqlrcur_sendQuery($cur,"drop table if exists testtable1"));
+	assertTrue(sqlrcur_sendQuery($cur,"drop table if exists testtable2"));
+	assertTrue(sqlrcur_sendQuery($cur,"drop table if exists testtable3"));
+	assertTrue(sqlrcur_sendQuery($cur,"drop table if exists testtable4"));
+	echo("\n");
+
+
+	# type info list
+	echo("TYPE INFO LIST: \n");
+	assertTrue(sqlrcur_getTypeInfoList($cur,"integer"));
+	assertEqStr(sqlrcur_getColumnName($cur,0),"type_name");
+	assertEqStr(sqlrcur_getColumnName($cur,1),"data_type");
+	assertEqStr(sqlrcur_getColumnName($cur,2),"precision");
+	assertEqStr(sqlrcur_getColumnName($cur,3),"literal_prefix");
+	assertEqStr(sqlrcur_getColumnName($cur,4),"literal_suffix");
+	assertEqStr(sqlrcur_getColumnName($cur,5),"create_params");
+	assertEqStr(sqlrcur_getColumnName($cur,6),"nullable");
+	assertEqStr(sqlrcur_getColumnName($cur,7),"case_sensitive");
+	assertEqStr(sqlrcur_getColumnName($cur,8),"searchable");
+	assertEqStr(sqlrcur_getColumnName($cur,9),"unsigned_attribute");
+	assertEqStr(sqlrcur_getColumnName($cur,10),"fixed_prec_scale");
+	assertEqStr(sqlrcur_getColumnName($cur,11),"auto_increment");
+	assertEqStr(sqlrcur_getColumnName($cur,12),"local_type_name");
+	assertEqStr(sqlrcur_getColumnName($cur,13),"minumum_scale");
+	assertEqStr(sqlrcur_getColumnName($cur,14),"maxiumm_scale");
+	assertEqStr(sqlrcur_getColumnName($cur,15),"sql_data_type");
+	assertEqStr(sqlrcur_getColumnName($cur,16),"sql_datetime_sub");
+	assertEqStr(sqlrcur_getColumnName($cur,17),"num_prec_radix");
+	assertEqStr(sqlrcur_getColumnName($cur,18),"interval_precision");
+	assertEqStr(sqlrcur_getField($cur,0,"type_name"),"INTEGER");
+	assertEqStr(sqlrcur_getField($cur,0,"data_type"),"4");
+	assertEqStr(sqlrcur_getField($cur,0,"precision"),"19");
+	assertEqStr(sqlrcur_getField($cur,0,"local_type_name"),"INTEGER");
+	assertTrue(sqlrcur_getTypeInfoList($cur,"char"));
+	assertEqStr(sqlrcur_getField($cur,0,"type_name"),"CHAR");
+	assertEqStr(sqlrcur_getField($cur,0,"data_type"),"1");
+	assertEqStr(sqlrcur_getField($cur,0,"precision"),"2147483647");
+	assertEqStr(sqlrcur_getField($cur,0,"local_type_name"),"CHAR");
+	assertTrue(sqlrcur_getTypeInfoList($cur,"varchar"));
+	assertEqStr(sqlrcur_getField($cur,0,"type_name"),"VARCHAR");
+	assertEqStr(sqlrcur_getField($cur,0,"data_type"),"12");
+	assertEqStr(sqlrcur_getField($cur,0,"precision"),"2147483647");
+	assertEqStr(sqlrcur_getField($cur,0,"local_type_name"),"VARCHAR");
+	assertTrue(sqlrcur_getTypeInfoList($cur,"date"));
+	assertEqStr(sqlrcur_getField($cur,0,"type_name"),"DATE");
+	assertEqStr(sqlrcur_getField($cur,0,"data_type"),"91");
+	assertEqStr(sqlrcur_getField($cur,0,"precision"),"10");
+	assertEqStr(sqlrcur_getField($cur,0,"local_type_name"),"DATE");
+	echo("\n");
+
+
+	# column list
+	echo("COLUMN LIST: \n");
+	sqlrcur_sendQuery($cur,"drop table if exists testtable");
+	assertTrue(sqlrcur_sendQuery($cur,
+		"create table testtable (".
+		"	testint int, ".
+		"	testfloat float, ".
+		"	testchar char(40), ".
+		"	testvarchar varchar(40), ".
+		"	testclob clob, ".
+		"	testblob blob)"));
+	assertTrue(sqlrcur_getColumnList($cur,"testtable",NULL));
+	assertEqStr(sqlrcur_getColumnName($cur,0),"column_name");
+	assertEqStr(sqlrcur_getColumnName($cur,1),"data_type");
+	assertEqStr(sqlrcur_getColumnName($cur,2),"character_maximum_length");
+	assertEqStr(sqlrcur_getColumnName($cur,3),"numeric_precision");
+	assertEqStr(sqlrcur_getColumnName($cur,4),"numeric_scale");
+	assertEqStr(sqlrcur_getColumnName($cur,5),"is_nullable");
+	assertEqStr(sqlrcur_getColumnName($cur,6),"column_key");
+	assertEqStr(sqlrcur_getColumnName($cur,7),"column_default");
+	assertEqStr(sqlrcur_getColumnName($cur,8),"extra");
+	assertEqStr(sqlrcur_getField($cur,0,"column_name"),"testint");
+	assertEqStr(sqlrcur_getField($cur,1,"column_name"),"testfloat");
+	assertEqStr(sqlrcur_getField($cur,2,"column_name"),"testchar");
+	assertEqStr(sqlrcur_getField($cur,3,"column_name"),"testvarchar");
+	assertEqStr(sqlrcur_getField($cur,4,"column_name"),"testclob");
+	assertEqStr(sqlrcur_getField($cur,5,"column_name"),"testblob");
+	assertEqStr(sqlrcur_getField($cur,0,"data_type"),"INT");
+	assertEqStr(sqlrcur_getField($cur,1,"data_type"),"FLOAT");
+	assertEqStr(sqlrcur_getField($cur,2,"data_type"),"CHAR");
+	assertEqStr(sqlrcur_getField($cur,3,"data_type"),"VARCHAR");
+	assertEqStr(sqlrcur_getField($cur,4,"data_type"),"CLOB");
+	assertEqStr(sqlrcur_getField($cur,5,"data_type"),"BLOB");
+	assertTrue(sqlrcur_sendQuery($cur,"drop table if exists testtable"));
+	echo("\n");
+
+
+	# column list - auto_increment,
+	# primary key
+	echo("COLUMN LIST - auto_increment, primary key: \n");
+	sqlrcur_sendQuery($cur,"drop table if exists testtable");
+	assertTrue(sqlrcur_sendQuery($cur,
+		"create table testtable (".
+		"	col1 integer primary key ".
+		"	autoincrement, ".
+		"	col2 int)"));
+	assertTrue(sqlrcur_getColumnList($cur,"testtable",NULL));
+	assertTrue(strstr(sqlrcur_getField($cur,0,"extra"),
+			"auto_increment")!==false);
+	assertTrue(strstr(sqlrcur_getField($cur,0,"column_key"),
+			"PRI")!==false);
+	assertFalse(strstr(sqlrcur_getField($cur,1,"extra"),
+			"auto_increment")!==false);
+	assertFalse(strstr(sqlrcur_getField($cur,1,"column_key"),
+			"PRI")!==false);
+	echo("\n");
+	assertTrue(sqlrcur_sendQuery($cur,"drop table if exists testtable"));
+	assertTrue(sqlrcur_sendQuery($cur,
+		"create table testtable (".
+		"	col1 int primary key, ".
+		"	col2 int)"));
+	assertTrue(sqlrcur_getColumnList($cur,"testtable",NULL));
+	assertFalse(strstr(sqlrcur_getField($cur,0,"extra"),
+			"auto_increment")!==false);
+	assertTrue(strstr(sqlrcur_getField($cur,0,"column_key"),
+			"PRI")!==false);
+	assertTrue(sqlrcur_sendQuery($cur,"drop table if exists testtable"));
+	echo("\n");
+
+
+	# primary keys list
+	echo("PRIMARY KEYS LIST: \n");
+	sqlrcur_sendQuery($cur,"drop table if exists testtable");
+	assertTrue(sqlrcur_sendQuery($cur,
+		"create table testtable (".
+		"	col1 int primary key, ".
+		"	col2 int)"));
+	assertTrue(sqlrcur_getPrimaryKeysList($cur,"testtable",NULL));
+	assertEqStr(sqlrcur_getColumnName($cur,0),"table");
+	assertEqStr(sqlrcur_getColumnName($cur,1),"non_unique");
+	assertEqStr(sqlrcur_getColumnName($cur,2),"key_name");
+	assertEqStr(sqlrcur_getColumnName($cur,3),"seq_in_index");
+	assertEqStr(sqlrcur_getColumnName($cur,4),"column_name");
+	assertEqStr(sqlrcur_getColumnName($cur,5),"collation");
+	assertEqStr(sqlrcur_getColumnName($cur,6),"cardinality");
+	assertEqStr(sqlrcur_getColumnName($cur,7),"sub_part");
+	assertEqStr(sqlrcur_getColumnName($cur,8),"packed");
+	assertEqStr(sqlrcur_getColumnName($cur,9),"null");
+	assertEqStr(sqlrcur_getColumnName($cur,10),"index_type");
+	assertEqStr(sqlrcur_getColumnName($cur,11),"comment");
+	assertEqStr(sqlrcur_getColumnName($cur,12),"index_comment");
+	assertEqInt(sqlrcur_rowCount($cur),1);
+	assertTrue(strcmp(sqlrcur_getField($cur,0,"table"),"testtable")==0);
+	assertEqStr(sqlrcur_getField($cur,0,"seq_in_index"),"1");
+	assertTrue(strcmp(sqlrcur_getField($cur,0,"column_name"),"col1")==0);
+	assertTrue(sqlrcur_sendQuery($cur,"drop table if exists testtable"));
+	echo("\n");
+
+
+	# key and index list
+	echo("KEY AND INDEX LIST: \n");
+	sqlrcur_sendQuery($cur,"drop table if exists testtable");
+	assertTrue(sqlrcur_sendQuery($cur,
+		"create table testtable (".
+		"	col1 int primary key, ".
+		"	col2 int)"));
+	assertTrue(sqlrcur_getKeyAndIndexList($cur,"testtable",NULL));
+	assertEqStr(sqlrcur_getColumnName($cur,0),"table");
+	assertEqStr(sqlrcur_getColumnName($cur,1),"non_unique");
+	assertEqStr(sqlrcur_getColumnName($cur,2),"key_name");
+	assertEqStr(sqlrcur_getColumnName($cur,3),"seq_in_index");
+	assertEqStr(sqlrcur_getColumnName($cur,4),"column_name");
+	assertEqStr(sqlrcur_getColumnName($cur,5),"collation");
+	assertEqStr(sqlrcur_getColumnName($cur,6),"cardinality");
+	assertEqStr(sqlrcur_getColumnName($cur,7),"sub_part");
+	assertEqStr(sqlrcur_getColumnName($cur,8),"packed");
+	assertEqStr(sqlrcur_getColumnName($cur,9),"null");
+	assertEqStr(sqlrcur_getColumnName($cur,10),"index_type");
+	assertEqStr(sqlrcur_getColumnName($cur,11),"comment");
+	assertEqStr(sqlrcur_getColumnName($cur,12),"index_comment");
+	assertEqInt(sqlrcur_rowCount($cur),1);
+	assertTrue(strcmp(sqlrcur_getField($cur,0,"table"),"testtable")==0);
+	assertEqStr(sqlrcur_getField($cur,0,"non_unique"),"0");
+	assertEqStr(sqlrcur_getField($cur,0,"seq_in_index"),"1");
+	assertTrue(strcmp(sqlrcur_getField($cur,0,"column_name"),"col1")==0);
+	assertEqStr(sqlrcur_getField($cur,0,"collation"),"A");
+	assertEqStr(sqlrcur_getField($cur,0,"index_type"),"3");
+	$kn=sqlrcur_getField($cur,0,"key_name");
+	assertTrue(!((!$kn) || (!$kn[0])));
+	assertTrue(sqlrcur_sendQuery($cur,"drop table if exists testtable"));
+	echo("\n");
+
+
+	# procedure list
+	echo("PROCEDURE LIST: \n");
+	assertTrue(sqlrcur_getProcedureList($cur,NULL));
+	assertEqInt(sqlrcur_rowCount($cur),0);
+	echo("\n");
+
+
+	# procedure parameter list
+	echo("PROCEDURE PARAMETER LIST: \n");
+	assertTrue(sqlrcur_getProcedureParameterList($cur,"testproc1",NULL));
+	assertEqStr(sqlrcur_getColumnName($cur,0),"parameter_name");
+	assertEqStr(sqlrcur_getColumnName($cur,1),"parameter_mode");
+	assertEqStr(sqlrcur_getColumnName($cur,2),"data_type");
+	assertEqStr(sqlrcur_getColumnName($cur,3),"character_maximum_length");
+	assertEqStr(sqlrcur_getColumnName($cur,4),"ordinal_position");
+	assertEqInt(sqlrcur_rowCount($cur),0);
+	echo("\n");
 
 
 	# invalid queries
@@ -789,38 +1357,14 @@
 	assertFalse(sqlrcur_sendQuery($cur,"select * from testtable"));
 	assertFalse(sqlrcur_sendQuery($cur,"select * from testtable"));
 	echo("\n");
-	assertFalse(sqlrcur_sendQuery($cur,
-		"insert into ".
-		"	testtable ".
-		"values (".
-		"	1, ".
-		"	2, ".
-		"	3, ".
-		"	4)"));
-	assertFalse(sqlrcur_sendQuery($cur,
-		"insert into ".
-		"	testtable ".
-		"values (".
-		"	1, ".
-		"	2, ".
-		"	3, ".
-		"	4)"));
-	assertFalse(sqlrcur_sendQuery($cur,
-		"insert into ".
-		"	testtable ".
-		"values (".
-		"	1, ".
-		"	2, ".
-		"	3, ".
-		"	4)"));
-	assertFalse(sqlrcur_sendQuery($cur,
-		"insert into ".
-		"	testtable ".
-		"values (".
-		"	1, ".
-		"	2, ".
-		"	3, ".
-		"	4)"));
+	assertFalse(sqlrcur_sendQuery($cur,"insert into testtable ".
+		"values (1,2,3,4)"));
+	assertFalse(sqlrcur_sendQuery($cur,"insert into testtable ".
+		"values (1,2,3,4)"));
+	assertFalse(sqlrcur_sendQuery($cur,"insert into testtable ".
+		"values (1,2,3,4)"));
+	assertFalse(sqlrcur_sendQuery($cur,"insert into testtable ".
+		"values (1,2,3,4)"));
 	echo("\n");
 	assertFalse(sqlrcur_sendQuery($cur,"create table testtable"));
 	assertFalse(sqlrcur_sendQuery($cur,"create table testtable"));

@@ -3,26 +3,44 @@
 # Copyright (c) David Muse
 # See the file COPYING for more information.
 
-
-
 require 'rbconfig'
 require 'sqlrelay'
 require './asserts'
 
 
+isolationlevels=["0","1"]
+subvars=["var1","var2","var3"]
+subvalstrings=["hi","hello","bye"]
+subvallongs=[1,2,3]
+subvaldoubles=[10.55,10.556,10.5556]
+precs=[4,5,6]
+scales=[2,3,4]
+counter=0
 
 
 # instantiation
 con=SQLRConnection.new("sqlrelay",9000,"/tmp/test.socket",
-						"testuser","testpassword",0,1);
+					"testuser","testpassword",0,1)
 cur=SQLRCursor.new(con)
-
-# get database type
+setConnection(con)
+setCursor(cur)
 
 
 # identify
 print "IDENTIFY: \n"
 assertEqual(con.identify(),"sqlite")
+print "\n"
+
+
+# db version
+print "DB VERSION: \n"
+dbversion=con.dbVersion()
+issqlite3=true
+if !dbversion ||
+	dbversion.eql?("unknown") ||
+	dbversion.to_i<3
+	issqlite3=false
+end
 print "\n"
 
 
@@ -32,9 +50,20 @@ assertTrue(con.ping())
 print "\n"
 
 
+# bind format
+print "BIND FORMAT: \n"
+assertEqual(con.bindFormat(),":*")
+print "\n"
+
+
+# nextval format
+print "NEXTVAL FORMAT: \n"
+assertEqual(con.nextvalFormat(),"")
+print "\n"
+
+
 # isolation levels
 print "ISOLATION LEVELS: \n"
-isolationlevels=["0","1"]
 for il in isolationlevels
 	assertTrue(con.setIsolationLevel(il))
 	assertEqual(con.getIsolationLevel(),il)
@@ -44,30 +73,26 @@ end
 assertTrue(con.setIsolationLevel(isolationlevels[0]))
 print "\n"
 
-# drop existing table
-cur.sendQuery("begin")
+
+# create testtable
+print "CREATE TESTTABLE: \n"
+con.begin()
 cur.sendQuery("drop table if exists testtable")
-con.commit()
-
-# create a new table
-
-
-# create temptable
-print "CREATE TEMPTABLE: \n"
-cur.sendQuery("begin")
 assertTrue(cur.sendQuery(
 	"create table testtable ("+
 	"	testint int, "+
 	"	testfloat float, "+
 	"	testchar char(40), "+
-	"	testvarchar varchar(40))"))
+	"	testvarchar varchar(40), "+
+	"	testclob clob, "+
+	"	testblob blob)"))
 con.commit()
 print "\n"
 
 
 # insert
 print "INSERT: \n"
-cur.sendQuery("begin")
+assertTrue(con.begin())
 assertTrue(cur.sendQuery(
 	"insert into "+
 	"	testtable "+
@@ -75,7 +100,9 @@ assertTrue(cur.sendQuery(
 	"	1, "+
 	"	1.1, "+
 	"	'testchar1', "+
-	"	'testvarchar1')"))
+	"	'testvarchar1', "+
+	"	'testclob1', "+
+	"	'testblob1')"))
 assertTrue(cur.sendQuery(
 	"insert into "+
 	"	testtable "+
@@ -83,7 +110,9 @@ assertTrue(cur.sendQuery(
 	"	2, "+
 	"	2.2, "+
 	"	'testchar2', "+
-	"	'testvarchar2')"))
+	"	'testvarchar2', "+
+	"	'testclob2', "+
+	"	'testblob2')"))
 assertTrue(cur.sendQuery(
 	"insert into "+
 	"	testtable "+
@@ -91,7 +120,9 @@ assertTrue(cur.sendQuery(
 	"	3, "+
 	"	3.3, "+
 	"	'testchar3', "+
-	"	'testvarchar3')"))
+	"	'testvarchar3', "+
+	"	'testclob3', "+
+	"	'testblob3')"))
 assertTrue(cur.sendQuery(
 	"insert into "+
 	"	testtable "+
@@ -99,7 +130,9 @@ assertTrue(cur.sendQuery(
 	"	4, "+
 	"	4.4, "+
 	"	'testchar4', "+
-	"	'testvarchar4')"))
+	"	'testvarchar4', "+
+	"	'testclob4', "+
+	"	'testblob4')"))
 print "\n"
 
 
@@ -109,40 +142,71 @@ assertEqual(cur.affectedRows(),1)
 print "\n"
 
 
-# bind by name
-print "BIND BY NAME: \n"
-cur.prepareQuery("insert into testtable values (:var1,:var2,:var3,:var4)")
-assertEqual(cur.countBindVariables(),4)
+# input bind by position
+# sqlite doesn't support bind by position
+
+
+# array of input binds by position
+# sqlite doesn't support bind by position
+
+
+# input bind by position with validation
+# sqlite doesn't support bind by position
+
+
+# input bind by name
+print "INPUT BIND BY NAME: \n"
+cur.prepareQuery(
+	"insert into "+
+	"	testtable "+
+	"values ("+
+	"	:var1, "+
+	"	:var2, "+
+	"	:var3, "+
+	"	:var4, "+
+	"	:var5, "+
+	"	:var6)")
+assertEqual(cur.countBindVariables(),6)
 cur.inputBind("var1",5)
 cur.inputBind("var2",5.5,4,1)
 cur.inputBind("var3","testchar5")
 cur.inputBind("var4","testvarchar5")
+cur.inputBindClob("var5","testclob5","testclob5".to_s.bytesize)
+cur.inputBindBlob("var6","testblob5","testblob5".to_s.bytesize)
 assertTrue(cur.executeQuery())
 cur.clearBinds()
 cur.inputBind("var1",6)
 cur.inputBind("var2",6.6,4,1)
 cur.inputBind("var3","testchar6")
 cur.inputBind("var4","testvarchar6")
+cur.inputBindClob("var5","testclob6","testclob6".to_s.bytesize)
+cur.inputBindBlob("var6","testblob6","testblob6".to_s.bytesize)
 assertTrue(cur.executeQuery())
-print "\n"
-
-
-# array of binds by name
-print "ARRAY OF BINDS BY NAME: \n"
 cur.clearBinds()
-cur.inputBinds(["var1","var2","var3","var4"],
-		[7,7.7,"testchar7","testvarchar7"],[0,4,0,0],[0,1,0,0])
+cur.inputBind("var1",7)
+cur.inputBind("var2",7.7,4,1)
+cur.inputBind("var3","testchar7")
+cur.inputBind("var4","testvarchar7")
+cur.inputBindClob("var5","testclob7","testclob7".to_s.bytesize)
+cur.inputBindBlob("var6","testblob7","testblob7".to_s.bytesize)
 assertTrue(cur.executeQuery())
 print "\n"
 
 
-# bind by name with validation
-print "BIND BY NAME WITH VALIDATION: \n"
+# array of input binds by name
+# sqlite doesn't support implicit conversion of string binds to other
+# data types, so arrays of binds don't generally work.
+
+
+# input bind by name with validation
+print "INPUT BIND BY NAME WITH VALIDATION: \n"
 cur.clearBinds()
 cur.inputBind("var1",8)
 cur.inputBind("var2",8.8,4,1)
 cur.inputBind("var3","testchar8")
 cur.inputBind("var4","testvarchar8")
+cur.inputBindClob("var5","testclob8","testclob8".to_s.bytesize)
+cur.inputBindBlob("var6","testblob8","testblob8".to_s.bytesize)
 cur.validateBinds()
 assertTrue(cur.executeQuery())
 print "\n"
@@ -156,7 +220,7 @@ print "\n"
 
 # column count
 print "COLUMN COUNT: \n"
-assertEqual(cur.colCount(),4)
+assertEqual(cur.colCount(),6)
 print "\n"
 
 
@@ -176,40 +240,67 @@ print "\n"
 
 # column types
 print "COLUMN TYPES: \n"
-assertEqual(cur.getColumnType(0),"INTEGER")
-assertEqual(cur.getColumnType('testint'),"INTEGER")
-assertEqual(cur.getColumnType(1),"FLOAT")
-assertEqual(cur.getColumnType('testfloat'),"FLOAT")
-assertEqual(cur.getColumnType(2),"STRING")
-assertEqual(cur.getColumnType('testchar'),"STRING")
-assertEqual(cur.getColumnType(3),"STRING")
-assertEqual(cur.getColumnType('testvarchar'),"STRING")
+if issqlite3
+	assertEqual(cur.getColumnType(0),"INTEGER")
+	assertEqual(cur.getColumnType("testint"),"INTEGER")
+	assertEqual(cur.getColumnType(1),"FLOAT")
+	assertEqual(cur.getColumnType("testfloat"),"FLOAT")
+	assertEqual(cur.getColumnType(2),"STRING")
+	assertEqual(cur.getColumnType("testchar"),"STRING")
+	assertEqual(cur.getColumnType(3),"STRING")
+	assertEqual(cur.getColumnType("testvarchar"),"STRING")
+	assertEqual(cur.getColumnType(4),"STRING")
+	assertEqual(cur.getColumnType("testclob"),"STRING")
+	assertEqual(cur.getColumnType(5),"STRING")
+	assertEqual(cur.getColumnType("testblob"),"STRING")
+else
+	assertEqual(cur.getColumnType(0),"UNKNOWN")
+	assertEqual(cur.getColumnType("testint"),"UNKNOWN")
+	assertEqual(cur.getColumnType(1),"UNKNOWN")
+	assertEqual(cur.getColumnType("testfloat"),"UNKNOWN")
+	assertEqual(cur.getColumnType(2),"UNKNOWN")
+	assertEqual(cur.getColumnType("testchar"),"UNKNOWN")
+	assertEqual(cur.getColumnType(3),"UNKNOWN")
+	assertEqual(cur.getColumnType("testvarchar"),"UNKNOWN")
+	assertEqual(cur.getColumnType(4),"UNKNOWN")
+	assertEqual(cur.getColumnType("testclob"),"UNKNOWN")
+	assertEqual(cur.getColumnType(5),"UNKNOWN")
+	assertEqual(cur.getColumnType("testblob"),"UNKNOWN")
+end
 print "\n"
 
 
 # column length
 print "COLUMN LENGTH: \n"
 assertEqual(cur.getColumnLength(0),0)
-assertEqual(cur.getColumnLength('testint'),0)
+assertEqual(cur.getColumnLength("testint"),0)
 assertEqual(cur.getColumnLength(1),0)
-assertEqual(cur.getColumnLength('testfloat'),0)
+assertEqual(cur.getColumnLength("testfloat"),0)
 assertEqual(cur.getColumnLength(2),0)
-assertEqual(cur.getColumnLength('testchar'),0)
+assertEqual(cur.getColumnLength("testchar"),0)
 assertEqual(cur.getColumnLength(3),0)
-assertEqual(cur.getColumnLength('testvarchar'),0)
+assertEqual(cur.getColumnLength("testvarchar"),0)
+assertEqual(cur.getColumnLength(4),0)
+assertEqual(cur.getColumnLength("testclob"),0)
+assertEqual(cur.getColumnLength(5),0)
+assertEqual(cur.getColumnLength("testblob"),0)
 print "\n"
 
 
 # longest column
 print "LONGEST COLUMN: \n"
 assertEqual(cur.getLongest(0),1)
-assertEqual(cur.getLongest('testint'),1)
+assertEqual(cur.getLongest("testint"),1)
 assertEqual(cur.getLongest(1),3)
-assertEqual(cur.getLongest('testfloat'),3)
+assertEqual(cur.getLongest("testfloat"),3)
 assertEqual(cur.getLongest(2),9)
-assertEqual(cur.getLongest('testchar'),9)
+assertEqual(cur.getLongest("testchar"),9)
 assertEqual(cur.getLongest(3),12)
-assertEqual(cur.getLongest('testvarchar'),12)
+assertEqual(cur.getLongest("testvarchar"),12)
+assertEqual(cur.getLongest(4),9)
+assertEqual(cur.getLongest("testclob"),9)
+assertEqual(cur.getLongest(5),9)
+assertEqual(cur.getLongest("testblob"),9)
 print "\n"
 
 
@@ -221,7 +312,7 @@ print "\n"
 
 # total rows
 print "TOTAL ROWS: \n"
-assertEqual(cur.totalRows(),0)
+assertEqual(cur.totalRows(),(issqlite3) ? 0 : 8)
 print "\n"
 
 
@@ -243,11 +334,15 @@ assertEqual(cur.getField(0,0),"1")
 assertEqual(cur.getField(0,1),"1.1")
 assertEqual(cur.getField(0,2),"testchar1")
 assertEqual(cur.getField(0,3),"testvarchar1")
+assertEqual(cur.getField(0,4),"testclob1")
+assertEqual(cur.getField(0,5),"testblob1")
 print "\n"
 assertEqual(cur.getField(7,0),"8")
 assertEqual(cur.getField(7,1),"8.8")
 assertEqual(cur.getField(7,2),"testchar8")
 assertEqual(cur.getField(7,3),"testvarchar8")
+assertEqual(cur.getField(7,4),"testclob8")
+assertEqual(cur.getField(7,5),"testblob8")
 print "\n"
 
 
@@ -257,11 +352,15 @@ assertEqual(cur.getFieldLength(0,0),1)
 assertEqual(cur.getFieldLength(0,1),3)
 assertEqual(cur.getFieldLength(0,2),9)
 assertEqual(cur.getFieldLength(0,3),12)
+assertEqual(cur.getFieldLength(0,4),9)
+assertEqual(cur.getFieldLength(0,5),9)
 print "\n"
 assertEqual(cur.getFieldLength(7,0),1)
 assertEqual(cur.getFieldLength(7,1),3)
 assertEqual(cur.getFieldLength(7,2),9)
 assertEqual(cur.getFieldLength(7,3),12)
+assertEqual(cur.getFieldLength(7,4),9)
+assertEqual(cur.getFieldLength(7,5),9)
 print "\n"
 
 
@@ -271,11 +370,15 @@ assertEqual(cur.getField(0,"testint"),"1")
 assertEqual(cur.getField(0,"testfloat"),"1.1")
 assertEqual(cur.getField(0,"testchar"),"testchar1")
 assertEqual(cur.getField(0,"testvarchar"),"testvarchar1")
+assertEqual(cur.getField(0,"testclob"),"testclob1")
+assertEqual(cur.getField(0,"testblob"),"testblob1")
 print "\n"
 assertEqual(cur.getField(7,"testint"),"8")
 assertEqual(cur.getField(7,"testfloat"),"8.8")
 assertEqual(cur.getField(7,"testchar"),"testchar8")
 assertEqual(cur.getField(7,"testvarchar"),"testvarchar8")
+assertEqual(cur.getField(7,"testclob"),"testclob8")
+assertEqual(cur.getField(7,"testblob"),"testblob8")
 print "\n"
 
 
@@ -285,11 +388,15 @@ assertEqual(cur.getFieldLength(0,"testint"),1)
 assertEqual(cur.getFieldLength(0,"testfloat"),3)
 assertEqual(cur.getFieldLength(0,"testchar"),9)
 assertEqual(cur.getFieldLength(0,"testvarchar"),12)
+assertEqual(cur.getFieldLength(0,"testclob"),9)
+assertEqual(cur.getFieldLength(0,"testblob"),9)
 print "\n"
 assertEqual(cur.getFieldLength(7,"testint"),1)
 assertEqual(cur.getFieldLength(7,"testfloat"),3)
 assertEqual(cur.getFieldLength(7,"testchar"),9)
 assertEqual(cur.getFieldLength(7,"testvarchar"),12)
+assertEqual(cur.getFieldLength(7,"testclob"),9)
+assertEqual(cur.getFieldLength(7,"testblob"),9)
 print "\n"
 
 
@@ -300,6 +407,8 @@ assertEqual(fields[0],"1")
 assertEqual(fields[1],"1.1")
 assertEqual(fields[2],"testchar1")
 assertEqual(fields[3],"testvarchar1")
+assertEqual(fields[4],"testclob1")
+assertEqual(fields[5],"testblob1")
 print "\n"
 
 
@@ -310,100 +419,8 @@ assertEqual(fieldlens[0],1)
 assertEqual(fieldlens[1],3)
 assertEqual(fieldlens[2],9)
 assertEqual(fieldlens[3],12)
-print "\n"
-
-
-# fields by hash
-print "FIELDS BY HASH: \n"
-fields=cur.getRowHash(0)
-assertEqual(fields["testint"],"1")
-assertEqual(fields["testfloat"],"1.1")
-assertEqual(fields["testchar"],"testchar1")
-assertEqual(fields["testvarchar"],"testvarchar1")
-print "\n"
-fields=cur.getRowHash(7)
-assertEqual(fields["testint"],"8")
-assertEqual(fields["testfloat"],"8.8")
-assertEqual(fields["testchar"],"testchar8")
-assertEqual(fields["testvarchar"],"testvarchar8")
-print "\n"
-
-
-# field lengths by hash
-print "FIELD LENGTHS BY HASH: \n"
-fieldlengths=cur.getRowLengthsHash(0)
-assertEqual(fieldlengths["testint"],1)
-assertEqual(fieldlengths["testfloat"],3)
-assertEqual(fieldlengths["testchar"],9)
-assertEqual(fieldlengths["testvarchar"],12)
-print "\n"
-fieldlengths=cur.getRowLengthsHash(7)
-assertEqual(fieldlengths["testint"],1)
-assertEqual(fieldlengths["testfloat"],3)
-assertEqual(fieldlengths["testchar"],9)
-assertEqual(fieldlengths["testvarchar"],12)
-print "\n"
-
-
-# individual substitutions
-print "INDIVIDUAL SUBSTITUTIONS: \n"
-cur.sendQuery("drop table if exists testtable1")
-assertTrue(cur.sendQuery(
-	"create table testtable1 ("+
-	"	col1 int, "+
-	"	col2 char, "+
-	"	col3 float)"))
-cur.prepareQuery("insert into testtable1 values ($(var1),'$(var2)',$(var3))")
-cur.substitution("var1",1)
-cur.substitution("var2","hello")
-cur.substitution("var3",10.5556,6,4)
-assertTrue(cur.executeQuery())
-print "\n"
-
-
-# fields
-print "FIELDS: \n"
-assertTrue(cur.sendQuery("select * from testtable1"))
-assertEqual(cur.getField(0,0),"1")
-assertEqual(cur.getField(0,1),"hello")
-assertEqual(cur.getField(0,2),"10.5556")
-assertTrue(cur.sendQuery("delete from testtable1"))
-print "\n"
-
-
-# array substitutions
-print "ARRAY SUBSTITUTIONS: \n"
-cur.prepareQuery("insert into testtable1 values ($(var1),'$(var2)',$(var3))")
-cur.substitutions(["var1","var2","var3"],
-			[1,"hello",10.5556],[0,0,6],[0,0,4])
-assertTrue(cur.executeQuery())
-print "\n"
-
-
-# fields
-print "FIELDS: \n"
-assertTrue(cur.sendQuery("select * from testtable1"))
-assertEqual(cur.getField(0,0),"1")
-assertEqual(cur.getField(0,1),"hello")
-assertEqual(cur.getField(0,2),"10.5556")
-assertTrue(cur.sendQuery("delete from testtable1"))
-print "\n"
-
-
-# nulls as nils
-print "NULLS AS NILS: \n"
-cur.getNullsAsNils()
-assertTrue(cur.sendQuery("insert into testtable1 values (1,NULL,NULL)"))
-assertTrue(cur.sendQuery("select * from testtable1"))
-assertEqual(cur.getField(0,0),"1")
-assertEqual(cur.getField(0,1),nil)
-assertEqual(cur.getField(0,2),nil)
-cur.getNullsAsEmptyStrings()
-assertTrue(cur.sendQuery("select * from testtable1"))
-assertEqual(cur.getField(0,0),"1")
-assertEqual(cur.getField(0,1),"")
-assertEqual(cur.getField(0,2),"")
-cur.getNullsAsNils()
+assertEqual(fieldlens[4],9)
+assertEqual(fieldlens[5],9)
 print "\n"
 
 
@@ -450,44 +467,13 @@ cur.getColumnInfo()
 assertTrue(cur.sendQuery("select * from testtable order by testint"))
 assertEqual(cur.getColumnName(0),"testint")
 assertEqual(cur.getColumnLength(0),0)
-assertEqual(cur.getColumnType(0),"INTEGER")
+assertEqual(cur.getColumnType(0),
+			(issqlite3) ? "INTEGER" : "UNKNOWN")
 print "\n"
 
 
 # suspended session
 print "SUSPENDED SESSION: \n"
-assertTrue(cur.sendQuery("select * from testtable order by testint"))
-cur.suspendResultSet()
-assertTrue(con.suspendSession())
-port=con.getConnectionPort()
-socket=con.getConnectionSocket()
-assertTrue(con.resumeSession(port,socket))
-print "\n"
-assertEqual(cur.getField(0,0),"1")
-assertEqual(cur.getField(1,0),"2")
-assertEqual(cur.getField(2,0),"3")
-assertEqual(cur.getField(3,0),"4")
-assertEqual(cur.getField(4,0),"5")
-assertEqual(cur.getField(5,0),"6")
-assertEqual(cur.getField(6,0),"7")
-assertEqual(cur.getField(7,0),"8")
-print "\n"
-assertTrue(cur.sendQuery("select * from testtable order by testint"))
-cur.suspendResultSet()
-assertTrue(con.suspendSession())
-port=con.getConnectionPort()
-socket=con.getConnectionSocket()
-assertTrue(con.resumeSession(port,socket))
-print "\n"
-assertEqual(cur.getField(0,0),"1")
-assertEqual(cur.getField(1,0),"2")
-assertEqual(cur.getField(2,0),"3")
-assertEqual(cur.getField(3,0),"4")
-assertEqual(cur.getField(4,0),"5")
-assertEqual(cur.getField(5,0),"6")
-assertEqual(cur.getField(6,0),"7")
-assertEqual(cur.getField(7,0),"8")
-print "\n"
 assertTrue(cur.sendQuery("select * from testtable order by testint"))
 cur.suspendResultSet()
 assertTrue(con.suspendSession())
@@ -551,7 +537,7 @@ print "\n"
 
 # column count for cached result set
 print "COLUMN COUNT FOR CACHED RESULT SET: \n"
-assertEqual(cur.colCount(),4)
+assertEqual(cur.colCount(),6)
 print "\n"
 
 
@@ -561,11 +547,15 @@ assertEqual(cur.getColumnName(0),"testint")
 assertEqual(cur.getColumnName(1),"testfloat")
 assertEqual(cur.getColumnName(2),"testchar")
 assertEqual(cur.getColumnName(3),"testvarchar")
+assertEqual(cur.getColumnName(4),"testclob")
+assertEqual(cur.getColumnName(5),"testblob")
 cols=cur.getColumnNames()
 assertEqual(cols[0],"testint")
 assertEqual(cols[1],"testfloat")
 assertEqual(cols[2],"testchar")
 assertEqual(cols[3],"testvarchar")
+assertEqual(cols[4],"testclob")
+assertEqual(cols[5],"testblob")
 print "\n"
 
 
@@ -651,32 +641,9 @@ cur.setResultSetBufferSize(0)
 print "\n"
 
 
-# commit
-print "COMMIT: \n"
-secondcon=SQLRConnection.new("sqlrelay",9000,"/tmp/test.socket",
-						"testuser","testpassword",0,1);
-secondcur=SQLRCursor.new(secondcon)
-assertTrue(secondcur.sendQuery("select count(*) from testtable"))
-assertEqual(secondcur.getField(0,0),"0")
-assertTrue(con.commit())
-assertTrue(secondcur.sendQuery("select count(*) from testtable"))
-assertEqual(secondcur.getField(0,0),"8")
-assertTrue(cur.sendQuery(
-	"insert into "+
-	"	testtable "+
-	"values ("+
-	"	10, "+
-	"	10.1, "+
-	"	'testchar10', "+
-	"	'testvarchar10')"))
-assertTrue(secondcur.sendQuery("select count(*) from testtable"))
-assertEqual(secondcur.getField(0,0),"9")
-print "\n"
-
-
 # finished suspended session
 print "FINISHED SUSPENDED SESSION: \n"
-assertTrue(cur.sendQuery("select * from testtable order by testint"))
+assertTrue(cur.sendQuery("select * from testtable"))
 assertEqual(cur.getField(4,0),"5")
 assertEqual(cur.getField(5,0),"6")
 assertEqual(cur.getField(6,0),"7")
@@ -694,8 +661,671 @@ assertEqual(cur.getField(6,0),nil)
 assertEqual(cur.getField(7,0),nil)
 print "\n"
 
-# drop existing table
+
+# nested selects
+print "NESTED SELECTS: \n"
+cur.setResultSetBufferSize(1)
+assertTrue(cur.sendQuery("select * from testtable"))
+i=0
+while cur.getRow(i)
+	secondcur=SQLRCursor.new(con)
+	secondcur.setResultSetBufferSize(1)
+	assertTrue(secondcur.sendQuery("select * from testtable"))
+	secondcur.closeResultSet()
+	i=i+1
+end
+cur.setResultSetBufferSize(0)
+print "\n"
+
+
+# commit and rollback
+print "COMMIT AND ROLLBACK: \n"
+secondcon=SQLRConnection.new("sqlrelay",9000,"/tmp/test.socket",
+					"testuser","testpassword",0,1)
+secondcur=SQLRCursor.new(secondcon)
+setSecondConnection(secondcon)
+setSecondCursor(secondcur)
+assertTrue(secondcur.sendQuery("select count(*) from testtable"))
+assertEqual(secondcur.getField(0,0),"0")
+assertTrue(con.commit())
+assertTrue(secondcur.sendQuery("select count(*) from testtable"))
+assertEqual(secondcur.getField(0,0),"8")
+assertTrue(con.begin())
+assertTrue(cur.sendQuery(
+	"insert into "+
+	"	testtable "+
+	"values ("+
+	"	10, "+
+	"	10.1, "+
+	"	'testchar10', "+
+	"	'testvarchar10', "+
+	"	'testclob10', "+
+	"	'testblob10')"))
+assertTrue(con.rollback())
+assertTrue(secondcur.sendQuery("select count(*) from testtable"))
+assertEqual(secondcur.getField(0,0),"8")
+assertTrue(cur.sendQuery(
+	"insert into "+
+	"	testtable "+
+	"values ("+
+	"	10, "+
+	"	10.1, "+
+	"	'testchar10', "+
+	"	'testvarchar10', "+
+	"	'testclob10', "+
+	"	'testblob10')"))
+assertTrue(secondcur.sendQuery("select count(*) from testtable"))
+assertEqual(secondcur.getField(0,0),"9")
+secondcon.endSession()
+setSecondCursor(nil)
+setSecondConnection(nil)
+assertTrue(cur.sendQuery("drop table if exists testtable"))
+print "\n"
+
+
+# individual substitutions
+print "INDIVIDUAL SUBSTITUTIONS: \n"
 cur.sendQuery("drop table if exists testtable")
+assertTrue(cur.sendQuery(
+	"create table testtable ("+
+	"	col1 int, "+
+	"	col2 char, "+
+	"	col3 float)"))
+cur.prepareQuery(
+	"insert into "+
+	"	testtable "+
+	"values ("+
+	"	$(var1), "+
+	"	'$(var2)', "+
+	"	$(var3))")
+cur.substitution("var1",1)
+cur.substitution("var2","hello")
+cur.substitution("var3",10.5556,6,4)
+assertTrue(cur.executeQuery())
+assertTrue(cur.sendQuery("select * from testtable"))
+assertEqual(cur.getField(0,0),"1")
+assertEqual(cur.getField(0,1),"hello")
+assertEqual(cur.getField(0,2),"10.5556")
+assertTrue(cur.sendQuery("delete from testtable"))
+print "\n"
+
+
+# array substitutions
+print "ARRAY SUBSTITUTIONS: \n"
+cur.prepareQuery(
+	"insert into "+
+	"	testtable "+
+	"values ("+
+	"	'$(var1)', "+
+	"	'$(var2)', "+
+	"	'$(var3)')")
+cur.substitutions(subvars,subvalstrings)
+assertTrue(cur.executeQuery())
+assertTrue(cur.sendQuery("select * from testtable"))
+assertEqual(cur.getField(0,0),"hi")
+assertEqual(cur.getField(0,1),"hello")
+assertEqual(cur.getField(0,2),"bye")
+assertTrue(cur.sendQuery("delete from testtable"))
+print "\n"
+cur.prepareQuery(
+	"insert into "+
+	"	testtable "+
+	"values ("+
+	"	$(var1), "+
+	"	'$(var2)', "+
+	"	$(var3))")
+cur.substitutions(subvars,subvallongs)
+assertTrue(cur.executeQuery())
+assertTrue(cur.sendQuery("select * from testtable"))
+assertEqual(cur.getField(0,0),"1")
+assertEqual(cur.getField(0,1),"2")
+assertEqual(cur.getField(0,2),"3.0")
+assertTrue(cur.sendQuery("delete from testtable"))
+print "\n"
+cur.prepareQuery(
+	"insert into "+
+	"	testtable "+
+	"values ("+
+	"	$(var1), "+
+	"	'$(var2)', "+
+	"	$(var3))")
+cur.substitutions(subvars,subvaldoubles,precs,scales)
+assertTrue(cur.executeQuery())
+assertTrue(cur.sendQuery("select * from testtable"))
+assertEqual(cur.getField(0,0),"10.55")
+assertEqual(cur.getField(0,1),"10.556")
+assertEqual(cur.getField(0,2),"10.5556")
+assertTrue(cur.sendQuery("delete from testtable"))
+print "\n"
+
+
+# nulls as nulls
+print "NULLS AS NULLS: \n"
+cur.getNullsAsNils()
+assertTrue(cur.sendQuery(
+	"insert into "+
+	"	testtable "+
+	"values ("+
+	"	1, "+
+	"	NULL, "+
+	"	NULL)"))
+assertTrue(cur.sendQuery("select * from testtable"))
+assertEqual(cur.getField(0,0),"1")
+assertEqual(cur.getField(0,1),nil)
+assertEqual(cur.getField(0,2),nil)
+cur.getNullsAsEmptyStrings()
+assertTrue(cur.sendQuery("select * from testtable"))
+assertEqual(cur.getField(0,0),"1")
+assertEqual(cur.getField(0,1),"")
+assertEqual(cur.getField(0,2),"")
+assertTrue(cur.sendQuery("drop table if exists testtable"))
+print "\n"
+
+
+# null and empty lobs
+print "NULL AND EMPTY LOBS: \n"
+cur.getNullsAsNils()
+cur.sendQuery("drop table testtable")
+assertTrue(cur.sendQuery(
+	"create table testtable ("+
+	"	testclob1 clob, "+
+	"	testclob2 clob, "+
+	"	testblob1 blob, "+
+	"	testblob2 blob)"))
+cur.prepareQuery(
+	"insert into "+
+	"	testtable "+
+	"values ("+
+	"	:var1, "+
+	"	:var2, "+
+	"	:var3, "+
+	"	:var4)")
+cur.inputBindClob("var1","","".to_s.bytesize)
+cur.inputBindClob("var2",nil,nil.to_s.bytesize)
+cur.inputBindBlob("var3","","".to_s.bytesize)
+cur.inputBindBlob("var4",nil,nil.to_s.bytesize)
+assertTrue(cur.executeQuery())
+cur.sendQuery("select * from testtable")
+assertEqual(cur.getField(0,0),"")
+assertEqual(cur.getField(0,1),nil)
+assertEqual(cur.getField(0,2),"")
+assertEqual(cur.getField(0,3),nil)
+cur.getNullsAsEmptyStrings()
+assertTrue(cur.sendQuery("drop table testtable"))
+print "\n"
+
+
+# long lobs
+print "LONG LOBS: \n"
+cur.sendQuery("drop table testtable")
+cur.sendQuery(
+	"create table testtable ("+
+	"	testclob clob, "+
+	"	testblob blob)")
+cur.prepareQuery("insert into testtable values (:clobval,:blobval)")
+largebuffer = "C" * 8192
+cur.inputBindClob("clobval",largebuffer,largebuffer.to_s.bytesize)
+cur.inputBindBlob("blobval",largebuffer,largebuffer.to_s.bytesize)
+assertTrue(cur.executeQuery())
+cur.sendQuery("select * from testtable")
+assertEqual(cur.getFieldLength(0,"testclob"),8192)
+assertEqual(cur.getField(0,"testclob"),largebuffer)
+assertEqual(cur.getFieldLength(0,"testblob"),8192)
+assertEqualLen(cur.getField(0,"testblob"),largebuffer,8192)
+assertTrue(cur.sendQuery("drop table testtable"))
+print "\n"
+
+
+# output bind by position
+# sqlite doesn't support output binds
+
+
+# output bind by name
+# sqlite doesn't support output binds
+
+
+# output bind by name with validation
+# sqlite doesn't support output binds
+
+
+# lob output bind
+# sqlite doesn't support output binds
+
+
+# long output bind
+# sqlite doesn't support output binds
+
+
+# negative input bind
+print "NEGATIVE INPUT BIND: \n"
+cur.sendQuery("drop table testtable")
+cur.sendQuery("create table testtable (testval int)")
+cur.prepareQuery("insert into testtable values (:testval)")
+cur.inputBind("testval",-1)
+assertTrue(cur.executeQuery())
+cur.sendQuery("select testval from testtable")
+assertEqual(cur.getField(0,"testval"),"-1")
+assertTrue(cur.sendQuery("drop table testtable"))
+print "\n"
+
+
+# bind validation
+print "BIND VALIDATION: \n"
+cur.sendQuery("drop table testtable")
+cur.sendQuery(
+	"create table testtable ("+
+	"	col1 varchar(20), "+
+	"	col2 varchar(20), "+
+	"	col3 varchar(20))")
+cur.prepareQuery(
+	"insert into "+
+	"	testtable "+
+	"values ("+
+	"	$(var1), "+
+	"	$(var2), "+
+	"	$(var3))")
+cur.inputBind("var1","1")
+cur.inputBind("var2","2")
+cur.inputBind("var3","3")
+cur.substitution("var1",":var1")
+assertTrue(cur.validBind("var1"))
+assertFalse(cur.validBind("var2"))
+assertFalse(cur.validBind("var3"))
+assertFalse(cur.validBind("var4"))
+print "\n"
+cur.substitution("var2",":var2")
+assertTrue(cur.validBind("var1"))
+assertTrue(cur.validBind("var2"))
+assertFalse(cur.validBind("var3"))
+assertFalse(cur.validBind("var4"))
+print "\n"
+cur.substitution("var3",":var3")
+assertTrue(cur.validBind("var1"))
+assertTrue(cur.validBind("var2"))
+assertTrue(cur.validBind("var3"))
+assertFalse(cur.validBind("var4"))
+assertTrue(cur.executeQuery())
+assertTrue(cur.sendQuery("drop table testtable"))
+print "\n"
+
+
+# rebinding
+print "REBINDING: \n"
+cur.prepareQuery("select :val")
+cur.inputBind("val",1)
+assertTrue(cur.executeQuery())
+assertEqual(cur.getField(0,0),"1")
+cur.inputBind("val",2)
+assertTrue(cur.executeQuery())
+assertEqual(cur.getField(0,0),"2")
+cur.inputBind("val",3)
+assertTrue(cur.executeQuery())
+assertEqual(cur.getField(0,0),"3")
+print "\n"
+
+
+# reexecute
+print "REEXECUTE: \n"
+cur.prepareQuery("select 1")
+assertTrue(cur.executeQuery())
+assertEqual(cur.rowCount(),1)
+assertEqual(cur.getField(0,0),"1")
+print "\n"
+assertTrue(cur.executeQuery())
+assertEqual(cur.rowCount(),1)
+assertEqual(cur.getField(0,0),"1")
+print "\n"
+cur.prepareQuery("select :var")
+cur.inputBind("var",1)
+assertTrue(cur.executeQuery())
+assertEqual(cur.rowCount(),1)
+assertEqual(cur.getField(0,0),"1")
+print "\n"
+assertTrue(cur.executeQuery())
+assertEqual(cur.rowCount(),1)
+assertEqual(cur.getField(0,0),"1")
+print "\n"
+cur.inputBind("var",2)
+assertTrue(cur.executeQuery())
+assertEqual(cur.rowCount(),1)
+assertEqual(cur.getField(0,0),"2")
+print "\n"
+
+
+# stored procedure returning no value
+# sqlite doesn't support stored procedures
+
+
+# stored procedure returning single value
+# sqlite doesn't support stored procedures
+
+
+# stored procedure returning multiple values
+# sqlite doesn't support stored procedures
+
+
+# stored procedure returning result set
+# sqlite doesn't support stored procedures
+
+
+# temporary tables
+print "TEMPORARY TABLES: \n"
+cur.sendQuery("drop table if exists temptable\n")
+cur.sendQuery("create temporary table temptable (col1 int)")
+assertTrue(cur.sendQuery("insert into temptable values (1)"))
+assertTrue(cur.sendQuery("select count(*) from temptable"))
+assertEqual(cur.getField(0,0),"1")
+con.endSession()
+print "\n"
+assertFalse(cur.sendQuery("select count(*) from temptable"))
+assertTrue(cur.sendQuery("drop table if exists temptable\n"))
+print "\n"
+
+
+# encoded binary data
+print "ENCODED BINARY DATA: \n"
+cur.sendQuery("drop table testtable")
+assertTrue(cur.sendQuery("create table testtable (col1 blob)"))
+buffer = (0..255).map { |j| j.chr }.join
+querystr = "insert into testtable values (X'"
+querystr = querystr + buffer.bytes.map { |b| "%02x" % b }.join
+querystr = querystr + "')"
+assertTrue(cur.sendQuery(querystr))
+assertTrue(cur.sendQuery("select col1 from testtable"))
+assertEqual(cur.getFieldLength(0,0),buffer.length)
+assertEqual(cur.getField(0,0),buffer)
+assertTrue(cur.sendQuery("drop table testtable"))
+print "\n"
+
+
+# quotes
+print "QUOTES: \n"
+cur.sendQuery("drop table testtable")
+assertTrue(cur.sendQuery("create table testtable (col1 varchar(4))"))
+assertTrue(cur.sendQuery("insert into testtable values ('''''')"))
+assertTrue(cur.sendQuery("select col1 from testtable"))
+assertEqual(cur.getFieldLength(0,0),2)
+assertEqual(cur.getField(0,0),"''")
+assertTrue(cur.sendQuery("drop table testtable"))
+print "\n"
+
+
+# last insert id
+print "LAST INSERT ID: \n"
+cur.sendQuery("drop table testtable")
+assertTrue(cur.sendQuery(
+		"create table testtable "+
+		"	(col1 integer primary key "+
+		"	autoincrement, "+
+		"	col2 int)"))
+assertTrue(cur.sendQuery(
+		"insert into testtable values (null,1)"))
+assertEqual(con.getLastInsertId(),1)
+assertTrue(cur.sendQuery("drop table testtable"))
+print "\n"
+
+
+# database is schema
+print "DATABASE IS SCHEMA: \n"
+assertFalse(con.getDatabaseIsSchema())
+print "\n"
+
+
+# catalog list
+print "CATALOG LIST: \n"
+assertTrue(cur.getCatalogList(nil))
+assertEqual(cur.getColumnName(0),"Database")
+print "\n"
+
+
+# schema list
+print "SCHEMA LIST: \n"
+assertTrue(cur.getSchemaList(nil))
+assertEqual(cur.getColumnName(0),"Database")
+print "\n"
+
+
+# table type list
+print "TABLE TYPE LIST: \n"
+assertTrue(cur.getTableTypeList())
+assertEqual(cur.getColumnName(0),"table_type")
+found=false
+for i in 0...cur.rowCount()
+	if cur.getField(i,"table_type").eql?("TABLE")
+		found=true
+		break
+	end
+end
+assertTrue(found)
+print "\n"
+
+
+# table list
+print "TABLE LIST: \n"
+cur.sendQuery("drop table if exists testtable1")
+cur.sendQuery("drop table if exists testtable2")
+cur.sendQuery("drop table if exists testtable3")
+cur.sendQuery("drop table if exists testtable4")
+assertTrue(cur.sendQuery(
+	"create table testtable1 ("+
+	"	col1 int, "+
+	"	col2 int)"))
+assertTrue(cur.sendQuery(
+	"create table testtable2 ("+
+	"	col1 int, "+
+	"	col2 int)"))
+assertTrue(cur.sendQuery(
+	"create table testtable3 ("+
+	"	col1 int, "+
+	"	col2 int)"))
+assertTrue(cur.sendQuery(
+	"create table testtable4 ("+
+	"	col1 int, "+
+	"	col2 int)"))
+assertTrue(cur.getTableList(nil))
+counter=0
+for i in 0...cur.rowCount()
+	name=cur.getField(i,"Tables_in_xxx")
+	if name.eql?("testtable1") ||
+		name.eql?("testtable2") ||
+		name.eql?("testtable3") ||
+		name.eql?("testtable4")
+		counter=counter+1
+	end
+end
+assertEqual(counter,4)
+assertTrue(cur.sendQuery("drop table if exists testtable1"))
+assertTrue(cur.sendQuery("drop table if exists testtable2"))
+assertTrue(cur.sendQuery("drop table if exists testtable3"))
+assertTrue(cur.sendQuery("drop table if exists testtable4"))
+print "\n"
+
+
+# type info list
+print "TYPE INFO LIST: \n"
+assertTrue(cur.getTypeInfoList("integer"))
+assertEqual(cur.getColumnName(0),"type_name")
+assertEqual(cur.getColumnName(1),"data_type")
+assertEqual(cur.getColumnName(2),"precision")
+assertEqual(cur.getColumnName(3),"literal_prefix")
+assertEqual(cur.getColumnName(4),"literal_suffix")
+assertEqual(cur.getColumnName(5),"create_params")
+assertEqual(cur.getColumnName(6),"nullable")
+assertEqual(cur.getColumnName(7),"case_sensitive")
+assertEqual(cur.getColumnName(8),"searchable")
+assertEqual(cur.getColumnName(9),"unsigned_attribute")
+assertEqual(cur.getColumnName(10),"fixed_prec_scale")
+assertEqual(cur.getColumnName(11),"auto_increment")
+assertEqual(cur.getColumnName(12),"local_type_name")
+assertEqual(cur.getColumnName(13),"minumum_scale")
+assertEqual(cur.getColumnName(14),"maxiumm_scale")
+assertEqual(cur.getColumnName(15),"sql_data_type")
+assertEqual(cur.getColumnName(16),"sql_datetime_sub")
+assertEqual(cur.getColumnName(17),"num_prec_radix")
+assertEqual(cur.getColumnName(18),"interval_precision")
+assertEqual(cur.getField(0,"type_name"),"INTEGER")
+assertEqual(cur.getField(0,"data_type"),"4")
+assertEqual(cur.getField(0,"precision"),"19")
+assertEqual(cur.getField(0,"local_type_name"),"INTEGER")
+assertTrue(cur.getTypeInfoList("char"))
+assertEqual(cur.getField(0,"type_name"),"CHAR")
+assertEqual(cur.getField(0,"data_type"),"1")
+assertEqual(cur.getField(0,"precision"),"2147483647")
+assertEqual(cur.getField(0,"local_type_name"),"CHAR")
+assertTrue(cur.getTypeInfoList("varchar"))
+assertEqual(cur.getField(0,"type_name"),"VARCHAR")
+assertEqual(cur.getField(0,"data_type"),"12")
+assertEqual(cur.getField(0,"precision"),"2147483647")
+assertEqual(cur.getField(0,"local_type_name"),"VARCHAR")
+assertTrue(cur.getTypeInfoList("date"))
+assertEqual(cur.getField(0,"type_name"),"DATE")
+assertEqual(cur.getField(0,"data_type"),"91")
+assertEqual(cur.getField(0,"precision"),"10")
+assertEqual(cur.getField(0,"local_type_name"),"DATE")
+print "\n"
+
+
+# column list
+print "COLUMN LIST: \n"
+cur.sendQuery("drop table if exists testtable")
+assertTrue(cur.sendQuery(
+	"create table testtable ("+
+	"	testint int, "+
+	"	testfloat float, "+
+	"	testchar char(40), "+
+	"	testvarchar varchar(40), "+
+	"	testclob clob, "+
+	"	testblob blob)"))
+assertTrue(cur.getColumnList("testtable",nil))
+assertEqual(cur.getColumnName(0),"column_name")
+assertEqual(cur.getColumnName(1),"data_type")
+assertEqual(cur.getColumnName(2),"character_maximum_length")
+assertEqual(cur.getColumnName(3),"numeric_precision")
+assertEqual(cur.getColumnName(4),"numeric_scale")
+assertEqual(cur.getColumnName(5),"is_nullable")
+assertEqual(cur.getColumnName(6),"column_key")
+assertEqual(cur.getColumnName(7),"column_default")
+assertEqual(cur.getColumnName(8),"extra")
+assertEqual(cur.getField(0,"column_name"),"testint")
+assertEqual(cur.getField(1,"column_name"),"testfloat")
+assertEqual(cur.getField(2,"column_name"),"testchar")
+assertEqual(cur.getField(3,"column_name"),"testvarchar")
+assertEqual(cur.getField(4,"column_name"),"testclob")
+assertEqual(cur.getField(5,"column_name"),"testblob")
+assertEqual(cur.getField(0,"data_type"),"INT")
+assertEqual(cur.getField(1,"data_type"),"FLOAT")
+assertEqual(cur.getField(2,"data_type"),"CHAR")
+assertEqual(cur.getField(3,"data_type"),"VARCHAR")
+assertEqual(cur.getField(4,"data_type"),"CLOB")
+assertEqual(cur.getField(5,"data_type"),"BLOB")
+assertTrue(cur.sendQuery("drop table if exists testtable"))
+print "\n"
+
+
+# column list - auto_increment, primary key
+print "COLUMN LIST - auto_increment, primary key: \n"
+cur.sendQuery("drop table if exists testtable")
+assertTrue(cur.sendQuery(
+	"create table testtable ("+
+	"	col1 integer primary key autoincrement, "+
+	"	col2 int)"))
+assertTrue(cur.getColumnList("testtable",nil))
+assertTrue(cur.getField(0,"extra").include?("auto_increment"))
+assertTrue(cur.getField(0,"column_key").include?("PRI"))
+assertFalse(cur.getField(1,"extra").include?("auto_increment"))
+assertFalse(cur.getField(1,"column_key").include?("PRI"))
+print "\n"
+assertTrue(cur.sendQuery("drop table if exists testtable"))
+assertTrue(cur.sendQuery(
+	"create table testtable ("+
+	"	col1 int primary key, "+
+	"	col2 int)"))
+assertTrue(cur.getColumnList("testtable",nil))
+assertFalse(cur.getField(0,"extra").include?("auto_increment"))
+assertTrue(cur.getField(0,"column_key").include?("PRI"))
+assertTrue(cur.sendQuery("drop table if exists testtable"))
+print "\n"
+
+
+# primary keys list
+print "PRIMARY KEYS LIST: \n"
+cur.sendQuery("drop table if exists testtable")
+assertTrue(cur.sendQuery(
+	"create table testtable ("+
+	"	col1 int primary key, "+
+	"	col2 int)"))
+assertTrue(cur.getPrimaryKeysList("testtable",nil))
+assertEqual(cur.getColumnName(0),"table")
+assertEqual(cur.getColumnName(1),"non_unique")
+assertEqual(cur.getColumnName(2),"key_name")
+assertEqual(cur.getColumnName(3),"seq_in_index")
+assertEqual(cur.getColumnName(4),"column_name")
+assertEqual(cur.getColumnName(5),"collation")
+assertEqual(cur.getColumnName(6),"cardinality")
+assertEqual(cur.getColumnName(7),"sub_part")
+assertEqual(cur.getColumnName(8),"packed")
+assertEqual(cur.getColumnName(9),"null")
+assertEqual(cur.getColumnName(10),"index_type")
+assertEqual(cur.getColumnName(11),"comment")
+assertEqual(cur.getColumnName(12),"index_comment")
+assertEqual(cur.rowCount(),1)
+assertTrue(cur.getField(0,"table").eql?("testtable"))
+assertEqual(cur.getField(0,"seq_in_index"),"1")
+assertTrue(cur.getField(0,"column_name").eql?("col1"))
+assertTrue(cur.sendQuery("drop table if exists testtable"))
+print "\n"
+
+
+# key and index list
+print "KEY AND INDEX LIST: \n"
+cur.sendQuery("drop table if exists testtable")
+assertTrue(cur.sendQuery(
+	"create table testtable ("+
+	"	col1 int primary key, "+
+	"	col2 int)"))
+assertTrue(cur.getKeyAndIndexList("testtable",nil))
+assertEqual(cur.getColumnName(0),"table")
+assertEqual(cur.getColumnName(1),"non_unique")
+assertEqual(cur.getColumnName(2),"key_name")
+assertEqual(cur.getColumnName(3),"seq_in_index")
+assertEqual(cur.getColumnName(4),"column_name")
+assertEqual(cur.getColumnName(5),"collation")
+assertEqual(cur.getColumnName(6),"cardinality")
+assertEqual(cur.getColumnName(7),"sub_part")
+assertEqual(cur.getColumnName(8),"packed")
+assertEqual(cur.getColumnName(9),"null")
+assertEqual(cur.getColumnName(10),"index_type")
+assertEqual(cur.getColumnName(11),"comment")
+assertEqual(cur.getColumnName(12),"index_comment")
+assertEqual(cur.rowCount(),1)
+assertTrue(cur.getField(0,"table").eql?("testtable"))
+assertEqual(cur.getField(0,"non_unique"),"0")
+assertEqual(cur.getField(0,"seq_in_index"),"1")
+assertTrue(cur.getField(0,"column_name").eql?("col1"))
+assertEqual(cur.getField(0,"collation"),"A")
+assertEqual(cur.getField(0,"index_type"),"3")
+assertTrue(!(cur.getField(0,"key_name").nil? || cur.getField(0,"key_name").empty?))
+assertTrue(cur.sendQuery("drop table if exists testtable"))
+print "\n"
+
+
+# procedure list
+print "PROCEDURE LIST: \n"
+assertTrue(cur.getProcedureList(nil))
+assertEqual(cur.rowCount(),0)
+print "\n"
+
+
+# procedure parameter list
+print "PROCEDURE PARAMETER LIST: \n"
+assertTrue(cur.getProcedureParameterList("testproc1",nil))
+assertEqual(cur.getColumnName(0),"parameter_name")
+assertEqual(cur.getColumnName(1),"parameter_mode")
+assertEqual(cur.getColumnName(2),"data_type")
+assertEqual(cur.getColumnName(3),"character_maximum_length")
+assertEqual(cur.getColumnName(4),"ordinal_position")
+assertEqual(cur.rowCount(),0)
+print "\n"
 
 
 # invalid queries

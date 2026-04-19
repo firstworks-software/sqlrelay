@@ -1980,7 +1980,7 @@ DLEXPORT ZEND_FUNCTION(sqlrcur_inputbindblob) {
 	ZVAL variable;
 	ZVAL value;
 	ZVAL size;
-	if (ZEND_NUM_ARGS() != 4 || 
+	if (ZEND_NUM_ARGS() != 4 ||
 		GET_PARAMETERS(
 				ZEND_NUM_ARGS() TSRMLS_CC,
 				PARAMS("zzzz")
@@ -1991,7 +1991,10 @@ DLEXPORT ZEND_FUNCTION(sqlrcur_inputbindblob) {
 		WRONG_PARAM_COUNT;
 	}
 	convert_to_string_ex(variable);
-	convert_to_string_ex(value);
+	bool	valueisnull=(TYPE(value)==IS_NULL);
+	if (!valueisnull) {
+		convert_to_string_ex(value);
+	}
 	convert_to_long_ex(size);
 	sqlrcursor *cursor=NULL;
 	ZEND_FETCH_RESOURCE(cursor,
@@ -2002,7 +2005,7 @@ DLEXPORT ZEND_FUNCTION(sqlrcur_inputbindblob) {
 				sqlrelay_cursor);
 	if (cursor) {
 		cursor->inputBindBlob(SVAL(variable),
-					SVAL(value),
+					(valueisnull)?NULL:SVAL(value),
 					LVAL(size));
 		RETURN_LONG(1);
 	}
@@ -2014,7 +2017,7 @@ DLEXPORT ZEND_FUNCTION(sqlrcur_inputbindclob) {
 	ZVAL variable;
 	ZVAL value;
 	ZVAL size;
-	if (ZEND_NUM_ARGS() != 4 || 
+	if (ZEND_NUM_ARGS() != 4 ||
 		GET_PARAMETERS(
 				ZEND_NUM_ARGS() TSRMLS_CC,
 				PARAMS("zzzz")
@@ -2025,7 +2028,10 @@ DLEXPORT ZEND_FUNCTION(sqlrcur_inputbindclob) {
 		WRONG_PARAM_COUNT;
 	}
 	convert_to_string_ex(variable);
-	convert_to_string_ex(value);
+	bool	valueisnull=(TYPE(value)==IS_NULL);
+	if (!valueisnull) {
+		convert_to_string_ex(value);
+	}
 	convert_to_long_ex(size);
 	sqlrcursor *cursor=NULL;
 	ZEND_FETCH_RESOURCE(cursor,
@@ -2036,7 +2042,7 @@ DLEXPORT ZEND_FUNCTION(sqlrcur_inputbindclob) {
 				sqlrelay_cursor);
 	if (cursor) {
 		cursor->inputBindClob(SVAL(variable),
-					SVAL(value),
+					(valueisnull)?NULL:SVAL(value),
 					LVAL(size));
 		RETURN_LONG(1);
 	}
@@ -6757,6 +6763,9 @@ ZEND_END_ARG_INFO()
 ZEND_BEGIN_ARG_INFO_EX(arginfo_sqlrcur_resumecachedresultset,0,0,0)
 ZEND_END_ARG_INFO()
 
+ZEND_BEGIN_ARG_INFO_EX(arginfo_sqlrcur_closeresultset,0,0,0)
+ZEND_END_ARG_INFO()
+
 ZEND_BEGIN_ARG_INFO_EX(arginfo_sqlrcon_ping,0,0,0)
 ZEND_END_ARG_INFO()
 
@@ -7153,6 +7162,8 @@ zend_function_entry sql_relay_functions[] = {
 		ARGINFO(arginfo_sqlrcur_resumeresultset))
 	ZEND_FE(sqlrcur_resumecachedresultset,
 		ARGINFO(arginfo_sqlrcur_resumecachedresultset))
+	ZEND_FE(sqlrcur_closeresultset,
+		ARGINFO(arginfo_sqlrcur_closeresultset))
 	ZEND_FE(sqlrcon_ping,
 		ARGINFO(arginfo_sqlrcon_ping))
 	ZEND_FE(sqlrcon_identify,

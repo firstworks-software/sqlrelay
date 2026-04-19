@@ -1271,7 +1271,7 @@ for ($i=0; ; $i++) {
 	$secondcur=SQLRelay::Cursor->new($con);
 	$secondcur->setResultSetBufferSize(1);
 	assertTrue($secondcur->sendQuery("select * from testtable"));
-	$secondcur=undef;
+	$secondcur->closeResultSet();
 }
 #$cur->setResultSetBufferSize(0);
 print("\n");
@@ -1358,6 +1358,7 @@ assertTrue($cur->sendQuery(
 assertTrue($secondcon->commit());
 assertTrue($secondcur->sendQuery("select count(*) from testtable"));
 assertEquals($secondcur->getField(0,0),"9");
+$secondcon->endSession();
 $secondcon->commit();
 $secondcur=undef;
 $secondcon=undef;

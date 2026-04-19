@@ -2040,7 +2040,7 @@ class sqlrcursor:
         """
         return CSQLRelay.resumeCachedResultSet(self.cursor, id, filename)
 
-    def closeResultSet():
+    def closeResultSet(self):
         """
         Closes the current result set, if one is open.  Data
         that has been fetched already is still available but

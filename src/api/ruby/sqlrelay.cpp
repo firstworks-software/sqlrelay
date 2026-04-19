@@ -16,6 +16,10 @@
 	#define STR2CSTR(v) StringValuePtr(v)
 #endif
 
+// nil-tolerant C-string extractor: returns NULL for Qnil, else calls
+// StringValuePtr (which raises TypeError on non-string non-nil).
+#define STR2CSTR_NIL(v) (NIL_P(v)?(const char *)NULL:STR2CSTR(v))
+
 #include <rudiments/bytestring.h>
 #include "../c++/sqlrelay/sqlrclient.h"
 
@@ -259,19 +263,13 @@ static void sqlrcon_free(void *sqlrcon) {
  *  it is nil or "" then no attempt will be made to connect through the
  *  socket.*/
 static VALUE sqlrcon_new(VALUE self, VALUE host, VALUE port, VALUE socket,
-				VALUE user, VALUE password, 
+				VALUE user, VALUE password,
 				VALUE retrytime, VALUE tries) {
-	const char	*socketstr;
-	if (socket==Qnil) {
-		socketstr="";
-	} else {
-		socketstr=STR2CSTR(socket);
-	}
-	sqlrconnection	*sqlrcon=new sqlrconnection(STR2CSTR(host),
+	sqlrconnection	*sqlrcon=new sqlrconnection(STR2CSTR_NIL(host),
 							NUM2INT(port),
-							socketstr,
-							STR2CSTR(user),
-							STR2CSTR(password),
+							STR2CSTR_NIL(socket),
+							STR2CSTR_NIL(user),
+							STR2CSTR_NIL(password),
 							NUM2INT(retrytime),
 							NUM2INT(tries),
 							true);
@@ -455,9 +453,9 @@ static VALUE sqlrcon_getBindVariableDelimiterDollarSignSupported(VALUE self) {
 }
 
 static void enableKerberos(params *p) {
-	p->sqlrc.sqlrcon->enableKerberos(STR2CSTR(p->one),
-						STR2CSTR(p->two),
-						STR2CSTR(p->three));
+	p->sqlrc.sqlrcon->enableKerberos(STR2CSTR_NIL(p->one),
+						STR2CSTR_NIL(p->two),
+						STR2CSTR_NIL(p->three));
 }
 /** Enables Kerberos authentication and encryption.
  *
@@ -504,12 +502,12 @@ static VALUE sqlrcon_enableKerberos(VALUE self,
 
 
 static void enableTls(params *p) {
-	p->sqlrc.sqlrcon->enableTls(STR2CSTR(p->one),
-					STR2CSTR(p->two),
-					STR2CSTR(p->three),
-					STR2CSTR(p->four),
-					STR2CSTR(p->five),
-					STR2CSTR(p->six),
+	p->sqlrc.sqlrcon->enableTls(STR2CSTR_NIL(p->one),
+					STR2CSTR_NIL(p->two),
+					STR2CSTR_NIL(p->three),
+					STR2CSTR_NIL(p->four),
+					STR2CSTR_NIL(p->five),
+					STR2CSTR_NIL(p->six),
 					NUM2INT(p->seven));
 }
 /** Enables TLS/SSL encryption, and optionally authentication.
@@ -1848,7 +1846,7 @@ static VALUE sqlrcur_cacheOff(VALUE self) {
 }
 
 static void getDatabaseList(params *p) {
-	p->result.br=p->sqlrc.sqlrcur->getDatabaseList(STR2CSTR(p->one));
+	p->result.br=p->sqlrc.sqlrcur->getDatabaseList(STR2CSTR_NIL(p->one));
 }
 /**
  *  call-seq:
@@ -1875,7 +1873,7 @@ static VALUE sqlrcur_getDatabaseList(VALUE self, VALUE databases) {
 }
 
 static void getCatalogList(params *p) {
-	p->result.br=p->sqlrc.sqlrcur->getCatalogList(STR2CSTR(p->one));
+	p->result.br=p->sqlrc.sqlrcur->getCatalogList(STR2CSTR_NIL(p->one));
 }
 /**
  *  call-seq:
@@ -1902,7 +1900,7 @@ static VALUE sqlrcur_getCatalogList(VALUE self, VALUE catalogs) {
 }
 
 static void getSchemaList(params *p) {
-	p->result.br=p->sqlrc.sqlrcur->getSchemaList(STR2CSTR(p->one));
+	p->result.br=p->sqlrc.sqlrcur->getSchemaList(STR2CSTR_NIL(p->one));
 }
 /**
  *  call-seq:
@@ -1956,7 +1954,7 @@ static VALUE sqlrcur_getTableTypeList(VALUE self) {
 }
 
 static void getTableList(params *p) {
-	p->result.br=p->sqlrc.sqlrcur->getTableList(STR2CSTR(p->one));
+	p->result.br=p->sqlrc.sqlrcur->getTableList(STR2CSTR_NIL(p->one));
 }
 /**
  *  call-seq:
@@ -1984,7 +1982,7 @@ static VALUE sqlrcur_getTableList(VALUE self, VALUE tables) {
 }
 
 static void getTypeInfoList(params *p) {
-	p->result.br=p->sqlrc.sqlrcur->getTypeInfoList(STR2CSTR(p->one));
+	p->result.br=p->sqlrc.sqlrcur->getTypeInfoList(STR2CSTR_NIL(p->one));
 }
 /**
  *  call-seq:
@@ -2031,7 +2029,8 @@ static VALUE sqlrcur_getTypeInfoList(VALUE self, VALUE type) {
 
 static void getColumnList(params *p) {
 	p->result.br=p->sqlrc.sqlrcur->getColumnList(
-					STR2CSTR(p->one),STR2CSTR(p->two));
+					STR2CSTR_NIL(p->one),
+					STR2CSTR_NIL(p->two));
 }
 /**
  *  call-seq:
@@ -2067,7 +2066,8 @@ static VALUE sqlrcur_getColumnList(VALUE self, VALUE table, VALUE columns) {
 
 static void getPrimaryKeysList(params *p) {
 	p->result.br=p->sqlrc.sqlrcur->getPrimaryKeysList(
-					STR2CSTR(p->one),STR2CSTR(p->two));
+					STR2CSTR_NIL(p->one),
+					STR2CSTR_NIL(p->two));
 }
 /**
  *  call-seq:
@@ -2109,7 +2109,8 @@ static VALUE sqlrcur_getPrimaryKeysList(VALUE self,
 
 static void getKeyAndIndexList(params *p) {
 	p->result.br=p->sqlrc.sqlrcur->getKeyAndIndexList(
-					STR2CSTR(p->one),STR2CSTR(p->two));
+					STR2CSTR_NIL(p->one),
+					STR2CSTR_NIL(p->two));
 }
 /**
  *  call-seq:
@@ -2151,7 +2152,7 @@ static VALUE sqlrcur_getKeyAndIndexList(VALUE self,
 }
 
 static void getProcedureList(params *p) {
-	p->result.br=p->sqlrc.sqlrcur->getProcedureList(STR2CSTR(p->one));
+	p->result.br=p->sqlrc.sqlrcur->getProcedureList(STR2CSTR_NIL(p->one));
 }
 /**
  *  call-seq:
@@ -2183,7 +2184,8 @@ static VALUE sqlrcur_getProcedureList(VALUE self, VALUE procedures) {
 
 static void getProcedureParameterList(params *p) {
 	p->result.br=p->sqlrc.sqlrcur->getProcedureParameterList(
-					STR2CSTR(p->one),STR2CSTR(p->two));
+					STR2CSTR_NIL(p->one),
+					STR2CSTR_NIL(p->two));
 }
 /**
  *  call-seq:
@@ -2461,8 +2463,8 @@ static void inputBindDate(params *p) {
 					(int16_t)NUM2INT(p->six),
 					(int16_t)NUM2INT(p->seven),
 					(int32_t)NUM2INT(p->eight),
-					STR2CSTR(p->nine),
-					(bool)NUM2INT(p->ten));
+					STR2CSTR_NIL(p->nine),
+					(bool)(RTEST(p->ten)?1:0));
 }
 /**
  *  call-seq:
@@ -2681,18 +2683,19 @@ static VALUE sqlrcur_substitutions(int argc, VALUE *argv, VALUE self) {
 	}
 	VALUE	variable;
 	VALUE	value;
-	VALUE	precision=0;
-	VALUE	scale=0;
+	VALUE	precision=INT2NUM(0);
+	VALUE	scale=INT2NUM(0);
 	bool	success=true;
-	for (;;) {
-		variable=rb_ary_shift(variables);
+	long	n=RARRAY_LEN(variables);
+	for (long i=0; i<n; i++) {
+		variable=rb_ary_entry(variables,i);
 		if (variable==Qnil) {
 			break;
 		}
-		value=rb_ary_shift(values);
+		value=rb_ary_entry(values,i);
 		if (argcount==4) {
-			precision=rb_ary_shift(precisions);
-			scale=rb_ary_shift(scales);
+			precision=rb_ary_entry(precisions,i);
+			scale=rb_ary_entry(scales,i);
 		}
 		if (rb_obj_is_instance_of(value,rb_cString)==Qtrue) {
 			CUR2(sqlrcurdata->cur,substitutionStr,variable,value);
@@ -2734,18 +2737,19 @@ static VALUE sqlrcur_inputBinds(int argc, VALUE *argv, VALUE self) {
 	}
 	VALUE	variable;
 	VALUE	value;
-	VALUE	precision=0;
-	VALUE	scale=0;
+	VALUE	precision=INT2NUM(0);
+	VALUE	scale=INT2NUM(0);
 	bool	success=true;
-	for (;;) {
-		variable=rb_ary_shift(variables);
+	long	n=RARRAY_LEN(variables);
+	for (long i=0; i<n; i++) {
+		variable=rb_ary_entry(variables,i);
 		if (variable==Qnil) {
 			break;
 		}
-		value=rb_ary_shift(values);
+		value=rb_ary_entry(values,i);
 		if (argcount==4) {
-			precision=rb_ary_shift(precisions);
-			scale=rb_ary_shift(scales);
+			precision=rb_ary_entry(precisions,i);
+			scale=rb_ary_entry(scales,i);
 		}
 		if (rb_obj_is_instance_of(value,rb_cString)==Qtrue) {
 			CUR2(sqlrcurdata->cur,inputBindStr,variable,value);
@@ -4302,9 +4306,12 @@ static VALUE sqlrcur_getRow(VALUE self, VALUE row) {
 	uint32_t	*length;
 	Data_Get_Struct(self,sqlrcursordata,sqlrcurdata);
 	sqlrcur=sqlrcurdata->cur;
-	VALUE	fieldary=rb_ary_new2(sqlrcur->colCount());
 	RCUR1(result,ccpcpr,sqlrcur,getRow,row);
+	if (!result) {
+		return Qnil;
+	}
 	RCUR1(length,u32pr,sqlrcur,getRowLengths,row);
+	VALUE	fieldary=rb_ary_new2(sqlrcur->colCount());
 	for (uint32_t i=0; i<sqlrcur->colCount(); i++) {
 		if (result[i]) {
 			rb_ary_store(fieldary,i,rb_str_new(result[i],
@@ -4333,6 +4340,9 @@ static VALUE sqlrcur_getRowHash(VALUE self, VALUE row) {
 	Data_Get_Struct(self,sqlrcursordata,sqlrcurdata);
 	sqlrcur=sqlrcurdata->cur;
 	RCUR1(result,ccpcpr,sqlrcur,getRow,row);
+	if (!result) {
+		return Qnil;
+	}
 	RCUR1(length,u32pr,sqlrcur,getRowLengths,row);
 	VALUE	fieldhash=rb_hash_new();
 	for (uint32_t i=0; i<sqlrcur->colCount(); i++) {
@@ -4385,6 +4395,9 @@ static VALUE sqlrcur_getRowLengthsHash(VALUE self, VALUE row) {
 	Data_Get_Struct(self,sqlrcursordata,sqlrcurdata);
 	sqlrcur=sqlrcurdata->cur;
 	RCUR1(result,u32pr,sqlrcur,getRowLengths,row);
+	if (!result) {
+		return Qnil;
+	}
 	VALUE	lengthhash=rb_hash_new();
 	for (uint32_t i=0; i<sqlrcur->colCount(); i++) {
 		RCUR1(name,ccpr,sqlrcur,getColumnName,INT2NUM(i));

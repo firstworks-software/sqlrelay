@@ -895,7 +895,7 @@ def main():
 		secondcur=PySQLRClient.sqlrcursor(con)
 		secondcur.setResultSetBufferSize(1)
 		assertTrue(secondcur.sendQuery("select * from testtable"))
-		secondcur=None
+		secondcur.closeResultSet()
 		i+=1
 	cur.setResultSetBufferSize(0)
 	print()
@@ -953,6 +953,7 @@ def main():
 		"	blob('testblob10'))"))
 	assertTrue(secondcur.sendQuery("select count(*) from testtable"))
 	assertEquals(secondcur.getField(0,0),"9")
+	secondcon.endSession()
 	secondcur=None
 	secondcon=None
 	asserts.setSecondCursor(None)

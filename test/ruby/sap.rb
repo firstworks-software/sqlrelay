@@ -10,15 +10,12 @@ require 'sqlrelay'
 require './asserts'
 
 
-
-
-
 # instantiation
 con=SQLRConnection.new("sqlrelay",9000,"/tmp/test.socket",
-						"testuser","testpassword",0,1);
+						"testuser","testpassword",0,1)
 cur=SQLRCursor.new(con)
-
-# get database type
+setConnection(con)
+setCursor(cur)
 
 
 # identify
@@ -30,6 +27,18 @@ print "\n"
 # ping
 print "PING: \n"
 assertTrue(con.ping())
+print "\n"
+
+
+# bind format
+print "BIND FORMAT: \n"
+assertEqual(con.bindFormat(),"@*")
+print "\n"
+
+
+# nextval format
+print "NEXTVAL FORMAT: \n"
+assertEqual(con.nextvalFormat(),"%s.nextval")
 print "\n"
 
 
@@ -45,12 +54,10 @@ end
 assertTrue(con.setIsolationLevel(isolationlevels[0]))
 print "\n"
 
-# drop existing table
+
+# create testtable
+print "CREATE TESTTABLE: \n"
 cur.sendQuery("drop table testtable")
-
-
-# create temptable
-print "CREATE TEMPTABLE: \n"
 assertTrue(cur.sendQuery(
 	"create table testtable ("+
 	"	testint int, "+
@@ -66,18 +73,14 @@ assertTrue(cur.sendQuery(
 	"	testsmalldatetime smalldatetime, "+
 	"	testchar char(40), "+
 	"	testvarchar varchar(40), "+
-	"	testbit bit)"))
-print "\n"
-
-
-# begin transaction
-print "BEGIN TRANSACTION: \n"
-#assertTrue(cur.sendQuery("begin tran"))
+	"	testbit bit, "+
+	"	testtext text) lock datarows"))
 print "\n"
 
 
 # insert
 print "INSERT: \n"
+assertTrue(con.begin())
 assertTrue(cur.sendQuery(
 	"insert into "+
 	"	testtable "+
@@ -95,7 +98,8 @@ assertTrue(cur.sendQuery(
 	"	'01-Jan-2001 01:00:00', "+
 	"	'testchar1', "+
 	"	'testvarchar1', "+
-	"	1)"))
+	"	1, "+
+	"	'testtext1')"))
 print "\n"
 
 
@@ -105,8 +109,8 @@ assertEqual(cur.affectedRows(),1)
 print "\n"
 
 
-# bind by position
-print "BIND BY POSITION: \n"
+# input bind by position
+print "INPUT BIND BY POSITION: \n"
 cur.prepareQuery(
 	"insert into "+
 	"	testtable "+
@@ -124,8 +128,9 @@ cur.prepareQuery(
 	"	@var11, "+
 	"	@var12, "+
 	"	@var13, "+
-	"	@var14)")
-assertEqual(cur.countBindVariables(),14)
+	"	@var14, "+
+	"	@var15)")
+assertEqual(cur.countBindVariables(),15)
 cur.inputBind("1",2)
 cur.inputBind("2",2)
 cur.inputBind("3",2)
@@ -140,6 +145,7 @@ cur.inputBind("11","01-Jan-2002 02:00:00")
 cur.inputBind("12","testchar2")
 cur.inputBind("13","testvarchar2")
 cur.inputBind("14",1)
+cur.inputBindClob("15","testtext2","testtext2".to_s.bytesize)
 assertTrue(cur.executeQuery())
 cur.clearBinds()
 cur.inputBind("1",3)
@@ -156,28 +162,42 @@ cur.inputBind("11","01-Jan-2003 03:00:00")
 cur.inputBind("12","testchar3")
 cur.inputBind("13","testvarchar3")
 cur.inputBind("14",1)
+cur.inputBindClob("15","testtext3","testtext3".to_s.bytesize)
 assertTrue(cur.executeQuery())
 print "\n"
 
 
-# array of binds by position
-print "ARRAY OF BINDS BY POSITION: \n"
+# array of input binds by position
+# sap doesn't support implicit conversion of string binds to other
+# data types, so arrays of binds don't generally work.
+# Omitting the test.
+
+
+# input bind by position with validation
+print "INPUT BIND BY POSITION WITH VALIDATION: \n"
 cur.clearBinds()
-cur.inputBinds(["1","2","3","4","5","6",
-		"7","8","9","10","11","12",
-		"13","14"],
-	[4,4,4,4.4,4.4,4.4,4.4,4.00,4.00,
-		"01-Jan-2004 04:00:00",
-		"01-Jan-2004 04:00:00",
-		"testchar4","testvarchar4",1],
-	[0,0,0,2,2,2,2,3,3,0,0,0,0,0],
-	[0,0,0,1,1,1,1,2,2,0,0,0,0,0])
+cur.inputBind("1",4)
+cur.inputBind("2",4)
+cur.inputBind("3",4)
+cur.inputBind("4",4.4,2,1)
+cur.inputBind("5",4.4,2,1)
+cur.inputBind("6",4.4,2,1)
+cur.inputBind("7",4.4,2,1)
+cur.inputBind("8",4.00,3,2)
+cur.inputBind("9",4.00,3,2)
+cur.inputBind("10","01-Jan-2004 04:00:00")
+cur.inputBind("11","01-Jan-2004 04:00:00")
+cur.inputBind("12","testchar4")
+cur.inputBind("13","testvarchar4")
+cur.inputBind("14",1)
+cur.inputBindClob("15","testtext4","testtext4".to_s.bytesize)
+cur.validateBinds()
 assertTrue(cur.executeQuery())
 print "\n"
 
 
-# bind by name
-print "BIND BY NAME: \n"
+# input bind by name
+print "INPUT BIND BY NAME: \n"
 cur.clearBinds()
 cur.inputBind("var1",5)
 cur.inputBind("var2",5)
@@ -193,6 +213,7 @@ cur.inputBind("var11","01-Jan-2005 05:00:00")
 cur.inputBind("var12","testchar5")
 cur.inputBind("var13","testvarchar5")
 cur.inputBind("var14",1)
+cur.inputBindClob("var15","testtext5","testtext5".to_s.bytesize)
 assertTrue(cur.executeQuery())
 cur.clearBinds()
 cur.inputBind("var1",6)
@@ -209,28 +230,36 @@ cur.inputBind("var11","01-Jan-2006 06:00:00")
 cur.inputBind("var12","testchar6")
 cur.inputBind("var13","testvarchar6")
 cur.inputBind("var14",1)
+cur.inputBindClob("var15","testtext6","testtext6".to_s.bytesize)
 assertTrue(cur.executeQuery())
-print "\n"
-
-
-# array of binds by name
-print "ARRAY OF BINDS BY NAME: \n"
 cur.clearBinds()
-cur.inputBinds(["var1","var2","var3","var4","var5","var6",
-		"var7","var8","var9","var10","var11","var12",
-		"var13","var14"],
-	[7,7,7,7.7,7.7,7.7,7.7,7.00,7.00,
-		"01-Jan-2007 07:00:00",
-		"01-Jan-2007 07:00:00",
-		"testchar7","testvarchar7",1],
-	[0,0,0,2,2,2,2,3,3,0,0,0,0,0],
-	[0,0,0,1,1,1,1,2,2,0,0,0,0,0])
+cur.inputBind("var1",7)
+cur.inputBind("var2",7)
+cur.inputBind("var3",7)
+cur.inputBind("var4",7.7,2,1)
+cur.inputBind("var5",7.7,2,1)
+cur.inputBind("var6",7.7,2,1)
+cur.inputBind("var7",7.7,2,1)
+cur.inputBind("var8",7.00,3,2)
+cur.inputBind("var9",7.00,3,2)
+cur.inputBind("var10","01-Jan-2007 07:00:00")
+cur.inputBind("var11","01-Jan-2007 07:00:00")
+cur.inputBind("var12","testchar7")
+cur.inputBind("var13","testvarchar7")
+cur.inputBind("var14",1)
+cur.inputBindClob("var15","testtext7","testtext7".to_s.bytesize)
 assertTrue(cur.executeQuery())
 print "\n"
 
 
-# bind by name with validation
-print "BIND BY NAME WITH VALIDATION: \n"
+# array of input binds by name
+# sap doesn't support implicit conversion of string binds to other
+# data types, so arrays of binds don't generally work.
+# Omitting the test.
+
+
+# input bind by name with validation
+print "INPUT BIND BY NAME WITH VALIDATION: \n"
 cur.clearBinds()
 cur.inputBind("var1",8)
 cur.inputBind("var2",8)
@@ -246,7 +275,8 @@ cur.inputBind("var11","01-Jan-2008 08:00:00")
 cur.inputBind("var12","testchar8")
 cur.inputBind("var13","testvarchar8")
 cur.inputBind("var14",1)
-cur.inputBind("var15","junkvalue")
+cur.inputBindClob("var15","testtext8","testtext8".to_s.bytesize)
+cur.inputBind("var16","junkvalue")
 cur.validateBinds()
 assertTrue(cur.executeQuery())
 print "\n"
@@ -260,7 +290,7 @@ print "\n"
 
 # column count
 print "COLUMN COUNT: \n"
-assertEqual(cur.colCount(),14)
+assertEqual(cur.colCount(),15)
 print "\n"
 
 
@@ -301,99 +331,99 @@ print "\n"
 # column types
 print "COLUMN TYPES: \n"
 assertEqual(cur.getColumnType(0),"INT")
-assertEqual(cur.getColumnType('testint'),"INT")
+assertEqual(cur.getColumnType("testint"),"INT")
 assertEqual(cur.getColumnType(1),"SMALLINT")
-assertEqual(cur.getColumnType('testsmallint'),"SMALLINT")
+assertEqual(cur.getColumnType("testsmallint"),"SMALLINT")
 assertEqual(cur.getColumnType(2),"TINYINT")
-assertEqual(cur.getColumnType('testtinyint'),"TINYINT")
+assertEqual(cur.getColumnType("testtinyint"),"TINYINT")
 assertEqual(cur.getColumnType(3),"REAL")
-assertEqual(cur.getColumnType('testreal'),"REAL")
+assertEqual(cur.getColumnType("testreal"),"REAL")
 assertEqual(cur.getColumnType(4),"FLOAT")
-assertEqual(cur.getColumnType('testfloat'),"FLOAT")
+assertEqual(cur.getColumnType("testfloat"),"FLOAT")
 assertEqual(cur.getColumnType(5),"DECIMAL")
-assertEqual(cur.getColumnType('testdecimal'),"DECIMAL")
+assertEqual(cur.getColumnType("testdecimal"),"DECIMAL")
 assertEqual(cur.getColumnType(6),"NUMERIC")
-assertEqual(cur.getColumnType('testnumeric'),"NUMERIC")
+assertEqual(cur.getColumnType("testnumeric"),"NUMERIC")
 assertEqual(cur.getColumnType(7),"MONEY")
-assertEqual(cur.getColumnType('testmoney'),"MONEY")
+assertEqual(cur.getColumnType("testmoney"),"MONEY")
 assertEqual(cur.getColumnType(8),"SMALLMONEY")
-assertEqual(cur.getColumnType('testsmallmoney'),"SMALLMONEY")
+assertEqual(cur.getColumnType("testsmallmoney"),"SMALLMONEY")
 assertEqual(cur.getColumnType(9),"DATETIME")
-assertEqual(cur.getColumnType('testdatetime'),"DATETIME")
+assertEqual(cur.getColumnType("testdatetime"),"DATETIME")
 assertEqual(cur.getColumnType(10),"SMALLDATETIME")
-assertEqual(cur.getColumnType('testsmalldatetime'),"SMALLDATETIME")
+assertEqual(cur.getColumnType("testsmalldatetime"),"SMALLDATETIME")
 assertEqual(cur.getColumnType(11),"CHAR")
-assertEqual(cur.getColumnType('testchar'),"CHAR")
+assertEqual(cur.getColumnType("testchar"),"CHAR")
 assertEqual(cur.getColumnType(12),"CHAR")
-assertEqual(cur.getColumnType('testvarchar'),"CHAR")
+assertEqual(cur.getColumnType("testvarchar"),"CHAR")
 assertEqual(cur.getColumnType(13),"BIT")
-assertEqual(cur.getColumnType('testbit'),"BIT")
+assertEqual(cur.getColumnType("testbit"),"BIT")
 print "\n"
 
 
 # column length
 print "COLUMN LENGTH: \n"
 assertEqual(cur.getColumnLength(0),4)
-assertEqual(cur.getColumnLength('testint'),4)
+assertEqual(cur.getColumnLength("testint"),4)
 assertEqual(cur.getColumnLength(1),2)
-assertEqual(cur.getColumnLength('testsmallint'),2)
+assertEqual(cur.getColumnLength("testsmallint"),2)
 assertEqual(cur.getColumnLength(2),1)
-assertEqual(cur.getColumnLength('testtinyint'),1)
+assertEqual(cur.getColumnLength("testtinyint"),1)
 assertEqual(cur.getColumnLength(3),4)
-assertEqual(cur.getColumnLength('testreal'),4)
+assertEqual(cur.getColumnLength("testreal"),4)
 assertEqual(cur.getColumnLength(4),8)
-assertEqual(cur.getColumnLength('testfloat'),8)
+assertEqual(cur.getColumnLength("testfloat"),8)
 assertEqual(cur.getColumnLength(5),35)
-assertEqual(cur.getColumnLength('testdecimal'),35)
+assertEqual(cur.getColumnLength("testdecimal"),35)
 assertEqual(cur.getColumnLength(6),35)
-assertEqual(cur.getColumnLength('testnumeric'),35)
+assertEqual(cur.getColumnLength("testnumeric"),35)
 assertEqual(cur.getColumnLength(7),8)
-assertEqual(cur.getColumnLength('testmoney'),8)
+assertEqual(cur.getColumnLength("testmoney"),8)
 assertEqual(cur.getColumnLength(8),4)
-assertEqual(cur.getColumnLength('testsmallmoney'),4)
+assertEqual(cur.getColumnLength("testsmallmoney"),4)
 assertEqual(cur.getColumnLength(9),8)
-assertEqual(cur.getColumnLength('testdatetime'),8)
+assertEqual(cur.getColumnLength("testdatetime"),8)
 assertEqual(cur.getColumnLength(10),4)
-assertEqual(cur.getColumnLength('testsmalldatetime'),4)
+assertEqual(cur.getColumnLength("testsmalldatetime"),4)
 assertEqual(cur.getColumnLength(11),40)
-assertEqual(cur.getColumnLength('testchar'),40)
+assertEqual(cur.getColumnLength("testchar"),40)
 assertEqual(cur.getColumnLength(12),40)
-assertEqual(cur.getColumnLength('testvarchar'),40)
+assertEqual(cur.getColumnLength("testvarchar"),40)
 assertEqual(cur.getColumnLength(13),1)
-assertEqual(cur.getColumnLength('testbit'),1)
+assertEqual(cur.getColumnLength("testbit"),1)
 print "\n"
 
 
 # longest column
 print "LONGEST COLUMN: \n"
 assertEqual(cur.getLongest(0),1)
-assertEqual(cur.getLongest('testint'),1)
+assertEqual(cur.getLongest("testint"),1)
 assertEqual(cur.getLongest(1),1)
-assertEqual(cur.getLongest('testsmallint'),1)
+assertEqual(cur.getLongest("testsmallint"),1)
 assertEqual(cur.getLongest(2),1)
-assertEqual(cur.getLongest('testtinyint'),1)
+assertEqual(cur.getLongest("testtinyint"),1)
 assertEqual(cur.getLongest(3),18)
-assertEqual(cur.getLongest('testreal'),18)
+assertEqual(cur.getLongest("testreal"),18)
 assertEqual(cur.getLongest(4),18)
-assertEqual(cur.getLongest('testfloat'),18)
+assertEqual(cur.getLongest("testfloat"),18)
 assertEqual(cur.getLongest(5),3)
-assertEqual(cur.getLongest('testdecimal'),3)
+assertEqual(cur.getLongest("testdecimal"),3)
 assertEqual(cur.getLongest(6),3)
-assertEqual(cur.getLongest('testnumeric'),3)
+assertEqual(cur.getLongest("testnumeric"),3)
 assertEqual(cur.getLongest(7),4)
-assertEqual(cur.getLongest('testmoney'),4)
+assertEqual(cur.getLongest("testmoney"),4)
 assertEqual(cur.getLongest(8),4)
-assertEqual(cur.getLongest('testsmallmoney'),4)
+assertEqual(cur.getLongest("testsmallmoney"),4)
 assertEqual(cur.getLongest(9),19)
-assertEqual(cur.getLongest('testdatetime'),19)
+assertEqual(cur.getLongest("testdatetime"),19)
 assertEqual(cur.getLongest(10),19)
-assertEqual(cur.getLongest('testsmalldatetime'),19)
+assertEqual(cur.getLongest("testsmalldatetime"),19)
 assertEqual(cur.getLongest(11),40)
-assertEqual(cur.getLongest('testchar'),40)
+assertEqual(cur.getLongest("testchar"),40)
 assertEqual(cur.getLongest(12),12)
-assertEqual(cur.getLongest('testvarchar'),12)
+assertEqual(cur.getLongest("testvarchar"),12)
 assertEqual(cur.getLongest(13),1)
-assertEqual(cur.getLongest('testbit'),1)
+assertEqual(cur.getLongest("testbit"),1)
 print "\n"
 
 
@@ -597,128 +627,6 @@ assertEqual(fieldlens[13],1)
 print "\n"
 
 
-# fields by hash
-print "FIELDS BY HASH: \n"
-fields=cur.getRowHash(0)
-assertEqual(fields["testint"],"1")
-assertEqual(fields["testsmallint"],"1")
-assertEqual(fields["testtinyint"],"1")
-#assertEqual(fields["testreal"],"1.1")
-#assertEqual(fields["testfloat"],"1.1")
-assertEqual(fields["testdecimal"],"1.1")
-assertEqual(fields["testnumeric"],"1.1")
-assertEqual(fields["testmoney"],"1.00")
-assertEqual(fields["testsmallmoney"],"1.00")
-assertEqual(fields["testdatetime"],"Jan  1 2001  1:00AM")
-assertEqual(fields["testsmalldatetime"],"Jan  1 2001  1:00AM")
-assertEqual(fields["testchar"],"testchar1                               ")
-assertEqual(fields["testvarchar"],"testvarchar1")
-assertEqual(fields["testbit"],"1")
-print "\n"
-fields=cur.getRowHash(7)
-assertEqual(fields["testint"],"8")
-assertEqual(fields["testsmallint"],"8")
-assertEqual(fields["testtinyint"],"8")
-#assertEqual(fields["testreal"],"8.8")
-#assertEqual(fields["testfloat"],"8.8")
-assertEqual(fields["testdecimal"],"8.8")
-assertEqual(fields["testnumeric"],"8.8")
-assertEqual(fields["testmoney"],"8.00")
-assertEqual(fields["testsmallmoney"],"8.00")
-assertEqual(fields["testdatetime"],"Jan  1 2008  8:00AM")
-assertEqual(fields["testsmalldatetime"],"Jan  1 2008  8:00AM")
-assertEqual(fields["testchar"],"testchar8                               ")
-assertEqual(fields["testvarchar"],"testvarchar8")
-assertEqual(fields["testbit"],"1")
-print "\n"
-
-
-# field lengths by hash
-print "FIELD LENGTHS BY HASH: \n"
-fieldlengths=cur.getRowLengthsHash(0)
-assertEqual(fieldlengths["testint"],1)
-assertEqual(fieldlengths["testsmallint"],1)
-assertEqual(fieldlengths["testtinyint"],1)
-#assertEqual(fieldlengths["testreal"],3)
-#assertEqual(fieldlengths["testfloat"],3)
-assertEqual(fieldlengths["testdecimal"],3)
-assertEqual(fieldlengths["testnumeric"],3)
-assertEqual(fieldlengths["testmoney"],4)
-assertEqual(fieldlengths["testsmallmoney"],4)
-assertEqual(fieldlengths["testdatetime"],19)
-assertEqual(fieldlengths["testsmalldatetime"],19)
-assertEqual(fieldlengths["testchar"],40)
-assertEqual(fieldlengths["testvarchar"],12)
-assertEqual(fieldlengths["testbit"],1)
-print "\n"
-fieldlengths=cur.getRowLengthsHash(7)
-assertEqual(fieldlengths["testsmallint"],1)
-assertEqual(fieldlengths["testtinyint"],1)
-#assertEqual(fieldlengths["testreal"],3)
-#assertEqual(fieldlengths["testfloat"],3)
-assertEqual(fieldlengths["testdecimal"],3)
-assertEqual(fieldlengths["testnumeric"],3)
-assertEqual(fieldlengths["testmoney"],4)
-assertEqual(fieldlengths["testsmallmoney"],4)
-assertEqual(fieldlengths["testdatetime"],19)
-assertEqual(fieldlengths["testsmalldatetime"],19)
-assertEqual(fieldlengths["testchar"],40)
-assertEqual(fieldlengths["testvarchar"],12)
-assertEqual(fieldlengths["testbit"],1)
-print "\n"
-
-
-# individual substitutions
-print "INDIVIDUAL SUBSTITUTIONS: \n"
-cur.prepareQuery("select $(var1),'$(var2)',$(var3)")
-cur.substitution("var1",1)
-cur.substitution("var2","hello")
-cur.substitution("var3",10.5556,6,4)
-assertTrue(cur.executeQuery())
-print "\n"
-
-
-# fields
-print "FIELDS: \n"
-assertEqual(cur.getField(0,0),"1")
-assertEqual(cur.getField(0,1),"hello")
-assertEqual(cur.getField(0,2),"10.5556")
-print "\n"
-
-
-# array substitutions
-print "ARRAY SUBSTITUTIONS: \n"
-cur.prepareQuery("select $(var1),'$(var2)',$(var3)")
-cur.substitutions(["var1","var2","var3"],
-			[1,"hello",10.5556],[0,0,6],[0,0,4])
-assertTrue(cur.executeQuery())
-print "\n"
-
-
-# fields
-print "FIELDS: \n"
-assertEqual(cur.getField(0,0),"1")
-assertEqual(cur.getField(0,1),"hello")
-assertEqual(cur.getField(0,2),"10.5556")
-print "\n"
-
-
-# nulls as nils
-print "NULLS AS NILS: \n"
-cur.getNullsAsNils()
-assertTrue(cur.sendQuery("select NULL,1,NULL"))
-assertEqual(cur.getField(0,0),nil)
-assertEqual(cur.getField(0,1),"1")
-assertEqual(cur.getField(0,2),nil)
-cur.getNullsAsEmptyStrings()
-assertTrue(cur.sendQuery("select NULL,1,NULL"))
-assertEqual(cur.getField(0,0),"")
-assertEqual(cur.getField(0,1),"1")
-assertEqual(cur.getField(0,2),"")
-cur.getNullsAsNils()
-print "\n"
-
-
 # result set buffer size
 print "RESULT SET BUFFER SIZE: \n"
 assertEqual(cur.getResultSetBufferSize(),0)
@@ -862,7 +770,7 @@ print "\n"
 
 # column count for cached result set
 print "COLUMN COUNT FOR CACHED RESULT SET: \n"
-assertEqual(cur.colCount(),14)
+assertEqual(cur.colCount(),15)
 print "\n"
 
 
@@ -1002,8 +910,952 @@ assertEqual(cur.getField(6,0),nil)
 assertEqual(cur.getField(7,0),nil)
 print "\n"
 
-# drop existing table
+
+# nested selects
+print "NESTED SELECTS: \n"
+cur.setResultSetBufferSize(1)
+assertTrue(cur.sendQuery("select * from testtable"))
+i=0
+while cur.getRow(i)
+	secondcur=SQLRCursor.new(con)
+	secondcur.setResultSetBufferSize(1)
+	assertTrue(secondcur.sendQuery("select * from testtable"))
+	secondcur.closeResultSet()
+	i=i+1
+end
+cur.setResultSetBufferSize(0)
+print "\n"
+
+
+# commit and rollback
+print "COMMIT AND ROLLBACK: \n"
+secondcon=SQLRConnection.new("sqlrelay",9000,"/tmp/test.socket",
+						"testuser","testpassword",0,1)
+secondcur=SQLRCursor.new(secondcon)
+assertTrue(secondcur.sendQuery("select count(*) from testtable"))
+assertEqual(secondcur.getField(0,0),"0")
+assertTrue(con.commit())
+assertTrue(secondcur.sendQuery("select count(*) from testtable"))
+assertEqual(secondcur.getField(0,0),"8")
+assertTrue(con.begin())
+assertTrue(cur.sendQuery(
+	"insert into "+
+	"	testtable "+
+	"values ("+
+	"	10, "+
+	"	10, "+
+	"	10, "+
+	"	10.1, "+
+	"	10.1, "+
+	"	10.1, "+
+	"	10.1, "+
+	"	10.00, "+
+	"	10.00, "+
+	"	'01-Jan-2010 10:00:00', "+
+	"	'01-Jan-2010 10:00:00', "+
+	"	'testchar10', "+
+	"	'testvarchar10', "+
+	"	10, "+
+	"	'testtext10')"))
+assertTrue(con.rollback())
+assertTrue(secondcur.sendQuery("select count(*) from testtable"))
+assertEqual(secondcur.getField(0,0),"8")
+assertTrue(cur.sendQuery(
+	"insert into "+
+	"	testtable "+
+	"values ("+
+	"	10, "+
+	"	10, "+
+	"	10, "+
+	"	10.1, "+
+	"	10.1, "+
+	"	10.1, "+
+	"	10.1, "+
+	"	10.00, "+
+	"	10.00, "+
+	"	'01-Jan-2010 10:00:00', "+
+	"	'01-Jan-2010 10:00:00', "+
+	"	'testchar10', "+
+	"	'testvarchar10', "+
+	"	10, "+
+	"	'testtext10')"))
+assertTrue(con.commit())
+assertTrue(secondcur.sendQuery("select count(*) from testtable"))
+assertEqual(secondcur.getField(0,0),"9")
+secondcon.endSession()
+assertTrue(cur.sendQuery("drop table testtable"))
+print "\n"
+
+
+# individual substitutions
+print "INDIVIDUAL SUBSTITUTIONS: \n"
+cur.prepareQuery("select $(var1),'$(var2)',$(var3)")
+cur.substitution("var1",1)
+cur.substitution("var2","hello")
+cur.substitution("var3",10.5556,6,4)
+assertTrue(cur.executeQuery())
+assertEqual(cur.getField(0,0),"1")
+assertEqual(cur.getField(0,1),"hello")
+assertEqual(cur.getField(0,2),"10.5556")
+print "\n"
+
+
+# array substitutions
+print "ARRAY SUBSTITUTIONS: \n"
+cur.prepareQuery("select $(var1),$(var2),$(var3)")
+cur.substitutions(["var1","var2","var3"],[1,2,3])
+assertTrue(cur.executeQuery())
+assertEqual(cur.getField(0,0),"1")
+assertEqual(cur.getField(0,1),"2")
+assertEqual(cur.getField(0,2),"3")
+print "\n"
+cur.prepareQuery("select '$(var1)','$(var2)','$(var3)'")
+cur.substitutions(["var1","var2","var3"],["hi","hello","bye"])
+assertTrue(cur.executeQuery())
+assertEqual(cur.getField(0,0),"hi")
+assertEqual(cur.getField(0,1),"hello")
+assertEqual(cur.getField(0,2),"bye")
+print "\n"
+cur.prepareQuery("select $(var1),$(var2),$(var3)")
+cur.substitutions(["var1","var2","var3"],
+			[10.55,10.556,10.5556],[4,5,6],[2,3,4])
+assertTrue(cur.executeQuery())
+assertEqual(cur.getField(0,0),"10.55")
+assertEqual(cur.getField(0,1),"10.556")
+assertEqual(cur.getField(0,2),"10.5556")
+print "\n"
+
+
+# nulls as nulls
+print "NULLS AS NULLS: \n"
+cur.getNullsAsNils()
+assertTrue(cur.sendQuery("select NULL,1,NULL"))
+assertEqual(cur.getField(0,0),nil)
+assertEqual(cur.getField(0,1),"1")
+assertEqual(cur.getField(0,2),nil)
+cur.getNullsAsEmptyStrings()
+assertTrue(cur.sendQuery("select NULL,1,NULL"))
+assertEqual(cur.getField(0,0),"")
+assertEqual(cur.getField(0,1),"1")
+assertEqual(cur.getField(0,2),"")
+print "\n"
+
+
+
+# null and empty lobs
+print "NULL AND EMPTY LOBS: \n"
+cur.getNullsAsNils()
 cur.sendQuery("drop table testtable")
+assertTrue(cur.sendQuery(
+	"create table testtable ("+
+	"	testclob1 text NULL, "+
+	"	testclob2 text NULL, "+
+	"	testblob1 image NULL, "+
+	"	testblob2 image NULL)"))
+cur.prepareQuery(
+	"insert into "+
+	"	testtable "+
+	"values ("+
+	"	@var1, "+
+	"	@var2, "+
+	"	@var3, "+
+	"	@var4)")
+cur.inputBindClob("var1","","".to_s.bytesize)
+cur.inputBindClob("var2",nil,nil.to_s.bytesize)
+cur.inputBindBlob("var3","","".to_s.bytesize)
+cur.inputBindBlob("var4",nil,nil.to_s.bytesize)
+assertTrue(cur.executeQuery())
+cur.sendQuery("select * from testtable")
+# sap converts empty strings to a single space.  It's possible that
+# if we had true input bind support on the backend, then this would
+# work correctly, but for now we're faking binds, and inserting an
+# empty string, so we have to check for a single space here.
+assertEqual(cur.getField(0,0)," ")
+assertEqual(cur.getField(0,1),nil)
+# see note above for why we're checking for a single space
+assertEqual(cur.getField(0,2)," ")
+assertEqual(cur.getField(0,3),nil)
+cur.getNullsAsEmptyStrings()
+assertTrue(cur.sendQuery("drop table testtable"))
+print "\n"
+
+
+# long lobs
+print "LONG LOBS: \n"
+cur.sendQuery("drop table testtable")
+cur.sendQuery(
+	"create table testtable ("+
+	"	testclob text NULL, "+
+	"	testblob image NULL) lock datarows")
+cur.prepareQuery("insert into testtable values (@var1,@var2)")
+largebuffer="C"*255
+cur.inputBindClob("var1",largebuffer,largebuffer.to_s.bytesize)
+cur.inputBindBlob("var2",largebuffer,largebuffer.to_s.bytesize)
+assertTrue(cur.executeQuery())
+cur.sendQuery("select * from testtable")
+assertEqual(cur.getFieldLength(0,"testclob"),255)
+assertEqual(cur.getField(0,"testclob"),largebuffer)
+assertEqual(cur.getFieldLength(0,"testblob"),255)
+assertEqualLen(cur.getField(0,"testblob"),largebuffer,255)
+assertTrue(cur.sendQuery("drop table testtable"))
+print "\n"
+
+
+# output bind by position
+print "OUTPUT BIND BY POSITION: \n"
+cur.sendQuery("drop procedure testproc")
+cur.getNullsAsNils()
+assertTrue(cur.sendQuery(
+	"create procedure testproc "+
+	"	@out1 int output, "+
+	"	@out2 varchar(20) output, "+
+	"	@out3 float output, "+
+	"	@out4 datetime output, "+
+	"	@out5 varchar(20) output as "+
+	"select @out1=1, "+
+	"	@out2='hello', "+
+	"	@out3=2.5, "+
+	"	@out4='2001-02-03', "+
+	"	@out5=null"))
+cur.prepareQuery("exec testproc")
+assertEqual(cur.countBindVariables(),0)
+cur.defineOutputBindInteger("1")
+cur.defineOutputBindString("2",20)
+cur.defineOutputBindDouble("3")
+cur.defineOutputBindDate("4")
+cur.defineOutputBindString("5",20)
+assertTrue(cur.executeQuery())
+numvar=cur.getOutputBindInteger("1")
+stringvar=cur.getOutputBindString("2")
+floatvar=cur.getOutputBindDouble("3")
+year=cur.getOutputBindDateYear("4")
+month=cur.getOutputBindDateMonth("4")
+day=cur.getOutputBindDateDay("4")
+hour=cur.getOutputBindDateHour("4")
+minute=cur.getOutputBindDateMinute("4")
+second=cur.getOutputBindDateSecond("4")
+microsecond=cur.getOutputBindDateMicrosecond("4")
+tz=cur.getOutputBindDateTz("4")
+isnegative=cur.getOutputBindDateIsNegative("4")
+nullvar=cur.getOutputBindString("5")
+assertEqual(numvar,1)
+assertEqual(stringvar,"hello")
+assertEqual(floatvar,2.5)
+assertEqual(year,2001)
+assertEqual(month,2)
+assertEqual(day,3)
+assertEqual(hour,0)
+assertEqual(minute,0)
+assertEqual(second,0)
+assertEqual(microsecond,0)
+assertEqual(tz,"")
+assertEqual(isnegative,false)
+assertEqual(nullvar,nil)
+cur.getNullsAsEmptyStrings()
+assertTrue(cur.sendQuery("drop procedure testproc"))
+print "\n"
+
+
+# output bind by name
+print "OUTPUT BIND BY NAME: \n"
+cur.sendQuery("drop procedure testproc")
+cur.getNullsAsNils()
+assertTrue(cur.sendQuery(
+	"create procedure testproc "+
+	"	@out1 int output, "+
+	"	@out2 varchar(20) output, "+
+	"	@out3 float output, "+
+	"	@out4 datetime output, "+
+	"	@out5 varchar(20) output as "+
+	"select @out1=1, "+
+	"	@out2='hello', "+
+	"	@out3=2.5, "+
+	"	@out4='2001-02-03', "+
+	"	@out5=null"))
+cur.prepareQuery("exec testproc")
+assertEqual(cur.countBindVariables(),0)
+cur.defineOutputBindInteger("out1")
+cur.defineOutputBindString("out2",20)
+cur.defineOutputBindDouble("out3")
+cur.defineOutputBindDate("out4")
+cur.defineOutputBindString("out5",20)
+assertTrue(cur.executeQuery())
+numvar=cur.getOutputBindInteger("out1")
+stringvar=cur.getOutputBindString("out2")
+floatvar=cur.getOutputBindDouble("out3")
+year=cur.getOutputBindDateYear("out4")
+month=cur.getOutputBindDateMonth("out4")
+day=cur.getOutputBindDateDay("out4")
+hour=cur.getOutputBindDateHour("out4")
+minute=cur.getOutputBindDateMinute("out4")
+second=cur.getOutputBindDateSecond("out4")
+microsecond=cur.getOutputBindDateMicrosecond("out4")
+tz=cur.getOutputBindDateTz("out4")
+isnegative=cur.getOutputBindDateIsNegative("out4")
+nullvar=cur.getOutputBindString("out5")
+assertEqual(numvar,1)
+assertEqual(stringvar,"hello")
+assertEqual(floatvar,2.5)
+assertEqual(year,2001)
+assertEqual(month,2)
+assertEqual(day,3)
+assertEqual(hour,0)
+assertEqual(minute,0)
+assertEqual(second,0)
+assertEqual(microsecond,0)
+assertEqual(tz,"")
+assertEqual(isnegative,false)
+assertEqual(nullvar,nil)
+cur.getNullsAsEmptyStrings()
+assertTrue(cur.sendQuery("drop procedure testproc"))
+print "\n"
+
+
+# output bind by name with validation
+# validateBinds() can't be used for output binds, with sap.  In sap,
+# when executing a procedure, you don't declare any bind variable
+# delimiters in the query.  eg, you just do: "exec testproc", not
+# "exec testproc(@out1,@out2)".  If you call validateBinds(), it won't
+# find any binds in the query, and will filter out any binds that you
+# declare.
+
+
+# lob output bind
+# sap doesn't support lobs as output parameters to stored procedures,
+# and there's no way to directly select into a lob bind variable
+
+
+# long output bind
+print "LONG OUTPUT BIND: \n"
+cur.sendQuery("drop procedure testproc")
+largebuffer="C"*255
+query="create procedure testproc "+
+	"@bindval varchar(255) output as "+
+	"set @bindval='"+largebuffer+"'"
+assertTrue(cur.sendQuery(query))
+cur.prepareQuery("exec testproc")
+cur.defineOutputBindString("bindval",255)
+assertTrue(cur.executeQuery())
+assertEqual(cur.getOutputBindLength("bindval"),255)
+assertEqual(cur.getOutputBindString("bindval"),largebuffer)
+assertTrue(cur.sendQuery("drop procedure testproc"))
+print "\n"
+
+
+# negative input bind
+print "NEGATIVE INPUT BIND: \n"
+cur.sendQuery("drop table testtable")
+cur.sendQuery("create table testtable (testval int)")
+cur.prepareQuery("insert into testtable values (@testval)")
+cur.inputBind("testval",-1)
+assertTrue(cur.executeQuery())
+cur.sendQuery("select testval from testtable")
+assertEqual(cur.getField(0,"testval"),"-1")
+assertTrue(cur.sendQuery("drop table testtable"))
+print "\n"
+
+
+# bind validation
+print "BIND VALIDATION: \n"
+cur.sendQuery("drop table testtable")
+cur.sendQuery(
+	"create table testtable ("+
+	"	col1 varchar(20), "+
+	"	col2 varchar(20), "+
+	"	col3 varchar(20))")
+cur.prepareQuery(
+	"insert into "+
+	"	testtable "+
+	"values ("+
+	"	$(var1), "+
+	"	$(var2), "+
+	"	$(var3))")
+cur.inputBind("var1","1")
+cur.inputBind("var2","2")
+cur.inputBind("var3","3")
+cur.substitution("var1","@var1")
+assertTrue(cur.validBind("var1"))
+assertFalse(cur.validBind("var2"))
+assertFalse(cur.validBind("var3"))
+assertFalse(cur.validBind("var4"))
+print "\n"
+cur.substitution("var2","@var2")
+assertTrue(cur.validBind("var1"))
+assertTrue(cur.validBind("var2"))
+assertFalse(cur.validBind("var3"))
+assertFalse(cur.validBind("var4"))
+print "\n"
+cur.substitution("var3","@var3")
+assertTrue(cur.validBind("var1"))
+assertTrue(cur.validBind("var2"))
+assertTrue(cur.validBind("var3"))
+assertFalse(cur.validBind("var4"))
+assertTrue(cur.executeQuery())
+assertTrue(cur.sendQuery("drop table testtable"))
+print "\n"
+
+
+# rebinding
+print "REBINDING: \n"
+cur.sendQuery("drop procedure testproc")
+assertTrue(cur.sendQuery(
+	"create procedure testproc "+
+	"	@in1 int, "+
+	"	@out1 int output as "+
+	"select @out1=@in1"))
+cur.prepareQuery("exec testproc")
+cur.inputBind("in1",1)
+cur.defineOutputBindInteger("out1")
+assertTrue(cur.executeQuery())
+assertEqual(cur.getOutputBindInteger("out1"),1)
+cur.inputBind("in1",2)
+assertTrue(cur.executeQuery())
+assertEqual(cur.getOutputBindInteger("out1"),2)
+cur.inputBind("in1",3)
+assertTrue(cur.executeQuery())
+assertEqual(cur.getOutputBindInteger("out1"),3)
+assertTrue(cur.sendQuery("drop procedure testproc"))
+print "\n"
+
+
+# reexecute
+print "REEXECUTE: \n"
+cur.prepareQuery("select 1")
+assertTrue(cur.executeQuery())
+assertEqual(cur.rowCount(),1)
+assertEqual(cur.getField(0,0),"1")
+print "\n"
+assertTrue(cur.executeQuery())
+assertEqual(cur.rowCount(),1)
+assertEqual(cur.getField(0,0),"1")
+print "\n"
+cur.prepareQuery(
+	"begin "+
+	"	select cast(@var1 as int) "+
+	"end")
+cur.inputBind("var1",1)
+assertTrue(cur.executeQuery())
+assertEqual(cur.rowCount(),1)
+assertEqual(cur.getField(0,0),"1")
+print "\n"
+assertTrue(cur.executeQuery())
+assertEqual(cur.rowCount(),1)
+assertEqual(cur.getField(0,0),"1")
+print "\n"
+cur.inputBind("var1",2)
+assertTrue(cur.executeQuery())
+assertEqual(cur.rowCount(),1)
+assertEqual(cur.getField(0,0),"2")
+print "\n"
+
+
+# stored procedure returning no value
+print "STORED PROCEDURE RETURNING NO VALUE: \n"
+cur.sendQuery("drop procedure testproc")
+assertTrue(cur.sendQuery(
+	"create procedure testproc "+
+	"	@in1 int, "+
+	"	@in2 float, "+
+	"	@in3 varchar(20) as "+
+	"return"))
+cur.prepareQuery("exec testproc")
+cur.inputBind("in1",1)
+cur.inputBind("in2",1.1,2,1)
+cur.inputBind("in3","hello")
+assertTrue(cur.executeQuery())
+assertTrue(cur.sendQuery("drop procedure testproc"))
+print "\n"
+
+
+# stored procedure returning single value
+print "STORED PROCEDURE RETURNING SINGLE VALUE: \n"
+cur.sendQuery("drop procedure testproc")
+assertTrue(cur.sendQuery(
+	"create procedure testproc "+
+	"	@in1 int, "+
+	"	@in2 float, "+
+	"	@in3 varchar(20), "+
+	"	@out1 int output as "+
+	"select @out1=@in1"))
+cur.prepareQuery("exec testproc")
+cur.inputBind("in1",1)
+cur.inputBind("in2",1.1,2,1)
+cur.inputBind("in3","hello")
+cur.defineOutputBindInteger("out1")
+assertTrue(cur.executeQuery())
+assertEqual(cur.getOutputBindInteger("out1"),1)
+assertTrue(cur.sendQuery("drop procedure testproc"))
+print "\n"
+
+
+# stored procedure returning multiple values
+print "STORED PROCEDURE RETURNING MULTIPLE VALUES: \n"
+cur.sendQuery("drop procedure testproc")
+assertTrue(cur.sendQuery(
+	"create procedure testproc @in1 int, "+
+	"	@in2 float, "+
+	"	@in3 varchar(20), "+
+	"	@out1 int output, "+
+	"	@out2 float output, "+
+	"	@out3 varchar(20) output as "+
+	"select @out1=@in1, "+
+	"	@out2=@in2, "+
+	"	@out3=@in3"))
+cur.prepareQuery("exec testproc")
+cur.inputBind("in1",1)
+cur.inputBind("in2",1.1,2,1)
+cur.inputBind("in3","hello")
+cur.defineOutputBindInteger("out1")
+cur.defineOutputBindDouble("out2")
+cur.defineOutputBindString("out3",20)
+assertTrue(cur.executeQuery())
+assertEqual(cur.getOutputBindInteger("out1"),1)
+assertEqual(cur.getOutputBindDouble("out2"),1.1)
+assertEqual(cur.getOutputBindString("out3"),"hello")
+assertTrue(cur.sendQuery("drop procedure testproc"))
+print "\n"
+
+
+# stored procedure returning result set
+print "STORED PROCEDURE RETURNING RESULT SET: \n"
+cur.sendQuery("drop procedure testselectproc")
+assertTrue(cur.sendQuery(
+	"create procedure testselectproc as "+
+	"	select 1 "+
+	"	union "+
+	"	select 2 "+
+	"	union "+
+	"	select 3 "+
+	"	union "+
+	"	select 4 "+
+	"	union "+
+	"	select 5 "+
+	"	union "+
+	"	select 6 "+
+	"	union "+
+	"	select 7 "+
+	"	union "+
+	"	select 8"))
+assertTrue(cur.sendQuery("exec testselectproc"))
+assertEqual(cur.rowCount(),8)
+assertTrue(cur.sendQuery("drop procedure testselectproc"))
+print "\n"
+
+
+# temporary tables
+print "TEMPORARY TABLES: \n"
+cur.sendQuery("drop table #temptable\n")
+cur.sendQuery("create table #temptable (col1 int)")
+assertTrue(cur.sendQuery("insert into #temptable values (1)"))
+assertTrue(cur.sendQuery("select count(*) from #temptable"))
+assertEqual(cur.getField(0,0),"1")
+con.endSession()
+print "\n"
+assertFalse(cur.sendQuery("select count(*) from #temptable"))
+print "\n"
+
+
+# encoded binary data
+print "ENCODED BINARY DATA: \n"
+cur.sendQuery("drop table testtable")
+assertTrue(cur.sendQuery("create table testtable (col1 image)"))
+buffer=(0..255).map { |j| j.chr }.join
+querystr="insert into testtable values (0x"
+querystr=querystr+buffer.bytes.map { |b| "%02x" % b }.join
+querystr=querystr+")"
+assertTrue(cur.sendQuery(querystr))
+assertTrue(cur.sendQuery("select col1 from testtable"))
+assertEqual(cur.getFieldLength(0,0),256)
+assertEqualLen(cur.getField(0,0),buffer,256)
+assertTrue(cur.sendQuery("drop table testtable"))
+print "\n"
+
+
+# quotes
+print "QUOTES: \n"
+cur.sendQuery("drop table testtable")
+assertTrue(cur.sendQuery("create table testtable (col1 varchar(4))"))
+assertTrue(cur.sendQuery("insert into testtable values ('''''')"))
+assertTrue(cur.sendQuery("select col1 from testtable"))
+assertEqual(cur.getFieldLength(0,0),2)
+assertEqual(cur.getField(0,0),"''")
+assertTrue(cur.sendQuery("drop table testtable"))
+print "\n"
+
+
+# last insert id
+print "LAST INSERT ID: \n"
+cur.sendQuery("drop table testtable")
+assertTrue(cur.sendQuery(
+		"create table testtable "+
+		"	(col1 int identity primary key, "+
+		"	col2 int)"))
+assertTrue(cur.sendQuery(
+		"insert into testtable (col2) values (1)"))
+assertEqual(con.getLastInsertId(),1)
+assertTrue(cur.sendQuery("drop table testtable"))
+print "\n"
+
+
+# database is schema
+print "DATABASE IS SCHEMA: \n"
+assertFalse(con.getDatabaseIsSchema())
+print "\n"
+
+
+# catalog list
+print "CATALOG LIST: \n"
+assertTrue(cur.getCatalogList(nil))
+assertEqual(cur.getColumnName(0),"Database")
+assertTrue(cur.rowCount()>0)
+print "\n"
+
+
+# schema list
+print "SCHEMA LIST: \n"
+cur.sendQuery("drop table testtable")
+# the get schema list query that is used with sap will only return the
+# names of schemas that have at least one database object in them, so
+# to be sure that there is one, we'll create a table
+assertTrue(cur.sendQuery("create table testtable (col1 int)"))
+assertTrue(cur.getSchemaList(nil))
+assertEqual(cur.getColumnName(0),"Database")
+assertTrue(cur.rowCount()>0)
+assertTrue(cur.sendQuery("drop table testtable"))
+print "\n"
+
+
+# table type list
+print "TABLE TYPE LIST: \n"
+assertTrue(cur.getTableTypeList())
+assertEqual(cur.getColumnName(0),"table_type")
+found=false
+for i in 0..cur.rowCount()-1
+	if cur.getField(i,"table_type")=="TABLE"
+		found=true
+		break
+	end
+end
+assertTrue(found)
+print "\n"
+
+
+# table list
+print "TABLE LIST: \n"
+cur.sendQuery("drop table testtable1")
+cur.sendQuery("drop table testtable2")
+cur.sendQuery("drop table testtable3")
+cur.sendQuery("drop table testtable4")
+assertTrue(cur.sendQuery(
+	"create table testtable1 ("+
+	"	col1 int, "+
+	"	col2 int)"))
+assertTrue(cur.sendQuery(
+	"create table testtable2 ("+
+	"	col1 int, "+
+	"	col2 int)"))
+assertTrue(cur.sendQuery(
+	"create table testtable3 ("+
+	"	col1 int, "+
+	"	col2 int)"))
+assertTrue(cur.sendQuery(
+	"create table testtable4 ("+
+	"	col1 int, "+
+	"	col2 int)"))
+assertTrue(cur.getTableList(nil))
+counter=0
+for i in 0..cur.rowCount()-1
+	name=cur.getField(i,"Tables_in_xxx")
+	if name=="testtable1" ||
+		name=="testtable2" ||
+		name=="testtable3" ||
+		name=="testtable4"
+		counter=counter+1
+	end
+end
+assertEqual(counter,4)
+assertTrue(cur.sendQuery("drop table testtable1"))
+assertTrue(cur.sendQuery("drop table testtable2"))
+assertTrue(cur.sendQuery("drop table testtable3"))
+assertTrue(cur.sendQuery("drop table testtable4"))
+print "\n"
+
+
+# type info list
+print "TYPE INFO LIST: \n"
+assertTrue(cur.getTypeInfoList("int"))
+assertEqual(cur.getColumnName(0),"type_name")
+assertEqual(cur.getColumnName(1),"data_type")
+assertEqual(cur.getColumnName(2),"precision")
+assertEqual(cur.getColumnName(3),"literal_prefix")
+assertEqual(cur.getColumnName(4),"literal_suffix")
+assertEqual(cur.getColumnName(5),"create_params")
+assertEqual(cur.getColumnName(6),"nullable")
+assertEqual(cur.getColumnName(7),"case_sensitive")
+assertEqual(cur.getColumnName(8),"searchable")
+assertEqual(cur.getColumnName(9),"unsigned_attribute")
+assertEqual(cur.getColumnName(10),"fixed_prec_scale")
+assertEqual(cur.getColumnName(11),"auto_increment")
+assertEqual(cur.getColumnName(12),"local_type_name")
+assertEqual(cur.getColumnName(13),"minumum_scale")
+assertEqual(cur.getColumnName(14),"maxiumm_scale")
+assertEqual(cur.getColumnName(15),"sql_data_type")
+assertEqual(cur.getColumnName(16),"sql_datetime_sub")
+assertEqual(cur.getColumnName(17),"num_prec_radix")
+assertEqual(cur.getColumnName(18),"interval_precision")
+assertEqual(cur.getField(0,"type_name"),"INT")
+assertEqual(cur.getField(0,"data_type"),"4")
+assertEqual(cur.getField(0,"precision"),"10")
+assertEqual(cur.getField(0,"local_type_name"),"INT")
+assertTrue(cur.getTypeInfoList("char"))
+assertEqual(cur.getField(0,"type_name"),"CHAR")
+assertEqual(cur.getField(0,"data_type"),"1")
+assertEqual(cur.getField(0,"precision"),"255")
+assertEqual(cur.getField(0,"local_type_name"),"CHAR")
+assertTrue(cur.getTypeInfoList("varchar"))
+assertEqual(cur.getField(0,"type_name"),"VARCHAR")
+assertEqual(cur.getField(0,"data_type"),"12")
+assertEqual(cur.getField(0,"precision"),"255")
+assertEqual(cur.getField(0,"local_type_name"),"VARCHAR")
+assertTrue(cur.getTypeInfoList("datetime"))
+assertEqual(cur.getField(0,"type_name"),"DATETIME")
+assertEqual(cur.getField(0,"data_type"),"93")
+assertEqual(cur.getField(0,"precision"),"23")
+assertEqual(cur.getField(0,"local_type_name"),"DATETIME")
+print "\n"
+
+
+# column list
+print "COLUMN LIST: \n"
+cur.sendQuery("drop table testtable")
+assertTrue(cur.sendQuery(
+	"create table testtable ("+
+	"	testint int, "+
+	"	testsmallint smallint, "+
+	"	testtinyint tinyint, "+
+	"	testreal real, "+
+	"	testfloat float, "+
+	"	testdecimal decimal(4,1), "+
+	"	testnumeric numeric(4,1), "+
+	"	testmoney money, "+
+	"	testsmallmoney smallmoney, "+
+	"	testdatetime datetime, "+
+	"	testsmalldatetime smalldatetime, "+
+	"	testchar char(40), "+
+	"	testvarchar varchar(40), "+
+	"	testbit bit, "+
+	"	testtext text)"))
+assertTrue(cur.getColumnList("testtable",nil))
+assertEqual(cur.getColumnName(0),"column_name")
+assertEqual(cur.getColumnName(1),"data_type")
+assertEqual(cur.getColumnName(2),"character_maximum_length")
+assertEqual(cur.getColumnName(3),"numeric_precision")
+assertEqual(cur.getColumnName(4),"numeric_scale")
+assertEqual(cur.getColumnName(5),"is_nullable")
+assertEqual(cur.getColumnName(6),"column_key")
+assertEqual(cur.getColumnName(7),"column_default")
+assertEqual(cur.getColumnName(8),"extra")
+assertEqual(cur.getField(0,"column_name"),"testint")
+assertEqual(cur.getField(1,"column_name"),"testsmallint")
+assertEqual(cur.getField(2,"column_name"),"testtinyint")
+assertEqual(cur.getField(3,"column_name"),"testreal")
+assertEqual(cur.getField(4,"column_name"),"testfloat")
+assertEqual(cur.getField(5,"column_name"),"testdecimal")
+assertEqual(cur.getField(6,"column_name"),"testnumeric")
+assertEqual(cur.getField(7,"column_name"),"testmoney")
+assertEqual(cur.getField(8,"column_name"),"testsmallmoney")
+assertEqual(cur.getField(9,"column_name"),"testdatetime")
+assertEqual(cur.getField(10,"column_name"),"testsmalldatetime")
+assertEqual(cur.getField(11,"column_name"),"testchar")
+assertEqual(cur.getField(12,"column_name"),"testvarchar")
+assertEqual(cur.getField(13,"column_name"),"testbit")
+assertEqual(cur.getField(14,"column_name"),"testtext")
+assertEqual(cur.getField(0,"data_type"),"int")
+assertEqual(cur.getField(1,"data_type"),"smallint")
+assertEqual(cur.getField(2,"data_type"),"tinyint")
+assertEqual(cur.getField(3,"data_type"),"real")
+assertEqual(cur.getField(4,"data_type"),"float")
+assertEqual(cur.getField(5,"data_type"),"decimal")
+assertEqual(cur.getField(6,"data_type"),"numeric")
+assertEqual(cur.getField(7,"data_type"),"money")
+assertEqual(cur.getField(8,"data_type"),"smallmoney")
+assertEqual(cur.getField(9,"data_type"),"datetime")
+assertEqual(cur.getField(10,"data_type"),"smalldatetime")
+assertEqual(cur.getField(11,"data_type"),"char")
+assertEqual(cur.getField(12,"data_type"),"varchar")
+assertEqual(cur.getField(13,"data_type"),"bit")
+assertEqual(cur.getField(14,"data_type"),"text")
+assertTrue(cur.sendQuery("drop table testtable"))
+print "\n"
+
+
+# column list - auto_increment, primary key
+print "COLUMN LIST - auto_increment, primary key: \n"
+cur.sendQuery("drop table testtable")
+assertTrue(cur.sendQuery(
+	"create table testtable ("+
+	"	col1 int identity primary key, "+
+	"	col2 int)"))
+assertTrue(cur.getColumnList("testtable",nil))
+assertTrue(cur.getField(0,"extra").include?("auto_increment"))
+assertTrue(cur.getField(0,"column_key").include?("PRI"))
+assertFalse(cur.getField(1,"extra").include?("auto_increment"))
+assertFalse(cur.getField(1,"column_key").include?("PRI"))
+print "\n"
+assertTrue(cur.sendQuery("drop table testtable"))
+assertTrue(cur.sendQuery(
+	"create table testtable ("+
+	"	col1 int primary key, "+
+	"	col2 int)"))
+assertTrue(cur.getColumnList("testtable",nil))
+assertFalse(cur.getField(0,"extra").include?("auto_increment"))
+assertTrue(cur.getField(0,"column_key").include?("PRI"))
+assertTrue(cur.sendQuery("drop table testtable"))
+print "\n"
+
+
+# primary keys list
+print "PRIMARY KEYS LIST: \n"
+cur.sendQuery("drop table testtable")
+assertTrue(cur.sendQuery(
+	"create table testtable ("+
+	"	col1 int primary key, "+
+	"	col2 int)"))
+assertTrue(cur.getPrimaryKeysList("testtable",nil))
+assertEqual(cur.getColumnName(0),"table")
+assertEqual(cur.getColumnName(1),"non_unique")
+assertEqual(cur.getColumnName(2),"key_name")
+assertEqual(cur.getColumnName(3),"seq_in_index")
+assertEqual(cur.getColumnName(4),"column_name")
+assertEqual(cur.getColumnName(5),"collation")
+assertEqual(cur.getColumnName(6),"cardinality")
+assertEqual(cur.getColumnName(7),"sub_part")
+assertEqual(cur.getColumnName(8),"packed")
+assertEqual(cur.getColumnName(9),"null")
+assertEqual(cur.getColumnName(10),"index_type")
+assertEqual(cur.getColumnName(11),"comment")
+assertEqual(cur.getColumnName(12),"index_comment")
+assertEqual(cur.rowCount(),1)
+assertEqual(cur.getField(0,"table"),"testtable")
+assertEqual(cur.getField(0,"seq_in_index"),"1")
+assertEqual(cur.getField(0,"column_name"),"col1")
+assertTrue(cur.getField(0,"key_name")!=nil && cur.getField(0,"key_name")!="")
+assertTrue(cur.sendQuery("drop table testtable"))
+print "\n"
+
+
+# key and index list
+print "KEY AND INDEX LIST: \n"
+cur.sendQuery("drop table testtable")
+assertTrue(cur.sendQuery(
+	"create table testtable ("+
+	"	col1 int primary key, "+
+	"	col2 int)"))
+assertTrue(cur.getKeyAndIndexList("testtable",nil))
+assertEqual(cur.getColumnName(0),"table")
+assertEqual(cur.getColumnName(1),"non_unique")
+assertEqual(cur.getColumnName(2),"key_name")
+assertEqual(cur.getColumnName(3),"seq_in_index")
+assertEqual(cur.getColumnName(4),"column_name")
+assertEqual(cur.getColumnName(5),"collation")
+assertEqual(cur.getColumnName(6),"cardinality")
+assertEqual(cur.getColumnName(7),"sub_part")
+assertEqual(cur.getColumnName(8),"packed")
+assertEqual(cur.getColumnName(9),"null")
+assertEqual(cur.getColumnName(10),"index_type")
+assertEqual(cur.getColumnName(11),"comment")
+assertEqual(cur.getColumnName(12),"index_comment")
+assertEqual(cur.rowCount(),1)
+assertEqual(cur.getField(0,"table"),"testtable")
+assertEqual(cur.getField(0,"non_unique"),"FALSE")
+assertEqual(cur.getField(0,"seq_in_index"),"1")
+assertEqual(cur.getField(0,"column_name"),"col1")
+assertEqual(cur.getField(0,"collation"),"A")
+assertEqual(cur.getField(0,"index_type"),"1")
+assertTrue(cur.getField(0,"key_name")!=nil && cur.getField(0,"key_name")!="")
+assertTrue(cur.sendQuery("drop table testtable"))
+print "\n"
+
+
+# procedure list
+print "PROCEDURE LIST: \n"
+cur.sendQuery("drop procedure testproc1")
+cur.sendQuery("drop procedure testproc2")
+cur.sendQuery("drop procedure testproc3")
+cur.sendQuery("drop procedure testproc4")
+assertTrue(cur.sendQuery(
+	"create procedure testproc1 "+
+	"	@in1 int, "+
+	"	@in2 char(20), "+
+	"	@in3 varchar(20), "+
+	"	@in4 datetime "+
+	"as select 1"))
+assertTrue(cur.sendQuery(
+	"create procedure testproc2 "+
+	"	@in1 int, "+
+	"	@in2 char(20), "+
+	"	@in3 varchar(20), "+
+	"	@in4 datetime "+
+	"as select 1"))
+assertTrue(cur.sendQuery(
+	"create procedure testproc3 "+
+	"	@in1 int, "+
+	"	@in2 char(20), "+
+	"	@in3 varchar(20), "+
+	"	@in4 datetime "+
+	"as select 1"))
+assertTrue(cur.sendQuery(
+	"create procedure testproc4 "+
+	"	@in1 int, "+
+	"	@in2 char(20), "+
+	"	@in3 varchar(20), "+
+	"	@in4 datetime "+
+	"as select 1"))
+assertTrue(cur.getProcedureList(nil))
+counter=0
+for i in 0..cur.rowCount()-1
+	name=cur.getField(i,"routine_name")
+	if name=="testproc1" ||
+		name=="testproc2" ||
+		name=="testproc3" ||
+		name=="testproc4"
+		counter=counter+1
+	end
+end
+assertEqual(counter,4)
+print "\n"
+
+
+# procedure parameter list
+print "PROCEDURE PARAMETER LIST: \n"
+assertTrue(cur.getProcedureParameterList("testproc1",nil))
+assertEqual(cur.getColumnName(0),"parameter_name")
+assertEqual(cur.getColumnName(1),"parameter_mode")
+assertEqual(cur.getColumnName(2),"data_type")
+assertEqual(cur.getColumnName(3),"character_maximum_length")
+assertEqual(cur.getColumnName(4),"ordinal_position")
+assertEqual(cur.rowCount(),4)
+assertEqual(cur.getField(0,"parameter_name"),"@in1")
+assertEqual(cur.getField(0,"parameter_mode"),"1")
+assertEqual(cur.getField(0,"data_type"),"int")
+assertEqual(cur.getField(0,"ordinal_position"),"1")
+assertEqual(cur.getField(1,"parameter_name"),"@in2")
+assertEqual(cur.getField(1,"parameter_mode"),"1")
+assertEqual(cur.getField(1,"data_type"),"char")
+assertEqual(cur.getField(1,"ordinal_position"),"2")
+assertEqual(cur.getField(2,"parameter_name"),"@in3")
+assertEqual(cur.getField(2,"parameter_mode"),"1")
+assertEqual(cur.getField(2,"data_type"),"varchar")
+assertEqual(cur.getField(2,"ordinal_position"),"3")
+assertEqual(cur.getField(3,"parameter_name"),"@in4")
+assertEqual(cur.getField(3,"parameter_mode"),"1")
+assertEqual(cur.getField(3,"data_type"),"datetime")
+assertEqual(cur.getField(3,"ordinal_position"),"4")
+assertTrue(cur.sendQuery("drop procedure testproc1"))
+assertTrue(cur.sendQuery("drop procedure testproc2"))
+assertTrue(cur.sendQuery("drop procedure testproc3"))
+assertTrue(cur.sendQuery("drop procedure testproc4"))
+print "\n"
 
 
 # invalid queries
