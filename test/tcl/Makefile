@@ -7,6 +7,7 @@ include ../../config.mk
 all: db2.tcl \
 	firebird.tcl \
 	freetds.tcl \
+	informix.tcl \
 	mysql.tcl \
 	oracle.tcl \
 	postgresql.tcl \
@@ -32,6 +33,14 @@ firebird.tcl: firebird.tcl.in
 	$(CHMOD) 755 $@
 
 freetds.tcl: freetds.tcl.in
+	$(REPLACE) @TCLLIBSPATH@ "$(TCLLIBSPATH)" $@.in > $@.in.in.in.in
+	$(REPLACE) @SOSUFFIX@ $(SOSUFFIX) $@.in.in.in.in > $@.in.in.in
+	$(REPLACE) @SLASH@ $(SLASH) $@.in.in.in > $@.in.in
+	$(REPLACE) C:\Tcl\lib C:\\Tcl\\lib $@.in.in > $@
+	$(RM) $@.in.in $@.in.in.in $@.in.in.in.in
+	$(CHMOD) 755 $@
+
+informix.tcl: informix.tcl.in
 	$(REPLACE) @TCLLIBSPATH@ "$(TCLLIBSPATH)" $@.in > $@.in.in.in.in
 	$(REPLACE) @SOSUFFIX@ $(SOSUFFIX) $@.in.in.in.in > $@.in.in.in
 	$(REPLACE) @SLASH@ $(SLASH) $@.in.in.in > $@.in.in
@@ -96,4 +105,4 @@ krb.tcl: krb.tcl.in
 	$(CHMOD) 755 $@
 
 clean:
-	$(RM) *.in.in *.in.in.in *.in.in.in.in db2.tcl firebird.tcl freetds.tcl mysql.tcl oracle.tcl postgresql.tcl sqlite.tcl sap.tcl tls.tcl krb.tcl cachefile* sqlnet.log
+	$(RM) *.in.in *.in.in.in *.in.in.in.in db2.tcl firebird.tcl freetds.tcl informix.tcl mysql.tcl oracle.tcl postgresql.tcl sqlite.tcl sap.tcl tls.tcl krb.tcl cachefile* sqlnet.log

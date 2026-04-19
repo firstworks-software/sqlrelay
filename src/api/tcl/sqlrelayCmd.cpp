@@ -282,6 +282,7 @@ int sqlrcurObjCmd(ClientData data, Tcl_Interp *interp,
     "clearBinds",
     "countBindVariables",
     "inputBind",
+    "inputBindNull",
     "inputBindDate",
     "inputBindBlob",
     "inputBindClob",
@@ -455,6 +456,7 @@ int sqlrcurObjCmd(ClientData data, Tcl_Interp *interp,
     SQLRCUR_clearBinds,
     SQLRCUR_countBindVariables,
     SQLRCUR_inputBind,
+    SQLRCUR_inputBindNull,
     SQLRCUR_inputBindDate,
     SQLRCUR_inputBindBlob,
     SQLRCUR_inputBindClob,
@@ -914,7 +916,7 @@ int sqlrcurObjCmd(ClientData data, Tcl_Interp *interp,
 	Tcl_SetObjResult(interp, Tcl_NewBooleanObj(result));
 	break;
       }
-    case SQLRCUR_sendQueryWithLength: 
+    case SQLRCUR_sendQueryWithLength:
       {
 	int result = 0;
 	int length = 0;
@@ -923,7 +925,9 @@ int sqlrcurObjCmd(ClientData data, Tcl_Interp *interp,
 	  return TCL_ERROR;
 	}
 	Tcl_GetIntFromObj(interp, objv[3], &length);
-	if (!(result = cur->sendQuery(Tcl_GetString(objv[2]),length))) {
+	int bytelen = 0;
+	const char *bytes = (const char *)Tcl_GetByteArrayFromObj(objv[2], &bytelen);
+	if (!(result = cur->sendQuery(bytes,length))) {
 	  Tcl_AppendResult(interp,cur->errorMessage(),(char *)NULL);
 	  return TCL_ERROR;
 	}
@@ -962,7 +966,9 @@ int sqlrcurObjCmd(ClientData data, Tcl_Interp *interp,
 	  return TCL_ERROR;
 	}
 	Tcl_GetIntFromObj(interp, objv[3], &length);
-	cur->prepareQuery(Tcl_GetString(objv[2]),length);
+	int bytelen = 0;
+	const char *bytes = (const char *)Tcl_GetByteArrayFromObj(objv[2], &bytelen);
+	cur->prepareQuery(bytes,length);
 	break;
       }
     case SQLRCUR_prepareFileQuery:
@@ -1062,6 +1068,15 @@ int sqlrcurObjCmd(ClientData data, Tcl_Interp *interp,
 	}
 	break;
       }
+    case SQLRCUR_inputBindNull:
+      {
+	if (objc != 3) {
+	  Tcl_WrongNumArgs(interp, 2, objv, "variable");
+	  return TCL_ERROR;
+	}
+	cur->inputBind(Tcl_GetString(objv[2]), (const char *)NULL);
+	break;
+      }
     case SQLRCUR_inputBindDate:
       {
 	long year, month, day, hour, minute, second, microsecond, isnegative;
@@ -1096,8 +1111,10 @@ int sqlrcurObjCmd(ClientData data, Tcl_Interp *interp,
 	if (Tcl_GetLongFromObj(interp, objv[4], &size) != TCL_OK) {
 	  return TCL_ERROR;
 	}
+	int bytelen = 0;
+	const char *bytes = (const char *)Tcl_GetByteArrayFromObj(objv[3], &bytelen);
 	cur->inputBindBlob(Tcl_GetString(objv[2]),
-			      Tcl_GetString(objv[3]),
+			      bytes,
 			      (uint32_t)size);
 	break;
       }
@@ -1111,8 +1128,10 @@ int sqlrcurObjCmd(ClientData data, Tcl_Interp *interp,
 	if (Tcl_GetLongFromObj(interp, objv[4], &size) != TCL_OK) {
 	  return TCL_ERROR;
 	}
+	int bytelen = 0;
+	const char *bytes = (const char *)Tcl_GetByteArrayFromObj(objv[3], &bytelen);
 	cur->inputBindClob(Tcl_GetString(objv[2]),
-			      Tcl_GetString(objv[3]),
+			      bytes,
 			      (uint32_t)size);
 	break;
       }
@@ -1661,7 +1680,7 @@ int sqlrcurObjCmd(ClientData data, Tcl_Interp *interp,
 	if ((field = cur->getField(row, col)) == (const char *)NULL) {
 	  field = "";
 	}
-	Tcl_SetObjResult(interp, _Tcl_NewStringObj(field, cur->getFieldLength(row,col)));
+	Tcl_SetObjResult(interp, Tcl_NewByteArrayObj((const unsigned char *)field, cur->getFieldLength(row,col)));
 	break;
       }
     case SQLRCUR_getFieldByName:
@@ -1678,7 +1697,7 @@ int sqlrcurObjCmd(ClientData data, Tcl_Interp *interp,
 	if ((field = cur->getField(row, Tcl_GetString(objv[3]))) == (const char *)NULL) {
 	  field = "";
 	}
-	Tcl_SetObjResult(interp, _Tcl_NewStringObj(field, cur->getFieldLength(row, Tcl_GetString(objv[3]))));
+	Tcl_SetObjResult(interp, Tcl_NewByteArrayObj((const unsigned char *)field, cur->getFieldLength(row, Tcl_GetString(objv[3]))));
 	break;
       }
     case SQLRCUR_getFieldByNameIgnoringCase:
@@ -1695,7 +1714,7 @@ int sqlrcurObjCmd(ClientData data, Tcl_Interp *interp,
 	if ((field = cur->getFieldIgnoringCase(row, Tcl_GetString(objv[3]))) == (const char *)NULL) {
 	  field = "";
 	}
-	Tcl_SetObjResult(interp, _Tcl_NewStringObj(field, cur->getFieldLength(row, Tcl_GetString(objv[3]))));
+	Tcl_SetObjResult(interp, Tcl_NewByteArrayObj((const unsigned char *)field, cur->getFieldLength(row, Tcl_GetString(objv[3]))));
 	break;
       }
     case SQLRCUR_getFieldAsIntegerByIndex:
@@ -2552,11 +2571,15 @@ int sqlrcurObjCmd(ClientData data, Tcl_Interp *interp,
 	  return TCL_ERROR;
 	}
 	rowarray = cur->getRow(row);
-	lengtharray = cur->getRowLengths(row);
 	resultList = Tcl_NewObj();
+	if (!rowarray) {
+	  Tcl_SetObjResult(interp, resultList);
+	  break;
+	}
+	lengtharray = cur->getRowLengths(row);
 	for (col = 0; col < cur->colCount(); col++) {
 	  if (Tcl_ListObjAppendElement(interp, resultList,
-				       _Tcl_NewStringObj((rowarray[col])?rowarray[col]:"", lengtharray[col])) != TCL_OK) {
+				       Tcl_NewByteArrayObj((const unsigned char *)((rowarray[col])?rowarray[col]:""), lengtharray[col])) != TCL_OK) {
 	    return TCL_ERROR;
 	  }
 	}
@@ -2578,6 +2601,10 @@ int sqlrcurObjCmd(ClientData data, Tcl_Interp *interp,
 	}
 	lenarray = cur->getRowLengths(row);
 	resultList = Tcl_NewObj();
+	if (!lenarray) {
+	  Tcl_SetObjResult(interp, resultList);
+	  break;
+	}
 	for (col = 0; col < cur->colCount(); col++) {
 	  if (Tcl_ListObjAppendElement(interp, resultList,
 				       Tcl_NewLongObj(lenarray[col])) != TCL_OK) {
