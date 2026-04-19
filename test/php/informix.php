@@ -1371,16 +1371,10 @@
 	$clobvarlength=sqlrcur_getOutputBindLength($cur,"1");
 	$blobvar=sqlrcur_getOutputBindBlob($cur,"2");
 	$blobvarlength=sqlrcur_getOutputBindLength($cur,"2");
-	$blobvarlength=sqlrcur_getOutputBindLength($cur,"2");
-	fprintf(STDERR,"  got blob len\n");
 	assertEqStrLen($clobvar,"hello",5);
-	fprintf(STDERR,"  clob assert done\n");
 	assertEqInt($clobvarlength,5);
-	fprintf(STDERR,"  clob len assert done\n");
 	assertEqStrLen($blobvar,"hello",5);
-	fprintf(STDERR,"  blob assert done\n");
 	assertEqInt($blobvarlength,5);
-	fprintf(STDERR,"  blob len assert done\n");
 	assertTrue(sqlrcur_sendQuery($cur,"drop procedure testproc"));
 	assertTrue(sqlrcur_sendQuery($cur,"drop table testtable"));
 	assertTrue(sqlrcon_commit($con));
@@ -1672,11 +1666,25 @@
 	# informix returns a single \0 for an empty lob; the C/C++ tests
 	# pass via strcmp (which stops at \0) so truncate at first \0 here.
 	$f0=sqlrcur_getField($cur,0,0);
-	$f0=($f0===false||$f0===NULL)?"":explode("\0",$f0,2)[0];
+	if ($f0===false || $f0===NULL) {
+		$f0="";
+	} else {
+		$nul=strpos($f0,"\0");
+		if ($nul!==false) {
+			$f0=substr($f0,0,$nul);
+		}
+	}
 	assertEqStr($f0,"");
 	assertEqStr(sqlrcur_getField($cur,0,1),NULL);
 	$f2=sqlrcur_getField($cur,0,2);
-	$f2=($f2===false||$f2===NULL)?"":explode("\0",$f2,2)[0];
+	if ($f2===false || $f2===NULL) {
+		$f2="";
+	} else {
+		$nul=strpos($f2,"\0");
+		if ($nul!==false) {
+			$f2=substr($f2,0,$nul);
+		}
+	}
 	assertEqStr($f2,"");
 	assertEqStr(sqlrcur_getField($cur,0,3),NULL);
 	sqlrcur_getNullsAsEmptyStrings($cur);

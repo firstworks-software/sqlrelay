@@ -1160,7 +1160,14 @@
 	# semantics, so truncate at the first
 	# \0 before compare.
 	$fld=sqlrcur_getField($cur,0,2);
-	$fld=($fld===false||$fld===NULL)?"":explode("\0",$fld,2)[0];
+	if ($fld===false || $fld===NULL) {
+		$fld="";
+	} else {
+		$nul=strpos($fld,"\0");
+		if ($nul!==false) {
+			$fld=substr($fld,0,$nul);
+		}
+	}
 	assertEqStr($fld,"");
 	assertEqStr(sqlrcur_getField($cur,0,3),NULL);
 	sqlrcur_getNullsAsEmptyStrings($cur);
@@ -1701,8 +1708,8 @@
 	assertTrue(!strcmp(sqlrcur_getField($cur,0,"table"),"testtable"));
 	assertEqStr(sqlrcur_getField($cur,0,"seq_in_index"),"1");
 	assertTrue(!strcmp(sqlrcur_getField($cur,0,"column_name"),"col1"));
-	assertTrue(!(!sqlrcur_getField($cur,0,"key_name") ||
-		!sqlrcur_getField($cur,0,"key_name")[0]));
+	$kn=sqlrcur_getField($cur,0,"key_name");
+	assertTrue(!(!$kn || !$kn[0]));
 	assertTrue(sqlrcur_sendQuery($cur,"drop table testtable"));
 	echo("\n");
 
@@ -1735,8 +1742,8 @@
 	assertTrue(!strcmp(sqlrcur_getField($cur,0,"column_name"),"col1"));
 	assertEqStr(sqlrcur_getField($cur,0,"collation"),"A");
 	assertEqStr(sqlrcur_getField($cur,0,"index_type"),"1");
-	assertTrue(!(!sqlrcur_getField($cur,0,"key_name") ||
-		!sqlrcur_getField($cur,0,"key_name")[0]));
+	$kn=sqlrcur_getField($cur,0,"key_name");
+	assertTrue(!(!$kn || !$kn[0]));
 	assertTrue(sqlrcur_sendQuery($cur,"drop table testtable"));
 	echo("\n");
 
