@@ -1,0 +1,1672 @@
+#! /usr/bin/env tclsh
+
+# Copyright (c) David Muse
+# See the file COPYING for more information.
+
+load @TCLLIBSPATH@@SLASH@sqlrelay@SLASH@sqlrelay.@SOSUFFIX@ sqlrelay
+source ./asserts.tcl
+
+
+set LARGE_BUFFER_LENGTH [expr 20*1024]
+set largebuffer [string repeat "C" $LARGE_BUFFER_LENGTH]
+
+
+# instantiation
+set con [sqlrcon -server "sqlrelay" -port 9000 -socket "/tmp/test.socket" -user "testuser" -password "testpassword" -retrytime 0 -tries 1]
+set cur [$con sqlrcur]
+setConnection $con
+setCursor $cur
+
+
+# identify
+puts "IDENTIFY: "
+assertEqual [$con identify] "informix"
+puts ""
+
+
+# ping
+puts "PING: "
+assertTrue [$con ping]
+puts ""
+
+
+# bind format
+puts "BIND FORMAT: "
+assertEqual [$con bindFormat] "?"
+puts ""
+
+
+# nextval format
+puts "NEXTVAL FORMAT: "
+assertEqual [$con nextvalFormat] "%s.nextval"
+puts ""
+
+
+# isolation levels
+puts "ISOLATION LEVELS: "
+set isolationlevels [list "committed read" "dirty read" "cursor stability" "repeatable read"]
+foreach il $isolationlevels {
+	# you can set the isolation level, but to get it, you have to
+	# have permissions to read from sysmaster:syssqlcurses
+	assertTrue [$con setIsolationLevel $il]
+	puts ""
+}
+# reset to the default isolation level
+assertTrue [$con setIsolationLevel [lindex $isolationlevels 0]]
+puts ""
+
+
+# create testtable
+puts "CREATE TESTTABLE: "
+catch {$cur sendQuery "drop table testtable"}
+assertTrue [$cur sendQuery "create table testtable (testboolean boolean, testsmallint smallint, testint integer, testbigint bigint, testint8 int8, testdecimal decimal(10,2), testmoney money, testsmallfloat smallfloat, testfloat float, testchar char(40), testnchar nchar(40), testvarchar varchar(40), testnvarchar nvarchar(40), testlvarchar lvarchar(40), testdate date, testdatetime datetime year to second, testtext text, testbyte byte)"]
+assertTrue [$con commit]
+puts ""
+
+
+# insert
+puts "INSERT: "
+assertTrue [$cur sendQuery "insert into testtable values ('t', 1, 1, 1, 1, 1.1, 1.1, 1.1, 1.1, 'testchar1', 'testnchar1', 'testvarchar1', 'testnvarchar1', 'testlvarchar1', '01/01/2001', '2001-01-01 01:00:00', 'testtext1', null)"]
+puts ""
+
+
+# affected rows
+puts "AFFECTED ROWS: "
+assertEqual [$cur affectedRows] 1
+puts ""
+
+
+# input bind by position
+puts "INPUT BIND BY POSITION: "
+$cur prepareQuery "insert into testtable values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
+assertEqual [$cur countBindVariables] 18
+$cur inputBind "1" "t"
+$cur inputBind "2" 2
+$cur inputBind "3" 2
+$cur inputBind "4" 2
+$cur inputBind "5" 2
+$cur inputBind "6" 2.2 4 2
+$cur inputBind "7" 2.2 4 2
+$cur inputBind "8" 2.2 4 2
+$cur inputBind "9" 2.2 4 2
+$cur inputBind "10" "testchar2"
+$cur inputBind "11" "testnchar2"
+$cur inputBind "12" "testvarchar2"
+$cur inputBind "13" "testnvarchar2"
+$cur inputBind "14" "testlvarchar2"
+$cur inputBindDate "15" 2002 1 1 -1 -1 -1 -1 "" 0
+$cur inputBindDate "16" 2002 1 1 2 0 0 0 "" 0
+$cur inputBindClob "17" "testtext2" 9
+$cur inputBindBlob "18" "testbyte2" 9
+assertTrue [$cur executeQuery]
+$cur clearBinds
+$cur inputBind "1" "t"
+$cur inputBind "2" 3
+$cur inputBind "3" 3
+$cur inputBind "4" 3
+$cur inputBind "5" 3
+$cur inputBind "6" 3.3 4 2
+$cur inputBind "7" 3.3 4 2
+$cur inputBind "8" 3.3 4 2
+$cur inputBind "9" 3.3 4 2
+$cur inputBind "10" "testchar3"
+$cur inputBind "11" "testnchar3"
+$cur inputBind "12" "testvarchar3"
+$cur inputBind "13" "testnvarchar3"
+$cur inputBind "14" "testlvarchar3"
+$cur inputBindDate "15" 2003 1 1 -1 -1 -1 -1 "" 0
+$cur inputBindDate "16" 2003 1 1 3 0 0 0 "" 0
+$cur inputBindClob "17" "testtext3" 9
+$cur inputBindBlob "18" "testbyte3" 9
+assertTrue [$cur executeQuery]
+$cur clearBinds
+$cur inputBind "1" "t"
+$cur inputBind "2" 4
+$cur inputBind "3" 4
+$cur inputBind "4" 4
+$cur inputBind "5" 4
+$cur inputBind "6" 4.4 4 2
+$cur inputBind "7" 4.4 4 2
+$cur inputBind "8" 4.4 4 2
+$cur inputBind "9" 4.4 4 2
+$cur inputBind "10" "testchar4"
+$cur inputBind "11" "testnchar4"
+$cur inputBind "12" "testvarchar4"
+$cur inputBind "13" "testnvarchar4"
+$cur inputBind "14" "testlvarchar4"
+$cur inputBindDate "15" 2004 1 1 -1 -1 -1 -1 "" 0
+$cur inputBindDate "16" 2004 1 1 4 0 0 0 "" 0
+$cur inputBindClob "17" "testtext4" 9
+$cur inputBindBlob "18" "testbyte4" 9
+assertTrue [$cur executeQuery]
+$cur clearBinds
+$cur inputBind "1" "t"
+$cur inputBind "2" 5
+$cur inputBind "3" 5
+$cur inputBind "4" 5
+$cur inputBind "5" 5
+$cur inputBind "6" 5.5 4 2
+$cur inputBind "7" 5.5 4 2
+$cur inputBind "8" 5.5 4 2
+$cur inputBind "9" 5.5 4 2
+$cur inputBind "10" "testchar5"
+$cur inputBind "11" "testnchar5"
+$cur inputBind "12" "testvarchar5"
+$cur inputBind "13" "testnvarchar5"
+$cur inputBind "14" "testlvarchar5"
+$cur inputBindDate "15" 2005 1 1 -1 -1 -1 -1 "" 0
+$cur inputBindDate "16" 2005 1 1 5 0 0 0 "" 0
+$cur inputBindClob "17" "testtext5" 9
+$cur inputBindBlob "18" "testbyte5" 9
+assertTrue [$cur executeQuery]
+$cur clearBinds
+$cur inputBind "1" "t"
+$cur inputBind "2" 6
+$cur inputBind "3" 6
+$cur inputBind "4" 6
+$cur inputBind "5" 6
+$cur inputBind "6" 6.6 4 2
+$cur inputBind "7" 6.6 4 2
+$cur inputBind "8" 6.6 4 2
+$cur inputBind "9" 6.6 4 2
+$cur inputBind "10" "testchar6"
+$cur inputBind "11" "testnchar6"
+$cur inputBind "12" "testvarchar6"
+$cur inputBind "13" "testnvarchar6"
+$cur inputBind "14" "testlvarchar6"
+$cur inputBindDate "15" 2006 1 1 -1 -1 -1 -1 "" 0
+$cur inputBindDate "16" 2006 1 1 6 0 0 0 "" 0
+$cur inputBindClob "17" "testtext6" 9
+$cur inputBindBlob "18" "testbyte6" 9
+assertTrue [$cur executeQuery]
+puts ""
+
+
+# array of input binds by position
+puts "ARRAY OF INPUT BINDS BY POSITION: "
+$cur clearBinds
+$cur prepareQuery "insert into testtable values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, null, null)"
+$cur inputBinds {{"1" "t"} {"2" 7} {"3" 7} {"4" 7} {"5" 7} {"6" 7.7 4 1} {"7" 7.7 4 1} {"8" 7.7 4 1} {"9" 7.7 4 1} {"10" "testchar7"} {"11" "testnchar7"} {"12" "testvarchar7"} {"13" "testnvarchar7"} {"14" "testlvarchar7"} {"15" "01/01/2007"} {"16" "2007-01-01 07:00:00"}}
+assertTrue [$cur executeQuery]
+puts ""
+
+
+# input bind by position with validation
+puts "INPUT BIND BY POSITION WITH VALIDATION: "
+$cur clearBinds
+$cur inputBind "1" "t"
+$cur inputBind "2" 8
+$cur inputBind "3" 8
+$cur inputBind "4" 8
+$cur inputBind "5" 8
+$cur inputBind "6" 8.8 4 2
+$cur inputBind "7" 8.8 4 2
+$cur inputBind "8" 8.8 4 2
+$cur inputBind "9" 8.8 4 2
+$cur inputBind "10" "testchar8"
+$cur inputBind "11" "testnchar8"
+$cur inputBind "12" "testvarchar8"
+$cur inputBind "13" "testnvarchar8"
+$cur inputBind "14" "testlvarchar8"
+$cur inputBindDate "15" 2008 1 1 -1 -1 -1 -1 "" 0
+$cur inputBindDate "16" 2008 1 1 8 0 0 0 "" 0
+$cur inputBindClob "17" "testtext8" 9
+$cur inputBindBlob "18" "testbyte8" 9
+$cur validateBinds
+assertTrue [$cur executeQuery]
+puts ""
+
+
+# input bind by name
+# informix doesn't support bind by name
+
+
+# array of input binds by name
+# informix doesn't support bind by name
+
+
+# input bind by name with validation
+# informix doesn't support bind by name
+
+
+# select
+puts "SELECT: "
+assertTrue [$cur sendQuery "select * from testtable order by testsmallint"]
+puts ""
+
+
+# column count
+puts "COLUMN COUNT: "
+assertEqual [$cur colCount] 18
+puts ""
+
+
+# column names
+puts "COLUMN NAMES: "
+assertEqual [$cur getColumnName 0] "testboolean"
+assertEqual [$cur getColumnName 1] "testsmallint"
+assertEqual [$cur getColumnName 2] "testint"
+assertEqual [$cur getColumnName 3] "testbigint"
+assertEqual [$cur getColumnName 4] "testint8"
+assertEqual [$cur getColumnName 5] "testdecimal"
+assertEqual [$cur getColumnName 6] "testmoney"
+assertEqual [$cur getColumnName 7] "testsmallfloat"
+assertEqual [$cur getColumnName 8] "testfloat"
+assertEqual [$cur getColumnName 9] "testchar"
+assertEqual [$cur getColumnName 10] "testnchar"
+assertEqual [$cur getColumnName 11] "testvarchar"
+assertEqual [$cur getColumnName 12] "testnvarchar"
+assertEqual [$cur getColumnName 13] "testlvarchar"
+assertEqual [$cur getColumnName 14] "testdate"
+assertEqual [$cur getColumnName 15] "testdatetime"
+assertEqual [$cur getColumnName 16] "testtext"
+assertEqual [$cur getColumnName 17] "testbyte"
+set cols [$cur getColumnNames]
+assertEqual [lindex $cols 0] "testboolean"
+assertEqual [lindex $cols 1] "testsmallint"
+assertEqual [lindex $cols 2] "testint"
+assertEqual [lindex $cols 3] "testbigint"
+assertEqual [lindex $cols 4] "testint8"
+assertEqual [lindex $cols 5] "testdecimal"
+assertEqual [lindex $cols 6] "testmoney"
+assertEqual [lindex $cols 7] "testsmallfloat"
+assertEqual [lindex $cols 8] "testfloat"
+assertEqual [lindex $cols 9] "testchar"
+assertEqual [lindex $cols 10] "testnchar"
+assertEqual [lindex $cols 11] "testvarchar"
+assertEqual [lindex $cols 12] "testnvarchar"
+assertEqual [lindex $cols 13] "testlvarchar"
+assertEqual [lindex $cols 14] "testdate"
+assertEqual [lindex $cols 15] "testdatetime"
+assertEqual [lindex $cols 16] "testtext"
+assertEqual [lindex $cols 17] "testbyte"
+puts ""
+
+
+# column types
+puts "COLUMN TYPES: "
+assertEqual [$cur getColumnTypeByIndex 0] "BOOLEAN"
+assertEqual [$cur getColumnTypeByName "testboolean"] "BOOLEAN"
+assertEqual [$cur getColumnTypeByIndex 1] "SMALLINT"
+assertEqual [$cur getColumnTypeByName "testsmallint"] "SMALLINT"
+assertEqual [$cur getColumnTypeByIndex 2] "INTEGER"
+assertEqual [$cur getColumnTypeByName "testint"] "INTEGER"
+assertEqual [$cur getColumnTypeByIndex 3] "BIGINT"
+assertEqual [$cur getColumnTypeByName "testbigint"] "BIGINT"
+assertEqual [$cur getColumnTypeByIndex 4] "INT8"
+assertEqual [$cur getColumnTypeByName "testint8"] "INT8"
+assertEqual [$cur getColumnTypeByIndex 5] "DECIMAL"
+assertEqual [$cur getColumnTypeByName "testdecimal"] "DECIMAL"
+assertEqual [$cur getColumnTypeByIndex 6] "DECIMAL"
+assertEqual [$cur getColumnTypeByName "testmoney"] "DECIMAL"
+assertEqual [$cur getColumnTypeByIndex 7] "SMALLFLOAT"
+assertEqual [$cur getColumnTypeByName "testsmallfloat"] "SMALLFLOAT"
+assertEqual [$cur getColumnTypeByIndex 8] "FLOAT"
+assertEqual [$cur getColumnTypeByName "testfloat"] "FLOAT"
+assertEqual [$cur getColumnTypeByIndex 9] "CHAR"
+assertEqual [$cur getColumnTypeByName "testchar"] "CHAR"
+assertEqual [$cur getColumnTypeByIndex 10] "CHAR"
+assertEqual [$cur getColumnTypeByName "testnchar"] "CHAR"
+assertEqual [$cur getColumnTypeByIndex 11] "VARCHAR"
+assertEqual [$cur getColumnTypeByName "testvarchar"] "VARCHAR"
+assertEqual [$cur getColumnTypeByIndex 12] "VARCHAR"
+assertEqual [$cur getColumnTypeByName "testnvarchar"] "VARCHAR"
+assertEqual [$cur getColumnTypeByIndex 13] "VARCHAR"
+assertEqual [$cur getColumnTypeByName "testlvarchar"] "VARCHAR"
+assertEqual [$cur getColumnTypeByIndex 14] "DATE"
+assertEqual [$cur getColumnTypeByName "testdate"] "DATE"
+assertEqual [$cur getColumnTypeByIndex 15] "DATETIME"
+assertEqual [$cur getColumnTypeByName "testdatetime"] "DATETIME"
+assertEqual [$cur getColumnTypeByIndex 16] "TEXT"
+assertEqual [$cur getColumnTypeByName "testtext"] "TEXT"
+assertEqual [$cur getColumnTypeByIndex 17] "BYTE"
+assertEqual [$cur getColumnTypeByName "testbyte"] "BYTE"
+puts ""
+
+
+# column length
+puts "COLUMN LENGTH: "
+assertEqual [$cur getColumnLengthByIndex 0] 1
+assertEqual [$cur getColumnLengthByName "testboolean"] 1
+assertEqual [$cur getColumnLengthByIndex 1] 5
+assertEqual [$cur getColumnLengthByName "testsmallint"] 5
+assertEqual [$cur getColumnLengthByIndex 2] 10
+assertEqual [$cur getColumnLengthByName "testint"] 10
+assertEqual [$cur getColumnLengthByIndex 3] 20
+assertEqual [$cur getColumnLengthByName "testbigint"] 20
+assertEqual [$cur getColumnLengthByIndex 4] 20
+assertEqual [$cur getColumnLengthByName "testint8"] 20
+assertEqual [$cur getColumnLengthByIndex 5] 10
+assertEqual [$cur getColumnLengthByName "testdecimal"] 10
+assertEqual [$cur getColumnLengthByIndex 6] 16
+assertEqual [$cur getColumnLengthByName "testmoney"] 16
+assertEqual [$cur getColumnLengthByIndex 7] 7
+assertEqual [$cur getColumnLengthByName "testsmallfloat"] 7
+assertEqual [$cur getColumnLengthByIndex 8] 15
+assertEqual [$cur getColumnLengthByName "testfloat"] 15
+assertEqual [$cur getColumnLengthByIndex 9] 40
+assertEqual [$cur getColumnLengthByName "testchar"] 40
+assertEqual [$cur getColumnLengthByIndex 10] 40
+assertEqual [$cur getColumnLengthByName "testnchar"] 40
+assertEqual [$cur getColumnLengthByIndex 11] 40
+assertEqual [$cur getColumnLengthByName "testvarchar"] 40
+assertEqual [$cur getColumnLengthByIndex 12] 40
+assertEqual [$cur getColumnLengthByName "testnvarchar"] 40
+assertEqual [$cur getColumnLengthByIndex 13] 40
+assertEqual [$cur getColumnLengthByName "testlvarchar"] 40
+assertEqual [$cur getColumnLengthByIndex 14] 10
+assertEqual [$cur getColumnLengthByName "testdate"] 10
+assertEqual [$cur getColumnLengthByIndex 15] 19
+assertEqual [$cur getColumnLengthByName "testdatetime"] 19
+assertEqual [$cur getColumnLengthByIndex 16] 2147483647
+assertEqual [$cur getColumnLengthByName "testtext"] 2147483647
+puts ""
+
+
+# longest column
+puts "LONGEST COLUMN: "
+assertEqual [$cur getLongestByIndex 0] 1
+assertEqual [$cur getLongestByName "testboolean"] 1
+assertEqual [$cur getLongestByIndex 1] 1
+assertEqual [$cur getLongestByName "testsmallint"] 1
+assertEqual [$cur getLongestByIndex 2] 1
+assertEqual [$cur getLongestByName "testint"] 1
+assertEqual [$cur getLongestByIndex 3] 1
+assertEqual [$cur getLongestByName "testbigint"] 1
+assertEqual [$cur getLongestByIndex 4] 1
+assertEqual [$cur getLongestByName "testint8"] 1
+assertEqual [$cur getLongestByIndex 5] 4
+assertEqual [$cur getLongestByName "testdecimal"] 4
+assertEqual [$cur getLongestByIndex 6] 4
+assertEqual [$cur getLongestByName "testmoney"] 4
+assertEqual [$cur getLongestByIndex 7] 3
+assertEqual [$cur getLongestByName "testsmallfloat"] 3
+assertEqual [$cur getLongestByIndex 8] 3
+assertEqual [$cur getLongestByName "testfloat"] 3
+assertEqual [$cur getLongestByIndex 9] 40
+assertEqual [$cur getLongestByName "testchar"] 40
+assertEqual [$cur getLongestByIndex 10] 40
+assertEqual [$cur getLongestByName "testnchar"] 40
+assertEqual [$cur getLongestByIndex 11] 12
+assertEqual [$cur getLongestByName "testvarchar"] 12
+assertEqual [$cur getLongestByIndex 12] 13
+assertEqual [$cur getLongestByName "testnvarchar"] 13
+assertEqual [$cur getLongestByIndex 13] 13
+assertEqual [$cur getLongestByName "testlvarchar"] 13
+assertEqual [$cur getLongestByIndex 14] 10
+assertEqual [$cur getLongestByName "testdate"] 10
+assertEqual [$cur getLongestByIndex 15] 19
+assertEqual [$cur getLongestByName "testdatetime"] 19
+assertEqual [$cur getLongestByIndex 16] 9
+assertEqual [$cur getLongestByName "testtext"] 9
+assertEqual [$cur getLongestByIndex 17] 9
+assertEqual [$cur getLongestByName "testbyte"] 9
+puts ""
+
+
+# row count
+puts "ROW COUNT: "
+assertEqual [$cur rowCount] 8
+puts ""
+
+
+# total rows
+puts "TOTAL ROWS: "
+assertEqual [$cur totalRows] 0
+puts ""
+
+
+# first row index
+puts "FIRST ROW INDEX: "
+assertEqual [$cur firstRowIndex] 0
+puts ""
+
+
+# end of result set
+puts "END OF RESULT SET: "
+assertTrue [$cur endOfResultSet]
+puts ""
+
+
+# fields by index
+puts "FIELDS BY INDEX: "
+assertEqual [$cur getFieldByIndex 0 0] "1"
+assertEqual [$cur getFieldByIndex 0 1] "1"
+assertEqual [$cur getFieldByIndex 0 2] "1"
+assertEqual [$cur getFieldByIndex 0 3] "1"
+assertEqual [$cur getFieldByIndex 0 4] "1"
+assertEqual [$cur getFieldByIndex 0 5] "1.10"
+assertEqual [$cur getFieldByIndex 0 6] "1.10"
+assertEqual [$cur getFieldByIndex 0 7] "1.1"
+assertEqual [$cur getFieldByIndex 0 8] "1.1"
+assertEqual [$cur getFieldByIndex 0 9] "testchar1                               "
+assertEqual [$cur getFieldByIndex 0 10] "testnchar1                              "
+assertEqual [$cur getFieldByIndex 0 11] "testvarchar1"
+assertEqual [$cur getFieldByIndex 0 12] "testnvarchar1"
+assertEqual [$cur getFieldByIndex 0 13] "testlvarchar1"
+assertEqual [$cur getFieldByIndex 0 14] "2001-01-01"
+assertEqual [$cur getFieldByIndex 0 15] "2001-01-01 01:00:00"
+assertEqual [$cur getFieldByIndex 0 16] "testtext1"
+assertEqual [$cur getFieldByIndex 0 17] ""
+puts ""
+assertEqual [$cur getFieldByIndex 7 0] "1"
+assertEqual [$cur getFieldByIndex 7 1] "8"
+assertEqual [$cur getFieldByIndex 7 2] "8"
+assertEqual [$cur getFieldByIndex 7 3] "8"
+assertEqual [$cur getFieldByIndex 7 4] "8"
+assertEqual [$cur getFieldByIndex 7 5] "8.80"
+assertEqual [$cur getFieldByIndex 7 6] "8.80"
+assertEqual [$cur getFieldByIndex 7 7] "8.8"
+assertEqual [$cur getFieldByIndex 7 8] "8.8"
+assertEqual [$cur getFieldByIndex 7 9] "testchar8                               "
+assertEqual [$cur getFieldByIndex 7 10] "testnchar8                              "
+assertEqual [$cur getFieldByIndex 7 11] "testvarchar8"
+assertEqual [$cur getFieldByIndex 7 12] "testnvarchar8"
+assertEqual [$cur getFieldByIndex 7 13] "testlvarchar8"
+assertEqual [$cur getFieldByIndex 7 14] "2008-01-01"
+assertEqual [$cur getFieldByIndex 7 15] "2008-01-01 08:00:00"
+assertEqual [$cur getFieldByIndex 7 16] ""
+assertEqual [$cur getFieldByIndex 7 17] ""
+puts ""
+
+
+# field lengths by index
+puts "FIELD LENGTHS BY INDEX: "
+assertEqual [$cur getFieldLengthByIndex 0 0] 1
+assertEqual [$cur getFieldLengthByIndex 0 1] 1
+assertEqual [$cur getFieldLengthByIndex 0 2] 1
+assertEqual [$cur getFieldLengthByIndex 0 3] 1
+assertEqual [$cur getFieldLengthByIndex 0 4] 1
+assertEqual [$cur getFieldLengthByIndex 0 5] 4
+assertEqual [$cur getFieldLengthByIndex 0 6] 4
+assertEqual [$cur getFieldLengthByIndex 0 7] 3
+assertEqual [$cur getFieldLengthByIndex 0 8] 3
+assertEqual [$cur getFieldLengthByIndex 0 9] 40
+assertEqual [$cur getFieldLengthByIndex 0 10] 40
+assertEqual [$cur getFieldLengthByIndex 0 11] 12
+assertEqual [$cur getFieldLengthByIndex 0 12] 13
+assertEqual [$cur getFieldLengthByIndex 0 14] 10
+assertEqual [$cur getFieldLengthByIndex 0 15] 19
+assertEqual [$cur getFieldLengthByIndex 0 16] 9
+assertEqual [$cur getFieldLengthByIndex 0 17] 0
+puts ""
+assertEqual [$cur getFieldLengthByIndex 7 0] 1
+assertEqual [$cur getFieldLengthByIndex 7 1] 1
+assertEqual [$cur getFieldLengthByIndex 7 2] 1
+assertEqual [$cur getFieldLengthByIndex 7 3] 1
+assertEqual [$cur getFieldLengthByIndex 7 4] 1
+assertEqual [$cur getFieldLengthByIndex 7 5] 4
+assertEqual [$cur getFieldLengthByIndex 7 6] 4
+assertEqual [$cur getFieldLengthByIndex 7 7] 3
+assertEqual [$cur getFieldLengthByIndex 7 8] 3
+assertEqual [$cur getFieldLengthByIndex 7 9] 40
+assertEqual [$cur getFieldLengthByIndex 7 10] 40
+assertEqual [$cur getFieldLengthByIndex 7 11] 12
+assertEqual [$cur getFieldLengthByIndex 7 12] 13
+assertEqual [$cur getFieldLengthByIndex 7 14] 10
+assertEqual [$cur getFieldLengthByIndex 7 15] 19
+assertEqual [$cur getFieldLengthByIndex 7 16] 0
+assertEqual [$cur getFieldLengthByIndex 7 17] 0
+puts ""
+
+
+# fields by name
+puts "FIELDS BY NAME: "
+assertEqual [$cur getFieldByName 0 "testboolean"] "1"
+assertEqual [$cur getFieldByName 0 "testsmallint"] "1"
+assertEqual [$cur getFieldByName 0 "testint"] "1"
+assertEqual [$cur getFieldByName 0 "testbigint"] "1"
+assertEqual [$cur getFieldByName 0 "testint8"] "1"
+assertEqual [$cur getFieldByName 0 "testdecimal"] "1.10"
+assertEqual [$cur getFieldByName 0 "testmoney"] "1.10"
+assertEqual [$cur getFieldByName 0 "testsmallfloat"] "1.1"
+assertEqual [$cur getFieldByName 0 "testfloat"] "1.1"
+assertEqual [$cur getFieldByName 0 "testchar"] "testchar1                               "
+assertEqual [$cur getFieldByName 0 "testnchar"] "testnchar1                              "
+assertEqual [$cur getFieldByName 0 "testvarchar"] "testvarchar1"
+assertEqual [$cur getFieldByName 0 "testnvarchar"] "testnvarchar1"
+assertEqual [$cur getFieldByName 0 "testlvarchar"] "testlvarchar1"
+assertEqual [$cur getFieldByName 0 "testdate"] "2001-01-01"
+assertEqual [$cur getFieldByName 0 "testdatetime"] "2001-01-01 01:00:00"
+assertEqual [$cur getFieldByName 0 "testtext"] "testtext1"
+assertEqual [$cur getFieldByName 0 "testbyte"] ""
+puts ""
+assertEqual [$cur getFieldByName 7 "testboolean"] "1"
+assertEqual [$cur getFieldByName 7 "testsmallint"] "8"
+assertEqual [$cur getFieldByName 7 "testint"] "8"
+assertEqual [$cur getFieldByName 7 "testbigint"] "8"
+assertEqual [$cur getFieldByName 7 "testint8"] "8"
+assertEqual [$cur getFieldByName 7 "testdecimal"] "8.80"
+assertEqual [$cur getFieldByName 7 "testmoney"] "8.80"
+assertEqual [$cur getFieldByName 7 "testsmallfloat"] "8.8"
+assertEqual [$cur getFieldByName 7 "testfloat"] "8.8"
+assertEqual [$cur getFieldByName 7 "testchar"] "testchar8                               "
+assertEqual [$cur getFieldByName 7 "testnchar"] "testnchar8                              "
+assertEqual [$cur getFieldByName 7 "testvarchar"] "testvarchar8"
+assertEqual [$cur getFieldByName 7 "testnvarchar"] "testnvarchar8"
+assertEqual [$cur getFieldByName 7 "testlvarchar"] "testlvarchar8"
+assertEqual [$cur getFieldByName 7 "testdate"] "2008-01-01"
+assertEqual [$cur getFieldByName 7 "testdatetime"] "2008-01-01 08:00:00"
+assertEqual [$cur getFieldByName 7 "testtext"] ""
+assertEqual [$cur getFieldByName 7 "testbyte"] ""
+puts ""
+
+
+# field lengths by name
+puts "FIELD LENGTHS BY NAME: "
+assertEqual [$cur getFieldLengthByName 0 "testboolean"] 1
+assertEqual [$cur getFieldLengthByName 0 "testsmallint"] 1
+assertEqual [$cur getFieldLengthByName 0 "testint"] 1
+assertEqual [$cur getFieldLengthByName 0 "testbigint"] 1
+assertEqual [$cur getFieldLengthByName 0 "testint8"] 1
+assertEqual [$cur getFieldLengthByName 0 "testdecimal"] 4
+assertEqual [$cur getFieldLengthByName 0 "testmoney"] 4
+assertEqual [$cur getFieldLengthByName 0 "testsmallfloat"] 3
+assertEqual [$cur getFieldLengthByName 0 "testfloat"] 3
+assertEqual [$cur getFieldLengthByName 0 "testchar"] 40
+assertEqual [$cur getFieldLengthByName 0 "testnchar"] 40
+assertEqual [$cur getFieldLengthByName 0 "testvarchar"] 12
+assertEqual [$cur getFieldLengthByName 0 "testnvarchar"] 13
+assertEqual [$cur getFieldLengthByName 0 "testlvarchar"] 13
+assertEqual [$cur getFieldLengthByName 0 "testdate"] 10
+assertEqual [$cur getFieldLengthByName 0 "testdatetime"] 19
+assertEqual [$cur getFieldLengthByName 0 "testtext"] 9
+assertEqual [$cur getFieldLengthByName 0 "testbyte"] 0
+puts ""
+assertEqual [$cur getFieldLengthByName 7 "testboolean"] 1
+assertEqual [$cur getFieldLengthByName 7 "testsmallint"] 1
+assertEqual [$cur getFieldLengthByName 7 "testint"] 1
+assertEqual [$cur getFieldLengthByName 7 "testbigint"] 1
+assertEqual [$cur getFieldLengthByName 7 "testint8"] 1
+assertEqual [$cur getFieldLengthByName 7 "testdecimal"] 4
+assertEqual [$cur getFieldLengthByName 7 "testmoney"] 4
+assertEqual [$cur getFieldLengthByName 7 "testsmallfloat"] 3
+assertEqual [$cur getFieldLengthByName 7 "testfloat"] 3
+assertEqual [$cur getFieldLengthByName 7 "testchar"] 40
+assertEqual [$cur getFieldLengthByName 7 "testnchar"] 40
+assertEqual [$cur getFieldLengthByName 7 "testvarchar"] 12
+assertEqual [$cur getFieldLengthByName 7 "testnvarchar"] 13
+assertEqual [$cur getFieldLengthByName 7 "testlvarchar"] 13
+assertEqual [$cur getFieldLengthByName 7 "testdate"] 10
+assertEqual [$cur getFieldLengthByName 7 "testdatetime"] 19
+assertEqual [$cur getFieldLengthByName 7 "testtext"] 0
+assertEqual [$cur getFieldLengthByName 7 "testbyte"] 0
+puts ""
+
+
+# fields by array
+puts "FIELDS BY ARRAY: "
+set fields [$cur getRow 0]
+assertEqual [lindex $fields 0] "1"
+assertEqual [lindex $fields 1] "1"
+assertEqual [lindex $fields 2] "1"
+assertEqual [lindex $fields 3] "1"
+assertEqual [lindex $fields 4] "1"
+assertEqual [lindex $fields 5] "1.10"
+assertEqual [lindex $fields 6] "1.10"
+assertEqual [lindex $fields 7] "1.1"
+assertEqual [lindex $fields 8] "1.1"
+assertEqual [lindex $fields 9] "testchar1                               "
+assertEqual [lindex $fields 10] "testnchar1                              "
+assertEqual [lindex $fields 11] "testvarchar1"
+assertEqual [lindex $fields 12] "testnvarchar1"
+assertEqual [lindex $fields 13] "testlvarchar1"
+assertEqual [lindex $fields 14] "2001-01-01"
+assertEqual [lindex $fields 15] "2001-01-01 01:00:00"
+assertEqual [lindex $fields 16] "testtext1"
+assertEqual [lindex $fields 17] ""
+puts ""
+
+
+# field lengths by array
+puts "FIELD LENGTHS BY ARRAY: "
+set fieldlens [$cur getRowLengths 0]
+assertEqual [lindex $fieldlens 0] 1
+assertEqual [lindex $fieldlens 1] 1
+assertEqual [lindex $fieldlens 2] 1
+assertEqual [lindex $fieldlens 3] 1
+assertEqual [lindex $fieldlens 4] 1
+assertEqual [lindex $fieldlens 5] 4
+assertEqual [lindex $fieldlens 6] 4
+assertEqual [lindex $fieldlens 7] 3
+assertEqual [lindex $fieldlens 8] 3
+assertEqual [lindex $fieldlens 9] 40
+assertEqual [lindex $fieldlens 10] 40
+assertEqual [lindex $fieldlens 11] 12
+assertEqual [lindex $fieldlens 12] 13
+assertEqual [lindex $fieldlens 14] 10
+assertEqual [lindex $fieldlens 15] 19
+assertEqual [lindex $fieldlens 16] 9
+assertEqual [lindex $fieldlens 17] 0
+puts ""
+
+
+# result set buffer size
+puts "RESULT SET BUFFER SIZE: "
+assertEqual [$cur getResultSetBufferSize] 0
+$cur setResultSetBufferSize 2
+assertTrue [$cur sendQuery "select * from testtable order by testsmallint"]
+assertEqual [$cur getResultSetBufferSize] 2
+puts ""
+assertEqual [$cur firstRowIndex] 0
+assertFalse [$cur endOfResultSet]
+assertEqual [$cur rowCount] 2
+assertEqual [$cur getFieldByIndex 0 1] "1"
+assertEqual [$cur getFieldByIndex 1 1] "2"
+assertEqual [$cur getFieldByIndex 2 1] "3"
+puts ""
+assertEqual [$cur firstRowIndex] 2
+assertFalse [$cur endOfResultSet]
+assertEqual [$cur rowCount] 4
+assertEqual [$cur getFieldByIndex 6 1] "7"
+assertEqual [$cur getFieldByIndex 7 1] "8"
+puts ""
+assertEqual [$cur firstRowIndex] 6
+assertFalse [$cur endOfResultSet]
+assertEqual [$cur rowCount] 8
+assertUndef [$cur getFieldByIndex 8 1]
+puts ""
+assertEqual [$cur firstRowIndex] 8
+assertTrue [$cur endOfResultSet]
+assertEqual [$cur rowCount] 8
+$cur setResultSetBufferSize 0
+puts ""
+
+
+# dont get column info
+puts "DONT GET COLUMN INFO: "
+$cur dontGetColumnInfo
+assertTrue [$cur sendQuery "select * from testtable order by testsmallint"]
+assertUndef [$cur getColumnName 1]
+assertEqual [$cur getColumnLengthByIndex 1] 0
+assertUndef [$cur getColumnTypeByIndex 1]
+$cur getColumnInfo
+assertTrue [$cur sendQuery "select * from testtable order by testsmallint"]
+assertEqual [$cur getColumnName 1] "testsmallint"
+assertEqual [$cur getColumnLengthByIndex 1] 5
+assertEqual [$cur getColumnTypeByIndex 1] "SMALLINT"
+puts ""
+
+
+# suspended session
+puts "SUSPENDED SESSION: "
+assertTrue [$cur sendQuery "select * from testtable order by testsmallint"]
+$cur suspendResultSet
+assertTrue [$con suspendSession]
+set port [$con getConnectionPort]
+set socket [$con getConnectionSocket]
+assertTrue [$con resumeSession $port $socket]
+puts ""
+assertEqual [$cur getFieldByIndex 0 1] "1"
+assertEqual [$cur getFieldByIndex 1 1] "2"
+assertEqual [$cur getFieldByIndex 2 1] "3"
+assertEqual [$cur getFieldByIndex 3 1] "4"
+assertEqual [$cur getFieldByIndex 4 1] "5"
+assertEqual [$cur getFieldByIndex 5 1] "6"
+assertEqual [$cur getFieldByIndex 6 1] "7"
+assertEqual [$cur getFieldByIndex 7 1] "8"
+puts ""
+assertTrue [$cur sendQuery "select * from testtable order by testsmallint"]
+$cur suspendResultSet
+assertTrue [$con suspendSession]
+set port [$con getConnectionPort]
+set socket [$con getConnectionSocket]
+assertTrue [$con resumeSession $port $socket]
+puts ""
+assertEqual [$cur getFieldByIndex 0 1] "1"
+assertEqual [$cur getFieldByIndex 1 1] "2"
+assertEqual [$cur getFieldByIndex 2 1] "3"
+assertEqual [$cur getFieldByIndex 3 1] "4"
+assertEqual [$cur getFieldByIndex 4 1] "5"
+assertEqual [$cur getFieldByIndex 5 1] "6"
+assertEqual [$cur getFieldByIndex 6 1] "7"
+assertEqual [$cur getFieldByIndex 7 1] "8"
+puts ""
+assertTrue [$cur sendQuery "select * from testtable order by testsmallint"]
+$cur suspendResultSet
+assertTrue [$con suspendSession]
+set port [$con getConnectionPort]
+set socket [$con getConnectionSocket]
+assertTrue [$con resumeSession $port $socket]
+puts ""
+assertEqual [$cur getFieldByIndex 0 1] "1"
+assertEqual [$cur getFieldByIndex 1 1] "2"
+assertEqual [$cur getFieldByIndex 2 1] "3"
+assertEqual [$cur getFieldByIndex 3 1] "4"
+assertEqual [$cur getFieldByIndex 4 1] "5"
+assertEqual [$cur getFieldByIndex 5 1] "6"
+assertEqual [$cur getFieldByIndex 6 1] "7"
+assertEqual [$cur getFieldByIndex 7 1] "8"
+puts ""
+
+
+# suspended result set
+puts "SUSPENDED RESULT SET: "
+$cur setResultSetBufferSize 2
+assertTrue [$cur sendQuery "select * from testtable order by testsmallint"]
+assertEqual [$cur getFieldByIndex 2 1] "3"
+set id [$cur getResultSetId]
+$cur suspendResultSet
+assertTrue [$con suspendSession]
+set port [$con getConnectionPort]
+set socket [$con getConnectionSocket]
+assertTrue [$con resumeSession $port $socket]
+assertTrue [$cur resumeResultSet $id]
+puts ""
+assertEqual [$cur firstRowIndex] 4
+assertFalse [$cur endOfResultSet]
+assertEqual [$cur rowCount] 6
+assertEqual [$cur getFieldByIndex 7 1] "8"
+puts ""
+assertEqual [$cur firstRowIndex] 6
+assertFalse [$cur endOfResultSet]
+assertEqual [$cur rowCount] 8
+assertUndef [$cur getFieldByIndex 8 1]
+puts ""
+assertEqual [$cur firstRowIndex] 8
+assertTrue [$cur endOfResultSet]
+assertEqual [$cur rowCount] 8
+$cur setResultSetBufferSize 0
+puts ""
+
+
+# cached result set
+puts "CACHED RESULT SET: "
+$cur cacheToFile "cachefile1"
+$cur setCacheTtl 200
+assertTrue [$cur sendQuery "select * from testtable order by testsmallint"]
+set filename [$cur getCacheFileName]
+assertEqual $filename "cachefile1"
+$cur cacheOff
+assertTrue [$cur openCachedResultSet $filename]
+assertEqual [$cur getFieldByIndex 7 1] "8"
+puts ""
+
+
+# column count for cached result set
+puts "COLUMN COUNT FOR CACHED RESULT SET: "
+assertEqual [$cur colCount] 18
+puts ""
+
+
+# column names for cached result set
+puts "COLUMN NAMES FOR CACHED RESULT SET: "
+assertEqual [$cur getColumnName 0] "testboolean"
+assertEqual [$cur getColumnName 1] "testsmallint"
+assertEqual [$cur getColumnName 2] "testint"
+assertEqual [$cur getColumnName 3] "testbigint"
+assertEqual [$cur getColumnName 4] "testint8"
+assertEqual [$cur getColumnName 5] "testdecimal"
+assertEqual [$cur getColumnName 6] "testmoney"
+assertEqual [$cur getColumnName 7] "testsmallfloat"
+assertEqual [$cur getColumnName 8] "testfloat"
+assertEqual [$cur getColumnName 9] "testchar"
+assertEqual [$cur getColumnName 10] "testnchar"
+assertEqual [$cur getColumnName 11] "testvarchar"
+assertEqual [$cur getColumnName 12] "testnvarchar"
+assertEqual [$cur getColumnName 13] "testlvarchar"
+assertEqual [$cur getColumnName 14] "testdate"
+assertEqual [$cur getColumnName 15] "testdatetime"
+assertEqual [$cur getColumnName 16] "testtext"
+assertEqual [$cur getColumnName 17] "testbyte"
+set cols [$cur getColumnNames]
+assertEqual [lindex $cols 0] "testboolean"
+assertEqual [lindex $cols 1] "testsmallint"
+assertEqual [lindex $cols 2] "testint"
+assertEqual [lindex $cols 3] "testbigint"
+assertEqual [lindex $cols 4] "testint8"
+assertEqual [lindex $cols 5] "testdecimal"
+assertEqual [lindex $cols 6] "testmoney"
+assertEqual [lindex $cols 7] "testsmallfloat"
+assertEqual [lindex $cols 8] "testfloat"
+assertEqual [lindex $cols 9] "testchar"
+assertEqual [lindex $cols 10] "testnchar"
+assertEqual [lindex $cols 11] "testvarchar"
+assertEqual [lindex $cols 12] "testnvarchar"
+assertEqual [lindex $cols 13] "testlvarchar"
+assertEqual [lindex $cols 14] "testdate"
+assertEqual [lindex $cols 15] "testdatetime"
+assertEqual [lindex $cols 16] "testtext"
+assertEqual [lindex $cols 17] "testbyte"
+puts ""
+
+
+# cached result set with result set buffer size
+puts "CACHED RESULT SET WITH RESULT SET BUFFER SIZE: "
+$cur setResultSetBufferSize 2
+$cur cacheToFile "cachefile1"
+$cur setCacheTtl 200
+assertTrue [$cur sendQuery "select * from testtable order by testsmallint"]
+set filename [$cur getCacheFileName]
+assertEqual $filename "cachefile1"
+$cur cacheOff
+assertTrue [$cur openCachedResultSet $filename]
+assertEqual [$cur getFieldByIndex 7 1] "8"
+assertUndef [$cur getFieldByIndex 8 1]
+$cur setResultSetBufferSize 0
+puts ""
+
+
+# from one cache file to another
+puts "FROM ONE CACHE FILE TO ANOTHER: "
+$cur cacheToFile "cachefile2"
+assertTrue [$cur openCachedResultSet "cachefile1"]
+$cur cacheOff
+assertTrue [$cur openCachedResultSet "cachefile2"]
+assertEqual [$cur getFieldByIndex 7 1] "8"
+assertUndef [$cur getFieldByIndex 8 1]
+puts ""
+
+
+# from one cache file to another with result set buffer size
+puts "FROM ONE CACHE FILE TO ANOTHER WITH RESULT SET BUFFER SIZE: "
+$cur setResultSetBufferSize 2
+$cur cacheToFile "cachefile2"
+assertTrue [$cur openCachedResultSet "cachefile1"]
+$cur cacheOff
+assertTrue [$cur openCachedResultSet "cachefile2"]
+assertEqual [$cur getFieldByIndex 7 1] "8"
+assertUndef [$cur getFieldByIndex 8 1]
+$cur setResultSetBufferSize 0
+puts ""
+
+
+# cached result set with suspend and result set buffer size
+puts "CACHED RESULT SET WITH SUSPEND AND RESULT SET BUFFER SIZE: "
+$cur setResultSetBufferSize 2
+$cur cacheToFile "cachefile1"
+$cur setCacheTtl 200
+assertTrue [$cur sendQuery "select * from testtable order by testsmallint"]
+assertEqual [$cur getFieldByIndex 2 1] "3"
+set filename [$cur getCacheFileName]
+assertEqual $filename "cachefile1"
+set id [$cur getResultSetId]
+$cur suspendResultSet
+assertTrue [$con suspendSession]
+set port [$con getConnectionPort]
+set socket [$con getConnectionSocket]
+puts ""
+assertTrue [$con resumeSession $port $socket]
+assertTrue [$cur resumeCachedResultSet $id $filename]
+puts ""
+assertEqual [$cur firstRowIndex] 4
+assertFalse [$cur endOfResultSet]
+assertEqual [$cur rowCount] 6
+assertEqual [$cur getFieldByIndex 7 1] "8"
+puts ""
+assertEqual [$cur firstRowIndex] 6
+assertFalse [$cur endOfResultSet]
+assertEqual [$cur rowCount] 8
+assertUndef [$cur getFieldByIndex 8 1]
+puts ""
+assertEqual [$cur firstRowIndex] 8
+assertTrue [$cur endOfResultSet]
+assertEqual [$cur rowCount] 8
+$cur cacheOff
+puts ""
+assertTrue [$cur openCachedResultSet $filename]
+assertEqual [$cur getFieldByIndex 7 1] "8"
+assertUndef [$cur getFieldByIndex 8 1]
+$cur setResultSetBufferSize 0
+puts ""
+
+
+# finished suspended session
+puts "FINISHED SUSPENDED SESSION: "
+assertTrue [$cur sendQuery "select * from testtable order by testint"]
+assertEqual [$cur getFieldByIndex 4 1] "5"
+assertEqual [$cur getFieldByIndex 5 1] "6"
+assertEqual [$cur getFieldByIndex 6 1] "7"
+assertEqual [$cur getFieldByIndex 7 1] "8"
+set id [$cur getResultSetId]
+$cur suspendResultSet
+assertTrue [$con suspendSession]
+set port [$con getConnectionPort]
+set socket [$con getConnectionSocket]
+assertTrue [$con resumeSession $port $socket]
+assertTrue [$cur resumeResultSet $id]
+assertUndef [$cur getFieldByIndex 4 1]
+assertUndef [$cur getFieldByIndex 5 1]
+assertUndef [$cur getFieldByIndex 6 1]
+assertUndef [$cur getFieldByIndex 7 1]
+puts ""
+
+
+# nested selects
+puts "NESTED SELECTS: "
+$cur setResultSetBufferSize 1
+assertTrue [$cur sendQuery "select * from testtable"]
+set i 0
+while {1} {
+	set row [$cur getRow $i]
+	if {[llength $row] == 0} {
+		break
+	}
+	set secondcur [$con sqlrcur]
+	$secondcur setResultSetBufferSize 1
+	assertTrue [$secondcur sendQuery "select * from testtable"]
+	$secondcur closeResultSet
+	incr i
+}
+$cur setResultSetBufferSize 0
+puts ""
+
+
+# commit and rollback
+puts "COMMIT AND ROLLBACK: "
+set secondcon [sqlrcon -server "sqlrelay" -port 9000 -socket "/tmp/test.socket" -user "testuser" -password "testpassword" -retrytime 0 -tries 1]
+set secondcur [$secondcon sqlrcur]
+setSecondConnection $secondcon
+setSecondCursor $secondcur
+# Informix has no MVCC option.  You can either set the isolation level
+# to dirty reads where it'll just see the rows, or set it to committed
+# read where it will block or throw an error when the rows are locked.
+# So, bypass this test with informix.
+#assertTrue [$secondcur sendQuery "select count(*) from testtable"]
+#assertEqual [$secondcur getFieldByIndex 0 0] "0"
+assertTrue [$con commit]
+assertTrue [$secondcur sendQuery "select count(*) from testtable"]
+assertEqual [$secondcur getFieldByIndex 0 0] "8"
+assertTrue [$cur sendQuery "insert into testtable values ('t', 10, 10, 10, 10, 10.1, 10.1, 10.1, 10.1, 'testchar10', 'testnchar10', 'testvarchar10', 'testnvarchar10', 'testlvarchar10', '01/01/2010', '2010-01-01 10:00:00', 'testtext10', null)"]
+assertTrue [$con rollback]
+assertTrue [$secondcur sendQuery "select count(*) from testtable"]
+assertEqual [$secondcur getFieldByIndex 0 0] "8"
+assertTrue [$con autoCommit 1]
+assertTrue [$cur sendQuery "insert into testtable values ('t', 10, 10, 10, 10, 10.1, 10.1, 10.1, 10.1, 'testchar10', 'testnchar10', 'testvarchar10', 'testnvarchar10', 'testlvarchar10', '01/01/2010', '2010-01-01 10:00:00', 'testtext10', null)"]
+assertTrue [$secondcur sendQuery "select count(*) from testtable"]
+assertEqual [$secondcur getFieldByIndex 0 0] "9"
+$secondcon endSession
+set secondcur ""
+set secondcon ""
+setSecondCursor ""
+setSecondConnection ""
+assertTrue [$con autoCommit 0]
+assertTrue [$cur sendQuery "drop table testtable"]
+assertTrue [$con commit]
+puts ""
+
+
+# individual substitutions
+puts "INDIVIDUAL SUBSTITUTIONS: "
+$cur prepareQuery "select \$(var1), '\$(var2)', '\$(var3)' from sysmaster:sysdual "
+$cur substitution "var1" 1
+$cur substitution "var2" "hello"
+$cur substitution "var3" 10.5556 6 4
+assertTrue [$cur executeQuery]
+assertEqual [$cur getFieldByIndex 0 0] "1"
+assertEqual [$cur getFieldByIndex 0 1] "hello"
+assertEqual [$cur getFieldByIndex 0 2] "10.5556"
+puts ""
+
+
+# array substitutions
+puts "ARRAY SUBSTITUTIONS: "
+$cur prepareQuery "select '\$(var1)', '\$(var2)', '\$(var3)' from sysmaster:sysdual "
+$cur substitutions {{"var1" "hi"} {"var2" "hello"} {"var3" "bye"}}
+assertTrue [$cur executeQuery]
+assertEqual [$cur getFieldByIndex 0 0] "hi"
+assertEqual [$cur getFieldByIndex 0 1] "hello"
+assertEqual [$cur getFieldByIndex 0 2] "bye"
+puts ""
+$cur prepareQuery "select \$(var1), \$(var2), \$(var3) from sysmaster:sysdual "
+$cur substitutions {{"var1" 1} {"var2" 2} {"var3" 3}}
+assertTrue [$cur executeQuery]
+assertEqual [$cur getFieldByIndex 0 0] "1"
+assertEqual [$cur getFieldByIndex 0 1] "2"
+assertEqual [$cur getFieldByIndex 0 2] "3"
+puts ""
+$cur prepareQuery "select \$(var1), \$(var2), \$(var3) from sysmaster:sysdual "
+$cur substitutions {{"var1" 10.55 4 2} {"var2" 10.556 5 3} {"var3" 10.5556 6 4}}
+assertTrue [$cur executeQuery]
+assertEqual [$cur getFieldByIndex 0 0] "10.55"
+assertEqual [$cur getFieldByIndex 0 1] "10.556"
+assertEqual [$cur getFieldByIndex 0 2] "10.5556"
+puts ""
+
+
+# nulls
+puts "NULLS: "
+assertTrue [$cur sendQuery "select NULL::int,1,NULL::int from sysmaster:sysdual"]
+assertEqual [$cur getFieldByIndex 0 0] ""
+assertEqual [$cur getFieldByIndex 0 1] "1"
+assertEqual [$cur getFieldByIndex 0 2] ""
+puts ""
+
+
+# output bind by position
+puts "OUTPUT BIND BY POSITION: "
+catch {$cur sendQuery "drop procedure testproc"}
+assertTrue [$cur sendQuery "create procedure testproc(out out1 int, out out2 varchar(20), out out3 float, out out4 varchar(20)) let out1 = 1; 	let out2 = 'hello'; 	let out3 = 2.5; 	let out4 = null; end procedure;"]
+assertTrue [$con commit]
+$cur prepareQuery "{call testproc(?,?,?,?)}"
+assertEqual [$cur countBindVariables] 4
+$cur defineOutputBindInteger "1"
+$cur defineOutputBindString "2" 20
+$cur defineOutputBindDouble "3"
+$cur defineOutputBindString "4" 20
+assertTrue [$cur executeQuery]
+set numvar [$cur getOutputBindInteger "1"]
+set stringvar [$cur getOutputBindString "2"]
+set floatvar [$cur getOutputBindDouble "3"]
+set nullvar [$cur getOutputBindString "4"]
+assertEqual $numvar 1
+assertEqual $stringvar "hello"
+assertEqual $floatvar 2.5
+assertEqual $nullvar ""
+assertTrue [$cur sendQuery "drop procedure testproc"]
+assertTrue [$con commit]
+puts ""
+
+
+# output bind by name
+# informix doesn't support bind by name
+
+
+# output bind by name with validation
+# informix doesn't support bind by name
+
+
+# lob output bind
+puts "LOB OUTPUT BIND: "
+catch {$cur sendQuery "drop table testtable"}
+assertTrue [$cur sendQuery "create table testtable (testclob clob, testblob blob)"]
+assertTrue [$con commit]
+$cur prepareQuery "insert into testtable values (?,?)"
+$cur inputBindClob "1" "hello" 5
+$cur inputBindBlob "2" "hello" 5
+assertTrue [$cur executeQuery]
+catch {$cur sendQuery "drop procedure testproc"}
+assertTrue [$cur sendQuery "create procedure testproc(out out1 clob, out out2 blob) select testclob, testblob 	into out1, out2 	from testtable; end procedure;"]
+assertTrue [$con commit]
+$cur prepareQuery "{call testproc(?,?)}"
+$cur defineOutputBindClob "1"
+$cur defineOutputBindBlob "2"
+assertTrue [$cur executeQuery]
+set clobvar [$cur getOutputBindClob "1"]
+set clobvarlength [$cur getOutputBindLength "1"]
+set blobvar [$cur getOutputBindBlob "2"]
+set blobvarlength [$cur getOutputBindLength "2"]
+assertEqualLen $clobvar "hello" 5
+assertEqual $clobvarlength 5
+assertEqualLen $blobvar "hello" 5
+assertEqual $blobvarlength 5
+assertTrue [$cur sendQuery "drop procedure testproc"]
+assertTrue [$cur sendQuery "drop table testtable"]
+assertTrue [$con commit]
+puts ""
+
+
+# long output bind
+puts "LONG OUTPUT BIND: "
+catch {$cur sendQuery "drop procedure testproc"}
+assertTrue [$cur sendQuery "create procedure testproc(in1 clob, out out1 clob) let out1 = in1; 	end procedure;"]
+assertTrue [$con commit]
+$cur prepareQuery "{call testproc(?,?)}"
+$cur inputBindClob "1" $largebuffer $LARGE_BUFFER_LENGTH
+$cur defineOutputBindClob "2"
+assertTrue [$cur executeQuery]
+assertEqual [$cur getOutputBindLength "2"] $LARGE_BUFFER_LENGTH
+assertEqual [$cur getOutputBindClob "2"] $largebuffer
+assertTrue [$cur sendQuery "drop procedure testproc"]
+assertTrue [$con commit]
+puts ""
+
+
+# negative input bind
+puts "NEGATIVE INPUT BIND: "
+catch {$cur sendQuery "drop table testtable"}
+$cur sendQuery "create table testtable (testval int)"
+assertTrue [$con commit]
+$cur prepareQuery "insert into testtable values (?)"
+$cur inputBind "1" -1
+assertTrue [$cur executeQuery]
+$cur sendQuery "select testval from testtable"
+assertEqual [$cur getFieldByName 0 "testval"] "-1"
+assertTrue [$cur sendQuery "drop table testtable"]
+assertTrue [$con commit]
+puts ""
+
+
+# bind validation
+# informix doesn't support bind by name
+
+# rebinding
+puts "REBINDING: "
+catch {$cur sendQuery "drop procedure testproc"}
+assertTrue [$cur sendQuery "create procedure testproc(in1 int, out out1 int) let out1 = in1; end procedure;"]
+assertTrue [$con commit]
+$cur prepareQuery "{call testproc(?,?)}"
+$cur inputBind "1" 1
+$cur defineOutputBindInteger "2"
+assertTrue [$cur executeQuery]
+assertEqual [$cur getOutputBindInteger "2"] 1
+$cur inputBind "1" 2
+assertTrue [$cur executeQuery]
+assertEqual [$cur getOutputBindInteger "2"] 2
+$cur inputBind "1" 3
+assertTrue [$cur executeQuery]
+assertEqual [$cur getOutputBindInteger "2"] 3
+assertTrue [$cur sendQuery "drop procedure testproc"]
+assertTrue [$con commit]
+puts ""
+
+
+# reexecute
+puts "REEXECUTE: "
+$cur prepareQuery "select 1 from sysmaster:sysdual"
+assertTrue [$cur executeQuery]
+assertEqual [$cur rowCount] 1
+assertEqual [$cur getFieldByIndex 0 0] "1"
+puts ""
+assertTrue [$cur executeQuery]
+assertEqual [$cur rowCount] 1
+assertEqual [$cur getFieldByIndex 0 0] "1"
+puts ""
+$cur prepareQuery "select ?::int from sysmaster:sysdual"
+$cur inputBind "1" 1
+assertTrue [$cur executeQuery]
+assertEqual [$cur rowCount] 1
+assertEqual [$cur getFieldByIndex 0 0] "1"
+puts ""
+assertTrue [$cur executeQuery]
+assertEqual [$cur rowCount] 1
+assertEqual [$cur getFieldByIndex 0 0] "1"
+puts ""
+$cur inputBind "1" 2
+assertTrue [$cur executeQuery]
+assertEqual [$cur rowCount] 1
+assertEqual [$cur getFieldByIndex 0 0] "2"
+puts ""
+
+
+# stored procedure returning no value
+puts "STORED PROCEDURE RETURNING NO VALUE: "
+catch {$cur sendQuery "drop procedure testproc"}
+assertTrue [$cur sendQuery "create procedure testproc(in1 int, in2 float, in3 varchar(20)) end procedure;"]
+assertTrue [$con commit]
+$cur prepareQuery "{call testproc(?,?,?)}"
+$cur inputBind "1" 1
+$cur inputBind "2" 1.1 2 1
+$cur inputBind "3" "hello"
+assertTrue [$cur executeQuery]
+assertTrue [$cur sendQuery "drop procedure testproc"]
+assertTrue [$con commit]
+puts ""
+
+
+# stored procedure returning single value
+puts "STORED PROCEDURE RETURNING SINGLE VALUE: "
+catch {$cur sendQuery "drop procedure testproc"}
+assertTrue [$cur sendQuery "create procedure testproc(in1 int, in2 float, in3 varchar(20), out out1 int) let out1 = in1; end procedure;"]
+assertTrue [$con commit]
+$cur prepareQuery "{call testproc(?,?,?,?)}"
+$cur inputBind "1" 1
+$cur inputBind "2" 1.1 2 1
+$cur inputBind "3" "hello"
+$cur defineOutputBindInteger "4"
+assertTrue [$cur executeQuery]
+assertEqual [$cur getOutputBindInteger "4"] 1
+assertTrue [$cur sendQuery "drop procedure testproc"]
+assertTrue [$con commit]
+puts ""
+
+
+# stored procedure returning multiple values
+puts "STORED PROCEDURE RETURNING MULTIPLE VALUES: "
+catch {$cur sendQuery "drop procedure testproc"}
+assertTrue [$cur sendQuery "create procedure testproc(in1 int, in2 float, in3 varchar(20), out out1 int, out out2 float, out out3 varchar(20)) let out1 = in1; 	let out2 = in2; 	let out3 = in3; end procedure;"]
+assertTrue [$con commit]
+$cur prepareQuery "{call testproc(?,?,?,?,?,?)}"
+$cur inputBind "1" 1
+$cur inputBind "2" 1.1 2 1
+$cur inputBind "3" "hello"
+$cur defineOutputBindInteger "4"
+$cur defineOutputBindDouble "5"
+$cur defineOutputBindString "6" 20
+assertTrue [$cur executeQuery]
+assertEqual [$cur getOutputBindInteger "4"] 1
+assertEqual [$cur getOutputBindDouble "5"] 1.1
+assertEqual [$cur getOutputBindString "6"] "hello"
+assertTrue [$cur sendQuery "drop procedure testproc"]
+assertTrue [$con commit]
+puts ""
+
+
+# stored procedure returning result set
+puts "STORED PROCEDURE RETURNING RESULT SET: "
+catch {$cur sendQuery "drop procedure testproc"}
+assertTrue [$cur sendQuery "create procedure testproc() returning boolean, smallint, varchar(40); 	define out1 boolean; 	define out2 smallint; 	define out3 varchar(40); 	foreach 		select 			testboolean, 			testsmallint, 			testvarchar 		into out1,out2,out3 		from ( 			select 				't' as testboolean, 				1 as testsmallint, 				'1' as testvarchar 			from 				sysmaster:sysdual 			union 			select 				't' as testboolean, 				2 as testsmallint, 				'2' as testvarchar 			from 				sysmaster:sysdual 			union 			select 				't' as testboolean, 				3 as testsmallint, 				'3' as testvarchar 			from 				sysmaster:sysdual 			union 			select 				't' as testboolean, 				4 as testsmallint, 				'4' as testvarchar 			from 				sysmaster:sysdual 			union 			select 				't' as testboolean, 				5 as testsmallint, 				'5' as testvarchar 			from 				sysmaster:sysdual 			union 			select 				't' as testboolean, 				6 as testsmallint, 				'6' as testvarchar 			from 				sysmaster:sysdual 			union 			select 				't' as testboolean, 				7 as testsmallint, 				'7' as testvarchar 			from 				sysmaster:sysdual 			union 			select 				't' as testboolean, 				8 as testsmallint, 				'8' as testvarchar 			from 				sysmaster:sysdual 		) 	return out1,out2,out3 	with resume; 	end foreach; 	end procedure;"]
+assertTrue [$con commit]
+assertTrue [$cur sendQuery "{call testproc()}"]
+assertEqual [$cur rowCount] 8
+assertTrue [$cur sendQuery "drop procedure testproc"]
+assertTrue [$con commit]
+puts ""
+
+
+# null and empty lobs
+puts "NULL AND EMPTY LOBS: "
+catch {$cur sendQuery "drop table testtable"}
+assertTrue [$cur sendQuery "create table testtable (testclob1 clob, testclob2 clob, testblob1 blob, testblob2 blob)"]
+assertTrue [$con commit]
+$cur prepareQuery "insert into testtable values (?, ?, ?, ?)"
+$cur inputBindClob "1" "" 0
+$cur inputBindNull "2"
+$cur inputBindBlob "3" "" 0
+$cur inputBindNull "4"
+assertTrue [$cur executeQuery]
+$cur sendQuery "select * from testtable"
+# informix returns a single \0 byte for an empty-string clob/blob bind.
+# In C that looks like an empty string (strcmp stops at the null
+# terminator) but Tcl preserves the null byte, so truncate at the first
+# \0 here to match the C++ test's behavior.
+proc stripLeadingNul {s} {
+	if {[string length $s] > 0} {
+		binary scan $s c firstbyte
+		if {$firstbyte == 0} { return "" }
+	}
+	return $s
+}
+assertEqual [stripLeadingNul [$cur getFieldByIndex 0 0]] ""
+assertEqual [$cur getFieldByIndex 0 1] ""
+assertEqual [stripLeadingNul [$cur getFieldByIndex 0 2]] ""
+assertEqual [$cur getFieldByIndex 0 3] ""
+assertTrue [$cur sendQuery "drop table testtable"]
+assertTrue [$con commit]
+puts ""
+
+
+# long lobs
+puts "LONG LOBS: "
+catch {$cur sendQuery "drop table testtable"}
+$cur sendQuery "create table testtable (testtext text, testbyte byte)"
+assertTrue [$con commit]
+$cur prepareQuery "insert into testtable values (?,?)"
+$cur inputBindClob "1" $largebuffer $LARGE_BUFFER_LENGTH
+$cur inputBindBlob "2" $largebuffer $LARGE_BUFFER_LENGTH
+assertTrue [$cur executeQuery]
+$cur sendQuery "select * from testtable"
+assertEqual [$cur getFieldLengthByName 0 "testtext"] $LARGE_BUFFER_LENGTH
+assertEqual [$cur getFieldByName 0 "testtext"] $largebuffer
+assertEqual [$cur getFieldLengthByName 0 "testbyte"] $LARGE_BUFFER_LENGTH
+assertEqualLen [$cur getFieldByName 0 "testbyte"] $largebuffer $LARGE_BUFFER_LENGTH
+assertTrue [$cur sendQuery "drop table testtable"]
+assertTrue [$con commit]
+puts ""
+
+
+# temporary tables
+puts "TEMPORARY TABLES: "
+catch {$cur sendQuery "drop table temptable"}
+$cur sendQuery "create temp table temptable (col1 int)"
+assertTrue [$cur sendQuery "insert into temptable values (1)"]
+assertTrue [$cur sendQuery "select count(*) from temptable"]
+assertEqual [$cur getFieldByIndex 0 0] "1"
+$con endSession
+puts ""
+assertTrue [catch {$cur sendQuery "select count(*) from temptable"}]
+puts ""
+
+
+# encoded binary data
+# informix doesn't support encoded binary data
+
+
+# quotes
+puts "QUOTES: "
+catch {$cur sendQuery "drop table testtable"}
+assertTrue [$cur sendQuery "create table testtable (col1 varchar(4))"]
+assertTrue [$cur sendQuery "insert into testtable values ('''''')"]
+assertTrue [$cur sendQuery "select col1 from testtable"]
+assertEqual [$cur getFieldLengthByIndex 0 0] 2
+assertEqual [$cur getFieldByIndex 0 0] "''"
+assertTrue [$cur sendQuery "drop table testtable"]
+puts ""
+
+
+# last insert id
+puts "LAST INSERT ID: "
+catch {$cur sendQuery "drop table testtable"}
+assertTrue [$cur sendQuery "create table testtable (col1 serial primary key, col2 int)"]
+assertTrue [$cur sendQuery "insert into testtable (col2) values (1)"]
+assertEqual [$con getLastInsertId] 1
+assertTrue [$cur sendQuery "drop table testtable"]
+puts ""
+
+
+# database is schema
+puts "DATABASE IS SCHEMA: "
+assertFalse [$con getDatabaseIsSchema]
+puts ""
+
+
+# catalog list
+puts "CATALOG LIST: "
+assertTrue [$cur getCatalogList ""]
+assertEqual [$cur getColumnName 0] "Database"
+assertTrue [expr {[$cur rowCount] > 0}]
+puts ""
+
+
+# schema list
+puts "SCHEMA LIST: "
+# informix requires that a table exist that is
+# owned by a user for the user to be reported
+catch {$cur sendQuery "drop table testtable"}
+assertTrue [$cur sendQuery "create table testtable (col1 integer, col2 integer)"]
+assertTrue [$con commit]
+assertTrue [$cur getSchemaList ""]
+assertEqual [$cur getColumnName 0] "Database"
+assertTrue [expr {[$cur rowCount] > 0}]
+assertTrue [$cur sendQuery "drop table testtable"]
+assertTrue [$con commit]
+puts ""
+
+
+# table type list
+puts "TABLE TYPE LIST: "
+assertTrue [$cur getTableTypeList]
+assertEqual [$cur getColumnName 0] "table_type"
+set found 0
+for {set i 0} {$i < [$cur rowCount]} {incr i} {
+	if {[$cur getFieldByName $i "table_type"] eq "TABLE"} {
+		set found 1
+		break
+	}
+}
+assertTrue $found
+puts ""
+
+
+# table list
+puts "TABLE LIST: "
+catch {$cur sendQuery "drop table testtable1"}
+catch {$cur sendQuery "drop table testtable2"}
+catch {$cur sendQuery "drop table testtable3"}
+catch {$cur sendQuery "drop table testtable4"}
+assertTrue [$cur sendQuery "create table testtable1 (col1 integer, col2 integer)"]
+assertTrue [$cur sendQuery "create table testtable2 (col1 integer, col2 integer)"]
+assertTrue [$cur sendQuery "create table testtable3 (col1 integer, col2 integer)"]
+assertTrue [$cur sendQuery "create table testtable4 (col1 integer, col2 integer)"]
+assertTrue [$con commit]
+assertTrue [$cur getTableList ""]
+set counter 0
+for {set i 0} {$i < [$cur rowCount]} {incr i} {
+	set name [$cur getFieldByName $i "Tables_in_xxx"]
+	if {$name eq "testtable1" || $name eq "testtable2" ||
+		$name eq "testtable3" || $name eq "testtable4"} {
+		incr counter
+	}
+}
+assertEqual $counter 4
+assertTrue [$cur sendQuery "drop table testtable1"]
+assertTrue [$cur sendQuery "drop table testtable2"]
+assertTrue [$cur sendQuery "drop table testtable3"]
+assertTrue [$cur sendQuery "drop table testtable4"]
+assertTrue [$con commit]
+puts ""
+
+
+# type info list
+puts "TYPE INFO LIST: "
+assertTrue [$cur getTypeInfoList "integer"]
+assertEqual [$cur getColumnName 0] "type_name"
+assertEqual [$cur getColumnName 1] "data_type"
+assertEqual [$cur getColumnName 2] "precision"
+assertEqual [$cur getColumnName 3] "literal_prefix"
+assertEqual [$cur getColumnName 4] "literal_suffix"
+assertEqual [$cur getColumnName 5] "create_params"
+assertEqual [$cur getColumnName 6] "nullable"
+assertEqual [$cur getColumnName 7] "case_sensitive"
+assertEqual [$cur getColumnName 8] "searchable"
+assertEqual [$cur getColumnName 9] "unsigned_attribute"
+assertEqual [$cur getColumnName 10] "fixed_prec_scale"
+assertEqual [$cur getColumnName 11] "auto_increment"
+assertEqual [$cur getColumnName 12] "local_type_name"
+assertEqual [$cur getColumnName 13] "minumum_scale"
+assertEqual [$cur getColumnName 14] "maxiumm_scale"
+assertEqual [$cur getColumnName 15] "sql_data_type"
+assertEqual [$cur getColumnName 16] "sql_datetime_sub"
+assertEqual [$cur getColumnName 17] "num_prec_radix"
+assertEqual [$cur getColumnName 18] "interval_precision"
+assertEqual [$cur getFieldByName 0 "type_name"] "INTEGER"
+assertEqual [$cur getFieldByName 0 "data_type"] "4"
+assertEqual [$cur getFieldByName 0 "precision"] "10"
+assertEqual [$cur getFieldByName 0 "local_type_name"] "INTEGER"
+assertTrue [$cur getTypeInfoList "char"]
+assertEqual [$cur getFieldByName 0 "type_name"] "CHAR"
+assertEqual [$cur getFieldByName 0 "data_type"] "1"
+assertEqual [$cur getFieldByName 0 "precision"] "32767"
+assertEqual [$cur getFieldByName 0 "local_type_name"] "CHAR"
+assertTrue [$cur getTypeInfoList "varchar"]
+assertEqual [$cur getFieldByName 0 "type_name"] "VARCHAR"
+assertEqual [$cur getFieldByName 0 "data_type"] "12"
+assertEqual [$cur getFieldByName 0 "precision"] "255"
+assertEqual [$cur getFieldByName 0 "local_type_name"] "VARCHAR"
+assertTrue [$cur getTypeInfoList "date"]
+assertEqual [$cur getFieldByName 0 "type_name"] "DATE"
+assertEqual [$cur getFieldByName 0 "data_type"] "91"
+assertEqual [$cur getFieldByName 0 "precision"] "10"
+assertEqual [$cur getFieldByName 0 "local_type_name"] "DATE"
+puts ""
+
+
+# column list
+puts "COLUMN LIST: "
+catch {$cur sendQuery "drop table testtable"}
+assertTrue [$cur sendQuery "create table testtable (testboolean boolean, testsmallint smallint, testint integer, testbigint bigint, testint8 int8, testdecimal decimal(10,2), testmoney money, testsmallfloat smallfloat, testfloat float, testchar char(40), testnchar nchar(40), testvarchar varchar(40), testnvarchar nvarchar(40), testlvarchar lvarchar(40), testdate date, testdatetime datetime year to second, testtext text, testbyte byte)"]
+assertTrue [$con commit]
+assertTrue [$cur getColumnList "testtable" ""]
+assertEqual [$cur getColumnName 0] "column_name"
+assertEqual [$cur getColumnName 1] "data_type"
+assertEqual [$cur getColumnName 2] "character_maximum_length"
+assertEqual [$cur getColumnName 3] "numeric_precision"
+assertEqual [$cur getColumnName 4] "numeric_scale"
+assertEqual [$cur getColumnName 5] "is_nullable"
+assertEqual [$cur getColumnName 6] "column_key"
+assertEqual [$cur getColumnName 7] "column_default"
+assertEqual [$cur getColumnName 8] "extra"
+assertEqual [$cur getFieldByName 0 "column_name"] "testboolean"
+assertEqual [$cur getFieldByName 1 "column_name"] "testsmallint"
+assertEqual [$cur getFieldByName 2 "column_name"] "testint"
+assertEqual [$cur getFieldByName 3 "column_name"] "testbigint"
+assertEqual [$cur getFieldByName 4 "column_name"] "testint8"
+assertEqual [$cur getFieldByName 5 "column_name"] "testdecimal"
+assertEqual [$cur getFieldByName 6 "column_name"] "testmoney"
+assertEqual [$cur getFieldByName 7 "column_name"] "testsmallfloat"
+assertEqual [$cur getFieldByName 8 "column_name"] "testfloat"
+assertEqual [$cur getFieldByName 9 "column_name"] "testchar"
+assertEqual [$cur getFieldByName 10 "column_name"] "testnchar"
+assertEqual [$cur getFieldByName 11 "column_name"] "testvarchar"
+assertEqual [$cur getFieldByName 12 "column_name"] "testnvarchar"
+assertEqual [$cur getFieldByName 13 "column_name"] "testlvarchar"
+assertEqual [$cur getFieldByName 14 "column_name"] "testdate"
+assertEqual [$cur getFieldByName 15 "column_name"] "testdatetime"
+assertEqual [$cur getFieldByName 16 "column_name"] "testtext"
+assertEqual [$cur getFieldByName 17 "column_name"] "testbyte"
+assertEqual [$cur getFieldByName 0 "data_type"] "BOOLEAN"
+assertEqual [$cur getFieldByName 1 "data_type"] "SMALLINT"
+assertEqual [$cur getFieldByName 2 "data_type"] "INTEGER"
+assertEqual [$cur getFieldByName 3 "data_type"] "BIGINT"
+assertEqual [$cur getFieldByName 4 "data_type"] "INT8"
+assertEqual [$cur getFieldByName 5 "data_type"] "DECIMAL"
+assertEqual [$cur getFieldByName 6 "data_type"] "MONEY"
+assertEqual [$cur getFieldByName 7 "data_type"] "SMALLFLOAT"
+assertEqual [$cur getFieldByName 8 "data_type"] "FLOAT"
+assertEqual [$cur getFieldByName 9 "data_type"] "CHAR"
+assertEqual [$cur getFieldByName 10 "data_type"] "NCHAR"
+assertEqual [$cur getFieldByName 11 "data_type"] "VARCHAR"
+assertEqual [$cur getFieldByName 12 "data_type"] "NVARCHAR"
+assertEqual [$cur getFieldByName 13 "data_type"] "LVARCHAR"
+assertEqual [$cur getFieldByName 14 "data_type"] "DATE"
+assertEqual [$cur getFieldByName 15 "data_type"] "DATETIME"
+assertEqual [$cur getFieldByName 16 "data_type"] "TEXT"
+assertEqual [$cur getFieldByName 17 "data_type"] "BYTE"
+assertTrue [$cur sendQuery "drop table testtable"]
+assertTrue [$con commit]
+puts ""
+
+
+# column list - auto_increment, primary key
+puts "COLUMN LIST - auto_increment, primary key: "
+catch {$cur sendQuery "drop table testtable"}
+assertTrue [$cur sendQuery "create table testtable (col1 serial primary key, col2 int)"]
+assertTrue [$con commit]
+assertTrue [$cur getColumnList "testtable" ""]
+assertTrue [expr {[string first "auto_increment" [$cur getFieldByName 0 "extra"]] >= 0}]
+assertTrue [expr {[string first "PRI" [$cur getFieldByName 0 "column_key"]] >= 0}]
+assertFalse [expr {[string first "auto_increment" [$cur getFieldByName 1 "extra"]] >= 0}]
+assertFalse [expr {[string first "PRI" [$cur getFieldByName 1 "column_key"]] >= 0}]
+puts ""
+assertTrue [$cur sendQuery "drop table testtable"]
+assertTrue [$con commit]
+assertTrue [$cur sendQuery "create table testtable (col1 int primary key, col2 int)"]
+assertTrue [$cur getColumnList "testtable" ""]
+assertFalse [expr {[string first "auto_increment" [$cur getFieldByName 0 "extra"]] >= 0}]
+assertTrue [expr {[string first "PRI" [$cur getFieldByName 0 "column_key"]] >= 0}]
+assertTrue [$cur sendQuery "drop table testtable"]
+assertTrue [$con commit]
+puts ""
+
+
+# primary keys list
+puts "PRIMARY KEYS LIST: "
+catch {$cur sendQuery "drop table testtable"}
+assertTrue [$cur sendQuery "create table testtable (col1 integer primary key, col2 integer)"]
+assertTrue [$con commit]
+assertTrue [$cur getPrimaryKeysList "testtable" ""]
+assertEqual [$cur getColumnName 0] "table"
+assertEqual [$cur getColumnName 1] "non_unique"
+assertEqual [$cur getColumnName 2] "key_name"
+assertEqual [$cur getColumnName 3] "seq_in_index"
+assertEqual [$cur getColumnName 4] "column_name"
+assertEqual [$cur getColumnName 5] "collation"
+assertEqual [$cur getColumnName 6] "cardinality"
+assertEqual [$cur getColumnName 7] "sub_part"
+assertEqual [$cur getColumnName 8] "packed"
+assertEqual [$cur getColumnName 9] "null"
+assertEqual [$cur getColumnName 10] "index_type"
+assertEqual [$cur getColumnName 11] "comment"
+assertEqual [$cur getColumnName 12] "index_comment"
+assertEqual [$cur rowCount] 1
+assertEqual [$cur getFieldByName 0 "table"] "testtable"
+assertEqual [$cur getFieldByName 0 "seq_in_index"] "1"
+assertEqual [$cur getFieldByName 0 "column_name"] "col1"
+set keyname [$cur getFieldByName 0 "key_name"]
+assertTrue [expr {$keyname ne ""}]
+assertTrue [$cur sendQuery "drop table testtable"]
+assertTrue [$con commit]
+puts ""
+
+
+# key and index list
+puts "KEY AND INDEX LIST: "
+catch {$cur sendQuery "drop table testtable"}
+assertTrue [$cur sendQuery "create table testtable (col1 integer primary key, col2 integer)"]
+assertTrue [$con commit]
+assertTrue [$cur getKeyAndIndexList "testtable" ""]
+assertEqual [$cur getColumnName 0] "table"
+assertEqual [$cur getColumnName 1] "non_unique"
+assertEqual [$cur getColumnName 2] "key_name"
+assertEqual [$cur getColumnName 3] "seq_in_index"
+assertEqual [$cur getColumnName 4] "column_name"
+assertEqual [$cur getColumnName 5] "collation"
+assertEqual [$cur getColumnName 6] "cardinality"
+assertEqual [$cur getColumnName 7] "sub_part"
+assertEqual [$cur getColumnName 8] "packed"
+assertEqual [$cur getColumnName 9] "null"
+assertEqual [$cur getColumnName 10] "index_type"
+assertEqual [$cur getColumnName 11] "comment"
+assertEqual [$cur getColumnName 12] "index_comment"
+assertEqual [$cur rowCount] 1
+assertEqual [$cur getFieldByName 0 "table"] "testtable"
+assertEqual [$cur getFieldByName 0 "non_unique"] "0"
+assertEqual [$cur getFieldByName 0 "seq_in_index"] "1"
+assertEqual [$cur getFieldByName 0 "column_name"] "col1"
+assertEqual [$cur getFieldByName 0 "collation"] "A"
+assertEqual [$cur getFieldByName 0 "index_type"] "3"
+set keyname [$cur getFieldByName 0 "key_name"]
+assertTrue [expr {$keyname ne ""}]
+assertTrue [$cur sendQuery "drop table testtable"]
+assertTrue [$con commit]
+puts ""
+
+
+# procedure list
+puts "PROCEDURE LIST: "
+catch {$cur sendQuery "drop procedure testproc1"}
+catch {$cur sendQuery "drop procedure testproc2"}
+catch {$cur sendQuery "drop procedure testproc3"}
+catch {$cur sendQuery "drop procedure testproc4"}
+assertTrue [$cur sendQuery "create procedure testproc1(in1 integer, in2 char(20), in3 varchar(20), in4 date) define x integer; let x = 1; end procedure;"]
+assertTrue [$cur sendQuery "create procedure testproc2(in1 integer, in2 char(20), in3 varchar(20), in4 date) define x integer; let x = 1; end procedure;"]
+assertTrue [$cur sendQuery "create procedure testproc3(in1 integer, in2 char(20), in3 varchar(20), in4 date) define x integer; let x = 1; end procedure;"]
+assertTrue [$cur sendQuery "create procedure testproc4(in1 integer, in2 char(20), in3 varchar(20), in4 date) define x integer; let x = 1; end procedure;"]
+assertTrue [$con commit]
+assertTrue [$cur getProcedureList ""]
+set counter 0
+for {set i 0} {$i < [$cur rowCount]} {incr i} {
+	set name [$cur getFieldByName $i "routine_name"]
+	if {$name eq "testproc1" || $name eq "testproc2" ||
+		$name eq "testproc3" || $name eq "testproc4"} {
+		incr counter
+	}
+}
+assertEqual $counter 4
+puts ""
+
+
+# procedure parameter list
+puts "PROCEDURE PARAMETER LIST: "
+assertTrue [$cur getProcedureParameterList "testproc1" ""]
+assertEqual [$cur getColumnName 0] "parameter_name"
+assertEqual [$cur getColumnName 1] "parameter_mode"
+assertEqual [$cur getColumnName 2] "data_type"
+assertEqual [$cur getColumnName 3] "character_maximum_length"
+assertEqual [$cur getColumnName 4] "ordinal_position"
+assertEqual [$cur rowCount] 4
+assertEqual [$cur getFieldByName 0 "parameter_name"] "in1"
+assertEqual [$cur getFieldByName 0 "parameter_mode"] "1"
+assertEqual [$cur getFieldByName 0 "data_type"] "integer"
+assertEqual [$cur getFieldByName 0 "ordinal_position"] "0"
+assertEqual [$cur getFieldByName 1 "parameter_name"] "in2"
+assertEqual [$cur getFieldByName 1 "parameter_mode"] "1"
+assertEqual [$cur getFieldByName 1 "data_type"] "char"
+assertEqual [$cur getFieldByName 1 "ordinal_position"] "1"
+assertEqual [$cur getFieldByName 2 "parameter_name"] "in3"
+assertEqual [$cur getFieldByName 2 "parameter_mode"] "1"
+assertEqual [$cur getFieldByName 2 "data_type"] "varchar"
+assertEqual [$cur getFieldByName 2 "ordinal_position"] "2"
+assertEqual [$cur getFieldByName 3 "parameter_name"] "in4"
+assertEqual [$cur getFieldByName 3 "parameter_mode"] "1"
+assertEqual [$cur getFieldByName 3 "data_type"] "date"
+assertEqual [$cur getFieldByName 3 "ordinal_position"] "3"
+assertTrue [$cur sendQuery "drop procedure testproc1"]
+assertTrue [$cur sendQuery "drop procedure testproc2"]
+assertTrue [$cur sendQuery "drop procedure testproc3"]
+assertTrue [$cur sendQuery "drop procedure testproc4"]
+assertTrue [$con commit]
+puts ""
+
+
+# invalid queries
+puts "INVALID QUERIES: "
+assertTrue [catch {$cur sendQuery "select * from testtable order by testsmallint"}]
+assertTrue [catch {$cur sendQuery "select * from testtable order by testsmallint"}]
+assertTrue [catch {$cur sendQuery "select * from testtable order by testsmallint"}]
+assertTrue [catch {$cur sendQuery "select * from testtable order by testsmallint"}]
+puts ""
+assertTrue [catch {$cur sendQuery "insert into testtable values (1,2,3,4)"}]
+assertTrue [catch {$cur sendQuery "insert into testtable values (1,2,3,4)"}]
+assertTrue [catch {$cur sendQuery "insert into testtable values (1,2,3,4)"}]
+assertTrue [catch {$cur sendQuery "insert into testtable values (1,2,3,4)"}]
+puts ""
+assertTrue [catch {$cur sendQuery "create table testtable"}]
+assertTrue [catch {$cur sendQuery "create table testtable"}]
+assertTrue [catch {$cur sendQuery "create table testtable"}]
+assertTrue [catch {$cur sendQuery "create table testtable"}]
+puts ""
+
+reportTestStatus
+
+exit $status
