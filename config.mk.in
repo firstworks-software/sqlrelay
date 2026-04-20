@@ -803,7 +803,7 @@ endif
 # tests
 TESTALLSUBDIRS = all-c all-cpp all-protocol all-stress all-tcl all-crud
 ifneq ($(HAVE_MONO),)
-TESTALLSUBDIRS += all-cs
+TESTALLSUBDIRS += all-cs all-adonet
 endif
 ifneq ($(HAVE_JAVA),)
 TESTALLSUBDIRS += all-java

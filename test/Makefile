@@ -13,6 +13,9 @@ all-cpp:
 all-cs:
 	cd cs $(AND) $(MAKE) all
 
+all-adonet:
+	cd ado.net $(AND) $(MAKE) all
+
 all-java:
 	cd java $(AND) $(MAKE) all
 
@@ -36,6 +39,7 @@ clean:
 	cd c $(AND) $(MAKE) clean
 	cd c++ $(AND) $(MAKE) clean
 	cd cs $(AND) $(MAKE) clean
+	cd ado.net $(AND) $(MAKE) clean
 	cd protocol $(AND) $(MAKE) clean
 	cd java $(AND) $(MAKE) clean
 	cd jdbc $(AND) $(MAKE) clean

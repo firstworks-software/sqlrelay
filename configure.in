@@ -979,7 +979,7 @@ if ( test -n "$HAVE_ERLANG" ); then
 fi
 if ( test -n "$HAVE_MONO" ); then
 	MONOBUILD="yes"
-	TESTAPIS="$TESTAPIS cs"
+	TESTAPIS="$TESTAPIS cs ado.net"
 fi
 if ( test -n "$HAVE_NODEJS" ); then
 	NODEJSBUILD="yes"

@@ -702,9 +702,9 @@ class SQLRConnection {
 
 class SQLRCursor {
 	public:
-			/** Creates a cursor to run queries and fetch result
-			 *  sets using connecton "sqlrc". */
-			SQLRCursor(var sqlrc);
+		/** Creates a cursor to run queries and fetch result
+		 *  sets using connecton "sqlrc". */
+		SQLRCursor(var sqlrc);
 
 
 		/** Sets the number of rows of the result set
@@ -788,6 +788,33 @@ class SQLRCursor {
 
 		function getCatalogList(var wild);
 
+		/** Generates a result set containing schemas that match the
+		 *  pattern "schemas".
+		 *
+		 *  The result set will contain the following columns:
+		 *  * Database
+		 *
+		 *  (The column name is a bit of a misnomer, the results are
+		 *  schemas, not databases.)
+		 *
+		 *  If "schemas" is empty or NULL then a result set containing
+		 *  all schemas in the current database will be returned.
+		 *
+		 *  If SQL Relay doesn't support getting a list of schemas
+		 *  for the current database backend (or the database doesn't)
+		 *  then an empty result set will be returned. */
+		function getSchemaList(var schemas);
+
+		/** Generates a result set containing supported table types.
+		 *
+		 *  The result set will contain the following columns:
+		 *  * table_type
+		 *
+		 *  If SQL Relay doesn't support getting a list of table types
+		 *  for the current database backend (or the database doesn't)
+		 *  then an empty result set will be returned. */
+		function getTableTypeList();
+
 		/** Generates a result set containing the
 		 *  tables in the current database and schema that match the
 		 *  pattern "wild".
@@ -802,6 +829,39 @@ class SQLRCursor {
 		 *  for the current database backend (or the database doesn't)
 		 *  then an empty result set will be returned. */
 		function getTableList(var wild);
+
+		/** Generates a result set containing data type information for
+		 *  "type".
+		 *
+		 *  The result set will contain the following columns:
+		 *  * type_name
+		 *  * data_type
+		 *  * precision
+		 *  * literal_prefix
+		 *  * literal_suffix
+		 *  * create_params
+		 *  * nullable
+		 *  * case_sensitive
+		 *  * searchable
+		 *  * unsigned_attribute
+		 *  * fixed_prec_scale
+		 *  * auto_increment
+		 *  * local_type_name
+		 *  * minumum_scale
+		 *  * maxiumm_scale
+		 *  * sql_data_type
+		 *  * sql_datetime_sub
+		 *  * num_prec_radix
+		 *  * interval_precision
+		 *
+		 *  If "type" is empty or NULL then a result set containing
+		 *  all data types in the current databas/schema will be
+		 *  returned.
+		 *
+		 *  If SQL Relay doesn't support getting type info
+		 *  for the current database backend (or the database doesn't)
+		 *  then an empty result set will be returned. */
+		function getTypeInfoList(var type);
 
 		/** Generates a result set containing the
 		 *  columns of "table", which match the pattern "wild".
@@ -824,6 +884,96 @@ class SQLRCursor {
 		 *  for the current database backend (or the database doesn't)
 		 *  then an empty result set will be returned. */
 		function getColumnList(var table, var wild);
+
+		/** Generates a result set containing the primary keys of
+		 *  "table", which match the pattern "columns".
+		 *
+		 *  The result set will contain the following columns:
+		 *  * table
+		 *  * non_unique
+		 *  * key_name
+		 *  * seq_in_index
+		 *  * column_name
+		 *  * collation
+		 *  * cardinality
+		 *  * sub_part
+		 *  * packed
+		 *  * null
+		 *  * index_type
+		 *  * comment
+		 *  * index_comment
+		 *
+		 *  If "columns" is empty or NULL then a result set containing
+		 *  all primary keys of "table" will be returned.
+		 *
+		 *  If SQL Relay doesn't support getting a list of primary keys
+		 *  for the current database backend (or the database doesn't)
+		 *  then an empty result set will be returned. */
+		function getPrimaryKeysList(var table, var columns);
+
+		/** Generates a result set containing the keys and indexes of
+		 *  "table", which match the pattern "qualifier".
+		 *
+		 *  The result set will contain the following columns:
+		 *  * table
+		 *  * non_unique
+		 *  * key_name
+		 *  * seq_in_index
+		 *  * column_name
+		 *  * collation
+		 *  * cardinality
+		 *  * sub_part
+		 *  * packed
+		 *  * null
+		 *  * index_type
+		 *  * comment
+		 *  * index_comment
+		 *
+		 *  If "qualifier" is empty or NULL then a result set
+		 *  containing all keys and indexes of "table" will be
+		 *  returned.
+		 *
+		 *  If SQL Relay doesn't support getting a list of keys and
+		 *  indexes for the current database backend (or the database
+		 *  doesn't) then an empty result set will be returned. */
+		function getKeyAndIndexList(var table, var qualifier);
+
+		/** Generates a result set containing procedures that match the
+		 *  pattern "procedures".
+		 *
+		 *  The result set will contain the following columns:
+		 *  * routine_catalog
+		 *  * routine_schema
+		 *  * routine_name
+		 *  * data_type
+		 *
+		 *  If "procedures" is empty or NULL then a result set
+		 *  containing all procedures in the current database/schema
+		 *  will be returned.
+		 *
+		 *  If SQL Relay doesn't support getting a list of procedures
+		 *  for the current database backend (or the database doesn't)
+		 *  then an empty result set will be returned. */
+		function getProcedureList(var procedures);
+
+		/** Generates a result set containing the parameters of
+		 *  "procedure", which match the pattern "parameters".
+		 *
+		 *  The result set will contain the following columns:
+		 *  * parameter_name
+		 *  * parameter_mode
+		 *  * data_type
+		 *  * character_maximum_length
+		 *  * ordinal_position
+		 *
+		 *  If "parameters" is empty or NULL then a result set
+		 *  containing all parameters of "procedure" will be returned.
+		 *
+		 *  If SQL Relay doesn't support getting a list of procedure
+		 *  parameters for the current database backend (or the
+		 *  database doesn't) then an empty result set will be
+		 *  returned. */
+		function getProcedureParameterList(var procedure, var parameters);
 
 
 
