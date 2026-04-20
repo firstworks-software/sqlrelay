@@ -52,6 +52,10 @@
 	ODBC driver handles short years correctly now, when parsing dates
 	fixed a bug that caused queries including binary data to be truncated
 		at the first \0 in various languages (perl, python, etc.)
+	ODBC driver SQLGetData returns SQL_NO_DATA the first time (instead of
+		the second time) if we fetch past the end of a string/lob
+	ODBC driver sets day/month to 1 rather than 0 if it can't be parsed
+		out of the string
 
 2.1.1 - added tns_admin support
 	fixed sqlr-start ... -strace ...
