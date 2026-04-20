@@ -92,19 +92,19 @@ start(ExtPrg) ->
     spawn_link(?MODULE, init, [ExtPrg]).
 %% @hidden
 stop() ->
-	case(get("cursor")) of 
+	case(get("cursor")) of
 		"true" ->
 			erase("cursor"),
-			cursorFree();    
+			cursorFree();
 		_ ->  true
 	end,
-	case(get("connection")) of 
+	endSession(),
+	case(get("connection")) of
 		"true" ->
 			erase("connection"),
-			connectionFree();    
+			connectionFree();
 		_ ->  true
 	end,
-	endSession(),    
 	?MODULE ! stop.
 
 %
@@ -178,7 +178,7 @@ getConnectionPort() -> call_port({getConnectionPort}).
 getConnectionSocket() -> call_port({getConnectionSocket}).
 
 %% @doc Resumes a session previously left open using suspendSession().  Returns true on success and false on failure.
-resumeSession(Port, Socket) when is_integer(Port), is_list(Socket) -> call_port({getConnectionSocket, Port, Socket}).
+resumeSession(Port, Socket) when is_integer(Port), is_list(Socket) -> call_port({resumeSession, Port, Socket}).
 
 %% @doc Returns true if the database is up and false if it's down.
 ping() -> call_port({ping}).
@@ -1083,19 +1083,7 @@ resumeCachedResultSet(Id, Filename) when is_integer(Id), is_list(Filename) ->
 closeResultSet() -> call_port({closeResultSet}).
 
 %% @doc Returns a tuple containing the value of the fields in the specified row.
-getRow(Row) when is_integer(Row) ->
-        {ok, Columns} = colCount(),
-        L = appendColumnForRow([], Row, Columns-1),
-        lists:reverse(L),
-        list_to_tuple(L).
-
-appendColumnForRow(L, Row, 0) ->
-        {ok, Value} = getFieldByIndex(Row, 0),
-        lists:append(L, Value);
-appendColumnForRow(L, Row, Col) ->
-        {ok, Value} = getFieldByIndex(Row, Col),
-        NewL = lists:append(L, Value),
-        appendColumnForRow(NewL, Row, Col-1).
+getRow(Row) when is_integer(Row) -> call_port({getRow, Row}).
 
 %
 % Port communication functions

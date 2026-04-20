@@ -275,10 +275,13 @@ int main() {
 		if (strcmp("connectionFree", command) == TRUE) {
 			// check number of arguments
 		    	if (arity != 0) return ERR_NUMBER_OF_ARGS;
-			
-			// call function and encode result 
-			sqlrcon_free(con); 	
-			ENCODE_VOID;   
+
+			// call function and encode result
+			if (con) {
+				sqlrcon_free(con);
+				con = NULL;
+			}
+			ENCODE_VOID;
 		}
 		
 		if (strcmp("cursorFree", command) == TRUE) {
@@ -511,9 +514,11 @@ int main() {
 			// check number of arguments
 		    	if (arity != 0) return ERR_NUMBER_OF_ARGS;
 
-			// call function and encode result 
-			sqlrcon_endSession(con); 	
-			ENCODE_VOID;   
+			// call function and encode result
+			if (con) {
+				sqlrcon_endSession(con);
+			}
+			ENCODE_VOID;
 		}
 
 		if (strcmp("suspendSession", command) == TRUE) {
@@ -551,23 +556,33 @@ int main() {
 		}
 
 		if (strcmp("resumeSession", command) == TRUE) {
-                	unsigned long port; 
-                	char socket[30];
+			unsigned long port;
+			int vtype, vsize;
+			char *socket;
+			int rs;
 
 			// check number of arguments
 		    	if (arity != 2) return ERR_NUMBER_OF_ARGS;
 
 			// get arguments
-			if (ei_decode_ulong(buf, &index, &port)) { 
+			if (ei_decode_ulong(buf, &index, &port)) {
 				return ERR_DECODING_ARGS;
 			}
-			if (ei_decode_string(buf, &index, &socket[0])) { 
+			if (ei_get_type(buf, &index, &vtype, &vsize)) {
+				return ERR_DECODING_ARGS;
+			}
+			socket = (char *) malloc(vsize + 1);
+			if (!socket) return ERR_DECODING_ARGS;
+			if (ei_decode_string(buf, &index, socket)) {
+				free(socket);
 				return ERR_DECODING_ARGS;
 			}
 
-			// encode result 
-			if (ei_x_encode_atom(&result, "ok") || 
-				ei_x_encode_long(&result,  sqlrcon_resumeSession(con, port, socket))) {
+			// encode result
+			rs = sqlrcon_resumeSession(con, port, socket);
+			free(socket);
+			if (ei_x_encode_atom(&result, "ok") ||
+				ei_x_encode_long(&result, rs)) {
 				return ERR_ENCODING_ARGS;
 			}
 		}
