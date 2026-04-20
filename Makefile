@@ -109,6 +109,7 @@ distclean: clean
 		test/testall.vbs \
 		test/test.sh \
 		test/test.bat \
+		test/erlang/run \
 		test/sqlrelay.conf.d/*.conf \
 		msvc/setupx64/setupx64.vdproj \
 		msvc/setupx86/setupx86.vdproj \

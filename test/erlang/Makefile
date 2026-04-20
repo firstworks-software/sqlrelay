@@ -8,4 +8,4 @@ oracle.beam: oracle.erl
 	erlc oracle.erl
 
 clean:
-	$(RM) *.beam cachefile* sqlnet.log
+	$(RM) *.beam cachefile* sqlnet.log erl_crash.dump

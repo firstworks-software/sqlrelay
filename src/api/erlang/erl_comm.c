@@ -5,25 +5,26 @@
 
 typedef unsigned char byte;
 
-int read_cmd(byte *buf, int *size);
-int write_cmd(ei_x_buff *buff); 
+int read_cmd(byte **buf, int *size);
+int write_cmd(ei_x_buff *buff);
 int read_exact(byte *buf, int len);
 int write_exact(byte *buf, int len);
 
-int read_cmd(byte *buf, int *size) {
+int read_cmd(byte **buf, int *size) {
   int len;
 
-  if (read_exact(buf, 2) != 2)
+  if (read_exact(*buf, 2) != 2)
     return(-1);
-  len = (buf[0] << 8) | buf[1];
+  len = ((*buf)[0] << 8) | (*buf)[1];
 
   if (len > *size) {
-    buf = (byte *) realloc(buf, len);
-    if (buf == NULL)
+    byte *newbuf = (byte *) realloc(*buf, len);
+    if (newbuf == NULL)
       return -1;
+    *buf = newbuf;
     *size = len;
   }
-  return read_exact(buf, len);
+  return read_exact(*buf, len);
 }
 
 int write_cmd(ei_x_buff *buff) {

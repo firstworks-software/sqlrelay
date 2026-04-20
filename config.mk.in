@@ -811,6 +811,9 @@ endif
 ifneq ($(HAVE_JDBC),)
 TESTALLSUBDIRS += all-jdbc
 endif
+ifneq ($(HAVE_ERLANG),)
+TESTALLSUBDIRS += all-erlang
+endif
 TESTPROTOCOLSUBDIRS =
 ifneq ($(strip $(MYSQLLIBS)),)
 TESTPROTOCOLSUBDIRS += all-mysql
