@@ -1,0 +1,3 @@
+#!/bin/sh
+
+erl -noshell -pa @ERLANG_ROOT_DIR@/lib/@SQLRELAY@-@SQLR_VERSION@/ebin -s $1 main
