@@ -394,6 +394,14 @@ public class SQLRCursor : IDisposable
         return sqlrcur_sendQueryWithLength(sqlrcurref, query, length) != 0;
     }
 
+    /** Sends "query" (a byte array) with length "length" directly and
+     *  gets a result set.  This form is byte-safe — use it when the
+     *  query contains bytes outside the ASCII range or embedded NUL. */
+    public Boolean sendQuery(Byte[] query, UInt32 length)
+    {
+        return sqlrcur_sendQueryWithLengthBytes(sqlrcurref, query, length) != 0;
+    }
+
     /** Sends the query in file "path"/"filename" and gets a result set. */
     public Boolean sendFileQuery(String path, String filename)
     {
@@ -1320,9 +1328,18 @@ public class SQLRCursor : IDisposable
     }
 
     /** Returns an array of the values of the fields in the
-     *  specified row. */
+     *  specified row, or null if the row is past the end of the
+     *  result set. */
     public String[] getRow(UInt64 row)
     {
+        // The underlying C++ getRow() returns NULL past the end of
+        // the result set.  Check that first so callers can distinguish
+        // end-of-results from a valid row whose columns happen to be
+        // NULL.
+        if (sqlrcur_getRow(sqlrcurref, row) == IntPtr.Zero)
+        {
+            return null;
+        }
         UInt32 colcount = sqlrcur_colCount(sqlrcurref);
         String[] retval = new String[colcount];
         for (UInt32 i = 0; i < colcount; i++)
@@ -1333,9 +1350,14 @@ public class SQLRCursor : IDisposable
     }
 
     /** Returns an array of the lengths of the fields in the
-     *  specified row. */
+     *  specified row, or null if the row is past the end of the
+     *  result set. */
     public UInt32[] getRowLengths(UInt64 row)
     {
+        if (sqlrcur_getRowLengths(sqlrcurref, row) == IntPtr.Zero)
+        {
+            return null;
+        }
         UInt32 colcount = sqlrcur_colCount(sqlrcurref);
         UInt32[] retval = new UInt32[colcount];
         for (UInt32 i = 0; i < colcount; i++)
@@ -1666,6 +1688,9 @@ public class SQLRCursor : IDisposable
     [DllImport("libsqlrclientwrapper.dll", CallingConvention = CallingConvention.Cdecl)]
     private static extern Int32 sqlrcur_sendQueryWithLength(IntPtr sqlrcurref, String query, UInt32 length);
 
+    [DllImport("libsqlrclientwrapper.dll", CallingConvention = CallingConvention.Cdecl, EntryPoint = "sqlrcur_sendQueryWithLength")]
+    private static extern Int32 sqlrcur_sendQueryWithLengthBytes(IntPtr sqlrcurref, Byte[] query, UInt32 length);
+
     [DllImport("libsqlrclientwrapper.dll", CallingConvention = CallingConvention.Cdecl)]
     private static extern Int32 sqlrcur_sendFileQuery(IntPtr sqlrcurref, String path, String filename);
 
@@ -1836,6 +1861,12 @@ public class SQLRCursor : IDisposable
 
     [DllImport("libsqlrclientwrapper.dll", CallingConvention = CallingConvention.Cdecl)]
     private static extern IntPtr sqlrcur_getFieldByIndex(IntPtr sqlrcurref, UInt64 row, UInt32 col);
+
+    [DllImport("libsqlrclientwrapper.dll", CallingConvention = CallingConvention.Cdecl)]
+    private static extern IntPtr sqlrcur_getRow(IntPtr sqlrcurref, UInt64 row);
+
+    [DllImport("libsqlrclientwrapper.dll", CallingConvention = CallingConvention.Cdecl)]
+    private static extern IntPtr sqlrcur_getRowLengths(IntPtr sqlrcurref, UInt64 row);
 
     [DllImport("libsqlrclientwrapper.dll", CallingConvention = CallingConvention.Cdecl)]
     private static extern IntPtr sqlrcur_getFieldByName(IntPtr sqlrcurref, UInt64 row, String col);

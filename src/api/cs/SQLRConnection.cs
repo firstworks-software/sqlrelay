@@ -289,7 +289,7 @@ public class SQLRConnection : IDisposable
      *  is only valid after a call to suspendSession(). */
     public String getConnectionSocket()
     {
-        return sqlrcon_getConnectionSocket(sqlrconref);
+        return Marshal.PtrToStringAnsi(sqlrcon_getConnectionSocket(sqlrconref));
     }
     
     /** Resumes a session previously left open using sqlrcon_suspendSession().
@@ -310,37 +310,37 @@ public class SQLRConnection : IDisposable
     /** Returns the type of database: oracle, postgresql, mysql, etc. */
     public String identify()
     {
-        return sqlrcon_identify(sqlrconref);
+        return Marshal.PtrToStringAnsi(sqlrcon_identify(sqlrconref));
     }
     
     /** Returns the version of the database */
     public String dbVersion()
     {
-        return sqlrcon_dbVersion(sqlrconref);
+        return Marshal.PtrToStringAnsi(sqlrcon_dbVersion(sqlrconref));
     }
     
     /** Returns the host name of the database */
     public String dbHostName()
     {
-        return sqlrcon_dbHostName(sqlrconref);
+        return Marshal.PtrToStringAnsi(sqlrcon_dbHostName(sqlrconref));
     }
     
     /** Returns the ip address of the database */
     public String dbIpAddress()
     {
-        return sqlrcon_dbIpAddress(sqlrconref);
+        return Marshal.PtrToStringAnsi(sqlrcon_dbIpAddress(sqlrconref));
     }
     
     /** Returns the version of the sqlrelay server software. */
     public String serverVersion()
     {
-        return sqlrcon_serverVersion(sqlrconref);
+        return Marshal.PtrToStringAnsi(sqlrcon_serverVersion(sqlrconref));
     }
     
     /** Returns the version of the sqlrelay client software. */
     public String clientVersion()
     {
-        return sqlrcon_clientVersion(sqlrconref);
+        return Marshal.PtrToStringAnsi(sqlrcon_clientVersion(sqlrconref));
     }
     
     /** Returns a string representing the bind variable format used
@@ -356,7 +356,7 @@ public class SQLRConnection : IDisposable
      */
     public String bindFormat()
     {
-        return sqlrcon_bindFormat(sqlrconref);
+        return Marshal.PtrToStringAnsi(sqlrcon_bindFormat(sqlrconref));
     }
 
     /** Returns a string representing the format of the sequence
@@ -372,7 +372,7 @@ public class SQLRConnection : IDisposable
      *  sequences. */
     public String nextvalFormat()
     {
-        return sqlrcon_nextvalFormat(sqlrconref);
+        return Marshal.PtrToStringAnsi(sqlrcon_nextvalFormat(sqlrconref));
     }
     
     
@@ -398,7 +398,7 @@ public class SQLRConnection : IDisposable
      *  See getDatabaseIsSchema(). */
     public String getCurrentDatabase()
     {
-        return sqlrcon_getCurrentDatabase(sqlrconref);
+        return Marshal.PtrToStringAnsi(sqlrcon_getCurrentDatabase(sqlrconref));
     }
 
     /** Returns true if the backend database equates "database" with
@@ -417,7 +417,7 @@ public class SQLRConnection : IDisposable
     /** Returns the catalog that is currently in use. */
     public String getCurrentCatalog()
     {
-        return sqlrcon_getCurrentCatalog(sqlrconref);
+        return Marshal.PtrToStringAnsi(sqlrcon_getCurrentCatalog(sqlrconref));
     }
 
     /** Sets the current schema to "schema" */
@@ -429,7 +429,7 @@ public class SQLRConnection : IDisposable
     /** Returns the schema that is currently in use. */
     public String getCurrentSchema()
     {
-        return sqlrcon_getCurrentSchema(sqlrconref);
+        return Marshal.PtrToStringAnsi(sqlrcon_getCurrentSchema(sqlrconref));
     }
 
 
@@ -439,7 +439,7 @@ public class SQLRConnection : IDisposable
      *  or if an error occurred. */
     public String getCurrentUser()
     {
-        return sqlrcon_getCurrentUser(sqlrconref);
+        return Marshal.PtrToStringAnsi(sqlrcon_getCurrentUser(sqlrconref));
     }
 
     /** Returns the value of the autoincrement column for the last insert */
@@ -498,7 +498,7 @@ public class SQLRConnection : IDisposable
      *  or null if an error occurred. */
     public String getDefaultIsolationLevel()
     {
-        return sqlrcon_getDefaultIsolationLevel(sqlrconref);
+        return Marshal.PtrToStringAnsi(sqlrcon_getDefaultIsolationLevel(sqlrconref));
     }
 
     /** Sets the isolation level to "isolationlevel", the database-secific
@@ -513,7 +513,7 @@ public class SQLRConnection : IDisposable
      *  isolation level is unknown, or null if an error occurred. */
     public String getIsolationLevel()
     {
-        return sqlrcon_getIsolationLevel(sqlrconref);
+        return Marshal.PtrToStringAnsi(sqlrcon_getIsolationLevel(sqlrconref));
     }
 
     /** Returns the value of the specified database "feature".
@@ -799,7 +799,7 @@ public class SQLRConnection : IDisposable
      *  an error occurred or an invalid feature was requested. */
     public String getDatabaseFeature(String feature)
     {
-        return sqlrcon_getDatabaseFeature(sqlrconref, feature);
+        return Marshal.PtrToStringAnsi(sqlrcon_getDatabaseFeature(sqlrconref, feature));
     }
 
 
@@ -808,7 +808,7 @@ public class SQLRConnection : IDisposable
      *  available here.  If there is no error then this method returns NULL */
     public String errorMessage()
     {
-        return sqlrcon_errorMessage(sqlrconref);
+        return Marshal.PtrToStringAnsi(sqlrcon_errorMessage(sqlrconref));
     }
     
     /** If an operation failed and generated an error, the error number is
@@ -859,7 +859,7 @@ public class SQLRConnection : IDisposable
     /** Returns the string that was set by setClientInfo(). */
     public String getClientInfo()
     {
-        return sqlrcon_getClientInfo(sqlrconref);
+        return Marshal.PtrToStringAnsi(sqlrcon_getClientInfo(sqlrconref));
     }
 
     /** Returns a pointer to the internal connection structure */
@@ -938,7 +938,7 @@ public class SQLRConnection : IDisposable
     private static extern UInt16 sqlrcon_getConnectionPort(IntPtr sqlrconref);
     
     [DllImport("libsqlrclientwrapper.dll", CallingConvention = CallingConvention.Cdecl)]
-    private static extern String sqlrcon_getConnectionSocket(IntPtr sqlrconref);
+    private static extern IntPtr sqlrcon_getConnectionSocket(IntPtr sqlrconref);
     
     [DllImport("libsqlrclientwrapper.dll", CallingConvention = CallingConvention.Cdecl)]
     private static extern Int32 sqlrcon_resumeSession(IntPtr sqlrconref, UInt16 port, String socket);
@@ -947,34 +947,34 @@ public class SQLRConnection : IDisposable
     private static extern Int32 sqlrcon_ping(IntPtr sqlrconref);
     
     [DllImport("libsqlrclientwrapper.dll", CallingConvention = CallingConvention.Cdecl)]
-    private static extern String sqlrcon_identify(IntPtr sqlrconref);
+    private static extern IntPtr sqlrcon_identify(IntPtr sqlrconref);
     
     [DllImport("libsqlrclientwrapper.dll", CallingConvention = CallingConvention.Cdecl)]
-    private static extern String sqlrcon_dbVersion(IntPtr sqlrconref);
+    private static extern IntPtr sqlrcon_dbVersion(IntPtr sqlrconref);
     
     [DllImport("libsqlrclientwrapper.dll", CallingConvention = CallingConvention.Cdecl)]
-    private static extern String sqlrcon_dbHostName(IntPtr sqlrconref);
+    private static extern IntPtr sqlrcon_dbHostName(IntPtr sqlrconref);
     
     [DllImport("libsqlrclientwrapper.dll", CallingConvention = CallingConvention.Cdecl)]
-    private static extern String sqlrcon_dbIpAddress(IntPtr sqlrconref);
+    private static extern IntPtr sqlrcon_dbIpAddress(IntPtr sqlrconref);
     
     [DllImport("libsqlrclientwrapper.dll", CallingConvention = CallingConvention.Cdecl)]
-    private static extern String sqlrcon_serverVersion(IntPtr sqlrconref);
+    private static extern IntPtr sqlrcon_serverVersion(IntPtr sqlrconref);
     
     [DllImport("libsqlrclientwrapper.dll", CallingConvention = CallingConvention.Cdecl)]
-    private static extern String sqlrcon_clientVersion(IntPtr sqlrconref);
+    private static extern IntPtr sqlrcon_clientVersion(IntPtr sqlrconref);
     
     [DllImport("libsqlrclientwrapper.dll", CallingConvention = CallingConvention.Cdecl)]
-    private static extern String sqlrcon_bindFormat(IntPtr sqlrconref);
+    private static extern IntPtr sqlrcon_bindFormat(IntPtr sqlrconref);
     
     [DllImport("libsqlrclientwrapper.dll", CallingConvention = CallingConvention.Cdecl)]
-    private static extern String sqlrcon_nextvalFormat(IntPtr sqlrconref);
+    private static extern IntPtr sqlrcon_nextvalFormat(IntPtr sqlrconref);
     
     [DllImport("libsqlrclientwrapper.dll", CallingConvention = CallingConvention.Cdecl)]
     private static extern Int32 sqlrcon_selectDatabase(IntPtr sqlrconref, String database);
     
     [DllImport("libsqlrclientwrapper.dll", CallingConvention = CallingConvention.Cdecl)]
-    private static extern String sqlrcon_getCurrentDatabase(IntPtr sqlrconref);
+    private static extern IntPtr sqlrcon_getCurrentDatabase(IntPtr sqlrconref);
 
     [DllImport("libsqlrclientwrapper.dll", CallingConvention = CallingConvention.Cdecl)]
     private static extern Int32 sqlrcon_getDatabaseIsSchema(IntPtr sqlrconref);
@@ -983,16 +983,16 @@ public class SQLRConnection : IDisposable
     private static extern Int32 sqlrcon_selectCatalog(IntPtr sqlrconref, String catalog);
 
     [DllImport("libsqlrclientwrapper.dll", CallingConvention = CallingConvention.Cdecl)]
-    private static extern String sqlrcon_getCurrentCatalog(IntPtr sqlrconref);
+    private static extern IntPtr sqlrcon_getCurrentCatalog(IntPtr sqlrconref);
 
     [DllImport("libsqlrclientwrapper.dll", CallingConvention = CallingConvention.Cdecl)]
     private static extern Int32 sqlrcon_selectSchema(IntPtr sqlrconref, String schema);
 
     [DllImport("libsqlrclientwrapper.dll", CallingConvention = CallingConvention.Cdecl)]
-    private static extern String sqlrcon_getCurrentSchema(IntPtr sqlrconref);
+    private static extern IntPtr sqlrcon_getCurrentSchema(IntPtr sqlrconref);
 
     [DllImport("libsqlrclientwrapper.dll", CallingConvention = CallingConvention.Cdecl)]
-    private static extern String sqlrcon_getCurrentUser(IntPtr sqlrconref);
+    private static extern IntPtr sqlrcon_getCurrentUser(IntPtr sqlrconref);
 
     [DllImport("libsqlrclientwrapper.dll", CallingConvention = CallingConvention.Cdecl)]
     private static extern UInt64 sqlrcon_getLastInsertId(IntPtr sqlrconref);
@@ -1016,19 +1016,19 @@ public class SQLRConnection : IDisposable
     private static extern Int32 sqlrcon_rollback(IntPtr sqlrconref);
 
     [DllImport("libsqlrclientwrapper.dll", CallingConvention = CallingConvention.Cdecl)]
-    private static extern String sqlrcon_getDefaultIsolationLevel(IntPtr sqlrconref);
+    private static extern IntPtr sqlrcon_getDefaultIsolationLevel(IntPtr sqlrconref);
 
     [DllImport("libsqlrclientwrapper.dll", CallingConvention = CallingConvention.Cdecl)]
     private static extern Int32 sqlrcon_setIsolationLevel(IntPtr sqlrconref, String isolationlevel);
 
     [DllImport("libsqlrclientwrapper.dll", CallingConvention = CallingConvention.Cdecl)]
-    private static extern String sqlrcon_getIsolationLevel(IntPtr sqlrconref);
+    private static extern IntPtr sqlrcon_getIsolationLevel(IntPtr sqlrconref);
 
     [DllImport("libsqlrclientwrapper.dll", CallingConvention = CallingConvention.Cdecl)]
-    private static extern String sqlrcon_getDatabaseFeature(IntPtr sqlrconref, String feature);
+    private static extern IntPtr sqlrcon_getDatabaseFeature(IntPtr sqlrconref, String feature);
 
     [DllImport("libsqlrclientwrapper.dll", CallingConvention = CallingConvention.Cdecl)]
-    private static extern String sqlrcon_errorMessage(IntPtr sqlrconref);
+    private static extern IntPtr sqlrcon_errorMessage(IntPtr sqlrconref);
     
     [DllImport("libsqlrclientwrapper.dll", CallingConvention = CallingConvention.Cdecl)]
     private static extern Int64 sqlrcon_errorNumber(IntPtr sqlrconref);
@@ -1049,7 +1049,7 @@ public class SQLRConnection : IDisposable
     private static extern void sqlrcon_setClientInfo(IntPtr sqlrconref, String clientinfo);
     
     [DllImport("libsqlrclientwrapper.dll", CallingConvention = CallingConvention.Cdecl)]
-    private static extern String sqlrcon_getClientInfo(IntPtr sqlrconref);
+    private static extern IntPtr sqlrcon_getClientInfo(IntPtr sqlrconref);
 
     [DllImport("libsqlrclientwrapper.dll", CallingConvention = CallingConvention.Cdecl)]
     private static extern Int32 sqlrcon_isYes(String str);
