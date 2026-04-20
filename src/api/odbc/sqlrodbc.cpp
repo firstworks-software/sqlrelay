@@ -4272,7 +4272,9 @@ static SQLRETURN SQLR_Fetch(SQLHSTMT statementhandle,
 						targetvalue,
 						field->bufferlength,
 						strlen_or_ind);
-				if (getdataresult!=SQL_SUCCESS) {
+				if (getdataresult!=SQL_SUCCESS &&
+					getdataresult!=SQL_SUCCESS_WITH_INFO &&
+					getdataresult!=SQL_NO_DATA) {
 					return getdataresult;
 				}
 			}
