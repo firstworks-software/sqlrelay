@@ -57,6 +57,7 @@
 	ODBC driver sets day/month to 1 rather than 0 if it can't be parsed
 		out of the string
 	fixed some lurking double-frees in the C# api
+	added binary-compatible sendQuery to C# api
 
 2.1.1 - added tns_admin support
 	fixed sqlr-start ... -strace ...
