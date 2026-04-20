@@ -1808,29 +1808,39 @@ var {
 		cur.sendQuery("drop table testtable");
 		assertTrue(cur.sendQuery("create table testtable "+
 			"(col1 longblob)"));
-		var buffer="";
+		var buffer=Buffer.alloc(256);
 		for (var i=0;i<256;i++) {
-			buffer+=String.fromCharCode(i);
+			buffer[i]=i;
 		}
-		var query="insert into testtable values (_binary'";
+		// Build the query as a Buffer so that raw bytes (including NUL
+		// and bytes 128-255) pass through unmolested. The Node.js
+		// sqlrelay binding's sendQuery accepts Buffer for binary-safe
+		// transport; a plain JS string would be UTF-8 encoded by V8.
+		var prefix=Buffer.from("insert into testtable values (_binary'");
+		var suffix=Buffer.from("')");
+		var chunks=[prefix];
 		for (var i=0;i<buffer.length;i++) {
-			var c=buffer[i];
-			if (c=="'") {
-				query+="\\";
+			var b=buffer[i];
+			if (b==0x27 || b==0x5c) {
+				chunks.push(Buffer.from([0x5c]));
 			}
-			if (c=="\\") {
-				query+="\\";
-			}
-			query+=c;
+			chunks.push(buffer.slice(i,i+1));
 		}
-		query+="')";
-		assertTrue(cur.sendQueryWithLength(query,query.length));
-		assertTrue(cur.sendQuery("select col1 "+
-			"from testtable"));
-		assertEqInt(cur.getFieldLength(0,0),
-		    buffer.length);
-		assertEqStrLen(cur.getField(0,0),buffer,
-		    buffer.length);
+		chunks.push(suffix);
+		var query=Buffer.concat(chunks);
+		assertTrue(cur.sendQuery(query,query.length));
+		// Verify round-tripped bytes via server-side HEX (the binding's
+		// getField returns strings via String::NewFromUtf8, which drops
+		// invalid UTF-8 byte sequences, so direct byte compare won't
+		// work for raw bytes 128-255).
+		assertTrue(cur.sendQuery("select hex(col1) from testtable"));
+		var expectedhex="";
+		for (var i=0;i<buffer.length;i++) {
+			expectedhex+=("0"+buffer[i].toString(16)).slice(-2);
+		}
+		assertEqInt(cur.getFieldLength(0,0),expectedhex.length);
+		assertEqStr(String(cur.getField(0,0)).toLowerCase(),
+				expectedhex);
 		assertTrue(cur.sendQuery("drop table testtable"));
 		console.log("");
 
@@ -1841,13 +1851,12 @@ var {
 		cur.sendQuery("drop table testtable");
 		assertTrue(cur.sendQuery("create table testtable "+
 			"(col1 longblob)"));
-		assertTrue(cur.sendQueryWithLength("insert into "+
-			"testtable values (_binary'\0\"\"')",43));
-		assertTrue(cur.sendQuery("select col1 "+
-			"from testtable"));
-		assertEqInt(cur.getFieldLength(0,0),3);
-		assertEqStrLen(cur.getField(0,0),
-		    "\0\"\"",3);
+		assertTrue(cur.sendQuery(Buffer.from(
+			"insert into testtable values (_binary'\0\"\"')",
+			"binary"),43));
+		assertTrue(cur.sendQuery("select hex(col1) from testtable"));
+		assertEqInt(cur.getFieldLength(0,0),6);
+		assertEqStr(String(cur.getField(0,0)).toLowerCase(),"002222");
 		assertTrue(cur.sendQuery("drop table testtable"));
 		console.log("");
 
@@ -1859,13 +1868,12 @@ var {
 		cur.sendQuery("drop table testtable");
 		assertTrue(cur.sendQuery("create table testtable "+
 			"(col1 longblob)"));
-		assertTrue(cur.sendQueryWithLength("insert into "+
-			"testtable values (_binary'\\\0\\\"\\\"')",46));
-		assertTrue(cur.sendQuery("select col1 "+
-			"from testtable"));
-		assertEqInt(cur.getFieldLength(0,0),3);
-		assertEqStrLen(cur.getField(0,0),
-		    "\0\"\"",3);
+		assertTrue(cur.sendQuery(Buffer.from(
+			"insert into testtable values (_binary'\\\0\\\"\\\"')",
+			"binary"),46));
+		assertTrue(cur.sendQuery("select hex(col1) from testtable"));
+		assertEqInt(cur.getFieldLength(0,0),6);
+		assertEqStr(String(cur.getField(0,0)).toLowerCase(),"002222");
 		assertTrue(cur.sendQuery("drop table testtable"));
 		console.log("");
 	}
@@ -1946,48 +1954,48 @@ var {
 	cur.sendQuery("drop table testtable");
 	assertTrue(cur.sendQuery("create table testtable "+
 		"(col1 varchar(512))"));
-	var ch=["'","\"","\\","\0"];
-	var seed1=Math.floor(Math.random()*2147483647);
-	var seed2=Math.floor(Math.random()*2147483647);
-	var buffer="";
-	var result1=seed1;
+	// Build a random buffer of [', ", \, \0] bytes. Keep it as a Buffer
+	// so \0 doesn't truncate when passed through the Node.js binding.
+	var ch=[0x27,0x22,0x5c,0x00];
+	var buffer=Buffer.alloc(256);
 	for (var i=0;i<256;i++) {
-		result1=Math.floor(Math.random()*2147483647);
-		buffer+=ch[result1%4];
+		buffer[i]=ch[Math.floor(Math.random()*4)];
 	}
-	var query="insert into testtable values ('";
-	var result2=seed2;
+	var chunks=[Buffer.from("insert into testtable values ('")];
 	for (var i=0;i<buffer.length;i++) {
-		result2=Math.floor(Math.random()*2147483647);
-		if (buffer[i]=="'") {
-			// randomly escape
-			// with \ or ''
-			if (result2%2) {
-				query+="'";
+		var b=buffer[i];
+		if (b==0x27) {
+			// randomly escape ' with \ or ''
+			if (Math.floor(Math.random()*2)) {
+				chunks.push(Buffer.from([0x27]));
 			} else {
-				query+="\\";
+				chunks.push(Buffer.from([0x5c]));
 			}
 		}
-		if (buffer[i]=="\"") {
-			// randomly escape
-			// with \ or don't
-			if (result2%2) {
-				query+="\\";
+		if (b==0x22) {
+			// randomly escape " with \ or don't
+			if (Math.floor(Math.random()*2)) {
+				chunks.push(Buffer.from([0x5c]));
 			}
 		}
-		if (buffer[i]=="\\") {
-			// escape with
-			// backslash
-			query+="\\";
+		if (b==0x5c) {
+			// always escape \ with \
+			chunks.push(Buffer.from([0x5c]));
 		}
-		query+=buffer[i];
+		chunks.push(buffer.slice(i,i+1));
 	}
-	query+="')";
-	assertTrue(cur.sendQueryWithLength(query,query.length));
-	assertTrue(cur.sendQuery("select col1 from testtable"));
-	assertEqInt(cur.getFieldLength(0,0),buffer.length);
-	assertEqStrLen(cur.getField(0,0),
-		buffer,buffer.length);
+	chunks.push(Buffer.from("')"));
+	var query=Buffer.concat(chunks);
+	assertTrue(cur.sendQuery(query,query.length));
+	// Verify via server-side HEX (see the ENCODED BINARY DATA section
+	// for why direct byte compare doesn't work through the binding).
+	assertTrue(cur.sendQuery("select hex(col1) from testtable"));
+	var expectedhex="";
+	for (var i=0;i<buffer.length;i++) {
+		expectedhex+=("0"+buffer[i].toString(16)).slice(-2);
+	}
+	assertEqInt(cur.getFieldLength(0,0),expectedhex.length);
+	assertEqStr(String(cur.getField(0,0)).toLowerCase(),expectedhex);
 	assertTrue(cur.sendQuery("drop table testtable"));
 	console.log("");
 

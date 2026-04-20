@@ -1238,9 +1238,17 @@ for (var i=0; i<buffer.length; i++) {
 }
 querystr=querystr+"','hex'))";
 assertTrue(cur.sendQuery(querystr));
-assertTrue(cur.sendQuery("select col1 from testtable"));
-assertEqInt(cur.getFieldLength(0,0),buffer.length);
-assertEqInt((cur.getField(0,0)==buffer)?0:1,0);
+// Verify round-tripped bytes via server-side encode/hex (the binding's
+// getField returns strings via String::NewFromUtf8, which drops
+// invalid UTF-8 byte sequences that arise from raw bytes 128-255).
+assertTrue(cur.sendQuery(
+	"select encode(col1,'hex') from testtable"));
+var expectedhex="";
+for (var i=0; i<buffer.length; i++) {
+	expectedhex+=("0"+buffer.charCodeAt(i).toString(16)).slice(-2);
+}
+assertEqInt(cur.getFieldLength(0,0),expectedhex.length);
+assertEqStr(String(cur.getField(0,0)).toLowerCase(),expectedhex);
 assertTrue(cur.sendQuery("drop table testtable"));
 console.log("");
 

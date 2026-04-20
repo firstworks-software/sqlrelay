@@ -1117,7 +1117,7 @@ var day=cur.getOutputBindDateDay("4");
 var hour=cur.getOutputBindDateHour("4");
 var minute=cur.getOutputBindDateMinute("4");
 var second=cur.getOutputBindDateSecond("4");
-var microsecond=cur.getOutputBindDateMicroSecond("4");
+var microsecond=cur.getOutputBindDateMicrosecond("4");
 var tz=cur.getOutputBindDateTz("4");
 var isnegative=cur.getOutputBindDateIsNegative("4");
 assertEqInt(numvar,1);
@@ -1446,9 +1446,19 @@ for (var i=0; i<buffer.length; i++) {
 }
 querystr+="'))";
 assertTrue(cur.sendQuery(querystr));
-assertTrue(cur.sendQuery("select col1 from testtable"));
-assertEqInt(cur.getFieldLength(0,0),buffer.length);
-assertEqInt((cur.getField(0,0)===buffer)?0:1,0);
+// Verify the raw bytes round-tripped by asking the server to hex-encode
+// the blob. (Can't byte-compare the returned string directly — the Node.js
+// sqlrelay binding returns strings via String::NewFromUtf8, which drops
+// invalid UTF-8 sequences that arise from raw bytes 128-255.)
+assertTrue(cur.sendQuery(
+	"select hex(cast(col1 as varchar(256) for bit data)) "+
+	"from testtable"));
+var expectedhex="";
+for (var i=0; i<buffer.length; i++) {
+	expectedhex+=("0"+buffer.charCodeAt(i).toString(16)).slice(-2);
+}
+assertEqInt(cur.getFieldLength(0,0),expectedhex.length);
+assertEqStr(String(cur.getField(0,0)).toLowerCase(),expectedhex);
 assertTrue(cur.sendQuery("drop table testtable"));
 console.log("");
 

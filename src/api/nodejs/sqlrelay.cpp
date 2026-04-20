@@ -7,6 +7,7 @@
 #endif
 #include <v8.h>
 #include <node.h>
+#include <node_buffer.h>
 #include <node_object_wrap.h>
 
 using namespace v8;
@@ -27,7 +28,9 @@ using namespace node;
 	#define resetConstructor(constructor,tpl) constructor.Reset(isolate,GetFunction(tpl))
 
 	#define returnObject(object) args.GetReturnValue().Set(object)
-	#define returnString(result) if (result) { args.GetReturnValue().Set(newString(result)); } else { args.GetReturnValue().Set(Null(isolate)); }
+	#define nullValue() Null(isolate)
+	#define returnNull() args.GetReturnValue().Set(nullValue())
+	#define returnString(result) if (result) { args.GetReturnValue().Set(newString(result)); } else { returnNull(); }
 	#define returnBoolean(result) args.GetReturnValue().Set(newBoolean(result))
 	#define returnInteger(result) args.GetReturnValue().Set(newInteger(result))
 	#define returnUnsignedInteger(result) args.GetReturnValue().Set(newUnsignedInteger(result))
@@ -76,6 +79,8 @@ using namespace node;
 	#define resetConstructor(constructor,tpl)
 
 	#define returnObject(object) return localscope.Close(object)
+	#define nullValue() Null()
+	#define returnNull() return localscope.Close(nullValue())
 	#define returnBoolean(result) return localscope.Close(Boolean::New(result))
 	#define returnString(result) if (result) { return localscope.Close(String::New(result)); } else { return localscope.Close(Null()); }
 	#define returnInteger(result) return localscope.Close(newInteger(result))
@@ -1310,15 +1315,17 @@ RET SQLRCursor::New(const ARGS &args) {
 
 	if (args.IsConstructCall()) {
 
-		checkArgCount(args,1);
-
-		// invoked as constructor: new SQLRCursor(...)
-		sqlrconnection	*sqlrcon=
-			node::ObjectWrap::Unwrap<SQLRConnection>(
-						toObject(args[0]))->sqlrc;
-
+		// invoked as constructor: new SQLRCursor(connection)
+		// or (internally) new SQLRCursor() to wrap a bind cursor
 		SQLRCursor	*obj=new SQLRCursor();
-		obj->sqlrc=new sqlrcursor(sqlrcon,true);
+		if (args.Length()==1) {
+			sqlrconnection	*sqlrcon=
+				node::ObjectWrap::Unwrap<SQLRConnection>(
+						toObject(args[0]))->sqlrc;
+			obj->sqlrc=new sqlrcursor(sqlrcon,true);
+		} else {
+			obj->sqlrc=NULL;
+		}
 		obj->Wrap(args.This());
 		returnObject(args.This());
 
@@ -1586,10 +1593,22 @@ RET SQLRCursor::sendQuery(const ARGS &args) {
 	bool	result=false;
 
 	if (args.Length()==1) {
-		result=sqlrcur(args)->sendQuery(toString(args[0]));
+		if (node::Buffer::HasInstance(args[0])) {
+			result=sqlrcur(args)->sendQuery(
+				node::Buffer::Data(args[0]),
+				node::Buffer::Length(args[0]));
+		} else {
+			result=sqlrcur(args)->sendQuery(toString(args[0]));
+		}
 	} else if (args.Length()==2) {
-		result=sqlrcur(args)->sendQuery(toString(args[0]),
-						toUint32(args[1]));
+		if (node::Buffer::HasInstance(args[0])) {
+			result=sqlrcur(args)->sendQuery(
+				node::Buffer::Data(args[0]),
+				toUint32(args[1]));
+		} else {
+			result=sqlrcur(args)->sendQuery(toString(args[0]),
+							toUint32(args[1]));
+		}
 	} else {
 		throwWrongNumberOfArguments();
 	}
@@ -1722,40 +1741,49 @@ RET SQLRCursor::substitutions(const ARGS &args) {
 	} else if (args.Length()==4) {
 
 		if (args[0]->IsArray() && args[1]->IsArray() &&
-			args[2]->IsArray() && args[3]->IsArray()) {
-			
+			(args[2]->IsArray() || args[2]->IsNull()) &&
+			(args[3]->IsArray() || args[3]->IsNull())) {
+
 			Handle<Array>	vars=toArray(args[0]);
 			Handle<Array>	vals=toArray(args[1]);
-			Handle<Array>	precs=toArray(args[2]);
-			Handle<Array>	scales=toArray(args[3]);
+			bool		haveprecs=args[2]->IsArray();
+			bool		havescales=args[3]->IsArray();
+			Handle<Array>	precs;
+			Handle<Array>	scales;
+			if (haveprecs) {
+				precs=toArray(args[2]);
+			}
+			if (havescales) {
+				scales=toArray(args[3]);
+			}
 
-			if (vars->Length()) {
+			for (uint32_t i=0; i<vars->Length(); i++) {
 
-				Local<Value>	first=
-					get(vals,newInteger(0));
+				Local<Value>	val=
+					get(vals,newInteger(i));
 
-				if (first->IsNumber()) {
+				if (val->IsString() || val->IsNull()) {
 
-					for (uint32_t i=0;
-						i<vars->Length(); i++) {
+					sqlrcur(args)->substitution(
+						toString(get(vars,
+						newInteger(i))),
+						toString(val));
 
-						sqlrcur(args)->substitution(
+				} else if (val->IsNumber()) {
 
-							toString(get(vars,
-							newInteger(i))),
+					uint32_t	prec=haveprecs?
+						toUint32(get(precs,
+						newInteger(i))):0;
+					uint32_t	scale=havescales?
+						toUint32(get(scales,
+						newInteger(i))):0;
 
-							toNumber(
-							get(vals,
-							newInteger(i))),
-
-							toUint32(
-							get(precs,
-							newInteger(i))),
-
-							toUint32(
-							get(scales,
-							newInteger(i))));
-					}
+					sqlrcur(args)->substitution(
+						toString(get(vars,
+						newInteger(i))),
+						toNumber(val),
+						prec,
+						scale);
 
 				} else {
 					throwInvalidArgumentType();
@@ -2183,10 +2211,15 @@ RET SQLRCursor::getOutputBindCursor(const ARGS &args) {
 
 	checkArgCount(args,1);
 
-	SQLRCursor	*obj=new SQLRCursor();
+	// Create a new SQLRCursor JS object (via the zero-arg constructor
+	// branch in SQLRCursor::New), then point its sqlrc at the bind
+	// cursor. This avoids clobbering the caller's wrapping, which
+	// matters when a stored procedure returns more than one cursor.
+	Local<Function>	cons=newLocalFunction(constructor);
+	Local<Object>	instance=newInstance(0,NULL);
+	SQLRCursor	*obj=node::ObjectWrap::Unwrap<SQLRCursor>(instance);
 	obj->sqlrc=sqlrcur(args)->getOutputBindCursor(toString(args[0]),true);
-	obj->Wrap(args.This());
-	returnObject(args.This());
+	returnObject(instance);
 }
 
 RET SQLRCursor::getOutputBindDateYear(const ARGS &args) {
@@ -3226,11 +3259,19 @@ RET SQLRCursor::getRow(const ARGS &args) {
 	checkArgCount(args,1);
 
 	const char * const *fields=sqlrcur(args)->getRow(toInteger(args[0]));
+	if (!fields) {
+		returnNull();
+		return;
+	}
 	uint32_t	colcount=sqlrcur(args)->colCount();
 
 	Handle<Array>	result=newArray(colcount);
 	for (uint32_t i=0; i<colcount; i++) {
-		set(result,newInteger(i),newString(fields[i]));
+		if (fields[i]) {
+			set(result,newInteger(i),newString(fields[i]));
+		} else {
+			set(result,newInteger(i),nullValue());
+		}
 	}
 
 	returnObject(result);
@@ -3244,6 +3285,10 @@ RET SQLRCursor::getRowLengths(const ARGS &args) {
 
 	uint32_t	*lengths=sqlrcur(args)->getRowLengths(
 						toInteger(args[0]));
+	if (!lengths) {
+		returnNull();
+		return;
+	}
 	uint32_t	colcount=sqlrcur(args)->colCount();
 
 	Handle<Array>	result=newArray(colcount);

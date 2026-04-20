@@ -3,19 +3,18 @@
 
 var sqlrelay=require("sqlrelay");
 var {
-    setConnection, setCursor,
-    setSecondConnection, setSecondCursor,
-    assertEqStr, assertEqStrLen,
-    assertEqInt, assertEqDbl, assertEqual,
-    assertTrue, assertFalse,
-    getStatus, reportTestStatus
+	setConnection, setCursor,
+	setSecondConnection, setSecondCursor,
+	assertEqStr, assertEqStrLen,
+	assertEqInt, assertEqDbl, assertEqual,
+	assertTrue, assertFalse,
+	getStatus, reportTestStatus
 }=require("./asserts.js");
-
 
 // hostname
 var hostname=require("os").hostname();
 var dot=hostname.indexOf(".");
-if (dot!==-1) {
+if (dot>0) {
 	hostname=hostname.substring(0,dot);
 }
 
@@ -32,31 +31,31 @@ con.enableKerberos(null,null,null);
 // identify
 console.log("IDENTIFY: ");
 assertEqStr(con.identify(),"oracle");
-console.log();
+console.log("");
 
 
 // ping
 console.log("PING: ");
 assertTrue(con.ping());
-console.log();
+console.log("");
 
 
 // bind format
 console.log("BIND FORMAT: ");
 assertEqStr(con.bindFormat(),":*");
-console.log();
+console.log("");
 
 
 // nextval format
 console.log("NEXTVAL FORMAT: ");
 assertEqStr(con.nextvalFormat(),"%s.nextval");
-console.log();
+console.log("");
 
 
 // isolation levels
 console.log("ISOLATION LEVELS: ");
 var isolationlevels=["READ COMMITTED","SERIALIZABLE"];
-for (var i=0;i<isolationlevels.length;i++) {
+for (var i=0; i<isolationlevels.length; i++) {
 	var il=isolationlevels[i];
 	// oracle requires the isolation level to
 	// be the first query of the transaction
@@ -65,12 +64,12 @@ for (var i=0;i<isolationlevels.length;i++) {
 	// have permisisons to read from sys.v_$session and
 	// sys.v_$transaction
 	assertTrue(con.setIsolationLevel(il));
-	console.log();
+	console.log("");
 }
 // reset to the default isolation level
 assertTrue(con.commit());
 assertTrue(con.setIsolationLevel(isolationlevels[0]));
-console.log();
+console.log("");
 
 
 // create testtable
@@ -85,7 +84,7 @@ assertTrue(cur.sendQuery(
 	"	testlong long, "+
 	"	testclob clob, "+
 	"	testblob blob)"));
-console.log();
+console.log("");
 
 
 // insert
@@ -101,13 +100,13 @@ assertTrue(cur.sendQuery(
 	"	'testlong1', "+
 	"	'testclob1', "+
 	"	empty_blob())"));
-console.log();
+console.log("");
 
 
 // affected rows
 console.log("AFFECTED ROWS: ");
 assertEqInt(cur.affectedRows(),1);
-console.log();
+console.log("");
 
 
 // input bind by position
@@ -141,20 +140,19 @@ cur.inputBind("5","testlong3");
 cur.inputBindClob("6","testclob3","testclob3".length);
 cur.inputBindBlob("7","testblob3","testblob3".length);
 assertTrue(cur.executeQuery());
-console.log();
+console.log("");
 
 
 // array of input binds by position
 console.log("ARRAY OF INPUT BINDS BY POSITION: ");
 cur.clearBinds();
 var bindvars=["1","2","3","4","5"];
-var bindvals=["4","testchar4",
-			"testvarchar4","01-JAN-2004","testlong4"];
+var bindvals=["4","testchar4","testvarchar4","01-JAN-2004","testlong4"];
 cur.inputBinds(bindvars,bindvals);
 cur.inputBindClob("6","testclob4","testclob4".length);
 cur.inputBindBlob("7","testblob4","testblob4".length);
 assertTrue(cur.executeQuery());
-console.log();
+console.log("");
 
 
 // input bind by position with validation
@@ -183,20 +181,20 @@ cur.inputBind("var5","testlong6");
 cur.inputBindClob("var6","testclob6","testclob6".length);
 cur.inputBindBlob("var7","testblob6","testblob6".length);
 assertTrue(cur.executeQuery());
-console.log();
+console.log("");
 
 
 // array of input binds by name
 console.log("ARRAY OF INPUT BINDS BY NAME: ");
 cur.clearBinds();
 var arraybindvars=["var1","var2","var3","var4","var5"];
-var arraybindvals=["7","testchar7",
-			"testvarchar7","01-JAN-2007","testlong7"];
+var arraybindvals=["7","testchar7","testvarchar7",
+			"01-JAN-2007","testlong7"];
 cur.inputBinds(arraybindvars,arraybindvals);
 cur.inputBindClob("var6","testclob7","testclob7".length);
 cur.inputBindBlob("var7","testblob7","testblob7".length);
 assertTrue(cur.executeQuery());
-console.log();
+console.log("");
 
 
 // input bind by name with validation
@@ -212,7 +210,7 @@ cur.inputBindBlob("var7","testblob8","testblob8".length);
 cur.inputBind("var9","junkvalue");
 cur.validateBinds();
 assertTrue(cur.executeQuery());
-console.log();
+console.log("");
 
 
 // select
@@ -224,13 +222,13 @@ assertTrue(cur.sendQuery(
 	"	testtable "+
 	"order by "+
 	"	testnumber"));
-console.log();
+console.log("");
 
 
 // column count
 console.log("COLUMN COUNT: ");
 assertEqInt(cur.colCount(),7);
-console.log();
+console.log("");
 
 
 // column names
@@ -250,7 +248,7 @@ assertEqStr(cols[3],"TESTDATE");
 assertEqStr(cols[4],"TESTLONG");
 assertEqStr(cols[5],"TESTCLOB");
 assertEqStr(cols[6],"TESTBLOB");
-console.log();
+console.log("");
 
 
 // column types
@@ -269,7 +267,7 @@ assertEqStr(cur.getColumnType(5),"CLOB");
 assertEqStr(cur.getColumnType("TESTCLOB"),"CLOB");
 assertEqStr(cur.getColumnType(6),"BLOB");
 assertEqStr(cur.getColumnType("TESTBLOB"),"BLOB");
-console.log();
+console.log("");
 
 
 // column length
@@ -288,7 +286,7 @@ assertEqInt(cur.getColumnLength(5),0);
 assertEqInt(cur.getColumnLength("TESTCLOB"),0);
 assertEqInt(cur.getColumnLength(6),0);
 assertEqInt(cur.getColumnLength("TESTBLOB"),0);
-console.log();
+console.log("");
 
 
 // longest column
@@ -307,31 +305,31 @@ assertEqInt(cur.getLongest(5),9);
 assertEqInt(cur.getLongest("TESTCLOB"),9);
 assertEqInt(cur.getLongest(6),9);
 assertEqInt(cur.getLongest("TESTBLOB"),9);
-console.log();
+console.log("");
 
 
 // row count
 console.log("ROW COUNT: ");
 assertEqInt(cur.rowCount(),8);
-console.log();
+console.log("");
 
 
 // total rows
 console.log("TOTAL ROWS: ");
 assertEqInt(cur.totalRows(),0);
-console.log();
+console.log("");
 
 
 // first row index
 console.log("FIRST ROW INDEX: ");
 assertEqInt(cur.firstRowIndex(),0);
-console.log();
+console.log("");
 
 
 // end of result set
 console.log("END OF RESULT SET: ");
 assertTrue(cur.endOfResultSet());
-console.log();
+console.log("");
 
 
 // fields by index
@@ -344,7 +342,7 @@ assertEqStr(cur.getField(0,3),"01-JAN-01");
 assertEqStr(cur.getField(0,4),"testlong1");
 assertEqStr(cur.getField(0,5),"testclob1");
 assertEqStr(cur.getField(0,6),"");
-console.log();
+console.log("");
 assertEqStr(cur.getField(7,0),"8");
 assertEqStr(cur.getField(7,1),
 		"testchar8                               ");
@@ -353,7 +351,7 @@ assertEqStr(cur.getField(7,3),"01-JAN-08");
 assertEqStr(cur.getField(7,4),"testlong8");
 assertEqStr(cur.getField(7,5),"testclob8");
 assertEqStr(cur.getField(7,6),"testblob8");
-console.log();
+console.log("");
 
 
 // field lengths by index
@@ -365,7 +363,7 @@ assertEqInt(cur.getFieldLength(0,3),9);
 assertEqInt(cur.getFieldLength(0,4),9);
 assertEqInt(cur.getFieldLength(0,5),9);
 assertEqInt(cur.getFieldLength(0,6),0);
-console.log();
+console.log("");
 assertEqInt(cur.getFieldLength(7,0),1);
 assertEqInt(cur.getFieldLength(7,1),40);
 assertEqInt(cur.getFieldLength(7,2),12);
@@ -373,7 +371,7 @@ assertEqInt(cur.getFieldLength(7,3),9);
 assertEqInt(cur.getFieldLength(7,4),9);
 assertEqInt(cur.getFieldLength(7,5),9);
 assertEqInt(cur.getFieldLength(7,6),9);
-console.log();
+console.log("");
 
 
 // fields by name
@@ -386,7 +384,7 @@ assertEqStr(cur.getField(0,"TESTDATE"),"01-JAN-01");
 assertEqStr(cur.getField(0,"TESTLONG"),"testlong1");
 assertEqStr(cur.getField(0,"TESTCLOB"),"testclob1");
 assertEqStr(cur.getField(0,"TESTBLOB"),"");
-console.log();
+console.log("");
 assertEqStr(cur.getField(7,"TESTNUMBER"),"8");
 assertEqStr(cur.getField(7,"TESTCHAR"),
 		"testchar8                               ");
@@ -395,7 +393,7 @@ assertEqStr(cur.getField(7,"TESTDATE"),"01-JAN-08");
 assertEqStr(cur.getField(7,"TESTLONG"),"testlong8");
 assertEqStr(cur.getField(7,"TESTCLOB"),"testclob8");
 assertEqStr(cur.getField(7,"TESTBLOB"),"testblob8");
-console.log();
+console.log("");
 
 
 // field lengths by name
@@ -407,7 +405,7 @@ assertEqInt(cur.getFieldLength(0,"TESTDATE"),9);
 assertEqInt(cur.getFieldLength(0,"TESTLONG"),9);
 assertEqInt(cur.getFieldLength(0,"TESTCLOB"),9);
 assertEqInt(cur.getFieldLength(0,"TESTBLOB"),0);
-console.log();
+console.log("");
 assertEqInt(cur.getFieldLength(7,"TESTNUMBER"),1);
 assertEqInt(cur.getFieldLength(7,"TESTCHAR"),40);
 assertEqInt(cur.getFieldLength(7,"TESTVARCHAR"),12);
@@ -415,7 +413,7 @@ assertEqInt(cur.getFieldLength(7,"TESTDATE"),9);
 assertEqInt(cur.getFieldLength(7,"TESTLONG"),9);
 assertEqInt(cur.getFieldLength(7,"TESTCLOB"),9);
 assertEqInt(cur.getFieldLength(7,"TESTBLOB"),9);
-console.log();
+console.log("");
 
 
 // fields by array
@@ -428,7 +426,7 @@ assertEqStr(fields[3],"01-JAN-01");
 assertEqStr(fields[4],"testlong1");
 assertEqStr(fields[5],"testclob1");
 assertEqStr(fields[6],"");
-console.log();
+console.log("");
 
 
 // field lengths by array
@@ -441,7 +439,7 @@ assertEqInt(fieldlens[3],9);
 assertEqInt(fieldlens[4],9);
 assertEqInt(fieldlens[5],9);
 assertEqInt(fieldlens[6],0);
-console.log();
+console.log("");
 
 
 // result set buffer size
@@ -456,7 +454,7 @@ assertTrue(cur.sendQuery(
 	"order by "+
 	"	testnumber"));
 assertEqInt(cur.getResultSetBufferSize(),2);
-console.log();
+console.log("");
 assertEqInt(cur.firstRowIndex(),0);
 assertFalse(cur.endOfResultSet());
 assertEqInt(cur.rowCount(),2);
@@ -468,17 +466,17 @@ assertFalse(cur.endOfResultSet());
 assertEqInt(cur.rowCount(),4);
 assertEqStr(cur.getField(6,0),"7");
 assertEqStr(cur.getField(7,0),"8");
-console.log();
+console.log("");
 assertEqInt(cur.firstRowIndex(),6);
 assertFalse(cur.endOfResultSet());
 assertEqInt(cur.rowCount(),8);
 assertEqStr(cur.getField(8,0),null);
-console.log();
+console.log("");
 assertEqInt(cur.firstRowIndex(),8);
 assertTrue(cur.endOfResultSet());
 assertEqInt(cur.rowCount(),8);
 cur.setResultSetBufferSize(0);
-console.log();
+console.log("");
 
 
 // dont get column info
@@ -505,7 +503,7 @@ assertTrue(cur.sendQuery(
 assertEqStr(cur.getColumnName(0),"TESTNUMBER");
 assertEqInt(cur.getColumnLength(0),22);
 assertEqStr(cur.getColumnType(0),"NUMBER");
-console.log();
+console.log("");
 
 
 // suspended session
@@ -522,7 +520,7 @@ assertTrue(con.suspendSession());
 var port=con.getConnectionPort();
 var socket=con.getConnectionSocket();
 assertTrue(con.resumeSession(port,socket));
-console.log();
+console.log("");
 assertEqStr(cur.getField(0,0),"1");
 assertEqStr(cur.getField(1,0),"2");
 assertEqStr(cur.getField(2,0),"3");
@@ -531,7 +529,7 @@ assertEqStr(cur.getField(4,0),"5");
 assertEqStr(cur.getField(5,0),"6");
 assertEqStr(cur.getField(6,0),"7");
 assertEqStr(cur.getField(7,0),"8");
-console.log();
+console.log("");
 assertTrue(cur.sendQuery(
 	"select "+
 	"	* "+
@@ -544,7 +542,7 @@ assertTrue(con.suspendSession());
 port=con.getConnectionPort();
 socket=con.getConnectionSocket();
 assertTrue(con.resumeSession(port,socket));
-console.log();
+console.log("");
 assertEqStr(cur.getField(0,0),"1");
 assertEqStr(cur.getField(1,0),"2");
 assertEqStr(cur.getField(2,0),"3");
@@ -553,7 +551,7 @@ assertEqStr(cur.getField(4,0),"5");
 assertEqStr(cur.getField(5,0),"6");
 assertEqStr(cur.getField(6,0),"7");
 assertEqStr(cur.getField(7,0),"8");
-console.log();
+console.log("");
 assertTrue(cur.sendQuery(
 	"select "+
 	"	* "+
@@ -566,7 +564,7 @@ assertTrue(con.suspendSession());
 port=con.getConnectionPort();
 socket=con.getConnectionSocket();
 assertTrue(con.resumeSession(port,socket));
-console.log();
+console.log("");
 assertEqStr(cur.getField(0,0),"1");
 assertEqStr(cur.getField(1,0),"2");
 assertEqStr(cur.getField(2,0),"3");
@@ -575,7 +573,7 @@ assertEqStr(cur.getField(4,0),"5");
 assertEqStr(cur.getField(5,0),"6");
 assertEqStr(cur.getField(6,0),"7");
 assertEqStr(cur.getField(7,0),"8");
-console.log();
+console.log("");
 
 
 // suspended result set
@@ -596,22 +594,22 @@ port=con.getConnectionPort();
 socket=con.getConnectionSocket();
 assertTrue(con.resumeSession(port,socket));
 assertTrue(cur.resumeResultSet(id));
-console.log();
+console.log("");
 assertEqInt(cur.firstRowIndex(),4);
 assertFalse(cur.endOfResultSet());
 assertEqInt(cur.rowCount(),6);
 assertEqStr(cur.getField(7,0),"8");
-console.log();
+console.log("");
 assertEqInt(cur.firstRowIndex(),6);
 assertFalse(cur.endOfResultSet());
 assertEqInt(cur.rowCount(),8);
 assertEqStr(cur.getField(8,0),null);
-console.log();
+console.log("");
 assertEqInt(cur.firstRowIndex(),8);
 assertTrue(cur.endOfResultSet());
 assertEqInt(cur.rowCount(),8);
 cur.setResultSetBufferSize(0);
-console.log();
+console.log("");
 
 
 // cached result set
@@ -630,13 +628,13 @@ assertEqStr(filename,"cachefile1");
 cur.cacheOff();
 assertTrue(cur.openCachedResultSet(filename));
 assertEqStr(cur.getField(7,0),"8");
-console.log();
+console.log("");
 
 
 // column count for cached result set
 console.log("COLUMN COUNT FOR CACHED RESULT SET: ");
 assertEqInt(cur.colCount(),7);
-console.log();
+console.log("");
 
 
 // column names for cached result set
@@ -656,7 +654,7 @@ assertEqStr(cols[3],"TESTDATE");
 assertEqStr(cols[4],"TESTLONG");
 assertEqStr(cols[5],"TESTCLOB");
 assertEqStr(cols[6],"TESTBLOB");
-console.log();
+console.log("");
 
 
 // cached result set with result set buffer size
@@ -678,7 +676,7 @@ assertTrue(cur.openCachedResultSet(filename));
 assertEqStr(cur.getField(7,0),"8");
 assertEqStr(cur.getField(8,0),null);
 cur.setResultSetBufferSize(0);
-console.log();
+console.log("");
 
 
 // from one cache file to another
@@ -689,7 +687,7 @@ cur.cacheOff();
 assertTrue(cur.openCachedResultSet("cachefile2"));
 assertEqStr(cur.getField(7,0),"8");
 assertEqStr(cur.getField(8,0),null);
-console.log();
+console.log("");
 
 
 // from one cache file to another with result set buffer size
@@ -703,7 +701,7 @@ assertTrue(cur.openCachedResultSet("cachefile2"));
 assertEqStr(cur.getField(7,0),"8");
 assertEqStr(cur.getField(8,0),null);
 cur.setResultSetBufferSize(0);
-console.log();
+console.log("");
 
 
 // cached result set with suspend and result set buffer size
@@ -727,30 +725,30 @@ cur.suspendResultSet();
 assertTrue(con.suspendSession());
 port=con.getConnectionPort();
 socket=con.getConnectionSocket();
-console.log();
+console.log("");
 assertTrue(con.resumeSession(port,socket));
 assertTrue(cur.resumeCachedResultSet(id,filename));
-console.log();
+console.log("");
 assertEqInt(cur.firstRowIndex(),4);
 assertFalse(cur.endOfResultSet());
 assertEqInt(cur.rowCount(),6);
 assertEqStr(cur.getField(7,0),"8");
-console.log();
+console.log("");
 assertEqInt(cur.firstRowIndex(),6);
 assertFalse(cur.endOfResultSet());
 assertEqInt(cur.rowCount(),8);
 assertEqStr(cur.getField(8,0),null);
-console.log();
+console.log("");
 assertEqInt(cur.firstRowIndex(),8);
 assertTrue(cur.endOfResultSet());
 assertEqInt(cur.rowCount(),8);
 cur.cacheOff();
-console.log();
+console.log("");
 assertTrue(cur.openCachedResultSet(filename));
 assertEqStr(cur.getField(7,0),"8");
 assertEqStr(cur.getField(8,0),null);
 cur.setResultSetBufferSize(0);
-console.log();
+console.log("");
 
 
 // finished suspended session
@@ -777,7 +775,7 @@ assertEqStr(cur.getField(4,0),null);
 assertEqStr(cur.getField(5,0),null);
 assertEqStr(cur.getField(6,0),null);
 assertEqStr(cur.getField(7,0),null);
-console.log();
+console.log("");
 
 
 // nested selects
@@ -786,30 +784,26 @@ cur.setResultSetBufferSize(1);
 assertTrue(cur.sendQuery("select * from testtable"));
 for (var i=0; cur.getRow(i); i++) {
 	var secondcur=new sqlrelay.SQLRCursor(con);
-	setSecondCursor(secondcur);
 	secondcur.setResultSetBufferSize(1);
-	assertTrue(secondcur.sendQuery(
-			"select * from testtable"));
+	assertTrue(secondcur.sendQuery("select * from testtable"));
 	secondcur.closeResultSet();
 }
 cur.setResultSetBufferSize(0);
-console.log();
+console.log("");
 
 
 // commit and rollback
 console.log("COMMIT AND ROLLBACK: ");
 var secondcon=new sqlrelay.SQLRConnection("sqlrelay",9000,"/tmp/test.socket",
-						null,null,0,1);
+					null,null,0,1);
 setSecondConnection(secondcon);
 var secondcur=new sqlrelay.SQLRCursor(secondcon);
 setSecondCursor(secondcur);
 secondcon.enableKerberos(null,null,null);
-assertTrue(secondcur.sendQuery(
-		"select count(*) from testtable"));
+assertTrue(secondcur.sendQuery("select count(*) from testtable"));
 assertEqStr(secondcur.getField(0,0),"0");
 assertTrue(con.commit());
-assertTrue(secondcur.sendQuery(
-		"select count(*) from testtable"));
+assertTrue(secondcur.sendQuery("select count(*) from testtable"));
 assertEqStr(secondcur.getField(0,0),"8");
 assertTrue(cur.sendQuery(
 	"insert into "+
@@ -823,8 +817,7 @@ assertTrue(cur.sendQuery(
 	"	'testclob10', "+
 	"	NULL)"));
 assertTrue(con.rollback());
-assertTrue(secondcur.sendQuery(
-		"select count(*) from testtable"));
+assertTrue(secondcur.sendQuery("select count(*) from testtable"));
 assertEqStr(secondcur.getField(0,0),"8");
 assertTrue(con.autoCommitOn());
 assertTrue(cur.sendQuery(
@@ -838,13 +831,12 @@ assertTrue(cur.sendQuery(
 	"	'testlong10', "+
 	"	'testclob10', "+
 	"	NULL)"));
-assertTrue(secondcur.sendQuery(
-		"select count(*) from testtable"));
+assertTrue(secondcur.sendQuery("select count(*) from testtable"));
 assertEqStr(secondcur.getField(0,0),"9");
 secondcon.endSession();
 assertTrue(con.autoCommitOff());
 assertTrue(cur.sendQuery("drop table testtable"));
-console.log();
+console.log("");
 
 
 // individual substitutions
@@ -863,39 +855,39 @@ assertTrue(cur.executeQuery());
 assertEqStr(cur.getField(0,0),"1");
 assertEqStr(cur.getField(0,1),"hello");
 assertEqStr(cur.getField(0,2),"10.5556");
-console.log();
+console.log("");
 
 
 // array substitutions
 console.log("ARRAY SUBSTITUTIONS: ");
 var subvars=["var1","var2","var3"];
-var subvallongs=[1,2,3];
-var subvalstrings=["hi","hello","bye"];
-var subvaldoubles=[10.55,10.556,10.5556];
-var precs=[4,5,6];
-var scales=[2,3,4];
 cur.prepareQuery("select $(var1),$(var2),$(var3) from dual");
+var subvallongs=[1,2,3];
 cur.substitutions(subvars,subvallongs);
 assertTrue(cur.executeQuery());
 assertEqStr(cur.getField(0,0),"1");
 assertEqStr(cur.getField(0,1),"2");
 assertEqStr(cur.getField(0,2),"3");
-console.log();
+console.log("");
 cur.prepareQuery(
 		"select '$(var1)','$(var2)','$(var3)' from dual");
+var subvalstrings=["hi","hello","bye"];
 cur.substitutions(subvars,subvalstrings);
 assertTrue(cur.executeQuery());
 assertEqStr(cur.getField(0,0),"hi");
 assertEqStr(cur.getField(0,1),"hello");
 assertEqStr(cur.getField(0,2),"bye");
-console.log();
+console.log("");
 cur.prepareQuery("select $(var1),$(var2),$(var3) from dual");
+var subvaldoubles=[10.55,10.556,10.5556];
+var precs=[4,5,6];
+var scales=[2,3,4];
 cur.substitutions(subvars,subvaldoubles,precs,scales);
 assertTrue(cur.executeQuery());
 assertEqStr(cur.getField(0,0),"10.55");
 assertEqStr(cur.getField(0,1),"10.556");
 assertEqStr(cur.getField(0,2),"10.5556");
-console.log();
+console.log("");
 
 
 // nulls as nulls
@@ -910,7 +902,7 @@ assertTrue(cur.sendQuery("select NULL,1,NULL from dual"));
 assertEqStr(cur.getField(0,0),"");
 assertEqStr(cur.getField(0,1),"1");
 assertEqStr(cur.getField(0,2),"");
-console.log();
+console.log("");
 
 
 // null and empty lobs
@@ -943,7 +935,7 @@ assertEqStr(cur.getField(0,2),"");
 assertEqStr(cur.getField(0,3),null);
 cur.getNullsAsEmptyStrings();
 assertTrue(cur.sendQuery("drop table testtable"));
-console.log();
+console.log("");
 
 
 // long lobs
@@ -955,10 +947,7 @@ cur.sendQuery(
 	"	testblob blob)");
 cur.prepareQuery(
 		"insert into testtable values (:clobval,:blobval)");
-var largebuffer="";
-for (var i=0; i<8192; i++) {
-	largebuffer=largebuffer+"C";
-}
+var largebuffer="C".repeat(8192);
 cur.inputBindClob("clobval",largebuffer,largebuffer.length);
 cur.inputBindBlob("blobval",largebuffer,largebuffer.length);
 assertTrue(cur.executeQuery());
@@ -966,10 +955,9 @@ cur.sendQuery("select * from testtable");
 assertEqInt(cur.getFieldLength(0,"TESTCLOB"),8192);
 assertEqStr(cur.getField(0,"TESTCLOB"),largebuffer);
 assertEqInt(cur.getFieldLength(0,"TESTBLOB"),8192);
-assertEqStrLen(cur.getField(0,"TESTBLOB"),
-		largebuffer,8192);
+assertEqStrLen(cur.getField(0,"TESTBLOB"),largebuffer,8192);
 assertTrue(cur.sendQuery("drop table testtable"));
-console.log();
+console.log("");
 
 
 // output bind by position
@@ -999,7 +987,7 @@ var day=cur.getOutputBindDateDay("4");
 var hour=cur.getOutputBindDateHour("4");
 var minute=cur.getOutputBindDateMinute("4");
 var second=cur.getOutputBindDateSecond("4");
-var microsecond=cur.getOutputBindDateMicroSecond("4");
+var microsecond=cur.getOutputBindDateMicrosecond("4");
 var tz=cur.getOutputBindDateTz("4");
 var isnegative=cur.getOutputBindDateIsNegative("4");
 var nullvar=cur.getOutputBindString("5");
@@ -1017,7 +1005,7 @@ assertEqStr(tz,"");
 assertFalse(isnegative);
 assertEqStr(nullvar,null);
 cur.getNullsAsEmptyStrings();
-console.log();
+console.log("");
 
 
 // output bind by name
@@ -1039,7 +1027,7 @@ day=cur.getOutputBindDateDay("datevar");
 hour=cur.getOutputBindDateHour("datevar");
 minute=cur.getOutputBindDateMinute("datevar");
 second=cur.getOutputBindDateSecond("datevar");
-microsecond=cur.getOutputBindDateMicroSecond("datevar");
+microsecond=cur.getOutputBindDateMicrosecond("datevar");
 tz=cur.getOutputBindDateTz("datevar");
 isnegative=cur.getOutputBindDateIsNegative("datevar");
 assertEqInt(numvar,1);
@@ -1057,7 +1045,7 @@ assertFalse(isnegative);
 nullvar=cur.getOutputBindString("nullvar");
 assertEqStr(nullvar,null);
 cur.getNullsAsEmptyStrings();
-console.log();
+console.log("");
 
 
 // output bind by name with validation
@@ -1081,7 +1069,7 @@ day=cur.getOutputBindDateDay("datevar");
 hour=cur.getOutputBindDateHour("datevar");
 minute=cur.getOutputBindDateMinute("datevar");
 second=cur.getOutputBindDateSecond("datevar");
-microsecond=cur.getOutputBindDateMicroSecond("datevar");
+microsecond=cur.getOutputBindDateMicrosecond("datevar");
 tz=cur.getOutputBindDateTz("datevar");
 isnegative=cur.getOutputBindDateIsNegative("datevar");
 assertEqInt(numvar,1);
@@ -1099,7 +1087,7 @@ assertFalse(isnegative);
 nullvar=cur.getOutputBindString("nullvar");
 assertEqStr(nullvar,null);
 cur.getNullsAsEmptyStrings();
-console.log();
+console.log("");
 
 
 // lob output bind
@@ -1130,22 +1118,19 @@ assertEqInt(clobvarlength,5);
 assertEqStrLen(blobvar,"hello",5);
 assertEqInt(blobvarlength,5);
 assertTrue(cur.sendQuery("drop table testtable"));
-console.log();
+console.log("");
 
 
 // long output bind
 console.log("LONG OUTPUT BIND: ");
-largebuffer="";
-for (var i=0; i<8192; i++) {
-	largebuffer=largebuffer+"C";
-}
+largebuffer="C".repeat(8192);
 var query="begin :bindval:='"+largebuffer+"'; end;";
 cur.prepareQuery(query);
 cur.defineOutputBindString("bindval",8192);
 assertTrue(cur.executeQuery());
 assertEqInt(cur.getOutputBindLength("bindval"),8192);
 assertEqStr(cur.getOutputBindString("bindval"),largebuffer);
-console.log();
+console.log("");
 
 
 // negative input bind
@@ -1158,7 +1143,7 @@ assertTrue(cur.executeQuery());
 cur.sendQuery("select testval from testtable");
 assertEqStr(cur.getField(0,"TESTVAL"),"-1");
 assertTrue(cur.sendQuery("drop table testtable"));
-console.log();
+console.log("");
 
 
 // bind validation
@@ -1184,13 +1169,13 @@ assertTrue(cur.validBind("var1"));
 assertFalse(cur.validBind("var2"));
 assertFalse(cur.validBind("var3"));
 assertFalse(cur.validBind("var4"));
-console.log();
+console.log("");
 cur.substitution("var2",":var2");
 assertTrue(cur.validBind("var1"));
 assertTrue(cur.validBind("var2"));
 assertFalse(cur.validBind("var3"));
 assertFalse(cur.validBind("var4"));
-console.log();
+console.log("");
 cur.substitution("var3",":var3");
 assertTrue(cur.validBind("var1"));
 assertTrue(cur.validBind("var2"));
@@ -1198,7 +1183,7 @@ assertTrue(cur.validBind("var3"));
 assertFalse(cur.validBind("var4"));
 assertTrue(cur.executeQuery());
 assertTrue(cur.sendQuery("drop table testtable"));
-console.log();
+console.log("");
 
 
 // rebinding
@@ -1217,7 +1202,7 @@ assertEqInt(cur.getOutputBindInteger("out"),2);
 cur.inputBind("in",3);
 assertTrue(cur.executeQuery());
 assertEqInt(cur.getOutputBindInteger("out"),3);
-console.log();
+console.log("");
 
 
 // reexecute
@@ -1226,26 +1211,26 @@ cur.prepareQuery("select 1 from dual");
 assertTrue(cur.executeQuery());
 assertEqInt(cur.rowCount(),1);
 assertEqStr(cur.getField(0,0),"1");
-console.log();
+console.log("");
 assertTrue(cur.executeQuery());
 assertEqInt(cur.rowCount(),1);
 assertEqStr(cur.getField(0,0),"1");
-console.log();
+console.log("");
 cur.prepareQuery("select :var from dual");
 cur.inputBind("var",1);
 assertTrue(cur.executeQuery());
 assertEqInt(cur.rowCount(),1);
 assertEqStr(cur.getField(0,0),"1");
-console.log();
+console.log("");
 assertTrue(cur.executeQuery());
 assertEqInt(cur.rowCount(),1);
 assertEqStr(cur.getField(0,0),"1");
-console.log();
+console.log("");
 cur.inputBind("var",2);
 assertTrue(cur.executeQuery());
 assertEqInt(cur.rowCount(),1);
 assertEqStr(cur.getField(0,0),"2");
-console.log();
+console.log("");
 
 
 // stored procedure returning no value
@@ -1268,7 +1253,7 @@ cur.inputBind("in2",1.1,2,1);
 cur.inputBind("in3","hello");
 assertTrue(cur.executeQuery());
 assertTrue(cur.sendQuery("drop procedure testproc"));
-console.log();
+console.log("");
 
 
 // stored procedure returning single value
@@ -1303,7 +1288,7 @@ cur.defineOutputBindInteger("out1");
 assertTrue(cur.executeQuery());
 assertEqInt(cur.getOutputBindInteger("out1"),1);
 assertTrue(cur.sendQuery("drop function testproc"));
-console.log();
+console.log("");
 
 
 // stored procedure returning multiple values
@@ -1340,7 +1325,7 @@ assertEqInt(cur.getOutputBindInteger("out1"),1);
 assertEqDbl(cur.getOutputBindDouble("out2"),1.1);
 assertEqStr(cur.getOutputBindString("out3"),"hello");
 assertTrue(cur.sendQuery("drop procedure testproc"));
-console.log();
+console.log("");
 
 
 // stored procedure returning result set
@@ -1404,7 +1389,7 @@ assertEqStr(bindcur2.getField(1,0),"2");
 assertEqStr(bindcur2.getField(2,0),"3");
 assertTrue(cur.sendQuery("drop function testproc"));
 assertTrue(cur.sendQuery("drop package types"));
-console.log();
+console.log("");
 
 
 // temporary tables
@@ -1436,7 +1421,7 @@ assertEqStr(cur.getField(0,0),"0");
 cur.prepareQuery("drop table $(HOSTNAME)_temptabledelete");
 cur.substitution("HOSTNAME",hostname);
 cur.executeQuery();
-console.log();
+console.log("");
 cur.prepareQuery(
 		"truncate table $(HOSTNAME)_temptablepreserve");
 cur.substitution("HOSTNAME",hostname);
@@ -1468,7 +1453,7 @@ cur.substitution("HOSTNAME",hostname);
 assertTrue(cur.executeQuery());
 assertEqStr(cur.getField(0,0),"1");
 con.endSession();
-console.log();
+console.log("");
 cur.prepareQuery(
 		"select count(*) from $(HOSTNAME)_temptablepreserve");
 cur.substitution("HOSTNAME",hostname);
@@ -1478,7 +1463,7 @@ cur.prepareQuery(
 		"truncate table $(HOSTNAME)_temptablepreserve");
 cur.substitution("HOSTNAME",hostname);
 assertTrue(cur.executeQuery());
-var _t=Date.now(); while (Date.now()-_t<2*1000) {}
+var start=Date.now(); while (Date.now()-start<2000) {}
 cur.prepareQuery("drop table $(HOSTNAME)_temptablepreserve");
 cur.substitution("HOSTNAME",hostname);
 assertTrue(cur.executeQuery());
@@ -1486,7 +1471,7 @@ cur.prepareQuery(
 		"select count(*) from $(HOSTNAME)_temptablepreserve");
 cur.substitution("HOSTNAME",hostname);
 assertFalse(cur.executeQuery());
-console.log();
+console.log("");
 
 
 // encoded binary data
@@ -1495,33 +1480,39 @@ cur.sendQuery("drop table testtable");
 assertTrue(cur.sendQuery("create table testtable (col1 blob)"));
 var buffer="";
 for (var i=0; i<256; i++) {
-	buffer=buffer+String.fromCharCode(i);
+	buffer+=String.fromCharCode(i);
 }
 var querystr="insert into testtable values ('";
-for (var i=0; i<256; i++) {
-	querystr=querystr+("0"+buffer.charCodeAt(i).toString(16)).slice(-2);
+for (var i=0; i<buffer.length; i++) {
+	querystr+=("0"+buffer.charCodeAt(i).toString(16)).slice(-2);
 }
-querystr=querystr+"')";
+querystr+="')";
 assertTrue(cur.sendQuery(querystr));
-assertTrue(cur.sendQuery("select col1 from testtable"));
-assertEqInt(cur.getFieldLength(0,0),256);
-assertEqInt((cur.getField(0,0)===buffer)?0:1,0);
+// Verify round-tripped bytes via server-side RAWTOHEX (the binding's
+// getField returns strings via String::NewFromUtf8, which drops
+// invalid UTF-8 byte sequences that arise from raw bytes 128-255).
+assertTrue(cur.sendQuery(
+	"select rawtohex(dbms_lob.substr(col1,4000,1)) from testtable"));
+var expectedhex="";
+for (var i=0; i<buffer.length; i++) {
+	expectedhex+=("0"+buffer.charCodeAt(i).toString(16)).slice(-2);
+}
+assertEqInt(cur.getFieldLength(0,0),expectedhex.length);
+assertEqStr(String(cur.getField(0,0)).toLowerCase(),expectedhex);
 assertTrue(cur.sendQuery("drop table testtable"));
-console.log();
+console.log("");
 
 
 // quotes
 console.log("QUOTES: ");
 cur.sendQuery("drop table testtable");
-assertTrue(cur.sendQuery(
-		"create table testtable (col1 varchar2(4))"));
-assertTrue(cur.sendQuery(
-		"insert into testtable values ('''''')"));
+assertTrue(cur.sendQuery("create table testtable (col1 varchar2(4))"));
+assertTrue(cur.sendQuery("insert into testtable values ('''''')"));
 assertTrue(cur.sendQuery("select col1 from testtable"));
 assertEqInt(cur.getFieldLength(0,0),2);
-assertEqInt((cur.getField(0,0)==="''")?0:1,0);
+assertEqStr(cur.getField(0,0),"''");
 assertTrue(cur.sendQuery("drop table testtable"));
-console.log();
+console.log("");
 
 
 // last insert id
@@ -1531,7 +1522,7 @@ console.log();
 // database is schema
 console.log("DATABASE IS SCHEMA: ");
 assertTrue(con.getDatabaseIsSchema());
-console.log();
+console.log("");
 
 
 // catalog list
@@ -1539,7 +1530,7 @@ console.log("CATALOG LIST: ");
 assertTrue(cur.getCatalogList(null));
 assertEqStr(cur.getColumnName(0),"Database");
 assertEqInt(cur.rowCount(),0);
-console.log();
+console.log("");
 
 
 // schema list
@@ -1555,7 +1546,7 @@ for (var i=0; i<cur.rowCount(); i++) {
 	}
 }
 assertTrue(found);
-console.log();
+console.log("");
 
 
 // table type list
@@ -1565,7 +1556,7 @@ assertEqStr(cur.getColumnName(0),"table_type");
 assertEqStr(cur.getField(0,"table_type"),"SYNONYM");
 assertEqStr(cur.getField(1,"table_type"),"TABLE");
 assertEqStr(cur.getField(2,"table_type"),"VIEW");
-console.log();
+console.log("");
 
 
 // table list
@@ -1626,7 +1617,7 @@ assertTrue(cur.sendQuery("drop table testtable1"));
 assertTrue(cur.sendQuery("drop table testtable2"));
 assertTrue(cur.sendQuery("drop table testtable3"));
 assertTrue(cur.sendQuery("drop table testtable4"));
-console.log();
+console.log("");
 
 
 // type info list
@@ -1670,7 +1661,7 @@ assertEqStr(cur.getField(0,"type_name"),"DATE");
 assertEqStr(cur.getField(0,"data_type"),"92");
 assertEqStr(cur.getField(0,"precision"),"7");
 assertEqStr(cur.getField(0,"local_type_name"),"DATE");
-console.log();
+console.log("");
 
 
 // column list
@@ -1710,7 +1701,7 @@ assertEqStr(cur.getField(4,"data_type"),"LONG");
 assertEqStr(cur.getField(5,"data_type"),"CLOB");
 assertEqStr(cur.getField(6,"data_type"),"BLOB");
 assertTrue(cur.sendQuery("drop table testtable"));
-console.log();
+console.log("");
 
 
 // column list - auto_increment, primary key
@@ -1721,10 +1712,10 @@ assertTrue(cur.sendQuery(
 	"	col1 number primary key, "+
 	"	col2 number)"));
 assertTrue(cur.getColumnList("testtable",null));
-assertTrue(String(cur.getField(0,"column_key")).indexOf("PRI")!=-1);
-assertFalse(String(cur.getField(1,"column_key")).indexOf("PRI")!=-1);
+assertTrue(String(cur.getField(0,"column_key")).indexOf("PRI")>=0);
+assertFalse(String(cur.getField(1,"column_key")).indexOf("PRI")>=0);
 assertTrue(cur.sendQuery("drop table testtable"));
-console.log();
+console.log("");
 
 
 // primary keys list
@@ -1755,7 +1746,7 @@ assertEqStr(cur.getField(0,"column_name"),"COL1");
 var keyname=cur.getField(0,"key_name");
 assertTrue(keyname && keyname[0]);
 assertTrue(cur.sendQuery("drop table testtable"));
-console.log();
+console.log("");
 
 
 // key and index list
@@ -1789,7 +1780,7 @@ assertEqStr(cur.getField(0,"index_type"),"3");
 keyname=cur.getField(0,"key_name");
 assertTrue(keyname && keyname[0]);
 assertTrue(cur.sendQuery("drop table testtable"));
-console.log();
+console.log("");
 
 
 // procedure list
@@ -1846,7 +1837,7 @@ for (var i=0; i<cur.rowCount(); i++) {
 	}
 }
 assertEqInt(counter,4);
-console.log();
+console.log("");
 
 
 // procedure parameter list
@@ -1878,7 +1869,7 @@ assertTrue(cur.sendQuery("drop procedure testproc1"));
 assertTrue(cur.sendQuery("drop procedure testproc2"));
 assertTrue(cur.sendQuery("drop procedure testproc3"));
 assertTrue(cur.sendQuery("drop procedure testproc4"));
-console.log();
+console.log("");
 
 
 // invalid queries
@@ -1911,21 +1902,18 @@ assertFalse(cur.sendQuery(
 	"	testtable "+
 	"order by "+
 	"	testnumber"));
-console.log();
-assertFalse(cur.sendQuery(
-		"insert into testtable values (1,2,3,4)"));
-assertFalse(cur.sendQuery(
-		"insert into testtable values (1,2,3,4)"));
-assertFalse(cur.sendQuery(
-		"insert into testtable values (1,2,3,4)"));
-assertFalse(cur.sendQuery(
-		"insert into testtable values (1,2,3,4)"));
-console.log();
+console.log("");
+assertFalse(cur.sendQuery("insert into testtable values (1,2,3,4)"));
+assertFalse(cur.sendQuery("insert into testtable values (1,2,3,4)"));
+assertFalse(cur.sendQuery("insert into testtable values (1,2,3,4)"));
+assertFalse(cur.sendQuery("insert into testtable values (1,2,3,4)"));
+console.log("");
 assertFalse(cur.sendQuery("create table testtable"));
 assertFalse(cur.sendQuery("create table testtable"));
 assertFalse(cur.sendQuery("create table testtable"));
 assertFalse(cur.sendQuery("create table testtable"));
-console.log();
+console.log("");
+
 
 reportTestStatus();
 

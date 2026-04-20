@@ -985,7 +985,7 @@ var day=cur.getOutputBindDateDay("4");
 var hour=cur.getOutputBindDateHour("4");
 var minute=cur.getOutputBindDateMinute("4");
 var second=cur.getOutputBindDateSecond("4");
-var microsecond=cur.getOutputBindDateMicroSecond("4");
+var microsecond=cur.getOutputBindDateMicrosecond("4");
 var tz=cur.getOutputBindDateTz("4");
 var isnegative=cur.getOutputBindDateIsNegative("4");
 var nullvar=cur.getOutputBindString("5");
@@ -1025,7 +1025,7 @@ day=cur.getOutputBindDateDay("datevar");
 hour=cur.getOutputBindDateHour("datevar");
 minute=cur.getOutputBindDateMinute("datevar");
 second=cur.getOutputBindDateSecond("datevar");
-microsecond=cur.getOutputBindDateMicroSecond("datevar");
+microsecond=cur.getOutputBindDateMicrosecond("datevar");
 tz=cur.getOutputBindDateTz("datevar");
 isnegative=cur.getOutputBindDateIsNegative("datevar");
 assertEqInt(numvar,1);
@@ -1067,7 +1067,7 @@ day=cur.getOutputBindDateDay("datevar");
 hour=cur.getOutputBindDateHour("datevar");
 minute=cur.getOutputBindDateMinute("datevar");
 second=cur.getOutputBindDateSecond("datevar");
-microsecond=cur.getOutputBindDateMicroSecond("datevar");
+microsecond=cur.getOutputBindDateMicrosecond("datevar");
 tz=cur.getOutputBindDateTz("datevar");
 isnegative=cur.getOutputBindDateIsNegative("datevar");
 assertEqInt(numvar,1);
@@ -1486,9 +1486,17 @@ for (var i=0; i<buffer.length; i++) {
 }
 querystr+="')";
 assertTrue(cur.sendQuery(querystr));
-assertTrue(cur.sendQuery("select col1 from testtable"));
-assertEqInt(cur.getFieldLength(0,0),buffer.length);
-assertEqStr(cur.getField(0,0),buffer);
+// Verify round-tripped bytes via server-side RAWTOHEX (the binding's
+// getField returns strings via String::NewFromUtf8, which drops
+// invalid UTF-8 byte sequences that arise from raw bytes 128-255).
+assertTrue(cur.sendQuery(
+	"select rawtohex(dbms_lob.substr(col1,4000,1)) from testtable"));
+var expectedhex="";
+for (var i=0; i<buffer.length; i++) {
+	expectedhex+=("0"+buffer.charCodeAt(i).toString(16)).slice(-2);
+}
+assertEqInt(cur.getFieldLength(0,0),expectedhex.length);
+assertEqStr(String(cur.getField(0,0)).toLowerCase(),expectedhex);
 assertTrue(cur.sendQuery("drop table testtable"));
 console.log("");
 
