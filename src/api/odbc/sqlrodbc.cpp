@@ -3453,7 +3453,8 @@ static void SQLR_FetchOutputBinds(SQLHSTMT statementhandle) {
 				int32_t	microsecond;
 				const char	*tz;
 				bool	isnegative;
-				stmt->cur->getOutputBindDate(parametername,
+				stmt->cur->getOutputBindDate(
+							parametername,
 							&year,&month,&day,
 							&hour,&minute,&second,
 							&microsecond,&tz,
@@ -3483,7 +3484,8 @@ static void SQLR_FetchOutputBinds(SQLHSTMT statementhandle) {
 				int32_t	microsecond;
 				const char	*tz;
 				bool	isnegative;
-				stmt->cur->getOutputBindDate(parametername,
+				stmt->cur->getOutputBindDate(
+							parametername,
 							&year,&month,&day,
 							&hour,&minute,&second,
 							&microsecond,&tz,
@@ -4803,8 +4805,8 @@ static void SQLR_ParseDate(DATE_STRUCT *ds, const char *value) {
 
 	// copy data out
 	ds->year=(year!=-1)?year:0;
-	ds->month=(month!=-1)?month:0;
-	ds->day=(day!=-1)?day:0;
+	ds->month=(month!=-1)?month:1;
+	ds->day=(day!=-1)?day:1;
 
 	debugPrintf("    value: %s\n",value);
 	debugPrintf("    year: %d\n",ds->year);
@@ -4877,8 +4879,8 @@ static void SQLR_ParseTimeStamp(TIMESTAMP_STRUCT *tss, const char *value) {
 
 	// copy data out
 	tss->year=(year!=-1)?year:0;
-	tss->month=(month!=-1)?month:0;
-	tss->day=(day!=-1)?day:0;
+	tss->month=(month!=-1)?month:1;
+	tss->day=(day!=-1)?day:1;
 	tss->hour=(hour!=-1)?hour:0;
 	tss->minute=(minute!=-1)?minute:0;
 	tss->second=(second!=-1)?second:0;
@@ -5012,11 +5014,7 @@ static SQLRETURN SQLR_SQLGetData(SQLHSTMT statementhandle,
 					*offset+=fieldlength;
 				}
 			} else {
-				if (*offset>fieldlength) {
-					nodata=true;
-				} else {
-					(*offset)++;
-				}
+				nodata=true;
 				fieldlength=0;
 				bytestocopy=0;
 			}
@@ -5180,11 +5178,7 @@ static SQLRETURN SQLR_SQLGetData(SQLHSTMT statementhandle,
 					*offset+=fieldlength;
 				}
 			} else {
-				if (*offset>fieldlength) {
-					nodata=true;
-				} else {
-					(*offset)++;
-				}
+				nodata=true;
 				fieldlength=0;
 				bytestocopy=0;
 			}
