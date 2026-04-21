@@ -1,7 +1,7 @@
 %% Copyright (c) David Muse
 %% See the file COPYING for more information.
 
--module(oracle).
+-module(tls).
 -export([main/0]).
 
 -import(asserts, [pass/0, fail/2,
@@ -26,10 +26,15 @@ setIsolationLevels([Il | Rest]) ->
     setIsolationLevels(Rest).
 
 main() ->
+    {ok, Cwd} = file:get_cwd(),
+    Cert = filename:absname("../sqlrelay.conf.d/tls/client.pem", Cwd),
+    Ca   = filename:absname("../sqlrelay.conf.d/tls/ca.pem", Cwd),
+
     sqlrelay:start(),
     waitForPort(50),
     {ok, _} = sqlrelay:alloc("sqlrelay", 9000, "/tmp/test.socket",
-                             "testuser", "testpassword", 0, 1),
+                             "", "", 0, 1),
+    sqlrelay:enableTls("", Cert, "", "", "ca", Ca, 0),
 
     Hostname = shortHostname(),
 

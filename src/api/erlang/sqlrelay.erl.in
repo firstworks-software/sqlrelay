@@ -26,7 +26,7 @@
 -export([prepareQuery/1, prepareQueryWithLength/2, prepareFileQuery/2]).
 -export([subString/2, subLong/2, subDouble/4]).
 -export([clearBinds/0, countBindVariables/0]).
--export([inputBindString/2, inputBindLong/2, inputBindDouble/4, inputBindDate/10, inputBindBlob/3, inputBindClob/3 ]).
+-export([inputBindString/2, inputBindLong/2, inputBindDouble/4, inputBindDate/10, inputBindBlob/3, inputBindClob/3, inputBindNull/1 ]).
 -export([defineOutputBindString/2, defineOutputBindInteger/1, defineOutputBindDouble/1, defineOutputBindDate/1, defineOutputBindBlob/1, defineOutputBindClob/1, defineOutputBindCursor/1]).
 -export([validateBinds/0, validBind/1]).
 -export([executeQuery/0]).
@@ -573,7 +573,11 @@ inputBindBlob(Variable, Value, Size)
 	call_port({inputBindBlob, Variable, Value, Size}).  
 
 %% @doc Defines a character lob input bind variable.
-inputBindClob(Variable, Value, Size) 
+%% @doc Defines a NULL input bind variable.
+inputBindNull(Variable) when is_list(Variable) ->
+	call_port({inputBindNull, Variable}).
+
+inputBindClob(Variable, Value, Size)
 	when is_list(Variable), is_list(Value), is_integer(Size) ->
 	call_port({inputBindClob, Variable, Value, Size}).  
 

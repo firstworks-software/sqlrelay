@@ -1,7 +1,7 @@
 %% Copyright (c) David Muse
 %% See the file COPYING for more information.
 
--module(oracle).
+-module(krb).
 -export([main/0]).
 
 -import(asserts, [pass/0, fail/2,
@@ -29,7 +29,8 @@ main() ->
     sqlrelay:start(),
     waitForPort(50),
     {ok, _} = sqlrelay:alloc("sqlrelay", 9000, "/tmp/test.socket",
-                             "testuser", "testpassword", 0, 1),
+                             "", "", 0, 1),
+    sqlrelay:enableKerberos("", "", ""),
 
     Hostname = shortHostname(),
 

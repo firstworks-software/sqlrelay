@@ -14,6 +14,7 @@
 -export([assertEqualsString/2, assertEqualsStringLen/3]).
 -export([assertEqualsInt/2, assertEqualsDouble/2]).
 -export([assertTrue/1, assertFalse/1]).
+-export([waitForPort/1, largeBuffer/1, shortHostname/0]).
 
 success()            -> "\e[32msuccess\e[0m".
 failure()            -> "\e[31mfailure\e[0m".
@@ -132,4 +133,26 @@ reportTestStatus() ->
     case getStatus() of
         0 -> io:format("~s", [alltestssucceeded()]);
         _ -> io:format("~s", [sometestsfailed()])
+    end.
+
+%% sqlrelay:start/0 is an async spawn_link — the registered name
+%% 'sqlrelay' isn't available immediately.  Poll until it is.
+waitForPort(0) ->
+    exit(port_not_registered);
+waitForPort(N) ->
+    case whereis(sqlrelay) of
+        undefined -> timer:sleep(10), waitForPort(N - 1);
+        _         -> ok
+    end.
+
+%% Build a string of N 'C' characters.
+largeBuffer(Length) ->
+    lists:duplicate(Length, $C).
+
+%% Return inet:gethostname() stripped of any trailing .domain suffix.
+shortHostname() ->
+    {ok, H} = inet:gethostname(),
+    case string:chr(H, $.) of
+        0 -> H;
+        N -> string:substr(H, 1, N - 1)
     end.

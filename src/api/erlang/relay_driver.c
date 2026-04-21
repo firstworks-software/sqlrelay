@@ -94,7 +94,13 @@ long alloc(char *server, ulong port, char *socket, char *user, char *password, u
 		fprintf(stderr, "Processing alloc with arguments: %s, %ld, %s, %s, %s, %ld, %ld\n\r", server, port, socket, user, password, retrytime, tries);
 	}
 
-	con = sqlrcon_alloc(server, port, socket, user, password, retrytime, tries);
+	// Use copyrefs=1 so the C++ library duplicates any string
+	// arguments we pass in later (e.g. enableTls cert/ca paths,
+	// inputBindString values).  Without this, the library stores
+	// raw pointers into the driver's stack buffers and they go
+	// stale on subsequent commands.
+	con = sqlrcon_alloc_copyrefs(server, port, socket, user, password,
+	                             retrytime, tries, 1);
 
 	return 0;
 }
@@ -458,8 +464,13 @@ int main() {
 				return ERR_DECODING_ARGS;
 			}
 
-			sqlrcon_enableKerberos(con,service,mech,flags);
-			ENCODE_VOID;   
+			// Convert empty strings to NULL so the underlying C++
+			// library applies its "use defaults" behavior.
+			sqlrcon_enableKerberos(con,
+				service[0] ? service : NULL,
+				mech[0] ? mech : NULL,
+				flags[0] ? flags : NULL);
+			ENCODE_VOID;
 		}
 
 		if (strcmp("enableTls", command) == TRUE) {
@@ -472,7 +483,7 @@ int main() {
 			long depth;
 
 			// check number of arguments
-		    	if (arity != 3) return ERR_NUMBER_OF_ARGS;
+		    	if (arity != 7) return ERR_NUMBER_OF_ARGS;
 
 			// get arguments
 			if (ei_decode_string(buf, &index, &version[0])) { 
@@ -497,8 +508,18 @@ int main() {
 				return ERR_DECODING_ARGS;
 			}
 
-			sqlrcon_enableTls(con,version,cert,password,ciphers,validate,ca,depth);
-			ENCODE_VOID;   
+			// Convert empty strings to NULL so the underlying C++
+			// library applies its "use defaults" behavior (matches
+			// how the cs binding passes (String)null).
+			sqlrcon_enableTls(con,
+				version[0] ? version : NULL,
+				cert[0] ? cert : NULL,
+				password[0] ? password : NULL,
+				ciphers[0] ? ciphers : NULL,
+				validate[0] ? validate : NULL,
+				ca[0] ? ca : NULL,
+				depth);
+			ENCODE_VOID;
 		}
 
 		if (strcmp("disableEncryption", command) == TRUE) {
@@ -1594,15 +1615,31 @@ int main() {
 		    	if (arity != 2) return ERR_NUMBER_OF_ARGS;
 
 			// get input parameters
-			if (ei_decode_string(buf, &index, &variable[0])) { 
+			if (ei_decode_string(buf, &index, &variable[0])) {
 				return ERR_DECODING_ARGS;
 			}
-			if (ei_decode_string(buf, &index, &value[0])) { 
+			if (ei_decode_string(buf, &index, &value[0])) {
 				return ERR_DECODING_ARGS;
 			}
 
-			// call function and encode result 
-			sqlrcur_inputBindString(cur, variable, value); 	
+			// call function and encode result
+			sqlrcur_inputBindString(cur, variable, value);
+			ENCODE_VOID;
+		}
+
+		if (strcmp("inputBindNull", command) == TRUE) {
+			char variable[2000];
+
+			// check number of arguments
+			if (arity != 1) return ERR_NUMBER_OF_ARGS;
+
+			// get input parameters
+			if (ei_decode_string(buf, &index, &variable[0])) {
+				return ERR_DECODING_ARGS;
+			}
+
+			// pass NULL value to bind a NULL
+			sqlrcur_inputBindString(cur, variable, NULL);
 			ENCODE_VOID;
 		}
 

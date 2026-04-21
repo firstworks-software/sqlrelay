@@ -1,7 +1,7 @@
 %% Copyright (c) David Muse
 %% See the file COPYING for more information.
 
--module(oracle).
+-module(db2).
 -export([main/0]).
 
 -import(asserts, [pass/0, fail/2,
@@ -15,13 +15,8 @@
 setIsolationLevels([]) ->
     ok;
 setIsolationLevels([Il | Rest]) ->
-    %% oracle requires the isolation level to be the first query of
-    %% the transaction
-    assertTrue(sqlrelay:commit()),
-    %% you can set the isolation level, but to get it, you have to
-    %% have permissions to read from sys.v_$session and
-    %% sys.v_$transaction
     assertTrue(sqlrelay:setIsolationLevel(Il)),
+    assertEqualsString(sqlrelay:getIsolationLevel(), Il),
     io:format("~n"),
     setIsolationLevels(Rest).
 
@@ -29,13 +24,13 @@ main() ->
     sqlrelay:start(),
     waitForPort(50),
     {ok, _} = sqlrelay:alloc("sqlrelay", 9000, "/tmp/test.socket",
-                             "testuser", "testpassword", 0, 1),
+                             "db2inst1", "testpassword", 0, 1),
 
     Hostname = shortHostname(),
 
     %% IDENTIFY
     io:format("IDENTIFY: ~n"),
-    assertEqualsString(sqlrelay:identify(), "oracle"),
+    assertEqualsString(sqlrelay:identify(), "db2"),
     io:format("~n"),
 
     %% PING
@@ -45,20 +40,19 @@ main() ->
 
     %% BIND FORMAT
     io:format("BIND FORMAT: ~n"),
-    assertEqualsString(sqlrelay:bindFormat(), ":*"),
+    assertEqualsString(sqlrelay:bindFormat(), "?"),
     io:format("~n"),
 
     %% NEXTVAL FORMAT
     io:format("NEXTVAL FORMAT: ~n"),
-    assertEqualsString(sqlrelay:nextvalFormat(), "%s.nextval"),
+    assertEqualsString(sqlrelay:nextvalFormat(), "(nextval for %s)"),
     io:format("~n"),
 
     %% ISOLATION LEVELS
     io:format("ISOLATION LEVELS: ~n"),
-    IsolationLevels = ["READ COMMITTED", "SERIALIZABLE"],
+    IsolationLevels = ["CS", "UR", "RS", "RR"],
     setIsolationLevels(IsolationLevels),
     %% reset to the default isolation level
-    assertTrue(sqlrelay:commit()),
     assertTrue(sqlrelay:setIsolationLevel(hd(IsolationLevels))),
     io:format("~n"),
 
@@ -67,13 +61,20 @@ main() ->
     sqlrelay:sendQuery("drop table testtable"),
     assertTrue(sqlrelay:sendQuery(
         "create table testtable ("
-        "	testnumber number, "
+        "	testsmallint smallint, "
+        "	testint integer, "
+        "	testbigint bigint, "
+        "	testdecimal decimal(10,2), "
+        "	testreal real, "
+        "	testdouble double, "
         "	testchar char(40), "
-        "	testvarchar varchar2(40), "
+        "	testvarchar varchar(40), "
         "	testdate date, "
-        "	testlong long, "
+        "	testtime time, "
+        "	testtimestamp timestamp, "
         "	testclob clob, "
         "	testblob blob)")),
+    assertTrue(sqlrelay:commit()),
     io:format("~n"),
 
     %% INSERT
@@ -83,12 +84,18 @@ main() ->
         "	testtable "
         "values ("
         "	1, "
+        "	1, "
+        "	1, "
+        "	1.1, "
+        "	1.1, "
+        "	1.1, "
         "	'testchar1', "
         "	'testvarchar1', "
-        "	'01-JAN-2001', "
-        "	'testlong1', "
+        "	'01/01/2001', "
+        "	'01:00:00', "
+        "	NULL, "
         "	'testclob1', "
-        "	empty_blob())")),
+        "	blob('testblob1'))")),
     io:format("~n"),
 
     %% AFFECTED ROWS
@@ -102,102 +109,137 @@ main() ->
         "insert into "
         "	testtable "
         "values ("
-        "	:var1, "
-        "	:var2, "
-        "	:var3, "
-        "	:var4, "
-        "	:var5, "
-        "	:var6, "
-        "	:var7)"),
-    assertEqualsInt(sqlrelay:countBindVariables(), 7),
+        "	?, "
+        "	?, "
+        "	?, "
+        "	?, "
+        "	?, "
+        "	?, "
+        "	?, "
+        "	?, "
+        "	?, "
+        "	?, "
+        "	NULL, "
+        "	?, "
+        "	?)"),
+    assertEqualsInt(sqlrelay:countBindVariables(), 12),
     sqlrelay:inputBindLong("1", 2),
-    sqlrelay:inputBindString("2", "testchar2"),
-    sqlrelay:inputBindString("3", "testvarchar2"),
-    sqlrelay:inputBindDate("4", 2002, 1, 1, 0, 0, 0, 0, "", 0),
-    sqlrelay:inputBindString("5", "testlong2"),
-    sqlrelay:inputBindClob("6", "testclob2", 9),
-    sqlrelay:inputBindBlob("7", "testblob2", 9),
+    sqlrelay:inputBindLong("2", 2),
+    sqlrelay:inputBindLong("3", 2),
+    sqlrelay:inputBindDouble("4", 2.2, 4, 2),
+    sqlrelay:inputBindDouble("5", 2.2, 4, 2),
+    sqlrelay:inputBindDouble("6", 2.2, 4, 2),
+    sqlrelay:inputBindString("7", "testchar2"),
+    sqlrelay:inputBindString("8", "testvarchar2"),
+    sqlrelay:inputBindDate("9", 2002, 1, 1, -1, -1, -1, -1, "", 0),
+    sqlrelay:inputBindDate("10", -1, -1, -1, 2, 0, 0, 0, "", 0),
+    sqlrelay:inputBindClob("11", "testclob2", 9),
+    sqlrelay:inputBindBlob("12", "testblob2", 9),
     assertTrue(sqlrelay:executeQuery()),
     sqlrelay:clearBinds(),
     sqlrelay:inputBindLong("1", 3),
-    sqlrelay:inputBindString("2", "testchar3"),
-    sqlrelay:inputBindString("3", "testvarchar3"),
-    sqlrelay:inputBindDate("4", 2003, 1, 1, 0, 0, 0, 0, "", 0),
-    sqlrelay:inputBindString("5", "testlong3"),
-    sqlrelay:inputBindClob("6", "testclob3", 9),
-    sqlrelay:inputBindBlob("7", "testblob3", 9),
+    sqlrelay:inputBindLong("2", 3),
+    sqlrelay:inputBindLong("3", 3),
+    sqlrelay:inputBindDouble("4", 3.3, 4, 2),
+    sqlrelay:inputBindDouble("5", 3.3, 4, 2),
+    sqlrelay:inputBindDouble("6", 3.3, 4, 2),
+    sqlrelay:inputBindString("7", "testchar3"),
+    sqlrelay:inputBindString("8", "testvarchar3"),
+    sqlrelay:inputBindDate("9", 2003, 1, 1, -1, -1, -1, -1, "", 0),
+    sqlrelay:inputBindDate("10", -1, -1, -1, 3, 0, 0, 0, "", 0),
+    sqlrelay:inputBindClob("11", "testclob3", 9),
+    sqlrelay:inputBindBlob("12", "testblob3", 9),
+    assertTrue(sqlrelay:executeQuery()),
+    sqlrelay:clearBinds(),
+    sqlrelay:inputBindLong("1", 4),
+    sqlrelay:inputBindLong("2", 4),
+    sqlrelay:inputBindLong("3", 4),
+    sqlrelay:inputBindDouble("4", 4.4, 4, 2),
+    sqlrelay:inputBindDouble("5", 4.4, 4, 2),
+    sqlrelay:inputBindDouble("6", 4.4, 4, 2),
+    sqlrelay:inputBindString("7", "testchar4"),
+    sqlrelay:inputBindString("8", "testvarchar4"),
+    sqlrelay:inputBindDate("9", 2004, 1, 1, -1, -1, -1, -1, "", 0),
+    sqlrelay:inputBindDate("10", -1, -1, -1, 4, 0, 0, 0, "", 0),
+    sqlrelay:inputBindClob("11", "testclob4", 9),
+    sqlrelay:inputBindBlob("12", "testblob4", 9),
+    assertTrue(sqlrelay:executeQuery()),
+    sqlrelay:clearBinds(),
+    sqlrelay:inputBindLong("1", 5),
+    sqlrelay:inputBindLong("2", 5),
+    sqlrelay:inputBindLong("3", 5),
+    sqlrelay:inputBindDouble("4", 5.5, 4, 2),
+    sqlrelay:inputBindDouble("5", 5.5, 4, 2),
+    sqlrelay:inputBindDouble("6", 5.5, 4, 2),
+    sqlrelay:inputBindString("7", "testchar5"),
+    sqlrelay:inputBindString("8", "testvarchar5"),
+    sqlrelay:inputBindDate("9", 2005, 1, 1, -1, -1, -1, -1, "", 0),
+    sqlrelay:inputBindDate("10", -1, -1, -1, 5, 0, 0, 0, "", 0),
+    sqlrelay:inputBindClob("11", "testclob5", 9),
+    sqlrelay:inputBindBlob("12", "testblob5", 9),
+    assertTrue(sqlrelay:executeQuery()),
+    sqlrelay:clearBinds(),
+    sqlrelay:inputBindLong("1", 6),
+    sqlrelay:inputBindLong("2", 6),
+    sqlrelay:inputBindLong("3", 6),
+    sqlrelay:inputBindDouble("4", 6.6, 4, 2),
+    sqlrelay:inputBindDouble("5", 6.6, 4, 2),
+    sqlrelay:inputBindDouble("6", 6.6, 4, 2),
+    sqlrelay:inputBindString("7", "testchar6"),
+    sqlrelay:inputBindString("8", "testvarchar6"),
+    sqlrelay:inputBindDate("9", 2006, 1, 1, -1, -1, -1, -1, "", 0),
+    sqlrelay:inputBindDate("10", -1, -1, -1, 6, 0, 0, 0, "", 0),
+    sqlrelay:inputBindClob("11", "testclob6", 9),
+    sqlrelay:inputBindBlob("12", "testblob6", 9),
     assertTrue(sqlrelay:executeQuery()),
     io:format("~n"),
 
     %% ARRAY OF INPUT BINDS BY POSITION
     %% The Erlang binding has no array-inputBinds(); do the individual
-    %% binds for row 4 manually to keep the section faithful.
+    %% binds for row 7 manually to keep the section faithful.
     io:format("ARRAY OF INPUT BINDS BY POSITION: ~n"),
     sqlrelay:clearBinds(),
-    sqlrelay:inputBindString("1", "4"),
-    sqlrelay:inputBindString("2", "testchar4"),
-    sqlrelay:inputBindString("3", "testvarchar4"),
-    sqlrelay:inputBindString("4", "01-JAN-2004"),
-    sqlrelay:inputBindString("5", "testlong4"),
-    sqlrelay:inputBindClob("6", "testclob4", 9),
-    sqlrelay:inputBindBlob("7", "testblob4", 9),
+    sqlrelay:inputBindString("1", "7"),
+    sqlrelay:inputBindString("2", "7"),
+    sqlrelay:inputBindString("3", "7"),
+    sqlrelay:inputBindString("4", "7.7"),
+    sqlrelay:inputBindString("5", "7.7"),
+    sqlrelay:inputBindString("6", "7.7"),
+    sqlrelay:inputBindString("7", "testchar7"),
+    sqlrelay:inputBindString("8", "testvarchar7"),
+    sqlrelay:inputBindString("9", "01/01/2007"),
+    sqlrelay:inputBindString("10", "07:00:00"),
+    sqlrelay:inputBindString("11", "testclob7"),
     assertTrue(sqlrelay:executeQuery()),
     io:format("~n"),
 
     %% INPUT BIND BY POSITION WITH VALIDATION
     io:format("INPUT BIND BY POSITION WITH VALIDATION: ~n"),
     sqlrelay:clearBinds(),
-    sqlrelay:inputBindLong("1", 5),
-    sqlrelay:inputBindString("2", "testchar5"),
-    sqlrelay:inputBindString("3", "testvarchar5"),
-    sqlrelay:inputBindDate("4", 2005, 1, 1, 0, 0, 0, 0, "", 0),
-    sqlrelay:inputBindString("5", "testlong5"),
-    sqlrelay:inputBindClob("6", "testclob5", 9),
-    sqlrelay:inputBindBlob("7", "testblob5", 9),
+    sqlrelay:inputBindLong("1", 8),
+    sqlrelay:inputBindLong("2", 8),
+    sqlrelay:inputBindLong("3", 8),
+    sqlrelay:inputBindDouble("4", 8.8, 4, 2),
+    sqlrelay:inputBindDouble("5", 8.8, 4, 2),
+    sqlrelay:inputBindDouble("6", 8.8, 4, 2),
+    sqlrelay:inputBindString("7", "testchar8"),
+    sqlrelay:inputBindString("8", "testvarchar8"),
+    sqlrelay:inputBindDate("9", 2008, 1, 1, -1, -1, -1, -1, "", 0),
+    sqlrelay:inputBindDate("10", -1, -1, -1, 8, 0, 0, 0, "", 0),
+    sqlrelay:inputBindClob("11", "testclob8", 9),
+    sqlrelay:inputBindBlob("12", "testblob8", 9),
     sqlrelay:validateBinds(),
     assertTrue(sqlrelay:executeQuery()),
-    sqlrelay:clearBinds(),
+    io:format("~n"),
 
     %% INPUT BIND BY NAME
-    io:format("INPUT BIND BY NAME: ~n"),
-    sqlrelay:clearBinds(),
-    sqlrelay:inputBindLong("var1", 6),
-    sqlrelay:inputBindString("var2", "testchar6"),
-    sqlrelay:inputBindString("var3", "testvarchar6"),
-    sqlrelay:inputBindDate("var4", 2006, 1, 1, 0, 0, 0, 0, "", 0),
-    sqlrelay:inputBindString("var5", "testlong6"),
-    sqlrelay:inputBindClob("var6", "testclob6", 9),
-    sqlrelay:inputBindBlob("var7", "testblob6", 9),
-    assertTrue(sqlrelay:executeQuery()),
-    io:format("~n"),
+    %% db2 doesn't support bind by name
 
-    %% ARRAY OF INPUT BINDS BY NAME (same treatment as above, no array API)
-    io:format("ARRAY OF INPUT BINDS BY NAME: ~n"),
-    sqlrelay:clearBinds(),
-    sqlrelay:inputBindString("var1", "7"),
-    sqlrelay:inputBindString("var2", "testchar7"),
-    sqlrelay:inputBindString("var3", "testvarchar7"),
-    sqlrelay:inputBindString("var4", "01-JAN-2007"),
-    sqlrelay:inputBindString("var5", "testlong7"),
-    sqlrelay:inputBindClob("var6", "testclob7", 9),
-    sqlrelay:inputBindBlob("var7", "testblob7", 9),
-    assertTrue(sqlrelay:executeQuery()),
-    io:format("~n"),
+    %% ARRAY OF INPUT BINDS BY NAME
+    %% db2 doesn't support bind by name
 
     %% INPUT BIND BY NAME WITH VALIDATION
-    io:format("INPUT BIND BY NAME WITH VALIDATION: ~n"),
-    sqlrelay:clearBinds(),
-    sqlrelay:inputBindLong("var1", 8),
-    sqlrelay:inputBindString("var2", "testchar8"),
-    sqlrelay:inputBindString("var3", "testvarchar8"),
-    sqlrelay:inputBindDate("var4", 2008, 1, 1, 0, 0, 0, 0, "", 0),
-    sqlrelay:inputBindString("var5", "testlong8"),
-    sqlrelay:inputBindClob("var6", "testclob8", 9),
-    sqlrelay:inputBindBlob("var7", "testblob8", 9),
-    sqlrelay:inputBindString("var9", "junkvalue"),
-    sqlrelay:validateBinds(),
-    assertTrue(sqlrelay:executeQuery()),
-    io:format("~n"),
+    %% db2 doesn't support bind by name
 
     %% SELECT
     io:format("SELECT: ~n"),
@@ -207,85 +249,111 @@ main() ->
         "from "
         "	testtable "
         "order by "
-        "	testnumber")),
+        "	testsmallint ")),
     io:format("~n"),
 
     %% COLUMN COUNT
     io:format("COLUMN COUNT: ~n"),
-    assertEqualsInt(sqlrelay:colCount(), 7),
+    assertEqualsInt(sqlrelay:colCount(), 13),
     io:format("~n"),
 
     %% COLUMN NAMES
     io:format("COLUMN NAMES: ~n"),
-    assertEqualsString(sqlrelay:getColumnName(0), "TESTNUMBER"),
-    assertEqualsString(sqlrelay:getColumnName(1), "TESTCHAR"),
-    assertEqualsString(sqlrelay:getColumnName(2), "TESTVARCHAR"),
-    assertEqualsString(sqlrelay:getColumnName(3), "TESTDATE"),
-    assertEqualsString(sqlrelay:getColumnName(4), "TESTLONG"),
-    assertEqualsString(sqlrelay:getColumnName(5), "TESTCLOB"),
-    assertEqualsString(sqlrelay:getColumnName(6), "TESTBLOB"),
+    assertEqualsString(sqlrelay:getColumnName(0), "TESTSMALLINT"),
+    assertEqualsString(sqlrelay:getColumnName(1), "TESTINT"),
+    assertEqualsString(sqlrelay:getColumnName(2), "TESTBIGINT"),
+    assertEqualsString(sqlrelay:getColumnName(3), "TESTDECIMAL"),
+    assertEqualsString(sqlrelay:getColumnName(4), "TESTREAL"),
+    assertEqualsString(sqlrelay:getColumnName(5), "TESTDOUBLE"),
+    assertEqualsString(sqlrelay:getColumnName(6), "TESTCHAR"),
+    assertEqualsString(sqlrelay:getColumnName(7), "TESTVARCHAR"),
+    assertEqualsString(sqlrelay:getColumnName(8), "TESTDATE"),
+    assertEqualsString(sqlrelay:getColumnName(9), "TESTTIME"),
+    assertEqualsString(sqlrelay:getColumnName(10), "TESTTIMESTAMP"),
     {ok, Cols1} = sqlrelay:getColumnNames(),
-    assertEqualsString(lists:nth(1, Cols1), "TESTNUMBER"),
-    assertEqualsString(lists:nth(2, Cols1), "TESTCHAR"),
-    assertEqualsString(lists:nth(3, Cols1), "TESTVARCHAR"),
-    assertEqualsString(lists:nth(4, Cols1), "TESTDATE"),
-    assertEqualsString(lists:nth(5, Cols1), "TESTLONG"),
-    assertEqualsString(lists:nth(6, Cols1), "TESTCLOB"),
-    assertEqualsString(lists:nth(7, Cols1), "TESTBLOB"),
+    assertEqualsString(lists:nth(1, Cols1), "TESTSMALLINT"),
+    assertEqualsString(lists:nth(2, Cols1), "TESTINT"),
+    assertEqualsString(lists:nth(3, Cols1), "TESTBIGINT"),
+    assertEqualsString(lists:nth(4, Cols1), "TESTDECIMAL"),
+    assertEqualsString(lists:nth(5, Cols1), "TESTREAL"),
+    assertEqualsString(lists:nth(6, Cols1), "TESTDOUBLE"),
+    assertEqualsString(lists:nth(7, Cols1), "TESTCHAR"),
+    assertEqualsString(lists:nth(8, Cols1), "TESTVARCHAR"),
+    assertEqualsString(lists:nth(9, Cols1), "TESTDATE"),
+    assertEqualsString(lists:nth(10, Cols1), "TESTTIME"),
+    assertEqualsString(lists:nth(11, Cols1), "TESTTIMESTAMP"),
     io:format("~n"),
 
     %% COLUMN TYPES
     io:format("COLUMN TYPES: ~n"),
-    assertEqualsString(sqlrelay:getColumnTypeByIndex(0), "NUMBER"),
-    assertEqualsString(sqlrelay:getColumnTypeByName("TESTNUMBER"), "NUMBER"),
-    assertEqualsString(sqlrelay:getColumnTypeByIndex(1), "CHAR"),
+    assertEqualsString(sqlrelay:getColumnTypeByIndex(0), "SMALLINT"),
+    assertEqualsString(sqlrelay:getColumnTypeByName("TESTSMALLINT"), "SMALLINT"),
+    assertEqualsString(sqlrelay:getColumnTypeByIndex(1), "INTEGER"),
+    assertEqualsString(sqlrelay:getColumnTypeByName("TESTINT"), "INTEGER"),
+    assertEqualsString(sqlrelay:getColumnTypeByIndex(2), "BIGINT"),
+    assertEqualsString(sqlrelay:getColumnTypeByName("TESTBIGINT"), "BIGINT"),
+    assertEqualsString(sqlrelay:getColumnTypeByIndex(3), "DECIMAL"),
+    assertEqualsString(sqlrelay:getColumnTypeByName("TESTDECIMAL"), "DECIMAL"),
+    assertEqualsString(sqlrelay:getColumnTypeByIndex(4), "REAL"),
+    assertEqualsString(sqlrelay:getColumnTypeByName("TESTREAL"), "REAL"),
+    assertEqualsString(sqlrelay:getColumnTypeByIndex(5), "DOUBLE"),
+    assertEqualsString(sqlrelay:getColumnTypeByName("TESTDOUBLE"), "DOUBLE"),
+    assertEqualsString(sqlrelay:getColumnTypeByIndex(6), "CHAR"),
     assertEqualsString(sqlrelay:getColumnTypeByName("TESTCHAR"), "CHAR"),
-    assertEqualsString(sqlrelay:getColumnTypeByIndex(2), "VARCHAR2"),
-    assertEqualsString(sqlrelay:getColumnTypeByName("TESTVARCHAR"), "VARCHAR2"),
-    assertEqualsString(sqlrelay:getColumnTypeByIndex(3), "DATE"),
+    assertEqualsString(sqlrelay:getColumnTypeByIndex(7), "VARCHAR"),
+    assertEqualsString(sqlrelay:getColumnTypeByName("TESTVARCHAR"), "VARCHAR"),
+    assertEqualsString(sqlrelay:getColumnTypeByIndex(8), "DATE"),
     assertEqualsString(sqlrelay:getColumnTypeByName("TESTDATE"), "DATE"),
-    assertEqualsString(sqlrelay:getColumnTypeByIndex(4), "LONG"),
-    assertEqualsString(sqlrelay:getColumnTypeByName("TESTLONG"), "LONG"),
-    assertEqualsString(sqlrelay:getColumnTypeByIndex(5), "CLOB"),
-    assertEqualsString(sqlrelay:getColumnTypeByName("TESTCLOB"), "CLOB"),
-    assertEqualsString(sqlrelay:getColumnTypeByIndex(6), "BLOB"),
-    assertEqualsString(sqlrelay:getColumnTypeByName("TESTBLOB"), "BLOB"),
+    assertEqualsString(sqlrelay:getColumnTypeByIndex(9), "TIME"),
+    assertEqualsString(sqlrelay:getColumnTypeByName("TESTTIME"), "TIME"),
+    assertEqualsString(sqlrelay:getColumnTypeByIndex(10), "TIMESTAMP"),
+    assertEqualsString(sqlrelay:getColumnTypeByName("TESTTIMESTAMP"), "TIMESTAMP"),
     io:format("~n"),
 
     %% COLUMN LENGTH
     io:format("COLUMN LENGTH: ~n"),
-    assertEqualsInt(sqlrelay:getColumnLengthByIndex(0), 22),
-    assertEqualsInt(sqlrelay:getColumnLengthByName("TESTNUMBER"), 22),
-    assertEqualsInt(sqlrelay:getColumnLengthByIndex(1), 40),
+    assertEqualsInt(sqlrelay:getColumnLengthByIndex(0), 2),
+    assertEqualsInt(sqlrelay:getColumnLengthByName("TESTSMALLINT"), 2),
+    assertEqualsInt(sqlrelay:getColumnLengthByIndex(1), 4),
+    assertEqualsInt(sqlrelay:getColumnLengthByName("TESTINT"), 4),
+    assertEqualsInt(sqlrelay:getColumnLengthByIndex(2), 8),
+    assertEqualsInt(sqlrelay:getColumnLengthByName("TESTBIGINT"), 8),
+    assertEqualsInt(sqlrelay:getColumnLengthByIndex(3), 12),
+    assertEqualsInt(sqlrelay:getColumnLengthByName("TESTDECIMAL"), 12),
+    assertEqualsInt(sqlrelay:getColumnLengthByIndex(4), 4),
+    assertEqualsInt(sqlrelay:getColumnLengthByName("TESTREAL"), 4),
+    assertEqualsInt(sqlrelay:getColumnLengthByIndex(5), 8),
+    assertEqualsInt(sqlrelay:getColumnLengthByName("TESTDOUBLE"), 8),
+    assertEqualsInt(sqlrelay:getColumnLengthByIndex(6), 40),
     assertEqualsInt(sqlrelay:getColumnLengthByName("TESTCHAR"), 40),
-    assertEqualsInt(sqlrelay:getColumnLengthByIndex(2), 40),
+    assertEqualsInt(sqlrelay:getColumnLengthByIndex(7), 40),
     assertEqualsInt(sqlrelay:getColumnLengthByName("TESTVARCHAR"), 40),
-    assertEqualsInt(sqlrelay:getColumnLengthByIndex(3), 7),
-    assertEqualsInt(sqlrelay:getColumnLengthByName("TESTDATE"), 7),
-    assertEqualsInt(sqlrelay:getColumnLengthByIndex(4), 0),
-    assertEqualsInt(sqlrelay:getColumnLengthByName("TESTLONG"), 0),
-    assertEqualsInt(sqlrelay:getColumnLengthByIndex(5), 0),
-    assertEqualsInt(sqlrelay:getColumnLengthByName("TESTCLOB"), 0),
-    assertEqualsInt(sqlrelay:getColumnLengthByIndex(6), 0),
-    assertEqualsInt(sqlrelay:getColumnLengthByName("TESTBLOB"), 0),
+    assertEqualsInt(sqlrelay:getColumnLengthByIndex(8), 6),
+    assertEqualsInt(sqlrelay:getColumnLengthByName("TESTDATE"), 6),
+    assertEqualsInt(sqlrelay:getColumnLengthByIndex(9), 6),
+    assertEqualsInt(sqlrelay:getColumnLengthByName("TESTTIME"), 6),
+    assertEqualsInt(sqlrelay:getColumnLengthByIndex(10), 16),
+    assertEqualsInt(sqlrelay:getColumnLengthByName("TESTTIMESTAMP"), 16),
     io:format("~n"),
 
     %% LONGEST COLUMN
     io:format("LONGEST COLUMN: ~n"),
     assertEqualsInt(sqlrelay:getLongestByIndex(0), 1),
-    assertEqualsInt(sqlrelay:getLongestByName("TESTNUMBER"), 1),
-    assertEqualsInt(sqlrelay:getLongestByIndex(1), 40),
+    assertEqualsInt(sqlrelay:getLongestByName("TESTSMALLINT"), 1),
+    assertEqualsInt(sqlrelay:getLongestByIndex(1), 1),
+    assertEqualsInt(sqlrelay:getLongestByName("TESTINT"), 1),
+    assertEqualsInt(sqlrelay:getLongestByIndex(2), 1),
+    assertEqualsInt(sqlrelay:getLongestByName("TESTBIGINT"), 1),
+    assertEqualsInt(sqlrelay:getLongestByIndex(3), 4),
+    assertEqualsInt(sqlrelay:getLongestByName("TESTDECIMAL"), 4),
+    assertEqualsInt(sqlrelay:getLongestByIndex(6), 40),
     assertEqualsInt(sqlrelay:getLongestByName("TESTCHAR"), 40),
-    assertEqualsInt(sqlrelay:getLongestByIndex(2), 12),
+    assertEqualsInt(sqlrelay:getLongestByIndex(7), 12),
     assertEqualsInt(sqlrelay:getLongestByName("TESTVARCHAR"), 12),
-    assertEqualsInt(sqlrelay:getLongestByIndex(3), 9),
-    assertEqualsInt(sqlrelay:getLongestByName("TESTDATE"), 9),
-    assertEqualsInt(sqlrelay:getLongestByIndex(4), 9),
-    assertEqualsInt(sqlrelay:getLongestByName("TESTLONG"), 9),
-    assertEqualsInt(sqlrelay:getLongestByIndex(5), 9),
-    assertEqualsInt(sqlrelay:getLongestByName("TESTCLOB"), 9),
-    assertEqualsInt(sqlrelay:getLongestByIndex(6), 9),
-    assertEqualsInt(sqlrelay:getLongestByName("TESTBLOB"), 9),
+    assertEqualsInt(sqlrelay:getLongestByIndex(8), 10),
+    assertEqualsInt(sqlrelay:getLongestByName("TESTDATE"), 10),
+    assertEqualsInt(sqlrelay:getLongestByIndex(9), 8),
+    assertEqualsInt(sqlrelay:getLongestByName("TESTTIME"), 8),
     io:format("~n"),
 
     %% ROW COUNT
@@ -311,106 +379,116 @@ main() ->
     %% FIELDS BY INDEX
     io:format("FIELDS BY INDEX: ~n"),
     assertEqualsString(sqlrelay:getFieldByIndex(0, 0), "1"),
-    assertEqualsString(sqlrelay:getFieldByIndex(0, 1),
+    assertEqualsString(sqlrelay:getFieldByIndex(0, 1), "1"),
+    assertEqualsString(sqlrelay:getFieldByIndex(0, 2), "1"),
+    assertEqualsString(sqlrelay:getFieldByIndex(0, 3), "1.10"),
+    assertEqualsString(sqlrelay:getFieldByIndex(0, 6),
                        "testchar1                               "),
-    assertEqualsString(sqlrelay:getFieldByIndex(0, 2), "testvarchar1"),
-    assertEqualsString(sqlrelay:getFieldByIndex(0, 3), "01-JAN-01"),
-    assertEqualsString(sqlrelay:getFieldByIndex(0, 4), "testlong1"),
-    assertEqualsString(sqlrelay:getFieldByIndex(0, 5), "testclob1"),
-    assertEqualsString(sqlrelay:getFieldByIndex(0, 6), ""),
+    assertEqualsString(sqlrelay:getFieldByIndex(0, 7), "testvarchar1"),
+    assertEqualsString(sqlrelay:getFieldByIndex(0, 8), "2001-01-01"),
+    assertEqualsString(sqlrelay:getFieldByIndex(0, 9), "01:00:00"),
     io:format("~n"),
     assertEqualsString(sqlrelay:getFieldByIndex(7, 0), "8"),
-    assertEqualsString(sqlrelay:getFieldByIndex(7, 1),
+    assertEqualsString(sqlrelay:getFieldByIndex(7, 1), "8"),
+    assertEqualsString(sqlrelay:getFieldByIndex(7, 2), "8"),
+    assertEqualsString(sqlrelay:getFieldByIndex(7, 3), "8.80"),
+    assertEqualsString(sqlrelay:getFieldByIndex(7, 6),
                        "testchar8                               "),
-    assertEqualsString(sqlrelay:getFieldByIndex(7, 2), "testvarchar8"),
-    assertEqualsString(sqlrelay:getFieldByIndex(7, 3), "01-JAN-08"),
-    assertEqualsString(sqlrelay:getFieldByIndex(7, 4), "testlong8"),
-    assertEqualsString(sqlrelay:getFieldByIndex(7, 5), "testclob8"),
-    assertEqualsString(sqlrelay:getFieldByIndex(7, 6), "testblob8"),
+    assertEqualsString(sqlrelay:getFieldByIndex(7, 7), "testvarchar8"),
+    assertEqualsString(sqlrelay:getFieldByIndex(7, 8), "2008-01-01"),
+    assertEqualsString(sqlrelay:getFieldByIndex(7, 9), "08:00:00"),
     io:format("~n"),
 
     %% FIELD LENGTHS BY INDEX
     io:format("FIELD LENGTHS BY INDEX: ~n"),
     assertEqualsInt(sqlrelay:getFieldLengthByIndex(0, 0), 1),
-    assertEqualsInt(sqlrelay:getFieldLengthByIndex(0, 1), 40),
-    assertEqualsInt(sqlrelay:getFieldLengthByIndex(0, 2), 12),
-    assertEqualsInt(sqlrelay:getFieldLengthByIndex(0, 3), 9),
-    assertEqualsInt(sqlrelay:getFieldLengthByIndex(0, 4), 9),
-    assertEqualsInt(sqlrelay:getFieldLengthByIndex(0, 5), 9),
-    assertEqualsInt(sqlrelay:getFieldLengthByIndex(0, 6), 0),
+    assertEqualsInt(sqlrelay:getFieldLengthByIndex(0, 1), 1),
+    assertEqualsInt(sqlrelay:getFieldLengthByIndex(0, 2), 1),
+    assertEqualsInt(sqlrelay:getFieldLengthByIndex(0, 3), 4),
+    assertEqualsInt(sqlrelay:getFieldLengthByIndex(0, 6), 40),
+    assertEqualsInt(sqlrelay:getFieldLengthByIndex(0, 7), 12),
+    assertEqualsInt(sqlrelay:getFieldLengthByIndex(0, 8), 10),
+    assertEqualsInt(sqlrelay:getFieldLengthByIndex(0, 9), 8),
     io:format("~n"),
     assertEqualsInt(sqlrelay:getFieldLengthByIndex(7, 0), 1),
-    assertEqualsInt(sqlrelay:getFieldLengthByIndex(7, 1), 40),
-    assertEqualsInt(sqlrelay:getFieldLengthByIndex(7, 2), 12),
-    assertEqualsInt(sqlrelay:getFieldLengthByIndex(7, 3), 9),
-    assertEqualsInt(sqlrelay:getFieldLengthByIndex(7, 4), 9),
-    assertEqualsInt(sqlrelay:getFieldLengthByIndex(7, 5), 9),
-    assertEqualsInt(sqlrelay:getFieldLengthByIndex(7, 6), 9),
+    assertEqualsInt(sqlrelay:getFieldLengthByIndex(7, 1), 1),
+    assertEqualsInt(sqlrelay:getFieldLengthByIndex(7, 2), 1),
+    assertEqualsInt(sqlrelay:getFieldLengthByIndex(7, 3), 4),
+    assertEqualsInt(sqlrelay:getFieldLengthByIndex(7, 6), 40),
+    assertEqualsInt(sqlrelay:getFieldLengthByIndex(7, 7), 12),
+    assertEqualsInt(sqlrelay:getFieldLengthByIndex(7, 8), 10),
+    assertEqualsInt(sqlrelay:getFieldLengthByIndex(7, 9), 8),
     io:format("~n"),
 
     %% FIELDS BY NAME
     io:format("FIELDS BY NAME: ~n"),
-    assertEqualsString(sqlrelay:getFieldByName(0, "TESTNUMBER"), "1"),
+    assertEqualsString(sqlrelay:getFieldByName(0, "TESTSMALLINT"), "1"),
+    assertEqualsString(sqlrelay:getFieldByName(0, "TESTINT"), "1"),
+    assertEqualsString(sqlrelay:getFieldByName(0, "TESTBIGINT"), "1"),
+    assertEqualsString(sqlrelay:getFieldByName(0, "TESTDECIMAL"), "1.10"),
     assertEqualsString(sqlrelay:getFieldByName(0, "TESTCHAR"),
                        "testchar1                               "),
     assertEqualsString(sqlrelay:getFieldByName(0, "TESTVARCHAR"), "testvarchar1"),
-    assertEqualsString(sqlrelay:getFieldByName(0, "TESTDATE"), "01-JAN-01"),
-    assertEqualsString(sqlrelay:getFieldByName(0, "TESTLONG"), "testlong1"),
-    assertEqualsString(sqlrelay:getFieldByName(0, "TESTCLOB"), "testclob1"),
-    assertEqualsString(sqlrelay:getFieldByName(0, "TESTBLOB"), ""),
+    assertEqualsString(sqlrelay:getFieldByName(0, "TESTDATE"), "2001-01-01"),
+    assertEqualsString(sqlrelay:getFieldByName(0, "TESTTIME"), "01:00:00"),
     io:format("~n"),
-    assertEqualsString(sqlrelay:getFieldByName(7, "TESTNUMBER"), "8"),
+    assertEqualsString(sqlrelay:getFieldByName(7, "TESTSMALLINT"), "8"),
+    assertEqualsString(sqlrelay:getFieldByName(7, "TESTINT"), "8"),
+    assertEqualsString(sqlrelay:getFieldByName(7, "TESTBIGINT"), "8"),
+    assertEqualsString(sqlrelay:getFieldByName(7, "TESTDECIMAL"), "8.80"),
     assertEqualsString(sqlrelay:getFieldByName(7, "TESTCHAR"),
                        "testchar8                               "),
     assertEqualsString(sqlrelay:getFieldByName(7, "TESTVARCHAR"), "testvarchar8"),
-    assertEqualsString(sqlrelay:getFieldByName(7, "TESTDATE"), "01-JAN-08"),
-    assertEqualsString(sqlrelay:getFieldByName(7, "TESTLONG"), "testlong8"),
-    assertEqualsString(sqlrelay:getFieldByName(7, "TESTCLOB"), "testclob8"),
-    assertEqualsString(sqlrelay:getFieldByName(7, "TESTBLOB"), "testblob8"),
+    assertEqualsString(sqlrelay:getFieldByName(7, "TESTDATE"), "2008-01-01"),
+    assertEqualsString(sqlrelay:getFieldByName(7, "TESTTIME"), "08:00:00"),
     io:format("~n"),
 
     %% FIELD LENGTHS BY NAME
     io:format("FIELD LENGTHS BY NAME: ~n"),
-    assertEqualsInt(sqlrelay:getFieldLengthByName(0, "TESTNUMBER"), 1),
+    assertEqualsInt(sqlrelay:getFieldLengthByName(0, "TESTSMALLINT"), 1),
+    assertEqualsInt(sqlrelay:getFieldLengthByName(0, "TESTINT"), 1),
+    assertEqualsInt(sqlrelay:getFieldLengthByName(0, "TESTBIGINT"), 1),
+    assertEqualsInt(sqlrelay:getFieldLengthByName(0, "TESTDECIMAL"), 4),
     assertEqualsInt(sqlrelay:getFieldLengthByName(0, "TESTCHAR"), 40),
     assertEqualsInt(sqlrelay:getFieldLengthByName(0, "TESTVARCHAR"), 12),
-    assertEqualsInt(sqlrelay:getFieldLengthByName(0, "TESTDATE"), 9),
-    assertEqualsInt(sqlrelay:getFieldLengthByName(0, "TESTLONG"), 9),
-    assertEqualsInt(sqlrelay:getFieldLengthByName(0, "TESTCLOB"), 9),
-    assertEqualsInt(sqlrelay:getFieldLengthByName(0, "TESTBLOB"), 0),
+    assertEqualsInt(sqlrelay:getFieldLengthByName(0, "TESTDATE"), 10),
+    assertEqualsInt(sqlrelay:getFieldLengthByName(0, "TESTTIME"), 8),
     io:format("~n"),
-    assertEqualsInt(sqlrelay:getFieldLengthByName(7, "TESTNUMBER"), 1),
+    assertEqualsInt(sqlrelay:getFieldLengthByName(7, "TESTSMALLINT"), 1),
+    assertEqualsInt(sqlrelay:getFieldLengthByName(7, "TESTINT"), 1),
+    assertEqualsInt(sqlrelay:getFieldLengthByName(7, "TESTBIGINT"), 1),
+    assertEqualsInt(sqlrelay:getFieldLengthByName(7, "TESTDECIMAL"), 4),
     assertEqualsInt(sqlrelay:getFieldLengthByName(7, "TESTCHAR"), 40),
     assertEqualsInt(sqlrelay:getFieldLengthByName(7, "TESTVARCHAR"), 12),
-    assertEqualsInt(sqlrelay:getFieldLengthByName(7, "TESTDATE"), 9),
-    assertEqualsInt(sqlrelay:getFieldLengthByName(7, "TESTLONG"), 9),
-    assertEqualsInt(sqlrelay:getFieldLengthByName(7, "TESTCLOB"), 9),
-    assertEqualsInt(sqlrelay:getFieldLengthByName(7, "TESTBLOB"), 9),
+    assertEqualsInt(sqlrelay:getFieldLengthByName(7, "TESTDATE"), 10),
+    assertEqualsInt(sqlrelay:getFieldLengthByName(7, "TESTTIME"), 8),
     io:format("~n"),
 
     %% FIELDS BY ARRAY
     io:format("FIELDS BY ARRAY: ~n"),
     {ok, Row0} = sqlrelay:getRow(0),
     assertEqualsString(lists:nth(1, Row0), "1"),
-    assertEqualsString(lists:nth(2, Row0),
+    assertEqualsString(lists:nth(2, Row0), "1"),
+    assertEqualsString(lists:nth(3, Row0), "1"),
+    assertEqualsString(lists:nth(4, Row0), "1.10"),
+    assertEqualsString(lists:nth(7, Row0),
                        "testchar1                               "),
-    assertEqualsString(lists:nth(3, Row0), "testvarchar1"),
-    assertEqualsString(lists:nth(4, Row0), "01-JAN-01"),
-    assertEqualsString(lists:nth(5, Row0), "testlong1"),
-    assertEqualsString(lists:nth(6, Row0), "testclob1"),
-    assertEqualsString(lists:nth(7, Row0), ""),
+    assertEqualsString(lists:nth(8, Row0), "testvarchar1"),
+    assertEqualsString(lists:nth(9, Row0), "2001-01-01"),
+    assertEqualsString(lists:nth(10, Row0), "01:00:00"),
     io:format("~n"),
 
     %% FIELD LENGTHS BY ARRAY
     io:format("FIELD LENGTHS BY ARRAY: ~n"),
     {ok, Rowlens0} = sqlrelay:getRowLengths(0),
     assertEqualsInt(lists:nth(1, Rowlens0), 1),
-    assertEqualsInt(lists:nth(2, Rowlens0), 40),
-    assertEqualsInt(lists:nth(3, Rowlens0), 12),
-    assertEqualsInt(lists:nth(4, Rowlens0), 9),
-    assertEqualsInt(lists:nth(5, Rowlens0), 9),
-    assertEqualsInt(lists:nth(6, Rowlens0), 9),
-    assertEqualsInt(lists:nth(7, Rowlens0), 0),
+    assertEqualsInt(lists:nth(2, Rowlens0), 1),
+    assertEqualsInt(lists:nth(3, Rowlens0), 1),
+    assertEqualsInt(lists:nth(4, Rowlens0), 4),
+    assertEqualsInt(lists:nth(7, Rowlens0), 40),
+    assertEqualsInt(lists:nth(8, Rowlens0), 12),
+    assertEqualsInt(lists:nth(9, Rowlens0), 10),
+    assertEqualsInt(lists:nth(10, Rowlens0), 8),
     io:format("~n"),
 
     %% RESULT SET BUFFER SIZE
@@ -423,7 +501,7 @@ main() ->
         "from "
         "	testtable "
         "order by "
-        "	testnumber")),
+        "	testsmallint ")),
     assertEqualsInt(sqlrelay:getResultSetBufferSize(), 2),
     io:format("~n"),
     assertEqualsInt(sqlrelay:firstRowIndex(), 0),
@@ -432,6 +510,7 @@ main() ->
     assertEqualsString(sqlrelay:getFieldByIndex(0, 0), "1"),
     assertEqualsString(sqlrelay:getFieldByIndex(1, 0), "2"),
     assertEqualsString(sqlrelay:getFieldByIndex(2, 0), "3"),
+    io:format("~n"),
     assertEqualsInt(sqlrelay:firstRowIndex(), 2),
     assertFalse(sqlrelay:endOfResultSet()),
     assertEqualsInt(sqlrelay:rowCount(), 4),
@@ -458,7 +537,7 @@ main() ->
         "from "
         "	testtable "
         "order by "
-        "	testnumber")),
+        "	testsmallint ")),
     assertEqualsString(sqlrelay:getColumnName(0), null),
     assertEqualsInt(sqlrelay:getColumnLengthByIndex(0), 0),
     assertEqualsString(sqlrelay:getColumnTypeByIndex(0), null),
@@ -469,10 +548,10 @@ main() ->
         "from "
         "	testtable "
         "order by "
-        "	testnumber")),
-    assertEqualsString(sqlrelay:getColumnName(0), "TESTNUMBER"),
-    assertEqualsInt(sqlrelay:getColumnLengthByIndex(0), 22),
-    assertEqualsString(sqlrelay:getColumnTypeByIndex(0), "NUMBER"),
+        "	testsmallint ")),
+    assertEqualsString(sqlrelay:getColumnName(0), "TESTSMALLINT"),
+    assertEqualsInt(sqlrelay:getColumnLengthByIndex(0), 2),
+    assertEqualsString(sqlrelay:getColumnTypeByIndex(0), "SMALLINT"),
     io:format("~n"),
 
     %% SUSPENDED SESSION
@@ -483,7 +562,7 @@ main() ->
         "from "
         "	testtable "
         "order by "
-        "	testnumber")),
+        "	testsmallint ")),
     sqlrelay:suspendResultSet(),
     assertTrue(sqlrelay:suspendSession()),
     {ok, Port1} = sqlrelay:getConnectionPort(),
@@ -505,7 +584,7 @@ main() ->
         "from "
         "	testtable "
         "order by "
-        "	testnumber")),
+        "	testsmallint ")),
     sqlrelay:suspendResultSet(),
     assertTrue(sqlrelay:suspendSession()),
     {ok, Port2} = sqlrelay:getConnectionPort(),
@@ -527,7 +606,7 @@ main() ->
         "from "
         "	testtable "
         "order by "
-        "	testnumber")),
+        "	testsmallint ")),
     sqlrelay:suspendResultSet(),
     assertTrue(sqlrelay:suspendSession()),
     {ok, Port3} = sqlrelay:getConnectionPort(),
@@ -553,7 +632,7 @@ main() ->
         "from "
         "	testtable "
         "order by "
-        "	testnumber")),
+        "	testsmallint ")),
     assertEqualsString(sqlrelay:getFieldByIndex(2, 0), "3"),
     {ok, Id1} = sqlrelay:getResultSetId(),
     sqlrelay:suspendResultSet(),
@@ -589,7 +668,7 @@ main() ->
         "from "
         "	testtable "
         "order by "
-        "	testnumber")),
+        "	testsmallint ")),
     {ok, Filename1} = sqlrelay:getCacheFileName(),
     assertEqualsString(Filename1, "cachefile1"),
     sqlrelay:cacheOff(),
@@ -599,26 +678,34 @@ main() ->
 
     %% COLUMN COUNT FOR CACHED RESULT SET
     io:format("COLUMN COUNT FOR CACHED RESULT SET: ~n"),
-    assertEqualsInt(sqlrelay:colCount(), 7),
+    assertEqualsInt(sqlrelay:colCount(), 13),
     io:format("~n"),
 
     %% COLUMN NAMES FOR CACHED RESULT SET
     io:format("COLUMN NAMES FOR CACHED RESULT SET: ~n"),
-    assertEqualsString(sqlrelay:getColumnName(0), "TESTNUMBER"),
-    assertEqualsString(sqlrelay:getColumnName(1), "TESTCHAR"),
-    assertEqualsString(sqlrelay:getColumnName(2), "TESTVARCHAR"),
-    assertEqualsString(sqlrelay:getColumnName(3), "TESTDATE"),
-    assertEqualsString(sqlrelay:getColumnName(4), "TESTLONG"),
-    assertEqualsString(sqlrelay:getColumnName(5), "TESTCLOB"),
-    assertEqualsString(sqlrelay:getColumnName(6), "TESTBLOB"),
+    assertEqualsString(sqlrelay:getColumnName(0), "TESTSMALLINT"),
+    assertEqualsString(sqlrelay:getColumnName(1), "TESTINT"),
+    assertEqualsString(sqlrelay:getColumnName(2), "TESTBIGINT"),
+    assertEqualsString(sqlrelay:getColumnName(3), "TESTDECIMAL"),
+    assertEqualsString(sqlrelay:getColumnName(4), "TESTREAL"),
+    assertEqualsString(sqlrelay:getColumnName(5), "TESTDOUBLE"),
+    assertEqualsString(sqlrelay:getColumnName(6), "TESTCHAR"),
+    assertEqualsString(sqlrelay:getColumnName(7), "TESTVARCHAR"),
+    assertEqualsString(sqlrelay:getColumnName(8), "TESTDATE"),
+    assertEqualsString(sqlrelay:getColumnName(9), "TESTTIME"),
+    assertEqualsString(sqlrelay:getColumnName(10), "TESTTIMESTAMP"),
     {ok, Cols2} = sqlrelay:getColumnNames(),
-    assertEqualsString(lists:nth(1, Cols2), "TESTNUMBER"),
-    assertEqualsString(lists:nth(2, Cols2), "TESTCHAR"),
-    assertEqualsString(lists:nth(3, Cols2), "TESTVARCHAR"),
-    assertEqualsString(lists:nth(4, Cols2), "TESTDATE"),
-    assertEqualsString(lists:nth(5, Cols2), "TESTLONG"),
-    assertEqualsString(lists:nth(6, Cols2), "TESTCLOB"),
-    assertEqualsString(lists:nth(7, Cols2), "TESTBLOB"),
+    assertEqualsString(lists:nth(1, Cols2), "TESTSMALLINT"),
+    assertEqualsString(lists:nth(2, Cols2), "TESTINT"),
+    assertEqualsString(lists:nth(3, Cols2), "TESTBIGINT"),
+    assertEqualsString(lists:nth(4, Cols2), "TESTDECIMAL"),
+    assertEqualsString(lists:nth(5, Cols2), "TESTREAL"),
+    assertEqualsString(lists:nth(6, Cols2), "TESTDOUBLE"),
+    assertEqualsString(lists:nth(7, Cols2), "TESTCHAR"),
+    assertEqualsString(lists:nth(8, Cols2), "TESTVARCHAR"),
+    assertEqualsString(lists:nth(9, Cols2), "TESTDATE"),
+    assertEqualsString(lists:nth(10, Cols2), "TESTTIME"),
+    assertEqualsString(lists:nth(11, Cols2), "TESTTIMESTAMP"),
     io:format("~n"),
 
     %% CACHED RESULT SET WITH RESULT SET BUFFER SIZE
@@ -632,7 +719,7 @@ main() ->
         "from "
         "	testtable "
         "order by "
-        "	testnumber")),
+        "	testsmallint ")),
     {ok, Filename2} = sqlrelay:getCacheFileName(),
     assertEqualsString(Filename2, "cachefile1"),
     sqlrelay:cacheOff(),
@@ -675,7 +762,7 @@ main() ->
         "from "
         "	testtable "
         "order by "
-        "	testnumber")),
+        "	testsmallint ")),
     assertEqualsString(sqlrelay:getFieldByIndex(2, 0), "3"),
     {ok, Filename3} = sqlrelay:getCacheFileName(),
     assertEqualsString(Filename3, "cachefile1"),
@@ -717,7 +804,7 @@ main() ->
         "from "
         "	testtable "
         "order by "
-        "	testnumber")),
+        "	testint")),
     assertEqualsString(sqlrelay:getFieldByIndex(4, 0), "5"),
     assertEqualsString(sqlrelay:getFieldByIndex(5, 0), "6"),
     assertEqualsString(sqlrelay:getFieldByIndex(6, 0), "7"),
@@ -763,20 +850,15 @@ main() ->
     assertTrue(sqlrelay:commit()),
     assertTrue(sqlrelay:autoCommitOff()),
     assertTrue(sqlrelay:sendQuery("drop table testtable")),
+    assertTrue(sqlrelay:commit()),
     io:format("~n"),
 
     %% INDIVIDUAL SUBSTITUTIONS
     io:format("INDIVIDUAL SUBSTITUTIONS: ~n"),
-    sqlrelay:prepareQuery("select $(var1),'$(var2)',$(var3) from dual"),
-    sqlrelay:subString("var1", "$(var11)"),
-    sqlrelay:subString("var2", "$(var21)"),
-    sqlrelay:subString("var3", "$(var31)"),
-    sqlrelay:subString("var11", "$(var111)"),
-    sqlrelay:subString("var21", "$(var211)"),
-    sqlrelay:subString("var31", "$(var311)"),
-    sqlrelay:subLong("var111", 1),
-    sqlrelay:subString("var211", "hello"),
-    sqlrelay:subDouble("var311", 10.5556, 6, 4),
+    sqlrelay:prepareQuery("values ($(var1),'$(var2)','$(var3)')"),
+    sqlrelay:subLong("var1", 1),
+    sqlrelay:subString("var2", "hello"),
+    sqlrelay:subDouble("var3", 10.5556, 6, 4),
     assertTrue(sqlrelay:executeQuery()),
     assertEqualsString(sqlrelay:getFieldByIndex(0, 0), "1"),
     assertEqualsString(sqlrelay:getFieldByIndex(0, 1), "hello"),
@@ -785,16 +867,7 @@ main() ->
 
     %% ARRAY SUBSTITUTIONS (done individually; no array-subst API)
     io:format("ARRAY SUBSTITUTIONS: ~n"),
-    sqlrelay:prepareQuery("select $(var1),$(var2),$(var3) from dual"),
-    sqlrelay:subLong("var1", 1),
-    sqlrelay:subLong("var2", 2),
-    sqlrelay:subLong("var3", 3),
-    assertTrue(sqlrelay:executeQuery()),
-    assertEqualsString(sqlrelay:getFieldByIndex(0, 0), "1"),
-    assertEqualsString(sqlrelay:getFieldByIndex(0, 1), "2"),
-    assertEqualsString(sqlrelay:getFieldByIndex(0, 2), "3"),
-    io:format("~n"),
-    sqlrelay:prepareQuery("select '$(var1)','$(var2)','$(var3)' from dual"),
+    sqlrelay:prepareQuery("values ('$(var1)','$(var2)','$(var3)')"),
     sqlrelay:subString("var1", "hi"),
     sqlrelay:subString("var2", "hello"),
     sqlrelay:subString("var3", "bye"),
@@ -803,7 +876,16 @@ main() ->
     assertEqualsString(sqlrelay:getFieldByIndex(0, 1), "hello"),
     assertEqualsString(sqlrelay:getFieldByIndex(0, 2), "bye"),
     io:format("~n"),
-    sqlrelay:prepareQuery("select $(var1),$(var2),$(var3) from dual"),
+    sqlrelay:prepareQuery("values ($(var1),$(var2),$(var3))"),
+    sqlrelay:subLong("var1", 1),
+    sqlrelay:subLong("var2", 2),
+    sqlrelay:subLong("var3", 3),
+    assertTrue(sqlrelay:executeQuery()),
+    assertEqualsString(sqlrelay:getFieldByIndex(0, 0), "1"),
+    assertEqualsString(sqlrelay:getFieldByIndex(0, 1), "2"),
+    assertEqualsString(sqlrelay:getFieldByIndex(0, 2), "3"),
+    io:format("~n"),
+    sqlrelay:prepareQuery("values ($(var1),$(var2),$(var3))"),
     sqlrelay:subDouble("var1", 10.55, 4, 2),
     sqlrelay:subDouble("var2", 10.556, 5, 3),
     sqlrelay:subDouble("var3", 10.5556, 6, 4),
@@ -816,12 +898,12 @@ main() ->
     %% NULLS AS NULLS
     io:format("NULLS AS NULLS: ~n"),
     sqlrelay:getNullsAsNulls(),
-    assertTrue(sqlrelay:sendQuery("select NULL,1,NULL from dual")),
+    assertTrue(sqlrelay:sendQuery("select NULL,1,NULL from sysibm.sysdummy1")),
     assertEqualsString(sqlrelay:getFieldByIndex(0, 0), null),
     assertEqualsString(sqlrelay:getFieldByIndex(0, 1), "1"),
     assertEqualsString(sqlrelay:getFieldByIndex(0, 2), null),
     sqlrelay:getNullsAsEmptyStrings(),
-    assertTrue(sqlrelay:sendQuery("select NULL,1,NULL from dual")),
+    assertTrue(sqlrelay:sendQuery("select NULL,1,NULL from sysibm.sysdummy1")),
     assertEqualsString(sqlrelay:getFieldByIndex(0, 0), ""),
     assertEqualsString(sqlrelay:getFieldByIndex(0, 1), "1"),
     assertEqualsString(sqlrelay:getFieldByIndex(0, 2), ""),
@@ -843,18 +925,19 @@ main() ->
         "	testclob2 clob, "
         "	testblob1 blob, "
         "	testblob2 blob)")),
+    assertTrue(sqlrelay:commit()),
     sqlrelay:prepareQuery(
         "insert into "
         "	testtable "
         "values ("
-        "	:var1, "
-        "	:var2, "
-        "	:var3, "
-        "	:var4)"),
-    sqlrelay:inputBindClob("var1", "", 0),
-    sqlrelay:inputBindClob("var2", "", 0),
-    sqlrelay:inputBindBlob("var3", "", 0),
-    sqlrelay:inputBindBlob("var4", "", 0),
+        "	?, "
+        "	?, "
+        "	?, "
+        "	?)"),
+    sqlrelay:inputBindClob("1", "", 0),
+    sqlrelay:inputBindClob("2", "", 0),
+    sqlrelay:inputBindBlob("3", "", 0),
+    sqlrelay:inputBindBlob("4", "", 0),
     assertTrue(sqlrelay:executeQuery()),
     sqlrelay:sendQuery("select * from testtable"),
     assertEqualsString(sqlrelay:getFieldByIndex(0, 0), ""),
@@ -863,20 +946,22 @@ main() ->
     assertEqualsString(sqlrelay:getFieldByIndex(0, 3), null),
     sqlrelay:getNullsAsEmptyStrings(),
     assertTrue(sqlrelay:sendQuery("drop table testtable")),
+    assertTrue(sqlrelay:commit()),
     io:format("~n"),
 
     %% LONG LOBS
     io:format("LONG LOBS: ~n"),
     sqlrelay:sendQuery("drop table testtable"),
-    sqlrelay:sendQuery(
+    assertTrue(sqlrelay:sendQuery(
         "create table testtable ("
         "	testclob clob, "
-        "	testblob blob)"),
-    sqlrelay:prepareQuery("insert into testtable values (:clobval,:blobval)"),
-    LargeBufferLength = 8192,
+        "	testblob blob)")),
+    assertTrue(sqlrelay:commit()),
+    sqlrelay:prepareQuery("insert into testtable values (?,?)"),
+    LargeBufferLength = 20480,
     LargeBuf = largeBuffer(LargeBufferLength),
-    sqlrelay:inputBindClob("clobval", LargeBuf, LargeBufferLength),
-    sqlrelay:inputBindBlob("blobval", LargeBuf, LargeBufferLength),
+    sqlrelay:inputBindClob("1", LargeBuf, LargeBufferLength),
+    sqlrelay:inputBindBlob("2", LargeBuf, LargeBufferLength),
     assertTrue(sqlrelay:executeQuery()),
     sqlrelay:sendQuery("select * from testtable"),
     assertEqualsInt(sqlrelay:getFieldLengthByName(0, "TESTCLOB"),
@@ -887,25 +972,36 @@ main() ->
     assertEqualsStringLen(sqlrelay:getFieldByName(0, "TESTBLOB"),
                           LargeBuf, LargeBufferLength),
     assertTrue(sqlrelay:sendQuery("drop table testtable")),
+    assertTrue(sqlrelay:commit()),
     io:format("~n"),
 
     %% OUTPUT BIND BY POSITION
     io:format("OUTPUT BIND BY POSITION: ~n"),
+    sqlrelay:sendQuery("drop procedure testproc"),
     sqlrelay:getNullsAsNulls(),
-    sqlrelay:prepareQuery(
+    assertTrue(sqlrelay:sendQuery(
+        "create procedure testproc("
+        "	out out1 int, "
+        "	out out2 varchar(20), "
+        "	out out3 double, "
+        "	out out4 date, "
+        "	out out5 varchar(20)) "
+        "language sql "
         "begin "
-        "	:numvar:=1; "
-        "	:stringvar:='hello'; "
-        "	:floatvar:=2.5; "
-        "	:datevar:='03-FEB-2001'; "
-        "	:nullvar:=null; "
-        "end;"),
+        "	set out1 = 1; "
+        "	set out2 = 'hello'; "
+        "	set out3 = 2.5; "
+        "	set out4 = '2001-02-03'; "
+        "	set out5 = null; "
+        "end")),
+    assertTrue(sqlrelay:commit()),
+    sqlrelay:prepareQuery("call testproc(?,?,?,?,?)"),
     assertEqualsInt(sqlrelay:countBindVariables(), 5),
     sqlrelay:defineOutputBindInteger("1"),
-    sqlrelay:defineOutputBindString("2", 10),
+    sqlrelay:defineOutputBindString("2", 20),
     sqlrelay:defineOutputBindDouble("3"),
     sqlrelay:defineOutputBindDate("4"),
-    sqlrelay:defineOutputBindString("5", 10),
+    sqlrelay:defineOutputBindString("5", 20),
     assertTrue(sqlrelay:executeQuery()),
     assertEqualsInt(sqlrelay:getOutputBindInteger("1"), 1),
     assertEqualsString(sqlrelay:getOutputBindString("2"), "hello"),
@@ -921,169 +1017,120 @@ main() ->
     assertFalse(sqlrelay:getOutputBindDateIsNegative("4")),
     assertEqualsString(sqlrelay:getOutputBindString("5"), null),
     sqlrelay:getNullsAsEmptyStrings(),
+    assertTrue(sqlrelay:sendQuery("drop procedure testproc")),
+    assertTrue(sqlrelay:commit()),
     io:format("~n"),
 
     %% OUTPUT BIND BY NAME
-    io:format("OUTPUT BIND BY NAME: ~n"),
-    sqlrelay:getNullsAsNulls(),
-    sqlrelay:clearBinds(),
-    sqlrelay:defineOutputBindInteger("numvar"),
-    sqlrelay:defineOutputBindString("stringvar", 10),
-    sqlrelay:defineOutputBindDouble("floatvar"),
-    sqlrelay:defineOutputBindDate("datevar"),
-    sqlrelay:defineOutputBindString("nullvar", 10),
-    assertTrue(sqlrelay:executeQuery()),
-    assertEqualsInt(sqlrelay:getOutputBindInteger("numvar"), 1),
-    assertEqualsString(sqlrelay:getOutputBindString("stringvar"), "hello"),
-    assertEqualsDouble(sqlrelay:getOutputBindDouble("floatvar"), 2.5),
-    assertEqualsInt(sqlrelay:getOutputBindDateYear("datevar"), 2001),
-    assertEqualsInt(sqlrelay:getOutputBindDateMonth("datevar"), 2),
-    assertEqualsInt(sqlrelay:getOutputBindDateDay("datevar"), 3),
-    assertEqualsInt(sqlrelay:getOutputBindDateHour("datevar"), 0),
-    assertEqualsInt(sqlrelay:getOutputBindDateMinute("datevar"), 0),
-    assertEqualsInt(sqlrelay:getOutputBindDateSecond("datevar"), 0),
-    assertEqualsInt(sqlrelay:getOutputBindDateMicrosecond("datevar"), 0),
-    assertEqualsString(sqlrelay:getOutputBindDateTz("datevar"), ""),
-    assertFalse(sqlrelay:getOutputBindDateIsNegative("datevar")),
-    assertEqualsString(sqlrelay:getOutputBindString("nullvar"), null),
-    sqlrelay:getNullsAsEmptyStrings(),
-    io:format("~n"),
+    %% db2 doesn't support bind by name
 
     %% OUTPUT BIND BY NAME WITH VALIDATION
-    io:format("OUTPUT BIND BY NAME WITH VALIDATION: ~n"),
-    sqlrelay:getNullsAsNulls(),
-    sqlrelay:clearBinds(),
-    sqlrelay:defineOutputBindInteger("numvar"),
-    sqlrelay:defineOutputBindString("stringvar", 10),
-    sqlrelay:defineOutputBindDouble("floatvar"),
-    sqlrelay:defineOutputBindDate("datevar"),
-    sqlrelay:defineOutputBindString("nullvar", 10),
-    sqlrelay:defineOutputBindString("dummyvar", 10),
-    sqlrelay:validateBinds(),
-    assertTrue(sqlrelay:executeQuery()),
-    assertEqualsInt(sqlrelay:getOutputBindInteger("numvar"), 1),
-    assertEqualsString(sqlrelay:getOutputBindString("stringvar"), "hello"),
-    assertEqualsDouble(sqlrelay:getOutputBindDouble("floatvar"), 2.5),
-    assertEqualsInt(sqlrelay:getOutputBindDateYear("datevar"), 2001),
-    assertEqualsInt(sqlrelay:getOutputBindDateMonth("datevar"), 2),
-    assertEqualsInt(sqlrelay:getOutputBindDateDay("datevar"), 3),
-    assertEqualsInt(sqlrelay:getOutputBindDateHour("datevar"), 0),
-    assertEqualsInt(sqlrelay:getOutputBindDateMinute("datevar"), 0),
-    assertEqualsInt(sqlrelay:getOutputBindDateSecond("datevar"), 0),
-    assertEqualsInt(sqlrelay:getOutputBindDateMicrosecond("datevar"), 0),
-    assertEqualsString(sqlrelay:getOutputBindDateTz("datevar"), ""),
-    assertFalse(sqlrelay:getOutputBindDateIsNegative("datevar")),
-    assertEqualsString(sqlrelay:getOutputBindString("nullvar"), null),
-    sqlrelay:getNullsAsEmptyStrings(),
-    io:format("~n"),
+    %% db2 doesn't support bind by name
 
     %% LOB OUTPUT BIND
     io:format("LOB OUTPUT BIND: ~n"),
     sqlrelay:sendQuery("drop table testtable"),
-    assertTrue(sqlrelay:sendQuery(
+    sqlrelay:sendQuery(
         "create table testtable ("
         "	testclob clob, "
-        "	testblob blob)")),
-    sqlrelay:prepareQuery("insert into testtable values ('hello',:var1)"),
-    sqlrelay:inputBindBlob("var1", "hello", 5),
+        "	testblob blob)"),
+    assertTrue(sqlrelay:commit()),
+    sqlrelay:prepareQuery("insert into testtable values ('hello',?)"),
+    sqlrelay:inputBindBlob("1", "hello", 5),
     assertTrue(sqlrelay:executeQuery()),
-    sqlrelay:prepareQuery(
+    sqlrelay:sendQuery("drop procedure testproc"),
+    assertTrue(sqlrelay:sendQuery(
+        "create procedure testproc("
+        "	out out1 clob, "
+        "	out out2 blob) "
+        "language sql "
         "begin "
-        "	select testclob into :clobvar from testtable; "
-        "	select testblob into :blobvar from testtable; "
-        "end;"),
-    sqlrelay:defineOutputBindClob("clobvar"),
-    sqlrelay:defineOutputBindBlob("blobvar"),
+        "	select testclob into out1 from testtable; "
+        "	select testblob into out2 from testtable; "
+        "end")),
+    assertTrue(sqlrelay:commit()),
+    sqlrelay:prepareQuery("call testproc(?,?)"),
+    sqlrelay:defineOutputBindClob("1"),
+    sqlrelay:defineOutputBindBlob("2"),
     assertTrue(sqlrelay:executeQuery()),
-    assertEqualsStringLen(sqlrelay:getOutputBindClob("clobvar"), "hello", 5),
-    assertEqualsInt(sqlrelay:getOutputBindLength("clobvar"), 5),
-    assertEqualsStringLen(sqlrelay:getOutputBindBlob("blobvar"), "hello", 5),
-    assertEqualsInt(sqlrelay:getOutputBindLength("blobvar"), 5),
+    assertEqualsStringLen(sqlrelay:getOutputBindClob("1"), "hello", 5),
+    assertEqualsInt(sqlrelay:getOutputBindLength("1"), 5),
+    assertEqualsStringLen(sqlrelay:getOutputBindBlob("2"), "hello", 5),
+    assertEqualsInt(sqlrelay:getOutputBindLength("2"), 5),
+    assertTrue(sqlrelay:sendQuery("drop procedure testproc")),
     assertTrue(sqlrelay:sendQuery("drop table testtable")),
+    assertTrue(sqlrelay:commit()),
     io:format("~n"),
 
     %% LONG OUTPUT BIND
     io:format("LONG OUTPUT BIND: ~n"),
-    LongQuery = "begin :bindval:='" ++ LargeBuf ++ "'; end;",
-    sqlrelay:prepareQuery(LongQuery),
-    sqlrelay:defineOutputBindString("bindval", LargeBufferLength),
+    sqlrelay:sendQuery("drop procedure testproc"),
+    assertTrue(sqlrelay:sendQuery(
+        "create procedure testproc("
+        "	in in1 clob, "
+        "	out out1 clob) "
+        "language sql "
+        "begin "
+        "	set out1 = in1; "
+        "end")),
+    assertTrue(sqlrelay:commit()),
+    sqlrelay:prepareQuery("call testproc(?,?)"),
+    sqlrelay:inputBindClob("1", LargeBuf, LargeBufferLength),
+    sqlrelay:defineOutputBindClob("2"),
     assertTrue(sqlrelay:executeQuery()),
-    assertEqualsInt(sqlrelay:getOutputBindLength("bindval"), LargeBufferLength),
-    assertEqualsString(sqlrelay:getOutputBindString("bindval"), LargeBuf),
+    assertEqualsInt(sqlrelay:getOutputBindLength("2"), LargeBufferLength),
+    assertEqualsString(sqlrelay:getOutputBindClob("2"), LargeBuf),
+    assertTrue(sqlrelay:sendQuery("drop procedure testproc")),
+    assertTrue(sqlrelay:commit()),
     io:format("~n"),
 
     %% NEGATIVE INPUT BIND
     io:format("NEGATIVE INPUT BIND: ~n"),
     sqlrelay:sendQuery("drop table testtable"),
-    sqlrelay:sendQuery("create table testtable (testval number)"),
-    sqlrelay:prepareQuery("insert into testtable values (:testval)"),
-    sqlrelay:inputBindLong("testval", -1),
+    sqlrelay:sendQuery("create table testtable (testval integer)"),
+    assertTrue(sqlrelay:commit()),
+    sqlrelay:prepareQuery("insert into testtable values (?)"),
+    sqlrelay:inputBindLong("1", -1),
     assertTrue(sqlrelay:executeQuery()),
     sqlrelay:sendQuery("select testval from testtable"),
     assertEqualsString(sqlrelay:getFieldByName(0, "TESTVAL"), "-1"),
     assertTrue(sqlrelay:sendQuery("drop table testtable")),
+    assertTrue(sqlrelay:commit()),
     io:format("~n"),
 
     %% BIND VALIDATION
-    io:format("BIND VALIDATION: ~n"),
-    sqlrelay:sendQuery("drop table testtable"),
-    sqlrelay:sendQuery(
-        "create table testtable ("
-        "	col1 varchar2(20), "
-        "	col2 varchar2(20), "
-        "	col3 varchar2(20))"),
-    sqlrelay:prepareQuery(
-        "insert into "
-        "	testtable "
-        "values ("
-        "	$(var1), "
-        "	$(var2), "
-        "	$(var3))"),
-    sqlrelay:inputBindString("var1", "1"),
-    sqlrelay:inputBindString("var2", "2"),
-    sqlrelay:inputBindString("var3", "3"),
-    sqlrelay:subString("var1", ":var1"),
-    assertTrue(sqlrelay:validBind("var1")),
-    assertFalse(sqlrelay:validBind("var2")),
-    assertFalse(sqlrelay:validBind("var3")),
-    assertFalse(sqlrelay:validBind("var4")),
-    io:format("~n"),
-    sqlrelay:subString("var2", ":var2"),
-    assertTrue(sqlrelay:validBind("var1")),
-    assertTrue(sqlrelay:validBind("var2")),
-    assertFalse(sqlrelay:validBind("var3")),
-    assertFalse(sqlrelay:validBind("var4")),
-    io:format("~n"),
-    sqlrelay:subString("var3", ":var3"),
-    assertTrue(sqlrelay:validBind("var1")),
-    assertTrue(sqlrelay:validBind("var2")),
-    assertTrue(sqlrelay:validBind("var3")),
-    assertFalse(sqlrelay:validBind("var4")),
-    assertTrue(sqlrelay:executeQuery()),
-    assertTrue(sqlrelay:sendQuery("drop table testtable")),
-    io:format("~n"),
+    %% db2 doesn't support bind by name
 
     %% REBINDING
     io:format("REBINDING: ~n"),
-    sqlrelay:prepareQuery(
+    sqlrelay:sendQuery("drop procedure testproc"),
+    assertTrue(sqlrelay:sendQuery(
+        "create procedure testproc("
+        "	in in1 int, "
+        "	out out1 int) "
+        "language sql "
         "begin "
-        "	:out:= :in; "
-        "end;"),
-    sqlrelay:inputBindLong("in", 1),
-    sqlrelay:defineOutputBindInteger("out"),
+        "	set out1 = in1; "
+        "end")),
+    assertTrue(sqlrelay:commit()),
+    sqlrelay:prepareQuery("call testproc(?,?)"),
+    sqlrelay:inputBindLong("1", 1),
+    sqlrelay:defineOutputBindInteger("2"),
     assertTrue(sqlrelay:executeQuery()),
-    assertEqualsInt(sqlrelay:getOutputBindInteger("out"), 1),
-    sqlrelay:inputBindLong("in", 2),
+    assertEqualsInt(sqlrelay:getOutputBindInteger("2"), 1),
+    sqlrelay:inputBindLong("1", 2),
     assertTrue(sqlrelay:executeQuery()),
-    assertEqualsInt(sqlrelay:getOutputBindInteger("out"), 2),
-    sqlrelay:inputBindLong("in", 3),
+    assertEqualsInt(sqlrelay:getOutputBindInteger("2"), 2),
+    sqlrelay:inputBindLong("1", 3),
     assertTrue(sqlrelay:executeQuery()),
-    assertEqualsInt(sqlrelay:getOutputBindInteger("out"), 3),
+    assertEqualsInt(sqlrelay:getOutputBindInteger("2"), 3),
+    assertTrue(sqlrelay:sendQuery("drop procedure testproc")),
+    assertTrue(sqlrelay:commit()),
     io:format("~n"),
 
     %% REEXECUTE
     io:format("REEXECUTE: ~n"),
-    sqlrelay:prepareQuery("select 1 from dual"),
+    sqlrelay:prepareQuery("select 1 from sysibm.sysdummy1"),
     assertTrue(sqlrelay:executeQuery()),
     assertEqualsInt(sqlrelay:rowCount(), 1),
     assertEqualsString(sqlrelay:getFieldByIndex(0, 0), "1"),
@@ -1092,8 +1139,8 @@ main() ->
     assertEqualsInt(sqlrelay:rowCount(), 1),
     assertEqualsString(sqlrelay:getFieldByIndex(0, 0), "1"),
     io:format("~n"),
-    sqlrelay:prepareQuery("select :var from dual"),
-    sqlrelay:inputBindLong("var", 1),
+    sqlrelay:prepareQuery("select cast(? as integer) from sysibm.sysdummy1"),
+    sqlrelay:inputBindLong("1", 1),
     assertTrue(sqlrelay:executeQuery()),
     assertEqualsInt(sqlrelay:rowCount(), 1),
     assertEqualsString(sqlrelay:getFieldByIndex(0, 0), "1"),
@@ -1102,7 +1149,7 @@ main() ->
     assertEqualsInt(sqlrelay:rowCount(), 1),
     assertEqualsString(sqlrelay:getFieldByIndex(0, 0), "1"),
     io:format("~n"),
-    sqlrelay:inputBindLong("var", 2),
+    sqlrelay:inputBindLong("1", 2),
     assertTrue(sqlrelay:executeQuery()),
     assertEqualsInt(sqlrelay:rowCount(), 1),
     assertEqualsString(sqlrelay:getFieldByIndex(0, 0), "2"),
@@ -1110,176 +1157,139 @@ main() ->
 
     %% STORED PROCEDURE RETURNING NO VALUE
     io:format("STORED PROCEDURE RETURNING NO VALUE: ~n"),
-    sqlrelay:sendQuery("drop function testproc"),
     sqlrelay:sendQuery("drop procedure testproc"),
     assertTrue(sqlrelay:sendQuery(
-        "create or replace "
-        "procedure testproc("
-        "	in1 in number, "
-        "	in2 in number, "
-        "	in3 in varchar2) "
-        "is "
+        "create procedure testproc("
+        "	in in1 int, "
+        "	in in2 double, "
+        "	in in3 varchar(20)) "
+        "language sql "
         "begin "
         "	return; "
-        "end;")),
-    sqlrelay:prepareQuery("begin testproc(:in1,:in2,:in3); end;"),
-    sqlrelay:inputBindLong("in1", 1),
-    sqlrelay:inputBindDouble("in2", 1.1, 2, 1),
-    sqlrelay:inputBindString("in3", "hello"),
+        "end")),
+    assertTrue(sqlrelay:commit()),
+    sqlrelay:prepareQuery("call testproc(?,?,?)"),
+    sqlrelay:inputBindLong("1", 1),
+    sqlrelay:inputBindDouble("2", 1.1, 2, 1),
+    sqlrelay:inputBindString("3", "hello"),
     assertTrue(sqlrelay:executeQuery()),
     assertTrue(sqlrelay:sendQuery("drop procedure testproc")),
+    assertTrue(sqlrelay:commit()),
     io:format("~n"),
 
     %% STORED PROCEDURE RETURNING SINGLE VALUE
     io:format("STORED PROCEDURE RETURNING SINGLE VALUE: ~n"),
-    sqlrelay:sendQuery("drop function testproc"),
-    sqlrelay:sendQuery("drop procedure testproc"),
+    sqlrelay:sendQuery("drop function testfunc"),
     assertTrue(sqlrelay:sendQuery(
-        "create or replace "
-        "function testproc("
-        "	in1 in number, "
-        "	in2 in number, "
-        "	in3 in varchar2) "
-        "	return number "
-        "is "
+        "create function testfunc("
+        "	in1 int, "
+        "	in2 double, "
+        "	in3 varchar(20)) "
+        "returns int "
+        "language sql "
         "begin "
         "	return in1; "
-        "end;")),
-    sqlrelay:prepareQuery("select testproc(:in1,:in2,:in3) from dual"),
-    sqlrelay:inputBindLong("in1", 1),
-    sqlrelay:inputBindDouble("in2", 1.1, 2, 1),
-    sqlrelay:inputBindString("in3", "hello"),
+        "end")),
+    assertTrue(sqlrelay:commit()),
+    sqlrelay:prepareQuery("select testfunc(?,?,?) from sysibm.sysdummy1"),
+    sqlrelay:inputBindLong("1", 1),
+    sqlrelay:inputBindDouble("2", 1.1, 2, 1),
+    sqlrelay:inputBindString("3", "hello"),
     assertTrue(sqlrelay:executeQuery()),
     assertEqualsString(sqlrelay:getFieldByIndex(0, 0), "1"),
-    sqlrelay:prepareQuery(
-        "begin "
-        "	:out1:=testproc(:in1,:in2,:in3); "
-        "end;"),
-    sqlrelay:inputBindLong("in1", 1),
-    sqlrelay:inputBindDouble("in2", 1.1, 2, 1),
-    sqlrelay:inputBindString("in3", "hello"),
-    sqlrelay:defineOutputBindInteger("out1"),
-    assertTrue(sqlrelay:executeQuery()),
-    assertEqualsInt(sqlrelay:getOutputBindInteger("out1"), 1),
-    assertTrue(sqlrelay:sendQuery("drop function testproc")),
+    assertTrue(sqlrelay:sendQuery("drop function testfunc")),
+    assertTrue(sqlrelay:commit()),
     io:format("~n"),
 
     %% STORED PROCEDURE RETURNING MULTIPLE VALUES
     io:format("STORED PROCEDURE RETURNING MULTIPLE VALUES: ~n"),
-    sqlrelay:sendQuery("drop function testproc"),
     sqlrelay:sendQuery("drop procedure testproc"),
     assertTrue(sqlrelay:sendQuery(
-        "create or replace "
-        "procedure testproc("
-        "	in1 in number, "
-        "	in2 in number, "
-        "	in3 in varchar2, "
-        "	out1 out number, "
-        "	out2 out number, "
-        "	out3 out varchar2) "
-        "is "
+        "create procedure testproc("
+        "	in in1 int, "
+        "	in in2 double, "
+        "	in in3 varchar(20), "
+        "	in in4 clob, "
+        "	in in5 blob, "
+        "	out out1 int, "
+        "	out out2 double, "
+        "	out out3 varchar(20), "
+        "	out out4 clob, "
+        "	out out5 blob) "
+        "language sql "
         "begin "
-        "	out1:=in1; "
-        "	out2:=in2; "
-        "	out3:=in3; "
-        "end;")),
-    sqlrelay:prepareQuery(
-        "begin "
-        "	testproc(:in1,:in2,:in3,:out1,:out2,:out3); "
-        "end;"),
-    sqlrelay:inputBindLong("in1", 1),
-    sqlrelay:inputBindDouble("in2", 1.1, 2, 1),
-    sqlrelay:inputBindString("in3", "hello"),
-    sqlrelay:defineOutputBindInteger("out1"),
-    sqlrelay:defineOutputBindDouble("out2"),
-    sqlrelay:defineOutputBindString("out3", 20),
+        "	set out1 = in1; "
+        "	set out2 = in2; "
+        "	set out3 = in3; "
+        "	set out4 = in4; "
+        "	set out5 = in5; "
+        "end")),
+    assertTrue(sqlrelay:commit()),
+    sqlrelay:prepareQuery("call testproc(?,?,?,?,?,?,?,?,?,?)"),
+    sqlrelay:inputBindLong("1", 1),
+    sqlrelay:inputBindDouble("2", 1.1, 2, 1),
+    sqlrelay:inputBindString("3", "hello"),
+    sqlrelay:inputBindClob("4", "clob", 4),
+    sqlrelay:inputBindBlob("5", "blob", 4),
+    sqlrelay:defineOutputBindInteger("6"),
+    sqlrelay:defineOutputBindDouble("7"),
+    sqlrelay:defineOutputBindString("8", 20),
+    sqlrelay:defineOutputBindClob("9"),
+    sqlrelay:defineOutputBindBlob("10"),
     assertTrue(sqlrelay:executeQuery()),
-    assertEqualsInt(sqlrelay:getOutputBindInteger("out1"), 1),
-    assertEqualsDouble(sqlrelay:getOutputBindDouble("out2"), 1.1),
-    assertEqualsString(sqlrelay:getOutputBindString("out3"), "hello"),
+    assertEqualsInt(sqlrelay:getOutputBindInteger("6"), 1),
+    assertEqualsDouble(sqlrelay:getOutputBindDouble("7"), 1.1),
+    assertEqualsString(sqlrelay:getOutputBindString("8"), "hello"),
+    assertEqualsString(sqlrelay:getOutputBindClob("9"), "clob"),
+    assertEqualsString(sqlrelay:getOutputBindBlob("10"), "blob"),
     assertTrue(sqlrelay:sendQuery("drop procedure testproc")),
+    assertTrue(sqlrelay:commit()),
     io:format("~n"),
 
     %% STORED PROCEDURE RETURNING RESULT SET
-    %% SKIPPED: the C++ version uses getOutputBindCursor(...) to obtain
-    %% a SECOND cursor (bindcur1/bindcur2) and fetches from it while
-    %% the main cursor is still live. The Erlang binding's
-    %% getOutputBindCursor/1 is explicitly not implemented (returns
-    %% false) and the port-program holds only one cursor at a time.
     io:format("STORED PROCEDURE RETURNING RESULT SET: ~n"),
-    io:format("(skipped - requires second cursor via getOutputBindCursor)~n"),
+    sqlrelay:sendQuery("drop procedure testproc"),
+    assertTrue(sqlrelay:sendQuery(
+        "create procedure testproc() "
+        "result set 1 "
+        "language sql "
+        "begin "
+        "	declare c1 cursor with return for "
+        "		select 1 from sysibm.sysdummy1 "
+        "		union "
+        "		select 2 from sysibm.sysdummy1 "
+        "		union "
+        "		select 3 from sysibm.sysdummy1 "
+        "		union "
+        "		select 4 from sysibm.sysdummy1 "
+        "		union "
+        "		select 5 from sysibm.sysdummy1 "
+        "		union "
+        "		select 6 from sysibm.sysdummy1 "
+        "		union "
+        "		select 7 from sysibm.sysdummy1 "
+        "		union "
+        "		select 8 from sysibm.sysdummy1; "
+        "	open c1; "
+        "end")),
+    assertTrue(sqlrelay:commit()),
+    assertTrue(sqlrelay:sendQuery("call testproc()")),
+    assertEqualsInt(sqlrelay:rowCount(), 8),
+    assertTrue(sqlrelay:sendQuery("drop procedure testproc")),
+    assertTrue(sqlrelay:commit()),
     io:format("~n"),
 
     %% TEMPORARY TABLES
     io:format("TEMPORARY TABLES: ~n"),
-    sqlrelay:prepareQuery("drop table $(HOSTNAME)_temptabledelete"),
-    sqlrelay:subString("HOSTNAME", Hostname),
-    sqlrelay:executeQuery(),
-    sqlrelay:prepareQuery(
-        "create global temporary table $(HOSTNAME)_temptabledelete ( "
-        "	col1 number "
-        ") on commit delete rows"),
-    sqlrelay:subString("HOSTNAME", Hostname),
-    sqlrelay:executeQuery(),
-    sqlrelay:prepareQuery("insert into $(HOSTNAME)_temptabledelete values (1)"),
-    sqlrelay:subString("HOSTNAME", Hostname),
-    assertTrue(sqlrelay:executeQuery()),
-    sqlrelay:prepareQuery("select count(*) from $(HOSTNAME)_temptabledelete"),
-    sqlrelay:subString("HOSTNAME", Hostname),
-    assertTrue(sqlrelay:executeQuery()),
-    assertEqualsString(sqlrelay:getFieldByIndex(0, 0), "1"),
-    assertTrue(sqlrelay:commit()),
-    sqlrelay:prepareQuery("select count(*) from $(HOSTNAME)_temptabledelete"),
-    sqlrelay:subString("HOSTNAME", Hostname),
-    assertTrue(sqlrelay:executeQuery()),
-    assertEqualsString(sqlrelay:getFieldByIndex(0, 0), "0"),
-    sqlrelay:prepareQuery("drop table $(HOSTNAME)_temptabledelete"),
-    sqlrelay:subString("HOSTNAME", Hostname),
-    sqlrelay:executeQuery(),
-    io:format("~n"),
-    sqlrelay:prepareQuery("truncate table $(HOSTNAME)_temptablepreserve"),
-    sqlrelay:subString("HOSTNAME", Hostname),
-    sqlrelay:executeQuery(),
-    sqlrelay:prepareQuery("drop table $(HOSTNAME)_temptablepreserve"),
-    sqlrelay:subString("HOSTNAME", Hostname),
-    sqlrelay:executeQuery(),
-    sqlrelay:prepareQuery(
-        "create global temporary table $(HOSTNAME)_temptablepreserve ("
-        "	col1 number "
-        ") on commit preserve rows"),
-    sqlrelay:subString("HOSTNAME", Hostname),
-    sqlrelay:executeQuery(),
-    sqlrelay:prepareQuery(
-        "insert into "
-        "	$(HOSTNAME)_temptablepreserve "
-        "values (1)"),
-    sqlrelay:subString("HOSTNAME", Hostname),
-    assertTrue(sqlrelay:executeQuery()),
-    sqlrelay:prepareQuery("select count(*) from $(HOSTNAME)_temptablepreserve"),
-    sqlrelay:subString("HOSTNAME", Hostname),
-    assertTrue(sqlrelay:executeQuery()),
-    assertEqualsString(sqlrelay:getFieldByIndex(0, 0), "1"),
-    assertTrue(sqlrelay:commit()),
-    sqlrelay:prepareQuery("select count(*) from $(HOSTNAME)_temptablepreserve"),
-    sqlrelay:subString("HOSTNAME", Hostname),
-    assertTrue(sqlrelay:executeQuery()),
+    sqlrelay:sendQuery("drop table session.temptable"),
+    assertTrue(sqlrelay:sendQuery("declare global temporary table temptable "
+                                  "(col1 int) not logged")),
+    assertTrue(sqlrelay:sendQuery("insert into session.temptable values (1)")),
+    assertTrue(sqlrelay:sendQuery("select count(*) from session.temptable")),
     assertEqualsString(sqlrelay:getFieldByIndex(0, 0), "1"),
     sqlrelay:endSession(),
     io:format("~n"),
-    sqlrelay:prepareQuery("select count(*) from $(HOSTNAME)_temptablepreserve"),
-    sqlrelay:subString("HOSTNAME", Hostname),
-    assertTrue(sqlrelay:executeQuery()),
-    assertEqualsString(sqlrelay:getFieldByIndex(0, 0), "0"),
-    sqlrelay:prepareQuery("truncate table $(HOSTNAME)_temptablepreserve"),
-    sqlrelay:subString("HOSTNAME", Hostname),
-    assertTrue(sqlrelay:executeQuery()),
-    timer:sleep(2000),
-    sqlrelay:prepareQuery("drop table $(HOSTNAME)_temptablepreserve"),
-    sqlrelay:subString("HOSTNAME", Hostname),
-    assertTrue(sqlrelay:executeQuery()),
-    sqlrelay:prepareQuery("select count(*) from $(HOSTNAME)_temptablepreserve"),
-    sqlrelay:subString("HOSTNAME", Hostname),
-    assertFalse(sqlrelay:executeQuery()),
+    assertFalse(sqlrelay:sendQuery("select count(*) from session.temptable")),
     io:format("~n"),
 
     %% ENCODED BINARY DATA
@@ -1288,7 +1298,7 @@ main() ->
     assertTrue(sqlrelay:sendQuery("create table testtable (col1 blob)")),
     Buffer = lists:seq(0, 255),
     HexStr = lists:flatten([io_lib:format("~2.16.0b", [B]) || B <- Buffer]),
-    QueryStr = "insert into testtable values ('" ++ HexStr ++ "')",
+    QueryStr = "insert into testtable values (blob(X'" ++ HexStr ++ "'))",
     assertTrue(sqlrelay:sendQuery(QueryStr)),
     assertTrue(sqlrelay:sendQuery("select col1 from testtable")),
     assertEqualsInt(sqlrelay:getFieldLengthByIndex(0, 0), 256),
@@ -1304,7 +1314,7 @@ main() ->
     %% QUOTES
     io:format("QUOTES: ~n"),
     sqlrelay:sendQuery("drop table testtable"),
-    assertTrue(sqlrelay:sendQuery("create table testtable (col1 varchar2(4))")),
+    assertTrue(sqlrelay:sendQuery("create table testtable (col1 varchar(4))")),
     assertTrue(sqlrelay:sendQuery("insert into testtable values ('''''')")),
     assertTrue(sqlrelay:sendQuery("select col1 from testtable")),
     assertEqualsInt(sqlrelay:getFieldLengthByIndex(0, 0), 2),
@@ -1313,7 +1323,19 @@ main() ->
     io:format("~n"),
 
     %% LAST INSERT ID
-    %% oracle doesn't support auto-increment
+    io:format("LAST INSERT ID: ~n"),
+    sqlrelay:sendQuery("drop table testtable"),
+    assertTrue(sqlrelay:sendQuery(
+            "create table testtable "
+            "	(col1 int not null "
+            "	generated always as identity, "
+            "	col2 int, "
+            "	primary key(col1))")),
+    assertTrue(sqlrelay:sendQuery(
+            "insert into testtable (col2) values (1)")),
+    assertEqualsInt(sqlrelay:getLastInsertId(), 1),
+    assertTrue(sqlrelay:sendQuery("drop table testtable")),
+    io:format("~n"),
 
     %% DATABASE IS SCHEMA
     io:format("DATABASE IS SCHEMA: ~n"),
@@ -1332,7 +1354,7 @@ main() ->
     assertTrue(sqlrelay:getSchemaList("")),
     assertEqualsString(sqlrelay:getColumnName(0), "Database"),
     {ok, SchemaRowCount} = sqlrelay:rowCount(),
-    SchemaFound = searchSchemaList(0, SchemaRowCount, Hostname),
+    SchemaFound = searchSchemaList(0, SchemaRowCount),
     assertTrue(SchemaFound),
     io:format("~n"),
 
@@ -1340,9 +1362,9 @@ main() ->
     io:format("TABLE TYPE LIST: ~n"),
     assertTrue(sqlrelay:getTableTypeList()),
     assertEqualsString(sqlrelay:getColumnName(0), "table_type"),
-    assertEqualsString(sqlrelay:getFieldByName(0, "table_type"), "SYNONYM"),
-    assertEqualsString(sqlrelay:getFieldByName(1, "table_type"), "TABLE"),
-    assertEqualsString(sqlrelay:getFieldByName(2, "table_type"), "VIEW"),
+    {ok, TtRowCount} = sqlrelay:rowCount(),
+    TtFound = searchTableType(0, TtRowCount),
+    assertTrue(TtFound),
     io:format("~n"),
 
     %% TABLE LIST
@@ -1353,40 +1375,21 @@ main() ->
     sqlrelay:sendQuery("drop table testtable4"),
     assertTrue(sqlrelay:sendQuery(
         "create table testtable1 ("
-        "	testnumber number, "
-        "	testchar char(40), "
-        "	testvarchar varchar2(40), "
-        "	testdate date, "
-        "	testlong long, "
-        "	testclob clob, "
-        "	testblob blob)")),
+        "	col1 integer, "
+        "	col2 integer)")),
     assertTrue(sqlrelay:sendQuery(
         "create table testtable2 ("
-        "	testnumber number, "
-        "	testchar char(40), "
-        "	testvarchar varchar2(40), "
-        "	testdate date, "
-        "	testlong long, "
-        "	testclob clob, "
-        "	testblob blob)")),
+        "	col1 integer, "
+        "	col2 integer)")),
     assertTrue(sqlrelay:sendQuery(
         "create table testtable3 ("
-        "	testnumber number, "
-        "	testchar char(40), "
-        "	testvarchar varchar2(40), "
-        "	testdate date, "
-        "	testlong long, "
-        "	testclob clob, "
-        "	testblob blob)")),
+        "	col1 integer, "
+        "	col2 integer)")),
     assertTrue(sqlrelay:sendQuery(
         "create table testtable4 ("
-        "	testnumber number, "
-        "	testchar char(40), "
-        "	testvarchar varchar2(40), "
-        "	testdate date, "
-        "	testlong long, "
-        "	testclob clob, "
-        "	testblob blob)")),
+        "	col1 integer, "
+        "	col2 integer)")),
+    assertTrue(sqlrelay:commit()),
     assertTrue(sqlrelay:getTableList("")),
     {ok, TableListRowCount} = sqlrelay:rowCount(),
     TableCount = countMatchingTables(0, TableListRowCount, 0),
@@ -1395,11 +1398,12 @@ main() ->
     assertTrue(sqlrelay:sendQuery("drop table testtable2")),
     assertTrue(sqlrelay:sendQuery("drop table testtable3")),
     assertTrue(sqlrelay:sendQuery("drop table testtable4")),
+    assertTrue(sqlrelay:commit()),
     io:format("~n"),
 
     %% TYPE INFO LIST
     io:format("TYPE INFO LIST: ~n"),
-    assertTrue(sqlrelay:getTypeInfoList("number")),
+    assertTrue(sqlrelay:getTypeInfoList("integer")),
     assertEqualsString(sqlrelay:getColumnName(0), "type_name"),
     assertEqualsString(sqlrelay:getColumnName(1), "data_type"),
     assertEqualsString(sqlrelay:getColumnName(2), "precision"),
@@ -1419,25 +1423,24 @@ main() ->
     assertEqualsString(sqlrelay:getColumnName(16), "sql_datetime_sub"),
     assertEqualsString(sqlrelay:getColumnName(17), "num_prec_radix"),
     assertEqualsString(sqlrelay:getColumnName(18), "interval_precision"),
-    assertEqualsString(sqlrelay:getFieldByName(0, "type_name"), "NUMBER"),
-    assertEqualsString(sqlrelay:getFieldByName(0, "data_type"), "-7"),
-    assertEqualsString(sqlrelay:getFieldByName(0, "precision"), "1"),
-    assertEqualsString(sqlrelay:getFieldByName(0, "local_type_name"), "NUMBER"),
+    assertEqualsString(sqlrelay:getFieldByName(0, "type_name"), "INTEGER"),
+    assertEqualsString(sqlrelay:getFieldByName(0, "data_type"), "4"),
+    assertEqualsString(sqlrelay:getFieldByName(0, "precision"), "10"),
+    assertEqualsString(sqlrelay:getFieldByName(0, "local_type_name"), "INTEGER"),
     assertTrue(sqlrelay:getTypeInfoList("char")),
     assertEqualsString(sqlrelay:getFieldByName(0, "type_name"), "CHAR"),
     assertEqualsString(sqlrelay:getFieldByName(0, "data_type"), "1"),
-    assertEqualsString(sqlrelay:getFieldByName(0, "precision"), "2000"),
+    assertEqualsString(sqlrelay:getFieldByName(0, "precision"), "254"),
     assertEqualsString(sqlrelay:getFieldByName(0, "local_type_name"), "CHAR"),
-    assertTrue(sqlrelay:getTypeInfoList("varchar2")),
-    assertEqualsString(sqlrelay:getFieldByName(0, "type_name"), "VARCHAR2"),
+    assertTrue(sqlrelay:getTypeInfoList("varchar")),
+    assertEqualsString(sqlrelay:getFieldByName(0, "type_name"), "VARCHAR"),
     assertEqualsString(sqlrelay:getFieldByName(0, "data_type"), "12"),
-    assertEqualsString(sqlrelay:getFieldByName(0, "precision"), "32767"),
-    assertEqualsString(sqlrelay:getFieldByName(0, "local_type_name"),
-                       "VARCHAR2"),
+    assertEqualsString(sqlrelay:getFieldByName(0, "precision"), "32672"),
+    assertEqualsString(sqlrelay:getFieldByName(0, "local_type_name"), "VARCHAR"),
     assertTrue(sqlrelay:getTypeInfoList("date")),
     assertEqualsString(sqlrelay:getFieldByName(0, "type_name"), "DATE"),
-    assertEqualsString(sqlrelay:getFieldByName(0, "data_type"), "92"),
-    assertEqualsString(sqlrelay:getFieldByName(0, "precision"), "7"),
+    assertEqualsString(sqlrelay:getFieldByName(0, "data_type"), "91"),
+    assertEqualsString(sqlrelay:getFieldByName(0, "precision"), "10"),
     assertEqualsString(sqlrelay:getFieldByName(0, "local_type_name"), "DATE"),
     io:format("~n"),
 
@@ -1446,13 +1449,20 @@ main() ->
     sqlrelay:sendQuery("drop table testtable"),
     assertTrue(sqlrelay:sendQuery(
         "create table testtable ("
-        "	testnumber number, "
+        "	testsmallint smallint, "
+        "	testint integer, "
+        "	testbigint bigint, "
+        "	testdecimal decimal(10,2), "
+        "	testreal real, "
+        "	testdouble double, "
         "	testchar char(40), "
-        "	testvarchar varchar2(40), "
+        "	testvarchar varchar(40), "
         "	testdate date, "
-        "	testlong long, "
+        "	testtime time, "
+        "	testtimestamp timestamp, "
         "	testclob clob, "
         "	testblob blob)")),
+    assertTrue(sqlrelay:commit()),
     assertTrue(sqlrelay:getColumnList("testtable", "")),
     assertEqualsString(sqlrelay:getColumnName(0), "column_name"),
     assertEqualsString(sqlrelay:getColumnName(1), "data_type"),
@@ -1463,38 +1473,68 @@ main() ->
     assertEqualsString(sqlrelay:getColumnName(6), "column_key"),
     assertEqualsString(sqlrelay:getColumnName(7), "column_default"),
     assertEqualsString(sqlrelay:getColumnName(8), "extra"),
-    assertEqualsString(sqlrelay:getFieldByName(0, "column_name"),
-                       "TESTNUMBER"),
-    assertEqualsString(sqlrelay:getFieldByName(1, "column_name"), "TESTCHAR"),
-    assertEqualsString(sqlrelay:getFieldByName(2, "column_name"),
-                       "TESTVARCHAR"),
-    assertEqualsString(sqlrelay:getFieldByName(3, "column_name"), "TESTDATE"),
-    assertEqualsString(sqlrelay:getFieldByName(4, "column_name"), "TESTLONG"),
-    assertEqualsString(sqlrelay:getFieldByName(5, "column_name"), "TESTCLOB"),
-    assertEqualsString(sqlrelay:getFieldByName(6, "column_name"), "TESTBLOB"),
-    assertEqualsString(sqlrelay:getFieldByName(0, "data_type"), "NUMBER"),
-    assertEqualsString(sqlrelay:getFieldByName(1, "data_type"), "CHAR"),
-    assertEqualsString(sqlrelay:getFieldByName(2, "data_type"), "VARCHAR2"),
-    assertEqualsString(sqlrelay:getFieldByName(3, "data_type"), "DATE"),
-    assertEqualsString(sqlrelay:getFieldByName(4, "data_type"), "LONG"),
-    assertEqualsString(sqlrelay:getFieldByName(5, "data_type"), "CLOB"),
-    assertEqualsString(sqlrelay:getFieldByName(6, "data_type"), "BLOB"),
+    assertEqualsString(sqlrelay:getFieldByName(0, "column_name"), "TESTSMALLINT"),
+    assertEqualsString(sqlrelay:getFieldByName(1, "column_name"), "TESTINT"),
+    assertEqualsString(sqlrelay:getFieldByName(2, "column_name"), "TESTBIGINT"),
+    assertEqualsString(sqlrelay:getFieldByName(3, "column_name"), "TESTDECIMAL"),
+    assertEqualsString(sqlrelay:getFieldByName(4, "column_name"), "TESTREAL"),
+    assertEqualsString(sqlrelay:getFieldByName(5, "column_name"), "TESTDOUBLE"),
+    assertEqualsString(sqlrelay:getFieldByName(6, "column_name"), "TESTCHAR"),
+    assertEqualsString(sqlrelay:getFieldByName(7, "column_name"), "TESTVARCHAR"),
+    assertEqualsString(sqlrelay:getFieldByName(8, "column_name"), "TESTDATE"),
+    assertEqualsString(sqlrelay:getFieldByName(9, "column_name"), "TESTTIME"),
+    assertEqualsString(sqlrelay:getFieldByName(10, "column_name"),
+                       "TESTTIMESTAMP"),
+    assertEqualsString(sqlrelay:getFieldByName(11, "column_name"), "TESTCLOB"),
+    assertEqualsString(sqlrelay:getFieldByName(12, "column_name"), "TESTBLOB"),
+    assertEqualsString(sqlrelay:getFieldByName(0, "data_type"), "SMALLINT"),
+    assertEqualsString(sqlrelay:getFieldByName(1, "data_type"), "INTEGER"),
+    assertEqualsString(sqlrelay:getFieldByName(2, "data_type"), "BIGINT"),
+    assertEqualsString(sqlrelay:getFieldByName(3, "data_type"), "DECIMAL"),
+    assertEqualsString(sqlrelay:getFieldByName(4, "data_type"), "REAL"),
+    assertEqualsString(sqlrelay:getFieldByName(5, "data_type"), "DOUBLE"),
+    assertEqualsString(sqlrelay:getFieldByName(6, "data_type"), "CHARACTER"),
+    assertEqualsString(sqlrelay:getFieldByName(7, "data_type"), "VARCHAR"),
+    assertEqualsString(sqlrelay:getFieldByName(8, "data_type"), "DATE"),
+    assertEqualsString(sqlrelay:getFieldByName(9, "data_type"), "TIME"),
+    assertEqualsString(sqlrelay:getFieldByName(10, "data_type"), "TIMESTAMP"),
+    assertEqualsString(sqlrelay:getFieldByName(11, "data_type"), "CLOB"),
+    assertEqualsString(sqlrelay:getFieldByName(12, "data_type"), "BLOB"),
     assertTrue(sqlrelay:sendQuery("drop table testtable")),
+    assertTrue(sqlrelay:commit()),
     io:format("~n"),
 
     %% COLUMN LIST - auto_increment, primary key
-    %% oracle doesn't support auto_increment
     io:format("COLUMN LIST - auto_increment, primary key: ~n"),
+    sqlrelay:sendQuery("drop table testtable"),
     assertTrue(sqlrelay:sendQuery(
         "create table testtable ("
-        "	col1 number primary key, "
-        "	col2 number)")),
+        "	col1 int generated always as identity primary key, "
+        "	col2 int)")),
+    assertTrue(sqlrelay:commit()),
     assertTrue(sqlrelay:getColumnList("testtable", "")),
+    {ok, Extra0} = sqlrelay:getFieldByName(0, "extra"),
+    assertTrue(contains(Extra0, "auto_increment")),
     {ok, Ck0} = sqlrelay:getFieldByName(0, "column_key"),
     assertTrue(contains(Ck0, "PRI")),
+    {ok, Extra1} = sqlrelay:getFieldByName(1, "extra"),
+    assertFalse(contains(Extra1, "auto_increment")),
     {ok, Ck1} = sqlrelay:getFieldByName(1, "column_key"),
     assertFalse(contains(Ck1, "PRI")),
+    io:format("~n"),
     assertTrue(sqlrelay:sendQuery("drop table testtable")),
+    assertTrue(sqlrelay:sendQuery(
+        "create table testtable ("
+        "	col1 int not null primary key, "
+        "	col2 int)")),
+    assertTrue(sqlrelay:commit()),
+    assertTrue(sqlrelay:getColumnList("testtable", "")),
+    {ok, Extra0b} = sqlrelay:getFieldByName(0, "extra"),
+    assertFalse(contains(Extra0b, "auto_increment")),
+    {ok, Ck0b} = sqlrelay:getFieldByName(0, "column_key"),
+    assertTrue(contains(Ck0b, "PRI")),
+    assertTrue(sqlrelay:sendQuery("drop table testtable")),
+    assertTrue(sqlrelay:commit()),
     io:format("~n"),
 
     %% PRIMARY KEYS LIST
@@ -1502,8 +1542,9 @@ main() ->
     sqlrelay:sendQuery("drop table testtable"),
     assertTrue(sqlrelay:sendQuery(
         "create table testtable ("
-        "	col1 number primary key, "
-        "	col2 number)")),
+        "	col1 int not null primary key, "
+        "	col2 int)")),
+    assertTrue(sqlrelay:commit()),
     assertTrue(sqlrelay:getPrimaryKeysList("testtable", "")),
     assertEqualsString(sqlrelay:getColumnName(0), "table"),
     assertEqualsString(sqlrelay:getColumnName(1), "non_unique"),
@@ -1525,6 +1566,7 @@ main() ->
     {ok, PkName} = sqlrelay:getFieldByName(0, "key_name"),
     assertTrue(not isNullOrEmpty(PkName)),
     assertTrue(sqlrelay:sendQuery("drop table testtable")),
+    assertTrue(sqlrelay:commit()),
     io:format("~n"),
 
     %% KEY AND INDEX LIST
@@ -1532,8 +1574,9 @@ main() ->
     sqlrelay:sendQuery("drop table testtable"),
     assertTrue(sqlrelay:sendQuery(
         "create table testtable ("
-        "	col1 number primary key, "
-        "	col2 number)")),
+        "	col1 int not null primary key, "
+        "	col2 int)")),
+    assertTrue(sqlrelay:commit()),
     assertTrue(sqlrelay:getKeyAndIndexList("testtable", "")),
     assertEqualsString(sqlrelay:getColumnName(0), "table"),
     assertEqualsString(sqlrelay:getColumnName(1), "non_unique"),
@@ -1558,6 +1601,7 @@ main() ->
     {ok, KeyName2} = sqlrelay:getFieldByName(0, "key_name"),
     assertTrue(not isNullOrEmpty(KeyName2)),
     assertTrue(sqlrelay:sendQuery("drop table testtable")),
+    assertTrue(sqlrelay:commit()),
     io:format("~n"),
 
     %% PROCEDURE LIST
@@ -1568,40 +1612,33 @@ main() ->
     sqlrelay:sendQuery("drop procedure testproc4"),
     assertTrue(sqlrelay:sendQuery(
         "create procedure testproc1("
-        "	in1 in number, "
-        "	in2 in char, "
-        "	in3 in varchar2, "
-        "	in4 in date) as "
-        "begin "
-        "	null; "
-        "end;")),
+        "	in in1 integer, "
+        "	in in2 char(20), "
+        "	in in3 varchar(20), "
+        "	in in4 date) "
+        "language sql begin end")),
     assertTrue(sqlrelay:sendQuery(
         "create procedure testproc2("
-        "	in1 in number, "
-        "	in2 in char, "
-        "	in3 in varchar2, "
-        "	in4 in date) as "
-        "begin "
-        "	null; "
-        "end;")),
+        "	in in1 integer, "
+        "	in in2 char(20), "
+        "	in in3 varchar(20), "
+        "	in in4 date) "
+        "language sql begin end")),
     assertTrue(sqlrelay:sendQuery(
         "create procedure testproc3("
-        "	in1 in number, "
-        "	in2 in char, "
-        "	in3 in varchar2, "
-        "	in4 in date) as "
-        "begin "
-        "	null; "
-        "end;")),
+        "	in in1 integer, "
+        "	in in2 char(20), "
+        "	in in3 varchar(20), "
+        "	in in4 date) "
+        "language sql begin end")),
     assertTrue(sqlrelay:sendQuery(
         "create procedure testproc4("
-        "	in1 in number, "
-        "	in2 in char, "
-        "	in3 in varchar2, "
-        "	in4 in date) as "
-        "begin "
-        "	null; "
-        "end;")),
+        "	in in1 integer, "
+        "	in in2 char(20), "
+        "	in in3 varchar(20), "
+        "	in in4 date) "
+        "language sql begin end")),
+    assertTrue(sqlrelay:commit()),
     assertTrue(sqlrelay:getProcedureList("")),
     {ok, ProcRowCount} = sqlrelay:rowCount(),
     ProcCount = countMatchingProcs(0, ProcRowCount, 0),
@@ -1619,15 +1656,15 @@ main() ->
     assertEqualsInt(sqlrelay:rowCount(), 4),
     assertEqualsString(sqlrelay:getFieldByName(0, "parameter_name"), "IN1"),
     assertEqualsString(sqlrelay:getFieldByName(0, "parameter_mode"), "1"),
-    assertEqualsString(sqlrelay:getFieldByName(0, "data_type"), "NUMBER"),
+    assertEqualsString(sqlrelay:getFieldByName(0, "data_type"), "INTEGER"),
     assertEqualsString(sqlrelay:getFieldByName(0, "ordinal_position"), "1"),
     assertEqualsString(sqlrelay:getFieldByName(1, "parameter_name"), "IN2"),
     assertEqualsString(sqlrelay:getFieldByName(1, "parameter_mode"), "1"),
-    assertEqualsString(sqlrelay:getFieldByName(1, "data_type"), "CHAR"),
+    assertEqualsString(sqlrelay:getFieldByName(1, "data_type"), "CHARACTER"),
     assertEqualsString(sqlrelay:getFieldByName(1, "ordinal_position"), "2"),
     assertEqualsString(sqlrelay:getFieldByName(2, "parameter_name"), "IN3"),
     assertEqualsString(sqlrelay:getFieldByName(2, "parameter_mode"), "1"),
-    assertEqualsString(sqlrelay:getFieldByName(2, "data_type"), "VARCHAR2"),
+    assertEqualsString(sqlrelay:getFieldByName(2, "data_type"), "VARCHAR"),
     assertEqualsString(sqlrelay:getFieldByName(2, "ordinal_position"), "3"),
     assertEqualsString(sqlrelay:getFieldByName(3, "parameter_name"), "IN4"),
     assertEqualsString(sqlrelay:getFieldByName(3, "parameter_mode"), "1"),
@@ -1637,6 +1674,7 @@ main() ->
     assertTrue(sqlrelay:sendQuery("drop procedure testproc2")),
     assertTrue(sqlrelay:sendQuery("drop procedure testproc3")),
     assertTrue(sqlrelay:sendQuery("drop procedure testproc4")),
+    assertTrue(sqlrelay:commit()),
     io:format("~n"),
 
     %% INVALID QUERIES
@@ -1647,28 +1685,28 @@ main() ->
         "from "
         "	testtable "
         "order by "
-        "	testnumber")),
+        "	testsmallint ")),
     assertFalse(sqlrelay:sendQuery(
         "select "
         "	* "
         "from "
         "	testtable "
         "order by "
-        "	testnumber")),
+        "	testsmallint ")),
     assertFalse(sqlrelay:sendQuery(
         "select "
         "	* "
         "from "
         "	testtable "
         "order by "
-        "	testnumber")),
+        "	testsmallint ")),
     assertFalse(sqlrelay:sendQuery(
         "select "
         "	* "
         "from "
         "	testtable "
         "order by "
-        "	testnumber")),
+        "	testsmallint ")),
     io:format("~n"),
     assertFalse(sqlrelay:sendQuery("insert into testtable values (1,2,3,4)")),
     assertFalse(sqlrelay:sendQuery("insert into testtable values (1,2,3,4)")),
@@ -1680,6 +1718,9 @@ main() ->
     assertFalse(sqlrelay:sendQuery("create table testtable")),
     assertFalse(sqlrelay:sendQuery("create table testtable")),
     io:format("~n"),
+
+    %% Silence unused-variable warning for Hostname.
+    _ = Hostname,
 
     reportTestStatus(),
 
@@ -1705,18 +1746,23 @@ contains(_, _) ->
     false.
 
 %% Walk the schema-list result looking for a row whose "Database"
-%% column (case-insensitive) matches the hostname.
-searchSchemaList(I, Count, _Hostname) when I >= Count ->
+%% column matches "DB2INST1".
+searchSchemaList(I, Count) when I >= Count ->
     false;
-searchSchemaList(I, Count, Hostname) ->
+searchSchemaList(I, Count) ->
     case sqlrelay:getFieldByName(I, "Database") of
-        {ok, Name} when is_list(Name) ->
-            case string:to_lower(Name) =:= string:to_lower(Hostname) of
-                true  -> true;
-                false -> searchSchemaList(I + 1, Count, Hostname)
-            end;
-        _ ->
-            searchSchemaList(I + 1, Count, Hostname)
+        {ok, "DB2INST1"} -> true;
+        _                -> searchSchemaList(I + 1, Count)
+    end.
+
+%% Walk the table-type-list result looking for a row whose
+%% "table_type" column is "TABLE".
+searchTableType(I, Count) when I >= Count ->
+    false;
+searchTableType(I, Count) ->
+    case sqlrelay:getFieldByName(I, "table_type") of
+        {ok, "TABLE"} -> true;
+        _             -> searchTableType(I + 1, Count)
     end.
 
 %% Count rows in the table-list result whose "Tables_in_xxx" column is
