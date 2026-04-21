@@ -1778,36 +1778,18 @@ class postgresql extends sqlrtest {
 
 			// bytea as bytes
 			System.out.println("  row "+i+" - bytea as bytes");
-			if (issqlrelay) {
-				// sqlrelay jdbc returns hex format
-				assertEquals(new String(
-					rs.getBytes(11),"UTF-8"),
-					"\\x6279746561"+
-					Integer.toHexString(48+i));
-			} else {
-				// postgresql jdbc returns raw bytes
-				assertEquals(new String(
-					rs.getBytes(11),"UTF-8"),
-					"bytea"+i);
-			}
+			assertEquals(new String(
+				rs.getBytes(11),"UTF-8"),
+				"bytea"+i);
 			assertFalse(rs.wasNull());
 			System.out.println();
 
 			// bytea as binary stream
 			System.out.println("  row "+i+
 						" - bytea as binary stream");
-			if (issqlrelay) {
-				// sqlrelay jdbc returns hex format
-				assertEquals(new String(streamToBytes(
-					rs.getBinaryStream(11)),"UTF-8"),
-					"\\x6279746561"+
-					Integer.toHexString(48+i));
-			} else {
-				// postgresql jdbc returns raw bytes
-				assertEquals(new String(streamToBytes(
-					rs.getBinaryStream(11)),"UTF-8"),
-					"bytea"+i);
-			}
+			assertEquals(new String(streamToBytes(
+				rs.getBinaryStream(11)),"UTF-8"),
+				"bytea"+i);
 			assertFalse(rs.wasNull());
 			System.out.println();
 
@@ -1947,36 +1929,18 @@ class postgresql extends sqlrtest {
 
 			// bytea as bytes
 			System.out.println("  row "+i+" - bytea as bytes");
-			if (issqlrelay) {
-				// sqlrelay jdbc returns hex format
-				assertEquals(new String(
-					rs.getBytes("testbytea"),"UTF-8"),
-					"\\x6279746561"+
-					Integer.toHexString(48+i));
-			} else {
-				// postgresql jdbc returns raw bytes
-				assertEquals(new String(
-					rs.getBytes("testbytea"),"UTF-8"),
-					"bytea"+i);
-			}
+			assertEquals(new String(
+				rs.getBytes("testbytea"),"UTF-8"),
+				"bytea"+i);
 			assertFalse(rs.wasNull());
 			System.out.println();
 
 			// bytea as binary stream
 			System.out.println("  row "+i
 						+" - bytea as binary stream");
-			if (issqlrelay) {
-				// sqlrelay jdbc returns hex format
-				assertEquals(new String(streamToBytes(
-					rs.getBinaryStream("testbytea")),"UTF-8"),
-					"\\x6279746561"+
-					Integer.toHexString(48+i));
-			} else {
-				// postgresql jdbc returns raw bytes
-				assertEquals(new String(streamToBytes(
-					rs.getBinaryStream("testbytea")),"UTF-8"),
-					"bytea"+i);
-			}
+			assertEquals(new String(streamToBytes(
+				rs.getBinaryStream("testbytea")),"UTF-8"),
+				"bytea"+i);
 			assertFalse(rs.wasNull());
 			System.out.println();
 
