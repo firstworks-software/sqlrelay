@@ -615,6 +615,444 @@ class db2 extends sqlrtest {
 		System.out.println();
 
 
+		// result set buffer size
+		System.out.println("RESULT SET BUFFER SIZE: ");
+		assertEquals(cur.getResultSetBufferSize(),0);
+		cur.setResultSetBufferSize(2);
+		assertTrue(cur.sendQuery(
+			"select "+
+			"	* "+
+			"from "+
+			"	testtable "+
+			"order by "+
+			"	testsmallint "));
+		assertEquals(cur.getResultSetBufferSize(),2);
+		System.out.println();
+		assertEquals(cur.firstRowIndex(),0);
+		assertFalse(cur.endOfResultSet());
+		assertEquals(cur.rowCount(),2);
+		assertEquals(cur.getField(0,0),"1");
+		assertEquals(cur.getField(1,0),"2");
+		assertEquals(cur.getField(2,0),"3");
+		System.out.println();
+		assertEquals(cur.firstRowIndex(),2);
+		assertFalse(cur.endOfResultSet());
+		assertEquals(cur.rowCount(),4);
+		assertEquals(cur.getField(6,0),"7");
+		assertEquals(cur.getField(7,0),"8");
+		System.out.println();
+		assertEquals(cur.firstRowIndex(),6);
+		assertFalse(cur.endOfResultSet());
+		assertEquals(cur.rowCount(),8);
+		assertEquals(cur.getField(8,0),null);
+		System.out.println();
+		assertEquals(cur.firstRowIndex(),8);
+		assertTrue(cur.endOfResultSet());
+		assertEquals(cur.rowCount(),8);
+		cur.setResultSetBufferSize(0);
+		System.out.println();
+
+
+		// dont get column info
+		System.out.println("DONT GET COLUMN INFO: ");
+		cur.dontGetColumnInfo();
+		assertTrue(cur.sendQuery(
+			"select "+
+			"	* "+
+			"from "+
+			"	testtable "+
+			"order by "+
+			"	testsmallint "));
+		assertEquals(cur.getColumnName(0),null);
+		assertEquals(cur.getColumnLength(0),0);
+		assertEquals(cur.getColumnType(0),null);
+		cur.getColumnInfo();
+		assertTrue(cur.sendQuery(
+			"select "+
+			"	* "+
+			"from "+
+			"	testtable "+
+			"order by "+
+			"	testsmallint "));
+		assertEquals(cur.getColumnName(0),"TESTSMALLINT");
+		assertEquals(cur.getColumnLength(0),2);
+		assertEquals(cur.getColumnType(0),"SMALLINT");
+		System.out.println();
+
+
+		// suspended session
+		System.out.println("SUSPENDED SESSION: ");
+		assertTrue(cur.sendQuery(
+			"select "+
+			"	* "+
+			"from "+
+			"	testtable "+
+			"order by "+
+			"	testsmallint "));
+		cur.suspendResultSet();
+		assertTrue(con.suspendSession());
+		port=con.getConnectionPort();
+		socket=con.getConnectionSocket();
+		assertTrue(con.resumeSession(port,socket));
+		System.out.println();
+		assertEquals(cur.getField(0,0),"1");
+		assertEquals(cur.getField(1,0),"2");
+		assertEquals(cur.getField(2,0),"3");
+		assertEquals(cur.getField(3,0),"4");
+		assertEquals(cur.getField(4,0),"5");
+		assertEquals(cur.getField(5,0),"6");
+		assertEquals(cur.getField(6,0),"7");
+		assertEquals(cur.getField(7,0),"8");
+		System.out.println();
+		assertTrue(cur.sendQuery(
+			"select "+
+			"	* "+
+			"from "+
+			"	testtable "+
+			"order by "+
+			"	testsmallint "));
+		cur.suspendResultSet();
+		assertTrue(con.suspendSession());
+		port=con.getConnectionPort();
+		socket=con.getConnectionSocket();
+		assertTrue(con.resumeSession(port,socket));
+		System.out.println();
+		assertEquals(cur.getField(0,0),"1");
+		assertEquals(cur.getField(1,0),"2");
+		assertEquals(cur.getField(2,0),"3");
+		assertEquals(cur.getField(3,0),"4");
+		assertEquals(cur.getField(4,0),"5");
+		assertEquals(cur.getField(5,0),"6");
+		assertEquals(cur.getField(6,0),"7");
+		assertEquals(cur.getField(7,0),"8");
+		System.out.println();
+		assertTrue(cur.sendQuery(
+			"select "+
+			"	* "+
+			"from "+
+			"	testtable "+
+			"order by "+
+			"	testsmallint "));
+		cur.suspendResultSet();
+		assertTrue(con.suspendSession());
+		port=con.getConnectionPort();
+		socket=con.getConnectionSocket();
+		assertTrue(con.resumeSession(port,socket));
+		System.out.println();
+		assertEquals(cur.getField(0,0),"1");
+		assertEquals(cur.getField(1,0),"2");
+		assertEquals(cur.getField(2,0),"3");
+		assertEquals(cur.getField(3,0),"4");
+		assertEquals(cur.getField(4,0),"5");
+		assertEquals(cur.getField(5,0),"6");
+		assertEquals(cur.getField(6,0),"7");
+		assertEquals(cur.getField(7,0),"8");
+		System.out.println();
+
+
+		// suspended result set
+		System.out.println("SUSPENDED RESULT SET: ");
+		cur.setResultSetBufferSize(2);
+		assertTrue(cur.sendQuery(
+			"select "+
+			"	* "+
+			"from "+
+			"	testtable "+
+			"order by "+
+			"	testsmallint "));
+		assertEquals(cur.getField(2,0),"3");
+		id=cur.getResultSetId();
+		cur.suspendResultSet();
+		assertTrue(con.suspendSession());
+		port=con.getConnectionPort();
+		socket=con.getConnectionSocket();
+		assertTrue(con.resumeSession(port,socket));
+		assertTrue(cur.resumeResultSet(id));
+		System.out.println();
+		assertEquals(cur.firstRowIndex(),4);
+		assertFalse(cur.endOfResultSet());
+		assertEquals(cur.rowCount(),6);
+		assertEquals(cur.getField(7,0),"8");
+		System.out.println();
+		assertEquals(cur.firstRowIndex(),6);
+		assertFalse(cur.endOfResultSet());
+		assertEquals(cur.rowCount(),8);
+		assertEquals(cur.getField(8,0),null);
+		System.out.println();
+		assertEquals(cur.firstRowIndex(),8);
+		assertTrue(cur.endOfResultSet());
+		assertEquals(cur.rowCount(),8);
+		cur.setResultSetBufferSize(0);
+		System.out.println();
+
+
+		// cached result set
+		System.out.println("CACHED RESULT SET: ");
+		cur.cacheToFile("cachefile1");
+		cur.setCacheTtl(200);
+		assertTrue(cur.sendQuery(
+			"select "+
+			"	* "+
+			"from "+
+			"	testtable "+
+			"order by "+
+			"	testsmallint "));
+		filename=cur.getCacheFileName();
+		assertEquals(filename,"cachefile1");
+		cur.cacheOff();
+		assertTrue(cur.openCachedResultSet(filename));
+		assertEquals(cur.getField(7,0),"8");
+		System.out.println();
+
+
+		// column count for cached result set
+		System.out.println("COLUMN COUNT FOR CACHED RESULT SET: ");
+		assertEquals(cur.colCount(),13);
+		System.out.println();
+
+
+		// column names for cached result set
+		System.out.println("COLUMN NAMES FOR CACHED RESULT SET: ");
+		assertEquals(cur.getColumnName(0),"TESTSMALLINT");
+		assertEquals(cur.getColumnName(1),"TESTINT");
+		assertEquals(cur.getColumnName(2),"TESTBIGINT");
+		assertEquals(cur.getColumnName(3),"TESTDECIMAL");
+		assertEquals(cur.getColumnName(4),"TESTREAL");
+		assertEquals(cur.getColumnName(5),"TESTDOUBLE");
+		assertEquals(cur.getColumnName(6),"TESTCHAR");
+		assertEquals(cur.getColumnName(7),"TESTVARCHAR");
+		assertEquals(cur.getColumnName(8),"TESTDATE");
+		assertEquals(cur.getColumnName(9),"TESTTIME");
+		assertEquals(cur.getColumnName(10),"TESTTIMESTAMP");
+		cols=cur.getColumnNames();
+		assertEquals(cols[0],"TESTSMALLINT");
+		assertEquals(cols[1],"TESTINT");
+		assertEquals(cols[2],"TESTBIGINT");
+		assertEquals(cols[3],"TESTDECIMAL");
+		assertEquals(cols[4],"TESTREAL");
+		assertEquals(cols[5],"TESTDOUBLE");
+		assertEquals(cols[6],"TESTCHAR");
+		assertEquals(cols[7],"TESTVARCHAR");
+		assertEquals(cols[8],"TESTDATE");
+		assertEquals(cols[9],"TESTTIME");
+		assertEquals(cols[10],"TESTTIMESTAMP");
+		System.out.println();
+
+
+		// cached result set with result set buffer size
+		System.out.println("CACHED RESULT SET WITH RESULT SET BUFFER "+
+			"SIZE: ");
+		cur.setResultSetBufferSize(2);
+		cur.cacheToFile("cachefile1");
+		cur.setCacheTtl(200);
+		assertTrue(cur.sendQuery(
+			"select "+
+			"	* "+
+			"from "+
+			"	testtable "+
+			"order by "+
+			"	testsmallint "));
+		filename=cur.getCacheFileName();
+		assertEquals(filename,"cachefile1");
+		cur.cacheOff();
+		assertTrue(cur.openCachedResultSet(filename));
+		assertEquals(cur.getField(7,0),"8");
+		assertEquals(cur.getField(8,0),null);
+		cur.setResultSetBufferSize(0);
+		System.out.println();
+
+
+		// from one cache file to another
+		System.out.println("FROM ONE CACHE FILE TO ANOTHER: ");
+		cur.cacheToFile("cachefile2");
+		assertTrue(cur.openCachedResultSet("cachefile1"));
+		cur.cacheOff();
+		assertTrue(cur.openCachedResultSet("cachefile2"));
+		assertEquals(cur.getField(7,0),"8");
+		assertEquals(cur.getField(8,0),null);
+		System.out.println();
+
+
+		// from one cache file to another with result set buffer size
+		System.out.println("FROM ONE CACHE FILE TO ANOTHER "+
+			"WITH RESULT SET BUFFER SIZE: ");
+		cur.setResultSetBufferSize(2);
+		cur.cacheToFile("cachefile2");
+		assertTrue(cur.openCachedResultSet("cachefile1"));
+		cur.cacheOff();
+		assertTrue(cur.openCachedResultSet("cachefile2"));
+		assertEquals(cur.getField(7,0),"8");
+		assertEquals(cur.getField(8,0),null);
+		cur.setResultSetBufferSize(0);
+		System.out.println();
+
+
+		// cached result set with suspend and result set buffer size
+		System.out.println("CACHED RESULT SET WITH SUSPEND "+
+			"AND RESULT SET BUFFER SIZE: ");
+		cur.setResultSetBufferSize(2);
+		cur.cacheToFile("cachefile1");
+		cur.setCacheTtl(200);
+		assertTrue(cur.sendQuery(
+			"select "+
+			"	* "+
+			"from "+
+			"	testtable "+
+			"order by "+
+			"	testsmallint "));
+		assertEquals(cur.getField(2,0),"3");
+		filename=cur.getCacheFileName();
+		assertEquals(filename,"cachefile1");
+		id=cur.getResultSetId();
+		cur.suspendResultSet();
+		assertTrue(con.suspendSession());
+		port=con.getConnectionPort();
+		socket=con.getConnectionSocket();
+		System.out.println();
+		assertTrue(con.resumeSession(port,socket));
+		assertTrue(cur.resumeCachedResultSet(id,filename));
+		System.out.println();
+		assertEquals(cur.firstRowIndex(),4);
+		assertFalse(cur.endOfResultSet());
+		assertEquals(cur.rowCount(),6);
+		assertEquals(cur.getField(7,0),"8");
+		System.out.println();
+		assertEquals(cur.firstRowIndex(),6);
+		assertFalse(cur.endOfResultSet());
+		assertEquals(cur.rowCount(),8);
+		assertEquals(cur.getField(8,0),null);
+		System.out.println();
+		assertEquals(cur.firstRowIndex(),8);
+		assertTrue(cur.endOfResultSet());
+		assertEquals(cur.rowCount(),8);
+		cur.cacheOff();
+		System.out.println();
+		assertTrue(cur.openCachedResultSet(filename));
+		assertEquals(cur.getField(7,0),"8");
+		assertEquals(cur.getField(8,0),null);
+		cur.setResultSetBufferSize(0);
+		System.out.println();
+
+
+		// finished suspended session
+		System.out.println("FINISHED SUSPENDED SESSION: ");
+		assertTrue(cur.sendQuery(
+			"select "+
+			"	* "+
+			"from "+
+			"	testtable "+
+			"order by "+
+			"	testint"));
+		assertEquals(cur.getField(4,0),"5");
+		assertEquals(cur.getField(5,0),"6");
+		assertEquals(cur.getField(6,0),"7");
+		assertEquals(cur.getField(7,0),"8");
+		id=cur.getResultSetId();
+		cur.suspendResultSet();
+		assertTrue(con.suspendSession());
+		port=con.getConnectionPort();
+		socket=con.getConnectionSocket();
+		assertTrue(con.resumeSession(port,socket));
+		assertTrue(cur.resumeResultSet(id));
+		assertEquals(cur.getField(4,0),null);
+		assertEquals(cur.getField(5,0),null);
+		assertEquals(cur.getField(6,0),null);
+		assertEquals(cur.getField(7,0),null);
+		System.out.println();
+
+
+		// nested selects
+		System.out.println("NESTED SELECTS: ");
+		cur.setResultSetBufferSize(1);
+		assertTrue(cur.sendQuery("select * from testtable"));
+		for (int i=0; cur.getRow(i)!=null; i++) {
+			SQLRCursor secondcur=new SQLRCursor(con);
+			secondcur.setResultSetBufferSize(1);
+			assertTrue(secondcur.sendQuery(
+				"select "+
+				"	* "+
+				"from "+
+				"	testtable"));
+			secondcur.closeResultSet();
+		}
+		cur.setResultSetBufferSize(0);
+		System.out.println();
+
+
+		// commit and rollback
+		System.out.println("COMMIT AND ROLLBACK: ");
+		SQLRConnection secondcon=new SQLRConnection("sqlrelay",
+				(short)9000,"/tmp/test.socket","db2inst1",
+				"testpassword",0,1);
+		SQLRCursor secondcur=new SQLRCursor(secondcon);
+		assertTrue(secondcur.sendQuery(
+			"select "+
+			"	count(*) "+
+			"from "+
+			"	testtable"));
+		assertEquals(secondcur.getField(0,0),"0");
+		assertTrue(con.commit());
+		assertTrue(secondcur.sendQuery(
+			"select "+
+			"	count(*) "+
+			"from "+
+			"	testtable"));
+		assertEquals(secondcur.getField(0,0),"8");
+		assertTrue(cur.sendQuery(
+			"insert into "+
+			"	testtable "+
+			"values ("+
+			"	10, "+
+			"	10, "+
+			"	10, "+
+			"	10.1, "+
+			"	10.1, "+
+			"	10.1, "+
+			"	'testchar10', "+
+			"	'testvarchar10', "+
+			"	'01/01/2010', "+
+			"	'10:00:00', "+
+			"	NULL, "+
+			"	'testclob10', "+
+			"	blob('testblob10'))"));
+		assertTrue(con.rollback());
+		assertTrue(secondcur.sendQuery(
+			"select "+
+			"	count(*) "+
+			"from "+
+			"	testtable"));
+		assertEquals(secondcur.getField(0,0),"8");
+		assertTrue(con.autoCommitOn());
+		assertTrue(cur.sendQuery(
+			"insert into "+
+			"	testtable "+
+			"values ("+
+			"	10, "+
+			"	10, "+
+			"	10, "+
+			"	10.1, "+
+			"	10.1, "+
+			"	10.1, "+
+			"	'testchar10', "+
+			"	'testvarchar10', "+
+			"	'01/01/2010', "+
+			"	'10:00:00', "+
+			"	NULL, "+
+			"	'testclob10', "+
+			"	blob('testblob10'))"));
+		assertTrue(secondcur.sendQuery(
+			"select "+
+			"	count(*) "+
+			"from "+
+			"	testtable"));
+		assertEquals(secondcur.getField(0,0),"9");
+		assertTrue(con.autoCommitOff());
+		secondcon.endSession();
+		assertTrue(cur.sendQuery("drop table testtable"));
+		assertTrue(con.commit());
+		System.out.println();
+
+
 		// individual substitutions
 		System.out.println("INDIVIDUAL SUBSTITUTIONS: ");
 		cur.prepareQuery("values ($(var1),'$(var2)','$(var3)')");
@@ -1097,10 +1535,9 @@ class db2 extends sqlrtest {
 		System.out.println("TEMPORARY TABLES: ");
 		cur.sendQuery("drop table session.temptable");
 		assertTrue(cur.sendQuery(
-			"declare global temporary "+
-			"table temptable ( "+
-			"	col1 int) "+
-			"not logged"));
+			"declare global temporary table session.temptable ("+
+			"	col1 int "+
+			") not logged"));
 		assertTrue(cur.sendQuery(
 			"insert into "+
 			"	session.temptable "+
@@ -1569,444 +2006,6 @@ class db2 extends sqlrtest {
 		assertTrue(cur.sendQuery("drop procedure testproc2"));
 		assertTrue(cur.sendQuery("drop procedure testproc3"));
 		assertTrue(cur.sendQuery("drop procedure testproc4"));
-		assertTrue(con.commit());
-		System.out.println();
-
-
-		// result set buffer size
-		System.out.println("RESULT SET BUFFER SIZE: ");
-		assertEquals(cur.getResultSetBufferSize(),0);
-		cur.setResultSetBufferSize(2);
-		assertTrue(cur.sendQuery(
-			"select "+
-			"	* "+
-			"from "+
-			"	testtable "+
-			"order by "+
-			"	testsmallint "));
-		assertEquals(cur.getResultSetBufferSize(),2);
-		System.out.println();
-		assertEquals(cur.firstRowIndex(),0);
-		assertFalse(cur.endOfResultSet());
-		assertEquals(cur.rowCount(),2);
-		assertEquals(cur.getField(0,0),"1");
-		assertEquals(cur.getField(1,0),"2");
-		assertEquals(cur.getField(2,0),"3");
-		System.out.println();
-		assertEquals(cur.firstRowIndex(),2);
-		assertFalse(cur.endOfResultSet());
-		assertEquals(cur.rowCount(),4);
-		assertEquals(cur.getField(6,0),"7");
-		assertEquals(cur.getField(7,0),"8");
-		System.out.println();
-		assertEquals(cur.firstRowIndex(),6);
-		assertFalse(cur.endOfResultSet());
-		assertEquals(cur.rowCount(),8);
-		assertEquals(cur.getField(8,0),null);
-		System.out.println();
-		assertEquals(cur.firstRowIndex(),8);
-		assertTrue(cur.endOfResultSet());
-		assertEquals(cur.rowCount(),8);
-		cur.setResultSetBufferSize(0);
-		System.out.println();
-
-
-		// dont get column info
-		System.out.println("DONT GET COLUMN INFO: ");
-		cur.dontGetColumnInfo();
-		assertTrue(cur.sendQuery(
-			"select "+
-			"	* "+
-			"from "+
-			"	testtable "+
-			"order by "+
-			"	testsmallint "));
-		assertEquals(cur.getColumnName(0),null);
-		assertEquals(cur.getColumnLength(0),0);
-		assertEquals(cur.getColumnType(0),null);
-		cur.getColumnInfo();
-		assertTrue(cur.sendQuery(
-			"select "+
-			"	* "+
-			"from "+
-			"	testtable "+
-			"order by "+
-			"	testsmallint "));
-		assertEquals(cur.getColumnName(0),"TESTSMALLINT");
-		assertEquals(cur.getColumnLength(0),2);
-		assertEquals(cur.getColumnType(0),"SMALLINT");
-		System.out.println();
-
-
-		// suspended session
-		System.out.println("SUSPENDED SESSION: ");
-		assertTrue(cur.sendQuery(
-			"select "+
-			"	* "+
-			"from "+
-			"	testtable "+
-			"order by "+
-			"	testsmallint "));
-		cur.suspendResultSet();
-		assertTrue(con.suspendSession());
-		port=con.getConnectionPort();
-		socket=con.getConnectionSocket();
-		assertTrue(con.resumeSession(port,socket));
-		System.out.println();
-		assertEquals(cur.getField(0,0),"1");
-		assertEquals(cur.getField(1,0),"2");
-		assertEquals(cur.getField(2,0),"3");
-		assertEquals(cur.getField(3,0),"4");
-		assertEquals(cur.getField(4,0),"5");
-		assertEquals(cur.getField(5,0),"6");
-		assertEquals(cur.getField(6,0),"7");
-		assertEquals(cur.getField(7,0),"8");
-		System.out.println();
-		assertTrue(cur.sendQuery(
-			"select "+
-			"	* "+
-			"from "+
-			"	testtable "+
-			"order by "+
-			"	testsmallint "));
-		cur.suspendResultSet();
-		assertTrue(con.suspendSession());
-		port=con.getConnectionPort();
-		socket=con.getConnectionSocket();
-		assertTrue(con.resumeSession(port,socket));
-		System.out.println();
-		assertEquals(cur.getField(0,0),"1");
-		assertEquals(cur.getField(1,0),"2");
-		assertEquals(cur.getField(2,0),"3");
-		assertEquals(cur.getField(3,0),"4");
-		assertEquals(cur.getField(4,0),"5");
-		assertEquals(cur.getField(5,0),"6");
-		assertEquals(cur.getField(6,0),"7");
-		assertEquals(cur.getField(7,0),"8");
-		System.out.println();
-		assertTrue(cur.sendQuery(
-			"select "+
-			"	* "+
-			"from "+
-			"	testtable "+
-			"order by "+
-			"	testsmallint "));
-		cur.suspendResultSet();
-		assertTrue(con.suspendSession());
-		port=con.getConnectionPort();
-		socket=con.getConnectionSocket();
-		assertTrue(con.resumeSession(port,socket));
-		System.out.println();
-		assertEquals(cur.getField(0,0),"1");
-		assertEquals(cur.getField(1,0),"2");
-		assertEquals(cur.getField(2,0),"3");
-		assertEquals(cur.getField(3,0),"4");
-		assertEquals(cur.getField(4,0),"5");
-		assertEquals(cur.getField(5,0),"6");
-		assertEquals(cur.getField(6,0),"7");
-		assertEquals(cur.getField(7,0),"8");
-		System.out.println();
-
-
-		// suspended result set
-		System.out.println("SUSPENDED RESULT SET: ");
-		cur.setResultSetBufferSize(2);
-		assertTrue(cur.sendQuery(
-			"select "+
-			"	* "+
-			"from "+
-			"	testtable "+
-			"order by "+
-			"	testsmallint "));
-		assertEquals(cur.getField(2,0),"3");
-		id=cur.getResultSetId();
-		cur.suspendResultSet();
-		assertTrue(con.suspendSession());
-		port=con.getConnectionPort();
-		socket=con.getConnectionSocket();
-		assertTrue(con.resumeSession(port,socket));
-		assertTrue(cur.resumeResultSet(id));
-		System.out.println();
-		assertEquals(cur.firstRowIndex(),4);
-		assertFalse(cur.endOfResultSet());
-		assertEquals(cur.rowCount(),6);
-		assertEquals(cur.getField(7,0),"8");
-		System.out.println();
-		assertEquals(cur.firstRowIndex(),6);
-		assertFalse(cur.endOfResultSet());
-		assertEquals(cur.rowCount(),8);
-		assertEquals(cur.getField(8,0),null);
-		System.out.println();
-		assertEquals(cur.firstRowIndex(),8);
-		assertTrue(cur.endOfResultSet());
-		assertEquals(cur.rowCount(),8);
-		cur.setResultSetBufferSize(0);
-		System.out.println();
-
-
-		// cached result set
-		System.out.println("CACHED RESULT SET: ");
-		cur.cacheToFile("cachefile1");
-		cur.setCacheTtl(200);
-		assertTrue(cur.sendQuery(
-			"select "+
-			"	* "+
-			"from "+
-			"	testtable "+
-			"order by "+
-			"	testsmallint "));
-		filename=cur.getCacheFileName();
-		assertEquals(filename,"cachefile1");
-		cur.cacheOff();
-		assertTrue(cur.openCachedResultSet(filename));
-		assertEquals(cur.getField(7,0),"8");
-		System.out.println();
-
-
-		// column count for cached result set
-		System.out.println("COLUMN COUNT FOR CACHED RESULT SET: ");
-		assertEquals(cur.colCount(),13);
-		System.out.println();
-
-
-		// column names for cached result set
-		System.out.println("COLUMN NAMES FOR CACHED RESULT SET: ");
-		assertEquals(cur.getColumnName(0),"TESTSMALLINT");
-		assertEquals(cur.getColumnName(1),"TESTINT");
-		assertEquals(cur.getColumnName(2),"TESTBIGINT");
-		assertEquals(cur.getColumnName(3),"TESTDECIMAL");
-		assertEquals(cur.getColumnName(4),"TESTREAL");
-		assertEquals(cur.getColumnName(5),"TESTDOUBLE");
-		assertEquals(cur.getColumnName(6),"TESTCHAR");
-		assertEquals(cur.getColumnName(7),"TESTVARCHAR");
-		assertEquals(cur.getColumnName(8),"TESTDATE");
-		assertEquals(cur.getColumnName(9),"TESTTIME");
-		assertEquals(cur.getColumnName(10),"TESTTIMESTAMP");
-		cols=cur.getColumnNames();
-		assertEquals(cols[0],"TESTSMALLINT");
-		assertEquals(cols[1],"TESTINT");
-		assertEquals(cols[2],"TESTBIGINT");
-		assertEquals(cols[3],"TESTDECIMAL");
-		assertEquals(cols[4],"TESTREAL");
-		assertEquals(cols[5],"TESTDOUBLE");
-		assertEquals(cols[6],"TESTCHAR");
-		assertEquals(cols[7],"TESTVARCHAR");
-		assertEquals(cols[8],"TESTDATE");
-		assertEquals(cols[9],"TESTTIME");
-		assertEquals(cols[10],"TESTTIMESTAMP");
-		System.out.println();
-
-
-		// cached result set with result set buffer size
-		System.out.println("CACHED RESULT SET WITH RESULT SET BUFFER "+
-			"SIZE: ");
-		cur.setResultSetBufferSize(2);
-		cur.cacheToFile("cachefile1");
-		cur.setCacheTtl(200);
-		assertTrue(cur.sendQuery(
-			"select "+
-			"	* "+
-			"from "+
-			"	testtable "+
-			"order by "+
-			"	testsmallint "));
-		filename=cur.getCacheFileName();
-		assertEquals(filename,"cachefile1");
-		cur.cacheOff();
-		assertTrue(cur.openCachedResultSet(filename));
-		assertEquals(cur.getField(7,0),"8");
-		assertEquals(cur.getField(8,0),null);
-		cur.setResultSetBufferSize(0);
-		System.out.println();
-
-
-		// from one cache file to another
-		System.out.println("FROM ONE CACHE FILE TO ANOTHER: ");
-		cur.cacheToFile("cachefile2");
-		assertTrue(cur.openCachedResultSet("cachefile1"));
-		cur.cacheOff();
-		assertTrue(cur.openCachedResultSet("cachefile2"));
-		assertEquals(cur.getField(7,0),"8");
-		assertEquals(cur.getField(8,0),null);
-		System.out.println();
-
-
-		// from one cache file to another with result set buffer size
-		System.out.println("FROM ONE CACHE FILE TO ANOTHER "+
-			"WITH RESULT SET BUFFER SIZE: ");
-		cur.setResultSetBufferSize(2);
-		cur.cacheToFile("cachefile2");
-		assertTrue(cur.openCachedResultSet("cachefile1"));
-		cur.cacheOff();
-		assertTrue(cur.openCachedResultSet("cachefile2"));
-		assertEquals(cur.getField(7,0),"8");
-		assertEquals(cur.getField(8,0),null);
-		cur.setResultSetBufferSize(0);
-		System.out.println();
-
-
-		// cached result set with suspend and result set buffer size
-		System.out.println("CACHED RESULT SET WITH SUSPEND "+
-			"AND RESULT SET BUFFER SIZE: ");
-		cur.setResultSetBufferSize(2);
-		cur.cacheToFile("cachefile1");
-		cur.setCacheTtl(200);
-		assertTrue(cur.sendQuery(
-			"select "+
-			"	* "+
-			"from "+
-			"	testtable "+
-			"order by "+
-			"	testsmallint "));
-		assertEquals(cur.getField(2,0),"3");
-		filename=cur.getCacheFileName();
-		assertEquals(filename,"cachefile1");
-		id=cur.getResultSetId();
-		cur.suspendResultSet();
-		assertTrue(con.suspendSession());
-		port=con.getConnectionPort();
-		socket=con.getConnectionSocket();
-		System.out.println();
-		assertTrue(con.resumeSession(port,socket));
-		assertTrue(cur.resumeCachedResultSet(id,filename));
-		System.out.println();
-		assertEquals(cur.firstRowIndex(),4);
-		assertFalse(cur.endOfResultSet());
-		assertEquals(cur.rowCount(),6);
-		assertEquals(cur.getField(7,0),"8");
-		System.out.println();
-		assertEquals(cur.firstRowIndex(),6);
-		assertFalse(cur.endOfResultSet());
-		assertEquals(cur.rowCount(),8);
-		assertEquals(cur.getField(8,0),null);
-		System.out.println();
-		assertEquals(cur.firstRowIndex(),8);
-		assertTrue(cur.endOfResultSet());
-		assertEquals(cur.rowCount(),8);
-		cur.cacheOff();
-		System.out.println();
-		assertTrue(cur.openCachedResultSet(filename));
-		assertEquals(cur.getField(7,0),"8");
-		assertEquals(cur.getField(8,0),null);
-		cur.setResultSetBufferSize(0);
-		System.out.println();
-
-
-		// finished suspended session
-		System.out.println("FINISHED SUSPENDED SESSION: ");
-		assertTrue(cur.sendQuery(
-			"select "+
-			"	* "+
-			"from "+
-			"	testtable "+
-			"order by "+
-			"	testint"));
-		assertEquals(cur.getField(4,0),"5");
-		assertEquals(cur.getField(5,0),"6");
-		assertEquals(cur.getField(6,0),"7");
-		assertEquals(cur.getField(7,0),"8");
-		id=cur.getResultSetId();
-		cur.suspendResultSet();
-		assertTrue(con.suspendSession());
-		port=con.getConnectionPort();
-		socket=con.getConnectionSocket();
-		assertTrue(con.resumeSession(port,socket));
-		assertTrue(cur.resumeResultSet(id));
-		assertEquals(cur.getField(4,0),null);
-		assertEquals(cur.getField(5,0),null);
-		assertEquals(cur.getField(6,0),null);
-		assertEquals(cur.getField(7,0),null);
-		System.out.println();
-
-
-		// nested selects
-		System.out.println("NESTED SELECTS: ");
-		cur.setResultSetBufferSize(1);
-		assertTrue(cur.sendQuery("select * from testtable"));
-		for (int i=0; cur.getRow(i)!=null; i++) {
-			SQLRCursor secondcur=new SQLRCursor(con);
-			secondcur.setResultSetBufferSize(1);
-			assertTrue(secondcur.sendQuery(
-				"select "+
-				"	* "+
-				"from "+
-				"	testtable"));
-			secondcur.closeResultSet();
-		}
-		cur.setResultSetBufferSize(0);
-		System.out.println();
-
-
-		// commit and rollback
-		System.out.println("COMMIT AND ROLLBACK: ");
-		SQLRConnection secondcon=new SQLRConnection("sqlrelay",
-				(short)9000,"/tmp/test.socket","db2inst1",
-				"testpassword",0,1);
-		SQLRCursor secondcur=new SQLRCursor(secondcon);
-		assertTrue(secondcur.sendQuery(
-			"select "+
-			"	count(*) "+
-			"from "+
-			"	testtable"));
-		assertEquals(secondcur.getField(0,0),"0");
-		assertTrue(con.commit());
-		assertTrue(secondcur.sendQuery(
-			"select "+
-			"	count(*) "+
-			"from "+
-			"	testtable"));
-		assertEquals(secondcur.getField(0,0),"8");
-		assertTrue(cur.sendQuery(
-			"insert into "+
-			"	testtable "+
-			"values ("+
-			"	10, "+
-			"	10, "+
-			"	10, "+
-			"	10.1, "+
-			"	10.1, "+
-			"	10.1, "+
-			"	'testchar10', "+
-			"	'testvarchar10', "+
-			"	'01/01/2010', "+
-			"	'10:00:00', "+
-			"	NULL, "+
-			"	'testclob10', "+
-			"	blob('testblob10'))"));
-		assertTrue(con.rollback());
-		assertTrue(secondcur.sendQuery(
-			"select "+
-			"	count(*) "+
-			"from "+
-			"	testtable"));
-		assertEquals(secondcur.getField(0,0),"8");
-		assertTrue(con.autoCommitOn());
-		assertTrue(cur.sendQuery(
-			"insert into "+
-			"	testtable "+
-			"values ("+
-			"	10, "+
-			"	10, "+
-			"	10, "+
-			"	10.1, "+
-			"	10.1, "+
-			"	10.1, "+
-			"	'testchar10', "+
-			"	'testvarchar10', "+
-			"	'01/01/2010', "+
-			"	'10:00:00', "+
-			"	NULL, "+
-			"	'testclob10', "+
-			"	blob('testblob10'))"));
-		assertTrue(secondcur.sendQuery(
-			"select "+
-			"	count(*) "+
-			"from "+
-			"	testtable"));
-		assertEquals(secondcur.getField(0,0),"9");
-		assertTrue(con.autoCommitOff());
-		secondcon.endSession();
-		assertTrue(cur.sendQuery("drop table testtable"));
 		assertTrue(con.commit());
 		System.out.println();
 

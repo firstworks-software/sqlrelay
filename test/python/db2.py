@@ -1414,7 +1414,7 @@ def main():
 	# temporary tables
 	print("TEMPORARY TABLES: ")
 	cur.sendQuery("drop table session.temptable")
-	assertTrue(cur.sendQuery("declare global temporary table temptable "
+	assertTrue(cur.sendQuery("declare global temporary table session.temptable "
 						"(col1 int) not logged"))
 	assertTrue(cur.sendQuery("insert into session.temptable values (1)"))
 	assertTrue(cur.sendQuery("select count(*) from session.temptable"))

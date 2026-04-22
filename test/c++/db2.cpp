@@ -1447,8 +1447,10 @@ int main(int argc, char **argv) {
 	// temporary tables
 	stdoutput.printf("TEMPORARY TABLES: \n");
 	cur->sendQuery("drop table session.temptable");
-	assertTrue(cur->sendQuery("declare global temporary table temptable "
-						"(col1 int) not logged"));
+	assertTrue(cur->sendQuery(
+			"declare global temporary table session.temptable ("
+			"	col1 int "
+			") not logged"));
 	assertTrue(cur->sendQuery("insert into session.temptable values (1)"));
 	assertTrue(cur->sendQuery("select count(*) from session.temptable"));
 	assertEquals(cur->getField(0,(uint32_t)0),"1");

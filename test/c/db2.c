@@ -1465,7 +1465,7 @@ int main(int argc, char **argv) {
 	printf("TEMPORARY TABLES: \n");
 	sqlrcur_sendQuery(cur,"drop table session.temptable");
 	assertTrue(sqlrcur_sendQuery(cur,
-		"declare global temporary table temptable ("
+		"declare global temporary table session.temptable ("
 		"	col1 int "
 		") not logged"));
 	assertTrue(sqlrcur_sendQuery(

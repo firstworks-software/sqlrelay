@@ -1417,7 +1417,7 @@ console.log("");
 console.log("TEMPORARY TABLES: ");
 cur.sendQuery("drop table session.temptable");
 assertTrue(cur.sendQuery(
-	"declare global temporary table temptable ("+
+	"declare global temporary table session.temptable ("+
 	"	col1 int "+
 	") not logged"));
 assertTrue(cur.sendQuery(

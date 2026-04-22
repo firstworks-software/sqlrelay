@@ -1282,8 +1282,10 @@ main() ->
     %% TEMPORARY TABLES
     io:format("TEMPORARY TABLES: ~n"),
     sqlrelay:sendQuery("drop table session.temptable"),
-    assertTrue(sqlrelay:sendQuery("declare global temporary table temptable "
-                                  "(col1 int) not logged")),
+    assertTrue(sqlrelay:sendQuery(
+        "declare global temporary table session.temptable ("
+        "	col1 int "
+        ") not logged")),
     assertTrue(sqlrelay:sendQuery("insert into session.temptable values (1)")),
     assertTrue(sqlrelay:sendQuery("select count(*) from session.temptable")),
     assertEqualsString(sqlrelay:getFieldByIndex(0, 0), "1"),
