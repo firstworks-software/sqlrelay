@@ -10,7 +10,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 
-#include "asserts.cpp"
+#include "../c++/asserts.cpp"
 
 sqlrconnection	*con=NULL;
 sqlrcursor	*cur=NULL;

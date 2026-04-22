@@ -21,7 +21,7 @@
 
 #include "../../config.h"
 
-#include "asserts.cpp"
+#include "../c++/asserts.cpp"
 
 //#define ROWS 10000
 //#define ROWS 1000

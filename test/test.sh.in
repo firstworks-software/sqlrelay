@@ -34,6 +34,10 @@ do
 			TEST="./$1"
 			TESTFILE="$1"
 			;;
+		extensions)
+			TEST="./$1"
+			TESTFILE="$1"
+			;;
 		cs)
 			mono --version > /dev/null 2>&1
 			if ( test "$?" = "0" )

@@ -10,6 +10,9 @@ all-c:
 all-cpp:
 	cd c++ $(AND) $(MAKE) all
 
+all-extensions:
+	cd extensions $(AND) $(MAKE) all
+
 all-cs:
 	cd cs $(AND) $(MAKE) all
 
@@ -28,6 +31,9 @@ all-tcl:
 all-erlang:
 	cd erlang $(AND) $(MAKE) all
 
+all-legacy:
+	cd legacy $(AND) $(MAKE) all
+
 all-protocol:
 	cd protocol $(AND) $(MAKE) all
 
@@ -43,6 +49,7 @@ clean:
 	cd c++ $(AND) $(MAKE) clean
 	cd cs $(AND) $(MAKE) clean
 	cd erlang $(AND) $(MAKE) clean
+	cd extensions $(AND) $(MAKE) clean
 	cd java $(AND) $(MAKE) clean
 	cd jdbc $(AND) $(MAKE) clean
 	cd nodejs $(AND) $(MAKE) clean
@@ -54,9 +61,10 @@ clean:
 	cd tcl $(AND) $(MAKE) clean
 	cd bench $(AND) $(MAKE) clean
 	cd crud $(AND) $(MAKE) clean
+	cd legacy $(AND) $(MAKE) clean
 	cd protocol $(AND) $(MAKE) clean
 	cd stress $(AND) $(MAKE) clean
-	$(RM) sqlr-*.*.bt sybinit.err log/*.log sqlrelay.conf.d/sqlite/sqlite.db temp1 temp2 temp3
+	$(RM) sqlr-*.*.bt sybinit.err sqlrelay.conf.d/sqlite/sqlite.db temp1 temp2 temp3
 
 tests: all
 	$(SCRIPTINT) $(THISDIR)testall$(SCRIPTEXT)

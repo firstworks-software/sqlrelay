@@ -275,8 +275,6 @@ do
 	$PREFIX/bin/sqlr-stop -config @abs_top_builddir@/test/sqlrelay.conf.d/${DB}.conf -id ${DB}test
 	sleep 2
 
-	rm -f log/*.log
-
 	echo
 	echo "================================================================================"
 	echo

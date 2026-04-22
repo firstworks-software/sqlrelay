@@ -42602,7 +42602,7 @@ ODBCDRIVERBUILD="no "
 TESTAPIS=""
 if ( test -n "$ENABLE_CPP" ); then
 	CPPBUILD="yes"
-	TESTAPIS="$TESTAPIS c c++"
+	TESTAPIS="$TESTAPIS c c++ extensions"
 fi
 if ( test -n "$HAVE_PERL" ); then
 	PERLBUILD="yes"

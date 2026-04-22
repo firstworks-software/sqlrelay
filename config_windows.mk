@@ -411,7 +411,7 @@ CONNECTIONSINSTALLTARGETS = @INSTALLDB2@ @INSTALLFIREBIRD@ @INSTALLMYSQL@ @INSTA
 
 
 # tests
-TESTALLSUBDIRS = all-c all-cpp all-cs all-adonet all-java all-jdbc all-protocol all-stress all-tcl all-crud
+TESTALLSUBDIRS = all-c all-cpp all-legacy all-extensions all-cs all-adonet all-java all-jdbc all-protocol all-stress all-tcl all-crud
 TESTPROTOCOLSUBDIRS =
 
 CPPTESTCPPFLAGS = $(BASECPPFLAGS) /I $(includedir) $(RUDIMENTSINCLUDES)

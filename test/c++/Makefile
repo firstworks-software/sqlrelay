@@ -11,40 +11,23 @@ include ../../config.mk
 	$(CXX) $(CXXFLAGS) $(CPPTESTCPPFLAGS) $(COMPILE) $<
 
 all: db2 \
-	db27 \
-	db26 \
 	freetds \
 	firebird \
 	informix \
 	mysql \
 	oracle \
-	oracle8 \
-	oracle7 \
 	postgresql \
 	sqlite \
 	sap \
-	router \
-	extensions \
 	krb \
-	tls \
-	mysqlupsert \
-	mysqldeadlockreplay \
-	mysqlsplitmultiinsert \
-	mysqlimportexport \
-	postgresqlupsert
+	tls
 
 clean:
-	$(RM) *.lo *.o *.obj db2$(EXE) db27$(EXE) db26$(EXE) freetds$(EXE) firebird$(EXE) informix$(EXE) mysql$(EXE) oracleclobfetch$(EXE) oracleclobinsert$(EXE) oracle$(EXE) oracle8$(EXE) oracle7$(EXE) postgresql$(EXE) sqlite$(EXE) sap$(EXE) router$(EXE) extensions$(EXE) krb$(EXE) tls$(EXE) mysqldeadlockreplay$(EXE) mysqlsplitmultiinsert$(EXE) mysqlupsert$(EXE) mysqlexport$(EXE) mysqlimportexport$(EXE) emoji$(EXE) postgresqlupsert$(EXE) *.csv cachefile* sqlnet.log
+	$(RM) *.lo *.o *.obj db2$(EXE) freetds$(EXE) firebird$(EXE) informix$(EXE) mysql$(EXE) oracle$(EXE) postgresql$(EXE) sqlite$(EXE) sap$(EXE) krb$(EXE) tls$(EXE) *.csv cachefile* sqlnet.log
 	$(RMTREE) .libs
 
 db2: db2.cpp db2.$(OBJ)
 	$(LTLINK) $(LINK) $(LDFLAGS) $(OUT)$@$(EXE) db2.$(OBJ) $(CPPTESTLIBS)
-
-db27: db27.cpp db27.$(OBJ)
-	$(LTLINK) $(LINK) $(LDFLAGS) $(OUT)$@$(EXE) db27.$(OBJ) $(CPPTESTLIBS)
-
-db26: db26.cpp db26.$(OBJ)
-	$(LTLINK) $(LINK) $(LDFLAGS) $(OUT)$@$(EXE) db26.$(OBJ) $(CPPTESTLIBS)
 
 freetds: freetds.cpp freetds.$(OBJ)
 	$(LTLINK) $(LINK) $(LDFLAGS) $(OUT)$@$(EXE) freetds.$(OBJ) $(CPPTESTLIBS)
@@ -61,19 +44,8 @@ mysql: mysql.cpp mysql.$(OBJ)
 oracle: oracle.cpp oracle.$(OBJ)
 	$(LTLINK) $(LINK) $(LDFLAGS) $(OUT)$@$(EXE) oracle.$(OBJ) $(CPPTESTLIBS)
 
-oracle8: oracle8.cpp oracle8.$(OBJ)
-	$(LTLINK) $(LINK) $(LDFLAGS) $(OUT)$@$(EXE) oracle8.$(OBJ) $(CPPTESTLIBS)
-oracle7: oracle7.cpp oracle7.$(OBJ)
-	$(LTLINK) $(LINK) $(LDFLAGS) $(OUT)$@$(EXE) oracle7.$(OBJ) $(CPPTESTLIBS)
-
 postgresql: postgresql.cpp postgresql.$(OBJ)
 	$(LTLINK) $(LINK) $(LDFLAGS) $(OUT)$@$(EXE) postgresql.$(OBJ) $(CPPTESTLIBS)
-
-oracleclobinsert: oracleclobinsert.cpp oracleclobinsert.$(OBJ)
-	$(LTLINK) $(LINK) $(LDFLAGS) $(OUT)$@$(EXE) oracleclobinsert.$(OBJ) $(CPPTESTLIBS)
-
-oracleclobfetch: oracleclobfetch.cpp oracleclobfetch.$(OBJ)
-	$(LTLINK) $(LINK) $(LDFLAGS) $(OUT)$@$(EXE) oracleclobfetch.$(OBJ) $(CPPTESTLIBS)
 
 sqlite: sqlite.cpp sqlite.$(OBJ)
 	$(LTLINK) $(LINK) $(LDFLAGS) $(OUT)$@$(EXE) sqlite.$(OBJ) $(CPPTESTLIBS)
@@ -81,32 +53,8 @@ sqlite: sqlite.cpp sqlite.$(OBJ)
 sap: sap.cpp sap.$(OBJ)
 	$(LTLINK) $(LINK) $(LDFLAGS) $(OUT)$@$(EXE) sap.$(OBJ) $(CPPTESTLIBS)
 
-router: router.cpp router.$(OBJ)
-	$(LTLINK) $(LINK) $(LDFLAGS) $(OUT)$@$(EXE) router.$(OBJ) $(CPPTESTLIBS)
-
-extensions: extensions.cpp extensions.$(OBJ)
-	$(LTLINK) $(LINK) $(LDFLAGS) $(OUT)$@$(EXE) extensions.$(OBJ) $(CPPTESTLIBS)
-
 krb: krb.cpp krb.$(OBJ)
 	$(LTLINK) $(LINK) $(LDFLAGS) $(OUT)$@$(EXE) krb.$(OBJ) $(CPPTESTLIBS)
 
 tls: tls.cpp tls.$(OBJ)
 	$(LTLINK) $(LINK) $(LDFLAGS) $(OUT)$@$(EXE) tls.$(OBJ) $(CPPTESTLIBS)
-
-mysqldeadlockreplay: mysqldeadlockreplay.cpp mysqldeadlockreplay.$(OBJ)
-	$(LTLINK) $(LINK) $(LDFLAGS) $(OUT)$@$(EXE) mysqldeadlockreplay.$(OBJ) $(CPPTESTLIBS)
-
-mysqlsplitmultiinsert: mysqlsplitmultiinsert.cpp mysqlsplitmultiinsert.$(OBJ)
-	$(LTLINK) $(LINK) $(LDFLAGS) $(OUT)$@$(EXE) mysqlsplitmultiinsert.$(OBJ) $(CPPTESTLIBS)
-
-mysqlupsert: mysqlupsert.cpp mysqlupsert.$(OBJ)
-	$(LTLINK) $(LINK) $(LDFLAGS) $(OUT)$@$(EXE) mysqlupsert.$(OBJ) $(CPPTESTLIBS)
-
-mysqlimportexport: mysqlimportexport.cpp mysqlimportexport.$(OBJ)
-	$(LTLINK) $(LINK) $(LDFLAGS) $(OUT)$@$(EXE) mysqlimportexport.$(OBJ) $(CPPTESTLIBS)
-
-emoji: emoji.cpp emoji.$(OBJ)
-	$(LTLINK) $(LINK) $(LDFLAGS) $(OUT)$@$(EXE) emoji.$(OBJ) $(CPPTESTLIBS)
-
-postgresqlupsert: postgresqlupsert.cpp postgresqlupsert.$(OBJ)
-	$(LTLINK) $(LINK) $(LDFLAGS) $(OUT)$@$(EXE) postgresqlupsert.$(OBJ) $(CPPTESTLIBS)

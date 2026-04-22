@@ -956,7 +956,7 @@ if disablecmdline=false then
 end if
 if disablecpp=false then
 	CPPBUILD="yes"
-	TESTAPIS=TESTAPIS & """c"",""c++"","
+	TESTAPIS=TESTAPIS & """c"",""c++"",""extensions"","
 end if
 if disableperl=false then
 	PERLBUILD="yes"
