@@ -1096,7 +1096,7 @@ const char *sapconnection::getSchemaListQuery(const char *catalog,
 	schemalistquery.append(
 		"select distinct "
 		"	'' as table_cat, "
-		"	loginame as table_schem, "
+		"	user_name(uid) as table_schem, "
 		"	'' as table_name, "
 		"	'' as table_type, "
 		"	'' as remarks, "
@@ -1110,11 +1110,11 @@ const char *sapconnection::getSchemaListQuery(const char *catalog,
 	// where clause
 	schemalistquery.append(
 		"where "
-		"	loginame is not null ");
+		"	user_name(uid) is not null ");
 	if (schema) {
 		schemalistquery.append(
 			"	and "
-			"	loginame like '");
+			"	user_name(uid) like '");
 		schemalistquery.append(schema);
 		schemalistquery.append("' ");
 	}
@@ -1122,7 +1122,7 @@ const char *sapconnection::getSchemaListQuery(const char *catalog,
 	// order by clause
 	schemalistquery.append(
 		"order by "
-		"	loginame");
+		"	user_name(uid)");
 
 	return schemalistquery.getString();
 }
@@ -1180,7 +1180,7 @@ const char *sapconnection::getTableListQuery(const char *catalog,
 	tablelistquery.append(
 		"select "
 		"	'' as table_cat, "
-		"	loginame as table_schem, "
+		"	user_name(uid) as table_schem, "
 		"	name as table_name, "
 		"	'TABLE' as table_type, "
 		"	'' as remarks, "
@@ -1194,11 +1194,11 @@ const char *sapconnection::getTableListQuery(const char *catalog,
 	// where clause
 	tablelistquery.append(
 		"where "
-		"	loginame is not null ");
+		"	user_name(uid) is not null ");
 	if (schema) {
 		tablelistquery.append(
 			"	and "
-			"	loginame like '");
+			"	user_name(uid) like '");
 		tablelistquery.append(schema);
 		tablelistquery.append("' ");
 	}
@@ -2213,7 +2213,7 @@ const char *sapconnection::getProcedureListQuery(
 	procedurelistquery.append(
 		"select "
 		"	'' as procedure_cat, "
-		"	loginame as procedure_schem, "
+		"	user_name(uid) as procedure_schem, "
 		"	name as procedure_name, "
 		"	0 as num_input_params, "
 		"	0 as num_output_params, "
@@ -2237,7 +2237,7 @@ const char *sapconnection::getProcedureListQuery(
 		"	type in ('P','SF') ");
 	if (!charstring::isNullOrEmpty(schema)) {
 		procedurelistquery.append(
-			"and loginame like '");
+			"and user_name(uid) like '");
 		procedurelistquery.append(schema);
 		procedurelistquery.append("' ");
 	}
@@ -2251,7 +2251,7 @@ const char *sapconnection::getProcedureListQuery(
 	// order by clause
 	procedurelistquery.append(
 		"order by "
-		"	loginame, "
+		"	user_name(uid), "
 		"	name");
 
 	return procedurelistquery.getString();

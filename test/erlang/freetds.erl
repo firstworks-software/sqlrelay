@@ -27,6 +27,7 @@ main() ->
                              "testuser", "testpassword", 0, 1),
 
     Hostname = shortHostname(),
+    DumpTran = "dump tran " ++ Hostname ++ " with truncate_only",
 
     %% IDENTIFY
     io:format("IDENTIFY: ~n"),
@@ -59,6 +60,7 @@ main() ->
     %% CREATE TESTTABLE
     io:format("CREATE TESTTABLE: ~n"),
     sqlrelay:sendQuery("drop table testtable"),
+    sqlrelay:sendQuery(DumpTran),
     assertTrue(sqlrelay:sendQuery(
         "create table testtable ("
         "	testint int, "
@@ -911,6 +913,7 @@ main() ->
     io:format("NULL AND EMPTY LOBS: ~n"),
     sqlrelay:getNullsAsNulls(),
     sqlrelay:sendQuery("drop table testtable"),
+    sqlrelay:sendQuery(DumpTran),
     assertTrue(sqlrelay:sendQuery(
         "create table testtable ("
         "	testclob1 text NULL, "
@@ -952,6 +955,7 @@ main() ->
     %% LONG LOBS
     io:format("LONG LOBS: ~n"),
     sqlrelay:sendQuery("drop table testtable"),
+    sqlrelay:sendQuery(DumpTran),
     sqlrelay:sendQuery(
         "create table testtable ("
         "	testclob text, "
@@ -992,6 +996,7 @@ main() ->
     %% NEGATIVE INPUT BIND
     io:format("NEGATIVE INPUT BIND: ~n"),
     sqlrelay:sendQuery("drop table testtable"),
+    sqlrelay:sendQuery(DumpTran),
     sqlrelay:sendQuery("create table testtable (testval int)"),
     sqlrelay:prepareQuery("insert into testtable values (@testval)"),
     sqlrelay:inputBindLong("testval", -1),
@@ -1004,6 +1009,7 @@ main() ->
     %% BIND VALIDATION
     io:format("BIND VALIDATION: ~n"),
     sqlrelay:sendQuery("drop table testtable"),
+    sqlrelay:sendQuery(DumpTran),
     sqlrelay:sendQuery(
         "create table testtable ("
         "	col1 varchar(20), "
@@ -1082,6 +1088,7 @@ main() ->
     %% STORED PROCEDURE RETURNING RESULT SET
     io:format("STORED PROCEDURE RETURNING RESULT SET: ~n"),
     sqlrelay:sendQuery("drop procedure testselectproc"),
+    sqlrelay:sendQuery(DumpTran),
     assertTrue(sqlrelay:sendQuery(
         "create procedure testselectproc as "
         "       select 1 "
@@ -1107,6 +1114,7 @@ main() ->
     %% TEMPORARY TABLES
     io:format("TEMPORARY TABLES: ~n"),
     sqlrelay:sendQuery("drop table #temptable"),
+    sqlrelay:sendQuery(DumpTran),
     sqlrelay:sendQuery("create table #temptable (col1 int)"),
     assertTrue(sqlrelay:sendQuery("insert into #temptable values (1)")),
     assertTrue(sqlrelay:sendQuery("select count(*) from #temptable")),
@@ -1119,6 +1127,7 @@ main() ->
     %% ENCODED BINARY DATA
     io:format("ENCODED BINARY DATA: ~n"),
     sqlrelay:sendQuery("drop table testtable"),
+    sqlrelay:sendQuery(DumpTran),
     assertTrue(sqlrelay:sendQuery("create table testtable (col1 image)")),
     Buffer = lists:seq(0, 255),
     HexStr = lists:flatten([io_lib:format("~2.16.0b", [B]) || B <- Buffer]),
@@ -1137,6 +1146,7 @@ main() ->
     %% QUOTES
     io:format("QUOTES: ~n"),
     sqlrelay:sendQuery("drop table testtable"),
+    sqlrelay:sendQuery(DumpTran),
     assertTrue(sqlrelay:sendQuery(
         "create table testtable (col1 varchar(4))")),
     assertTrue(sqlrelay:sendQuery("insert into testtable values ('''''')")),
@@ -1149,6 +1159,7 @@ main() ->
     %% LAST INSERT ID
     io:format("LAST INSERT ID: ~n"),
     sqlrelay:sendQuery("drop table testtable"),
+    sqlrelay:sendQuery(DumpTran),
     assertTrue(sqlrelay:sendQuery(
         "create table testtable "
         "	(col1 int identity primary key, "
@@ -1178,6 +1189,7 @@ main() ->
     %% the get schema list query that is used with sap will only return
     %% the names of schemas that have at least one database object in
     %% them, so to be sure that there is one, we'll create a table
+    sqlrelay:sendQuery(DumpTran),
     assertTrue(sqlrelay:sendQuery("create table testtable (col1 int)")),
     assertTrue(sqlrelay:getSchemaList("")),
     assertEqualsString(sqlrelay:getColumnName(0), "Database"),
@@ -1202,6 +1214,7 @@ main() ->
     sqlrelay:sendQuery("drop table testtable2"),
     sqlrelay:sendQuery("drop table testtable3"),
     sqlrelay:sendQuery("drop table testtable4"),
+    sqlrelay:sendQuery(DumpTran),
     assertTrue(sqlrelay:sendQuery(
         "create table testtable1 ("
         "	col1 int, "
@@ -1276,6 +1289,7 @@ main() ->
     %% COLUMN LIST
     io:format("COLUMN LIST: ~n"),
     sqlrelay:sendQuery("drop table testtable"),
+    sqlrelay:sendQuery(DumpTran),
     assertTrue(sqlrelay:sendQuery(
         "create table testtable ("
         "	testint int, "
@@ -1347,6 +1361,7 @@ main() ->
     %% COLUMN LIST - auto_increment, primary key
     io:format("COLUMN LIST - auto_increment, primary key: ~n"),
     sqlrelay:sendQuery("drop table testtable"),
+    sqlrelay:sendQuery(DumpTran),
     assertTrue(sqlrelay:sendQuery(
         "create table testtable ("
         "	col1 int identity primary key, "
@@ -1362,6 +1377,7 @@ main() ->
     assertFalse(contains(Ck1, "PRI")),
     io:format("~n"),
     assertTrue(sqlrelay:sendQuery("drop table testtable")),
+    sqlrelay:sendQuery(DumpTran),
     assertTrue(sqlrelay:sendQuery(
         "create table testtable ("
         "	col1 int primary key, "
@@ -1377,6 +1393,7 @@ main() ->
     %% PRIMARY KEYS LIST
     io:format("PRIMARY KEYS LIST: ~n"),
     sqlrelay:sendQuery("drop table testtable"),
+    sqlrelay:sendQuery(DumpTran),
     assertTrue(sqlrelay:sendQuery(
         "create table testtable ("
         "	col1 int primary key, "
@@ -1407,6 +1424,7 @@ main() ->
     %% KEY AND INDEX LIST
     io:format("KEY AND INDEX LIST: ~n"),
     sqlrelay:sendQuery("drop table testtable"),
+    sqlrelay:sendQuery(DumpTran),
     assertTrue(sqlrelay:sendQuery(
         "create table testtable ("
         "	col1 int primary key, "
@@ -1443,6 +1461,7 @@ main() ->
     sqlrelay:sendQuery("drop procedure testproc2"),
     sqlrelay:sendQuery("drop procedure testproc3"),
     sqlrelay:sendQuery("drop procedure testproc4"),
+    sqlrelay:sendQuery(DumpTran),
     assertTrue(sqlrelay:sendQuery(
         "create procedure testproc1 "
         "	@in1 int, "
@@ -1524,6 +1543,7 @@ main() ->
     assertFalse(sqlrelay:sendQuery("insert into testtable values (1,2,3,4)")),
     assertFalse(sqlrelay:sendQuery("insert into testtable values (1,2,3,4)")),
     io:format("~n"),
+    sqlrelay:sendQuery(DumpTran),
     assertFalse(sqlrelay:sendQuery("create table testtable")),
     assertFalse(sqlrelay:sendQuery("create table testtable")),
     assertFalse(sqlrelay:sendQuery("create table testtable")),

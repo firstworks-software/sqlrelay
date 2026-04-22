@@ -3,6 +3,7 @@
 
 #include <sqlrelay/sqlrclient.h>
 #include <rudiments/charstring.h>
+#include <rudiments/sys.h>
 #include <rudiments/process.h>
 #include <rudiments/bytestring.h>
 #include <rudiments/stringbuffer.h>
@@ -35,6 +36,16 @@ int main(int argc, char **argv) {
 
 	#define	LARGE_BUFFER_LENGTH	8192
 	char		largebuffer[LARGE_BUFFER_LENGTH+1];
+
+
+	// hostname
+	char	*hostname=sys::getHostName();
+	char	*dot=(char *)charstring::findFirstOrEnd(hostname,'.');
+	*dot='\0';
+	stringbuffer	dumptran;
+	dumptran.append("dump tran ");
+	dumptran.append(hostname);
+	dumptran.append(" with truncate_only");
 
 
 	// instantiation
@@ -82,6 +93,7 @@ int main(int argc, char **argv) {
 	// create testtable
 	stdoutput.printf("CREATE TESTTABLE: \n");
 	cur->sendQuery("drop table testtable");
+	cur->sendQuery(dumptran.getString());
 	assertTrue(cur->sendQuery(
 		"create table testtable ("
 		"	testint int, "
@@ -1099,6 +1111,7 @@ int main(int argc, char **argv) {
 	stdoutput.printf("NULL AND EMPTY LOBS: \n");
 	cur->getNullsAsNulls();
 	cur->sendQuery("drop table testtable");
+	cur->sendQuery(dumptran.getString());
 	assertTrue(cur->sendQuery(
 		"create table testtable ("
 		"	testclob1 text NULL, "
@@ -1139,6 +1152,7 @@ int main(int argc, char **argv) {
 	// long lobs
 	stdoutput.printf("LONG LOBS: \n");
 	cur->sendQuery("drop table testtable");
+	cur->sendQuery(dumptran.getString());
 	cur->sendQuery(
 		"create table testtable ("
 		"	testclob text, "
@@ -1167,6 +1181,7 @@ int main(int argc, char **argv) {
 	stdoutput.printf("OUTPUT BIND BY POSITION: \n");
 	cur->sendQuery("drop procedure testproc");
 	cur->getNullsAsNulls();
+	cur->sendQuery(dumptran.getString());
 	assertTrue(cur->sendQuery(
 		"create procedure testproc "
 		"	@out1 int output, "
@@ -1219,6 +1234,7 @@ int main(int argc, char **argv) {
 	stdoutput.printf("OUTPUT BIND BY NAME: \n");
 	cur->sendQuery("drop procedure testproc");
 	cur->getNullsAsNulls();
+	cur->sendQuery(dumptran.getString());
 	assertTrue(cur->sendQuery(
 		"create procedure testproc "
 		"	@out1 int output, "
@@ -1290,6 +1306,7 @@ int main(int argc, char **argv) {
 	}
 	largebuffer[LARGE_BUFFER_LENGTH]='\0';
 	char	query[LARGE_BUFFER_LENGTH+256];
+	cur->sendQuery(dumptran.getString());
 	charstring::printf(query,sizeof(query),
 		"create procedure testproc "
 		"@bindval varchar(%d) output as "
@@ -1308,6 +1325,7 @@ int main(int argc, char **argv) {
 	// negative input bind
 	stdoutput.printf("NEGATIVE INPUT BIND: \n");
 	cur->sendQuery("drop table testtable");
+	cur->sendQuery(dumptran.getString());
 	cur->sendQuery("create table testtable (testval int)");
 	cur->prepareQuery("insert into testtable values (@testval)");
 	cur->inputBind("testval",-1);
@@ -1321,6 +1339,7 @@ int main(int argc, char **argv) {
 	// bind validation
 	stdoutput.printf("BIND VALIDATION: \n");
 	cur->sendQuery("drop table testtable");
+	cur->sendQuery(dumptran.getString());
 	cur->sendQuery(
 		"create table testtable ("
 		"	col1 varchar(20), "
@@ -1363,6 +1382,7 @@ int main(int argc, char **argv) {
 	#if 0
 	stdoutput.printf("REBINDING: \n");
 	cur->sendQuery("drop procedure testproc");
+	cur->sendQuery(dumptran.getString());
 	assertTrue(cur->sendQuery(
 		"create procedure testproc "
 		"	@in1 int, "
@@ -1417,6 +1437,7 @@ int main(int argc, char **argv) {
 	#if 0
 	stdoutput.printf("STORED PROCEDURE RETURNING NO VALUE: \n");
 	cur->sendQuery("drop procedure testproc");
+	cur->sendQuery(dumptran.getString());
 	assertTrue(cur->sendQuery(
 		"create procedure testproc "
 		"	@in1 int, "
@@ -1438,6 +1459,7 @@ int main(int argc, char **argv) {
 	#if 0
 	stdoutput.printf("STORED PROCEDURE RETURNING SINGLE VALUE: \n");
 	cur->sendQuery("drop procedure testproc");
+	cur->sendQuery(dumptran.getString());
 	assertTrue(cur->sendQuery(
 		"create procedure testproc "
 		"	@in1 int, "
@@ -1462,6 +1484,7 @@ int main(int argc, char **argv) {
 	#if 0
 	stdoutput.printf("STORED PROCEDURE RETURNING MULTIPLE VALUES: \n");
 	cur->sendQuery("drop procedure testproc");
+	cur->sendQuery(dumptran.getString());
 	assertTrue(cur->sendQuery(
 		"create procedure testproc @in1 int, "
 		"       @in2 float, "
@@ -1491,6 +1514,7 @@ int main(int argc, char **argv) {
 	// stored procedure returning result set
 	stdoutput.printf("STORED PROCEDURE RETURNING RESULT SET: \n");
 	cur->sendQuery("drop procedure testselectproc");
+	cur->sendQuery(dumptran.getString());
 	assertTrue(cur->sendQuery(
 		"create procedure testselectproc as "
 		"       select 1 "
@@ -1517,6 +1541,7 @@ int main(int argc, char **argv) {
 	// temporary tables
 	stdoutput.printf("TEMPORARY TABLES: \n");
 	cur->sendQuery("drop table #temptable");
+	cur->sendQuery(dumptran.getString());
 	cur->sendQuery("create table #temptable (col1 int)");
 	assertTrue(cur->sendQuery("insert into #temptable values (1)"));
 	assertTrue(cur->sendQuery("select count(*) from #temptable"));
@@ -1530,6 +1555,7 @@ int main(int argc, char **argv) {
 	// encoded binary data
 	stdoutput.printf("ENCODED BINARY DATA: \n");
 	cur->sendQuery("drop table testtable");
+	cur->sendQuery(dumptran.getString());
 	assertTrue(cur->sendQuery("create table testtable (col1 image)"));
 	byte_t	buffer[256];
 	for (uint16_t i=0; i<256; i++) {
@@ -1555,6 +1581,7 @@ int main(int argc, char **argv) {
 	// quotes
 	stdoutput.printf("QUOTES: \n");
 	cur->sendQuery("drop table testtable");
+	cur->sendQuery(dumptran.getString());
 	assertTrue(cur->sendQuery("create table testtable (col1 varchar(4))"));
 	assertTrue(cur->sendQuery("insert into testtable values ('''''')"));
 	assertTrue(cur->sendQuery("select col1 from testtable"));
@@ -1567,6 +1594,7 @@ int main(int argc, char **argv) {
 	// last insert id
 	stdoutput.printf("LAST INSERT ID: \n");
 	cur->sendQuery("drop table testtable");
+	cur->sendQuery(dumptran.getString());
 	assertTrue(cur->sendQuery(
 			"create table testtable "
 			"	(col1 int identity primary key, "
@@ -1598,6 +1626,7 @@ int main(int argc, char **argv) {
 	// the get schema list query that is used with sap will only return the
 	// names of schemas that have at least one database object in them, so
 	// to be sure that there is one, we'll create a table
+	cur->sendQuery(dumptran.getString());
 	assertTrue(cur->sendQuery("create table testtable (col1 int)"));
 	assertTrue(cur->getSchemaList(NULL));
 	assertEquals(cur->getColumnName(0),"Database");
@@ -1628,6 +1657,7 @@ int main(int argc, char **argv) {
 	cur->sendQuery("drop table testtable2");
 	cur->sendQuery("drop table testtable3");
 	cur->sendQuery("drop table testtable4");
+	cur->sendQuery(dumptran.getString());
 	assertTrue(cur->sendQuery(
 		"create table testtable1 ("
 		"	col1 int, "
@@ -1710,6 +1740,7 @@ int main(int argc, char **argv) {
 	// column list
 	stdoutput.printf("COLUMN LIST: \n");
 	cur->sendQuery("drop table testtable");
+	cur->sendQuery(dumptran.getString());
 	assertTrue(cur->sendQuery(
 		"create table testtable ("
 		"	testint int, "
@@ -1799,6 +1830,7 @@ int main(int argc, char **argv) {
 	// column list - auto_increment, primary key
 	stdoutput.printf("COLUMN LIST - auto_increment, primary key: \n");
 	cur->sendQuery("drop table testtable");
+	cur->sendQuery(dumptran.getString());
 	assertTrue(cur->sendQuery(
 		"create table testtable ("
 		"	col1 int identity primary key, "
@@ -1814,6 +1846,7 @@ int main(int argc, char **argv) {
 			cur->getField(1,"column_key"),"PRI"));
 	stdoutput.printf("\n");
 	assertTrue(cur->sendQuery("drop table testtable"));
+	cur->sendQuery(dumptran.getString());
 	assertTrue(cur->sendQuery(
 		"create table testtable ("
 		"	col1 int primary key, "
@@ -1830,6 +1863,7 @@ int main(int argc, char **argv) {
 	// primary keys list
 	stdoutput.printf("PRIMARY KEYS LIST: \n");
 	cur->sendQuery("drop table testtable");
+	cur->sendQuery(dumptran.getString());
 	assertTrue(cur->sendQuery(
 		"create table testtable ("
 		"	col1 int primary key, "
@@ -1860,6 +1894,7 @@ int main(int argc, char **argv) {
 	// key and index list
 	stdoutput.printf("KEY AND INDEX LIST: \n");
 	cur->sendQuery("drop table testtable");
+	cur->sendQuery(dumptran.getString());
 	assertTrue(cur->sendQuery(
 		"create table testtable ("
 		"	col1 int primary key, "
@@ -1896,6 +1931,7 @@ int main(int argc, char **argv) {
 	cur->sendQuery("drop procedure testproc2");
 	cur->sendQuery("drop procedure testproc3");
 	cur->sendQuery("drop procedure testproc4");
+	cur->sendQuery(dumptran.getString());
 	assertTrue(cur->sendQuery(
 		"create procedure testproc1 "
 		"	@in1 int, "
@@ -1983,6 +2019,7 @@ int main(int argc, char **argv) {
 	assertFalse(cur->sendQuery("insert into testtable values (1,2,3,4)"));
 	assertFalse(cur->sendQuery("insert into testtable values (1,2,3,4)"));
 	stdoutput.printf("\n");
+	cur->sendQuery(dumptran.getString());
 	assertFalse(cur->sendQuery("create table testtable"));
 	assertFalse(cur->sendQuery("create table testtable"));
 	assertFalse(cur->sendQuery("create table testtable"));

@@ -6,6 +6,7 @@
 from SQLRelay import PySQLRClient
 from decimal import *
 import sys
+from socket import gethostname
 from asserts import *
 import string
 
@@ -13,6 +14,11 @@ import string
 def main():
 
 	PySQLRClient.getNumericFieldsAsNumbers()
+
+	# hostname
+	hostname=gethostname().split(".")[0]
+	dumptran="dump tran "+hostname+" with truncate_only"
+
 
 	# instantiation
 	con=PySQLRClient.sqlrconnection("sqlrelay",9000,
@@ -52,6 +58,7 @@ def main():
 
 	# create temptable
 	print("CREATE TEMPTABLE: ")
+	cur.sendQuery(dumptran)
 	assertTrue(cur.sendQuery(
 		"create table testtable ("
 		"	testint int, "
@@ -1139,6 +1146,7 @@ def main():
 	assertFalse(cur.sendQuery("insert into testtable values (1,2,3,4)"))
 	assertFalse(cur.sendQuery("insert into testtable values (1,2,3,4)"))
 	print()
+	cur.sendQuery(dumptran)
 	assertFalse(cur.sendQuery("create table testtable"))
 	assertFalse(cur.sendQuery("create table testtable"))
 	assertFalse(cur.sendQuery("create table testtable"))

@@ -6,6 +6,7 @@
 
 use SQLRelay::Connection;
 use SQLRelay::Cursor;
+use Sys::Hostname;
 require "./asserts.pl";
 
 
@@ -18,6 +19,12 @@ require "./asserts.pl";
 @scales=(2,3,4);
 
 $LARGE_BUFFER_LENGTH=255;
+
+
+# hostname
+$hostname=hostname();
+$hostname=~s/\..*//;
+$dumptran="dump tran $hostname with truncate_only";
 
 
 # instantiation
@@ -65,6 +72,7 @@ print("\n");
 # create testtable
 print("CREATE TESTTABLE: \n");
 $cur->sendQuery("drop table testtable");
+$cur->sendQuery($dumptran);
 assertTrue($cur->sendQuery(
 	"create table testtable (".
 	"	testint int, ".
@@ -1054,6 +1062,7 @@ print("\n");
 print("NULL AND EMPTY LOBS: \n");
 $cur->getNullsAsUndefined();
 $cur->sendQuery("drop table testtable");
+$cur->sendQuery($dumptran);
 assertTrue($cur->sendQuery(
 	"create table testtable (".
 	"	testclob1 text NULL, ".
@@ -1091,6 +1100,7 @@ print("\n");
 # long lobs
 print("LONG LOBS: \n");
 $cur->sendQuery("drop table testtable");
+$cur->sendQuery($dumptran);
 $cur->sendQuery(
 	"create table testtable (".
 	"	testclob text NULL, ".
@@ -1114,6 +1124,7 @@ print("\n");
 print("OUTPUT BIND BY POSITION: \n");
 $cur->sendQuery("drop procedure testproc");
 $cur->getNullsAsUndefined();
+$cur->sendQuery($dumptran);
 assertTrue($cur->sendQuery(
 	"create procedure testproc ".
 	"	\@out1 int output, ".
@@ -1167,6 +1178,7 @@ print("\n");
 print("OUTPUT BIND BY NAME: \n");
 $cur->sendQuery("drop procedure testproc");
 $cur->getNullsAsUndefined();
+$cur->sendQuery($dumptran);
 assertTrue($cur->sendQuery(
 	"create procedure testproc ".
 	"	\@out1 int output, ".
@@ -1234,6 +1246,7 @@ print("\n");
 print("LONG OUTPUT BIND: \n");
 $cur->sendQuery("drop procedure testproc");
 $largebuffer=('C' x $LARGE_BUFFER_LENGTH);
+$cur->sendQuery($dumptran);
 $query="create procedure testproc ".
 	"\@bindval varchar($LARGE_BUFFER_LENGTH) output as ".
 	"set \@bindval='$largebuffer'";
@@ -1250,6 +1263,7 @@ print("\n");
 # negative input bind
 print("NEGATIVE INPUT BIND: \n");
 $cur->sendQuery("drop table testtable");
+$cur->sendQuery($dumptran);
 $cur->sendQuery("create table testtable (testval int)");
 $cur->prepareQuery("insert into testtable values (\@testval)");
 $cur->inputBind("testval",-1);
@@ -1263,6 +1277,7 @@ print("\n");
 # bind validation
 print("BIND VALIDATION: \n");
 $cur->sendQuery("drop table testtable");
+$cur->sendQuery($dumptran);
 $cur->sendQuery(
 	"create table testtable (".
 	"	col1 varchar(20), ".
@@ -1303,6 +1318,7 @@ print("\n");
 # rebinding
 print("REBINDING: \n");
 $cur->sendQuery("drop procedure testproc");
+$cur->sendQuery($dumptran);
 assertTrue($cur->sendQuery(
 	"create procedure testproc ".
 	"	\@in1 int, ".
@@ -1357,6 +1373,7 @@ print("\n");
 # stored procedure returning no value
 print("STORED PROCEDURE RETURNING NO VALUE: \n");
 $cur->sendQuery("drop procedure testproc");
+$cur->sendQuery($dumptran);
 assertTrue($cur->sendQuery(
 	"create procedure testproc ".
 	"	\@in1 int, ".
@@ -1375,6 +1392,7 @@ print("\n");
 # stored procedure returning single value
 print("STORED PROCEDURE RETURNING SINGLE VALUE: \n");
 $cur->sendQuery("drop procedure testproc");
+$cur->sendQuery($dumptran);
 assertTrue($cur->sendQuery(
 	"create procedure testproc ".
 	"	\@in1 int, ".
@@ -1396,6 +1414,7 @@ print("\n");
 # stored procedure returning multiple values
 print("STORED PROCEDURE RETURNING MULTIPLE VALUES: \n");
 $cur->sendQuery("drop procedure testproc");
+$cur->sendQuery($dumptran);
 assertTrue($cur->sendQuery(
 	"create procedure testproc \@in1 int, ".
 	"	\@in2 float, ".
@@ -1424,6 +1443,7 @@ print("\n");
 # stored procedure returning result set
 print("STORED PROCEDURE RETURNING RESULT SET: \n");
 $cur->sendQuery("drop procedure testselectproc");
+$cur->sendQuery($dumptran);
 assertTrue($cur->sendQuery(
 	"create procedure testselectproc as ".
 	"	select 1 ".
@@ -1450,6 +1470,7 @@ print("\n");
 # temporary tables
 print("TEMPORARY TABLES: \n");
 $cur->sendQuery("drop table #temptable\n");
+$cur->sendQuery($dumptran);
 $cur->sendQuery("create table #temptable (col1 int)");
 assertTrue($cur->sendQuery("insert into #temptable values (1)"));
 assertTrue($cur->sendQuery("select count(*) from #temptable"));
@@ -1463,6 +1484,7 @@ print("\n");
 # encoded binary data
 print("ENCODED BINARY DATA: \n");
 $cur->sendQuery("drop table testtable");
+$cur->sendQuery($dumptran);
 assertTrue($cur->sendQuery("create table testtable (col1 image)"));
 $buffer=pack("C*",(0..255));
 $querystr="insert into testtable values (0x";
@@ -1479,6 +1501,7 @@ print("\n");
 # quotes
 print("QUOTES: \n");
 $cur->sendQuery("drop table testtable");
+$cur->sendQuery($dumptran);
 assertTrue($cur->sendQuery("create table testtable (col1 varchar(4))"));
 assertTrue($cur->sendQuery("insert into testtable values ('''''')"));
 assertTrue($cur->sendQuery("select col1 from testtable"));
@@ -1491,6 +1514,7 @@ print("\n");
 # last insert id
 print("LAST INSERT ID: \n");
 $cur->sendQuery("drop table testtable");
+$cur->sendQuery($dumptran);
 assertTrue($cur->sendQuery(
 		"create table testtable ".
 		"	(col1 int identity primary key, ".
@@ -1522,6 +1546,7 @@ $cur->sendQuery("drop table testtable");
 # the get schema list query that is used with sap will only return the
 # names of schemas that have at least one database object in them, so
 # to be sure that there is one, we'll create a table
+$cur->sendQuery($dumptran);
 assertTrue($cur->sendQuery("create table testtable (col1 int)"));
 assertTrue($cur->getSchemaList(undef));
 assertEquals($cur->getColumnName(0),"Database");
@@ -1551,6 +1576,7 @@ $cur->sendQuery("drop table testtable1");
 $cur->sendQuery("drop table testtable2");
 $cur->sendQuery("drop table testtable3");
 $cur->sendQuery("drop table testtable4");
+$cur->sendQuery($dumptran);
 assertTrue($cur->sendQuery(
 	"create table testtable1 (".
 	"	col1 int, ".
@@ -1634,6 +1660,7 @@ print("\n");
 # column list
 print("COLUMN LIST: \n");
 $cur->sendQuery("drop table testtable");
+$cur->sendQuery($dumptran);
 assertTrue($cur->sendQuery(
 	"create table testtable (".
 	"	testint int, ".
@@ -1698,6 +1725,7 @@ print("\n");
 # column list - auto_increment, primary key
 print("COLUMN LIST - auto_increment, primary key: \n");
 $cur->sendQuery("drop table testtable");
+$cur->sendQuery($dumptran);
 assertTrue($cur->sendQuery(
 	"create table testtable (".
 	"	col1 int identity primary key, ".
@@ -1709,6 +1737,7 @@ assertFalse(index($cur->getField(1,"extra"),"auto_increment")>=0);
 assertFalse(index($cur->getField(1,"column_key"),"PRI")>=0);
 print("\n");
 assertTrue($cur->sendQuery("drop table testtable"));
+$cur->sendQuery($dumptran);
 assertTrue($cur->sendQuery(
 	"create table testtable (".
 	"	col1 int primary key, ".
@@ -1723,6 +1752,7 @@ print("\n");
 # primary keys list
 print("PRIMARY KEYS LIST: \n");
 $cur->sendQuery("drop table testtable");
+$cur->sendQuery($dumptran);
 assertTrue($cur->sendQuery(
 	"create table testtable (".
 	"	col1 int primary key, ".
@@ -1754,6 +1784,7 @@ print("\n");
 # key and index list
 print("KEY AND INDEX LIST: \n");
 $cur->sendQuery("drop table testtable");
+$cur->sendQuery($dumptran);
 assertTrue($cur->sendQuery(
 	"create table testtable (".
 	"	col1 int primary key, ".
@@ -1791,6 +1822,7 @@ $cur->sendQuery("drop procedure testproc1");
 $cur->sendQuery("drop procedure testproc2");
 $cur->sendQuery("drop procedure testproc3");
 $cur->sendQuery("drop procedure testproc4");
+$cur->sendQuery($dumptran);
 assertTrue($cur->sendQuery(
 	"create procedure testproc1 ".
 	"	\@in1 int, ".
@@ -1879,6 +1911,7 @@ assertFalse($cur->sendQuery("insert into testtable values (1,2,3,4)"));
 assertFalse($cur->sendQuery("insert into testtable values (1,2,3,4)"));
 assertFalse($cur->sendQuery("insert into testtable values (1,2,3,4)"));
 print("\n");
+$cur->sendQuery($dumptran);
 assertFalse($cur->sendQuery("create table testtable"));
 assertFalse($cur->sendQuery("create table testtable"));
 assertFalse($cur->sendQuery("create table testtable"));

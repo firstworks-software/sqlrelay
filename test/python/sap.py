@@ -6,6 +6,7 @@
 
 from SQLRelay import PySQLRClient
 import sys
+from socket import gethostname
 import asserts
 from asserts import *
 
@@ -21,6 +22,11 @@ def main():
 	scales=[2,3,4]
 
 	LARGE_BUFFER_LENGTH=255
+
+
+	# hostname
+	hostname=gethostname().split(".")[0]
+	dumptran="dump tran "+hostname+" with truncate_only"
 
 
 	# instantiation
@@ -69,6 +75,7 @@ def main():
 	# create testtable
 	print("CREATE TESTTABLE: ")
 	cur.sendQuery("drop table testtable")
+	cur.sendQuery(dumptran)
 	assertTrue(cur.sendQuery(
 		"create table testtable ("
 		"	testint int, "
@@ -1064,6 +1071,7 @@ def main():
 	print("NULL AND EMPTY LOBS: ")
 	cur.getNullsAsNone()
 	cur.sendQuery("drop table testtable")
+	cur.sendQuery(dumptran)
 	assertTrue(cur.sendQuery(
 		"create table testtable ("
 		"	testclob1 text NULL, "
@@ -1102,6 +1110,7 @@ def main():
 	# long lobs
 	print("LONG LOBS: ")
 	cur.sendQuery("drop table testtable")
+	cur.sendQuery(dumptran)
 	cur.sendQuery(
 		"create table testtable ("
 		"	testclob text NULL, "
@@ -1126,6 +1135,7 @@ def main():
 	print("OUTPUT BIND BY POSITION: ")
 	cur.sendQuery("drop procedure testproc")
 	cur.getNullsAsNone()
+	cur.sendQuery(dumptran)
 	assertTrue(cur.sendQuery(
 		"create procedure testproc "
 		"	@out1 int output, "
@@ -1181,6 +1191,7 @@ def main():
 	print("OUTPUT BIND BY NAME: ")
 	cur.sendQuery("drop procedure testproc")
 	cur.getNullsAsNone()
+	cur.sendQuery(dumptran)
 	assertTrue(cur.sendQuery(
 		"create procedure testproc "
 		"	@out1 int output, "
@@ -1250,6 +1261,7 @@ def main():
 	print("LONG OUTPUT BIND: ")
 	cur.sendQuery("drop procedure testproc")
 	largebuffer='C'*LARGE_BUFFER_LENGTH
+	cur.sendQuery(dumptran)
 	query=("create procedure testproc "
 		"@bindval varchar(%d) output as "
 		"set @bindval='%s'" % (LARGE_BUFFER_LENGTH,largebuffer))
@@ -1266,6 +1278,7 @@ def main():
 	# negative input bind
 	print("NEGATIVE INPUT BIND: ")
 	cur.sendQuery("drop table testtable")
+	cur.sendQuery(dumptran)
 	cur.sendQuery("create table testtable (testval int)")
 	cur.prepareQuery("insert into testtable values (@testval)")
 	cur.inputBind("testval",-1)
@@ -1279,6 +1292,7 @@ def main():
 	# bind validation
 	print("BIND VALIDATION: ")
 	cur.sendQuery("drop table testtable")
+	cur.sendQuery(dumptran)
 	cur.sendQuery(
 		"create table testtable ("
 		"	col1 varchar(20), "
@@ -1319,6 +1333,7 @@ def main():
 	# rebinding
 	print("REBINDING: ")
 	cur.sendQuery("drop procedure testproc")
+	cur.sendQuery(dumptran)
 	assertTrue(cur.sendQuery(
 		"create procedure testproc "
 		"	@in1 int, "
@@ -1373,6 +1388,7 @@ def main():
 	# stored procedure returning no value
 	print("STORED PROCEDURE RETURNING NO VALUE: ")
 	cur.sendQuery("drop procedure testproc")
+	cur.sendQuery(dumptran)
 	assertTrue(cur.sendQuery(
 		"create procedure testproc "
 		"	@in1 int, "
@@ -1391,6 +1407,7 @@ def main():
 	# stored procedure returning single value
 	print("STORED PROCEDURE RETURNING SINGLE VALUE: ")
 	cur.sendQuery("drop procedure testproc")
+	cur.sendQuery(dumptran)
 	assertTrue(cur.sendQuery(
 		"create procedure testproc "
 		"	@in1 int, "
@@ -1412,6 +1429,7 @@ def main():
 	# stored procedure returning multiple values
 	print("STORED PROCEDURE RETURNING MULTIPLE VALUES: ")
 	cur.sendQuery("drop procedure testproc")
+	cur.sendQuery(dumptran)
 	assertTrue(cur.sendQuery(
 		"create procedure testproc @in1 int, "
 		"	@in2 float, "
@@ -1440,6 +1458,7 @@ def main():
 	# stored procedure returning result set
 	print("STORED PROCEDURE RETURNING RESULT SET: ")
 	cur.sendQuery("drop procedure testselectproc")
+	cur.sendQuery(dumptran)
 	assertTrue(cur.sendQuery(
 		"create procedure testselectproc as "
 		"	select 1 "
@@ -1466,6 +1485,7 @@ def main():
 	# temporary tables
 	print("TEMPORARY TABLES: ")
 	cur.sendQuery("drop table #temptable\n")
+	cur.sendQuery(dumptran)
 	cur.sendQuery("create table #temptable (col1 int)")
 	assertTrue(cur.sendQuery("insert into #temptable values (1)"))
 	assertTrue(cur.sendQuery("select count(*) from #temptable"))
@@ -1479,6 +1499,7 @@ def main():
 	# encoded binary data
 	print("ENCODED BINARY DATA: ")
 	cur.sendQuery("drop table testtable")
+	cur.sendQuery(dumptran)
 	assertTrue(cur.sendQuery("create table testtable (col1 image)"))
 	buffer=bytes(range(256))
 	hex=buffer.hex()
@@ -1494,6 +1515,7 @@ def main():
 	# quotes
 	print("QUOTES: ")
 	cur.sendQuery("drop table testtable")
+	cur.sendQuery(dumptran)
 	assertTrue(cur.sendQuery("create table testtable (col1 varchar(4))"))
 	assertTrue(cur.sendQuery("insert into testtable values ('''''')"))
 	assertTrue(cur.sendQuery("select col1 from testtable"))
@@ -1506,6 +1528,7 @@ def main():
 	# last insert id
 	print("LAST INSERT ID: ")
 	cur.sendQuery("drop table testtable")
+	cur.sendQuery(dumptran)
 	assertTrue(cur.sendQuery(
 			"create table testtable "
 			"	(col1 int identity primary key, "
@@ -1537,6 +1560,7 @@ def main():
 	# the get schema list query that is used with sap will only return the
 	# names of schemas that have at least one database object in them, so
 	# to be sure that there is one, we'll create a table
+	cur.sendQuery(dumptran)
 	assertTrue(cur.sendQuery("create table testtable (col1 int)"))
 	assertTrue(cur.getSchemaList(None))
 	assertEquals(cur.getColumnName(0),"Database")
@@ -1564,6 +1588,7 @@ def main():
 	cur.sendQuery("drop table testtable2")
 	cur.sendQuery("drop table testtable3")
 	cur.sendQuery("drop table testtable4")
+	cur.sendQuery(dumptran)
 	assertTrue(cur.sendQuery(
 		"create table testtable1 ("
 		"	col1 int, "
@@ -1641,6 +1666,7 @@ def main():
 	# column list
 	print("COLUMN LIST: ")
 	cur.sendQuery("drop table testtable")
+	cur.sendQuery(dumptran)
 	assertTrue(cur.sendQuery(
 		"create table testtable ("
 		"	testint int, "
@@ -1705,6 +1731,7 @@ def main():
 	# column list - auto_increment, primary key
 	print("COLUMN LIST - auto_increment, primary key: ")
 	cur.sendQuery("drop table testtable")
+	cur.sendQuery(dumptran)
 	assertTrue(cur.sendQuery(
 		"create table testtable ("
 		"	col1 int identity primary key, "
@@ -1720,6 +1747,7 @@ def main():
 	assertFalse(colkey1 is not None and "PRI" in colkey1)
 	print()
 	assertTrue(cur.sendQuery("drop table testtable"))
+	cur.sendQuery(dumptran)
 	assertTrue(cur.sendQuery(
 		"create table testtable ("
 		"	col1 int primary key, "
@@ -1736,6 +1764,7 @@ def main():
 	# primary keys list
 	print("PRIMARY KEYS LIST: ")
 	cur.sendQuery("drop table testtable")
+	cur.sendQuery(dumptran)
 	assertTrue(cur.sendQuery(
 		"create table testtable ("
 		"	col1 int primary key, "
@@ -1767,6 +1796,7 @@ def main():
 	# key and index list
 	print("KEY AND INDEX LIST: ")
 	cur.sendQuery("drop table testtable")
+	cur.sendQuery(dumptran)
 	assertTrue(cur.sendQuery(
 		"create table testtable ("
 		"	col1 int primary key, "
@@ -1804,6 +1834,7 @@ def main():
 	cur.sendQuery("drop procedure testproc2")
 	cur.sendQuery("drop procedure testproc3")
 	cur.sendQuery("drop procedure testproc4")
+	cur.sendQuery(dumptran)
 	assertTrue(cur.sendQuery(
 		"create procedure testproc1 "
 		"	@in1 int, "
@@ -1886,6 +1917,7 @@ def main():
 	assertFalse(cur.sendQuery("insert into testtable values (1,2,3,4)"))
 	assertFalse(cur.sendQuery("insert into testtable values (1,2,3,4)"))
 	print()
+	cur.sendQuery(dumptran)
 	assertFalse(cur.sendQuery("create table testtable"))
 	assertFalse(cur.sendQuery("create table testtable"))
 	assertFalse(cur.sendQuery("create table testtable"))

@@ -18,6 +18,7 @@ class freetds extends sqlrtest {
 		String classpath=System.getProperty("java.class.path");
 		String hostname=InetAddress.getLocalHost().
 					getHostName().split("\\.")[0];
+		String dumptran="dump tran "+hostname+" with truncate_only";
 		String driver=null;
 		String host=null;
 		short port=0;
@@ -1507,6 +1508,7 @@ class freetds extends sqlrtest {
 			stmt.executeUpdate("drop table testtable");
 		} catch (Exception ex) {
 		}
+		try { stmt.executeUpdate(dumptran); } catch (Exception ex) { }
 		assertEquals(stmt.executeUpdate(
 			"create table testtable ("+
 			"	testint int, "+
@@ -1973,6 +1975,7 @@ class freetds extends sqlrtest {
 			stmt.executeUpdate("drop procedure testproc");
 		} catch (Exception ex) {
 		}
+		try { stmt.executeUpdate(dumptran); } catch (Exception ex) { }
 		assertEquals(stmt.executeUpdate(
 			"create procedure testproc "+
 			"	@in1 int, "+
@@ -2045,7 +2048,9 @@ class freetds extends sqlrtest {
 		found=false;
 		while (rs.next()) {
 			String	tschem=rs.getString("TABLE_SCHEM");
-			if (tschem!=null && tschem.equals(user)) {
+			if (tschem!=null &&
+				(tschem.equals(user) ||
+					tschem.equals("dbo"))) {
 				found=true;
 				break;
 			}
@@ -2093,6 +2098,7 @@ class freetds extends sqlrtest {
 			stmt.executeUpdate("drop table testtable4");
 		} catch (Exception ex) {
 		}
+		try { stmt.executeUpdate(dumptran); } catch (Exception ex) { }
 		stmt.executeUpdate(
 			"create table testtable1 ("+
 			"	col1 int, "+
@@ -2194,6 +2200,7 @@ class freetds extends sqlrtest {
 			stmt.executeUpdate("drop table testtable");
 		} catch (Exception ex) {
 		}
+		try { stmt.executeUpdate(dumptran); } catch (Exception ex) { }
 		stmt.executeUpdate(
 			"create table testtable ("+
 			"	testint int, "+
@@ -2295,6 +2302,7 @@ class freetds extends sqlrtest {
 			stmt.executeUpdate("drop table testtable");
 		} catch (Exception ex) {
 		}
+		try { stmt.executeUpdate(dumptran); } catch (Exception ex) { }
 		stmt.executeUpdate(
 			"create table testtable ("+
 			"	col1 int primary key, "+
@@ -2338,6 +2346,7 @@ class freetds extends sqlrtest {
 			stmt.executeUpdate("drop table testtable");
 		} catch (Exception ex) {
 		}
+		try { stmt.executeUpdate(dumptran); } catch (Exception ex) { }
 		stmt.executeUpdate(
 			"create table testtable ("+
 			"	col1 int primary key, "+
@@ -2420,6 +2429,7 @@ class freetds extends sqlrtest {
 			stmt.executeUpdate("drop procedure testproc4");
 		} catch (Exception ex) {
 		}
+		try { stmt.executeUpdate(dumptran); } catch (Exception ex) { }
 		stmt.executeUpdate(
 			"create procedure testproc1 "+
 			"	@in1 int, "+
@@ -2607,6 +2617,7 @@ class freetds extends sqlrtest {
 		} catch (Exception e) {
 			assertTrue(true);
 		}
+		try { stmt.executeUpdate(dumptran); } catch (Exception ex) { }
 		try {
 			stmt.executeUpdate("create table");
 			assertTrue(false);

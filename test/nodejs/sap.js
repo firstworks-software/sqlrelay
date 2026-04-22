@@ -21,6 +21,15 @@ var precs=[4,5,6];
 var scales=[2,3,4];
 
 
+// hostname
+var hostname=require("os").hostname();
+var dot=hostname.indexOf(".");
+if (dot>-1) {
+	hostname=hostname.substring(0,dot);
+}
+var dumptran="dump tran "+hostname+" with truncate_only";
+
+
 // instantiation
 var con=new sqlrelay.SQLRConnection("sqlrelay",9000,"/tmp/test.socket",
 		"testuser","testpassword",0,1);
@@ -68,6 +77,7 @@ console.log();
 // create testtable
 console.log("CREATE TESTTABLE: ");
 cur.sendQuery("drop table testtable");
+cur.sendQuery(dumptran);
 assertTrue(cur.sendQuery(
 	"create table testtable ("+
 	"	testint int, "+
@@ -1084,6 +1094,7 @@ console.log();
 console.log("NULL AND EMPTY LOBS: ");
 cur.getNullsAsNulls();
 cur.sendQuery("drop table testtable");
+cur.sendQuery(dumptran);
 assertTrue(cur.sendQuery(
 	"create table testtable ("+
 	"	testclob1 text NULL, "+
@@ -1125,6 +1136,7 @@ console.log();
 // long lobs
 console.log("LONG LOBS: ");
 cur.sendQuery("drop table testtable");
+cur.sendQuery(dumptran);
 cur.sendQuery(
 	"create table testtable ("+
 	"	testclob text NULL, "+
@@ -1148,6 +1160,7 @@ console.log();
 console.log("OUTPUT BIND "+"BY POSITION: ");
 cur.sendQuery("drop procedure testproc");
 cur.getNullsAsNulls();
+cur.sendQuery(dumptran);
 assertTrue(cur.sendQuery(
 	"create procedure testproc "+
 	"	@out1 int output, "+
@@ -1203,6 +1216,7 @@ console.log();
 console.log("OUTPUT BIND BY NAME: ");
 cur.sendQuery("drop procedure testproc");
 cur.getNullsAsNulls();
+cur.sendQuery(dumptran);
 assertTrue(cur.sendQuery(
 	"create procedure testproc "+
 	"	@out1 int output, "+
@@ -1278,6 +1292,7 @@ console.log();
 console.log("LONG OUTPUT BIND: ");
 cur.sendQuery("drop procedure testproc");
 largebuffer="C".repeat(255);
+cur.sendQuery(dumptran);
 var query="create procedure testproc "+
 	"@bindval varchar(255) "+"output as "+
 	"set @bindval='"+largebuffer+"'";
@@ -1294,6 +1309,7 @@ console.log();
 // negative input bind
 console.log("NEGATIVE INPUT BIND: ");
 cur.sendQuery("drop table testtable");
+cur.sendQuery(dumptran);
 cur.sendQuery("create table testtable "+"(testval int)");
 cur.prepareQuery("insert into testtable "+"values (@testval)");
 cur.inputBind("testval",-1);
@@ -1307,6 +1323,7 @@ console.log();
 // bind validation
 console.log("BIND VALIDATION: ");
 cur.sendQuery("drop table testtable");
+cur.sendQuery(dumptran);
 cur.sendQuery(
 	"create table testtable ("+
 	"	col1 varchar(20), "+
@@ -1347,6 +1364,7 @@ console.log();
 // rebinding
 console.log("REBINDING: ");
 cur.sendQuery("drop procedure testproc");
+cur.sendQuery(dumptran);
 assertTrue(cur.sendQuery(
 	"create procedure testproc "+
 	"	@in1 int, "+
@@ -1399,6 +1417,7 @@ console.log();
 // stored procedure returning no value
 console.log("STORED PROCEDURE "+"RETURNING NO VALUE: ");
 cur.sendQuery("drop procedure testproc");
+cur.sendQuery(dumptran);
 assertTrue(cur.sendQuery(
 	"create procedure testproc "+
 	"	@in1 int, "+
@@ -1417,6 +1436,7 @@ console.log();
 // single value
 console.log("STORED PROCEDURE "+"RETURNING SINGLE VALUE: ");
 cur.sendQuery("drop procedure testproc");
+cur.sendQuery(dumptran);
 assertTrue(cur.sendQuery(
 	"create procedure testproc "+
 	"	@in1 int, "+
@@ -1438,6 +1458,7 @@ console.log();
 // multiple values
 console.log("STORED PROCEDURE RETURNING "+"MULTIPLE VALUES: ");
 cur.sendQuery("drop procedure testproc");
+cur.sendQuery(dumptran);
 assertTrue(cur.sendQuery("create procedure testproc "+
 	"@in1 int, "+
 	"	@in2 float, "+
@@ -1466,6 +1487,7 @@ console.log();
 // stored procedure returning result set
 console.log("STORED PROCEDURE "+"RETURNING RESULT SET: ");
 cur.sendQuery("drop procedure "+"testselectproc");
+cur.sendQuery(dumptran);
 assertTrue(cur.sendQuery("create procedure "+
 	"testselectproc as "+
 	"	select 1 "+
@@ -1492,6 +1514,7 @@ console.log();
 // temporary tables
 console.log("TEMPORARY TABLES: ");
 cur.sendQuery("drop table #temptable\n");
+cur.sendQuery(dumptran);
 cur.sendQuery("create table #temptable "+"(col1 int)");
 assertTrue(cur.sendQuery("insert into #temptable "+
 	"values (1)"));
@@ -1506,6 +1529,7 @@ console.log();
 // encoded binary data
 console.log("ENCODED BINARY DATA: ");
 cur.sendQuery("drop table testtable");
+cur.sendQuery(dumptran);
 assertTrue(cur.sendQuery("create table testtable "+
 	"(col1 image)"));
 var buffer="";
@@ -1532,6 +1556,7 @@ console.log();
 // quotes
 console.log("QUOTES: ");
 cur.sendQuery("drop table testtable");
+cur.sendQuery(dumptran);
 assertTrue(cur.sendQuery("create table testtable "+
 	"(col1 varchar(4))"));
 assertTrue(cur.sendQuery("insert into testtable "+
@@ -1546,6 +1571,7 @@ console.log();
 // last insert id
 console.log("LAST INSERT ID: ");
 cur.sendQuery("drop table testtable");
+cur.sendQuery(dumptran);
 assertTrue(cur.sendQuery(
 	"create table testtable "+
 	"	(col1 int identity "+
@@ -1581,6 +1607,7 @@ cur.sendQuery("drop table testtable");
 // one database object in them, so to
 // be sure that there is one, we'll
 // create a table
+cur.sendQuery(dumptran);
 assertTrue(cur.sendQuery("create table testtable "+
 	"(col1 int)"));
 assertTrue(cur.getSchemaList(null));
@@ -1611,6 +1638,7 @@ cur.sendQuery("drop table testtable1");
 cur.sendQuery("drop table testtable2");
 cur.sendQuery("drop table testtable3");
 cur.sendQuery("drop table testtable4");
+cur.sendQuery(dumptran);
 assertTrue(cur.sendQuery(
 	"create table testtable1 ("+
 	"	col1 int, "+
@@ -1693,6 +1721,7 @@ console.log();
 // column list
 console.log("COLUMN LIST: ");
 cur.sendQuery("drop table testtable");
+cur.sendQuery(dumptran);
 assertTrue(cur.sendQuery(
 	"create table testtable ("+
 	"	testint int, "+
@@ -1759,6 +1788,7 @@ console.log();
 // primary key
 console.log("COLUMN LIST - "+"auto_increment, "+"primary key: ");
 cur.sendQuery("drop table testtable");
+cur.sendQuery(dumptran);
 assertTrue(cur.sendQuery(
 	"create table testtable ("+
 	"	col1 int identity "+
@@ -1771,6 +1801,7 @@ assertFalse(cur.getField(1,"extra").indexOf("auto_increment")!==-1);
 assertFalse(cur.getField(1,"column_key").indexOf("PRI")!==-1);
 console.log();
 assertTrue(cur.sendQuery("drop table testtable"));
+cur.sendQuery(dumptran);
 assertTrue(cur.sendQuery(
 	"create table testtable ("+
 	"	col1 int "+
@@ -1786,6 +1817,7 @@ console.log();
 // primary keys list
 console.log("PRIMARY KEYS LIST: ");
 cur.sendQuery("drop table testtable");
+cur.sendQuery(dumptran);
 assertTrue(cur.sendQuery(
 	"create table testtable ("+
 	"	col1 int "+
@@ -1818,6 +1850,7 @@ console.log();
 // key and index list
 console.log("KEY AND INDEX LIST: ");
 cur.sendQuery("drop table testtable");
+cur.sendQuery(dumptran);
 assertTrue(cur.sendQuery(
 	"create table testtable ("+
 	"	col1 int "+
@@ -1856,6 +1889,7 @@ cur.sendQuery("drop procedure testproc1");
 cur.sendQuery("drop procedure testproc2");
 cur.sendQuery("drop procedure testproc3");
 cur.sendQuery("drop procedure testproc4");
+cur.sendQuery(dumptran);
 assertTrue(cur.sendQuery(
 	"create procedure testproc1 "+
 	"	@in1 int, "+
@@ -1947,6 +1981,7 @@ assertFalse(cur.sendQuery("insert into testtable "+
 assertFalse(cur.sendQuery("insert into testtable "+
 	"values (1,2,3,4)"));
 console.log();
+cur.sendQuery(dumptran);
 assertFalse(cur.sendQuery("create table testtable"));
 assertFalse(cur.sendQuery("create table testtable"));
 assertFalse(cur.sendQuery("create table testtable"));

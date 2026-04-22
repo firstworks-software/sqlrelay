@@ -7,6 +7,15 @@ load @TCLLIBSPATH@@SLASH@sqlrelay@SLASH@sqlrelay.@SOSUFFIX@ sqlrelay
 source ./asserts.tcl
 
 
+# hostname
+set hostname [info hostname]
+set dot [string first "." $hostname]
+if {$dot > 0} {
+	set hostname [string range $hostname 0 [expr {$dot - 1}]]
+}
+set dumptran "dump tran $hostname with truncate_only"
+
+
 # instantiation
 set con [sqlrcon -server "sqlrelay" -port 9000 -socket "/tmp/test.socket" -user "testuser" -password "testpassword" -retrytime 0 -tries 1]
 set cur [$con sqlrcur]
@@ -54,6 +63,7 @@ puts ""
 # create testtable
 puts "CREATE TESTTABLE: "
 catch {$cur sendQuery "drop table testtable"}
+$cur sendQuery $dumptran
 assertTrue [$cur sendQuery "create table testtable (testint int, testsmallint smallint, testtinyint tinyint, testreal real, testfloat float, testdecimal decimal(4,1), testnumeric numeric(4,1), testmoney money, testsmallmoney smallmoney, testdatetime datetime, testsmalldatetime smalldatetime, testchar char(40), testvarchar varchar(40), testbit bit) lock datarows"]
 puts ""
 
@@ -955,6 +965,7 @@ puts ""
 # null and empty lobs
 puts "NULL AND EMPTY LOBS: "
 catch {$cur sendQuery "drop table testtable"}
+$cur sendQuery $dumptran
 assertTrue [$cur sendQuery "create table testtable (testclob1 text NULL, testclob2 text NULL, testblob1 image NULL, testblob2 image NULL)"]
 $cur prepareQuery "insert into testtable values (?, ?, ?, ?)"
 $cur inputBindClob "1" "" 0
@@ -988,6 +999,7 @@ puts ""
 # long lobs
 puts "LONG LOBS: "
 catch {$cur sendQuery "drop table testtable"}
+$cur sendQuery $dumptran
 $cur sendQuery "create table testtable (testclob text, testblob image) lock datarows"
 $cur prepareQuery "insert into testtable values (?,?)"
 set largebuffer [string repeat "C" 8192]
@@ -1033,6 +1045,7 @@ puts ""
 # negative input bind
 puts "NEGATIVE INPUT BIND: "
 catch {$cur sendQuery "drop table testtable"}
+$cur sendQuery $dumptran
 $cur sendQuery "create table testtable (testval int)"
 $cur prepareQuery "insert into testtable values (@testval)"
 $cur inputBind "testval" -1
@@ -1046,6 +1059,7 @@ puts ""
 # bind validation
 puts "BIND VALIDATION: "
 catch {$cur sendQuery "drop table testtable"}
+$cur sendQuery $dumptran
 $cur sendQuery "create table testtable (col1 varchar(20), col2 varchar(20), col3 varchar(20))"
 $cur prepareQuery "insert into testtable values (\$(var1), \$(var2), \$(var3))"
 $cur inputBind "var1" "aaa"
@@ -1120,6 +1134,7 @@ puts ""
 # stored procedure returning result set
 puts "STORED PROCEDURE RETURNING RESULT SET: "
 catch {$cur sendQuery "drop procedure testselectproc"}
+$cur sendQuery $dumptran
 assertTrue [$cur sendQuery "create procedure testselectproc as select 1 union select 2 union select 3 union select 4 union select 5 union select 6 union select 7 union select 8"]
 assertTrue [$cur sendQuery "exec testselectproc"]
 assertEqual [$cur rowCount] 8
@@ -1130,6 +1145,7 @@ puts ""
 # temporary tables
 puts "TEMPORARY TABLES: "
 catch {$cur sendQuery "drop table #temptable"}
+$cur sendQuery $dumptran
 $cur sendQuery "create table #temptable (col1 int)"
 assertTrue [$cur sendQuery "insert into #temptable values (1)"]
 assertTrue [$cur sendQuery "select count(*) from #temptable"]
@@ -1143,6 +1159,7 @@ puts ""
 # encoded binary data
 puts "ENCODED BINARY DATA: "
 catch {$cur sendQuery "drop table testtable"}
+$cur sendQuery $dumptran
 assertTrue [$cur sendQuery "create table testtable (col1 image)"]
 set buffer ""
 for {set j 0} {$j < 256} {incr j} {
@@ -1160,6 +1177,7 @@ puts ""
 # quotes
 puts "QUOTES: "
 catch {$cur sendQuery "drop table testtable"}
+$cur sendQuery $dumptran
 assertTrue [$cur sendQuery "create table testtable (col1 varchar(4))"]
 assertTrue [$cur sendQuery "insert into testtable values ('''''')"]
 assertTrue [$cur sendQuery "select col1 from testtable"]
@@ -1172,6 +1190,7 @@ puts ""
 # last insert id
 puts "LAST INSERT ID: "
 catch {$cur sendQuery "drop table testtable"}
+$cur sendQuery $dumptran
 assertTrue [$cur sendQuery "create table testtable (col1 int identity primary key, col2 int)"]
 assertTrue [$cur sendQuery "insert into testtable (col2) values (1)"]
 assertEqual [$con getLastInsertId] 1
@@ -1199,6 +1218,7 @@ catch {$cur sendQuery "drop table testtable"}
 # the get schema list query that is used with sap will only return the
 # names of schemas that have at least one database object in them, so
 # to be sure that there is one, we'll create a table
+$cur sendQuery $dumptran
 assertTrue [$cur sendQuery "create table testtable (col1 int)"]
 assertTrue [$cur getSchemaList ""]
 assertEqual [$cur getColumnName 0] "Database"
@@ -1228,6 +1248,7 @@ catch {$cur sendQuery "drop table testtable1"}
 catch {$cur sendQuery "drop table testtable2"}
 catch {$cur sendQuery "drop table testtable3"}
 catch {$cur sendQuery "drop table testtable4"}
+$cur sendQuery $dumptran
 assertTrue [$cur sendQuery "create table testtable1 (col1 int, col2 int)"]
 assertTrue [$cur sendQuery "create table testtable2 (col1 int, col2 int)"]
 assertTrue [$cur sendQuery "create table testtable3 (col1 int, col2 int)"]
@@ -1295,6 +1316,7 @@ puts ""
 # column list
 puts "COLUMN LIST: "
 catch {$cur sendQuery "drop table testtable"}
+$cur sendQuery $dumptran
 assertTrue [$cur sendQuery "create table testtable (testint int, testsmallint smallint, testtinyint tinyint, testreal real, testfloat float, testdecimal decimal(4,1), testnumeric numeric(4,1), testmoney money, testsmallmoney smallmoney, testdatetime datetime, testsmalldatetime smalldatetime, testchar char(40), testvarchar varchar(40), testbit bit)"]
 assertTrue [$cur getColumnList "testtable" ""]
 assertEqual [$cur getColumnName 0] "column_name"
@@ -1341,6 +1363,7 @@ puts ""
 # column list - auto_increment, primary key
 puts "COLUMN LIST - auto_increment, primary key: "
 catch {$cur sendQuery "drop table testtable"}
+$cur sendQuery $dumptran
 assertTrue [$cur sendQuery "create table testtable (col1 int identity primary key, col2 int)"]
 assertTrue [$cur getColumnList "testtable" ""]
 assertTrue [expr {[string first "auto_increment" [$cur getFieldByName 0 "extra"]] >= 0}]
@@ -1349,6 +1372,7 @@ assertFalse [expr {[string first "auto_increment" [$cur getFieldByName 1 "extra"
 assertFalse [expr {[string first "PRI" [$cur getFieldByName 1 "column_key"]] >= 0}]
 puts ""
 assertTrue [$cur sendQuery "drop table testtable"]
+$cur sendQuery $dumptran
 assertTrue [$cur sendQuery "create table testtable (col1 int primary key, col2 int)"]
 assertTrue [$cur getColumnList "testtable" ""]
 assertFalse [expr {[string first "auto_increment" [$cur getFieldByName 0 "extra"]] >= 0}]
@@ -1360,6 +1384,7 @@ puts ""
 # primary keys list
 puts "PRIMARY KEYS LIST: "
 catch {$cur sendQuery "drop table testtable"}
+$cur sendQuery $dumptran
 assertTrue [$cur sendQuery "create table testtable (col1 int primary key, col2 int)"]
 assertTrue [$cur getPrimaryKeysList "testtable" ""]
 assertEqual [$cur getColumnName 0] "table"
@@ -1387,6 +1412,7 @@ puts ""
 # key and index list
 puts "KEY AND INDEX LIST: "
 catch {$cur sendQuery "drop table testtable"}
+$cur sendQuery $dumptran
 assertTrue [$cur sendQuery "create table testtable (col1 int primary key, col2 int)"]
 assertTrue [$cur getKeyAndIndexList "testtable" ""]
 assertEqual [$cur getColumnName 0] "table"
@@ -1420,6 +1446,7 @@ catch {$cur sendQuery "drop procedure testproc1"}
 catch {$cur sendQuery "drop procedure testproc2"}
 catch {$cur sendQuery "drop procedure testproc3"}
 catch {$cur sendQuery "drop procedure testproc4"}
+$cur sendQuery $dumptran
 assertTrue [$cur sendQuery "create procedure testproc1 @in1 int, @in2 char(20), @in3 varchar(20), @in4 datetime as select 1"]
 assertTrue [$cur sendQuery "create procedure testproc2 @in1 int, @in2 char(20), @in3 varchar(20), @in4 datetime as select 1"]
 assertTrue [$cur sendQuery "create procedure testproc3 @in1 int, @in2 char(20), @in3 varchar(20), @in4 datetime as select 1"]
@@ -1480,6 +1507,7 @@ assertTrue [catch {$cur sendQuery "insert into testtable values (1,2,3,4)"}]
 assertTrue [catch {$cur sendQuery "insert into testtable values (1,2,3,4)"}]
 assertTrue [catch {$cur sendQuery "insert into testtable values (1,2,3,4)"}]
 puts ""
+$cur sendQuery $dumptran
 assertTrue [catch {$cur sendQuery "create table testtable"}]
 assertTrue [catch {$cur sendQuery "create table testtable"}]
 assertTrue [catch {$cur sendQuery "create table testtable"}]

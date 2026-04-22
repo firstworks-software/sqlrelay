@@ -18,6 +18,7 @@ class sap extends sqlrtest {
 		String classpath=System.getProperty("java.class.path");
 		String hostname=InetAddress.getLocalHost().
 					getHostName().split("\\.")[0];
+		String dumptran="dump tran "+hostname+" with truncate_only";
 		String driver=null;
 		String host=null;
 		short port=0;
@@ -1473,6 +1474,7 @@ class sap extends sqlrtest {
 			stmt.executeUpdate("drop table testtable");
 		} catch (Exception ex) {
 		}
+		try { stmt.executeUpdate(dumptran); } catch (Exception ex) { }
 		assertEquals(stmt.executeUpdate(
 			"create table testtable ("+
 			"	testint int, "+
@@ -2038,6 +2040,7 @@ class sap extends sqlrtest {
 			stmt.executeUpdate("drop procedure testproc2");
 		} catch (Exception ex) {
 		}
+		try { stmt.executeUpdate(dumptran); } catch (Exception ex) { }
 		assertEquals(stmt.executeUpdate(
 			"create procedure testproc2 "+
 			"	@in1 int, "+
@@ -2091,6 +2094,7 @@ class sap extends sqlrtest {
 						"drop procedure testproc2");
 			} catch (Exception ex) {
 			}
+			try { stmt.executeUpdate(dumptran); } catch (Exception ex) { }
 			assertEquals(stmt.executeUpdate(
 				"create procedure testproc2 "+
 				"	@in1 int, "+
@@ -2132,6 +2136,7 @@ class sap extends sqlrtest {
 			stmt.executeUpdate("drop procedure testproc");
 		} catch (Exception ex) {
 		}
+		try { stmt.executeUpdate(dumptran); } catch (Exception ex) { }
 		assertEquals(stmt.executeUpdate(
 			"create procedure testproc "+
 			"	@in1 int, "+
@@ -2219,7 +2224,9 @@ class sap extends sqlrtest {
 		found=false;
 		while (rs.next()) {
 			String	tschem=rs.getString(1);
-			if (tschem!=null && tschem.equals(user)) {
+			if (tschem!=null &&
+				(tschem.equals(user) ||
+					tschem.equals("dbo"))) {
 				found=true;
 				break;
 			}
@@ -2271,6 +2278,7 @@ class sap extends sqlrtest {
 			stmt.executeUpdate("drop table testtable4");
 		} catch (Exception ex) {
 		}
+		try { stmt.executeUpdate(dumptran); } catch (Exception ex) { }
 		stmt.executeUpdate(
 			"create table testtable1 ("+
 			"	col1 int, "+
@@ -2434,6 +2442,7 @@ class sap extends sqlrtest {
 			stmt.executeUpdate("drop table testtable");
 		} catch (Exception ex) {
 		}
+		try { stmt.executeUpdate(dumptran); } catch (Exception ex) { }
 		stmt.executeUpdate(
 			"create table testtable ("+
 			"	testint int, "+
@@ -2550,6 +2559,7 @@ class sap extends sqlrtest {
 			stmt.executeUpdate("drop table testtable");
 		} catch (Exception ex) {
 		}
+		try { stmt.executeUpdate(dumptran); } catch (Exception ex) { }
 		stmt.executeUpdate(
 			"create table testtable ("+
 			"	col1 int primary key, "+
@@ -2593,6 +2603,7 @@ class sap extends sqlrtest {
 			stmt.executeUpdate("drop table testtable");
 		} catch (Exception ex) {
 		}
+		try { stmt.executeUpdate(dumptran); } catch (Exception ex) { }
 		stmt.executeUpdate(
 			"create table testtable ("+
 			"	col1 int primary key, "+
@@ -2675,6 +2686,7 @@ class sap extends sqlrtest {
 			stmt.executeUpdate("drop procedure testproc4");
 		} catch (Exception ex) {
 		}
+		try { stmt.executeUpdate(dumptran); } catch (Exception ex) { }
 		stmt.executeUpdate(
 			"create procedure testproc1 "+
 			"	@in1 int, "+
@@ -2850,6 +2862,7 @@ class sap extends sqlrtest {
 		} catch (Exception e) {
 			assertTrue(true);
 		}
+		try { stmt.executeUpdate(dumptran); } catch (Exception ex) { }
 		try {
 			stmt.executeUpdate("create table");
 			assertTrue(false);
