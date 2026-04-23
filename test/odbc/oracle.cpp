@@ -4913,13 +4913,7 @@ int main(int argc, char **argv) {
 	erg=SQLGetStmtAttr(stmt,SQL_ATTR_QUERY_TIMEOUT,
 			(SQLPOINTER)&stmtulenval,0,&stmtstrlen);
 	assertSuccessStmt(stmt,erg);
-	if (issqlrelay) {
-		// FIXME: SQL Relay accepts the set silently but get always
-		// returns the hardcoded 0; should return 30.
-		assertEqualStmt(stmt,(int)stmtulenval,0);
-	} else {
-		assertEqualStmt(stmt,(int)stmtulenval,30);
-	}
+	assertEqualStmt(stmt,(int)stmtulenval,30);
 	// restore
 	erg=SQLSetStmtAttr(stmt,SQL_ATTR_QUERY_TIMEOUT,
 			(SQLPOINTER)(uintptr_t)stmtinitial,0);
@@ -4939,13 +4933,7 @@ int main(int argc, char **argv) {
 	erg=SQLGetStmtAttr(stmt,SQL_ATTR_MAX_ROWS,
 			(SQLPOINTER)&stmtulenval,0,&stmtstrlen);
 	assertSuccessStmt(stmt,erg);
-	if (issqlrelay) {
-		// FIXME: SQL Relay accepts the set silently but get always
-		// returns the hardcoded 0; should return 100.
-		assertEqualStmt(stmt,(int)stmtulenval,0);
-	} else {
-		assertEqualStmt(stmt,(int)stmtulenval,100);
-	}
+	assertEqualStmt(stmt,(int)stmtulenval,100);
 	erg=SQLSetStmtAttr(stmt,SQL_ATTR_MAX_ROWS,
 			(SQLPOINTER)(uintptr_t)stmtinitial,0);
 	assertSuccessStmt(stmt,erg);
@@ -4964,14 +4952,7 @@ int main(int argc, char **argv) {
 	erg=SQLGetStmtAttr(stmt,SQL_ATTR_NOSCAN,
 			(SQLPOINTER)&stmtulenval,0,&stmtstrlen);
 	assertSuccessStmt(stmt,erg);
-	if (issqlrelay) {
-		// FIXME: SQL Relay accepts the set silently but get always
-		// returns the hardcoded SQL_NOSCAN_OFF; should return
-		// SQL_NOSCAN_ON here.
-		assertEqualStmt(stmt,(int)stmtulenval,(int)SQL_NOSCAN_OFF);
-	} else {
-		assertEqualStmt(stmt,(int)stmtulenval,(int)SQL_NOSCAN_ON);
-	}
+	assertEqualStmt(stmt,(int)stmtulenval,(int)SQL_NOSCAN_ON);
 	erg=SQLSetStmtAttr(stmt,SQL_ATTR_NOSCAN,
 			(SQLPOINTER)(uintptr_t)SQL_NOSCAN_OFF,0);
 	assertSuccessStmt(stmt,erg);
@@ -4994,13 +4975,7 @@ int main(int argc, char **argv) {
 	erg=SQLGetStmtAttr(stmt,SQL_ATTR_MAX_LENGTH,
 			(SQLPOINTER)&stmtulenval,0,&stmtstrlen);
 	assertSuccessStmt(stmt,erg);
-	if (issqlrelay) {
-		// FIXME: SQL Relay accepts the set silently but get always
-		// returns the hardcoded 0; should return 4096.
-		assertEqualStmt(stmt,(int)stmtulenval,0);
-	} else {
-		assertEqualStmt(stmt,(int)stmtulenval,4096);
-	}
+	assertEqualStmt(stmt,(int)stmtulenval,4096);
 	erg=SQLSetStmtAttr(stmt,SQL_ATTR_MAX_LENGTH,
 			(SQLPOINTER)(uintptr_t)stmtinitial,0);
 	assertSuccessStmt(stmt,erg);

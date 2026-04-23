@@ -239,6 +239,10 @@ struct STMT {
 	uint64_t				*coloffsets;
 	SQLULEN					*paramsprocessed;
 	SQLULEN					*parambindoffsetptr;
+	SQLULEN					attrquerytimeout;
+	SQLULEN					attrmaxrows;
+	SQLULEN					attrnoscan;
+	SQLULEN					attrmaxlength;
 };
 
 static SQLRETURN SQLR_SQLAllocHandle(SQLSMALLINT handletype,
@@ -466,6 +470,10 @@ static SQLRETURN SQLR_SQLAllocHandle(SQLSMALLINT handletype,
 				stmt->coloffsets=NULL;
 				stmt->paramsprocessed=NULL;
 				stmt->parambindoffsetptr=NULL;
+				stmt->attrquerytimeout=0;
+				stmt->attrmaxrows=0;
+				stmt->attrnoscan=SQL_NOSCAN_OFF;
+				stmt->attrmaxlength=0;
 				stmt->inputbindstrings.
 					setManageArrayValues(true);
 				stmt->outputbinds.setManageValues(true);
@@ -10684,33 +10692,32 @@ static SQLRETURN SQLR_SQLGetStmtAttr(SQLHSTMT statementhandle,
 		case SQL_QUERY_TIMEOUT:
 			debugPrintf("  attribute: "
 					"SQL_ATTR_QUERY_TIMEOUT/"
-					"SQL_QUERY_TIMEOUT\n");
-			val.ulenval=0;
+					"SQL_QUERY_TIMEOUT (stub)\n");
+			val.ulenval=stmt->attrquerytimeout;
 			type=2;
 			break;
 		//case SQL_ATTR_MAX_ROWS:
 		case SQL_MAX_ROWS:
 			debugPrintf("  attribute: "
 					"SQL_ATTR_MAX_ROWS/"
-					"SQL_MAX_ROWS:\n");
-			val.ulenval=0;
+					"SQL_MAX_ROWS (stub)\n");
+			val.ulenval=stmt->attrmaxrows;
 			type=2;
 			break;
 		//case SQL_ATTR_NOSCAN:
 		case SQL_NOSCAN:
 			debugPrintf("  attribute: "
 					"SQL_ATTR_NOSCAN/"
-					"SQL_NOSCAN\n");
-			// FIXME: db-specific
-			val.ulenval=SQL_NOSCAN_OFF;
+					"SQL_NOSCAN (stub)\n");
+			val.ulenval=stmt->attrnoscan;
 			type=2;
 			break;
 		//case SQL_ATTR_MAX_LENGTH:
 		case SQL_MAX_LENGTH:
 			debugPrintf("  attribute: "
 					"SQL_ATTR_MAX_LENGTH/"
-					"SQL_MAX_LENGTH\n");
-			val.ulenval=0;
+					"SQL_MAX_LENGTH (stub)\n");
+			val.ulenval=stmt->attrmaxlength;
 			type=2;
 			break;
 		//case SQL_ATTR_ASYNC_ENABLE:
@@ -11896,33 +11903,33 @@ static SQLRETURN SQLR_SQLSetStmtAttr(SQLHSTMT statementhandle,
 		case SQL_QUERY_TIMEOUT:
 			debugPrintf("  attribute: "
 					"SQL_ATTR_QUERY_TIMEOUT/"
-					"SQL_QUERY_TIMEOUT "
-				"(unsupported but returning success)\n");
-			// FIXME: implement
+					"SQL_QUERY_TIMEOUT (stub)\n");
+			debugPrintf("  val: %lld\n",(uint64_t)value);
+			stmt->attrquerytimeout=(SQLULEN)(uint64_t)value;
 			return SQL_SUCCESS;
 		//case SQL_ATTR_MAX_ROWS:
 		case SQL_MAX_ROWS:
 			debugPrintf("  attribute: "
 					"SQL_ATTR_MAX_ROWS/"
-					"SQL_MAX_ROWS "
-				"(unsupported but returning success)\n");
-			// FIXME: implement
+					"SQL_MAX_ROWS (stub)\n");
+			debugPrintf("  val: %lld\n",(uint64_t)value);
+			stmt->attrmaxrows=(SQLULEN)(uint64_t)value;
 			return SQL_SUCCESS;
 		//case SQL_ATTR_NOSCAN:
 		case SQL_NOSCAN:
 			debugPrintf("  attribute: "
 					"SQL_ATTR_NOSCAN/"
-					"SQL_NOSCAN "
-				"(unsupported but returning success)\n");
-			// FIXME: implement
+					"SQL_NOSCAN (stub)\n");
+			debugPrintf("  val: %lld\n",(uint64_t)value);
+			stmt->attrnoscan=(SQLULEN)(uint64_t)value;
 			return SQL_SUCCESS;
 		//case SQL_ATTR_MAX_LENGTH:
 		case SQL_MAX_LENGTH:
 			debugPrintf("  attribute: "
 					"SQL_ATTR_MAX_LENGTH/"
-					"SQL_MAX_LENGTH "
-				"(unsupported but returning success)\n");
-			// FIXME: implement
+					"SQL_MAX_LENGTH (stub)\n");
+			debugPrintf("  val: %lld\n",(uint64_t)value);
+			stmt->attrmaxlength=(SQLULEN)(uint64_t)value;
 			return SQL_SUCCESS;
 		case SQL_ASYNC_ENABLE:
 			debugPrintf("  attribute: SQL_ASYNC_ENABLE "
