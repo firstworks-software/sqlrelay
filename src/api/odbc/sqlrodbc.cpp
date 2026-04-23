@@ -137,6 +137,9 @@ struct CONN {
 	bool				nullsasnulls;
 	bool				lazyconnect;
 	bool				clearbindsduringprepare;
+	bool				mapdatetimetodate;
+	bool				mapdatetotimestamp;
+	bool				mapnewdatetotimestamp;
 
 	char				bindvariabledelimiters[5];
 
@@ -369,6 +372,9 @@ static SQLRETURN SQLR_SQLAllocHandle(SQLSMALLINT handletype,
 				conn->setautocommiton=true;
 				conn->setautocommitoff=false;
 				conn->setisolationlevel=false;
+				conn->mapdatetimetodate=false;
+				conn->mapdatetotimestamp=false;
+				conn->mapnewdatetotimestamp=false;
 				conn->attraccessmode=SQL_MODE_READ_WRITE;
 				conn->attrlogintimeout=0;
 				conn->attropttrace=SQL_OPT_TRACE_OFF;
@@ -829,7 +835,8 @@ SQLRETURN SQL_API SQLCloseCursor(SQLHSTMT statementhandle) {
 	return SQLR_SQLCloseCursor(statementhandle);
 }
 
-static SQLSMALLINT SQLR_MapColumnType(sqlrcursor *cur, uint32_t col) {
+static SQLSMALLINT SQLR_MapColumnType(CONN *conn,
+					sqlrcursor *cur, uint32_t col) {
 	const char	*ctype=cur->getColumnType(col);
 	if (!charstring::compare(ctype,"UNKNOWN")) {
 		return SQL_UNKNOWN_TYPE;
@@ -850,11 +857,10 @@ static SQLSMALLINT SQLR_MapColumnType(sqlrcursor *cur, uint32_t col) {
 		return SQL_CHAR;
 	}
 	if (!charstring::compare(ctype,"DATETIME")) {
-		// FIXME: need parameter indicating whether
-		// to map this to SQL_DATE or SQL_TIMESTAMP.
 		// MySQL, for example, may use DATE for dates and
 		// TIMESTAMP for datetimes.
-		return SQL_TIMESTAMP;
+		return (conn && conn->mapdatetimetodate)?
+					SQL_DATE:SQL_TIMESTAMP;
 	}
 	if (!charstring::compare(ctype,"NUMERIC")) {
 		return SQL_NUMERIC;
@@ -925,8 +931,8 @@ static SQLSMALLINT SQLR_MapColumnType(sqlrcursor *cur, uint32_t col) {
 		return SQL_DOUBLE;
 	}
 	if (!charstring::compare(ctype,"DATE")) {
-		// FIXME: optionally map to SQL_TIMESTAMP?
-		return SQL_DATE;
+		return (conn && conn->mapdatetotimestamp)?
+					SQL_TIMESTAMP:SQL_DATE;
 	}
 	if (!charstring::compare(ctype,"TIME")) {
 		return SQL_TIME;
@@ -960,8 +966,8 @@ static SQLSMALLINT SQLR_MapColumnType(sqlrcursor *cur, uint32_t col) {
 		return SQL_SMALLINT;
 	}
 	if (!charstring::compare(ctype,"NEWDATE")) {
-		// FIXME: optionally map to SQL_TIMESTAMP?
-		return SQL_DATE;
+		return (conn && conn->mapnewdatetotimestamp)?
+					SQL_TIMESTAMP:SQL_DATE;
 	}
 	if (!charstring::compare(ctype,"NULL")) {
 		return SQL_CHAR;
@@ -1447,10 +1453,11 @@ static SQLSMALLINT SQLR_MapColumnType(sqlrcursor *cur, uint32_t col) {
 	return SQL_CHAR;
 }
 
-static SQLSMALLINT SQLR_MapCColumnType(sqlrcursor *cur,
+static SQLSMALLINT SQLR_MapCColumnType(CONN *conn,
+					sqlrcursor *cur,
 					uint32_t col,
 					SQLLEN bufferlength) {
-	switch (SQLR_MapColumnType(cur,col)) {
+	switch (SQLR_MapColumnType(conn,cur,col)) {
 		case SQL_UNKNOWN_TYPE:
 			return SQL_C_CHAR;
 		case SQL_CHAR:
@@ -1510,8 +1517,9 @@ static SQLSMALLINT SQLR_MapCColumnType(sqlrcursor *cur,
 	return SQL_C_CHAR;
 }
 
-static SQLULEN SQLR_GetColumnSize(sqlrcursor *cur, uint32_t col) {
-	switch (SQLR_MapColumnType(cur,col)) {
+static SQLULEN SQLR_GetColumnSize(CONN *conn,
+					sqlrcursor *cur, uint32_t col) {
+	switch (SQLR_MapColumnType(conn,cur,col)) {
 		case SQL_UNKNOWN_TYPE:
 		case SQL_CHAR:
 		case SQL_NUMERIC:
@@ -1640,7 +1648,8 @@ static SQLRETURN SQLR_SQLColAttribute(SQLHSTMT statementhandle,
 					"SQL_DESC_CONCISE_TYPE/"
 					"COLUMN_TYPE\n");
 			*(SQLSMALLINT *)numericattribute=
-					SQLR_MapColumnType(stmt->cur,col);
+					SQLR_MapColumnType(stmt->conn,
+								stmt->cur,col);
 			debugPrintf("  type: %lld\n",
 				(int64_t)*(SQLSMALLINT *)numericattribute);
 			break;
@@ -1651,7 +1660,8 @@ static SQLRETURN SQLR_SQLColAttribute(SQLHSTMT statementhandle,
 					"SQL_DESC_LENGTH/COLUMN_LENGTH/"
 					"SQL_DESC_OCTET_LENGTH\n");
 			*(SQLINTEGER *)numericattribute=
-					SQLR_GetColumnSize(stmt->cur,col);
+					SQLR_GetColumnSize(stmt->conn,
+								stmt->cur,col);
 			debugPrintf("  length: %lld\n",
 				(int64_t)*(SQLSMALLINT *)numericattribute);
 			break;
@@ -1849,7 +1859,8 @@ static SQLRETURN SQLR_SQLColAttribute(SQLHSTMT statementhandle,
 			debugPrintf("  fieldidentifier: "
 					"SQL_DESC_LITERAL_PREFIX\n");
 			// single-quote for char, 0x for binary
-			SQLSMALLINT	type=SQLR_MapColumnType(stmt->cur,col);
+			SQLSMALLINT	type=SQLR_MapColumnType(stmt->conn,
+								stmt->cur,col);
 			if (type==SQL_CHAR ||
 				type==SQL_VARCHAR ||
 				type==SQL_LONGVARCHAR) {
@@ -1898,7 +1909,8 @@ static SQLRETURN SQLR_SQLColAttribute(SQLHSTMT statementhandle,
 			debugPrintf("  fieldidentifier: "
 					"SQL_DESC_LITERAL_SUFFIX\n");
 			// single-quote for char
-			SQLSMALLINT	type=SQLR_MapColumnType(stmt->cur,col);
+			SQLSMALLINT	type=SQLR_MapColumnType(stmt->conn,
+								stmt->cur,col);
 			if (type==SQL_CHAR ||
 				type==SQL_VARCHAR ||
 				type==SQL_LONGVARCHAR) {
@@ -2527,6 +2539,28 @@ static SQLRETURN SQLR_SQLConnect(SQLHDBC connectionhandle,
 					ODBC_INI);
 	conn->clearbindsduringprepare=
 		!charstring::isNo(clearbindsduringpreparebuf);
+	char	mapdatetimetodatebuf[6];
+	SQLGetPrivateProfileString((const char *)conn->dsn,
+					"MapDateTimeToDate","no",
+					mapdatetimetodatebuf,
+					sizeof(mapdatetimetodatebuf),
+					ODBC_INI);
+	conn->mapdatetimetodate=charstring::isYes(mapdatetimetodatebuf);
+	char	mapdatetotimestampbuf[6];
+	SQLGetPrivateProfileString((const char *)conn->dsn,
+					"MapDateToTimeStamp","no",
+					mapdatetotimestampbuf,
+					sizeof(mapdatetotimestampbuf),
+					ODBC_INI);
+	conn->mapdatetotimestamp=charstring::isYes(mapdatetotimestampbuf);
+	char	mapnewdatetotimestampbuf[6];
+	SQLGetPrivateProfileString((const char *)conn->dsn,
+					"MapNewDateToTimeStamp","no",
+					mapnewdatetotimestampbuf,
+					sizeof(mapnewdatetotimestampbuf),
+					ODBC_INI);
+	conn->mapnewdatetotimestamp=
+			charstring::isYes(mapnewdatetotimestampbuf);
 
 	// bind variable delimiters
 	SQLGetPrivateProfileString((const char *)conn->dsn,
@@ -2696,6 +2730,24 @@ static SQLRETURN SQLR_SQLConnect(SQLHDBC connectionhandle,
 			conn->clearbindsduringprepare=
 				!charstring::isNo(connclearbindsduringprepare);
 		}
+		const char	*connmapdatetimetodate=
+				connparams->getValue("MapDateTimeToDate");
+		if (connmapdatetimetodate!=NULL) {
+			conn->mapdatetimetodate=
+				charstring::isYes(connmapdatetimetodate);
+		}
+		const char	*connmapdatetotimestamp=
+				connparams->getValue("MapDateToTimeStamp");
+		if (connmapdatetotimestamp!=NULL) {
+			conn->mapdatetotimestamp=
+				charstring::isYes(connmapdatetotimestamp);
+		}
+		const char	*connmapnewdatetotimestamp=
+				connparams->getValue("MapNewDateToTimeStamp");
+		if (connmapnewdatetotimestamp!=NULL) {
+			conn->mapnewdatetotimestamp=
+				charstring::isYes(connmapnewdatetotimestamp);
+		}
 
 		// bind variable delimiters
 		const char	*conn_bindvariabledelimiters=
@@ -2737,6 +2789,10 @@ static SQLRETURN SQLR_SQLConnect(SQLHDBC connectionhandle,
 	debugPrintf("  LazyConnect: %d\n",conn->lazyconnect);
 	debugPrintf("  ClearBindsDuringPrepare: %d\n",
 					conn->clearbindsduringprepare);
+	debugPrintf("  MapDateTimeToDate: %d\n",conn->mapdatetimetodate);
+	debugPrintf("  MapDateToTimeStamp: %d\n",conn->mapdatetotimestamp);
+	debugPrintf("  MapNewDateToTimeStamp: %d\n",
+					conn->mapnewdatetotimestamp);
 	debugPrintf("  BindVariableDelimiters: %s\n",
 					conn->bindvariabledelimiters);
 
@@ -2939,12 +2995,12 @@ SQLRETURN SQL_API SQLDescribeCol(SQLHSTMT statementhandle,
 		debugPrintf("  namelength   : %d\n",*namelength);
 	}
 	if (datatype) {
-		*datatype=SQLR_MapColumnType(stmt->cur,col);
+		*datatype=SQLR_MapColumnType(stmt->conn,stmt->cur,col);
 		debugPrintf("  datatype     : %s\n",
 					stmt->cur->getColumnType(col));
 	}
 	if (columnsize) {
-		*columnsize=SQLR_GetColumnSize(stmt->cur,col);
+		*columnsize=SQLR_GetColumnSize(stmt->conn,stmt->cur,col);
 		debugPrintf("  columnsize   : %lld\n",(uint64_t)*columnsize);
 	}
 	if (decimaldigits) {
@@ -4971,7 +5027,8 @@ static SQLRETURN SQLR_SQLGetData(SQLHSTMT statementhandle,
 
 	// reset targettype based on column type
 	if (targettype==SQL_C_DEFAULT) {
-		targettype=SQLR_MapCColumnType(stmt->cur,col,bufferlength);
+		targettype=SQLR_MapCColumnType(stmt->conn,
+						stmt->cur,col,bufferlength);
 		debugPrintf("  targettype SQL_C_DEFAULT, "
 						"mapped to: %d (from %s)\n",
 						(int)targettype,
@@ -13995,6 +14052,9 @@ static HWND		dontgetcolumninfoedit;
 static HWND		nullsasnullsedit;
 static HWND		lazyconnectedit;
 static HWND		clearbindsduringprepareedit;
+static HWND		mapdatetimetodateedit;
+static HWND		mapdatetotimestampedit;
+static HWND		mapnewdatetotimestampedit;
 static HWND		bindvariabledelimitersedit;
 
 static const char	sqlrwindowclass[]="SQLRWindowClass";
@@ -14157,6 +14217,12 @@ static void createControls(HWND hwnd) {
 	createLabel(box1,"Tries",
 			x,y+=(labelheight+labeloffset),
 			labelwidth,labelheight);
+	createLabel(box1,"Database",
+			x,y+=(labelheight+labeloffset),
+			labelwidth,labelheight);
+	createLabel(box1,"Debug",
+			x,y+=(labelheight+labeloffset),
+			labelwidth,labelheight);
 	y=yoffset;
 	createLabel(box2,"Enable Kerberos",
 			x,y,
@@ -14195,14 +14261,8 @@ static void createControls(HWND hwnd) {
 			x,y+=(labelheight+labeloffset),
 			labelwidth,labelheight);
 	y=yoffset;
-	createLabel(box3,"Database",
-			x,y,
-			labelwidth,labelheight);
-	createLabel(box3,"Debug",
-			x,y+=(labelheight+labeloffset),
-			labelwidth,labelheight);
 	createLabel(box3,"Column Name Case",
-			x,y+=(labelheight+labeloffset),
+			x,y,
 			labelwidth,labelheight);
 	createLabel(box3,"Result Set Buffer Size",
 			x,y+=(labelheight+labeloffset),
@@ -14217,6 +14277,15 @@ static void createControls(HWND hwnd) {
 			x,y+=(labelheight+labeloffset),
 			labelwidth,labelheight);
 	createLabel(box3,"Clear Binds During Prepare",
+			x,y+=(labelheight+labeloffset),
+			labelwidth,labelheight);
+	createLabel(box3,"Map DateTime To Date",
+			x,y+=(labelheight+labeloffset),
+			labelwidth,labelheight);
+	createLabel(box3,"Map Date To TimeStamp",
+			x,y+=(labelheight+labeloffset),
+			labelwidth,labelheight);
+	createLabel(box3,"Map NewDate To TimeStamp",
 			x,y+=(labelheight+labeloffset),
 			labelwidth,labelheight);
 	createLabel(box3,"Bind Variable Delimiters",
@@ -14260,6 +14329,14 @@ static void createControls(HWND hwnd) {
 			dsndict.getValue("Tries"),
 			x,y+=(labelheight+labeloffset),editwidth,labelheight,
 			6,true,false);
+	dbedit=createEdit(box1,
+			dsndict.getValue("Db"),
+			x,y+=(labelheight+labeloffset),editwidth,labelheight,
+			1024,false,false);
+	debugedit=createEdit(box1,
+			dsndict.getValue("Debug"),
+			x,y+=(labelheight+labeloffset),editwidth,labelheight,
+			1024,false,false);
 	y=yoffset;
 	krbedit=createEdit(box2,
 			dsndict.getValue("Krb"),
@@ -14310,17 +14387,9 @@ static void createControls(HWND hwnd) {
 			x,y+=(labelheight+labeloffset),editwidth,labelheight,
 			20,false,false);
 	y=yoffset;
-	dbedit=createEdit(box3,
-			dsndict.getValue("Db"),
-			x,y,editwidth,labelheight,
-			1024,false,false);
-	debugedit=createEdit(box3,
-			dsndict.getValue("Debug"),
-			x,y+=(labelheight+labeloffset),editwidth,labelheight,
-			1024,false,false);
 	columnnamecaseedit=createEdit(box3,
 			dsndict.getValue("ColumnNameCase"),
-			x,y+=(labelheight+labeloffset),editwidth,labelheight,
+			x,y,editwidth,labelheight,
 			5,false,false);
 	resultsetbuffersizeedit=createEdit(box3,
 			dsndict.getValue("ResultSetBufferSize"),
@@ -14340,6 +14409,18 @@ static void createControls(HWND hwnd) {
 			1,true,false);
 	clearbindsduringprepareedit=createEdit(box3,
 			dsndict.getValue("ClearBindsDuringPrepare"),
+			x,y+=(labelheight+labeloffset),editwidth,labelheight,
+			1,true,false);
+	mapdatetimetodateedit=createEdit(box3,
+			dsndict.getValue("MapDateTimeToDate"),
+			x,y+=(labelheight+labeloffset),editwidth,labelheight,
+			1,true,false);
+	mapdatetotimestampedit=createEdit(box3,
+			dsndict.getValue("MapDateToTimeStamp"),
+			x,y+=(labelheight+labeloffset),editwidth,labelheight,
+			1,true,false);
+	mapnewdatetotimestampedit=createEdit(box3,
+			dsndict.getValue("MapNewDateToTimeStamp"),
 			x,y+=(labelheight+labeloffset),editwidth,labelheight,
 			1,true,false);
 	bindvariabledelimitersedit=createEdit(box3,
@@ -14402,6 +14483,12 @@ static void parseDsn(const char *dsn) {
 					charstring::duplicate("1"));
 		dsndict.setValue("ClearBindsDuringPrepare",
 					charstring::duplicate("1"));
+		dsndict.setValue("MapDateTimeToDate",
+					charstring::duplicate("0"));
+		dsndict.setValue("MapDateToTimeStamp",
+					charstring::duplicate("0"));
+		dsndict.setValue("MapNewDateToTimeStamp",
+					charstring::duplicate("0"));
 		dsndict.setValue("BindVariableDelimiters",
 					charstring::duplicate("?:@$"));
 
@@ -14596,6 +14683,24 @@ static void parseDsn(const char *dsn) {
 					clearbindsduringprepare,2,ODBC_INI);
 		dsndict.setValue("ClearBindsDuringPrepare",
 					clearbindsduringprepare);
+	}
+	if (!dsndict.getValue("MapDateTimeToDate")) {
+		char	*mapdatetimetodate=new char[2];
+		SQLGetPrivateProfileString(dsnval,"MapDateTimeToDate","0",
+					mapdatetimetodate,2,ODBC_INI);
+		dsndict.setValue("MapDateTimeToDate",mapdatetimetodate);
+	}
+	if (!dsndict.getValue("MapDateToTimeStamp")) {
+		char	*mapdatetotimestamp=new char[2];
+		SQLGetPrivateProfileString(dsnval,"MapDateToTimeStamp","0",
+					mapdatetotimestamp,2,ODBC_INI);
+		dsndict.setValue("MapDateToTimeStamp",mapdatetotimestamp);
+	}
+	if (!dsndict.getValue("MapNewDateToTimeStamp")) {
+		char	*mapnewdatetotimestamp=new char[2];
+		SQLGetPrivateProfileString(dsnval,"MapNewDateToTimeStamp","0",
+					mapnewdatetotimestamp,2,ODBC_INI);
+		dsndict.setValue("MapNewDateToTimeStamp",mapnewdatetotimestamp);
 	}
 	if (!dsndict.getValue("BindVariableDelimiters")) {
 		char	*bindvariabledelimiters=new char[5];
@@ -14849,6 +14954,27 @@ static void getDsnFromUi() {
 	GetWindowText(clearbindsduringprepareedit,data,len+1);
 	delete[] dsndict.getValue("ClearBindsDuringPrepare");
 	dsndict.setValue("ClearBindsDuringPrepare",data);
+
+	// MapDateTimeToDate
+	len=GetWindowTextLength(mapdatetimetodateedit);
+	data=new char[len+1];
+	GetWindowText(mapdatetimetodateedit,data,len+1);
+	delete[] dsndict.getValue("MapDateTimeToDate");
+	dsndict.setValue("MapDateTimeToDate",data);
+
+	// MapDateToTimeStamp
+	len=GetWindowTextLength(mapdatetotimestampedit);
+	data=new char[len+1];
+	GetWindowText(mapdatetotimestampedit,data,len+1);
+	delete[] dsndict.getValue("MapDateToTimeStamp");
+	dsndict.setValue("MapDateToTimeStamp",data);
+
+	// MapNewDateToTimeStamp
+	len=GetWindowTextLength(mapnewdatetotimestampedit);
+	data=new char[len+1];
+	GetWindowText(mapnewdatetotimestampedit,data,len+1);
+	delete[] dsndict.getValue("MapNewDateToTimeStamp");
+	dsndict.setValue("MapNewDateToTimeStamp",data);
 
 	// BindVariableDelimiters
 	len=GetWindowTextLength(bindvariabledelimitersedit);

@@ -59,6 +59,8 @@
 	fixed some lurking double-frees in the C# api
 	added binary-compatible sendQuery to C# api
 	various erlang updates and fixes
+	added MapDateTimeToDate, MapDateToTimeStamp, and MapNewDateToTimeStamp
+		options to ODBC
 
 2.1.1 - added tns_admin support
 	fixed sqlr-start ... -strace ...
