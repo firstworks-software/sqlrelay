@@ -333,7 +333,7 @@ int main(int argc, char **argv) {
 			"Server=sqlrelay;Port=9000;"
 			"Socket=/tmp/test.socket;"
 			"User=testuser;Password=testpassword;"
-			"NullsAsNulls=yes";
+			"NullsAsNulls=yes;MapDateToTimeStamp=1;";
 		SQLCHAR		outcstring[1024];
 		SQLSMALLINT	outcstringlen;
 		erg=SQLDriverConnect(dbc,NULL,
@@ -5252,23 +5252,17 @@ int main(int argc, char **argv) {
 	assertSuccessStmt(stmt,erg);
 	assertEqualStmt(stmt,(const char *)colname,"TESTDATE");
 	assertEqualStmt(stmt,(int)colnamelen,8);
+	#if (ODBCVER >= 0x0300)
+	assertEqualStmt(stmt,(int)datatype,SQL_TYPE_TIMESTAMP);
+	#else
+	assertEqualStmt(stmt,(int)datatype,SQL_TIMESTAMP);
+	#endif
 	if (issqlrelay) {
-		#if (ODBCVER >= 0x0300)
-		assertEqualStmt(stmt,(int)datatype,SQL_TYPE_DATE);
-		#else
-		assertEqualStmt(stmt,(int)datatype,SQL_DATE);
-		#endif
 		assertEqualStmt(stmt,(int)colsize,25);
-		assertEqualStmt(stmt,(int)decdigits,0);
 	} else {
-		#if (ODBCVER >= 0x0300)
-		assertEqualStmt(stmt,(int)datatype,SQL_TYPE_TIMESTAMP);
-		#else
-		assertEqualStmt(stmt,(int)datatype,SQL_TIMESTAMP);
-		#endif
 		assertEqualStmt(stmt,(int)colsize,19);
-		assertEqualStmt(stmt,(int)decdigits,0);
 	}
+	assertEqualStmt(stmt,(int)decdigits,0);
 	assertEqualStmt(stmt,(int)nullable,SQL_NULLABLE);
 
 	// col 5
