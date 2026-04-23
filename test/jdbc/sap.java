@@ -2040,7 +2040,6 @@ class sap extends sqlrtest {
 			stmt.executeUpdate("drop procedure testproc2");
 		} catch (Exception ex) {
 		}
-		try { stmt.executeUpdate(dumptran); } catch (Exception ex) { }
 		assertEquals(stmt.executeUpdate(
 			"create procedure testproc2 "+
 			"	@in1 int, "+
@@ -2094,7 +2093,6 @@ class sap extends sqlrtest {
 						"drop procedure testproc2");
 			} catch (Exception ex) {
 			}
-			try { stmt.executeUpdate(dumptran); } catch (Exception ex) { }
 			assertEquals(stmt.executeUpdate(
 				"create procedure testproc2 "+
 				"	@in1 int, "+
@@ -2136,7 +2134,6 @@ class sap extends sqlrtest {
 			stmt.executeUpdate("drop procedure testproc");
 		} catch (Exception ex) {
 		}
-		try { stmt.executeUpdate(dumptran); } catch (Exception ex) { }
 		assertEquals(stmt.executeUpdate(
 			"create procedure testproc "+
 			"	@in1 int, "+
@@ -2278,7 +2275,6 @@ class sap extends sqlrtest {
 			stmt.executeUpdate("drop table testtable4");
 		} catch (Exception ex) {
 		}
-		try { stmt.executeUpdate(dumptran); } catch (Exception ex) { }
 		stmt.executeUpdate(
 			"create table testtable1 ("+
 			"	col1 int, "+
@@ -2442,7 +2438,6 @@ class sap extends sqlrtest {
 			stmt.executeUpdate("drop table testtable");
 		} catch (Exception ex) {
 		}
-		try { stmt.executeUpdate(dumptran); } catch (Exception ex) { }
 		stmt.executeUpdate(
 			"create table testtable ("+
 			"	testint int, "+
@@ -2559,7 +2554,6 @@ class sap extends sqlrtest {
 			stmt.executeUpdate("drop table testtable");
 		} catch (Exception ex) {
 		}
-		try { stmt.executeUpdate(dumptran); } catch (Exception ex) { }
 		stmt.executeUpdate(
 			"create table testtable ("+
 			"	col1 int primary key, "+
@@ -2603,7 +2597,6 @@ class sap extends sqlrtest {
 			stmt.executeUpdate("drop table testtable");
 		} catch (Exception ex) {
 		}
-		try { stmt.executeUpdate(dumptran); } catch (Exception ex) { }
 		stmt.executeUpdate(
 			"create table testtable ("+
 			"	col1 int primary key, "+
@@ -2686,7 +2679,6 @@ class sap extends sqlrtest {
 			stmt.executeUpdate("drop procedure testproc4");
 		} catch (Exception ex) {
 		}
-		try { stmt.executeUpdate(dumptran); } catch (Exception ex) { }
 		stmt.executeUpdate(
 			"create procedure testproc1 "+
 			"	@in1 int, "+
@@ -2862,7 +2854,6 @@ class sap extends sqlrtest {
 		} catch (Exception e) {
 			assertTrue(true);
 		}
-		try { stmt.executeUpdate(dumptran); } catch (Exception ex) { }
 		try {
 			stmt.executeUpdate("create table");
 			assertTrue(false);

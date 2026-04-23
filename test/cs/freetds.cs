@@ -1088,7 +1088,6 @@ namespace SQLRClientTest
             Console.WriteLine("NULL AND EMPTY LOBS: ");
             cur.getNullsAsNulls();
             cur.sendQuery("drop table testtable");
-            cur.sendQuery(dumptran);
             assertTrue(cur.sendQuery(
                 "create table testtable ("
                 + "	testclob1 text NULL, "
@@ -1144,7 +1143,6 @@ namespace SQLRClientTest
             // long lobs
             Console.WriteLine("LONG LOBS: ");
             cur.sendQuery("drop table testtable");
-            cur.sendQuery(dumptran);
             cur.sendQuery(
                 "create table testtable ("
                 + "	testclob text, "
@@ -1199,7 +1197,6 @@ namespace SQLRClientTest
             // negative input bind
             Console.WriteLine("NEGATIVE INPUT BIND: ");
             cur.sendQuery("drop table testtable");
-            cur.sendQuery(dumptran);
             cur.sendQuery("create table testtable (testval int)");
             cur.prepareQuery("insert into testtable values (@testval)");
             cur.inputBind("testval", (Int64)(-1));
@@ -1213,7 +1210,6 @@ namespace SQLRClientTest
             // bind validation
             Console.WriteLine("BIND VALIDATION: ");
             cur.sendQuery("drop table testtable");
-            cur.sendQuery(dumptran);
             cur.sendQuery(
                 "create table testtable ("
                 + "	col1 varchar(20), "
@@ -1298,7 +1294,6 @@ namespace SQLRClientTest
             // stored procedure returning result set
             Console.WriteLine("STORED PROCEDURE RETURNING RESULT SET: ");
             cur.sendQuery("drop procedure testselectproc");
-            cur.sendQuery(dumptran);
             assertTrue(cur.sendQuery(
                 "create procedure testselectproc as "
                 + "       select 1 "
@@ -1325,7 +1320,6 @@ namespace SQLRClientTest
             // temporary tables
             Console.WriteLine("TEMPORARY TABLES: ");
             cur.sendQuery("drop table #temptable");
-            cur.sendQuery(dumptran);
             cur.sendQuery("create table #temptable (col1 int)");
             assertTrue(cur.sendQuery("insert into #temptable values (1)"));
             assertTrue(cur.sendQuery("select count(*) from #temptable"));
@@ -1339,7 +1333,6 @@ namespace SQLRClientTest
             // encoded binary data
             Console.WriteLine("ENCODED BINARY DATA: ");
             cur.sendQuery("drop table testtable");
-            cur.sendQuery(dumptran);
             assertTrue(cur.sendQuery("create table testtable (col1 image)"));
             Byte[] buffer = new Byte[256];
             for (UInt16 i = 0; i < 256; i++)
@@ -1364,7 +1357,6 @@ namespace SQLRClientTest
             // quotes
             Console.WriteLine("QUOTES: ");
             cur.sendQuery("drop table testtable");
-            cur.sendQuery(dumptran);
             assertTrue(cur.sendQuery("create table testtable (col1 varchar(4))"));
             assertTrue(cur.sendQuery("insert into testtable values ('''''')"));
             assertTrue(cur.sendQuery("select col1 from testtable"));
@@ -1377,7 +1369,6 @@ namespace SQLRClientTest
             // last insert id
             Console.WriteLine("LAST INSERT ID: ");
             cur.sendQuery("drop table testtable");
-            cur.sendQuery(dumptran);
             assertTrue(cur.sendQuery(
                     "create table testtable "
                     + "	(col1 int identity primary key, "
@@ -1409,7 +1400,6 @@ namespace SQLRClientTest
             // the get schema list query that is used with sap will only return the
             // names of schemas that have at least one database object in them, so
             // to be sure that there is one, we'll create a table
-            cur.sendQuery(dumptran);
             assertTrue(cur.sendQuery("create table testtable (col1 int)"));
             assertTrue(cur.getSchemaList(null));
             assertEquals(cur.getColumnName(0), "Database");
@@ -1441,7 +1431,6 @@ namespace SQLRClientTest
             cur.sendQuery("drop table testtable2");
             cur.sendQuery("drop table testtable3");
             cur.sendQuery("drop table testtable4");
-            cur.sendQuery(dumptran);
             assertTrue(cur.sendQuery(
                 "create table testtable1 ("
                 + "	col1 int, "
@@ -1526,7 +1515,6 @@ namespace SQLRClientTest
             // column list
             Console.WriteLine("COLUMN LIST: ");
             cur.sendQuery("drop table testtable");
-            cur.sendQuery(dumptran);
             assertTrue(cur.sendQuery(
                 "create table testtable ("
                 + "	testint int, "
@@ -1588,7 +1576,6 @@ namespace SQLRClientTest
             // column list - auto_increment, primary key
             Console.WriteLine("COLUMN LIST - auto_increment, primary key: ");
             cur.sendQuery("drop table testtable");
-            cur.sendQuery(dumptran);
             assertTrue(cur.sendQuery(
                 "create table testtable ("
                 + "	col1 int identity primary key, "
@@ -1600,7 +1587,6 @@ namespace SQLRClientTest
             assertFalse(cur.getField((UInt64)1, "column_key").Contains("PRI"));
             Console.WriteLine("");
             assertTrue(cur.sendQuery("drop table testtable"));
-            cur.sendQuery(dumptran);
             assertTrue(cur.sendQuery(
                 "create table testtable ("
                 + "	col1 int primary key, "
@@ -1615,7 +1601,6 @@ namespace SQLRClientTest
             // primary keys list
             Console.WriteLine("PRIMARY KEYS LIST: ");
             cur.sendQuery("drop table testtable");
-            cur.sendQuery(dumptran);
             assertTrue(cur.sendQuery(
                 "create table testtable ("
                 + "	col1 int primary key, "
@@ -1646,7 +1631,6 @@ namespace SQLRClientTest
             // key and index list
             Console.WriteLine("KEY AND INDEX LIST: ");
             cur.sendQuery("drop table testtable");
-            cur.sendQuery(dumptran);
             assertTrue(cur.sendQuery(
                 "create table testtable ("
                 + "	col1 int primary key, "
@@ -1683,7 +1667,6 @@ namespace SQLRClientTest
             cur.sendQuery("drop procedure testproc2");
             cur.sendQuery("drop procedure testproc3");
             cur.sendQuery("drop procedure testproc4");
-            cur.sendQuery(dumptran);
             assertTrue(cur.sendQuery(
                 "create procedure testproc1 "
                 + "	@in1 int, "
@@ -1773,7 +1756,6 @@ namespace SQLRClientTest
             assertFalse(cur.sendQuery("insert into testtable values (1,2,3,4)"));
             assertFalse(cur.sendQuery("insert into testtable values (1,2,3,4)"));
             Console.WriteLine("");
-            cur.sendQuery(dumptran);
             assertFalse(cur.sendQuery("create table testtable"));
             assertFalse(cur.sendQuery("create table testtable"));
             assertFalse(cur.sendQuery("create table testtable"));

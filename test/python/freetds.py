@@ -1146,7 +1146,6 @@ def main():
 	assertFalse(cur.sendQuery("insert into testtable values (1,2,3,4)"))
 	assertFalse(cur.sendQuery("insert into testtable values (1,2,3,4)"))
 	print()
-	cur.sendQuery(dumptran)
 	assertFalse(cur.sendQuery("create table testtable"))
 	assertFalse(cur.sendQuery("create table testtable"))
 	assertFalse(cur.sendQuery("create table testtable"))

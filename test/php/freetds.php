@@ -1131,7 +1131,6 @@
 	echo("NULL AND EMPTY LOBS: \n");
 	sqlrcur_getNullsAsNulls($cur);
 	sqlrcur_sendQuery($cur,"drop table testtable");
-	sqlrcur_sendQuery($cur,$dumptran);
 	assertTrue(sqlrcur_sendQuery($cur,
 		"create table testtable (".
 		"	testclob1 text NULL, ".
@@ -1189,7 +1188,6 @@
 	# long lobs
 	echo("LONG LOBS: \n");
 	sqlrcur_sendQuery($cur,"drop table testtable");
-	sqlrcur_sendQuery($cur,$dumptran);
 	sqlrcur_sendQuery($cur,
 		"create table testtable (".
 		"	testclob text, ".
@@ -1252,7 +1250,6 @@
 	# negative input bind
 	echo("NEGATIVE INPUT BIND: \n");
 	sqlrcur_sendQuery($cur,"drop table testtable");
-	sqlrcur_sendQuery($cur,$dumptran);
 	sqlrcur_sendQuery($cur,"create table testtable ".
 		"(testval int)");
 	sqlrcur_prepareQuery($cur,"insert into testtable ".
@@ -1268,7 +1265,6 @@
 	# bind validation
 	echo("BIND VALIDATION: \n");
 	sqlrcur_sendQuery($cur,"drop table testtable");
-	sqlrcur_sendQuery($cur,$dumptran);
 	sqlrcur_sendQuery($cur,
 		"create table testtable (".
 		"	col1 varchar(20), ".
@@ -1359,7 +1355,6 @@
 	# stored procedure returning result set
 	echo("STORED PROCEDURE RETURNING RESULT SET: \n");
 	sqlrcur_sendQuery($cur,"drop procedure testselectproc");
-	sqlrcur_sendQuery($cur,$dumptran);
 	assertTrue(sqlrcur_sendQuery($cur,"create procedure testselectproc as ".
 		"       select 1 ".
 		"       union ".
@@ -1385,7 +1380,6 @@
 	# temporary tables
 	echo("TEMPORARY TABLES: \n");
 	sqlrcur_sendQuery($cur,"drop table #temptable");
-	sqlrcur_sendQuery($cur,$dumptran);
 	sqlrcur_sendQuery($cur,"create table #temptable ".
 		"(col1 int)");
 	assertTrue(sqlrcur_sendQuery($cur,"insert into #temptable ".
@@ -1403,7 +1397,6 @@
 	# encoded binary data
 	echo("ENCODED BINARY DATA: \n");
 	sqlrcur_sendQuery($cur,"drop table testtable");
-	sqlrcur_sendQuery($cur,$dumptran);
 	assertTrue(sqlrcur_sendQuery($cur,"create table testtable ".
 		"(col1 image)"));
 	$buffer="";
@@ -1426,7 +1419,6 @@
 	# quotes
 	echo("QUOTES: \n");
 	sqlrcur_sendQuery($cur,"drop table testtable");
-	sqlrcur_sendQuery($cur,$dumptran);
 	assertTrue(sqlrcur_sendQuery($cur,"create table testtable ".
 		"(col1 varchar(4))"));
 	assertTrue(sqlrcur_sendQuery($cur,"insert into testtable ".
@@ -1441,7 +1433,6 @@
 	# last insert id
 	echo("LAST INSERT ID: \n");
 	sqlrcur_sendQuery($cur,"drop table testtable");
-	sqlrcur_sendQuery($cur,$dumptran);
 	assertTrue(sqlrcur_sendQuery($cur,
 		"create table testtable ".
 		"	(col1 int identity ".
@@ -1476,7 +1467,6 @@
 	# schemas that have at least one database
 	# object in them, so to be sure that
 	# there is one, we'll create a table
-	sqlrcur_sendQuery($cur,$dumptran);
 	assertTrue(sqlrcur_sendQuery($cur,"create table testtable ".
 		"(col1 int)"));
 	assertTrue(sqlrcur_getSchemaList($cur,NULL));
@@ -1508,7 +1498,6 @@
 	sqlrcur_sendQuery($cur,"drop table testtable2");
 	sqlrcur_sendQuery($cur,"drop table testtable3");
 	sqlrcur_sendQuery($cur,"drop table testtable4");
-	sqlrcur_sendQuery($cur,$dumptran);
 	assertTrue(sqlrcur_sendQuery($cur,
 		"create table testtable1 (".
 		"	col1 int, ".
@@ -1590,7 +1579,6 @@
 	# column list
 	echo("COLUMN LIST: \n");
 	sqlrcur_sendQuery($cur,"drop table testtable");
-	sqlrcur_sendQuery($cur,$dumptran);
 	assertTrue(sqlrcur_sendQuery($cur,
 		"create table testtable (".
 		"	testint int, ".
@@ -1676,7 +1664,6 @@
 	# primary key
 	echo("COLUMN LIST - auto_increment, primary key: \n");
 	sqlrcur_sendQuery($cur,"drop table testtable");
-	sqlrcur_sendQuery($cur,$dumptran);
 	assertTrue(sqlrcur_sendQuery($cur,
 		"create table testtable (".
 		"	col1 int identity ".
@@ -1693,7 +1680,6 @@
 		"PRI")!==false);
 	echo("\n");
 	assertTrue(sqlrcur_sendQuery($cur,"drop table testtable"));
-	sqlrcur_sendQuery($cur,$dumptran);
 	assertTrue(sqlrcur_sendQuery($cur,
 		"create table testtable (".
 		"	col1 int primary key, ".
@@ -1710,7 +1696,6 @@
 	# primary keys list
 	echo("PRIMARY KEYS LIST: \n");
 	sqlrcur_sendQuery($cur,"drop table testtable");
-	sqlrcur_sendQuery($cur,$dumptran);
 	assertTrue(sqlrcur_sendQuery($cur,
 		"create table testtable (".
 		"	col1 int primary key, ".
@@ -1742,7 +1727,6 @@
 	# key and index list
 	echo("KEY AND INDEX LIST: \n");
 	sqlrcur_sendQuery($cur,"drop table testtable");
-	sqlrcur_sendQuery($cur,$dumptran);
 	assertTrue(sqlrcur_sendQuery($cur,
 		"create table testtable (".
 		"	col1 int primary key, ".
@@ -1780,7 +1764,6 @@
 	sqlrcur_sendQuery($cur,"drop procedure testproc2");
 	sqlrcur_sendQuery($cur,"drop procedure testproc3");
 	sqlrcur_sendQuery($cur,"drop procedure testproc4");
-	sqlrcur_sendQuery($cur,$dumptran);
 	assertTrue(sqlrcur_sendQuery($cur,
 		"create procedure testproc1 ".
 		"	@in1 int, ".
@@ -1875,7 +1858,6 @@
 	assertFalse(sqlrcur_sendQuery($cur,"insert into testtable ".
 		"values (1,2,3,4)"));
 	echo("\n");
-	sqlrcur_sendQuery($cur,$dumptran);
 	assertFalse(sqlrcur_sendQuery($cur,"create table testtable"));
 	assertFalse(sqlrcur_sendQuery($cur,"create table testtable"));
 	assertFalse(sqlrcur_sendQuery($cur,"create table testtable"));

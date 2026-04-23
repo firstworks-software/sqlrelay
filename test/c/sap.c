@@ -1147,7 +1147,6 @@ int main(int argc, char **argv) {
 	printf("NULL AND EMPTY LOBS: \n");
 	sqlrcur_getNullsAsNulls(cur);
 	sqlrcur_sendQuery(cur,"drop table testtable");
-	sqlrcur_sendQuery(cur,dumptran);
 	assertTrue(sqlrcur_sendQuery(cur,
 		"create table testtable ("
 		"	testclob1 text NULL, "
@@ -1189,7 +1188,6 @@ int main(int argc, char **argv) {
 	// long lobs
 	printf("LONG LOBS: \n");
 	sqlrcur_sendQuery(cur,"drop table testtable");
-	sqlrcur_sendQuery(cur,dumptran);
 	sqlrcur_sendQuery(cur,
 		"create table testtable ("
 		"	testclob text NULL, "
@@ -1219,7 +1217,6 @@ int main(int argc, char **argv) {
 	printf("OUTPUT BIND ""BY POSITION: \n");
 	sqlrcur_sendQuery(cur,"drop procedure testproc");
 	sqlrcur_getNullsAsNulls(cur);
-	sqlrcur_sendQuery(cur,dumptran);
 	assertTrue(sqlrcur_sendQuery(cur,
 		"create procedure testproc "
 		"	@out1 int output, "
@@ -1268,7 +1265,6 @@ int main(int argc, char **argv) {
 	printf("OUTPUT BIND BY NAME: \n");
 	sqlrcur_sendQuery(cur,"drop procedure testproc");
 	sqlrcur_getNullsAsNulls(cur);
-	sqlrcur_sendQuery(cur,dumptran);
 	assertTrue(sqlrcur_sendQuery(cur,
 		"create procedure testproc "
 		"	@out1 int output, "
@@ -1341,7 +1337,6 @@ int main(int argc, char **argv) {
 		largebuffer[i]='C';
 	}
 	largebuffer[LARGE_BUFFER_LENGTH]='\0';
-	sqlrcur_sendQuery(cur,dumptran);
 	snprintf(query,sizeof(query),"create procedure testproc "
 		"@bindval varchar(%d) ""output as "
 		"set @bindval='%s'",LARGE_BUFFER_LENGTH,largebuffer);
@@ -1359,7 +1354,6 @@ int main(int argc, char **argv) {
 	// negative input bind
 	printf("NEGATIVE INPUT BIND: \n");
 	sqlrcur_sendQuery(cur,"drop table testtable");
-	sqlrcur_sendQuery(cur,dumptran);
 	sqlrcur_sendQuery(cur,"create table testtable ""(testval int)");
 	sqlrcur_prepareQuery(cur,"insert into testtable ""values (@testval)");
 	sqlrcur_inputBindLong(cur,"testval",-1);
@@ -1373,7 +1367,6 @@ int main(int argc, char **argv) {
 	// bind validation
 	printf("BIND VALIDATION: \n");
 	sqlrcur_sendQuery(cur,"drop table testtable");
-	sqlrcur_sendQuery(cur,dumptran);
 	sqlrcur_sendQuery(cur,
 		"create table testtable ("
 		"	col1 varchar(20), "
@@ -1414,7 +1407,6 @@ int main(int argc, char **argv) {
 	// rebinding
 	printf("REBINDING: \n");
 	sqlrcur_sendQuery(cur,"drop procedure testproc");
-	sqlrcur_sendQuery(cur,dumptran);
 	assertTrue(sqlrcur_sendQuery(cur,
 		"create procedure testproc "
 		"	@in1 int, "
@@ -1467,7 +1459,6 @@ int main(int argc, char **argv) {
 	// stored procedure returning no value
 	printf("STORED PROCEDURE ""RETURNING NO VALUE: \n");
 	sqlrcur_sendQuery(cur,"drop procedure testproc");
-	sqlrcur_sendQuery(cur,dumptran);
 	assertTrue(sqlrcur_sendQuery(cur,
 		"create procedure testproc "
 		"	@in1 int, "
@@ -1486,7 +1477,6 @@ int main(int argc, char **argv) {
 	// single value
 	printf("STORED PROCEDURE ""RETURNING SINGLE VALUE: \n");
 	sqlrcur_sendQuery(cur,"drop procedure testproc");
-	sqlrcur_sendQuery(cur,dumptran);
 	assertTrue(sqlrcur_sendQuery(cur,
 		"create procedure testproc "
 		"	@in1 int, "
@@ -1508,7 +1498,6 @@ int main(int argc, char **argv) {
 	// multiple values
 	printf("STORED PROCEDURE RETURNING ""MULTIPLE VALUES: \n");
 	sqlrcur_sendQuery(cur,"drop procedure testproc");
-	sqlrcur_sendQuery(cur,dumptran);
 	assertTrue(sqlrcur_sendQuery(cur,"create procedure testproc "
 		"@in1 int, "
 		"	@in2 float, "
@@ -1537,7 +1526,6 @@ int main(int argc, char **argv) {
 	// stored procedure returning result set
 	printf("STORED PROCEDURE ""RETURNING RESULT SET: \n");
 	sqlrcur_sendQuery(cur,"drop procedure ""testselectproc");
-	sqlrcur_sendQuery(cur,dumptran);
 	assertTrue(sqlrcur_sendQuery(cur,"create procedure "
 		"testselectproc as "
 		"	select 1 "
@@ -1564,7 +1552,6 @@ int main(int argc, char **argv) {
 	// temporary tables
 	printf("TEMPORARY TABLES: \n");
 	sqlrcur_sendQuery(cur,"drop table #temptable\n");
-	sqlrcur_sendQuery(cur,dumptran);
 	sqlrcur_sendQuery(cur,"create table #temptable ""(col1 int)");
 	assertTrue(sqlrcur_sendQuery(cur,"insert into #temptable "
 		"values (1)"));
@@ -1579,7 +1566,6 @@ int main(int argc, char **argv) {
 	// encoded binary data
 	printf("ENCODED BINARY DATA: \n");
 	sqlrcur_sendQuery(cur,"drop table testtable");
-	sqlrcur_sendQuery(cur,dumptran);
 	assertTrue(sqlrcur_sendQuery(cur,"create table testtable "
 		"(col1 image)"));
 	for (bi=0; bi<256; bi++) {
@@ -1603,7 +1589,6 @@ int main(int argc, char **argv) {
 	// quotes
 	printf("QUOTES: \n");
 	sqlrcur_sendQuery(cur,"drop table testtable");
-	sqlrcur_sendQuery(cur,dumptran);
 	assertTrue(sqlrcur_sendQuery(cur,"create table testtable "
 		"(col1 varchar(4))"));
 	assertTrue(sqlrcur_sendQuery(cur,"insert into testtable "
@@ -1618,7 +1603,6 @@ int main(int argc, char **argv) {
 	// last insert id
 	printf("LAST INSERT ID: \n");
 	sqlrcur_sendQuery(cur,"drop table testtable");
-	sqlrcur_sendQuery(cur,dumptran);
 	assertTrue(sqlrcur_sendQuery(cur,
 		"create table testtable "
 		"	(col1 int identity "
@@ -1654,7 +1638,6 @@ int main(int argc, char **argv) {
 	// one database object in them, so to
 	// be sure that there is one, we'll
 	// create a table
-	sqlrcur_sendQuery(cur,dumptran);
 	assertTrue(sqlrcur_sendQuery(cur,"create table testtable "
 		"(col1 int)"));
 	assertTrue(sqlrcur_getSchemaList(cur,NULL));
@@ -1686,7 +1669,6 @@ int main(int argc, char **argv) {
 	sqlrcur_sendQuery(cur,"drop table testtable2");
 	sqlrcur_sendQuery(cur,"drop table testtable3");
 	sqlrcur_sendQuery(cur,"drop table testtable4");
-	sqlrcur_sendQuery(cur,dumptran);
 	assertTrue(sqlrcur_sendQuery(cur,
 		"create table testtable1 ("
 		"	col1 int, "
@@ -1768,7 +1750,6 @@ int main(int argc, char **argv) {
 	// column list
 	printf("COLUMN LIST: \n");
 	sqlrcur_sendQuery(cur,"drop table testtable");
-	sqlrcur_sendQuery(cur,dumptran);
 	assertTrue(sqlrcur_sendQuery(cur,
 		"create table testtable ("
 		"	testint int, "
@@ -1858,7 +1839,6 @@ int main(int argc, char **argv) {
 	// primary key
 	printf("COLUMN LIST - ""auto_increment, ""primary key: \n");
 	sqlrcur_sendQuery(cur,"drop table testtable");
-	sqlrcur_sendQuery(cur,dumptran);
 	assertTrue(sqlrcur_sendQuery(cur,
 		"create table testtable ("
 		"	col1 int identity "
@@ -1875,7 +1855,6 @@ int main(int argc, char **argv) {
 		"PRI")!=NULL);
 	printf("\n");
 	assertTrue(sqlrcur_sendQuery(cur,"drop table testtable"));
-	sqlrcur_sendQuery(cur,dumptran);
 	assertTrue(sqlrcur_sendQuery(cur,
 		"create table testtable ("
 		"	col1 int "
@@ -1893,7 +1872,6 @@ int main(int argc, char **argv) {
 	// primary keys list
 	printf("PRIMARY KEYS LIST: \n");
 	sqlrcur_sendQuery(cur,"drop table testtable");
-	sqlrcur_sendQuery(cur,dumptran);
 	assertTrue(sqlrcur_sendQuery(cur,
 		"create table testtable ("
 		"	col1 int "
@@ -1926,7 +1904,6 @@ int main(int argc, char **argv) {
 	// key and index list
 	printf("KEY AND INDEX LIST: \n");
 	sqlrcur_sendQuery(cur,"drop table testtable");
-	sqlrcur_sendQuery(cur,dumptran);
 	assertTrue(sqlrcur_sendQuery(cur,
 		"create table testtable ("
 		"	col1 int "
@@ -1965,7 +1942,6 @@ int main(int argc, char **argv) {
 	sqlrcur_sendQuery(cur,"drop procedure testproc2");
 	sqlrcur_sendQuery(cur,"drop procedure testproc3");
 	sqlrcur_sendQuery(cur,"drop procedure testproc4");
-	sqlrcur_sendQuery(cur,dumptran);
 	assertTrue(sqlrcur_sendQuery(cur,
 		"create procedure testproc1 "
 		"	@in1 int, "
@@ -2056,7 +2032,6 @@ int main(int argc, char **argv) {
 	assertFalse(sqlrcur_sendQuery(cur,"insert into testtable "
 		"values (1,2,3,4)"));
 	printf("\n");
-	sqlrcur_sendQuery(cur,dumptran);
 	assertFalse(sqlrcur_sendQuery(cur,"create table testtable"));
 	assertFalse(sqlrcur_sendQuery(cur,"create table testtable"));
 	assertFalse(sqlrcur_sendQuery(cur,"create table testtable"));
