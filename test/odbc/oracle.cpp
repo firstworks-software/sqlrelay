@@ -4667,7 +4667,949 @@ int main(int argc, char **argv) {
 
 
 	// statement attributes
-	// FIXME:...
+	stdoutput.printf("STATEMENT ATTRIBUTES: \n");
+	SQLULEN		stmtulenval;
+	SQLULEN		stmtinitial;
+	SQLINTEGER	stmtstrlen;
+	SQLPOINTER	stmtptrval;
+	SQLPOINTER	stmtptrinit;
+	SQLUSMALLINT	stmtrowstatus[4]={0,0,0,0};
+	SQLULEN		stmtrowsfetched=0;
+	SQLULEN		stmtparamsprocessed=0;
+	SQLULEN		stmtparambindoffset=0;
+	SQLULEN		stmtrowbindoffset=0;
+	SQLUSMALLINT	stmtparamstatus[4]={0,0,0,0};
+	SQLUSMALLINT	stmtparamop[4]={0,0,0,0};
+	SQLUSMALLINT	stmtrowop[4]={0,0,0,0};
+	SQLLEN		stmtbookmark=0;
+
+
+	#if (ODBCVER >= 0x0300)
+	// SQL_ATTR_APP_ROW_DESC (descriptor handle, settable)
+	stdoutput.printf("  SQL_ATTR_APP_ROW_DESC\n");
+	// hangs when run directly against oracle
+	if (issqlrelay) {
+		// get initial (implicit app row descriptor)
+		erg=SQLGetStmtAttr(stmt,SQL_ATTR_APP_ROW_DESC,
+				(SQLPOINTER)&stmtptrinit,0,&stmtstrlen);
+		assertSuccessStmt(stmt,erg);
+		// round-trip the same handle
+		erg=SQLSetStmtAttr(stmt,SQL_ATTR_APP_ROW_DESC,
+				(SQLPOINTER)stmtptrinit,SQL_IS_POINTER);
+		assertSuccessStmt(stmt,erg);
+		erg=SQLGetStmtAttr(stmt,SQL_ATTR_APP_ROW_DESC,
+				(SQLPOINTER)&stmtptrval,0,&stmtstrlen);
+		assertSuccessStmt(stmt,erg);
+		assertEqualStmt(stmt,(int)(stmtptrval==stmtptrinit),1);
+		// SQL_NULL_DESC resets to the implicit descriptor
+		erg=SQLSetStmtAttr(stmt,SQL_ATTR_APP_ROW_DESC,
+				(SQLPOINTER)SQL_NULL_DESC,SQL_IS_POINTER);
+		assertSuccessStmt(stmt,erg);
+	}
+	stdoutput.printf("\n");
+
+
+	// SQL_ATTR_APP_PARAM_DESC (descriptor handle, settable)
+	stdoutput.printf("  SQL_ATTR_APP_PARAM_DESC\n");
+	// hangs when run directly against oracle
+	if (issqlrelay) {
+		erg=SQLGetStmtAttr(stmt,SQL_ATTR_APP_PARAM_DESC,
+				(SQLPOINTER)&stmtptrinit,0,&stmtstrlen);
+		assertSuccessStmt(stmt,erg);
+		erg=SQLSetStmtAttr(stmt,SQL_ATTR_APP_PARAM_DESC,
+				(SQLPOINTER)stmtptrinit,SQL_IS_POINTER);
+		assertSuccessStmt(stmt,erg);
+		erg=SQLGetStmtAttr(stmt,SQL_ATTR_APP_PARAM_DESC,
+				(SQLPOINTER)&stmtptrval,0,&stmtstrlen);
+		assertSuccessStmt(stmt,erg);
+		assertEqualStmt(stmt,(int)(stmtptrval==stmtptrinit),1);
+		erg=SQLSetStmtAttr(stmt,SQL_ATTR_APP_PARAM_DESC,
+			(SQLPOINTER)SQL_NULL_DESC,SQL_IS_POINTER);
+		assertSuccessStmt(stmt,erg);
+	}
+	stdoutput.printf("\n");
+
+
+	// SQL_ATTR_IMP_ROW_DESC (read-only)
+	stdoutput.printf("  SQL_ATTR_IMP_ROW_DESC\n");
+	erg=SQLGetStmtAttr(stmt,SQL_ATTR_IMP_ROW_DESC,
+			(SQLPOINTER)&stmtptrval,0,&stmtstrlen);
+	assertSuccessStmt(stmt,erg);
+	// setting should fail (HY017 automatically allocated descriptor)
+	erg=SQLSetStmtAttr(stmt,SQL_ATTR_IMP_ROW_DESC,
+			(SQLPOINTER)stmtptrval,SQL_IS_POINTER);
+	assertFailureStmt(stmt,erg);
+	stdoutput.printf("\n");
+
+
+	// SQL_ATTR_IMP_PARAM_DESC (read-only)
+	stdoutput.printf("  SQL_ATTR_IMP_PARAM_DESC\n");
+	erg=SQLGetStmtAttr(stmt,SQL_ATTR_IMP_PARAM_DESC,
+			(SQLPOINTER)&stmtptrval,0,&stmtstrlen);
+	assertSuccessStmt(stmt,erg);
+	// setting should fail (HY017 automatically allocated descriptor)
+	erg=SQLSetStmtAttr(stmt,SQL_ATTR_IMP_PARAM_DESC,
+			(SQLPOINTER)stmtptrval,SQL_IS_POINTER);
+	assertFailureStmt(stmt,erg);
+	stdoutput.printf("\n");
+
+
+	// SQL_ATTR_CURSOR_SCROLLABLE
+	stdoutput.printf("  SQL_ATTR_CURSOR_SCROLLABLE\n");
+	if (issqlrelay) {
+		erg=SQLGetStmtAttr(stmt,SQL_ATTR_CURSOR_SCROLLABLE,
+				(SQLPOINTER)&stmtinitial,0,&stmtstrlen);
+		assertSuccessStmt(stmt,erg);
+		assertEqualStmt(stmt,(int)stmtinitial,(int)SQL_NONSCROLLABLE);
+		// SQL_SCROLLABLE
+		erg=SQLSetStmtAttr(stmt,SQL_ATTR_CURSOR_SCROLLABLE,
+				(SQLPOINTER)(uintptr_t)SQL_SCROLLABLE,0);
+		assertSuccessStmt(stmt,erg);
+		erg=SQLGetStmtAttr(stmt,SQL_ATTR_CURSOR_SCROLLABLE,
+				(SQLPOINTER)&stmtulenval,0,&stmtstrlen);
+		assertSuccessStmt(stmt,erg);
+		// FIXME: SQL Relay accepts the set silently but get always
+		// returns the hardcoded SQL_NONSCROLLABLE; should return
+		// SQL_SCROLLABLE here.
+		assertEqualStmt(stmt,(int)stmtulenval,(int)SQL_NONSCROLLABLE);
+		// SQL_NONSCROLLABLE
+		erg=SQLSetStmtAttr(stmt,SQL_ATTR_CURSOR_SCROLLABLE,
+				(SQLPOINTER)(uintptr_t)SQL_NONSCROLLABLE,0);
+		assertSuccessStmt(stmt,erg);
+		erg=SQLGetStmtAttr(stmt,SQL_ATTR_CURSOR_SCROLLABLE,
+				(SQLPOINTER)&stmtulenval,0,&stmtstrlen);
+		assertSuccessStmt(stmt,erg);
+		assertEqualStmt(stmt,(int)stmtulenval,(int)SQL_NONSCROLLABLE);
+	} else {
+		// Oracle's ODBC driver does not implement
+		// SQL_ATTR_CURSOR_SCROLLABLE; get returns HY103
+		// "Invalid retrieval code", set returns HYT00
+		// "Timeout expired".
+		erg=SQLGetStmtAttr(stmt,SQL_ATTR_CURSOR_SCROLLABLE,
+				(SQLPOINTER)&stmtinitial,0,&stmtstrlen);
+		assertFailureStmt(stmt,erg);
+		erg=SQLSetStmtAttr(stmt,SQL_ATTR_CURSOR_SCROLLABLE,
+				(SQLPOINTER)(uintptr_t)SQL_SCROLLABLE,0);
+		assertFailureStmt(stmt,erg);
+	}
+	stdoutput.printf("\n");
+
+
+	// SQL_ATTR_CURSOR_SENSITIVITY
+	stdoutput.printf("  SQL_ATTR_CURSOR_SENSITIVITY\n");
+	if (issqlrelay) {
+		erg=SQLGetStmtAttr(stmt,SQL_ATTR_CURSOR_SENSITIVITY,
+				(SQLPOINTER)&stmtinitial,0,&stmtstrlen);
+		assertSuccessStmt(stmt,erg);
+		// SQL_INSENSITIVE
+		erg=SQLSetStmtAttr(stmt,SQL_ATTR_CURSOR_SENSITIVITY,
+				(SQLPOINTER)(uintptr_t)SQL_INSENSITIVE,0);
+		assertSuccessStmt(stmt,erg);
+		erg=SQLGetStmtAttr(stmt,SQL_ATTR_CURSOR_SENSITIVITY,
+				(SQLPOINTER)&stmtulenval,0,&stmtstrlen);
+		assertSuccessStmt(stmt,erg);
+		// FIXME: SQL Relay accepts the set silently but get always
+		// returns the hardcoded SQL_UNSPECIFIED; should return
+		// SQL_INSENSITIVE here.
+		assertEqualStmt(stmt,(int)stmtulenval,(int)SQL_UNSPECIFIED);
+		// SQL_SENSITIVE
+		erg=SQLSetStmtAttr(stmt,SQL_ATTR_CURSOR_SENSITIVITY,
+				(SQLPOINTER)(uintptr_t)SQL_SENSITIVE,0);
+		assertSuccessStmt(stmt,erg);
+		erg=SQLGetStmtAttr(stmt,SQL_ATTR_CURSOR_SENSITIVITY,
+				(SQLPOINTER)&stmtulenval,0,&stmtstrlen);
+		assertSuccessStmt(stmt,erg);
+		// FIXME: should return SQL_SENSITIVE here (same issue).
+		assertEqualStmt(stmt,(int)stmtulenval,(int)SQL_UNSPECIFIED);
+		// SQL_UNSPECIFIED
+		erg=SQLSetStmtAttr(stmt,SQL_ATTR_CURSOR_SENSITIVITY,
+				(SQLPOINTER)(uintptr_t)SQL_UNSPECIFIED,0);
+		assertSuccessStmt(stmt,erg);
+		erg=SQLGetStmtAttr(stmt,SQL_ATTR_CURSOR_SENSITIVITY,
+				(SQLPOINTER)&stmtulenval,0,&stmtstrlen);
+		assertSuccessStmt(stmt,erg);
+		assertEqualStmt(stmt,(int)stmtulenval,(int)SQL_UNSPECIFIED);
+		// restore
+		erg=SQLSetStmtAttr(stmt,SQL_ATTR_CURSOR_SENSITIVITY,
+				(SQLPOINTER)(uintptr_t)stmtinitial,0);
+		assertSuccessStmt(stmt,erg);
+	} else {
+		// Oracle's ODBC driver does not implement
+		// SQL_ATTR_CURSOR_SENSITIVITY; same failure pattern as
+		// SQL_ATTR_CURSOR_SCROLLABLE.
+		erg=SQLGetStmtAttr(stmt,SQL_ATTR_CURSOR_SENSITIVITY,
+				(SQLPOINTER)&stmtinitial,0,&stmtstrlen);
+		assertFailureStmt(stmt,erg);
+		erg=SQLSetStmtAttr(stmt,SQL_ATTR_CURSOR_SENSITIVITY,
+				(SQLPOINTER)(uintptr_t)SQL_INSENSITIVE,0);
+		assertFailureStmt(stmt,erg);
+	}
+	stdoutput.printf("\n");
+	#endif
+
+
+	// SQL_ATTR_CURSOR_TYPE
+	// (drivers may substitute an unsupported cursor type and return
+	// SQL_SUCCESS_WITH_INFO with SQLSTATE 01S02; assert only success)
+	stdoutput.printf("  SQL_ATTR_CURSOR_TYPE\n");
+	erg=SQLGetStmtAttr(stmt,SQL_ATTR_CURSOR_TYPE,
+			(SQLPOINTER)&stmtinitial,0,&stmtstrlen);
+	assertSuccessStmt(stmt,erg);
+	assertEqualStmt(stmt,(int)stmtinitial,(int)SQL_CURSOR_FORWARD_ONLY);
+	erg=SQLSetStmtAttr(stmt,SQL_ATTR_CURSOR_TYPE,
+			(SQLPOINTER)(uintptr_t)SQL_CURSOR_STATIC,0);
+	assertSuccessStmt(stmt,erg);
+	erg=SQLSetStmtAttr(stmt,SQL_ATTR_CURSOR_TYPE,
+			(SQLPOINTER)(uintptr_t)SQL_CURSOR_DYNAMIC,0);
+	assertSuccessStmt(stmt,erg);
+	erg=SQLSetStmtAttr(stmt,SQL_ATTR_CURSOR_TYPE,
+			(SQLPOINTER)(uintptr_t)SQL_CURSOR_KEYSET_DRIVEN,0);
+	assertSuccessStmt(stmt,erg);
+	erg=SQLSetStmtAttr(stmt,SQL_ATTR_CURSOR_TYPE,
+			(SQLPOINTER)(uintptr_t)SQL_CURSOR_FORWARD_ONLY,0);
+	assertSuccessStmt(stmt,erg);
+	erg=SQLGetStmtAttr(stmt,SQL_ATTR_CURSOR_TYPE,
+			(SQLPOINTER)&stmtulenval,0,&stmtstrlen);
+	assertSuccessStmt(stmt,erg);
+	assertEqualStmt(stmt,(int)stmtulenval,(int)SQL_CURSOR_FORWARD_ONLY);
+	stdoutput.printf("\n");
+
+
+	// SQL_ATTR_CONCURRENCY
+	// (drivers may substitute; assert only success)
+	stdoutput.printf("  SQL_ATTR_CONCURRENCY\n");
+	erg=SQLGetStmtAttr(stmt,SQL_ATTR_CONCURRENCY,
+			(SQLPOINTER)&stmtinitial,0,&stmtstrlen);
+	assertSuccessStmt(stmt,erg);
+	assertEqualStmt(stmt,(int)stmtinitial,(int)SQL_CONCUR_READ_ONLY);
+	erg=SQLSetStmtAttr(stmt,SQL_ATTR_CONCURRENCY,
+			(SQLPOINTER)(uintptr_t)SQL_CONCUR_LOCK,0);
+	assertSuccessStmt(stmt,erg);
+	erg=SQLSetStmtAttr(stmt,SQL_ATTR_CONCURRENCY,
+			(SQLPOINTER)(uintptr_t)SQL_CONCUR_ROWVER,0);
+	assertSuccessStmt(stmt,erg);
+	erg=SQLSetStmtAttr(stmt,SQL_ATTR_CONCURRENCY,
+			(SQLPOINTER)(uintptr_t)SQL_CONCUR_VALUES,0);
+	assertSuccessStmt(stmt,erg);
+	erg=SQLSetStmtAttr(stmt,SQL_ATTR_CONCURRENCY,
+			(SQLPOINTER)(uintptr_t)SQL_CONCUR_READ_ONLY,0);
+	assertSuccessStmt(stmt,erg);
+	erg=SQLGetStmtAttr(stmt,SQL_ATTR_CONCURRENCY,
+			(SQLPOINTER)&stmtulenval,0,&stmtstrlen);
+	assertSuccessStmt(stmt,erg);
+	assertEqualStmt(stmt,(int)stmtulenval,(int)SQL_CONCUR_READ_ONLY);
+	stdoutput.printf("\n");
+
+
+	// SQL_ATTR_QUERY_TIMEOUT
+	stdoutput.printf("  SQL_ATTR_QUERY_TIMEOUT\n");
+	erg=SQLGetStmtAttr(stmt,SQL_ATTR_QUERY_TIMEOUT,
+			(SQLPOINTER)&stmtinitial,0,&stmtstrlen);
+	assertSuccessStmt(stmt,erg);
+	assertEqualStmt(stmt,(int)stmtinitial,0);
+	erg=SQLSetStmtAttr(stmt,SQL_ATTR_QUERY_TIMEOUT,
+			(SQLPOINTER)(uintptr_t)30,0);
+	assertSuccessStmt(stmt,erg);
+	erg=SQLGetStmtAttr(stmt,SQL_ATTR_QUERY_TIMEOUT,
+			(SQLPOINTER)&stmtulenval,0,&stmtstrlen);
+	assertSuccessStmt(stmt,erg);
+	if (issqlrelay) {
+		// FIXME: SQL Relay accepts the set silently but get always
+		// returns the hardcoded 0; should return 30.
+		assertEqualStmt(stmt,(int)stmtulenval,0);
+	} else {
+		assertEqualStmt(stmt,(int)stmtulenval,30);
+	}
+	// restore
+	erg=SQLSetStmtAttr(stmt,SQL_ATTR_QUERY_TIMEOUT,
+			(SQLPOINTER)(uintptr_t)stmtinitial,0);
+	assertSuccessStmt(stmt,erg);
+	stdoutput.printf("\n");
+
+
+	// SQL_ATTR_MAX_ROWS
+	stdoutput.printf("  SQL_ATTR_MAX_ROWS\n");
+	erg=SQLGetStmtAttr(stmt,SQL_ATTR_MAX_ROWS,
+			(SQLPOINTER)&stmtinitial,0,&stmtstrlen);
+	assertSuccessStmt(stmt,erg);
+	assertEqualStmt(stmt,(int)stmtinitial,0);
+	erg=SQLSetStmtAttr(stmt,SQL_ATTR_MAX_ROWS,
+			(SQLPOINTER)(uintptr_t)100,0);
+	assertSuccessStmt(stmt,erg);
+	erg=SQLGetStmtAttr(stmt,SQL_ATTR_MAX_ROWS,
+			(SQLPOINTER)&stmtulenval,0,&stmtstrlen);
+	assertSuccessStmt(stmt,erg);
+	if (issqlrelay) {
+		// FIXME: SQL Relay accepts the set silently but get always
+		// returns the hardcoded 0; should return 100.
+		assertEqualStmt(stmt,(int)stmtulenval,0);
+	} else {
+		assertEqualStmt(stmt,(int)stmtulenval,100);
+	}
+	erg=SQLSetStmtAttr(stmt,SQL_ATTR_MAX_ROWS,
+			(SQLPOINTER)(uintptr_t)stmtinitial,0);
+	assertSuccessStmt(stmt,erg);
+	stdoutput.printf("\n");
+
+
+	// SQL_ATTR_NOSCAN
+	stdoutput.printf("  SQL_ATTR_NOSCAN\n");
+	erg=SQLGetStmtAttr(stmt,SQL_ATTR_NOSCAN,
+			(SQLPOINTER)&stmtinitial,0,&stmtstrlen);
+	assertSuccessStmt(stmt,erg);
+	assertEqualStmt(stmt,(int)stmtinitial,(int)SQL_NOSCAN_OFF);
+	erg=SQLSetStmtAttr(stmt,SQL_ATTR_NOSCAN,
+			(SQLPOINTER)(uintptr_t)SQL_NOSCAN_ON,0);
+	assertSuccessStmt(stmt,erg);
+	erg=SQLGetStmtAttr(stmt,SQL_ATTR_NOSCAN,
+			(SQLPOINTER)&stmtulenval,0,&stmtstrlen);
+	assertSuccessStmt(stmt,erg);
+	if (issqlrelay) {
+		// FIXME: SQL Relay accepts the set silently but get always
+		// returns the hardcoded SQL_NOSCAN_OFF; should return
+		// SQL_NOSCAN_ON here.
+		assertEqualStmt(stmt,(int)stmtulenval,(int)SQL_NOSCAN_OFF);
+	} else {
+		assertEqualStmt(stmt,(int)stmtulenval,(int)SQL_NOSCAN_ON);
+	}
+	erg=SQLSetStmtAttr(stmt,SQL_ATTR_NOSCAN,
+			(SQLPOINTER)(uintptr_t)SQL_NOSCAN_OFF,0);
+	assertSuccessStmt(stmt,erg);
+	erg=SQLGetStmtAttr(stmt,SQL_ATTR_NOSCAN,
+			(SQLPOINTER)&stmtulenval,0,&stmtstrlen);
+	assertSuccessStmt(stmt,erg);
+	assertEqualStmt(stmt,(int)stmtulenval,(int)SQL_NOSCAN_OFF);
+	stdoutput.printf("\n");
+
+
+	// SQL_ATTR_MAX_LENGTH
+	stdoutput.printf("  SQL_ATTR_MAX_LENGTH\n");
+	erg=SQLGetStmtAttr(stmt,SQL_ATTR_MAX_LENGTH,
+			(SQLPOINTER)&stmtinitial,0,&stmtstrlen);
+	assertSuccessStmt(stmt,erg);
+	assertEqualStmt(stmt,(int)stmtinitial,0);
+	erg=SQLSetStmtAttr(stmt,SQL_ATTR_MAX_LENGTH,
+			(SQLPOINTER)(uintptr_t)4096,0);
+	assertSuccessStmt(stmt,erg);
+	erg=SQLGetStmtAttr(stmt,SQL_ATTR_MAX_LENGTH,
+			(SQLPOINTER)&stmtulenval,0,&stmtstrlen);
+	assertSuccessStmt(stmt,erg);
+	if (issqlrelay) {
+		// FIXME: SQL Relay accepts the set silently but get always
+		// returns the hardcoded 0; should return 4096.
+		assertEqualStmt(stmt,(int)stmtulenval,0);
+	} else {
+		assertEqualStmt(stmt,(int)stmtulenval,4096);
+	}
+	erg=SQLSetStmtAttr(stmt,SQL_ATTR_MAX_LENGTH,
+			(SQLPOINTER)(uintptr_t)stmtinitial,0);
+	assertSuccessStmt(stmt,erg);
+	stdoutput.printf("\n");
+
+
+	#if (ODBCVER >= 0x0300)
+	// SQL_ATTR_ASYNC_ENABLE
+	stdoutput.printf("  SQL_ATTR_ASYNC_ENABLE\n");
+	if (issqlrelay) {
+		erg=SQLGetStmtAttr(stmt,SQL_ATTR_ASYNC_ENABLE,
+				(SQLPOINTER)&stmtinitial,0,&stmtstrlen);
+		assertSuccessStmt(stmt,erg);
+		assertEqualStmt(stmt,(int)stmtinitial,
+					(int)SQL_ASYNC_ENABLE_OFF);
+		erg=SQLSetStmtAttr(stmt,SQL_ATTR_ASYNC_ENABLE,
+				(SQLPOINTER)(uintptr_t)SQL_ASYNC_ENABLE_ON,0);
+		assertSuccessStmt(stmt,erg);
+		erg=SQLGetStmtAttr(stmt,SQL_ATTR_ASYNC_ENABLE,
+				(SQLPOINTER)&stmtulenval,0,&stmtstrlen);
+		assertSuccessStmt(stmt,erg);
+		// FIXME: SQL Relay accepts the set silently but get always
+		// returns the hardcoded SQL_ASYNC_ENABLE_OFF; should return
+		// SQL_ASYNC_ENABLE_ON here.
+		assertEqualStmt(stmt,(int)stmtulenval,
+					(int)SQL_ASYNC_ENABLE_OFF);
+		erg=SQLSetStmtAttr(stmt,SQL_ATTR_ASYNC_ENABLE,
+				(SQLPOINTER)(uintptr_t)SQL_ASYNC_ENABLE_OFF,0);
+		assertSuccessStmt(stmt,erg);
+	} else {
+		// Oracle's ODBC driver returns SQL_ASYNC_ENABLE_OFF on get
+		// but doesn't support setting SQL_ATTR_ASYNC_ENABLE; set
+		// raises HYT00 "Timeout expired".
+		erg=SQLGetStmtAttr(stmt,SQL_ATTR_ASYNC_ENABLE,
+				(SQLPOINTER)&stmtinitial,0,&stmtstrlen);
+		assertSuccessStmt(stmt,erg);
+		assertEqualStmt(stmt,(int)stmtinitial,
+					(int)SQL_ASYNC_ENABLE_OFF);
+		erg=SQLSetStmtAttr(stmt,SQL_ATTR_ASYNC_ENABLE,
+				(SQLPOINTER)(uintptr_t)SQL_ASYNC_ENABLE_ON,0);
+		assertFailureStmt(stmt,erg);
+	}
+	stdoutput.printf("\n");
+	#endif
+
+
+	// SQL_ATTR_ROW_BIND_TYPE (SQL_BIND_BY_COLUMN == 0, or row length)
+	stdoutput.printf("  SQL_ATTR_ROW_BIND_TYPE\n");
+	erg=SQLGetStmtAttr(stmt,SQL_ATTR_ROW_BIND_TYPE,
+			(SQLPOINTER)&stmtinitial,0,&stmtstrlen);
+	assertSuccessStmt(stmt,erg);
+	assertEqualStmt(stmt,(int)stmtinitial,(int)SQL_BIND_BY_COLUMN);
+	// row-wise binding: any non-zero row length is spec-valid
+	erg=SQLSetStmtAttr(stmt,SQL_ATTR_ROW_BIND_TYPE,
+			(SQLPOINTER)(uintptr_t)64,0);
+	assertSuccessStmt(stmt,erg);
+	erg=SQLGetStmtAttr(stmt,SQL_ATTR_ROW_BIND_TYPE,
+			(SQLPOINTER)&stmtulenval,0,&stmtstrlen);
+	assertSuccessStmt(stmt,erg);
+	assertEqualStmt(stmt,(int)stmtulenval,64);
+	// back to column-wise
+	erg=SQLSetStmtAttr(stmt,SQL_ATTR_ROW_BIND_TYPE,
+			(SQLPOINTER)(uintptr_t)SQL_BIND_BY_COLUMN,0);
+	assertSuccessStmt(stmt,erg);
+	erg=SQLGetStmtAttr(stmt,SQL_ATTR_ROW_BIND_TYPE,
+			(SQLPOINTER)&stmtulenval,0,&stmtstrlen);
+	assertSuccessStmt(stmt,erg);
+	assertEqualStmt(stmt,(int)stmtulenval,(int)SQL_BIND_BY_COLUMN);
+	stdoutput.printf("\n");
+
+
+	// SQL_ATTR_KEYSET_SIZE
+	// (per ODBC spec, driver may silently ignore for non-keyset-driven
+	// cursors; Oracle leaves it at 0, SQL Relay round-trips the value)
+	stdoutput.printf("  SQL_ATTR_KEYSET_SIZE\n");
+	erg=SQLGetStmtAttr(stmt,SQL_ATTR_KEYSET_SIZE,
+			(SQLPOINTER)&stmtinitial,0,&stmtstrlen);
+	assertSuccessStmt(stmt,erg);
+	assertEqualStmt(stmt,(int)stmtinitial,0);
+	erg=SQLSetStmtAttr(stmt,SQL_ATTR_KEYSET_SIZE,
+			(SQLPOINTER)(uintptr_t)10,0);
+	assertSuccessStmt(stmt,erg);
+	erg=SQLGetStmtAttr(stmt,SQL_ATTR_KEYSET_SIZE,
+			(SQLPOINTER)&stmtulenval,0,&stmtstrlen);
+	assertSuccessStmt(stmt,erg);
+	assertTrueStmt(stmt,(stmtulenval==10 || stmtulenval==0));
+	erg=SQLSetStmtAttr(stmt,SQL_ATTR_KEYSET_SIZE,
+			(SQLPOINTER)(uintptr_t)stmtinitial,0);
+	assertSuccessStmt(stmt,erg);
+	stdoutput.printf("\n");
+
+
+	#if (ODBCVER >= 0x0300)
+	// SQL_ATTR_ROW_ARRAY_SIZE
+	stdoutput.printf("  SQL_ATTR_ROW_ARRAY_SIZE\n");
+	erg=SQLGetStmtAttr(stmt,SQL_ATTR_ROW_ARRAY_SIZE,
+			(SQLPOINTER)&stmtinitial,0,&stmtstrlen);
+	assertSuccessStmt(stmt,erg);
+	assertEqualStmt(stmt,(int)stmtinitial,1);
+	erg=SQLSetStmtAttr(stmt,SQL_ATTR_ROW_ARRAY_SIZE,
+			(SQLPOINTER)(uintptr_t)10,0);
+	assertSuccessStmt(stmt,erg);
+	erg=SQLGetStmtAttr(stmt,SQL_ATTR_ROW_ARRAY_SIZE,
+			(SQLPOINTER)&stmtulenval,0,&stmtstrlen);
+	assertSuccessStmt(stmt,erg);
+	assertEqualStmt(stmt,(int)stmtulenval,10);
+	erg=SQLSetStmtAttr(stmt,SQL_ATTR_ROW_ARRAY_SIZE,
+			(SQLPOINTER)(uintptr_t)stmtinitial,0);
+	assertSuccessStmt(stmt,erg);
+	stdoutput.printf("\n");
+	#endif
+
+
+	// SQL_ATTR_SIMULATE_CURSOR
+	stdoutput.printf("  SQL_ATTR_SIMULATE_CURSOR\n");
+	if (issqlrelay) {
+		erg=SQLGetStmtAttr(stmt,SQL_ATTR_SIMULATE_CURSOR,
+				(SQLPOINTER)&stmtinitial,0,&stmtstrlen);
+		assertSuccessStmt(stmt,erg);
+		erg=SQLSetStmtAttr(stmt,SQL_ATTR_SIMULATE_CURSOR,
+				(SQLPOINTER)(uintptr_t)SQL_SC_NON_UNIQUE,0);
+		assertSuccessStmt(stmt,erg);
+		erg=SQLGetStmtAttr(stmt,SQL_ATTR_SIMULATE_CURSOR,
+				(SQLPOINTER)&stmtulenval,0,&stmtstrlen);
+		assertSuccessStmt(stmt,erg);
+		// FIXME: SQL Relay accepts the set silently but get always
+		// returns the hardcoded SQL_SC_UNIQUE; should return
+		// SQL_SC_NON_UNIQUE here.
+		assertEqualStmt(stmt,(int)stmtulenval,(int)SQL_SC_UNIQUE);
+		erg=SQLSetStmtAttr(stmt,SQL_ATTR_SIMULATE_CURSOR,
+				(SQLPOINTER)(uintptr_t)SQL_SC_TRY_UNIQUE,0);
+		assertSuccessStmt(stmt,erg);
+		erg=SQLGetStmtAttr(stmt,SQL_ATTR_SIMULATE_CURSOR,
+				(SQLPOINTER)&stmtulenval,0,&stmtstrlen);
+		assertSuccessStmt(stmt,erg);
+		// FIXME: should return SQL_SC_TRY_UNIQUE here (same issue).
+		assertEqualStmt(stmt,(int)stmtulenval,(int)SQL_SC_UNIQUE);
+		erg=SQLSetStmtAttr(stmt,SQL_ATTR_SIMULATE_CURSOR,
+				(SQLPOINTER)(uintptr_t)SQL_SC_UNIQUE,0);
+		assertSuccessStmt(stmt,erg);
+		erg=SQLGetStmtAttr(stmt,SQL_ATTR_SIMULATE_CURSOR,
+				(SQLPOINTER)&stmtulenval,0,&stmtstrlen);
+		assertSuccessStmt(stmt,erg);
+		assertEqualStmt(stmt,(int)stmtulenval,(int)SQL_SC_UNIQUE);
+	} else {
+		// Oracle's ODBC driver does not implement
+		// SQL_ATTR_SIMULATE_CURSOR; both get and set raise
+		// HYT00 "Timeout expired".
+		erg=SQLGetStmtAttr(stmt,SQL_ATTR_SIMULATE_CURSOR,
+				(SQLPOINTER)&stmtinitial,0,&stmtstrlen);
+		assertFailureStmt(stmt,erg);
+		erg=SQLSetStmtAttr(stmt,SQL_ATTR_SIMULATE_CURSOR,
+				(SQLPOINTER)(uintptr_t)SQL_SC_UNIQUE,0);
+		assertFailureStmt(stmt,erg);
+	}
+	stdoutput.printf("\n");
+
+
+	// SQL_ATTR_RETRIEVE_DATA
+	stdoutput.printf("  SQL_ATTR_RETRIEVE_DATA\n");
+	erg=SQLGetStmtAttr(stmt,SQL_ATTR_RETRIEVE_DATA,
+			(SQLPOINTER)&stmtinitial,0,&stmtstrlen);
+	assertSuccessStmt(stmt,erg);
+	assertEqualStmt(stmt,(int)stmtinitial,(int)SQL_RD_ON);
+	// SQL_RD_OFF is spec-valid (skip fetch, just advance cursor)
+	erg=SQLSetStmtAttr(stmt,SQL_ATTR_RETRIEVE_DATA,
+			(SQLPOINTER)(uintptr_t)SQL_RD_OFF,0);
+	if (issqlrelay) {
+		// FIXME: SQL Relay rejects SQL_RD_OFF with HY024
+		// "Invalid attribute value"; should accept it.
+		assertFailureStmt(stmt,erg);
+	} else {
+		assertSuccessStmt(stmt,erg);
+	}
+	erg=SQLGetStmtAttr(stmt,SQL_ATTR_RETRIEVE_DATA,
+			(SQLPOINTER)&stmtulenval,0,&stmtstrlen);
+	assertSuccessStmt(stmt,erg);
+	if (issqlrelay) {
+		// FIXME: because the set failed, the value is still
+		// SQL_RD_ON; once the set is fixed, this should be
+		// SQL_RD_OFF.
+		assertEqualStmt(stmt,(int)stmtulenval,(int)SQL_RD_ON);
+	} else {
+		assertEqualStmt(stmt,(int)stmtulenval,(int)SQL_RD_OFF);
+	}
+	erg=SQLSetStmtAttr(stmt,SQL_ATTR_RETRIEVE_DATA,
+			(SQLPOINTER)(uintptr_t)SQL_RD_ON,0);
+	assertSuccessStmt(stmt,erg);
+	erg=SQLGetStmtAttr(stmt,SQL_ATTR_RETRIEVE_DATA,
+			(SQLPOINTER)&stmtulenval,0,&stmtstrlen);
+	assertSuccessStmt(stmt,erg);
+	assertEqualStmt(stmt,(int)stmtulenval,(int)SQL_RD_ON);
+	stdoutput.printf("\n");
+
+
+	// SQL_ATTR_USE_BOOKMARKS
+	stdoutput.printf("  SQL_ATTR_USE_BOOKMARKS\n");
+	erg=SQLGetStmtAttr(stmt,SQL_ATTR_USE_BOOKMARKS,
+			(SQLPOINTER)&stmtinitial,0,&stmtstrlen);
+	assertSuccessStmt(stmt,erg);
+	assertEqualStmt(stmt,(int)stmtinitial,(int)SQL_UB_OFF);
+	erg=SQLSetStmtAttr(stmt,SQL_ATTR_USE_BOOKMARKS,
+			(SQLPOINTER)(uintptr_t)SQL_UB_VARIABLE,0);
+	assertSuccessStmt(stmt,erg);
+	erg=SQLGetStmtAttr(stmt,SQL_ATTR_USE_BOOKMARKS,
+			(SQLPOINTER)&stmtulenval,0,&stmtstrlen);
+	assertSuccessStmt(stmt,erg);
+	if (issqlrelay) {
+		// FIXME: SQL Relay accepts the set silently but get always
+		// returns the hardcoded SQL_UB_OFF; should return
+		// SQL_UB_VARIABLE here.
+		assertEqualStmt(stmt,(int)stmtulenval,(int)SQL_UB_OFF);
+	} else {
+		assertEqualStmt(stmt,(int)stmtulenval,(int)SQL_UB_VARIABLE);
+	}
+	erg=SQLSetStmtAttr(stmt,SQL_ATTR_USE_BOOKMARKS,
+			(SQLPOINTER)(uintptr_t)SQL_UB_OFF,0);
+	assertSuccessStmt(stmt,erg);
+	erg=SQLGetStmtAttr(stmt,SQL_ATTR_USE_BOOKMARKS,
+			(SQLPOINTER)&stmtulenval,0,&stmtstrlen);
+	assertSuccessStmt(stmt,erg);
+	assertEqualStmt(stmt,(int)stmtulenval,(int)SQL_UB_OFF);
+	stdoutput.printf("\n");
+
+
+	// SQL_ATTR_ROW_NUMBER (read-only)
+	// Before a cursor is open, the spec allows either a successful get
+	// returning 0 or SQLSTATE 24000 "Invalid cursor state". Oracle
+	// returns 24000; SQL Relay returns success with 0. Both are legal,
+	// so we don't assert on the return code here, only that the call
+	// returns without crashing.
+	stdoutput.printf("  SQL_ATTR_ROW_NUMBER\n");
+	erg=SQLGetStmtAttr(stmt,SQL_ATTR_ROW_NUMBER,
+			(SQLPOINTER)&stmtulenval,0,&stmtstrlen);
+	// setting should fail (read-only)
+	erg=SQLSetStmtAttr(stmt,SQL_ATTR_ROW_NUMBER,
+			(SQLPOINTER)(uintptr_t)1,0);
+	assertFailureStmt(stmt,erg);
+	stdoutput.printf("\n");
+
+
+	#if (ODBCVER >= 0x0300)
+	// SQL_ATTR_METADATA_ID (inherits from connection, default SQL_FALSE)
+	stdoutput.printf("  SQL_ATTR_METADATA_ID\n");
+	if (issqlrelay) {
+		// FIXME: SQL Relay doesn't implement SQL_ATTR_METADATA_ID at
+		// the statement level; both get and set return HYC00
+		// "Optional field not implemented". Should support get/set
+		// and default to the connection-level value (SQL_FALSE).
+		erg=SQLGetStmtAttr(stmt,SQL_ATTR_METADATA_ID,
+				(SQLPOINTER)&stmtinitial,0,&stmtstrlen);
+		assertFailureStmt(stmt,erg);
+		erg=SQLSetStmtAttr(stmt,SQL_ATTR_METADATA_ID,
+				(SQLPOINTER)(uintptr_t)SQL_TRUE,0);
+		assertFailureStmt(stmt,erg);
+	} else {
+		erg=SQLGetStmtAttr(stmt,SQL_ATTR_METADATA_ID,
+				(SQLPOINTER)&stmtinitial,0,&stmtstrlen);
+		assertSuccessStmt(stmt,erg);
+		erg=SQLSetStmtAttr(stmt,SQL_ATTR_METADATA_ID,
+				(SQLPOINTER)(uintptr_t)SQL_TRUE,0);
+		assertSuccessStmt(stmt,erg);
+		erg=SQLGetStmtAttr(stmt,SQL_ATTR_METADATA_ID,
+				(SQLPOINTER)&stmtulenval,0,&stmtstrlen);
+		assertSuccessStmt(stmt,erg);
+		assertEqualStmt(stmt,(int)stmtulenval,(int)SQL_TRUE);
+		erg=SQLSetStmtAttr(stmt,SQL_ATTR_METADATA_ID,
+				(SQLPOINTER)(uintptr_t)SQL_FALSE,0);
+		assertSuccessStmt(stmt,erg);
+		erg=SQLGetStmtAttr(stmt,SQL_ATTR_METADATA_ID,
+				(SQLPOINTER)&stmtulenval,0,&stmtstrlen);
+		assertSuccessStmt(stmt,erg);
+		assertEqualStmt(stmt,(int)stmtulenval,(int)SQL_FALSE);
+		erg=SQLSetStmtAttr(stmt,SQL_ATTR_METADATA_ID,
+				(SQLPOINTER)(uintptr_t)stmtinitial,0);
+		assertSuccessStmt(stmt,erg);
+	}
+	stdoutput.printf("\n");
+
+
+	// SQL_ATTR_ENABLE_AUTO_IPD
+	stdoutput.printf("  SQL_ATTR_ENABLE_AUTO_IPD\n");
+	if (issqlrelay) {
+		erg=SQLGetStmtAttr(stmt,SQL_ATTR_ENABLE_AUTO_IPD,
+				(SQLPOINTER)&stmtinitial,0,&stmtstrlen);
+		assertSuccessStmt(stmt,erg);
+		erg=SQLSetStmtAttr(stmt,SQL_ATTR_ENABLE_AUTO_IPD,
+				(SQLPOINTER)(uintptr_t)SQL_TRUE,0);
+		assertSuccessStmt(stmt,erg);
+		erg=SQLGetStmtAttr(stmt,SQL_ATTR_ENABLE_AUTO_IPD,
+				(SQLPOINTER)&stmtulenval,0,&stmtstrlen);
+		assertSuccessStmt(stmt,erg);
+		assertEqualStmt(stmt,(int)stmtulenval,(int)SQL_TRUE);
+		erg=SQLSetStmtAttr(stmt,SQL_ATTR_ENABLE_AUTO_IPD,
+				(SQLPOINTER)(uintptr_t)SQL_FALSE,0);
+		assertSuccessStmt(stmt,erg);
+		erg=SQLGetStmtAttr(stmt,SQL_ATTR_ENABLE_AUTO_IPD,
+				(SQLPOINTER)&stmtulenval,0,&stmtstrlen);
+		assertSuccessStmt(stmt,erg);
+		// FIXME: SQL Relay accepts the set silently but get always
+		// returns the hardcoded SQL_TRUE; should return SQL_FALSE
+		// here.
+		assertEqualStmt(stmt,(int)stmtulenval,(int)SQL_TRUE);
+		erg=SQLSetStmtAttr(stmt,SQL_ATTR_ENABLE_AUTO_IPD,
+				(SQLPOINTER)(uintptr_t)stmtinitial,0);
+		assertSuccessStmt(stmt,erg);
+	} else {
+		// Oracle's ODBC driver does not implement
+		// SQL_ATTR_ENABLE_AUTO_IPD; both get and set raise
+		// HYT00 "Timeout expired".
+		erg=SQLGetStmtAttr(stmt,SQL_ATTR_ENABLE_AUTO_IPD,
+				(SQLPOINTER)&stmtinitial,0,&stmtstrlen);
+		assertFailureStmt(stmt,erg);
+		erg=SQLSetStmtAttr(stmt,SQL_ATTR_ENABLE_AUTO_IPD,
+				(SQLPOINTER)(uintptr_t)SQL_FALSE,0);
+		assertFailureStmt(stmt,erg);
+	}
+	stdoutput.printf("\n");
+
+
+	// SQL_ATTR_PARAMSET_SIZE
+	stdoutput.printf("  SQL_ATTR_PARAMSET_SIZE\n");
+	erg=SQLGetStmtAttr(stmt,SQL_ATTR_PARAMSET_SIZE,
+			(SQLPOINTER)&stmtinitial,0,&stmtstrlen);
+	assertSuccessStmt(stmt,erg);
+	assertEqualStmt(stmt,(int)stmtinitial,1);
+	erg=SQLSetStmtAttr(stmt,SQL_ATTR_PARAMSET_SIZE,
+			(SQLPOINTER)(uintptr_t)10,0);
+	if (issqlrelay) {
+		// FIXME: SQL Relay rejects any PARAMSET_SIZE other than 1
+		// with HY024 "Invalid attribute value"; should support
+		// array parameter binding.
+		assertFailureStmt(stmt,erg);
+	} else {
+		assertSuccessStmt(stmt,erg);
+	}
+	erg=SQLGetStmtAttr(stmt,SQL_ATTR_PARAMSET_SIZE,
+			(SQLPOINTER)&stmtulenval,0,&stmtstrlen);
+	assertSuccessStmt(stmt,erg);
+	if (issqlrelay) {
+		// FIXME: because the set failed, the value is still 1;
+		// once array parameter binding is supported this should
+		// be 10.
+		assertEqualStmt(stmt,(int)stmtulenval,1);
+	} else {
+		assertEqualStmt(stmt,(int)stmtulenval,10);
+	}
+	erg=SQLSetStmtAttr(stmt,SQL_ATTR_PARAMSET_SIZE,
+			(SQLPOINTER)(uintptr_t)stmtinitial,0);
+	assertSuccessStmt(stmt,erg);
+	stdoutput.printf("\n");
+
+
+	// SQL_ATTR_PARAM_BIND_TYPE (0 or row length)
+	stdoutput.printf("  SQL_ATTR_PARAM_BIND_TYPE\n");
+	// FIXME: SQL Relay does not implement SQL_ATTR_PARAM_BIND_TYPE in
+	// SQLGetStmtAttr (the case in the switch falls through without
+	// writing the out value and returns success); stmtinitial
+	// therefore carries whatever value it had. Set only accepts
+	// SQL_PARAM_BIND_BY_COLUMN (0), rejecting row-wise binding with
+	// HY024 "Invalid attribute value".
+	erg=SQLGetStmtAttr(stmt,SQL_ATTR_PARAM_BIND_TYPE,
+			(SQLPOINTER)&stmtinitial,0,&stmtstrlen);
+	assertSuccessStmt(stmt,erg);
+	if (!issqlrelay) {
+		assertEqualStmt(stmt,(int)stmtinitial,
+					(int)SQL_PARAM_BIND_BY_COLUMN);
+	}
+	// row-wise: spec allows any non-zero row length
+	erg=SQLSetStmtAttr(stmt,SQL_ATTR_PARAM_BIND_TYPE,
+			(SQLPOINTER)(uintptr_t)32,0);
+	if (issqlrelay) {
+		// FIXME: should accept row-wise bind length.
+		assertFailureStmt(stmt,erg);
+	} else {
+		assertSuccessStmt(stmt,erg);
+	}
+	erg=SQLGetStmtAttr(stmt,SQL_ATTR_PARAM_BIND_TYPE,
+			(SQLPOINTER)&stmtulenval,0,&stmtstrlen);
+	assertSuccessStmt(stmt,erg);
+	if (!issqlrelay) {
+		assertEqualStmt(stmt,(int)stmtulenval,32);
+	}
+	erg=SQLSetStmtAttr(stmt,SQL_ATTR_PARAM_BIND_TYPE,
+			(SQLPOINTER)(uintptr_t)SQL_PARAM_BIND_BY_COLUMN,0);
+	assertSuccessStmt(stmt,erg);
+	erg=SQLGetStmtAttr(stmt,SQL_ATTR_PARAM_BIND_TYPE,
+			(SQLPOINTER)&stmtulenval,0,&stmtstrlen);
+	assertSuccessStmt(stmt,erg);
+	if (!issqlrelay) {
+		assertEqualStmt(stmt,(int)stmtulenval,
+					(int)SQL_PARAM_BIND_BY_COLUMN);
+	}
+	stdoutput.printf("\n");
+
+
+	// SQL_ATTR_PARAM_BIND_OFFSET_PTR (pointer)
+	// FIXME: SQL Relay's SQLGetStmtAttr does not populate the out
+	// value for this attribute (the case in the switch is unhandled
+	// but returns success); the pointer round-trip comparison is
+	// therefore only asserted when running natively.
+	stdoutput.printf("  SQL_ATTR_PARAM_BIND_OFFSET_PTR\n");
+	erg=SQLGetStmtAttr(stmt,SQL_ATTR_PARAM_BIND_OFFSET_PTR,
+			(SQLPOINTER)&stmtptrinit,0,&stmtstrlen);
+	assertSuccessStmt(stmt,erg);
+	erg=SQLSetStmtAttr(stmt,SQL_ATTR_PARAM_BIND_OFFSET_PTR,
+			(SQLPOINTER)&stmtparambindoffset,SQL_IS_POINTER);
+	assertSuccessStmt(stmt,erg);
+	erg=SQLGetStmtAttr(stmt,SQL_ATTR_PARAM_BIND_OFFSET_PTR,
+			(SQLPOINTER)&stmtptrval,0,&stmtstrlen);
+	assertSuccessStmt(stmt,erg);
+	if (!issqlrelay) {
+		assertEqualStmt(stmt,
+			(int)(stmtptrval==(SQLPOINTER)&stmtparambindoffset),1);
+	}
+	erg=SQLSetStmtAttr(stmt,SQL_ATTR_PARAM_BIND_OFFSET_PTR,
+			(SQLPOINTER)stmtptrinit,SQL_IS_POINTER);
+	assertSuccessStmt(stmt,erg);
+	stdoutput.printf("\n");
+
+
+	// SQL_ATTR_PARAM_OPERATION_PTR (pointer)
+	// FIXME: SQL Relay's SQLGetStmtAttr does not populate the out
+	// value (same issue as SQL_ATTR_PARAM_BIND_OFFSET_PTR above).
+	stdoutput.printf("  SQL_ATTR_PARAM_OPERATION_PTR\n");
+	erg=SQLGetStmtAttr(stmt,SQL_ATTR_PARAM_OPERATION_PTR,
+			(SQLPOINTER)&stmtptrinit,0,&stmtstrlen);
+	assertSuccessStmt(stmt,erg);
+	erg=SQLSetStmtAttr(stmt,SQL_ATTR_PARAM_OPERATION_PTR,
+			(SQLPOINTER)stmtparamop,SQL_IS_POINTER);
+	assertSuccessStmt(stmt,erg);
+	erg=SQLGetStmtAttr(stmt,SQL_ATTR_PARAM_OPERATION_PTR,
+			(SQLPOINTER)&stmtptrval,0,&stmtstrlen);
+	assertSuccessStmt(stmt,erg);
+	if (!issqlrelay) {
+		assertEqualStmt(stmt,
+				(int)(stmtptrval==(SQLPOINTER)stmtparamop),1);
+	}
+	erg=SQLSetStmtAttr(stmt,SQL_ATTR_PARAM_OPERATION_PTR,
+			(SQLPOINTER)stmtptrinit,SQL_IS_POINTER);
+	assertSuccessStmt(stmt,erg);
+	stdoutput.printf("\n");
+
+
+	// SQL_ATTR_PARAM_STATUS_PTR (pointer)
+	// FIXME: SQL Relay's SQLGetStmtAttr does not populate the out
+	// value (same issue as SQL_ATTR_PARAM_BIND_OFFSET_PTR above).
+	stdoutput.printf("  SQL_ATTR_PARAM_STATUS_PTR\n");
+	erg=SQLGetStmtAttr(stmt,SQL_ATTR_PARAM_STATUS_PTR,
+			(SQLPOINTER)&stmtptrinit,0,&stmtstrlen);
+	assertSuccessStmt(stmt,erg);
+	erg=SQLSetStmtAttr(stmt,SQL_ATTR_PARAM_STATUS_PTR,
+			(SQLPOINTER)stmtparamstatus,SQL_IS_POINTER);
+	assertSuccessStmt(stmt,erg);
+	erg=SQLGetStmtAttr(stmt,SQL_ATTR_PARAM_STATUS_PTR,
+			(SQLPOINTER)&stmtptrval,0,&stmtstrlen);
+	assertSuccessStmt(stmt,erg);
+	if (!issqlrelay) {
+		assertEqualStmt(stmt,
+			(int)(stmtptrval==(SQLPOINTER)stmtparamstatus),1);
+	}
+	erg=SQLSetStmtAttr(stmt,SQL_ATTR_PARAM_STATUS_PTR,
+			(SQLPOINTER)stmtptrinit,SQL_IS_POINTER);
+	assertSuccessStmt(stmt,erg);
+	stdoutput.printf("\n");
+
+
+	// SQL_ATTR_PARAMS_PROCESSED_PTR (pointer)
+	// FIXME: SQL Relay's SQLGetStmtAttr does not populate the out
+	// value for this attribute even though the set side stores it
+	// in stmt->paramsprocessed; should round-trip the pointer.
+	stdoutput.printf("  SQL_ATTR_PARAMS_PROCESSED_PTR\n");
+	erg=SQLGetStmtAttr(stmt,SQL_ATTR_PARAMS_PROCESSED_PTR,
+			(SQLPOINTER)&stmtptrinit,0,&stmtstrlen);
+	assertSuccessStmt(stmt,erg);
+	erg=SQLSetStmtAttr(stmt,SQL_ATTR_PARAMS_PROCESSED_PTR,
+			(SQLPOINTER)&stmtparamsprocessed,SQL_IS_POINTER);
+	assertSuccessStmt(stmt,erg);
+	erg=SQLGetStmtAttr(stmt,SQL_ATTR_PARAMS_PROCESSED_PTR,
+			(SQLPOINTER)&stmtptrval,0,&stmtstrlen);
+	assertSuccessStmt(stmt,erg);
+	if (!issqlrelay) {
+		assertEqualStmt(stmt,
+			(int)(stmtptrval==(SQLPOINTER)&stmtparamsprocessed),1);
+	}
+	erg=SQLSetStmtAttr(stmt,SQL_ATTR_PARAMS_PROCESSED_PTR,
+			(SQLPOINTER)stmtptrinit,SQL_IS_POINTER);
+	assertSuccessStmt(stmt,erg);
+	stdoutput.printf("\n");
+
+
+	// SQL_ATTR_ROW_BIND_OFFSET_PTR (pointer)
+	// FIXME: SQL Relay's SQLGetStmtAttr does not populate the out
+	// value (same issue as SQL_ATTR_PARAM_BIND_OFFSET_PTR above).
+	stdoutput.printf("  SQL_ATTR_ROW_BIND_OFFSET_PTR\n");
+	erg=SQLGetStmtAttr(stmt,SQL_ATTR_ROW_BIND_OFFSET_PTR,
+			(SQLPOINTER)&stmtptrinit,0,&stmtstrlen);
+	assertSuccessStmt(stmt,erg);
+	erg=SQLSetStmtAttr(stmt,SQL_ATTR_ROW_BIND_OFFSET_PTR,
+			(SQLPOINTER)&stmtrowbindoffset,SQL_IS_POINTER);
+	assertSuccessStmt(stmt,erg);
+	erg=SQLGetStmtAttr(stmt,SQL_ATTR_ROW_BIND_OFFSET_PTR,
+			(SQLPOINTER)&stmtptrval,0,&stmtstrlen);
+	assertSuccessStmt(stmt,erg);
+	if (!issqlrelay) {
+		assertEqualStmt(stmt,
+			(int)(stmtptrval==(SQLPOINTER)&stmtrowbindoffset),1);
+	}
+	erg=SQLSetStmtAttr(stmt,SQL_ATTR_ROW_BIND_OFFSET_PTR,
+			(SQLPOINTER)stmtptrinit,SQL_IS_POINTER);
+	assertSuccessStmt(stmt,erg);
+	stdoutput.printf("\n");
+
+
+	// SQL_ATTR_ROW_OPERATION_PTR (pointer)
+	// FIXME: SQL Relay's SQLGetStmtAttr does not populate the out
+	// value (same issue as SQL_ATTR_PARAM_BIND_OFFSET_PTR above).
+	stdoutput.printf("  SQL_ATTR_ROW_OPERATION_PTR\n");
+	erg=SQLGetStmtAttr(stmt,SQL_ATTR_ROW_OPERATION_PTR,
+			(SQLPOINTER)&stmtptrinit,0,&stmtstrlen);
+	assertSuccessStmt(stmt,erg);
+	erg=SQLSetStmtAttr(stmt,SQL_ATTR_ROW_OPERATION_PTR,
+			(SQLPOINTER)stmtrowop,SQL_IS_POINTER);
+	assertSuccessStmt(stmt,erg);
+	erg=SQLGetStmtAttr(stmt,SQL_ATTR_ROW_OPERATION_PTR,
+			(SQLPOINTER)&stmtptrval,0,&stmtstrlen);
+	assertSuccessStmt(stmt,erg);
+	if (!issqlrelay) {
+		assertEqualStmt(stmt,
+				(int)(stmtptrval==(SQLPOINTER)stmtrowop),1);
+	}
+	erg=SQLSetStmtAttr(stmt,SQL_ATTR_ROW_OPERATION_PTR,
+			(SQLPOINTER)stmtptrinit,SQL_IS_POINTER);
+	assertSuccessStmt(stmt,erg);
+	stdoutput.printf("\n");
+
+
+	// SQL_ATTR_ROW_STATUS_PTR (pointer)
+	stdoutput.printf("  SQL_ATTR_ROW_STATUS_PTR\n");
+	erg=SQLGetStmtAttr(stmt,SQL_ATTR_ROW_STATUS_PTR,
+			(SQLPOINTER)&stmtptrinit,0,&stmtstrlen);
+	assertSuccessStmt(stmt,erg);
+	erg=SQLSetStmtAttr(stmt,SQL_ATTR_ROW_STATUS_PTR,
+			(SQLPOINTER)stmtrowstatus,SQL_IS_POINTER);
+	assertSuccessStmt(stmt,erg);
+	erg=SQLGetStmtAttr(stmt,SQL_ATTR_ROW_STATUS_PTR,
+			(SQLPOINTER)&stmtptrval,0,&stmtstrlen);
+	assertSuccessStmt(stmt,erg);
+	assertEqualStmt(stmt,(int)(stmtptrval==(SQLPOINTER)stmtrowstatus),1);
+	erg=SQLSetStmtAttr(stmt,SQL_ATTR_ROW_STATUS_PTR,
+			(SQLPOINTER)stmtptrinit,SQL_IS_POINTER);
+	assertSuccessStmt(stmt,erg);
+	stdoutput.printf("\n");
+
+
+	// SQL_ATTR_ROWS_FETCHED_PTR (pointer)
+	stdoutput.printf("  SQL_ATTR_ROWS_FETCHED_PTR\n");
+	erg=SQLGetStmtAttr(stmt,SQL_ATTR_ROWS_FETCHED_PTR,
+			(SQLPOINTER)&stmtptrinit,0,&stmtstrlen);
+	assertSuccessStmt(stmt,erg);
+	erg=SQLSetStmtAttr(stmt,SQL_ATTR_ROWS_FETCHED_PTR,
+			(SQLPOINTER)&stmtrowsfetched,SQL_IS_POINTER);
+	assertSuccessStmt(stmt,erg);
+	erg=SQLGetStmtAttr(stmt,SQL_ATTR_ROWS_FETCHED_PTR,
+			(SQLPOINTER)&stmtptrval,0,&stmtstrlen);
+	assertSuccessStmt(stmt,erg);
+	assertEqualStmt(stmt,
+			(int)(stmtptrval==(SQLPOINTER)&stmtrowsfetched),1);
+	erg=SQLSetStmtAttr(stmt,SQL_ATTR_ROWS_FETCHED_PTR,
+			(SQLPOINTER)stmtptrinit,SQL_IS_POINTER);
+	assertSuccessStmt(stmt,erg);
+	stdoutput.printf("\n");
+
+
+	// SQL_ATTR_FETCH_BOOKMARK_PTR (pointer)
+	// FIXME: SQL Relay's SQLGetStmtAttr does not populate the out
+	// value (same issue as SQL_ATTR_PARAM_BIND_OFFSET_PTR above).
+	stdoutput.printf("  SQL_ATTR_FETCH_BOOKMARK_PTR\n");
+	erg=SQLGetStmtAttr(stmt,SQL_ATTR_FETCH_BOOKMARK_PTR,
+			(SQLPOINTER)&stmtptrinit,0,&stmtstrlen);
+	assertSuccessStmt(stmt,erg);
+	erg=SQLSetStmtAttr(stmt,SQL_ATTR_FETCH_BOOKMARK_PTR,
+			(SQLPOINTER)&stmtbookmark,SQL_IS_POINTER);
+	assertSuccessStmt(stmt,erg);
+	erg=SQLGetStmtAttr(stmt,SQL_ATTR_FETCH_BOOKMARK_PTR,
+			(SQLPOINTER)&stmtptrval,0,&stmtstrlen);
+	assertSuccessStmt(stmt,erg);
+	if (!issqlrelay) {
+		assertEqualStmt(stmt,
+			(int)(stmtptrval==(SQLPOINTER)&stmtbookmark),1);
+	}
+	erg=SQLSetStmtAttr(stmt,SQL_ATTR_FETCH_BOOKMARK_PTR,
+			(SQLPOINTER)stmtptrinit,SQL_IS_POINTER);
+	assertSuccessStmt(stmt,erg);
+	stdoutput.printf("\n");
+	#endif
+
+
+	// invalid attribute identifier
+	// (spec: get/set with an unrecognized attribute must return
+	// SQLSTATE HY092 "Invalid attribute/option identifier")
+	stdoutput.printf("  invalid attribute\n");
+	erg=SQLGetStmtAttr(stmt,99999,
+			(SQLPOINTER)&stmtulenval,0,&stmtstrlen);
+	assertFailureStmt(stmt,erg);
+	erg=SQLSetStmtAttr(stmt,99999,
+			(SQLPOINTER)(uintptr_t)0,0);
+	assertFailureStmt(stmt,erg);
+	stdoutput.printf("\n");
 
 
 
