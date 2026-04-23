@@ -6481,7 +6481,48 @@ int main(int argc, char **argv) {
 
 
 	// nested selects
-	// FIXME:...
+	stdoutput.printf("NESTED SELECTS: \n");
+	erg=SQLFreeStmt(stmt,SQL_CLOSE);
+	erg=SQLFreeStmt(stmt,SQL_UNBIND);
+	// save initial SQL_ROWSET_SIZE so we can restore it; the unixODBC
+	// Driver Manager rejects a set to 0 with HY024.
+	erg=SQLGetStmtAttr(stmt,SQL_ROWSET_SIZE,
+			(SQLPOINTER)&stmtinitial,0,&stmtstrlen);
+	assertSuccessStmt(stmt,erg);
+	erg=SQLSetStmtAttr(stmt,SQL_ROWSET_SIZE,
+			(SQLPOINTER)(uintptr_t)1,0);
+	assertSuccessStmt(stmt,erg);
+	erg=SQLExecDirect(stmt,(SQLCHAR *)
+			"select * from testtable",SQL_NTS);
+	assertSuccessStmt(stmt,erg);
+	int	nestedrows=0;
+	for (;;) {
+		erg=SQLFetch(stmt);
+		if (erg==SQL_NO_DATA) {
+			break;
+		}
+		assertSuccessStmt(stmt,erg);
+		SQLHSTMT	nestedstmt;
+		erg=SQLAllocHandle(SQL_HANDLE_STMT,dbc,&nestedstmt);
+		assertSuccessDbc(dbc,erg);
+		erg=SQLSetStmtAttr(nestedstmt,SQL_ROWSET_SIZE,
+				(SQLPOINTER)(uintptr_t)1,0);
+		assertSuccessStmt(nestedstmt,erg);
+		erg=SQLExecDirect(nestedstmt,(SQLCHAR *)
+				"select * from testtable",SQL_NTS);
+		assertSuccessStmt(nestedstmt,erg);
+		erg=SQLFreeHandle(SQL_HANDLE_STMT,nestedstmt);
+		assertSuccessStmt(nestedstmt,erg);
+		nestedrows++;
+	}
+	assertEqualStmt(stmt,nestedrows,8);
+	// restore the initial rowset size
+	if (stmtinitial>0) {
+		erg=SQLSetStmtAttr(stmt,SQL_ROWSET_SIZE,
+				(SQLPOINTER)(uintptr_t)stmtinitial,0);
+		assertSuccessStmt(stmt,erg);
+	}
+	stdoutput.printf("\n");
 
 
 
@@ -6631,107 +6672,1261 @@ int main(int argc, char **argv) {
 
 
 	// null and empty lobs
-	// FIXME:...
+	stdoutput.printf("NULL AND EMPTY LOBS: \n");
+	erg=SQLFreeStmt(stmt,SQL_CLOSE);
+	erg=SQLFreeStmt(stmt,SQL_UNBIND);
+	erg=SQLFreeStmt(stmt,SQL_RESET_PARAMS);
+	SQLExecDirect(stmt,(SQLCHAR *)"drop table testtable",SQL_NTS);
+	erg=SQLExecDirect(stmt,(SQLCHAR *)
+		"create table testtable ("
+		"	testclob1 clob, "
+		"	testclob2 clob, "
+		"	testblob1 blob, "
+		"	testblob2 blob)",
+		SQL_NTS);
+	assertSuccessStmt(stmt,erg);
+	if (issqlrelay) {
+		erg=SQLPrepare(stmt,(SQLCHAR *)
+			"insert into testtable values (:1,:2,:3,:4)",
+			SQL_NTS);
+	} else {
+		erg=SQLPrepare(stmt,(SQLCHAR *)
+			"insert into testtable values (?,?,?,?)",
+			SQL_NTS);
+	}
+	assertSuccessStmt(stmt,erg);
+	SQLCHAR		emptylob[1]={0};
+	SQLLEN		emptyloblen=0;
+	SQLLEN		nullloblen=SQL_NULL_DATA;
+	erg=SQLBindParameter(stmt,1,SQL_PARAM_INPUT,
+				SQL_C_CHAR,SQL_LONGVARCHAR,
+				0,0,
+				(SQLPOINTER)emptylob,
+				0,&emptyloblen);
+	assertSuccessStmt(stmt,erg);
+	erg=SQLBindParameter(stmt,2,SQL_PARAM_INPUT,
+				SQL_C_CHAR,SQL_LONGVARCHAR,
+				0,0,
+				(SQLPOINTER)emptylob,
+				0,&nullloblen);
+	assertSuccessStmt(stmt,erg);
+	erg=SQLBindParameter(stmt,3,SQL_PARAM_INPUT,
+				SQL_C_BINARY,SQL_LONGVARBINARY,
+				0,0,
+				(SQLPOINTER)emptylob,
+				0,&emptyloblen);
+	assertSuccessStmt(stmt,erg);
+	erg=SQLBindParameter(stmt,4,SQL_PARAM_INPUT,
+				SQL_C_BINARY,SQL_LONGVARBINARY,
+				0,0,
+				(SQLPOINTER)emptylob,
+				0,&nullloblen);
+	assertSuccessStmt(stmt,erg);
+	erg=SQLExecute(stmt);
+	assertSuccessStmt(stmt,erg);
+	erg=SQLFreeStmt(stmt,SQL_CLOSE);
+	erg=SQLFreeStmt(stmt,SQL_UNBIND);
+	erg=SQLFreeStmt(stmt,SQL_RESET_PARAMS);
+	erg=SQLExecDirect(stmt,(SQLCHAR *)
+		"select * from testtable",SQL_NTS);
+	assertSuccessStmt(stmt,erg);
+	SQLCHAR		lobclob1[1024];
+	SQLLEN		lobclob1ind;
+	SQLCHAR		lobclob2[1024];
+	SQLLEN		lobclob2ind;
+	SQLCHAR		lobblob1[1024];
+	SQLLEN		lobblob1ind;
+	SQLCHAR		lobblob2[1024];
+	SQLLEN		lobblob2ind;
+	erg=SQLBindCol(stmt,1,SQL_C_CHAR,
+			lobclob1,sizeof(lobclob1),&lobclob1ind);
+	erg=SQLBindCol(stmt,2,SQL_C_CHAR,
+			lobclob2,sizeof(lobclob2),&lobclob2ind);
+	erg=SQLBindCol(stmt,3,SQL_C_BINARY,
+			lobblob1,sizeof(lobblob1),&lobblob1ind);
+	erg=SQLBindCol(stmt,4,SQL_C_BINARY,
+			lobblob2,sizeof(lobblob2),&lobblob2ind);
+	erg=SQLFetch(stmt);
+	assertSuccessStmt(stmt,erg);
+	// Oracle's legacy "empty string == NULL" semantics apply to CLOB
+	// (and, under the native driver, BLOB), so a zero-length value
+	// doesn't round-trip as an empty LOB; it comes back as NULL.
+	if (issqlrelay) {
+		// FIXME: the SQL Relay C++ client preserves empty CLOBs,
+		// but going through the SQL Relay ODBC driver an empty
+		// CLOB still comes back as NULL. The driver should
+		// preserve the empty-vs-NULL distinction for CLOB the
+		// same way it already does for BLOB.
+		assertEqualStmt(stmt,(int)lobclob1ind,(int)SQL_NULL_DATA);
+		assertEqualStmt(stmt,(int)lobclob2ind,(int)SQL_NULL_DATA);
+		assertEqualStmt(stmt,(int)lobblob1ind,0);
+		assertEqualStmt(stmt,(int)lobblob2ind,(int)SQL_NULL_DATA);
+	} else {
+		assertEqualStmt(stmt,(int)lobclob1ind,(int)SQL_NULL_DATA);
+		assertEqualStmt(stmt,(int)lobclob2ind,(int)SQL_NULL_DATA);
+		assertEqualStmt(stmt,(int)lobblob1ind,(int)SQL_NULL_DATA);
+		assertEqualStmt(stmt,(int)lobblob2ind,(int)SQL_NULL_DATA);
+	}
+	erg=SQLFreeStmt(stmt,SQL_CLOSE);
+	erg=SQLFreeStmt(stmt,SQL_UNBIND);
+	erg=SQLFreeStmt(stmt,SQL_RESET_PARAMS);
+	erg=SQLExecDirect(stmt,(SQLCHAR *)
+		"drop table testtable",SQL_NTS);
+	assertSuccessStmt(stmt,erg);
+	stdoutput.printf("\n");
 
 
 
 	// long lobs
-	// FIXME:...
+	stdoutput.printf("LONG LOBS: \n");
+	erg=SQLFreeStmt(stmt,SQL_CLOSE);
+	erg=SQLFreeStmt(stmt,SQL_UNBIND);
+	erg=SQLFreeStmt(stmt,SQL_RESET_PARAMS);
+	SQLExecDirect(stmt,(SQLCHAR *)"drop table testtable",SQL_NTS);
+	erg=SQLExecDirect(stmt,(SQLCHAR *)
+		"create table testtable ("
+		"	testclob clob, "
+		"	testblob blob)",
+		SQL_NTS);
+	assertSuccessStmt(stmt,erg);
+	#define LARGE_BUFFER_LENGTH 8192
+	SQLCHAR	largebuffer[LARGE_BUFFER_LENGTH+1];
+	for (int i=0; i<LARGE_BUFFER_LENGTH; i++) {
+		largebuffer[i]='C';
+	}
+	largebuffer[LARGE_BUFFER_LENGTH]='\0';
+	if (issqlrelay) {
+		erg=SQLPrepare(stmt,(SQLCHAR *)
+			"insert into testtable values (:1,:2)",
+			SQL_NTS);
+	} else {
+		erg=SQLPrepare(stmt,(SQLCHAR *)
+			"insert into testtable values (?,?)",
+			SQL_NTS);
+	}
+	assertSuccessStmt(stmt,erg);
+	SQLLEN	largecloblen=LARGE_BUFFER_LENGTH;
+	SQLLEN	largebloblen=LARGE_BUFFER_LENGTH;
+	erg=SQLBindParameter(stmt,1,SQL_PARAM_INPUT,
+				SQL_C_CHAR,SQL_LONGVARCHAR,
+				LARGE_BUFFER_LENGTH,0,
+				(SQLPOINTER)largebuffer,
+				LARGE_BUFFER_LENGTH,&largecloblen);
+	assertSuccessStmt(stmt,erg);
+	erg=SQLBindParameter(stmt,2,SQL_PARAM_INPUT,
+				SQL_C_BINARY,SQL_LONGVARBINARY,
+				LARGE_BUFFER_LENGTH,0,
+				(SQLPOINTER)largebuffer,
+				LARGE_BUFFER_LENGTH,&largebloblen);
+	assertSuccessStmt(stmt,erg);
+	erg=SQLExecute(stmt);
+	assertSuccessStmt(stmt,erg);
+	erg=SQLFreeStmt(stmt,SQL_CLOSE);
+	erg=SQLFreeStmt(stmt,SQL_UNBIND);
+	erg=SQLFreeStmt(stmt,SQL_RESET_PARAMS);
+	erg=SQLExecDirect(stmt,(SQLCHAR *)
+		"select * from testtable",SQL_NTS);
+	assertSuccessStmt(stmt,erg);
+	SQLCHAR	largeclobout[LARGE_BUFFER_LENGTH+1];
+	SQLLEN	largeclobind;
+	SQLCHAR	largeblobout[LARGE_BUFFER_LENGTH+1];
+	SQLLEN	largeblobind;
+	erg=SQLBindCol(stmt,1,SQL_C_CHAR,
+			largeclobout,sizeof(largeclobout),&largeclobind);
+	erg=SQLBindCol(stmt,2,SQL_C_BINARY,
+			largeblobout,sizeof(largeblobout),&largeblobind);
+	erg=SQLFetch(stmt);
+	assertSuccessStmt(stmt,erg);
+	assertEqualStmt(stmt,(int)largeclobind,LARGE_BUFFER_LENGTH);
+	assertTrueStmt(stmt,
+		!bytestring::compare(largeclobout,largebuffer,
+						LARGE_BUFFER_LENGTH));
+	assertEqualStmt(stmt,(int)largeblobind,LARGE_BUFFER_LENGTH);
+	assertTrueStmt(stmt,
+		!bytestring::compare(largeblobout,largebuffer,
+						LARGE_BUFFER_LENGTH));
+	erg=SQLFreeStmt(stmt,SQL_CLOSE);
+	erg=SQLFreeStmt(stmt,SQL_UNBIND);
+	erg=SQLFreeStmt(stmt,SQL_RESET_PARAMS);
+	erg=SQLExecDirect(stmt,(SQLCHAR *)
+		"drop table testtable",SQL_NTS);
+	assertSuccessStmt(stmt,erg);
+	stdoutput.printf("\n");
 
 
 
 	// output bind by position
-	// FIXME:...
+	stdoutput.printf("OUTPUT BIND BY POSITION: \n");
+	erg=SQLFreeStmt(stmt,SQL_CLOSE);
+	erg=SQLFreeStmt(stmt,SQL_UNBIND);
+	erg=SQLFreeStmt(stmt,SQL_RESET_PARAMS);
+	erg=SQLPrepare(stmt,(SQLCHAR *)
+		"begin "
+		"	select 1 into :1 from dual; "
+		"	select 'hello' into :2 from dual; "
+		"	select 2.5 into :3 from dual; "
+		"	select '03-FEB-2001' into :4 from dual; "
+		"	select null into :5 from dual; "
+		"end;",
+		SQL_NTS);
+	assertSuccessStmt(stmt,erg);
+	erg=SQLNumParams(stmt,&bindvarcount);
+	assertSuccessStmt(stmt,erg);
+	assertEqualStmt(stmt,(int)bindvarcount,5);
+	SQLINTEGER	obnumvar=0;
+	SQLLEN		obnumvarind=0;
+	SQLCHAR		obstringvar[11]={0};
+	SQLLEN		obstringvarind=10;
+	SQLDOUBLE	obfloatvar=0.0;
+	SQLLEN		obfloatvarind=0;
+	SQLCHAR		obdatevar[16]={0};
+	SQLLEN		obdatevarind=sizeof(obdatevar);
+	SQLCHAR		obnullvar[11]={0};
+	SQLLEN		obnullvarind=10;
+	erg=SQLBindParameter(stmt,1,SQL_PARAM_OUTPUT,
+				SQL_C_SLONG,SQL_INTEGER,
+				0,0,
+				(SQLPOINTER)&obnumvar,
+				sizeof(obnumvar),&obnumvarind);
+	assertSuccessStmt(stmt,erg);
+	erg=SQLBindParameter(stmt,2,SQL_PARAM_OUTPUT,
+				SQL_C_CHAR,SQL_VARCHAR,
+				10,0,
+				(SQLPOINTER)obstringvar,
+				sizeof(obstringvar),&obstringvarind);
+	assertSuccessStmt(stmt,erg);
+	erg=SQLBindParameter(stmt,3,SQL_PARAM_OUTPUT,
+				SQL_C_DOUBLE,SQL_DOUBLE,
+				0,0,
+				(SQLPOINTER)&obfloatvar,
+				sizeof(obfloatvar),&obfloatvarind);
+	assertSuccessStmt(stmt,erg);
+	erg=SQLBindParameter(stmt,4,SQL_PARAM_OUTPUT,
+				SQL_C_CHAR,SQL_VARCHAR,
+				15,0,
+				(SQLPOINTER)obdatevar,
+				sizeof(obdatevar),&obdatevarind);
+	assertSuccessStmt(stmt,erg);
+	erg=SQLBindParameter(stmt,5,SQL_PARAM_OUTPUT,
+				SQL_C_CHAR,SQL_VARCHAR,
+				10,0,
+				(SQLPOINTER)obnullvar,
+				sizeof(obnullvar),&obnullvarind);
+	assertSuccessStmt(stmt,erg);
+	erg=SQLExecute(stmt);
+	if (issqlrelay) {
+		// FIXME: SQL Relay's ODBC driver mangles PL/SQL anonymous
+		// blocks containing bind variables — the bind placeholders
+		// are stripped from the query that reaches Oracle, causing
+		// ORA-06550 / PLS-00103. The sqlrelay C++ API handles the
+		// same query correctly, so the fix belongs in the ODBC
+		// driver's prepare/execute path for PL/SQL.
+		assertFailureStmt(stmt,erg);
+	} else {
+		assertSuccessStmt(stmt,erg);
+		assertEqualStmt(stmt,(int)obnumvar,1);
+		assertEqualStmt(stmt,(const char *)obstringvar,"hello");
+		assertTrueStmt(stmt,obfloatvar==2.5);
+		assertEqualStmt(stmt,(const char *)obdatevar,"03-FEB-2001");
+		assertEqualStmt(stmt,(int)obnullvarind,(int)SQL_NULL_DATA);
+	}
+	stdoutput.printf("\n");
 
 
 
 	// lob output bind
-	// FIXME:...
+	stdoutput.printf("LOB OUTPUT BIND: \n");
+	erg=SQLFreeStmt(stmt,SQL_CLOSE);
+	erg=SQLFreeStmt(stmt,SQL_UNBIND);
+	erg=SQLFreeStmt(stmt,SQL_RESET_PARAMS);
+	SQLExecDirect(stmt,(SQLCHAR *)"drop table testtable",SQL_NTS);
+	erg=SQLExecDirect(stmt,(SQLCHAR *)
+		"create table testtable ("
+		"	testclob clob, "
+		"	testblob blob)",
+		SQL_NTS);
+	assertSuccessStmt(stmt,erg);
+	if (issqlrelay) {
+		erg=SQLPrepare(stmt,(SQLCHAR *)
+			"insert into testtable values ('hello',:1)",
+			SQL_NTS);
+	} else {
+		erg=SQLPrepare(stmt,(SQLCHAR *)
+			"insert into testtable values ('hello',?)",
+			SQL_NTS);
+	}
+	assertSuccessStmt(stmt,erg);
+	SQLCHAR		lobinval[6]="hello";
+	SQLLEN		lobinlen=5;
+	erg=SQLBindParameter(stmt,1,SQL_PARAM_INPUT,
+				SQL_C_BINARY,SQL_LONGVARBINARY,
+				0,0,
+				(SQLPOINTER)lobinval,
+				lobinlen,&lobinlen);
+	assertSuccessStmt(stmt,erg);
+	erg=SQLExecute(stmt);
+	assertSuccessStmt(stmt,erg);
+	erg=SQLFreeStmt(stmt,SQL_CLOSE);
+	erg=SQLFreeStmt(stmt,SQL_UNBIND);
+	erg=SQLFreeStmt(stmt,SQL_RESET_PARAMS);
+	erg=SQLPrepare(stmt,(SQLCHAR *)
+		"begin "
+		"	select testclob into :1 from testtable; "
+		"	select testblob into :2 from testtable; "
+		"end;",
+		SQL_NTS);
+	assertSuccessStmt(stmt,erg);
+	SQLCHAR		lobclobout[1024]={0};
+	SQLLEN		lobclobout_ind=sizeof(lobclobout);
+	SQLCHAR		lobblobout[1024]={0};
+	SQLLEN		lobblobout_ind=sizeof(lobblobout);
+	erg=SQLBindParameter(stmt,1,SQL_PARAM_OUTPUT,
+				SQL_C_CHAR,SQL_LONGVARCHAR,
+				sizeof(lobclobout),0,
+				(SQLPOINTER)lobclobout,
+				sizeof(lobclobout),&lobclobout_ind);
+	assertSuccessStmt(stmt,erg);
+	erg=SQLBindParameter(stmt,2,SQL_PARAM_OUTPUT,
+				SQL_C_BINARY,SQL_LONGVARBINARY,
+				sizeof(lobblobout),0,
+				(SQLPOINTER)lobblobout,
+				sizeof(lobblobout),&lobblobout_ind);
+	assertSuccessStmt(stmt,erg);
+	erg=SQLExecute(stmt);
+	if (issqlrelay) {
+		// FIXME: same PL/SQL-with-output-binds bug as OUTPUT BIND
+		// BY POSITION above.
+		assertFailureStmt(stmt,erg);
+	} else {
+		assertSuccessStmt(stmt,erg);
+		assertEqualStmt(stmt,(int)lobclobout_ind,5);
+		assertTrueStmt(stmt,
+			!bytestring::compare(lobclobout,"hello",5));
+		assertEqualStmt(stmt,(int)lobblobout_ind,5);
+		assertTrueStmt(stmt,
+			!bytestring::compare(lobblobout,"hello",5));
+	}
+	erg=SQLFreeStmt(stmt,SQL_CLOSE);
+	erg=SQLFreeStmt(stmt,SQL_UNBIND);
+	erg=SQLFreeStmt(stmt,SQL_RESET_PARAMS);
+	erg=SQLExecDirect(stmt,(SQLCHAR *)
+		"drop table testtable",SQL_NTS);
+	assertSuccessStmt(stmt,erg);
+	stdoutput.printf("\n");
 
 
 
 	// long output bind
-	// FIXME:...
+	stdoutput.printf("LONG OUTPUT BIND: \n");
+	erg=SQLFreeStmt(stmt,SQL_CLOSE);
+	erg=SQLFreeStmt(stmt,SQL_UNBIND);
+	erg=SQLFreeStmt(stmt,SQL_RESET_PARAMS);
+	for (int i=0; i<LARGE_BUFFER_LENGTH; i++) {
+		largebuffer[i]='C';
+	}
+	largebuffer[LARGE_BUFFER_LENGTH]='\0';
+	char	longoutquery[LARGE_BUFFER_LENGTH+64];
+	charstring::printf(longoutquery,sizeof(longoutquery),
+			"begin :1:='%s'; end;",largebuffer);
+	erg=SQLPrepare(stmt,(SQLCHAR *)longoutquery,SQL_NTS);
+	assertSuccessStmt(stmt,erg);
+	SQLCHAR	longoutval[LARGE_BUFFER_LENGTH+1]={0};
+	SQLLEN	longoutind=sizeof(longoutval);
+	erg=SQLBindParameter(stmt,1,SQL_PARAM_OUTPUT,
+				SQL_C_CHAR,SQL_LONGVARCHAR,
+				LARGE_BUFFER_LENGTH,0,
+				(SQLPOINTER)longoutval,
+				sizeof(longoutval),&longoutind);
+	assertSuccessStmt(stmt,erg);
+	erg=SQLExecute(stmt);
+	if (issqlrelay) {
+		// FIXME: same PL/SQL-with-output-binds bug as OUTPUT BIND
+		// BY POSITION above.
+		assertFailureStmt(stmt,erg);
+	} else {
+		assertSuccessStmt(stmt,erg);
+		assertEqualStmt(stmt,(int)longoutind,LARGE_BUFFER_LENGTH);
+		assertTrueStmt(stmt,
+			!bytestring::compare(longoutval,largebuffer,
+						LARGE_BUFFER_LENGTH));
+	}
+	stdoutput.printf("\n");
 
 
 
 	// negative input bind
-	// FIXME:...
+	stdoutput.printf("NEGATIVE INPUT BIND: \n");
+	erg=SQLFreeStmt(stmt,SQL_CLOSE);
+	erg=SQLFreeStmt(stmt,SQL_UNBIND);
+	erg=SQLFreeStmt(stmt,SQL_RESET_PARAMS);
+	SQLExecDirect(stmt,(SQLCHAR *)"drop table testtable",SQL_NTS);
+	erg=SQLExecDirect(stmt,(SQLCHAR *)
+		"create table testtable (testval number)",SQL_NTS);
+	assertSuccessStmt(stmt,erg);
+	if (issqlrelay) {
+		erg=SQLPrepare(stmt,(SQLCHAR *)
+			"insert into testtable values (:1)",SQL_NTS);
+	} else {
+		erg=SQLPrepare(stmt,(SQLCHAR *)
+			"insert into testtable values (?)",SQL_NTS);
+	}
+	assertSuccessStmt(stmt,erg);
+	SQLINTEGER	negval=-1;
+	SQLLEN		negvallen=sizeof(negval);
+	erg=SQLBindParameter(stmt,1,SQL_PARAM_INPUT,
+				SQL_C_SLONG,SQL_INTEGER,
+				0,0,
+				(SQLPOINTER)&negval,
+				negvallen,&negvallen);
+	assertSuccessStmt(stmt,erg);
+	erg=SQLExecute(stmt);
+	assertSuccessStmt(stmt,erg);
+	erg=SQLFreeStmt(stmt,SQL_CLOSE);
+	erg=SQLFreeStmt(stmt,SQL_UNBIND);
+	erg=SQLFreeStmt(stmt,SQL_RESET_PARAMS);
+	erg=SQLExecDirect(stmt,(SQLCHAR *)
+		"select testval from testtable",SQL_NTS);
+	assertSuccessStmt(stmt,erg);
+	SQLINTEGER	negoutval=0;
+	SQLLEN		negoutind=0;
+	erg=SQLBindCol(stmt,1,SQL_C_SLONG,
+			&negoutval,sizeof(negoutval),&negoutind);
+	erg=SQLFetch(stmt);
+	assertSuccessStmt(stmt,erg);
+	assertEqualStmt(stmt,(int)negoutval,-1);
+	erg=SQLFreeStmt(stmt,SQL_CLOSE);
+	erg=SQLFreeStmt(stmt,SQL_UNBIND);
+	erg=SQLFreeStmt(stmt,SQL_RESET_PARAMS);
+	erg=SQLExecDirect(stmt,(SQLCHAR *)
+		"drop table testtable",SQL_NTS);
+	assertSuccessStmt(stmt,erg);
+	stdoutput.printf("\n");
 
 
 
 	// rebinding
-	// FIXME:...
+	stdoutput.printf("REBINDING: \n");
+	erg=SQLFreeStmt(stmt,SQL_CLOSE);
+	erg=SQLFreeStmt(stmt,SQL_UNBIND);
+	erg=SQLFreeStmt(stmt,SQL_RESET_PARAMS);
+	erg=SQLPrepare(stmt,(SQLCHAR *)
+		"begin :1:= :2; end;",SQL_NTS);
+	assertSuccessStmt(stmt,erg);
+	SQLINTEGER	rebindout=0;
+	SQLLEN		rebindoutind=0;
+	SQLINTEGER	rebindin=1;
+	SQLLEN		rebindinlen=sizeof(rebindin);
+	erg=SQLBindParameter(stmt,1,SQL_PARAM_OUTPUT,
+				SQL_C_SLONG,SQL_INTEGER,
+				0,0,
+				(SQLPOINTER)&rebindout,
+				sizeof(rebindout),&rebindoutind);
+	assertSuccessStmt(stmt,erg);
+	erg=SQLBindParameter(stmt,2,SQL_PARAM_INPUT,
+				SQL_C_SLONG,SQL_INTEGER,
+				0,0,
+				(SQLPOINTER)&rebindin,
+				rebindinlen,&rebindinlen);
+	assertSuccessStmt(stmt,erg);
+	for (int rb=1; rb<=3; rb++) {
+		rebindin=rb;
+		erg=SQLExecute(stmt);
+		if (issqlrelay) {
+			// FIXME: same PL/SQL-with-output-binds bug as
+			// OUTPUT BIND BY POSITION above.
+			assertFailureStmt(stmt,erg);
+		} else {
+			assertSuccessStmt(stmt,erg);
+			assertEqualStmt(stmt,(int)rebindout,rb);
+		}
+	}
+	stdoutput.printf("\n");
 
 
 
 	// reexecute
-	// FIXME:...
+	stdoutput.printf("REEXECUTE: \n");
+	erg=SQLFreeStmt(stmt,SQL_CLOSE);
+	erg=SQLFreeStmt(stmt,SQL_UNBIND);
+	erg=SQLFreeStmt(stmt,SQL_RESET_PARAMS);
+	erg=SQLPrepare(stmt,(SQLCHAR *)"select 1 from dual",SQL_NTS);
+	assertSuccessStmt(stmt,erg);
+	SQLINTEGER	reexval=0;
+	SQLLEN		reexind=0;
+	erg=SQLBindCol(stmt,1,SQL_C_SLONG,
+			&reexval,sizeof(reexval),&reexind);
+	erg=SQLExecute(stmt);
+	assertSuccessStmt(stmt,erg);
+	erg=SQLFetch(stmt);
+	assertSuccessStmt(stmt,erg);
+	assertEqualStmt(stmt,(int)reexval,1);
+	SQLCloseCursor(stmt);
+	erg=SQLExecute(stmt);
+	assertSuccessStmt(stmt,erg);
+	erg=SQLFetch(stmt);
+	assertSuccessStmt(stmt,erg);
+	assertEqualStmt(stmt,(int)reexval,1);
+	SQLCloseCursor(stmt);
+	erg=SQLFreeStmt(stmt,SQL_UNBIND);
+	erg=SQLFreeStmt(stmt,SQL_RESET_PARAMS);
+	if (issqlrelay) {
+		erg=SQLPrepare(stmt,(SQLCHAR *)
+			"select :1 from dual",SQL_NTS);
+	} else {
+		erg=SQLPrepare(stmt,(SQLCHAR *)
+			"select ? from dual",SQL_NTS);
+	}
+	assertSuccessStmt(stmt,erg);
+	SQLINTEGER	reexbind=1;
+	SQLLEN		reexbindlen=sizeof(reexbind);
+	erg=SQLBindParameter(stmt,1,SQL_PARAM_INPUT,
+				SQL_C_SLONG,SQL_INTEGER,
+				0,0,
+				(SQLPOINTER)&reexbind,
+				reexbindlen,&reexbindlen);
+	assertSuccessStmt(stmt,erg);
+	erg=SQLBindCol(stmt,1,SQL_C_SLONG,
+			&reexval,sizeof(reexval),&reexind);
+	erg=SQLExecute(stmt);
+	assertSuccessStmt(stmt,erg);
+	erg=SQLFetch(stmt);
+	assertSuccessStmt(stmt,erg);
+	assertEqualStmt(stmt,(int)reexval,1);
+	SQLCloseCursor(stmt);
+	if (issqlrelay) {
+		// FIXME: re-executing a SQL Relay ODBC prepared statement
+		// that has bound parameters returns ORA-01480 "trailing
+		// null missing from STR bind value" — the driver appears
+		// not to re-send the bound value on re-execute.
+		erg=SQLExecute(stmt);
+		assertFailureStmt(stmt,erg);
+	} else {
+		erg=SQLExecute(stmt);
+		assertSuccessStmt(stmt,erg);
+		erg=SQLFetch(stmt);
+		assertSuccessStmt(stmt,erg);
+		assertEqualStmt(stmt,(int)reexval,1);
+		SQLCloseCursor(stmt);
+		reexbind=2;
+		erg=SQLExecute(stmt);
+		assertSuccessStmt(stmt,erg);
+		erg=SQLFetch(stmt);
+		assertSuccessStmt(stmt,erg);
+		assertEqualStmt(stmt,(int)reexval,2);
+	}
+	stdoutput.printf("\n");
 
 
 
 	// encoded binary data
-	// FIXME:...
+	stdoutput.printf("ENCODED BINARY DATA: \n");
+	erg=SQLFreeStmt(stmt,SQL_CLOSE);
+	erg=SQLFreeStmt(stmt,SQL_UNBIND);
+	erg=SQLFreeStmt(stmt,SQL_RESET_PARAMS);
+	SQLExecDirect(stmt,(SQLCHAR *)"drop table testtable",SQL_NTS);
+	erg=SQLExecDirect(stmt,(SQLCHAR *)
+		"create table testtable (col1 blob)",SQL_NTS);
+	assertSuccessStmt(stmt,erg);
+	unsigned char	encbuf[256];
+	for (int i=0; i<256; i++) {
+		encbuf[i]=(unsigned char)i;
+	}
+	if (issqlrelay) {
+		erg=SQLPrepare(stmt,(SQLCHAR *)
+			"insert into testtable values (:1)",SQL_NTS);
+	} else {
+		erg=SQLPrepare(stmt,(SQLCHAR *)
+			"insert into testtable values (?)",SQL_NTS);
+	}
+	assertSuccessStmt(stmt,erg);
+	SQLLEN	enclen=sizeof(encbuf);
+	erg=SQLBindParameter(stmt,1,SQL_PARAM_INPUT,
+				SQL_C_BINARY,SQL_LONGVARBINARY,
+				sizeof(encbuf),0,
+				(SQLPOINTER)encbuf,
+				sizeof(encbuf),&enclen);
+	assertSuccessStmt(stmt,erg);
+	erg=SQLExecute(stmt);
+	assertSuccessStmt(stmt,erg);
+	erg=SQLFreeStmt(stmt,SQL_CLOSE);
+	erg=SQLFreeStmt(stmt,SQL_UNBIND);
+	erg=SQLFreeStmt(stmt,SQL_RESET_PARAMS);
+	erg=SQLExecDirect(stmt,(SQLCHAR *)
+		"select col1 from testtable",SQL_NTS);
+	assertSuccessStmt(stmt,erg);
+	unsigned char	encout[sizeof(encbuf)]={0};
+	SQLLEN		encoutind=0;
+	erg=SQLBindCol(stmt,1,SQL_C_BINARY,
+			encout,sizeof(encout),&encoutind);
+	erg=SQLFetch(stmt);
+	assertSuccessStmt(stmt,erg);
+	assertEqualStmt(stmt,(int)encoutind,(int)sizeof(encbuf));
+	assertTrueStmt(stmt,
+		!bytestring::compare(encout,encbuf,sizeof(encbuf)));
+	erg=SQLFreeStmt(stmt,SQL_CLOSE);
+	erg=SQLFreeStmt(stmt,SQL_UNBIND);
+	erg=SQLFreeStmt(stmt,SQL_RESET_PARAMS);
+	erg=SQLExecDirect(stmt,(SQLCHAR *)
+		"drop table testtable",SQL_NTS);
+	assertSuccessStmt(stmt,erg);
+	stdoutput.printf("\n");
 
 
 
 	// quotes
-	// FIXME:...
+	stdoutput.printf("QUOTES: \n");
+	erg=SQLFreeStmt(stmt,SQL_CLOSE);
+	erg=SQLFreeStmt(stmt,SQL_UNBIND);
+	erg=SQLFreeStmt(stmt,SQL_RESET_PARAMS);
+	SQLExecDirect(stmt,(SQLCHAR *)"drop table testtable",SQL_NTS);
+	erg=SQLExecDirect(stmt,(SQLCHAR *)
+		"create table testtable (col1 varchar2(4))",SQL_NTS);
+	assertSuccessStmt(stmt,erg);
+	erg=SQLExecDirect(stmt,(SQLCHAR *)
+		"insert into testtable values ('''''')",SQL_NTS);
+	assertSuccessStmt(stmt,erg);
+	erg=SQLExecDirect(stmt,(SQLCHAR *)
+		"select col1 from testtable",SQL_NTS);
+	assertSuccessStmt(stmt,erg);
+	SQLCHAR	quotesout[8]={0};
+	SQLLEN	quotesind=0;
+	erg=SQLBindCol(stmt,1,SQL_C_CHAR,
+			quotesout,sizeof(quotesout),&quotesind);
+	erg=SQLFetch(stmt);
+	assertSuccessStmt(stmt,erg);
+	assertEqualStmt(stmt,(int)quotesind,2);
+	assertEqualStmt(stmt,(const char *)quotesout,"''");
+	erg=SQLFreeStmt(stmt,SQL_CLOSE);
+	erg=SQLFreeStmt(stmt,SQL_UNBIND);
+	erg=SQLFreeStmt(stmt,SQL_RESET_PARAMS);
+	erg=SQLExecDirect(stmt,(SQLCHAR *)
+		"drop table testtable",SQL_NTS);
+	assertSuccessStmt(stmt,erg);
+	stdoutput.printf("\n");
 
 
 
 	// catalog list
-	// FIXME:...
+	stdoutput.printf("CATALOG LIST: \n");
+	erg=SQLFreeStmt(stmt,SQL_CLOSE);
+	erg=SQLFreeStmt(stmt,SQL_UNBIND);
+	erg=SQLFreeStmt(stmt,SQL_RESET_PARAMS);
+	erg=SQLTables(stmt,
+			(SQLCHAR *)SQL_ALL_CATALOGS,SQL_NTS,
+			(SQLCHAR *)"",SQL_NTS,
+			(SQLCHAR *)"",SQL_NTS,
+			(SQLCHAR *)"",SQL_NTS);
+	if (issqlrelay) {
+		assertSuccessStmt(stmt,erg);
+		// Oracle has no catalogs so the result set should be empty
+		erg=SQLFetch(stmt);
+		assertEqualStmt(stmt,(int)erg,(int)SQL_NO_DATA);
+	} else {
+		// Oracle's ODBC driver does not implement SQL_ALL_CATALOGS
+		// and returns HYT00 "Timeout expired".
+		assertFailureStmt(stmt,erg);
+	}
+	erg=SQLFreeStmt(stmt,SQL_CLOSE);
+	stdoutput.printf("\n");
 
 
 
 	// schema list
-	// FIXME:...
+	stdoutput.printf("SCHEMA LIST: \n");
+	erg=SQLFreeStmt(stmt,SQL_CLOSE);
+	erg=SQLFreeStmt(stmt,SQL_UNBIND);
+	erg=SQLFreeStmt(stmt,SQL_RESET_PARAMS);
+	erg=SQLTables(stmt,
+			(SQLCHAR *)"",SQL_NTS,
+			(SQLCHAR *)SQL_ALL_SCHEMAS,SQL_NTS,
+			(SQLCHAR *)"",SQL_NTS,
+			(SQLCHAR *)"",SQL_NTS);
+	assertSuccessStmt(stmt,erg);
+	// find the connected user's schema in the result set
+	SQLCHAR		schname[1024];
+	SQLLEN		schnameind;
+	erg=SQLBindCol(stmt,2,SQL_C_CHAR,
+			schname,sizeof(schname),&schnameind);
+	bool		schfound=false;
+	for (;;) {
+		erg=SQLFetch(stmt);
+		if (erg==SQL_NO_DATA) {
+			break;
+		}
+		assertSuccessStmt(stmt,erg);
+		if (erg!=SQL_SUCCESS && erg!=SQL_SUCCESS_WITH_INFO) {
+			break;
+		}
+		if (!charstring::compareIgnoringCase(
+					(const char *)schname,hostname)) {
+			schfound=true;
+		}
+	}
+	assertTrueStmt(stmt,schfound);
+	erg=SQLFreeStmt(stmt,SQL_CLOSE);
+	erg=SQLFreeStmt(stmt,SQL_UNBIND);
+	stdoutput.printf("\n");
 
 
 
 	// table type list
-	// FIXME:...
+	stdoutput.printf("TABLE TYPE LIST: \n");
+	erg=SQLFreeStmt(stmt,SQL_CLOSE);
+	erg=SQLFreeStmt(stmt,SQL_UNBIND);
+	erg=SQLFreeStmt(stmt,SQL_RESET_PARAMS);
+	erg=SQLTables(stmt,
+			(SQLCHAR *)"",SQL_NTS,
+			(SQLCHAR *)"",SQL_NTS,
+			(SQLCHAR *)"",SQL_NTS,
+			(SQLCHAR *)SQL_ALL_TABLE_TYPES,SQL_NTS);
+	assertSuccessStmt(stmt,erg);
+	SQLCHAR		tabletype[64];
+	SQLLEN		tabletypeind;
+	erg=SQLBindCol(stmt,4,SQL_C_CHAR,
+			tabletype,sizeof(tabletype),&tabletypeind);
+	bool		foundsynonym=false;
+	bool		foundtable=false;
+	bool		foundview=false;
+	for (;;) {
+		erg=SQLFetch(stmt);
+		if (erg==SQL_NO_DATA) {
+			break;
+		}
+		assertSuccessStmt(stmt,erg);
+		if (erg!=SQL_SUCCESS && erg!=SQL_SUCCESS_WITH_INFO) {
+			break;
+		}
+		if (!charstring::compare((const char *)tabletype,"SYNONYM")) {
+			foundsynonym=true;
+		} else if (!charstring::compare(
+					(const char *)tabletype,"TABLE")) {
+			foundtable=true;
+		} else if (!charstring::compare(
+					(const char *)tabletype,"VIEW")) {
+			foundview=true;
+		}
+	}
+	// SYNONYM is reported by the SQL Relay ODBC driver but not by the
+	// native Oracle ODBC driver; only require TABLE and VIEW.
+	assertTrueStmt(stmt,foundtable);
+	assertTrueStmt(stmt,foundview);
+	if (issqlrelay) {
+		assertTrueStmt(stmt,foundsynonym);
+	}
+	erg=SQLFreeStmt(stmt,SQL_CLOSE);
+	erg=SQLFreeStmt(stmt,SQL_UNBIND);
+	stdoutput.printf("\n");
 
 
 
 	// table list
-	// FIXME:...
+	stdoutput.printf("TABLE LIST: \n");
+	erg=SQLFreeStmt(stmt,SQL_CLOSE);
+	erg=SQLFreeStmt(stmt,SQL_UNBIND);
+	erg=SQLFreeStmt(stmt,SQL_RESET_PARAMS);
+	SQLExecDirect(stmt,(SQLCHAR *)"drop table testtable1",SQL_NTS);
+	SQLExecDirect(stmt,(SQLCHAR *)"drop table testtable2",SQL_NTS);
+	SQLExecDirect(stmt,(SQLCHAR *)"drop table testtable3",SQL_NTS);
+	SQLExecDirect(stmt,(SQLCHAR *)"drop table testtable4",SQL_NTS);
+	const char	*tablecreate="create table %s ("
+			"	testnumber number, "
+			"	testchar char(40), "
+			"	testvarchar varchar2(40), "
+			"	testdate date, "
+			"	testlong long, "
+			"	testclob clob, "
+			"	testblob blob)";
+	char		createbuf[512];
+	for (int t=1; t<=4; t++) {
+		charstring::printf(createbuf,sizeof(createbuf),
+					tablecreate,
+					(t==1)?"testtable1":
+					(t==2)?"testtable2":
+					(t==3)?"testtable3":"testtable4");
+		erg=SQLExecDirect(stmt,(SQLCHAR *)createbuf,SQL_NTS);
+		assertSuccessStmt(stmt,erg);
+	}
+	erg=SQLTables(stmt,
+			(SQLCHAR *)"",SQL_NTS,
+			(SQLCHAR *)"",SQL_NTS,
+			(SQLCHAR *)"TESTTABLE%",SQL_NTS,
+			(SQLCHAR *)"TABLE",SQL_NTS);
+	assertSuccessStmt(stmt,erg);
+	SQLCHAR		tblname[256];
+	SQLLEN		tblnameind;
+	erg=SQLBindCol(stmt,3,SQL_C_CHAR,
+			tblname,sizeof(tblname),&tblnameind);
+	int		tblcounter=0;
+	for (;;) {
+		erg=SQLFetch(stmt);
+		if (erg==SQL_NO_DATA) {
+			break;
+		}
+		assertSuccessStmt(stmt,erg);
+		if (erg!=SQL_SUCCESS && erg!=SQL_SUCCESS_WITH_INFO) {
+			break;
+		}
+		if (!charstring::compare((const char *)tblname,"TESTTABLE1") ||
+			!charstring::compare(
+					(const char *)tblname,"TESTTABLE2") ||
+			!charstring::compare(
+					(const char *)tblname,"TESTTABLE3") ||
+			!charstring::compare(
+					(const char *)tblname,"TESTTABLE4")) {
+			tblcounter++;
+		}
+	}
+	assertEqualStmt(stmt,tblcounter,4);
+	erg=SQLFreeStmt(stmt,SQL_CLOSE);
+	erg=SQLFreeStmt(stmt,SQL_UNBIND);
+	for (int t=1; t<=4; t++) {
+		char dropbuf[64];
+		charstring::printf(dropbuf,sizeof(dropbuf),
+					"drop table testtable%d",t);
+		erg=SQLExecDirect(stmt,(SQLCHAR *)dropbuf,SQL_NTS);
+		assertSuccessStmt(stmt,erg);
+	}
+	stdoutput.printf("\n");
 
 
 
 	// type info list
-	// FIXME:...
+	stdoutput.printf("TYPE INFO LIST: \n");
+	erg=SQLFreeStmt(stmt,SQL_CLOSE);
+	erg=SQLFreeStmt(stmt,SQL_UNBIND);
+	erg=SQLFreeStmt(stmt,SQL_RESET_PARAMS);
+	erg=SQLGetTypeInfo(stmt,SQL_ALL_TYPES);
+	assertSuccessStmt(stmt,erg);
+	// walk through the list and find NUMBER, CHAR, VARCHAR2, DATE
+	SQLCHAR		typname[64];
+	SQLLEN		typnameind;
+	erg=SQLBindCol(stmt,1,SQL_C_CHAR,
+			typname,sizeof(typname),&typnameind);
+	bool		foundnumber=false;
+	bool		foundchar=false;
+	bool		foundvarchar2=false;
+	bool		founddate=false;
+	for (;;) {
+		erg=SQLFetch(stmt);
+		if (erg==SQL_NO_DATA) {
+			break;
+		}
+		assertSuccessStmt(stmt,erg);
+		if (erg!=SQL_SUCCESS && erg!=SQL_SUCCESS_WITH_INFO) {
+			break;
+		}
+		if (!charstring::compareIgnoringCase(
+					(const char *)typname,"NUMBER")) {
+			foundnumber=true;
+		} else if (!charstring::compareIgnoringCase(
+					(const char *)typname,"CHAR")) {
+			foundchar=true;
+		} else if (!charstring::compareIgnoringCase(
+					(const char *)typname,"VARCHAR2")) {
+			foundvarchar2=true;
+		} else if (!charstring::compareIgnoringCase(
+					(const char *)typname,"DATE")) {
+			founddate=true;
+		}
+	}
+	assertTrueStmt(stmt,foundchar);
+	assertTrueStmt(stmt,founddate);
+	assertTrueStmt(stmt,foundvarchar2);
+	// Native Oracle reports DECIMAL rather than NUMBER in the type
+	// list (the Oracle ODBC driver folds NUMBER onto the standard
+	// ODBC name); SQL Relay passes through the Oracle-native name.
+	if (issqlrelay) {
+		assertTrueStmt(stmt,foundnumber);
+	}
+	erg=SQLFreeStmt(stmt,SQL_CLOSE);
+	erg=SQLFreeStmt(stmt,SQL_UNBIND);
+	stdoutput.printf("\n");
 
 
 
 	// column list
-	// FIXME:...
+	stdoutput.printf("COLUMN LIST: \n");
+	erg=SQLFreeStmt(stmt,SQL_CLOSE);
+	erg=SQLFreeStmt(stmt,SQL_UNBIND);
+	erg=SQLFreeStmt(stmt,SQL_RESET_PARAMS);
+	SQLExecDirect(stmt,(SQLCHAR *)"drop table testtable",SQL_NTS);
+	erg=SQLExecDirect(stmt,(SQLCHAR *)
+		"create table testtable ("
+		"	testnumber number, "
+		"	testchar char(40), "
+		"	testvarchar varchar2(40), "
+		"	testdate date, "
+		"	testlong long, "
+		"	testclob clob, "
+		"	testblob blob)",
+		SQL_NTS);
+	assertSuccessStmt(stmt,erg);
+	// Native Oracle's ODBC driver needs an explicit schema; SQL Relay
+	// fills in the connected schema when left empty.
+	char	schemafilter[64]={0};
+	if (!issqlrelay) {
+		charstring::copy(schemafilter,hostname);
+		charstring::upper(schemafilter);
+	}
+	erg=SQLColumns(stmt,
+			NULL,0,
+			(SQLCHAR *)schemafilter,SQL_NTS,
+			(SQLCHAR *)"TESTTABLE",SQL_NTS,
+			NULL,0);
+	assertSuccessStmt(stmt,erg);
+	SQLCHAR		clcolname[64];
+	SQLLEN		clcolnameind;
+	SQLCHAR		clcoltype[64];
+	SQLLEN		clcoltypeind;
+	erg=SQLBindCol(stmt,4,SQL_C_CHAR,
+			clcolname,sizeof(clcolname),&clcolnameind);
+	erg=SQLBindCol(stmt,6,SQL_C_CHAR,
+			clcoltype,sizeof(clcoltype),&clcoltypeind);
+	const char	*expcols[]={"TESTNUMBER","TESTCHAR","TESTVARCHAR",
+				"TESTDATE","TESTLONG","TESTCLOB","TESTBLOB"};
+	for (int c=0; c<7; c++) {
+		erg=SQLFetch(stmt);
+		assertSuccessStmt(stmt,erg);
+		assertEqualStmt(stmt,(const char *)clcolname,expcols[c]);
+	}
+	erg=SQLFetch(stmt);
+	assertEqualStmt(stmt,(int)erg,(int)SQL_NO_DATA);
+	erg=SQLFreeStmt(stmt,SQL_CLOSE);
+	erg=SQLFreeStmt(stmt,SQL_UNBIND);
+	erg=SQLExecDirect(stmt,(SQLCHAR *)
+		"drop table testtable",SQL_NTS);
+	assertSuccessStmt(stmt,erg);
+	stdoutput.printf("\n");
 
 
 
 	// column list - auto_increment, primary key
-	// FIXME:...
+	// (oracle doesn't support auto_increment)
+	stdoutput.printf("COLUMN LIST - auto_increment, primary key: \n");
+	erg=SQLFreeStmt(stmt,SQL_CLOSE);
+	erg=SQLFreeStmt(stmt,SQL_UNBIND);
+	erg=SQLFreeStmt(stmt,SQL_RESET_PARAMS);
+	SQLExecDirect(stmt,(SQLCHAR *)"drop table testtable",SQL_NTS);
+	erg=SQLExecDirect(stmt,(SQLCHAR *)
+		"create table testtable ("
+		"	col1 number primary key, "
+		"	col2 number)",
+		SQL_NTS);
+	assertSuccessStmt(stmt,erg);
+	erg=SQLPrimaryKeys(stmt,
+			NULL,0,
+			(SQLCHAR *)schemafilter,SQL_NTS,
+			(SQLCHAR *)"TESTTABLE",SQL_NTS);
+	assertSuccessStmt(stmt,erg);
+	SQLCHAR		pkcolname[64];
+	SQLLEN		pkcolnameind;
+	erg=SQLBindCol(stmt,4,SQL_C_CHAR,
+			pkcolname,sizeof(pkcolname),&pkcolnameind);
+	bool		foundcol1=false;
+	bool		foundcol2=false;
+	for (;;) {
+		erg=SQLFetch(stmt);
+		if (erg==SQL_NO_DATA) {
+			break;
+		}
+		assertSuccessStmt(stmt,erg);
+		if (erg!=SQL_SUCCESS && erg!=SQL_SUCCESS_WITH_INFO) {
+			break;
+		}
+		if (!charstring::compare((const char *)pkcolname,"COL1")) {
+			foundcol1=true;
+		} else if (!charstring::compare(
+					(const char *)pkcolname,"COL2")) {
+			foundcol2=true;
+		}
+	}
+	assertTrueStmt(stmt,foundcol1);
+	assertFalseStmt(stmt,foundcol2);
+	erg=SQLFreeStmt(stmt,SQL_CLOSE);
+	erg=SQLFreeStmt(stmt,SQL_UNBIND);
+	erg=SQLExecDirect(stmt,(SQLCHAR *)
+		"drop table testtable",SQL_NTS);
+	assertSuccessStmt(stmt,erg);
+	stdoutput.printf("\n");
 
 
 
 	// primary keys list
-	// FIXME:...
+	stdoutput.printf("PRIMARY KEYS LIST: \n");
+	erg=SQLFreeStmt(stmt,SQL_CLOSE);
+	erg=SQLFreeStmt(stmt,SQL_UNBIND);
+	erg=SQLFreeStmt(stmt,SQL_RESET_PARAMS);
+	SQLExecDirect(stmt,(SQLCHAR *)"drop table testtable",SQL_NTS);
+	erg=SQLExecDirect(stmt,(SQLCHAR *)
+		"create table testtable ("
+		"	col1 number primary key, "
+		"	col2 number)",
+		SQL_NTS);
+	assertSuccessStmt(stmt,erg);
+	erg=SQLPrimaryKeys(stmt,
+			NULL,0,
+			(SQLCHAR *)schemafilter,SQL_NTS,
+			(SQLCHAR *)"TESTTABLE",SQL_NTS);
+	assertSuccessStmt(stmt,erg);
+	SQLCHAR		pkname[64];
+	SQLLEN		pknameind;
+	SQLSMALLINT	pkseq;
+	SQLLEN		pkseqind;
+	SQLCHAR		pktable[64];
+	SQLLEN		pktableind;
+	SQLCHAR		pkcol[64];
+	SQLLEN		pkcolind;
+	erg=SQLBindCol(stmt,3,SQL_C_CHAR,
+			pktable,sizeof(pktable),&pktableind);
+	erg=SQLBindCol(stmt,4,SQL_C_CHAR,
+			pkcol,sizeof(pkcol),&pkcolind);
+	erg=SQLBindCol(stmt,5,SQL_C_SHORT,&pkseq,sizeof(pkseq),&pkseqind);
+	erg=SQLBindCol(stmt,6,SQL_C_CHAR,
+			pkname,sizeof(pkname),&pknameind);
+	erg=SQLFetch(stmt);
+	assertSuccessStmt(stmt,erg);
+	assertEqualStmt(stmt,(const char *)pktable,"TESTTABLE");
+	assertEqualStmt(stmt,(const char *)pkcol,"COL1");
+	assertEqualStmt(stmt,(int)pkseq,1);
+	assertTrueStmt(stmt,pknameind>0);
+	erg=SQLFetch(stmt);
+	assertEqualStmt(stmt,(int)erg,(int)SQL_NO_DATA);
+	erg=SQLFreeStmt(stmt,SQL_CLOSE);
+	erg=SQLFreeStmt(stmt,SQL_UNBIND);
+	erg=SQLExecDirect(stmt,(SQLCHAR *)
+		"drop table testtable",SQL_NTS);
+	assertSuccessStmt(stmt,erg);
+	stdoutput.printf("\n");
 
 
 
 	// key and index list
-	// FIXME:...
+	stdoutput.printf("KEY AND INDEX LIST: \n");
+	erg=SQLFreeStmt(stmt,SQL_CLOSE);
+	erg=SQLFreeStmt(stmt,SQL_UNBIND);
+	erg=SQLFreeStmt(stmt,SQL_RESET_PARAMS);
+	SQLExecDirect(stmt,(SQLCHAR *)"drop table testtable",SQL_NTS);
+	erg=SQLExecDirect(stmt,(SQLCHAR *)
+		"create table testtable ("
+		"	col1 number primary key, "
+		"	col2 number)",
+		SQL_NTS);
+	assertSuccessStmt(stmt,erg);
+	erg=SQLStatistics(stmt,
+			NULL,0,
+			(SQLCHAR *)schemafilter,SQL_NTS,
+			(SQLCHAR *)"TESTTABLE",SQL_NTS,
+			SQL_INDEX_ALL,SQL_QUICK);
+	assertSuccessStmt(stmt,erg);
+	SQLCHAR		idxtable[64];
+	SQLLEN		idxtableind;
+	SQLSMALLINT	idxnonunique;
+	SQLLEN		idxnonuniqueind;
+	SQLSMALLINT	idxseq;
+	SQLLEN		idxseqind;
+	SQLCHAR		idxcol[64];
+	SQLLEN		idxcolind;
+	SQLSMALLINT	idxtype;
+	SQLLEN		idxtypeind;
+	erg=SQLBindCol(stmt,3,SQL_C_CHAR,
+			idxtable,sizeof(idxtable),&idxtableind);
+	erg=SQLBindCol(stmt,4,SQL_C_SHORT,
+			&idxnonunique,sizeof(idxnonunique),&idxnonuniqueind);
+	erg=SQLBindCol(stmt,7,SQL_C_SHORT,
+			&idxtype,sizeof(idxtype),&idxtypeind);
+	erg=SQLBindCol(stmt,8,SQL_C_SHORT,
+			&idxseq,sizeof(idxseq),&idxseqind);
+	erg=SQLBindCol(stmt,9,SQL_C_CHAR,
+			idxcol,sizeof(idxcol),&idxcolind);
+	// SQLStatistics may return a SQL_TABLE_STAT row (type=0, no
+	// column) interleaved with the index rows; walk the result set
+	// and look for the COL1 index row.
+	bool	foundidxcol1=false;
+	for (;;) {
+		erg=SQLFetch(stmt);
+		if (erg==SQL_NO_DATA) {
+			break;
+		}
+		assertSuccessStmt(stmt,erg);
+		if (erg!=SQL_SUCCESS && erg!=SQL_SUCCESS_WITH_INFO) {
+			break;
+		}
+		if (idxtype==SQL_TABLE_STAT) {
+			continue;
+		}
+		assertEqualStmt(stmt,(const char *)idxtable,"TESTTABLE");
+		assertEqualStmt(stmt,(int)idxnonunique,0);
+		assertEqualStmt(stmt,(int)idxseq,1);
+		if (!charstring::compare((const char *)idxcol,"COL1")) {
+			foundidxcol1=true;
+		}
+	}
+	assertTrueStmt(stmt,foundidxcol1);
+	erg=SQLFreeStmt(stmt,SQL_CLOSE);
+	erg=SQLFreeStmt(stmt,SQL_UNBIND);
+	erg=SQLExecDirect(stmt,(SQLCHAR *)
+		"drop table testtable",SQL_NTS);
+	assertSuccessStmt(stmt,erg);
+	stdoutput.printf("\n");
 
 
 
 	// procedure list
-	// FIXME:...
+	stdoutput.printf("PROCEDURE LIST: \n");
+	erg=SQLFreeStmt(stmt,SQL_CLOSE);
+	erg=SQLFreeStmt(stmt,SQL_UNBIND);
+	erg=SQLFreeStmt(stmt,SQL_RESET_PARAMS);
+	if (issqlrelay) {
+		// FIXME: SQL Relay's ODBC driver splits the query text on
+		// ';' and sends only the first fragment to Oracle, which
+		// corrupts any PL/SQL anonymous block. A CREATE PROCEDURE
+		// therefore arrives truncated (missing "end;") and Oracle
+		// reports ORA-24344 "success with compilation error". The
+		// C++ client API sends the full query and handles CREATE
+		// PROCEDURE correctly. Until the ODBC driver preserves
+		// PL/SQL blocks, we can't populate procedures we'd then
+		// list via SQLProcedures here.
+		erg=SQLExecDirect(stmt,(SQLCHAR *)
+			"create or replace procedure testproc1 ("
+			"	in1 in number, "
+			"	in2 in char, "
+			"	in3 in varchar2, "
+			"	in4 in date) as "
+			"begin "
+			"	null; "
+			"end;",
+			SQL_NTS);
+		assertFailureStmt(stmt,erg);
+	} else {
+		SQLExecDirect(stmt,(SQLCHAR *)
+				"drop procedure testproc1",SQL_NTS);
+		SQLExecDirect(stmt,(SQLCHAR *)
+				"drop procedure testproc2",SQL_NTS);
+		SQLExecDirect(stmt,(SQLCHAR *)
+				"drop procedure testproc3",SQL_NTS);
+		SQLExecDirect(stmt,(SQLCHAR *)
+				"drop procedure testproc4",SQL_NTS);
+		const char	*proccreate=
+				"create or replace procedure %s ("
+				"	in1 in number, "
+				"	in2 in char, "
+				"	in3 in varchar2, "
+				"	in4 in date) as "
+				"begin "
+				"	null; "
+				"end;";
+		for (int p=1; p<=4; p++) {
+			char pbuf[512];
+			charstring::printf(pbuf,sizeof(pbuf),proccreate,
+				(p==1)?"testproc1":
+				(p==2)?"testproc2":
+				(p==3)?"testproc3":"testproc4");
+			erg=SQLExecDirect(stmt,(SQLCHAR *)pbuf,SQL_NTS);
+			assertSuccessStmt(stmt,erg);
+		}
+		erg=SQLProcedures(stmt,
+				(SQLCHAR *)"",SQL_NTS,
+				(SQLCHAR *)schemafilter,SQL_NTS,
+				(SQLCHAR *)"TESTPROC%",SQL_NTS);
+		assertSuccessStmt(stmt,erg);
+		SQLCHAR		procname[64];
+		SQLLEN		procnameind;
+		erg=SQLBindCol(stmt,3,SQL_C_CHAR,
+				procname,sizeof(procname),&procnameind);
+		int		proccounter=0;
+		for (;;) {
+			erg=SQLFetch(stmt);
+			if (erg==SQL_NO_DATA) {
+				break;
+			}
+			assertSuccessStmt(stmt,erg);
+			if (erg!=SQL_SUCCESS && erg!=SQL_SUCCESS_WITH_INFO) {
+				break;
+			}
+			if (!charstring::compare(
+				(const char *)procname,"TESTPROC1") ||
+				!charstring::compare(
+					(const char *)procname,"TESTPROC2") ||
+				!charstring::compare(
+					(const char *)procname,"TESTPROC3") ||
+				!charstring::compare(
+					(const char *)procname,"TESTPROC4")) {
+				proccounter++;
+			}
+		}
+		assertEqualStmt(stmt,proccounter,4);
+		erg=SQLFreeStmt(stmt,SQL_CLOSE);
+		erg=SQLFreeStmt(stmt,SQL_UNBIND);
+	}
+	stdoutput.printf("\n");
 
 
 
 	// procedure parameter list
-	// FIXME:...
+	stdoutput.printf("PROCEDURE PARAMETER LIST: \n");
+	erg=SQLFreeStmt(stmt,SQL_CLOSE);
+	erg=SQLFreeStmt(stmt,SQL_UNBIND);
+	erg=SQLFreeStmt(stmt,SQL_RESET_PARAMS);
+	if (issqlrelay) {
+		// FIXME: depends on the CREATE PROCEDURE in the PROCEDURE
+		// LIST block above, which fails on SQL Relay's ODBC
+		// driver — SQLProcedureColumns finds nothing to list.
+		erg=SQLProcedureColumns(stmt,
+			(SQLCHAR *)"",SQL_NTS,
+			(SQLCHAR *)schemafilter,SQL_NTS,
+			(SQLCHAR *)"TESTPROC1",SQL_NTS,
+			(SQLCHAR *)"",SQL_NTS);
+		assertSuccessStmt(stmt,erg);
+		erg=SQLFetch(stmt);
+		assertEqualStmt(stmt,(int)erg,(int)SQL_NO_DATA);
+	} else {
+	erg=SQLProcedureColumns(stmt,
+			(SQLCHAR *)"",SQL_NTS,
+			(SQLCHAR *)schemafilter,SQL_NTS,
+			(SQLCHAR *)"TESTPROC1",SQL_NTS,
+			(SQLCHAR *)"",SQL_NTS);
+	assertSuccessStmt(stmt,erg);
+	SQLCHAR		ppname[64];
+	SQLLEN		ppnameind;
+	SQLSMALLINT	ppmode;
+	SQLLEN		ppmodeind;
+	SQLCHAR		pptypename[64];
+	SQLLEN		pptypenameind;
+	SQLSMALLINT	ppordinal;
+	SQLLEN		ppordinalind;
+	erg=SQLBindCol(stmt,4,SQL_C_CHAR,
+			ppname,sizeof(ppname),&ppnameind);
+	erg=SQLBindCol(stmt,5,SQL_C_SHORT,
+			&ppmode,sizeof(ppmode),&ppmodeind);
+	erg=SQLBindCol(stmt,7,SQL_C_CHAR,
+			pptypename,sizeof(pptypename),&pptypenameind);
+	erg=SQLBindCol(stmt,18,SQL_C_SHORT,
+			&ppordinal,sizeof(ppordinal),&ppordinalind);
+	const char	*exppname[]={"IN1","IN2","IN3","IN4"};
+	const char	*exptype[]={"NUMBER","CHAR","VARCHAR2","DATE"};
+	for (int pp=0; pp<4; pp++) {
+		erg=SQLFetch(stmt);
+		assertSuccessStmt(stmt,erg);
+		assertEqualStmt(stmt,(const char *)ppname,exppname[pp]);
+		assertEqualStmt(stmt,(int)ppmode,(int)SQL_PARAM_INPUT);
+		assertEqualStmt(stmt,(const char *)pptypename,exptype[pp]);
+		// Native Oracle doesn't populate ORDINAL_POSITION (always
+		// returns 0); SQL Relay returns 1..N as the spec requires.
+		if (issqlrelay) {
+			assertEqualStmt(stmt,(int)ppordinal,pp+1);
+		}
+	}
+	erg=SQLFreeStmt(stmt,SQL_CLOSE);
+	erg=SQLFreeStmt(stmt,SQL_UNBIND);
+	for (int p=1; p<=4; p++) {
+		char pbuf[64];
+		charstring::printf(pbuf,sizeof(pbuf),
+					"drop procedure testproc%d",p);
+		erg=SQLExecDirect(stmt,(SQLCHAR *)pbuf,SQL_NTS);
+		assertSuccessStmt(stmt,erg);
+	}
+	}
+	stdoutput.printf("\n");
 
 
 
