@@ -6748,20 +6748,20 @@ int main(int argc, char **argv) {
 			lobblob2,sizeof(lobblob2),&lobblob2ind);
 	erg=SQLFetch(stmt);
 	assertSuccessStmt(stmt,erg);
-	// Oracle's legacy "empty string == NULL" semantics apply to CLOB
-	// (and, under the native driver, BLOB), so a zero-length value
-	// doesn't round-trip as an empty LOB; it comes back as NULL.
 	if (issqlrelay) {
-		// FIXME: the SQL Relay C++ client preserves empty CLOBs,
-		// but going through the SQL Relay ODBC driver an empty
-		// CLOB still comes back as NULL. The driver should
-		// preserve the empty-vs-NULL distinction for CLOB the
-		// same way it already does for BLOB.
-		assertEqualStmt(stmt,(int)lobclob1ind,(int)SQL_NULL_DATA);
+		// SQL Relay preserves the empty-vs-NULL distinction for
+		// both CLOB and BLOB by binding zero-length LONGVAR values
+		// as temporary LOBs rather than as empty strings (which
+		// Oracle's legacy "empty string == NULL" semantics would
+		// otherwise collapse to NULL).
+		assertEqualStmt(stmt,(int)lobclob1ind,0);
 		assertEqualStmt(stmt,(int)lobclob2ind,(int)SQL_NULL_DATA);
 		assertEqualStmt(stmt,(int)lobblob1ind,0);
 		assertEqualStmt(stmt,(int)lobblob2ind,(int)SQL_NULL_DATA);
 	} else {
+		// The native Oracle ODBC driver applies the legacy
+		// empty-string-is-NULL rule to both CLOB and BLOB, so a
+		// zero-length input round-trips as NULL.
 		assertEqualStmt(stmt,(int)lobclob1ind,(int)SQL_NULL_DATA);
 		assertEqualStmt(stmt,(int)lobclob2ind,(int)SQL_NULL_DATA);
 		assertEqualStmt(stmt,(int)lobblob1ind,(int)SQL_NULL_DATA);
@@ -6914,22 +6914,12 @@ int main(int argc, char **argv) {
 				sizeof(obnullvar),&obnullvarind);
 	assertSuccessStmt(stmt,erg);
 	erg=SQLExecute(stmt);
-	if (issqlrelay) {
-		// FIXME: SQL Relay's ODBC driver mangles PL/SQL anonymous
-		// blocks containing bind variables — the bind placeholders
-		// are stripped from the query that reaches Oracle, causing
-		// ORA-06550 / PLS-00103. The sqlrelay C++ API handles the
-		// same query correctly, so the fix belongs in the ODBC
-		// driver's prepare/execute path for PL/SQL.
-		assertFailureStmt(stmt,erg);
-	} else {
-		assertSuccessStmt(stmt,erg);
-		assertEqualStmt(stmt,(int)obnumvar,1);
-		assertEqualStmt(stmt,(const char *)obstringvar,"hello");
-		assertTrueStmt(stmt,obfloatvar==2.5);
-		assertEqualStmt(stmt,(const char *)obdatevar,"03-FEB-2001");
-		assertEqualStmt(stmt,(int)obnullvarind,(int)SQL_NULL_DATA);
-	}
+	assertSuccessStmt(stmt,erg);
+	assertEqualStmt(stmt,(int)obnumvar,1);
+	assertEqualStmt(stmt,(const char *)obstringvar,"hello");
+	assertTrueStmt(stmt,obfloatvar==2.5);
+	assertEqualStmt(stmt,(const char *)obdatevar,"03-FEB-2001");
+	assertEqualStmt(stmt,(int)obnullvarind,(int)SQL_NULL_DATA);
 	stdoutput.printf("\n");
 
 
@@ -6993,19 +6983,13 @@ int main(int argc, char **argv) {
 				sizeof(lobblobout),&lobblobout_ind);
 	assertSuccessStmt(stmt,erg);
 	erg=SQLExecute(stmt);
-	if (issqlrelay) {
-		// FIXME: same PL/SQL-with-output-binds bug as OUTPUT BIND
-		// BY POSITION above.
-		assertFailureStmt(stmt,erg);
-	} else {
-		assertSuccessStmt(stmt,erg);
-		assertEqualStmt(stmt,(int)lobclobout_ind,5);
-		assertTrueStmt(stmt,
-			!bytestring::compare(lobclobout,"hello",5));
-		assertEqualStmt(stmt,(int)lobblobout_ind,5);
-		assertTrueStmt(stmt,
-			!bytestring::compare(lobblobout,"hello",5));
-	}
+	assertSuccessStmt(stmt,erg);
+	assertEqualStmt(stmt,(int)lobclobout_ind,5);
+	assertTrueStmt(stmt,
+		!bytestring::compare(lobclobout,"hello",5));
+	assertEqualStmt(stmt,(int)lobblobout_ind,5);
+	assertTrueStmt(stmt,
+		!bytestring::compare(lobblobout,"hello",5));
 	erg=SQLFreeStmt(stmt,SQL_CLOSE);
 	erg=SQLFreeStmt(stmt,SQL_UNBIND);
 	erg=SQLFreeStmt(stmt,SQL_RESET_PARAMS);
@@ -7039,17 +7023,11 @@ int main(int argc, char **argv) {
 				sizeof(longoutval),&longoutind);
 	assertSuccessStmt(stmt,erg);
 	erg=SQLExecute(stmt);
-	if (issqlrelay) {
-		// FIXME: same PL/SQL-with-output-binds bug as OUTPUT BIND
-		// BY POSITION above.
-		assertFailureStmt(stmt,erg);
-	} else {
-		assertSuccessStmt(stmt,erg);
-		assertEqualStmt(stmt,(int)longoutind,LARGE_BUFFER_LENGTH);
-		assertTrueStmt(stmt,
-			!bytestring::compare(longoutval,largebuffer,
-						LARGE_BUFFER_LENGTH));
-	}
+	assertSuccessStmt(stmt,erg);
+	assertEqualStmt(stmt,(int)longoutind,LARGE_BUFFER_LENGTH);
+	assertTrueStmt(stmt,
+		!bytestring::compare(longoutval,largebuffer,
+					LARGE_BUFFER_LENGTH));
 	stdoutput.printf("\n");
 
 
@@ -7131,14 +7109,8 @@ int main(int argc, char **argv) {
 	for (int rb=1; rb<=3; rb++) {
 		rebindin=rb;
 		erg=SQLExecute(stmt);
-		if (issqlrelay) {
-			// FIXME: same PL/SQL-with-output-binds bug as
-			// OUTPUT BIND BY POSITION above.
-			assertFailureStmt(stmt,erg);
-		} else {
-			assertSuccessStmt(stmt,erg);
-			assertEqualStmt(stmt,(int)rebindout,rb);
-		}
+		assertSuccessStmt(stmt,erg);
+		assertEqualStmt(stmt,(int)rebindout,rb);
 	}
 	stdoutput.printf("\n");
 
@@ -7193,27 +7165,18 @@ int main(int argc, char **argv) {
 	assertSuccessStmt(stmt,erg);
 	assertEqualStmt(stmt,(int)reexval,1);
 	SQLCloseCursor(stmt);
-	if (issqlrelay) {
-		// FIXME: re-executing a SQL Relay ODBC prepared statement
-		// that has bound parameters returns ORA-01480 "trailing
-		// null missing from STR bind value" — the driver appears
-		// not to re-send the bound value on re-execute.
-		erg=SQLExecute(stmt);
-		assertFailureStmt(stmt,erg);
-	} else {
-		erg=SQLExecute(stmt);
-		assertSuccessStmt(stmt,erg);
-		erg=SQLFetch(stmt);
-		assertSuccessStmt(stmt,erg);
-		assertEqualStmt(stmt,(int)reexval,1);
-		SQLCloseCursor(stmt);
-		reexbind=2;
-		erg=SQLExecute(stmt);
-		assertSuccessStmt(stmt,erg);
-		erg=SQLFetch(stmt);
-		assertSuccessStmt(stmt,erg);
-		assertEqualStmt(stmt,(int)reexval,2);
-	}
+	erg=SQLExecute(stmt);
+	assertSuccessStmt(stmt,erg);
+	erg=SQLFetch(stmt);
+	assertSuccessStmt(stmt,erg);
+	assertEqualStmt(stmt,(int)reexval,1);
+	SQLCloseCursor(stmt);
+	reexbind=2;
+	erg=SQLExecute(stmt);
+	assertSuccessStmt(stmt,erg);
+	erg=SQLFetch(stmt);
+	assertSuccessStmt(stmt,erg);
+	assertEqualStmt(stmt,(int)reexval,2);
 	stdoutput.printf("\n");
 
 
@@ -7776,88 +7739,65 @@ int main(int argc, char **argv) {
 	erg=SQLFreeStmt(stmt,SQL_CLOSE);
 	erg=SQLFreeStmt(stmt,SQL_UNBIND);
 	erg=SQLFreeStmt(stmt,SQL_RESET_PARAMS);
-	if (issqlrelay) {
-		// FIXME: SQL Relay's ODBC driver splits the query text on
-		// ';' and sends only the first fragment to Oracle, which
-		// corrupts any PL/SQL anonymous block. A CREATE PROCEDURE
-		// therefore arrives truncated (missing "end;") and Oracle
-		// reports ORA-24344 "success with compilation error". The
-		// C++ client API sends the full query and handles CREATE
-		// PROCEDURE correctly. Until the ODBC driver preserves
-		// PL/SQL blocks, we can't populate procedures we'd then
-		// list via SQLProcedures here.
-		erg=SQLExecDirect(stmt,(SQLCHAR *)
-			"create or replace procedure testproc1 ("
+	SQLExecDirect(stmt,(SQLCHAR *)
+			"drop procedure testproc1",SQL_NTS);
+	SQLExecDirect(stmt,(SQLCHAR *)
+			"drop procedure testproc2",SQL_NTS);
+	SQLExecDirect(stmt,(SQLCHAR *)
+			"drop procedure testproc3",SQL_NTS);
+	SQLExecDirect(stmt,(SQLCHAR *)
+			"drop procedure testproc4",SQL_NTS);
+	const char	*proccreate=
+			"create or replace procedure %s ("
 			"	in1 in number, "
 			"	in2 in char, "
 			"	in3 in varchar2, "
 			"	in4 in date) as "
 			"begin "
 			"	null; "
-			"end;",
-			SQL_NTS);
-		assertFailureStmt(stmt,erg);
-	} else {
-		SQLExecDirect(stmt,(SQLCHAR *)
-				"drop procedure testproc1",SQL_NTS);
-		SQLExecDirect(stmt,(SQLCHAR *)
-				"drop procedure testproc2",SQL_NTS);
-		SQLExecDirect(stmt,(SQLCHAR *)
-				"drop procedure testproc3",SQL_NTS);
-		SQLExecDirect(stmt,(SQLCHAR *)
-				"drop procedure testproc4",SQL_NTS);
-		const char	*proccreate=
-				"create or replace procedure %s ("
-				"	in1 in number, "
-				"	in2 in char, "
-				"	in3 in varchar2, "
-				"	in4 in date) as "
-				"begin "
-				"	null; "
-				"end;";
-		for (int p=1; p<=4; p++) {
-			char pbuf[512];
-			charstring::printf(pbuf,sizeof(pbuf),proccreate,
-				(p==1)?"testproc1":
-				(p==2)?"testproc2":
-				(p==3)?"testproc3":"testproc4");
-			erg=SQLExecDirect(stmt,(SQLCHAR *)pbuf,SQL_NTS);
-			assertSuccessStmt(stmt,erg);
-		}
-		erg=SQLProcedures(stmt,
-				(SQLCHAR *)"",SQL_NTS,
-				(SQLCHAR *)schemafilter,SQL_NTS,
-				(SQLCHAR *)"TESTPROC%",SQL_NTS);
+			"end;";
+	for (int p=1; p<=4; p++) {
+		char pbuf[512];
+		charstring::printf(pbuf,sizeof(pbuf),proccreate,
+			(p==1)?"testproc1":
+			(p==2)?"testproc2":
+			(p==3)?"testproc3":"testproc4");
+		erg=SQLExecDirect(stmt,(SQLCHAR *)pbuf,SQL_NTS);
 		assertSuccessStmt(stmt,erg);
-		SQLCHAR		procname[64];
-		SQLLEN		procnameind;
-		erg=SQLBindCol(stmt,3,SQL_C_CHAR,
-				procname,sizeof(procname),&procnameind);
-		int		proccounter=0;
-		for (;;) {
-			erg=SQLFetch(stmt);
-			if (erg==SQL_NO_DATA) {
-				break;
-			}
-			assertSuccessStmt(stmt,erg);
-			if (erg!=SQL_SUCCESS && erg!=SQL_SUCCESS_WITH_INFO) {
-				break;
-			}
-			if (!charstring::compare(
-				(const char *)procname,"TESTPROC1") ||
-				!charstring::compare(
-					(const char *)procname,"TESTPROC2") ||
-				!charstring::compare(
-					(const char *)procname,"TESTPROC3") ||
-				!charstring::compare(
-					(const char *)procname,"TESTPROC4")) {
-				proccounter++;
-			}
-		}
-		assertEqualStmt(stmt,proccounter,4);
-		erg=SQLFreeStmt(stmt,SQL_CLOSE);
-		erg=SQLFreeStmt(stmt,SQL_UNBIND);
 	}
+	erg=SQLProcedures(stmt,
+			(SQLCHAR *)"",SQL_NTS,
+			(SQLCHAR *)schemafilter,SQL_NTS,
+			(SQLCHAR *)"TESTPROC%",SQL_NTS);
+	assertSuccessStmt(stmt,erg);
+	SQLCHAR		procname[64];
+	SQLLEN		procnameind;
+	erg=SQLBindCol(stmt,3,SQL_C_CHAR,
+			procname,sizeof(procname),&procnameind);
+	int		proccounter=0;
+	for (;;) {
+		erg=SQLFetch(stmt);
+		if (erg==SQL_NO_DATA) {
+			break;
+		}
+		assertSuccessStmt(stmt,erg);
+		if (erg!=SQL_SUCCESS && erg!=SQL_SUCCESS_WITH_INFO) {
+			break;
+		}
+		if (!charstring::compare(
+			(const char *)procname,"TESTPROC1") ||
+			!charstring::compare(
+				(const char *)procname,"TESTPROC2") ||
+			!charstring::compare(
+				(const char *)procname,"TESTPROC3") ||
+			!charstring::compare(
+				(const char *)procname,"TESTPROC4")) {
+			proccounter++;
+		}
+	}
+	assertEqualStmt(stmt,proccounter,4);
+	erg=SQLFreeStmt(stmt,SQL_CLOSE);
+	erg=SQLFreeStmt(stmt,SQL_UNBIND);
 	stdoutput.printf("\n");
 
 
@@ -7867,19 +7807,6 @@ int main(int argc, char **argv) {
 	erg=SQLFreeStmt(stmt,SQL_CLOSE);
 	erg=SQLFreeStmt(stmt,SQL_UNBIND);
 	erg=SQLFreeStmt(stmt,SQL_RESET_PARAMS);
-	if (issqlrelay) {
-		// FIXME: depends on the CREATE PROCEDURE in the PROCEDURE
-		// LIST block above, which fails on SQL Relay's ODBC
-		// driver — SQLProcedureColumns finds nothing to list.
-		erg=SQLProcedureColumns(stmt,
-			(SQLCHAR *)"",SQL_NTS,
-			(SQLCHAR *)schemafilter,SQL_NTS,
-			(SQLCHAR *)"TESTPROC1",SQL_NTS,
-			(SQLCHAR *)"",SQL_NTS);
-		assertSuccessStmt(stmt,erg);
-		erg=SQLFetch(stmt);
-		assertEqualStmt(stmt,(int)erg,(int)SQL_NO_DATA);
-	} else {
 	erg=SQLProcedureColumns(stmt,
 			(SQLCHAR *)"",SQL_NTS,
 			(SQLCHAR *)schemafilter,SQL_NTS,
@@ -7924,7 +7851,6 @@ int main(int argc, char **argv) {
 					"drop procedure testproc%d",p);
 		erg=SQLExecDirect(stmt,(SQLCHAR *)pbuf,SQL_NTS);
 		assertSuccessStmt(stmt,erg);
-	}
 	}
 	stdoutput.printf("\n");
 

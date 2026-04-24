@@ -193,6 +193,21 @@ struct FIELD {
 struct outputbind {
 	SQLUSMALLINT	parameternumber;
 	SQLSMALLINT	valuetype;
+	SQLSMALLINT	parametertype;
+	SQLULEN		lengthprecision;
+	SQLSMALLINT	parameterscale;
+	SQLPOINTER	parametervalue;
+	SQLLEN		bufferlength;
+	SQLLEN		*strlen_or_ind;
+	void	print() {}
+};
+
+// SQLBindParameter input descriptor — stashed so SQLExecute can re-read
+// the application buffer on each execute, as the ODBC spec requires.
+struct inputbind {
+	SQLUSMALLINT	parameternumber;
+	SQLSMALLINT	valuetype;
+	SQLSMALLINT	parametertype;
 	SQLULEN		lengthprecision;
 	SQLSMALLINT	parameterscale;
 	SQLPOINTER	parametervalue;
@@ -217,6 +232,7 @@ struct STMT {
 	rowdesc					*improwdesc;
 	paramdesc				*impparamdesc;
 	dictionary<int32_t, char *>		inputbindstrings;
+	dictionary<int32_t,inputbind *>		inputbinds;
 	dictionary<int32_t,outputbind *>	outputbinds;
 	dictionary<int32_t,outputbind *>	inputoutputbinds;
 	SQLROWSETSIZE				*rowsfetchedptr;
@@ -476,6 +492,7 @@ static SQLRETURN SQLR_SQLAllocHandle(SQLSMALLINT handletype,
 				stmt->attrmaxlength=0;
 				stmt->inputbindstrings.
 					setManageArrayValues(true);
+				stmt->inputbinds.setManageValues(true);
 				stmt->outputbinds.setManageValues(true);
 				stmt->inputoutputbinds.setManageValues(true);
 
@@ -819,6 +836,7 @@ static void SQLR_ResetParams(STMT *stmt) {
 
 	stmt->cur->clearBinds();
 	stmt->inputbindstrings.clear();
+	stmt->inputbinds.clear();
 	stmt->outputbinds.clear();
 	stmt->inputoutputbinds.clear();
 }
@@ -832,7 +850,9 @@ static SQLRETURN SQLR_SQLCloseCursor(SQLHSTMT statementhandle) {
 		return SQL_INVALID_HANDLE;
 	}
 
-	SQLR_ResetParams(stmt);
+	// Per the ODBC spec, SQLCloseCursor (and SQLFreeStmt with SQL_CLOSE)
+	// closes the cursor and discards any pending result set but does not
+	// affect parameter or column bindings.  Don't reset params here.
 	stmt->cur->closeResultSet();
 
 	return SQL_SUCCESS;
@@ -3398,7 +3418,14 @@ static void SQLR_FetchOutputBinds(SQLHSTMT statementhandle) {
 			case SQL_C_CHAR:
 				{
 				debugPrintf("  valuetype: SQL_C_CHAR\n");
+				// for LONGVARCHAR the server-side bind is a
+				// CLOB, so pull the value through the CLOB
+				// accessor instead of the string accessor
 				const char	*str=
+					(ob->parametertype==SQL_LONGVARCHAR ||
+					 ob->parametertype==SQL_WLONGVARCHAR)?
+					stmt->cur->getOutputBindClob(
+								parametername):
 					stmt->cur->getOutputBindString(
 								parametername);
 				uint32_t	len=
@@ -3633,13 +3660,29 @@ static void SQLR_FetchOutputBinds(SQLHSTMT statementhandle) {
 				{
 				debugPrintf("  valuetype: "
 					"SQL_C_BINARY/SQL_C_VARBOOKMARK\n");
-				charstring::safeCopy(
-					(char *)ob->parametervalue,
-					ob->bufferlength,
+				const char	*blob=
 					stmt->cur->getOutputBindBlob(
-							parametername),
+							parametername);
+				uint32_t	bloblen=
 					stmt->cur->getOutputBindLength(
-							parametername));
+							parametername);
+				if (!blob) {
+					if (ob->strlen_or_ind) {
+						*(ob->strlen_or_ind)=
+								SQL_NULL_DATA;
+					}
+				} else {
+					bytestring::copy(
+						ob->parametervalue,blob,
+						(bloblen<(uint32_t)
+							ob->bufferlength)?
+							bloblen:
+							(uint32_t)
+							ob->bufferlength);
+					if (ob->strlen_or_ind) {
+						*(ob->strlen_or_ind)=bloblen;
+					}
+				}
 				break;
 				}
 			case SQL_C_BIT:
@@ -4049,6 +4092,127 @@ static void SQLR_FetchInputOutputBinds(SQLHSTMT statementhandle) {
 	}
 }
 
+static bool SQLR_KeywordAt(const SQLCHAR *text, uint32_t length,
+					uint32_t pos, const char *kw) {
+
+	uint32_t	kwlen=charstring::getLength(kw);
+
+	// not enough text left at `pos` to contain the keyword
+	if (length-pos<kwlen) {
+		return false;
+	}
+
+	// case-insensitive keyword match at `pos` in `text[0..length)`
+	if (charstring::compareIgnoringCase(
+			(const char *)text+pos,kw,kwlen)) {
+		return false;
+	}
+
+	// the keyword runs up to the end of the text, so there is no
+	// trailing character that could extend it into a longer identifier
+	if (length-pos==kwlen) {
+		return true;
+	}
+
+	// require a non-identifier boundary immediately after the keyword
+	// (eg. so that "begin" matches "begin null;" but not "beginning").
+	char	next=text[pos+kwlen];
+	return !character::isAlphanumeric(next) && next!='_';
+}
+
+static void SQLR_SkipWhitespace(const SQLCHAR *text, uint32_t length,
+							uint32_t *pos) {
+	// advance past SQL whitespace in `text[0..length)` starting at `*pos`.
+	while (*pos<length) {
+		char	ch=text[*pos];
+		if (ch!=' ' && ch!='	' && ch!='\n' && ch!='\r') {
+			return;
+		}
+		(*pos)++;
+	}
+}
+
+static bool SQLR_IsProceduralSQL(SQLCHAR *statementtext, uint32_t length) {
+
+	uint32_t	i=0;
+	SQLR_SkipWhitespace(statementtext,length,&i);
+
+	// BEGIN ... END; or DECLARE ... BEGIN ... END;
+	if (SQLR_KeywordAt(statementtext,length,i,"begin") ||
+			SQLR_KeywordAt(statementtext,length,i,"declare")) {
+		return true;
+	}
+
+	// CREATE [OR REPLACE] / ALTER followed (after whitespace) by
+	// one of the procedural-SQL object kinds
+	bool	isddl=SQLR_KeywordAt(statementtext,length,i,"create");
+	if (isddl) {
+		i+=6;
+	} else if (SQLR_KeywordAt(statementtext,length,i,"alter")) {
+		i+=5;
+	} else {
+		return false;
+	}
+	SQLR_SkipWhitespace(statementtext,length,&i);
+
+	// optional OR REPLACE (only valid on CREATE)
+	if (isddl && SQLR_KeywordAt(statementtext,length,i,"or")) {
+		i+=2;
+		SQLR_SkipWhitespace(statementtext,length,&i);
+		if (SQLR_KeywordAt(statementtext,length,i,"replace")) {
+			i+=7;
+			SQLR_SkipWhitespace(statementtext,length,&i);
+		}
+	}
+
+	// procedural-SQL object kinds
+	return SQLR_KeywordAt(statementtext,length,i,"procedure") ||
+		SQLR_KeywordAt(statementtext,length,i,"function") ||
+		SQLR_KeywordAt(statementtext,length,i,"package") ||
+		SQLR_KeywordAt(statementtext,length,i,"trigger") ||
+		SQLR_KeywordAt(statementtext,length,i,"type");
+}
+
+static SQLRETURN SQLR_InputBindParameter(SQLHSTMT statementhandle,
+					SQLUSMALLINT parameternumber,
+					SQLSMALLINT valuetype,
+					SQLSMALLINT parametertype,
+					SQLULEN lengthprecision,
+					SQLSMALLINT parameterscale,
+					SQLPOINTER parametervalue,
+					SQLLEN bufferlength,
+					SQLLEN *strlen_or_ind);
+
+static void SQLR_RebindInputs(STMT *stmt) {
+	if (!stmt->inputbinds.getCount()) {
+		return;
+	}
+	for (listnode<int32_t> *node=
+				stmt->inputbinds.getKeys()->getFirst();
+				node; node=node->getNext()) {
+		inputbind	*ib=
+				stmt->inputbinds.getValue(node->getValue());
+		// skip data-at-exec placeholders; those get real values
+		// through SQLParamData/SQLPutData, not through the bound
+		// buffer
+		if (ib->strlen_or_ind &&
+				(*ib->strlen_or_ind==SQL_DATA_AT_EXEC ||
+					*ib->strlen_or_ind<=
+						SQL_LEN_DATA_AT_EXEC_OFFSET)) {
+			continue;
+		}
+		SQLR_InputBindParameter((SQLHSTMT)stmt,
+					ib->parameternumber,
+					ib->valuetype,
+					ib->parametertype,
+					ib->lengthprecision,
+					ib->parameterscale,
+					ib->parametervalue,
+					ib->bufferlength,
+					ib->strlen_or_ind);
+	}
+}
+
 static uint32_t SQLR_TrimQuery(SQLCHAR *statementtext, SQLINTEGER textlength) {
 
 	// find the length of the string
@@ -4064,15 +4228,20 @@ static uint32_t SQLR_TrimQuery(SQLCHAR *statementtext, SQLINTEGER textlength) {
 		return 0;
 	}
 
-	// trim trailing whitespace and semicolons
+	// strip trailing whitespace; strip trailing ';' too, but only when
+	// the query isn't a procedural-SQL block — those need their
+	// terminating "end;" intact
+	bool	proceduralsql=SQLR_IsProceduralSQL(statementtext,length);
 	for (;;) {
 		char	ch=statementtext[length-1];
-		if (ch==' ' || ch=='	' || ch=='\n' || ch=='\r' || ch==';') {
-			length--;
-			if (length==0) {
-				return length;
-			}
-		} else {
+		bool	trim=(ch==' ' || ch=='	' ||
+					ch=='\n' || ch=='\r' ||
+					(ch==';' && !proceduralsql));
+		if (!trim) {
+			return length;
+		}
+		length--;
+		if (length==0) {
 			return length;
 		}
 	}
@@ -4088,6 +4257,9 @@ static SQLRETURN SQLR_SQLExecDirect(SQLHSTMT statementhandle,
 		debugPrintf("  NULL stmt handle\n");
 		return SQL_INVALID_HANDLE;
 	}
+
+	// re-read the application's input bind buffers before execute
+	SQLR_RebindInputs(stmt);
 
 	// defer execution if there are any data-at-exec binds
 	if (stmt->dataatexec) {
@@ -4153,6 +4325,9 @@ static SQLRETURN SQLR_SQLExecute(SQLHSTMT statementhandle) {
 		debugPrintf("  NULL stmt handle\n");
 		return SQL_INVALID_HANDLE;
 	}
+
+	// re-read the application's input bind buffers before execute
+	SQLR_RebindInputs(stmt);
 
 	// defer execution if there are any data-at-exec binds
 	if (stmt->dataatexec) {
@@ -13285,6 +13460,7 @@ static const char *SQLR_BuildGuid(STMT *stmt,
 static SQLRETURN SQLR_InputBindParameter(SQLHSTMT statementhandle,
 					SQLUSMALLINT parameternumber,
 					SQLSMALLINT valuetype,
+					SQLSMALLINT parametertype,
 					SQLULEN lengthprecision,
 					SQLSMALLINT parameterscale,
 					SQLPOINTER parametervalue,
@@ -13344,6 +13520,25 @@ static SQLRETURN SQLR_InputBindParameter(SQLHSTMT statementhandle,
 				stmt->dataatexec=true;
 				stmt->dataatexecdict.setValue(parameternumber,
 								parametervalue);
+			} else if ((parametertype==SQL_LONGVARCHAR ||
+					parametertype==SQL_WLONGVARCHAR) &&
+					(!parametervalue ||
+						(strlen_or_ind &&
+							*strlen_or_ind==0))) {
+				// Zero-length or NULL input for a
+				// LONGVARCHAR parameter: bind as a CLOB so
+				// the empty-vs-NULL distinction survives
+				// Oracle's "empty string == NULL" legacy
+				// semantics.  Non-empty data still falls
+				// through to the plain-string path below,
+				// because ODBC's SQL_LONGVARCHAR maps to
+				// either LONG or CLOB on Oracle and a CLOB
+				// temporary LOB can't bind to a LONG
+				// column.
+				debugPrintf("  as CLOB (empty/NULL)\n");
+				stmt->cur->inputBindClob(parametername,
+						(const char *)parametervalue,
+						0);
 			} else {
 				if (bufferlength) {
 					debugPrintf("  value: \"%.*s\"\n",
@@ -13561,6 +13756,7 @@ static SQLRETURN SQLR_InputBindParameter(SQLHSTMT statementhandle,
 static SQLRETURN SQLR_OutputBindParameter(SQLHSTMT statementhandle,
 					SQLUSMALLINT parameternumber,
 					SQLSMALLINT valuetype,
+					SQLSMALLINT parametertype,
 					SQLULEN lengthprecision,
 					SQLSMALLINT parameterscale,
 					SQLPOINTER parametervalue,
@@ -13571,6 +13767,7 @@ static SQLRETURN SQLR_InputOutputBindParameter(
 					SQLHSTMT statementhandle,
 					SQLUSMALLINT parameternumber,
 					SQLSMALLINT valuetype,
+					SQLSMALLINT parametertype,
 					SQLULEN lengthprecision,
 					SQLSMALLINT parameterscale,
 					SQLPOINTER parametervalue,
@@ -13589,6 +13786,7 @@ static SQLRETURN SQLR_InputOutputBindParameter(
 					statementhandle,
 					parameternumber,
 					valuetype,
+					parametertype,
 					lengthprecision,
 					parameterscale,
 					parametervalue,
@@ -13619,6 +13817,7 @@ static SQLRETURN SQLR_InputOutputBindParameter(
 	outputbind	*ob=new outputbind;
 	ob->parameternumber=parameternumber;
 	ob->valuetype=valuetype;
+	ob->parametertype=parametertype;
 	ob->lengthprecision=lengthprecision;
 	ob->parameterscale=parameterscale;
 	ob->parametervalue=parametervalue;
@@ -13812,6 +14011,7 @@ static SQLRETURN SQLR_InputOutputBindParameter(
 static SQLRETURN SQLR_OutputBindParameter(SQLHSTMT statementhandle,
 					SQLUSMALLINT parameternumber,
 					SQLSMALLINT valuetype,
+					SQLSMALLINT parametertype,
 					SQLULEN lengthprecision,
 					SQLSMALLINT parameterscale,
 					SQLPOINTER parametervalue,
@@ -13842,6 +14042,7 @@ static SQLRETURN SQLR_OutputBindParameter(SQLHSTMT statementhandle,
 	outputbind	*ob=new outputbind;
 	ob->parameternumber=parameternumber;
 	ob->valuetype=valuetype;
+	ob->parametertype=parametertype;
 	ob->lengthprecision=lengthprecision;
 	ob->parameterscale=parameterscale;
 	ob->parametervalue=parametervalue;
@@ -13853,8 +14054,16 @@ static SQLRETURN SQLR_OutputBindParameter(SQLHSTMT statementhandle,
 		case SQL_C_CHAR:
 		case SQL_C_BIT:
 			debugPrintf("  valuetype: SQL_C_CHAR/SQL_C_BIT\n");
-			stmt->cur->defineOutputBindString(parametername,
-								bufferlength);
+			if (parametertype==SQL_LONGVARCHAR ||
+					parametertype==SQL_WLONGVARCHAR) {
+				// CLOB output bind; the server fills the
+				// buffer from a real LOB rather than a
+				// fixed-size padded string
+				stmt->cur->defineOutputBindClob(parametername);
+			} else {
+				stmt->cur->defineOutputBindString(
+						parametername,bufferlength);
+			}
 			break;
 		case SQL_C_LONG:
 		case SQL_C_SBIGINT:
@@ -13962,9 +14171,29 @@ static SQLRETURN SQLR_SQLBindParameter(SQLHSTMT statementhandle,
 		case SQL_PARAM_INPUT:
 			debugPrintf("  inputoutputtype: "
 						"SQL_PARAM_INPUT\n");
+			{
+			// stash the descriptor so each SQLExecute can
+			// re-read the application buffer (ODBC semantics:
+			// bound values are read at execute time, not bind
+			// time)
+			inputbind	*ib;
+			if (!stmt->inputbinds.getValue(parameternumber,&ib)) {
+				ib=new inputbind;
+				stmt->inputbinds.setValue(parameternumber,ib);
+			}
+			ib->parameternumber=parameternumber;
+			ib->valuetype=valuetype;
+			ib->parametertype=parametertype;
+			ib->lengthprecision=lengthprecision;
+			ib->parameterscale=parameterscale;
+			ib->parametervalue=parametervalue;
+			ib->bufferlength=bufferlength;
+			ib->strlen_or_ind=strlen_or_ind;
+			}
 			return SQLR_InputBindParameter(statementhandle,
 							parameternumber,
 							valuetype,
+							parametertype,
 							lengthprecision,
 							parameterscale,
 							parametervalue,
@@ -13976,6 +14205,7 @@ static SQLRETURN SQLR_SQLBindParameter(SQLHSTMT statementhandle,
 			return SQLR_InputOutputBindParameter(statementhandle,
 							parameternumber,
 							valuetype,
+							parametertype,
 							lengthprecision,
 							parameterscale,
 							parametervalue,
@@ -13987,6 +14217,7 @@ static SQLRETURN SQLR_SQLBindParameter(SQLHSTMT statementhandle,
 			return SQLR_OutputBindParameter(statementhandle,
 							parameternumber,
 							valuetype,
+							parametertype,
 							lengthprecision,
 							parameterscale,
 							parametervalue,
