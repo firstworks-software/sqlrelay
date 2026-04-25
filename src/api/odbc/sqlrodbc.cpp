@@ -323,6 +323,16 @@ static void SQLR_CONNSetError(CONN *conn, const char *error,
 	debugPrintf("  sqlstate: %s\n",conn->sqlstate);
 }
 
+static void SQLR_ConnSetOptionalFeatureNotImplementedError(CONN *conn) {
+	SQLR_CONNSetError(conn,
+		"Optional feature not implemented",0,"HYC00");
+}
+
+static void SQLR_ConnSetOptionValueChangedError(CONN *conn) {
+	SQLR_CONNSetError(conn,
+		"Option value changed",0,"01S02");
+}
+
 static void SQLR_CONNClearError(CONN *conn) {
 	debugFunction();
 	SQLR_CONNSetError(conn,NULL,0,"00000");
@@ -344,6 +354,26 @@ static void SQLR_STMTSetError(STMT *stmt, const char *error,
 	debugPrintf("  error: %s\n",stmt->error);
 	debugPrintf("  errn: %lld\n",stmt->errn);
 	debugPrintf("  sqlstate: %s\n",stmt->sqlstate);
+}
+
+static void SQLR_StmtSetInvalidAttributeError(STMT *stmt) {
+	SQLR_STMTSetError(stmt,
+		"Invalid attribute/option identifier",0,"HY092");
+}
+
+static void SQLR_StmtSetOptionalFeatureNotImplementedError(STMT *stmt) {
+	SQLR_STMTSetError(stmt,
+		"Optional feature not implemented",0,"HYC00");
+}
+
+static void SQLR_StmtSetOptionValueChangedError(STMT *stmt) {
+	SQLR_STMTSetError(stmt,
+		"Option value changed",0,"01S02");
+}
+
+static void SQLR_StmtSetDriverDoesNotSupportError(STMT *stmt) {
+	SQLR_STMTSetError(stmt,
+		"Driver does not support this function",0,"IM001");
 }
 
 static void SQLR_STMTClearError(STMT *stmt) {
@@ -548,8 +578,7 @@ static SQLRETURN SQLR_SQLAllocHandle(SQLSMALLINT handletype,
 				debugPrintf("  NULL conn handle\n");
 				return SQL_INVALID_HANDLE;
 			}
-			SQLR_CONNSetError(conn,
-				"Optional feature not implemented",0,"HYC00");
+			SQLR_ConnSetOptionalFeatureNotImplementedError(conn);
 			return SQL_ERROR;
 			}
 		default:
@@ -838,8 +867,7 @@ static SQLRETURN SQLR_SQLCancelHandle(SQLSMALLINT handletype,
 			debugPrintf("  NULL stmt handle\n");
 			return SQL_INVALID_HANDLE;
 		}
-		SQLR_STMTSetError(stmt,
-			"Driver does not support this function",0,"IM001");
+		SQLR_StmtSetDriverDoesNotSupportError(stmt);
 	}
 	return SQL_ERROR;
 }
@@ -4936,8 +4964,7 @@ static SQLRETURN SQLR_SQLGetConnectAttr(SQLHDBC connectionhandle,
 	#endif
 		default:
 			debugPrintf("  invalid attribute: %d\n",attribute);
-			SQLR_CONNSetError(conn,
-				"Optional field not implemented",0,"HYC00");
+			SQLR_ConnSetOptionalFeatureNotImplementedError(conn);
 			return SQL_ERROR;
 	}
 
@@ -6046,7 +6073,7 @@ SQLRETURN SQL_API SQLGetEnvAttr(SQLHENV environmenthandle,
 		default:
 			debugPrintf("  invalid attribute: %d\n",attribute);
 			SQLR_ENVSetError(env,
-				"Optional field not implemented",0,"HYC00");
+				"Optional feature not implemented",0,"HYC00");
 			return SQL_ERROR;
 			break;
 	}
@@ -10782,8 +10809,7 @@ SQLRETURN SQL_API SQLGetInfo(SQLHDBC connectionhandle,
 		#endif
 		default:
 			debugPrintf("  invalid infotype: %d\n",infotype);
-			SQLR_CONNSetError(conn,
-				"Optional field not implemented",0,"HYC00");
+			SQLR_ConnSetOptionalFeatureNotImplementedError(conn);
 			return SQL_ERROR;
 	}
 
@@ -11025,9 +11051,7 @@ static SQLRETURN SQLR_SQLGetStmtAttr(SQLHSTMT statementhandle,
 		case SQL_GET_BOOKMARK:
 			debugPrintf("  attribute: SQL_GET_BOOKMARK\n");
 			// sqlrelay doesn't support bookmarks
-			SQLR_STMTSetError(stmt,
-				"Optional feature not implemented",
-				0,"HYC00");
+			SQLR_StmtSetOptionalFeatureNotImplementedError(stmt);
 			return SQL_ERROR;
 		// case SQL_ATTR_ROW_NUMBER
 		case SQL_ROW_NUMBER:
@@ -11137,14 +11161,12 @@ static SQLRETURN SQLR_SQLGetStmtAttr(SQLHSTMT statementhandle,
 			// these are sentinel constants marking the range of
 			// stmt-option ids, not real attributes
 			debugPrintf("  invalid attribute: %d\n",attribute);
-			SQLR_STMTSetError(stmt,
-				"Invalid attribute identifier",0,"HY092");
+			SQLR_StmtSetInvalidAttributeError(stmt);
 			return SQL_ERROR;
 		#endif
 		default:
 			debugPrintf("  invalid attribute: %d\n",attribute);
-			SQLR_STMTSetError(stmt,
-				"Optional field not implemented",0,"HYC00");
+			SQLR_StmtSetOptionalFeatureNotImplementedError(stmt);
 			return SQL_ERROR;
 	}
 
@@ -11875,8 +11897,7 @@ static SQLRETURN SQLR_SQLSetConnectAttr(SQLHDBC connectionhandle,
 			// sqlrelay doesn't support async mode
 			if (val.uintval==SQL_ASYNC_ENABLE_ON) {
 				conn->attrasyncenable=SQL_ASYNC_ENABLE_OFF;
-				SQLR_CONNSetError(conn,
-					"Option value changed",0,"01S02");
+				SQLR_ConnSetOptionValueChangedError(conn);
 				return SQL_SUCCESS_WITH_INFO;
 			}
 			conn->attrasyncenable=val.uintval;
@@ -11911,8 +11932,7 @@ static SQLRETURN SQLR_SQLSetConnectAttr(SQLHDBC connectionhandle,
 			// so SQL_TRUE (treat args as quoted identifiers) isn't
 			// implementable
 			if (val.uintval==SQL_TRUE) {
-				SQLR_CONNSetError(conn,
-					"Option value changed",0,"01S02");
+				SQLR_ConnSetOptionValueChangedError(conn);
 				return SQL_SUCCESS_WITH_INFO;
 			}
 			return SQL_SUCCESS;
@@ -11972,8 +11992,7 @@ static SQLRETURN SQLR_SQLSetConnectAttr(SQLHDBC connectionhandle,
 			return SQL_SUCCESS;
 		default:
 			debugPrintf("  invalid attribute: %d\n",attribute);
-			SQLR_CONNSetError(conn,
-				"Optional field not implemented",0,"HYC00");
+			SQLR_ConnSetOptionalFeatureNotImplementedError(conn);
 			return SQL_ERROR;
 	}
 
@@ -12163,10 +12182,12 @@ static SQLRETURN SQLR_SQLSetStmtAttr(SQLHSTMT statementhandle,
 		case SQL_ATTR_IMP_ROW_DESC:
 			debugPrintf("  attribute: SQL_ATTR_IMP_ROW_DESC\n");
 			// read-only
+			SQLR_StmtSetInvalidAttributeError(stmt);
 			return SQL_ERROR;
 		case SQL_ATTR_IMP_PARAM_DESC:
 			debugPrintf("  attribute: SQL_ATTR_IMP_PARAM_DESC\n");
 			// read-only
+			SQLR_StmtSetInvalidAttributeError(stmt);
 			return SQL_ERROR;
 		case SQL_ATTR_CURSOR_SCROLLABLE:
 			{
@@ -12176,8 +12197,7 @@ static SQLRETURN SQLR_SQLSetStmtAttr(SQLHSTMT statementhandle,
 						"%lld\n",(uint64_t)val);
 			// sqlrelay only supports SQL_NONSCROLLABLE
 			if (val!=SQL_NONSCROLLABLE) {
-				SQLR_STMTSetError(stmt,
-					"Option value changed",0,"01S02");
+				SQLR_StmtSetOptionValueChangedError(stmt);
 				return SQL_SUCCESS_WITH_INFO;
 			}
 			return SQL_SUCCESS;
@@ -12190,8 +12210,7 @@ static SQLRETURN SQLR_SQLSetStmtAttr(SQLHSTMT statementhandle,
 						"%lld\n",(uint64_t)val);
 			// sqlrelay doesn't support SQL_SENSITIVE
 			if (val==SQL_SENSITIVE) {
-				SQLR_STMTSetError(stmt,
-					"Option value changed",0,"01S02");
+				SQLR_StmtSetOptionValueChangedError(stmt);
 				return SQL_SUCCESS_WITH_INFO;
 			}
 			return SQL_SUCCESS;
@@ -12238,8 +12257,7 @@ static SQLRETURN SQLR_SQLSetStmtAttr(SQLHSTMT statementhandle,
 						"%lld\n",(uint64_t)val);
 			// sqlrelay doesn't support async mode
 			if (val==SQL_ASYNC_ENABLE_ON) {
-				SQLR_STMTSetError(stmt,
-					"Option value changed",0,"01S02");
+				SQLR_StmtSetOptionValueChangedError(stmt);
 				return SQL_SUCCESS_WITH_INFO;
 			}
 			return SQL_SUCCESS;
@@ -12262,8 +12280,7 @@ static SQLRETURN SQLR_SQLSetStmtAttr(SQLHSTMT statementhandle,
 						"%lld\n",(uint64_t)val);
 			// sqlrelay only supports forward-only cursors
 			if (val!=SQL_CURSOR_FORWARD_ONLY) {
-				SQLR_STMTSetError(stmt,
-					"Option value changed",0,"01S02");
+				SQLR_StmtSetOptionValueChangedError(stmt);
 				return SQL_SUCCESS_WITH_INFO;
 			}
 			return SQL_SUCCESS;
@@ -12278,8 +12295,7 @@ static SQLRETURN SQLR_SQLSetStmtAttr(SQLHSTMT statementhandle,
 						"%lld\n",(uint64_t)val);
 			// sqlrelay's result sets are read-only
 			if (val!=SQL_CONCUR_READ_ONLY) {
-				SQLR_STMTSetError(stmt,
-					"Option value changed",0,"01S02");
+				SQLR_StmtSetOptionValueChangedError(stmt);
 				return SQL_SUCCESS_WITH_INFO;
 			}
 			return SQL_SUCCESS;
@@ -12315,8 +12331,7 @@ static SQLRETURN SQLR_SQLSetStmtAttr(SQLHSTMT statementhandle,
 			// sqlrelay doesn't implement positioned updates,
 			// so it can't make uniqueness guarantees
 			if (val!=SQL_SC_NON_UNIQUE) {
-				SQLR_STMTSetError(stmt,
-					"Option value changed",0,"01S02");
+				SQLR_StmtSetOptionValueChangedError(stmt);
 				return SQL_SUCCESS_WITH_INFO;
 			}
 			return SQL_SUCCESS;
@@ -12339,8 +12354,7 @@ static SQLRETURN SQLR_SQLSetStmtAttr(SQLHSTMT statementhandle,
 						"%lld\n",(uint64_t)val);
 			// sqlrelay doesn't support bookmarks
 			if (val!=SQL_UB_OFF) {
-				SQLR_STMTSetError(stmt,
-					"Option value changed",0,"01S02");
+				SQLR_StmtSetOptionValueChangedError(stmt);
 				return SQL_SUCCESS_WITH_INFO;
 			}
 			return SQL_SUCCESS;
@@ -12348,9 +12362,7 @@ static SQLRETURN SQLR_SQLSetStmtAttr(SQLHSTMT statementhandle,
 		case SQL_GET_BOOKMARK:
 			debugPrintf("  attribute: SQL_GET_BOOKMARK\n");
 			// sqlrelay doesn't support bookmarks
-			SQLR_STMTSetError(stmt,
-				"Optional feature not implemented",
-				0,"HYC00");
+			SQLR_StmtSetOptionalFeatureNotImplementedError(stmt);
 			return SQL_ERROR;
 		//case SQL_ATTR_ROW_NUMBER:
 		case SQL_ROW_NUMBER:
@@ -12358,6 +12370,7 @@ static SQLRETURN SQLR_SQLSetStmtAttr(SQLHSTMT statementhandle,
 					"SQL_ATTR_ROW_NUMBER/"
 					"SQL_ROW_NUMBER\n");
 			// read-only
+			SQLR_StmtSetInvalidAttributeError(stmt);
 			return SQL_ERROR;
 		#if (ODBCVER >= 0x0300)
 		case SQL_ATTR_METADATA_ID:
@@ -12370,8 +12383,7 @@ static SQLRETURN SQLR_SQLSetStmtAttr(SQLHSTMT statementhandle,
 			// so SQL_TRUE (treat args as quoted identifiers) isn't
 			// implementable
 			if (val==SQL_TRUE) {
-				SQLR_STMTSetError(stmt,
-					"Option value changed",0,"01S02");
+				SQLR_StmtSetOptionValueChangedError(stmt);
 				return SQL_SUCCESS_WITH_INFO;
 			}
 			return SQL_SUCCESS;
@@ -12392,9 +12404,7 @@ static SQLRETURN SQLR_SQLSetStmtAttr(SQLHSTMT statementhandle,
 			if (!value) {
 				return SQL_SUCCESS;
 			}
-			SQLR_STMTSetError(stmt,
-				"Optional feature not implemented",
-				0,"HYC00");
+			SQLR_StmtSetOptionalFeatureNotImplementedError(stmt);
 			return SQL_ERROR;
 		case SQL_ATTR_PARAM_BIND_OFFSET_PTR:
 			{
@@ -12412,8 +12422,7 @@ static SQLRETURN SQLR_SQLSetStmtAttr(SQLHSTMT statementhandle,
 							"%lld\n",(uint64_t)val);
 			// sqlrelay doesn't implement parameter arrays
 			if (val!=SQL_PARAM_BIND_BY_COLUMN) {
-				SQLR_STMTSetError(stmt,
-					"Option value changed",0,"01S02");
+				SQLR_StmtSetOptionValueChangedError(stmt);
 				return SQL_SUCCESS_WITH_INFO;
 			}
 			return SQL_SUCCESS;
@@ -12443,8 +12452,7 @@ static SQLRETURN SQLR_SQLSetStmtAttr(SQLHSTMT statementhandle,
 					"%lld\n",(uint64_t)val);
 			// sqlrelay doesn't implement parameter arrays
 			if (val!=1) {
-				SQLR_STMTSetError(stmt,
-					"Option value changed",0,"01S02");
+				SQLR_StmtSetOptionValueChangedError(stmt);
 				return SQL_SUCCESS_WITH_INFO;
 			}
 			return SQL_SUCCESS;
@@ -12486,8 +12494,7 @@ static SQLRETURN SQLR_SQLSetStmtAttr(SQLHSTMT statementhandle,
 			// these are sentinel constants marking the range of
 			// stmt-option ids, not real attributes
 			debugPrintf("  invalid attribute: %d\n",attribute);
-			SQLR_STMTSetError(stmt,
-				"Invalid attribute identifier",0,"HY092");
+			SQLR_StmtSetInvalidAttributeError(stmt);
 			return SQL_ERROR;
 		#endif
 		default:
@@ -12531,8 +12538,7 @@ SQLRETURN SQL_API SQLSpecialColumns(SQLHSTMT statementhandle,
 	}
 
 	// not supported
-	SQLR_STMTSetError(stmt,
-			"Driver does not support this function",0,"IM001");
+	SQLR_StmtSetDriverDoesNotSupportError(stmt);
 
 	return SQL_ERROR;
 }
@@ -12979,8 +12985,7 @@ SQLRETURN SQL_API SQLBulkOperations(SQLHSTMT statementhandle,
 	}
 
 	// not supported
-	SQLR_STMTSetError(stmt,
-			"Driver does not support this function",0,"IM001");
+	SQLR_StmtSetDriverDoesNotSupportError(stmt);
 
 	return SQL_ERROR;
 }
@@ -13020,8 +13025,7 @@ SQLRETURN SQL_API SQLColumnPrivileges(SQLHSTMT statementhandle,
 	}
 
 	// not supported
-	SQLR_STMTSetError(stmt,
-			"Driver does not support this function",0,"IM001");
+	SQLR_StmtSetDriverDoesNotSupportError(stmt);
 
 	return SQL_ERROR;
 }
@@ -13041,8 +13045,7 @@ SQLRETURN SQL_API SQLDescribeParam(SQLHSTMT statementhandle,
 	}
 
 	// not supported
-	SQLR_STMTSetError(stmt,
-			"Driver does not support this function",0,"IM001");
+	SQLR_StmtSetDriverDoesNotSupportError(stmt);
 
 	return SQL_ERROR;
 }
@@ -13114,8 +13117,7 @@ SQLRETURN SQL_API SQLForeignKeys(SQLHSTMT statementhandle,
 	}
 
 	// not supported
-	SQLR_STMTSetError(stmt,
-			"Driver does not support this function",0,"IM001");
+	SQLR_StmtSetDriverDoesNotSupportError(stmt);
 
 	return SQL_ERROR;
 }
@@ -13425,8 +13427,7 @@ static SQLRETURN SQLR_SQLSetPos(SQLHSTMT statementhandle,
 		return SQL_SUCCESS;
 	}
 
-	SQLR_STMTSetError(stmt,
-			"Driver does not support this function",0,"IM001");
+	SQLR_StmtSetDriverDoesNotSupportError(stmt);
 	return SQL_ERROR;
 }
 
@@ -13453,8 +13454,7 @@ SQLRETURN SQL_API SQLTablePrivileges(SQLHSTMT statementhandle,
 	}
 
 	// not supported
-	SQLR_STMTSetError(stmt,
-			"Driver does not support this function",0,"IM001");
+	SQLR_StmtSetDriverDoesNotSupportError(stmt);
 
 	return SQL_ERROR;
 }
