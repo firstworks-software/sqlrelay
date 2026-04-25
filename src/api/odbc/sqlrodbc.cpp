@@ -538,9 +538,20 @@ static SQLRETURN SQLR_SQLAllocHandle(SQLSMALLINT handletype,
 			return SQL_SUCCESS;
 			}
 		case SQL_HANDLE_DESC:
+			{
 			debugPrintf("  handletype: SQL_HANDLE_DESC\n");
-			// FIXME: no idea what to do here
+			// explicit (application-allocated) descriptors are
+			// not supported; implicit ones are exposed via the
+			// SQL_ATTR_{APP,IMP}_{ROW,PARAM}_DESC stmt attributes
+			CONN	*conn=(CONN *)inputhandle;
+			if (inputhandle==SQL_NULL_HANDLE || !conn) {
+				debugPrintf("  NULL conn handle\n");
+				return SQL_INVALID_HANDLE;
+			}
+			SQLR_CONNSetError(conn,
+				"Optional feature not implemented",0,"HYC00");
 			return SQL_ERROR;
+			}
 		default:
 			debugPrintf("  invalid handletype: %d\n",handletype);
 			break;
@@ -2255,15 +2266,15 @@ SQLRETURN SQL_API SQLColumns(SQLHSTMT statementhandle,
 	if (namelength4==SQL_NTS) {
 		namelength4=charstring::getLength((const char *)columnname);
 	}
-	char	*wild=charstring::duplicate(
+	char	*columns=charstring::duplicate(
 				(const char *)columnname,namelength4);
-	if (!charstring::compare(wild,"%")) {
-		delete[] wild;
-		wild=NULL;
+	if (!charstring::compare(columns,"%")) {
+		delete[] columns;
+		columns=NULL;
 	}
 
 	debugPrintf("  table: %s\n",table.getString());
-	debugPrintf("  wild: %s\n",(wild)?wild:"");
+	debugPrintf("  columns: %s\n",(columns)?columns:"");
 
 	// reinit row indices
 	stmt->currentfetchrow=0;
@@ -2274,10 +2285,10 @@ SQLRETURN SQL_API SQLColumns(SQLHSTMT statementhandle,
 	SQLR_STMTClearError(stmt);
 
 	SQLRETURN	retval=
-		(stmt->cur->getColumnList(table.getString(),wild,
+		(stmt->cur->getColumnList(table.getString(),columns,
 						SQLRCLIENTLISTFORMAT_ODBC))?
-							SQL_SUCCESS:SQL_ERROR;
-	delete[] wild;
+						SQL_SUCCESS:SQL_ERROR;
+	delete[] columns;
 
 	// the statement has been executed
 	stmt->executed=true;
@@ -2976,9 +2987,11 @@ SQLRETURN SQL_API SQLConnect(SQLHDBC connectionhandle,
 SQLRETURN SQL_API SQLCopyDesc(SQLHDESC SourceDescHandle,
 					SQLHDESC TargetDescHandle) {
 	debugFunction();
-	// FIXME: do something?
-	// I guess the desc handles are ARD, APD, IRD and IPD's.
-	return SQL_SUCCESS;
+	// descriptor field copy is not implemented;
+	// rowdesc/paramdesc don't actually track field state
+	// (would be HYC00, but descriptors don't carry
+	// diagnostics in this driver)
+	return SQL_ERROR;
 }
 
 #if (ODBCVER < 0x0300)
@@ -4688,9 +4701,10 @@ static SQLRETURN SQLR_SQLFreeHandle(SQLSMALLINT handletype, SQLHANDLE handle) {
 			}
 		case SQL_HANDLE_DESC:
 			debugPrintf("  handletype: SQL_HANDLE_DESC\n");
-			// FIXME: no idea what to do here,
-			// for now just report success
-			return SQL_SUCCESS;
+			// only implicit descriptors are exposed (via the
+			// SQL_ATTR_{APP,IMP}_{ROW,PARAM}_DESC stmt attrs);
+			// per spec those can't be explicitly freed (HY017)
+			return SQL_ERROR;
 		default:
 			debugPrintf("  invalid handletype\n");
 			return SQL_ERROR;
@@ -5904,8 +5918,8 @@ static SQLRETURN SQLR_SQLGetDiagRec(SQLSMALLINT handletype,
 			break;
 		case SQL_HANDLE_DESC:
 			debugPrintf("  handletype: SQL_HANDLE_DESC\n");
-			// not supported
-			return SQL_ERROR;
+			// descriptors don't track diagnostic records
+			return SQL_NO_DATA;
 		default:
 			debugPrintf("  invalid handletype\n");
 			return SQL_ERROR;
@@ -9362,7 +9376,6 @@ SQLRETURN SQL_API SQLGetInfo(SQLHDBC connectionhandle,
 					"SQL_ACTIVE_CONNECTIONS/"
 					"SQL_MAX_DRIVER_CONNECTIONS/"
 					"SQL_MAXIMUM_DRIVER_CONNECTIONS\n");
-			// FIXME: shouldn't this be sqlrelay's max connections?
 			val.usmallintval=
 				(SQLUSMALLINT)
 				charstring::convertToUnsignedInteger(
@@ -11021,7 +11034,12 @@ static SQLRETURN SQLR_SQLGetStmtAttr(SQLHSTMT statementhandle,
 			debugPrintf("  attribute: "
 					"SQL_ATTR_ROW_NUMBER/"
 					"SQL_ROW_NUMBER\n");
-			// FIXME: implement
+			// currentfetchrow is incremented past the just-fetched
+			// row, which makes it numerically equal to the 1-based
+			// row number of the current row; spec wants 0 if there
+			// is no current row (before first fetch or after EOF)
+			val.ulenval=(stmt->nodata)?0:stmt->currentfetchrow;
+			type=2;
 			break;
 		#if (ODBCVER >= 0x0300)
 		case SQL_ATTR_METADATA_ID:
@@ -11419,7 +11437,7 @@ SQLRETURN SQL_API SQLGetTypeInfo(SQLHSTMT statementhandle,
 	// get the type info
 	SQLRETURN	retval=(stmt->cur->getTypeInfoList(typestring,
 						SQLRCLIENTLISTFORMAT_ODBC))?
-							SQL_SUCCESS:SQL_ERROR;
+						SQL_SUCCESS:SQL_ERROR;
 
 	// the statement has been executed
 	stmt->executed=true;
@@ -12573,11 +12591,11 @@ SQLRETURN SQL_API SQLStatistics(SQLHSTMT statementhandle,
 			"Accuracy option type out of range",0,"HY101");
 	}
 
-	char	*wild;
-	charstring::printf(&wild,"%s:%s",uniqueness,accuracy);
+	char	*qualifier;
+	charstring::printf(&qualifier,"%s:%s",uniqueness,accuracy);
 
 	debugPrintf("  table: %s\n",table.getString());
-	debugPrintf("  wild: %s\n",(wild)?wild:"");
+	debugPrintf("  qualifier: %s\n",(qualifier)?qualifier:"");
 
 	// reinit row indices
 	stmt->currentfetchrow=0;
@@ -12588,10 +12606,10 @@ SQLRETURN SQL_API SQLStatistics(SQLHSTMT statementhandle,
 	SQLR_STMTClearError(stmt);
 
 	SQLRETURN	retval=
-		(stmt->cur->getKeyAndIndexList(table.getString(),wild,
+		(stmt->cur->getKeyAndIndexList(table.getString(),qualifier,
 						SQLRCLIENTLISTFORMAT_ODBC))?
-							SQL_SUCCESS:SQL_ERROR;
-	delete[] wild;
+						SQL_SUCCESS:SQL_ERROR;
+	delete[] qualifier;
 
 	// the statement has been executed
 	stmt->executed=true;
@@ -12696,9 +12714,9 @@ SQLRETURN SQL_API SQLTables(SQLHSTMT statementhandle,
 
 	} else {
 
-		const char	*wild=NULL;
+		const char	*tables=NULL;
 
-		// If tblname was empty or %, then leave "wild" NULL.
+		// If tblname was empty or %, then leave "tables" NULL.
 		// Otherwise concatenate catalog/schema's until it's in one
 		// of the following formats:
 		// * table
@@ -12707,27 +12725,27 @@ SQLRETURN SQL_API SQLTables(SQLHSTMT statementhandle,
 		// If tblname already contains a . then just use it as-is.
 		if (!charstring::contains(tblname,'.')) {
 
-			stringbuffer	wildstr;
+			stringbuffer	tblnamestr;
 			if (!charstring::isNullOrEmpty(catname)) {
-				wildstr.append(catname)->append('.');
+				tblnamestr.append(catname)->append('.');
 			}
 			if (!charstring::isNullOrEmpty(schname)) {
-				wildstr.append(schname)->append('.');
-			} else if (wildstr.getSize()) {
-				wildstr.append("%.");
+				tblnamestr.append(schname)->append('.');
+			} else if (tblnamestr.getSize()) {
+				tblnamestr.append("%.");
 			}
 			if (!charstring::isNullOrEmpty(tblname)) {
-				wildstr.append(tblname);
+				tblnamestr.append(tblname);
 			} else {
-				wildstr.append('%');
+				tblnamestr.append('%');
 			}
 			delete[] tblname;
-			tblname=wildstr.detachString();
+			tblname=tblnamestr.detachString();
 		}
-		wild=tblname;
+		tables=tblname;
 
 		debugPrintf("  getting table list...\n");
-		debugPrintf("  wild: %s\n",(wild)?wild:"");
+		debugPrintf("  tables: %s\n",(tables)?tables:"");
 
 		uint16_t	objecttypes=0;
 		if (charstring::contains(tbltype,"TABLE")) {
@@ -12747,9 +12765,10 @@ SQLRETURN SQL_API SQLTables(SQLHSTMT statementhandle,
 		// FIXME: this list should also be restricted to the
 		// specified table type
 		retval=
-		(stmt->cur->getTableList(
-				wild,SQLRCLIENTLISTFORMAT_ODBC,objecttypes))?
-							SQL_SUCCESS:SQL_ERROR;
+		(stmt->cur->getTableList(tables,
+					SQLRCLIENTLISTFORMAT_ODBC,
+					objecttypes))?
+					SQL_SUCCESS:SQL_ERROR;
 	}
 
 	delete[] catname;
@@ -13216,7 +13235,7 @@ SQLRETURN SQL_API SQLPrimaryKeys(SQLHSTMT statementhandle,
 	SQLRETURN	retval=
 		(stmt->cur->getPrimaryKeysList(table.getString(),NULL,
 						SQLRCLIENTLISTFORMAT_ODBC))?
-							SQL_SUCCESS:SQL_ERROR;
+						SQL_SUCCESS:SQL_ERROR;
 
 	// the statement has been executed
 	stmt->executed=true;
@@ -13263,15 +13282,15 @@ SQLRETURN SQL_API SQLProcedureColumns(SQLHSTMT statementhandle,
 	if (namelength4==SQL_NTS) {
 		namelength4=charstring::getLength((const char *)columnname);
 	}
-	char	*wild=charstring::duplicate(
+	char	*parameters=charstring::duplicate(
 				(const char *)columnname,namelength4);
-	if (!charstring::compare(wild,"%")) {
-		delete[] wild;
-		wild=NULL;
+	if (!charstring::compare(parameters,"%")) {
+		delete[] parameters;
+		parameters=NULL;
 	}
 
 	debugPrintf("  procedure: %s\n",procedure.getString());
-	debugPrintf("  wild: %s\n",(wild)?wild:"");
+	debugPrintf("  parameters: %s\n",(parameters)?parameters:"");
 
 	// reinit row indices
 	stmt->currentfetchrow=0;
@@ -13283,10 +13302,10 @@ SQLRETURN SQL_API SQLProcedureColumns(SQLHSTMT statementhandle,
 
 	SQLRETURN	retval=
 		(stmt->cur->getProcedureParameterList(
-						procedure.getString(),wild,
-						SQLRCLIENTLISTFORMAT_ODBC))?
-							SQL_SUCCESS:SQL_ERROR;
-	delete[] wild;
+					procedure.getString(),parameters,
+					SQLRCLIENTLISTFORMAT_ODBC))?
+					SQL_SUCCESS:SQL_ERROR;
+	delete[] parameters;
 
 	// the statement has been executed
 	stmt->executed=true;
@@ -13343,13 +13362,13 @@ SQLRETURN SQL_API SQLProcedures(SQLHSTMT statementhandle,
 
 	SQLRETURN	retval=SQL_ERROR;
 
-	const char	*wild=prcname;
-	if (!charstring::compare(wild,"%")) {
-		wild=NULL;
+	const char	*procedures=prcname;
+	if (!charstring::compare(procedures,"%")) {
+		procedures=NULL;
 	}
 
 	debugPrintf("  getting procedure list...\n");
-	debugPrintf("  wild: %s\n",(wild)?wild:"");
+	debugPrintf("  procedures: %s\n",(procedures)?procedures:"");
 
 	// FIXME: this list should also be restricted to the
 	// specified catalog, schema, and procedure type
@@ -13362,8 +13381,9 @@ SQLRETURN SQL_API SQLProcedures(SQLHSTMT statementhandle,
 	// clear the error
 	SQLR_STMTClearError(stmt);
 
-	retval=(stmt->cur->getProcedureList(wild,SQLRCLIENTLISTFORMAT_ODBC))?
-							SQL_SUCCESS:SQL_ERROR;
+	retval=(stmt->cur->getProcedureList(procedures,
+						SQLRCLIENTLISTFORMAT_ODBC))?
+						SQL_SUCCESS:SQL_ERROR;
 
 	delete[] catname;
 	delete[] schname;
