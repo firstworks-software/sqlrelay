@@ -12920,7 +12920,9 @@ SQLRETURN SQL_API SQLDriverConnect(SQLHDBC hdbc,
 			"Don't Get Column Info",
 			"Nulls As Nulls",
 			"Lazy Connect",
-			"Clear Binds During Prepare",
+			"Map DateTime To Date",
+			"Map Date To TimeStamp",
+			"Map NewDate To TimeStamp",
 			"Bind Variable Delimiters",
 			NULL
 		};
