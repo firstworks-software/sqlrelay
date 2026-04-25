@@ -143,7 +143,6 @@ struct CONN {
 
 	char				bindvariabledelimiters[5];
 
-	bool				attrmetadataid;
 	SQLSMALLINT			sqlerrorindex;
 
 	bool				setautocommiton;
@@ -259,6 +258,13 @@ struct STMT {
 	SQLULEN					attrmaxrows;
 	SQLULEN					attrnoscan;
 	SQLULEN					attrmaxlength;
+	SQLULEN					attrretrievedata;
+	SQLULEN					attrkeysetsize;
+	SQLULEN					attrenableautoipd;
+	SQLUSMALLINT				*paramoperationptr;
+	SQLUSMALLINT				*paramstatusptr;
+	SQLULEN					*rowbindoffsetptr;
+	SQLUSMALLINT				*rowoperationptr;
 };
 
 static SQLRETURN SQLR_SQLAllocHandle(SQLSMALLINT handletype,
@@ -388,7 +394,6 @@ static SQLRETURN SQLR_SQLAllocHandle(SQLSMALLINT handletype,
 				conn->error=NULL;
 				SQLR_CONNClearError(conn);
 				env->connlist.append(conn);
-				conn->attrmetadataid=false;
 				conn->setautocommiton=true;
 				conn->setautocommitoff=false;
 				conn->setisolationlevel=false;
@@ -490,6 +495,13 @@ static SQLRETURN SQLR_SQLAllocHandle(SQLSMALLINT handletype,
 				stmt->attrmaxrows=0;
 				stmt->attrnoscan=SQL_NOSCAN_OFF;
 				stmt->attrmaxlength=0;
+				stmt->attrretrievedata=SQL_RD_ON;
+				stmt->attrkeysetsize=0;
+				stmt->attrenableautoipd=SQL_TRUE;
+				stmt->paramoperationptr=NULL;
+				stmt->paramstatusptr=NULL;
+				stmt->rowbindoffsetptr=NULL;
+				stmt->rowoperationptr=NULL;
 				stmt->inputbindstrings.
 					setManageArrayValues(true);
 				stmt->inputbinds.setManageValues(true);
@@ -4864,7 +4876,9 @@ static SQLRETURN SQLR_SQLGetConnectAttr(SQLHDBC connectionhandle,
 			break;
 		case SQL_ATTR_METADATA_ID:
 			debugPrintf("  attribute: SQL_ATTR_METADATA_ID\n");
-			val.uintval=(conn->attrmetadataid)?SQL_TRUE:SQL_FALSE;
+			// sqlrelay's catalog functions always pattern-match,
+			// so they're always operating in SQL_FALSE mode
+			val.uintval=SQL_FALSE;
 			type=1;
 			break;
 	#endif
@@ -10959,8 +10973,8 @@ static SQLRETURN SQLR_SQLGetStmtAttr(SQLHSTMT statementhandle,
 		case SQL_KEYSET_SIZE:
 			debugPrintf("  attribute: "
 					"SQL_ATTR_KEYSET_SIZE/"
-					"SQL_KEYSET_SIZE\n");
-			val.ulenval=0;
+					"SQL_KEYSET_SIZE (stub)\n");
+			val.ulenval=stmt->attrkeysetsize;
 			type=2;
 			break;
 		case SQL_ROWSET_SIZE:
@@ -10974,16 +10988,17 @@ static SQLRETURN SQLR_SQLGetStmtAttr(SQLHSTMT statementhandle,
 			debugPrintf("  attribute: "
 					"SQL_ATTR_SIMULATE_CURSOR/"
 					"SQL_SIMULATE_CURSOR\n");
-			// FIXME: I'm not sure this is true...
-			val.ulenval=SQL_SC_UNIQUE;
+			// sqlrelay doesn't implement positioned updates,
+			// so it can't make uniqueness guarantees
+			val.ulenval=SQL_SC_NON_UNIQUE;
 			type=2;
 			break;
 		//case SQL_ATTR_RETRIEVE_DATA:
 		case SQL_RETRIEVE_DATA:
 			debugPrintf("  attribute: "
 					"SQL_ATTR_RETRIEVE_DATA/"
-					"SQL_RETRIEVE_DATA\n");
-			val.ulenval=SQL_RD_ON;
+					"SQL_RETRIEVE_DATA (stub)\n");
+			val.ulenval=stmt->attrretrievedata;
 			type=2;
 			break;
 		//case SQL_ATTR_USE_BOOKMARKS:
@@ -10995,10 +11010,12 @@ static SQLRETURN SQLR_SQLGetStmtAttr(SQLHSTMT statementhandle,
 			type=2;
 			break;
 		case SQL_GET_BOOKMARK:
-			debugPrintf("  unsupported attribute: "
-					"SQL_GET_BOOKMARK\n");
-			// FIXME: implement
-			break;
+			debugPrintf("  attribute: SQL_GET_BOOKMARK\n");
+			// sqlrelay doesn't support bookmarks
+			SQLR_STMTSetError(stmt,
+				"Optional feature not implemented",
+				0,"HYC00");
+			return SQL_ERROR;
 		// case SQL_ATTR_ROW_NUMBER
 		case SQL_ROW_NUMBER:
 			debugPrintf("  attribute: "
@@ -11007,10 +11024,17 @@ static SQLRETURN SQLR_SQLGetStmtAttr(SQLHSTMT statementhandle,
 			// FIXME: implement
 			break;
 		#if (ODBCVER >= 0x0300)
+		case SQL_ATTR_METADATA_ID:
+			debugPrintf("  attribute: SQL_ATTR_METADATA_ID\n");
+			// sqlrelay's catalog functions always pattern-match,
+			// so they're always operating in SQL_FALSE mode
+			val.ulenval=SQL_FALSE;
+			type=2;
+			break;
 		case SQL_ATTR_ENABLE_AUTO_IPD:
 			debugPrintf("  attribute: "
-					"SQL_ATTR_ENABLE_AUTO_IPD\n");
-			val.ulenval=SQL_TRUE;
+					"SQL_ATTR_ENABLE_AUTO_IPD (stub)\n");
+			val.ulenval=stmt->attrenableautoipd;
 			type=2;
 			break;
 		case SQL_ATTR_FETCH_BOOKMARK_PTR:
@@ -11021,45 +11045,54 @@ static SQLRETURN SQLR_SQLGetStmtAttr(SQLHSTMT statementhandle,
 			type=5;
 			break;
 		case SQL_ATTR_PARAM_BIND_OFFSET_PTR:
-			debugPrintf("  unsupported attribute: "
+			debugPrintf("  attribute: "
 					"SQL_ATTR_PARAM_BIND_OFFSET_PTR\n");
-			// FIXME: implement
+			val.ptrval=(SQLPOINTER)stmt->parambindoffsetptr;
+			type=5;
 			break;
 		case SQL_ATTR_PARAM_BIND_TYPE:
-			debugPrintf("  unsupported attribute: "
+			debugPrintf("  attribute: "
 					"SQL_ATTR_PARAM_BIND_TYPE\n");
-			// FIXME: implement
+			// sqlrelay doesn't implement parameter arrays
+			val.ulenval=SQL_PARAM_BIND_BY_COLUMN;
+			type=2;
 			break;
 		case SQL_ATTR_PARAM_OPERATION_PTR:
-			debugPrintf("  unsupported attribute: "
-					"SQL_ATTR_PARAM_OPERATION_PTR\n");
-			// FIXME: implement
+			debugPrintf("  attribute: "
+					"SQL_ATTR_PARAM_OPERATION_PTR (stub)\n");
+			val.usmallintptrval=stmt->paramoperationptr;
+			type=3;
 			break;
 		case SQL_ATTR_PARAM_STATUS_PTR:
-			debugPrintf("  unsupported attribute: "
-					"SQL_ATTR_PARAM_STATUS_PTR\n");
-			// FIXME: implement
+			debugPrintf("  attribute: "
+					"SQL_ATTR_PARAM_STATUS_PTR (stub)\n");
+			val.usmallintptrval=stmt->paramstatusptr;
+			type=3;
 			break;
 		case SQL_ATTR_PARAMS_PROCESSED_PTR:
-			debugPrintf("  unsupported attribute: "
+			debugPrintf("  attribute: "
 					"SQL_ATTR_PARAMS_PROCESSED_PTR\n");
-			// FIXME: implement
+			val.ptrval=(SQLPOINTER)stmt->paramsprocessed;
+			type=5;
 			break;
 		case SQL_ATTR_PARAMSET_SIZE:
-			debugPrintf("  unsupported attribute: "
+			debugPrintf("  attribute: "
 					"SQL_ATTR_PARAMSET_SIZE\n");
+			// sqlrelay doesn't implement parameter arrays
 			val.ulenval=1;
 			type=2;
 			break;
 		case SQL_ATTR_ROW_BIND_OFFSET_PTR:
-			debugPrintf("  unsupported attribute: "
-					"SQL_ATTR_ROW_BIND_OFFSET_PTR\n");
-			// FIXME: implement
+			debugPrintf("  attribute: "
+					"SQL_ATTR_ROW_BIND_OFFSET_PTR (stub)\n");
+			val.ptrval=(SQLPOINTER)stmt->rowbindoffsetptr;
+			type=5;
 			break;
 		case SQL_ATTR_ROW_OPERATION_PTR:
-			debugPrintf("  unsupported attribute: "
-					"SQL_ATTR_ROW_OPERATION_PTR\n");
-			// FIXME: implement
+			debugPrintf("  attribute: "
+					"SQL_ATTR_ROW_OPERATION_PTR (stub)\n");
+			val.usmallintptrval=stmt->rowoperationptr;
+			type=3;
 			break;
 		case SQL_ATTR_ROW_STATUS_PTR:
 			debugPrintf("  attribute: "
@@ -11082,15 +11115,13 @@ static SQLRETURN SQLR_SQLGetStmtAttr(SQLHSTMT statementhandle,
 		#endif
 		#if (ODBCVER < 0x0300)
 		case SQL_STMT_OPT_MAX:
-			debugPrintf("  unsupported attribute: "
-					"SQL_STMT_OPT_MAX\n");
-			// FIXME: implement
-			break;
 		case SQL_STMT_OPT_MIN:
-			debugPrintf("  unsupported attribute: "
-					"SQL_STMT_OPT_MIN\n");
-			// FIXME: implement
-			break;
+			// these are sentinel constants marking the range of
+			// stmt-option ids, not real attributes
+			debugPrintf("  invalid attribute: %d\n",attribute);
+			SQLR_STMTSetError(stmt,
+				"Invalid attribute identifier",0,"HY092");
+			return SQL_ERROR;
 		#endif
 		default:
 			debugPrintf("  invalid attribute: %d\n",attribute);
@@ -11856,12 +11887,17 @@ static SQLRETURN SQLR_SQLSetConnectAttr(SQLHDBC connectionhandle,
 			conn->attrautoipd=val.uintval;
 			return SQL_SUCCESS;
 		case SQL_ATTR_METADATA_ID:
-		{
 			debugPrintf("  attribute: SQL_ATTR_METADATA_ID\n");
 			debugPrintf("  val: %lld\n",(uint64_t)val.uintval);
-			conn->attrmetadataid=(val.uintval==SQL_TRUE);
+			// sqlrelay's catalog functions always pattern-match,
+			// so SQL_TRUE (treat args as quoted identifiers) isn't
+			// implementable
+			if (val.uintval==SQL_TRUE) {
+				SQLR_CONNSetError(conn,
+					"Option value changed",0,"01S02");
+				return SQL_SUCCESS_WITH_INFO;
+			}
 			return SQL_SUCCESS;
-		}
 	#endif
 	#if defined(SQL_ATTR_ANSI_APP)
 		case SQL_ATTR_ANSI_APP:
@@ -12234,9 +12270,9 @@ static SQLRETURN SQLR_SQLSetStmtAttr(SQLHSTMT statementhandle,
 		case SQL_KEYSET_SIZE:
 			debugPrintf("  attribute: "
 					"SQL_ATTR_KEYSET_SIZE/"
-					"SQL_KEYSET_SIZE "
-				"(unsupported but returning success)\n");
-			// FIXME: implement
+					"SQL_KEYSET_SIZE (stub)\n");
+			debugPrintf("  val: %lld\n",(uint64_t)value);
+			stmt->attrkeysetsize=(SQLULEN)(uint64_t)value;
 			return SQL_SUCCESS;
 		case SQL_ROWSET_SIZE:
 			{
@@ -12252,28 +12288,29 @@ static SQLRETURN SQLR_SQLSetStmtAttr(SQLHSTMT statementhandle,
 			}
 		//case SQL_ATTR_SIMULATE_CURSOR:
 		case SQL_SIMULATE_CURSOR:
-			debugPrintf("  attribute: "
-					"SQL_ATTR_SIMULATE_CURSOR/"
-					"SQL_SIMULATE_CURSOR "
-				"(unsupported but returning success)\n");
-			// FIXME: implement
-			return SQL_SUCCESS;
-		//case SQL_ATTR_RETRIEVE_DATA:
-		case SQL_RETRIEVE_DATA:
 			{
 			SQLULEN	val=(SQLULEN)(uint64_t)value;
 			debugPrintf("  attribute: "
-					"SQL_ATTR_RETRIEVE_DATA/"
-					"SQL_RETRIEVE_DATA: %lld\n",
-					(uint64_t)val);
-			if (val==SQL_RD_ON) {
-				return SQL_SUCCESS;
-			} else {
+					"SQL_ATTR_SIMULATE_CURSOR/"
+					"SQL_SIMULATE_CURSOR: "
+						"%lld\n",(uint64_t)val);
+			// sqlrelay doesn't implement positioned updates,
+			// so it can't make uniqueness guarantees
+			if (val!=SQL_SC_NON_UNIQUE) {
 				SQLR_STMTSetError(stmt,
-					"Invalid attribute value",0,"HY024");
-				return SQL_ERROR;
+					"Option value changed",0,"01S02");
+				return SQL_SUCCESS_WITH_INFO;
 			}
+			return SQL_SUCCESS;
 			}
+		//case SQL_ATTR_RETRIEVE_DATA:
+		case SQL_RETRIEVE_DATA:
+			debugPrintf("  attribute: "
+					"SQL_ATTR_RETRIEVE_DATA/"
+					"SQL_RETRIEVE_DATA (stub)\n");
+			debugPrintf("  val: %lld\n",(uint64_t)value);
+			stmt->attrretrievedata=(SQLULEN)(uint64_t)value;
+			return SQL_SUCCESS;
 		//case SQL_ATTR_USE_BOOKMARKS:
 		case SQL_USE_BOOKMARKS:
 			{
@@ -12291,10 +12328,12 @@ static SQLRETURN SQLR_SQLSetStmtAttr(SQLHSTMT statementhandle,
 			return SQL_SUCCESS;
 			}
 		case SQL_GET_BOOKMARK:
-			debugPrintf("  attribute: SQL_GET_BOOKMARK "
-				"(unsupported but returning success)\n");
-			// FIXME: implement
-			return SQL_SUCCESS;
+			debugPrintf("  attribute: SQL_GET_BOOKMARK\n");
+			// sqlrelay doesn't support bookmarks
+			SQLR_STMTSetError(stmt,
+				"Optional feature not implemented",
+				0,"HYC00");
+			return SQL_ERROR;
 		//case SQL_ATTR_ROW_NUMBER:
 		case SQL_ROW_NUMBER:
 			debugPrintf("  attribute: "
@@ -12303,10 +12342,27 @@ static SQLRETURN SQLR_SQLSetStmtAttr(SQLHSTMT statementhandle,
 			// read-only
 			return SQL_ERROR;
 		#if (ODBCVER >= 0x0300)
+		case SQL_ATTR_METADATA_ID:
+			{
+			SQLULEN	val=(SQLULEN)(uint64_t)value;
+			debugPrintf("  attribute: "
+					"SQL_ATTR_METADATA_ID: "
+						"%lld\n",(uint64_t)val);
+			// sqlrelay's catalog functions always pattern-match,
+			// so SQL_TRUE (treat args as quoted identifiers) isn't
+			// implementable
+			if (val==SQL_TRUE) {
+				SQLR_STMTSetError(stmt,
+					"Option value changed",0,"01S02");
+				return SQL_SUCCESS_WITH_INFO;
+			}
+			return SQL_SUCCESS;
+			}
 		case SQL_ATTR_ENABLE_AUTO_IPD:
-			debugPrintf("  attribute: SQL_ATTR_ENABLE_AUTO_IPD "
-				"(unsupported but returning success)\n");
-			// FIXME: implement
+			debugPrintf("  attribute: "
+					"SQL_ATTR_ENABLE_AUTO_IPD (stub)\n");
+			debugPrintf("  val: %lld\n",(uint64_t)value);
+			stmt->attrenableautoipd=(SQLULEN)(uint64_t)value;
 			return SQL_SUCCESS;
 		case SQL_ATTR_FETCH_BOOKMARK_PTR:
 			debugPrintf("  attribute: "
@@ -12336,23 +12392,23 @@ static SQLRETURN SQLR_SQLSetStmtAttr(SQLHSTMT statementhandle,
 			SQLULEN	val=(SQLULEN)(uint64_t)value;
 			debugPrintf("  attribute: SQL_ATTR_PARAM_BIND_TYPE: "
 							"%lld\n",(uint64_t)val);
-			if (val==SQL_PARAM_BIND_BY_COLUMN) {
-				return SQL_SUCCESS;
-			} else {
+			// sqlrelay doesn't implement parameter arrays
+			if (val!=SQL_PARAM_BIND_BY_COLUMN) {
 				SQLR_STMTSetError(stmt,
-					"Invalid attribute value",0,"HY024");
-				return SQL_ERROR;
+					"Option value changed",0,"01S02");
+				return SQL_SUCCESS_WITH_INFO;
 			}
+			return SQL_SUCCESS;
 			}
 		case SQL_ATTR_PARAM_OPERATION_PTR:
-			debugPrintf("  attribute: SQL_ATTR_PARAM_OPERATION_PTR "
-				"(unsupported but returning success)\n");
-			// FIXME: implement
+			debugPrintf("  attribute: "
+					"SQL_ATTR_PARAM_OPERATION_PTR (stub)\n");
+			stmt->paramoperationptr=(SQLUSMALLINT *)value;
 			return SQL_SUCCESS;
 		case SQL_ATTR_PARAM_STATUS_PTR:
-			debugPrintf("  attribute: SQL_ATTR_PARAM_STATUS_PTR "
-				"(unsupported but returning success)\n");
-			// FIXME: implement
+			debugPrintf("  attribute: "
+					"SQL_ATTR_PARAM_STATUS_PTR (stub)\n");
+			stmt->paramstatusptr=(SQLUSMALLINT *)value;
 			return SQL_SUCCESS;
 		case SQL_ATTR_PARAMS_PROCESSED_PTR:
 			{
@@ -12367,23 +12423,23 @@ static SQLRETURN SQLR_SQLSetStmtAttr(SQLHSTMT statementhandle,
 			SQLULEN	val=(SQLULEN)(uint64_t)value;
 			debugPrintf("  attribute: SQL_ATTR_PARAMSET_SIZE: "
 					"%lld\n",(uint64_t)val);
+			// sqlrelay doesn't implement parameter arrays
 			if (val!=1) {
 				SQLR_STMTSetError(stmt,
-					"Invalid attribute value",0,"HY024");
-				return SQL_ERROR;
+					"Option value changed",0,"01S02");
+				return SQL_SUCCESS_WITH_INFO;
 			}
 			return SQL_SUCCESS;
 			}
 		case SQL_ATTR_ROW_BIND_OFFSET_PTR:
-			debugPrintf("  attribute: "	
-					"SQL_ATTR_ROW_BIND_OFFSET_PTR "
-				"(unsupported but returning success)\n");
-			// FIXME: implement
+			debugPrintf("  attribute: "
+					"SQL_ATTR_ROW_BIND_OFFSET_PTR (stub)\n");
+			stmt->rowbindoffsetptr=(SQLULEN *)value;
 			return SQL_SUCCESS;
 		case SQL_ATTR_ROW_OPERATION_PTR:
-			debugPrintf("  attribute: SQL_ATTR_ROW_OPERATION_PTR "
-				"(unsupported but returning success)\n");
-			// FIXME: implement
+			debugPrintf("  attribute: "
+					"SQL_ATTR_ROW_OPERATION_PTR (stub)\n");
+			stmt->rowoperationptr=(SQLUSMALLINT *)value;
 			return SQL_SUCCESS;
 		case SQL_ATTR_ROW_STATUS_PTR:
 			debugPrintf("  attribute: SQL_ATTR_ROW_STATUS_PTR\n");
@@ -12408,15 +12464,13 @@ static SQLRETURN SQLR_SQLSetStmtAttr(SQLHSTMT statementhandle,
 		#endif
 		#if (ODBCVER < 0x0300)
 		case SQL_STMT_OPT_MAX:
-			debugPrintf("  attribute: SQL_STMT_OPT_MAX "
-				"(unsupported but returning success)\n");
-			// FIXME: implement
-			return SQL_SUCCESS;
 		case SQL_STMT_OPT_MIN:
-			debugPrintf("  attribute: SQL_STMT_OPT_MIN "
-				"(unsupported but returning success)\n");
-			// FIXME: implement
-			return SQL_SUCCESS;
+			// these are sentinel constants marking the range of
+			// stmt-option ids, not real attributes
+			debugPrintf("  invalid attribute: %d\n",attribute);
+			SQLR_STMTSetError(stmt,
+				"Invalid attribute identifier",0,"HY092");
+			return SQL_ERROR;
 		#endif
 		default:
 			return SQL_ERROR;
