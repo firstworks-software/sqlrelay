@@ -136,7 +136,6 @@ struct CONN {
 	bool				dontgetcolumninfo;
 	bool				nullsasnulls;
 	bool				lazyconnect;
-	bool				clearbindsduringprepare;
 	bool				mapdatetimetodate;
 	bool				mapdatetotimestamp;
 	bool				mapnewdatetotimestamp;
@@ -547,13 +546,12 @@ static SQLRETURN SQLR_SQLAllocHandle(SQLSMALLINT handletype,
 					stmt->cur->lowerCaseColumnNames();
 				}
 				stmt->cur->lazyFetch();
-				if (conn->clearbindsduringprepare) {
-					stmt->cur->
-						clearBindsDuringPrepare();
-				} else {
-					stmt->cur->
-						dontClearBindsDuringPrepare();
-				}
+				// per the ODBC spec, parameter bindings persist
+				// across SQLPrepare/SQLExecDirect; only
+				// SQLFreeStmt(SQL_RESET_PARAMS), an overwrite
+				// via SQLBindParameter, or freeing the handle
+				// clears them
+				stmt->cur->dontClearBindsDuringPrepare();
 				if (conn->dontgetcolumninfo) {
 					stmt->cur->dontGetColumnInfo();
 				} else {
@@ -2610,14 +2608,6 @@ static SQLRETURN SQLR_SQLConnect(SQLHDBC connectionhandle,
 					sizeof(lazyconnectbuf),
 					ODBC_INI);
 	conn->lazyconnect=!charstring::isNo(lazyconnectbuf);
-	char	clearbindsduringpreparebuf[6];
-	SQLGetPrivateProfileString((const char *)conn->dsn,
-					"ClearBindsDuringPrepare","yes",
-					clearbindsduringpreparebuf,
-					sizeof(clearbindsduringpreparebuf),
-					ODBC_INI);
-	conn->clearbindsduringprepare=
-		!charstring::isNo(clearbindsduringpreparebuf);
 	char	mapdatetimetodatebuf[6];
 	SQLGetPrivateProfileString((const char *)conn->dsn,
 					"MapDateTimeToDate","no",
@@ -2803,12 +2793,6 @@ static SQLRETURN SQLR_SQLConnect(SQLHDBC connectionhandle,
 		if (connlazyconnect!=NULL) {
 			conn->lazyconnect=!charstring::isNo(connlazyconnect);
 		}
-		const char	*connclearbindsduringprepare=
-				connparams->getValue("ClearBindsDuringPrepare");
-		if (connclearbindsduringprepare!=NULL) {
-			conn->clearbindsduringprepare=
-				!charstring::isNo(connclearbindsduringprepare);
-		}
 		const char	*connmapdatetimetodate=
 				connparams->getValue("MapDateTimeToDate");
 		if (connmapdatetimetodate!=NULL) {
@@ -2866,8 +2850,6 @@ static SQLRETURN SQLR_SQLConnect(SQLHDBC connectionhandle,
 	debugPrintf("  DontGetColumnInfo: %d\n",conn->dontgetcolumninfo);
 	debugPrintf("  NullsAsNulls: %d\n",conn->nullsasnulls);
 	debugPrintf("  LazyConnect: %d\n",conn->lazyconnect);
-	debugPrintf("  ClearBindsDuringPrepare: %d\n",
-					conn->clearbindsduringprepare);
 	debugPrintf("  MapDateTimeToDate: %d\n",conn->mapdatetimetodate);
 	debugPrintf("  MapDateToTimeStamp: %d\n",conn->mapdatetotimestamp);
 	debugPrintf("  MapNewDateToTimeStamp: %d\n",
@@ -4322,12 +4304,13 @@ static SQLRETURN SQLR_SQLExecDirect(SQLHSTMT statementhandle,
 	#endif
 
 	// prepare the query, then re-read the application's input bind buffers.
-	// The order matters when ClearBindsDuringPrepare is set: prepareQuery
-	// will wipe whatever SQLBindParameter put on the cursor, and
-	// SQLR_RebindInputs replays it from the STMT-level bookkeeping.  This
-	// also leaves the cursor in a prepared state for the data-at-exec path,
-	// where SQLParamData's final pass will just call executeQuery via
-	// SQLR_SQLExecute rather than re-entering this function.
+	// Per ODBC, parameter buffers are read at execute time, not bind time —
+	// SQLR_RebindInputs picks up whatever the application has put in those
+	// buffers since SQLBindParameter was called.  Splitting prepare from
+	// execute also leaves the cursor in a prepared state for the
+	// data-at-exec path, where SQLParamData's final pass calls
+	// executeQuery via SQLR_SQLExecute rather than re-entering this
+	// function.
 	stmt->cur->prepareQuery((const char *)statementtext,
 					statementtextlength);
 	SQLR_RebindInputs(stmt);
@@ -11609,8 +11592,8 @@ SQLRETURN SQL_API SQLParamData(SQLHSTMT statementhandle,
 	// exec/exec-direct will have been deferred until now.  In both cases
 	// the cursor was already prepared (by SQLPrepare or by the deferred
 	// SQLR_SQLExecDirect call above), so just execute it — re-preparing
-	// here would clear the data-at-exec binds that SQLPutData/SQLParamData
-	// just set on the cursor when ClearBindsDuringPrepare is on.
+	// here would discard the data-at-exec binds that SQLPutData/SQLParamData
+	// just set on the cursor.
 	SQLRETURN	retval=SQL_ERROR;
 	{
 		debugPrintf("  exececuting...\n");
@@ -14487,7 +14470,6 @@ static HWND		resultsetbuffersizeedit;
 static HWND		dontgetcolumninfoedit;
 static HWND		nullsasnullsedit;
 static HWND		lazyconnectedit;
-static HWND		clearbindsduringprepareedit;
 static HWND		mapdatetimetodateedit;
 static HWND		mapdatetotimestampedit;
 static HWND		mapnewdatetotimestampedit;
@@ -14712,9 +14694,6 @@ static void createControls(HWND hwnd) {
 	createLabel(box3,"Lazy Connect",
 			x,y+=(labelheight+labeloffset),
 			labelwidth,labelheight);
-	createLabel(box3,"Clear Binds During Prepare",
-			x,y+=(labelheight+labeloffset),
-			labelwidth,labelheight);
 	createLabel(box3,"Map DateTime To Date",
 			x,y+=(labelheight+labeloffset),
 			labelwidth,labelheight);
@@ -14843,10 +14822,6 @@ static void createControls(HWND hwnd) {
 			dsndict.getValue("LazyConnect"),
 			x,y+=(labelheight+labeloffset),editwidth,labelheight,
 			1,true,false);
-	clearbindsduringprepareedit=createEdit(box3,
-			dsndict.getValue("ClearBindsDuringPrepare"),
-			x,y+=(labelheight+labeloffset),editwidth,labelheight,
-			1,true,false);
 	mapdatetimetodateedit=createEdit(box3,
 			dsndict.getValue("MapDateTimeToDate"),
 			x,y+=(labelheight+labeloffset),editwidth,labelheight,
@@ -14916,8 +14891,6 @@ static void parseDsn(const char *dsn) {
 		dsndict.setValue("NullsAsNulls",
 					charstring::duplicate("0"));
 		dsndict.setValue("LazyConnect",
-					charstring::duplicate("1"));
-		dsndict.setValue("ClearBindsDuringPrepare",
 					charstring::duplicate("1"));
 		dsndict.setValue("MapDateTimeToDate",
 					charstring::duplicate("0"));
@@ -15112,13 +15085,6 @@ static void parseDsn(const char *dsn) {
 		SQLGetPrivateProfileString(dsnval,"LazyConnect","1",
 						lazyconnect,2,ODBC_INI);
 		dsndict.setValue("LazyConnect",lazyconnect);
-	}
-	if (!dsndict.getValue("ClearBindsDuringPrepare")) {
-		char	*clearbindsduringprepare=new char[2];
-		SQLGetPrivateProfileString(dsnval,"ClearBindsDuringPrepare","1",
-					clearbindsduringprepare,2,ODBC_INI);
-		dsndict.setValue("ClearBindsDuringPrepare",
-					clearbindsduringprepare);
 	}
 	if (!dsndict.getValue("MapDateTimeToDate")) {
 		char	*mapdatetimetodate=new char[2];
@@ -15383,13 +15349,6 @@ static void getDsnFromUi() {
 	GetWindowText(lazyconnectedit,data,len+1);
 	delete[] dsndict.getValue("LazyConnect");
 	dsndict.setValue("LazyConnect",data);
-
-	// ClearBindsDuringPrepare
-	len=GetWindowTextLength(clearbindsduringprepareedit);
-	data=new char[len+1];
-	GetWindowText(clearbindsduringprepareedit,data,len+1);
-	delete[] dsndict.getValue("ClearBindsDuringPrepare");
-	dsndict.setValue("ClearBindsDuringPrepare",data);
 
 	// MapDateTimeToDate
 	len=GetWindowTextLength(mapdatetimetodateedit);
