@@ -21,6 +21,10 @@ SQLHSTMT	stmt;
 
 int main(int argc, char **argv) {
 
+	#define LARGE_BUFFER_LENGTH 8192
+	#define LARGE_CHUNK_LENGTH (LARGE_BUFFER_LENGTH/4)
+	SQLCHAR	largebuffer[LARGE_BUFFER_LENGTH+1];
+
 	// hostname
 	char    *hostname=sys::getHostName();
 	char    *dot=(char *)charstring::findFirstOrEnd(hostname,'.');
@@ -654,22 +658,25 @@ int main(int argc, char **argv) {
 		erg=SQLGetConnectAttr(dbc,SQL_ATTR_ASYNC_ENABLE,
 				(SQLPOINTER)&dbcinitial,0,&dbcstrlen);
 		assertSuccessDbc(dbc,erg);
-		// SQL_ASYNC_ENABLE_OFF
+		assertEqualDbc(dbc,(int)dbcinitial,(int)SQL_ASYNC_ENABLE_OFF);
+		// SQL_ASYNC_ENABLE_OFF: matches the actual mode
 		erg=SQLSetConnectAttr(dbc,SQL_ATTR_ASYNC_ENABLE,
 				(SQLPOINTER)(uintptr_t)SQL_ASYNC_ENABLE_OFF,0);
-		assertSuccessDbc(dbc,erg);
+		assertEqualDbc(dbc,(int)erg,(int)SQL_SUCCESS);
 		erg=SQLGetConnectAttr(dbc,SQL_ATTR_ASYNC_ENABLE,
 				(SQLPOINTER)&dbcuintval,0,&dbcstrlen);
 		assertSuccessDbc(dbc,erg);
 		assertEqualDbc(dbc,(int)dbcuintval,(int)SQL_ASYNC_ENABLE_OFF);
-		// SQL_ASYNC_ENABLE_ON
+		// SQL_ASYNC_ENABLE_ON: unsupported, substituted with
+		// SQL_ASYNC_ENABLE_OFF; SQLSTATE 01S02 ("Option value changed")
 		erg=SQLSetConnectAttr(dbc,SQL_ATTR_ASYNC_ENABLE,
 				(SQLPOINTER)(uintptr_t)SQL_ASYNC_ENABLE_ON,0);
-		assertSuccessDbc(dbc,erg);
+		assertEqualDbc(dbc,(int)erg,(int)SQL_SUCCESS_WITH_INFO);
 		erg=SQLGetConnectAttr(dbc,SQL_ATTR_ASYNC_ENABLE,
 				(SQLPOINTER)&dbcuintval,0,&dbcstrlen);
 		assertSuccessDbc(dbc,erg);
-		assertEqualDbc(dbc,(int)dbcuintval,(int)SQL_ASYNC_ENABLE_ON);
+		// get reflects the substituted value, not what the app set
+		assertEqualDbc(dbc,(int)dbcuintval,(int)SQL_ASYNC_ENABLE_OFF);
 		// restore initial value
 		erg=SQLSetConnectAttr(dbc,SQL_ATTR_ASYNC_ENABLE,
 				(SQLPOINTER)(uintptr_t)dbcinitial,0);
@@ -1602,11 +1609,7 @@ int main(int argc, char **argv) {
 	erg=SQLGetInfo(dbc,SQL_CURSOR_SENSITIVITY,
 			(SQLPOINTER)&uintval,(SQLSMALLINT)sizeof(uintval),
 			&vallen);
-	if (issqlrelay) {
-		assertEqualDbc(dbc,(int)uintval,(int)SQL_UNSPECIFIED);
-	} else {
-		assertEqualDbc(dbc,(int)uintval,(int)SQL_INSENSITIVE);
-	}
+	assertEqualDbc(dbc,(int)uintval,(int)SQL_INSENSITIVE);
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
 	#endif
@@ -4762,21 +4765,20 @@ int main(int argc, char **argv) {
 				(SQLPOINTER)&stmtinitial,0,&stmtstrlen);
 		assertSuccessStmt(stmt,erg);
 		assertEqualStmt(stmt,(int)stmtinitial,(int)SQL_NONSCROLLABLE);
-		// SQL_SCROLLABLE
+		// SQL Relay only supports SQL_NONSCROLLABLE, expect
+		// SQL_SUCCESS_WITH_INFO/SQLSTATE 01S02 ("Option value changed")
 		erg=SQLSetStmtAttr(stmt,SQL_ATTR_CURSOR_SCROLLABLE,
 				(SQLPOINTER)(uintptr_t)SQL_SCROLLABLE,0);
-		assertSuccessStmt(stmt,erg);
+		assertEqualStmt(stmt,(int)erg,(int)SQL_SUCCESS_WITH_INFO);
 		erg=SQLGetStmtAttr(stmt,SQL_ATTR_CURSOR_SCROLLABLE,
 				(SQLPOINTER)&stmtulenval,0,&stmtstrlen);
 		assertSuccessStmt(stmt,erg);
-		// FIXME: SQL Relay accepts the set silently but get always
-		// returns the hardcoded SQL_NONSCROLLABLE; should return
-		// SQL_SCROLLABLE here.
+		// get reflects the substituted value, not what the app set
 		assertEqualStmt(stmt,(int)stmtulenval,(int)SQL_NONSCROLLABLE);
-		// SQL_NONSCROLLABLE
+		// SQL_NONSCROLLABLE: accepted as-is
 		erg=SQLSetStmtAttr(stmt,SQL_ATTR_CURSOR_SCROLLABLE,
 				(SQLPOINTER)(uintptr_t)SQL_NONSCROLLABLE,0);
-		assertSuccessStmt(stmt,erg);
+		assertEqualStmt(stmt,(int)erg,(int)SQL_SUCCESS);
 		erg=SQLGetStmtAttr(stmt,SQL_ATTR_CURSOR_SCROLLABLE,
 				(SQLPOINTER)&stmtulenval,0,&stmtstrlen);
 		assertSuccessStmt(stmt,erg);
@@ -4802,34 +4804,33 @@ int main(int argc, char **argv) {
 		erg=SQLGetStmtAttr(stmt,SQL_ATTR_CURSOR_SENSITIVITY,
 				(SQLPOINTER)&stmtinitial,0,&stmtstrlen);
 		assertSuccessStmt(stmt,erg);
-		// SQL_INSENSITIVE
+		assertEqualStmt(stmt,(int)stmtinitial,(int)SQL_INSENSITIVE);
+		// SQL_INSENSITIVE: matches the actual cursor mode
 		erg=SQLSetStmtAttr(stmt,SQL_ATTR_CURSOR_SENSITIVITY,
 				(SQLPOINTER)(uintptr_t)SQL_INSENSITIVE,0);
-		assertSuccessStmt(stmt,erg);
+		assertEqualStmt(stmt,(int)erg,(int)SQL_SUCCESS);
 		erg=SQLGetStmtAttr(stmt,SQL_ATTR_CURSOR_SENSITIVITY,
 				(SQLPOINTER)&stmtulenval,0,&stmtstrlen);
 		assertSuccessStmt(stmt,erg);
-		// FIXME: SQL Relay accepts the set silently but get always
-		// returns the hardcoded SQL_UNSPECIFIED; should return
-		// SQL_INSENSITIVE here.
-		assertEqualStmt(stmt,(int)stmtulenval,(int)SQL_UNSPECIFIED);
-		// SQL_SENSITIVE
+		assertEqualStmt(stmt,(int)stmtulenval,(int)SQL_INSENSITIVE);
+		// SQL_SENSITIVE: unsupported, substituted with
+		// SQL_INSENSITIVE; SQLSTATE 01S02 ("Option value changed")
 		erg=SQLSetStmtAttr(stmt,SQL_ATTR_CURSOR_SENSITIVITY,
 				(SQLPOINTER)(uintptr_t)SQL_SENSITIVE,0);
-		assertSuccessStmt(stmt,erg);
+		assertEqualStmt(stmt,(int)erg,(int)SQL_SUCCESS_WITH_INFO);
 		erg=SQLGetStmtAttr(stmt,SQL_ATTR_CURSOR_SENSITIVITY,
 				(SQLPOINTER)&stmtulenval,0,&stmtstrlen);
 		assertSuccessStmt(stmt,erg);
-		// FIXME: should return SQL_SENSITIVE here (same issue).
-		assertEqualStmt(stmt,(int)stmtulenval,(int)SQL_UNSPECIFIED);
-		// SQL_UNSPECIFIED
+		// get reflects the substituted value, not what the app set
+		assertEqualStmt(stmt,(int)stmtulenval,(int)SQL_INSENSITIVE);
+		// SQL_UNSPECIFIED: spec lets the driver pick (insensitive)
 		erg=SQLSetStmtAttr(stmt,SQL_ATTR_CURSOR_SENSITIVITY,
 				(SQLPOINTER)(uintptr_t)SQL_UNSPECIFIED,0);
-		assertSuccessStmt(stmt,erg);
+		assertEqualStmt(stmt,(int)erg,(int)SQL_SUCCESS);
 		erg=SQLGetStmtAttr(stmt,SQL_ATTR_CURSOR_SENSITIVITY,
 				(SQLPOINTER)&stmtulenval,0,&stmtstrlen);
 		assertSuccessStmt(stmt,erg);
-		assertEqualStmt(stmt,(int)stmtulenval,(int)SQL_UNSPECIFIED);
+		assertEqualStmt(stmt,(int)stmtulenval,(int)SQL_INSENSITIVE);
 		// restore
 		erg=SQLSetStmtAttr(stmt,SQL_ATTR_CURSOR_SENSITIVITY,
 				(SQLPOINTER)(uintptr_t)stmtinitial,0);
@@ -4850,8 +4851,11 @@ int main(int argc, char **argv) {
 
 
 	// SQL_ATTR_CURSOR_TYPE
-	// (drivers may substitute an unsupported cursor type and return
-	// SQL_SUCCESS_WITH_INFO with SQLSTATE 01S02; assert only success)
+	// sqlrelay only supports SQL_CURSOR_FORWARD_ONLY; per the ODBC
+	// spec, other values are substituted and the driver returns
+	// SQL_SUCCESS_WITH_INFO with SQLSTATE 01S02 ("Option value
+	// changed").  Native drivers may substitute differently;
+	// assertSuccessStmt accepts both SUCCESS and SUCCESS_WITH_INFO
 	stdoutput.printf("  SQL_ATTR_CURSOR_TYPE\n");
 	erg=SQLGetStmtAttr(stmt,SQL_ATTR_CURSOR_TYPE,
 			(SQLPOINTER)&stmtinitial,0,&stmtstrlen);
@@ -4859,16 +4863,32 @@ int main(int argc, char **argv) {
 	assertEqualStmt(stmt,(int)stmtinitial,(int)SQL_CURSOR_FORWARD_ONLY);
 	erg=SQLSetStmtAttr(stmt,SQL_ATTR_CURSOR_TYPE,
 			(SQLPOINTER)(uintptr_t)SQL_CURSOR_STATIC,0);
-	assertSuccessStmt(stmt,erg);
+	if (issqlrelay) {
+		assertEqualStmt(stmt,(int)erg,(int)SQL_SUCCESS_WITH_INFO);
+	} else {
+		assertSuccessStmt(stmt,erg);
+	}
 	erg=SQLSetStmtAttr(stmt,SQL_ATTR_CURSOR_TYPE,
 			(SQLPOINTER)(uintptr_t)SQL_CURSOR_DYNAMIC,0);
-	assertSuccessStmt(stmt,erg);
+	if (issqlrelay) {
+		assertEqualStmt(stmt,(int)erg,(int)SQL_SUCCESS_WITH_INFO);
+	} else {
+		assertSuccessStmt(stmt,erg);
+	}
 	erg=SQLSetStmtAttr(stmt,SQL_ATTR_CURSOR_TYPE,
 			(SQLPOINTER)(uintptr_t)SQL_CURSOR_KEYSET_DRIVEN,0);
-	assertSuccessStmt(stmt,erg);
+	if (issqlrelay) {
+		assertEqualStmt(stmt,(int)erg,(int)SQL_SUCCESS_WITH_INFO);
+	} else {
+		assertSuccessStmt(stmt,erg);
+	}
 	erg=SQLSetStmtAttr(stmt,SQL_ATTR_CURSOR_TYPE,
 			(SQLPOINTER)(uintptr_t)SQL_CURSOR_FORWARD_ONLY,0);
-	assertSuccessStmt(stmt,erg);
+	if (issqlrelay) {
+		assertEqualStmt(stmt,(int)erg,(int)SQL_SUCCESS);
+	} else {
+		assertSuccessStmt(stmt,erg);
+	}
 	erg=SQLGetStmtAttr(stmt,SQL_ATTR_CURSOR_TYPE,
 			(SQLPOINTER)&stmtulenval,0,&stmtstrlen);
 	assertSuccessStmt(stmt,erg);
@@ -4877,7 +4897,8 @@ int main(int argc, char **argv) {
 
 
 	// SQL_ATTR_CONCURRENCY
-	// (drivers may substitute; assert only success)
+	// sqlrelay only supports SQL_CONCUR_READ_ONLY; other values are
+	// substituted with SQL_SUCCESS_WITH_INFO + SQLSTATE 01S02
 	stdoutput.printf("  SQL_ATTR_CONCURRENCY\n");
 	erg=SQLGetStmtAttr(stmt,SQL_ATTR_CONCURRENCY,
 			(SQLPOINTER)&stmtinitial,0,&stmtstrlen);
@@ -4885,16 +4906,32 @@ int main(int argc, char **argv) {
 	assertEqualStmt(stmt,(int)stmtinitial,(int)SQL_CONCUR_READ_ONLY);
 	erg=SQLSetStmtAttr(stmt,SQL_ATTR_CONCURRENCY,
 			(SQLPOINTER)(uintptr_t)SQL_CONCUR_LOCK,0);
-	assertSuccessStmt(stmt,erg);
+	if (issqlrelay) {
+		assertEqualStmt(stmt,(int)erg,(int)SQL_SUCCESS_WITH_INFO);
+	} else {
+		assertSuccessStmt(stmt,erg);
+	}
 	erg=SQLSetStmtAttr(stmt,SQL_ATTR_CONCURRENCY,
 			(SQLPOINTER)(uintptr_t)SQL_CONCUR_ROWVER,0);
-	assertSuccessStmt(stmt,erg);
+	if (issqlrelay) {
+		assertEqualStmt(stmt,(int)erg,(int)SQL_SUCCESS_WITH_INFO);
+	} else {
+		assertSuccessStmt(stmt,erg);
+	}
 	erg=SQLSetStmtAttr(stmt,SQL_ATTR_CONCURRENCY,
 			(SQLPOINTER)(uintptr_t)SQL_CONCUR_VALUES,0);
-	assertSuccessStmt(stmt,erg);
+	if (issqlrelay) {
+		assertEqualStmt(stmt,(int)erg,(int)SQL_SUCCESS_WITH_INFO);
+	} else {
+		assertSuccessStmt(stmt,erg);
+	}
 	erg=SQLSetStmtAttr(stmt,SQL_ATTR_CONCURRENCY,
 			(SQLPOINTER)(uintptr_t)SQL_CONCUR_READ_ONLY,0);
-	assertSuccessStmt(stmt,erg);
+	if (issqlrelay) {
+		assertEqualStmt(stmt,(int)erg,(int)SQL_SUCCESS);
+	} else {
+		assertSuccessStmt(stmt,erg);
+	}
 	erg=SQLGetStmtAttr(stmt,SQL_ATTR_CONCURRENCY,
 			(SQLPOINTER)&stmtulenval,0,&stmtstrlen);
 	assertSuccessStmt(stmt,erg);
@@ -4992,20 +5029,21 @@ int main(int argc, char **argv) {
 		assertSuccessStmt(stmt,erg);
 		assertEqualStmt(stmt,(int)stmtinitial,
 					(int)SQL_ASYNC_ENABLE_OFF);
+		// SQL_ASYNC_ENABLE_ON: unsupported, substituted with
+		// SQL_ASYNC_ENABLE_OFF; SQLSTATE 01S02 ("Option value changed")
 		erg=SQLSetStmtAttr(stmt,SQL_ATTR_ASYNC_ENABLE,
 				(SQLPOINTER)(uintptr_t)SQL_ASYNC_ENABLE_ON,0);
-		assertSuccessStmt(stmt,erg);
+		assertEqualStmt(stmt,(int)erg,(int)SQL_SUCCESS_WITH_INFO);
 		erg=SQLGetStmtAttr(stmt,SQL_ATTR_ASYNC_ENABLE,
 				(SQLPOINTER)&stmtulenval,0,&stmtstrlen);
 		assertSuccessStmt(stmt,erg);
-		// FIXME: SQL Relay accepts the set silently but get always
-		// returns the hardcoded SQL_ASYNC_ENABLE_OFF; should return
-		// SQL_ASYNC_ENABLE_ON here.
+		// get reflects the substituted value, not what the app set
 		assertEqualStmt(stmt,(int)stmtulenval,
 					(int)SQL_ASYNC_ENABLE_OFF);
+		// SQL_ASYNC_ENABLE_OFF: matches the actual mode
 		erg=SQLSetStmtAttr(stmt,SQL_ATTR_ASYNC_ENABLE,
 				(SQLPOINTER)(uintptr_t)SQL_ASYNC_ENABLE_OFF,0);
-		assertSuccessStmt(stmt,erg);
+		assertEqualStmt(stmt,(int)erg,(int)SQL_SUCCESS);
 	} else {
 		// Oracle's ODBC driver returns SQL_ASYNC_ENABLE_OFF on get
 		// but doesn't support setting SQL_ATTR_ASYNC_ENABLE; set
@@ -5173,6 +5211,9 @@ int main(int argc, char **argv) {
 
 
 	// SQL_ATTR_USE_BOOKMARKS
+	// sqlrelay doesn't support bookmarks; SQL_UB_VARIABLE is
+	// substituted with SQL_UB_OFF and the driver returns
+	// SQL_SUCCESS_WITH_INFO with SQLSTATE 01S02
 	stdoutput.printf("  SQL_ATTR_USE_BOOKMARKS\n");
 	erg=SQLGetStmtAttr(stmt,SQL_ATTR_USE_BOOKMARKS,
 			(SQLPOINTER)&stmtinitial,0,&stmtstrlen);
@@ -5180,21 +5221,27 @@ int main(int argc, char **argv) {
 	assertEqualStmt(stmt,(int)stmtinitial,(int)SQL_UB_OFF);
 	erg=SQLSetStmtAttr(stmt,SQL_ATTR_USE_BOOKMARKS,
 			(SQLPOINTER)(uintptr_t)SQL_UB_VARIABLE,0);
-	assertSuccessStmt(stmt,erg);
+	if (issqlrelay) {
+		assertEqualStmt(stmt,(int)erg,(int)SQL_SUCCESS_WITH_INFO);
+	} else {
+		assertSuccessStmt(stmt,erg);
+	}
 	erg=SQLGetStmtAttr(stmt,SQL_ATTR_USE_BOOKMARKS,
 			(SQLPOINTER)&stmtulenval,0,&stmtstrlen);
 	assertSuccessStmt(stmt,erg);
 	if (issqlrelay) {
-		// FIXME: SQL Relay accepts the set silently but get always
-		// returns the hardcoded SQL_UB_OFF; should return
-		// SQL_UB_VARIABLE here.
+		// get reflects the substituted value, not what the app set
 		assertEqualStmt(stmt,(int)stmtulenval,(int)SQL_UB_OFF);
 	} else {
 		assertEqualStmt(stmt,(int)stmtulenval,(int)SQL_UB_VARIABLE);
 	}
 	erg=SQLSetStmtAttr(stmt,SQL_ATTR_USE_BOOKMARKS,
 			(SQLPOINTER)(uintptr_t)SQL_UB_OFF,0);
-	assertSuccessStmt(stmt,erg);
+	if (issqlrelay) {
+		assertEqualStmt(stmt,(int)erg,(int)SQL_SUCCESS);
+	} else {
+		assertSuccessStmt(stmt,erg);
+	}
 	erg=SQLGetStmtAttr(stmt,SQL_ATTR_USE_BOOKMARKS,
 			(SQLPOINTER)&stmtulenval,0,&stmtstrlen);
 	assertSuccessStmt(stmt,erg);
@@ -5552,25 +5599,42 @@ int main(int argc, char **argv) {
 
 
 	// SQL_ATTR_FETCH_BOOKMARK_PTR (pointer)
-	// FIXME: SQL Relay's SQLGetStmtAttr does not populate the out
-	// value (same issue as SQL_ATTR_PARAM_BIND_OFFSET_PTR above).
 	stdoutput.printf("  SQL_ATTR_FETCH_BOOKMARK_PTR\n");
 	erg=SQLGetStmtAttr(stmt,SQL_ATTR_FETCH_BOOKMARK_PTR,
 			(SQLPOINTER)&stmtptrinit,0,&stmtstrlen);
 	assertSuccessStmt(stmt,erg);
+	if (issqlrelay) {
+		// SQL Relay doesn't support bookmarks, so no bookmark
+		// pointer is ever in effect
+		assertEqualStmt(stmt,(int)(stmtptrinit==NULL),1);
+	}
 	erg=SQLSetStmtAttr(stmt,SQL_ATTR_FETCH_BOOKMARK_PTR,
 			(SQLPOINTER)&stmtbookmark,SQL_IS_POINTER);
-	assertSuccessStmt(stmt,erg);
+	if (issqlrelay) {
+		// installing a non-NULL bookmark pointer is rejected
+		// with SQLSTATE HYC00 ("Optional feature not implemented")
+		assertFailureStmt(stmt,erg);
+	} else {
+		assertSuccessStmt(stmt,erg);
+	}
 	erg=SQLGetStmtAttr(stmt,SQL_ATTR_FETCH_BOOKMARK_PTR,
 			(SQLPOINTER)&stmtptrval,0,&stmtstrlen);
 	assertSuccessStmt(stmt,erg);
-	if (!issqlrelay) {
+	if (issqlrelay) {
+		// the rejected set didn't take, so still NULL
+		assertEqualStmt(stmt,(int)(stmtptrval==NULL),1);
+	} else {
 		assertEqualStmt(stmt,
 			(int)(stmtptrval==(SQLPOINTER)&stmtbookmark),1);
 	}
+	// restore: NULL is accepted, non-NULL is not
 	erg=SQLSetStmtAttr(stmt,SQL_ATTR_FETCH_BOOKMARK_PTR,
 			(SQLPOINTER)stmtptrinit,SQL_IS_POINTER);
-	assertSuccessStmt(stmt,erg);
+	if (issqlrelay && stmtptrinit!=NULL) {
+		assertFailureStmt(stmt,erg);
+	} else {
+		assertSuccessStmt(stmt,erg);
+	}
 	stdoutput.printf("\n");
 	#endif
 
@@ -5594,9 +5658,7 @@ int main(int argc, char **argv) {
 	erg=SQLSetConnectAttr(dbc,SQL_ATTR_AUTOCOMMIT,
 		(SQLPOINTER)SQL_AUTOCOMMIT_OFF,0);
 	assertSuccessDbc(dbc,erg);
-	SQLExecDirect(stmt,
-		(SQLCHAR *)"drop table testtable",
-		SQL_NTS);
+	SQLExecDirect(stmt,(SQLCHAR *)"drop table testtable",SQL_NTS);
 	erg=SQLExecDirect(stmt,(SQLCHAR *)
 		"create table testtable ("
 		"	testnumber number, "
@@ -5683,9 +5745,6 @@ int main(int argc, char **argv) {
 	assertSuccessStmt(stmt,erg);
 	assertEqualStmt(stmt,(int)bindvarcount,7);
 
-	// FIXME: why the different types?  can we bind DATE_STRUCT?
-	SQLSMALLINT	datesqltype=(issqlrelay)?SQL_TYPE_DATE:SQL_CHAR;
-
 	// OCI appears to convert data bound to clob columns to UCS2, even if
 	// the clob column isn't an NCLOB.  It does the conversion in-place, in
 	// the buffer that the value is stored in, so if the buffer contains
@@ -5699,23 +5758,26 @@ int main(int argc, char **argv) {
 	SQLINTEGER	intval;
 	SQLCHAR		*charval;
 	SQLCHAR		*varcharval;
-	SQLCHAR		*dateval;
+	SQL_DATE_STRUCT	dateval;
 	SQLCHAR		*longval;
 	SQLCHAR		clobval[40];
 	SQLCHAR		*blobval;
 	SQLLEN		intlen=sizeof(SQLINTEGER);
 	SQLLEN		charlen=SQL_NTS;
 	SQLLEN		varcharlen=SQL_NTS;
-	SQLLEN		datelen=SQL_NTS;
+	SQLLEN		datelen=sizeof(SQL_DATE_STRUCT);
 	SQLLEN		longlen=SQL_NTS;
 	SQLLEN		cloblen=sizeof(clobval);
+	SQLLEN		clobstrlen=SQL_NTS;
 	SQLLEN		bloblen=9;
 
 	// row 2
 	intval=2;
 	charval=(SQLCHAR *)"testchar2";
 	varcharval=(SQLCHAR *)"testvarchar2";
-	dateval=(SQLCHAR *)"01-JAN-2002";
+	dateval.year=2002;
+	dateval.month=1;
+	dateval.day=1;
 	longval=(SQLCHAR *)"testlong2";
 	charstring::copy((char *)clobval,"testclob2");
 	blobval=(SQLCHAR *)"testblob2";
@@ -5738,10 +5800,10 @@ int main(int argc, char **argv) {
 				0,&varcharlen);
 	assertSuccessStmt(stmt,erg);
 	erg=SQLBindParameter(stmt,4,SQL_PARAM_INPUT,
-				SQL_C_CHAR,datesqltype,
-				11,0,
-				(SQLPOINTER)dateval,
-				0,&datelen);
+				SQL_C_TYPE_DATE,SQL_TYPE_DATE,
+				10,0,
+				(SQLPOINTER)&dateval,
+				sizeof(dateval),&datelen);
 	assertSuccessStmt(stmt,erg);
 	erg=SQLBindParameter(stmt,5,SQL_PARAM_INPUT,
 				SQL_C_CHAR,SQL_LONGVARCHAR,
@@ -5753,7 +5815,7 @@ int main(int argc, char **argv) {
 				SQL_C_CHAR,SQL_LONGVARCHAR,
 				0,0,
 				(SQLPOINTER)clobval,
-				cloblen,&cloblen);
+				cloblen,&clobstrlen);
 	assertSuccessStmt(stmt,erg);
 	erg=SQLBindParameter(stmt,7,SQL_PARAM_INPUT,
 				SQL_C_BINARY,SQL_LONGVARBINARY,
@@ -5777,15 +5839,18 @@ int main(int argc, char **argv) {
 	intval=3;
 	charval=(SQLCHAR *)"testchar3";
 	varcharval=(SQLCHAR *)"testvarchar3";
-	dateval=(SQLCHAR *)"01-JAN-2003";
+	dateval.year=2003;
+	dateval.month=1;
+	dateval.day=1;
 	longval=(SQLCHAR *)"testlong3";
 	charstring::copy((char *)clobval,"testclob3");
 	blobval=(SQLCHAR *)"testblob3";
 	charlen=SQL_NTS;
 	varcharlen=SQL_NTS;
-	datelen=SQL_NTS;
+	datelen=sizeof(SQL_DATE_STRUCT);
 	longlen=SQL_NTS;
 	cloblen=sizeof(clobval);
+	clobstrlen=SQL_NTS;
 	bloblen=9;
 	erg=SQLBindParameter(stmt,1,SQL_PARAM_INPUT,
 				SQL_C_SLONG,SQL_INTEGER,
@@ -5806,10 +5871,10 @@ int main(int argc, char **argv) {
 				0,&varcharlen);
 	assertSuccessStmt(stmt,erg);
 	erg=SQLBindParameter(stmt,4,SQL_PARAM_INPUT,
-				SQL_C_CHAR,datesqltype,
-				11,0,
-				(SQLPOINTER)dateval,
-				0,&datelen);
+				SQL_C_TYPE_DATE,SQL_TYPE_DATE,
+				10,0,
+				(SQLPOINTER)&dateval,
+				sizeof(dateval),&datelen);
 	assertSuccessStmt(stmt,erg);
 	erg=SQLBindParameter(stmt,5,SQL_PARAM_INPUT,
 				SQL_C_CHAR,SQL_LONGVARCHAR,
@@ -5821,7 +5886,7 @@ int main(int argc, char **argv) {
 				SQL_C_CHAR,SQL_LONGVARCHAR,
 				0,0,
 				(SQLPOINTER)clobval,
-				cloblen,&cloblen);
+				cloblen,&clobstrlen);
 	assertSuccessStmt(stmt,erg);
 	erg=SQLBindParameter(stmt,7,SQL_PARAM_INPUT,
 				SQL_C_BINARY,SQL_LONGVARBINARY,
@@ -5900,13 +5965,15 @@ int main(int argc, char **argv) {
 	intval=4;
 	charval=(SQLCHAR *)"testchar4";
 	varcharval=(SQLCHAR *)"testvarchar4";
-	dateval=(SQLCHAR *)"01-JAN-2004";
+	dateval.year=2004;
+	dateval.month=1;
+	dateval.day=1;
 	longval=(SQLCHAR *)"testlong4";
 	charstring::copy((char *)clobval,"testclob4");
 	blobval=(SQLCHAR *)"testblob4";
 	charlen=SQL_NTS;
 	varcharlen=SQL_NTS;
-	datelen=SQL_NTS;
+	datelen=sizeof(SQL_DATE_STRUCT);
 	longlen=SQL_NTS;
 	// data-at-exec sentinel for the CLOB column
 	SQLLEN	clobdataatexeclen=SQL_LEN_DATA_AT_EXEC(9);
@@ -5930,10 +5997,10 @@ int main(int argc, char **argv) {
 				0,&varcharlen);
 	assertSuccessStmt(stmt,erg);
 	erg=SQLBindParameter(stmt,4,SQL_PARAM_INPUT,
-				SQL_C_CHAR,datesqltype,
-				11,0,
-				(SQLPOINTER)dateval,
-				0,&datelen);
+				SQL_C_TYPE_DATE,SQL_TYPE_DATE,
+				10,0,
+				(SQLPOINTER)&dateval,
+				sizeof(dateval),&datelen);
 	assertSuccessStmt(stmt,erg);
 	erg=SQLBindParameter(stmt,5,SQL_PARAM_INPUT,
 				SQL_C_CHAR,SQL_LONGVARCHAR,
@@ -6201,12 +6268,7 @@ int main(int argc, char **argv) {
 	assertEqualStmt(stmt,(int)datefield.day,1);
 	assertEqualStmt(stmt,(int)longind,9);
 	assertEqualStmt(stmt,(const char *)longfield,"testlong2");
-	// FIXME: IDK which of these is correct
-	if (issqlrelay) {
-		assertEqualStmt(stmt,(int)clobind,9);
-	} else {
-		assertEqualStmt(stmt,(int)clobind,(int)sizeof(clobval));
-	}
+	assertEqualStmt(stmt,(int)clobind,9);
 	assertEqualStmt(stmt,(const char *)clobfield,"testclob2");
 	assertEqualStmt(stmt,(int)blobind,9);
 	assertTrueStmt(stmt,!bytestring::compare(blobfield,"testblob2",9));
@@ -6227,11 +6289,7 @@ int main(int argc, char **argv) {
 	assertEqualStmt(stmt,(int)datefield.day,1);
 	assertEqualStmt(stmt,(int)longind,9);
 	assertEqualStmt(stmt,(const char *)longfield,"testlong3");
-	if (issqlrelay) {
-		assertEqualStmt(stmt,(int)clobind,9);
-	} else {
-		assertEqualStmt(stmt,(int)clobind,(int)sizeof(clobval));
-	}
+	assertEqualStmt(stmt,(int)clobind,9);
 	assertEqualStmt(stmt,(const char *)clobfield,"testclob3");
 	assertEqualStmt(stmt,(int)blobind,9);
 	assertTrueStmt(stmt,!bytestring::compare(blobfield,"testblob3",9));
@@ -6385,11 +6443,7 @@ int main(int argc, char **argv) {
 	erg=SQLGetData(stmt,6,SQL_C_CHAR,
 			gclobfield,sizeof(gclobfield),&gclobind);
 	assertSuccessStmt(stmt,erg);
-	if (issqlrelay) {
-		assertEqualStmt(stmt,(int)gclobind,9);
-	} else {
-		assertEqualStmt(stmt,(int)gclobind,40);
-	}
+	assertEqualStmt(stmt,(int)gclobind,9);
 	assertEqualStmt(stmt,(const char *)gclobfield,"testclob2");
 	erg=SQLGetData(stmt,7,SQL_C_BINARY,
 			gblobfield,sizeof(gblobfield),&gblobind);
@@ -6431,11 +6485,7 @@ int main(int argc, char **argv) {
 	erg=SQLGetData(stmt,6,SQL_C_CHAR,
 			gclobfield,sizeof(gclobfield),&gclobind);
 	assertSuccessStmt(stmt,erg);
-	if (issqlrelay) {
-		assertEqualStmt(stmt,(int)gclobind,9);
-	} else {
-		assertEqualStmt(stmt,(int)gclobind,40);
-	}
+	assertEqualStmt(stmt,(int)gclobind,9);
 	assertEqualStmt(stmt,(const char *)gclobfield,"testclob3");
 	erg=SQLGetData(stmt,7,SQL_C_BINARY,
 			gblobfield,sizeof(gblobfield),&gblobind);
@@ -6649,8 +6699,7 @@ int main(int argc, char **argv) {
 	erg=SQLSetConnectAttr(dbc,SQL_ATTR_AUTOCOMMIT,
 		(SQLPOINTER)SQL_AUTOCOMMIT_OFF,0);
 	assertSuccessDbc(dbc,erg);
-	erg=SQLExecDirect(stmt,(SQLCHAR *)
-		"drop table testtable",SQL_NTS);
+	erg=SQLExecDirect(stmt,(SQLCHAR *)"drop table testtable",SQL_NTS);
 	assertSuccessStmt(stmt,erg);
 	stdoutput.printf("\n");
 
@@ -6784,15 +6833,14 @@ int main(int argc, char **argv) {
 	erg=SQLFreeStmt(stmt,SQL_CLOSE);
 	erg=SQLFreeStmt(stmt,SQL_UNBIND);
 	erg=SQLFreeStmt(stmt,SQL_RESET_PARAMS);
-	erg=SQLExecDirect(stmt,(SQLCHAR *)
-		"drop table testtable",SQL_NTS);
+	erg=SQLExecDirect(stmt,(SQLCHAR *)"drop table testtable",SQL_NTS);
 	assertSuccessStmt(stmt,erg);
 	stdoutput.printf("\n");
 
 
 
-	// long lobs
-	stdoutput.printf("LONG LOBS: \n");
+	// long lobs (prepare, bind, execute)
+	stdoutput.printf("LONG LOBS (prepare, bind, execute): \n");
 	erg=SQLFreeStmt(stmt,SQL_CLOSE);
 	erg=SQLFreeStmt(stmt,SQL_UNBIND);
 	erg=SQLFreeStmt(stmt,SQL_RESET_PARAMS);
@@ -6803,8 +6851,6 @@ int main(int argc, char **argv) {
 		"	testblob blob)",
 		SQL_NTS);
 	assertSuccessStmt(stmt,erg);
-	#define LARGE_BUFFER_LENGTH 8192
-	SQLCHAR	largebuffer[LARGE_BUFFER_LENGTH+1];
 	for (int i=0; i<LARGE_BUFFER_LENGTH; i++) {
 		largebuffer[i]='C';
 	}
@@ -6838,8 +6884,7 @@ int main(int argc, char **argv) {
 	erg=SQLFreeStmt(stmt,SQL_CLOSE);
 	erg=SQLFreeStmt(stmt,SQL_UNBIND);
 	erg=SQLFreeStmt(stmt,SQL_RESET_PARAMS);
-	erg=SQLExecDirect(stmt,(SQLCHAR *)
-		"select * from testtable",SQL_NTS);
+	erg=SQLExecDirect(stmt,(SQLCHAR *)"select * from testtable",SQL_NTS);
 	assertSuccessStmt(stmt,erg);
 	SQLCHAR	largeclobout[LARGE_BUFFER_LENGTH+1];
 	SQLLEN	largeclobind;
@@ -6862,8 +6907,105 @@ int main(int argc, char **argv) {
 	erg=SQLFreeStmt(stmt,SQL_CLOSE);
 	erg=SQLFreeStmt(stmt,SQL_UNBIND);
 	erg=SQLFreeStmt(stmt,SQL_RESET_PARAMS);
+	erg=SQLExecDirect(stmt,(SQLCHAR *)"drop table testtable",SQL_NTS);
+	assertSuccessStmt(stmt,erg);
+	stdoutput.printf("\n");
+
+
+
+	// long lobs (prepare, bind, execute, putdata)
+	stdoutput.printf("LONG LOBS (prepare, bind, execute, putdata): \n");
+	erg=SQLFreeStmt(stmt,SQL_CLOSE);
+	erg=SQLFreeStmt(stmt,SQL_UNBIND);
+	erg=SQLFreeStmt(stmt,SQL_RESET_PARAMS);
+	SQLExecDirect(stmt,(SQLCHAR *)"drop table testtable",SQL_NTS);
 	erg=SQLExecDirect(stmt,(SQLCHAR *)
-		"drop table testtable",SQL_NTS);
+		"create table testtable ("
+		"	testclob clob, "
+		"	testblob blob)",
+		SQL_NTS);
+	assertSuccessStmt(stmt,erg);
+	for (int i=0; i<LARGE_BUFFER_LENGTH; i++) {
+		largebuffer[i]='C';
+	}
+	largebuffer[LARGE_BUFFER_LENGTH]='\0';
+	if (issqlrelay) {
+		erg=SQLPrepare(stmt,(SQLCHAR *)
+			"insert into testtable values (:1,:2)",
+			SQL_NTS);
+	} else {
+		erg=SQLPrepare(stmt,(SQLCHAR *)
+			"insert into testtable values (?,?)",
+			SQL_NTS);
+	}
+	assertSuccessStmt(stmt,erg);
+	SQLLEN	largeclobdaelen=SQL_LEN_DATA_AT_EXEC(LARGE_BUFFER_LENGTH);
+	SQLLEN	largeblobdaelen=SQL_LEN_DATA_AT_EXEC(LARGE_BUFFER_LENGTH);
+	// the application tokens we expect SQLParamData to hand back
+	const char	*clobtoken="largeclob";
+	const char	*blobtoken="largeblob";
+	erg=SQLBindParameter(stmt,1,SQL_PARAM_INPUT,
+				SQL_C_CHAR,SQL_LONGVARCHAR,
+				LARGE_BUFFER_LENGTH,0,
+				(SQLPOINTER)clobtoken,
+				0,&largeclobdaelen);
+	assertSuccessStmt(stmt,erg);
+	erg=SQLBindParameter(stmt,2,SQL_PARAM_INPUT,
+				SQL_C_BINARY,SQL_LONGVARBINARY,
+				LARGE_BUFFER_LENGTH,0,
+				(SQLPOINTER)blobtoken,
+				0,&largeblobdaelen);
+	assertSuccessStmt(stmt,erg);
+	erg=SQLExecute(stmt);
+	assertEqualStmt(stmt,(int)erg,(int)SQL_NEED_DATA);
+	SQLPOINTER	largetoken=NULL;
+	// CLOB: SQLParamData hands back the CLOB token, then 4 chunks
+	erg=SQLParamData(stmt,&largetoken);
+	assertEqualStmt(stmt,(int)erg,(int)SQL_NEED_DATA);
+	assertEqualStmt(stmt,(const char *)largetoken,clobtoken);
+	for (int i=0; i<4; i++) {
+		erg=SQLPutData(stmt,
+				largebuffer+i*LARGE_CHUNK_LENGTH,
+				LARGE_CHUNK_LENGTH);
+		assertSuccessStmt(stmt,erg);
+	}
+	// BLOB: next SQLParamData hands back the BLOB token, then 4 chunks
+	erg=SQLParamData(stmt,&largetoken);
+	assertEqualStmt(stmt,(int)erg,(int)SQL_NEED_DATA);
+	assertEqualStmt(stmt,(const char *)largetoken,blobtoken);
+	for (int i=0; i<4; i++) {
+		erg=SQLPutData(stmt,
+				largebuffer+i*LARGE_CHUNK_LENGTH,
+				LARGE_CHUNK_LENGTH);
+		assertSuccessStmt(stmt,erg);
+	}
+	// final SQLParamData completes execution
+	erg=SQLParamData(stmt,&largetoken);
+	assertSuccessStmt(stmt,erg);
+	// fetch the row back and verify it matches the source buffer
+	erg=SQLFreeStmt(stmt,SQL_CLOSE);
+	erg=SQLFreeStmt(stmt,SQL_UNBIND);
+	erg=SQLFreeStmt(stmt,SQL_RESET_PARAMS);
+	erg=SQLExecDirect(stmt,(SQLCHAR *)"select * from testtable",SQL_NTS);
+	assertSuccessStmt(stmt,erg);
+	erg=SQLBindCol(stmt,1,SQL_C_CHAR,
+			largeclobout,sizeof(largeclobout),&largeclobind);
+	erg=SQLBindCol(stmt,2,SQL_C_BINARY,
+			largeblobout,sizeof(largeblobout),&largeblobind);
+	erg=SQLFetch(stmt);
+	assertSuccessStmt(stmt,erg);
+	assertEqualStmt(stmt,(int)largeclobind,LARGE_BUFFER_LENGTH);
+	assertTrueStmt(stmt,
+		!bytestring::compare(largeclobout,largebuffer,
+					LARGE_BUFFER_LENGTH));
+	assertEqualStmt(stmt,(int)largeblobind,LARGE_BUFFER_LENGTH);
+	assertTrueStmt(stmt,
+		!bytestring::compare(largeblobout,largebuffer,
+					LARGE_BUFFER_LENGTH));
+	erg=SQLFreeStmt(stmt,SQL_CLOSE);
+	erg=SQLFreeStmt(stmt,SQL_UNBIND);
+	erg=SQLFreeStmt(stmt,SQL_RESET_PARAMS);
+	erg=SQLExecDirect(stmt,(SQLCHAR *)"drop table testtable",SQL_NTS);
 	assertSuccessStmt(stmt,erg);
 	stdoutput.printf("\n");
 
@@ -7007,8 +7149,7 @@ int main(int argc, char **argv) {
 	erg=SQLFreeStmt(stmt,SQL_CLOSE);
 	erg=SQLFreeStmt(stmt,SQL_UNBIND);
 	erg=SQLFreeStmt(stmt,SQL_RESET_PARAMS);
-	erg=SQLExecDirect(stmt,(SQLCHAR *)
-		"drop table testtable",SQL_NTS);
+	erg=SQLExecDirect(stmt,(SQLCHAR *)"drop table testtable",SQL_NTS);
 	assertSuccessStmt(stmt,erg);
 	stdoutput.printf("\n");
 
@@ -7089,8 +7230,7 @@ int main(int argc, char **argv) {
 	erg=SQLFreeStmt(stmt,SQL_CLOSE);
 	erg=SQLFreeStmt(stmt,SQL_UNBIND);
 	erg=SQLFreeStmt(stmt,SQL_RESET_PARAMS);
-	erg=SQLExecDirect(stmt,(SQLCHAR *)
-		"drop table testtable",SQL_NTS);
+	erg=SQLExecDirect(stmt,(SQLCHAR *)"drop table testtable",SQL_NTS);
 	assertSuccessStmt(stmt,erg);
 	stdoutput.printf("\n");
 
@@ -7243,8 +7383,7 @@ int main(int argc, char **argv) {
 	erg=SQLFreeStmt(stmt,SQL_CLOSE);
 	erg=SQLFreeStmt(stmt,SQL_UNBIND);
 	erg=SQLFreeStmt(stmt,SQL_RESET_PARAMS);
-	erg=SQLExecDirect(stmt,(SQLCHAR *)
-		"drop table testtable",SQL_NTS);
+	erg=SQLExecDirect(stmt,(SQLCHAR *)"drop table testtable",SQL_NTS);
 	assertSuccessStmt(stmt,erg);
 	stdoutput.printf("\n");
 
@@ -7276,8 +7415,7 @@ int main(int argc, char **argv) {
 	erg=SQLFreeStmt(stmt,SQL_CLOSE);
 	erg=SQLFreeStmt(stmt,SQL_UNBIND);
 	erg=SQLFreeStmt(stmt,SQL_RESET_PARAMS);
-	erg=SQLExecDirect(stmt,(SQLCHAR *)
-		"drop table testtable",SQL_NTS);
+	erg=SQLExecDirect(stmt,(SQLCHAR *)"drop table testtable",SQL_NTS);
 	assertSuccessStmt(stmt,erg);
 	stdoutput.printf("\n");
 
@@ -7570,8 +7708,7 @@ int main(int argc, char **argv) {
 	assertEqualStmt(stmt,(int)erg,(int)SQL_NO_DATA);
 	erg=SQLFreeStmt(stmt,SQL_CLOSE);
 	erg=SQLFreeStmt(stmt,SQL_UNBIND);
-	erg=SQLExecDirect(stmt,(SQLCHAR *)
-		"drop table testtable",SQL_NTS);
+	erg=SQLExecDirect(stmt,(SQLCHAR *)"drop table testtable",SQL_NTS);
 	assertSuccessStmt(stmt,erg);
 	stdoutput.printf("\n");
 
@@ -7621,8 +7758,7 @@ int main(int argc, char **argv) {
 	assertFalseStmt(stmt,foundcol2);
 	erg=SQLFreeStmt(stmt,SQL_CLOSE);
 	erg=SQLFreeStmt(stmt,SQL_UNBIND);
-	erg=SQLExecDirect(stmt,(SQLCHAR *)
-		"drop table testtable",SQL_NTS);
+	erg=SQLExecDirect(stmt,(SQLCHAR *)"drop table testtable",SQL_NTS);
 	assertSuccessStmt(stmt,erg);
 	stdoutput.printf("\n");
 
@@ -7670,8 +7806,7 @@ int main(int argc, char **argv) {
 	assertEqualStmt(stmt,(int)erg,(int)SQL_NO_DATA);
 	erg=SQLFreeStmt(stmt,SQL_CLOSE);
 	erg=SQLFreeStmt(stmt,SQL_UNBIND);
-	erg=SQLExecDirect(stmt,(SQLCHAR *)
-		"drop table testtable",SQL_NTS);
+	erg=SQLExecDirect(stmt,(SQLCHAR *)"drop table testtable",SQL_NTS);
 	assertSuccessStmt(stmt,erg);
 	stdoutput.printf("\n");
 
@@ -7741,8 +7876,7 @@ int main(int argc, char **argv) {
 	assertTrueStmt(stmt,foundidxcol1);
 	erg=SQLFreeStmt(stmt,SQL_CLOSE);
 	erg=SQLFreeStmt(stmt,SQL_UNBIND);
-	erg=SQLExecDirect(stmt,(SQLCHAR *)
-		"drop table testtable",SQL_NTS);
+	erg=SQLExecDirect(stmt,(SQLCHAR *)"drop table testtable",SQL_NTS);
 	assertSuccessStmt(stmt,erg);
 	stdoutput.printf("\n");
 

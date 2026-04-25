@@ -9765,7 +9765,7 @@ SQLRETURN SQL_API SQLGetInfo(SQLHDBC connectionhandle,
 		case SQL_CURSOR_SENSITIVITY:
 			debugPrintf("  infotype: "
 					"SQL_CURSOR_SENSITIVITY\n");
-			val.uintval=SQL_UNSPECIFIED;
+			val.uintval=SQL_INSENSITIVE;
 			type=1;
 			break;
 		case SQL_DESCRIBE_PARAMETER:
@@ -10848,6 +10848,7 @@ static SQLRETURN SQLR_SQLGetStmtAttr(SQLHSTMT statementhandle,
 		SQLULEN		ulenval;
 		SQLUSMALLINT	*usmallintptrval;
 		SQLROWSETSIZE	*rowsetsizeptrval;
+		SQLPOINTER	ptrval;
 	} val;
 	int16_t	type=-1;
 
@@ -10886,7 +10887,7 @@ static SQLRETURN SQLR_SQLGetStmtAttr(SQLHSTMT statementhandle,
 		case SQL_ATTR_CURSOR_SENSITIVITY:
 			debugPrintf("  attribute: "
 					"SQL_ATTR_CURSOR_SENSITIVITY\n");
-			val.ulenval=SQL_UNSPECIFIED;
+			val.ulenval=SQL_INSENSITIVE;
 			type=2;
 			break;
 		#endif
@@ -10938,18 +10939,18 @@ static SQLRETURN SQLR_SQLGetStmtAttr(SQLHSTMT statementhandle,
 			val.ulenval=stmt->rowbindtype;
 			type=2;
 			break;
-		//case SQL_ATTR_CONCURRENCY:
 		//case SQL_ATTR_CURSOR_TYPE:
 		case SQL_CURSOR_TYPE:
 			debugPrintf("  attribute: "
-					"SQL_ATTR_CONCURRENCY/"
 					"SQL_ATTR_CURSOR_TYPE/"
 					"SQL_CURSOR_TYPE\n");
 			val.ulenval=SQL_CURSOR_FORWARD_ONLY;
 			type=2;
 			break;
+		//case SQL_ATTR_CONCURRENCY:
 		case SQL_CONCURRENCY:
 			debugPrintf("  attribute: "
+					"SQL_ATTR_CONCURRENCY/"
 					"SQL_CONCURRENCY\n");
 			val.ulenval=SQL_CONCUR_READ_ONLY;
 			type=2;
@@ -11013,9 +11014,11 @@ static SQLRETURN SQLR_SQLGetStmtAttr(SQLHSTMT statementhandle,
 			type=2;
 			break;
 		case SQL_ATTR_FETCH_BOOKMARK_PTR:
-			debugPrintf("  unsupported attribute: "
+			debugPrintf("  attribute: "
 					"SQL_ATTR_FETCH_BOOKMARK_PTR\n");
-			// FIXME: implement
+			// sqlrelay doesn't support bookmarks
+			val.ptrval=NULL;
+			type=5;
 			break;
 		case SQL_ATTR_PARAM_BIND_OFFSET_PTR:
 			debugPrintf("  unsupported attribute: "
@@ -11143,6 +11146,15 @@ static SQLRETURN SQLR_SQLGetStmtAttr(SQLHSTMT statementhandle,
 			if (value) {
 				*((SQLROWSETSIZE **)value)=val.rowsetsizeptrval;
 				valuelength=sizeof(SQLROWSETSIZE *);
+			} else {
+				debugPrintf("  NULL value "
+						"(not copying out data)\n");
+			}
+			break;
+		case 5:
+			if (value) {
+				*((SQLPOINTER *)value)=val.ptrval;
+				valuelength=sizeof(SQLPOINTER);
 			} else {
 				debugPrintf("  NULL value "
 						"(not copying out data)\n");
@@ -11445,19 +11457,31 @@ SQLRETURN SQL_API SQLParamData(SQLHSTMT statementhandle,
 
 	// if there's an existing putdata then bind it
 	if (stmt->putdatabind) {
-		// FIXME: for now we only support SQL_C_DATA, but eventually
-		// we'll need to do some type-checking here and handle different
-		// data types in different ways
 		char	*parametername=charstring::parseNumber(
 						stmt->putdatabind);
 		debugPrintf("  parametername: %s\n",
 					parametername);
-		debugPrintf("  value: \"%.*s\"\n",
+		// dispatch on the C type recorded by SQLBindParameter so
+		// binary data goes to inputBindBlob and character data goes
+		// to inputBind
+		inputbind	*ib=NULL;
+		stmt->inputbinds.getValue(stmt->putdatabind,&ib);
+		if (ib && ib->valuetype==SQL_C_BINARY) {
+			debugPrintf("  putting %d binary bytes\n",
+					stmt->putdatabuffer.getSize());
+			stmt->cur->inputBindBlob(parametername,
+				(const char *)
+					stmt->putdatabuffer.getBuffer(),
+				stmt->putdatabuffer.getSize());
+		} else {
+			debugPrintf("  value: \"%.*s\"\n",
 					stmt->putdatabuffer.getSize(),
 					stmt->putdatabuffer.getBuffer());
-		stmt->cur->inputBind(parametername,
-				(const char *)stmt->putdatabuffer.getBuffer(),
+			stmt->cur->inputBind(parametername,
+				(const char *)
+					stmt->putdatabuffer.getBuffer(),
 				stmt->putdatabuffer.getSize());
+		}
 		delete[] parametername;
 	}
 
@@ -11797,9 +11821,15 @@ static SQLRETURN SQLR_SQLSetConnectAttr(SQLHDBC connectionhandle,
 			conn->con->setConnectTimeout((int32_t)val.uintval,0);
 			return SQL_SUCCESS;
 		case SQL_ATTR_ASYNC_ENABLE:
-			debugPrintf("  attribute: SQL_ATTR_ASYNC_ENABLE "
-								"(stub)\n");
+			debugPrintf("  attribute: SQL_ATTR_ASYNC_ENABLE\n");
 			debugPrintf("  val: %lld\n",(uint64_t)val.uintval);
+			// sqlrelay doesn't support async mode
+			if (val.uintval==SQL_ASYNC_ENABLE_ON) {
+				conn->attrasyncenable=SQL_ASYNC_ENABLE_OFF;
+				SQLR_CONNSetError(conn,
+					"Option value changed",0,"01S02");
+				return SQL_SUCCESS_WITH_INFO;
+			}
 			conn->attrasyncenable=val.uintval;
 			return SQL_SUCCESS;
 		case SQL_ATTR_DISCONNECT_BEHAVIOR:
@@ -12085,15 +12115,33 @@ static SQLRETURN SQLR_SQLSetStmtAttr(SQLHSTMT statementhandle,
 			// read-only
 			return SQL_ERROR;
 		case SQL_ATTR_CURSOR_SCROLLABLE:
-			debugPrintf("  attribute: SQL_ATTR_CURSOR_SCROLLABLE "
-				"(unsupported but returning success)\n");
-			// FIXME: implement
+			{
+			SQLULEN	val=(SQLULEN)(uint64_t)value;
+			debugPrintf("  attribute: "
+					"SQL_ATTR_CURSOR_SCROLLABLE: "
+						"%lld\n",(uint64_t)val);
+			// sqlrelay only supports SQL_NONSCROLLABLE
+			if (val!=SQL_NONSCROLLABLE) {
+				SQLR_STMTSetError(stmt,
+					"Option value changed",0,"01S02");
+				return SQL_SUCCESS_WITH_INFO;
+			}
 			return SQL_SUCCESS;
+			}
 		case SQL_ATTR_CURSOR_SENSITIVITY:
-			debugPrintf("  attribute: SQL_ATTR_CURSOR_SENSITIVITY "
-				"(unsupported but returning success)\n");
-			// FIXME: implement
+			{
+			SQLULEN	val=(SQLULEN)(uint64_t)value;
+			debugPrintf("  attribute: "
+					"SQL_ATTR_CURSOR_SENSITIVITY: "
+						"%lld\n",(uint64_t)val);
+			// sqlrelay doesn't support SQL_SENSITIVE
+			if (val==SQL_SENSITIVE) {
+				SQLR_STMTSetError(stmt,
+					"Option value changed",0,"01S02");
+				return SQL_SUCCESS_WITH_INFO;
+			}
 			return SQL_SUCCESS;
+			}
 		#endif
 		//case SQL_ATTR_QUERY_TIMEOUT:
 		case SQL_QUERY_TIMEOUT:
@@ -12128,10 +12176,20 @@ static SQLRETURN SQLR_SQLSetStmtAttr(SQLHSTMT statementhandle,
 			stmt->attrmaxlength=(SQLULEN)(uint64_t)value;
 			return SQL_SUCCESS;
 		case SQL_ASYNC_ENABLE:
-			debugPrintf("  attribute: SQL_ASYNC_ENABLE "
-				"(unsupported but returning success)\n");
-			// FIXME: implement
+			{
+			SQLULEN	val=(SQLULEN)(uint64_t)value;
+			debugPrintf("  attribute: "
+					"SQL_ATTR_ASYNC_ENABLE/"
+					"SQL_ASYNC_ENABLE: "
+						"%lld\n",(uint64_t)val);
+			// sqlrelay doesn't support async mode
+			if (val==SQL_ASYNC_ENABLE_ON) {
+				SQLR_STMTSetError(stmt,
+					"Option value changed",0,"01S02");
+				return SQL_SUCCESS_WITH_INFO;
+			}
 			return SQL_SUCCESS;
+			}
 		//case SQL_ATTR_ROW_BIND_TYPE:
 		case SQL_BIND_TYPE:
 			debugPrintf("  attribute: "
@@ -12140,21 +12198,38 @@ static SQLRETURN SQLR_SQLSetStmtAttr(SQLHSTMT statementhandle,
 					"%lld\n",(uint64_t)value);
 			stmt->rowbindtype=(SQLULEN)(uint64_t)value;
 			return SQL_SUCCESS;
-		//case SQL_ATTR_CONCURRENCY:
 		//case SQL_ATTR_CURSOR_TYPE:
 		case SQL_CURSOR_TYPE:
+			{
+			SQLULEN	val=(SQLULEN)(uint64_t)value;
+			debugPrintf("  attribute: "
+					"SQL_ATTR_CURSOR_TYPE/"
+					"SQL_CURSOR_TYPE: "
+						"%lld\n",(uint64_t)val);
+			// sqlrelay only supports forward-only cursors
+			if (val!=SQL_CURSOR_FORWARD_ONLY) {
+				SQLR_STMTSetError(stmt,
+					"Option value changed",0,"01S02");
+				return SQL_SUCCESS_WITH_INFO;
+			}
+			return SQL_SUCCESS;
+			}
+		//case SQL_ATTR_CONCURRENCY:
+		case SQL_CONCURRENCY:
+			{
+			SQLULEN	val=(SQLULEN)(uint64_t)value;
 			debugPrintf("  attribute: "
 					"SQL_ATTR_CONCURRENCY/"
-					"SQL_ATTR_CURSOR_TYPE/"
-					"SQL_CURSOR_TYPE "
-				"(unsupported but returning success)\n");
-			// FIXME: implement
+					"SQL_CONCURRENCY: "
+						"%lld\n",(uint64_t)val);
+			// sqlrelay's result sets are read-only
+			if (val!=SQL_CONCUR_READ_ONLY) {
+				SQLR_STMTSetError(stmt,
+					"Option value changed",0,"01S02");
+				return SQL_SUCCESS_WITH_INFO;
+			}
 			return SQL_SUCCESS;
-		case SQL_CONCURRENCY:
-			debugPrintf("  attribute: SQL_CONCURRENCY "
-				"(unsupported but returning success)\n");
-			// FIXME: implement
-			return SQL_SUCCESS;
+			}
 		//case SQL_ATTR_KEYSET_SIZE:
 		case SQL_KEYSET_SIZE:
 			debugPrintf("  attribute: "
@@ -12201,12 +12276,20 @@ static SQLRETURN SQLR_SQLSetStmtAttr(SQLHSTMT statementhandle,
 			}
 		//case SQL_ATTR_USE_BOOKMARKS:
 		case SQL_USE_BOOKMARKS:
+			{
+			SQLULEN	val=(SQLULEN)(uint64_t)value;
 			debugPrintf("  attribute: "
 					"SQL_ATTR_USE_BOOKMARKS/"
-					"SQL_USE_BOOKMARKS "
-				"(unsupported but returning success)\n");
-			// FIXME: implement
+					"SQL_USE_BOOKMARKS: "
+						"%lld\n",(uint64_t)val);
+			// sqlrelay doesn't support bookmarks
+			if (val!=SQL_UB_OFF) {
+				SQLR_STMTSetError(stmt,
+					"Option value changed",0,"01S02");
+				return SQL_SUCCESS_WITH_INFO;
+			}
 			return SQL_SUCCESS;
+			}
 		case SQL_GET_BOOKMARK:
 			debugPrintf("  attribute: SQL_GET_BOOKMARK "
 				"(unsupported but returning success)\n");
@@ -12226,10 +12309,19 @@ static SQLRETURN SQLR_SQLSetStmtAttr(SQLHSTMT statementhandle,
 			// FIXME: implement
 			return SQL_SUCCESS;
 		case SQL_ATTR_FETCH_BOOKMARK_PTR:
-			debugPrintf("  attribute: SQL_ATTR_FETCH_BOOKMARK_PTR "
-				"(unsupported but returning success)\n");
-			// FIXME: implement
-			return SQL_SUCCESS;
+			debugPrintf("  attribute: "
+					"SQL_ATTR_FETCH_BOOKMARK_PTR\n");
+			debugPrintf("  val: %p\n",(SQLPOINTER)value);
+			// sqlrelay doesn't support bookmarks
+			// allow clearing a bookmark (NULL) is harmless,
+			// but fail when attempting to set a bookmark
+			if (!value) {
+				return SQL_SUCCESS;
+			}
+			SQLR_STMTSetError(stmt,
+				"Optional feature not implemented",
+				0,"HYC00");
+			return SQL_ERROR;
 		case SQL_ATTR_PARAM_BIND_OFFSET_PTR:
 			{
 			stmt->parambindoffsetptr=(SQLULEN *)value;
@@ -13682,9 +13774,20 @@ static SQLRETURN SQLR_InputBindParameter(SQLHSTMT statementhandle,
 		case SQL_C_BINARY:
 			debugPrintf("  valuetype: "
 				"SQL_C_BINARY/SQL_C_VARBOOKMARK\n");
-			stmt->cur->inputBindBlob(parametername,
-					(const char *)parametervalue,
-					(strlen_or_ind)?*strlen_or_ind:0);
+			if (dataatexec) {
+				// real value will be supplied later via
+				// SQLPutData; stash the application token
+				// here so SQLParamData can return it
+				debugPrintf("  data at exec\n");
+				stmt->dataatexec=true;
+				stmt->dataatexecdict.setValue(parameternumber,
+								parametervalue);
+			} else {
+				stmt->cur->inputBindBlob(parametername,
+						(const char *)parametervalue,
+						(strlen_or_ind)?
+							*strlen_or_ind:0);
+			}
 			break;
 		case SQL_C_BIT:
 			debugPrintf("  valuetype: SQL_C_BIT\n");
