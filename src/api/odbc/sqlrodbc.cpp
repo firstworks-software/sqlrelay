@@ -4258,14 +4258,32 @@ static SQLRETURN SQLR_SQLExecDirect(SQLHSTMT statementhandle,
 		return SQL_INVALID_HANDLE;
 	}
 
-	// re-read the application's input bind buffers before execute
+	// trim query
+	uint32_t	statementtextlength=SQLR_TrimQuery(
+						statementtext,textlength);
+	#ifdef DEBUG_MESSAGES
+	stringbuffer	debugstr;
+	debugstr.append(statementtext,statementtextlength);
+	debugPrintf("  statement: \"%s\" (%d)\n",
+			debugstr.getString(),(int)statementtextlength);
+	#endif
+
+	// prepare the query, then re-read the application's input bind buffers.
+	// The order matters when ClearBindsDuringPrepare is set: prepareQuery
+	// will wipe whatever SQLBindParameter put on the cursor, and
+	// SQLR_RebindInputs replays it from the STMT-level bookkeeping.  This
+	// also leaves the cursor in a prepared state for the data-at-exec path,
+	// where SQLParamData's final pass will just call executeQuery via
+	// SQLR_SQLExecute rather than re-entering this function.
+	stmt->cur->prepareQuery((const char *)statementtext,
+					statementtextlength);
 	SQLR_RebindInputs(stmt);
 
 	// defer execution if there are any data-at-exec binds
 	if (stmt->dataatexec) {
 		debugPrintf("  data-at-exec detected, deferring execution\n");
-		stmt->dataatexecstatement=statementtext;
-		stmt->dataatexecstatementlength=textlength;
+		stmt->dataatexecstatement=NULL;
+		stmt->dataatexecstatementlength=0;
 		return SQL_NEED_DATA;
 	}
 
@@ -4277,19 +4295,8 @@ static SQLRETURN SQLR_SQLExecDirect(SQLHSTMT statementhandle,
 	// clear the error
 	SQLR_STMTClearError(stmt);
 
-	// trim query
-	uint32_t	statementtextlength=SQLR_TrimQuery(
-						statementtext,textlength);
-
-	// run the query
-	#ifdef DEBUG_MESSAGES
-	stringbuffer	debugstr;
-	debugstr.append(statementtext,statementtextlength);
-	debugPrintf("  statement: \"%s\" (%d)\n",
-			debugstr.getString(),(int)statementtextlength);
-	#endif
-	bool	result=stmt->cur->sendQuery((const char *)statementtext,
-							statementtextlength);
+	// execute the prepared query
+	bool	result=stmt->cur->executeQuery();
 
 	// the statement has been executed
 	stmt->executed=true;
@@ -5255,6 +5262,16 @@ static SQLRETURN SQLR_SQLGetData(SQLHSTMT statementhandle,
 					bytestocopy=fieldlength+1;
 					*offset+=fieldlength;
 				}
+			} else if (!*offset) {
+				// Per the ODBC spec, the first call on a
+				// zero-length (but non-NULL) field should
+				// return SQL_SUCCESS with the indicator set to
+				// 0.  A subsequent call should return
+				// SQL_NO_DATA.  Bump *offset so the next call
+				// will fall through to the nodata=true branch
+				// below.
+				*offset=1;
+				bytestocopy=0;
 			} else {
 				nodata=true;
 				fieldlength=0;
@@ -5419,6 +5436,16 @@ static SQLRETURN SQLR_SQLGetData(SQLHSTMT statementhandle,
 					bytestocopy=fieldlength;
 					*offset+=fieldlength;
 				}
+			} else if (!*offset) {
+				// Per the ODBC spec, the first call on a
+				// zero-length (but non-NULL) field should
+				// return SQL_SUCCESS with the indicator set to
+				// 0.  A subsequent call should return
+				// SQL_NO_DATA.  Bump *offset so the next call
+				// will fall through to the nodata=true branch
+				// below.
+				*offset=1;
+				bytestocopy=0;
 			} else {
 				nodata=true;
 				fieldlength=0;
@@ -11477,26 +11504,20 @@ SQLRETURN SQL_API SQLParamData(SQLHSTMT statementhandle,
 	// (do this prior to execute to prevent looping forever)
 	// FIXME: also reset in SQLFreeStmt?
 	stmt->dataatexec=false;
-	delete stmt->dataatexeckeys;
+	// dataatexeckeys is the dictionary's internal keylist (returned by
+	// getKeys()), so we must not delete it — the dictionary owns it and
+	// will free it on destruction
 	stmt->dataatexeckeys=NULL;
 	stmt->putdatabind=0;
 	stmt->putdatabuffer.clear();
 
-	// exec/exec-direct will have been deferred until now...
+	// exec/exec-direct will have been deferred until now.  In both cases
+	// the cursor was already prepared (by SQLPrepare or by the deferred
+	// SQLR_SQLExecDirect call above), so just execute it — re-preparing
+	// here would clear the data-at-exec binds that SQLPutData/SQLParamData
+	// just set on the cursor when ClearBindsDuringPrepare is on.
 	SQLRETURN	retval=SQL_ERROR;
-	if (stmt->dataatexecstatement) {
-		// if we have a query then exec-direct it
-		debugPrintf("  exec-direc'ing...\n");
-		retval=SQLR_SQLExecDirect(
-					statementhandle,
-					stmt->dataatexecstatement,
-					stmt->dataatexecstatementlength);
-
-		// reset statement/length
-		stmt->dataatexecstatement=NULL;
-		stmt->dataatexecstatementlength=0;
-	} else {
-		// otherwise just execute
+	{
 		debugPrintf("  exececuting...\n");
 		retval=SQLR_SQLExecute(statementhandle);
 	}
