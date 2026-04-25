@@ -337,8 +337,7 @@ int main(int argc, char **argv) {
 			"Server=sqlrelay;Port=9000;"
 			"Socket=/tmp/test.socket;"
 			"User=testuser;Password=testpassword;"
-			"NullsAsNulls=yes;MapDateToTimeStamp=yes;"
-			"ClearBindsDuringPrepare=yes;";
+			"NullsAsNulls=yes;MapDateToTimeStamp=yes;";
 		SQLCHAR		outcstring[1024];
 		SQLSMALLINT	outcstringlen;
 		erg=SQLDriverConnect(dbc,NULL,
@@ -7058,6 +7057,52 @@ int main(int argc, char **argv) {
 	assertTrueStmt(stmt,obfloatvar==2.5);
 	assertEqualStmt(stmt,(const char *)obdatevar,"03-FEB-2001");
 	assertEqualStmt(stmt,(int)obnullvarind,(int)SQL_NULL_DATA);
+	stdoutput.printf("\n");
+
+
+
+	// bind before prepare — per ODBC, parameter bindings live on the
+	// statement handle's APD and must survive a subsequent SQLPrepare;
+	// they're cleared only by SQLFreeStmt(SQL_RESET_PARAMS), an
+	// overwriting SQLBindParameter, or freeing the handle
+	stdoutput.printf("BIND BEFORE PREPARE: \n");
+	erg=SQLFreeStmt(stmt,SQL_CLOSE);
+	erg=SQLFreeStmt(stmt,SQL_UNBIND);
+	erg=SQLFreeStmt(stmt,SQL_RESET_PARAMS);
+	SQLINTEGER	bbpinval=42;
+	SQLLEN		bbpinind=0;
+	SQLCHAR		bbpoutval[16]={0};
+	SQLLEN		bbpoutind=sizeof(bbpoutval);
+	// bind input and output BEFORE the prepare
+	erg=SQLBindParameter(stmt,1,SQL_PARAM_INPUT,
+				SQL_C_SLONG,SQL_INTEGER,
+				0,0,
+				(SQLPOINTER)&bbpinval,
+				bbpinind,&bbpinind);
+	assertSuccessStmt(stmt,erg);
+	erg=SQLBindParameter(stmt,2,SQL_PARAM_OUTPUT,
+				SQL_C_CHAR,SQL_VARCHAR,
+				sizeof(bbpoutval),0,
+				(SQLPOINTER)bbpoutval,
+				sizeof(bbpoutval),&bbpoutind);
+	assertSuccessStmt(stmt,erg);
+	if (issqlrelay) {
+		erg=SQLPrepare(stmt,(SQLCHAR *)
+			"begin "
+			"	select to_char(:1) into :2 from dual; "
+			"end;",
+			SQL_NTS);
+	} else {
+		erg=SQLPrepare(stmt,(SQLCHAR *)
+			"begin "
+			"	select to_char(?) into ? from dual; "
+			"end;",
+			SQL_NTS);
+	}
+	assertSuccessStmt(stmt,erg);
+	erg=SQLExecute(stmt);
+	assertSuccessStmt(stmt,erg);
+	assertEqualStmt(stmt,(const char *)bbpoutval,"42");
 	stdoutput.printf("\n");
 
 
