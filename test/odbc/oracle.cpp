@@ -7061,6 +7061,177 @@ int main(int argc, char **argv) {
 
 
 
+	// bind survives SQLFreeStmt(SQL_CLOSE) — per ODBC, SQL_CLOSE only
+	// closes the cursor and discards pending results; parameter
+	// bindings on the APD must survive so the same prepared statement
+	// can be re-executed with new host-variable values without
+	// rebinding.  only SQL_RESET_PARAMS (or freeing the handle) clears
+	// them
+	stdoutput.printf("BIND SURVIVES SQL_CLOSE: \n");
+	erg=SQLFreeStmt(stmt,SQL_CLOSE);
+	erg=SQLFreeStmt(stmt,SQL_UNBIND);
+	erg=SQLFreeStmt(stmt,SQL_RESET_PARAMS);
+	SQLExecDirect(stmt,(SQLCHAR *)"drop table testtable",SQL_NTS);
+	erg=SQLExecDirect(stmt,(SQLCHAR *)
+		"create table testtable (testval number)",SQL_NTS);
+	assertSuccessStmt(stmt,erg);
+	if (issqlrelay) {
+		erg=SQLPrepare(stmt,(SQLCHAR *)
+			"insert into testtable values (:1)",SQL_NTS);
+	} else {
+		erg=SQLPrepare(stmt,(SQLCHAR *)
+			"insert into testtable values (?)",SQL_NTS);
+	}
+	assertSuccessStmt(stmt,erg);
+	SQLINTEGER	bscval=100;
+	SQLLEN		bscind=0;
+	// bind once
+	erg=SQLBindParameter(stmt,1,SQL_PARAM_INPUT,
+				SQL_C_SLONG,SQL_INTEGER,
+				0,0,
+				(SQLPOINTER)&bscval,
+				0,&bscind);
+	assertSuccessStmt(stmt,erg);
+	// execute with bscval=100
+	erg=SQLExecute(stmt);
+	assertSuccessStmt(stmt,erg);
+	// SQL_CLOSE only — no SQL_UNBIND, no SQL_RESET_PARAMS
+	erg=SQLFreeStmt(stmt,SQL_CLOSE);
+	assertSuccessStmt(stmt,erg);
+	// change the host variable; binding should still point at it
+	bscval=200;
+	// execute again WITHOUT rebinding
+	erg=SQLExecute(stmt);
+	assertSuccessStmt(stmt,erg);
+	erg=SQLFreeStmt(stmt,SQL_CLOSE);
+	erg=SQLFreeStmt(stmt,SQL_UNBIND);
+	erg=SQLFreeStmt(stmt,SQL_RESET_PARAMS);
+	// read back both rows in ascending order
+	erg=SQLExecDirect(stmt,(SQLCHAR *)
+		"select testval from testtable order by testval",SQL_NTS);
+	assertSuccessStmt(stmt,erg);
+	SQLINTEGER	bscread=0;
+	SQLLEN		bscreadind=0;
+	erg=SQLBindCol(stmt,1,SQL_C_SLONG,
+			(SQLPOINTER)&bscread,0,&bscreadind);
+	assertSuccessStmt(stmt,erg);
+	// row 1: 100
+	erg=SQLFetch(stmt);
+	assertSuccessStmt(stmt,erg);
+	assertEqualStmt(stmt,(int)bscread,100);
+	// row 2: 200 if the binding survived SQL_CLOSE
+	erg=SQLFetch(stmt);
+	assertSuccessStmt(stmt,erg);
+	assertEqualStmt(stmt,(int)bscread,200);
+	// no row 3
+	erg=SQLFetch(stmt);
+	assertEqualStmt(stmt,(int)erg,(int)SQL_NO_DATA);
+	erg=SQLFreeStmt(stmt,SQL_CLOSE);
+	erg=SQLFreeStmt(stmt,SQL_UNBIND);
+	erg=SQLFreeStmt(stmt,SQL_RESET_PARAMS);
+	erg=SQLExecDirect(stmt,(SQLCHAR *)"drop table testtable",SQL_NTS);
+	assertSuccessStmt(stmt,erg);
+	stdoutput.printf("\n");
+
+
+
+	// leftover binds are ignored when the next statement has fewer
+	// (or zero) parameter markers than the previous one.  per ODBC,
+	// bindings are positional and only consulted up to the marker
+	// count of the current SQL.  regression for SQL Relay's ODBC
+	// driver, which used to re-apply every stashed bind on each
+	// execute and produce ORA-01036 on a parameterless follow-up.
+	stdoutput.printf("LEFTOVER BIND IGNORED: \n");
+	erg=SQLFreeStmt(stmt,SQL_CLOSE);
+	erg=SQLFreeStmt(stmt,SQL_UNBIND);
+	erg=SQLFreeStmt(stmt,SQL_RESET_PARAMS);
+	SQLExecDirect(stmt,(SQLCHAR *)"drop table testtable",SQL_NTS);
+	erg=SQLExecDirect(stmt,(SQLCHAR *)
+		"create table testtable (col1 number, col2 number)",SQL_NTS);
+	assertSuccessStmt(stmt,erg);
+	// bind two parameters
+	SQLINTEGER	lbi1=11;
+	SQLINTEGER	lbi2=22;
+	SQLLEN		lbi1ind=0;
+	SQLLEN		lbi2ind=0;
+	erg=SQLBindParameter(stmt,1,SQL_PARAM_INPUT,
+				SQL_C_SLONG,SQL_INTEGER,
+				0,0,(SQLPOINTER)&lbi1,0,&lbi1ind);
+	assertSuccessStmt(stmt,erg);
+	erg=SQLBindParameter(stmt,2,SQL_PARAM_INPUT,
+				SQL_C_SLONG,SQL_INTEGER,
+				0,0,(SQLPOINTER)&lbi2,0,&lbi2ind);
+	assertSuccessStmt(stmt,erg);
+	// execute a statement with two markers
+	if (issqlrelay) {
+		erg=SQLExecDirect(stmt,(SQLCHAR *)
+			"insert into testtable values (:1,:2)",SQL_NTS);
+	} else {
+		erg=SQLExecDirect(stmt,(SQLCHAR *)
+			"insert into testtable values (?,?)",SQL_NTS);
+	}
+	assertSuccessStmt(stmt,erg);
+	// SQL_CLOSE only — leftover binds stay on the statement handle
+	erg=SQLFreeStmt(stmt,SQL_CLOSE);
+	assertSuccessStmt(stmt,erg);
+	// execute a parameterless statement WITHOUT clearing the binds —
+	// the leftover bindings must not be sent to the backend
+	erg=SQLExecDirect(stmt,(SQLCHAR *)
+		"insert into testtable values (33,44)",SQL_NTS);
+	assertSuccessStmt(stmt,erg);
+	erg=SQLFreeStmt(stmt,SQL_CLOSE);
+	// fewer-but-nonzero path: binds 1 and 2 are still stashed, but
+	// this statement has only one marker.  only bind 1 should apply.
+	if (issqlrelay) {
+		erg=SQLExecDirect(stmt,(SQLCHAR *)
+			"insert into testtable values (:1,99)",SQL_NTS);
+	} else {
+		erg=SQLExecDirect(stmt,(SQLCHAR *)
+			"insert into testtable values (?,99)",SQL_NTS);
+	}
+	assertSuccessStmt(stmt,erg);
+	erg=SQLFreeStmt(stmt,SQL_CLOSE);
+	erg=SQLFreeStmt(stmt,SQL_UNBIND);
+	erg=SQLFreeStmt(stmt,SQL_RESET_PARAMS);
+	// read back: rows should be (11,22), (11,99), (33,44)
+	erg=SQLExecDirect(stmt,(SQLCHAR *)
+		"select col1, col2 from testtable order by col1, col2",SQL_NTS);
+	assertSuccessStmt(stmt,erg);
+	SQLINTEGER	lbr1=0;
+	SQLINTEGER	lbr2=0;
+	SQLLEN		lbr1ind=0;
+	SQLLEN		lbr2ind=0;
+	erg=SQLBindCol(stmt,1,SQL_C_SLONG,(SQLPOINTER)&lbr1,0,&lbr1ind);
+	assertSuccessStmt(stmt,erg);
+	erg=SQLBindCol(stmt,2,SQL_C_SLONG,(SQLPOINTER)&lbr2,0,&lbr2ind);
+	assertSuccessStmt(stmt,erg);
+	// row 1: 11,22
+	erg=SQLFetch(stmt);
+	assertSuccessStmt(stmt,erg);
+	assertEqualStmt(stmt,(int)lbr1,11);
+	assertEqualStmt(stmt,(int)lbr2,22);
+	// row 2: 11,99
+	erg=SQLFetch(stmt);
+	assertSuccessStmt(stmt,erg);
+	assertEqualStmt(stmt,(int)lbr1,11);
+	assertEqualStmt(stmt,(int)lbr2,99);
+	// row 3: 33,44
+	erg=SQLFetch(stmt);
+	assertSuccessStmt(stmt,erg);
+	assertEqualStmt(stmt,(int)lbr1,33);
+	assertEqualStmt(stmt,(int)lbr2,44);
+	// no row 4
+	erg=SQLFetch(stmt);
+	assertEqualStmt(stmt,(int)erg,(int)SQL_NO_DATA);
+	erg=SQLFreeStmt(stmt,SQL_CLOSE);
+	erg=SQLFreeStmt(stmt,SQL_UNBIND);
+	erg=SQLFreeStmt(stmt,SQL_RESET_PARAMS);
+	erg=SQLExecDirect(stmt,(SQLCHAR *)"drop table testtable",SQL_NTS);
+	assertSuccessStmt(stmt,erg);
+	stdoutput.printf("\n");
+
+
+
 	// lob output bind
 	stdoutput.printf("LOB OUTPUT BIND: \n");
 	erg=SQLFreeStmt(stmt,SQL_CLOSE);

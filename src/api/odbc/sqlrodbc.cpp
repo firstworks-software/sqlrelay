@@ -546,12 +546,6 @@ static SQLRETURN SQLR_SQLAllocHandle(SQLSMALLINT handletype,
 					stmt->cur->lowerCaseColumnNames();
 				}
 				stmt->cur->lazyFetch();
-				// per the ODBC spec, parameter bindings persist
-				// across SQLPrepare/SQLExecDirect; only
-				// SQLFreeStmt(SQL_RESET_PARAMS), an overwrite
-				// via SQLBindParameter, or freeing the handle
-				// clears them
-				stmt->cur->dontClearBindsDuringPrepare();
 				if (conn->dontgetcolumninfo) {
 					stmt->cur->dontGetColumnInfo();
 				} else {
@@ -4218,24 +4212,67 @@ static SQLRETURN SQLR_InputBindParameter(SQLHSTMT statementhandle,
 					SQLLEN bufferlength,
 					SQLLEN *strlen_or_ind);
 
-static void SQLR_RebindInputs(STMT *stmt) {
-	if (!stmt->inputbinds.getCount()) {
+static SQLRETURN SQLR_OutputBindParameter(SQLHSTMT statementhandle,
+					SQLUSMALLINT parameternumber,
+					SQLSMALLINT valuetype,
+					SQLSMALLINT parametertype,
+					SQLULEN lengthprecision,
+					SQLSMALLINT parameterscale,
+					SQLPOINTER parametervalue,
+					SQLLEN bufferlength,
+					SQLLEN *strlen_or_ind);
+
+static SQLRETURN SQLR_InputOutputBindParameter(
+					SQLHSTMT statementhandle,
+					SQLUSMALLINT parameternumber,
+					SQLSMALLINT valuetype,
+					SQLSMALLINT parametertype,
+					SQLULEN lengthprecision,
+					SQLSMALLINT parameterscale,
+					SQLPOINTER parametervalue,
+					SQLLEN bufferlength,
+					SQLLEN *strlen_or_ind);
+
+static void SQLR_Bind(STMT *stmt) {
+
+	// bail if there are no binds at all
+	if (!stmt->inputbinds.getCount() &&
+			!stmt->outputbinds.getCount() &&
+			!stmt->inputoutputbinds.getCount()) {
 		return;
 	}
+
+	// get the number of bind variables in the query itself,
+	// bail if there are none
+	uint16_t	inquerybindcount=stmt->cur->countBindVariables();
+	if (!inquerybindcount) {
+		return;
+	}
+
+	// input binds
 	for (listnode<int32_t> *node=
-				stmt->inputbinds.getKeys()->getFirst();
-				node; node=node->getNext()) {
+			stmt->inputbinds.getKeys()->getFirst();
+						node; node=node->getNext()) {
+
+		// get the bind variable/value
 		inputbind	*ib=
-				stmt->inputbinds.getValue(node->getValue());
-		// skip data-at-exec placeholders; those get real values
-		// through SQLParamData/SQLPutData, not through the bound
-		// buffer
-		if (ib->strlen_or_ind &&
-				(*ib->strlen_or_ind==SQL_DATA_AT_EXEC ||
-					*ib->strlen_or_ind<=
-						SQL_LEN_DATA_AT_EXEC_OFFSET)) {
+			stmt->inputbinds.getValue(node->getValue());
+
+		// skip binds whose position is past the new
+		// statement's parameter count
+		if (ib->parameternumber>inquerybindcount) {
 			continue;
 		}
+
+		// skip data-at-exec placeholders; data for those parameters
+		// is sent later via SQLParamData/SQLPutData
+		if (ib->strlen_or_ind &&
+			(*ib->strlen_or_ind==SQL_DATA_AT_EXEC ||
+			*ib->strlen_or_ind<=SQL_LEN_DATA_AT_EXEC_OFFSET)) {
+			continue;
+		}
+
+		// bind the variable/value
 		SQLR_InputBindParameter((SQLHSTMT)stmt,
 					ib->parameternumber,
 					ib->valuetype,
@@ -4245,6 +4282,60 @@ static void SQLR_RebindInputs(STMT *stmt) {
 					ib->parametervalue,
 					ib->bufferlength,
 					ib->strlen_or_ind);
+	}
+
+	// output binds
+	for (listnode<int32_t> *node=
+			stmt->outputbinds.getKeys()->getFirst();
+						node; node=node->getNext()) {
+
+		// get the bind variable/value
+		outputbind	*ob=
+			stmt->outputbinds.getValue(node->getValue());
+
+		// skip binds whose position is past the new
+		// statement's parameter count
+		if (ob->parameternumber>inquerybindcount) {
+			continue;
+		}
+
+		// bind the variable/value
+		SQLR_OutputBindParameter((SQLHSTMT)stmt,
+					ob->parameternumber,
+					ob->valuetype,
+					ob->parametertype,
+					ob->lengthprecision,
+					ob->parameterscale,
+					ob->parametervalue,
+					ob->bufferlength,
+					ob->strlen_or_ind);
+	}
+
+	// input/output binds
+	for (listnode<int32_t> *node=
+			stmt->inputoutputbinds.getKeys()->getFirst();
+						node; node=node->getNext()) {
+
+		// get the bind variable/value
+		outputbind	*ob=
+			stmt->inputoutputbinds.getValue(node->getValue());
+
+		// skip binds whose position is past the new
+		// statement's parameter count
+		if (ob->parameternumber>inquerybindcount) {
+			continue;
+		}
+
+		// bind the variable/value
+		SQLR_InputOutputBindParameter((SQLHSTMT)stmt,
+					ob->parameternumber,
+					ob->valuetype,
+					ob->parametertype,
+					ob->lengthprecision,
+					ob->parameterscale,
+					ob->parametervalue,
+					ob->bufferlength,
+					ob->strlen_or_ind);
 	}
 }
 
@@ -4303,17 +4394,12 @@ static SQLRETURN SQLR_SQLExecDirect(SQLHSTMT statementhandle,
 			debugstr.getString(),(int)statementtextlength);
 	#endif
 
-	// prepare the query, then re-read the application's input bind buffers.
-	// Per ODBC, parameter buffers are read at execute time, not bind time —
-	// SQLR_RebindInputs picks up whatever the application has put in those
-	// buffers since SQLBindParameter was called.  Splitting prepare from
-	// execute also leaves the cursor in a prepared state for the
-	// data-at-exec path, where SQLParamData's final pass calls
-	// executeQuery via SQLR_SQLExecute rather than re-entering this
-	// function.
+	// prepare the query
 	stmt->cur->prepareQuery((const char *)statementtext,
 					statementtextlength);
-	SQLR_RebindInputs(stmt);
+
+	// apply the stashed input/output/inputoutput binds before execute
+	SQLR_Bind(stmt);
 
 	// defer execution if there are any data-at-exec binds
 	if (stmt->dataatexec) {
@@ -4369,8 +4455,8 @@ static SQLRETURN SQLR_SQLExecute(SQLHSTMT statementhandle) {
 		return SQL_INVALID_HANDLE;
 	}
 
-	// re-read the application's input bind buffers before execute
-	SQLR_RebindInputs(stmt);
+	// apply the stashed input/output/inputoutput binds before execute
+	SQLR_Bind(stmt);
 
 	// defer execution if there are any data-at-exec binds
 	if (stmt->dataatexec) {
