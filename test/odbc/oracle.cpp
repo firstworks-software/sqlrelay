@@ -4,6 +4,7 @@
 #include <rudiments/sys.h>
 #include <rudiments/charstring.h>
 #include <rudiments/bytestring.h>
+#include <rudiments/stringbuffer.h>
 
 #include "../../config.h"
 
@@ -327,29 +328,33 @@ int main(int argc, char **argv) {
 
 	// connect
 	stdoutput.printf("CONNECT: \n");
-	SQLCHAR	*dsn;
-	SQLCHAR	*user;
-	SQLCHAR	*password;
-	SQLCHAR	*incstring;
+	stringbuffer	incstr;
 	if (issqlrelay) {
-		incstring=(SQLCHAR *)
+		incstr.append(
 			"Driver={SQL Relay};"
 			"Server=sqlrelay;Port=9000;"
 			"Socket=/tmp/test.socket;"
 			"User=testuser;Password=testpassword;"
-			"NullsAsNulls=yes;MapDateToTimeStamp=yes;";
-		SQLCHAR		outcstring[1024];
-		SQLSMALLINT	outcstringlen;
-		erg=SQLDriverConnect(dbc,NULL,
-				incstring,SQL_NTS,
-				outcstring,sizeof(outcstring),&outcstringlen,
-				SQL_DRIVER_NOPROMPT);
+			"NullsAsNulls=yes;MapDateToTimeStamp=yes;");
 	} else {
-		dsn=(SQLCHAR *)"oracle";
-		user=(SQLCHAR *)hostname;
-		password=(SQLCHAR *)"testpassword";
-		erg=SQLConnect(dbc,dsn,SQL_NTS,user,SQL_NTS,password,SQL_NTS);
+		incstr.append(
+			"Driver={Oracle};"
+			"DBQ=(DESCRIPTION = "
+			"(ADDRESS = (PROTOCOL = TCP)"
+			"(HOST = oracle)(PORT = 1521)) "
+			"(CONNECT_DATA = (SERVER = DEDICATED) "
+			"(SERVICE_NAME = ora1)));"
+			"UID=")->append(hostname)->append(";PWD=testpassword;");
 	}
+	SQLCHAR		outcstring[1024];
+	SQLSMALLINT	outcstringlen;
+	erg=SQLDriverConnect(dbc,NULL,
+			(SQLCHAR *)incstr.getString(),
+			SQL_NTS,
+			outcstring,
+			sizeof(outcstring),
+			&outcstringlen,
+			SQL_DRIVER_NOPROMPT);
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
 
@@ -1083,12 +1088,7 @@ int main(int argc, char **argv) {
 	erg=SQLGetInfo(dbc,SQL_DATA_SOURCE_NAME,
 			(SQLPOINTER)strval,(SQLSMALLINT)sizeof(strval),
 			&vallen);
-	if (issqlrelay) {
-		// sqlrelay uses SQLDriverConnect without a DSN
-		assertEqualDbc(dbc,(const char *)strval,"");
-	} else {
-		assertEqualDbc(dbc,(const char *)strval,"oracle");
-	}
+	assertEqualDbc(dbc,(const char *)strval,"");
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
 
@@ -6579,21 +6579,15 @@ int main(int argc, char **argv) {
 	SQLHSTMT	stmt2;
 	erg=SQLAllocHandle(SQL_HANDLE_DBC,env,&dbc2);
 	assertSuccessEnv(env,erg);
-	if (issqlrelay) {
-		SQLCHAR		outcstring2[1024];
-		SQLSMALLINT	outcstringlen2;
-		erg=SQLDriverConnect(dbc2,NULL,
-				incstring,SQL_NTS,
-				outcstring2,
-				sizeof(outcstring2),
-				&outcstringlen2,
-				SQL_DRIVER_NOPROMPT);
-	} else {
-		erg=SQLConnect(dbc2,
-				dsn,SQL_NTS,
-				user,SQL_NTS,
-				password,SQL_NTS);
-	}
+	SQLCHAR		outcstring2[1024];
+	SQLSMALLINT	outcstringlen2;
+	erg=SQLDriverConnect(dbc2,NULL,
+			(SQLCHAR *)incstr.getString(),
+			SQL_NTS,
+			outcstring2,
+			sizeof(outcstring2),
+			&outcstringlen2,
+			SQL_DRIVER_NOPROMPT);
 	assertSuccessDbc(dbc2,erg);
 	erg=SQLAllocHandle(SQL_HANDLE_STMT,dbc2,&stmt2);
 	assertSuccessDbc(dbc2,erg);
