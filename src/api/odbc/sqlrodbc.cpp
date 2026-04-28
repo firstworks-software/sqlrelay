@@ -13798,13 +13798,19 @@ static SQLRETURN SQLR_InputBindParameter(SQLHSTMT statementhandle,
 						(const char *)parametervalue,
 						0);
 			} else {
-				if (bufferlength) {
+				// Don't be tempted to use bufferlength here,
+				// it's the size of the buffer, and only
+				// used for output binds.  The actual length
+				// of the input value is in *strlen_or_indptr,
+				// which can be the number of bytes or SQL_NTS.
+				// If it's NULL assume SQL_NTS.
+				if (strlen_or_ind && *strlen_or_ind!=SQL_NTS) {
 					debugPrintf("  value: \"%.*s\"\n",
-								bufferlength,
-								parametervalue);
+							(int)*strlen_or_ind,
+							parametervalue);
 					stmt->cur->inputBind(parametername,
 						(const char *)parametervalue,
-						bufferlength);
+						*strlen_or_ind);
 				} else {
 					debugPrintf("  value: \"%s\"\n",
 								parametervalue);
