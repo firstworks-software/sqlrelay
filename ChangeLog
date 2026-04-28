@@ -61,6 +61,9 @@
 	various erlang updates and fixes
 	added MapDateTimeToDate, MapDateToTimeStamp, and MapNewDateToTimeStamp
 		options to ODBC
+	fixed a bug in the ODBC driver where bufferlength was used instead of
+		*strlen_or_ind as the size of a char/binary array for input
+		binds
 
 2.1.1 - added tns_admin support
 	fixed sqlr-start ... -strace ...
