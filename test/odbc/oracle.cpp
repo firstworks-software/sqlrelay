@@ -4969,7 +4969,6 @@ int main(int argc, char **argv) {
 			(SQLPOINTER)&stmtulenval,0,&stmtstrlen);
 	assertSuccessStmt(stmt,erg);
 	assertEqualStmt(stmt,(int)stmtulenval,30);
-	// restore
 	erg=SQLSetStmtAttr(stmt,SQL_ATTR_QUERY_TIMEOUT,
 			(SQLPOINTER)(uintptr_t)stmtinitial,0);
 	assertSuccessStmt(stmt,erg);
@@ -5689,7 +5688,7 @@ int main(int argc, char **argv) {
 
 
 	// input bind by position
-	stdoutput.printf("INPUT BIND BY POSITION (preapre, bind, execute): \n");
+	stdoutput.printf("INPUT BIND BY POSITION (prepare, bind, execute): \n");
 	erg=SQLFreeStmt(stmt,SQL_CLOSE);
 	erg=SQLFreeStmt(stmt,SQL_UNBIND);
 	erg=SQLFreeStmt(stmt,SQL_RESET_PARAMS);

@@ -413,10 +413,11 @@ void mysqlconnection::initDatabaseFeatures() {
 		"false";
 
 	databasefeatures[FEATURE_BATCH_OPERATIONS]=
-		"";
+		"SELECT_EXPLICIT,ROW_COUNT_EXPLICIT,"
+			"SELECT_PROC,ROW_COUNT_PROC";
 
 	databasefeatures[FEATURE_BATCH_ROW_COUNTS]=
-		"";
+		"EXPLICIT";
 
 	databasefeatures[FEATURE_CATALOG_SEPARATOR]=
 		".";
@@ -448,13 +449,14 @@ void mysqlconnection::initDatabaseFeatures() {
 		"";
 
 	databasefeatures[FEATURE_CREATE_TABLE_CLAUSES]=
-		"";
+		"CREATE_TABLE,COMMIT_DELETE,LOCAL_TEMPORARY,"
+			"COLUMN_DEFAULT,COLUMN_COLLATION";
 
 	databasefeatures[FEATURE_CREATE_TRANSLATION_CLAUSES]=
 		"";
 
 	databasefeatures[FEATURE_CREATE_VIEW_CLAUSES]=
-		"";
+		"CREATE_VIEW,CHECK_OPTION,CASCADED";
 
 	databasefeatures[FEATURE_DATA_DEFINITION_TRANSACTION_BEHAVIOR]=
 		"CAUSES_COMMIT";
@@ -487,13 +489,13 @@ void mysqlconnection::initDatabaseFeatures() {
 		"";
 
 	databasefeatures[FEATURE_DROP_TABLE_CLAUSES]=
-		"";
+		"DROP_TABLE,RESTRICT,CASCADE";
 
 	databasefeatures[FEATURE_DROP_TRANSLATION_CLAUSES]=
 		"";
 
 	databasefeatures[FEATURE_DROP_VIEW_CLAUSES]=
-		"";
+		"DROP_VIEW,RESTRICT,CASCADE";
 
 	databasefeatures[FEATURE_EXTRA_NAME_CHARACTERS]=
 		"$";
@@ -523,7 +525,7 @@ void mysqlconnection::initDatabaseFeatures() {
 		"`";
 
 	databasefeatures[FEATURE_INDEX_KEYWORDS]=
-		"";
+		"ASC,DESC";
 
 	databasefeatures[FEATURE_INFO_SCHEMA_VIEWS]=
 		"";
@@ -688,7 +690,7 @@ void mysqlconnection::initDatabaseFeatures() {
 		"ROWID_UNSUPPORTED";
 
 	databasefeatures[FEATURE_ROW_VALUE_CONSTRUCTOR_EXPRESSIONS]=
-		"";
+		"VALUE_EXPRESSION,NULL,DEFAULT,ROW_SUBQUERY";
 
 	databasefeatures[FEATURE_SCHEMA_TERM]=
 		"";
@@ -818,7 +820,7 @@ void mysqlconnection::initDatabaseFeatures() {
 		"BASIC,DIFFERENT";
 
 	databasefeatures[FEATURE_TABLE_TERM]=
-		"";
+		"table";
 
 	databasefeatures[FEATURE_TIME_DATE_ADD_INTERVALS]=
 		"";
@@ -836,7 +838,7 @@ void mysqlconnection::initDatabaseFeatures() {
 			"SEC_TO_TIME,TIME_TO_SEC";
 
 	databasefeatures[FEATURE_TIME_DATE_LITERALS]=
-		"";
+		"DATE,TIME,TIMESTAMP";
 
 	databasefeatures[FEATURE_TRANSACTION_DDL_DML]=
 		"";
@@ -848,7 +850,7 @@ void mysqlconnection::initDatabaseFeatures() {
 		"";
 
 	databasefeatures[FEATURE_VALUE_EXPRESSIONS]=
-		"";
+		"CASE,CAST,COALESCE,NULLIF";
 
 	databasefeatures[FEATURE_WHERE_CURRENT_OF_OPERATIONS]=
 		"";

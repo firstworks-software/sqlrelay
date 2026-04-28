@@ -109,6 +109,7 @@ Result/detail logs land at `test/testresults.log` and `test/testdetails.log` aft
 
 ## Conventions worth knowing
 
+- **C++ standard is C++98.** Don't use C++11+ features in `.cpp` / `.h` files — no `auto` type deduction, no lambdas, no range-based `for`, no `nullptr`, no `std::move`, no `=delete`/`=default`, no strongly-typed enums, no brace-init-list constructors, no variadic templates. Use plain functions (or pass state via structs) instead of lambdas; `NULL` instead of `nullptr`.
 - **Copyright header**: every `.cpp` / `.h` starts with `// Copyright (c) David Muse` / `// See the file COPYING for more information`. Preserve it on edits; add it to new files.
 - **Comment style inside functions**: put comments *inside* the function, above the specific block they describe, rather than as one block summarizing the whole function from outside. A function header comment (on the line(s) before the signature) should be short, if present at all — explain each meaningful step in situ. This applies to new functions and to adding comments to existing ones.
 - **`config.mk` is generated** — never edit it; edit `config.mk.in` and rerun configure. Same for `config.h` (from `config.h.in`) and `src/common/defines.h` (from `defines.h.in`).
