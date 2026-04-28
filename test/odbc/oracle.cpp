@@ -7757,24 +7757,46 @@ int main(int argc, char **argv) {
 	SQLExecDirect(stmt,(SQLCHAR *)"drop table testtable2",SQL_NTS);
 	SQLExecDirect(stmt,(SQLCHAR *)"drop table testtable3",SQL_NTS);
 	SQLExecDirect(stmt,(SQLCHAR *)"drop table testtable4",SQL_NTS);
-	const char	*tablecreate="create table %s ("
-			"	testnumber number, "
-			"	testchar char(40), "
-			"	testvarchar varchar2(40), "
-			"	testdate date, "
-			"	testlong long, "
-			"	testclob clob, "
-			"	testblob blob)";
-	char		createbuf[512];
-	for (int t=1; t<=4; t++) {
-		charstring::printf(createbuf,sizeof(createbuf),
-					tablecreate,
-					(t==1)?"testtable1":
-					(t==2)?"testtable2":
-					(t==3)?"testtable3":"testtable4");
-		erg=SQLExecDirect(stmt,(SQLCHAR *)createbuf,SQL_NTS);
-		assertSuccessStmt(stmt,erg);
-	}
+	erg=SQLExecDirect(stmt,(SQLCHAR *)
+		"create table testtable1 ("
+		"	testnumber number, "
+		"	testchar char(40), "
+		"	testvarchar varchar2(40), "
+		"	testdate date, "
+		"	testlong long, "
+		"	testclob clob, "
+		"	testblob blob)",SQL_NTS);
+	assertSuccessStmt(stmt,erg);
+	erg=SQLExecDirect(stmt,(SQLCHAR *)
+		"create table testtable2 ("
+		"	testnumber number, "
+		"	testchar char(40), "
+		"	testvarchar varchar2(40), "
+		"	testdate date, "
+		"	testlong long, "
+		"	testclob clob, "
+		"	testblob blob)",SQL_NTS);
+	assertSuccessStmt(stmt,erg);
+	erg=SQLExecDirect(stmt,(SQLCHAR *)
+		"create table testtable3 ("
+		"	testnumber number, "
+		"	testchar char(40), "
+		"	testvarchar varchar2(40), "
+		"	testdate date, "
+		"	testlong long, "
+		"	testclob clob, "
+		"	testblob blob)",SQL_NTS);
+	assertSuccessStmt(stmt,erg);
+	erg=SQLExecDirect(stmt,(SQLCHAR *)
+		"create table testtable4 ("
+		"	testnumber number, "
+		"	testchar char(40), "
+		"	testvarchar varchar2(40), "
+		"	testdate date, "
+		"	testlong long, "
+		"	testclob clob, "
+		"	testblob blob)",SQL_NTS);
+	assertSuccessStmt(stmt,erg);
 	erg=SQLTables(stmt,
 			(SQLCHAR *)"",SQL_NTS,
 			(SQLCHAR *)"",SQL_NTS,
@@ -8101,32 +8123,50 @@ int main(int argc, char **argv) {
 	erg=SQLFreeStmt(stmt,SQL_CLOSE);
 	erg=SQLFreeStmt(stmt,SQL_UNBIND);
 	erg=SQLFreeStmt(stmt,SQL_RESET_PARAMS);
-	SQLExecDirect(stmt,(SQLCHAR *)
-			"drop procedure testproc1",SQL_NTS);
-	SQLExecDirect(stmt,(SQLCHAR *)
-			"drop procedure testproc2",SQL_NTS);
-	SQLExecDirect(stmt,(SQLCHAR *)
-			"drop procedure testproc3",SQL_NTS);
-	SQLExecDirect(stmt,(SQLCHAR *)
-			"drop procedure testproc4",SQL_NTS);
-	const char	*proccreate=
-			"create or replace procedure %s ("
-			"	in1 in number, "
-			"	in2 in char, "
-			"	in3 in varchar2, "
-			"	in4 in date) as "
-			"begin "
-			"	null; "
-			"end;";
-	for (int p=1; p<=4; p++) {
-		char pbuf[512];
-		charstring::printf(pbuf,sizeof(pbuf),proccreate,
-			(p==1)?"testproc1":
-			(p==2)?"testproc2":
-			(p==3)?"testproc3":"testproc4");
-		erg=SQLExecDirect(stmt,(SQLCHAR *)pbuf,SQL_NTS);
-		assertSuccessStmt(stmt,erg);
-	}
+	SQLExecDirect(stmt,(SQLCHAR *)"drop procedure testproc1",SQL_NTS);
+	SQLExecDirect(stmt,(SQLCHAR *)"drop procedure testproc2",SQL_NTS);
+	SQLExecDirect(stmt,(SQLCHAR *)"drop procedure testproc3",SQL_NTS);
+	SQLExecDirect(stmt,(SQLCHAR *)"drop procedure testproc4",SQL_NTS);
+	erg=SQLExecDirect(stmt,(SQLCHAR *)
+		"create or replace procedure testproc1 ("
+		"	in1 in number, "
+		"	in2 in char, "
+		"	in3 in varchar2, "
+		"	in4 in date) as "
+		"begin "
+		"	null; "
+		"end;",SQL_NTS);
+	assertSuccessStmt(stmt,erg);
+	erg=SQLExecDirect(stmt,(SQLCHAR *)
+		"create or replace procedure testproc2 ("
+		"	in1 in number, "
+		"	in2 in char, "
+		"	in3 in varchar2, "
+		"	in4 in date) as "
+		"begin "
+		"	null; "
+		"end;",SQL_NTS);
+	assertSuccessStmt(stmt,erg);
+	erg=SQLExecDirect(stmt,(SQLCHAR *)
+		"create or replace procedure testproc3 ("
+		"	in1 in number, "
+		"	in2 in char, "
+		"	in3 in varchar2, "
+		"	in4 in date) as "
+		"begin "
+		"	null; "
+		"end;",SQL_NTS);
+	assertSuccessStmt(stmt,erg);
+	erg=SQLExecDirect(stmt,(SQLCHAR *)
+		"create or replace procedure testproc4 ("
+		"	in1 in number, "
+		"	in2 in char, "
+		"	in3 in varchar2, "
+		"	in4 in date) as "
+		"begin "
+		"	null; "
+		"end;",SQL_NTS);
+	assertSuccessStmt(stmt,erg);
 	erg=SQLProcedures(stmt,
 			(SQLCHAR *)"",SQL_NTS,
 			(SQLCHAR *)schemafilter,SQL_NTS,
@@ -8191,29 +8231,54 @@ int main(int argc, char **argv) {
 			pptypename,sizeof(pptypename),&pptypenameind);
 	erg=SQLBindCol(stmt,18,SQL_C_SHORT,
 			&ppordinal,sizeof(ppordinal),&ppordinalind);
-	const char	*exppname[]={"IN1","IN2","IN3","IN4"};
-	const char	*exptype[]={"NUMBER","CHAR","VARCHAR2","DATE"};
-	for (int pp=0; pp<4; pp++) {
-		erg=SQLFetch(stmt);
-		assertSuccessStmt(stmt,erg);
-		assertEqualStmt(stmt,(const char *)ppname,exppname[pp]);
-		assertEqualStmt(stmt,(int)ppmode,(int)SQL_PARAM_INPUT);
-		assertEqualStmt(stmt,(const char *)pptypename,exptype[pp]);
-		// Native Oracle doesn't populate ORDINAL_POSITION (always
-		// returns 0); SQL Relay returns 1..N as the spec requires.
-		if (issqlrelay) {
-			assertEqualStmt(stmt,(int)ppordinal,pp+1);
-		}
+	// Native Oracle doesn't populate ORDINAL_POSITION (always
+	// returns 0); SQL Relay returns 1..N as the spec requires.
+	// IN1
+	erg=SQLFetch(stmt);
+	assertSuccessStmt(stmt,erg);
+	assertEqualStmt(stmt,(const char *)ppname,"IN1");
+	assertEqualStmt(stmt,(int)ppmode,(int)SQL_PARAM_INPUT);
+	assertEqualStmt(stmt,(const char *)pptypename,"NUMBER");
+	if (issqlrelay) {
+		assertEqualStmt(stmt,(int)ppordinal,1);
+	}
+	// IN2
+	erg=SQLFetch(stmt);
+	assertSuccessStmt(stmt,erg);
+	assertEqualStmt(stmt,(const char *)ppname,"IN2");
+	assertEqualStmt(stmt,(int)ppmode,(int)SQL_PARAM_INPUT);
+	assertEqualStmt(stmt,(const char *)pptypename,"CHAR");
+	if (issqlrelay) {
+		assertEqualStmt(stmt,(int)ppordinal,2);
+	}
+	// IN3
+	erg=SQLFetch(stmt);
+	assertSuccessStmt(stmt,erg);
+	assertEqualStmt(stmt,(const char *)ppname,"IN3");
+	assertEqualStmt(stmt,(int)ppmode,(int)SQL_PARAM_INPUT);
+	assertEqualStmt(stmt,(const char *)pptypename,"VARCHAR2");
+	if (issqlrelay) {
+		assertEqualStmt(stmt,(int)ppordinal,3);
+	}
+	// IN4
+	erg=SQLFetch(stmt);
+	assertSuccessStmt(stmt,erg);
+	assertEqualStmt(stmt,(const char *)ppname,"IN4");
+	assertEqualStmt(stmt,(int)ppmode,(int)SQL_PARAM_INPUT);
+	assertEqualStmt(stmt,(const char *)pptypename,"DATE");
+	if (issqlrelay) {
+		assertEqualStmt(stmt,(int)ppordinal,4);
 	}
 	erg=SQLFreeStmt(stmt,SQL_CLOSE);
 	erg=SQLFreeStmt(stmt,SQL_UNBIND);
-	for (int p=1; p<=4; p++) {
-		char pbuf[64];
-		charstring::printf(pbuf,sizeof(pbuf),
-					"drop procedure testproc%d",p);
-		erg=SQLExecDirect(stmt,(SQLCHAR *)pbuf,SQL_NTS);
-		assertSuccessStmt(stmt,erg);
-	}
+	erg=SQLExecDirect(stmt,(SQLCHAR *)"drop procedure testproc1",SQL_NTS);
+	assertSuccessStmt(stmt,erg);
+	erg=SQLExecDirect(stmt,(SQLCHAR *)"drop procedure testproc2",SQL_NTS);
+	assertSuccessStmt(stmt,erg);
+	erg=SQLExecDirect(stmt,(SQLCHAR *)"drop procedure testproc3",SQL_NTS);
+	assertSuccessStmt(stmt,erg);
+	erg=SQLExecDirect(stmt,(SQLCHAR *)"drop procedure testproc4",SQL_NTS);
+	assertSuccessStmt(stmt,erg);
 	stdoutput.printf("\n");
 
 

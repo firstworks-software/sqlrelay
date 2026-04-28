@@ -570,33 +570,33 @@ int main(int argc, char **argv) {
 	#if (ODBCVER >= 0x0300)
 	// SQL_ATTR_CONNECTION_TIMEOUT
 	stdoutput.printf("  SQL_ATTR_CONNECTION_TIMEOUT\n");
+	// save initial value
+	erg=SQLGetConnectAttr(dbc,SQL_ATTR_CONNECTION_TIMEOUT,
+			(SQLPOINTER)&dbcinitial,0,&dbcstrlen);
+	assertSuccessDbc(dbc,erg);
+	// set to 30
+	erg=SQLSetConnectAttr(dbc,SQL_ATTR_CONNECTION_TIMEOUT,
+			(SQLPOINTER)(uintptr_t)30,0);
 	if (issqlrelay) {
-		// save initial value
-		erg=SQLGetConnectAttr(dbc,SQL_ATTR_CONNECTION_TIMEOUT,
-				(SQLPOINTER)&dbcinitial,0,&dbcstrlen);
-		assertSuccessDbc(dbc,erg);
-		// set to 30
-		erg=SQLSetConnectAttr(dbc,SQL_ATTR_CONNECTION_TIMEOUT,
-				(SQLPOINTER)(uintptr_t)30,0);
-		assertSuccessDbc(dbc,erg);
-		erg=SQLGetConnectAttr(dbc,SQL_ATTR_CONNECTION_TIMEOUT,
-				(SQLPOINTER)&dbcuintval,0,&dbcstrlen);
-		assertSuccessDbc(dbc,erg);
-		assertEqualDbc(dbc,(int)dbcuintval,30);
-		// restore initial value
-		erg=SQLSetConnectAttr(dbc,SQL_ATTR_CONNECTION_TIMEOUT,
-				(SQLPOINTER)(uintptr_t)dbcinitial,0);
 		assertSuccessDbc(dbc,erg);
 	} else {
 		// MariaDB substitutes its own connection timeout and
 		// returns SQL_SUCCESS_WITH_INFO.
-		erg=SQLGetConnectAttr(dbc,SQL_ATTR_CONNECTION_TIMEOUT,
-				(SQLPOINTER)&dbcinitial,0,&dbcstrlen);
-		assertSuccessDbc(dbc,erg);
-		erg=SQLSetConnectAttr(dbc,SQL_ATTR_CONNECTION_TIMEOUT,
-				(SQLPOINTER)(uintptr_t)30,0);
 		assertEqualDbc(dbc,(int)erg,(int)SQL_SUCCESS_WITH_INFO);
 	}
+	erg=SQLGetConnectAttr(dbc,SQL_ATTR_CONNECTION_TIMEOUT,
+			(SQLPOINTER)&dbcuintval,0,&dbcstrlen);
+	assertSuccessDbc(dbc,erg);
+	if (issqlrelay) {
+		assertEqualDbc(dbc,(int)dbcuintval,30);
+	} else {
+		// MariaDB substituted; the value never changed.
+		assertEqualDbc(dbc,(int)dbcuintval,(int)dbcinitial);
+	}
+	// restore initial value
+	erg=SQLSetConnectAttr(dbc,SQL_ATTR_CONNECTION_TIMEOUT,
+			(SQLPOINTER)(uintptr_t)dbcinitial,0);
+	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
 	#endif
 
@@ -790,41 +790,44 @@ int main(int argc, char **argv) {
 
 	#if defined(SQL_ATTR_DISCONNECT_BEHAVIOR)
 	// SQL_ATTR_DISCONNECT_BEHAVIOR
+	// MariaDB rejects get and silently accepts every set.
 	stdoutput.printf("  SQL_ATTR_DISCONNECT_BEHAVIOR\n");
+	// save initial value
+	erg=SQLGetConnectAttr(dbc,SQL_ATTR_DISCONNECT_BEHAVIOR,
+			(SQLPOINTER)&dbcinitial,0,&dbcstrlen);
 	if (issqlrelay) {
-		// save initial value
-		erg=SQLGetConnectAttr(dbc,SQL_ATTR_DISCONNECT_BEHAVIOR,
-				(SQLPOINTER)&dbcinitial,0,&dbcstrlen);
-		assertSuccessDbc(dbc,erg);
-		// SQL_DB_RETURN_TO_POOL
-		erg=SQLSetConnectAttr(dbc,SQL_ATTR_DISCONNECT_BEHAVIOR,
-				(SQLPOINTER)(uintptr_t)SQL_DB_RETURN_TO_POOL,0);
-		assertSuccessDbc(dbc,erg);
-		erg=SQLGetConnectAttr(dbc,SQL_ATTR_DISCONNECT_BEHAVIOR,
-				(SQLPOINTER)&dbcuintval,0,&dbcstrlen);
-		assertSuccessDbc(dbc,erg);
-		assertEqualDbc(dbc,(int)dbcuintval,(int)SQL_DB_RETURN_TO_POOL);
-		// SQL_DB_DISCONNECT
-		erg=SQLSetConnectAttr(dbc,SQL_ATTR_DISCONNECT_BEHAVIOR,
-				(SQLPOINTER)(uintptr_t)SQL_DB_DISCONNECT,0);
-		assertSuccessDbc(dbc,erg);
-		erg=SQLGetConnectAttr(dbc,SQL_ATTR_DISCONNECT_BEHAVIOR,
-				(SQLPOINTER)&dbcuintval,0,&dbcstrlen);
-		assertSuccessDbc(dbc,erg);
-		assertEqualDbc(dbc,(int)dbcuintval,(int)SQL_DB_DISCONNECT);
-		// restore initial value
-		erg=SQLSetConnectAttr(dbc,SQL_ATTR_DISCONNECT_BEHAVIOR,
-				(SQLPOINTER)(uintptr_t)dbcinitial,0);
 		assertSuccessDbc(dbc,erg);
 	} else {
-		// MariaDB rejects get and silently accepts set.
-		erg=SQLGetConnectAttr(dbc,SQL_ATTR_DISCONNECT_BEHAVIOR,
-				(SQLPOINTER)&dbcinitial,0,&dbcstrlen);
 		assertFailureDbc(dbc,erg);
-		erg=SQLSetConnectAttr(dbc,SQL_ATTR_DISCONNECT_BEHAVIOR,
-				(SQLPOINTER)(uintptr_t)SQL_DB_RETURN_TO_POOL,0);
-		assertSuccessDbc(dbc,erg);
 	}
+	// SQL_DB_RETURN_TO_POOL
+	erg=SQLSetConnectAttr(dbc,SQL_ATTR_DISCONNECT_BEHAVIOR,
+			(SQLPOINTER)(uintptr_t)SQL_DB_RETURN_TO_POOL,0);
+	assertSuccessDbc(dbc,erg);
+	erg=SQLGetConnectAttr(dbc,SQL_ATTR_DISCONNECT_BEHAVIOR,
+			(SQLPOINTER)&dbcuintval,0,&dbcstrlen);
+	if (issqlrelay) {
+		assertSuccessDbc(dbc,erg);
+		assertEqualDbc(dbc,(int)dbcuintval,(int)SQL_DB_RETURN_TO_POOL);
+	} else {
+		assertFailureDbc(dbc,erg);
+	}
+	// SQL_DB_DISCONNECT
+	erg=SQLSetConnectAttr(dbc,SQL_ATTR_DISCONNECT_BEHAVIOR,
+			(SQLPOINTER)(uintptr_t)SQL_DB_DISCONNECT,0);
+	assertSuccessDbc(dbc,erg);
+	erg=SQLGetConnectAttr(dbc,SQL_ATTR_DISCONNECT_BEHAVIOR,
+			(SQLPOINTER)&dbcuintval,0,&dbcstrlen);
+	if (issqlrelay) {
+		assertSuccessDbc(dbc,erg);
+		assertEqualDbc(dbc,(int)dbcuintval,(int)SQL_DB_DISCONNECT);
+	} else {
+		assertFailureDbc(dbc,erg);
+	}
+	// restore initial value
+	erg=SQLSetConnectAttr(dbc,SQL_ATTR_DISCONNECT_BEHAVIOR,
+			(SQLPOINTER)(uintptr_t)dbcinitial,0);
+	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
 	#endif
 
@@ -867,29 +870,23 @@ int main(int argc, char **argv) {
 	#if (ODBCVER >= 0x0300)
 	// SQL_ATTR_TRANSLATE_LIB
 	stdoutput.printf("  SQL_ATTR_TRANSLATE_LIB\n");
-	if (issqlrelay) {
-		// save initial value
-		erg=SQLGetConnectAttr(dbc,SQL_ATTR_TRANSLATE_LIB,
-				(SQLPOINTER)dbcstrinit,
-				sizeof(dbcstrinit),&dbcstrlen);
-		assertSuccessDbc(dbc,erg);
-		// round-trip to the initial value
-		erg=SQLSetConnectAttr(dbc,SQL_ATTR_TRANSLATE_LIB,
-				(SQLPOINTER)dbcstrinit,SQL_NTS);
-		assertSuccessDbc(dbc,erg);
-		erg=SQLGetConnectAttr(dbc,SQL_ATTR_TRANSLATE_LIB,
-				(SQLPOINTER)dbcstrval,
-				sizeof(dbcstrval),&dbcstrlen);
-		assertSuccessDbc(dbc,erg);
-		assertEqualDbc(dbc,(const char *)dbcstrval,
-				(const char *)dbcstrinit);
-	} else {
-		// MariaDB returns the empty string.
-		erg=SQLGetConnectAttr(dbc,SQL_ATTR_TRANSLATE_LIB,
-				(SQLPOINTER)dbcstrinit,
-				sizeof(dbcstrinit),&dbcstrlen);
-		assertSuccessDbc(dbc,erg);
-	}
+	// save initial value
+	bytestring::zero(dbcstrinit,sizeof(dbcstrinit));
+	erg=SQLGetConnectAttr(dbc,SQL_ATTR_TRANSLATE_LIB,
+			(SQLPOINTER)dbcstrinit,
+			sizeof(dbcstrinit),&dbcstrlen);
+	assertSuccessDbc(dbc,erg);
+	// round-trip to the initial value
+	erg=SQLSetConnectAttr(dbc,SQL_ATTR_TRANSLATE_LIB,
+			(SQLPOINTER)dbcstrinit,SQL_NTS);
+	assertSuccessDbc(dbc,erg);
+	bytestring::zero(dbcstrval,sizeof(dbcstrval));
+	erg=SQLGetConnectAttr(dbc,SQL_ATTR_TRANSLATE_LIB,
+			(SQLPOINTER)dbcstrval,
+			sizeof(dbcstrval),&dbcstrlen);
+	assertSuccessDbc(dbc,erg);
+	assertEqualDbc(dbc,(const char *)dbcstrval,
+			(const char *)dbcstrinit);
 	stdoutput.printf("\n");
 	#endif
 
@@ -919,45 +916,47 @@ int main(int argc, char **argv) {
 
 	#if defined(SQL_ATTR_ANSI_APP)
 	// SQL_ATTR_ANSI_APP
+	// MariaDB returns HYC00 "Optional feature not implemented"
+	// on get and silently accepts every set.
 	stdoutput.printf("  SQL_ATTR_ANSI_APP\n");
+	// save initial value
+	erg=SQLGetConnectAttr(dbc,SQL_ATTR_ANSI_APP,
+			(SQLPOINTER)&dbcinitial,0,&dbcstrlen);
 	if (issqlrelay) {
-		// save initial value
-		erg=SQLGetConnectAttr(dbc,SQL_ATTR_ANSI_APP,
-				(SQLPOINTER)&dbcinitial,0,&dbcstrlen);
-		assertSuccessDbc(dbc,erg);
-		// SQL_AA_TRUE
-		erg=SQLSetConnectAttr(dbc,SQL_ATTR_ANSI_APP,
-				(SQLPOINTER)(uintptr_t)SQL_AA_TRUE,0);
-		assertSuccessDbc(dbc,erg);
-		erg=SQLGetConnectAttr(dbc,SQL_ATTR_ANSI_APP,
-				(SQLPOINTER)&dbcuintval,0,&dbcstrlen);
-		assertSuccessDbc(dbc,erg);
-		assertEqualDbc(dbc,(int)dbcuintval,(int)SQL_AA_TRUE);
-		// SQL_AA_FALSE
-		erg=SQLSetConnectAttr(dbc,SQL_ATTR_ANSI_APP,
-				(SQLPOINTER)(uintptr_t)SQL_AA_FALSE,0);
-		assertSuccessDbc(dbc,erg);
-		erg=SQLGetConnectAttr(dbc,SQL_ATTR_ANSI_APP,
-				(SQLPOINTER)&dbcuintval,0,&dbcstrlen);
-		assertSuccessDbc(dbc,erg);
-		assertEqualDbc(dbc,(int)dbcuintval,(int)SQL_AA_FALSE);
-		// restore initial value
-		erg=SQLSetConnectAttr(dbc,SQL_ATTR_ANSI_APP,
-				(SQLPOINTER)(uintptr_t)dbcinitial,0);
 		assertSuccessDbc(dbc,erg);
 	} else {
-		// MariaDB returns HYC00 "Optional feature not implemented"
-		// on get and silently accepts set.
-		erg=SQLGetConnectAttr(dbc,SQL_ATTR_ANSI_APP,
-				(SQLPOINTER)&dbcinitial,0,&dbcstrlen);
 		assertFailureDbc(dbc,erg);
-		erg=SQLSetConnectAttr(dbc,SQL_ATTR_ANSI_APP,
-				(SQLPOINTER)(uintptr_t)SQL_AA_TRUE,0);
-		assertSuccessDbc(dbc,erg);
-		erg=SQLSetConnectAttr(dbc,SQL_ATTR_ANSI_APP,
-				(SQLPOINTER)(uintptr_t)SQL_AA_FALSE,0);
-		assertSuccessDbc(dbc,erg);
 	}
+	// SQL_AA_TRUE
+	erg=SQLSetConnectAttr(dbc,SQL_ATTR_ANSI_APP,
+			(SQLPOINTER)(uintptr_t)SQL_AA_TRUE,0);
+	assertSuccessDbc(dbc,erg);
+	erg=SQLGetConnectAttr(dbc,SQL_ATTR_ANSI_APP,
+			(SQLPOINTER)&dbcuintval,0,&dbcstrlen);
+	if (issqlrelay) {
+		assertSuccessDbc(dbc,erg);
+		assertEqualDbc(dbc,(int)dbcuintval,(int)SQL_AA_TRUE);
+	} else {
+		assertFailureDbc(dbc,erg);
+	}
+	// SQL_AA_FALSE
+	erg=SQLSetConnectAttr(dbc,SQL_ATTR_ANSI_APP,
+			(SQLPOINTER)(uintptr_t)SQL_AA_FALSE,0);
+	assertSuccessDbc(dbc,erg);
+	erg=SQLGetConnectAttr(dbc,SQL_ATTR_ANSI_APP,
+			(SQLPOINTER)&dbcuintval,0,&dbcstrlen);
+	if (issqlrelay) {
+		assertSuccessDbc(dbc,erg);
+		assertEqualDbc(dbc,(int)dbcuintval,(int)SQL_AA_FALSE);
+	} else {
+		assertFailureDbc(dbc,erg);
+	}
+	// restore initial value (safe on MariaDB even though
+	// dbcinitial was never populated -- the driver silently
+	// accepts any value)
+	erg=SQLSetConnectAttr(dbc,SQL_ATTR_ANSI_APP,
+			(SQLPOINTER)(uintptr_t)dbcinitial,0);
+	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
 	#endif
 
@@ -986,54 +985,52 @@ int main(int argc, char **argv) {
 
 	#if defined(SQL_ATTR_ASYNC_DBC_FUNCTIONS_ENABLE)
 	// SQL_ATTR_ASYNC_DBC_FUNCTIONS_ENABLE
+	// MariaDB rejects get and silently accepts every set.
 	stdoutput.printf("  SQL_ATTR_ASYNC_DBC_FUNCTIONS_ENABLE\n");
+	// save initial value
+	erg=SQLGetConnectAttr(dbc,
+			SQL_ATTR_ASYNC_DBC_FUNCTIONS_ENABLE,
+			(SQLPOINTER)&dbcinitial,0,&dbcstrlen);
 	if (issqlrelay) {
-		// save initial value
-		erg=SQLGetConnectAttr(dbc,
-				SQL_ATTR_ASYNC_DBC_FUNCTIONS_ENABLE,
-				(SQLPOINTER)&dbcinitial,0,&dbcstrlen);
 		assertSuccessDbc(dbc,erg);
-		// SQL_ASYNC_DBC_ENABLE_ON
-		erg=SQLSetConnectAttr(dbc,
-				SQL_ATTR_ASYNC_DBC_FUNCTIONS_ENABLE,
-				(SQLPOINTER)(uintptr_t)
-				SQL_ASYNC_DBC_ENABLE_ON,0);
-		assertSuccessDbc(dbc,erg);
-		erg=SQLGetConnectAttr(dbc,
-				SQL_ATTR_ASYNC_DBC_FUNCTIONS_ENABLE,
-				(SQLPOINTER)&dbcuintval,0,&dbcstrlen);
+	} else {
+		assertFailureDbc(dbc,erg);
+	}
+	// SQL_ASYNC_DBC_ENABLE_ON
+	erg=SQLSetConnectAttr(dbc,
+			SQL_ATTR_ASYNC_DBC_FUNCTIONS_ENABLE,
+			(SQLPOINTER)(uintptr_t)SQL_ASYNC_DBC_ENABLE_ON,0);
+	assertSuccessDbc(dbc,erg);
+	erg=SQLGetConnectAttr(dbc,
+			SQL_ATTR_ASYNC_DBC_FUNCTIONS_ENABLE,
+			(SQLPOINTER)&dbcuintval,0,&dbcstrlen);
+	if (issqlrelay) {
 		assertSuccessDbc(dbc,erg);
 		assertEqualDbc(dbc,(int)dbcuintval,
 				(int)SQL_ASYNC_DBC_ENABLE_ON);
-		// SQL_ASYNC_DBC_ENABLE_OFF
-		erg=SQLSetConnectAttr(dbc,
-				SQL_ATTR_ASYNC_DBC_FUNCTIONS_ENABLE,
-				(SQLPOINTER)(uintptr_t)
-				SQL_ASYNC_DBC_ENABLE_OFF,0);
-		assertSuccessDbc(dbc,erg);
-		erg=SQLGetConnectAttr(dbc,
-				SQL_ATTR_ASYNC_DBC_FUNCTIONS_ENABLE,
-				(SQLPOINTER)&dbcuintval,0,&dbcstrlen);
+	} else {
+		assertFailureDbc(dbc,erg);
+	}
+	// SQL_ASYNC_DBC_ENABLE_OFF
+	erg=SQLSetConnectAttr(dbc,
+			SQL_ATTR_ASYNC_DBC_FUNCTIONS_ENABLE,
+			(SQLPOINTER)(uintptr_t)SQL_ASYNC_DBC_ENABLE_OFF,0);
+	assertSuccessDbc(dbc,erg);
+	erg=SQLGetConnectAttr(dbc,
+			SQL_ATTR_ASYNC_DBC_FUNCTIONS_ENABLE,
+			(SQLPOINTER)&dbcuintval,0,&dbcstrlen);
+	if (issqlrelay) {
 		assertSuccessDbc(dbc,erg);
 		assertEqualDbc(dbc,(int)dbcuintval,
 				(int)SQL_ASYNC_DBC_ENABLE_OFF);
-		// restore initial value
-		erg=SQLSetConnectAttr(dbc,
-				SQL_ATTR_ASYNC_DBC_FUNCTIONS_ENABLE,
-				(SQLPOINTER)(uintptr_t)dbcinitial,0);
-		assertSuccessDbc(dbc,erg);
 	} else {
-		// MariaDB rejects get and silently accepts set.
-		erg=SQLGetConnectAttr(dbc,
-				SQL_ATTR_ASYNC_DBC_FUNCTIONS_ENABLE,
-				(SQLPOINTER)&dbcinitial,0,&dbcstrlen);
 		assertFailureDbc(dbc,erg);
-		erg=SQLSetConnectAttr(dbc,
-				SQL_ATTR_ASYNC_DBC_FUNCTIONS_ENABLE,
-				(SQLPOINTER)(uintptr_t)
-				SQL_ASYNC_DBC_ENABLE_ON,0);
-		assertSuccessDbc(dbc,erg);
 	}
+	// restore initial value
+	erg=SQLSetConnectAttr(dbc,
+			SQL_ATTR_ASYNC_DBC_FUNCTIONS_ENABLE,
+			(SQLPOINTER)(uintptr_t)dbcinitial,0);
+	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
 	#endif
 
@@ -1041,34 +1038,33 @@ int main(int argc, char **argv) {
 	#if defined(SQL_ATTR_DRIVER_THREADING)
 	// SQL_ATTR_DRIVER_THREADING
 	// (driver-reported threading level; SQL Relay reports 1 =
-	// thread-safe per HDBC)
+	// thread-safe per HDBC.  MariaDB rejects get and silently
+	// accepts every set.)
 	stdoutput.printf("  SQL_ATTR_DRIVER_THREADING\n");
+	// save initial value
+	erg=SQLGetConnectAttr(dbc,SQL_ATTR_DRIVER_THREADING,
+			(SQLPOINTER)&dbcinitial,0,&dbcstrlen);
 	if (issqlrelay) {
-		// save initial value
-		erg=SQLGetConnectAttr(dbc,SQL_ATTR_DRIVER_THREADING,
-				(SQLPOINTER)&dbcinitial,0,&dbcstrlen);
-		assertSuccessDbc(dbc,erg);
-		// set to 1
-		erg=SQLSetConnectAttr(dbc,SQL_ATTR_DRIVER_THREADING,
-				(SQLPOINTER)(uintptr_t)1,0);
-		assertSuccessDbc(dbc,erg);
-		erg=SQLGetConnectAttr(dbc,SQL_ATTR_DRIVER_THREADING,
-				(SQLPOINTER)&dbcuintval,0,&dbcstrlen);
-		assertSuccessDbc(dbc,erg);
-		assertEqualDbc(dbc,(int)dbcuintval,1);
-		// restore initial value
-		erg=SQLSetConnectAttr(dbc,SQL_ATTR_DRIVER_THREADING,
-				(SQLPOINTER)(uintptr_t)dbcinitial,0);
 		assertSuccessDbc(dbc,erg);
 	} else {
-		// MariaDB rejects get and silently accepts set.
-		erg=SQLGetConnectAttr(dbc,SQL_ATTR_DRIVER_THREADING,
-				(SQLPOINTER)&dbcinitial,0,&dbcstrlen);
 		assertFailureDbc(dbc,erg);
-		erg=SQLSetConnectAttr(dbc,SQL_ATTR_DRIVER_THREADING,
-				(SQLPOINTER)(uintptr_t)1,0);
-		assertSuccessDbc(dbc,erg);
 	}
+	// set to 1
+	erg=SQLSetConnectAttr(dbc,SQL_ATTR_DRIVER_THREADING,
+			(SQLPOINTER)(uintptr_t)1,0);
+	assertSuccessDbc(dbc,erg);
+	erg=SQLGetConnectAttr(dbc,SQL_ATTR_DRIVER_THREADING,
+			(SQLPOINTER)&dbcuintval,0,&dbcstrlen);
+	if (issqlrelay) {
+		assertSuccessDbc(dbc,erg);
+		assertEqualDbc(dbc,(int)dbcuintval,1);
+	} else {
+		assertFailureDbc(dbc,erg);
+	}
+	// restore initial value
+	erg=SQLSetConnectAttr(dbc,SQL_ATTR_DRIVER_THREADING,
+			(SQLPOINTER)(uintptr_t)dbcinitial,0);
+	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
 	#endif
 
@@ -7331,42 +7327,17 @@ int main(int argc, char **argv) {
 
 
 	// nested selects
-	stdoutput.printf("NESTED SELECTS: \n");
-	erg=SQLFreeStmt(stmt,SQL_CLOSE);
-	erg=SQLFreeStmt(stmt,SQL_UNBIND);
-        // save initial SQL_ROWSET_SIZE so we can restore it; the unixODBC
-        // Driver Manager rejects a set to 0 with HY024.
-	erg=SQLGetStmtAttr(stmt,SQL_ROWSET_SIZE,
-			(SQLPOINTER)&stmtinitial,0,&stmtstrlen);
-	assertSuccessStmt(stmt,erg);
-	erg=SQLSetStmtAttr(stmt,SQL_ROWSET_SIZE,
-			(SQLPOINTER)(uintptr_t)1,0);
-	assertSuccessStmt(stmt,erg);
-	erg=SQLExecDirect(stmt,(SQLCHAR *)
-			"select * from testtable",SQL_NTS);
-	assertSuccessStmt(stmt,erg);
-	int	nestedrows=0;
-	for (;;) {
-		erg=SQLFetch(stmt);
-		if (erg==SQL_NO_DATA) {
-			break;
-		}
-		assertSuccessStmt(stmt,erg);
-		SQLHSTMT	nestedstmt;
-		erg=SQLAllocHandle(SQL_HANDLE_STMT,dbc,&nestedstmt);
-		assertSuccessDbc(dbc,erg);
-		erg=SQLFreeHandle(SQL_HANDLE_STMT,nestedstmt);
-		assertSuccessStmt(nestedstmt,erg);
-		nestedrows++;
-	}
-	assertEqualStmt(stmt,nestedrows,4);
-	// restore the initial rowset size
-	if (stmtinitial>0) {
-		erg=SQLSetStmtAttr(stmt,SQL_ROWSET_SIZE,
-				(SQLPOINTER)(uintptr_t)stmtinitial,0);
-		assertSuccessStmt(stmt,erg);
-	}
-	stdoutput.printf("\n");
+	// MySQL allows only one active result set per connection.
+	//
+	// Nested selects just can't be done natively at all.
+	//
+	// SQL Relay can't either, even with a result set buffer size of 0,
+	// due to lazy fetching (necessary to allow the SQL_ROWSET_SIZE to be
+	// set between execute and fetch) - the backend doesn't close the
+	// result set of the outer query before running the inner query,
+	// leaving more than one activce result set per connection.
+	//
+	// So, we'll just skip this test.
 
 
 
@@ -8185,6 +8156,7 @@ int main(int argc, char **argv) {
 	if (issqlrelay) {
 		// sqlrelay's mysql backend returns "def" rather than the
 		// connected database name
+		// FIXME: hmm... is this different than JDBC?
 	} else {
 		assertTrueStmt(stmt,catfound);
 	}
@@ -8263,13 +8235,18 @@ int main(int argc, char **argv) {
 	SQLExecDirect(stmt,(SQLCHAR *)"drop table testtable2",SQL_NTS);
 	SQLExecDirect(stmt,(SQLCHAR *)"drop table testtable3",SQL_NTS);
 	SQLExecDirect(stmt,(SQLCHAR *)"drop table testtable4",SQL_NTS);
-	for (int t=1; t<=4; t++) {
-		char	createbuf[256];
-		charstring::printf(createbuf,sizeof(createbuf),
-			"create table testtable%d (col1 int, col2 int)",t);
-		erg=SQLExecDirect(stmt,(SQLCHAR *)createbuf,SQL_NTS);
-		assertSuccessStmt(stmt,erg);
-	}
+	erg=SQLExecDirect(stmt,(SQLCHAR *)
+		"create table testtable1 (col1 int, col2 int)",SQL_NTS);
+	assertSuccessStmt(stmt,erg);
+	erg=SQLExecDirect(stmt,(SQLCHAR *)
+		"create table testtable2 (col1 int, col2 int)",SQL_NTS);
+	assertSuccessStmt(stmt,erg);
+	erg=SQLExecDirect(stmt,(SQLCHAR *)
+		"create table testtable3 (col1 int, col2 int)",SQL_NTS);
+	assertSuccessStmt(stmt,erg);
+	erg=SQLExecDirect(stmt,(SQLCHAR *)
+		"create table testtable4 (col1 int, col2 int)",SQL_NTS);
+	assertSuccessStmt(stmt,erg);
 	// commit so the catalog query sees the new tables
 	SQLEndTran(SQL_HANDLE_DBC,dbc,SQL_COMMIT);
 	// Force metadata_id off so the table-name pattern is
@@ -8280,6 +8257,8 @@ int main(int argc, char **argv) {
 	// MariaDB returns no rows when catalog/schema are empty
 	// strings; pass NULL there.  SQL Relay matches across the
 	// connected database with empty strings.
+	// FIXME: hmm... which is correct?
+	// (other list tests do this same thing)
 	SQLCHAR		*tlcatalog=(SQLCHAR *)(issqlrelay?"":NULL);
 	SQLSMALLINT	tlcataloglen=(issqlrelay?SQL_NTS:0);
 	SQLCHAR		*tlschema=(SQLCHAR *)(issqlrelay?"":NULL);
@@ -8641,22 +8620,38 @@ int main(int argc, char **argv) {
 			"drop procedure if exists testproc4",SQL_NTS);
 	// MySQL: 'create procedure ... begin end' (no `or replace`, no
 	// trailing `;` because some clients reject it)
-	const char	*proccreate=
-			"create procedure %s ("
-			"	in in1 int, "
-			"	in in2 char(20), "
-			"	in in3 varchar(20), "
-			"	in in4 date) "
-			"begin end";
-	for (int p=1; p<=4; p++) {
-		char pbuf[512];
-		charstring::printf(pbuf,sizeof(pbuf),proccreate,
-			(p==1)?"testproc1":
-			(p==2)?"testproc2":
-			(p==3)?"testproc3":"testproc4");
-		erg=SQLExecDirect(stmt,(SQLCHAR *)pbuf,SQL_NTS);
-		assertSuccessStmt(stmt,erg);
-	}
+	erg=SQLExecDirect(stmt,(SQLCHAR *)
+		"create procedure testproc1 ("
+		"	in in1 int, "
+		"	in in2 char(20), "
+		"	in in3 varchar(20), "
+		"	in in4 date) "
+		"begin end",SQL_NTS);
+	assertSuccessStmt(stmt,erg);
+	erg=SQLExecDirect(stmt,(SQLCHAR *)
+		"create procedure testproc2 ("
+		"	in in1 int, "
+		"	in in2 char(20), "
+		"	in in3 varchar(20), "
+		"	in in4 date) "
+		"begin end",SQL_NTS);
+	assertSuccessStmt(stmt,erg);
+	erg=SQLExecDirect(stmt,(SQLCHAR *)
+		"create procedure testproc3 ("
+		"	in in1 int, "
+		"	in in2 char(20), "
+		"	in in3 varchar(20), "
+		"	in in4 date) "
+		"begin end",SQL_NTS);
+	assertSuccessStmt(stmt,erg);
+	erg=SQLExecDirect(stmt,(SQLCHAR *)
+		"create procedure testproc4 ("
+		"	in in1 int, "
+		"	in in2 char(20), "
+		"	in in3 varchar(20), "
+		"	in in4 date) "
+		"begin end",SQL_NTS);
+	assertSuccessStmt(stmt,erg);
 	SQLEndTran(SQL_HANDLE_DBC,dbc,SQL_COMMIT);
 	// Force metadata_id off so the procedure name pattern is
 	// honored by both drivers.
@@ -8733,30 +8728,61 @@ int main(int argc, char **argv) {
 			pptypename,sizeof(pptypename),&pptypenameind);
 	erg=SQLBindCol(stmt,18,SQL_C_SHORT,
 			&ppordinal,sizeof(ppordinal),&ppordinalind);
-	const char	*exppname[]={"in1","in2","in3","in4"};
 	// SQL Relay reports type names upper case; MariaDB lower.
-	const char	*exptypeupper[]={"INT","CHAR","VARCHAR","DATE"};
-	const char	*exptypelower[]={"int","char","varchar","date"};
-	const char	**exptype=(issqlrelay?exptypeupper:exptypelower);
-	for (int pp=0; pp<4; pp++) {
-		erg=SQLFetch(stmt);
-		assertSuccessStmt(stmt,erg);
-		assertEqualStmt(stmt,(const char *)ppname,exppname[pp]);
-		assertEqualStmt(stmt,(int)ppmode,(int)SQL_PARAM_INPUT);
-		assertEqualStmt(stmt,(const char *)pptypename,exptype[pp]);
-		if (issqlrelay) {
-			assertEqualStmt(stmt,(int)ppordinal,pp+1);
-		}
+	// in1
+	erg=SQLFetch(stmt);
+	assertSuccessStmt(stmt,erg);
+	assertEqualStmt(stmt,(const char *)ppname,"in1");
+	assertEqualStmt(stmt,(int)ppmode,(int)SQL_PARAM_INPUT);
+	if (issqlrelay) {
+		assertEqualStmt(stmt,(const char *)pptypename,"INT");
+	} else {
+		assertEqualStmt(stmt,(const char *)pptypename,"int");
 	}
+	assertEqualStmt(stmt,(int)ppordinal,1);
+	// in2
+	erg=SQLFetch(stmt);
+	assertSuccessStmt(stmt,erg);
+	assertEqualStmt(stmt,(const char *)ppname,"in2");
+	assertEqualStmt(stmt,(int)ppmode,(int)SQL_PARAM_INPUT);
+	if (issqlrelay) {
+		assertEqualStmt(stmt,(const char *)pptypename,"CHAR");
+	} else {
+		assertEqualStmt(stmt,(const char *)pptypename,"char");
+	}
+	assertEqualStmt(stmt,(int)ppordinal,2);
+	// in3
+	erg=SQLFetch(stmt);
+	assertSuccessStmt(stmt,erg);
+	assertEqualStmt(stmt,(const char *)ppname,"in3");
+	assertEqualStmt(stmt,(int)ppmode,(int)SQL_PARAM_INPUT);
+	if (issqlrelay) {
+		assertEqualStmt(stmt,(const char *)pptypename,"VARCHAR");
+	} else {
+		assertEqualStmt(stmt,(const char *)pptypename,"varchar");
+	}
+	assertEqualStmt(stmt,(int)ppordinal,3);
+	// in4
+	erg=SQLFetch(stmt);
+	assertSuccessStmt(stmt,erg);
+	assertEqualStmt(stmt,(const char *)ppname,"in4");
+	assertEqualStmt(stmt,(int)ppmode,(int)SQL_PARAM_INPUT);
+	if (issqlrelay) {
+		assertEqualStmt(stmt,(const char *)pptypename,"DATE");
+	} else {
+		assertEqualStmt(stmt,(const char *)pptypename,"date");
+	}
+	assertEqualStmt(stmt,(int)ppordinal,4);
 	erg=SQLFreeStmt(stmt,SQL_CLOSE);
 	erg=SQLFreeStmt(stmt,SQL_UNBIND);
-	for (int p=1; p<=4; p++) {
-		char pbuf[64];
-		charstring::printf(pbuf,sizeof(pbuf),
-				"drop procedure if exists testproc%d",p);
-		erg=SQLExecDirect(stmt,(SQLCHAR *)pbuf,SQL_NTS);
-		assertSuccessStmt(stmt,erg);
-	}
+	erg=SQLExecDirect(stmt,(SQLCHAR *)"drop procedure testproc1",SQL_NTS);
+	assertSuccessStmt(stmt,erg);
+	erg=SQLExecDirect(stmt,(SQLCHAR *)"drop procedure testproc2",SQL_NTS);
+	assertSuccessStmt(stmt,erg);
+	erg=SQLExecDirect(stmt,(SQLCHAR *)"drop procedure testproc3",SQL_NTS);
+	assertSuccessStmt(stmt,erg);
+	erg=SQLExecDirect(stmt,(SQLCHAR *)"drop procedure testproc4",SQL_NTS);
+	assertSuccessStmt(stmt,erg);
 	stdoutput.printf("\n");
 
 
