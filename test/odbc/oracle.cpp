@@ -5801,7 +5801,7 @@ int main(int argc, char **argv) {
 				SQL_C_BINARY,SQL_LONGVARBINARY,
 				0,0,
 				(SQLPOINTER)blobval,
-				bloblen,&bloblen);
+				0,&bloblen);
 	assertSuccessStmt(stmt,erg);
 	erg=SQLExecute(stmt);
 	assertSuccessStmt(stmt,erg);
@@ -5872,7 +5872,7 @@ int main(int argc, char **argv) {
 				SQL_C_BINARY,SQL_LONGVARBINARY,
 				0,0,
 				(SQLPOINTER)blobval,
-				bloblen,&bloblen);
+				0,&bloblen);
 	assertSuccessStmt(stmt,erg);
 	if (issqlrelay) {
 		erg=SQLExecDirect(stmt,(SQLCHAR *)
@@ -6000,7 +6000,7 @@ int main(int argc, char **argv) {
 				SQL_C_BINARY,SQL_LONGVARBINARY,
 				0,0,
 				(SQLPOINTER)blobval,
-				bloblen,&bloblen);
+				0,&bloblen);
 	assertSuccessStmt(stmt,erg);
 	// data-at-exec column triggers SQL_NEED_DATA
 	erg=SQLExecute(stmt);
@@ -6851,7 +6851,7 @@ int main(int argc, char **argv) {
 				SQL_C_BINARY,SQL_LONGVARBINARY,
 				LARGE_BUFFER_LENGTH,0,
 				(SQLPOINTER)largebuffer,
-				LARGE_BUFFER_LENGTH,&largebloblen);
+				0,&largebloblen);
 	assertSuccessStmt(stmt,erg);
 	erg=SQLExecute(stmt);
 	assertSuccessStmt(stmt,erg);
@@ -7082,7 +7082,7 @@ int main(int argc, char **argv) {
 				SQL_C_BINARY,SQL_LONGVARBINARY,
 				0,0,
 				(SQLPOINTER)lobinval,
-				lobinlen,&lobinlen);
+				0,&lobinlen);
 	assertSuccessStmt(stmt,erg);
 	erg=SQLExecute(stmt);
 	assertSuccessStmt(stmt,erg);
@@ -7575,7 +7575,7 @@ int main(int argc, char **argv) {
 				SQL_C_BINARY,SQL_LONGVARBINARY,
 				sizeof(encbuf),0,
 				(SQLPOINTER)encbuf,
-				sizeof(encbuf),&enclen);
+				0,&enclen);
 	assertSuccessStmt(stmt,erg);
 	erg=SQLExecute(stmt);
 	assertSuccessStmt(stmt,erg);

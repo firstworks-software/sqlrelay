@@ -513,7 +513,10 @@ void mysqlconnection::initDatabaseFeatures() {
 		"true";
 
 	databasefeatures[FEATURE_GRANT_CLAUSES]=
-		"";
+		"DELETE_TABLE,INSERT_COLUMN,INSERT_TABLE,"
+			"REFERENCES_TABLE,REFERENCES_COLUMN,"
+			"SELECT_TABLE,UPDATE_COLUMN,UPDATE_TABLE,"
+			"WITH_GRANT_OPTION";
 
 	databasefeatures[FEATURE_GROUP_BY_CLAUSES]=
 		"BASIC,BEYOND_SELECT,UNRELATED";
@@ -660,7 +663,9 @@ void mysqlconnection::initDatabaseFeatures() {
 		"";
 
 	databasefeatures[FEATURE_PREDICATES]=
-		"";
+		"BETWEEN,COMPARISON,EXISTS,IN,"
+			"ISNOTNULL,ISNULL,LIKE,"
+			"QUANTIFIED_COMPARISON";
 
 	databasefeatures[FEATURE_PROCEDURE_TERM]=
 		"PROCEDURE";
@@ -669,7 +674,9 @@ void mysqlconnection::initDatabaseFeatures() {
 		"MIXED";
 
 	databasefeatures[FEATURE_RELATIONAL_JOIN_OPERATORS]=
-		"";
+		"CROSS_JOIN,INNER_JOIN,"
+			"LEFT_OUTER_JOIN,NATURAL_JOIN,"
+			"RIGHT_OUTER_JOIN";
 
 	databasefeatures[FEATURE_RESULT_SET_CONCURRENCIES]=
 		"FORWARD_ONLY/READ_ONLY,"
@@ -684,7 +691,9 @@ void mysqlconnection::initDatabaseFeatures() {
 		"FORWARD_ONLY,SCROLL_INSENSITIVE";
 
 	databasefeatures[FEATURE_REVOKE_CLAUSES]=
-		"";
+		"DELETE_TABLE,INSERT_COLUMN,INSERT_TABLE,"
+			"REFERENCES_COLUMN,REFERENCES_TABLE,"
+			"SELECT_TABLE,UPDATE_COLUMN,UPDATE_TABLE";
 
 	databasefeatures[FEATURE_ROW_ID_LIFETIME]=
 		"ROWID_UNSUPPORTED";

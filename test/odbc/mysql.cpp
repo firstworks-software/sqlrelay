@@ -3382,12 +3382,15 @@ int main(int argc, char **argv) {
 	erg=SQLGetInfo(dbc,SQL_SQL92_GRANT,
 			(SQLPOINTER)&uintval,
 			(SQLSMALLINT)sizeof(uintval),&vallen);
-	if (issqlrelay) {
-		assertEqualDbc(dbc,(int)uintval,0);
-	} else {
-		// MariaDB reports 8176.
-		assertEqualDbc(dbc,(int)uintval,8176);
-	}
+	// Both drivers report 8176: WITH_GRANT_OPTION|DELETE_TABLE|
+	// INSERT_TABLE|INSERT_COLUMN|REFERENCES_TABLE|
+	// REFERENCES_COLUMN|SELECT_TABLE|UPDATE_TABLE|UPDATE_COLUMN.
+	assertEqualDbc(dbc,(int)uintval,
+		(int)(SQL_SG_WITH_GRANT_OPTION|SQL_SG_DELETE_TABLE|
+			SQL_SG_INSERT_TABLE|SQL_SG_INSERT_COLUMN|
+			SQL_SG_REFERENCES_TABLE|SQL_SG_REFERENCES_COLUMN|
+			SQL_SG_SELECT_TABLE|SQL_SG_UPDATE_TABLE|
+			SQL_SG_UPDATE_COLUMN));
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
 	#endif
@@ -3416,12 +3419,13 @@ int main(int argc, char **argv) {
 	erg=SQLGetInfo(dbc,SQL_SQL92_PREDICATES,
 			(SQLPOINTER)&uintval,
 			(SQLSMALLINT)sizeof(uintval),&vallen);
-	if (issqlrelay) {
-		assertEqualDbc(dbc,(int)uintval,0);
-	} else {
-		// MariaDB reports 15879.
-		assertEqualDbc(dbc,(int)uintval,15879);
-	}
+	// Both drivers report 15879: EXISTS|ISNOTNULL|ISNULL|LIKE|
+	// IN|BETWEEN|COMPARISON|QUANTIFIED_COMPARISON.
+	assertEqualDbc(dbc,(int)uintval,
+		(int)(SQL_SP_EXISTS|SQL_SP_ISNOTNULL|SQL_SP_ISNULL|
+			SQL_SP_LIKE|SQL_SP_IN|SQL_SP_BETWEEN|
+			SQL_SP_COMPARISON|
+			SQL_SP_QUANTIFIED_COMPARISON));
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
 	#endif
@@ -3433,12 +3437,13 @@ int main(int argc, char **argv) {
 	erg=SQLGetInfo(dbc,SQL_SQL92_RELATIONAL_JOIN_OPERATORS,
 			(SQLPOINTER)&uintval,
 			(SQLSMALLINT)sizeof(uintval),&vallen);
-	if (issqlrelay) {
-		assertEqualDbc(dbc,(int)uintval,0);
-	} else {
-		// MariaDB reports 466.
-		assertEqualDbc(dbc,(int)uintval,466);
-	}
+	// Both drivers report 466: CROSS_JOIN|INNER_JOIN|
+	// LEFT_OUTER_JOIN|NATURAL_JOIN|RIGHT_OUTER_JOIN.
+	assertEqualDbc(dbc,(int)uintval,
+		(int)(SQL_SRJO_CROSS_JOIN|SQL_SRJO_INNER_JOIN|
+			SQL_SRJO_LEFT_OUTER_JOIN|
+			SQL_SRJO_NATURAL_JOIN|
+			SQL_SRJO_RIGHT_OUTER_JOIN));
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
 	#endif
@@ -3450,12 +3455,14 @@ int main(int argc, char **argv) {
 	erg=SQLGetInfo(dbc,SQL_SQL92_REVOKE,
 			(SQLPOINTER)&uintval,
 			(SQLSMALLINT)sizeof(uintval),&vallen);
-	if (issqlrelay) {
-		assertEqualDbc(dbc,(int)uintval,0);
-	} else {
-		// MariaDB reports 32640.
-		assertEqualDbc(dbc,(int)uintval,32640);
-	}
+	// Both drivers report 32640: DELETE_TABLE|INSERT_TABLE|
+	// INSERT_COLUMN|REFERENCES_TABLE|REFERENCES_COLUMN|
+	// SELECT_TABLE|UPDATE_TABLE|UPDATE_COLUMN.
+	assertEqualDbc(dbc,(int)uintval,
+		(int)(SQL_SR_DELETE_TABLE|SQL_SR_INSERT_TABLE|
+			SQL_SR_INSERT_COLUMN|SQL_SR_REFERENCES_TABLE|
+			SQL_SR_REFERENCES_COLUMN|SQL_SR_SELECT_TABLE|
+			SQL_SR_UPDATE_TABLE|SQL_SR_UPDATE_COLUMN));
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
 	#endif
@@ -5850,22 +5857,22 @@ int main(int argc, char **argv) {
 	erg=SQLBindParameter(stmt,19,SQL_PARAM_INPUT,
 			SQL_C_BINARY,SQL_LONGVARBINARY,
 			0,0,(SQLPOINTER)blobval,
-			bloblen,&bloblen);
+			0,&bloblen);
 	assertSuccessStmt(stmt,erg);
 	erg=SQLBindParameter(stmt,20,SQL_PARAM_INPUT,
 			SQL_C_BINARY,SQL_LONGVARBINARY,
 			0,0,(SQLPOINTER)tinyblobval,
-			tinybloblen,&tinybloblen);
+			0,&tinybloblen);
 	assertSuccessStmt(stmt,erg);
 	erg=SQLBindParameter(stmt,21,SQL_PARAM_INPUT,
 			SQL_C_BINARY,SQL_LONGVARBINARY,
 			0,0,(SQLPOINTER)mediumblobval,
-			mediumbloblen,&mediumbloblen);
+			0,&mediumbloblen);
 	assertSuccessStmt(stmt,erg);
 	erg=SQLBindParameter(stmt,22,SQL_PARAM_INPUT,
 			SQL_C_BINARY,SQL_LONGVARBINARY,
 			0,0,(SQLPOINTER)longblobval,
-			longbloblen,&longbloblen);
+			0,&longbloblen);
 	assertSuccessStmt(stmt,erg);
 	// position 23 (testtimestamp) is bound as NULL
 	erg=SQLBindParameter(stmt,23,SQL_PARAM_INPUT,
@@ -6019,22 +6026,22 @@ int main(int argc, char **argv) {
 	erg=SQLBindParameter(stmt,19,SQL_PARAM_INPUT,
 			SQL_C_BINARY,SQL_LONGVARBINARY,
 			0,0,(SQLPOINTER)blobval,
-			bloblen,&bloblen);
+			0,&bloblen);
 	assertSuccessStmt(stmt,erg);
 	erg=SQLBindParameter(stmt,20,SQL_PARAM_INPUT,
 			SQL_C_BINARY,SQL_LONGVARBINARY,
 			0,0,(SQLPOINTER)tinyblobval,
-			tinybloblen,&tinybloblen);
+			0,&tinybloblen);
 	assertSuccessStmt(stmt,erg);
 	erg=SQLBindParameter(stmt,21,SQL_PARAM_INPUT,
 			SQL_C_BINARY,SQL_LONGVARBINARY,
 			0,0,(SQLPOINTER)mediumblobval,
-			mediumbloblen,&mediumbloblen);
+			0,&mediumbloblen);
 	assertSuccessStmt(stmt,erg);
 	erg=SQLBindParameter(stmt,22,SQL_PARAM_INPUT,
 			SQL_C_BINARY,SQL_LONGVARBINARY,
 			0,0,(SQLPOINTER)longblobval,
-			longbloblen,&longbloblen);
+			0,&longbloblen);
 	assertSuccessStmt(stmt,erg);
 	erg=SQLBindParameter(stmt,23,SQL_PARAM_INPUT,
 			SQL_C_TYPE_TIMESTAMP,SQL_TYPE_TIMESTAMP,
@@ -6211,22 +6218,22 @@ int main(int argc, char **argv) {
 	erg=SQLBindParameter(stmt,19,SQL_PARAM_INPUT,
 			SQL_C_BINARY,SQL_LONGVARBINARY,
 			0,0,(SQLPOINTER)blobval,
-			bloblen,&bloblen);
+			0,&bloblen);
 	assertSuccessStmt(stmt,erg);
 	erg=SQLBindParameter(stmt,20,SQL_PARAM_INPUT,
 			SQL_C_BINARY,SQL_LONGVARBINARY,
 			0,0,(SQLPOINTER)tinyblobval,
-			tinybloblen,&tinybloblen);
+			0,&tinybloblen);
 	assertSuccessStmt(stmt,erg);
 	erg=SQLBindParameter(stmt,21,SQL_PARAM_INPUT,
 			SQL_C_BINARY,SQL_LONGVARBINARY,
 			0,0,(SQLPOINTER)mediumblobval,
-			mediumbloblen,&mediumbloblen);
+			0,&mediumbloblen);
 	assertSuccessStmt(stmt,erg);
 	erg=SQLBindParameter(stmt,22,SQL_PARAM_INPUT,
 			SQL_C_BINARY,SQL_LONGVARBINARY,
 			0,0,(SQLPOINTER)longblobval,
-			longbloblen,&longbloblen);
+			0,&longbloblen);
 	assertSuccessStmt(stmt,erg);
 	erg=SQLBindParameter(stmt,23,SQL_PARAM_INPUT,
 			SQL_C_TYPE_TIMESTAMP,SQL_TYPE_TIMESTAMP,
@@ -7579,13 +7586,13 @@ int main(int argc, char **argv) {
 				SQL_C_CHAR,SQL_LONGVARCHAR,
 				LARGE_BUFFER_LENGTH,0,
 				(SQLPOINTER)largebuffer,
-				LARGE_BUFFER_LENGTH,&largetextlen);
+				0,&largetextlen);
 	assertSuccessStmt(stmt,erg);
 	erg=SQLBindParameter(stmt,2,SQL_PARAM_INPUT,
 				SQL_C_BINARY,SQL_LONGVARBINARY,
 				LARGE_BUFFER_LENGTH,0,
 				(SQLPOINTER)largebuffer,
-				LARGE_BUFFER_LENGTH,&largebloblen);
+				0,&largebloblen);
 	assertSuccessStmt(stmt,erg);
 	erg=SQLExecute(stmt);
 	assertSuccessStmt(stmt,erg);
@@ -8063,7 +8070,7 @@ int main(int argc, char **argv) {
 				SQL_C_BINARY,SQL_LONGVARBINARY,
 				sizeof(encbuf),0,
 				(SQLPOINTER)encbuf,
-				sizeof(encbuf),&enclen);
+				0,&enclen);
 	assertSuccessStmt(stmt,erg);
 	erg=SQLExecute(stmt);
 	assertSuccessStmt(stmt,erg);
