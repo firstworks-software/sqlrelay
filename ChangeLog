@@ -64,6 +64,9 @@
 	fixed a bug in the ODBC driver where bufferlength was used instead of
 		*strlen_or_ind as the size of a char/binary array for input
 		binds
+	implemented postgresql getColumnScale()
+	fixed bugs in postgresql getColumnSize()
+	implemented postgresql isColumnNullable()
 
 2.1.1 - added tns_admin support
 	fixed sqlr-start ... -strace ...

@@ -6252,8 +6252,10 @@ int main(int argc, char **argv) {
 	#else
 	assertEqualStmt(stmt,(int)datatype,SQL_TIME);
 	#endif
-	assertEqualStmt(stmt,(int)colsize,8);
-	assertEqualStmt(stmt,(int)decdigits,0);
+	// postgres time defaults to time(6); ODBC col size is 9+s,
+	// decimal digits is s
+	assertEqualStmt(stmt,(int)colsize,15);
+	assertEqualStmt(stmt,(int)decdigits,6);
 	assertEqualStmt(stmt,(int)nullable,SQL_NULLABLE);
 
 	// col 9: testtimestamp

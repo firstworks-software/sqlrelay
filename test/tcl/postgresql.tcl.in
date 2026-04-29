@@ -234,10 +234,10 @@ assertEqual [$cur getColumnLengthByIndex 2] 4
 assertEqual [$cur getColumnLengthByName "testreal"] 4
 assertEqual [$cur getColumnLengthByIndex 3] 2
 assertEqual [$cur getColumnLengthByName "testsmallint"] 2
-assertEqual [$cur getColumnLengthByIndex 4] 44
-assertEqual [$cur getColumnLengthByName "testchar"] 44
-assertEqual [$cur getColumnLengthByIndex 5] 44
-assertEqual [$cur getColumnLengthByName "testvarchar"] 44
+assertEqual [$cur getColumnLengthByIndex 4]  40
+assertEqual [$cur getColumnLengthByName "testchar"]  40
+assertEqual [$cur getColumnLengthByIndex 5]  40
+assertEqual [$cur getColumnLengthByName "testvarchar"]  40
 assertEqual [$cur getColumnLengthByIndex 6] 4
 assertEqual [$cur getColumnLengthByName "testdate"] 4
 assertEqual [$cur getColumnLengthByIndex 7] 8

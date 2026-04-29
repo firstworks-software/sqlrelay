@@ -340,10 +340,10 @@ namespace SQLRClientTest
             assertEquals(cur.getColumnLength("testreal"), (UInt32)4);
             assertEquals(cur.getColumnLength((UInt32)3), (UInt32)2);
             assertEquals(cur.getColumnLength("testsmallint"), (UInt32)2);
-            assertEquals(cur.getColumnLength((UInt32)4), (UInt32)44);
-            assertEquals(cur.getColumnLength("testchar"), (UInt32)44);
-            assertEquals(cur.getColumnLength((UInt32)5), (UInt32)44);
-            assertEquals(cur.getColumnLength("testvarchar"), (UInt32)44);
+            assertEquals(cur.getColumnLength((UInt32)4), (UInt32)40);
+            assertEquals(cur.getColumnLength("testchar"), (UInt32)40);
+            assertEquals(cur.getColumnLength((UInt32)5), (UInt32)40);
+            assertEquals(cur.getColumnLength("testvarchar"), (UInt32)40);
             assertEquals(cur.getColumnLength((UInt32)6), (UInt32)4);
             assertEquals(cur.getColumnLength("testdate"), (UInt32)4);
             assertEquals(cur.getColumnLength((UInt32)7), (UInt32)8);

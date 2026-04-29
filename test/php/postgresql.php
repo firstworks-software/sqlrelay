@@ -318,10 +318,10 @@
 	assertEqInt(sqlrcur_getColumnLength($cur,"testreal"),4);
 	assertEqInt(sqlrcur_getColumnLength($cur,3),2);
 	assertEqInt(sqlrcur_getColumnLength($cur,"testsmallint"),2);
-	assertEqInt(sqlrcur_getColumnLength($cur,4),44);
-	assertEqInt(sqlrcur_getColumnLength($cur,"testchar"),44);
-	assertEqInt(sqlrcur_getColumnLength($cur,5),44);
-	assertEqInt(sqlrcur_getColumnLength($cur,"testvarchar"),44);
+	assertEqInt(sqlrcur_getColumnLength($cur,4),40);
+	assertEqInt(sqlrcur_getColumnLength($cur,"testchar"),40);
+	assertEqInt(sqlrcur_getColumnLength($cur,5),40);
+	assertEqInt(sqlrcur_getColumnLength($cur,"testvarchar"),40);
 	assertEqInt(sqlrcur_getColumnLength($cur,6),4);
 	assertEqInt(sqlrcur_getColumnLength($cur,"testdate"),4);
 	assertEqInt(sqlrcur_getColumnLength($cur,7),8);

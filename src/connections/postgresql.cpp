@@ -212,6 +212,8 @@ class SQLRSERVER_DLLSPEC postgresqlcursor : public sqlrservercursor {
 		const char	*getColumnTypeName(uint32_t col);
 		uint32_t	getColumnSize(uint32_t col);
 		uint16_t	getColumnIsBinary(uint32_t col);
+		uint16_t	getColumnIsNullable(uint32_t col);
+		uint32_t	getColumnScale(uint32_t col);
 #ifdef HAVE_POSTGRESQL_PQFTABLE
 		const char	*getColumnTable(uint32_t col);
 #endif
@@ -3353,16 +3355,62 @@ const char *postgresqlcursor::getColumnTypeName(uint32_t col) {
 }
 
 uint32_t postgresqlcursor::getColumnSize(uint32_t col) {
+
+	// PQfsize returns the binary storage size for
+	// fixed-length types or -1 for variable-length types.
 	int32_t	size=PQfsize(pgresult,col);
+	if (size<0) {
 #ifdef HAVE_POSTGRESQL_PQFMOD
-	if (size<0) {
-		size=PQfmod(pgresult,col);
-	}
-#endif
-	if (size<0) {
+		// For variable-length types, PQfmod returns the type
+		// modifier, which encodes length, precision, and scale
+		// in type-specific ways.
+		int32_t	typmod=PQfmod(pgresult,col);
+		switch (PQftype(pgresult,col)) {
+			case 1042: // bpchar
+			case 1043: // varchar
+				// length in characters, not bytes
+				size=(typmod>=4)?(typmod-4):0;
+				break;
+			case 1700: // numeric
+				// precision in decimal digits
+				size=(typmod>=4)?((typmod-4)>>16)&0xFFFF:0;
+				break;
+			default:
+				// length in bytes
+				size=(typmod>=0)?typmod:0;
+				break;
+		}
+#else
 		size=0;
+#endif
 	}
 	return size;
+}
+
+uint32_t postgresqlcursor::getColumnScale(uint32_t col) {
+#ifdef HAVE_POSTGRESQL_PQFMOD
+	// For variable-length types, PQfmod returns the type
+	// modifier, which encodes length, precision, and scale
+	// in type-specific ways.
+	int32_t	typmod=PQfmod(pgresult,col);
+	switch (PQftype(pgresult,col)) {
+		case 1700: // numeric
+			// scale in decimal digits
+			return (typmod>=4)?((typmod-4)&0xFFFF):0;
+		case 1083: // time
+		case 1114: // timestamp
+		case 1184: // timestamptz
+		case 1186: // interval
+		case 1266: // timetz
+			// fractional-seconds precision
+			// (-1 means the default of 6)
+			return (typmod>=0)?typmod:6;
+		default:
+			return 0;
+	}
+#else
+	return 0;
+#endif
 }
 
 uint16_t postgresqlcursor::getColumnIsBinary(uint32_t col) {
@@ -3372,6 +3420,46 @@ uint16_t postgresqlcursor::getColumnIsBinary(uint32_t col) {
 	binary=PQbinaryTuples(pgresult);
 #endif
 	return binary;
+}
+
+uint16_t postgresqlcursor::getColumnIsNullable(uint32_t col) {
+#ifdef HAVE_POSTGRESQL_PQFTABLE
+
+	// If the column is an expression or literal, it's nullable.  PQftable
+	// ought to cath it, but if it doesn't then fall back to PQftablecol.
+	Oid	tableoid=PQftable(pgresult,col);
+	if (tableoid==InvalidOid) {
+		return 1;
+	}
+	int	colnum=PQftablecol(pgresult,col);
+	if (colnum<=0) {
+		return 1;
+	}
+
+	// If the column isn't an expression or literal, then we have to
+	// query pg_attribute...
+	char	query[128];
+	charstring::printf(query,sizeof(query),
+				"select attnotnull from pg_attribute "
+				"where attrelid=%u and attnum=%d",
+				(unsigned int)tableoid,colnum);
+	PGresult	*result=PQexec(postgresqlconn->pgconn,query);
+	if (!result) {
+		return 1;
+	}
+	uint16_t	nullable=1;
+	if (PQresultStatus(result)==PGRES_TUPLES_OK && PQntuples(result)>0) {
+		const char	*v=PQgetvalue(result,0,0);
+		nullable=(v && (*v=='t' || *v=='T' || *v=='1'))?0:1;
+	}
+	PQclear(result);
+	return nullable;
+#else
+	// without PQftable we cannot map back to pg_attribute, so just
+	// say nullable (the postgresql default for columns without an
+	// explicit NOT NULL constraint)
+	return 1;
+#endif
 }
 
 #ifdef HAVE_POSTGRESQL_PQFTABLE

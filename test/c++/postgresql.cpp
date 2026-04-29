@@ -346,10 +346,10 @@ int main(int argc, char **argv) {
 	assertEquals(cur->getColumnLength("testreal"),4);
 	assertEquals(cur->getColumnLength(3),2);
 	assertEquals(cur->getColumnLength("testsmallint"),2);
-	assertEquals(cur->getColumnLength(4),44);
-	assertEquals(cur->getColumnLength("testchar"),44);
-	assertEquals(cur->getColumnLength(5),44);
-	assertEquals(cur->getColumnLength("testvarchar"),44);
+	assertEquals(cur->getColumnLength(4),40);
+	assertEquals(cur->getColumnLength("testchar"),40);
+	assertEquals(cur->getColumnLength(5),40);
+	assertEquals(cur->getColumnLength("testvarchar"),40);
 	assertEquals(cur->getColumnLength(6),4);
 	assertEquals(cur->getColumnLength("testdate"),4);
 	assertEquals(cur->getColumnLength(7),8);

@@ -360,10 +360,10 @@ int main(int argc, char **argv) {
 	assertEqInt(sqlrcur_getColumnLengthByName(cur,"testreal"),4);
 	assertEqInt(sqlrcur_getColumnLengthByIndex(cur,3),2);
 	assertEqInt(sqlrcur_getColumnLengthByName(cur,"testsmallint"),2);
-	assertEqInt(sqlrcur_getColumnLengthByIndex(cur,4),44);
-	assertEqInt(sqlrcur_getColumnLengthByName(cur,"testchar"),44);
-	assertEqInt(sqlrcur_getColumnLengthByIndex(cur,5),44);
-	assertEqInt(sqlrcur_getColumnLengthByName(cur,"testvarchar"),44);
+	assertEqInt(sqlrcur_getColumnLengthByIndex(cur,4),40);
+	assertEqInt(sqlrcur_getColumnLengthByName(cur,"testchar"),40);
+	assertEqInt(sqlrcur_getColumnLengthByIndex(cur,5),40);
+	assertEqInt(sqlrcur_getColumnLengthByName(cur,"testvarchar"),40);
 	assertEqInt(sqlrcur_getColumnLengthByIndex(cur,6),4);
 	assertEqInt(sqlrcur_getColumnLengthByName(cur,"testdate"),4);
 	assertEqInt(sqlrcur_getColumnLengthByIndex(cur,7),8);
