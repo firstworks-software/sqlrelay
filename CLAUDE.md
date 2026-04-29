@@ -120,3 +120,5 @@ Result/detail logs land at `test/testresults.log` and `test/testdetails.log` aft
 ## Commits
 
 **Never commit on your own.** The maintainer references Trac ticket IDs in commit messages, which you don't have access to — let them write the commit. Stage changes if you like, but don't run `git commit` unless explicitly told to in the current turn (a prior "yes, commit" doesn't carry forward to later changes).
+
+**Never revert/discard working-tree changes without asking.** That means no `git checkout -- <file>`, `git restore <file>`, `git reset --hard`, `git stash` of unstaged work, or anything else that overwrites uncommitted changes. The maintainer often has substantial uncommitted work in the tree (sometimes from prior Claude sessions that didn't end with a commit) — silently reverting it loses that work and `git reflog` won't help recover it. If you need a clean tree to narrow down a problem, use `#if 0` blocks, a temporary copy, or ask first.

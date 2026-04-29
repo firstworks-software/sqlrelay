@@ -5638,11 +5638,6 @@ int main(int argc, char **argv) {
 
 
 	// create testtable
-	// PostgreSQL aborts the entire transaction on the first failed
-	// statement and does not implicitly commit DDL, so do the
-	// drop+create with autocommit still on (so they're auto-
-	// committed and visible to other connections) before switching
-	// to autocommit-off for the test that follows.
 	stdoutput.printf("CREATE TESTTABLE: \n");
 	SQLExecDirect(stmt,(SQLCHAR *)"drop table if exists testtable",SQL_NTS);
 	erg=SQLExecDirect(stmt,(SQLCHAR *)
@@ -5660,15 +5655,15 @@ int main(int argc, char **argv) {
 		"	testbytea bytea)",
 		SQL_NTS);
 	assertSuccessStmt(stmt,erg);
-	erg=SQLSetConnectAttr(dbc,SQL_ATTR_AUTOCOMMIT,
-		(SQLPOINTER)SQL_AUTOCOMMIT_OFF,0);
-	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
 
 
 
 	// insert
 	stdoutput.printf("INSERT: \n");
+	erg=SQLSetConnectAttr(dbc,SQL_ATTR_AUTOCOMMIT,
+		(SQLPOINTER)SQL_AUTOCOMMIT_OFF,0);
+	assertSuccessDbc(dbc,erg);
 	erg=SQLExecDirect(stmt,(SQLCHAR *)
 		"insert into "
 		"	testtable "
@@ -7728,7 +7723,7 @@ int main(int argc, char **argv) {
 	for (int t=1; t<=4; t++) {
 		char dropbuf[64];
 		charstring::printf(dropbuf,sizeof(dropbuf),
-					"drop table testtable%d",t);
+					"drop table if exists testtable%d",t);
 		erg=SQLExecDirect(stmt,(SQLCHAR *)dropbuf,SQL_NTS);
 		assertSuccessStmt(stmt,erg);
 	}

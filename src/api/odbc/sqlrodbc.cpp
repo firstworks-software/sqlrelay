@@ -7110,53 +7110,53 @@ static SQLUINTEGER SQLR_NumericFunctions(CONN *conn) {
 	for (uint64_t i=0; i<partcount; i++) {
 		charstring::strip(parts[i],' ');
 		const char	*f=parts[i];
-		if (!charstring::compare(f,"ABS")) {
+		if (!charstring::compareIgnoringCase(f,"ABS")) {
 			retval|=SQL_FN_NUM_ABS;
-		} else if (!charstring::compare(f,"ACOS")) {
+		} else if (!charstring::compareIgnoringCase(f,"ACOS")) {
 			retval|=SQL_FN_NUM_ACOS;
-		} else if (!charstring::compare(f,"ASIN")) {
+		} else if (!charstring::compareIgnoringCase(f,"ASIN")) {
 			retval|=SQL_FN_NUM_ASIN;
-		} else if (!charstring::compare(f,"ATAN")) {
+		} else if (!charstring::compareIgnoringCase(f,"ATAN")) {
 			retval|=SQL_FN_NUM_ATAN;
-		} else if (!charstring::compare(f,"ATAN2")) {
+		} else if (!charstring::compareIgnoringCase(f,"ATAN2")) {
 			retval|=SQL_FN_NUM_ATAN2;
-		} else if (!charstring::compare(f,"CEILING")) {
+		} else if (!charstring::compareIgnoringCase(f,"CEILING")) {
 			retval|=SQL_FN_NUM_CEILING;
-		} else if (!charstring::compare(f,"COS")) {
+		} else if (!charstring::compareIgnoringCase(f,"COS")) {
 			retval|=SQL_FN_NUM_COS;
-		} else if (!charstring::compare(f,"COT")) {
+		} else if (!charstring::compareIgnoringCase(f,"COT")) {
 			retval|=SQL_FN_NUM_COT;
-		} else if (!charstring::compare(f,"DEGREES")) {
+		} else if (!charstring::compareIgnoringCase(f,"DEGREES")) {
 			retval|=SQL_FN_NUM_DEGREES;
-		} else if (!charstring::compare(f,"EXP")) {
+		} else if (!charstring::compareIgnoringCase(f,"EXP")) {
 			retval|=SQL_FN_NUM_EXP;
-		} else if (!charstring::compare(f,"FLOOR")) {
+		} else if (!charstring::compareIgnoringCase(f,"FLOOR")) {
 			retval|=SQL_FN_NUM_FLOOR;
-		} else if (!charstring::compare(f,"LOG")) {
+		} else if (!charstring::compareIgnoringCase(f,"LOG")) {
 			retval|=SQL_FN_NUM_LOG;
-		} else if (!charstring::compare(f,"LOG10")) {
+		} else if (!charstring::compareIgnoringCase(f,"LOG10")) {
 			retval|=SQL_FN_NUM_LOG10;
-		} else if (!charstring::compare(f,"MOD")) {
+		} else if (!charstring::compareIgnoringCase(f,"MOD")) {
 			retval|=SQL_FN_NUM_MOD;
-		} else if (!charstring::compare(f,"PI")) {
+		} else if (!charstring::compareIgnoringCase(f,"PI")) {
 			retval|=SQL_FN_NUM_PI;
-		} else if (!charstring::compare(f,"POWER")) {
+		} else if (!charstring::compareIgnoringCase(f,"POWER")) {
 			retval|=SQL_FN_NUM_POWER;
-		} else if (!charstring::compare(f,"RADIANS")) {
+		} else if (!charstring::compareIgnoringCase(f,"RADIANS")) {
 			retval|=SQL_FN_NUM_RADIANS;
-		} else if (!charstring::compare(f,"RAND")) {
+		} else if (!charstring::compareIgnoringCase(f,"RAND")) {
 			retval|=SQL_FN_NUM_RAND;
-		} else if (!charstring::compare(f,"ROUND")) {
+		} else if (!charstring::compareIgnoringCase(f,"ROUND")) {
 			retval|=SQL_FN_NUM_ROUND;
-		} else if (!charstring::compare(f,"SIGN")) {
+		} else if (!charstring::compareIgnoringCase(f,"SIGN")) {
 			retval|=SQL_FN_NUM_SIGN;
-		} else if (!charstring::compare(f,"SIN")) {
+		} else if (!charstring::compareIgnoringCase(f,"SIN")) {
 			retval|=SQL_FN_NUM_SIN;
-		} else if (!charstring::compare(f,"SQRT")) {
+		} else if (!charstring::compareIgnoringCase(f,"SQRT")) {
 			retval|=SQL_FN_NUM_SQRT;
-		} else if (!charstring::compare(f,"TAN")) {
+		} else if (!charstring::compareIgnoringCase(f,"TAN")) {
 			retval|=SQL_FN_NUM_TAN;
-		} else if (!charstring::compare(f,"TRUNCATE")) {
+		} else if (!charstring::compareIgnoringCase(f,"TRUNCATE")) {
 			retval|=SQL_FN_NUM_TRUNCATE;
 		}
 		delete[] parts[i];
@@ -7183,54 +7183,54 @@ static SQLUINTEGER SQLR_StringFunctions(CONN *conn) {
 	for (uint64_t i=0; i<partcount; i++) {
 		charstring::strip(parts[i],' ');
 		const char	*f=parts[i];
-		if (!charstring::compare(f,"CONCAT")) {
+		if (!charstring::compareIgnoringCase(f,"CONCAT")) {
 			retval|=SQL_FN_STR_CONCAT;
-		} else if (!charstring::compare(f,"INSERT")) {
+		} else if (!charstring::compareIgnoringCase(f,"INSERT")) {
 			retval|=SQL_FN_STR_INSERT;
-		} else if (!charstring::compare(f,"LEFT")) {
+		} else if (!charstring::compareIgnoringCase(f,"LEFT")) {
 			retval|=SQL_FN_STR_LEFT;
-		} else if (!charstring::compare(f,"LTRIM")) {
+		} else if (!charstring::compareIgnoringCase(f,"LTRIM")) {
 			retval|=SQL_FN_STR_LTRIM;
-		} else if (!charstring::compare(f,"LENGTH")) {
+		} else if (!charstring::compareIgnoringCase(f,"LENGTH")) {
 			retval|=SQL_FN_STR_LENGTH;
-		} else if (!charstring::compare(f,"LOCATE")) {
+		} else if (!charstring::compareIgnoringCase(f,"LOCATE")) {
 			retval|=SQL_FN_STR_LOCATE;
-		} else if (!charstring::compare(f,"LCASE")) {
+		} else if (!charstring::compareIgnoringCase(f,"LCASE")) {
 			retval|=SQL_FN_STR_LCASE;
-		} else if (!charstring::compare(f,"REPEAT")) {
+		} else if (!charstring::compareIgnoringCase(f,"REPEAT")) {
 			retval|=SQL_FN_STR_REPEAT;
-		} else if (!charstring::compare(f,"REPLACE")) {
+		} else if (!charstring::compareIgnoringCase(f,"REPLACE")) {
 			retval|=SQL_FN_STR_REPLACE;
-		} else if (!charstring::compare(f,"RIGHT")) {
+		} else if (!charstring::compareIgnoringCase(f,"RIGHT")) {
 			retval|=SQL_FN_STR_RIGHT;
-		} else if (!charstring::compare(f,"RTRIM")) {
+		} else if (!charstring::compareIgnoringCase(f,"RTRIM")) {
 			retval|=SQL_FN_STR_RTRIM;
-		} else if (!charstring::compare(f,"SUBSTRING")) {
+		} else if (!charstring::compareIgnoringCase(f,"SUBSTRING")) {
 			retval|=SQL_FN_STR_SUBSTRING;
-		} else if (!charstring::compare(f,"UCASE")) {
+		} else if (!charstring::compareIgnoringCase(f,"UCASE")) {
 			retval|=SQL_FN_STR_UCASE;
-		} else if (!charstring::compare(f,"ASCII")) {
+		} else if (!charstring::compareIgnoringCase(f,"ASCII")) {
 			retval|=SQL_FN_STR_ASCII;
-		} else if (!charstring::compare(f,"CHAR")) {
+		} else if (!charstring::compareIgnoringCase(f,"CHAR")) {
 			retval|=SQL_FN_STR_CHAR;
-		} else if (!charstring::compare(f,"DIFFERENCE")) {
+		} else if (!charstring::compareIgnoringCase(f,"DIFFERENCE")) {
 			retval|=SQL_FN_STR_DIFFERENCE;
-		} else if (!charstring::compare(f,"LOCATE_2")) {
+		} else if (!charstring::compareIgnoringCase(f,"LOCATE_2")) {
 			retval|=SQL_FN_STR_LOCATE_2;
-		} else if (!charstring::compare(f,"SOUNDEX")) {
+		} else if (!charstring::compareIgnoringCase(f,"SOUNDEX")) {
 			retval|=SQL_FN_STR_SOUNDEX;
-		} else if (!charstring::compare(f,"SPACE")) {
+		} else if (!charstring::compareIgnoringCase(f,"SPACE")) {
 			retval|=SQL_FN_STR_SPACE;
 		#if (ODBCVER >= 0x0300)
-		} else if (!charstring::compare(f,"BIT_LENGTH")) {
+		} else if (!charstring::compareIgnoringCase(f,"BIT_LENGTH")) {
 			retval|=SQL_FN_STR_BIT_LENGTH;
-		} else if (!charstring::compare(f,"CHAR_LENGTH")) {
+		} else if (!charstring::compareIgnoringCase(f,"CHAR_LENGTH")) {
 			retval|=SQL_FN_STR_CHAR_LENGTH;
-		} else if (!charstring::compare(f,"CHARACTER_LENGTH")) {
+		} else if (!charstring::compareIgnoringCase(f,"CHARACTER_LENGTH")) {
 			retval|=SQL_FN_STR_CHARACTER_LENGTH;
-		} else if (!charstring::compare(f,"OCTET_LENGTH")) {
+		} else if (!charstring::compareIgnoringCase(f,"OCTET_LENGTH")) {
 			retval|=SQL_FN_STR_OCTET_LENGTH;
-		} else if (!charstring::compare(f,"POSITION")) {
+		} else if (!charstring::compareIgnoringCase(f,"POSITION")) {
 			retval|=SQL_FN_STR_POSITION;
 		#endif
 		}
@@ -7258,12 +7258,12 @@ static SQLUINTEGER SQLR_SystemFunctions(CONN *conn) {
 	for (uint64_t i=0; i<partcount; i++) {
 		charstring::strip(parts[i],' ');
 		const char	*f=parts[i];
-		if (!charstring::compare(f,"USER") ||
-			!charstring::compare(f,"USERNAME")) {
+		if (!charstring::compareIgnoringCase(f,"USER") ||
+			!charstring::compareIgnoringCase(f,"USERNAME")) {
 			retval|=SQL_FN_SYS_USERNAME;
-		} else if (!charstring::compare(f,"DBNAME")) {
+		} else if (!charstring::compareIgnoringCase(f,"DBNAME")) {
 			retval|=SQL_FN_SYS_DBNAME;
-		} else if (!charstring::compare(f,"IFNULL")) {
+		} else if (!charstring::compareIgnoringCase(f,"IFNULL")) {
 			retval|=SQL_FN_SYS_IFNULL;
 		}
 		delete[] parts[i];
@@ -7290,48 +7290,48 @@ static SQLUINTEGER SQLR_TimedateFunctions(CONN *conn) {
 	for (uint64_t i=0; i<partcount; i++) {
 		charstring::strip(parts[i],' ');
 		const char	*f=parts[i];
-		if (!charstring::compare(f,"NOW")) {
+		if (!charstring::compareIgnoringCase(f,"NOW")) {
 			retval|=SQL_FN_TD_NOW;
-		} else if (!charstring::compare(f,"CURDATE")) {
+		} else if (!charstring::compareIgnoringCase(f,"CURDATE")) {
 			retval|=SQL_FN_TD_CURDATE;
-		} else if (!charstring::compare(f,"DAYOFMONTH")) {
+		} else if (!charstring::compareIgnoringCase(f,"DAYOFMONTH")) {
 			retval|=SQL_FN_TD_DAYOFMONTH;
-		} else if (!charstring::compare(f,"DAYOFWEEK")) {
+		} else if (!charstring::compareIgnoringCase(f,"DAYOFWEEK")) {
 			retval|=SQL_FN_TD_DAYOFWEEK;
-		} else if (!charstring::compare(f,"DAYOFYEAR")) {
+		} else if (!charstring::compareIgnoringCase(f,"DAYOFYEAR")) {
 			retval|=SQL_FN_TD_DAYOFYEAR;
-		} else if (!charstring::compare(f,"MONTH")) {
+		} else if (!charstring::compareIgnoringCase(f,"MONTH")) {
 			retval|=SQL_FN_TD_MONTH;
-		} else if (!charstring::compare(f,"QUARTER")) {
+		} else if (!charstring::compareIgnoringCase(f,"QUARTER")) {
 			retval|=SQL_FN_TD_QUARTER;
-		} else if (!charstring::compare(f,"WEEK")) {
+		} else if (!charstring::compareIgnoringCase(f,"WEEK")) {
 			retval|=SQL_FN_TD_WEEK;
-		} else if (!charstring::compare(f,"YEAR")) {
+		} else if (!charstring::compareIgnoringCase(f,"YEAR")) {
 			retval|=SQL_FN_TD_YEAR;
-		} else if (!charstring::compare(f,"CURTIME")) {
+		} else if (!charstring::compareIgnoringCase(f,"CURTIME")) {
 			retval|=SQL_FN_TD_CURTIME;
-		} else if (!charstring::compare(f,"HOUR")) {
+		} else if (!charstring::compareIgnoringCase(f,"HOUR")) {
 			retval|=SQL_FN_TD_HOUR;
-		} else if (!charstring::compare(f,"MINUTE")) {
+		} else if (!charstring::compareIgnoringCase(f,"MINUTE")) {
 			retval|=SQL_FN_TD_MINUTE;
-		} else if (!charstring::compare(f,"SECOND")) {
+		} else if (!charstring::compareIgnoringCase(f,"SECOND")) {
 			retval|=SQL_FN_TD_SECOND;
-		} else if (!charstring::compare(f,"TIMESTAMPADD")) {
+		} else if (!charstring::compareIgnoringCase(f,"TIMESTAMPADD")) {
 			retval|=SQL_FN_TD_TIMESTAMPADD;
-		} else if (!charstring::compare(f,"TIMESTAMPDIFF")) {
+		} else if (!charstring::compareIgnoringCase(f,"TIMESTAMPDIFF")) {
 			retval|=SQL_FN_TD_TIMESTAMPDIFF;
-		} else if (!charstring::compare(f,"DAYNAME")) {
+		} else if (!charstring::compareIgnoringCase(f,"DAYNAME")) {
 			retval|=SQL_FN_TD_DAYNAME;
-		} else if (!charstring::compare(f,"MONTHNAME")) {
+		} else if (!charstring::compareIgnoringCase(f,"MONTHNAME")) {
 			retval|=SQL_FN_TD_MONTHNAME;
 		#if (ODBCVER >= 0x0300)
-		} else if (!charstring::compare(f,"CURRENT_DATE")) {
+		} else if (!charstring::compareIgnoringCase(f,"CURRENT_DATE")) {
 			retval|=SQL_FN_TD_CURRENT_DATE;
-		} else if (!charstring::compare(f,"CURRENT_TIME")) {
+		} else if (!charstring::compareIgnoringCase(f,"CURRENT_TIME")) {
 			retval|=SQL_FN_TD_CURRENT_TIME;
-		} else if (!charstring::compare(f,"CURRENT_TIMESTAMP")) {
+		} else if (!charstring::compareIgnoringCase(f,"CURRENT_TIMESTAMP")) {
 			retval|=SQL_FN_TD_CURRENT_TIMESTAMP;
-		} else if (!charstring::compare(f,"EXTRACT")) {
+		} else if (!charstring::compareIgnoringCase(f,"EXTRACT")) {
 			retval|=SQL_FN_TD_EXTRACT;
 		#endif
 		}
@@ -8718,11 +8718,11 @@ static SQLUINTEGER SQLR_Sql92DatetimeFunctions(CONN *conn) {
 	for (uint64_t i=0; i<partcount; i++) {
 		charstring::strip(parts[i],' ');
 		const char	*f=parts[i];
-		if (!charstring::compare(f,"CURRENT_DATE")) {
+		if (!charstring::compareIgnoringCase(f,"CURRENT_DATE")) {
 			retval|=SQL_SDF_CURRENT_DATE;
-		} else if (!charstring::compare(f,"CURRENT_TIME")) {
+		} else if (!charstring::compareIgnoringCase(f,"CURRENT_TIME")) {
 			retval|=SQL_SDF_CURRENT_TIME;
-		} else if (!charstring::compare(f,"CURRENT_TIMESTAMP")) {
+		} else if (!charstring::compareIgnoringCase(f,"CURRENT_TIMESTAMP")) {
 			retval|=SQL_SDF_CURRENT_TIMESTAMP;
 		}
 		delete[] parts[i];
@@ -8884,7 +8884,7 @@ static SQLUINTEGER SQLR_Sql92NumericValueFunctions(CONN *conn) {
 		for (uint64_t i=0; i<partcount; i++) {
 			charstring::strip(parts[i],' ');
 			const char	*f=parts[i];
-			if (!charstring::compare(f,"BIT_LENGTH")) {
+			if (!charstring::compareIgnoringCase(f,"BIT_LENGTH")) {
 				retval|=SQL_SNVF_BIT_LENGTH;
 			} else if (!charstring::compare(
 						f,"CHAR_LENGTH")) {
@@ -8895,7 +8895,7 @@ static SQLUINTEGER SQLR_Sql92NumericValueFunctions(CONN *conn) {
 			} else if (!charstring::compare(
 						f,"OCTET_LENGTH")) {
 				retval|=SQL_SNVF_OCTET_LENGTH;
-			} else if (!charstring::compare(f,"POSITION")) {
+			} else if (!charstring::compareIgnoringCase(f,"POSITION")) {
 				retval|=SQL_SNVF_POSITION;
 			}
 			delete[] parts[i];
@@ -8914,7 +8914,7 @@ static SQLUINTEGER SQLR_Sql92NumericValueFunctions(CONN *conn) {
 		for (uint64_t i=0; i<partcount; i++) {
 			charstring::strip(parts[i],' ');
 			const char	*f=parts[i];
-			if (!charstring::compare(f,"EXTRACT")) {
+			if (!charstring::compareIgnoringCase(f,"EXTRACT")) {
 				retval|=SQL_SNVF_EXTRACT;
 			}
 			delete[] parts[i];
@@ -9162,28 +9162,28 @@ static SQLUINTEGER SQLR_Sql92StringFunctions(CONN *conn) {
 	for (uint64_t i=0; i<partcount; i++) {
 		charstring::strip(parts[i],' ');
 		const char	*f=parts[i];
-		if (!charstring::compare(f,"CONVERT")) {
+		if (!charstring::compareIgnoringCase(f,"CONVERT")) {
 			retval|=SQL_SSF_CONVERT;
-		} else if (!charstring::compare(f,"LCASE") ||
-				!charstring::compare(f,"LOWER")) {
+		} else if (!charstring::compareIgnoringCase(f,"LCASE") ||
+				!charstring::compareIgnoringCase(f,"LOWER")) {
 			retval|=SQL_SSF_LOWER;
-		} else if (!charstring::compare(f,"UCASE") ||
-				!charstring::compare(f,"UPPER")) {
+		} else if (!charstring::compareIgnoringCase(f,"UCASE") ||
+				!charstring::compareIgnoringCase(f,"UPPER")) {
 			retval|=SQL_SSF_UPPER;
-		} else if (!charstring::compare(f,"SUBSTR") ||
-				!charstring::compare(f,"SUBSTRING")) {
+		} else if (!charstring::compareIgnoringCase(f,"SUBSTR") ||
+				!charstring::compareIgnoringCase(f,"SUBSTRING")) {
 			retval|=SQL_SSF_SUBSTRING;
-		} else if (!charstring::compare(f,"TRANSLATE")) {
+		} else if (!charstring::compareIgnoringCase(f,"TRANSLATE")) {
 			retval|=SQL_SSF_TRANSLATE;
-		} else if (!charstring::compare(f,"TRIM") ||
-				!charstring::compare(f,"TRIM BOTH") ||
-				!charstring::compare(f,"TRIM_BOTH")) {
+		} else if (!charstring::compareIgnoringCase(f,"TRIM") ||
+				!charstring::compareIgnoringCase(f,"TRIM BOTH") ||
+				!charstring::compareIgnoringCase(f,"TRIM_BOTH")) {
 			retval|=SQL_SSF_TRIM_BOTH;
-		} else if (!charstring::compare(f,"TRIM LEADING") ||
-				!charstring::compare(f,"TRIM_LEADING")) {
+		} else if (!charstring::compareIgnoringCase(f,"TRIM LEADING") ||
+				!charstring::compareIgnoringCase(f,"TRIM_LEADING")) {
 			retval|=SQL_SSF_TRIM_LEADING;
-		} else if (!charstring::compare(f,"TRIM TRAILING") ||
-				!charstring::compare(f,"TRIM_TRAILING")) {
+		} else if (!charstring::compareIgnoringCase(f,"TRIM TRAILING") ||
+				!charstring::compareIgnoringCase(f,"TRIM_TRAILING")) {
 			retval|=SQL_SSF_TRIM_TRAILING;
 		}
 		delete[] parts[i];

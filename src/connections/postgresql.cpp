@@ -313,7 +313,7 @@ void postgresqlconnection::initDatabaseFeatures() {
 		charstring::parseNumber(cont->getConfig()->getMaxConnections());
 
 	databasefeatures[FEATURE_AGGREGATE_FUNCTIONS]=
-		"";
+		"ALL,AVG,COUNT,DISTINCT,MAX,MIN,SUM";
 
 	databasefeatures[FEATURE_ALL_PROCEDURES_ARE_CALLABLE]=
 		"true";
@@ -322,7 +322,9 @@ void postgresqlconnection::initDatabaseFeatures() {
 		"true";
 
 	databasefeatures[FEATURE_ALTER_DOMAIN_CLAUSES]=
-		"";
+		"ADD_DOMAIN_CONSTRAINT,ADD_DOMAIN_DEFAULT,"
+			"CONSTRAINT_NAME_DEFINITION,"
+			"DROP_DOMAIN_CONSTRAINT,DROP_DOMAIN_DEFAULT";
 
 	databasefeatures[FEATURE_ALTER_TABLE_OPERATIONS]=
 		"ADD_COLUMN,DROP_COLUMN";
@@ -334,10 +336,11 @@ void postgresqlconnection::initDatabaseFeatures() {
 		"false";
 
 	databasefeatures[FEATURE_BATCH_OPERATIONS]=
-		"";
+		"SELECT_EXPLICIT,ROW_COUNT_EXPLICIT,"
+			"SELECT_PROC,ROW_COUNT_PROC";
 
 	databasefeatures[FEATURE_BATCH_ROW_COUNTS]=
-		"";
+		"EXPLICIT,PROCEDURES";
 
 	databasefeatures[FEATURE_CATALOG_SEPARATOR]=
 		".";
@@ -358,28 +361,38 @@ void postgresqlconnection::initDatabaseFeatures() {
 		"";
 
 	databasefeatures[FEATURE_CREATE_COLLATION_CLAUSES]=
-		"";
+		"CREATE_COLLATION";
 
 	databasefeatures[FEATURE_CREATE_DOMAIN_CLAUSES]=
-		"";
+		"CREATE_DOMAIN,CONSTRAINT_NAME_DEFINITION,"
+			"DEFAULT,CONSTRAINT,COLLATION";
 
 	databasefeatures[FEATURE_CREATE_SCHEMA_CLAUSES]=
-		"";
+		"CREATE_SCHEMA,AUTHORIZATION";
 
 	databasefeatures[FEATURE_CREATE_TABLE_CLAUSES]=
-		"";
+		"CREATE_TABLE,TABLE_CONSTRAINT,"
+			"CONSTRAINT_NAME_DEFINITION,"
+			"COMMIT_DELETE,COMMIT_PRESERVE,"
+			"GLOBAL_TEMPORARY,LOCAL_TEMPORARY,"
+			"COLUMN_CONSTRAINT,COLUMN_DEFAULT,"
+			"COLUMN_COLLATION,"
+			"CONSTRAINT_INITIALLY_DEFERRED,"
+			"CONSTRAINT_INITIALLY_IMMEDIATE,"
+			"CONSTRAINT_DEFERRABLE,"
+			"CONSTRAINT_NON_DEFERRABLE";
 
 	databasefeatures[FEATURE_CREATE_TRANSLATION_CLAUSES]=
 		"";
 
 	databasefeatures[FEATURE_CREATE_VIEW_CLAUSES]=
-		"";
+		"CREATE_VIEW,CHECK_OPTION,CASCADED,LOCAL";
 
 	databasefeatures[FEATURE_DATA_DEFINITION_TRANSACTION_BEHAVIOR]=
 		"";
 
 	databasefeatures[FEATURE_DDL_INDEX_OPERATIONS]=
-		"";
+		"CREATE_INDEX,DROP_INDEX";
 
 	databasefeatures[FEATURE_DEFAULT_RESULT_SET_HOLDABILITY]=
 		"HOLD_CURSORS_OVER_COMMIT";
@@ -397,40 +410,44 @@ void postgresqlconnection::initDatabaseFeatures() {
 		"";
 
 	databasefeatures[FEATURE_DROP_COLLATION_CLAUSES]=
-		"";
+		"DROP_COLLATION";
 
 	databasefeatures[FEATURE_DROP_DOMAIN_CLAUSES]=
-		"";
+		"DROP_DOMAIN,CASCADE,RESTRICT";
 
 	databasefeatures[FEATURE_DROP_SCHEMA_CLAUSES]=
-		"";
+		"DROP_SCHEMA,CASCADE,RESTRICT";
 
 	databasefeatures[FEATURE_DROP_TABLE_CLAUSES]=
-		"";
+		"DROP_TABLE,CASCADE,RESTRICT";
 
 	databasefeatures[FEATURE_DROP_TRANSLATION_CLAUSES]=
 		"";
 
 	databasefeatures[FEATURE_DROP_VIEW_CLAUSES]=
-		"";
+		"DROP_VIEW,CASCADE,RESTRICT";
 
 	databasefeatures[FEATURE_EXTRA_NAME_CHARACTERS]=
 		"";
 
 	databasefeatures[FEATURE_FOREIGN_KEY_DELETE_RULES]=
-		"";
+		"CASCADE,NO_ACTION,SET_DEFAULT,SET_NULL";
 
 	databasefeatures[FEATURE_FOREIGN_KEY_UPDATE_RULES]=
-		"";
+		"CASCADE,NO_ACTION,SET_DEFAULT,SET_NULL";
 
 	databasefeatures[FEATURE_FORWARD_ONLY_CURSOR_ATTRIBUTES]=
-		"";
+		"NEXT,READ_ONLY_CONCURRENCY";
 
 	databasefeatures[FEATURE_GENERATED_KEY_ALWAYS_RETURNED]=
 		"true";
 
 	databasefeatures[FEATURE_GRANT_CLAUSES]=
-		"";
+		"DELETE_TABLE,INSERT_COLUMN,INSERT_TABLE,"
+			"REFERENCES_TABLE,REFERENCES_COLUMN,"
+			"SELECT_TABLE,UPDATE_COLUMN,UPDATE_TABLE,"
+			"USAGE_ON_DOMAIN,USAGE_ON_COLLATION,"
+			"WITH_GRANT_OPTION";
 
 	databasefeatures[FEATURE_GROUP_BY_CLAUSES]=
 		"BASIC,BEYOND_SELECT,UNRELATED";
@@ -442,16 +459,24 @@ void postgresqlconnection::initDatabaseFeatures() {
 		"\"";
 
 	databasefeatures[FEATURE_INDEX_KEYWORDS]=
-		"";
+		"ASC,DESC";
 
 	databasefeatures[FEATURE_INFO_SCHEMA_VIEWS]=
-		"";
+		"CHECK_CONSTRAINTS,COLLATIONS,"
+			"COLUMN_DOMAIN_USAGE,COLUMN_PRIVILEGES,"
+			"COLUMNS,CONSTRAINT_COLUMN_USAGE,"
+			"CONSTRAINT_TABLE_USAGE,DOMAIN_CONSTRAINTS,"
+			"DOMAINS,KEY_COLUMN_USAGE,"
+			"REFERENTIAL_CONSTRAINTS,SCHEMATA,"
+			"SQL_LANGUAGES,TABLE_CONSTRAINTS,"
+			"TABLE_PRIVILEGES,TABLES,USAGE_PRIVILEGES,"
+			"VIEW_COLUMN_USAGE,VIEW_TABLE_USAGE,VIEWS";
 
 	databasefeatures[FEATURE_INSERTS_ARE_DETECTED]=
 		"";
 
 	databasefeatures[FEATURE_INSERT_OPERATIONS]=
-		"";
+		"INSERT_LITERALS,INSERT_SEARCHED,SELECT_INTO";
 
 	databasefeatures[FEATURE_ISOLATION_LEVELS]=
 		"READ_UNCOMMITTED,READ_COMMITTED,"
@@ -467,7 +492,7 @@ void postgresqlconnection::initDatabaseFeatures() {
 		"true";
 
 	databasefeatures[FEATURE_LOCK_TYPES]=
-		"";
+		"NO_CHANGE";
 
 	databasefeatures[FEATURE_MAX_BINARY_LITERAL_LENGTH]=
 		"0";
@@ -535,7 +560,7 @@ void postgresqlconnection::initDatabaseFeatures() {
 		"QUOTED_IDENTIFIERS";
 
 	databasefeatures[FEATURE_NEED_LONG_DATA_LENGTH]=
-		"";
+		"false";
 
 	databasefeatures[FEATURE_NULL_PLUS_NON_NULL_IS_NULL]=
 		"true";
@@ -576,7 +601,9 @@ void postgresqlconnection::initDatabaseFeatures() {
 		"FORWARD_ONLY,SCROLL_INSENSITIVE,SCROLL_SENSITIVE";
 
 	databasefeatures[FEATURE_PREDICATES]=
-		"";
+		"BETWEEN,COMPARISON,EXISTS,IN,"
+			"ISNOTNULL,ISNULL,LIKE,OVERLAPS,"
+			"QUANTIFIED_COMPARISON,UNIQUE";
 
 	databasefeatures[FEATURE_PROCEDURE_TERM]=
 		"function";
@@ -585,7 +612,9 @@ void postgresqlconnection::initDatabaseFeatures() {
 		"";
 
 	databasefeatures[FEATURE_RELATIONAL_JOIN_OPERATORS]=
-		"";
+		"CROSS_JOIN,EXCEPT_JOIN,FULL_OUTER_JOIN,"
+			"INNER_JOIN,INTERSECT_JOIN,LEFT_OUTER_JOIN,"
+			"NATURAL_JOIN,RIGHT_OUTER_JOIN,UNION_JOIN";
 
 	databasefeatures[FEATURE_RESULT_SET_CONCURRENCIES]=
 		"FORWARD_ONLY/READ_ONLY,FORWARD_ONLY/UPDATABLE,"
@@ -599,13 +628,18 @@ void postgresqlconnection::initDatabaseFeatures() {
 		"FORWARD_ONLY,SCROLL_INSENSITIVE";
 
 	databasefeatures[FEATURE_REVOKE_CLAUSES]=
-		"";
+		"CASCADE,DELETE_TABLE,GRANT_OPTION_FOR,"
+			"INSERT_COLUMN,INSERT_TABLE,"
+			"REFERENCES_COLUMN,REFERENCES_TABLE,"
+			"RESTRICT,SELECT_TABLE,UPDATE_COLUMN,"
+			"UPDATE_TABLE,USAGE_ON_DOMAIN,"
+			"USAGE_ON_COLLATION";
 
 	databasefeatures[FEATURE_ROW_ID_LIFETIME]=
 		"ROWID_UNSUPPORTED";
 
 	databasefeatures[FEATURE_ROW_VALUE_CONSTRUCTOR_EXPRESSIONS]=
-		"";
+		"VALUE_EXPRESSION,NULL,DEFAULT,ROW_SUBQUERY";
 
 	databasefeatures[FEATURE_SCHEMA_TERM]=
 		"schema";
@@ -616,7 +650,7 @@ void postgresqlconnection::initDatabaseFeatures() {
 			"TABLE_DEFINITIONS";
 
 	databasefeatures[FEATURE_SCROLL_CONCURRENCIES]=
-		"";
+		"READ_ONLY";
 
 	databasefeatures[FEATURE_SEARCH_STRING_ESCAPE]=
 		"\\";
@@ -662,7 +696,7 @@ void postgresqlconnection::initDatabaseFeatures() {
 		"2";
 
 	databasefeatures[FEATURE_STATIC_CURSOR_ATTRIBUTES]=
-		"";
+		"NEXT,ABSOLUTE,RELATIVE,READ_ONLY_CONCURRENCY";
 
 	databasefeatures[FEATURE_STORED_PROGRAMS]=
 		"FUNCTIONS,PROCEDURES";
@@ -687,7 +721,7 @@ void postgresqlconnection::initDatabaseFeatures() {
 		"true";
 
 	databasefeatures[FEATURE_SUPPORTS_DESCRIBE_PARAMETER]=
-		"";
+		"true";
 
 	databasefeatures[FEATURE_SUPPORTS_EXPRESSIONS_IN_ORDER_BY]=
 		"true";
@@ -735,10 +769,12 @@ void postgresqlconnection::initDatabaseFeatures() {
 		"table";
 
 	databasefeatures[FEATURE_TIME_DATE_ADD_INTERVALS]=
-		"";
+		"FRAC_SECOND,SECOND,MINUTE,HOUR,DAY,"
+			"WEEK,MONTH,QUARTER,YEAR";
 
 	databasefeatures[FEATURE_TIME_DATE_DIFF_INTERVALS]=
-		"";
+		"FRAC_SECOND,SECOND,MINUTE,HOUR,DAY,"
+			"WEEK,MONTH,QUARTER,YEAR";
 
 	databasefeatures[FEATURE_TIME_DATE_FUNCTIONS]=
 		"curdate,curtime,dayname,dayofmonth,dayofweek,"
@@ -746,7 +782,17 @@ void postgresqlconnection::initDatabaseFeatures() {
 			"quarter,second,week,year,timestampadd";
 
 	databasefeatures[FEATURE_TIME_DATE_LITERALS]=
-		"";
+		"DATE,TIME,TIMESTAMP,"
+			"INTERVAL_YEAR,INTERVAL_MONTH,INTERVAL_DAY,"
+			"INTERVAL_HOUR,INTERVAL_MINUTE,"
+			"INTERVAL_SECOND,"
+			"INTERVAL_YEAR_TO_MONTH,"
+			"INTERVAL_DAY_TO_HOUR,"
+			"INTERVAL_DAY_TO_MINUTE,"
+			"INTERVAL_DAY_TO_SECOND,"
+			"INTERVAL_HOUR_TO_MINUTE,"
+			"INTERVAL_HOUR_TO_SECOND,"
+			"INTERVAL_MINUTE_TO_SECOND";
 
 	databasefeatures[FEATURE_TRANSACTION_DDL_DML]=
 		"DDL_AND_DML";
@@ -758,7 +804,7 @@ void postgresqlconnection::initDatabaseFeatures() {
 		"";
 
 	databasefeatures[FEATURE_VALUE_EXPRESSIONS]=
-		"";
+		"CASE,CAST,COALESCE,NULLIF";
 
 	databasefeatures[FEATURE_WHERE_CURRENT_OF_OPERATIONS]=
 		"";

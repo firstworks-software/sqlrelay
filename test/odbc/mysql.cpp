@@ -7362,7 +7362,8 @@ int main(int argc, char **argv) {
 	erg=SQLExecDirect(stmt,(SQLCHAR *)
 		"insert into testtable values (1, 'one')",SQL_NTS);
 	assertSuccessStmt(stmt,erg);
-	// dbc2 (second connection) should see 0 rows because dbc hasn't committed
+	// dbc2 (second connection) should see 0 rows
+	// because dbc hasn't committed
 	erg=SQLExecDirect(stmt2,(SQLCHAR *)
 		"select count(*) from testtable",SQL_NTS);
 	assertSuccessStmt(stmt2,erg);
