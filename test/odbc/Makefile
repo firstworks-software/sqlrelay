@@ -10,10 +10,11 @@ include ../../config.mk
 .cpp.obj:
 	$(CXX) $(CXXFLAGS) $(ODBCTESTCPPFLAGS) $(COMPILE) $<
 
-all: oracle mysql mssql putdata
+all: oracle mysql postgresql
 
 clean:
-	$(RM) *.lo *.o *.obj oracle$(EXE) mssql$(EXE) mysql$(EXE) putdata$(EXE) cachefile* sqlnet.log
+	$(RM) *.lo *.o *.obj oracle$(EXE) mysql$(EXE) postgresql$(EXE) \
+		cachefile* sqlnet.log
 	$(RMTREE) .libs
 
 mysql: mysql.cpp mysql.$(OBJ)
@@ -22,8 +23,5 @@ mysql: mysql.cpp mysql.$(OBJ)
 oracle: oracle.cpp oracle.$(OBJ)
 	$(LTLINK) $(LINK) $(LDFLAGS) $(OUT)$@ oracle.$(OBJ) $(ODBCTESTLIBS)
 
-mssql: mssql.cpp mssql.$(OBJ)
-	$(LTLINK) $(LINK) $(LDFLAGS) $(OUT)$@ mssql.$(OBJ) $(ODBCTESTLIBS)
-
-putdata: putdata.cpp putdata.$(OBJ)
-	$(LTLINK) $(LINK) $(LDFLAGS) $(OUT)$@ putdata.$(OBJ) $(ODBCTESTLIBS)
+postgresql: postgresql.cpp postgresql.$(OBJ)
+	$(LTLINK) $(LINK) $(LDFLAGS) $(OUT)$@ postgresql.$(OBJ) $(ODBCTESTLIBS)

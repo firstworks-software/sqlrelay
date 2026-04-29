@@ -6410,12 +6410,7 @@ int main(int argc, char **argv) {
 	assertEqualStmt(stmt,(const char *)colname,"testdate");
 	assertEqualStmt(stmt,(int)colnamelen,8);
 	assertEqualStmt(stmt,(int)datatype,SQL_TYPE_DATE);
-	if (issqlrelay) {
-		assertEqualStmt(stmt,(int)colsize,25);
-	} else {
-		// MariaDB reports the YYYY-MM-DD display length (10).
-		assertEqualStmt(stmt,(int)colsize,10);
-	}
+	assertEqualStmt(stmt,(int)colsize,10);
 	assertEqualStmt(stmt,(int)decdigits,0);
 	assertEqualStmt(stmt,(int)nullable,SQL_NULLABLE);
 
@@ -6426,12 +6421,7 @@ int main(int argc, char **argv) {
 	assertEqualStmt(stmt,(const char *)colname,"testtime");
 	assertEqualStmt(stmt,(int)colnamelen,8);
 	assertEqualStmt(stmt,(int)datatype,SQL_TYPE_TIME);
-	if (issqlrelay) {
-		assertEqualStmt(stmt,(int)colsize,25);
-	} else {
-		// MariaDB reports the HH:MM:SS display length (8).
-		assertEqualStmt(stmt,(int)colsize,8);
-	}
+	assertEqualStmt(stmt,(int)colsize,8);
 	assertEqualStmt(stmt,(int)decdigits,0);
 	assertEqualStmt(stmt,(int)nullable,SQL_NULLABLE);
 
@@ -6442,13 +6432,7 @@ int main(int argc, char **argv) {
 	assertEqualStmt(stmt,(const char *)colname,"testdatetime");
 	assertEqualStmt(stmt,(int)colnamelen,12);
 	assertEqualStmt(stmt,(int)datatype,SQL_TYPE_TIMESTAMP);
-	if (issqlrelay) {
-		assertEqualStmt(stmt,(int)colsize,25);
-	} else {
-		// MariaDB reports the YYYY-MM-DD HH:MM:SS display
-		// length (19).
-		assertEqualStmt(stmt,(int)colsize,19);
-	}
+	assertEqualStmt(stmt,(int)colsize,19);
 	assertEqualStmt(stmt,(int)decdigits,0);
 	assertEqualStmt(stmt,(int)nullable,SQL_NULLABLE);
 
@@ -6634,13 +6618,7 @@ int main(int argc, char **argv) {
 	assertEqualStmt(stmt,(const char *)colname,"testtimestamp");
 	assertEqualStmt(stmt,(int)colnamelen,13);
 	assertEqualStmt(stmt,(int)datatype,SQL_TYPE_TIMESTAMP);
-	if (issqlrelay) {
-		assertEqualStmt(stmt,(int)colsize,25);
-	} else {
-		// TIMESTAMP: MariaDB reports the 19-char display
-		// length (YYYY-MM-DD HH:MM:SS) instead of 25.
-		assertEqualStmt(stmt,(int)colsize,19);
-	}
+	assertEqualStmt(stmt,(int)colsize,19);
 	assertEqualStmt(stmt,(int)decdigits,0);
 	assertEqualStmt(stmt,(int)nullable,SQL_NULLABLE);
 	stdoutput.printf("\n");

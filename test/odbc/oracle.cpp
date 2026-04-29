@@ -6109,11 +6109,7 @@ int main(int argc, char **argv) {
 	#else
 	assertEqualStmt(stmt,(int)datatype,SQL_TIMESTAMP);
 	#endif
-	if (issqlrelay) {
-		assertEqualStmt(stmt,(int)colsize,25);
-	} else {
-		assertEqualStmt(stmt,(int)colsize,19);
-	}
+	assertEqualStmt(stmt,(int)colsize,19);
 	assertEqualStmt(stmt,(int)decdigits,0);
 	assertEqualStmt(stmt,(int)nullable,SQL_NULLABLE);
 
@@ -6546,6 +6542,9 @@ int main(int argc, char **argv) {
 			break;
 		}
 		assertSuccessStmt(stmt,erg);
+		if (erg!=SQL_SUCCESS && erg!=SQL_SUCCESS_WITH_INFO) {
+			break;
+		}
 		SQLHSTMT	nestedstmt;
 		erg=SQLAllocHandle(SQL_HANDLE_STMT,dbc,&nestedstmt);
 		assertSuccessDbc(dbc,erg);

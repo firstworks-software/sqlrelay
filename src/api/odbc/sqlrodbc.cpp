@@ -909,616 +909,639 @@ SQLRETURN SQL_API SQLCloseCursor(SQLHSTMT statementhandle) {
 static SQLSMALLINT SQLR_MapColumnType(CONN *conn,
 					sqlrcursor *cur, uint32_t col) {
 	const char	*ctype=cur->getColumnType(col);
-	if (!charstring::compare(ctype,"UNKNOWN")) {
+	if (!charstring::compareIgnoringCase(ctype,"UNKNOWN")) {
 		return SQL_UNKNOWN_TYPE;
 	}
-	if (!charstring::compare(ctype,"CHAR")) {
+	if (!charstring::compareIgnoringCase(ctype,"CHAR")) {
 		return SQL_CHAR;
 	}
-	if (!charstring::compare(ctype,"INT")) {
+	if (!charstring::compareIgnoringCase(ctype,"INT")) {
 		return SQL_INTEGER;
 	}
-	if (!charstring::compare(ctype,"SMALLINT")) {
+	if (!charstring::compareIgnoringCase(ctype,"SMALLINT")) {
 		return SQL_SMALLINT;
 	}
-	if (!charstring::compare(ctype,"TINYINT")) {
+	if (!charstring::compareIgnoringCase(ctype,"TINYINT")) {
 		return SQL_TINYINT;
 	}
-	if (!charstring::compare(ctype,"MONEY")) {
+	if (!charstring::compareIgnoringCase(ctype,"MONEY")) {
 		return SQL_CHAR;
 	}
-	if (!charstring::compare(ctype,"DATETIME")) {
+	if (!charstring::compareIgnoringCase(ctype,"DATETIME")) {
 		// MySQL, for example, may use DATE for dates and
 		// TIMESTAMP for datetimes.
+		#if (ODBCVER >= 0x0300)
+		return (conn && conn->mapdatetimetodate)?
+					SQL_TYPE_DATE:SQL_TYPE_TIMESTAMP;
+		#else
 		return (conn && conn->mapdatetimetodate)?
 					SQL_DATE:SQL_TIMESTAMP;
+		#endif
 	}
-	if (!charstring::compare(ctype,"NUMERIC")) {
+	if (!charstring::compareIgnoringCase(ctype,"NUMERIC")) {
 		return SQL_NUMERIC;
 	}
-	if (!charstring::compare(ctype,"DECIMAL")) {
+	if (!charstring::compareIgnoringCase(ctype,"DECIMAL")) {
 		return SQL_DECIMAL;
 	}
-	if (!charstring::compare(ctype,"SMALLDATETIME")) {
+	if (!charstring::compareIgnoringCase(ctype,"SMALLDATETIME")) {
+		#if (ODBCVER >= 0x0300)
+		return SQL_TYPE_TIMESTAMP;
+		#else
 		return SQL_TIMESTAMP;
+		#endif
 	}
-	if (!charstring::compare(ctype,"SMALLMONEY")) {
+	if (!charstring::compareIgnoringCase(ctype,"SMALLMONEY")) {
 		return SQL_CHAR;
 	}
-	if (!charstring::compare(ctype,"IMAGE")) {
+	if (!charstring::compareIgnoringCase(ctype,"IMAGE")) {
 		return SQL_BINARY;
 	}
-	if (!charstring::compare(ctype,"BINARY")) {
+	if (!charstring::compareIgnoringCase(ctype,"BINARY")) {
 		return SQL_BINARY;
 	}
-	if (!charstring::compare(ctype,"BIT")) {
+	if (!charstring::compareIgnoringCase(ctype,"BIT")) {
 		return SQL_BIT;
 	}
-	if (!charstring::compare(ctype,"REAL")) {
+	if (!charstring::compareIgnoringCase(ctype,"REAL")) {
 		return SQL_REAL;
 	}
-	if (!charstring::compare(ctype,"FLOAT")) {
+	if (!charstring::compareIgnoringCase(ctype,"FLOAT")) {
 		return SQL_FLOAT;
 	}
-	if (!charstring::compare(ctype,"TEXT")) {
-		return SQL_CHAR;
+	if (!charstring::compareIgnoringCase(ctype,"TEXT")) {
+		return SQL_LONGVARCHAR;
 	}
-	if (!charstring::compare(ctype,"VARCHAR")) {
+	if (!charstring::compareIgnoringCase(ctype,"VARCHAR")) {
 		return SQL_VARCHAR;
 	}
-	if (!charstring::compare(ctype,"VARBINARY")) {
+	if (!charstring::compareIgnoringCase(ctype,"VARBINARY")) {
 		return SQL_VARBINARY;
 	}
-	if (!charstring::compare(ctype,"LONGCHAR")) {
+	if (!charstring::compareIgnoringCase(ctype,"LONGCHAR")) {
 		return SQL_CHAR;
 	}
-	if (!charstring::compare(ctype,"LONGBINARY")) {
+	if (!charstring::compareIgnoringCase(ctype,"LONGBINARY")) {
 		return SQL_BINARY;
 	}
-	if (!charstring::compare(ctype,"LONG")) {
+	if (!charstring::compareIgnoringCase(ctype,"LONG")) {
 		return SQL_CHAR;
 	}
-	if (!charstring::compare(ctype,"ILLEGAL")) {
+	if (!charstring::compareIgnoringCase(ctype,"ILLEGAL")) {
 		return SQL_CHAR;
 	}
-	if (!charstring::compare(ctype,"SENSITIVITY")) {
+	if (!charstring::compareIgnoringCase(ctype,"SENSITIVITY")) {
 		return SQL_CHAR;
 	}
-	if (!charstring::compare(ctype,"BOUNDARY")) {
+	if (!charstring::compareIgnoringCase(ctype,"BOUNDARY")) {
 		return SQL_CHAR;
 	}
-	if (!charstring::compare(ctype,"VOID")) {
+	if (!charstring::compareIgnoringCase(ctype,"VOID")) {
 		return SQL_CHAR;
 	}
-	if (!charstring::compare(ctype,"USHORT")) {
+	if (!charstring::compareIgnoringCase(ctype,"USHORT")) {
 		return SQL_SMALLINT;
 	}
 
 	// added by lago
-	if (!charstring::compare(ctype,"UNDEFINED")) {
+	if (!charstring::compareIgnoringCase(ctype,"UNDEFINED")) {
 		return SQL_UNKNOWN_TYPE;
 	}
-	if (!charstring::compare(ctype,"DOUBLE")) {
+	if (!charstring::compareIgnoringCase(ctype,"DOUBLE")) {
 		return SQL_DOUBLE;
 	}
-	if (!charstring::compare(ctype,"DATE")) {
+	if (!charstring::compareIgnoringCase(ctype,"DATE")) {
+		#if (ODBCVER >= 0x0300)
+		return (conn && conn->mapdatetotimestamp)?
+					SQL_TYPE_TIMESTAMP:SQL_TYPE_DATE;
+		#else
 		return (conn && conn->mapdatetotimestamp)?
 					SQL_TIMESTAMP:SQL_DATE;
+		#endif
 	}
-	if (!charstring::compare(ctype,"TIME")) {
+	if (!charstring::compareIgnoringCase(ctype,"TIME")) {
+		#if (ODBCVER >= 0x0300)
+		return SQL_TYPE_TIME;
+		#else
 		return SQL_TIME;
+		#endif
 	}
-	if (!charstring::compare(ctype,"TIMESTAMP")) {
+	if (!charstring::compareIgnoringCase(ctype,"TIMESTAMP")) {
+		#if (ODBCVER >= 0x0300)
+		return SQL_TYPE_TIMESTAMP;
+		#else
 		return SQL_TIMESTAMP;
+		#endif
 	}
 
 	// added by msql
-	if (!charstring::compare(ctype,"UINT")) {
+	if (!charstring::compareIgnoringCase(ctype,"UINT")) {
 		return SQL_INTEGER;
 	}
-	if (!charstring::compare(ctype,"LASTREAL")) {
+	if (!charstring::compareIgnoringCase(ctype,"LASTREAL")) {
 		return SQL_REAL;
 	}
 
 	// added by mysql
-	if (!charstring::compare(ctype,"STRING")) {
+	if (!charstring::compareIgnoringCase(ctype,"STRING")) {
 		return SQL_CHAR;
 	}
-	if (!charstring::compare(ctype,"VARSTRING")) {
+	if (!charstring::compareIgnoringCase(ctype,"VARSTRING")) {
 		return SQL_VARCHAR;
 	}
-	if (!charstring::compare(ctype,"LONGLONG")) {
+	if (!charstring::compareIgnoringCase(ctype,"LONGLONG")) {
 		return SQL_BIGINT;
 	}
-	if (!charstring::compare(ctype,"MEDIUMINT")) {
+	if (!charstring::compareIgnoringCase(ctype,"MEDIUMINT")) {
 		return SQL_INTEGER;
 	}
-	if (!charstring::compare(ctype,"YEAR")) {
+	if (!charstring::compareIgnoringCase(ctype,"YEAR")) {
 		return SQL_SMALLINT;
 	}
-	if (!charstring::compare(ctype,"NEWDATE")) {
+	if (!charstring::compareIgnoringCase(ctype,"NEWDATE")) {
 		return (conn && conn->mapnewdatetotimestamp)?
 					SQL_TIMESTAMP:SQL_DATE;
 	}
-	if (!charstring::compare(ctype,"NULL")) {
+	if (!charstring::compareIgnoringCase(ctype,"NULL")) {
 		return SQL_CHAR;
 	}
-	if (!charstring::compare(ctype,"ENUM")) {
+	if (!charstring::compareIgnoringCase(ctype,"ENUM")) {
 		return SQL_CHAR;
 	}
-	if (!charstring::compare(ctype,"SET")) {
+	if (!charstring::compareIgnoringCase(ctype,"SET")) {
 		return SQL_CHAR;
 	}
-	if (!charstring::compare(ctype,"TINYBLOB")) {
+	if (!charstring::compareIgnoringCase(ctype,"TINYBLOB")) {
 		return SQL_BINARY;
 	}
-	if (!charstring::compare(ctype,"MEDIUMBLOB")) {
+	if (!charstring::compareIgnoringCase(ctype,"MEDIUMBLOB")) {
 		return SQL_BINARY;
 	}
-	if (!charstring::compare(ctype,"LONGBLOB")) {
+	if (!charstring::compareIgnoringCase(ctype,"LONGBLOB")) {
 		return SQL_BINARY;
 	}
-	if (!charstring::compare(ctype,"BLOB")) {
+	if (!charstring::compareIgnoringCase(ctype,"BLOB")) {
 		return SQL_BINARY;
 	}
 
 	// added by oracle
-	if (!charstring::compare(ctype,"VARCHAR2")) {
+	if (!charstring::compareIgnoringCase(ctype,"VARCHAR2")) {
 		return SQL_VARCHAR;
 	}
-	if (!charstring::compare(ctype,"NUMBER")) {
+	if (!charstring::compareIgnoringCase(ctype,"NUMBER")) {
 		return SQL_NUMERIC;
 	}
-	if (!charstring::compare(ctype,"ROWID")) {
+	if (!charstring::compareIgnoringCase(ctype,"ROWID")) {
 		return SQL_BIGINT;
 	}
-	if (!charstring::compare(ctype,"RAW")) {
+	if (!charstring::compareIgnoringCase(ctype,"RAW")) {
 		return SQL_VARBINARY;
 	}
-	if (!charstring::compare(ctype,"LONG_RAW")) {
+	if (!charstring::compareIgnoringCase(ctype,"LONG_RAW")) {
 		return SQL_LONGVARBINARY;
 	}
-	if (!charstring::compare(ctype,"MLSLABEL")) {
+	if (!charstring::compareIgnoringCase(ctype,"MLSLABEL")) {
 		return SQL_BINARY;
 	}
-	if (!charstring::compare(ctype,"CLOB")) {
+	if (!charstring::compareIgnoringCase(ctype,"CLOB")) {
 		return SQL_LONGVARCHAR;
 	}
-	if (!charstring::compare(ctype,"BFILE")) {
+	if (!charstring::compareIgnoringCase(ctype,"BFILE")) {
 		return SQL_LONGVARBINARY;
 	}
 
 	// added by odbc
-	if (!charstring::compare(ctype,"BIGINT")) {
+	if (!charstring::compareIgnoringCase(ctype,"BIGINT")) {
 		return SQL_BIGINT;
 	}
-	if (!charstring::compare(ctype,"INTEGER")) {
+	if (!charstring::compareIgnoringCase(ctype,"INTEGER")) {
 		return SQL_INTEGER;
 	}
-	if (!charstring::compare(ctype,"LONGVARBINARY")) {
+	if (!charstring::compareIgnoringCase(ctype,"LONGVARBINARY")) {
 		return SQL_LONGVARBINARY;
 	}
-	if (!charstring::compare(ctype,"LONGVARCHAR")) {
+	if (!charstring::compareIgnoringCase(ctype,"LONGVARCHAR")) {
 		return SQL_LONGVARCHAR;
 	}
 
 	// added by db2
-	if (!charstring::compare(ctype,"GRAPHIC")) {
+	if (!charstring::compareIgnoringCase(ctype,"GRAPHIC")) {
 		return SQL_BINARY;
 	}
-	if (!charstring::compare(ctype,"VARGRAPHIC")) {
+	if (!charstring::compareIgnoringCase(ctype,"VARGRAPHIC")) {
 		return SQL_VARBINARY;
 	}
-	if (!charstring::compare(ctype,"LONGVARGRAPHIC")) {
+	if (!charstring::compareIgnoringCase(ctype,"LONGVARGRAPHIC")) {
 		return SQL_LONGVARBINARY;
 	}
-	if (!charstring::compare(ctype,"DBCLOB")) {
+	if (!charstring::compareIgnoringCase(ctype,"DBCLOB")) {
 		return SQL_LONGVARCHAR;
 	}
-	if (!charstring::compare(ctype,"DATALINK")) {
+	if (!charstring::compareIgnoringCase(ctype,"DATALINK")) {
 		return SQL_BINARY;
 	}
-	if (!charstring::compare(ctype,"USER_DEFINED_TYPE")) {
+	if (!charstring::compareIgnoringCase(ctype,"USER_DEFINED_TYPE")) {
 		return SQL_BINARY;
 	}
-	if (!charstring::compare(ctype,"SHORT_DATATYPE")) {
+	if (!charstring::compareIgnoringCase(ctype,"SHORT_DATATYPE")) {
 		return SQL_SMALLINT;
 	}
-	if (!charstring::compare(ctype,"TINY_DATATYPE")) {
+	if (!charstring::compareIgnoringCase(ctype,"TINY_DATATYPE")) {
 		return SQL_TINYINT;
 	}
 
 	// added by firebird
-	if (!charstring::compare(ctype,"D_FLOAT")) {
+	if (!charstring::compareIgnoringCase(ctype,"D_FLOAT")) {
 		return SQL_DOUBLE;
 	}
-	if (!charstring::compare(ctype,"ARRAY")) {
+	if (!charstring::compareIgnoringCase(ctype,"ARRAY")) {
 		return SQL_BINARY;
 	}
-	if (!charstring::compare(ctype,"QUAD")) {
+	if (!charstring::compareIgnoringCase(ctype,"QUAD")) {
 		return SQL_BIGINT;
 	}
-	if (!charstring::compare(ctype,"INT64")) {
+	if (!charstring::compareIgnoringCase(ctype,"INT64")) {
 		return SQL_BIGINT;
 	}
-	if (!charstring::compare(ctype,"DOUBLE PRECISION")) {
+	if (!charstring::compareIgnoringCase(ctype,"DOUBLE PRECISION")) {
 		return SQL_DOUBLE;
 	}
 
 	// added by postgresql
-	if (!charstring::compare(ctype,"BOOL")) {
+	if (!charstring::compareIgnoringCase(ctype,"BOOL")) {
 		return SQL_CHAR;
 	}
-	if (!charstring::compare(ctype,"BYTEA")) {
-		return SQL_BINARY;
+	if (!charstring::compareIgnoringCase(ctype,"BYTEA")) {
+		return SQL_LONGVARBINARY;
 	}
-	if (!charstring::compare(ctype,"NAME")) {
+	if (!charstring::compareIgnoringCase(ctype,"NAME")) {
 		return SQL_CHAR;
 	}
-	if (!charstring::compare(ctype,"INT8")) {
+	if (!charstring::compareIgnoringCase(ctype,"INT8")) {
 		return SQL_BIGINT;
 	}
-	if (!charstring::compare(ctype,"INT2")) {
+	if (!charstring::compareIgnoringCase(ctype,"INT2")) {
 		return SQL_SMALLINT;
 	}
-	if (!charstring::compare(ctype,"INT2VECTOR")) {
+	if (!charstring::compareIgnoringCase(ctype,"INT2VECTOR")) {
 		return SQL_BINARY;
 	}
-	if (!charstring::compare(ctype,"INT4")) {
+	if (!charstring::compareIgnoringCase(ctype,"INT4")) {
 		return SQL_INTEGER;
 	}
-	if (!charstring::compare(ctype,"REGPROC")) {
+	if (!charstring::compareIgnoringCase(ctype,"REGPROC")) {
 		return SQL_BIGINT;
 	}
-	if (!charstring::compare(ctype,"OID")) {
+	if (!charstring::compareIgnoringCase(ctype,"OID")) {
 		return SQL_BIGINT;
 	}
-	if (!charstring::compare(ctype,"TID")) {
+	if (!charstring::compareIgnoringCase(ctype,"TID")) {
 		return SQL_BIGINT;
 	}
-	if (!charstring::compare(ctype,"XID")) {
+	if (!charstring::compareIgnoringCase(ctype,"XID")) {
 		return SQL_BIGINT;
 	}
-	if (!charstring::compare(ctype,"CID")) {
+	if (!charstring::compareIgnoringCase(ctype,"CID")) {
 		return SQL_BIGINT;
 	}
-	if (!charstring::compare(ctype,"OIDVECTOR")) {
+	if (!charstring::compareIgnoringCase(ctype,"OIDVECTOR")) {
 		return SQL_BINARY;
 	}
-	if (!charstring::compare(ctype,"SMGR")) {
+	if (!charstring::compareIgnoringCase(ctype,"SMGR")) {
 		return SQL_BINARY;
 	}
-	if (!charstring::compare(ctype,"POINT")) {
+	if (!charstring::compareIgnoringCase(ctype,"POINT")) {
 		return SQL_BINARY;
 	}
-	if (!charstring::compare(ctype,"LSEG")) {
+	if (!charstring::compareIgnoringCase(ctype,"LSEG")) {
 		return SQL_BINARY;
 	}
-	if (!charstring::compare(ctype,"PATH")) {
+	if (!charstring::compareIgnoringCase(ctype,"PATH")) {
 		return SQL_BINARY;
 	}
-	if (!charstring::compare(ctype,"BOX")) {
+	if (!charstring::compareIgnoringCase(ctype,"BOX")) {
 		return SQL_BINARY;
 	}
-	if (!charstring::compare(ctype,"POLYGON")) {
+	if (!charstring::compareIgnoringCase(ctype,"POLYGON")) {
 		return SQL_BINARY;
 	}
-	if (!charstring::compare(ctype,"LINE")) {
+	if (!charstring::compareIgnoringCase(ctype,"LINE")) {
 		return SQL_BINARY;
 	}
-	if (!charstring::compare(ctype,"LINE_ARRAY")) {
+	if (!charstring::compareIgnoringCase(ctype,"LINE_ARRAY")) {
 		return SQL_BINARY;
 	}
-	if (!charstring::compare(ctype,"FLOAT4")) {
-		return SQL_FLOAT;
+	if (!charstring::compareIgnoringCase(ctype,"FLOAT4")) {
+		// float4 is single-precision (4-byte)
+		return SQL_REAL;
 	}
-	if (!charstring::compare(ctype,"FLOAT8")) {
+	if (!charstring::compareIgnoringCase(ctype,"FLOAT8")) {
 		return SQL_DOUBLE;
 	}
-	if (!charstring::compare(ctype,"ABSTIME")) {
+	if (!charstring::compareIgnoringCase(ctype,"ABSTIME")) {
 		return SQL_INTEGER;
 	}
-	if (!charstring::compare(ctype,"RELTIME")) {
+	if (!charstring::compareIgnoringCase(ctype,"RELTIME")) {
 		return SQL_INTEGER;
 	}
-	if (!charstring::compare(ctype,"TINTERVAL")) {
+	if (!charstring::compareIgnoringCase(ctype,"TINTERVAL")) {
 		return SQL_BINARY;
 	}
-	if (!charstring::compare(ctype,"CIRCLE")) {
+	if (!charstring::compareIgnoringCase(ctype,"CIRCLE")) {
 		return SQL_BINARY;
 	}
-	if (!charstring::compare(ctype,"CIRCLE_ARRAY")) {
+	if (!charstring::compareIgnoringCase(ctype,"CIRCLE_ARRAY")) {
 		return SQL_BINARY;
 	}
-	if (!charstring::compare(ctype,"MONEY_ARRAY")) {
+	if (!charstring::compareIgnoringCase(ctype,"MONEY_ARRAY")) {
 		return SQL_BINARY;
 	}
-	if (!charstring::compare(ctype,"MACADDR")) {
+	if (!charstring::compareIgnoringCase(ctype,"MACADDR")) {
 		return SQL_BINARY;
 	}
-	if (!charstring::compare(ctype,"INET")) {
+	if (!charstring::compareIgnoringCase(ctype,"INET")) {
 		return SQL_BINARY;
 	}
-	if (!charstring::compare(ctype,"CIDR")) {
+	if (!charstring::compareIgnoringCase(ctype,"CIDR")) {
 		return SQL_BINARY;
 	}
-	if (!charstring::compare(ctype,"BOOL_ARRAY")) {
+	if (!charstring::compareIgnoringCase(ctype,"BOOL_ARRAY")) {
 		return SQL_BINARY;
 	}
-	if (!charstring::compare(ctype,"BYTEA_ARRAY")) {
+	if (!charstring::compareIgnoringCase(ctype,"BYTEA_ARRAY")) {
 		return SQL_BINARY;
 	}
-	if (!charstring::compare(ctype,"CHAR_ARRAY")) {
+	if (!charstring::compareIgnoringCase(ctype,"CHAR_ARRAY")) {
 		return SQL_BINARY;
 	}
-	if (!charstring::compare(ctype,"NAME_ARRAY")) {
+	if (!charstring::compareIgnoringCase(ctype,"NAME_ARRAY")) {
 		return SQL_BINARY;
 	}
-	if (!charstring::compare(ctype,"INT2_ARRAY")) {
+	if (!charstring::compareIgnoringCase(ctype,"INT2_ARRAY")) {
 		return SQL_BINARY;
 	}
-	if (!charstring::compare(ctype,"INT2VECTOR_ARRAY")) {
+	if (!charstring::compareIgnoringCase(ctype,"INT2VECTOR_ARRAY")) {
 		return SQL_BINARY;
 	}
-	if (!charstring::compare(ctype,"INT4_ARRAY")) {
+	if (!charstring::compareIgnoringCase(ctype,"INT4_ARRAY")) {
 		return SQL_BINARY;
 	}
-	if (!charstring::compare(ctype,"REGPROC_ARRAY")) {
+	if (!charstring::compareIgnoringCase(ctype,"REGPROC_ARRAY")) {
 		return SQL_BINARY;
 	}
-	if (!charstring::compare(ctype,"TEXT_ARRAY")) {
+	if (!charstring::compareIgnoringCase(ctype,"TEXT_ARRAY")) {
 		return SQL_BINARY;
 	}
-	if (!charstring::compare(ctype,"OID_ARRAY")) {
+	if (!charstring::compareIgnoringCase(ctype,"OID_ARRAY")) {
 		return SQL_BINARY;
 	}
-	if (!charstring::compare(ctype,"TID_ARRAY")) {
+	if (!charstring::compareIgnoringCase(ctype,"TID_ARRAY")) {
 		return SQL_BINARY;
 	}
-	if (!charstring::compare(ctype,"XID_ARRAY")) {
+	if (!charstring::compareIgnoringCase(ctype,"XID_ARRAY")) {
 		return SQL_BINARY;
 	}
-	if (!charstring::compare(ctype,"CID_ARRAY")) {
+	if (!charstring::compareIgnoringCase(ctype,"CID_ARRAY")) {
 		return SQL_BINARY;
 	}
-	if (!charstring::compare(ctype,"OIDVECTOR_ARRAY")) {
+	if (!charstring::compareIgnoringCase(ctype,"OIDVECTOR_ARRAY")) {
 		return SQL_BINARY;
 	}
-	if (!charstring::compare(ctype,"BPCHAR_ARRAY")) {
+	if (!charstring::compareIgnoringCase(ctype,"BPCHAR_ARRAY")) {
 		return SQL_BINARY;
 	}
-	if (!charstring::compare(ctype,"VARCHAR_ARRAY")) {
+	if (!charstring::compareIgnoringCase(ctype,"VARCHAR_ARRAY")) {
 		return SQL_BINARY;
 	}
-	if (!charstring::compare(ctype,"INT8_ARRAY")) {
+	if (!charstring::compareIgnoringCase(ctype,"INT8_ARRAY")) {
 		return SQL_BINARY;
 	}
-	if (!charstring::compare(ctype,"POINT_ARRAY")) {
+	if (!charstring::compareIgnoringCase(ctype,"POINT_ARRAY")) {
 		return SQL_BINARY;
 	}
-	if (!charstring::compare(ctype,"LSEG_ARRAY")) {
+	if (!charstring::compareIgnoringCase(ctype,"LSEG_ARRAY")) {
 		return SQL_BINARY;
 	}
-	if (!charstring::compare(ctype,"PATH_ARRAY")) {
+	if (!charstring::compareIgnoringCase(ctype,"PATH_ARRAY")) {
 		return SQL_BINARY;
 	}
-	if (!charstring::compare(ctype,"BOX_ARRAY")) {
+	if (!charstring::compareIgnoringCase(ctype,"BOX_ARRAY")) {
 		return SQL_BINARY;
 	}
-	if (!charstring::compare(ctype,"FLOAT4_ARRAY")) {
+	if (!charstring::compareIgnoringCase(ctype,"FLOAT4_ARRAY")) {
 		return SQL_BINARY;
 	}
-	if (!charstring::compare(ctype,"FLOAT8_ARRAY")) {
+	if (!charstring::compareIgnoringCase(ctype,"FLOAT8_ARRAY")) {
 		return SQL_BINARY;
 	}
-	if (!charstring::compare(ctype,"ABSTIME_ARRAY")) {
+	if (!charstring::compareIgnoringCase(ctype,"ABSTIME_ARRAY")) {
 		return SQL_BINARY;
 	}
-	if (!charstring::compare(ctype,"RELTIME_ARRAY")) {
+	if (!charstring::compareIgnoringCase(ctype,"RELTIME_ARRAY")) {
 		return SQL_BINARY;
 	}
-	if (!charstring::compare(ctype,"TINTERVAL_ARRAY")) {
+	if (!charstring::compareIgnoringCase(ctype,"TINTERVAL_ARRAY")) {
 		return SQL_BINARY;
 	}
-	if (!charstring::compare(ctype,"POLYGON_ARRAY")) {
+	if (!charstring::compareIgnoringCase(ctype,"POLYGON_ARRAY")) {
 		return SQL_BINARY;
 	}
-	if (!charstring::compare(ctype,"ACLITEM")) {
+	if (!charstring::compareIgnoringCase(ctype,"ACLITEM")) {
 		return SQL_BINARY;
 	}
-	if (!charstring::compare(ctype,"ACLITEM_ARRAY")) {
+	if (!charstring::compareIgnoringCase(ctype,"ACLITEM_ARRAY")) {
 		return SQL_BINARY;
 	}
-	if (!charstring::compare(ctype,"MACADDR_ARRAY")) {
+	if (!charstring::compareIgnoringCase(ctype,"MACADDR_ARRAY")) {
 		return SQL_BINARY;
 	}
-	if (!charstring::compare(ctype,"INET_ARRAY")) {
+	if (!charstring::compareIgnoringCase(ctype,"INET_ARRAY")) {
 		return SQL_BINARY;
 	}
-	if (!charstring::compare(ctype,"CIDR_ARRAY")) {
+	if (!charstring::compareIgnoringCase(ctype,"CIDR_ARRAY")) {
 		return SQL_BINARY;
 	}
-	if (!charstring::compare(ctype,"BPCHAR")) {
+	if (!charstring::compareIgnoringCase(ctype,"BPCHAR")) {
 		return SQL_CHAR;
 	}
-	if (!charstring::compare(ctype,"TIMESTAMP_ARRAY")) {
+	if (!charstring::compareIgnoringCase(ctype,"TIMESTAMP_ARRAY")) {
 		return SQL_BINARY;
 	}
-	if (!charstring::compare(ctype,"DATE_ARRAY")) {
+	if (!charstring::compareIgnoringCase(ctype,"DATE_ARRAY")) {
 		return SQL_BINARY;
 	}
-	if (!charstring::compare(ctype,"TIME_ARRAY")) {
+	if (!charstring::compareIgnoringCase(ctype,"TIME_ARRAY")) {
 		return SQL_BINARY;
 	}
-	if (!charstring::compare(ctype,"TIMESTAMPTZ")) {
+	if (!charstring::compareIgnoringCase(ctype,"TIMESTAMPTZ")) {
 		return SQL_TIMESTAMP;
 	}
-	if (!charstring::compare(ctype,"TIMESTAMPTZ_ARRAY")) {
+	if (!charstring::compareIgnoringCase(ctype,"TIMESTAMPTZ_ARRAY")) {
 		return SQL_BINARY;
 	}
-	if (!charstring::compare(ctype,"INTERVAL")) {
+	if (!charstring::compareIgnoringCase(ctype,"INTERVAL")) {
 		return SQL_INTERVAL;
 	}
-	if (!charstring::compare(ctype,"INTERVAL_ARRAY")) {
+	if (!charstring::compareIgnoringCase(ctype,"INTERVAL_ARRAY")) {
 		return SQL_BINARY;
 	}
-	if (!charstring::compare(ctype,"NUMERIC_ARRAY")) {
+	if (!charstring::compareIgnoringCase(ctype,"NUMERIC_ARRAY")) {
 		return SQL_BINARY;
 	}
-	if (!charstring::compare(ctype,"TIMETZ")) {
+	if (!charstring::compareIgnoringCase(ctype,"TIMETZ")) {
 		return SQL_TIME;
 	}
-	if (!charstring::compare(ctype,"TIMETZ_ARRAY")) {
+	if (!charstring::compareIgnoringCase(ctype,"TIMETZ_ARRAY")) {
 		return SQL_BINARY;
 	}
-	if (!charstring::compare(ctype,"BIT_ARRAY")) {
+	if (!charstring::compareIgnoringCase(ctype,"BIT_ARRAY")) {
 		return SQL_BINARY;
 	}
-	if (!charstring::compare(ctype,"VARBIT")) {
+	if (!charstring::compareIgnoringCase(ctype,"VARBIT")) {
 		return SQL_BINARY;
 	}
-	if (!charstring::compare(ctype,"VARBIT_ARRAY")) {
+	if (!charstring::compareIgnoringCase(ctype,"VARBIT_ARRAY")) {
 		return SQL_BINARY;
 	}
-	if (!charstring::compare(ctype,"REFCURSOR")) {
+	if (!charstring::compareIgnoringCase(ctype,"REFCURSOR")) {
 		return SQL_BINARY;
 	}
-	if (!charstring::compare(ctype,"REFCURSOR_ARRAY")) {
+	if (!charstring::compareIgnoringCase(ctype,"REFCURSOR_ARRAY")) {
 		return SQL_BINARY;
 	}
-	if (!charstring::compare(ctype,"REGPROCEDURE")) {
+	if (!charstring::compareIgnoringCase(ctype,"REGPROCEDURE")) {
 		return SQL_BINARY;
 	}
-	if (!charstring::compare(ctype,"REGOPER")) {
+	if (!charstring::compareIgnoringCase(ctype,"REGOPER")) {
 		return SQL_BINARY;
 	}
-	if (!charstring::compare(ctype,"REGOPERATOR")) {
+	if (!charstring::compareIgnoringCase(ctype,"REGOPERATOR")) {
 		return SQL_BINARY;
 	}
-	if (!charstring::compare(ctype,"REGCLASS")) {
+	if (!charstring::compareIgnoringCase(ctype,"REGCLASS")) {
 		return SQL_BINARY;
 	}
-	if (!charstring::compare(ctype,"REGTYPE")) {
+	if (!charstring::compareIgnoringCase(ctype,"REGTYPE")) {
 		return SQL_BINARY;
 	}
-	if (!charstring::compare(ctype,"REGPROCEDURE_ARRAY")) {
+	if (!charstring::compareIgnoringCase(ctype,"REGPROCEDURE_ARRAY")) {
 		return SQL_BINARY;
 	}
-	if (!charstring::compare(ctype,"REGOPER_ARRAY")) {
+	if (!charstring::compareIgnoringCase(ctype,"REGOPER_ARRAY")) {
 		return SQL_BINARY;
 	}
-	if (!charstring::compare(ctype,"REGOPERATOR_ARRAY")) {
+	if (!charstring::compareIgnoringCase(ctype,"REGOPERATOR_ARRAY")) {
 		return SQL_BINARY;
 	}
-	if (!charstring::compare(ctype,"REGCLASS_ARRAY")) {
+	if (!charstring::compareIgnoringCase(ctype,"REGCLASS_ARRAY")) {
 		return SQL_BINARY;
 	}
-	if (!charstring::compare(ctype,"REGTYPE_ARRAY")) {
+	if (!charstring::compareIgnoringCase(ctype,"REGTYPE_ARRAY")) {
 		return SQL_BINARY;
 	}
-	if (!charstring::compare(ctype,"RECORD")) {
+	if (!charstring::compareIgnoringCase(ctype,"RECORD")) {
 		return SQL_BINARY;
 	}
-	if (!charstring::compare(ctype,"CSTRING")) {
+	if (!charstring::compareIgnoringCase(ctype,"CSTRING")) {
 		return SQL_CHAR;
 	}
-	if (!charstring::compare(ctype,"ANY")) {
+	if (!charstring::compareIgnoringCase(ctype,"ANY")) {
 		return SQL_BINARY;
 	}
-	if (!charstring::compare(ctype,"ANYARRAY")) {
+	if (!charstring::compareIgnoringCase(ctype,"ANYARRAY")) {
 		return SQL_BINARY;
 	}
-	if (!charstring::compare(ctype,"TRIGGER")) {
+	if (!charstring::compareIgnoringCase(ctype,"TRIGGER")) {
 		return SQL_BINARY;
 	}
-	if (!charstring::compare(ctype,"LANGUAGE_HANDLER")) {
+	if (!charstring::compareIgnoringCase(ctype,"LANGUAGE_HANDLER")) {
 		return SQL_BINARY;
 	}
-	if (!charstring::compare(ctype,"INTERNAL")) {
+	if (!charstring::compareIgnoringCase(ctype,"INTERNAL")) {
 		return SQL_BINARY;
 	}
-	if (!charstring::compare(ctype,"OPAQUE")) {
+	if (!charstring::compareIgnoringCase(ctype,"OPAQUE")) {
 		return SQL_BINARY;
 	}
-	if (!charstring::compare(ctype,"ANYELEMENT")) {
+	if (!charstring::compareIgnoringCase(ctype,"ANYELEMENT")) {
 		return SQL_BINARY;
 	}
-	if (!charstring::compare(ctype,"PG_TYPE")) {
+	if (!charstring::compareIgnoringCase(ctype,"PG_TYPE")) {
 		return SQL_BINARY;
 	}
-	if (!charstring::compare(ctype,"PG_ATTRIBUTE")) {
+	if (!charstring::compareIgnoringCase(ctype,"PG_ATTRIBUTE")) {
 		return SQL_BINARY;
 	}
-	if (!charstring::compare(ctype,"PG_PROC")) {
+	if (!charstring::compareIgnoringCase(ctype,"PG_PROC")) {
 		return SQL_BINARY;
 	}
-	if (!charstring::compare(ctype,"PG_CLASS")) {
+	if (!charstring::compareIgnoringCase(ctype,"PG_CLASS")) {
 		return SQL_BINARY;
 	}
 	// none added by sqlite
 	// added by sqlserver
-	if (!charstring::compare(ctype,"UBIGINT")) {
+	if (!charstring::compareIgnoringCase(ctype,"UBIGINT")) {
 		return SQL_BIGINT;
 	}
-	if (!charstring::compare(ctype,"UNIQUEIDENTIFIER")) {
+	if (!charstring::compareIgnoringCase(ctype,"UNIQUEIDENTIFIER")) {
 		return SQL_BINARY;
 	}
 	// added by informix
-	if (!charstring::compare(ctype,"SMALLFLOAT")) {
+	if (!charstring::compareIgnoringCase(ctype,"SMALLFLOAT")) {
 		return SQL_FLOAT;
 	}
-	if (!charstring::compare(ctype,"BYTE")) {
+	if (!charstring::compareIgnoringCase(ctype,"BYTE")) {
 		return SQL_BINARY;
 	}
-	if (!charstring::compare(ctype,"BOOLEAN")) {
+	if (!charstring::compareIgnoringCase(ctype,"BOOLEAN")) {
 		return SQL_CHAR;
 	}
 	// also added by mysql
-	if (!charstring::compare(ctype,"TINYTEXT")) {
+	if (!charstring::compareIgnoringCase(ctype,"TINYTEXT")) {
 		return SQL_LONGVARCHAR;
 	}
-	if (!charstring::compare(ctype,"MEDIUMTEXT")) {
+	if (!charstring::compareIgnoringCase(ctype,"MEDIUMTEXT")) {
 		return SQL_LONGVARCHAR;
 	}
-	if (!charstring::compare(ctype,"LONGTEXT")) {
+	if (!charstring::compareIgnoringCase(ctype,"LONGTEXT")) {
 		return SQL_LONGVARCHAR;
 	}
-	if (!charstring::compare(ctype,"JSON")) {
+	if (!charstring::compareIgnoringCase(ctype,"JSON")) {
 		return SQL_LONGVARCHAR;
 	}
-	if (!charstring::compare(ctype,"GEOMETRY")) {
+	if (!charstring::compareIgnoringCase(ctype,"GEOMETRY")) {
 		return SQL_BINARY;
 	}
 	// also added by oracle
-	if (!charstring::compare(ctype,"SDO_GEOMETRY")) {
+	if (!charstring::compareIgnoringCase(ctype,"SDO_GEOMETRY")) {
 		return SQL_BINARY;
 	}
 	// added by mssql
-	if (!charstring::compare(ctype,"NCHAR")) {
+	if (!charstring::compareIgnoringCase(ctype,"NCHAR")) {
 		#ifdef SQL_WCHAR
 			return SQL_WCHAR;
 		#else
 			return SQL_CHAR;
 		#endif
 	}
-	if (!charstring::compare(ctype,"NVARCHAR")) {
+	if (!charstring::compareIgnoringCase(ctype,"NVARCHAR")) {
 		#ifdef SQL_WVARCHAR
 			return SQL_WVARCHAR;
 		#else
 			return SQL_VARCHAR;
 		#endif
 	}
-	if (!charstring::compare(ctype,"NTEXT")) {
+	if (!charstring::compareIgnoringCase(ctype,"NTEXT")) {
 		#ifdef SQL_WLONGVARCHAR
 			return SQL_WLONGVARCHAR;
 		#else
 			return SQL_LONGVARCHAR;
 		#endif
 	}
-	if (!charstring::compare(ctype,"XML")) {
+	if (!charstring::compareIgnoringCase(ctype,"XML")) {
 		return SQL_LONGVARCHAR;
 	}
-	if (!charstring::compare(ctype,"DATETIMEOFFSET")) {
+	if (!charstring::compareIgnoringCase(ctype,"DATETIMEOFFSET")) {
 		return SQL_TIMESTAMP;
 	}
 	return SQL_CHAR;
@@ -1640,9 +1663,22 @@ static SQLULEN SQLR_GetColumnSize(CONN *conn,
 		case SQL_TYPE_DATE:
 			return 10;
 		case SQL_TYPE_TIME:
-			return 8;
+			{
+			// per ODBC spec, COLUMN_SIZE for SQL_TYPE_TIME is
+			// 8 (hh:mm:ss) when there are no fractional seconds
+			// or 9+s where s is the count of fractional digits
+			uint32_t	scale=cur->getColumnScale(col);
+			return scale ? (9+scale) : 8;
+			}
 		case SQL_TYPE_TIMESTAMP:
-			return 25;
+			{
+			// per ODBC spec, COLUMN_SIZE for SQL_TYPE_TIMESTAMP
+			// is 19 (yyyy-mm-dd hh:mm:ss) when there are no
+			// fractional seconds or 20+s where s is the count
+			// of fractional digits
+			uint32_t	scale=cur->getColumnScale(col);
+			return scale ? (20+scale) : 19;
+			}
 		case SQL_TIME:
 		// case SQL_INTERVAL:
 		// 	(ODBC 3 dup of SQL_TIME)
@@ -13836,20 +13872,35 @@ static SQLRETURN SQLR_InputBindParameter(SQLHSTMT statementhandle,
 		case SQL_C_FLOAT:
 			debugPrintf("  valuetype: SQL_C_FLOAT\n");
 			debugPrintf("  value: \"%f\"\n",
-				(float)(*((double *)parametervalue)));
-			stmt->cur->inputBind(parametername,
-				(float)(*((double *)parametervalue)),
-				lengthprecision,
-				parameterscale);
+				(double)(*((float *)parametervalue)));
+			// Per the ODBC spec, ColumnSize and DecimalDigits are
+			// ignored for fixed-precision floating types — they are
+			// typically passed as 0,0.  But sqlrcursor::inputBind
+			// uses them as precision/scale for "%*.*Lf"-style
+			// formatting, which would truncate "1.1" to "1".  Send
+			// the value as a string with full single-precision
+			// precision (FLT_DECIMAL_DIG=9) instead.
+			{
+			char	floatbuf[32];
+			charstring::printf(floatbuf,sizeof(floatbuf),
+				"%.9g",
+				(double)(*((float *)parametervalue)));
+			stmt->cur->inputBind(parametername,floatbuf);
+			}
 			break;
 		case SQL_C_DOUBLE:
 			debugPrintf("  valuetype: SQL_C_DOUBLE\n");
 			debugPrintf("  value: \"%f\"\n",
 				*((double *)parametervalue));
-			stmt->cur->inputBind(parametername,
-				*((double *)parametervalue),
-				lengthprecision,
-				parameterscale);
+			// see SQL_C_FLOAT comment above; full double precision
+			// here is DBL_DECIMAL_DIG=17
+			{
+			char	doublebuf[32];
+			charstring::printf(doublebuf,sizeof(doublebuf),
+				"%.17g",
+				*((double *)parametervalue));
+			stmt->cur->inputBind(parametername,doublebuf);
+			}
 			break;
 		case SQL_C_NUMERIC:
 			debugPrintf("  valuetype: SQL_C_NUMERIC\n");
@@ -14174,9 +14225,9 @@ static SQLRETURN SQLR_InputOutputBindParameter(
 		case SQL_C_FLOAT:
 			debugPrintf("  valuetype: SQL_C_FLOAT\n");
 			debugPrintf("  value: \"%f\"\n",
-				(float)(*((double *)parametervalue)));
+				(double)(*((float *)parametervalue)));
 			stmt->cur->defineInputOutputBindDouble(parametername,
-				(float)(*((double *)parametervalue)),
+				(float)(*((float *)parametervalue)),
 				lengthprecision,
 				parameterscale);
 			break;
