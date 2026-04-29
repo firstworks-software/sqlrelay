@@ -65,7 +65,7 @@
 		*strlen_or_ind as the size of a char/binary array for input
 		binds
 	implemented postgresql getColumnScale()
-	fixed bugs in postgresql getColumnSize()
+	implemented postgresql getColumnSize() for variable-length types
 	implemented postgresql isColumnNullable()
 
 2.1.1 - added tns_admin support
