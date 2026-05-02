@@ -194,16 +194,10 @@ bool sqlrserverconnection::changeProxiedUser(const char *newuser,
 
 bool sqlrserverconnection::setAutoCommitOn() {
 
-	// if the database doesn't support transactions, then autocommit
-	// is always on
-	if (!isTransactional()) {
+	// if the database doesn't support transactions or transaction blocks,
+	// then autocommit is always on
+	if (!isTransactional() || !supportsTransactionBlocks()) {
 		return true;
-	}
-	// the APIs of databases that don't support transaction blocks must
-	// provide an auto-commit function, and setAutoCommitOn() must be
-	// implemented for them, using that function
-	if (!supportsTransactionBlocks()) {
-		return false;
 	}
 	// if we're in a transaction block, then just commit it
 	// and don't start a new one
@@ -217,15 +211,9 @@ bool sqlrserverconnection::setAutoCommitOn() {
 
 bool sqlrserverconnection::setAutoCommitOff() {
 
-	// if the database doesn't support transactions, then it's impossible
-	// to turn auto commit off
-	if (!isTransactional()) {
-		return false;
-	}
-	// the APIs of databases that don't support transaction blocks must
-	// provide an auto-commit function, and setAutoCommitOff() must be
-	// implemented for them, using that function
-	if (!supportsTransactionBlocks()) {
+	// if the database doesn't support transactions or transaction blocks,
+	// then autocommit is always on
+	if (!isTransactional() || !supportsTransactionBlocks()) {
 		return false;
 	}
 	// if we're not in a transaction block, then start a new one

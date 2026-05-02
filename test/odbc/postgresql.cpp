@@ -6836,6 +6836,8 @@ int main(int argc, char **argv) {
 	stdoutput.printf("COMMIT AND ROLLBACK: \n");
 	erg=SQLFreeStmt(stmt,SQL_CLOSE);
 	erg=SQLFreeStmt(stmt,SQL_UNBIND);
+
+	// open second connection and statement
 	SQLHDBC		dbc2;
 	SQLHSTMT	stmt2;
 	erg=SQLAllocHandle(SQL_HANDLE_DBC,env,&dbc2);
@@ -6852,6 +6854,8 @@ int main(int argc, char **argv) {
 	assertSuccessDbc(dbc2,erg);
 	erg=SQLAllocHandle(SQL_HANDLE_STMT,dbc2,&stmt2);
 	assertSuccessDbc(dbc2,erg);
+
+	// get rowcount (should be 0)
 	SQLINTEGER	rowcount;
 	SQLLEN		rowcountind;
 	erg=SQLExecDirect(stmt2,(SQLCHAR *)
@@ -6863,8 +6867,12 @@ int main(int argc, char **argv) {
 	erg=SQLFetch(stmt2);
 	assertSuccessStmt(stmt2,erg);
 	assertEqualStmt(stmt2,(int)rowcount,0);
+
+	// commit
 	erg=SQLEndTran(SQL_HANDLE_DBC,dbc,SQL_COMMIT);
 	assertSuccessDbc(dbc,erg);
+
+	// get row count (should be 4)
 	erg=SQLFreeStmt(stmt2,SQL_CLOSE);
 	erg=SQLFreeStmt(stmt2,SQL_UNBIND);
 	erg=SQLExecDirect(stmt2,(SQLCHAR *)
@@ -6876,6 +6884,12 @@ int main(int argc, char **argv) {
 	erg=SQLFetch(stmt2);
 	assertSuccessStmt(stmt2,erg);
 	assertEqualStmt(stmt2,(int)rowcount,4);
+
+	// begin new tx
+	// (since autocommit was set off earlier, the commit implicitly started
+	// another transaction, so we don't actually need to do anything here)
+
+	// insert another row
 	erg=SQLExecDirect(stmt,(SQLCHAR *)
 		"insert into "
 		"	testtable "
@@ -6893,8 +6907,12 @@ int main(int argc, char **argv) {
 		"	'testbytea10')",
 		SQL_NTS);
 	assertSuccessStmt(stmt,erg);
+
+	// rollback
 	erg=SQLEndTran(SQL_HANDLE_DBC,dbc,SQL_ROLLBACK);
 	assertSuccessDbc(dbc,erg);
+
+	// get row count (should still be 4)
 	erg=SQLFreeStmt(stmt2,SQL_CLOSE);
 	erg=SQLFreeStmt(stmt2,SQL_UNBIND);
 	erg=SQLExecDirect(stmt2,(SQLCHAR *)
@@ -6906,9 +6924,8 @@ int main(int argc, char **argv) {
 	erg=SQLFetch(stmt2);
 	assertSuccessStmt(stmt2,erg);
 	assertEqualStmt(stmt2,(int)rowcount,4);
-	erg=SQLSetConnectAttr(dbc,SQL_ATTR_AUTOCOMMIT,
-		(SQLPOINTER)SQL_AUTOCOMMIT_ON,0);
-	assertSuccessDbc(dbc,erg);
+
+	// insert another row
 	erg=SQLExecDirect(stmt,(SQLCHAR *)
 		"insert into "
 		"	testtable "
@@ -6926,6 +6943,8 @@ int main(int argc, char **argv) {
 		"	'testbytea10')",
 		SQL_NTS);
 	assertSuccessStmt(stmt,erg);
+
+	// get row count (should be 5)
 	erg=SQLFreeStmt(stmt2,SQL_CLOSE);
 	erg=SQLFreeStmt(stmt2,SQL_UNBIND);
 	erg=SQLExecDirect(stmt2,(SQLCHAR *)
@@ -6937,13 +6956,14 @@ int main(int argc, char **argv) {
 	erg=SQLFetch(stmt2);
 	assertSuccessStmt(stmt2,erg);
 	assertEqualStmt(stmt2,(int)rowcount,5);
+
+	// clean up and disconnect
 	SQLFreeHandle(SQL_HANDLE_STMT,stmt2);
 	SQLDisconnect(dbc2);
 	SQLFreeHandle(SQL_HANDLE_DBC,dbc2);
-	erg=SQLSetConnectAttr(dbc,SQL_ATTR_AUTOCOMMIT,
-		(SQLPOINTER)SQL_AUTOCOMMIT_OFF,0);
-	assertSuccessDbc(dbc,erg);
-	erg=SQLExecDirect(stmt,(SQLCHAR *)"drop table if exists testtable",SQL_NTS);
+
+	erg=SQLExecDirect(stmt,
+		(SQLCHAR *)"drop table if exists testtable",SQL_NTS);
 	assertSuccessStmt(stmt,erg);
 	stdoutput.printf("\n");
 
@@ -7064,7 +7084,8 @@ int main(int argc, char **argv) {
 	erg=SQLFreeStmt(stmt,SQL_CLOSE);
 	erg=SQLFreeStmt(stmt,SQL_UNBIND);
 	erg=SQLFreeStmt(stmt,SQL_RESET_PARAMS);
-	erg=SQLExecDirect(stmt,(SQLCHAR *)"drop table if exists testtable",SQL_NTS);
+	erg=SQLExecDirect(stmt,
+		(SQLCHAR *)"drop table if exists testtable",SQL_NTS);
 	assertSuccessStmt(stmt,erg);
 	stdoutput.printf("\n");
 
@@ -7138,7 +7159,8 @@ int main(int argc, char **argv) {
 	erg=SQLFreeStmt(stmt,SQL_CLOSE);
 	erg=SQLFreeStmt(stmt,SQL_UNBIND);
 	erg=SQLFreeStmt(stmt,SQL_RESET_PARAMS);
-	erg=SQLExecDirect(stmt,(SQLCHAR *)"drop table if exists testtable",SQL_NTS);
+	erg=SQLExecDirect(stmt,
+		(SQLCHAR *)"drop table if exists testtable",SQL_NTS);
 	assertSuccessStmt(stmt,erg);
 	stdoutput.printf("\n");
 
@@ -7236,7 +7258,8 @@ int main(int argc, char **argv) {
 	erg=SQLFreeStmt(stmt,SQL_CLOSE);
 	erg=SQLFreeStmt(stmt,SQL_UNBIND);
 	erg=SQLFreeStmt(stmt,SQL_RESET_PARAMS);
-	erg=SQLExecDirect(stmt,(SQLCHAR *)"drop table if exists testtable",SQL_NTS);
+	erg=SQLExecDirect(stmt,
+		(SQLCHAR *)"drop table if exists testtable",SQL_NTS);
 	assertSuccessStmt(stmt,erg);
 	stdoutput.printf("\n");
 
@@ -7298,7 +7321,8 @@ int main(int argc, char **argv) {
 	erg=SQLFreeStmt(stmt,SQL_CLOSE);
 	erg=SQLFreeStmt(stmt,SQL_UNBIND);
 	erg=SQLFreeStmt(stmt,SQL_RESET_PARAMS);
-	erg=SQLExecDirect(stmt,(SQLCHAR *)"drop table if exists testtable",SQL_NTS);
+	erg=SQLExecDirect(stmt,
+		(SQLCHAR *)"drop table if exists testtable",SQL_NTS);
 	assertSuccessStmt(stmt,erg);
 	stdoutput.printf("\n");
 
@@ -7536,7 +7560,8 @@ int main(int argc, char **argv) {
 	erg=SQLFreeStmt(stmt,SQL_CLOSE);
 	erg=SQLFreeStmt(stmt,SQL_UNBIND);
 	erg=SQLFreeStmt(stmt,SQL_RESET_PARAMS);
-	erg=SQLExecDirect(stmt,(SQLCHAR *)"drop table if exists testtable",SQL_NTS);
+	erg=SQLExecDirect(stmt,
+		(SQLCHAR *)"drop table if exists testtable",SQL_NTS);
 	assertSuccessStmt(stmt,erg);
 	stdoutput.printf("\n");
 
@@ -7628,7 +7653,8 @@ int main(int argc, char **argv) {
 	erg=SQLFreeStmt(stmt,SQL_CLOSE);
 	erg=SQLFreeStmt(stmt,SQL_UNBIND);
 	erg=SQLFreeStmt(stmt,SQL_RESET_PARAMS);
-	erg=SQLExecDirect(stmt,(SQLCHAR *)"drop table if exists testtable",SQL_NTS);
+	erg=SQLExecDirect(stmt,
+		(SQLCHAR *)"drop table if exists testtable",SQL_NTS);
 	assertSuccessStmt(stmt,erg);
 	stdoutput.printf("\n");
 
@@ -7682,7 +7708,8 @@ int main(int argc, char **argv) {
 	erg=SQLFreeStmt(stmt,SQL_CLOSE);
 	erg=SQLFreeStmt(stmt,SQL_UNBIND);
 	erg=SQLFreeStmt(stmt,SQL_RESET_PARAMS);
-	erg=SQLExecDirect(stmt,(SQLCHAR *)"drop table if exists testtable",SQL_NTS);
+	erg=SQLExecDirect(stmt,
+		(SQLCHAR *)"drop table if exists testtable",SQL_NTS);
 	assertSuccessStmt(stmt,erg);
 	stdoutput.printf("\n");
 
@@ -7714,7 +7741,8 @@ int main(int argc, char **argv) {
 	erg=SQLFreeStmt(stmt,SQL_CLOSE);
 	erg=SQLFreeStmt(stmt,SQL_UNBIND);
 	erg=SQLFreeStmt(stmt,SQL_RESET_PARAMS);
-	erg=SQLExecDirect(stmt,(SQLCHAR *)"drop table if exists testtable",SQL_NTS);
+	erg=SQLExecDirect(stmt,
+		(SQLCHAR *)"drop table if exists testtable",SQL_NTS);
 	assertSuccessStmt(stmt,erg);
 	stdoutput.printf("\n");
 
@@ -7843,10 +7871,14 @@ int main(int argc, char **argv) {
 	erg=SQLFreeStmt(stmt,SQL_CLOSE);
 	erg=SQLFreeStmt(stmt,SQL_UNBIND);
 	erg=SQLFreeStmt(stmt,SQL_RESET_PARAMS);
-	SQLExecDirect(stmt,(SQLCHAR *)"drop table if exists testtable1",SQL_NTS);
-	SQLExecDirect(stmt,(SQLCHAR *)"drop table if exists testtable2",SQL_NTS);
-	SQLExecDirect(stmt,(SQLCHAR *)"drop table if exists testtable3",SQL_NTS);
-	SQLExecDirect(stmt,(SQLCHAR *)"drop table if exists testtable4",SQL_NTS);
+	SQLExecDirect(stmt,
+		(SQLCHAR *)"drop table if exists testtable1",SQL_NTS);
+	SQLExecDirect(stmt,
+		(SQLCHAR *)"drop table if exists testtable2",SQL_NTS);
+	SQLExecDirect(stmt,
+		(SQLCHAR *)"drop table if exists testtable3",SQL_NTS);
+	SQLExecDirect(stmt,
+		(SQLCHAR *)"drop table if exists testtable4",SQL_NTS);
 	erg=SQLExecDirect(stmt,(SQLCHAR *)
 		"create table testtable1 (col1 int, col2 int)",SQL_NTS);
 	assertSuccessStmt(stmt,erg);
@@ -8017,7 +8049,8 @@ int main(int argc, char **argv) {
 	assertEqualStmt(stmt,(int)erg,(int)SQL_NO_DATA);
 	erg=SQLFreeStmt(stmt,SQL_CLOSE);
 	erg=SQLFreeStmt(stmt,SQL_UNBIND);
-	erg=SQLExecDirect(stmt,(SQLCHAR *)"drop table if exists testtable",SQL_NTS);
+	erg=SQLExecDirect(stmt,
+		(SQLCHAR *)"drop table if exists testtable",SQL_NTS);
 	assertSuccessStmt(stmt,erg);
 	stdoutput.printf("\n");
 
@@ -8067,7 +8100,8 @@ int main(int argc, char **argv) {
 	assertFalseStmt(stmt,foundcol2);
 	erg=SQLFreeStmt(stmt,SQL_CLOSE);
 	erg=SQLFreeStmt(stmt,SQL_UNBIND);
-	erg=SQLExecDirect(stmt,(SQLCHAR *)"drop table if exists testtable",SQL_NTS);
+	erg=SQLExecDirect(stmt,
+		(SQLCHAR *)"drop table if exists testtable",SQL_NTS);
 	assertSuccessStmt(stmt,erg);
 	stdoutput.printf("\n");
 
@@ -8116,7 +8150,8 @@ int main(int argc, char **argv) {
 	assertEqualStmt(stmt,(int)erg,(int)SQL_NO_DATA);
 	erg=SQLFreeStmt(stmt,SQL_CLOSE);
 	erg=SQLFreeStmt(stmt,SQL_UNBIND);
-	erg=SQLExecDirect(stmt,(SQLCHAR *)"drop table if exists testtable",SQL_NTS);
+	erg=SQLExecDirect(stmt,
+		(SQLCHAR *)"drop table if exists testtable",SQL_NTS);
 	assertSuccessStmt(stmt,erg);
 	stdoutput.printf("\n");
 
@@ -8187,7 +8222,8 @@ int main(int argc, char **argv) {
 	assertTrueStmt(stmt,foundidxcol1);
 	erg=SQLFreeStmt(stmt,SQL_CLOSE);
 	erg=SQLFreeStmt(stmt,SQL_UNBIND);
-	erg=SQLExecDirect(stmt,(SQLCHAR *)"drop table if exists testtable",SQL_NTS);
+	erg=SQLExecDirect(stmt,
+		(SQLCHAR *)"drop table if exists testtable",SQL_NTS);
 	assertSuccessStmt(stmt,erg);
 	stdoutput.printf("\n");
 

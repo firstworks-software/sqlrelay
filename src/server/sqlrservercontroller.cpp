@@ -2575,6 +2575,27 @@ bool sqlrservercontroller::commit() {
 	return true;
 }
 
+bool sqlrservercontroller::rollback() {
+
+	if (pvt->_debugsql) {
+		stdoutput.printf("\n===================="
+				 "===================="
+				 "===================="
+				 "===================\n\n");
+		stdoutput.printf("%d: rollback\n",process::getProcessId());
+	}
+
+	if (!pvt->_conn->rollback()) {
+		return false;
+	}
+	endTransaction(false);
+	if (!pvt->_conn->supportsTransactionBlocks() &&
+				pvt->_faketransactionblocks) {
+		return setAutoCommitOn();
+	}
+	return true;
+}
+
 void sqlrservercontroller::endTransaction(bool commit) {
 
 	// raise events
@@ -2674,27 +2695,6 @@ void sqlrservercontroller::clearColumnCaches() {
 	pvt->_colcache.clear();
 	pvt->_autoinccolcache.clear();
 	pvt->_primarykeycolcache.clear();
-}
-
-bool sqlrservercontroller::rollback() {
-
-	if (pvt->_debugsql) {
-		stdoutput.printf("\n===================="
-				 "===================="
-				 "===================="
-				 "===================\n\n");
-		stdoutput.printf("%d: rollback\n",process::getProcessId());
-	}
-
-	if (!pvt->_conn->rollback()) {
-		return false;
-	}
-	endTransaction(false);
-	if (!pvt->_conn->supportsTransactionBlocks() &&
-				pvt->_faketransactionblocks) {
-		return setAutoCommitOn();
-	}
-	return true;
 }
 
 bool sqlrservercontroller::selectDatabase(const char *db) {
