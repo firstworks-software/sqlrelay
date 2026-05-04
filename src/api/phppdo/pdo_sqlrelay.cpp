@@ -1986,7 +1986,8 @@ static int sqlrelayHandleFactory(pdo_dbh_t *dbh,
 		{"autocommit",(char *)"0",0},
 		{"bindvariabledelimiters",(char *)"?:@$",0},
 		{"emulatepreparesunicodestrings",(char *)"0",0},
-		{"fetchlobsasstrings",(char *)"0",0}
+		{"fetchlobsasstrings",(char *)"0",0},
+		{"lazyconnectautocommit",(char *)"1",0}
 	};
 	php_pdo_parse_data_source(dbh->data_source,
 					dbh->data_source_len,
@@ -1998,7 +1999,7 @@ static int sqlrelayHandleFactory(pdo_dbh_t *dbh,
 	int32_t		tries=charstring::convertToInteger(options[3].optval);
 	int32_t		retrytime=charstring::convertToInteger(options[4].optval);
 	const char	*debug=options[5].optval;
-	bool		lazyconnect=!charstring::isNo(options[6].optval);
+	bool		lazyconnect=!charstring::isNo(options[9].optval);
 	const char	*krb=options[10].optval;
 	const char	*krbservice=options[11].optval;
 	const char	*krbmech=options[12].optval;
@@ -2013,16 +2014,14 @@ static int sqlrelayHandleFactory(pdo_dbh_t *dbh,
 	uint16_t	tlsdepth=charstring::convertToInteger(options[21].optval);
 	const char	*db=options[22].optval;
 	const char      *connecttime=options[23].optval;
-	// autocommit:
-	//   "1"  - turn autocommit on after connect
-	//   "0"  - turn autocommit off after connect (default)
-	//   "-1" - don't do either, leave it up to the backend
 	const char	*autocommit=options[24].optval;
 	const char	*bindvariabledelimiters=options[25].optval;
 	bool		emulatepreparesunicodestrings=
 				charstring::isYes(options[26].optval);
 	bool		fetchlobsasstrings=
 				charstring::isYes(options[27].optval);
+	bool		lazyconnectautocommit=
+				!charstring::isNo(options[28].optval);
 
 	// create a sqlrconnection and attach it to the dbh
 	sqlrdbhandle	*sqlrdbh=new sqlrdbhandle;
@@ -2135,14 +2134,25 @@ static int sqlrelayHandleFactory(pdo_dbh_t *dbh,
 		sqlrdbh->sqlrcon->selectDatabase(db);
 	}
 
-	// turn autocommit on or off, or leave it alone and let the backend
-	// decide.  isYes/isNo match "1"/"0" (and "yes"/"no", "true"/"false");
-	// "-1" matches neither, so it falls through and we don't call either
-	// autoCommit method.
+	// autocommit:
+	//   "1" (or any other yes) - autocommit on
+	//   "0" (or any other no) - autocommit off
+	//   "-1" - leave it up to the backend
 	if (charstring::isYes(autocommit)) {
 		sqlrdbh->sqlrcon->autoCommitOn();
+		dbh->auto_commit=1;
 	} else if (charstring::isNo(autocommit)) {
 		sqlrdbh->sqlrcon->autoCommitOff();
+		dbh->auto_commit=0;
+	} else {
+		// initialize auto_commit to the lazyconnectautocommit option
+		// if we're doing lazyconnects (lazyconnectautocommit defaults
+		// to 1, since most backends autocommit by default)
+		if (!lazyconnect) {
+			dbh->auto_commit=sqlrdbh->sqlrcon->getAutoCommit();
+		} else {
+			dbh->auto_commit=(lazyconnectautocommit)?1:0;
+		}
 	}
 
 	sqlrdbh->resultsetbuffersize=charstring::convertToInteger(options[6].optval);
@@ -2158,14 +2168,6 @@ static int sqlrelayHandleFactory(pdo_dbh_t *dbh,
 	dbh->methods=&sqlrconnectionMethods;
 
 	dbh->is_persistent=0;
-	// keep PDO's auto_commit flag in sync with what we just set; for
-	// "-1" (don't touch) default to true, since most backends autocommit
-	// by default and that matches PDO's general default
-	if (charstring::isNo(autocommit)) {
-		dbh->auto_commit=0;
-	} else {
-		dbh->auto_commit=1;
-	}
 	dbh->is_closed=0;
 	dbh->alloc_own_columns=1;
 	dbh->max_escaped_char_length=2;
