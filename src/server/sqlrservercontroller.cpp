@@ -2567,12 +2567,7 @@ bool sqlrservercontroller::commit() {
 	if (!pvt->_conn->commit()) {
 		return false;
 	}
-	endTransaction(true);
-	if (!pvt->_conn->supportsTransactionBlocks() &&
-				pvt->_faketransactionblocks) {
-		return setAutoCommitOn();
-	}
-	return true;
+	return endTransaction(true);
 }
 
 bool sqlrservercontroller::rollback() {
@@ -2588,15 +2583,10 @@ bool sqlrservercontroller::rollback() {
 	if (!pvt->_conn->rollback()) {
 		return false;
 	}
-	endTransaction(false);
-	if (!pvt->_conn->supportsTransactionBlocks() &&
-				pvt->_faketransactionblocks) {
-		return setAutoCommitOn();
-	}
-	return true;
+	return endTransaction(false);
 }
 
-void sqlrservercontroller::endTransaction(bool commit) {
+bool sqlrservercontroller::endTransaction(bool commit) {
 
 	// raise events
 	if (commit) {
@@ -2684,6 +2674,13 @@ void sqlrservercontroller::endTransaction(bool commit) {
 	// set in-tx flag
 	pvt->_intransaction=!(pvt->_conn->supportsTransactionBlocks() ||
 						pvt->_faketransactionblocks);
+
+	// reset autocommit behavior
+	if (!pvt->_conn->supportsTransactionBlocks() &&
+				pvt->_faketransactionblocks) {
+		return setAutoCommitOn();
+	}
+	return true;
 }
 
 void sqlrservercontroller::clearColumnCaches() {
