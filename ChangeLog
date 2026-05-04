@@ -69,6 +69,8 @@
 	implemented postgresql isColumnNullable()
 	added AutoCommit yes/no/backend connect string option to JDBC driver
 	added autocommit 1/0/-1 connect string option to PHP PDO driver
+	added lazyconnectautocommit connect string option to PHP PDO driver
+	fixed PHP PDO lazyconnect initialization from wrong option bug
 
 2.1.1 - added tns_admin support
 	fixed sqlr-start ... -strace ...
