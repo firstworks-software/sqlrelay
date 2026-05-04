@@ -2564,10 +2564,7 @@ bool sqlrservercontroller::commit() {
 		stdoutput.printf("%d: commit\n",process::getProcessId());
 	}
 
-	if (!pvt->_conn->commit()) {
-		return false;
-	}
-	return endTransaction(true);
+	return pvt->_conn->commit() && endTransaction(true);
 }
 
 bool sqlrservercontroller::rollback() {
@@ -2580,10 +2577,7 @@ bool sqlrservercontroller::rollback() {
 		stdoutput.printf("%d: rollback\n",process::getProcessId());
 	}
 
-	if (!pvt->_conn->rollback()) {
-		return false;
-	}
-	return endTransaction(false);
+	return pvt->_conn->rollback() && endTransaction(false);
 }
 
 bool sqlrservercontroller::endTransaction(bool commit) {
