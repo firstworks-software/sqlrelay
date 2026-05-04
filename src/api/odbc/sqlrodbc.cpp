@@ -423,7 +423,7 @@ static SQLRETURN SQLR_SQLAllocHandle(SQLSMALLINT handletype,
 				conn->error=NULL;
 				SQLR_CONNClearError(conn);
 				env->connlist.append(conn);
-				conn->setautocommiton=true;
+				conn->setautocommiton=false;
 				conn->setautocommitoff=false;
 				conn->setisolationlevel=false;
 				conn->mapdatetimetodate=false;
@@ -2638,6 +2638,12 @@ static SQLRETURN SQLR_SQLConnect(SQLHDBC connectionhandle,
 					sizeof(lazyconnectbuf),
 					ODBC_INI);
 	conn->lazyconnect=!charstring::isNo(lazyconnectbuf);
+	char	autocommitbuf[9];
+	SQLGetPrivateProfileString((const char *)conn->dsn,
+					"AutoCommit","",
+					autocommitbuf,
+					sizeof(autocommitbuf),
+					ODBC_INI);
 	char	mapdatetimetodatebuf[6];
 	SQLGetPrivateProfileString((const char *)conn->dsn,
 					"MapDateTimeToDate","no",
@@ -2823,6 +2829,13 @@ static SQLRETURN SQLR_SQLConnect(SQLHDBC connectionhandle,
 		if (connlazyconnect!=NULL) {
 			conn->lazyconnect=!charstring::isNo(connlazyconnect);
 		}
+		const char	*connautocommit=
+				connparams->getValue("AutoCommit");
+		if (connautocommit!=NULL) {
+			charstring::safeCopy(autocommitbuf,
+						sizeof(autocommitbuf),
+						connautocommit);
+		}
 		const char	*connmapdatetimetodate=
 				connparams->getValue("MapDateTimeToDate");
 		if (connmapdatetimetodate!=NULL) {
@@ -2850,6 +2863,23 @@ static SQLRETURN SQLR_SQLConnect(SQLHDBC connectionhandle,
 					sizeof(conn->bindvariabledelimiters),
 					conn_bindvariabledelimiters);
 		}
+	}
+
+	// * "yes" - autocommit on
+	// * "no" - autocommit off
+	// * "backend" - whatever the backend does, overriding anything
+	//               set by SQLSetConnectAttr prior to connect
+	// * "" (or unset) - whatever was set by SQLSetConnectAttr prior to
+	//                   connect, or backend if nothing was set
+	if (charstring::isYes(autocommitbuf)) {
+		conn->setautocommiton=true;
+		conn->setautocommitoff=false;
+	} else if (charstring::isNo(autocommitbuf)) {
+		conn->setautocommiton=false;
+		conn->setautocommitoff=true;
+	} else if (!charstring::compareIgnoringCase(autocommitbuf,"backend")) {
+		conn->setautocommiton=false;
+		conn->setautocommitoff=false;
 	}
 
 	debugPrintf("  DSN: %s\n",conn->dsn);
@@ -2880,6 +2910,9 @@ static SQLRETURN SQLR_SQLConnect(SQLHDBC connectionhandle,
 	debugPrintf("  DontGetColumnInfo: %d\n",conn->dontgetcolumninfo);
 	debugPrintf("  NullsAsNulls: %d\n",conn->nullsasnulls);
 	debugPrintf("  LazyConnect: %d\n",conn->lazyconnect);
+	debugPrintf("  AutoCommit: %s\n",
+		(charstring::isNullOrEmpty(autocommitbuf))?
+						"(unset)":autocommitbuf);
 	debugPrintf("  MapDateTimeToDate: %d\n",conn->mapdatetimetodate);
 	debugPrintf("  MapDateToTimeStamp: %d\n",conn->mapdatetotimestamp);
 	debugPrintf("  MapNewDateToTimeStamp: %d\n",
@@ -13042,6 +13075,7 @@ SQLRETURN SQL_API SQLDriverConnect(SQLHDBC hdbc,
 			"Don't Get Column Info",
 			"Nulls As Nulls",
 			"Lazy Connect",
+			"Auto Commit",
 			"Map DateTime To Date",
 			"Map Date To TimeStamp",
 			"Map NewDate To TimeStamp",
@@ -14615,6 +14649,7 @@ static HWND		resultsetbuffersizeedit;
 static HWND		dontgetcolumninfoedit;
 static HWND		nullsasnullsedit;
 static HWND		lazyconnectedit;
+static HWND		autocommitedit;
 static HWND		mapdatetimetodateedit;
 static HWND		mapdatetotimestampedit;
 static HWND		mapnewdatetotimestampedit;
@@ -14839,6 +14874,9 @@ static void createControls(HWND hwnd) {
 	createLabel(box3,"Lazy Connect",
 			x,y+=(labelheight+labeloffset),
 			labelwidth,labelheight);
+	createLabel(box3,"Auto Commit",
+			x,y+=(labelheight+labeloffset),
+			labelwidth,labelheight);
 	createLabel(box3,"Map DateTime To Date",
 			x,y+=(labelheight+labeloffset),
 			labelwidth,labelheight);
@@ -14967,6 +15005,10 @@ static void createControls(HWND hwnd) {
 			dsndict.getValue("LazyConnect"),
 			x,y+=(labelheight+labeloffset),editwidth,labelheight,
 			1,true,false);
+	autocommitedit=createEdit(box3,
+			dsndict.getValue("AutoCommit"),
+			x,y+=(labelheight+labeloffset),editwidth,labelheight,
+			8,false,false);
 	mapdatetimetodateedit=createEdit(box3,
 			dsndict.getValue("MapDateTimeToDate"),
 			x,y+=(labelheight+labeloffset),editwidth,labelheight,
@@ -15037,6 +15079,8 @@ static void parseDsn(const char *dsn) {
 					charstring::duplicate("0"));
 		dsndict.setValue("LazyConnect",
 					charstring::duplicate("1"));
+		dsndict.setValue("AutoCommit",
+					charstring::duplicate(""));
 		dsndict.setValue("MapDateTimeToDate",
 					charstring::duplicate("0"));
 		dsndict.setValue("MapDateToTimeStamp",
@@ -15230,6 +15274,12 @@ static void parseDsn(const char *dsn) {
 		SQLGetPrivateProfileString(dsnval,"LazyConnect","1",
 						lazyconnect,2,ODBC_INI);
 		dsndict.setValue("LazyConnect",lazyconnect);
+	}
+	if (!dsndict.getValue("AutoCommit")) {
+		char	*autocommit=new char[9];
+		SQLGetPrivateProfileString(dsnval,"AutoCommit","",
+						autocommit,9,ODBC_INI);
+		dsndict.setValue("AutoCommit",autocommit);
 	}
 	if (!dsndict.getValue("MapDateTimeToDate")) {
 		char	*mapdatetimetodate=new char[2];
@@ -15494,6 +15544,13 @@ static void getDsnFromUi() {
 	GetWindowText(lazyconnectedit,data,len+1);
 	delete[] dsndict.getValue("LazyConnect");
 	dsndict.setValue("LazyConnect",data);
+
+	// AutoCommit
+	len=GetWindowTextLength(autocommitedit);
+	data=new char[len+1];
+	GetWindowText(autocommitedit,data,len+1);
+	delete[] dsndict.getValue("AutoCommit");
+	dsndict.setValue("AutoCommit",data);
 
 	// MapDateTimeToDate
 	len=GetWindowTextLength(mapdatetimetodateedit);
