@@ -43,6 +43,14 @@ class informix extends sqlrtest {
 			password="testpassword";
 		}
 
+		Properties	props=new Properties();
+		props.setProperty("user",user);
+		props.setProperty("password",password);
+		if (issqlrelay) {
+			// for JDBC spec compliance
+			props.setProperty("AutoCommit","yes");
+		}
+
 		Connection		con;
 		Connection		secondcon;
 		Statement		secondstmt;
@@ -73,7 +81,7 @@ class informix extends sqlrtest {
 		System.out.println("  getConnection");
 		DriverManager.getDrivers();
 		Class.forName(driver);
-		con=DriverManager.getConnection(url,user,password);
+		con=DriverManager.getConnection(url,props);
 		assertTrue((con!=null));
 		System.out.println();
 
@@ -82,7 +90,7 @@ class informix extends sqlrtest {
 		assertFalse(con.isClosed());
 		con.close();
 		assertTrue(con.isClosed());
-		con=DriverManager.getConnection(url,user,password);
+		con=DriverManager.getConnection(url,props);
 		assertTrue((con!=null));
 		assertFalse(con.isClosed());
 		con.setAutoCommit(false);

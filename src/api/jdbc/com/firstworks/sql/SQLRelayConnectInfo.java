@@ -13,6 +13,7 @@ public class SQLRelayConnectInfo {
 	public String	triesstr;
 	public String	datetotimestampstr;
 	public String	outputparameterbuffersizestr;
+	public String	autocommit;
 
 	public short	port;
 	public int	retrytime;

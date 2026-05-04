@@ -215,6 +215,8 @@ http://www.gnu.org/software/src-highlite -->
 
 <p>You can also turn Autocommit on or off using setAutoCommit().  When Autocommit is on, the database performs a commit after each successful DML or DDL query.  When Autocommit is off, the database commits when the client instructs it to, or (by default) when a client disconnects.  For databases that don't support Autocommit, setAutoCommit() has no effect.</p>
 
+<p>You can also pass an <b>AutoCommit</b> property to DriverManager.getConnection() to control whether the driver explicitly turns autocommit on or off after connecting.  May be set to <b>yes</b> (autocommit on), <b>no</b> (autocommit off), or <b>backend</b> (leave it up to the backend).  Defaults to <b>backend</b>.</p>
+
 <blockquote>
 <!-- Generator: GNU source-highlight 3.1.9
 by Lorenzo Bettini

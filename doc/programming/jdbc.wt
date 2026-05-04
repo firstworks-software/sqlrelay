@@ -184,6 +184,8 @@ If you need to execute a commit or rollback, you should use the commit() and rol
 
 You can also turn Autocommit on or off using setAutoCommit().  When Autocommit is on, the database performs a commit after each successful DML or DDL query.  When Autocommit is off, the database commits when the client instructs it to, or (by default) when a client disconnects.  For databases that don't support Autocommit, setAutoCommit() has no effect.
 
+You can also pass an '''!AutoCommit''' property to !DriverManager.getConnection() to control whether the driver explicitly turns autocommit on or off after connecting.  May be set to '''yes''' (autocommit on), '''no''' (autocommit off), or '''backend''' (leave it up to the backend).  Defaults to '''backend'''.
+
 {{{#!blockquote
 {{{#!code
 @parts/jdbc-commit-rollback.java@

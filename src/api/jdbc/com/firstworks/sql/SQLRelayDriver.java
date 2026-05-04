@@ -52,6 +52,17 @@ public class SQLRelayDriver implements Driver {
 			conn.setDateToTimestamp(ci.datetotimestamp);
 			conn.setOutputParameterBufferSize(
 						ci.outputparameterbuffersize);
+
+			if (ci.autocommit!=null) {
+				if (ci.autocommit.equalsIgnoreCase("yes")) {
+					conn.setAutoCommit(true);
+				} else if (ci.autocommit.
+						equalsIgnoreCase("no")) {
+					conn.setAutoCommit(false);
+				}
+			}
+			// if autocommit is "backend" or unset then
+			// we'll just do whatever the backend does
 		}
 		debugEnd();
 		return conn;
@@ -70,6 +81,7 @@ public class SQLRelayDriver implements Driver {
 		String	triesstr=null;
 		String	datetotimestampstr=null;
 		String	outputparameterbuffersizestr=null;
+		String	autocommit=null;
 
 		// all parameters could be passed in as properties
 		if (info!=null) {
@@ -90,6 +102,7 @@ public class SQLRelayDriver implements Driver {
 						"DATE to TimeStamp");
 			outputparameterbuffersizestr=info.getProperty(
 						"Output Parameter Buffer Size");
+			autocommit=info.getProperty("AutoCommit");
 		}
 
 		// override them if they were passed in in the url
@@ -212,6 +225,7 @@ public class SQLRelayDriver implements Driver {
 		ci.datetotimestamp = datetotimestamp;
 		ci.outputparameterbuffersizestr = outputparameterbuffersizestr;
 		ci.outputparameterbuffersize = outputparameterbuffersize;
+		ci.autocommit = autocommit;
 
 		debugPrintln("host: "+host);
 		debugPrintln("portstr: "+portstr);
@@ -229,6 +243,7 @@ public class SQLRelayDriver implements Driver {
 						outputparameterbuffersizestr);
 		debugPrintln("outputparameterbuffersize: "+
 						outputparameterbuffersize);
+		debugPrintln("autocommit: "+autocommit);
 
 		debugEnd();
 		return ci;
@@ -328,6 +343,19 @@ public class SQLRelayDriver implements Driver {
 			dpi.description="Buffer size to use for output "+
 					"parameters when using a method "+
 					"that doesn't have a length parameter";
+			dpi.required=false;
+			dpilist.add(dpi);
+		}
+		if (ci.autocommit==null) {
+			dpi=new DriverPropertyInfo("AutoCommit","backend");
+			dpi.choices=new String[]{"yes","no","backend"};
+			dpi.description="Controls whether the driver "+
+					"explicitly turns autocommit on or "+
+					"off after connecting.  May be set "+
+					"to \"yes\" (autocommit on), \"no\" "+
+					"(autocommit off), or \"backend\" "+
+					"(leave it up to the backend).  "+
+					"Defaults to \"backend\".";
 			dpi.required=false;
 			dpilist.add(dpi);
 		}

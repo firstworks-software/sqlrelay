@@ -129,6 +129,7 @@ The following connect string variables control attributes of the connection:
 * '''db''' - The database to switch to when logging into SQL Relay.  May be left empty or omitted to accept the default database that SQL Relay is already connected to.
 * '''debug''' - If this is set to 1 or to a file name then debug is enabled.  If set to a file name then debug will be written to the file.  If set to 1 then debug will be written to the browser.  Defaults to 0.
 * '''lazyconnect''' - By default, the SQL Relay client does "lazy connects".  I.e. the connection to the SQL Relay server isn't established until the first query or other operation is run.  This optimizes availability of the connection pool but is inconsistent with most other database API's.  Setting this parameter to 0 causes the connection to the SQL Relay server to be established immediately and the constructor to fail, returning 0, if the connection cannot be established.  Defaults to 1.
+* '''autocommit''' - Controls whether the driver explicitly turns autocommit on or off after connecting.  May be set to '''1''' (autocommit on), '''0''' (autocommit off), or '''-1''' (leave it up to the backend).  Defaults to '''0'''.
 
 In addition, the following connect string variables can be used to establish Kerberos or Active Directory encryption and authentication with the server:
 

@@ -1983,11 +1983,6 @@ static int sqlrelayHandleFactory(pdo_dbh_t *dbh,
 		{"tlsdepth",(char *)"0",0},
 		{"db",(char *)"",0},
 		{"connecttime",(char *)"",0},
-		// FIXME: sort this out...  George Carrette suggests this to
-		// make SQL Relay consistent with other PDO drivers, but the
-		// change makes it inconsistent with SQL Relay drivers for
-		// other languages...
-		//{"autocommit",(char *)"1",0},
 		{"autocommit",(char *)"0",0},
 		{"bindvariabledelimiters",(char *)"?:@$",0},
 		{"emulatepreparesunicodestrings",(char *)"0",0},
@@ -2018,7 +2013,11 @@ static int sqlrelayHandleFactory(pdo_dbh_t *dbh,
 	uint16_t	tlsdepth=charstring::convertToInteger(options[21].optval);
 	const char	*db=options[22].optval;
 	const char      *connecttime=options[23].optval;
-	bool		autocommit=!charstring::isNo(options[24].optval);
+	// autocommit:
+	//   "1"  - turn autocommit on after connect
+	//   "0"  - turn autocommit off after connect (default)
+	//   "-1" - don't do either, leave it up to the backend
+	const char	*autocommit=options[24].optval;
 	const char	*bindvariabledelimiters=options[25].optval;
 	bool		emulatepreparesunicodestrings=
 				charstring::isYes(options[26].optval);
@@ -2136,6 +2135,16 @@ static int sqlrelayHandleFactory(pdo_dbh_t *dbh,
 		sqlrdbh->sqlrcon->selectDatabase(db);
 	}
 
+	// turn autocommit on or off, or leave it alone and let the backend
+	// decide.  isYes/isNo match "1"/"0" (and "yes"/"no", "true"/"false");
+	// "-1" matches neither, so it falls through and we don't call either
+	// autoCommit method.
+	if (charstring::isYes(autocommit)) {
+		sqlrdbh->sqlrcon->autoCommitOn();
+	} else if (charstring::isNo(autocommit)) {
+		sqlrdbh->sqlrcon->autoCommitOff();
+	}
+
 	sqlrdbh->resultsetbuffersize=charstring::convertToInteger(options[6].optval);
 	sqlrdbh->dontgetcolumninfo=charstring::isYes(options[7].optval);
 	sqlrdbh->nullsasnulls=charstring::isYes(options[8].optval);
@@ -2149,7 +2158,14 @@ static int sqlrelayHandleFactory(pdo_dbh_t *dbh,
 	dbh->methods=&sqlrconnectionMethods;
 
 	dbh->is_persistent=0;
-	dbh->auto_commit=autocommit;
+	// keep PDO's auto_commit flag in sync with what we just set; for
+	// "-1" (don't touch) default to true, since most backends autocommit
+	// by default and that matches PDO's general default
+	if (charstring::isNo(autocommit)) {
+		dbh->auto_commit=0;
+	} else {
+		dbh->auto_commit=1;
+	}
 	dbh->is_closed=0;
 	dbh->alloc_own_columns=1;
 	dbh->max_escaped_char_length=2;

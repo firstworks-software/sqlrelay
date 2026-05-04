@@ -50,6 +50,14 @@ class oracle extends sqlrtest {
 			password="testpassword";
 		}
 
+		Properties	props=new Properties();
+		props.setProperty("user",user);
+		props.setProperty("password",password);
+		if (issqlrelay) {
+			// for JDBC spec compliance
+			props.setProperty("AutoCommit","yes");
+		}
+
 		Connection		con;
 		DatabaseMetaData	md;
 		boolean			boolval;
@@ -77,7 +85,7 @@ class oracle extends sqlrtest {
 		System.out.println("  getConnection");
 		DriverManager.getDrivers();
 		Class.forName(driver);
-		con=DriverManager.getConnection(url,user,password);
+		con=DriverManager.getConnection(url,props);
 		assertTrue((con!=null));
 		System.out.println();
 
@@ -88,7 +96,7 @@ class oracle extends sqlrtest {
 		con.close();
 		assertTrue(con.isClosed());
 		assertFalse(con.isValid(0));
-		con=DriverManager.getConnection(url,user,password);
+		con=DriverManager.getConnection(url,props);
 		assertTrue((con!=null));
 		System.out.println();
 
@@ -2683,7 +2691,7 @@ class oracle extends sqlrtest {
 		// commit
 		System.out.println("COMMIT:");
 		Connection	secondcon=DriverManager.getConnection(
-							url,user,password);
+							url,props);
 		assertTrue((secondcon!=null));
 		Statement	secondstmt=secondcon.createStatement();
 		assertTrue((secondstmt!=null));
@@ -3114,7 +3122,7 @@ class oracle extends sqlrtest {
 		rs.close();
 		con.close();
 		System.out.println();
-		con=DriverManager.getConnection(url,user,password);
+		con=DriverManager.getConnection(url,props);
 		assertTrue((con!=null));
 		stmt=con.createStatement();
 		assertTrue((stmt!=null));
@@ -3316,7 +3324,7 @@ class oracle extends sqlrtest {
 
 		// client info properties
 		System.out.println("CLIENT INFO PROPERTIES:");
-		con=DriverManager.getConnection(url,user,password);
+		con=DriverManager.getConnection(url,props);
 		md=con.getMetaData();
 		// sqlrelay doesn't support this yet
 		if (!issqlrelay) {

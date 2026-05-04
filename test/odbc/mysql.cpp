@@ -335,7 +335,9 @@ int main(int argc, char **argv) {
 			"Server=sqlrelay;Port=9000;"
 			"Socket=/tmp/test.socket;"
 			"User=testuser;Password=testpassword;"
-			"NullsAsNulls=yes;");
+			"NullsAsNulls=yes;"
+			// for ODBC spec compliance
+			"AutoCommit=yes;");
 	} else {
 		incstr.append(
 			"Driver={MariaDB};"

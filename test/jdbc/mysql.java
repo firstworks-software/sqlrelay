@@ -49,6 +49,14 @@ class mysql extends sqlrtest {
 			password="testpassword";
 		}
 
+		Properties	props=new Properties();
+		props.setProperty("user",user);
+		props.setProperty("password",password);
+		if (issqlrelay) {
+			// for JDBC spec compliance
+			props.setProperty("AutoCommit","yes");
+		}
+
 		Connection		con;
 		DatabaseMetaData	md;
 		boolean			boolval;
@@ -76,7 +84,7 @@ class mysql extends sqlrtest {
 		System.out.println("  getConnection");
 		DriverManager.getDrivers();
 		Class.forName(driver);
-		con=DriverManager.getConnection(url,user,password);
+		con=DriverManager.getConnection(url,props);
 		assertTrue((con!=null));
 		System.out.println();
 
@@ -87,7 +95,7 @@ class mysql extends sqlrtest {
 		con.close();
 		assertTrue(con.isClosed());
 		assertFalse(con.isValid(0));
-		con=DriverManager.getConnection(url,user,password);
+		con=DriverManager.getConnection(url,props);
 		assertTrue((con!=null));
 		System.out.println();
 
@@ -2844,7 +2852,7 @@ if (issqlrelay) {
 		// commit
 		System.out.println("COMMIT:");
 		Connection	secondcon=DriverManager.getConnection(
-							url,user,password);
+							url,props);
 		assertTrue((secondcon!=null));
 		Statement	secondstmt=secondcon.createStatement();
 		assertTrue((secondstmt!=null));
@@ -3084,7 +3092,7 @@ if (issqlrelay) {
 		// temp table is gone after close/reconnect
 		con.close();
 		System.out.println();
-		con=DriverManager.getConnection(url,user,password);
+		con=DriverManager.getConnection(url,props);
 		assertTrue((con!=null));
 		con.setAutoCommit(false);
 		stmt=con.createStatement();
@@ -3174,7 +3182,7 @@ if (issqlrelay) {
 
 		// client info properties
 		System.out.println("CLIENT INFO PROPERTIES:");
-		con=DriverManager.getConnection(url,user,password);
+		con=DriverManager.getConnection(url,props);
 		con.setAutoCommit(false);
 		md=con.getMetaData();
 		// sqlrelay doesn't support this yet
