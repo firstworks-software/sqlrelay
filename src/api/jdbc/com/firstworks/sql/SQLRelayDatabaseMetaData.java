@@ -287,8 +287,10 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 		drv.debugPrintln("table name pattern: "+tablenamepattern);
 		drv.debugPrintln("column name pattern: "+columnnamepattern);
 
-		String	wild=buildWild(catalog,schemapattern,tablenamepattern);
-		drv.debugPrintln("wild: "+wild);
+		String	table=buildObjectName(catalog,
+						schemapattern,
+						tablenamepattern);
+		drv.debugPrintln("table: "+table);
 		drv.debugPrintln("column name pattern: "+columnnamepattern);
 
 		SQLRelayResultSet	resultset=null;
@@ -299,7 +301,7 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 		boolean	result=false;
 		synchronized (networklock) {
 			result=sqlrcur.getColumnListWithFormat(
-						wild,columnnamepattern,4);
+						table,columnnamepattern,4);
 		}
 
 		if (result) {
@@ -601,21 +603,23 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 
 	public
 	ResultSet getIndexInfo(String catalog,
-					String schema,
-					String table,
+					String schemapattern,
+					String tablenamepattern,
 					boolean unique,
 					boolean approximate)
 					throws SQLException {
 		drv.debugFunction(this);
 
 		drv.debugPrintln("catalog: "+catalog);
-		drv.debugPrintln("schema: "+schema);
-		drv.debugPrintln("table: "+table);
+		drv.debugPrintln("schema pattern: "+schemapattern);
+		drv.debugPrintln("table name pattern: "+tablenamepattern);
 		drv.debugPrintln("unique: "+unique);
 		drv.debugPrintln("approximate: "+approximate);
 
-		String	wild=buildWild(catalog,schema,table);
-		drv.debugPrintln("wild: "+wild);
+		String	table=buildObjectName(catalog,
+						schemapattern,
+						tablenamepattern);
+		drv.debugPrintln("table: "+table);
 
 		SQLRelayResultSet	resultset=null;
 		SQLRelayStatement	stmt=(SQLRelayStatement)
@@ -625,7 +629,7 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 		boolean	result=false;
 		synchronized (networklock) {
 			result=sqlrcur.getKeyAndIndexListWithFormat(
-							wild,null,4);
+							table,null,4);
 		}
 
 		if (result) {
@@ -857,17 +861,19 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 
 	public
 	ResultSet getPrimaryKeys(String catalog,
-					String schema,
-					String table)
+					String schemapattern,
+					String tablenamepattern)
 					throws SQLException {
 		drv.debugFunction(this);
 
 		drv.debugPrintln("catalog: "+catalog);
-		drv.debugPrintln("schema: "+schema);
-		drv.debugPrintln("table: "+table);
+		drv.debugPrintln("schema pattern: "+schemapattern);
+		drv.debugPrintln("table name pattern: "+tablenamepattern);
 
-		String	wild=buildWild(catalog,schema,table);
-		drv.debugPrintln("wild: "+wild);
+		String	table=buildObjectName(catalog,
+						schemapattern,
+						tablenamepattern);
+		drv.debugPrintln("table: "+table);
 
 		SQLRelayResultSet	resultset=null;
 		SQLRelayStatement	stmt=(SQLRelayStatement)
@@ -877,7 +883,7 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 		boolean	result=false;
 		synchronized (networklock) {
 			result=sqlrcur.getPrimaryKeysListWithFormat(
-							wild,null,4);
+							table,null,4);
 		}
 
 		if (result) {
@@ -915,9 +921,10 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 		drv.debugPrintln("column name pattern: "+
 						columnnamepattern);
 
-		String	wild=buildWild(catalog,schemapattern,
+		String	procedure=buildObjectName(catalog,
+						schemapattern,
 						procedurenamepattern);
-		drv.debugPrintln("wild: "+wild);
+		drv.debugPrintln("procedure: "+procedure);
 		drv.debugPrintln("column name pattern: "+
 						columnnamepattern);
 
@@ -930,7 +937,7 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 		synchronized (networklock) {
 			result=sqlrcur.
 				getProcedureParameterListWithFormat(
-						wild,columnnamepattern,4);
+						procedure,columnnamepattern,4);
 		}
 
 		if (result) {
@@ -965,9 +972,10 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 		drv.debugPrintln("procedure name pattern: "+
 						procedurenamepattern);
 
-		String	wild=buildWild(catalog,schemapattern,
+		String	procedures=buildObjectName(catalog,
+						schemapattern,
 						procedurenamepattern);
-		drv.debugPrintln("wild: "+wild);
+		drv.debugPrintln("procedures: "+procedures);
 
 		SQLRelayResultSet	resultset=null;
 		SQLRelayStatement	stmt=(SQLRelayStatement)
@@ -977,7 +985,7 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 		boolean	result=false;
 		synchronized (networklock) {
 			result=sqlrcur.getProcedureListWithFormat(
-						procedurenamepattern,4);
+						procedures,4);
 		}
 
 		if (result) {
@@ -1257,8 +1265,10 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 			drv.debugPrintln("types: "+t);
 		}
 
-		String	wild=buildWild(catalog,schemapattern,tablenamepattern);
-		drv.debugPrintln("wild: "+wild);
+		String	tables=buildObjectName(catalog,
+						schemapattern,
+						tablenamepattern);
+		drv.debugPrintln("tables: "+tables);
 
 		SQLRelayResultSet	resultset=null;
 		SQLRelayStatement	stmt=(SQLRelayStatement)
@@ -1268,7 +1278,7 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 		boolean	result=false;
 		synchronized (networklock) {
 			result=sqlrcur.getTableListWithFormat(
-					tablenamepattern,4,objecttypes);
+					tables,4,objecttypes);
 		}
 
 		if (result) {
@@ -1291,7 +1301,7 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 	}
 
 	private
-	String buildWild(String catalog, String schema, String object) {
+	String buildObjectName(String catalog, String schema, String object) {
 		drv.debugFunction(this);
 
 		drv.debugPrintln("catalog: "+catalog);
@@ -1305,18 +1315,19 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 			return object;
 		}
 
-		// Concatenate parts until wild is one of the following formats:
+		// Concatenate parts until objectname
+		// is one of the following formats:
 		// * table
 		// * schema.table
 		// * catalog.schema.table
 
-		StringBuilder	wild=new StringBuilder();
+		StringBuilder	objectname=new StringBuilder();
 		if (catalog!=null) {
 			if (catalog.equals("")) {
 				// retrieve objects without a catalog
 				// FIXME: how???
 			} else {
-				wild.append(catalog).append('.');
+				objectname.append(catalog).append('.');
 			}
 		}
 		if (schema!=null) {
@@ -1324,20 +1335,20 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 				// retrieve objects without a schema
 				// FIXME: how???
 			} else {
-				wild.append(schema).append('.');
+				objectname.append(schema).append('.');
 			}
-		} else if (wild.length()>0) {
+		} else if (objectname.length()>0) {
 			// if schema was null, but a catalog was
 			// specified then include all schemas
-			wild.append("%.");
+			objectname.append("%.");
 		}
 		if (object!=null && !object.equals("")) {
-			wild.append(object);
+			objectname.append(object);
 		} else {
-			wild.append('%');
+			objectname.append('%');
 		}
 		drv.debugEnd();
-		return wild.toString();
+		return objectname.toString();
 	}
 
 	public
