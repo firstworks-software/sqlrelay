@@ -71,6 +71,8 @@
 	added autocommit 1/0/-1 connect string option to PHP PDO driver
 	added lazyconnectautocommit connect string option to PHP PDO driver
 	fixed PHP PDO lazyconnect initialization from wrong option bug
+	fixed bug that allowed faketransactionblocks=yes to be set for dbs
+		that support transaction blocks natively
 
 2.1.1 - added tns_admin support
 	fixed sqlr-start ... -strace ...

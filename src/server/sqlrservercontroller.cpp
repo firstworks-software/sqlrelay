@@ -10070,6 +10070,13 @@ void sqlrservercontroller::setDbType(const char *dbtype) {
 }
 
 void sqlrservercontroller::setFakeTransactionBlocks(bool ftb) {
+	if (ftb && pvt->_conn->supportsTransactionBlocks()) {
+		stderror.printf("Warning: faketransactionblocks=yes is set, "
+				"but the database supports transaction blocks "
+				"natively, falling back to "
+				"faketransactionblocks=no.");
+		return;
+	}
 	pvt->_faketransactionblocks=ftb;
 }
 
