@@ -231,6 +231,7 @@ class SQLRSERVER_DLLSPEC firebirdconnection : public sqlrserverconnection {
 		bool	supportsTransactionBlocks();
 		bool	setAutoCommitOn();
 		bool	setAutoCommitOff();
+		bool	supportsAutoCommit();
 		bool	commit();
 		bool	rollback();
 		bool	ping();
@@ -976,6 +977,10 @@ bool firebirdconnection::setAutoCommitOff() {
 	return !isc_commit_transaction(error,&tr) &&
 		!isc_start_transaction(error,&tr,1,&db,
 					(uint16_t)sizeof(tpb),&tpb);
+}
+
+bool firebirdconnection::supportsAutoCommit() {
+	return true;
 }
 
 bool firebirdconnection::commit() {

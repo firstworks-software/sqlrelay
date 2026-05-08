@@ -231,6 +231,7 @@ class SQLRSERVER_DLLSPEC informixconnection : public sqlrserverconnection {
 		int16_t	getNullBindValue();
 		bool	setAutoCommitOn();
 		bool	setAutoCommitOff();
+		bool	supportsAutoCommit();
 		bool	supportsTransactionBlocks();
 		bool	commit();
 		bool	rollback();
@@ -975,6 +976,10 @@ bool informixconnection::setAutoCommitOff() {
 	return (SQLSetConnectAttr(dbc,SQL_ATTR_AUTOCOMMIT,
 				(SQLPOINTER)SQL_AUTOCOMMIT_OFF,
 				sizeof(SQLINTEGER))==SQL_SUCCESS);
+}
+
+bool informixconnection::supportsAutoCommit() {
+	return true;
 }
 
 bool informixconnection::supportsTransactionBlocks() {

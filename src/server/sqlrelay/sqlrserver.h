@@ -3218,10 +3218,19 @@ class SQLRSERVER_DLLSPEC sqlrserverconnection : public sqlrserverbase {
 						const char *newpassword);
 
 		/** Set auto-commit on.
+		 *
+		 *  This implementation just returns false, but may be
+		 *  overridden by a child class to set autocommit on
+		 *  in a database-specific manner.
+		 *
 		 *  Returns true on success and false on failure. */
 		virtual bool	setAutoCommitOn();
 
 		/** Set auto-commit off.
+		 *
+		 *  This implementation just returns false, but may be
+		 *  overridden by a child class to set autocommit off
+		 *  in a database-specific manner.
 		 *
 		 *  Returns true on success and false on failure. */
 		virtual bool	setAutoCommitOff();
@@ -3232,6 +3241,14 @@ class SQLRSERVER_DLLSPEC sqlrserverconnection : public sqlrserverbase {
 		 *  Returns true by default but may be overridden by a child
 		 *  class. */
 		virtual bool	isTransactional();
+
+		/** Returns true if the database supports auto-commit (ie. if
+		 *  setAutoCommitOn() and setAutoCommitOff() are implemented in
+		 *  a database-specific manner) and false otherwise.
+		 *
+		 *  Returns false by default but may be overridden by a child
+		 *  class. */
+		virtual bool	supportsAutoCommit();
 
 		/** Returns true if the database supports begin-commit/rollback
 		 *  transaction blocks (eg. the behavior of most databases) and

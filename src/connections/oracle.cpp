@@ -109,6 +109,7 @@ class SQLRSERVER_DLLSPEC oracleconnection : public sqlrserverconnection {
 		bool		supportsTransactionBlocks();
 		bool		setAutoCommitOn();
 		bool		setAutoCommitOff();
+		bool		supportsAutoCommit();
 		bool		commit();
 		bool		rollback();
 		void		getError(char *errorbuffer,
@@ -1637,6 +1638,10 @@ bool oracleconnection::setAutoCommitOn() {
 
 bool oracleconnection::setAutoCommitOff() {
 	stmtmode=OCI_DEFAULT;
+	return true;
+}
+
+bool oracleconnection::supportsAutoCommit() {
 	return true;
 }
 

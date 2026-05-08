@@ -242,6 +242,7 @@ class SQLRSERVER_DLLSPEC db2connection : public sqlrserverconnection {
 		int16_t	getNullBindValue();
 		bool	setAutoCommitOn();
 		bool	setAutoCommitOff();
+		bool	supportsAutoCommit();
 		bool	supportsTransactionBlocks();
 		bool	commit();
 		bool	rollback();
@@ -998,6 +999,10 @@ bool db2connection::setAutoCommitOff() {
 	return (SQLSetConnectAttr(dbc,SQL_ATTR_AUTOCOMMIT,
 				(SQLPOINTER)SQL_AUTOCOMMIT_OFF,
 				sizeof(SQLINTEGER))==SQL_SUCCESS);
+}
+
+bool db2connection::supportsAutoCommit() {
+	return true;
 }
 
 bool db2connection::supportsTransactionBlocks() {

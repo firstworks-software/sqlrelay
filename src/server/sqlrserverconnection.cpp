@@ -87,7 +87,8 @@ void sqlrserverconnection::handleConnectString() {
 	} else if (charstring::isNo(autocommit)) {
 		cont->setInitialAutoCommit(false);
 	} else {
-		cont->setInitialAutoCommit(supportsTransactionBlocks());
+		cont->setInitialAutoCommit(!isTransactional() ||
+						supportsTransactionBlocks());
 	}
 
 	// fake transaction blocks
@@ -193,40 +194,19 @@ bool sqlrserverconnection::changeProxiedUser(const char *newuser,
 }
 
 bool sqlrserverconnection::setAutoCommitOn() {
-
-	// if the database doesn't support transactions or transaction blocks,
-	// then autocommit is always on
-	if (!isTransactional() || !supportsTransactionBlocks()) {
-		return true;
-	}
-	// if we're in a transaction block, then just commit it
-	// and don't start a new one
-	if (cont->getInTransaction()) {
-		return cont->commit();
-	}
-	// otherwise, we're already outside of a transaction block,
-	// so autocommit must already be on
-	return true;
+	return false;
 }
 
 bool sqlrserverconnection::setAutoCommitOff() {
-
-	// if the database doesn't support transactions or transaction blocks,
-	// then autocommit is always on
-	if (!isTransactional() || !supportsTransactionBlocks()) {
-		return false;
-	}
-	// if we're not in a transaction block, then start a new one
-	if (!cont->getInTransaction()) {
-		return cont->begin();
-	}
-	// otherwise, we're already in a transaction block,
-	// so autocommit must already be off
-	return true;
+	return false;
 }
 
 bool sqlrserverconnection::isTransactional() {
 	return true;
+}
+
+bool sqlrserverconnection::supportsAutoCommit() {
+	return false;
 }
 
 bool sqlrserverconnection::supportsTransactionBlocks() {
@@ -235,16 +215,10 @@ bool sqlrserverconnection::supportsTransactionBlocks() {
 
 bool sqlrserverconnection::begin() {
 
+	// run a begin query...
+
 	// re-init error data
 	cont->clearError();
-
-	// for db's that don't support begin queries,
-	// don't do anything, just return true
-	if (!supportsTransactionBlocks()) {
-		return true;
-	}
-
-	// for db's that support begin queries, run one...
 
 	// init some variables
 	const char	*beginquery=beginTransactionQuery();
@@ -283,6 +257,8 @@ const char *sqlrserverconnection::beginTransactionQuery() {
 
 bool sqlrserverconnection::commit() {
 
+	// run a commit query...
+
 	// re-init error data
 	cont->clearError();
 
@@ -318,6 +294,8 @@ bool sqlrserverconnection::commit() {
 }
 
 bool sqlrserverconnection::rollback() {
+
+	// run a rollback query...
 
 	// re-init error data
 	cont->clearError();

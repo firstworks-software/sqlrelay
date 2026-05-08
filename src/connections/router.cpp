@@ -58,6 +58,7 @@ class SQLRSERVER_DLLSPEC routerconnection : public sqlrserverconnection {
 		void		logOut();
 		bool		setAutoCommitOn();
 		bool		setAutoCommitOff();
+		bool		supportsAutoCommit();
 		bool		begin();
 		bool		commit();
 		bool		rollback();
@@ -1010,6 +1011,10 @@ bool routerconnection::setAutoCommitOff() {
 		stdoutput.printf("}\n");
 	}
 	return result;
+}
+
+bool routerconnection::supportsAutoCommit() {
+	return true;
 }
 
 bool routerconnection::begin() {
