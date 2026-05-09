@@ -95,7 +95,6 @@ class freetds extends sqlrtest {
 		con=DriverManager.getConnection(url,props);
 		assertTrue((con!=null));
 		assertFalse(con.isClosed());
-		con.setAutoCommit(false);
 		System.out.println();
 
 		// autocommit
@@ -104,6 +103,7 @@ class freetds extends sqlrtest {
 		assertTrue(con.getAutoCommit());
 		con.setAutoCommit(false);
 		assertFalse(con.getAutoCommit());
+		con.setAutoCommit(true);
 		System.out.println();
 
 		// warnings

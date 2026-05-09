@@ -6927,6 +6927,11 @@ int main(int argc, char **argv) {
 	assertSuccessStmt(stmt2,erg);
 	assertEqualStmt(stmt2,(int)rowcount,4);
 
+	// switch dbc to autocommit ON; the next insert is auto-committed
+	erg=SQLSetConnectAttr(dbc,SQL_ATTR_AUTOCOMMIT,
+		(SQLPOINTER)SQL_AUTOCOMMIT_ON,0);
+	assertSuccessDbc(dbc,erg);
+
 	// insert another row
 	erg=SQLExecDirect(stmt,(SQLCHAR *)
 		"insert into "
@@ -6964,6 +6969,9 @@ int main(int argc, char **argv) {
 	SQLDisconnect(dbc2);
 	SQLFreeHandle(SQL_HANDLE_DBC,dbc2);
 
+	erg=SQLSetConnectAttr(dbc,SQL_ATTR_AUTOCOMMIT,
+		(SQLPOINTER)SQL_AUTOCOMMIT_OFF,0);
+	assertSuccessDbc(dbc,erg);
 	erg=SQLExecDirect(stmt,
 		(SQLCHAR *)"drop table if exists testtable",SQL_NTS);
 	assertSuccessStmt(stmt,erg);

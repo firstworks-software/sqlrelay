@@ -92,7 +92,6 @@ class postgresql extends sqlrtest {
 		con=DriverManager.getConnection(url,props);
 		assertTrue((con!=null));
 		assertFalse(con.isClosed());
-		con.setAutoCommit(false);
 		System.out.println();
 
 		// autocommit
@@ -101,6 +100,7 @@ class postgresql extends sqlrtest {
 		assertTrue(con.getAutoCommit());
 		con.setAutoCommit(false);
 		assertFalse(con.getAutoCommit());
+		con.setAutoCommit(true);
 		System.out.println();
 
 		// warnings
@@ -1500,6 +1500,7 @@ class postgresql extends sqlrtest {
 			"	testtext text, "+
 			"	testbytea bytea, "+
 			"	testurl varchar(60))"),0);
+		con.setAutoCommit(false);
 		System.out.println();
 
 

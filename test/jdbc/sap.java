@@ -94,7 +94,6 @@ class sap extends sqlrtest {
 		con=DriverManager.getConnection(url,props);
 		assertTrue((con!=null));
 		assertFalse(con.isClosed());
-		con.setAutoCommit(false);
 		System.out.println();
 
 		// autocommit

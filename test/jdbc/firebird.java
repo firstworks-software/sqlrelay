@@ -93,7 +93,6 @@ class firebird extends sqlrtest {
 		con=DriverManager.getConnection(url,props);
 		assertTrue((con!=null));
 		assertFalse(con.isClosed());
-		con.setAutoCommit(false);
 		System.out.println();
 
 		// autocommit
@@ -102,6 +101,7 @@ class firebird extends sqlrtest {
 		assertTrue(con.getAutoCommit());
 		con.setAutoCommit(false);
 		assertFalse(con.getAutoCommit());
+		con.setAutoCommit(true);
 		System.out.println();
 
 		// warnings
@@ -1499,6 +1499,7 @@ class firebird extends sqlrtest {
 		System.out.println("STATEMENT:");
 		stmt=con.createStatement();
 		assertTrue((stmt!=null));
+		con.setAutoCommit(false);
 		System.out.println();
 
 

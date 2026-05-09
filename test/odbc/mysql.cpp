@@ -7358,6 +7358,12 @@ int main(int argc, char **argv) {
 	assertSuccessDbc(dbc2,erg);
 	erg=SQLAllocHandle(SQL_HANDLE_STMT,dbc2,&stmt2);
 	assertSuccessDbc(dbc2,erg);
+	// mysql uses repeatable read by default, so dbc2 needs to commit
+	// to release its current snapshot before reading data committed
+	// by dbc; put dbc2 in autocommit-off so we can drive that explicitly
+	erg=SQLSetConnectAttr(dbc2,SQL_ATTR_AUTOCOMMIT,
+		(SQLPOINTER)SQL_AUTOCOMMIT_OFF,0);
+	assertSuccessDbc(dbc2,erg);
 	SQLINTEGER	rowcount;
 	SQLLEN		rowcountind;
 	// insert a row on dbc, but don't commit
@@ -7377,6 +7383,9 @@ int main(int argc, char **argv) {
 	// commit on dbc; dbc2 should now see 1 row
 	erg=SQLEndTran(SQL_HANDLE_DBC,dbc,SQL_COMMIT);
 	assertSuccessDbc(dbc,erg);
+	// release dbc2's snapshot to start a new one
+	erg=SQLEndTran(SQL_HANDLE_DBC,dbc2,SQL_COMMIT);
+	assertSuccessDbc(dbc2,erg);
 	erg=SQLFreeStmt(stmt2,SQL_CLOSE);
 	erg=SQLExecDirect(stmt2,(SQLCHAR *)
 		"select count(*) from testtable",SQL_NTS);
@@ -7393,6 +7402,8 @@ int main(int argc, char **argv) {
 	erg=SQLEndTran(SQL_HANDLE_DBC,dbc,SQL_ROLLBACK);
 	assertSuccessDbc(dbc,erg);
 	// dbc2 should still see only the one committed row
+	erg=SQLEndTran(SQL_HANDLE_DBC,dbc2,SQL_COMMIT);
+	assertSuccessDbc(dbc2,erg);
 	erg=SQLFreeStmt(stmt2,SQL_CLOSE);
 	erg=SQLExecDirect(stmt2,(SQLCHAR *)
 		"select count(*) from testtable",SQL_NTS);
@@ -7409,6 +7420,8 @@ int main(int argc, char **argv) {
 	erg=SQLExecDirect(stmt,(SQLCHAR *)
 		"insert into testtable values (3, 'three')",SQL_NTS);
 	assertSuccessStmt(stmt,erg);
+	erg=SQLEndTran(SQL_HANDLE_DBC,dbc2,SQL_COMMIT);
+	assertSuccessDbc(dbc2,erg);
 	erg=SQLFreeStmt(stmt2,SQL_CLOSE);
 	erg=SQLExecDirect(stmt2,(SQLCHAR *)
 		"select count(*) from testtable",SQL_NTS);

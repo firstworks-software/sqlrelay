@@ -165,6 +165,7 @@ class mysql extends sqlrtest {
 		assertTrue(con.getAutoCommit());
 		con.setAutoCommit(false);
 		assertTrue(!con.getAutoCommit());
+		con.setAutoCommit(true);
 		System.out.println();
 
 		// holdability
@@ -1862,6 +1863,7 @@ class mysql extends sqlrtest {
 			"	testlongblob longblob, "+
 			"	testtimestamp timestamp, "+
 			"	testurl varchar(60))"),0);
+		con.setAutoCommit(false);
 		System.out.println();
 
 

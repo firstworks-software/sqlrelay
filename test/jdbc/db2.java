@@ -112,7 +112,6 @@ class db2 extends sqlrtest {
 		con=DriverManager.getConnection(url,props);
 		assertTrue((con!=null));
 		assertFalse(con.isClosed());
-		con.setAutoCommit(false);
 		System.out.println();
 
 		// autocommit
@@ -121,6 +120,7 @@ class db2 extends sqlrtest {
 		assertTrue(con.getAutoCommit());
 		con.setAutoCommit(false);
 		assertFalse(con.getAutoCommit());
+		con.setAutoCommit(true);
 		System.out.println();
 
 		// warnings
@@ -1539,6 +1539,7 @@ class db2 extends sqlrtest {
 			"	testclob clob, "+
 			"	testblob blob, "+
 			"	testurl varchar(60))"),0);
+		con.setAutoCommit(false);
 		System.out.println();
 
 

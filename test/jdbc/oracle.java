@@ -187,6 +187,7 @@ class oracle extends sqlrtest {
 		assertTrue(con.getAutoCommit());
 		con.setAutoCommit(false);
 		assertTrue(!con.getAutoCommit());
+		con.setAutoCommit(true);
 		System.out.println();
 
 		// holdability
@@ -1844,6 +1845,7 @@ class oracle extends sqlrtest {
 			"	testclob clob, "+
 			"	testblob blob, "+
 			"	testurl varchar2(60))"),0);
+		con.setAutoCommit(false);
 		System.out.println();
 
 
