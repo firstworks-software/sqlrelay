@@ -99,6 +99,10 @@ class sqlrconnectionprivate {
 		char		*_isolationlevel;
 		char		*_defaultisolationlevel;
 
+		// transaction model
+		char		*_transactionmodel;
+		char		*_defaulttransactionmodel;
+
 		// database features
 		dictionary<const char *, char *>	_dbfeatures;
 
@@ -238,6 +242,10 @@ void sqlrconnection::init(const char *server, uint16_t port,
 	pvt->_isolationlevel=NULL;
 	pvt->_defaultisolationlevel=NULL;
 
+	// transaction model
+	pvt->_transactionmodel=NULL;
+	pvt->_defaulttransactionmodel=NULL;
+
 	// database features
 	pvt->_dbfeatures.setManageArrayValues(true);
 
@@ -332,6 +340,10 @@ sqlrconnection::~sqlrconnection() {
 	// deallocate isolation level
 	delete[] pvt->_isolationlevel;
 	delete[] pvt->_defaultisolationlevel;
+
+	// deallocate transaction model
+	delete[] pvt->_transactionmodel;
+	delete[] pvt->_defaulttransactionmodel;
 
 	// deallocate server version
 	delete[] pvt->_serverversion;
@@ -2177,6 +2189,146 @@ bool sqlrconnection::rollback() {
 	return !gotError();
 }
 
+const char *sqlrconnection::getDefaultTransactionModel() {
+
+	if (!openSession()) {
+		return NULL;
+	}
+
+	clearError();
+
+	if (pvt->_debug) {
+		debugPreStart();
+		debugPrint("Getting default transaction model...");
+		debugPrint("\n");
+		debugPreEnd();
+	}
+
+	// tell the server we want to get the default transaction model
+	pvt->_cs->write((uint16_t)GET_DEFAULT_TRANSACTION_MODEL);
+
+	flushWriteBuffer();
+
+	if (gotError()) {
+		return NULL;
+	}
+
+	// get the default transaction model size
+	uint16_t	size;
+	if (pvt->_cs->read(&size,pvt->_responsetimeoutsec,
+				pvt->_responsetimeoutusec)!=sizeof(uint16_t)) {
+		setError("Failed to get default transaction model.\n"
+				"A network error may have occurred.");
+		return NULL;
+	}
+
+	// get the default transaction model
+	delete[] pvt->_defaulttransactionmodel;
+	pvt->_defaulttransactionmodel=new char[size+1];
+	if (pvt->_cs->read(pvt->_defaulttransactionmodel,size)!=size) {
+		setError("Failed to get default transaction model.\n"
+				"A network error may have occurred.");
+		delete[] pvt->_defaulttransactionmodel;
+		pvt->_defaulttransactionmodel=NULL;
+		return NULL;
+	}
+	pvt->_defaulttransactionmodel[size]='\0';
+
+	if (pvt->_debug) {
+		debugPreStart();
+		debugPrint(pvt->_defaulttransactionmodel);
+		debugPrint("\n");
+		debugPreEnd();
+	}
+	return pvt->_defaulttransactionmodel;
+}
+
+bool sqlrconnection::setTransactionModel(const char *txmodel) {
+
+	clearError();
+
+	if (!openSession()) {
+		return false;
+	}
+
+	if (pvt->_debug) {
+		debugPreStart();
+		debugPrint("Setting transaction model ");
+		debugPrint(txmodel);
+		debugPrint("...\n");
+		debugPreEnd();
+	}
+
+	// tell the server we want to set the transaction model
+	pvt->_cs->write((uint16_t)SET_TRANSACTION_MODEL);
+
+	// send the transaction model string
+	uint16_t	len=charstring::getLength(txmodel);
+	pvt->_cs->write(len);
+	if (len) {
+		pvt->_cs->write(txmodel,len);
+	}
+	flushWriteBuffer();
+
+	// the server validates the string and returns an error if it's not
+	// one of "native", "none", "implicit", "explicit",
+	// "explicit-deferred", or "explicit-error"
+	return !gotError();
+}
+
+const char *sqlrconnection::getTransactionModel() {
+
+	if (!openSession()) {
+		return NULL;
+	}
+
+	clearError();
+
+	if (pvt->_debug) {
+		debugPreStart();
+		debugPrint("Getting transaction model...\n");
+		debugPreEnd();
+	}
+
+	// tell the server we want to get the transaction model
+	pvt->_cs->write((uint16_t)GET_TRANSACTION_MODEL);
+
+	flushWriteBuffer();
+
+	if (gotError()) {
+		return NULL;
+	}
+
+	// get the transaction model size
+	uint16_t	size;
+	if (pvt->_cs->read(&size,pvt->_responsetimeoutsec,
+				pvt->_responsetimeoutusec)!=sizeof(uint16_t)) {
+		setError("Failed to get transaction model.\n"
+				"A network error may have occurred.");
+		return NULL;
+	}
+
+	// get the transaction model
+	delete[] pvt->_transactionmodel;
+	pvt->_transactionmodel=new char[size+1];
+	if (pvt->_cs->read(pvt->_transactionmodel,size)!=size) {
+		setError("Failed to get transaction model.\n"
+				"A network error may have occurred.");
+		delete[] pvt->_transactionmodel;
+		pvt->_transactionmodel=NULL;
+		return NULL;
+	}
+	pvt->_transactionmodel[size]='\0';
+
+	if (pvt->_debug) {
+		debugPreStart();
+		debugPrint(pvt->_transactionmodel);
+		debugPrint("\n");
+		debugPreEnd();
+	}
+	return pvt->_transactionmodel;
+}
+
 const char *sqlrconnection::getDefaultIsolationLevel() {
 	return	getDefaultIsolationLevel(SQLRCLIENTISOLATIONLEVELFORMAT_NATIVE);
 }
@@ -2338,74 +2490,6 @@ const char *sqlrconnection::getIsolationLevel(
 		debugPreEnd();
 	}
 	return pvt->_isolationlevel;
-}
-
-bool sqlrconnection::setTransactionModel(sqlrclienttxmodel_t txmodel) {
-
-	clearError();
-
-	if (!openSession()) {
-		return false;
-	}
-
-	if (pvt->_debug) {
-		debugPreStart();
-		debugPrint("Setting transaction model ");
-		debugPrint((int64_t)txmodel);
-		debugPrint("...\n");
-		debugPreEnd();
-	}
-
-	// tell the server we want to set the transaction model
-	pvt->_cs->write((uint16_t)SET_TRANSACTION_MODEL);
-
-	// send the transaction model
-	pvt->_cs->write((uint16_t)txmodel);
-
-	flushWriteBuffer();
-
-	return !gotError();
-}
-
-sqlrclienttxmodel_t sqlrconnection::getTransactionModel() {
-
-	if (!openSession()) {
-		return SQLRCLIENTTXMODEL_UNKNOWN;
-	}
-
-	clearError();
-
-	if (pvt->_debug) {
-		debugPreStart();
-		debugPrint("Getting transaction model...\n");
-		debugPreEnd();
-	}
-
-	// tell the server we want to get the transaction model
-	pvt->_cs->write((uint16_t)GET_TRANSACTION_MODEL);
-
-	flushWriteBuffer();
-
-	if (gotError()) {
-		return SQLRCLIENTTXMODEL_UNKNOWN;
-	}
-
-	// get the transaction model
-	uint16_t	txmodel;
-	if (pvt->_cs->read(&txmodel,pvt->_responsetimeoutsec,
-				pvt->_responsetimeoutusec)!=sizeof(uint16_t)) {
-		setError("Failed to get transaction model.\n"
-				"A network error may have occurred.");
-		return SQLRCLIENTTXMODEL_UNKNOWN;
-	}
-
-	if (pvt->_debug) {
-		debugPreStart();
-		debugPrint((int64_t)txmodel);
-		debugPrint("\n");
-		debugPreEnd();
-	}
-	return (sqlrclienttxmodel_t)txmodel;
 }
 
 const char *sqlrconnection::getDatabaseFeature(const char *feature) {

@@ -2949,7 +2949,7 @@ static SQLRETURN SQLR_SQLConnect(SQLHDBC connectionhandle,
 	//
 	// If this fails, we don't want the entire connection to fail.  Just
 	// set the error and return SUCCESS_WITH_INFO.
-	if (conn->con->setTransactionModel(SQLRCLIENTTXMODEL_IMPLICIT)) {
+	if (conn->con->setTransactionModel("implicit")) {
 		debugPrintf("  Set Transaction Model Implicit: success\n");
 	} else {
 		SQLR_CONNSetError(conn,

@@ -807,16 +807,8 @@ bool sqlrservercontroller::init(int argc, const char **argv) {
 	const char	*txmodel=pvt->_cfg->getTransactionModel();
 	if (!charstring::compare(txmodel,"native")) {
 		pvt->_initialtxmodel=pvt->_conn->getNativeTransactionModel();
-	} else if (!charstring::compare(txmodel,"none")) {
-		pvt->_initialtxmodel=SQLRTXMODEL_NONE;
-	} else if (!charstring::compare(txmodel,"implicit")) {
-		pvt->_initialtxmodel=SQLRTXMODEL_IMPLICIT;
-	} else if (!charstring::compare(txmodel,"explicit")) {
-		pvt->_initialtxmodel=SQLRTXMODEL_EXPLICIT;
-	} else if (!charstring::compare(txmodel,"explicit-deferred")) {
-		pvt->_initialtxmodel=SQLRTXMODEL_EXPLICIT_DEFERRED;
-	} else if (!charstring::compare(txmodel,"explicit-error")) {
-		pvt->_initialtxmodel=SQLRTXMODEL_EXPLICIT_ERROR;
+	} else {
+		pvt->_initialtxmodel=stringToTransactionModel(txmodel);
 	}
 	pvt->_txmodel=pvt->_initialtxmodel;
 
@@ -3045,6 +3037,54 @@ const char *sqlrservercontroller::getIsolationLevel(
 
 sqlrtxmodel_t sqlrservercontroller::getTransactionModel() {
 	return pvt->_txmodel;
+}
+
+sqlrtxmodel_t sqlrservercontroller::getNativeTransactionModel() {
+	return pvt->_conn->getNativeTransactionModel();
+}
+
+sqlrtxmodel_t sqlrservercontroller::stringToTransactionModel(
+						const char *txmodel) {
+
+	// "native" is intentionally not mapped here; resolving it requires
+	// asking the active connection what its native model is, which a
+	// static helper can't do.  Callers handle that case before calling
+	// this function.
+	if (!charstring::compare(txmodel,"none")) {
+		return SQLRTXMODEL_NONE;
+	}
+	if (!charstring::compare(txmodel,"implicit")) {
+		return SQLRTXMODEL_IMPLICIT;
+	}
+	if (!charstring::compare(txmodel,"explicit")) {
+		return SQLRTXMODEL_EXPLICIT;
+	}
+	if (!charstring::compare(txmodel,"explicit-deferred")) {
+		return SQLRTXMODEL_EXPLICIT_DEFERRED;
+	}
+	if (!charstring::compare(txmodel,"explicit-error")) {
+		return SQLRTXMODEL_EXPLICIT_ERROR;
+	}
+	return SQLRTXMODEL_UNKNOWN;
+}
+
+const char *sqlrservercontroller::transactionModelToString(
+						sqlrtxmodel_t txmodel) {
+	switch (txmodel) {
+		case SQLRTXMODEL_NONE:
+			return "none";
+		case SQLRTXMODEL_IMPLICIT:
+			return "implicit";
+		case SQLRTXMODEL_EXPLICIT:
+			return "explicit";
+		case SQLRTXMODEL_EXPLICIT_DEFERRED:
+			return "explicit-deferred";
+		case SQLRTXMODEL_EXPLICIT_ERROR:
+			return "explicit-error";
+		case SQLRTXMODEL_UNKNOWN:
+		default:
+			return "unknown";
+	}
 }
 
 bool sqlrservercontroller::setTransactionModel(sqlrtxmodel_t txmodel) {

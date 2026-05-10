@@ -54,7 +54,8 @@ public class SQLRelayDriver implements Driver {
 						ci.outputparameterbuffersize);
 
 			// JDBC wants the implicit transaction model
-			if (!conn.getSQLRConnection().setTransactionModel(2)) {
+			if (!conn.getSQLRConnection().setTransactionModel(
+								"implicit")) {
 				conn.throwErrorMessageException();
 			}
 

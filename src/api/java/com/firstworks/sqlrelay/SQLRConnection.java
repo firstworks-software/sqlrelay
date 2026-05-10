@@ -369,6 +369,45 @@ public class SQLRConnection {
 	 *  it failed. */
 	public native boolean	rollback();
 
+	/** Returns the database's native transaction model.  See
+	 *  setTranscationModel() for a list of potential return values.
+	 *  Returns null if an error occurred. */
+	public native String	getDefaultTransactionModel();
+
+	/** Sets the current transaction model to "txmodel" which should be one
+	 *  of:
+	 *
+	 *  * native - the database's native transaction model
+	 *  * none - no transactions
+	 *  * "implicit"
+	 *      * in a transaction when the session begins
+	 *      * commit/rollback implicitly starts a new transcaction
+	 *      * autocommit on/off take effect immediately
+	 *  * "explicit"
+	 *      * not in a transaction when the session begins
+	 *      * begin required to start a new transaction
+	 *      * commit/rollback does not start a new transcaction
+	 *      * autocommit on/off take effect immediately
+	 *  * "explicit-deferred"
+	 *      * not in a transaction when the session begins
+	 *      * begin required to start a new transaction
+	 *      * commit/rollback does not start a new transcaction
+	 *      * while in a transaction, autocommit on/off take effect at next
+	 *        commit/rollback
+	 *  * "explicit-error"
+	 *      * not in a transaction when the session begins
+	 *      * begin required to start a new transaction
+	 *      * commit/rollback does not start a new transcaction
+	 *      * while in a transaction, autocommit on/off throw error
+	 *
+	 *  Returns true on success and false on failure. */
+	public native boolean	setTransactionModel(String txmodel);
+
+	/** Returns the current transaction model.  See setTranscationModel()
+	 *  for a list of potential return values.  Returns null if an error
+	 *  occurred. */
+	public native String	getTransactionModel();
+
 	/** Returns the database-specific default isolation level,
 	 *  or null if an error occurred. */
 	public native String	getDefaultIsolationLevel();
@@ -718,6 +757,4 @@ public class SQLRConnection {
 	public native boolean	setIsolationLevel(String isolationlevel,
 								int format);
 	public native String	getIsolationLevel(int format);
-	public native boolean	setTransactionModel(int txmodel);
-	public native int	getTransactionModel();
 }

@@ -701,6 +701,29 @@ class SQLRSERVER_DLLSPEC sqlrservercontroller : public sqlrserverbase {
 		 *  Returns true on success and false on failure. */
 		bool	setTransactionModel(sqlrtxmodel_t txmodel);
 
+		/** Returns the database's native transaction model (the model
+		 *  returned by sqlrserverconnection::getNativeTransactionModel()
+		 *  for the active backend). */
+		sqlrtxmodel_t	getNativeTransactionModel();
+
+		/** Maps the configuration string ("native", "none", "implicit",
+		 *  "explicit", "explicit-deferred", or "explicit-error") to the
+		 *  corresponding sqlrtxmodel_t value.
+		 *
+		 *  Returns SQLRTXMODEL_UNKNOWN if the string doesn't match any
+		 *  known transaction model.  "native" maps to
+		 *  SQLRTXMODEL_UNKNOWN here because resolving it requires the
+		 *  active connection's getNativeTransactionModel() — callers
+		 *  must handle that case themselves. */
+		static sqlrtxmodel_t	stringToTransactionModel(
+						const char *txmodel);
+
+		/** Maps an sqlrtxmodel_t back to its configuration-string
+		 *  form ("none", "implicit", "explicit", "explicit-deferred",
+		 *  "explicit-error", or "unknown"). */
+		static const char	*transactionModelToString(
+						sqlrtxmodel_t txmodel);
+
 		/** If "fac" is true then auto-commit is faked by executing a
 		 *  commit after each query.  If "fac" is false then native
 		 *  auto-commit is used.

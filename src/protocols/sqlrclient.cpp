@@ -78,6 +78,7 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_sqlrclient : public sqlrprotocol {
 		void	getDefaultIsolationLevelCommand();
 		void	setTransactionModelCommand();
 		void	getTransactionModelCommand();
+		void	getDefaultTransactionModelCommand();
 		void	getDatabaseFeaturesCommand();
 		bool	newQueryCommand(sqlrservercursor *cursor);
 		bool	reExecuteQueryCommand(sqlrservercursor *cursor);
@@ -536,6 +537,9 @@ clientsessionexitstatus_t sqlrprotocol_sqlrclient::clientSession(
 			continue;
 		} else if (command==GET_TRANSACTION_MODEL) {
 			getTransactionModelCommand();
+			continue;
+		} else if (command==GET_DEFAULT_TRANSACTION_MODEL) {
+			getDefaultTransactionModelCommand();
 			continue;
 		} else if (command==GET_DATABASE_FEATURES) {
 			//cont->incrementGetDatabaseFeaturesCount();
@@ -1830,24 +1834,80 @@ void sqlrprotocol_sqlrclient::setTransactionModelCommand() {
 
 	debugStart("setting transaction model");
 
-	// get the transaction model
-	uint16_t	txmodel;
-	ssize_t		result=clientsock->read(&txmodel,
+	// get the size of the transaction model string
+	uint16_t	txmodelsize;
+	ssize_t		result=clientsock->read(&txmodelsize,
 						idleclienttimeout,0);
 	if (result!=sizeof(uint16_t)) {
 		clientsock->write(false);
 		cont->raiseClientProtocolErrorEvent(NULL,result,
 					"set transaction model failed: "
-					"failed to get transaction model");
-		debugWrite("failed to get transaction model");
+					"failed to get transaction model size");
+		debugWrite("failed to get transaction model size");
 		debugEnd();
 		return;
 	}
 
-	debugWrite("transaction model: %hd",txmodel);
+	// bounds checking
+	if (txmodelsize>maxquerysize) {
+		clientsock->write(false);
+		cont->raiseClientProtocolErrorEvent(NULL,1,
+					"set transaction model failed: "
+					"client sent bad transaction model "
+					"size: %d",txmodelsize);
+		debugWrite("client sent bad transaction model size: %d",
+								txmodelsize);
+		debugEnd();
+		return;
+	}
+
+	// read the transaction model parameter into the buffer
+	char	*txmodelstr=new char[txmodelsize+1];
+	if (txmodelsize) {
+		result=clientsock->read(txmodelstr,txmodelsize,
+						idleclienttimeout,0);
+		if ((uint32_t)result!=txmodelsize) {
+			clientsock->write(false);
+			clientsock->flushWriteBuffer(-1,-1);
+			delete[] txmodelstr;
+			cont->raiseClientProtocolErrorEvent(NULL,result,
+					"set transaction model failed: "
+					"failed to get transaction model");
+			debugWrite("failed to get transaction model");
+			debugEnd();
+			return;
+		}
+	}
+	txmodelstr[txmodelsize]='\0';
+
+	debugWrite("transaction model: %.*s",txmodelsize,txmodelstr);
+
+	// map the string to an enum; "native" resolves to whatever the
+	// active backend reports as its native model
+	sqlrtxmodel_t	txmodel;
+	if (!charstring::compare(txmodelstr,"native")) {
+		txmodel=cont->getNativeTransactionModel();
+	} else {
+		txmodel=sqlrservercontroller::stringToTransactionModel(
+								txmodelstr);
+	}
+
+	// reject unknown strings before calling the controller
+	if (txmodel==SQLRTXMODEL_UNKNOWN) {
+		stringbuffer	errmsg;
+		errmsg.append("invalid transaction model: ");
+		errmsg.append(txmodelstr);
+		cont->setError(errmsg.getString(),
+				SQLR_ERROR_NOTIMPLEMENTED,true);
+		delete[] txmodelstr;
+		debugWrite("invalid transaction model");
+		returnError(false);
+		debugEnd();
+		return;
+	}
 
 	// set the transaction model and send back the result
-	if (cont->setTransactionModel((sqlrtxmodel_t)txmodel)) {
+	if (cont->setTransactionModel(txmodel)) {
 		debugWrite("success");
 		clientsock->write((uint16_t)NO_ERROR_OCCURRED);
 		clientsock->flushWriteBuffer(-1,-1);
@@ -1856,6 +1916,8 @@ void sqlrprotocol_sqlrclient::setTransactionModelCommand() {
 		returnError(false);
 	}
 
+	delete[] txmodelstr;
+
 	debugEnd();
 }
 
@@ -1863,14 +1925,37 @@ void sqlrprotocol_sqlrclient::getTransactionModelCommand() {
 
 	debugStart("getting transaction model");
 
-	// get the transaction model
-	sqlrtxmodel_t	txmodel=cont->getTransactionModel();
+	// get the transaction model and map it to its config string form
+	const char	*txmodel=sqlrservercontroller::transactionModelToString(
+						cont->getTransactionModel());
 
-	debugWrite("transaction model: %hd",(uint16_t)txmodel);
+	debugWrite("transaction model: %s",txmodel);
 
 	// send result to the client
+	uint16_t	txmodelsize=charstring::getLength(txmodel);
 	clientsock->write((uint16_t)NO_ERROR_OCCURRED);
-	clientsock->write((uint16_t)txmodel);
+	clientsock->write(txmodelsize);
+	clientsock->write(txmodel,txmodelsize);
+	clientsock->flushWriteBuffer(-1,-1);
+
+	debugEnd();
+}
+
+void sqlrprotocol_sqlrclient::getDefaultTransactionModelCommand() {
+
+	debugStart("getting default transaction model");
+
+	// the default is whatever the backend reports as its native model
+	const char	*txmodel=sqlrservercontroller::transactionModelToString(
+					cont->getNativeTransactionModel());
+
+	debugWrite("default transaction model: %s",txmodel);
+
+	// send result to the client
+	uint16_t	txmodelsize=charstring::getLength(txmodel);
+	clientsock->write((uint16_t)NO_ERROR_OCCURRED);
+	clientsock->write(txmodelsize);
+	clientsock->write(txmodel,txmodelsize);
 	clientsock->flushWriteBuffer(-1,-1);
 
 	debugEnd();
@@ -5169,6 +5254,9 @@ void sqlrprotocol_sqlrclient::debugCommand(uint16_t command) {
 			break;
 		case GET_TRANSACTION_MODEL:
 			debugWrite("GET_TRANSACTION_MODEL");
+			break;
+		case GET_DEFAULT_TRANSACTION_MODEL:
+			debugWrite("GET_DEFAULT_TRANSACTION_MODEL");
 			break;
 		case GET_LAST_INSERT_ID_LIST:
 			debugWrite("GET_LAST_INSERT_ID_LIST");
