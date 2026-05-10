@@ -13,6 +13,7 @@
 #include <rudiments/url.h>
 #include <rudiments/filesystem.h>
 #include <rudiments/character.h>
+#include <rudiments/parameterstring.h>
 #include <rudiments/stdio.h>
 #include <rudiments/process.h>
 //#define DEBUG_MESSAGES
@@ -1969,6 +1970,25 @@ void sqlrconfig_xmldom::normalizeTree() {
 				logger->getAttributeValue("connection"))) {
 			instance->getFirstTagChild("connections")->
 					setAttributeValue("debug","yes");
+		}
+	}
+
+	// if the instance has no transactionmodel attribute, but any
+	// connection's string attribute has faketransactionblocks=yes,
+	// then default the instance's transactionmodel to "explicit"
+	if (instance->getAttribute("transactionmodel")->isNullNode()) {
+		for (domnode *conn=instance->getFirstTagChild("connections")->
+						getFirstTagChild("connection");
+				!conn->isNullNode();
+				conn=conn->getNextTagSibling("connection")) {
+			parameterstring	ps;
+			ps.parse(conn->getAttributeValue("string"));
+			if (charstring::isYes(
+					ps.getValue("faketransactionblocks"))) {
+				instance->setAttributeValue(
+						"transactionmodel","explicit");
+				break;
+			}
 		}
 	}
 }

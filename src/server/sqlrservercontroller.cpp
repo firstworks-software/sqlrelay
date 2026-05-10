@@ -246,7 +246,6 @@ class sqlrservercontrollerprivate {
 	uint16_t	_inetport;
 	stringbuffer	_unixsocket;
 
-	bool		_faketransactionblocks;
 	sqlrtxmodel_t	_txmodel;
 	bool		_intransaction;
 
@@ -523,8 +522,7 @@ sqlrservercontroller::sqlrservercontroller() : sqlrserverbase() {
 	pvt->_autocommit=false;
 	pvt->_initialautocommit=false;
 
-	pvt->_faketransactionblocks=false;
-	pvt->_txmodel=SQLRTXMODEL_NATIVE;
+	pvt->_txmodel=SQLRTXMODEL_UNKNOWN;
 	pvt->_intransaction=false;
 
 	pvt->_fakeinputbinds=false;
@@ -770,20 +768,6 @@ bool sqlrservercontroller::init(int argc, const char **argv) {
 	pvt->_debugsql=pvt->_cfg->getDebugSql();
 	pvt->_debugbulkload=pvt->_cfg->getDebugBulkLoad();
 
-	// transaction model
-	const char	*txmodel=pvt->_cfg->getTransactionModel();
-	if (!charstring::compare(txmodel,"native")) {
-		pvt->_txmodel=SQLRTXMODEL_NATIVE;
-	} else if (!charstring::compare(txmodel,"implicit")) {
-		pvt->_txmodel=SQLRTXMODEL_IMPLICIT;
-	} else if (!charstring::compare(txmodel,"explicit")) {
-		pvt->_txmodel=SQLRTXMODEL_EXPLICIT;
-	} else if (!charstring::compare(txmodel,"explicit-deferred")) {
-		pvt->_txmodel=SQLRTXMODEL_EXPLICIT_DEFERRED;
-	} else if (!charstring::compare(txmodel,"explicit-error")) {
-		pvt->_txmodel=SQLRTXMODEL_EXPLICIT_ERROR;
-	}
-
 	// initialize logger modules
 	domnode	*loggers=pvt->_cfg->getLoggers();
 	if (!loggers->isNullNode()) {
@@ -813,6 +797,22 @@ bool sqlrservercontroller::init(int argc, const char **argv) {
 	pvt->_conn=initConnection(pvt->_cfg->getDbase());
 	if (!pvt->_conn) {
 		return false;
+	}
+
+	// initialize transaction model
+	const char	*txmodel=pvt->_cfg->getTransactionModel();
+	if (!charstring::compare(txmodel,"native")) {
+		pvt->_txmodel=pvt->_conn->getNativeTransactionModel();
+	} else if (!charstring::compare(txmodel,"none")) {
+		pvt->_txmodel=SQLRTXMODEL_NONE;
+	} else if (!charstring::compare(txmodel,"implicit")) {
+		pvt->_txmodel=SQLRTXMODEL_IMPLICIT;
+	} else if (!charstring::compare(txmodel,"explicit")) {
+		pvt->_txmodel=SQLRTXMODEL_EXPLICIT;
+	} else if (!charstring::compare(txmodel,"explicit-deferred")) {
+		pvt->_txmodel=SQLRTXMODEL_EXPLICIT_DEFERRED;
+	} else if (!charstring::compare(txmodel,"explicit-error")) {
+		pvt->_txmodel=SQLRTXMODEL_EXPLICIT_ERROR;
 	}
 
 	buildColumnMaps();
@@ -1048,7 +1048,7 @@ bool sqlrservercontroller::init(int argc, const char **argv) {
 
 	// be sure that the db really is in the autocommit state that we
 	// think it is before setting it to the state that we want it to be in
-	if (pvt->_conn->isTransactional() && pvt->_conn->supportsAutoCommit()) {
+	if (isTransactional() && pvt->_conn->supportsAutoCommit()) {
 		if (pvt->_autocommit) {
 			pvt->_conn->setAutoCommitOn();
 		} else {
@@ -1330,12 +1330,8 @@ bool sqlrservercontroller::logIn(bool printerrors) {
 		}
 	}
 
-	// If the db supports transactions, and doesn't support transaction
-	// blocks (and we're not faking them), then we're in a transaction,
-	// otherwise we're not.
-	pvt->_intransaction=pvt->_conn->isTransactional() &&
-				(!pvt->_conn->supportsTransactionBlocks() &&
-				!pvt->_faketransactionblocks);
+	// initialize transaction state
+	pvt->_intransaction=isInTransactionAtLogin();
 
 	// success... update stats
 	incrementOpenDatabaseConnections();
@@ -1377,6 +1373,30 @@ bool sqlrservercontroller::logIn(bool printerrors) {
 
 	raiseDbLogInEvent();
 
+	return true;
+}
+
+bool sqlrservercontroller::isInTransactionAtLogin() {
+
+	// if the database doesn't support transactions
+	// then we're not in a transaction
+	if (!isTransactional()) {
+		return false;
+	}
+
+	// if the database supports transaction blocks
+	// then we're not in a transaction
+	if (supportsTransactionBlocks()) {
+		return false;
+	}
+
+	// if we're faking transaction blocks
+	// then we're not in a transaction
+	if (fakingTransactionBlocks()) {
+		return false;
+	}
+
+	// otherwise, we are
 	return true;
 }
 
@@ -1723,7 +1743,7 @@ bool sqlrservercontroller::listen() {
 				// to pick up the suspended session then roll
 				// back and break out of the suspended session
 				// loop
-				if (pvt->_conn->isTransactional()) {
+				if (isTransactional()) {
 					rollback();
 				}
 				pvt->_suspendedsession=false;
@@ -2524,19 +2544,22 @@ bool sqlrservercontroller::setAutoCommitOn() {
 
 	// bail if we're not currently in a transaction
 	if (!pvt->_intransaction) {
+		if (pvt->_txmodel==SQLRTXMODEL_EXPLICIT_ERROR) {
+			// FIXME: throw an error and return false
+		}
 		return true;
 	}
 
 	// if the database isn't transactional then autocommit is always on
-	if (!pvt->_conn->isTransactional()) {
+	if (!isTransactional()) {
 		pvt->_autocommit=true;
 		return true;
 	}
 
 	// if the database supports autocommit then call its autocommit method
 	if (pvt->_conn->supportsAutoCommit()) {
-		// FIXME: this is not correct for dbs which
-		// defer autocommit (eg. mysql)
+		// FIXME: this is not correct for
+		// SQLRTXMODEL_EXPLICIT_DEFERRED (eg. mysql)
 		if (!pvt->_conn->setAutoCommitOn()) {
 			return false;
 		}
@@ -2546,8 +2569,7 @@ bool sqlrservercontroller::setAutoCommitOn() {
 
 	// if the database supports transaction blocks (or we're faking them)
 	// then implement this with a commit
-	if (pvt->_conn->supportsTransactionBlocks() ||
-				pvt->_faketransactionblocks) {
+	if (supportsTransactionBlocks() || fakingTransactionBlocks()) {
 		return commit();
 	}
 
@@ -2581,19 +2603,22 @@ bool sqlrservercontroller::setAutoCommitOff() {
 
 	// bail if we're currently in a transaction
 	if (pvt->_intransaction) {
+		if (pvt->_txmodel==SQLRTXMODEL_EXPLICIT_ERROR) {
+			// FIXME: throw an error and return false
+		}
 		return true;
 	}
 
 	// if the database isn't transactional then autocommit is always on
-	if (!pvt->_conn->isTransactional()) {
+	if (!isTransactional()) {
 		pvt->_autocommit=true;
 		return false;
 	}
 
 	// if the database supports autocommit then call its autocommit method
 	if (pvt->_conn->supportsAutoCommit()) {
-		// FIXME: this is not correct for dbs which
-		// defer autocommit (eg. mysql)
+		// FIXME: this is not correct for
+		// SQLRTXMODEL_EXPLICIT_DEFERRED (eg. mysql)
 		if (!pvt->_conn->setAutoCommitOff()) {
 			return false;
 		}
@@ -2603,8 +2628,7 @@ bool sqlrservercontroller::setAutoCommitOff() {
 
 	// if the database supports transaction blocks (or we're faking them)
 	// then implement this with a begin
-	if (pvt->_conn->supportsTransactionBlocks() ||
-				pvt->_faketransactionblocks) {
+	if (supportsTransactionBlocks() || fakingTransactionBlocks()) {
 		return begin();
 	}
 
@@ -2637,24 +2661,25 @@ bool sqlrservercontroller::begin() {
 
 	// bail if we're currently in a transaction
 	if (pvt->_intransaction) {
-		return true;
+		setError(SQLR_ERROR_BEGIN_IN_TX_BLOCK_STRING,
+				SQLR_ERROR_BEGIN_IN_TX_BLOCK,true);
+		return false;
 	}
 
 	// bail if the database isn't transactional
-	if (!pvt->_conn->isTransactional()) {
+	if (!isTransactional()) {
 		return true;
 	}
 
 	// bail if the database doesn't support transaction blocks,
 	// and we're not faking them
-	if (!pvt->_conn->supportsTransactionBlocks() &&
-				!pvt->_faketransactionblocks) {
+	if (!supportsTransactionBlocks() && !fakingTransactionBlocks()) {
 		return true;
 	}
 
 	// if we are faking transaction blocks then implement this with
 	// autocommit off
-	if (pvt->_faketransactionblocks) {
+	if (fakingTransactionBlocks()) {
 
 		// ...but, only if the db supports autocommit, otherwise we'll
 		// end up in an infinite begin()-setAutoCommitOff()-begin()-...
@@ -2690,11 +2715,13 @@ bool sqlrservercontroller::commit() {
 
 	// bail if we're not currently in a transaction
 	if (!pvt->_intransaction) {
-		return true;
+		setError(SQLR_ERROR_COMMIT_NOT_IN_TX_BLOCK_STRING,
+				SQLR_ERROR_COMMIT_NOT_IN_TX_BLOCK,true);
+		return false;
 	}
 
 	// bail if the database isn't transactional
-	if (!pvt->_conn->isTransactional()) {
+	if (!isTransactional()) {
 		return true;
 	}
 
@@ -2719,16 +2746,31 @@ bool sqlrservercontroller::rollback() {
 
 	// bail if we're not currently in a transaction
 	if (!pvt->_intransaction) {
-		return true;
+		setError(SQLR_ERROR_ROLLBACK_NOT_IN_TX_BLOCK_STRING,
+				SQLR_ERROR_ROLLBACK_NOT_IN_TX_BLOCK,true);
+		return false;
 	}
 
 	// if the database isn't transactional then this is a no-op
-	if (!pvt->_conn->isTransactional()) {
+	if (!isTransactional()) {
 		return true;
 	}
 
 	// rollback
 	return pvt->_conn->rollback() && endTransaction(false);
+}
+
+bool sqlrservercontroller::isTransactional() {
+	return pvt->_txmodel!=SQLRTXMODEL_NONE;
+}
+
+bool sqlrservercontroller::supportsTransactionBlocks() {
+	return pvt->_txmodel!=SQLRTXMODEL_IMPLICIT;
+}
+
+bool sqlrservercontroller::fakingTransactionBlocks() {
+	return pvt->_conn->getNativeTransactionModel()==SQLRTXMODEL_IMPLICIT &&
+					pvt->_txmodel!=SQLRTXMODEL_IMPLICIT;
 }
 
 bool sqlrservercontroller::beginTransaction() {
@@ -2826,11 +2868,10 @@ bool sqlrservercontroller::endTransaction(bool commit) {
 	pvt->_txpool.clear();
 
 	// set in-tx and autocommit flags
-	if (pvt->_conn->supportsTransactionBlocks() ||
-				pvt->_faketransactionblocks) {
+	if (supportsTransactionBlocks() || fakingTransactionBlocks()) {
 		// FIXME: this is not correct for dbs which
 		// defer autocommit (eg. mysql)
-		if (pvt->_faketransactionblocks &&
+		if (fakingTransactionBlocks() &&
 				pvt->_conn->supportsAutoCommit()) {
 			pvt->_conn->setAutoCommitOn();
 		}
@@ -2942,6 +2983,10 @@ const char *sqlrservercontroller::getIsolationLevel(
 	return pvt->_conn->mapIsolationLevel(
 				isolevel,SQLRSERVERISOLATIONLEVELFORMAT_NATIVE,
 				toformat);
+}
+
+sqlrtxmodel_t sqlrservercontroller::getTransactionModel() {
+	return pvt->_txmodel;
 }
 
 bool sqlrservercontroller::ping() {
@@ -3300,18 +3345,10 @@ bool sqlrservercontroller::interceptQuery(sqlrservercursor *cursor) {
 			cursor->setOutputBindCount(0);
 			cursor->setInputOutputBindCount(0);
 			pvt->_sendcolumninfo=false;
-			if (pvt->_faketransactionblocks &&
-					pvt->_intransaction) {
-				setError(cursor,
-					SQLR_ERROR_BEGIN_IN_TX_BLOCK_STRING,
-					SQLR_ERROR_BEGIN_IN_TX_BLOCK,true);
-			} else {
-				retval=begin();
+			retval=begin();
+			if (!retval) {
+				copyConnectionErrorToCursor(cursor);
 			}
-			// FIXME: if the begin fails and the db api doesn't
-			// support a begin command then the connection-level
-			// error needs to be copied to the cursor so
-			// queryOrBindCursor can report it
 			break;
 		case SQLRQUERYTYPE_COMMIT:
 			cursor->setQueryWasIntercepted(true);
@@ -3319,18 +3356,10 @@ bool sqlrservercontroller::interceptQuery(sqlrservercursor *cursor) {
 			cursor->setOutputBindCount(0);
 			cursor->setInputOutputBindCount(0);
 			pvt->_sendcolumninfo=false;
-			if (pvt->_faketransactionblocks &&
-					!pvt->_intransaction) {
-				setError(cursor,
-				SQLR_ERROR_COMMIT_NOT_IN_TX_BLOCK_STRING,
-				SQLR_ERROR_COMMIT_NOT_IN_TX_BLOCK,true);
-			} else {
-				retval=commit();
+			retval=commit();
+			if (!retval) {
+				copyConnectionErrorToCursor(cursor);
 			}
-			// FIXME: if the commit fails and the db api doesn't
-			// support a commit command then the connection-level
-			// error needs to be copied to the cursor so
-			// queryOrBindCursor can report it
 			break;
 		case SQLRQUERYTYPE_ROLLBACK:
 			cursor->setQueryWasIntercepted(true);
@@ -3338,18 +3367,10 @@ bool sqlrservercontroller::interceptQuery(sqlrservercursor *cursor) {
 			cursor->setOutputBindCount(0);
 			cursor->setInputOutputBindCount(0);
 			pvt->_sendcolumninfo=false;
-			if (pvt->_faketransactionblocks &&
-					!pvt->_intransaction) {
-				setError(cursor,
-				SQLR_ERROR_ROLLBACK_NOT_IN_TX_BLOCK_STRING,
-				SQLR_ERROR_ROLLBACK_NOT_IN_TX_BLOCK,true);
-			} else {
-				retval=rollback();
+			retval=rollback();
+			if (!retval) {
+				copyConnectionErrorToCursor(cursor);
 			}
-			// FIXME: if the rollback fails and the db api doesn't
-			// support a rollback command then the connection-level
-			// error needs to be copied to the cursor so
-			// queryOrBindCursor can report it
 			break;
 		case SQLRQUERYTYPE_AUTOCOMMIT_ON:
 			cursor->setQueryWasIntercepted(true);
@@ -3361,6 +3382,9 @@ bool sqlrservercontroller::interceptQuery(sqlrservercursor *cursor) {
 			// SQLRQUERYTYPE_SET_INCLUDING_AUTOCOMMIT_ON
 			// somehow
 			retval=setAutoCommitOn();
+			if (!retval) {
+				copyConnectionErrorToCursor(cursor);
+			}
 			break;
 		case SQLRQUERYTYPE_AUTOCOMMIT_OFF:
 			cursor->setQueryWasIntercepted(true);
@@ -3372,6 +3396,9 @@ bool sqlrservercontroller::interceptQuery(sqlrservercursor *cursor) {
 			// SQLRQUERYTYPE_SET_INCLUDING_AUTOCOMMIT_OFF
 			// somehow
 			retval=setAutoCommitOff();
+			if (!retval) {
+				copyConnectionErrorToCursor(cursor);
+			}
 			break;
 		default:
 			break;
@@ -5352,7 +5379,7 @@ bool sqlrservercontroller::prepareQuery(sqlrservercursor *cursor,
 
 	// translate "begin" queries
 	// FIXME: can we just let interceptQuery below handle this?
-	if (pvt->_conn->supportsTransactionBlocks() &&
+	if (supportsTransactionBlocks() &&
 			cursor->getQueryType()==SQLRQUERYTYPE_BEGIN) {
 		translateBeginTransaction(cursor);
 	}
@@ -5568,7 +5595,7 @@ bool sqlrservercontroller::executeQuery(sqlrservercursor *cursor,
 
 		// translate "begin" queries
 		// FIXME: can we just let interceptQuery below handle this?
-		if (pvt->_conn->supportsTransactionBlocks() &&
+		if (supportsTransactionBlocks() &&
 				cursor->getQueryType()==SQLRQUERYTYPE_BEGIN) {
 			translateBeginTransaction(cursor);
 		}
@@ -5927,7 +5954,7 @@ void sqlrservercontroller::commitOrRollback(sqlrservercursor *cursor) {
 	debugStart("commit or rollback check");
 
 	// if the query was a commit or rollback, set a flag indicating so
-	if (pvt->_conn->isTransactional()) {
+	if (isTransactional()) {
 		if (cursor->queryIsCommitOrRollback()) {
 			pvt->_needscommitorrollback=false;
 		} else if (cursor->queryIsNotSelect()) {
@@ -7591,9 +7618,9 @@ void sqlrservercontroller::endSession() {
 		// Worst case, if we weren't in a fake transaction block (and
 		// were in autocommit mode) and the db cares, then it will
 		// throw an error, which will be ignored.
-		pvt->_faketransactionblocks ||
+		fakingTransactionBlocks() ||
 
-		(pvt->_conn->isTransactional() &&
+		(isTransactional() &&
 			pvt->_needscommitorrollback)) {
 
 		// otherwise, commit or rollback as necessary
@@ -10257,32 +10284,8 @@ void sqlrservercontroller::setDbType(const char *dbtype) {
 	pvt->_dbtype=dbtype;
 }
 
-void sqlrservercontroller::setFakeTransactionBlocks(bool ftb) {
-	if (ftb && pvt->_conn->supportsTransactionBlocks()) {
-		stderror.printf("Warning: faketransactionblocks=yes is set, "
-				"but the database supports transaction blocks "
-				"natively, falling back to "
-				"faketransactionblocks=no.\n");
-		pvt->_faketransactionblocks=false;
-		return;
-	}
-	pvt->_faketransactionblocks=ftb;
-}
-
-bool sqlrservercontroller::getFakeTransactionBlocks() {
-	return pvt->_faketransactionblocks;
-}
-
-void sqlrservercontroller::setTransactionModel(sqlrtxmodel_t txmodel) {
-	pvt->_txmodel=txmodel;
-}
-
-sqlrtxmodel_t sqlrservercontroller::getTransactionModel() {
-	return pvt->_txmodel;
-}
-
 void sqlrservercontroller::setInitialAutoCommit(bool iac) {
-	if (!iac && !pvt->_conn->isTransactional()) {
+	if (!iac && !isTransactional()) {
 		stderror.printf("Warning: autocommit=no is set, but the "
 				"database doesn't support transactions, "
 				"falling back to autocommit=yes.\n");
@@ -12360,6 +12363,14 @@ void sqlrservercontroller::setError(sqlrservercursor *cursor,
 						int64_t errn,
 						bool liveconn) {
 	setError(cursor,err,charstring::getLength(err),errn,liveconn);
+}
+
+void sqlrservercontroller::copyConnectionErrorToCursor(
+					sqlrservercursor *cursor) {
+	setError(cursor,pvt->_conn->getErrorBuffer(),
+			pvt->_conn->getErrorSize(),
+			pvt->_conn->getErrorNumber(),
+			pvt->_conn->getLiveConnection());
 }
 
 char *sqlrservercontroller::getErrorBuffer(sqlrservercursor *cursor) {

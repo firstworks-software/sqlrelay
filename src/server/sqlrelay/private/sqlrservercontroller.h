@@ -67,6 +67,7 @@
 
 		bool	attemptLogIn(bool printerrors);
 		bool	logIn(bool printerrors);
+		bool	isInTransactionAtLogin();
 		void	logOut();
 
 		void	setAutoCommit(bool ac);
@@ -95,6 +96,9 @@
 		bool	getProtocol();
 		void	clientSession();
 
+		bool	isTransactional();
+		bool	supportsTransactionBlocks();
+		bool	fakingTransactionBlocks();
 		bool	beginTransaction();
 		bool	endTransaction(bool commit);
 		void	clearColumnCaches();

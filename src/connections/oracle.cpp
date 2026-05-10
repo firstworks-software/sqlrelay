@@ -106,7 +106,6 @@ class SQLRSERVER_DLLSPEC oracleconnection : public sqlrserverconnection {
 		bool		changeProxiedUser(const char *newuser,
 						const char *newpassword);
 		#endif
-		bool		supportsTransactionBlocks();
 		sqlrtxmodel_t	getNativeTransactionModel();
 		bool		setAutoCommitOn();
 		bool		setAutoCommitOff();
@@ -1644,10 +1643,6 @@ bool oracleconnection::setAutoCommitOff() {
 
 bool oracleconnection::supportsAutoCommit() {
 	return true;
-}
-
-bool oracleconnection::supportsTransactionBlocks() {
-	return false;
 }
 
 sqlrtxmodel_t oracleconnection::getNativeTransactionModel() {

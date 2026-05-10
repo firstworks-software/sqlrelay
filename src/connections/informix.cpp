@@ -232,7 +232,6 @@ class SQLRSERVER_DLLSPEC informixconnection : public sqlrserverconnection {
 		bool	setAutoCommitOn();
 		bool	setAutoCommitOff();
 		bool	supportsAutoCommit();
-		bool	supportsTransactionBlocks();
 		sqlrtxmodel_t	getNativeTransactionModel();
 		bool	commit();
 		bool	rollback();
@@ -981,10 +980,6 @@ bool informixconnection::setAutoCommitOff() {
 
 bool informixconnection::supportsAutoCommit() {
 	return true;
-}
-
-bool informixconnection::supportsTransactionBlocks() {
-	return false;
 }
 
 sqlrtxmodel_t informixconnection::getNativeTransactionModel() {

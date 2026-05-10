@@ -206,7 +206,6 @@ class SQLRSERVER_DLLSPEC mysqlconnection : public sqlrserverconnection {
 		sqlrservercursor	*newCursor(uint16_t id);
 		void		deleteCursor(sqlrservercursor *curs);
 		void		logOut();
-		bool		isTransactional();
 #ifdef HAVE_MYSQL_PING
 		bool		ping();
 #endif
@@ -2714,10 +2713,6 @@ bool mysqlconnection::getLastInsertId(uint64_t *id) {
 
 const char *mysqlconnection::getNoopQuery() {
 	return "set @noop=null";
-}
-
-bool mysqlconnection::isTransactional() {
-	return true;
 }
 
 bool mysqlconnection::setAutoCommitOn() {

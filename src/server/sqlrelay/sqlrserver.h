@@ -7,7 +7,8 @@
 #include <sqlrelay/private/sqlrserverincludes.h>
 
 enum sqlrtxmodel_t {
-	SQLRTXMODEL_NATIVE=0,
+	SQLRTXMODEL_UNKNOWN=0,
+	SQLRTXMODEL_NONE,
 	SQLRTXMODEL_IMPLICIT,
 	SQLRTXMODEL_EXPLICIT,
 	SQLRTXMODEL_EXPLICIT_DEFERRED,
@@ -692,21 +693,7 @@ class SQLRSERVER_DLLSPEC sqlrservercontroller : public sqlrserverbase {
 		const char	*getIsolationLevel(
 				sqlrserverisolationlevelformat_t toformat);
 
-		/** If "ftb" is true then transaction blocks are faked by
-		 *  setting autocommit on and off as appropriate.  If "ftb" is
-		 *  false then begin and commit/rollback queries are run to
-		 *  begin/end transaction blocks. */
-		void	setFakeTransactionBlocks(bool ftb);
-
-		/** Returns whether transaction blocks are being faked, as set
-		 *  by setFakeTransactionBlocks(). */
-		bool	getFakeTransactionBlocks();
-
-		/** Sets the presented transaction model to "txmodel". */
-		void	setTransactionModel(sqlrtxmodel_t txmodel);
-
-		/** Returns the presented transaction model as set by
-		 *  by setTransactionModel(). */
+		/** Returns the current transaction model. */
 		sqlrtxmodel_t	getTransactionModel();
 
 		/** If "fac" is true then auto-commit is faked by executing a
@@ -754,6 +741,12 @@ class SQLRSERVER_DLLSPEC sqlrservercontroller : public sqlrserverbase {
 		 *
 		 *  FIXME: how is this distinct from saveError(cursor)? */
 		void	saveErrorFromCursor(sqlrservercursor *cursor);
+
+		/** Copies the connection-level error buffer, size,
+		 *  numeric error code, and live-connection flag into the
+		 *  corresponding cursor-level fields. */
+		void	copyConnectionErrorToCursor(
+						sqlrservercursor *cursor);
 
 		/** Returns the error message and code by:
 		 *
@@ -3250,13 +3243,6 @@ class SQLRSERVER_DLLSPEC sqlrserverconnection : public sqlrserverbase {
 		 *  Returns true on success and false on failure. */
 		virtual bool	setAutoCommitOff();
 
-		/** Returns true if the database is transactional and false
-		 *  otherwise.
-		 *
-		 *  Returns true by default but may be overridden by a child
-		 *  class. */
-		virtual bool	isTransactional();
-
 		/** Returns true if the database supports auto-commit (ie. if
 		 *  setAutoCommitOn() and setAutoCommitOff() are implemented in
 		 *  a database-specific manner) and false otherwise.
@@ -3264,15 +3250,6 @@ class SQLRSERVER_DLLSPEC sqlrserverconnection : public sqlrserverbase {
 		 *  Returns false by default but may be overridden by a child
 		 *  class. */
 		virtual bool	supportsAutoCommit();
-
-		/** Returns true if the database supports begin-commit/rollback
-		 *  transaction blocks (eg. the behavior of most databases) and
-		 *  false it a commit/rollback just begins another transaction
-		 *  (eg. the behavior of oracle databases).
-		 *
-		 *  Returns true by default, but may be overridden by a child
-		 *  class. */
-		virtual bool	supportsTransactionBlocks();
 
 		/** Returns the database's native transaction model.
 		 *

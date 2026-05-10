@@ -228,7 +228,6 @@ class SQLRSERVER_DLLSPEC firebirdconnection : public sqlrserverconnection {
 		sqlrservercursor	*newCursor(uint16_t id);
 		void	deleteCursor(sqlrservercursor *curs);
 		void	logOut();
-		bool	supportsTransactionBlocks();
 		sqlrtxmodel_t	getNativeTransactionModel();
 		bool	setAutoCommitOn();
 		bool	setAutoCommitOff();
@@ -960,10 +959,6 @@ void firebirdconnection::deleteCursor(sqlrservercursor *curs) {
 
 void firebirdconnection::logOut() {
 	isc_detach_database(error,&db);
-}
-
-bool firebirdconnection::supportsTransactionBlocks() {
-	return false;
 }
 
 sqlrtxmodel_t firebirdconnection::getNativeTransactionModel() {

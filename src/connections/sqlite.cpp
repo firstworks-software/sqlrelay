@@ -106,7 +106,7 @@ class SQLRSERVER_DLLSPEC sqliteconnection : public sqlrserverconnection {
 		char		*duplicate(const char *str);
 		#endif
 		#ifndef SQLITE_TRANSACTIONAL
-		bool		isTransactional();
+		sqlrtxmodel_t	getNativeTransactionModel();
 		bool		commit();
 		bool		rollback();
 		#endif
@@ -1689,8 +1689,8 @@ const char *sqliteconnection::getNoopQuery() {
 }
 
 #ifndef SQLITE_TRANSACTIONAL
-bool sqliteconnection::isTransactional() {
-	return false;
+sqlrtxmodel_t sqliteconnection::getNativeTransactionModel() {
+	return SQLRTXMODEL_NONE;
 }
 
 bool sqliteconnection::commit() {
