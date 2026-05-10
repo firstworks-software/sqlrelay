@@ -25,6 +25,9 @@ all-java:
 all-jdbc:
 	cd jdbc $(AND) $(MAKE) all
 
+all-odbc:
+	cd odbc $(AND) $(MAKE) all
+
 all-tcl:
 	cd tcl $(AND) $(MAKE) all
 

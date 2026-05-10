@@ -97,8 +97,10 @@
 		void	clientSession();
 
 		bool	isTransactional();
-		bool	supportsTransactionBlocks();
-		bool	fakingTransactionBlocks();
+		bool	supportsExplicitTransactions();
+		bool	supportsImplicitTransactions();
+		bool	fakingExplicitTransactions();
+		bool	fakingImplicitTransactions();
 		bool	beginTransaction();
 		bool	endTransaction(bool commit);
 		void	clearColumnCaches();

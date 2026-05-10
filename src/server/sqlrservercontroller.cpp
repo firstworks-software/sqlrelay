@@ -1384,17 +1384,19 @@ bool sqlrservercontroller::isInTransactionAtLogin() {
 		return false;
 	}
 
-	// if the database supports transaction blocks
+	// if the database supports explicit transactions
 	// then we're not in a transaction
-	if (supportsTransactionBlocks()) {
+	if (supportsExplicitTransactions()) {
 		return false;
 	}
 
-	// if we're faking transaction blocks
+	// if we're faking explicit transactions
 	// then we're not in a transaction
-	if (fakingTransactionBlocks()) {
+	if (fakingExplicitTransactions()) {
 		return false;
 	}
+
+	// FIXME: what if we're faking implicit transactions?
 
 	// otherwise, we are
 	return true;
@@ -2567,17 +2569,19 @@ bool sqlrservercontroller::setAutoCommitOn() {
 		return endTransaction(true);
 	}
 
-	// if the database supports transaction blocks (or we're faking them)
+	// if the database supports explicit transactions (or we're faking them)
 	// then implement this with a commit
-	if (supportsTransactionBlocks() || fakingTransactionBlocks()) {
+	if (supportsExplicitTransactions() || fakingExplicitTransactions()) {
 		return commit();
 	}
+
+	// FIXME: what if we're faking implicit transactions?
 
 	// the db:
 	// * is transactional
 	// * doesn't support it's own method of enabling autocommit
-	// * doesn't support transaction blocks
-	// * we're not faking transaction blocks
+	// * doesn't support explicit transactions
+	// * we're not faking explicit transactions
 	//
 	// in this case, there's no way to enable autocommit
 	// FIXME: we need to manually execute a commit after every query
@@ -2626,17 +2630,19 @@ bool sqlrservercontroller::setAutoCommitOff() {
 		return beginTransaction();
 	}
 
-	// if the database supports transaction blocks (or we're faking them)
+	// if the database supports explicit transactions (or we're faking them)
 	// then implement this with a begin
-	if (supportsTransactionBlocks() || fakingTransactionBlocks()) {
+	if (supportsExplicitTransactions() || fakingExplicitTransactions()) {
 		return begin();
 	}
+
+	// FIXME: what if we're faking implicit transactions?
 
 	// the db:
 	// * is transactional
 	// * doesn't support it's own method of enabling autocommit
-	// * doesn't support transaction blocks
-	// * we're not faking transaction blocks
+	// * doesn't support explicit transactions
+	// * we're not faking explicit transactions
 	//
 	// in this case, autocommit is always off
 	// FIXME: unless we're manually executing a commit after every query
@@ -2671,15 +2677,15 @@ bool sqlrservercontroller::begin() {
 		return true;
 	}
 
-	// bail if the database doesn't support transaction blocks,
+	// bail if the database doesn't support explicit transactions,
 	// and we're not faking them
-	if (!supportsTransactionBlocks() && !fakingTransactionBlocks()) {
+	if (!supportsExplicitTransactions() && !fakingExplicitTransactions()) {
 		return true;
 	}
 
-	// if we are faking transaction blocks then implement this with
+	// if we are faking explicit transactions then implement this with
 	// autocommit off
-	if (fakingTransactionBlocks()) {
+	if (fakingExplicitTransactions()) {
 
 		// ...but, only if the db supports autocommit, otherwise we'll
 		// end up in an infinite begin()-setAutoCommitOff()-begin()-...
@@ -2688,11 +2694,13 @@ bool sqlrservercontroller::begin() {
 			return setAutoCommitOff();
 		}
 
-		// If we're faking transaction blocks then the db doesn't
+		// If we're faking explicit transactions then the db doesn't
 		// support a begin statement.  If the db ALSO doesn't support
 		// autocommit, then there's no way to begin a transaction.
 		return false;
 	}
+
+	// FIXME: what if we're faking implicit transactions?
 
 	// begin
 	return pvt->_conn->begin() && beginTransaction();
@@ -2764,13 +2772,22 @@ bool sqlrservercontroller::isTransactional() {
 	return pvt->_txmodel!=SQLRTXMODEL_NONE;
 }
 
-bool sqlrservercontroller::supportsTransactionBlocks() {
+bool sqlrservercontroller::supportsExplicitTransactions() {
 	return pvt->_txmodel!=SQLRTXMODEL_IMPLICIT;
 }
 
-bool sqlrservercontroller::fakingTransactionBlocks() {
+bool sqlrservercontroller::supportsImplicitTransactions() {
+	return pvt->_txmodel==SQLRTXMODEL_IMPLICIT;
+}
+
+bool sqlrservercontroller::fakingExplicitTransactions() {
 	return pvt->_conn->getNativeTransactionModel()==SQLRTXMODEL_IMPLICIT &&
 					pvt->_txmodel!=SQLRTXMODEL_IMPLICIT;
+}
+
+bool sqlrservercontroller::fakingImplicitTransactions() {
+	return pvt->_conn->getNativeTransactionModel()!=SQLRTXMODEL_IMPLICIT &&
+					pvt->_txmodel==SQLRTXMODEL_IMPLICIT;
 }
 
 bool sqlrservercontroller::beginTransaction() {
@@ -2868,10 +2885,10 @@ bool sqlrservercontroller::endTransaction(bool commit) {
 	pvt->_txpool.clear();
 
 	// set in-tx and autocommit flags
-	if (supportsTransactionBlocks() || fakingTransactionBlocks()) {
+	if (supportsExplicitTransactions() || fakingExplicitTransactions()) {
 		// FIXME: this is not correct for dbs which
 		// defer autocommit (eg. mysql)
-		if (fakingTransactionBlocks() &&
+		if (fakingExplicitTransactions() &&
 				pvt->_conn->supportsAutoCommit()) {
 			pvt->_conn->setAutoCommitOn();
 		}
@@ -2880,6 +2897,8 @@ bool sqlrservercontroller::endTransaction(bool commit) {
 	} else {
 		pvt->_intransaction=!pvt->_autocommit;
 	}
+
+	// FIXME: what if we're faking implicit transactions?
 
 	// reset needs commit/rollback flag
 	pvt->_needscommitorrollback=false;
@@ -5379,7 +5398,7 @@ bool sqlrservercontroller::prepareQuery(sqlrservercursor *cursor,
 
 	// translate "begin" queries
 	// FIXME: can we just let interceptQuery below handle this?
-	if (supportsTransactionBlocks() &&
+	if (supportsExplicitTransactions() &&
 			cursor->getQueryType()==SQLRQUERYTYPE_BEGIN) {
 		translateBeginTransaction(cursor);
 	}
@@ -5595,7 +5614,7 @@ bool sqlrservercontroller::executeQuery(sqlrservercursor *cursor,
 
 		// translate "begin" queries
 		// FIXME: can we just let interceptQuery below handle this?
-		if (supportsTransactionBlocks() &&
+		if (supportsExplicitTransactions() &&
 				cursor->getQueryType()==SQLRQUERYTYPE_BEGIN) {
 			translateBeginTransaction(cursor);
 		}
@@ -7614,11 +7633,13 @@ void sqlrservercontroller::endSession() {
 		// ending the session before running the commit/rollback, then
 		// a commit/rollback needs to be run here.
 		//
-		// Call the commit/rollback if we're faking transaction blocks.
-		// Worst case, if we weren't in a fake transaction block (and
-		// were in autocommit mode) and the db cares, then it will
+		// Call the commit/rollback if we're faking explicit
+		// transactions.
+		//
+		// Worst case, if we weren't in a fake explicit transaction
+		// (and were in autocommit mode) and the db cares, then it will
 		// throw an error, which will be ignored.
-		fakingTransactionBlocks() ||
+		fakingExplicitTransactions() ||
 
 		(isTransactional() &&
 			pvt->_needscommitorrollback)) {
@@ -7634,6 +7655,8 @@ void sqlrservercontroller::endSession() {
 			debugEnd();
 		}
 	}
+
+	// FIXME: what if we're faking implicit transactions?
 
 	// truncate/drop temp tables
 	// (Do this before running the end-session queries becuase
