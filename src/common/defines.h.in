@@ -502,6 +502,12 @@ static const char *dbfeaturenames[]={
 #define SQLR_ERROR_TRIGGER 900034
 
 
+#define SQLR_ERROR_AUTOCOMMIT_ON_IN_TX_BLOCK 999995
+#define SQLR_ERROR_AUTOCOMMIT_ON_IN_TX_BLOCK_STRING \
+	"autocommit on while in transaction block"
+#define SQLR_ERROR_AUTOCOMMIT_OFF_IN_TX_BLOCK 999996
+#define SQLR_ERROR_AUTOCOMMIT_OFF_IN_TX_BLOCK_STRING \
+	"autocommit off while in transaction block"
 #define SQLR_ERROR_ROLLBACK_NOT_IN_TX_BLOCK 999997
 #define SQLR_ERROR_ROLLBACK_NOT_IN_TX_BLOCK_STRING \
 	"rollback while not in transaction block"

@@ -1054,6 +1054,12 @@ bool sqlrservercontroller::init(int argc, const char **argv) {
 		} else {
 			pvt->_conn->setAutoCommitOff();
 		}
+	} else if (fakingImplicitTransactions()) {
+		// FIXME: review this...
+		// the db has no runtime autocommit toggle, so the
+		// setAutoCommitOff() call above couldn't be used to start
+		// the implicit-mode tx; issue an explicit begin instead
+		pvt->_conn->begin();
 	}
 
 	// set it to the autocommit state that we want it to be in
@@ -1396,7 +1402,11 @@ bool sqlrservercontroller::isInTransactionAtLogin() {
 		return false;
 	}
 
-	// FIXME: what if we're faking implicit transactions?
+	// if we're faking implicit transactions
+	// then we're in a transaction
+	if (fakingImplicitTransactions()) {
+		return true;
+	}
 
 	// otherwise, we are
 	return true;
@@ -2546,10 +2556,16 @@ bool sqlrservercontroller::setAutoCommitOn() {
 
 	// bail if we're not currently in a transaction
 	if (!pvt->_intransaction) {
-		if (pvt->_txmodel==SQLRTXMODEL_EXPLICIT_ERROR) {
-			// FIXME: throw an error and return false
-		}
 		return true;
+	}
+
+	// if the transaction model is "explicit-error" then throw an
+	// error if we're currently in a transaction
+	if (pvt->_txmodel==SQLRTXMODEL_EXPLICIT_ERROR) {
+		setError(SQLR_ERROR_AUTOCOMMIT_ON_IN_TX_BLOCK_STRING,
+				SQLR_ERROR_AUTOCOMMIT_ON_IN_TX_BLOCK,
+				true);
+		return false;
 	}
 
 	// if the database isn't transactional then autocommit is always on
@@ -2569,13 +2585,22 @@ bool sqlrservercontroller::setAutoCommitOn() {
 		return endTransaction(true);
 	}
 
+	// if the database doesn't support autocommit...
+
+	// if we're faking implicit transactions then execute a direct commit
+	if (fakingImplicitTransactions()) {
+		if (!pvt->_conn->commit()) {
+			return false;
+		}
+		pvt->_autocommit=true;
+		return endTransaction(true);
+	}
+
 	// if the database supports explicit transactions (or we're faking them)
 	// then implement this with a commit
 	if (supportsExplicitTransactions() || fakingExplicitTransactions()) {
 		return commit();
 	}
-
-	// FIXME: what if we're faking implicit transactions?
 
 	// the db:
 	// * is transactional
@@ -2607,8 +2632,13 @@ bool sqlrservercontroller::setAutoCommitOff() {
 
 	// bail if we're currently in a transaction
 	if (pvt->_intransaction) {
+		// if the transaction model is "explicit-error" then throw an
+		// error if we're currently in a transaction
 		if (pvt->_txmodel==SQLRTXMODEL_EXPLICIT_ERROR) {
-			// FIXME: throw an error and return false
+			setError(SQLR_ERROR_AUTOCOMMIT_OFF_IN_TX_BLOCK_STRING,
+					SQLR_ERROR_AUTOCOMMIT_OFF_IN_TX_BLOCK,
+					true);
+			return false;
 		}
 		return true;
 	}
@@ -2623,11 +2653,14 @@ bool sqlrservercontroller::setAutoCommitOff() {
 	if (pvt->_conn->supportsAutoCommit()) {
 		// FIXME: this is not correct for
 		// SQLRTXMODEL_EXPLICIT_DEFERRED (eg. mysql)
-		if (!pvt->_conn->setAutoCommitOff()) {
-			return false;
-		}
-		pvt->_autocommit=false;
-		return beginTransaction();
+		return pvt->_conn->setAutoCommitOff() && beginTransaction();
+	}
+
+	// if the database doesn't support autocommit...
+
+	// if we're faking implicit transactions then execute a direct begin
+	if (fakingImplicitTransactions()) {
+		return pvt->_conn->begin() && beginTransaction();
 	}
 
 	// if the database supports explicit transactions (or we're faking them)
@@ -2635,8 +2668,6 @@ bool sqlrservercontroller::setAutoCommitOff() {
 	if (supportsExplicitTransactions() || fakingExplicitTransactions()) {
 		return begin();
 	}
-
-	// FIXME: what if we're faking implicit transactions?
 
 	// the db:
 	// * is transactional
@@ -2700,7 +2731,9 @@ bool sqlrservercontroller::begin() {
 		return false;
 	}
 
-	// FIXME: what if we're faking implicit transactions?
+	// faking-implicit mode bails at the top of this function
+	// (autocommit is always conceptually off, so the "autocommit is off"
+	// guard catches it -- begin is meaningless when we're always in a tx)
 
 	// begin
 	return pvt->_conn->begin() && beginTransaction();
@@ -2884,21 +2917,22 @@ bool sqlrservercontroller::endTransaction(bool commit) {
 	// clear per-session pool
 	pvt->_txpool.clear();
 
-	// set in-tx and autocommit flags
 	if (supportsExplicitTransactions() || fakingExplicitTransactions()) {
-		// FIXME: this is not correct for dbs which
-		// defer autocommit (eg. mysql)
+		// FIXME: this is not correct for
+		// SQLRTXMODEL_EXPLICIT_DEFERRED (eg. mysql)
 		if (fakingExplicitTransactions() &&
 				pvt->_conn->supportsAutoCommit()) {
 			pvt->_conn->setAutoCommitOn();
 		}
-		pvt->_intransaction=false;
 		pvt->_autocommit=true;
-	} else {
-		pvt->_intransaction=!pvt->_autocommit;
+	} else if (fakingImplicitTransactions()) {
+		if (!pvt->_autocommit && !pvt->_conn->supportsAutoCommit()) {
+			pvt->_conn->begin();
+		}
 	}
 
-	// FIXME: what if we're faking implicit transactions?
+	// set in-tx flag
+	pvt->_intransaction=!pvt->_autocommit;
 
 	// reset needs commit/rollback flag
 	pvt->_needscommitorrollback=false;
@@ -7641,6 +7675,10 @@ void sqlrservercontroller::endSession() {
 		// throw an error, which will be ignored.
 		fakingExplicitTransactions() ||
 
+		// call the commit/rollback if we're faking
+		// implicit transactions
+		fakingImplicitTransactions() ||
+
 		(isTransactional() &&
 			pvt->_needscommitorrollback)) {
 
@@ -7655,8 +7693,6 @@ void sqlrservercontroller::endSession() {
 			debugEnd();
 		}
 	}
-
-	// FIXME: what if we're faking implicit transactions?
 
 	// truncate/drop temp tables
 	// (Do this before running the end-session queries becuase
