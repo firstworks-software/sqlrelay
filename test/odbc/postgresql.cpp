@@ -8244,14 +8244,20 @@ int main(int argc, char **argv) {
 	erg=SQLFreeStmt(stmt,SQL_CLOSE);
 	erg=SQLFreeStmt(stmt,SQL_UNBIND);
 	erg=SQLFreeStmt(stmt,SQL_RESET_PARAMS);
+	// use "if exists" so a failed drop doesn't abort the transaction
+	// on first run before the functions exist
 	SQLExecDirect(stmt,(SQLCHAR *)
-		"drop function testproc1(int,char,varchar,date)",SQL_NTS);
+		"drop function if exists "
+		"testproc1(int,char,varchar,date)",SQL_NTS);
 	SQLExecDirect(stmt,(SQLCHAR *)
-		"drop function testproc2(int,char,varchar,date)",SQL_NTS);
+		"drop function if exists "
+		"testproc2(int,char,varchar,date)",SQL_NTS);
 	SQLExecDirect(stmt,(SQLCHAR *)
-		"drop function testproc3(int,char,varchar,date)",SQL_NTS);
+		"drop function if exists "
+		"testproc3(int,char,varchar,date)",SQL_NTS);
 	SQLExecDirect(stmt,(SQLCHAR *)
-		"drop function testproc4(int,char,varchar,date)",SQL_NTS);
+		"drop function if exists "
+		"testproc4(int,char,varchar,date)",SQL_NTS);
 	erg=SQLExecDirect(stmt,(SQLCHAR *)
 		"create function testproc1 ("
 		"	in1 int, "
