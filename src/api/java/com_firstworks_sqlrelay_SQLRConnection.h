@@ -326,6 +326,22 @@ JNIEXPORT jboolean JNICALL Java_com_firstworks_sqlrelay_SQLRConnection_setIsolat
 JNIEXPORT jstring JNICALL Java_com_firstworks_sqlrelay_SQLRConnection_getIsolationLevel__I
   (JNIEnv *, jobject, jint);
 
+/*
+ * Class:     com_firstworks_sqlrelay_SQLRConnection
+ * Method:    setTransactionModel
+ * Signature: (I)Z
+ */
+JNIEXPORT jboolean JNICALL Java_com_firstworks_sqlrelay_SQLRConnection_setTransactionModel
+  (JNIEnv *, jobject, jint);
+
+/*
+ * Class:     com_firstworks_sqlrelay_SQLRConnection
+ * Method:    getTransactionModel
+ * Signature: ()I
+ */
+JNIEXPORT jint JNICALL Java_com_firstworks_sqlrelay_SQLRConnection_getTransactionModel
+  (JNIEnv *, jobject);
+
 JNIEXPORT jstring JNICALL Java_com_firstworks_sqlrelay_SQLRConnection_getDatabaseFeature
   (JNIEnv *, jobject, jstring);
 

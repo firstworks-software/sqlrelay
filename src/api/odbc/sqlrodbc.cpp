@@ -2945,6 +2945,20 @@ static SQLRETURN SQLR_SQLConnect(SQLHDBC connectionhandle,
 	conn->con->debugOn();
 	#endif
 
+	// ODBC wants the implicit transaction model.
+	//
+	// If this fails, we don't want the entire connection to fail.  Just
+	// set the error and return SUCCESS_WITH_INFO.
+	if (conn->con->setTransactionModel(SQLRCLIENTTXMODEL_IMPLICIT)) {
+		debugPrintf("  Set Transaction Model Implicit: success\n");
+	} else {
+		SQLR_CONNSetError(conn,
+			conn->con->errorMessage(),
+			conn->con->errorNumber(),NULL);
+		debugPrintf("  Set Transaction Model Implicit: failed\n");
+		success=SQL_SUCCESS_WITH_INFO;
+	}
+
 	// Set autocommit on/off per the flag that was set when conn was
 	// created or by a call to SQLSetConnectAttr(autoconf-on/off)
 	// after creating a connection handle, but before calling this

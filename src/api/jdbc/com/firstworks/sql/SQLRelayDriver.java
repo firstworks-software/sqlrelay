@@ -53,6 +53,11 @@ public class SQLRelayDriver implements Driver {
 			conn.setOutputParameterBufferSize(
 						ci.outputparameterbuffersize);
 
+			// JDBC wants the implicit transaction model
+			if (!conn.getSQLRConnection().setTransactionModel(2)) {
+				conn.throwErrorMessageException();
+			}
+
 			if (ci.autocommit!=null) {
 				if (ci.autocommit.equalsIgnoreCase("yes")) {
 					conn.setAutoCommit(true);

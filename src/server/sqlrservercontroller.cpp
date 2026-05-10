@@ -246,6 +246,7 @@ class sqlrservercontrollerprivate {
 	uint16_t	_inetport;
 	stringbuffer	_unixsocket;
 
+	sqlrtxmodel_t	_initialtxmodel;
 	sqlrtxmodel_t	_txmodel;
 	bool		_intransaction;
 
@@ -522,6 +523,7 @@ sqlrservercontroller::sqlrservercontroller() : sqlrserverbase() {
 	pvt->_autocommit=false;
 	pvt->_initialautocommit=false;
 
+	pvt->_initialtxmodel=SQLRTXMODEL_UNKNOWN;
 	pvt->_txmodel=SQLRTXMODEL_UNKNOWN;
 	pvt->_intransaction=false;
 
@@ -799,21 +801,24 @@ bool sqlrservercontroller::init(int argc, const char **argv) {
 		return false;
 	}
 
-	// initialize transaction model
+	// initialize transaction model -- the configured value is the
+	// "initial" model that we'll restore at end-of-session; the
+	// active _txmodel starts out as a copy of it
 	const char	*txmodel=pvt->_cfg->getTransactionModel();
 	if (!charstring::compare(txmodel,"native")) {
-		pvt->_txmodel=pvt->_conn->getNativeTransactionModel();
+		pvt->_initialtxmodel=pvt->_conn->getNativeTransactionModel();
 	} else if (!charstring::compare(txmodel,"none")) {
-		pvt->_txmodel=SQLRTXMODEL_NONE;
+		pvt->_initialtxmodel=SQLRTXMODEL_NONE;
 	} else if (!charstring::compare(txmodel,"implicit")) {
-		pvt->_txmodel=SQLRTXMODEL_IMPLICIT;
+		pvt->_initialtxmodel=SQLRTXMODEL_IMPLICIT;
 	} else if (!charstring::compare(txmodel,"explicit")) {
-		pvt->_txmodel=SQLRTXMODEL_EXPLICIT;
+		pvt->_initialtxmodel=SQLRTXMODEL_EXPLICIT;
 	} else if (!charstring::compare(txmodel,"explicit-deferred")) {
-		pvt->_txmodel=SQLRTXMODEL_EXPLICIT_DEFERRED;
+		pvt->_initialtxmodel=SQLRTXMODEL_EXPLICIT_DEFERRED;
 	} else if (!charstring::compare(txmodel,"explicit-error")) {
-		pvt->_txmodel=SQLRTXMODEL_EXPLICIT_ERROR;
+		pvt->_initialtxmodel=SQLRTXMODEL_EXPLICIT_ERROR;
 	}
+	pvt->_txmodel=pvt->_initialtxmodel;
 
 	buildColumnMaps();
 
@@ -3043,9 +3048,51 @@ sqlrtxmodel_t sqlrservercontroller::getTransactionModel() {
 }
 
 bool sqlrservercontroller::setTransactionModel(sqlrtxmodel_t txmodel) {
-	// for now, just remember the new model — the connection-level
-	// behavior changes that go with switching models aren't wired up yet
+
+	if (pvt->_debugsql) {
+		stdoutput.printf("\n===================="
+				 "===================="
+				 "===================="
+				 "===================\n\n");
+		stdoutput.printf("%d: set transaction model %d\n",
+					process::getProcessId(),(int)txmodel);
+	}
+
+	// bail if the tx model isn't actually changing
+	if (txmodel==pvt->_txmodel) {
+		return true;
+	}
+
+	// capture the autocommit state
+	bool	savedautocommit=pvt->_autocommit;
+
+	// make sure we're outside of a transaction...
+	// commit and set autocommit on
+	if (pvt->_intransaction) {
+		if (isTransactional() && !pvt->_conn->commit()) {
+			return false;
+		}
+		endTransaction(true);
+	}
+	if (pvt->_txmodel==SQLRTXMODEL_IMPLICIT) {
+		if (pvt->_conn->supportsAutoCommit() &&
+				!pvt->_conn->setAutoCommitOn()) {
+			return false;
+		}
+		pvt->_autocommit=true;
+		pvt->_intransaction=false;
+	}
+
+	// we're definitely outside of a tx, with autocommit on here
+
+	// switch the tx model
 	pvt->_txmodel=txmodel;
+
+	// restore the original autocommit state
+	// (only necessary if autocommit was originally off)
+	if (!savedautocommit) {
+		return setAutoCommitOff();
+	}
 	return true;
 }
 
@@ -7727,6 +7774,10 @@ void sqlrservercontroller::endSession() {
 		pvt->_conn->selectSchema(pvt->_originalschema);
 		pvt->_schemachanged=false;
 	}
+
+	// reset transaction model (commits any in-flight tx under the
+	// current model, then drives state to the initial model's baseline)
+	setTransactionModel(pvt->_initialtxmodel);
 
 	// reset initial autocommit behavior
 	setAutoCommit(pvt->_initialautocommit);

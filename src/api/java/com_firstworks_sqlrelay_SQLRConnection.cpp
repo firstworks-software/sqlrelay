@@ -548,6 +548,27 @@ JNIEXPORT jstring JNICALL Java_com_firstworks_sqlrelay_SQLRConnection_getIsolati
 		getIsolationLevel((sqlrclientisolationlevelformat_t)format));
 }
 
+/*
+ * Class:     com_firstworks_sqlrelay_SQLRConnection
+ * Method:    setTransactionModel
+ * Signature: (I)Z
+ */
+JNIEXPORT jboolean JNICALL Java_com_firstworks_sqlrelay_SQLRConnection_setTransactionModel
+  (JNIEnv *env, jobject self, jint txmodel) {
+	return (jboolean)getSqlrConnection(env,self)->
+			setTransactionModel((sqlrclienttxmodel_t)txmodel);
+}
+
+/*
+ * Class:     com_firstworks_sqlrelay_SQLRConnection
+ * Method:    getTransactionModel
+ * Signature: ()I
+ */
+JNIEXPORT jint JNICALL Java_com_firstworks_sqlrelay_SQLRConnection_getTransactionModel
+  (JNIEnv *env, jobject self) {
+	return (jint)getSqlrConnection(env,self)->getTransactionModel();
+}
+
 JNIEXPORT jstring JNICALL Java_com_firstworks_sqlrelay_SQLRConnection_getDatabaseFeature
   (JNIEnv *env, jobject self, jstring feature) {
 	const char	*featurestr=env->GetStringUTFChars(feature,0);

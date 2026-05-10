@@ -718,4 +718,6 @@ public class SQLRConnection {
 	public native boolean	setIsolationLevel(String isolationlevel,
 								int format);
 	public native String	getIsolationLevel(int format);
+	public native boolean	setTransactionModel(int txmodel);
+	public native int	getTransactionModel();
 }
