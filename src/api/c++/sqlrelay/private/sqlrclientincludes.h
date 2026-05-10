@@ -45,6 +45,15 @@ enum sqlrclientisolationlevelformat_t {
 	SQLRCLIENTISOLATIONLEVELFORMAT_JDBC
 };
 
+enum sqlrclienttxmodel_t {
+	SQLRCLIENTTXMODEL_UNKNOWN=0,
+	SQLRCLIENTTXMODEL_NONE,
+	SQLRCLIENTTXMODEL_IMPLICIT,
+	SQLRCLIENTTXMODEL_EXPLICIT,
+	SQLRCLIENTTXMODEL_EXPLICIT_DEFERRED,
+	SQLRCLIENTTXMODEL_EXPLICIT_ERROR
+};
+
 class sqlrconnectionprivate;
 class sqlrcursor;
 class sqlrcursorprivate;

@@ -2340,6 +2340,74 @@ const char *sqlrconnection::getIsolationLevel(
 	return pvt->_isolationlevel;
 }
 
+bool sqlrconnection::setTransactionModel(sqlrclienttxmodel_t txmodel) {
+
+	clearError();
+
+	if (!openSession()) {
+		return false;
+	}
+
+	if (pvt->_debug) {
+		debugPreStart();
+		debugPrint("Setting transaction model ");
+		debugPrint((int64_t)txmodel);
+		debugPrint("...\n");
+		debugPreEnd();
+	}
+
+	// tell the server we want to set the transaction model
+	pvt->_cs->write((uint16_t)SET_TRANSACTION_MODEL);
+
+	// send the transaction model
+	pvt->_cs->write((uint16_t)txmodel);
+
+	flushWriteBuffer();
+
+	return !gotError();
+}
+
+sqlrclienttxmodel_t sqlrconnection::getTransactionModel() {
+
+	if (!openSession()) {
+		return SQLRCLIENTTXMODEL_UNKNOWN;
+	}
+
+	clearError();
+
+	if (pvt->_debug) {
+		debugPreStart();
+		debugPrint("Getting transaction model...\n");
+		debugPreEnd();
+	}
+
+	// tell the server we want to get the transaction model
+	pvt->_cs->write((uint16_t)GET_TRANSACTION_MODEL);
+
+	flushWriteBuffer();
+
+	if (gotError()) {
+		return SQLRCLIENTTXMODEL_UNKNOWN;
+	}
+
+	// get the transaction model
+	uint16_t	txmodel;
+	if (pvt->_cs->read(&txmodel,pvt->_responsetimeoutsec,
+				pvt->_responsetimeoutusec)!=sizeof(uint16_t)) {
+		setError("Failed to get transaction model.\n"
+				"A network error may have occurred.");
+		return SQLRCLIENTTXMODEL_UNKNOWN;
+	}
+
+	if (pvt->_debug) {
+		debugPreStart();
+		debugPrint((int64_t)txmodel);
+		debugPrint("\n");
+		debugPreEnd();
+	}
+	return (sqlrclienttxmodel_t)txmodel;
+}
+
 const char *sqlrconnection::getDatabaseFeature(const char *feature) {
 
 	// if we haven't already fetched the features, then fetch them

@@ -78,4 +78,8 @@
 		const char	*getIsolationLevel(
 				sqlrclientisolationlevelformat_t format);
 
+		bool			setTransactionModel(
+					sqlrclienttxmodel_t txmodel);
+		sqlrclienttxmodel_t	getTransactionModel();
+
 	friend class sqlrcursor;

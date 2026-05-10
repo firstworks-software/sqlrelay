@@ -76,6 +76,8 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_sqlrclient : public sqlrprotocol {
 		void	setIsolationLevelCommand();
 		void	getIsolationLevelCommand();
 		void	getDefaultIsolationLevelCommand();
+		void	setTransactionModelCommand();
+		void	getTransactionModelCommand();
 		void	getDatabaseFeaturesCommand();
 		bool	newQueryCommand(sqlrservercursor *cursor);
 		bool	reExecuteQueryCommand(sqlrservercursor *cursor);
@@ -528,6 +530,12 @@ clientsessionexitstatus_t sqlrprotocol_sqlrclient::clientSession(
 			continue;
 		} else if (command==GET_DEFAULT_ISOLATION_LEVEL) {
 			getDefaultIsolationLevelCommand();
+			continue;
+		} else if (command==SET_TRANSACTION_MODEL) {
+			setTransactionModelCommand();
+			continue;
+		} else if (command==GET_TRANSACTION_MODEL) {
+			getTransactionModelCommand();
 			continue;
 		} else if (command==GET_DATABASE_FEATURES) {
 			//cont->incrementGetDatabaseFeaturesCount();
@@ -1814,6 +1822,56 @@ void sqlrprotocol_sqlrclient::getDefaultIsolationLevelCommand() {
 		debugWrite("failed");
 		returnError(false);
 	}
+
+	debugEnd();
+}
+
+void sqlrprotocol_sqlrclient::setTransactionModelCommand() {
+
+	debugStart("setting transaction model");
+
+	// get the transaction model
+	uint16_t	txmodel;
+	ssize_t		result=clientsock->read(&txmodel,
+						idleclienttimeout,0);
+	if (result!=sizeof(uint16_t)) {
+		clientsock->write(false);
+		cont->raiseClientProtocolErrorEvent(NULL,result,
+					"set transaction model failed: "
+					"failed to get transaction model");
+		debugWrite("failed to get transaction model");
+		debugEnd();
+		return;
+	}
+
+	debugWrite("transaction model: %hd",txmodel);
+
+	// set the transaction model and send back the result
+	if (cont->setTransactionModel((sqlrtxmodel_t)txmodel)) {
+		debugWrite("success");
+		clientsock->write((uint16_t)NO_ERROR_OCCURRED);
+		clientsock->flushWriteBuffer(-1,-1);
+	} else {
+		debugWrite("failed");
+		returnError(false);
+	}
+
+	debugEnd();
+}
+
+void sqlrprotocol_sqlrclient::getTransactionModelCommand() {
+
+	debugStart("getting transaction model");
+
+	// get the transaction model
+	sqlrtxmodel_t	txmodel=cont->getTransactionModel();
+
+	debugWrite("transaction model: %hd",(uint16_t)txmodel);
+
+	// send result to the client
+	clientsock->write((uint16_t)NO_ERROR_OCCURRED);
+	clientsock->write((uint16_t)txmodel);
+	clientsock->flushWriteBuffer(-1,-1);
 
 	debugEnd();
 }
@@ -5105,6 +5163,12 @@ void sqlrprotocol_sqlrclient::debugCommand(uint16_t command) {
 			break;
 		case GET_ISOLATION_LEVEL:
 			debugWrite("GET_ISOLATION_LEVEL");
+			break;
+		case SET_TRANSACTION_MODEL:
+			debugWrite("SET_TRANSACTION_MODEL");
+			break;
+		case GET_TRANSACTION_MODEL:
+			debugWrite("GET_TRANSACTION_MODEL");
 			break;
 		case GET_LAST_INSERT_ID_LIST:
 			debugWrite("GET_LAST_INSERT_ID_LIST");

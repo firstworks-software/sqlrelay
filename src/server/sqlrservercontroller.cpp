@@ -3042,6 +3042,13 @@ sqlrtxmodel_t sqlrservercontroller::getTransactionModel() {
 	return pvt->_txmodel;
 }
 
+bool sqlrservercontroller::setTransactionModel(sqlrtxmodel_t txmodel) {
+	// for now, just remember the new model — the connection-level
+	// behavior changes that go with switching models aren't wired up yet
+	pvt->_txmodel=txmodel;
+	return true;
+}
+
 bool sqlrservercontroller::ping() {
 	return pvt->_conn->ping();
 }

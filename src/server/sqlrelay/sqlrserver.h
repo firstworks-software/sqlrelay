@@ -696,6 +696,11 @@ class SQLRSERVER_DLLSPEC sqlrservercontroller : public sqlrserverbase {
 		/** Returns the current transaction model. */
 		sqlrtxmodel_t	getTransactionModel();
 
+		/** Sets the current transaction model.
+		 *
+		 *  Returns true on success and false on failure. */
+		bool	setTransactionModel(sqlrtxmodel_t txmodel);
+
 		/** If "fac" is true then auto-commit is faked by executing a
 		 *  commit after each query.  If "fac" is false then native
 		 *  auto-commit is used.
