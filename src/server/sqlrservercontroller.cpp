@@ -247,6 +247,7 @@ class sqlrservercontrollerprivate {
 	stringbuffer	_unixsocket;
 
 	bool		_faketransactionblocks;
+	sqlrtxmodel_t	_txmodel;
 	bool		_intransaction;
 
 	bool		_needscommitorrollback;
@@ -523,6 +524,7 @@ sqlrservercontroller::sqlrservercontroller() : sqlrserverbase() {
 	pvt->_initialautocommit=false;
 
 	pvt->_faketransactionblocks=false;
+	pvt->_txmodel=SQLRTXMODEL_NATIVE;
 	pvt->_intransaction=false;
 
 	pvt->_fakeinputbinds=false;
@@ -767,6 +769,20 @@ bool sqlrservercontroller::init(int argc, const char **argv) {
 	pvt->_debug=pvt->_cfg->getDebugConnections();
 	pvt->_debugsql=pvt->_cfg->getDebugSql();
 	pvt->_debugbulkload=pvt->_cfg->getDebugBulkLoad();
+
+	// transaction model
+	const char	*txmodel=pvt->_cfg->getTransactionModel();
+	if (!charstring::compare(txmodel,"native")) {
+		pvt->_txmodel=SQLRTXMODEL_NATIVE;
+	} else if (!charstring::compare(txmodel,"implicit")) {
+		pvt->_txmodel=SQLRTXMODEL_IMPLICIT;
+	} else if (!charstring::compare(txmodel,"explicit")) {
+		pvt->_txmodel=SQLRTXMODEL_EXPLICIT;
+	} else if (!charstring::compare(txmodel,"explicit-deferred")) {
+		pvt->_txmodel=SQLRTXMODEL_EXPLICIT_DEFERRED;
+	} else if (!charstring::compare(txmodel,"explicit-error")) {
+		pvt->_txmodel=SQLRTXMODEL_EXPLICIT_ERROR;
+	}
 
 	// initialize logger modules
 	domnode	*loggers=pvt->_cfg->getLoggers();
@@ -10255,6 +10271,14 @@ void sqlrservercontroller::setFakeTransactionBlocks(bool ftb) {
 
 bool sqlrservercontroller::getFakeTransactionBlocks() {
 	return pvt->_faketransactionblocks;
+}
+
+void sqlrservercontroller::setTransactionModel(sqlrtxmodel_t txmodel) {
+	pvt->_txmodel=txmodel;
+}
+
+sqlrtxmodel_t sqlrservercontroller::getTransactionModel() {
+	return pvt->_txmodel;
 }
 
 void sqlrservercontroller::setInitialAutoCommit(bool iac) {

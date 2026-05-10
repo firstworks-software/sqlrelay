@@ -92,6 +92,7 @@ class SQLRSERVER_DLLSPEC sapconnection : public sqlrserverconnection {
 		const char	*getBindFormat();
 		const char	*beginTransactionQuery();
 		const char	*tempTablePrefix();
+		sqlrtxmodel_t	getNativeTransactionModel();
 		bool		commit();
 		bool		rollback();
 		void		getError(char *errorbuffer,
@@ -3647,6 +3648,10 @@ CS_RETCODE sapconnection::serverMessageCallback(CS_CONTEXT *ctxt,
 
 const char *sapconnection::tempTablePrefix() {
 	return "#";
+}
+
+sqlrtxmodel_t sapconnection::getNativeTransactionModel() {
+	return SQLRTXMODEL_EXPLICIT_ERROR;
 }
 
 bool sapconnection::commit() {

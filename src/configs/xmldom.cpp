@@ -61,6 +61,7 @@ class SQLRUTIL_DLLSPEC sqlrconfig_xmldom : public sqlrconfig, public xmldom {
 		const char	*getEndOfSession();
 		bool		getEndOfSessionCommit();
 		uint32_t	getSessionTimeout();
+		const char	*getTransactionModel();
 		const char	*getRunAsUser();
 		const char	*getRunAsGroup();
 		uint16_t	getCursors();
@@ -203,6 +204,7 @@ class SQLRUTIL_DLLSPEC sqlrconfig_xmldom : public sqlrconfig, public xmldom {
 		const char	*endofsession;
 		bool		endofsessioncommit;
 		uint32_t	sessiontimeout;
+		const char	*txmodel;
 		const char	*runasuser;
 		const char	*runasgroup;
 		uint16_t	cursors;
@@ -352,6 +354,7 @@ void sqlrconfig_xmldom::init() {
 	endofsessioncommit=!charstring::compare(endofsession,"commit");
 	sessiontimeout=charstring::convertToUnsignedInteger(
 						DEFAULT_SESSIONTIMEOUT);
+	txmodel=DEFAULT_TRANSACTIONMODEL;
 	runasuser=DEFAULT_RUNASUSER;
 	runasgroup=DEFAULT_RUNASGROUP;
 	cursors=charstring::convertToInteger(DEFAULT_CURSORS);
@@ -563,6 +566,10 @@ bool sqlrconfig_xmldom::getEndOfSessionCommit() {
 
 uint32_t sqlrconfig_xmldom::getSessionTimeout() {
 	return sessiontimeout;
+}
+
+const char *sqlrconfig_xmldom::getTransactionModel() {
+	return txmodel;
 }
 
 const char *sqlrconfig_xmldom::getRunAsUser() {
@@ -2031,6 +2038,10 @@ void sqlrconfig_xmldom::getTreeValues() {
 	if (!attr->isNullNode()) {
 		sessiontimeout=atouint32_t(attr->getValue(),
 						DEFAULT_SESSIONTIMEOUT,1);
+	}
+	attr=instance->getAttribute("transactionmodel");
+	if (!attr->isNullNode()) {
+		txmodel=attr->getValue();
 	}
 	attr=instance->getAttribute("runasuser");
 	if (!attr->isNullNode()) {

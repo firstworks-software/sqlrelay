@@ -274,6 +274,7 @@ class SQLRSERVER_DLLSPEC mysqlconnection : public sqlrserverconnection {
 		bool		setAutoCommitOn();
 		bool		setAutoCommitOff();
 		bool		supportsAutoCommit();
+		sqlrtxmodel_t	getNativeTransactionModel();
 		bool		commit();
 		bool		rollback();
 		void		getError(char *errorbuffer,
@@ -2793,6 +2794,10 @@ bool mysqlconnection::setAutoCommitOff() {
 
 bool mysqlconnection::supportsAutoCommit() {
 	return true;
+}
+
+sqlrtxmodel_t mysqlconnection::getNativeTransactionModel() {
+	return SQLRTXMODEL_EXPLICIT_DEFERRED;
 }
 
 bool mysqlconnection::commit() {

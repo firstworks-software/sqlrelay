@@ -6,6 +6,14 @@
 
 #include <sqlrelay/private/sqlrserverincludes.h>
 
+enum sqlrtxmodel_t {
+	SQLRTXMODEL_NATIVE=0,
+	SQLRTXMODEL_IMPLICIT,
+	SQLRTXMODEL_EXPLICIT,
+	SQLRTXMODEL_EXPLICIT_DEFERRED,
+	SQLRTXMODEL_EXPLICIT_ERROR
+};
+
 enum sqlrcursorstate_t {
 	SQLRCURSORSTATE_AVAILABLE=0,
 	SQLRCURSORSTATE_BUSY,
@@ -693,6 +701,13 @@ class SQLRSERVER_DLLSPEC sqlrservercontroller : public sqlrserverbase {
 		/** Returns whether transaction blocks are being faked, as set
 		 *  by setFakeTransactionBlocks(). */
 		bool	getFakeTransactionBlocks();
+
+		/** Sets the presented transaction model to "txmodel". */
+		void	setTransactionModel(sqlrtxmodel_t txmodel);
+
+		/** Returns the presented transaction model as set by
+		 *  by setTransactionModel(). */
+		sqlrtxmodel_t	getTransactionModel();
 
 		/** If "fac" is true then auto-commit is faked by executing a
 		 *  commit after each query.  If "fac" is false then native
@@ -3258,6 +3273,12 @@ class SQLRSERVER_DLLSPEC sqlrserverconnection : public sqlrserverbase {
 		 *  Returns true by default, but may be overridden by a child
 		 *  class. */
 		virtual bool	supportsTransactionBlocks();
+
+		/** Returns the database's native transaction model.
+		 *
+		 *  Returns SQLRTXMODEL_EXPLICIT by default, but may be
+		 *  overridden by a child class. */
+		virtual sqlrtxmodel_t	getNativeTransactionModel();
 
 		/** Begins a new transaction.
 		 * 

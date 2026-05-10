@@ -161,6 +161,8 @@ class SQLRUTIL_DLLSPEC sqlrconfig {
 		virtual bool		getEndOfSessionCommit()=0;
 		virtual uint32_t	getSessionTimeout()=0;
 
+		virtual const char	*getTransactionModel()=0;
+
 		virtual const char	*getRunAsUser()=0;
 		virtual const char	*getRunAsGroup()=0;
 

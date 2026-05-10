@@ -1964,10 +1964,108 @@ class freetds extends sqlrtest {
 		System.out.println();
 
 
-		// commit
-		System.out.println("COMMIT:");
+		// commit and rollback
+		System.out.println("COMMIT AND ROLLBACK:");
+
+		// open a second connection to verify cross-connection
+		// visibility of commits/rollbacks
+		secondcon=DriverManager.getConnection(url,props);
+		assertTrue((secondcon!=null));
+		assertFalse(secondcon.isClosed());
+		secondstmt=secondcon.createStatement();
+
+		// from secondcon: row count should be 0 (con's 4 inserts
+		// haven't been committed yet)
+		secondrs=secondstmt.executeQuery(
+				"select count(*) from testtable");
+		assertTrue(secondrs.next());
+		assertEquals(secondrs.getInt(1),0);
+		secondrs.close();
+
+		// commit on con
 		con.commit();
+
+		// from secondcon: row count should be 4
+		secondrs=secondstmt.executeQuery(
+				"select count(*) from testtable");
+		assertTrue(secondrs.next());
+		assertEquals(secondrs.getInt(1),4);
+		secondrs.close();
+
+		// begin new tx
+		// (since autocommit was set off earlier, the commit
+		// implicitly started another transaction, so we don't
+		// actually need to do anything here)
+
+		// insert another row on con
+		stmt=con.createStatement();
+		assertEquals(stmt.executeUpdate(
+			"insert into "+
+			"	testtable "+
+			"values ("+
+			"	10, "+
+			"	10, "+
+			"	10, "+
+			"	10.10, "+
+			"	10.10, "+
+			"	10.10, "+
+			"	10.10, "+
+			"	10.10, "+
+			"	10.10, "+
+			"	'2010-01-01 10:00:00', "+
+			"	'2010-01-01 10:00:00', "+
+			"	'char10', "+
+			"	'varchar10', "+
+			"	1, "+
+			"	'http://www.firstworks.com:8080/testurl10')"),1);
+
+		// rollback on con
+		con.rollback();
+
+		// from secondcon: row count should still be 4
+		secondrs=secondstmt.executeQuery(
+				"select count(*) from testtable");
+		assertTrue(secondrs.next());
+		assertEquals(secondrs.getInt(1),4);
+		secondrs.close();
+
+		// switch con to autocommit on; the next insert is
+		// auto-committed
 		con.setAutoCommit(true);
+
+		// insert another row on con
+		assertEquals(stmt.executeUpdate(
+			"insert into "+
+			"	testtable "+
+			"values ("+
+			"	10, "+
+			"	10, "+
+			"	10, "+
+			"	10.10, "+
+			"	10.10, "+
+			"	10.10, "+
+			"	10.10, "+
+			"	10.10, "+
+			"	10.10, "+
+			"	'2010-01-01 10:00:00', "+
+			"	'2010-01-01 10:00:00', "+
+			"	'char10', "+
+			"	'varchar10', "+
+			"	1, "+
+			"	'http://www.firstworks.com:8080/testurl10')"),1);
+
+		// from secondcon: row count should be 5
+		secondrs=secondstmt.executeQuery(
+				"select count(*) from testtable");
+		assertTrue(secondrs.next());
+		assertEquals(secondrs.getInt(1),5);
+		secondrs.close();
+
+		// clean up secondcon
+		secondstmt.close();
+		secondcon.close();
+
+		// drop the table (autocommit is currently on)
 		stmt.executeUpdate("drop table testtable");
 		con.setAutoCommit(false);
 		stmt.close();

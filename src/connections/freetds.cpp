@@ -372,6 +372,7 @@ class SQLRSERVER_DLLSPEC freetdsconnection : public sqlrserverconnection {
 		const char	*getBindFormat();
 		const char	*beginTransactionQuery();
 		const char	*tempTablePrefix();
+		sqlrtxmodel_t	getNativeTransactionModel();
 		bool		commit();
 		bool		rollback();
 		void		getError(char *errorbuffer,
@@ -5026,6 +5027,10 @@ CS_RETCODE freetdsconnection::serverMessageCallback(CS_CONTEXT *ctxt,
 
 const char *freetdsconnection::tempTablePrefix() {
 	return "#";
+}
+
+sqlrtxmodel_t freetdsconnection::getNativeTransactionModel() {
+	return SQLRTXMODEL_EXPLICIT_ERROR;
 }
 
 bool freetdsconnection::commit() {

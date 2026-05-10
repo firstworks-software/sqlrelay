@@ -170,6 +170,9 @@
 // default behind-load-balancer flag
 #define DEFAULT_BEHINDLOADBALANCER "no"
 
+// default transaction model
+#define DEFAULT_TRANSACTIONMODEL "native"
+
 // default router host
 #define DEFAULT_ROUTER_HOST ""
 

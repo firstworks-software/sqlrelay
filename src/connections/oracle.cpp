@@ -107,6 +107,7 @@ class SQLRSERVER_DLLSPEC oracleconnection : public sqlrserverconnection {
 						const char *newpassword);
 		#endif
 		bool		supportsTransactionBlocks();
+		sqlrtxmodel_t	getNativeTransactionModel();
 		bool		setAutoCommitOn();
 		bool		setAutoCommitOff();
 		bool		supportsAutoCommit();
@@ -1647,6 +1648,10 @@ bool oracleconnection::supportsAutoCommit() {
 
 bool oracleconnection::supportsTransactionBlocks() {
 	return false;
+}
+
+sqlrtxmodel_t oracleconnection::getNativeTransactionModel() {
+	return SQLRTXMODEL_IMPLICIT;
 }
 
 bool oracleconnection::commit() {

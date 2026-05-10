@@ -244,6 +244,7 @@ class SQLRSERVER_DLLSPEC db2connection : public sqlrserverconnection {
 		bool	setAutoCommitOff();
 		bool	supportsAutoCommit();
 		bool	supportsTransactionBlocks();
+		sqlrtxmodel_t	getNativeTransactionModel();
 		bool	commit();
 		bool	rollback();
 		void	getError(char *errorbuffer,
@@ -1007,6 +1008,10 @@ bool db2connection::supportsAutoCommit() {
 
 bool db2connection::supportsTransactionBlocks() {
 	return false;
+}
+
+sqlrtxmodel_t db2connection::getNativeTransactionModel() {
+	return SQLRTXMODEL_IMPLICIT;
 }
 
 bool db2connection::commit() {

@@ -94,6 +94,10 @@ void sqlrserverconnection::handleConnectString() {
 	// fake transaction blocks
 	cont->setFakeTransactionBlocks(charstring::isYes(
 			cont->getConnectStringValue("faketransactionblocks")));
+	if (charstring::isYes(cont->getConnectStringValue(
+					"faketransactionblocks"))) {
+		cont->setTransactionModel(SQLRTXMODEL_EXPLICIT);
+	}
 
 	// fake binds
 	if (charstring::isYes(cont->getConnectStringValue("fakebinds"))) {
@@ -211,6 +215,10 @@ bool sqlrserverconnection::supportsAutoCommit() {
 
 bool sqlrserverconnection::supportsTransactionBlocks() {
 	return true;
+}
+
+sqlrtxmodel_t sqlrserverconnection::getNativeTransactionModel() {
+	return SQLRTXMODEL_EXPLICIT;
 }
 
 bool sqlrserverconnection::begin() {

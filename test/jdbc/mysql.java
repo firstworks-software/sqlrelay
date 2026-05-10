@@ -2851,8 +2851,8 @@ if (issqlrelay) {
 		System.out.println();
 
 
-		// commit
-		System.out.println("COMMIT:");
+		// commit and rollback
+		System.out.println("COMMIT AND ROLLBACK:");
 		Connection	secondcon=DriverManager.getConnection(
 							url,props);
 		assertTrue((secondcon!=null));
@@ -2884,8 +2884,14 @@ if (issqlrelay) {
 		assertTrue((secondrs!=null));
 		secondrs.next();
 		assertEquals(secondrs.getString(1),"8");
-		con.setAutoCommit(true);
 		secondrs.close();
+
+		// begin new tx
+		// (since autocommit was set off earlier, the commit
+		// implicitly started another transaction, so we don't
+		// actually need to do anything here)
+
+		// insert another row on con
 		stmt=con.createStatement();
 		assertEquals(stmt.executeUpdate(
 			"insert into "+
@@ -2916,6 +2922,57 @@ if (issqlrelay) {
 			"	NULL, "+
 			"	'http://www.firstworks.com:8080/testurl10' "+
 			"	)"),1);
+
+		// rollback on con
+		con.rollback();
+
+		// from secondcon: row count should still be 8
+		// (release snapshot first under repeatable read)
+		secondcon.commit();
+		secondrs=secondstmt.executeQuery(
+			"select "+
+			"	count(*) "+
+			"from "+
+			"	testtable ");
+		assertTrue((secondrs!=null));
+		secondrs.next();
+		assertEquals(secondrs.getString(1),"8");
+		secondrs.close();
+
+		// switch con to autocommit on; the next insert is
+		// auto-committed
+		con.setAutoCommit(true);
+		assertEquals(stmt.executeUpdate(
+			"insert into "+
+			"	testtable "+
+			"values ("+
+			"	10, "+
+			"	10, "+
+			"	10, "+
+			"	10, "+
+			"	10, "+
+			"	10.1, "+
+			"	10.1, "+
+			"	1.0, "+
+			"	'2010-01-01', "+
+			"	'10:00:00', "+
+			"	'2010-01-01 10:00:00', "+
+			"	'2010', "+
+			"	'char10', "+
+			"	'varchar10', "+
+			"	'text10', "+
+			"	'tinytext10', "+
+			"	'mediumtext10', "+
+			"	'longtext10', "+
+			"	'blob10', "+
+			"	'tinyblob10', "+
+			"	'mediumblob10', "+
+			"	'longblob10', "+
+			"	NULL, "+
+			"	'http://www.firstworks.com:8080/testurl10' "+
+			"	)"),1);
+
+		// from secondcon: row count should be 9
 		secondcon.commit();
 		secondrs=secondstmt.executeQuery(
 			"select "+
