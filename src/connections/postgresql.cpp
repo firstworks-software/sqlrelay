@@ -3684,13 +3684,42 @@ void postgresqlcursor::closeResultSet() {
 		(defined(HAVE_POSTGRESQL_PQSENDQUERYPREPARED) && \
 		defined(HAVE_POSTGRESQL_PQSETSINGLEROWMODE))
 void postgresqlcursor::deallocateNamedStatement() {
-	if (namedstmtallocated) {
-		pgresult=PQexec(postgresqlconn->pgconn,
-				deallocatecursorid.getString());
-		PQclear(pgresult);
-		pgresult=NULL;
-		namedstmtallocated=false;
+
+	// The "namedstmtallocated" flag tracks whether postgresql has a
+	// named prepared statement registered for this cursor's
+	// "cursorid".  It's used as a fast-path hint to skip DEALLOCATE
+	// when we know there's nothing to deallocate.  However, the flag
+	// can drift out of sync with the server across abnormal session
+	// termination paths, leaving us thinking a statement isn't
+	// registered when it actually is -- the next PQprepare on this
+	// cursor name then fails with "prepared statement already
+	// exists" and the cursor is wedged.
+	//
+	// To recover from drift without blindly calling DEALLOCATE
+	// (which raises an error if the statement doesn't actually
+	// exist, aborting any open transaction), probe
+	// pg_prepared_statements when the flag says "not allocated" to
+	// see if we're out of sync.  In the common case (flag true),
+	// this is a single DEALLOCATE round-trip exactly as before.
+	bool		exists=namedstmtallocated;
+	if (!exists) {
+		stringbuffer	probe;
+		probe.append("select 1 from pg_prepared_statements "
+				"where name='")->append(cursorid)->
+				append("'");
+		PGresult	*r=PQexec(postgresqlconn->pgconn,
+					probe.getString());
+		exists=(r && PQresultStatus(r)==PGRES_TUPLES_OK &&
+				PQntuples(r)>0);
+		PQclear(r);
 	}
+
+	if (exists) {
+		PGresult	*r=PQexec(postgresqlconn->pgconn,
+					deallocatecursorid.getString());
+		PQclear(r);
+	}
+	namedstmtallocated=false;
 }
 #endif
 
