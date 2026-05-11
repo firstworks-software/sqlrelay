@@ -2861,6 +2861,10 @@ bool sqlrservercontroller::beginTransaction() {
 }
 
 bool sqlrservercontroller::endTransaction(bool commit) {
+	return endTransaction(commit,false);
+}
+
+bool sqlrservercontroller::endTransaction(bool commit, bool suppressbegin) {
 
 	// reset protocol modules
 	if (pvt->_sqlrpr) {
@@ -2948,7 +2952,9 @@ bool sqlrservercontroller::endTransaction(bool commit) {
 		pvt->_autocommit=true;
 	} else if (fakingImplicitTransactions()) {
 		if (!pvt->_autocommit && !pvt->_conn->supportsAutoCommit()) {
-			pvt->_conn->begin();
+			if (!suppressbegin) {
+				pvt->_conn->begin();
+			}
 		}
 	}
 
@@ -3133,10 +3139,20 @@ bool sqlrservercontroller::setTransactionModel(sqlrtxmodel_t txmodel) {
 	// make sure we're outside of a transaction...
 	// commit and set autocommit on
 	if (pvt->_intransaction) {
+		// FIXME: shouldn't this whole thing be wrapped in
+		// isTransactonal() instead of it being checked here?
 		if (isTransactional() && !pvt->_conn->commit()) {
 			return false;
 		}
-		endTransaction(true);
+		// If we're switching transaction models from an implicit model
+		// to any other model, then tell endTransaction() to skip
+		// calling the the begin that it would otherwise execute to
+		// start the next implicit transaction.
+		// If we're switching from an any other model to an implicit
+		// model, then it wouldn't be executed anyway.
+		// So, it's safe to set the second parameter here true in
+		// any case.
+		endTransaction(true,true);
 	}
 	if (pvt->_txmodel==SQLRTXMODEL_IMPLICIT) {
 		if (pvt->_conn->supportsAutoCommit() &&

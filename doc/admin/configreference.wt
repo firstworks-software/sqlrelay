@@ -305,11 +305,12 @@ For '''firebird''' databases, the connect string syntax is "user=USER;password=P
 
 
 [=#sqlite]
-For '''sqlite''' databases, the connect string syntax is "db=DB;dbtype=ID;autocommit=yes/no/default"
+For '''sqlite''' databases, the connect string syntax is "db=DB;dbtype=ID;autocommit=yes/no/default;busytimeoutms=MILLISECONDS"
 
 * '''db''': The filename of the database open.  Required.
 * '''dbtype''': Overrides the default value returned when a client request the database type using the identify() method (or similar method/function).
 * '''autocommit''': If set to yes, then each insert, update, or delete is committed immediately.  If set to no, then each insert, update, or delete is only committed when a commit statement is executed.  If set to default then the default behavior (autocommit-on) is observed.  Optional, defaults to default.
+* '''busytimeoutms''': The number of milliseconds to wait for a contended write lock to clear before returning an error.  Set to 0 to fail immediately when a write lock is contended.  Optional, defaults to 5000 (5 seconds).
 
 
 [=#odbc]

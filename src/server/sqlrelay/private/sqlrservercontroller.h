@@ -103,6 +103,7 @@
 		bool	fakingImplicitTransactions();
 		bool	beginTransaction();
 		bool	endTransaction(bool commit);
+		bool	endTransaction(bool commit, bool suppressimplicitbegin);
 		void	clearColumnCaches();
 		bool	checkInterceptQuery(sqlrservercursor *cursor);
 		bool	interceptQuery(sqlrservercursor *cursor);

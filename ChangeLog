@@ -73,6 +73,12 @@
 	fixed PHP PDO lazyconnect initialization from wrong option bug
 	fixed bug that allowed faketransactionblocks=yes to be set for dbs
 		that support transaction blocks natively
+	added sqlite busytimeoutms option to allow handle transient write lock
+		contention
+	refactored transacton model handling, added support for faking
+		no transactions, implicit transactions, and various types of
+		explicit transactions with transactionmodel parameter and api
+		calls
 
 2.1.1 - added tns_admin support
 	fixed sqlr-start ... -strace ...
