@@ -70,7 +70,7 @@
 		bool	isInTransactionAtLogin();
 		void	logOut();
 
-		void	setAutoCommit(bool ac);
+		bool	setAutoCommit(bool ac);
 
 		bool			initCursors(uint16_t count);
 		sqlrservercursor	*newCursor(uint16_t id);

@@ -1043,24 +1043,45 @@ bool sqlrservercontroller::init(int argc, const char **argv) {
 	// set what we think the current autocommit behavior ought to be
 	pvt->_autocommit=!pvt->_intransaction;
 
-	// be sure that the db really is in the autocommit state that we
-	// think it is before setting it to the state that we want it to be in
-	if (isTransactional() && pvt->_conn->supportsAutoCommit()) {
-		if (pvt->_autocommit) {
-			pvt->_conn->setAutoCommitOn();
+	// bootstrap the autocommit state to match the flag
+	// (use only pvt->_conn calls here since we're bootstrapping)
+	if (pvt->_conn->getNativeTransactionModel()!=SQLRTXMODEL_NONE) {
+		if (pvt->_conn->supportsAutoCommit()) {
+			// this branch handles all implicit-tx dbs
+			// (which must support autocommit) and explicit-tx
+			// dbs which also support autocommit
+			// FIXME: this is not correct for dbs which
+			// defer autocommit (eg. mysql)
+			bool	success=true;
+			if (pvt->_autocommit) {
+				success=pvt->_conn->setAutoCommitOn();
+			} else {
+				success=pvt->_conn->setAutoCommitOff();
+			}
+			if (!success) {
+				closeCursors(false);
+				logOut();
+				return false;
+			}
 		} else {
-			pvt->_conn->setAutoCommitOff();
+			// if we're here then the db must be an explicit-tx
+			// db that doesn't support autocommit
+			// (ignore errors, some dbs throw errors if you
+			// commit outside of a tx or begin inside one)
+			if (pvt->_autocommit) {
+				pvt->_conn->commit();
+			} else {
+				pvt->_conn->begin();
+			}
 		}
-	} else if (fakingImplicitTransactions()) {
-		// FIXME: review this...
-		// the db has no runtime autocommit toggle, so the
-		// setAutoCommitOff() call above couldn't be used to start
-		// the implicit-mode tx; issue an explicit begin instead
-		pvt->_conn->begin();
 	}
 
-	// set it to the autocommit state that we want it to be in
-	setAutoCommit(pvt->_initialautocommit);
+	// set the autocommit state that we want to be in
+	if (!setAutoCommit(pvt->_initialautocommit)) {
+		closeCursors(false);
+		logOut();
+		return false;
+	}
 
 	// increment connection counter
 	if (pvt->_cfg->getDynamicScaling()) {
@@ -1432,25 +1453,28 @@ void sqlrservercontroller::logOut() {
 	debugEnd();
 }
 
-void sqlrservercontroller::setAutoCommit(bool ac) {
+bool sqlrservercontroller::setAutoCommit(bool ac) {
 	debugStart("set autocommit");
 	if (ac) {
 		debugWrite("on");
 		if (!setAutoCommitOn()) {
 			debugWrite("failed");
 			stderror.printf("Couldn't set autocommit on.\n");
-			return;
+			debugEnd();
+			return false;
 		}
 	} else {
 		debugWrite("off");
 		if (!setAutoCommitOff()) {
 			debugWrite("failed");
 			stderror.printf("Couldn't set autocommit off.\n");
-			return;
+			debugEnd();
+			return false;
 		}
 	}
 	debugWrite("success");
 	debugEnd();
+	return true;
 }
 
 bool sqlrservercontroller::initCursors(uint16_t count) {
