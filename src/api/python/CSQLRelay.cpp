@@ -572,6 +572,32 @@ static PyObject *rollback(PyObject *self, PyObject *args) {
   return Py_BuildValue("h", (short)rc);
 }
 
+static PyObject *getDefaultTransactionModel(PyObject *self, PyObject *args) {
+  long sqlrcon;
+  if (!PyArg_ParseTuple(args, "l", &sqlrcon))
+    return NULL;
+  return Py_BuildValue("s", ((sqlrconnection *)sqlrcon)->getDefaultTransactionModel());
+}
+
+static PyObject *setTransactionModel(PyObject *self, PyObject *args) {
+  long sqlrcon;
+  const char *txmodel;
+  bool rc;
+  if (!PyArg_ParseTuple(args, "ls", &sqlrcon, &txmodel))
+    return NULL;
+  Py_BEGIN_ALLOW_THREADS
+  rc=((sqlrconnection *)sqlrcon)->setTransactionModel(txmodel);
+  Py_END_ALLOW_THREADS
+  return Py_BuildValue("h", (short)rc);
+}
+
+static PyObject *getTransactionModel(PyObject *self, PyObject *args) {
+  long sqlrcon;
+  if (!PyArg_ParseTuple(args, "l", &sqlrcon))
+    return NULL;
+  return Py_BuildValue("s", ((sqlrconnection *)sqlrcon)->getTransactionModel());
+}
+
 static PyObject *getDefaultIsolationLevel(PyObject *self, PyObject *args) {
   long sqlrcon;
   if (!PyArg_ParseTuple(args, "l", &sqlrcon))
@@ -3328,6 +3354,9 @@ static PyMethodDef SQLRMethods[] = {
   {"begin", begin, METH_VARARGS},
   {"commit", commit, METH_VARARGS},
   {"rollback", rollback, METH_VARARGS},
+  {"getDefaultTransactionModel", getDefaultTransactionModel, METH_VARARGS},
+  {"setTransactionModel", setTransactionModel, METH_VARARGS},
+  {"getTransactionModel", getTransactionModel, METH_VARARGS},
   {"getDefaultIsolationLevel", getDefaultIsolationLevel, METH_VARARGS},
   {"getDefaultIsolationLevel", getDefaultIsolationLevel, METH_VARARGS},
   {"setIsolationLevel", setIsolationLevel, METH_VARARGS},

@@ -494,6 +494,54 @@ public class SQLRConnection : IDisposable
         return (sqlrcon_rollback(sqlrconref) == 1);
     }
 
+    /** Returns the database's native transaction model.  See
+     *  setTranscationModel() for a list of potential return values.
+     *  Returns null if an error occurred. */
+    public String getDefaultTransactionModel()
+    {
+        return Marshal.PtrToStringAnsi(sqlrcon_getDefaultTransactionModel(sqlrconref));
+    }
+
+    /** Sets the current transaction model to "txmodel" which should be
+     *  one of:
+     *
+     *  * native - the database's native transaction model
+     *  * none - no transactions
+     *  * "implicit"
+     *      * in a transaction when the session begins
+     *      * commit/rollback implicitly starts a new transcaction
+     *      * autocommit on/off take effect immediately
+     *  * "explicit"
+     *      * not in a transaction when the session begins
+     *      * begin required to start a new transaction
+     *      * commit/rollback does not start a new transcaction
+     *      * autocommit on/off take effect immediately
+     *  * "explicit-deferred"
+     *      * not in a transaction when the session begins
+     *      * begin required to start a new transaction
+     *      * commit/rollback does not start a new transcaction
+     *      * while in a transaction, autocommit on/off take effect at
+     *        next commit/rollback
+     *  * "explicit-error"
+     *      * not in a transaction when the session begins
+     *      * begin required to start a new transaction
+     *      * commit/rollback does not start a new transcaction
+     *      * while in a transaction, autocommit on/off throw error
+     *
+     *  Returns true on success and false on failure. */
+    public Boolean setTransactionModel(String txmodel)
+    {
+        return (sqlrcon_setTransactionModel(sqlrconref, txmodel) == 1);
+    }
+
+    /** Returns the current transaction model.  See setTranscationModel()
+     *  for a list of potential return values.  Returns null if an error
+     *  occurred. */
+    public String getTransactionModel()
+    {
+        return Marshal.PtrToStringAnsi(sqlrcon_getTransactionModel(sqlrconref));
+    }
+
     /** Returns the database-specific default isolation level,
      *  or null if an error occurred. */
     public String getDefaultIsolationLevel()
@@ -1014,6 +1062,15 @@ public class SQLRConnection : IDisposable
     
     [DllImport("libsqlrclientwrapper.dll", CallingConvention = CallingConvention.Cdecl)]
     private static extern Int32 sqlrcon_rollback(IntPtr sqlrconref);
+
+    [DllImport("libsqlrclientwrapper.dll", CallingConvention = CallingConvention.Cdecl)]
+    private static extern IntPtr sqlrcon_getDefaultTransactionModel(IntPtr sqlrconref);
+
+    [DllImport("libsqlrclientwrapper.dll", CallingConvention = CallingConvention.Cdecl)]
+    private static extern Int32 sqlrcon_setTransactionModel(IntPtr sqlrconref, String txmodel);
+
+    [DllImport("libsqlrclientwrapper.dll", CallingConvention = CallingConvention.Cdecl)]
+    private static extern IntPtr sqlrcon_getTransactionModel(IntPtr sqlrconref);
 
     [DllImport("libsqlrclientwrapper.dll", CallingConvention = CallingConvention.Cdecl)]
     private static extern IntPtr sqlrcon_getDefaultIsolationLevel(IntPtr sqlrconref);

@@ -45,15 +45,15 @@ class NotSupportedError(DatabaseError):
     pass
 
 
-def connect(host, port, socket, user, password, retrytime=0, tries=1, krb='no', krbservice='', krbmech='', krbflags='', tls='no', tlsversion='', tlscert='', tlspassword='', tlsciphers='', tlsvalidate='', tlsca='', tlsdepth=0, db='', debug=0, columnnamecase='mixed', resultsetbuffersize=0, dontgetcolumninfo=0, nullsasnone=1, lazyconnect=1, bindvariabledelimiters="?:@$", autocommit='backend'):
-    return SQLRConnection(host, port, socket, user, password, retrytime, tries, krb, krbservice, krbmech, krbflags, tls, tlsversion, tlscert, tlspassword, tlsciphers, tlsvalidate, tlsca, tlsdepth, db, debug, columnnamecase, resultsetbuffersize, dontgetcolumninfo, nullsasnone, lazyconnect, bindvariabledelimiters, autocommit)
+def connect(host, port, socket, user, password, retrytime=0, tries=1, krb='no', krbservice='', krbmech='', krbflags='', tls='no', tlsversion='', tlscert='', tlspassword='', tlsciphers='', tlsvalidate='', tlsca='', tlsdepth=0, db='', debug=0, columnnamecase='mixed', resultsetbuffersize=0, dontgetcolumninfo=0, nullsasnone=1, lazyconnect=1, bindvariabledelimiters="?:@$", autocommit='backend', transactionmodel=''):
+    return SQLRConnection(host, port, socket, user, password, retrytime, tries, krb, krbservice, krbmech, krbflags, tls, tlsversion, tlscert, tlspassword, tlsciphers, tlsvalidate, tlsca, tlsdepth, db, debug, columnnamecase, resultsetbuffersize, dontgetcolumninfo, nullsasnone, lazyconnect, bindvariabledelimiters, autocommit, transactionmodel)
 
 
 class SQLRConnection:
 
     connection=None
 
-    def __init__(self, host, port, socket, user, password, retrytime, tries, krb, krbservice, krbmech, krbflags, tls, tlsversion, tlscert, tlspassword, tlsciphers, tlsvalidate, tlsca, tlsdepth, db, debug, columnnamecase, resultsetbuffersize, dontgetcolumninfo, nullsasnone, lazyconnect, bindvariabledelimiters, autocommit):
+    def __init__(self, host, port, socket, user, password, retrytime, tries, krb, krbservice, krbmech, krbflags, tls, tlsversion, tlscert, tlspassword, tlsciphers, tlsvalidate, tlsca, tlsdepth, db, debug, columnnamecase, resultsetbuffersize, dontgetcolumninfo, nullsasnone, lazyconnect, bindvariabledelimiters, autocommit, transactionmodel):
 
         # create the connection
         self.connection=CSQLRelay.sqlrcon_alloc(host, port, socket, user, password, retrytime, tries)
@@ -81,6 +81,10 @@ class SQLRConnection:
         self.dontgetcolumninfo=dontgetcolumninfo
         self.nullsasnone=nullsasnone
         CSQLRelay.setBindVariableDelimiters(self.connection, bindvariabledelimiters)
+
+        # set the transaction model, if one was specified
+        if transactionmodel!='':
+                CSQLRelay.setTransactionModel(self.connection, transactionmodel)
 
         # set autocommit on or off, or leave it up to the backend
         # ("yes" - on, "no" - off, "backend" or anything else - leave alone)

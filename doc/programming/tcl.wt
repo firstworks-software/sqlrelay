@@ -80,11 +80,34 @@ have no commit or rollback methods, the calls do nothing and the database
 throws no error.
 
 You can also turn Autocommit on or off with the autoCommitOn() and
-autoCommitOff() methods of the SQLRelay::Connection class.  When 
-Autocommit is on, the database performs a commit after each successful DML or 
-DDL query.  When Autocommit is off, the database commits when the client 
+autoCommitOff() methods of the SQLRelay::Connection class.  When
+Autocommit is on, the database performs a commit after each successful DML or
+DDL query.  When Autocommit is off, the database commits when the client
 instructs it to, or (by default) when a client disconnects.  For databases that
 don't support Autocommit, autoCommitOn() and autoCommitOff() have no effect.
+
+The transaction model can be queried and set with the
+getDefaultTransactionModel, setTransactionModel and getTransactionModel procs.
+The transaction model controls whether a session is in a transaction when it
+begins, whether commit/rollback implicitly starts a new transaction, and when
+changes to Autocommit take effect.  Valid models are '''native''' (the
+database's native transaction model), '''none''' (no transactions),
+'''implicit''' (in a transaction when the session begins; commit/rollback
+implicitly starts a new transaction; autocommit on/off take effect
+immediately), '''explicit''' (not in a transaction when the session begins;
+begin required to start a new transaction; commit/rollback does not start a
+new transaction; autocommit on/off take effect immediately),
+'''explicit-deferred''' (like explicit, but while in a transaction, autocommit
+on/off take effect at the next commit/rollback), or '''explicit-error''' (like
+explicit, but while in a transaction, autocommit on/off throw an error).
+
+The transaction isolation level can be queried and set with the
+setIsolationLevel and getIsolationLevel procs.  Isolation level values are
+database-specific and are passed through to the backend (typically '''READ
+UNCOMMITTED''', '''READ COMMITTED''', '''REPEATABLE READ''', or
+'''SERIALIZABLE''' on databases that support the standard SQL isolation
+levels).  getIsolationLevel returns '''unknown''' if the current isolation
+level cannot be determined.
 
 [=#temptables]
 == Temporary Tables ==

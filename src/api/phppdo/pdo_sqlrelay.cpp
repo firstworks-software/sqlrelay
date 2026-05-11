@@ -1987,7 +1987,8 @@ static int sqlrelayHandleFactory(pdo_dbh_t *dbh,
 		{"bindvariabledelimiters",(char *)"?:@$",0},
 		{"emulatepreparesunicodestrings",(char *)"0",0},
 		{"fetchlobsasstrings",(char *)"0",0},
-		{"lazyconnectautocommit",(char *)"1",0}
+		{"lazyconnectautocommit",(char *)"1",0},
+		{"transactionmodel",(char *)"",0}
 	};
 	php_pdo_parse_data_source(dbh->data_source,
 					dbh->data_source_len,
@@ -2022,6 +2023,7 @@ static int sqlrelayHandleFactory(pdo_dbh_t *dbh,
 				charstring::isYes(options[27].optval);
 	bool		lazyconnectautocommit=
 				!charstring::isNo(options[28].optval);
+	const char	*transactionmodel=options[29].optval;
 
 	// create a sqlrconnection and attach it to the dbh
 	sqlrdbhandle	*sqlrdbh=new sqlrdbhandle;
@@ -2132,6 +2134,11 @@ static int sqlrelayHandleFactory(pdo_dbh_t *dbh,
 
 	if (!charstring::isNullOrEmpty(db)) {
 		sqlrdbh->sqlrcon->selectDatabase(db);
+	}
+
+	// set the transaction model, if one was specified
+	if (!charstring::isNullOrEmpty(transactionmodel)) {
+		sqlrdbh->sqlrcon->setTransactionModel(transactionmodel);
 	}
 
 	// autocommit:

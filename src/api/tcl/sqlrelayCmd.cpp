@@ -3191,6 +3191,9 @@ int sqlrconObjCmd(ClientData data, Tcl_Interp *interp,
     "begin",
     "commit",
     "rollback",
+    "getDefaultTransactionModel",
+    "setTransactionModel",
+    "getTransactionModel",
     "setIsolationLevel",
     "getIsolationLevel",
     "getDatabaseFeature",
@@ -3246,6 +3249,9 @@ int sqlrconObjCmd(ClientData data, Tcl_Interp *interp,
     SQLR_BEGIN,
     SQLR_COMMIT,
     SQLR_ROLLBACK,
+    SQLR_GETDEFAULTTRANSACTIONMODEL,
+    SQLR_SETTRANSACTIONMODEL,
+    SQLR_GETTRANSACTIONMODEL,
     SQLR_SETISOLATIONLEVEL,
     SQLR_GETISOLATIONLEVEL,
     SQLR_GETDATABASEFEATURE,
@@ -3696,6 +3702,30 @@ int sqlrconObjCmd(ClientData data, Tcl_Interp *interp,
     }
     Tcl_SetObjResult(interp, Tcl_NewIntObj(con->rollback()));
     break;
+  case SQLR_GETDEFAULTTRANSACTIONMODEL: {
+    if (objc > 2) {
+      Tcl_WrongNumArgs(interp, 2, objv, NULL);
+      return TCL_ERROR;
+    }
+    Tcl_SetObjResult(interp,_Tcl_NewStringObj(con->getDefaultTransactionModel(), -1));
+    break;
+  }
+  case SQLR_SETTRANSACTIONMODEL: {
+    if (objc != 3) {
+      Tcl_WrongNumArgs(interp, 2, objv, "txmodel");
+      return TCL_ERROR;
+    }
+    Tcl_SetObjResult(interp, Tcl_NewIntObj(con->setTransactionModel(Tcl_GetString(objv[2]))));
+    break;
+  }
+  case SQLR_GETTRANSACTIONMODEL: {
+    if (objc > 2) {
+      Tcl_WrongNumArgs(interp, 2, objv, NULL);
+      return TCL_ERROR;
+    }
+    Tcl_SetObjResult(interp,_Tcl_NewStringObj(con->getTransactionModel(), -1));
+    break;
+  }
   case SQLR_SETISOLATIONLEVEL: {
     if (objc != 3) {
       Tcl_WrongNumArgs(interp, 2, objv, "isolationlevel");

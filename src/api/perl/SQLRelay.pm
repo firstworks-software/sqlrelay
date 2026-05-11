@@ -81,6 +81,7 @@ sub connect {
 	$dsn{'debug'}=0;
 	$dsn{'lazyconnect'}=1;
 	$dsn{'bindvariabledelimiters'}="?:@\$";
+	$dsn{'transactionmodel'}='';
 
 	# split the dsn
 	my $var;
@@ -141,6 +142,11 @@ sub connect {
 
 	# set bind variable delimiters
 	$connection->setBindVariableDelimiters($dsn{'bindvariabledelimiters'});
+
+	# set the transaction model, if one was specified
+	if (length($dsn{'transactionmodel'})) {
+		$connection->setTransactionModel($dsn{'transactionmodel'});
+	}
 
 	# store some references in the database handle
 	$dbh->STORE('driver_database_handle',$drh);
@@ -883,6 +889,8 @@ Connection string consists of following parts:
 =item B<retrytime=...> default: I<0>         --- time (in seconds) between connect attempts;
 
 =item B<debug=...>     default: I<0>         --- set it to 1 if you want to get some debug messages in stdout;
+
+=item B<transactionmodel=...> default: I<>     --- transaction model to use (native, none, implicit, explicit, explicit-deferred, or explicit-error).  Leave empty to use the database's native model;
 
 =back
 

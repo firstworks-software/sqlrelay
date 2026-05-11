@@ -876,6 +876,46 @@ int main() {
 			}
 		}
 
+		if (strcmp("getDefaultTransactionModel", command) == TRUE) {
+			// check number of arguments
+		    	if (arity != 0) return ERR_NUMBER_OF_ARGS;
+
+			// encode result
+			if (ei_x_encode_atom(&result, "ok") ||
+				ei_x_encode_string(&result, sqlrcon_getDefaultTransactionModel(con))) {
+				return ERR_ENCODING_ARGS;
+			}
+		}
+
+		if (strcmp("setTransactionModel", command) == TRUE) {
+			char txmodel[256];
+
+			// check number of arguments
+		    	if (arity != 1) return ERR_NUMBER_OF_ARGS;
+
+			// get input parameters
+			if (ei_decode_string(buf, &index, &txmodel[0])) {
+				return ERR_DECODING_ARGS;
+			}
+
+			// call function and encode result
+			if (ei_x_encode_atom(&result, "ok") ||
+				ei_x_encode_long(&result, sqlrcon_setTransactionModel(con, txmodel))) {
+				return ERR_ENCODING_ARGS;
+			}
+		}
+
+		if (strcmp("getTransactionModel", command) == TRUE) {
+			// check number of arguments
+		    	if (arity != 0) return ERR_NUMBER_OF_ARGS;
+
+			// encode result
+			if (ei_x_encode_atom(&result, "ok") ||
+				ei_x_encode_string(&result, sqlrcon_getTransactionModel(con))) {
+				return ERR_ENCODING_ARGS;
+			}
+		}
+
 		if (strcmp("setIsolationLevel", command) == TRUE) {
 			char isolationlevel[256];
 

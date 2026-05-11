@@ -238,6 +238,18 @@ int sqlrcon_rollback(sqlrcon sqlrconref) {
 	return sqlrconref->rollback();
 }
 
+const char *sqlrcon_getDefaultTransactionModel(sqlrcon sqlrconref) {
+	return sqlrconref->getDefaultTransactionModel();
+}
+
+int sqlrcon_setTransactionModel(sqlrcon sqlrconref, const char *txmodel) {
+	return sqlrconref->setTransactionModel(txmodel);
+}
+
+const char *sqlrcon_getTransactionModel(sqlrcon sqlrconref) {
+	return sqlrconref->getTransactionModel();
+}
+
 const char *sqlrcon_getDefaultIsolationLevel(sqlrcon sqlrconref) {
 	return sqlrconref->getDefaultIsolationLevel();
 }

@@ -105,11 +105,35 @@ have no commit or rollback methods, the calls do nothing and the database
 throws no error.</p>
 
 <p>You can also turn Autocommit on or off with the autoCommitOn() and
-autoCommitOff() methods of the sqlrelay module.  When 
-Autocommit is on, the database performs a commit after each successful DML or 
-DDL query.  When Autocommit is off, the database commits when the client 
+autoCommitOff() methods of the sqlrelay module.  When
+Autocommit is on, the database performs a commit after each successful DML or
+DDL query.  When Autocommit is off, the database commits when the client
 instructs it to, or (by default) when a client disconnects.  For databases that
 don't support Autocommit, autoCommitOn() and autoCommitOff() have no effect.</p>
+
+<p>The transaction model can be queried and set with the
+getDefaultTransactionModel(), setTransactionModel(Txmodel) and
+getTransactionModel() functions of the sqlrelay module.  The transaction model
+controls whether a session is in a transaction when it begins, whether
+commit/rollback implicitly starts a new transaction, and when changes to
+Autocommit take effect.  Valid models are <b>native</b> (the database's native
+transaction model), <b>none</b> (no transactions), <b>implicit</b> (in a
+transaction when the session begins; commit/rollback implicitly starts a new
+transaction; autocommit on/off take effect immediately), <b>explicit</b> (not in
+a transaction when the session begins; begin required to start a new
+transaction; commit/rollback does not start a new transaction; autocommit
+on/off take effect immediately), <b>explicit-deferred</b> (like explicit, but
+while in a transaction, autocommit on/off take effect at the next
+commit/rollback), or <b>explicit-error</b> (like explicit, but while in a
+transaction, autocommit on/off throw an error).</p>
+
+<p>The transaction isolation level can be queried and set with the
+setIsolationLevel(Isolationlevel) and getIsolationLevel() functions of the
+sqlrelay module.  Isolation level values are database-specific and are passed
+through to the backend (typically <b>READ UNCOMMITTED</b>, <b>READ COMMITTED</b>,
+<b>REPEATABLE READ</b>, or <b>SERIALIZABLE</b> on databases that support the
+standard SQL isolation levels).  getIsolationLevel() returns <b>unknown</b> if
+the current isolation level cannot be determined.</p>
 
 <a name="temptables"/><h2>Temporary Tables</h2>
 

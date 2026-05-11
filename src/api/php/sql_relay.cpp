@@ -5979,6 +5979,85 @@ DLEXPORT ZEND_FUNCTION(sqlrcon_rollback) {
 	RETURN_LONG(0);
 }
 
+DLEXPORT ZEND_FUNCTION(sqlrcon_getDefaultTransactionModel) {
+	ZVAL sqlrcon;
+	const char *r;
+	if (ZEND_NUM_ARGS() != 1 ||
+		GET_PARAMETERS(
+				ZEND_NUM_ARGS() TSRMLS_CC,
+				PARAMS("z")
+				&sqlrcon) == FAILURE) {
+		WRONG_PARAM_COUNT;
+	}
+	sqlrconnection *connection=NULL;
+	ZEND_FETCH_RESOURCE(connection,
+				sqlrconnection *,
+				sqlrcon,
+				-1,
+				"sqlrelay connection",
+				sqlrelay_connection);
+	if (connection) {
+		r=connection->getDefaultTransactionModel();
+		if (r) {
+			RET_STRING(const_cast<char *>(r),1);
+		}
+	}
+	RETURN_FALSE;
+}
+
+DLEXPORT ZEND_FUNCTION(sqlrcon_setTransactionModel) {
+	ZVAL sqlrcon;
+	ZVAL txmodel;
+	bool r;
+	if (ZEND_NUM_ARGS() != 2 ||
+		GET_PARAMETERS(
+				ZEND_NUM_ARGS() TSRMLS_CC,
+				PARAMS("zz")
+				&sqlrcon,
+				&txmodel) == FAILURE) {
+		WRONG_PARAM_COUNT;
+	}
+	convert_to_string_ex(txmodel);
+	sqlrconnection *connection=NULL;
+	ZEND_FETCH_RESOURCE(connection,
+				sqlrconnection *,
+				sqlrcon,
+				-1,
+				"sqlrelay connection",
+				sqlrelay_connection);
+	if (connection) {
+		r=connection->setTransactionModel(SVAL(txmodel));
+		RETURN_LONG(r);
+	}
+	RETURN_LONG(0);
+}
+
+DLEXPORT ZEND_FUNCTION(sqlrcon_getTransactionModel) {
+	ZVAL sqlrcon;
+	const char *r;
+	if (ZEND_NUM_ARGS() != 1 ||
+		GET_PARAMETERS(
+				ZEND_NUM_ARGS() TSRMLS_CC,
+				PARAMS("z")
+				&sqlrcon) == FAILURE) {
+		WRONG_PARAM_COUNT;
+	}
+	sqlrconnection *connection=NULL;
+	ZEND_FETCH_RESOURCE(connection,
+				sqlrconnection *,
+				sqlrcon,
+				-1,
+				"sqlrelay connection",
+				sqlrelay_connection);
+	if (connection) {
+		r=connection->getTransactionModel();
+		if (r) {
+			RET_STRING(const_cast<char *>(r),1);
+		}
+	}
+	RETURN_FALSE;
+}
+
 DLEXPORT ZEND_FUNCTION(sqlrcon_getDefaultIsolationLevel) {
 	ZVAL sqlrcon;
 	const char *r;
@@ -6817,6 +6896,15 @@ ZEND_END_ARG_INFO()
 ZEND_BEGIN_ARG_INFO_EX(arginfo_sqlrcon_rollback,0,0,0)
 ZEND_END_ARG_INFO()
 
+ZEND_BEGIN_ARG_INFO_EX(arginfo_sqlrcon_getDefaultTransactionModel,0,0,0)
+ZEND_END_ARG_INFO()
+
+ZEND_BEGIN_ARG_INFO_EX(arginfo_sqlrcon_setTransactionModel,0,0,0)
+ZEND_END_ARG_INFO()
+
+ZEND_BEGIN_ARG_INFO_EX(arginfo_sqlrcon_getTransactionModel,0,0,0)
+ZEND_END_ARG_INFO()
+
 ZEND_BEGIN_ARG_INFO_EX(arginfo_sqlrcon_getDefaultIsolationLevel,0,0,0)
 ZEND_END_ARG_INFO()
 
@@ -7198,6 +7286,12 @@ zend_function_entry sql_relay_functions[] = {
 		ARGINFO(arginfo_sqlrcon_commit))
 	ZEND_FE(sqlrcon_rollback,
 		ARGINFO(arginfo_sqlrcon_rollback))
+	ZEND_FE(sqlrcon_getDefaultTransactionModel,
+		ARGINFO(arginfo_sqlrcon_getDefaultTransactionModel))
+	ZEND_FE(sqlrcon_setTransactionModel,
+		ARGINFO(arginfo_sqlrcon_setTransactionModel))
+	ZEND_FE(sqlrcon_getTransactionModel,
+		ARGINFO(arginfo_sqlrcon_getTransactionModel))
 	ZEND_FE(sqlrcon_getDefaultIsolationLevel,
 		ARGINFO(arginfo_sqlrcon_getDefaultIsolationLevel))
 	ZEND_FE(sqlrcon_setIsolationLevel,

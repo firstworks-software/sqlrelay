@@ -1087,6 +1087,78 @@ static VALUE sqlrcon_rollback(VALUE self) {
 	return INT2NUM(result);
 }
 
+static void getDefaultTransactionModel(params *p) {
+	p->result.ccpr=p->sqlrc.sqlrcon->getDefaultTransactionModel();
+}
+/** Returns the database's native transaction model.  See
+ *  setTranscationModel() for a list of potential return values.  Returns nil
+ *  if an error occurred. */
+static VALUE sqlrcon_getDefaultTransactionModel(VALUE self) {
+	sqlrconnection	*sqlrcon;
+	const char	*result;
+	Data_Get_Struct(self,sqlrconnection,sqlrcon);
+	RCON(result,ccpr,sqlrcon,getDefaultTransactionModel);
+	if (result) {
+		return rb_str_new2(result);
+	} else {
+		return Qnil;
+	}
+}
+
+static void setTransactionModel(params *p) {
+	p->result.br=p->sqlrc.sqlrcon->setTransactionModel(STR2CSTR(p->one));
+}
+/** Sets the current transaction model to "txmodel" which should be one of:
+ *
+ *  * native - the database's native transaction model
+ *  * none - no transactions
+ *  * "implicit"
+ *      * in a transaction when the session begins
+ *      * commit/rollback implicitly starts a new transcaction
+ *      * autocommit on/off take effect immediately
+ *  * "explicit"
+ *      * not in a transaction when the session begins
+ *      * begin required to start a new transaction
+ *      * commit/rollback does not start a new transcaction
+ *      * autocommit on/off take effect immediately
+ *  * "explicit-deferred"
+ *      * not in a transaction when the session begins
+ *      * begin required to start a new transaction
+ *      * commit/rollback does not start a new transcaction
+ *      * while in a transaction, autocommit on/off take effect at next
+ *        commit/rollback
+ *  * "explicit-error"
+ *      * not in a transaction when the session begins
+ *      * begin required to start a new transaction
+ *      * commit/rollback does not start a new transcaction
+ *      * while in a transaction, autocommit on/off throw error
+ *
+ *  Returns true on success and false on failure. */
+static VALUE sqlrcon_setTransactionModel(VALUE self, VALUE txmodel) {
+	sqlrconnection	*sqlrcon;
+	bool		result;
+	Data_Get_Struct(self,sqlrconnection,sqlrcon);
+	RCON1(result,br,sqlrcon,setTransactionModel,txmodel);
+	return INT2NUM(result);
+}
+
+static void getTransactionModel(params *p) {
+	p->result.ccpr=p->sqlrc.sqlrcon->getTransactionModel();
+}
+/** Returns the current transaction model.  See setTranscationModel() for a
+ *  list of potential return values.  Returns nil if an error occurred. */
+static VALUE sqlrcon_getTransactionModel(VALUE self) {
+	sqlrconnection	*sqlrcon;
+	const char	*result;
+	Data_Get_Struct(self,sqlrconnection,sqlrcon);
+	RCON(result,ccpr,sqlrcon,getTransactionModel);
+	if (result) {
+		return rb_str_new2(result);
+	} else {
+		return Qnil;
+	}
+}
+
 static void setIsolationLevel(params *p) {
 	p->result.br=p->sqlrc.sqlrcon->setIsolationLevel(STR2CSTR(p->one));
 }
@@ -1631,6 +1703,12 @@ void Init_SQLRConnection() {
 				(CAST)sqlrcon_commit,0);
 	rb_define_method(csqlrconnection,"rollback",
 				(CAST)sqlrcon_rollback,0);
+	rb_define_method(csqlrconnection,"getDefaultTransactionModel",
+				(CAST)sqlrcon_getDefaultTransactionModel,0);
+	rb_define_method(csqlrconnection,"setTransactionModel",
+				(CAST)sqlrcon_setTransactionModel,1);
+	rb_define_method(csqlrconnection,"getTransactionModel",
+				(CAST)sqlrcon_getTransactionModel,0);
 	rb_define_method(csqlrconnection,"setIsolationLevel",
 				(CAST)sqlrcon_setIsolationLevel,1);
 	rb_define_method(csqlrconnection,"getIsolationLevel",

@@ -231,6 +231,16 @@ sqlrconnection::commit()
 bool
 sqlrconnection::rollback()
 
+const char *
+sqlrconnection::getDefaultTransactionModel()
+
+bool
+sqlrconnection::setTransactionModel(txmodel)
+	const char *txmodel
+
+const char *
+sqlrconnection::getTransactionModel()
+
 bool
 sqlrconnection::setIsolationLevel(isolationlevel)
 	const char *isolationlevel

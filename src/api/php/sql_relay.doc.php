@@ -367,6 +367,46 @@ function sqlrcon_commit($sqlrconref){}
 function sqlrcon_rollback($sqlrconref){}
 
 
+/** Returns the database's native transaction model.  See
+ *  sqlrcon_setTranscationModel() for a list of potential return values.
+ *  Returns NULL if an error occurred. */
+function sqlrcon_getDefaultTransactionModel($sqlrconref){}
+
+/**
+ *  Sets the current transaction model to "txmodel" which should be one of:
+ *
+ *  * native - the database's native transaction model
+ *  * none - no transactions
+ *  * "implicit"
+ *      * in a transaction when the session begins
+ *      * commit/rollback implicitly starts a new transcaction
+ *      * autocommit on/off take effect immediately
+ *  * "explicit"
+ *      * not in a transaction when the session begins
+ *      * begin required to start a new transaction
+ *      * commit/rollback does not start a new transcaction
+ *      * autocommit on/off take effect immediately
+ *  * "explicit-deferred"
+ *      * not in a transaction when the session begins
+ *      * begin required to start a new transaction
+ *      * commit/rollback does not start a new transcaction
+ *      * while in a transaction, autocommit on/off take effect at next
+ *        commit/rollback
+ *  * "explicit-error"
+ *      * not in a transaction when the session begins
+ *      * begin required to start a new transaction
+ *      * commit/rollback does not start a new transcaction
+ *      * while in a transaction, autocommit on/off throw error
+ *
+ *  Returns 1 on success and 0 on failure. */
+function sqlrcon_setTransactionModel($sqlrconref, $txmodel){}
+
+/**
+ *  Returns the current transaction model.  See sqlrcon_setTranscationModel()
+ *  for a list of potential return values.  Returns NULL if an error
+ *  occurred. */
+function sqlrcon_getTransactionModel($sqlrconref){}
+
 /** Returns the database-specific default isolation level,
  *  or NULL if an error occurred. */
 function sqlrcon_getDefaultIsolationLevel($sqlrconref){}
