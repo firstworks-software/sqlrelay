@@ -1045,6 +1045,9 @@ bool sqlrservercontroller::init(int argc, const char **argv) {
 
 	// bootstrap the autocommit state to match the flag
 	// (use only pvt->_conn calls here since we're bootstrapping)
+	// (ignore errors, in case the db throws an error if you commit
+	// outside of a tx, begin inside one, or set autocommit on/off when
+	// it already is)
 	if (pvt->_conn->getNativeTransactionModel()!=SQLRTXMODEL_NONE) {
 		if (pvt->_conn->supportsAutoCommit()) {
 			// this branch handles all implicit-tx dbs
@@ -1052,22 +1055,14 @@ bool sqlrservercontroller::init(int argc, const char **argv) {
 			// dbs which also support autocommit
 			// FIXME: this is not correct for dbs which
 			// defer autocommit (eg. mysql)
-			bool	success=true;
 			if (pvt->_autocommit) {
-				success=pvt->_conn->setAutoCommitOn();
+				pvt->_conn->setAutoCommitOn();
 			} else {
-				success=pvt->_conn->setAutoCommitOff();
-			}
-			if (!success) {
-				closeCursors(false);
-				logOut();
-				return false;
+				pvt->_conn->setAutoCommitOff();
 			}
 		} else {
 			// if we're here then the db must be an explicit-tx
 			// db that doesn't support autocommit
-			// (ignore errors, some dbs throw errors if you
-			// commit outside of a tx or begin inside one)
 			if (pvt->_autocommit) {
 				pvt->_conn->commit();
 			} else {
@@ -1077,11 +1072,9 @@ bool sqlrservercontroller::init(int argc, const char **argv) {
 	}
 
 	// set the autocommit state that we want to be in
-	if (!setAutoCommit(pvt->_initialautocommit)) {
-		closeCursors(false);
-		logOut();
-		return false;
-	}
+	// (ignore errors, in case the db throws an error if you set
+	// autocommit on/off when it already is)
+	setAutoCommit(pvt->_initialautocommit);
 
 	// increment connection counter
 	if (pvt->_cfg->getDynamicScaling()) {
@@ -2570,6 +2563,12 @@ bool sqlrservercontroller::setAutoCommitOn() {
 					process::getProcessId());
 	}
 
+	// if the database isn't transactional then autocommit is always on
+	if (!isTransactional()) {
+		pvt->_autocommit=true;
+		return true;
+	}
+
 	// bail if autocommit is already on
 	if (pvt->_autocommit) {
 		return true;
@@ -2587,12 +2586,6 @@ bool sqlrservercontroller::setAutoCommitOn() {
 				SQLR_ERROR_AUTOCOMMIT_ON_IN_TX_BLOCK,
 				true);
 		return false;
-	}
-
-	// if the database isn't transactional then autocommit is always on
-	if (!isTransactional()) {
-		pvt->_autocommit=true;
-		return true;
 	}
 
 	// if the database supports autocommit then call its autocommit method
@@ -2646,6 +2639,12 @@ bool sqlrservercontroller::setAutoCommitOff() {
 					process::getProcessId());
 	}
 
+	// if the database isn't transactional then autocommit is always on
+	if (!isTransactional()) {
+		pvt->_autocommit=true;
+		return false;
+	}
+
 	// bail if autocommit is already off
 	if (!pvt->_autocommit) {
 		return true;
@@ -2662,12 +2661,6 @@ bool sqlrservercontroller::setAutoCommitOff() {
 			return false;
 		}
 		return true;
-	}
-
-	// if the database isn't transactional then autocommit is always on
-	if (!isTransactional()) {
-		pvt->_autocommit=true;
-		return false;
 	}
 
 	// if the database supports autocommit then call its autocommit method
@@ -2712,6 +2705,11 @@ bool sqlrservercontroller::begin() {
 		stdoutput.printf("%d: begin\n",process::getProcessId());
 	}
 
+	// bail if the database isn't transactional
+	if (!isTransactional()) {
+		return true;
+	}
+
 	// bail if autocommit is off
 	if (!pvt->_autocommit) {
 		return true;
@@ -2722,11 +2720,6 @@ bool sqlrservercontroller::begin() {
 		setError(SQLR_ERROR_BEGIN_IN_TX_BLOCK_STRING,
 				SQLR_ERROR_BEGIN_IN_TX_BLOCK,true);
 		return false;
-	}
-
-	// bail if the database isn't transactional
-	if (!isTransactional()) {
-		return true;
 	}
 
 	// bail if the database doesn't support explicit transactions,
@@ -2770,6 +2763,11 @@ bool sqlrservercontroller::commit() {
 		stdoutput.printf("%d: commit\n",process::getProcessId());
 	}
 
+	// bail if the database isn't transactional
+	if (!isTransactional()) {
+		return true;
+	}
+
 	// bail if autocommit is on
 	if (pvt->_autocommit) {
 		return true;
@@ -2780,11 +2778,6 @@ bool sqlrservercontroller::commit() {
 		setError(SQLR_ERROR_COMMIT_NOT_IN_TX_BLOCK_STRING,
 				SQLR_ERROR_COMMIT_NOT_IN_TX_BLOCK,true);
 		return false;
-	}
-
-	// bail if the database isn't transactional
-	if (!isTransactional()) {
-		return true;
 	}
 
 	// commit
@@ -2801,6 +2794,11 @@ bool sqlrservercontroller::rollback() {
 		stdoutput.printf("%d: rollback\n",process::getProcessId());
 	}
 
+	// bail if the database isn't transactional
+	if (!isTransactional()) {
+		return true;
+	}
+
 	// bail if autocommit is on
 	if (pvt->_autocommit) {
 		return true;
@@ -2811,11 +2809,6 @@ bool sqlrservercontroller::rollback() {
 		setError(SQLR_ERROR_ROLLBACK_NOT_IN_TX_BLOCK_STRING,
 				SQLR_ERROR_ROLLBACK_NOT_IN_TX_BLOCK,true);
 		return false;
-	}
-
-	// if the database isn't transactional then this is a no-op
-	if (!isTransactional()) {
-		return true;
 	}
 
 	// rollback
@@ -2861,10 +2854,6 @@ bool sqlrservercontroller::beginTransaction() {
 }
 
 bool sqlrservercontroller::endTransaction(bool commit) {
-	return endTransaction(commit,false);
-}
-
-bool sqlrservercontroller::endTransaction(bool commit, bool suppressbegin) {
 
 	// reset protocol modules
 	if (pvt->_sqlrpr) {
@@ -2952,9 +2941,7 @@ bool sqlrservercontroller::endTransaction(bool commit, bool suppressbegin) {
 		pvt->_autocommit=true;
 	} else if (fakingImplicitTransactions()) {
 		if (!pvt->_autocommit && !pvt->_conn->supportsAutoCommit()) {
-			if (!suppressbegin) {
-				pvt->_conn->begin();
-			}
+			pvt->_conn->begin();
 		}
 	}
 
@@ -3133,37 +3120,16 @@ bool sqlrservercontroller::setTransactionModel(sqlrtxmodel_t txmodel) {
 		return true;
 	}
 
-	// capture the autocommit state
-	bool	savedautocommit=pvt->_autocommit;
+	// capture the txmodel and autocommit state
+	sqlrtxmodel_t	savedtxmodel=pvt->_txmodel;
+	bool		savedautocommit=pvt->_autocommit;
 
-	// make sure we're outside of a transaction...
-	// commit and set autocommit on
-	if (pvt->_intransaction) {
-		// FIXME: shouldn't this whole thing be wrapped in
-		// isTransactonal() instead of it being checked here?
-		if (isTransactional() && !pvt->_conn->commit()) {
-			return false;
-		}
-		// If we're switching transaction models from an implicit model
-		// to any other model, then tell endTransaction() to skip
-		// calling the the begin that it would otherwise execute to
-		// start the next implicit transaction.
-		// If we're switching from an any other model to an implicit
-		// model, then it wouldn't be executed anyway.
-		// So, it's safe to set the second parameter here true in
-		// any case.
-		endTransaction(true,true);
+	// make sure that we're outside of a transaction, with autocommit on
+	pvt->_txmodel=pvt->_conn->getNativeTransactionModel();
+	if (!commit() || !setAutoCommitOn()) {
+		pvt->_txmodel=savedtxmodel;
+		return false;
 	}
-	if (pvt->_txmodel==SQLRTXMODEL_IMPLICIT) {
-		if (pvt->_conn->supportsAutoCommit() &&
-				!pvt->_conn->setAutoCommitOn()) {
-			return false;
-		}
-		pvt->_autocommit=true;
-		pvt->_intransaction=false;
-	}
-
-	// we're definitely outside of a tx, with autocommit on here
 
 	// switch the tx model
 	pvt->_txmodel=txmodel;
