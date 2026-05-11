@@ -1533,7 +1533,8 @@ class freetds extends sqlrtest {
 			"	testchar char(40), "+
 			"	testvarchar varchar(40), "+
 			"	testbit bit, "+
-			"	testurl varchar(60))"),0);
+			"	testurl varchar(60)) "+
+			"lock datarows"),0);
 		con.setAutoCommit(false);
 		System.out.println();
 

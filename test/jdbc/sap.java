@@ -1499,7 +1499,8 @@ class sap extends sqlrtest {
 			"	testvarchar varchar(40), "+
 			"	testbit bit, "+
 			"	testtext text, "+
-			"	testurl varchar(60))"),0);
+			"	testurl varchar(60)) "+
+			"lock datarows"),0);
 		con.setAutoCommit(false);
 		System.out.println();
 
