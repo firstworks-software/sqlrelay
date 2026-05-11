@@ -2012,9 +2012,9 @@ Depending on the back-end, it might also be necessary to make some other configu
 * In the instance tag:
  * set translatebindvariables="yes"
  * set the isolationlevel attribute
+ * set transactionmodel="explicit"
 * In the string attribute of the connection tag:
  * set autocommit=yes or autocommit=no
- * set faketransactionblocks=yes
  * implement a function that returns the last insert id and specify it using the lastinsertidfunction parameter
  * set the identity parameter to override the database type
  * set ignorespace=yes
@@ -2405,9 +2405,9 @@ Depending on the back-end, it might also be necessary to make some other configu
 * In the instance tag:
  * set translatebindvariables="yes"
  * set the isolationlevel attribute
+ * set transactionmodel="explicit"
 * In the string attribute of the connection tag:
  * set autocommit=yes or autocommit=no
- * set faketransactionblocks=yes
  * implement a function that returns the last insert id and specify it using the lastinsertidfunction parameter
  * set the identity parameter to override the database type
  * set ignorespace=yes
