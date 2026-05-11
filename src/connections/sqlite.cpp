@@ -121,6 +121,7 @@ class SQLRSERVER_DLLSPEC sqliteconnection : public sqlrserverconnection {
 		const char	*getNextvalFormat();
 
 		char		*db;
+		int32_t		busytimeoutms;
 
 		#ifdef SQLITE3
 		sqlite3	*sqliteptr;
@@ -240,6 +241,7 @@ sqliteconnection::sqliteconnection(sqlrservercontroller *cont) :
 	hostname=NULL;
 	initDatabaseFeatures();
 	db=NULL;
+	busytimeoutms=0;
 }
 
 sqliteconnection::~sqliteconnection() {
@@ -673,6 +675,15 @@ void sqliteconnection::handleConnectString() {
 
 	db=charstring::duplicate(cont->getConnectStringValue("db"));
 
+	// how long to wait for a contended write lock to clear before
+	// returning SQLITE_BUSY, default to 5 seconds
+	const char	*bt=cont->getConnectStringValue("busytimeoutms");
+	if (charstring::isNullOrEmpty(bt)) {
+		busytimeoutms=5000;
+	} else {
+		busytimeoutms=charstring::convertToInteger(bt);
+	}
+
 	cont->setFetchAtOnce(1);
 	cont->setMaxColumnCount(0);
 	cont->setMaxFieldSize(0);
@@ -682,6 +693,10 @@ bool sqliteconnection::logIn(const char **error, const char **warning) {
 #ifdef SQLITE_TRANSACTIONAL
 	#ifdef SQLITE3
 		if (sqlite3_open(db,&sqliteptr)==SQLITE_OK) {
+			// set a busy timeout
+			if (busytimeoutms>0) {
+				sqlite3_busy_timeout(sqliteptr,busytimeoutms);
+			}
 			return true;
 		}
 		errmesg=duplicate(sqlite3_errmsg(sqliteptr));
@@ -1966,6 +1981,11 @@ bool sqlitecursor::executeQuery(const char *query, uint32_t size) {
 		sqliteconn->errcode=
 			sqlite3_errcode(sqliteconn->sqliteptr);
 		return false;
+	}
+	// set a busy timeout
+	if (sqliteconn->busytimeoutms>0) {
+		sqlite3_busy_timeout(sqliteconn->sqliteptr,
+					sqliteconn->busytimeoutms);
 	}
 	#else
 	if (!(sqliteconn->sqliteptr=
