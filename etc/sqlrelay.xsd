@@ -56,6 +56,7 @@
         <xs:simpleType>
           <xs:restriction base="xs:token">
             <xs:enumeration value="native"/>
+            <xs:enumeration value="none"/>
             <xs:enumeration value="implicit"/>
             <xs:enumeration value="explicit"/>
             <xs:enumeration value="explicit-deferred"/>
