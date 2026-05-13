@@ -38,6 +38,15 @@ assertTrue [$con ping]
 puts ""
 
 
+# transaction state
+puts "TRANSACTION STATE: "
+assertEqual [$con getDefaultTransactionModel] "implicit"
+assertEqual [$con getTransactionModel] "implicit"
+assertTrue [$con getInTransaction]
+assertFalse [$con getAutoCommit]
+puts ""
+
+
 # bind format
 puts "BIND FORMAT: "
 assertEqual [$con bindFormat] "?"

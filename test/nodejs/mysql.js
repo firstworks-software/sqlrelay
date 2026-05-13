@@ -39,6 +39,15 @@ var {
 	console.log("");
 
 
+	// transaction state
+	console.log("TRANSACTION STATE: ");
+	assertEqStr(con.getDefaultTransactionModel(),"explicit-deferred");
+	assertEqStr(con.getTransactionModel(),"explicit-deferred");
+	assertFalse(con.getInTransaction());
+	assertTrue(con.getAutoCommit());
+	console.log("");
+
+
 	// bind format
 	console.log("BIND FORMAT: ");
 	if (majorversion>3) {

@@ -29,6 +29,15 @@
 	echo("\n");
 
 
+	// transaction state
+	echo("TRANSACTION STATE: \n");
+	assertEqStr(sqlrcon_getDefaultTransactionModel($con),"explicit-deferred");
+	assertEqStr(sqlrcon_getTransactionModel($con),"explicit-deferred");
+	assertFalse(sqlrcon_getInTransaction($con));
+	assertTrue(sqlrcon_getAutoCommit($con));
+	echo("\n");
+
+
 	// bind format
 	echo("BIND FORMAT: \n");
 	if ($majorversion>3) {

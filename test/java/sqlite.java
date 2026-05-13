@@ -61,6 +61,15 @@ class sqlite extends sqlrtest {
 		System.out.println();
 
 
+		// transaction state
+		System.out.println("TRANSACTION STATE: ");
+		assertEquals(con.getDefaultTransactionModel(),"explicit");
+		assertEquals(con.getTransactionModel(),"explicit");
+		assertFalse(con.getInTransaction());
+		assertTrue(con.getAutoCommit());
+		System.out.println();
+
+
 		// bind format
 		System.out.println("BIND FORMAT: ");
 		assertEquals(con.bindFormat(),":*");

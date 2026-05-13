@@ -79,6 +79,15 @@ int main(int argc, char **argv) {
 	printf("\n");
 
 
+	// transaction state
+	printf("TRANSACTION STATE: \n");
+	assertEqStr(sqlrcon_getDefaultTransactionModel(con),"implicit");
+	assertEqStr(sqlrcon_getTransactionModel(con),"implicit");
+	assertTrue(sqlrcon_getInTransaction(con));
+	assertFalse(sqlrcon_getAutoCommit(con));
+	printf("\n");
+
+
 	// bind format
 	printf("BIND FORMAT: \n");
 	assertEqStr(sqlrcon_bindFormat(con),"?");

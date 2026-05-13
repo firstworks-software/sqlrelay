@@ -63,6 +63,15 @@ namespace SQLRClientTest
             Console.WriteLine("");
 
 
+            // transaction state
+            Console.WriteLine("TRANSACTION STATE: ");
+            assertEquals(con.getDefaultTransactionModel(), "explicit-deferred");
+            assertEquals(con.getTransactionModel(), "explicit-deferred");
+            assertFalse(con.getInTransaction());
+            assertTrue(con.getAutoCommit());
+            Console.WriteLine("");
+
+
             // bind format
             Console.WriteLine("BIND FORMAT: ");
             if (majorversion > 3)

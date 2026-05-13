@@ -32,6 +32,15 @@ assertTrue(con.ping())
 print "\n"
 
 
+# transaction state
+print "TRANSACTION STATE: \n"
+assertEqual(con.getDefaultTransactionModel(),"explicit")
+assertEqual(con.getTransactionModel(),"explicit")
+assertFalse(con.getInTransaction())
+assertTrue(con.getAutoCommit())
+print "\n"
+
+
 # bind format
 print "BIND FORMAT: \n"
 assertEqual(con.bindFormat(),"$1")

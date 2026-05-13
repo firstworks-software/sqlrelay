@@ -60,6 +60,15 @@ class freetds extends sqlrtest {
 		System.out.println();
 
 
+		// transaction state
+		System.out.println("TRANSACTION STATE: ");
+		assertEquals(con.getDefaultTransactionModel(),"explicit-error");
+		assertEquals(con.getTransactionModel(),"explicit-error");
+		assertFalse(con.getInTransaction());
+		assertTrue(con.getAutoCommit());
+		System.out.println();
+
+
 		// bind format
 		System.out.println("BIND FORMAT: ");
 		assertEquals(con.bindFormat(),"@*");

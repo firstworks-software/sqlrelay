@@ -29,6 +29,14 @@ main() ->
     assertTrue(sqlrelay:ping()),
     io:format("~n"),
 
+    %% TRANSACTION STATE
+    io:format("TRANSACTION STATE: ~n"),
+    assertEqualsString(sqlrelay:getDefaultTransactionModel(), "explicit"),
+    assertEqualsString(sqlrelay:getTransactionModel(), "explicit"),
+    assertFalse(sqlrelay:getInTransaction()),
+    assertTrue(sqlrelay:getAutoCommit()),
+    io:format("~n"),
+
     %% BIND FORMAT
     io:format("BIND FORMAT: ~n"),
     assertEqualsString(sqlrelay:bindFormat(), "$1"),

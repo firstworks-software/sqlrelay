@@ -44,6 +44,15 @@ include("./asserts.php");
 	echo("\n");
 
 
+	# transaction state
+	echo("TRANSACTION STATE: \n");
+	assertEqStr(sqlrcon_getDefaultTransactionModel($con),"explicit");
+	assertEqStr(sqlrcon_getTransactionModel($con),"explicit");
+	assertFalse(sqlrcon_getInTransaction($con));
+	assertTrue(sqlrcon_getAutoCommit($con));
+	echo("\n");
+
+
 	# bind format
 	echo("BIND FORMAT: \n");
 	assertEqStr(sqlrcon_bindFormat($con),":*");

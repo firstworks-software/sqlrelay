@@ -31,6 +31,15 @@
 	echo("\n");
 
 
+	# transaction state
+	echo("TRANSACTION STATE: \n");
+	assertEqStr(sqlrcon_getDefaultTransactionModel($con),"implicit");
+	assertEqStr(sqlrcon_getTransactionModel($con),"implicit");
+	assertTrue(sqlrcon_getInTransaction($con));
+	assertFalse(sqlrcon_getAutoCommit($con));
+	echo("\n");
+
+
 	# bind format
 	echo("BIND FORMAT: \n");
 	assertEqStr(sqlrcon_bindFormat($con),":*");

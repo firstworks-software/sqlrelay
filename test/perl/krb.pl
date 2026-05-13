@@ -51,6 +51,15 @@ assertTrue($con->ping());
 print("\n");
 
 
+# transaction state
+print("TRANSACTION STATE: \n");
+assertEquals($con->getDefaultTransactionModel(),"implicit");
+assertEquals($con->getTransactionModel(),"implicit");
+assertTrue($con->getInTransaction());
+assertFalse($con->getAutoCommit());
+print("\n");
+
+
 # bind format
 print("BIND FORMAT: \n");
 assertEquals($con->bindFormat(),":*");

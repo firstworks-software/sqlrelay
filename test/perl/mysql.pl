@@ -46,6 +46,15 @@ assertTrue($con->ping());
 print("\n");
 
 
+# transaction state
+print("TRANSACTION STATE: \n");
+assertEquals($con->getDefaultTransactionModel(),"explicit-deferred");
+assertEquals($con->getTransactionModel(),"explicit-deferred");
+assertFalse($con->getInTransaction());
+assertTrue($con->getAutoCommit());
+print("\n");
+
+
 # bind format
 print("BIND FORMAT: \n");
 if ($majorversion>3) {

@@ -57,6 +57,15 @@ class mysql extends sqlrtest {
 		System.out.println();
 
 
+		// transaction state
+		System.out.println("TRANSACTION STATE: ");
+		assertEquals(con.getDefaultTransactionModel(),"explicit-deferred");
+		assertEquals(con.getTransactionModel(),"explicit-deferred");
+		assertFalse(con.getInTransaction());
+		assertTrue(con.getAutoCommit());
+		System.out.println();
+
+
 		// bind format
 		System.out.println("BIND FORMAT: ");
 		if (majorversion>3) {

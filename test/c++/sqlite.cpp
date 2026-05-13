@@ -69,8 +69,8 @@ int main(int argc, char **argv) {
 
 	// transaction state
 	stdoutput.printf("TRANSACTION STATE: \n");
-	assertEquals(con->getDefaultTransactionModel(),"none");
-	assertEquals(con->getTransactionModel(),"none");
+	assertEquals(con->getDefaultTransactionModel(),"explicit");
+	assertEquals(con->getTransactionModel(),"explicit");
 	assertFalse(con->getInTransaction());
 	assertTrue(con->getAutoCommit());
 	stdoutput.printf("\n");

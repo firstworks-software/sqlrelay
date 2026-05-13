@@ -45,6 +45,15 @@ def main():
 	print()
 
 
+	# transaction state
+	print("TRANSACTION STATE: ")
+	assertEquals(con.getDefaultTransactionModel(),"explicit")
+	assertEquals(con.getTransactionModel(),"explicit")
+	assertFalse(con.getInTransaction())
+	assertTrue(con.getAutoCommit())
+	print()
+
+
 	# bind format
 	print("BIND FORMAT: ")
 	assertEquals(con.bindFormat(),"$1")

@@ -49,6 +49,15 @@ def main():
 	print()
 
 
+	# transaction state
+	print("TRANSACTION STATE: ")
+	assertEquals(con.getDefaultTransactionModel(),"explicit-error")
+	assertEquals(con.getTransactionModel(),"explicit-error")
+	assertFalse(con.getInTransaction())
+	assertTrue(con.getAutoCommit())
+	print()
+
+
 	# nextval format
 	print("NEXTVAL FORMAT: ")
 	assertEquals(con.nextvalFormat(),"%s.nextval")

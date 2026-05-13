@@ -32,6 +32,15 @@ assertTrue(con.ping());
 console.log("");
 
 
+// transaction state
+console.log("TRANSACTION STATE: ");
+assertEqStr(con.getDefaultTransactionModel(),"explicit");
+assertEqStr(con.getTransactionModel(),"explicit");
+assertFalse(con.getInTransaction());
+assertTrue(con.getAutoCommit());
+console.log("");
+
+
 // bind format
 console.log("BIND FORMAT: ");
 assertEqStr(con.bindFormat(),"$1");

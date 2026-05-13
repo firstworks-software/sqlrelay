@@ -69,6 +69,15 @@ namespace SQLRClientTest
             Console.WriteLine("");
 
 
+            // transaction state
+            Console.WriteLine("TRANSACTION STATE: ");
+            assertEquals(con.getDefaultTransactionModel(), "implicit");
+            assertEquals(con.getTransactionModel(), "implicit");
+            assertTrue(con.getInTransaction());
+            assertFalse(con.getAutoCommit());
+            Console.WriteLine("");
+
+
             // bind format
             Console.WriteLine("BIND FORMAT: ");
             assertEquals(con.bindFormat(), "?");

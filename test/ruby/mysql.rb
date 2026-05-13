@@ -39,6 +39,15 @@ assertTrue(con.ping())
 print "\n"
 
 
+# transaction state
+print "TRANSACTION STATE: \n"
+assertEqual(con.getDefaultTransactionModel(),"explicit-deferred")
+assertEqual(con.getTransactionModel(),"explicit-deferred")
+assertFalse(con.getInTransaction())
+assertTrue(con.getAutoCommit())
+print "\n"
+
+
 # bind format
 print "BIND FORMAT: \n"
 if majorversion>3

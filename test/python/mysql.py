@@ -52,6 +52,15 @@ def main():
 	print()
 
 
+	# transaction state
+	print("TRANSACTION STATE: ")
+	assertEquals(con.getDefaultTransactionModel(),"explicit-deferred")
+	assertEquals(con.getTransactionModel(),"explicit-deferred")
+	assertFalse(con.getInTransaction())
+	assertTrue(con.getAutoCommit())
+	print()
+
+
 	# bind format
 	print("BIND FORMAT: ")
 	if majorversion>3:

@@ -93,6 +93,15 @@ class tls extends sqlrtest {
 		System.out.println();
 
 
+		// transaction state
+		System.out.println("TRANSACTION STATE: ");
+		assertEquals(con.getDefaultTransactionModel(),"implicit");
+		assertEquals(con.getTransactionModel(),"implicit");
+		assertTrue(con.getInTransaction());
+		assertFalse(con.getAutoCommit());
+		System.out.println();
+
+
 		// bind format
 		System.out.println("BIND FORMAT: ");
 		assertEquals(con.bindFormat(),":*");

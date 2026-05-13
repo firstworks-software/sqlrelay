@@ -33,6 +33,15 @@ assertTrue [$con ping]
 puts ""
 
 
+# transaction state
+puts "TRANSACTION STATE: "
+assertEqual [$con getDefaultTransactionModel] "explicit-deferred"
+assertEqual [$con getTransactionModel] "explicit-deferred"
+assertFalse [$con getInTransaction]
+assertTrue [$con getAutoCommit]
+puts ""
+
+
 # bind format
 puts "BIND FORMAT: "
 if {$majorversion>3} {

@@ -80,6 +80,15 @@ int main(int argc, char **argv) {
 	printf("\n");
 
 
+	// transaction state
+	printf("TRANSACTION STATE: \n");
+	assertEqStr(sqlrcon_getDefaultTransactionModel(con),"explicit-deferred");
+	assertEqStr(sqlrcon_getTransactionModel(con),"explicit-deferred");
+	assertFalse(sqlrcon_getInTransaction(con));
+	assertTrue(sqlrcon_getAutoCommit(con));
+	printf("\n");
+
+
 	// bind format
 	printf("BIND FORMAT: \n");
 	if (majorversion>3) {
