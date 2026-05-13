@@ -3191,6 +3191,7 @@ int sqlrconObjCmd(ClientData data, Tcl_Interp *interp,
     "begin",
     "commit",
     "rollback",
+    "getInTransaction",
     "getDefaultTransactionModel",
     "setTransactionModel",
     "getTransactionModel",
@@ -3249,6 +3250,7 @@ int sqlrconObjCmd(ClientData data, Tcl_Interp *interp,
     SQLR_BEGIN,
     SQLR_COMMIT,
     SQLR_ROLLBACK,
+    SQLR_GETINTRANSACTION,
     SQLR_GETDEFAULTTRANSACTIONMODEL,
     SQLR_SETTRANSACTIONMODEL,
     SQLR_GETTRANSACTIONMODEL,
@@ -3701,6 +3703,13 @@ int sqlrconObjCmd(ClientData data, Tcl_Interp *interp,
       return TCL_ERROR;
     }
     Tcl_SetObjResult(interp, Tcl_NewIntObj(con->rollback()));
+    break;
+  case SQLR_GETINTRANSACTION:
+    if (objc > 2) {
+      Tcl_WrongNumArgs(interp, 2, objv, NULL);
+      return TCL_ERROR;
+    }
+    Tcl_SetObjResult(interp, Tcl_NewIntObj(con->getInTransaction()));
     break;
   case SQLR_GETDEFAULTTRANSACTIONMODEL: {
     if (objc > 2) {

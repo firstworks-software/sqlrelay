@@ -479,6 +479,16 @@ JNIEXPORT jboolean JNICALL Java_com_firstworks_sqlrelay_SQLRConnection_rollback
 
 /*
  * Class:     com_firstworks_sqlrelay_SQLRConnection
+ * Method:    getInTransaction
+ * Signature: ()Z
+ */
+JNIEXPORT jboolean JNICALL Java_com_firstworks_sqlrelay_SQLRConnection_getInTransaction
+  (JNIEnv *env, jobject self) {
+	return (jboolean)getSqlrConnection(env,self)->getInTransaction();
+}
+
+/*
+ * Class:     com_firstworks_sqlrelay_SQLRConnection
  * Method:    getDefaultTransactionModel
  * Signature: ()Ljava/lang/String;
  */

@@ -572,6 +572,17 @@ static PyObject *rollback(PyObject *self, PyObject *args) {
   return Py_BuildValue("h", (short)rc);
 }
 
+static PyObject *getInTransaction(PyObject *self, PyObject *args) {
+  long sqlrcon;
+  bool rc;
+  if (!PyArg_ParseTuple(args, "l", &sqlrcon))
+    return NULL;
+  Py_BEGIN_ALLOW_THREADS
+  rc=((sqlrconnection *)sqlrcon)->getInTransaction();
+  Py_END_ALLOW_THREADS
+  return Py_BuildValue("h", (short)rc);
+}
+
 static PyObject *getDefaultTransactionModel(PyObject *self, PyObject *args) {
   long sqlrcon;
   if (!PyArg_ParseTuple(args, "l", &sqlrcon))
@@ -3354,6 +3365,7 @@ static PyMethodDef SQLRMethods[] = {
   {"begin", begin, METH_VARARGS},
   {"commit", commit, METH_VARARGS},
   {"rollback", rollback, METH_VARARGS},
+  {"getInTransaction", getInTransaction, METH_VARARGS},
   {"getDefaultTransactionModel", getDefaultTransactionModel, METH_VARARGS},
   {"setTransactionModel", setTransactionModel, METH_VARARGS},
   {"getTransactionModel", getTransactionModel, METH_VARARGS},

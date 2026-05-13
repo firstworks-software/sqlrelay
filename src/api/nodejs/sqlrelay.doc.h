@@ -354,6 +354,10 @@ class SQLRConnection {
 		 *  succeeded, false if it failed. */
 		function rollback();
 
+		/** Returns true if the session is currently inside a
+		 *  transaction, false otherwise. */
+		function getInTransaction();
+
 
 		/** Returns the database's native transaction model.  See
 		 *  setTranscationModel() for a list of potential return

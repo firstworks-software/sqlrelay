@@ -351,6 +351,10 @@ proc commit {}
 # succeeded, false if it failed.
 proc rollback {}
 
+# Returns true if the session is currently inside a transaction,
+# false otherwise.
+proc getInTransaction {}
+
 
 # Returns the database's native transaction model.  See
 # setTranscationModel() for a list of potential return values.

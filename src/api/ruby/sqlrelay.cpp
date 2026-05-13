@@ -1087,6 +1087,19 @@ static VALUE sqlrcon_rollback(VALUE self) {
 	return INT2NUM(result);
 }
 
+static void getInTransaction(params *p) {
+	p->result.br=p->sqlrc.sqlrcon->getInTransaction();
+}
+/** Returns true if the session is currently inside a transaction,
+ *  false otherwise. */
+static VALUE sqlrcon_getInTransaction(VALUE self) {
+	sqlrconnection	*sqlrcon;
+	bool		result;
+	Data_Get_Struct(self,sqlrconnection,sqlrcon);
+	RCON(result,br,sqlrcon,getInTransaction);
+	return INT2NUM(result);
+}
+
 static void getDefaultTransactionModel(params *p) {
 	p->result.ccpr=p->sqlrc.sqlrcon->getDefaultTransactionModel();
 }
@@ -1703,6 +1716,8 @@ void Init_SQLRConnection() {
 				(CAST)sqlrcon_commit,0);
 	rb_define_method(csqlrconnection,"rollback",
 				(CAST)sqlrcon_rollback,0);
+	rb_define_method(csqlrconnection,"getInTransaction",
+				(CAST)sqlrcon_getInTransaction,0);
 	rb_define_method(csqlrconnection,"getDefaultTransactionModel",
 				(CAST)sqlrcon_getDefaultTransactionModel,0);
 	rb_define_method(csqlrconnection,"setTransactionModel",

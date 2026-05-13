@@ -369,6 +369,10 @@ public class SQLRConnection {
 	 *  it failed. */
 	public native boolean	rollback();
 
+	/** Returns true if the session is currently inside a transaction,
+	 *  false otherwise. */
+	public native boolean	getInTransaction();
+
 	/** Returns the database's native transaction model.  See
 	 *  setTranscationModel() for a list of potential return values.
 	 *  Returns null if an error occurred. */

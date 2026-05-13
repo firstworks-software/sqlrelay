@@ -231,6 +231,9 @@ sqlrconnection::commit()
 bool
 sqlrconnection::rollback()
 
+bool
+sqlrconnection::getInTransaction()
+
 const char *
 sqlrconnection::getDefaultTransactionModel()
 

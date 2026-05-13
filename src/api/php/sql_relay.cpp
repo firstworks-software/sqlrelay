@@ -5958,7 +5958,7 @@ DLEXPORT ZEND_FUNCTION(sqlrcon_commit) {
 DLEXPORT ZEND_FUNCTION(sqlrcon_rollback) {
 	ZVAL sqlrcon;
 	bool r;
-	if (ZEND_NUM_ARGS() != 1 || 
+	if (ZEND_NUM_ARGS() != 1 ||
 		GET_PARAMETERS(
 				ZEND_NUM_ARGS() TSRMLS_CC,
 				PARAMS("z")
@@ -5974,6 +5974,30 @@ DLEXPORT ZEND_FUNCTION(sqlrcon_rollback) {
 				sqlrelay_connection);
 	if (connection) {
 		r=connection->rollback();
+		RETURN_LONG(r);
+	}
+	RETURN_LONG(0);
+}
+
+DLEXPORT ZEND_FUNCTION(sqlrcon_getInTransaction) {
+	ZVAL sqlrcon;
+	bool r;
+	if (ZEND_NUM_ARGS() != 1 ||
+		GET_PARAMETERS(
+				ZEND_NUM_ARGS() TSRMLS_CC,
+				PARAMS("z")
+				&sqlrcon) == FAILURE) {
+		WRONG_PARAM_COUNT;
+	}
+	sqlrconnection *connection=NULL;
+	ZEND_FETCH_RESOURCE(connection,
+				sqlrconnection *,
+				sqlrcon,
+				-1,
+				"sqlrelay connection",
+				sqlrelay_connection);
+	if (connection) {
+		r=connection->getInTransaction();
 		RETURN_LONG(r);
 	}
 	RETURN_LONG(0);
@@ -6896,6 +6920,9 @@ ZEND_END_ARG_INFO()
 ZEND_BEGIN_ARG_INFO_EX(arginfo_sqlrcon_rollback,0,0,0)
 ZEND_END_ARG_INFO()
 
+ZEND_BEGIN_ARG_INFO_EX(arginfo_sqlrcon_getInTransaction,0,0,0)
+ZEND_END_ARG_INFO()
+
 ZEND_BEGIN_ARG_INFO_EX(arginfo_sqlrcon_getDefaultTransactionModel,0,0,0)
 ZEND_END_ARG_INFO()
 
@@ -7286,6 +7313,8 @@ zend_function_entry sql_relay_functions[] = {
 		ARGINFO(arginfo_sqlrcon_commit))
 	ZEND_FE(sqlrcon_rollback,
 		ARGINFO(arginfo_sqlrcon_rollback))
+	ZEND_FE(sqlrcon_getInTransaction,
+		ARGINFO(arginfo_sqlrcon_getInTransaction))
 	ZEND_FE(sqlrcon_getDefaultTransactionModel,
 		ARGINFO(arginfo_sqlrcon_getDefaultTransactionModel))
 	ZEND_FE(sqlrcon_setTransactionModel,

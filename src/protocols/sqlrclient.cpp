@@ -58,6 +58,7 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_sqlrclient : public sqlrprotocol {
 		void	beginCommand();
 		void	commitCommand();
 		void	rollbackCommand();
+		void	getInTransactionCommand();
 		void	dbVersionCommand();
 		void	bindFormatCommand();
 		void	getNextvalFormatCommand();
@@ -454,6 +455,9 @@ clientsessionexitstatus_t sqlrprotocol_sqlrclient::clientSession(
 		} else if (command==ROLLBACK) {
 			cont->incrementRollbackCount();
 			rollbackCommand();
+			continue;
+		} else if (command==GET_IN_TRANSACTION) {
+			getInTransactionCommand();
 			continue;
 		} else if (command==DB_VERSION) {
 			cont->incrementDbVersionCount();
@@ -1228,6 +1232,22 @@ void sqlrprotocol_sqlrclient::rollbackCommand() {
 		debugWrite("failed");
 		returnError(false);
 	}
+	debugEnd();
+}
+
+void sqlrprotocol_sqlrclient::getInTransactionCommand() {
+
+	debugStart("get in-transaction");
+
+	// get the current in-transaction state
+	bool	intx=cont->getInTransaction();
+
+	// send result to the client
+	clientsock->write((uint16_t)NO_ERROR_OCCURRED);
+	clientsock->write(intx);
+	clientsock->flushWriteBuffer(-1,-1);
+
+	debugWrite((intx)?"in transaction":"not in transaction");
 	debugEnd();
 }
 
@@ -5143,6 +5163,9 @@ void sqlrprotocol_sqlrclient::debugCommand(uint16_t command) {
 			break;
 		case ROLLBACK:
 			debugWrite("ROLLBACK");
+			break;
+		case GET_IN_TRANSACTION:
+			debugWrite("GET_IN_TRANSACTION");
 			break;
 		case AUTH:
 			debugWrite("AUTH");

@@ -2189,6 +2189,44 @@ bool sqlrconnection::rollback() {
 	return !gotError();
 }
 
+bool sqlrconnection::getInTransaction() {
+
+	if (!openSession()) {
+		return false;
+	}
+
+	clearError();
+
+	if (pvt->_debug) {
+		debugPreStart();
+		debugPrint("Getting in-transaction state...\n");
+		debugPreEnd();
+	}
+
+	pvt->_cs->write((uint16_t)GET_IN_TRANSACTION);
+	flushWriteBuffer();
+
+	if (gotError()) {
+		return false;
+	}
+
+	bool	result;
+	if (pvt->_cs->read(&result,pvt->_responsetimeoutsec,
+				pvt->_responsetimeoutusec)!=sizeof(bool)) {
+		setError("Failed to get in-transaction state.\n"
+				"A network error may have occurred.");
+		return false;
+	}
+
+	if (pvt->_debug) {
+		debugPreStart();
+		debugPrint((result)?"in transaction\n":"not in transaction\n");
+		debugPreEnd();
+	}
+
+	return result;
+}
+
 const char *sqlrconnection::getDefaultTransactionModel() {
 
 	if (!openSession()) {

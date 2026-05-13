@@ -238,6 +238,10 @@ int sqlrcon_rollback(sqlrcon sqlrconref) {
 	return sqlrconref->rollback();
 }
 
+int sqlrcon_getInTransaction(sqlrcon sqlrconref) {
+	return sqlrconref->getInTransaction();
+}
+
 const char *sqlrcon_getDefaultTransactionModel(sqlrcon sqlrconref) {
 	return sqlrconref->getDefaultTransactionModel();
 }

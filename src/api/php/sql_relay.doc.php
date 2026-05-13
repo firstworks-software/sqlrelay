@@ -366,6 +366,11 @@ function sqlrcon_commit($sqlrconref){}
  *  failed. */
 function sqlrcon_rollback($sqlrconref){}
 
+/**
+ *  Returns 1 if the session is currently inside a transaction,
+ *  0 otherwise. */
+function sqlrcon_getInTransaction($sqlrconref){}
+
 
 /** Returns the database's native transaction model.  See
  *  sqlrcon_setTranscationModel() for a list of potential return values.

@@ -488,6 +488,13 @@ class sqlrconnection:
         """
         return CSQLRelay.rollback(self.connection)
 
+    def getInTransaction(self):
+        """
+        Returns true if the session is currently inside a
+        transaction, false otherwise.
+        """
+        return CSQLRelay.getInTransaction(self.connection)
+
     def getDefaultTransactionModel(self):
         """
         Returns the database's native transaction model.  See

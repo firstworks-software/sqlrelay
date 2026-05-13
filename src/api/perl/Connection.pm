@@ -369,6 +369,10 @@ __END__
             # Issues a rollback.  Returns true if the rollback
             # succeeded, false if it failed.
 
+        getInTransaction();
+            # Returns true if the session is currently inside a
+            # transaction, false otherwise.
+
         getDefaultTransactionModel();
             # Returns the database's native transaction model.  See
             # setTranscationModel() for a list of potential return

@@ -381,6 +381,10 @@ class SQLRCLIENT_DLLSPEC sqlrconnection : public object {
 		 *  succeeded, false if it failed. */
 		bool	rollback();
 
+		/** Returns true if the session is currently inside a
+		 *  transaction, false otherwise. */
+		bool	getInTransaction();
+
 
 
 		/** Returns the database's native transaction model.  See

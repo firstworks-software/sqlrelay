@@ -494,6 +494,13 @@ public class SQLRConnection : IDisposable
         return (sqlrcon_rollback(sqlrconref) == 1);
     }
 
+    /** Returns true if the session is currently inside a transaction,
+     *  false otherwise. */
+    public Boolean getInTransaction()
+    {
+        return (sqlrcon_getInTransaction(sqlrconref) == 1);
+    }
+
     /** Returns the database's native transaction model.  See
      *  setTranscationModel() for a list of potential return values.
      *  Returns null if an error occurred. */
@@ -1062,6 +1069,9 @@ public class SQLRConnection : IDisposable
     
     [DllImport("libsqlrclientwrapper.dll", CallingConvention = CallingConvention.Cdecl)]
     private static extern Int32 sqlrcon_rollback(IntPtr sqlrconref);
+
+    [DllImport("libsqlrclientwrapper.dll", CallingConvention = CallingConvention.Cdecl)]
+    private static extern Int32 sqlrcon_getInTransaction(IntPtr sqlrconref);
 
     [DllImport("libsqlrclientwrapper.dll", CallingConvention = CallingConvention.Cdecl)]
     private static extern IntPtr sqlrcon_getDefaultTransactionModel(IntPtr sqlrconref);

@@ -461,6 +461,12 @@ SQLRCLIENT_DLLSPEC
 int	sqlrcon_rollback(sqlrcon sqlrconref);
 
 /** @ingroup sqlrclientwrapper
+ *  Returns 1 if the session is currently inside a transaction,
+ *  0 otherwise. */
+SQLRCLIENT_DLLSPEC
+int	sqlrcon_getInTransaction(sqlrcon sqlrconref);
+
+/** @ingroup sqlrclientwrapper
  *  Returns the database's native transaction model.  See
  *  sqlrcon_setTranscationModel() for a list of potential return values.
  *  Returns NULL if an error occurred. */

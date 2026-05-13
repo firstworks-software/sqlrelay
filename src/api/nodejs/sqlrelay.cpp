@@ -196,6 +196,7 @@ class SQLRConnection : public ObjectWrap {
 		static RET	begin(const ARGS &args);
 		static RET	commit(const ARGS &args);
 		static RET	rollback(const ARGS &args);
+		static RET	getInTransaction(const ARGS &args);
 		static RET	getDefaultTransactionModel(const ARGS &args);
 		static RET	setTransactionModel(const ARGS &args);
 		static RET	getTransactionModel(const ARGS &args);
@@ -434,6 +435,7 @@ void SQLRConnection::Init(Handle<Object> exports) {
 	NODE_SET_PROTOTYPE_METHOD(tpl,"begin",begin);
 	NODE_SET_PROTOTYPE_METHOD(tpl,"commit",commit);
 	NODE_SET_PROTOTYPE_METHOD(tpl,"rollback",rollback);
+	NODE_SET_PROTOTYPE_METHOD(tpl,"getInTransaction",getInTransaction);
 	NODE_SET_PROTOTYPE_METHOD(tpl,"getDefaultTransactionModel",getDefaultTransactionModel);
 	NODE_SET_PROTOTYPE_METHOD(tpl,"setTransactionModel",setTransactionModel);
 	NODE_SET_PROTOTYPE_METHOD(tpl,"getTransactionModel",getTransactionModel);
@@ -970,6 +972,17 @@ RET SQLRConnection::rollback(const ARGS &args) {
 	checkArgCount(args,0);
 
 	bool	result=sqlrcon(args)->rollback();
+
+	returnBoolean(result);
+}
+
+RET SQLRConnection::getInTransaction(const ARGS &args) {
+
+	initLocalScope();
+
+	checkArgCount(args,0);
+
+	bool	result=sqlrcon(args)->getInTransaction();
 
 	returnBoolean(result);
 }
