@@ -80,6 +80,15 @@ for (uint16_t a=0; a<50; a++) {
 	stdoutput.printf("\n");
 
 
+	// transaction state
+	stdoutput.printf("TRANSACTION STATE: \n");
+	assertEquals(con->getDefaultTransactionModel(),"explicit-deferred");
+	assertEquals(con->getTransactionModel(),"explicit-deferred");
+	assertFalse(con->getInTransaction());
+	assertTrue(con->getAutoCommit());
+	stdoutput.printf("\n");
+
+
 	// bind format
 	stdoutput.printf("BIND FORMAT: \n");
 	if (majorversion>3) {

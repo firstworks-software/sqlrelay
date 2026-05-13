@@ -94,6 +94,15 @@ int main(int argc, char **argv) {
 	stdoutput.printf("\n");
 
 
+	// transaction state
+	stdoutput.printf("TRANSACTION STATE: \n");
+	assertEquals(con->getDefaultTransactionModel(),"implicit");
+	assertEquals(con->getTransactionModel(),"implicit");
+	assertTrue(con->getInTransaction());
+	assertFalse(con->getAutoCommit());
+	stdoutput.printf("\n");
+
+
 	// bind format
 	stdoutput.printf("BIND FORMAT: \n");
 	assertEquals(con->bindFormat(),":*");
