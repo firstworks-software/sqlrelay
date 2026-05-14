@@ -3279,6 +3279,16 @@ class SQLRSERVER_DLLSPEC sqlrserverconnection : public sqlrserverbase {
 		 *  class. */
 		virtual bool	supportsAutoCommit();
 
+		/** Returns the database's default auto-commit state.
+		 *
+		 *  Returns getNativeTransactionModel()!=SQLRTXMODEL_IMPLICIT
+		 *  by default, but may be overridden by a child class for
+		 *  databases whose driver doesn't match the native transaction
+		 *  model out of the box (eg. db2/informix/odbc, which have
+		 *  implicit transactions but whose drivers default to
+		 *  auto-commit on). */
+		virtual bool	getDefaultAutoCommit();
+
 		/** Returns the database's native transaction model.
 		 *
 		 *  Returns SQLRTXMODEL_EXPLICIT by default, but may be

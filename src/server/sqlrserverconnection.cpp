@@ -201,6 +201,10 @@ bool sqlrserverconnection::supportsAutoCommit() {
 	return false;
 }
 
+bool sqlrserverconnection::getDefaultAutoCommit() {
+	return getNativeTransactionModel()!=SQLRTXMODEL_IMPLICIT;
+}
+
 sqlrtxmodel_t sqlrserverconnection::getNativeTransactionModel() {
 	return SQLRTXMODEL_EXPLICIT;
 }

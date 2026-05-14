@@ -1314,39 +1314,8 @@ bool sqlrservercontroller::logIn(bool printerrors) {
 	}
 
 	// initialize transaction and autocommit state
-	pvt->_autocommit=
-		(pvt->_conn->getNativeTransactionModel()!=SQLRTXMODEL_IMPLICIT);
+	pvt->_autocommit=pvt->_conn->getDefaultAutoCommit();
 	pvt->_intransaction=!pvt->_autocommit;
-
-	// bootstrap the actual connection's autocommit state to match the
-	// flag we just set; some drivers (eg. db2's ODBC handle defaults to
-	// SQL_AUTOCOMMIT_ON) don't match the native transaction model out of
-	// the box, so without this the controller's _autocommit flag and
-	// the connection's real state can diverge
-	// (use only pvt->_conn calls here since we're bootstrapping)
-	// (ignore errors, in case the db throws an error if you commit
-	// outside of a tx, begin inside one, or set autocommit on/off when
-	// it already is)
-	if (pvt->_conn->getNativeTransactionModel()!=SQLRTXMODEL_NONE) {
-		if (pvt->_conn->supportsAutoCommit()) {
-			// this branch handles all implicit-tx dbs
-			// (which must support autocommit) and explicit-tx
-			// dbs which also support autocommit
-			if (pvt->_autocommit) {
-				pvt->_conn->setAutoCommitOn();
-			} else {
-				pvt->_conn->setAutoCommitOff();
-			}
-		} else {
-			// if we're here then the db must be an explicit-tx
-			// db that doesn't support autocommit
-			if (pvt->_autocommit) {
-				pvt->_conn->commit();
-			} else {
-				pvt->_conn->begin();
-			}
-		}
-	}
 
 	// set the autocommit state that we want to be in
 	setAutoCommit(pvt->_initialautocommit);

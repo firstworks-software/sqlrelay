@@ -322,6 +322,7 @@ class SQLRSERVER_DLLSPEC odbcconnection : public sqlrserverconnection {
 		bool		setAutoCommitOn();
 		bool		setAutoCommitOff();
 		bool		supportsAutoCommit();
+		bool		getDefaultAutoCommit();
 		const char	*beginTransactionQuery();
 		bool		commit();
 		bool		rollback();
@@ -3287,6 +3288,10 @@ bool odbcconnection::setAutoCommitOff() {
 }
 
 bool odbcconnection::supportsAutoCommit() {
+	return true;
+}
+
+bool odbcconnection::getDefaultAutoCommit() {
 	return true;
 }
 
