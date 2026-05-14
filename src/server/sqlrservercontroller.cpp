@@ -2545,6 +2545,17 @@ bool sqlrservercontroller::setAutoCommitOn() {
 		return true;
 	}
 
+	// bail if the transaction model is "explicit-deferred" and the
+	// transaction was started by a begin rather than by autocommit-off
+	// (In "explicit-deferred" mode, autocommit-on only ends the current
+	// transaction if it was started by an autocommit-off.  If we're in a
+	// transaction (and we must be, if we're here), and _eotautocommit is
+	// true, then the transaction must have been started by a begin.)
+	if (pvt->_txmodel==SQLRTXMODEL_EXPLICIT_DEFERRED &&
+					pvt->_eotautocommit) {
+		return true;
+	}
+
 	// if the transaction model is "explicit-error" then throw an
 	// error if we're currently in a transaction
 	if (pvt->_txmodel==SQLRTXMODEL_EXPLICIT_ERROR) {

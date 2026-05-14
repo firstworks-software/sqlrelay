@@ -982,11 +982,18 @@ int main(int argc, char **argv) {
 	assertTrue(con->rollback());
 	assertTrue(secondcur->sendQuery("select count(*) from testtable"));
 	assertEquals(secondcur->getField(0,(uint32_t)0),"1");
-	// during a transaction, autoCommitOn implicitly commits the tx
-	// and turns autocommit on (mysql-asymmetric semantic)
+	// during a transaction started by begin(), autoCommitOn is a
+	// no-op: the autocommit setting takes effect after the user
+	// explicitly commits/rollbacks the tx (mysql-native semantic)
 	assertTrue(con->begin());
 	assertTrue(cur->sendQuery("insert into testtable values (3)"));
 	assertTrue(con->autoCommitOn());
+	assertFalse(con->getAutoCommit());
+	assertTrue(con->getInTransaction());
+	assertTrue(secondcur->sendQuery("select count(*) from testtable"));
+	assertEquals(secondcur->getField(0,(uint32_t)0),"1");
+	// explicit commit ends the tx; autocommit-on now takes effect
+	assertTrue(con->commit());
 	assertTrue(con->getAutoCommit());
 	assertFalse(con->getInTransaction());
 	assertTrue(secondcur->sendQuery("select count(*) from testtable"));
