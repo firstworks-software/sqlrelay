@@ -2959,27 +2959,33 @@ bool sqlrservercontroller::endTransaction(bool commit) {
 	pvt->_txpool.clear();
 
 	if (pvt->_txmodel==SQLRTXMODEL_EXPLICIT_DEFERRED) {
-		if (fakingExplicitTransactions() &&
-				pvt->_conn->supportsAutoCommit()) {
-			if (pvt->_eotautocommit) {
-				pvt->_conn->setAutoCommitOn();
-			} else {
-				pvt->_conn->setAutoCommitOff();
+		if (fakingExplicitTransactions()) {
+			if (pvt->_conn->supportsAutoCommit()) {
+				if (pvt->_eotautocommit) {
+					pvt->_conn->setAutoCommitOn();
+				} else {
+					pvt->_conn->setAutoCommitOff();
+				}
+			}
+		} else {
+			if (!pvt->_eotautocommit) {
+				pvt->_conn->begin();
 			}
 		}
 		pvt->_autocommit=pvt->_eotautocommit;
 		pvt->_eotautocommit=false;
-	} else if (supportsExplicitTransactions() ||
-				fakingExplicitTransactions()) {
-		if (fakingExplicitTransactions() &&
-				pvt->_conn->supportsAutoCommit()) {
-			pvt->_conn->setAutoCommitOn();
-		}
-		pvt->_autocommit=true;
 	} else if (fakingImplicitTransactions()) {
 		if (!pvt->_autocommit && !pvt->_conn->supportsAutoCommit()) {
 			pvt->_conn->begin();
 		}
+	} else if (supportsExplicitTransactions() ||
+				fakingExplicitTransactions()) {
+		if (fakingExplicitTransactions()) {
+			if (pvt->_conn->supportsAutoCommit()) {
+				pvt->_conn->setAutoCommitOn();
+			}
+		}
+		pvt->_autocommit=true;
 	}
 
 	// set in-tx flag
@@ -3157,12 +3163,7 @@ bool sqlrservercontroller::setTransactionModel(sqlrtxmodel_t txmodel) {
 		return true;
 	}
 
-	// capture the autocommit state
-	bool	savedautocommit=pvt->_autocommit;
-
 	// make sure that we're outside of a transaction, with autocommit on
-	// (skip if we're already in NONE mode -- NONE forces autocommit-on
-	// and not-in-tx, so the commit/setAutoCommitOn would be no-ops)
 	if (pvt->_txmodel!=SQLRTXMODEL_NONE) {
 		sqlrtxmodel_t	savedtxmodel=pvt->_txmodel;
 		pvt->_txmodel=pvt->_conn->getNativeTransactionModel();
@@ -3175,14 +3176,9 @@ bool sqlrservercontroller::setTransactionModel(sqlrtxmodel_t txmodel) {
 	// switch the tx model
 	pvt->_txmodel=txmodel;
 
-	// restore the original autocommit state...
-
-	// only possible if the new model supports autocommit-off
-	if (txmodel!=SQLRTXMODEL_NONE) {
-		// only necessary if autocommit was originally off
-		if (!savedautocommit) {
-			return setAutoCommitOff();
-		}
+	// set the autocommit state to the new model's natural default
+	if (txmodel==SQLRTXMODEL_IMPLICIT) {
+		return setAutoCommitOff();
 	}
 	return true;
 }

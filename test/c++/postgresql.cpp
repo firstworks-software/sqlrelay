@@ -870,6 +870,9 @@ int main(int argc, char **argv) {
 	assertTrue(con->setTransactionModel("implicit"));
 	assertEquals(con->getTransactionModel(),"implicit");
 	assertTrue(cur->sendQuery("create table testtable (col1 integer)"));
+	// postgresql DDL is transactional; commit so the table is visible
+	// to the second connection (the commit implicitly starts a new tx)
+	assertTrue(con->commit());
 	secondcon=new sqlrconnection("sqlrelay",9000,"/tmp/test.socket",
 						"testuser","testpassword",0,1);
 	secondcur=new sqlrcursor(secondcon);
