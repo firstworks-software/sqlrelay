@@ -1318,9 +1318,11 @@ bool sqlrservercontroller::logIn(bool printerrors) {
 		(pvt->_conn->getNativeTransactionModel()!=SQLRTXMODEL_IMPLICIT);
 	pvt->_intransaction=!pvt->_autocommit;
 
-// I'm not convinced we need this.
-#if 0
-	// bootstrap the autocommit state to match the flag
+	// bootstrap the actual connection's autocommit state to match the
+	// flag we just set; some drivers (eg. db2's ODBC handle defaults to
+	// SQL_AUTOCOMMIT_ON) don't match the native transaction model out of
+	// the box, so without this the controller's _autocommit flag and
+	// the connection's real state can diverge
 	// (use only pvt->_conn calls here since we're bootstrapping)
 	// (ignore errors, in case the db throws an error if you commit
 	// outside of a tx, begin inside one, or set autocommit on/off when
@@ -1345,7 +1347,6 @@ bool sqlrservercontroller::logIn(bool printerrors) {
 			}
 		}
 	}
-#endif
 
 	// set the autocommit state that we want to be in
 	setAutoCommit(pvt->_initialautocommit);
