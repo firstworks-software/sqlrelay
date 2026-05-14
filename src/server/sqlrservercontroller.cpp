@@ -2816,22 +2816,37 @@ bool sqlrservercontroller::isTransactional() {
 	return pvt->_txmodel!=SQLRTXMODEL_NONE;
 }
 
-bool sqlrservercontroller::supportsExplicitTransactions() {
-	return pvt->_txmodel!=SQLRTXMODEL_IMPLICIT;
-}
-
 bool sqlrservercontroller::supportsImplicitTransactions() {
-	return pvt->_txmodel==SQLRTXMODEL_IMPLICIT;
+	return pvt->_conn->getNativeTransactionModel()==
+					SQLRTXMODEL_IMPLICIT;
 }
 
-bool sqlrservercontroller::fakingExplicitTransactions() {
-	return pvt->_conn->getNativeTransactionModel()==SQLRTXMODEL_IMPLICIT &&
-					pvt->_txmodel!=SQLRTXMODEL_IMPLICIT;
+bool sqlrservercontroller::supportsExplicitTransactions() {
+	return pvt->_conn->getNativeTransactionModel()!=
+					SQLRTXMODEL_NONE &&
+		pvt->_conn->getNativeTransactionModel()!=
+					SQLRTXMODEL_IMPLICIT;
 }
 
 bool sqlrservercontroller::fakingImplicitTransactions() {
-	return pvt->_conn->getNativeTransactionModel()!=SQLRTXMODEL_IMPLICIT &&
-					pvt->_txmodel==SQLRTXMODEL_IMPLICIT;
+	return pvt->_conn->getNativeTransactionModel()!=
+					SQLRTXMODEL_IMPLICIT &&
+				pvt->_txmodel==
+					SQLRTXMODEL_IMPLICIT;
+}
+
+bool sqlrservercontroller::fakingExplicitTransactions() {
+	return pvt->_conn->getNativeTransactionModel()==
+					SQLRTXMODEL_IMPLICIT &&
+				pvt->_txmodel!=
+					SQLRTXMODEL_IMPLICIT;
+}
+
+bool sqlrservercontroller::fakingExplicitDeferredTransactions() {
+	return pvt->_conn->getNativeTransactionModel()!=
+					SQLRTXMODEL_EXPLICIT_DEFERRED &&
+				pvt->_txmodel==
+					SQLRTXMODEL_EXPLICIT_DEFERRED;
 }
 
 bool sqlrservercontroller::beginTransaction() {
@@ -5552,8 +5567,8 @@ bool sqlrservercontroller::prepareQuery(sqlrservercursor *cursor,
 
 	// translate "begin" queries
 	// FIXME: can we just let interceptQuery below handle this?
-	if (supportsExplicitTransactions() &&
-			cursor->getQueryType()==SQLRQUERYTYPE_BEGIN) {
+	if ((supportsExplicitTransactions() || fakingExplicitTransactions()) &&
+				cursor->getQueryType()==SQLRQUERYTYPE_BEGIN) {
 		translateBeginTransaction(cursor);
 	}
 
@@ -5768,7 +5783,8 @@ bool sqlrservercontroller::executeQuery(sqlrservercursor *cursor,
 
 		// translate "begin" queries
 		// FIXME: can we just let interceptQuery below handle this?
-		if (supportsExplicitTransactions() &&
+		if ((supportsExplicitTransactions() || 
+					fakingExplicitTransactions()) &&
 				cursor->getQueryType()==SQLRQUERYTYPE_BEGIN) {
 			translateBeginTransaction(cursor);
 		}
