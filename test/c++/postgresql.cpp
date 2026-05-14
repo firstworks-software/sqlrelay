@@ -956,6 +956,11 @@ int main(int argc, char **argv) {
 	stdoutput.printf("TRANSACTION BEHAVIOR - explicit-deferred: \n");
 	assertTrue(con->setTransactionModel("explicit-deferred"));
 	assertEquals(con->getTransactionModel(),"explicit-deferred");
+	// switch to autocommit-on so the begin/commit cycles below
+	// bracket explicit transactions (autocommit-off semantics are
+	// exercised at the end of this block)
+	assertTrue(con->autoCommitOn());
+	assertTrue(con->getAutoCommit());
 	assertTrue(cur->sendQuery("create table testtable (col1 integer)"));
 	secondcon=new sqlrconnection("sqlrelay",9000,"/tmp/test.socket",
 						"testuser","testpassword",0,1);

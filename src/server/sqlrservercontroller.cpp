@@ -254,6 +254,7 @@ class sqlrservercontrollerprivate {
 
 	bool		_autocommit;
 	bool		_initialautocommit;
+	bool		_endtxwithautocommiton;
 
 	bool		_fakeinputbinds;
 	bool		_translatebinds;
@@ -522,6 +523,7 @@ sqlrservercontroller::sqlrservercontroller() : sqlrserverbase() {
 
 	pvt->_autocommit=false;
 	pvt->_initialautocommit=false;
+	pvt->_endtxwithautocommiton=false;
 
 	pvt->_initialtxmodel=SQLRTXMODEL_UNKNOWN;
 	pvt->_txmodel=SQLRTXMODEL_UNKNOWN;
@@ -2552,10 +2554,18 @@ bool sqlrservercontroller::setAutoCommitOn() {
 		return false;
 	}
 
-	// if the transaction model is "explicit-deferred" then defer
-	// the autocommit change until the next commit/rollback
+	// if the transaction model is "explicit-deferred":
+	// * if we're in an explicit tx (begin() was called or a prior
+	//   deferred autoCommitOn already marked it explicit), defer
+	//   the autocommit change to the next commit/rollback
+	// * if we're in an implicit (autocommit-off) tx, mark it
+	//   explicit and fall through to commit it now -- the upcoming
+	//   endTransaction will drive autocommit on
 	if (pvt->_txmodel==SQLRTXMODEL_EXPLICIT_DEFERRED) {
-		return true;
+		if (pvt->_endtxwithautocommiton) {
+			return true;
+		}
+		pvt->_endtxwithautocommiton=true;
 	}
 
 	// if the database supports autocommit then call its autocommit method
@@ -2623,12 +2633,25 @@ bool sqlrservercontroller::setAutoCommitOff() {
 					true);
 			return false;
 		}
+		// in explicit-deferred mode, cancel any pending deferred
+		// autoCommitOn -- the user wants autocommit-off to persist
+		// past the next commit/rollback
+		if (pvt->_txmodel==SQLRTXMODEL_EXPLICIT_DEFERRED) {
+			pvt->_endtxwithautocommiton=false;
+		}
 		return true;
 	}
 
 	// if the database supports autocommit then call its autocommit method
+	// (this path is reached only when autocommit was on and we're not in
+	// a tx; the resulting tx is "implicit" -- autocommit-off should
+	// persist past the next commit/rollback)
 	if (pvt->_conn->supportsAutoCommit()) {
-		return pvt->_conn->setAutoCommitOff() && beginTransaction();
+		if (!pvt->_conn->setAutoCommitOff()) {
+			return false;
+		}
+		pvt->_endtxwithautocommiton=false;
+		return beginTransaction();
 	}
 
 	// if the database doesn't support autocommit...
@@ -2697,7 +2720,15 @@ bool sqlrservercontroller::begin() {
 		// end up in an infinite begin()-setAutoCommitOff()-begin()-...
 		// recursion
 		if (pvt->_conn->supportsAutoCommit()) {
-			return setAutoCommitOff();
+			if (!setAutoCommitOff()) {
+				return false;
+			}
+			// user explicitly began the tx; autocommit should
+			// return to on at commit/rollback (overrides the
+			// _endtxwithautocommiton=false that setAutoCommitOff sets for
+			// the "user wants persistent autocommit-off" case)
+			pvt->_endtxwithautocommiton=true;
+			return true;
 		}
 
 		// If we're faking explicit transactions then the db doesn't
@@ -2710,8 +2741,13 @@ bool sqlrservercontroller::begin() {
 	// (autocommit is always conceptually off, so the "autocommit is off"
 	// guard catches it -- begin is meaningless when we're always in a tx)
 
-	// begin
-	return pvt->_conn->begin() && beginTransaction();
+	// native begin -- this is an explicit user-driven tx; autocommit
+	// should return to on at commit/rollback
+	if (!pvt->_conn->begin() || !beginTransaction()) {
+		return false;
+	}
+	pvt->_endtxwithautocommiton=true;
+	return true;
 }
 
 bool sqlrservercontroller::commit() {
@@ -2892,9 +2928,21 @@ bool sqlrservercontroller::endTransaction(bool commit) {
 	// clear per-session pool
 	pvt->_txpool.clear();
 
-	if (supportsExplicitTransactions() || fakingExplicitTransactions()) {
-		// FIXME: this is not correct for
-		// SQLRTXMODEL_EXPLICIT_DEFERRED (eg. mysql)
+	if (pvt->_txmodel==SQLRTXMODEL_EXPLICIT_DEFERRED) {
+		// in explicit-deferred mode autocommit persists across
+		// commit/rollback unless the tx was started explicitly by
+		// begin() or a deferred autoCommitOn was issued during the tx
+		pvt->_autocommit=pvt->_endtxwithautocommiton;
+		if (fakingExplicitTransactions() &&
+				pvt->_conn->supportsAutoCommit()) {
+			if (pvt->_autocommit) {
+				pvt->_conn->setAutoCommitOn();
+			} else {
+				pvt->_conn->setAutoCommitOff();
+			}
+		}
+	} else if (supportsExplicitTransactions() ||
+				fakingExplicitTransactions()) {
 		if (fakingExplicitTransactions() &&
 				pvt->_conn->supportsAutoCommit()) {
 			pvt->_conn->setAutoCommitOn();
@@ -2905,6 +2953,9 @@ bool sqlrservercontroller::endTransaction(bool commit) {
 			pvt->_conn->begin();
 		}
 	}
+
+	// reset explicit-tx flag for the next tx
+	pvt->_endtxwithautocommiton=false;
 
 	// set in-tx flag
 	pvt->_intransaction=!pvt->_autocommit;
