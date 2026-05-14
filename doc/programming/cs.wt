@@ -170,8 +170,10 @@ commit/rollback implicitly starts a new transaction; autocommit on/off take
 effect immediately), '''explicit''' (not in a transaction when the session
 begins; begin required to start a new transaction; commit/rollback does not
 start a new transaction; autocommit on/off take effect immediately),
-'''explicit-deferred''' (like explicit, but while in a transaction, autocommit
-on/off take effect at the next commit/rollback), or '''explicit-error''' (like
+'''explicit-deferred''' (like explicit, but while in a begin-initiated
+transaction, autocommit on takes effect at the next commit/rollback (deferred);
+while in an autocommit-off-initiated transaction, autocommit on takes effect
+immediately), or '''explicit-error''' (like
 explicit, but while in a transaction, autocommit on/off throw an error).
 
 The transaction isolation level can be queried and set with the
