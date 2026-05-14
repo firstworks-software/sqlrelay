@@ -254,7 +254,7 @@ class sqlrservercontrollerprivate {
 
 	bool		_autocommit;
 	bool		_initialautocommit;
-	bool		_endtxwithautocommiton;
+	bool		_pendingautocommit;
 
 	bool		_fakeinputbinds;
 	bool		_translatebinds;
@@ -523,7 +523,7 @@ sqlrservercontroller::sqlrservercontroller() : sqlrserverbase() {
 
 	pvt->_autocommit=false;
 	pvt->_initialautocommit=false;
-	pvt->_endtxwithautocommiton=false;
+	pvt->_pendingautocommit=false;
 
 	pvt->_initialtxmodel=SQLRTXMODEL_UNKNOWN;
 	pvt->_txmodel=SQLRTXMODEL_UNKNOWN;
@@ -2554,17 +2554,14 @@ bool sqlrservercontroller::setAutoCommitOn() {
 		return false;
 	}
 
-	// if the transaction model is "explicit-deferred" then set a flag to
-	// tell the upcoming endTransaction() to leave autocommit on
-	// (and fall through to setAutocommitOn() or commit() below)
-	if (pvt->_txmodel==SQLRTXMODEL_EXPLICIT_DEFERRED) {
-		pvt->_endtxwithautocommiton=true;
-	}
-
-	// if the database supports autocommit then call its autocommit method
+	// if the database supports autocommit then call its autocommit on
 	if (pvt->_conn->supportsAutoCommit()) {
 		if (!pvt->_conn->setAutoCommitOn()) {
 			return false;
+		}
+		// set the pending autocommit state
+		if (pvt->_txmodel==SQLRTXMODEL_EXPLICIT_DEFERRED) {
+			pvt->_pendingautocommit=true;
 		}
 		pvt->_autocommit=true;
 		return endTransaction(true);
@@ -2582,9 +2579,16 @@ bool sqlrservercontroller::setAutoCommitOn() {
 	}
 
 	// if the database supports explicit transactions (or we're faking them)
-	// then implement this with a commit
+	// then implement this with a direct commit
 	if (supportsExplicitTransactions() || fakingExplicitTransactions()) {
-		return commit();
+		if (!pvt->_conn->commit()) {
+			return false;
+		}
+		// set the pending autocommit state
+		if (pvt->_txmodel==SQLRTXMODEL_EXPLICIT_DEFERRED) {
+			pvt->_pendingautocommit=true;
+		}
+		return endTransaction(true);
 	}
 
 	// the db:
@@ -2629,9 +2633,8 @@ bool sqlrservercontroller::setAutoCommitOff() {
 		}
 
 		// if the transaction model is "explicit-deferred" then call
-		// autocommit off if the db supports it, and unset any flag
-		// that was set to tell the upcoming endTransaction() to
-		// leave autocommit on
+		// autocommit off if the db supports it, and unset any pending
+		// autocommit state
 		if (pvt->_txmodel==SQLRTXMODEL_EXPLICIT_DEFERRED) {
 			if (!fakingExplicitDeferredTransactions() &&
 					pvt->_conn->supportsAutoCommit()) {
@@ -2639,20 +2642,21 @@ bool sqlrservercontroller::setAutoCommitOff() {
 					return false;
 				}
 			}
-			pvt->_endtxwithautocommiton=false;
+			pvt->_pendingautocommit=false;
 		}
 
 		// otherwise, just bail
 		return true;
 	}
 
-	// if the database supports autocommit then call its autocommit method
+	// if the database supports autocommit then call its autocommit off
 	if (pvt->_conn->supportsAutoCommit()) {
 		if (!pvt->_conn->setAutoCommitOff()) {
 			return false;
 		}
+		// set pending autocommit state
 		if (pvt->_txmodel==SQLRTXMODEL_EXPLICIT_DEFERRED) {
-			pvt->_endtxwithautocommiton=false;
+			pvt->_pendingautocommit=false;
 		}
 		return beginTransaction();
 	}
@@ -2665,9 +2669,16 @@ bool sqlrservercontroller::setAutoCommitOff() {
 	}
 
 	// if the database supports explicit transactions (or we're faking them)
-	// then implement this with a begin
+	// then implement this with a direct begin
 	if (supportsExplicitTransactions() || fakingExplicitTransactions()) {
-		return begin();
+		if (!pvt->_conn->begin()) {
+			return false;
+		}
+		// set pending autocommit state
+		if (pvt->_txmodel==SQLRTXMODEL_EXPLICIT_DEFERRED) {
+			pvt->_pendingautocommit=false;
+		}
+		return beginTransaction();
 	}
 
 	// the db:
@@ -2728,10 +2739,10 @@ bool sqlrservercontroller::begin() {
 			}
 			// user explicitly began the tx; autocommit should
 			// return to on at commit/rollback (overrides the
-			// _endtxwithautocommiton=false that setAutoCommitOff sets for
+			// _pendingautocommit=false that setAutoCommitOff sets for
 			// the "user wants persistent autocommit-off" case)
 			if (pvt->_txmodel==SQLRTXMODEL_EXPLICIT_DEFERRED) {
-				pvt->_endtxwithautocommiton=true;
+				pvt->_pendingautocommit=true;
 			}
 			return true;
 		}
@@ -2752,7 +2763,7 @@ bool sqlrservercontroller::begin() {
 		return false;
 	}
 	if (pvt->_txmodel==SQLRTXMODEL_EXPLICIT_DEFERRED) {
-		pvt->_endtxwithautocommiton=true;
+		pvt->_pendingautocommit=true;
 	}
 	return true;
 }
@@ -2953,14 +2964,14 @@ bool sqlrservercontroller::endTransaction(bool commit) {
 	if (pvt->_txmodel==SQLRTXMODEL_EXPLICIT_DEFERRED) {
 		if (fakingExplicitTransactions() &&
 				pvt->_conn->supportsAutoCommit()) {
-			if (pvt->_endtxwithautocommiton) {
+			if (pvt->_pendingautocommit) {
 				pvt->_conn->setAutoCommitOn();
 			} else {
 				pvt->_conn->setAutoCommitOff();
 			}
 		}
-		pvt->_autocommit=pvt->_endtxwithautocommiton;
-		pvt->_endtxwithautocommiton=false;
+		pvt->_autocommit=pvt->_pendingautocommit;
+		pvt->_pendingautocommit=false;
 	} else if (supportsExplicitTransactions() ||
 				fakingExplicitTransactions()) {
 		if (fakingExplicitTransactions() &&
