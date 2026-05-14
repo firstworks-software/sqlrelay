@@ -1314,10 +1314,9 @@ bool sqlrservercontroller::logIn(bool printerrors) {
 	}
 
 	// initialize transaction and autocommit state
-	pvt->_intransaction=
-		(pvt->_conn->getNativeTransactionModel()!=SQLRTXMODEL_NONE &&
-		pvt->_conn->getNativeTransactionModel()!=SQLRTXMODEL_IMPLICIT);
-	pvt->_autocommit=!pvt->_intransaction;
+	pvt->_autocommit=
+		(pvt->_conn->getNativeTransactionModel()!=SQLRTXMODEL_IMPLICIT);
+	pvt->_intransaction=!pvt->_autocommit;
 
 // I'm not convinced we need this.
 #if 0
