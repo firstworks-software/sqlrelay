@@ -6575,6 +6575,8 @@ int main(int argc, char **argv) {
 	stdoutput.printf("COMMIT AND ROLLBACK: \n");
 	erg=SQLFreeStmt(stmt,SQL_CLOSE);
 	erg=SQLFreeStmt(stmt,SQL_UNBIND);
+
+	// open second connection and statement
 	SQLHDBC		dbc2;
 	SQLHSTMT	stmt2;
 	erg=SQLAllocHandle(SQL_HANDLE_DBC,env,&dbc2);
@@ -6591,6 +6593,8 @@ int main(int argc, char **argv) {
 	assertSuccessDbc(dbc2,erg);
 	erg=SQLAllocHandle(SQL_HANDLE_STMT,dbc2,&stmt2);
 	assertSuccessDbc(dbc2,erg);
+
+	// get row count (should be 0, dbc hasn't committed)
 	SQLINTEGER	rowcount;
 	SQLLEN		rowcountind;
 	erg=SQLExecDirect(stmt2,(SQLCHAR *)
@@ -6602,8 +6606,12 @@ int main(int argc, char **argv) {
 	erg=SQLFetch(stmt2);
 	assertSuccessStmt(stmt2,erg);
 	assertEqualStmt(stmt2,(int)rowcount,0);
+
+	// commit on dbc
 	erg=SQLEndTran(SQL_HANDLE_DBC,dbc,SQL_COMMIT);
 	assertSuccessDbc(dbc,erg);
+
+	// get row count (should be 4)
 	erg=SQLFreeStmt(stmt2,SQL_CLOSE);
 	erg=SQLFreeStmt(stmt2,SQL_UNBIND);
 	erg=SQLExecDirect(stmt2,(SQLCHAR *)
@@ -6615,6 +6623,8 @@ int main(int argc, char **argv) {
 	erg=SQLFetch(stmt2);
 	assertSuccessStmt(stmt2,erg);
 	assertEqualStmt(stmt2,(int)rowcount,4);
+
+	// insert another row on dbc
 	erg=SQLExecDirect(stmt,(SQLCHAR *)
 		"insert into "
 		"	testtable "
@@ -6628,8 +6638,12 @@ int main(int argc, char **argv) {
 		"	NULL)",
 		SQL_NTS);
 	assertSuccessStmt(stmt,erg);
+
+	// rollback on dbc
 	erg=SQLEndTran(SQL_HANDLE_DBC,dbc,SQL_ROLLBACK);
 	assertSuccessDbc(dbc,erg);
+
+	// get row count (should still be 4)
 	erg=SQLFreeStmt(stmt2,SQL_CLOSE);
 	erg=SQLFreeStmt(stmt2,SQL_UNBIND);
 	erg=SQLExecDirect(stmt2,(SQLCHAR *)
@@ -6641,9 +6655,13 @@ int main(int argc, char **argv) {
 	erg=SQLFetch(stmt2);
 	assertSuccessStmt(stmt2,erg);
 	assertEqualStmt(stmt2,(int)rowcount,4);
+
+	// switch dbc to autocommit ON; the next insert is auto-committed
 	erg=SQLSetConnectAttr(dbc,SQL_ATTR_AUTOCOMMIT,
 		(SQLPOINTER)SQL_AUTOCOMMIT_ON,0);
 	assertSuccessDbc(dbc,erg);
+
+	// insert another row on dbc
 	erg=SQLExecDirect(stmt,(SQLCHAR *)
 		"insert into "
 		"	testtable "
@@ -6657,6 +6675,8 @@ int main(int argc, char **argv) {
 		"	NULL)",
 		SQL_NTS);
 	assertSuccessStmt(stmt,erg);
+
+	// get row count (should be 5)
 	erg=SQLFreeStmt(stmt2,SQL_CLOSE);
 	erg=SQLFreeStmt(stmt2,SQL_UNBIND);
 	erg=SQLExecDirect(stmt2,(SQLCHAR *)
@@ -6668,6 +6688,8 @@ int main(int argc, char **argv) {
 	erg=SQLFetch(stmt2);
 	assertSuccessStmt(stmt2,erg);
 	assertEqualStmt(stmt2,(int)rowcount,5);
+
+	// clean up and disconnect
 	SQLFreeHandle(SQL_HANDLE_STMT,stmt2);
 	SQLDisconnect(dbc2);
 	SQLFreeHandle(SQL_HANDLE_DBC,dbc2);

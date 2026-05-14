@@ -6857,7 +6857,7 @@ int main(int argc, char **argv) {
 	erg=SQLAllocHandle(SQL_HANDLE_STMT,dbc2,&stmt2);
 	assertSuccessDbc(dbc2,erg);
 
-	// get rowcount (should be 0)
+	// get row count (should be 0, dbc hasn't committed)
 	SQLINTEGER	rowcount;
 	SQLLEN		rowcountind;
 	erg=SQLExecDirect(stmt2,(SQLCHAR *)
@@ -6870,7 +6870,7 @@ int main(int argc, char **argv) {
 	assertSuccessStmt(stmt2,erg);
 	assertEqualStmt(stmt2,(int)rowcount,0);
 
-	// commit
+	// commit on dbc
 	erg=SQLEndTran(SQL_HANDLE_DBC,dbc,SQL_COMMIT);
 	assertSuccessDbc(dbc,erg);
 
@@ -6887,11 +6887,7 @@ int main(int argc, char **argv) {
 	assertSuccessStmt(stmt2,erg);
 	assertEqualStmt(stmt2,(int)rowcount,4);
 
-	// begin new tx
-	// (since autocommit was set off earlier, the commit implicitly started
-	// another transaction, so we don't actually need to do anything here)
-
-	// insert another row
+	// insert another row on dbc
 	erg=SQLExecDirect(stmt,(SQLCHAR *)
 		"insert into "
 		"	testtable "
@@ -6910,7 +6906,7 @@ int main(int argc, char **argv) {
 		SQL_NTS);
 	assertSuccessStmt(stmt,erg);
 
-	// rollback
+	// rollback on dbc
 	erg=SQLEndTran(SQL_HANDLE_DBC,dbc,SQL_ROLLBACK);
 	assertSuccessDbc(dbc,erg);
 
@@ -6932,7 +6928,7 @@ int main(int argc, char **argv) {
 		(SQLPOINTER)SQL_AUTOCOMMIT_ON,0);
 	assertSuccessDbc(dbc,erg);
 
-	// insert another row
+	// insert another row on dbc
 	erg=SQLExecDirect(stmt,(SQLCHAR *)
 		"insert into "
 		"	testtable "
@@ -6968,7 +6964,6 @@ int main(int argc, char **argv) {
 	SQLFreeHandle(SQL_HANDLE_STMT,stmt2);
 	SQLDisconnect(dbc2);
 	SQLFreeHandle(SQL_HANDLE_DBC,dbc2);
-
 	erg=SQLSetConnectAttr(dbc,SQL_ATTR_AUTOCOMMIT,
 		(SQLPOINTER)SQL_AUTOCOMMIT_OFF,0);
 	assertSuccessDbc(dbc,erg);

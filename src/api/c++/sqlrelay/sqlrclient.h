@@ -410,8 +410,10 @@ class SQLRCLIENT_DLLSPEC sqlrconnection : public object {
 		 *      * not in a transaction when the session begins
 		 *      * begin required to start a new transaction
 		 *      * commit/rollback does not start a new transcaction
-		 *      * while in a transaction, autocommit on/off take effect
-		 *        at next commit/rollback
+		 *      * while in a begin-initiated transaction, autocommit
+		 *        on takes effect at next commit/rollback (deferred)
+		 *      * while in an autocommit-off-initiated transaction,
+		 *        autocommit on takes effect immediately
 		 *  * "explicit-error"
 		 *      * not in a transaction when the session begins
 		 *      * begin required to start a new transaction

@@ -7332,16 +7332,8 @@ int main(int argc, char **argv) {
 	stdoutput.printf("COMMIT AND ROLLBACK: \n");
 	erg=SQLFreeStmt(stmt,SQL_CLOSE);
 	erg=SQLFreeStmt(stmt,SQL_UNBIND);
-	erg=SQLExecDirect(stmt,(SQLCHAR *)"drop table testtable",SQL_NTS);
-	assertSuccessStmt(stmt,erg);
-	erg=SQLExecDirect(stmt,(SQLCHAR *)
-		"create table testtable ("
-		"	col1 int, "
-		"	col2 varchar(40)) engine=InnoDB",SQL_NTS);
-	assertSuccessStmt(stmt,erg);
-	// commit so the second connection can see the empty table
-	erg=SQLEndTran(SQL_HANDLE_DBC,dbc,SQL_COMMIT);
-	assertSuccessDbc(dbc,erg);
+
+	// open second connection and statement
 	SQLHDBC		dbc2;
 	SQLHSTMT	stmt2;
 	erg=SQLAllocHandle(SQL_HANDLE_DBC,env,&dbc2);
@@ -7358,79 +7350,133 @@ int main(int argc, char **argv) {
 	assertSuccessDbc(dbc2,erg);
 	erg=SQLAllocHandle(SQL_HANDLE_STMT,dbc2,&stmt2);
 	assertSuccessDbc(dbc2,erg);
-	// mysql uses repeatable read by default, so dbc2 needs to commit
-	// to release its current snapshot before reading data committed
-	// by dbc; put dbc2 in autocommit-off so we can drive that explicitly
+
+	// put dbc2 in autocommit-off so we can explicitly release its
+	// repeatable-read snapshot (via SQL_COMMIT) before each read;
+	// mysql's default isolation would otherwise hide data committed
+	// by dbc after dbc2's first read
 	erg=SQLSetConnectAttr(dbc2,SQL_ATTR_AUTOCOMMIT,
 		(SQLPOINTER)SQL_AUTOCOMMIT_OFF,0);
 	assertSuccessDbc(dbc2,erg);
+
+	// get row count (should be 0, dbc hasn't committed)
 	SQLINTEGER	rowcount;
 	SQLLEN		rowcountind;
-	// insert a row on dbc, but don't commit
-	erg=SQLExecDirect(stmt,(SQLCHAR *)
-		"insert into testtable values (1, 'one')",SQL_NTS);
-	assertSuccessStmt(stmt,erg);
-	// dbc2 (second connection) should see 0 rows
-	// because dbc hasn't committed
 	erg=SQLExecDirect(stmt2,(SQLCHAR *)
-		"select count(*) from testtable",SQL_NTS);
+		"select count(*) from testtable",
+		SQL_NTS);
 	assertSuccessStmt(stmt2,erg);
 	erg=SQLBindCol(stmt2,1,SQL_C_SLONG,
 		&rowcount,sizeof(rowcount),&rowcountind);
 	erg=SQLFetch(stmt2);
 	assertSuccessStmt(stmt2,erg);
 	assertEqualStmt(stmt2,(int)rowcount,0);
-	// commit on dbc; dbc2 should now see 1 row
+
+	// commit on dbc
 	erg=SQLEndTran(SQL_HANDLE_DBC,dbc,SQL_COMMIT);
 	assertSuccessDbc(dbc,erg);
+
 	// release dbc2's snapshot to start a new one
 	erg=SQLEndTran(SQL_HANDLE_DBC,dbc2,SQL_COMMIT);
 	assertSuccessDbc(dbc2,erg);
+
+	// get row count (should be 4)
 	erg=SQLFreeStmt(stmt2,SQL_CLOSE);
+	erg=SQLFreeStmt(stmt2,SQL_UNBIND);
 	erg=SQLExecDirect(stmt2,(SQLCHAR *)
-		"select count(*) from testtable",SQL_NTS);
+		"select count(*) from testtable",
+		SQL_NTS);
 	assertSuccessStmt(stmt2,erg);
 	erg=SQLBindCol(stmt2,1,SQL_C_SLONG,
 		&rowcount,sizeof(rowcount),&rowcountind);
 	erg=SQLFetch(stmt2);
 	assertSuccessStmt(stmt2,erg);
-	assertEqualStmt(stmt2,(int)rowcount,1);
-	// insert another row on dbc, then rollback
+	assertEqualStmt(stmt2,(int)rowcount,4);
+
+	// insert another row on dbc
 	erg=SQLExecDirect(stmt,(SQLCHAR *)
-		"insert into testtable values (2, 'two')",SQL_NTS);
+		"insert into "
+		"	testtable "
+		"values ("
+		"	5, 5, 5, 5, 5, "
+		"	5.5, 5.5, 5.5, "
+		"	'2005-05-05', "
+		"	'05:00:00', "
+		"	'2005-05-05 05:00:00', "
+		"	'2005', "
+		"	'char5', 'varchar5', "
+		"	'text5', 'tinytext5', "
+		"	'mediumtext5', 'longtext5', "
+		"	'blob5', 'tinyblob5', "
+		"	'mediumblob5', 'longblob5', "
+		"	NULL)",
+		SQL_NTS);
 	assertSuccessStmt(stmt,erg);
+
+	// rollback on dbc
 	erg=SQLEndTran(SQL_HANDLE_DBC,dbc,SQL_ROLLBACK);
 	assertSuccessDbc(dbc,erg);
-	// dbc2 should still see only the one committed row
+
+	// release dbc2's snapshot to start a new one
 	erg=SQLEndTran(SQL_HANDLE_DBC,dbc2,SQL_COMMIT);
 	assertSuccessDbc(dbc2,erg);
+
+	// get row count (should still be 4)
 	erg=SQLFreeStmt(stmt2,SQL_CLOSE);
+	erg=SQLFreeStmt(stmt2,SQL_UNBIND);
 	erg=SQLExecDirect(stmt2,(SQLCHAR *)
-		"select count(*) from testtable",SQL_NTS);
+		"select count(*) from testtable",
+		SQL_NTS);
 	assertSuccessStmt(stmt2,erg);
 	erg=SQLBindCol(stmt2,1,SQL_C_SLONG,
 		&rowcount,sizeof(rowcount),&rowcountind);
 	erg=SQLFetch(stmt2);
 	assertSuccessStmt(stmt2,erg);
-	assertEqualStmt(stmt2,(int)rowcount,1);
+	assertEqualStmt(stmt2,(int)rowcount,4);
+
 	// switch dbc to autocommit ON; the next insert is auto-committed
 	erg=SQLSetConnectAttr(dbc,SQL_ATTR_AUTOCOMMIT,
 		(SQLPOINTER)SQL_AUTOCOMMIT_ON,0);
 	assertSuccessDbc(dbc,erg);
+
+	// insert another row on dbc
 	erg=SQLExecDirect(stmt,(SQLCHAR *)
-		"insert into testtable values (3, 'three')",SQL_NTS);
+		"insert into "
+		"	testtable "
+		"values ("
+		"	5, 5, 5, 5, 5, "
+		"	5.5, 5.5, 5.5, "
+		"	'2005-05-05', "
+		"	'05:00:00', "
+		"	'2005-05-05 05:00:00', "
+		"	'2005', "
+		"	'char5', 'varchar5', "
+		"	'text5', 'tinytext5', "
+		"	'mediumtext5', 'longtext5', "
+		"	'blob5', 'tinyblob5', "
+		"	'mediumblob5', 'longblob5', "
+		"	NULL)",
+		SQL_NTS);
 	assertSuccessStmt(stmt,erg);
+
+	// release dbc2's snapshot to start a new one
 	erg=SQLEndTran(SQL_HANDLE_DBC,dbc2,SQL_COMMIT);
 	assertSuccessDbc(dbc2,erg);
+
+	// get row count (should be 5)
 	erg=SQLFreeStmt(stmt2,SQL_CLOSE);
+	erg=SQLFreeStmt(stmt2,SQL_UNBIND);
 	erg=SQLExecDirect(stmt2,(SQLCHAR *)
-		"select count(*) from testtable",SQL_NTS);
+		"select count(*) from testtable",
+		SQL_NTS);
 	assertSuccessStmt(stmt2,erg);
 	erg=SQLBindCol(stmt2,1,SQL_C_SLONG,
 		&rowcount,sizeof(rowcount),&rowcountind);
 	erg=SQLFetch(stmt2);
 	assertSuccessStmt(stmt2,erg);
-	assertEqualStmt(stmt2,(int)rowcount,2);
+	assertEqualStmt(stmt2,(int)rowcount,5);
+
+	// clean up and disconnect
 	SQLFreeHandle(SQL_HANDLE_STMT,stmt2);
 	SQLDisconnect(dbc2);
 	SQLFreeHandle(SQL_HANDLE_DBC,dbc2);

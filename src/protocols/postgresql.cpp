@@ -1434,9 +1434,12 @@ bool sqlrprotocol_postgresql::sendRowDescription(sqlrservercursor *cursor,
 		uint16_t	datatypesize=cont->getColumnSize(cursor,i);
 		uint32_t	datatypemodifier=(uint32_t)-1;
 		// For various types (I'm sure I'll discover others later),
-		// return -1 for the size and return the size in the modifier
+		// return -1 for the size and return the size in the modifier.
+		// For bpchar/varchar, atttypmod is the declared length plus
+		// VARHDRSZ (4 bytes); clients subtract 4 to recover the
+		// declared length.
 		if (coltypeoid==1042 || coltypeoid==1043) {
-			datatypemodifier=datatypesize;
+			datatypemodifier=datatypesize+4;
 			datatypesize=(uint16_t)-1;
 		}
 		writeBE(&resppacket,datatypesize);
