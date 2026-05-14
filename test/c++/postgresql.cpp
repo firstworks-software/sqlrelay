@@ -853,56 +853,231 @@ int main(int argc, char **argv) {
 		secondcur=NULL;
 	}
 	cur->setResultSetBufferSize(0);
+	assertTrue(cur->sendQuery("drop table testtable"));
 	stdoutput.printf("\n");
 
 
-	// commit and rollback
-	stdoutput.printf("COMMIT AND ROLLBACK: \n");
+	// reset transaction state
+	stdoutput.printf("RESET TRANSACTION STATE: \n");
+	assertTrue(con->commit());
+	assertEquals(con->getTransactionModel(),"explicit");
+	assertTrue(con->getAutoCommit());
+	stdoutput.printf("\n");
+
+
+	// transaction behavior - implicit
+	stdoutput.printf("TRANSACTION BEHAVIOR - implicit: \n");
+	assertTrue(con->setTransactionModel("implicit"));
+	assertEquals(con->getTransactionModel(),"implicit");
+	assertTrue(cur->sendQuery("create table testtable (col1 integer)"));
 	secondcon=new sqlrconnection("sqlrelay",9000,"/tmp/test.socket",
 						"testuser","testpassword",0,1);
 	secondcur=new sqlrcursor(secondcon);
+	// session is in a transaction; insert is not visible until commit
+	assertTrue(con->getInTransaction());
+	assertFalse(con->getAutoCommit());
+	assertTrue(cur->sendQuery("insert into testtable values (1)"));
 	assertTrue(secondcur->sendQuery("select count(*) from testtable"));
 	assertEquals(secondcur->getField(0,(uint32_t)0),"0");
+	// commit makes it visible, and implicitly starts a new transaction
 	assertTrue(con->commit());
+	assertTrue(con->getInTransaction());
 	assertTrue(secondcur->sendQuery("select count(*) from testtable"));
-	assertEquals(secondcur->getField(0,(uint32_t)0),"8");
-	assertTrue(con->begin());
-	assertTrue(cur->sendQuery(
-		"insert into "
-		"	testtable "
-		"values ("
-		"	10, "
-		"	10.1, "
-		"	10.1, "
-		"	10, "
-		"	'testchar10', "
-		"	'testvarchar10', "
-		"	'01/01/2010', "
-		"	'10:00:00', "
-		"	NULL)"));
+	assertEquals(secondcur->getField(0,(uint32_t)0),"1");
+	// rollback discards, and implicitly starts a new transaction
+	assertTrue(cur->sendQuery("insert into testtable values (2)"));
 	assertTrue(con->rollback());
+	assertTrue(con->getInTransaction());
 	assertTrue(secondcur->sendQuery("select count(*) from testtable"));
-	assertEquals(secondcur->getField(0,(uint32_t)0),"8");
-	assertTrue(cur->sendQuery(
-		"insert into "
-		"	testtable "
-		"values ("
-		"	10, "
-		"	10.1, "
-		"	10.1, "
-		"	10, "
-		"	'testchar10', "
-		"	'testvarchar10', "
-		"	'01/01/2010', "
-		"	'10:00:00', "
-		"	NULL)"));
+	assertEquals(secondcur->getField(0,(uint32_t)0),"1");
+	// autoCommitOn takes effect immediately
+	assertTrue(con->autoCommitOn());
+	assertTrue(con->getAutoCommit());
+	assertFalse(con->getInTransaction());
+	assertTrue(cur->sendQuery("insert into testtable values (3)"));
 	assertTrue(secondcur->sendQuery("select count(*) from testtable"));
-	assertEquals(secondcur->getField(0,(uint32_t)0),"9");
+	assertEquals(secondcur->getField(0,(uint32_t)0),"2");
+	// autoCommitOff takes effect immediately
+	assertTrue(con->autoCommitOff());
+	assertFalse(con->getAutoCommit());
+	assertTrue(con->getInTransaction());
 	delete secondcur;
 	secondcur=NULL;
 	delete secondcon;
 	secondcon=NULL;
 	assertTrue(cur->sendQuery("drop table testtable"));
+	stdoutput.printf("\n");
+
+
+	// transaction behavior - explicit
+	stdoutput.printf("TRANSACTION BEHAVIOR - explicit: \n");
+	assertTrue(con->setTransactionModel("explicit"));
+	assertEquals(con->getTransactionModel(),"explicit");
+	assertTrue(cur->sendQuery("create table testtable (col1 integer)"));
+	secondcon=new sqlrconnection("sqlrelay",9000,"/tmp/test.socket",
+						"testuser","testpassword",0,1);
+	secondcur=new sqlrcursor(secondcon);
+	// begin starts a new transaction; insert is not visible until commit
+	assertTrue(con->begin());
+	assertTrue(con->getInTransaction());
+	assertTrue(cur->sendQuery("insert into testtable values (1)"));
+	assertTrue(secondcur->sendQuery("select count(*) from testtable"));
+	assertEquals(secondcur->getField(0,(uint32_t)0),"0");
+	// commit makes it visible; no new transaction is started
+	assertTrue(con->commit());
+	assertFalse(con->getInTransaction());
+	assertTrue(secondcur->sendQuery("select count(*) from testtable"));
+	assertEquals(secondcur->getField(0,(uint32_t)0),"1");
+	// begin, insert, rollback discards; no new transaction is started
+	assertTrue(con->begin());
+	assertTrue(cur->sendQuery("insert into testtable values (2)"));
+	assertTrue(con->rollback());
+	assertFalse(con->getInTransaction());
+	assertTrue(secondcur->sendQuery("select count(*) from testtable"));
+	assertEquals(secondcur->getField(0,(uint32_t)0),"1");
+	// autoCommitOn takes effect immediately
+	assertTrue(con->autoCommitOn());
+	assertTrue(con->getAutoCommit());
+	assertTrue(cur->sendQuery("insert into testtable values (3)"));
+	assertTrue(secondcur->sendQuery("select count(*) from testtable"));
+	assertEquals(secondcur->getField(0,(uint32_t)0),"2");
+	// autoCommitOff takes effect immediately
+	assertTrue(con->autoCommitOff());
+	assertFalse(con->getAutoCommit());
+	delete secondcur;
+	secondcur=NULL;
+	delete secondcon;
+	secondcon=NULL;
+	assertTrue(cur->sendQuery("drop table testtable"));
+	stdoutput.printf("\n");
+
+
+	// transaction behavior - explicit-deferred
+	stdoutput.printf("TRANSACTION BEHAVIOR - explicit-deferred: \n");
+	assertTrue(con->setTransactionModel("explicit-deferred"));
+	assertEquals(con->getTransactionModel(),"explicit-deferred");
+	assertTrue(cur->sendQuery("create table testtable (col1 integer)"));
+	secondcon=new sqlrconnection("sqlrelay",9000,"/tmp/test.socket",
+						"testuser","testpassword",0,1);
+	secondcur=new sqlrcursor(secondcon);
+	// begin starts a transaction; commit makes it visible
+	assertTrue(con->begin());
+	assertTrue(con->getInTransaction());
+	assertTrue(cur->sendQuery("insert into testtable values (1)"));
+	assertTrue(con->commit());
+	assertFalse(con->getInTransaction());
+	assertTrue(secondcur->sendQuery("select count(*) from testtable"));
+	assertEquals(secondcur->getField(0,(uint32_t)0),"1");
+	// begin, insert, rollback discards
+	assertTrue(con->begin());
+	assertTrue(cur->sendQuery("insert into testtable values (2)"));
+	assertTrue(con->rollback());
+	assertTrue(secondcur->sendQuery("select count(*) from testtable"));
+	assertEquals(secondcur->getField(0,(uint32_t)0),"1");
+	// while in a transaction, autoCommitOn is deferred to next commit/rollback
+	assertTrue(con->begin());
+	assertTrue(cur->sendQuery("insert into testtable values (3)"));
+	assertTrue(con->autoCommitOn());
+	assertFalse(con->getAutoCommit());
+	assertTrue(con->commit());
+	assertTrue(con->getAutoCommit());
+	// autocommit is now on; insert is visible immediately
+	assertTrue(cur->sendQuery("insert into testtable values (4)"));
+	assertTrue(secondcur->sendQuery("select count(*) from testtable"));
+	assertEquals(secondcur->getField(0,(uint32_t)0),"3");
+	// autoCommitOff takes effect immediately when not in a transaction
+	assertTrue(con->autoCommitOff());
+	assertFalse(con->getAutoCommit());
+	delete secondcur;
+	secondcur=NULL;
+	delete secondcon;
+	secondcon=NULL;
+	assertTrue(cur->sendQuery("drop table testtable"));
+	stdoutput.printf("\n");
+
+
+	// transaction behavior - explicit-error
+	stdoutput.printf("TRANSACTION BEHAVIOR - explicit-error: \n");
+	assertTrue(con->setTransactionModel("explicit-error"));
+	assertEquals(con->getTransactionModel(),"explicit-error");
+	assertTrue(cur->sendQuery("create table testtable (col1 integer)"));
+	secondcon=new sqlrconnection("sqlrelay",9000,"/tmp/test.socket",
+						"testuser","testpassword",0,1);
+	secondcur=new sqlrcursor(secondcon);
+	// begin, insert, commit
+	assertTrue(con->begin());
+	assertTrue(con->getInTransaction());
+	assertTrue(cur->sendQuery("insert into testtable values (1)"));
+	assertTrue(con->commit());
+	assertFalse(con->getInTransaction());
+	assertTrue(secondcur->sendQuery("select count(*) from testtable"));
+	assertEquals(secondcur->getField(0,(uint32_t)0),"1");
+	// begin, insert, rollback
+	assertTrue(con->begin());
+	assertTrue(cur->sendQuery("insert into testtable values (2)"));
+	assertTrue(con->rollback());
+	assertTrue(secondcur->sendQuery("select count(*) from testtable"));
+	assertEquals(secondcur->getField(0,(uint32_t)0),"1");
+	// while in a transaction, autoCommitOn/Off throw an error
+	assertTrue(con->begin());
+	assertFalse(con->autoCommitOn());
+	assertFalse(con->autoCommitOff());
+	assertTrue(con->commit());
+	// outside of a transaction, autoCommitOn takes effect immediately
+	assertTrue(con->autoCommitOn());
+	assertTrue(con->getAutoCommit());
+	assertTrue(cur->sendQuery("insert into testtable values (3)"));
+	assertTrue(secondcur->sendQuery("select count(*) from testtable"));
+	assertEquals(secondcur->getField(0,(uint32_t)0),"2");
+	// autoCommitOff takes effect immediately
+	assertTrue(con->autoCommitOff());
+	assertFalse(con->getAutoCommit());
+	delete secondcur;
+	secondcur=NULL;
+	delete secondcon;
+	secondcon=NULL;
+	assertTrue(cur->sendQuery("drop table testtable"));
+	stdoutput.printf("\n");
+
+
+	// transaction behavior - none
+	stdoutput.printf("TRANSACTION BEHAVIOR - none: \n");
+	assertTrue(con->setTransactionModel("none"));
+	assertEquals(con->getTransactionModel(),"none");
+	assertTrue(cur->sendQuery("create table testtable (col1 integer)"));
+	secondcon=new sqlrconnection("sqlrelay",9000,"/tmp/test.socket",
+						"testuser","testpassword",0,1);
+	secondcur=new sqlrcursor(secondcon);
+	// no transactions; everything is visible immediately
+	assertTrue(con->getAutoCommit());
+	assertFalse(con->getInTransaction());
+	assertTrue(cur->sendQuery("insert into testtable values (1)"));
+	assertTrue(secondcur->sendQuery("select count(*) from testtable"));
+	assertEquals(secondcur->getField(0,(uint32_t)0),"1");
+	// commit and rollback are no-ops
+	assertTrue(con->commit());
+	assertTrue(cur->sendQuery("insert into testtable values (2)"));
+	assertTrue(con->rollback());
+	assertTrue(secondcur->sendQuery("select count(*) from testtable"));
+	assertEquals(secondcur->getField(0,(uint32_t)0),"2");
+	// autocommit is always on
+	assertTrue(con->autoCommitOff());
+	assertTrue(con->getAutoCommit());
+	assertTrue(con->autoCommitOn());
+	assertTrue(con->getAutoCommit());
+	delete secondcur;
+	secondcur=NULL;
+	delete secondcon;
+	secondcon=NULL;
+	assertTrue(cur->sendQuery("drop table testtable"));
+	stdoutput.printf("\n");
+
+
+	// reset transaction behavior
+	stdoutput.printf("RESET TRANSACTION BEHAVIOR: \n");
+	assertTrue(con->setTransactionModel(con->getDefaultTransactionModel()));
+	assertEquals(con->getTransactionModel(),"explicit");
+	assertTrue(con->getAutoCommit());
 	stdoutput.printf("\n");
 
 
