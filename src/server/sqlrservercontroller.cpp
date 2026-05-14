@@ -254,7 +254,7 @@ class sqlrservercontrollerprivate {
 
 	bool		_autocommit;
 	bool		_initialautocommit;
-	bool		_pendingautocommit;
+	bool		_eotautocommit;
 
 	bool		_fakeinputbinds;
 	bool		_translatebinds;
@@ -523,7 +523,7 @@ sqlrservercontroller::sqlrservercontroller() : sqlrserverbase() {
 
 	pvt->_autocommit=false;
 	pvt->_initialautocommit=false;
-	pvt->_pendingautocommit=false;
+	pvt->_eotautocommit=false;
 
 	pvt->_initialtxmodel=SQLRTXMODEL_UNKNOWN;
 	pvt->_txmodel=SQLRTXMODEL_UNKNOWN;
@@ -2561,7 +2561,7 @@ bool sqlrservercontroller::setAutoCommitOn() {
 		}
 		// set the pending autocommit state
 		if (pvt->_txmodel==SQLRTXMODEL_EXPLICIT_DEFERRED) {
-			pvt->_pendingautocommit=true;
+			pvt->_eotautocommit=true;
 		}
 		pvt->_autocommit=true;
 		return endTransaction(true);
@@ -2586,7 +2586,7 @@ bool sqlrservercontroller::setAutoCommitOn() {
 		}
 		// set the pending autocommit state
 		if (pvt->_txmodel==SQLRTXMODEL_EXPLICIT_DEFERRED) {
-			pvt->_pendingautocommit=true;
+			pvt->_eotautocommit=true;
 		}
 		return endTransaction(true);
 	}
@@ -2642,7 +2642,7 @@ bool sqlrservercontroller::setAutoCommitOff() {
 					return false;
 				}
 			}
-			pvt->_pendingautocommit=false;
+			pvt->_eotautocommit=false;
 		}
 
 		// otherwise, just bail
@@ -2654,9 +2654,9 @@ bool sqlrservercontroller::setAutoCommitOff() {
 		if (!pvt->_conn->setAutoCommitOff()) {
 			return false;
 		}
-		// set pending autocommit state
+		// set end of tx autocommit state
 		if (pvt->_txmodel==SQLRTXMODEL_EXPLICIT_DEFERRED) {
-			pvt->_pendingautocommit=false;
+			pvt->_eotautocommit=false;
 		}
 		return beginTransaction();
 	}
@@ -2674,9 +2674,9 @@ bool sqlrservercontroller::setAutoCommitOff() {
 		if (!pvt->_conn->begin()) {
 			return false;
 		}
-		// set pending autocommit state
+		// set end of tx autocommit state
 		if (pvt->_txmodel==SQLRTXMODEL_EXPLICIT_DEFERRED) {
-			pvt->_pendingautocommit=false;
+			pvt->_eotautocommit=false;
 		}
 		return beginTransaction();
 	}
@@ -2734,17 +2734,14 @@ bool sqlrservercontroller::begin() {
 		// end up in an infinite begin()-setAutoCommitOff()-begin()-...
 		// recursion
 		if (pvt->_conn->supportsAutoCommit()) {
-			if (!setAutoCommitOff()) {
+			if (!pvt->_conn->setAutoCommitOff()) {
 				return false;
 			}
-			// user explicitly began the tx; autocommit should
-			// return to on at commit/rollback (overrides the
-			// _pendingautocommit=false that setAutoCommitOff sets for
-			// the "user wants persistent autocommit-off" case)
+			// set end of tx autocommit state
 			if (pvt->_txmodel==SQLRTXMODEL_EXPLICIT_DEFERRED) {
-				pvt->_pendingautocommit=true;
+				pvt->_eotautocommit=true;
 			}
-			return true;
+			return beginTransaction();
 		}
 
 		// If we're faking explicit transactions then the db doesn't
@@ -2757,15 +2754,15 @@ bool sqlrservercontroller::begin() {
 	// (autocommit is always conceptually off, so the "autocommit is off"
 	// guard catches it -- begin is meaningless when we're always in a tx)
 
-	// native begin -- this is an explicit user-driven tx; autocommit
-	// should return to on at commit/rollback
-	if (!pvt->_conn->begin() || !beginTransaction()) {
+	// native begin
+	if (!pvt->_conn->begin()) {
 		return false;
 	}
+	// set end of tx autocommit state
 	if (pvt->_txmodel==SQLRTXMODEL_EXPLICIT_DEFERRED) {
-		pvt->_pendingautocommit=true;
+		pvt->_eotautocommit=true;
 	}
-	return true;
+	return beginTransaction();
 }
 
 bool sqlrservercontroller::commit() {
@@ -2964,14 +2961,14 @@ bool sqlrservercontroller::endTransaction(bool commit) {
 	if (pvt->_txmodel==SQLRTXMODEL_EXPLICIT_DEFERRED) {
 		if (fakingExplicitTransactions() &&
 				pvt->_conn->supportsAutoCommit()) {
-			if (pvt->_pendingautocommit) {
+			if (pvt->_eotautocommit) {
 				pvt->_conn->setAutoCommitOn();
 			} else {
 				pvt->_conn->setAutoCommitOff();
 			}
 		}
-		pvt->_autocommit=pvt->_pendingautocommit;
-		pvt->_pendingautocommit=false;
+		pvt->_autocommit=pvt->_eotautocommit;
+		pvt->_eotautocommit=false;
 	} else if (supportsExplicitTransactions() ||
 				fakingExplicitTransactions()) {
 		if (fakingExplicitTransactions() &&
