@@ -988,6 +988,21 @@ int main(int argc, char **argv) {
 	// autoCommitOff takes effect immediately when not in a transaction
 	assertTrue(con->autoCommitOff());
 	assertFalse(con->getAutoCommit());
+	// autocommit-off persists across commit/rollback; each commit or
+	// rollback ends the current implicit tx and a new one starts for
+	// the next statement
+	assertTrue(cur->sendQuery("insert into testtable values (5)"));
+	assertTrue(con->commit());
+	assertFalse(con->getAutoCommit());
+	assertTrue(con->getInTransaction());
+	assertTrue(secondcur->sendQuery("select count(*) from testtable"));
+	assertEquals(secondcur->getField(0,(uint32_t)0),"4");
+	assertTrue(cur->sendQuery("insert into testtable values (6)"));
+	assertTrue(con->rollback());
+	assertFalse(con->getAutoCommit());
+	assertTrue(con->getInTransaction());
+	assertTrue(secondcur->sendQuery("select count(*) from testtable"));
+	assertEquals(secondcur->getField(0,(uint32_t)0),"4");
 	delete secondcur;
 	secondcur=NULL;
 	delete secondcon;
