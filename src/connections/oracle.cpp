@@ -1632,6 +1632,9 @@ bool oracleconnection::changeProxiedUser(const char *newuser,
 #endif
 
 bool oracleconnection::setAutoCommitOn() {
+	if (!commit()) {
+		return false;
+	}
 	stmtmode=OCI_COMMIT_ON_SUCCESS;
 	return true;
 }

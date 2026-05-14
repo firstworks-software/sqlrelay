@@ -979,14 +979,16 @@ int main(int argc, char **argv) {
 	assertTrue(con->rollback());
 	assertTrue(secondcur->sendQuery("select count(*) from testtable"));
 	assertEquals(secondcur->getField(0,(uint32_t)0),"1");
-	// while in a transaction, autoCommitOn is deferred to next commit/rollback
+	// during a transaction, autoCommitOn implicitly commits the tx
+	// and turns autocommit on (mysql-asymmetric semantic)
 	assertTrue(con->begin());
 	assertTrue(cur->sendQuery("insert into testtable values (3)"));
 	assertTrue(con->autoCommitOn());
-	assertFalse(con->getAutoCommit());
-	assertTrue(con->commit());
 	assertTrue(con->getAutoCommit());
-	// autocommit is now on; insert is visible immediately
+	assertFalse(con->getInTransaction());
+	assertTrue(secondcur->sendQuery("select count(*) from testtable"));
+	assertEquals(secondcur->getField(0,(uint32_t)0),"2");
+	// autocommit is on; subsequent inserts are visible immediately
 	assertTrue(cur->sendQuery("insert into testtable values (4)"));
 	assertTrue(secondcur->sendQuery("select count(*) from testtable"));
 	assertEquals(secondcur->getField(0,(uint32_t)0),"3");
@@ -1008,6 +1010,25 @@ int main(int argc, char **argv) {
 	assertTrue(con->getInTransaction());
 	assertTrue(secondcur->sendQuery("select count(*) from testtable"));
 	assertEquals(secondcur->getField(0,(uint32_t)0),"4");
+	// autoCommitOff during a transaction changes the variable
+	// immediately but the in-flight tx continues; only after the
+	// next explicit commit/rollback does the new autocommit-off
+	// setting drop us into a new implicit tx (mysql-asymmetric
+	// semantic)
+	assertTrue(con->autoCommitOn());
+	assertTrue(con->getAutoCommit());
+	assertTrue(con->begin());
+	assertTrue(cur->sendQuery("insert into testtable values (7)"));
+	assertTrue(con->autoCommitOff());
+	assertFalse(con->getAutoCommit());
+	assertTrue(con->getInTransaction());
+	assertTrue(secondcur->sendQuery("select count(*) from testtable"));
+	assertEquals(secondcur->getField(0,(uint32_t)0),"4");
+	assertTrue(con->commit());
+	assertFalse(con->getAutoCommit());
+	assertTrue(con->getInTransaction());
+	assertTrue(secondcur->sendQuery("select count(*) from testtable"));
+	assertEquals(secondcur->getField(0,(uint32_t)0),"5");
 	delete secondcur;
 	secondcur=NULL;
 	delete secondcon;
