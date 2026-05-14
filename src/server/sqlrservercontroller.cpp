@@ -1040,42 +1040,6 @@ bool sqlrservercontroller::init(int argc, const char **argv) {
 		return false;
 	}
 
-	// set what we think the current autocommit behavior ought to be
-	pvt->_autocommit=!pvt->_intransaction;
-
-	// bootstrap the autocommit state to match the flag
-	// (use only pvt->_conn calls here since we're bootstrapping)
-	// (ignore errors, in case the db throws an error if you commit
-	// outside of a tx, begin inside one, or set autocommit on/off when
-	// it already is)
-	if (pvt->_conn->getNativeTransactionModel()!=SQLRTXMODEL_NONE) {
-		if (pvt->_conn->supportsAutoCommit()) {
-			// this branch handles all implicit-tx dbs
-			// (which must support autocommit) and explicit-tx
-			// dbs which also support autocommit
-			// FIXME: this is not correct for dbs which
-			// defer autocommit (eg. mysql)
-			if (pvt->_autocommit) {
-				pvt->_conn->setAutoCommitOn();
-			} else {
-				pvt->_conn->setAutoCommitOff();
-			}
-		} else {
-			// if we're here then the db must be an explicit-tx
-			// db that doesn't support autocommit
-			if (pvt->_autocommit) {
-				pvt->_conn->commit();
-			} else {
-				pvt->_conn->begin();
-			}
-		}
-	}
-
-	// set the autocommit state that we want to be in
-	// (ignore errors, in case the db throws an error if you set
-	// autocommit on/off when it already is)
-	setAutoCommit(pvt->_initialautocommit);
-
 	// increment connection counter
 	if (pvt->_cfg->getDynamicScaling()) {
 		incrementConnectionCount();
@@ -1347,8 +1311,43 @@ bool sqlrservercontroller::logIn(bool printerrors) {
 		}
 	}
 
-	// initialize transaction state
-	pvt->_intransaction=isInTransactionAtLogin();
+	// initialize transaction and autocommit state
+	pvt->_intransaction=
+		(pvt->_conn->getNativeTransactionModel()!=SQLRTXMODEL_NONE &&
+		pvt->_conn->getNativeTransactionModel()!=SQLRTXMODEL_IMPLICIT);
+	pvt->_autocommit=!pvt->_intransaction;
+
+// I'm not convinced we need this.
+#if 0
+	// bootstrap the autocommit state to match the flag
+	// (use only pvt->_conn calls here since we're bootstrapping)
+	// (ignore errors, in case the db throws an error if you commit
+	// outside of a tx, begin inside one, or set autocommit on/off when
+	// it already is)
+	if (pvt->_conn->getNativeTransactionModel()!=SQLRTXMODEL_NONE) {
+		if (pvt->_conn->supportsAutoCommit()) {
+			// this branch handles all implicit-tx dbs
+			// (which must support autocommit) and explicit-tx
+			// dbs which also support autocommit
+			if (pvt->_autocommit) {
+				pvt->_conn->setAutoCommitOn();
+			} else {
+				pvt->_conn->setAutoCommitOff();
+			}
+		} else {
+			// if we're here then the db must be an explicit-tx
+			// db that doesn't support autocommit
+			if (pvt->_autocommit) {
+				pvt->_conn->commit();
+			} else {
+				pvt->_conn->begin();
+			}
+		}
+	}
+#endif
+
+	// set the autocommit state that we want to be in
+	setAutoCommit(pvt->_initialautocommit);
 
 	// success... update stats
 	incrementOpenDatabaseConnections();
@@ -1390,36 +1389,6 @@ bool sqlrservercontroller::logIn(bool printerrors) {
 
 	raiseDbLogInEvent();
 
-	return true;
-}
-
-bool sqlrservercontroller::isInTransactionAtLogin() {
-
-	// if the database doesn't support transactions
-	// then we're not in a transaction
-	if (!isTransactional()) {
-		return false;
-	}
-
-	// if the database supports explicit transactions
-	// then we're not in a transaction
-	if (supportsExplicitTransactions()) {
-		return false;
-	}
-
-	// if we're faking explicit transactions
-	// then we're not in a transaction
-	if (fakingExplicitTransactions()) {
-		return false;
-	}
-
-	// if we're faking implicit transactions
-	// then we're in a transaction
-	if (fakingImplicitTransactions()) {
-		return true;
-	}
-
-	// otherwise, we are
 	return true;
 }
 
@@ -2569,13 +2538,8 @@ bool sqlrservercontroller::setAutoCommitOn() {
 		return true;
 	}
 
-	// bail if autocommit is already on
-	if (pvt->_autocommit) {
-		return true;
-	}
-
-	// bail if we're not currently in a transaction
-	if (!pvt->_intransaction) {
+	// bail if autocommit is already on or if we're not in a transaction
+	if (pvt->_autocommit || !pvt->_intransaction) {
 		return true;
 	}
 
@@ -2588,10 +2552,14 @@ bool sqlrservercontroller::setAutoCommitOn() {
 		return false;
 	}
 
+	// if the transaction model is "explicit-deferred" then defer
+	// the autocommit change until the next commit/rollback
+	if (pvt->_txmodel==SQLRTXMODEL_EXPLICIT_DEFERRED) {
+		return true;
+	}
+
 	// if the database supports autocommit then call its autocommit method
 	if (pvt->_conn->supportsAutoCommit()) {
-		// FIXME: this is not correct for
-		// SQLRTXMODEL_EXPLICIT_DEFERRED (eg. mysql)
 		if (!pvt->_conn->setAutoCommitOn()) {
 			return false;
 		}
@@ -2645,13 +2613,8 @@ bool sqlrservercontroller::setAutoCommitOff() {
 		return false;
 	}
 
-	// bail if autocommit is already off
-	if (!pvt->_autocommit) {
-		return true;
-	}
-
-	// bail if we're currently in a transaction
-	if (pvt->_intransaction) {
+	// bail if autocommit is already off or if we're in a transaction
+	if (!pvt->_autocommit || pvt->_intransaction) {
 		// if the transaction model is "explicit-error" then throw an
 		// error if we're currently in a transaction
 		if (pvt->_txmodel==SQLRTXMODEL_EXPLICIT_ERROR) {
@@ -2665,8 +2628,6 @@ bool sqlrservercontroller::setAutoCommitOff() {
 
 	// if the database supports autocommit then call its autocommit method
 	if (pvt->_conn->supportsAutoCommit()) {
-		// FIXME: this is not correct for
-		// SQLRTXMODEL_EXPLICIT_DEFERRED (eg. mysql)
 		return pvt->_conn->setAutoCommitOff() && beginTransaction();
 	}
 
@@ -3120,24 +3081,32 @@ bool sqlrservercontroller::setTransactionModel(sqlrtxmodel_t txmodel) {
 		return true;
 	}
 
-	// capture the txmodel and autocommit state
-	sqlrtxmodel_t	savedtxmodel=pvt->_txmodel;
-	bool		savedautocommit=pvt->_autocommit;
+	// capture the autocommit state
+	bool	savedautocommit=pvt->_autocommit;
 
 	// make sure that we're outside of a transaction, with autocommit on
-	pvt->_txmodel=pvt->_conn->getNativeTransactionModel();
-	if (!commit() || !setAutoCommitOn()) {
-		pvt->_txmodel=savedtxmodel;
-		return false;
+	// (skip if we're already in NONE mode -- NONE forces autocommit-on
+	// and not-in-tx, so the commit/setAutoCommitOn would be no-ops)
+	if (pvt->_txmodel!=SQLRTXMODEL_NONE) {
+		sqlrtxmodel_t	savedtxmodel=pvt->_txmodel;
+		pvt->_txmodel=pvt->_conn->getNativeTransactionModel();
+		if (!commit() || !setAutoCommitOn()) {
+			pvt->_txmodel=savedtxmodel;
+			return false;
+		}
 	}
 
 	// switch the tx model
 	pvt->_txmodel=txmodel;
 
-	// restore the original autocommit state
-	// (only necessary if autocommit was originally off)
-	if (!savedautocommit) {
-		return setAutoCommitOff();
+	// restore the original autocommit state...
+
+	// only possible if the new model supports autocommit-off
+	if (txmodel!=SQLRTXMODEL_NONE) {
+		// only necessary if autocommit was originally off
+		if (!savedautocommit) {
+			return setAutoCommitOff();
+		}
 	}
 	return true;
 }

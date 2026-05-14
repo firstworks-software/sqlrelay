@@ -1060,8 +1060,8 @@ int main(int argc, char **argv) {
 	assertTrue(con->rollback());
 	assertTrue(secondcur->sendQuery("select count(*) from testtable"));
 	assertEquals(secondcur->getField(0,(uint32_t)0),"2");
-	// autocommit is always on
-	assertTrue(con->autoCommitOff());
+	// autocommit is always on; autoCommitOff is an error
+	assertFalse(con->autoCommitOff());
 	assertTrue(con->getAutoCommit());
 	assertTrue(con->autoCommitOn());
 	assertTrue(con->getAutoCommit());

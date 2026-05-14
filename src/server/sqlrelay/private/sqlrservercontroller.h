@@ -67,7 +67,6 @@
 
 		bool	attemptLogIn(bool printerrors);
 		bool	logIn(bool printerrors);
-		bool	isInTransactionAtLogin();
 		void	logOut();
 
 		bool	setAutoCommit(bool ac);

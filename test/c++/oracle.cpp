@@ -1053,8 +1053,8 @@ int main(int argc, char **argv) {
 	assertTrue(con->rollback());
 	assertTrue(secondcur->sendQuery("select count(*) from testtable"));
 	assertEquals(secondcur->getField(0,(uint32_t)0),"2");
-	// autocommit is always on
-	assertTrue(con->autoCommitOff());
+	// autocommit is always on; autoCommitOff is an error
+	assertFalse(con->autoCommitOff());
 	assertTrue(con->getAutoCommit());
 	assertTrue(con->autoCommitOn());
 	assertTrue(con->getAutoCommit());
@@ -1070,6 +1070,9 @@ int main(int argc, char **argv) {
 	stdoutput.printf("RESET TRANSACTION BEHAVIOR: \n");
 	assertTrue(con->setTransactionModel(con->getDefaultTransactionModel()));
 	assertEquals(con->getTransactionModel(),"implicit");
+	// the model switch preserves the prior autocommit state;
+	// restore autocommit-off explicitly
+	assertTrue(con->autoCommitOff());
 	assertFalse(con->getAutoCommit());
 	stdoutput.printf("\n");
 
