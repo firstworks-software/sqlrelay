@@ -385,6 +385,12 @@ class SQLRSERVER_DLLSPEC odbcconnection : public sqlrserverconnection {
 		char		*getCurrentCatalog();
 		char		*getCurrentSchema();
 		char		*getCurrentUser();
+		const char	*mapIsolationLevel(
+						const char *isolevel,
+						sqlrserverisolationlevelformat_t
+								fromformat,
+						sqlrserverisolationlevelformat_t
+								toformat);
 		bool		setIsolationLevel(const char *isolevel);
 		const char	*getDbHostNameQuery();
 		const char	*getDbIpAddressQuery();
@@ -3340,9 +3346,160 @@ bool odbcconnection::isLiveConnection(SQLCHAR *state) {
 		bytestring::compare("08003",state,5);
 }
 
+const char *odbcconnection::mapIsolationLevel(
+				const char *isolevel,
+				sqlrserverisolationlevelformat_t fromformat,
+				sqlrserverisolationlevelformat_t toformat) {
+
+	if (fromformat==toformat) {
+		return isolevel;
+	}
+
+	// ODBC has 4 canonical isolation levels:
+	// * SQL_TXN_READ_UNCOMMITTED
+	// * SQL_TXN_READ_COMMITTED
+	// * SQL_TXN_REPEATABLE_READ
+	// * SQL_TXN_SERIALIZABLE
+
+	// Translate "isolevel" to one of those...
+	SQLUINTEGER	level=0;
+	if (fromformat==SQLRSERVERISOLATIONLEVELFORMAT_JDBC) {
+		if (!charstring::compare(isolevel,
+					"TRANSACTION_READ_UNCOMMITTED")) {
+			level=SQL_TXN_READ_UNCOMMITTED;
+		} else if (!charstring::compare(isolevel,
+					"TRANSACTION_READ_COMMITTED")) {
+			level=SQL_TXN_READ_COMMITTED;
+		} else if (!charstring::compare(isolevel,
+					"TRANSACTION_REPEATABLE_READ")) {
+			level=SQL_TXN_REPEATABLE_READ;
+		} else if (!charstring::compare(isolevel,
+					"TRANSACTION_SERIALIZABLE") ||
+				!charstring::compare(isolevel,
+					"TRANSACTION_SNAPSHOT")) {
+			// fold FreeTDS (MSSQL) SERIALIZABLE into
+			// TRANSACTION_SNAPSHOT for now
+			level=SQL_TXN_SERIALIZABLE;
+		}
+	} else {
+		if (!charstring::compare(isolevel,
+					"SQL_TXN_READ_UNCOMMITTED") ||
+			!charstring::compareIgnoringCase(isolevel,
+					"READ UNCOMMITTED") ||
+			!charstring::compareIgnoringCase(isolevel,
+					"READ-UNCOMMITTED") ||
+			!charstring::compareIgnoringCase(isolevel,
+					"dirty read") ||
+			!charstring::compareIgnoringCase(isolevel,"UR") ||
+			!charstring::compare(isolevel,"0")) {
+			level=SQL_TXN_READ_UNCOMMITTED;
+		} else if (!charstring::compare(isolevel,
+					"SQL_TXN_READ_COMMITTED") ||
+			!charstring::compareIgnoringCase(isolevel,
+					"READ COMMITTED") ||
+			!charstring::compareIgnoringCase(isolevel,
+					"READ-COMMITTED") ||
+			!charstring::compareIgnoringCase(isolevel,
+				"read committed no record version") ||
+			!charstring::compareIgnoringCase(isolevel,
+					"read consistency") ||
+			!charstring::compareIgnoringCase(isolevel,
+					"committed read") ||
+			!charstring::compareIgnoringCase(isolevel,"CS") ||
+			!charstring::compare(isolevel,"1")) {
+			level=SQL_TXN_READ_COMMITTED;
+		} else if (!charstring::compare(isolevel,
+					"SQL_TXN_REPEATABLE_READ") ||
+			!charstring::compareIgnoringCase(isolevel,
+					"REPEATABLE READ") ||
+			!charstring::compareIgnoringCase(isolevel,
+					"REPEATABLE-READ") ||
+			!charstring::compareIgnoringCase(isolevel,
+					"cursor stability") ||
+			!charstring::compareIgnoringCase(isolevel,
+					"snapshot") ||
+			!charstring::compareIgnoringCase(isolevel,"RS") ||
+			!charstring::compare(isolevel,"2")) {
+			level=SQL_TXN_REPEATABLE_READ;
+		} else if (!charstring::compare(isolevel,
+					"SQL_TXN_SERIALIZABLE") ||
+			!charstring::compareIgnoringCase(isolevel,
+					"SERIALIZABLE") ||
+			!charstring::compareIgnoringCase(isolevel,
+					"snapshot table stability") ||
+			!charstring::compareIgnoringCase(isolevel,"RR") ||
+			!charstring::compare(isolevel,"3")) {
+			level=SQL_TXN_SERIALIZABLE;
+		}
+	}
+
+	// bail if we couldn't translate
+	if (!level) {
+		return isolevel;
+	}
+
+	// now translate "level" back to a string
+	if (toformat==SQLRSERVERISOLATIONLEVELFORMAT_JDBC) {
+		switch (level) {
+			case SQL_TXN_READ_UNCOMMITTED:
+				return "TRANSACTION_READ_UNCOMMITTED";
+			case SQL_TXN_READ_COMMITTED:
+				return "TRANSACTION_READ_COMMITTED";
+			case SQL_TXN_REPEATABLE_READ:
+				return "TRANSACTION_REPEATABLE_READ";
+			case SQL_TXN_SERIALIZABLE:
+				return "TRANSACTION_SERIALIZABLE";
+		}
+	} else {
+		switch (level) {
+			case SQL_TXN_READ_UNCOMMITTED:
+				return "SQL_TXN_READ_UNCOMMITTED";
+			case SQL_TXN_READ_COMMITTED:
+				return "SQL_TXN_READ_COMMITTED";
+			case SQL_TXN_REPEATABLE_READ:
+				return "SQL_TXN_REPEATABLE_READ";
+			case SQL_TXN_SERIALIZABLE:
+				return "SQL_TXN_SERIALIZABLE";
+		}
+	}
+
+	// bail if we somehow couldn't translate "level"
+	return isolevel;
+}
+
 bool odbcconnection::setIsolationLevel(const char *isolevel) {
-	// FIXME: do nothing for now.  see task #422
-	return true;
+
+	if (charstring::isNullOrEmpty(isolevel)) {
+		return false;
+	}
+
+	// normalize whatever we got into the canonical SQL_TXN_* form
+	const char	*odbciso=mapIsolationLevel(isolevel,
+					SQLRSERVERISOLATIONLEVELFORMAT_NATIVE,
+					SQLRSERVERISOLATIONLEVELFORMAT_ODBC);
+
+	// decode it into the integer macro that the ODBC API wants
+	SQLUINTEGER	level;
+	if (!charstring::compare(odbciso,"SQL_TXN_READ_UNCOMMITTED")) {
+		level=SQL_TXN_READ_UNCOMMITTED;
+	} else if (!charstring::compare(odbciso,"SQL_TXN_READ_COMMITTED")) {
+		level=SQL_TXN_READ_COMMITTED;
+	} else if (!charstring::compare(odbciso,"SQL_TXN_REPEATABLE_READ")) {
+		level=SQL_TXN_REPEATABLE_READ;
+	} else if (!charstring::compare(odbciso,"SQL_TXN_SERIALIZABLE")) {
+		level=SQL_TXN_SERIALIZABLE;
+	} else {
+		// unrecognized — couldn't map it to anything ODBC understands
+		return false;
+	}
+
+	#if (ODBCVER >= 0x0300)
+	erg=SQLSetConnectAttr(dbc,SQL_ATTR_TXN_ISOLATION,
+				(SQLPOINTER)(uintptr_t)level,0);
+	#else
+	erg=SQLSetConnectOption(dbc,SQL_TXN_ISOLATION,level);
+	#endif
+	return (erg==SQL_SUCCESS || erg==SQL_SUCCESS_WITH_INFO);
 }
 
 const char *odbcconnection::getDbHostNameQuery() {
