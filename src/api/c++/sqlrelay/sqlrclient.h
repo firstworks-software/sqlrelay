@@ -434,9 +434,70 @@ class SQLRCLIENT_DLLSPEC sqlrconnection : public object {
 		 *  or NULL if an error occurred. */
 		const char	*getDefaultIsolationLevel();
 
-		/** Sets the isolation level to "isolationlevel", the
-		 *  database-secific isolation level.  Returns true if setting
-		 *  the isolation level succeeded, false if it failed. */
+		/** Sets the transaction isolation level to "isolationlevel".
+		 *  The string is the database-specific (native) name and is
+		 *  matched case-insensitively.
+		 *
+		 *  Valid isolation levels include:
+		 *
+		 *  For PostgreSQL:
+		 *  * READ UNCOMMITTED
+		 *  * READ COMMITTED (default)
+		 *  * REPEATABLE READ
+		 *  * SERIALIZABLE
+		 *
+		 *  For MySQL/MariaDB:
+		 *  * READ-UNCOMMITTED
+		 *  * READ-COMMITTED
+		 *  * REPEATABLE-READ (default)
+		 *  * SERIALIZABLE
+		 *
+		 *  For Oracle:
+		 *  * READ COMMITTED (default)
+		 *  * SERIALIZABLE
+		 *
+		 *  For DB2:
+		 *  * UR  (uncommitted read)
+		 *  * CS  (cursor stability, default)
+		 *  * RS  (read stability)
+		 *  * RR  (repeatable read)
+		 *
+		 *  For MS SQL Server (via FreeTDS):
+		 *  * READ UNCOMMITTED
+		 *  * READ COMMITTED (default)
+		 *  * REPEATABLE READ
+		 *  * SERIALIZABLE
+		 *  * SNAPSHOT
+		 *
+		 *  For SAP ASE (Sybase):
+		 *  * 0  (read uncommitted)
+		 *  * 1  (read committed, default)
+		 *  * 2  (repeatable read)
+		 *  * 3  (serializable)
+		 *
+		 *  For Informix:
+		 *  * dirty read
+		 *  * committed read (default)
+		 *  * cursor stability
+		 *  * repeatable read
+		 *
+		 *  For Firebird:
+		 *  * read committed (default)
+		 *  * read committed no record version
+		 *  * read consistency
+		 *  * snapshot
+		 *  * snapshot table stability
+		 *
+		 *  For SQLite:
+		 *  * 0  (serializable, default)
+		 *  * 1  (read uncommitted)
+		 *
+		 *  For other databases (generic ODBC, etc.), the string is
+		 *  passed through to the backend as the argument to
+		 *  "set transaction isolation level".
+		 *
+		 *  Returns true if setting the isolation level succeeded,
+		 *  false if it failed. */
 		bool	setIsolationLevel(const char *isolationlevel);
 
 		/** Returns the database-specific isolation level, "unknown"
