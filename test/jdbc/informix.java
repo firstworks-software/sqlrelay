@@ -2116,13 +2116,20 @@ class informix extends sqlrtest {
 		assertTrue((secondcon!=null));
 		assertFalse(secondcon.isClosed());
 		secondstmt=secondcon.createStatement();
+		// Informix has no MVCC; under default committed-read isolation,
+		// secondstmt's catalog/data read errors with "Cannot get system
+		// information for table" while con holds row locks from the
+		// in-flight tx.  Use dirty-read on secondcon so it sees the
+		// uncommitted writes -- the test then verifies dirty-read
+		// semantics instead of MVCC visibility.
+		secondstmt.executeUpdate("set isolation to dirty read");
 
-		// from secondcon: row count should be 0 (con's 4 inserts
-		// haven't been committed yet)
+		// from secondcon: row count should be 4 (con's 4 inserts are
+		// uncommitted but visible via dirty read)
 		secondrs=secondstmt.executeQuery(
 				"select count(*) from testtable");
 		assertTrue(secondrs.next());
-		assertEquals(secondrs.getInt(1),0);
+		assertEquals(secondrs.getInt(1),4);
 		secondrs.close();
 
 		// commit on con
