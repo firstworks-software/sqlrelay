@@ -1148,81 +1148,273 @@
 		sqlrcur_closeResultSet($secondcur);
 	}
 	sqlrcur_setResultSetBufferSize($cur,0);
+	assertTrue(sqlrcur_sendQuery($cur,"drop table testtable"));
 	echo("\n");
 
 
-	# commit and rollback
-	echo("COMMIT AND ROLLBACK: \n");
+	# reset transaction state
+	echo("RESET TRANSACTION STATE: \n");
+	assertTrue(sqlrcon_commit($con));
+	assertEqStr(sqlrcon_getTransactionModel($con),"implicit");
+	assertFalse(sqlrcon_getAutoCommit($con));
+	echo("\n");
+
+
+	# transaction behavior - implicit
+	# Informix has no MVCC option -- the isolation level is either dirty
+	# reads (where the second connection sees uncommitted rows) or
+	# committed read (where it blocks or errors on locked rows) -- so
+	# the visibility assertions below may need to be revisited
+	echo("TRANSACTION BEHAVIOR - implicit: \n");
+	assertTrue(sqlrcon_setTransactionModel($con,"implicit"));
+	assertEqStr(sqlrcon_getTransactionModel($con),"implicit");
+	assertTrue(sqlrcur_sendQuery($cur,"create table testtable (col1 integer)"));
+	# informix DDL is transactional in logged mode; commit so the table
+	# is visible to the second connection (commit implicitly starts a
+	# new tx)
+	assertTrue(sqlrcon_commit($con));
 	$secondcon=sqlrcon_alloc("sqlrelay",9000,"/tmp/test.socket",
 						"testuser","testpassword",0,1);
 	$secondcur=sqlrcur_alloc($secondcon);
-	# Informix has no MVCC option.  You can either set the isolation level
-	# to dirty reads where it'll just see the rows, or set it to committed
-	# read where it will block or throw an error when the rows are locked.
-	# So, bypass this test with informix.
-	#assertTrue(sqlrcur_sendQuery(
-	#		$secondcur,"select count(*) from testtable"));
-	#assertEqStr(sqlrcur_getField($secondcur,0,0),"0");
+	# Informix has no MVCC; under default committed-read isolation,
+	# secondcur's catalog/data read errors with "Cannot get system
+	# information for table" while cur holds row locks from the
+	# in-flight tx.  Use dirty-read on secondcur so it sees the
+	# uncommitted writes — the test then verifies dirty-read
+	# semantics instead of MVCC visibility.
+	assertTrue(sqlrcur_sendQuery($secondcur,"set isolation to dirty read"));
+	# session is in a transaction; insert is visible via dirty read
+	assertTrue(sqlrcon_getInTransaction($con));
+	assertFalse(sqlrcon_getAutoCommit($con));
+	assertTrue(sqlrcur_sendQuery($cur,"insert into testtable values (1)"));
+	assertTrue(sqlrcur_sendQuery($secondcur,"select count(*) from testtable"));
+	assertEqStr(sqlrcur_getField($secondcur,0,0),"1");
+	# commit makes it visible, and implicitly starts a new transaction
 	assertTrue(sqlrcon_commit($con));
-	assertTrue(sqlrcur_sendQuery(
-			$secondcur,"select count(*) from testtable"));
-	assertEqStr(sqlrcur_getField($secondcur,0,0),"8");
-	assertTrue(sqlrcur_sendQuery($cur,
-		"insert into ".
-		"	testtable ".
-		"values (".
-		"	't', ".
-		"	10, ".
-		"	10, ".
-		"	10, ".
-		"	10, ".
-		"	10.1, ".
-		"	10.1, ".
-		"	10.1, ".
-		"	10.1, ".
-		"	'testchar10', ".
-		"	'testnchar10', ".
-		"	'testvarchar10', ".
-		"	'testnvarchar10', ".
-		"	'testlvarchar10', ".
-		"	'01/01/2010', ".
-		"	'2010-01-01 10:00:00', ".
-		"	'testtext10', ".
-		"	null)"));
+	assertTrue(sqlrcon_getInTransaction($con));
+	assertTrue(sqlrcur_sendQuery($secondcur,"select count(*) from testtable"));
+	assertEqStr(sqlrcur_getField($secondcur,0,0),"1");
+	# rollback discards, and implicitly starts a new transaction
+	assertTrue(sqlrcur_sendQuery($cur,"insert into testtable values (2)"));
 	assertTrue(sqlrcon_rollback($con));
-	assertTrue(sqlrcur_sendQuery(
-			$secondcur,"select count(*) from testtable"));
-	assertEqStr(sqlrcur_getField($secondcur,0,0),"8");
+	assertTrue(sqlrcon_getInTransaction($con));
+	assertTrue(sqlrcur_sendQuery($secondcur,"select count(*) from testtable"));
+	assertEqStr(sqlrcur_getField($secondcur,0,0),"1");
+	# autoCommitOn takes effect immediately
 	assertTrue(sqlrcon_autoCommitOn($con));
-	assertTrue(sqlrcur_sendQuery($cur,
-		"insert into ".
-		"	testtable ".
-		"values (".
-		"	't', ".
-		"	10, ".
-		"	10, ".
-		"	10, ".
-		"	10, ".
-		"	10.1, ".
-		"	10.1, ".
-		"	10.1, ".
-		"	10.1, ".
-		"	'testchar10', ".
-		"	'testnchar10', ".
-		"	'testvarchar10', ".
-		"	'testnvarchar10', ".
-		"	'testlvarchar10', ".
-		"	'01/01/2010', ".
-		"	'2010-01-01 10:00:00', ".
-		"	'testtext10', ".
-		"	null)"));
-	assertTrue(sqlrcur_sendQuery(
-			$secondcur,"select count(*) from testtable"));
-	assertEqStr(sqlrcur_getField($secondcur,0,0),"9");
-	sqlrcon_endSession($secondcon);
+	assertTrue(sqlrcon_getAutoCommit($con));
+	assertFalse(sqlrcon_getInTransaction($con));
+	assertTrue(sqlrcur_sendQuery($cur,"insert into testtable values (3)"));
+	assertTrue(sqlrcur_sendQuery($secondcur,"select count(*) from testtable"));
+	assertEqStr(sqlrcur_getField($secondcur,0,0),"2");
+	# autoCommitOff takes effect immediately
 	assertTrue(sqlrcon_autoCommitOff($con));
+	assertFalse(sqlrcon_getAutoCommit($con));
+	assertTrue(sqlrcon_getInTransaction($con));
+	sqlrcur_closeResultSet($secondcur);
 	assertTrue(sqlrcur_sendQuery($cur,"drop table testtable"));
+	echo("\n");
+
+
+	# transaction behavior - explicit
+	echo("TRANSACTION BEHAVIOR - explicit: \n");
+	assertTrue(sqlrcon_setTransactionModel($con,"explicit"));
+	assertEqStr(sqlrcon_getTransactionModel($con),"explicit");
+	assertTrue(sqlrcur_sendQuery($cur,"create table testtable (col1 integer)"));
+	# see note above re: informix dirty-read workaround
+	assertTrue(sqlrcur_sendQuery($secondcur,"set isolation to dirty read"));
+	# begin starts a new transaction; insert is visible via dirty read
+	assertTrue(sqlrcon_begin($con));
+	assertTrue(sqlrcon_getInTransaction($con));
+	assertTrue(sqlrcur_sendQuery($cur,"insert into testtable values (1)"));
+	assertTrue(sqlrcur_sendQuery($secondcur,"select count(*) from testtable"));
+	assertEqStr(sqlrcur_getField($secondcur,0,0),"1");
+	# commit makes it visible; no new transaction is started
 	assertTrue(sqlrcon_commit($con));
+	assertFalse(sqlrcon_getInTransaction($con));
+	assertTrue(sqlrcur_sendQuery($secondcur,"select count(*) from testtable"));
+	assertEqStr(sqlrcur_getField($secondcur,0,0),"1");
+	# begin, insert, rollback discards; no new transaction is started
+	assertTrue(sqlrcon_begin($con));
+	assertTrue(sqlrcur_sendQuery($cur,"insert into testtable values (2)"));
+	assertTrue(sqlrcon_rollback($con));
+	assertFalse(sqlrcon_getInTransaction($con));
+	assertTrue(sqlrcur_sendQuery($secondcur,"select count(*) from testtable"));
+	assertEqStr(sqlrcur_getField($secondcur,0,0),"1");
+	# autoCommitOn takes effect immediately
+	assertTrue(sqlrcon_autoCommitOn($con));
+	assertTrue(sqlrcon_getAutoCommit($con));
+	assertTrue(sqlrcur_sendQuery($cur,"insert into testtable values (3)"));
+	assertTrue(sqlrcur_sendQuery($secondcur,"select count(*) from testtable"));
+	assertEqStr(sqlrcur_getField($secondcur,0,0),"2");
+	# autoCommitOff takes effect immediately
+	assertTrue(sqlrcon_autoCommitOff($con));
+	assertFalse(sqlrcon_getAutoCommit($con));
+	sqlrcur_closeResultSet($secondcur);
+	assertTrue(sqlrcur_sendQuery($cur,"drop table testtable"));
+	echo("\n");
+
+
+	# transaction behavior - explicit-deferred
+	echo("TRANSACTION BEHAVIOR - explicit-deferred: \n");
+	assertTrue(sqlrcon_setTransactionModel($con,"explicit-deferred"));
+	assertEqStr(sqlrcon_getTransactionModel($con),"explicit-deferred");
+	# switch to autocommit-on so the begin/commit cycles below
+	# bracket explicit transactions (autocommit-off semantics are
+	# exercised at the end of this block)
+	assertTrue(sqlrcon_autoCommitOn($con));
+	assertTrue(sqlrcon_getAutoCommit($con));
+	assertTrue(sqlrcur_sendQuery($cur,"create table testtable (col1 integer)"));
+	# see note in - implicit section re: informix dirty-read workaround
+	assertTrue(sqlrcur_sendQuery($secondcur,"set isolation to dirty read"));
+	# begin starts a transaction; commit makes it visible
+	assertTrue(sqlrcon_begin($con));
+	assertTrue(sqlrcon_getInTransaction($con));
+	assertTrue(sqlrcur_sendQuery($cur,"insert into testtable values (1)"));
+	assertTrue(sqlrcon_commit($con));
+	assertFalse(sqlrcon_getInTransaction($con));
+	assertTrue(sqlrcur_sendQuery($secondcur,"select count(*) from testtable"));
+	assertEqStr(sqlrcur_getField($secondcur,0,0),"1");
+	# begin, insert, rollback discards
+	assertTrue(sqlrcon_begin($con));
+	assertTrue(sqlrcur_sendQuery($cur,"insert into testtable values (2)"));
+	assertTrue(sqlrcon_rollback($con));
+	assertTrue(sqlrcur_sendQuery($secondcur,"select count(*) from testtable"));
+	assertEqStr(sqlrcur_getField($secondcur,0,0),"1");
+	# during a transaction started by begin(), autoCommitOn is a
+	# no-op: the autocommit setting takes effect after the user
+	# explicitly commits/rollbacks the tx (mysql-native semantic).
+	# dirty-read on secondcur sees the in-flight insert (count=2)
+	assertTrue(sqlrcon_begin($con));
+	assertTrue(sqlrcur_sendQuery($cur,"insert into testtable values (3)"));
+	assertTrue(sqlrcon_autoCommitOn($con));
+	assertFalse(sqlrcon_getAutoCommit($con));
+	assertTrue(sqlrcon_getInTransaction($con));
+	assertTrue(sqlrcur_sendQuery($secondcur,"select count(*) from testtable"));
+	assertEqStr(sqlrcur_getField($secondcur,0,0),"2");
+	# explicit commit ends the tx; autocommit-on now takes effect
+	assertTrue(sqlrcon_commit($con));
+	assertTrue(sqlrcon_getAutoCommit($con));
+	assertFalse(sqlrcon_getInTransaction($con));
+	assertTrue(sqlrcur_sendQuery($secondcur,"select count(*) from testtable"));
+	assertEqStr(sqlrcur_getField($secondcur,0,0),"2");
+	# autocommit is on; subsequent inserts are visible immediately
+	assertTrue(sqlrcur_sendQuery($cur,"insert into testtable values (4)"));
+	assertTrue(sqlrcur_sendQuery($secondcur,"select count(*) from testtable"));
+	assertEqStr(sqlrcur_getField($secondcur,0,0),"3");
+	# autoCommitOff takes effect immediately when not in a transaction
+	assertTrue(sqlrcon_autoCommitOff($con));
+	assertFalse(sqlrcon_getAutoCommit($con));
+	# autocommit-off persists across commit/rollback; each commit or
+	# rollback ends the current implicit tx and a new one starts for
+	# the next statement
+	assertTrue(sqlrcur_sendQuery($cur,"insert into testtable values (5)"));
+	assertTrue(sqlrcon_commit($con));
+	assertFalse(sqlrcon_getAutoCommit($con));
+	assertTrue(sqlrcon_getInTransaction($con));
+	assertTrue(sqlrcur_sendQuery($secondcur,"select count(*) from testtable"));
+	assertEqStr(sqlrcur_getField($secondcur,0,0),"4");
+	assertTrue(sqlrcur_sendQuery($cur,"insert into testtable values (6)"));
+	assertTrue(sqlrcon_rollback($con));
+	assertFalse(sqlrcon_getAutoCommit($con));
+	assertTrue(sqlrcon_getInTransaction($con));
+	assertTrue(sqlrcur_sendQuery($secondcur,"select count(*) from testtable"));
+	assertEqStr(sqlrcur_getField($secondcur,0,0),"4");
+	# autoCommitOff during a transaction changes the variable
+	# immediately but the in-flight tx continues; only after the
+	# next explicit commit/rollback does the new autocommit-off
+	# setting drop us into a new implicit tx (mysql-asymmetric
+	# semantic)
+	# dirty-read on secondcur sees the in-flight insert (count=5)
+	assertTrue(sqlrcon_autoCommitOn($con));
+	assertTrue(sqlrcon_getAutoCommit($con));
+	assertTrue(sqlrcon_begin($con));
+	assertTrue(sqlrcur_sendQuery($cur,"insert into testtable values (7)"));
+	assertTrue(sqlrcon_autoCommitOff($con));
+	assertFalse(sqlrcon_getAutoCommit($con));
+	assertTrue(sqlrcon_getInTransaction($con));
+	assertTrue(sqlrcur_sendQuery($secondcur,"select count(*) from testtable"));
+	assertEqStr(sqlrcur_getField($secondcur,0,0),"5");
+	assertTrue(sqlrcon_commit($con));
+	assertFalse(sqlrcon_getAutoCommit($con));
+	assertTrue(sqlrcon_getInTransaction($con));
+	assertTrue(sqlrcur_sendQuery($secondcur,"select count(*) from testtable"));
+	assertEqStr(sqlrcur_getField($secondcur,0,0),"5");
+	sqlrcur_closeResultSet($secondcur);
+	assertTrue(sqlrcur_sendQuery($cur,"drop table testtable"));
+	echo("\n");
+
+
+	# transaction behavior - explicit-error
+	echo("TRANSACTION BEHAVIOR - explicit-error: \n");
+	assertTrue(sqlrcon_setTransactionModel($con,"explicit-error"));
+	assertEqStr(sqlrcon_getTransactionModel($con),"explicit-error");
+	assertTrue(sqlrcur_sendQuery($cur,"create table testtable (col1 integer)"));
+	# begin, insert, commit
+	assertTrue(sqlrcon_begin($con));
+	assertTrue(sqlrcon_getInTransaction($con));
+	assertTrue(sqlrcur_sendQuery($cur,"insert into testtable values (1)"));
+	assertTrue(sqlrcon_commit($con));
+	assertFalse(sqlrcon_getInTransaction($con));
+	assertTrue(sqlrcur_sendQuery($secondcur,"select count(*) from testtable"));
+	assertEqStr(sqlrcur_getField($secondcur,0,0),"1");
+	# begin, insert, rollback
+	assertTrue(sqlrcon_begin($con));
+	assertTrue(sqlrcur_sendQuery($cur,"insert into testtable values (2)"));
+	assertTrue(sqlrcon_rollback($con));
+	assertTrue(sqlrcur_sendQuery($secondcur,"select count(*) from testtable"));
+	assertEqStr(sqlrcur_getField($secondcur,0,0),"1");
+	# while in a transaction, autoCommitOn/Off throw an error
+	assertTrue(sqlrcon_begin($con));
+	assertFalse(sqlrcon_autoCommitOn($con));
+	assertFalse(sqlrcon_autoCommitOff($con));
+	assertTrue(sqlrcon_commit($con));
+	# outside of a transaction, autoCommitOn takes effect immediately
+	assertTrue(sqlrcon_autoCommitOn($con));
+	assertTrue(sqlrcon_getAutoCommit($con));
+	assertTrue(sqlrcur_sendQuery($cur,"insert into testtable values (3)"));
+	assertTrue(sqlrcur_sendQuery($secondcur,"select count(*) from testtable"));
+	assertEqStr(sqlrcur_getField($secondcur,0,0),"2");
+	# autoCommitOff takes effect immediately
+	assertTrue(sqlrcon_autoCommitOff($con));
+	assertFalse(sqlrcon_getAutoCommit($con));
+	sqlrcur_closeResultSet($secondcur);
+	assertTrue(sqlrcur_sendQuery($cur,"drop table testtable"));
+	echo("\n");
+
+
+	# transaction behavior - none
+	echo("TRANSACTION BEHAVIOR - none: \n");
+	assertTrue(sqlrcon_setTransactionModel($con,"none"));
+	assertEqStr(sqlrcon_getTransactionModel($con),"none");
+	assertTrue(sqlrcur_sendQuery($cur,"create table testtable (col1 integer)"));
+	# no transactions; everything is visible immediately
+	assertTrue(sqlrcon_getAutoCommit($con));
+	assertFalse(sqlrcon_getInTransaction($con));
+	assertTrue(sqlrcur_sendQuery($cur,"insert into testtable values (1)"));
+	assertTrue(sqlrcur_sendQuery($secondcur,"select count(*) from testtable"));
+	assertEqStr(sqlrcur_getField($secondcur,0,0),"1");
+	# commit and rollback are no-ops
+	assertTrue(sqlrcon_commit($con));
+	assertTrue(sqlrcur_sendQuery($cur,"insert into testtable values (2)"));
+	assertTrue(sqlrcon_rollback($con));
+	assertTrue(sqlrcur_sendQuery($secondcur,"select count(*) from testtable"));
+	assertEqStr(sqlrcur_getField($secondcur,0,0),"2");
+	# autocommit is always on; autoCommitOff is an error
+	assertFalse(sqlrcon_autoCommitOff($con));
+	assertTrue(sqlrcon_getAutoCommit($con));
+	assertTrue(sqlrcon_autoCommitOn($con));
+	assertTrue(sqlrcon_getAutoCommit($con));
+	sqlrcur_closeResultSet($secondcur);
+	assertTrue(sqlrcur_sendQuery($cur,"drop table testtable"));
+	echo("\n");
+
+
+	# reset transaction behavior
+	echo("RESET TRANSACTION BEHAVIOR: \n");
+	assertTrue(sqlrcon_setTransactionModel($con,sqlrcon_getDefaultTransactionModel($con)));
+	assertEqStr(sqlrcon_getTransactionModel($con),"implicit");
+	assertFalse(sqlrcon_getAutoCommit($con));
 	echo("\n");
 
 

@@ -1217,13 +1217,28 @@ main() ->
     %% Inner loop with secondcur is omitted.
     io:format("~n"),
 
-    %% COMMIT AND ROLLBACK
-    %% SKIPPED: this section requires a second concurrent connection
+    %% RESET TRANSACTION STATE
+    io:format("RESET TRANSACTION STATE: ~n"),
+    assertTrue(sqlrelay:commit()),
+    assertEqualsString(sqlrelay:getTransactionModel(), "explicit-deferred"),
+    assertTrue(sqlrelay:getAutoCommit()),
+    io:format("~n"),
+
+    %% TRANSACTION BEHAVIOR - implicit/explicit/explicit-deferred/explicit-error/none
+    %% SKIPPED: these blocks require a second concurrent connection
     %% (secondcon) and cursor (secondcur) to verify cross-connection
     %% isolation. The Erlang binding only supports one connection per
     %% process, so a second connection cannot be instantiated here.
-    io:format("COMMIT AND ROLLBACK: ~n"),
+    io:format("TRANSACTION BEHAVIOR - implicit/explicit/explicit-deferred/explicit-error/none: ~n"),
     io:format("(skipped - requires second concurrent connection)~n"),
+    io:format("~n"),
+
+    %% RESET TRANSACTION BEHAVIOR
+    io:format("RESET TRANSACTION BEHAVIOR: ~n"),
+    {ok, DefaultModel} = sqlrelay:getDefaultTransactionModel(),
+    assertTrue(sqlrelay:setTransactionModel(DefaultModel)),
+    assertEqualsString(sqlrelay:getTransactionModel(), "explicit-deferred"),
+    assertTrue(sqlrelay:getAutoCommit()),
     io:format("~n"),
 
     %% INDIVIDUAL SUBSTITUTIONS

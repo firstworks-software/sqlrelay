@@ -758,20 +758,35 @@ main() ->
     sqlrelay:setResultSetBufferSize(0),
     io:format("~n"),
 
-    %% COMMIT AND ROLLBACK
-    %% SKIPPED: this section requires a second concurrent connection
-    %% (secondcon) to verify cross-connection isolation. The Erlang
-    %% binding only supports one connection per process (see
-    %% sqlrelay.erl: alloc/connectionFree use a single connection slot
-    %% in the process dictionary), so a second connection cannot be
-    %% instantiated here.
-    io:format("COMMIT AND ROLLBACK: ~n"),
+    %% RESET TRANSACTION STATE
+    io:format("RESET TRANSACTION STATE: ~n"),
+    assertTrue(sqlrelay:commit()),
+    assertEqualsString(sqlrelay:getTransactionModel(), "implicit"),
+    assertFalse(sqlrelay:getAutoCommit()),
+    io:format("~n"),
+
+    %% TRANSACTION BEHAVIOR - implicit/explicit/explicit-deferred/explicit-error/none
+    %% SKIPPED: these blocks require a second concurrent connection
+    %% (secondcon) and cursor (secondcur) to verify cross-connection
+    %% isolation. The Erlang binding only supports one connection per
+    %% process (see sqlrelay.erl: alloc/connectionFree use a single
+    %% connection slot in the process dictionary), so a second
+    %% connection cannot be instantiated here.
+    io:format("TRANSACTION BEHAVIOR - implicit/explicit/explicit-deferred/explicit-error/none: ~n"),
     io:format("(skipped - requires second concurrent connection)~n"),
-    %% We still need to drop the test table and restore autoCommitOff
-    %% so that the rest of the test works.
+    %% Drop the leftover testtable and restore autoCommitOff so
+    %% subsequent sections start clean.
     assertTrue(sqlrelay:commit()),
     assertTrue(sqlrelay:autoCommitOff()),
     assertTrue(sqlrelay:sendQuery("drop table testtable")),
+    io:format("~n"),
+
+    %% RESET TRANSACTION BEHAVIOR
+    io:format("RESET TRANSACTION BEHAVIOR: ~n"),
+    {ok, DefaultModel} = sqlrelay:getDefaultTransactionModel(),
+    assertTrue(sqlrelay:setTransactionModel(DefaultModel)),
+    assertEqualsString(sqlrelay:getTransactionModel(), "implicit"),
+    assertFalse(sqlrelay:getAutoCommit()),
     io:format("~n"),
 
     %% INDIVIDUAL SUBSTITUTIONS

@@ -940,66 +940,272 @@ while cur.getRow(i)
 	i=i+1
 end
 cur.setResultSetBufferSize(0)
+assertTrue(con.commit())
+assertTrue(cur.sendQuery("drop table testtable"))
 print "\n"
 
 
-# commit and rollback
-print "COMMIT AND ROLLBACK: \n"
+# reset transaction state
+print "RESET TRANSACTION STATE: \n"
+assertTrue(con.commit())
+assertEqual(con.getTransactionModel(),"explicit-error")
+assertTrue(con.getAutoCommit())
+print "\n"
+
+
+# transaction behavior - implicit
+print "TRANSACTION BEHAVIOR - implicit: \n"
+# sap ase rejects DDL inside a chained-mode (multi-statement) tx
+# unless `sp_dboption ... 'ddl in tran', true` is set on the db;
+# create the table while still in unchained mode, then switch.
+# `lock datarows` is needed so secondcur's count(*) scan doesn't
+# block on the writer's page lock from the in-flight insert
+assertTrue(cur.sendQuery(
+	"create table testtable (col1 integer) lock datarows"))
+assertTrue(con.setTransactionModel("implicit"))
+assertEqual(con.getTransactionModel(),"implicit")
 secondcon=SQLRConnection.new("sqlrelay",9000,"/tmp/test.socket",
-						"testuser","testpassword",0,1)
+					"testuser","testpassword",0,1)
 secondcur=SQLRCursor.new(secondcon)
+setSecondConnection(secondcon)
+setSecondCursor(secondcur)
+# session is in a transaction; insert is not visible until commit
+assertTrue(con.getInTransaction())
+assertFalse(con.getAutoCommit())
+assertTrue(cur.sendQuery("insert into testtable values (1)"))
 assertTrue(secondcur.sendQuery("select count(*) from testtable"))
 assertEqual(secondcur.getField(0,0),"0")
+# commit makes it visible, and implicitly starts a new transaction
 assertTrue(con.commit())
+assertTrue(con.getInTransaction())
 assertTrue(secondcur.sendQuery("select count(*) from testtable"))
-assertEqual(secondcur.getField(0,0),"8")
+assertEqual(secondcur.getField(0,0),"1")
+# rollback discards, and implicitly starts a new transaction
+assertTrue(cur.sendQuery("insert into testtable values (2)"))
+assertTrue(con.rollback())
+assertTrue(con.getInTransaction())
+assertTrue(secondcur.sendQuery("select count(*) from testtable"))
+assertEqual(secondcur.getField(0,0),"1")
+# autoCommitOn takes effect immediately
+assertTrue(con.autoCommitOn())
+assertTrue(con.getAutoCommit())
+assertFalse(con.getInTransaction())
+assertTrue(cur.sendQuery("insert into testtable values (3)"))
+assertTrue(secondcur.sendQuery("select count(*) from testtable"))
+assertEqual(secondcur.getField(0,0),"2")
+# autoCommitOff takes effect immediately
+assertTrue(con.autoCommitOff())
+assertFalse(con.getAutoCommit())
+assertTrue(con.getInTransaction())
+secondcur.closeResultSet()
+# switch back to unchained mode so the drop isn't rejected
+assertTrue(con.setTransactionModel("explicit-error"))
+assertTrue(cur.sendQuery("drop table testtable"))
+print "\n"
+
+
+# transaction behavior - explicit
+print "TRANSACTION BEHAVIOR - explicit: \n"
+assertTrue(con.setTransactionModel("explicit"))
+assertEqual(con.getTransactionModel(),"explicit")
+assertTrue(cur.sendQuery("create table testtable (col1 integer) lock datarows"))
+# begin starts a new transaction; insert is not visible until commit
 assertTrue(con.begin())
-assertTrue(cur.sendQuery(
-	"insert into "+
-	"	testtable "+
-	"values ("+
-	"	10, "+
-	"	10, "+
-	"	10, "+
-	"	10.1, "+
-	"	10.1, "+
-	"	10.1, "+
-	"	10.1, "+
-	"	10.00, "+
-	"	10.00, "+
-	"	'01-Jan-2010 10:00:00', "+
-	"	'01-Jan-2010 10:00:00', "+
-	"	'testchar10', "+
-	"	'testvarchar10', "+
-	"	10, "+
-	"	'testtext10')"))
+assertTrue(con.getInTransaction())
+assertTrue(cur.sendQuery("insert into testtable values (1)"))
+assertTrue(secondcur.sendQuery("select count(*) from testtable"))
+assertEqual(secondcur.getField(0,0),"0")
+# commit makes it visible; no new transaction is started
+assertTrue(con.commit())
+assertFalse(con.getInTransaction())
+assertTrue(secondcur.sendQuery("select count(*) from testtable"))
+assertEqual(secondcur.getField(0,0),"1")
+# begin, insert, rollback discards; no new transaction is started
+assertTrue(con.begin())
+assertTrue(cur.sendQuery("insert into testtable values (2)"))
+assertTrue(con.rollback())
+assertFalse(con.getInTransaction())
+assertTrue(secondcur.sendQuery("select count(*) from testtable"))
+assertEqual(secondcur.getField(0,0),"1")
+# autoCommitOn takes effect immediately
+assertTrue(con.autoCommitOn())
+assertTrue(con.getAutoCommit())
+assertTrue(cur.sendQuery("insert into testtable values (3)"))
+assertTrue(secondcur.sendQuery("select count(*) from testtable"))
+assertEqual(secondcur.getField(0,0),"2")
+# autoCommitOff takes effect immediately
+assertTrue(con.autoCommitOff())
+assertFalse(con.getAutoCommit())
+secondcur.closeResultSet()
+# switch back to unchained mode so the drop isn't rejected
+assertTrue(con.setTransactionModel("explicit-error"))
+assertTrue(cur.sendQuery("drop table testtable"))
+print "\n"
+
+
+# transaction behavior - explicit-deferred
+print "TRANSACTION BEHAVIOR - explicit-deferred: \n"
+assertTrue(con.setTransactionModel("explicit-deferred"))
+assertEqual(con.getTransactionModel(),"explicit-deferred")
+# switch to autocommit-on so the begin/commit cycles below
+# bracket explicit transactions (autocommit-off semantics are
+# exercised at the end of this block)
+assertTrue(con.autoCommitOn())
+assertTrue(con.getAutoCommit())
+assertTrue(cur.sendQuery("create table testtable (col1 integer) lock datarows"))
+# begin starts a transaction; commit makes it visible
+assertTrue(con.begin())
+assertTrue(con.getInTransaction())
+assertTrue(cur.sendQuery("insert into testtable values (1)"))
+assertTrue(con.commit())
+assertFalse(con.getInTransaction())
+assertTrue(secondcur.sendQuery("select count(*) from testtable"))
+assertEqual(secondcur.getField(0,0),"1")
+# begin, insert, rollback discards
+assertTrue(con.begin())
+assertTrue(cur.sendQuery("insert into testtable values (2)"))
 assertTrue(con.rollback())
 assertTrue(secondcur.sendQuery("select count(*) from testtable"))
-assertEqual(secondcur.getField(0,0),"8")
-assertTrue(cur.sendQuery(
-	"insert into "+
-	"	testtable "+
-	"values ("+
-	"	10, "+
-	"	10, "+
-	"	10, "+
-	"	10.1, "+
-	"	10.1, "+
-	"	10.1, "+
-	"	10.1, "+
-	"	10.00, "+
-	"	10.00, "+
-	"	'01-Jan-2010 10:00:00', "+
-	"	'01-Jan-2010 10:00:00', "+
-	"	'testchar10', "+
-	"	'testvarchar10', "+
-	"	10, "+
-	"	'testtext10')"))
-assertTrue(con.commit())
+assertEqual(secondcur.getField(0,0),"1")
+# during a transaction started by begin(), autoCommitOn is a
+# no-op: the autocommit setting takes effect after the user
+# explicitly commits/rollbacks the tx (mysql-native semantic)
+assertTrue(con.begin())
+assertTrue(cur.sendQuery("insert into testtable values (3)"))
+assertTrue(con.autoCommitOn())
+assertFalse(con.getAutoCommit())
+assertTrue(con.getInTransaction())
 assertTrue(secondcur.sendQuery("select count(*) from testtable"))
-assertEqual(secondcur.getField(0,0),"9")
-secondcon.endSession()
+assertEqual(secondcur.getField(0,0),"1")
+# explicit commit ends the tx; autocommit-on now takes effect
+assertTrue(con.commit())
+assertTrue(con.getAutoCommit())
+assertFalse(con.getInTransaction())
+assertTrue(secondcur.sendQuery("select count(*) from testtable"))
+assertEqual(secondcur.getField(0,0),"2")
+# autocommit is on; subsequent inserts are visible immediately
+assertTrue(cur.sendQuery("insert into testtable values (4)"))
+assertTrue(secondcur.sendQuery("select count(*) from testtable"))
+assertEqual(secondcur.getField(0,0),"3")
+# autoCommitOff takes effect immediately when not in a transaction
+assertTrue(con.autoCommitOff())
+assertFalse(con.getAutoCommit())
+# autocommit-off persists across commit/rollback; each commit or
+# rollback ends the current implicit tx and a new one starts for
+# the next statement
+assertTrue(cur.sendQuery("insert into testtable values (5)"))
+assertTrue(con.commit())
+assertFalse(con.getAutoCommit())
+assertTrue(con.getInTransaction())
+assertTrue(secondcur.sendQuery("select count(*) from testtable"))
+assertEqual(secondcur.getField(0,0),"4")
+assertTrue(cur.sendQuery("insert into testtable values (6)"))
+assertTrue(con.rollback())
+assertFalse(con.getAutoCommit())
+assertTrue(con.getInTransaction())
+assertTrue(secondcur.sendQuery("select count(*) from testtable"))
+assertEqual(secondcur.getField(0,0),"4")
+# autoCommitOff during a transaction changes the variable
+# immediately but the in-flight tx continues; only after the
+# next explicit commit/rollback does the new autocommit-off
+# setting drop us into a new implicit tx (mysql-asymmetric
+# semantic)
+assertTrue(con.autoCommitOn())
+assertTrue(con.getAutoCommit())
+assertTrue(con.begin())
+assertTrue(cur.sendQuery("insert into testtable values (7)"))
+assertTrue(con.autoCommitOff())
+assertFalse(con.getAutoCommit())
+assertTrue(con.getInTransaction())
+assertTrue(secondcur.sendQuery("select count(*) from testtable"))
+assertEqual(secondcur.getField(0,0),"4")
+assertTrue(con.commit())
+assertFalse(con.getAutoCommit())
+assertTrue(con.getInTransaction())
+assertTrue(secondcur.sendQuery("select count(*) from testtable"))
+assertEqual(secondcur.getField(0,0),"5")
+secondcur.closeResultSet()
+# switch back to unchained mode so the drop isn't rejected
+assertTrue(con.setTransactionModel("explicit-error"))
 assertTrue(cur.sendQuery("drop table testtable"))
+print "\n"
+
+
+# transaction behavior - explicit-error
+print "TRANSACTION BEHAVIOR - explicit-error: \n"
+assertTrue(con.setTransactionModel("explicit-error"))
+assertEqual(con.getTransactionModel(),"explicit-error")
+assertTrue(cur.sendQuery("create table testtable (col1 integer) lock datarows"))
+# begin, insert, commit
+assertTrue(con.begin())
+assertTrue(con.getInTransaction())
+assertTrue(cur.sendQuery("insert into testtable values (1)"))
+assertTrue(con.commit())
+assertFalse(con.getInTransaction())
+assertTrue(secondcur.sendQuery("select count(*) from testtable"))
+assertEqual(secondcur.getField(0,0),"1")
+# begin, insert, rollback
+assertTrue(con.begin())
+assertTrue(cur.sendQuery("insert into testtable values (2)"))
+assertTrue(con.rollback())
+assertTrue(secondcur.sendQuery("select count(*) from testtable"))
+assertEqual(secondcur.getField(0,0),"1")
+# while in a transaction, autoCommitOn/Off throw an error
+assertTrue(con.begin())
+assertFalse(con.autoCommitOn())
+assertFalse(con.autoCommitOff())
+assertTrue(con.commit())
+# outside of a transaction, autoCommitOn takes effect immediately
+assertTrue(con.autoCommitOn())
+assertTrue(con.getAutoCommit())
+assertTrue(cur.sendQuery("insert into testtable values (3)"))
+assertTrue(secondcur.sendQuery("select count(*) from testtable"))
+assertEqual(secondcur.getField(0,0),"2")
+# autoCommitOff takes effect immediately
+assertTrue(con.autoCommitOff())
+assertFalse(con.getAutoCommit())
+secondcur.closeResultSet()
+# commit the open tx so the drop isn't rejected as DDL inside a
+# chained-mode transaction (in explicit-error model, autoCommitOn
+# from inside a tx errors out by design, so commit is the route
+# back to autocommit-on / unchained mode)
+assertTrue(con.commit())
+assertTrue(cur.sendQuery("drop table testtable"))
+print "\n"
+
+
+# transaction behavior - none
+print "TRANSACTION BEHAVIOR - none: \n"
+assertTrue(con.setTransactionModel("none"))
+assertEqual(con.getTransactionModel(),"none")
+assertTrue(cur.sendQuery("create table testtable (col1 integer) lock datarows"))
+# no transactions; everything is visible immediately
+assertTrue(con.getAutoCommit())
+assertFalse(con.getInTransaction())
+assertTrue(cur.sendQuery("insert into testtable values (1)"))
+assertTrue(secondcur.sendQuery("select count(*) from testtable"))
+assertEqual(secondcur.getField(0,0),"1")
+# commit and rollback are no-ops
+assertTrue(con.commit())
+assertTrue(cur.sendQuery("insert into testtable values (2)"))
+assertTrue(con.rollback())
+assertTrue(secondcur.sendQuery("select count(*) from testtable"))
+assertEqual(secondcur.getField(0,0),"2")
+# autocommit is always on; autoCommitOff is an error
+assertFalse(con.autoCommitOff())
+assertTrue(con.getAutoCommit())
+assertTrue(con.autoCommitOn())
+assertTrue(con.getAutoCommit())
+secondcur.closeResultSet()
+assertTrue(cur.sendQuery("drop table testtable"))
+print "\n"
+
+
+# reset transaction behavior
+print "RESET TRANSACTION BEHAVIOR: \n"
+assertTrue(con.setTransactionModel(con.getDefaultTransactionModel()))
+assertEqual(con.getTransactionModel(),"explicit-error")
+assertTrue(con.getAutoCommit())
 print "\n"
 
 

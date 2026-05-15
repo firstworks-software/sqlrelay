@@ -932,75 +932,256 @@ class firebird extends sqlrtest {
 		System.out.println();
 
 
-		// commit and rollback
-		System.out.println("COMMIT AND ROLLBACK: ");
+		// reset transaction state
+		System.out.println("RESET TRANSACTION STATE: ");
+		assertTrue(con.commit());
+		assertEquals(con.getTransactionModel(),"implicit");
+		assertFalse(con.getAutoCommit());
+		System.out.println();
+
+
+		// transaction behavior - implicit
+		System.out.println("TRANSACTION BEHAVIOR - implicit: ");
+		assertTrue(con.setTransactionModel("implicit"));
+		assertEquals(con.getTransactionModel(),"implicit");
+		// truncate testtable so this section starts with it empty;
+		// firebird DDL on the table here would otherwise hit cursor-state
+		// issues at the next commit, so we reuse the existing schema and
+		// just write to one column (testinteger)
+		assertTrue(cur.sendQuery("delete from testtable"));
+		// commit so the truncation is visible to the second connection
+		// (the commit implicitly starts a new tx)
+		assertTrue(con.commit());
 		SQLRConnection secondcon=new SQLRConnection("sqlrelay",
 				(short)9000,"/tmp/test.socket","testuser",
 				"testpassword",0,1);
 		SQLRCursor secondcur=new SQLRCursor(secondcon);
-		assertTrue(secondcur.sendQuery(
-			"select "+
-			"	count(*) "+
-			"from "+
-			"	testtable"));
+		// session is in a transaction; insert is not visible until commit
+		assertTrue(con.getInTransaction());
+		assertFalse(con.getAutoCommit());
+		assertTrue(cur.sendQuery("insert into testtable (testinteger) values (1)"));
+		assertTrue(secondcur.sendQuery("select count(*) from testtable"));
 		assertEquals(secondcur.getField(0,0),"0");
+		// commit makes it visible, and implicitly starts a new transaction
 		assertTrue(con.commit());
-		assertTrue(secondcur.sendQuery(
-			"select "+
-			"	count(*) "+
-			"from "+
-			"	testtable"));
-		assertEquals(secondcur.getField(0,0),"8");
-		assertTrue(cur.sendQuery(
-			"insert into "+
-			"	testtable "+
-			"values ("+
-			"	10, "+
-			"	10, "+
-			"	10.1, "+
-			"	10.1, "+
-			"	10.1, "+
-			"	10.1, "+
-			"	'01-JAN-2010', "+
-			"	'10:00:00', "+
-			"	'testchar10', "+
-			"	'testvarchar10', "+
-			"	NULL, "+
-			"	NULL)"));
+		assertTrue(con.getInTransaction());
+		assertTrue(secondcur.sendQuery("select count(*) from testtable"));
+		assertEquals(secondcur.getField(0,0),"1");
+		// rollback discards, and implicitly starts a new transaction
+		assertTrue(cur.sendQuery("insert into testtable (testinteger) values (2)"));
 		assertTrue(con.rollback());
-		assertTrue(secondcur.sendQuery(
-			"select "+
-			"	count(*) "+
-			"from "+
-			"	testtable"));
-		assertEquals(secondcur.getField(0,0),"8");
+		assertTrue(con.getInTransaction());
+		assertTrue(secondcur.sendQuery("select count(*) from testtable"));
+		assertEquals(secondcur.getField(0,0),"1");
+		// autoCommitOn takes effect immediately
 		assertTrue(con.autoCommitOn());
-		assertTrue(cur.sendQuery(
-			"insert into "+
-			"	testtable "+
-			"values ("+
-			"	10, "+
-			"	10, "+
-			"	10.1, "+
-			"	10.1, "+
-			"	10.1, "+
-			"	10.1, "+
-			"	'01-JAN-2010', "+
-			"	'10:00:00', "+
-			"	'testchar10', "+
-			"	'testvarchar10', "+
-			"	NULL, "+
-			"	NULL)"));
-		assertTrue(secondcur.sendQuery(
-			"select "+
-			"	count(*) "+
-			"from "+
-			"	testtable"));
-		assertEquals(secondcur.getField(0,0),"9");
+		assertTrue(con.getAutoCommit());
+		assertFalse(con.getInTransaction());
+		assertTrue(cur.sendQuery("insert into testtable (testinteger) values (3)"));
+		assertTrue(secondcur.sendQuery("select count(*) from testtable"));
+		assertEquals(secondcur.getField(0,0),"2");
+		// autoCommitOff takes effect immediately
 		assertTrue(con.autoCommitOff());
-		secondcon.endSession();
+		assertFalse(con.getAutoCommit());
+		assertTrue(con.getInTransaction());
+		secondcur.closeResultSet();
+		System.out.println();
+
+
+		// transaction behavior - explicit
+		System.out.println("TRANSACTION BEHAVIOR - explicit: ");
+		assertTrue(con.setTransactionModel("explicit"));
+		assertEquals(con.getTransactionModel(),"explicit");
+		// truncate testtable so this section starts with it empty (delete
+		// autocommits here since explicit-model defaults to autocommit-on)
 		assertTrue(cur.sendQuery("delete from testtable"));
-		con.commit();
+		// begin starts a new transaction; insert is not visible until commit
+		assertTrue(con.begin());
+		assertTrue(con.getInTransaction());
+		assertTrue(cur.sendQuery("insert into testtable (testinteger) values (1)"));
+		assertTrue(secondcur.sendQuery("select count(*) from testtable"));
+		assertEquals(secondcur.getField(0,0),"0");
+		// commit makes it visible; no new transaction is started
+		assertTrue(con.commit());
+		assertFalse(con.getInTransaction());
+		assertTrue(secondcur.sendQuery("select count(*) from testtable"));
+		assertEquals(secondcur.getField(0,0),"1");
+		// begin, insert, rollback discards; no new transaction is started
+		assertTrue(con.begin());
+		assertTrue(cur.sendQuery("insert into testtable (testinteger) values (2)"));
+		assertTrue(con.rollback());
+		assertFalse(con.getInTransaction());
+		assertTrue(secondcur.sendQuery("select count(*) from testtable"));
+		assertEquals(secondcur.getField(0,0),"1");
+		// autoCommitOn takes effect immediately
+		assertTrue(con.autoCommitOn());
+		assertTrue(con.getAutoCommit());
+		assertTrue(cur.sendQuery("insert into testtable (testinteger) values (3)"));
+		assertTrue(secondcur.sendQuery("select count(*) from testtable"));
+		assertEquals(secondcur.getField(0,0),"2");
+		// autoCommitOff takes effect immediately
+		assertTrue(con.autoCommitOff());
+		assertFalse(con.getAutoCommit());
+		secondcur.closeResultSet();
+		System.out.println();
+
+
+		// transaction behavior - explicit-deferred
+		System.out.println("TRANSACTION BEHAVIOR - explicit-deferred: ");
+		assertTrue(con.setTransactionModel("explicit-deferred"));
+		assertEquals(con.getTransactionModel(),"explicit-deferred");
+		// switch to autocommit-on so the begin/commit cycles below
+		// bracket explicit transactions (autocommit-off semantics are
+		// exercised at the end of this block)
+		assertTrue(con.autoCommitOn());
+		assertTrue(con.getAutoCommit());
+		// truncate testtable so this section starts with it empty
+		assertTrue(cur.sendQuery("delete from testtable"));
+		// begin starts a transaction; commit makes it visible
+		assertTrue(con.begin());
+		assertTrue(con.getInTransaction());
+		assertTrue(cur.sendQuery("insert into testtable (testinteger) values (1)"));
+		assertTrue(con.commit());
+		assertFalse(con.getInTransaction());
+		assertTrue(secondcur.sendQuery("select count(*) from testtable"));
+		assertEquals(secondcur.getField(0,0),"1");
+		// begin, insert, rollback discards
+		assertTrue(con.begin());
+		assertTrue(cur.sendQuery("insert into testtable (testinteger) values (2)"));
+		assertTrue(con.rollback());
+		assertTrue(secondcur.sendQuery("select count(*) from testtable"));
+		assertEquals(secondcur.getField(0,0),"1");
+		// during a transaction started by begin(), autoCommitOn is a
+		// no-op: the autocommit setting takes effect after the user
+		// explicitly commits/rollbacks the tx (mysql-native semantic)
+		assertTrue(con.begin());
+		assertTrue(cur.sendQuery("insert into testtable (testinteger) values (3)"));
+		assertTrue(con.autoCommitOn());
+		assertFalse(con.getAutoCommit());
+		assertTrue(con.getInTransaction());
+		assertTrue(secondcur.sendQuery("select count(*) from testtable"));
+		assertEquals(secondcur.getField(0,0),"1");
+		// explicit commit ends the tx; autocommit-on now takes effect
+		assertTrue(con.commit());
+		assertTrue(con.getAutoCommit());
+		assertFalse(con.getInTransaction());
+		assertTrue(secondcur.sendQuery("select count(*) from testtable"));
+		assertEquals(secondcur.getField(0,0),"2");
+		// autocommit is on; subsequent inserts are visible immediately
+		assertTrue(cur.sendQuery("insert into testtable (testinteger) values (4)"));
+		assertTrue(secondcur.sendQuery("select count(*) from testtable"));
+		assertEquals(secondcur.getField(0,0),"3");
+		// autoCommitOff takes effect immediately when not in a transaction
+		assertTrue(con.autoCommitOff());
+		assertFalse(con.getAutoCommit());
+		// autocommit-off persists across commit/rollback; each commit or
+		// rollback ends the current implicit tx and a new one starts for
+		// the next statement
+		assertTrue(cur.sendQuery("insert into testtable (testinteger) values (5)"));
+		assertTrue(con.commit());
+		assertFalse(con.getAutoCommit());
+		assertTrue(con.getInTransaction());
+		assertTrue(secondcur.sendQuery("select count(*) from testtable"));
+		assertEquals(secondcur.getField(0,0),"4");
+		assertTrue(cur.sendQuery("insert into testtable (testinteger) values (6)"));
+		assertTrue(con.rollback());
+		assertFalse(con.getAutoCommit());
+		assertTrue(con.getInTransaction());
+		assertTrue(secondcur.sendQuery("select count(*) from testtable"));
+		assertEquals(secondcur.getField(0,0),"4");
+		// autoCommitOff during a transaction changes the variable
+		// immediately but the in-flight tx continues; only after the
+		// next explicit commit/rollback does the new autocommit-off
+		// setting drop us into a new implicit tx (mysql-asymmetric
+		// semantic)
+		assertTrue(con.autoCommitOn());
+		assertTrue(con.getAutoCommit());
+		assertTrue(con.begin());
+		assertTrue(cur.sendQuery("insert into testtable (testinteger) values (7)"));
+		assertTrue(con.autoCommitOff());
+		assertFalse(con.getAutoCommit());
+		assertTrue(con.getInTransaction());
+		assertTrue(secondcur.sendQuery("select count(*) from testtable"));
+		assertEquals(secondcur.getField(0,0),"4");
+		assertTrue(con.commit());
+		assertFalse(con.getAutoCommit());
+		assertTrue(con.getInTransaction());
+		assertTrue(secondcur.sendQuery("select count(*) from testtable"));
+		assertEquals(secondcur.getField(0,0),"5");
+		secondcur.closeResultSet();
+		System.out.println();
+
+
+		// transaction behavior - explicit-error
+		System.out.println("TRANSACTION BEHAVIOR - explicit-error: ");
+		assertTrue(con.setTransactionModel("explicit-error"));
+		assertEquals(con.getTransactionModel(),"explicit-error");
+		// truncate testtable so this section starts with it empty
+		assertTrue(cur.sendQuery("delete from testtable"));
+		// begin, insert, commit
+		assertTrue(con.begin());
+		assertTrue(con.getInTransaction());
+		assertTrue(cur.sendQuery("insert into testtable (testinteger) values (1)"));
+		assertTrue(con.commit());
+		assertFalse(con.getInTransaction());
+		assertTrue(secondcur.sendQuery("select count(*) from testtable"));
+		assertEquals(secondcur.getField(0,0),"1");
+		// begin, insert, rollback
+		assertTrue(con.begin());
+		assertTrue(cur.sendQuery("insert into testtable (testinteger) values (2)"));
+		assertTrue(con.rollback());
+		assertTrue(secondcur.sendQuery("select count(*) from testtable"));
+		assertEquals(secondcur.getField(0,0),"1");
+		// while in a transaction, autoCommitOn/Off throw an error
+		assertTrue(con.begin());
+		assertFalse(con.autoCommitOn());
+		assertFalse(con.autoCommitOff());
+		assertTrue(con.commit());
+		// outside of a transaction, autoCommitOn takes effect immediately
+		assertTrue(con.autoCommitOn());
+		assertTrue(con.getAutoCommit());
+		assertTrue(cur.sendQuery("insert into testtable (testinteger) values (3)"));
+		assertTrue(secondcur.sendQuery("select count(*) from testtable"));
+		assertEquals(secondcur.getField(0,0),"2");
+		// autoCommitOff takes effect immediately
+		assertTrue(con.autoCommitOff());
+		assertFalse(con.getAutoCommit());
+		secondcur.closeResultSet();
+		System.out.println();
+
+
+		// transaction behavior - none
+		System.out.println("TRANSACTION BEHAVIOR - none: ");
+		assertTrue(con.setTransactionModel("none"));
+		assertEquals(con.getTransactionModel(),"none");
+		// truncate testtable so this section starts with it empty
+		assertTrue(cur.sendQuery("delete from testtable"));
+		// no transactions; everything is visible immediately
+		assertTrue(con.getAutoCommit());
+		assertFalse(con.getInTransaction());
+		assertTrue(cur.sendQuery("insert into testtable (testinteger) values (1)"));
+		assertTrue(secondcur.sendQuery("select count(*) from testtable"));
+		assertEquals(secondcur.getField(0,0),"1");
+		// commit and rollback are no-ops
+		assertTrue(con.commit());
+		assertTrue(cur.sendQuery("insert into testtable (testinteger) values (2)"));
+		assertTrue(con.rollback());
+		assertTrue(secondcur.sendQuery("select count(*) from testtable"));
+		assertEquals(secondcur.getField(0,0),"2");
+		// autocommit is always on; autoCommitOff is an error
+		assertFalse(con.autoCommitOff());
+		assertTrue(con.getAutoCommit());
+		assertTrue(con.autoCommitOn());
+		assertTrue(con.getAutoCommit());
+		secondcur.closeResultSet();
+		System.out.println();
+
+
+		// reset transaction behavior
+		System.out.println("RESET TRANSACTION BEHAVIOR: ");
+		assertTrue(con.setTransactionModel(con.getDefaultTransactionModel()));
+		assertEquals(con.getTransactionModel(),"implicit");
+		assertFalse(con.getAutoCommit());
 		System.out.println();
 
 

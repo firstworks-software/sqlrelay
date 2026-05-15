@@ -1060,69 +1060,272 @@ int main(int argc, char **argv) {
 		sqlrcur_free(secondcur);
 	}
 	//sqlrcur_setResultSetBufferSize(cur,0);
+	assertTrue(sqlrcon_commit(con));
+	assertTrue(sqlrcur_sendQuery(cur,"drop table testtable"));
 	printf("\n");
 
 
-	// commit and rollback
-	printf("COMMIT AND ROLLBACK: \n");
+	// reset transaction state
+	printf("RESET TRANSACTION STATE: \n");
+	assertTrue(sqlrcon_commit(con));
+	assertEqStr(sqlrcon_getTransactionModel(con),"explicit-error");
+	assertTrue(sqlrcon_getAutoCommit(con));
+	printf("\n");
+
+
+	// transaction behavior - implicit
+	printf("TRANSACTION BEHAVIOR - implicit: \n");
+	// sap ase rejects DDL inside a chained-mode (multi-statement) tx
+	// unless `sp_dboption ... 'ddl in tran', true` is set on the db;
+	// create the table while still in unchained mode, then switch.
+	// `lock datarows` is needed so secondcur's count(*) scan doesn't
+	// block on the writer's page lock from the in-flight insert
+	assertTrue(sqlrcur_sendQuery(cur,
+		"create table testtable (col1 integer) lock datarows"));
+	assertTrue(sqlrcon_setTransactionModel(con,"implicit"));
+	assertEqStr(sqlrcon_getTransactionModel(con),"implicit");
 	secondcon=sqlrcon_alloc("sqlrelay",9000,"/tmp/test.socket",
-		"testuser","testpassword",0,1);
+						"testuser","testpassword",0,1);
 	secondcur=sqlrcur_alloc(secondcon);
-	assertTrue(sqlrcur_sendQuery(
-			secondcur,"select count(*) from testtable"));
+	// session is in a transaction; insert is not visible until commit
+	assertTrue(sqlrcon_getInTransaction(con));
+	assertFalse(sqlrcon_getAutoCommit(con));
+	assertTrue(sqlrcur_sendQuery(cur,"insert into testtable values (1)"));
+	assertTrue(sqlrcur_sendQuery(secondcur,"select count(*) from testtable"));
 	assertEqStr(sqlrcur_getFieldByIndex(secondcur,0,0),"0");
+	// commit makes it visible, and implicitly starts a new transaction
 	assertTrue(sqlrcon_commit(con));
-	assertTrue(sqlrcur_sendQuery(
-			secondcur,"select count(*) from testtable"));
-	assertEqStr(sqlrcur_getFieldByIndex(secondcur,0,0),"8");
-	assertTrue(sqlrcon_begin(con));
-	assertTrue(sqlrcur_sendQuery(cur,
-		"insert into "
-		"	testtable "
-		"values ("
-		"	10, "
-		"	10, "
-		"	10, "
-		"	10.1, "
-		"	10.1, "
-		"	10.1, "
-		"	10.1, "
-		"	10.00, "
-		"	10.00, "
-		"	'01-Jan-2010 10:00:00', "
-		"	'01-Jan-2010 10:00:00', "
-		"	'testchar10', "
-		"	'testvarchar10', "
-		"	10)"));
+	assertTrue(sqlrcon_getInTransaction(con));
+	assertTrue(sqlrcur_sendQuery(secondcur,"select count(*) from testtable"));
+	assertEqStr(sqlrcur_getFieldByIndex(secondcur,0,0),"1");
+	// rollback discards, and implicitly starts a new transaction
+	assertTrue(sqlrcur_sendQuery(cur,"insert into testtable values (2)"));
 	assertTrue(sqlrcon_rollback(con));
-	assertTrue(sqlrcur_sendQuery(
-			secondcur,"select count(*) from testtable"));
-	assertEqStr(sqlrcur_getFieldByIndex(secondcur,0,0),"8");
-	assertTrue(sqlrcur_sendQuery(cur,
-		"insert into "
-		"	testtable "
-		"values ("
-		"	10, "
-		"	10, "
-		"	10, "
-		"	10.1, "
-		"	10.1, "
-		"	10.1, "
-		"	10.1, "
-		"	10.00, "
-		"	10.00, "
-		"	'01-Jan-2010 10:00:00', "
-		"	'01-Jan-2010 10:00:00', "
-		"	'testchar10', "
-		"	'testvarchar10', "
-		"	10)"));
+	assertTrue(sqlrcon_getInTransaction(con));
+	assertTrue(sqlrcur_sendQuery(secondcur,"select count(*) from testtable"));
+	assertEqStr(sqlrcur_getFieldByIndex(secondcur,0,0),"1");
+	// autoCommitOn takes effect immediately
+	assertTrue(sqlrcon_autoCommitOn(con));
+	assertTrue(sqlrcon_getAutoCommit(con));
+	assertFalse(sqlrcon_getInTransaction(con));
+	assertTrue(sqlrcur_sendQuery(cur,"insert into testtable values (3)"));
+	assertTrue(sqlrcur_sendQuery(secondcur,"select count(*) from testtable"));
+	assertEqStr(sqlrcur_getFieldByIndex(secondcur,0,0),"2");
+	// autoCommitOff takes effect immediately
+	assertTrue(sqlrcon_autoCommitOff(con));
+	assertFalse(sqlrcon_getAutoCommit(con));
+	assertTrue(sqlrcon_getInTransaction(con));
+	sqlrcur_closeResultSet(secondcur);
+	// switch back to unchained mode so the drop isn't rejected
+	assertTrue(sqlrcon_setTransactionModel(con,"explicit-error"));
+	assertTrue(sqlrcur_sendQuery(cur,"drop table testtable"));
+	printf("\n");
+
+
+	// transaction behavior - explicit
+	printf("TRANSACTION BEHAVIOR - explicit: \n");
+	assertTrue(sqlrcon_setTransactionModel(con,"explicit"));
+	assertEqStr(sqlrcon_getTransactionModel(con),"explicit");
+	assertTrue(sqlrcur_sendQuery(cur,"create table testtable (col1 integer) lock datarows"));
+	// begin starts a new transaction; insert is not visible until commit
+	assertTrue(sqlrcon_begin(con));
+	assertTrue(sqlrcon_getInTransaction(con));
+	assertTrue(sqlrcur_sendQuery(cur,"insert into testtable values (1)"));
+	assertTrue(sqlrcur_sendQuery(secondcur,"select count(*) from testtable"));
+	assertEqStr(sqlrcur_getFieldByIndex(secondcur,0,0),"0");
+	// commit makes it visible; no new transaction is started
 	assertTrue(sqlrcon_commit(con));
-	assertTrue(sqlrcur_sendQuery(
-			secondcur,"select count(*) from testtable"));
-	assertEqStr(sqlrcur_getFieldByIndex(secondcur,0,0),"9");
+	assertFalse(sqlrcon_getInTransaction(con));
+	assertTrue(sqlrcur_sendQuery(secondcur,"select count(*) from testtable"));
+	assertEqStr(sqlrcur_getFieldByIndex(secondcur,0,0),"1");
+	// begin, insert, rollback discards; no new transaction is started
+	assertTrue(sqlrcon_begin(con));
+	assertTrue(sqlrcur_sendQuery(cur,"insert into testtable values (2)"));
+	assertTrue(sqlrcon_rollback(con));
+	assertFalse(sqlrcon_getInTransaction(con));
+	assertTrue(sqlrcur_sendQuery(secondcur,"select count(*) from testtable"));
+	assertEqStr(sqlrcur_getFieldByIndex(secondcur,0,0),"1");
+	// autoCommitOn takes effect immediately
+	assertTrue(sqlrcon_autoCommitOn(con));
+	assertTrue(sqlrcon_getAutoCommit(con));
+	assertTrue(sqlrcur_sendQuery(cur,"insert into testtable values (3)"));
+	assertTrue(sqlrcur_sendQuery(secondcur,"select count(*) from testtable"));
+	assertEqStr(sqlrcur_getFieldByIndex(secondcur,0,0),"2");
+	// autoCommitOff takes effect immediately
+	assertTrue(sqlrcon_autoCommitOff(con));
+	assertFalse(sqlrcon_getAutoCommit(con));
+	sqlrcur_closeResultSet(secondcur);
+	// switch back to unchained mode so the drop isn't rejected
+	assertTrue(sqlrcon_setTransactionModel(con,"explicit-error"));
+	assertTrue(sqlrcur_sendQuery(cur,"drop table testtable"));
+	printf("\n");
+
+
+	// transaction behavior - explicit-deferred
+	printf("TRANSACTION BEHAVIOR - explicit-deferred: \n");
+	assertTrue(sqlrcon_setTransactionModel(con,"explicit-deferred"));
+	assertEqStr(sqlrcon_getTransactionModel(con),"explicit-deferred");
+	// switch to autocommit-on so the begin/commit cycles below
+	// bracket explicit transactions (autocommit-off semantics are
+	// exercised at the end of this block)
+	assertTrue(sqlrcon_autoCommitOn(con));
+	assertTrue(sqlrcon_getAutoCommit(con));
+	assertTrue(sqlrcur_sendQuery(cur,"create table testtable (col1 integer) lock datarows"));
+	// begin starts a transaction; commit makes it visible
+	assertTrue(sqlrcon_begin(con));
+	assertTrue(sqlrcon_getInTransaction(con));
+	assertTrue(sqlrcur_sendQuery(cur,"insert into testtable values (1)"));
+	assertTrue(sqlrcon_commit(con));
+	assertFalse(sqlrcon_getInTransaction(con));
+	assertTrue(sqlrcur_sendQuery(secondcur,"select count(*) from testtable"));
+	assertEqStr(sqlrcur_getFieldByIndex(secondcur,0,0),"1");
+	// begin, insert, rollback discards
+	assertTrue(sqlrcon_begin(con));
+	assertTrue(sqlrcur_sendQuery(cur,"insert into testtable values (2)"));
+	assertTrue(sqlrcon_rollback(con));
+	assertTrue(sqlrcur_sendQuery(secondcur,"select count(*) from testtable"));
+	assertEqStr(sqlrcur_getFieldByIndex(secondcur,0,0),"1");
+	// during a transaction started by begin(), autoCommitOn is a
+	// no-op: the autocommit setting takes effect after the user
+	// explicitly commits/rollbacks the tx (mysql-native semantic)
+	assertTrue(sqlrcon_begin(con));
+	assertTrue(sqlrcur_sendQuery(cur,"insert into testtable values (3)"));
+	assertTrue(sqlrcon_autoCommitOn(con));
+	assertFalse(sqlrcon_getAutoCommit(con));
+	assertTrue(sqlrcon_getInTransaction(con));
+	assertTrue(sqlrcur_sendQuery(secondcur,"select count(*) from testtable"));
+	assertEqStr(sqlrcur_getFieldByIndex(secondcur,0,0),"1");
+	// explicit commit ends the tx; autocommit-on now takes effect
+	assertTrue(sqlrcon_commit(con));
+	assertTrue(sqlrcon_getAutoCommit(con));
+	assertFalse(sqlrcon_getInTransaction(con));
+	assertTrue(sqlrcur_sendQuery(secondcur,"select count(*) from testtable"));
+	assertEqStr(sqlrcur_getFieldByIndex(secondcur,0,0),"2");
+	// autocommit is on; subsequent inserts are visible immediately
+	assertTrue(sqlrcur_sendQuery(cur,"insert into testtable values (4)"));
+	assertTrue(sqlrcur_sendQuery(secondcur,"select count(*) from testtable"));
+	assertEqStr(sqlrcur_getFieldByIndex(secondcur,0,0),"3");
+	// autoCommitOff takes effect immediately when not in a transaction
+	assertTrue(sqlrcon_autoCommitOff(con));
+	assertFalse(sqlrcon_getAutoCommit(con));
+	// autocommit-off persists across commit/rollback; each commit or
+	// rollback ends the current implicit tx and a new one starts for
+	// the next statement
+	assertTrue(sqlrcur_sendQuery(cur,"insert into testtable values (5)"));
+	assertTrue(sqlrcon_commit(con));
+	assertFalse(sqlrcon_getAutoCommit(con));
+	assertTrue(sqlrcon_getInTransaction(con));
+	assertTrue(sqlrcur_sendQuery(secondcur,"select count(*) from testtable"));
+	assertEqStr(sqlrcur_getFieldByIndex(secondcur,0,0),"4");
+	assertTrue(sqlrcur_sendQuery(cur,"insert into testtable values (6)"));
+	assertTrue(sqlrcon_rollback(con));
+	assertFalse(sqlrcon_getAutoCommit(con));
+	assertTrue(sqlrcon_getInTransaction(con));
+	assertTrue(sqlrcur_sendQuery(secondcur,"select count(*) from testtable"));
+	assertEqStr(sqlrcur_getFieldByIndex(secondcur,0,0),"4");
+	// autoCommitOff during a transaction changes the variable
+	// immediately but the in-flight tx continues; only after the
+	// next explicit commit/rollback does the new autocommit-off
+	// setting drop us into a new implicit tx (mysql-asymmetric
+	// semantic)
+	assertTrue(sqlrcon_autoCommitOn(con));
+	assertTrue(sqlrcon_getAutoCommit(con));
+	assertTrue(sqlrcon_begin(con));
+	assertTrue(sqlrcur_sendQuery(cur,"insert into testtable values (7)"));
+	assertTrue(sqlrcon_autoCommitOff(con));
+	assertFalse(sqlrcon_getAutoCommit(con));
+	assertTrue(sqlrcon_getInTransaction(con));
+	assertTrue(sqlrcur_sendQuery(secondcur,"select count(*) from testtable"));
+	assertEqStr(sqlrcur_getFieldByIndex(secondcur,0,0),"4");
+	assertTrue(sqlrcon_commit(con));
+	assertFalse(sqlrcon_getAutoCommit(con));
+	assertTrue(sqlrcon_getInTransaction(con));
+	assertTrue(sqlrcur_sendQuery(secondcur,"select count(*) from testtable"));
+	assertEqStr(sqlrcur_getFieldByIndex(secondcur,0,0),"5");
+	sqlrcur_closeResultSet(secondcur);
+	// switch back to unchained mode so the drop isn't rejected
+	assertTrue(sqlrcon_setTransactionModel(con,"explicit-error"));
+	assertTrue(sqlrcur_sendQuery(cur,"drop table testtable"));
+	printf("\n");
+
+
+	// transaction behavior - explicit-error
+	printf("TRANSACTION BEHAVIOR - explicit-error: \n");
+	assertTrue(sqlrcon_setTransactionModel(con,"explicit-error"));
+	assertEqStr(sqlrcon_getTransactionModel(con),"explicit-error");
+	assertTrue(sqlrcur_sendQuery(cur,"create table testtable (col1 integer) lock datarows"));
+	// begin, insert, commit
+	assertTrue(sqlrcon_begin(con));
+	assertTrue(sqlrcon_getInTransaction(con));
+	assertTrue(sqlrcur_sendQuery(cur,"insert into testtable values (1)"));
+	assertTrue(sqlrcon_commit(con));
+	assertFalse(sqlrcon_getInTransaction(con));
+	assertTrue(sqlrcur_sendQuery(secondcur,"select count(*) from testtable"));
+	assertEqStr(sqlrcur_getFieldByIndex(secondcur,0,0),"1");
+	// begin, insert, rollback
+	assertTrue(sqlrcon_begin(con));
+	assertTrue(sqlrcur_sendQuery(cur,"insert into testtable values (2)"));
+	assertTrue(sqlrcon_rollback(con));
+	assertTrue(sqlrcur_sendQuery(secondcur,"select count(*) from testtable"));
+	assertEqStr(sqlrcur_getFieldByIndex(secondcur,0,0),"1");
+	// while in a transaction, autoCommitOn/Off throw an error
+	assertTrue(sqlrcon_begin(con));
+	assertFalse(sqlrcon_autoCommitOn(con));
+	assertFalse(sqlrcon_autoCommitOff(con));
+	assertTrue(sqlrcon_commit(con));
+	// outside of a transaction, autoCommitOn takes effect immediately
+	assertTrue(sqlrcon_autoCommitOn(con));
+	assertTrue(sqlrcon_getAutoCommit(con));
+	assertTrue(sqlrcur_sendQuery(cur,"insert into testtable values (3)"));
+	assertTrue(sqlrcur_sendQuery(secondcur,"select count(*) from testtable"));
+	assertEqStr(sqlrcur_getFieldByIndex(secondcur,0,0),"2");
+	// autoCommitOff takes effect immediately
+	assertTrue(sqlrcon_autoCommitOff(con));
+	assertFalse(sqlrcon_getAutoCommit(con));
+	sqlrcur_closeResultSet(secondcur);
+	// commit the open tx so the drop isn't rejected as DDL inside a
+	// chained-mode transaction (in explicit-error model, autoCommitOn
+	// from inside a tx errors out by design, so commit is the route
+	// back to autocommit-on / unchained mode)
+	assertTrue(sqlrcon_commit(con));
+	assertTrue(sqlrcur_sendQuery(cur,"drop table testtable"));
+	printf("\n");
+
+
+	// transaction behavior - none
+	printf("TRANSACTION BEHAVIOR - none: \n");
+	assertTrue(sqlrcon_setTransactionModel(con,"none"));
+	assertEqStr(sqlrcon_getTransactionModel(con),"none");
+	assertTrue(sqlrcur_sendQuery(cur,"create table testtable (col1 integer) lock datarows"));
+	// no transactions; everything is visible immediately
+	assertTrue(sqlrcon_getAutoCommit(con));
+	assertFalse(sqlrcon_getInTransaction(con));
+	assertTrue(sqlrcur_sendQuery(cur,"insert into testtable values (1)"));
+	assertTrue(sqlrcur_sendQuery(secondcur,"select count(*) from testtable"));
+	assertEqStr(sqlrcur_getFieldByIndex(secondcur,0,0),"1");
+	// commit and rollback are no-ops
+	assertTrue(sqlrcon_commit(con));
+	assertTrue(sqlrcur_sendQuery(cur,"insert into testtable values (2)"));
+	assertTrue(sqlrcon_rollback(con));
+	assertTrue(sqlrcur_sendQuery(secondcur,"select count(*) from testtable"));
+	assertEqStr(sqlrcur_getFieldByIndex(secondcur,0,0),"2");
+	// autocommit is always on; autoCommitOff is an error
+	assertFalse(sqlrcon_autoCommitOff(con));
+	assertTrue(sqlrcon_getAutoCommit(con));
+	assertTrue(sqlrcon_autoCommitOn(con));
+	assertTrue(sqlrcon_getAutoCommit(con));
+	sqlrcur_closeResultSet(secondcur);
 	sqlrcur_free(secondcur);
 	sqlrcon_free(secondcon);
 	assertTrue(sqlrcur_sendQuery(cur,"drop table testtable"));
+	printf("\n");
+
+
+	// reset transaction behavior
+	printf("RESET TRANSACTION BEHAVIOR: \n");
+	assertTrue(sqlrcon_setTransactionModel(con,sqlrcon_getDefaultTransactionModel(con)));
+	assertEqStr(sqlrcon_getTransactionModel(con),"explicit-error");
+	assertTrue(sqlrcon_getAutoCommit(con));
 	printf("\n");
 
 
