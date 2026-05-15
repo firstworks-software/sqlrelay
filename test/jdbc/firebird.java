@@ -1506,6 +1506,11 @@ class firebird extends sqlrtest {
 		// insert
 		System.out.println("INSERT:");
 		stmt.executeUpdate("delete from testtable");
+		// commit the delete so the table starts this test empty from
+		// the perspective of other connections; without this, firebird's
+		// MVCC will show secondcon (opened later, in COMMIT AND ROLLBACK)
+		// whatever rows were in testtable before this run rather than 0
+		con.commit();
 		assertFalse(stmt.execute(
 			"insert into "+
 			"	testtable "+
