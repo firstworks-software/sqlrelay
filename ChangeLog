@@ -80,6 +80,7 @@
 		explicit transactions with transactionmodel parameter and api
 		calls
 	added getInTransaction() api call
+	added decodeblobs connect string option, defaulting true
 
 2.1.1 - added tns_admin support
 	fixed sqlr-start ... -strace ...
