@@ -3453,7 +3453,8 @@ void sapcursor::getField(uint32_t col,
 	uint64_t	ds=datasize[col][row]-1;
 
 	// decode text-encoded binary data
-	if (column[col].datatype==CS_IMAGE_TYPE) {
+	// (unless the user has opted out via decodeblobs=no)
+	if (column[col].datatype==CS_IMAGE_TYPE && sapconn->getDecodeBlobs()) {
 		uint32_t	blobsize=(uint32_t)ds;
 		decodeBlob(&d,&blobsize);
 		ds=(uint64_t)blobsize;

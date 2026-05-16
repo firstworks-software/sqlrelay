@@ -30,6 +30,8 @@ class sqlrserverconnectionprivate {
 
 		bool		_detachbeforelogin;
 
+		bool		_decodeblobs;
+
 		char		*_currentisolationlevel;
 
 		stringbuffer	_tablelistquery;
@@ -70,6 +72,10 @@ sqlrserverconnection::~sqlrserverconnection() {
 
 bool sqlrserverconnection::mustDetachBeforeLogIn() {
 	return pvt->_detachbeforelogin;
+}
+
+bool sqlrserverconnection::getDecodeBlobs() {
+	return pvt->_decodeblobs;
 }
 
 void sqlrserverconnection::handleConnectString() {
@@ -170,6 +176,10 @@ void sqlrserverconnection::handleConnectString() {
 	// detach before login
 	pvt->_detachbeforelogin=charstring::isYes(
 			cont->getConnectStringValue("detachbeforelogin"));
+
+	// decode blobs (default yes, only false when explicitly set to no)
+	pvt->_decodeblobs=!charstring::isNo(
+				cont->getConnectStringValue("decodeblobs"));
 
 	// database type
 	const char	*dbtype=cont->getConnectStringValue("dbtype");

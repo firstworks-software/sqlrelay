@@ -3626,7 +3626,8 @@ void postgresqlcursor::getField(uint32_t col,
 	*fieldsize=PQgetlength(pgresult,currentrow,col);
 
 	// decode encoded binary data
-	if (PQftype(pgresult,col)==17) {
+	// (unless the user has opted out via decodeblobs=no)
+	if (PQftype(pgresult,col)==17 && postgresqlconn->getDecodeBlobs()) {
 		decodeBlob((char **)field,fieldsize);
 	}
 }

@@ -168,7 +168,7 @@ or a tnsnames-style expression such as:
 
 
 [=#freetds]
-For '''freetds''' databases, the connect string syntax is "sybase=SYBASE;user=USER;password=PASSWORD;server=SERVER;db=DATABASE;autocommit=yes/no/default;charset=CHARSET;language=LANGUAGE;hostname=HOSTNAME;packetsize=PACKETSIZE;maxcolumncount=MAXCOLUMNCOUNT;maxfieldsize=MAXFIELDSIZE;dbtype=ID"
+For '''freetds''' databases, the connect string syntax is "sybase=SYBASE;user=USER;password=PASSWORD;server=SERVER;db=DATABASE;autocommit=yes/no/default;charset=CHARSET;language=LANGUAGE;hostname=HOSTNAME;packetsize=PACKETSIZE;maxcolumncount=MAXCOLUMNCOUNT;maxfieldsize=MAXFIELDSIZE;decodeblobs=yes/no;dbtype=ID"
 
 * '''sybase''': The directory containing the "freetds.conf" file.  Optional if the SYBASE environment variable is set.  Overrides the SYBASE environment variable.
 * '''user''': The username SQL Relay should use to log into the database.  Required.
@@ -182,11 +182,12 @@ For '''freetds''' databases, the connect string syntax is "sybase=SYBASE;user=US
 * '''packetsize''': The packetsize to use.  Optional.
 * '''maxcolumncount''': The maximum number of columns that can be fetched in a query.  Defaults to 256.  Setting this parameter to -1 causes result set buffers to be dynamically allocated, allowing any number of columns to be fetched.  Using -1 is flexible and conserves memory but there is a performance penalty.  (see [tuning.html#memoryusage here] for more info on this parameter)
 * '''maxfieldsize''': The maximum size, in bytes, of a non-lob field.  Non-lob fields longer than this will be truncated.  Defaults to 32768. (see [tuning.html#memoryusage here] for more info on this parameter)
+* '''decodeblobs''': Blob field values are returned by the SAP/Sybase client library to SQL Relay in a text-encoded form.  By default SQL Relay decodes these to raw binary before passing them to the client.  Set to "no" to leave the values text-encoded and let the client decode them itself.  Optional, defaults to yes.
 * '''dbtype''': Overrides the default value returned when a client request the database type using the identify() method (or similar method/function).
 
 
 [=#sap]
-For '''sap''' (or '''sybase''') databases, the connect string syntax is "sybase=SYBASE;lang=LANG;user=USER;password=PASSWORD;server=SERVER;db=DATABASE;autocommit=yes/no/default;charset=CHARSET;language=LANGUAGE;hostname=HOSTNAME;packetsize=PACKETSIZE;fetchatonce=FETCHATONCE;maxcolumncount=MAXCOLUMNCOUNT;maxfieldsize=MAXFIELDSIZE;dbtype=ID"
+For '''sap''' (or '''sybase''') databases, the connect string syntax is "sybase=SYBASE;lang=LANG;user=USER;password=PASSWORD;server=SERVER;db=DATABASE;autocommit=yes/no/default;charset=CHARSET;language=LANGUAGE;hostname=HOSTNAME;packetsize=PACKETSIZE;fetchatonce=FETCHATONCE;maxcolumncount=MAXCOLUMNCOUNT;maxfieldsize=MAXFIELDSIZE;decodeblobs=yes/no;dbtype=ID"
 
 * '''sybase''': The directory containing the "interfaces" file.  Optional if the SYBASE environment variable is set.  Overrides the SYBASE environment variable.  If SQL Relay was built to load the SAP/Sybase libraries at runtime, then the lib subdirectory of this directory will be searched for the SAP/Sybase client libraries.
 * '''user''': The username SQL Relay should use to log into the database.  Required.
@@ -201,6 +202,7 @@ For '''sap''' (or '''sybase''') databases, the connect string syntax is "sybase=
 * '''fetchatonce''': The number of rows that SQL Relay fetches from the database in each round trip.  Defaults to 10. (see [tuning.html#memoryusage here] for more info on this parameter)
 * '''maxcolumncount''': The maximum number of columns that can be fetched in a query.  Defaults to 256.  Setting this parameter to -1 causes result set buffers to be dynamically allocated, allowing any number of columns to be fetched.  Using -1 is flexible and conserves memory but there is a performance penalty.  (see [tuning.html#memoryusage here] for more info on this parameter)
 * '''maxfieldsize''': The maximum size, in bytes, of a non-lob field.  Non-lob fields longer than this will be truncated.  Defaults to 32768. (see [tuning.html#memoryusage here] for more info on this parameter)
+* '''decodeblobs''': Blob field values are returned by the SAP/Sybase client library to SQL Relay in a text-encoded form.  By default SQL Relay decodes these to raw binary before passing them to the client.  Set to "no" to leave the values text-encoded and let the client decode them itself.  Optional, defaults to yes.
 * '''dbtype''': Overrides the default value returned when a client request the database type using the identify() method (or similar method/function).
 
 
@@ -268,7 +270,7 @@ For '''mysql''' databases, the connect string syntax is "user=USER;password=PASS
 
 
 [=#postgresql]
-For '''postgresql''' databases, the connect string syntax is "user=USER;password=PASSWORD;db=DB;host=HOST;port=PORT;sslmode=SSLMODE;options=OPTIONS;autocommit=yes/no/default;typemangling=MANGLING;tablemangling=MANGLING;enablecolumnisnullable=yes/no;fakebinds=FAKEBINDS;charset=CHARSET;lastinsertidfunction=LASTINSERTDFUNCTION;fetchatonce=FETCHATONCE;dbtype=ID"
+For '''postgresql''' databases, the connect string syntax is "user=USER;password=PASSWORD;db=DB;host=HOST;port=PORT;sslmode=SSLMODE;options=OPTIONS;autocommit=yes/no/default;typemangling=MANGLING;tablemangling=MANGLING;enablecolumnisnullable=yes/no;fakebinds=FAKEBINDS;charset=CHARSET;lastinsertidfunction=LASTINSERTDFUNCTION;fetchatonce=FETCHATONCE;decodeblobs=yes/no;dbtype=ID"
 
 * '''user''': The username SQL Relay should use to log into the database.  Required.
 * '''password''': The password SQL Relay should use to log into the database.  Required.  Required.  The password is generally stored in plain text but it is possible to encrypt the password using a loadable module.  See [configguide.html#pwdenc Password Encryption]
@@ -285,6 +287,7 @@ For '''postgresql''' databases, the connect string syntax is "user=USER;password
 * '''charset''': The character set to translate data coming out of the database into.  Optional.
 * '''lastinsertidfunction''': Postgresql 7+ supports serial or identity columns, and after an insert into a table containing one, the id that was generated may be retrieved via lastval().  Older Postgresql doesn't support auto-increment columns of any kind, but they can be simulated using triggers and sequences.  When implementing a trigger-sequence package, it is possible to store the value that was most-recently fetched from the sequence in a package-local variable and provide a function to access it.  This parameter allows you to specify that function so that a call to getLastInsertId() by a SQL Relay client will return whatever value is returned by that function.  Defaults to lastval().
 * '''fetchatonce''': May be set to 0 or 1.  Defaults to 0.  0 is interpreted as "fetch all rows at once" and 1 is interpreted as "fetch one row at a time".  Use caution when setting this to 1.  Due to the quirky way that PostgreSQL implements fetching one row at a time, if you run a set of nested queries, rows will be truncated in the outer query, if the client uses a non-zero result set buffer size.  See [../faq.html#postgresqlfetchatonce the faq] for more details.
+* '''decodeblobs''': PostgreSQL returns blob field values to the client in a text-encoded form (either hex format "\xDEADBEEF" or escape format with octal escapes).  By default SQL Relay decodes these to raw binary before passing them to the client.  Set to "no" to leave the values text-encoded and let the client decode them itself.  Optional, defaults to yes.
 * '''dbtype''': Overrides the default value returned when a client request the database type using the identify() method (or similar method/function).
 
 

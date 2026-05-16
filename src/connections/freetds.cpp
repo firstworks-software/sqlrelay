@@ -4820,7 +4820,9 @@ void freetdscursor::getField(uint32_t col,
 	uint32_t	ds=datasize[col][row]-1;
 
 	// decode text-encoded binary data
-	if (column[col].datatype==CS_IMAGE_TYPE) {
+	// (unless the user has opted out via decodeblobs=no)
+	if (column[col].datatype==CS_IMAGE_TYPE &&
+				freetdsconn->getDecodeBlobs()) {
 		decodeBlob(&d,&ds);
 	}
 

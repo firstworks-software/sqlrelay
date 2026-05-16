@@ -3197,6 +3197,7 @@ class SQLRSERVER_DLLSPEC sqlrserverconnection : public sqlrserverbase {
 		 *   * querytimeout
 		 *   * executedirect
 		 *   * detachbeforelogin
+		 *   * decodeblobs
 		 *
 		 *  A child class may override this method to parse additional
 		 *  parameters. */
@@ -4152,6 +4153,19 @@ class SQLRSERVER_DLLSPEC sqlrserverconnection : public sqlrserverbase {
 		bool	getLiveConnection();
 
 		sqlrservercontroller	*cont;
+
+	protected:
+
+		/** Returns true if encoded binary data fetched from the
+		 *  database should be decoded to raw binary by the
+		 *  connection module, and false if it should be returned
+		 *  to the client as-is.  Defaults to true, but may be set
+		 *  to false by the "decodeblobs=no" connect string option.
+		 *
+		 *  Connection modules that text-encode binary fields on
+		 *  fetch should consult this flag before calling
+		 *  decodeBlob(). */
+		bool	getDecodeBlobs();
 
 	#include <sqlrelay/private/sqlrserverconnection.h>
 };
