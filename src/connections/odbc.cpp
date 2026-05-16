@@ -3489,7 +3489,7 @@ bool odbcconnection::setIsolationLevel(const char *isolevel) {
 	} else if (!charstring::compare(odbciso,"SQL_TXN_SERIALIZABLE")) {
 		level=SQL_TXN_SERIALIZABLE;
 	} else {
-		// unrecognized — couldn't map it to anything ODBC understands
+		// unrecognized - couldn't map it to anything ODBC understands
 		return false;
 	}
 

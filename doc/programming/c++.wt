@@ -144,11 +144,32 @@ explicit, but while in a transaction, autocommit on/off throw an error).
 
 The transaction isolation level can be queried and set with the
 getDefaultIsolationLevel(), setIsolationLevel() and getIsolationLevel() methods
-of the sqlrconnection class.  Isolation level values are database-specific and
-are passed through to the backend (typically '''READ UNCOMMITTED''', '''READ
-COMMITTED''', '''REPEATABLE READ''', or '''SERIALIZABLE''' on databases that
-support the standard SQL isolation levels).  getIsolationLevel() returns
-'''unknown''' if the current isolation level cannot be determined.
+of the sqlrconnection class.  Isolation level values are the database-specific
+(native) names, matched case-insensitively.  Valid values include: PostgreSQL
+('''READ UNCOMMITTED''', '''READ COMMITTED''' (default), '''REPEATABLE READ''',
+'''SERIALIZABLE'''); MySQL/MariaDB ('''READ-UNCOMMITTED''',
+'''READ-COMMITTED''', '''REPEATABLE-READ''' (default), '''SERIALIZABLE''');
+Oracle ('''READ COMMITTED''' (default), '''SERIALIZABLE'''); DB2 ('''UR'''
+(uncommitted read), '''CS''' (cursor stability, default), '''RS''' (read
+stability), '''RR''' (repeatable read)); MS SQL Server via FreeTDS ('''READ
+UNCOMMITTED''', '''READ COMMITTED''' (default), '''REPEATABLE READ''',
+'''SERIALIZABLE''', '''SNAPSHOT'''); SAP ASE/Sybase ('''0''' (read
+uncommitted), '''1''' (read committed, default), '''2''' (repeatable read),
+'''3''' (serializable)); Informix ('''dirty read''', '''committed read'''
+(default), '''cursor stability''', '''repeatable read'''); Firebird ('''read
+committed''' (default), '''read committed no record version''', '''read
+consistency''', '''snapshot''', '''snapshot table stability'''); SQLite
+('''0''' (serializable, default), '''1''' (read uncommitted)); and generic
+ODBC ('''SQL_TXN_READ_UNCOMMITTED''', '''SQL_TXN_READ_COMMITTED''',
+'''SQL_TXN_REPEATABLE_READ''', '''SQL_TXN_SERIALIZABLE''' - whether a given
+level is actually supported depends on the underlying ODBC driver and target
+database; the generic ODBC backend also accepts the database-specific native
+names listed above for any of the other backends, as well as the JDBC
+'''TRANSACTION_*''' names, and maps them to the closest of the four ODBC
+levels).  For other databases, the string is passed through to the backend
+as the argument to '''set transaction isolation level'''.
+getIsolationLevel() returns '''unknown''' if the current isolation level
+cannot be determined.
 
 
 [=#temptables]

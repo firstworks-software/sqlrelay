@@ -492,9 +492,22 @@ class SQLRCLIENT_DLLSPEC sqlrconnection : public object {
 		 *  * 0  (serializable, default)
 		 *  * 1  (read uncommitted)
 		 *
-		 *  For other databases (generic ODBC, etc.), the string is
-		 *  passed through to the backend as the argument to
-		 *  "set transaction isolation level".
+		 *  For ODBC:
+		 *  * SQL_TXN_READ_UNCOMMITTED
+		 *  * SQL_TXN_READ_COMMITTED
+		 *  * SQL_TXN_REPEATABLE_READ
+		 *  * SQL_TXN_SERIALIZABLE
+		 *
+		 *  (whether a given level is actually supported depends on
+		 *  the underlying ODBC driver and target database).  The
+		 *  generic ODBC backend also accepts the database-specific
+		 *  native names listed above for any of the other backends,
+		 *  as well as the JDBC TRANSACTION_* names, and maps them
+		 *  to the closest of the four ODBC levels above.
+		 *
+		 *  For other databases, the string is passed through to the
+		 *  backend as the argument to "set transaction isolation
+		 *  level".
 		 *
 		 *  Returns true if setting the isolation level succeeded,
 		 *  false if it failed. */

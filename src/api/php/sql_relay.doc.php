@@ -419,9 +419,82 @@ function sqlrcon_getTransactionModel($sqlrconref){}
 function sqlrcon_getDefaultIsolationLevel($sqlrconref){}
 
 /**
- *  Sets the isolation level to "isolationlevel", the database-secific
- *  isolation level.  Returns 1 if setting the isolation level succeeded,
- *  0 if it failed. */
+ *  Sets the transaction isolation level to "isolationlevel".  The string
+ *  is the database-specific (native) name and is matched
+ *  case-insensitively.
+ *
+ *  Valid isolation levels include:
+ *
+ *  For PostgreSQL:
+ *  * READ UNCOMMITTED
+ *  * READ COMMITTED (default)
+ *  * REPEATABLE READ
+ *  * SERIALIZABLE
+ *
+ *  For MySQL/MariaDB:
+ *  * READ-UNCOMMITTED
+ *  * READ-COMMITTED
+ *  * REPEATABLE-READ (default)
+ *  * SERIALIZABLE
+ *
+ *  For Oracle:
+ *  * READ COMMITTED (default)
+ *  * SERIALIZABLE
+ *
+ *  For DB2:
+ *  * UR  (uncommitted read)
+ *  * CS  (cursor stability, default)
+ *  * RS  (read stability)
+ *  * RR  (repeatable read)
+ *
+ *  For MS SQL Server (via FreeTDS):
+ *  * READ UNCOMMITTED
+ *  * READ COMMITTED (default)
+ *  * REPEATABLE READ
+ *  * SERIALIZABLE
+ *  * SNAPSHOT
+ *
+ *  For SAP ASE (Sybase):
+ *  * 0  (read uncommitted)
+ *  * 1  (read committed, default)
+ *  * 2  (repeatable read)
+ *  * 3  (serializable)
+ *
+ *  For Informix:
+ *  * dirty read
+ *  * committed read (default)
+ *  * cursor stability
+ *  * repeatable read
+ *
+ *  For Firebird:
+ *  * read committed (default)
+ *  * read committed no record version
+ *  * read consistency
+ *  * snapshot
+ *  * snapshot table stability
+ *
+ *  For SQLite:
+ *  * 0  (serializable, default)
+ *  * 1  (read uncommitted)
+ *
+ *  For ODBC (generic), one of the ODBC names:
+ *  * SQL_TXN_READ_UNCOMMITTED
+ *  * SQL_TXN_READ_COMMITTED
+ *  * SQL_TXN_REPEATABLE_READ
+ *  * SQL_TXN_SERIALIZABLE
+ *
+ *  (whether a given level is actually supported depends on the
+ *  underlying ODBC driver and target database).  The generic ODBC
+ *  backend also accepts the database-specific native names listed
+ *  above for any of the other backends, as well as the JDBC
+ *  TRANSACTION_* names, and maps them to the closest of the four
+ *  ODBC levels above.
+ *
+ *  For other databases, the string is passed through to the backend
+ *  as the argument to "set transaction isolation level".
+ *
+ *  Returns 1 if setting the isolation level succeeded, 0 if it
+ *  failed. */
 function sqlrcon_setIsolationLevel($sqlrconref, $isolationlevel){}
 
 /**
