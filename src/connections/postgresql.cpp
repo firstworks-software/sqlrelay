@@ -108,6 +108,7 @@ class SQLRSERVER_DLLSPEC postgresqlconnection : public sqlrserverconnection {
 		const char	*sslmode;
 		uint16_t	typemangling;
 		uint16_t	tablemangling;
+		bool		enablecolumnisnullable;
 		const char	*charset;
 		char		*dbversion;
 		char		*hostname;
@@ -835,6 +836,8 @@ void postgresqlconnection::handleConnectString() {
 	} else {
 		tablemangling=2;
 	}
+	enablecolumnisnullable=charstring::isYes(
+			cont->getConnectStringValue("enablecolumnisnullable"));
 	charset=cont->getConnectStringValue("charset");
 	const char	*lastinsertidfunc=
 			cont->getConnectStringValue("lastinsertidfunction");
@@ -3469,7 +3472,13 @@ uint16_t postgresqlcursor::getColumnIsBinary(uint32_t col) {
 }
 
 uint16_t postgresqlcursor::getColumnIsNullable(uint32_t col) {
+
 #ifdef HAVE_POSTGRESQL_PQFTABLE
+
+	// this is an expensive operation, don't do it by default
+	if (!postgresqlconn->enablecolumnisnullable) {
+		return 1;
+	}
 
 	// If the column is an expression or literal, it's nullable.  PQftable
 	// ought to cath it, but if it doesn't then fall back to PQftablecol.

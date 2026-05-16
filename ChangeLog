@@ -66,7 +66,7 @@
 		binds
 	implemented postgresql getColumnScale()
 	implemented postgresql getColumnSize() for variable-length types
-	implemented postgresql isColumnNullable()
+	implemented postgresql isColumnNullable() (and made it optional)
 	added AutoCommit yes/no/backend connect string option to JDBC driver
 	added autocommit 1/0/-1 connect string option to PHP PDO driver
 	added lazyconnectautocommit connect string option to PHP PDO driver
