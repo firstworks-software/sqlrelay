@@ -84,6 +84,8 @@ class SQLRSERVER_DLLSPEC postgresqlconnection : public sqlrserverconnection {
 		const char	*selectSchemaQuery();
 		const char	*getCurrentSchemaQuery();
 		const char	*getCurrentUserQuery();
+		bool		begin();
+		bool		setIsolationLevel(const char *isolevel);
 		const char	*getIsolationLevelQuery();
 		const char	*mapIsolationLevel(
 				const char *isolevel,
@@ -2422,6 +2424,57 @@ const char *postgresqlconnection::getCurrentSchemaQuery() {
 
 const char *postgresqlconnection::getCurrentUserQuery() {
 	return "select current_user";
+}
+
+bool postgresqlconnection::begin() {
+
+	// the query that sets the isolation level must be run as the first
+	// query in a new transaction, so run "begin" and
+	// "set transaction isolation level ..." quries directly through PQexec
+	// to avoid running queries that check or deallocate the named
+	// statement...
+
+	cont->clearError();
+
+	PGresult	*r=PQexec(pgconn,"begin");
+	if (!r) {
+		return false;
+	}
+
+	bool	retval=PQresultStatus(r)==PGRES_COMMAND_OK;
+	PQclear(r);
+
+	if (retval) {
+		cont->setNeedsCommitOrRollback(true);
+	}
+	return retval;
+}
+
+bool postgresqlconnection::setIsolationLevel(const char *isolevel) {
+
+	// the query that sets the isolation level must be run as the first
+	// query in a new transaction, so run "begin" and
+	// "set transaction isolation level ..." quries directly through PQexec
+	// to avoid running queries that check or deallocate the named
+	// statement...
+
+	if (charstring::isNullOrEmpty(isolevel)) {
+		return false;
+	}
+
+	cont->clearError();
+
+	stringbuffer	silquery;
+	silquery.append("set transaction isolation level ")->append(isolevel);
+
+	PGresult	*r=PQexec(pgconn,silquery.getString());
+	if (!r) {
+		return false;
+	}
+
+	bool	retval=PQresultStatus(r)==PGRES_COMMAND_OK;
+	PQclear(r);
+	return retval;
 }
 
 const char *postgresqlconnection::getIsolationLevelQuery() {
