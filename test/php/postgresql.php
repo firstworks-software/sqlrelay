@@ -44,7 +44,7 @@
 
 
 	# isolation levels
-	/*echo("ISOLATION LEVELS: \n");
+	echo("ISOLATION LEVELS: \n");
 	$isolationlevels=array("read committed","read uncommitted",
 				"repeatable read","serializable");
 	foreach ($isolationlevels as $il) {
@@ -61,7 +61,7 @@
 	sqlrcon_begin($con);
 	assertTrue(sqlrcon_setIsolationLevel($con,$isolationlevels[0]));
 	sqlrcon_commit($con);
-	echo("\n");*/
+	echo("\n");
 
 
 	# create testtable

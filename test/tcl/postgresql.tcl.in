@@ -48,22 +48,22 @@ puts ""
 
 
 # isolation levels
-#puts "ISOLATION LEVELS: "
-#set isolationlevels [list "read committed" "read uncommitted" "repeatable read" "serializable"]
-#foreach il $isolationlevels {
-#	# postgresql requires the isolation level to
-#	# be the first query of the transaction
-#	$con begin
-#	assertTrue [$con setIsolationLevel $il]
-#	assertEqual [$con getIsolationLevel] $il
-#	$con commit
-#	puts ""
-#}
-## reset to the default isolation level
-#$con begin
-#assertTrue [$con setIsolationLevel [lindex $isolationlevels 0]]
-#$con commit
-#puts ""
+puts "ISOLATION LEVELS: "
+set isolationlevels [list "read committed" "read uncommitted" "repeatable read" "serializable"]
+foreach il $isolationlevels {
+	# postgresql requires the isolation level to
+	# be the first query of the transaction
+	$con begin
+	assertTrue [$con setIsolationLevel $il]
+	assertEqual [$con getIsolationLevel] $il
+	$con commit
+	puts ""
+}
+# reset to the default isolation level
+$con begin
+assertTrue [$con setIsolationLevel [lindex $isolationlevels 0]]
+$con commit
+puts ""
 
 
 # create testtable

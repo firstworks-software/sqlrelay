@@ -2465,7 +2465,13 @@ bool postgresqlconnection::setIsolationLevel(const char *isolevel) {
 	cont->clearError();
 
 	stringbuffer	silquery;
-	silquery.append("set transaction isolation level ")->append(isolevel);
+	if (cont->getInTransaction()) {
+		silquery.append("set transaction isolation level ");
+	} else {
+		silquery.append("set session characteristics as "
+				"transaction isolation level ");
+	}
+	silquery.append(isolevel);
 
 	PGresult	*r=PQexec(pgconn,silquery.getString());
 	if (!r) {

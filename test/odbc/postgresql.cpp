@@ -641,9 +641,6 @@ int main(int argc, char **argv) {
 
 
 	// SQL_ATTR_TXN_ISOLATION
-	// disabled: setting the isolation level is known to be
-	// problematic with postgresql
-	/*
 	// (the ISOLATION LEVELS section below exercises
 	// Oracle-specific acceptance of individual levels; we skip
 	// SQLGetConnectAttr here because it needs read access to
@@ -655,7 +652,6 @@ int main(int argc, char **argv) {
 			(SQLPOINTER)(uintptr_t)SQL_TXN_READ_COMMITTED,0);
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
-	*/
 
 
 	#if (ODBCVER >= 0x0300)
@@ -4805,9 +4801,6 @@ int main(int argc, char **argv) {
 
 
 	// isolation levels
-	// disabled: setting the isolation level is known to be
-	// problematic with postgresql
-	/*
 	stdoutput.printf("ISOLATION LEVELS: \n");
 
 	// PostgreSQL supports all four standard isolation levels;
@@ -4833,7 +4826,6 @@ int main(int argc, char **argv) {
 			(SQLPOINTER)(uintptr_t)SQL_TXN_READ_COMMITTED,0);
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
-	*/
 
 
 

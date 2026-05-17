@@ -54,7 +54,7 @@ console.log("");
 
 
 // isolation levels
-/*console.log("ISOLATION LEVELS: ");
+console.log("ISOLATION LEVELS: ");
 var isolationlevels=["read committed","read uncommitted",
 			"repeatable read","serializable"];
 for (var i=0;i<isolationlevels.length;i++) {
@@ -72,7 +72,7 @@ for (var i=0;i<isolationlevels.length;i++) {
 con.begin();
 assertTrue(con.setIsolationLevel(isolationlevels[0]));
 con.commit();
-console.log("");*/
+console.log("");
 
 
 // create testtable

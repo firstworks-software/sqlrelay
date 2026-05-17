@@ -54,22 +54,22 @@ print "\n"
 
 
 # isolation levels
-#print "ISOLATION LEVELS: \n"
-#isolationlevels=["read committed","read uncommitted","repeatable read","serializable"]
-#for il in isolationlevels
-#	# postgresql requires the isolation level to
-#	# be the first query of the transaction
-#	con.begin()
-#	assertTrue(con.setIsolationLevel(il))
-#	assertEqual(con.getIsolationLevel(),il)
-#	con.commit()
-#	print "\n"
-#end
-## reset to the default isolation level
-#con.begin()
-#assertTrue(con.setIsolationLevel(isolationlevels[0]))
-#con.commit()
-#print "\n"
+print "ISOLATION LEVELS: \n"
+isolationlevels=["read committed","read uncommitted","repeatable read","serializable"]
+for il in isolationlevels
+	# postgresql requires the isolation level to
+	# be the first query of the transaction
+	con.begin()
+	assertTrue(con.setIsolationLevel(il))
+	assertEqual(con.getIsolationLevel(),il)
+	con.commit()
+	print "\n"
+end
+# reset to the default isolation level
+con.begin()
+assertTrue(con.setIsolationLevel(isolationlevels[0]))
+con.commit()
+print "\n"
 
 
 # create testtable

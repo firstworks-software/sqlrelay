@@ -103,6 +103,42 @@ class postgresql extends sqlrtest {
 		con.setAutoCommit(true);
 		System.out.println();
 
+		// isolation levels
+		System.out.println("  isolation levels");
+
+		// postgresql supports all four isolation levels
+		con.commit();
+
+		con.setTransactionIsolation(
+			Connection.TRANSACTION_READ_UNCOMMITTED);
+		assertEquals(con.getTransactionIsolation(),
+			Connection.TRANSACTION_READ_UNCOMMITTED);
+
+		con.commit();
+		con.setTransactionIsolation(
+			Connection.TRANSACTION_READ_COMMITTED);
+		assertEquals(con.getTransactionIsolation(),
+			Connection.TRANSACTION_READ_COMMITTED);
+
+		con.commit();
+		con.setTransactionIsolation(
+			Connection.
+			TRANSACTION_REPEATABLE_READ);
+		assertEquals(con.getTransactionIsolation(),
+			Connection.TRANSACTION_REPEATABLE_READ);
+
+		con.commit();
+		con.setTransactionIsolation(
+			Connection.TRANSACTION_SERIALIZABLE);
+		assertEquals(con.getTransactionIsolation(),
+			Connection.TRANSACTION_SERIALIZABLE);
+
+		// reset to default
+		con.commit();
+		con.setTransactionIsolation(
+			Connection.TRANSACTION_READ_COMMITTED);
+		System.out.println();
+
 		// warnings
 		System.out.println("  warnings");
 		con.clearWarnings();

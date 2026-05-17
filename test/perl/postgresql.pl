@@ -62,21 +62,21 @@ print("\n");
 
 
 # isolation levels
-#print("ISOLATION LEVELS: \n");
-#foreach $il (@isolationlevels) {
-#	# postgresql requires the isolation level to
-#	# be the first query of the transaction
-#	$con->begin();
-#	assertTrue($con->setIsolationLevel($il));
-#	assertEquals($con->getIsolationLevel(),$il);
-#	$con->commit();
-#	print("\n");
-#}
-## reset to the default isolation level
-#$con->begin();
-#assertTrue($con->setIsolationLevel($isolationlevels[0]));
-#$con->commit();
-#print("\n");
+print("ISOLATION LEVELS: \n");
+foreach $il (@isolationlevels) {
+	# postgresql requires the isolation level to
+	# be the first query of the transaction
+	$con->begin();
+	assertTrue($con->setIsolationLevel($il));
+	assertEquals($con->getIsolationLevel(),$il);
+	$con->commit();
+	print("\n");
+}
+# reset to the default isolation level
+$con->begin();
+assertTrue($con->setIsolationLevel($isolationlevels[0]));
+$con->commit();
+print("\n");
 
 
 # create testtable

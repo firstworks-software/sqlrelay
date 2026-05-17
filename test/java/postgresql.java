@@ -71,7 +71,7 @@ class postgresql extends sqlrtest {
 
 
 		// isolation levels
-		/*System.out.println("ISOLATION LEVELS: ");
+		System.out.println("ISOLATION LEVELS: ");
 		for (String il : isolationlevels) {
 			// postgresql requires the isolation
 			// level to be the first query of the transaction
@@ -85,7 +85,7 @@ class postgresql extends sqlrtest {
 		con.begin();
 		assertTrue(con.setIsolationLevel(isolationlevels[0]));
 		con.commit();
-		System.out.println();*/
+		System.out.println();
 
 
 		// create testtable

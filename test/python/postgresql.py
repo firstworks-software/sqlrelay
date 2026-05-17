@@ -67,20 +67,20 @@ def main():
 
 
 	# isolation levels
-	#print("ISOLATION LEVELS: ")
-	#for il in isolationlevels:
-	#	# postgresql requires the isolation level to
-	#	# be the first query of the transaction
-	#	con.begin()
-	#	assertTrue(con.setIsolationLevel(il))
-	#	assertEquals(con.getIsolationLevel(),il)
-	#	con.commit()
-	#	print()
-	## reset to the default isolation level
-	#con.begin()
-	#assertTrue(con.setIsolationLevel(isolationlevels[0]))
-	#con.commit()
-	#print()
+	print("ISOLATION LEVELS: ")
+	for il in isolationlevels:
+		# postgresql requires the isolation level to
+		# be the first query of the transaction
+		con.begin()
+		assertTrue(con.setIsolationLevel(il))
+		assertEquals(con.getIsolationLevel(),il)
+		con.commit()
+		print()
+	# reset to the default isolation level
+	con.begin()
+	assertTrue(con.setIsolationLevel(isolationlevels[0]))
+	con.commit()
+	print()
 
 
 	# create testtable

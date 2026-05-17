@@ -85,7 +85,7 @@ int main(int argc, char **argv) {
 
 
 	// isolation levels
-	/*printf("ISOLATION LEVELS: \n");
+	printf("ISOLATION LEVELS: \n");
 	{
 		const char **il;
 		for (il=isolationlevels; *il; il++) {
@@ -103,7 +103,7 @@ int main(int argc, char **argv) {
 	sqlrcon_begin(con);
 	assertTrue(sqlrcon_setIsolationLevel(con,isolationlevels[0]));
 	sqlrcon_commit(con);
-	printf("\n");*/
+	printf("\n");
 
 
 	// create testtable

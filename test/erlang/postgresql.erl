@@ -11,6 +11,19 @@
                   assertTrue/1, assertFalse/1,
                   waitForPort/1, largeBuffer/1, shortHostname/0]).
 
+%% Iterate through an isolation-level list, setting each inside its
+%% own transaction (postgresql requires the SET to be the first query
+%% of the transaction) and verifying that getIsolationLevel agrees.
+setIsolationLevels([]) ->
+    ok;
+setIsolationLevels([Il | Rest]) ->
+    sqlrelay:beginTransaction(),
+    assertTrue(sqlrelay:setIsolationLevel(Il)),
+    assertEqualsString(sqlrelay:getIsolationLevel(), Il),
+    sqlrelay:commit(),
+    io:format("~n"),
+    setIsolationLevels(Rest).
+
 main() ->
     sqlrelay:start(),
     waitForPort(50),
@@ -48,7 +61,15 @@ main() ->
     io:format("~n"),
 
     %% ISOLATION LEVELS
-    %% (commented out in the C++ reference; not ported)
+    io:format("ISOLATION LEVELS: ~n"),
+    IsolationLevels = ["read committed", "read uncommitted",
+                       "repeatable read", "serializable"],
+    setIsolationLevels(IsolationLevels),
+    %% reset to the default isolation level
+    sqlrelay:beginTransaction(),
+    assertTrue(sqlrelay:setIsolationLevel(hd(IsolationLevels))),
+    sqlrelay:commit(),
+    io:format("~n"),
 
     %% CREATE TESTTABLE
     io:format("CREATE TESTTABLE: ~n"),

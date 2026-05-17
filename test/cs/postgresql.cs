@@ -69,7 +69,7 @@ namespace SQLRClientTest
 
 
             // isolation levels
-            /*String[] isolationlevels = new String[] {
+            String[] isolationlevels = new String[] {
                     "read committed","read uncommitted",
                     "repeatable read","serializable"};
             Console.WriteLine("ISOLATION LEVELS: ");
@@ -87,7 +87,7 @@ namespace SQLRClientTest
             con.begin();
             assertTrue(con.setIsolationLevel(isolationlevels[0]));
             con.commit();
-            Console.WriteLine("");*/
+            Console.WriteLine("");
 
 
             // create testtable
