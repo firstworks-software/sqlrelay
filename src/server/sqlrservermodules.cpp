@@ -122,14 +122,17 @@ const char *sqlrservermodules::getModuleName(domnode *parameters) {
 void sqlrservermodules::unload() {
 
 	// before list...
+	// skip plugins shared with alist (eg. when="both" triggers)
 	for (listnode< sqlrmoduleplugin * > *node=blist.getFirst();
 						node; node=node->getNext()) {
 		sqlrmoduleplugin	*sqlrmp=node->getValue();
+		if (alist.find(sqlrmp)) {
+			continue;
+		}
 		delete sqlrmp->m;
 		delete sqlrmp->dl;
 		delete sqlrmp;
 	}
-	blist.clear();
 
 	// after list...
 	for (listnode< sqlrmoduleplugin * > *node=alist.getFirst();
@@ -139,14 +142,20 @@ void sqlrservermodules::unload() {
 		delete sqlrmp->dl;
 		delete sqlrmp;
 	}
+
+	blist.clear();
 	alist.clear();
 }
 
 void sqlrservermodules::endTransaction(bool commit) {
 
 	// before list...
+	// skip plugins shared with alist (eg. when="both" triggers)
 	for (listnode< sqlrmoduleplugin * > *node=blist.getFirst();
 						node; node=node->getNext()) {
+		if (alist.find(node->getValue())) {
+			continue;
+		}
 		node->getValue()->m->endTransaction(commit);
 	}
 
@@ -160,8 +169,12 @@ void sqlrservermodules::endTransaction(bool commit) {
 void sqlrservermodules::endSession() {
 
 	// before list...
+	// skip plugins shared with alist (eg. when="both" triggers)
 	for (listnode< sqlrmoduleplugin * > *node=blist.getFirst();
 						node; node=node->getNext()) {
+		if (alist.find(node->getValue())) {
+			continue;
+		}
 		node->getValue()->m->endSession();
 	}
 

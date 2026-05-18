@@ -298,6 +298,13 @@ sqlrquerytype_t sqlrservercursor::determineQueryType(const char *query,
 							*(ptr+2)=='\0'))) {
 		return SQLRQUERYTYPE_COMMIT;
 	} else if (!charstring::compareIgnoringCase(ptr,"rollback",8)) {
+		// don't match "rollback to [savepoint] name")
+		const char	*after=
+			conn->cont->skipWhitespaceAndComments(ptr+8);
+		if (!charstring::compareIgnoringCase(after,"to",2) &&
+				character::isWhitespace(*(after+2))) {
+			return SQLRQUERYTYPE_ETC;
+		}
 		return SQLRQUERYTYPE_ROLLBACK;
 	} else if (isAutoCommitOnQuery(ptr)) {
 		return SQLRQUERYTYPE_AUTOCOMMIT_ON;

@@ -12,7 +12,8 @@ include ../../config.mk
 
 all: $(SQLR)trigger_replay.$(LIBEXT) \
 	$(SQLR)trigger_upsert.$(LIBEXT) \
-	$(SQLR)trigger_splitmultiinsert.$(LIBEXT)
+	$(SQLR)trigger_splitmultiinsert.$(LIBEXT) \
+	$(SQLR)trigger_savepoints.$(LIBEXT)
 
 clean:
 	$(RM) *.lo *.o *.obj *.$(LIBEXT) *.lib *.exp *.idb *.pdb *.manifest *.ii
@@ -27,6 +28,9 @@ $(SQLR)trigger_upsert.$(LIBEXT): upsert.cpp upsert.$(OBJ)
 $(SQLR)trigger_splitmultiinsert.$(LIBEXT): splitmultiinsert.cpp splitmultiinsert.$(OBJ)
 	$(LTLINK) $(LINK) $(OUT)$@ splitmultiinsert.$(OBJ) $(LDFLAGS) $(PLUGINLIBS) $(MODLINKFLAGS)
 
+$(SQLR)trigger_savepoints.$(LIBEXT): savepoints.cpp savepoints.$(OBJ)
+	$(LTLINK) $(LINK) $(OUT)$@ savepoints.$(OBJ) $(LDFLAGS) $(PLUGINLIBS) $(MODLINKFLAGS)
+
 install: $(INSTALLLIB)
 
 installdll:
@@ -34,6 +38,7 @@ installdll:
 	$(LTINSTALL) $(CP) $(SQLR)trigger_replay.$(LIBEXT) $(libexecdir)
 	$(LTINSTALL) $(CP) $(SQLR)trigger_upsert.$(LIBEXT) $(libexecdir)
 	$(LTINSTALL) $(CP) $(SQLR)trigger_splitmultiinsert.$(LIBEXT) $(libexecdir)
+	$(LTINSTALL) $(CP) $(SQLR)trigger_savepoints.$(LIBEXT) $(libexecdir)
 
 installlib: $(INSTALLSHAREDLIB)
 
@@ -51,9 +56,14 @@ installsharedlib:
 	$(RM) $(libexecdir)/$(SQLR)trigger_splitmultiinsert.a
 	$(RM) $(libexecdir)/$(SQLR)trigger_splitmultiinsert.$(LIBEXT)
 	$(MODULERENAME) $(libexecdir)/$(SQLR)trigger_splitmultiinsert.so so $(MODULESUFFIX)
+	$(LTINSTALL) $(CP) $(SQLR)trigger_savepoints.$(LIBEXT) $(libexecdir)
+	$(RM) $(libexecdir)/$(SQLR)trigger_savepoints.a
+	$(RM) $(libexecdir)/$(SQLR)trigger_savepoints.$(LIBEXT)
+	$(MODULERENAME) $(libexecdir)/$(SQLR)trigger_savepoints.so so $(MODULESUFFIX)
 
 uninstall:
 	$(RM) $(libexecdir)/$(SQLR)trigger_replay.*
 	$(RM) $(libexecdir)/$(SQLR)trigger_deadlock_replay.*
 	$(RM) $(libexecdir)/$(SQLR)trigger_upsert.*
 	$(RM) $(libexecdir)/$(SQLR)trigger_splitmultiinsert.*
+	$(RM) $(libexecdir)/$(SQLR)trigger_savepoints.*

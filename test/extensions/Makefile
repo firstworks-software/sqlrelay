@@ -17,10 +17,11 @@ all: router \
 	mysqlsplitmultiinsert \
 	mysqlimportexport \
 	emoji \
-	postgresqlupsert
+	postgresqlupsert \
+	postgresqlsavepoint
 
 clean:
-	$(RM) *.lo *.o *.obj router$(EXE) extensions$(EXE) mysqldeadlockreplay$(EXE) mysqlsplitmultiinsert$(EXE) mysqlupsert$(EXE) mysqlexport$(EXE) mysqlimportexport$(EXE) emoji$(EXE) postgresqlupsert$(EXE) *.csv cachefile* sqlnet.log
+	$(RM) *.lo *.o *.obj router$(EXE) extensions$(EXE) mysqldeadlockreplay$(EXE) mysqlsplitmultiinsert$(EXE) mysqlupsert$(EXE) mysqlexport$(EXE) mysqlimportexport$(EXE) emoji$(EXE) postgresqlupsert$(EXE) postgresqlsavepoint$(EXE) *.csv cachefile* sqlnet.log
 	$(RMTREE) .libs
 
 router: router.cpp router.$(OBJ)
@@ -46,3 +47,6 @@ emoji: emoji.cpp emoji.$(OBJ)
 
 postgresqlupsert: postgresqlupsert.cpp postgresqlupsert.$(OBJ)
 	$(LTLINK) $(LINK) $(LDFLAGS) $(OUT)$@$(EXE) postgresqlupsert.$(OBJ) $(CPPTESTLIBS)
+
+postgresqlsavepoint: postgresqlsavepoint.cpp postgresqlsavepoint.$(OBJ)
+	$(LTLINK) $(LINK) $(LDFLAGS) $(OUT)$@$(EXE) postgresqlsavepoint.$(OBJ) $(CPPTESTLIBS)

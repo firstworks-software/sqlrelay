@@ -81,6 +81,7 @@
 		calls
 	added getInTransaction() api call
 	added decodeblobs connect string option, defaulting true
+	fixed when="both" trigger double-free/dispatch errors
 
 2.1.1 - added tns_admin support
 	fixed sqlr-start ... -strace ...
