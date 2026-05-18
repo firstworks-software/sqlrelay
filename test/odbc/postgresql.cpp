@@ -641,15 +641,46 @@ int main(int argc, char **argv) {
 
 
 	// SQL_ATTR_TXN_ISOLATION
-	// (the ISOLATION LEVELS section below exercises
-	// Oracle-specific acceptance of individual levels; we skip
-	// SQLGetConnectAttr here because it needs read access to
-	// sys.v_$session / sys.v_$transaction which the test user
-	// does not have)
 	stdoutput.printf("  SQL_ATTR_TXN_ISOLATION\n");
-	// SQL_TXN_READ_COMMITTED (set only; restore via SET below)
+	// save initial value
+	erg=SQLGetConnectAttr(dbc,SQL_ATTR_TXN_ISOLATION,
+			(SQLPOINTER)&dbcinitial,0,&dbcstrlen);
+	assertSuccessDbc(dbc,erg);
+	// SQL_TXN_READ_UNCOMMITTED
+	erg=SQLSetConnectAttr(dbc,SQL_ATTR_TXN_ISOLATION,
+			(SQLPOINTER)(uintptr_t)SQL_TXN_READ_UNCOMMITTED,0);
+	assertSuccessDbc(dbc,erg);
+	erg=SQLGetConnectAttr(dbc,SQL_ATTR_TXN_ISOLATION,
+			(SQLPOINTER)&dbcuintval,0,&dbcstrlen);
+	assertSuccessDbc(dbc,erg);
+	assertEqualDbc(dbc,(int)dbcuintval,(int)SQL_TXN_READ_UNCOMMITTED);
+	// SQL_TXN_READ_COMMITTED
 	erg=SQLSetConnectAttr(dbc,SQL_ATTR_TXN_ISOLATION,
 			(SQLPOINTER)(uintptr_t)SQL_TXN_READ_COMMITTED,0);
+	assertSuccessDbc(dbc,erg);
+	erg=SQLGetConnectAttr(dbc,SQL_ATTR_TXN_ISOLATION,
+			(SQLPOINTER)&dbcuintval,0,&dbcstrlen);
+	assertSuccessDbc(dbc,erg);
+	assertEqualDbc(dbc,(int)dbcuintval,(int)SQL_TXN_READ_COMMITTED);
+	// SQL_TXN_REPEATABLE_READ
+	erg=SQLSetConnectAttr(dbc,SQL_ATTR_TXN_ISOLATION,
+			(SQLPOINTER)(uintptr_t)SQL_TXN_REPEATABLE_READ,0);
+	assertSuccessDbc(dbc,erg);
+	erg=SQLGetConnectAttr(dbc,SQL_ATTR_TXN_ISOLATION,
+			(SQLPOINTER)&dbcuintval,0,&dbcstrlen);
+	assertSuccessDbc(dbc,erg);
+	assertEqualDbc(dbc,(int)dbcuintval,(int)SQL_TXN_REPEATABLE_READ);
+	// SQL_TXN_SERIALIZABLE
+	erg=SQLSetConnectAttr(dbc,SQL_ATTR_TXN_ISOLATION,
+			(SQLPOINTER)(uintptr_t)SQL_TXN_SERIALIZABLE,0);
+	assertSuccessDbc(dbc,erg);
+	erg=SQLGetConnectAttr(dbc,SQL_ATTR_TXN_ISOLATION,
+			(SQLPOINTER)&dbcuintval,0,&dbcstrlen);
+	assertSuccessDbc(dbc,erg);
+	assertEqualDbc(dbc,(int)dbcuintval,(int)SQL_TXN_SERIALIZABLE);
+	// restore initial value
+	erg=SQLSetConnectAttr(dbc,SQL_ATTR_TXN_ISOLATION,
+			(SQLPOINTER)(uintptr_t)dbcinitial,0);
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
 

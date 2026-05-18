@@ -148,7 +148,7 @@ struct CONN {
 	bool				setautocommitoff;
 
 	bool				setisolationlevel;
-	bool				isolationleveltoset;
+	SQLUINTEGER			isolationleveltoset;
 
 	SQLUINTEGER			attraccessmode;
 	SQLUINTEGER			attrlogintimeout;
