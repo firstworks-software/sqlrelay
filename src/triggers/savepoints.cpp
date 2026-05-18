@@ -75,6 +75,7 @@ bool sqlrtrigger_savepoints::shouldSkip(sqlrservercursor *sqlrcur) {
 
 	// nothing to do if the query was suppressed
 	if (cont->getQuerySuppressed(sqlrcur)) {
+		debugWrite("skip: query suppressed");
 		return true;
 	}
 
@@ -83,6 +84,7 @@ bool sqlrtrigger_savepoints::shouldSkip(sqlrservercursor *sqlrcur) {
 	// savepoint we create would be destroyed before runAfter could
 	// roll back to it.
 	if (!cont->getInTransaction()) {
+		debugWrite("skip: not in a transaction");
 		return true;
 	}
 
@@ -97,24 +99,28 @@ bool sqlrtrigger_savepoints::shouldSkip(sqlrservercursor *sqlrcur) {
 		querytype==SQLRQUERYTYPE_AUTOCOMMIT_OFF ||
 		querytype==SQLRQUERYTYPE_SET_INCLUDING_AUTOCOMMIT_ON ||
 		querytype==SQLRQUERYTYPE_SET_INCLUDING_AUTOCOMMIT_OFF) {
+		debugWrite("skip: transaction-control query (type %d)",
+								(int)querytype);
 		return true;
 	}
 
+	debugWrite("not skipping");
 	return false;
 }
 
 bool sqlrtrigger_savepoints::runBefore(sqlrserverconnection *sqlrcon,
 					sqlrservercursor *sqlrcur) {
 
+	debugStart("savepoints runBefore");
+
 	// reset state - if we bail out below, runAfter must not try to
 	// roll back to or release a savepoint we didn't actually create
 	spactive=false;
 
 	if (shouldSkip(sqlrcur)) {
+		debugEnd();
 		return true;
 	}
-
-	debugStart("savepoints runBefore");
 
 	// build a unique savepoint name for this query.  The counter is
 	// per-trigger-instance which means per-sqlr-connection, so there's
