@@ -134,6 +134,7 @@
  * [#sqlrcmdgstat sqlrcmdgstat]
 * [#triggers Triggers]
  * [#replay replay]
+ * [#savepoints savepoints]
  * [#splitmultiinsert splitmultiinsert]
  * [#upsert upsert]
 * [#logging Logging]
@@ -5132,6 +5133,7 @@ At startup, the SQL Relay server creates instances of the specified trigger modu
 Currently, the following trigger modules are available in the standard SQL Relay distribution:
 
 * '''replay'''
+* '''savepoints'''
 * '''splitmultiinsert'''
 * '''upsert'''
 
@@ -5318,6 +5320,58 @@ There are some limitations to this.
 If any of those are detected, then the query log is cleared and the module is disabled until the beginning of the next transaction.  If a replay condition occurs, then the error is just returned as it would have been if the module were not in use.
 
 The module also has to do a bit of work to determine whether the insert contains an auto-increment column, including query the database for the last-insert-id, and potentially column info.  Column info is cached, but the cache isn't shared across sqlr-connection processes, and is (currently) cleared at the end of each transaction.  So, the module should be used with caution in performance-sensitive applications.
+
+
+[[br]][=#savepoints]
+== savepoints ==
+
+The savepoints module wraps each query in a database savepoint, and rolls back to that savepoint if the query fails.  This contains the failure to just the failed query, rather than letting it abort the surrounding transaction.
+
+This is most useful with databases (notably PostgreSQL) that mark the entire transaction as aborted as soon as any query in it fails.  Without intervention, every subsequent query in the transaction fails until the application issues a rollback - even queries that are otherwise unrelated to the one that failed.  With this trigger, the failed query is rolled back to the savepoint taken just before it ran, leaving the rest of the transaction intact and the connection ready to accept the next query.
+
+The trigger only takes savepoints inside a transaction.  Queries run in autocommit mode are passed through untouched, since a savepoint outside a transaction has no effect.  begin, commit, rollback, and autocommit-toggle queries are also passed through untouched.
+
+An example configuration:
+
+{{{#!blockquote
+{{{#!code
+@parts/sqlrelay-savepoints.conf@
+}}}
+}}}
+
+In this example, before every non-transaction-control query that runs inside a transaction, the trigger runs //savepoint sqlrspN// (where //N// is an auto-incrementing counter).  If the user's query succeeds, the trigger runs //release savepoint sqlrspN// to keep the savepoint stack bounded.  If the user's query fails, the trigger runs //rollback to savepoint sqlrspN// to undo the failed query.  Either way, the user's error (if any) is preserved and reported back to the client - the trigger contains the failure but doesn't hide it.
+
+The trigger should be configured with //when="both"//, since it takes a savepoint before each query and rolls back or releases it after.  Configurations with //when="before"// or //when="after"// alone are honored but won't accomplish anything useful.
+
+The default savepoint, rollback, and release syntax is standard SQL and works for PostgreSQL, MySQL/MariaDB, Oracle, DB2, Firebird, and other databases that follow the SQL standard.  For databases with non-standard savepoint syntax (e.g. SAP/Sybase ASE, Microsoft SQL Server), the syntax templates are configurable:
+
+{{{#!blockquote
+{{{#!code
+@parts/sqlrelay-savepoints-sap.conf@
+}}}
+}}}
+
+The '''trigger''' tag supports the following attributes in addition to the standard '''module''', '''when''', '''enabled''', and '''debug''' attributes:
+
+* '''savepointquery'''
+ * SQL template for creating a savepoint.  //%s// is replaced with the generated savepoint name.  Defaults to //savepoint %s//.
+* '''rollbackquery'''
+ * SQL template for rolling back to a savepoint.  //%s// is replaced with the generated savepoint name.  Defaults to //rollback to savepoint %s//.
+* '''releasequery'''
+ * SQL template for releasing a savepoint.  //%s// is replaced with the generated savepoint name.  Defaults to //release savepoint %s//.
+* '''release'''
+ * If set to "yes" (the default), the trigger runs //releasequery// after each successful query, so the savepoint stack doesn't grow without bound for long-running transactions.  Set to "no" for databases that don't support releasing savepoints (e.g. SAP/Sybase, MS SQL Server).
+* '''prefix'''
+ * Prefix used for the auto-generated savepoint names.  Defaults to //sqlrsp//.  Combined with a per-session counter to form names like //sqlrsp0//, //sqlrsp1//, and so on.
+
+
+=== Considerations ===
+
+There is a performance cost.  Every query inside a transaction generates two extra round-trips to the database (savepoint before, release or rollback after).  For workloads with short transactions or high query rates, this overhead can be significant.
+
+The trigger does not retry the failed query.  After rolling back to the savepoint, the original error is still reported to the client; it's up to the application (or another trigger like //replay//) to decide whether to retry.
+
+The trigger only acts inside a transaction.  Failures of queries run in autocommit mode are passed through unchanged.
 
 
 [[br]][=#splitmultiinsert]

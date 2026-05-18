@@ -211,6 +211,7 @@
   <li><a href="#triggers">Triggers</a></li>
   <ul>
     <li><a href="#replay">replay</a></li>
+    <li><a href="#savepoints">savepoints</a></li>
     <li><a href="#splitmultiinsert">splitmultiinsert</a></li>
     <li><a href="#upsert">upsert</a></li>
   </ul>
@@ -7803,6 +7804,7 @@ http://www.gnu.org/software/src-highlite -->
 
 <ul>
   <li><b>replay</b></li>
+  <li><b>savepoints</b></li>
   <li><b>splitmultiinsert</b></li>
   <li><b>upsert</b></li>
 </ul>
@@ -8051,6 +8053,103 @@ Status :
 <p>If any of those are detected, then the query log is cleared and the module is disabled until the beginning of the next transaction.  If a replay condition occurs, then the error is just returned as it would have been if the module were not in use.</p>
 
 <p>The module also has to do a bit of work to determine whether the insert contains an auto-increment column, including query the database for the last-insert-id, and potentially column info.  Column info is cached, but the cache isn't shared across sqlr-connection processes, and is (currently) cleared at the end of each transaction.  So, the module should be used with caution in performance-sensitive applications.</p>
+
+<br/><a name="savepoints"/><h2>savepoints</h2>
+
+<p>The savepoints module wraps each query in a database savepoint, and rolls back to that savepoint if the query fails.  This contains the failure to just the failed query, rather than letting it abort the surrounding transaction.</p>
+
+<p>This is most useful with databases (notably <a href="PostgreSQL">PostgreSQL</a>) that mark the entire transaction as aborted as soon as any query in it fails.  Without intervention, every subsequent query in the transaction fails until the application issues a rollback - even queries that are otherwise unrelated to the one that failed.  With this trigger, the failed query is rolled back to the savepoint taken just before it ran, leaving the rest of the transaction intact and the connection ready to accept the next query.</p>
+
+<p>The trigger only takes savepoints inside a transaction.  Queries run in autocommit mode are passed through untouched, since a savepoint outside a transaction has no effect.  begin, commit, rollback, and autocommit-toggle queries are also passed through untouched.</p>
+
+<p>An example configuration:</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt><b><font color="#000080">&lt;?xml</font></b> <font color="#009900">version</font><font color="#990000">=</font><font color="#FF0000">"1.0"</font><b><font color="#000080">?&gt;</font></b>
+<b><font color="#0000FF">&lt;instances&gt;</font></b>
+	...
+	<b><font color="#0000FF">&lt;instance</font></b> <font color="#009900">id</font><font color="#990000">=</font><font color="#FF0000">"example"</font> ... <b><font color="#0000FF">&gt;</font></b>
+		...
+		<b><font color="#0000FF">&lt;triggers&gt;</font></b>
+			<b><font color="#0000FF">&lt;trigger</font></b> <font color="#009900">module</font><font color="#990000">=</font><font color="#FF0000">"savepoints"</font> <font color="#009900">when</font><font color="#990000">=</font><font color="#FF0000">"both"</font><b><font color="#0000FF">/&gt;</font></b>
+		<b><font color="#0000FF">&lt;/triggers&gt;</font></b>
+		...
+	<b><font color="#0000FF">&lt;/instance&gt;</font></b>
+	...
+<b><font color="#0000FF">&lt;/instances&gt;</font></b>
+</tt></pre>
+
+</blockquote>
+<p>In this example, before every non-transaction-control query that runs inside a transaction, the trigger runs <i>savepoint sqlrspN</i> (where <i>N</i> is an auto-incrementing counter).  If the user's query succeeds, the trigger runs <i>release savepoint sqlrspN</i> to keep the savepoint stack bounded.  If the user's query fails, the trigger runs <i>rollback to savepoint sqlrspN</i> to undo the failed query.  Either way, the user's error (if any) is preserved and reported back to the client - the trigger contains the failure but doesn't hide it.</p>
+
+<p>The trigger should be configured with <i>when="both"</i>, since it takes a savepoint before each query and rolls back or releases it after.  Configurations with <i>when="before"</i> or <i>when="after"</i> alone are honored but won't accomplish anything useful.</p>
+
+<p>The default savepoint, rollback, and release syntax is standard SQL and works for <a href="PostgreSQL">PostgreSQL</a>, <a href="MySQL">MySQL</a>/MariaDB, Oracle, DB2, Firebird, and other databases that follow the SQL standard.  For databases with non-standard savepoint syntax (e.g. SAP/Sybase ASE, Microsoft SQL Server), the syntax templates are configurable:</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt><b><font color="#000080">&lt;?xml</font></b> <font color="#009900">version</font><font color="#990000">=</font><font color="#FF0000">"1.0"</font><b><font color="#000080">?&gt;</font></b>
+<b><font color="#0000FF">&lt;instances&gt;</font></b>
+	...
+	<b><font color="#0000FF">&lt;instance</font></b> <font color="#009900">id</font><font color="#990000">=</font><font color="#FF0000">"example"</font> ... <b><font color="#0000FF">&gt;</font></b>
+		...
+		<b><font color="#0000FF">&lt;triggers&gt;</font></b>
+			<b><font color="#0000FF">&lt;trigger</font></b> <font color="#009900">module</font><font color="#990000">=</font><font color="#FF0000">"savepoints"</font> <font color="#009900">when</font><font color="#990000">=</font><font color="#FF0000">"both"</font>
+				<font color="#009900">savepointquery</font><font color="#990000">=</font><font color="#FF0000">"save tran %s"</font>
+				<font color="#009900">rollbackquery</font><font color="#990000">=</font><font color="#FF0000">"rollback tran %s"</font>
+				<font color="#009900">release</font><font color="#990000">=</font><font color="#FF0000">"no"</font><b><font color="#0000FF">/&gt;</font></b>
+		<b><font color="#0000FF">&lt;/triggers&gt;</font></b>
+		...
+	<b><font color="#0000FF">&lt;/instance&gt;</font></b>
+	...
+<b><font color="#0000FF">&lt;/instances&gt;</font></b>
+</tt></pre>
+
+</blockquote>
+<p>The <b>trigger</b> tag supports the following attributes in addition to the standard <b>module</b>, <b>when</b>, <b>enabled</b>, and <b>debug</b> attributes:</p>
+
+<ul>
+  <li><b>savepointquery</b></li>
+  <ul>
+    <li>SQL template for creating a savepoint.  <i>%s</i> is replaced with the generated savepoint name.  Defaults to <i>savepoint %s</i>.</li>
+  </ul>
+
+  <li><b>rollbackquery</b></li>
+  <ul>
+    <li>SQL template for rolling back to a savepoint.  <i>%s</i> is replaced with the generated savepoint name.  Defaults to <i>rollback to savepoint %s</i>.</li>
+  </ul>
+
+  <li><b>releasequery</b></li>
+  <ul>
+    <li>SQL template for releasing a savepoint.  <i>%s</i> is replaced with the generated savepoint name.  Defaults to <i>release savepoint %s</i>.</li>
+  </ul>
+
+  <li><b>release</b></li>
+  <ul>
+    <li>If set to "yes" (the default), the trigger runs <i>releasequery</i> after each successful query, so the savepoint stack doesn't grow without bound for long-running transactions.  Set to "no" for databases that don't support releasing savepoints (e.g. SAP/Sybase, MS SQL Server).</li>
+  </ul>
+
+  <li><b>prefix</b></li>
+  <ul>
+    <li>Prefix used for the auto-generated savepoint names.  Defaults to <i>sqlrsp</i>.  Combined with a per-session counter to form names like <i>sqlrsp0</i>, <i>sqlrsp1</i>, and so on.</li>
+  </ul>
+
+</ul>
+
+<br/><h3>Considerations</h3>
+
+<p>There is a performance cost.  Every query inside a transaction generates two extra round-trips to the database (savepoint before, release or rollback after).  For workloads with short transactions or high query rates, this overhead can be significant.</p>
+
+<p>The trigger does not retry the failed query.  After rolling back to the savepoint, the original error is still reported to the client; it's up to the application (or another trigger like <i>replay</i>) to decide whether to retry.</p>
+
+<p>The trigger only acts inside a transaction.  Failures of queries run in autocommit mode are passed through unchanged.</p>
 
 <br/><a name="splitmultiinsert"/><h2>splitmultiinsert</h2>
 
