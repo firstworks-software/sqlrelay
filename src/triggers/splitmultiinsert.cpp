@@ -140,9 +140,12 @@ bool sqlrtrigger_splitmultiinsert::runBeforeExecute(sqlrserverconnection *sqlrco
 		//cont->copyInputBinds(micur,sicur);
 		
 		// prepare and execute the single-insert query
+		// (be sure to run directives, translations, filters,
+		// and triggers on the single-insert query, as well)
 		success=cont->prepareQuery(sicur,
 					singleinsert.getString(),
-					singleinsert.getSize()) &&
+					singleinsert.getSize(),
+					true,true,true,true) &&
 				cont->executeQuery(sicur,true,true,true,true);
 
 		// copy the error from the cursor used to run the
