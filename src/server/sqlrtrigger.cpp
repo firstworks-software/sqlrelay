@@ -18,12 +18,22 @@ sqlrtrigger::~sqlrtrigger() {
 	delete pvt;
 }
 
-bool sqlrtrigger::runBefore(sqlrserverconnection *sqlrcon,
+bool sqlrtrigger::runBeforePrepare(sqlrserverconnection *sqlrcon,
 				sqlrservercursor *sqlrcur) {
 	return true;
 }
 
-bool sqlrtrigger::runAfter(sqlrserverconnection *sqlrcon,
+bool sqlrtrigger::runAfterPrepare(sqlrserverconnection *sqlrcon,
+				sqlrservercursor *sqlrcur) {
+	return true;
+}
+
+bool sqlrtrigger::runBeforeExecute(sqlrserverconnection *sqlrcon,
+				sqlrservercursor *sqlrcur) {
+	return true;
+}
+
+bool sqlrtrigger::runAfterExecute(sqlrserverconnection *sqlrcon,
 				sqlrservercursor *sqlrcur) {
 	return true;
 }

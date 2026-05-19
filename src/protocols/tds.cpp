@@ -2453,7 +2453,7 @@ bool sqlrprotocol_tds::sqlBatch(sqlrservercursor *cursor) {
 
 	// run the query
 	bool	success=
-		cont->prepareQuery(cursor,sql8,sqlsize,true,true,true) &&
+		cont->prepareQuery(cursor,sql8,sqlsize,true,true,true,true) &&
 		cont->executeQuery(cursor,true,true,true,true);
 
 	// clean up
@@ -4039,7 +4039,7 @@ bool sqlrprotocol_tds::remoteProcedureCall(sqlrservercursor *cursor) {
 		// prepare the query
 		retval=cont->prepareQuery(cursor,
 					query.getString(),query.getSize(),
-					true,true,true);
+					true,true,true,true);
 	} else {
 		// do whatever the procid asked for
 		switch (procid) {
@@ -4118,7 +4118,8 @@ bool sqlrprotocol_tds::remoteProcedureCall(sqlrservercursor *cursor) {
 		if (procname) {
 
 			// execute the query
-			bool	success=cont->executeQuery(cursor);
+			bool	success=cont->executeQuery(cursor,
+						true,true,true,true);
 
 			// build the response packet
 			if (success) {

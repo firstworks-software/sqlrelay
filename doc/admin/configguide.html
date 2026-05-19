@@ -7774,7 +7774,7 @@ http://www.gnu.org/software/src-highlite -->
 			<b><font color="#0000FF">&lt;querytranslation</font></b> <font color="#009900">module</font><font color="#990000">=</font><font color="#FF0000">"normalize"</font><b><font color="#0000FF">/&gt;</font></b>
 		<b><font color="#0000FF">&lt;/querytranslations&gt;</font></b>
 		<b><font color="#0000FF">&lt;triggers&gt;</font></b>
-			<b><font color="#0000FF">&lt;trigger</font></b> <font color="#009900">module</font><font color="#990000">=</font><font color="#FF0000">"replay"</font> <font color="#009900">when</font><font color="#990000">=</font><font color="#FF0000">"after"</font><b><font color="#0000FF">&gt;</font></b>
+			<b><font color="#0000FF">&lt;trigger</font></b> <font color="#009900">module</font><font color="#990000">=</font><font color="#FF0000">"replay"</font> <font color="#009900">when</font><font color="#990000">=</font><font color="#FF0000">"afterExecute"</font><b><font color="#0000FF">&gt;</font></b>
 				<b><font color="#0000FF">&lt;condition</font></b> <font color="#009900">error</font><font color="#990000">=</font><font color="#FF0000">"1213"</font> <font color="#009900">scope</font><font color="#990000">=</font><font color="#FF0000">"transaction"</font><b><font color="#0000FF">/&gt;</font></b>
 				<b><font color="#0000FF">&lt;condition</font></b> <font color="#009900">error</font><font color="#990000">=</font><font color="#FF0000">"1205"</font> <font color="#009900">scope</font><font color="#990000">=</font><font color="#FF0000">"query"</font><b><font color="#0000FF">/&gt;</font></b>
 			<b><font color="#0000FF">&lt;/trigger&gt;</font></b>
@@ -7794,7 +7794,19 @@ http://www.gnu.org/software/src-highlite -->
 
 <p>All trigger modules have a <i>debug</i> attribute.  If debug="yes" is configured then debugging information is written to the destination of the debug logger module (if one is defined, see <a href="#debug">the debug logger module</a>), or otherwise, to standard output.  If debug="no" is configured, or if the <i>debug</i> attribute is omitted, then no debugging information is written.</p>
 
-<p>All trigger modules also have a <i>when</i> attribute which can be set to "before", "after", or "both", indicating whether to run the trigger before the query is executed, after the query has been executed, or both.</p>
+<p>All trigger modules also have a <i>when</i> attribute which controls the phases in which the trigger runs.  The value is a comma-separated list of phase keywords.  The supported keywords are:</p>
+
+<ul>
+  <li>"beforeExecute" - run the trigger before the query is executed</li>
+  <li>"afterExecute" - run the trigger after the query has been executed</li>
+  <li>"bothExecute" - shorthand for "beforeExecute,afterExecute"</li>
+  <li>"beforePrepare" - run the trigger before the query is prepared</li>
+  <li>"afterPrepare" - run the trigger after the query has been prepared</li>
+  <li>"bothPrepare" - shorthand for "beforePrepare,afterPrepare"</li>
+  <li>"all" - shorthand for "bothPrepare,bothExecute"</li>
+</ul>
+
+<p>For example, <i>when="all"</i> runs the trigger before and after both the prepare and execute phases.  Most triggers only need to act at execute time, but some triggers (notably <i>savepoints</i>) need to wrap the prepare phase as well, because databases like <a href="PostgreSQL">PostgreSQL</a> parse and resolve references during prepare and fail there rather than at execute time.</p>
 
 <p>Trigger modules can be "stacked".  Multiple different modules may be loaded and multiple instances of the same type of module, with different configurations, may also be loaded.</p>
 
@@ -7833,7 +7845,7 @@ http://www.gnu.org/software/src-highlite -->
 			<b><font color="#0000FF">&lt;querytranslation</font></b> <font color="#009900">module</font><font color="#990000">=</font><font color="#FF0000">"normalize"</font><b><font color="#0000FF">/&gt;</font></b>
 		<b><font color="#0000FF">&lt;/querytranslations&gt;</font></b>
 		<b><font color="#0000FF">&lt;triggers&gt;</font></b>
-			<b><font color="#0000FF">&lt;trigger</font></b> <font color="#009900">module</font><font color="#990000">=</font><font color="#FF0000">"replay"</font> <font color="#009900">when</font><font color="#990000">=</font><font color="#FF0000">"after"</font><b><font color="#0000FF">&gt;</font></b>
+			<b><font color="#0000FF">&lt;trigger</font></b> <font color="#009900">module</font><font color="#990000">=</font><font color="#FF0000">"replay"</font> <font color="#009900">when</font><font color="#990000">=</font><font color="#FF0000">"afterExecute"</font><b><font color="#0000FF">&gt;</font></b>
 				<b><font color="#0000FF">&lt;condition</font></b> <font color="#009900">error</font><font color="#990000">=</font><font color="#FF0000">"1213"</font> <font color="#009900">scope</font><font color="#990000">=</font><font color="#FF0000">"transaction"</font><b><font color="#0000FF">/&gt;</font></b>
 				<b><font color="#0000FF">&lt;condition</font></b> <font color="#009900">error</font><font color="#990000">=</font><font color="#FF0000">"1205"</font> <font color="#009900">scope</font><font color="#990000">=</font><font color="#FF0000">"query"</font><b><font color="#0000FF">/&gt;</font></b>
 			<b><font color="#0000FF">&lt;/trigger&gt;</font></b>
@@ -7847,7 +7859,7 @@ http://www.gnu.org/software/src-highlite -->
 </blockquote>
 <p>In this example...</p>
 
-<p>The trigger is configured to run after the query has been executed.  This is the only valid configuration for the replay trigger.  If when="before" or when="both" is set then the trigger will be ignored.</p>
+<p>The trigger is configured to run after the query has been executed.  This is the only valid configuration for the replay trigger.  If when="beforeExecute" is set then the trigger will be ignored.</p>
 
 <p>If an error code 1213 occurs (a MySQL deadlock), then the entire transaction is replayed.  If an error code 1205 occurs (a MySQL lock wait timeout), then the previous query is replayed.</p>
 
@@ -7869,7 +7881,7 @@ http://www.gnu.org/software/src-highlite -->
 			<b><font color="#0000FF">&lt;querytranslation</font></b> <font color="#009900">module</font><font color="#990000">=</font><font color="#FF0000">"normalize"</font><b><font color="#0000FF">/&gt;</font></b>
 		<b><font color="#0000FF">&lt;/querytranslations&gt;</font></b>
 		<b><font color="#0000FF">&lt;triggers&gt;</font></b>
-			<b><font color="#0000FF">&lt;trigger</font></b> <font color="#009900">module</font><font color="#990000">=</font><font color="#FF0000">"replay"</font> <font color="#009900">when</font><font color="#990000">=</font><font color="#FF0000">"after"</font><b><font color="#0000FF">&gt;</font></b>
+			<b><font color="#0000FF">&lt;trigger</font></b> <font color="#009900">module</font><font color="#990000">=</font><font color="#FF0000">"replay"</font> <font color="#009900">when</font><font color="#990000">=</font><font color="#FF0000">"afterExecute"</font><b><font color="#0000FF">&gt;</font></b>
 				<b><font color="#0000FF">&lt;condition</font></b> <font color="#009900">error</font><font color="#990000">=</font><font color="#FF0000">"1213"</font> <font color="#009900">scope</font><font color="#990000">=</font><font color="#FF0000">"transaction"</font><b><font color="#0000FF">&gt;</font></b>
 					<b><font color="#0000FF">&lt;log</font></b> <font color="#009900">file</font><font color="#990000">=</font><font color="#FF0000">"/tmp/example-deadlocks.log"</font><b><font color="#0000FF">&gt;</font></b>
 						<b><font color="#0000FF">&lt;query&gt;</font></b>
@@ -8075,7 +8087,8 @@ http://www.gnu.org/software/src-highlite -->
 	<b><font color="#0000FF">&lt;instance</font></b> <font color="#009900">id</font><font color="#990000">=</font><font color="#FF0000">"example"</font> ... <b><font color="#0000FF">&gt;</font></b>
 		...
 		<b><font color="#0000FF">&lt;triggers&gt;</font></b>
-			<b><font color="#0000FF">&lt;trigger</font></b> <font color="#009900">module</font><font color="#990000">=</font><font color="#FF0000">"savepoints"</font> <font color="#009900">when</font><font color="#990000">=</font><font color="#FF0000">"both"</font><b><font color="#0000FF">/&gt;</font></b>
+			<b><font color="#0000FF">&lt;trigger</font></b> <font color="#009900">module</font><font color="#990000">=</font><font color="#FF0000">"savepoints"</font>
+				<font color="#009900">when</font><font color="#990000">=</font><font color="#FF0000">"all"</font><b><font color="#0000FF">/&gt;</font></b>
 		<b><font color="#0000FF">&lt;/triggers&gt;</font></b>
 		...
 	<b><font color="#0000FF">&lt;/instance&gt;</font></b>
@@ -8086,7 +8099,7 @@ http://www.gnu.org/software/src-highlite -->
 </blockquote>
 <p>In this example, before every non-transaction-control query that runs inside a transaction, the trigger runs <i>savepoint sqlrspN</i> (where <i>N</i> is an auto-incrementing counter).  If the user's query succeeds, the trigger runs <i>release savepoint sqlrspN</i> to keep the savepoint stack bounded.  If the user's query fails, the trigger runs <i>rollback to savepoint sqlrspN</i> to undo the failed query.  Either way, the user's error (if any) is preserved and reported back to the client - the trigger contains the failure but doesn't hide it.</p>
 
-<p>The trigger should be configured with <i>when="both"</i>, since it takes a savepoint before each query and rolls back or releases it after.  Configurations with <i>when="before"</i> or <i>when="after"</i> alone are honored but won't accomplish anything useful.</p>
+<p>The trigger should be configured with <i>when="all"</i>, since it takes a savepoint before each query and rolls back or releases it after, and needs to wrap both the prepare and execute phases.  Wrapping prepare is essential for <a href="PostgreSQL">PostgreSQL</a> and similar databases that parse and resolve references during prepare - reference-related failures occur at prepare time there, not execute time, and without a savepoint bracketing the prepare the entire transaction is poisoned.  Configurations that omit any of the four phases are honored but may not accomplish anything useful.</p>
 
 <p>The default savepoint, rollback, and release syntax is standard SQL and works for <a href="PostgreSQL">PostgreSQL</a>, <a href="MySQL">MySQL</a>/MariaDB, Oracle, DB2, Firebird, and other databases that follow the SQL standard.  For databases with non-standard savepoint syntax (e.g. SAP/Sybase ASE, Microsoft SQL Server), the syntax templates are configurable:</p>
 
@@ -8101,7 +8114,8 @@ http://www.gnu.org/software/src-highlite -->
 	<b><font color="#0000FF">&lt;instance</font></b> <font color="#009900">id</font><font color="#990000">=</font><font color="#FF0000">"example"</font> ... <b><font color="#0000FF">&gt;</font></b>
 		...
 		<b><font color="#0000FF">&lt;triggers&gt;</font></b>
-			<b><font color="#0000FF">&lt;trigger</font></b> <font color="#009900">module</font><font color="#990000">=</font><font color="#FF0000">"savepoints"</font> <font color="#009900">when</font><font color="#990000">=</font><font color="#FF0000">"both"</font>
+			<b><font color="#0000FF">&lt;trigger</font></b> <font color="#009900">module</font><font color="#990000">=</font><font color="#FF0000">"savepoints"</font>
+				<font color="#009900">when</font><font color="#990000">=</font><font color="#FF0000">"all"</font>
 				<font color="#009900">savepointquery</font><font color="#990000">=</font><font color="#FF0000">"save tran %s"</font>
 				<font color="#009900">rollbackquery</font><font color="#990000">=</font><font color="#FF0000">"rollback tran %s"</font>
 				<font color="#009900">release</font><font color="#990000">=</font><font color="#FF0000">"no"</font><b><font color="#0000FF">/&gt;</font></b>
@@ -8173,8 +8187,8 @@ http://www.gnu.org/software/src-highlite -->
 			<b><font color="#0000FF">&lt;querytranslation</font></b> <font color="#009900">module</font><font color="#990000">=</font><font color="#FF0000">"normalize"</font><b><font color="#0000FF">/&gt;</font></b>
 		<b><font color="#0000FF">&lt;/querytranslations&gt;</font></b>
 		<b><font color="#0000FF">&lt;triggers&gt;</font></b>
-			<b><font color="#0000FF">&lt;trigger</font></b> <font color="#009900">module</font><font color="#990000">=</font><font color="#FF0000">"splitmultiinsert"</font> <font color="#009900">when</font><font color="#990000">=</font><font color="#FF0000">"before"</font><b><font color="#0000FF">/&gt;</font></b>
-			<b><font color="#0000FF">&lt;trigger</font></b> <font color="#009900">module</font><font color="#990000">=</font><font color="#FF0000">"replay"</font> <font color="#009900">when</font><font color="#990000">=</font><font color="#FF0000">"after"</font><b><font color="#0000FF">&gt;</font></b>
+			<b><font color="#0000FF">&lt;trigger</font></b> <font color="#009900">module</font><font color="#990000">=</font><font color="#FF0000">"splitmultiinsert"</font> <font color="#009900">when</font><font color="#990000">=</font><font color="#FF0000">"beforeExecute"</font><b><font color="#0000FF">/&gt;</font></b>
+			<b><font color="#0000FF">&lt;trigger</font></b> <font color="#009900">module</font><font color="#990000">=</font><font color="#FF0000">"replay"</font> <font color="#009900">when</font><font color="#990000">=</font><font color="#FF0000">"afterExecute"</font><b><font color="#0000FF">&gt;</font></b>
 				<b><font color="#0000FF">&lt;condition</font></b> <font color="#009900">error</font><font color="#990000">=</font><font color="#FF0000">"1213"</font> <font color="#009900">scope</font><font color="#990000">=</font><font color="#FF0000">"transaction"</font><b><font color="#0000FF">/&gt;</font></b>
 				<b><font color="#0000FF">&lt;condition</font></b> <font color="#009900">error</font><font color="#990000">=</font><font color="#FF0000">"1205"</font> <font color="#009900">scope</font><font color="#990000">=</font><font color="#FF0000">"query"</font><b><font color="#0000FF">/&gt;</font></b>
 			<b><font color="#0000FF">&lt;/trigger&gt;</font></b>
@@ -8188,7 +8202,7 @@ http://www.gnu.org/software/src-highlite -->
 </blockquote>
 <p>In this example...</p>
 
-<p>The splitmultiinsert trigger is configured to run before the query has been executed.  This is the only valid configuration for the splitmultiinsert trigger.  If when="after" or when="both" is set then the trigger will be ignored.</p>
+<p>The splitmultiinsert trigger is configured to run before the query has been executed.  This is the only valid configuration for the splitmultiinsert trigger.  If when="afterExecute" is set then the trigger will be ignored.</p>
 
 <p>The replay trigger is also configured.  In this configuration, the splitmultiinsert trigger supports the replay trigger by splitting multi-row inserts into a set of single-row inserts, for which it is possible to get the last-insert-id of each, if necessary.</p>
 
@@ -8313,7 +8327,7 @@ http://www.gnu.org/software/src-highlite -->
 			<b><font color="#0000FF">&lt;querytranslation</font></b> <font color="#009900">module</font><font color="#990000">=</font><font color="#FF0000">"normalize"</font><b><font color="#0000FF">/&gt;</font></b>
 		<b><font color="#0000FF">&lt;/querytranslations&gt;</font></b>
 		<b><font color="#0000FF">&lt;triggers&gt;</font></b>
-			<b><font color="#0000FF">&lt;trigger</font></b> <font color="#009900">module</font><font color="#990000">=</font><font color="#FF0000">"upsert"</font> <font color="#009900">when</font><font color="#990000">=</font><font color="#FF0000">"after"</font><b><font color="#0000FF">&gt;</font></b>
+			<b><font color="#0000FF">&lt;trigger</font></b> <font color="#009900">module</font><font color="#990000">=</font><font color="#FF0000">"upsert"</font> <font color="#009900">when</font><font color="#990000">=</font><font color="#FF0000">"afterExecute"</font><b><font color="#0000FF">&gt;</font></b>
 				<b><font color="#0000FF">&lt;errors&gt;</font></b>
 					<b><font color="#0000FF">&lt;error</font></b> <font color="#009900">string</font><font color="#990000">=</font><font color="#FF0000">"ORA-00001"</font><b><font color="#0000FF">/&gt;</font></b>
 				<b><font color="#0000FF">&lt;/errors&gt;</font></b>
@@ -8408,7 +8422,7 @@ http://www.gnu.org/software/src-highlite -->
 			<b><font color="#0000FF">&lt;translation</font></b> <font color="#009900">module</font><font color="#990000">=</font><font color="#FF0000">"normalize"</font><b><font color="#0000FF">/&gt;</font></b>
 		<b><font color="#0000FF">&lt;/translations&gt;</font></b>
 		<b><font color="#0000FF">&lt;triggers&gt;</font></b>
-			<b><font color="#0000FF">&lt;trigger</font></b> <font color="#009900">module</font><font color="#990000">=</font><font color="#FF0000">"upsert"</font> <font color="#009900">when</font><font color="#990000">=</font><font color="#FF0000">"after"</font><b><font color="#0000FF">&gt;</font></b>
+			<b><font color="#0000FF">&lt;trigger</font></b> <font color="#009900">module</font><font color="#990000">=</font><font color="#FF0000">"upsert"</font> <font color="#009900">when</font><font color="#990000">=</font><font color="#FF0000">"afterExecute"</font><b><font color="#0000FF">&gt;</font></b>
 				<b><font color="#0000FF">&lt;errors&gt;</font></b>
 					<b><font color="#0000FF">&lt;error</font></b> <font color="#009900">number</font><font color="#990000">=</font><font color="#FF0000">"1"</font><b><font color="#0000FF">/&gt;</font></b>
 				<b><font color="#0000FF">&lt;/errors&gt;</font></b>
@@ -8444,7 +8458,7 @@ http://www.gnu.org/software/src-highlite -->
 			<b><font color="#0000FF">&lt;querytranslation</font></b> <font color="#009900">module</font><font color="#990000">=</font><font color="#FF0000">"normalize"</font><b><font color="#0000FF">/&gt;</font></b>
 		<b><font color="#0000FF">&lt;/querytranslations&gt;</font></b>
 		<b><font color="#0000FF">&lt;triggers&gt;</font></b>
-			<b><font color="#0000FF">&lt;trigger</font></b> <font color="#009900">module</font><font color="#990000">=</font><font color="#FF0000">"upsert"</font> <font color="#009900">when</font><font color="#990000">=</font><font color="#FF0000">"after"</font><b><font color="#0000FF">&gt;</font></b>
+			<b><font color="#0000FF">&lt;trigger</font></b> <font color="#009900">module</font><font color="#990000">=</font><font color="#FF0000">"upsert"</font> <font color="#009900">when</font><font color="#990000">=</font><font color="#FF0000">"afterExecute"</font><b><font color="#0000FF">&gt;</font></b>
 				<b><font color="#0000FF">&lt;errors&gt;</font></b>
 					<b><font color="#0000FF">&lt;error</font></b> <font color="#009900">string</font><font color="#990000">=</font><font color="#FF0000">"ORA-00001"</font><b><font color="#0000FF">/&gt;</font></b>
 				<b><font color="#0000FF">&lt;/errors&gt;</font></b>
@@ -8481,7 +8495,7 @@ http://www.gnu.org/software/src-highlite -->
 			<b><font color="#0000FF">&lt;querytranslation</font></b> <font color="#009900">module</font><font color="#990000">=</font><font color="#FF0000">"normalize"</font><b><font color="#0000FF">/&gt;</font></b>
 		<b><font color="#0000FF">&lt;/querytranslations&gt;</font></b>
 		<b><font color="#0000FF">&lt;triggers&gt;</font></b>
-			<b><font color="#0000FF">&lt;trigger</font></b> <font color="#009900">module</font><font color="#990000">=</font><font color="#FF0000">"upsert"</font> <font color="#009900">when</font><font color="#990000">=</font><font color="#FF0000">"after"</font><b><font color="#0000FF">&gt;</font></b>
+			<b><font color="#0000FF">&lt;trigger</font></b> <font color="#009900">module</font><font color="#990000">=</font><font color="#FF0000">"upsert"</font> <font color="#009900">when</font><font color="#990000">=</font><font color="#FF0000">"afterExecute"</font><b><font color="#0000FF">&gt;</font></b>
 				<b><font color="#0000FF">&lt;errors&gt;</font></b>
 					<b><font color="#0000FF">&lt;error</font></b> <font color="#009900">string</font><font color="#990000">=</font><font color="#FF0000">"ORA-00001"</font><b><font color="#0000FF">/&gt;</font></b>
 				<b><font color="#0000FF">&lt;/errors&gt;</font></b>

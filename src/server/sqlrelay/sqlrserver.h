@@ -1600,6 +1600,8 @@ class SQLRSERVER_DLLSPEC sqlrservercontroller : public sqlrserverbase {
 		 *  disabled if it is false.
 		 *  Filters are enabled if "enablefilters" is true or disabled
 		 *  if it is false.
+		 *  Triggers are enabled if "enabletriggers" is true or disabled
+		 *  if it is false.
 		 *
 		 *  Returns true on success and false otherwise. */
 		bool	prepareQuery(sqlrservercursor *cursor,
@@ -1607,7 +1609,8 @@ class SQLRSERVER_DLLSPEC sqlrservercontroller : public sqlrserverbase {
 						uint32_t size,
 						bool enabledirectives,
 						bool enabletranslations,
-						bool enablefilters);
+						bool enablefilters,
+						bool enabletriggers);
 
 		/** Sets whether the current query is "suppressed" or not.
 		 *  Currently may be called by a before-trigger to suppresses
@@ -7630,13 +7633,31 @@ class SQLRSERVER_DLLSPEC sqlrtrigger : public sqlrservermodule {
 		/** Deletes this instance of sqlrtrigger. */
 		virtual	~sqlrtrigger();
 
+		/** Runs before preparation of the query.
+		 *
+		 *  Returns true on success and false if an error occurred.
+		 *
+		 *  This implementation just returns true, but may be
+		 *  overridden by a child class to perform specific tasks. */
+		virtual bool	runBeforePrepare(sqlrserverconnection *sqlrcon,
+						sqlrservercursor *sqlrcur);
+
+		/** Runs after preparation of the query.
+		 *
+		 *  Returns true on success and false if an error occurred.
+		 *
+		 *  This implementation just returns true, but may be
+		 *  overridden by a child class to perform specific tasks. */
+		virtual bool	runAfterPrepare(sqlrserverconnection *sqlrcon,
+						sqlrservercursor *sqlrcur);
+
 		/** Runs before execution of the query.
 		 *
 		 *  Returns true on success and false if an error occurred.
 		 *
 		 *  This implementation just returns true, but may be
 		 *  overridden by a child class to perform specific tasks. */
-		virtual bool	runBefore(sqlrserverconnection *sqlrcon,
+		virtual bool	runBeforeExecute(sqlrserverconnection *sqlrcon,
 						sqlrservercursor *sqlrcur);
 
 		/** Runs after execution of the query.
@@ -7645,7 +7666,7 @@ class SQLRSERVER_DLLSPEC sqlrtrigger : public sqlrservermodule {
 		 *
 		 *  This implementation just returns true, but may be
 		 *  overridden by a child class to perform specific tasks. */
-		virtual bool	runAfter(sqlrserverconnection *sqlrcon,
+		virtual bool	runAfterExecute(sqlrserverconnection *sqlrcon,
 						sqlrservercursor *sqlrcur);
 
 	#include <sqlrelay/private/sqlrtrigger.h>

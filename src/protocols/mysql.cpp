@@ -2969,7 +2969,8 @@ bool sqlrprotocol_mysql::sendQuery(sqlrservercursor *cursor,
 	// FIXME: handle custom cursors
 	columntypescached[cont->getId(cursor)]=false;
 	clearParams(cursor);
-	return (cont->prepareQuery(cursor,query,querysize,true,true,true) &&
+	return (cont->prepareQuery(cursor,query,querysize,
+						true,true,true,true) &&
 			cont->executeQuery(cursor,true,true,true,true))?
 			sendQueryResult(cursor,false):
 			sendQueryError(cursor);
@@ -4276,7 +4277,7 @@ bool sqlrprotocol_mysql::comStmtPrepare(sqlrservercursor *cursor) {
 	// prepare the query
 	if (!cont->prepareQuery(cursor,cont->getQueryBuffer(cursor),
 					cont->getQuerySize(cursor),
-					true,true,true)) {
+					true,true,true,true)) {
 		return sendQueryError(cursor);
 	}
 	return sendStmtPrepareOk(cursor);

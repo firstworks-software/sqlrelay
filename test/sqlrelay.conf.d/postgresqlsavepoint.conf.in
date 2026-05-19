@@ -9,7 +9,7 @@
 			<translation module="normalize"/>
 		</translations>
 		<triggers>
-			<trigger module="savepoints" when="both"/>
+			<trigger module="savepoints" when="all"/>
 		</triggers>
 		<connections>
 			<connection string="host=postgresql;user=testuser;password=testpassword;db=@HOSTNAME@;typemangling=lookup;tablemangling=lookup"/>

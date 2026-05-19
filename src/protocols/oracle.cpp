@@ -3257,7 +3257,7 @@ cursorid=hackcursorid;
 	// prepare the query
 	if (!cont->prepareQuery(cursor,cont->getQueryBuffer(cursor),
 					cont->getQuerySize(cursor),
-					true,true,true)) {
+					true,true,true,true)) {
 		debugWrite("prepare query failed");
 		return sendQueryError(cursor);
 	}
@@ -3382,7 +3382,7 @@ cursorid=hackcursorid;
 		if (!cont->prepareQuery(cursor,
 					cont->getQueryBuffer(cursor),
 					cont->getQuerySize(cursor),
-					true,true,true)) {
+					true,true,true,true)) {
 			debugWrite("prepare query failed");
 			return sendQueryError(cursor);
 		}
@@ -3894,7 +3894,7 @@ hackcursorid=cursorid;
 		if (!cont->prepareQuery(cursor,
 					cont->getQueryBuffer(cursor),
 					cont->getQuerySize(cursor),
-					true,true,true)) {
+					true,true,true,true)) {
 			debugWrite("prepare query failed");
 			return sendQueryError(cursor);
 		}

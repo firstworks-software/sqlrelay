@@ -389,19 +389,34 @@ class SQLRSERVER_DLLSPEC sqlrtriggers : public sqlrservermodules {
 		~sqlrtriggers();
 
 		bool	load();
-		bool	runBeforeTriggers(sqlrserverconnection *sqlrcon,
+		bool	runBeforePrepareTriggers(sqlrserverconnection *sqlrcon,
 						sqlrservercursor *sqlrcur);
-		bool	runAfterTriggers(sqlrserverconnection *sqlrcon,
+		bool	runAfterPrepareTriggers(sqlrserverconnection *sqlrcon,
+						sqlrservercursor *sqlrcur);
+		bool	runBeforeExecuteTriggers(sqlrserverconnection *sqlrcon,
+						sqlrservercursor *sqlrcur);
+		bool	runAfterExecuteTriggers(sqlrserverconnection *sqlrcon,
 						sqlrservercursor *sqlrcur);
 
 	private:
 		void	loadModule(domnode *trigger, sqlrmoduleplugin **plugin);
-		bool	runBefore(sqlrserverconnection *sqlrcon,
+		bool	runBeforePrepare(sqlrserverconnection *sqlrcon,
 				sqlrservercursor *sqlrcur,
 				singlylinkedlist< sqlrmoduleplugin * > *list);
-		bool	runAfter(sqlrserverconnection *sqlrcon,
+		bool	runAfterPrepare(sqlrserverconnection *sqlrcon,
 				sqlrservercursor *sqlrcur,
 				singlylinkedlist< sqlrmoduleplugin * > *list);
+		bool	runBeforeExecute(sqlrserverconnection *sqlrcon,
+				sqlrservercursor *sqlrcur,
+				singlylinkedlist< sqlrmoduleplugin * > *list);
+		bool	runAfterExecute(sqlrserverconnection *sqlrcon,
+				sqlrservercursor *sqlrcur,
+				singlylinkedlist< sqlrmoduleplugin * > *list);
+
+		// blist/alist (inherited) are the execute-time lists.
+		// These two are the prepare-time lists.
+		singlylinkedlist< sqlrmoduleplugin * >	bplist;
+		singlylinkedlist< sqlrmoduleplugin * >	aplist;
 
 		sqlrtriggersprivate	*pvt;
 };

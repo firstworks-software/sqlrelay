@@ -5756,7 +5756,7 @@ bool sqlrprotocol_teradata::prepareQuery() {
 	debugStart("prepare query");
 	bool	retval=cont->prepareQuery(req->cur,
 					query,querylen,
-					true,true,true);
+					true,true,true,true);
 	debugWrite("result: %s",(retval)?"success":"error");
 	debugEnd();
 	return retval;

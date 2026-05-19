@@ -14,7 +14,7 @@ class SQLRSERVER_DLLSPEC sqlrtrigger_splitmultiinsert : public sqlrtrigger {
 		sqlrtrigger_splitmultiinsert(sqlrservercontroller *cont,
 						domnode *parameters);
 
-		bool	runBefore(sqlrserverconnection *sqlrcon,
+		bool	runBeforeExecute(sqlrserverconnection *sqlrcon,
 						sqlrservercursor *micur);
 	private:
 		void	parsePrefix(const char *query,
@@ -40,7 +40,7 @@ sqlrtrigger_splitmultiinsert::sqlrtrigger_splitmultiinsert(
 					sqlrtrigger(cont,parameters) {
 }
 
-bool sqlrtrigger_splitmultiinsert::runBefore(sqlrserverconnection *sqlrcon,
+bool sqlrtrigger_splitmultiinsert::runBeforeExecute(sqlrserverconnection *sqlrcon,
 						sqlrservercursor *micur) {
 
 	// bail if the query was suppressed

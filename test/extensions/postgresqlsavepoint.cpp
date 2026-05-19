@@ -96,6 +96,48 @@ int main(int argc, char **argv) {
 	stdoutput.printf("\n");
 
 
+	// PostgreSQL resolves references during prepare, so queries against
+	// nonexistent tables (or other reference-related problems) fail at
+	// prepare time rather than execute time.  Without a savepoint
+	// bracketing the prepare, the prepare-time failure poisons the
+	// transaction.  The savepoints trigger should contain prepare-time
+	// failures the same way it contains execute-time failures.
+	stdoutput.printf("CONTAIN PREPARE FAILURE WITHIN TX:\n");
+	assertTrue(con->begin());
+	assertTrue(cur->sendQuery("insert into sptest values (11,'eleven')"));
+	// fails at prepare time - the table doesn't exist
+	assertFalse(cur->sendQuery("select * from nonexistent_table"));
+	// without containment of the prepare failure this would fail with
+	// "current transaction is aborted..."; with the trigger's
+	// before/after-prepare savepoint it should succeed
+	assertTrue(cur->sendQuery("insert into sptest values (12,'twelve')"));
+	assertTrue(con->commit());
+	// rows 11 and 12 should now be present
+	assertTrue(cur->sendQuery("select count(*) from sptest"));
+	assertEquals(cur->getField(0,(uint32_t)0),"6");
+	stdoutput.printf("\n");
+
+
+	// Mix of prepare-time and execute-time failures within the same
+	// transaction.  Both kinds should be contained without poisoning
+	// the surrounding transaction.
+	stdoutput.printf("MIXED PREPARE/EXECUTE FAILURES WITHIN TX:\n");
+	assertTrue(con->begin());
+	// prepare-time failure (nonexistent column)
+	assertFalse(cur->sendQuery(
+			"select nonexistent_column from sptest"));
+	assertTrue(cur->sendQuery("insert into sptest values (13,'thirteen')"));
+	// execute-time failure (duplicate primary key)
+	assertFalse(cur->sendQuery("insert into sptest values (13,'dup')"));
+	// prepare-time failure (nonexistent table)
+	assertFalse(cur->sendQuery("update nonexistent_table set x=1"));
+	assertTrue(cur->sendQuery("insert into sptest values (14,'fourteen')"));
+	assertTrue(con->commit());
+	assertTrue(cur->sendQuery("select count(*) from sptest"));
+	assertEquals(cur->getField(0,(uint32_t)0),"8");
+	stdoutput.printf("\n");
+
+
 	// A successful query inside a transaction followed by an explicit
 	// rollback should undo everything - including queries the trigger
 	// committed savepoints for.  Releasing the savepoint must not have
@@ -106,8 +148,8 @@ int main(int argc, char **argv) {
 	assertTrue(cur->sendQuery("insert into sptest values (6,'six')"));
 	assertTrue(con->rollback());
 	assertTrue(cur->sendQuery("select count(*) from sptest"));
-	// still 4 - the begin/inserts/rollback added nothing
-	assertEquals(cur->getField(0,(uint32_t)0),"4");
+	// still 8 - the begin/inserts/rollback added nothing
+	assertEquals(cur->getField(0,(uint32_t)0),"8");
 	stdoutput.printf("\n");
 
 
@@ -119,7 +161,7 @@ int main(int argc, char **argv) {
 	assertFalse(cur->sendQuery("insert into sptest values (7,'dup')"));
 	assertTrue(cur->sendQuery("insert into sptest values (8,'eight')"));
 	assertTrue(cur->sendQuery("select count(*) from sptest"));
-	assertEquals(cur->getField(0,(uint32_t)0),"6");
+	assertEquals(cur->getField(0,(uint32_t)0),"10");
 	stdoutput.printf("\n");
 
 
@@ -133,7 +175,7 @@ int main(int argc, char **argv) {
 	assertTrue(con->commit());
 	assertTrue(con->autoCommitOn());
 	assertTrue(cur->sendQuery("select count(*) from sptest"));
-	assertEquals(cur->getField(0,(uint32_t)0),"8");
+	assertEquals(cur->getField(0,(uint32_t)0),"12");
 	stdoutput.printf("\n");
 
 

@@ -5398,7 +5398,7 @@ bool sqlrservercontroller::handleBinds(sqlrservercursor *cursor) {
 bool sqlrservercontroller::prepareQuery(sqlrservercursor *cursor,
 						const char *query,
 						uint32_t querysize) {
-	return prepareQuery(cursor,query,querysize,false,false,false);
+	return prepareQuery(cursor,query,querysize,false,false,false,false);
 }
 
 bool sqlrservercontroller::prepareQuery(sqlrservercursor *cursor,
@@ -5406,7 +5406,8 @@ bool sqlrservercontroller::prepareQuery(sqlrservercursor *cursor,
 						uint32_t querysize,
 						bool enabledirectives,
 						bool enabletranslations,
-						bool enablefilters) {
+						bool enablefilters,
+						bool enabletriggers) {
 
 	if (pvt->_debugsql) {
 		stdoutput.printf("\n===================="
@@ -5620,8 +5621,32 @@ bool sqlrservercontroller::prepareQuery(sqlrservercursor *cursor,
 	dt.initFromSystemDateTime();
 	cursor->setQueryStart(dt.getSecond(),dt.getMicrosecond());
 
+	// handle before-prepare triggers.  Triggers like savepoints
+	// need to bracket the prepare itself because some databases
+	// (notably postgresql) parse and resolve references during
+	// prepare, so reference-related failures occur here rather
+	// than during execute.
+	if (enabletriggers && pvt->_sqlrtr) {
+		pvt->_sqlrtr->runBeforePrepareTriggers(pvt->_conn,cursor);
+	}
+
 	// prepare the query
 	bool	success=cursor->prepareQuery(query,querysize);
+
+	// on failure, save the error before running after-prepare
+	// triggers - triggers may inspect getError* to decide what to do
+	if (!success) {
+		saveError(cursor);
+	}
+
+	// handle after-prepare triggers.  Run on success AND failure;
+	// the trigger inspects getErrorNumber/getErrorSize to decide.
+	if (enabletriggers && pvt->_sqlrtr) {
+		if (!pvt->_sqlrtr->runAfterPrepareTriggers(
+						pvt->_conn,cursor)) {
+			success=false;
+		}
+	}
 
 	// log query-prepared
 	raiseQueryPreparedEvent(cursor);
@@ -5636,8 +5661,6 @@ bool sqlrservercontroller::prepareQuery(sqlrservercursor *cursor,
 		incrementQueryCount(cursor->getQueryType());
 		incrementTotalErrors();
 
-		// save the error
-		saveError(cursor);
 		debugWrite("failed: \"%.*s\"",
 					cursor->getErrorSize(),
 					cursor->getErrorBuffer());
@@ -5889,8 +5912,28 @@ bool sqlrservercontroller::executeQuery(sqlrservercursor *cursor,
 		dt.initFromSystemDateTime();
 		cursor->setQueryStart(dt.getSecond(),dt.getMicrosecond());
 
+		// handle before-prepare triggers (lazy-prepare path)
+		if (enabletriggers && pvt->_sqlrtr) {
+			pvt->_sqlrtr->runBeforePrepareTriggers(
+							pvt->_conn,cursor);
+		}
+
 		// prepare the query
 		success=cursor->prepareQuery(query,querysize);
+
+		// on failure, save the error before running
+		// after-prepare triggers
+		if (!success) {
+			saveError(cursor);
+		}
+
+		// handle after-prepare triggers
+		if (enabletriggers && pvt->_sqlrtr) {
+			if (!pvt->_sqlrtr->runAfterPrepareTriggers(
+						pvt->_conn,cursor)) {
+				success=false;
+			}
+		}
 
 		// log query-prepared
 		raiseQueryPreparedEvent(cursor);
@@ -5907,8 +5950,6 @@ bool sqlrservercontroller::executeQuery(sqlrservercursor *cursor,
 			incrementQueryCount(cursor->getQueryType());
 			incrementTotalErrors();
 
-			// save the error
-			saveError(cursor);
 			debugWrite("failed: \"%.*s\"",
 						cursor->getErrorSize(),
 						cursor->getErrorBuffer());
@@ -5968,12 +6009,12 @@ bool sqlrservercontroller::executeQuery(sqlrservercursor *cursor,
 		debugEnd();
 	}
 
-	// handle before-triggers
+	// handle before-execute triggers
 	setQuerySuppressed(cursor,false);
 	if (enabletriggers && pvt->_sqlrtr) {
-		success=pvt->_sqlrtr->runBeforeTriggers(pvt->_conn,cursor);
+		success=pvt->_sqlrtr->runBeforeExecuteTriggers(pvt->_conn,cursor);
 	}
-	// FIXME: handle if runBeforeTriggers set success=false;
+	// FIXME: handle if runBeforeExecuteTriggers set success=false;
 	
 
 	// (re)set the query start time
@@ -6056,7 +6097,7 @@ bool sqlrservercontroller::executeQuery(sqlrservercursor *cursor,
 		// still returns true should also be caught here, though I
 		// can't think of a case where a well-behaved trigger should do 
 		// his.
-		success=pvt->_sqlrtr->runAfterTriggers(pvt->_conn,cursor) &&
+		success=pvt->_sqlrtr->runAfterExecuteTriggers(pvt->_conn,cursor) &&
 						!getErrorNumber(cursor) &&
 						!getErrorSize(cursor);
 	}
@@ -9033,7 +9074,7 @@ bool sqlrservercontroller::bulkLoadExecuteQuery() {
 	if (success && !prepareQuery(pvt->_bulkcursor,
 					pvt->_bulkquery,
 					pvt->_bulkquerysize,
-					true,true,true)) {
+					true,true,true,true)) {
 		saveErrorFromCursor(pvt->_bulkcursor);
 		success=false;
 	}

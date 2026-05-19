@@ -377,7 +377,8 @@ bool sqlrserverconnection::selectCatalog(const char *catalog) {
 	bool	retval=false;
 	sqlrservercursor	*sdcur=cont->newCursor();
 	if (cont->open(sdcur) &&
-		cont->prepareQuery(sdcur,sdquery,sdquerysize,true,true,true) &&
+		cont->prepareQuery(sdcur,sdquery,sdquerysize,
+						true,true,true,true) &&
 		cont->executeQuery(sdcur,true,true,true,true)) {
 		cont->closeResultSet(sdcur);
 		retval=true;
@@ -473,7 +474,8 @@ bool sqlrserverconnection::selectSchema(const char *schema) {
 	bool	retval=false;
 	sqlrservercursor	*sscur=cont->newCursor();
 	if (cont->open(sscur) &&
-		cont->prepareQuery(sscur,ssquery,ssquerysize,true,true,true) &&
+		cont->prepareQuery(sscur,ssquery,ssquerysize,
+						true,true,true,true) &&
 		cont->executeQuery(sscur,true,true,true,true)) {
 		cont->closeResultSet(sscur);
 		retval=true;
@@ -926,7 +928,7 @@ bool sqlrserverconnection::getCatalogList(sqlrservercursor *cursor,
 	return cont->prepareQuery(cursor,
 				cont->getQueryBuffer(cursor),
 				cont->getQuerySize(cursor),
-				false,false,false) &&
+				false,false,false,false) &&
 		cont->executeQuery(cursor,false,false,false,false);
 }
 
@@ -946,7 +948,7 @@ bool sqlrserverconnection::getSchemaList(sqlrservercursor *cursor,
 	return cont->prepareQuery(cursor,
 				cont->getQueryBuffer(cursor),
 				cont->getQuerySize(cursor),
-				false,false,false) &&
+				false,false,false,false) &&
 		cont->executeQuery(cursor,false,false,false,false);
 }
 
@@ -967,7 +969,7 @@ bool sqlrserverconnection::getTableTypeList(sqlrservercursor *cursor,
 	return cont->prepareQuery(cursor,
 				cont->getQueryBuffer(cursor),
 				cont->getQuerySize(cursor),
-				false,false,false) &&
+				false,false,false,false) &&
 		cont->executeQuery(cursor,false,false,false,false);
 }
 
@@ -989,7 +991,7 @@ bool sqlrserverconnection::getTableList(sqlrservercursor *cursor,
 	return cont->prepareQuery(cursor,
 				cont->getQueryBuffer(cursor),
 				cont->getQuerySize(cursor),
-				false,false,false) &&
+				false,false,false,false) &&
 		cont->executeQuery(cursor,false,false,false,false);
 }
 
@@ -1010,7 +1012,7 @@ bool sqlrserverconnection::getTypeInfoList(sqlrservercursor *cursor,
 	return cont->prepareQuery(cursor,
 				cont->getQueryBuffer(cursor),
 				cont->getQuerySize(cursor),
-				false,false,false) &&
+				false,false,false,false) &&
 		cont->executeQuery(cursor,false,false,false,false);
 }
 
@@ -1032,7 +1034,7 @@ bool sqlrserverconnection::getColumnList(sqlrservercursor *cursor,
 	return cont->prepareQuery(cursor,
 				cont->getQueryBuffer(cursor),
 				cont->getQuerySize(cursor),
-				false,false,false) &&
+				false,false,false,false) &&
 		cont->executeQuery(cursor,false,false,false,false);
 }
 
@@ -1053,7 +1055,7 @@ bool sqlrserverconnection::getPrimaryKeysList(sqlrservercursor *cursor,
 	return cont->prepareQuery(cursor,
 				cont->getQueryBuffer(cursor),
 				cont->getQuerySize(cursor),
-				false,false,false) &&
+				false,false,false,false) &&
 		cont->executeQuery(cursor,false,false,false,false);
 }
 
@@ -1074,7 +1076,7 @@ bool sqlrserverconnection::getKeyAndIndexList(sqlrservercursor *cursor,
 	return cont->prepareQuery(cursor,
 				cont->getQueryBuffer(cursor),
 				cont->getQuerySize(cursor),
-				false,false,false) &&
+				false,false,false,false) &&
 		cont->executeQuery(cursor,false,false,false,false);
 }
 
@@ -1095,7 +1097,7 @@ bool sqlrserverconnection::getProcedureList(sqlrservercursor *cursor,
 	return cont->prepareQuery(cursor,
 				cont->getQueryBuffer(cursor),
 				cont->getQuerySize(cursor),
-				false,false,false) &&
+				false,false,false,false) &&
 		cont->executeQuery(cursor,false,false,false,false);
 }
 
@@ -1118,7 +1120,7 @@ bool sqlrserverconnection::getProcedureParameterList(
 	return cont->prepareQuery(cursor,
 				cont->getQueryBuffer(cursor),
 				cont->getQuerySize(cursor),
-				false,false,false) &&
+				false,false,false,false) &&
 		cont->executeQuery(cursor,false,false,false,false);
 }
 

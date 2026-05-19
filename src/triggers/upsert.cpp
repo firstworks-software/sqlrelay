@@ -16,7 +16,7 @@ class SQLRSERVER_DLLSPEC sqlrtrigger_upsert : public sqlrtrigger {
 		sqlrtrigger_upsert(sqlrservercontroller *cont,
 						domnode *parameters);
 
-		bool	runAfter(sqlrserverconnection *sqlrcon,
+		bool	runAfterExecute(sqlrserverconnection *sqlrcon,
 						sqlrservercursor *icur);
 	private:
 		bool	errorEncountered(sqlrservercursor *icur);
@@ -55,7 +55,7 @@ sqlrtrigger_upsert::sqlrtrigger_upsert(sqlrservercontroller *cont,
 	tables=parameters->getFirstTagChild("tables");
 }
 
-bool sqlrtrigger_upsert::runAfter(sqlrserverconnection *sqlrcon,
+bool sqlrtrigger_upsert::runAfterExecute(sqlrserverconnection *sqlrcon,
 						sqlrservercursor *icur) {
 
 	// bail if the query was suppressed

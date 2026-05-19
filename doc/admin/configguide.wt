@@ -5124,7 +5124,17 @@ All trigger modules have an //enabled// attribute, allowing the module to be tem
 
 All trigger modules have a //debug// attribute.  If debug="yes" is configured then debugging information is written to the destination of the debug logger module (if one is defined, see [#debug the debug logger module]), or otherwise, to standard output.  If debug="no" is configured, or if the //debug// attribute is omitted, then no debugging information is written.
 
-All trigger modules also have a //when// attribute which can be set to "before", "after", or "both", indicating whether to run the trigger before the query is executed, after the query has been executed, or both.
+All trigger modules also have a //when// attribute which controls the phases in which the trigger runs.  The value is a comma-separated list of phase keywords.  The supported keywords are:
+
+* "beforeExecute" - run the trigger before the query is executed
+* "afterExecute" - run the trigger after the query has been executed
+* "bothExecute" - shorthand for "beforeExecute,afterExecute"
+* "beforePrepare" - run the trigger before the query is prepared
+* "afterPrepare" - run the trigger after the query has been prepared
+* "bothPrepare" - shorthand for "beforePrepare,afterPrepare"
+* "all" - shorthand for "bothPrepare,bothExecute"
+
+For example, //when="all"// runs the trigger before and after both the prepare and execute phases.  Most triggers only need to act at execute time, but some triggers (notably //savepoints//) need to wrap the prepare phase as well, because databases like PostgreSQL parse and resolve references during prepare and fail there rather than at execute time.
 
 Trigger modules can be "stacked".  Multiple different modules may be loaded and multiple instances of the same type of module, with different configurations, may also be loaded.
 
@@ -5157,7 +5167,7 @@ An example configuration:
 
 In this example...
 
-The trigger is configured to run after the query has been executed.  This is the only valid configuration for the replay trigger.  If when="before" or when="both" is set then the trigger will be ignored.
+The trigger is configured to run after the query has been executed.  This is the only valid configuration for the replay trigger.  If when="beforeExecute" is set then the trigger will be ignored.
 
 If an error code 1213 occurs (a !MySQL deadlock), then the entire transaction is replayed.  If an error code 1205 occurs (a !MySQL lock wait timeout), then the previous query is replayed.
 
@@ -5341,7 +5351,7 @@ An example configuration:
 
 In this example, before every non-transaction-control query that runs inside a transaction, the trigger runs //savepoint sqlrspN// (where //N// is an auto-incrementing counter).  If the user's query succeeds, the trigger runs //release savepoint sqlrspN// to keep the savepoint stack bounded.  If the user's query fails, the trigger runs //rollback to savepoint sqlrspN// to undo the failed query.  Either way, the user's error (if any) is preserved and reported back to the client - the trigger contains the failure but doesn't hide it.
 
-The trigger should be configured with //when="both"//, since it takes a savepoint before each query and rolls back or releases it after.  Configurations with //when="before"// or //when="after"// alone are honored but won't accomplish anything useful.
+The trigger should be configured with //when="all"//, since it takes a savepoint before each query and rolls back or releases it after, and needs to wrap both the prepare and execute phases.  Wrapping prepare is essential for PostgreSQL and similar databases that parse and resolve references during prepare - reference-related failures occur at prepare time there, not execute time, and without a savepoint bracketing the prepare the entire transaction is poisoned.  Configurations that omit any of the four phases are honored but may not accomplish anything useful.
 
 The default savepoint, rollback, and release syntax is standard SQL and works for PostgreSQL, MySQL/MariaDB, Oracle, DB2, Firebird, and other databases that follow the SQL standard.  For databases with non-standard savepoint syntax (e.g. SAP/Sybase ASE, Microsoft SQL Server), the syntax templates are configurable:
 
@@ -5391,7 +5401,7 @@ An example configuration:
 
 In this example...
 
-The splitmultiinsert trigger is configured to run before the query has been executed.  This is the only valid configuration for the splitmultiinsert trigger.  If when="after" or when="both" is set then the trigger will be ignored.
+The splitmultiinsert trigger is configured to run before the query has been executed.  This is the only valid configuration for the splitmultiinsert trigger.  If when="afterExecute" is set then the trigger will be ignored.
 
 The replay trigger is also configured.  In this configuration, the splitmultiinsert trigger supports the replay trigger by splitting multi-row inserts into a set of single-row inserts, for which it is possible to get the last-insert-id of each, if necessary.
 

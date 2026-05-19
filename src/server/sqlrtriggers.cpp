@@ -38,19 +38,60 @@ bool sqlrtriggers::load() {
 			continue;
 		}
 
-		// is this a before, after, or both trigger
-		bool	before=(charstring::contains(
-					moduledata->getAttributeValue("when"),
-					"before") ||
-				charstring::contains(
-					moduledata->getAttributeValue("when"),
-					"both"));
-		bool	after=(charstring::contains(
-					moduledata->getAttributeValue("when"),
-					"after") ||
-				charstring::contains(
-					moduledata->getAttributeValue("when"),
-					"both"));
+		// parse "when"...
+		bool	beforeexecute=false;
+		bool	afterexecute=false;
+		bool	beforeprepare=false;
+		bool	afterprepare=false;
+		const char	*when=moduledata->getAttributeValue("when");
+		if (!charstring::isNullOrEmpty(when)) {
+			char		**tokens=NULL;
+			uint64_t	tokencount=0;
+			charstring::split(when,",",true,&tokens,&tokencount);
+			for (uint64_t i=0; i<tokencount; i++) {
+				charstring::strip(tokens[i],' ');
+				charstring::strip(tokens[i],'\t');
+				const char	*t=tokens[i];
+				if (!charstring::compareIgnoringCase(
+							t,"beforeexecute") ||
+					// for back-compatibility
+					!charstring::compareIgnoringCase(
+							t,"before")) {
+					beforeexecute=true;
+				} else if (!charstring::compareIgnoringCase(
+							t,"afterexecute") ||
+					// for back-compatibility
+					!charstring::compareIgnoringCase(
+							t,"after")) {
+					afterexecute=true;
+				} else if (!charstring::compareIgnoringCase(
+							t,"bothexecute") ||
+					// for back-compatibility
+					!charstring::compareIgnoringCase(
+							t,"both")) {
+					beforeexecute=true;
+					afterexecute=true;
+				} else if (!charstring::compareIgnoringCase(
+							t,"beforeprepare")) {
+					beforeprepare=true;
+				} else if (!charstring::compareIgnoringCase(
+							t,"afterprepare")) {
+					afterprepare=true;
+				} else if (!charstring::compareIgnoringCase(
+							t,"bothprepare")) {
+					beforeprepare=true;
+					afterprepare=true;
+				} else if (!charstring::compareIgnoringCase(
+							t,"all")) {
+					beforeprepare=true;
+					afterprepare=true;
+					beforeexecute=true;
+					afterexecute=true;
+				}
+				delete[] tokens[i];
+			}
+			delete[] tokens;
+		}
 
 		// load the trigger
 		sqlrmoduleplugin	*p;
@@ -59,15 +100,27 @@ bool sqlrtriggers::load() {
 			continue;
 		}
 
-		// add trigger to before list
-		if (before) {
-			debugWrite("before trigger");
+		// add trigger to before-prepare list
+		if (beforeprepare) {
+			debugWrite("before-prepare trigger");
+			bplist.append(p);
+		}
+
+		// add trigger to after-prepare list
+		if (afterprepare) {
+			debugWrite("after-prepare trigger");
+			aplist.append(p);
+		}
+
+		// add trigger to before-execute list
+		if (beforeexecute) {
+			debugWrite("before-execute trigger");
 			blist.append(p);
 		}
 
-		// add trigger to after list
-		if (after) {
-			debugWrite("after trigger");
+		// add trigger to after-execute list
+		if (afterexecute) {
+			debugWrite("after-execute trigger");
 			alist.append(p);
 		}
 	}
@@ -148,44 +201,88 @@ void sqlrtriggers::loadModule(domnode *parameters, sqlrmoduleplugin **plugin) {
 	return;
 }
 
-bool sqlrtriggers::runBeforeTriggers(sqlrserverconnection *sqlrcon,
+bool sqlrtriggers::runBeforePrepareTriggers(sqlrserverconnection *sqlrcon,
 						sqlrservercursor *sqlrcur) {
-	return runBefore(sqlrcon,sqlrcur,&blist);
+	return runBeforePrepare(sqlrcon,sqlrcur,&bplist);
 }
 
-bool sqlrtriggers::runAfterTriggers(sqlrserverconnection *sqlrcon,
+bool sqlrtriggers::runAfterPrepareTriggers(sqlrserverconnection *sqlrcon,
 						sqlrservercursor *sqlrcur) {
-	return runAfter(sqlrcon,sqlrcur,&alist);
+	return runAfterPrepare(sqlrcon,sqlrcur,&aplist);
 }
 
-bool sqlrtriggers::runBefore(sqlrserverconnection *sqlrcon,
+bool sqlrtriggers::runBeforeExecuteTriggers(sqlrserverconnection *sqlrcon,
+						sqlrservercursor *sqlrcur) {
+	return runBeforeExecute(sqlrcon,sqlrcur,&blist);
+}
+
+bool sqlrtriggers::runAfterExecuteTriggers(sqlrserverconnection *sqlrcon,
+						sqlrservercursor *sqlrcur) {
+	return runAfterExecute(sqlrcon,sqlrcur,&alist);
+}
+
+bool sqlrtriggers::runBeforePrepare(sqlrserverconnection *sqlrcon,
 				sqlrservercursor *sqlrcur,
 				singlylinkedlist< sqlrmoduleplugin * > *list) {
 	for (listnode< sqlrmoduleplugin * > *node=list->getFirst();
 						node; node=node->getNext()) {
 
-		debugWrite("running before trigger: %s...",
+		debugWrite("running before-prepare trigger: %s...",
 					node->getValue()->module);
 
 		sqlrtrigger	*tr=(sqlrtrigger *)node->getValue()->m;
-		if (!tr->runBefore(sqlrcon,sqlrcur)) {
+		if (!tr->runBeforePrepare(sqlrcon,sqlrcur)) {
 			return false;
 		}
 	}
 	return true;
 }
 
-bool sqlrtriggers::runAfter(sqlrserverconnection *sqlrcon,
+bool sqlrtriggers::runAfterPrepare(sqlrserverconnection *sqlrcon,
 				sqlrservercursor *sqlrcur,
 				singlylinkedlist< sqlrmoduleplugin * > *list) {
 	for (listnode< sqlrmoduleplugin * > *node=list->getFirst();
 						node; node=node->getNext()) {
 
-		debugWrite("running after trigger: %s...",
+		debugWrite("running after-prepare trigger: %s...",
 					node->getValue()->module);
 
 		sqlrtrigger	*tr=(sqlrtrigger *)node->getValue()->m;
-		if (!tr->runAfter(sqlrcon,sqlrcur)) {
+		if (!tr->runAfterPrepare(sqlrcon,sqlrcur)) {
+			return false;
+		}
+	}
+	return true;
+}
+
+bool sqlrtriggers::runBeforeExecute(sqlrserverconnection *sqlrcon,
+				sqlrservercursor *sqlrcur,
+				singlylinkedlist< sqlrmoduleplugin * > *list) {
+	for (listnode< sqlrmoduleplugin * > *node=list->getFirst();
+						node; node=node->getNext()) {
+
+		debugWrite("running before-execute trigger: %s...",
+					node->getValue()->module);
+
+		sqlrtrigger	*tr=(sqlrtrigger *)node->getValue()->m;
+		if (!tr->runBeforeExecute(sqlrcon,sqlrcur)) {
+			return false;
+		}
+	}
+	return true;
+}
+
+bool sqlrtriggers::runAfterExecute(sqlrserverconnection *sqlrcon,
+				sqlrservercursor *sqlrcur,
+				singlylinkedlist< sqlrmoduleplugin * > *list) {
+	for (listnode< sqlrmoduleplugin * > *node=list->getFirst();
+						node; node=node->getNext()) {
+
+		debugWrite("running after-execute trigger: %s...",
+					node->getValue()->module);
+
+		sqlrtrigger	*tr=(sqlrtrigger *)node->getValue()->m;
+		if (!tr->runAfterExecute(sqlrcon,sqlrcur)) {
 			return false;
 		}
 	}

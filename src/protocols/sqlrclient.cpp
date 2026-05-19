@@ -2189,7 +2189,7 @@ bool sqlrprotocol_sqlrclient::processQueryOrBindCursor(
 			success=(cont->prepareQuery(cursor,
 					cont->getQueryBuffer(cursor),
 					cont->getQuerySize(cursor),
-					true,true,true) &&
+					true,true,true,true) &&
 				cont->executeQuery(cursor,true,true,true,true));
 		}
 

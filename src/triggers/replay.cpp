@@ -57,7 +57,7 @@ class SQLRSERVER_DLLSPEC sqlrtrigger_replay : public sqlrtrigger {
 	public:
 		sqlrtrigger_replay(sqlrservercontroller *cont,
 						domnode *parameters);
-		bool	runAfter(sqlrserverconnection *sqlrcon,
+		bool	runAfterExecute(sqlrserverconnection *sqlrcon,
 						sqlrservercursor *sqlrcur);
 
 		void	endTransaction(bool commit);
@@ -177,7 +177,7 @@ sqlrtrigger_replay::sqlrtrigger_replay(sqlrservercontroller *cont,
 	disabled=false;
 }
 
-bool sqlrtrigger_replay::runAfter(sqlrserverconnection *sqlrcon,
+bool sqlrtrigger_replay::runAfterExecute(sqlrserverconnection *sqlrcon,
 						sqlrservercursor *sqlrcur) {
 
 	// bail if the query was suppressed

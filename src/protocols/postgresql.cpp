@@ -1251,7 +1251,7 @@ bool sqlrprotocol_postgresql::query() {
 			result=sendEmptyQueryResponse();
 		} else {
 			if (cont->prepareQuery(cursor,query,querysize,
-							true,true,true) &&
+							true,true,true,true) &&
 				cont->executeQuery(cursor,
 							true,true,true,true)) {
 				result=sendQueryResult(cursor,true,0);
@@ -1943,7 +1943,7 @@ bool sqlrprotocol_postgresql::parse() {
 	// prepare the query
 	if (!cont->prepareQuery(cursor,cont->getQueryBuffer(cursor),
 					cont->getQuerySize(cursor),
-					true,true,true)) {
+					true,true,true,true)) {
 		return sendCursorError(cursor);
 	}
 
