@@ -84,6 +84,8 @@
 	fixed when="both" trigger double-free/dispatch errors
 	added the savepoints trigger module
 	fixed erroneous "rollback to savepoint" query interception
+	updated trigger framework with before/afterPrepare options, renamed
+		before/after to before/afterExecute
 
 2.1.1 - added tns_admin support
 	fixed sqlr-start ... -strace ...
