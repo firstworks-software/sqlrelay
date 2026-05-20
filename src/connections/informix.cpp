@@ -309,7 +309,6 @@ class SQLRSERVER_DLLSPEC informixconnection : public sqlrserverconnection {
 		const char	*informixdir;
 		const char	*servername;
 		const char	*db;
-		const char	*lang;
 		stringbuffer	dsn;
 
 		stringbuffer	errormessage;
@@ -832,9 +831,6 @@ void informixconnection::handleConnectString() {
 		dsn.append("pwd=")->append(pass);
 	}
 
-	// get other parameters
-	lang=cont->getConnectStringValue("lang");
-
 	// multi-row fetch doesn't work with clobs/blobs because you're already
 	// on a different row when SQLGetData is called to get the data for the
 	// clob/blob on the first row, so override it to 1
@@ -853,13 +849,6 @@ bool informixconnection::logIn(const char **error, const char **warning) {
 	if (charstring::getLength(informixdir) &&
 		!environment::setValue("INFORMIXDIR",informixdir)) {
 		*error="Failed to set INFORMIXDIR environment variable";
-		return false;
-	}
-
-	// set the LANG environment variable
-	if (charstring::getLength(lang) &&
-		!environment::setValue("LANG",lang)) {
-		*error="Failed to set LANG environment variable";
 		return false;
 	}
 

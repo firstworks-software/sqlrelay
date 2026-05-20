@@ -106,7 +106,6 @@ class SQLRSERVER_DLLSPEC sapconnection : public sqlrserverconnection {
 		CS_CONNECTION	*dbconn;
 
 		const char	*sybase;
-		const char	*lang;
 		const char	*server;
 		const char	*db;
 		const char	*charset;
@@ -766,7 +765,6 @@ void sapconnection::handleConnectString() {
 	sqlrserverconnection::handleConnectString();
 
 	sybase=cont->getConnectStringValue("sybase");
-	lang=cont->getConnectStringValue("lang");
 	server=cont->getConnectStringValue("server");
 	db=cont->getConnectStringValue("db");
 	charset=cont->getConnectStringValue("charset");
@@ -788,14 +786,6 @@ bool sapconnection::logIn(const char **error, const char **warning) {
 			!environment::setValue("SYBASE",sybase)) {
 		*error=logInError(
 			"Failed to set SYBASE environment variable.",1);
-		return false;
-	}
-
-	// set lang
-	if (!charstring::isNullOrEmpty(lang) &&
-			!environment::setValue("LANG",lang)) {
-		*error=logInError(
-			"Failed to set LANG environment variable.",1);
 		return false;
 	}
 

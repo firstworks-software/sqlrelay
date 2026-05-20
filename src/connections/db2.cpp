@@ -2,7 +2,6 @@
 // See the file COPYING for more information
 
 #include <sqlrelay/sqlrserver.h>
-#include <rudiments/environment.h>
 
 #include <datatypes.h>
 #include <defines.h>
@@ -321,7 +320,6 @@ class SQLRSERVER_DLLSPEC db2connection : public sqlrserverconnection {
 
 		const char	*db2path;
 		const char	*server;
-		const char	*lang;
 
 		stringbuffer	errormessage;
 
@@ -839,8 +837,6 @@ void db2connection::handleConnectString() {
 		server=tmp;
 	}
 
-	lang=cont->getConnectStringValue("lang");
-
 	maxoutbindlobsize=charstring::convertToInteger(
 			cont->getConnectStringValue("maxoutbindlobsize"));
 	if (maxoutbindlobsize<1) {
@@ -857,12 +853,6 @@ bool db2connection::mustDetachBeforeLogIn() {
 }
 
 bool db2connection::logIn(const char **error, const char **warning) {
-
-	// set the LANG environment variable
-	if (charstring::getLength(lang) && !environment::setValue("LANG",lang)) {
-		*error="Failed to set LANG environment variable";
-		return false;
-	}
 
 	#ifdef DB2_AT_RUNTIME
 	if (!loadLibraries(&errormessage,db2path)) {

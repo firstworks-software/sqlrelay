@@ -2,6 +2,7 @@
 // See the file COPYING for more information
 
 #include <sqlrelay/sqlrserver.h>
+#include <rudiments/environment.h>
 #include <rudiments/hostentry.h>
 #include <rudiments/process.h>
 
@@ -187,6 +188,12 @@ void sqlrserverconnection::handleConnectString() {
 		dbtype=cont->getConnectStringValue("identity");
 	}
 	cont->setDbType(dbtype);
+
+	// lang environment variable
+	const char	*lang=cont->getConnectStringValue("lang");
+	if (!charstring::isNullOrEmpty(lang)) {
+		environment::setValue("LANG",lang);
+	}
 }
 
 bool sqlrserverconnection::changeUser(const char *newuser,

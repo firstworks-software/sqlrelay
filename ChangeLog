@@ -86,6 +86,7 @@
 	fixed erroneous "rollback to savepoint" query interception
 	updated trigger framework with before/afterPrepare options, renamed
 		before/after to before/afterExecute
+	made lang connect string option work with all dbs
 
 2.1.1 - added tns_admin support
 	fixed sqlr-start ... -strace ...

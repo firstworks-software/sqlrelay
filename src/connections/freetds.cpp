@@ -387,7 +387,6 @@ class SQLRSERVER_DLLSPEC freetdsconnection : public sqlrserverconnection {
 
 		const char	*sybase;
 		const char	*freetds;
-		const char	*lang;
 		const char	*server;
 		const char	*db;
 		const char	*charset;
@@ -899,7 +898,6 @@ void freetdsconnection::handleConnectString() {
 
 	sybase=cont->getConnectStringValue("sybase");
 	freetds=cont->getConnectStringValue("freetds");
-	lang=cont->getConnectStringValue("lang");
 	server=cont->getConnectStringValue("server");
 	db=cont->getConnectStringValue("db");
 	charset=cont->getConnectStringValue("charset");
@@ -941,14 +939,6 @@ bool freetdsconnection::logIn(const char **error, const char **warning) {
 				"environment variable.",1);
 			return false;
 		}
-	}
-
-	// set lang
-	if (!charstring::isNullOrEmpty(lang) &&
-			!environment::setValue("LANG",lang)) {
-		*error=logInError(
-			"Failed to set LANG environment variable.",1);
-		return false;
 	}
 
 	// set server
