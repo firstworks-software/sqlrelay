@@ -877,13 +877,13 @@ int main(int argc, char **argv) {
 	printf("NESTED SELECTS: \n");
 	sqlrcur_setResultSetBufferSize(cur,1);
 	assertTrue(sqlrcur_sendQuery(cur,"select * from testtable"));
+	secondcur=sqlrcur_alloc(con);
+	sqlrcur_setResultSetBufferSize(secondcur,1);
 	for (i=0; sqlrcur_getRow(cur,i); i++) {
-		secondcur=sqlrcur_alloc(con);
-		sqlrcur_setResultSetBufferSize(secondcur,1);
 		assertTrue(sqlrcur_sendQuery(secondcur,
 			"select * from testtable"));
-		sqlrcur_free(secondcur);
 	}
+	sqlrcur_free(secondcur);
 	sqlrcur_setResultSetBufferSize(cur,0);
 	assertTrue(sqlrcur_sendQuery(cur,"drop table testtable"));
 	printf("\n");

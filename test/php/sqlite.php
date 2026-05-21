@@ -680,13 +680,13 @@ include("./asserts.php");
 	echo("NESTED SELECTS: \n");
 	sqlrcur_setResultSetBufferSize($cur,1);
 	assertTrue(sqlrcur_sendQuery($cur,"select * from testtable"));
+	$secondcur=sqlrcur_alloc($con);
+	sqlrcur_setResultSetBufferSize($secondcur,1);
 	for ($i=0; sqlrcur_getRow($cur,$i); $i++) {
-		$secondcur=sqlrcur_alloc($con);
-		sqlrcur_setResultSetBufferSize($secondcur,1);
 		assertTrue(sqlrcur_sendQuery($secondcur,
 			"select * from testtable"));
-		sqlrcur_closeResultSet($secondcur);
 	}
+	sqlrcur_closeResultSet($secondcur);
 	sqlrcur_setResultSetBufferSize($cur,0);
 	assertTrue(sqlrcur_sendQuery($cur,"drop table if exists testtable"));
 	echo("\n");

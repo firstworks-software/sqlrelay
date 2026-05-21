@@ -21,10 +21,10 @@ public class SQLRConnection : IDisposable
      *  made to connect to each until the attempt succeeds, or there are no
      *  more hosts left to try.
      *
-     *  If the "socket" parameter is nether NULL nor "" then an attempt will be
+     *  If the "socket" parameter is neither NULL nor "" then an attempt will be
      *  made to connect through it before attempting to connect to "server" on
      *  "port".  If it is NULL or "" then no attempt will be made to connect
-     *  through the socket.*/
+     *  through the socket. */
     public SQLRConnection(String server, UInt16 port, String socket, String user, String password, Int32 retrytime, Int32 tries)
     {
         sqlrconref = sqlrcon_alloc_copyrefs(server, port, socket, user, password, retrytime, tries, 1);
@@ -46,7 +46,7 @@ public class SQLRConnection : IDisposable
         }
     }
 
-    /** Disconnects and ends the session if it hasn't been terminated
+    /** Disconnects and ends the session if it hasn't been ended
      *  already. */
     ~SQLRConnection()
     {
@@ -55,7 +55,7 @@ public class SQLRConnection : IDisposable
     
     
     
-    /** Sets the server connect timeout in seconds and milliseconds.  Setting
+    /** Sets the server connect timeout in seconds and microseconds.  Setting
      *  either parameter to -1 disables the timeout.  You can also set this
      *  timeout using the SQLR_CLIENT_CONNECT_TIMEOUT environment variable. */
     public void setConnectTimeout(Int32 timeoutsec, Int32 timeoutusec)
@@ -78,9 +78,9 @@ public class SQLRConnection : IDisposable
     
 
     /** Sets the response timeout (for queries, commits, rollbacks, pings,
-      * etc.) in seconds and milliseconds.  Setting either parameter to -1
-      * disables the timeout.  You can also set this timeout using the
-      * SQLR_CLIENT_RESPONSE_TIMEOUT environment variable. */
+     *  etc.) in seconds and microseconds.  Setting either parameter to -1
+     *  disables the timeout.  You can also set this timeout using the
+     *  SQLR_CLIENT_RESPONSE_TIMEOUT environment variable. */
     public void setResponseTimeout(Int32 timeoutsec, Int32 timeoutusec)
     {
         sqlrcon_setResponseTimeout(sqlrconref, timeoutsec, timeoutusec);
@@ -268,31 +268,34 @@ public class SQLRConnection : IDisposable
     
     /** Disconnects this connection from the current session but leaves the
      *  session open so that another connection can connect to it using
-     *  sqlrcon_resumeSession(). */
+     *  resumeSession(). */
     public Boolean suspendSession()
     {
         return sqlrcon_suspendSession(sqlrconref)!=0;
     }
     
-    /** Returns the inet port that the connection is communicating over.  This
-     *  parameter may be passed to another connection for use in the
-     *  sqlrcon_resumeSession() command.  Note: The result this function returns
-     *  is only valid after a call to suspendSession(). */
+    /** Returns the inet port that the connection is communicating over.
+     *  This parameter may be passed to another connection for use in
+     *  the resumeSession() method.
+     *  Note: The value this method returns is only valid after a call to
+     *  suspendSession(). */
     public UInt16 getConnectionPort()
     {
         return sqlrcon_getConnectionPort(sqlrconref);
     }
     
-    /** Returns the unix socket that the connection is communicating over.  This
-     *  parameter may be passed to another connection for use in the
-     *  sqlrcon_resumeSession() command.  Note: The result this function returns
-     *  is only valid after a call to suspendSession(). */
+    /** Returns the unix socket that the connection is communicating over.
+     *  This parameter may be passed to another connection for use in
+     *  the resumeSession() method.
+     *  Note: The value this method returns is only valid after a call to
+     *  suspendSession(). */
     public String getConnectionSocket()
     {
         return Marshal.PtrToStringAnsi(sqlrcon_getConnectionSocket(sqlrconref));
     }
     
-    /** Resumes a session previously left open using sqlrcon_suspendSession().
+    /** Resumes a session previously left open
+     *  using suspendSession().
      *  Returns true on success and false on failure. */
     public Boolean resumeSession(UInt16 port, String socket)
     {
@@ -435,7 +438,7 @@ public class SQLRConnection : IDisposable
 
 
     /** Returns the user that sqlrelay is currently logged in to
-     *  the database as, or null if no user could be determined
+     *  the database as, or NULL if no user could be determined
      *  or if an error occurred. */
     public String getCurrentUser()
     {
@@ -482,13 +485,15 @@ public class SQLRConnection : IDisposable
     }
     
     
-    /** Issues a commit.  Returns true if the commit succeeded and false if it failed. */
+    /** Commits a transaction.  Returns true if the commit
+     *  succeeded, false if it failed. */
     public Boolean commit()
     {
         return (sqlrcon_commit(sqlrconref) == 1);
     }
     
-    /** Issues a rollback.  Returns true if the rollback succeeded, false if it failed. */
+    /** Rolls back a transaction.  Returns true if the rollback
+     *  succeeded, false if it failed. */
     public Boolean rollback()
     {
         return (sqlrcon_rollback(sqlrconref) == 1);
@@ -502,8 +507,8 @@ public class SQLRConnection : IDisposable
     }
 
     /** Returns the database's native transaction model.  See
-     *  setTranscationModel() for a list of potential return values.
-     *  Returns null if an error occurred. */
+     *  setTranscationModel() for a list of potential return
+     *  values.  Returns NULL if an error occurred. */
     public String getDefaultTransactionModel()
     {
         return Marshal.PtrToStringAnsi(sqlrcon_getDefaultTransactionModel(sqlrconref));
@@ -543,16 +548,16 @@ public class SQLRConnection : IDisposable
         return (sqlrcon_setTransactionModel(sqlrconref, txmodel) == 1);
     }
 
-    /** Returns the current transaction model.  See setTranscationModel()
-     *  for a list of potential return values.  Returns null if an error
-     *  occurred. */
+    /** Returns the current transaction model.  See
+     *  setTranscationModel() for a list of potential return
+     *  values.  Returns NULL if an error occurred. */
     public String getTransactionModel()
     {
         return Marshal.PtrToStringAnsi(sqlrcon_getTransactionModel(sqlrconref));
     }
 
     /** Returns the database-specific default isolation level,
-     *  or null if an error occurred. */
+     *  or NULL if an error occurred. */
     public String getDefaultIsolationLevel()
     {
         return Marshal.PtrToStringAnsi(sqlrcon_getDefaultIsolationLevel(sqlrconref));
@@ -616,31 +621,33 @@ public class SQLRConnection : IDisposable
      *  * 0  (serializable, default)
      *  * 1  (read uncommitted)
      *
-     *  For ODBC (generic), one of the ODBC names:
+     *  For ODBC:
      *  * SQL_TXN_READ_UNCOMMITTED
      *  * SQL_TXN_READ_COMMITTED
      *  * SQL_TXN_REPEATABLE_READ
      *  * SQL_TXN_SERIALIZABLE
      *
-     *  (whether a given level is actually supported depends on the
-     *  underlying ODBC driver and target database).  The generic ODBC
-     *  backend also accepts the database-specific native names listed
-     *  above for any of the other backends, as well as the JDBC
-     *  TRANSACTION_* names, and maps them to the closest of the four
-     *  ODBC levels above.
+     *  (whether a given level is actually supported depends on
+     *  the underlying ODBC driver and target database).  The
+     *  generic ODBC backend also accepts the database-specific
+     *  native names listed above for any of the other backends,
+     *  as well as the JDBC TRANSACTION_* names, and maps them
+     *  to the closest of the four ODBC levels above.
      *
      *  For other databases, the string is passed through to the
-     *  backend as the argument to "set transaction isolation level".
+     *  backend as the argument to "set transaction isolation
+     *  level".
      *
-     *  Returns true if setting the isolation level succeeded, false
-     *  if it failed. */
+     *  Returns true if setting the isolation level succeeded,
+     *  false if it failed. */
     public Boolean setIsolationLevel(String isolationlevel)
     {
         return (sqlrcon_setIsolationLevel(sqlrconref, isolationlevel) == 1);
     }
 
-    /** Returns the database-specific isolation level, "unknown" if the
-     *  isolation level is unknown, or null if an error occurred. */
+    /** Returns the database-specific isolation level, "unknown"
+     *  if the isolation level is unknown, or NULL if an error
+     *  occurred. */
     public String getIsolationLevel()
     {
         return Marshal.PtrToStringAnsi(sqlrcon_getIsolationLevel(sqlrconref));
@@ -664,7 +671,7 @@ public class SQLRConnection : IDisposable
      *  * auto_commit_failure_closes_all_result_sets
      *   * true/false
      *  * batch_operations
-     *   * list - SELECT_EXPLICIT,ROW_COUNT_EXPLICIT,SELECT_PROC,ROW_COUNT_PROC
+     *   * list - SELECT_EXPLICIT,ROW_COUNT_EXPLICIT,SELECT_PROC,...
      *  * batch_row_counts
      *   * list - PROCEDURES,EXPLICIT,ROLLED_UP
      *  * catalog_separator
@@ -925,7 +932,7 @@ public class SQLRConnection : IDisposable
      *  * where_current_of_operations
      *   * list - DELETE,UPDATE
      *
-     *  Returns the value of the feature as a string, or null if
+     *  Returns the value of the feature as a string, or NULL if
      *  an error occurred or an invalid feature was requested. */
     public String getDatabaseFeature(String feature)
     {
@@ -935,7 +942,7 @@ public class SQLRConnection : IDisposable
 
 
     /** If an operation failed and generated an error, the error message is
-     *  available here.  If there is no error then this method returns NULL */
+     *  available here.  If there is no error then this method returns NULL. */
     public String errorMessage()
     {
         return Marshal.PtrToStringAnsi(sqlrcon_errorMessage(sqlrconref));

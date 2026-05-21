@@ -462,7 +462,7 @@ class SQLRConnection {
 		 *  * 0  (serializable, default)
 		 *  * 1  (read uncommitted)
 		 *
-		 *  For ODBC (generic), one of the ODBC names:
+		 *  For ODBC:
 		 *  * SQL_TXN_READ_UNCOMMITTED
 		 *  * SQL_TXN_READ_COMMITTED
 		 *  * SQL_TXN_REPEATABLE_READ
@@ -472,8 +472,8 @@ class SQLRConnection {
 		 *  the underlying ODBC driver and target database).  The
 		 *  generic ODBC backend also accepts the database-specific
 		 *  native names listed above for any of the other backends,
-		 *  as well as the JDBC TRANSACTION_* names, and maps them to
-		 *  the closest of the four ODBC levels above.
+		 *  as well as the JDBC TRANSACTION_* names, and maps them
+		 *  to the closest of the four ODBC levels above.
 		 *
 		 *  For other databases, the string is passed through to the
 		 *  backend as the argument to "set transaction isolation
@@ -506,7 +506,7 @@ class SQLRConnection {
 		 *  * auto_commit_failure_closes_all_result_sets
 		 *   * true/false
 		 *  * batch_operations
-		 *   * list - SELECT_EXPLICIT,ROW_COUNT_EXPLICIT,SELECT_PROC,ROW_COUNT_PROC
+		 *   * list - SELECT_EXPLICIT,ROW_COUNT_EXPLICIT,SELECT_PROC,...
 		 *  * batch_row_counts
 		 *   * list - PROCEDURES,EXPLICIT,ROLLED_UP
 		 *  * catalog_separator
@@ -891,20 +891,38 @@ class SQLRCursor {
 
 
 
-		/** Generates a result set containing
-		 *  databases that match the pattern "wild".
+		/** Generates a result set containing databases that match the
+		 *  pattern "databases".
 		 *
 		 *  The result set will contain the following columns:
 		 *  * Database
 		 *
-		 *  If "wild" is empty or NULL then a result set containing
-		 *  all databases will be returned.
+		 *  If "databases" is empty or NULL then a result set
+		 *  containing all databases will be returned.
+		 *
+		 *  May actually return a result set of catalogs or schemas,
+		 *  depending on whether the backend database equates
+		 *  "database" with catalog or schema.
+		 *
+		 *  See getDatabaseIsSchema().
 		 *
 		 *  If SQL Relay doesn't support getting a list of databases
 		 *  for the current database backend (or the database doesn't)
 		 *  then an empty result set will be returned. */
 		function getDatabaseList(var wild);
 
+		/** Generates a result set containing catalogs that match the
+		 *  pattern "catalog".
+		 *
+		 *  The result set will contain the following columns:
+		 *  * Database
+		 *
+		 *  If "catalog" is empty or NULL then a result set containing
+		 *  all catalogs will be returned.
+		 *
+		 *  If SQL Relay doesn't support getting a list of catalogs
+		 *  for the current database backend (or the database doesn't)
+		 *  then an empty result set will be returned. */
 		function getCatalogList(var wild);
 
 		/** Generates a result set containing schemas that match the
@@ -934,14 +952,13 @@ class SQLRCursor {
 		 *  then an empty result set will be returned. */
 		function getTableTypeList();
 
-		/** Generates a result set containing the
-		 *  tables in the current database and schema that match the
-		 *  pattern "wild".
+		/** Generates a result set containing the tables in the current
+		 *  database and schema that match the pattern "tables".
 		 *
 		 *  The result set will contain the following columns:
 		 *  * Tables_in_xxx
 		 *
-		 *  If "wild" is empty or NULL then a result set containing
+		 *  If "tables" is empty or NULL then a result set containing
 		 *  all tables in the current database/schema will be returned.
 		 *
 		 *  If SQL Relay doesn't support getting a list of tables
@@ -982,8 +999,8 @@ class SQLRCursor {
 		 *  then an empty result set will be returned. */
 		function getTypeInfoList(var type);
 
-		/** Generates a result set containing the
-		 *  columns of "table", which match the pattern "wild".
+		/** Generates a result set containing the columns of "table",
+		 *  which match the pattern "columns".
 		 *
 		 *  The result set will contain the following columns:
 		 *  * column_name
@@ -996,7 +1013,7 @@ class SQLRCursor {
 		 *  * column_default
 		 *  * extra
 		 *
-		 *  If "wild" is empty or NULL then a list of all columns
+		 *  If "columns" is empty or NULL then a list of all columns
 		 *  of "table" will be returned.
 		 *
 		 *  If SQL Relay doesn't support getting a list of columns

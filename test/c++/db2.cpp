@@ -935,13 +935,13 @@ int main(int argc, char **argv) {
 	stdoutput.printf("NESTED SELECTS: \n");
 	cur->setResultSetBufferSize(1);
 	assertTrue(cur->sendQuery("select * from testtable"));
+	secondcur=new sqlrcursor(con);
+	secondcur->setResultSetBufferSize(1);
 	for (uint32_t i=0; cur->getRow(i); i++) {
-		secondcur=new sqlrcursor(con);
-		secondcur->setResultSetBufferSize(1);
 		assertTrue(secondcur->sendQuery("select * from testtable"));
-		delete secondcur;
-		secondcur=NULL;
 	}
+	delete secondcur;
+	secondcur=NULL;
 	cur->setResultSetBufferSize(0);
 	assertTrue(cur->sendQuery("drop table testtable"));
 	stdoutput.printf("\n");

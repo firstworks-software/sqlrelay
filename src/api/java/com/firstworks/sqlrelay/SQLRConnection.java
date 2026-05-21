@@ -41,7 +41,7 @@ public class SQLRConnection {
 
 
 	/** Sets the server connect timeout in seconds and
-	 *  milliseconds.  Setting either parameter to -1 disables the
+	 *  microseconds.  Setting either parameter to -1 disables the
 	 *  timeout.  You can also set this timeout using the
 	 *  SQLR_CLIENT_CONNECT_TIMEOUT environment variable. */
 	public native void	setConnectTimeout(int timeoutsec,
@@ -56,7 +56,7 @@ public class SQLRConnection {
 
 
 	/** Sets the response timeout (for queries, commits, rollbacks,
-	 *  pings, etc.) in seconds and milliseconds.  Setting either
+	 *  pings, etc.) in seconds and microseconds.  Setting either
 	 *  parameter to -1 disables the timeout.  You can also set
 	 *  this timeout using the SQLR_CLIENT_RESPONSE_TIMEOUT
 	 *  environment variable. */
@@ -224,34 +224,34 @@ public class SQLRConnection {
 	 *  using resumeSession().  */
 	public native boolean	suspendSession();
 
-	/** Returns the inet port that the connection is 
-	 *  communicating over. This parameter may be 
+	/** Returns the inet port that the connection is
+	 *  communicating over. This parameter may be
 	 *  passed to another connection for use in
 	 *  the resumeSession() method.
-	 *  Note: the value returned by this method is only
-	 *  valid after a call to suspendSession().*/
+	 *  Note: The value this method returns is only
+	 *  valid after a call to suspendSession(). */
 	public native short	getConnectionPort();
 
-	/** Returns the unix socket that the connection 
-	 *  is communicating over. This parameter may be 
+	/** Returns the unix socket that the connection
+	 *  is communicating over. This parameter may be
 	 *  passed to another connection for use in
 	 *  the resumeSession() method.
-	 *  Note: the value returned by this method is only
-	 *  valid after a call to suspendSession().*/
+	 *  Note: The value this method returns is only
+	 *  valid after a call to suspendSession(). */
 	public native String	getConnectionSocket();
 
-	/** Resumes a session previously left open 
+	/** Resumes a session previously left open
 	 *  using suspendSession().
-	 *  Returns 1 on success and 0 on failure. */
+	 *  Returns true on success and false on failure. */
 	public native boolean	resumeSession(short port, String socket);
 
 
-	/** Returns 1 if the database is up and 0
-	 *  if it's down.  */
+	/** Returns true if the database is up and false
+	 *  if it's down. */
 	public native boolean	ping();
 
-	/** Returns the type of database: 
-	 *    oracle, postgresql, mysql, etc.  */
+	/** Returns the type of database:
+	 *  oracle, postgresql, mysql, etc. */
 	public native String	identify();
 
 	/** Returns the version of the database */
@@ -263,10 +263,10 @@ public class SQLRConnection {
 	/** Returns the ip address of the database */
 	public native String	dbIpAddress();
 
-	/** Returns the version of the sqlrelay server software */
+	/** Returns the version of the sqlrelay server software. */
 	public native String	serverVersion();
 
-	/** Returns the version of the sqlrelay client software */
+	/** Returns the version of the sqlrelay client software. */
 	public native String	clientVersion();
 
 	/** Returns a string representing the bind variable format used
@@ -322,13 +322,13 @@ public class SQLRConnection {
 	/** Sets the current catalog to "catalog" */
 	public native boolean	selectCatalog(String catalog);
 
-	/** Returns the catalog that is currently in use */
+	/** Returns the catalog that is currently in use. */
 	public native String	getCurrentCatalog();
 
 	/** Sets the current schema to "schema" */
 	public native boolean	selectSchema(String schema);
 
-	/** Returns the schema that is currently in use */
+	/** Returns the schema that is currently in use. */
 	public native String	getCurrentSchema();
 
 	/** Returns the user that sqlrelay is currently logged in to
@@ -361,12 +361,12 @@ public class SQLRConnection {
 	 *  blocks. */
 	public native boolean	begin();
 
-	/** Issues a commit. Returns true if the commit succeeded, false if it
-	 *  failed. */
+	/** Commits a transaction.  Returns true if the commit
+	 *  succeeded, false if it failed. */
 	public native boolean	commit();
 
-	/** Issues a rollback. Returns true if the rollback succeeded, false if
-	 *  it failed. */
+	/** Rolls back a transaction.  Returns true if the rollback
+	 *  succeeded, false if it failed. */
 	public native boolean	rollback();
 
 	/** Returns true if the session is currently inside a transaction,
@@ -476,18 +476,18 @@ public class SQLRConnection {
 	 *  * 0  (serializable, default)
 	 *  * 1  (read uncommitted)
 	 *
-	 *  For ODBC (generic), one of the ODBC names:
+	 *  For ODBC:
 	 *  * SQL_TXN_READ_UNCOMMITTED
 	 *  * SQL_TXN_READ_COMMITTED
 	 *  * SQL_TXN_REPEATABLE_READ
 	 *  * SQL_TXN_SERIALIZABLE
 	 *
-	 *  (whether a given level is actually supported depends on the
-	 *  underlying ODBC driver and target database).  The generic ODBC
-	 *  backend also accepts the database-specific native names listed
-	 *  above for any of the other backends, as well as the JDBC
-	 *  TRANSACTION_* names, and maps them to the closest of the four
-	 *  ODBC levels above.
+	 *  (whether a given level is actually supported depends on
+	 *  the underlying ODBC driver and target database).  The
+	 *  generic ODBC backend also accepts the database-specific
+	 *  native names listed above for any of the other backends,
+	 *  as well as the JDBC TRANSACTION_* names, and maps them
+	 *  to the closest of the four ODBC levels above.
 	 *
 	 *  For other databases, the string is passed through to the
 	 *  backend as the argument to "set transaction isolation level".
@@ -806,8 +806,8 @@ public class SQLRConnection {
 	/** Turns debugging off. */
 	public native void	debugOff();
 
-	/** Returns 0 if debugging is off and 1 if 
-	 *  debugging is on. */
+	/** Returns false if debugging is off and true
+	 *  if debugging is on. */
 	public native boolean	getDebug();
 
 	/** Allows you to specify a file to write debug to.

@@ -1171,16 +1171,16 @@ class freetds extends sqlrtest {
 		// can't do this with freetds
 		//cur.setResultSetBufferSize(1);
 		assertTrue(cur.sendQuery("select * from testtable"));
+		SQLRCursor secondcur=new SQLRCursor(con);
+		secondcur.setResultSetBufferSize(1);
 		for (long i=0; cur.getRow(i)!=null; i++) {
-			SQLRCursor secondcur=new SQLRCursor(con);
-			secondcur.setResultSetBufferSize(1);
 			assertTrue(secondcur.sendQuery(
 				"select "+
 				"	* "+
 				"from "+
 				"	testtable"));
-			secondcur.closeResultSet();
 		}
+		secondcur.closeResultSet();
 		//cur.setResultSetBufferSize(0);
 		assertTrue(con.commit());
 		assertTrue(cur.sendQuery("drop table testtable"));

@@ -12,8 +12,8 @@ namespace SQLRClient
 public class SQLRCursor : IDisposable
 {
 
-    /** Creates a cursor to run queries and fetch
-     *  result sets using connection "conn" */
+    /** Creates a cursor to run queries and fetch result
+     *  sets using connecton "conn". */
     public SQLRCursor(SQLRConnection conn)
     {
         sqlrcurref = sqlrcur_alloc_copyrefs(conn.getInternalConnectionStructure(), 1);
@@ -64,9 +64,10 @@ public class SQLRCursor : IDisposable
 
 
 
-    /** Tells the server not to send any column info (names, types, sizes).  If
-     *  you don't need that info, you should call this function to improve
-     *  performance. */
+    /** Tells the server not to send any column
+     *  info (names, types, sizes).  If you don't
+     *  need that info, you should call this
+     *  method to improve performance. */
     public void dontGetColumnInfo()
     {
         sqlrcur_dontGetColumnInfo(sqlrcurref);
@@ -102,15 +103,18 @@ public class SQLRCursor : IDisposable
 
 
 
-    /** Sets query caching on.  Future queries will be cached to the
-     *  file "filename".
-     * 
-     *  A default time-to-live of 10 minutes is also set.
-     * 
-     *  Note that once sqlrcur_cacheToFile() is called, the result sets of all
-     *  future queries will be cached to that file until another call to
-     *  sqlrcur_cacheToFile() changes which file to cache to or a call to
-     *  sqlrcur_cacheOff() turns off caching. */
+    /** Sets query caching on.  Future queries
+     *  will be cached to the file "filename".
+     *
+     *  A default time-to-live of 10 minutes is
+     *  also set.
+     *
+     *  Note that once cacheToFile() is called,
+     *  the result sets of all future queries will
+     *  be cached to that file until another call
+     *  to cacheToFile() changes which file to
+     *  cache to or a call to cacheOff() turns off
+     *  caching. */
     public void cacheToFile(String filename)
     {
         sqlrcur_cacheToFile(sqlrcurref, filename);
@@ -124,8 +128,8 @@ public class SQLRCursor : IDisposable
         sqlrcur_setCacheTtl(sqlrcurref, ttl);
     }
 
-    /** Returns the name of the file containing
-     *  the most recently cached result set. */
+    /** Returns the name of the file containing the
+     *  cached result set. */
     public String getCacheFileName()
     {
         return Marshal.PtrToStringAnsi(sqlrcur_getCacheFileName(sqlrcurref));
@@ -139,14 +143,20 @@ public class SQLRCursor : IDisposable
 
 
 
-    /** Generates a result set containing
-     *  databases that match the pattern "databases".
+    /** Generates a result set containing databases that match the
+     *  pattern "databases".
      *
      *  The result set will contain the following columns:
      *  * Database
      *
-     *  If "databases" is empty or NULL then a result set containing
-     *  all databases will be returned.
+     *  If "databases" is empty or NULL then a result set
+     *  containing all databases will be returned.
+     *
+     *  May actually return a result set of catalogs or schemas,
+     *  depending on whether the backend database equates
+     *  "database" with catalog or schema.
+     *
+     *  See getDatabaseIsSchema().
      *
      *  If SQL Relay doesn't support getting a list of databases
      *  for the current database backend (or the database doesn't)
@@ -156,6 +166,18 @@ public class SQLRCursor : IDisposable
         return sqlrcur_getDatabaseList(sqlrcurref, databases) != 0;
     }
 
+    /** Generates a result set containing catalogs that match the
+     *  pattern "catalog".
+     *
+     *  The result set will contain the following columns:
+     *  * Database
+     *
+     *  If "catalog" is empty or NULL then a result set containing
+     *  all catalogs will be returned.
+     *
+     *  If SQL Relay doesn't support getting a list of catalogs
+     *  for the current database backend (or the database doesn't)
+     *  then an empty result set will be returned. */
     public Boolean getCatalogList(String catalogs)
     {
         return sqlrcur_getCatalogList(sqlrcurref, catalogs) != 0;
@@ -387,8 +409,9 @@ public class SQLRCursor : IDisposable
         return sqlrcur_sendQueryWithLength(sqlrcurref, query, (uint)System.Text.Encoding.Default.GetByteCount(query)) != 0;
     }
 
-    /** Sends "query" with length "length" directly and gets a result set. This
-     *  function must be used if the query contains binary data. */
+    /** Sends "query" with length "length" directly
+     *  and gets a result set. This method must be used
+     *  if the query contains binary data. */
     public Boolean sendQuery(String query, UInt32 length)
     {
         return sqlrcur_sendQueryWithLength(sqlrcurref, query, length) != 0;
@@ -402,7 +425,8 @@ public class SQLRCursor : IDisposable
         return sqlrcur_sendQueryWithLengthBytes(sqlrcurref, query, length) != 0;
     }
 
-    /** Sends the query in file "path"/"filename" and gets a result set. */
+    /** Sends the query in file "path"/"filename" directly
+     *  and gets a result set. */
     public Boolean sendFileQuery(String path, String filename)
     {
         return sqlrcur_sendFileQuery(sqlrcurref, path, filename) != 0;
@@ -416,8 +440,9 @@ public class SQLRCursor : IDisposable
         sqlrcur_prepareQueryWithLength(sqlrcurref, query, (uint)System.Text.Encoding.Default.GetByteCount(query));
     }
 
-    /** Prepare to execute "query" with length "length".  This function must be
-     *  used if the query contains binary data. */
+    /** Prepare to execute "query" with length
+     *  "length".  This method must be used if the
+     *  query contains binary data. */
     public void prepareQuery(String query, UInt32 length)
     {
         sqlrcur_prepareQueryWithLength(sqlrcurref, query, length);
@@ -431,13 +456,13 @@ public class SQLRCursor : IDisposable
 
 
 
-    /** Defines a String substitution variable. */
+    /** Defines a string substitution variable. */
     public void substitution(String variable, String val)
     {
         sqlrcur_subString(sqlrcurref, variable, val);
     }
 
-    /** Defines a integer substitution variable. */
+    /** Defines an integer substitution variable. */
     public void substitution(String variable, Int64 val)
     {
         sqlrcur_subLong(sqlrcurref, variable, val);
@@ -449,7 +474,7 @@ public class SQLRCursor : IDisposable
         sqlrcur_subDouble(sqlrcurref, variable, val, precision, scale);
     }
 
-    /** Defines an array of String substitution variable. */
+    /** Defines an array of string substitution variables. */
     public void substitutions(String[] variables, String[] vals)
     {
         for (Int32 i = 0; i < variables.Length; i++)
@@ -458,7 +483,7 @@ public class SQLRCursor : IDisposable
         }
     }
 
-    /** Defines an array of integer substitution variable. */
+    /** Defines an array of integer substitution variables. */
     public void substitution(String[] variables, Int64[] vals)
     {
         for (Int32 i = 0; i < variables.Length; i++)
@@ -467,7 +492,7 @@ public class SQLRCursor : IDisposable
         }
     }
 
-    /** Defines an array of decimal substitution variable. */
+    /** Defines an array of decimal substitution variables. */
     public void substitution(String[] variables, Double[] vals, UInt32[] precisions, UInt32[] scales)
     {
         for (Int32 i = 0; i < variables.Length; i++)
@@ -478,13 +503,13 @@ public class SQLRCursor : IDisposable
 
 
 
-    /** Defines a String input bind variable. */
+    /** Defines a string input bind variable. */
     public void inputBind(String variable, String val)
     {
         sqlrcur_inputBindStringWithLength(sqlrcurref, variable, val, (val != null) ? (uint)System.Text.Encoding.Default.GetByteCount(val) : 0);
     }
 
-    /** Defines a String input bind variable. */
+    /** Defines a string input bind variable. */
     public void inputBind(String variable, String val, UInt32 vallength)
     {
         sqlrcur_inputBindStringWithLength(sqlrcurref, variable, val, vallength);
@@ -497,16 +522,16 @@ public class SQLRCursor : IDisposable
     }
 
     /** Defines a decimal input bind variable.
-     * (If you don't have the precision and scale then set
-     * them both to 0.  However in that case you may get
-     * unexpected rounding behavior if the server is faking
-     * binds.) */
+      * (If you don't have the precision and scale then set
+      * them both 0.  However in that case you may get
+      * unexpected rounding behavior if the server is faking
+      * binds.) */
     public void inputBind(String variable, Double val, UInt32 precision, UInt32 scale)
     {
         sqlrcur_inputBindDouble(sqlrcurref, variable, val, precision, scale);
     }
 
-    /** Defines an array of String input bind variables. */
+    /** Defines an array of string input bind variables. */
     public void inputBind(String[] variables, String[] vals)
     {
         for (UInt32 i = 0; i < variables.Length; i++)
@@ -524,11 +549,7 @@ public class SQLRCursor : IDisposable
         }
     }
 
-    /** Defines an array of decimal input bind variables.
-     * (If you don't have the precision and scale then set
-     * them both to 0.  However in that case you may get
-     * unexpected rounding behavior if the server is faking
-     * binds.) */
+    /** Defines an array of decimal input bind variables. */
     public void inputBinds(String[] variables, Double[] vals, UInt32[] precisions, UInt32[] scales)
     {
         for (UInt32 i = 0; i < variables.Length; i++)
@@ -537,9 +558,28 @@ public class SQLRCursor : IDisposable
         }
     }
 
-    /**  Defines a date input bind variable.  "day" should be
-     *  1-31 and "month" should be 1-12.  "tz" may be left NULL.
-     *  Most databases ignore "tz".  */
+    /** Defines a date input bind variable.  "day" and "month"
+     *  are 1-based.
+     *
+     *  Some databases distinguish between date, time, and
+     *  datetime types.  For those databases...
+     *
+     *  * The input bind variable will be interpreted as a time type
+     *  if year and/or month are negative.
+     *
+     *  * The input bind variable will be interpreted as a date type
+     *  if hour, minute, second, and/or microsecond are negative.
+     *
+     *  * The input bind variable will be interpreted as a datetime
+     *  type if all parts are positive.
+     *
+     *  "tz" is the timezone abbreviation, and may be left NULL.
+     *  Most databases ignore "tz".
+     *
+     *  Set "isnegative" may be set to true to represent a negative
+     *  time interval.  However, few databases support negative
+     *  time intervals and ignore "isnegative".
+     *  */
     public void inputBind(String variable, Int16 year, Int16 month, Int16 day, Int16 hour, Int16 minute, Int16 second, Int32 microsecond, String tz, Boolean isnegative)
     {
         sqlrcur_inputBindDate(sqlrcurref, variable, year, month, day, hour, minute, second, microsecond, tz, (isnegative) ? 1 : 0);
@@ -559,8 +599,9 @@ public class SQLRCursor : IDisposable
 
 
 
-    /** Defines a String output bind variable.
-     *  "length" Bytes will be reserved to store the value. */
+    /** Defines an output bind variable.
+     *  "length" bytes will be reserved
+     *  to store the value. */
     public void defineOutputBindString(String variable, UInt32 length)
     {
         sqlrcur_defineOutputBindString(sqlrcurref, variable, length);
@@ -572,31 +613,31 @@ public class SQLRCursor : IDisposable
         sqlrcur_defineOutputBindInteger(sqlrcurref, variable);
     }
 
-    /** Defines an decimal output bind variable. */
+    /** Defines a decimal output bind variable. */
     public void defineOutputBindDouble(String variable)
     {
         sqlrcur_defineOutputBindDouble(sqlrcurref, variable);
     }
 
-    /** Defines an date output bind variable. */
+    /** Defines a date output bind variable. */
     public void defineOutputBindDate(String variable)
     {
         sqlrcur_defineOutputBindDate(sqlrcurref, variable);
     }
 
-    /** Defines a binary lob output bind variable */
+    /** Defines a binary lob output bind variable. */
     public void defineOutputBindBlob(String variable)
     {
         sqlrcur_defineOutputBindBlob(sqlrcurref, variable);
     }
 
-    /** Defines a character lob output bind variable */
+    /** Defines a character lob output bind variable. */
     public void defineOutputBindClob(String variable)
     {
         sqlrcur_defineOutputBindClob(sqlrcurref, variable);
     }
 
-    /** Defines a cursor output bind variable */
+    /** Defines a cursor output bind variable. */
     public void defineOutputBindCursor(String variable)
     {
         sqlrcur_defineOutputBindCursor(sqlrcurref, variable);
@@ -617,10 +658,12 @@ public class SQLRCursor : IDisposable
         return sqlrcur_countBindVariables(sqlrcurref);
     }
 
-    /** If you are binding to any variables that might not actually be in your
-     *  query, call this to ensure that the database won't try to bind them
-     *  unless they really are in the query.  There is a performance penalty
-     *  for calling this function */
+    /** If you are binding to any variables that
+     *  might not actually be in your query, call
+     *  this to ensure that the database won't try
+     *  to bind them unless they really are in the
+     *  query.  There is a performance penalty for
+     *  calling this method. */
     public void validateBinds()
     {
         sqlrcur_validateBinds(sqlrcurref);
@@ -669,8 +712,8 @@ public class SQLRCursor : IDisposable
         return sqlrcur_getOutputBindDouble(sqlrcurref, variable);
     }
 
-    /** Get the value stored in a previously defined
-     *  decimal output bind variable. */
+    /** Get the value stored in a previously
+     *  defined date output bind variable. */
     public Boolean getOutputBindDate(String variable, out Int16 year, out Int16 month, out Int16 day, out Int16 hour, out Int16 minute, out Int16 second, out Int32 microsecond, out String tz, out Boolean isnegative)
     {
         year = -1;
@@ -739,15 +782,15 @@ public class SQLRCursor : IDisposable
         return sqlrcur_getOutputBindDateMicrosecond(sqlrcurref, variable);
     }
 
-    /** Get the timezone from a previously defined
-     *  date output bind variable. */
+    /** Get the time zone from a previously
+     *  defined date output bind variable. */
     public String getOutputBindDateTz(String variable)
     {
         return Marshal.PtrToStringAnsi(sqlrcur_getOutputBindDateTz(sqlrcurref, variable));
     }
 
-    /** Get whether a previously defined date output
-     *  bind variable is negative. */
+    /** Get whether the value is negative from a
+     *  previously defined date output bind variable. */
     public Boolean getOutputBindDateIsNegative(String variable)
     {
         return sqlrcur_getOutputBindDateIsNegative(sqlrcurref, variable) != 0;
@@ -790,8 +833,8 @@ public class SQLRCursor : IDisposable
 
 
 
-    /** Opens a cached result set.  Returns true on success and
-     * false on failure. */
+    /** Opens a cached result set.
+     *  Returns true on success and false on failure. */
     public Boolean openCachedResultSet(String filename)
     {
         return sqlrcur_openCachedResultSet(sqlrcurref, filename)!=0;
@@ -805,25 +848,33 @@ public class SQLRCursor : IDisposable
         return sqlrcur_colCount(sqlrcurref);
     }
 
-    /** Returns the number of rows in the current result set. */
+    /** Returns the number of rows in the current
+     *  result set (if the result set is being
+     *  stepped through, this returns the number
+     *  of rows processed so far). */
     public UInt64 rowCount()
     {
         return sqlrcur_rowCount(sqlrcurref);
     }
 
-    /** Returns the total number of rows that will be returned in the result
-     *  set.  Not all databases support this call.  Don't use it for
-     *  applications which are designed to be portable across databases.  -1
-     *  is returned by databases which don't support this option. */
+    /** Returns the total number of rows that will
+     *  be returned in the result set.  Not all
+     *  databases support this call.  Don't use it
+     *  for applications which are designed to be
+     *  portable across databases.  0 is returned
+     *  by databases which don't support this option. */
     public UInt64 totalRows()
     {
         return sqlrcur_totalRows(sqlrcurref);
     }
 
-    /** Returns the number of rows that were updated, inserted or deleted by
-     *  the query.  Not all databases support this call.  Don't use it for
-     *  applications which are designed to be portable across databases.  -1
-     *  is returned by databases which don't support this option. */
+    /** Returns the number of rows that were
+     *  updated, inserted or deleted by the query.
+     *  Not all databases support this call.  Don't
+     *  use it for applications which are designed
+     *  to be portable across databases.  0 is
+     *  returned by databases which don't support
+     *  this option. */
     public UInt64 affectedRows()
     {
         return sqlrcur_affectedRows(sqlrcurref);
@@ -836,10 +887,11 @@ public class SQLRCursor : IDisposable
         return sqlrcur_firstRowIndex(sqlrcurref);
     }
 
-    /** Returns false if part of the result set is still pending on the server
-     *  and true if not.  This function can only return false if
-     *  setResultSetBufferSize() has been called with a parameter other than
-     *  0. */
+    /** Returns false if part of the result set is
+     *  still pending on the server and true if not.
+     *  This method can only return false if
+     *  setResultSetBufferSize() has been called
+     *  with a parameter other than 0. */
     public Boolean endOfResultSet()
     {
         return sqlrcur_endOfResultSet(sqlrcurref)!=0;
@@ -854,8 +906,10 @@ public class SQLRCursor : IDisposable
 
 
 
-    /** If a query failed and generated an error, the error message is available
-     *  here.  If the query succeeded then this function returns a NULL. */
+    /** If a query failed and generated an error,
+     *  the error message is available here.  If
+     *  the query succeeded then this method
+     *  returns NULL. */
     public String errorMessage()
     {
         return Marshal.PtrToStringAnsi(sqlrcur_errorMessage(sqlrcurref));
@@ -877,7 +931,8 @@ public class SQLRCursor : IDisposable
     }
 
     /** Tells the connection to return NULL fields
-     *  and output bind variables as NULL's. */
+     *  and output bind variables as NULL's rather
+     *  than as empty strings. */
     public void getNullsAsNulls()
     {
         sqlrcur_getNullsAsNulls(sqlrcurref);
@@ -969,13 +1024,13 @@ public class SQLRCursor : IDisposable
         return sqlrcur_getFieldAsIntegerByNameIgnoringCase(sqlrcurref, row, col);
     }
 
-    /** Returns the specified field as an decimal. */
+    /** Returns the specified field as a decimal. */
     public Double getFieldAsDouble(UInt64 row, UInt32 col)
     {
         return sqlrcur_getFieldAsDoubleByIndex(sqlrcurref, row, col);
     }
 
-    /** Returns the specified field as an decimal. */
+    /** Returns the specified field as a decimal. */
     public Double getFieldAsDouble(UInt64 row, String col)
     {
         return sqlrcur_getFieldAsDoubleByName(sqlrcurref, row, col);
@@ -1251,37 +1306,49 @@ public class SQLRCursor : IDisposable
         return sqlrcur_getFieldAsDateMicrosecondByNameWithDdMmIgnoringCase(sqlrcurref, row, col, (ddmm) ? 1 : 0, (yyyyddmm) ? 1 : 0, datedelimiters);
     }
 
-    /** Interprets the specified field as a date and returns whether it is negative. */
+    /** Interprets the specified field as a date
+     *  and returns whether the hour component
+     *  is negative. */
     public Boolean getFieldAsDateIsNegative(UInt64 row, UInt32 col)
     {
         return sqlrcur_getFieldAsDateIsNegativeByIndex(sqlrcurref, row, col) != 0;
     }
 
-    /** Interprets the specified field as a date and returns whether it is negative. */
+    /** Interprets the specified field as a date
+     *  and returns whether the hour component
+     *  is negative. */
     public Boolean getFieldAsDateIsNegative(UInt64 row, UInt32 col, Boolean ddmm, Boolean yyyyddmm, String datedelimiters)
     {
         return sqlrcur_getFieldAsDateIsNegativeByIndexWithDdMm(sqlrcurref, row, col, (ddmm) ? 1 : 0, (yyyyddmm) ? 1 : 0, datedelimiters) != 0;
     }
 
-    /** Interprets the specified field as a date and returns whether it is negative. */
+    /** Interprets the specified field as a date
+     *  and returns whether the hour component
+     *  is negative. */
     public Boolean getFieldAsDateIsNegative(UInt64 row, String col)
     {
         return sqlrcur_getFieldAsDateIsNegativeByName(sqlrcurref, row, col) != 0;
     }
 
-    /** Interprets the specified field as a date and returns whether it is negative, ignoring the case of "col". */
+    /** Interprets the specified field as a date
+     *  and returns whether the hour component
+     *  is negative, ignoring the case of "col". */
     public Boolean getFieldAsDateIsNegativeIgnoringCase(UInt64 row, String col)
     {
         return sqlrcur_getFieldAsDateIsNegativeByNameIgnoringCase(sqlrcurref, row, col) != 0;
     }
 
-    /** Interprets the specified field as a date and returns whether it is negative. */
+    /** Interprets the specified field as a date
+     *  and returns whether the hour component
+     *  is negative. */
     public Boolean getFieldAsDateIsNegative(UInt64 row, String col, Boolean ddmm, Boolean yyyyddmm, String datedelimiters)
     {
         return sqlrcur_getFieldAsDateIsNegativeByNameWithDdMm(sqlrcurref, row, col, (ddmm) ? 1 : 0, (yyyyddmm) ? 1 : 0, datedelimiters) != 0;
     }
 
-    /** Interprets the specified field as a date and returns whether it is negative, ignoring the case of "col". */
+    /** Interprets the specified field as a date
+     *  and returns whether the hour component
+     *  is negative, ignoring the case of "col". */
     public Boolean getFieldAsDateIsNegativeIgnoringCase(UInt64 row, String col, Boolean ddmm, Boolean yyyyddmm, String datedelimiters)
     {
         return sqlrcur_getFieldAsDateIsNegativeByNameWithDdMmIgnoringCase(sqlrcurref, row, col, (ddmm) ? 1 : 0, (yyyyddmm) ? 1 : 0, datedelimiters) != 0;
@@ -1315,13 +1382,13 @@ public class SQLRCursor : IDisposable
 
 
 
-    /** Returns the length of the specified row and column. */
+    /** Returns the length of the specified field. */
     public UInt32 getFieldLength(UInt64 row, UInt32 col)
     {
         return sqlrcur_getFieldLengthByIndex(sqlrcurref, row, col);
     }
 
-    /** Returns the length of the specified row and column. */
+    /** Returns the length of the specified field. */
     public UInt32 getFieldLength(UInt64 row, String col)
     {
         return sqlrcur_getFieldLengthByName(sqlrcurref, row, col);
@@ -1398,45 +1465,55 @@ public class SQLRCursor : IDisposable
         return Marshal.PtrToStringAnsi(sqlrcur_getColumnTypeByName(sqlrcurref, col));
     }
 
-    /** Returns the length of the specified column. */
+    /** Returns the number of bytes required on
+     *  the server to store the data for the specified column */
     public UInt32 getColumnLength(UInt32 col)
     {
         return sqlrcur_getColumnLengthByIndex(sqlrcurref, col);
     }
 
-    /** Returns the length of the specified column. */
+    /** Returns the number of bytes required on
+     *  the server to store the data for the specified column */
     public UInt32 getColumnLength(String col)
     {
         return sqlrcur_getColumnLengthByName(sqlrcurref, col);
     }
 
-    /** Returns the precision of the specified column.  Precision is the total
-     *  number of digits in a number.  eg: 123.45 has a precision of 5.  For
-     *  non-numeric types, it's the number of characters in the string. */
+    /** Returns the precision of the specified
+     *  column.
+     *  Precision is the total number of digits in
+     *  a number.  eg: 123.45 has a precision of 5.
+     *  For non-numeric types, it's the number of
+     *  characters in the string. */
     public UInt32 getColumnPrecision(UInt32 col)
     {
         return sqlrcur_getColumnPrecisionByIndex(sqlrcurref, col);
     }
 
-    /** Returns the precision of the specified column.  Precision is the total
-     *  number of digits in a number.  eg: 123.45 has a precision of 5.  For
-     *  non-numeric types, it's the number of characters in the string. */
+    /** Returns the precision of the specified
+     *  column.
+     *  Precision is the total number of digits in
+     *  a number.  eg: 123.45 has a precision of 5.
+     *  For non-numeric types, it's the number of
+     *  characters in the string. */
     public UInt32 getColumnPrecision(String col)
     {
         return sqlrcur_getColumnPrecisionByName(sqlrcurref, col);
     }
 
-    /** Returns the scale of the specified column.  Scale is the total number of
-     *  digits to the right of the decimal poInt32 in a number.  eg: 123.45 has a
-     *  scale of 2. */
+    /** Returns the scale of the specified column.
+     *  Scale is the total number of digits to the
+     *  right of the decimal point in a number.
+     *  eg: 123.45 has a scale of 2. */
     public UInt32 getColumnScale(UInt32 col)
     {
         return sqlrcur_getColumnScaleByIndex(sqlrcurref, col);
     }
 
-    /** Returns the scale of the specified column.  Scale is the total number of
-     *  digits to the right of the decimal poInt32 in a number.  eg: 123.45 has a 
-     *  scale of 2. */
+    /** Returns the scale of the specified column.
+     *  Scale is the total number of digits to the
+     *  right of the decimal point in a number.
+     *  eg: 123.45 has a scale of 2. */
     public UInt32 getColumnScale(String col)
     {
         return sqlrcur_getColumnScaleByName(sqlrcurref, col);
@@ -1566,18 +1643,22 @@ public class SQLRCursor : IDisposable
 
 
 
-    /** Tells the server to leave this result set open when the connection calls
-     *  suspendSession() so that another connection can connect to it using
-     *  resumeResultSet() after it calls resumeSession(). */
+    /** Tells the server to leave this result
+     *  set open when the connection calls
+     *  suspendSession() so that another connection
+     *  can connect to it using resumeResultSet()
+     *  after it calls resumeSession(). */
     public void suspendResultSet()
     {
         sqlrcur_suspendResultSet(sqlrcurref);
     }
 
-    /** Returns the internal ID of this result set.  This parameter may be
-     *  passed to another statement for use in the resumeResultSet() function.
-     *  Note: The value this function returns is only valid after a call to
-     *  suspendResultSet().*/
+    /** Returns the internal ID of this result set.
+     *  This parameter may be passed to another
+     *  cursor for use in the resumeResultSet()
+     *  method.
+     *  Note: The value this method returns is only
+     *  valid after a call to suspendResultSet(). */
     public UInt16 getResultSetId()
     {
         return sqlrcur_getResultSetId(sqlrcurref);
@@ -1590,9 +1671,10 @@ public class SQLRCursor : IDisposable
         return sqlrcur_resumeResultSet(sqlrcurref, id)!=0;
     }
 
-    /** Resumes a result set previously left open using suspendSession() and
-     *  continues caching the result set to "filename".  Returns true on success
-     *  and false on failure. */
+    /** Resumes a result set previously left open
+     *  using suspendSession() and continues caching
+     *  the result set to "filename".
+     *  Returns true on success and false on failure. */
     public Boolean resumeCachedResultSet(UInt16 id, String filename)
     {
         return sqlrcur_resumeCachedResultSet(sqlrcurref, id, filename)!=0;

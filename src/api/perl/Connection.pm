@@ -62,7 +62,7 @@ __END__
 
         setConnectTimeout(timeoutsec, timeoutusec);
             # Sets the server connect timeout in seconds and
-            # milliseconds.  Setting either parameter to -1 disables the
+            # microseconds.  Setting either parameter to -1 disables the
             # timeout.  You can also set this timeout using the
             # SQLR_CLIENT_CONNECT_TIMEOUT environment variable.
 
@@ -74,7 +74,7 @@ __END__
 
         setResponseTimeout(timeoutsec, timeoutusec);
             # Sets the response timeout (for queries, commits, rollbacks,
-            # pings, etc.) in seconds and milliseconds.  Setting either
+            # pings, etc.) in seconds and microseconds.  Setting either
             # parameter to -1 disables the timeout.  You can also set
             # this timeout using the SQLR_CLIENT_RESPONSE_TIMEOUT
             # environment variable.
@@ -88,23 +88,23 @@ __END__
         setBindVariableDelimiters(delimiters);
             # Sets which delimiters are used to identify bind variables
             # in countBindVariables() and validateBinds().  Valid
-            # delimiters include ?,:,@, and $.  Defaults to "?:@$" */
+            # delimiters include ?,:,@, and $.  Defaults to "?:@$"
 
         getBindVariableDelimiterQuestionMarkSupported();
             # Returns true if question marks (?) are considered to be
-            # valid bind variable delimiters. */
+            # valid bind variable delimiters.
 
         getBindVariableDelimiterColonSupported();
             # Returns true if colons (:) are considered to be
-            # valid bind variable delimiters. */
+            # valid bind variable delimiters.
 
         getBindVariableDelimiterAtSignSupported();
             # Returns true if at-signs (@) are considered to be
-            # valid bind variable delimiters. */
+            # valid bind variable delimiters.
 
         getBindVariableDelimiterDollarSignSupported();
             # Returns true if dollar signs ($) are considered to be
-            # valid bind variable delimiters. */
+            # valid bind variable delimiters.
 
         enableKerberos(service, mech, flags);
             # Enables Kerberos authentication and encryption.
@@ -212,7 +212,7 @@ __END__
             #  vary between platforms.  A variety of file formats are
             #  generally supported on Linux/Unix platfoms (.pem, .pfx,
             #  etc.) but only the .pfx format is currently supported on
-            #  Windows. */
+            #  Windows.
 
         disableEncryption();
             # Disables encryption.
@@ -221,24 +221,26 @@ __END__
             # Ends the session.
 
         suspendSession();
-            # Leaves the session open so another client
-            # can connect to it.
-            
+            # Disconnects this connection from the current
+            # session but leaves the session open so
+            # that another connection can connect to it
+            # using resumeSession().
+
         getConnectionPort();
-            # Returns the inet port that the client is 
-            # communicating over. This parameter may be 
-            # passed to another client for use in
-            # the resumeSession() command below.
-            # Note: the value returned by this method is
-            # only valid after a call to suspendSession().
+            # Returns the inet port that the connection is
+            # communicating over. This parameter may be
+            # passed to another connection for use in
+            # the resumeSession() method.
+            # Note: The value this method returns is only
+            # valid after a call to suspendSession().
 
         getConnectionSocket();
-            # Returns the unix socket that the client is 
-            # communicating over. This parameter may be 
-            # passed to another client for use in
-            # the resumeSession() command below.
-            # Note: the value returned by this method is
-            # only valid after a call to suspendSession().
+            # Returns the unix socket that the connection
+            # is communicating over. This parameter may be
+            # passed to another connection for use in
+            # the resumeSession() method.
+            # Note: The value this method returns is only
+            # valid after a call to suspendSession().
 
         resumeSession(port,socket);
             # Resumes a session previously left open 
@@ -252,7 +254,7 @@ __END__
 
         identify();
             # Returns the type of database:
-            #   oracle, postgresql, mysql, etc.
+            # oracle, postgresql, mysql, etc.
 
         dbVersion();
             # Returns the version of the database
@@ -264,10 +266,10 @@ __END__
             # Returns the ip address of the database
 
         serverVersion();
-            # Returns the version of the SQL Relay server software
+            # Returns the version of the sqlrelay server software.
 
         clientVersion();
-            # Returns the version of the SQL Relay client software
+            # Returns the version of the sqlrelay client software.
 
         bindFormat();
             # Returns a string representing the bind variable format used
@@ -340,14 +342,10 @@ __END__
         autoCommitOn();
             # Instructs the database to perform a commit
             # after every successful query.
-            # Returns true if setting autocommit on succeeded
-            # and false if it failed.
 
         autoCommitOff();
             # Instructs the database to wait for the
             # client to tell it when to commit.
-            # Returns true if setting autocommit off succeeded
-            # and false if it failed.
 
         getAutoCommit();
             # Returns true if auto-commit is currently on,
@@ -362,11 +360,11 @@ __END__
             # blocks.
 
         commit();
-            # Issues a commit.  Returns true if the commit
+            # Commits a transaction.  Returns true if the commit
             # succeeded, false if it failed.
 
         rollback();
-            # Issues a rollback.  Returns true if the rollback
+            # Rolls back a transaction.  Returns true if the rollback
             # succeeded, false if it failed.
 
         getInTransaction();
@@ -415,6 +413,10 @@ __END__
             # Returns the current transaction model.  See
             # setTranscationModel() for a list of potential return
             # values.  Returns undef if an error occurred.
+
+        getDefaultIsolationLevel();
+            # Returns the database-specific default isolation level,
+            # or undef if an error occurred.
 
         setIsolationLevel(isolationlevel);
             # Sets the transaction isolation level to
@@ -475,26 +477,25 @@ __END__
             #  * 0  (serializable, default)
             #  * 1  (read uncommitted)
             #
-            # For ODBC (generic), one of the ODBC names:
+            # For ODBC:
             #  * SQL_TXN_READ_UNCOMMITTED
             #  * SQL_TXN_READ_COMMITTED
             #  * SQL_TXN_REPEATABLE_READ
             #  * SQL_TXN_SERIALIZABLE
             #
-            # (whether a given level is actually supported depends
-            # on the underlying ODBC driver and target database).
-            # The generic ODBC backend also accepts the
-            # database-specific native names listed above for any
-            # of the other backends, as well as the JDBC
-            # TRANSACTION_* names, and maps them to the closest of
-            # the four ODBC levels above.
+            # (whether a given level is actually supported depends on
+            # the underlying ODBC driver and target database).  The
+            # generic ODBC backend also accepts the database-specific
+            # native names listed above for any of the other backends,
+            # as well as the JDBC TRANSACTION_* names, and maps them
+            # to the closest of the four ODBC levels above.
             #
-            # For other databases, the string is passed through to
-            # the backend as the argument to "set transaction
-            # isolation level".
+            # For other databases, the string is passed through to the
+            # backend as the argument to "set transaction isolation
+            # level".
             #
-            # Returns true if setting the isolation level
-            # succeeded, false if it failed.
+            # Returns true if setting the isolation level succeeded,
+            # false if it failed.
 
         getIsolationLevel();
             # Returns the database-specific isolation level,
@@ -785,20 +786,21 @@ __END__
             #  an error occurred or an invalid feature was requested.
 
         errorMessage();
-            # If an operation failed and generated an error, the
-            # error message is available here.  If there is no
-            # error then this method returns NULL.
+            # If an operation failed and generated an
+            # error, the error message is available here.
+            # If there is no error then this method
+            # returns NULL.
 
         errorNumber();
             # If an operation failed and generated an
             # error, the error number is available here.
-            # If there is no error then this method 
+            # If there is no error then this method
             # returns 0.
 
 
         debugOn();
-            # Causes verbose debugging information to be 
-            # sent to standard output.  Another way to do 
+            # Causes verbose debugging information to be
+            # sent to standard output.  Another way to do
             # this is to start a query with "-- debug\n".
             # Yet another way is to set the environment
             # variable SQLR_CLIENT_DEBUG to "ON"
@@ -807,8 +809,8 @@ __END__
             # Turns debugging off.
 
         getDebug();
-            # Returns true if debugging is currently on and false
-            # if debugging is currently off.
+            # Returns false if debugging is off and true
+            # if debugging is on.
 
         setDebugFile(filename);
             # Allows you to specify a file to write debug to.

@@ -23,17 +23,18 @@ typedef	struct sqlrcursor *sqlrcur;
  *  made to connect to each until the attempt succeeds, or there are no more
  *  hosts left to try.
  *
- *  If the "socket" parameter is nether NULL nor "" then an attempt will be
+ *  If the "socket" parameter is neither NULL nor "" then an attempt will be
  *  made to connect through it before attempting to connect to "server" on
  *  "port".  If it is NULL or "" then no attempt will be made to connect
- *  through the socket.*/
+ *  through the socket. */
 SQLRCLIENT_DLLSPEC
 sqlrcon	sqlrcon_alloc(const char *server, uint16_t port, const char *socket,
 					const char *user, const char *password, 
 					int32_t retrytime, int32_t tries);
 
 /** @ingroup sqlrclientwrapper
- *  Disconnects and ends the session if it hasn't been terminated already. */
+ *  Disconnects and ends the session if it hasn't been ended
+ *  already. */
 SQLRCLIENT_DLLSPEC
 void	sqlrcon_free(sqlrcon sqlrconref);
 
@@ -41,7 +42,7 @@ void	sqlrcon_free(sqlrcon sqlrconref);
 
 /** @ingroup sqlrclientwrapper
  *  Sets the server connect timeout in seconds and
- *  milliseconds.  Setting either parameter to -1 disables the
+ *  microseconds.  Setting either parameter to -1 disables the
  *  timeout.  You can also set this timeout using the
  *  SQLR_CLIENT_CONNECT_TIMEOUT environment variable. */
 SQLRCLIENT_DLLSPEC
@@ -49,7 +50,8 @@ void	sqlrcon_setConnectTimeout(sqlrcon sqlrconref,
 				int32_t timeoutsec, int32_t timeoutusec);
 
 /** @ingroup sqlrclientwrapper
- *  Gets the server connect timeout in seconds and microseconds. */
+ *  Gets the server connect timeout in seconds and
+ *  microseconds. */
 SQLRCLIENT_DLLSPEC
 void	sqlrcon_getConnectTimeout(sqlrcon sqlrconref,
 				int32_t *timeoutsec, int32_t *timeoutusec);
@@ -67,7 +69,7 @@ int32_t	sqlrcon_getConnectTimeoutMicroseconds(sqlrcon sqlrconref);
 
 /** @ingroup sqlrclientwrapper
  *  Sets the response timeout (for queries, commits, rollbacks,
- *  pings, etc.) in seconds and milliseconds.  Setting either
+ *  pings, etc.) in seconds and microseconds.  Setting either
  *  parameter to -1 disables the timeout.  You can also set
  *  this timeout using the SQLR_CLIENT_RESPONSE_TIMEOUT
  *  environment variable. */
@@ -76,7 +78,8 @@ void	sqlrcon_setResponseTimeout(sqlrcon sqlrconref,
 				int32_t timeoutsec, int32_t timeoutusec);
 
 /** @ingroup sqlrclientwrapper
- *  Gets the response timeout in seconds and microseconds. */
+ *  Gets the response timeout in seconds and
+ *  microseconds. */
 SQLRCLIENT_DLLSPEC
 void	sqlrcon_getResponseTimeout(sqlrcon sqlrconref,
 				int32_t *timeoutsec, int32_t *timeoutusec);
@@ -249,7 +252,7 @@ void	sqlrcon_enableTls(sqlrcon sqlrconref,
 				uint16_t depth);
 
 /** @ingroup sqlrclientwrapper
-  * Disables encryption. */
+ *  Disables encryption. */
 SQLRCLIENT_DLLSPEC
 void	sqlrcon_disableEncryption(sqlrcon sqlrconref);
 
@@ -261,31 +264,37 @@ SQLRCLIENT_DLLSPEC
 void	sqlrcon_endSession(sqlrcon sqlrconref);
 
 /** @ingroup sqlrclientwrapper
- *  Disconnects this connection from the current session but leaves the session
- *  open so that another connection can connect to it using
- *  sqlrcon_resumeSession(). */
+ *  Disconnects this connection from the current
+ *  session but leaves the session open so
+ *  that another connection can connect to it
+ *  using resumeSession(). */
 SQLRCLIENT_DLLSPEC
 int	sqlrcon_suspendSession(sqlrcon sqlrconref);
 
 /** @ingroup sqlrclientwrapper
- *  Returns the inet port that the connection is communicating over.  This
- *  parameter may be passed to another connection for use in the
- *  sqlrcon_resumeSession() command.  Note: The result this function returns
- *  is only valid after a call to suspendSession(). */
+ *  Returns the inet port that the connection is
+ *  communicating over. This parameter may be
+ *  passed to another connection for use in
+ *  the resumeSession() method.
+ *  Note: The value this method returns is only
+ *  valid after a call to suspendSession(). */
 SQLRCLIENT_DLLSPEC
 uint16_t	sqlrcon_getConnectionPort(sqlrcon sqlrconref);
 
 /** @ingroup sqlrclientwrapper
- *  Returns the unix socket that the connection is communicating over.  This
- *  parameter may be passed to another connection for use in the
- *  sqlrcon_resumeSession() command.  Note: The result this function returns
- *  is only valid after a call to suspendSession(). */
+ *  Returns the unix socket that the connection
+ *  is communicating over. This parameter may be
+ *  passed to another connection for use in
+ *  the resumeSession() method.
+ *  Note: The value this method returns is only
+ *  valid after a call to suspendSession(). */
 SQLRCLIENT_DLLSPEC
 const char	*sqlrcon_getConnectionSocket(sqlrcon sqlrconref);
 
 /** @ingroup sqlrclientwrapper
- *  Resumes a session previously left open using sqlrcon_suspendSession().
- *  Returns 1 on success and 0 on failure. */
+ *  Resumes a session previously left open
+ *  using suspendSession().
+ *  Returns true on success and false on failure. */
 SQLRCLIENT_DLLSPEC
 int	sqlrcon_resumeSession(sqlrcon sqlrconref, uint16_t port,
 							const char *socket);
@@ -293,12 +302,14 @@ int	sqlrcon_resumeSession(sqlrcon sqlrconref, uint16_t port,
 
 
 /** @ingroup sqlrclientwrapper
- *  Returns 1 if the database is up and 0 if it's down. */
+ *  Returns true if the database is up and false
+ *  if it's down. */
 SQLRCLIENT_DLLSPEC
 int	sqlrcon_ping(sqlrcon sqlrconref);
 
 /** @ingroup sqlrclientwrapper
- *  Returns the type of database: oracle, postgresql, mysql, etc. */
+ *  Returns the type of database:
+ *  oracle, postgresql, mysql, etc. */
 SQLRCLIENT_DLLSPEC
 const char	*sqlrcon_identify(sqlrcon sqlrconref);
 
@@ -382,8 +393,9 @@ SQLRCLIENT_DLLSPEC
 const char	*sqlrcon_getCurrentDatabase(sqlrcon sqlrconref);
 
 /** @ingroup sqlrclientwrapper
- *  Returns true if the backend database equates "database" with "schema",
- *  and false if it equates "database" with "catalog". */
+ *  Returns true if the backend database equates
+ *  "database" with "schema", and false if it equates
+ *  "database" with "catalog". */
 SQLRCLIENT_DLLSPEC
 int	sqlrcon_getDatabaseIsSchema(sqlrcon sqlrconref);
 
@@ -417,32 +429,36 @@ const char	*sqlrcon_getCurrentUser(sqlrcon sqlrconref);
 
 
 /** @ingroup sqlrclientwrapper
- *  Returns the value of the autoincrement column for the last insert */
+ *  Returns the value of the autoincrement
+ *  column for the last insert */
 SQLRCLIENT_DLLSPEC
 uint64_t	sqlrcon_getLastInsertId(sqlrcon sqlrconref);
 
 
 
 /** @ingroup sqlrclientwrapper
- *  Instructs the database to perform a commit after every successful query. */
+ *  Instructs the database to perform a commit
+ *  after every successful query. */
 SQLRCLIENT_DLLSPEC
 int	sqlrcon_autoCommitOn(sqlrcon sqlrconref);
 
 /** @ingroup sqlrclientwrapper
- *  Instructs the database to wait for the client to tell it when to commit. */
+ *  Instructs the database to wait for the
+ *  client to tell it when to commit. */
 SQLRCLIENT_DLLSPEC
 int	sqlrcon_autoCommitOff(sqlrcon sqlrconref);
 
 /** @ingroup sqlrclientwrapper
- *  Returns 1 if auto-commit is currently on, 0 otherwise. */
+ *  Returns true if auto-commit is currently on,
+ *  false otherwise. */
 SQLRCLIENT_DLLSPEC
 int	sqlrcon_getAutoCommit(sqlrcon sqlrconref);
 
 
 
 /** @ingroup sqlrclientwrapper
- *  Begins a transaction.  Returns 1 if the begin
- *  succeeded, 0 if it failed.  If the database
+ *  Begins a transaction.  Returns true if the begin
+ *  succeeded, false if it failed.  If the database
  *  automatically begins a new transaction when a
  *  commit or rollback is issued then this doesn't
  *  do anything unless SQL Relay is faking transaction
@@ -451,25 +467,27 @@ SQLRCLIENT_DLLSPEC
 int	sqlrcon_begin(sqlrcon sqlrconref);
 
 /** @ingroup sqlrclientwrapper
- *  Issues a commit.  Returns 1 if the commit succeeded, 0 if it failed. */
+ *  Commits a transaction.  Returns true if the commit
+ *  succeeded, false if it failed. */
 SQLRCLIENT_DLLSPEC
 int	sqlrcon_commit(sqlrcon sqlrconref);
 
 /** @ingroup sqlrclientwrapper
- *  Issues a rollback.  Returns 1 if the rollback succeeded, 0 if it failed. */
+ *  Rolls back a transaction.  Returns true if the rollback
+ *  succeeded, false if it failed. */
 SQLRCLIENT_DLLSPEC
 int	sqlrcon_rollback(sqlrcon sqlrconref);
 
 /** @ingroup sqlrclientwrapper
- *  Returns 1 if the session is currently inside a transaction,
- *  0 otherwise. */
+ *  Returns true if the session is currently inside a
+ *  transaction, false otherwise. */
 SQLRCLIENT_DLLSPEC
 int	sqlrcon_getInTransaction(sqlrcon sqlrconref);
 
 /** @ingroup sqlrclientwrapper
  *  Returns the database's native transaction model.  See
- *  sqlrcon_setTranscationModel() for a list of potential return values.
- *  Returns NULL if an error occurred. */
+ *  setTranscationModel() for a list of potential return
+ *  values.  Returns NULL if an error occurred. */
 SQLRCLIENT_DLLSPEC
 const char	*sqlrcon_getDefaultTransactionModel(sqlrcon sqlrconref);
 
@@ -501,14 +519,14 @@ const char	*sqlrcon_getDefaultTransactionModel(sqlrcon sqlrconref);
  *      * commit/rollback does not start a new transcaction
  *      * while in a transaction, autocommit on/off throw error
  *
- *  Returns 1 on success and 0 on failure. */
+ *  Returns true on success and false on failure. */
 SQLRCLIENT_DLLSPEC
 int	sqlrcon_setTransactionModel(sqlrcon sqlrconref, const char *txmodel);
 
 /** @ingroup sqlrclientwrapper
- *  Returns the current transaction model.  See sqlrcon_setTranscationModel()
- *  for a list of potential return values.  Returns NULL if an error
- *  occurred. */
+ *  Returns the current transaction model.  See
+ *  setTranscationModel() for a list of potential return
+ *  values.  Returns NULL if an error occurred. */
 SQLRCLIENT_DLLSPEC
 const char	*sqlrcon_getTransactionModel(sqlrcon sqlrconref);
 
@@ -577,31 +595,33 @@ const char	*sqlrcon_getDefaultIsolationLevel(sqlrcon sqlrconref);
  *  * 0  (serializable, default)
  *  * 1  (read uncommitted)
  *
- *  For ODBC (generic), one of the ODBC names:
+ *  For ODBC:
  *  * SQL_TXN_READ_UNCOMMITTED
  *  * SQL_TXN_READ_COMMITTED
  *  * SQL_TXN_REPEATABLE_READ
  *  * SQL_TXN_SERIALIZABLE
  *
- *  (whether a given level is actually supported depends on the
- *  underlying ODBC driver and target database).  The generic ODBC
- *  backend also accepts the database-specific native names listed
- *  above for any of the other backends, as well as the JDBC
- *  TRANSACTION_* names, and maps them to the closest of the four
- *  ODBC levels above.
+ *  (whether a given level is actually supported depends on
+ *  the underlying ODBC driver and target database).  The
+ *  generic ODBC backend also accepts the database-specific
+ *  native names listed above for any of the other backends,
+ *  as well as the JDBC TRANSACTION_* names, and maps them
+ *  to the closest of the four ODBC levels above.
  *
- *  For other databases, the string is passed through to the backend
- *  as the argument to "set transaction isolation level".
+ *  For other databases, the string is passed through to the
+ *  backend as the argument to "set transaction isolation
+ *  level".
  *
- *  Returns 1 if setting the isolation level succeeded, 0 if it
- *  failed. */
+ *  Returns true if setting the isolation level succeeded,
+ *  false if it failed. */
 SQLRCLIENT_DLLSPEC
 int	sqlrcon_setIsolationLevel(sqlrcon sqlrconref,
 					const char *isolationlevel);
 
 /** @ingroup sqlrclientwrapper
- *  Returns the database-specific isolation level, "unknown" if the
- *  isolation level is unknown, or NULL if an error occurred. */
+ *  Returns the database-specific isolation level, "unknown"
+ *  if the isolation level is unknown, or NULL if an error
+ *  occurred. */
 SQLRCLIENT_DLLSPEC
 const char	*sqlrcon_getIsolationLevel(sqlrcon sqlrconref);
 
@@ -624,7 +644,7 @@ const char	*sqlrcon_getIsolationLevel(sqlrcon sqlrconref);
  *  * auto_commit_failure_closes_all_result_sets
  *   * true/false
  *  * batch_operations
- *   * list - SELECT_EXPLICIT,ROW_COUNT_EXPLICIT,SELECT_PROC,ROW_COUNT_PROC
+ *   * list - SELECT_EXPLICIT,ROW_COUNT_EXPLICIT,SELECT_PROC,...
  *  * batch_row_counts
  *   * list - PROCEDURES,EXPLICIT,ROLLED_UP
  *  * catalog_separator
@@ -894,23 +914,28 @@ const char	*sqlrcon_getDatabaseFeature(sqlrcon sqlrconref,
 
 
 /** @ingroup sqlrclientwrapper
- *  If an operation failed and generated an error, the error message is
- *  available here.  If there is no error then this method returns NULL */
+ *  If an operation failed and generated an
+ *  error, the error message is available here.
+ *  If there is no error then this method
+ *  returns NULL. */
 SQLRCLIENT_DLLSPEC
 const char	*sqlrcon_errorMessage(sqlrcon sqlrconref);
 
 /** @ingroup sqlrclientwrapper
- *  If an operation failed and generated an error, the error number is
- *  available here.  If there is no error then this method returns 0. */
+ *  If an operation failed and generated an
+ *  error, the error number is available here.
+ *  If there is no error then this method
+ *  returns 0. */
 SQLRCLIENT_DLLSPEC
 int64_t		sqlrcon_errorNumber(sqlrcon sqlrconref);
 
 
 /** @ingroup sqlrclientwrapper
- *  Causes verbose debugging information to be sent to standard output.
- *  Another way to do this is to start a query with "-- debug\n".
- *  Yet another way is to set the environment variable SQLR_CLIENT_DEBUG
- *  to "ON" */
+ *  Causes verbose debugging information to be
+ *  sent to standard output.  Another way to do
+ *  this is to start a query with "-- debug\n".
+ *  Yet another way is to set the environment
+ *  variable SQLR_CLIENT_DEBUG to "ON" */
 SQLRCLIENT_DLLSPEC
 void	sqlrcon_debugOn(sqlrcon sqlrconref);
 
@@ -920,15 +945,18 @@ SQLRCLIENT_DLLSPEC
 void	sqlrcon_debugOff(sqlrcon sqlrconref);
 
 /** @ingroup sqlrclientwrapper
- *  Returns 0 if debugging is off and 1 if debugging is on. */
+ *  Returns false if debugging is off and true
+ *  if debugging is on. */
 SQLRCLIENT_DLLSPEC
 int	sqlrcon_getDebug(sqlrcon sqlrconref);
 
 
 
 /** @ingroup sqlrclientwrapper
- *  Allows you to replace the function used to print debug messages with your
- *  own function.  The function is expected to take arguments like printf. */
+ *  Allows you to replace the function used
+ *  to print debug messages with your own
+ *  function.  The function is expected to take
+ *  arguments like printf(). */
 SQLRCLIENT_DLLSPEC
 void	sqlrcon_debugPrintFunction(sqlrcon sqlrconref, 
 					int (*printfunction)(const char *,...));
@@ -941,22 +969,23 @@ SQLRCLIENT_DLLSPEC
 void	sqlrcon_setDebugFile(sqlrcon sqlrconref, const char *filename);
 
 /** @ingroup sqlrclientwrapper
- *  Allows you to set a string that will be passed to the server and ultimately
- *  included in server-side logging along with queries that were run by this
- *  instance of the client. */
+ *  Allows you to set a string that will be passed to the
+ *  server and ultimately included in server-side logging
+ *  along with queries that were run by this instance of
+ *  the client. */
 SQLRCLIENT_DLLSPEC
 void	sqlrcon_setClientInfo(sqlrcon sqlrconref, const char *clientinfo);
 
 /** @ingroup sqlrclientwrapper
- *  Returns the string that was set by sqlrcon_setClientInfo(). */
+ *  Returns the string that was set by setClientInfo(). */
 SQLRCLIENT_DLLSPEC
 const char	*sqlrcon_getClientInfo(sqlrcon sqlrconref);
 
 
 
 /** @ingroup sqlrclientwrapper
- *  Creates a cursor to run queries and fetch
- *  result sets using connection "sqlrconref" */
+ *  Creates a cursor to run queries and fetch result
+ *  sets using connecton "sqlrconref". */
 SQLRCLIENT_DLLSPEC
 sqlrcur	sqlrcur_alloc(sqlrcon sqlrconref);
 
@@ -968,23 +997,26 @@ void	sqlrcur_free(sqlrcur sqlrcurref);
 
 
 /** @ingroup sqlrclientwrapper
- *  Sets the number of rows of the result set to buffer at a time.
- *  0 (the default) means buffer the entire result set. */
+ *  Sets the number of rows of the result set
+ *  to buffer at a time.  0 (the default)
+ *  means buffer the entire result set. */
 SQLRCLIENT_DLLSPEC
 void	sqlrcur_setResultSetBufferSize(sqlrcur sqlrcurref, uint64_t rows);
 
 /** @ingroup sqlrclientwrapper
- *  Returns the number of result set rows that will be buffered at a time or
- *  0 for the entire result set. */
+ *  Returns the number of result set rows that
+ *  will be buffered at a time or 0 for the
+ *  entire result set. */
 SQLRCLIENT_DLLSPEC
 uint64_t	sqlrcur_getResultSetBufferSize(sqlrcur sqlrcurref);
 
 
 
 /** @ingroup sqlrclientwrapper
- *  Tells the server not to send any column info (names, types, sizes).  If
- *  you don't need that info, you should call this function to improve
- *  performance. */
+ *  Tells the server not to send any column
+ *  info (names, types, sizes).  If you don't
+ *  need that info, you should call this
+ *  method to improve performance. */
 SQLRCLIENT_DLLSPEC
 void	sqlrcur_dontGetColumnInfo(sqlrcur sqlrcurref);
 
@@ -996,8 +1028,9 @@ void	sqlrcur_getColumnInfo(sqlrcur sqlrcurref);
 
 
 /** @ingroup sqlrclientwrapper
- *  Columns names are returned in the same case as they are defined in the
- *  database.  This is the default. */
+ *  Columns names are returned in the same
+ *  case as they are defined in the database.
+ *  This is the default. */
 SQLRCLIENT_DLLSPEC
 void	sqlrcur_mixedCaseColumnNames(sqlrcur sqlrcurref);
 
@@ -1014,28 +1047,33 @@ void	sqlrcur_lowerCaseColumnNames(sqlrcur sqlrcurref);
 
 
 /** @ingroup sqlrclientwrapper
- *  Sets query caching on.  Future queries will be cached to the
- *  file "filename".
- * 
- *  A default time-to-live of 10 minutes is also set.
- * 
- *  Note that once sqlrcur_cacheToFile() is called, the result sets of all
- *  future queries will be cached to that file until another call to
- *  sqlrcur_cacheToFile() changes which file to cache to or a call to
- *  sqlrcur_cacheOff() turns off caching. */
+ *  Sets query caching on.  Future queries
+ *  will be cached to the file "filename".
+ *
+ *  A default time-to-live of 10 minutes is
+ *  also set.
+ *
+ *  Note that once cacheToFile() is called,
+ *  the result sets of all future queries will
+ *  be cached to that file until another call
+ *  to cacheToFile() changes which file to
+ *  cache to or a call to cacheOff() turns off
+ *  caching. */
 SQLRCLIENT_DLLSPEC
 void	sqlrcur_cacheToFile(sqlrcur sqlrcurref, const char *filename);
 
 /** @ingroup sqlrclientwrapper
- *  Sets the time-to-live for cached result sets. The sqlr-cachemanger will
- *  remove each cached result set "ttl" seconds after it's created, provided
- *  it's scanning the directory containing the cache files. */
+ *  Sets the time-to-live for cached result
+ *  sets. The sqlr-cachemanger will remove each
+ *  cached result set "ttl" seconds after it's
+ *  created, provided it's scanning the directory
+ *  containing the cache files. */
 SQLRCLIENT_DLLSPEC
 void	sqlrcur_setCacheTtl(sqlrcur sqlrcurref, uint32_t ttl);
 
 /** @ingroup sqlrclientwrapper
- *  Returns the name of the file containing
- *  the most recently cached result set. */
+ *  Returns the name of the file containing the
+ *  cached result set. */
 SQLRCLIENT_DLLSPEC
 const char	*sqlrcur_getCacheFileName(sqlrcur sqlrcurref);
 
@@ -1047,14 +1085,20 @@ void	sqlrcur_cacheOff(sqlrcur sqlrcurref);
 
 
 /** @ingroup sqlrclientwrapper
- *  Generates a result set containing
- *  databases that match the pattern "databases".
+ *  Generates a result set containing databases that match the
+ *  pattern "databases".
  *
  *  The result set will contain the following columns:
  *  * Database
  *
- *  If "databases" is empty or NULL then a result set containing
- *  all databases will be returned.
+ *  If "databases" is empty or NULL then a result set
+ *  containing all databases will be returned.
+ *
+ *  May actually return a result set of catalogs or schemas,
+ *  depending on whether the backend database equates
+ *  "database" with catalog or schema.
+ *
+ *  See getDatabaseIsSchema().
  *
  *  If SQL Relay doesn't support getting a list of databases
  *  for the current database backend (or the database doesn't)
@@ -1063,13 +1107,13 @@ SQLRCLIENT_DLLSPEC
 int	sqlrcur_getDatabaseList(sqlrcur sqlrcurref, const char *databases);
 
 /** @ingroup sqlrclientwrapper
- *  Generates a result set containing
- *  catalogs that match the pattern "catalogs".
+ *  Generates a result set containing catalogs that match the
+ *  pattern "catalog".
  *
  *  The result set will contain the following columns:
  *  * Database
  *
- *  If "catalogs" is empty or NULL then a result set containing
+ *  If "catalog" is empty or NULL then a result set containing
  *  all catalogs will be returned.
  *
  *  If SQL Relay doesn't support getting a list of catalogs
@@ -1079,8 +1123,8 @@ SQLRCLIENT_DLLSPEC
 int	sqlrcur_getCatalogList(sqlrcur sqlrcurref, const char *catalogs);
 
 /** @ingroup sqlrclientwrapper
- *  Generates a result set containing
- *  schemas that match the pattern "schemas".
+ *  Generates a result set containing schemas that match the
+ *  pattern "schemas".
  *
  *  The result set will contain the following columns:
  *  * Database
@@ -1098,8 +1142,7 @@ SQLRCLIENT_DLLSPEC
 int	sqlrcur_getSchemaList(sqlrcur sqlrcurref, const char *schemas);
 
 /** @ingroup sqlrclientwrapper
- *  Generates a result set containing
- *  supported table types.
+ *  Generates a result set containing supported table types.
  *
  *  The result set will contain the following columns:
  *  * table_type
@@ -1111,9 +1154,8 @@ SQLRCLIENT_DLLSPEC
 int	sqlrcur_getTableTypeList(sqlrcur sqlrcurref);
 
 /** @ingroup sqlrclientwrapper
- *  Generates a result set containing the
- *  tables in the current database and schema that match the
- *  pattern "tables".
+ *  Generates a result set containing the tables in the current
+ *  database and schema that match the pattern "tables".
  *
  *  The result set will contain the following columns:
  *  * Tables_in_xxx
@@ -1128,8 +1170,8 @@ SQLRCLIENT_DLLSPEC
 int	sqlrcur_getTableList(sqlrcur sqlrcurref, const char *tables);
 
 /** @ingroup sqlrclientwrapper
- *  Generates a result set containing data
- *  type information for "type".
+ *  Generates a result set containing data type information for
+ *  "type".
  *
  *  The result set will contain the following columns:
  *  * type_name
@@ -1163,8 +1205,8 @@ SQLRCLIENT_DLLSPEC
 int	sqlrcur_getTypeInfoList(sqlrcur sqlrcurref, const char *type);
 
 /** @ingroup sqlrclientwrapper
- *  Generates a result set containing the
- *  columns of "table", which match the pattern "columns".
+ *  Generates a result set containing the columns of "table",
+ *  which match the pattern "columns".
  *
  *  The result set will contain the following columns:
  *  * column_name
@@ -1188,9 +1230,8 @@ int	sqlrcur_getColumnList(sqlrcur sqlrcurref,
 				const char *table, const char *columns);
 
 /** @ingroup sqlrclientwrapper
- *  Generates a result set containing the
- *  primary keys of "table", which match the pattern
- *  "columns".
+ *  Generates a result set containing the primary keys of
+ *  "table", which match the pattern "columns".
  *
  *  The result set will contain the following columns:
  *  * table
@@ -1218,9 +1259,8 @@ int	sqlrcur_getPrimaryKeysList(sqlrcur sqlrcurref,
 				const char *table, const char *columns);
 
 /** @ingroup sqlrclientwrapper
- *  Generates a result set containing the
- *  keys and indexes of "table", which match the pattern
- *  "qualifier".
+ *  Generates a result set containing the keys and indexes of
+ *  "table", which match the pattern "qualifier".
  *
  *  The result set will contain the following columns:
  *  * table
@@ -1249,8 +1289,8 @@ int	sqlrcur_getKeyAndIndexList(sqlrcur sqlrcurref,
 				const char *table, const char *qualifier);
 
 /** @ingroup sqlrclientwrapper
- *  Generates a result set containing
- *  procedures that match the pattern "procedures".
+ *  Generates a result set containing procedures that match the
+ *  pattern "procedures".
  *
  *  The result set will contain the following columns:
  *  * routine_catalog
@@ -1269,9 +1309,8 @@ SQLRCLIENT_DLLSPEC
 int	sqlrcur_getProcedureList(sqlrcur sqlrcurref, const char *procedures);
 
 /** @ingroup sqlrclientwrapper
- *  Generates a result set containing the
- *  parameters of "procedure", which match the pattern
- *  "parameters".
+ *  Generates a result set containing the parameters of
+ *  "procedure", which match the pattern "parameters".
  *
  *  The result set will contain the following columns:
  *  * parameter_name
@@ -1300,14 +1339,16 @@ SQLRCLIENT_DLLSPEC
 int	sqlrcur_sendQuery(sqlrcur sqlrcurref, const char *query);
 
 /** @ingroup sqlrclientwrapper
- *  Sends "query" with length "length" directly and gets a result set. This
- *  function must be used if the query contains binary data. */
+ *  Sends "query" with length "length" directly
+ *  and gets a result set. This method must be used
+ *  if the query contains binary data. */
 SQLRCLIENT_DLLSPEC
 int	sqlrcur_sendQueryWithLength(sqlrcur sqlrcurref, const char *query,
 							uint32_t length);
 
 /** @ingroup sqlrclientwrapper
- *  Sends the query in file "path"/"filename" and gets a result set. */
+ *  Sends the query in file "path"/"filename" directly
+ *  and gets a result set. */
 SQLRCLIENT_DLLSPEC
 int	sqlrcur_sendFileQuery(sqlrcur sqlrcurref,
 				const char *path, const char *filename);
@@ -1320,15 +1361,18 @@ SQLRCLIENT_DLLSPEC
 void	sqlrcur_prepareQuery(sqlrcur sqlrcurref, const char *query);
 
 /** @ingroup sqlrclientwrapper
- *  Prepare to execute "query" with length "length".  This function must be
- *  used if the query contains binary data. */
+ *  Prepare to execute "query" with length
+ *  "length".  This method must be used if the
+ *  query contains binary data. */
 SQLRCLIENT_DLLSPEC
 void	sqlrcur_prepareQueryWithLength(sqlrcur sqlrcurref,
 						const char *query,
 						uint32_t length);
 
 /** @ingroup sqlrclientwrapper
- *  Prepare to execute the contents of "path"/"filename". */
+ *  Prepare to execute the contents
+ *  of "path"/"filename".  Returns false if the
+ * // file couldn't be opened. */
 SQLRCLIENT_DLLSPEC
 void	sqlrcur_prepareFileQuery(sqlrcur sqlrcurref, 
 					const char *path, const char *filename);
@@ -1342,7 +1386,7 @@ void	sqlrcur_subString(sqlrcur sqlrcurref,
 				const char *variable, const char *value);
 
 /** @ingroup sqlrclientwrapper
- *  Defines a integer substitution variable. */
+ *  Defines an integer substitution variable. */
 SQLRCLIENT_DLLSPEC
 void	sqlrcur_subLong(sqlrcur sqlrcurref,
 				const char *variable, int64_t value);
@@ -1367,7 +1411,7 @@ void	sqlrcur_subLongs(sqlrcur sqlrcurref,
 				const char **variables, const int64_t *values);
 
 /** @ingroup sqlrclientwrapper
- *  Defines an array of decmial substitution variables. */
+ *  Defines an array of decimal substitution variables. */
 SQLRCLIENT_DLLSPEC
 void	sqlrcur_subDoubles(sqlrcur sqlrcurref,
 				const char **variables, const double *values,
@@ -1397,17 +1441,17 @@ void	sqlrcur_inputBindLong(sqlrcur sqlrcurref, const char *variable,
 
 /** @ingroup sqlrclientwrapper
  *  Defines a decimal input bind variable.
- * (If you don't have the precision and scale then set
- * them both to 0.  However in that case you may get
- * unexpected rounding behavior if the server is faking
- * binds.) */
+ *  (If you don't have the precision and scale then set
+ *  them both 0.  However in that case you may get
+ *  unexpected rounding behavior if the server is faking
+ *  binds.) */
 SQLRCLIENT_DLLSPEC
 void	sqlrcur_inputBindDouble(sqlrcur sqlrcurref, 
 					const char *variable, double value,
 					uint32_t precision, 
 					uint32_t scale);
 
-/** @ingroup sqlrclientwraper
+/** @ingroup sqlrclientwrapper
  *  Defines a date input bind variable.  "day" and "month"
  *  are 1-based.
  *
@@ -1477,8 +1521,9 @@ void	sqlrcur_inputBindDoubles(sqlrcur sqlrcurref,
 
 
 /** @ingroup sqlrclientwrapper
- *  Defines a string output bind variable.
- *  "length" bytes will be reserved to store the value. */
+ *  Defines an output bind variable.
+ *  "bufferlength" bytes will be reserved
+ *  to store the value. */
 SQLRCLIENT_DLLSPEC
 void	sqlrcur_defineOutputBindString(sqlrcur sqlrcurref,
 					const char *variable, uint32_t length);
@@ -1490,31 +1535,31 @@ void	sqlrcur_defineOutputBindInteger(sqlrcur sqlrcurref,
 					const char *variable);
 
 /** @ingroup sqlrclientwrapper
- *  Defines an decimal output bind variable. */
+ *  Defines a decimal output bind variable. */
 SQLRCLIENT_DLLSPEC
 void	sqlrcur_defineOutputBindDouble(sqlrcur sqlrcurref,
 					const char *variable);
 
 /** @ingroup sqlrclientwrapper
- *   Defines a date output bind variable. */
+ *  Defines a date output bind variable. */
 SQLRCLIENT_DLLSPEC
 void	sqlrcur_defineOutputBindDate(sqlrcur sqlrcurref,
 					const char *variable);
 
 /** @ingroup sqlrclientwrapper
- *  Defines a binary lob output bind variable */
+ *  Defines a binary lob output bind variable. */
 SQLRCLIENT_DLLSPEC
 void	sqlrcur_defineOutputBindBlob(sqlrcur sqlrcurref,
 					const char *variable);
 
 /** @ingroup sqlrclientwrapper
- *  Defines a character lob output bind variable */
+ *  Defines a character lob output bind variable. */
 SQLRCLIENT_DLLSPEC
 void	sqlrcur_defineOutputBindClob(sqlrcur sqlrcurref,
 					const char *variable);
 
 /** @ingroup sqlrclientwrapper
- *  Defines a cursor output bind variable */
+ *  Defines a cursor output bind variable. */
 SQLRCLIENT_DLLSPEC
 void	sqlrcur_defineOutputBindCursor(sqlrcur sqlrcurref,
 					const char *variable);
@@ -1527,55 +1572,61 @@ SQLRCLIENT_DLLSPEC
 void	sqlrcur_clearBinds(sqlrcur sqlrcurref);
 
 /** @ingroup sqlrclientwrapper
- *  Parses the previously prepared query, counts the number of bind variables
- *  defined in it and returns that number. */
+ *  Parses the previously prepared query,
+ *  counts the number of bind variables defined
+ *  in it and returns that number. */
 SQLRCLIENT_DLLSPEC
 uint16_t	sqlrcur_countBindVariables(sqlrcur sqlrcurref);
 
 /** @ingroup sqlrclientwrapper
- *  If you are binding to any variables that might not actually be in your
- *  query, call this to ensure that the database won't try to bind them unless
- *  they really are in the query.  There is a performance penalty for calling
- *  this function */
+ *  If you are binding to any variables that
+ *  might not actually be in your query, call
+ *  this to ensure that the database won't try
+ *  to bind them unless they really are in the
+ *  query.  There is a performance penalty for
+ *  calling this method. */
 SQLRCLIENT_DLLSPEC
 void	sqlrcur_validateBinds(sqlrcur sqlrcurref);
 
 /** @ingroup sqlrclientwrapper
- *  Returns true if "variable" was a valid bind variable of the query. */
+ *  Returns true if "variable" was a valid
+ *  bind variable of the query. */
 SQLRCLIENT_DLLSPEC
 int	sqlrcur_validBind(sqlrcur sqlrcurref, const char *variable);
 
 
 
 /** @ingroup sqlrclientwrapper
- *  Execute the query that was previously prepared and bound. */
+ *  Execute the query that was previously
+ *  prepared and bound. */
 SQLRCLIENT_DLLSPEC
 int	sqlrcur_executeQuery(sqlrcur sqlrcurref);
 
 /** @ingroup sqlrclientwrapper
- *  Fetch from a cursor that was returned as an output bind variable. */
+ *  Fetch from a cursor that was returned as
+ *  an output bind variable. */
 SQLRCLIENT_DLLSPEC
 int	sqlrcur_fetchFromBindCursor(sqlrcur sqlrcurref);
 
 
 
 /** @ingroup sqlrclientwrapper
- *  Get the value stored in a previously defined
- *  string output bind variable. */
+ *  Get the value stored in a previously
+ *  defined string output bind variable. */
 SQLRCLIENT_DLLSPEC
 const char	*sqlrcur_getOutputBindString(sqlrcur sqlrcurref,
 						const char *variable);
 
 /** @ingroup sqlrclientwrapper
- *  Get the value stored in a previously defined
- *  integer output bind variable. */
+ *  Get the value stored in a previously
+ *  defined integer output bind variable. */
 SQLRCLIENT_DLLSPEC
 int64_t	sqlrcur_getOutputBindInteger(sqlrcur sqlrcurref,
 						const char *variable);
 
 /** @ingroup sqlrclientwrapper
- *  Get the value stored in a previously defined
- *  decimal output bind variable. */
+ *  Get the value stored in a previously
+ *  defined decimal output bind variable. */
 SQLRCLIENT_DLLSPEC
 double	sqlrcur_getOutputBindDouble(sqlrcur sqlrcurref,
 						const char *variable);
@@ -1655,109 +1706,130 @@ int	sqlrcur_getOutputBindDateIsNegative(sqlrcur sqlrcurref,
 						const char *variable);
 
 /** @ingroup sqlrclientwrapper
- *  Get the value stored in a previously defined
- *  binary lob output bind variable. */
+ *  Get the value stored in a previously
+ *  defined binary lob output bind variable. */
 SQLRCLIENT_DLLSPEC
 const char	*sqlrcur_getOutputBindBlob(sqlrcur sqlrcurref,
 						const char *variable);
 
 /** @ingroup sqlrclientwrapper
- *  Get the value stored in a previously defined
- *  character lob output bind variable. */
+ *  Get the value stored in a previously
+ *  defined character lob output bind variable. */
 SQLRCLIENT_DLLSPEC
 const char	*sqlrcur_getOutputBindClob(sqlrcur sqlrcurref,
 						const char *variable);
 
 /** @ingroup sqlrclientwrapper
- *  Get the length of the value stored in a previously
- *  defined output bind variable. */
+ *  Get the length of the value stored in a
+ *  previously defined output bind variable. */
 SQLRCLIENT_DLLSPEC
 uint32_t	sqlrcur_getOutputBindLength(sqlrcur sqlrcurref,
 						const char *variable);
 
 /** @ingroup sqlrclientwrapper
- *  Get the cursor associated with a previously defined output bind variable. */
+ *  Get the cursor associated with a previously
+ *  defined output bind variable. */
 SQLRCLIENT_DLLSPEC
 sqlrcur	sqlrcur_getOutputBindCursor(sqlrcur sqlrcurref, const char *variable);
 
 
 
 /** @ingroup sqlrclientwrapper
- *  Opens a cached result set.  Returns 1 on success and 0 on failure. */
+ *  Opens a cached result set.
+ *  Returns true on success and false on failure. */
 SQLRCLIENT_DLLSPEC
 int	sqlrcur_openCachedResultSet(sqlrcur sqlrcurref, const char *filename);
 
 
 
 /** @ingroup sqlrclientwrapper
- *  Returns the number of columns in the current result set. */
+ *  Returns the number of columns in the current
+ *  result set. */
 SQLRCLIENT_DLLSPEC
 uint32_t	sqlrcur_colCount(sqlrcur sqlrcurref);
 
 /** @ingroup sqlrclientwrapper
- *  Returns the number of rows in the current result set. */
+ *  Returns the number of rows in the current
+ *  result set (if the result set is being
+ *  stepped through, this returns the number
+ *  of rows processed so far). */
 SQLRCLIENT_DLLSPEC
 uint64_t	sqlrcur_rowCount(sqlrcur sqlrcurref);
 
 /** @ingroup sqlrclientwrapper
- *  Returns the total number of rows that will be returned in the result set.
- *  Not all databases support this call.  Don't use it for applications which
- *  are designed to be portable across databases.  -1 is returned by databases
- *  which don't support this option. */
+ *  Returns the total number of rows that will
+ *  be returned in the result set.  Not all
+ *  databases support this call.  Don't use it
+ *  for applications which are designed to be
+ *  portable across databases.  0 is returned
+ *  by databases which don't support this option. */
 SQLRCLIENT_DLLSPEC
 uint64_t	sqlrcur_totalRows(sqlrcur sqlrcurref);
 
 /** @ingroup sqlrclientwrapper
- *  Returns the number of rows that were updated, inserted or deleted by the
- *  query.  Not all databases support this call.  Don't use it for applications
- *  which are designed to be portable across databases.  -1 is returned by
- *  databases which don't support this option. */
+ *  Returns the number of rows that were
+ *  updated, inserted or deleted by the query.
+ *  Not all databases support this call.  Don't
+ *  use it for applications which are designed
+ *  to be portable across databases.  0 is
+ *  returned by databases which don't support
+ *  this option. */
 SQLRCLIENT_DLLSPEC
 uint64_t	sqlrcur_affectedRows(sqlrcur sqlrcurref);
 
 /** @ingroup sqlrclientwrapper
- *  Returns the index of the first buffered row.  This is useful when buffering
- *  only part of the result set at a time. */
+ *  Returns the index of the first buffered row.
+ *  This is useful when buffering only part of
+ *  the result set at a time. */
 SQLRCLIENT_DLLSPEC
 uint64_t	sqlrcur_firstRowIndex(sqlrcur sqlrcurref);
 
 /** @ingroup sqlrclientwrapper
- *  Returns 0 if part of the result set is still pending on the server and 1 if
- *  not.  This function can only return 0 if setResultSetBufferSize() has been
- *  called with a parameter other than 0. */
+ *  Returns false if part of the result set is
+ *  still pending on the server and true if not.
+ *  This method can only return false if
+ *  setResultSetBufferSize() has been called
+ *  with a parameter other than 0. */
 SQLRCLIENT_DLLSPEC
 int	sqlrcur_endOfResultSet(sqlrcur sqlrcurref);
 
 /** @ingroup sqlrclientwrapper
- *  Returns true and acts like executeQuery() when there is another result set
- *  available from the server. */
+ *  Returns true and acts like executeQuery()
+ *  when there is another result set available
+ *  from the server. */
 SQLRCLIENT_DLLSPEC
 int	sqlrcur_nextResultSet(sqlrcur sqlrcurref);
 
 
 
 /** @ingroup sqlrclientwrapper
- *  If a query failed and generated an error, the error message is available
- *  here.  If the query succeeded then this function returns a NULL. */
+ *  If a query failed and generated an error,
+ *  the error message is available here.  If
+ *  the query succeeded then this method
+ *  returns NULL. */
 SQLRCLIENT_DLLSPEC
 const char	*sqlrcur_errorMessage(sqlrcur sqlrcurref);
 
 /** @ingroup sqlrclientwrapper
- *  If a query failed and generated an error, the error number is available
- *  here.  If there is no error then this method returns 0. */
+ *  If a query failed and generated an
+ *  error, the error number is available here.
+ *  If there is no error then this method
+ *  returns 0. */
 SQLRCLIENT_DLLSPEC
 int64_t		sqlrcur_errorNumber(sqlrcur sqlrcurref);
 
 
 /** @ingroup sqlrclientwrapper
- *  Tells the connection to return NULL fields and output bind variables as
- *  empty strings.  This is the default. */
+ *  Tells the connection to return NULL fields
+ *  and output bind variables as empty strings.
+ *  This is the default. */
 SQLRCLIENT_DLLSPEC
 void	sqlrcur_getNullsAsEmptyStrings(sqlrcur sqlrcurref);
 
 /** @ingroup sqlrclientwrapper
  *  Tells the connection to return NULL fields
- *  and output bind variables as NULL's. */
+ *  and output bind variables as NULL's rather
+ *  than as empty strings. */
 SQLRCLIENT_DLLSPEC
 void	sqlrcur_getNullsAsNulls(sqlrcur sqlrcurref);
 
@@ -1842,7 +1914,11 @@ int	sqlrcur_getFieldAsBooleanByNameIgnoringCase(sqlrcur sqlrcurref,
 
 
 /** @ingroup sqlrclientwrapper
- *  Returns the specified field as a date/time. */
+ *  Interprets the specified field as a date and
+ *  populates its broken-down parts.
+ *
+ *  Returns true if it was able to interpret the
+ *  field as a date, and false otherwise. */
 SQLRCLIENT_DLLSPEC
 int	sqlrcur_getFieldAsDateByIndex(sqlrcur sqlrcurref,
 					uint64_t row, uint32_t col,
@@ -1853,7 +1929,8 @@ int	sqlrcur_getFieldAsDateByIndex(sqlrcur sqlrcurref,
 					int *isnegative);
 
 /** @ingroup sqlrclientwrapper
- *  Returns the specified field as a date/time.
+ *  Interprets the specified field as a date and
+ *  populates its broken-down parts.
  *
  *  If "ddmm" is set true then the date format
  *  is assumed to be dd/mm/yyyy rather than
@@ -1870,7 +1947,10 @@ int	sqlrcur_getFieldAsDateByIndex(sqlrcur sqlrcurref,
  *  combination of '/', '-', '.', and ':'.
  *  Eg. "/-" would mean that only '/' and '-'
  *  are valid date delimiters.  If left NULL
- *  then it defaults to "/-.:". */
+ *  then it defaults to "/-.:".
+ *
+ *  Returns true if it was able to interpret the
+ *  field as a date, and false otherwise. */
 SQLRCLIENT_DLLSPEC
 int	sqlrcur_getFieldAsDateByIndexWithDdMm(sqlrcur sqlrcurref,
 					uint64_t row, uint32_t col,
@@ -1883,7 +1963,11 @@ int	sqlrcur_getFieldAsDateByIndexWithDdMm(sqlrcur sqlrcurref,
 					int *isnegative);
 
 /** @ingroup sqlrclientwrapper
- *  Returns the specified field as a date/time. */
+ *  Interprets the specified field as a date and
+ *  populates its broken-down parts.
+ *
+ *  Returns true if it was able to interpret the
+ *  field as a date, and false otherwise. */
 SQLRCLIENT_DLLSPEC
 int	sqlrcur_getFieldAsDateByName(sqlrcur sqlrcurref,
 					uint64_t row, const char *col,
@@ -1894,8 +1978,12 @@ int	sqlrcur_getFieldAsDateByName(sqlrcur sqlrcurref,
 					int *isnegative);
 
 /** @ingroup sqlrclientwrapper
- *  Returns the specified field as a date/time, ignoring
- *  the case of "col". */
+ *  Interprets the specified field as a date and
+ *  populates its broken-down parts, ignoring
+ *  the case of "col".
+ *
+ *  Returns true if it was able to interpret the
+ *  field as a date, and false otherwise. */
 SQLRCLIENT_DLLSPEC
 int	sqlrcur_getFieldAsDateByNameIgnoringCase(sqlrcur sqlrcurref,
 					uint64_t row, const char *col,
@@ -1906,7 +1994,8 @@ int	sqlrcur_getFieldAsDateByNameIgnoringCase(sqlrcur sqlrcurref,
 					int *isnegative);
 
 /** @ingroup sqlrclientwrapper
- *  Returns the specified field as a date/time.
+ *  Interprets the specified field as a date and
+ *  populates its broken-down parts.
  *
  *  If "ddmm" is set true then the date format
  *  is assumed to be dd/mm/yyyy rather than
@@ -1923,7 +2012,10 @@ int	sqlrcur_getFieldAsDateByNameIgnoringCase(sqlrcur sqlrcurref,
  *  combination of '/', '-', '.', and ':'.
  *  Eg. "/-" would mean that only '/' and '-'
  *  are valid date delimiters.  If left NULL
- *  then it defaults to "/-.:". */
+ *  then it defaults to "/-.:".
+ *
+ *  Returns true if it was able to interpret the
+ *  field as a date, and false otherwise. */
 SQLRCLIENT_DLLSPEC
 int	sqlrcur_getFieldAsDateByNameWithDdMm(sqlrcur sqlrcurref,
 					uint64_t row, const char *col,
@@ -1936,8 +2028,29 @@ int	sqlrcur_getFieldAsDateByNameWithDdMm(sqlrcur sqlrcurref,
 					int *isnegative);
 
 /** @ingroup sqlrclientwrapper
- *  Returns the specified field as a date/time, ignoring
- *  the case of "col". */
+ *  Interprets the specified field as a date and
+ *  populates its broken-down parts, ignoring
+ *  the case of "col".
+ *
+ *  If "ddmm" is set true then the date format
+ *  is assumed to be dd/mm/yyyy rather than
+ *  mm/dd/yyyy when a date with a trailing year
+ *  is encountered.
+ *
+ *  If "yyyyddmm" is set true then the date
+ *  format is assumed to be yyyy/dd/mm rather
+ *  than yyyy/mm/dd when a date with a leading
+ *  year is encountered.
+ *
+ *  "datedelimiters" may be set to a set of
+ *  valid date delimiters and may contain any
+ *  combination of '/', '-', '.', and ':'.
+ *  Eg. "/-" would mean that only '/' and '-'
+ *  are valid date delimiters.  If left NULL
+ *  then it defaults to "/-.:".
+ *
+ *  Returns true if it was able to interpret the
+ *  field as a date, and false otherwise. */
 SQLRCLIENT_DLLSPEC
 int	sqlrcur_getFieldAsDateByNameWithDdMmIgnoringCase(sqlrcur sqlrcurref,
 					uint64_t row, const char *col,
@@ -1958,7 +2071,24 @@ int16_t	sqlrcur_getFieldAsDateYearByIndex(sqlrcur sqlrcurref,
 
 /** @ingroup sqlrclientwrapper
  *  Interprets the specified field as a date
- *  and returns the year component. */
+ *  and returns the year component.
+ *
+ *  If "ddmm" is set true then the date format
+ *  is assumed to be dd/mm/yyyy rather than
+ *  mm/dd/yyyy when a date with a trailing year
+ *  is encountered.
+ *
+ *  If "yyyyddmm" is set true then the date
+ *  format is assumed to be yyyy/dd/mm rather
+ *  than yyyy/mm/dd when a date with a leading
+ *  year is encountered.
+ *
+ *  "datedelimiters" may be set to a set of
+ *  valid date delimiters and may contain any
+ *  combination of '/', '-', '.', and ':'.
+ *  Eg. "/-" would mean that only '/' and '-'
+ *  are valid date delimiters.  If left NULL
+ *  then it defaults to "/-.:". */
 SQLRCLIENT_DLLSPEC
 int16_t	sqlrcur_getFieldAsDateYearByIndexWithDdMm(sqlrcur sqlrcurref,
 					uint64_t row, uint32_t col,
@@ -1982,7 +2112,24 @@ int16_t	sqlrcur_getFieldAsDateYearByNameIgnoringCase(sqlrcur sqlrcurref,
 
 /** @ingroup sqlrclientwrapper
  *  Interprets the specified field as a date
- *  and returns the year component. */
+ *  and returns the year component.
+ *
+ *  If "ddmm" is set true then the date format
+ *  is assumed to be dd/mm/yyyy rather than
+ *  mm/dd/yyyy when a date with a trailing year
+ *  is encountered.
+ *
+ *  If "yyyyddmm" is set true then the date
+ *  format is assumed to be yyyy/dd/mm rather
+ *  than yyyy/mm/dd when a date with a leading
+ *  year is encountered.
+ *
+ *  "datedelimiters" may be set to a set of
+ *  valid date delimiters and may contain any
+ *  combination of '/', '-', '.', and ':'.
+ *  Eg. "/-" would mean that only '/' and '-'
+ *  are valid date delimiters.  If left NULL
+ *  then it defaults to "/-.:". */
 SQLRCLIENT_DLLSPEC
 int16_t	sqlrcur_getFieldAsDateYearByNameWithDdMm(sqlrcur sqlrcurref,
 					uint64_t row, const char *col,
@@ -1992,7 +2139,24 @@ int16_t	sqlrcur_getFieldAsDateYearByNameWithDdMm(sqlrcur sqlrcurref,
 /** @ingroup sqlrclientwrapper
  *  Interprets the specified field as a date
  *  and returns the year component, ignoring
- *  the case of "col". */
+ *  the case of "col".
+ *
+ *  If "ddmm" is set true then the date format
+ *  is assumed to be dd/mm/yyyy rather than
+ *  mm/dd/yyyy when a date with a trailing year
+ *  is encountered.
+ *
+ *  If "yyyyddmm" is set true then the date
+ *  format is assumed to be yyyy/dd/mm rather
+ *  than yyyy/mm/dd when a date with a leading
+ *  year is encountered.
+ *
+ *  "datedelimiters" may be set to a set of
+ *  valid date delimiters and may contain any
+ *  combination of '/', '-', '.', and ':'.
+ *  Eg. "/-" would mean that only '/' and '-'
+ *  are valid date delimiters.  If left NULL
+ *  then it defaults to "/-.:". */
 SQLRCLIENT_DLLSPEC
 int16_t	sqlrcur_getFieldAsDateYearByNameWithDdMmIgnoringCase(
 					sqlrcur sqlrcurref,
@@ -2009,7 +2173,24 @@ int16_t	sqlrcur_getFieldAsDateMonthByIndex(sqlrcur sqlrcurref,
 
 /** @ingroup sqlrclientwrapper
  *  Interprets the specified field as a date
- *  and returns the month component. */
+ *  and returns the month component.
+ *
+ *  If "ddmm" is set true then the date format
+ *  is assumed to be dd/mm/yyyy rather than
+ *  mm/dd/yyyy when a date with a trailing year
+ *  is encountered.
+ *
+ *  If "yyyyddmm" is set true then the date
+ *  format is assumed to be yyyy/dd/mm rather
+ *  than yyyy/mm/dd when a date with a leading
+ *  year is encountered.
+ *
+ *  "datedelimiters" may be set to a set of
+ *  valid date delimiters and may contain any
+ *  combination of '/', '-', '.', and ':'.
+ *  Eg. "/-" would mean that only '/' and '-'
+ *  are valid date delimiters.  If left NULL
+ *  then it defaults to "/-.:". */
 SQLRCLIENT_DLLSPEC
 int16_t	sqlrcur_getFieldAsDateMonthByIndexWithDdMm(sqlrcur sqlrcurref,
 					uint64_t row, uint32_t col,
@@ -2033,7 +2214,24 @@ int16_t	sqlrcur_getFieldAsDateMonthByNameIgnoringCase(sqlrcur sqlrcurref,
 
 /** @ingroup sqlrclientwrapper
  *  Interprets the specified field as a date
- *  and returns the month component. */
+ *  and returns the month component.
+ *
+ *  If "ddmm" is set true then the date format
+ *  is assumed to be dd/mm/yyyy rather than
+ *  mm/dd/yyyy when a date with a trailing year
+ *  is encountered.
+ *
+ *  If "yyyyddmm" is set true then the date
+ *  format is assumed to be yyyy/dd/mm rather
+ *  than yyyy/mm/dd when a date with a leading
+ *  year is encountered.
+ *
+ *  "datedelimiters" may be set to a set of
+ *  valid date delimiters and may contain any
+ *  combination of '/', '-', '.', and ':'.
+ *  Eg. "/-" would mean that only '/' and '-'
+ *  are valid date delimiters.  If left NULL
+ *  then it defaults to "/-.:". */
 SQLRCLIENT_DLLSPEC
 int16_t	sqlrcur_getFieldAsDateMonthByNameWithDdMm(sqlrcur sqlrcurref,
 					uint64_t row, const char *col,
@@ -2043,7 +2241,24 @@ int16_t	sqlrcur_getFieldAsDateMonthByNameWithDdMm(sqlrcur sqlrcurref,
 /** @ingroup sqlrclientwrapper
  *  Interprets the specified field as a date
  *  and returns the month component, ignoring
- *  the case of "col". */
+ *  the case of "col".
+ *
+ *  If "ddmm" is set true then the date format
+ *  is assumed to be dd/mm/yyyy rather than
+ *  mm/dd/yyyy when a date with a trailing year
+ *  is encountered.
+ *
+ *  If "yyyyddmm" is set true then the date
+ *  format is assumed to be yyyy/dd/mm rather
+ *  than yyyy/mm/dd when a date with a leading
+ *  year is encountered.
+ *
+ *  "datedelimiters" may be set to a set of
+ *  valid date delimiters and may contain any
+ *  combination of '/', '-', '.', and ':'.
+ *  Eg. "/-" would mean that only '/' and '-'
+ *  are valid date delimiters.  If left NULL
+ *  then it defaults to "/-.:". */
 SQLRCLIENT_DLLSPEC
 int16_t	sqlrcur_getFieldAsDateMonthByNameWithDdMmIgnoringCase(
 					sqlrcur sqlrcurref,
@@ -2060,7 +2275,24 @@ int16_t	sqlrcur_getFieldAsDateDayByIndex(sqlrcur sqlrcurref,
 
 /** @ingroup sqlrclientwrapper
  *  Interprets the specified field as a date
- *  and returns the day component. */
+ *  and returns the day component.
+ *
+ *  If "ddmm" is set true then the date format
+ *  is assumed to be dd/mm/yyyy rather than
+ *  mm/dd/yyyy when a date with a trailing year
+ *  is encountered.
+ *
+ *  If "yyyyddmm" is set true then the date
+ *  format is assumed to be yyyy/dd/mm rather
+ *  than yyyy/mm/dd when a date with a leading
+ *  year is encountered.
+ *
+ *  "datedelimiters" may be set to a set of
+ *  valid date delimiters and may contain any
+ *  combination of '/', '-', '.', and ':'.
+ *  Eg. "/-" would mean that only '/' and '-'
+ *  are valid date delimiters.  If left NULL
+ *  then it defaults to "/-.:". */
 SQLRCLIENT_DLLSPEC
 int16_t	sqlrcur_getFieldAsDateDayByIndexWithDdMm(sqlrcur sqlrcurref,
 					uint64_t row, uint32_t col,
@@ -2084,7 +2316,24 @@ int16_t	sqlrcur_getFieldAsDateDayByNameIgnoringCase(sqlrcur sqlrcurref,
 
 /** @ingroup sqlrclientwrapper
  *  Interprets the specified field as a date
- *  and returns the day component. */
+ *  and returns the day component.
+ *
+ *  If "ddmm" is set true then the date format
+ *  is assumed to be dd/mm/yyyy rather than
+ *  mm/dd/yyyy when a date with a trailing year
+ *  is encountered.
+ *
+ *  If "yyyyddmm" is set true then the date
+ *  format is assumed to be yyyy/dd/mm rather
+ *  than yyyy/mm/dd when a date with a leading
+ *  year is encountered.
+ *
+ *  "datedelimiters" may be set to a set of
+ *  valid date delimiters and may contain any
+ *  combination of '/', '-', '.', and ':'.
+ *  Eg. "/-" would mean that only '/' and '-'
+ *  are valid date delimiters.  If left NULL
+ *  then it defaults to "/-.:". */
 SQLRCLIENT_DLLSPEC
 int16_t	sqlrcur_getFieldAsDateDayByNameWithDdMm(sqlrcur sqlrcurref,
 					uint64_t row, const char *col,
@@ -2094,7 +2343,24 @@ int16_t	sqlrcur_getFieldAsDateDayByNameWithDdMm(sqlrcur sqlrcurref,
 /** @ingroup sqlrclientwrapper
  *  Interprets the specified field as a date
  *  and returns the day component, ignoring
- *  the case of "col". */
+ *  the case of "col".
+ *
+ *  If "ddmm" is set true then the date format
+ *  is assumed to be dd/mm/yyyy rather than
+ *  mm/dd/yyyy when a date with a trailing year
+ *  is encountered.
+ *
+ *  If "yyyyddmm" is set true then the date
+ *  format is assumed to be yyyy/dd/mm rather
+ *  than yyyy/mm/dd when a date with a leading
+ *  year is encountered.
+ *
+ *  "datedelimiters" may be set to a set of
+ *  valid date delimiters and may contain any
+ *  combination of '/', '-', '.', and ':'.
+ *  Eg. "/-" would mean that only '/' and '-'
+ *  are valid date delimiters.  If left NULL
+ *  then it defaults to "/-.:". */
 SQLRCLIENT_DLLSPEC
 int16_t	sqlrcur_getFieldAsDateDayByNameWithDdMmIgnoringCase(
 					sqlrcur sqlrcurref,
@@ -2111,7 +2377,24 @@ int16_t	sqlrcur_getFieldAsDateHourByIndex(sqlrcur sqlrcurref,
 
 /** @ingroup sqlrclientwrapper
  *  Interprets the specified field as a date
- *  and returns the hour component. */
+ *  and returns the hour component.
+ *
+ *  If "ddmm" is set true then the date format
+ *  is assumed to be dd/mm/yyyy rather than
+ *  mm/dd/yyyy when a date with a trailing year
+ *  is encountered.
+ *
+ *  If "yyyyddmm" is set true then the date
+ *  format is assumed to be yyyy/dd/mm rather
+ *  than yyyy/mm/dd when a date with a leading
+ *  year is encountered.
+ *
+ *  "datedelimiters" may be set to a set of
+ *  valid date delimiters and may contain any
+ *  combination of '/', '-', '.', and ':'.
+ *  Eg. "/-" would mean that only '/' and '-'
+ *  are valid date delimiters.  If left NULL
+ *  then it defaults to "/-.:". */
 SQLRCLIENT_DLLSPEC
 int16_t	sqlrcur_getFieldAsDateHourByIndexWithDdMm(sqlrcur sqlrcurref,
 					uint64_t row, uint32_t col,
@@ -2135,7 +2418,24 @@ int16_t	sqlrcur_getFieldAsDateHourByNameIgnoringCase(sqlrcur sqlrcurref,
 
 /** @ingroup sqlrclientwrapper
  *  Interprets the specified field as a date
- *  and returns the hour component. */
+ *  and returns the hour component.
+ *
+ *  If "ddmm" is set true then the date format
+ *  is assumed to be dd/mm/yyyy rather than
+ *  mm/dd/yyyy when a date with a trailing year
+ *  is encountered.
+ *
+ *  If "yyyyddmm" is set true then the date
+ *  format is assumed to be yyyy/dd/mm rather
+ *  than yyyy/mm/dd when a date with a leading
+ *  year is encountered.
+ *
+ *  "datedelimiters" may be set to a set of
+ *  valid date delimiters and may contain any
+ *  combination of '/', '-', '.', and ':'.
+ *  Eg. "/-" would mean that only '/' and '-'
+ *  are valid date delimiters.  If left NULL
+ *  then it defaults to "/-.:". */
 SQLRCLIENT_DLLSPEC
 int16_t	sqlrcur_getFieldAsDateHourByNameWithDdMm(sqlrcur sqlrcurref,
 					uint64_t row, const char *col,
@@ -2145,7 +2445,24 @@ int16_t	sqlrcur_getFieldAsDateHourByNameWithDdMm(sqlrcur sqlrcurref,
 /** @ingroup sqlrclientwrapper
  *  Interprets the specified field as a date
  *  and returns the hour component, ignoring
- *  the case of "col". */
+ *  the case of "col".
+ *
+ *  If "ddmm" is set true then the date format
+ *  is assumed to be dd/mm/yyyy rather than
+ *  mm/dd/yyyy when a date with a trailing year
+ *  is encountered.
+ *
+ *  If "yyyyddmm" is set true then the date
+ *  format is assumed to be yyyy/dd/mm rather
+ *  than yyyy/mm/dd when a date with a leading
+ *  year is encountered.
+ *
+ *  "datedelimiters" may be set to a set of
+ *  valid date delimiters and may contain any
+ *  combination of '/', '-', '.', and ':'.
+ *  Eg. "/-" would mean that only '/' and '-'
+ *  are valid date delimiters.  If left NULL
+ *  then it defaults to "/-.:". */
 SQLRCLIENT_DLLSPEC
 int16_t	sqlrcur_getFieldAsDateHourByNameWithDdMmIgnoringCase(
 					sqlrcur sqlrcurref,
@@ -2162,7 +2479,24 @@ int16_t	sqlrcur_getFieldAsDateMinuteByIndex(sqlrcur sqlrcurref,
 
 /** @ingroup sqlrclientwrapper
  *  Interprets the specified field as a date
- *  and returns the minute component. */
+ *  and returns the minute component.
+ *
+ *  If "ddmm" is set true then the date format
+ *  is assumed to be dd/mm/yyyy rather than
+ *  mm/dd/yyyy when a date with a trailing year
+ *  is encountered.
+ *
+ *  If "yyyyddmm" is set true then the date
+ *  format is assumed to be yyyy/dd/mm rather
+ *  than yyyy/mm/dd when a date with a leading
+ *  year is encountered.
+ *
+ *  "datedelimiters" may be set to a set of
+ *  valid date delimiters and may contain any
+ *  combination of '/', '-', '.', and ':'.
+ *  Eg. "/-" would mean that only '/' and '-'
+ *  are valid date delimiters.  If left NULL
+ *  then it defaults to "/-.:". */
 SQLRCLIENT_DLLSPEC
 int16_t	sqlrcur_getFieldAsDateMinuteByIndexWithDdMm(sqlrcur sqlrcurref,
 					uint64_t row, uint32_t col,
@@ -2186,7 +2520,24 @@ int16_t	sqlrcur_getFieldAsDateMinuteByNameIgnoringCase(sqlrcur sqlrcurref,
 
 /** @ingroup sqlrclientwrapper
  *  Interprets the specified field as a date
- *  and returns the minute component. */
+ *  and returns the minute component.
+ *
+ *  If "ddmm" is set true then the date format
+ *  is assumed to be dd/mm/yyyy rather than
+ *  mm/dd/yyyy when a date with a trailing year
+ *  is encountered.
+ *
+ *  If "yyyyddmm" is set true then the date
+ *  format is assumed to be yyyy/dd/mm rather
+ *  than yyyy/mm/dd when a date with a leading
+ *  year is encountered.
+ *
+ *  "datedelimiters" may be set to a set of
+ *  valid date delimiters and may contain any
+ *  combination of '/', '-', '.', and ':'.
+ *  Eg. "/-" would mean that only '/' and '-'
+ *  are valid date delimiters.  If left NULL
+ *  then it defaults to "/-.:". */
 SQLRCLIENT_DLLSPEC
 int16_t	sqlrcur_getFieldAsDateMinuteByNameWithDdMm(sqlrcur sqlrcurref,
 					uint64_t row, const char *col,
@@ -2196,7 +2547,24 @@ int16_t	sqlrcur_getFieldAsDateMinuteByNameWithDdMm(sqlrcur sqlrcurref,
 /** @ingroup sqlrclientwrapper
  *  Interprets the specified field as a date
  *  and returns the minute component, ignoring
- *  the case of "col". */
+ *  the case of "col".
+ *
+ *  If "ddmm" is set true then the date format
+ *  is assumed to be dd/mm/yyyy rather than
+ *  mm/dd/yyyy when a date with a trailing year
+ *  is encountered.
+ *
+ *  If "yyyyddmm" is set true then the date
+ *  format is assumed to be yyyy/dd/mm rather
+ *  than yyyy/mm/dd when a date with a leading
+ *  year is encountered.
+ *
+ *  "datedelimiters" may be set to a set of
+ *  valid date delimiters and may contain any
+ *  combination of '/', '-', '.', and ':'.
+ *  Eg. "/-" would mean that only '/' and '-'
+ *  are valid date delimiters.  If left NULL
+ *  then it defaults to "/-.:". */
 SQLRCLIENT_DLLSPEC
 int16_t	sqlrcur_getFieldAsDateMinuteByNameWithDdMmIgnoringCase(
 					sqlrcur sqlrcurref,
@@ -2213,7 +2581,24 @@ int16_t	sqlrcur_getFieldAsDateSecondByIndex(sqlrcur sqlrcurref,
 
 /** @ingroup sqlrclientwrapper
  *  Interprets the specified field as a date
- *  and returns the second component. */
+ *  and returns the second component.
+ *
+ *  If "ddmm" is set true then the date format
+ *  is assumed to be dd/mm/yyyy rather than
+ *  mm/dd/yyyy when a date with a trailing year
+ *  is encountered.
+ *
+ *  If "yyyyddmm" is set true then the date
+ *  format is assumed to be yyyy/dd/mm rather
+ *  than yyyy/mm/dd when a date with a leading
+ *  year is encountered.
+ *
+ *  "datedelimiters" may be set to a set of
+ *  valid date delimiters and may contain any
+ *  combination of '/', '-', '.', and ':'.
+ *  Eg. "/-" would mean that only '/' and '-'
+ *  are valid date delimiters.  If left NULL
+ *  then it defaults to "/-.:". */
 SQLRCLIENT_DLLSPEC
 int16_t	sqlrcur_getFieldAsDateSecondByIndexWithDdMm(sqlrcur sqlrcurref,
 					uint64_t row, uint32_t col,
@@ -2237,7 +2622,24 @@ int16_t	sqlrcur_getFieldAsDateSecondByNameIgnoringCase(sqlrcur sqlrcurref,
 
 /** @ingroup sqlrclientwrapper
  *  Interprets the specified field as a date
- *  and returns the second component. */
+ *  and returns the second component.
+ *
+ *  If "ddmm" is set true then the date format
+ *  is assumed to be dd/mm/yyyy rather than
+ *  mm/dd/yyyy when a date with a trailing year
+ *  is encountered.
+ *
+ *  If "yyyyddmm" is set true then the date
+ *  format is assumed to be yyyy/dd/mm rather
+ *  than yyyy/mm/dd when a date with a leading
+ *  year is encountered.
+ *
+ *  "datedelimiters" may be set to a set of
+ *  valid date delimiters and may contain any
+ *  combination of '/', '-', '.', and ':'.
+ *  Eg. "/-" would mean that only '/' and '-'
+ *  are valid date delimiters.  If left NULL
+ *  then it defaults to "/-.:". */
 SQLRCLIENT_DLLSPEC
 int16_t	sqlrcur_getFieldAsDateSecondByNameWithDdMm(sqlrcur sqlrcurref,
 					uint64_t row, const char *col,
@@ -2247,7 +2649,24 @@ int16_t	sqlrcur_getFieldAsDateSecondByNameWithDdMm(sqlrcur sqlrcurref,
 /** @ingroup sqlrclientwrapper
  *  Interprets the specified field as a date
  *  and returns the second component, ignoring
- *  the case of "col". */
+ *  the case of "col".
+ *
+ *  If "ddmm" is set true then the date format
+ *  is assumed to be dd/mm/yyyy rather than
+ *  mm/dd/yyyy when a date with a trailing year
+ *  is encountered.
+ *
+ *  If "yyyyddmm" is set true then the date
+ *  format is assumed to be yyyy/dd/mm rather
+ *  than yyyy/mm/dd when a date with a leading
+ *  year is encountered.
+ *
+ *  "datedelimiters" may be set to a set of
+ *  valid date delimiters and may contain any
+ *  combination of '/', '-', '.', and ':'.
+ *  Eg. "/-" would mean that only '/' and '-'
+ *  are valid date delimiters.  If left NULL
+ *  then it defaults to "/-.:". */
 SQLRCLIENT_DLLSPEC
 int16_t	sqlrcur_getFieldAsDateSecondByNameWithDdMmIgnoringCase(
 					sqlrcur sqlrcurref,
@@ -2264,7 +2683,24 @@ int32_t	sqlrcur_getFieldAsDateMicrosecondByIndex(sqlrcur sqlrcurref,
 
 /** @ingroup sqlrclientwrapper
  *  Interprets the specified field as a date
- *  and returns the microsecond component. */
+ *  and returns the microsecond component.
+ *
+ *  If "ddmm" is set true then the date format
+ *  is assumed to be dd/mm/yyyy rather than
+ *  mm/dd/yyyy when a date with a trailing year
+ *  is encountered.
+ *
+ *  If "yyyyddmm" is set true then the date
+ *  format is assumed to be yyyy/dd/mm rather
+ *  than yyyy/mm/dd when a date with a leading
+ *  year is encountered.
+ *
+ *  "datedelimiters" may be set to a set of
+ *  valid date delimiters and may contain any
+ *  combination of '/', '-', '.', and ':'.
+ *  Eg. "/-" would mean that only '/' and '-'
+ *  are valid date delimiters.  If left NULL
+ *  then it defaults to "/-.:". */
 SQLRCLIENT_DLLSPEC
 int32_t	sqlrcur_getFieldAsDateMicrosecondByIndexWithDdMm(sqlrcur sqlrcurref,
 					uint64_t row, uint32_t col,
@@ -2289,7 +2725,24 @@ int32_t	sqlrcur_getFieldAsDateMicrosecondByNameIgnoringCase(
 
 /** @ingroup sqlrclientwrapper
  *  Interprets the specified field as a date
- *  and returns the microsecond component. */
+ *  and returns the microsecond component.
+ *
+ *  If "ddmm" is set true then the date format
+ *  is assumed to be dd/mm/yyyy rather than
+ *  mm/dd/yyyy when a date with a trailing year
+ *  is encountered.
+ *
+ *  If "yyyyddmm" is set true then the date
+ *  format is assumed to be yyyy/dd/mm rather
+ *  than yyyy/mm/dd when a date with a leading
+ *  year is encountered.
+ *
+ *  "datedelimiters" may be set to a set of
+ *  valid date delimiters and may contain any
+ *  combination of '/', '-', '.', and ':'.
+ *  Eg. "/-" would mean that only '/' and '-'
+ *  are valid date delimiters.  If left NULL
+ *  then it defaults to "/-.:". */
 SQLRCLIENT_DLLSPEC
 int32_t	sqlrcur_getFieldAsDateMicrosecondByNameWithDdMm(sqlrcur sqlrcurref,
 					uint64_t row, const char *col,
@@ -2299,7 +2752,24 @@ int32_t	sqlrcur_getFieldAsDateMicrosecondByNameWithDdMm(sqlrcur sqlrcurref,
 /** @ingroup sqlrclientwrapper
  *  Interprets the specified field as a date
  *  and returns the microsecond component, ignoring
- *  the case of "col". */
+ *  the case of "col".
+ *
+ *  If "ddmm" is set true then the date format
+ *  is assumed to be dd/mm/yyyy rather than
+ *  mm/dd/yyyy when a date with a trailing year
+ *  is encountered.
+ *
+ *  If "yyyyddmm" is set true then the date
+ *  format is assumed to be yyyy/dd/mm rather
+ *  than yyyy/mm/dd when a date with a leading
+ *  year is encountered.
+ *
+ *  "datedelimiters" may be set to a set of
+ *  valid date delimiters and may contain any
+ *  combination of '/', '-', '.', and ':'.
+ *  Eg. "/-" would mean that only '/' and '-'
+ *  are valid date delimiters.  If left NULL
+ *  then it defaults to "/-.:". */
 SQLRCLIENT_DLLSPEC
 int32_t	sqlrcur_getFieldAsDateMicrosecondByNameWithDdMmIgnoringCase(
 					sqlrcur sqlrcurref,
@@ -2318,7 +2788,24 @@ int	sqlrcur_getFieldAsDateIsNegativeByIndex(sqlrcur sqlrcurref,
 /** @ingroup sqlrclientwrapper
  *  Interprets the specified field as a date
  *  and returns whether the hour component
- *  is negative. */
+ *  is negative.
+ *
+ *  If "ddmm" is set true then the date format
+ *  is assumed to be dd/mm/yyyy rather than
+ *  mm/dd/yyyy when a date with a trailing year
+ *  is encountered.
+ *
+ *  If "yyyyddmm" is set true then the date
+ *  format is assumed to be yyyy/dd/mm rather
+ *  than yyyy/mm/dd when a date with a leading
+ *  year is encountered.
+ *
+ *  "datedelimiters" may be set to a set of
+ *  valid date delimiters and may contain any
+ *  combination of '/', '-', '.', and ':'.
+ *  Eg. "/-" would mean that only '/' and '-'
+ *  are valid date delimiters.  If left NULL
+ *  then it defaults to "/-.:". */
 SQLRCLIENT_DLLSPEC
 int	sqlrcur_getFieldAsDateIsNegativeByIndexWithDdMm(sqlrcur sqlrcurref,
 					uint64_t row, uint32_t col,
@@ -2345,7 +2832,24 @@ int	sqlrcur_getFieldAsDateIsNegativeByNameIgnoringCase(
 /** @ingroup sqlrclientwrapper
  *  Interprets the specified field as a date
  *  and returns whether the hour component
- *  is negative. */
+ *  is negative.
+ *
+ *  If "ddmm" is set true then the date format
+ *  is assumed to be dd/mm/yyyy rather than
+ *  mm/dd/yyyy when a date with a trailing year
+ *  is encountered.
+ *
+ *  If "yyyyddmm" is set true then the date
+ *  format is assumed to be yyyy/dd/mm rather
+ *  than yyyy/mm/dd when a date with a leading
+ *  year is encountered.
+ *
+ *  "datedelimiters" may be set to a set of
+ *  valid date delimiters and may contain any
+ *  combination of '/', '-', '.', and ':'.
+ *  Eg. "/-" would mean that only '/' and '-'
+ *  are valid date delimiters.  If left NULL
+ *  then it defaults to "/-.:". */
 SQLRCLIENT_DLLSPEC
 int	sqlrcur_getFieldAsDateIsNegativeByNameWithDdMm(sqlrcur sqlrcurref,
 					uint64_t row, const char *col,
@@ -2355,7 +2859,24 @@ int	sqlrcur_getFieldAsDateIsNegativeByNameWithDdMm(sqlrcur sqlrcurref,
 /** @ingroup sqlrclientwrapper
  *  Interprets the specified field as a date
  *  and returns whether the hour component
- *  is negative, ignoring the case of "col". */
+ *  is negative, ignoring the case of "col".
+ *
+ *  If "ddmm" is set true then the date format
+ *  is assumed to be dd/mm/yyyy rather than
+ *  mm/dd/yyyy when a date with a trailing year
+ *  is encountered.
+ *
+ *  If "yyyyddmm" is set true then the date
+ *  format is assumed to be yyyy/dd/mm rather
+ *  than yyyy/mm/dd when a date with a leading
+ *  year is encountered.
+ *
+ *  "datedelimiters" may be set to a set of
+ *  valid date delimiters and may contain any
+ *  combination of '/', '-', '.', and ':'.
+ *  Eg. "/-" would mean that only '/' and '-'
+ *  are valid date delimiters.  If left NULL
+ *  then it defaults to "/-.:". */
 SQLRCLIENT_DLLSPEC
 int	sqlrcur_getFieldAsDateIsNegativeByNameWithDdMmIgnoringCase(
 					sqlrcur sqlrcurref,
@@ -2366,13 +2887,13 @@ int	sqlrcur_getFieldAsDateIsNegativeByNameWithDdMmIgnoringCase(
 
 
 /** @ingroup sqlrclientwrapper
- *  Returns the length of the specified row and column. */
+ *  Returns the length of the specified field. */
 SQLRCLIENT_DLLSPEC
 uint32_t	sqlrcur_getFieldLengthByIndex(sqlrcur sqlrcurref,
 						uint64_t row, uint32_t col);
 
 /** @ingroup sqlrclientwrapper
- *  Returns the length of the specified row and column. */
+ *  Returns the length of the specified field. */
 SQLRCLIENT_DLLSPEC
 uint32_t	sqlrcur_getFieldLengthByName(sqlrcur sqlrcurref,
 						uint64_t row, const char *col);
@@ -2380,14 +2901,14 @@ uint32_t	sqlrcur_getFieldLengthByName(sqlrcur sqlrcurref,
 
 
 /** @ingroup sqlrclientwrapper
- *  Returns a null terminated array of the values
- *  of the fields in the specified row. */
+ *  Returns a null terminated array of the
+ *  values of the fields in the specified row. */
 SQLRCLIENT_DLLSPEC
 const char * const *sqlrcur_getRow(sqlrcur sqlrcurref, uint64_t row);
 
 /** @ingroup sqlrclientwrapper
- *  Returns a null terminated array of the lengths
- *  of the fields in the specified row. */
+ *  Returns a null terminated array of the
+ *  lengths of the fields in the specified row. */
 SQLRCLIENT_DLLSPEC
 uint32_t	*sqlrcur_getRowLengths(sqlrcur sqlrcurref, uint64_t row);
 
@@ -2414,188 +2935,220 @@ const char	*sqlrcur_getColumnTypeByName(sqlrcur sqlrcurref,
 							const char *col);
 
 /** @ingroup sqlrclientwrapper
- *  Returns the length of the specified column. */
+ *  Returns the number of bytes required on
+ *  the server to store the data for the specified column */
 SQLRCLIENT_DLLSPEC
 uint32_t	sqlrcur_getColumnLengthByIndex(sqlrcur sqlrcurref,
 							uint32_t col);
 
 /** @ingroup sqlrclientwrapper
- *  Returns the length of the specified column. */
+ *  Returns the number of bytes required on
+ *  the server to store the data for the specified column */
 SQLRCLIENT_DLLSPEC
 uint32_t	sqlrcur_getColumnLengthByName(sqlrcur sqlrcurref,
 							const char *col);
 
 /** @ingroup sqlrclientwrapper
- *  Returns the precision of the specified column.  Precision is the total
- *  number of digits in a number.  eg: 123.45 has a precision of 5.  For
- *  non-numeric types, it's the number of characters in the string. */
+ *  Returns the precision of the specified
+ *  column.
+ *  Precision is the total number of digits in
+ *  a number.  eg: 123.45 has a precision of 5.
+ *  For non-numeric types, it's the number of
+ *  characters in the string. */
 SQLRCLIENT_DLLSPEC
 uint32_t	sqlrcur_getColumnPrecisionByIndex(sqlrcur sqlrcurref,
 							uint32_t col);
 
 /** @ingroup sqlrclientwrapper
- *  Returns the precision of the specified column.  Precision is the total
- *  number of digits in a number.  eg: 123.45 has a precision of 5.  For
- *  non-numeric types, it's the number of characters in the string. */
+ *  Returns the precision of the specified
+ *  column.
+ *  Precision is the total number of digits in
+ *  a number.  eg: 123.45 has a precision of 5.
+ *  For non-numeric types, it's the number of
+ *  characters in the string. */
 SQLRCLIENT_DLLSPEC
 uint32_t	sqlrcur_getColumnPrecisionByName(sqlrcur sqlrcurref,
 							const char *col);
 
 /** @ingroup sqlrclientwrapper
- *  Returns the scale of the specified column.  Scale is the total number of
- *  digits to the right of the decimal point in a number.  eg: 123.45 has a
- *  scale of 2. */
+ *  Returns the scale of the specified column.
+ *  Scale is the total number of digits to the
+ *  right of the decimal point in a number.
+ *  eg: 123.45 has a scale of 2. */
 SQLRCLIENT_DLLSPEC
 uint32_t	sqlrcur_getColumnScaleByIndex(sqlrcur sqlrcurref,
 							uint32_t col);
 
 /** @ingroup sqlrclientwrapper
- *  Returns the scale of the specified column.  Scale is the total number of
- *  digits to the right of the decimal point in a number.  eg: 123.45 has a 
- *  scale of 2. */
+ *  Returns the scale of the specified column.
+ *  Scale is the total number of digits to the
+ *  right of the decimal point in a number.
+ *  eg: 123.45 has a scale of 2. */
 SQLRCLIENT_DLLSPEC
 uint32_t	sqlrcur_getColumnScaleByName(sqlrcur sqlrcurref,
 							const char *col);
 
 /** @ingroup sqlrclientwrapper
- *  Returns the scale of the specified column.  Scale is the total number of
- *  digits to the right of the decimal point in a number.  eg: 123.45 has a
- *  scale of 2. */
+ *  Returns true if the specified column can
+ *  contain nulls and false otherwise. */
 SQLRCLIENT_DLLSPEC
 int	sqlrcur_getColumnIsNullableByIndex(sqlrcur sqlrcurref,
 							uint32_t col);
 
 /** @ingroup sqlrclientwrapper
- *  Returns 1 if the specified column can contain nulls and 0 otherwise. */
+ *  Returns true if the specified column can
+ *  contain nulls and false otherwise. */
 SQLRCLIENT_DLLSPEC
 int	sqlrcur_getColumnIsNullableByName(sqlrcur sqlrcurref,
 							const char *col);
 
 /** @ingroup sqlrclientwrapper
- *  Returns 1 if the specified column is a primary key and 0 otherwise. */
+ *  Returns true if the specified column is a
+ *  primary key and false otherwise. */
 SQLRCLIENT_DLLSPEC
 int	sqlrcur_getColumnIsPrimaryKeyByIndex(sqlrcur sqlrcurref,
 							uint32_t col);
 
 /** @ingroup sqlrclientwrapper
- *  Returns 1 if the specified column is a primary key and 0 otherwise. */
+ *  Returns true if the specified column is a
+ *  primary key and false otherwise. */
 SQLRCLIENT_DLLSPEC
 int	sqlrcur_getColumnIsPrimaryKeyByName(sqlrcur sqlrcurref,
 							const char *col);
 
 /** @ingroup sqlrclientwrapper
- *  Returns 1 if the specified column is unique and 0 otherwise. */
+ *  Returns true if the specified column is
+ *  unique and false otherwise. */
 SQLRCLIENT_DLLSPEC
 int		sqlrcur_getColumnIsUniqueByIndex(sqlrcur sqlrcurref,
 							uint32_t col);
 
 /** @ingroup sqlrclientwrapper
- *  Returns 1 if the specified column is unique and 0 otherwise. */
+ *  Returns true if the specified column is
+ *  unique and false otherwise. */
 SQLRCLIENT_DLLSPEC
 int	sqlrcur_getColumnIsUniqueByName(sqlrcur sqlrcurref,
 							const char *col);
 
 /** @ingroup sqlrclientwrapper
- *  Returns 1 if the specified column is part of a composite key and 0
- *  otherwise. */
+ *  Returns true if the specified column is
+ *  part of a composite key and false otherwise. */
 SQLRCLIENT_DLLSPEC
 int	sqlrcur_getColumnIsPartOfKeyByIndex(sqlrcur sqlrcurref,
 							uint32_t col);
 
 /** @ingroup sqlrclientwrapper
- *  Returns 1 if the specified column is part of a composite key and 0
- *  otherwise. */
+ *  Returns true if the specified column is
+ *  part of a composite key and false otherwise. */
 SQLRCLIENT_DLLSPEC
 int	sqlrcur_getColumnIsPartOfKeyByName(sqlrcur sqlrcurref,
 							const char *col);
 
 /** @ingroup sqlrclientwrapper
- *  Returns 1 if the specified column is an unsigned number and 0 otherwise. */
+ *  Returns true if the specified column is
+ *  an unsigned number and false otherwise. */
 SQLRCLIENT_DLLSPEC
 int	sqlrcur_getColumnIsUnsignedByIndex(sqlrcur sqlrcurref,
 							uint32_t col);
 
 /** @ingroup sqlrclientwrapper
- *  Returns 1 if the specified column is an unsigned number and 0 otherwise. */
+ *  Returns true if the specified column is
+ *  an unsigned number and false otherwise. */
 SQLRCLIENT_DLLSPEC
 int	sqlrcur_getColumnIsUnsignedByName(sqlrcur sqlrcurref,
 							const char *col);
 
 /** @ingroup sqlrclientwrapper
- *  Returns 1 if the specified column was created
- *  with the zero-fill flag and 0 otherwise. */
+ *  Returns true if the specified column was
+ *  created with the zero-fill flag and false
+ *  otherwise. */
 SQLRCLIENT_DLLSPEC
 int	sqlrcur_getColumnIsZeroFilledByIndex(sqlrcur sqlrcurref,
 							uint32_t col);
 
 /** @ingroup sqlrclientwrapper
- *  Returns 1 if the specified column was created
- *  with the zero-fill flag and 0 otherwise. */
+ *  Returns true if the specified column was
+ *  created with the zero-fill flag and false
+ *  otherwise. */
 SQLRCLIENT_DLLSPEC
 int	sqlrcur_getColumnIsZeroFilledByName(sqlrcur sqlrcurref,
 							const char *col);
 
 /** @ingroup sqlrclientwrapper
- *  Returns 1 if the specified column contains binary data and 0 otherwise. */
+ *  Returns true if the specified column
+ *  contains binary data and false
+ *  otherwise. */
 SQLRCLIENT_DLLSPEC
 int	sqlrcur_getColumnIsBinaryByIndex(sqlrcur sqlrcurref,
 							uint32_t col);
 
 /** @ingroup sqlrclientwrapper
- *  Returns 1 if the specified column contains binary data and 0 otherwise. */
+ *  Returns true if the specified column
+ *  contains binary data and false
+ *  otherwise. */
 SQLRCLIENT_DLLSPEC
 int	sqlrcur_getColumnIsBinaryByName(sqlrcur sqlrcurref,
 							const char *col);
 
 /** @ingroup sqlrclientwrapper
- *  Returns 1 if the specified column auto-increments and 0 otherwise. */
+ *  Returns true if the specified column
+ *  auto-increments and false otherwise. */
 SQLRCLIENT_DLLSPEC
 int	sqlrcur_getColumnIsAutoIncrementByIndex(sqlrcur sqlrcurref,
 							uint32_t col);
 
 /** @ingroup sqlrclientwrapper
- *  Returns 1 if the specified column auto-increments and 0 otherwise. */
+ *  Returns true if the specified column
+ *  auto-increments and false otherwise. */
 SQLRCLIENT_DLLSPEC
 int	sqlrcur_getColumnIsAutoIncrementByName(sqlrcur sqlrcurref,
 							const char *col);
 
 /** @ingroup sqlrclientwrapper
- *  Returns the length of the longest field in the specified column. */
+ *  Returns the length of the longest field
+ *  in the specified column. */
 SQLRCLIENT_DLLSPEC
 uint32_t	sqlrcur_getLongestByIndex(sqlrcur sqlrcurref, uint32_t col);
 
 /** @ingroup sqlrclientwrapper
- *  Returns the length of the longest field in the specified column. */
+ *  Returns the length of the longest field
+ *  in the specified column. */
 SQLRCLIENT_DLLSPEC
 uint32_t	sqlrcur_getLongestByName(sqlrcur sqlrcurref, const char *col);
 
 
 
 /** @ingroup sqlrclientwrapper
- *  Tells the server to leave this result set open when the connection calls
- *  suspendSession() so that another connection can connect to it using
- *  resumeResultSet() after it calls resumeSession(). */
+ *  Tells the server to leave this result
+ *  set open when the connection calls
+ *  suspendSession() so that another connection
+ *  can connect to it using resumeResultSet()
+ *  after it calls resumeSession(). */
 SQLRCLIENT_DLLSPEC
 void	sqlrcur_suspendResultSet(sqlrcur sqlrcurref);
 
 /** @ingroup sqlrclientwrapper
- *  Returns the internal ID of this result set.  This parameter may be passed
- *  to another statement for use in the resumeResultSet() function.  Note: The
- *  value this function returns is only valid after a call to
- *  suspendResultSet().*/
+ *  Returns the internal ID of this result set.
+ *  This parameter may be passed to another
+ *  cursor for use in the resumeResultSet()
+ *  method.
+ *  Note: The value this method returns is only
+ *  valid after a call to suspendResultSet(). */
 SQLRCLIENT_DLLSPEC
 uint16_t	sqlrcur_getResultSetId(sqlrcur sqlrcurref);
 
 /** @ingroup sqlrclientwrapper
- *  Resumes a result set previously left open using suspendSession().
- *  Returns 1 on success and 0 on failure. */
+ *  Resumes a result set previously left open
+ *  using suspendSession().
+ *  Returns true on success and false on failure. */
 SQLRCLIENT_DLLSPEC
 int	sqlrcur_resumeResultSet(sqlrcur sqlrcurref, uint16_t id);
 
 /** @ingroup sqlrclientwrapper
- *  Resumes a result set previously left open using suspendSession() and
- *  continues caching the result set to "filename".  Returns 1 on success and 0
- *  on failure. */
+ *  Resumes a result set previously left open
+ *  using suspendSession() and continues caching
+ *  the result set to "filename".
+ *  Returns true on success and false on failure. */
 SQLRCLIENT_DLLSPEC
 int	sqlrcur_resumeCachedResultSet(sqlrcur sqlrcurref, 
 					uint16_t id, const char *filename);

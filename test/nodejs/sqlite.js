@@ -691,14 +691,14 @@ var {
 	console.log("NESTED SELECTS: ");
 	cur.setResultSetBufferSize(1);
 	assertTrue(cur.sendQuery("select * from testtable"));
+	var secondcur=new sqlrelay.SQLRCursor(con);
+	setSecondCursor(secondcur);
+	secondcur.setResultSetBufferSize(1);
 	for (var i=0; cur.getRow(i); i++) {
-		var secondcur=new sqlrelay.SQLRCursor(con);
-		setSecondCursor(secondcur);
-		secondcur.setResultSetBufferSize(1);
 		assertTrue(secondcur.sendQuery(
 			"select * from testtable"));
-		secondcur.closeResultSet();
 	}
+	secondcur.closeResultSet();
 	cur.setResultSetBufferSize(0);
 	assertTrue(cur.sendQuery("drop table if exists testtable"));
 	console.log("");

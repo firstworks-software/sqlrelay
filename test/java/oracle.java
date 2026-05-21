@@ -840,13 +840,13 @@ class oracle extends sqlrtest {
 		System.out.println("NESTED SELECTS: ");
 		cur.setResultSetBufferSize(1);
 		assertTrue(cur.sendQuery("select * from testtable"));
+		SQLRCursor secondcur2=new SQLRCursor(con);
+		secondcur2.setResultSetBufferSize(1);
 		for (int i=0; cur.getRow(i)!=null; i++) {
-			SQLRCursor secondcur2=new SQLRCursor(con);
-			secondcur2.setResultSetBufferSize(1);
 			assertTrue(secondcur2.sendQuery(
 				"select * from testtable"));
-			secondcur2.closeResultSet();
 		}
+		secondcur2.closeResultSet();
 		cur.setResultSetBufferSize(0);
 		assertTrue(cur.sendQuery("drop table testtable"));
 		System.out.println();

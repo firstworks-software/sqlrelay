@@ -180,12 +180,8 @@ __END__
             # Sets query caching off.
 
         getDatabaseList(databases);
-            # Generates a result set containing
-            # databases that match the pattern "databases".
-
-        getCatalogList(catalogs);
-            # Generates a result set containing
-            # catalogs that match the pattern "catalogs".
+            # Generates a result set containing databases that match the
+            # pattern "databases".
             #
             # The result set will contain the following columns:
             # * Database
@@ -193,10 +189,30 @@ __END__
             # If "databases" is empty or undef then a result set
             # containing all databases will be returned.
             #
-            # If SQL Relay doesn't support getting a list of
-            # databases for the current database backend (or the
-            # database doesn't) then an empty result set will be
-            # returned.
+            # May actually return a result set of catalogs or schemas,
+            # depending on whether the backend database equates
+            # "database" with catalog or schema.
+            #
+            # See getDatabaseIsSchema().
+            #
+            # If SQL Relay doesn't support getting a list of databases
+            # for the current database backend (or the database doesn't)
+            # then an empty result set will be returned.
+
+        getCatalogList(catalog);
+            # Generates a result set containing catalogs that match the
+            # pattern "catalog".
+            #
+            # The result set will contain the following columns:
+            # * Database
+            #
+            # If "catalog" is empty or undef then a result set containing
+            # all catalogs will be returned.
+            #
+            # If SQL Relay doesn't support getting a list of catalogs
+            # for the current database backend (or the database doesn't)
+            # then an empty result set will be returned.
+
         getSchemaList(schemas);
             # Generates a result set containing
             # schemas that match the pattern "schemas".
@@ -396,15 +412,15 @@ __END__
         # If you don't need to use substitution or bind variables
         # in your queries, use these two methods.
         sendQuery(query);
-            # Sends "query" and gets a result set.
+            # Sends "query" directly and gets a result set.
 
         sendQueryWithLength(query,length);
-            # Sends "query" with length "length" and gets
-            # a result set. This method must be used if
-            # the query contains binary data.
+            # Sends "query" with length "length" directly
+            # and gets a result set. This method must be used
+            # if the query contains binary data.
 
         sendFileQuery(path,filename);
-            # Sends the query in file "path"/"filename" 
+            # Sends the query in file "path"/"filename" directly
             # and gets a result set.
 
 
@@ -422,14 +438,15 @@ __END__
             # query contains binary data.
 
         prepareFileQuery(path,filename);
-            # Prepare to execute the contents 
-            # of "path"/"filename".
+            # Prepare to execute the contents
+            # of "path"/"filename".  Returns false if the
+            # file couldn't be opened.
 
         substitution(variable,value);
-            # Define a substitution variable.
+            # Defines a substitution variable.
 
         clearBinds();
-            # Clear all bind variables.
+            # Clears all bind variables.
 
         countBindVariables();
             # Parses the previously prepared query,
@@ -442,36 +459,38 @@ __END__
         inputBindDate(variable,year,month,day,hour,minute,second,microsecond,tz,isnegative);
         inputBindBlob(variable,value,size);
         inputBindClob(variable,value,size);
-            # Define an input bind variable.
+            # Defines an input bind variable.
             # (For floating point values, if you don't have the precision and
             # scale then they may both be set to 0.  However in that case you
             # may get unexpected rounding behavior if the server is faking
             # binds.)
 
         defineOutputBindString(variable,bufferlength);
-            # Define an output bind variable.
-            # "bufferlength" bytes will be reserved to store the value.
+            # Defines an output bind variable.
+            # "bufferlength" bytes will be reserved
+            # to store the value.
         defineOutputBindDate(variable);
-            # Define a date output bind variable.
+            # Defines a date output bind variable.
         defineOutputBindBlob(variable);
-            # Define a BLOB output bind variable.
+            # Defines a binary lob output bind variable.
         defineOutputBindClob(variable);
-            # Define a CLOB output bind variable.
+            # Defines a character lob output bind variable.
         defineOutputBindCursor(variable);
-            # Define a cursor output bind variable.
+            # Defines a cursor output bind variable.
 
         substitutions(variables,values);
-            # Define an array of substitution variables.
+            # Defines an array of substitution variables.
 
         inputBinds(variables,values);
-            # Define an array of input bind variables.
+            # Defines an array of input bind variables.
 
         validateBinds();
-            # If you are binding to any variables that 
-            # might not actually be in your query, call 
-            # this to ensure that the database won't try 
-            # to bind them unless they really are in the 
-            # query.
+            # If you are binding to any variables that
+            # might not actually be in your query, call
+            # this to ensure that the database won't try
+            # to bind them unless they really are in the
+            # query.  There is a performance penalty for
+            # calling this method.
 
         validBind(variable);
             # Returns true if "variable" was a valid
@@ -488,15 +507,15 @@ __END__
 
         getOutputBindString(variable);
             # Get the value stored in a previously
-            # defined output bind variable.
+            # defined string output bind variable.
 
 	getOutputBindBlob(variable);
             # Get the value stored in a previously
-            # defined output bind variable.
+            # defined binary lob output bind variable.
 
 	getOutputBindClob(variable);
             # Get the value stored in a previously
-            # defined output bind variable.
+            # defined character lob output bind variable.
 
 	getOutputBindLength(variable);
             # Get the length of the value stored in a
@@ -507,46 +526,45 @@ __END__
             # defined output bind variable.
 
 	getOutputBindDateYear(variable);
-            # Get the year component of a previously
+            # Get the year from a previously
             # defined date output bind variable.
 
 	getOutputBindDateMonth(variable);
-            # Get the month component of a previously
+            # Get the month from a previously
             # defined date output bind variable.
 
 	getOutputBindDateDay(variable);
-            # Get the day component of a previously
+            # Get the day from a previously
             # defined date output bind variable.
 
 	getOutputBindDateHour(variable);
-            # Get the hour component of a previously
+            # Get the hour from a previously
             # defined date output bind variable.
 
 	getOutputBindDateMinute(variable);
-            # Get the minute component of a previously
+            # Get the minute from a previously
             # defined date output bind variable.
 
 	getOutputBindDateSecond(variable);
-            # Get the second component of a previously
+            # Get the second from a previously
             # defined date output bind variable.
 
 	getOutputBindDateMicrosecond(variable);
-            # Get the microsecond component of a previously
+            # Get the microsecond from a previously
             # defined date output bind variable.
 
 	getOutputBindDateTz(variable);
-            # Get the time zone component of a previously
+            # Get the time zone from a previously
             # defined date output bind variable.
 
 	getOutputBindDateIsNegative(variable);
-            # Get the negative flag of a previously
-            # defined date output bind variable.
+            # Get whether the value is negative from a
+            # previously defined date output bind variable.
 
 
 
         openCachedResultSet(filename);
-            # Opens a cached result set as if a query that
-            # would have generated it had been executed.
+            # Opens a cached result set.
             # Returns true on success and false on failure.
 
 
@@ -556,30 +574,32 @@ __END__
             # result set.
 
         rowCount();
-            # Returns the number of rows in the current 
-            # result set.
+            # Returns the number of rows in the current
+            # result set (if the result set is being
+            # stepped through, this returns the number
+            # of rows processed so far).
 
         totalRows();
-            # Returns the total number of rows that will 
-            # be returned in the result set.  Not all 
-            # databases support this call.  Don't use it 
-            # for applications which are designed to be 
-            # portable across databases.  -1 is returned
+            # Returns the total number of rows that will
+            # be returned in the result set.  Not all
+            # databases support this call.  Don't use it
+            # for applications which are designed to be
+            # portable across databases.  0 is returned
             # by databases which don't support this option.
 
         affectedRows();
-            # Returns the number of rows that were 
+            # Returns the number of rows that were
             # updated, inserted or deleted by the query.
-            # Not all databases support this call.  Don't 
-            # use it for applications which are designed 
-            # to be portable across databases.  -1 is 
-            # returned by databases which don't support 
+            # Not all databases support this call.  Don't
+            # use it for applications which are designed
+            # to be portable across databases.  0 is
+            # returned by databases which don't support
             # this option.
 
         firstRowIndex();
             # Returns the index of the first buffered row.
-            # This is useful when bufferning only part of the
-            # result set at a time.
+            # This is useful when buffering only part of
+            # the result set at a time.
 
         endOfResultSet();
             # Returns false if part of the result set is still
@@ -605,27 +625,26 @@ __END__
             # returns 0.
 
         getNullsAsEmptyStrings();
-            # Tells the client to return NULL fields and 
-            # output bind variables as empty strings.
+            # Tells the connection to return NULL fields
+            # and output bind variables as empty strings.
             # This is the default.
 
         getNullsAsUndefined();
-            # Tells the client to return NULL fields and 
-            # output bind variables as undefined.
+            # Tells the connection to return NULL fields
+            # and output bind variables as undef rather
+            # than as empty strings.
 
         getField(row, col);
-            # Returns a pointer to the value of the 
-            # specified row and column.
+            # Returns the specified field as a string.
 
         getFieldLength(row, col);
-            # Returns a the length of the 
-            # specified row and column.
+            # Returns the length of the specified field.
 
         getRow(row);
             # Returns an array of the values of the
-            # specified row or an empty list if the
-            # requested row is past the end of the
-            # result set.
+            # fields in the specified row or an empty
+            # list if the requested row is past the
+            # end of the result set.
 
         getRowHash(row);
             # Returns the requested row as values in a
@@ -634,10 +653,10 @@ __END__
             # the end of the result set.
 
         getRowLengths(row);
-            # Returns a null terminated array of the 
-            # lengths of the specified row or an empty
-            # list if the requested row is past the end
-            # of the result set.
+            # Returns a null terminated array of the
+            # lengths of the fields in the specified row
+            # or an empty list if the requested row is
+            # past the end of the result set.
 
         getRowLengthsHash(row);
             # Returns the requested row lengths as values 
@@ -656,7 +675,8 @@ __END__
             # Returns the type of the specified column.
 
         getColumnLength(col);
-            # Returns the length of the specified column.
+            # Returns the number of bytes required on
+            # the server to store the data for the specified column
 
         getColumnPrecision(col);
             # Returns the precision of the specified
@@ -673,38 +693,38 @@ __END__
             # eg: 123.45 has a scale of 2.
 
         getColumnIsNullable(col);
-            # Returns 1 if the specified column can
-            # contain nulls and 0 otherwise.
+            # Returns true if the specified column can
+            # contain nulls and false otherwise.
 
         getColumnIsPrimaryKey(col);
-            # Returns 1 if the specified column is a
-            # primary key and 0 otherwise.
+            # Returns true if the specified column is a
+            # primary key and false otherwise.
 
         getColumnIsUnique(col);
-            # Returns 1 if the specified column is
-            # unique and 0 otherwise.
+            # Returns true if the specified column is
+            # unique and false otherwise.
 
         getColumnIsPartOfKey(col);
-            # Returns 1 if the specified column is
-            # part of a composite key and 0 otherwise.
+            # Returns true if the specified column is
+            # part of a composite key and false otherwise.
 
         getColumnIsUnsigned(col);
-            # Returns 1 if the specified column is
-            # an unsigned number and 0 otherwise.
+            # Returns true if the specified column is
+            # an unsigned number and false otherwise.
 
         getColumnIsZeroFilled(col);
-            # Returns 1 if the specified column was
-            # created with the zero-fill flag and 0
+            # Returns true if the specified column was
+            # created with the zero-fill flag and false
             # otherwise.
 
         getColumnIsBinary(col);
-            # Returns 1 if the specified column
-            # contains binary data and 0
+            # Returns true if the specified column
+            # contains binary data and false
             # otherwise.
 
         getColumnIsAutoIncrement(col);
-            # Returns 1 if the specified column
-            # auto-increments and 0 otherwise.
+            # Returns true if the specified column
+            # auto-increments and false otherwise.
 
         getLongest(col);
             # Returns the length of the longest field
@@ -712,18 +732,18 @@ __END__
 
         suspendResultSet();
             # Tells the server to leave this result
-            # set open when the client calls 
-            # suspendSession() so that another client can 
-            # connect to it using resumeResultSet() after 
-            # it calls resumeSession().
+            # set open when the connection calls
+            # suspendSession() so that another connection
+            # can connect to it using resumeResultSet()
+            # after it calls resumeSession().
 
         getResultSetId();
             # Returns the internal ID of this result set.
-            # This parameter may be passed to another 
-            # statement for use in the resumeResultSet() 
+            # This parameter may be passed to another
+            # cursor for use in the resumeResultSet()
             # method.
-            # Note: the value returned by this method is
-            # only valid after a call to suspendResultSet().
+            # Note: The value this method returns is only
+            # valid after a call to suspendResultSet().
 
         resumeResultSet(int id);
             # Resumes a result set previously left open 

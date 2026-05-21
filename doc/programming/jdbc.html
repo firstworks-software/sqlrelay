@@ -48,6 +48,23 @@
 </blockquote>
 <p>The port defaults to 9000 if not specified.  The socket is optional.  User and password may also be passed as properties to DriverManager.getConnection() rather than being included in the URL.</p>
 
+<h3>Properties</h3>
+
+<p>Every URL field can also be supplied as a property passed to DriverManager.getConnection().  Properties always override values parsed out of the URL.  The driver recognizes the following property names:</p>
+
+<ul>
+  <li><b>Host</b> - Name of the host running SQL Relay.</li>
+  <li><b>Port</b> - The port that the SQL Relay server is listening on.  Defaults to 9000.</li>
+  <li><b>Socket</b> - The filename of the unix socket that the SQL Relay server is listening on.  Optional.</li>
+  <li><b>User</b> - The username to use when logging into SQL Relay.  Also accepted as <b>user</b>.</li>
+  <li><b>Password</b> - The password to use when logging into SQL Relay.  Also accepted as <b>password</b>.</li>
+  <li><b>Retry Time</b> - If a connection fails, wait this many seconds before trying again.  Defaults to 0.</li>
+  <li><b>Tries</b> - If a connection fails, retry this many times.  Defaults to 1.</li>
+  <li><b>DATE to TimeStamp</b> - If set to <b>yes</b>, <b>true</b>, <b>on</b>, <b>y</b>, <b>t</b>, or <b>1</b>, columns of type DATE are mapped to java.sql.Timestamp instead of java.sql.Date.  Defaults to <b>false</b>.</li>
+  <li><b>Output Parameter Buffer Size</b> - Buffer size, in bytes, to use for output parameters when the application calls a method that does not have a length parameter.  Defaults to 4096.</li>
+  <li><b>AutoCommit</b> - Controls whether the driver explicitly turns autocommit on or off after connecting.  May be set to <b>yes</b> (autocommit on), <b>no</b> (autocommit off), or <b>backend</b> (leave it up to the backend).  Defaults to <b>backend</b>.</li>
+</ul>
+
 <h3>Sample Session</h3>
 
 <p>A good program to test this with is <a target="_blank" href="https://github.com/neurolabs/henplus">HenPlus</a>, a JDBC command line client.  After downloading and installing <a href="HenPlus">HenPlus</a>, you can run it as follows:</p>

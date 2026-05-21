@@ -724,11 +724,11 @@ $cur setResultSetBufferSize 1
 assertTrue [$cur sendQuery "select * from testtable"]
 set secondcur [$con sqlrcur]
 setSecondCursor $secondcur
+$secondcur setResultSetBufferSize 1
 for {set i 0} {[$cur getRow $i] ne ""} {incr i} {
-	$secondcur setResultSetBufferSize 1
 	assertTrue [$secondcur sendQuery "select * from testtable"]
-	$secondcur closeResultSet
 }
+$secondcur closeResultSet
 $cur setResultSetBufferSize 0
 assertTrue [$cur sendQuery "drop table testtable"]
 puts ""

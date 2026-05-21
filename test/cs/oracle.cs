@@ -819,12 +819,12 @@ namespace SQLRClientTest
             Console.WriteLine("NESTED SELECTS: ");
             cur.setResultSetBufferSize(1);
             assertTrue(cur.sendQuery("select * from testtable"));
+            secondcur = new SQLRCursor(con);
+            secondcur.setResultSetBufferSize(1);
             for (UInt32 i = 0; cur.getRow((UInt64)i) != null; i++) {
-                secondcur = new SQLRCursor(con);
-                secondcur.setResultSetBufferSize(1);
                 assertTrue(secondcur.sendQuery("select * from testtable"));
-                secondcur.closeResultSet();
             }
+            secondcur.closeResultSet();
             cur.setResultSetBufferSize(0);
             assertTrue(cur.sendQuery("drop table testtable"));
             Console.WriteLine("");

@@ -76,23 +76,225 @@ proc cacheOff {}
 
 
 
-# Generates a result set containing databases
-# matching "wild".  If wild is empty or NULL then
-# all databases will be returned.
+# Generates a result set containing databases that match the
+# pattern "databases".
+#
+# The result set will contain the following columns:
+# * Database
+#
+# If "databases" is empty or NULL then a result set
+# containing all databases will be returned.
+#
+# May actually return a result set of catalogs or schemas,
+# depending on whether the backend database equates
+# "database" with catalog or schema.
+#
+# See getDatabaseIsSchema().
+#
+# If SQL Relay doesn't support getting a list of databases
+# for the current database backend (or the database doesn't)
+# then an empty result set will be returned.
 proc getDatabaseList {wild}
 
+# Generates a result set containing catalogs that match the
+# pattern "catalog".
+#
+# The result set will contain the following columns:
+# * Database
+#
+# If "catalog" is empty or NULL then a result set containing
+# all catalogs will be returned.
+#
+# If SQL Relay doesn't support getting a list of catalogs
+# for the current database backend (or the database doesn't)
+# then an empty result set will be returned.
 proc getCatalogList {wild}
 
-# Generates a result set containing tables
-# matching "wild".  If wild is empty or NULL then
-# all tables will be returned.
+# Generates a result set containing schemas that match the
+# pattern "schemas".
+#
+# The result set will contain the following columns:
+# * Database
+#
+# (The column name is a bit of a misnomer, the results are
+# schemas, not databases.)
+#
+# If "schemas" is empty or NULL then a result set containing
+# all schemas in the current database will be returned.
+#
+# If SQL Relay doesn't support getting a list of schemas
+# for the current database backend (or the database doesn't)
+# then an empty result set will be returned.
+proc getSchemaList {wild}
+
+# Generates a result set containing supported table types.
+#
+# The result set will contain the following columns:
+# * table_type
+#
+# If SQL Relay doesn't support getting a list of table types
+# for the current database backend (or the database doesn't)
+# then an empty result set will be returned.
+proc getTableTypeList {}
+
+# Generates a result set containing the tables in the current
+# database and schema that match the pattern "tables".
+#
+# The result set will contain the following columns:
+# * Tables_in_xxx
+#
+# If "tables" is empty or NULL then a result set containing
+# all tables in the current database/schema will be returned.
+#
+# If SQL Relay doesn't support getting a list of tables
+# for the current database backend (or the database doesn't)
+# then an empty result set will be returned.
 proc getTableList {wild}
 
-# Generates a result set containing columns
-# in the table specified by the "table" parameter
-# matching "wild".  If wild is empty or NULL then
-# all columns will be returned.
+# Generates a result set containing data type information for
+# "type".
+#
+# The result set will contain the following columns:
+# * type_name
+# * data_type
+# * precision
+# * literal_prefix
+# * literal_suffix
+# * create_params
+# * nullable
+# * case_sensitive
+# * searchable
+# * unsigned_attribute
+# * fixed_prec_scale
+# * auto_increment
+# * local_type_name
+# * minumum_scale
+# * maxiumm_scale
+# * sql_data_type
+# * sql_datetime_sub
+# * num_prec_radix
+# * interval_precision
+#
+# If "type" is empty or NULL then a result set containing
+# all data types in the current databas/schema will be
+# returned.
+#
+# If SQL Relay doesn't support getting type info
+# for the current database backend (or the database doesn't)
+# then an empty result set will be returned.
+proc getTypeInfoList {type}
+
+# Generates a result set containing the columns of "table",
+# which match the pattern "columns".
+#
+# The result set will contain the following columns:
+# * column_name
+# * data_type
+# * character_maximum_length
+# * numeric_precision
+# * numeric_scale
+# * is_nullable
+# * column_key
+# * column_default
+# * extra
+#
+# If "columns" is empty or NULL then a list of all columns
+# of "table" will be returned.
+#
+# If SQL Relay doesn't support getting a list of columns
+# for the current database backend (or the database doesn't)
+# then an empty result set will be returned.
 proc getColumnList {table wild}
+
+# Generates a result set containing the primary keys of
+# "table", which match the pattern "columns".
+#
+# The result set will contain the following columns:
+# * table
+# * non_unique
+# * key_name
+# * seq_in_index
+# * column_name
+# * collation
+# * cardinality
+# * sub_part
+# * packed
+# * null
+# * index_type
+# * comment
+# * index_comment
+#
+# If "columns" is empty or NULL then a result set containing
+# all primary keys of "table" will be returned.
+#
+# If SQL Relay doesn't support getting a list of primary keys
+# for the current database backend (or the database doesn't)
+# then an empty result set will be returned.
+proc getPrimaryKeysList {table columns}
+
+# Generates a result set containing the keys and indexes of
+# "table", which match the pattern "qualifier".
+#
+# The result set will contain the following columns:
+# * table
+# * non_unique
+# * key_name
+# * seq_in_index
+# * column_name
+# * collation
+# * cardinality
+# * sub_part
+# * packed
+# * null
+# * index_type
+# * comment
+# * index_comment
+#
+# If "qualifier" is empty or NULL then a result set
+# containing all keys and indexes of "table" will be
+# returned.
+#
+# If SQL Relay doesn't support getting a list of keys and
+# indexes for the current database backend (or the database
+# doesn't) then an empty result set will be returned.
+proc getKeyAndIndexList {table qualifier}
+
+# Generates a result set containing procedures that match the
+# pattern "procedures".
+#
+# The result set will contain the following columns:
+# * routine_catalog
+# * routine_schema
+# * routine_name
+# * data_type
+#
+# If "procedures" is empty or NULL then a result set
+# containing all procedures in the current database/schema
+# will be returned.
+#
+# If SQL Relay doesn't support getting a list of procedures
+# for the current database backend (or the database doesn't)
+# then an empty result set will be returned.
+proc getProcedureList {procedures}
+
+# Generates a result set containing the parameters of
+# "procedure", which match the pattern "parameters".
+#
+# The result set will contain the following columns:
+# * parameter_name
+# * parameter_mode
+# * data_type
+# * character_maximum_length
+# * ordinal_position
+#
+# If "parameters" is empty or NULL then a result set
+# containing all parameters of "procedure" will be returned.
+#
+# If SQL Relay doesn't support getting a list of procedure
+# parameters for the current database backend (or the
+# database doesn't) then an empty result set will be
+# returned.
+proc getProcedureParameterList {procedure parameters}
 
 
 
@@ -140,7 +342,27 @@ proc substitutions {variables values precisions scales}
 # get unexpected rounding behavior if the server is faking binds.
 proc inputBind {variable value precision scale}
 
-# Defines a date input bind variable.
+# Defines a date input bind variable.  "day" and "month"
+# are 1-based.
+#
+# Some databases distinguish between date, time, and
+# datetime types.  For those databases...
+#
+# * The input bind variable will be interpreted as a time type
+# if year and/or month are negative.
+#
+# * The input bind variable will be interpreted as a date type
+# if hour, minute, second, and/or microsecond are negative.
+#
+# * The input bind variable will be interpreted as a datetime
+# type if all parts are positive.
+#
+# "tz" is the timezone abbreviation, and may be left NULL.
+# Most databases ignore "tz".
+#
+# Set "isnegative" may be set to true to represent a negative
+# time interval.  However, few databases support negative
+# time intervals and ignore "isnegative".
 proc inputBindDate {variable year month day hour minute second microsecond tz isnegative}
 
 # Defines a binary lob input bind variable.
@@ -395,14 +617,66 @@ proc getFieldAsDateYearByNameIgnoringCase {row col}
 
 # Interprets the specified field as a date
 # and returns the year component.
+#
+# If "ddmm" is set true then the date format
+# is assumed to be dd/mm/yyyy rather than
+# mm/dd/yyyy when a date with a trailing year
+# is encountered.
+#
+# If "yyyyddmm" is set true then the date
+# format is assumed to be yyyy/dd/mm rather
+# than yyyy/mm/dd when a date with a leading
+# year is encountered.
+#
+# "datedelimiters" may be set to a set of
+# valid date delimiters and may contain any
+# combination of '/', '-', '.', and ':'.
+# Eg. "/-" would mean that only '/' and '-'
+# are valid date delimiters.  If left NULL
+# then it defaults to "/-.:".
 proc getFieldAsDateYearByIndexWithDdMm {row col ddmm yyyyddmm datedelimiters}
 
 # Interprets the specified field as a date
 # and returns the year component.
+#
+# If "ddmm" is set true then the date format
+# is assumed to be dd/mm/yyyy rather than
+# mm/dd/yyyy when a date with a trailing year
+# is encountered.
+#
+# If "yyyyddmm" is set true then the date
+# format is assumed to be yyyy/dd/mm rather
+# than yyyy/mm/dd when a date with a leading
+# year is encountered.
+#
+# "datedelimiters" may be set to a set of
+# valid date delimiters and may contain any
+# combination of '/', '-', '.', and ':'.
+# Eg. "/-" would mean that only '/' and '-'
+# are valid date delimiters.  If left NULL
+# then it defaults to "/-.:".
 proc getFieldAsDateYearByNameWithDdMm {row col ddmm yyyyddmm datedelimiters}
 
 # Interprets the specified field as a date
-# and returns the year component, ignoring the case of "col".
+# and returns the year component, ignoring
+# the case of "col".
+#
+# If "ddmm" is set true then the date format
+# is assumed to be dd/mm/yyyy rather than
+# mm/dd/yyyy when a date with a trailing year
+# is encountered.
+#
+# If "yyyyddmm" is set true then the date
+# format is assumed to be yyyy/dd/mm rather
+# than yyyy/mm/dd when a date with a leading
+# year is encountered.
+#
+# "datedelimiters" may be set to a set of
+# valid date delimiters and may contain any
+# combination of '/', '-', '.', and ':'.
+# Eg. "/-" would mean that only '/' and '-'
+# are valid date delimiters.  If left NULL
+# then it defaults to "/-.:".
 proc getFieldAsDateYearByNameWithDdMmIgnoringCase {row col ddmm yyyyddmm datedelimiters}
 
 # Interprets the specified field as a date
@@ -419,14 +693,66 @@ proc getFieldAsDateMonthByNameIgnoringCase {row col}
 
 # Interprets the specified field as a date
 # and returns the month component.
+#
+# If "ddmm" is set true then the date format
+# is assumed to be dd/mm/yyyy rather than
+# mm/dd/yyyy when a date with a trailing year
+# is encountered.
+#
+# If "yyyyddmm" is set true then the date
+# format is assumed to be yyyy/dd/mm rather
+# than yyyy/mm/dd when a date with a leading
+# year is encountered.
+#
+# "datedelimiters" may be set to a set of
+# valid date delimiters and may contain any
+# combination of '/', '-', '.', and ':'.
+# Eg. "/-" would mean that only '/' and '-'
+# are valid date delimiters.  If left NULL
+# then it defaults to "/-.:".
 proc getFieldAsDateMonthByIndexWithDdMm {row col ddmm yyyyddmm datedelimiters}
 
 # Interprets the specified field as a date
 # and returns the month component.
+#
+# If "ddmm" is set true then the date format
+# is assumed to be dd/mm/yyyy rather than
+# mm/dd/yyyy when a date with a trailing year
+# is encountered.
+#
+# If "yyyyddmm" is set true then the date
+# format is assumed to be yyyy/dd/mm rather
+# than yyyy/mm/dd when a date with a leading
+# year is encountered.
+#
+# "datedelimiters" may be set to a set of
+# valid date delimiters and may contain any
+# combination of '/', '-', '.', and ':'.
+# Eg. "/-" would mean that only '/' and '-'
+# are valid date delimiters.  If left NULL
+# then it defaults to "/-.:".
 proc getFieldAsDateMonthByNameWithDdMm {row col ddmm yyyyddmm datedelimiters}
 
 # Interprets the specified field as a date
-# and returns the month component, ignoring the case of "col".
+# and returns the month component, ignoring
+# the case of "col".
+#
+# If "ddmm" is set true then the date format
+# is assumed to be dd/mm/yyyy rather than
+# mm/dd/yyyy when a date with a trailing year
+# is encountered.
+#
+# If "yyyyddmm" is set true then the date
+# format is assumed to be yyyy/dd/mm rather
+# than yyyy/mm/dd when a date with a leading
+# year is encountered.
+#
+# "datedelimiters" may be set to a set of
+# valid date delimiters and may contain any
+# combination of '/', '-', '.', and ':'.
+# Eg. "/-" would mean that only '/' and '-'
+# are valid date delimiters.  If left NULL
+# then it defaults to "/-.:".
 proc getFieldAsDateMonthByNameWithDdMmIgnoringCase {row col ddmm yyyyddmm datedelimiters}
 
 # Interprets the specified field as a date
@@ -443,14 +769,66 @@ proc getFieldAsDateDayByNameIgnoringCase {row col}
 
 # Interprets the specified field as a date
 # and returns the day component.
+#
+# If "ddmm" is set true then the date format
+# is assumed to be dd/mm/yyyy rather than
+# mm/dd/yyyy when a date with a trailing year
+# is encountered.
+#
+# If "yyyyddmm" is set true then the date
+# format is assumed to be yyyy/dd/mm rather
+# than yyyy/mm/dd when a date with a leading
+# year is encountered.
+#
+# "datedelimiters" may be set to a set of
+# valid date delimiters and may contain any
+# combination of '/', '-', '.', and ':'.
+# Eg. "/-" would mean that only '/' and '-'
+# are valid date delimiters.  If left NULL
+# then it defaults to "/-.:".
 proc getFieldAsDateDayByIndexWithDdMm {row col ddmm yyyyddmm datedelimiters}
 
 # Interprets the specified field as a date
 # and returns the day component.
+#
+# If "ddmm" is set true then the date format
+# is assumed to be dd/mm/yyyy rather than
+# mm/dd/yyyy when a date with a trailing year
+# is encountered.
+#
+# If "yyyyddmm" is set true then the date
+# format is assumed to be yyyy/dd/mm rather
+# than yyyy/mm/dd when a date with a leading
+# year is encountered.
+#
+# "datedelimiters" may be set to a set of
+# valid date delimiters and may contain any
+# combination of '/', '-', '.', and ':'.
+# Eg. "/-" would mean that only '/' and '-'
+# are valid date delimiters.  If left NULL
+# then it defaults to "/-.:".
 proc getFieldAsDateDayByNameWithDdMm {row col ddmm yyyyddmm datedelimiters}
 
 # Interprets the specified field as a date
-# and returns the day component, ignoring the case of "col".
+# and returns the day component, ignoring
+# the case of "col".
+#
+# If "ddmm" is set true then the date format
+# is assumed to be dd/mm/yyyy rather than
+# mm/dd/yyyy when a date with a trailing year
+# is encountered.
+#
+# If "yyyyddmm" is set true then the date
+# format is assumed to be yyyy/dd/mm rather
+# than yyyy/mm/dd when a date with a leading
+# year is encountered.
+#
+# "datedelimiters" may be set to a set of
+# valid date delimiters and may contain any
+# combination of '/', '-', '.', and ':'.
+# Eg. "/-" would mean that only '/' and '-'
+# are valid date delimiters.  If left NULL
+# then it defaults to "/-.:".
 proc getFieldAsDateDayByNameWithDdMmIgnoringCase {row col ddmm yyyyddmm datedelimiters}
 
 # Interprets the specified field as a date
@@ -467,14 +845,66 @@ proc getFieldAsDateHourByNameIgnoringCase {row col}
 
 # Interprets the specified field as a date
 # and returns the hour component.
+#
+# If "ddmm" is set true then the date format
+# is assumed to be dd/mm/yyyy rather than
+# mm/dd/yyyy when a date with a trailing year
+# is encountered.
+#
+# If "yyyyddmm" is set true then the date
+# format is assumed to be yyyy/dd/mm rather
+# than yyyy/mm/dd when a date with a leading
+# year is encountered.
+#
+# "datedelimiters" may be set to a set of
+# valid date delimiters and may contain any
+# combination of '/', '-', '.', and ':'.
+# Eg. "/-" would mean that only '/' and '-'
+# are valid date delimiters.  If left NULL
+# then it defaults to "/-.:".
 proc getFieldAsDateHourByIndexWithDdMm {row col ddmm yyyyddmm datedelimiters}
 
 # Interprets the specified field as a date
 # and returns the hour component.
+#
+# If "ddmm" is set true then the date format
+# is assumed to be dd/mm/yyyy rather than
+# mm/dd/yyyy when a date with a trailing year
+# is encountered.
+#
+# If "yyyyddmm" is set true then the date
+# format is assumed to be yyyy/dd/mm rather
+# than yyyy/mm/dd when a date with a leading
+# year is encountered.
+#
+# "datedelimiters" may be set to a set of
+# valid date delimiters and may contain any
+# combination of '/', '-', '.', and ':'.
+# Eg. "/-" would mean that only '/' and '-'
+# are valid date delimiters.  If left NULL
+# then it defaults to "/-.:".
 proc getFieldAsDateHourByNameWithDdMm {row col ddmm yyyyddmm datedelimiters}
 
 # Interprets the specified field as a date
-# and returns the hour component, ignoring the case of "col".
+# and returns the hour component, ignoring
+# the case of "col".
+#
+# If "ddmm" is set true then the date format
+# is assumed to be dd/mm/yyyy rather than
+# mm/dd/yyyy when a date with a trailing year
+# is encountered.
+#
+# If "yyyyddmm" is set true then the date
+# format is assumed to be yyyy/dd/mm rather
+# than yyyy/mm/dd when a date with a leading
+# year is encountered.
+#
+# "datedelimiters" may be set to a set of
+# valid date delimiters and may contain any
+# combination of '/', '-', '.', and ':'.
+# Eg. "/-" would mean that only '/' and '-'
+# are valid date delimiters.  If left NULL
+# then it defaults to "/-.:".
 proc getFieldAsDateHourByNameWithDdMmIgnoringCase {row col ddmm yyyyddmm datedelimiters}
 
 # Interprets the specified field as a date
@@ -491,14 +921,66 @@ proc getFieldAsDateMinuteByNameIgnoringCase {row col}
 
 # Interprets the specified field as a date
 # and returns the minute component.
+#
+# If "ddmm" is set true then the date format
+# is assumed to be dd/mm/yyyy rather than
+# mm/dd/yyyy when a date with a trailing year
+# is encountered.
+#
+# If "yyyyddmm" is set true then the date
+# format is assumed to be yyyy/dd/mm rather
+# than yyyy/mm/dd when a date with a leading
+# year is encountered.
+#
+# "datedelimiters" may be set to a set of
+# valid date delimiters and may contain any
+# combination of '/', '-', '.', and ':'.
+# Eg. "/-" would mean that only '/' and '-'
+# are valid date delimiters.  If left NULL
+# then it defaults to "/-.:".
 proc getFieldAsDateMinuteByIndexWithDdMm {row col ddmm yyyyddmm datedelimiters}
 
 # Interprets the specified field as a date
 # and returns the minute component.
+#
+# If "ddmm" is set true then the date format
+# is assumed to be dd/mm/yyyy rather than
+# mm/dd/yyyy when a date with a trailing year
+# is encountered.
+#
+# If "yyyyddmm" is set true then the date
+# format is assumed to be yyyy/dd/mm rather
+# than yyyy/mm/dd when a date with a leading
+# year is encountered.
+#
+# "datedelimiters" may be set to a set of
+# valid date delimiters and may contain any
+# combination of '/', '-', '.', and ':'.
+# Eg. "/-" would mean that only '/' and '-'
+# are valid date delimiters.  If left NULL
+# then it defaults to "/-.:".
 proc getFieldAsDateMinuteByNameWithDdMm {row col ddmm yyyyddmm datedelimiters}
 
 # Interprets the specified field as a date
-# and returns the minute component, ignoring the case of "col".
+# and returns the minute component, ignoring
+# the case of "col".
+#
+# If "ddmm" is set true then the date format
+# is assumed to be dd/mm/yyyy rather than
+# mm/dd/yyyy when a date with a trailing year
+# is encountered.
+#
+# If "yyyyddmm" is set true then the date
+# format is assumed to be yyyy/dd/mm rather
+# than yyyy/mm/dd when a date with a leading
+# year is encountered.
+#
+# "datedelimiters" may be set to a set of
+# valid date delimiters and may contain any
+# combination of '/', '-', '.', and ':'.
+# Eg. "/-" would mean that only '/' and '-'
+# are valid date delimiters.  If left NULL
+# then it defaults to "/-.:".
 proc getFieldAsDateMinuteByNameWithDdMmIgnoringCase {row col ddmm yyyyddmm datedelimiters}
 
 # Interprets the specified field as a date
@@ -515,14 +997,66 @@ proc getFieldAsDateSecondByNameIgnoringCase {row col}
 
 # Interprets the specified field as a date
 # and returns the second component.
+#
+# If "ddmm" is set true then the date format
+# is assumed to be dd/mm/yyyy rather than
+# mm/dd/yyyy when a date with a trailing year
+# is encountered.
+#
+# If "yyyyddmm" is set true then the date
+# format is assumed to be yyyy/dd/mm rather
+# than yyyy/mm/dd when a date with a leading
+# year is encountered.
+#
+# "datedelimiters" may be set to a set of
+# valid date delimiters and may contain any
+# combination of '/', '-', '.', and ':'.
+# Eg. "/-" would mean that only '/' and '-'
+# are valid date delimiters.  If left NULL
+# then it defaults to "/-.:".
 proc getFieldAsDateSecondByIndexWithDdMm {row col ddmm yyyyddmm datedelimiters}
 
 # Interprets the specified field as a date
 # and returns the second component.
+#
+# If "ddmm" is set true then the date format
+# is assumed to be dd/mm/yyyy rather than
+# mm/dd/yyyy when a date with a trailing year
+# is encountered.
+#
+# If "yyyyddmm" is set true then the date
+# format is assumed to be yyyy/dd/mm rather
+# than yyyy/mm/dd when a date with a leading
+# year is encountered.
+#
+# "datedelimiters" may be set to a set of
+# valid date delimiters and may contain any
+# combination of '/', '-', '.', and ':'.
+# Eg. "/-" would mean that only '/' and '-'
+# are valid date delimiters.  If left NULL
+# then it defaults to "/-.:".
 proc getFieldAsDateSecondByNameWithDdMm {row col ddmm yyyyddmm datedelimiters}
 
 # Interprets the specified field as a date
-# and returns the second component, ignoring the case of "col".
+# and returns the second component, ignoring
+# the case of "col".
+#
+# If "ddmm" is set true then the date format
+# is assumed to be dd/mm/yyyy rather than
+# mm/dd/yyyy when a date with a trailing year
+# is encountered.
+#
+# If "yyyyddmm" is set true then the date
+# format is assumed to be yyyy/dd/mm rather
+# than yyyy/mm/dd when a date with a leading
+# year is encountered.
+#
+# "datedelimiters" may be set to a set of
+# valid date delimiters and may contain any
+# combination of '/', '-', '.', and ':'.
+# Eg. "/-" would mean that only '/' and '-'
+# are valid date delimiters.  If left NULL
+# then it defaults to "/-.:".
 proc getFieldAsDateSecondByNameWithDdMmIgnoringCase {row col ddmm yyyyddmm datedelimiters}
 
 # Interprets the specified field as a date
@@ -539,14 +1073,66 @@ proc getFieldAsDateMicrosecondByNameIgnoringCase {row col}
 
 # Interprets the specified field as a date
 # and returns the microsecond component.
+#
+# If "ddmm" is set true then the date format
+# is assumed to be dd/mm/yyyy rather than
+# mm/dd/yyyy when a date with a trailing year
+# is encountered.
+#
+# If "yyyyddmm" is set true then the date
+# format is assumed to be yyyy/dd/mm rather
+# than yyyy/mm/dd when a date with a leading
+# year is encountered.
+#
+# "datedelimiters" may be set to a set of
+# valid date delimiters and may contain any
+# combination of '/', '-', '.', and ':'.
+# Eg. "/-" would mean that only '/' and '-'
+# are valid date delimiters.  If left NULL
+# then it defaults to "/-.:".
 proc getFieldAsDateMicrosecondByIndexWithDdMm {row col ddmm yyyyddmm datedelimiters}
 
 # Interprets the specified field as a date
 # and returns the microsecond component.
+#
+# If "ddmm" is set true then the date format
+# is assumed to be dd/mm/yyyy rather than
+# mm/dd/yyyy when a date with a trailing year
+# is encountered.
+#
+# If "yyyyddmm" is set true then the date
+# format is assumed to be yyyy/dd/mm rather
+# than yyyy/mm/dd when a date with a leading
+# year is encountered.
+#
+# "datedelimiters" may be set to a set of
+# valid date delimiters and may contain any
+# combination of '/', '-', '.', and ':'.
+# Eg. "/-" would mean that only '/' and '-'
+# are valid date delimiters.  If left NULL
+# then it defaults to "/-.:".
 proc getFieldAsDateMicrosecondByNameWithDdMm {row col ddmm yyyyddmm datedelimiters}
 
 # Interprets the specified field as a date
-# and returns the microsecond component, ignoring the case of "col".
+# and returns the microsecond component, ignoring
+# the case of "col".
+#
+# If "ddmm" is set true then the date format
+# is assumed to be dd/mm/yyyy rather than
+# mm/dd/yyyy when a date with a trailing year
+# is encountered.
+#
+# If "yyyyddmm" is set true then the date
+# format is assumed to be yyyy/dd/mm rather
+# than yyyy/mm/dd when a date with a leading
+# year is encountered.
+#
+# "datedelimiters" may be set to a set of
+# valid date delimiters and may contain any
+# combination of '/', '-', '.', and ':'.
+# Eg. "/-" would mean that only '/' and '-'
+# are valid date delimiters.  If left NULL
+# then it defaults to "/-.:".
 proc getFieldAsDateMicrosecondByNameWithDdMmIgnoringCase {row col ddmm yyyyddmm datedelimiters}
 
 # Interprets the specified field as a date
@@ -567,16 +1153,67 @@ proc getFieldAsDateIsNegativeByNameIgnoringCase {row col}
 # Interprets the specified field as a date
 # and returns whether the hour component
 # is negative.
+#
+# If "ddmm" is set true then the date format
+# is assumed to be dd/mm/yyyy rather than
+# mm/dd/yyyy when a date with a trailing year
+# is encountered.
+#
+# If "yyyyddmm" is set true then the date
+# format is assumed to be yyyy/dd/mm rather
+# than yyyy/mm/dd when a date with a leading
+# year is encountered.
+#
+# "datedelimiters" may be set to a set of
+# valid date delimiters and may contain any
+# combination of '/', '-', '.', and ':'.
+# Eg. "/-" would mean that only '/' and '-'
+# are valid date delimiters.  If left NULL
+# then it defaults to "/-.:".
 proc getFieldAsDateIsNegativeByIndexWithDdMm {row col ddmm yyyyddmm datedelimiters}
 
 # Interprets the specified field as a date
 # and returns whether the hour component
 # is negative.
+#
+# If "ddmm" is set true then the date format
+# is assumed to be dd/mm/yyyy rather than
+# mm/dd/yyyy when a date with a trailing year
+# is encountered.
+#
+# If "yyyyddmm" is set true then the date
+# format is assumed to be yyyy/dd/mm rather
+# than yyyy/mm/dd when a date with a leading
+# year is encountered.
+#
+# "datedelimiters" may be set to a set of
+# valid date delimiters and may contain any
+# combination of '/', '-', '.', and ':'.
+# Eg. "/-" would mean that only '/' and '-'
+# are valid date delimiters.  If left NULL
+# then it defaults to "/-.:".
 proc getFieldAsDateIsNegativeByNameWithDdMm {row col ddmm yyyyddmm datedelimiters}
 
 # Interprets the specified field as a date
 # and returns whether the hour component
 # is negative, ignoring the case of "col".
+#
+# If "ddmm" is set true then the date format
+# is assumed to be dd/mm/yyyy rather than
+# mm/dd/yyyy when a date with a trailing year
+# is encountered.
+#
+# If "yyyyddmm" is set true then the date
+# format is assumed to be yyyy/dd/mm rather
+# than yyyy/mm/dd when a date with a leading
+# year is encountered.
+#
+# "datedelimiters" may be set to a set of
+# valid date delimiters and may contain any
+# combination of '/', '-', '.', and ':'.
+# Eg. "/-" would mean that only '/' and '-'
+# are valid date delimiters.  If left NULL
+# then it defaults to "/-.:".
 proc getFieldAsDateIsNegativeByNameWithDdMmIgnoringCase {row col ddmm yyyyddmm datedelimiters}
 
 

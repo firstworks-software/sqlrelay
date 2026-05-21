@@ -1127,16 +1127,16 @@ def main():
 	print("NESTED SELECTS: ")
 	cur.setResultSetBufferSize(1)
 	assertTrue(cur.sendQuery("select * from testtable"))
+	secondcur=PySQLRClient.sqlrcursor(con)
+	secondcur.setResultSetBufferSize(1)
 	i=0
 	while True:
 		row=cur.getRow(i)
 		if not row:
 			break
-		secondcur=PySQLRClient.sqlrcursor(con)
-		secondcur.setResultSetBufferSize(1)
 		assertTrue(secondcur.sendQuery("select * from testtable"))
-		secondcur.closeResultSet()
 		i+=1
+	secondcur.closeResultSet()
 	cur.setResultSetBufferSize(0)
 	assertTrue(cur.sendQuery("drop table testtable"))
 	print()

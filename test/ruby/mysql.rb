@@ -1269,14 +1269,14 @@ print "NESTED SELECTS: \n"
 # can't do this with mysql
 #cur.setResultSetBufferSize(1)
 assertTrue(cur.sendQuery("select * from testtable"))
+secondcur=SQLRCursor.new(con)
+secondcur.setResultSetBufferSize(1)
 i=0
 while cur.getRow(i)
-	secondcur=SQLRCursor.new(con)
-	secondcur.setResultSetBufferSize(1)
 	assertTrue(secondcur.sendQuery("select * from testtable"))
-	secondcur.closeResultSet()
 	i+=1
 end
+secondcur.closeResultSet()
 #cur.setResultSetBufferSize(0)
 assertTrue(cur.sendQuery("drop table testtable"))
 print "\n"

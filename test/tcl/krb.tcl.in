@@ -678,14 +678,14 @@ puts ""
 puts "NESTED SELECTS: "
 $cur setResultSetBufferSize 1
 assertTrue [$cur sendQuery "select * from testtable"]
+set secondcur [$con sqlrcur]
+$secondcur setResultSetBufferSize 1
 set i 0
 while {[llength [$cur getRow $i]] > 0} {
-	set secondcur [$con sqlrcur]
-	$secondcur setResultSetBufferSize 1
 	assertTrue [$secondcur sendQuery "select * from testtable"]
-	$secondcur closeResultSet
 	incr i
 }
+$secondcur closeResultSet
 $cur setResultSetBufferSize 0
 assertTrue [$cur sendQuery "drop table testtable"]
 puts ""

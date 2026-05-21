@@ -1,26 +1,24 @@
 # Copyright (c) 2003 Takeshi Taguchi
 # See the file COPYING for more information
 
-# Initiates a connection to "server" on "port"
-# or to the unix "socket" on the local machine
-# and auths with "user" and "password".
-# Failed connections will be retried for 
-# "tries" times, waiting "retrytime" seconds
-# between each try.  If "tries" is 0 then retries
-# will continue forever.  If "retrytime" is 0 then
-# retries will be attempted on a default interval.
+# Initiates a connection to "server" on "port" or to the
+# unix "socket" on the local machine and auths with "user"
+# and "password".  Failed connections will be retried for
+# "tries" times, waiting "retrytime" seconds between each
+# try.  If "tries" is 0 then retries will continue forever.
+# If "retrytime" is 0 then retries will be attempted on a
+# default interval.
 #
 # If "server" is a comma-separated list of hosts, then an
 # attempt will be made to connect to each until the attempt
 # succeeds, or there are no more hosts left to try.
 #
-# If the "socket" parameter is neither 
-# NULL nor "" then an attempt will be made to 
-# connect through it before attempting to 
-# connect to "server" on "port".  If it is 
-# NULL or "" then no attempt will be made to 
-# connect through the socket.
-proc sqlrconCmd {server port socket user password retrytime tries} 
+# If the "socket" parameter is neither NULL nor "" then an
+# attempt will be made to connect through it before
+# attempting to connect to "server" on "port".  If it is NULL
+# or "" then no attempt will be made to connect through the
+# socket.
+proc sqlrconCmd {server port socket user password retrytime tries}
 
 
 # Disconnects and ends the session if
@@ -309,8 +307,8 @@ proc selectSchema {schema}
 proc getCurrentSchema {}
 
 # Returns the user that sqlrelay is currently logged in to
-# the database as, or an empty string if no user could be
-# determined or if an error occurred.
+# the database as, or NULL if no user could be determined
+# or if an error occurred.
 proc getCurrentUser {}
 
 
@@ -455,18 +453,18 @@ proc getTransactionModel {}
 #  * 0  (serializable, default)
 #  * 1  (read uncommitted)
 #
-# For ODBC (generic), one of the ODBC names:
+# For ODBC:
 #  * SQL_TXN_READ_UNCOMMITTED
 #  * SQL_TXN_READ_COMMITTED
 #  * SQL_TXN_REPEATABLE_READ
 #  * SQL_TXN_SERIALIZABLE
 #
-# (whether a given level is actually supported depends on the
-# underlying ODBC driver and target database).  The generic
-# ODBC backend also accepts the database-specific native
-# names listed above for any of the other backends, as well
-# as the JDBC TRANSACTION_* names, and maps them to the
-# closest of the four ODBC levels above.
+# (whether a given level is actually supported depends on
+# the underlying ODBC driver and target database).  The
+# generic ODBC backend also accepts the database-specific
+# native names listed above for any of the other backends,
+# as well as the JDBC TRANSACTION_* names, and maps them
+# to the closest of the four ODBC levels above.
 #
 # For other databases, the string is passed through to the
 # backend as the argument to "set transaction isolation
@@ -499,7 +497,7 @@ proc getIsolationLevel {}
 #  * auto_commit_failure_closes_all_result_sets
 #   * true/false
 #  * batch_operations
-#   * list - SELECT_EXPLICIT,ROW_COUNT_EXPLICIT,SELECT_PROC,ROW_COUNT_PROC
+#   * list - SELECT_EXPLICIT,ROW_COUNT_EXPLICIT,SELECT_PROC,...
 #  * batch_row_counts
 #   * list - PROCEDURES,EXPLICIT,ROLLED_UP
 #  * catalog_separator

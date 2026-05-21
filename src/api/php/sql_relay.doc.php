@@ -196,10 +196,11 @@ function sqlrcon_disableEncryption($sqlrconref){}
  *  Ends the session. */
 function sqlrcon_endSession($sqlrconref){}
 
-/** 
- *  Disconnects this connection from the current session but leaves the session
- *  open so that another connection can connect to it using
- *  sqlrcon_resumeSession(). */
+/**
+ *  Disconnects this connection from the current
+ *  session but leaves the session open so
+ *  that another connection can connect to it
+ *  using resumeSession(). */
 function sqlrcon_suspendSession($sqlrconref){}
 
 /**
@@ -216,8 +217,9 @@ function sqlrcon_getConnectionPort($sqlrconref){}
  *  is only valid after a call to suspendSession(). */
 function sqlrcon_getConnectionSocket($sqlrconref){}
 
-/** 
- *  Resumes a session previously left open using sqlrcon_suspendSession().
+/**
+ *  Resumes a session previously left open
+ *  using suspendSession().
  *  Returns 1 on success and 0 on failure. */
 function sqlrcon_resumeSession($sqlrconref, $port, $socket){}
 
@@ -373,8 +375,8 @@ function sqlrcon_getInTransaction($sqlrconref){}
 
 
 /** Returns the database's native transaction model.  See
- *  sqlrcon_setTranscationModel() for a list of potential return values.
- *  Returns NULL if an error occurred. */
+ *  setTranscationModel() for a list of potential return
+ *  values.  Returns NULL if an error occurred. */
 function sqlrcon_getDefaultTransactionModel($sqlrconref){}
 
 /**
@@ -409,9 +411,9 @@ function sqlrcon_getDefaultTransactionModel($sqlrconref){}
 function sqlrcon_setTransactionModel($sqlrconref, $txmodel){}
 
 /**
- *  Returns the current transaction model.  See sqlrcon_setTranscationModel()
- *  for a list of potential return values.  Returns NULL if an error
- *  occurred. */
+ *  Returns the current transaction model.  See
+ *  setTranscationModel() for a list of potential return
+ *  values.  Returns NULL if an error occurred. */
 function sqlrcon_getTransactionModel($sqlrconref){}
 
 /** Returns the database-specific default isolation level,
@@ -477,21 +479,22 @@ function sqlrcon_getDefaultIsolationLevel($sqlrconref){}
  *  * 0  (serializable, default)
  *  * 1  (read uncommitted)
  *
- *  For ODBC (generic), one of the ODBC names:
+ *  For ODBC:
  *  * SQL_TXN_READ_UNCOMMITTED
  *  * SQL_TXN_READ_COMMITTED
  *  * SQL_TXN_REPEATABLE_READ
  *  * SQL_TXN_SERIALIZABLE
  *
- *  (whether a given level is actually supported depends on the
- *  underlying ODBC driver and target database).  The generic ODBC
- *  backend also accepts the database-specific native names listed
- *  above for any of the other backends, as well as the JDBC
- *  TRANSACTION_* names, and maps them to the closest of the four
- *  ODBC levels above.
+ *  (whether a given level is actually supported depends on
+ *  the underlying ODBC driver and target database).  The
+ *  generic ODBC backend also accepts the database-specific
+ *  native names listed above for any of the other backends,
+ *  as well as the JDBC TRANSACTION_* names, and maps them
+ *  to the closest of the four ODBC levels above.
  *
- *  For other databases, the string is passed through to the backend
- *  as the argument to "set transaction isolation level".
+ *  For other databases, the string is passed through to the
+ *  backend as the argument to "set transaction isolation
+ *  level".
  *
  *  Returns 1 if setting the isolation level succeeded, 0 if it
  *  failed. */
@@ -882,16 +885,19 @@ function sqlrcur_lowerCaseColumnNames($sqlrcurref){}
 
 
 
-/** 
- *  Sets query caching on.  Future queries will be cached to the
- *  file "filename".
- * 
- *  A default time-to-live of 10 minutes is also set.
- * 
- *  Note that once sqlrcur_cacheToFile() is called, the result sets of all
- *  future queries will be cached to that file until another call to
- *  sqlrcur_cacheToFile() changes which file to cache to or a call to
- *  sqlrcur_cacheOff() turns off caching. */
+/**
+ *  Sets query caching on.  Future queries
+ *  will be cached to the file "filename".
+ *
+ *  A default time-to-live of 10 minutes is
+ *  also set.
+ *
+ *  Note that once cacheToFile() is called,
+ *  the result sets of all future queries will
+ *  be cached to that file until another call
+ *  to cacheToFile() changes which file to
+ *  cache to or a call to cacheOff() turns off
+ *  caching. */
 function sqlrcur_cacheToFile($sqlrcurref, $filename){}
 
 /** 
@@ -912,31 +918,49 @@ function sqlrcur_cacheOff($sqlrcurref){}
 
 
 /**
- *  Generates a result set containing
- *  databases that match the pattern "wild".
+ *  Generates a result set containing databases that match the
+ *  pattern "databases".
  *
  *  The result set will contain the following columns:
  *  * Database
  *
- *  If "wild" is empty or NULL then a result set containing
- *  all databases will be returned.
+ *  If "databases" is empty or NULL then a result set
+ *  containing all databases will be returned.
+ *
+ *  May actually return a result set of catalogs or schemas,
+ *  depending on whether the backend database equates
+ *  "database" with catalog or schema.
+ *
+ *  See getDatabaseIsSchema().
  *
  *  If SQL Relay doesn't support getting a list of databases
  *  for the current database backend (or the database doesn't)
  *  then an empty result set will be returned. */
 function sqlrcur_getDatabaseList($sqlrcurref, $wild){}
 
+/**
+ *  Generates a result set containing catalogs that match the
+ *  pattern "catalog".
+ *
+ *  The result set will contain the following columns:
+ *  * Database
+ *
+ *  If "catalog" is empty or NULL then a result set containing
+ *  all catalogs will be returned.
+ *
+ *  If SQL Relay doesn't support getting a list of catalogs
+ *  for the current database backend (or the database doesn't)
+ *  then an empty result set will be returned. */
 function sqlrcur_getCatalogList($sqlrcurref, $wild){}
 
 /**
- *  Generates a result set containing the
- *  tables in the current database and schema that match the
- *  pattern "wild".
+ *  Generates a result set containing the tables in the current
+ *  database and schema that match the pattern "tables".
  *
  *  The result set will contain the following columns:
  *  * Tables_in_xxx
  *
- *  If "wild" is empty or NULL then a result set containing
+ *  If "tables" is empty or NULL then a result set containing
  *  all tables in the current database/schema will be returned.
  *
  *  If SQL Relay doesn't support getting a list of tables
@@ -945,8 +969,8 @@ function sqlrcur_getCatalogList($sqlrcurref, $wild){}
 function sqlrcur_getTableList($sqlrcurref, $wild){}
 
 /**
- *  Generates a result set containing the
- *  columns of "table", which match the pattern "wild".
+ *  Generates a result set containing the columns of "table",
+ *  which match the pattern "columns".
  *
  *  The result set will contain the following columns:
  *  * column_name
@@ -959,7 +983,7 @@ function sqlrcur_getTableList($sqlrcurref, $wild){}
  *  * column_default
  *  * extra
  *
- *  If "wild" is empty or NULL then a list of all columns
+ *  If "columns" is empty or NULL then a list of all columns
  *  of "table" will be returned.
  *
  *  If SQL Relay doesn't support getting a list of columns
@@ -993,8 +1017,9 @@ function sqlrcur_prepareQuery($sqlrcurref, $query){}
  *  used if the query contains binary data. */
 function sqlrcur_prepareQueryWithLength($sqlrcurref, $query, $length){}
 
-/** 
- *  Prepare to execute the contents of "path"/"filename". */
+/**
+ *  Prepare to execute the contents of "path"/"filename".  Returns false if the
+ *  file couldn't be opened. */
 function sqlrcur_prepareFileQuery($sqlrcurref, $path, $filename){}
 
 /** 
@@ -1024,7 +1049,27 @@ function sqlrcur_inputBind($sqlrcurref, $variable, $value, $precision, $scale){}
 function sqlrcur_inputBind($sqlrcurref, $variable, $value, $precision, $scale){}
 
 /**
- *  Defines a date input bind variable. */
+ *  Defines a date input bind variable.  "day" and "month"
+ *  are 1-based.
+ *
+ *  Some databases distinguish between date, time, and
+ *  datetime types.  For those databases...
+ *
+ *  * The input bind variable will be interpreted as a time type
+ *  if year and/or month are negative.
+ *
+ *  * The input bind variable will be interpreted as a date type
+ *  if hour, minute, second, and/or microsecond are negative.
+ *
+ *  * The input bind variable will be interpreted as a datetime
+ *  type if all parts are positive.
+ *
+ *  "tz" is the timezone abbreviation, and may be left NULL.
+ *  Most databases ignore "tz".
+ *
+ *  Set "isnegative" may be set to true to represent a negative
+ *  time interval.  However, few databases support negative
+ *  time intervals and ignore "isnegative". */
 function sqlrcur_inputBindDate($sqlrcurref, $variable, $year, $month, $day, $hour, $minute, $second, $microsecond, $tz, $isnegative){}
 
 /**
@@ -1037,9 +1082,10 @@ function sqlrcur_inputBindClob($sqlrcurref, $variable, $value, $size){}
 
 
 
-/** 
- *  Defines a string output bind variable.
- *  "length" bytes will be reserved to store the value. */
+/**
+ *  Defines an output bind variable.
+ *  "bufferlength" bytes will be reserved
+ *  to store the value. */
 function sqlrcur_defineOutputBindString($sqlrcurref, $variable, $length){}
 
 /** 
@@ -1051,19 +1097,19 @@ function sqlrcur_defineOutputBindInteger($sqlrcurref, $variable){}
 function sqlrcur_defineOutputBindDouble($sqlrcurref, $variable){}
 
 /**
- *  Defines a date output bind variable */
+ *  Defines a date output bind variable. */
 function sqlrcur_defineOutputBindDate($sqlrcurref, $variable){}
 
 /**
- *  Defines a binary lob output bind variable */
+ *  Defines a binary lob output bind variable. */
 function sqlrcur_defineOutputBindBlob($sqlrcurref, $variable){}
 
-/** 
- *  Defines a character lob output bind variable */
+/**
+ *  Defines a character lob output bind variable. */
 function sqlrcur_defineOutputBindClob($sqlrcurref, $variable){}
 
-/** 
- *  Defines a cursor output bind variable */
+/**
+ *  Defines a cursor output bind variable. */
 function sqlrcur_defineOutputBindCursor($sqlrcurref, $variable){}
 
 
@@ -1230,7 +1276,7 @@ function sqlrcur_nextResultSet($sqlrcurref){}
 
 /**
  *  If a query failed and generated an error, the error message is available
- *  here.  If the query succeeded then this function returns a NULL. */
+ *  here.  If the query succeeded then this method returns NULL. */
 function sqlrcur_errorMessage($sqlrcurref){}
 
 
@@ -1375,7 +1421,7 @@ function sqlrcur_getFieldAsDateIsNegativeIgnoringCase($sqlrcurref, $row, $col){}
 
 
 /**
- *  Returns the length of the specified row and column. "col" may be
+ *  Returns the length of the specified field. "col" may be
  *  specified as the column name or number. */
 function sqlrcur_getFieldLength($sqlrcurref, $row, $col){}
 

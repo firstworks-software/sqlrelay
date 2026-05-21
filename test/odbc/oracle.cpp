@@ -6537,6 +6537,12 @@ int main(int argc, char **argv) {
 	erg=SQLExecDirect(stmt,(SQLCHAR *)
 			"select * from testtable",SQL_NTS);
 	assertSuccessStmt(stmt,erg);
+	SQLHSTMT	nestedstmt;
+	erg=SQLAllocHandle(SQL_HANDLE_STMT,dbc,&nestedstmt);
+	assertSuccessDbc(dbc,erg);
+	erg=SQLSetStmtAttr(nestedstmt,SQL_ROWSET_SIZE,
+			(SQLPOINTER)(uintptr_t)1,0);
+	assertSuccessStmt(nestedstmt,erg);
 	int	nestedrows=0;
 	for (;;) {
 		erg=SQLFetch(stmt);
@@ -6547,19 +6553,19 @@ int main(int argc, char **argv) {
 		if (erg!=SQL_SUCCESS && erg!=SQL_SUCCESS_WITH_INFO) {
 			break;
 		}
-		SQLHSTMT	nestedstmt;
-		erg=SQLAllocHandle(SQL_HANDLE_STMT,dbc,&nestedstmt);
-		assertSuccessDbc(dbc,erg);
-		erg=SQLSetStmtAttr(nestedstmt,SQL_ROWSET_SIZE,
-				(SQLPOINTER)(uintptr_t)1,0);
-		assertSuccessStmt(nestedstmt,erg);
+		// close the previous nested cursor (if any) before
+		// re-executing on the same statement handle
+		if (nestedrows>0) {
+			erg=SQLFreeStmt(nestedstmt,SQL_CLOSE);
+			assertSuccessStmt(nestedstmt,erg);
+		}
 		erg=SQLExecDirect(nestedstmt,(SQLCHAR *)
 				"select * from testtable",SQL_NTS);
 		assertSuccessStmt(nestedstmt,erg);
-		erg=SQLFreeHandle(SQL_HANDLE_STMT,nestedstmt);
-		assertSuccessStmt(nestedstmt,erg);
 		nestedrows++;
 	}
+	erg=SQLFreeHandle(SQL_HANDLE_STMT,nestedstmt);
+	assertSuccessStmt(nestedstmt,erg);
 	assertEqualStmt(stmt,nestedrows,4);
 	// restore the initial rowset size
 	if (stmtinitial>0) {

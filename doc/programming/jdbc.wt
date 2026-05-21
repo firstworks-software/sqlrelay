@@ -49,6 +49,21 @@ jdbc:sqlrelay://myuser:mypassword@sqlrserver:9000:/tmp/example.socket
 
 The port defaults to 9000 if not specified.  The socket is optional.  User and password may also be passed as properties to !DriverManager.getConnection() rather than being included in the URL.
 
+=== Properties ===
+
+Every URL field can also be supplied as a property passed to !DriverManager.getConnection().  Properties always override values parsed out of the URL.  The driver recognizes the following property names:
+
+* '''Host''' - Name of the host running SQL Relay.
+* '''Port''' - The port that the SQL Relay server is listening on.  Defaults to 9000.
+* '''Socket''' - The filename of the unix socket that the SQL Relay server is listening on.  Optional.
+* '''User''' - The username to use when logging into SQL Relay.  Also accepted as '''user'''.
+* '''Password''' - The password to use when logging into SQL Relay.  Also accepted as '''password'''.
+* '''Retry Time''' - If a connection fails, wait this many seconds before trying again.  Defaults to 0.
+* '''Tries''' - If a connection fails, retry this many times.  Defaults to 1.
+* '''DATE to !TimeStamp''' - If set to '''yes''', '''true''', '''on''', '''y''', '''t''', or '''1''', columns of type DATE are mapped to java.sql.Timestamp instead of java.sql.Date.  Defaults to '''false'''.
+* '''Output Parameter Buffer Size''' - Buffer size, in bytes, to use for output parameters when the application calls a method that does not have a length parameter.  Defaults to 4096.
+* '''!AutoCommit''' - Controls whether the driver explicitly turns autocommit on or off after connecting.  May be set to '''yes''' (autocommit on), '''no''' (autocommit off), or '''backend''' (leave it up to the backend).  Defaults to '''backend'''.
+
 === Sample Session ===
 
 A good program to test this with is [https://github.com/neurolabs/henplus HenPlus], a JDBC command line client.  After downloading and installing HenPlus, you can run it as follows:

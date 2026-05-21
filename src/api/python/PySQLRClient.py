@@ -39,9 +39,9 @@ class sqlrconnection:
         made to connect to each until the attempt succeeds, or there are no
         more hosts left to try.
 
-        If the "socket" parameter is neither NULL nor "" then an
+        If the "socket" parameter is neither None nor "" then an
         attempt will be made to connect through it before
-        attempting to connect to "server" on "port".  If it is NULL
+        attempting to connect to "server" on "port".  If it is None
         or "" then no attempt will be made to connect through the
         socket.
         """
@@ -54,7 +54,7 @@ class sqlrconnection:
     def setConnectTimeout(self, timeoutsec, timeoutusec):
         """
         Sets the server connect timeout in seconds and
-        milliseconds.  Setting either parameter to -1 disables the
+        microseconds.  Setting either parameter to -1 disables the
         timeout.  You can also set this timeout using the
         SQLR_CLIENT_CONNECT_TIMEOUT environment variable.
         """
@@ -75,7 +75,7 @@ class sqlrconnection:
     def setResponseTimeout(self, timeoutsec, timeoutusec):
         """
         Sets the response timeout (for queries, commits, rollbacks,
-        pings, etc.) in seconds and milliseconds.  Setting either
+        pings, etc.) in seconds and microseconds.  Setting either
         parameter to -1 disables the timeout.  You can also set
         this timeout using the SQLR_CLIENT_RESPONSE_TIMEOUT
         environment variable.
@@ -135,7 +135,7 @@ class sqlrconnection:
         Enables Kerberos authentication and encryption.
 
         "service" indicates the Kerberos service name of the
-        SQL Relay server.  If left empty or NULL then the service
+        SQL Relay server.  If left empty or None then the service
         name "sqlrelay" will be used. "sqlrelay" is the default
         service name of the SQL Relay server.  Note that on Windows
         platforms the service name must be fully qualified,
@@ -148,13 +148,13 @@ class sqlrconnection:
             { 1 2 840 113554 1 2 2 }
         On Windows platforms, this should be a string like:
             Kerberos
-        If left empty or NULL then the default mechanism will be
+        If left empty or None then the default mechanism will be
         used.  Only set this if you know that you have a good
         reason to.
       
         "flags" indicates what Kerberos flags to use.  Multiple
         flags may be specified, separated by commas.  If left
-        empty or NULL then a defalt set of flags will be used.
+        empty or None then a defalt set of flags will be used.
         Only set this if you know that you have a good reason to.
       
         Valid flags include:
@@ -189,11 +189,11 @@ class sqlrconnection:
         If "cert" contains a password-protected private key, then
         "password" may be supplied to access it.  If the private
         key is not password-protected, then this argument is
-        ignored, and may be left empty or NULL.
+        ignored, and may be left empty or None.
         
         "ciphers" is a list of ciphers to allow.  Ciphers may be
         separated by spaces, commas, or colons.  If "ciphers" is
-        empty or NULL then a default set is used.  Only set this if
+        empty or None then a default set is used.  Only set this if
         you know that you have a good reason to.
         
         For a list of valid ciphers on Linux/Unix platforms, see:
@@ -240,7 +240,7 @@ class sqlrconnection:
         vary between platforms.  A variety of file formats are
         generally supported on Linux/Unix platfoms (.pem, .pfx,
         etc.) but only the .pfx format is currently supported on
-        Windows. */
+        Windows.
         """
         return CSQLRelay.enableTls(self.connection, version, cert, password, ciphers, validate, ca, depth)
 
@@ -252,7 +252,7 @@ class sqlrconnection:
 
     def endSession(self):
         """
-        Ends the current session.
+        Ends the session.
         """
         return CSQLRelay.endSession(self.connection)
 
@@ -267,37 +267,37 @@ class sqlrconnection:
 
     def getConnectionPort(self):
         """
-        Returns the inet port that the connection is 
-        communicating over. This parameter may be 
+        Returns the inet port that the connection is
+        communicating over. This parameter may be
         passed to another connection for use in
         the resumeSession() method.
-        Note: the value returned by this method is
-        only valid after a call to suspendSession().
+        Note: The value this method returns is only
+        valid after a call to suspendSession().
         """
         return CSQLRelay.getConnectionPort(self.connection)
 
     def getConnectionSocket(self):
         """
-        Returns the unix socket that the connection is 
-        communicating over. This parameter may be 
+        Returns the unix socket that the connection
+        is communicating over. This parameter may be
         passed to another connection for use in
         the resumeSession() method.
-        Note: the value returned by this method is
-        only valid after a call to suspendSession().
+        Note: The value this method returns is only
+        valid after a call to suspendSession().
         """
         return CSQLRelay.getConnectionSocket(self.connection)
 
     def resumeSession(self, port, socket):
         """
-        Resumes a session previously left open 
+        Resumes a session previously left open
         using suspendSession().
-        Returns 1 on success and 0 on failure.
+        Returns true on success and false on failure.
         """
         return CSQLRelay.resumeSession(self.connection, port, socket)
 
     def ping(self):
         """
-        Returns 1 if the database is up and 0
+        Returns true if the database is up and false
         if it's down.
         """
         return CSQLRelay.ping(self.connection)
@@ -330,14 +330,14 @@ class sqlrconnection:
 
     def serverVersion(self):
         """
-        Returns the version of the SQL Relay server version
+        Returns the version of the sqlrelay server software.
         """
         return CSQLRelay.serverVersion(self.connection)
 
 
     def clientVersion(self):
         """
-        Returns the version of the SQL Relay client version
+        Returns the version of the sqlrelay client software.
         """
         return CSQLRelay.clientVersion(self.connection)
 
@@ -476,14 +476,14 @@ class sqlrconnection:
 
     def commit(self):
         """
-        Issues a commit, returns true if the commit
+        Commits a transaction.  Returns true if the commit
         succeeded, false if it failed.
         """
         return CSQLRelay.commit(self.connection)
 
     def rollback(self):
         """
-        Issues a rollback, returns true if the rollback
+        Rolls back a transaction.  Returns true if the rollback
         succeeded, false if it failed.
         """
         return CSQLRelay.rollback(self.connection)
@@ -498,8 +498,8 @@ class sqlrconnection:
     def getDefaultTransactionModel(self):
         """
         Returns the database's native transaction model.  See
-        setTranscationModel() for a list of potential return values.
-        Returns None if an error occurred.
+        setTranscationModel() for a list of potential return
+        values.  Returns None if an error occurred.
         """
         return CSQLRelay.getDefaultTransactionModel(self.connection)
 
@@ -540,8 +540,8 @@ class sqlrconnection:
     def getTransactionModel(self):
         """
         Returns the current transaction model.  See
-        setTranscationModel() for a list of potential return values.
-        Returns None if an error occurred.
+        setTranscationModel() for a list of potential return
+        values.  Returns None if an error occurred.
         """
         return CSQLRelay.getTransactionModel(self.connection)
 
@@ -554,9 +554,9 @@ class sqlrconnection:
 
     def setIsolationLevel(self, isolationlevel):
         """
-        Sets the transaction isolation level to "isolationlevel".  The
-        string is the database-specific (native) name and is matched
-        case-insensitively.
+        Sets the transaction isolation level to "isolationlevel".
+        The string is the database-specific (native) name and is
+        matched case-insensitively.
 
         Valid isolation levels include:
 
@@ -612,31 +612,33 @@ class sqlrconnection:
         * 0  (serializable, default)
         * 1  (read uncommitted)
 
-        For ODBC (generic), one of the ODBC names:
+        For ODBC:
         * SQL_TXN_READ_UNCOMMITTED
         * SQL_TXN_READ_COMMITTED
         * SQL_TXN_REPEATABLE_READ
         * SQL_TXN_SERIALIZABLE
 
-        (whether a given level is actually supported depends on the
-        underlying ODBC driver and target database).  The generic ODBC
-        backend also accepts the database-specific native names listed
-        above for any of the other backends, as well as the JDBC
-        TRANSACTION_* names, and maps them to the closest of the four
-        ODBC levels above.
+        (whether a given level is actually supported depends on
+        the underlying ODBC driver and target database).  The
+        generic ODBC backend also accepts the database-specific
+        native names listed above for any of the other backends,
+        as well as the JDBC TRANSACTION_* names, and maps them
+        to the closest of the four ODBC levels above.
 
         For other databases, the string is passed through to the
-        backend as the argument to "set transaction isolation level".
+        backend as the argument to "set transaction isolation
+        level".
 
-        Returns true if setting the isolation level succeeded, false
-        if it failed.
+        Returns true if setting the isolation level succeeded,
+        false if it failed.
         """
         return CSQLRelay.setIsolationLevel(self.connection, isolationlevel)
 
     def getIsolationLevel(self):
         """
-        Returns the database-specific isolation level, "unknown" if
-        the isolation level is unknown, or None if an error occurred.
+        Returns the database-specific isolation level, "unknown"
+        if the isolation level is unknown, or None if an error
+        occurred.
         """
         return CSQLRelay.getIsolationLevel(self.connection)
 
@@ -928,8 +930,10 @@ class sqlrconnection:
 
     def errorMessage(self):
         """
-        If the operation failed, the error message will be returned
-        from this method.  Otherwise, it returns None.
+        If an operation failed and generated an
+        error, the error message is available here.
+        If there is no error then this method
+        returns None.
         """
         return CSQLRelay.connectionErrorMessage(self.connection)
 
@@ -944,29 +948,31 @@ class sqlrconnection:
 
     def debugOn(self):
         """
-        Turn verbose debugging on.
-        Another way to do this is to start a query with "-- debug\n".
-        Yet another way is to set the environment variable SQLR_CLIENT_DEBUG
-        to "ON"
+        Causes verbose debugging information to be
+        sent to standard output.  Another way to do
+        this is to start a query with "-- debug\n".
+        Yet another way is to set the environment
+        variable SQLR_CLIENT_DEBUG to "ON"
         """
         return CSQLRelay.debugOn(self.connection)
 
     def debugOff(self):
         """
-        Turn verbose debugging off.
+        Turns debugging off.
         """
         return CSQLRelay.debugOff(self.connection)
 
     def getDebug(self):
         """
-        Returns 1 if debugging is turned on and 0 if debugging is turned off.
+        Returns false if debugging is off and true
+        if debugging is on.
         """
         return CSQLRelay.getDebug(self.connection)
 
     def setDebugFile(self,filename):
         """
         Allows you to specify a file to write debug to.
-        Setting "filename" to NULL or an empty string causes debug
+        Setting "filename" to None or an empty string causes debug
         to be written to standard output (the default).
         """
         return CSQLRelay.setDebugFile(self.connection,filename)
@@ -1058,15 +1064,13 @@ class sqlrcursor:
         """
         Sets query caching on.  Future queries
         will be cached to the file "filename".
-        The full pathname of the file can be
-        retrieved using getCacheFileName().
-        
+
         A default time-to-live of 10 minutes is
         also set.
-        
+
         Note that once cacheToFile() is called,
         the result sets of all future queries will
-        be cached to that file until another call 
+        be cached to that file until another call
         to cacheToFile() changes which file to
         cache to or a call to cacheOff() turns off
         caching.
@@ -1076,16 +1080,17 @@ class sqlrcursor:
     def setCacheTtl(self, ttl):
         """
         Sets the time-to-live for cached result
-        sets. The sqlr-cachemanger will remove each 
-        cached result set "ttl" seconds after it's 
-        created.
+        sets. The sqlr-cachemanger will remove each
+        cached result set "ttl" seconds after it's
+        created, provided it's scanning the directory
+        containing the cache files.
         """
         return CSQLRelay.setCacheTtl(self.cursor,ttl)
 
     def getCacheFileName(self):
         """
-        Returns the name of the file containing the most
-        recently cached result set.
+        Returns the name of the file containing the
+        cached result set.
         """
         return CSQLRelay.getCacheFileName(self.cursor)
 
@@ -1097,14 +1102,20 @@ class sqlrcursor:
 
     def getDatabaseList(self,wild):
         """
-        Generates a result set containing
-        databases that match the pattern "wild".
+        Generates a result set containing databases that match the
+        pattern "wild".
 
         The result set will contain the following columns:
         * Database
 
-        If "wild" is empty or None then a result set containing
-        all databases will be returned.
+        If "wild" is empty or None then a result set
+        containing all databases will be returned.
+
+        May actually return a result set of catalogs or schemas,
+        depending on whether the backend database equates
+        "database" with catalog or schema.
+
+        See getDatabaseIsSchema().
 
         If SQL Relay doesn't support getting a list of databases
         for the current database backend (or the database doesn't)
@@ -1114,8 +1125,8 @@ class sqlrcursor:
 
     def getCatalogList(self,wild):
         """
-        Generates a result set containing
-        catalogs that match the pattern "wild".
+        Generates a result set containing catalogs that match the
+        pattern "wild".
 
         The result set will contain the following columns:
         * Database
@@ -1131,11 +1142,14 @@ class sqlrcursor:
 
     def getSchemaList(self,wild):
         """
-        Generates a result set containing
-        schemas that match the pattern "wild".
+        Generates a result set containing schemas that match the
+        pattern "wild".
 
         The result set will contain the following columns:
         * Database
+
+        (The column name is a bit of a misnomer, the results are
+        schemas, not databases.)
 
         If "wild" is empty or None then a result set containing
         all schemas in the current database will be returned.
@@ -1148,23 +1162,21 @@ class sqlrcursor:
 
     def getTableTypeList(self):
         """
-        Generates a result set containing
-        supported table types.
+        Generates a result set containing supported table types.
 
         The result set will contain the following columns:
         * table_type
 
-        If SQL Relay doesn't support getting a list of table
-        types for the current database backend (or the database
-        doesn't) then an empty result set will be returned.
+        If SQL Relay doesn't support getting a list of table types
+        for the current database backend (or the database doesn't)
+        then an empty result set will be returned.
         """
         return CSQLRelay.getTableTypeList(self.cursor)
 
     def getTableList(self,wild):
         """
-        Generates a result set containing the
-        tables in the current database and schema that match the
-        pattern "wild".
+        Generates a result set containing the tables in the current
+        database and schema that match the pattern "wild".
 
         The result set will contain the following columns:
         * Tables_in_xxx
@@ -1180,23 +1192,44 @@ class sqlrcursor:
 
     def getTypeInfoList(self,type):
         """
-        Generates a result set containing
-        data type information for "type".
+        Generates a result set containing data type information for
+        "type".
+
+        The result set will contain the following columns:
+        * type_name
+        * data_type
+        * precision
+        * literal_prefix
+        * literal_suffix
+        * create_params
+        * nullable
+        * case_sensitive
+        * searchable
+        * unsigned_attribute
+        * fixed_prec_scale
+        * auto_increment
+        * local_type_name
+        * minumum_scale
+        * maxiumm_scale
+        * sql_data_type
+        * sql_datetime_sub
+        * num_prec_radix
+        * interval_precision
 
         If "type" is empty or None then a result set containing
-        all data types in the current database/schema will be
+        all data types in the current databas/schema will be
         returned.
 
-        If SQL Relay doesn't support getting type info for the
-        current database backend (or the database doesn't) then
-        an empty result set will be returned.
+        If SQL Relay doesn't support getting type info
+        for the current database backend (or the database doesn't)
+        then an empty result set will be returned.
         """
         return CSQLRelay.getTypeInfoList(self.cursor,type)
 
     def getColumnList(self,table,wild):
         """
-        Generates a result set containing the
-        columns of "table", which match the pattern "wild".
+        Generates a result set containing the columns of "table",
+        which match the pattern "wild".
 
         The result set will contain the following columns:
         * column_name
@@ -1220,27 +1253,56 @@ class sqlrcursor:
 
     def getPrimaryKeysList(self,table,wild):
         """
-        Generates a result set containing
-        the primary keys of "table", which match the pattern
-        "wild".
+        Generates a result set containing the primary keys of
+        "table", which match the pattern "wild".
+
+        The result set will contain the following columns:
+        * table
+        * non_unique
+        * key_name
+        * seq_in_index
+        * column_name
+        * collation
+        * cardinality
+        * sub_part
+        * packed
+        * null
+        * index_type
+        * comment
+        * index_comment
 
         If "wild" is empty or None then a result set containing
         all primary keys of "table" will be returned.
 
-        If SQL Relay doesn't support getting a list of primary
-        keys for the current database backend (or the database
-        doesn't) then an empty result set will be returned.
+        If SQL Relay doesn't support getting a list of primary keys
+        for the current database backend (or the database doesn't)
+        then an empty result set will be returned.
         """
         return CSQLRelay.getPrimaryKeysList(self.cursor,table,wild)
 
     def getKeyAndIndexList(self,table,wild):
         """
-        Generates a result set containing
-        the keys and indexes of "table", which match the pattern
-        "wild".
+        Generates a result set containing the keys and indexes of
+        "table", which match the pattern "wild".
 
-        If "wild" is empty or None then a result set containing
-        all keys and indexes of "table" will be returned.
+        The result set will contain the following columns:
+        * table
+        * non_unique
+        * key_name
+        * seq_in_index
+        * column_name
+        * collation
+        * cardinality
+        * sub_part
+        * packed
+        * null
+        * index_type
+        * comment
+        * index_comment
+
+        If "wild" is empty or None then a result set
+        containing all keys and indexes of "table" will be
+        returned.
 
         If SQL Relay doesn't support getting a list of keys and
         indexes for the current database backend (or the database
@@ -1250,12 +1312,18 @@ class sqlrcursor:
 
     def getProcedureList(self,wild):
         """
-        Generates a result set containing
-        procedures that match the pattern "wild".
+        Generates a result set containing procedures that match the
+        pattern "wild".
 
-        If "wild" is empty or None then a result set containing
-        all procedures in the current database/schema will be
-        returned.
+        The result set will contain the following columns:
+        * routine_catalog
+        * routine_schema
+        * routine_name
+        * data_type
+
+        If "wild" is empty or None then a result set
+        containing all procedures in the current database/schema
+        will be returned.
 
         If SQL Relay doesn't support getting a list of procedures
         for the current database backend (or the database doesn't)
@@ -1265,12 +1333,18 @@ class sqlrcursor:
 
     def getProcedureParameterList(self,procedure,wild):
         """
-        Generates a result set containing
-        the parameters of "procedure", which match the pattern
-        "wild".
+        Generates a result set containing the parameters of
+        "procedure", which match the pattern "wild".
 
-        If "wild" is empty or None then a result set containing
-        all parameters of "procedure" will be returned.
+        The result set will contain the following columns:
+        * parameter_name
+        * parameter_mode
+        * data_type
+        * character_maximum_length
+        * ordinal_position
+
+        If "wild" is empty or None then a result set
+        containing all parameters of "procedure" will be returned.
 
         If SQL Relay doesn't support getting a list of procedure
         parameters for the current database backend (or the
@@ -1285,23 +1359,22 @@ class sqlrcursor:
     """
     def sendQuery(self, query):
         """
-        Send a SQL query to the server and
-        gets a result set.
+        Sends "query" directly and gets a result set.
         """
         return CSQLRelay.sendQuery(self.cursor, query)
 
     def sendQueryWithLength(self, query, length):
         """
-        Sends "query" with length "length" and gets
-        a result set. This method must be used if
-        the query contains binary data.
+        Sends "query" with length "length" directly
+        and gets a result set. This method must be used
+        if the query contains binary data.
         """
         return CSQLRelay.sendQueryWithLength(self.cursor, query, length)
 
     def sendFileQuery(self, path, file):
         """
-        Send the SQL query in path/file to the server and
-        gets a result set.
+        Sends the query in file "path"/"filename" directly
+        and gets a result set.
         """
         return CSQLRelay.sendFileQuery(self.cursor, path, file)
 
@@ -1312,7 +1385,7 @@ class sqlrcursor:
     """
     def prepareQuery(self, query):
         """
-        Prepare to execute query.
+        Prepare to execute "query".
         """
         return CSQLRelay.prepareQuery(self.cursor, query)
 
@@ -1326,7 +1399,9 @@ class sqlrcursor:
 
     def prepareFileQuery(self, path, file):
         """
-        Prepare to execute the contents of path/filename.
+        Prepare to execute the contents
+        of "path"/"filename".  Returns false if the
+        // file couldn't be opened.
         """
         return CSQLRelay.prepareFileQuery(self.cursor, path, file)
 
@@ -1341,7 +1416,7 @@ class sqlrcursor:
 
     def clearBinds(self):
         """
-        Clear all binds variables.
+        Clears all bind variables.
         """
         return CSQLRelay.clearBinds(self.cursor)
 
@@ -1366,61 +1441,83 @@ class sqlrcursor:
 
     def inputBindDate(self, variable, year, month, day, hour, minute, second, microsecond, tz, isnegative):
         """
-        Define a date input bind variable.
+        Defines a date input bind variable.  "day" and "month"
+        are 1-based.
+
+        Some databases distinguish between date, time, and
+        datetime types.  For those databases...
+
+        * The input bind variable will be interpreted as a time type
+        if year and/or month are negative.
+
+        * The input bind variable will be interpreted as a date type
+        if hour, minute, second, and/or microsecond are negative.
+
+        * The input bind variable will be interpreted as a datetime
+        type if all parts are positive.
+
+        "tz" is the timezone abbreviation, and may be left None.
+        Most databases ignore "tz".
+
+        Set "isnegative" may be set to true to represent a negative
+        time interval.  However, few databases support negative
+        time intervals and ignore "isnegative".
         """
         return CSQLRelay.inputBindDate(self.cursor, variable, year, month, day, hour, minute, second, microsecond, tz, isnegative)
 
     def inputBindBlob(self, variable, value, length):
         """
-        Define an input bind varaible.
+        Defines a binary lob input bind variable.
         """
         return CSQLRelay.inputBindBlob(self.cursor, variable, value, length)
 
     def inputBindClob(self, variable, value, length):
         """
-        Define an input bind varaible.
+        Defines a character lob input bind variable.
         """
         return CSQLRelay.inputBindClob(self.cursor, variable, value, length)
 
     def defineOutputBindString(self, variable, length):
         """
-        Define a string output bind varaible.
+        Defines an output bind variable.
+        "bufferlength" bytes will be reserved
+        to store the value.
         """
         return CSQLRelay.defineOutputBindString(self.cursor, variable, length)
 
     def defineOutputBindInteger(self, variable):
         """
-        Define an integer output bind varaible.
+        Defines an integer output bind variable.
         """
         return CSQLRelay.defineOutputBindInteger(self.cursor, variable)
 
     def defineOutputBindDouble(self, variable):
         """
-        Define a double precision floating point output bind varaible.
+        Defines a decimal output bind variable.
         """
         return CSQLRelay.defineOutputBindDouble(self.cursor, variable)
 
     def defineOutputBindDate(self, variable):
         """
-        Define a date output bind variable.
+        Defines a date output bind variable.
         """
         return CSQLRelay.defineOutputBindDate(self.cursor, variable)
 
     def defineOutputBindBlob(self, variable):
         """
-        Define an output bind varaible.
+        Defines a binary lob output bind variable.
         """
         return CSQLRelay.defineOutputBindBlob(self.cursor, variable)
 
     def defineOutputBindClob(self, variable):
         """
-        Define an output bind varaible.
+        Defines a character lob output bind variable.
         """
         return CSQLRelay.defineOutputBindClob(self.cursor, variable)
 
     def defineOutputBindCursor(self, variable):
         """
-        Define an output bind varaible.
+        Defines a cursor output bind variable.
         """
         return CSQLRelay.defineOutputBindCursor(self.cursor, variable)
 
@@ -1445,11 +1542,12 @@ class sqlrcursor:
 
     def validateBinds(self):
         """
-        If you are binding to any variables that 
-        might not actually be in your query, call 
-        this to ensure that the database won't try 
-        to bind them unless they really are in the 
-        query.
+        If you are binding to any variables that
+        might not actually be in your query, call
+        this to ensure that the database won't try
+        to bind them unless they really are in the
+        query.  There is a performance penalty for
+        calling this method.
         """
         return CSQLRelay.validateBinds(self.cursor)
         
@@ -1457,7 +1555,7 @@ class sqlrcursor:
     def validBind(self,variable):
         """
         Returns true if "variable" was a valid
-        input bind variable of the query.
+        bind variable of the query.
         """
         return CSQLRelay.validBind(self.cursor,variable)
         
@@ -1479,43 +1577,42 @@ class sqlrcursor:
     def getOutputBindString(self, variable):
         """
         Get the value stored in a previously
-        defined output bind variable.
+        defined string output bind variable.
         """
         return CSQLRelay.getOutputBindString(self.cursor, variable)
 
     def getOutputBindBlob(self, variable):
         """
         Get the value stored in a previously
-        defined output bind variable.
+        defined binary lob output bind variable.
         """
         return CSQLRelay.getOutputBindBlob(self.cursor, variable)
 
     def getOutputBindClob(self, variable):
         """
         Get the value stored in a previously
-        defined output bind variable.
+        defined character lob output bind variable.
         """
         return CSQLRelay.getOutputBindClob(self.cursor, variable)
 
     def getOutputBindInteger(self, variable):
         """
         Get the value stored in a previously
-        defined output bind variable as a long
-        integer.
+        defined integer output bind variable.
         """
         return CSQLRelay.getOutputBindInteger(self.cursor, variable)
 
     def getOutputBindDouble(self, variable):
         """
         Get the value stored in a previously
-        defined output bind variable as a double
-        precision floating point number.
+        defined decimal output bind variable.
         """
         return CSQLRelay.getOutputBindDouble(self.cursor, variable)
 
     def getOutputBindLength(self, variable):
         """
-        Retrieve the length of an output bind variable.
+        Get the length of the value stored in a
+        previously defined output bind variable.
         """
         return CSQLRelay.getOutputBindLength(self.cursor, variable)
 
@@ -1570,15 +1667,15 @@ class sqlrcursor:
 
     def getOutputBindDateTz(self, variable):
         """
-        Get the timezone from a previously defined
-        date output bind variable.
+        Get the time zone from a previously
+        defined date output bind variable.
         """
         return CSQLRelay.getOutputBindDateTz(self.cursor, variable)
 
     def getOutputBindDateIsNegative(self, variable):
         """
-        Get whether the value of a previously defined
-        date output bind variable is negative.
+        Get whether the value is negative from a
+        previously defined date output bind variable.
         """
         return CSQLRelay.getOutputBindDateIsNegative(self.cursor, variable)
 
@@ -1596,7 +1693,8 @@ class sqlrcursor:
 
     def openCachedResultSet(self, filename):
         """
-        Open a result set after a sendCachedQeury
+        Opens a cached result set.
+        Returns true on success and false on failure.
         """
         return CSQLRelay.openCachedResultSet(self.cursor, filename)
 
@@ -1608,29 +1706,32 @@ class sqlrcursor:
 
     def rowCount(self):
         """
-        Returns the number of rows in the current result set.
+        Returns the number of rows in the current
+        result set (if the result set is being
+        stepped through, this returns the number
+        of rows processed so far).
         """
         return CSQLRelay.rowCount(self.cursor)
 
     def totalRows(self):
         """
-        Returns the total number of rows that will 
-        be returned in the result set.  Not all 
-        databases support this call.  Don't use it 
-        for applications which are designed to be 
-        portable across databases.  -1 is returned
+        Returns the total number of rows that will
+        be returned in the result set.  Not all
+        databases support this call.  Don't use it
+        for applications which are designed to be
+        portable across databases.  0 is returned
         by databases which don't support this option.
         """
         return CSQLRelay.totalRows(self.cursor)
 
     def affectedRows(self):
         """
-        Returns the number of rows that were 
+        Returns the number of rows that were
         updated, inserted or deleted by the query.
-        Not all databases support this call.  Don't 
-        use it for applications which are designed 
-        to be portable across databases.  -1 is 
-        returned by databases which don't support 
+        Not all databases support this call.  Don't
+        use it for applications which are designed
+        to be portable across databases.  0 is
+        returned by databases which don't support
         this option.
         """
         return CSQLRelay.affectedRows(self.cursor)
@@ -1645,9 +1746,9 @@ class sqlrcursor:
 
     def endOfResultSet(self):
         """
-        Returns 0 if part of the result set is still
-        pending on the server and 1 if not.  This
-        method can only return 0 if 
+        Returns false if part of the result set is
+        still pending on the server and true if not.
+        This method can only return false if
         setResultSetBufferSize() has been called
         with a parameter other than 0.
         """
@@ -1663,39 +1764,41 @@ class sqlrcursor:
 
     def errorMessage(self):
         """
-        If the query failed, the error message will be returned
-        from this method.  Otherwise, it returns None.
+        If a query failed and generated an error,
+        the error message is available here.  If
+        the query succeeded then this method
+        returns None.
         """
         return CSQLRelay.cursorErrorMessage(self.cursor)
 
     def errorNumber(self):
         """
-        If the query failed and generated an
+        If a query failed and generated an
         error, the error number is available here.
-        If there is no error then this method 
+        If there is no error then this method
         returns 0.
         """
         return CSQLRelay.cursorErrorNumber(self.cursor)
 
     def getNullsAsEmptyStrings(self):
         """
-        Tells the cursor to return NULL fields and output
-        bind variables as empty strings.
+        Tells the connection to return NULL fields
+        and output bind variables as empty strings.
         This is the default.
         """
         return CSQLRelay.getNullsAsEmptyStrings(self.cursor)
 
     def getNullsAsNone(self):
         """
-        Tells the cursor to return NULL fields and output
-        bind variables as NULL's.
+        Tells the connection to return NULL fields
+        and output bind variables as None rather
+        than as empty strings.
         """
         return CSQLRelay.getNullsAsNone(self.cursor)
 
     def getField(self, row, col):
         """
-        Returns the value of the specified row and
-        column.  col may be a column name or number.
+        Returns the specified field as a string.
         """
         return CSQLRelay.getField(self.cursor, row, col)
 
@@ -1708,28 +1811,27 @@ class sqlrcursor:
 
     def getFieldAsInteger(self, row, col):
         """
-        Returns the specified field as a long integer.
+        Returns the specified field as an integer.
         """
         return CSQLRelay.getFieldAsInteger(self.cursor, row, col)
 
     def getFieldAsIntegerIgnoringCase(self, row, col):
         """
-        Returns the specified field as a long integer,
-        ignoring the case of "col".
+        Returns the specified field as an integer, ignoring
+        the case of "col".
         """
         return CSQLRelay.getFieldAsIntegerIgnoringCase(self.cursor, row, col)
 
     def getFieldAsDouble(self, row, col):
         """
-        Returns the specified field as a double precision
-        floating point number.
+        Returns the specified field as a decimal.
         """
         return CSQLRelay.getFieldAsDouble(self.cursor, row, col)
 
     def getFieldAsDoubleIgnoringCase(self, row, col):
         """
-        Returns the specified field as a double precision
-        floating point number, ignoring the case of "col".
+        Returns the specified field as a decimal, ignoring
+        the case of "col".
         """
         return CSQLRelay.getFieldAsDoubleIgnoringCase(self.cursor, row, col)
 
@@ -1981,8 +2083,7 @@ class sqlrcursor:
 
     def getFieldLength(self, row, col):
         """
-        Returns the length of the specified row and
-        column.  col may be a column name or number.
+        Returns the length of the specified field.
         """
         return CSQLRelay.getFieldLength(self.cursor, row, col)
 
@@ -2028,7 +2129,7 @@ class sqlrcursor:
 
     def getColumnName(self, col):
         """
-        Returns the name of column number col.
+        Returns the name of the specified column.
         """
         return CSQLRelay.getColumnName(self.cursor, col)
 
@@ -2040,15 +2141,14 @@ class sqlrcursor:
 
     def getColumnType(self, col):
         """
-        Returns the type of the specified column.  col may
-        be a name or number.
+        Returns the type of the specified column.
         """
         return CSQLRelay.getColumnType(self.cursor, col)
 
     def getColumnLength(self, col):
         """
-        Returns the length of the specified column.  col may
-        be a name or number.
+        Returns the number of bytes required on
+        the server to store the data for the specified column
         """
         return CSQLRelay.getColumnLength(self.cursor, col)
 
@@ -2071,93 +2171,95 @@ class sqlrcursor:
 
     def getColumnIsNullable(self, col):
         """
-        Returns 1 if the specified column can contain nulls and
-        0 otherwise.
+        Returns true if the specified column can
+        contain nulls and false otherwise.
         """
         return CSQLRelay.getColumnIsNullable(self.cursor, col)
 
     def getColumnIsPrimaryKey(self, col):
         """
-        Returns 1 if the specified column is a primary key and
-        0 otherwise.
+        Returns true if the specified column is a
+        primary key and false otherwise.
         """
         return CSQLRelay.getColumnIsPrimaryKey(self.cursor, col)
 
     def getColumnIsUnique(self, col):
         """
-        Returns 1 if the specified column is unique and
-        0 otherwise.
+        Returns true if the specified column is
+        unique and false otherwise.
         """
         return CSQLRelay.getColumnIsUnique(self.cursor, col)
 
     def getColumnIsPartOfKey(self, col):
         """
-        Returns 1 if the specified column is part of a composite
-        key and 0 otherwise.
+        Returns true if the specified column is
+        part of a composite key and false otherwise.
         """
         return CSQLRelay.getColumnIsPartOfKey(self.cursor, col)
 
     def getColumnIsUnsigned(self, col):
         """
-        Returns 1 if the specified column is an unsigned number
-        and 0 otherwise.
+        Returns true if the specified column is
+        an unsigned number and false otherwise.
         """
         return CSQLRelay.getColumnIsUnsigned(self.cursor, col)
 
     def getColumnIsZeroFilled(self, col):
         """
-        Returns 1 if the specified column was created with the
-        zero-fill flag and 0 otherwise.
+        Returns true if the specified column was
+        created with the zero-fill flag and false
+        otherwise.
         """
         return CSQLRelay.getColumnIsZeroFilled(self.cursor, col)
 
     def getColumnIsBinary(self, col):
         """
-        Returns 1 if the specified column contains binary data
-        and 0 otherwise.
+        Returns true if the specified column
+        contains binary data and false
+        otherwise.
         """
         return CSQLRelay.getColumnIsBinary(self.cursor, col)
 
     def getColumnIsAutoIncrement(self, col):
         """
-        Returns 1 if the specified column auto-increments and
-        0 otherwise.
+        Returns true if the specified column
+        auto-increments and false otherwise.
         """
         return CSQLRelay.getColumnIsAutoIncrement(self.cursor, col)
 
     def getLongest(self, col):
         """
-        Returns the length of the specified column.  col may
-        be a name or number.
+        Returns the length of the longest field
+        in the specified column.
         """
         return CSQLRelay.getLongest(self.cursor, col)
 
     def suspendResultSet(self):
         """
         Tells the server to leave this result
-        set open when the cursor calls 
-        suspendSession() so that another cursor can 
-        connect to it using resumeResultSet() after 
-        it calls resumeSession().
+        set open when the connection calls
+        suspendSession() so that another connection
+        can connect to it using resumeResultSet()
+        after it calls resumeSession().
         """
         return CSQLRelay.suspendResultSet(self.cursor)
 
     def getResultSetId(self):
         """
         Returns the internal ID of this result set.
-        This parameter may be passed to another 
-        cursor for use in the resumeResultSet() 
+        This parameter may be passed to another
+        cursor for use in the resumeResultSet()
         method.
-        Note: the value returned by this method is
-        only valid after a call to suspendResultSet().
+        Note: The value this method returns is only
+        valid after a call to suspendResultSet().
         """
         return CSQLRelay.getResultSetId(self.cursor)
 
     def resumeResultSet(self, id):
         """
-        Resumes a result set previously left open 
+        Resumes a result set previously left open
         using suspendSession().
-        Returns 1 on success and 0 on failure.
+        Returns true on success and false on failure.
         """
         return CSQLRelay.resumeResultSet(self.cursor, id)
 
@@ -2166,7 +2268,7 @@ class sqlrcursor:
         Resumes a result set previously left open
         using suspendSession() and continues caching
         the result set to "filename".
-        Returns 1 on success and 0 on failure.
+        Returns true on success and false on failure.
         """
         return CSQLRelay.resumeCachedResultSet(self.cursor, id, filename)
 

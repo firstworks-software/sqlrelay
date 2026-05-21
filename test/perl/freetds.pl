@@ -961,14 +961,14 @@ print("NESTED SELECTS: \n");
 # can't do this with freetds
 #$cur->setResultSetBufferSize(1);
 assertTrue($cur->sendQuery("select * from testtable"));
+$secondcur=SQLRelay::Cursor->new($con);
+$secondcur->setResultSetBufferSize(1);
 for ($i=0; ; $i++) {
 	@row=$cur->getRow($i);
 	last if (!@row);
-	$secondcur=SQLRelay::Cursor->new($con);
-	$secondcur->setResultSetBufferSize(1);
 	assertTrue($secondcur->sendQuery("select * from testtable"));
-	$secondcur->closeResultSet();
 }
+$secondcur->closeResultSet();
 #$cur->setResultSetBufferSize(0);
 assertTrue($con->commit());
 assertTrue($cur->sendQuery("drop table testtable"));
