@@ -1523,6 +1523,10 @@ When TLS/SSL encryption and authentication is used:
 
 When using TLS/SSL encryption and authentication, at minimum, the SQL Relay server must be configured to load a certificate.  For highly secure production environments, this certificate should come from a trusted certificate authority.  In other environments the certificate may be self-signed, or even be borrowed from another server.
 
+{{{#!blockquote
+( '''NOTE:''' Prior to version 2.0.0, the various tls* attributes were specified on the instance tag rather than on individual listener tags, and applied to all listeners.)
+}}}
+
 
 === Encryption Only ===
 
@@ -1876,6 +1880,10 @@ When TLS/SSL encryption and authentication is used:
 * !MySQL/MariaDB clients and servers may optionally validate each other's certificates and identities.
 
 When using TLS/SSL encryption and authentication, at minimum, the SQL Relay server must be configured to load a certificate.  For highly secure production environments, this certificate should come from a trusted certificate authority.  In other environments the certificate may be self-signed, or even be borrowed from another server.
+
+{{{#!blockquote
+( '''NOTE:''' Prior to version 2.0.0, the various tls* attributes were specified on the instance tag rather than on individual listener tags, and applied to all listeners.)
+}}}
 
 
 === Encryption Only ===
@@ -2252,6 +2260,10 @@ When TLS/SSL encryption and authentication is used:
 * !PostgreSQL clients and servers may optionally validate each other's certificates and identities.
 
 When using TLS/SSL encryption and authentication, at minimum, the SQL Relay server must be configured to load a certificate.  For highly secure production environments, this certificate should come from a trusted certificate authority.  In other environments the certificate may be self-signed, or even be borrowed from another server.
+
+{{{#!blockquote
+( '''NOTE:''' Prior to version 2.0.0, the various tls* attributes were specified on the instance tag rather than on individual listener tags, and applied to all listeners.)
+}}}
 
 
 === Encryption Only ===
