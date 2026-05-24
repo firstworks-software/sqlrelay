@@ -488,11 +488,15 @@ http://www.gnu.org/software/src-highlite -->
 </blockquote>
 <a name="bindvars"/><h2>Bind Variables</h2>
 
-<p>Programs rarely execute fixed queries.  More often than not, some part of the query is dynamically generated.  ODBC provides SQLBindParameter() for binding values to parameter markers (?) in queries.</p>
+<p>Programs rarely execute fixed queries.  More often than not, some part of the query is dynamically generated.  The ODBC API provides means for using bind variables (also known as parameters) in those queries.</p>
 
-<p>You call SQLPrepare() to prepare the query, SQLBindParameter() to bind each parameter, and SQLExecute() to execute the query.</p>
+<p>For a detailed discussion of binds, see <a href="binds.html">this document</a>.</p>
+
+<p>ODBC provides SQLBindParameter() for binding values to parameter markers (?) in queries.  You call SQLPrepare() to prepare the query, SQLBindParameter() to bind each parameter, and SQLExecute() to execute the query.</p>
 
 <p>When passing a floating point number as a bind variable, ODBC handles the precision and scale through the SQL type specification.  See <a href="precisionscale.html">this page</a> for a discussion of precision and scale.</p>
+
+<p>Note that ODBC requires question marks (?) as parameter markers, but most databases use other formats natively (eg. :name for Oracle, @name for Sybase/MSSQL, $1 for PostgreSQL).  For ODBC bind variables to work against those databases, SQL Relay must be configured to translate them by setting translatebindvariables="yes" in the sqlrelay.conf file for the instance you're using.  See the <a href="../admin/configreference.html">SQL Relay Configuration Reference</a> for more information on this parameter.</p>
 
 <blockquote>
 <!-- Generator: GNU source-highlight 3.1.9
@@ -1094,8 +1098,6 @@ http://www.gnu.org/software/src-highlite -->
 
 <p>Stored procedures typically take input paramters from client programs through input bind variables and return values back to client programs either through bind variables or result sets.  Stored procedures can be broken down into several categories, based on the values that they return.  Some stored procedures don't return any values, some return a single value, some return multiple values and some return entire result sets.</p>
 
-<p>In the ODBC examples below, the variable "stmt" refers to an SQLHSTMT statement handle that has already been allocated.</p>
-
 <h3>No Values</h3>
 
 <p>Some stored procedures don't return any values.  Below are examples, illustrating how to create, execute and drop this kind of stored procedure for each database that SQL Relay supports.</p>
@@ -1116,7 +1118,7 @@ end<font color="#990000">;</font>
 </tt></pre>
 
 </blockquote>
-<p>To execute the stored procedure from an ODBC program, use code like the following.</p>
+<p>To execute the stored procedure from an SQL Relay program, use code like the following.</p>
 
 <blockquote>
 <!-- Generator: GNU source-highlight 3.1.9
@@ -1166,7 +1168,7 @@ http://www.gnu.org/software/src-highlite -->
 </tt></pre>
 
 </blockquote>
-<p>To execute the stored procedure from an ODBC program, use code like the following.</p>
+<p>To execute the stored procedure from an SQL Relay program, use code like the following.</p>
 
 <blockquote>
 <!-- Generator: GNU source-highlight 3.1.9
@@ -1219,7 +1221,7 @@ end<font color="#990000">;</font>
 </tt></pre>
 
 </blockquote>
-<p>To execute the stored procedure from an ODBC program, use code like the following.</p>
+<p>To execute the stored procedure from an SQL Relay program, use code like the following.</p>
 
 <blockquote>
 <!-- Generator: GNU source-highlight 3.1.9
@@ -1272,7 +1274,7 @@ end<font color="#990000">;</font>
 </tt></pre>
 
 </blockquote>
-<p>To execute the stored procedure from an ODBC program, use code like the following.</p>
+<p>To execute the stored procedure from an SQL Relay program, use code like the following.</p>
 
 <blockquote>
 <!-- Generator: GNU source-highlight 3.1.9
@@ -1325,7 +1327,7 @@ http://www.gnu.org/software/src-highlite -->
 </tt></pre>
 
 </blockquote>
-<p>To execute the stored procedure from an ODBC program, use code like the following.</p>
+<p>To execute the stored procedure from an SQL Relay program, use code like the following.</p>
 
 <blockquote>
 <!-- Generator: GNU source-highlight 3.1.9
@@ -1377,7 +1379,7 @@ end<font color="#990000">;</font>
 </tt></pre>
 
 </blockquote>
-<p>To execute the stored procedure from an ODBC program, use code like the following.</p>
+<p>To execute the stored procedure from an SQL Relay program, use code like the following.</p>
 
 <blockquote>
 <!-- Generator: GNU source-highlight 3.1.9
@@ -1437,7 +1439,7 @@ end<font color="#990000">;</font>
 </tt></pre>
 
 </blockquote>
-<p>To execute the stored procedure from an ODBC program, use code like the following.</p>
+<p>To execute the stored procedure from an SQL Relay program, use code like the following.</p>
 
 <blockquote>
 <!-- Generator: GNU source-highlight 3.1.9
@@ -1495,7 +1497,7 @@ end<font color="#990000">;</font>
 </tt></pre>
 
 </blockquote>
-<p>To execute the stored procedure from an ODBC program, use code like the following.</p>
+<p>To execute the stored procedure from an SQL Relay program, use code like the following.</p>
 
 <blockquote>
 <!-- Generator: GNU source-highlight 3.1.9
@@ -1552,7 +1554,7 @@ http://www.gnu.org/software/src-highlite -->
 </tt></pre>
 
 </blockquote>
-<p>To execute the stored procedure from an ODBC program, use code like the following.</p>
+<p>To execute the stored procedure from an SQL Relay program, use code like the following.</p>
 
 <blockquote>
 <!-- Generator: GNU source-highlight 3.1.9
@@ -1610,7 +1612,7 @@ end<font color="#990000">;</font>
 </tt></pre>
 
 </blockquote>
-<p>To execute the stored procedure from an ODBC program, use code like the following.</p>
+<p>To execute the stored procedure from an SQL Relay program, use code like the following.</p>
 
 <blockquote>
 <!-- Generator: GNU source-highlight 3.1.9
@@ -1670,7 +1672,7 @@ end
 </tt></pre>
 
 </blockquote>
-<p>To execute the stored procedure from an ODBC program, use code like the following.</p>
+<p>To execute the stored procedure from an SQL Relay program, use code like the following.</p>
 
 <blockquote>
 <!-- Generator: GNU source-highlight 3.1.9
@@ -1733,7 +1735,7 @@ http://www.gnu.org/software/src-highlite -->
 </tt></pre>
 
 </blockquote>
-<p>To execute the stored procedure from an ODBC program, use code like the following.</p>
+<p>To execute the stored procedure from an SQL Relay program, use code like the following.</p>
 
 <blockquote>
 <!-- Generator: GNU source-highlight 3.1.9
@@ -1790,7 +1792,7 @@ http://www.gnu.org/software/src-highlite -->
 </tt></pre>
 
 </blockquote>
-<p>To execute the function from an ODBC program, use code like the following.</p>
+<p>To execute the function from an SQL Relay program, use code like the following.</p>
 
 <blockquote>
 <!-- Generator: GNU source-highlight 3.1.9
@@ -1845,7 +1847,7 @@ http://www.gnu.org/software/src-highlite -->
 </tt></pre>
 
 </blockquote>
-<p>To execute the procedure from an ODBC program, use code like the following.</p>
+<p>To execute the procedure from an SQL Relay program, use code like the following.</p>
 
 <blockquote>
 <!-- Generator: GNU source-highlight 3.1.9
@@ -1885,7 +1887,7 @@ http://www.gnu.org/software/src-highlite -->
 </tt></pre>
 
 </blockquote>
-<p>To execute the procedure from an ODBC program, use code like the following.</p>
+<p>To execute the procedure from an SQL Relay program, use code like the following.</p>
 
 <blockquote>
 <!-- Generator: GNU source-highlight 3.1.9
@@ -1938,7 +1940,7 @@ end<font color="#990000">;</font>
 </tt></pre>
 
 </blockquote>
-<p>To execute the stored procedure from an ODBC program, use code like the following.</p>
+<p>To execute the stored procedure from an SQL Relay program, use code like the following.</p>
 
 <blockquote>
 <!-- Generator: GNU source-highlight 3.1.9
@@ -2004,7 +2006,7 @@ http://www.gnu.org/software/src-highlite -->
 </tt></pre>
 
 </blockquote>
-<p>To execute the stored procedure from an ODBC program, use code like the following.</p>
+<p>To execute the stored procedure from an SQL Relay program, use code like the following.</p>
 
 <blockquote>
 <!-- Generator: GNU source-highlight 3.1.9
@@ -2072,7 +2074,7 @@ end<font color="#990000">;</font>
 </tt></pre>
 
 </blockquote>
-<p>To execute the stored procedure from an ODBC program, use code like the following.</p>
+<p>To execute the stored procedure from an SQL Relay program, use code like the following.</p>
 
 <blockquote>
 <!-- Generator: GNU source-highlight 3.1.9
@@ -2138,7 +2140,7 @@ end
 </tt></pre>
 
 </blockquote>
-<p>To execute the stored procedure from an ODBC program, use code like the following.</p>
+<p>To execute the stored procedure from an SQL Relay program, use code like the following.</p>
 
 <blockquote>
 <!-- Generator: GNU source-highlight 3.1.9
@@ -2207,7 +2209,7 @@ http://www.gnu.org/software/src-highlite -->
 </tt></pre>
 
 </blockquote>
-<p>To execute the stored procedure from an ODBC program, use code like the following.</p>
+<p>To execute the stored procedure from an SQL Relay program, use code like the following.</p>
 
 <blockquote>
 <!-- Generator: GNU source-highlight 3.1.9
@@ -2272,7 +2274,7 @@ http://www.gnu.org/software/src-highlite -->
 </tt></pre>
 
 </blockquote>
-<p>To execute the stored procedure from an ODBC program, use code like the following.</p>
+<p>To execute the stored procedure from an SQL Relay program, use code like the following.</p>
 
 <blockquote>
 <!-- Generator: GNU source-highlight 3.1.9
@@ -2332,7 +2334,7 @@ http://www.gnu.org/software/src-highlite -->
 </tt></pre>
 
 </blockquote>
-<p>To execute the stored procedure from an ODBC program, use code like the following.</p>
+<p>To execute the stored procedure from an SQL Relay program, use code like the following.</p>
 
 <blockquote>
 <!-- Generator: GNU source-highlight 3.1.9
@@ -2395,7 +2397,7 @@ end<font color="#990000">;</font>
 </tt></pre>
 
 </blockquote>
-<p>To execute the stored procedure from an ODBC program, use code like the following.</p>
+<p>To execute the stored procedure from an SQL Relay program, use code like the following.</p>
 
 <blockquote>
 <!-- Generator: GNU source-highlight 3.1.9
@@ -2448,7 +2450,7 @@ http://www.gnu.org/software/src-highlite -->
 </tt></pre>
 
 </blockquote>
-<p>To execute the stored procedure from an ODBC program, use code like the following.</p>
+<p>To execute the stored procedure from an SQL Relay program, use code like the following.</p>
 
 <blockquote>
 <!-- Generator: GNU source-highlight 3.1.9
@@ -2513,7 +2515,7 @@ http://www.gnu.org/software/src-highlite -->
 </tt></pre>
 
 </blockquote>
-<p>To execute the stored procedure from an ODBC program, use code like the following.</p>
+<p>To execute the stored procedure from an SQL Relay program, use code like the following.</p>
 
 <blockquote>
 <!-- Generator: GNU source-highlight 3.1.9
@@ -2567,7 +2569,7 @@ http://www.gnu.org/software/src-highlite -->
 </tt></pre>
 
 </blockquote>
-<p>To execute the stored procedure from an ODBC program, use code like the following.</p>
+<p>To execute the stored procedure from an SQL Relay program, use code like the following.</p>
 
 <blockquote>
 <!-- Generator: GNU source-highlight 3.1.9

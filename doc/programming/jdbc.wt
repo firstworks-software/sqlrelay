@@ -233,11 +233,15 @@ If a query fails, JDBC throws a SQLException.  You can catch it and call getMess
 [=#bindvars]
 == Bind Variables ==
 
-Programs rarely execute fixed queries.  More often than not, some part of the query is dynamically generated.  JDBC provides !PreparedStatement for binding values to parameter markers (?) in queries.
+Programs rarely execute fixed queries.  More often than not, some part of the query is dynamically generated.  The JDBC API provides means for using bind variables (also known as parameters) in those queries.
 
-You call Connection.prepareStatement() to prepare the query, then setString(), setInt(), setDouble(), etc. to bind each parameter, and executeQuery() or executeUpdate() to execute the query.
+For a detailed discussion of binds, see [binds.html this document].
+
+JDBC provides !PreparedStatement for binding values to parameter markers (?) in queries.  You call Connection.prepareStatement() to prepare the query, then setString(), setInt(), setDouble(), etc. to bind each parameter, and executeQuery() or executeUpdate() to execute the query.
 
 When passing a floating point number as a bind variable, you can use setDouble() or setFloat().  See [precisionscale.html this page] for a discussion of precision and scale.
+
+Note that JDBC requires question marks (?) as parameter markers, but most databases use other formats natively (eg. :name for Oracle, @name for Sybase/MSSQL, $1 for !PostgreSQL).  For JDBC bind variables to work against those databases, SQL Relay must be configured to translate them by setting translatebindvariables="yes" in the sqlrelay.conf file for the instance you're using.  See the [../admin/configreference.html SQL Relay Configuration Reference] for more information on this parameter.
 
 {{{#!blockquote
 {{{#!code
@@ -330,8 +334,6 @@ While many databases support stored procedures.  The syntax for creating and exe
 
 Stored procedures typically take input paramters from client programs through input bind variables and return values back to client programs either through bind variables or result sets.  Stored procedures can be broken down into several categories, based on the values that they return.  Some stored procedures don't return any values, some return a single value, some return multiple values and some return entire result sets.
 
-In the JDBC examples below, the variable "con" refers to a Connection that has already been established.
-
 === No Values ===
 
 Some stored procedures don't return any values.  Below are examples, illustrating how to create, execute and drop this kind of stored procedure for each database that SQL Relay supports.
@@ -346,7 +348,7 @@ To create the stored procedure, run a query like the following.
 }}}
 }}}
 
-To execute the stored procedure from a JDBC program, use code like the following.
+To execute the stored procedure from an SQL Relay program, use code like the following.
 
 {{{#!blockquote
 {{{#!code
@@ -373,7 +375,7 @@ To create the stored procedure, run a query like the following.
 }}}
 }}}
 
-To execute the stored procedure from a JDBC program, use code like the following.
+To execute the stored procedure from an SQL Relay program, use code like the following.
 
 {{{#!blockquote
 {{{#!code
@@ -399,7 +401,7 @@ To create the stored procedure, run a query like the following.
 }}}
 }}}
 
-To execute the stored procedure from a JDBC program, use code like the following.
+To execute the stored procedure from an SQL Relay program, use code like the following.
 
 {{{#!blockquote
 {{{#!code
@@ -425,7 +427,7 @@ To create the stored procedure, run a query like the following.
 }}}
 }}}
 
-To execute the stored procedure from a JDBC program, use code like the following.
+To execute the stored procedure from an SQL Relay program, use code like the following.
 
 {{{#!blockquote
 {{{#!code
@@ -451,7 +453,7 @@ To create the stored procedure, run a query like the following.
 }}}
 }}}
 
-To execute the stored procedure from a JDBC program, use code like the following.
+To execute the stored procedure from an SQL Relay program, use code like the following.
 
 {{{#!blockquote
 {{{#!code
@@ -477,7 +479,7 @@ To create the stored procedure, run a query like the following.
 }}}
 }}}
 
-To execute the stored procedure from a JDBC program, use code like the following.
+To execute the stored procedure from an SQL Relay program, use code like the following.
 
 {{{#!blockquote
 {{{#!code
@@ -513,7 +515,7 @@ To create the stored procedure, run a query like the following.
 }}}
 }}}
 
-To execute the stored procedure from a JDBC program, use code like the following.
+To execute the stored procedure from an SQL Relay program, use code like the following.
 
 {{{#!blockquote
 {{{#!code
@@ -539,7 +541,7 @@ To create the stored procedure, run a query like the following.
 }}}
 }}}
 
-To execute the stored procedure from a JDBC program, use code like the following.
+To execute the stored procedure from an SQL Relay program, use code like the following.
 
 {{{#!blockquote
 {{{#!code
@@ -568,7 +570,7 @@ To create the stored procedure, run a query like the following.
 }}}
 }}}
 
-To execute the stored procedure from a JDBC program, use code like the following.
+To execute the stored procedure from an SQL Relay program, use code like the following.
 
 {{{#!blockquote
 {{{#!code
@@ -595,7 +597,7 @@ To create the stored procedure, run a query like the following.
 }}}
 }}}
 
-To execute the stored procedure from a JDBC program, use code like the following.
+To execute the stored procedure from an SQL Relay program, use code like the following.
 
 {{{#!blockquote
 {{{#!code
@@ -624,7 +626,7 @@ To create the stored procedure, run a query like the following.
 }}}
 }}}
 
-To execute the stored procedure from a JDBC program, use code like the following.
+To execute the stored procedure from an SQL Relay program, use code like the following.
 
 {{{#!blockquote
 {{{#!code
@@ -651,7 +653,7 @@ To create the stored procedure, run a query like the following.
 }}}
 }}}
 
-To execute the stored procedure from a JDBC program, use code like the following.
+To execute the stored procedure from an SQL Relay program, use code like the following.
 
 {{{#!blockquote
 {{{#!code
@@ -679,7 +681,7 @@ To create the function, run a query like the following.
 }}}
 }}}
 
-To execute the function from a JDBC program, use code like the following.
+To execute the function from an SQL Relay program, use code like the following.
 
 {{{#!blockquote
 {{{#!code
@@ -705,7 +707,7 @@ To create the procedure, run a query like the following.
 }}}
 }}}
 
-To execute the procedure from a JDBC program, use code like the following.
+To execute the procedure from an SQL Relay program, use code like the following.
 
 {{{#!blockquote
 {{{#!code
@@ -731,7 +733,7 @@ To create the procedure, run a query like the following.
 }}}
 }}}
 
-To execute the procedure from a JDBC program, use code like the following.
+To execute the procedure from an SQL Relay program, use code like the following.
 
 {{{#!blockquote
 {{{#!code
@@ -765,7 +767,7 @@ To create the stored procedure, run a query like the following.
 }}}
 }}}
 
-To execute the stored procedure from a JDBC program, use code like the following.
+To execute the stored procedure from an SQL Relay program, use code like the following.
 
 {{{#!blockquote
 {{{#!code
@@ -792,7 +794,7 @@ To create the stored procedure, run a query like the following.
 }}}
 }}}
 
-To execute the stored procedure from a JDBC program, use code like the following.
+To execute the stored procedure from an SQL Relay program, use code like the following.
 
 {{{#!blockquote
 {{{#!code
@@ -819,7 +821,7 @@ To create the stored procedure, run a query like the following.
 }}}
 }}}
 
-To execute the stored procedure from a JDBC program, use code like the following.
+To execute the stored procedure from an SQL Relay program, use code like the following.
 
 {{{#!blockquote
 {{{#!code
@@ -846,7 +848,7 @@ To create the stored procedure, run a query like the following.
 }}}
 }}}
 
-To execute the stored procedure from a JDBC program, use code like the following.
+To execute the stored procedure from an SQL Relay program, use code like the following.
 
 {{{#!blockquote
 {{{#!code
@@ -873,7 +875,7 @@ To create the stored procedure, run a query like the following.
 }}}
 }}}
 
-To execute the stored procedure from a JDBC program, use code like the following.
+To execute the stored procedure from an SQL Relay program, use code like the following.
 
 {{{#!blockquote
 {{{#!code
@@ -901,7 +903,7 @@ To create the stored procedure, run a query like the following.
 }}}
 }}}
 
-To execute the stored procedure from a JDBC program, use code like the following.
+To execute the stored procedure from an SQL Relay program, use code like the following.
 
 {{{#!blockquote
 {{{#!code
@@ -927,7 +929,7 @@ To create the stored procedure, run a query like the following.
 }}}
 }}}
 
-To execute the stored procedure from a JDBC program, use code like the following.
+To execute the stored procedure from an SQL Relay program, use code like the following.
 
 {{{#!blockquote
 {{{#!code
@@ -959,7 +961,7 @@ To create the stored procedure, run a query like the following.
 }}}
 }}}
 
-To execute the stored procedure from a JDBC program, use code like the following.
+To execute the stored procedure from an SQL Relay program, use code like the following.
 
 {{{#!blockquote
 {{{#!code
@@ -986,7 +988,7 @@ To create the stored procedure, run a query like the following.
 }}}
 }}}
 
-To execute the stored procedure from a JDBC program, use code like the following.
+To execute the stored procedure from an SQL Relay program, use code like the following.
 
 {{{#!blockquote
 {{{#!code
@@ -1021,7 +1023,7 @@ To create the stored procedure, run a query like the following.
 }}}
 }}}
 
-To execute the stored procedure from a JDBC program, use code like the following.
+To execute the stored procedure from an SQL Relay program, use code like the following.
 
 {{{#!blockquote
 {{{#!code
@@ -1049,7 +1051,7 @@ To create the stored procedure which returns a result set, run a query like the 
 }}}
 }}}
 
-To execute the stored procedure from a JDBC program, use code like the following.
+To execute the stored procedure from an SQL Relay program, use code like the following.
 
 {{{#!blockquote
 {{{#!code
