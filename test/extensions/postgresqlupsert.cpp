@@ -19,21 +19,6 @@ sqlrcursor	*secondcur=NULL;
 
 int main(int argc, char **argv) {
 
-	// The extensionstest instance uses connections="0", so the
-	// sqlr-connection process exits after each client session.  When the
-	// client sends its final endSession(), and the server can receive it,
-	// process it, and exit, before the client's final write() system call
-	// returns, causing the client to receive a SIGPIPE.  It all depends on
-	// timing though, and doesn't happen every time.  We'll ignore SIGPIPE
-	// here to manage this.
-	#ifdef SIGPIPE
-	signalset	set;
-	set.removeAllSignals();
-	set.addSignal(SIGPIPE);
-	signalmanager::ignoreSignals(&set);
-	#endif
-
-
 	// upsert
 	stdoutput.printf("UPSERT:\n");
 	con=new sqlrconnection("sqlrelay",9000,"/tmp/test.socket",
@@ -125,10 +110,7 @@ int main(int argc, char **argv) {
 	secondcur=NULL;
 	delete cur;
 	delete con;
-	stdoutput.printf("\n\n");
-
-	stdoutput.printf("done\n");
-	stdoutput.printf("\n\n");
+	stdoutput.printf("\n");
 
 	reportTestStatus();
 

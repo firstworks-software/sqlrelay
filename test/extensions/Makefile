@@ -18,10 +18,12 @@ all: router \
 	mysqlimportexport \
 	emoji \
 	postgresqlupsert \
-	postgresqlsavepoint
+	postgresqlsavepoint \
+	postgresqlglobaltemptables \
+	postgresqlstringagg
 
 clean:
-	$(RM) *.lo *.o *.obj router$(EXE) extensions$(EXE) mysqldeadlockreplay$(EXE) mysqlsplitmultiinsert$(EXE) mysqlupsert$(EXE) mysqlexport$(EXE) mysqlimportexport$(EXE) emoji$(EXE) postgresqlupsert$(EXE) postgresqlsavepoint$(EXE) *.csv cachefile* sqlnet.log
+	$(RM) *.lo *.o *.obj router$(EXE) extensions$(EXE) mysqldeadlockreplay$(EXE) mysqlsplitmultiinsert$(EXE) mysqlupsert$(EXE) mysqlexport$(EXE) mysqlimportexport$(EXE) emoji$(EXE) postgresqlupsert$(EXE) postgresqlsavepoint$(EXE) postgresqlglobaltemptables$(EXE) postgresqlstringagg$(EXE) *.csv cachefile* sqlnet.log
 	$(RMTREE) .libs
 
 router: router.cpp router.$(OBJ)
@@ -50,3 +52,9 @@ postgresqlupsert: postgresqlupsert.cpp postgresqlupsert.$(OBJ)
 
 postgresqlsavepoint: postgresqlsavepoint.cpp postgresqlsavepoint.$(OBJ)
 	$(LTLINK) $(LINK) $(LDFLAGS) $(OUT)$@$(EXE) postgresqlsavepoint.$(OBJ) $(CPPTESTLIBS)
+
+postgresqlglobaltemptables: postgresqlglobaltemptables.cpp postgresqlglobaltemptables.$(OBJ)
+	$(LTLINK) $(LINK) $(LDFLAGS) $(OUT)$@$(EXE) postgresqlglobaltemptables.$(OBJ) $(CPPTESTLIBS)
+
+postgresqlstringagg: postgresqlstringagg.cpp postgresqlstringagg.$(OBJ)
+	$(LTLINK) $(LINK) $(LDFLAGS) $(OUT)$@$(EXE) postgresqlstringagg.$(OBJ) $(CPPTESTLIBS)

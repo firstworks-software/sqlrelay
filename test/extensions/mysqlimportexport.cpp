@@ -1211,7 +1211,7 @@ void generateCsv(const char *option,
 
 	comparison.flushWriteBuffer(-1,-1);
 
-	stdoutput.printf("\n\n");
+	stdoutput.printf("\n");
 }
 
 void generateXml(const char *option,
@@ -1306,7 +1306,7 @@ void generateXml(const char *option,
 
 	comparison.flushWriteBuffer(-1,-1);
 
-	stdoutput.printf("\n\n");
+	stdoutput.printf("\n");
 }
 
 void createTable(const char *tablename,
@@ -1407,7 +1407,7 @@ void generateTable(const char *option,
 
 	econ.commit();
 
-	stdoutput.printf("\n\n");
+	stdoutput.printf("\n");
 }
 
 
@@ -1524,7 +1524,7 @@ void diffTables(const char *table1, const char *table2) {
 
 void exportTests() {
 
-	stdoutput.printf("EXPORT TESTS... \n\n");
+	stdoutput.printf("EXPORT TESTS... \n");
 
 	// clean up
 	cur->sendQuery("drop table testtable");
@@ -1567,7 +1567,7 @@ void exportTests() {
 		}
 	}
 	assertEquals(1,1);
-	stdoutput.printf("\n\n");
+	stdoutput.printf("\n");
 
 
 	// set up csv export
@@ -1577,7 +1577,7 @@ void exportTests() {
 	tsec.setSqlrCursor(cur);
 	assertEquals((uint64_t)tsec.getSqlrConnection(),(uint64_t)con);
 	assertEquals((uint64_t)tsec.getSqlrCursor(),(uint64_t)cur);
-	stdoutput.printf("\n\n");
+	stdoutput.printf("\n");
 
 
 	// set up xml export
@@ -1587,7 +1587,7 @@ void exportTests() {
 	tsex.setSqlrCursor(cur);
 	assertEquals((uint64_t)tsex.getSqlrConnection(),(uint64_t)con);
 	assertEquals((uint64_t)tsex.getSqlrCursor(),(uint64_t)cur);
-	stdoutput.printf("\n\n");
+	stdoutput.printf("\n");
 
 
 	// set up table export
@@ -1597,7 +1597,7 @@ void exportTests() {
 	tset.setSqlrCursor(cur);
 	assertEquals((uint64_t)tset.getSqlrConnection(),(uint64_t)con);
 	assertEquals((uint64_t)tset.getSqlrCursor(),(uint64_t)cur);
-	stdoutput.printf("\n\n");
+	stdoutput.printf("\n");
 
 	// iterate through options...
 	uint8_t oiter=0;
@@ -1776,7 +1776,7 @@ void exportTests() {
 				assertTrue(tset.exportData());
 				econ.commit();
 			}
-			stdoutput.printf("\n\n");
+			stdoutput.printf("\n");
 
 			// generate comparison file/table
 			if (fiter==0) {
@@ -1837,13 +1837,13 @@ void exportTests() {
 	// clean up
 	cur->sendQuery("drop table testtable");
 
-	stdoutput.printf("\n\n");
+	stdoutput.printf("\n");
 }
 
 
 void importTests() {
 
-	stdoutput.printf("IMPORT TESTS... \n\n");
+	stdoutput.printf("IMPORT TESTS... \n");
 
 	// clean up
 	cur->sendQuery("drop table testtable");
@@ -1867,7 +1867,7 @@ void importTests() {
 	tsic.setDbType(con->identify());
 	assertEquals((uint64_t)tsic.getSqlrConnection(),(uint64_t)con);
 	assertEquals((uint64_t)tsic.getSqlrCursor(),(uint64_t)cur);
-	stdoutput.printf("\n\n");
+	stdoutput.printf("\n");
 
 
 	// set up xml import
@@ -1878,7 +1878,7 @@ void importTests() {
 	tsix.setDbType(con->identify());
 	assertEquals((uint64_t)tsix.getSqlrConnection(),(uint64_t)con);
 	assertEquals((uint64_t)tsix.getSqlrCursor(),(uint64_t)cur);
-	stdoutput.printf("\n\n");
+	stdoutput.printf("\n");
 
 	// iterate through options...
 	uint8_t oiter=0;
@@ -1960,7 +1960,7 @@ void importTests() {
 			im->setEmptyRows(&emptyrows);
 			im->setIgnoreEmptyRows(true);
 			assertTrue(im->importData());
-			stdoutput.printf("\n\n");
+			stdoutput.printf("\n");
 
 			// generate comparison table
 			generateTable(option,"testtable_comparison",

@@ -3651,6 +3651,61 @@ const char *sqlrservercontroller::skipWhitespaceAndComments(const char *query) {
 	return ptr;
 }
 
+const char *sqlrservercontroller::copyStringLiteral(const char *ptr,
+							const char *end,
+							stringbuffer *out) {
+
+	// "ptr" points at the opening delimiter, grab and copy it out
+	char	delim=*ptr;
+	out->append(delim);
+	ptr++;
+
+	// copy characters until the closing delimiter,
+	// handle a doubled delimiter as an embedded delimiter
+	// FIXME: we should handle \-escaped quotes
+	while (ptr<end) {
+		if (*ptr==delim) {
+			out->append(*ptr);
+			ptr++;
+			if (ptr<end && *ptr==delim) {
+				out->append(*ptr);
+				ptr++;
+				continue;
+			}
+			return ptr;
+		}
+		out->append(*ptr);
+		ptr++;
+	}
+
+	return ptr;
+}
+
+const char *sqlrservercontroller::skipStringLiteral(const char *ptr,
+							const char *end) {
+
+	// "ptr" points at the opening delimiter, grab and skip it
+	char	delim=*ptr;
+	ptr++;
+
+	// skip characters until the closing delimiter,
+	// handle a doubled delimiter as an embedded delimiter
+	// FIXME: we should handle \-escaped quotes
+	while (ptr<end) {
+		if (*ptr==delim) {
+			ptr++;
+			if (ptr<end && *ptr==delim) {
+				ptr++;
+				continue;
+			}
+			return ptr;
+		}
+		ptr++;
+	}
+
+	return ptr;
+}
+
 static const char *asciitohex[]={
 	"00","01","02","03","04","05","06","07",
 	"08","09","0A","0B","0C","0D","0E","0F",

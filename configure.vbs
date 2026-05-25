@@ -1030,7 +1030,7 @@ if disablemysql=false then
 end if
 if disablepostgresql=false then
 	POSTGRESQLBUILD="yes    "
-	TESTDBS=TESTDBs&"""postgresql"",""postgresqlupsert"","
+	TESTDBS=TESTDBs&"""postgresql"",""postgresqlupsert"",""postgresqlsavepoint"",""postgresqlglobaltemptables"",""postgresqlstringagg"","
 end if
 if disablesap=false then
 	SYBASEBUILD="yes    "
@@ -1095,6 +1095,9 @@ infiles=Array(_
 	"test\\sqlrelay.conf.d\\postgresql.conf.in",_
 	"test\\sqlrelay.conf.d\\postgresqlprotocol.conf.in",_
 	"test\\sqlrelay.conf.d\\postgresqlupsert.conf.in",_
+	"test\\sqlrelay.conf.d\\postgresqlsavepoint.conf.in",_
+	"test\\sqlrelay.conf.d\\postgresqlglobaltemptables.conf.in",_
+	"test\\sqlrelay.conf.d\\postgresqlstringagg.conf.in",_
 	"test\\sqlrelay.conf.d\\router.conf.in",_
 	"test\\sqlrelay.conf.d\\sap.conf.in",_
 	"test\\sqlrelay.conf.d\\sqlite.conf.in",_
@@ -1130,6 +1133,9 @@ outfiles=Array(_
 	"test\\sqlrelay.conf.d\\postgresql.conf",_
 	"test\\sqlrelay.conf.d\\postgresqlprotocol.conf",_
 	"test\\sqlrelay.conf.d\\postgresqlupsert.conf",_
+	"test\\sqlrelay.conf.d\\postgresqlsavepoint.conf",_
+	"test\\sqlrelay.conf.d\\postgresqlglobaltemptables.conf",_
+	"test\\sqlrelay.conf.d\\postgresqlstringagg.conf",_
 	"test\\sqlrelay.conf.d\\router.conf",_
 	"test\\sqlrelay.conf.d\\sap.conf",_
 	"test\\sqlrelay.conf.d\\sqlite.conf",_

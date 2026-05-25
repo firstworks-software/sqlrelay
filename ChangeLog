@@ -87,6 +87,8 @@
 	updated trigger framework with before/afterPrepare options, renamed
 		before/after to before/afterExecute
 	made lang connect string option work with all dbs
+	added globaltemptables trigger module
+	added listagg_to_string_agg query translation module
 
 2.1.1 - added tns_admin support
 	fixed sqlr-start ... -strace ...

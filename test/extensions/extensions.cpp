@@ -48,7 +48,7 @@ int main(int argc, char **argv) {
 	assertEquals(con->selectDatabase("nonexistentdb"),true);
 	assertEquals(con->getCurrentDatabase(),originaldb);
 	delete[] originaldb;
-	stdoutput.printf("\n\n");
+	stdoutput.printf("\n");
 
 
 	// translate bind variables
@@ -135,7 +135,7 @@ int main(int argc, char **argv) {
 	assertTrue(cur->executeQuery());
 	assertEquals(cur->getField(0,(uint32_t)0),"hello");
 	cur->clearBinds();
-	stdoutput.printf("\n\n");
+	stdoutput.printf("\n");
 
 
 	// fake input bind variables
@@ -162,7 +162,7 @@ int main(int argc, char **argv) {
 	assertEquals(cur->getField(0,(uint32_t)3),"hello");
 	assertEquals(cur->getField(0,(uint32_t)4),"'");
 	assertEquals(cur->getField(0,(uint32_t)5),"'");
-	stdoutput.printf("\n\n");
+	stdoutput.printf("\n");
 
 
 	// isolation levels
@@ -224,7 +224,7 @@ int main(int argc, char **argv) {
 	cur=new sqlrcursor(con);
 	assertTrue(cur->sendQuery("drop table testtable"));
 	con->setClientInfo("extensionstest");
-	stdoutput.printf("\n\n");
+	stdoutput.printf("\n");
 
 
 	// sqlrcmd cstat
@@ -316,7 +316,7 @@ int main(int argc, char **argv) {
 	//assertEquals(cur->getField(row,(uint32_t)6),"UNIX");
 	assertEquals(cur->getField(row,(uint32_t)7),"extensionstest");
 	assertEquals(cur->getField(row,(uint32_t)8),"sqlrcmd cstat");
-	stdoutput.printf("\n\n");
+	stdoutput.printf("\n");
 
 
 	// sqlrcmd gstat
@@ -370,7 +370,7 @@ int main(int argc, char **argv) {
 	assertEquals(cur->getField(33,(uint32_t)0),"peak_session");
 	assertEquals(cur->getField(34,(uint32_t)0),"peak_session_1min");
 	assertEquals(cur->getField(35,(uint32_t)0),"peak_session_1min_time");
-	stdoutput.printf("\n\n");
+	stdoutput.printf("\n");
 
 
 	// session queries: date format
@@ -397,7 +397,7 @@ int main(int argc, char **argv) {
 	delete[] month;
 	delete[] hour;
 	delete[] minute;
-	stdoutput.printf("\n\n");
+	stdoutput.printf("\n");
 
 
 	// filters
@@ -408,7 +408,7 @@ int main(int argc, char **argv) {
 	assertEquals(cur->errorMessage(),"badregex encountered");
 	assertEquals(cur->errorNumber(),100);
 	assertFalse(cur->sendQuery("select * from badpattern"));
-	stdoutput.printf("\n\n");
+	stdoutput.printf("\n");
 
 	delete cur;
 	delete con;
@@ -529,7 +529,7 @@ int main(int argc, char **argv) {
 	assertTrue(cur->sendQuery("drop sequence student_id"));
 	delete secondcur;
 	secondcur=NULL;
-	stdoutput.printf("\n\n");
+	stdoutput.printf("\n");
 
 
 	// error translation
@@ -538,12 +538,10 @@ int main(int argc, char **argv) {
 	assertEquals(cur->errorNumber(),10923);
 	assertEquals(cur->errorMessage(),
 			"ORA-10923: fRoM kEyWoRd nOt fOuNd wHeRe eXpEcTeD");
-	stdoutput.printf("\n\n");
+	stdoutput.printf("\n");
 
-	stdoutput.printf("done\n");
 	delete cur;
 	delete con;
-	stdoutput.printf("\n\n");
 
 	reportTestStatus();
 

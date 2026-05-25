@@ -30,7 +30,7 @@ int main(int argc, char **argv) {
 	const char      *dbversion=con->dbVersion();
 	uint32_t	majorversion=dbversion[0]-'0';
 	if (majorversion<5) {
-		stdoutput.printf("MySQL version < 5, skipping tests\n\n");
+		stdoutput.printf("MySQL version < 5, skipping tests\n");
 		delete con;
 		return 0;
 	}
@@ -117,10 +117,7 @@ int main(int argc, char **argv) {
 	secondcur=NULL;
 	delete cur;
 	delete con;
-	stdoutput.printf("\n\n");
-
-	stdoutput.printf("done\n");
-	stdoutput.printf("\n\n");
+	stdoutput.printf("\n");
 
 	reportTestStatus();
 

@@ -2878,6 +2878,29 @@ class SQLRSERVER_DLLSPEC sqlrservercontroller : public sqlrserverbase {
 		 *  the whitespace. */
 		const char	*skipWhitespaceAndComments(const char *query);
 
+		/** Copies a delimited (eg. quoted) string literal verbatim to
+		 *  "out".  "ptr" must point at the opening delimiter character,
+		 *  which is also taken to be the closing delimiter.  A doubled
+		 *  delimiter (eg. '' or "") is treated as an embedded
+		 *  delimiter.
+		 *
+		 *  Returns a pointer to the character after the closing
+		 *  delimiter, or to "end" if the literal is unterminated. */
+		const char	*copyStringLiteral(const char *ptr,
+							const char *end,
+							stringbuffer *out);
+
+		/** Skips past a delimited (eg. quoted) string literal.  "ptr"
+		 *  must point at the opening delimiter character, which is
+		 *  also taken to be the closing delimiter.  A doubled
+		 *  delimiter (eg. '' or "") is treated as an embedded
+		 *  delimiter.
+		 *
+		 *  Returns a pointer to the character after the closing
+		 *  delimiter, or to "end" if the literal is unterminated. */
+		const char	*skipStringLiteral(const char *ptr,
+							const char *end);
+
 		/** Returns a 2-character hex representation of "ch". */
 		const char	*asciiToHex(byte_t ch);
 

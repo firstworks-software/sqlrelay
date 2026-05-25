@@ -13,7 +13,8 @@ include ../../config.mk
 all: $(SQLR)trigger_replay.$(LIBEXT) \
 	$(SQLR)trigger_upsert.$(LIBEXT) \
 	$(SQLR)trigger_splitmultiinsert.$(LIBEXT) \
-	$(SQLR)trigger_savepoints.$(LIBEXT)
+	$(SQLR)trigger_savepoints.$(LIBEXT) \
+	$(SQLR)trigger_globaltemptables.$(LIBEXT)
 
 clean:
 	$(RM) *.lo *.o *.obj *.$(LIBEXT) *.lib *.exp *.idb *.pdb *.manifest *.ii
@@ -31,6 +32,9 @@ $(SQLR)trigger_splitmultiinsert.$(LIBEXT): splitmultiinsert.cpp splitmultiinsert
 $(SQLR)trigger_savepoints.$(LIBEXT): savepoints.cpp savepoints.$(OBJ)
 	$(LTLINK) $(LINK) $(OUT)$@ savepoints.$(OBJ) $(LDFLAGS) $(PLUGINLIBS) $(MODLINKFLAGS)
 
+$(SQLR)trigger_globaltemptables.$(LIBEXT): globaltemptables.cpp globaltemptables.$(OBJ)
+	$(LTLINK) $(LINK) $(OUT)$@ globaltemptables.$(OBJ) $(LDFLAGS) $(PLUGINLIBS) $(MODLINKFLAGS)
+
 install: $(INSTALLLIB)
 
 installdll:
@@ -39,6 +43,7 @@ installdll:
 	$(LTINSTALL) $(CP) $(SQLR)trigger_upsert.$(LIBEXT) $(libexecdir)
 	$(LTINSTALL) $(CP) $(SQLR)trigger_splitmultiinsert.$(LIBEXT) $(libexecdir)
 	$(LTINSTALL) $(CP) $(SQLR)trigger_savepoints.$(LIBEXT) $(libexecdir)
+	$(LTINSTALL) $(CP) $(SQLR)trigger_globaltemptables.$(LIBEXT) $(libexecdir)
 
 installlib: $(INSTALLSHAREDLIB)
 
@@ -60,6 +65,10 @@ installsharedlib:
 	$(RM) $(libexecdir)/$(SQLR)trigger_savepoints.a
 	$(RM) $(libexecdir)/$(SQLR)trigger_savepoints.$(LIBEXT)
 	$(MODULERENAME) $(libexecdir)/$(SQLR)trigger_savepoints.so so $(MODULESUFFIX)
+	$(LTINSTALL) $(CP) $(SQLR)trigger_globaltemptables.$(LIBEXT) $(libexecdir)
+	$(RM) $(libexecdir)/$(SQLR)trigger_globaltemptables.a
+	$(RM) $(libexecdir)/$(SQLR)trigger_globaltemptables.$(LIBEXT)
+	$(MODULERENAME) $(libexecdir)/$(SQLR)trigger_globaltemptables.so so $(MODULESUFFIX)
 
 uninstall:
 	$(RM) $(libexecdir)/$(SQLR)trigger_replay.*
@@ -67,3 +76,4 @@ uninstall:
 	$(RM) $(libexecdir)/$(SQLR)trigger_upsert.*
 	$(RM) $(libexecdir)/$(SQLR)trigger_splitmultiinsert.*
 	$(RM) $(libexecdir)/$(SQLR)trigger_savepoints.*
+	$(RM) $(libexecdir)/$(SQLR)trigger_globaltemptables.*

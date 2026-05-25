@@ -45,7 +45,7 @@ int main(int argc, char **argv) {
 		"	emojidirect nvarchar(64), "
 		"	emojifrombase64 nvarchar(64), "
 		"	base64 varchar(64))"));
-	stdoutput.printf("\n\n");
+	stdoutput.printf("\n");
 
 
 	// insert
@@ -64,7 +64,7 @@ int main(int argc, char **argv) {
 		assertTrue(cur->executeQuery());
 		delete[] b64e;
 	}
-	stdoutput.printf("\n\n");
+	stdoutput.printf("\n");
 
 
 	// update
@@ -72,7 +72,7 @@ int main(int argc, char **argv) {
 	assertTrue(cur->sendQuery(
 		"update testtable set "
 		"	emojifrombase64=cast(cast(N'' as xml).value('xs:base64Binary(sql:column(\"base64\"))','VARBINARY(MAX)') AS NVARCHAR(MAX))"));
-	stdoutput.printf("\n\n");
+	stdoutput.printf("\n");
 
 
 	// select
@@ -87,7 +87,7 @@ int main(int argc, char **argv) {
 							(const char *)*e);
 		row++;
 	}
-	stdoutput.printf("\n\n");
+	stdoutput.printf("\n");
 
 
 	// output bind
@@ -114,7 +114,7 @@ int main(int argc, char **argv) {
 						(const char *)*e);
 		row++;
 	}
-	stdoutput.printf("\n\n");
+	stdoutput.printf("\n");
 
 	delete cur;
 	delete con;
