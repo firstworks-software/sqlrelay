@@ -1,0 +1,23 @@
+<?xml version="1.0"?>
+<instances>
+
+	<instance id="postgresqlglobaltemptablestest" dbase="postgresql">
+		<listeners>
+			<listener port="9000" socket="/tmp/test.socket"/>
+		</listeners>
+		<translations>
+			<translation module="normalize"/>
+		</translations>
+		<triggers>
+			<trigger module="globaltemptables" when="beforeprepare">
+				<alreadyexists error="already exists"/>
+				<table name="gtttest1">create temp table gtttest1 (id int primary key, value varchar(20))</table>
+				<table name="gtttest2">create temp table gtttest2 (id int primary key, value varchar(20))</table>
+			</trigger>
+		</triggers>
+		<connections>
+			<connection string="host=postgresql;user=testuser;password=testpassword;db=@HOSTNAME@;typemangling=lookup;tablemangling=lookup"/>
+		</connections>
+	</instance>
+
+</instances>

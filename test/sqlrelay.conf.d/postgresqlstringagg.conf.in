@@ -1,0 +1,17 @@
+<?xml version="1.0"?>
+<instances>
+
+	<instance id="postgresqlstringaggtest" dbase="postgresql">
+		<listeners>
+			<listener port="9000" socket="/tmp/test.socket"/>
+		</listeners>
+		<translations>
+			<translation module="normalize"/>
+			<translation module="listagg_to_string_agg"/>
+		</translations>
+		<connections>
+			<connection string="host=postgresql;user=testuser;password=testpassword;db=@HOSTNAME@;typemangling=lookup;tablemangling=lookup"/>
+		</connections>
+	</instance>
+
+</instances>
