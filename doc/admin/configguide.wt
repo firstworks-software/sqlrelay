@@ -3807,6 +3807,7 @@ Currently, the following query translation modules are available in the standard
 
 * '''normalize'''
 * '''patterns'''
+* '''listagg_to_string_agg'''
 
 Custom modules may also be developed.  For more information, please contact [mailto:dev@firstworks.com dev@firstworks.com]. [[Image(http://sqlrelay.sourceforge.net/images/us.png)]] [[Image(http://sqlrelay.sourceforge.net/images/br.png)]]
 
@@ -3983,6 +3984,55 @@ Though more than 2 levels is rarely necessary, any level of nesting is supported
 @parts/sqlrelay-querytranslations-patterns-nested-multi.conf@
 }}}
 }}}
+
+
+[[br]][=#listagg_to_string_agg]
+=== listagg_to_string_agg ===
+
+The '''listagg_to_string_agg''' module rewrites Oracle/DB2-style //listagg()// aggregate calls as PostgreSQL //string_agg()// calls.  It's useful when running an application originally written for Oracle, DB2, or another database that supports //listagg()//, against PostgreSQL or another database that supports //string_agg()// but not //listagg()//.
+
+A query like:
+
+{{{#!blockquote
+{{{#!code
+select grp, listagg(name,',') within group (order by id asc)
+from testtable group by grp
+}}}
+}}}
+
+Would be translated to:
+
+{{{#!blockquote
+{{{#!code
+select grp, string_agg(cast(name as text),',' order by id asc)
+from testtable group by grp
+}}}
+}}}
+
+An example configuration:
+
+{{{#!blockquote
+{{{#!code
+@parts/sqlrelay-querytranslations-listagg-to-string-agg.conf@
+}}}
+}}}
+
+The module has no module-specific attributes - only the standard '''module''', '''enabled''', and '''debug''' attributes apply.
+
+Note that, in this example, the normalize translation is also configured.  Loading normalize first helps the module identify //listagg()// calls more reliably, as their syntactic form (the spacing around //within group//, the parenthesized //order by// clause, etc.) is sensitive to whitespace and case.
+
+=== Considerations ===
+
+The module performs the following transformations on each //listagg(EXPR, SEP) within group (order by SORT)// call:
+
+* wraps the aggregated expression in '''cast(... as text)''', because //string_agg()// requires a text-typed first argument while //listagg()// accepts any type that can be coerced to a string
+* moves the //order by// from the //within group// clause inside the //string_agg()// argument list, which is where PostgreSQL expects it
+
+Calls inside string literals are left alone.  Identifiers like //mylistagg(...)// that merely end in //listagg// are also left alone.
+
+The match is fairly strict.  A //listagg()// call is only rewritten if it is followed by '' within group ('' (a single space, then the keywords, then a space, then the open paren) and the contents of the //within group// clause begin with //order by // (lowercase, single space).  If you have queries with unusual spacing or case, run the [#normalize normalize] translation first; otherwise the call will be passed through to the database untranslated and will fail there.
+
+The module does not implement the //on overflow truncate// or //on overflow error// clauses, and does not implement //listagg()// used as a window function (//over (...)//).  Calls using either of these forms will not match and will be passed through untranslated.
 
 
 [[br]][=#bindvariabletranslation]
