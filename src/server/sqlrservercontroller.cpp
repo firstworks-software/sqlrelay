@@ -3706,6 +3706,37 @@ const char *sqlrservercontroller::skipStringLiteral(const char *ptr,
 	return ptr;
 }
 
+const char *sqlrservercontroller::findCommaOrCloseParen(const char *ptr,
+							const char *end) {
+
+	// walk [ptr, end), tracking nested parens and skipping string
+	// literals, returning the next top-level "," or the ")" that
+	// closes the enclosing paren scope - or NULL if neither is
+	// found before "end"
+	int32_t		depth=0;
+	while (ptr<end) {
+
+		// FIXME: handle double quotes and back ticks
+		if (*ptr=='\'') {
+			ptr=skipStringLiteral(ptr,end);
+			continue;
+		}
+
+		if (*ptr=='(') {
+			depth++;
+		} else if (*ptr==')') {
+			if (depth==0) {
+				return ptr;
+			}
+			depth--;
+		} else if (*ptr==',' && depth==0) {
+			return ptr;
+		}
+		ptr++;
+	}
+	return NULL;
+}
+
 static const char *asciitohex[]={
 	"00","01","02","03","04","05","06","07",
 	"08","09","0A","0B","0C","0D","0E","0F",

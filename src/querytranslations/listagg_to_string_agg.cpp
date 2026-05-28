@@ -111,40 +111,20 @@ const char *sqlrquerytranslation_listagg_to_string_agg::translateListagg(
 	// "ptr" points to "listagg(", step past it
 	const char	*exprstart=ptr+8;
 
-	// find the first comma inside of listagg(...)
-	// (handle commas embedded in the expression)
-	const char	*exprend=NULL;
-	const char	*separatorstart=NULL;
-	const char	*separatorend=NULL;
-	int32_t		depth=1;
-	const char	*p=exprstart;
-	while (p<end) {
-
-		if (*p=='\'') {
-			p=cont->skipStringLiteral(p,end);
-			continue;
-		}
-
-		if (*p=='(') {
-			depth++;
-		} else if (*p==')') {
-			depth--;
-			if (depth==0) {
-				separatorend=p;
-				p++;
-				break;
-			}
-		} else if (*p==',' && depth==1 && !exprend) {
-			exprend=p;
-			separatorstart=p+1;
-		}
-		p++;
-	}
-
-	// bail if the call is malformed or has no separator argument
-	if (!exprend || !separatorend) {
+	// find the comma that separates EXPR from SEP
+	const char	*exprend=cont->findCommaOrCloseParen(exprstart,end);
+	if (!exprend || *exprend!=',') {
 		return NULL;
 	}
+	const char	*separatorstart=exprend+1;
+
+	// find the matching ")" of the listagg(...) call
+	const char	*separatorend=cont->findCommaOrCloseParen(
+							separatorstart,end);
+	if (!separatorend || *separatorend!=')') {
+		return NULL;
+	}
+	const char	*p=separatorend+1;
 
 	// require " within group (" immediately after the closing ")"
 	static const char	withinmark[]=" within group (";
@@ -155,34 +135,26 @@ const char *sqlrquerytranslation_listagg_to_string_agg::translateListagg(
 	}
 	p+=withinmarklen;
 
-	// scan for the matching ")" of the "within group" clause
+	// scan for the matching ")" of the "within group" clause,
+	// stepping past any top-level commas in the "order by" list
 	const char	*ogstart=p;
-	const char	*ogend=NULL;
-	depth=1;
-	while (p<end) {
-		if (*p=='\'') {
-			p=cont->skipStringLiteral(p,end);
-			continue;
+	const char	*ogend=ogstart;
+	for (;;) {
+		ogend=cont->findCommaOrCloseParen(ogend,end);
+		if (!ogend) {
+			return NULL;
 		}
-		if (*p=='(') {
-			depth++;
-		} else if (*p==')') {
-			depth--;
-			if (depth==0) {
-				ogend=p;
-				p++;
-				break;
-			}
+		if (*ogend==')') {
+			break;
 		}
-		p++;
+		ogend++;
 	}
+	p=ogend+1;
 
-	// bail if the "within group" parens are unbalanced or its
-	// contents don't begin with "order by "
+	// bail if the "within group" contents don't begin with "order by "
 	static const char	orderbymark[]="order by ";
 	static const size_t	orderbymarklen=sizeof(orderbymark)-1;
-	if (!ogend ||
-		(size_t)(ogend-ogstart)<orderbymarklen ||
+	if ((size_t)(ogend-ogstart)<orderbymarklen ||
 		charstring::compare(ogstart,orderbymark,orderbymarklen)) {
 		return NULL;
 	}

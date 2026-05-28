@@ -2901,6 +2901,13 @@ class SQLRSERVER_DLLSPEC sqlrservercontroller : public sqlrserverbase {
 		const char	*skipStringLiteral(const char *ptr,
 							const char *end);
 
+		/** Walks [ptr, end), tracking nested parens and skipping
+		 *  string literals, and returns a pointer to the next
+		 *  top-level "," or the ")" that closes the enclosing paren
+		 *  scope - or NULL if neither is found before "end". */
+		const char	*findCommaOrCloseParen(const char *ptr,
+							const char *end);
+
 		/** Returns a 2-character hex representation of "ch". */
 		const char	*asciiToHex(byte_t ch);
 

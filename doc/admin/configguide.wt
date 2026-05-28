@@ -5208,6 +5208,7 @@ Currently, the following trigger modules are available in the standard SQL Relay
 * '''savepoints'''
 * '''splitmultiinsert'''
 * '''upsert'''
+* '''globaltemptables'''
 
 Custom modules may also be developed.  For more information, please contact [mailto:dev@firstworks.com dev@firstworks.com]. [[Image(http://sqlrelay.sourceforge.net/images/us.png)]] [[Image(http://sqlrelay.sourceforge.net/images/br.png)]]
 
@@ -5653,6 +5654,63 @@ There are some considerations that need to be taken into account when using the 
 * Currently, only single-row inserts are supported.  Multi-row inserts, select-into, and insert-select queries will not be converted to update queries, and will just fail.
 * If you don't specify any columns in the table tag, then the where clause of the generated update will be empty, and the update query will fail.
 * If the insert doesn't contain values for the columns specified in the table tag, then the conversion to update will fail.
+
+
+[[br]][=#globaltemptables]
+== globaltemptables ==
+
+The globaltemptables module simulates Oracle/DB2-style global temporary tables on databases (notably PostgreSQL) that only support session-local temporary tables.
+
+In databases that support global temporary tables, the table definition is persistent and visible to every session, but each session sees its own private set of rows.  In databases that only support session-local temporary tables, the table itself only exists for the life of the session that created it, so an application that expects a global temp table to already be there will fail with a //relation does not exist// (or similar) error at prepare time.
+
+This module bridges that gap.  For each configured table, the module watches for inserts targeting that table at prepare time, and the first time it sees one in the current backend session, it issues the configured //create// statement on that session.  Once created, the table persists for the rest of the backend session, which - given the sqlr-connection process model, where one backend session is multiplexed across many client sessions - lets it appear to behave like a global temporary table.
+
+An example configuration:
+
+{{{#!blockquote
+{{{#!code
+@parts/sqlrelay-triggers-globaltemptables.conf@
+}}}
+}}}
+
+In this example...
+
+The trigger is configured to run before the query has been prepared.  This is the only valid configuration for the globaltemptables trigger - the create statement has to run before the database tries to resolve the table reference during prepare, or the prepare itself will fail.  Configurations with any other //when// value will not accomplish anything useful.
+
+Two tables are configured, //gtttest1// and //gtttest2//.  The first time an insert into one of them is seen in a given backend session, the corresponding //create temp table ...// statement is run on that session.  Subsequent inserts in the same session skip the create step.
+
+The first time the create is attempted, it may fail because another agent (e.g. another sqlr-connection process, or the application itself) has already created the table in this session.  The '''alreadyexists''' tag lets the module recognize that situation and treat it as success.  Its '''error''' attribute may be set to either:
+
+* a numeric value - matched against the database error number
+* a string - matched as a substring against the database error text
+
+If the create fails with any other error, that error is reported back to the client as if the user's insert had failed.
+
+Note that the normalize translation is also configured.  This is important - the trigger matches inserts against a regular expression that assumes the query has been normalized (lowercased, whitespace collapsed, etc.).  Without normalize, an insert with unusual capitalization or spacing will not be recognized and the create will not fire.
+
+The '''trigger''' tag supports the following attributes in addition to the standard '''module''', '''when''', '''enabled''', and '''debug''' attributes:
+
+* none beyond the nested '''alreadyexists''' and '''table''' tags described above
+
+The '''table''' tag supports the following attribute:
+
+* '''name'''
+ * the name of the table to watch for - matched against inserts at prepare time
+ * the table body (between the open and close tags) is the //create// statement to run on the backend session the first time an insert into the table is seen
+
+The body of the '''table''' tag may also use the //[...filename...]// syntax supported elsewhere in the SQL Relay config to read the create statement from an external file - useful for long create statements.
+
+=== Considerations ===
+
+The "create-on-first-insert" trigger only fires on inserts.  Queries like //select * from gtttest1// run against a session that has not yet seen an insert into //gtttest1// will fail with the underlying //relation does not exist// error.  In practice this is rarely a problem - applications that use global temp tables typically populate them before reading from them - but it's worth noting.
+
+The match is keyed off normalized insert syntax.  Make sure the [#normalize normalize] query translation is loaded ahead of any application code that exercises these tables.
+
+Once a table has been created in a backend session, the module remembers that and skips the create on subsequent matches.  However, this state is per-sqlr-connection process.  If the sqlr-connection process is recycled, the next process will create the table again on first use.
+
+Different sqlr-connection processes in the same instance each maintain their own copy of the temp table (since each holds its own backend session).  The data in one is not visible from another, which matches the per-session-private-rows semantics of a real global temporary table.
+
+The trigger does not drop the table at the end of a client session.  The table is created lazily in the backend session and persists until that backend session ends.
 
 
 ----
