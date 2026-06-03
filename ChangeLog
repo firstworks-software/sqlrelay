@@ -89,6 +89,9 @@
 	made lang connect string option work with all dbs
 	added globaltemptables trigger module
 	added listagg_to_string_agg query translation module
+	fixed sap/freeds get-current-user bug
+	fixed sap/freetds connection module issue where (for example) a failed
+		bind could prevent queries from running until end of session
 
 2.1.1 - added tns_admin support
 	fixed sqlr-start ... -strace ...

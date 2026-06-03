@@ -2335,7 +2335,10 @@ const char *sapconnection::getCurrentSchemaQuery() {
 }
 
 const char *sapconnection::getCurrentUserQuery() {
-	return "select suser_sname()";
+	// suser_sname() isn't available on all ASE versions; suser_name()
+	// is the older, universally-supported function and returns the
+	// current login name
+	return "select suser_name()";
 }
 
 const char *sapconnection::getLastInsertIdQuery() {
@@ -3485,11 +3488,10 @@ void sapcursor::discardResults() {
 		} while (results==CS_SUCCEED);
 	}
 
-	if (results==CS_FAIL) {
-		if (ct_cancel(NULL,cmd,CS_CANCEL_ALL)==CS_FAIL) {
-			sapconn->liveconnection=false;
-			// FIXME: call ct_close(CS_FORCE_CLOSE)?
-		}
+	// also clears a prepared-but-unsent command (e.g. a failed bind)
+	if (ct_cancel(NULL,cmd,CS_CANCEL_ALL)==CS_FAIL) {
+		sapconn->liveconnection=false;
+		// FIXME: call ct_close(CS_FORCE_CLOSE)?
 	}
 
 	if (!conn->cont->getMaxColumnCount()) {

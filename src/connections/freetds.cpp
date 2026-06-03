@@ -3367,7 +3367,10 @@ const char *freetdsconnection::getCurrentSchemaQuery() {
 }
 
 const char *freetdsconnection::getCurrentUserQuery() {
-	return "select suser_sname()";
+	// suser_sname() isn't available on all ASE versions; suser_name()
+	// is the older, universally-supported function and returns the
+	// current login name
+	return "select suser_name()";
 }
 
 const char *freetdsconnection::getLastInsertIdQuery() {
@@ -4850,11 +4853,10 @@ void freetdscursor::discardResults() {
 		} while (results==CS_SUCCEED);
 	}
 
-	if (results==CS_FAIL) {
-		if (ct_cancel(NULL,cmd,CS_CANCEL_ALL)==CS_FAIL) {
-			freetdsconn->liveconnection=false;
-			// FIXME: call ct_close(CS_FORCE_CLOSE)?
-		}
+	// also clears a prepared-but-unsent command (e.g. a failed bind)
+	if (ct_cancel(NULL,cmd,CS_CANCEL_ALL)==CS_FAIL) {
+		freetdsconn->liveconnection=false;
+		// FIXME: call ct_close(CS_FORCE_CLOSE)?
 	}
 
 	// Deallocating the result set buffers here causes a problem, but only
