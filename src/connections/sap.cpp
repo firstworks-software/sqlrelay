@@ -806,14 +806,14 @@ bool sapconnection::logIn(const char **error, const char **warning) {
 
 	// allocate a context
 	context=(CS_CONTEXT *)NULL;
-	if (cs_ctx_alloc(CS_VERSION_125,&context)!=CS_SUCCEED) {
+	if (cs_ctx_alloc(CS_VERSION_100,&context)!=CS_SUCCEED) {
 		*error=logInError(
 			"Failed to allocate a context structure",2);
 		return false;
 	}
 
 	// init the context
-	if (ct_init(context,CS_VERSION_125)!=CS_SUCCEED) {
+	if (ct_init(context,CS_VERSION_100)!=CS_SUCCEED) {
 		*error=logInError(
 			"Failed to initialize a context structure",3);
 		return false;

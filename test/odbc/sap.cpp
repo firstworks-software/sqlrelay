@@ -22,7 +22,7 @@ SQLHSTMT	stmt;
 
 int main(int argc, char **argv) {
 
-	#define LARGE_BUFFER_LENGTH 8192
+	#define LARGE_BUFFER_LENGTH 255
 	#define LARGE_CHUNK_LENGTH (LARGE_BUFFER_LENGTH/4)
 	SQLCHAR	largebuffer[LARGE_BUFFER_LENGTH+1];
 
@@ -6653,13 +6653,17 @@ int main(int argc, char **argv) {
 	assertEqualStmt(stmt,(int)erg,(int)SQL_NEED_DATA);
 	SQLPOINTER	largetoken=NULL;
 	// CLOB: SQLParamData hands back the CLOB token, then 4 chunks
+	// (the last chunk carries any remainder when the length doesn't
+	// divide evenly by 4)
 	erg=SQLParamData(stmt,&largetoken);
 	assertEqualStmt(stmt,(int)erg,(int)SQL_NEED_DATA);
 	assertEqualStmt(stmt,(const char *)largetoken,clobtoken);
 	for (int i=0; i<4; i++) {
+		int	chunklen=(i<3)?LARGE_CHUNK_LENGTH:
+				(LARGE_BUFFER_LENGTH-3*LARGE_CHUNK_LENGTH);
 		erg=SQLPutData(stmt,
 				largebuffer+i*LARGE_CHUNK_LENGTH,
-				LARGE_CHUNK_LENGTH);
+				chunklen);
 		assertSuccessStmt(stmt,erg);
 	}
 	// BLOB: next SQLParamData hands back the BLOB token, then 4 chunks
@@ -6667,9 +6671,11 @@ int main(int argc, char **argv) {
 	assertEqualStmt(stmt,(int)erg,(int)SQL_NEED_DATA);
 	assertEqualStmt(stmt,(const char *)largetoken,blobtoken);
 	for (int i=0; i<4; i++) {
+		int	chunklen=(i<3)?LARGE_CHUNK_LENGTH:
+				(LARGE_BUFFER_LENGTH-3*LARGE_CHUNK_LENGTH);
 		erg=SQLPutData(stmt,
 				largebuffer+i*LARGE_CHUNK_LENGTH,
-				LARGE_CHUNK_LENGTH);
+				chunklen);
 		assertSuccessStmt(stmt,erg);
 	}
 	// final SQLParamData completes execution
@@ -7250,8 +7256,10 @@ int main(int argc, char **argv) {
 	erg=SQLExecDirect(stmt,(SQLCHAR *)
 		"create table testtable (col1 image)",SQL_NTS);
 	assertSuccessStmt(stmt,erg);
-	unsigned char	encbuf[256];
-	for (int i=0; i<256; i++) {
+	// distinct byte values; sap's ct-library caps char/binary binds at
+	// 255 bytes, so stop one short of a full 256
+	unsigned char	encbuf[255];
+	for (int i=0; i<255; i++) {
 		encbuf[i]=(unsigned char)i;
 	}
 	if (issqlrelay) {
