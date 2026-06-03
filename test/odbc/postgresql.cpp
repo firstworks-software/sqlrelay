@@ -286,9 +286,7 @@ int main(int argc, char **argv) {
 
 
 	// SQL_ATTR_PACKET_SIZE
-	// Per the ODBC spec, SQL_ATTR_PACKET_SIZE must be set before
-	// the connection is opened, and the value cannot be read
-	// until after connect; set only here.
+	// must be set before connect and can't be read until after; set only
 	stdoutput.printf("  SQL_ATTR_PACKET_SIZE\n");
 	erg=SQLSetConnectAttr(dbc,SQL_ATTR_PACKET_SIZE,
 			(SQLPOINTER)(uintptr_t)8192,0);
@@ -364,8 +362,7 @@ int main(int argc, char **argv) {
 
 
 	// SQL_ATTR_ODBC_VERSION
-	// cannot be set once a connection handle exists (HY010);
-	// value stays at whatever was set pre-connect
+	// can't be set once a connection handle exists (HY010); value unchanged
 	stdoutput.printf("  SQL_ATTR_ODBC_VERSION\n");
 	// get initial value
 	erg=SQLGetEnvAttr(env,SQL_ATTR_ODBC_VERSION,
@@ -529,10 +526,8 @@ int main(int argc, char **argv) {
 
 
 	// SQL_ATTR_ACCESS_MODE
-	// Note: Oracle's ODBC driver reports success when switching from
-	// READ_ONLY back to READ_WRITE but the stored value stays at
-	// READ_ONLY, so we only round-trip one direction and trust the
-	// final restore call without verifying.
+	// Oracle's driver reports success on a READ_ONLY->READ_WRITE switch
+	// but keeps READ_ONLY; round-trip one direction and don't verify restore
 	stdoutput.printf("  SQL_ATTR_ACCESS_MODE\n");
 	// save initial value
 	erg=SQLGetConnectAttr(dbc,SQL_ATTR_ACCESS_MODE,
@@ -593,9 +588,8 @@ int main(int argc, char **argv) {
 
 	#if (ODBCVER >= 0x0300)
 	// SQL_ATTR_METADATA_ID
-	// sqlrelay's catalog functions always pattern-match, so SQL_TRUE
-	// is substituted with SQL_FALSE and the driver returns
-	// SQL_SUCCESS_WITH_INFO + SQLSTATE 01S02
+	// sqlrelay catalogs always pattern-match: SQL_TRUE substituted with
+	// SQL_FALSE, returns SQL_SUCCESS_WITH_INFO + SQLSTATE 01S02
 	stdoutput.printf("  SQL_ATTR_METADATA_ID\n");
 	erg=SQLGetConnectAttr(dbc,SQL_ATTR_METADATA_ID,
 			(SQLPOINTER)&dbcinitial,0,&dbcstrlen);
@@ -692,8 +686,7 @@ int main(int argc, char **argv) {
 	erg=SQLGetConnectAttr(dbc,SQL_ATTR_CURRENT_CATALOG,
 			(SQLPOINTER)dbcstrinit,sizeof(dbcstrinit),&dbcstrlen);
 	assertSuccessDbc(dbc,erg);
-	// setting is a no-op for many drivers, but a round-trip
-	// to the initial value should always succeed
+	// often a no-op, but round-trip to initial should succeed
 	erg=SQLSetConnectAttr(dbc,SQL_ATTR_CURRENT_CATALOG,
 			(SQLPOINTER)dbcstrinit,SQL_NTS);
 	assertSuccessDbc(dbc,erg);
@@ -737,8 +730,7 @@ int main(int argc, char **argv) {
 				(SQLPOINTER)(uintptr_t)dbcinitial,0);
 		assertSuccessDbc(dbc,erg);
 	} else {
-		// postgresql odbc accepts get but rejects set for
-		// SQL_ATTR_ASYNC_ENABLE
+		// postgresql odbc accepts get but rejects set
 		erg=SQLGetConnectAttr(dbc,SQL_ATTR_ASYNC_ENABLE,
 				(SQLPOINTER)&dbcinitial,0,&dbcstrlen);
 		assertSuccessDbc(dbc,erg);
@@ -768,8 +760,7 @@ int main(int argc, char **argv) {
 		erg=SQLGetConnectAttr(dbc,SQL_ATTR_AUTO_IPD,
 				(SQLPOINTER)&dbcuintval,0,&dbcstrlen);
 		assertSuccessDbc(dbc,erg);
-		// either SQL_TRUE or SQL_FALSE is legal; just
-		// require a valid boolean
+		// require a valid boolean (SQL_TRUE or SQL_FALSE)
 		assertEqualDbc(dbc,
 			(int)(dbcuintval==SQL_TRUE || dbcuintval==SQL_FALSE),
 			(int)1);
@@ -815,10 +806,8 @@ int main(int argc, char **argv) {
 				(SQLPOINTER)(uintptr_t)dbcinitial,0);
 		assertSuccessDbc(dbc,erg);
 	} else {
-		// Oracle's ODBC driver does not implement
-		// SQL_ATTR_DISCONNECT_BEHAVIOR; get raises HYT00
-		// "Timeout expired" and set raises HY003 "Invalid
-		// application buffer type".
+		// Oracle's driver doesn't implement this; get raises HYT00,
+		// set raises HY003
 		erg=SQLGetConnectAttr(dbc,SQL_ATTR_DISCONNECT_BEHAVIOR,
 				(SQLPOINTER)&dbcinitial,0,&dbcstrlen);
 		assertFailureDbc(dbc,erg);
@@ -831,8 +820,7 @@ int main(int argc, char **argv) {
 
 
 	// SQL_ATTR_TRACEFILE
-	// (the driver manager rejects an empty restore value, so we
-	// do not restore)
+	// driver manager rejects an empty restore value, so don't restore
 	stdoutput.printf("  SQL_ATTR_TRACEFILE\n");
 	erg=SQLSetConnectAttr(dbc,SQL_ATTR_TRACEFILE,
 			(SQLPOINTER)"/tmp/odbctrace.log",SQL_NTS);
@@ -960,17 +948,14 @@ int main(int argc, char **argv) {
 	// SQL_ATTR_RESET_CONNECTION
 	stdoutput.printf("  SQL_ATTR_RESET_CONNECTION\n");
 	if (issqlrelay) {
-		// SQL_RESET_CONNECTION_YES (write-only per spec; the
-		// driver manager normally sets this before reusing a
-		// pooled connection)
+		// SQL_RESET_CONNECTION_YES (write-only per spec; driver
+		// manager sets this before reusing a pooled connection)
 		erg=SQLSetConnectAttr(dbc,SQL_ATTR_RESET_CONNECTION,
 				(SQLPOINTER)(uintptr_t)
 				SQL_RESET_CONNECTION_YES,0);
 		assertSuccessDbc(dbc,erg);
 	} else {
-		// Oracle's ODBC driver does not implement
-		// SQL_ATTR_RESET_CONNECTION; set raises HYT00
-		// "Timeout expired".
+		// Oracle's driver doesn't implement this; set raises HYT00
 		erg=SQLSetConnectAttr(dbc,SQL_ATTR_RESET_CONNECTION,
 				(SQLPOINTER)(uintptr_t)
 				SQL_RESET_CONNECTION_YES,0);
@@ -1019,9 +1004,7 @@ int main(int argc, char **argv) {
 				(SQLPOINTER)(uintptr_t)dbcinitial,0);
 		assertSuccessDbc(dbc,erg);
 	} else {
-		// Oracle's ODBC driver does not implement
-		// SQL_ATTR_ASYNC_DBC_FUNCTIONS_ENABLE; both get and
-		// set raise HYT00 "Timeout expired".
+		// Oracle's driver doesn't implement this; get and set raise HYT00
 		erg=SQLGetConnectAttr(dbc,
 				SQL_ATTR_ASYNC_DBC_FUNCTIONS_ENABLE,
 				(SQLPOINTER)&dbcinitial,0,&dbcstrlen);
@@ -1038,8 +1021,7 @@ int main(int argc, char **argv) {
 
 	#if defined(SQL_ATTR_DRIVER_THREADING)
 	// SQL_ATTR_DRIVER_THREADING
-	// (driver-reported threading level; SQL Relay reports 1 =
-	// thread-safe per HDBC)
+	// driver-reported threading level; SQL Relay reports 1 (thread-safe per HDBC)
 	stdoutput.printf("  SQL_ATTR_DRIVER_THREADING\n");
 	if (issqlrelay) {
 		// save initial value
@@ -1059,9 +1041,7 @@ int main(int argc, char **argv) {
 				(SQLPOINTER)(uintptr_t)dbcinitial,0);
 		assertSuccessDbc(dbc,erg);
 	} else {
-		// Oracle's ODBC driver does not implement
-		// SQL_ATTR_DRIVER_THREADING; both get and set raise
-		// HYT00 "Timeout expired".
+		// Oracle's driver doesn't implement this; get and set raise HYT00
 		erg=SQLGetConnectAttr(dbc,SQL_ATTR_DRIVER_THREADING,
 				(SQLPOINTER)&dbcinitial,0,&dbcstrlen);
 		assertFailureDbc(dbc,erg);
@@ -1147,8 +1127,7 @@ int main(int argc, char **argv) {
 	if (issqlrelay) {
 		assertEqualDbc(dbc,(const char *)strval,"sqlrelay");
 	} else {
-		// oracle returns the full TNS description string,
-		// which is unwieldy to match exactly; just verify non-empty
+		// oracle returns the full TNS description; just verify non-empty
 		assertTrueDbc(dbc,vallen>0);
 	}
 	assertSuccessDbc(dbc,erg);
@@ -1197,8 +1176,7 @@ int main(int argc, char **argv) {
 			(SQLPOINTER)strval,(SQLSMALLINT)sizeof(strval),
 			&vallen);
 	if (issqlrelay) {
-		// sqlrelay reports "Y" though only tables visible to
-		// the connected user are actually accessible
+		// sqlrelay reports "Y" though only the user's tables are accessible
 		assertEqualDbc(dbc,(const char *)strval,"Y");
 	} else {
 		assertEqualDbc(dbc,(const char *)strval,"N");
@@ -1213,8 +1191,7 @@ int main(int argc, char **argv) {
 			(SQLPOINTER)strval,(SQLSMALLINT)sizeof(strval),
 			&vallen);
 	if (issqlrelay) {
-		// sqlrelay reports "Y" though only procedures visible
-		// to the connected user are actually callable
+		// sqlrelay reports "Y" though only the user's procedures are callable
 		assertEqualDbc(dbc,(const char *)strval,"Y");
 	} else {
 		assertEqualDbc(dbc,(const char *)strval,"N");
@@ -1322,9 +1299,8 @@ int main(int argc, char **argv) {
 			(SQLPOINTER)&usmallintval,
 			(SQLSMALLINT)sizeof(usmallintval),&vallen);
 	if (issqlrelay) {
-		// sqlrelay reports NAMEDATALEN-1, though postgresql
-		// has no real catalog (database) namespace exposed
-		// through ODBC
+		// sqlrelay reports NAMEDATALEN-1, though postgresql exposes
+		// no real catalog namespace through ODBC
 		assertEqualDbc(dbc,(int)usmallintval,63);
 	} else {
 		assertEqualDbc(dbc,(int)usmallintval,0);
@@ -1352,8 +1328,7 @@ int main(int argc, char **argv) {
 	if (issqlrelay) {
 		assertEqualDbc(dbc,(int)uintval,(int)SQL_SCCO_READ_ONLY);
 	} else {
-		// postgresql odbc reports
-		// SQL_SCCO_READ_ONLY|SQL_SCCO_OPT_ROWVER
+		// postgresql odbc adds SQL_SCCO_OPT_ROWVER
 		assertEqualDbc(dbc,(int)uintval,
 			(int)(SQL_SCCO_READ_ONLY|SQL_SCCO_OPT_ROWVER));
 	}
@@ -1366,9 +1341,7 @@ int main(int argc, char **argv) {
 	erg=SQLGetInfo(dbc,SQL_TXN_CAPABLE,
 			(SQLPOINTER)&usmallintval,
 			(SQLSMALLINT)sizeof(usmallintval),&vallen);
-	// postgresql supports DML inside transactions but rolls back
-	// or otherwise treats DDL specially; both drivers report
-	// SQL_TC_ALL
+	// both drivers report SQL_TC_ALL (DML/DDL in transactions)
 	assertEqualDbc(dbc,(int)usmallintval,(int)SQL_TC_ALL);
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
@@ -1442,8 +1415,8 @@ int main(int argc, char **argv) {
 			(SQLPOINTER)&uintval,(SQLSMALLINT)sizeof(uintval),
 			&vallen);
 	if (issqlrelay) {
-		// sqlrelay bundles these bits whenever the backend
-		// reports ADD_COLUMN/DROP_COLUMN in alter_table_operations.
+		// sqlrelay bundles these bits when the backend reports
+		// ADD_COLUMN/DROP_COLUMN in alter_table_operations
 		assertEqualDbc(dbc,(int)uintval,
 			(int)(SQL_AT_ADD_COLUMN|
 				SQL_AT_DROP_COLUMN|
@@ -1530,9 +1503,8 @@ int main(int argc, char **argv) {
 	if (issqlrelay) {
 		assertEqualDbc(dbc,(int)usmallintval,32);
 	} else {
-		// oracle odbc unhelpfully returns 0 for this
-		// oracle jdbc helpfully returns 32 for:
-		// getMaxColumnsInIndex()
+		// oracle odbc returns 0 (oracle jdbc returns 32 via
+		// getMaxColumnsInIndex())
 		assertEqualDbc(dbc,(int)usmallintval,0);
 	}
 	assertSuccessDbc(dbc,erg);
@@ -1704,8 +1676,7 @@ int main(int argc, char **argv) {
 	erg=SQLGetInfo(dbc,SQL_CATALOG_NAME,
 			(SQLPOINTER)strval,(SQLSMALLINT)sizeof(strval),
 			&vallen);
-	// both drivers report "Y" though postgresql exposes only a
-	// single catalog (database) per connection
+	// both report "Y" though postgresql exposes one catalog per connection
 	assertEqualDbc(dbc,(const char *)strval,"Y");
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
@@ -1756,9 +1727,7 @@ int main(int argc, char **argv) {
 
 
 	// SQL_DRIVER_HSTMT
-	// (requires a valid SQLHSTMT as input; skip the actual call
-	// since we don't have one handy here, but reference the macro
-	// to ensure it's defined)
+	// needs a valid SQLHSTMT; skip the call, just reference the macro
 	stdoutput.printf("  SQL_DRIVER_HSTMT\n");
 	(void)SQL_DRIVER_HSTMT;
 	stdoutput.printf("\n");
@@ -1938,9 +1907,8 @@ int main(int argc, char **argv) {
 			(SQLPOINTER)&usmallintval,
 			(SQLSMALLINT)sizeof(usmallintval),&vallen);
 	if (issqlrelay) {
-		// sqlrelay reports NAMEDATALEN-1, though postgresql
-		// has no real catalog (database) namespace exposed
-		// through ODBC
+		// sqlrelay reports NAMEDATALEN-1, though postgresql exposes
+		// no real catalog namespace through ODBC
 		assertEqualDbc(dbc,(int)usmallintval,63);
 	} else {
 		assertEqualDbc(dbc,(int)usmallintval,0);
@@ -1995,8 +1963,7 @@ int main(int argc, char **argv) {
 			(SQLPOINTER)strval,(SQLSMALLINT)sizeof(strval),
 			&vallen);
 	if (issqlrelay) {
-		// sqlrelay reports "function" since postgresql callable
-		// routines are functions
+		// sqlrelay reports "function" (postgresql routines are functions)
 		assertEqualDbc(dbc,(const char *)strval,"function");
 	} else {
 		assertEqualDbc(dbc,(const char *)strval,"procedure");
@@ -2124,8 +2091,7 @@ int main(int argc, char **argv) {
 				SQL_FN_STR_SPACE|SQL_FN_STR_SUBSTRING|
 				SQL_FN_STR_UCASE));
 	} else {
-		// postgresql odbc reports a slightly different mix
-		// (notably without SQL_FN_STR_REPLACE)
+		// postgresql odbc reports a different mix (no SQL_FN_STR_REPLACE)
 		assertEqualDbc(dbc,(int)uintval,
 			(int)(SQL_FN_STR_CONCAT|SQL_FN_STR_INSERT|
 				SQL_FN_STR_LEFT|SQL_FN_STR_LTRIM|
@@ -2145,10 +2111,9 @@ int main(int argc, char **argv) {
 	erg=SQLGetInfo(dbc,SQL_SYSTEM_FUNCTIONS,
 			(SQLPOINTER)&uintval,
 			(SQLSMALLINT)sizeof(uintval),&vallen);
-	// sqlrelay reports SQL_FN_SYS_USERNAME|SQL_FN_SYS_IFNULL
-	// because the postgresql backend module advertises "user"
-	// and "ifnull". (The "database" entry is ignored because the
-	// odbc translator looks for "DBNAME" instead.)
+	// sqlrelay reports SQL_FN_SYS_USERNAME|SQL_FN_SYS_IFNULL because the
+	// backend advertises "user" and "ifnull"; "database" is ignored
+	// (odbc translator looks for "DBNAME" instead)
 	assertEqualDbc(dbc,(int)uintval,
 			(int)(SQL_FN_SYS_USERNAME|SQL_FN_SYS_IFNULL));
 	assertSuccessDbc(dbc,erg);
@@ -2191,8 +2156,8 @@ int main(int argc, char **argv) {
 	stdoutput.printf("\n");
 
 
-	// postgresql odbc reports the same big bitmask for most of
-	// the numeric SQL_CONVERT_* infotypes
+	// postgresql odbc reports the same bitmask for most numeric
+	// SQL_CONVERT_* infotypes
 	#define PG_CVT_NUM (SQL_CVT_CHAR|SQL_CVT_NUMERIC| \
 				SQL_CVT_DECIMAL|SQL_CVT_INTEGER| \
 				SQL_CVT_SMALLINT|SQL_CVT_FLOAT| \
@@ -2478,9 +2443,7 @@ int main(int argc, char **argv) {
 
 
 	// SQL_CONVERT_GUID
-	// Oracle's ODBC driver returns HYT00 "Timeout expired" and
-	// SQL Relay's ODBC driver returns HYC00 "Optional field not
-	// implemented"; neither supports this infotype.
+	// neither driver supports this; Oracle returns HYT00, SQL Relay HYC00
 	stdoutput.printf("  SQL_CONVERT_GUID\n");
 	erg=SQLGetInfo(dbc,SQL_CONVERT_GUID,
 			(SQLPOINTER)&uintval,
@@ -2494,8 +2457,7 @@ int main(int argc, char **argv) {
 	erg=SQLGetInfo(dbc,SQL_CORRELATION_NAME,
 			(SQLPOINTER)&usmallintval,
 			(SQLSMALLINT)sizeof(usmallintval),&vallen);
-	// postgresql backend module reports BASIC (not DIFFERENT),
-	// which maps to SQL_CN_ANY
+	// backend reports BASIC (not DIFFERENT), which maps to SQL_CN_ANY
 	assertEqualDbc(dbc,(int)usmallintval,(int)SQL_CN_ANY);
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
@@ -2580,8 +2542,7 @@ int main(int argc, char **argv) {
 	if (issqlrelay) {
 		assertEqualDbc(dbc,(int)uintval,0);
 	} else {
-		// postgresql odbc reports SQL_BP_SCROLL|SQL_BP_DELETE|
-		// SQL_BP_UPDATE|SQL_BP_TRANSACTION
+		// postgresql odbc reports a wider bookmark bitmask
 		assertEqualDbc(dbc,(int)uintval,
 			(int)(SQL_BP_SCROLL|SQL_BP_DELETE|
 				SQL_BP_UPDATE|SQL_BP_TRANSACTION));
@@ -2598,8 +2559,7 @@ int main(int argc, char **argv) {
 	if (issqlrelay) {
 		assertEqualDbc(dbc,(int)uintval,0);
 	} else {
-		// postgresql odbc reports
-		// SQL_SS_ADDITIONS|SQL_SS_DELETIONS|SQL_SS_UPDATES
+		// postgresql odbc reports additions/deletions/updates
 		assertEqualDbc(dbc,(int)uintval,
 			(int)(SQL_SS_ADDITIONS|SQL_SS_DELETIONS|
 				SQL_SS_UPDATES));
@@ -2634,10 +2594,8 @@ int main(int argc, char **argv) {
 			(SQLPOINTER)&usmallintval,
 			(SQLSMALLINT)sizeof(usmallintval),&vallen);
 	if (issqlrelay) {
-		// sqlrelay returns SQL_GB_NO_RELATION|SQL_GB_COLLATE,
-		// which is not a legal enum value per the ODBC spec
-		// (SQL_GROUP_BY is supposed to be a single enum, not
-		// a bitmask).
+		// sqlrelay returns SQL_GB_NO_RELATION|SQL_GB_COLLATE, not a
+		// legal enum value (SQL_GROUP_BY should be a single enum, not a bitmask)
 		assertEqualDbc(dbc,(int)usmallintval,
 			(int)(SQL_GB_NO_RELATION|SQL_GB_COLLATE));
 	} else {
@@ -2655,8 +2613,7 @@ int main(int argc, char **argv) {
 			(SQLPOINTER)strval,(SQLSMALLINT)sizeof(strval),
 			&vallen);
 	if (issqlrelay) {
-		// long postgresql-specific keyword list; just verify
-		// non-empty
+		// long postgresql keyword list; just verify non-empty
 		assertTrueDbc(dbc,vallen>0);
 	} else {
 		// postgresql odbc reports an empty string
@@ -2783,8 +2740,7 @@ int main(int argc, char **argv) {
 				SQL_FN_TSI_MONTH|SQL_FN_TSI_QUARTER|
 				SQL_FN_TSI_YEAR));
 	} else {
-		// postgresql odbc reports the same set but without
-		// QUARTER
+		// postgresql odbc reports the same set without QUARTER
 		assertEqualDbc(dbc,(int)uintval,
 			(int)(SQL_FN_TSI_FRAC_SECOND|SQL_FN_TSI_SECOND|
 				SQL_FN_TSI_MINUTE|SQL_FN_TSI_HOUR|
@@ -2911,8 +2867,7 @@ int main(int argc, char **argv) {
 			(SQLPOINTER)&uintval,
 			(SQLSMALLINT)sizeof(uintval),&vallen);
 	if (issqlrelay) {
-		// sqlrelay reports the full set of SQL92 datetime
-		// literal types
+		// sqlrelay reports the full set of SQL92 datetime literals
 		assertEqualDbc(dbc,(int)uintval,
 			(int)(SQL_DL_SQL92_DATE|SQL_DL_SQL92_TIME|
 				SQL_DL_SQL92_TIMESTAMP|
@@ -2999,8 +2954,8 @@ int main(int argc, char **argv) {
 	if (issqlrelay) {
 		assertEqualDbc(dbc,(int)uintval,0);
 	} else {
-		// postgresql odbc reports a wide bitmask covering
-		// numeric, datetime and wide-string targets
+		// postgresql odbc reports a wide bitmask (numeric, datetime,
+		// wide-string targets)
 		assertEqualDbc(dbc,(int)uintval,
 			(int)(SQL_CVT_NUMERIC|SQL_CVT_DECIMAL|
 				SQL_CVT_INTEGER|SQL_CVT_SMALLINT|
@@ -3248,10 +3203,8 @@ int main(int argc, char **argv) {
 
 	#if (ODBCVER >= 0x0300)
 	// SQL_DRIVER_HDESC
-	// This infotype requires an application-allocated HDESC
-	// passed via InfoValuePtr and is intended for use by the
-	// driver manager internally; unixODBC's driver manager
-	// rejects the call here with HY024 "Invalid attribute value".
+	// needs an app-allocated HDESC in InfoValuePtr; unixODBC's
+	// driver manager rejects the call here with HY024
 	stdoutput.printf("  SQL_DRIVER_HDESC\n");
 	erg=SQLGetInfo(dbc,SQL_DRIVER_HDESC,
 			(SQLPOINTER)&uintval,
@@ -3599,8 +3552,7 @@ int main(int argc, char **argv) {
 	if (issqlrelay) {
 		assertEqualDbc(dbc,(int)uintval,0);
 	} else {
-		// postgresql odbc reports CURRENT_DATE|CURRENT_TIME|
-		// CURRENT_TIMESTAMP
+		// postgresql odbc reports the current date/time/timestamp set
 		assertEqualDbc(dbc,(int)uintval,
 			(int)(SQL_SDF_CURRENT_DATE|
 				SQL_SDF_CURRENT_TIME|
@@ -3965,8 +3917,7 @@ int main(int argc, char **argv) {
 
 	#if (ODBCVER >= 0x0380)
 	// SQL_ASYNC_DBC_FUNCTIONS
-	// Oracle's ODBC driver returns HYT00 "Timeout expired" (does
-	// not implement this ODBC 3.8 infotype).
+	// Oracle doesn't implement this ODBC 3.8 infotype; returns HYT00
 	stdoutput.printf("  SQL_ASYNC_DBC_FUNCTIONS\n");
 	erg=SQLGetInfo(dbc,SQL_ASYNC_DBC_FUNCTIONS,
 			(SQLPOINTER)&uintval,
@@ -3981,8 +3932,7 @@ int main(int argc, char **argv) {
 
 
 	// SQL_DRIVER_AWARE_POOLING_SUPPORTED
-	// Oracle's ODBC driver returns HYT00 "Timeout expired" (does
-	// not implement this infotype).
+	// Oracle doesn't implement this infotype; returns HYT00
 	stdoutput.printf("  SQL_DRIVER_AWARE_POOLING_SUPPORTED\n");
 	erg=SQLGetInfo(dbc,SQL_DRIVER_AWARE_POOLING_SUPPORTED,
 			(SQLPOINTER)&uintval,
@@ -3997,8 +3947,7 @@ int main(int argc, char **argv) {
 
 	#if (ODBCVER >= 0x0380)
 	// SQL_ASYNC_NOTIFICATION
-	// Oracle's ODBC driver returns HYT00 "Timeout expired" (does
-	// not implement this ODBC 3.8 infotype).
+	// Oracle doesn't implement this ODBC 3.8 infotype; returns HYT00
 	stdoutput.printf("  SQL_ASYNC_NOTIFICATION\n");
 	erg=SQLGetInfo(dbc,SQL_ASYNC_NOTIFICATION,
 			(SQLPOINTER)&uintval,
@@ -4113,8 +4062,7 @@ int main(int argc, char **argv) {
 	supported=0xff;
 	erg=SQLGetFunctions(dbc,SQL_API_SQLERROR,&supported);
 	assertSuccessDbc(dbc,erg);
-	// both drivers report SQLError as supported (ODBC 2.x
-	// compatibility call, also implemented by SQL Relay and pg odbc)
+	// both drivers report SQLError supported (ODBC 2.x compatibility call)
 	assertEqualDbc(dbc,(int)supported,(int)SQL_TRUE);
 	stdoutput.printf("\n");
 
@@ -4656,8 +4604,7 @@ int main(int argc, char **argv) {
 	erg=SQLGetFunctions(dbc,SQL_API_SQLGETDESCFIELD,&supported);
 	assertSuccessDbc(dbc,erg);
 	if (issqlrelay) {
-		// SQL Relay ODBC driver does not yet implement
-		// descriptor field/record access.
+		// SQL Relay doesn't yet implement descriptor field/record access
 		assertEqualDbc(dbc,(int)supported,(int)SQL_FALSE);
 	} else {
 		assertEqualDbc(dbc,(int)supported,(int)SQL_TRUE);
@@ -4726,8 +4673,7 @@ int main(int argc, char **argv) {
 	erg=SQLGetFunctions(dbc,SQL_API_SQLSETDESCFIELD,&supported);
 	assertSuccessDbc(dbc,erg);
 	if (issqlrelay) {
-		// SQL Relay ODBC driver does not yet implement
-		// descriptor field/record access.
+		// SQL Relay doesn't yet implement descriptor field/record access
 		assertEqualDbc(dbc,(int)supported,(int)SQL_FALSE);
 	} else {
 		assertEqualDbc(dbc,(int)supported,(int)SQL_TRUE);
@@ -4769,8 +4715,7 @@ int main(int argc, char **argv) {
 	erg=SQLGetFunctions(dbc,SQL_API_SQLBULKOPERATIONS,&supported);
 	assertSuccessDbc(dbc,erg);
 	if (issqlrelay) {
-		// SQL Relay ODBC driver does not yet implement
-		// bulk operations.
+		// SQL Relay doesn't yet implement bulk operations
 		assertEqualDbc(dbc,(int)supported,(int)SQL_FALSE);
 	} else {
 		assertEqualDbc(dbc,(int)supported,(int)SQL_TRUE);
@@ -4834,8 +4779,7 @@ int main(int argc, char **argv) {
 	// isolation levels
 	stdoutput.printf("ISOLATION LEVELS: \n");
 
-	// PostgreSQL supports all four standard isolation levels;
-	// each set should succeed.
+	// PostgreSQL supports all four isolation levels; each set should succeed
 	erg=SQLSetConnectAttr(dbc,SQL_ATTR_TXN_ISOLATION,
 			(SQLPOINTER)(uintptr_t)SQL_TXN_READ_UNCOMMITTED,0);
 	assertSuccessDbc(dbc,erg);
@@ -4982,8 +4926,7 @@ int main(int argc, char **argv) {
 		assertSuccessStmt(stmt,erg);
 		assertEqualStmt(stmt,(int)stmtulenval,(int)SQL_NONSCROLLABLE);
 	} else {
-		// postgresql odbc accepts get but rejects set for
-		// SQL_ATTR_CURSOR_SCROLLABLE
+		// postgresql odbc accepts get but rejects set
 		erg=SQLGetStmtAttr(stmt,SQL_ATTR_CURSOR_SCROLLABLE,
 				(SQLPOINTER)&stmtinitial,0,&stmtstrlen);
 		assertSuccessStmt(stmt,erg);
@@ -5032,8 +4975,7 @@ int main(int argc, char **argv) {
 				(SQLPOINTER)(uintptr_t)stmtinitial,0);
 		assertSuccessStmt(stmt,erg);
 	} else {
-		// postgresql odbc accepts get but rejects set for
-		// SQL_ATTR_CURSOR_SENSITIVITY
+		// postgresql odbc accepts get but rejects set
 		erg=SQLGetStmtAttr(stmt,SQL_ATTR_CURSOR_SENSITIVITY,
 				(SQLPOINTER)&stmtinitial,0,&stmtstrlen);
 		assertSuccessStmt(stmt,erg);
@@ -5046,11 +4988,9 @@ int main(int argc, char **argv) {
 
 
 	// SQL_ATTR_CURSOR_TYPE
-	// sqlrelay only supports SQL_CURSOR_FORWARD_ONLY; per the ODBC
-	// spec, other values are substituted and the driver returns
-	// SQL_SUCCESS_WITH_INFO with SQLSTATE 01S02 ("Option value
-	// changed").  Native drivers may substitute differently;
-	// assertSuccessStmt accepts both SUCCESS and SUCCESS_WITH_INFO
+	// sqlrelay only supports SQL_CURSOR_FORWARD_ONLY; other values are
+	// substituted, returning SQL_SUCCESS_WITH_INFO + 01S02. native drivers
+	// may differ; assertSuccessStmt accepts SUCCESS and SUCCESS_WITH_INFO
 	stdoutput.printf("  SQL_ATTR_CURSOR_TYPE\n");
 	erg=SQLGetStmtAttr(stmt,SQL_ATTR_CURSOR_TYPE,
 			(SQLPOINTER)&stmtinitial,0,&stmtstrlen);
@@ -5292,8 +5232,8 @@ int main(int argc, char **argv) {
 
 
 	// SQL_ATTR_KEYSET_SIZE
-	// (per ODBC spec, driver may silently ignore for non-keyset-driven
-	// cursors; Oracle leaves it at 0, SQL Relay round-trips the value)
+	// may be ignored for non-keyset cursors; Oracle leaves it at 0,
+	// SQL Relay round-trips the value
 	stdoutput.printf("  SQL_ATTR_KEYSET_SIZE\n");
 	erg=SQLGetStmtAttr(stmt,SQL_ATTR_KEYSET_SIZE,
 			(SQLPOINTER)&stmtinitial,0,&stmtstrlen);
@@ -5336,9 +5276,8 @@ int main(int argc, char **argv) {
 	// SQL_ATTR_SIMULATE_CURSOR
 	stdoutput.printf("  SQL_ATTR_SIMULATE_CURSOR\n");
 	if (issqlrelay) {
-		// sqlrelay doesn't implement positioned updates, so it can't
-		// make uniqueness guarantees; only SQL_SC_NON_UNIQUE is
-		// supported, other values are substituted with
+		// sqlrelay can't guarantee uniqueness (no positioned updates);
+		// only SQL_SC_NON_UNIQUE supported, others substituted with
 		// SQL_SUCCESS_WITH_INFO + 01S02
 		erg=SQLGetStmtAttr(stmt,SQL_ATTR_SIMULATE_CURSOR,
 				(SQLPOINTER)&stmtinitial,0,&stmtstrlen);
@@ -5370,8 +5309,7 @@ int main(int argc, char **argv) {
 		assertSuccessStmt(stmt,erg);
 		assertEqualStmt(stmt,(int)stmtulenval,(int)SQL_SC_NON_UNIQUE);
 	} else {
-		// postgresql odbc accepts get but rejects set for
-		// SQL_ATTR_SIMULATE_CURSOR
+		// postgresql odbc accepts get but rejects set
 		erg=SQLGetStmtAttr(stmt,SQL_ATTR_SIMULATE_CURSOR,
 				(SQLPOINTER)&stmtinitial,0,&stmtstrlen);
 		assertSuccessStmt(stmt,erg);
@@ -5406,9 +5344,8 @@ int main(int argc, char **argv) {
 
 
 	// SQL_ATTR_USE_BOOKMARKS
-	// sqlrelay doesn't support bookmarks; SQL_UB_VARIABLE is
-	// substituted with SQL_UB_OFF and the driver returns
-	// SQL_SUCCESS_WITH_INFO with SQLSTATE 01S02
+	// no bookmark support; SQL_UB_VARIABLE substituted with SQL_UB_OFF,
+	// returns SQL_SUCCESS_WITH_INFO + 01S02
 	stdoutput.printf("  SQL_ATTR_USE_BOOKMARKS\n");
 	erg=SQLGetStmtAttr(stmt,SQL_ATTR_USE_BOOKMARKS,
 			(SQLPOINTER)&stmtinitial,0,&stmtstrlen);
@@ -5445,11 +5382,9 @@ int main(int argc, char **argv) {
 
 
 	// SQL_ATTR_ROW_NUMBER (read-only)
-	// Before a cursor is open, the spec allows either a successful get
-	// returning 0 or SQLSTATE 24000 "Invalid cursor state". Oracle
-	// returns 24000; SQL Relay returns success with 0. Both are legal,
-	// so we don't assert on the return code here, only that the call
-	// returns without crashing.
+	// before a cursor is open, spec allows success returning 0 or
+	// SQLSTATE 24000; Oracle returns 24000, SQL Relay success with 0.
+	// both legal, so don't assert on the return code
 	stdoutput.printf("  SQL_ATTR_ROW_NUMBER\n");
 	erg=SQLGetStmtAttr(stmt,SQL_ATTR_ROW_NUMBER,
 			(SQLPOINTER)&stmtulenval,0,&stmtstrlen);
@@ -7560,7 +7495,7 @@ int main(int argc, char **argv) {
 	// execute with bscval=100
 	erg=SQLExecute(stmt);
 	assertSuccessStmt(stmt,erg);
-	// SQL_CLOSE only — no SQL_UNBIND, no SQL_RESET_PARAMS
+	// SQL_CLOSE only - no SQL_UNBIND, no SQL_RESET_PARAMS
 	erg=SQLFreeStmt(stmt,SQL_CLOSE);
 	assertSuccessStmt(stmt,erg);
 	// change the host variable; binding should still point at it
@@ -7632,10 +7567,10 @@ int main(int argc, char **argv) {
 			"insert into testtable values (?,?)",SQL_NTS);
 	}
 	assertSuccessStmt(stmt,erg);
-	// SQL_CLOSE only — leftover binds stay on the statement handle
+	// SQL_CLOSE only - leftover binds stay on the statement handle
 	erg=SQLFreeStmt(stmt,SQL_CLOSE);
 	assertSuccessStmt(stmt,erg);
-	// execute a parameterless statement WITHOUT clearing the binds —
+	// execute a parameterless statement WITHOUT clearing the binds -
 	// the leftover bindings must not be sent to the backend
 	erg=SQLExecDirect(stmt,(SQLCHAR *)
 		"insert into testtable values (33,44)",SQL_NTS);

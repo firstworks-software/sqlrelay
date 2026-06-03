@@ -1611,13 +1611,10 @@ static SQLSMALLINT SQLR_MapCColumnType(CONN *conn,
 	return SQL_C_CHAR;
 }
 
-static SQLULEN SQLR_GetColumnSize(CONN *conn,
-					sqlrcursor *cur, uint32_t col) {
+static SQLULEN SQLR_GetColumnSize(CONN *conn, sqlrcursor *cur, uint32_t col) {
 	switch (SQLR_MapColumnType(conn,cur,col)) {
 		case SQL_UNKNOWN_TYPE:
 		case SQL_CHAR:
-		case SQL_NUMERIC:
-		case SQL_DECIMAL:
 		case SQL_VARCHAR:
 		case SQL_LONGVARCHAR:
 		case SQL_BINARY:
@@ -1642,10 +1639,27 @@ static SQLULEN SQLR_GetColumnSize(CONN *conn,
 			// FIXME: is there a better fallback value?
 			return (size)?size:32768;
 			}
-		case SQL_INTEGER:
-			return 10;
+		case SQL_TINYINT:
+			return 3;
 		case SQL_SMALLINT:
 			return 5;
+		case SQL_INTEGER:
+			return 10;
+		case SQL_BIGINT:
+			{
+			uint32_t	precision=cur->getColumnPrecision(col);
+			return (precision)?precision:19;
+			}
+		case SQL_NUMERIC:
+		case SQL_DECIMAL:
+			{
+			uint32_t	precision=cur->getColumnPrecision(col);
+			if (precision) {
+				return precision;
+			}
+			uint32_t	length=cur->getColumnLength(col);
+			return (length)?length:32768;
+			}
 		case SQL_FLOAT:
 			return 15;
 		case SQL_REAL:
@@ -1655,29 +1669,20 @@ static SQLULEN SQLR_GetColumnSize(CONN *conn,
 		case SQL_DATE:
 		// case SQL_DATETIME:
 		// 	(ODBC 3 dup of SQL_DATE)
-			// FIXME: need parameter indicating whether
-			// to map this to the length of SQL_C_DATE or
-			// SQL_C_TIMESTAMP.  MySQL, for example, may use DATE
-			// for dates and TIMESTAMP for datetimes.
+			// FIXME: return different value dependind on
+			// MapDateTimeToDate/TimeStamp
 			return 25;
 		case SQL_TYPE_DATE:
 			return 10;
 		case SQL_TYPE_TIME:
 			{
-			// per ODBC spec, COLUMN_SIZE for SQL_TYPE_TIME is
-			// 8 (hh:mm:ss) when there are no fractional seconds
-			// or 9+s where s is the count of fractional digits
 			uint32_t	scale=cur->getColumnScale(col);
-			return scale ? (9+scale) : 8;
+			return scale?(9+scale):8;
 			}
 		case SQL_TYPE_TIMESTAMP:
 			{
-			// per ODBC spec, COLUMN_SIZE for SQL_TYPE_TIMESTAMP
-			// is 19 (yyyy-mm-dd hh:mm:ss) when there are no
-			// fractional seconds or 20+s where s is the count
-			// of fractional digits
 			uint32_t	scale=cur->getColumnScale(col);
-			return scale ? (20+scale) : 19;
+			return scale?(20+scale):19;
 			}
 		case SQL_TIME:
 		// case SQL_INTERVAL:
@@ -1685,10 +1690,6 @@ static SQLULEN SQLR_GetColumnSize(CONN *conn,
 			return 25;
 		case SQL_TIMESTAMP:
 			return 25;
-		case SQL_BIGINT:
-			return 20;
-		case SQL_TINYINT:
-			return 3;
 		case SQL_BIT:
 			return 1;
 		case SQL_GUID:

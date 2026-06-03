@@ -3810,7 +3810,39 @@ uint32_t mysqlcursor::getColumnSize(uint32_t col) {
 }
 
 uint32_t mysqlcursor::getColumnPrecision(uint32_t col) {
-	return mysqlfields[col]->length;
+
+	// the precision is the maximum number of decimal digits the column can
+	// hold; mysql reports a display width (which includes room for a sign
+	// and, for a decimal, a decimal point) rather than the precision, so
+	// derive the precision from the column type instead
+	bool	isunsigned=getColumnIsUnsigned(col);
+	switch (getColumnType(col)) {
+		case TINYINT_DATATYPE:
+			return 3;
+		case SMALLINT_DATATYPE:
+			return 5;
+		case MEDIUMINT_DATATYPE:
+			return isunsigned?8:7;
+		case INT_DATATYPE:
+			return 10;
+		case BIGINT_DATATYPE:
+			return isunsigned?20:19;
+		case DECIMAL_DATATYPE:
+			{
+			// strip the sign (when signed) and the decimal point
+			// (when there's a scale) from the display width
+			uint32_t	precision=mysqlfields[col]->length;
+			if (!isunsigned && precision) {
+				precision--;
+			}
+			if (mysqlfields[col]->decimals>0 && precision) {
+				precision--;
+			}
+			return precision;
+			}
+		default:
+			return mysqlfields[col]->length;
+	}
 }
 
 uint32_t mysqlcursor::getColumnScale(uint32_t col) {

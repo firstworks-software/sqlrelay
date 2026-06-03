@@ -1339,16 +1339,16 @@ class mysql extends sqlrtest {
 		// can't do this with mysql
 		//cur.setResultSetBufferSize(1);
 		assertTrue(cur.sendQuery("select * from testtable"));
-		SQLRCursor secondcur=new SQLRCursor(con);
-		secondcur.setResultSetBufferSize(1);
+		SQLRCursor secondcur2=new SQLRCursor(con);
+		secondcur2.setResultSetBufferSize(1);
 		for (int i=0; cur.getRow(i)!=null; i++) {
-			assertTrue(secondcur.sendQuery(
+			assertTrue(secondcur2.sendQuery(
 				"select "+
 				"	* "+
 				"from "+
 				"	testtable"));
 		}
-		secondcur.closeResultSet();
+		secondcur2.closeResultSet();
 		//cur.setResultSetBufferSize(0);
 		assertTrue(cur.sendQuery("drop table testtable"));
 		System.out.println();
