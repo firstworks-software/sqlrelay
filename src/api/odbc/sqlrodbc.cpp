@@ -1669,27 +1669,25 @@ static SQLULEN SQLR_GetColumnSize(CONN *conn, sqlrcursor *cur, uint32_t col) {
 		case SQL_DATE:
 		// case SQL_DATETIME:
 		// 	(ODBC 3 dup of SQL_DATE)
-			// FIXME: return different value dependind on
-			// MapDateTimeToDate/TimeStamp
-			return 25;
 		case SQL_TYPE_DATE:
+			// yyyy-mm-dd
 			return 10;
-		case SQL_TYPE_TIME:
-			{
-			uint32_t	scale=cur->getColumnScale(col);
-			return scale?(9+scale):8;
-			}
-		case SQL_TYPE_TIMESTAMP:
-			{
-			uint32_t	scale=cur->getColumnScale(col);
-			return scale?(20+scale):19;
-			}
 		case SQL_TIME:
 		// case SQL_INTERVAL:
 		// 	(ODBC 3 dup of SQL_TIME)
-			return 25;
+		case SQL_TYPE_TIME:
+			{
+			// hh:mm:ss.s+
+			uint32_t	scale=cur->getColumnScale(col);
+			return scale?(9+scale):8;
+			}
 		case SQL_TIMESTAMP:
-			return 25;
+		case SQL_TYPE_TIMESTAMP:
+			{
+			// yyyy-mm-dd hh:mm:ss.s+
+			uint32_t	scale=cur->getColumnScale(col);
+			return scale?(20+scale):19;
+			}
 		case SQL_BIT:
 			return 1;
 		case SQL_GUID:
