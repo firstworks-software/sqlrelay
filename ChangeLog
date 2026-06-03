@@ -92,6 +92,7 @@
 	fixed sap/freeds get-current-user bug
 	fixed sap/freetds connection module issue where (for example) a failed
 		bind could prevent queries from running until end of session
+	fixed an odbc/sap bind issue
 
 2.1.1 - added tns_admin support
 	fixed sqlr-start ... -strace ...

@@ -13861,6 +13861,10 @@ static SQLRETURN SQLR_InputBindParameter(SQLHSTMT statementhandle,
 				stmt->dataatexec=true;
 				stmt->dataatexecdict.setValue(parameternumber,
 								parametervalue);
+				// reserve this parameter's slot in the bind
+				// list now, in parameter order - necessary for
+				// backends that bind by position (eg. sap)
+				stmt->cur->inputBind(parametername,"",0);
 			} else if ((parametertype==SQL_LONGVARCHAR ||
 					parametertype==SQL_WLONGVARCHAR) &&
 					(!parametervalue ||
