@@ -3889,6 +3889,50 @@ bool freetdscursor::prepareQuery(const char *query, uint32_t size) {
 		}
 		#endif
 
+	} else if (query[0]=='{') {
+
+		// handle ODBC/JDBC procedure-call:
+		// {call proc(...)}
+		// or
+		// {?=call proc(...)}.
+
+		// initiate an rpc command
+		cmd=languagecmd;
+		#ifdef FREETDS_SUPPORTS_CURSORS
+
+		// find "call"
+		const char	*p=query+1;
+		while (*p && *p!='}' &&
+				charstring::compare(p,"call",4) &&
+				charstring::compare(p,"CALL",4)) {
+			p++;
+		}
+
+		// skip past "call"
+		if (!charstring::compare(p,"call",4) ||
+				!charstring::compare(p,"CALL",4)) {
+			p+=4;
+		}
+
+		// skip whitespace
+		p=conn->cont->skipWhitespace(p);
+
+		// get the procedure name
+		const char	*namestart=p;
+		while (*p && *p!='(' && *p!='}' &&
+				!character::isWhitespace(*p)) {
+			p++;
+		}
+
+		if (ct_command(languagecmd,
+				CS_RPC_CMD,
+				(CS_CHAR *)namestart,
+				(CS_INT)(p-namestart),
+				CS_UNUSED)!=CS_SUCCEED) {
+			return false;
+		}
+		#endif
+
 	} else {
 
 		// initiate a language command

@@ -6972,10 +6972,13 @@ int main(int argc, char **argv) {
 	// a procedure that copies its input to its output; re-executed with a
 	// rebound input each iteration
 	SQLExecDirect(stmt,(SQLCHAR *)"drop procedure testproc",SQL_NTS);
+	// the input parameter is declared first; sap binds rpc parameters by
+	// position, and the SQL Relay driver sends input binds before output
+	// binds, so an input-then-output signature keeps them in order
 	erg=SQLExecDirect(stmt,(SQLCHAR *)
 		"create procedure testproc "
-		"	@out1 int output, "
-		"	@in1 int "
+		"	@in1 int, "
+		"	@out1 int output "
 		"as select @out1=@in1",
 		SQL_NTS);
 	assertSuccessStmt(stmt,erg);
@@ -6985,17 +6988,17 @@ int main(int argc, char **argv) {
 	SQLLEN		rebindoutind=0;
 	SQLINTEGER	rebindin=1;
 	SQLLEN		rebindinlen=sizeof(rebindin);
-	erg=SQLBindParameter(stmt,1,SQL_PARAM_OUTPUT,
-				SQL_C_SLONG,SQL_INTEGER,
-				0,0,
-				(SQLPOINTER)&rebindout,
-				sizeof(rebindout),&rebindoutind);
-	assertSuccessStmt(stmt,erg);
-	erg=SQLBindParameter(stmt,2,SQL_PARAM_INPUT,
+	erg=SQLBindParameter(stmt,1,SQL_PARAM_INPUT,
 				SQL_C_SLONG,SQL_INTEGER,
 				0,0,
 				(SQLPOINTER)&rebindin,
 				rebindinlen,&rebindinlen);
+	assertSuccessStmt(stmt,erg);
+	erg=SQLBindParameter(stmt,2,SQL_PARAM_OUTPUT,
+				SQL_C_SLONG,SQL_INTEGER,
+				0,0,
+				(SQLPOINTER)&rebindout,
+				sizeof(rebindout),&rebindoutind);
 	assertSuccessStmt(stmt,erg);
 	for (int rb=1; rb<=3; rb++) {
 		rebindin=rb;
