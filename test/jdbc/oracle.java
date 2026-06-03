@@ -19,9 +19,8 @@ class oracle extends sqlrtest {
 	public static void main(String args[]) throws Exception {
 
 		// This test supports both the sqlrelay jdbc driver and the
-		// databse native jdbc driver.  It detects which to use based
-		// on what is included in the classpath, and builds the
-		// appropriate url and credentials for each.
+		// database native jdbc driver, selecting one based on the
+		// classpath.
 		String	classpath=System.getProperty("java.class.path");
 		String	hostname=InetAddress.getLocalHost().
 					getHostName().split("\\.")[0].
@@ -211,7 +210,7 @@ class oracle extends sqlrtest {
 		con.commit();
 
 		// you can set the isolation level, but to get it, you
-		// have to have permisisons to read from sys.v_$session
+		// have to have permissions to read from sys.v_$session
 		// and sys.v_$transaction, so we'll just set them here
 		try {
 			con.setTransactionIsolation(
@@ -2527,7 +2526,7 @@ class oracle extends sqlrtest {
 		assertTrue(rs.isFirst());
 		System.out.println();
 
-		// move fowards to the last row again
+		// move forwards to the last row again
 		for (int row=1; row<=7; row++) {
 			assertEquals(rs.getInt(1),row);
 			assertTrue(rs.next());

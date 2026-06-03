@@ -2219,7 +2219,7 @@ class postgresql extends sqlrtest {
 		// test creates temporary tables, which postgresql creates
 		// in their own pg_temp_# schemas, which persist until
 		// the database session ends.  Since sqlrelay keeps persistent
-		// database sessions, they will be visisble to future clients,
+		// database sessions, they will be visible to future clients,
 		// including (possibly) this test.
 		counter=0;
 		while (rs.next()) {
@@ -2671,7 +2671,7 @@ class postgresql extends sqlrtest {
 		if (issqlrelay) {
 			assertEquals(counter,4);
 		} else {
-			// postgresl jdbc returns an empty result set (bug?)
+			// postgresql jdbc returns an empty result set (bug?)
 			assertEquals(counter,0);
 		}
 		rs.close();

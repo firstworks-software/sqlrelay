@@ -31,10 +31,6 @@ int main(int argc, char **argv) {
 	char    *dot=(char *)charstring::findFirstOrEnd(hostname,'.');
 	*dot='\0';
 
-	// db2 db names are <= 8 chars, so derive a short db name from the
-	// hostname (abbreviate os prefix + arch suffix, like
-	// test/jdbc/db2.java; e.g. "fedora40x64" -> "fc40x64"); used as the
-	// native connect string's Database name below
 	static const char * const db2osprefixes[]={
 					"centos","co",
 					"debian","db",
@@ -60,6 +56,7 @@ int main(int argc, char **argv) {
 			break;
 		}
 	}
+
 	static const char * const db2archsuffixes[]={
 					"alpha","a",
 					"mipsel","m32",
@@ -4155,7 +4152,7 @@ int main(int argc, char **argv) {
 	erg=SQLGetFunctions(dbc,SQL_API_SQLSPECIALCOLUMNS,&supported);
 	assertSuccessDbc(dbc,erg);
 	if (issqlrelay) {
-		// SQL Relay ODBC driver does not yet implement this.
+		// SQL Relay doesn't yet implement this
 		assertEqualDbc(dbc,(int)supported,(int)SQL_FALSE);
 	} else {
 		assertEqualDbc(dbc,(int)supported,(int)SQL_TRUE);
@@ -4187,7 +4184,7 @@ int main(int argc, char **argv) {
 	erg=SQLGetFunctions(dbc,SQL_API_SQLBROWSECONNECT,&supported);
 	assertSuccessDbc(dbc,erg);
 	if (issqlrelay) {
-		// SQL Relay ODBC driver does not yet implement this.
+		// SQL Relay doesn't yet implement this
 		assertEqualDbc(dbc,(int)supported,(int)SQL_FALSE);
 	} else {
 		assertEqualDbc(dbc,(int)supported,(int)SQL_TRUE);
@@ -4201,7 +4198,7 @@ int main(int argc, char **argv) {
 	erg=SQLGetFunctions(dbc,SQL_API_SQLCOLUMNPRIVILEGES,&supported);
 	assertSuccessDbc(dbc,erg);
 	if (issqlrelay) {
-		// SQL Relay ODBC driver does not yet implement this.
+		// SQL Relay doesn't yet implement this
 		assertEqualDbc(dbc,(int)supported,(int)SQL_FALSE);
 	} else {
 		assertEqualDbc(dbc,(int)supported,(int)SQL_TRUE);
@@ -4224,7 +4221,7 @@ int main(int argc, char **argv) {
 	erg=SQLGetFunctions(dbc,SQL_API_SQLDESCRIBEPARAM,&supported);
 	assertSuccessDbc(dbc,erg);
 	if (issqlrelay) {
-		// SQL Relay ODBC driver does not yet implement this.
+		// SQL Relay doesn't yet implement this
 		assertEqualDbc(dbc,(int)supported,(int)SQL_FALSE);
 	} else {
 		assertEqualDbc(dbc,(int)supported,(int)SQL_TRUE);
@@ -4247,7 +4244,7 @@ int main(int argc, char **argv) {
 	erg=SQLGetFunctions(dbc,SQL_API_SQLFOREIGNKEYS,&supported);
 	assertSuccessDbc(dbc,erg);
 	if (issqlrelay) {
-		// SQL Relay ODBC driver does not yet implement this.
+		// SQL Relay doesn't yet implement this
 		assertEqualDbc(dbc,(int)supported,(int)SQL_FALSE);
 	} else {
 		assertEqualDbc(dbc,(int)supported,(int)SQL_TRUE);
@@ -4270,7 +4267,7 @@ int main(int argc, char **argv) {
 	erg=SQLGetFunctions(dbc,SQL_API_SQLNATIVESQL,&supported);
 	assertSuccessDbc(dbc,erg);
 	if (issqlrelay) {
-		// SQL Relay ODBC driver does not yet implement this.
+		// SQL Relay doesn't yet implement this
 		assertEqualDbc(dbc,(int)supported,(int)SQL_FALSE);
 	} else {
 		assertEqualDbc(dbc,(int)supported,(int)SQL_TRUE);
@@ -4347,7 +4344,7 @@ int main(int argc, char **argv) {
 	erg=SQLGetFunctions(dbc,SQL_API_SQLTABLEPRIVILEGES,&supported);
 	assertSuccessDbc(dbc,erg);
 	if (issqlrelay) {
-		// SQL Relay ODBC driver does not yet implement this.
+		// SQL Relay doesn't yet implement this
 		assertEqualDbc(dbc,(int)supported,(int)SQL_FALSE);
 	} else {
 		assertEqualDbc(dbc,(int)supported,(int)SQL_TRUE);

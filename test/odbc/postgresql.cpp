@@ -7577,7 +7577,7 @@ int main(int argc, char **argv) {
 	assertSuccessStmt(stmt,erg);
 	erg=SQLFreeStmt(stmt,SQL_CLOSE);
 	// fewer-but-nonzero path: binds 1 and 2 are still stashed, but
-	// this statement has only one marker.  only bind 1 should apply.
+	// this statement has only one marker, so only bind 1 should apply
 	if (issqlrelay) {
 		erg=SQLExecDirect(stmt,(SQLCHAR *)
 			"insert into testtable values ($1,99)",SQL_NTS);

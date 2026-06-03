@@ -2246,7 +2246,7 @@ class sqlite extends sqlrtest {
 		if (issqlrelay) {
 			assertEquals(rs.getString("ASC_OR_DESC"),"A");
 		} else {
-			// slite jdbc returns null for this (bug?)
+			// sqlite jdbc returns null for this (bug?)
 			assertEquals(rs.getString("ASC_OR_DESC"),null);
 		}
 		assertEquals(rs.getString("TYPE"),"3");

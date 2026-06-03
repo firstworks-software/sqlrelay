@@ -19,9 +19,8 @@ class mysql extends sqlrtest {
 	public static void main(String args[]) throws Exception {
 
 		// This test supports both the sqlrelay jdbc driver and the
-		// databse native jdbc driver.  It detects which to use based
-		// on what is included in the classpath, and builds the
-		// appropriate url and credentials for each.
+		// database native jdbc driver, selecting one based on the
+		// classpath.
 		String	classpath=System.getProperty("java.class.path");
 		String	hostname=InetAddress.getLocalHost().
 					getHostName().split("\\.")[0];
@@ -391,7 +390,7 @@ class mysql extends sqlrtest {
 		System.out.println("  getDriverMajorVersion");
 		intval=md.getDriverMajorVersion();
 		System.out.println("    "+intval);
-		// varies by driver ersion
+		// varies by driver version
 		assertTrue(intval>=0);
 		System.out.println();
 

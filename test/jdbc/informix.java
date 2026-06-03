@@ -1984,8 +1984,9 @@ class informix extends sqlrtest {
 			System.out.println("  row "+i+" - money");
 			// apparently, via the informix odbc driver, which
 			// sqlrelay uses on the backend, inserting a literal
-			// lue causes the field to be populated without a
+			// value causes the field to be populated without a
 			// leading $, but inserting a value via bind causes it
+			// to be populated with a leading $
 			String moneyval=rs.getString("testmoney");
 			assertTrue(moneyval.equals(i+".10") ||
 					moneyval.equals("$"+i+".10"));

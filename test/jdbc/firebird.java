@@ -2056,7 +2056,7 @@ class firebird extends sqlrtest {
 		assertTrue(rs.isFirst());
 		System.out.println();
 
-		// move fowards to the last row again
+		// move forwards to the last row again
 		for (int row=1; row<=3; row++) {
 			assertEquals(rs.getInt(1),row);
 			assertTrue(rs.next());
