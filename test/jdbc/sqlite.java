@@ -1318,7 +1318,7 @@ class sqlite extends sqlrtest {
 		boolval=md.supportsStatementPooling();
 		System.out.println("    "+boolval);
 		if (issqlrelay) {
-                        // sqlrelay jdbc supports statement pooling
+			// sqlrelay jdbc supports statement pooling
 			assertTrue(boolval);
 		} else {
 			assertFalse(boolval);
