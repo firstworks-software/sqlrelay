@@ -803,9 +803,7 @@ bool sqlrservercontroller::init(int argc, const char **argv) {
 		return false;
 	}
 
-	// initialize transaction model -- the configured value is the
-	// "initial" model that we'll restore at end-of-session; the
-	// active _txmodel starts out as a copy of it
+	// initialize transaction model
 	const char	*txmodel=pvt->_cfg->getTransactionModel();
 	if (!charstring::compare(txmodel,"native")) {
 		pvt->_initialtxmodel=pvt->_conn->getNativeTransactionModel();
@@ -2410,11 +2408,13 @@ bool sqlrservercontroller::auth(sqlrcredentials *cred) {
 	}
 	if (autheduser) {
 
-		setAuthenticatedUser(autheduser,charstring::getLength(autheduser));
+		setAuthenticatedUser(autheduser,
+				charstring::getLength(autheduser));
 
 		// consult connection schedules
 		if (pvt->_sqlrs &&
-			!pvt->_sqlrs->allowed(pvt->_conn,getAuthenticatedUser())) {
+			!pvt->_sqlrs->allowed(pvt->_conn,
+						getAuthenticatedUser())) {
 			debugWrite("connection schedule violation");
 			raiseScheduleViolationEvent(getAuthenticatedUser());
 			debugEnd();
