@@ -1551,11 +1551,8 @@ assertTrue(cur.executeQuery())
 assertEqual(cur.rowCount(),1)
 assertEqual(cur.getField(0,0),"1")
 print "\n"
-cur.prepareQuery(
-	"begin "+
-	"	select cast(@var1 as int) "+
-	"end")
-cur.inputBind("var1",1)
+cur.prepareQuery("select cast(@1 as int)")
+cur.inputBind("1",1)
 assertTrue(cur.executeQuery())
 assertEqual(cur.rowCount(),1)
 assertEqual(cur.getField(0,0),"1")
@@ -1564,7 +1561,7 @@ assertTrue(cur.executeQuery())
 assertEqual(cur.rowCount(),1)
 assertEqual(cur.getField(0,0),"1")
 print "\n"
-cur.inputBind("var1",2)
+cur.inputBind("1",2)
 assertTrue(cur.executeQuery())
 assertEqual(cur.rowCount(),1)
 assertEqual(cur.getField(0,0),"2")

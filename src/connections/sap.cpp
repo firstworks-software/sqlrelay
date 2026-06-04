@@ -258,6 +258,9 @@ class SQLRSERVER_DLLSPEC sapcursor : public sqlrservercursor {
 		size_t		cursornamesize;
 
 		void		checkRePrepare();
+		bool		inputBind(CS_VOID *value,
+						CS_INT valuesize,
+						CS_SMALLINT indicator);
 
 		CS_COMMAND	*languagecmd;
 		CS_COMMAND	*cursorcmd;
@@ -275,6 +278,9 @@ class SQLRSERVER_DLLSPEC sapcursor : public sqlrservercursor {
 		uint16_t	maxbindcount;
 		CS_DATAFMT	*parameter;
 		uint16_t	paramindex;
+		CS_VOID		**inbindvalue;
+		CS_INT		*inbinddatasize;
+		CS_SMALLINT	*inbindindicator;
 		char		**inbindts;
 		CS_INT		*outbindtype;
 		char		**outbindstrings;
@@ -2453,6 +2459,9 @@ sapcursor::sapcursor(sqlrserverconnection *conn, uint16_t id) :
 
 	maxbindcount=conn->cont->getConfig()->getMaxBindCount();
 	parameter=new CS_DATAFMT[maxbindcount];
+	inbindvalue=new CS_VOID *[maxbindcount];
+	inbinddatasize=new CS_INT[maxbindcount];
+	inbindindicator=new CS_SMALLINT[maxbindcount];
 	inbindts=new char *[maxbindcount];
 	for (uint16_t i=0; i<maxbindcount; i++) {
 		inbindts[i]=new char[27];
@@ -2491,6 +2500,9 @@ sapcursor::~sapcursor() {
 	close();
 	delete[] cursorname;
 	delete[] parameter;
+	delete[] inbindvalue;
+	delete[] inbinddatasize;
+	delete[] inbindindicator;
 	for (uint16_t i=0; i<maxbindcount; i++) {
 		delete[] inbindts[i];
 	}
@@ -2799,6 +2811,47 @@ void sapcursor::checkRePrepare() {
 	}
 }
 
+bool sapcursor::inputBind(CS_VOID *value, CS_INT valuesize,
+						CS_SMALLINT indicator) {
+
+	if (cmd==cursorcmd) {
+
+		// for a cursor command, the flow is:
+		//
+		// prepare:
+		// * ct_cursor(CS_CURSOR_DECLARE)
+		//
+		// bind:
+		// * ct_param(param,NULL);
+		// * ct_param(param,NULL);
+		// * ...
+		//
+		// execute:
+		// * ct_cursor(CS_CURSOR_ROWS)
+		// * ct_cursor(CS_CURSOR_OPEN)
+		//
+		// * ct_param(param,value);
+		// * ct_param(param,value);
+		// * ...
+		//
+		// * ct_send()
+		//
+		// So, at this phase, stash the value, valuesize, and indicator,
+		// and declare a placeholder for the parameter.  We'll call
+		// ct_param() again in executeQuery() to supply the values.
+
+		inbindvalue[paramindex]=value;
+		inbinddatasize[paramindex]=valuesize;
+		inbindindicator[paramindex]=indicator;
+		return ct_param(cmd,&parameter[paramindex],
+					NULL,CS_UNUSED,0)==CS_SUCCEED;
+	}
+
+	// for non-cursor commands, we can supply the parameter values now
+	return ct_param(cmd,&parameter[paramindex],
+				value,valuesize,indicator)==CS_SUCCEED;
+}
+
 bool sapcursor::inputBind(const char *variable,
 				uint16_t variablesize,
 				const char *value,
@@ -2807,7 +2860,8 @@ bool sapcursor::inputBind(const char *variable,
 	checkRePrepare();
 
 	bytestring::zero(&parameter[paramindex],sizeof(parameter[paramindex]));
-	if (charstring::isInteger(variable+1,variablesize-1)) {
+	if (cmd!=cursorcmd &&
+		charstring::isInteger(variable+1,variablesize-1)) {
 		parameter[paramindex].name[0]='\0';
 		parameter[paramindex].namelen=0;
 	} else {
@@ -2818,9 +2872,8 @@ bool sapcursor::inputBind(const char *variable,
 	parameter[paramindex].maxlength=CS_UNUSED;
 	parameter[paramindex].status=CS_INPUTVALUE;
 	parameter[paramindex].locale=NULL;
-	if (ct_param(cmd,&parameter[paramindex],
-		(CS_VOID *)value,valuesize,
-		(*isnull==conn->cont->getNullBindValue())?-1:0)!=CS_SUCCEED) {
+	if (!inputBind((CS_VOID *)value,valuesize,
+		(*isnull==conn->cont->getNullBindValue())?-1:0)) {
 		return false;
 	}
 	paramindex++;
@@ -2833,7 +2886,8 @@ bool sapcursor::inputBind(const char *variable,
 	checkRePrepare();
 
 	bytestring::zero(&parameter[paramindex],sizeof(parameter[paramindex]));
-	if (charstring::isInteger(variable+1,variablesize-1)) {
+	if (cmd!=cursorcmd &&
+		charstring::isInteger(variable+1,variablesize-1)) {
 		parameter[paramindex].name[0]='\0';
 		parameter[paramindex].namelen=0;
 	} else {
@@ -2844,8 +2898,7 @@ bool sapcursor::inputBind(const char *variable,
 	parameter[paramindex].maxlength=CS_UNUSED;
 	parameter[paramindex].status=CS_INPUTVALUE;
 	parameter[paramindex].locale=NULL;
-	if (ct_param(cmd,&parameter[paramindex],
-		(CS_VOID *)value,sizeof(int64_t),0)!=CS_SUCCEED) {
+	if (!inputBind((CS_VOID *)value,sizeof(int64_t),0)) {
 		return false;
 	}
 	paramindex++;
@@ -2860,7 +2913,8 @@ bool sapcursor::inputBind(const char *variable,
 	checkRePrepare();
 
 	bytestring::zero(&parameter[paramindex],sizeof(parameter[paramindex]));
-	if (charstring::isInteger(variable+1,variablesize-1)) {
+	if (cmd!=cursorcmd &&
+		charstring::isInteger(variable+1,variablesize-1)) {
 		parameter[paramindex].name[0]='\0';
 		parameter[paramindex].namelen=0;
 	} else {
@@ -2873,8 +2927,7 @@ bool sapcursor::inputBind(const char *variable,
 	parameter[paramindex].precision=precision;
 	parameter[paramindex].scale=scale;
 	parameter[paramindex].locale=NULL;
-	if (ct_param(cmd,&parameter[paramindex],
-		(CS_VOID *)value,sizeof(double),0)!=CS_SUCCEED) {
+	if (!inputBind((CS_VOID *)value,sizeof(double),0)) {
 		return false;
 	}
 	paramindex++;
@@ -2950,7 +3003,8 @@ bool sapcursor::outputBind(const char *variable,
 	outbindindex++;
 
 	bytestring::zero(&parameter[paramindex],sizeof(parameter[paramindex]));
-	if (charstring::isInteger(variable+1,variablesize-1)) {
+	if (cmd!=cursorcmd &&
+		charstring::isInteger(variable+1,variablesize-1)) {
 		parameter[paramindex].name[0]='\0';
 		parameter[paramindex].namelen=0;
 	} else {
@@ -2982,7 +3036,8 @@ bool sapcursor::outputBind(const char *variable,
 	outbindindex++;
 
 	bytestring::zero(&parameter[paramindex],sizeof(parameter[paramindex]));
-	if (charstring::isInteger(variable+1,variablesize-1)) {
+	if (cmd!=cursorcmd &&
+		charstring::isInteger(variable+1,variablesize-1)) {
 		parameter[paramindex].name[0]='\0';
 		parameter[paramindex].namelen=0;
 	} else {
@@ -3016,7 +3071,8 @@ bool sapcursor::outputBind(const char *variable,
 	outbindindex++;
 
 	bytestring::zero(&parameter[paramindex],sizeof(parameter[paramindex]));
-	if (charstring::isInteger(variable+1,variablesize-1)) {
+	if (cmd!=cursorcmd &&
+		charstring::isInteger(variable+1,variablesize-1)) {
 		parameter[paramindex].name[0]='\0';
 		parameter[paramindex].namelen=0;
 	} else {
@@ -3064,7 +3120,8 @@ bool sapcursor::outputBind(const char *variable,
 	outbindindex++;
 
 	bytestring::zero(&parameter[paramindex],sizeof(parameter[paramindex]));
-	if (charstring::isInteger(variable+1,variablesize-1)) {
+	if (cmd!=cursorcmd &&
+		charstring::isInteger(variable+1,variablesize-1)) {
 		parameter[paramindex].name[0]='\0';
 		parameter[paramindex].namelen=0;
 	} else {
@@ -3110,6 +3167,15 @@ bool sapcursor::executeQuery(const char *query, uint32_t size) {
 					NULL,CS_UNUSED,
 					CS_UNUSED)!=CS_SUCCEED) {
 			return false;
+		}
+
+		// supply values for placeholders defined by inputBind()
+		for (uint16_t i=0; i<paramindex; i++) {
+			if (ct_param(cursorcmd,&parameter[i],
+					inbindvalue[i],inbinddatasize[i],
+					inbindindicator[i])!=CS_SUCCEED) {
+				return false;
+			}
 		}
 	}
 

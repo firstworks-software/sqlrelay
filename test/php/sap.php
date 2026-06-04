@@ -1588,10 +1588,8 @@ include("./asserts.php");
 	assertEqInt(sqlrcur_rowCount($cur),1);
 	assertEqStr(sqlrcur_getField($cur,0,0),"1");
 	echo("\n");
-	sqlrcur_prepareQuery($cur,
-		"begin ".
-		"	select "."cast(@var1 as int) "."end");
-	sqlrcur_inputBind($cur,"var1",1);
+	sqlrcur_prepareQuery($cur,"select cast(@1 as int)");
+	sqlrcur_inputBind($cur,"1",1);
 	assertTrue(sqlrcur_executeQuery($cur));
 	assertEqInt(sqlrcur_rowCount($cur),1);
 	assertEqStr(sqlrcur_getField($cur,0,0),"1");
@@ -1600,7 +1598,7 @@ include("./asserts.php");
 	assertEqInt(sqlrcur_rowCount($cur),1);
 	assertEqStr(sqlrcur_getField($cur,0,0),"1");
 	echo("\n");
-	sqlrcur_inputBind($cur,"var1",2);
+	sqlrcur_inputBind($cur,"1",2);
 	assertTrue(sqlrcur_executeQuery($cur));
 	assertEqInt(sqlrcur_rowCount($cur),1);
 	assertEqStr(sqlrcur_getField($cur,0,0),"2");

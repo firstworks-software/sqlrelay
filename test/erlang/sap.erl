@@ -1243,11 +1243,8 @@ main() ->
     assertEqualsInt(sqlrelay:rowCount(), 1),
     assertEqualsString(sqlrelay:getFieldByIndex(0, 0), "1"),
     io:format("~n"),
-    sqlrelay:prepareQuery(
-        "begin "
-        "	select cast(@var1 as int) "
-        "end"),
-    sqlrelay:inputBindLong("var1", 1),
+    sqlrelay:prepareQuery("select cast(@1 as int)"),
+    sqlrelay:inputBindLong("1", 1),
     assertTrue(sqlrelay:executeQuery()),
     assertEqualsInt(sqlrelay:rowCount(), 1),
     assertEqualsString(sqlrelay:getFieldByIndex(0, 0), "1"),
@@ -1256,7 +1253,7 @@ main() ->
     assertEqualsInt(sqlrelay:rowCount(), 1),
     assertEqualsString(sqlrelay:getFieldByIndex(0, 0), "1"),
     io:format("~n"),
-    sqlrelay:inputBindLong("var1", 2),
+    sqlrelay:inputBindLong("1", 2),
     assertTrue(sqlrelay:executeQuery()),
     assertEqualsInt(sqlrelay:rowCount(), 1),
     assertEqualsString(sqlrelay:getFieldByIndex(0, 0), "2"),

@@ -7347,12 +7347,31 @@ int main(int argc, char **argv) {
 			(SQLCHAR *)"",SQL_NTS);
 	if (issqlrelay) {
 		assertSuccessStmt(stmt,erg);
-		// Oracle has no catalogs so the result set should be empty
-		erg=SQLFetch(stmt);
-		assertEqualStmt(stmt,(int)erg,(int)SQL_NO_DATA);
+		// SAP has catalogs (databases); the connected database, named
+		// after the host, should appear in the list
+		SQLCHAR		catname[1024];
+		SQLLEN		catnameind;
+		erg=SQLBindCol(stmt,1,SQL_C_CHAR,
+				catname,sizeof(catname),&catnameind);
+		bool		catfound=false;
+		for (;;) {
+			erg=SQLFetch(stmt);
+			if (erg==SQL_NO_DATA) {
+				break;
+			}
+			assertSuccessStmt(stmt,erg);
+			if (erg!=SQL_SUCCESS && erg!=SQL_SUCCESS_WITH_INFO) {
+				break;
+			}
+			if (!charstring::compareIgnoringCase(
+						(const char *)catname,hostname)) {
+				catfound=true;
+			}
+		}
+		assertTrueStmt(stmt,catfound);
 	} else {
-		// Oracle's ODBC driver does not implement SQL_ALL_CATALOGS
-		// and returns HYT00 "Timeout expired".
+		// the native SAP ODBC driver does not implement
+		// SQL_ALL_CATALOGS and returns an error
 		assertFailureStmt(stmt,erg);
 	}
 	erg=SQLFreeStmt(stmt,SQL_CLOSE);
@@ -7376,10 +7395,9 @@ int main(int argc, char **argv) {
 	SQLLEN		schnameind;
 	erg=SQLBindCol(stmt,2,SQL_C_CHAR,
 			schname,sizeof(schname),&schnameind);
-	// through SQL Relay a "schema" is the database (named after the host);
-	// the native SAP driver lists object owners, so the connected user's
-	// schema is dbo
-	const char	*expschema=(issqlrelay)?hostname:"dbo";
+	// SAP reports object owners as schemas (both through SQL Relay, via
+	// user_name(uid), and natively); the test objects are owned by dbo
+	const char	*expschema="dbo";
 	bool		schfound=false;
 	for (;;) {
 		erg=SQLFetch(stmt);

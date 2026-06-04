@@ -186,6 +186,11 @@ class SQLRSERVER_DLLSPEC freetdscursor : public sqlrservercursor {
 		size_t		cursornamesize;
 
 		void		checkRePrepare();
+		#ifdef FREETDS_SUPPORTS_CURSORS
+		bool		inputBind(CS_VOID *value,
+						CS_INT valuesize,
+						CS_SMALLINT indicator);
+		#endif
 
 		uint32_t	majorversion;
 		uint32_t	minorversion;
@@ -208,6 +213,11 @@ class SQLRSERVER_DLLSPEC freetdscursor : public sqlrservercursor {
 		uint16_t	maxbindcount;
 		CS_DATAFMT	*parameter;
 		uint16_t	paramindex;
+		#ifdef FREETDS_SUPPORTS_CURSORS
+		CS_VOID		**inbindvalue;
+		CS_INT		*inbinddatasize;
+		CS_SMALLINT	*inbindindicator;
+		#endif
 		char		**inbindts;
 		CS_INT		*outbindtype;
 		char		**outbindstrings;
@@ -3638,6 +3648,11 @@ freetdscursor::freetdscursor(sqlrserverconnection *conn, uint16_t id) :
 
 	maxbindcount=conn->cont->getConfig()->getMaxBindCount();
 	parameter=new CS_DATAFMT[maxbindcount];
+	#ifdef FREETDS_SUPPORTS_CURSORS
+	inbindvalue=new CS_VOID *[maxbindcount];
+	inbinddatasize=new CS_INT[maxbindcount];
+	inbindindicator=new CS_SMALLINT[maxbindcount];
+	#endif
 	inbindts=new char *[maxbindcount];
 	outbindtype=new CS_INT[maxbindcount];
 	outbindstrings=new char *[maxbindcount];
@@ -3674,6 +3689,11 @@ freetdscursor::~freetdscursor() {
 	close();
 	delete[] cursorname;
 	delete[] parameter;
+	#ifdef FREETDS_SUPPORTS_CURSORS
+	delete[] inbindvalue;
+	delete[] inbinddatasize;
+	delete[] inbindindicator;
+	#endif
 	for (uint16_t i=0; i<maxbindcount; i++) {
 		delete[] inbindts[i];
 	}
@@ -4011,6 +4031,47 @@ void freetdscursor::checkRePrepare() {
 }
 
 #ifdef FREETDS_SUPPORTS_CURSORS
+bool freetdscursor::inputBind(CS_VOID *value, CS_INT valuesize,
+						CS_SMALLINT indicator) {
+
+	if (cmd==cursorcmd) {
+
+		// for a cursor command, the flow is:
+		//
+		// prepare:
+		// * ct_cursor(CS_CURSOR_DECLARE)
+		//
+		// bind:
+		// * ct_param(param,NULL);
+		// * ct_param(param,NULL);
+		// * ...
+		//
+		// execute:
+		// * ct_cursor(CS_CURSOR_ROWS)
+		// * ct_cursor(CS_CURSOR_OPEN)
+		//
+		// * ct_param(param,value);
+		// * ct_param(param,value);
+		// * ...
+		//
+		// * ct_send()
+		//
+		// So, at this phase, stash the value, valuesize, and indicator,
+		// and declare a placeholder for the parameter.  We'll call
+		// ct_param() again in executeQuery() to supply the values.
+
+		inbindvalue[paramindex]=value;
+		inbinddatasize[paramindex]=valuesize;
+		inbindindicator[paramindex]=indicator;
+		return ct_param(cmd,&parameter[paramindex],
+					NULL,CS_UNUSED,0)==CS_SUCCEED;
+	}
+
+	// for non-cursor commands, we can supply the parameter values now
+	return ct_param(cmd,&parameter[paramindex],
+				value,valuesize,indicator)==CS_SUCCEED;
+}
+
 bool freetdscursor::inputBind(const char *variable,
 				uint16_t variablesize,
 				const char *value,
@@ -4020,7 +4081,8 @@ bool freetdscursor::inputBind(const char *variable,
 
 	(CS_VOID)bytestring::zero(&parameter[paramindex],
 				sizeof(parameter[paramindex]));
-	if (charstring::isInteger(variable+1,variablesize-1)) {
+	if (cmd!=cursorcmd &&
+		charstring::isInteger(variable+1,variablesize-1)) {
 		parameter[paramindex].name[0]='\0';
 		parameter[paramindex].namelen=0;
 	} else {
@@ -4031,8 +4093,7 @@ bool freetdscursor::inputBind(const char *variable,
 	parameter[paramindex].maxlength=CS_UNUSED;
 	parameter[paramindex].status=CS_INPUTVALUE;
 	parameter[paramindex].locale=NULL;
-	if (ct_param(cmd,&parameter[paramindex],
-		(CS_VOID *)value,valuesize,0)!=CS_SUCCEED) {
+	if (!inputBind((CS_VOID *)value,valuesize,0)) {
 		return false;
 	}
 	paramindex++;
@@ -4046,7 +4107,8 @@ bool freetdscursor::inputBind(const char *variable,
 
 	(CS_VOID)bytestring::zero(&parameter[paramindex],
 				sizeof(parameter[paramindex]));
-	if (charstring::isInteger(variable+1,variablesize-1)) {
+	if (cmd!=cursorcmd &&
+		charstring::isInteger(variable+1,variablesize-1)) {
 		parameter[paramindex].name[0]='\0';
 		parameter[paramindex].namelen=0;
 	} else {
@@ -4057,8 +4119,7 @@ bool freetdscursor::inputBind(const char *variable,
 	parameter[paramindex].maxlength=CS_UNUSED;
 	parameter[paramindex].status=CS_INPUTVALUE;
 	parameter[paramindex].locale=NULL;
-	if (ct_param(cmd,&parameter[paramindex],
-		(CS_VOID *)value,sizeof(int64_t),0)!=CS_SUCCEED) {
+	if (!inputBind((CS_VOID *)value,sizeof(int64_t),0)) {
 		return false;
 	}
 	paramindex++;
@@ -4074,7 +4135,8 @@ bool freetdscursor::inputBind(const char *variable,
 
 	(CS_VOID)bytestring::zero(&parameter[paramindex],
 				sizeof(parameter[paramindex]));
-	if (charstring::isInteger(variable+1,variablesize-1)) {
+	if (cmd!=cursorcmd &&
+		charstring::isInteger(variable+1,variablesize-1)) {
 		parameter[paramindex].name[0]='\0';
 		parameter[paramindex].namelen=0;
 	} else {
@@ -4087,8 +4149,7 @@ bool freetdscursor::inputBind(const char *variable,
 	parameter[paramindex].precision=precision;
 	parameter[paramindex].scale=scale;
 	parameter[paramindex].locale=NULL;
-	if (ct_param(cmd,&parameter[paramindex],
-		(CS_VOID *)value,sizeof(double),0)!=CS_SUCCEED) {
+	if (!inputBind((CS_VOID *)value,sizeof(double),0)) {
 		return false;
 	}
 	paramindex++;
@@ -4164,7 +4225,8 @@ bool freetdscursor::outputBind(const char *variable,
 
 	(CS_VOID)bytestring::zero(&parameter[paramindex],
 				sizeof(parameter[paramindex]));
-	if (charstring::isInteger(variable+1,variablesize-1)) {
+	if (cmd!=cursorcmd &&
+		charstring::isInteger(variable+1,variablesize-1)) {
 		parameter[paramindex].name[0]='\0';
 		parameter[paramindex].namelen=0;
 	} else {
@@ -4196,7 +4258,8 @@ bool freetdscursor::outputBind(const char *variable,
 
 	(CS_VOID)bytestring::zero(&parameter[paramindex],
 				sizeof(parameter[paramindex]));
-	if (charstring::isInteger(variable+1,variablesize-1)) {
+	if (cmd!=cursorcmd &&
+		charstring::isInteger(variable+1,variablesize-1)) {
 		parameter[paramindex].name[0]='\0';
 		parameter[paramindex].namelen=0;
 	} else {
@@ -4230,7 +4293,8 @@ bool freetdscursor::outputBind(const char *variable,
 
 	(CS_VOID)bytestring::zero(&parameter[paramindex],
 				sizeof(parameter[paramindex]));
-	if (charstring::isInteger(variable+1,variablesize-1)) {
+	if (cmd!=cursorcmd &&
+		charstring::isInteger(variable+1,variablesize-1)) {
 		parameter[paramindex].name[0]='\0';
 		parameter[paramindex].namelen=0;
 	} else {
@@ -4277,7 +4341,8 @@ bool freetdscursor::outputBind(const char *variable,
 	outbindindex++;
 
 	bytestring::zero(&parameter[paramindex],sizeof(parameter[paramindex]));
-	if (charstring::isInteger(variable+1,variablesize-1)) {
+	if (cmd!=cursorcmd &&
+		charstring::isInteger(variable+1,variablesize-1)) {
 		parameter[paramindex].name[0]='\0';
 		parameter[paramindex].namelen=0;
 	} else {
@@ -4336,6 +4401,15 @@ bool freetdscursor::executeQuery(const char *query, uint32_t size) {
 					NULL,CS_UNUSED,
 					CS_UNUSED)!=CS_SUCCEED) {
 			return false;
+		}
+
+		// supply values for placeholders defined by inputBind()
+		for (uint16_t i=0; i<paramindex; i++) {
+			if (ct_param(cursorcmd,&parameter[i],
+					inbindvalue[i],inbinddatasize[i],
+					inbindindicator[i])!=CS_SUCCEED) {
+				return false;
+			}
 		}
 	}
 	#endif

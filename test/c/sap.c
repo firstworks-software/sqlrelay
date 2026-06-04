@@ -1647,10 +1647,8 @@ int main(int argc, char **argv) {
 	assertEqInt(sqlrcur_rowCount(cur),1);
 	assertEqStr(sqlrcur_getFieldByIndex(cur,0,0),"1");
 	printf("\n");
-	sqlrcur_prepareQuery(cur,
-		"begin "
-		"	select ""cast(@var1 as int) ""end");
-	sqlrcur_inputBindLong(cur,"var1",1);
+	sqlrcur_prepareQuery(cur,"select cast(@1 as int)");
+	sqlrcur_inputBindLong(cur,"1",1);
 	assertTrue(sqlrcur_executeQuery(cur));
 	assertEqInt(sqlrcur_rowCount(cur),1);
 	assertEqStr(sqlrcur_getFieldByIndex(cur,0,0),"1");
@@ -1659,7 +1657,7 @@ int main(int argc, char **argv) {
 	assertEqInt(sqlrcur_rowCount(cur),1);
 	assertEqStr(sqlrcur_getFieldByIndex(cur,0,0),"1");
 	printf("\n");
-	sqlrcur_inputBindLong(cur,"var1",2);
+	sqlrcur_inputBindLong(cur,"1",2);
 	assertTrue(sqlrcur_executeQuery(cur));
 	assertEqInt(sqlrcur_rowCount(cur),1);
 	assertEqStr(sqlrcur_getFieldByIndex(cur,0,0),"2");

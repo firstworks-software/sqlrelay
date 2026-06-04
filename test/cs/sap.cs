@@ -1590,11 +1590,8 @@ namespace SQLRClientTest
             assertEquals(cur.rowCount(), (UInt64)1);
             assertEquals(cur.getField((UInt64)0, (UInt32)0), "1");
             Console.WriteLine("");
-            cur.prepareQuery(
-                "begin " +
-                "	select cast(@var1 as int) " +
-                "end");
-            cur.inputBind("var1", (Int64)1);
+            cur.prepareQuery("select cast(@1 as int)");
+            cur.inputBind("1", (Int64)1);
             assertTrue(cur.executeQuery());
             assertEquals(cur.rowCount(), (UInt64)1);
             assertEquals(cur.getField((UInt64)0, (UInt32)0), "1");
@@ -1603,7 +1600,7 @@ namespace SQLRClientTest
             assertEquals(cur.rowCount(), (UInt64)1);
             assertEquals(cur.getField((UInt64)0, (UInt32)0), "1");
             Console.WriteLine("");
-            cur.inputBind("var1", (Int64)2);
+            cur.inputBind("1", (Int64)2);
             assertTrue(cur.executeQuery());
             assertEquals(cur.rowCount(), (UInt64)1);
             assertEquals(cur.getField((UInt64)0, (UInt32)0), "2");

@@ -1725,12 +1725,8 @@ class sap extends sqlrtest {
 		assertEquals(cur.rowCount(),1);
 		assertEquals(cur.getField(0,0),"1");
 		System.out.println();
-		cur.prepareQuery(
-			"begin "+
-			"	select "+
-			"		cast(@var1 as int) "+
-			"end");
-		cur.inputBind("var1",1);
+		cur.prepareQuery("select cast(@1 as int)");
+		cur.inputBind("1",1);
 		assertTrue(cur.executeQuery());
 		assertEquals(cur.rowCount(),1);
 		assertEquals(cur.getField(0,0),"1");
@@ -1739,7 +1735,7 @@ class sap extends sqlrtest {
 		assertEquals(cur.rowCount(),1);
 		assertEquals(cur.getField(0,0),"1");
 		System.out.println();
-		cur.inputBind("var1",2);
+		cur.inputBind("1",2);
 		assertTrue(cur.executeQuery());
 		assertEquals(cur.rowCount(),1);
 		assertEquals(cur.getField(0,0),"2");
