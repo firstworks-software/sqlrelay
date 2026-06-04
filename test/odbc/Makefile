@@ -10,10 +10,10 @@ include ../../config.mk
 .cpp.obj:
 	$(CXX) $(CXXFLAGS) $(ODBCTESTCPPFLAGS) $(COMPILE) $<
 
-all: oracle mysql postgresql db2 sap
+all: oracle mysql postgresql db2 sap freetds
 
 clean:
-	$(RM) *.lo *.o *.obj oracle$(EXE) mysql$(EXE) postgresql$(EXE) db2$(EXE) sap$(EXE) cachefile* sqlnet.log
+	$(RM) *.lo *.o *.obj oracle$(EXE) mysql$(EXE) postgresql$(EXE) db2$(EXE) sap$(EXE) freetds$(EXE) cachefile* sqlnet.log
 	$(RMTREE) .libs
 
 mysql: mysql.cpp mysql.$(OBJ)
@@ -30,3 +30,6 @@ db2: db2.cpp db2.$(OBJ)
 
 sap: sap.cpp sap.$(OBJ)
 	$(LTLINK) $(LINK) $(LDFLAGS) $(OUT)$@ sap.$(OBJ) $(ODBCTESTLIBS)
+
+freetds: freetds.cpp freetds.$(OBJ)
+	$(LTLINK) $(LINK) $(LDFLAGS) $(OUT)$@ freetds.$(OBJ) $(ODBCTESTLIBS)
