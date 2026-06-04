@@ -288,14 +288,8 @@ int main(int argc, char **argv) {
 	// SQL_ATTR_PACKET_SIZE
 	// must be set before connect and can't be read until after; set only
 	stdoutput.printf("  SQL_ATTR_PACKET_SIZE\n");
-	if (issqlrelay) {
-		erg=SQLSetConnectAttr(dbc,SQL_ATTR_PACKET_SIZE,
-				(SQLPOINTER)(uintptr_t)8192,0);
-	} else {
-		// sap ase rejects a login packet size outside 512-2048
-		erg=SQLSetConnectAttr(dbc,SQL_ATTR_PACKET_SIZE,
-				(SQLPOINTER)(uintptr_t)2048,0);
-	}
+	erg=SQLSetConnectAttr(dbc,SQL_ATTR_PACKET_SIZE,
+			(SQLPOINTER)(uintptr_t)2048,0);
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
 
@@ -558,36 +552,22 @@ int main(int argc, char **argv) {
 	#if (ODBCVER >= 0x0300)
 	// SQL_ATTR_CONNECTION_TIMEOUT
 	stdoutput.printf("  SQL_ATTR_CONNECTION_TIMEOUT\n");
-	if (issqlrelay) {
-		// save initial value
-		erg=SQLGetConnectAttr(dbc,SQL_ATTR_CONNECTION_TIMEOUT,
-				(SQLPOINTER)&dbcinitial,0,&dbcstrlen);
-		assertSuccessDbc(dbc,erg);
-		// set to 30
-		erg=SQLSetConnectAttr(dbc,SQL_ATTR_CONNECTION_TIMEOUT,
-				(SQLPOINTER)(uintptr_t)30,0);
-		assertSuccessDbc(dbc,erg);
-		erg=SQLGetConnectAttr(dbc,SQL_ATTR_CONNECTION_TIMEOUT,
-				(SQLPOINTER)&dbcuintval,0,&dbcstrlen);
-		assertSuccessDbc(dbc,erg);
-		assertEqualDbc(dbc,(int)dbcuintval,30);
-		// restore initial value
-		erg=SQLSetConnectAttr(dbc,SQL_ATTR_CONNECTION_TIMEOUT,
-				(SQLPOINTER)(uintptr_t)dbcinitial,0);
-		assertSuccessDbc(dbc,erg);
-	} else {
-		// sap accepts get and set
-		erg=SQLGetConnectAttr(dbc,SQL_ATTR_CONNECTION_TIMEOUT,
-				(SQLPOINTER)&dbcinitial,0,&dbcstrlen);
-		assertSuccessDbc(dbc,erg);
-		erg=SQLSetConnectAttr(dbc,SQL_ATTR_CONNECTION_TIMEOUT,
-				(SQLPOINTER)(uintptr_t)30,0);
-		assertSuccessDbc(dbc,erg);
-		// restore initial value
-		erg=SQLSetConnectAttr(dbc,SQL_ATTR_CONNECTION_TIMEOUT,
-				(SQLPOINTER)(uintptr_t)dbcinitial,0);
-		assertSuccessDbc(dbc,erg);
-	}
+	// save initial value
+	erg=SQLGetConnectAttr(dbc,SQL_ATTR_CONNECTION_TIMEOUT,
+			(SQLPOINTER)&dbcinitial,0,&dbcstrlen);
+	assertSuccessDbc(dbc,erg);
+	// set to 30
+	erg=SQLSetConnectAttr(dbc,SQL_ATTR_CONNECTION_TIMEOUT,
+			(SQLPOINTER)(uintptr_t)30,0);
+	assertSuccessDbc(dbc,erg);
+	erg=SQLGetConnectAttr(dbc,SQL_ATTR_CONNECTION_TIMEOUT,
+			(SQLPOINTER)&dbcuintval,0,&dbcstrlen);
+	assertSuccessDbc(dbc,erg);
+	assertEqualDbc(dbc,(int)dbcuintval,30);
+	// restore initial value
+	erg=SQLSetConnectAttr(dbc,SQL_ATTR_CONNECTION_TIMEOUT,
+			(SQLPOINTER)(uintptr_t)dbcinitial,0);
+	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
 	#endif
 
@@ -730,23 +710,13 @@ int main(int argc, char **argv) {
 	#if (ODBCVER >= 0x0351)
 	// SQL_ATTR_AUTO_IPD (read-only)
 	stdoutput.printf("  SQL_ATTR_AUTO_IPD\n");
-	if (issqlrelay) {
-		erg=SQLGetConnectAttr(dbc,SQL_ATTR_AUTO_IPD,
-				(SQLPOINTER)&dbcuintval,0,&dbcstrlen);
-		assertSuccessDbc(dbc,erg);
-		// SQL_TRUE or SQL_FALSE both legal; require a valid boolean
-		assertEqualDbc(dbc,
-			(int)(dbcuintval==SQL_TRUE || dbcuintval==SQL_FALSE),
-			(int)1);
-	} else {
-		// sap accepts get; SQL_TRUE or SQL_FALSE both legal
-		erg=SQLGetConnectAttr(dbc,SQL_ATTR_AUTO_IPD,
-				(SQLPOINTER)&dbcuintval,0,&dbcstrlen);
-		assertSuccessDbc(dbc,erg);
-		assertEqualDbc(dbc,
-			(int)(dbcuintval==SQL_TRUE || dbcuintval==SQL_FALSE),
-			(int)1);
-	}
+	erg=SQLGetConnectAttr(dbc,SQL_ATTR_AUTO_IPD,
+			(SQLPOINTER)&dbcuintval,0,&dbcstrlen);
+	assertSuccessDbc(dbc,erg);
+	// SQL_TRUE or SQL_FALSE both legal; require a valid boolean
+	assertEqualDbc(dbc,
+		(int)(dbcuintval==SQL_TRUE || dbcuintval==SQL_FALSE),
+		(int)1);
 	stdoutput.printf("\n");
 	#endif
 
@@ -1123,13 +1093,9 @@ int main(int argc, char **argv) {
 	erg=SQLGetInfo(dbc,SQL_SEARCH_PATTERN_ESCAPE,
 			(SQLPOINTER)strval,(SQLSMALLINT)sizeof(strval),
 			&vallen);
-	if (issqlrelay) {
-		assertEqualDbc(dbc,(const char *)strval,"\\");
-	} else {
-		// oracle odbc wrongly returns "\\"; jdbc getSearchStringEscape()
-		// correctly returns "/"
-		assertEqualDbc(dbc,(const char *)strval,"\\");
-	}
+	// sap reports backslash as the search pattern
+	// escape character
+	assertEqualDbc(dbc,(const char *)strval,"\\");
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
 
@@ -1567,12 +1533,7 @@ int main(int argc, char **argv) {
 	erg=SQLGetInfo(dbc,SQL_MAX_STATEMENT_LEN,
 			(SQLPOINTER)&uintval,(SQLSMALLINT)sizeof(uintval),
 			&vallen);
-	if (issqlrelay) {
-		assertEqualDbc(dbc,(int)uintval,0);
-	} else {
-		// oracle odbc returns 0; jdbc getMaxStatementLength() returns 65535
-		assertEqualDbc(dbc,(int)uintval,0);
-	}
+	assertEqualDbc(dbc,(int)uintval,0);
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
 
@@ -1899,11 +1860,7 @@ int main(int argc, char **argv) {
 	erg=SQLGetInfo(dbc,SQL_MULT_RESULT_SETS,
 			(SQLPOINTER)strval,(SQLSMALLINT)sizeof(strval),
 			&vallen);
-	if (issqlrelay) {
-		assertEqualDbc(dbc,(const char *)strval,"Y");
-	} else {
-		assertEqualDbc(dbc,(const char *)strval,"Y");
-	}
+	assertEqualDbc(dbc,(const char *)strval,"Y");
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
 
@@ -2570,11 +2527,7 @@ int main(int argc, char **argv) {
 	erg=SQLGetInfo(dbc,SQL_MAX_ROW_SIZE_INCLUDES_LONG,
 			(SQLPOINTER)strval,(SQLSMALLINT)sizeof(strval),
 			&vallen);
-	if (issqlrelay) {
-		assertEqualDbc(dbc,(const char *)strval,"N");
-	} else {
-		assertEqualDbc(dbc,(const char *)strval,"N");
-	}
+	assertEqualDbc(dbc,(const char *)strval,"N");
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
 
@@ -2715,11 +2668,7 @@ int main(int argc, char **argv) {
 	erg=SQLGetInfo(dbc,SQL_DATETIME_LITERALS,
 			(SQLPOINTER)&uintval,
 			(SQLSMALLINT)sizeof(uintval),&vallen);
-	if (issqlrelay) {
-		assertEqualDbc(dbc,(int)uintval,0);
-	} else {
-		assertEqualDbc(dbc,(int)uintval,0);
-	}
+	assertEqualDbc(dbc,(int)uintval,0);
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
 	#endif
@@ -3005,11 +2954,7 @@ int main(int argc, char **argv) {
 	erg=SQLGetInfo(dbc,SQL_DROP_SCHEMA,
 			(SQLPOINTER)&uintval,
 			(SQLSMALLINT)sizeof(uintval),&vallen);
-	if (issqlrelay) {
-		assertEqualDbc(dbc,(int)uintval,0);
-	} else {
-		assertEqualDbc(dbc,(int)uintval,0);
-	}
+	assertEqualDbc(dbc,(int)uintval,0);
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
 	#endif
@@ -3239,11 +3184,7 @@ int main(int argc, char **argv) {
 	erg=SQLGetInfo(dbc,SQL_SQL92_FOREIGN_KEY_DELETE_RULE,
 			(SQLPOINTER)&uintval,
 			(SQLSMALLINT)sizeof(uintval),&vallen);
-	if (issqlrelay) {
-		assertEqualDbc(dbc,(int)uintval,0);
-	} else {
-		assertEqualDbc(dbc,(int)uintval,0);
-	}
+	assertEqualDbc(dbc,(int)uintval,0);
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
 	#endif
@@ -3255,11 +3196,7 @@ int main(int argc, char **argv) {
 	erg=SQLGetInfo(dbc,SQL_SQL92_FOREIGN_KEY_UPDATE_RULE,
 			(SQLPOINTER)&uintval,
 			(SQLSMALLINT)sizeof(uintval),&vallen);
-	if (issqlrelay) {
-		assertEqualDbc(dbc,(int)uintval,0);
-	} else {
-		assertEqualDbc(dbc,(int)uintval,0);
-	}
+	assertEqualDbc(dbc,(int)uintval,0);
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
 	#endif
@@ -3315,11 +3252,7 @@ int main(int argc, char **argv) {
 	erg=SQLGetInfo(dbc,SQL_SQL92_RELATIONAL_JOIN_OPERATORS,
 			(SQLPOINTER)&uintval,
 			(SQLSMALLINT)sizeof(uintval),&vallen);
-	if (issqlrelay) {
-		assertEqualDbc(dbc,(int)uintval,0);
-	} else {
-		assertEqualDbc(dbc,(int)uintval,0);
-	}
+	assertEqualDbc(dbc,(int)uintval,0);
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
 	#endif
@@ -3347,11 +3280,7 @@ int main(int argc, char **argv) {
 	erg=SQLGetInfo(dbc,SQL_SQL92_ROW_VALUE_CONSTRUCTOR,
 			(SQLPOINTER)&uintval,
 			(SQLSMALLINT)sizeof(uintval),&vallen);
-	if (issqlrelay) {
-		assertEqualDbc(dbc,(int)uintval,0);
-	} else {
-		assertEqualDbc(dbc,(int)uintval,0);
-	}
+	assertEqualDbc(dbc,(int)uintval,0);
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
 	#endif
@@ -3648,13 +3577,9 @@ int main(int argc, char **argv) {
 	supported=0xff;
 	erg=SQLGetFunctions(dbc,SQL_API_SQLERROR,&supported);
 	assertSuccessDbc(dbc,erg);
-	if (issqlrelay) {
-		assertEqualDbc(dbc,(int)supported,(int)SQL_TRUE);
-	} else {
-		// ODBC 2.x call, replaced by SQLGetDiagRec; sap's driver
-		// still reports it as supported
-		assertEqualDbc(dbc,(int)supported,(int)SQL_TRUE);
-	}
+	// ODBC 2.x call, replaced by SQLGetDiagRec, but still
+	// reported as supported
+	assertEqualDbc(dbc,(int)supported,(int)SQL_TRUE);
 	stdoutput.printf("\n");
 
 
@@ -3798,13 +3723,9 @@ int main(int argc, char **argv) {
 	supported=0xff;
 	erg=SQLGetFunctions(dbc,SQL_API_SQLGETCONNECTOPTION,&supported);
 	assertSuccessDbc(dbc,erg);
-	if (issqlrelay) {
-		assertEqualDbc(dbc,(int)supported,(int)SQL_TRUE);
-	} else {
-		// ODBC 2.x call, replaced by SQLGetConnectAttr; sap's driver
-		// still reports it as supported
-		assertEqualDbc(dbc,(int)supported,(int)SQL_TRUE);
-	}
+	// ODBC 2.x call, replaced by SQLGetConnectAttr, but still
+	// reported as supported
+	assertEqualDbc(dbc,(int)supported,(int)SQL_TRUE);
 	stdoutput.printf("\n");
 
 
@@ -3840,13 +3761,9 @@ int main(int argc, char **argv) {
 	supported=0xff;
 	erg=SQLGetFunctions(dbc,SQL_API_SQLGETSTMTOPTION,&supported);
 	assertSuccessDbc(dbc,erg);
-	if (issqlrelay) {
-		assertEqualDbc(dbc,(int)supported,(int)SQL_TRUE);
-	} else {
-		// ODBC 2.x call, replaced by SQLGetStmtAttr; sap's driver
-		// still reports it as supported
-		assertEqualDbc(dbc,(int)supported,(int)SQL_TRUE);
-	}
+	// ODBC 2.x call, replaced by SQLGetStmtAttr, but still
+	// reported as supported
+	assertEqualDbc(dbc,(int)supported,(int)SQL_TRUE);
 	stdoutput.printf("\n");
 
 
@@ -3882,13 +3799,9 @@ int main(int argc, char **argv) {
 	supported=0xff;
 	erg=SQLGetFunctions(dbc,SQL_API_SQLSETCONNECTOPTION,&supported);
 	assertSuccessDbc(dbc,erg);
-	if (issqlrelay) {
-		assertEqualDbc(dbc,(int)supported,(int)SQL_TRUE);
-	} else {
-		// ODBC 2.x call, replaced by SQLSetConnectAttr; sap's driver
-		// still reports it as supported
-		assertEqualDbc(dbc,(int)supported,(int)SQL_TRUE);
-	}
+	// ODBC 2.x call, replaced by SQLSetConnectAttr, but still
+	// reported as supported
+	assertEqualDbc(dbc,(int)supported,(int)SQL_TRUE);
 	stdoutput.printf("\n");
 
 
@@ -3897,13 +3810,9 @@ int main(int argc, char **argv) {
 	supported=0xff;
 	erg=SQLGetFunctions(dbc,SQL_API_SQLSETSTMTOPTION,&supported);
 	assertSuccessDbc(dbc,erg);
-	if (issqlrelay) {
-		assertEqualDbc(dbc,(int)supported,(int)SQL_TRUE);
-	} else {
-		// ODBC 2.x call, replaced by SQLSetStmtAttr; sap's driver
-		// still reports it as supported
-		assertEqualDbc(dbc,(int)supported,(int)SQL_TRUE);
-	}
+	// ODBC 2.x call, replaced by SQLSetStmtAttr, but still
+	// reported as supported
+	assertEqualDbc(dbc,(int)supported,(int)SQL_TRUE);
 	stdoutput.printf("\n");
 
 

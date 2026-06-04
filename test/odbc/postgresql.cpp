@@ -289,7 +289,7 @@ int main(int argc, char **argv) {
 	// must be set before connect and can't be read until after; set only
 	stdoutput.printf("  SQL_ATTR_PACKET_SIZE\n");
 	erg=SQLSetConnectAttr(dbc,SQL_ATTR_PACKET_SIZE,
-			(SQLPOINTER)(uintptr_t)8192,0);
+			(SQLPOINTER)(uintptr_t)2048,0);
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
 
@@ -756,23 +756,13 @@ int main(int argc, char **argv) {
 	#if (ODBCVER >= 0x0351)
 	// SQL_ATTR_AUTO_IPD (read-only)
 	stdoutput.printf("  SQL_ATTR_AUTO_IPD\n");
-	if (issqlrelay) {
-		erg=SQLGetConnectAttr(dbc,SQL_ATTR_AUTO_IPD,
-				(SQLPOINTER)&dbcuintval,0,&dbcstrlen);
-		assertSuccessDbc(dbc,erg);
-		// require a valid boolean (SQL_TRUE or SQL_FALSE)
-		assertEqualDbc(dbc,
-			(int)(dbcuintval==SQL_TRUE || dbcuintval==SQL_FALSE),
-			(int)1);
-	} else {
-		// postgresql odbc accepts SQL_ATTR_AUTO_IPD
-		erg=SQLGetConnectAttr(dbc,SQL_ATTR_AUTO_IPD,
-				(SQLPOINTER)&dbcuintval,0,&dbcstrlen);
-		assertSuccessDbc(dbc,erg);
-		assertEqualDbc(dbc,
-			(int)(dbcuintval==SQL_TRUE || dbcuintval==SQL_FALSE),
-			(int)1);
-	}
+	erg=SQLGetConnectAttr(dbc,SQL_ATTR_AUTO_IPD,
+			(SQLPOINTER)&dbcuintval,0,&dbcstrlen);
+	assertSuccessDbc(dbc,erg);
+	// require a valid boolean (SQL_TRUE or SQL_FALSE)
+	assertEqualDbc(dbc,
+		(int)(dbcuintval==SQL_TRUE || dbcuintval==SQL_FALSE),
+		(int)1);
 	stdoutput.printf("\n");
 	#endif
 
@@ -3569,16 +3559,9 @@ int main(int argc, char **argv) {
 	erg=SQLGetInfo(dbc,SQL_SQL92_FOREIGN_KEY_DELETE_RULE,
 			(SQLPOINTER)&uintval,
 			(SQLSMALLINT)sizeof(uintval),&vallen);
-	if (issqlrelay) {
-		assertEqualDbc(dbc,(int)uintval,
-			(int)(SQL_SFKD_CASCADE|SQL_SFKD_NO_ACTION|
-				SQL_SFKD_SET_DEFAULT|SQL_SFKD_SET_NULL));
-	} else {
-		// postgresql odbc reports the same union
-		assertEqualDbc(dbc,(int)uintval,
-			(int)(SQL_SFKD_CASCADE|SQL_SFKD_NO_ACTION|
-				SQL_SFKD_SET_DEFAULT|SQL_SFKD_SET_NULL));
-	}
+	assertEqualDbc(dbc,(int)uintval,
+		(int)(SQL_SFKD_CASCADE|SQL_SFKD_NO_ACTION|
+			SQL_SFKD_SET_DEFAULT|SQL_SFKD_SET_NULL));
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
 	#endif

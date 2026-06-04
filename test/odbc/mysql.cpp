@@ -289,7 +289,7 @@ int main(int argc, char **argv) {
 	// must be set before connect and can't be read until after; set only
 	stdoutput.printf("  SQL_ATTR_PACKET_SIZE\n");
 	erg=SQLSetConnectAttr(dbc,SQL_ATTR_PACKET_SIZE,
-			(SQLPOINTER)(uintptr_t)8192,0);
+			(SQLPOINTER)(uintptr_t)2048,0);
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
 
@@ -952,20 +952,12 @@ int main(int argc, char **argv) {
 	#if defined(SQL_ATTR_RESET_CONNECTION)
 	// SQL_ATTR_RESET_CONNECTION
 	stdoutput.printf("  SQL_ATTR_RESET_CONNECTION\n");
-	if (issqlrelay) {
-		// SQL_RESET_CONNECTION_YES (write-only per spec; set
-		// before reusing a pooled connection)
-		erg=SQLSetConnectAttr(dbc,SQL_ATTR_RESET_CONNECTION,
-				(SQLPOINTER)(uintptr_t)
-				SQL_RESET_CONNECTION_YES,0);
-		assertSuccessDbc(dbc,erg);
-	} else {
-		// MariaDB silently accepts set.
-		erg=SQLSetConnectAttr(dbc,SQL_ATTR_RESET_CONNECTION,
-				(SQLPOINTER)(uintptr_t)
-				SQL_RESET_CONNECTION_YES,0);
-		assertSuccessDbc(dbc,erg);
-	}
+	// SQL_RESET_CONNECTION_YES (write-only per spec; set
+	// before reusing a pooled connection)
+	erg=SQLSetConnectAttr(dbc,SQL_ATTR_RESET_CONNECTION,
+			(SQLPOINTER)(uintptr_t)
+			SQL_RESET_CONNECTION_YES,0);
+	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
 	#endif
 
@@ -1252,13 +1244,9 @@ int main(int argc, char **argv) {
 	erg=SQLGetInfo(dbc,SQL_IDENTIFIER_QUOTE_CHAR,
 			(SQLPOINTER)strval,(SQLSMALLINT)sizeof(strval),
 			&vallen);
-	if (issqlrelay) {
-		assertEqualDbc(dbc,(const char *)strval,"`");
-	} else {
-		// native MySQL ODBC reports the backtick (default;
-		// ANSI mode would report ")
-		assertEqualDbc(dbc,(const char *)strval,"`");
-	}
+	// the backtick is the default; ANSI mode
+	// would report the double-quote instead
+	assertEqualDbc(dbc,(const char *)strval,"`");
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
 
@@ -1380,18 +1368,10 @@ int main(int argc, char **argv) {
 	erg=SQLGetInfo(dbc,SQL_TXN_ISOLATION_OPTION,
 			(SQLPOINTER)&uintval,(SQLSMALLINT)sizeof(uintval),
 			&vallen);
-	if (issqlrelay) {
-		// TODO: sqlrelay reports the union of backend support;
-		// for MySQL all four levels are valid
-		assertEqualDbc(dbc,(int)uintval,
-			(int)(SQL_TXN_READ_UNCOMMITTED|SQL_TXN_READ_COMMITTED|
-				SQL_TXN_REPEATABLE_READ|SQL_TXN_SERIALIZABLE));
-	} else {
-		// MySQL supports all four standard isolation levels
-		assertEqualDbc(dbc,(int)uintval,
-			(int)(SQL_TXN_READ_UNCOMMITTED|SQL_TXN_READ_COMMITTED|
-				SQL_TXN_REPEATABLE_READ|SQL_TXN_SERIALIZABLE));
-	}
+	// MySQL supports all four standard isolation levels
+	assertEqualDbc(dbc,(int)uintval,
+		(int)(SQL_TXN_READ_UNCOMMITTED|SQL_TXN_READ_COMMITTED|
+			SQL_TXN_REPEATABLE_READ|SQL_TXN_SERIALIZABLE));
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
 
@@ -1839,11 +1819,7 @@ int main(int argc, char **argv) {
 	erg=SQLGetInfo(dbc,SQL_ODBC_SQL_CONFORMANCE,
 			(SQLPOINTER)&usmallintval,
 			(SQLSMALLINT)sizeof(usmallintval),&vallen);
-	if (issqlrelay) {
-		assertEqualDbc(dbc,(int)usmallintval,(int)SQL_OSC_CORE);
-	} else {
-		assertEqualDbc(dbc,(int)usmallintval,(int)SQL_OSC_CORE);
-	}
+	assertEqualDbc(dbc,(int)usmallintval,(int)SQL_OSC_CORE);
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
 
@@ -1943,11 +1919,7 @@ int main(int argc, char **argv) {
 	erg=SQLGetInfo(dbc,SQL_MULT_RESULT_SETS,
 			(SQLPOINTER)strval,(SQLSMALLINT)sizeof(strval),
 			&vallen);
-	if (issqlrelay) {
-		assertEqualDbc(dbc,(const char *)strval,"Y");
-	} else {
-		assertEqualDbc(dbc,(const char *)strval,"Y");
-	}
+	assertEqualDbc(dbc,(const char *)strval,"Y");
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
 
@@ -2684,11 +2656,7 @@ int main(int argc, char **argv) {
 	erg=SQLGetInfo(dbc,SQL_NEED_LONG_DATA_LEN,
 			(SQLPOINTER)strval,(SQLSMALLINT)sizeof(strval),
 			&vallen);
-	if (issqlrelay) {
-		assertEqualDbc(dbc,(const char *)strval,"N");
-	} else {
-		assertEqualDbc(dbc,(const char *)strval,"N");
-	}
+	assertEqualDbc(dbc,(const char *)strval,"N");
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
 
@@ -3077,11 +3045,7 @@ int main(int argc, char **argv) {
 	erg=SQLGetInfo(dbc,SQL_DROP_SCHEMA,
 			(SQLPOINTER)&uintval,
 			(SQLSMALLINT)sizeof(uintval),&vallen);
-	if (issqlrelay) {
-		assertEqualDbc(dbc,(int)uintval,0);
-	} else {
-		assertEqualDbc(dbc,(int)uintval,0);
-	}
+	assertEqualDbc(dbc,(int)uintval,0);
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
 	#endif
@@ -3303,18 +3267,10 @@ int main(int argc, char **argv) {
 	erg=SQLGetInfo(dbc,SQL_SQL92_DATETIME_FUNCTIONS,
 			(SQLPOINTER)&uintval,
 			(SQLSMALLINT)sizeof(uintval),&vallen);
-	if (issqlrelay) {
-		assertEqualDbc(dbc,(int)uintval,
-			(int)(SQL_SDF_CURRENT_DATE|
-				SQL_SDF_CURRENT_TIME|
-				SQL_SDF_CURRENT_TIMESTAMP));
-	} else {
-		// MariaDB also reports DATE|TIME|TIMESTAMP.
-		assertEqualDbc(dbc,(int)uintval,
-			(int)(SQL_SDF_CURRENT_DATE|
-				SQL_SDF_CURRENT_TIME|
-				SQL_SDF_CURRENT_TIMESTAMP));
-	}
+	assertEqualDbc(dbc,(int)uintval,
+		(int)(SQL_SDF_CURRENT_DATE|
+			SQL_SDF_CURRENT_TIME|
+			SQL_SDF_CURRENT_TIMESTAMP));
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
 	#endif
@@ -3326,11 +3282,7 @@ int main(int argc, char **argv) {
 	erg=SQLGetInfo(dbc,SQL_SQL92_FOREIGN_KEY_DELETE_RULE,
 			(SQLPOINTER)&uintval,
 			(SQLSMALLINT)sizeof(uintval),&vallen);
-	if (issqlrelay) {
-		assertEqualDbc(dbc,(int)uintval,0);
-	} else {
-		assertEqualDbc(dbc,(int)uintval,0);
-	}
+	assertEqualDbc(dbc,(int)uintval,0);
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
 	#endif
@@ -3342,11 +3294,7 @@ int main(int argc, char **argv) {
 	erg=SQLGetInfo(dbc,SQL_SQL92_FOREIGN_KEY_UPDATE_RULE,
 			(SQLPOINTER)&uintval,
 			(SQLSMALLINT)sizeof(uintval),&vallen);
-	if (issqlrelay) {
-		assertEqualDbc(dbc,(int)uintval,0);
-	} else {
-		assertEqualDbc(dbc,(int)uintval,0);
-	}
+	assertEqualDbc(dbc,(int)uintval,0);
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
 	#endif
@@ -5462,14 +5410,9 @@ int main(int argc, char **argv) {
 	}
 	erg=SQLSetStmtAttr(stmt,SQL_ATTR_FETCH_BOOKMARK_PTR,
 			(SQLPOINTER)&stmtbookmark,SQL_IS_POINTER);
-	if (issqlrelay) {
-		// installing a non-NULL bookmark pointer is rejected
-		// with HYC00 ("Optional feature not implemented")
-		assertFailureStmt(stmt,erg);
-	} else {
-		// MariaDB also rejects with HYC00.
-		assertFailureStmt(stmt,erg);
-	}
+	// installing a non-NULL bookmark pointer is rejected
+	// with HYC00 ("Optional feature not implemented")
+	assertFailureStmt(stmt,erg);
 	erg=SQLGetStmtAttr(stmt,SQL_ATTR_FETCH_BOOKMARK_PTR,
 			(SQLPOINTER)&stmtptrval,0,&stmtstrlen);
 	assertSuccessStmt(stmt,erg);

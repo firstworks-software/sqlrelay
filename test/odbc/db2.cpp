@@ -337,7 +337,7 @@ int main(int argc, char **argv) {
 	// must be set pre-connect, can't be read until post-connect; set only
 	stdoutput.printf("  SQL_ATTR_PACKET_SIZE\n");
 	erg=SQLSetConnectAttr(dbc,SQL_ATTR_PACKET_SIZE,
-			(SQLPOINTER)(uintptr_t)8192,0);
+			(SQLPOINTER)(uintptr_t)2048,0);
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
 
@@ -1941,12 +1941,7 @@ int main(int argc, char **argv) {
 	erg=SQLGetInfo(dbc,SQL_MAX_PROCEDURE_NAME_LEN,
 			(SQLPOINTER)&usmallintval,
 			(SQLSMALLINT)sizeof(usmallintval),&vallen);
-	if (issqlrelay) {
-		assertEqualDbc(dbc,(int)usmallintval,128);
-	} else {
-		// native db2 reports 128
-		assertEqualDbc(dbc,(int)usmallintval,128);
-	}
+	assertEqualDbc(dbc,(int)usmallintval,128);
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
 
@@ -2216,12 +2211,7 @@ int main(int argc, char **argv) {
 	erg=SQLGetInfo(dbc,SQL_CONVERT_BIGINT,
 			(SQLPOINTER)&uintval,
 			(SQLSMALLINT)sizeof(uintval),&vallen);
-	if (issqlrelay) {
-		assertEqualDbc(dbc,(int)uintval,0);
-	} else {
-		// native db2 reports 0
-		assertEqualDbc(dbc,(int)uintval,0);
-	}
+	assertEqualDbc(dbc,(int)uintval,0);
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
 
@@ -2241,12 +2231,7 @@ int main(int argc, char **argv) {
 	erg=SQLGetInfo(dbc,SQL_CONVERT_BIT,
 			(SQLPOINTER)&uintval,
 			(SQLSMALLINT)sizeof(uintval),&vallen);
-	if (issqlrelay) {
-		assertEqualDbc(dbc,(int)uintval,0);
-	} else {
-		// native db2 reports 0
-		assertEqualDbc(dbc,(int)uintval,0);
-	}
+	assertEqualDbc(dbc,(int)uintval,0);
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
 
@@ -2371,12 +2356,7 @@ int main(int argc, char **argv) {
 	erg=SQLGetInfo(dbc,SQL_CONVERT_REAL,
 			(SQLPOINTER)&uintval,
 			(SQLSMALLINT)sizeof(uintval),&vallen);
-	if (issqlrelay) {
-		assertEqualDbc(dbc,(int)uintval,0);
-	} else {
-		// native db2 reports 0
-		assertEqualDbc(dbc,(int)uintval,0);
-	}
+	assertEqualDbc(dbc,(int)uintval,0);
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
 
@@ -2431,12 +2411,7 @@ int main(int argc, char **argv) {
 	erg=SQLGetInfo(dbc,SQL_CONVERT_TINYINT,
 			(SQLPOINTER)&uintval,
 			(SQLSMALLINT)sizeof(uintval),&vallen);
-	if (issqlrelay) {
-		assertEqualDbc(dbc,(int)uintval,0);
-	} else {
-		// native db2 reports 0
-		assertEqualDbc(dbc,(int)uintval,0);
-	}
+	assertEqualDbc(dbc,(int)uintval,0);
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
 
@@ -2522,12 +2497,7 @@ int main(int argc, char **argv) {
 	erg=SQLGetInfo(dbc,SQL_DRIVER_ODBC_VER,
 			(SQLPOINTER)strval,(SQLSMALLINT)sizeof(strval),
 			&vallen);
-	if (issqlrelay) {
-		assertEqualDbc(dbc,(const char *)strval,"03.80");
-	} else {
-		// native db2 driver conforms to ODBC 3.80
-		assertEqualDbc(dbc,(const char *)strval,"03.80");
-	}
+	assertEqualDbc(dbc,(const char *)strval,"03.80");
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
 
@@ -2537,13 +2507,8 @@ int main(int argc, char **argv) {
 	erg=SQLGetInfo(dbc,SQL_LOCK_TYPES,
 			(SQLPOINTER)&uintval,
 			(SQLSMALLINT)sizeof(uintval),&vallen);
-	if (issqlrelay) {
-		// db2 reports no lock types
-		assertEqualDbc(dbc,(int)uintval,0);
-	} else {
-		// native db2 reports 0
-		assertEqualDbc(dbc,(int)uintval,0);
-	}
+	// db2 reports no lock types
+	assertEqualDbc(dbc,(int)uintval,0);
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
 
@@ -2684,12 +2649,7 @@ int main(int argc, char **argv) {
 	erg=SQLGetInfo(dbc,SQL_QUALIFIER_USAGE,
 			(SQLPOINTER)&uintval,
 			(SQLSMALLINT)sizeof(uintval),&vallen);
-	if (issqlrelay) {
-		assertEqualDbc(dbc,(int)uintval,0);
-	} else {
-		// native db2 reports 0
-		assertEqualDbc(dbc,(int)uintval,0);
-	}
+	assertEqualDbc(dbc,(int)uintval,0);
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
 
@@ -2747,12 +2707,7 @@ int main(int argc, char **argv) {
 	erg=SQLGetInfo(dbc,SQL_MAX_CHAR_LITERAL_LEN,
 			(SQLPOINTER)&uintval,
 			(SQLSMALLINT)sizeof(uintval),&vallen);
-	if (issqlrelay) {
-		assertEqualDbc(dbc,(int)uintval,32672);
-	} else {
-		// native db2 reports 32672
-		assertEqualDbc(dbc,(int)uintval,32672);
-	}
+	assertEqualDbc(dbc,(int)uintval,32672);
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
 
@@ -2808,12 +2763,7 @@ int main(int argc, char **argv) {
 	erg=SQLGetInfo(dbc,SQL_MAX_BINARY_LITERAL_LEN,
 			(SQLPOINTER)&uintval,
 			(SQLSMALLINT)sizeof(uintval),&vallen);
-	if (issqlrelay) {
-		assertEqualDbc(dbc,(int)uintval,4000);
-	} else {
-		// native db2 reports 4000
-		assertEqualDbc(dbc,(int)uintval,4000);
-	}
+	assertEqualDbc(dbc,(int)uintval,4000);
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
 
@@ -3337,12 +3287,7 @@ int main(int argc, char **argv) {
 	erg=SQLGetInfo(dbc,SQL_INFO_SCHEMA_VIEWS,
 			(SQLPOINTER)&uintval,
 			(SQLSMALLINT)sizeof(uintval),&vallen);
-	if (issqlrelay) {
-		assertEqualDbc(dbc,(int)uintval,0);
-	} else {
-		// native db2 reports 0
-		assertEqualDbc(dbc,(int)uintval,0);
-	}
+	assertEqualDbc(dbc,(int)uintval,0);
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
 	#endif

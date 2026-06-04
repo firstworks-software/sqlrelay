@@ -289,7 +289,7 @@ int main(int argc, char **argv) {
 	// must be set before connect and can't be read until after; set only
 	stdoutput.printf("  SQL_ATTR_PACKET_SIZE\n");
 	erg=SQLSetConnectAttr(dbc,SQL_ATTR_PACKET_SIZE,
-			(SQLPOINTER)(uintptr_t)8192,0);
+			(SQLPOINTER)(uintptr_t)2048,0);
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
 
