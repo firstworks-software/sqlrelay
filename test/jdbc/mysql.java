@@ -189,34 +189,30 @@ class mysql extends sqlrtest {
 		System.out.println("  isolation levels");
 
 		// mysql supports all four isolation levels
-		con.commit();
-
+		// (autocommit is on here, so no commit() between changes -
+		// the native driver rejects commit() in autocommit mode)
 		con.setTransactionIsolation(
 			Connection.TRANSACTION_READ_UNCOMMITTED);
 		assertEquals(con.getTransactionIsolation(),
 			Connection.TRANSACTION_READ_UNCOMMITTED);
 
-		con.commit();
 		con.setTransactionIsolation(
 			Connection.TRANSACTION_READ_COMMITTED);
 		assertEquals(con.getTransactionIsolation(),
 			Connection.TRANSACTION_READ_COMMITTED);
 
-		con.commit();
 		con.setTransactionIsolation(
 			Connection.
 			TRANSACTION_REPEATABLE_READ);
 		assertEquals(con.getTransactionIsolation(),
 			Connection.TRANSACTION_REPEATABLE_READ);
 
-		con.commit();
 		con.setTransactionIsolation(
 			Connection.TRANSACTION_SERIALIZABLE);
 		assertEquals(con.getTransactionIsolation(),
 			Connection.TRANSACTION_SERIALIZABLE);
 
 		// reset to default
-		con.commit();
 		con.setTransactionIsolation(
 			Connection.TRANSACTION_REPEATABLE_READ);
 		System.out.println();
@@ -308,12 +304,7 @@ class mysql extends sqlrtest {
 		boolval=md.deletesAreDetected(
 					ResultSet.TYPE_SCROLL_SENSITIVE);
 		System.out.println("    "+boolval);
-		if (issqlrelay) {
-			// sqlrelay doesn't support TYPE_SCROLL_SENSITIVE
-			assertFalse(boolval);
-		} else {
-			assertFalse(boolval);
-		}
+		assertFalse(boolval);
 		System.out.println();
 
 		// doesMaxRowSizeIncludeBlobs
@@ -728,12 +719,7 @@ class mysql extends sqlrtest {
 		boolval=md.insertsAreDetected(
 					ResultSet.TYPE_SCROLL_SENSITIVE);
 		System.out.println("    "+boolval);
-		if (issqlrelay) {
-			// sqlrelay doesn't support TYPE_SCROLL_SENSITIVE
-			assertFalse(boolval);
-		} else {
-			assertFalse(boolval);
-		}
+		assertFalse(boolval);
 		System.out.println();
 
 		// isCatalogAtStart
@@ -814,12 +800,7 @@ class mysql extends sqlrtest {
 		boolval=md.othersDeletesAreVisible(
 					ResultSet.TYPE_SCROLL_SENSITIVE);
 		System.out.println("    "+boolval);
-		if (issqlrelay) {
-			// sqlrelay doesn't support TYPE_SCROLL_SENSITIVE
-			assertFalse(boolval);
-		} else {
-			assertFalse(boolval);
-		}
+		assertFalse(boolval);
 		System.out.println();
 
 		// othersInsertsAreVisible
@@ -844,12 +825,7 @@ class mysql extends sqlrtest {
 		boolval=md.othersInsertsAreVisible(
 					ResultSet.TYPE_SCROLL_SENSITIVE);
 		System.out.println("    "+boolval);
-		if (issqlrelay) {
-			// sqlrelay doesn't support TYPE_SCROLL_SENSITIVE
-			assertFalse(boolval);
-		} else {
-			assertFalse(boolval);
-		}
+		assertFalse(boolval);
 		System.out.println();
 
 		// othersUpdatesAreVisible
@@ -874,12 +850,7 @@ class mysql extends sqlrtest {
 		boolval=md.othersUpdatesAreVisible(
 					ResultSet.TYPE_SCROLL_SENSITIVE);
 		System.out.println("    "+boolval);
-		if (issqlrelay) {
-			// sqlrelay doesn't support TYPE_SCROLL_SENSITIVE
-			assertFalse(boolval);
-		} else {
-			assertFalse(boolval);
-		}
+		assertFalse(boolval);
 		System.out.println();
 
 		// ownDeletesAreVisible
@@ -904,12 +875,7 @@ class mysql extends sqlrtest {
 		boolval=md.ownDeletesAreVisible(
 					ResultSet.TYPE_SCROLL_SENSITIVE);
 		System.out.println("    "+boolval);
-		if (issqlrelay) {
-			// sqlrelay doesn't support TYPE_SCROLL_SENSITIVE
-			assertFalse(boolval);
-		} else {
-			assertFalse(boolval);
-		}
+		assertFalse(boolval);
 		System.out.println();
 
 		// ownInsertsAreVisible
@@ -934,12 +900,7 @@ class mysql extends sqlrtest {
 		boolval=md.ownInsertsAreVisible(
 					ResultSet.TYPE_SCROLL_SENSITIVE);
 		System.out.println("    "+boolval);
-		if (issqlrelay) {
-			// sqlrelay doesn't support TYPE_SCROLL_SENSITIVE
-			assertFalse(boolval);
-		} else {
-			assertFalse(boolval);
-		}
+		assertFalse(boolval);
 		System.out.println();
 
 		// ownUpdatesAreVisible
@@ -964,12 +925,7 @@ class mysql extends sqlrtest {
 		boolval=md.ownUpdatesAreVisible(
 					ResultSet.TYPE_SCROLL_SENSITIVE);
 		System.out.println("    "+boolval);
-		if (issqlrelay) {
-			// sqlrelay doesn't support TYPE_SCROLL_SENSITIVE
-			assertFalse(boolval);
-		} else {
-			assertFalse(boolval);
-		}
+		assertFalse(boolval);
 		System.out.println();
 
 		// storesLowerCaseIdentifiers
@@ -1642,12 +1598,7 @@ class mysql extends sqlrtest {
 		boolval=md.updatesAreDetected(
 					ResultSet.TYPE_SCROLL_SENSITIVE);
 		System.out.println("    "+boolval);
-		if (issqlrelay) {
-			// sqlrelay doesn't support TYPE_SCROLL_SENSITIVE
-			assertFalse(boolval);
-		} else {
-			assertFalse(boolval);
-		}
+		assertFalse(boolval);
 		System.out.println();
 
 		// usesLocalFilePerTable

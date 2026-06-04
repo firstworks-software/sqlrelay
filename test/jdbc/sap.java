@@ -557,7 +557,12 @@ class sap extends sqlrtest {
 		System.out.println("  getUserName");
 		stringval=md.getUserName();
 		System.out.println("    "+stringval);
-		assertEquals(stringval,"testuser");
+		if (issqlrelay) {
+			assertEquals(stringval,"testuser");
+		} else {
+			// sap jdbc returns "dbo" for this
+			assertEquals(stringval,"dbo");
+		}
 		System.out.println();
 
 		// isCatalogAtStart

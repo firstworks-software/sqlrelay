@@ -205,6 +205,11 @@ class oracle extends sqlrtest {
 		// isolation levels
 		System.out.println("  isolation levels");
 
+		// commit() is illegal in auto-commit mode, and the
+		// isolation level must be the first statement of a
+		// transaction, so switch to manual-commit mode here
+		con.setAutoCommit(false);
+
 		// oracle requires the isolation level to
 		// be the first query of the transaction
 		con.commit();
@@ -245,6 +250,9 @@ class oracle extends sqlrtest {
 		con.setTransactionIsolation(
 			Connection.TRANSACTION_READ_COMMITTED);
 		assertTrue(true);
+
+		// restore auto-commit mode
+		con.setAutoCommit(true);
 		System.out.println();
 
 		// warnings
@@ -334,12 +342,7 @@ class oracle extends sqlrtest {
 		boolval=md.deletesAreDetected(
 					ResultSet.TYPE_SCROLL_SENSITIVE);
 		System.out.println("    "+boolval);
-		if (issqlrelay) {
-			// sqlrelay doesn't support TYPE_SCROLL_SENSITIVE
-			assertFalse(boolval);
-		} else {
-			assertFalse(boolval);
-		}
+		assertFalse(boolval);
 		System.out.println();
 
 		// doesMaxRowSizeIncludeBlobs
@@ -738,12 +741,7 @@ class oracle extends sqlrtest {
 		boolval=md.insertsAreDetected(
 					ResultSet.TYPE_SCROLL_SENSITIVE);
 		System.out.println("    "+boolval);
-		if (issqlrelay) {
-			// sqlrelay doesn't support TYPE_SCROLL_SENSITIVE
-			assertFalse(boolval);
-		} else {
-			assertFalse(boolval);
-		}
+		assertFalse(boolval);
 		System.out.println();
 
 		// isCatalogAtStart
@@ -824,12 +822,7 @@ class oracle extends sqlrtest {
 		boolval=md.othersDeletesAreVisible(
 					ResultSet.TYPE_SCROLL_SENSITIVE);
 		System.out.println("    "+boolval);
-		if (issqlrelay) {
-			// sqlrelay doesn't support TYPE_SCROLL_SENSITIVE
-			assertFalse(boolval);
-		} else {
-			assertFalse(boolval);
-		}
+		assertFalse(boolval);
 		System.out.println();
 
 		// othersInsertsAreVisible
@@ -854,12 +847,7 @@ class oracle extends sqlrtest {
 		boolval=md.othersInsertsAreVisible(
 					ResultSet.TYPE_SCROLL_SENSITIVE);
 		System.out.println("    "+boolval);
-		if (issqlrelay) {
-			// sqlrelay doesn't support TYPE_SCROLL_SENSITIVE
-			assertFalse(boolval);
-		} else {
-			assertFalse(boolval);
-		}
+		assertFalse(boolval);
 		System.out.println();
 
 		// othersUpdatesAreVisible
@@ -944,12 +932,7 @@ class oracle extends sqlrtest {
 		boolval=md.ownInsertsAreVisible(
 					ResultSet.TYPE_SCROLL_SENSITIVE);
 		System.out.println("    "+boolval);
-		if (issqlrelay) {
-			// sqlrelay doesn't support TYPE_SCROLL_SENSITIVE
-			assertFalse(boolval);
-		} else {
-			assertFalse(boolval);
-		}
+		assertFalse(boolval);
 		System.out.println();
 
 		// ownUpdatesAreVisible
@@ -1663,12 +1646,7 @@ class oracle extends sqlrtest {
 		boolval=md.updatesAreDetected(
 					ResultSet.TYPE_SCROLL_SENSITIVE);
 		System.out.println("    "+boolval);
-		if (issqlrelay) {
-			// sqlrelay doesn't support TYPE_SCROLL_SENSITIVE
-			assertFalse(boolval);
-		} else {
-			assertFalse(boolval);
-		}
+		assertFalse(boolval);
 		System.out.println();
 
 		// usesLocalFilePerTable

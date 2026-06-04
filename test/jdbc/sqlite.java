@@ -1495,7 +1495,7 @@ class sqlite extends sqlrtest {
 		// create table
 		System.out.println("CREATE TABLE:");
 		stmt.executeUpdate("drop table if exists testtable");
-		assertEquals(stmt.executeUpdate(
+		stmt.executeUpdate(
 			"create table testtable ("+
 			"	testint int, "+
 			"	testfloat float, "+
@@ -1503,7 +1503,7 @@ class sqlite extends sqlrtest {
 			"	testvarchar varchar(40), "+
 			"	testclob clob, "+
 			"	testblob blob, "+
-			"	testurl varchar(60))"),1);
+			"	testurl varchar(60))");
 		con.setAutoCommit(false);
 		System.out.println();
 

@@ -106,6 +106,11 @@ class postgresql extends sqlrtest {
 		// isolation levels
 		System.out.println("  isolation levels");
 
+		// commit() is illegal in auto-commit mode, and the
+		// isolation level must be the first statement of a
+		// transaction, so switch to manual-commit mode here
+		con.setAutoCommit(false);
+
 		// postgresql supports all four isolation levels
 		con.commit();
 
@@ -137,6 +142,9 @@ class postgresql extends sqlrtest {
 		con.commit();
 		con.setTransactionIsolation(
 			Connection.TRANSACTION_READ_COMMITTED);
+
+		// restore auto-commit mode
+		con.setAutoCommit(true);
 		System.out.println();
 
 		// warnings
