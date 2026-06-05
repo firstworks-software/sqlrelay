@@ -96,6 +96,7 @@
 	updated sap/freetds to support {call proc(...)} syntax
 	fixed a long-standing sap select-with-bind bug
 	fixed some subtle odbc/informix bugs
+	updated odbc driver to use inputBindClob for all SQL_(W)LONGVARCHARs
 
 2.1.1 - added tns_admin support
 	fixed sqlr-start ... -strace ...
