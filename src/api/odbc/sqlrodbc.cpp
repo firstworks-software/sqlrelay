@@ -11683,15 +11683,23 @@ SQLRETURN SQL_API SQLParamData(SQLHSTMT statementhandle,
 						stmt->putdatabind);
 		debugPrintf("  parametername: %s\n",
 					parametername);
-		// dispatch on the C type recorded by SQLBindParameter so
-		// binary data goes to inputBindBlob and character data goes
-		// to inputBind
+		// dispatch on the type recorded by SQLBindParameter so binary
+		// data goes to inputBindBlob, LONGVARCHAR data to inputBindClob
+		// and other character data to inputBind
 		inputbind	*ib=NULL;
 		stmt->inputbinds.getValue(stmt->putdatabind,&ib);
 		if (ib && ib->valuetype==SQL_C_BINARY) {
 			debugPrintf("  putting %d binary bytes\n",
 					stmt->putdatabuffer.getSize());
 			stmt->cur->inputBindBlob(parametername,
+				(const char *)
+					stmt->putdatabuffer.getBuffer(),
+				stmt->putdatabuffer.getSize());
+		} else if (ib && (ib->parametertype==SQL_LONGVARCHAR ||
+					ib->parametertype==SQL_WLONGVARCHAR)) {
+			debugPrintf("  putting %d clob bytes\n",
+					stmt->putdatabuffer.getSize());
+			stmt->cur->inputBindClob(parametername,
 				(const char *)
 					stmt->putdatabuffer.getBuffer(),
 				stmt->putdatabuffer.getSize());
@@ -13865,25 +13873,31 @@ static SQLRETURN SQLR_InputBindParameter(SQLHSTMT statementhandle,
 				// list now, in parameter order - necessary for
 				// backends that bind by position (eg. sap)
 				stmt->cur->inputBind(parametername,"",0);
-			} else if ((parametertype==SQL_LONGVARCHAR ||
-					parametertype==SQL_WLONGVARCHAR) &&
-					(!parametervalue ||
-						(strlen_or_ind &&
-							*strlen_or_ind==0))) {
-				// Zero-length or NULL input for a
-				// LONGVARCHAR parameter: bind as a CLOB so
-				// the empty-vs-NULL distinction survives
-				// Oracle's "empty string == NULL" legacy
-				// semantics.  Non-empty data still falls
-				// through to the plain-string path below,
-				// because ODBC's SQL_LONGVARCHAR maps to
-				// either LONG or CLOB on Oracle and a CLOB
-				// temporary LOB can't bind to a LONG
-				// column.
-				debugPrintf("  as CLOB (empty/NULL)\n");
-				stmt->cur->inputBindClob(parametername,
+			} else if (parametertype==SQL_LONGVARCHAR ||
+					parametertype==SQL_WLONGVARCHAR) {
+				if (!parametervalue ||
+					(strlen_or_ind &&
+						*strlen_or_ind==0)) {
+					debugPrintf("  as CLOB (empty/NULL)\n");
+					stmt->cur->inputBindClob(parametername,
 						(const char *)parametervalue,
 						0);
+				} else if (strlen_or_ind &&
+						*strlen_or_ind!=SQL_NTS) {
+					debugPrintf("  as CLOB: \"%.*s\"\n",
+							(int)*strlen_or_ind,
+							parametervalue);
+					stmt->cur->inputBindClob(parametername,
+						(const char *)parametervalue,
+						*strlen_or_ind);
+				} else {
+					debugPrintf("  as CLOB: \"%s\"\n",
+							parametervalue);
+					stmt->cur->inputBindClob(parametername,
+						(const char *)parametervalue,
+						charstring::getLength(
+						(const char *)parametervalue));
+				}
 			} else {
 				// Don't be tempted to use bufferlength here,
 				// it's the size of the buffer, and only
@@ -13924,13 +13938,6 @@ static SQLRETURN SQLR_InputBindParameter(SQLHSTMT statementhandle,
 			debugPrintf("  valuetype: SQL_C_FLOAT\n");
 			debugPrintf("  value: \"%f\"\n",
 				(double)(*((float *)parametervalue)));
-			// Per the ODBC spec, ColumnSize and DecimalDigits are
-			// ignored for fixed-precision floating types — they are
-			// typically passed as 0,0.  But sqlrcursor::inputBind
-			// uses them as precision/scale for "%*.*Lf"-style
-			// formatting, which would truncate "1.1" to "1".  Send
-			// the value as a string with full single-precision
-			// precision (FLT_DECIMAL_DIG=9) instead.
 			{
 			char	floatbuf[32];
 			charstring::printf(floatbuf,sizeof(floatbuf),
@@ -13943,8 +13950,6 @@ static SQLRETURN SQLR_InputBindParameter(SQLHSTMT statementhandle,
 			debugPrintf("  valuetype: SQL_C_DOUBLE\n");
 			debugPrintf("  value: \"%f\"\n",
 				*((double *)parametervalue));
-			// see SQL_C_FLOAT comment above; full double precision
-			// here is DBL_DECIMAL_DIG=17
 			{
 			char	doublebuf[32];
 			charstring::printf(doublebuf,sizeof(doublebuf),
@@ -13965,7 +13970,8 @@ static SQLRETURN SQLR_InputBindParameter(SQLHSTMT statementhandle,
 		case SQL_C_DATE:
 		case SQL_C_TYPE_DATE:
 			{
-			debugPrintf("  valuetype: SQL_C_DATE/SQL_C_TYPE_DATE\n");
+			debugPrintf("  valuetype: "
+					"SQL_C_DATE/SQL_C_TYPE_DATE\n");
 			DATE_STRUCT	*ds=(DATE_STRUCT *)parametervalue;
 			debugPrintf("  value: \"%d-%d-%d\"\n",
 						ds->year,ds->month,ds->day);
@@ -13977,7 +13983,8 @@ static SQLRETURN SQLR_InputBindParameter(SQLHSTMT statementhandle,
 		case SQL_C_TIME:
 		case SQL_C_TYPE_TIME:
 			{
-			debugPrintf("  valuetype: SQL_C_TIME/SQL_C_TYPE_TIME\n");
+			debugPrintf("  valuetype: "
+					"SQL_C_TIME/SQL_C_TYPE_TIME\n");
 			TIME_STRUCT	*ts=(TIME_STRUCT *)parametervalue;
 			debugPrintf("  value: \"%d:%d:%d\"\n",
 						ts->hour,ts->minute,ts->second);
@@ -14091,7 +14098,8 @@ static SQLRETURN SQLR_InputBindParameter(SQLHSTMT statementhandle,
 		//case SQL_C_BOOKMARK:
 		//	(dup of SQL_C_ULONG)
 		case SQL_C_ULONG:
-			debugPrintf("  valuetype: SQL_C_ULONG/SQL_C_BOOKMARK\n");
+			debugPrintf("  valuetype: "
+					"SQL_C_ULONG/SQL_C_BOOKMARK\n");
 			debugPrintf("  value: \"%lld\"\n",
 				(int64_t)(*((uint32_t *)parametervalue)));
 			stmt->cur->inputBind(parametername,
