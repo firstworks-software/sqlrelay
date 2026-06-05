@@ -2066,7 +2066,9 @@ int main(int argc, char **argv) {
 			(SQLPOINTER)&uintval,
 			(SQLSMALLINT)sizeof(uintval),&vallen);
 	if (issqlrelay) {
-		assertEqualDbc(dbc,(int)uintval,(int)SQL_FN_SYS_USERNAME);
+		// the mysql connection module doesn't advertise IFNULL
+		assertEqualDbc(dbc,(int)uintval,
+			(int)(SQL_FN_SYS_USERNAME|SQL_FN_SYS_DBNAME));
 	} else {
 		// MariaDB reports USERNAME|DBNAME|IFNULL.
 		assertEqualDbc(dbc,(int)uintval,

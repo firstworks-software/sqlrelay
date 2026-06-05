@@ -166,6 +166,7 @@ class SQLRSERVER_DLLSPEC firebirdcursor : public sqlrservercursor {
 		uint32_t	getColumnSize(uint32_t col);
 		uint32_t	getColumnPrecision(uint32_t col);
 		uint32_t	getColumnScale(uint32_t col);
+		uint16_t	getColumnIsNullable(uint32_t col);
 		const char	*getColumnTable(uint32_t col);
 		uint16_t	getColumnTableSize(uint32_t col);
 		bool		noRowsToReturn();
@@ -378,7 +379,7 @@ void firebirdconnection::initDatabaseFeatures() {
 		charstring::parseNumber(cont->getConfig()->getMaxConnections());
 
 	databasefeatures[FEATURE_AGGREGATE_FUNCTIONS]=
-		"";
+		"ALL,AVG,COUNT,DISTINCT,MAX,MIN,SUM";
 
 	databasefeatures[FEATURE_ALL_PROCEDURES_ARE_CALLABLE]=
 		"false";
@@ -432,19 +433,22 @@ void firebirdconnection::initDatabaseFeatures() {
 		"";
 
 	databasefeatures[FEATURE_CREATE_TABLE_CLAUSES]=
-		"";
+		"CREATE_TABLE,TABLE_CONSTRAINT,"
+			"CONSTRAINT_NAME_DEFINITION,COLUMN_CONSTRAINT,"
+			"COLUMN_DEFAULT,COLUMN_COLLATION,"
+			"GLOBAL_TEMPORARY,COMMIT_DELETE,COMMIT_PRESERVE";
 
 	databasefeatures[FEATURE_CREATE_TRANSLATION_CLAUSES]=
 		"";
 
 	databasefeatures[FEATURE_CREATE_VIEW_CLAUSES]=
-		"";
+		"CREATE_VIEW,CHECK_OPTION";
 
 	databasefeatures[FEATURE_DATA_DEFINITION_TRANSACTION_BEHAVIOR]=
 		"";
 
 	databasefeatures[FEATURE_DDL_INDEX_OPERATIONS]=
-		"";
+		"CREATE_INDEX,DROP_INDEX";
 
 	databasefeatures[FEATURE_DEFAULT_RESULT_SET_HOLDABILITY]=
 		"HOLD_CURSORS_OVER_COMMIT";
@@ -471,13 +475,13 @@ void firebirdconnection::initDatabaseFeatures() {
 		"";
 
 	databasefeatures[FEATURE_DROP_TABLE_CLAUSES]=
-		"";
+		"DROP_TABLE";
 
 	databasefeatures[FEATURE_DROP_TRANSLATION_CLAUSES]=
 		"";
 
 	databasefeatures[FEATURE_DROP_VIEW_CLAUSES]=
-		"";
+		"DROP_VIEW";
 
 	databasefeatures[FEATURE_EXTRA_NAME_CHARACTERS]=
 		"$";
@@ -495,7 +499,10 @@ void firebirdconnection::initDatabaseFeatures() {
 		"false";
 
 	databasefeatures[FEATURE_GRANT_CLAUSES]=
-		"";
+		"DELETE_TABLE,INSERT_TABLE,"
+			"REFERENCES_TABLE,REFERENCES_COLUMN,"
+			"SELECT_TABLE,UPDATE_COLUMN,UPDATE_TABLE,"
+			"WITH_GRANT_OPTION";
 
 	databasefeatures[FEATURE_GROUP_BY_CLAUSES]=
 		"BASIC";
@@ -507,7 +514,7 @@ void firebirdconnection::initDatabaseFeatures() {
 		"\"";
 
 	databasefeatures[FEATURE_INDEX_KEYWORDS]=
-		"";
+		"ASC,DESC";
 
 	databasefeatures[FEATURE_INFO_SCHEMA_VIEWS]=
 		"";
@@ -516,7 +523,7 @@ void firebirdconnection::initDatabaseFeatures() {
 		"";
 
 	databasefeatures[FEATURE_INSERT_OPERATIONS]=
-		"";
+		"INSERT_LITERALS,INSERT_SEARCHED";
 
 	databasefeatures[FEATURE_ISOLATION_LEVELS]=
 		"READ_COMMITTED,REPEATABLE_READ,SERIALIZABLE";
@@ -531,7 +538,7 @@ void firebirdconnection::initDatabaseFeatures() {
 		"true";
 
 	databasefeatures[FEATURE_LOCK_TYPES]=
-		"";
+		"NO_CHANGE";
 
 	databasefeatures[FEATURE_MAX_BINARY_LITERAL_LENGTH]=
 		"0";
@@ -640,7 +647,9 @@ void firebirdconnection::initDatabaseFeatures() {
 		"SCROLL_INSENSITIVE,SCROLL_SENSITIVE";
 
 	databasefeatures[FEATURE_PREDICATES]=
-		"";
+		"BETWEEN,COMPARISON,EXISTS,IN,"
+			"ISNOTNULL,ISNULL,LIKE,"
+			"QUANTIFIED_COMPARISON";
 
 	databasefeatures[FEATURE_PROCEDURE_TERM]=
 		"PROCEDURE";
@@ -665,7 +674,10 @@ void firebirdconnection::initDatabaseFeatures() {
 		"FORWARD_ONLY,SCROLL_INSENSITIVE,SCROLL_SENSITIVE";
 
 	databasefeatures[FEATURE_REVOKE_CLAUSES]=
-		"";
+		"DELETE_TABLE,GRANT_OPTION_FOR,"
+			"INSERT_TABLE,REFERENCES_COLUMN,"
+			"REFERENCES_TABLE,SELECT_TABLE,"
+			"UPDATE_COLUMN,UPDATE_TABLE";
 
 	databasefeatures[FEATURE_ROW_ID_LIFETIME]=
 		"ROWID_UNSUPPORTED";
@@ -680,7 +692,7 @@ void firebirdconnection::initDatabaseFeatures() {
 		"";
 
 	databasefeatures[FEATURE_SCROLL_CONCURRENCIES]=
-		"";
+		"READ_ONLY";
 
 	databasefeatures[FEATURE_SEARCH_STRING_ESCAPE]=
 		"\\";
@@ -791,7 +803,7 @@ void firebirdconnection::initDatabaseFeatures() {
 		"";
 
 	databasefeatures[FEATURE_TRANSACTION_DDL_DML]=
-		"";
+		"DDL_AND_DML";
 
 	databasefeatures[FEATURE_UNION_CLAUSES]=
 		"UNION,UNION_ALL";
@@ -800,7 +812,7 @@ void firebirdconnection::initDatabaseFeatures() {
 		"";
 
 	databasefeatures[FEATURE_VALUE_EXPRESSIONS]=
-		"";
+		"CASE,CAST,COALESCE,NULLIF";
 
 	databasefeatures[FEATURE_WHERE_CURRENT_OF_OPERATIONS]=
 		"DELETE,UPDATE";
@@ -3394,6 +3406,11 @@ uint32_t firebirdcursor::getColumnPrecision(uint32_t col) {
 
 uint32_t firebirdcursor::getColumnScale(uint32_t col) {
 	return -outsqlda->sqlvar[col].sqlscale;
+}
+
+uint16_t firebirdcursor::getColumnIsNullable(uint32_t col) {
+	// the low bit of sqltype indicates nullability
+	return outsqlda->sqlvar[col].sqltype&1;
 }
 
 const char *firebirdcursor::getColumnTable(uint32_t col) {

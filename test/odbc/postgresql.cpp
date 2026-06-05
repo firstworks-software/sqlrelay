@@ -2101,11 +2101,14 @@ int main(int argc, char **argv) {
 	erg=SQLGetInfo(dbc,SQL_SYSTEM_FUNCTIONS,
 			(SQLPOINTER)&uintval,
 			(SQLSMALLINT)sizeof(uintval),&vallen);
-	// sqlrelay reports SQL_FN_SYS_USERNAME|SQL_FN_SYS_IFNULL because the
-	// backend advertises "user" and "ifnull"; "database" is ignored
-	// (odbc translator looks for "DBNAME" instead)
-	assertEqualDbc(dbc,(int)uintval,
+	if (issqlrelay) {
+		assertEqualDbc(dbc,(int)uintval,
+			(int)(SQL_FN_SYS_USERNAME|SQL_FN_SYS_DBNAME|
+				SQL_FN_SYS_IFNULL));
+	} else {
+		assertEqualDbc(dbc,(int)uintval,
 			(int)(SQL_FN_SYS_USERNAME|SQL_FN_SYS_IFNULL));
+	}
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
 

@@ -1967,14 +1967,9 @@ int main(int argc, char **argv) {
 	erg=SQLGetInfo(dbc,SQL_SYSTEM_FUNCTIONS,
 			(SQLPOINTER)&uintval,
 			(SQLSMALLINT)sizeof(uintval),&vallen);
-	if (issqlrelay) {
-		assertEqualDbc(dbc,(int)uintval,
-			(int)(SQL_FN_SYS_USERNAME|SQL_FN_SYS_IFNULL));
-	} else {
-		assertEqualDbc(dbc,(int)uintval,
-			(int)(SQL_FN_SYS_USERNAME|SQL_FN_SYS_DBNAME|
-				SQL_FN_SYS_IFNULL));
-	}
+	assertEqualDbc(dbc,(int)uintval,
+		(int)(SQL_FN_SYS_USERNAME|SQL_FN_SYS_DBNAME|
+			SQL_FN_SYS_IFNULL));
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
 

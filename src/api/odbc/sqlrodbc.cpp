@@ -7307,7 +7307,8 @@ static SQLUINTEGER SQLR_SystemFunctions(CONN *conn) {
 		if (!charstring::compareIgnoringCase(f,"USER") ||
 			!charstring::compareIgnoringCase(f,"USERNAME")) {
 			retval|=SQL_FN_SYS_USERNAME;
-		} else if (!charstring::compareIgnoringCase(f,"DBNAME")) {
+		} else if (!charstring::compareIgnoringCase(f,"DBNAME") ||
+			!charstring::compareIgnoringCase(f,"DATABASE")) {
 			retval|=SQL_FN_SYS_DBNAME;
 		} else if (!charstring::compareIgnoringCase(f,"IFNULL")) {
 			retval|=SQL_FN_SYS_IFNULL;
