@@ -2918,6 +2918,9 @@ bool db2cursor::outputBindClob(const char *variable,
 }
 
 bool db2cursor::getLobOutputBindLength(uint16_t index, uint64_t *length) {
+	if (outlobbindlen[index]==SQL_NULL_DATA) {
+		return false;
+	}
 	// FIXME: this code assumes that the lob characters are 1 byte long
 	if (outlobbindlen[index]>db2conn->maxoutbindlobsize) {
 		outlobbindlen[index]=db2conn->maxoutbindlobsize;
