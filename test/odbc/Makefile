@@ -35,4 +35,4 @@ freetds: freetds.cpp freetds.$(OBJ)
 	$(LTLINK) $(LINK) $(LDFLAGS) $(OUT)$@ freetds.$(OBJ) $(ODBCTESTLIBS)
 
 informix: informix.cpp informix.$(OBJ)
-	$(LTLINK) $(LINK) $(LDFLAGS) $(OUT)$@ informix.$(OBJ) $(ODBCTESTLIBS)
+	$(LTLINK) $(LINK) -export-dynamic $(LDFLAGS) $(OUT)$@ informix.$(OBJ) $(ODBCTESTLIBS) $(INFORMIXLIBS)

@@ -1,10 +1,16 @@
 // Copyright (c) David Muse
 // See the file COPYING for more information.
 
+// for dlvsym()/RTLD_NEXT, used by the native-driver diagnostic workaround
+#ifndef _GNU_SOURCE
+	#define _GNU_SOURCE
+#endif
+
 #include <rudiments/sys.h>
 #include <rudiments/charstring.h>
 #include <rudiments/bytestring.h>
 #include <rudiments/stringbuffer.h>
+#include <rudiments/environment.h>
 
 #include "../../config.h"
 
@@ -13,7 +19,40 @@
 #include <sqlucode.h>
 #include <sqltypes.h>
 
+#include <dlfcn.h>
+
 #include "asserts.cpp"
+
+// set true (before any odbc call) when running directly against the informix
+// native odbc driver rather than through sql relay
+static bool	nativeinformix=false;
+
+// The IBM Informix CSDK ODBC driver's wide diagnostic functions
+// (SQLGetDiagRecW/SQLGetDiagFieldW/SQLErrorW) emit 4-byte wchar_t via
+// mbstowcs(), but unixODBC uses a 2-byte SQLWCHAR.  unixODBC caches the
+// driver's diagnostics through its wide path whenever the driver exports
+// those functions, writing a 4-byte-per-char sqlstate into a 2-byte
+// SQLWCHAR[6] stack buffer - smashing the stack on every call that returns
+// an error or SQL_SUCCESS_WITH_INFO.  There is no driver/odbc.ini setting
+// that fixes this (the diag path ignores the UNICODE/getSizeofSQLWCHAR
+// keyword).  Interpose dlsym() to hide the wide diagnostic functions from
+// unixODBC so it falls back to the driver's (correct) 1-byte ansi diagnostic
+// path.  Only active in native mode; through sql relay this just forwards
+// every lookup unchanged.
+extern "C" void *dlsym(void *handle, const char *name) {
+	static void	*(*realdlsym)(void *, const char *)=NULL;
+	if (!realdlsym) {
+		realdlsym=(void *(*)(void *, const char *))
+				dlvsym(RTLD_NEXT,"dlsym","GLIBC_2.2.5");
+	}
+	if (nativeinformix && name &&
+			(!charstring::compare(name,"SQLGetDiagRecW") ||
+			!charstring::compare(name,"SQLGetDiagFieldW") ||
+			!charstring::compare(name,"SQLErrorW"))) {
+		return NULL;
+	}
+	return realdlsym(handle,name);
+}
 
 SQLRETURN	erg;
 SQLHENV		env;
@@ -33,6 +72,16 @@ int main(int argc, char **argv) {
 
 	// sqlrelay-vs-native flag
 	bool	issqlrelay=!(argc==2 && !charstring::compare(argv[1],"native"));
+
+	// when running against the native informix driver, enable the
+	// diagnostic workaround and point the driver at the database; the
+	// driver's dependent libs are resolved via the -R paths baked in by
+	// $(INFORMIXLIBS) at link time
+	if (!issqlrelay) {
+		nativeinformix=true;
+		environment::setValue("INFORMIXDIR","/opt/informix");
+		environment::setValue("INFORMIXSERVER","ol_informix1210");
+	}
 
 
 
@@ -337,8 +386,6 @@ int main(int argc, char **argv) {
 			// for ODBC spec compliance
 			"AutoCommit=yes;");
 	} else {
-		// the informix csdk driver resolves the host/service/protocol
-		// for the named server from the sqlhosts file
 		incstr.append(
 			"Driver={Informix};"
 			"Server=ol_informix1210;"
@@ -528,8 +575,8 @@ int main(int argc, char **argv) {
 
 
 	// SQL_ATTR_ACCESS_MODE
-	// oracle's driver doesn't store a READ_ONLY->READ_WRITE switch;
-	// round-trip one direction and don't verify the restore
+	// the native informix driver doesn't store a READ_ONLY->READ_WRITE
+	// switch; round-trip one direction and don't verify the restore
 	stdoutput.printf("  SQL_ATTR_ACCESS_MODE\n");
 	// save initial value
 	erg=SQLGetConnectAttr(dbc,SQL_ATTR_ACCESS_MODE,
@@ -571,7 +618,7 @@ int main(int argc, char **argv) {
 				(SQLPOINTER)(uintptr_t)dbcinitial,0);
 		assertSuccessDbc(dbc,erg);
 	} else {
-		// oracle doesn't implement this; get and set raise HYT00
+		// the native informix driver doesn't implement this
 		erg=SQLGetConnectAttr(dbc,SQL_ATTR_CONNECTION_TIMEOUT,
 				(SQLPOINTER)&dbcinitial,0,&dbcstrlen);
 		assertFailureDbc(dbc,erg);
@@ -694,7 +741,7 @@ int main(int argc, char **argv) {
 				(SQLPOINTER)(uintptr_t)dbcinitial,0);
 		assertSuccessDbc(dbc,erg);
 	} else {
-		// oracle doesn't implement this; get and set raise HYT00
+		// the native informix driver doesn't implement this
 		erg=SQLGetConnectAttr(dbc,SQL_ATTR_ASYNC_ENABLE,
 				(SQLPOINTER)&dbcinitial,0,&dbcstrlen);
 		assertFailureDbc(dbc,erg);
@@ -720,20 +767,14 @@ int main(int argc, char **argv) {
 	#if (ODBCVER >= 0x0351)
 	// SQL_ATTR_AUTO_IPD (read-only)
 	stdoutput.printf("  SQL_ATTR_AUTO_IPD\n");
-	if (issqlrelay) {
-		erg=SQLGetConnectAttr(dbc,SQL_ATTR_AUTO_IPD,
-				(SQLPOINTER)&dbcuintval,0,&dbcstrlen);
-		assertSuccessDbc(dbc,erg);
-		// SQL_TRUE or SQL_FALSE both legal; require a valid boolean
-		assertEqualDbc(dbc,
-			(int)(dbcuintval==SQL_TRUE || dbcuintval==SQL_FALSE),
-			(int)1);
-	} else {
-		// oracle doesn't implement this; get raises HYT00
-		erg=SQLGetConnectAttr(dbc,SQL_ATTR_AUTO_IPD,
-				(SQLPOINTER)&dbcuintval,0,&dbcstrlen);
-		assertFailureDbc(dbc,erg);
-	}
+	// both sqlrelay and the informix native driver implement this
+	erg=SQLGetConnectAttr(dbc,SQL_ATTR_AUTO_IPD,
+			(SQLPOINTER)&dbcuintval,0,&dbcstrlen);
+	assertSuccessDbc(dbc,erg);
+	// SQL_TRUE or SQL_FALSE both legal; require a valid boolean
+	assertEqualDbc(dbc,
+		(int)(dbcuintval==SQL_TRUE || dbcuintval==SQL_FALSE),
+		(int)1);
 	stdoutput.printf("\n");
 	#endif
 
@@ -767,7 +808,7 @@ int main(int argc, char **argv) {
 				(SQLPOINTER)(uintptr_t)dbcinitial,0);
 		assertSuccessDbc(dbc,erg);
 	} else {
-		// oracle doesn't implement this; get raises HYT00, set HY003
+		// the native informix driver doesn't implement this
 		erg=SQLGetConnectAttr(dbc,SQL_ATTR_DISCONNECT_BEHAVIOR,
 				(SQLPOINTER)&dbcinitial,0,&dbcstrlen);
 		assertFailureDbc(dbc,erg);
@@ -816,29 +857,22 @@ int main(int argc, char **argv) {
 	#if (ODBCVER >= 0x0300)
 	// SQL_ATTR_TRANSLATE_LIB
 	stdoutput.printf("  SQL_ATTR_TRANSLATE_LIB\n");
-	if (issqlrelay) {
-		// save initial value
-		erg=SQLGetConnectAttr(dbc,SQL_ATTR_TRANSLATE_LIB,
-				(SQLPOINTER)dbcstrinit,
-				sizeof(dbcstrinit),&dbcstrlen);
-		assertSuccessDbc(dbc,erg);
-		// round-trip to the initial value
-		erg=SQLSetConnectAttr(dbc,SQL_ATTR_TRANSLATE_LIB,
-				(SQLPOINTER)dbcstrinit,SQL_NTS);
-		assertSuccessDbc(dbc,erg);
-		erg=SQLGetConnectAttr(dbc,SQL_ATTR_TRANSLATE_LIB,
-				(SQLPOINTER)dbcstrval,
-				sizeof(dbcstrval),&dbcstrlen);
-		assertSuccessDbc(dbc,erg);
-		assertEqualDbc(dbc,(const char *)dbcstrval,
-				(const char *)dbcstrinit);
-	} else {
-		// oracle doesn't implement this; get returns SQL_NO_DATA (100)
-		erg=SQLGetConnectAttr(dbc,SQL_ATTR_TRANSLATE_LIB,
-				(SQLPOINTER)dbcstrinit,
-				sizeof(dbcstrinit),&dbcstrlen);
-		assertFailureDbc(dbc,erg);
-	}
+	// both sqlrelay and the informix native driver implement this
+	// save initial value
+	erg=SQLGetConnectAttr(dbc,SQL_ATTR_TRANSLATE_LIB,
+			(SQLPOINTER)dbcstrinit,
+			sizeof(dbcstrinit),&dbcstrlen);
+	assertSuccessDbc(dbc,erg);
+	// round-trip to the initial value
+	erg=SQLSetConnectAttr(dbc,SQL_ATTR_TRANSLATE_LIB,
+			(SQLPOINTER)dbcstrinit,SQL_NTS);
+	assertSuccessDbc(dbc,erg);
+	erg=SQLGetConnectAttr(dbc,SQL_ATTR_TRANSLATE_LIB,
+			(SQLPOINTER)dbcstrval,
+			sizeof(dbcstrval),&dbcstrlen);
+	assertSuccessDbc(dbc,erg);
+	assertEqualDbc(dbc,(const char *)dbcstrval,
+			(const char *)dbcstrinit);
 	stdoutput.printf("\n");
 	#endif
 
@@ -895,8 +929,8 @@ int main(int argc, char **argv) {
 				(SQLPOINTER)(uintptr_t)dbcinitial,0);
 		assertSuccessDbc(dbc,erg);
 	} else {
-		// oracle doesn't implement this; get raises HYT00 (driver
-		// manager intercepts set, so set appears to succeed)
+		// the native informix driver doesn't implement this; get fails
+		// (the driver manager intercepts set, so set appears to succeed)
 		erg=SQLGetConnectAttr(dbc,SQL_ATTR_ANSI_APP,
 				(SQLPOINTER)&dbcinitial,0,&dbcstrlen);
 		assertFailureDbc(dbc,erg);
@@ -916,7 +950,7 @@ int main(int argc, char **argv) {
 				SQL_RESET_CONNECTION_YES,0);
 		assertSuccessDbc(dbc,erg);
 	} else {
-		// oracle doesn't implement this; set raises HYT00
+		// the native informix driver doesn't implement this
 		erg=SQLSetConnectAttr(dbc,SQL_ATTR_RESET_CONNECTION,
 				(SQLPOINTER)(uintptr_t)
 				SQL_RESET_CONNECTION_YES,0);
@@ -965,7 +999,7 @@ int main(int argc, char **argv) {
 				(SQLPOINTER)(uintptr_t)dbcinitial,0);
 		assertSuccessDbc(dbc,erg);
 	} else {
-		// oracle doesn't implement this; get and set raise HYT00
+		// the native informix driver doesn't implement this
 		erg=SQLGetConnectAttr(dbc,
 				SQL_ATTR_ASYNC_DBC_FUNCTIONS_ENABLE,
 				(SQLPOINTER)&dbcinitial,0,&dbcstrlen);
@@ -1002,7 +1036,7 @@ int main(int argc, char **argv) {
 				(SQLPOINTER)(uintptr_t)dbcinitial,0);
 		assertSuccessDbc(dbc,erg);
 	} else {
-		// oracle doesn't implement this; get and set raise HYT00
+		// the native informix driver doesn't implement this
 		erg=SQLGetConnectAttr(dbc,SQL_ATTR_DRIVER_THREADING,
 				(SQLPOINTER)&dbcinitial,0,&dbcstrlen);
 		assertFailureDbc(dbc,erg);
@@ -1019,7 +1053,10 @@ int main(int argc, char **argv) {
 	stdoutput.printf("GET INFO: \n");
 	SQLUINTEGER	uintval;
 	SQLUSMALLINT	usmallintval;
-	SQLCHAR		strval[2048];
+	// the informix native driver returns a ~2.7KB keyword list for
+	// SQL_KEYWORDS and overflows the buffer regardless of the length
+	// passed to SQLGetInfo, so this needs to be larger than 2048
+	SQLCHAR		strval[4096];
 	SQLSMALLINT	vallen;
 
 
@@ -1070,11 +1107,7 @@ int main(int argc, char **argv) {
 		// sqlrelay only supports SQL_FD_FETCH_NEXT
 		assertEqualDbc(dbc,(int)uintval,(int)SQL_FD_FETCH_NEXT);
 	} else {
-		assertEqualDbc(dbc,(int)uintval,
-			(int)(SQL_FD_FETCH_NEXT|SQL_FD_FETCH_FIRST|
-				SQL_FD_FETCH_LAST|SQL_FD_FETCH_PRIOR|
-				SQL_FD_FETCH_ABSOLUTE|SQL_FD_FETCH_RELATIVE|
-				SQL_FD_FETCH_BOOKMARK));
+		assertEqualDbc(dbc,(int)uintval,1);
 	}
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
@@ -1088,7 +1121,7 @@ int main(int argc, char **argv) {
 	if (issqlrelay) {
 		assertEqualDbc(dbc,(const char *)strval,"sqlrelay");
 	} else {
-		// oracle returns the full TNS description string; verify non-empty
+		// the native informix driver returns a non-empty value
 		assertTrueDbc(dbc,vallen>0);
 	}
 	assertSuccessDbc(dbc,erg);
@@ -1103,8 +1136,7 @@ int main(int argc, char **argv) {
 	if (issqlrelay) {
 		assertEqualDbc(dbc,(const char *)strval,"\\");
 	} else {
-		// oracle odbc wrongly returns "\\"; jdbc getSearchStringEscape()
-		// correctly returns "/"
+		// the native informix driver returns "\\"
 		assertEqualDbc(dbc,(const char *)strval,"\\");
 	}
 	assertSuccessDbc(dbc,erg);
@@ -1144,8 +1176,7 @@ int main(int argc, char **argv) {
 	if (issqlrelay) {
 		assertEqualDbc(dbc,(const char *)strval,"Y");
 	} else {
-		// oracle odbc wrongly returns "Y"; jdbc allTablesAreSelectable()
-		// correctly returns false
+		// the native informix driver returns "Y"
 		assertEqualDbc(dbc,(const char *)strval,"Y");
 	}
 	assertSuccessDbc(dbc,erg);
@@ -1160,8 +1191,7 @@ int main(int argc, char **argv) {
 	if (issqlrelay) {
 		assertEqualDbc(dbc,(const char *)strval,"Y");
 	} else {
-		// oracle odbc wrongly returns "Y"; jdbc allProceduresAreCallable()
-		// correctly returns false
+		// the native informix driver returns "Y"
 		assertEqualDbc(dbc,(const char *)strval,"Y");
 	}
 	assertSuccessDbc(dbc,erg);
@@ -1176,9 +1206,7 @@ int main(int argc, char **argv) {
 	if (issqlrelay) {
 		assertEqualDbc(dbc,(int)usmallintval,(int)SQL_CB_CLOSE);
 	} else {
-		// oracle odbc wrongly returns SQL_CB_PRESERVE; jdbc
-		// supportsOpenCursorsAcrossCommit() correctly returns false
-		assertEqualDbc(dbc,(int)usmallintval,(int)SQL_CB_PRESERVE);
+		assertEqualDbc(dbc,(int)usmallintval,1);
 	}
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
@@ -1253,7 +1281,11 @@ int main(int argc, char **argv) {
 	erg=SQLGetInfo(dbc,SQL_MAX_SCHEMA_NAME_LEN,
 			(SQLPOINTER)&usmallintval,
 			(SQLSMALLINT)sizeof(usmallintval),&vallen);
-	assertEqualDbc(dbc,(int)usmallintval,128);
+	if (issqlrelay) {
+		assertEqualDbc(dbc,(int)usmallintval,128);
+	} else {
+		assertEqualDbc(dbc,(int)usmallintval,32);
+	}
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
 
@@ -1286,9 +1318,7 @@ int main(int argc, char **argv) {
 	if (issqlrelay) {
 		assertEqualDbc(dbc,(int)uintval,0);
 	} else {
-		assertEqualDbc(dbc,(int)uintval,
-			(int)(SQL_SCCO_READ_ONLY|SQL_SCCO_LOCK|
-				SQL_SCCO_OPT_ROWVER));
+		assertEqualDbc(dbc,(int)uintval,3);
 	}
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
@@ -1320,9 +1350,13 @@ int main(int argc, char **argv) {
 	erg=SQLGetInfo(dbc,SQL_TXN_ISOLATION_OPTION,
 			(SQLPOINTER)&uintval,(SQLSMALLINT)sizeof(uintval),
 			&vallen);
-	assertEqualDbc(dbc,(int)uintval,
-			(int)(SQL_TXN_READ_UNCOMMITTED|SQL_TXN_READ_COMMITTED|
-				SQL_TXN_REPEATABLE_READ|SQL_TXN_SERIALIZABLE));
+	if (issqlrelay) {
+		assertEqualDbc(dbc,(int)uintval,
+				(int)(SQL_TXN_READ_UNCOMMITTED|SQL_TXN_READ_COMMITTED|
+					SQL_TXN_REPEATABLE_READ|SQL_TXN_SERIALIZABLE));
+	} else {
+		assertEqualDbc(dbc,(int)uintval,11);
+	}
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
 
@@ -1335,8 +1369,7 @@ int main(int argc, char **argv) {
 	if (issqlrelay) {
 		assertEqualDbc(dbc,(const char *)strval,"Y");
 	} else {
-		// oracle odbc wrongly returns "N"; jdbc
-		// supportsIntegrityEnhancementFacility() correctly returns true
+		// the native informix driver returns "N"
 		assertEqualDbc(dbc,(const char *)strval,"N");
 	}
 	assertSuccessDbc(dbc,erg);
@@ -1363,8 +1396,7 @@ int main(int argc, char **argv) {
 	if (issqlrelay) {
 		assertEqualDbc(dbc,(int)usmallintval,4);
 	} else {
-		// oracle odbc wrongly returns SQL_NC_LOW; jdbc
-		// nullsAreSortedHigh() correctly returns true
+		// the native informix driver returns SQL_NC_LOW
 		assertEqualDbc(dbc,(int)usmallintval,(int)SQL_NC_LOW);
 	}
 	assertSuccessDbc(dbc,erg);
@@ -1378,13 +1410,11 @@ int main(int argc, char **argv) {
 			&vallen);
 	if (issqlrelay) {
 		// sqlrelay bundles these bits whenever the backend reports
-		// ADD_COLUMN, and omits DROP_COLUMN bits because the oracle
-		// backend module doesn't report it (oracle supports it since 8i)
+		// ADD_COLUMN, and omits DROP_COLUMN bits because the informix
+		// backend module doesn't report it
 		assertEqualDbc(dbc,(int)uintval,1048547);
 	} else {
-		// oracle odbc (and jdbc) wrongly omit drop-column features
-		// though oracle 8i+ supports them
-		assertEqualDbc(dbc,(int)uintval,(int)SQL_AT_ADD_COLUMN);
+		assertEqualDbc(dbc,(int)uintval,11);
 	}
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
@@ -1405,7 +1435,11 @@ int main(int argc, char **argv) {
 	erg=SQLGetInfo(dbc,SQL_SPECIAL_CHARACTERS,
 			(SQLPOINTER)strval,(SQLSMALLINT)sizeof(strval),
 			&vallen);
-	assertEqualDbc(dbc,(const char *)strval,"$");
+	if (issqlrelay) {
+		assertEqualDbc(dbc,(const char *)strval,"$");
+	} else {
+		assertEqualDbc(dbc,(const char *)strval,"");
+	}
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
 
@@ -1415,7 +1449,11 @@ int main(int argc, char **argv) {
 	erg=SQLGetInfo(dbc,SQL_MAX_COLUMNS_IN_GROUP_BY,
 			(SQLPOINTER)&usmallintval,
 			(SQLSMALLINT)sizeof(usmallintval),&vallen);
-	assertEqualDbc(dbc,(int)usmallintval,32767);
+	if (issqlrelay) {
+		assertEqualDbc(dbc,(int)usmallintval,32767);
+	} else {
+		assertEqualDbc(dbc,(int)usmallintval,0);
+	}
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
 
@@ -1428,8 +1466,7 @@ int main(int argc, char **argv) {
 	if (issqlrelay) {
 		assertEqualDbc(dbc,(int)usmallintval,16);
 	} else {
-		// oracle odbc returns 0; jdbc getMaxColumnsInIndex() returns 32
-		assertEqualDbc(dbc,(int)usmallintval,0);
+		assertEqualDbc(dbc,(int)usmallintval,16);
 	}
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
@@ -1440,7 +1477,11 @@ int main(int argc, char **argv) {
 	erg=SQLGetInfo(dbc,SQL_MAX_COLUMNS_IN_ORDER_BY,
 			(SQLPOINTER)&usmallintval,
 			(SQLSMALLINT)sizeof(usmallintval),&vallen);
-	assertEqualDbc(dbc,(int)usmallintval,32767);
+	if (issqlrelay) {
+		assertEqualDbc(dbc,(int)usmallintval,32767);
+	} else {
+		assertEqualDbc(dbc,(int)usmallintval,0);
+	}
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
 
@@ -1453,8 +1494,7 @@ int main(int argc, char **argv) {
 	if (issqlrelay) {
 		assertEqualDbc(dbc,(int)usmallintval,32767);
 	} else {
-		// oracle odbc returns 1000; jdbc getMaxColumnsInSelect() returns 0
-		assertEqualDbc(dbc,(int)usmallintval,1000);
+		assertEqualDbc(dbc,(int)usmallintval,0);
 	}
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
@@ -1465,7 +1505,11 @@ int main(int argc, char **argv) {
 	erg=SQLGetInfo(dbc,SQL_MAX_COLUMNS_IN_TABLE,
 			(SQLPOINTER)&usmallintval,
 			(SQLSMALLINT)sizeof(usmallintval),&vallen);
-	assertEqualDbc(dbc,(int)usmallintval,32767);
+	if (issqlrelay) {
+		assertEqualDbc(dbc,(int)usmallintval,32767);
+	} else {
+		assertEqualDbc(dbc,(int)usmallintval,0);
+	}
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
 
@@ -1498,7 +1542,7 @@ int main(int argc, char **argv) {
 	if (issqlrelay) {
 		assertEqualDbc(dbc,(int)uintval,2147483647);
 	} else {
-		// oracle odbc returns 0; jdbc getMaxStatementLength() returns 65535
+		// the native informix driver returns 0
 		assertEqualDbc(dbc,(int)uintval,0);
 	}
 	assertSuccessDbc(dbc,erg);
@@ -1537,12 +1581,7 @@ int main(int argc, char **argv) {
 				SQL_OJ_NESTED|SQL_OJ_NOT_ORDERED|
 				SQL_OJ_INNER|SQL_OJ_ALL_COMPARISON_OPS));
 	} else {
-		// oracle odbc wrongly omits SQL_OJ_FULL; jdbc
-		// supportsFullOuterJoins() correctly returns true
-		assertEqualDbc(dbc,(int)uintval,
-			(int)(SQL_OJ_LEFT|SQL_OJ_RIGHT|
-				SQL_OJ_NESTED|SQL_OJ_NOT_ORDERED|
-				SQL_OJ_INNER|SQL_OJ_ALL_COMPARISON_OPS));
+		assertEqualDbc(dbc,(int)uintval,107);
 	}
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
@@ -1579,7 +1618,11 @@ int main(int argc, char **argv) {
 	erg=SQLGetInfo(dbc,SQL_DESCRIBE_PARAMETER,
 			(SQLPOINTER)strval,(SQLSMALLINT)sizeof(strval),
 			&vallen);
-	assertEqualDbc(dbc,(const char *)strval,"N");
+	if (issqlrelay) {
+		assertEqualDbc(dbc,(const char *)strval,"N");
+	} else {
+		assertEqualDbc(dbc,(const char *)strval,"Y");
+	}
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
 	#endif
@@ -1654,7 +1697,7 @@ int main(int argc, char **argv) {
 	if (issqlrelay) {
 		assertEqualDbc(dbc,(const char *)strval,"libsqlrodbc.so");
 	} else {
-		assertEqualDbc(dbc,(const char *)strval,"SQORA32.DLL");
+		assertEqualDbc(dbc,(const char *)strval,"iclis09b.so");
 	}
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
@@ -1668,7 +1711,7 @@ int main(int argc, char **argv) {
 	if (issqlrelay) {
 		assertEqualDbc(dbc,(const char *)strval,"2.1.2");
 	} else {
-		assertEqualDbc(dbc,(const char *)strval,"19.03.0000");
+		assertEqualDbc(dbc,(const char *)strval," 4.10.0000 4.10.U    ");
 	}
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
@@ -1706,7 +1749,7 @@ int main(int argc, char **argv) {
 	if (issqlrelay) {
 		assertEqualDbc(dbc,(const char *)strval,"N");
 	} else {
-		assertEqualDbc(dbc,(const char *)strval,"Y");
+		assertEqualDbc(dbc,(const char *)strval,"N");
 	}
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
@@ -1759,7 +1802,7 @@ int main(int argc, char **argv) {
 	if (issqlrelay) {
 		assertEqualDbc(dbc,(int)usmallintval,(int)SQL_CB_NULL);
 	} else {
-		assertEqualDbc(dbc,(int)usmallintval,(int)SQL_CB_NON_NULL);
+		assertEqualDbc(dbc,(int)usmallintval,0);
 	}
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
@@ -1773,7 +1816,7 @@ int main(int argc, char **argv) {
 	if (issqlrelay) {
 		assertEqualDbc(dbc,(int)usmallintval,(int)SQL_CB_CLOSE);
 	} else {
-		assertEqualDbc(dbc,(int)usmallintval,(int)SQL_CB_PRESERVE);
+		assertEqualDbc(dbc,(int)usmallintval,1);
 	}
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
@@ -1794,7 +1837,11 @@ int main(int argc, char **argv) {
 	erg=SQLGetInfo(dbc,SQL_MAX_OWNER_NAME_LEN,
 			(SQLPOINTER)&usmallintval,
 			(SQLSMALLINT)sizeof(usmallintval),&vallen);
-	assertEqualDbc(dbc,(int)usmallintval,128);
+	if (issqlrelay) {
+		assertEqualDbc(dbc,(int)usmallintval,128);
+	} else {
+		assertEqualDbc(dbc,(int)usmallintval,32);
+	}
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
 
@@ -1807,7 +1854,7 @@ int main(int argc, char **argv) {
 	if (issqlrelay) {
 		assertEqualDbc(dbc,(int)usmallintval,128);
 	} else {
-		assertEqualDbc(dbc,(int)usmallintval,386);
+		assertEqualDbc(dbc,(int)usmallintval,128);
 	}
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
@@ -1831,7 +1878,7 @@ int main(int argc, char **argv) {
 	if (issqlrelay) {
 		assertEqualDbc(dbc,(const char *)strval,"N");
 	} else {
-		assertEqualDbc(dbc,(const char *)strval,"Y");
+		assertEqualDbc(dbc,(const char *)strval,"N");
 	}
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
@@ -1842,7 +1889,11 @@ int main(int argc, char **argv) {
 	erg=SQLGetInfo(dbc,SQL_MULTIPLE_ACTIVE_TXN,
 			(SQLPOINTER)strval,(SQLSMALLINT)sizeof(strval),
 			&vallen);
-	assertEqualDbc(dbc,(const char *)strval,"Y");
+	if (issqlrelay) {
+		assertEqualDbc(dbc,(const char *)strval,"Y");
+	} else {
+		assertEqualDbc(dbc,(const char *)strval,"N");
+	}
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
 
@@ -1893,7 +1944,7 @@ int main(int argc, char **argv) {
 	if (issqlrelay) {
 		assertEqualDbc(dbc,(const char *)strval,":");
 	} else {
-		assertEqualDbc(dbc,(const char *)strval,"@");
+		assertEqualDbc(dbc,(const char *)strval,":");
 	}
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
@@ -1907,7 +1958,7 @@ int main(int argc, char **argv) {
 	if (issqlrelay) {
 		assertEqualDbc(dbc,(const char *)strval,"database");
 	} else {
-		assertEqualDbc(dbc,(const char *)strval,"Database Link");
+		assertEqualDbc(dbc,(const char *)strval,"Database");
 	}
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
@@ -1922,9 +1973,7 @@ int main(int argc, char **argv) {
 		assertEqualDbc(dbc,(int)uintval,
 			(int)(SQL_SO_FORWARD_ONLY|SQL_SO_STATIC));
 	} else {
-		assertEqualDbc(dbc,(int)uintval,
-			(int)(SQL_SO_FORWARD_ONLY|SQL_SO_KEYSET_DRIVEN|
-				SQL_SO_STATIC));
+		assertEqualDbc(dbc,(int)uintval,1);
 	}
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
@@ -1952,7 +2001,7 @@ int main(int argc, char **argv) {
 	if (issqlrelay) {
 		assertEqualDbc(dbc,(int)uintval,(int)SQL_FN_CVT_CAST);
 	} else {
-		assertEqualDbc(dbc,(int)uintval,(int)SQL_FN_CVT_CONVERT);
+		assertEqualDbc(dbc,(int)uintval,0);
 	}
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
@@ -1966,15 +2015,7 @@ int main(int argc, char **argv) {
 	if (issqlrelay) {
 		assertEqualDbc(dbc,(int)uintval,4778335);
 	} else {
-		assertEqualDbc(dbc,(int)uintval,
-			(int)(SQL_FN_NUM_ABS|SQL_FN_NUM_CEILING|
-				SQL_FN_NUM_COS|SQL_FN_NUM_EXP|
-				SQL_FN_NUM_FLOOR|SQL_FN_NUM_LOG|
-				SQL_FN_NUM_MOD|SQL_FN_NUM_SIGN|
-				SQL_FN_NUM_SIN|SQL_FN_NUM_SQRT|
-				SQL_FN_NUM_TAN|SQL_FN_NUM_PI|
-				SQL_FN_NUM_LOG10|SQL_FN_NUM_POWER|
-				SQL_FN_NUM_TRUNCATE));
+		assertEqualDbc(dbc,(int)uintval,14216543);
 	}
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
@@ -1988,16 +2029,7 @@ int main(int argc, char **argv) {
 	if (issqlrelay) {
 		assertEqualDbc(dbc,(int)uintval,16);
 	} else {
-		assertEqualDbc(dbc,(int)uintval,
-			(int)(SQL_FN_STR_CONCAT|SQL_FN_STR_INSERT|
-				SQL_FN_STR_LEFT|SQL_FN_STR_LTRIM|
-				SQL_FN_STR_LENGTH|SQL_FN_STR_LOCATE|
-				SQL_FN_STR_LCASE|SQL_FN_STR_REPEAT|
-				SQL_FN_STR_REPLACE|SQL_FN_STR_RIGHT|
-				SQL_FN_STR_RTRIM|SQL_FN_STR_SUBSTRING|
-				SQL_FN_STR_UCASE|SQL_FN_STR_ASCII|
-				SQL_FN_STR_CHAR|SQL_FN_STR_LOCATE_2|
-				SQL_FN_STR_SOUNDEX|SQL_FN_STR_SPACE));
+		assertEqualDbc(dbc,(int)uintval,8029);
 	}
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
@@ -2011,8 +2043,7 @@ int main(int argc, char **argv) {
 	if (issqlrelay) {
 		assertEqualDbc(dbc,(int)uintval,0);
 	} else {
-		assertEqualDbc(dbc,(int)uintval,
-			(int)(SQL_FN_SYS_USERNAME|SQL_FN_SYS_IFNULL));
+		assertEqualDbc(dbc,(int)uintval,7);
 	}
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
@@ -2026,15 +2057,7 @@ int main(int argc, char **argv) {
 	if (issqlrelay) {
 		assertEqualDbc(dbc,(int)uintval,288);
 	} else {
-		assertEqualDbc(dbc,(int)uintval,
-			(int)(SQL_FN_TD_NOW|SQL_FN_TD_CURDATE|
-				SQL_FN_TD_DAYOFMONTH|SQL_FN_TD_DAYOFWEEK|
-				SQL_FN_TD_DAYOFYEAR|SQL_FN_TD_MONTH|
-				SQL_FN_TD_QUARTER|SQL_FN_TD_WEEK|
-				SQL_FN_TD_YEAR|SQL_FN_TD_CURTIME|
-				SQL_FN_TD_HOUR|SQL_FN_TD_MINUTE|
-				SQL_FN_TD_SECOND|SQL_FN_TD_DAYNAME|
-				SQL_FN_TD_MONTHNAME));
+		assertEqualDbc(dbc,(int)uintval,99183);
 	}
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
@@ -2048,13 +2071,7 @@ int main(int argc, char **argv) {
 	if (issqlrelay) {
 		assertEqualDbc(dbc,(int)uintval,0);
 	} else {
-		assertEqualDbc(dbc,(int)uintval,
-			(int)(SQL_CVT_CHAR|SQL_CVT_NUMERIC|
-				SQL_CVT_DECIMAL|SQL_CVT_INTEGER|
-				SQL_CVT_SMALLINT|SQL_CVT_FLOAT|
-				SQL_CVT_REAL|SQL_CVT_DOUBLE|
-				SQL_CVT_VARCHAR|SQL_CVT_BIT|
-				SQL_CVT_TINYINT|SQL_CVT_BIGINT));
+		assertEqualDbc(dbc,(int)uintval,0);
 	}
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
@@ -2078,13 +2095,7 @@ int main(int argc, char **argv) {
 	if (issqlrelay) {
 		assertEqualDbc(dbc,(int)uintval,0);
 	} else {
-		assertEqualDbc(dbc,(int)uintval,
-			(int)(SQL_CVT_CHAR|SQL_CVT_NUMERIC|
-				SQL_CVT_DECIMAL|SQL_CVT_INTEGER|
-				SQL_CVT_SMALLINT|SQL_CVT_FLOAT|
-				SQL_CVT_REAL|SQL_CVT_DOUBLE|
-				SQL_CVT_VARCHAR|SQL_CVT_BIT|
-				SQL_CVT_TINYINT|SQL_CVT_BIGINT));
+		assertEqualDbc(dbc,(int)uintval,0);
 	}
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
@@ -2098,14 +2109,7 @@ int main(int argc, char **argv) {
 	if (issqlrelay) {
 		assertEqualDbc(dbc,(int)uintval,0);
 	} else {
-		assertEqualDbc(dbc,(int)uintval,
-			(int)(SQL_CVT_CHAR|SQL_CVT_NUMERIC|
-				SQL_CVT_DECIMAL|SQL_CVT_INTEGER|
-				SQL_CVT_SMALLINT|SQL_CVT_FLOAT|
-				SQL_CVT_REAL|SQL_CVT_DOUBLE|
-				SQL_CVT_VARCHAR|SQL_CVT_BIT|
-				SQL_CVT_TINYINT|SQL_CVT_BIGINT|
-				SQL_CVT_DATE|SQL_CVT_TIMESTAMP));
+		assertEqualDbc(dbc,(int)uintval,0);
 	}
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
@@ -2119,9 +2123,7 @@ int main(int argc, char **argv) {
 	if (issqlrelay) {
 		assertEqualDbc(dbc,(int)uintval,0);
 	} else {
-		assertEqualDbc(dbc,(int)uintval,
-			(int)(SQL_CVT_CHAR|SQL_CVT_VARCHAR|
-				SQL_CVT_DATE|SQL_CVT_TIMESTAMP));
+		assertEqualDbc(dbc,(int)uintval,0);
 	}
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
@@ -2135,13 +2137,7 @@ int main(int argc, char **argv) {
 	if (issqlrelay) {
 		assertEqualDbc(dbc,(int)uintval,0);
 	} else {
-		assertEqualDbc(dbc,(int)uintval,
-			(int)(SQL_CVT_CHAR|SQL_CVT_NUMERIC|
-				SQL_CVT_DECIMAL|SQL_CVT_INTEGER|
-				SQL_CVT_SMALLINT|SQL_CVT_FLOAT|
-				SQL_CVT_REAL|SQL_CVT_DOUBLE|
-				SQL_CVT_VARCHAR|SQL_CVT_BIT|
-				SQL_CVT_TINYINT|SQL_CVT_BIGINT));
+		assertEqualDbc(dbc,(int)uintval,0);
 	}
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
@@ -2155,13 +2151,7 @@ int main(int argc, char **argv) {
 	if (issqlrelay) {
 		assertEqualDbc(dbc,(int)uintval,0);
 	} else {
-		assertEqualDbc(dbc,(int)uintval,
-			(int)(SQL_CVT_CHAR|SQL_CVT_NUMERIC|
-				SQL_CVT_DECIMAL|SQL_CVT_INTEGER|
-				SQL_CVT_SMALLINT|SQL_CVT_FLOAT|
-				SQL_CVT_REAL|SQL_CVT_DOUBLE|
-				SQL_CVT_VARCHAR|SQL_CVT_BIT|
-				SQL_CVT_TINYINT|SQL_CVT_BIGINT));
+		assertEqualDbc(dbc,(int)uintval,0);
 	}
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
@@ -2175,13 +2165,7 @@ int main(int argc, char **argv) {
 	if (issqlrelay) {
 		assertEqualDbc(dbc,(int)uintval,0);
 	} else {
-		assertEqualDbc(dbc,(int)uintval,
-			(int)(SQL_CVT_CHAR|SQL_CVT_NUMERIC|
-				SQL_CVT_DECIMAL|SQL_CVT_INTEGER|
-				SQL_CVT_SMALLINT|SQL_CVT_FLOAT|
-				SQL_CVT_REAL|SQL_CVT_DOUBLE|
-				SQL_CVT_VARCHAR|SQL_CVT_BIT|
-				SQL_CVT_TINYINT|SQL_CVT_BIGINT));
+		assertEqualDbc(dbc,(int)uintval,0);
 	}
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
@@ -2195,13 +2179,7 @@ int main(int argc, char **argv) {
 	if (issqlrelay) {
 		assertEqualDbc(dbc,(int)uintval,0);
 	} else {
-		assertEqualDbc(dbc,(int)uintval,
-			(int)(SQL_CVT_CHAR|SQL_CVT_NUMERIC|
-				SQL_CVT_DECIMAL|SQL_CVT_INTEGER|
-				SQL_CVT_SMALLINT|SQL_CVT_FLOAT|
-				SQL_CVT_REAL|SQL_CVT_DOUBLE|
-				SQL_CVT_VARCHAR|SQL_CVT_BIT|
-				SQL_CVT_TINYINT|SQL_CVT_BIGINT));
+		assertEqualDbc(dbc,(int)uintval,0);
 	}
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
@@ -2225,13 +2203,7 @@ int main(int argc, char **argv) {
 	if (issqlrelay) {
 		assertEqualDbc(dbc,(int)uintval,0);
 	} else {
-		assertEqualDbc(dbc,(int)uintval,
-			(int)(SQL_CVT_CHAR|SQL_CVT_NUMERIC|
-				SQL_CVT_DECIMAL|SQL_CVT_INTEGER|
-				SQL_CVT_SMALLINT|SQL_CVT_FLOAT|
-				SQL_CVT_REAL|SQL_CVT_DOUBLE|
-				SQL_CVT_VARCHAR|SQL_CVT_BIT|
-				SQL_CVT_TINYINT|SQL_CVT_BIGINT));
+		assertEqualDbc(dbc,(int)uintval,0);
 	}
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
@@ -2245,13 +2217,7 @@ int main(int argc, char **argv) {
 	if (issqlrelay) {
 		assertEqualDbc(dbc,(int)uintval,0);
 	} else {
-		assertEqualDbc(dbc,(int)uintval,
-			(int)(SQL_CVT_CHAR|SQL_CVT_NUMERIC|
-				SQL_CVT_DECIMAL|SQL_CVT_INTEGER|
-				SQL_CVT_SMALLINT|SQL_CVT_FLOAT|
-				SQL_CVT_REAL|SQL_CVT_DOUBLE|
-				SQL_CVT_VARCHAR|SQL_CVT_BIT|
-				SQL_CVT_TINYINT|SQL_CVT_BIGINT));
+		assertEqualDbc(dbc,(int)uintval,0);
 	}
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
@@ -2265,13 +2231,7 @@ int main(int argc, char **argv) {
 	if (issqlrelay) {
 		assertEqualDbc(dbc,(int)uintval,0);
 	} else {
-		assertEqualDbc(dbc,(int)uintval,
-			(int)(SQL_CVT_CHAR|SQL_CVT_NUMERIC|
-				SQL_CVT_DECIMAL|SQL_CVT_INTEGER|
-				SQL_CVT_SMALLINT|SQL_CVT_FLOAT|
-				SQL_CVT_REAL|SQL_CVT_DOUBLE|
-				SQL_CVT_VARCHAR|SQL_CVT_BIT|
-				SQL_CVT_TINYINT|SQL_CVT_BIGINT));
+		assertEqualDbc(dbc,(int)uintval,0);
 	}
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
@@ -2295,9 +2255,7 @@ int main(int argc, char **argv) {
 	if (issqlrelay) {
 		assertEqualDbc(dbc,(int)uintval,0);
 	} else {
-		assertEqualDbc(dbc,(int)uintval,
-			(int)(SQL_CVT_CHAR|SQL_CVT_VARCHAR|
-				SQL_CVT_DATE|SQL_CVT_TIMESTAMP));
+		assertEqualDbc(dbc,(int)uintval,0);
 	}
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
@@ -2311,13 +2269,7 @@ int main(int argc, char **argv) {
 	if (issqlrelay) {
 		assertEqualDbc(dbc,(int)uintval,0);
 	} else {
-		assertEqualDbc(dbc,(int)uintval,
-			(int)(SQL_CVT_CHAR|SQL_CVT_NUMERIC|
-				SQL_CVT_DECIMAL|SQL_CVT_INTEGER|
-				SQL_CVT_SMALLINT|SQL_CVT_FLOAT|
-				SQL_CVT_REAL|SQL_CVT_DOUBLE|
-				SQL_CVT_VARCHAR|SQL_CVT_BIT|
-				SQL_CVT_TINYINT|SQL_CVT_BIGINT));
+		assertEqualDbc(dbc,(int)uintval,0);
 	}
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
@@ -2341,14 +2293,7 @@ int main(int argc, char **argv) {
 	if (issqlrelay) {
 		assertEqualDbc(dbc,(int)uintval,0);
 	} else {
-		assertEqualDbc(dbc,(int)uintval,
-			(int)(SQL_CVT_CHAR|SQL_CVT_NUMERIC|
-				SQL_CVT_DECIMAL|SQL_CVT_INTEGER|
-				SQL_CVT_SMALLINT|SQL_CVT_FLOAT|
-				SQL_CVT_REAL|SQL_CVT_DOUBLE|
-				SQL_CVT_VARCHAR|SQL_CVT_BIT|
-				SQL_CVT_TINYINT|SQL_CVT_BIGINT|
-				SQL_CVT_DATE|SQL_CVT_TIMESTAMP));
+		assertEqualDbc(dbc,(int)uintval,0);
 	}
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
@@ -2365,7 +2310,7 @@ int main(int argc, char **argv) {
 
 
 	// SQL_CONVERT_GUID
-	// neither supports it; oracle returns HYT00, sqlrelay HYC00
+	// neither the native informix driver nor sqlrelay supports it
 	stdoutput.printf("  SQL_CONVERT_GUID\n");
 	erg=SQLGetInfo(dbc,SQL_CONVERT_GUID,
 			(SQLPOINTER)&uintval,
@@ -2415,7 +2360,7 @@ int main(int argc, char **argv) {
 	if (issqlrelay) {
 		assertEqualDbc(dbc,(const char *)strval,"03.80");
 	} else {
-		assertEqualDbc(dbc,(const char *)strval,"03.52");
+		assertEqualDbc(dbc,(const char *)strval,"03.51");
 	}
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
@@ -2443,10 +2388,7 @@ int main(int argc, char **argv) {
 	if (issqlrelay) {
 		assertEqualDbc(dbc,(int)uintval,(int)SQL_POS_POSITION);
 	} else {
-		assertEqualDbc(dbc,(int)uintval,
-			(int)(SQL_POS_POSITION|SQL_POS_REFRESH|
-				SQL_POS_UPDATE|SQL_POS_DELETE|
-				SQL_POS_ADD));
+		assertEqualDbc(dbc,(int)uintval,30);
 	}
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
@@ -2477,9 +2419,7 @@ int main(int argc, char **argv) {
 	if (issqlrelay) {
 		assertEqualDbc(dbc,(int)uintval,0);
 	} else {
-		assertEqualDbc(dbc,(int)uintval,
-			(int)(SQL_BP_TRANSACTION|SQL_BP_UPDATE|
-				SQL_BP_SCROLL));
+		assertEqualDbc(dbc,(int)uintval,64);
 	}
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
@@ -2510,7 +2450,11 @@ int main(int argc, char **argv) {
 	erg=SQLGetInfo(dbc,SQL_COLUMN_ALIAS,
 			(SQLPOINTER)strval,(SQLSMALLINT)sizeof(strval),
 			&vallen);
-	assertEqualDbc(dbc,(const char *)strval,"Y");
+	if (issqlrelay) {
+		assertEqualDbc(dbc,(const char *)strval,"Y");
+	} else {
+		assertEqualDbc(dbc,(const char *)strval,"N");
+	}
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
 
@@ -2541,7 +2485,7 @@ int main(int argc, char **argv) {
 	if (issqlrelay) {
 		assertEqualDbc(dbc,(const char *)strval,"after,ansi,append,attach,audit,before,bitmap,boolean,buffered,byte,cache,call,cluster,clustersize,codeset,database,datafiles,dataskip,datetime,dba,dbdate,dbmoney,debug,define,delimiter,deluxe,detach,dirty,distributions,document,each,elif,exclusive,exit,explain,express,expression,extend,extent,file,fillfactor,foreach,format,fraction,fragment,gk,hash,high,hold,hybrid,if,index,init,labeleq,labelge,labelgt,labelle,labellt,let,listing,lock,log,low,matches,maxerrors,medium,mode,modify,money,mounting,new,nvarchar,off,old,operational,optical,optimization,page,pdqpriority,pload,private,raise,range,raw,recordend,recover,referencing,rejectfile,release,remainder,rename,reserve,resolution,resource,resume,return,returning,returns,ridlist,robin,rollforward,round,row,rowids,sameas,samples,schedule,scratch,serial,share,skall,skinhibit,skshow,smallfloat,stability,standard,start,static,statistics,stdev,step,sync,synonym,system,temp,text,timeout,trace,trigger,units,unlock,variance,wait,while,xload,xunload");
 	} else {
-		assertEqualDbc(dbc,(const char *)strval,"ACCESS,AUDIT,BLOB,BFILE,CLOB,NCLOB,CLUSTER,COMMENT,COMPRESS,EXCLUSIVE,FILE,IDENTIFIED,INCREMENT,INITIAL,LOCK,LONG,MAXEXTENTS,MINUS,MODE,MODIFY,NOAUDIT,NOCOMPRESS,NOWAIT,NUMBER,OFFLINE,ONLINE,PCTFREE,RAW,RENAME,RESOURCE,ROW,ROWID,ROWLABEL,ROWNUM,SHARE,START,SUCCESSFUL,SYNONYM,SYSDATE,TRIGGER,UID,VALIDATE,VARCHAR2");
+		assertEqualDbc(dbc,(const char *)strval,"access,access_method,account,address,after,aggregate,alignment,all_mutables,all_rows,ansi,append,array,attach,attributes,audit,authentication,authid,authorized,auto,avoid_execute,based,before,buckets,buffered,byte,cache,call,cannothash,cardinality,class,client,cluster,clustersize,coarse,codeset,collection,committed,commutator,component,components,compressed,connect_by_root,constructor,context,copy,costfunc,crcols,cycle,database,datafiles,dataskip,datetime,db2,dba,dbdate,dbmoney,dbpassword,dbsecadm,debug,decode,decrypt_binary,decrypt_char,define,delay,delimiter,deluxe,detach,dirty,disable,disabled,discard,distributebinary,distributesreferences,distributions,document,donotdistribute,duplicate,each,elif,enable,enabled,encrypt_aes,encrypt_tdes,encryption,environment,exclusive,executeanywhere,exemption,exit,explain,explicit,express,expression,extend,extent,file,fillfactor,filtering,first_rows,first_value,force,foreach,format,fraction,fragment,fragments,gb,general,gethint,gib,gk,handlesnulls,hash,high,hint,hold,home,hybrid,idslbacrules,ignore,immutable,implicit,increment,indexes,informix,instead,int8,internal,internallength,iscanonical,item,iterator,kb,keep,kib,label,labeleq,labelge,labelglb,labelgt,labelle,labellt,labellub,labeltostring,lag,last_value,lateral,limit,listing,lock,locks,matched,matches,maxerrors,maxlen,maxvalue,mb,median,medium,memory_resident,merge,mib,middle,minus,minvalue,mode,moderate,modify,money,mounting,move,mutable,negator,new,nlscase,nocache,nocycle,nomaxvalue,nomigrate,nominvalue,non_resident,noorder,normal,notemplatearg,novalidate,numrows,nvarchar,nvl,off,old,online,opaque,opclass,operational,optical,optimization,override,page,parallelizable,parameter,partition,partitions,passedbyvalue,password,pdqpriority,percall_cost,percent_rank,pload,policy,private,properties,raise,range,ratio_to_report,ratiotoreport,raw,recordend,recover,referencing,rejectfile,release,remainder,rename,repeatable,replace,replication,resolution,resource,respect,restart,resume,retain,return,returning,returns,reuse,robin,role,roles,rollforward,rolling,root,round,routine,rowids,rule,sameas,samples,sampling,savepoint,schedule,scratch,seclabel_by_comp,seclabel_by_name,seclabel_to_char,secondary,secured,security,selconst,selfunc,sequence,serial,serial8,serializable,serveruuid,setsessionauth,share,siblings,skall,skinhibit,skip,skshow,smallfloat,specific,stability,stack,standard,start,statchange,statistics,statlevel,stdev,step,stop,storage,store,strategies,stringtolabel,style,support,sync,synonym,table_space,table_type,tb,text,tib,timeout,trace,transition,tree,trigger,triggers,truncate,trusted,uid,uncommitted,under,units,unlock,upon,variable,variance,variant,violations,wait,while,without,xadatasource,xload,xunload");
 	}
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
@@ -2568,9 +2512,7 @@ int main(int argc, char **argv) {
 	if (issqlrelay) {
 		assertEqualDbc(dbc,(int)uintval,3);
 	} else {
-		assertEqualDbc(dbc,(int)uintval,
-			(int)(SQL_QU_DML_STATEMENTS|
-				SQL_QU_PROCEDURE_INVOCATION));
+		assertEqualDbc(dbc,(int)uintval,1);
 	}
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
@@ -2664,7 +2606,7 @@ int main(int argc, char **argv) {
 	if (issqlrelay) {
 		assertEqualDbc(dbc,(const char *)strval,"N");
 	} else {
-		assertEqualDbc(dbc,(const char *)strval,"N");
+		assertEqualDbc(dbc,(const char *)strval,"Y");
 	}
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
@@ -2713,7 +2655,7 @@ int main(int argc, char **argv) {
 	if (issqlrelay) {
 		assertEqualDbc(dbc,(int)usmallintval,0);
 	} else {
-		assertEqualDbc(dbc,(int)usmallintval,1);
+		assertEqualDbc(dbc,(int)usmallintval,0);
 	}
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
@@ -2925,16 +2867,7 @@ int main(int argc, char **argv) {
 	if (issqlrelay) {
 		assertEqualDbc(dbc,(int)uintval,0);
 	} else {
-		assertEqualDbc(dbc,(int)uintval,
-			(int)(SQL_CT_CREATE_TABLE|
-				SQL_CT_CONSTRAINT_INITIALLY_DEFERRED|
-				SQL_CT_CONSTRAINT_INITIALLY_IMMEDIATE|
-				SQL_CT_CONSTRAINT_DEFERRABLE|
-				SQL_CT_CONSTRAINT_NON_DEFERRABLE|
-				SQL_CT_COLUMN_CONSTRAINT|
-				SQL_CT_COLUMN_DEFAULT|
-				SQL_CT_TABLE_CONSTRAINT|
-				SQL_CT_CONSTRAINT_NAME_DEFINITION));
+		assertEqualDbc(dbc,(int)uintval,1);
 	}
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
@@ -3056,7 +2989,7 @@ int main(int argc, char **argv) {
 	if (issqlrelay) {
 		assertEqualDbc(dbc,(int)uintval,0);
 	} else {
-		assertEqualDbc(dbc,(int)uintval,(int)SQL_DT_DROP_TABLE);
+		assertEqualDbc(dbc,(int)uintval,7);
 	}
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
@@ -3084,7 +3017,7 @@ int main(int argc, char **argv) {
 	if (issqlrelay) {
 		assertEqualDbc(dbc,(int)uintval,0);
 	} else {
-		assertEqualDbc(dbc,(int)uintval,(int)SQL_DV_DROP_VIEW);
+		assertEqualDbc(dbc,(int)uintval,7);
 	}
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
@@ -3093,7 +3026,6 @@ int main(int argc, char **argv) {
 
 	#if (ODBCVER >= 0x0300)
 	// SQL_DYNAMIC_CURSOR_ATTRIBUTES1
-	// oracle lacks dynamic cursors; returns HY105
 	stdoutput.printf("  SQL_DYNAMIC_CURSOR_ATTRIBUTES1\n");
 	erg=SQLGetInfo(dbc,SQL_DYNAMIC_CURSOR_ATTRIBUTES1,
 			(SQLPOINTER)&uintval,
@@ -3101,7 +3033,10 @@ int main(int argc, char **argv) {
 	if (issqlrelay) {
 		assertSuccessDbc(dbc,erg);
 	} else {
-		assertFailureDbc(dbc,erg);
+		// informix implements the infotype but supports no
+		// dynamic-cursor attributes
+		assertSuccessDbc(dbc,erg);
+		assertEqualDbc(dbc,(int)uintval,0);
 	}
 	stdoutput.printf("\n");
 	#endif
@@ -3109,7 +3044,6 @@ int main(int argc, char **argv) {
 
 	#if (ODBCVER >= 0x0300)
 	// SQL_DYNAMIC_CURSOR_ATTRIBUTES2
-	// oracle lacks dynamic cursors; returns HY105
 	stdoutput.printf("  SQL_DYNAMIC_CURSOR_ATTRIBUTES2\n");
 	erg=SQLGetInfo(dbc,SQL_DYNAMIC_CURSOR_ATTRIBUTES2,
 			(SQLPOINTER)&uintval,
@@ -3117,7 +3051,10 @@ int main(int argc, char **argv) {
 	if (issqlrelay) {
 		assertSuccessDbc(dbc,erg);
 	} else {
-		assertFailureDbc(dbc,erg);
+		// informix implements the infotype but supports no
+		// dynamic-cursor attributes
+		assertSuccessDbc(dbc,erg);
+		assertEqualDbc(dbc,(int)uintval,0);
 	}
 	stdoutput.printf("\n");
 	#endif
@@ -3132,10 +3069,7 @@ int main(int argc, char **argv) {
 	if (issqlrelay) {
 		assertEqualDbc(dbc,(int)uintval,0);
 	} else {
-		assertEqualDbc(dbc,(int)uintval,
-			(int)(SQL_CA1_NEXT|SQL_CA1_POSITIONED_UPDATE|
-				SQL_CA1_POSITIONED_DELETE|
-				SQL_CA1_SELECT_FOR_UPDATE));
+		assertEqualDbc(dbc,(int)uintval,73217);
 	}
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
@@ -3151,12 +3085,7 @@ int main(int argc, char **argv) {
 	if (issqlrelay) {
 		assertEqualDbc(dbc,(int)uintval,0);
 	} else {
-		assertEqualDbc(dbc,(int)uintval,
-			(int)(SQL_CA2_READ_ONLY_CONCURRENCY|
-				SQL_CA2_LOCK_CONCURRENCY|
-				SQL_CA2_OPT_ROWVER_CONCURRENCY|
-				SQL_CA2_MAX_ROWS_SELECT|
-				SQL_CA2_MAX_ROWS_CATALOG));
+		assertEqualDbc(dbc,(int)uintval,2179);
 	}
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
@@ -3172,7 +3101,7 @@ int main(int argc, char **argv) {
 	if (issqlrelay) {
 		assertEqualDbc(dbc,(int)uintval,0);
 	} else {
-		assertEqualDbc(dbc,(int)uintval,(int)SQL_IK_ASC);
+		assertEqualDbc(dbc,(int)uintval,3);
 	}
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
@@ -3188,9 +3117,7 @@ int main(int argc, char **argv) {
 	if (issqlrelay) {
 		assertEqualDbc(dbc,(int)uintval,0);
 	} else {
-		assertEqualDbc(dbc,(int)uintval,
-			(int)(SQL_ISV_COLUMN_PRIVILEGES|
-				SQL_ISV_TABLE_PRIVILEGES));
+		assertEqualDbc(dbc,(int)uintval,0);
 	}
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
@@ -3206,15 +3133,7 @@ int main(int argc, char **argv) {
 	if (issqlrelay) {
 		assertEqualDbc(dbc,(int)uintval,0);
 	} else {
-		assertEqualDbc(dbc,(int)uintval,
-			(int)(SQL_CA1_NEXT|SQL_CA1_ABSOLUTE|
-				SQL_CA1_RELATIVE|SQL_CA1_BOOKMARK|
-				SQL_CA1_LOCK_NO_CHANGE|
-				SQL_CA1_POS_POSITION|SQL_CA1_POS_UPDATE|
-				SQL_CA1_POS_DELETE|SQL_CA1_POS_REFRESH|
-				SQL_CA1_POSITIONED_UPDATE|
-				SQL_CA1_POSITIONED_DELETE|
-				SQL_CA1_SELECT_FOR_UPDATE));
+		assertEqualDbc(dbc,(int)uintval,0);
 	}
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
@@ -3230,12 +3149,7 @@ int main(int argc, char **argv) {
 	if (issqlrelay) {
 		assertEqualDbc(dbc,(int)uintval,0);
 	} else {
-		assertEqualDbc(dbc,(int)uintval,
-			(int)(SQL_CA2_READ_ONLY_CONCURRENCY|
-				SQL_CA2_LOCK_CONCURRENCY|
-				SQL_CA2_OPT_ROWVER_CONCURRENCY|
-				SQL_CA2_MAX_ROWS_SELECT|
-				SQL_CA2_MAX_ROWS_CATALOG));
+		assertEqualDbc(dbc,(int)uintval,0);
 	}
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
@@ -3347,7 +3261,7 @@ int main(int argc, char **argv) {
 	if (issqlrelay) {
 		assertEqualDbc(dbc,(int)uintval,0);
 	} else {
-		assertEqualDbc(dbc,(int)uintval,(int)SQL_SG_WITH_GRANT_OPTION);
+		assertEqualDbc(dbc,(int)uintval,0);
 	}
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
@@ -3379,11 +3293,7 @@ int main(int argc, char **argv) {
 	if (issqlrelay) {
 		assertEqualDbc(dbc,(int)uintval,0);
 	} else {
-		assertEqualDbc(dbc,(int)uintval,
-			(int)(SQL_SP_EXISTS|SQL_SP_ISNOTNULL|
-				SQL_SP_ISNULL|SQL_SP_LIKE|
-				SQL_SP_IN|SQL_SP_BETWEEN|
-				SQL_SP_COMPARISON));
+		assertEqualDbc(dbc,(int)uintval,0);
 	}
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
@@ -3415,7 +3325,7 @@ int main(int argc, char **argv) {
 	if (issqlrelay) {
 		assertEqualDbc(dbc,(int)uintval,0);
 	} else {
-		assertEqualDbc(dbc,(int)uintval,0);
+		assertEqualDbc(dbc,(int)uintval,96);
 	}
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
@@ -3463,7 +3373,7 @@ int main(int argc, char **argv) {
 	if (issqlrelay) {
 		assertEqualDbc(dbc,(int)uintval,0);
 	} else {
-		assertEqualDbc(dbc,(int)uintval,(int)SQL_SVE_CASE);
+		assertEqualDbc(dbc,(int)uintval,0);
 	}
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
@@ -3498,15 +3408,7 @@ int main(int argc, char **argv) {
 	if (issqlrelay) {
 		assertEqualDbc(dbc,(int)uintval,0);
 	} else {
-		assertEqualDbc(dbc,(int)uintval,
-			(int)(SQL_CA1_NEXT|SQL_CA1_ABSOLUTE|
-				SQL_CA1_RELATIVE|SQL_CA1_BOOKMARK|
-				SQL_CA1_LOCK_NO_CHANGE|
-				SQL_CA1_POS_POSITION|SQL_CA1_POS_UPDATE|
-				SQL_CA1_POS_DELETE|SQL_CA1_POS_REFRESH|
-				SQL_CA1_POSITIONED_UPDATE|
-				SQL_CA1_POSITIONED_DELETE|
-				SQL_CA1_SELECT_FOR_UPDATE));
+		assertEqualDbc(dbc,(int)uintval,7681);
 	}
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
@@ -3522,12 +3424,7 @@ int main(int argc, char **argv) {
 	if (issqlrelay) {
 		assertEqualDbc(dbc,(int)uintval,0);
 	} else {
-		assertEqualDbc(dbc,(int)uintval,
-			(int)(SQL_CA2_READ_ONLY_CONCURRENCY|
-				SQL_CA2_LOCK_CONCURRENCY|
-				SQL_CA2_OPT_ROWVER_CONCURRENCY|
-				SQL_CA2_MAX_ROWS_SELECT|
-				SQL_CA2_CRC_EXACT));
+		assertEqualDbc(dbc,(int)uintval,10371);
 	}
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
@@ -3536,8 +3433,6 @@ int main(int argc, char **argv) {
 
 	#if (ODBCVER >= 0x0300)
 	// SQL_AGGREGATE_FUNCTIONS
-	// Oracle's ODBC driver returns HYT00 "Timeout expired" (does
-	// not implement this infotype).
 	stdoutput.printf("  SQL_AGGREGATE_FUNCTIONS\n");
 	erg=SQLGetInfo(dbc,SQL_AGGREGATE_FUNCTIONS,
 			(SQLPOINTER)&uintval,
@@ -3545,7 +3440,9 @@ int main(int argc, char **argv) {
 	if (issqlrelay) {
 		assertSuccessDbc(dbc,erg);
 	} else {
-		assertFailureDbc(dbc,erg);
+		// informix implements the infotype
+		assertSuccessDbc(dbc,erg);
+		assertEqualDbc(dbc,(int)uintval,(int)SQL_AF_ALL);
 	}
 	stdoutput.printf("\n");
 	#endif
@@ -3557,7 +3454,11 @@ int main(int argc, char **argv) {
 	erg=SQLGetInfo(dbc,SQL_DDL_INDEX,
 			(SQLPOINTER)&uintval,
 			(SQLSMALLINT)sizeof(uintval),&vallen);
-	assertEqualDbc(dbc,(int)uintval,0);
+	if (issqlrelay) {
+		assertEqualDbc(dbc,(int)uintval,0);
+	} else {
+		assertEqualDbc(dbc,(int)uintval,3);
+	}
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
 	#endif
@@ -3581,7 +3482,11 @@ int main(int argc, char **argv) {
 	erg=SQLGetInfo(dbc,SQL_INSERT_STATEMENT,
 			(SQLPOINTER)&uintval,
 			(SQLSMALLINT)sizeof(uintval),&vallen);
-	assertEqualDbc(dbc,(int)uintval,0);
+	if (issqlrelay) {
+		assertEqualDbc(dbc,(int)uintval,0);
+	} else {
+		assertEqualDbc(dbc,(int)uintval,7);
+	}
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
 	#endif
@@ -3589,7 +3494,7 @@ int main(int argc, char **argv) {
 
 	#if (ODBCVER >= 0x0380)
 	// SQL_ASYNC_DBC_FUNCTIONS
-	// oracle doesn't implement this ODBC 3.8 infotype; returns HYT00
+	// the native informix driver doesn't implement this ODBC 3.8 infotype
 	stdoutput.printf("  SQL_ASYNC_DBC_FUNCTIONS\n");
 	erg=SQLGetInfo(dbc,SQL_ASYNC_DBC_FUNCTIONS,
 			(SQLPOINTER)&uintval,
@@ -3604,7 +3509,7 @@ int main(int argc, char **argv) {
 
 
 	// SQL_DRIVER_AWARE_POOLING_SUPPORTED
-	// oracle doesn't implement this infotype; returns HYT00
+	// the native informix driver doesn't implement this infotype
 	stdoutput.printf("  SQL_DRIVER_AWARE_POOLING_SUPPORTED\n");
 	erg=SQLGetInfo(dbc,SQL_DRIVER_AWARE_POOLING_SUPPORTED,
 			(SQLPOINTER)&uintval,
@@ -3619,7 +3524,7 @@ int main(int argc, char **argv) {
 
 	#if (ODBCVER >= 0x0380)
 	// SQL_ASYNC_NOTIFICATION
-	// oracle doesn't implement this ODBC 3.8 infotype; returns HYT00
+	// the native informix driver doesn't implement this ODBC 3.8 infotype
 	stdoutput.printf("  SQL_ASYNC_NOTIFICATION\n");
 	erg=SQLGetInfo(dbc,SQL_ASYNC_NOTIFICATION,
 			(SQLPOINTER)&uintval,
@@ -3634,7 +3539,7 @@ int main(int argc, char **argv) {
 
 
 	// SQL_DTC_TRANSITION_COST
-	// oracle doesn't implement this infotype; returns HYT00
+	// the native informix driver doesn't implement this infotype
 	stdoutput.printf("  SQL_DTC_TRANSITION_COST\n");
 	erg=SQLGetInfo(dbc,SQL_DTC_TRANSITION_COST,
 			(SQLPOINTER)&uintval,
@@ -3742,8 +3647,8 @@ int main(int argc, char **argv) {
 	if (issqlrelay) {
 		assertEqualDbc(dbc,(int)supported,(int)SQL_TRUE);
 	} else {
-		// ODBC 2.x call, replaced by SQLGetDiagRec
-		assertEqualDbc(dbc,(int)supported,(int)SQL_FALSE);
+		// the informix native driver still implements this ODBC 2.x call
+		assertEqualDbc(dbc,(int)supported,(int)SQL_TRUE);
 	}
 	stdoutput.printf("\n");
 
@@ -3891,8 +3796,8 @@ int main(int argc, char **argv) {
 	if (issqlrelay) {
 		assertEqualDbc(dbc,(int)supported,(int)SQL_TRUE);
 	} else {
-		// ODBC 2.x call, replaced by SQLGetConnectAttr
-		assertEqualDbc(dbc,(int)supported,(int)SQL_FALSE);
+		// the informix native driver still implements this ODBC 2.x call
+		assertEqualDbc(dbc,(int)supported,(int)SQL_TRUE);
 	}
 	stdoutput.printf("\n");
 
@@ -3932,8 +3837,8 @@ int main(int argc, char **argv) {
 	if (issqlrelay) {
 		assertEqualDbc(dbc,(int)supported,(int)SQL_TRUE);
 	} else {
-		// ODBC 2.x call, replaced by SQLGetStmtAttr
-		assertEqualDbc(dbc,(int)supported,(int)SQL_FALSE);
+		// the informix native driver still implements this ODBC 2.x call
+		assertEqualDbc(dbc,(int)supported,(int)SQL_TRUE);
 	}
 	stdoutput.printf("\n");
 
@@ -3973,8 +3878,8 @@ int main(int argc, char **argv) {
 	if (issqlrelay) {
 		assertEqualDbc(dbc,(int)supported,(int)SQL_TRUE);
 	} else {
-		// ODBC 2.x call, replaced by SQLSetConnectAttr
-		assertEqualDbc(dbc,(int)supported,(int)SQL_FALSE);
+		// the informix native driver still implements this ODBC 2.x call
+		assertEqualDbc(dbc,(int)supported,(int)SQL_TRUE);
 	}
 	stdoutput.printf("\n");
 
@@ -3987,8 +3892,8 @@ int main(int argc, char **argv) {
 	if (issqlrelay) {
 		assertEqualDbc(dbc,(int)supported,(int)SQL_TRUE);
 	} else {
-		// ODBC 2.x call, replaced by SQLSetStmtAttr
-		assertEqualDbc(dbc,(int)supported,(int)SQL_FALSE);
+		// the informix native driver still implements this ODBC 2.x call
+		assertEqualDbc(dbc,(int)supported,(int)SQL_TRUE);
 	}
 	stdoutput.printf("\n");
 
@@ -4034,7 +3939,8 @@ int main(int argc, char **argv) {
 		// SQL Relay ODBC driver does not yet implement this.
 		assertEqualDbc(dbc,(int)supported,(int)SQL_FALSE);
 	} else {
-		assertEqualDbc(dbc,(int)supported,(int)SQL_TRUE);
+		// the informix native driver does not implement SQLBrowseConnect
+		assertEqualDbc(dbc,(int)supported,(int)SQL_FALSE);
 	}
 	stdoutput.printf("\n");
 
@@ -4544,46 +4450,40 @@ int main(int argc, char **argv) {
 	#if (ODBCVER >= 0x0300)
 	// SQL_ATTR_APP_ROW_DESC (descriptor handle, settable)
 	stdoutput.printf("  SQL_ATTR_APP_ROW_DESC\n");
-	// hangs when run directly against oracle
-	if (issqlrelay) {
-		// get initial (implicit app row descriptor)
-		erg=SQLGetStmtAttr(stmt,SQL_ATTR_APP_ROW_DESC,
-				(SQLPOINTER)&stmtptrinit,0,&stmtstrlen);
-		assertSuccessStmt(stmt,erg);
-		// round-trip the same handle
-		erg=SQLSetStmtAttr(stmt,SQL_ATTR_APP_ROW_DESC,
-				(SQLPOINTER)stmtptrinit,SQL_IS_POINTER);
-		assertSuccessStmt(stmt,erg);
-		erg=SQLGetStmtAttr(stmt,SQL_ATTR_APP_ROW_DESC,
-				(SQLPOINTER)&stmtptrval,0,&stmtstrlen);
-		assertSuccessStmt(stmt,erg);
-		assertEqualStmt(stmt,(int)(stmtptrval==stmtptrinit),1);
-		// SQL_NULL_DESC resets to the implicit descriptor
-		erg=SQLSetStmtAttr(stmt,SQL_ATTR_APP_ROW_DESC,
-				(SQLPOINTER)SQL_NULL_DESC,SQL_IS_POINTER);
-		assertSuccessStmt(stmt,erg);
-	}
+	// get initial (implicit app row descriptor)
+	erg=SQLGetStmtAttr(stmt,SQL_ATTR_APP_ROW_DESC,
+			(SQLPOINTER)&stmtptrinit,0,&stmtstrlen);
+	assertSuccessStmt(stmt,erg);
+	// round-trip the same handle
+	erg=SQLSetStmtAttr(stmt,SQL_ATTR_APP_ROW_DESC,
+			(SQLPOINTER)stmtptrinit,SQL_IS_POINTER);
+	assertSuccessStmt(stmt,erg);
+	erg=SQLGetStmtAttr(stmt,SQL_ATTR_APP_ROW_DESC,
+			(SQLPOINTER)&stmtptrval,0,&stmtstrlen);
+	assertSuccessStmt(stmt,erg);
+	assertEqualStmt(stmt,(int)(stmtptrval==stmtptrinit),1);
+	// SQL_NULL_DESC resets to the implicit descriptor
+	erg=SQLSetStmtAttr(stmt,SQL_ATTR_APP_ROW_DESC,
+			(SQLPOINTER)SQL_NULL_DESC,SQL_IS_POINTER);
+	assertSuccessStmt(stmt,erg);
 	stdoutput.printf("\n");
 
 
 	// SQL_ATTR_APP_PARAM_DESC (descriptor handle, settable)
 	stdoutput.printf("  SQL_ATTR_APP_PARAM_DESC\n");
-	// hangs when run directly against oracle
-	if (issqlrelay) {
-		erg=SQLGetStmtAttr(stmt,SQL_ATTR_APP_PARAM_DESC,
-				(SQLPOINTER)&stmtptrinit,0,&stmtstrlen);
-		assertSuccessStmt(stmt,erg);
-		erg=SQLSetStmtAttr(stmt,SQL_ATTR_APP_PARAM_DESC,
-				(SQLPOINTER)stmtptrinit,SQL_IS_POINTER);
-		assertSuccessStmt(stmt,erg);
-		erg=SQLGetStmtAttr(stmt,SQL_ATTR_APP_PARAM_DESC,
-				(SQLPOINTER)&stmtptrval,0,&stmtstrlen);
-		assertSuccessStmt(stmt,erg);
-		assertEqualStmt(stmt,(int)(stmtptrval==stmtptrinit),1);
-		erg=SQLSetStmtAttr(stmt,SQL_ATTR_APP_PARAM_DESC,
-			(SQLPOINTER)SQL_NULL_DESC,SQL_IS_POINTER);
-		assertSuccessStmt(stmt,erg);
-	}
+	erg=SQLGetStmtAttr(stmt,SQL_ATTR_APP_PARAM_DESC,
+			(SQLPOINTER)&stmtptrinit,0,&stmtstrlen);
+	assertSuccessStmt(stmt,erg);
+	erg=SQLSetStmtAttr(stmt,SQL_ATTR_APP_PARAM_DESC,
+			(SQLPOINTER)stmtptrinit,SQL_IS_POINTER);
+	assertSuccessStmt(stmt,erg);
+	erg=SQLGetStmtAttr(stmt,SQL_ATTR_APP_PARAM_DESC,
+			(SQLPOINTER)&stmtptrval,0,&stmtstrlen);
+	assertSuccessStmt(stmt,erg);
+	assertEqualStmt(stmt,(int)(stmtptrval==stmtptrinit),1);
+	erg=SQLSetStmtAttr(stmt,SQL_ATTR_APP_PARAM_DESC,
+		(SQLPOINTER)SQL_NULL_DESC,SQL_IS_POINTER);
+	assertSuccessStmt(stmt,erg);
 	stdoutput.printf("\n");
 
 
@@ -4613,38 +4513,30 @@ int main(int argc, char **argv) {
 
 	// SQL_ATTR_CURSOR_SCROLLABLE
 	stdoutput.printf("  SQL_ATTR_CURSOR_SCROLLABLE\n");
-	if (issqlrelay) {
-		erg=SQLGetStmtAttr(stmt,SQL_ATTR_CURSOR_SCROLLABLE,
-				(SQLPOINTER)&stmtinitial,0,&stmtstrlen);
-		assertSuccessStmt(stmt,erg);
-		assertEqualStmt(stmt,(int)stmtinitial,(int)SQL_NONSCROLLABLE);
-		// sqlrelay only supports SQL_NONSCROLLABLE; expect
-		// SQL_SUCCESS_WITH_INFO + SQLSTATE 01S02
-		erg=SQLSetStmtAttr(stmt,SQL_ATTR_CURSOR_SCROLLABLE,
-				(SQLPOINTER)(uintptr_t)SQL_SCROLLABLE,0);
-		assertEqualStmt(stmt,(int)erg,(int)SQL_SUCCESS_WITH_INFO);
-		erg=SQLGetStmtAttr(stmt,SQL_ATTR_CURSOR_SCROLLABLE,
-				(SQLPOINTER)&stmtulenval,0,&stmtstrlen);
-		assertSuccessStmt(stmt,erg);
-		// get reflects the substituted value, not what the app set
-		assertEqualStmt(stmt,(int)stmtulenval,(int)SQL_NONSCROLLABLE);
-		// SQL_NONSCROLLABLE: accepted as-is
-		erg=SQLSetStmtAttr(stmt,SQL_ATTR_CURSOR_SCROLLABLE,
-				(SQLPOINTER)(uintptr_t)SQL_NONSCROLLABLE,0);
-		assertEqualStmt(stmt,(int)erg,(int)SQL_SUCCESS);
-		erg=SQLGetStmtAttr(stmt,SQL_ATTR_CURSOR_SCROLLABLE,
-				(SQLPOINTER)&stmtulenval,0,&stmtstrlen);
-		assertSuccessStmt(stmt,erg);
-		assertEqualStmt(stmt,(int)stmtulenval,(int)SQL_NONSCROLLABLE);
-	} else {
-		// oracle doesn't implement this; get returns HY103, set HYT00
-		erg=SQLGetStmtAttr(stmt,SQL_ATTR_CURSOR_SCROLLABLE,
-				(SQLPOINTER)&stmtinitial,0,&stmtstrlen);
-		assertFailureStmt(stmt,erg);
-		erg=SQLSetStmtAttr(stmt,SQL_ATTR_CURSOR_SCROLLABLE,
-				(SQLPOINTER)(uintptr_t)SQL_SCROLLABLE,0);
-		assertFailureStmt(stmt,erg);
-	}
+	// both sqlrelay and the informix native driver support only
+	// SQL_NONSCROLLABLE
+	erg=SQLGetStmtAttr(stmt,SQL_ATTR_CURSOR_SCROLLABLE,
+			(SQLPOINTER)&stmtinitial,0,&stmtstrlen);
+	assertSuccessStmt(stmt,erg);
+	assertEqualStmt(stmt,(int)stmtinitial,(int)SQL_NONSCROLLABLE);
+	// SQL_SCROLLABLE unsupported; substituted with SQL_NONSCROLLABLE,
+	// expect SQL_SUCCESS_WITH_INFO + SQLSTATE 01S02
+	erg=SQLSetStmtAttr(stmt,SQL_ATTR_CURSOR_SCROLLABLE,
+			(SQLPOINTER)(uintptr_t)SQL_SCROLLABLE,0);
+	assertEqualStmt(stmt,(int)erg,(int)SQL_SUCCESS_WITH_INFO);
+	erg=SQLGetStmtAttr(stmt,SQL_ATTR_CURSOR_SCROLLABLE,
+			(SQLPOINTER)&stmtulenval,0,&stmtstrlen);
+	assertSuccessStmt(stmt,erg);
+	// get reflects the substituted value, not what the app set
+	assertEqualStmt(stmt,(int)stmtulenval,(int)SQL_NONSCROLLABLE);
+	// SQL_NONSCROLLABLE: accepted as-is
+	erg=SQLSetStmtAttr(stmt,SQL_ATTR_CURSOR_SCROLLABLE,
+			(SQLPOINTER)(uintptr_t)SQL_NONSCROLLABLE,0);
+	assertEqualStmt(stmt,(int)erg,(int)SQL_SUCCESS);
+	erg=SQLGetStmtAttr(stmt,SQL_ATTR_CURSOR_SCROLLABLE,
+			(SQLPOINTER)&stmtulenval,0,&stmtstrlen);
+	assertSuccessStmt(stmt,erg);
+	assertEqualStmt(stmt,(int)stmtulenval,(int)SQL_NONSCROLLABLE);
 	stdoutput.printf("\n");
 
 
@@ -4686,8 +4578,7 @@ int main(int argc, char **argv) {
 				(SQLPOINTER)(uintptr_t)stmtinitial,0);
 		assertSuccessStmt(stmt,erg);
 	} else {
-		// oracle doesn't implement this; same failure pattern as
-		// SQL_ATTR_CURSOR_SCROLLABLE
+		// the native informix driver doesn't implement this
 		erg=SQLGetStmtAttr(stmt,SQL_ATTR_CURSOR_SENSITIVITY,
 				(SQLPOINTER)&stmtinitial,0,&stmtstrlen);
 		assertFailureStmt(stmt,erg);
@@ -4891,13 +4782,11 @@ int main(int argc, char **argv) {
 				(SQLPOINTER)(uintptr_t)SQL_ASYNC_ENABLE_OFF,0);
 		assertEqualStmt(stmt,(int)erg,(int)SQL_SUCCESS);
 	} else {
-		// oracle returns SQL_ASYNC_ENABLE_OFF on get but rejects set
-		// with HYT00
+		// the informix native driver is not capable of this statement
+		// attribute; get and set both fail with SQLSTATE S1C00
 		erg=SQLGetStmtAttr(stmt,SQL_ATTR_ASYNC_ENABLE,
 				(SQLPOINTER)&stmtinitial,0,&stmtstrlen);
-		assertSuccessStmt(stmt,erg);
-		assertEqualStmt(stmt,(int)stmtinitial,
-					(int)SQL_ASYNC_ENABLE_OFF);
+		assertFailureStmt(stmt,erg);
 		erg=SQLSetStmtAttr(stmt,SQL_ATTR_ASYNC_ENABLE,
 				(SQLPOINTER)(uintptr_t)SQL_ASYNC_ENABLE_ON,0);
 		assertFailureStmt(stmt,erg);
@@ -4932,8 +4821,8 @@ int main(int argc, char **argv) {
 
 
 	// SQL_ATTR_KEYSET_SIZE
-	// driver may ignore for non-keyset cursors; oracle leaves it at 0,
-	// sqlrelay round-trips the value
+	// driver may ignore for non-keyset cursors; the native informix driver
+	// leaves it at 0, sqlrelay round-trips the value
 	stdoutput.printf("  SQL_ATTR_KEYSET_SIZE\n");
 	erg=SQLGetStmtAttr(stmt,SQL_ATTR_KEYSET_SIZE,
 			(SQLPOINTER)&stmtinitial,0,&stmtstrlen);
@@ -5008,7 +4897,7 @@ int main(int argc, char **argv) {
 		assertSuccessStmt(stmt,erg);
 		assertEqualStmt(stmt,(int)stmtulenval,(int)SQL_SC_NON_UNIQUE);
 	} else {
-		// oracle doesn't implement this; get and set raise HYT00
+		// the native informix driver doesn't implement this
 		erg=SQLGetStmtAttr(stmt,SQL_ATTR_SIMULATE_CURSOR,
 				(SQLPOINTER)&stmtinitial,0,&stmtstrlen);
 		assertFailureStmt(stmt,erg);
@@ -5082,8 +4971,8 @@ int main(int argc, char **argv) {
 
 	// SQL_ATTR_ROW_NUMBER (read-only)
 	// before a cursor is open, get may return 0 or SQLSTATE 24000;
-	// oracle gives 24000, sqlrelay success with 0, both legal, so
-	// don't assert on the return code
+	// the native informix driver gives 24000, sqlrelay success with 0,
+	// both legal, so don't assert on the return code
 	stdoutput.printf("  SQL_ATTR_ROW_NUMBER\n");
 	erg=SQLGetStmtAttr(stmt,SQL_ATTR_ROW_NUMBER,
 			(SQLPOINTER)&stmtulenval,0,&stmtstrlen);
@@ -5164,13 +5053,25 @@ int main(int argc, char **argv) {
 				(SQLPOINTER)(uintptr_t)stmtinitial,0);
 		assertSuccessStmt(stmt,erg);
 	} else {
-		// oracle doesn't implement this; get and set raise HYT00
+		// informix implements this; the initial value is SQL_FALSE
 		erg=SQLGetStmtAttr(stmt,SQL_ATTR_ENABLE_AUTO_IPD,
 				(SQLPOINTER)&stmtinitial,0,&stmtstrlen);
-		assertFailureStmt(stmt,erg);
+		assertSuccessStmt(stmt,erg);
+		assertEqualStmt(stmt,(int)stmtinitial,(int)SQL_FALSE);
+		erg=SQLSetStmtAttr(stmt,SQL_ATTR_ENABLE_AUTO_IPD,
+				(SQLPOINTER)(uintptr_t)SQL_TRUE,0);
+		assertSuccessStmt(stmt,erg);
+		erg=SQLGetStmtAttr(stmt,SQL_ATTR_ENABLE_AUTO_IPD,
+				(SQLPOINTER)&stmtulenval,0,&stmtstrlen);
+		assertSuccessStmt(stmt,erg);
+		assertEqualStmt(stmt,(int)stmtulenval,(int)SQL_TRUE);
 		erg=SQLSetStmtAttr(stmt,SQL_ATTR_ENABLE_AUTO_IPD,
 				(SQLPOINTER)(uintptr_t)SQL_FALSE,0);
-		assertFailureStmt(stmt,erg);
+		assertSuccessStmt(stmt,erg);
+		erg=SQLGetStmtAttr(stmt,SQL_ATTR_ENABLE_AUTO_IPD,
+				(SQLPOINTER)&stmtulenval,0,&stmtstrlen);
+		assertSuccessStmt(stmt,erg);
+		assertEqualStmt(stmt,(int)stmtulenval,(int)SQL_FALSE);
 	}
 	stdoutput.printf("\n");
 
@@ -5450,15 +5351,13 @@ int main(int argc, char **argv) {
 	stdoutput.printf("CREATE TESTTABLE: \n");
 	// informix has no MVCC; run the data sections in autocommit-on mode so
 	// each statement commits immediately and the second connection's
-	// count(*) in the COMMIT AND ROLLBACK section doesn't block on row locks
-	// held by an in-flight transaction (that section manages its own
+	// count(*) in the COMMIT AND ROLLBACK section doesn't block on row
+	// locks held by an in-flight transaction (that section manages its own
 	// transaction and a dirty-read second connection)
 	erg=SQLSetConnectAttr(dbc,SQL_ATTR_AUTOCOMMIT,
 		(SQLPOINTER)SQL_AUTOCOMMIT_ON,0);
 	assertSuccessDbc(dbc,erg);
 	SQLExecDirect(stmt,(SQLCHAR *)"drop table testtable",SQL_NTS);
-	// the lob columns use informix's simple large objects, text (character)
-	// and byte (binary)
 	erg=SQLExecDirect(stmt,(SQLCHAR *)
 		"create table testtable ("
 		"	testint integer, "
@@ -5475,8 +5374,6 @@ int main(int argc, char **argv) {
 
 
 	// insert
-	// informix has no binary literal, so the byte column is inserted NULL
-	// here and given a real value through the binds in the rows below
 	stdoutput.printf("INSERT: \n");
 	erg=SQLExecDirect(stmt,(SQLCHAR *)
 		"insert into "
@@ -5548,6 +5445,10 @@ int main(int argc, char **argv) {
 	SQLLEN		cloblen=sizeof(clobval);
 	SQLLEN		clobstrlen=SQL_NTS;
 	SQLLEN		bloblen=9;
+	// The informix native driver stores an empty value unless ColumnSize is
+	// non-zero for the SQL_LONGVARCHAR/SQL_LONGVARBINARY (text/byte) binds
+	// below; sqlrelay accepts 0.
+	SQLULEN		lobcolsize=(issqlrelay)?0:4096;
 
 	// row 2
 	intval=2;
@@ -5589,19 +5490,19 @@ int main(int argc, char **argv) {
 	assertSuccessStmt(stmt,erg);
 	erg=SQLBindParameter(stmt,5,SQL_PARAM_INPUT,
 				SQL_C_CHAR,SQL_LONGVARCHAR,
-				0,0,
+				lobcolsize,0,
 				(SQLPOINTER)longval,
 				0,&longlen);
 	assertSuccessStmt(stmt,erg);
 	erg=SQLBindParameter(stmt,6,SQL_PARAM_INPUT,
 				SQL_C_CHAR,SQL_LONGVARCHAR,
-				0,0,
+				lobcolsize,0,
 				(SQLPOINTER)clobval,
 				cloblen,&clobstrlen);
 	assertSuccessStmt(stmt,erg);
 	erg=SQLBindParameter(stmt,7,SQL_PARAM_INPUT,
 				SQL_C_BINARY,SQL_LONGVARBINARY,
-				0,0,
+				lobcolsize,0,
 				(SQLPOINTER)blobval,
 				0,&bloblen);
 	assertSuccessStmt(stmt,erg);
@@ -5664,19 +5565,19 @@ int main(int argc, char **argv) {
 	assertSuccessStmt(stmt,erg);
 	erg=SQLBindParameter(stmt,5,SQL_PARAM_INPUT,
 				SQL_C_CHAR,SQL_LONGVARCHAR,
-				0,0,
+				lobcolsize,0,
 				(SQLPOINTER)longval,
 				0,&longlen);
 	assertSuccessStmt(stmt,erg);
 	erg=SQLBindParameter(stmt,6,SQL_PARAM_INPUT,
 				SQL_C_CHAR,SQL_LONGVARCHAR,
-				0,0,
+				lobcolsize,0,
 				(SQLPOINTER)clobval,
 				cloblen,&clobstrlen);
 	assertSuccessStmt(stmt,erg);
 	erg=SQLBindParameter(stmt,7,SQL_PARAM_INPUT,
 				SQL_C_BINARY,SQL_LONGVARBINARY,
-				0,0,
+				lobcolsize,0,
 				(SQLPOINTER)blobval,
 				0,&bloblen);
 	assertSuccessStmt(stmt,erg);
@@ -5764,20 +5665,20 @@ int main(int argc, char **argv) {
 	assertSuccessStmt(stmt,erg);
 	erg=SQLBindParameter(stmt,5,SQL_PARAM_INPUT,
 				SQL_C_CHAR,SQL_LONGVARCHAR,
-				0,0,
+				lobcolsize,0,
 				(SQLPOINTER)longval,
 				0,&longlen);
 	assertSuccessStmt(stmt,erg);
 	// clobval is the SQLParamData token; real value comes via SQLPutData
 	erg=SQLBindParameter(stmt,6,SQL_PARAM_INPUT,
 				SQL_C_CHAR,SQL_LONGVARCHAR,
-				0,0,
+				lobcolsize,0,
 				(SQLPOINTER)clobval,
 				0,&clobdataatexeclen);
 	assertSuccessStmt(stmt,erg);
 	erg=SQLBindParameter(stmt,7,SQL_PARAM_INPUT,
 				SQL_C_BINARY,SQL_LONGVARBINARY,
-				0,0,
+				lobcolsize,0,
 				(SQLPOINTER)blobval,
 				0,&bloblen);
 	assertSuccessStmt(stmt,erg);
@@ -6563,12 +6464,18 @@ int main(int argc, char **argv) {
 			lobblob2,sizeof(lobblob2),&lobblob2ind);
 	erg=SQLFetch(stmt);
 	assertSuccessStmt(stmt,erg);
-	// informix stores a zero-length text/byte value as a single byte, so an
-	// empty lob round-trips with length 1 while a genuine NULL round-trips
-	// as SQL_NULL_DATA
-	assertEqualStmt(stmt,(int)lobclob1ind,1);
+	// a genuine NULL round-trips as SQL_NULL_DATA in both modes; an empty
+	// lob round-trips with length 1 through sqlrelay (which stores a
+	// zero-length text/byte as a single byte) but with length 0 through the
+	// native driver
+	if (issqlrelay) {
+		assertEqualStmt(stmt,(int)lobclob1ind,1);
+		assertEqualStmt(stmt,(int)lobblob1ind,1);
+	} else {
+		assertEqualStmt(stmt,(int)lobclob1ind,0);
+		assertEqualStmt(stmt,(int)lobblob1ind,0);
+	}
 	assertEqualStmt(stmt,(int)lobclob2ind,(int)SQL_NULL_DATA);
-	assertEqualStmt(stmt,(int)lobblob1ind,1);
 	assertEqualStmt(stmt,(int)lobblob2ind,(int)SQL_NULL_DATA);
 	erg=SQLFreeStmt(stmt,SQL_CLOSE);
 	erg=SQLFreeStmt(stmt,SQL_UNBIND);
@@ -6741,11 +6648,19 @@ int main(int argc, char **argv) {
 
 	// output bind by position
 	stdoutput.printf("OUTPUT BIND BY POSITION: \n");
+	// A prior data-at-exec SQLPutData (the LONG LOBS sections above) leaves
+	// the native informix driver unable to populate output-parameter binds
+	// for the rest of the session; a fresh statement handle clears that
+	// state (SQLFreeStmt/SQLCancel/rollback do not).  The output-bind tests
+	// that follow all reuse this handle, and nothing below uses SQLPutData.
+	if (!issqlrelay) {
+		SQLFreeHandle(SQL_HANDLE_STMT,stmt);
+		erg=SQLAllocHandle(SQL_HANDLE_STMT,dbc,&stmt);
+		assertSuccessDbc(dbc,erg);
+	}
 	erg=SQLFreeStmt(stmt,SQL_CLOSE);
 	erg=SQLFreeStmt(stmt,SQL_UNBIND);
 	erg=SQLFreeStmt(stmt,SQL_RESET_PARAMS);
-	// informix returns output parameters from an spl procedure invoked via
-	// the ODBC {call ...} escape, not from an anonymous block
 	SQLExecDirect(stmt,(SQLCHAR *)"drop procedure testproc",SQL_NTS);
 	erg=SQLExecDirect(stmt,(SQLCHAR *)
 		"create procedure testproc("
@@ -6817,143 +6732,162 @@ int main(int argc, char **argv) {
 	// informix can't pass a simple large object (text/byte) as an spl
 	// procedure parameter, so the smart large objects (clob/blob) are used
 	stdoutput.printf("LOB OUTPUT BIND: \n");
-	erg=SQLFreeStmt(stmt,SQL_CLOSE);
-	erg=SQLFreeStmt(stmt,SQL_UNBIND);
-	erg=SQLFreeStmt(stmt,SQL_RESET_PARAMS);
-	SQLExecDirect(stmt,(SQLCHAR *)"drop table testtable",SQL_NTS);
-	erg=SQLExecDirect(stmt,(SQLCHAR *)
-		"create table testtable ("
-		"	testclob clob, "
-		"	testblob blob)",
-		SQL_NTS);
-	assertSuccessStmt(stmt,erg);
-	erg=SQLPrepare(stmt,(SQLCHAR *)
-		"insert into testtable values (?,?)",
-		SQL_NTS);
-	assertSuccessStmt(stmt,erg);
-	SQLCHAR		lobclobin[6]="hello";
-	SQLLEN		lobclobinlen=5;
-	SQLCHAR		lobblobin[6]="hello";
-	SQLLEN		lobblobinlen=5;
-	erg=SQLBindParameter(stmt,1,SQL_PARAM_INPUT,
-				SQL_C_CHAR,SQL_LONGVARCHAR,
-				0,0,
-				(SQLPOINTER)lobclobin,
-				0,&lobclobinlen);
-	assertSuccessStmt(stmt,erg);
-	erg=SQLBindParameter(stmt,2,SQL_PARAM_INPUT,
-				SQL_C_BINARY,SQL_LONGVARBINARY,
-				0,0,
-				(SQLPOINTER)lobblobin,
-				0,&lobblobinlen);
-	assertSuccessStmt(stmt,erg);
-	erg=SQLExecute(stmt);
-	assertSuccessStmt(stmt,erg);
-	erg=SQLFreeStmt(stmt,SQL_CLOSE);
-	erg=SQLFreeStmt(stmt,SQL_UNBIND);
-	erg=SQLFreeStmt(stmt,SQL_RESET_PARAMS);
-	// informix returns the lobs through out parameters of an spl procedure
-	// that selects them into the bind variables
-	SQLExecDirect(stmt,(SQLCHAR *)"drop procedure testproc",SQL_NTS);
-	erg=SQLExecDirect(stmt,(SQLCHAR *)
-		"create procedure testproc("
-		"	out out1 clob, "
-		"	out out2 blob) "
-		"select testclob, testblob "
-		"	into out1, out2 "
-		"	from testtable; "
-		"end procedure;",
-		SQL_NTS);
-	assertSuccessStmt(stmt,erg);
-	erg=SQLPrepare(stmt,(SQLCHAR *)
-		"{call testproc(?,?)}",SQL_NTS);
-	assertSuccessStmt(stmt,erg);
-	SQLCHAR		lobclobout[1024]={0};
-	SQLLEN		lobclobout_ind=sizeof(lobclobout);
-	SQLCHAR		lobblobout[1024]={0};
-	SQLLEN		lobblobout_ind=sizeof(lobblobout);
-	erg=SQLBindParameter(stmt,1,SQL_PARAM_OUTPUT,
-				SQL_C_CHAR,SQL_LONGVARCHAR,
-				sizeof(lobclobout),0,
-				(SQLPOINTER)lobclobout,
-				sizeof(lobclobout),&lobclobout_ind);
-	assertSuccessStmt(stmt,erg);
-	erg=SQLBindParameter(stmt,2,SQL_PARAM_OUTPUT,
-				SQL_C_BINARY,SQL_LONGVARBINARY,
-				sizeof(lobblobout),0,
-				(SQLPOINTER)lobblobout,
-				sizeof(lobblobout),&lobblobout_ind);
-	assertSuccessStmt(stmt,erg);
-	erg=SQLExecute(stmt);
-	assertSuccessStmt(stmt,erg);
-	assertEqualStmt(stmt,(int)lobclobout_ind,5);
-	assertTrueStmt(stmt,
-		!bytestring::compare(lobclobout,"hello",5));
-	assertEqualStmt(stmt,(int)lobblobout_ind,5);
-	assertTrueStmt(stmt,
-		!bytestring::compare(lobblobout,"hello",5));
-	erg=SQLFreeStmt(stmt,SQL_CLOSE);
-	erg=SQLFreeStmt(stmt,SQL_UNBIND);
-	erg=SQLFreeStmt(stmt,SQL_RESET_PARAMS);
-	SQLExecDirect(stmt,(SQLCHAR *)"drop procedure testproc",SQL_NTS);
-	erg=SQLExecDirect(stmt,(SQLCHAR *)"drop table testtable",SQL_NTS);
-	assertSuccessStmt(stmt,erg);
+	// The native informix odbc driver cannot bind informix smart large
+	// objects (clob/blob) through standard odbc: SQL_C_CHAR/SQL_C_BINARY
+	// binds of clob/blob columns fail with "07006 Restricted data type
+	// attribute violation" (and segfault the driver outright when ColumnSize
+	// and BufferLength are 0).  Smart lobs are the only lob type that can be
+	// an spl out parameter (text/byte cannot), so there is no native
+	// equivalent of this output-bind test; the LONG OUTPUT BIND section below
+	// exercises output binds for the native driver via lvarchar.
+	if (issqlrelay) {
+		erg=SQLFreeStmt(stmt,SQL_CLOSE);
+		erg=SQLFreeStmt(stmt,SQL_UNBIND);
+		erg=SQLFreeStmt(stmt,SQL_RESET_PARAMS);
+		SQLExecDirect(stmt,(SQLCHAR *)"drop table testtable",SQL_NTS);
+		erg=SQLExecDirect(stmt,(SQLCHAR *)
+			"create table testtable ("
+			"	testclob clob, "
+			"	testblob blob)",
+			SQL_NTS);
+		assertSuccessStmt(stmt,erg);
+		erg=SQLPrepare(stmt,(SQLCHAR *)
+			"insert into testtable values (?,?)",
+			SQL_NTS);
+		assertSuccessStmt(stmt,erg);
+		SQLCHAR		lobclobin[6]="hello";
+		SQLLEN		lobclobinlen=5;
+		SQLCHAR		lobblobin[6]="hello";
+		SQLLEN		lobblobinlen=5;
+		erg=SQLBindParameter(stmt,1,SQL_PARAM_INPUT,
+					SQL_C_CHAR,SQL_LONGVARCHAR,
+					0,0,
+					(SQLPOINTER)lobclobin,
+					0,&lobclobinlen);
+		assertSuccessStmt(stmt,erg);
+		erg=SQLBindParameter(stmt,2,SQL_PARAM_INPUT,
+					SQL_C_BINARY,SQL_LONGVARBINARY,
+					0,0,
+					(SQLPOINTER)lobblobin,
+					0,&lobblobinlen);
+		assertSuccessStmt(stmt,erg);
+		erg=SQLExecute(stmt);
+		assertSuccessStmt(stmt,erg);
+		erg=SQLFreeStmt(stmt,SQL_CLOSE);
+		erg=SQLFreeStmt(stmt,SQL_UNBIND);
+		erg=SQLFreeStmt(stmt,SQL_RESET_PARAMS);
+		// informix returns the lobs through out parameters of an spl procedure
+		// that selects them into the bind variables
+		SQLExecDirect(stmt,(SQLCHAR *)"drop procedure testproc",SQL_NTS);
+		erg=SQLExecDirect(stmt,(SQLCHAR *)
+			"create procedure testproc("
+			"	out out1 clob, "
+			"	out out2 blob) "
+			"select testclob, testblob "
+			"	into out1, out2 "
+			"	from testtable; "
+			"end procedure;",
+			SQL_NTS);
+		assertSuccessStmt(stmt,erg);
+		erg=SQLPrepare(stmt,(SQLCHAR *)
+			"{call testproc(?,?)}",SQL_NTS);
+		assertSuccessStmt(stmt,erg);
+		SQLCHAR		lobclobout[1024]={0};
+		SQLLEN		lobclobout_ind=sizeof(lobclobout);
+		SQLCHAR		lobblobout[1024]={0};
+		SQLLEN		lobblobout_ind=sizeof(lobblobout);
+		erg=SQLBindParameter(stmt,1,SQL_PARAM_OUTPUT,
+					SQL_C_CHAR,SQL_LONGVARCHAR,
+					sizeof(lobclobout),0,
+					(SQLPOINTER)lobclobout,
+					sizeof(lobclobout),&lobclobout_ind);
+		assertSuccessStmt(stmt,erg);
+		erg=SQLBindParameter(stmt,2,SQL_PARAM_OUTPUT,
+					SQL_C_BINARY,SQL_LONGVARBINARY,
+					sizeof(lobblobout),0,
+					(SQLPOINTER)lobblobout,
+					sizeof(lobblobout),&lobblobout_ind);
+		assertSuccessStmt(stmt,erg);
+		erg=SQLExecute(stmt);
+		assertSuccessStmt(stmt,erg);
+		assertEqualStmt(stmt,(int)lobclobout_ind,5);
+		assertTrueStmt(stmt,
+			!bytestring::compare(lobclobout,"hello",5));
+		assertEqualStmt(stmt,(int)lobblobout_ind,5);
+		assertTrueStmt(stmt,
+			!bytestring::compare(lobblobout,"hello",5));
+		erg=SQLFreeStmt(stmt,SQL_CLOSE);
+		erg=SQLFreeStmt(stmt,SQL_UNBIND);
+		erg=SQLFreeStmt(stmt,SQL_RESET_PARAMS);
+		SQLExecDirect(stmt,(SQLCHAR *)"drop procedure testproc",SQL_NTS);
+		erg=SQLExecDirect(stmt,(SQLCHAR *)"drop table testtable",SQL_NTS);
+		assertSuccessStmt(stmt,erg);
+	}
 	stdoutput.printf("\n");
 
 
 
 	// long output bind
 	stdoutput.printf("LONG OUTPUT BIND: \n");
-	erg=SQLFreeStmt(stmt,SQL_CLOSE);
-	erg=SQLFreeStmt(stmt,SQL_UNBIND);
-	erg=SQLFreeStmt(stmt,SQL_RESET_PARAMS);
-	for (int i=0; i<LARGE_BUFFER_LENGTH; i++) {
-		largebuffer[i]='C';
+	// The native informix odbc driver mishandles large lvarchar output
+	// binds: SQLExecute of an spl "out lvarchar(8192)" parameter returns
+	// "22001 String data right truncation" with an exact-size buffer and an
+	// "08S01 Communication link failure" (or a protocol-level hang) with a
+	// larger one.  lvarchar is the only non-lob type that can be an spl out
+	// parameter, so there is no native equivalent of this large-output-bind
+	// test.
+	if (issqlrelay) {
+		erg=SQLFreeStmt(stmt,SQL_CLOSE);
+		erg=SQLFreeStmt(stmt,SQL_UNBIND);
+		erg=SQLFreeStmt(stmt,SQL_RESET_PARAMS);
+		for (int i=0; i<LARGE_BUFFER_LENGTH; i++) {
+			largebuffer[i]='C';
+		}
+		largebuffer[LARGE_BUFFER_LENGTH]='\0';
+		// informix returns the long value through an lvarchar out parameter of
+		// an spl procedure that copies its input to its output; lvarchar is a
+		// non-lob long varchar, so (unlike text/byte) it can be an spl
+		// parameter, and the input is bound as SQL_VARCHAR (not SQL_LONGVARCHAR,
+		// which the driver would route to the lob bind path) to match it
+		SQLExecDirect(stmt,(SQLCHAR *)"drop procedure testproc",SQL_NTS);
+		char	longoutproc[256];
+		charstring::printf(longoutproc,sizeof(longoutproc),
+				"create procedure testproc("
+				"	in1 lvarchar(%d), "
+				"	out out1 lvarchar(%d)) "
+				"let out1 = in1; "
+				"end procedure;",
+				LARGE_BUFFER_LENGTH,LARGE_BUFFER_LENGTH);
+		erg=SQLExecDirect(stmt,(SQLCHAR *)longoutproc,SQL_NTS);
+		assertSuccessStmt(stmt,erg);
+		erg=SQLPrepare(stmt,(SQLCHAR *)"{call testproc(?,?)}",SQL_NTS);
+		assertSuccessStmt(stmt,erg);
+		SQLLEN	longinind=LARGE_BUFFER_LENGTH;
+		erg=SQLBindParameter(stmt,1,SQL_PARAM_INPUT,
+					SQL_C_CHAR,SQL_VARCHAR,
+					LARGE_BUFFER_LENGTH,0,
+					(SQLPOINTER)largebuffer,
+					LARGE_BUFFER_LENGTH,&longinind);
+		assertSuccessStmt(stmt,erg);
+		SQLCHAR	longoutval[LARGE_BUFFER_LENGTH+1]={0};
+		SQLLEN	longoutind=sizeof(longoutval);
+		erg=SQLBindParameter(stmt,2,SQL_PARAM_OUTPUT,
+					SQL_C_CHAR,SQL_LONGVARCHAR,
+					LARGE_BUFFER_LENGTH,0,
+					(SQLPOINTER)longoutval,
+					sizeof(longoutval),&longoutind);
+		assertSuccessStmt(stmt,erg);
+		erg=SQLExecute(stmt);
+		assertSuccessStmt(stmt,erg);
+		assertEqualStmt(stmt,(int)longoutind,LARGE_BUFFER_LENGTH);
+		assertTrueStmt(stmt,
+			!bytestring::compare(longoutval,largebuffer,
+						LARGE_BUFFER_LENGTH));
+		erg=SQLFreeStmt(stmt,SQL_CLOSE);
+		erg=SQLFreeStmt(stmt,SQL_UNBIND);
+		erg=SQLFreeStmt(stmt,SQL_RESET_PARAMS);
+		SQLExecDirect(stmt,(SQLCHAR *)"drop procedure testproc",SQL_NTS);
 	}
-	largebuffer[LARGE_BUFFER_LENGTH]='\0';
-	// informix returns the long value through an lvarchar out parameter of
-	// an spl procedure that copies its input to its output; lvarchar is a
-	// non-lob long varchar, so (unlike text/byte) it can be an spl
-	// parameter, and the input is bound as SQL_VARCHAR (not SQL_LONGVARCHAR,
-	// which the driver would route to the lob bind path) to match it
-	SQLExecDirect(stmt,(SQLCHAR *)"drop procedure testproc",SQL_NTS);
-	char	longoutproc[256];
-	charstring::printf(longoutproc,sizeof(longoutproc),
-			"create procedure testproc("
-			"	in1 lvarchar(%d), "
-			"	out out1 lvarchar(%d)) "
-			"let out1 = in1; "
-			"end procedure;",
-			LARGE_BUFFER_LENGTH,LARGE_BUFFER_LENGTH);
-	erg=SQLExecDirect(stmt,(SQLCHAR *)longoutproc,SQL_NTS);
-	assertSuccessStmt(stmt,erg);
-	erg=SQLPrepare(stmt,(SQLCHAR *)"{call testproc(?,?)}",SQL_NTS);
-	assertSuccessStmt(stmt,erg);
-	SQLLEN	longinind=LARGE_BUFFER_LENGTH;
-	erg=SQLBindParameter(stmt,1,SQL_PARAM_INPUT,
-				SQL_C_CHAR,SQL_VARCHAR,
-				LARGE_BUFFER_LENGTH,0,
-				(SQLPOINTER)largebuffer,
-				LARGE_BUFFER_LENGTH,&longinind);
-	assertSuccessStmt(stmt,erg);
-	SQLCHAR	longoutval[LARGE_BUFFER_LENGTH+1]={0};
-	SQLLEN	longoutind=sizeof(longoutval);
-	erg=SQLBindParameter(stmt,2,SQL_PARAM_OUTPUT,
-				SQL_C_CHAR,SQL_LONGVARCHAR,
-				LARGE_BUFFER_LENGTH,0,
-				(SQLPOINTER)longoutval,
-				sizeof(longoutval),&longoutind);
-	assertSuccessStmt(stmt,erg);
-	erg=SQLExecute(stmt);
-	assertSuccessStmt(stmt,erg);
-	assertEqualStmt(stmt,(int)longoutind,LARGE_BUFFER_LENGTH);
-	assertTrueStmt(stmt,
-		!bytestring::compare(longoutval,largebuffer,
-					LARGE_BUFFER_LENGTH));
-	erg=SQLFreeStmt(stmt,SQL_CLOSE);
-	erg=SQLFreeStmt(stmt,SQL_UNBIND);
-	erg=SQLFreeStmt(stmt,SQL_RESET_PARAMS);
-	SQLExecDirect(stmt,(SQLCHAR *)"drop procedure testproc",SQL_NTS);
 	stdoutput.printf("\n");
 
 
@@ -7421,35 +7355,31 @@ int main(int argc, char **argv) {
 			(SQLCHAR *)"",SQL_NTS,
 			(SQLCHAR *)"",SQL_NTS,
 			(SQLCHAR *)"",SQL_NTS);
-	if (issqlrelay) {
-		assertSuccessStmt(stmt,erg);
-		// informix databases are catalogs; the connected database
-		// (named after this host) should appear in the list
-		SQLCHAR		catname[1024];
-		SQLLEN		catnameind;
-		erg=SQLBindCol(stmt,1,SQL_C_CHAR,
-				catname,sizeof(catname),&catnameind);
-		bool		catfound=false;
-		for (;;) {
-			erg=SQLFetch(stmt);
-			if (erg==SQL_NO_DATA) {
-				break;
-			}
-			assertSuccessStmt(stmt,erg);
-			if (erg!=SQL_SUCCESS && erg!=SQL_SUCCESS_WITH_INFO) {
-				break;
-			}
-			if (!charstring::compareIgnoringCase(
-						(const char *)catname,hostname)) {
-				catfound=true;
-			}
+	// both sqlrelay and the informix native driver implement
+	// SQL_ALL_CATALOGS
+	assertSuccessStmt(stmt,erg);
+	// informix databases are catalogs; the connected database
+	// (named after this host) should appear in the list
+	SQLCHAR		catname[1024];
+	SQLLEN		catnameind;
+	erg=SQLBindCol(stmt,1,SQL_C_CHAR,
+			catname,sizeof(catname),&catnameind);
+	bool		catfound=false;
+	for (;;) {
+		erg=SQLFetch(stmt);
+		if (erg==SQL_NO_DATA) {
+			break;
 		}
-		assertTrueStmt(stmt,catfound);
-	} else {
-		// the native informix ODBC driver does not implement
-		// SQL_ALL_CATALOGS this way
-		assertFailureStmt(stmt,erg);
+		assertSuccessStmt(stmt,erg);
+		if (erg!=SQL_SUCCESS && erg!=SQL_SUCCESS_WITH_INFO) {
+			break;
+		}
+		if (!charstring::compareIgnoringCase(
+					(const char *)catname,hostname)) {
+			catfound=true;
+		}
 	}
+	assertTrueStmt(stmt,catfound);
 	erg=SQLFreeStmt(stmt,SQL_CLOSE);
 	stdoutput.printf("\n");
 
@@ -7651,7 +7581,10 @@ int main(int argc, char **argv) {
 					(const char *)typname,"varchar")) {
 			foundvarchar=true;
 		} else if (!charstring::compareIgnoringCase(
-					(const char *)typname,"datetime")) {
+					(const char *)typname,"datetime",8)) {
+			// sqlrelay reports a plain "datetime" type; the native
+			// driver reports qualified names like
+			// "datetime year to fraction(5)", so match the prefix
 			founddatetime=true;
 		}
 	}
@@ -7720,7 +7653,6 @@ int main(int argc, char **argv) {
 
 
 	// column list - auto_increment, primary key
-	// (oracle doesn't support auto_increment)
 	stdoutput.printf("COLUMN LIST - auto_increment, primary key: \n");
 	erg=SQLFreeStmt(stmt,SQL_CLOSE);
 	erg=SQLFreeStmt(stmt,SQL_UNBIND);
@@ -7993,41 +7925,42 @@ int main(int argc, char **argv) {
 	erg=SQLBindCol(stmt,18,SQL_C_SHORT,
 			&ppordinal,sizeof(ppordinal),&ppordinalind);
 	// informix folds the parameter names to lowercase
-	// in1
-	erg=SQLFetch(stmt);
-	assertSuccessStmt(stmt,erg);
-	assertEqualStmt(stmt,(const char *)ppname,"in1");
-	assertEqualStmt(stmt,(int)ppmode,(int)SQL_PARAM_INPUT);
-	assertEqualStmt(stmt,(const char *)pptypename,"integer");
 	if (issqlrelay) {
+		// in1
+		erg=SQLFetch(stmt);
+		assertSuccessStmt(stmt,erg);
+		assertEqualStmt(stmt,(const char *)ppname,"in1");
+		assertEqualStmt(stmt,(int)ppmode,(int)SQL_PARAM_INPUT);
+		assertEqualStmt(stmt,(const char *)pptypename,"integer");
 		assertEqualStmt(stmt,(int)ppordinal,1);
-	}
-	// in2
-	erg=SQLFetch(stmt);
-	assertSuccessStmt(stmt,erg);
-	assertEqualStmt(stmt,(const char *)ppname,"in2");
-	assertEqualStmt(stmt,(int)ppmode,(int)SQL_PARAM_INPUT);
-	assertEqualStmt(stmt,(const char *)pptypename,"char");
-	if (issqlrelay) {
+		// in2
+		erg=SQLFetch(stmt);
+		assertSuccessStmt(stmt,erg);
+		assertEqualStmt(stmt,(const char *)ppname,"in2");
+		assertEqualStmt(stmt,(int)ppmode,(int)SQL_PARAM_INPUT);
+		assertEqualStmt(stmt,(const char *)pptypename,"char");
 		assertEqualStmt(stmt,(int)ppordinal,2);
-	}
-	// in3
-	erg=SQLFetch(stmt);
-	assertSuccessStmt(stmt,erg);
-	assertEqualStmt(stmt,(const char *)ppname,"in3");
-	assertEqualStmt(stmt,(int)ppmode,(int)SQL_PARAM_INPUT);
-	assertEqualStmt(stmt,(const char *)pptypename,"varchar");
-	if (issqlrelay) {
+		// in3
+		erg=SQLFetch(stmt);
+		assertSuccessStmt(stmt,erg);
+		assertEqualStmt(stmt,(const char *)ppname,"in3");
+		assertEqualStmt(stmt,(int)ppmode,(int)SQL_PARAM_INPUT);
+		assertEqualStmt(stmt,(const char *)pptypename,"varchar");
 		assertEqualStmt(stmt,(int)ppordinal,3);
-	}
-	// in4
-	erg=SQLFetch(stmt);
-	assertSuccessStmt(stmt,erg);
-	assertEqualStmt(stmt,(const char *)ppname,"in4");
-	assertEqualStmt(stmt,(int)ppmode,(int)SQL_PARAM_INPUT);
-	assertEqualStmt(stmt,(const char *)pptypename,"datetime");
-	if (issqlrelay) {
+		// in4
+		erg=SQLFetch(stmt);
+		assertSuccessStmt(stmt,erg);
+		assertEqualStmt(stmt,(const char *)ppname,"in4");
+		assertEqualStmt(stmt,(int)ppmode,(int)SQL_PARAM_INPUT);
+		assertEqualStmt(stmt,(const char *)pptypename,"datetime");
 		assertEqualStmt(stmt,(int)ppordinal,4);
+	} else {
+		// The native informix driver's SQLProcedureColumns returns no
+		// rows for SPL procedures even though the parameter metadata
+		// exists in sysproccolumns (a driver bug), so the first fetch
+		// returns SQL_NO_DATA.
+		erg=SQLFetch(stmt);
+		assertEqualStmt(stmt,(int)erg,(int)SQL_NO_DATA);
 	}
 	erg=SQLFreeStmt(stmt,SQL_CLOSE);
 	erg=SQLFreeStmt(stmt,SQL_UNBIND);
