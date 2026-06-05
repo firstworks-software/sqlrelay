@@ -95,6 +95,7 @@
 	fixed an odbc/sap bind issue
 	updated sap/freetds to support {call proc(...)} syntax
 	fixed a long-standing sap select-with-bind bug
+	fixed some subtle odbc/informix bugs
 
 2.1.1 - added tns_admin support
 	fixed sqlr-start ... -strace ...

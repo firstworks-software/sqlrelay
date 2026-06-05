@@ -2503,7 +2503,7 @@ const char *informixconnection::getProcedureParameterListQuery(
 		"	trim('') as sql_data_type, "
 		"	trim('') as sql_datetime_sub, "
 		"	spc.paramlen as char_octet_length, "
-		"	spc.paramid as ordinal_position, "
+		"	spc.paramid+1 as ordinal_position, "
 		"	trim('YES') as is_nullable, "
 		"	trim('') ");
 
@@ -2557,7 +2557,7 @@ const char *informixconnection::getCurrentSchemaQuery() {
 }
 
 const char *informixconnection::getCurrentUserQuery() {
-	return "select user from systables where tabid=1";
+	return "select trim(user) from systables where tabid=1";
 }
 
 const char *informixconnection::getLastInsertIdQuery() {

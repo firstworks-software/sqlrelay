@@ -10,10 +10,10 @@ include ../../config.mk
 .cpp.obj:
 	$(CXX) $(CXXFLAGS) $(ODBCTESTCPPFLAGS) $(COMPILE) $<
 
-all: oracle mysql postgresql db2 sap freetds
+all: oracle mysql postgresql db2 sap freetds informix
 
 clean:
-	$(RM) *.lo *.o *.obj oracle$(EXE) mysql$(EXE) postgresql$(EXE) db2$(EXE) sap$(EXE) freetds$(EXE) cachefile* sqlnet.log
+	$(RM) *.lo *.o *.obj oracle$(EXE) mysql$(EXE) postgresql$(EXE) db2$(EXE) sap$(EXE) freetds$(EXE) informix$(EXE) cachefile* sqlnet.log
 	$(RMTREE) .libs
 
 mysql: mysql.cpp mysql.$(OBJ)
@@ -33,3 +33,6 @@ sap: sap.cpp sap.$(OBJ)
 
 freetds: freetds.cpp freetds.$(OBJ)
 	$(LTLINK) $(LINK) $(LDFLAGS) $(OUT)$@ freetds.$(OBJ) $(ODBCTESTLIBS)
+
+informix: informix.cpp informix.$(OBJ)
+	$(LTLINK) $(LINK) $(LDFLAGS) $(OUT)$@ informix.$(OBJ) $(ODBCTESTLIBS)
