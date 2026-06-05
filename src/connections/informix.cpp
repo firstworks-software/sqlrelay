@@ -3240,6 +3240,9 @@ bool informixcursor::outputBindClob(const char *variable,
 }
 
 bool informixcursor::getLobOutputBindLength(uint16_t index, uint64_t *length) {
+	if (outlobbindlen[index]==SQL_NULL_DATA) {
+		return false;
+	}
 	// FIXME: this code assumes that the lob characters are 1 byte long
 	if (outlobbindlen[index]>informixconn->maxoutbindlobsize) {
 		outlobbindlen[index]=informixconn->maxoutbindlobsize;
