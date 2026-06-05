@@ -1,11 +1,6 @@
 // Copyright (c) David Muse
 // See the file COPYING for more information.
 
-// for dlvsym()/RTLD_NEXT, used by the native-driver diagnostic workaround
-#ifndef _GNU_SOURCE
-	#define _GNU_SOURCE
-#endif
-
 #include <rudiments/sys.h>
 #include <rudiments/charstring.h>
 #include <rudiments/bytestring.h>
@@ -19,40 +14,40 @@
 #include <sqlucode.h>
 #include <sqltypes.h>
 
-#include <dlfcn.h>
-
 #include "asserts.cpp"
 
-// set true (before any odbc call) when running directly against the informix
-// native odbc driver rather than through sql relay
-static bool	nativeinformix=false;
+static bool	issqlrelay=false;
 
-// The IBM Informix CSDK ODBC driver's wide diagnostic functions
-// (SQLGetDiagRecW/SQLGetDiagFieldW/SQLErrorW) emit 4-byte wchar_t via
-// mbstowcs(), but unixODBC uses a 2-byte SQLWCHAR.  unixODBC caches the
-// driver's diagnostics through its wide path whenever the driver exports
-// those functions, writing a 4-byte-per-char sqlstate into a 2-byte
-// SQLWCHAR[6] stack buffer - smashing the stack on every call that returns
-// an error or SQL_SUCCESS_WITH_INFO.  There is no driver/odbc.ini setting
-// that fixes this (the diag path ignores the UNICODE/getSizeofSQLWCHAR
-// keyword).  Interpose dlsym() to hide the wide diagnostic functions from
-// unixODBC so it falls back to the driver's (correct) 1-byte ansi diagnostic
-// path.  Only active in native mode; through sql relay this just forwards
-// every lookup unchanged.
-extern "C" void *dlsym(void *handle, const char *name) {
-	static void	*(*realdlsym)(void *, const char *)=NULL;
-	if (!realdlsym) {
-		realdlsym=(void *(*)(void *, const char *))
-				dlvsym(RTLD_NEXT,"dlsym","GLIBC_2.2.5");
+#ifndef _WIN32
+	// The informix ODBC driver's SQLGetDiagRecW, SQLGetDiagFieldW, and
+	// SQLErrorW use 4-byte SQLWCHAR, but unixODBC uses a 2-byte SQLWCHAR,
+	// so unixODBC crashes when attempting to cache the results of those
+	// methods.  There's no obvious way to disable caching, or tell unixODBC
+	// to use 4-bytes SQLWCHAR.  So, override dlsym() to hide these methods
+	// and cause unixODBC to fall back to the ascii versions and just avoid
+	// the issue altogether.
+
+	// for RTLD_NEXT
+	#ifndef _GNU_SOURCE
+		#define _GNU_SOURCE
+	#endif
+	// for dlvsym()
+	#include <dlfcn.h>
+	extern "C" void *dlsym(void *handle, const char *name) {
+		static void	*(*realdlsym)(void *, const char *)=NULL;
+		if (!realdlsym) {
+			realdlsym=(void *(*)(void *, const char *))
+					dlvsym(RTLD_NEXT,"dlsym","GLIBC_2.2.5");
+		}
+		if (!issqlrelay &&
+				(!charstring::compare(name,"SQLGetDiagRecW") ||
+				!charstring::compare(name,"SQLGetDiagFieldW") ||
+				!charstring::compare(name,"SQLErrorW"))) {
+			return NULL;
+		}
+		return realdlsym(handle,name);
 	}
-	if (nativeinformix && name &&
-			(!charstring::compare(name,"SQLGetDiagRecW") ||
-			!charstring::compare(name,"SQLGetDiagFieldW") ||
-			!charstring::compare(name,"SQLErrorW"))) {
-		return NULL;
-	}
-	return realdlsym(handle,name);
-}
+#endif
 
 SQLRETURN	erg;
 SQLHENV		env;
@@ -71,14 +66,10 @@ int main(int argc, char **argv) {
 	*dot='\0';
 
 	// sqlrelay-vs-native flag
-	bool	issqlrelay=!(argc==2 && !charstring::compare(argv[1],"native"));
+	issqlrelay=!(argc==2 && !charstring::compare(argv[1],"native"));
 
-	// when running against the native informix driver, enable the
-	// diagnostic workaround and point the driver at the database; the
-	// driver's dependent libs are resolved via the -R paths baked in by
-	// $(INFORMIXLIBS) at link time
+	// informix odbc needs these environment variables to be set
 	if (!issqlrelay) {
-		nativeinformix=true;
 		environment::setValue("INFORMIXDIR","/opt/informix");
 		environment::setValue("INFORMIXSERVER","ol_informix1210");
 	}
