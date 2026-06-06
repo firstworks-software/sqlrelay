@@ -2389,22 +2389,22 @@ assertEqStr(cur.getField(0,"parameter_name"),
 						"in1");
 assertEqStr(cur.getField(0,"parameter_mode"),"1");
 assertEqStr(cur.getField(0,"data_type"),"integer");
-assertEqStr(cur.getField(0,"ordinal_position"),"0");
+assertEqStr(cur.getField(0,"ordinal_position"),"1");
 assertEqStr(cur.getField(1,"parameter_name"),
 						"in2");
 assertEqStr(cur.getField(1,"parameter_mode"),"1");
 assertEqStr(cur.getField(1,"data_type"),"char");
-assertEqStr(cur.getField(1,"ordinal_position"),"1");
+assertEqStr(cur.getField(1,"ordinal_position"),"2");
 assertEqStr(cur.getField(2,"parameter_name"),
 						"in3");
 assertEqStr(cur.getField(2,"parameter_mode"),"1");
 assertEqStr(cur.getField(2,"data_type"),"varchar");
-assertEqStr(cur.getField(2,"ordinal_position"),"2");
+assertEqStr(cur.getField(2,"ordinal_position"),"3");
 assertEqStr(cur.getField(3,"parameter_name"),
 						"in4");
 assertEqStr(cur.getField(3,"parameter_mode"),"1");
 assertEqStr(cur.getField(3,"data_type"),"date");
-assertEqStr(cur.getField(3,"ordinal_position"),"3");
+assertEqStr(cur.getField(3,"ordinal_position"),"4");
 assertTrue(cur.sendQuery("drop procedure testproc1"));
 assertTrue(cur.sendQuery("drop procedure testproc2"));
 assertTrue(cur.sendQuery("drop procedure testproc3"));

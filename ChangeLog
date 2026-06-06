@@ -100,6 +100,8 @@
 	fixed a db2/informix NULL-lob crash
 	implemented getColumnIsNullable() for sqlite
 	defaulted getColumnIsNullable() to 1
+	updated informix tests to expect 1-based procedure-parameter
+		ordinal positions
 
 2.1.1 - added tns_admin support
 	fixed sqlr-start ... -strace ...

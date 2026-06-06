@@ -2383,22 +2383,22 @@
 							"in1");
 	assertEqStr(sqlrcur_getField($cur,0,"parameter_mode"),"1");
 	assertEqStr(sqlrcur_getField($cur,0,"data_type"),"integer");
-	assertEqStr(sqlrcur_getField($cur,0,"ordinal_position"),"0");
+	assertEqStr(sqlrcur_getField($cur,0,"ordinal_position"),"1");
 	assertEqStr(sqlrcur_getField($cur,1,"parameter_name"),
 							"in2");
 	assertEqStr(sqlrcur_getField($cur,1,"parameter_mode"),"1");
 	assertEqStr(sqlrcur_getField($cur,1,"data_type"),"char");
-	assertEqStr(sqlrcur_getField($cur,1,"ordinal_position"),"1");
+	assertEqStr(sqlrcur_getField($cur,1,"ordinal_position"),"2");
 	assertEqStr(sqlrcur_getField($cur,2,"parameter_name"),
 							"in3");
 	assertEqStr(sqlrcur_getField($cur,2,"parameter_mode"),"1");
 	assertEqStr(sqlrcur_getField($cur,2,"data_type"),"varchar");
-	assertEqStr(sqlrcur_getField($cur,2,"ordinal_position"),"2");
+	assertEqStr(sqlrcur_getField($cur,2,"ordinal_position"),"3");
 	assertEqStr(sqlrcur_getField($cur,3,"parameter_name"),
 							"in4");
 	assertEqStr(sqlrcur_getField($cur,3,"parameter_mode"),"1");
 	assertEqStr(sqlrcur_getField($cur,3,"data_type"),"date");
-	assertEqStr(sqlrcur_getField($cur,3,"ordinal_position"),"3");
+	assertEqStr(sqlrcur_getField($cur,3,"ordinal_position"),"4");
 	assertTrue(sqlrcur_sendQuery($cur,"drop procedure testproc1"));
 	assertTrue(sqlrcur_sendQuery($cur,"drop procedure testproc2"));
 	assertTrue(sqlrcur_sendQuery($cur,"drop procedure testproc3"));
