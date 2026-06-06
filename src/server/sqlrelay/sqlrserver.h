@@ -2394,7 +2394,7 @@ class SQLRSERVER_DLLSPEC sqlrservercontroller : public sqlrserverbase {
 							uint32_t col);
 
 		/** Returns non-zero if the column at position "col" in the
-		 *  current result set of "cursor" is nullable and 0if it is
+		 *  current result set of "cursor" is nullable and 0 if it is
 		 *  not nullable.
 		 *
 		 *  Returns 0 if column info is not yet valid or if the query
@@ -4919,7 +4919,7 @@ class SQLRSERVER_DLLSPEC sqlrservercursor : public sqlrserverbase {
 		virtual uint32_t	getColumnScale(uint32_t col);
 
 		/** Returns non-zero if the column at position "col" in the
-		 *  current result set is nullable and 0if it is not nullable.
+		 *  current result set is nullable and 0 if it is not nullable.
 		 *
 		 *  Returns 0 if column info is not yet valid or if the query
 		 *  has no result set (eg. if it was a DML or DDL query). */

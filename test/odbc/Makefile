@@ -10,10 +10,10 @@ include ../../config.mk
 .cpp.obj:
 	$(CXX) $(CXXFLAGS) $(ODBCTESTCPPFLAGS) $(COMPILE) $<
 
-all: oracle mysql postgresql db2 sap freetds informix firebird
+all: oracle mysql postgresql db2 sap freetds informix firebird sqlite
 
 clean:
-	$(RM) *.lo *.o *.obj oracle$(EXE) mysql$(EXE) postgresql$(EXE) db2$(EXE) sap$(EXE) freetds$(EXE) informix$(EXE) firebird$(EXE) cachefile* sqlnet.log
+	$(RM) *.lo *.o *.obj oracle$(EXE) mysql$(EXE) postgresql$(EXE) db2$(EXE) sap$(EXE) freetds$(EXE) informix$(EXE) firebird$(EXE) sqlite$(EXE) cachefile* sqlnet.log
 	$(RMTREE) .libs
 
 mysql: mysql.cpp mysql.$(OBJ)
@@ -39,3 +39,6 @@ informix: informix.cpp informix.$(OBJ)
 
 firebird: firebird.cpp firebird.$(OBJ)
 	$(LTLINK) $(LINK) $(LDFLAGS) $(OUT)$@ firebird.$(OBJ) $(ODBCTESTLIBS)
+
+sqlite: sqlite.cpp sqlite.$(OBJ)
+	$(LTLINK) $(LINK) $(LDFLAGS) $(OUT)$@ sqlite.$(OBJ) $(ODBCTESTLIBS)

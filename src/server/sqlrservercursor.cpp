@@ -1067,7 +1067,7 @@ uint32_t sqlrservercursor::getColumnScale(uint32_t col) {
 }
 
 uint16_t sqlrservercursor::getColumnIsNullable(uint32_t col) {
-	return 0;
+	return 1;
 }
 
 uint16_t sqlrservercursor::getColumnIsPrimaryKey(uint32_t col) {

@@ -195,6 +195,7 @@ class SQLRSERVER_DLLSPEC sqlitecursor : public sqlrservercursor {
 		#ifdef HAVE_SQLITE3_STMT
 		uint16_t	getColumnType(uint32_t col);
 		const char	*getColumnTable(uint32_t col);
+		uint16_t	getColumnIsNullable(uint32_t col);
 		#endif
 		bool		noRowsToReturn();
 		bool		skipRow(bool *error);
@@ -219,6 +220,7 @@ class SQLRSERVER_DLLSPEC sqlitecursor : public sqlrservercursor {
 		#ifdef HAVE_SQLITE3_STMT
 		char		**columntables;
 		int		*columntypes;
+		uint16_t	*columnisnullables;
 		sqlite3_stmt	*stmt;
 		bool		justexecuted;
 		char		*lastinsertrowidstr;
@@ -1765,6 +1767,7 @@ sqlitecursor::sqlitecursor(sqlrserverconnection *conn, uint16_t id) :
 	#ifdef HAVE_SQLITE3_STMT
 	columntables=NULL;
 	columntypes=NULL;
+	columnisnullables=NULL;
 	stmt=NULL;
 	justexecuted=false;
 	lastinsertrowidstr=NULL;
@@ -1803,6 +1806,11 @@ sqlitecursor::~sqlitecursor() {
 	// clean up old column types
 	if (columntypes) {
 		delete[] columntypes;
+	}
+
+	// clean up old column nullability
+	if (columnisnullables) {
+		delete[] columnisnullables;
 	}
 	#endif
 
@@ -2012,23 +2020,43 @@ bool sqlitecursor::executeQuery(const char *query, uint32_t size) {
 	columntables=new char *[ncolumn];
 	columnnames=new char *[ncolumn];
 	columntypes=new int[ncolumn];
+	columnisnullables=new uint16_t[ncolumn];
 	if (lastinsertrowid) {
 		columntables[0]=charstring::duplicate("");
 		columnnames[0]=charstring::duplicate("LASTINSERTROWID");
 		columntypes[0]=INTEGER_DATATYPE;
+		columnisnullables[0]=0;
 	} else {
 		for (int i=0; i<ncolumn; i++) {
-			columntables[i]=
-				charstring::duplicate(
-					#ifdef HAVE_SQLITE3_COLUMN_TABLE_NAME
-					sqlite3_column_table_name(stmt,i)
-					#else
-					""
-					#endif
-					);
+
+			const char	*coltable="";
+			#ifdef HAVE_SQLITE3_COLUMN_TABLE_NAME
+			coltable=sqlite3_column_table_name(stmt,i);
+			#endif
+
+			columntables[i]=charstring::duplicate(coltable);
 			columnnames[i]=charstring::duplicate(
 					sqlite3_column_name(stmt,i));
 			columntypes[i]=sqlite3_column_type(stmt,i);
+
+			columnisnullables[i]=1;
+			#ifdef HAVE_SQLITE3_COLUMN_TABLE_NAME
+			const char	*coldb=
+					sqlite3_column_database_name(stmt,i);
+			const char	*colorigin=
+					sqlite3_column_origin_name(stmt,i);
+			int		notnull=0;
+			if (!charstring::isNullOrEmpty(coltable) &&
+				!charstring::isNullOrEmpty(colorigin) &&
+				sqlite3_table_column_metadata(
+					sqliteconn->sqliteptr,
+					coldb,coltable,colorigin,
+					NULL,NULL,&notnull,
+					NULL,NULL)==SQLITE_OK &&
+				notnull) {
+				columnisnullables[i]=0;
+			}
+			#endif
 		}
 	}
 	#else
@@ -2070,6 +2098,12 @@ int sqlitecursor::runQuery(const char *query) {
 	if (columntypes) {
 		delete[] columntypes;
 		columntypes=NULL;
+	}
+
+	// clean up old column nullability
+	if (columnisnullables) {
+		delete[] columnisnullables;
+		columnisnullables=NULL;
 	}
 	#endif
 
@@ -2198,6 +2232,10 @@ const char *sqlitecursor::getColumnName(uint32_t col) {
 #ifdef HAVE_SQLITE3_STMT
 const char *sqlitecursor::getColumnTable(uint32_t col) {
 	return columntables[col];
+}
+
+uint16_t sqlitecursor::getColumnIsNullable(uint32_t col) {
+	return columnisnullables[col];
 }
 
 uint16_t sqlitecursor::getColumnType(uint32_t col) {
