@@ -485,14 +485,14 @@ class sqlite extends sqlrtest {
 		System.out.println("  getNumericFunctions");
 		stringval=md.getNumericFunctions();
 		System.out.println("    "+stringval);
-		assertEquals(stringval,"");
+		assertEquals(stringval,"ABS,ROUND,SIGN");
 		System.out.println();
 
 		// getProcedureTerm
 		System.out.println("  getProcedureTerm");
 		stringval=md.getProcedureTerm();
 		System.out.println("    "+stringval);
-		assertEquals(stringval,"not_implemented");
+		assertEquals(stringval,"");
 		System.out.println();
 
 		// getResultSetHoldability
@@ -545,21 +545,24 @@ class sqlite extends sqlrtest {
 		System.out.println("  getStringFunctions");
 		stringval=md.getStringFunctions();
 		System.out.println("    "+stringval);
-		assertEquals(stringval,"");
+		assertEquals(stringval,"CHAR,CONCAT,LCASE,LENGTH,LTRIM,REPLACE,"+
+				"RTRIM,SUBSTRING,UCASE");
 		System.out.println();
 
 		// getSystemFunctions
 		System.out.println("  getSystemFunctions");
 		stringval=md.getSystemFunctions();
 		System.out.println("    "+stringval);
-		assertEquals(stringval,"");
+		assertEquals(stringval,"IFNULL");
 		System.out.println();
 
 		// getTimeDateFunctions
 		System.out.println("  getTimeDateFunctions");
 		stringval=md.getTimeDateFunctions();
 		System.out.println("    "+stringval);
-		assertEquals(stringval,"DATE,TIME,DATETIME,JULIANDAY,STRFTIME");
+		assertEquals(stringval,"DATE,TIME,DATETIME,JULIANDAY,STRFTIME,"+
+				"CURRENT_DATE,CURRENT_TIME,"+
+				"CURRENT_TIMESTAMP");
 		System.out.println();
 
 		// getURL
@@ -963,7 +966,7 @@ class sqlite extends sqlrtest {
 		System.out.println("  supportsCorrelatedSubqueries");
 		boolval=md.supportsCorrelatedSubqueries();
 		System.out.println("    "+boolval);
-		assertFalse(boolval);
+		assertTrue(boolval);
 		System.out.println();
 
 		// supportsDataManipulationTransactionsOnly
@@ -1040,7 +1043,7 @@ class sqlite extends sqlrtest {
 		System.out.println("  supportsLikeEscapeClause");
 		boolval=md.supportsLikeEscapeClause();
 		System.out.println("    "+boolval);
-		assertFalse(boolval);
+		assertTrue(boolval);
 		System.out.println();
 
 		// supportsLimitedOuterJoins
@@ -1138,7 +1141,7 @@ class sqlite extends sqlrtest {
 		System.out.println("  supportsOrderByUnrelated");
 		boolval=md.supportsOrderByUnrelated();
 		System.out.println("    "+boolval);
-		assertFalse(boolval);
+		assertTrue(boolval);
 		System.out.println();
 
 		// supportsOuterJoins
@@ -1352,7 +1355,7 @@ class sqlite extends sqlrtest {
 		System.out.println("  supportsSubqueriesInComparisons");
 		boolval=md.supportsSubqueriesInComparisons();
 		System.out.println("    "+boolval);
-		assertFalse(boolval);
+		assertTrue(boolval);
 		System.out.println();
 
 		// supportsSubqueriesInExists
@@ -1380,7 +1383,7 @@ class sqlite extends sqlrtest {
 		System.out.println("  supportsTableCorrelationNames");
 		boolval=md.supportsTableCorrelationNames();
 		System.out.println("    "+boolval);
-		assertFalse(boolval);
+		assertTrue(boolval);
 		System.out.println();
 
 		// supportsTransactionIsolationLevel
@@ -1397,7 +1400,7 @@ class sqlite extends sqlrtest {
 		boolval=md.supportsTransactionIsolationLevel(
 				Connection.TRANSACTION_READ_UNCOMMITTED);
 		System.out.println("    "+boolval);
-		assertFalse(boolval);
+		assertTrue(boolval);
 		System.out.println();
 
 		System.out.println("  supportsTransactionIsolationLevel "+

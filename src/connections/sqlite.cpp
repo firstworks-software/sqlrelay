@@ -88,6 +88,7 @@ class SQLRSERVER_DLLSPEC sqliteconnection : public sqlrserverconnection {
 						const char *procedure);
 		#ifdef SQLITE_TRANSACTIONAL
 		const char	*getDefaultIsolationLevel();
+		bool		setIsolationLevel(const char *isolevel);
 		const char	*setIsolationLevelQuery();
 		const char	*getIsolationLevelQuery();
 		const char	*mapIsolationLevel(
@@ -100,6 +101,7 @@ class SQLRSERVER_DLLSPEC sqliteconnection : public sqlrserverconnection {
 		#endif
 		bool		selectCatalog(const char *catalog);
 		char		*getCurrentCatalog();
+		char		*getCurrentUser();
 		bool		getLastInsertId(uint64_t *id);
 		const char	*getNoopQuery();
 		#ifdef SQLITE3
@@ -259,7 +261,7 @@ void sqliteconnection::initDatabaseFeatures() {
 		charstring::parseNumber(cont->getConfig()->getMaxConnections());
 
 	databasefeatures[FEATURE_AGGREGATE_FUNCTIONS]=
-		"";
+		"ALL,AVG,COUNT,DISTINCT,MAX,MIN,SUM";
 
 	databasefeatures[FEATURE_ALL_PROCEDURES_ARE_CALLABLE]=
 		"false";
@@ -313,19 +315,19 @@ void sqliteconnection::initDatabaseFeatures() {
 		"";
 
 	databasefeatures[FEATURE_CREATE_TABLE_CLAUSES]=
-		"";
+		"CREATE_TABLE,TABLE_CONSTRAINT,CONSTRAINT_NAME_DEFINITION,LOCAL_TEMPORARY,COLUMN_CONSTRAINT,COLUMN_DEFAULT,COLUMN_COLLATION,CONSTRAINT_INITIALLY_DEFERRED,CONSTRAINT_INITIALLY_IMMEDIATE,CONSTRAINT_DEFERRABLE,CONSTRAINT_NON_DEFERRABLE";
 
 	databasefeatures[FEATURE_CREATE_TRANSLATION_CLAUSES]=
 		"";
 
 	databasefeatures[FEATURE_CREATE_VIEW_CLAUSES]=
-		"";
+		"CREATE_VIEW";
 
 	databasefeatures[FEATURE_DATA_DEFINITION_TRANSACTION_BEHAVIOR]=
 		"";
 
 	databasefeatures[FEATURE_DDL_INDEX_OPERATIONS]=
-		"";
+		"CREATE_INDEX,DROP_INDEX";
 
 	databasefeatures[FEATURE_DEFAULT_RESULT_SET_HOLDABILITY]=
 		"CLOSE_CURSORS_AT_COMMIT";
@@ -352,13 +354,13 @@ void sqliteconnection::initDatabaseFeatures() {
 		"";
 
 	databasefeatures[FEATURE_DROP_TABLE_CLAUSES]=
-		"";
+		"DROP_TABLE";
 
 	databasefeatures[FEATURE_DROP_TRANSLATION_CLAUSES]=
 		"";
 
 	databasefeatures[FEATURE_DROP_VIEW_CLAUSES]=
-		"";
+		"DROP_VIEW";
 
 	databasefeatures[FEATURE_EXTRA_NAME_CHARACTERS]=
 		"";
@@ -388,7 +390,7 @@ void sqliteconnection::initDatabaseFeatures() {
 		"\"";
 
 	databasefeatures[FEATURE_INDEX_KEYWORDS]=
-		"";
+		"ASC,DESC";
 
 	databasefeatures[FEATURE_INFO_SCHEMA_VIEWS]=
 		"";
@@ -397,10 +399,10 @@ void sqliteconnection::initDatabaseFeatures() {
 		"";
 
 	databasefeatures[FEATURE_INSERT_OPERATIONS]=
-		"";
+		"INSERT_LITERALS,INSERT_SEARCHED";
 
 	databasefeatures[FEATURE_ISOLATION_LEVELS]=
-		"SERIALIZABLE";
+		"READ_UNCOMMITTED,SERIALIZABLE";
 
 	databasefeatures[FEATURE_IS_CATALOG_AT_START]=
 		"true";
@@ -412,7 +414,7 @@ void sqliteconnection::initDatabaseFeatures() {
 		"false";
 
 	databasefeatures[FEATURE_LOCK_TYPES]=
-		"";
+		"NO_CHANGE";
 
 	databasefeatures[FEATURE_MAX_BINARY_LITERAL_LENGTH]=
 		"0";
@@ -489,7 +491,7 @@ void sqliteconnection::initDatabaseFeatures() {
 		"HIGH,AT_START";
 
 	databasefeatures[FEATURE_NUMERIC_FUNCTIONS]=
-		"";
+		"ABS,ROUND,SIGN";
 
 	databasefeatures[FEATURE_OPEN_CURSORS_ACROSS]=
 		"";
@@ -519,10 +521,10 @@ void sqliteconnection::initDatabaseFeatures() {
 		"";
 
 	databasefeatures[FEATURE_PREDICATES]=
-		"";
+		"BETWEEN,COMPARISON,EXISTS,IN,ISNOTNULL,ISNULL,LIKE";
 
 	databasefeatures[FEATURE_PROCEDURE_TERM]=
-		"not_implemented";
+		"";
 
 	databasefeatures[FEATURE_QUOTED_IDENTIFIER_CASE_STORAGE]=
 		"";
@@ -555,7 +557,7 @@ void sqliteconnection::initDatabaseFeatures() {
 		"";
 
 	databasefeatures[FEATURE_SCROLL_CONCURRENCIES]=
-		"";
+		"READ_ONLY";
 
 	databasefeatures[FEATURE_SEARCH_STRING_ESCAPE]=
 		"\\";
@@ -576,10 +578,10 @@ void sqliteconnection::initDatabaseFeatures() {
 		"";
 
 	databasefeatures[FEATURE_STRING_FUNCTIONS]=
-		"";
+		"CHAR,CONCAT,LCASE,LENGTH,LTRIM,REPLACE,RTRIM,SUBSTRING,UCASE";
 
 	databasefeatures[FEATURE_SUBQUERY_USAGE]=
-		"EXISTS,INS";
+		"COMPARISONS,EXISTS,INS";
 
 	databasefeatures[FEATURE_SUPPORTS_BATCH_UPDATES]=
 		"true";
@@ -591,7 +593,7 @@ void sqliteconnection::initDatabaseFeatures() {
 		"false";
 
 	databasefeatures[FEATURE_SUPPORTS_CORRELATED_SUBQUERIES]=
-		"false";
+		"true";
 
 	databasefeatures[FEATURE_SUPPORTS_DESCRIBE_PARAMETER]=
 		"";
@@ -606,7 +608,7 @@ void sqliteconnection::initDatabaseFeatures() {
 		"false";
 
 	databasefeatures[FEATURE_SUPPORTS_LIKE_ESCAPE_CLAUSE]=
-		"false";
+		"true";
 
 	databasefeatures[FEATURE_SUPPORTS_MULTIPLE_RESULT_SETS]=
 		"false";
@@ -621,7 +623,7 @@ void sqliteconnection::initDatabaseFeatures() {
 		"true";
 
 	databasefeatures[FEATURE_SUPPORTS_ORDER_BY_UNRELATED]=
-		"false";
+		"true";
 
 	databasefeatures[FEATURE_SUPPORTS_SAVEPOINTS]=
 		"true";
@@ -633,13 +635,13 @@ void sqliteconnection::initDatabaseFeatures() {
 		"true";
 
 	databasefeatures[FEATURE_SYSTEM_FUNCTIONS]=
-		"";
+		"IFNULL";
 
 	databasefeatures[FEATURE_TABLE_CORRELATION_NAMES]=
-		"";
+		"BASIC";
 
 	databasefeatures[FEATURE_TABLE_TERM]=
-		"";
+		"table";
 
 	databasefeatures[FEATURE_TIME_DATE_ADD_INTERVALS]=
 		"";
@@ -648,7 +650,7 @@ void sqliteconnection::initDatabaseFeatures() {
 		"";
 
 	databasefeatures[FEATURE_TIME_DATE_FUNCTIONS]=
-		"DATE,TIME,DATETIME,JULIANDAY,STRFTIME";
+		"DATE,TIME,DATETIME,JULIANDAY,STRFTIME,CURRENT_DATE,CURRENT_TIME,CURRENT_TIMESTAMP";
 
 	databasefeatures[FEATURE_TIME_DATE_LITERALS]=
 		"";
@@ -663,7 +665,7 @@ void sqliteconnection::initDatabaseFeatures() {
 		"";
 
 	databasefeatures[FEATURE_VALUE_EXPRESSIONS]=
-		"";
+		"CASE,CAST,COALESCE,NULLIF";
 
 	databasefeatures[FEATURE_WHERE_CURRENT_OF_OPERATIONS]=
 		"";
@@ -1590,7 +1592,23 @@ const char *sqliteconnection::getProcedureParameterListQuery(
 
 #ifdef SQLITE_TRANSACTIONAL
 const char *sqliteconnection::getDefaultIsolationLevel() {
+	// The pragma defaults to 0, which is serializable.  Return the
+	// name rather than the pragma value; the JDBC driver expects
+	// default isolation levels in this format (it passes through
+	// mapIsolationLevel unmapped) and mapIsolationLevel maps it
+	// for ODBC.
 	return "SERIALIZABLE";
+}
+
+bool sqliteconnection::setIsolationLevel(const char *isolevel) {
+	// Only allow levels that map to the read_uncommitted pragma.
+	// Anything else would be passed to the pragma verbatim, which
+	// sqlite would silently treat as false rather than erroring.
+	if (charstring::compare(isolevel,"0") &&
+			charstring::compare(isolevel,"1")) {
+		return false;
+	}
+	return sqlrserverconnection::setIsolationLevel(isolevel);
 }
 
 const char *sqliteconnection::setIsolationLevelQuery() {
@@ -1615,7 +1633,7 @@ const char *sqliteconnection::mapIsolationLevel(
 			return "1";
 		}
 		if (!charstring::compare(isolevel,
-				"TRANSACTION_READ_COMMITTED")) {
+				"TRANSACTION_SERIALIZABLE")) {
 			return "0";
 		}
 	} else if (fromformat==SQLRSERVERISOLATIONLEVELFORMAT_NATIVE &&
@@ -1624,7 +1642,7 @@ const char *sqliteconnection::mapIsolationLevel(
 			return "TRANSACTION_READ_UNCOMMITTED";
 		}
 		if (!charstring::compareIgnoringCase(isolevel,"0")) {
-			return "TRANSACTION_READ_COMMITTED";
+			return "TRANSACTION_SERIALIZABLE";
 		}
 	} else if (fromformat==SQLRSERVERISOLATIONLEVELFORMAT_ODBC &&
 			toformat==SQLRSERVERISOLATIONLEVELFORMAT_NATIVE) {
@@ -1633,7 +1651,7 @@ const char *sqliteconnection::mapIsolationLevel(
 			return "1";
 		}
 		if (!charstring::compare(isolevel,
-				"SQL_TXN_READ_COMMITTED")) {
+				"SQL_TXN_SERIALIZABLE")) {
 			return "0";
 		}
 	} else if (fromformat==SQLRSERVERISOLATIONLEVELFORMAT_NATIVE &&
@@ -1642,7 +1660,12 @@ const char *sqliteconnection::mapIsolationLevel(
 			return "SQL_TXN_READ_UNCOMMITTED";
 		}
 		if (!charstring::compareIgnoringCase(isolevel,"0")) {
-			return "SQL_TXN_READ_COMMITTED";
+			return "SQL_TXN_SERIALIZABLE";
+		}
+		// the default isolation level (see above)
+		if (!charstring::compareIgnoringCase(isolevel,
+						"SERIALIZABLE")) {
+			return "SQL_TXN_SERIALIZABLE";
 		}
 	}
 	return isolevel;
@@ -1694,6 +1717,11 @@ bool sqliteconnection::selectCatalog(const char *catalog) {
 
 char *sqliteconnection::getCurrentCatalog() {
 	return charstring::duplicate(db);
+}
+
+char *sqliteconnection::getCurrentUser() {
+	// sqlite has no users; return the user from the connect string
+	return charstring::duplicate(cont->getConnectStringValue("user"));
 }
 
 bool sqliteconnection::getLastInsertId(uint64_t *id) {
