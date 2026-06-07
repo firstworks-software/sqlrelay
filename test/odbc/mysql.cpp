@@ -6660,9 +6660,13 @@ int main(int argc, char **argv) {
 	assertEqualStmt(stmt,(const char *)tinytextfield,"tinytext1");
 	assertEqualStmt(stmt,(const char *)mediumtextfield,"mediumtext1");
 	assertEqualStmt(stmt,(const char *)longtextfield,"longtext1");
+	assertEqualStmt(stmt,(int)blobind,5);
 	assertTrueStmt(stmt,!bytestring::compare(blobfield,"blob1",5));
+	assertEqualStmt(stmt,(int)tinyblobind,9);
 	assertTrueStmt(stmt,!bytestring::compare(tinyblobfield,"tinyblob1",9));
+	assertEqualStmt(stmt,(int)mediumblobind,11);
 	assertTrueStmt(stmt,!bytestring::compare(mediumblobfield,"mediumblob1",11));
+	assertEqualStmt(stmt,(int)longblobind,9);
 	assertTrueStmt(stmt,!bytestring::compare(longblobfield,"longblob1",9));
 	assertEqualStmt(stmt,(int)timestampind,(int)SQL_NULL_DATA);
 
@@ -6696,9 +6700,13 @@ int main(int argc, char **argv) {
 	assertEqualStmt(stmt,(const char *)tinytextfield,"tinytext2");
 	assertEqualStmt(stmt,(const char *)mediumtextfield,"mediumtext2");
 	assertEqualStmt(stmt,(const char *)longtextfield,"longtext2");
+	assertEqualStmt(stmt,(int)blobind,5);
 	assertTrueStmt(stmt,!bytestring::compare(blobfield,"blob2",5));
+	assertEqualStmt(stmt,(int)tinyblobind,9);
 	assertTrueStmt(stmt,!bytestring::compare(tinyblobfield,"tinyblob2",9));
+	assertEqualStmt(stmt,(int)mediumblobind,11);
 	assertTrueStmt(stmt,!bytestring::compare(mediumblobfield,"mediumblob2",11));
+	assertEqualStmt(stmt,(int)longblobind,9);
 	assertTrueStmt(stmt,!bytestring::compare(longblobfield,"longblob2",9));
 	assertEqualStmt(stmt,(int)timestampind,(int)SQL_NULL_DATA);
 
@@ -6732,9 +6740,13 @@ int main(int argc, char **argv) {
 	assertEqualStmt(stmt,(const char *)tinytextfield,"tinytext3");
 	assertEqualStmt(stmt,(const char *)mediumtextfield,"mediumtext3");
 	assertEqualStmt(stmt,(const char *)longtextfield,"longtext3");
+	assertEqualStmt(stmt,(int)blobind,5);
 	assertTrueStmt(stmt,!bytestring::compare(blobfield,"blob3",5));
+	assertEqualStmt(stmt,(int)tinyblobind,9);
 	assertTrueStmt(stmt,!bytestring::compare(tinyblobfield,"tinyblob3",9));
+	assertEqualStmt(stmt,(int)mediumblobind,11);
 	assertTrueStmt(stmt,!bytestring::compare(mediumblobfield,"mediumblob3",11));
+	assertEqualStmt(stmt,(int)longblobind,9);
 	assertTrueStmt(stmt,!bytestring::compare(longblobfield,"longblob3",9));
 	assertEqualStmt(stmt,(int)timestampind,(int)SQL_NULL_DATA);
 
@@ -6768,9 +6780,13 @@ int main(int argc, char **argv) {
 	assertEqualStmt(stmt,(const char *)tinytextfield,"tinytext4");
 	assertEqualStmt(stmt,(const char *)mediumtextfield,"mediumtext4");
 	assertEqualStmt(stmt,(const char *)longtextfield,"longtext4");
+	assertEqualStmt(stmt,(int)blobind,5);
 	assertTrueStmt(stmt,!bytestring::compare(blobfield,"blob4",5));
+	assertEqualStmt(stmt,(int)tinyblobind,9);
 	assertTrueStmt(stmt,!bytestring::compare(tinyblobfield,"tinyblob4",9));
+	assertEqualStmt(stmt,(int)mediumblobind,11);
 	assertTrueStmt(stmt,!bytestring::compare(mediumblobfield,"mediumblob4",11));
+	assertEqualStmt(stmt,(int)longblobind,9);
 	assertTrueStmt(stmt,!bytestring::compare(longblobfield,"longblob4",9));
 	assertEqualStmt(stmt,(int)timestampind,(int)SQL_NULL_DATA);
 
@@ -6887,18 +6903,22 @@ int main(int argc, char **argv) {
 	erg=SQLGetData(stmt,19,SQL_C_BINARY,
 			blobfield,sizeof(blobfield),&blobind);
 	assertSuccessStmt(stmt,erg);
+	assertEqualStmt(stmt,(int)blobind,5);
 	assertTrueStmt(stmt,!bytestring::compare(blobfield,"blob1",5));
 	erg=SQLGetData(stmt,20,SQL_C_BINARY,
 			tinyblobfield,sizeof(tinyblobfield),&tinyblobind);
 	assertSuccessStmt(stmt,erg);
+	assertEqualStmt(stmt,(int)tinyblobind,9);
 	assertTrueStmt(stmt,!bytestring::compare(tinyblobfield,"tinyblob1",9));
 	erg=SQLGetData(stmt,21,SQL_C_BINARY,
 			mediumblobfield,sizeof(mediumblobfield),&mediumblobind);
 	assertSuccessStmt(stmt,erg);
+	assertEqualStmt(stmt,(int)mediumblobind,11);
 	assertTrueStmt(stmt,!bytestring::compare(mediumblobfield,"mediumblob1",11));
 	erg=SQLGetData(stmt,22,SQL_C_BINARY,
 			longblobfield,sizeof(longblobfield),&longblobind);
 	assertSuccessStmt(stmt,erg);
+	assertEqualStmt(stmt,(int)longblobind,9);
 	assertTrueStmt(stmt,!bytestring::compare(longblobfield,"longblob1",9));
 	erg=SQLGetData(stmt,23,SQL_C_TYPE_TIMESTAMP,
 			&timestampfield,sizeof(timestampfield),&timestampind);
@@ -6990,18 +7010,22 @@ int main(int argc, char **argv) {
 	erg=SQLGetData(stmt,19,SQL_C_BINARY,
 			blobfield,sizeof(blobfield),&blobind);
 	assertSuccessStmt(stmt,erg);
+	assertEqualStmt(stmt,(int)blobind,5);
 	assertTrueStmt(stmt,!bytestring::compare(blobfield,"blob2",5));
 	erg=SQLGetData(stmt,20,SQL_C_BINARY,
 			tinyblobfield,sizeof(tinyblobfield),&tinyblobind);
 	assertSuccessStmt(stmt,erg);
+	assertEqualStmt(stmt,(int)tinyblobind,9);
 	assertTrueStmt(stmt,!bytestring::compare(tinyblobfield,"tinyblob2",9));
 	erg=SQLGetData(stmt,21,SQL_C_BINARY,
 			mediumblobfield,sizeof(mediumblobfield),&mediumblobind);
 	assertSuccessStmt(stmt,erg);
+	assertEqualStmt(stmt,(int)mediumblobind,11);
 	assertTrueStmt(stmt,!bytestring::compare(mediumblobfield,"mediumblob2",11));
 	erg=SQLGetData(stmt,22,SQL_C_BINARY,
 			longblobfield,sizeof(longblobfield),&longblobind);
 	assertSuccessStmt(stmt,erg);
+	assertEqualStmt(stmt,(int)longblobind,9);
 	assertTrueStmt(stmt,!bytestring::compare(longblobfield,"longblob2",9));
 	erg=SQLGetData(stmt,23,SQL_C_TYPE_TIMESTAMP,
 			&timestampfield,sizeof(timestampfield),&timestampind);
@@ -7093,18 +7117,22 @@ int main(int argc, char **argv) {
 	erg=SQLGetData(stmt,19,SQL_C_BINARY,
 			blobfield,sizeof(blobfield),&blobind);
 	assertSuccessStmt(stmt,erg);
+	assertEqualStmt(stmt,(int)blobind,5);
 	assertTrueStmt(stmt,!bytestring::compare(blobfield,"blob3",5));
 	erg=SQLGetData(stmt,20,SQL_C_BINARY,
 			tinyblobfield,sizeof(tinyblobfield),&tinyblobind);
 	assertSuccessStmt(stmt,erg);
+	assertEqualStmt(stmt,(int)tinyblobind,9);
 	assertTrueStmt(stmt,!bytestring::compare(tinyblobfield,"tinyblob3",9));
 	erg=SQLGetData(stmt,21,SQL_C_BINARY,
 			mediumblobfield,sizeof(mediumblobfield),&mediumblobind);
 	assertSuccessStmt(stmt,erg);
+	assertEqualStmt(stmt,(int)mediumblobind,11);
 	assertTrueStmt(stmt,!bytestring::compare(mediumblobfield,"mediumblob3",11));
 	erg=SQLGetData(stmt,22,SQL_C_BINARY,
 			longblobfield,sizeof(longblobfield),&longblobind);
 	assertSuccessStmt(stmt,erg);
+	assertEqualStmt(stmt,(int)longblobind,9);
 	assertTrueStmt(stmt,!bytestring::compare(longblobfield,"longblob3",9));
 	erg=SQLGetData(stmt,23,SQL_C_TYPE_TIMESTAMP,
 			&timestampfield,sizeof(timestampfield),&timestampind);
@@ -7196,18 +7224,22 @@ int main(int argc, char **argv) {
 	erg=SQLGetData(stmt,19,SQL_C_BINARY,
 			blobfield,sizeof(blobfield),&blobind);
 	assertSuccessStmt(stmt,erg);
+	assertEqualStmt(stmt,(int)blobind,5);
 	assertTrueStmt(stmt,!bytestring::compare(blobfield,"blob4",5));
 	erg=SQLGetData(stmt,20,SQL_C_BINARY,
 			tinyblobfield,sizeof(tinyblobfield),&tinyblobind);
 	assertSuccessStmt(stmt,erg);
+	assertEqualStmt(stmt,(int)tinyblobind,9);
 	assertTrueStmt(stmt,!bytestring::compare(tinyblobfield,"tinyblob4",9));
 	erg=SQLGetData(stmt,21,SQL_C_BINARY,
 			mediumblobfield,sizeof(mediumblobfield),&mediumblobind);
 	assertSuccessStmt(stmt,erg);
+	assertEqualStmt(stmt,(int)mediumblobind,11);
 	assertTrueStmt(stmt,!bytestring::compare(mediumblobfield,"mediumblob4",11));
 	erg=SQLGetData(stmt,22,SQL_C_BINARY,
 			longblobfield,sizeof(longblobfield),&longblobind);
 	assertSuccessStmt(stmt,erg);
+	assertEqualStmt(stmt,(int)longblobind,9);
 	assertTrueStmt(stmt,!bytestring::compare(longblobfield,"longblob4",9));
 	erg=SQLGetData(stmt,23,SQL_C_TYPE_TIMESTAMP,
 			&timestampfield,sizeof(timestampfield),&timestampind);

@@ -22,7 +22,7 @@ int main(int argc, char **argv) {
 	const char	**il;
 	const char	*bindvars[]={"1","2","3","4","5","6",
 				"7","8","9","10","11","12",NULL};
-	const char	*bindvals[]={"7","7","7","7.7","7.7","7.7",
+	const char	*bindvals[]={"7","7","7","7.5","7.5","7.5",
 				"testchar7","testvarchar7",
 				"01/01/2007","07:00:00","testclob7",NULL};
 	const char * const *cols;
@@ -150,9 +150,9 @@ int main(int argc, char **argv) {
 		"	1, "
 		"	1, "
 		"	1, "
-		"	1.1, "
-		"	1.1, "
-		"	1.1, "
+		"	1.5, "
+		"	1.5, "
+		"	1.5, "
 		"	'testchar1', "
 		"	'testvarchar1', "
 		"	'01/01/2001', "
@@ -192,9 +192,9 @@ int main(int argc, char **argv) {
 	sqlrcur_inputBindLong(cur,"1",2);
 	sqlrcur_inputBindLong(cur,"2",2);
 	sqlrcur_inputBindLong(cur,"3",2);
-	sqlrcur_inputBindDouble(cur,"4",2.2,4,2);
-	sqlrcur_inputBindDouble(cur,"5",2.2,4,2);
-	sqlrcur_inputBindDouble(cur,"6",2.2,4,2);
+	sqlrcur_inputBindDouble(cur,"4",2.5,4,2);
+	sqlrcur_inputBindDouble(cur,"5",2.5,4,2);
+	sqlrcur_inputBindDouble(cur,"6",2.5,4,2);
 	sqlrcur_inputBindString(cur,"7","testchar2");
 	sqlrcur_inputBindString(cur,"8","testvarchar2");
 	sqlrcur_inputBindDate(cur,"9",2002,1,1,-1,-1,-1,-1,NULL,0);
@@ -206,9 +206,9 @@ int main(int argc, char **argv) {
 	sqlrcur_inputBindLong(cur,"1",3);
 	sqlrcur_inputBindLong(cur,"2",3);
 	sqlrcur_inputBindLong(cur,"3",3);
-	sqlrcur_inputBindDouble(cur,"4",3.3,4,2);
-	sqlrcur_inputBindDouble(cur,"5",3.3,4,2);
-	sqlrcur_inputBindDouble(cur,"6",3.3,4,2);
+	sqlrcur_inputBindDouble(cur,"4",3.5,4,2);
+	sqlrcur_inputBindDouble(cur,"5",3.5,4,2);
+	sqlrcur_inputBindDouble(cur,"6",3.5,4,2);
 	sqlrcur_inputBindString(cur,"7","testchar3");
 	sqlrcur_inputBindString(cur,"8","testvarchar3");
 	sqlrcur_inputBindDate(cur,"9",2003,1,1,-1,-1,-1,-1,NULL,0);
@@ -220,9 +220,9 @@ int main(int argc, char **argv) {
 	sqlrcur_inputBindLong(cur,"1",4);
 	sqlrcur_inputBindLong(cur,"2",4);
 	sqlrcur_inputBindLong(cur,"3",4);
-	sqlrcur_inputBindDouble(cur,"4",4.4,4,2);
-	sqlrcur_inputBindDouble(cur,"5",4.4,4,2);
-	sqlrcur_inputBindDouble(cur,"6",4.4,4,2);
+	sqlrcur_inputBindDouble(cur,"4",4.5,4,2);
+	sqlrcur_inputBindDouble(cur,"5",4.5,4,2);
+	sqlrcur_inputBindDouble(cur,"6",4.5,4,2);
 	sqlrcur_inputBindString(cur,"7","testchar4");
 	sqlrcur_inputBindString(cur,"8","testvarchar4");
 	sqlrcur_inputBindDate(cur,"9",2004,1,1,-1,-1,-1,-1,NULL,0);
@@ -248,9 +248,9 @@ int main(int argc, char **argv) {
 	sqlrcur_inputBindLong(cur,"1",6);
 	sqlrcur_inputBindLong(cur,"2",6);
 	sqlrcur_inputBindLong(cur,"3",6);
-	sqlrcur_inputBindDouble(cur,"4",6.6,4,2);
-	sqlrcur_inputBindDouble(cur,"5",6.6,4,2);
-	sqlrcur_inputBindDouble(cur,"6",6.6,4,2);
+	sqlrcur_inputBindDouble(cur,"4",6.5,4,2);
+	sqlrcur_inputBindDouble(cur,"5",6.5,4,2);
+	sqlrcur_inputBindDouble(cur,"6",6.5,4,2);
 	sqlrcur_inputBindString(cur,"7","testchar6");
 	sqlrcur_inputBindString(cur,"8","testvarchar6");
 	sqlrcur_inputBindDate(cur,"9",2006,1,1,-1,-1,-1,-1,NULL,0);
@@ -275,9 +275,9 @@ int main(int argc, char **argv) {
 	sqlrcur_inputBindLong(cur,"1",8);
 	sqlrcur_inputBindLong(cur,"2",8);
 	sqlrcur_inputBindLong(cur,"3",8);
-	sqlrcur_inputBindDouble(cur,"4",8.8,4,2);
-	sqlrcur_inputBindDouble(cur,"5",8.8,4,2);
-	sqlrcur_inputBindDouble(cur,"6",8.8,4,2);
+	sqlrcur_inputBindDouble(cur,"4",8.5,4,2);
+	sqlrcur_inputBindDouble(cur,"5",8.5,4,2);
+	sqlrcur_inputBindDouble(cur,"6",8.5,4,2);
 	sqlrcur_inputBindString(cur,"7","testchar8");
 	sqlrcur_inputBindString(cur,"8","testvarchar8");
 	sqlrcur_inputBindDate(cur,"9",2008,1,1,-1,-1,-1,-1,NULL,0);
@@ -411,10 +411,10 @@ int main(int argc, char **argv) {
 	assertEqInt(sqlrcur_getLongestByName(cur,"TESTBIGINT"),1);
 	assertEqInt(sqlrcur_getLongestByIndex(cur,3),4);
 	assertEqInt(sqlrcur_getLongestByName(cur,"TESTDECIMAL"),4);
-	//assertEqInt(sqlrcur_getLongestByIndex(cur,4),3);
-	//assertEqInt(sqlrcur_getLongestByName(cur,"TESTREAL"),3);
-	//assertEqInt(sqlrcur_getLongestByIndex(cur,5),3);
-	//assertEqInt(sqlrcur_getLongestByName(cur,"TESTDOUBLE"),3);
+	assertEqInt(sqlrcur_getLongestByIndex(cur,4),12);
+	assertEqInt(sqlrcur_getLongestByName(cur,"TESTREAL"),12);
+	assertEqInt(sqlrcur_getLongestByIndex(cur,5),21);
+	assertEqInt(sqlrcur_getLongestByName(cur,"TESTDOUBLE"),21);
 	assertEqInt(sqlrcur_getLongestByIndex(cur,6),40);
 	assertEqInt(sqlrcur_getLongestByName(cur,"TESTCHAR"),40);
 	assertEqInt(sqlrcur_getLongestByIndex(cur,7),12);
@@ -455,9 +455,9 @@ int main(int argc, char **argv) {
 	assertEqStr(sqlrcur_getFieldByIndex(cur,0,0),"1");
 	assertEqStr(sqlrcur_getFieldByIndex(cur,0,1),"1");
 	assertEqStr(sqlrcur_getFieldByIndex(cur,0,2),"1");
-	assertEqStr(sqlrcur_getFieldByIndex(cur,0,3),"1.10");
-	//assertEqStr(sqlrcur_getFieldByIndex(cur,0,4),"1.1");
-	//assertEqStr(sqlrcur_getFieldByIndex(cur,0,5),"1.1");
+	assertEqStr(sqlrcur_getFieldByIndex(cur,0,3),"1.50");
+	assertEqStr(sqlrcur_getFieldByIndex(cur,0,4),"1.500000E+00");
+	assertEqStr(sqlrcur_getFieldByIndex(cur,0,5),"1.50000000000000E+000");
 	assertEqStr(sqlrcur_getFieldByIndex(cur,0,6),"testchar1"
 					"                               ");
 	assertEqStr(sqlrcur_getFieldByIndex(cur,0,7),"testvarchar1");
@@ -467,9 +467,9 @@ int main(int argc, char **argv) {
 	assertEqStr(sqlrcur_getFieldByIndex(cur,7,0),"8");
 	assertEqStr(sqlrcur_getFieldByIndex(cur,7,1),"8");
 	assertEqStr(sqlrcur_getFieldByIndex(cur,7,2),"8");
-	assertEqStr(sqlrcur_getFieldByIndex(cur,7,3),"8.80");
-	//assertEqStr(sqlrcur_getFieldByIndex(cur,7,4),"8.8");
-	//assertEqStr(sqlrcur_getFieldByIndex(cur,7,5),"8.8");
+	assertEqStr(sqlrcur_getFieldByIndex(cur,7,3),"8.50");
+	assertEqStr(sqlrcur_getFieldByIndex(cur,7,4),"8.500000E+00");
+	assertEqStr(sqlrcur_getFieldByIndex(cur,7,5),"8.50000000000000E+000");
 	assertEqStr(sqlrcur_getFieldByIndex(cur,7,6),"testchar8"
 					"                               ");
 	assertEqStr(sqlrcur_getFieldByIndex(cur,7,7),"testvarchar8");
@@ -484,8 +484,8 @@ int main(int argc, char **argv) {
 	assertEqInt(sqlrcur_getFieldLengthByIndex(cur,0,1),1);
 	assertEqInt(sqlrcur_getFieldLengthByIndex(cur,0,2),1);
 	assertEqInt(sqlrcur_getFieldLengthByIndex(cur,0,3),4);
-	//assertEqInt(sqlrcur_getFieldLengthByIndex(cur,0,4),3);
-	//assertEqInt(sqlrcur_getFieldLengthByIndex(cur,0,5),3);
+	assertEqInt(sqlrcur_getFieldLengthByIndex(cur,0,4),12);
+	assertEqInt(sqlrcur_getFieldLengthByIndex(cur,0,5),21);
 	assertEqInt(sqlrcur_getFieldLengthByIndex(cur,0,6),40);
 	assertEqInt(sqlrcur_getFieldLengthByIndex(cur,0,7),12);
 	assertEqInt(sqlrcur_getFieldLengthByIndex(cur,0,8),10);
@@ -495,8 +495,8 @@ int main(int argc, char **argv) {
 	assertEqInt(sqlrcur_getFieldLengthByIndex(cur,7,1),1);
 	assertEqInt(sqlrcur_getFieldLengthByIndex(cur,7,2),1);
 	assertEqInt(sqlrcur_getFieldLengthByIndex(cur,7,3),4);
-	//assertEqInt(sqlrcur_getFieldLengthByIndex(cur,7,4),3);
-	//assertEqInt(sqlrcur_getFieldLengthByIndex(cur,7,5),3);
+	assertEqInt(sqlrcur_getFieldLengthByIndex(cur,7,4),12);
+	assertEqInt(sqlrcur_getFieldLengthByIndex(cur,7,5),21);
 	assertEqInt(sqlrcur_getFieldLengthByIndex(cur,7,6),40);
 	assertEqInt(sqlrcur_getFieldLengthByIndex(cur,7,7),12);
 	assertEqInt(sqlrcur_getFieldLengthByIndex(cur,7,8),10);
@@ -509,9 +509,9 @@ int main(int argc, char **argv) {
 	assertEqStr(sqlrcur_getFieldByName(cur,0,"TESTSMALLINT"),"1");
 	assertEqStr(sqlrcur_getFieldByName(cur,0,"TESTINT"),"1");
 	assertEqStr(sqlrcur_getFieldByName(cur,0,"TESTBIGINT"),"1");
-	assertEqStr(sqlrcur_getFieldByName(cur,0,"TESTDECIMAL"),"1.10");
-	//assertEqStr(sqlrcur_getFieldByName(cur,0,"TESTREAL"),"1.1");
-	//assertEqStr(sqlrcur_getFieldByName(cur,0,"TESTDOUBLE"),"1.1");
+	assertEqStr(sqlrcur_getFieldByName(cur,0,"TESTDECIMAL"),"1.50");
+	assertEqStr(sqlrcur_getFieldByName(cur,0,"TESTREAL"),"1.500000E+00");
+	assertEqStr(sqlrcur_getFieldByName(cur,0,"TESTDOUBLE"),"1.50000000000000E+000");
 	assertEqStr(sqlrcur_getFieldByName(cur,0,"TESTCHAR"),"testchar1"
 					"                               ");
 	assertEqStr(sqlrcur_getFieldByName(cur,0,"TESTVARCHAR"),"testvarchar1");
@@ -521,9 +521,9 @@ int main(int argc, char **argv) {
 	assertEqStr(sqlrcur_getFieldByName(cur,7,"TESTSMALLINT"),"8");
 	assertEqStr(sqlrcur_getFieldByName(cur,7,"TESTINT"),"8");
 	assertEqStr(sqlrcur_getFieldByName(cur,7,"TESTBIGINT"),"8");
-	assertEqStr(sqlrcur_getFieldByName(cur,7,"TESTDECIMAL"),"8.80");
-	//assertEqStr(sqlrcur_getFieldByName(cur,7,"TESTREAL"),"8.8");
-	//assertEqStr(sqlrcur_getFieldByName(cur,7,"TESTDOUBLE"),"8.8");
+	assertEqStr(sqlrcur_getFieldByName(cur,7,"TESTDECIMAL"),"8.50");
+	assertEqStr(sqlrcur_getFieldByName(cur,7,"TESTREAL"),"8.500000E+00");
+	assertEqStr(sqlrcur_getFieldByName(cur,7,"TESTDOUBLE"),"8.50000000000000E+000");
 	assertEqStr(sqlrcur_getFieldByName(cur,7,"TESTCHAR"),"testchar8"
 					"                               ");
 	assertEqStr(sqlrcur_getFieldByName(cur,7,"TESTVARCHAR"),"testvarchar8");
@@ -538,8 +538,8 @@ int main(int argc, char **argv) {
 	assertEqInt(sqlrcur_getFieldLengthByName(cur,0,"TESTINT"),1);
 	assertEqInt(sqlrcur_getFieldLengthByName(cur,0,"TESTBIGINT"),1);
 	assertEqInt(sqlrcur_getFieldLengthByName(cur,0,"TESTDECIMAL"),4);
-	//assertEqInt(sqlrcur_getFieldLengthByName(cur,0,"TESTREAL"),3);
-	//assertEqInt(sqlrcur_getFieldLengthByName(cur,0,"TESTDOUBLE"),3);
+	assertEqInt(sqlrcur_getFieldLengthByName(cur,0,"TESTREAL"),12);
+	assertEqInt(sqlrcur_getFieldLengthByName(cur,0,"TESTDOUBLE"),21);
 	assertEqInt(sqlrcur_getFieldLengthByName(cur,0,"TESTCHAR"),40);
 	assertEqInt(sqlrcur_getFieldLengthByName(cur,0,"TESTVARCHAR"),12);
 	assertEqInt(sqlrcur_getFieldLengthByName(cur,0,"TESTDATE"),10);
@@ -549,8 +549,8 @@ int main(int argc, char **argv) {
 	assertEqInt(sqlrcur_getFieldLengthByName(cur,7,"TESTINT"),1);
 	assertEqInt(sqlrcur_getFieldLengthByName(cur,7,"TESTBIGINT"),1);
 	assertEqInt(sqlrcur_getFieldLengthByName(cur,7,"TESTDECIMAL"),4);
-	//assertEqInt(sqlrcur_getFieldLengthByName(cur,7,"TESTREAL"),3);
-	//assertEqInt(sqlrcur_getFieldLengthByName(cur,7,"TESTDOUBLE"),3);
+	assertEqInt(sqlrcur_getFieldLengthByName(cur,7,"TESTREAL"),12);
+	assertEqInt(sqlrcur_getFieldLengthByName(cur,7,"TESTDOUBLE"),21);
 	assertEqInt(sqlrcur_getFieldLengthByName(cur,7,"TESTCHAR"),40);
 	assertEqInt(sqlrcur_getFieldLengthByName(cur,7,"TESTVARCHAR"),12);
 	assertEqInt(sqlrcur_getFieldLengthByName(cur,7,"TESTDATE"),10);
@@ -564,9 +564,9 @@ int main(int argc, char **argv) {
 	assertEqStr(fields[0],"1");
 	assertEqStr(fields[1],"1");
 	assertEqStr(fields[2],"1");
-	assertEqStr(fields[3],"1.10");
-	//assertEqStr(fields[4],"1.1");
-	//assertEqStr(fields[5],"1.1");
+	assertEqStr(fields[3],"1.50");
+	assertEqStr(fields[4],"1.500000E+00");
+	assertEqStr(fields[5],"1.50000000000000E+000");
 	assertEqStr(fields[6],"testchar1""                               ");
 	assertEqStr(fields[7],"testvarchar1");
 	assertEqStr(fields[8],"2001-01-01");
@@ -581,8 +581,8 @@ int main(int argc, char **argv) {
 	assertEqInt(fieldlens[1],1);
 	assertEqInt(fieldlens[2],1);
 	assertEqInt(fieldlens[3],4);
-	//assertEqInt(fieldlens[4],3);
-	//assertEqInt(fieldlens[5],3);
+	assertEqInt(fieldlens[4],12);
+	assertEqInt(fieldlens[5],21);
 	assertEqInt(fieldlens[6],40);
 	assertEqInt(fieldlens[7],12);
 	assertEqInt(fieldlens[8],10);

@@ -1270,6 +1270,7 @@ def main():
 	assertTrue(d>1.09 and d<1.11)
 	assertEquals(cur.getOutputBindString("3"),"hello               ")
 	assertEqualsBytes(cur.getOutputBindBlob("4"),b"blob",4)
+	assertEquals(cur.getOutputBindLength("4"),4)
 	cur.getNullsAsEmptyStrings()
 	print()
 

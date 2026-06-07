@@ -6528,7 +6528,9 @@ int main(int argc, char **argv) {
 	assertEqualStmt(stmt,(int)datefield.year,2003);
 	assertEqualStmt(stmt,(int)timefield.hour,3);
 	assertEqualStmt(stmt,(int)timestampind,(int)SQL_NULL_DATA);
+	assertEqualStmt(stmt,(int)textind,9);
 	assertEqualStmt(stmt,(const char *)textfield,"testtext3");
+	assertEqualStmt(stmt,(int)byteaind,10);
 	assertTrueStmt(stmt,!bytestring::compare(byteafield,"testbytea3",10));
 
 	// row 4
@@ -6671,6 +6673,7 @@ int main(int argc, char **argv) {
 	erg=SQLGetData(stmt,10,SQL_C_CHAR,
 			gtextfield,sizeof(gtextfield),&gtextind);
 	assertSuccessStmt(stmt,erg);
+	assertEqualStmt(stmt,(int)gtextind,9);
 	assertEqualStmt(stmt,(const char *)gtextfield,"testtext2");
 	erg=SQLGetData(stmt,11,SQL_C_BINARY,
 			gbyteafield,sizeof(gbyteafield),&gbyteaind);
@@ -6693,10 +6696,12 @@ int main(int argc, char **argv) {
 	erg=SQLGetData(stmt,10,SQL_C_CHAR,
 			gtextfield,sizeof(gtextfield),&gtextind);
 	assertSuccessStmt(stmt,erg);
+	assertEqualStmt(stmt,(int)gtextind,9);
 	assertEqualStmt(stmt,(const char *)gtextfield,"testtext3");
 	erg=SQLGetData(stmt,11,SQL_C_BINARY,
 			gbyteafield,sizeof(gbyteafield),&gbyteaind);
 	assertSuccessStmt(stmt,erg);
+	assertEqualStmt(stmt,(int)gbyteaind,10);
 	assertTrueStmt(stmt,!bytestring::compare(gbyteafield,"testbytea3",10));
 
 	// row 4

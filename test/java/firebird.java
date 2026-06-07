@@ -1320,6 +1320,7 @@ class firebird extends sqlrtest {
 		assertEquals(cur.getOutputBindString("3"),
 			"hello               ");
 		assertEquals(cur.getOutputBindBlob("4"),"blob",4);
+		assertEquals(cur.getOutputBindLength("4"),4);
 		cur.getNullsAsEmptyStrings();
 		System.out.println();
 

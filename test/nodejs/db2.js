@@ -15,7 +15,7 @@ var {
 var isolationlevels=["CS","UR","RS","RR"];
 var bindvars=["1","2","3","4","5","6",
 			"7","8","9","10","11","12"];
-var bindvals=["7","7","7","7.7","7.7","7.7",
+var bindvals=["7","7","7","7.5","7.5","7.5",
 			"testchar7","testvarchar7",
 			"01/01/2007","07:00:00","testclob7",null];
 var subvars=["var1","var2","var3"];
@@ -113,9 +113,9 @@ assertTrue(cur.sendQuery(
 	"	1, "+
 	"	1, "+
 	"	1, "+
-	"	1.1, "+
-	"	1.1, "+
-	"	1.1, "+
+	"	1.5, "+
+	"	1.5, "+
+	"	1.5, "+
 	"	'testchar1', "+
 	"	'testvarchar1', "+
 	"	'01/01/2001', "+
@@ -155,9 +155,9 @@ assertEqInt(cur.countBindVariables(),12);
 cur.inputBind("1",2);
 cur.inputBind("2",2);
 cur.inputBind("3",2);
-cur.inputBind("4",2.2,4,2);
-cur.inputBind("5",2.2,4,2);
-cur.inputBind("6",2.2,4,2);
+cur.inputBind("4",2.5,4,2);
+cur.inputBind("5",2.5,4,2);
+cur.inputBind("6",2.5,4,2);
 cur.inputBind("7","testchar2");
 cur.inputBind("8","testvarchar2");
 cur.inputBind("9",2002,1,1,-1,-1,-1,-1,null,0);
@@ -169,9 +169,9 @@ cur.clearBinds();
 cur.inputBind("1",3);
 cur.inputBind("2",3);
 cur.inputBind("3",3);
-cur.inputBind("4",3.3,4,2);
-cur.inputBind("5",3.3,4,2);
-cur.inputBind("6",3.3,4,2);
+cur.inputBind("4",3.5,4,2);
+cur.inputBind("5",3.5,4,2);
+cur.inputBind("6",3.5,4,2);
 cur.inputBind("7","testchar3");
 cur.inputBind("8","testvarchar3");
 cur.inputBind("9",2003,1,1,-1,-1,-1,-1,null,0);
@@ -183,9 +183,9 @@ cur.clearBinds();
 cur.inputBind("1",4);
 cur.inputBind("2",4);
 cur.inputBind("3",4);
-cur.inputBind("4",4.4,4,2);
-cur.inputBind("5",4.4,4,2);
-cur.inputBind("6",4.4,4,2);
+cur.inputBind("4",4.5,4,2);
+cur.inputBind("5",4.5,4,2);
+cur.inputBind("6",4.5,4,2);
 cur.inputBind("7","testchar4");
 cur.inputBind("8","testvarchar4");
 cur.inputBind("9",2004,1,1,-1,-1,-1,-1,null,0);
@@ -211,9 +211,9 @@ cur.clearBinds();
 cur.inputBind("1",6);
 cur.inputBind("2",6);
 cur.inputBind("3",6);
-cur.inputBind("4",6.6,4,2);
-cur.inputBind("5",6.6,4,2);
-cur.inputBind("6",6.6,4,2);
+cur.inputBind("4",6.5,4,2);
+cur.inputBind("5",6.5,4,2);
+cur.inputBind("6",6.5,4,2);
 cur.inputBind("7","testchar6");
 cur.inputBind("8","testvarchar6");
 cur.inputBind("9",2006,1,1,-1,-1,-1,-1,null,0);
@@ -238,9 +238,9 @@ cur.clearBinds();
 cur.inputBind("1",8);
 cur.inputBind("2",8);
 cur.inputBind("3",8);
-cur.inputBind("4",8.8,4,2);
-cur.inputBind("5",8.8,4,2);
-cur.inputBind("6",8.8,4,2);
+cur.inputBind("4",8.5,4,2);
+cur.inputBind("5",8.5,4,2);
+cur.inputBind("6",8.5,4,2);
 cur.inputBind("7","testchar8");
 cur.inputBind("8","testvarchar8");
 cur.inputBind("9",2008,1,1,-1,-1,-1,-1,null,0);
@@ -374,10 +374,10 @@ assertEqInt(cur.getLongest(2),1);
 assertEqInt(cur.getLongest("TESTBIGINT"),1);
 assertEqInt(cur.getLongest(3),4);
 assertEqInt(cur.getLongest("TESTDECIMAL"),4);
-//assertEqInt(cur.getLongest(4),3);
-//assertEqInt(cur.getLongest("TESTREAL"),3);
-//assertEqInt(cur.getLongest(5),3);
-//assertEqInt(cur.getLongest("TESTDOUBLE"),3);
+assertEqInt(cur.getLongest(4),12);
+assertEqInt(cur.getLongest("TESTREAL"),12);
+assertEqInt(cur.getLongest(5),21);
+assertEqInt(cur.getLongest("TESTDOUBLE"),21);
 assertEqInt(cur.getLongest(6),40);
 assertEqInt(cur.getLongest("TESTCHAR"),40);
 assertEqInt(cur.getLongest(7),12);
@@ -418,9 +418,9 @@ console.log("FIELDS BY INDEX: ");
 assertEqStr(cur.getField(0,0),"1");
 assertEqStr(cur.getField(0,1),"1");
 assertEqStr(cur.getField(0,2),"1");
-assertEqStr(cur.getField(0,3),"1.10");
-//assertEqStr(cur.getField(0,4),"1.1");
-//assertEqStr(cur.getField(0,5),"1.1");
+assertEqStr(cur.getField(0,3),"1.50");
+assertEqStr(cur.getField(0,4),"1.500000E+00");
+assertEqStr(cur.getField(0,5),"1.50000000000000E+000");
 assertEqStr(cur.getField(0,6),"testchar1"+
 				"                               ");
 assertEqStr(cur.getField(0,7),"testvarchar1");
@@ -430,9 +430,9 @@ console.log("");
 assertEqStr(cur.getField(7,0),"8");
 assertEqStr(cur.getField(7,1),"8");
 assertEqStr(cur.getField(7,2),"8");
-assertEqStr(cur.getField(7,3),"8.80");
-//assertEqStr(cur.getField(7,4),"8.8");
-//assertEqStr(cur.getField(7,5),"8.8");
+assertEqStr(cur.getField(7,3),"8.50");
+assertEqStr(cur.getField(7,4),"8.500000E+00");
+assertEqStr(cur.getField(7,5),"8.50000000000000E+000");
 assertEqStr(cur.getField(7,6),"testchar8"+
 				"                               ");
 assertEqStr(cur.getField(7,7),"testvarchar8");
@@ -447,8 +447,8 @@ assertEqInt(cur.getFieldLength(0,0),1);
 assertEqInt(cur.getFieldLength(0,1),1);
 assertEqInt(cur.getFieldLength(0,2),1);
 assertEqInt(cur.getFieldLength(0,3),4);
-//assertEqInt(cur.getFieldLength(0,4),3);
-//assertEqInt(cur.getFieldLength(0,5),3);
+assertEqInt(cur.getFieldLength(0,4),12);
+assertEqInt(cur.getFieldLength(0,5),21);
 assertEqInt(cur.getFieldLength(0,6),40);
 assertEqInt(cur.getFieldLength(0,7),12);
 assertEqInt(cur.getFieldLength(0,8),10);
@@ -458,8 +458,8 @@ assertEqInt(cur.getFieldLength(7,0),1);
 assertEqInt(cur.getFieldLength(7,1),1);
 assertEqInt(cur.getFieldLength(7,2),1);
 assertEqInt(cur.getFieldLength(7,3),4);
-//assertEqInt(cur.getFieldLength(7,4),3);
-//assertEqInt(cur.getFieldLength(7,5),3);
+assertEqInt(cur.getFieldLength(7,4),12);
+assertEqInt(cur.getFieldLength(7,5),21);
 assertEqInt(cur.getFieldLength(7,6),40);
 assertEqInt(cur.getFieldLength(7,7),12);
 assertEqInt(cur.getFieldLength(7,8),10);
@@ -472,9 +472,9 @@ console.log("FIELDS BY NAME: ");
 assertEqStr(cur.getField(0,"TESTSMALLINT"),"1");
 assertEqStr(cur.getField(0,"TESTINT"),"1");
 assertEqStr(cur.getField(0,"TESTBIGINT"),"1");
-assertEqStr(cur.getField(0,"TESTDECIMAL"),"1.10");
-//assertEqStr(cur.getField(0,"TESTREAL"),"1.1");
-//assertEqStr(cur.getField(0,"TESTDOUBLE"),"1.1");
+assertEqStr(cur.getField(0,"TESTDECIMAL"),"1.50");
+assertEqStr(cur.getField(0,"TESTREAL"),"1.500000E+00");
+assertEqStr(cur.getField(0,"TESTDOUBLE"),"1.50000000000000E+000");
 assertEqStr(cur.getField(0,"TESTCHAR"),"testchar1"+
 				"                               ");
 assertEqStr(cur.getField(0,"TESTVARCHAR"),"testvarchar1");
@@ -484,9 +484,9 @@ console.log("");
 assertEqStr(cur.getField(7,"TESTSMALLINT"),"8");
 assertEqStr(cur.getField(7,"TESTINT"),"8");
 assertEqStr(cur.getField(7,"TESTBIGINT"),"8");
-assertEqStr(cur.getField(7,"TESTDECIMAL"),"8.80");
-//assertEqStr(cur.getField(7,"TESTREAL"),"8.8");
-//assertEqStr(cur.getField(7,"TESTDOUBLE"),"8.8");
+assertEqStr(cur.getField(7,"TESTDECIMAL"),"8.50");
+assertEqStr(cur.getField(7,"TESTREAL"),"8.500000E+00");
+assertEqStr(cur.getField(7,"TESTDOUBLE"),"8.50000000000000E+000");
 assertEqStr(cur.getField(7,"TESTCHAR"),"testchar8"+
 				"                               ");
 assertEqStr(cur.getField(7,"TESTVARCHAR"),"testvarchar8");
@@ -501,8 +501,8 @@ assertEqInt(cur.getFieldLength(0,"TESTSMALLINT"),1);
 assertEqInt(cur.getFieldLength(0,"TESTINT"),1);
 assertEqInt(cur.getFieldLength(0,"TESTBIGINT"),1);
 assertEqInt(cur.getFieldLength(0,"TESTDECIMAL"),4);
-//assertEqInt(cur.getFieldLength(0,"TESTREAL"),3);
-//assertEqInt(cur.getFieldLength(0,"TESTDOUBLE"),3);
+assertEqInt(cur.getFieldLength(0,"TESTREAL"),12);
+assertEqInt(cur.getFieldLength(0,"TESTDOUBLE"),21);
 assertEqInt(cur.getFieldLength(0,"TESTCHAR"),40);
 assertEqInt(cur.getFieldLength(0,"TESTVARCHAR"),12);
 assertEqInt(cur.getFieldLength(0,"TESTDATE"),10);
@@ -512,8 +512,8 @@ assertEqInt(cur.getFieldLength(7,"TESTSMALLINT"),1);
 assertEqInt(cur.getFieldLength(7,"TESTINT"),1);
 assertEqInt(cur.getFieldLength(7,"TESTBIGINT"),1);
 assertEqInt(cur.getFieldLength(7,"TESTDECIMAL"),4);
-//assertEqInt(cur.getFieldLength(7,"TESTREAL"),3);
-//assertEqInt(cur.getFieldLength(7,"TESTDOUBLE"),3);
+assertEqInt(cur.getFieldLength(7,"TESTREAL"),12);
+assertEqInt(cur.getFieldLength(7,"TESTDOUBLE"),21);
 assertEqInt(cur.getFieldLength(7,"TESTCHAR"),40);
 assertEqInt(cur.getFieldLength(7,"TESTVARCHAR"),12);
 assertEqInt(cur.getFieldLength(7,"TESTDATE"),10);
@@ -527,9 +527,9 @@ var fields=cur.getRow(0);
 assertEqStr(fields[0],"1");
 assertEqStr(fields[1],"1");
 assertEqStr(fields[2],"1");
-assertEqStr(fields[3],"1.10");
-//assertEqStr(fields[4],"1.1");
-//assertEqStr(fields[5],"1.1");
+assertEqStr(fields[3],"1.50");
+assertEqStr(fields[4],"1.500000E+00");
+assertEqStr(fields[5],"1.50000000000000E+000");
 assertEqStr(fields[6],"testchar1"+"                               ");
 assertEqStr(fields[7],"testvarchar1");
 assertEqStr(fields[8],"2001-01-01");
@@ -544,8 +544,8 @@ assertEqInt(fieldlens[0],1);
 assertEqInt(fieldlens[1],1);
 assertEqInt(fieldlens[2],1);
 assertEqInt(fieldlens[3],4);
-//assertEqInt(fieldlens[4],3);
-//assertEqInt(fieldlens[5],3);
+assertEqInt(fieldlens[4],12);
+assertEqInt(fieldlens[5],21);
 assertEqInt(fieldlens[6],40);
 assertEqInt(fieldlens[7],12);
 assertEqInt(fieldlens[8],10);

@@ -137,10 +137,10 @@ assertTrue(cur.sendQuery(
 	"	1, "+
 	"	1, "+
 	"	1, "+
-	"	1.1, "+
-	"	1.1, "+
-	"	1.1, "+
-	"	1.1, "+
+	"	1.5, "+
+	"	1.5, "+
+	"	1.5, "+
+	"	1.5, "+
 	"	1.00, "+
 	"	1.00, "+
 	"	'01-Jan-2001 01:00:00', "+
@@ -181,10 +181,10 @@ assertEqInt(cur.countBindVariables(),14);
 cur.inputBind("1",2);
 cur.inputBind("2",2);
 cur.inputBind("3",2);
-cur.inputBind("4",2.2,2,1);
-cur.inputBind("5",2.2,2,1);
-cur.inputBind("6",2.2,2,1);
-cur.inputBind("7",2.2,2,1);
+cur.inputBind("4",2.5,2,1);
+cur.inputBind("5",2.5,2,1);
+cur.inputBind("6",2.5,2,1);
+cur.inputBind("7",2.5,2,1);
 cur.inputBind("8",2.00,3,2);
 cur.inputBind("9",2.00,3,2);
 cur.inputBind("10","01-Jan-2002 02:00:00");
@@ -197,10 +197,10 @@ cur.clearBinds();
 cur.inputBind("1",3);
 cur.inputBind("2",3);
 cur.inputBind("3",3);
-cur.inputBind("4",3.3,2,1);
-cur.inputBind("5",3.3,2,1);
-cur.inputBind("6",3.3,2,1);
-cur.inputBind("7",3.3,2,1);
+cur.inputBind("4",3.5,2,1);
+cur.inputBind("5",3.5,2,1);
+cur.inputBind("6",3.5,2,1);
+cur.inputBind("7",3.5,2,1);
 cur.inputBind("8",3.00,3,2);
 cur.inputBind("9",3.00,3,2);
 cur.inputBind("10","01-Jan-2003 03:00:00");
@@ -225,10 +225,10 @@ cur.clearBinds();
 cur.inputBind("1",4);
 cur.inputBind("2",4);
 cur.inputBind("3",4);
-cur.inputBind("4",4.4,2,1);
-cur.inputBind("5",4.4,2,1);
-cur.inputBind("6",4.4,2,1);
-cur.inputBind("7",4.4,2,1);
+cur.inputBind("4",4.5,2,1);
+cur.inputBind("5",4.5,2,1);
+cur.inputBind("6",4.5,2,1);
+cur.inputBind("7",4.5,2,1);
 cur.inputBind("8",4.00,3,2);
 cur.inputBind("9",4.00,3,2);
 cur.inputBind("10","01-Jan-2004 04:00:00");
@@ -282,10 +282,10 @@ cur.clearBinds();
 cur.inputBind("var1",6);
 cur.inputBind("var2",6);
 cur.inputBind("var3",6);
-cur.inputBind("var4",6.6,2,1);
-cur.inputBind("var5",6.6,2,1);
-cur.inputBind("var6",6.6,2,1);
-cur.inputBind("var7",6.6,2,1);
+cur.inputBind("var4",6.5,2,1);
+cur.inputBind("var5",6.5,2,1);
+cur.inputBind("var6",6.5,2,1);
+cur.inputBind("var7",6.5,2,1);
 cur.inputBind("var8",6.00,3,2);
 cur.inputBind("var9",6.00,3,2);
 cur.inputBind("var10","01-Jan-2006 06:00:00");
@@ -298,10 +298,10 @@ cur.clearBinds();
 cur.inputBind("var1",7);
 cur.inputBind("var2",7);
 cur.inputBind("var3",7);
-cur.inputBind("var4",7.7,2,1);
-cur.inputBind("var5",7.7,2,1);
-cur.inputBind("var6",7.7,2,1);
-cur.inputBind("var7",7.7,2,1);
+cur.inputBind("var4",7.5,2,1);
+cur.inputBind("var5",7.5,2,1);
+cur.inputBind("var6",7.5,2,1);
+cur.inputBind("var7",7.5,2,1);
 cur.inputBind("var8",7.00,3,2);
 cur.inputBind("var9",7.00,3,2);
 cur.inputBind("var10","01-Jan-2007 07:00:00");
@@ -326,10 +326,10 @@ cur.clearBinds();
 cur.inputBind("var1",8);
 cur.inputBind("var2",8);
 cur.inputBind("var3",8);
-cur.inputBind("var4",8.8,2,1);
-cur.inputBind("var5",8.8,2,1);
-cur.inputBind("var6",8.8,2,1);
-cur.inputBind("var7",8.8,2,1);
+cur.inputBind("var4",8.5,2,1);
+cur.inputBind("var5",8.5,2,1);
+cur.inputBind("var6",8.5,2,1);
+cur.inputBind("var7",8.5,2,1);
 cur.inputBind("var8",8.00,3,2);
 cur.inputBind("var9",8.00,3,2);
 cur.inputBind("var10","01-Jan-2008 08:00:00");
@@ -469,20 +469,20 @@ assertEqInt(cur.getLongest(1),1);
 assertEqInt(cur.getLongest("testsmallint"),1);
 assertEqInt(cur.getLongest(2),1);
 assertEqInt(cur.getLongest("testtinyint"),1);
-// these seem to fluctuate with every
-// freetds release
-//assertEqInt(cur.getLongest(3),3);
-//assertEqInt(cur.getLongest("testreal"),3);
-//assertEqInt(cur.getLongest(4),17);
-//assertEqInt(cur.getLongest("testfloat"),17);
-//assertEqInt(cur.getLongest(5),3);
-//assertEqInt(cur.getLongest("testdecimal"),3);
-//assertEqInt(cur.getLongest(6),3);
-//assertEqInt(cur.getLongest("testnumeric"),3);
-//assertEqInt(cur.getLongest(7),4);
-//assertEqInt(cur.getLongest("testmoney"),4);
-//assertEqInt(cur.getLongest(8),4);
-//assertEqInt(cur.getLongest("testsmallmoney"),4);
+assertEqInt(cur.getLongest(3),3);
+assertEqInt(cur.getLongest("testreal"),3);
+assertEqInt(cur.getLongest(4),3);
+assertEqInt(cur.getLongest("testfloat"),3);
+assertEqInt(cur.getLongest(5),3);
+assertEqInt(cur.getLongest("testdecimal"),3);
+assertEqInt(cur.getLongest(6),3);
+assertEqInt(cur.getLongest("testnumeric"),3);
+assertEqInt(cur.getLongest(7),6);
+assertEqInt(cur.getLongest("testmoney"),6);
+assertEqInt(cur.getLongest(8),6);
+assertEqInt(cur.getLongest("testsmallmoney"),6);
+// datetime formatting fluctuates with
+// every freetds release
 //assertEqInt(cur.getLongest(9),26);
 //assertEqInt(cur.getLongest("testdatetime"),26);
 //assertEqInt(cur.getLongest(10),26);
@@ -525,14 +525,14 @@ console.log("FIELDS BY INDEX: ");
 assertEqStr(cur.getField(0,0),"1");
 assertEqStr(cur.getField(0,1),"1");
 assertEqStr(cur.getField(0,2),"1");
-// these seem to fluctuate with every
-// freetds release
-//assertEqStr(cur.getField(0,3),"1.1");
-//assertEqStr(cur.getField(0,4),"1.1");
-assertEqStr(cur.getField(0,5),"1.1");
-assertEqStr(cur.getField(0,6),"1.1");
-//assertEqStr(cur.getField(0,7),"1.00");
-//assertEqStr(cur.getField(0,8),"1.00");
+assertEqStr(cur.getField(0,3),"1.5");
+assertEqStr(cur.getField(0,4),"1.5");
+assertEqStr(cur.getField(0,5),"1.5");
+assertEqStr(cur.getField(0,6),"1.5");
+assertEqStr(cur.getField(0,7),"1.0000");
+assertEqStr(cur.getField(0,8),"1.0000");
+// datetime formatting fluctuates with
+// every freetds release
 //assertEqStr(cur.getField(0,9),
 //	"Jan  1 2001 01:00:00:000AM");
 //assertEqStr(cur.getField(0,10),
@@ -545,14 +545,14 @@ console.log();
 assertEqStr(cur.getField(7,0),"8");
 assertEqStr(cur.getField(7,1),"8");
 assertEqStr(cur.getField(7,2),"8");
-// these seem to fluctuate with every
-// freetds release
-//assertEqStr(cur.getField(7,3),"8.8");
-//assertEqStr(cur.getField(7,4),"8.8");
-assertEqInt(0,cur.getField(7,5).substring(0,3)==="8.8"?0:1);
-assertEqInt(0,cur.getField(7,6).substring(0,3)==="8.8"?0:1);
-//assertEqStr(cur.getField(7,7),"8.00");
-//assertEqStr(cur.getField(7,8),"8.00");
+assertEqStr(cur.getField(7,3),"8.5");
+assertEqStr(cur.getField(7,4),"8.5");
+assertEqStr(cur.getField(7,5),"8.5");
+assertEqStr(cur.getField(7,6),"8.5");
+assertEqStr(cur.getField(7,7),"8.0000");
+assertEqStr(cur.getField(7,8),"8.0000");
+// datetime formatting fluctuates with
+// every freetds release
 //assertEqStr(cur.getField(7,9),
 //	"Jan  1 2008 08:00:00:000AM");
 //assertEqStr(cur.getField(7,10),
@@ -569,14 +569,14 @@ console.log("FIELD LENGTHS BY INDEX: ");
 assertEqInt(cur.getFieldLength(0,0),1);
 assertEqInt(cur.getFieldLength(0,1),1);
 assertEqInt(cur.getFieldLength(0,2),1);
-// these seem to fluctuate with every
-// freetds release
-//assertEqInt(cur.getFieldLength(0,3),3);
-//assertEqInt(cur.getFieldLength(0,4),3);
-//assertEqInt(cur.getFieldLength(0,5),3);
-//assertEqInt(cur.getFieldLength(0,6),3);
-//assertEqInt(cur.getFieldLength(0,7),4);
-//assertEqInt(cur.getFieldLength(0,8),4);
+assertEqInt(cur.getFieldLength(0,3),3);
+assertEqInt(cur.getFieldLength(0,4),3);
+assertEqInt(cur.getFieldLength(0,5),3);
+assertEqInt(cur.getFieldLength(0,6),3);
+assertEqInt(cur.getFieldLength(0,7),6);
+assertEqInt(cur.getFieldLength(0,8),6);
+// datetime formatting fluctuates with
+// every freetds release
 //assertEqInt(cur.getFieldLength(0,9),26);
 //assertEqInt(cur.getFieldLength(0,10),26);
 assertEqInt(cur.getFieldLength(0,11),40);
@@ -586,14 +586,14 @@ console.log();
 assertEqInt(cur.getFieldLength(7,0),1);
 assertEqInt(cur.getFieldLength(7,1),1);
 assertEqInt(cur.getFieldLength(7,2),1);
-// these seem to fluctuate with every
-// freetds release
-//assertEqInt(cur.getFieldLength(7,3),3);
-//assertEqInt(cur.getFieldLength(7,4),17);
-//assertEqInt(cur.getFieldLength(7,5),3);
-//assertEqInt(cur.getFieldLength(7,6),3);
-//assertEqInt(cur.getFieldLength(7,7),4);
-//assertEqInt(cur.getFieldLength(7,8),4);
+assertEqInt(cur.getFieldLength(7,3),3);
+assertEqInt(cur.getFieldLength(7,4),3);
+assertEqInt(cur.getFieldLength(7,5),3);
+assertEqInt(cur.getFieldLength(7,6),3);
+assertEqInt(cur.getFieldLength(7,7),6);
+assertEqInt(cur.getFieldLength(7,8),6);
+// datetime formatting fluctuates with
+// every freetds release
 //assertEqInt(cur.getFieldLength(7,9),26);
 //assertEqInt(cur.getFieldLength(7,10),26);
 assertEqInt(cur.getFieldLength(7,11),40);
@@ -607,14 +607,14 @@ console.log("FIELDS BY NAME: ");
 assertEqStr(cur.getField(0,"testint"),"1");
 assertEqStr(cur.getField(0,"testsmallint"),"1");
 assertEqStr(cur.getField(0,"testtinyint"),"1");
-// these seem to fluctuate with every
-// freetds release
-//assertEqStr(cur.getField(0,"testreal"),"1.1");
-//assertEqStr(cur.getField(0,"testfloat"),"1.1");
-assertEqStr(cur.getField(0,"testdecimal"),"1.1");
-assertEqStr(cur.getField(0,"testnumeric"),"1.1");
-//assertEqStr(cur.getField(0,"testmoney"),"1.00");
-//assertEqStr(cur.getField(0,"testsmallmoney"),"1.00");
+assertEqStr(cur.getField(0,"testreal"),"1.5");
+assertEqStr(cur.getField(0,"testfloat"),"1.5");
+assertEqStr(cur.getField(0,"testdecimal"),"1.5");
+assertEqStr(cur.getField(0,"testnumeric"),"1.5");
+assertEqStr(cur.getField(0,"testmoney"),"1.0000");
+assertEqStr(cur.getField(0,"testsmallmoney"),"1.0000");
+// datetime formatting fluctuates with
+// every freetds release
 //assertEqStr(cur.getField(0,"testdatetime"),
 //	"Jan  1 2001 01:00:00:000AM");
 //assertEqStr(cur.getField(0,"testsmalldatetime"),
@@ -627,14 +627,14 @@ console.log();
 assertEqStr(cur.getField(7,"testint"),"8");
 assertEqStr(cur.getField(7,"testsmallint"),"8");
 assertEqStr(cur.getField(7,"testtinyint"),"8");
-// these seem to fluctuate with every
-// freetds release
-//assertEqStr(cur.getField(7,"testreal"),"8.8");
-//assertEqStr(cur.getField(7,"testfloat"),"8.8");
-assertEqInt(0,cur.getField(7,"testdecimal").substring(0,3)==="8.8"?0:1);
-assertEqInt(0,cur.getField(7,"testnumeric").substring(0,3)==="8.8"?0:1);
-//assertEqStr(cur.getField(7,"testmoney"),"8.00");
-//assertEqStr(cur.getField(7,"testsmallmoney"),"8.00");
+assertEqStr(cur.getField(7,"testreal"),"8.5");
+assertEqStr(cur.getField(7,"testfloat"),"8.5");
+assertEqStr(cur.getField(7,"testdecimal"),"8.5");
+assertEqStr(cur.getField(7,"testnumeric"),"8.5");
+assertEqStr(cur.getField(7,"testmoney"),"8.0000");
+assertEqStr(cur.getField(7,"testsmallmoney"),"8.0000");
+// datetime formatting fluctuates with
+// every freetds release
 //assertEqStr(cur.getField(7,"testdatetime"),
 //	"Jan  1 2008 08:00:00:000AM");
 //assertEqStr(cur.getField(7,"testsmalldatetime"),
@@ -651,14 +651,14 @@ console.log("FIELD LENGTHS BY NAME: ");
 assertEqInt(cur.getFieldLength(0,"testint"),1);
 assertEqInt(cur.getFieldLength(0,"testsmallint"),1);
 assertEqInt(cur.getFieldLength(0,"testtinyint"),1);
-// these seem to fluctuate with every
-// freetds release
-//assertEqInt(cur.getFieldLength(0,"testreal"),3);
-//assertEqInt(cur.getFieldLength(0,"testfloat"),3);
-//assertEqInt(cur.getFieldLength(0,"testdecimal"),3);
-//assertEqInt(cur.getFieldLength(0,"testnumeric"),3);
-//assertEqInt(cur.getFieldLength(0,"testmoney"),4);
-//assertEqInt(cur.getFieldLength(0,"testsmallmoney"),4);
+assertEqInt(cur.getFieldLength(0,"testreal"),3);
+assertEqInt(cur.getFieldLength(0,"testfloat"),3);
+assertEqInt(cur.getFieldLength(0,"testdecimal"),3);
+assertEqInt(cur.getFieldLength(0,"testnumeric"),3);
+assertEqInt(cur.getFieldLength(0,"testmoney"),6);
+assertEqInt(cur.getFieldLength(0,"testsmallmoney"),6);
+// datetime formatting fluctuates with
+// every freetds release
 //assertEqInt(cur.getFieldLength(0,"testdatetime"),26);
 //assertEqInt(cur.getFieldLength(0,"testsmalldatetime"),
 //	26);
@@ -669,14 +669,14 @@ console.log();
 assertEqInt(cur.getFieldLength(7,"testint"),1);
 assertEqInt(cur.getFieldLength(7,"testsmallint"),1);
 assertEqInt(cur.getFieldLength(7,"testtinyint"),1);
-// these seem to fluctuate with every
-// freetds release
-//assertEqInt(cur.getFieldLength(7,"testreal"),3);
-//assertEqInt(cur.getFieldLength(7,"testfloat"),17);
-//assertEqInt(cur.getFieldLength(7,"testdecimal"),3);
-//assertEqInt(cur.getFieldLength(7,"testnumeric"),3);
-//assertEqInt(cur.getFieldLength(7,"testmoney"),4);
-//assertEqInt(cur.getFieldLength(7,"testsmallmoney"),4);
+assertEqInt(cur.getFieldLength(7,"testreal"),3);
+assertEqInt(cur.getFieldLength(7,"testfloat"),3);
+assertEqInt(cur.getFieldLength(7,"testdecimal"),3);
+assertEqInt(cur.getFieldLength(7,"testnumeric"),3);
+assertEqInt(cur.getFieldLength(7,"testmoney"),6);
+assertEqInt(cur.getFieldLength(7,"testsmallmoney"),6);
+// datetime formatting fluctuates with
+// every freetds release
 //assertEqInt(cur.getFieldLength(7,"testdatetime"),26);
 //assertEqInt(cur.getFieldLength(7,"testsmalldatetime"),
 //	26);
@@ -692,14 +692,14 @@ fields=cur.getRow(0);
 assertEqStr(fields[0],"1");
 assertEqStr(fields[1],"1");
 assertEqStr(fields[2],"1");
-// these seem to fluctuate with every
-// freetds release
-//assertEqStr(fields[3],"1.1");
-//assertEqStr(fields[4],"1.1");
-assertEqStr(fields[5],"1.1");
-assertEqStr(fields[6],"1.1");
-//assertEqStr(fields[7],"1.00");
-//assertEqStr(fields[8],"1.00");
+assertEqStr(fields[3],"1.5");
+assertEqStr(fields[4],"1.5");
+assertEqStr(fields[5],"1.5");
+assertEqStr(fields[6],"1.5");
+assertEqStr(fields[7],"1.0000");
+assertEqStr(fields[8],"1.0000");
+// datetime formatting fluctuates with
+// every freetds release
 //assertEqStr(fields[9],"Jan  1 2001 01:00:00:000AM");
 //assertEqStr(fields[10],"Jan  1 2001 01:00:00:000AM");
 assertEqStr(fields[11],"testchar1"+
@@ -715,14 +715,14 @@ fieldlens=cur.getRowLengths(0);
 assertEqInt(fieldlens[0],1);
 assertEqInt(fieldlens[1],1);
 assertEqInt(fieldlens[2],1);
-// these seem to fluctuate with every
-// freetds release
-//assertEqInt(fieldlens[3],3);
-//assertEqInt(fieldlens[4],3);
-//assertEqInt(fieldlens[5],3);
-//assertEqInt(fieldlens[6],3);
-//assertEqInt(fieldlens[7],4);
-//assertEqInt(fieldlens[8],4);
+assertEqInt(fieldlens[3],3);
+assertEqInt(fieldlens[4],3);
+assertEqInt(fieldlens[5],3);
+assertEqInt(fieldlens[6],3);
+assertEqInt(fieldlens[7],6);
+assertEqInt(fieldlens[8],6);
+// datetime formatting fluctuates with
+// every freetds release
 //assertEqInt(fieldlens[9],26);
 //assertEqInt(fieldlens[10],26);
 assertEqInt(fieldlens[11],40);

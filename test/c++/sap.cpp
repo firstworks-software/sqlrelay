@@ -146,10 +146,10 @@ int main(int argc, char **argv) {
 		"	1, "
 		"	1, "
 		"	1, "
-		"	1.1, "
-		"	1.1, "
-		"	1.1, "
-		"	1.1, "
+		"	1.5, "
+		"	1.5, "
+		"	1.5, "
+		"	1.5, "
 		"	1.00, "
 		"	1.00, "
 		"	'01-Jan-2001 01:00:00', "
@@ -192,10 +192,10 @@ int main(int argc, char **argv) {
 	cur->inputBind("1",2);
 	cur->inputBind("2",2);
 	cur->inputBind("3",2);
-	cur->inputBind("4",2.2,2,1);
-	cur->inputBind("5",2.2,2,1);
-	cur->inputBind("6",2.2,2,1);
-	cur->inputBind("7",2.2,2,1);
+	cur->inputBind("4",2.5,2,1);
+	cur->inputBind("5",2.5,2,1);
+	cur->inputBind("6",2.5,2,1);
+	cur->inputBind("7",2.5,2,1);
 	cur->inputBind("8",2.00,3,2);
 	cur->inputBind("9",2.00,3,2);
 	cur->inputBind("10","01-Jan-2002 02:00:00");
@@ -209,10 +209,10 @@ int main(int argc, char **argv) {
 	cur->inputBind("1",3);
 	cur->inputBind("2",3);
 	cur->inputBind("3",3);
-	cur->inputBind("4",3.3,2,1);
-	cur->inputBind("5",3.3,2,1);
-	cur->inputBind("6",3.3,2,1);
-	cur->inputBind("7",3.3,2,1);
+	cur->inputBind("4",3.5,2,1);
+	cur->inputBind("5",3.5,2,1);
+	cur->inputBind("6",3.5,2,1);
+	cur->inputBind("7",3.5,2,1);
 	cur->inputBind("8",3.00,3,2);
 	cur->inputBind("9",3.00,3,2);
 	cur->inputBind("10","01-Jan-2003 03:00:00");
@@ -237,10 +237,10 @@ int main(int argc, char **argv) {
 	cur->inputBind("1",4);
 	cur->inputBind("2",4);
 	cur->inputBind("3",4);
-	cur->inputBind("4",4.4,2,1);
-	cur->inputBind("5",4.4,2,1);
-	cur->inputBind("6",4.4,2,1);
-	cur->inputBind("7",4.4,2,1);
+	cur->inputBind("4",4.5,2,1);
+	cur->inputBind("5",4.5,2,1);
+	cur->inputBind("6",4.5,2,1);
+	cur->inputBind("7",4.5,2,1);
 	cur->inputBind("8",4.00,3,2);
 	cur->inputBind("9",4.00,3,2);
 	cur->inputBind("10","01-Jan-2004 04:00:00");
@@ -277,10 +277,10 @@ int main(int argc, char **argv) {
 	cur->inputBind("var1",6);
 	cur->inputBind("var2",6);
 	cur->inputBind("var3",6);
-	cur->inputBind("var4",6.6,2,1);
-	cur->inputBind("var5",6.6,2,1);
-	cur->inputBind("var6",6.6,2,1);
-	cur->inputBind("var7",6.6,2,1);
+	cur->inputBind("var4",6.5,2,1);
+	cur->inputBind("var5",6.5,2,1);
+	cur->inputBind("var6",6.5,2,1);
+	cur->inputBind("var7",6.5,2,1);
 	cur->inputBind("var8",6.00,3,2);
 	cur->inputBind("var9",6.00,3,2);
 	cur->inputBind("var10","01-Jan-2006 06:00:00");
@@ -294,10 +294,10 @@ int main(int argc, char **argv) {
 	cur->inputBind("var1",7);
 	cur->inputBind("var2",7);
 	cur->inputBind("var3",7);
-	cur->inputBind("var4",7.7,2,1);
-	cur->inputBind("var5",7.7,2,1);
-	cur->inputBind("var6",7.7,2,1);
-	cur->inputBind("var7",7.7,2,1);
+	cur->inputBind("var4",7.5,2,1);
+	cur->inputBind("var5",7.5,2,1);
+	cur->inputBind("var6",7.5,2,1);
+	cur->inputBind("var7",7.5,2,1);
 	cur->inputBind("var8",7.00,3,2);
 	cur->inputBind("var9",7.00,3,2);
 	cur->inputBind("var10","01-Jan-2007 07:00:00");
@@ -322,10 +322,10 @@ int main(int argc, char **argv) {
 	cur->inputBind("var1",8);
 	cur->inputBind("var2",8);
 	cur->inputBind("var3",8);
-	cur->inputBind("var4",8.8,2,1);
-	cur->inputBind("var5",8.8,2,1);
-	cur->inputBind("var6",8.8,2,1);
-	cur->inputBind("var7",8.8,2,1);
+	cur->inputBind("var4",8.5,2,1);
+	cur->inputBind("var5",8.5,2,1);
+	cur->inputBind("var6",8.5,2,1);
+	cur->inputBind("var7",8.5,2,1);
 	cur->inputBind("var8",8.00,3,2);
 	cur->inputBind("var9",8.00,3,2);
 	cur->inputBind("var10","01-Jan-2008 08:00:00");
@@ -460,10 +460,10 @@ int main(int argc, char **argv) {
 	assertEquals(cur->getLongest("testsmallint"),1);
 	assertEquals(cur->getLongest(2),1);
 	assertEquals(cur->getLongest("testtinyint"),1);
-	assertEquals(cur->getLongest(3),18);
-	assertEquals(cur->getLongest("testreal"),18);
-	assertEquals(cur->getLongest(4),18);
-	assertEquals(cur->getLongest("testfloat"),18);
+	assertEquals(cur->getLongest(3),3);
+	assertEquals(cur->getLongest("testreal"),3);
+	assertEquals(cur->getLongest(4),3);
+	assertEquals(cur->getLongest("testfloat"),3);
 	assertEquals(cur->getLongest(5),3);
 	assertEquals(cur->getLongest("testdecimal"),3);
 	assertEquals(cur->getLongest(6),3);
@@ -514,10 +514,10 @@ int main(int argc, char **argv) {
 	assertEquals(cur->getField(0,(uint32_t)0),"1");
 	assertEquals(cur->getField(0,1),"1");
 	assertEquals(cur->getField(0,2),"1");
-	//assertEquals(cur->getField(0,3),"1.1");
-	//assertEquals(cur->getField(0,4),"1.1");
-	assertEquals(cur->getField(0,5),"1.1");
-	assertEquals(cur->getField(0,6),"1.1");
+	assertEquals(cur->getField(0,3),"1.5");
+	assertEquals(cur->getField(0,4),"1.5");
+	assertEquals(cur->getField(0,5),"1.5");
+	assertEquals(cur->getField(0,6),"1.5");
 	assertEquals(cur->getField(0,7),"1.00");
 	assertEquals(cur->getField(0,8),"1.00");
 	assertEquals(cur->getField(0,9),"Jan  1 2001  1:00AM");
@@ -529,10 +529,10 @@ int main(int argc, char **argv) {
 	assertEquals(cur->getField(7,(uint32_t)0),"8");
 	assertEquals(cur->getField(7,1),"8");
 	assertEquals(cur->getField(7,2),"8");
-	//assertEquals(cur->getField(7,3),"8.8");
-	//assertEquals(cur->getField(7,4),"8.8");
-	assertEquals(cur->getField(7,5),"8.8");
-	assertEquals(cur->getField(7,6),"8.8");
+	assertEquals(cur->getField(7,3),"8.5");
+	assertEquals(cur->getField(7,4),"8.5");
+	assertEquals(cur->getField(7,5),"8.5");
+	assertEquals(cur->getField(7,6),"8.5");
 	assertEquals(cur->getField(7,7),"8.00");
 	assertEquals(cur->getField(7,8),"8.00");
 	assertEquals(cur->getField(7,9),"Jan  1 2008  8:00AM");
@@ -548,8 +548,8 @@ int main(int argc, char **argv) {
 	assertEquals(cur->getFieldLength(0,(uint32_t)0),1);
 	assertEquals(cur->getFieldLength(0,1),1);
 	assertEquals(cur->getFieldLength(0,2),1);
-	assertEquals(cur->getFieldLength(0,3),18);
-	assertEquals(cur->getFieldLength(0,4),18);
+	assertEquals(cur->getFieldLength(0,3),3);
+	assertEquals(cur->getFieldLength(0,4),3);
 	assertEquals(cur->getFieldLength(0,5),3);
 	assertEquals(cur->getFieldLength(0,6),3);
 	assertEquals(cur->getFieldLength(0,7),4);
@@ -563,8 +563,8 @@ int main(int argc, char **argv) {
 	assertEquals(cur->getFieldLength(7,(uint32_t)0),1);
 	assertEquals(cur->getFieldLength(7,1),1);
 	assertEquals(cur->getFieldLength(7,2),1);
-	assertEquals(cur->getFieldLength(7,3),18);
-	assertEquals(cur->getFieldLength(7,4),18);
+	assertEquals(cur->getFieldLength(7,3),3);
+	assertEquals(cur->getFieldLength(7,4),3);
 	assertEquals(cur->getFieldLength(7,5),3);
 	assertEquals(cur->getFieldLength(7,6),3);
 	assertEquals(cur->getFieldLength(7,7),4);
@@ -582,10 +582,10 @@ int main(int argc, char **argv) {
 	assertEquals(cur->getField(0,"testint"),"1");
 	assertEquals(cur->getField(0,"testsmallint"),"1");
 	assertEquals(cur->getField(0,"testtinyint"),"1");
-	//assertEquals(cur->getField(0,"testreal"),"1.1");
-	//assertEquals(cur->getField(0,"testfloat"),"1.1");
-	assertEquals(cur->getField(0,"testdecimal"),"1.1");
-	assertEquals(cur->getField(0,"testnumeric"),"1.1");
+	assertEquals(cur->getField(0,"testreal"),"1.5");
+	assertEquals(cur->getField(0,"testfloat"),"1.5");
+	assertEquals(cur->getField(0,"testdecimal"),"1.5");
+	assertEquals(cur->getField(0,"testnumeric"),"1.5");
 	assertEquals(cur->getField(0,"testmoney"),"1.00");
 	assertEquals(cur->getField(0,"testsmallmoney"),"1.00");
 	assertEquals(cur->getField(0,"testdatetime"),"Jan  1 2001  1:00AM");
@@ -597,10 +597,10 @@ int main(int argc, char **argv) {
 	assertEquals(cur->getField(7,"testint"),"8");
 	assertEquals(cur->getField(7,"testsmallint"),"8");
 	assertEquals(cur->getField(7,"testtinyint"),"8");
-	//assertEquals(cur->getField(7,"testreal"),"8.8");
-	//assertEquals(cur->getField(7,"testfloat"),"8.8");
-	assertEquals(cur->getField(7,"testdecimal"),"8.8");
-	assertEquals(cur->getField(7,"testnumeric"),"8.8");
+	assertEquals(cur->getField(7,"testreal"),"8.5");
+	assertEquals(cur->getField(7,"testfloat"),"8.5");
+	assertEquals(cur->getField(7,"testdecimal"),"8.5");
+	assertEquals(cur->getField(7,"testnumeric"),"8.5");
 	assertEquals(cur->getField(7,"testmoney"),"8.00");
 	assertEquals(cur->getField(7,"testsmallmoney"),"8.00");
 	assertEquals(cur->getField(7,"testdatetime"),"Jan  1 2008  8:00AM");
@@ -616,8 +616,8 @@ int main(int argc, char **argv) {
 	assertEquals(cur->getFieldLength(0,"testint"),1);
 	assertEquals(cur->getFieldLength(0,"testsmallint"),1);
 	assertEquals(cur->getFieldLength(0,"testtinyint"),1);
-	//assertEquals(cur->getFieldLength(0,"testreal"),3);
-	//assertEquals(cur->getFieldLength(0,"testfloat"),3);
+	assertEquals(cur->getFieldLength(0,"testreal"),3);
+	assertEquals(cur->getFieldLength(0,"testfloat"),3);
 	assertEquals(cur->getFieldLength(0,"testdecimal"),3);
 	assertEquals(cur->getFieldLength(0,"testnumeric"),3);
 	assertEquals(cur->getFieldLength(0,"testmoney"),4);
@@ -631,8 +631,8 @@ int main(int argc, char **argv) {
 	assertEquals(cur->getFieldLength(7,"testint"),1);
 	assertEquals(cur->getFieldLength(7,"testsmallint"),1);
 	assertEquals(cur->getFieldLength(7,"testtinyint"),1);
-	//assertEquals(cur->getFieldLength(7,"testreal"),3);
-	//assertEquals(cur->getFieldLength(7,"testfloat"),3);
+	assertEquals(cur->getFieldLength(7,"testreal"),3);
+	assertEquals(cur->getFieldLength(7,"testfloat"),3);
 	assertEquals(cur->getFieldLength(7,"testdecimal"),3);
 	assertEquals(cur->getFieldLength(7,"testnumeric"),3);
 	assertEquals(cur->getFieldLength(7,"testmoney"),4);
@@ -651,10 +651,10 @@ int main(int argc, char **argv) {
 	assertEquals(fields[0],"1");
 	assertEquals(fields[1],"1");
 	assertEquals(fields[2],"1");
-	//assertEquals(fields[3],"1.1");
-	//assertEquals(fields[4],"1.1");
-	assertEquals(fields[5],"1.1");
-	assertEquals(fields[6],"1.1");
+	assertEquals(fields[3],"1.5");
+	assertEquals(fields[4],"1.5");
+	assertEquals(fields[5],"1.5");
+	assertEquals(fields[6],"1.5");
 	assertEquals(fields[7],"1.00");
 	assertEquals(fields[8],"1.00");
 	assertEquals(fields[9],"Jan  1 2001  1:00AM");
@@ -671,8 +671,8 @@ int main(int argc, char **argv) {
 	assertEquals(fieldlens[0],1);
 	assertEquals(fieldlens[1],1);
 	assertEquals(fieldlens[2],1);
-	//assertEquals(fieldlens[3],3);
-	//assertEquals(fieldlens[4],3);
+	assertEquals(fieldlens[3],3);
+	assertEquals(fieldlens[4],3);
 	assertEquals(fieldlens[5],3);
 	assertEquals(fieldlens[6],3);
 	assertEquals(fieldlens[7],4);

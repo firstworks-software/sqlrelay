@@ -12,7 +12,7 @@ class db2 extends sqlrtest {
 		String[]	isolationlevels={"CS","UR","RS","RR"};
 		String[]	bindvars={"1","2","3","4","5","6",
 					"7","8","9","10","11","12"};
-		String[]	bindvals={"7","7","7","7.7","7.7","7.7",
+		String[]	bindvals={"7","7","7","7.5","7.5","7.5",
 					"testchar7","testvarchar7","01/01/2007",
 					"07:00:00","testclob7",null};
 		String[]	cols;
@@ -133,9 +133,9 @@ class db2 extends sqlrtest {
 			"	1, "+
 			"	1, "+
 			"	1, "+
-			"	1.1, "+
-			"	1.1, "+
-			"	1.1, "+
+			"	1.5, "+
+			"	1.5, "+
+			"	1.5, "+
 			"	'testchar1', "+
 			"	'testvarchar1', "+
 			"	'01/01/2001', "+
@@ -175,9 +175,9 @@ class db2 extends sqlrtest {
 		cur.inputBind("1",2);
 		cur.inputBind("2",2);
 		cur.inputBind("3",2);
-		cur.inputBind("4",2.2,4,2);
-		cur.inputBind("5",2.2,4,2);
-		cur.inputBind("6",2.2,4,2);
+		cur.inputBind("4",2.5,4,2);
+		cur.inputBind("5",2.5,4,2);
+		cur.inputBind("6",2.5,4,2);
 		cur.inputBind("7","testchar2");
 		cur.inputBind("8","testvarchar2");
 		cur.inputBind("9",
@@ -193,9 +193,9 @@ class db2 extends sqlrtest {
 		cur.inputBind("1",3);
 		cur.inputBind("2",3);
 		cur.inputBind("3",3);
-		cur.inputBind("4",3.3,4,2);
-		cur.inputBind("5",3.3,4,2);
-		cur.inputBind("6",3.3,4,2);
+		cur.inputBind("4",3.5,4,2);
+		cur.inputBind("5",3.5,4,2);
+		cur.inputBind("6",3.5,4,2);
 		cur.inputBind("7","testchar3");
 		cur.inputBind("8","testvarchar3");
 		cur.inputBind("9",
@@ -211,9 +211,9 @@ class db2 extends sqlrtest {
 		cur.inputBind("1",4);
 		cur.inputBind("2",4);
 		cur.inputBind("3",4);
-		cur.inputBind("4",4.4,4,2);
-		cur.inputBind("5",4.4,4,2);
-		cur.inputBind("6",4.4,4,2);
+		cur.inputBind("4",4.5,4,2);
+		cur.inputBind("5",4.5,4,2);
+		cur.inputBind("6",4.5,4,2);
 		cur.inputBind("7","testchar4");
 		cur.inputBind("8","testvarchar4");
 		cur.inputBind("9",
@@ -247,9 +247,9 @@ class db2 extends sqlrtest {
 		cur.inputBind("1",6);
 		cur.inputBind("2",6);
 		cur.inputBind("3",6);
-		cur.inputBind("4",6.6,4,2);
-		cur.inputBind("5",6.6,4,2);
-		cur.inputBind("6",6.6,4,2);
+		cur.inputBind("4",6.5,4,2);
+		cur.inputBind("5",6.5,4,2);
+		cur.inputBind("6",6.5,4,2);
 		cur.inputBind("7","testchar6");
 		cur.inputBind("8","testvarchar6");
 		cur.inputBind("9",
@@ -278,9 +278,9 @@ class db2 extends sqlrtest {
 		cur.inputBind("1",8);
 		cur.inputBind("2",8);
 		cur.inputBind("3",8);
-		cur.inputBind("4",8.8,4,2);
-		cur.inputBind("5",8.8,4,2);
-		cur.inputBind("6",8.8,4,2);
+		cur.inputBind("4",8.5,4,2);
+		cur.inputBind("5",8.5,4,2);
+		cur.inputBind("6",8.5,4,2);
 		cur.inputBind("7","testchar8");
 		cur.inputBind("8","testvarchar8");
 		cur.inputBind("9",
@@ -418,12 +418,10 @@ class db2 extends sqlrtest {
 		assertEquals(cur.getLongest("TESTBIGINT"),1);
 		assertEquals(cur.getLongest(3),4);
 		assertEquals(cur.getLongest("TESTDECIMAL"),4);
-		//assertEquals(cur.getLongest(4),3);
-		//assertEquals(
-		//	cur.getLongest("TESTREAL"),3);
-		//assertEquals(cur.getLongest(5),3);
-		//assertEquals(
-		//	cur.getLongest("TESTDOUBLE"),3);
+		assertEquals(cur.getLongest(4),12);
+		assertEquals(cur.getLongest("TESTREAL"),12);
+		assertEquals(cur.getLongest(5),21);
+		assertEquals(cur.getLongest("TESTDOUBLE"),21);
 		assertEquals(cur.getLongest(6),40);
 		assertEquals(cur.getLongest("TESTCHAR"),40);
 		assertEquals(cur.getLongest(7),12);
@@ -464,11 +462,9 @@ class db2 extends sqlrtest {
 		assertEquals(cur.getField(0,0),"1");
 		assertEquals(cur.getField(0,1),"1");
 		assertEquals(cur.getField(0,2),"1");
-		assertEquals(cur.getField(0,3),"1.10");
-		//assertEquals(
-		//	cur.getField(0,4),"1.1");
-		//assertEquals(
-		//	cur.getField(0,5),"1.1");
+		assertEquals(cur.getField(0,3),"1.50");
+		assertEquals(cur.getField(0,4),"1.500000E+00");
+		assertEquals(cur.getField(0,5),"1.50000000000000E+000");
 		assertEquals(cur.getField(0,6),"testchar1"+
 					"                               ");
 		assertEquals(cur.getField(0,7),"testvarchar1");
@@ -478,11 +474,9 @@ class db2 extends sqlrtest {
 		assertEquals(cur.getField(7,0),"8");
 		assertEquals(cur.getField(7,1),"8");
 		assertEquals(cur.getField(7,2),"8");
-		assertEquals(cur.getField(7,3),"8.80");
-		//assertEquals(
-		//	cur.getField(7,4),"8.8");
-		//assertEquals(
-		//	cur.getField(7,5),"8.8");
+		assertEquals(cur.getField(7,3),"8.50");
+		assertEquals(cur.getField(7,4),"8.500000E+00");
+		assertEquals(cur.getField(7,5),"8.50000000000000E+000");
 		assertEquals(cur.getField(7,6),"testchar8"+
 					"                               ");
 		assertEquals(cur.getField(7,7),"testvarchar8");
@@ -497,10 +491,8 @@ class db2 extends sqlrtest {
 		assertEquals(cur.getFieldLength(0,1),1);
 		assertEquals(cur.getFieldLength(0,2),1);
 		assertEquals(cur.getFieldLength(0,3),4);
-		//assertEquals(
-		//	cur.getFieldLength(0,4),3);
-		//assertEquals(
-		//	cur.getFieldLength(0,5),3);
+		assertEquals(cur.getFieldLength(0,4),12);
+		assertEquals(cur.getFieldLength(0,5),21);
 		assertEquals(cur.getFieldLength(0,6),40);
 		assertEquals(cur.getFieldLength(0,7),12);
 		assertEquals(cur.getFieldLength(0,8),10);
@@ -510,10 +502,8 @@ class db2 extends sqlrtest {
 		assertEquals(cur.getFieldLength(7,1),1);
 		assertEquals(cur.getFieldLength(7,2),1);
 		assertEquals(cur.getFieldLength(7,3),4);
-		//assertEquals(
-		//	cur.getFieldLength(7,4),3);
-		//assertEquals(
-		//	cur.getFieldLength(7,5),3);
+		assertEquals(cur.getFieldLength(7,4),12);
+		assertEquals(cur.getFieldLength(7,5),21);
 		assertEquals(cur.getFieldLength(7,6),40);
 		assertEquals(cur.getFieldLength(7,7),12);
 		assertEquals(cur.getFieldLength(7,8),10);
@@ -526,13 +516,10 @@ class db2 extends sqlrtest {
 		assertEquals(cur.getField(0,"TESTSMALLINT"),"1");
 		assertEquals(cur.getField(0,"TESTINT"),"1");
 		assertEquals(cur.getField(0,"TESTBIGINT"),"1");
-		assertEquals(cur.getField(0,"TESTDECIMAL"),"1.10");
-		//assertEquals(
-		//	cur.getField(0,
-		//		"TESTREAL"),"1.1");
-		//assertEquals(
-		//	cur.getField(0,
-		//		"TESTDOUBLE"),"1.1");
+		assertEquals(cur.getField(0,"TESTDECIMAL"),"1.50");
+		assertEquals(cur.getField(0,"TESTREAL"),"1.500000E+00");
+		assertEquals(cur.getField(0,"TESTDOUBLE"),
+					"1.50000000000000E+000");
 		assertEquals(cur.getField(0,"TESTCHAR"),"testchar1"+
 					"                               ");
 		assertEquals(cur.getField(0,"TESTVARCHAR"),"testvarchar1");
@@ -542,13 +529,10 @@ class db2 extends sqlrtest {
 		assertEquals(cur.getField(7,"TESTSMALLINT"),"8");
 		assertEquals(cur.getField(7,"TESTINT"),"8");
 		assertEquals(cur.getField(7,"TESTBIGINT"),"8");
-		assertEquals(cur.getField(7,"TESTDECIMAL"),"8.80");
-		//assertEquals(
-		//	cur.getField(7,
-		//		"TESTREAL"),"8.8");
-		//assertEquals(
-		//	cur.getField(7,
-		//		"TESTDOUBLE"),"8.8");
+		assertEquals(cur.getField(7,"TESTDECIMAL"),"8.50");
+		assertEquals(cur.getField(7,"TESTREAL"),"8.500000E+00");
+		assertEquals(cur.getField(7,"TESTDOUBLE"),
+					"8.50000000000000E+000");
 		assertEquals(cur.getField(7,"TESTCHAR"),"testchar8"+
 					"                               ");
 		assertEquals(cur.getField(7,"TESTVARCHAR"),"testvarchar8");
@@ -563,12 +547,8 @@ class db2 extends sqlrtest {
 		assertEquals(cur.getFieldLength(0,"TESTINT"),1);
 		assertEquals(cur.getFieldLength(0,"TESTBIGINT"),1);
 		assertEquals(cur.getFieldLength(0,"TESTDECIMAL"),4);
-		//assertEquals(
-		//	cur.getFieldLength(0,
-		//		"TESTREAL"),3);
-		//assertEquals(
-		//	cur.getFieldLength(0,
-		//		"TESTDOUBLE"),3);
+		assertEquals(cur.getFieldLength(0,"TESTREAL"),12);
+		assertEquals(cur.getFieldLength(0,"TESTDOUBLE"),21);
 		assertEquals(cur.getFieldLength(0,"TESTCHAR"),40);
 		assertEquals(cur.getFieldLength(0,"TESTVARCHAR"),12);
 		assertEquals(cur.getFieldLength(0,"TESTDATE"),10);
@@ -578,12 +558,8 @@ class db2 extends sqlrtest {
 		assertEquals(cur.getFieldLength(7,"TESTINT"),1);
 		assertEquals(cur.getFieldLength(7,"TESTBIGINT"),1);
 		assertEquals(cur.getFieldLength(7,"TESTDECIMAL"),4);
-		//assertEquals(
-		//	cur.getFieldLength(7,
-		//		"TESTREAL"),3);
-		//assertEquals(
-		//	cur.getFieldLength(7,
-		//		"TESTDOUBLE"),3);
+		assertEquals(cur.getFieldLength(7,"TESTREAL"),12);
+		assertEquals(cur.getFieldLength(7,"TESTDOUBLE"),21);
 		assertEquals(cur.getFieldLength(7,"TESTCHAR"),40);
 		assertEquals(cur.getFieldLength(7,"TESTVARCHAR"),12);
 		assertEquals(cur.getFieldLength(7,"TESTDATE"),10);
@@ -597,9 +573,9 @@ class db2 extends sqlrtest {
 		assertEquals(fields[0],"1");
 		assertEquals(fields[1],"1");
 		assertEquals(fields[2],"1");
-		assertEquals(fields[3],"1.10");
-		//assertEquals(fields[4],"1.1");
-		//assertEquals(fields[5],"1.1");
+		assertEquals(fields[3],"1.50");
+		assertEquals(fields[4],"1.500000E+00");
+		assertEquals(fields[5],"1.50000000000000E+000");
 		assertEquals(fields[6],"testchar1"+
 					"                               ");
 		assertEquals(fields[7],"testvarchar1");
@@ -615,8 +591,8 @@ class db2 extends sqlrtest {
 		assertEquals(fieldlens[1],1);
 		assertEquals(fieldlens[2],1);
 		assertEquals(fieldlens[3],4);
-		//assertEquals(fieldlens[4],3);
-		//assertEquals(fieldlens[5],3);
+		assertEquals(fieldlens[4],12);
+		assertEquals(fieldlens[5],21);
 		assertEquals(fieldlens[6],40);
 		assertEquals(fieldlens[7],12);
 		assertEquals(fieldlens[8],10);
@@ -1671,6 +1647,7 @@ class db2 extends sqlrtest {
 		assertEquals(cur.getOutputBindString("8"),"hello");
 		assertEquals(cur.getOutputBindClob("9"),"clob");
 		assertEquals(cur.getOutputBindBlob("10"),"blob",4);
+		assertEquals(cur.getOutputBindLength("10"),4);
 		assertTrue(cur.sendQuery("drop procedure testproc"));
 		assertTrue(con.commit());
 		System.out.println();

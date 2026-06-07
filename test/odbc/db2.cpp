@@ -6557,6 +6557,7 @@ int main(int argc, char **argv) {
 	erg=SQLGetData(stmt,12,SQL_C_CHAR,
 			gclobfield,sizeof(gclobfield),&gclobind);
 	assertSuccessStmt(stmt,erg);
+	assertEqualStmt(stmt,(int)gclobind,9);
 	assertEqualStmt(stmt,(const char *)gclobfield,"testclob2");
 	erg=SQLGetData(stmt,13,SQL_C_BINARY,
 			gblobfield,sizeof(gblobfield),&gblobind);
@@ -6579,10 +6580,12 @@ int main(int argc, char **argv) {
 	erg=SQLGetData(stmt,12,SQL_C_CHAR,
 			gclobfield,sizeof(gclobfield),&gclobind);
 	assertSuccessStmt(stmt,erg);
+	assertEqualStmt(stmt,(int)gclobind,9);
 	assertEqualStmt(stmt,(const char *)gclobfield,"testclob3");
 	erg=SQLGetData(stmt,13,SQL_C_BINARY,
 			gblobfield,sizeof(gblobfield),&gblobind);
 	assertSuccessStmt(stmt,erg);
+	assertEqualStmt(stmt,(int)gblobind,9);
 	assertTrueStmt(stmt,!bytestring::compare(gblobfield,"testblob3",9));
 
 	// row 4
