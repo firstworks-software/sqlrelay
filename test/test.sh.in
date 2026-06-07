@@ -2,7 +2,7 @@
 
 if ( test -z "$1" )
 then
-	echo "usage: test database"
+	echo "usage: test.sh database [apis]"
 	exit
 fi
 
