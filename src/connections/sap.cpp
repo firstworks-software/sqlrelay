@@ -330,7 +330,7 @@ void sapconnection::initDatabaseFeatures() {
 		charstring::parseNumber(cont->getConfig()->getMaxConnections());
 
 	databasefeatures[FEATURE_AGGREGATE_FUNCTIONS]=
-		"";
+		"ALL,AVG,COUNT,DISTINCT,MAX,MIN,SUM";
 
 	databasefeatures[FEATURE_ALL_PROCEDURES_ARE_CALLABLE]=
 		"false";

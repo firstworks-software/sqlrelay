@@ -772,18 +772,17 @@ int main(int argc, char **argv) {
 	// SQL_ATTR_AUTO_IPD (read-only)
 	stdoutput.printf("  SQL_ATTR_AUTO_IPD\n");
 	if (issqlrelay) {
+		// sqlrelay doesn't auto-populate the IPD
 		erg=SQLGetConnectAttr(dbc,SQL_ATTR_AUTO_IPD,
 				(SQLPOINTER)&dbcuintval,0,&dbcstrlen);
 		assertSuccessDbc(dbc,erg);
-		// require a valid boolean (either value is legal)
-		assertEqualDbc(dbc,
-			(int)(dbcuintval==SQL_TRUE || dbcuintval==SQL_FALSE),
-			(int)1);
+		assertEqualDbc(dbc,(int)dbcuintval,(int)SQL_FALSE);
 	} else {
-		// native db2 driver supports read-only SQL_ATTR_AUTO_IPD
+		// the native db2 driver auto-populates the IPD
 		erg=SQLGetConnectAttr(dbc,SQL_ATTR_AUTO_IPD,
 				(SQLPOINTER)&dbcuintval,0,&dbcstrlen);
 		assertSuccessDbc(dbc,erg);
+		assertEqualDbc(dbc,(int)dbcuintval,(int)SQL_TRUE);
 	}
 	stdoutput.printf("\n");
 	#endif
@@ -1088,6 +1087,7 @@ int main(int argc, char **argv) {
 	SQLUSMALLINT	usmallintval;
 	SQLCHAR		strval[2048];
 	SQLSMALLINT	vallen;
+	SQLULEN		handleval;
 
 
 	#if (ODBCVER >= 0x0300)
@@ -1170,7 +1170,8 @@ int main(int argc, char **argv) {
 	} else {
 		// native db2 driver bug: SQLGetInfo for this string info type
 		// returns the SQL_DRIVER_ODBC_VER value ("03.80") instead of
-		// the real value, so only the call's success is checked
+		// the real value; pin the bug so a fix gets noticed
+		assertEqualDbc(dbc,(const char *)strval,"03.80");
 	}
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
@@ -1214,7 +1215,8 @@ int main(int argc, char **argv) {
 	} else {
 		// native db2 driver bug: SQLGetInfo for this string info type
 		// returns the SQL_DRIVER_ODBC_VER value ("03.80") instead of
-		// the real value, so only the call's success is checked
+		// the real value; pin the bug so a fix gets noticed
+		assertEqualDbc(dbc,(const char *)strval,"03.80");
 	}
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
@@ -1230,7 +1232,8 @@ int main(int argc, char **argv) {
 	} else {
 		// native db2 driver bug: SQLGetInfo for this string info type
 		// returns the SQL_DRIVER_ODBC_VER value ("03.80") instead of
-		// the real value, so only the call's success is checked
+		// the real value; pin the bug so a fix gets noticed
+		assertEqualDbc(dbc,(const char *)strval,"03.80");
 	}
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
@@ -1257,7 +1260,8 @@ int main(int argc, char **argv) {
 	} else {
 		// native db2 driver bug: SQLGetInfo for this string info type
 		// returns the SQL_DRIVER_ODBC_VER value ("03.80") instead of
-		// the real value, so only the call's success is checked
+		// the real value; pin the bug so a fix gets noticed
+		assertEqualDbc(dbc,(const char *)strval,"03.80");
 	}
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
@@ -1293,7 +1297,8 @@ int main(int argc, char **argv) {
 	} else {
 		// native db2 driver bug: SQLGetInfo for this string info type
 		// returns the SQL_DRIVER_ODBC_VER value ("03.80") instead of
-		// the real value, so only the call's success is checked
+		// the real value; pin the bug so a fix gets noticed
+		assertEqualDbc(dbc,(const char *)strval,"03.80");
 	}
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
@@ -1417,7 +1422,8 @@ int main(int argc, char **argv) {
 	} else {
 		// native db2 driver bug: SQLGetInfo for this string info type
 		// returns the SQL_DRIVER_ODBC_VER value ("03.80") instead of
-		// the real value, so only the call's success is checked
+		// the real value; pin the bug so a fix gets noticed
+		assertEqualDbc(dbc,(const char *)strval,"03.80");
 	}
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
@@ -1495,7 +1501,8 @@ int main(int argc, char **argv) {
 	} else {
 		// native db2 driver bug: SQLGetInfo for this string info type
 		// returns the SQL_DRIVER_ODBC_VER value ("03.80") instead of
-		// the real value, so only the call's success is checked
+		// the real value; pin the bug so a fix gets noticed
+		assertEqualDbc(dbc,(const char *)strval,"03.80");
 	}
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
@@ -1511,7 +1518,8 @@ int main(int argc, char **argv) {
 	} else {
 		// native db2 driver bug: SQLGetInfo for this string info type
 		// returns the SQL_DRIVER_ODBC_VER value ("03.80") instead of
-		// the real value, so only the call's success is checked
+		// the real value; pin the bug so a fix gets noticed
+		assertEqualDbc(dbc,(const char *)strval,"03.80");
 	}
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
@@ -1682,7 +1690,8 @@ int main(int argc, char **argv) {
 	} else {
 		// native db2 driver bug: SQLGetInfo for this string info type
 		// returns the SQL_DRIVER_ODBC_VER value ("03.80") instead of
-		// the real value, so only the call's success is checked
+		// the real value; pin the bug so a fix gets noticed
+		assertEqualDbc(dbc,(const char *)strval,"03.80");
 	}
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
@@ -1700,7 +1709,8 @@ int main(int argc, char **argv) {
 	} else {
 		// native db2 driver bug: SQLGetInfo for this string info type
 		// returns the SQL_DRIVER_ODBC_VER value ("03.80") instead of
-		// the real value, so only the call's success is checked
+		// the real value; pin the bug so a fix gets noticed
+		assertEqualDbc(dbc,(const char *)strval,"03.80");
 	}
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
@@ -1718,7 +1728,8 @@ int main(int argc, char **argv) {
 	} else {
 		// native db2 driver bug: SQLGetInfo for this string info type
 		// returns the SQL_DRIVER_ODBC_VER value ("03.80") instead of
-		// the real value, so only the call's success is checked
+		// the real value; pin the bug so a fix gets noticed
+		assertEqualDbc(dbc,(const char *)strval,"03.80");
 	}
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
@@ -1738,20 +1749,26 @@ int main(int argc, char **argv) {
 
 
 	// SQL_DRIVER_HDBC
+	// driver-manager-level; the underlying driver's handle, non-zero
 	stdoutput.printf("  SQL_DRIVER_HDBC\n");
+	handleval=0;
 	erg=SQLGetInfo(dbc,SQL_DRIVER_HDBC,
-			(SQLPOINTER)&uintval,
-			(SQLSMALLINT)sizeof(uintval),&vallen);
+			(SQLPOINTER)&handleval,
+			(SQLSMALLINT)sizeof(handleval),&vallen);
 	assertSuccessDbc(dbc,erg);
+	assertTrueDbc(dbc,handleval!=0);
 	stdoutput.printf("\n");
 
 
 	// SQL_DRIVER_HENV
+	// driver-manager-level; the underlying driver's handle, non-zero
 	stdoutput.printf("  SQL_DRIVER_HENV\n");
+	handleval=0;
 	erg=SQLGetInfo(dbc,SQL_DRIVER_HENV,
-			(SQLPOINTER)&uintval,
-			(SQLSMALLINT)sizeof(uintval),&vallen);
+			(SQLPOINTER)&handleval,
+			(SQLSMALLINT)sizeof(handleval),&vallen);
 	assertSuccessDbc(dbc,erg);
+	assertTrueDbc(dbc,handleval!=0);
 	stdoutput.printf("\n");
 
 
@@ -1828,7 +1845,8 @@ int main(int argc, char **argv) {
 	} else {
 		// native db2 driver bug: SQLGetInfo for this string info type
 		// returns the SQL_DRIVER_ODBC_VER value ("03.80") instead of
-		// the real value, so only the call's success is checked
+		// the real value; pin the bug so a fix gets noticed
+		assertEqualDbc(dbc,(const char *)strval,"03.80");
 	}
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
@@ -1874,7 +1892,8 @@ int main(int argc, char **argv) {
 	} else {
 		// native db2 driver bug: SQLGetInfo for this string info type
 		// returns the SQL_DRIVER_ODBC_VER value ("03.80") instead of
-		// the real value, so only the call's success is checked
+		// the real value; pin the bug so a fix gets noticed
+		assertEqualDbc(dbc,(const char *)strval,"03.80");
 	}
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
@@ -1920,7 +1939,8 @@ int main(int argc, char **argv) {
 	} else {
 		// native db2 driver bug: SQLGetInfo for this string info type
 		// returns the SQL_DRIVER_ODBC_VER value ("03.80") instead of
-		// the real value, so only the call's success is checked
+		// the real value; pin the bug so a fix gets noticed
+		assertEqualDbc(dbc,(const char *)strval,"03.80");
 	}
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
@@ -1971,7 +1991,8 @@ int main(int argc, char **argv) {
 	} else {
 		// native db2 driver bug: SQLGetInfo for this string info type
 		// returns the SQL_DRIVER_ODBC_VER value ("03.80") instead of
-		// the real value, so only the call's success is checked
+		// the real value; pin the bug so a fix gets noticed
+		assertEqualDbc(dbc,(const char *)strval,"03.80");
 	}
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
@@ -1987,7 +2008,8 @@ int main(int argc, char **argv) {
 	} else {
 		// native db2 driver bug: SQLGetInfo for this string info type
 		// returns the SQL_DRIVER_ODBC_VER value ("03.80") instead of
-		// the real value, so only the call's success is checked
+		// the real value; pin the bug so a fix gets noticed
+		assertEqualDbc(dbc,(const char *)strval,"03.80");
 	}
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
@@ -2003,7 +2025,8 @@ int main(int argc, char **argv) {
 	} else {
 		// native db2 driver bug: SQLGetInfo for this string info type
 		// returns the SQL_DRIVER_ODBC_VER value ("03.80") instead of
-		// the real value, so only the call's success is checked
+		// the real value; pin the bug so a fix gets noticed
+		assertEqualDbc(dbc,(const char *)strval,"03.80");
 	}
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
@@ -2019,7 +2042,8 @@ int main(int argc, char **argv) {
 	} else {
 		// native db2 driver bug: SQLGetInfo for this string info type
 		// returns the SQL_DRIVER_ODBC_VER value ("03.80") instead of
-		// the real value, so only the call's success is checked
+		// the real value; pin the bug so a fix gets noticed
+		assertEqualDbc(dbc,(const char *)strval,"03.80");
 	}
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
@@ -2059,7 +2083,8 @@ int main(int argc, char **argv) {
 		assertEqualDbc(dbc,(const char *)strval,"database");
 	} else {
 		// the native db2 driver reports no catalog term (db2 does not
-		// use catalog qualifiers), so only the call's success is checked
+		// use catalog qualifiers)
+		assertEqualDbc(dbc,(const char *)strval,"");
 	}
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
@@ -2092,7 +2117,8 @@ int main(int argc, char **argv) {
 	} else {
 		// native db2 driver bug: SQLGetInfo for this string info type
 		// returns the SQL_DRIVER_ODBC_VER value ("03.80") instead of
-		// the real value, so only the call's success is checked
+		// the real value; pin the bug so a fix gets noticed
+		assertEqualDbc(dbc,(const char *)strval,"03.80");
 	}
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
@@ -2484,11 +2510,14 @@ int main(int argc, char **argv) {
 
 
 	// SQL_DRIVER_HLIB
+	// driver-manager-level; the driver's shared-library handle, non-zero
 	stdoutput.printf("  SQL_DRIVER_HLIB\n");
+	handleval=0;
 	erg=SQLGetInfo(dbc,SQL_DRIVER_HLIB,
-			(SQLPOINTER)&uintval,
-			(SQLSMALLINT)sizeof(uintval),&vallen);
+			(SQLPOINTER)&handleval,
+			(SQLSMALLINT)sizeof(handleval),&vallen);
 	assertSuccessDbc(dbc,erg);
+	assertTrueDbc(dbc,handleval!=0);
 	stdoutput.printf("\n");
 
 
@@ -2595,7 +2624,8 @@ int main(int argc, char **argv) {
 	} else {
 		// native db2 driver bug: SQLGetInfo for this string info type
 		// returns the SQL_DRIVER_ODBC_VER value ("03.80") instead of
-		// the real value, so only the call's success is checked
+		// the real value; pin the bug so a fix gets noticed
+		assertEqualDbc(dbc,(const char *)strval,"03.80");
 	}
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
@@ -2696,7 +2726,8 @@ int main(int argc, char **argv) {
 	} else {
 		// native db2 driver bug: SQLGetInfo for this string info type
 		// returns the SQL_DRIVER_ODBC_VER value ("03.80") instead of
-		// the real value, so only the call's success is checked
+		// the real value; pin the bug so a fix gets noticed
+		assertEqualDbc(dbc,(const char *)strval,"03.80");
 	}
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
@@ -2752,7 +2783,8 @@ int main(int argc, char **argv) {
 	} else {
 		// native db2 driver bug: SQLGetInfo for this string info type
 		// returns the SQL_DRIVER_ODBC_VER value ("03.80") instead of
-		// the real value, so only the call's success is checked
+		// the real value; pin the bug so a fix gets noticed
+		assertEqualDbc(dbc,(const char *)strval,"03.80");
 	}
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
@@ -2778,7 +2810,8 @@ int main(int argc, char **argv) {
 	} else {
 		// native db2 driver bug: SQLGetInfo for this string info type
 		// returns the SQL_DRIVER_ODBC_VER value ("03.80") instead of
-		// the real value, so only the call's success is checked
+		// the real value; pin the bug so a fix gets noticed
+		assertEqualDbc(dbc,(const char *)strval,"03.80");
 	}
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
@@ -3209,8 +3242,9 @@ int main(int argc, char **argv) {
 	erg=SQLGetInfo(dbc,SQL_DYNAMIC_CURSOR_ATTRIBUTES1,
 			(SQLPOINTER)&uintval,
 			(SQLSMALLINT)sizeof(uintval),&vallen);
-	// both sqlrelay and native db2 implement dynamic cursors
 	assertSuccessDbc(dbc,erg);
+	// neither driver reports dynamic-cursor support
+	assertEqualDbc(dbc,(int)uintval,0);
 	stdoutput.printf("\n");
 	#endif
 
@@ -3221,8 +3255,9 @@ int main(int argc, char **argv) {
 	erg=SQLGetInfo(dbc,SQL_DYNAMIC_CURSOR_ATTRIBUTES2,
 			(SQLPOINTER)&uintval,
 			(SQLSMALLINT)sizeof(uintval),&vallen);
-	// both sqlrelay and native db2 implement dynamic cursors
 	assertSuccessDbc(dbc,erg);
+	// neither driver reports dynamic-cursor support
+	assertEqualDbc(dbc,(int)uintval,0);
 	stdoutput.printf("\n");
 	#endif
 
@@ -3642,8 +3677,16 @@ int main(int argc, char **argv) {
 	erg=SQLGetInfo(dbc,SQL_AGGREGATE_FUNCTIONS,
 			(SQLPOINTER)&uintval,
 			(SQLSMALLINT)sizeof(uintval),&vallen);
-	// both sqlrelay and native db2 implement this infotype
 	assertSuccessDbc(dbc,erg);
+	if (issqlrelay) {
+		assertEqualDbc(dbc,(int)uintval,
+			(int)(SQL_AF_ALL|SQL_AF_AVG|SQL_AF_COUNT|
+				SQL_AF_DISTINCT|SQL_AF_MAX|SQL_AF_MIN|
+				SQL_AF_SUM));
+	} else {
+		// the native driver reports only SQL_AF_ALL
+		assertEqualDbc(dbc,(int)uintval,(int)SQL_AF_ALL);
+	}
 	stdoutput.printf("\n");
 	#endif
 
@@ -3706,6 +3749,9 @@ int main(int argc, char **argv) {
 			(SQLSMALLINT)sizeof(uintval),&vallen);
 	if (issqlrelay) {
 		assertSuccessDbc(dbc,erg);
+		// sqlrelay doesn't support async connection operations
+		assertEqualDbc(dbc,(int)uintval,
+				(int)SQL_ASYNC_DBC_NOT_CAPABLE);
 	} else {
 		assertFailureDbc(dbc,erg);
 	}
@@ -3722,6 +3768,9 @@ int main(int argc, char **argv) {
 			(SQLSMALLINT)sizeof(uintval),&vallen);
 	if (issqlrelay) {
 		assertSuccessDbc(dbc,erg);
+		// sqlrelay doesn't support driver-aware pooling
+		assertEqualDbc(dbc,(int)uintval,
+				(int)SQL_DRIVER_AWARE_POOLING_NOT_CAPABLE);
 	} else {
 		assertFailureDbc(dbc,erg);
 	}
@@ -3738,6 +3787,9 @@ int main(int argc, char **argv) {
 			(SQLSMALLINT)sizeof(uintval),&vallen);
 	if (issqlrelay) {
 		assertSuccessDbc(dbc,erg);
+		// sqlrelay doesn't support async notification
+		assertEqualDbc(dbc,(int)uintval,
+				(int)SQL_ASYNC_NOTIFICATION_NOT_CAPABLE);
 	} else {
 		assertFailureDbc(dbc,erg);
 	}
@@ -3753,7 +3805,9 @@ int main(int argc, char **argv) {
 			(SQLPOINTER)&uintval,
 			(SQLSMALLINT)sizeof(uintval),&vallen);
 	if (issqlrelay) {
+		// sqlrelay accepts the infotype but writes no value
 		assertSuccessDbc(dbc,erg);
+		assertEqualDbc(dbc,(int)vallen,0);
 	} else {
 		assertFailureDbc(dbc,erg);
 	}
@@ -4590,23 +4644,43 @@ int main(int argc, char **argv) {
 	erg=SQLSetConnectAttr(dbc,SQL_ATTR_TXN_ISOLATION,
 			(SQLPOINTER)(uintptr_t)SQL_TXN_READ_UNCOMMITTED,0);
 	assertSuccessDbc(dbc,erg);
+	erg=SQLGetConnectAttr(dbc,SQL_ATTR_TXN_ISOLATION,
+			(SQLPOINTER)&dbcuintval,0,&dbcstrlen);
+	assertSuccessDbc(dbc,erg);
+	assertEqualDbc(dbc,(int)dbcuintval,(int)SQL_TXN_READ_UNCOMMITTED);
 
 	erg=SQLSetConnectAttr(dbc,SQL_ATTR_TXN_ISOLATION,
 			(SQLPOINTER)(uintptr_t)SQL_TXN_READ_COMMITTED,0);
 	assertSuccessDbc(dbc,erg);
+	erg=SQLGetConnectAttr(dbc,SQL_ATTR_TXN_ISOLATION,
+			(SQLPOINTER)&dbcuintval,0,&dbcstrlen);
+	assertSuccessDbc(dbc,erg);
+	assertEqualDbc(dbc,(int)dbcuintval,(int)SQL_TXN_READ_COMMITTED);
 
 	erg=SQLSetConnectAttr(dbc,SQL_ATTR_TXN_ISOLATION,
 			(SQLPOINTER)(uintptr_t)SQL_TXN_REPEATABLE_READ,0);
 	assertSuccessDbc(dbc,erg);
+	erg=SQLGetConnectAttr(dbc,SQL_ATTR_TXN_ISOLATION,
+			(SQLPOINTER)&dbcuintval,0,&dbcstrlen);
+	assertSuccessDbc(dbc,erg);
+	assertEqualDbc(dbc,(int)dbcuintval,(int)SQL_TXN_REPEATABLE_READ);
 
 	erg=SQLSetConnectAttr(dbc,SQL_ATTR_TXN_ISOLATION,
 			(SQLPOINTER)(uintptr_t)SQL_TXN_SERIALIZABLE,0);
 	assertSuccessDbc(dbc,erg);
+	erg=SQLGetConnectAttr(dbc,SQL_ATTR_TXN_ISOLATION,
+			(SQLPOINTER)&dbcuintval,0,&dbcstrlen);
+	assertSuccessDbc(dbc,erg);
+	assertEqualDbc(dbc,(int)dbcuintval,(int)SQL_TXN_SERIALIZABLE);
 
 	// reset to default isolation level
 	erg=SQLSetConnectAttr(dbc,SQL_ATTR_TXN_ISOLATION,
 			(SQLPOINTER)(uintptr_t)SQL_TXN_READ_COMMITTED,0);
 	assertSuccessDbc(dbc,erg);
+	erg=SQLGetConnectAttr(dbc,SQL_ATTR_TXN_ISOLATION,
+			(SQLPOINTER)&dbcuintval,0,&dbcstrlen);
+	assertSuccessDbc(dbc,erg);
+	assertEqualDbc(dbc,(int)dbcuintval,(int)SQL_TXN_READ_COMMITTED);
 	stdoutput.printf("\n");
 
 
@@ -4737,6 +4811,7 @@ int main(int argc, char **argv) {
 		erg=SQLGetStmtAttr(stmt,SQL_ATTR_CURSOR_SCROLLABLE,
 				(SQLPOINTER)&stmtinitial,0,&stmtstrlen);
 		assertSuccessStmt(stmt,erg);
+		assertEqualStmt(stmt,(int)stmtinitial,(int)SQL_NONSCROLLABLE);
 		erg=SQLSetStmtAttr(stmt,SQL_ATTR_CURSOR_SCROLLABLE,
 				(SQLPOINTER)(uintptr_t)SQL_SCROLLABLE,0);
 		assertSuccessStmt(stmt,erg);
@@ -4794,6 +4869,7 @@ int main(int argc, char **argv) {
 		erg=SQLGetStmtAttr(stmt,SQL_ATTR_CURSOR_SENSITIVITY,
 				(SQLPOINTER)&stmtinitial,0,&stmtstrlen);
 		assertSuccessStmt(stmt,erg);
+		assertEqualStmt(stmt,(int)stmtinitial,(int)SQL_UNSPECIFIED);
 		erg=SQLSetStmtAttr(stmt,SQL_ATTR_CURSOR_SENSITIVITY,
 				(SQLPOINTER)(uintptr_t)stmtinitial,0);
 		assertSuccessStmt(stmt,erg);
@@ -5041,9 +5117,8 @@ int main(int argc, char **argv) {
 
 
 	// SQL_ATTR_KEYSET_SIZE
-	// (per ODBC spec, a driver may silently ignore this for
-	// non-keyset-driven cursors, leaving it at 0, or round-trip the
-	// value; the test below accepts either)
+	// sqlrelay round-trips the value; the native db2 driver ignores
+	// it for non-keyset cursors, leaving it at 0
 	stdoutput.printf("  SQL_ATTR_KEYSET_SIZE\n");
 	erg=SQLGetStmtAttr(stmt,SQL_ATTR_KEYSET_SIZE,
 			(SQLPOINTER)&stmtinitial,0,&stmtstrlen);
@@ -5055,7 +5130,11 @@ int main(int argc, char **argv) {
 	erg=SQLGetStmtAttr(stmt,SQL_ATTR_KEYSET_SIZE,
 			(SQLPOINTER)&stmtulenval,0,&stmtstrlen);
 	assertSuccessStmt(stmt,erg);
-	assertTrueStmt(stmt,(stmtulenval==10 || stmtulenval==0));
+	if (issqlrelay) {
+		assertEqualStmt(stmt,(int)stmtulenval,10);
+	} else {
+		assertEqualStmt(stmt,(int)stmtulenval,0);
+	}
 	erg=SQLSetStmtAttr(stmt,SQL_ATTR_KEYSET_SIZE,
 			(SQLPOINTER)(uintptr_t)stmtinitial,0);
 	assertSuccessStmt(stmt,erg);
@@ -5119,10 +5198,12 @@ int main(int argc, char **argv) {
 		assertSuccessStmt(stmt,erg);
 		assertEqualStmt(stmt,(int)stmtulenval,(int)SQL_SC_NON_UNIQUE);
 	} else {
-		// native db2 driver supports simulated cursors
+		// native db2 driver supports simulated cursors,
+		// defaulting to SQL_SC_UNIQUE
 		erg=SQLGetStmtAttr(stmt,SQL_ATTR_SIMULATE_CURSOR,
 				(SQLPOINTER)&stmtinitial,0,&stmtstrlen);
 		assertSuccessStmt(stmt,erg);
+		assertEqualStmt(stmt,(int)stmtinitial,(int)SQL_SC_UNIQUE);
 		erg=SQLSetStmtAttr(stmt,SQL_ATTR_SIMULATE_CURSOR,
 				(SQLPOINTER)(uintptr_t)SQL_SC_UNIQUE,0);
 		assertSuccessStmt(stmt,erg);
@@ -5197,12 +5278,12 @@ int main(int argc, char **argv) {
 
 
 	// SQL_ATTR_ROW_NUMBER (read-only)
-	// before a cursor is open the spec allows get to return 0 or
-	// SQLSTATE 24000; the native db2 driver and SQL Relay may differ
-	// here (both legal), so don't assert the return code
 	stdoutput.printf("  SQL_ATTR_ROW_NUMBER\n");
 	erg=SQLGetStmtAttr(stmt,SQL_ATTR_ROW_NUMBER,
 			(SQLPOINTER)&stmtulenval,0,&stmtstrlen);
+	// no cursor is open; the unixodbc driver manager itself
+	// raises 24000 before the call reaches either driver
+	assertFailureStmt(stmt,erg);
 	// setting should fail (read-only)
 	erg=SQLSetStmtAttr(stmt,SQL_ATTR_ROW_NUMBER,
 			(SQLPOINTER)(uintptr_t)1,0);
@@ -5278,10 +5359,12 @@ int main(int argc, char **argv) {
 				(SQLPOINTER)(uintptr_t)stmtinitial,0);
 		assertSuccessStmt(stmt,erg);
 	} else {
-		// native db2 driver supports SQL_ATTR_ENABLE_AUTO_IPD
+		// native db2 driver supports SQL_ATTR_ENABLE_AUTO_IPD,
+		// defaulting to SQL_FALSE
 		erg=SQLGetStmtAttr(stmt,SQL_ATTR_ENABLE_AUTO_IPD,
 				(SQLPOINTER)&stmtinitial,0,&stmtstrlen);
 		assertSuccessStmt(stmt,erg);
+		assertEqualStmt(stmt,(int)stmtinitial,(int)SQL_FALSE);
 		erg=SQLSetStmtAttr(stmt,SQL_ATTR_ENABLE_AUTO_IPD,
 				(SQLPOINTER)(uintptr_t)SQL_FALSE,0);
 		assertSuccessStmt(stmt,erg);
@@ -5415,7 +5498,10 @@ int main(int argc, char **argv) {
 			(int)(stmtptrval==(SQLPOINTER)stmtparamstatus),1);
 	} else {
 		// native db2 driver accepts the set but its get does not
-		// round-trip the param status pointer
+		// round-trip the param status pointer; it reports an
+		// internal, non-null pointer instead
+		assertEqualStmt(stmt,(int)(stmtptrval!=NULL &&
+			stmtptrval!=(SQLPOINTER)stmtparamstatus),1);
 	}
 	erg=SQLSetStmtAttr(stmt,SQL_ATTR_PARAM_STATUS_PTR,
 			(SQLPOINTER)stmtptrinit,SQL_IS_POINTER);
@@ -8127,8 +8213,9 @@ int main(int argc, char **argv) {
 	SQLExecDirect(stmt,(SQLCHAR *)"drop table testtable",SQL_NTS);
 	erg=SQLExecDirect(stmt,(SQLCHAR *)
 		"create table testtable ("
-		"	col1 int not null primary key, "
-		"	col2 int)",
+		"	col1 int not null, "
+		"	col2 int, "
+		"	constraint testtable_pk primary key (col1))",
 		SQL_NTS);
 	assertSuccessStmt(stmt,erg);
 	erg=SQLPrimaryKeys(stmt,
@@ -8160,7 +8247,8 @@ int main(int argc, char **argv) {
 	assertEqualStmt(stmt,(const char *)pktable,"TESTTABLE");
 	assertEqualStmt(stmt,(const char *)pkcol,"COL1");
 	assertEqualStmt(stmt,(int)pkseq,1);
-	assertTrueStmt(stmt,pknameind>0);
+	assertEqualStmt(stmt,(int)pknameind,12);
+	assertEqualStmt(stmt,(const char *)pkname,"TESTTABLE_PK");
 	erg=SQLFetch(stmt);
 	assertEqualStmt(stmt,(int)erg,(int)SQL_NO_DATA);
 	SQLFreeStmt(stmt,SQL_CLOSE);

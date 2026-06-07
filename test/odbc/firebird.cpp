@@ -587,9 +587,8 @@ int main(int argc, char **argv) {
 	erg=SQLGetConnectAttr(dbc,SQL_ATTR_METADATA_ID,
 			(SQLPOINTER)&dbcinitial,0,&dbcstrlen);
 	assertSuccessDbc(dbc,erg);
-	if (issqlrelay) {
-		assertEqualDbc(dbc,(int)dbcinitial,(int)SQL_FALSE);
-	}
+	// spec default is SQL_FALSE on both sides
+	assertEqualDbc(dbc,(int)dbcinitial,(int)SQL_FALSE);
 	// SQL_TRUE
 	erg=SQLSetConnectAttr(dbc,SQL_ATTR_METADATA_ID,
 			(SQLPOINTER)(uintptr_t)SQL_TRUE,0);
@@ -729,13 +728,11 @@ int main(int argc, char **argv) {
 	// SQL_ATTR_AUTO_IPD (read-only)
 	stdoutput.printf("  SQL_ATTR_AUTO_IPD\n");
 	if (issqlrelay) {
+		// sqlrelay doesn't auto-populate the IPD
 		erg=SQLGetConnectAttr(dbc,SQL_ATTR_AUTO_IPD,
 				(SQLPOINTER)&dbcuintval,0,&dbcstrlen);
 		assertSuccessDbc(dbc,erg);
-		// SQL_TRUE or SQL_FALSE both legal; require a valid boolean
-		assertEqualDbc(dbc,
-			(int)(dbcuintval==SQL_TRUE || dbcuintval==SQL_FALSE),
-			(int)1);
+		assertEqualDbc(dbc,(int)dbcuintval,(int)SQL_FALSE);
 	} else {
 		// the native driver is assumed not to implement this; get raises HYT00
 		erg=SQLGetConnectAttr(dbc,SQL_ATTR_AUTO_IPD,
@@ -1029,6 +1026,7 @@ int main(int argc, char **argv) {
 	SQLUSMALLINT	usmallintval;
 	SQLCHAR		strval[2048];
 	SQLSMALLINT	vallen;
+	SQLULEN		handleval;
 
 
 	#if (ODBCVER >= 0x0300)
@@ -1595,20 +1593,26 @@ int main(int argc, char **argv) {
 
 
 	// SQL_DRIVER_HDBC
+	// driver-manager-level; the underlying driver's handle, non-zero
 	stdoutput.printf("  SQL_DRIVER_HDBC\n");
+	handleval=0;
 	erg=SQLGetInfo(dbc,SQL_DRIVER_HDBC,
-			(SQLPOINTER)&uintval,
-			(SQLSMALLINT)sizeof(uintval),&vallen);
+			(SQLPOINTER)&handleval,
+			(SQLSMALLINT)sizeof(handleval),&vallen);
 	assertSuccessDbc(dbc,erg);
+	assertTrueDbc(dbc,handleval!=0);
 	stdoutput.printf("\n");
 
 
 	// SQL_DRIVER_HENV
+	// driver-manager-level; the underlying driver's handle, non-zero
 	stdoutput.printf("  SQL_DRIVER_HENV\n");
+	handleval=0;
 	erg=SQLGetInfo(dbc,SQL_DRIVER_HENV,
-			(SQLPOINTER)&uintval,
-			(SQLSMALLINT)sizeof(uintval),&vallen);
+			(SQLPOINTER)&handleval,
+			(SQLSMALLINT)sizeof(handleval),&vallen);
 	assertSuccessDbc(dbc,erg);
+	assertTrueDbc(dbc,handleval!=0);
 	stdoutput.printf("\n");
 
 
@@ -2202,11 +2206,14 @@ int main(int argc, char **argv) {
 
 
 	// SQL_DRIVER_HLIB
+	// driver-manager-level; the driver's shared-library handle, non-zero
 	stdoutput.printf("  SQL_DRIVER_HLIB\n");
+	handleval=0;
 	erg=SQLGetInfo(dbc,SQL_DRIVER_HLIB,
-			(SQLPOINTER)&uintval,
-			(SQLSMALLINT)sizeof(uintval),&vallen);
+			(SQLPOINTER)&handleval,
+			(SQLSMALLINT)sizeof(handleval),&vallen);
 	assertSuccessDbc(dbc,erg);
+	assertTrueDbc(dbc,handleval!=0);
 	stdoutput.printf("\n");
 
 
@@ -2855,6 +2862,10 @@ int main(int argc, char **argv) {
 			(SQLPOINTER)&uintval,
 			(SQLSMALLINT)sizeof(uintval),&vallen);
 	assertSuccessDbc(dbc,erg);
+	if (issqlrelay) {
+		// sqlrelay doesn't support dynamic cursors
+		assertEqualDbc(dbc,(int)uintval,0);
+	}
 	stdoutput.printf("\n");
 	#endif
 
@@ -2866,6 +2877,10 @@ int main(int argc, char **argv) {
 			(SQLPOINTER)&uintval,
 			(SQLSMALLINT)sizeof(uintval),&vallen);
 	assertSuccessDbc(dbc,erg);
+	if (issqlrelay) {
+		// sqlrelay doesn't support dynamic cursors
+		assertEqualDbc(dbc,(int)uintval,0);
+	}
 	stdoutput.printf("\n");
 	#endif
 
@@ -3279,6 +3294,9 @@ int main(int argc, char **argv) {
 			(SQLSMALLINT)sizeof(uintval),&vallen);
 	if (issqlrelay) {
 		assertSuccessDbc(dbc,erg);
+		// sqlrelay doesn't support async connection operations
+		assertEqualDbc(dbc,(int)uintval,
+				(int)SQL_ASYNC_DBC_NOT_CAPABLE);
 	} else {
 		assertFailureDbc(dbc,erg);
 	}
@@ -3294,6 +3312,9 @@ int main(int argc, char **argv) {
 			(SQLSMALLINT)sizeof(uintval),&vallen);
 	if (issqlrelay) {
 		assertSuccessDbc(dbc,erg);
+		// sqlrelay doesn't support driver-aware pooling
+		assertEqualDbc(dbc,(int)uintval,
+				(int)SQL_DRIVER_AWARE_POOLING_NOT_CAPABLE);
 	} else {
 		assertFailureDbc(dbc,erg);
 	}
@@ -3309,6 +3330,9 @@ int main(int argc, char **argv) {
 			(SQLSMALLINT)sizeof(uintval),&vallen);
 	if (issqlrelay) {
 		assertSuccessDbc(dbc,erg);
+		// sqlrelay doesn't support async notification
+		assertEqualDbc(dbc,(int)uintval,
+				(int)SQL_ASYNC_NOTIFICATION_NOT_CAPABLE);
 	} else {
 		assertFailureDbc(dbc,erg);
 	}
@@ -3323,7 +3347,9 @@ int main(int argc, char **argv) {
 			(SQLPOINTER)&uintval,
 			(SQLSMALLINT)sizeof(uintval),&vallen);
 	if (issqlrelay) {
+		// sqlrelay accepts the infotype but writes no value
 		assertSuccessDbc(dbc,erg);
+		assertEqualDbc(dbc,(int)vallen,0);
 	} else {
 		assertFailureDbc(dbc,erg);
 	}
@@ -4652,7 +4678,12 @@ int main(int argc, char **argv) {
 	erg=SQLGetStmtAttr(stmt,SQL_ATTR_KEYSET_SIZE,
 			(SQLPOINTER)&stmtulenval,0,&stmtstrlen);
 	assertSuccessStmt(stmt,erg);
-	assertTrueStmt(stmt,(stmtulenval==10 || stmtulenval==0));
+	if (issqlrelay) {
+		assertEqualStmt(stmt,(int)stmtulenval,10);
+	} else {
+		// native value unverified (no firebird odbc driver available)
+		assertTrueStmt(stmt,(stmtulenval==10 || stmtulenval==0));
+	}
 	erg=SQLSetStmtAttr(stmt,SQL_ATTR_KEYSET_SIZE,
 			(SQLPOINTER)(uintptr_t)stmtinitial,0);
 	assertSuccessStmt(stmt,erg);
@@ -4788,12 +4819,12 @@ int main(int argc, char **argv) {
 
 
 	// SQL_ATTR_ROW_NUMBER (read-only)
-	// before a cursor is open, get may return 0 or SQLSTATE 24000;
-	// some drivers give 24000, sqlrelay success with 0, both legal, so
-	// don't assert on the return code
 	stdoutput.printf("  SQL_ATTR_ROW_NUMBER\n");
 	erg=SQLGetStmtAttr(stmt,SQL_ATTR_ROW_NUMBER,
 			(SQLPOINTER)&stmtulenval,0,&stmtstrlen);
+	// no cursor is open; the unixodbc driver manager itself
+	// raises 24000 before the call reaches either driver
+	assertFailureStmt(stmt,erg);
 	// setting should fail (read-only)
 	erg=SQLSetStmtAttr(stmt,SQL_ATTR_ROW_NUMBER,
 			(SQLPOINTER)(uintptr_t)1,0);
@@ -4809,9 +4840,8 @@ int main(int argc, char **argv) {
 	erg=SQLGetStmtAttr(stmt,SQL_ATTR_METADATA_ID,
 			(SQLPOINTER)&stmtinitial,0,&stmtstrlen);
 	assertSuccessStmt(stmt,erg);
-	if (issqlrelay) {
-		assertEqualStmt(stmt,(int)stmtinitial,(int)SQL_FALSE);
-	}
+	// spec default is SQL_FALSE on both sides
+	assertEqualStmt(stmt,(int)stmtinitial,(int)SQL_FALSE);
 	erg=SQLSetStmtAttr(stmt,SQL_ATTR_METADATA_ID,
 			(SQLPOINTER)(uintptr_t)SQL_TRUE,0);
 	if (issqlrelay) {
@@ -7375,7 +7405,10 @@ int main(int argc, char **argv) {
 	assertEqualStmt(stmt,(const char *)pktable,"TESTTABLE2");
 	assertEqualStmt(stmt,(const char *)pkcol,"COL1");
 	assertEqualStmt(stmt,(int)pkseq,1);
-	assertTrueStmt(stmt,pknameind>0);
+	// firebird gives unnamed constraints auto-generated INTEG_n names
+	assertTrueStmt(stmt,pknameind>6);
+	assertTrueStmt(stmt,!charstring::compare(
+				(const char *)pkname,"INTEG_",6));
 	erg=SQLFetch(stmt);
 	assertEqualStmt(stmt,(int)erg,(int)SQL_NO_DATA);
 	SQLFreeStmt(stmt,SQL_CLOSE);

@@ -709,14 +709,12 @@ int main(int argc, char **argv) {
 
 	#if (ODBCVER >= 0x0351)
 	// SQL_ATTR_AUTO_IPD (read-only)
+	// neither driver auto-populates the IPD
 	stdoutput.printf("  SQL_ATTR_AUTO_IPD\n");
 	erg=SQLGetConnectAttr(dbc,SQL_ATTR_AUTO_IPD,
 			(SQLPOINTER)&dbcuintval,0,&dbcstrlen);
 	assertSuccessDbc(dbc,erg);
-	// SQL_TRUE or SQL_FALSE both legal; require a valid boolean
-	assertEqualDbc(dbc,
-		(int)(dbcuintval==SQL_TRUE || dbcuintval==SQL_FALSE),
-		(int)1);
+	assertEqualDbc(dbc,(int)dbcuintval,(int)SQL_FALSE);
 	stdoutput.printf("\n");
 	#endif
 
@@ -1014,6 +1012,7 @@ int main(int argc, char **argv) {
 	SQLUSMALLINT	usmallintval;
 	SQLCHAR		strval[2048];
 	SQLSMALLINT	vallen;
+	SQLULEN		handleval;
 
 
 	#if (ODBCVER >= 0x0300)
@@ -1660,20 +1659,26 @@ int main(int argc, char **argv) {
 
 
 	// SQL_DRIVER_HDBC
+	// driver-manager-level; the underlying driver's handle, non-zero
 	stdoutput.printf("  SQL_DRIVER_HDBC\n");
+	handleval=0;
 	erg=SQLGetInfo(dbc,SQL_DRIVER_HDBC,
-			(SQLPOINTER)&uintval,
-			(SQLSMALLINT)sizeof(uintval),&vallen);
+			(SQLPOINTER)&handleval,
+			(SQLSMALLINT)sizeof(handleval),&vallen);
 	assertSuccessDbc(dbc,erg);
+	assertTrueDbc(dbc,handleval!=0);
 	stdoutput.printf("\n");
 
 
 	// SQL_DRIVER_HENV
+	// driver-manager-level; the underlying driver's handle, non-zero
 	stdoutput.printf("  SQL_DRIVER_HENV\n");
+	handleval=0;
 	erg=SQLGetInfo(dbc,SQL_DRIVER_HENV,
-			(SQLPOINTER)&uintval,
-			(SQLSMALLINT)sizeof(uintval),&vallen);
+			(SQLPOINTER)&handleval,
+			(SQLSMALLINT)sizeof(handleval),&vallen);
 	assertSuccessDbc(dbc,erg);
+	assertTrueDbc(dbc,handleval!=0);
 	stdoutput.printf("\n");
 
 
@@ -2305,11 +2310,14 @@ int main(int argc, char **argv) {
 
 
 	// SQL_DRIVER_HLIB
+	// driver-manager-level; the driver's shared-library handle, non-zero
 	stdoutput.printf("  SQL_DRIVER_HLIB\n");
+	handleval=0;
 	erg=SQLGetInfo(dbc,SQL_DRIVER_HLIB,
-			(SQLPOINTER)&uintval,
-			(SQLSMALLINT)sizeof(uintval),&vallen);
+			(SQLPOINTER)&handleval,
+			(SQLSMALLINT)sizeof(handleval),&vallen);
 	assertSuccessDbc(dbc,erg);
+	assertTrueDbc(dbc,handleval!=0);
 	stdoutput.printf("\n");
 
 
@@ -3006,6 +3014,8 @@ int main(int argc, char **argv) {
 			(SQLPOINTER)&uintval,
 			(SQLSMALLINT)sizeof(uintval),&vallen);
 	assertSuccessDbc(dbc,erg);
+	// neither driver supports dynamic cursors
+	assertEqualDbc(dbc,(int)uintval,0);
 	stdoutput.printf("\n");
 	#endif
 
@@ -3017,6 +3027,8 @@ int main(int argc, char **argv) {
 			(SQLPOINTER)&uintval,
 			(SQLSMALLINT)sizeof(uintval),&vallen);
 	assertSuccessDbc(dbc,erg);
+	// neither driver supports dynamic cursors
+	assertEqualDbc(dbc,(int)uintval,0);
 	stdoutput.printf("\n");
 	#endif
 
@@ -3369,6 +3381,15 @@ int main(int argc, char **argv) {
 			(SQLPOINTER)&uintval,
 			(SQLSMALLINT)sizeof(uintval),&vallen);
 	assertSuccessDbc(dbc,erg);
+	if (issqlrelay) {
+		assertEqualDbc(dbc,(int)uintval,
+			(int)(SQL_AF_ALL|SQL_AF_AVG|SQL_AF_COUNT|
+				SQL_AF_DISTINCT|SQL_AF_MAX|SQL_AF_MIN|
+				SQL_AF_SUM));
+	} else {
+		// the native driver reports only SQL_AF_ALL
+		assertEqualDbc(dbc,(int)uintval,(int)SQL_AF_ALL);
+	}
 	stdoutput.printf("\n");
 	#endif
 
@@ -3422,13 +3443,16 @@ int main(int argc, char **argv) {
 
 	#if (ODBCVER >= 0x0380)
 	// SQL_ASYNC_DBC_FUNCTIONS
-	// oracle doesn't implement this ODBC 3.8 infotype; returns HYT00
+	// the native sap driver doesn't implement this ODBC 3.8 infotype
 	stdoutput.printf("  SQL_ASYNC_DBC_FUNCTIONS\n");
 	erg=SQLGetInfo(dbc,SQL_ASYNC_DBC_FUNCTIONS,
 			(SQLPOINTER)&uintval,
 			(SQLSMALLINT)sizeof(uintval),&vallen);
 	if (issqlrelay) {
 		assertSuccessDbc(dbc,erg);
+		// sqlrelay doesn't support async connection operations
+		assertEqualDbc(dbc,(int)uintval,
+				(int)SQL_ASYNC_DBC_NOT_CAPABLE);
 	} else {
 		assertFailureDbc(dbc,erg);
 	}
@@ -3437,13 +3461,16 @@ int main(int argc, char **argv) {
 
 
 	// SQL_DRIVER_AWARE_POOLING_SUPPORTED
-	// oracle doesn't implement this infotype; returns HYT00
+	// the native sap driver doesn't implement this infotype
 	stdoutput.printf("  SQL_DRIVER_AWARE_POOLING_SUPPORTED\n");
 	erg=SQLGetInfo(dbc,SQL_DRIVER_AWARE_POOLING_SUPPORTED,
 			(SQLPOINTER)&uintval,
 			(SQLSMALLINT)sizeof(uintval),&vallen);
 	if (issqlrelay) {
 		assertSuccessDbc(dbc,erg);
+		// sqlrelay doesn't support driver-aware pooling
+		assertEqualDbc(dbc,(int)uintval,
+				(int)SQL_DRIVER_AWARE_POOLING_NOT_CAPABLE);
 	} else {
 		assertFailureDbc(dbc,erg);
 	}
@@ -3452,13 +3479,16 @@ int main(int argc, char **argv) {
 
 	#if (ODBCVER >= 0x0380)
 	// SQL_ASYNC_NOTIFICATION
-	// oracle doesn't implement this ODBC 3.8 infotype; returns HYT00
+	// the native sap driver doesn't implement this ODBC 3.8 infotype
 	stdoutput.printf("  SQL_ASYNC_NOTIFICATION\n");
 	erg=SQLGetInfo(dbc,SQL_ASYNC_NOTIFICATION,
 			(SQLPOINTER)&uintval,
 			(SQLSMALLINT)sizeof(uintval),&vallen);
 	if (issqlrelay) {
 		assertSuccessDbc(dbc,erg);
+		// sqlrelay doesn't support async notification
+		assertEqualDbc(dbc,(int)uintval,
+				(int)SQL_ASYNC_NOTIFICATION_NOT_CAPABLE);
 	} else {
 		assertFailureDbc(dbc,erg);
 	}
@@ -3467,13 +3497,15 @@ int main(int argc, char **argv) {
 
 
 	// SQL_DTC_TRANSITION_COST
-	// oracle doesn't implement this infotype; returns HYT00
+	// the native sap driver doesn't implement this infotype
 	stdoutput.printf("  SQL_DTC_TRANSITION_COST\n");
 	erg=SQLGetInfo(dbc,SQL_DTC_TRANSITION_COST,
 			(SQLPOINTER)&uintval,
 			(SQLSMALLINT)sizeof(uintval),&vallen);
 	if (issqlrelay) {
+		// sqlrelay accepts the infotype but writes no value
 		assertSuccessDbc(dbc,erg);
+		assertEqualDbc(dbc,(int)vallen,0);
 	} else {
 		assertFailureDbc(dbc,erg);
 	}
@@ -4306,29 +4338,48 @@ int main(int argc, char **argv) {
 	// isolation levels
 	stdoutput.printf("ISOLATION LEVELS: \n");
 
-	// set only; get needs read access the test user may lack.
 	// sap's ase supports all four isolation levels (both directly and
-	// through SQL Relay), so each set succeeds
+	// through SQL Relay); verify each set with a get
 	erg=SQLSetConnectAttr(dbc,SQL_ATTR_TXN_ISOLATION,
 			(SQLPOINTER)(uintptr_t)SQL_TXN_READ_UNCOMMITTED,0);
 	assertSuccessDbc(dbc,erg);
+	erg=SQLGetConnectAttr(dbc,SQL_ATTR_TXN_ISOLATION,
+			(SQLPOINTER)&dbcuintval,0,&dbcstrlen);
+	assertSuccessDbc(dbc,erg);
+	assertEqualDbc(dbc,(int)dbcuintval,(int)SQL_TXN_READ_UNCOMMITTED);
 
 	erg=SQLSetConnectAttr(dbc,SQL_ATTR_TXN_ISOLATION,
 			(SQLPOINTER)(uintptr_t)SQL_TXN_READ_COMMITTED,0);
 	assertSuccessDbc(dbc,erg);
+	erg=SQLGetConnectAttr(dbc,SQL_ATTR_TXN_ISOLATION,
+			(SQLPOINTER)&dbcuintval,0,&dbcstrlen);
+	assertSuccessDbc(dbc,erg);
+	assertEqualDbc(dbc,(int)dbcuintval,(int)SQL_TXN_READ_COMMITTED);
 
 	erg=SQLSetConnectAttr(dbc,SQL_ATTR_TXN_ISOLATION,
 			(SQLPOINTER)(uintptr_t)SQL_TXN_REPEATABLE_READ,0);
 	assertSuccessDbc(dbc,erg);
+	erg=SQLGetConnectAttr(dbc,SQL_ATTR_TXN_ISOLATION,
+			(SQLPOINTER)&dbcuintval,0,&dbcstrlen);
+	assertSuccessDbc(dbc,erg);
+	assertEqualDbc(dbc,(int)dbcuintval,(int)SQL_TXN_REPEATABLE_READ);
 
 	erg=SQLSetConnectAttr(dbc,SQL_ATTR_TXN_ISOLATION,
 			(SQLPOINTER)(uintptr_t)SQL_TXN_SERIALIZABLE,0);
 	assertSuccessDbc(dbc,erg);
+	erg=SQLGetConnectAttr(dbc,SQL_ATTR_TXN_ISOLATION,
+			(SQLPOINTER)&dbcuintval,0,&dbcstrlen);
+	assertSuccessDbc(dbc,erg);
+	assertEqualDbc(dbc,(int)dbcuintval,(int)SQL_TXN_SERIALIZABLE);
 
 	// reset to default isolation level
 	erg=SQLSetConnectAttr(dbc,SQL_ATTR_TXN_ISOLATION,
 			(SQLPOINTER)(uintptr_t)SQL_TXN_READ_COMMITTED,0);
 	assertSuccessDbc(dbc,erg);
+	erg=SQLGetConnectAttr(dbc,SQL_ATTR_TXN_ISOLATION,
+			(SQLPOINTER)&dbcuintval,0,&dbcstrlen);
+	assertSuccessDbc(dbc,erg);
+	assertEqualDbc(dbc,(int)dbcuintval,(int)SQL_TXN_READ_COMMITTED);
 	stdoutput.printf("\n");
 
 
@@ -4459,6 +4510,7 @@ int main(int argc, char **argv) {
 		erg=SQLGetStmtAttr(stmt,SQL_ATTR_CURSOR_SCROLLABLE,
 				(SQLPOINTER)&stmtinitial,0,&stmtstrlen);
 		assertSuccessStmt(stmt,erg);
+		assertEqualStmt(stmt,(int)stmtinitial,(int)SQL_NONSCROLLABLE);
 		erg=SQLSetStmtAttr(stmt,SQL_ATTR_CURSOR_SCROLLABLE,
 				(SQLPOINTER)(uintptr_t)SQL_SCROLLABLE,0);
 		assertSuccessStmt(stmt,erg);
@@ -4512,6 +4564,7 @@ int main(int argc, char **argv) {
 		erg=SQLGetStmtAttr(stmt,SQL_ATTR_CURSOR_SENSITIVITY,
 				(SQLPOINTER)&stmtinitial,0,&stmtstrlen);
 		assertSuccessStmt(stmt,erg);
+		assertEqualStmt(stmt,(int)stmtinitial,(int)SQL_INSENSITIVE);
 		erg=SQLSetStmtAttr(stmt,SQL_ATTR_CURSOR_SENSITIVITY,
 				(SQLPOINTER)(uintptr_t)SQL_INSENSITIVE,0);
 		assertSuccessStmt(stmt,erg);
@@ -4792,7 +4845,7 @@ int main(int argc, char **argv) {
 		erg=SQLGetStmtAttr(stmt,SQL_ATTR_KEYSET_SIZE,
 				(SQLPOINTER)&stmtulenval,0,&stmtstrlen);
 		assertSuccessStmt(stmt,erg);
-		assertTrueStmt(stmt,(stmtulenval==10 || stmtulenval==0));
+		assertEqualStmt(stmt,(int)stmtulenval,10);
 		erg=SQLSetStmtAttr(stmt,SQL_ATTR_KEYSET_SIZE,
 				(SQLPOINTER)(uintptr_t)stmtinitial,0);
 		assertSuccessStmt(stmt,erg);
@@ -4881,6 +4934,9 @@ int main(int argc, char **argv) {
 	assertSuccessStmt(stmt,erg);
 	if (issqlrelay) {
 		assertEqualStmt(stmt,(int)stmtinitial,(int)SQL_RD_ON);
+	} else {
+		// the native sap driver reports SQL_RD_OFF before any set
+		assertEqualStmt(stmt,(int)stmtinitial,(int)SQL_RD_OFF);
 	}
 	erg=SQLSetStmtAttr(stmt,SQL_ATTR_RETRIEVE_DATA,
 			(SQLPOINTER)(uintptr_t)SQL_RD_OFF,0);
@@ -4890,6 +4946,9 @@ int main(int argc, char **argv) {
 	assertSuccessStmt(stmt,erg);
 	if (issqlrelay) {
 		assertEqualStmt(stmt,(int)stmtulenval,(int)SQL_RD_OFF);
+	} else {
+		// ...and SQL_RD_ON after any set, regardless of the value
+		assertEqualStmt(stmt,(int)stmtulenval,(int)SQL_RD_ON);
 	}
 	erg=SQLSetStmtAttr(stmt,SQL_ATTR_RETRIEVE_DATA,
 			(SQLPOINTER)(uintptr_t)SQL_RD_ON,0);
@@ -4940,12 +4999,12 @@ int main(int argc, char **argv) {
 
 
 	// SQL_ATTR_ROW_NUMBER (read-only)
-	// before a cursor is open, get may return 0 or SQLSTATE 24000;
-	// oracle gives 24000, sqlrelay success with 0, both legal, so
-	// don't assert on the return code
 	stdoutput.printf("  SQL_ATTR_ROW_NUMBER\n");
 	erg=SQLGetStmtAttr(stmt,SQL_ATTR_ROW_NUMBER,
 			(SQLPOINTER)&stmtulenval,0,&stmtstrlen);
+	// no cursor is open; the unixodbc driver manager itself
+	// raises 24000 before the call reaches either driver
+	assertFailureStmt(stmt,erg);
 	// setting should fail (read-only)
 	erg=SQLSetStmtAttr(stmt,SQL_ATTR_ROW_NUMBER,
 			(SQLPOINTER)(uintptr_t)1,0);
@@ -5026,6 +5085,7 @@ int main(int argc, char **argv) {
 		erg=SQLGetStmtAttr(stmt,SQL_ATTR_ENABLE_AUTO_IPD,
 				(SQLPOINTER)&stmtinitial,0,&stmtstrlen);
 		assertSuccessStmt(stmt,erg);
+		assertEqualStmt(stmt,(int)stmtinitial,(int)SQL_FALSE);
 		erg=SQLSetStmtAttr(stmt,SQL_ATTR_ENABLE_AUTO_IPD,
 				(SQLPOINTER)(uintptr_t)SQL_FALSE,0);
 		assertFailureStmt(stmt,erg);
@@ -7572,10 +7632,13 @@ int main(int argc, char **argv) {
 	assertSuccessStmt(stmt,erg);
 	const char	*expcols[]={"testint","testchar","testvarchar",
 				"testdatetime","testtext","testimage"};
+	const char	*expcoltypes[]={"int","char","varchar",
+				"datetime","text","image"};
 	for (int c=0; c<6; c++) {
 		erg=SQLFetch(stmt);
 		assertSuccessStmt(stmt,erg);
 		assertEqualStmt(stmt,(const char *)clcolname,expcols[c]);
+		assertEqualStmt(stmt,(const char *)clcoltype,expcoltypes[c]);
 	}
 	erg=SQLFetch(stmt);
 	assertEqualStmt(stmt,(int)erg,(int)SQL_NO_DATA);
@@ -7646,8 +7709,9 @@ int main(int argc, char **argv) {
 	SQLExecDirect(stmt,(SQLCHAR *)"drop table testtable",SQL_NTS);
 	erg=SQLExecDirect(stmt,(SQLCHAR *)
 		"create table testtable ("
-		"	col1 int primary key, "
-		"	col2 int)",
+		"	col1 int, "
+		"	col2 int, "
+		"	constraint testtable_pk primary key (col1))",
 		SQL_NTS);
 	assertSuccessStmt(stmt,erg);
 	erg=SQLPrimaryKeys(stmt,
@@ -7679,7 +7743,8 @@ int main(int argc, char **argv) {
 	assertEqualStmt(stmt,(const char *)pktable,"testtable");
 	assertEqualStmt(stmt,(const char *)pkcol,"col1");
 	assertEqualStmt(stmt,(int)pkseq,1);
-	assertTrueStmt(stmt,pknameind>0);
+	assertEqualStmt(stmt,(int)pknameind,12);
+	assertEqualStmt(stmt,(const char *)pkname,"testtable_pk");
 	erg=SQLFetch(stmt);
 	assertEqualStmt(stmt,(int)erg,(int)SQL_NO_DATA);
 	SQLFreeStmt(stmt,SQL_CLOSE);

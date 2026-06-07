@@ -607,6 +607,9 @@ int main(int argc, char **argv) {
 	assertSuccessDbc(dbc,erg);
 	if (issqlrelay) {
 		assertEqualDbc(dbc,(int)dbcinitial,(int)SQL_FALSE);
+	} else {
+		// MariaDB defaults to SQL_TRUE despite the spec default
+		assertEqualDbc(dbc,(int)dbcinitial,(int)SQL_TRUE);
 	}
 	// SQL_TRUE
 	erg=SQLSetConnectAttr(dbc,SQL_ATTR_METADATA_ID,
@@ -767,14 +770,12 @@ int main(int argc, char **argv) {
 
 	#if (ODBCVER >= 0x0351)
 	// SQL_ATTR_AUTO_IPD (read-only)
+	// neither driver auto-populates the IPD
 	stdoutput.printf("  SQL_ATTR_AUTO_IPD\n");
 	erg=SQLGetConnectAttr(dbc,SQL_ATTR_AUTO_IPD,
 			(SQLPOINTER)&dbcuintval,0,&dbcstrlen);
 	assertSuccessDbc(dbc,erg);
-	// SQL_TRUE or SQL_FALSE both legal; require a valid boolean
-	assertEqualDbc(dbc,
-		(int)(dbcuintval==SQL_TRUE || dbcuintval==SQL_FALSE),
-		(int)1);
+	assertEqualDbc(dbc,(int)dbcuintval,(int)SQL_FALSE);
 	stdoutput.printf("\n");
 	#endif
 
@@ -1054,6 +1055,7 @@ int main(int argc, char **argv) {
 	SQLUSMALLINT	usmallintval;
 	SQLCHAR		strval[2048];
 	SQLSMALLINT	vallen;
+	SQLULEN		handleval;
 
 
 	#if (ODBCVER >= 0x0300)
@@ -1708,20 +1710,26 @@ int main(int argc, char **argv) {
 
 
 	// SQL_DRIVER_HDBC
+	// driver-manager-level; the underlying driver's handle, non-zero
 	stdoutput.printf("  SQL_DRIVER_HDBC\n");
+	handleval=0;
 	erg=SQLGetInfo(dbc,SQL_DRIVER_HDBC,
-			(SQLPOINTER)&uintval,
-			(SQLSMALLINT)sizeof(uintval),&vallen);
+			(SQLPOINTER)&handleval,
+			(SQLSMALLINT)sizeof(handleval),&vallen);
 	assertSuccessDbc(dbc,erg);
+	assertTrueDbc(dbc,handleval!=0);
 	stdoutput.printf("\n");
 
 
 	// SQL_DRIVER_HENV
+	// driver-manager-level; the underlying driver's handle, non-zero
 	stdoutput.printf("  SQL_DRIVER_HENV\n");
+	handleval=0;
 	erg=SQLGetInfo(dbc,SQL_DRIVER_HENV,
-			(SQLPOINTER)&uintval,
-			(SQLSMALLINT)sizeof(uintval),&vallen);
+			(SQLPOINTER)&handleval,
+			(SQLSMALLINT)sizeof(handleval),&vallen);
 	assertSuccessDbc(dbc,erg);
+	assertTrueDbc(dbc,handleval!=0);
 	stdoutput.printf("\n");
 
 
@@ -2402,11 +2410,14 @@ int main(int argc, char **argv) {
 
 
 	// SQL_DRIVER_HLIB
+	// driver-manager-level; the driver's shared-library handle, non-zero
 	stdoutput.printf("  SQL_DRIVER_HLIB\n");
+	handleval=0;
 	erg=SQLGetInfo(dbc,SQL_DRIVER_HLIB,
-			(SQLPOINTER)&uintval,
-			(SQLSMALLINT)sizeof(uintval),&vallen);
+			(SQLPOINTER)&handleval,
+			(SQLSMALLINT)sizeof(handleval),&vallen);
 	assertSuccessDbc(dbc,erg);
+	assertTrueDbc(dbc,handleval!=0);
 	stdoutput.printf("\n");
 
 
@@ -3101,8 +3112,20 @@ int main(int argc, char **argv) {
 	erg=SQLGetInfo(dbc,SQL_DYNAMIC_CURSOR_ATTRIBUTES1,
 			(SQLPOINTER)&uintval,
 			(SQLSMALLINT)sizeof(uintval),&vallen);
-	// Both drivers accept this infotype.
 	assertSuccessDbc(dbc,erg);
+	if (issqlrelay) {
+		// sqlrelay doesn't support dynamic cursors
+		assertEqualDbc(dbc,(int)uintval,0);
+	} else {
+		assertEqualDbc(dbc,(int)uintval,
+			(int)(SQL_CA1_NEXT|SQL_CA1_ABSOLUTE|
+				SQL_CA1_RELATIVE|SQL_CA1_LOCK_NO_CHANGE|
+				SQL_CA1_POS_POSITION|SQL_CA1_POS_UPDATE|
+				SQL_CA1_POS_DELETE|SQL_CA1_POS_REFRESH|
+				SQL_CA1_POSITIONED_UPDATE|
+				SQL_CA1_POSITIONED_DELETE|
+				SQL_CA1_BULK_ADD));
+	}
 	stdoutput.printf("\n");
 	#endif
 
@@ -3113,8 +3136,22 @@ int main(int argc, char **argv) {
 	erg=SQLGetInfo(dbc,SQL_DYNAMIC_CURSOR_ATTRIBUTES2,
 			(SQLPOINTER)&uintval,
 			(SQLSMALLINT)sizeof(uintval),&vallen);
-	// Both drivers accept this infotype.
 	assertSuccessDbc(dbc,erg);
+	if (issqlrelay) {
+		// sqlrelay doesn't support dynamic cursors
+		assertEqualDbc(dbc,(int)uintval,0);
+	} else {
+		assertEqualDbc(dbc,(int)uintval,
+			(int)(SQL_CA2_SENSITIVITY_ADDITIONS|
+				SQL_CA2_SENSITIVITY_DELETIONS|
+				SQL_CA2_SENSITIVITY_UPDATES|
+				SQL_CA2_MAX_ROWS_SELECT|
+				SQL_CA2_MAX_ROWS_INSERT|
+				SQL_CA2_MAX_ROWS_DELETE|
+				SQL_CA2_MAX_ROWS_UPDATE|
+				SQL_CA2_CRC_EXACT|
+				SQL_CA2_SIMULATE_TRY_UNIQUE));
+	}
 	stdoutput.printf("\n");
 	#endif
 
@@ -3498,8 +3535,12 @@ int main(int argc, char **argv) {
 	erg=SQLGetInfo(dbc,SQL_AGGREGATE_FUNCTIONS,
 			(SQLPOINTER)&uintval,
 			(SQLSMALLINT)sizeof(uintval),&vallen);
-	// Both drivers accept this infotype.
 	assertSuccessDbc(dbc,erg);
+	// both drivers support the standard aggregates
+	assertEqualDbc(dbc,(int)uintval,
+		(int)(SQL_AF_ALL|SQL_AF_AVG|SQL_AF_COUNT|
+			SQL_AF_DISTINCT|SQL_AF_MAX|SQL_AF_MIN|
+			SQL_AF_SUM));
 	stdoutput.printf("\n");
 	#endif
 
@@ -3558,8 +3599,9 @@ int main(int argc, char **argv) {
 	erg=SQLGetInfo(dbc,SQL_ASYNC_DBC_FUNCTIONS,
 			(SQLPOINTER)&uintval,
 			(SQLSMALLINT)sizeof(uintval),&vallen);
-	// Both drivers accept this infotype.
 	assertSuccessDbc(dbc,erg);
+	// neither driver supports async connection operations
+	assertEqualDbc(dbc,(int)uintval,(int)SQL_ASYNC_DBC_NOT_CAPABLE);
 	stdoutput.printf("\n");
 	#endif
 
@@ -3569,8 +3611,10 @@ int main(int argc, char **argv) {
 	erg=SQLGetInfo(dbc,SQL_DRIVER_AWARE_POOLING_SUPPORTED,
 			(SQLPOINTER)&uintval,
 			(SQLSMALLINT)sizeof(uintval),&vallen);
-	// Both drivers accept this infotype.
 	assertSuccessDbc(dbc,erg);
+	// neither driver supports driver-aware pooling
+	assertEqualDbc(dbc,(int)uintval,
+			(int)SQL_DRIVER_AWARE_POOLING_NOT_CAPABLE);
 	stdoutput.printf("\n");
 
 
@@ -3580,8 +3624,10 @@ int main(int argc, char **argv) {
 	erg=SQLGetInfo(dbc,SQL_ASYNC_NOTIFICATION,
 			(SQLPOINTER)&uintval,
 			(SQLSMALLINT)sizeof(uintval),&vallen);
-	// Both drivers accept this infotype.
 	assertSuccessDbc(dbc,erg);
+	// neither driver supports async notification
+	assertEqualDbc(dbc,(int)uintval,
+			(int)SQL_ASYNC_NOTIFICATION_NOT_CAPABLE);
 	stdoutput.printf("\n");
 	#endif
 
@@ -3592,7 +3638,9 @@ int main(int argc, char **argv) {
 			(SQLPOINTER)&uintval,
 			(SQLSMALLINT)sizeof(uintval),&vallen);
 	if (issqlrelay) {
+		// sqlrelay accepts the infotype but writes no value
 		assertSuccessDbc(dbc,erg);
+		assertEqualDbc(dbc,(int)vallen,0);
 	} else {
 		// MariaDB doesn't implement this infotype
 		assertFailureDbc(dbc,erg);
@@ -4425,23 +4473,43 @@ int main(int argc, char **argv) {
 	erg=SQLSetConnectAttr(dbc,SQL_ATTR_TXN_ISOLATION,
 			(SQLPOINTER)(uintptr_t)SQL_TXN_READ_UNCOMMITTED,0);
 	assertSuccessDbc(dbc,erg);
+	erg=SQLGetConnectAttr(dbc,SQL_ATTR_TXN_ISOLATION,
+			(SQLPOINTER)&dbcuintval,0,&dbcstrlen);
+	assertSuccessDbc(dbc,erg);
+	assertEqualDbc(dbc,(int)dbcuintval,(int)SQL_TXN_READ_UNCOMMITTED);
 
 	erg=SQLSetConnectAttr(dbc,SQL_ATTR_TXN_ISOLATION,
 			(SQLPOINTER)(uintptr_t)SQL_TXN_READ_COMMITTED,0);
 	assertSuccessDbc(dbc,erg);
+	erg=SQLGetConnectAttr(dbc,SQL_ATTR_TXN_ISOLATION,
+			(SQLPOINTER)&dbcuintval,0,&dbcstrlen);
+	assertSuccessDbc(dbc,erg);
+	assertEqualDbc(dbc,(int)dbcuintval,(int)SQL_TXN_READ_COMMITTED);
 
 	erg=SQLSetConnectAttr(dbc,SQL_ATTR_TXN_ISOLATION,
 			(SQLPOINTER)(uintptr_t)SQL_TXN_REPEATABLE_READ,0);
 	assertSuccessDbc(dbc,erg);
+	erg=SQLGetConnectAttr(dbc,SQL_ATTR_TXN_ISOLATION,
+			(SQLPOINTER)&dbcuintval,0,&dbcstrlen);
+	assertSuccessDbc(dbc,erg);
+	assertEqualDbc(dbc,(int)dbcuintval,(int)SQL_TXN_REPEATABLE_READ);
 
 	erg=SQLSetConnectAttr(dbc,SQL_ATTR_TXN_ISOLATION,
 			(SQLPOINTER)(uintptr_t)SQL_TXN_SERIALIZABLE,0);
 	assertSuccessDbc(dbc,erg);
+	erg=SQLGetConnectAttr(dbc,SQL_ATTR_TXN_ISOLATION,
+			(SQLPOINTER)&dbcuintval,0,&dbcstrlen);
+	assertSuccessDbc(dbc,erg);
+	assertEqualDbc(dbc,(int)dbcuintval,(int)SQL_TXN_SERIALIZABLE);
 
 	// reset to MySQL's default isolation level (REPEATABLE READ)
 	erg=SQLSetConnectAttr(dbc,SQL_ATTR_TXN_ISOLATION,
 			(SQLPOINTER)(uintptr_t)SQL_TXN_REPEATABLE_READ,0);
 	assertSuccessDbc(dbc,erg);
+	erg=SQLGetConnectAttr(dbc,SQL_ATTR_TXN_ISOLATION,
+			(SQLPOINTER)&dbcuintval,0,&dbcstrlen);
+	assertSuccessDbc(dbc,erg);
+	assertEqualDbc(dbc,(int)dbcuintval,(int)SQL_TXN_REPEATABLE_READ);
 	stdoutput.printf("\n");
 
 
@@ -4906,7 +4974,12 @@ int main(int argc, char **argv) {
 	erg=SQLGetStmtAttr(stmt,SQL_ATTR_KEYSET_SIZE,
 			(SQLPOINTER)&stmtulenval,0,&stmtstrlen);
 	assertSuccessStmt(stmt,erg);
-	assertTrueStmt(stmt,(stmtulenval==10 || stmtulenval==0));
+	if (issqlrelay) {
+		assertEqualStmt(stmt,(int)stmtulenval,10);
+	} else {
+		// the rejected set leaves the value unchanged
+		assertEqualStmt(stmt,(int)stmtulenval,0);
+	}
 	erg=SQLSetStmtAttr(stmt,SQL_ATTR_KEYSET_SIZE,
 			(SQLPOINTER)(uintptr_t)stmtinitial,0);
 	if (issqlrelay) {
@@ -5069,6 +5142,9 @@ int main(int argc, char **argv) {
 	stdoutput.printf("  SQL_ATTR_ROW_NUMBER\n");
 	erg=SQLGetStmtAttr(stmt,SQL_ATTR_ROW_NUMBER,
 			(SQLPOINTER)&stmtulenval,0,&stmtstrlen);
+	// no cursor is open; the unixodbc driver manager itself
+	// raises 24000 before the call reaches either driver
+	assertFailureStmt(stmt,erg);
 	// setting should fail (read-only)
 	erg=SQLSetStmtAttr(stmt,SQL_ATTR_ROW_NUMBER,
 			(SQLPOINTER)(uintptr_t)1,0);
@@ -5086,6 +5162,9 @@ int main(int argc, char **argv) {
 	assertSuccessStmt(stmt,erg);
 	if (issqlrelay) {
 		assertEqualStmt(stmt,(int)stmtinitial,(int)SQL_FALSE);
+	} else {
+		// MariaDB defaults to SQL_TRUE despite the spec default
+		assertEqualStmt(stmt,(int)stmtinitial,(int)SQL_TRUE);
 	}
 	erg=SQLSetStmtAttr(stmt,SQL_ATTR_METADATA_ID,
 			(SQLPOINTER)(uintptr_t)SQL_TRUE,0);
@@ -8543,7 +8622,8 @@ int main(int argc, char **argv) {
 	assertEqualStmt(stmt,(const char *)pktable,"testtable");
 	assertEqualStmt(stmt,(const char *)pkcol,"col1");
 	assertEqualStmt(stmt,(int)pkseq,1);
-	assertTrueStmt(stmt,pknameind>0);
+	assertEqualStmt(stmt,(int)pknameind,7);
+	assertEqualStmt(stmt,(const char *)pkname,"PRIMARY");
 	erg=SQLFetch(stmt);
 	assertEqualStmt(stmt,(int)erg,(int)SQL_NO_DATA);
 	SQLFreeStmt(stmt,SQL_CLOSE);

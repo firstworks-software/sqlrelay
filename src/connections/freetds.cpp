@@ -465,7 +465,7 @@ void freetdsconnection::initDatabaseFeatures() {
 	// FIXME: we need separate methods for sybase and mssql
 
 	databasefeatures[FEATURE_AGGREGATE_FUNCTIONS]=
-		"";
+		"ALL,AVG,COUNT,DISTINCT,MAX,MIN,SUM";
 
 	databasefeatures[FEATURE_ALL_PROCEDURES_ARE_CALLABLE]=
 		"true";
