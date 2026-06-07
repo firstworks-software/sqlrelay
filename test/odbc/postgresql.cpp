@@ -1115,8 +1115,8 @@ int main(int argc, char **argv) {
 	if (issqlrelay) {
 		assertEqualDbc(dbc,(const char *)strval,"sqlrelay");
 	} else {
-		// oracle returns the full TNS description; just verify non-empty
-		assertTrueDbc(dbc,vallen>0);
+		// the Server= connect-string parameter
+		assertEqualDbc(dbc,(const char *)strval,"postgresql");
 	}
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
@@ -4876,46 +4876,40 @@ int main(int argc, char **argv) {
 	#if (ODBCVER >= 0x0300)
 	// SQL_ATTR_APP_ROW_DESC (descriptor handle, settable)
 	stdoutput.printf("  SQL_ATTR_APP_ROW_DESC\n");
-	// hangs when run directly against oracle
-	if (issqlrelay) {
-		// get initial (implicit app row descriptor)
-		erg=SQLGetStmtAttr(stmt,SQL_ATTR_APP_ROW_DESC,
-				(SQLPOINTER)&stmtptrinit,0,&stmtstrlen);
-		assertSuccessStmt(stmt,erg);
-		// round-trip the same handle
-		erg=SQLSetStmtAttr(stmt,SQL_ATTR_APP_ROW_DESC,
-				(SQLPOINTER)stmtptrinit,SQL_IS_POINTER);
-		assertSuccessStmt(stmt,erg);
-		erg=SQLGetStmtAttr(stmt,SQL_ATTR_APP_ROW_DESC,
-				(SQLPOINTER)&stmtptrval,0,&stmtstrlen);
-		assertSuccessStmt(stmt,erg);
-		assertEqualStmt(stmt,(int)(stmtptrval==stmtptrinit),1);
-		// SQL_NULL_DESC resets to the implicit descriptor
-		erg=SQLSetStmtAttr(stmt,SQL_ATTR_APP_ROW_DESC,
-				(SQLPOINTER)SQL_NULL_DESC,SQL_IS_POINTER);
-		assertSuccessStmt(stmt,erg);
-	}
+	// get initial (implicit app row descriptor)
+	erg=SQLGetStmtAttr(stmt,SQL_ATTR_APP_ROW_DESC,
+			(SQLPOINTER)&stmtptrinit,0,&stmtstrlen);
+	assertSuccessStmt(stmt,erg);
+	// round-trip the same handle
+	erg=SQLSetStmtAttr(stmt,SQL_ATTR_APP_ROW_DESC,
+			(SQLPOINTER)stmtptrinit,SQL_IS_POINTER);
+	assertSuccessStmt(stmt,erg);
+	erg=SQLGetStmtAttr(stmt,SQL_ATTR_APP_ROW_DESC,
+			(SQLPOINTER)&stmtptrval,0,&stmtstrlen);
+	assertSuccessStmt(stmt,erg);
+	assertEqualStmt(stmt,(int)(stmtptrval==stmtptrinit),1);
+	// SQL_NULL_DESC resets to the implicit descriptor
+	erg=SQLSetStmtAttr(stmt,SQL_ATTR_APP_ROW_DESC,
+			(SQLPOINTER)SQL_NULL_DESC,SQL_IS_POINTER);
+	assertSuccessStmt(stmt,erg);
 	stdoutput.printf("\n");
 
 
 	// SQL_ATTR_APP_PARAM_DESC (descriptor handle, settable)
 	stdoutput.printf("  SQL_ATTR_APP_PARAM_DESC\n");
-	// hangs when run directly against oracle
-	if (issqlrelay) {
-		erg=SQLGetStmtAttr(stmt,SQL_ATTR_APP_PARAM_DESC,
-				(SQLPOINTER)&stmtptrinit,0,&stmtstrlen);
-		assertSuccessStmt(stmt,erg);
-		erg=SQLSetStmtAttr(stmt,SQL_ATTR_APP_PARAM_DESC,
-				(SQLPOINTER)stmtptrinit,SQL_IS_POINTER);
-		assertSuccessStmt(stmt,erg);
-		erg=SQLGetStmtAttr(stmt,SQL_ATTR_APP_PARAM_DESC,
-				(SQLPOINTER)&stmtptrval,0,&stmtstrlen);
-		assertSuccessStmt(stmt,erg);
-		assertEqualStmt(stmt,(int)(stmtptrval==stmtptrinit),1);
-		erg=SQLSetStmtAttr(stmt,SQL_ATTR_APP_PARAM_DESC,
-			(SQLPOINTER)SQL_NULL_DESC,SQL_IS_POINTER);
-		assertSuccessStmt(stmt,erg);
-	}
+	erg=SQLGetStmtAttr(stmt,SQL_ATTR_APP_PARAM_DESC,
+			(SQLPOINTER)&stmtptrinit,0,&stmtstrlen);
+	assertSuccessStmt(stmt,erg);
+	erg=SQLSetStmtAttr(stmt,SQL_ATTR_APP_PARAM_DESC,
+			(SQLPOINTER)stmtptrinit,SQL_IS_POINTER);
+	assertSuccessStmt(stmt,erg);
+	erg=SQLGetStmtAttr(stmt,SQL_ATTR_APP_PARAM_DESC,
+			(SQLPOINTER)&stmtptrval,0,&stmtstrlen);
+	assertSuccessStmt(stmt,erg);
+	assertEqualStmt(stmt,(int)(stmtptrval==stmtptrinit),1);
+	erg=SQLSetStmtAttr(stmt,SQL_ATTR_APP_PARAM_DESC,
+		(SQLPOINTER)SQL_NULL_DESC,SQL_IS_POINTER);
+	assertSuccessStmt(stmt,erg);
 	stdoutput.printf("\n");
 
 

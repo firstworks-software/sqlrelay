@@ -8230,7 +8230,9 @@ int main(int argc, char **argv) {
 	erg=SQLBindCol(stmt,1,SQL_C_CHAR,
 			catname,sizeof(catname),&catnameind);
 	assertSuccessStmt(stmt,erg);
+	int		catrows=0;
 	bool		catfound=false;
+	bool		catdeffound=false;
 	for (;;) {
 		erg=SQLFetch(stmt);
 		if (erg==SQL_NO_DATA) {
@@ -8244,10 +8246,18 @@ int main(int argc, char **argv) {
 					(const char *)catname,hostname)) {
 			catfound=true;
 		}
+		if (!charstring::compare((const char *)catname,"def")) {
+			catdeffound=true;
+		}
+		catrows++;
 	}
+	// Through sqlrelay the list follows information_schema's model -
+	// the lone catalog is "def" and the databases are schemas.  The
+	// native driver treats databases as catalogs instead; the connected
+	// database, named after the host, appears in the list.
 	if (issqlrelay) {
-		// sqlrelay's mysql backend returns "def", not the database name
-		// FIXME: is this different than JDBC?
+		assertEqualStmt(stmt,catrows,1);
+		assertTrueStmt(stmt,catdeffound);
 	} else {
 		assertTrueStmt(stmt,catfound);
 	}
@@ -8268,7 +8278,37 @@ int main(int argc, char **argv) {
 			(SQLCHAR *)"",SQL_NTS,
 			(SQLCHAR *)"",SQL_NTS);
 	assertSuccessStmt(stmt,erg);
-	// in native mode the result set is typically empty for MySQL
+	SQLCHAR		schname[1024];
+	SQLLEN		schnameind;
+	erg=SQLBindCol(stmt,2,SQL_C_CHAR,
+			schname,sizeof(schname),&schnameind);
+	assertSuccessStmt(stmt,erg);
+	int		schrows=0;
+	bool		schfound=false;
+	for (;;) {
+		erg=SQLFetch(stmt);
+		if (erg==SQL_NO_DATA) {
+			break;
+		}
+		assertSuccessStmt(stmt,erg);
+		if (erg!=SQL_SUCCESS && erg!=SQL_SUCCESS_WITH_INFO) {
+			break;
+		}
+		if (!charstring::compareIgnoringCase(
+					(const char *)schname,hostname)) {
+			schfound=true;
+		}
+		schrows++;
+	}
+	if (issqlrelay) {
+		// mysql databases are schemas through sqlrelay; the connected
+		// database, named after the host, should appear in the list
+		assertTrueStmt(stmt,schfound);
+	} else {
+		// the native driver treats databases as catalogs and
+		// has no schemas; the list is empty
+		assertEqualStmt(stmt,schrows,0);
+	}
 	SQLFreeStmt(stmt,SQL_CLOSE);
 	SQLFreeStmt(stmt,SQL_UNBIND);
 	stdoutput.printf("\n");

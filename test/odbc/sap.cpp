@@ -1080,8 +1080,8 @@ int main(int argc, char **argv) {
 	if (issqlrelay) {
 		assertEqualDbc(dbc,(const char *)strval,"sqlrelay");
 	} else {
-		// oracle returns the full TNS description string; verify non-empty
-		assertTrueDbc(dbc,vallen>0);
+		// the Server= connect-string parameter
+		assertEqualDbc(dbc,(const char *)strval,"sap");
 	}
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
@@ -4413,45 +4413,57 @@ int main(int argc, char **argv) {
 	#if (ODBCVER >= 0x0300)
 	// SQL_ATTR_APP_ROW_DESC (descriptor handle, settable)
 	stdoutput.printf("  SQL_ATTR_APP_ROW_DESC\n");
-	// hangs when run directly against oracle
+	// get initial (implicit app row descriptor)
+	erg=SQLGetStmtAttr(stmt,SQL_ATTR_APP_ROW_DESC,
+			(SQLPOINTER)&stmtptrinit,0,&stmtstrlen);
+	assertSuccessStmt(stmt,erg);
+	// round-trip the same handle; the native driver doesn't implement
+	// setting the descriptor handles (HYC00) but gets still work
+	erg=SQLSetStmtAttr(stmt,SQL_ATTR_APP_ROW_DESC,
+			(SQLPOINTER)stmtptrinit,SQL_IS_POINTER);
 	if (issqlrelay) {
-		// get initial (implicit app row descriptor)
-		erg=SQLGetStmtAttr(stmt,SQL_ATTR_APP_ROW_DESC,
-				(SQLPOINTER)&stmtptrinit,0,&stmtstrlen);
 		assertSuccessStmt(stmt,erg);
-		// round-trip the same handle
-		erg=SQLSetStmtAttr(stmt,SQL_ATTR_APP_ROW_DESC,
-				(SQLPOINTER)stmtptrinit,SQL_IS_POINTER);
+	} else {
+		assertFailureStmt(stmt,erg);
+	}
+	erg=SQLGetStmtAttr(stmt,SQL_ATTR_APP_ROW_DESC,
+			(SQLPOINTER)&stmtptrval,0,&stmtstrlen);
+	assertSuccessStmt(stmt,erg);
+	assertEqualStmt(stmt,(int)(stmtptrval==stmtptrinit),1);
+	// SQL_NULL_DESC resets to the implicit descriptor
+	erg=SQLSetStmtAttr(stmt,SQL_ATTR_APP_ROW_DESC,
+			(SQLPOINTER)SQL_NULL_DESC,SQL_IS_POINTER);
+	if (issqlrelay) {
 		assertSuccessStmt(stmt,erg);
-		erg=SQLGetStmtAttr(stmt,SQL_ATTR_APP_ROW_DESC,
-				(SQLPOINTER)&stmtptrval,0,&stmtstrlen);
-		assertSuccessStmt(stmt,erg);
-		assertEqualStmt(stmt,(int)(stmtptrval==stmtptrinit),1);
-		// SQL_NULL_DESC resets to the implicit descriptor
-		erg=SQLSetStmtAttr(stmt,SQL_ATTR_APP_ROW_DESC,
-				(SQLPOINTER)SQL_NULL_DESC,SQL_IS_POINTER);
-		assertSuccessStmt(stmt,erg);
+	} else {
+		assertFailureStmt(stmt,erg);
 	}
 	stdoutput.printf("\n");
 
 
 	// SQL_ATTR_APP_PARAM_DESC (descriptor handle, settable)
 	stdoutput.printf("  SQL_ATTR_APP_PARAM_DESC\n");
-	// hangs when run directly against oracle
+	// same per-mode behavior as SQL_ATTR_APP_ROW_DESC
+	erg=SQLGetStmtAttr(stmt,SQL_ATTR_APP_PARAM_DESC,
+			(SQLPOINTER)&stmtptrinit,0,&stmtstrlen);
+	assertSuccessStmt(stmt,erg);
+	erg=SQLSetStmtAttr(stmt,SQL_ATTR_APP_PARAM_DESC,
+			(SQLPOINTER)stmtptrinit,SQL_IS_POINTER);
 	if (issqlrelay) {
-		erg=SQLGetStmtAttr(stmt,SQL_ATTR_APP_PARAM_DESC,
-				(SQLPOINTER)&stmtptrinit,0,&stmtstrlen);
 		assertSuccessStmt(stmt,erg);
-		erg=SQLSetStmtAttr(stmt,SQL_ATTR_APP_PARAM_DESC,
-				(SQLPOINTER)stmtptrinit,SQL_IS_POINTER);
+	} else {
+		assertFailureStmt(stmt,erg);
+	}
+	erg=SQLGetStmtAttr(stmt,SQL_ATTR_APP_PARAM_DESC,
+			(SQLPOINTER)&stmtptrval,0,&stmtstrlen);
+	assertSuccessStmt(stmt,erg);
+	assertEqualStmt(stmt,(int)(stmtptrval==stmtptrinit),1);
+	erg=SQLSetStmtAttr(stmt,SQL_ATTR_APP_PARAM_DESC,
+		(SQLPOINTER)SQL_NULL_DESC,SQL_IS_POINTER);
+	if (issqlrelay) {
 		assertSuccessStmt(stmt,erg);
-		erg=SQLGetStmtAttr(stmt,SQL_ATTR_APP_PARAM_DESC,
-				(SQLPOINTER)&stmtptrval,0,&stmtstrlen);
-		assertSuccessStmt(stmt,erg);
-		assertEqualStmt(stmt,(int)(stmtptrval==stmtptrinit),1);
-		erg=SQLSetStmtAttr(stmt,SQL_ATTR_APP_PARAM_DESC,
-			(SQLPOINTER)SQL_NULL_DESC,SQL_IS_POINTER);
-		assertSuccessStmt(stmt,erg);
+	} else {
+		assertFailureStmt(stmt,erg);
 	}
 	stdoutput.printf("\n");
 
@@ -7435,6 +7447,7 @@ int main(int argc, char **argv) {
 	erg=SQLBindCol(stmt,4,SQL_C_CHAR,
 			tabletype,sizeof(tabletype),&tabletypeind);
 	assertSuccessStmt(stmt,erg);
+	int		ttrows=0;
 	bool		foundtable=false;
 	bool		foundview=false;
 	for (;;) {
@@ -7453,6 +7466,7 @@ int main(int argc, char **argv) {
 					(const char *)tabletype,"VIEW")) {
 			foundview=true;
 		}
+		ttrows++;
 	}
 	// SQL Relay returns the standard table-type list (TABLE, VIEW, ...);
 	// the native SAP ASE ODBC driver doesn't implement the
@@ -7460,6 +7474,8 @@ int main(int argc, char **argv) {
 	if (issqlrelay) {
 		assertTrueStmt(stmt,foundtable);
 		assertTrueStmt(stmt,foundview);
+	} else {
+		assertEqualStmt(stmt,ttrows,0);
 	}
 	SQLFreeStmt(stmt,SQL_CLOSE);
 	SQLFreeStmt(stmt,SQL_UNBIND);
@@ -7651,7 +7667,7 @@ int main(int argc, char **argv) {
 
 
 	// column list - auto_increment, primary key
-	// (oracle doesn't support auto_increment)
+	// exercises primary-key reporting via SQLPrimaryKeys
 	stdoutput.printf("COLUMN LIST - auto_increment, primary key: \n");
 	SQLFreeStmt(stmt,SQL_CLOSE);
 	SQLFreeStmt(stmt,SQL_UNBIND);

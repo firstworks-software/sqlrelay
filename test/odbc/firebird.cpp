@@ -7151,7 +7151,12 @@ int main(int argc, char **argv) {
 			(SQLCHAR *)"",SQL_NTS,
 			(SQLCHAR *)"",SQL_NTS);
 	assertSuccessStmt(stmt,erg);
-	// firebird has no catalogs; just walk whatever came back
+	SQLCHAR		catname[1024];
+	SQLLEN		catnameind;
+	erg=SQLBindCol(stmt,1,SQL_C_CHAR,
+			catname,sizeof(catname),&catnameind);
+	assertSuccessStmt(stmt,erg);
+	int		catrows=0;
 	for (;;) {
 		erg=SQLFetch(stmt);
 		if (erg==SQL_NO_DATA) {
@@ -7161,8 +7166,22 @@ int main(int argc, char **argv) {
 		if (erg!=SQL_SUCCESS && erg!=SQL_SUCCESS_WITH_INFO) {
 			break;
 		}
+		catrows++;
+	}
+	if (issqlrelay) {
+		// firebird has no catalogs; sqlrelay returns a single row
+		// with an empty catalog name
+		assertEqualStmt(stmt,catrows,1);
+		assertEqualStmt(stmt,(int)catnameind,0);
+		assertEqualStmt(stmt,(const char *)catname,"");
+	} else {
+		// the native driver is assumed to return an empty list
+		// (firebird has no catalogs; unverified, no firebird odbc
+		// driver available)
+		assertEqualStmt(stmt,catrows,0);
 	}
 	SQLFreeStmt(stmt,SQL_CLOSE);
+	SQLFreeStmt(stmt,SQL_UNBIND);
 	stdoutput.printf("\n");
 
 

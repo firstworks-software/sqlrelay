@@ -1114,8 +1114,8 @@ int main(int argc, char **argv) {
 	if (issqlrelay) {
 		assertEqualDbc(dbc,(const char *)strval,"sqlrelay");
 	} else {
-		// the native informix driver returns a non-empty value
-		assertTrueDbc(dbc,vallen>0);
+		// the Server= connect-string parameter
+		assertEqualDbc(dbc,(const char *)strval,"ol_informix1210");
 	}
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");

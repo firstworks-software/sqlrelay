@@ -7405,7 +7405,12 @@ int main(int argc, char **argv) {
 			(SQLCHAR *)"",SQL_NTS,
 			(SQLCHAR *)"",SQL_NTS);
 	assertSuccessStmt(stmt,erg);
-	// just walk whatever came back
+	SQLCHAR		catname[1024];
+	SQLLEN		catnameind;
+	erg=SQLBindCol(stmt,1,SQL_C_CHAR,
+			catname,sizeof(catname),&catnameind);
+	assertSuccessStmt(stmt,erg);
+	int		catrows=0;
 	for (;;) {
 		erg=SQLFetch(stmt);
 		if (erg==SQL_NO_DATA) {
@@ -7415,8 +7420,21 @@ int main(int argc, char **argv) {
 		if (erg!=SQL_SUCCESS && erg!=SQL_SUCCESS_WITH_INFO) {
 			break;
 		}
+		catrows++;
+	}
+	// sqlite has no catalogs; through sqlrelay the list is a single
+	// row with an empty catalog name, the native driver returns a
+	// couple of placeholder rows with null catalog names
+	if (issqlrelay) {
+		assertEqualStmt(stmt,catrows,1);
+		assertEqualStmt(stmt,(int)catnameind,0);
+		assertEqualStmt(stmt,(const char *)catname,"");
+	} else {
+		assertEqualStmt(stmt,catrows,2);
+		assertEqualStmt(stmt,(int)catnameind,(int)SQL_NULL_DATA);
 	}
 	SQLFreeStmt(stmt,SQL_CLOSE);
+	SQLFreeStmt(stmt,SQL_UNBIND);
 	stdoutput.printf("\n");
 
 

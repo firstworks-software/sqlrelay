@@ -7865,7 +7865,7 @@ int main(int argc, char **argv) {
 			(SQLCHAR *)"",SQL_NTS,
 			(SQLCHAR *)"",SQL_NTS);
 	assertSuccessStmt(stmt,erg);
-	// db2 treats the database as the catalog; just drain the list
+	int		catrows=0;
 	for (;;) {
 		erg=SQLFetch(stmt);
 		if (erg==SQL_NO_DATA) {
@@ -7875,7 +7875,11 @@ int main(int argc, char **argv) {
 		if (erg!=SQL_SUCCESS && erg!=SQL_SUCCESS_WITH_INFO) {
 			break;
 		}
+		catrows++;
 	}
+	// db2 has no way to list catalogs; both sqlrelay and the native
+	// driver return an empty list
+	assertEqualStmt(stmt,catrows,0);
 	SQLFreeStmt(stmt,SQL_CLOSE);
 	stdoutput.printf("\n");
 

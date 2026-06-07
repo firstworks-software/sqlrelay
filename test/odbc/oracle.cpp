@@ -7991,7 +7991,7 @@ int main(int argc, char **argv) {
 
 
 	// column list - auto_increment, primary key
-	// (oracle doesn't support auto_increment)
+	// exercises primary-key reporting via SQLPrimaryKeys
 	stdoutput.printf("COLUMN LIST - auto_increment, primary key: \n");
 	SQLFreeStmt(stmt,SQL_CLOSE);
 	SQLFreeStmt(stmt,SQL_UNBIND);
