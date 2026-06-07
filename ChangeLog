@@ -102,6 +102,13 @@
 	defaulted getColumnIsNullable() to 1
 	updated informix tests to expect 1-based procedure-parameter
 		ordinal positions
+	fixed JDBC driver setDouble()/setFloat() to bind with unspecified
+		precision/scale rather than 15,0/7,0, which truncated
+		fractional values when binds were faked or string-formatted
+	updated postgresql connection to format doubles bound with
+		unspecified precision/scale naturally instead of with
+		scale 0
+	strengthened float/real round-trip assertions in jdbc tests
 
 2.1.1 - added tns_admin support
 	fixed sqlr-start ... -strace ...

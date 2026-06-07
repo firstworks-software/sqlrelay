@@ -2808,7 +2808,13 @@ bool postgresqlcursor::inputBind(const char *variable,
 		return true;
 	}
 
-	bindvalues[pos]=charstring::parseNumber(*value,precision,scale);
+	// if precision and scale were unspecified then format naturally
+	if (!precision && !scale) {
+		bindvalues[pos]=charstring::parseNumber(*value);
+	} else {
+		bindvalues[pos]=charstring::parseNumber(*value,
+							precision,scale);
+	}
 	bindsizes[pos]=charstring::getLength(bindvalues[pos]);
 	bindformats[pos]=0;
 	bindcount++;

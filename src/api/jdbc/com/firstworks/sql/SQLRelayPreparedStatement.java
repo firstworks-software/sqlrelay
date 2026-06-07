@@ -370,11 +370,11 @@ public class SQLRelayPreparedStatement
 				break;
 			case Double:
 				sqlrcur.inputBind(key,
-					((Double)o).doubleValue(),15,0);
+					((Double)o).doubleValue(),0,0);
 				break;
 			case Float:
 				sqlrcur.inputBind(key,
-					((Float)o).floatValue(),7,0);
+					((Float)o).floatValue(),0,0);
 				break;
 			case Int:
 				sqlrcur.inputBind(key,

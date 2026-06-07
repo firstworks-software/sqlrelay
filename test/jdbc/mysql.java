@@ -2177,13 +2177,13 @@ class mysql extends sqlrtest {
 
 			// real
 			System.out.println("  row "+i+" - real");
-			assertEquals(rs.getString(7),i+".1");
+			assertEquals(rs.getString(7),i+".5");
 			assertFalse(rs.wasNull());
 			System.out.println();
 
 			// decimal
 			System.out.println("  row "+i+" - decimal");
-			assertEquals(rs.getString(8),i+".1");
+			assertEquals(rs.getString(8),i+".5");
 			assertFalse(rs.wasNull());
 			System.out.println();
 

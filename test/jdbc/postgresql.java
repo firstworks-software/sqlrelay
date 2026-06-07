@@ -1555,8 +1555,8 @@ class postgresql extends sqlrtest {
 			"	testtable "+
 			"values ("+
 			"	1, "+
-			"	1.1, "+
-			"	1.1, "+
+			"	1.5, "+
+			"	1.5, "+
 			"	1, "+
 			"	'char1', "+
 			"	'varchar1', "+
@@ -1614,8 +1614,8 @@ class postgresql extends sqlrtest {
 		for (int i=2; i<=4; i++) {
 			pstmt.clearParameters();
 			pstmt.setInt(1,i);
-			pstmt.setDouble(2,i+0.1);
-			pstmt.setDouble(3,i+0.1);
+			pstmt.setDouble(2,i+0.5);
+			pstmt.setDouble(3,i+0.5);
 			pstmt.setInt(4,i);
 			pstmt.setString(5,"char"+i);
 			pstmt.setString(6,"varchar"+i);
@@ -1748,13 +1748,13 @@ class postgresql extends sqlrtest {
 
 			// float
 			System.out.println("  row "+i+" - float");
-			assertTrue(rs.getString(2)!=null);
+			assertEquals(rs.getString(2),i+".5");
 			assertFalse(rs.wasNull());
 			System.out.println();
 
 			// real
 			System.out.println("  row "+i+" - real");
-			assertTrue(rs.getString(3)!=null);
+			assertEquals(rs.getString(3),i+".5");
 			assertFalse(rs.wasNull());
 			System.out.println();
 
@@ -1899,13 +1899,13 @@ class postgresql extends sqlrtest {
 
 			// float
 			System.out.println("  row "+i+" - float");
-			assertTrue(rs.getString("testfloat")!=null);
+			assertEquals(rs.getString("testfloat"),i+".5");
 			assertFalse(rs.wasNull());
 			System.out.println();
 
 			// real
 			System.out.println("  row "+i+" - real");
-			assertTrue(rs.getString("testreal")!=null);
+			assertEquals(rs.getString("testreal"),i+".5");
 			assertFalse(rs.wasNull());
 			System.out.println();
 
@@ -2153,7 +2153,7 @@ class postgresql extends sqlrtest {
 		}
 		assertTrue((pstmt!=null));
 		pstmt.setInt(1,1);
-		pstmt.setDouble(2,1.1);
+		pstmt.setDouble(2,2.5);
 		pstmt.setString(3,"hello");
 		pstmt.execute();
 		pstmt.close();
@@ -2178,12 +2178,40 @@ class postgresql extends sqlrtest {
 		}
 		assertTrue((pstmt!=null));
 		pstmt.setInt(1,1);
-		pstmt.setDouble(2,1.1);
+		pstmt.setDouble(2,2.5);
 		pstmt.setString(3,"hello");
 		rs=pstmt.executeQuery();
 		assertTrue((rs!=null));
 		rs.next();
 		assertEquals(rs.getString(1),"1");
+		rs.close();
+		pstmt.close();
+		stmt.executeUpdate("drop function testfunc(int,float,char)");
+		System.out.println();
+		// return single value (float)
+		assertEquals(stmt.executeUpdate(
+			"create function testfunc(int,float,char(20)) "+
+			"	returns float as "+
+			"'begin "+
+			"	return $2; "+
+			"end;' "+
+			"language plpgsql"),0);
+		if (issqlrelay) {
+			pstmt=con.prepareStatement(
+				"select testfunc($1,$2,$3)");
+		} else {
+			// postgresql jdbc requires ? format
+			pstmt=con.prepareStatement(
+				"select testfunc(?,?,?)");
+		}
+		assertTrue((pstmt!=null));
+		pstmt.setInt(1,1);
+		pstmt.setDouble(2,2.5);
+		pstmt.setString(3,"hello");
+		rs=pstmt.executeQuery();
+		assertTrue((rs!=null));
+		rs.next();
+		assertEquals(rs.getString(1),"2.5");
 		rs.close();
 		pstmt.close();
 		stmt.executeUpdate("drop function testfunc(int,float,char)");
