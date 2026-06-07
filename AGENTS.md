@@ -136,7 +136,7 @@ Result/detail logs land at `test/testresults.log` and `test/testdetails.log` aft
 - **Most `.in` files are processed by `configure`**, but a few are processed by `make` in their directory instead: `test/tcl/*.tcl.in` (→ `*.tcl`), `src/api/python/PySQLRDB.py.in` (→ `PySQLRDB.py`), and `src/api/erlang/sqlrelay.erl.in` (→ `sqlrelay.erl`). After editing any of those, run `make` in that directory to regenerate the output — rerunning `./configure` won't do it.
 - **Windows build** is separate: `config_windows.mk`, `config_windows.h`, `configure.vbs`, `msvc/`. Changes that touch build variables usually need to be mirrored there.
 - **License**: GPLv2 with linking exceptions per-component — see `COPYING`. The server, command-line clients, and each language API have distinct license terms; check before copying code across component boundaries.
-- **`ChangeLog` entries**: append new entries to the end of the first (current-version) section, not in the middle next to topically-related entries. The first section is whatever appears before the first blank line at the top of the file.
+- **`ChangeLog` entries**: append new entries to the end of the first (current-version) section, not in the middle next to topically-related entries. The first section is whatever appears before the first blank line at the top of the file. Update the ChangeLog whenever something outside of `test/` changes, unless the change is already covered by an existing entry in that release (e.g. if an entry says "added some feature to c++ api", don't log further changes to that feature). Never log changes to tests.
 
 ## Commits
 
