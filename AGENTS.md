@@ -71,11 +71,17 @@ Tests live under `test/` and run against a **real database** via a live sqlr-lis
 
 ```
 make tests                        # equivalent to: cd test && make tests
-cd test && ./testall.sh           # run everything enabled by configure
-cd test && ./test.sh <db>         # run one DB through every enabled API
+cd test && ./testall.sh [dbs] [apis]      # run everything enabled by configure,
+                                          # or just the given DBs/APIs
+cd test && ./test.sh <db> [apis]          # run one DB through every enabled API,
+                                          # or just the given APIs
 ```
 
-`TESTDBS` (set by `configure.in` around line 1005) is the list of DB/config fixtures to exercise — each corresponds to `test/sqlrelay.conf.d/<name>.conf`. `TESTAPIS` (configure.in ~940) is the list of client-API directories. `testall.sh.in` loops over `$TESTDBS`, starts an sqlr instance per DB with that fixture, pings it, then calls `test.sh <db>` which loops over `$TESTAPIS` and runs `./<db>` (or `./<db>.py`, `./<db>.pl`, etc.) in each.
+Both scripts default to the full configure-time lists; pass space-separated
+subsets (quoted) to narrow a run, e.g. `./testall.sh "mysql postgresql" "c++ odbc"`
+or `./test.sh mysql odbc`.
+
+`TESTDBS` (set by `configure.in` around line 1005) is the list of DB/config fixtures to exercise — each corresponds to `test/sqlrelay.conf.d/<name>.conf`. `TESTAPIS` (configure.in ~940) is the list of client-API directories. `testall.sh.in` loops over `$TESTDBS` (or the dbs given in arg 1), starts an sqlr instance per DB with that fixture, pings it, then calls `test.sh <db>` which loops over `$TESTAPIS` (or the apis given in arg 2) and runs `./<db>` (or `./<db>.py`, `./<db>.pl`, etc.) in each.
 
 Per-test-type directories: `c/`, `c++/`, `extensions/` (trigger/router-specific C++ tests — recently split out of `c++/`), `cs/`, `ado.net/`, `erlang/`, `java/`, `jdbc/`, `nodejs/`, `odbc/`, `perl/`, `perldbi/`, `php/`, `phppdo/`, `python/`, `pythondb/`, `ruby/`, `tcl/`, plus `crud/`, `protocol/` (native-protocol emulation tests), `legacy/`, `stress/`, `bench/`.
 
@@ -85,13 +91,10 @@ C/C++ tests are plain executables built by each per-language Makefile:
 
 ```
 cd test/c++ && make mysql         # build just the mysql test binary
-# start an sqlr instance pointed at test/sqlrelay.conf.d/mysql.conf first
-/usr/local/firstworks/bin/sqlr-start -config \
-    $(pwd)/../sqlrelay.conf.d/mysql.conf -id mysqltest
-./mysql                           # run it
-/usr/local/firstworks/bin/sqlr-stop -config \
-    $(pwd)/../sqlrelay.conf.d/mysql.conf -id mysqltest
+cd .. && ./testall.sh mysql c++   # run just that DB/API combination
 ```
+
+`testall.sh <db> <api>` starts the sqlr instance for that DB, pings it, runs the test, and stops the instance - no manual `sqlr-start`/`sqlr-stop` needed. (A test binary can also be run directly, e.g. `cd test/c++ && ./mysql`, if an instance for that DB is already up.)
 
 For other languages the pattern is the same — the per-API Makefile produces `<db>.{exe,class,jar,py,pl,php,rb,tcl,beam,js}` and `test.sh` decides which runtime invokes it.
 
