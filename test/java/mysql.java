@@ -1795,7 +1795,7 @@ class mysql extends sqlrtest {
 			"begin end"));
 		cur.prepareQuery("call testproc(?,?,?)");
 		cur.inputBind("1",1);
-		cur.inputBind("2",1.1,2,1);
+		cur.inputBind("2",1.5,2,1);
 		cur.inputBind("3","hello");
 		assertTrue(cur.executeQuery());
 		assertTrue(cur.sendQuery("drop procedure testproc"));
@@ -1815,7 +1815,7 @@ class mysql extends sqlrtest {
 			"end"));
 		cur.prepareQuery("call testproc(?,?,?)");
 		cur.inputBind("1",1);
-		cur.inputBind("2",1.1,2,1);
+		cur.inputBind("2",1.5,2,1);
 		cur.inputBind("3","hello");
 		assertTrue(cur.executeQuery());
 		assertEquals(cur.getField(0,0),"1");
@@ -1837,11 +1837,11 @@ class mysql extends sqlrtest {
 			"end"));
 		cur.prepareQuery("call testproc(?,?,?)");
 		cur.inputBind("1",1);
-		cur.inputBind("2",1.1,2,1);
+		cur.inputBind("2",1.5,2,1);
 		cur.inputBind("3","hello");
 		assertTrue(cur.executeQuery());
 		assertEquals(cur.getField(0,0),"1");
-		assertEquals(cur.getField(0,1),"1.1");
+		assertEquals(cur.getField(0,1),"1.5");
 		assertEquals(cur.getField(0,2),"hello");
 		assertTrue(cur.sendQuery("drop procedure testproc"));
 		System.out.println();
@@ -1905,11 +1905,11 @@ class mysql extends sqlrtest {
 				"end;"));
 			cur.prepareQuery("call testproc(?,?,?)");
 			cur.inputBind("1",1);
-			cur.inputBind("2",1.1,4,2);
+			cur.inputBind("2",1.5,4,2);
 			cur.inputBind("3","hello");
 			assertTrue(cur.executeQuery());
 			assertEquals(cur.getField(0,0),"1");
-			assertEquals(cur.getField(0,1),"1.1");
+			assertEquals(cur.getField(0,1),"1.5");
 			assertEquals(cur.getField(0,2),"hello");
 			cur.sendQuery("drop procedure testproc");
 			System.out.println();

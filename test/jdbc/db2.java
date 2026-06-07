@@ -1552,9 +1552,9 @@ class db2 extends sqlrtest {
 			"	1, "+
 			"	1, "+
 			"	1, "+
-			"	1.1, "+
-			"	1.1, "+
-			"	1.1, "+
+			"	1.5, "+
+			"	1.5, "+
+			"	1.5, "+
 			"	'char1', "+
 			"	'varchar1', "+
 			"	'2001-01-01', "+
@@ -1597,9 +1597,9 @@ class db2 extends sqlrtest {
 			pstmt.setInt(1,i);
 			pstmt.setInt(2,i);
 			pstmt.setLong(3,(long)i);
-			pstmt.setDouble(4,i+0.1);
-			pstmt.setDouble(5,i+0.1);
-			pstmt.setDouble(6,i+0.1);
+			pstmt.setDouble(4,i+0.5);
+			pstmt.setDouble(5,i+0.5);
+			pstmt.setDouble(6,i+0.5);
 			pstmt.setString(7,"char"+i);
 			pstmt.setString(8,"varchar"+i);
 
@@ -1748,7 +1748,7 @@ class db2 extends sqlrtest {
 
 			// decimal
 			System.out.println("  row "+i+" - decimal");
-			assertEquals(rs.getString(4),i+".10");
+			assertEquals(rs.getString(4),i+".50");
 			assertFalse(rs.wasNull());
 			System.out.println();
 
@@ -1910,7 +1910,7 @@ class db2 extends sqlrtest {
 
 			// decimal
 			System.out.println("  row "+i+" - decimal");
-			assertEquals(rs.getString("TESTDECIMAL"),i+".10");
+			assertEquals(rs.getString("TESTDECIMAL"),i+".50");
 			assertFalse(rs.wasNull());
 			System.out.println();
 
@@ -2076,9 +2076,9 @@ class db2 extends sqlrtest {
 			"	10, "+
 			"	10, "+
 			"	10, "+
-			"	10.10, "+
-			"	10.10, "+
-			"	10.10, "+
+			"	10.50, "+
+			"	10.50, "+
+			"	10.50, "+
 			"	'char10', "+
 			"	'varchar10', "+
 			"	'2010-01-01', "+
@@ -2110,9 +2110,9 @@ class db2 extends sqlrtest {
 			"	10, "+
 			"	10, "+
 			"	10, "+
-			"	10.10, "+
-			"	10.10, "+
-			"	10.10, "+
+			"	10.50, "+
+			"	10.50, "+
+			"	10.50, "+
 			"	'char10', "+
 			"	'varchar10', "+
 			"	'2010-01-01', "+

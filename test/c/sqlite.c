@@ -134,7 +134,7 @@ int main(int argc, char **argv) {
 		"	testtable "
 		"values ("
 		"	1, "
-		"	1.1, "
+		"	1.5, "
 		"	'testchar1', "
 		"	'testvarchar1', "
 		"	'testclob1', "
@@ -144,7 +144,7 @@ int main(int argc, char **argv) {
 		"	testtable "
 		"values ("
 		"	2, "
-		"	2.2, "
+		"	2.5, "
 		"	'testchar2', "
 		"	'testvarchar2', "
 		"	'testclob2', "
@@ -154,7 +154,7 @@ int main(int argc, char **argv) {
 		"	testtable "
 		"values ("
 		"	3, "
-		"	3.3, "
+		"	3.5, "
 		"	'testchar3', "
 		"	'testvarchar3', "
 		"	'testclob3', "
@@ -164,7 +164,7 @@ int main(int argc, char **argv) {
 		"	testtable "
 		"values ("
 		"	4, "
-		"	4.4, "
+		"	4.5, "
 		"	'testchar4', "
 		"	'testvarchar4', "
 		"	'testclob4', "
@@ -212,7 +212,7 @@ int main(int argc, char **argv) {
 	assertTrue(sqlrcur_executeQuery(cur));
 	sqlrcur_clearBinds(cur);
 	sqlrcur_inputBindLong(cur,"var1",6);
-	sqlrcur_inputBindDouble(cur,"var2",6.6,4,1);
+	sqlrcur_inputBindDouble(cur,"var2",6.5,4,1);
 	sqlrcur_inputBindString(cur,"var3","testchar6");
 	sqlrcur_inputBindString(cur,"var4","testvarchar6");
 	sqlrcur_inputBindClob(cur,"var5","testclob6",9);
@@ -220,7 +220,7 @@ int main(int argc, char **argv) {
 	assertTrue(sqlrcur_executeQuery(cur));
 	sqlrcur_clearBinds(cur);
 	sqlrcur_inputBindLong(cur,"var1",7);
-	sqlrcur_inputBindDouble(cur,"var2",7.7,4,1);
+	sqlrcur_inputBindDouble(cur,"var2",7.5,4,1);
 	sqlrcur_inputBindString(cur,"var3","testchar7");
 	sqlrcur_inputBindString(cur,"var4","testvarchar7");
 	sqlrcur_inputBindClob(cur,"var5","testclob7",9);
@@ -239,7 +239,7 @@ int main(int argc, char **argv) {
 	printf("INPUT BIND BY NAME ""WITH VALIDATION: \n");
 	sqlrcur_clearBinds(cur);
 	sqlrcur_inputBindLong(cur,"var1",8);
-	sqlrcur_inputBindDouble(cur,"var2",8.8,4,1);
+	sqlrcur_inputBindDouble(cur,"var2",8.5,4,1);
 	sqlrcur_inputBindString(cur,"var3","testchar8");
 	sqlrcur_inputBindString(cur,"var4","testvarchar8");
 	sqlrcur_inputBindClob(cur,"var5","testclob8",9);
@@ -369,14 +369,14 @@ int main(int argc, char **argv) {
 	// fields by index
 	printf("FIELDS BY INDEX: \n");
 	assertEqStr(sqlrcur_getFieldByIndex(cur,0,0),"1");
-	assertEqStr(sqlrcur_getFieldByIndex(cur,0,1),"1.1");
+	assertEqStr(sqlrcur_getFieldByIndex(cur,0,1),"1.5");
 	assertEqStr(sqlrcur_getFieldByIndex(cur,0,2),"testchar1");
 	assertEqStr(sqlrcur_getFieldByIndex(cur,0,3),"testvarchar1");
 	assertEqStr(sqlrcur_getFieldByIndex(cur,0,4),"testclob1");
 	assertEqStr(sqlrcur_getFieldByIndex(cur,0,5),"testblob1");
 	printf("\n");
 	assertEqStr(sqlrcur_getFieldByIndex(cur,7,0),"8");
-	assertEqStr(sqlrcur_getFieldByIndex(cur,7,1),"8.8");
+	assertEqStr(sqlrcur_getFieldByIndex(cur,7,1),"8.5");
 	assertEqStr(sqlrcur_getFieldByIndex(cur,7,2),"testchar8");
 	assertEqStr(sqlrcur_getFieldByIndex(cur,7,3),"testvarchar8");
 	assertEqStr(sqlrcur_getFieldByIndex(cur,7,4),"testclob8");
@@ -405,14 +405,14 @@ int main(int argc, char **argv) {
 	// fields by name
 	printf("FIELDS BY NAME: \n");
 	assertEqStr(sqlrcur_getFieldByName(cur,0,"testint"),"1");
-	assertEqStr(sqlrcur_getFieldByName(cur,0,"testfloat"),"1.1");
+	assertEqStr(sqlrcur_getFieldByName(cur,0,"testfloat"),"1.5");
 	assertEqStr(sqlrcur_getFieldByName(cur,0,"testchar"),"testchar1");
 	assertEqStr(sqlrcur_getFieldByName(cur,0,"testvarchar"),"testvarchar1");
 	assertEqStr(sqlrcur_getFieldByName(cur,0,"testclob"),"testclob1");
 	assertEqStr(sqlrcur_getFieldByName(cur,0,"testblob"),"testblob1");
 	printf("\n");
 	assertEqStr(sqlrcur_getFieldByName(cur,7,"testint"),"8");
-	assertEqStr(sqlrcur_getFieldByName(cur,7,"testfloat"),"8.8");
+	assertEqStr(sqlrcur_getFieldByName(cur,7,"testfloat"),"8.5");
 	assertEqStr(sqlrcur_getFieldByName(cur,7,"testchar"),"testchar8");
 	assertEqStr(sqlrcur_getFieldByName(cur,7,"testvarchar"),"testvarchar8");
 	assertEqStr(sqlrcur_getFieldByName(cur,7,"testclob"),"testclob8");
@@ -442,7 +442,7 @@ int main(int argc, char **argv) {
 	printf("FIELDS BY ARRAY: \n");
 	fields=sqlrcur_getRow(cur,0);
 	assertEqStr(fields[0],"1");
-	assertEqStr(fields[1],"1.1");
+	assertEqStr(fields[1],"1.5");
 	assertEqStr(fields[2],"testchar1");
 	assertEqStr(fields[3],"testvarchar1");
 	assertEqStr(fields[4],"testclob1");

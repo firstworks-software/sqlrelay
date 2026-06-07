@@ -16,7 +16,7 @@ class informix extends sqlrtest {
 					"5","6","7","8","9","10",
 					"11","12","13","14","15","16"};
 		String[]	bindvals={"t","7","7","7","7",
-					"7.7","7.7","7.7","7.7",
+					"7.5","7.5","7.5","7.5",
 					"testchar7","testnchar7",
 					"testvarchar7","testnvarchar7",
 					"testlvarchar7","01/01/2007",
@@ -138,10 +138,10 @@ class informix extends sqlrtest {
 			"	1, "+
 			"	1, "+
 			"	1, "+
-			"	1.1, "+
-			"	1.1, "+
-			"	1.1, "+
-			"	1.1, "+
+			"	1.5, "+
+			"	1.5, "+
+			"	1.5, "+
+			"	1.5, "+
 			"	'testchar1', "+
 			"	'testnchar1', "+
 			"	'testvarchar1', "+
@@ -190,10 +190,10 @@ class informix extends sqlrtest {
 		cur.inputBind("3",2);
 		cur.inputBind("4",2);
 		cur.inputBind("5",2);
-		cur.inputBind("6",2.2,4,2);
-		cur.inputBind("7",2.2,4,2);
-		cur.inputBind("8",2.2,4,2);
-		cur.inputBind("9",2.2,4,2);
+		cur.inputBind("6",2.5,4,2);
+		cur.inputBind("7",2.5,4,2);
+		cur.inputBind("8",2.5,4,2);
+		cur.inputBind("9",2.5,4,2);
 		cur.inputBind("10","testchar2");
 		cur.inputBind("11","testnchar2");
 		cur.inputBind("12","testvarchar2");
@@ -215,10 +215,10 @@ class informix extends sqlrtest {
 		cur.inputBind("3",3);
 		cur.inputBind("4",3);
 		cur.inputBind("5",3);
-		cur.inputBind("6",3.3,4,2);
-		cur.inputBind("7",3.3,4,2);
-		cur.inputBind("8",3.3,4,2);
-		cur.inputBind("9",3.3,4,2);
+		cur.inputBind("6",3.5,4,2);
+		cur.inputBind("7",3.5,4,2);
+		cur.inputBind("8",3.5,4,2);
+		cur.inputBind("9",3.5,4,2);
 		cur.inputBind("10","testchar3");
 		cur.inputBind("11","testnchar3");
 		cur.inputBind("12","testvarchar3");
@@ -240,10 +240,10 @@ class informix extends sqlrtest {
 		cur.inputBind("3",4);
 		cur.inputBind("4",4);
 		cur.inputBind("5",4);
-		cur.inputBind("6",4.4,4,2);
-		cur.inputBind("7",4.4,4,2);
-		cur.inputBind("8",4.4,4,2);
-		cur.inputBind("9",4.4,4,2);
+		cur.inputBind("6",4.5,4,2);
+		cur.inputBind("7",4.5,4,2);
+		cur.inputBind("8",4.5,4,2);
+		cur.inputBind("9",4.5,4,2);
 		cur.inputBind("10","testchar4");
 		cur.inputBind("11","testnchar4");
 		cur.inputBind("12","testvarchar4");
@@ -290,10 +290,10 @@ class informix extends sqlrtest {
 		cur.inputBind("3",6);
 		cur.inputBind("4",6);
 		cur.inputBind("5",6);
-		cur.inputBind("6",6.6,4,2);
-		cur.inputBind("7",6.6,4,2);
-		cur.inputBind("8",6.6,4,2);
-		cur.inputBind("9",6.6,4,2);
+		cur.inputBind("6",6.5,4,2);
+		cur.inputBind("7",6.5,4,2);
+		cur.inputBind("8",6.5,4,2);
+		cur.inputBind("9",6.5,4,2);
 		cur.inputBind("10","testchar6");
 		cur.inputBind("11","testnchar6");
 		cur.inputBind("12","testvarchar6");
@@ -350,10 +350,10 @@ class informix extends sqlrtest {
 		cur.inputBind("3",8);
 		cur.inputBind("4",8);
 		cur.inputBind("5",8);
-		cur.inputBind("6",8.8,4,2);
-		cur.inputBind("7",8.8,4,2);
-		cur.inputBind("8",8.8,4,2);
-		cur.inputBind("9",8.8,4,2);
+		cur.inputBind("6",8.5,4,2);
+		cur.inputBind("7",8.5,4,2);
+		cur.inputBind("8",8.5,4,2);
+		cur.inputBind("9",8.5,4,2);
 		cur.inputBind("10","testchar8");
 		cur.inputBind("11","testnchar8");
 		cur.inputBind("12","testvarchar8");
@@ -607,10 +607,10 @@ class informix extends sqlrtest {
 		assertEquals(cur.getField(0,2),"1");
 		assertEquals(cur.getField(0,3),"1");
 		assertEquals(cur.getField(0,4),"1");
-		assertEquals(cur.getField(0,5),"1.10");
-		assertEquals(cur.getField(0,6),"1.10");
-		assertEquals(cur.getField(0,7),"1.1");
-		assertEquals(cur.getField(0,8),"1.1");
+		assertEquals(cur.getField(0,5),"1.50");
+		assertEquals(cur.getField(0,6),"1.50");
+		assertEquals(cur.getField(0,7),"1.5");
+		assertEquals(cur.getField(0,8),"1.5");
 		assertEquals(cur.getField(0,9),
 			"testchar1                               ");
 		assertEquals(cur.getField(0,10),
@@ -628,10 +628,10 @@ class informix extends sqlrtest {
 		assertEquals(cur.getField(7,2),"8");
 		assertEquals(cur.getField(7,3),"8");
 		assertEquals(cur.getField(7,4),"8");
-		assertEquals(cur.getField(7,5),"8.80");
-		assertEquals(cur.getField(7,6),"8.80");
-		assertEquals(cur.getField(7,7),"8.8");
-		assertEquals(cur.getField(7,8),"8.8");
+		assertEquals(cur.getField(7,5),"8.50");
+		assertEquals(cur.getField(7,6),"8.50");
+		assertEquals(cur.getField(7,7),"8.5");
+		assertEquals(cur.getField(7,8),"8.5");
 		assertEquals(cur.getField(7,9),
 			"testchar8                               ");
 		assertEquals(cur.getField(7,10),
@@ -693,10 +693,10 @@ class informix extends sqlrtest {
 		assertEquals(cur.getField(0,"testint"),"1");
 		assertEquals(cur.getField(0,"testbigint"),"1");
 		assertEquals(cur.getField(0,"testint8"),"1");
-		assertEquals(cur.getField(0,"testdecimal"),"1.10");
-		assertEquals(cur.getField(0,"testmoney"),"1.10");
-		assertEquals(cur.getField(0,"testsmallfloat"),"1.1");
-		assertEquals(cur.getField(0,"testfloat"),"1.1");
+		assertEquals(cur.getField(0,"testdecimal"),"1.50");
+		assertEquals(cur.getField(0,"testmoney"),"1.50");
+		assertEquals(cur.getField(0,"testsmallfloat"),"1.5");
+		assertEquals(cur.getField(0,"testfloat"),"1.5");
 		assertEquals(cur.getField(0,"testchar"),
 			"testchar1                               ");
 		assertEquals(cur.getField(0,"testnchar"),
@@ -715,10 +715,10 @@ class informix extends sqlrtest {
 		assertEquals(cur.getField(7,"testint"),"8");
 		assertEquals(cur.getField(7,"testbigint"),"8");
 		assertEquals(cur.getField(7,"testint8"),"8");
-		assertEquals(cur.getField(7,"testdecimal"),"8.80");
-		assertEquals(cur.getField(7,"testmoney"),"8.80");
-		assertEquals(cur.getField(7,"testsmallfloat"),"8.8");
-		assertEquals(cur.getField(7,"testfloat"),"8.8");
+		assertEquals(cur.getField(7,"testdecimal"),"8.50");
+		assertEquals(cur.getField(7,"testmoney"),"8.50");
+		assertEquals(cur.getField(7,"testsmallfloat"),"8.5");
+		assertEquals(cur.getField(7,"testfloat"),"8.5");
 		assertEquals(cur.getField(7,"testchar"),
 			"testchar8                               ");
 		assertEquals(cur.getField(7,"testnchar"),
@@ -784,10 +784,10 @@ class informix extends sqlrtest {
 		assertEquals(fields[2],"1");
 		assertEquals(fields[3],"1");
 		assertEquals(fields[4],"1");
-		assertEquals(fields[5],"1.10");
-		assertEquals(fields[6],"1.10");
-		assertEquals(fields[7],"1.1");
-		assertEquals(fields[8],"1.1");
+		assertEquals(fields[5],"1.50");
+		assertEquals(fields[6],"1.50");
+		assertEquals(fields[7],"1.5");
+		assertEquals(fields[8],"1.5");
 		assertEquals(fields[9],
 			"testchar1                               ");
 		assertEquals(fields[10],

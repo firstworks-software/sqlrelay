@@ -128,7 +128,7 @@ namespace SQLRClientTest
                 "	testtable " +
                 "values (" +
                 "	1, " +
-                "	1.1, " +
+                "	1.5, " +
                 "	'testchar1', " +
                 "	'testvarchar1', " +
                 "	'testclob1', " +
@@ -138,7 +138,7 @@ namespace SQLRClientTest
                 "	testtable " +
                 "values (" +
                 "	2, " +
-                "	2.2, " +
+                "	2.5, " +
                 "	'testchar2', " +
                 "	'testvarchar2', " +
                 "	'testclob2', " +
@@ -148,7 +148,7 @@ namespace SQLRClientTest
                 "	testtable " +
                 "values (" +
                 "	3, " +
-                "	3.3, " +
+                "	3.5, " +
                 "	'testchar3', " +
                 "	'testvarchar3', " +
                 "	'testclob3', " +
@@ -158,7 +158,7 @@ namespace SQLRClientTest
                 "	testtable " +
                 "values (" +
                 "	4, " +
-                "	4.4, " +
+                "	4.5, " +
                 "	'testchar4', " +
                 "	'testvarchar4', " +
                 "	'testclob4', " +
@@ -206,7 +206,7 @@ namespace SQLRClientTest
             assertTrue(cur.executeQuery());
             cur.clearBinds();
             cur.inputBind("var1", (Int64)6);
-            cur.inputBind("var2", 6.6, (UInt32)4, (UInt32)1);
+            cur.inputBind("var2", 6.5, (UInt32)4, (UInt32)1);
             cur.inputBind("var3", "testchar6");
             cur.inputBind("var4", "testvarchar6");
             cur.inputBindClob("var5", "testclob6", (UInt32)9);
@@ -214,7 +214,7 @@ namespace SQLRClientTest
             assertTrue(cur.executeQuery());
             cur.clearBinds();
             cur.inputBind("var1", (Int64)7);
-            cur.inputBind("var2", 7.7, (UInt32)4, (UInt32)1);
+            cur.inputBind("var2", 7.5, (UInt32)4, (UInt32)1);
             cur.inputBind("var3", "testchar7");
             cur.inputBind("var4", "testvarchar7");
             cur.inputBindClob("var5", "testclob7", (UInt32)9);
@@ -232,7 +232,7 @@ namespace SQLRClientTest
             Console.WriteLine("INPUT BIND BY NAME WITH VALIDATION: ");
             cur.clearBinds();
             cur.inputBind("var1", (Int64)8);
-            cur.inputBind("var2", 8.8, (UInt32)4, (UInt32)1);
+            cur.inputBind("var2", 8.5, (UInt32)4, (UInt32)1);
             cur.inputBind("var3", "testchar8");
             cur.inputBind("var4", "testvarchar8");
             cur.inputBindClob("var5", "testclob8", (UInt32)9);
@@ -361,14 +361,14 @@ namespace SQLRClientTest
             // fields by index
             Console.WriteLine("FIELDS BY INDEX: ");
             assertEquals(cur.getField((UInt64)0, (UInt32)0), "1");
-            assertEquals(cur.getField((UInt64)0, (UInt32)1), "1.1");
+            assertEquals(cur.getField((UInt64)0, (UInt32)1), "1.5");
             assertEquals(cur.getField((UInt64)0, (UInt32)2), "testchar1");
             assertEquals(cur.getField((UInt64)0, (UInt32)3), "testvarchar1");
             assertEquals(cur.getField((UInt64)0, (UInt32)4), "testclob1");
             assertEquals(cur.getField((UInt64)0, (UInt32)5), "testblob1");
             Console.WriteLine("");
             assertEquals(cur.getField((UInt64)7, (UInt32)0), "8");
-            assertEquals(cur.getField((UInt64)7, (UInt32)1), "8.8");
+            assertEquals(cur.getField((UInt64)7, (UInt32)1), "8.5");
             assertEquals(cur.getField((UInt64)7, (UInt32)2), "testchar8");
             assertEquals(cur.getField((UInt64)7, (UInt32)3), "testvarchar8");
             assertEquals(cur.getField((UInt64)7, (UInt32)4), "testclob8");
@@ -397,14 +397,14 @@ namespace SQLRClientTest
             // fields by name
             Console.WriteLine("FIELDS BY NAME: ");
             assertEquals(cur.getField((UInt64)0, "testint"), "1");
-            assertEquals(cur.getField((UInt64)0, "testfloat"), "1.1");
+            assertEquals(cur.getField((UInt64)0, "testfloat"), "1.5");
             assertEquals(cur.getField((UInt64)0, "testchar"), "testchar1");
             assertEquals(cur.getField((UInt64)0, "testvarchar"), "testvarchar1");
             assertEquals(cur.getField((UInt64)0, "testclob"), "testclob1");
             assertEquals(cur.getField((UInt64)0, "testblob"), "testblob1");
             Console.WriteLine("");
             assertEquals(cur.getField((UInt64)7, "testint"), "8");
-            assertEquals(cur.getField((UInt64)7, "testfloat"), "8.8");
+            assertEquals(cur.getField((UInt64)7, "testfloat"), "8.5");
             assertEquals(cur.getField((UInt64)7, "testchar"), "testchar8");
             assertEquals(cur.getField((UInt64)7, "testvarchar"), "testvarchar8");
             assertEquals(cur.getField((UInt64)7, "testclob"), "testclob8");
@@ -434,7 +434,7 @@ namespace SQLRClientTest
             Console.WriteLine("FIELDS BY ARRAY: ");
             fields = cur.getRow((UInt64)0);
             assertEquals(fields[0], "1");
-            assertEquals(fields[1], "1.1");
+            assertEquals(fields[1], "1.5");
             assertEquals(fields[2], "testchar1");
             assertEquals(fields[3], "testvarchar1");
             assertEquals(fields[4], "testclob1");

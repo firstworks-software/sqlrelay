@@ -18,7 +18,7 @@ namespace SQLRClientTest
                         "5","6","7","8","9","10",
                         "11","12","13","14","15","16"};
             String[] bindvals = new String[] {"t","7","7","7","7",
-                        "7.7","7.7","7.7","7.7",
+                        "7.5","7.5","7.5","7.5",
                         "testchar7","testnchar7",
                         "testvarchar7","testnvarchar7",
                         "testlvarchar7","01/01/2007",
@@ -142,10 +142,10 @@ namespace SQLRClientTest
                 "	1, " +
                 "	1, " +
                 "	1, " +
-                "	1.1, " +
-                "	1.1, " +
-                "	1.1, " +
-                "	1.1, " +
+                "	1.5, " +
+                "	1.5, " +
+                "	1.5, " +
+                "	1.5, " +
                 "	'testchar1', " +
                 "	'testnchar1', " +
                 "	'testvarchar1', " +
@@ -194,10 +194,10 @@ namespace SQLRClientTest
             cur.inputBind("3", (Int64)2);
             cur.inputBind("4", (Int64)2);
             cur.inputBind("5", (Int64)2);
-            cur.inputBind("6", 2.2, (UInt32)4, (UInt32)2);
-            cur.inputBind("7", 2.2, (UInt32)4, (UInt32)2);
-            cur.inputBind("8", 2.2, (UInt32)4, (UInt32)2);
-            cur.inputBind("9", 2.2, (UInt32)4, (UInt32)2);
+            cur.inputBind("6", 2.5, (UInt32)4, (UInt32)2);
+            cur.inputBind("7", 2.5, (UInt32)4, (UInt32)2);
+            cur.inputBind("8", 2.5, (UInt32)4, (UInt32)2);
+            cur.inputBind("9", 2.5, (UInt32)4, (UInt32)2);
             cur.inputBind("10", "testchar2");
             cur.inputBind("11", "testnchar2");
             cur.inputBind("12", "testvarchar2");
@@ -214,10 +214,10 @@ namespace SQLRClientTest
             cur.inputBind("3", (Int64)3);
             cur.inputBind("4", (Int64)3);
             cur.inputBind("5", (Int64)3);
-            cur.inputBind("6", 3.3, (UInt32)4, (UInt32)2);
-            cur.inputBind("7", 3.3, (UInt32)4, (UInt32)2);
-            cur.inputBind("8", 3.3, (UInt32)4, (UInt32)2);
-            cur.inputBind("9", 3.3, (UInt32)4, (UInt32)2);
+            cur.inputBind("6", 3.5, (UInt32)4, (UInt32)2);
+            cur.inputBind("7", 3.5, (UInt32)4, (UInt32)2);
+            cur.inputBind("8", 3.5, (UInt32)4, (UInt32)2);
+            cur.inputBind("9", 3.5, (UInt32)4, (UInt32)2);
             cur.inputBind("10", "testchar3");
             cur.inputBind("11", "testnchar3");
             cur.inputBind("12", "testvarchar3");
@@ -234,10 +234,10 @@ namespace SQLRClientTest
             cur.inputBind("3", (Int64)4);
             cur.inputBind("4", (Int64)4);
             cur.inputBind("5", (Int64)4);
-            cur.inputBind("6", 4.4, (UInt32)4, (UInt32)2);
-            cur.inputBind("7", 4.4, (UInt32)4, (UInt32)2);
-            cur.inputBind("8", 4.4, (UInt32)4, (UInt32)2);
-            cur.inputBind("9", 4.4, (UInt32)4, (UInt32)2);
+            cur.inputBind("6", 4.5, (UInt32)4, (UInt32)2);
+            cur.inputBind("7", 4.5, (UInt32)4, (UInt32)2);
+            cur.inputBind("8", 4.5, (UInt32)4, (UInt32)2);
+            cur.inputBind("9", 4.5, (UInt32)4, (UInt32)2);
             cur.inputBind("10", "testchar4");
             cur.inputBind("11", "testnchar4");
             cur.inputBind("12", "testvarchar4");
@@ -274,10 +274,10 @@ namespace SQLRClientTest
             cur.inputBind("3", (Int64)6);
             cur.inputBind("4", (Int64)6);
             cur.inputBind("5", (Int64)6);
-            cur.inputBind("6", 6.6, (UInt32)4, (UInt32)2);
-            cur.inputBind("7", 6.6, (UInt32)4, (UInt32)2);
-            cur.inputBind("8", 6.6, (UInt32)4, (UInt32)2);
-            cur.inputBind("9", 6.6, (UInt32)4, (UInt32)2);
+            cur.inputBind("6", 6.5, (UInt32)4, (UInt32)2);
+            cur.inputBind("7", 6.5, (UInt32)4, (UInt32)2);
+            cur.inputBind("8", 6.5, (UInt32)4, (UInt32)2);
+            cur.inputBind("9", 6.5, (UInt32)4, (UInt32)2);
             cur.inputBind("10", "testchar6");
             cur.inputBind("11", "testnchar6");
             cur.inputBind("12", "testvarchar6");
@@ -329,10 +329,10 @@ namespace SQLRClientTest
             cur.inputBind("3", (Int64)8);
             cur.inputBind("4", (Int64)8);
             cur.inputBind("5", (Int64)8);
-            cur.inputBind("6", 8.8, (UInt32)4, (UInt32)2);
-            cur.inputBind("7", 8.8, (UInt32)4, (UInt32)2);
-            cur.inputBind("8", 8.8, (UInt32)4, (UInt32)2);
-            cur.inputBind("9", 8.8, (UInt32)4, (UInt32)2);
+            cur.inputBind("6", 8.5, (UInt32)4, (UInt32)2);
+            cur.inputBind("7", 8.5, (UInt32)4, (UInt32)2);
+            cur.inputBind("8", 8.5, (UInt32)4, (UInt32)2);
+            cur.inputBind("9", 8.5, (UInt32)4, (UInt32)2);
             cur.inputBind("10", "testchar8");
             cur.inputBind("11", "testnchar8");
             cur.inputBind("12", "testvarchar8");
@@ -581,10 +581,10 @@ namespace SQLRClientTest
             assertEquals(cur.getField((UInt64)0, (UInt32)2), "1");
             assertEquals(cur.getField((UInt64)0, (UInt32)3), "1");
             assertEquals(cur.getField((UInt64)0, (UInt32)4), "1");
-            assertEquals(cur.getField((UInt64)0, (UInt32)5), "1.10");
-            assertEquals(cur.getField((UInt64)0, (UInt32)6), "1.10");
-            assertEquals(cur.getField((UInt64)0, (UInt32)7), "1.1");
-            assertEquals(cur.getField((UInt64)0, (UInt32)8), "1.1");
+            assertEquals(cur.getField((UInt64)0, (UInt32)5), "1.50");
+            assertEquals(cur.getField((UInt64)0, (UInt32)6), "1.50");
+            assertEquals(cur.getField((UInt64)0, (UInt32)7), "1.5");
+            assertEquals(cur.getField((UInt64)0, (UInt32)8), "1.5");
             assertEquals(cur.getField((UInt64)0, (UInt32)9), "testchar1                               ");
             assertEquals(cur.getField((UInt64)0, (UInt32)10), "testnchar1                              ");
             assertEquals(cur.getField((UInt64)0, (UInt32)11), "testvarchar1");
@@ -600,10 +600,10 @@ namespace SQLRClientTest
             assertEquals(cur.getField((UInt64)7, (UInt32)2), "8");
             assertEquals(cur.getField((UInt64)7, (UInt32)3), "8");
             assertEquals(cur.getField((UInt64)7, (UInt32)4), "8");
-            assertEquals(cur.getField((UInt64)7, (UInt32)5), "8.80");
-            assertEquals(cur.getField((UInt64)7, (UInt32)6), "8.80");
-            assertEquals(cur.getField((UInt64)7, (UInt32)7), "8.8");
-            assertEquals(cur.getField((UInt64)7, (UInt32)8), "8.8");
+            assertEquals(cur.getField((UInt64)7, (UInt32)5), "8.50");
+            assertEquals(cur.getField((UInt64)7, (UInt32)6), "8.50");
+            assertEquals(cur.getField((UInt64)7, (UInt32)7), "8.5");
+            assertEquals(cur.getField((UInt64)7, (UInt32)8), "8.5");
             assertEquals(cur.getField((UInt64)7, (UInt32)9), "testchar8                               ");
             assertEquals(cur.getField((UInt64)7, (UInt32)10), "testnchar8                              ");
             assertEquals(cur.getField((UInt64)7, (UInt32)11), "testvarchar8");
@@ -663,10 +663,10 @@ namespace SQLRClientTest
             assertEquals(cur.getField((UInt64)0, "testint"), "1");
             assertEquals(cur.getField((UInt64)0, "testbigint"), "1");
             assertEquals(cur.getField((UInt64)0, "testint8"), "1");
-            assertEquals(cur.getField((UInt64)0, "testdecimal"), "1.10");
-            assertEquals(cur.getField((UInt64)0, "testmoney"), "1.10");
-            assertEquals(cur.getField((UInt64)0, "testsmallfloat"), "1.1");
-            assertEquals(cur.getField((UInt64)0, "testfloat"), "1.1");
+            assertEquals(cur.getField((UInt64)0, "testdecimal"), "1.50");
+            assertEquals(cur.getField((UInt64)0, "testmoney"), "1.50");
+            assertEquals(cur.getField((UInt64)0, "testsmallfloat"), "1.5");
+            assertEquals(cur.getField((UInt64)0, "testfloat"), "1.5");
             assertEquals(cur.getField((UInt64)0, "testchar"), "testchar1                               ");
             assertEquals(cur.getField((UInt64)0, "testnchar"), "testnchar1                              ");
             assertEquals(cur.getField((UInt64)0, "testvarchar"), "testvarchar1");
@@ -682,10 +682,10 @@ namespace SQLRClientTest
             assertEquals(cur.getField((UInt64)7, "testint"), "8");
             assertEquals(cur.getField((UInt64)7, "testbigint"), "8");
             assertEquals(cur.getField((UInt64)7, "testint8"), "8");
-            assertEquals(cur.getField((UInt64)7, "testdecimal"), "8.80");
-            assertEquals(cur.getField((UInt64)7, "testmoney"), "8.80");
-            assertEquals(cur.getField((UInt64)7, "testsmallfloat"), "8.8");
-            assertEquals(cur.getField((UInt64)7, "testfloat"), "8.8");
+            assertEquals(cur.getField((UInt64)7, "testdecimal"), "8.50");
+            assertEquals(cur.getField((UInt64)7, "testmoney"), "8.50");
+            assertEquals(cur.getField((UInt64)7, "testsmallfloat"), "8.5");
+            assertEquals(cur.getField((UInt64)7, "testfloat"), "8.5");
             assertEquals(cur.getField((UInt64)7, "testchar"), "testchar8                               ");
             assertEquals(cur.getField((UInt64)7, "testnchar"), "testnchar8                              ");
             assertEquals(cur.getField((UInt64)7, "testvarchar"), "testvarchar8");
@@ -748,10 +748,10 @@ namespace SQLRClientTest
             assertEquals(fields[2], "1");
             assertEquals(fields[3], "1");
             assertEquals(fields[4], "1");
-            assertEquals(fields[5], "1.10");
-            assertEquals(fields[6], "1.10");
-            assertEquals(fields[7], "1.1");
-            assertEquals(fields[8], "1.1");
+            assertEquals(fields[5], "1.50");
+            assertEquals(fields[6], "1.50");
+            assertEquals(fields[7], "1.5");
+            assertEquals(fields[8], "1.5");
             assertEquals(fields[9], "testchar1                               ");
             assertEquals(fields[10], "testnchar1                              ");
             assertEquals(fields[11], "testvarchar1");

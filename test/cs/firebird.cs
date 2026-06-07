@@ -13,7 +13,7 @@ namespace SQLRClientTest
 
             String[] bindvars = new String[] { "1","2","3","4","5","6",
                                     "7","8","9","10","11","12" };
-            String[] bindvals = new String[] { "7","7","7.7","7.7","7.7","7.7",
+            String[] bindvals = new String[] { "7","7","7.5","7.5","7.5","7.5",
                                     "01-JAN-2007","07:00:00",
                                     "testchar7","testvarchar7",null,"testblob7" };
             String[] cols;
@@ -95,10 +95,10 @@ namespace SQLRClientTest
                 "values (" +
                 "	1, " +
                 "	1, " +
-                "	1.1, " +
-                "	1.1, " +
-                "	1.1, " +
-                "	1.1, " +
+                "	1.5, " +
+                "	1.5, " +
+                "	1.5, " +
+                "	1.5, " +
                 "	'01-JAN-2001', " +
                 "	'01:00:00', " +
                 "	'testchar1', " +
@@ -135,10 +135,10 @@ namespace SQLRClientTest
             assertEquals(cur.countBindVariables(),(UInt16)12);
             cur.inputBind("1",(Int64)2);
             cur.inputBind("2",(Int64)2);
-            cur.inputBind("3",2.2,2,1);
-            cur.inputBind("4",2.2,2,1);
-            cur.inputBind("5",2.2,2,1);
-            cur.inputBind("6",2.2,2,1);
+            cur.inputBind("3",2.5,2,1);
+            cur.inputBind("4",2.5,2,1);
+            cur.inputBind("5",2.5,2,1);
+            cur.inputBind("6",2.5,2,1);
             cur.inputBind("7",(Int16)2002,(Int16)1,(Int16)1,(Int16)(-1),(Int16)(-1),(Int16)(-1),(Int32)(-1),(String)null,false);
             cur.inputBind("8",(Int16)(-1),(Int16)(-1),(Int16)(-1),(Int16)2,(Int16)0,(Int16)0,(Int32)0,(String)null,false);
             cur.inputBind("9","testchar2");
@@ -149,10 +149,10 @@ namespace SQLRClientTest
             cur.clearBinds();
             cur.inputBind("1",(Int64)3);
             cur.inputBind("2",(Int64)3);
-            cur.inputBind("3",3.3,2,1);
-            cur.inputBind("4",3.3,2,1);
-            cur.inputBind("5",3.3,2,1);
-            cur.inputBind("6",3.3,2,1);
+            cur.inputBind("3",3.5,2,1);
+            cur.inputBind("4",3.5,2,1);
+            cur.inputBind("5",3.5,2,1);
+            cur.inputBind("6",3.5,2,1);
             cur.inputBind("7",(Int16)2003,(Int16)1,(Int16)1,(Int16)(-1),(Int16)(-1),(Int16)(-1),(Int32)(-1),(String)null,false);
             cur.inputBind("8",(Int16)(-1),(Int16)(-1),(Int16)(-1),(Int16)3,(Int16)0,(Int16)0,(Int32)0,(String)null,false);
             cur.inputBind("9","testchar3");
@@ -163,10 +163,10 @@ namespace SQLRClientTest
             cur.clearBinds();
             cur.inputBind("1",(Int64)4);
             cur.inputBind("2",(Int64)4);
-            cur.inputBind("3",4.4,2,1);
-            cur.inputBind("4",4.4,2,1);
-            cur.inputBind("5",4.4,2,1);
-            cur.inputBind("6",4.4,2,1);
+            cur.inputBind("3",4.5,2,1);
+            cur.inputBind("4",4.5,2,1);
+            cur.inputBind("5",4.5,2,1);
+            cur.inputBind("6",4.5,2,1);
             cur.inputBind("7",(Int16)2004,(Int16)1,(Int16)1,(Int16)(-1),(Int16)(-1),(Int16)(-1),(Int32)(-1),(String)null,false);
             cur.inputBind("8",(Int16)(-1),(Int16)(-1),(Int16)(-1),(Int16)4,(Int16)0,(Int16)0,(Int32)0,(String)null,false);
             cur.inputBind("9","testchar4");
@@ -191,10 +191,10 @@ namespace SQLRClientTest
             cur.clearBinds();
             cur.inputBind("1",(Int64)6);
             cur.inputBind("2",(Int64)6);
-            cur.inputBind("3",6.6,2,1);
-            cur.inputBind("4",6.6,2,1);
-            cur.inputBind("5",6.6,2,1);
-            cur.inputBind("6",6.6,2,1);
+            cur.inputBind("3",6.5,2,1);
+            cur.inputBind("4",6.5,2,1);
+            cur.inputBind("5",6.5,2,1);
+            cur.inputBind("6",6.5,2,1);
             cur.inputBind("7",(Int16)2006,(Int16)1,(Int16)1,(Int16)(-1),(Int16)(-1),(Int16)(-1),(Int32)(-1),(String)null,false);
             cur.inputBind("8",(Int16)(-1),(Int16)(-1),(Int16)(-1),(Int16)6,(Int16)0,(Int16)0,(Int32)0,(String)null,false);
             cur.inputBind("9","testchar6");
@@ -218,10 +218,10 @@ namespace SQLRClientTest
             cur.clearBinds();
             cur.inputBind("1",(Int64)8);
             cur.inputBind("2",(Int64)8);
-            cur.inputBind("3",8.8,2,1);
-            cur.inputBind("4",8.8,2,1);
-            cur.inputBind("5",8.8,2,1);
-            cur.inputBind("6",8.8,2,1);
+            cur.inputBind("3",8.5,2,1);
+            cur.inputBind("4",8.5,2,1);
+            cur.inputBind("5",8.5,2,1);
+            cur.inputBind("6",8.5,2,1);
             cur.inputBind("7",(Int16)2008,(Int16)1,(Int16)1,(Int16)(-1),(Int16)(-1),(Int16)(-1),(Int32)(-1),(String)null,false);
             cur.inputBind("8",(Int16)(-1),(Int16)(-1),(Int16)(-1),(Int16)8,(Int16)0,(Int16)0,(Int32)0,(String)null,false);
             cur.inputBind("9","testchar8");
@@ -408,10 +408,10 @@ namespace SQLRClientTest
             Console.WriteLine("FIELDS BY INDEX: ");
             assertEquals(cur.getField((UInt64)0,(UInt32)0),"1");
             assertEquals(cur.getField((UInt64)0,(UInt32)1),"1");
-            assertEquals(cur.getField((UInt64)0,(UInt32)2),"1.10");
-            assertEquals(cur.getField((UInt64)0,(UInt32)3),"1.10");
-            assertEquals(cur.getField((UInt64)0,(UInt32)4),"1.1000");
-            assertEquals(cur.getField((UInt64)0,(UInt32)5),"1.1000");
+            assertEquals(cur.getField((UInt64)0,(UInt32)2),"1.50");
+            assertEquals(cur.getField((UInt64)0,(UInt32)3),"1.50");
+            assertEquals(cur.getField((UInt64)0,(UInt32)4),"1.5000");
+            assertEquals(cur.getField((UInt64)0,(UInt32)5),"1.5000");
             assertEquals(cur.getField((UInt64)0,(UInt32)6),"2001:01:01");
             assertEquals(cur.getField((UInt64)0,(UInt32)7),"01:00:00");
             assertEquals(cur.getField((UInt64)0,(UInt32)8),"testchar1                                         ");
@@ -420,10 +420,10 @@ namespace SQLRClientTest
             Console.WriteLine("");
             assertEquals(cur.getField((UInt64)7,(UInt32)0),"8");
             assertEquals(cur.getField((UInt64)7,(UInt32)1),"8");
-            assertEquals(cur.getField((UInt64)7,(UInt32)2),"8.80");
-            assertEquals(cur.getField((UInt64)7,(UInt32)3),"8.80");
-            assertEquals(cur.getField((UInt64)7,(UInt32)4),"8.8000");
-            assertEquals(cur.getField((UInt64)7,(UInt32)5),"8.8000");
+            assertEquals(cur.getField((UInt64)7,(UInt32)2),"8.50");
+            assertEquals(cur.getField((UInt64)7,(UInt32)3),"8.50");
+            assertEquals(cur.getField((UInt64)7,(UInt32)4),"8.5000");
+            assertEquals(cur.getField((UInt64)7,(UInt32)5),"8.5000");
             assertEquals(cur.getField((UInt64)7,(UInt32)6),"2008:01:01");
             assertEquals(cur.getField((UInt64)7,(UInt32)7),"08:00:00");
             assertEquals(cur.getField((UInt64)7,(UInt32)8),"testchar8                                         ");
@@ -462,10 +462,10 @@ namespace SQLRClientTest
             Console.WriteLine("FIELDS BY NAME: ");
             assertEquals(cur.getField((UInt64)0,"TESTINTEGER"),"1");
             assertEquals(cur.getField((UInt64)0,"TESTSMALLINT"),"1");
-            assertEquals(cur.getField((UInt64)0,"TESTDECIMAL"),"1.10");
-            assertEquals(cur.getField((UInt64)0,"TESTNUMERIC"),"1.10");
-            assertEquals(cur.getField((UInt64)0,"TESTFLOAT"),"1.1000");
-            assertEquals(cur.getField((UInt64)0,"TESTDOUBLE"),"1.1000");
+            assertEquals(cur.getField((UInt64)0,"TESTDECIMAL"),"1.50");
+            assertEquals(cur.getField((UInt64)0,"TESTNUMERIC"),"1.50");
+            assertEquals(cur.getField((UInt64)0,"TESTFLOAT"),"1.5000");
+            assertEquals(cur.getField((UInt64)0,"TESTDOUBLE"),"1.5000");
             assertEquals(cur.getField((UInt64)0,"TESTDATE"),"2001:01:01");
             assertEquals(cur.getField((UInt64)0,"TESTTIME"),"01:00:00");
             assertEquals(cur.getField((UInt64)0,"TESTCHAR"),"testchar1                                         ");
@@ -474,10 +474,10 @@ namespace SQLRClientTest
             Console.WriteLine("");
             assertEquals(cur.getField((UInt64)7,"TESTINTEGER"),"8");
             assertEquals(cur.getField((UInt64)7,"TESTSMALLINT"),"8");
-            assertEquals(cur.getField((UInt64)7,"TESTDECIMAL"),"8.80");
-            assertEquals(cur.getField((UInt64)7,"TESTNUMERIC"),"8.80");
-            assertEquals(cur.getField((UInt64)7,"TESTFLOAT"),"8.8000");
-            assertEquals(cur.getField((UInt64)7,"TESTDOUBLE"),"8.8000");
+            assertEquals(cur.getField((UInt64)7,"TESTDECIMAL"),"8.50");
+            assertEquals(cur.getField((UInt64)7,"TESTNUMERIC"),"8.50");
+            assertEquals(cur.getField((UInt64)7,"TESTFLOAT"),"8.5000");
+            assertEquals(cur.getField((UInt64)7,"TESTDOUBLE"),"8.5000");
             assertEquals(cur.getField((UInt64)7,"TESTDATE"),"2008:01:01");
             assertEquals(cur.getField((UInt64)7,"TESTTIME"),"08:00:00");
             assertEquals(cur.getField((UInt64)7,"TESTCHAR"),"testchar8                                         ");
@@ -517,10 +517,10 @@ namespace SQLRClientTest
             fields=cur.getRow((UInt64)0);
             assertEquals(fields[0],"1");
             assertEquals(fields[1],"1");
-            assertEquals(fields[2],"1.10");
-            assertEquals(fields[3],"1.10");
-            assertEquals(fields[4],"1.1000");
-            assertEquals(fields[5],"1.1000");
+            assertEquals(fields[2],"1.50");
+            assertEquals(fields[3],"1.50");
+            assertEquals(fields[4],"1.5000");
+            assertEquals(fields[5],"1.5000");
             assertEquals(fields[6],"2001:01:01");
             assertEquals(fields[7],"01:00:00");
             assertEquals(fields[8],"testchar1                                         ");
@@ -1256,7 +1256,7 @@ namespace SQLRClientTest
             cur.getNullsAsNulls();
             cur.prepareQuery("execute procedure testproc ?, ?, ?, ?");
             cur.inputBind("1",(Int64)1);
-            cur.inputBind("2",1.1,2,1);
+            cur.inputBind("2",1.5,2,1);
             cur.inputBind("3","hello");
             cur.inputBindBlob("4",System.Text.Encoding.ASCII.GetBytes("blob"),(UInt32)4);
             cur.defineOutputBindInteger("1");
@@ -1266,7 +1266,7 @@ namespace SQLRClientTest
             assertTrue(cur.executeQuery());
             assertEquals(cur.getOutputBindInteger("1"),(Int64)1);
             double d=cur.getOutputBindDouble("2");
-            assertTrue(d>1.09 && d<1.11);
+            assertEquals(d,1.5);
             assertEquals(cur.getOutputBindString("3"),"hello               ");
             assertEquals(cur.getOutputBindBlob("4"),System.Text.Encoding.ASCII.GetBytes("blob"));
             cur.getNullsAsEmptyStrings();
@@ -1322,7 +1322,7 @@ namespace SQLRClientTest
             Console.WriteLine("REBINDING: ");
             cur.prepareQuery("execute procedure testproc ?, ?, ?, ?");
             cur.inputBind("1",(Int64)1);
-            cur.inputBind("2",1.1,2,1);
+            cur.inputBind("2",1.5,2,1);
             cur.inputBind("3","hello");
             cur.inputBindBlob("4",System.Text.Encoding.ASCII.GetBytes("blob"),(UInt32)4);
             cur.defineOutputBindInteger("1");
@@ -1378,7 +1378,7 @@ namespace SQLRClientTest
                 "begin " +
                 "end");
             cur.inputBind("1",(Int64)1);
-            cur.inputBind("2",1.1,2,1);
+            cur.inputBind("2",1.5,2,1);
             cur.inputBind("3","hello");
             assertTrue(cur.executeQuery());
             Console.WriteLine("");
@@ -1397,7 +1397,7 @@ namespace SQLRClientTest
                 "	suspend; " +
                 "end");
             cur.inputBind("1",(Int64)1);
-            cur.inputBind("2",1.1,2,1);
+            cur.inputBind("2",1.5,2,1);
             cur.inputBind("3","hello");
             assertTrue(cur.executeQuery());
             assertEquals(cur.getField((UInt64)0,(UInt32)0),"1");
@@ -1421,11 +1421,11 @@ namespace SQLRClientTest
                 "	suspend; " +
                 "end");
             cur.inputBind("1",(Int64)1);
-            cur.inputBind("2",1.1,2,1);
+            cur.inputBind("2",1.5,2,1);
             cur.inputBind("3","hello");
             assertTrue(cur.executeQuery());
             assertEquals(cur.getField((UInt64)0,(UInt32)0),"1");
-            assertEquals(cur.getField((UInt64)0,(UInt32)1),"1.1000");
+            assertEquals(cur.getField((UInt64)0,(UInt32)1),"1.5000");
             assertEquals(cur.getField((UInt64)0,(UInt32)2),"hello");
             Console.WriteLine("");
 

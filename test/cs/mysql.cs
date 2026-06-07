@@ -1769,7 +1769,7 @@ namespace SQLRClientTest
                 + "end"));
             cur.prepareQuery("call testproc(?,?,?)");
             cur.inputBind("1", (Int64)1);
-            cur.inputBind("2", 1.1, 2, 1);
+            cur.inputBind("2", 1.5, 2, 1);
             cur.inputBind("3", "hello");
             assertTrue(cur.executeQuery());
             assertTrue(cur.sendQuery("drop procedure testproc"));
@@ -1789,7 +1789,7 @@ namespace SQLRClientTest
                 + "end"));
             cur.prepareQuery("call testproc(?,?,?)");
             cur.inputBind("1", (Int64)1);
-            cur.inputBind("2", 1.1, 2, 1);
+            cur.inputBind("2", 1.5, 2, 1);
             cur.inputBind("3", "hello");
             assertTrue(cur.executeQuery());
             assertEquals(cur.getField((UInt64)0, (UInt32)0), "1");
@@ -1810,11 +1810,11 @@ namespace SQLRClientTest
                 + "end"));
             cur.prepareQuery("call testproc(?,?,?)");
             cur.inputBind("1", (Int64)1);
-            cur.inputBind("2", 1.1, 2, 1);
+            cur.inputBind("2", 1.5, 2, 1);
             cur.inputBind("3", "hello");
             assertTrue(cur.executeQuery());
             assertEquals(cur.getField((UInt64)0, (UInt32)0), "1");
-            assertEquals(cur.getField((UInt64)0, (UInt32)1), "1.1");
+            assertEquals(cur.getField((UInt64)0, (UInt32)1), "1.5");
             assertEquals(cur.getField((UInt64)0, (UInt32)2), "hello");
             assertTrue(cur.sendQuery("drop procedure testproc"));
             Console.WriteLine("");
@@ -1876,11 +1876,11 @@ namespace SQLRClientTest
                     + "end;"));
                 cur.prepareQuery("call testproc(?,?,?)");
                 cur.inputBind("1", (Int64)1);
-                cur.inputBind("2", 1.1, 4, 2);
+                cur.inputBind("2", 1.5, 4, 2);
                 cur.inputBind("3", "hello");
                 assertTrue(cur.executeQuery());
                 assertEquals(cur.getField((UInt64)0, (UInt32)0), "1");
-                assertEquals(cur.getField((UInt64)0, (UInt32)1), "1.1");
+                assertEquals(cur.getField((UInt64)0, (UInt32)1), "1.5");
                 assertEquals(cur.getField((UInt64)0, (UInt32)2), "hello");
                 cur.sendQuery("drop procedure testproc");
                 Console.WriteLine("");

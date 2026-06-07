@@ -1518,10 +1518,10 @@ class informix extends sqlrtest {
 			"	1, "+
 			"	1, "+
 			"	1, "+
-			"	1.1, "+
-			"	1.1, "+
-			"	1.1, "+
-			"	1.1, "+
+			"	1.5, "+
+			"	1.5, "+
+			"	1.5, "+
+			"	1.5, "+
 			"	'char1', "+
 			"	'nchar1', "+
 			"	'varchar1', "+
@@ -1582,10 +1582,10 @@ class informix extends sqlrtest {
 			pstmt.setInt(3,i);
 			pstmt.setLong(4,(long)i);
 			pstmt.setLong(5,(long)i);
-			pstmt.setDouble(6,i+0.1);
-			pstmt.setDouble(7,i+0.1);
-			pstmt.setDouble(8,i+0.1);
-			pstmt.setDouble(9,i+0.1);
+			pstmt.setDouble(6,i+0.5);
+			pstmt.setDouble(7,i+0.5);
+			pstmt.setDouble(8,i+0.5);
+			pstmt.setDouble(9,i+0.5);
 			pstmt.setString(10,"char"+i);
 			pstmt.setString(11,"nchar"+i);
 			pstmt.setString(12,"varchar"+i);
@@ -1786,7 +1786,7 @@ class informix extends sqlrtest {
 
 			// decimal
 			System.out.println("  row "+i+" - decimal");
-			assertEquals(rs.getString(6),i+".10");
+			assertEquals(rs.getString(6),i+".50");
 			assertFalse(rs.wasNull());
 			System.out.println();
 
@@ -1797,8 +1797,8 @@ class informix extends sqlrtest {
 			// field to be populated without a leading $, but
 			// inserting a value via bind causes it to be populated
 			// with a leading $
-			assertTrue(moneyval.equals(i+".10") ||
-					moneyval.equals("$"+i+".10"));
+			assertTrue(moneyval.equals(i+".50") ||
+					moneyval.equals("$"+i+".50"));
 			assertFalse(rs.wasNull());
 			System.out.println();
 
@@ -1976,7 +1976,7 @@ class informix extends sqlrtest {
 
 			// decimal
 			System.out.println("  row "+i+" - decimal");
-			assertEquals(rs.getString("testdecimal"),i+".10");
+			assertEquals(rs.getString("testdecimal"),i+".50");
 			assertFalse(rs.wasNull());
 			System.out.println();
 
@@ -1988,8 +1988,8 @@ class informix extends sqlrtest {
 			// leading $, but inserting a value via bind causes it
 			// to be populated with a leading $
 			String moneyval=rs.getString("testmoney");
-			assertTrue(moneyval.equals(i+".10") ||
-					moneyval.equals("$"+i+".10"));
+			assertTrue(moneyval.equals(i+".50") ||
+					moneyval.equals("$"+i+".50"));
 			assertFalse(rs.wasNull());
 			System.out.println();
 
@@ -2159,10 +2159,10 @@ class informix extends sqlrtest {
 			"	10, "+
 			"	10, "+
 			"	10, "+
-			"	10.10, "+
-			"	10.10, "+
-			"	10.10, "+
-			"	10.10, "+
+			"	10.50, "+
+			"	10.50, "+
+			"	10.50, "+
+			"	10.50, "+
 			"	'char10', "+
 			"	'nchar10', "+
 			"	'varchar10', "+
@@ -2198,10 +2198,10 @@ class informix extends sqlrtest {
 			"	10, "+
 			"	10, "+
 			"	10, "+
-			"	10.10, "+
-			"	10.10, "+
-			"	10.10, "+
-			"	10.10, "+
+			"	10.50, "+
+			"	10.50, "+
+			"	10.50, "+
+			"	10.50, "+
 			"	'char10', "+
 			"	'nchar10', "+
 			"	'varchar10', "+
@@ -3085,19 +3085,37 @@ class informix extends sqlrtest {
 		assertTrue(rs.next());
 		assertEquals(rs.getString("column_name"),"in1");
 		assertEquals(rs.getString("type_name"),"integer");
-		assertEquals(rs.getString("ordinal_position"),"1");
+		if (issqlrelay) {
+			assertEquals(rs.getString("ordinal_position"),"1");
+		} else {
+			// the native informix jdbc driver returns
+			// 0-based ordinal positions
+			assertEquals(rs.getString("ordinal_position"),"0");
+		}
 		assertTrue(rs.next());
 		assertEquals(rs.getString("column_name"),"in2");
 		assertEquals(rs.getString("type_name"),"char");
-		assertEquals(rs.getString("ordinal_position"),"2");
+		if (issqlrelay) {
+			assertEquals(rs.getString("ordinal_position"),"2");
+		} else {
+			assertEquals(rs.getString("ordinal_position"),"1");
+		}
 		assertTrue(rs.next());
 		assertEquals(rs.getString("column_name"),"in3");
 		assertEquals(rs.getString("type_name"),"varchar");
-		assertEquals(rs.getString("ordinal_position"),"3");
+		if (issqlrelay) {
+			assertEquals(rs.getString("ordinal_position"),"3");
+		} else {
+			assertEquals(rs.getString("ordinal_position"),"2");
+		}
 		assertTrue(rs.next());
 		assertEquals(rs.getString("column_name"),"in4");
 		assertEquals(rs.getString("type_name"),"date");
-		assertEquals(rs.getString("ordinal_position"),"4");
+		if (issqlrelay) {
+			assertEquals(rs.getString("ordinal_position"),"4");
+		} else {
+			assertEquals(rs.getString("ordinal_position"),"3");
+		}
 		rs.close();
 		stmt.executeUpdate("drop procedure testproc1");
 		stmt.executeUpdate("drop procedure testproc2");

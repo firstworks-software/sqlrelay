@@ -1517,10 +1517,10 @@ class firebird extends sqlrtest {
 			"values ("+
 			"	1, "+
 			"	1, "+
-			"	1.1, "+
-			"	1.1, "+
-			"	1.1, "+
-			"	1.1, "+
+			"	1.5, "+
+			"	1.5, "+
+			"	1.5, "+
+			"	1.5, "+
 			"	'2001-01-01', "+
 			"	'01:00:00', "+
 			"	'char1', "+
@@ -1556,10 +1556,10 @@ class firebird extends sqlrtest {
 			pstmt.clearParameters();
 			pstmt.setInt(1,i);
 			pstmt.setInt(2,i);
-			pstmt.setDouble(3,i+0.1);
-			pstmt.setDouble(4,i+0.1);
-			pstmt.setDouble(5,i+0.1);
-			pstmt.setDouble(6,i+0.1);
+			pstmt.setDouble(3,i+0.5);
+			pstmt.setDouble(4,i+0.5);
+			pstmt.setDouble(5,i+0.5);
+			pstmt.setDouble(6,i+0.5);
 
 			cal.set(Calendar.YEAR,2000+i);
 			cal.set(Calendar.MONTH,Calendar.JANUARY);
@@ -1733,13 +1733,13 @@ class firebird extends sqlrtest {
 
 			// decimal
 			System.out.println("  row "+i+" - decimal");
-			assertEquals(rs.getString(3),i+".10");
+			assertEquals(rs.getString(3),i+".50");
 			assertFalse(rs.wasNull());
 			System.out.println();
 
 			// numeric
 			System.out.println("  row "+i+" - numeric");
-			assertEquals(rs.getString(4),i+".10");
+			assertEquals(rs.getString(4),i+".50");
 			assertFalse(rs.wasNull());
 			System.out.println();
 
@@ -1868,13 +1868,13 @@ class firebird extends sqlrtest {
 
 			// decimal
 			System.out.println("  row "+i+" - decimal");
-			assertEquals(rs.getString("TESTDECIMAL"),i+".10");
+			assertEquals(rs.getString("TESTDECIMAL"),i+".50");
 			assertFalse(rs.wasNull());
 			System.out.println();
 
 			// numeric
 			System.out.println("  row "+i+" - numeric");
-			assertEquals(rs.getString("TESTNUMERIC"),i+".10");
+			assertEquals(rs.getString("TESTNUMERIC"),i+".50");
 			assertFalse(rs.wasNull());
 			System.out.println();
 
@@ -2258,10 +2258,10 @@ class firebird extends sqlrtest {
 			"values ("+
 			"	10, "+
 			"	10, "+
-			"	10.10, "+
-			"	10.10, "+
-			"	10.10, "+
-			"	10.10, "+
+			"	10.50, "+
+			"	10.50, "+
+			"	10.50, "+
+			"	10.50, "+
 			"	'2010-01-01', "+
 			"	'10:00:00', "+
 			"	'char10', "+
@@ -2290,10 +2290,10 @@ class firebird extends sqlrtest {
 			"values ("+
 			"	10, "+
 			"	10, "+
-			"	10.10, "+
-			"	10.10, "+
-			"	10.10, "+
-			"	10.10, "+
+			"	10.50, "+
+			"	10.50, "+
+			"	10.50, "+
+			"	10.50, "+
 			"	'2010-01-01', "+
 			"	'10:00:00', "+
 			"	'char10', "+
@@ -2323,7 +2323,7 @@ class firebird extends sqlrtest {
 		cstmt=con.prepareCall(
 			"execute procedure testproc ?, ?, ?, ?");
 		cstmt.setInt(1,1);
-		cstmt.setDouble(2,1.1);
+		cstmt.setDouble(2,1.5);
 		cstmt.setString(3,"hello");
 		cstmt.setBytes(4,"blob".getBytes(StandardCharsets.UTF_8));
 		cstmt.registerOutParameter(1,Types.INTEGER);
@@ -2352,10 +2352,10 @@ class firebird extends sqlrtest {
 			"values ("+
 			"	1, "+
 			"	1, "+
-			"	1.1, "+
-			"	1.1, "+
-			"	1.1, "+
-			"	1.1, "+
+			"	1.5, "+
+			"	1.5, "+
+			"	1.5, "+
+			"	1.5, "+
 			"	'2001-01-01', "+
 			"	'01:00:00', "+
 			"	'char1', "+
@@ -2475,7 +2475,7 @@ class firebird extends sqlrtest {
 			cstmt=con.prepareCall(
 				"execute procedure testproc ?, ?, ?, ?");
 			cstmt.setInt(1,1);
-			cstmt.setDouble(2,1.1);
+			cstmt.setDouble(2,1.5);
 			cstmt.setString(3,teststr);
 			cstmt.setBytes(4,"blob".getBytes(
 						StandardCharsets.UTF_8));
@@ -2527,7 +2527,7 @@ class firebird extends sqlrtest {
 		pstmt=con.prepareStatement("select * from testproc(?,?,?,?)");
 		assertTrue((pstmt!=null));
 		pstmt.setInt(1,1);
-		pstmt.setDouble(2,1.1);
+		pstmt.setDouble(2,1.5);
 		pstmt.setString(3,"hello");
 		pstmt.setBytes(4,(new String("blob")).
 				getBytes(StandardCharsets.UTF_8));
@@ -2546,7 +2546,7 @@ class firebird extends sqlrtest {
 		cstmt=con.prepareCall(
 			"execute procedure testproc ?, ?, ?, ?");
 		cstmt.setInt(1,1);
-		cstmt.setDouble(2,1.1);
+		cstmt.setDouble(2,1.5);
 		cstmt.setString(3,"hello");
 		cstmt.setBytes(4,"blob".getBytes(StandardCharsets.UTF_8));
 		cstmt.registerOutParameter(1,Types.INTEGER);

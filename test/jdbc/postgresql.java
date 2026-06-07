@@ -2060,8 +2060,8 @@ class postgresql extends sqlrtest {
 			"	testtable "+
 			"values ("+
 			"	10, "+
-			"	10.10, "+
-			"	10.10, "+
+			"	10.50, "+
+			"	10.50, "+
 			"	10, "+
 			"	'char10', "+
 			"	'varchar10', "+
@@ -2092,8 +2092,8 @@ class postgresql extends sqlrtest {
 			"	testtable "+
 			"values ("+
 			"	10, "+
-			"	10.10, "+
-			"	10.10, "+
+			"	10.50, "+
+			"	10.50, "+
 			"	10, "+
 			"	'char10', "+
 			"	'varchar10', "+

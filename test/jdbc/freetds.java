@@ -1548,12 +1548,12 @@ class freetds extends sqlrtest {
 			"	1, "+
 			"	1, "+
 			"	1, "+
-			"	1.1, "+
-			"	1.1, "+
-			"	1.1, "+
-			"	1.1, "+
-			"	1.10, "+
-			"	1.10, "+
+			"	1.5, "+
+			"	1.5, "+
+			"	1.5, "+
+			"	1.5, "+
+			"	1.50, "+
+			"	1.50, "+
 			"	'2001-01-01 01:00:00', "+
 			"	'2001-01-01 01:00:00', "+
 			"	'char1', "+
@@ -1593,12 +1593,12 @@ class freetds extends sqlrtest {
 			pstmt.setInt(1,i);
 			pstmt.setInt(2,i);
 			pstmt.setInt(3,i);
-			pstmt.setDouble(4,i+0.1);
-			pstmt.setDouble(5,i+0.1);
-			pstmt.setBigDecimal(6,new BigDecimal(i+".1"));
-			pstmt.setBigDecimal(7,new BigDecimal(i+".1"));
-			pstmt.setBigDecimal(8,new BigDecimal(i+".10"));
-			pstmt.setBigDecimal(9,new BigDecimal(i+".10"));
+			pstmt.setDouble(4,i+0.5);
+			pstmt.setDouble(5,i+0.5);
+			pstmt.setBigDecimal(6,new BigDecimal(i+".5"));
+			pstmt.setBigDecimal(7,new BigDecimal(i+".5"));
+			pstmt.setBigDecimal(8,new BigDecimal(i+".50"));
+			pstmt.setBigDecimal(9,new BigDecimal(i+".50"));
 
 			cal.set(Calendar.YEAR,2000+i);
 			cal.set(Calendar.MONTH,Calendar.JANUARY);
@@ -1769,25 +1769,25 @@ class freetds extends sqlrtest {
 
 			// decimal
 			System.out.println("  row "+i+" - decimal");
-			assertEquals(rs.getString(6),i+".1");
+			assertEquals(rs.getString(6),i+".5");
 			assertFalse(rs.wasNull());
 			System.out.println();
 
 			// numeric
 			System.out.println("  row "+i+" - numeric");
-			assertEquals(rs.getString(7),i+".1");
+			assertEquals(rs.getString(7),i+".5");
 			assertFalse(rs.wasNull());
 			System.out.println();
 
 			// money
 			System.out.println("  row "+i+" - money");
-			assertEquals(rs.getString(8),i+".1000");
+			assertEquals(rs.getString(8),i+".5000");
 			assertFalse(rs.wasNull());
 			System.out.println();
 
 			// smallmoney
 			System.out.println("  row "+i+" - smallmoney");
-			assertEquals(rs.getString(9),i+".1000");
+			assertEquals(rs.getString(9),i+".5000");
 			assertFalse(rs.wasNull());
 			System.out.println();
 
@@ -1895,25 +1895,25 @@ class freetds extends sqlrtest {
 
 			// decimal
 			System.out.println("  row "+i+" - decimal");
-			assertEquals(rs.getString("testdecimal"),i+".1");
+			assertEquals(rs.getString("testdecimal"),i+".5");
 			assertFalse(rs.wasNull());
 			System.out.println();
 
 			// numeric
 			System.out.println("  row "+i+" - numeric");
-			assertEquals(rs.getString("testnumeric"),i+".1");
+			assertEquals(rs.getString("testnumeric"),i+".5");
 			assertFalse(rs.wasNull());
 			System.out.println();
 
 			// money
 			System.out.println("  row "+i+" - money");
-			assertEquals(rs.getString("testmoney"),i+".1000");
+			assertEquals(rs.getString("testmoney"),i+".5000");
 			assertFalse(rs.wasNull());
 			System.out.println();
 
 			// smallmoney
 			System.out.println("  row "+i+" - smallmoney");
-			assertEquals(rs.getString("testsmallmoney"),i+".1000");
+			assertEquals(rs.getString("testsmallmoney"),i+".5000");
 			assertFalse(rs.wasNull());
 			System.out.println();
 
@@ -2007,12 +2007,12 @@ class freetds extends sqlrtest {
 			"	10, "+
 			"	10, "+
 			"	10, "+
-			"	10.10, "+
-			"	10.10, "+
-			"	10.10, "+
-			"	10.10, "+
-			"	10.10, "+
-			"	10.10, "+
+			"	10.50, "+
+			"	10.50, "+
+			"	10.50, "+
+			"	10.50, "+
+			"	10.50, "+
+			"	10.50, "+
 			"	'2010-01-01 10:00:00', "+
 			"	'2010-01-01 10:00:00', "+
 			"	'char10', "+
@@ -2042,12 +2042,12 @@ class freetds extends sqlrtest {
 			"	10, "+
 			"	10, "+
 			"	10, "+
-			"	10.10, "+
-			"	10.10, "+
-			"	10.10, "+
-			"	10.10, "+
-			"	10.10, "+
-			"	10.10, "+
+			"	10.50, "+
+			"	10.50, "+
+			"	10.50, "+
+			"	10.50, "+
+			"	10.50, "+
+			"	10.50, "+
 			"	'2010-01-01 10:00:00', "+
 			"	'2010-01-01 10:00:00', "+
 			"	'char10', "+
@@ -2095,7 +2095,7 @@ class freetds extends sqlrtest {
 			"	@out3=@in3"),0);
 		cstmt=con.prepareCall("exec testproc ?,?,?,?,?,?");
 		cstmt.setInt(1,1);
-		cstmt.setDouble(2,1.1);
+		cstmt.setDouble(2,1.5);
 		cstmt.setString(3,"hello");
 		cstmt.registerOutParameter(4,Types.INTEGER);
 		cstmt.registerOutParameter(5,Types.DOUBLE);

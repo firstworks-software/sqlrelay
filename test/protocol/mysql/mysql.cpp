@@ -325,14 +325,14 @@ int	main(int argc, char **argv) {
 	stdoutput.printf("\n");
 
 	stdoutput.printf("mysql_real_query: insert\n");
-	query="insert into testtable values (1,1,1,1,1,1.1,1.1,1.1,'2001-01-01','01:00:00','2001-01-01 01:00:00','2001','char1','text1','varchar1','tinytext1','mediumtext1','longtext1',NULL)";
+	query="insert into testtable values (1,1,1,1,1,1.5,1.5,1.5,'2001-01-01','01:00:00','2001-01-01 01:00:00','2001','char1','text1','varchar1','tinytext1','mediumtext1','longtext1',NULL)";
 	assertEquals(mysql_real_query(&mysql,query,charstring::getLength(query)),0);
 	assertEquals(mysql_info(&mysql),NULL);
 	assertEquals(mysql_affected_rows(&mysql),1);
 	stdoutput.printf("\n");
 
 	stdoutput.printf("mysql_send_query: insert\n");
-	query="insert into testtable values (2,2,2,2,2,2.1,2.1,2.1,'2002-01-01','02:00:00','2002-01-01 02:00:00','2002','char2','text2','varchar2','tinytext2','mediumtext2','longtext2',NULL)";
+	query="insert into testtable values (2,2,2,2,2,2.5,2.5,2.5,'2002-01-01','02:00:00','2002-01-01 02:00:00','2002','char2','text2','varchar2','tinytext2','mediumtext2','longtext2',NULL)";
 	assertEquals(mysql_send_query(&mysql,query,charstring::getLength(query)),0);
 	assertEquals(mysql_info(&mysql),NULL);
 	assertEquals(mysql_read_query_result(&mysql),0);
@@ -510,9 +510,9 @@ int	main(int argc, char **argv) {
 	assertEquals(row[2],"1");
 	assertEquals(row[3],"1");
 	assertEquals(row[4],"1");
-	//assertEquals(row[5],"1.1");
-	//assertEquals(row[6],"1.1");
-	assertEquals(row[7],"1.1");
+	//assertEquals(row[5],"1.5");
+	//assertEquals(row[6],"1.5");
+	assertEquals(row[7],"1.5");
 	assertEquals(row[8],"2001-01-01");
 	assertEquals(row[9],"01:00:00");
 	assertEquals(row[10],"2001-01-01 01:00:00");
@@ -557,9 +557,9 @@ int	main(int argc, char **argv) {
 	assertEquals(row[2],"2");
 	assertEquals(row[3],"2");
 	assertEquals(row[4],"2");
-	//assertEquals(row[5],"2.1");
-	//assertEquals(row[6],"2.1");
-	assertEquals(row[7],"2.1");
+	//assertEquals(row[5],"2.5");
+	//assertEquals(row[6],"2.5");
+	assertEquals(row[7],"2.5");
 	assertEquals(row[8],"2002-01-01");
 	assertEquals(row[9],"02:00:00");
 	assertEquals(row[10],"2002-01-01 02:00:00");
@@ -623,9 +623,9 @@ int	main(int argc, char **argv) {
 	assertEquals(row[2],"1");
 	assertEquals(row[3],"1");
 	assertEquals(row[4],"1");
-	//assertEquals(row[5],"1.1");
-	//assertEquals(row[6],"1.1");
-	assertEquals(row[7],"1.1");
+	//assertEquals(row[5],"1.5");
+	//assertEquals(row[6],"1.5");
+	assertEquals(row[7],"1.5");
 	assertEquals(row[8],"2001-01-01");
 	assertEquals(row[9],"01:00:00");
 	assertEquals(row[10],"2001-01-01 01:00:00");
@@ -642,9 +642,9 @@ int	main(int argc, char **argv) {
 	assertEquals(row[2],"2");
 	assertEquals(row[3],"2");
 	assertEquals(row[4],"2");
-	//assertEquals(row[5],"2.1");
-	//assertEquals(row[6],"2.1");
-	assertEquals(row[7],"2.1");
+	//assertEquals(row[5],"2.5");
+	//assertEquals(row[6],"2.5");
+	assertEquals(row[7],"2.5");
 	assertEquals(row[8],"2002-01-01");
 	assertEquals(row[9],"02:00:00");
 	assertEquals(row[10],"2002-01-01 02:00:00");
@@ -859,14 +859,14 @@ int	main(int argc, char **argv) {
 
 
 	stdoutput.printf("mysql_stmt_prepare/execute: insert\n");
-	query="insert into testtable values (1,1,1,1,1,1.1,1.1,1.1,'2001-01-01','01:00:00','2001-01-01 01:00:00','2001','char1','text1','varchar1','tinytext1','mediumtext1','longtext1',NULL)";
+	query="insert into testtable values (1,1,1,1,1,1.5,1.5,1.5,'2001-01-01','01:00:00','2001-01-01 01:00:00','2001','char1','text1','varchar1','tinytext1','mediumtext1','longtext1',NULL)";
 	assertEquals(mysql_stmt_prepare(stmt,query,charstring::getLength(query)),0);
 	assertEquals(mysql_stmt_execute(stmt),0);
 	stdoutput.printf("\n");
 
 
 	stdoutput.printf("mysql_stmt_prepare/execute: insert\n");
-	query="insert into testtable values (2,2,2,2,2,2.1,2.1,2.1,'2002-01-01','02:00:00','2002-01-01 02:00:00','2002','char2','text2','varchar2','tinytext2','mediumtext2','longtext2',NULL)";
+	query="insert into testtable values (2,2,2,2,2,2.5,2.5,2.5,'2002-01-01','02:00:00','2002-01-01 02:00:00','2002','char2','text2','varchar2','tinytext2','mediumtext2','longtext2',NULL)";
 	assertEquals(mysql_stmt_prepare(stmt,query,charstring::getLength(query)),0);
 	assertEquals(mysql_stmt_execute(stmt),0);
 	stdoutput.printf("\n");
@@ -972,9 +972,9 @@ int	main(int argc, char **argv) {
 	assertEquals((const char *)fieldbind[2].buffer,"1");
 	assertEquals((const char *)fieldbind[3].buffer,"1");
 	assertEquals((const char *)fieldbind[4].buffer,"1");
-	//assertEquals((const char *)fieldbind[5].buffer,"1.1");
-	//assertEquals((const char *)fieldbind[6].buffer,"1.1");
-	assertEquals((const char *)fieldbind[7].buffer,"1.1");
+	//assertEquals((const char *)fieldbind[5].buffer,"1.5");
+	//assertEquals((const char *)fieldbind[6].buffer,"1.5");
+	assertEquals((const char *)fieldbind[7].buffer,"1.5");
 	assertEquals((const char *)fieldbind[8].buffer,"2001-01-01");
 	assertEquals((const char *)fieldbind[9].buffer,"01:00:00");
 	assertEquals((const char *)fieldbind[10].buffer,"2001-01-01 01:00:00");
@@ -996,9 +996,9 @@ int	main(int argc, char **argv) {
 	assertEquals((const char *)fieldbind[2].buffer,"2");
 	assertEquals((const char *)fieldbind[3].buffer,"2");
 	assertEquals((const char *)fieldbind[4].buffer,"2");
-	//assertEquals((const char *)fieldbind[5].buffer,"2.1");
-	//assertEquals((const char *)fieldbind[6].buffer,"2.1");
-	assertEquals((const char *)fieldbind[7].buffer,"2.1");
+	//assertEquals((const char *)fieldbind[5].buffer,"2.5");
+	//assertEquals((const char *)fieldbind[6].buffer,"2.5");
+	assertEquals((const char *)fieldbind[7].buffer,"2.5");
 	assertEquals((const char *)fieldbind[8].buffer,"2002-01-01");
 	assertEquals((const char *)fieldbind[9].buffer,"02:00:00");
 	assertEquals((const char *)fieldbind[10].buffer,"2002-01-01 02:00:00");
@@ -1107,7 +1107,7 @@ int	main(int argc, char **argv) {
 	bindisnull[3]=0;
 	bind[3].is_null=&bindisnull[3];
 
-	float	floatval=1.1;
+	float	floatval=1.5;
 	bind[4].buffer_type=MYSQL_TYPE_FLOAT;
 	bind[4].buffer=&floatval;
 	bind[4].buffer_length=sizeof(floatval);
@@ -1116,7 +1116,7 @@ int	main(int argc, char **argv) {
 	bindisnull[4]=0;
 	bind[4].is_null=&bindisnull[4];
 
-	double	doubleval=1.1;
+	double	doubleval=1.5;
 	bind[5].buffer_type=MYSQL_TYPE_DOUBLE;
 	bind[5].buffer=&doubleval;
 	bind[5].buffer_length=sizeof(doubleval);
@@ -1217,8 +1217,8 @@ int	main(int argc, char **argv) {
 	assertEquals((const char *)fieldbind[1].buffer,"1");
 	assertEquals((const char *)fieldbind[2].buffer,"1");
 	assertEquals((const char *)fieldbind[3].buffer,"1");
-	//assertEquals((const char *)fieldbind[4].buffer,"1.1");
-	//assertEquals((const char *)fieldbind[5].buffer,"1.1");
+	//assertEquals((const char *)fieldbind[4].buffer,"1.5");
+	//assertEquals((const char *)fieldbind[5].buffer,"1.5");
 	assertEquals((const char *)fieldbind[6].buffer,"string1");
 	assertEquals((const char *)fieldbind[7].buffer,"varstring1");
 	assertEquals((const char *)fieldbind[8].buffer,"tinyblob1");

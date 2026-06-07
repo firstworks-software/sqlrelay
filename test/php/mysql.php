@@ -1756,7 +1756,7 @@
 		"	in in3 varchar(20)) begin end"));
 	sqlrcur_prepareQuery($cur,"call testproc(?,?,?)");
 	sqlrcur_inputBind($cur,"1",1);
-	sqlrcur_inputBind($cur,"2",1.1,2,1);
+	sqlrcur_inputBind($cur,"2",1.5,2,1);
 	sqlrcur_inputBind($cur,"3","hello");
 	assertTrue(sqlrcur_executeQuery($cur));
 	assertTrue(sqlrcur_sendQuery($cur,"drop procedure testproc"));
@@ -1776,7 +1776,7 @@
 		"	select in1; end"));
 	sqlrcur_prepareQuery($cur,"call testproc(?,?,?)");
 	sqlrcur_inputBind($cur,"1",1);
-	sqlrcur_inputBind($cur,"2",1.1,2,1);
+	sqlrcur_inputBind($cur,"2",1.5,2,1);
 	sqlrcur_inputBind($cur,"3","hello");
 	assertTrue(sqlrcur_executeQuery($cur));
 	assertEqStr(sqlrcur_getField($cur,0,0),"1");
@@ -1798,11 +1798,11 @@
 		"	in3; end"));
 	sqlrcur_prepareQuery($cur,"call testproc(?,?,?)");
 	sqlrcur_inputBind($cur,"1",1);
-	sqlrcur_inputBind($cur,"2",1.1,2,1);
+	sqlrcur_inputBind($cur,"2",1.5,2,1);
 	sqlrcur_inputBind($cur,"3","hello");
 	assertTrue(sqlrcur_executeQuery($cur));
 	assertEqStr(sqlrcur_getField($cur,0,0),"1");
-	assertEqStr(sqlrcur_getField($cur,0,1),"1.1");
+	assertEqStr(sqlrcur_getField($cur,0,1),"1.5");
 	assertEqStr(sqlrcur_getField($cur,0,2),"hello");
 	assertTrue(sqlrcur_sendQuery($cur,"drop procedure testproc"));
 	echo("\n");
@@ -1864,11 +1864,11 @@
 			"	in2, in3; end;"));
 		sqlrcur_prepareQuery($cur,"call testproc(?,?,?)");
 		sqlrcur_inputBind($cur,"1",1);
-		sqlrcur_inputBind($cur,"2",1.1,4,2);
+		sqlrcur_inputBind($cur,"2",1.5,4,2);
 		sqlrcur_inputBind($cur,"3","hello");
 		assertTrue(sqlrcur_executeQuery($cur));
 		assertEqStr(sqlrcur_getField($cur,0,0),"1");
-		assertEqStr(sqlrcur_getField($cur,0,1),"1.1");
+		assertEqStr(sqlrcur_getField($cur,0,1),"1.5");
 		assertEqStr(sqlrcur_getField($cur,0,2),"hello");
 		sqlrcur_sendQuery($cur,"drop procedure testproc");
 		echo("\n");

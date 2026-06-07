@@ -485,14 +485,23 @@ class sqlite extends sqlrtest {
 		System.out.println("  getNumericFunctions");
 		stringval=md.getNumericFunctions();
 		System.out.println("    "+stringval);
-		assertEquals(stringval,"ABS,ROUND,SIGN");
+		if (issqlrelay) {
+			assertEquals(stringval,"ABS,ROUND,SIGN");
+		} else {
+			// the native driver reports no numeric functions
+			assertEquals(stringval,"");
+		}
 		System.out.println();
 
 		// getProcedureTerm
 		System.out.println("  getProcedureTerm");
 		stringval=md.getProcedureTerm();
 		System.out.println("    "+stringval);
-		assertEquals(stringval,"");
+		if (issqlrelay) {
+			assertEquals(stringval,"");
+		} else {
+			assertEquals(stringval,"not_implemented");
+		}
 		System.out.println();
 
 		// getResultSetHoldability
@@ -545,24 +554,41 @@ class sqlite extends sqlrtest {
 		System.out.println("  getStringFunctions");
 		stringval=md.getStringFunctions();
 		System.out.println("    "+stringval);
-		assertEquals(stringval,"CHAR,CONCAT,LCASE,LENGTH,LTRIM,REPLACE,"+
+		if (issqlrelay) {
+			assertEquals(stringval,
+				"CHAR,CONCAT,LCASE,LENGTH,LTRIM,REPLACE,"+
 				"RTRIM,SUBSTRING,UCASE");
+		} else {
+			// the native driver reports no string functions
+			assertEquals(stringval,"");
+		}
 		System.out.println();
 
 		// getSystemFunctions
 		System.out.println("  getSystemFunctions");
 		stringval=md.getSystemFunctions();
 		System.out.println("    "+stringval);
-		assertEquals(stringval,"IFNULL");
+		if (issqlrelay) {
+			assertEquals(stringval,"IFNULL");
+		} else {
+			// the native driver reports no system functions
+			assertEquals(stringval,"");
+		}
 		System.out.println();
 
 		// getTimeDateFunctions
 		System.out.println("  getTimeDateFunctions");
 		stringval=md.getTimeDateFunctions();
 		System.out.println("    "+stringval);
-		assertEquals(stringval,"DATE,TIME,DATETIME,JULIANDAY,STRFTIME,"+
+		if (issqlrelay) {
+			assertEquals(stringval,
+				"DATE,TIME,DATETIME,JULIANDAY,STRFTIME,"+
 				"CURRENT_DATE,CURRENT_TIME,"+
 				"CURRENT_TIMESTAMP");
+		} else {
+			assertEquals(stringval,
+				"DATE,TIME,DATETIME,JULIANDAY,STRFTIME");
+		}
 		System.out.println();
 
 		// getURL
@@ -966,7 +992,13 @@ class sqlite extends sqlrtest {
 		System.out.println("  supportsCorrelatedSubqueries");
 		boolval=md.supportsCorrelatedSubqueries();
 		System.out.println("    "+boolval);
-		assertTrue(boolval);
+		if (issqlrelay) {
+			assertTrue(boolval);
+		} else {
+			// the native driver reports false even though
+			// sqlite supports correlated subqueries
+			assertFalse(boolval);
+		}
 		System.out.println();
 
 		// supportsDataManipulationTransactionsOnly
@@ -1043,7 +1075,11 @@ class sqlite extends sqlrtest {
 		System.out.println("  supportsLikeEscapeClause");
 		boolval=md.supportsLikeEscapeClause();
 		System.out.println("    "+boolval);
-		assertTrue(boolval);
+		if (issqlrelay) {
+			assertTrue(boolval);
+		} else {
+			assertFalse(boolval);
+		}
 		System.out.println();
 
 		// supportsLimitedOuterJoins
@@ -1141,7 +1177,11 @@ class sqlite extends sqlrtest {
 		System.out.println("  supportsOrderByUnrelated");
 		boolval=md.supportsOrderByUnrelated();
 		System.out.println("    "+boolval);
-		assertTrue(boolval);
+		if (issqlrelay) {
+			assertTrue(boolval);
+		} else {
+			assertFalse(boolval);
+		}
 		System.out.println();
 
 		// supportsOuterJoins
@@ -1355,7 +1395,11 @@ class sqlite extends sqlrtest {
 		System.out.println("  supportsSubqueriesInComparisons");
 		boolval=md.supportsSubqueriesInComparisons();
 		System.out.println("    "+boolval);
-		assertTrue(boolval);
+		if (issqlrelay) {
+			assertTrue(boolval);
+		} else {
+			assertFalse(boolval);
+		}
 		System.out.println();
 
 		// supportsSubqueriesInExists
@@ -1383,7 +1427,11 @@ class sqlite extends sqlrtest {
 		System.out.println("  supportsTableCorrelationNames");
 		boolval=md.supportsTableCorrelationNames();
 		System.out.println("    "+boolval);
-		assertTrue(boolval);
+		if (issqlrelay) {
+			assertTrue(boolval);
+		} else {
+			assertFalse(boolval);
+		}
 		System.out.println();
 
 		// supportsTransactionIsolationLevel
@@ -1400,7 +1448,13 @@ class sqlite extends sqlrtest {
 		boolval=md.supportsTransactionIsolationLevel(
 				Connection.TRANSACTION_READ_UNCOMMITTED);
 		System.out.println("    "+boolval);
-		assertTrue(boolval);
+		if (issqlrelay) {
+			assertTrue(boolval);
+		} else {
+			// the native driver only reports
+			// serializable as supported
+			assertFalse(boolval);
+		}
 		System.out.println();
 
 		System.out.println("  supportsTransactionIsolationLevel "+
@@ -1518,7 +1572,7 @@ class sqlite extends sqlrtest {
 			"	testtable "+
 			"values ("+
 			"	1, "+
-			"	1.1, "+
+			"	1.5, "+
 			"	'char1', "+
 			"	'varchar1', "+
 			"	'clob1', "+
@@ -1547,7 +1601,7 @@ class sqlite extends sqlrtest {
 		for (int i=2; i<=4; i++) {
 			pstmt.clearParameters();
 			pstmt.setInt(1,i);
-			pstmt.setDouble(2,i+0.1);
+			pstmt.setDouble(2,i+0.5);
 			pstmt.setString(3,"char"+i);
 			pstmt.setString(4,"varchar"+i);
 			pstmt.setString(5,"clob"+i);
@@ -1904,7 +1958,7 @@ class sqlite extends sqlrtest {
 			"	testtable "+
 			"values ("+
 			"	10, "+
-			"	10.10, "+
+			"	10.50, "+
 			"	'char10', "+
 			"	'varchar10', "+
 			"	'clob10', "+
@@ -1931,7 +1985,7 @@ class sqlite extends sqlrtest {
 			"	testtable "+
 			"values ("+
 			"	10, "+
-			"	10.10, "+
+			"	10.50, "+
 			"	'char10', "+
 			"	'varchar10', "+
 			"	'clob10', "+

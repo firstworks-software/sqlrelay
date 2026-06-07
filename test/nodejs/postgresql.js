@@ -102,8 +102,8 @@ assertTrue(cur.sendQuery(
 	"	testtable "+
 	"values ("+
 	"	1, "+
-	"	1.1, "+
-	"	1.1, "+
+	"	1.5, "+
+	"	1.5, "+
 	"	1, "+
 	"	'testchar1', "+
 	"	'testvarchar1', "+
@@ -117,8 +117,8 @@ assertTrue(cur.sendQuery(
 	"	testtable "+
 	"values ("+
 	"	2, "+
-	"	2.2, "+
-	"	2.2, "+
+	"	2.5, "+
+	"	2.5, "+
 	"	2, "+
 	"	'testchar2', "+
 	"	'testvarchar2', "+
@@ -132,8 +132,8 @@ assertTrue(cur.sendQuery(
 	"	testtable "+
 	"values ("+
 	"	3, "+
-	"	3.3, "+
-	"	3.3, "+
+	"	3.5, "+
+	"	3.5, "+
 	"	3, "+
 	"	'testchar3', "+
 	"	'testvarchar3', "+
@@ -147,8 +147,8 @@ assertTrue(cur.sendQuery(
 	"	testtable "+
 	"values ("+
 	"	4, "+
-	"	4.4, "+
-	"	4.4, "+
+	"	4.5, "+
+	"	4.5, "+
 	"	4, "+
 	"	'testchar4', "+
 	"	'testvarchar4', "+
@@ -197,8 +197,8 @@ cur.inputBindBlob("10","testbytea5","testbytea5".length);
 assertTrue(cur.executeQuery());
 cur.clearBinds();
 cur.inputBind("1",6);
-cur.inputBind("2",6.6,4,2);
-cur.inputBind("3",6.6,4,2);
+cur.inputBind("2",6.5,4,2);
+cur.inputBind("3",6.5,4,2);
 cur.inputBind("4",6);
 cur.inputBind("5","testchar6");
 cur.inputBind("6","testvarchar6");
@@ -209,8 +209,8 @@ cur.inputBindBlob("10","testbytea6","testbytea6".length);
 assertTrue(cur.executeQuery());
 cur.clearBinds();
 cur.inputBind("1",7);
-cur.inputBind("2",7.7,4,2);
-cur.inputBind("3",7.7,4,2);
+cur.inputBind("2",7.5,4,2);
+cur.inputBind("3",7.5,4,2);
 cur.inputBind("4",7);
 cur.inputBind("5","testchar7");
 cur.inputBind("6","testvarchar7");
@@ -237,8 +237,8 @@ console.log("");
 console.log("BIND BY POSITION WITH VALIDATION: ");
 cur.clearBinds();
 cur.inputBind("1",8);
-cur.inputBind("2",8.8,4,2);
-cur.inputBind("3",8.8,4,2);
+cur.inputBind("2",8.5,4,2);
+cur.inputBind("3",8.5,4,2);
 cur.inputBind("4",8);
 cur.inputBind("5","testchar8");
 cur.inputBind("6","testvarchar8");
@@ -407,8 +407,8 @@ console.log("");
 // fields by index
 console.log("FIELDS BY INDEX: ");
 assertEqStr(cur.getField(0,0),"1");
-assertEqStr(cur.getField(0,1),"1.1");
-assertEqStr(cur.getField(0,2),"1.1");
+assertEqStr(cur.getField(0,1),"1.5");
+assertEqStr(cur.getField(0,2),"1.5");
 assertEqStr(cur.getField(0,3),"1");
 assertEqStr(cur.getField(0,4),"testchar1"+
 	"                               ");
@@ -419,8 +419,8 @@ assertEqStr(cur.getField(0,9),"testtext1");
 assertEqStr(cur.getField(0,10),"testbytea1");
 console.log("");
 assertEqStr(cur.getField(7,0),"8");
-assertEqStr(cur.getField(7,1),"8.8");
-assertEqStr(cur.getField(7,2),"8.8");
+assertEqStr(cur.getField(7,1),"8.5");
+assertEqStr(cur.getField(7,2),"8.5");
 assertEqStr(cur.getField(7,3),"8");
 assertEqStr(cur.getField(7,4),"testchar8"+
 	"                               ");
@@ -461,8 +461,8 @@ console.log("");
 // fields by name
 console.log("FIELDS BY NAME: ");
 assertEqStr(cur.getField(0,"testint"),"1");
-assertEqStr(cur.getField(0,"testfloat"),"1.1");
-assertEqStr(cur.getField(0,"testreal"),"1.1");
+assertEqStr(cur.getField(0,"testfloat"),"1.5");
+assertEqStr(cur.getField(0,"testreal"),"1.5");
 assertEqStr(cur.getField(0,"testsmallint"),"1");
 assertEqStr(cur.getField(0,"testchar"),"testchar1"+
 	"                               ");
@@ -473,8 +473,8 @@ assertEqStr(cur.getField(0,"testtext"),"testtext1");
 assertEqStr(cur.getField(0,"testbytea"),"testbytea1");
 console.log("");
 assertEqStr(cur.getField(7,"testint"),"8");
-assertEqStr(cur.getField(7,"testfloat"),"8.8");
-assertEqStr(cur.getField(7,"testreal"),"8.8");
+assertEqStr(cur.getField(7,"testfloat"),"8.5");
+assertEqStr(cur.getField(7,"testreal"),"8.5");
 assertEqStr(cur.getField(7,"testsmallint"),"8");
 assertEqStr(cur.getField(7,"testchar"),"testchar8"+
 	"                               ");
@@ -516,8 +516,8 @@ console.log("");
 console.log("FIELDS BY ARRAY: ");
 var fields=cur.getRow(0);
 assertEqStr(fields[0],"1");
-assertEqStr(fields[1],"1.1");
-assertEqStr(fields[2],"1.1");
+assertEqStr(fields[1],"1.5");
+assertEqStr(fields[2],"1.5");
 assertEqStr(fields[3],"1");
 assertEqStr(fields[4],"testchar1"+
 	"                               ");
@@ -1321,7 +1321,7 @@ assertTrue(cur.sendQuery(
 	"	return; end;' language plpgsql"));
 cur.prepareQuery("select testfunc($1,$2,$3)");
 cur.inputBind("1",1);
-cur.inputBind("2",1.1,4,2);
+cur.inputBind("2",1.5,4,2);
 cur.inputBind("3","hello");
 assertTrue(cur.executeQuery());
 assertTrue(cur.sendQuery("drop function "+
@@ -1338,7 +1338,7 @@ assertTrue(cur.sendQuery("create function "+
 	"	' begin return $1; end;' language plpgsql"));
 cur.prepareQuery("select * from testfunc($1,$2,$3)");
 cur.inputBind("1",1);
-cur.inputBind("2",1.1,4,2);
+cur.inputBind("2",1.5,4,2);
 cur.inputBind("3","hello");
 assertTrue(cur.executeQuery());
 assertEqStr(cur.getField(0,0),"1");
@@ -1369,7 +1369,7 @@ cur.prepareQuery(
 	"		col2 float, "+
 	"		col3 bpchar) ");
 cur.inputBind("1",1);
-cur.inputBind("2",1.1,4,2);
+cur.inputBind("2",1.5,4,2);
 cur.inputBind("3","hello");
 assertTrue(cur.executeQuery());
 assertEqStr(cur.getField(0,0),"1");

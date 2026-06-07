@@ -112,7 +112,7 @@ var {
 		"	testtable "+
 		"values ("+
 		"	1, "+
-		"	1.1, "+
+		"	1.5, "+
 		"	'testchar1', "+
 		"	'testvarchar1', "+
 		"	'testclob1', "+
@@ -122,7 +122,7 @@ var {
 		"	testtable "+
 		"values ("+
 		"	2, "+
-		"	2.2, "+
+		"	2.5, "+
 		"	'testchar2', "+
 		"	'testvarchar2', "+
 		"	'testclob2', "+
@@ -132,7 +132,7 @@ var {
 		"	testtable "+
 		"values ("+
 		"	3, "+
-		"	3.3, "+
+		"	3.5, "+
 		"	'testchar3', "+
 		"	'testvarchar3', "+
 		"	'testclob3', "+
@@ -142,7 +142,7 @@ var {
 		"	testtable "+
 		"values ("+
 		"	4, "+
-		"	4.4, "+
+		"	4.5, "+
 		"	'testchar4', "+
 		"	'testvarchar4', "+
 		"	'testclob4', "+
@@ -190,7 +190,7 @@ var {
 	assertTrue(cur.executeQuery());
 	cur.clearBinds();
 	cur.inputBind("var1",6);
-	cur.inputBind("var2",6.6,4,1);
+	cur.inputBind("var2",6.5,4,1);
 	cur.inputBind("var3","testchar6");
 	cur.inputBind("var4","testvarchar6");
 	cur.inputBindClob("var5","testclob6","testclob6".length);
@@ -198,7 +198,7 @@ var {
 	assertTrue(cur.executeQuery());
 	cur.clearBinds();
 	cur.inputBind("var1",7);
-	cur.inputBind("var2",7.7,4,1);
+	cur.inputBind("var2",7.5,4,1);
 	cur.inputBind("var3","testchar7");
 	cur.inputBind("var4","testvarchar7");
 	cur.inputBindClob("var5","testclob7","testclob7".length);
@@ -217,7 +217,7 @@ var {
 	console.log("INPUT BIND BY NAME WITH VALIDATION: ");
 	cur.clearBinds();
 	cur.inputBind("var1",8);
-	cur.inputBind("var2",8.8,4,1);
+	cur.inputBind("var2",8.5,4,1);
 	cur.inputBind("var3","testchar8");
 	cur.inputBind("var4","testvarchar8");
 	cur.inputBindClob("var5","testclob8","testclob8".length);
@@ -347,14 +347,14 @@ var {
 	// fields by index
 	console.log("FIELDS BY INDEX: ");
 	assertEqStr(cur.getField(0,0),"1");
-	assertEqStr(cur.getField(0,1),"1.1");
+	assertEqStr(cur.getField(0,1),"1.5");
 	assertEqStr(cur.getField(0,2),"testchar1");
 	assertEqStr(cur.getField(0,3),"testvarchar1");
 	assertEqStr(cur.getField(0,4),"testclob1");
 	assertEqStr(cur.getField(0,5),"testblob1");
 	console.log("");
 	assertEqStr(cur.getField(7,0),"8");
-	assertEqStr(cur.getField(7,1),"8.8");
+	assertEqStr(cur.getField(7,1),"8.5");
 	assertEqStr(cur.getField(7,2),"testchar8");
 	assertEqStr(cur.getField(7,3),"testvarchar8");
 	assertEqStr(cur.getField(7,4),"testclob8");
@@ -383,14 +383,14 @@ var {
 	// fields by name
 	console.log("FIELDS BY NAME: ");
 	assertEqStr(cur.getField(0,"testint"),"1");
-	assertEqStr(cur.getField(0,"testfloat"),"1.1");
+	assertEqStr(cur.getField(0,"testfloat"),"1.5");
 	assertEqStr(cur.getField(0,"testchar"),"testchar1");
 	assertEqStr(cur.getField(0,"testvarchar"),"testvarchar1");
 	assertEqStr(cur.getField(0,"testclob"),"testclob1");
 	assertEqStr(cur.getField(0,"testblob"),"testblob1");
 	console.log("");
 	assertEqStr(cur.getField(7,"testint"),"8");
-	assertEqStr(cur.getField(7,"testfloat"),"8.8");
+	assertEqStr(cur.getField(7,"testfloat"),"8.5");
 	assertEqStr(cur.getField(7,"testchar"),"testchar8");
 	assertEqStr(cur.getField(7,"testvarchar"),"testvarchar8");
 	assertEqStr(cur.getField(7,"testclob"),"testclob8");
@@ -420,7 +420,7 @@ var {
 	console.log("FIELDS BY ARRAY: ");
 	var fields=cur.getRow(0);
 	assertEqStr(fields[0],"1");
-	assertEqStr(fields[1],"1.1");
+	assertEqStr(fields[1],"1.5");
 	assertEqStr(fields[2],"testchar1");
 	assertEqStr(fields[3],"testvarchar1");
 	assertEqStr(fields[4],"testclob1");

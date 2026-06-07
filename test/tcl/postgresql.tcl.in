@@ -76,10 +76,10 @@ puts ""
 # insert
 puts "INSERT: "
 assertTrue [$con begin]
-assertTrue [$cur sendQuery "insert into testtable values (1,1.1,1.1,1,'testchar1','testvarchar1','01/01/2001','01:00:00',NULL,'testtext1','testbytea1')"]
-assertTrue [$cur sendQuery "insert into testtable values (2,2.2,2.2,2,'testchar2','testvarchar2','01/01/2002','02:00:00',NULL,'testtext2','testbytea2')"]
-assertTrue [$cur sendQuery "insert into testtable values (3,3.3,3.3,3,'testchar3','testvarchar3','01/01/2003','03:00:00',NULL,'testtext3','testbytea3')"]
-assertTrue [$cur sendQuery "insert into testtable values (4,4.4,4.4,4,'testchar4','testvarchar4','01/01/2004','04:00:00',NULL,'testtext4','testbytea4')"]
+assertTrue [$cur sendQuery "insert into testtable values (1,1.5,1.5,1,'testchar1','testvarchar1','01/01/2001','01:00:00',NULL,'testtext1','testbytea1')"]
+assertTrue [$cur sendQuery "insert into testtable values (2,2.5,2.5,2,'testchar2','testvarchar2','01/01/2002','02:00:00',NULL,'testtext2','testbytea2')"]
+assertTrue [$cur sendQuery "insert into testtable values (3,3.5,3.5,3,'testchar3','testvarchar3','01/01/2003','03:00:00',NULL,'testtext3','testbytea3')"]
+assertTrue [$cur sendQuery "insert into testtable values (4,4.5,4.5,4,'testchar4','testvarchar4','01/01/2004','04:00:00',NULL,'testtext4','testbytea4')"]
 puts ""
 
 
@@ -106,8 +106,8 @@ $cur inputBindBlob "10" "testbytea5" 10
 assertTrue [$cur executeQuery]
 $cur clearBinds
 $cur inputBind "1" 6
-$cur inputBind "2" 6.6 4 2
-$cur inputBind "3" 6.6 4 2
+$cur inputBind "2" 6.5 4 2
+$cur inputBind "3" 6.5 4 2
 $cur inputBind "4" 6
 $cur inputBind "5" "testchar6"
 $cur inputBind "6" "testvarchar6"
@@ -118,8 +118,8 @@ $cur inputBindBlob "10" "testbytea6" 10
 assertTrue [$cur executeQuery]
 $cur clearBinds
 $cur inputBind "1" 7
-$cur inputBind "2" 7.7 4 2
-$cur inputBind "3" 7.7 4 2
+$cur inputBind "2" 7.5 4 2
+$cur inputBind "3" 7.5 4 2
 $cur inputBind "4" 7
 $cur inputBind "5" "testchar7"
 $cur inputBind "6" "testvarchar7"
@@ -144,8 +144,8 @@ puts ""
 puts "BIND BY POSITION WITH VALIDATION: "
 $cur clearBinds
 $cur inputBind "1" 8
-$cur inputBind "2" 8.8 4 2
-$cur inputBind "3" 8.8 4 2
+$cur inputBind "2" 8.5 4 2
+$cur inputBind "3" 8.5 4 2
 $cur inputBind "4" 8
 $cur inputBind "5" "testchar8"
 $cur inputBind "6" "testvarchar8"
@@ -312,8 +312,8 @@ puts ""
 # fields by index
 puts "FIELDS BY INDEX: "
 assertEqual [$cur getFieldByIndex 0 0] "1"
-assertEqual [$cur getFieldByIndex 0 1] "1.1"
-assertEqual [$cur getFieldByIndex 0 2] "1.1"
+assertEqual [$cur getFieldByIndex 0 1] "1.5"
+assertEqual [$cur getFieldByIndex 0 2] "1.5"
 assertEqual [$cur getFieldByIndex 0 3] "1"
 assertEqual [$cur getFieldByIndex 0 4] "testchar1                               "
 assertEqual [$cur getFieldByIndex 0 5] "testvarchar1"
@@ -323,8 +323,8 @@ assertEqual [$cur getFieldByIndex 0 9] "testtext1"
 assertEqual [$cur getFieldByIndex 0 10] "testbytea1"
 puts ""
 assertEqual [$cur getFieldByIndex 7 0] "8"
-assertEqual [$cur getFieldByIndex 7 1] "8.8"
-assertEqual [$cur getFieldByIndex 7 2] "8.8"
+assertEqual [$cur getFieldByIndex 7 1] "8.5"
+assertEqual [$cur getFieldByIndex 7 2] "8.5"
 assertEqual [$cur getFieldByIndex 7 3] "8"
 assertEqual [$cur getFieldByIndex 7 4] "testchar8                               "
 assertEqual [$cur getFieldByIndex 7 5] "testvarchar8"
@@ -364,8 +364,8 @@ puts ""
 # fields by name
 puts "FIELDS BY NAME: "
 assertEqual [$cur getFieldByName 0 "testint"] "1"
-assertEqual [$cur getFieldByName 0 "testfloat"] "1.1"
-assertEqual [$cur getFieldByName 0 "testreal"] "1.1"
+assertEqual [$cur getFieldByName 0 "testfloat"] "1.5"
+assertEqual [$cur getFieldByName 0 "testreal"] "1.5"
 assertEqual [$cur getFieldByName 0 "testsmallint"] "1"
 assertEqual [$cur getFieldByName 0 "testchar"] "testchar1                               "
 assertEqual [$cur getFieldByName 0 "testvarchar"] "testvarchar1"
@@ -375,8 +375,8 @@ assertEqual [$cur getFieldByName 0 "testtext"] "testtext1"
 assertEqual [$cur getFieldByName 0 "testbytea"] "testbytea1"
 puts ""
 assertEqual [$cur getFieldByName 7 "testint"] "8"
-assertEqual [$cur getFieldByName 7 "testfloat"] "8.8"
-assertEqual [$cur getFieldByName 7 "testreal"] "8.8"
+assertEqual [$cur getFieldByName 7 "testfloat"] "8.5"
+assertEqual [$cur getFieldByName 7 "testreal"] "8.5"
 assertEqual [$cur getFieldByName 7 "testsmallint"] "8"
 assertEqual [$cur getFieldByName 7 "testchar"] "testchar8                               "
 assertEqual [$cur getFieldByName 7 "testvarchar"] "testvarchar8"
@@ -417,8 +417,8 @@ puts ""
 puts "FIELDS BY ARRAY: "
 set fields [$cur getRow 0]
 assertEqual [lindex $fields 0] "1"
-assertEqual [lindex $fields 1] "1.1"
-assertEqual [lindex $fields 2] "1.1"
+assertEqual [lindex $fields 1] "1.5"
+assertEqual [lindex $fields 2] "1.5"
 assertEqual [lindex $fields 3] "1"
 assertEqual [lindex $fields 4] "testchar1                               "
 assertEqual [lindex $fields 5] "testvarchar1"
@@ -1156,7 +1156,7 @@ catch {$cur sendQuery "drop function testfunc(int,float,char(20))"}
 assertTrue [$cur sendQuery "create function testfunc(int,float,char(20)) returns void as ' declare in1 int; in2 float; in3 char(20); begin in1:=\$1; in2:=\$2; in3:=\$3; return; end;' language plpgsql"]
 $cur prepareQuery "select testfunc(\$1,\$2,\$3)"
 $cur inputBind "1" 1
-$cur inputBind "2" 1.1 4 2
+$cur inputBind "2" 1.5 4 2
 $cur inputBind "3" "hello"
 assertTrue [$cur executeQuery]
 assertTrue [$cur sendQuery "drop function testfunc(int,float,char(20))"]
@@ -1169,7 +1169,7 @@ catch {$cur sendQuery "drop function testfunc(int,float,char(20))"}
 assertTrue [$cur sendQuery "create function testfunc(int,float,char(20)) returns int as ' begin return \$1; end;' language plpgsql"]
 $cur prepareQuery "select * from testfunc(\$1,\$2,\$3)"
 $cur inputBind "1" 1
-$cur inputBind "2" 1.1 4 2
+$cur inputBind "2" 1.5 4 2
 $cur inputBind "3" "hello"
 assertTrue [$cur executeQuery]
 assertEqual [$cur getFieldByIndex 0 0] "1"
@@ -1183,7 +1183,7 @@ catch {$cur sendQuery "drop function testfunc(int,float,char(20))"}
 assertTrue [$cur sendQuery "create function testfunc(int,float,char(20)) returns record as ' declare output record; begin select \$1,\$2,\$3 into output; return output; end;' language plpgsql"]
 $cur prepareQuery "select * from testfunc(\$1,\$2,\$3) as (col1 int, col2 float, col3 bpchar)"
 $cur inputBind "1" 1
-$cur inputBind "2" 1.1 4 2
+$cur inputBind "2" 1.5 4 2
 $cur inputBind "3" "hello"
 assertTrue [$cur executeQuery]
 assertEqual [$cur getFieldByIndex 0 0] "1"

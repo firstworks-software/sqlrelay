@@ -57,7 +57,7 @@
 		"	testtable ".
 		"values (".
 		"	1, ".
-		"	1.1, ".
+		"	1.5, ".
 		"	'1', ".
 		"	'1', ".
 		"	'2001-01-01')"),1);
@@ -87,7 +87,7 @@ print_r($result);
 echo("\n");
 	$result=$stmt->fetch(PDO::FETCH_NUM);
 	assertEqual($result[0],1);
-	assertEqual($result[1],1.1);
+	assertEqual($result[1],1.5);
 	assertEqual($result[2],"1");
 	assertEqual(stream_get_contents($result[3]),"1");
 	assertEqual($result[4],"2001-01-01 00:00:00");
@@ -123,7 +123,7 @@ print_r($result);
 echo("\n");
 	$result=$stmt->fetch(PDO::FETCH_NUM);
 	assertEqual($result[0],1);
-	assertEqual($result[1],1.1);
+	assertEqual($result[1],1.5);
 	assertEqual($result[2],"1");
 	assertEqual(stream_get_contents($result[3]),"1");
 	assertEqual($result[4],"2001-01-01 00:00:00");

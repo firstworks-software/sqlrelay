@@ -5,7 +5,7 @@
 
 	$bindvars=array("1","2","3","4","5","6","7","8","9","10",
 				"11","12");
-	$bindvals=array("7","7","7.7","7.7","7.7","7.7",
+	$bindvals=array("7","7","7.5","7.5","7.5","7.5",
 				"01-JAN-2007","07:00:00",
 				"testchar7","testvarchar7",NULL,"testblob7");
 	$subvars=array("var1","var2","var3");
@@ -80,10 +80,10 @@
 		"values (".
 		"	1, ".
 		"	1, ".
-		"	1.1, ".
-		"	1.1, ".
-		"	1.1, ".
-		"	1.1, ".
+		"	1.5, ".
+		"	1.5, ".
+		"	1.5, ".
+		"	1.5, ".
 		"	'01-JAN-2001', ".
 		"	'01:00:00', ".
 		"	'testchar1', ".
@@ -120,10 +120,10 @@
 	assertEqInt(sqlrcur_countBindVariables($cur),12);
 	sqlrcur_inputBind($cur,"1",2);
 	sqlrcur_inputBind($cur,"2",2);
-	sqlrcur_inputBind($cur,"3",2.2,2,1);
-	sqlrcur_inputBind($cur,"4",2.2,2,1);
-	sqlrcur_inputBind($cur,"5",2.2,2,1);
-	sqlrcur_inputBind($cur,"6",2.2,2,1);
+	sqlrcur_inputBind($cur,"3",2.5,2,1);
+	sqlrcur_inputBind($cur,"4",2.5,2,1);
+	sqlrcur_inputBind($cur,"5",2.5,2,1);
+	sqlrcur_inputBind($cur,"6",2.5,2,1);
 	sqlrcur_inputBindDate($cur,"7",2002,1,1,-1,-1,-1,-1,NULL,0);
 	sqlrcur_inputBindDate($cur,"8",-1,-1,-1,2,0,0,0,NULL,0);
 	sqlrcur_inputBind($cur,"9","testchar2");
@@ -134,10 +134,10 @@
 	sqlrcur_clearBinds($cur);
 	sqlrcur_inputBind($cur,"1",3);
 	sqlrcur_inputBind($cur,"2",3);
-	sqlrcur_inputBind($cur,"3",3.3,2,1);
-	sqlrcur_inputBind($cur,"4",3.3,2,1);
-	sqlrcur_inputBind($cur,"5",3.3,2,1);
-	sqlrcur_inputBind($cur,"6",3.3,2,1);
+	sqlrcur_inputBind($cur,"3",3.5,2,1);
+	sqlrcur_inputBind($cur,"4",3.5,2,1);
+	sqlrcur_inputBind($cur,"5",3.5,2,1);
+	sqlrcur_inputBind($cur,"6",3.5,2,1);
 	sqlrcur_inputBindDate($cur,"7",2003,1,1,-1,-1,-1,-1,NULL,0);
 	sqlrcur_inputBindDate($cur,"8",-1,-1,-1,3,0,0,0,NULL,0);
 	sqlrcur_inputBind($cur,"9","testchar3");
@@ -148,10 +148,10 @@
 	sqlrcur_clearBinds($cur);
 	sqlrcur_inputBind($cur,"1",4);
 	sqlrcur_inputBind($cur,"2",4);
-	sqlrcur_inputBind($cur,"3",4.4,2,1);
-	sqlrcur_inputBind($cur,"4",4.4,2,1);
-	sqlrcur_inputBind($cur,"5",4.4,2,1);
-	sqlrcur_inputBind($cur,"6",4.4,2,1);
+	sqlrcur_inputBind($cur,"3",4.5,2,1);
+	sqlrcur_inputBind($cur,"4",4.5,2,1);
+	sqlrcur_inputBind($cur,"5",4.5,2,1);
+	sqlrcur_inputBind($cur,"6",4.5,2,1);
 	sqlrcur_inputBindDate($cur,"7",2004,1,1,-1,-1,-1,-1,NULL,0);
 	sqlrcur_inputBindDate($cur,"8",-1,-1,-1,4,0,0,0,NULL,0);
 	sqlrcur_inputBind($cur,"9","testchar4");
@@ -176,10 +176,10 @@
 	sqlrcur_clearBinds($cur);
 	sqlrcur_inputBind($cur,"1",6);
 	sqlrcur_inputBind($cur,"2",6);
-	sqlrcur_inputBind($cur,"3",6.6,2,1);
-	sqlrcur_inputBind($cur,"4",6.6,2,1);
-	sqlrcur_inputBind($cur,"5",6.6,2,1);
-	sqlrcur_inputBind($cur,"6",6.6,2,1);
+	sqlrcur_inputBind($cur,"3",6.5,2,1);
+	sqlrcur_inputBind($cur,"4",6.5,2,1);
+	sqlrcur_inputBind($cur,"5",6.5,2,1);
+	sqlrcur_inputBind($cur,"6",6.5,2,1);
 	sqlrcur_inputBindDate($cur,"7",2006,1,1,-1,-1,-1,-1,NULL,0);
 	sqlrcur_inputBindDate($cur,"8",-1,-1,-1,6,0,0,0,NULL,0);
 	sqlrcur_inputBind($cur,"9","testchar6");
@@ -203,10 +203,10 @@
 	sqlrcur_clearBinds($cur);
 	sqlrcur_inputBind($cur,"1",8);
 	sqlrcur_inputBind($cur,"2",8);
-	sqlrcur_inputBind($cur,"3",8.8,2,1);
-	sqlrcur_inputBind($cur,"4",8.8,2,1);
-	sqlrcur_inputBind($cur,"5",8.8,2,1);
-	sqlrcur_inputBind($cur,"6",8.8,2,1);
+	sqlrcur_inputBind($cur,"3",8.5,2,1);
+	sqlrcur_inputBind($cur,"4",8.5,2,1);
+	sqlrcur_inputBind($cur,"5",8.5,2,1);
+	sqlrcur_inputBind($cur,"6",8.5,2,1);
 	sqlrcur_inputBindDate($cur,"7",2008,1,1,-1,-1,-1,-1,NULL,0);
 	sqlrcur_inputBindDate($cur,"8",-1,-1,-1,8,0,0,0,NULL,0);
 	sqlrcur_inputBind($cur,"9","testchar8");
@@ -395,10 +395,10 @@
 	echo("FIELDS BY INDEX: \n");
 	assertEqStr(sqlrcur_getField($cur,0,0),"1");
 	assertEqStr(sqlrcur_getField($cur,0,1),"1");
-	assertEqStr(sqlrcur_getField($cur,0,2),"1.10");
-	assertEqStr(sqlrcur_getField($cur,0,3),"1.10");
-	assertEqStr(sqlrcur_getField($cur,0,4),"1.1000");
-	assertEqStr(sqlrcur_getField($cur,0,5),"1.1000");
+	assertEqStr(sqlrcur_getField($cur,0,2),"1.50");
+	assertEqStr(sqlrcur_getField($cur,0,3),"1.50");
+	assertEqStr(sqlrcur_getField($cur,0,4),"1.5000");
+	assertEqStr(sqlrcur_getField($cur,0,5),"1.5000");
 	assertEqStr(sqlrcur_getField($cur,0,6),"2001:01:01");
 	assertEqStr(sqlrcur_getField($cur,0,7),"01:00:00");
 	assertEqStr(sqlrcur_getField($cur,0,8),"testchar1".
@@ -408,10 +408,10 @@
 	echo("\n");
 	assertEqStr(sqlrcur_getField($cur,7,0),"8");
 	assertEqStr(sqlrcur_getField($cur,7,1),"8");
-	assertEqStr(sqlrcur_getField($cur,7,2),"8.80");
-	assertEqStr(sqlrcur_getField($cur,7,3),"8.80");
-	assertEqStr(sqlrcur_getField($cur,7,4),"8.8000");
-	assertEqStr(sqlrcur_getField($cur,7,5),"8.8000");
+	assertEqStr(sqlrcur_getField($cur,7,2),"8.50");
+	assertEqStr(sqlrcur_getField($cur,7,3),"8.50");
+	assertEqStr(sqlrcur_getField($cur,7,4),"8.5000");
+	assertEqStr(sqlrcur_getField($cur,7,5),"8.5000");
 	assertEqStr(sqlrcur_getField($cur,7,6),"2008:01:01");
 	assertEqStr(sqlrcur_getField($cur,7,7),"08:00:00");
 	assertEqStr(sqlrcur_getField($cur,7,8),"testchar8".
@@ -451,10 +451,10 @@
 	echo("FIELDS BY NAME: \n");
 	assertEqStr(sqlrcur_getField($cur,0,"TESTINTEGER"),"1");
 	assertEqStr(sqlrcur_getField($cur,0,"TESTSMALLINT"),"1");
-	assertEqStr(sqlrcur_getField($cur,0,"TESTDECIMAL"),"1.10");
-	assertEqStr(sqlrcur_getField($cur,0,"TESTNUMERIC"),"1.10");
-	assertEqStr(sqlrcur_getField($cur,0,"TESTFLOAT"),"1.1000");
-	assertEqStr(sqlrcur_getField($cur,0,"TESTDOUBLE"),"1.1000");
+	assertEqStr(sqlrcur_getField($cur,0,"TESTDECIMAL"),"1.50");
+	assertEqStr(sqlrcur_getField($cur,0,"TESTNUMERIC"),"1.50");
+	assertEqStr(sqlrcur_getField($cur,0,"TESTFLOAT"),"1.5000");
+	assertEqStr(sqlrcur_getField($cur,0,"TESTDOUBLE"),"1.5000");
 	assertEqStr(sqlrcur_getField($cur,0,"TESTDATE"),"2001:01:01");
 	assertEqStr(sqlrcur_getField($cur,0,"TESTTIME"),"01:00:00");
 	assertEqStr(sqlrcur_getField($cur,0,"TESTCHAR"),"testchar1".
@@ -464,10 +464,10 @@
 	echo("\n");
 	assertEqStr(sqlrcur_getField($cur,7,"TESTINTEGER"),"8");
 	assertEqStr(sqlrcur_getField($cur,7,"TESTSMALLINT"),"8");
-	assertEqStr(sqlrcur_getField($cur,7,"TESTDECIMAL"),"8.80");
-	assertEqStr(sqlrcur_getField($cur,7,"TESTNUMERIC"),"8.80");
-	assertEqStr(sqlrcur_getField($cur,7,"TESTFLOAT"),"8.8000");
-	assertEqStr(sqlrcur_getField($cur,7,"TESTDOUBLE"),"8.8000");
+	assertEqStr(sqlrcur_getField($cur,7,"TESTDECIMAL"),"8.50");
+	assertEqStr(sqlrcur_getField($cur,7,"TESTNUMERIC"),"8.50");
+	assertEqStr(sqlrcur_getField($cur,7,"TESTFLOAT"),"8.5000");
+	assertEqStr(sqlrcur_getField($cur,7,"TESTDOUBLE"),"8.5000");
 	assertEqStr(sqlrcur_getField($cur,7,"TESTDATE"),"2008:01:01");
 	assertEqStr(sqlrcur_getField($cur,7,"TESTTIME"),"08:00:00");
 	assertEqStr(sqlrcur_getField($cur,7,"TESTCHAR"),"testchar8".
@@ -508,10 +508,10 @@
 	$fields=sqlrcur_getRow($cur,0);
 	assertEqStr($fields[0],"1");
 	assertEqStr($fields[1],"1");
-	assertEqStr($fields[2],"1.10");
-	assertEqStr($fields[3],"1.10");
-	assertEqStr($fields[4],"1.1000");
-	assertEqStr($fields[5],"1.1000");
+	assertEqStr($fields[2],"1.50");
+	assertEqStr($fields[3],"1.50");
+	assertEqStr($fields[4],"1.5000");
+	assertEqStr($fields[5],"1.5000");
 	assertEqStr($fields[6],"2001:01:01");
 	assertEqStr($fields[7],"01:00:00");
 	assertEqStr($fields[8],"testchar1".
@@ -1257,7 +1257,7 @@
 	sqlrcur_getNullsAsNulls($cur);
 	sqlrcur_prepareQuery($cur,"execute procedure testproc ?, ?, ?, ?");
 	sqlrcur_inputBind($cur,"1",1);
-	sqlrcur_inputBind($cur,"2",1.1,2,1);
+	sqlrcur_inputBind($cur,"2",1.5,2,1);
 	sqlrcur_inputBind($cur,"3","hello");
 	sqlrcur_inputBindBlob($cur,"4","blob",strlen("blob"));
 	sqlrcur_defineOutputBindInteger($cur,"1");
@@ -1267,7 +1267,7 @@
 	assertTrue(sqlrcur_executeQuery($cur));
 	assertEqInt(sqlrcur_getOutputBindInteger($cur,"1"),1);
 	$d=sqlrcur_getOutputBindDouble($cur,"2");
-	assertTrue($d>1.09 && $d<1.11);
+	assertEqDbl($d,1.5);
 	assertEqStr(sqlrcur_getOutputBindString($cur,"3"),
 		"hello               ");
 	assertEqStr(sqlrcur_getOutputBindBlob($cur,"4"),"blob");
@@ -1325,7 +1325,7 @@
 	echo("REBINDING: \n");
 	sqlrcur_prepareQuery($cur,"execute procedure testproc ?, ?, ?, ?");
 	sqlrcur_inputBind($cur,"1",1);
-	sqlrcur_inputBind($cur,"2",1.1,2,1);
+	sqlrcur_inputBind($cur,"2",1.5,2,1);
 	sqlrcur_inputBind($cur,"3","hello");
 	sqlrcur_inputBindBlob($cur,"4","blob",strlen("blob"));
 	sqlrcur_defineOutputBindInteger($cur,"1");
@@ -1378,7 +1378,7 @@
 		"	in2 double precision = ?, ".
 		"	in3 varchar(20) = ?) as begin end");
 	sqlrcur_inputBind($cur,"1",1);
-	sqlrcur_inputBind($cur,"2",1.1,2,1);
+	sqlrcur_inputBind($cur,"2",1.5,2,1);
 	sqlrcur_inputBind($cur,"3","hello");
 	assertTrue(sqlrcur_executeQuery($cur));
 	echo("\n");
@@ -1394,7 +1394,7 @@
 		"	out1 = in1; ".
 		"	suspend; end");
 	sqlrcur_inputBind($cur,"1",1);
-	sqlrcur_inputBind($cur,"2",1.1,2,1);
+	sqlrcur_inputBind($cur,"2",1.5,2,1);
 	sqlrcur_inputBind($cur,"3","hello");
 	assertTrue(sqlrcur_executeQuery($cur));
 	assertEqStr(sqlrcur_getField($cur,0,0),"1");
@@ -1416,11 +1416,11 @@
 		"	out3 = in3; ".
 		"	suspend; end");
 	sqlrcur_inputBind($cur,"1",1);
-	sqlrcur_inputBind($cur,"2",1.1,2,1);
+	sqlrcur_inputBind($cur,"2",1.5,2,1);
 	sqlrcur_inputBind($cur,"3","hello");
 	assertTrue(sqlrcur_executeQuery($cur));
 	assertEqStr(sqlrcur_getField($cur,0,0),"1");
-	assertEqStr(sqlrcur_getField($cur,0,1),"1.1000");
+	assertEqStr(sqlrcur_getField($cur,0,1),"1.5000");
 	assertEqStr(sqlrcur_getField($cur,0,2),"hello");
 	echo("\n");
 

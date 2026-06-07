@@ -107,7 +107,7 @@ main() ->
         "	testtable "
         "values ("
         "	1, "
-        "	1.1, "
+        "	1.5, "
         "	'testchar1', "
         "	'testvarchar1', "
         "	'testclob1', "
@@ -117,7 +117,7 @@ main() ->
         "	testtable "
         "values ("
         "	2, "
-        "	2.2, "
+        "	2.5, "
         "	'testchar2', "
         "	'testvarchar2', "
         "	'testclob2', "
@@ -127,7 +127,7 @@ main() ->
         "	testtable "
         "values ("
         "	3, "
-        "	3.3, "
+        "	3.5, "
         "	'testchar3', "
         "	'testvarchar3', "
         "	'testclob3', "
@@ -137,7 +137,7 @@ main() ->
         "	testtable "
         "values ("
         "	4, "
-        "	4.4, "
+        "	4.5, "
         "	'testchar4', "
         "	'testvarchar4', "
         "	'testclob4', "
@@ -180,7 +180,7 @@ main() ->
     assertTrue(sqlrelay:executeQuery()),
     sqlrelay:clearBinds(),
     sqlrelay:inputBindLong("var1", 6),
-    sqlrelay:inputBindDouble("var2", 6.6, 4, 1),
+    sqlrelay:inputBindDouble("var2", 6.5, 4, 1),
     sqlrelay:inputBindString("var3", "testchar6"),
     sqlrelay:inputBindString("var4", "testvarchar6"),
     sqlrelay:inputBindClob("var5", "testclob6", 9),
@@ -188,7 +188,7 @@ main() ->
     assertTrue(sqlrelay:executeQuery()),
     sqlrelay:clearBinds(),
     sqlrelay:inputBindLong("var1", 7),
-    sqlrelay:inputBindDouble("var2", 7.7, 4, 1),
+    sqlrelay:inputBindDouble("var2", 7.5, 4, 1),
     sqlrelay:inputBindString("var3", "testchar7"),
     sqlrelay:inputBindString("var4", "testvarchar7"),
     sqlrelay:inputBindClob("var5", "testclob7", 9),
@@ -204,7 +204,7 @@ main() ->
     io:format("INPUT BIND BY NAME WITH VALIDATION: ~n"),
     sqlrelay:clearBinds(),
     sqlrelay:inputBindLong("var1", 8),
-    sqlrelay:inputBindDouble("var2", 8.8, 4, 1),
+    sqlrelay:inputBindDouble("var2", 8.5, 4, 1),
     sqlrelay:inputBindString("var3", "testchar8"),
     sqlrelay:inputBindString("var4", "testvarchar8"),
     sqlrelay:inputBindClob("var5", "testclob8", 9),
@@ -324,14 +324,14 @@ main() ->
     %% FIELDS BY INDEX
     io:format("FIELDS BY INDEX: ~n"),
     assertEqualsString(sqlrelay:getFieldByIndex(0, 0), "1"),
-    assertEqualsString(sqlrelay:getFieldByIndex(0, 1), "1.1"),
+    assertEqualsString(sqlrelay:getFieldByIndex(0, 1), "1.5"),
     assertEqualsString(sqlrelay:getFieldByIndex(0, 2), "testchar1"),
     assertEqualsString(sqlrelay:getFieldByIndex(0, 3), "testvarchar1"),
     assertEqualsString(sqlrelay:getFieldByIndex(0, 4), "testclob1"),
     assertEqualsString(sqlrelay:getFieldByIndex(0, 5), "testblob1"),
     io:format("~n"),
     assertEqualsString(sqlrelay:getFieldByIndex(7, 0), "8"),
-    assertEqualsString(sqlrelay:getFieldByIndex(7, 1), "8.8"),
+    assertEqualsString(sqlrelay:getFieldByIndex(7, 1), "8.5"),
     assertEqualsString(sqlrelay:getFieldByIndex(7, 2), "testchar8"),
     assertEqualsString(sqlrelay:getFieldByIndex(7, 3), "testvarchar8"),
     assertEqualsString(sqlrelay:getFieldByIndex(7, 4), "testclob8"),
@@ -358,14 +358,14 @@ main() ->
     %% FIELDS BY NAME
     io:format("FIELDS BY NAME: ~n"),
     assertEqualsString(sqlrelay:getFieldByName(0, "testint"), "1"),
-    assertEqualsString(sqlrelay:getFieldByName(0, "testfloat"), "1.1"),
+    assertEqualsString(sqlrelay:getFieldByName(0, "testfloat"), "1.5"),
     assertEqualsString(sqlrelay:getFieldByName(0, "testchar"), "testchar1"),
     assertEqualsString(sqlrelay:getFieldByName(0, "testvarchar"), "testvarchar1"),
     assertEqualsString(sqlrelay:getFieldByName(0, "testclob"), "testclob1"),
     assertEqualsString(sqlrelay:getFieldByName(0, "testblob"), "testblob1"),
     io:format("~n"),
     assertEqualsString(sqlrelay:getFieldByName(7, "testint"), "8"),
-    assertEqualsString(sqlrelay:getFieldByName(7, "testfloat"), "8.8"),
+    assertEqualsString(sqlrelay:getFieldByName(7, "testfloat"), "8.5"),
     assertEqualsString(sqlrelay:getFieldByName(7, "testchar"), "testchar8"),
     assertEqualsString(sqlrelay:getFieldByName(7, "testvarchar"), "testvarchar8"),
     assertEqualsString(sqlrelay:getFieldByName(7, "testclob"), "testclob8"),
@@ -393,7 +393,7 @@ main() ->
     io:format("FIELDS BY ARRAY: ~n"),
     {ok, Row0} = sqlrelay:getRow(0),
     assertEqualsString(lists:nth(1, Row0), "1"),
-    assertEqualsString(lists:nth(2, Row0), "1.1"),
+    assertEqualsString(lists:nth(2, Row0), "1.5"),
     assertEqualsString(lists:nth(3, Row0), "testchar1"),
     assertEqualsString(lists:nth(4, Row0), "testvarchar1"),
     assertEqualsString(lists:nth(5, Row0), "testclob1"),

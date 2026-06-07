@@ -13,7 +13,7 @@ var {
 
 var	bindvars=["1","2","3","4","5","6","7","8","9","10",
 				"11","12"];
-var	bindvals=["7","7","7.7","7.7","7.7","7.7",
+var	bindvals=["7","7","7.5","7.5","7.5","7.5",
 				"01-JAN-2007","07:00:00",
 				"testchar7","testvarchar7",null,"testblob7"];
 var	subvars=["var1","var2","var3"];
@@ -101,10 +101,10 @@ assertTrue(cur.sendQuery(
 	"values ("+
 	"	1, "+
 	"	1, "+
-	"	1.1, "+
-	"	1.1, "+
-	"	1.1, "+
-	"	1.1, "+
+	"	1.5, "+
+	"	1.5, "+
+	"	1.5, "+
+	"	1.5, "+
 	"	'01-JAN-2001', "+
 	"	'01:00:00', "+
 	"	'testchar1', "+
@@ -141,10 +141,10 @@ cur.prepareQuery(
 assertEqInt(cur.countBindVariables(),12);
 cur.inputBind("1",2);
 cur.inputBind("2",2);
-cur.inputBind("3",2.2,2,1);
-cur.inputBind("4",2.2,2,1);
-cur.inputBind("5",2.2,2,1);
-cur.inputBind("6",2.2,2,1);
+cur.inputBind("3",2.5,2,1);
+cur.inputBind("4",2.5,2,1);
+cur.inputBind("5",2.5,2,1);
+cur.inputBind("6",2.5,2,1);
 cur.inputBind("7",2002,1,1,-1,-1,-1,-1,null,0);
 cur.inputBind("8",-1,-1,-1,2,0,0,0,null,0);
 cur.inputBind("9","testchar2");
@@ -155,10 +155,10 @@ assertTrue(cur.executeQuery());
 cur.clearBinds();
 cur.inputBind("1",3);
 cur.inputBind("2",3);
-cur.inputBind("3",3.3,2,1);
-cur.inputBind("4",3.3,2,1);
-cur.inputBind("5",3.3,2,1);
-cur.inputBind("6",3.3,2,1);
+cur.inputBind("3",3.5,2,1);
+cur.inputBind("4",3.5,2,1);
+cur.inputBind("5",3.5,2,1);
+cur.inputBind("6",3.5,2,1);
 cur.inputBind("7",2003,1,1,-1,-1,-1,-1,null,0);
 cur.inputBind("8",-1,-1,-1,3,0,0,0,null,0);
 cur.inputBind("9","testchar3");
@@ -169,10 +169,10 @@ assertTrue(cur.executeQuery());
 cur.clearBinds();
 cur.inputBind("1",4);
 cur.inputBind("2",4);
-cur.inputBind("3",4.4,2,1);
-cur.inputBind("4",4.4,2,1);
-cur.inputBind("5",4.4,2,1);
-cur.inputBind("6",4.4,2,1);
+cur.inputBind("3",4.5,2,1);
+cur.inputBind("4",4.5,2,1);
+cur.inputBind("5",4.5,2,1);
+cur.inputBind("6",4.5,2,1);
 cur.inputBind("7",2004,1,1,-1,-1,-1,-1,null,0);
 cur.inputBind("8",-1,-1,-1,4,0,0,0,null,0);
 cur.inputBind("9","testchar4");
@@ -197,10 +197,10 @@ assertTrue(cur.executeQuery());
 cur.clearBinds();
 cur.inputBind("1",6);
 cur.inputBind("2",6);
-cur.inputBind("3",6.6,2,1);
-cur.inputBind("4",6.6,2,1);
-cur.inputBind("5",6.6,2,1);
-cur.inputBind("6",6.6,2,1);
+cur.inputBind("3",6.5,2,1);
+cur.inputBind("4",6.5,2,1);
+cur.inputBind("5",6.5,2,1);
+cur.inputBind("6",6.5,2,1);
 cur.inputBind("7",2006,1,1,-1,-1,-1,-1,null,0);
 cur.inputBind("8",-1,-1,-1,6,0,0,0,null,0);
 cur.inputBind("9","testchar6");
@@ -224,10 +224,10 @@ console.log("INPUT BIND BY POSITION WITH VALIDATION: ");
 cur.clearBinds();
 cur.inputBind("1",8);
 cur.inputBind("2",8);
-cur.inputBind("3",8.8,2,1);
-cur.inputBind("4",8.8,2,1);
-cur.inputBind("5",8.8,2,1);
-cur.inputBind("6",8.8,2,1);
+cur.inputBind("3",8.5,2,1);
+cur.inputBind("4",8.5,2,1);
+cur.inputBind("5",8.5,2,1);
+cur.inputBind("6",8.5,2,1);
 cur.inputBind("7",2008,1,1,-1,-1,-1,-1,null,0);
 cur.inputBind("8",-1,-1,-1,8,0,0,0,null,0);
 cur.inputBind("9","testchar8");
@@ -416,10 +416,10 @@ console.log();
 console.log("FIELDS BY INDEX: ");
 assertEqStr(cur.getField(0,0),"1");
 assertEqStr(cur.getField(0,1),"1");
-assertEqStr(cur.getField(0,2),"1.10");
-assertEqStr(cur.getField(0,3),"1.10");
-assertEqStr(cur.getField(0,4),"1.1000");
-assertEqStr(cur.getField(0,5),"1.1000");
+assertEqStr(cur.getField(0,2),"1.50");
+assertEqStr(cur.getField(0,3),"1.50");
+assertEqStr(cur.getField(0,4),"1.5000");
+assertEqStr(cur.getField(0,5),"1.5000");
 assertEqStr(cur.getField(0,6),"2001:01:01");
 assertEqStr(cur.getField(0,7),"01:00:00");
 assertEqStr(cur.getField(0,8),"testchar1"+
@@ -429,10 +429,10 @@ assertEqStr(cur.getField(0,11),"testblob1");
 console.log();
 assertEqStr(cur.getField(7,0),"8");
 assertEqStr(cur.getField(7,1),"8");
-assertEqStr(cur.getField(7,2),"8.80");
-assertEqStr(cur.getField(7,3),"8.80");
-assertEqStr(cur.getField(7,4),"8.8000");
-assertEqStr(cur.getField(7,5),"8.8000");
+assertEqStr(cur.getField(7,2),"8.50");
+assertEqStr(cur.getField(7,3),"8.50");
+assertEqStr(cur.getField(7,4),"8.5000");
+assertEqStr(cur.getField(7,5),"8.5000");
 assertEqStr(cur.getField(7,6),"2008:01:01");
 assertEqStr(cur.getField(7,7),"08:00:00");
 assertEqStr(cur.getField(7,8),"testchar8"+
@@ -472,10 +472,10 @@ console.log();
 console.log("FIELDS BY NAME: ");
 assertEqStr(cur.getField(0,"TESTINTEGER"),"1");
 assertEqStr(cur.getField(0,"TESTSMALLINT"),"1");
-assertEqStr(cur.getField(0,"TESTDECIMAL"),"1.10");
-assertEqStr(cur.getField(0,"TESTNUMERIC"),"1.10");
-assertEqStr(cur.getField(0,"TESTFLOAT"),"1.1000");
-assertEqStr(cur.getField(0,"TESTDOUBLE"),"1.1000");
+assertEqStr(cur.getField(0,"TESTDECIMAL"),"1.50");
+assertEqStr(cur.getField(0,"TESTNUMERIC"),"1.50");
+assertEqStr(cur.getField(0,"TESTFLOAT"),"1.5000");
+assertEqStr(cur.getField(0,"TESTDOUBLE"),"1.5000");
 assertEqStr(cur.getField(0,"TESTDATE"),"2001:01:01");
 assertEqStr(cur.getField(0,"TESTTIME"),"01:00:00");
 assertEqStr(cur.getField(0,"TESTCHAR"),"testchar1"+
@@ -485,10 +485,10 @@ assertEqStr(cur.getField(0,"TESTBLOB"),"testblob1");
 console.log();
 assertEqStr(cur.getField(7,"TESTINTEGER"),"8");
 assertEqStr(cur.getField(7,"TESTSMALLINT"),"8");
-assertEqStr(cur.getField(7,"TESTDECIMAL"),"8.80");
-assertEqStr(cur.getField(7,"TESTNUMERIC"),"8.80");
-assertEqStr(cur.getField(7,"TESTFLOAT"),"8.8000");
-assertEqStr(cur.getField(7,"TESTDOUBLE"),"8.8000");
+assertEqStr(cur.getField(7,"TESTDECIMAL"),"8.50");
+assertEqStr(cur.getField(7,"TESTNUMERIC"),"8.50");
+assertEqStr(cur.getField(7,"TESTFLOAT"),"8.5000");
+assertEqStr(cur.getField(7,"TESTDOUBLE"),"8.5000");
 assertEqStr(cur.getField(7,"TESTDATE"),"2008:01:01");
 assertEqStr(cur.getField(7,"TESTTIME"),"08:00:00");
 assertEqStr(cur.getField(7,"TESTCHAR"),"testchar8"+
@@ -529,10 +529,10 @@ console.log("FIELDS BY ARRAY: ");
 fields=cur.getRow(0);
 assertEqStr(fields[0],"1");
 assertEqStr(fields[1],"1");
-assertEqStr(fields[2],"1.10");
-assertEqStr(fields[3],"1.10");
-assertEqStr(fields[4],"1.1000");
-assertEqStr(fields[5],"1.1000");
+assertEqStr(fields[2],"1.50");
+assertEqStr(fields[3],"1.50");
+assertEqStr(fields[4],"1.5000");
+assertEqStr(fields[5],"1.5000");
 assertEqStr(fields[6],"2001:01:01");
 assertEqStr(fields[7],"01:00:00");
 assertEqStr(fields[8],"testchar1"+
@@ -1280,7 +1280,7 @@ console.log("OUTPUT BIND BY POSITION: ");
 cur.getNullsAsNulls();
 cur.prepareQuery("execute procedure testproc ?, ?, ?, ?");
 cur.inputBind("1",1);
-cur.inputBind("2",1.1,2,1);
+cur.inputBind("2",1.5,2,1);
 cur.inputBind("3","hello");
 cur.inputBindBlob("4","blob","blob".length);
 cur.defineOutputBindInteger("1");
@@ -1290,7 +1290,7 @@ cur.defineOutputBindBlob("4");
 assertTrue(cur.executeQuery());
 assertEqInt(cur.getOutputBindInteger("1"),1);
 var d=cur.getOutputBindDouble("2");
-assertTrue(d>1.09 && d<1.11);
+assertEqDbl(d,1.5);
 assertEqStr(cur.getOutputBindString("3"),
 	"hello               ");
 assertEqStr(cur.getOutputBindBlob("4"),"blob");
@@ -1348,7 +1348,7 @@ console.log();
 console.log("REBINDING: ");
 cur.prepareQuery("execute procedure testproc ?, ?, ?, ?");
 cur.inputBind("1",1);
-cur.inputBind("2",1.1,2,1);
+cur.inputBind("2",1.5,2,1);
 cur.inputBind("3","hello");
 cur.inputBindBlob("4","blob","blob".length);
 cur.defineOutputBindInteger("1");
@@ -1401,7 +1401,7 @@ cur.prepareQuery(
 	"	in2 double precision = ?, "+
 	"	in3 varchar(20) = ?) as begin end");
 cur.inputBind("1",1);
-cur.inputBind("2",1.1,2,1);
+cur.inputBind("2",1.5,2,1);
 cur.inputBind("3","hello");
 assertTrue(cur.executeQuery());
 console.log();
@@ -1417,7 +1417,7 @@ cur.prepareQuery(
 	"	out1 = in1; "+
 	"	suspend; end");
 cur.inputBind("1",1);
-cur.inputBind("2",1.1,2,1);
+cur.inputBind("2",1.5,2,1);
 cur.inputBind("3","hello");
 assertTrue(cur.executeQuery());
 assertEqStr(cur.getField(0,0),"1");
@@ -1439,11 +1439,11 @@ cur.prepareQuery(
 	"	out3 = in3; "+
 	"	suspend; end");
 cur.inputBind("1",1);
-cur.inputBind("2",1.1,2,1);
+cur.inputBind("2",1.5,2,1);
 cur.inputBind("3","hello");
 assertTrue(cur.executeQuery());
 assertEqStr(cur.getField(0,0),"1");
-assertEqStr(cur.getField(0,1),"1.1000");
+assertEqStr(cur.getField(0,1),"1.5000");
 assertEqStr(cur.getField(0,2),"hello");
 console.log();
 

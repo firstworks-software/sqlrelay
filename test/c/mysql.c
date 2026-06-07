@@ -1811,7 +1811,7 @@ int main(int argc, char **argv) {
 		"	in in3 varchar(20)) ""begin ""end"));
 	sqlrcur_prepareQuery(cur,"call testproc(?,?,?)");
 	sqlrcur_inputBindLong(cur,"1",1);
-	sqlrcur_inputBindDouble(cur,"2",1.1,2,1);
+	sqlrcur_inputBindDouble(cur,"2",1.5,2,1);
 	sqlrcur_inputBindString(cur,"3","hello");
 	assertTrue(sqlrcur_executeQuery(cur));
 	assertTrue(sqlrcur_sendQuery(cur,"drop procedure testproc"));
@@ -1831,7 +1831,7 @@ int main(int argc, char **argv) {
 		"	select in1; ""end"));
 	sqlrcur_prepareQuery(cur,"call testproc(?,?,?)");
 	sqlrcur_inputBindLong(cur,"1",1);
-	sqlrcur_inputBindDouble(cur,"2",1.1,2,1);
+	sqlrcur_inputBindDouble(cur,"2",1.5,2,1);
 	sqlrcur_inputBindString(cur,"3","hello");
 	assertTrue(sqlrcur_executeQuery(cur));
 	assertEqStr(sqlrcur_getFieldByIndex(cur,0,0),"1");
@@ -1853,11 +1853,11 @@ int main(int argc, char **argv) {
 		"	in3; ""end"));
 	sqlrcur_prepareQuery(cur,"call testproc(?,?,?)");
 	sqlrcur_inputBindLong(cur,"1",1);
-	sqlrcur_inputBindDouble(cur,"2",1.1,2,1);
+	sqlrcur_inputBindDouble(cur,"2",1.5,2,1);
 	sqlrcur_inputBindString(cur,"3","hello");
 	assertTrue(sqlrcur_executeQuery(cur));
 	assertEqStr(sqlrcur_getFieldByIndex(cur,0,0),"1");
-	assertEqStr(sqlrcur_getFieldByIndex(cur,0,1),"1.1");
+	assertEqStr(sqlrcur_getFieldByIndex(cur,0,1),"1.5");
 	assertEqStr(sqlrcur_getFieldByIndex(cur,0,2),"hello");
 	assertTrue(sqlrcur_sendQuery(cur,"drop procedure testproc"));
 	printf("\n");
@@ -1919,11 +1919,11 @@ int main(int argc, char **argv) {
 			"	in2, in3; ""end;"));
 		sqlrcur_prepareQuery(cur,"call testproc(""?,?,?)");
 		sqlrcur_inputBindLong(cur,"1",1);
-		sqlrcur_inputBindDouble(cur,"2",1.1,4,2);
+		sqlrcur_inputBindDouble(cur,"2",1.5,4,2);
 		sqlrcur_inputBindString(cur,"3","hello");
 		assertTrue(sqlrcur_executeQuery(cur));
 		assertEqStr(sqlrcur_getFieldByIndex(cur,0,0),"1");
-		assertEqStr(sqlrcur_getFieldByIndex(cur,0,1),"1.1");
+		assertEqStr(sqlrcur_getFieldByIndex(cur,0,1),"1.5");
 		assertEqStr(sqlrcur_getFieldByIndex(cur,0,2),"hello");
 		sqlrcur_sendQuery(cur,"drop procedure ""testproc");
 		printf("\n");

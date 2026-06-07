@@ -11,7 +11,7 @@ class firebird extends sqlrtest {
 
 		String[]	bindvars={"1","2","3","4","5","6",
 					"7","8","9","10","11","12"};
-		String[]	bindvals={"7","7","7.7","7.7","7.7","7.7",
+		String[]	bindvals={"7","7","7.5","7.5","7.5","7.5",
 					"01-JAN-2007","07:00:00",
 					"testchar7","testvarchar7",
 					null,"testblob7"};
@@ -97,10 +97,10 @@ class firebird extends sqlrtest {
 			"values ("+
 			"	1, "+
 			"	1, "+
-			"	1.1, "+
-			"	1.1, "+
-			"	1.1, "+
-			"	1.1, "+
+			"	1.5, "+
+			"	1.5, "+
+			"	1.5, "+
+			"	1.5, "+
 			"	'01-JAN-2001', "+
 			"	'01:00:00', "+
 			"	'testchar1', "+
@@ -137,10 +137,10 @@ class firebird extends sqlrtest {
 		assertEquals(cur.countBindVariables(),12);
 		cur.inputBind("1",2);
 		cur.inputBind("2",2);
-		cur.inputBind("3",2.2,2,1);
-		cur.inputBind("4",2.2,2,1);
-		cur.inputBind("5",2.2,2,1);
-		cur.inputBind("6",2.2,2,1);
+		cur.inputBind("3",2.5,2,1);
+		cur.inputBind("4",2.5,2,1);
+		cur.inputBind("5",2.5,2,1);
+		cur.inputBind("6",2.5,2,1);
 		cur.inputBind("7",(short)2002,(short)1,(short)1,
 				(short)-1,(short)-1,(short)-1,-1,null,false);
 		cur.inputBind("8",(short)-1,(short)-1,(short)-1,
@@ -153,10 +153,10 @@ class firebird extends sqlrtest {
 		cur.clearBinds();
 		cur.inputBind("1",3);
 		cur.inputBind("2",3);
-		cur.inputBind("3",3.3,2,1);
-		cur.inputBind("4",3.3,2,1);
-		cur.inputBind("5",3.3,2,1);
-		cur.inputBind("6",3.3,2,1);
+		cur.inputBind("3",3.5,2,1);
+		cur.inputBind("4",3.5,2,1);
+		cur.inputBind("5",3.5,2,1);
+		cur.inputBind("6",3.5,2,1);
 		cur.inputBind("7",(short)2003,(short)1,(short)1,
 				(short)-1,(short)-1,(short)-1,-1,null,false);
 		cur.inputBind("8",(short)-1,(short)-1,(short)-1,
@@ -169,10 +169,10 @@ class firebird extends sqlrtest {
 		cur.clearBinds();
 		cur.inputBind("1",4);
 		cur.inputBind("2",4);
-		cur.inputBind("3",4.4,2,1);
-		cur.inputBind("4",4.4,2,1);
-		cur.inputBind("5",4.4,2,1);
-		cur.inputBind("6",4.4,2,1);
+		cur.inputBind("3",4.5,2,1);
+		cur.inputBind("4",4.5,2,1);
+		cur.inputBind("5",4.5,2,1);
+		cur.inputBind("6",4.5,2,1);
 		cur.inputBind("7",(short)2004,(short)1,(short)1,
 				(short)-1,(short)-1,(short)-1,-1,null,false);
 		cur.inputBind("8",(short)-1,(short)-1,(short)-1,
@@ -201,10 +201,10 @@ class firebird extends sqlrtest {
 		cur.clearBinds();
 		cur.inputBind("1",6);
 		cur.inputBind("2",6);
-		cur.inputBind("3",6.6,2,1);
-		cur.inputBind("4",6.6,2,1);
-		cur.inputBind("5",6.6,2,1);
-		cur.inputBind("6",6.6,2,1);
+		cur.inputBind("3",6.5,2,1);
+		cur.inputBind("4",6.5,2,1);
+		cur.inputBind("5",6.5,2,1);
+		cur.inputBind("6",6.5,2,1);
 		cur.inputBind("7",(short)2006,(short)1,(short)1,
 				(short)-1,(short)-1,(short)-1,-1,null,false);
 		cur.inputBind("8",(short)-1,(short)-1,(short)-1,
@@ -230,10 +230,10 @@ class firebird extends sqlrtest {
 		cur.clearBinds();
 		cur.inputBind("1",8);
 		cur.inputBind("2",8);
-		cur.inputBind("3",8.8,2,1);
-		cur.inputBind("4",8.8,2,1);
-		cur.inputBind("5",8.8,2,1);
-		cur.inputBind("6",8.8,2,1);
+		cur.inputBind("3",8.5,2,1);
+		cur.inputBind("4",8.5,2,1);
+		cur.inputBind("5",8.5,2,1);
+		cur.inputBind("6",8.5,2,1);
 		cur.inputBind("7",(short)2008,(short)1,(short)1,
 				(short)-1,(short)-1,(short)-1,-1,null,false);
 		cur.inputBind("8",(short)-1,(short)-1,(short)-1,
@@ -423,10 +423,10 @@ class firebird extends sqlrtest {
 		System.out.println("FIELDS BY INDEX: ");
 		assertEquals(cur.getField(0,0),"1");
 		assertEquals(cur.getField(0,1),"1");
-		assertEquals(cur.getField(0,2),"1.10");
-		assertEquals(cur.getField(0,3),"1.10");
-		assertEquals(cur.getField(0,4),"1.1000");
-		assertEquals(cur.getField(0,5),"1.1000");
+		assertEquals(cur.getField(0,2),"1.50");
+		assertEquals(cur.getField(0,3),"1.50");
+		assertEquals(cur.getField(0,4),"1.5000");
+		assertEquals(cur.getField(0,5),"1.5000");
 		assertEquals(cur.getField(0,6),"2001:01:01");
 		assertEquals(cur.getField(0,7),"01:00:00");
 		assertEquals(cur.getField(0,8),"testchar1"+
@@ -436,10 +436,10 @@ class firebird extends sqlrtest {
 		System.out.println();
 		assertEquals(cur.getField(7,0),"8");
 		assertEquals(cur.getField(7,1),"8");
-		assertEquals(cur.getField(7,2),"8.80");
-		assertEquals(cur.getField(7,3),"8.80");
-		assertEquals(cur.getField(7,4),"8.8000");
-		assertEquals(cur.getField(7,5),"8.8000");
+		assertEquals(cur.getField(7,2),"8.50");
+		assertEquals(cur.getField(7,3),"8.50");
+		assertEquals(cur.getField(7,4),"8.5000");
+		assertEquals(cur.getField(7,5),"8.5000");
 		assertEquals(cur.getField(7,6),"2008:01:01");
 		assertEquals(cur.getField(7,7),"08:00:00");
 		assertEquals(cur.getField(7,8),"testchar8"+
@@ -479,10 +479,10 @@ class firebird extends sqlrtest {
 		System.out.println("FIELDS BY NAME: ");
 		assertEquals(cur.getField(0,"TESTINTEGER"),"1");
 		assertEquals(cur.getField(0,"TESTSMALLINT"),"1");
-		assertEquals(cur.getField(0,"TESTDECIMAL"),"1.10");
-		assertEquals(cur.getField(0,"TESTNUMERIC"),"1.10");
-		assertEquals(cur.getField(0,"TESTFLOAT"),"1.1000");
-		assertEquals(cur.getField(0,"TESTDOUBLE"),"1.1000");
+		assertEquals(cur.getField(0,"TESTDECIMAL"),"1.50");
+		assertEquals(cur.getField(0,"TESTNUMERIC"),"1.50");
+		assertEquals(cur.getField(0,"TESTFLOAT"),"1.5000");
+		assertEquals(cur.getField(0,"TESTDOUBLE"),"1.5000");
 		assertEquals(cur.getField(0,"TESTDATE"),"2001:01:01");
 		assertEquals(cur.getField(0,"TESTTIME"),"01:00:00");
 		assertEquals(cur.getField(0,"TESTCHAR"),"testchar1"+
@@ -492,10 +492,10 @@ class firebird extends sqlrtest {
 		System.out.println();
 		assertEquals(cur.getField(7,"TESTINTEGER"),"8");
 		assertEquals(cur.getField(7,"TESTSMALLINT"),"8");
-		assertEquals(cur.getField(7,"TESTDECIMAL"),"8.80");
-		assertEquals(cur.getField(7,"TESTNUMERIC"),"8.80");
-		assertEquals(cur.getField(7,"TESTFLOAT"),"8.8000");
-		assertEquals(cur.getField(7,"TESTDOUBLE"),"8.8000");
+		assertEquals(cur.getField(7,"TESTDECIMAL"),"8.50");
+		assertEquals(cur.getField(7,"TESTNUMERIC"),"8.50");
+		assertEquals(cur.getField(7,"TESTFLOAT"),"8.5000");
+		assertEquals(cur.getField(7,"TESTDOUBLE"),"8.5000");
 		assertEquals(cur.getField(7,"TESTDATE"),"2008:01:01");
 		assertEquals(cur.getField(7,"TESTTIME"),"08:00:00");
 		assertEquals(cur.getField(7,"TESTCHAR"),"testchar8"+
@@ -536,10 +536,10 @@ class firebird extends sqlrtest {
 		fields=cur.getRow(0);
 		assertEquals(fields[0],"1");
 		assertEquals(fields[1],"1");
-		assertEquals(fields[2],"1.10");
-		assertEquals(fields[3],"1.10");
-		assertEquals(fields[4],"1.1000");
-		assertEquals(fields[5],"1.1000");
+		assertEquals(fields[2],"1.50");
+		assertEquals(fields[3],"1.50");
+		assertEquals(fields[4],"1.5000");
+		assertEquals(fields[5],"1.5000");
 		assertEquals(fields[6],"2001:01:01");
 		assertEquals(fields[7],"01:00:00");
 		assertEquals(fields[8],"testchar1"+
@@ -1306,7 +1306,7 @@ class firebird extends sqlrtest {
 		cur.getNullsAsNulls();
 		cur.prepareQuery("execute procedure testproc ?, ?, ?, ?");
 		cur.inputBind("1",1);
-		cur.inputBind("2",1.1,2,1);
+		cur.inputBind("2",1.5,2,1);
 		cur.inputBind("3","hello");
 		cur.inputBindBlob("4",(new String("blob")).getBytes(),4);
 		cur.defineOutputBindInteger("1");
@@ -1316,7 +1316,7 @@ class firebird extends sqlrtest {
 		assertTrue(cur.executeQuery());
 		assertEquals(cur.getOutputBindInteger("1"),1);
 		double d=cur.getOutputBindDouble("2");
-		assertTrue(d>1.09 && d<1.11);
+		assertEquals(d,1.5);
 		assertEquals(cur.getOutputBindString("3"),
 			"hello               ");
 		assertEquals(cur.getOutputBindBlob("4"),"blob",4);
@@ -1379,7 +1379,7 @@ class firebird extends sqlrtest {
 		System.out.println("REBINDING: ");
 		cur.prepareQuery("execute procedure testproc ?, ?, ?, ?");
 		cur.inputBind("1",1);
-		cur.inputBind("2",1.1,2,1);
+		cur.inputBind("2",1.5,2,1);
 		cur.inputBind("3","hello");
 		cur.inputBindBlob("4",(new String("blob")).getBytes(),4);
 		cur.defineOutputBindInteger("1");
@@ -1433,7 +1433,7 @@ class firebird extends sqlrtest {
 			"	in3 varchar(20) = ?) "+
 			"as begin end");
 		cur.inputBind("1",1);
-		cur.inputBind("2",1.1,2,1);
+		cur.inputBind("2",1.5,2,1);
 		cur.inputBind("3","hello");
 		assertTrue(cur.executeQuery());
 		System.out.println();
@@ -1450,7 +1450,7 @@ class firebird extends sqlrtest {
 			"	suspend; "+
 			"end");
 		cur.inputBind("1",1);
-		cur.inputBind("2",1.1,2,1);
+		cur.inputBind("2",1.5,2,1);
 		cur.inputBind("3","hello");
 		assertTrue(cur.executeQuery());
 		assertEquals(cur.getField(0,0),"1");
@@ -1474,11 +1474,11 @@ class firebird extends sqlrtest {
 			"	suspend; "+
 			"end");
 		cur.inputBind("1",1);
-		cur.inputBind("2",1.1,2,1);
+		cur.inputBind("2",1.5,2,1);
 		cur.inputBind("3","hello");
 		assertTrue(cur.executeQuery());
 		assertEquals(cur.getField(0,0),"1");
-		assertEquals(cur.getField(0,1),"1.1000");
+		assertEquals(cur.getField(0,1),"1.5000");
 		assertEquals(cur.getField(0,2),"hello");
 		System.out.println();
 

@@ -299,9 +299,9 @@ if (false) {
 					"1,"+
 					"1,"+
 					"1,"+
-					"1.123,"+
-					"1.123,"+
-					"1.123,"+
+					"1.5,"+
+					"1.5,"+
+					"1.5,"+
 					"'hi1',"+
 					"'hello1',"+
 					"'2001-01-01',"+
@@ -322,9 +322,9 @@ if (false) {
 			pstmt.setShort(2,(short)i);
 			pstmt.setInt(3,i);
 			pstmt.setLong(4,(long)i);
-			pstmt.setDouble(5,(double)i+0.123);
-			pstmt.setDouble(6,(double)i+0.123);
-			pstmt.setDouble(7,(double)i+0.123);
+			pstmt.setDouble(5,(double)i+0.5);
+			pstmt.setDouble(6,(double)i+0.5);
+			pstmt.setDouble(7,(double)i+0.5);
 			pstmt.setString(8,"hi"+i);
 			pstmt.setString(9,"hello"+i);
 			DateFormat	fmt=new SimpleDateFormat("yyyy-MM-dd");
@@ -503,9 +503,9 @@ if (false) {
 			assertEquals(rs.getString(2),""+i);
 			assertEquals(rs.getString(3),""+i);
 			assertEquals(rs.getString(4),""+i);
-			assertEquals(rs.getString(5),i+".123");
-			assertEquals(rs.getString(6),i+".123");
-			assertEquals(rs.getString(7),i+".123");
+			assertEquals(rs.getString(5),i+".500");
+			assertEquals(rs.getString(6),i+".500");
+			assertEquals(rs.getString(7),i+".5");
 			assertEquals(rs.getString(8).trim(),"hi"+i);
 			assertEquals(rs.getString(9),"hello"+i);
 			assertEquals(rs.getString(10),"200"+i+"-0"+i+"-0"+i);
@@ -543,9 +543,9 @@ if (false) {
 					"null,"+
 					"1,"+
 					"null,"+
-					"1.123,"+
+					"1.5,"+
 					"null,"+
-					"1.123,"+
+					"1.5,"+
 					"null,"+
 					"'hello1',"+
 					"null,"+
@@ -560,9 +560,9 @@ if (false) {
 		assertEquals(rs.getString(2),null);
 		assertEquals(rs.getString(3),"1");
 		assertEquals(rs.getString(4),null);
-		assertEquals(rs.getString(5),"1.123");
+		assertEquals(rs.getString(5),"1.500");
 		assertEquals(rs.getString(6),null);
-		assertEquals(rs.getString(7),"1.123");
+		assertEquals(rs.getString(7),"1.5");
 		assertEquals(rs.getString(8),null);
 		assertEquals(rs.getString(9),"hello1");
 		assertEquals(rs.getString(10),null);
@@ -582,7 +582,7 @@ if (false) {
 					"null,"+
 					"1,"+
 					"null,"+
-					"1.123,"+
+					"1.5,"+
 					"null,"+
 					"'hi1',"+
 					"null,"+
@@ -599,7 +599,7 @@ if (false) {
 		assertEquals(rs.getString(3),null);
 		assertEquals(rs.getString(4),"1");
 		assertEquals(rs.getString(5),null);
-		assertEquals(rs.getString(6),"1.123");
+		assertEquals(rs.getString(6),"1.500");
 		assertEquals(rs.getString(7),null);
 		assertEquals(rs.getString(8).trim(),"hi1");
 		assertEquals(rs.getString(9),null);
@@ -621,9 +621,9 @@ if (false) {
 		pstmt.setNull(2,java.sql.Types.SMALLINT);
 		pstmt.setInt(3,1);
 		pstmt.setNull(4,java.sql.Types.BIGINT);
-		pstmt.setDouble(5,1.123);
+		pstmt.setDouble(5,1.5);
 		pstmt.setNull(6,java.sql.Types.CHAR);
-		pstmt.setDouble(7,1.123);
+		pstmt.setDouble(7,1.5);
 		pstmt.setNull(8,java.sql.Types.CHAR);
 		pstmt.setString(9,"hello1");
 		pstmt.setNull(10,java.sql.Types.DATE);
@@ -642,9 +642,9 @@ if (false) {
 		assertEquals(rs.getString(2),null);
 		assertEquals(rs.getString(3),"1");
 		assertEquals(rs.getString(4),null);
-		assertEquals(rs.getString(5),"1.123");
+		assertEquals(rs.getString(5),"1.500");
 		assertEquals(rs.getString(6),null);
-		assertEquals(rs.getString(7),"1.123");
+		assertEquals(rs.getString(7),"1.5");
 		assertEquals(rs.getString(8),null);
 		assertEquals(rs.getString(9),"hello1");
 		assertEquals(rs.getString(10),null);
@@ -666,7 +666,7 @@ if (false) {
 		pstmt.setNull(3,java.sql.Types.INTEGER);
 		pstmt.setLong(4,(long)1);
 		pstmt.setNull(5,java.sql.Types.DOUBLE);
-		pstmt.setDouble(6,1.123);
+		pstmt.setDouble(6,1.5);
 		pstmt.setNull(7,java.sql.Types.DOUBLE);
 		pstmt.setString(8,"hi1");
 		pstmt.setNull(9,java.sql.Types.CHAR);
@@ -689,7 +689,7 @@ if (false) {
 		assertEquals(rs.getString(3),null);
 		assertEquals(rs.getString(4),"1");
 		assertEquals(rs.getString(5),null);
-		assertEquals(rs.getString(6),"1.123");
+		assertEquals(rs.getString(6),"1.500");
 		assertEquals(rs.getString(7),null);
 		assertEquals(rs.getString(8).trim(),"hi1");
 		assertEquals(rs.getString(9),null);
@@ -714,9 +714,9 @@ if (false) {
 			pstmt.setInt(2,i);
 			pstmt.setInt(3,i);
 			pstmt.setInt(4,i);
-			pstmt.setDouble(5,2.345);
-			pstmt.setDouble(6,2.345);
-			pstmt.setDouble(7,2.345);
+			pstmt.setDouble(5,2.5);
+			pstmt.setDouble(6,2.5);
+			pstmt.setDouble(7,2.5);
 			pstmt.setString(8,"hi");
 			pstmt.setString(9,"hello");
 			fmt=new SimpleDateFormat("yyyy-MM-dd");

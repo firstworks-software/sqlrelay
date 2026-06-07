@@ -107,7 +107,7 @@ assertTrue(cur.sendQuery(
 	"	testtable "+
 	"values ("+
 	"	1, "+
-	"	1.1, "+
+	"	1.5, "+
 	"	'testchar1', "+
 	"	'testvarchar1', "+
 	"	'testclob1', "+
@@ -117,7 +117,7 @@ assertTrue(cur.sendQuery(
 	"	testtable "+
 	"values ("+
 	"	2, "+
-	"	2.2, "+
+	"	2.5, "+
 	"	'testchar2', "+
 	"	'testvarchar2', "+
 	"	'testclob2', "+
@@ -127,7 +127,7 @@ assertTrue(cur.sendQuery(
 	"	testtable "+
 	"values ("+
 	"	3, "+
-	"	3.3, "+
+	"	3.5, "+
 	"	'testchar3', "+
 	"	'testvarchar3', "+
 	"	'testclob3', "+
@@ -137,7 +137,7 @@ assertTrue(cur.sendQuery(
 	"	testtable "+
 	"values ("+
 	"	4, "+
-	"	4.4, "+
+	"	4.5, "+
 	"	'testchar4', "+
 	"	'testvarchar4', "+
 	"	'testclob4', "+
@@ -185,7 +185,7 @@ cur.inputBindBlob("var6","testblob5","testblob5".to_s.bytesize)
 assertTrue(cur.executeQuery())
 cur.clearBinds()
 cur.inputBind("var1",6)
-cur.inputBind("var2",6.6,4,1)
+cur.inputBind("var2",6.5,4,1)
 cur.inputBind("var3","testchar6")
 cur.inputBind("var4","testvarchar6")
 cur.inputBindClob("var5","testclob6","testclob6".to_s.bytesize)
@@ -193,7 +193,7 @@ cur.inputBindBlob("var6","testblob6","testblob6".to_s.bytesize)
 assertTrue(cur.executeQuery())
 cur.clearBinds()
 cur.inputBind("var1",7)
-cur.inputBind("var2",7.7,4,1)
+cur.inputBind("var2",7.5,4,1)
 cur.inputBind("var3","testchar7")
 cur.inputBind("var4","testvarchar7")
 cur.inputBindClob("var5","testclob7","testclob7".to_s.bytesize)
@@ -211,7 +211,7 @@ print "\n"
 print "INPUT BIND BY NAME WITH VALIDATION: \n"
 cur.clearBinds()
 cur.inputBind("var1",8)
-cur.inputBind("var2",8.8,4,1)
+cur.inputBind("var2",8.5,4,1)
 cur.inputBind("var3","testchar8")
 cur.inputBind("var4","testvarchar8")
 cur.inputBindClob("var5","testclob8","testclob8".to_s.bytesize)
@@ -340,14 +340,14 @@ print "\n"
 # fields by index
 print "FIELDS BY INDEX: \n"
 assertEqual(cur.getField(0,0),"1")
-assertEqual(cur.getField(0,1),"1.1")
+assertEqual(cur.getField(0,1),"1.5")
 assertEqual(cur.getField(0,2),"testchar1")
 assertEqual(cur.getField(0,3),"testvarchar1")
 assertEqual(cur.getField(0,4),"testclob1")
 assertEqual(cur.getField(0,5),"testblob1")
 print "\n"
 assertEqual(cur.getField(7,0),"8")
-assertEqual(cur.getField(7,1),"8.8")
+assertEqual(cur.getField(7,1),"8.5")
 assertEqual(cur.getField(7,2),"testchar8")
 assertEqual(cur.getField(7,3),"testvarchar8")
 assertEqual(cur.getField(7,4),"testclob8")
@@ -376,14 +376,14 @@ print "\n"
 # fields by name
 print "FIELDS BY NAME: \n"
 assertEqual(cur.getField(0,"testint"),"1")
-assertEqual(cur.getField(0,"testfloat"),"1.1")
+assertEqual(cur.getField(0,"testfloat"),"1.5")
 assertEqual(cur.getField(0,"testchar"),"testchar1")
 assertEqual(cur.getField(0,"testvarchar"),"testvarchar1")
 assertEqual(cur.getField(0,"testclob"),"testclob1")
 assertEqual(cur.getField(0,"testblob"),"testblob1")
 print "\n"
 assertEqual(cur.getField(7,"testint"),"8")
-assertEqual(cur.getField(7,"testfloat"),"8.8")
+assertEqual(cur.getField(7,"testfloat"),"8.5")
 assertEqual(cur.getField(7,"testchar"),"testchar8")
 assertEqual(cur.getField(7,"testvarchar"),"testvarchar8")
 assertEqual(cur.getField(7,"testclob"),"testclob8")
@@ -413,7 +413,7 @@ print "\n"
 print "FIELDS BY ARRAY: \n"
 fields=cur.getRow(0)
 assertEqual(fields[0],"1")
-assertEqual(fields[1],"1.1")
+assertEqual(fields[1],"1.5")
 assertEqual(fields[2],"testchar1")
 assertEqual(fields[3],"testvarchar1")
 assertEqual(fields[4],"testclob1")

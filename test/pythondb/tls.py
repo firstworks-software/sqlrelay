@@ -42,7 +42,7 @@ def main():
 		"	:var2, "
 		"	:var3 "
 		"from "
-		"	dual ",{'var1':1,'var2':'hello','var3':1.1})
+		"	dual ",{'var1':1,'var2':'hello','var3':1.5})
 	print(cur.fetchone())
 	print()
 	print()
@@ -71,10 +71,10 @@ def main():
 		"	:var1, "
 		"	:var2, "
 		"	:var3)",
-		[{'var1':1,'var2':'hello','var3':1.1},
-		{'var1':2,'var2':'hi','var3':2.2},
-		{'var1':3,'var2':'bye','var3':3.3}])
-	#cur.executemany("select :var1,:var2,:var3 from dual",[{'var1':1,'var2':'hello','var3':1.1},{'var1':2,'var2':'hi','var3':2.2},{'var1':3,'var2':'bye','var3':3.3}])
+		[{'var1':1,'var2':'hello','var3':1.5},
+		{'var1':2,'var2':'hi','var3':2.5},
+		{'var1':3,'var2':'bye','var3':3.5}])
+	#cur.executemany("select :var1,:var2,:var3 from dual",[{'var1':1,'var2':'hello','var3':1.5},{'var1':2,'var2':'hi','var3':2.5},{'var1':3,'var2':'bye','var3':3.5}])
 	cur.execute("select * from temptable")
 	print(cur.fetchall())
 	cur.execute("drop table temptable")
@@ -111,7 +111,7 @@ def main():
 	print("CALLPROC")
 	cur.callproc(
 		"select :var1,:var2,:var3 from dual",
-		{'var1':1,'var2':'hello','var3':1.1})
+		{'var1':1,'var2':'hello','var3':1.5})
 	print(cur.fetchone())
 	print()
 	print()

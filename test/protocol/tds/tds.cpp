@@ -283,15 +283,15 @@ int	main(int argc, char **argv) {
 				"1,"
 				"1,"
 				"'2001-01-01 13:01:01.000', "
-				"1.23, "
-				"1.23, "
+				"1.5, "
+				"1.5, "
 				"'2001-01-01 13:01:01:000', "
-				"1.23, "
-				"1.23, "
+				"1.5, "
+				"1.5, "
 				"1, "
 				"'01020304-0102-0304-0102-030401020304', "
-				"1.23, "
-				"1.23, "
+				"1.5, "
+				"1.5, "
 				"'2001-01-01', "
 				"'13:01:01.000', "
 				"'2001-01-01T13:01:01.000', "
@@ -335,15 +335,15 @@ int	main(int argc, char **argv) {
 				"2,"
 				"2,"
 				"'2002-02-02 14:02:02.000', "
-				"2.34, "
-				"2.34, "
+				"2.5, "
+				"2.5, "
 				"'2002-02-02 14:02:02.000', "
-				"2.34, "
-				"2.34, "
+				"2.5, "
+				"2.5, "
 				"2, "
 				"'01020304-0102-0304-0102-030401020304', "
-				"2.34, "
-				"2.34, "
+				"2.5, "
+				"2.5, "
 				"'2002-02-02', "
 				"'14:02:02.000', "
 				"'2002-02-02T14:02:02.000', "
@@ -845,19 +845,19 @@ int	main(int argc, char **argv) {
 	assertEquals(*(datalength[4]),27);
 	assertEquals(*(nullindicator[4]),0);
 	// reals aren't converted to strings reliably enough to compare
-	//assertEquals(data[5],"1.23");
+	//assertEquals(data[5],"1.5");
 	assertEquals(*(nullindicator[5]),0);
 	// moneys aren't converted to strings reliably enough to compare
-	//assertEquals(data[6],"1.23");
+	//assertEquals(data[6],"1.50");
 	assertEquals(*(nullindicator[6]),0);
 	assertEquals(data[7],"Jan  1 2001 01:01:01:000PM");
 	assertEquals(*(datalength[7]),27);
 	assertEquals(*(nullindicator[7]),0);
 	// floats aren't converted to strings reliably enough to compare
-	//assertEquals(data[8],"1.23");
+	//assertEquals(data[8],"1.5");
 	assertEquals(*(nullindicator[8]),0);
 	// smallmoneys aren't converted to strings reliably enough to compare
-	//assertEquals(data[9],"1.23");
+	//assertEquals(data[9],"1.50");
 	assertEquals(*(nullindicator[9]),0);
 	assertEquals(data[10],"1");
 	assertEquals(*(datalength[10]),2);
@@ -865,10 +865,10 @@ int	main(int argc, char **argv) {
 	assertEquals(data[11],"01020304-0102-0304-0102-030401020304");
 	assertEquals(*(datalength[11]),37);
 	assertEquals(*(nullindicator[11]),0);
-	assertEquals(data[12],"1.23");
+	assertEquals(data[12],"1.50");
 	assertEquals(*(datalength[12]),5);
 	assertEquals(*(nullindicator[12]),0);
-	assertEquals(data[13],"1.23");
+	assertEquals(data[13],"1.50");
 	assertEquals(*(datalength[13]),5);
 	assertEquals(*(nullindicator[13]),0);
 	// FIXME: #4780 date, time, datetime2, datetimeoffset types
@@ -921,15 +921,15 @@ int	main(int argc, char **argv) {
 	assertEquals(data[2],"2");
 	assertEquals(data[3],"2");
 	assertEquals(data[4],"Feb  2 2002 02:02:00:000PM");
-	//assertEquals(data[5],"2.34");
-	//assertEquals(data[6],"2.34");
+	//assertEquals(data[5],"2.5");
+	//assertEquals(data[6],"2.50");
 	assertEquals(data[7],"Feb  2 2002 02:02:02:000PM");
-	//assertEquals(data[8],"2.34");
-	//assertEquals(data[9],"2.34");
+	//assertEquals(data[8],"2.5");
+	//assertEquals(data[9],"2.50");
 	assertEquals(data[10],"2");
 	assertEquals(data[11],"01020304-0102-0304-0102-030401020304");
-	assertEquals(data[12],"2.34");
-	assertEquals(data[13],"2.34");
+	assertEquals(data[12],"2.50");
+	assertEquals(data[13],"2.50");
 	//assertEquals(data[14],"2002-02-02");		#4780
 	//assertEquals(data[15],"14:02:02.0000000");	#4780
 	//assertEquals(data[16],"2002-02-02 14:02:02.0000000");		#4780

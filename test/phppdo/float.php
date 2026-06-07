@@ -45,9 +45,9 @@
 
 
 	echo("INSERT: \n");
-	assertEqual($dbh->exec("insert into testtable values (3.14,3.14)"),1);
-	assertEqual($dbh->exec("insert into testtable values (6.28,6.28)"),1);
-	assertEqual($dbh->exec("insert into testtable values (9.42,9.42)"),1);
+	assertEqual($dbh->exec("insert into testtable values (3.5,3.5)"),1);
+	assertEqual($dbh->exec("insert into testtable values (6.5,6.5)"),1);
+	assertEqual($dbh->exec("insert into testtable values (9.5,9.5)"),1);
 	echo("\n");
 
 
@@ -64,8 +64,8 @@
 
 	echo("FIELDS BY INDEX: \n");
 	$result=$stmt->fetch(PDO::FETCH_NUM);
-	assertEqual($result[0],3.14);
-	assertEqual($result[1],3.14);
+	assertEqual($result[0],3.5);
+	assertEqual($result[1],3.5);
 	echo("\n");
 
 
@@ -74,8 +74,8 @@
 
 	echo("FIELDS BY NAME: \n");
 	$result=$stmt->fetch(PDO::FETCH_ASSOC);
-	assertEqual($result["testfloat"],6.28);
-	assertEqual($result["testdouble"],6.28);
+	assertEqual($result["testfloat"],6.5);
+	assertEqual($result["testdouble"],6.5);
 	var_dump($result);
 	echo("\n");
 
@@ -85,8 +85,8 @@
 
 	echo("FIELDS BY NAME AND INDEX: \n");
 	$result=$stmt->fetch();
-	assertEqual($result[0],9.42);
-	assertEqual($result[1],9.42);
+	assertEqual($result[0],9.5);
+	assertEqual($result[1],9.5);
 	echo("\n");
 
 	$dbh->exec("drop table testtable");

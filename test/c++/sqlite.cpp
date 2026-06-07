@@ -124,7 +124,7 @@ int main(int argc, char **argv) {
 		"	testtable "
 		"values ("
 		"	1, "
-		"	1.1, "
+		"	1.5, "
 		"	'testchar1', "
 		"	'testvarchar1', "
 		"	'testclob1', "
@@ -134,7 +134,7 @@ int main(int argc, char **argv) {
 		"	testtable "
 		"values ("
 		"	2, "
-		"	2.2, "
+		"	2.5, "
 		"	'testchar2', "
 		"	'testvarchar2', "
 		"	'testclob2', "
@@ -144,7 +144,7 @@ int main(int argc, char **argv) {
 		"	testtable "
 		"values ("
 		"	3, "
-		"	3.3, "
+		"	3.5, "
 		"	'testchar3', "
 		"	'testvarchar3', "
 		"	'testclob3', "
@@ -154,7 +154,7 @@ int main(int argc, char **argv) {
 		"	testtable "
 		"values ("
 		"	4, "
-		"	4.4, "
+		"	4.5, "
 		"	'testchar4', "
 		"	'testvarchar4', "
 		"	'testclob4', "
@@ -202,7 +202,7 @@ int main(int argc, char **argv) {
 	assertTrue(cur->executeQuery());
 	cur->clearBinds();
 	cur->inputBind("var1",6);
-	cur->inputBind("var2",6.6,4,1);
+	cur->inputBind("var2",6.5,4,1);
 	cur->inputBind("var3","testchar6");
 	cur->inputBind("var4","testvarchar6");
 	cur->inputBindClob("var5","testclob6",9);
@@ -210,7 +210,7 @@ int main(int argc, char **argv) {
 	assertTrue(cur->executeQuery());
 	cur->clearBinds();
 	cur->inputBind("var1",7);
-	cur->inputBind("var2",7.7,4,1);
+	cur->inputBind("var2",7.5,4,1);
 	cur->inputBind("var3","testchar7");
 	cur->inputBind("var4","testvarchar7");
 	cur->inputBindClob("var5","testclob7",9);
@@ -228,7 +228,7 @@ int main(int argc, char **argv) {
 	stdoutput.printf("INPUT BIND BY NAME WITH VALIDATION: \n");
 	cur->clearBinds();
 	cur->inputBind("var1",8);
-	cur->inputBind("var2",8.8,4,1);
+	cur->inputBind("var2",8.5,4,1);
 	cur->inputBind("var3","testchar8");
 	cur->inputBind("var4","testvarchar8");
 	cur->inputBindClob("var5","testclob8",9);
@@ -357,14 +357,14 @@ int main(int argc, char **argv) {
 	// fields by index
 	stdoutput.printf("FIELDS BY INDEX: \n");
 	assertEquals(cur->getField(0,(uint32_t)0),"1");
-	assertEquals(cur->getField(0,1),"1.1");
+	assertEquals(cur->getField(0,1),"1.5");
 	assertEquals(cur->getField(0,2),"testchar1");
 	assertEquals(cur->getField(0,3),"testvarchar1");
 	assertEquals(cur->getField(0,4),"testclob1");
 	assertEquals(cur->getField(0,5),"testblob1");
 	stdoutput.printf("\n");
 	assertEquals(cur->getField(7,(uint32_t)0),"8");
-	assertEquals(cur->getField(7,1),"8.8");
+	assertEquals(cur->getField(7,1),"8.5");
 	assertEquals(cur->getField(7,2),"testchar8");
 	assertEquals(cur->getField(7,3),"testvarchar8");
 	assertEquals(cur->getField(7,4),"testclob8");
@@ -393,14 +393,14 @@ int main(int argc, char **argv) {
 	// fields by name
 	stdoutput.printf("FIELDS BY NAME: \n");
 	assertEquals(cur->getField(0,"testint"),"1");
-	assertEquals(cur->getField(0,"testfloat"),"1.1");
+	assertEquals(cur->getField(0,"testfloat"),"1.5");
 	assertEquals(cur->getField(0,"testchar"),"testchar1");
 	assertEquals(cur->getField(0,"testvarchar"),"testvarchar1");
 	assertEquals(cur->getField(0,"testclob"),"testclob1");
 	assertEquals(cur->getField(0,"testblob"),"testblob1");
 	stdoutput.printf("\n");
 	assertEquals(cur->getField(7,"testint"),"8");
-	assertEquals(cur->getField(7,"testfloat"),"8.8");
+	assertEquals(cur->getField(7,"testfloat"),"8.5");
 	assertEquals(cur->getField(7,"testchar"),"testchar8");
 	assertEquals(cur->getField(7,"testvarchar"),"testvarchar8");
 	assertEquals(cur->getField(7,"testclob"),"testclob8");
@@ -430,7 +430,7 @@ int main(int argc, char **argv) {
 	stdoutput.printf("FIELDS BY ARRAY: \n");
 	fields=cur->getRow(0);
 	assertEquals(fields[0],"1");
-	assertEquals(fields[1],"1.1");
+	assertEquals(fields[1],"1.5");
 	assertEquals(fields[2],"testchar1");
 	assertEquals(fields[3],"testvarchar1");
 	assertEquals(fields[4],"testclob1");

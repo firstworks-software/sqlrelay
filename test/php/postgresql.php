@@ -91,8 +91,8 @@
 		"	testtable ".
 		"values (".
 		"	1, ".
-		"	1.1, ".
-		"	1.1, ".
+		"	1.5, ".
+		"	1.5, ".
 		"	1, ".
 		"	'testchar1', ".
 		"	'testvarchar1', ".
@@ -106,8 +106,8 @@
 		"	testtable ".
 		"values (".
 		"	2, ".
-		"	2.2, ".
-		"	2.2, ".
+		"	2.5, ".
+		"	2.5, ".
 		"	2, ".
 		"	'testchar2', ".
 		"	'testvarchar2', ".
@@ -121,8 +121,8 @@
 		"	testtable ".
 		"values (".
 		"	3, ".
-		"	3.3, ".
-		"	3.3, ".
+		"	3.5, ".
+		"	3.5, ".
 		"	3, ".
 		"	'testchar3', ".
 		"	'testvarchar3', ".
@@ -136,8 +136,8 @@
 		"	testtable ".
 		"values (".
 		"	4, ".
-		"	4.4, ".
-		"	4.4, ".
+		"	4.5, ".
+		"	4.5, ".
 		"	4, ".
 		"	'testchar4', ".
 		"	'testvarchar4', ".
@@ -186,8 +186,8 @@
 	assertTrue(sqlrcur_executeQuery($cur));
 	sqlrcur_clearBinds($cur);
 	sqlrcur_inputBind($cur,"1",6);
-	sqlrcur_inputBind($cur,"2",6.6,4,2);
-	sqlrcur_inputBind($cur,"3",6.6,4,2);
+	sqlrcur_inputBind($cur,"2",6.5,4,2);
+	sqlrcur_inputBind($cur,"3",6.5,4,2);
 	sqlrcur_inputBind($cur,"4",6);
 	sqlrcur_inputBind($cur,"5","testchar6");
 	sqlrcur_inputBind($cur,"6","testvarchar6");
@@ -198,8 +198,8 @@
 	assertTrue(sqlrcur_executeQuery($cur));
 	sqlrcur_clearBinds($cur);
 	sqlrcur_inputBind($cur,"1",7);
-	sqlrcur_inputBind($cur,"2",7.7,4,2);
-	sqlrcur_inputBind($cur,"3",7.7,4,2);
+	sqlrcur_inputBind($cur,"2",7.5,4,2);
+	sqlrcur_inputBind($cur,"3",7.5,4,2);
 	sqlrcur_inputBind($cur,"4",7);
 	sqlrcur_inputBind($cur,"5","testchar7");
 	sqlrcur_inputBind($cur,"6","testvarchar7");
@@ -226,8 +226,8 @@
 	echo("BIND BY POSITION WITH VALIDATION: \n");
 	sqlrcur_clearBinds($cur);
 	sqlrcur_inputBind($cur,"1",8);
-	sqlrcur_inputBind($cur,"2",8.8,4,2);
-	sqlrcur_inputBind($cur,"3",8.8,4,2);
+	sqlrcur_inputBind($cur,"2",8.5,4,2);
+	sqlrcur_inputBind($cur,"3",8.5,4,2);
 	sqlrcur_inputBind($cur,"4",8);
 	sqlrcur_inputBind($cur,"5","testchar8");
 	sqlrcur_inputBind($cur,"6","testvarchar8");
@@ -396,8 +396,8 @@
 	# fields by index
 	echo("FIELDS BY INDEX: \n");
 	assertEqStr(sqlrcur_getField($cur,0,0),"1");
-	assertEqStr(sqlrcur_getField($cur,0,1),"1.1");
-	assertEqStr(sqlrcur_getField($cur,0,2),"1.1");
+	assertEqStr(sqlrcur_getField($cur,0,1),"1.5");
+	assertEqStr(sqlrcur_getField($cur,0,2),"1.5");
 	assertEqStr(sqlrcur_getField($cur,0,3),"1");
 	assertEqStr(sqlrcur_getField($cur,0,4),"testchar1".
 		"                               ");
@@ -408,8 +408,8 @@
 	assertEqStr(sqlrcur_getField($cur,0,10),"testbytea1");
 	echo("\n");
 	assertEqStr(sqlrcur_getField($cur,7,0),"8");
-	assertEqStr(sqlrcur_getField($cur,7,1),"8.8");
-	assertEqStr(sqlrcur_getField($cur,7,2),"8.8");
+	assertEqStr(sqlrcur_getField($cur,7,1),"8.5");
+	assertEqStr(sqlrcur_getField($cur,7,2),"8.5");
 	assertEqStr(sqlrcur_getField($cur,7,3),"8");
 	assertEqStr(sqlrcur_getField($cur,7,4),"testchar8".
 		"                               ");
@@ -450,8 +450,8 @@
 	# fields by name
 	echo("FIELDS BY NAME: \n");
 	assertEqStr(sqlrcur_getField($cur,0,"testint"),"1");
-	assertEqStr(sqlrcur_getField($cur,0,"testfloat"),"1.1");
-	assertEqStr(sqlrcur_getField($cur,0,"testreal"),"1.1");
+	assertEqStr(sqlrcur_getField($cur,0,"testfloat"),"1.5");
+	assertEqStr(sqlrcur_getField($cur,0,"testreal"),"1.5");
 	assertEqStr(sqlrcur_getField($cur,0,"testsmallint"),"1");
 	assertEqStr(sqlrcur_getField($cur,0,"testchar"),"testchar1".
 		"                               ");
@@ -462,8 +462,8 @@
 	assertEqStr(sqlrcur_getField($cur,0,"testbytea"),"testbytea1");
 	echo("\n");
 	assertEqStr(sqlrcur_getField($cur,7,"testint"),"8");
-	assertEqStr(sqlrcur_getField($cur,7,"testfloat"),"8.8");
-	assertEqStr(sqlrcur_getField($cur,7,"testreal"),"8.8");
+	assertEqStr(sqlrcur_getField($cur,7,"testfloat"),"8.5");
+	assertEqStr(sqlrcur_getField($cur,7,"testreal"),"8.5");
 	assertEqStr(sqlrcur_getField($cur,7,"testsmallint"),"8");
 	assertEqStr(sqlrcur_getField($cur,7,"testchar"),"testchar8".
 		"                               ");
@@ -505,8 +505,8 @@
 	echo("FIELDS BY ARRAY: \n");
 	$fields=sqlrcur_getRow($cur,0);
 	assertEqStr($fields[0],"1");
-	assertEqStr($fields[1],"1.1");
-	assertEqStr($fields[2],"1.1");
+	assertEqStr($fields[1],"1.5");
+	assertEqStr($fields[2],"1.5");
 	assertEqStr($fields[3],"1");
 	assertEqStr($fields[4],"testchar1".
 		"                               ");
@@ -1308,7 +1308,7 @@
 		"	return; end;' language plpgsql"));
 	sqlrcur_prepareQuery($cur,"select testfunc(\$1,\$2,\$3)");
 	sqlrcur_inputBind($cur,"1",1);
-	sqlrcur_inputBind($cur,"2",1.1,4,2);
+	sqlrcur_inputBind($cur,"2",1.5,4,2);
 	sqlrcur_inputBind($cur,"3","hello");
 	assertTrue(sqlrcur_executeQuery($cur));
 	assertTrue(sqlrcur_sendQuery($cur,"drop function ".
@@ -1325,7 +1325,7 @@
 		"	' begin return \$1; end;' language plpgsql"));
 	sqlrcur_prepareQuery($cur,"select * from testfunc(\$1,\$2,\$3)");
 	sqlrcur_inputBind($cur,"1",1);
-	sqlrcur_inputBind($cur,"2",1.1,4,2);
+	sqlrcur_inputBind($cur,"2",1.5,4,2);
 	sqlrcur_inputBind($cur,"3","hello");
 	assertTrue(sqlrcur_executeQuery($cur));
 	assertEqStr(sqlrcur_getField($cur,0,0),"1");
@@ -1356,7 +1356,7 @@
 		"		col2 float, ".
 		"		col3 bpchar) ");
 	sqlrcur_inputBind($cur,"1",1);
-	sqlrcur_inputBind($cur,"2",1.1,4,2);
+	sqlrcur_inputBind($cur,"2",1.5,4,2);
 	sqlrcur_inputBind($cur,"3","hello");
 	assertTrue(sqlrcur_executeQuery($cur));
 	assertEqStr(sqlrcur_getField($cur,0,0),"1");

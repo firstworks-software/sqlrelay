@@ -20,7 +20,7 @@ int main(int argc, char **argv) {
 	const char	*isolationlevels[]={"CS","UR","RS","RR",NULL};
 	const char	*bindvars[]={"1","2","3","4","5","6",
 				"7","8","9","10","11","12",NULL};
-	const char	*bindvals[]={"7","7","7","7.7","7.7","7.7",
+	const char	*bindvals[]={"7","7","7","7.5","7.5","7.5",
 				"testchar7","testvarchar7",
 				"01/01/2007","07:00:00",
 				"testclob7",NULL,NULL};
@@ -132,9 +132,9 @@ int main(int argc, char **argv) {
 		"	1, "
 		"	1, "
 		"	1, "
-		"	1.1, "
-		"	1.1, "
-		"	1.1, "
+		"	1.5, "
+		"	1.5, "
+		"	1.5, "
 		"	'testchar1', "
 		"	'testvarchar1', "
 		"	'01/01/2001', "
@@ -174,9 +174,9 @@ int main(int argc, char **argv) {
 	cur->inputBind("1",2);
 	cur->inputBind("2",2);
 	cur->inputBind("3",2);
-	cur->inputBind("4",2.2,4,2);
-	cur->inputBind("5",2.2,4,2);
-	cur->inputBind("6",2.2,4,2);
+	cur->inputBind("4",2.5,4,2);
+	cur->inputBind("5",2.5,4,2);
+	cur->inputBind("6",2.5,4,2);
 	cur->inputBind("7","testchar2");
 	cur->inputBind("8","testvarchar2");
 	cur->inputBind("9","01/01/2002");
@@ -188,9 +188,9 @@ int main(int argc, char **argv) {
 	cur->inputBind("1",3);
 	cur->inputBind("2",3);
 	cur->inputBind("3",3);
-	cur->inputBind("4",3.3,4,2);
-	cur->inputBind("5",3.3,4,2);
-	cur->inputBind("6",3.3,4,2);
+	cur->inputBind("4",3.5,4,2);
+	cur->inputBind("5",3.5,4,2);
+	cur->inputBind("6",3.5,4,2);
 	cur->inputBind("7","testchar3");
 	cur->inputBind("8","testvarchar3");
 	cur->inputBind("9","01/01/2003");
@@ -202,9 +202,9 @@ int main(int argc, char **argv) {
 	cur->inputBind("1",4);
 	cur->inputBind("2",4);
 	cur->inputBind("3",4);
-	cur->inputBind("4",4.4,4,2);
-	cur->inputBind("5",4.4,4,2);
-	cur->inputBind("6",4.4,4,2);
+	cur->inputBind("4",4.5,4,2);
+	cur->inputBind("5",4.5,4,2);
+	cur->inputBind("6",4.5,4,2);
 	cur->inputBind("7","testchar4");
 	cur->inputBind("8","testvarchar4");
 	cur->inputBind("9","01/01/2004");
@@ -230,9 +230,9 @@ int main(int argc, char **argv) {
 	cur->inputBind("1",6);
 	cur->inputBind("2",6);
 	cur->inputBind("3",6);
-	cur->inputBind("4",6.6,4,2);
-	cur->inputBind("5",6.6,4,2);
-	cur->inputBind("6",6.6,4,2);
+	cur->inputBind("4",6.5,4,2);
+	cur->inputBind("5",6.5,4,2);
+	cur->inputBind("6",6.5,4,2);
 	cur->inputBind("7","testchar6");
 	cur->inputBind("8","testvarchar6");
 	cur->inputBind("9","01/01/2006");
@@ -257,9 +257,9 @@ int main(int argc, char **argv) {
 	cur->inputBind("1",8);
 	cur->inputBind("2",8);
 	cur->inputBind("3",8);
-	cur->inputBind("4",8.8,4,2);
-	cur->inputBind("5",8.8,4,2);
-	cur->inputBind("6",8.8,4,2);
+	cur->inputBind("4",8.5,4,2);
+	cur->inputBind("5",8.5,4,2);
+	cur->inputBind("6",8.5,4,2);
 	cur->inputBind("7","testchar8");
 	cur->inputBind("8","testvarchar8");
 	cur->inputBind("9","01/01/2008");
@@ -436,9 +436,9 @@ int main(int argc, char **argv) {
 	assertEquals(cur->getField(0,(uint32_t)0),"1");
 	assertEquals(cur->getField(0,1),"1");
 	assertEquals(cur->getField(0,2),"1");
-	assertEquals(cur->getField(0,3),"1.10");
-	//assertEquals(cur->getField(0,4),"1.1");
-	//assertEquals(cur->getField(0,5),"1.1");
+	assertEquals(cur->getField(0,3),"1.50");
+	//assertEquals(cur->getField(0,4),"1.5");
+	//assertEquals(cur->getField(0,5),"1.5");
 	assertEquals(cur->getField(0,6),"testchar1                               ");
 	assertEquals(cur->getField(0,7),"testvarchar1");
 	assertEquals(cur->getField(0,8),"2001-01-01");
@@ -447,9 +447,9 @@ int main(int argc, char **argv) {
 	assertEquals(cur->getField(7,(uint32_t)0),"8");
 	assertEquals(cur->getField(7,1),"8");
 	assertEquals(cur->getField(7,2),"8");
-	assertEquals(cur->getField(7,3),"8.80");
-	//assertEquals(cur->getField(7,4),"8.8");
-	//assertEquals(cur->getField(7,5),"8.8");
+	assertEquals(cur->getField(7,3),"8.50");
+	//assertEquals(cur->getField(7,4),"8.5");
+	//assertEquals(cur->getField(7,5),"8.5");
 	assertEquals(cur->getField(7,6),"testchar8                               ");
 	assertEquals(cur->getField(7,7),"testvarchar8");
 	assertEquals(cur->getField(7,8),"2008-01-01");
@@ -488,9 +488,9 @@ int main(int argc, char **argv) {
 	assertEquals(cur->getField(0,"testsmallint"),"1");
 	assertEquals(cur->getField(0,"testint"),"1");
 	assertEquals(cur->getField(0,"testbigint"),"1");
-	assertEquals(cur->getField(0,"testdecimal"),"1.10");
-	//assertEquals(cur->getField(0,"testreal"),"1.1");
-	//assertEquals(cur->getField(0,"testdouble"),"1.1");
+	assertEquals(cur->getField(0,"testdecimal"),"1.50");
+	//assertEquals(cur->getField(0,"testreal"),"1.5");
+	//assertEquals(cur->getField(0,"testdouble"),"1.5");
 	assertEquals(cur->getField(0,"testchar"),"testchar1                               ");
 	assertEquals(cur->getField(0,"testvarchar"),"testvarchar1");
 	assertEquals(cur->getField(0,"testdate"),"2001-01-01");
@@ -499,9 +499,9 @@ int main(int argc, char **argv) {
 	assertEquals(cur->getField(7,"testsmallint"),"8");
 	assertEquals(cur->getField(7,"testint"),"8");
 	assertEquals(cur->getField(7,"testbigint"),"8");
-	assertEquals(cur->getField(7,"testdecimal"),"8.80");
-	//assertEquals(cur->getField(7,"testreal"),"8.8");
-	//assertEquals(cur->getField(7,"testdouble"),"8.8");
+	assertEquals(cur->getField(7,"testdecimal"),"8.50");
+	//assertEquals(cur->getField(7,"testreal"),"8.5");
+	//assertEquals(cur->getField(7,"testdouble"),"8.5");
 	assertEquals(cur->getField(7,"testchar"),"testchar8                               ");
 	assertEquals(cur->getField(7,"testvarchar"),"testvarchar8");
 	assertEquals(cur->getField(7,"testdate"),"2008-01-01");
@@ -541,9 +541,9 @@ int main(int argc, char **argv) {
 	assertEquals(fields[0],"1");
 	assertEquals(fields[1],"1");
 	assertEquals(fields[2],"1");
-	assertEquals(fields[3],"1.10");
-	//assertEquals(fields[4],"1.1");
-	//assertEquals(fields[5],"1.1");
+	assertEquals(fields[3],"1.50");
+	//assertEquals(fields[4],"1.5");
+	//assertEquals(fields[5],"1.5");
 	assertEquals(fields[6],"testchar1                               ");
 	assertEquals(fields[7],"testvarchar1");
 	assertEquals(fields[8],"2001-01-01");
@@ -947,9 +947,9 @@ int main(int argc, char **argv) {
 		"	10, "
 		"	10, "
 		"	10, "
-		"	10.1, "
-		"	10.1, "
-		"	10.1, "
+		"	10.5, "
+		"	10.5, "
+		"	10.5, "
 		"	'testchar10', "
 		"	'testvarchar10', "
 		"	'01/01/2010', "
@@ -968,9 +968,9 @@ int main(int argc, char **argv) {
 		"	10, "
 		"	10, "
 		"	10, "
-		"	10.1, "
-		"	10.1, "
-		"	10.1, "
+		"	10.5, "
+		"	10.5, "
+		"	10.5, "
 		"	'testchar10', "
 		"	'testvarchar10', "
 		"	'01/01/2010', "
@@ -1329,7 +1329,7 @@ int main(int argc, char **argv) {
 	assertTrue(con->commit());
 	cur->prepareQuery("call testproc(?,?,?)");
 	cur->inputBind("1",1);
-	cur->inputBind("2",1.1,2,1);
+	cur->inputBind("2",1.5,2,1);
 	cur->inputBind("3","hello");
 	assertTrue(cur->executeQuery());
 	assertTrue(cur->sendQuery("drop procedure testproc"));
@@ -1353,7 +1353,7 @@ int main(int argc, char **argv) {
 	assertTrue(con->commit());
 	cur->prepareQuery("select testfunc(?,?,?) from sysibm.sysdummy1");
 	cur->inputBind("1",1);
-	cur->inputBind("2",1.1,2,1);
+	cur->inputBind("2",1.5,2,1);
 	cur->inputBind("3","hello");
 	assertTrue(cur->executeQuery());
 	assertEquals(cur->getField(0,(uint32_t)0),"1");
@@ -1388,7 +1388,7 @@ int main(int argc, char **argv) {
 	assertTrue(con->commit());
 	cur->prepareQuery("call testproc(?,?,?,?,?,?,?,?,?,?)");
 	cur->inputBind("1",1);
-	cur->inputBind("2",1.1,2,1);
+	cur->inputBind("2",1.5,2,1);
 	cur->inputBind("3","hello");
 	cur->inputBindClob("4","clob",4);
 	cur->inputBindBlob("5","blob",4);
@@ -1399,7 +1399,7 @@ int main(int argc, char **argv) {
 	cur->defineOutputBindBlob("10");
 	assertTrue(cur->executeQuery());
 	assertEquals(cur->getOutputBindInteger("6"),1);
-	assertEquals(cur->getOutputBindDouble("7"),1.1);
+	assertEquals(cur->getOutputBindDouble("7"),1.5);
 	assertEquals(cur->getOutputBindString("8"),"hello");
 	assertEquals(cur->getOutputBindClob("9"),"clob");
 	assertEquals(cur->getOutputBindBlob("10"),"blob");

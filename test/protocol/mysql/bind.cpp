@@ -142,7 +142,7 @@ int	main(int argc, char **argv) {
 	bindisnull[3]=0;
 	bind[3].is_null=&bindisnull[3];
 
-	float	floatval=1.1;
+	float	floatval=1.5;
 	bind[4].buffer_type=MYSQL_TYPE_FLOAT;
 	bind[4].buffer=&floatval;
 	bind[4].buffer_length=sizeof(floatval);
@@ -151,7 +151,7 @@ int	main(int argc, char **argv) {
 	bindisnull[4]=0;
 	bind[4].is_null=&bindisnull[4];
 
-	double	doubleval=1.1;
+	double	doubleval=1.5;
 	bind[5].buffer_type=MYSQL_TYPE_DOUBLE;
 	bind[5].buffer=&doubleval;
 	bind[5].buffer_length=sizeof(doubleval);

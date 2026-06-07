@@ -133,8 +133,8 @@ int main(int argc, char **argv) {
 		"	testtable "
 		"values ("
 		"	1, "
-		"	1.1, "
-		"	1.1, "
+		"	1.5, "
+		"	1.5, "
 		"	1, "
 		"	'testchar1', "
 		"	'testvarchar1', "
@@ -148,8 +148,8 @@ int main(int argc, char **argv) {
 		"	testtable "
 		"values ("
 		"	2, "
-		"	2.2, "
-		"	2.2, "
+		"	2.5, "
+		"	2.5, "
 		"	2, "
 		"	'testchar2', "
 		"	'testvarchar2', "
@@ -163,8 +163,8 @@ int main(int argc, char **argv) {
 		"	testtable "
 		"values ("
 		"	3, "
-		"	3.3, "
-		"	3.3, "
+		"	3.5, "
+		"	3.5, "
 		"	3, "
 		"	'testchar3', "
 		"	'testvarchar3', "
@@ -178,8 +178,8 @@ int main(int argc, char **argv) {
 		"	testtable "
 		"values ("
 		"	4, "
-		"	4.4, "
-		"	4.4, "
+		"	4.5, "
+		"	4.5, "
 		"	4, "
 		"	'testchar4', "
 		"	'testvarchar4', "
@@ -228,8 +228,8 @@ int main(int argc, char **argv) {
 	assertTrue(sqlrcur_executeQuery(cur));
 	sqlrcur_clearBinds(cur);
 	sqlrcur_inputBindLong(cur,"1",6);
-	sqlrcur_inputBindDouble(cur,"2",6.6,4,2);
-	sqlrcur_inputBindDouble(cur,"3",6.6,4,2);
+	sqlrcur_inputBindDouble(cur,"2",6.5,4,2);
+	sqlrcur_inputBindDouble(cur,"3",6.5,4,2);
 	sqlrcur_inputBindLong(cur,"4",6);
 	sqlrcur_inputBindString(cur,"5","testchar6");
 	sqlrcur_inputBindString(cur,"6","testvarchar6");
@@ -240,8 +240,8 @@ int main(int argc, char **argv) {
 	assertTrue(sqlrcur_executeQuery(cur));
 	sqlrcur_clearBinds(cur);
 	sqlrcur_inputBindLong(cur,"1",7);
-	sqlrcur_inputBindDouble(cur,"2",7.7,4,2);
-	sqlrcur_inputBindDouble(cur,"3",7.7,4,2);
+	sqlrcur_inputBindDouble(cur,"2",7.5,4,2);
+	sqlrcur_inputBindDouble(cur,"3",7.5,4,2);
 	sqlrcur_inputBindLong(cur,"4",7);
 	sqlrcur_inputBindString(cur,"5","testchar7");
 	sqlrcur_inputBindString(cur,"6","testvarchar7");
@@ -268,8 +268,8 @@ int main(int argc, char **argv) {
 	printf("BIND BY POSITION ""WITH VALIDATION: \n");
 	sqlrcur_clearBinds(cur);
 	sqlrcur_inputBindLong(cur,"1",8);
-	sqlrcur_inputBindDouble(cur,"2",8.8,4,2);
-	sqlrcur_inputBindDouble(cur,"3",8.8,4,2);
+	sqlrcur_inputBindDouble(cur,"2",8.5,4,2);
+	sqlrcur_inputBindDouble(cur,"3",8.5,4,2);
 	sqlrcur_inputBindLong(cur,"4",8);
 	sqlrcur_inputBindString(cur,"5","testchar8");
 	sqlrcur_inputBindString(cur,"6","testvarchar8");
@@ -438,8 +438,8 @@ int main(int argc, char **argv) {
 	// fields by index
 	printf("FIELDS BY INDEX: \n");
 	assertEqStr(sqlrcur_getFieldByIndex(cur,0,0),"1");
-	assertEqStr(sqlrcur_getFieldByIndex(cur,0,1),"1.1");
-	assertEqStr(sqlrcur_getFieldByIndex(cur,0,2),"1.1");
+	assertEqStr(sqlrcur_getFieldByIndex(cur,0,1),"1.5");
+	assertEqStr(sqlrcur_getFieldByIndex(cur,0,2),"1.5");
 	assertEqStr(sqlrcur_getFieldByIndex(cur,0,3),"1");
 	assertEqStr(sqlrcur_getFieldByIndex(cur,0,4),"testchar1"
 		"                               ");
@@ -450,8 +450,8 @@ int main(int argc, char **argv) {
 	assertEqStr(sqlrcur_getFieldByIndex(cur,0,10),"testbytea1");
 	printf("\n");
 	assertEqStr(sqlrcur_getFieldByIndex(cur,7,0),"8");
-	assertEqStr(sqlrcur_getFieldByIndex(cur,7,1),"8.8");
-	assertEqStr(sqlrcur_getFieldByIndex(cur,7,2),"8.8");
+	assertEqStr(sqlrcur_getFieldByIndex(cur,7,1),"8.5");
+	assertEqStr(sqlrcur_getFieldByIndex(cur,7,2),"8.5");
 	assertEqStr(sqlrcur_getFieldByIndex(cur,7,3),"8");
 	assertEqStr(sqlrcur_getFieldByIndex(cur,7,4),"testchar8"
 		"                               ");
@@ -492,8 +492,8 @@ int main(int argc, char **argv) {
 	// fields by name
 	printf("FIELDS BY NAME: \n");
 	assertEqStr(sqlrcur_getFieldByName(cur,0,"testint"),"1");
-	assertEqStr(sqlrcur_getFieldByName(cur,0,"testfloat"),"1.1");
-	assertEqStr(sqlrcur_getFieldByName(cur,0,"testreal"),"1.1");
+	assertEqStr(sqlrcur_getFieldByName(cur,0,"testfloat"),"1.5");
+	assertEqStr(sqlrcur_getFieldByName(cur,0,"testreal"),"1.5");
 	assertEqStr(sqlrcur_getFieldByName(cur,0,"testsmallint"),"1");
 	assertEqStr(sqlrcur_getFieldByName(cur,0,"testchar"),"testchar1"
 		"                               ");
@@ -504,8 +504,8 @@ int main(int argc, char **argv) {
 	assertEqStr(sqlrcur_getFieldByName(cur,0,"testbytea"),"testbytea1");
 	printf("\n");
 	assertEqStr(sqlrcur_getFieldByName(cur,7,"testint"),"8");
-	assertEqStr(sqlrcur_getFieldByName(cur,7,"testfloat"),"8.8");
-	assertEqStr(sqlrcur_getFieldByName(cur,7,"testreal"),"8.8");
+	assertEqStr(sqlrcur_getFieldByName(cur,7,"testfloat"),"8.5");
+	assertEqStr(sqlrcur_getFieldByName(cur,7,"testreal"),"8.5");
 	assertEqStr(sqlrcur_getFieldByName(cur,7,"testsmallint"),"8");
 	assertEqStr(sqlrcur_getFieldByName(cur,7,"testchar"),"testchar8"
 		"                               ");
@@ -547,8 +547,8 @@ int main(int argc, char **argv) {
 	printf("FIELDS BY ARRAY: \n");
 	fields=sqlrcur_getRow(cur,0);
 	assertEqStr(fields[0],"1");
-	assertEqStr(fields[1],"1.1");
-	assertEqStr(fields[2],"1.1");
+	assertEqStr(fields[1],"1.5");
+	assertEqStr(fields[2],"1.5");
 	assertEqStr(fields[3],"1");
 	assertEqStr(fields[4],"testchar1""                               ");
 	assertEqStr(fields[5],"testvarchar1");
@@ -1354,7 +1354,7 @@ int main(int argc, char **argv) {
 		"	return; ""end;' language plpgsql"));
 	sqlrcur_prepareQuery(cur,"select testfunc($1,$2,$3)");
 	sqlrcur_inputBindLong(cur,"1",1);
-	sqlrcur_inputBindDouble(cur,"2",1.1,4,2);
+	sqlrcur_inputBindDouble(cur,"2",1.5,4,2);
 	sqlrcur_inputBindString(cur,"3","hello");
 	assertTrue(sqlrcur_executeQuery(cur));
 	assertTrue(sqlrcur_sendQuery(cur,"drop function "
@@ -1371,7 +1371,7 @@ int main(int argc, char **argv) {
 		"	' begin return $1; end;' ""language plpgsql"));
 	sqlrcur_prepareQuery(cur,"select * from ""testfunc($1,$2,$3)");
 	sqlrcur_inputBindLong(cur,"1",1);
-	sqlrcur_inputBindDouble(cur,"2",1.1,4,2);
+	sqlrcur_inputBindDouble(cur,"2",1.5,4,2);
 	sqlrcur_inputBindString(cur,"3","hello");
 	assertTrue(sqlrcur_executeQuery(cur));
 	assertEqStr(sqlrcur_getFieldByIndex(cur,0,0),"1");
@@ -1402,7 +1402,7 @@ int main(int argc, char **argv) {
 		"		col2 float, "
 		"		col3 bpchar) ");
 	sqlrcur_inputBindLong(cur,"1",1);
-	sqlrcur_inputBindDouble(cur,"2",1.1,4,2);
+	sqlrcur_inputBindDouble(cur,"2",1.5,4,2);
 	sqlrcur_inputBindString(cur,"3","hello");
 	assertTrue(sqlrcur_executeQuery(cur));
 	assertEqStr(sqlrcur_getFieldByIndex(cur,0,0),"1");

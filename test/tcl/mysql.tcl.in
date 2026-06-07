@@ -1472,7 +1472,7 @@ catch {$cur sendQuery "drop procedure testproc"}
 assertTrue [$cur sendQuery "create procedure testproc(in in1 int, in in2 double, in in3 varchar(20)) begin end"]
 $cur prepareQuery "call testproc(?,?,?)"
 $cur inputBind "1" 1
-$cur inputBind "2" 1.1 2 1
+$cur inputBind "2" 1.5 2 1
 $cur inputBind "3" "hello"
 assertTrue [$cur executeQuery]
 assertTrue [$cur sendQuery "drop procedure testproc"]
@@ -1485,7 +1485,7 @@ catch {$cur sendQuery "drop procedure testproc"}
 assertTrue [$cur sendQuery "create procedure testproc(in in1 int, in in2 double, in in3 varchar(20)) begin select in1; end"]
 $cur prepareQuery "call testproc(?,?,?)"
 $cur inputBind "1" 1
-$cur inputBind "2" 1.1 2 1
+$cur inputBind "2" 1.5 2 1
 $cur inputBind "3" "hello"
 assertTrue [$cur executeQuery]
 assertEqual [$cur getFieldByIndex 0 0] "1"
@@ -1499,11 +1499,11 @@ catch {$cur sendQuery "drop procedure testproc"}
 assertTrue [$cur sendQuery "create procedure testproc(in in1 int, in in2 double, in in3 varchar(20)) begin select in1, in2, in3; end"]
 $cur prepareQuery "call testproc(?,?,?)"
 $cur inputBind "1" 1
-$cur inputBind "2" 1.1 2 1
+$cur inputBind "2" 1.5 2 1
 $cur inputBind "3" "hello"
 assertTrue [$cur executeQuery]
 assertEqual [$cur getFieldByIndex 0 0] "1"
-assertEqual [$cur getFieldByIndex 0 1] "1.1"
+assertEqual [$cur getFieldByIndex 0 1] "1.5"
 assertEqual [$cur getFieldByIndex 0 2] "hello"
 assertTrue [$cur sendQuery "drop procedure testproc"]
 puts ""
@@ -1540,11 +1540,11 @@ if {$majorversion>3} {
 	assertTrue [$cur sendQuery "create procedure testproc(in in1 int, in in2 float, in in3 char(20)) begin select in1, in2, in3; end;"]
 	$cur prepareQuery "call testproc(?,?,?)"
 	$cur inputBind "1" 1
-	$cur inputBind "2" 1.1 4 2
+	$cur inputBind "2" 1.5 4 2
 	$cur inputBind "3" "hello"
 	assertTrue [$cur executeQuery]
 	assertEqual [$cur getFieldByIndex 0 0] "1"
-	assertEqual [$cur getFieldByIndex 0 1] "1.1"
+	assertEqual [$cur getFieldByIndex 0 1] "1.5"
 	assertEqual [$cur getFieldByIndex 0 2] "hello"
 	catch {$cur sendQuery "drop procedure testproc"}
 	puts ""

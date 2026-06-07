@@ -1769,7 +1769,7 @@ var {
 		"	in in3 varchar(20)) begin end"));
 	cur.prepareQuery("call testproc(?,?,?)");
 	cur.inputBind("1",1);
-	cur.inputBind("2",1.1,2,1);
+	cur.inputBind("2",1.5,2,1);
 	cur.inputBind("3","hello");
 	assertTrue(cur.executeQuery());
 	assertTrue(cur.sendQuery("drop procedure testproc"));
@@ -1789,7 +1789,7 @@ var {
 		"	select in1; end"));
 	cur.prepareQuery("call testproc(?,?,?)");
 	cur.inputBind("1",1);
-	cur.inputBind("2",1.1,2,1);
+	cur.inputBind("2",1.5,2,1);
 	cur.inputBind("3","hello");
 	assertTrue(cur.executeQuery());
 	assertEqStr(cur.getField(0,0),"1");
@@ -1811,11 +1811,11 @@ var {
 		"	in3; end"));
 	cur.prepareQuery("call testproc(?,?,?)");
 	cur.inputBind("1",1);
-	cur.inputBind("2",1.1,2,1);
+	cur.inputBind("2",1.5,2,1);
 	cur.inputBind("3","hello");
 	assertTrue(cur.executeQuery());
 	assertEqStr(cur.getField(0,0),"1");
-	assertEqStr(cur.getField(0,1),"1.1");
+	assertEqStr(cur.getField(0,1),"1.5");
 	assertEqStr(cur.getField(0,2),"hello");
 	assertTrue(cur.sendQuery("drop procedure testproc"));
 	console.log("");
@@ -1877,11 +1877,11 @@ var {
 			"	in2, in3; end;"));
 		cur.prepareQuery("call testproc(?,?,?)");
 		cur.inputBind("1",1);
-		cur.inputBind("2",1.1,4,2);
+		cur.inputBind("2",1.5,4,2);
 		cur.inputBind("3","hello");
 		assertTrue(cur.executeQuery());
 		assertEqStr(cur.getField(0,0),"1");
-		assertEqStr(cur.getField(0,1),"1.1");
+		assertEqStr(cur.getField(0,1),"1.5");
 		assertEqStr(cur.getField(0,2),"hello");
 		cur.sendQuery("drop procedure testproc");
 		console.log("");

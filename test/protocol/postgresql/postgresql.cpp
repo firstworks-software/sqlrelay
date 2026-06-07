@@ -132,7 +132,7 @@ int	main(int argc, char **argv) {
 	stdoutput.printf("\n");
 
 	stdoutput.printf("PQexec: insert\n");
-	query="insert into testtable values (1,1.1,1.1,1,'testchar1','testvarchar1','01/01/2001','01:00:00',NULL)";
+	query="insert into testtable values (1,1.5,1.5,1,'testchar1','testvarchar1','01/01/2001','01:00:00',NULL)";
 	pgresult=PQexec(pgconn,query);
 	assertEquals(PQresultStatus(pgresult),PGRES_COMMAND_OK);
 	assertEquals(PQcmdTuples(pgresult),"1");
@@ -140,12 +140,12 @@ int	main(int argc, char **argv) {
 	stdoutput.printf("\n");
 
 	stdoutput.printf("PQprepare/PQexecPrepared: insert\n");
-	//query="insert into testtable values (2,2.2,2.2,2,'testchar2','testvarchar2','01/01/2002','02:00:00',NULL)";
+	//query="insert into testtable values (2,2.5,2.5,2,'testchar2','testvarchar2','01/01/2002','02:00:00',NULL)";
 	query="insert into testtable values ($1,$2,$3,$4,$5,$6,$7,$8,$9)";
 	pgresult=PQprepare(pgconn,"",query,9,NULL);
 	assertEquals(PQresultStatus(pgresult),PGRES_COMMAND_OK);
 	PQclear(pgresult);
-	const char * const paramvalues[]={"2","2.2","2.2","2","testchar2","testvarchar2","01/01/2002","02:00:00",NULL};
+	const char * const paramvalues[]={"2","2.5","2.5","2","testchar2","testvarchar2","01/01/2002","02:00:00",NULL};
 	pgresult=PQexecPrepared(pgconn,"",9,paramvalues,NULL,NULL,0);
 	assertEquals(PQresultStatus(pgresult),PGRES_COMMAND_OK);
 	assertEquals(PQcmdTuples(pgresult),"1");
@@ -239,16 +239,16 @@ int	main(int argc, char **argv) {
 
 	stdoutput.printf("PQgetvalue:\n");
 	assertEquals(PQgetvalue(pgresult,0,0),"1");
-	assertEquals(PQgetvalue(pgresult,0,1),"1.1");
-	assertEquals(PQgetvalue(pgresult,0,2),"1.1");
+	assertEquals(PQgetvalue(pgresult,0,1),"1.5");
+	assertEquals(PQgetvalue(pgresult,0,2),"1.5");
 	assertEquals(PQgetvalue(pgresult,0,3),"1");
 	assertEquals(PQgetvalue(pgresult,0,4),"testchar1                               ");
 	assertEquals(PQgetvalue(pgresult,0,5),"testvarchar1");
 	assertEquals(PQgetvalue(pgresult,0,6),"2001-01-01");
 	assertEquals(PQgetvalue(pgresult,0,7),"01:00:00");
 	assertEquals(PQgetvalue(pgresult,1,0),"2");
-	assertEquals(PQgetvalue(pgresult,1,1),"2.2");
-	assertEquals(PQgetvalue(pgresult,1,2),"2.2");
+	assertEquals(PQgetvalue(pgresult,1,1),"2.5");
+	assertEquals(PQgetvalue(pgresult,1,2),"2.5");
 	assertEquals(PQgetvalue(pgresult,1,3),"2");
 	assertEquals(PQgetvalue(pgresult,1,4),"testchar2                               ");
 	assertEquals(PQgetvalue(pgresult,1,5),"testvarchar2");
