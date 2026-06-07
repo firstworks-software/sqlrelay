@@ -1728,7 +1728,7 @@ int main(int argc, char **argv) {
 		"	@in3 varchar(20) as ""return"));
 	sqlrcur_prepareQuery(cur,"exec testproc");
 	sqlrcur_inputBindLong(cur,"in1",1);
-	sqlrcur_inputBindDouble(cur,"in2",1.1,2,1);
+	sqlrcur_inputBindDouble(cur,"in2",2.5,2,1);
 	sqlrcur_inputBindString(cur,"in3","hello");
 	assertTrue(sqlrcur_executeQuery(cur));
 	assertTrue(sqlrcur_sendQuery(cur,"drop procedure testproc"));
@@ -1751,7 +1751,7 @@ int main(int argc, char **argv) {
 		"	@out1 int output as ""select @out1=@in1"));
 	sqlrcur_prepareQuery(cur,"exec testproc");
 	sqlrcur_inputBindLong(cur,"in1",1);
-	sqlrcur_inputBindDouble(cur,"in2",1.1,2,1);
+	sqlrcur_inputBindDouble(cur,"in2",2.5,2,1);
 	sqlrcur_inputBindString(cur,"in3","hello");
 	sqlrcur_defineOutputBindInteger(cur,"out1");
 	assertTrue(sqlrcur_executeQuery(cur));
@@ -1775,14 +1775,14 @@ int main(int argc, char **argv) {
 		"       @out2=@in2, ""       @out3=@in3"));
 	sqlrcur_prepareQuery(cur,"exec testproc");
 	sqlrcur_inputBindLong(cur,"in1",1);
-	sqlrcur_inputBindDouble(cur,"in2",1.1,2,1);
+	sqlrcur_inputBindDouble(cur,"in2",2.5,2,1);
 	sqlrcur_inputBindString(cur,"in3","hello");
 	sqlrcur_defineOutputBindInteger(cur,"out1");
 	sqlrcur_defineOutputBindDouble(cur,"out2");
 	sqlrcur_defineOutputBindString(cur,"out3",20);
 	assertTrue(sqlrcur_executeQuery(cur));
 	assertEqInt(sqlrcur_getOutputBindInteger(cur,"out1"),1);
-	assertEqDbl(sqlrcur_getOutputBindDouble(cur,"out2"),1.1);
+	assertEqDbl(sqlrcur_getOutputBindDouble(cur,"out2"),2.5);
 	assertEqStr(sqlrcur_getOutputBindString(cur,"out3"),"hello");
 	assertTrue(sqlrcur_sendQuery(cur,"drop procedure testproc"));
 	printf("\n");

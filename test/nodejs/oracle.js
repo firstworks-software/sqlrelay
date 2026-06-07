@@ -1458,7 +1458,7 @@ assertTrue(cur.sendQuery(
 	"end;"));
 cur.prepareQuery("begin testproc(:in1,:in2,:in3); end;");
 cur.inputBind("in1",1);
-cur.inputBind("in2",1.1,2,1);
+cur.inputBind("in2",2.5,2,1);
 cur.inputBind("in3","hello");
 assertTrue(cur.executeQuery());
 assertTrue(cur.sendQuery("drop procedure testproc"));
@@ -1482,7 +1482,7 @@ assertTrue(cur.sendQuery(
 	"end;"));
 cur.prepareQuery("select testproc(:in1,:in2,:in3) from dual");
 cur.inputBind("in1",1);
-cur.inputBind("in2",1.1,2,1);
+cur.inputBind("in2",2.5,2,1);
 cur.inputBind("in3","hello");
 assertTrue(cur.executeQuery());
 assertEqStr(cur.getField(0,0),"1");
@@ -1491,7 +1491,7 @@ cur.prepareQuery(
 	"	:out1:=testproc(:in1,:in2,:in3); "+
 	"end;");
 cur.inputBind("in1",1);
-cur.inputBind("in2",1.1,2,1);
+cur.inputBind("in2",2.5,2,1);
 cur.inputBind("in3","hello");
 cur.defineOutputBindInteger("out1");
 assertTrue(cur.executeQuery());
@@ -1524,14 +1524,14 @@ cur.prepareQuery(
 	"	testproc(:in1,:in2,:in3,:out1,:out2,:out3); "+
 	"end;");
 cur.inputBind("in1",1);
-cur.inputBind("in2",1.1,2,1);
+cur.inputBind("in2",2.5,2,1);
 cur.inputBind("in3","hello");
 cur.defineOutputBindInteger("out1");
 cur.defineOutputBindDouble("out2");
 cur.defineOutputBindString("out3",20);
 assertTrue(cur.executeQuery());
 assertEqInt(cur.getOutputBindInteger("out1"),1);
-assertEqDbl(cur.getOutputBindDouble("out2"),1.1);
+assertEqDbl(cur.getOutputBindDouble("out2"),2.5);
 assertEqStr(cur.getOutputBindString("out3"),"hello");
 assertTrue(cur.sendQuery("drop procedure testproc"));
 console.log("");

@@ -3489,6 +3489,60 @@ static void SQLR_ParseGuid(SQLGUID *guid,
 	guid->Data4[7]=SQLR_CharToHex(value[34])*16+SQLR_CharToHex(value[35]);
 }
 
+static SQLLEN SQLR_FixedTypeSize(SQLSMALLINT valuetype) {
+	switch (valuetype) {
+		case SQL_C_SLONG:
+		case SQL_C_LONG:
+		case SQL_C_ULONG:
+			return sizeof(int32_t);
+		case SQL_C_SSHORT:
+		case SQL_C_SHORT:
+		case SQL_C_USHORT:
+			return sizeof(int16_t);
+		case SQL_C_FLOAT:
+			return sizeof(float);
+		case SQL_C_DOUBLE:
+			return sizeof(double);
+		case SQL_C_NUMERIC:
+			return sizeof(SQL_NUMERIC_STRUCT);
+		case SQL_C_DATE:
+		case SQL_C_TYPE_DATE:
+			return sizeof(DATE_STRUCT);
+		case SQL_C_TIME:
+		case SQL_C_TYPE_TIME:
+			return sizeof(TIME_STRUCT);
+		case SQL_C_TIMESTAMP:
+		case SQL_C_TYPE_TIMESTAMP:
+			return sizeof(TIMESTAMP_STRUCT);
+		case SQL_C_INTERVAL_YEAR:
+		case SQL_C_INTERVAL_MONTH:
+		case SQL_C_INTERVAL_DAY:
+		case SQL_C_INTERVAL_HOUR:
+		case SQL_C_INTERVAL_MINUTE:
+		case SQL_C_INTERVAL_SECOND:
+		case SQL_C_INTERVAL_YEAR_TO_MONTH:
+		case SQL_C_INTERVAL_DAY_TO_HOUR:
+		case SQL_C_INTERVAL_DAY_TO_MINUTE:
+		case SQL_C_INTERVAL_DAY_TO_SECOND:
+		case SQL_C_INTERVAL_HOUR_TO_MINUTE:
+		case SQL_C_INTERVAL_HOUR_TO_SECOND:
+		case SQL_C_INTERVAL_MINUTE_TO_SECOND:
+			return sizeof(SQL_INTERVAL_STRUCT);
+		case SQL_C_BIT:
+		case SQL_C_TINYINT:
+		case SQL_C_STINYINT:
+		case SQL_C_UTINYINT:
+			return sizeof(char);
+		case SQL_C_SBIGINT:
+		case SQL_C_UBIGINT:
+			return sizeof(int64_t);
+		case SQL_C_GUID:
+			return sizeof(SQLGUID);
+		default:
+			return 0;
+	}
+}
+
 static void SQLR_FetchOutputBinds(SQLHSTMT statementhandle) {
 	debugFunction();
 
@@ -3851,6 +3905,12 @@ static void SQLR_FetchOutputBinds(SQLHSTMT statementhandle) {
 				break;
 		}
 
+		// for fixed-size types, set the indicator to the type size
+		SQLLEN	fixedsize=SQLR_FixedTypeSize(ob->valuetype);
+		if (fixedsize && ob->strlen_or_ind) {
+			*(ob->strlen_or_ind)=fixedsize;
+		}
+
 		// clean up
 		delete[] parametername;
 	}
@@ -4196,6 +4256,12 @@ static void SQLR_FetchInputOutputBinds(SQLHSTMT statementhandle) {
 			default:
 				debugPrintf("  invalue valuetype\n");
 				break;
+		}
+
+		// for fixed-size types, set the indicator to the type size
+		SQLLEN	fixedsize=SQLR_FixedTypeSize(ob->valuetype);
+		if (fixedsize && ob->strlen_or_ind) {
+			*(ob->strlen_or_ind)=fixedsize;
 		}
 
 		// clean up
@@ -13050,18 +13116,18 @@ SQLRETURN SQL_API SQLDriverConnect(SQLHDBC hdbc,
 	}
 
 	// output the updated connect string
+	// (cbconnstrin was normalized to the actual length above)
 	if (pcbconnstrout) {
-		if (cbconnstrin==SQL_NTS) {
-			*pcbconnstrout=charstring::getLength(
-						(const char *)szconnstrin);
-		} else {
-			*pcbconnstrout=cbconnstrin;
-		}
-		if (*pcbconnstrout>cbconnstroutmax) {
-			*pcbconnstrout=cbconnstroutmax;
-		}
+		*pcbconnstrout=cbconnstrin;
+	}
+	if (szconnstrout && cbconnstroutmax>0) {
+		// make sure to include the null-terminator
 		charstring::safeCopy((char *)szconnstrout,
-					*pcbconnstrout,nulltermconnstr);
+					cbconnstroutmax,
+					nulltermconnstr,cbconnstrin+1);
+		// make sure to null-terminate
+		// (even if data has to be truncated)
+		szconnstrout[cbconnstroutmax-1]='\0';
 	}
 
 	// clean up

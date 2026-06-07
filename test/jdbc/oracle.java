@@ -3194,7 +3194,7 @@ class oracle extends sqlrtest {
 			"	testproc(:in1,:in2,:in3); "+
 			"end;");
 		cstmt.setInt("in1",1);
-		cstmt.setDouble("in2",1.1);
+		cstmt.setDouble("in2",2.5);
 		cstmt.setString("in3","hello");
 		assertFalse(cstmt.execute());
 		cstmt.close();
@@ -3225,7 +3225,7 @@ class oracle extends sqlrtest {
 			"from dual");
 		assertTrue((pstmt!=null));
 		pstmt.setInt(1,1);
-		pstmt.setDouble(2,1.1);
+		pstmt.setDouble(2,2.5);
 		pstmt.setString(3,"hello");
 		rs=pstmt.executeQuery();
 		assertTrue((rs!=null));
@@ -3241,7 +3241,7 @@ class oracle extends sqlrtest {
 				"	:out1 :=testproc(:in1,:in2,:in3); "+
 				"end;");
 			cstmt.setInt("in1",1);
-			cstmt.setDouble("in2",1.1);
+			cstmt.setDouble("in2",2.5);
 			cstmt.setString("in3","hello");
 			cstmt.registerOutParameter("out1",Types.INTEGER);
 			assertFalse(cstmt.execute());
@@ -3279,14 +3279,14 @@ class oracle extends sqlrtest {
 			"		:out1,:out2,:out3); "+
 			"end;");
 		cstmt.setInt("in1",1);
-		cstmt.setDouble("in2",1.1);
+		cstmt.setDouble("in2",2.5);
 		cstmt.setString("in3","hello");
 		cstmt.registerOutParameter("out1",Types.INTEGER);
 		cstmt.registerOutParameter("out2",Types.DOUBLE);
 		cstmt.registerOutParameter("out3",Types.VARCHAR);
 		assertFalse(cstmt.execute());
 		assertEquals(cstmt.getInt("out1"),1);
-		assertEquals(cstmt.getDouble("out2"),1.1);
+		assertEquals(cstmt.getDouble("out2"),2.5);
 		assertEquals(cstmt.getString("out3"),"hello");
 		cstmt.close();
 		try {

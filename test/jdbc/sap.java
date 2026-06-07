@@ -2171,27 +2171,27 @@ class sap extends sqlrtest {
 		if (issqlrelay) {
 			cstmt=con.prepareCall("exec testproc2");
 			cstmt.setInt("in1",1);
-			cstmt.setDouble("in2",1.1);
+			cstmt.setDouble("in2",2.5);
 			cstmt.setString("in3","hello");
 			cstmt.registerOutParameter("out1",Types.INTEGER);
 			cstmt.registerOutParameter("out2",Types.DOUBLE);
 			cstmt.registerOutParameter("out3",Types.VARCHAR);
 			assertFalse(cstmt.execute());
 			assertEquals(cstmt.getInt("out1"),1);
-			assertEquals(cstmt.getDouble("out2"),1.1);
+			assertEquals(cstmt.getDouble("out2"),2.5);
 			assertEquals(cstmt.getString("out3"),"hello");
 		} else {
 			cstmt=con.prepareCall(
 				"exec testproc2 ?,?,?,?,?,?");
 			cstmt.setInt(1,1);
-			cstmt.setDouble(2,1.1);
+			cstmt.setDouble(2,2.5);
 			cstmt.setString(3,"hello");
 			cstmt.registerOutParameter(4,Types.INTEGER);
 			cstmt.registerOutParameter(5,Types.DOUBLE);
 			cstmt.registerOutParameter(6,Types.VARCHAR);
 			assertFalse(cstmt.execute());
 			assertEquals(cstmt.getInt(4),1);
-			assertEquals(cstmt.getDouble(5),1.1);
+			assertEquals(cstmt.getDouble(5),2.5);
 			assertEquals(cstmt.getString(6),"hello");
 		}
 		cstmt.close();
@@ -2223,14 +2223,14 @@ class sap extends sqlrtest {
 				"	@out3=@in3"),0);
 			cstmt=con.prepareCall("exec testproc2");
 			cstmt.setInt("in1",1);
-			cstmt.setDouble("in2",1.1);
+			cstmt.setDouble("in2",2.5);
 			cstmt.setString("in3","hello");
 			cstmt.registerOutParameter("out1",Types.INTEGER);
 			cstmt.registerOutParameter("out2",Types.DOUBLE);
 			cstmt.registerOutParameter("out3",Types.VARCHAR);
 			assertFalse(cstmt.execute());
 			assertEquals(cstmt.getInt("out1"),1);
-			assertEquals(cstmt.getDouble("out2"),1.1);
+			assertEquals(cstmt.getDouble("out2"),2.5);
 			assertEquals(cstmt.getString("out3"),"hello");
 			cstmt.close();
 			stmt.executeUpdate("drop procedure testproc2");
@@ -2264,7 +2264,7 @@ class sap extends sqlrtest {
 		if (issqlrelay) {
 			cstmt=con.prepareCall("exec testproc");
 			cstmt.setInt("in1",1);
-			cstmt.setDouble("in2",1.1);
+			cstmt.setDouble("in2",2.5);
 			cstmt.setString("in3","hello");
 			cstmt.registerOutParameter("out1",Types.INTEGER);
 			cstmt.registerOutParameter("out2",Types.DOUBLE);
@@ -2276,7 +2276,7 @@ class sap extends sqlrtest {
 			cstmt=con.prepareCall(
 				"{call testproc(?,?,?,?,?,?)}");
 			cstmt.setInt(1,1);
-			cstmt.setDouble(2,1.1);
+			cstmt.setDouble(2,2.5);
 			cstmt.setString(3,"hello");
 			cstmt.registerOutParameter(4,Types.INTEGER);
 			cstmt.registerOutParameter(5,Types.DOUBLE);

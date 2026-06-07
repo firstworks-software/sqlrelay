@@ -306,7 +306,8 @@ int main(int argc, char **argv) {
 
 
 	// SQL_ATTR_PACKET_SIZE
-	// must be set before connect and can't be read until after; set only
+	// must be set before connect and can't be read until after; the
+	// connect section reads it back
 	stdoutput.printf("  SQL_ATTR_PACKET_SIZE\n");
 	erg=SQLSetConnectAttr(dbc,SQL_ATTR_PACKET_SIZE,
 			(SQLPOINTER)(uintptr_t)2048,0);
@@ -375,6 +376,23 @@ int main(int argc, char **argv) {
 			&outcstringlen,
 			SQL_DRIVER_NOPROMPT);
 	assertSuccessDbc(dbc,erg);
+	if (issqlrelay) {
+		// the SQL Relay driver echoes the connect string back
+		assertEqualDbc(dbc,(int)outcstringlen,
+				(int)incstr.getStringLength());
+		assertEqualDbc(dbc,(const char *)outcstring,
+				incstr.getString());
+	} else {
+		// native drivers return a driver-specific completed
+		// connect string; just verify that one came back
+		assertTrueDbc(dbc,outcstringlen>0);
+		assertTrueDbc(dbc,outcstring[0]!='\0');
+	}
+	// SQL_ATTR_PACKET_SIZE was set pre-connect and can be read now
+	erg=SQLGetConnectAttr(dbc,SQL_ATTR_PACKET_SIZE,
+			(SQLPOINTER)&dbcuintval,0,&dbcstrlen);
+	assertSuccessDbc(dbc,erg);
+	assertEqualDbc(dbc,(int)dbcuintval,2048);
 	stdoutput.printf("\n");
 
 
@@ -656,6 +674,9 @@ int main(int argc, char **argv) {
 	erg=SQLGetConnectAttr(dbc,SQL_ATTR_CURRENT_CATALOG,
 			(SQLPOINTER)dbcstrinit,sizeof(dbcstrinit),&dbcstrlen);
 	assertSuccessDbc(dbc,erg);
+	// the initial catalog is the database from the connect string
+	// (named after the host)
+	assertEqualDbc(dbc,(const char *)dbcstrinit,hostname);
 	// set is a no-op for many drivers, but round-tripping the
 	// initial value should always succeed
 	erg=SQLSetConnectAttr(dbc,SQL_ATTR_CURRENT_CATALOG,
@@ -828,6 +849,8 @@ int main(int argc, char **argv) {
 				(SQLPOINTER)dbcstrinit,
 				sizeof(dbcstrinit),&dbcstrlen);
 		assertSuccessDbc(dbc,erg);
+		// the SQL Relay driver's initial translate lib is empty
+		assertEqualDbc(dbc,(const char *)dbcstrinit,"");
 		// round-trip to the initial value
 		erg=SQLSetConnectAttr(dbc,SQL_ATTR_TRANSLATE_LIB,
 				(SQLPOINTER)dbcstrinit,SQL_NTS);
@@ -1323,9 +1346,8 @@ int main(int argc, char **argv) {
 			(SQLPOINTER)strval,(SQLSMALLINT)sizeof(strval),
 			&vallen);
 	if (issqlrelay) {
-		// SQL Relay reports the user given in the connect string
-		assertTrueDbc(dbc,!charstring::compareIgnoringCase(
-						(const char *)strval,"testuser"));
+		// SQL Relay reports the login name (suser_name())
+		assertEqualDbc(dbc,(const char *)strval,"testuser");
 	} else {
 		// the native FreeTDS driver doesn't report a user name
 		assertEqualDbc(dbc,(const char *)strval,"");
@@ -1667,9 +1689,20 @@ int main(int argc, char **argv) {
 
 
 	// SQL_DRIVER_HSTMT
-	// needs a valid SQLHSTMT input; skip the call, just reference the macro
+	// driver-manager-level; pass the dm statement handle in, the
+	// underlying driver's handle (non-zero) comes back
 	stdoutput.printf("  SQL_DRIVER_HSTMT\n");
-	(void)SQL_DRIVER_HSTMT;
+	SQLHSTMT	hstmtval;
+	erg=SQLAllocHandle(SQL_HANDLE_STMT,dbc,&hstmtval);
+	assertSuccessDbc(dbc,erg);
+	handleval=(SQLULEN)hstmtval;
+	erg=SQLGetInfo(dbc,SQL_DRIVER_HSTMT,
+			(SQLPOINTER)&handleval,
+			(SQLSMALLINT)sizeof(handleval),&vallen);
+	assertSuccessDbc(dbc,erg);
+	assertTrueDbc(dbc,handleval!=0);
+	erg=SQLFreeHandle(SQL_HANDLE_STMT,hstmtval);
+	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
 
 
@@ -1935,7 +1968,11 @@ int main(int argc, char **argv) {
 
 
 	// SQL_CONVERT_FUNCTIONS
+	// (uintval is poisoned before each get in the conversion run;
+	// many expected values are identical, so a success-without-write
+	// would otherwise false-pass)
 	stdoutput.printf("  SQL_CONVERT_FUNCTIONS\n");
+	uintval=0xffffffff;
 	erg=SQLGetInfo(dbc,SQL_CONVERT_FUNCTIONS,
 			(SQLPOINTER)&uintval,
 			(SQLSMALLINT)sizeof(uintval),&vallen);
@@ -2001,6 +2038,7 @@ int main(int argc, char **argv) {
 
 	// SQL_CONVERT_BIGINT
 	stdoutput.printf("  SQL_CONVERT_BIGINT\n");
+	uintval=0xffffffff;
 	erg=SQLGetInfo(dbc,SQL_CONVERT_BIGINT,
 			(SQLPOINTER)&uintval,
 			(SQLSMALLINT)sizeof(uintval),&vallen);
@@ -2016,6 +2054,7 @@ int main(int argc, char **argv) {
 
 	// SQL_CONVERT_BINARY
 	stdoutput.printf("  SQL_CONVERT_BINARY\n");
+	uintval=0xffffffff;
 	erg=SQLGetInfo(dbc,SQL_CONVERT_BINARY,
 			(SQLPOINTER)&uintval,
 			(SQLSMALLINT)sizeof(uintval),&vallen);
@@ -2026,6 +2065,7 @@ int main(int argc, char **argv) {
 
 	// SQL_CONVERT_BIT
 	stdoutput.printf("  SQL_CONVERT_BIT\n");
+	uintval=0xffffffff;
 	erg=SQLGetInfo(dbc,SQL_CONVERT_BIT,
 			(SQLPOINTER)&uintval,
 			(SQLSMALLINT)sizeof(uintval),&vallen);
@@ -2036,6 +2076,7 @@ int main(int argc, char **argv) {
 
 	// SQL_CONVERT_CHAR
 	stdoutput.printf("  SQL_CONVERT_CHAR\n");
+	uintval=0xffffffff;
 	erg=SQLGetInfo(dbc,SQL_CONVERT_CHAR,
 			(SQLPOINTER)&uintval,
 			(SQLSMALLINT)sizeof(uintval),&vallen);
@@ -2046,6 +2087,7 @@ int main(int argc, char **argv) {
 
 	// SQL_CONVERT_DATE
 	stdoutput.printf("  SQL_CONVERT_DATE\n");
+	uintval=0xffffffff;
 	erg=SQLGetInfo(dbc,SQL_CONVERT_DATE,
 			(SQLPOINTER)&uintval,
 			(SQLSMALLINT)sizeof(uintval),&vallen);
@@ -2061,6 +2103,7 @@ int main(int argc, char **argv) {
 
 	// SQL_CONVERT_DECIMAL
 	stdoutput.printf("  SQL_CONVERT_DECIMAL\n");
+	uintval=0xffffffff;
 	erg=SQLGetInfo(dbc,SQL_CONVERT_DECIMAL,
 			(SQLPOINTER)&uintval,
 			(SQLSMALLINT)sizeof(uintval),&vallen);
@@ -2071,6 +2114,7 @@ int main(int argc, char **argv) {
 
 	// SQL_CONVERT_DOUBLE
 	stdoutput.printf("  SQL_CONVERT_DOUBLE\n");
+	uintval=0xffffffff;
 	erg=SQLGetInfo(dbc,SQL_CONVERT_DOUBLE,
 			(SQLPOINTER)&uintval,
 			(SQLSMALLINT)sizeof(uintval),&vallen);
@@ -2086,6 +2130,7 @@ int main(int argc, char **argv) {
 
 	// SQL_CONVERT_FLOAT
 	stdoutput.printf("  SQL_CONVERT_FLOAT\n");
+	uintval=0xffffffff;
 	erg=SQLGetInfo(dbc,SQL_CONVERT_FLOAT,
 			(SQLPOINTER)&uintval,
 			(SQLSMALLINT)sizeof(uintval),&vallen);
@@ -2096,6 +2141,7 @@ int main(int argc, char **argv) {
 
 	// SQL_CONVERT_INTEGER
 	stdoutput.printf("  SQL_CONVERT_INTEGER\n");
+	uintval=0xffffffff;
 	erg=SQLGetInfo(dbc,SQL_CONVERT_INTEGER,
 			(SQLPOINTER)&uintval,
 			(SQLSMALLINT)sizeof(uintval),&vallen);
@@ -2106,6 +2152,7 @@ int main(int argc, char **argv) {
 
 	// SQL_CONVERT_LONGVARCHAR
 	stdoutput.printf("  SQL_CONVERT_LONGVARCHAR\n");
+	uintval=0xffffffff;
 	erg=SQLGetInfo(dbc,SQL_CONVERT_LONGVARCHAR,
 			(SQLPOINTER)&uintval,
 			(SQLSMALLINT)sizeof(uintval),&vallen);
@@ -2116,6 +2163,7 @@ int main(int argc, char **argv) {
 
 	// SQL_CONVERT_NUMERIC
 	stdoutput.printf("  SQL_CONVERT_NUMERIC\n");
+	uintval=0xffffffff;
 	erg=SQLGetInfo(dbc,SQL_CONVERT_NUMERIC,
 			(SQLPOINTER)&uintval,
 			(SQLSMALLINT)sizeof(uintval),&vallen);
@@ -2126,6 +2174,7 @@ int main(int argc, char **argv) {
 
 	// SQL_CONVERT_REAL
 	stdoutput.printf("  SQL_CONVERT_REAL\n");
+	uintval=0xffffffff;
 	erg=SQLGetInfo(dbc,SQL_CONVERT_REAL,
 			(SQLPOINTER)&uintval,
 			(SQLSMALLINT)sizeof(uintval),&vallen);
@@ -2136,6 +2185,7 @@ int main(int argc, char **argv) {
 
 	// SQL_CONVERT_SMALLINT
 	stdoutput.printf("  SQL_CONVERT_SMALLINT\n");
+	uintval=0xffffffff;
 	erg=SQLGetInfo(dbc,SQL_CONVERT_SMALLINT,
 			(SQLPOINTER)&uintval,
 			(SQLSMALLINT)sizeof(uintval),&vallen);
@@ -2146,6 +2196,7 @@ int main(int argc, char **argv) {
 
 	// SQL_CONVERT_TIME
 	stdoutput.printf("  SQL_CONVERT_TIME\n");
+	uintval=0xffffffff;
 	erg=SQLGetInfo(dbc,SQL_CONVERT_TIME,
 			(SQLPOINTER)&uintval,
 			(SQLSMALLINT)sizeof(uintval),&vallen);
@@ -2161,6 +2212,7 @@ int main(int argc, char **argv) {
 
 	// SQL_CONVERT_TIMESTAMP
 	stdoutput.printf("  SQL_CONVERT_TIMESTAMP\n");
+	uintval=0xffffffff;
 	erg=SQLGetInfo(dbc,SQL_CONVERT_TIMESTAMP,
 			(SQLPOINTER)&uintval,
 			(SQLSMALLINT)sizeof(uintval),&vallen);
@@ -2171,6 +2223,7 @@ int main(int argc, char **argv) {
 
 	// SQL_CONVERT_TINYINT
 	stdoutput.printf("  SQL_CONVERT_TINYINT\n");
+	uintval=0xffffffff;
 	erg=SQLGetInfo(dbc,SQL_CONVERT_TINYINT,
 			(SQLPOINTER)&uintval,
 			(SQLSMALLINT)sizeof(uintval),&vallen);
@@ -2181,6 +2234,7 @@ int main(int argc, char **argv) {
 
 	// SQL_CONVERT_VARBINARY
 	stdoutput.printf("  SQL_CONVERT_VARBINARY\n");
+	uintval=0xffffffff;
 	erg=SQLGetInfo(dbc,SQL_CONVERT_VARBINARY,
 			(SQLPOINTER)&uintval,
 			(SQLSMALLINT)sizeof(uintval),&vallen);
@@ -2191,6 +2245,7 @@ int main(int argc, char **argv) {
 
 	// SQL_CONVERT_VARCHAR
 	stdoutput.printf("  SQL_CONVERT_VARCHAR\n");
+	uintval=0xffffffff;
 	erg=SQLGetInfo(dbc,SQL_CONVERT_VARCHAR,
 			(SQLPOINTER)&uintval,
 			(SQLSMALLINT)sizeof(uintval),&vallen);
@@ -2201,6 +2256,7 @@ int main(int argc, char **argv) {
 
 	// SQL_CONVERT_LONGVARBINARY
 	stdoutput.printf("  SQL_CONVERT_LONGVARBINARY\n");
+	uintval=0xffffffff;
 	erg=SQLGetInfo(dbc,SQL_CONVERT_LONGVARBINARY,
 			(SQLPOINTER)&uintval,
 			(SQLSMALLINT)sizeof(uintval),&vallen);
@@ -2212,6 +2268,7 @@ int main(int argc, char **argv) {
 	// SQL_CONVERT_GUID
 	// neither supports it; oracle returns HYT00, sqlrelay HYC00
 	stdoutput.printf("  SQL_CONVERT_GUID\n");
+	uintval=0xffffffff;
 	erg=SQLGetInfo(dbc,SQL_CONVERT_GUID,
 			(SQLPOINTER)&uintval,
 			(SQLSMALLINT)sizeof(uintval),&vallen);
@@ -2638,6 +2695,7 @@ int main(int argc, char **argv) {
 	#if (ODBCVER >= 0x0300)
 	// SQL_CONVERT_WCHAR
 	stdoutput.printf("  SQL_CONVERT_WCHAR\n");
+	uintval=0xffffffff;
 	erg=SQLGetInfo(dbc,SQL_CONVERT_WCHAR,
 			(SQLPOINTER)&uintval,
 			(SQLSMALLINT)sizeof(uintval),&vallen);
@@ -2650,6 +2708,7 @@ int main(int argc, char **argv) {
 	#if (ODBCVER >= 0x0300)
 	// SQL_CONVERT_INTERVAL_DAY_TIME
 	stdoutput.printf("  SQL_CONVERT_INTERVAL_DAY_TIME\n");
+	uintval=0xffffffff;
 	erg=SQLGetInfo(dbc,SQL_CONVERT_INTERVAL_DAY_TIME,
 			(SQLPOINTER)&uintval,
 			(SQLSMALLINT)sizeof(uintval),&vallen);
@@ -2667,6 +2726,7 @@ int main(int argc, char **argv) {
 	#if (ODBCVER >= 0x0300)
 	// SQL_CONVERT_INTERVAL_YEAR_MONTH
 	stdoutput.printf("  SQL_CONVERT_INTERVAL_YEAR_MONTH\n");
+	uintval=0xffffffff;
 	erg=SQLGetInfo(dbc,SQL_CONVERT_INTERVAL_YEAR_MONTH,
 			(SQLPOINTER)&uintval,
 			(SQLSMALLINT)sizeof(uintval),&vallen);
@@ -2684,6 +2744,7 @@ int main(int argc, char **argv) {
 	#if (ODBCVER >= 0x0300)
 	// SQL_CONVERT_WLONGVARCHAR
 	stdoutput.printf("  SQL_CONVERT_WLONGVARCHAR\n");
+	uintval=0xffffffff;
 	erg=SQLGetInfo(dbc,SQL_CONVERT_WLONGVARCHAR,
 			(SQLPOINTER)&uintval,
 			(SQLSMALLINT)sizeof(uintval),&vallen);
@@ -2696,6 +2757,7 @@ int main(int argc, char **argv) {
 	#if (ODBCVER >= 0x0300)
 	// SQL_CONVERT_WVARCHAR
 	stdoutput.printf("  SQL_CONVERT_WVARCHAR\n");
+	uintval=0xffffffff;
 	erg=SQLGetInfo(dbc,SQL_CONVERT_WVARCHAR,
 			(SQLPOINTER)&uintval,
 			(SQLSMALLINT)sizeof(uintval),&vallen);
@@ -6831,103 +6893,105 @@ int main(int argc, char **argv) {
 	// bind before prepare
 	stdoutput.printf("BIND BEFORE PREPARE: \n");
 	// FreeTDS has no support for stored-procedure output parameters (no
-	// cursor/RPC output binds), so this is disabled - same as c++/freetds.
-	#if 0
+	// cursor/RPC output binds), and ASE allows a dynamic-sql parameter
+	// only in a WHERE/SET/VALUES clause, so this uses an
+	// insert-and-select-back formulation rather than the
+	// {call testproc(?,?)} one sap.cpp uses
 	SQLFreeStmt(stmt,SQL_CLOSE);
 	SQLFreeStmt(stmt,SQL_UNBIND);
 	SQLFreeStmt(stmt,SQL_RESET_PARAMS);
-	// a procedure that converts its int input to a char output; called
-	// via the ODBC {call} escape with params bound before prepare
-	SQLExecDirect(stmt,(SQLCHAR *)"drop procedure testproc",SQL_NTS);
+	SQLExecDirect(stmt,(SQLCHAR *)"drop table testtable",SQL_NTS);
 	erg=SQLExecDirect(stmt,(SQLCHAR *)
-		"create procedure testproc "
-		"	@in1 int, "
-		"	@out1 varchar(20) output "
-		"as set @out1=convert(varchar,@in1)",
-		SQL_NTS);
+		"create table testtable (testval int)",SQL_NTS);
 	assertSuccessOrNoDataStmt(stmt,erg);
 
 	// bind, prepare, execute
 	SQLINTEGER	bbpinval=42;
 	SQLLEN		bbpinind=0;
-	SQLCHAR		bbpoutval[16]={0};
-	SQLLEN		bbpoutind=sizeof(bbpoutval);
 	erg=SQLBindParameter(stmt,1,SQL_PARAM_INPUT,
 				SQL_C_SLONG,SQL_INTEGER,
 				0,0,
 				(SQLPOINTER)&bbpinval,
 				bbpinind,&bbpinind);
 	assertSuccessStmt(stmt,erg);
-	erg=SQLBindParameter(stmt,2,SQL_PARAM_OUTPUT,
-				SQL_C_CHAR,SQL_VARCHAR,
-				sizeof(bbpoutval),0,
-				(SQLPOINTER)bbpoutval,
-				sizeof(bbpoutval),&bbpoutind);
-	assertSuccessStmt(stmt,erg);
-	erg=SQLPrepare(stmt,(SQLCHAR *)"{call testproc(?,?)}",SQL_NTS);
+	if (issqlrelay) {
+		erg=SQLPrepare(stmt,(SQLCHAR *)
+			"insert into testtable values (@1)",SQL_NTS);
+	} else {
+		erg=SQLPrepare(stmt,(SQLCHAR *)
+			"insert into testtable values (?)",SQL_NTS);
+	}
 	assertSuccessStmt(stmt,erg);
 	erg=SQLExecute(stmt);
 	assertSuccessStmt(stmt,erg);
-	assertEqualStmt(stmt,(const char *)bbpoutval,"42");
 
 	// bind, exec-direct
 	SQLFreeStmt(stmt,SQL_CLOSE);
 	SQLFreeStmt(stmt,SQL_UNBIND);
 	SQLFreeStmt(stmt,SQL_RESET_PARAMS);
 	bbpinval=99;
-	bytestring::zero(bbpoutval,sizeof(bbpoutval));
-	bbpoutind=sizeof(bbpoutval);
 	erg=SQLBindParameter(stmt,1,SQL_PARAM_INPUT,
 				SQL_C_SLONG,SQL_INTEGER,
 				0,0,
 				(SQLPOINTER)&bbpinval,
 				bbpinind,&bbpinind);
 	assertSuccessStmt(stmt,erg);
-	erg=SQLBindParameter(stmt,2,SQL_PARAM_OUTPUT,
-				SQL_C_CHAR,SQL_VARCHAR,
-				sizeof(bbpoutval),0,
-				(SQLPOINTER)bbpoutval,
-				sizeof(bbpoutval),&bbpoutind);
+	if (issqlrelay) {
+		erg=SQLExecDirect(stmt,(SQLCHAR *)
+			"insert into testtable values (@1)",SQL_NTS);
+	} else {
+		erg=SQLExecDirect(stmt,(SQLCHAR *)
+			"insert into testtable values (?)",SQL_NTS);
+	}
 	assertSuccessStmt(stmt,erg);
-	erg=SQLExecDirect(stmt,(SQLCHAR *)"{call testproc(?,?)}",SQL_NTS);
-	assertSuccessStmt(stmt,erg);
-	assertEqualStmt(stmt,(const char *)bbpoutval,"99");
+
+	// both rows made it
 	SQLFreeStmt(stmt,SQL_CLOSE);
 	SQLFreeStmt(stmt,SQL_UNBIND);
 	SQLFreeStmt(stmt,SQL_RESET_PARAMS);
-	erg=SQLExecDirect(stmt,(SQLCHAR *)"drop procedure testproc",SQL_NTS);
-	assertSuccessOrNoDataStmt(stmt,erg);
-	#endif
+	erg=SQLExecDirect(stmt,(SQLCHAR *)
+		"select testval from testtable order by testval",SQL_NTS);
+	assertSuccessStmt(stmt,erg);
+	SQLINTEGER	bbpoutval=0;
+	SQLLEN		bbpoutind=0;
+	erg=SQLBindCol(stmt,1,SQL_C_SLONG,
+			&bbpoutval,sizeof(bbpoutval),&bbpoutind);
+	assertSuccessStmt(stmt,erg);
+	erg=SQLFetch(stmt);
+	assertSuccessStmt(stmt,erg);
+	assertEqualStmt(stmt,(int)bbpoutval,42);
+	erg=SQLFetch(stmt);
+	assertSuccessStmt(stmt,erg);
+	assertEqualStmt(stmt,(int)bbpoutval,99);
+	erg=SQLFetch(stmt);
+	assertEqualStmt(stmt,(int)erg,(int)SQL_NO_DATA);
+	SQLFreeStmt(stmt,SQL_CLOSE);
+	SQLFreeStmt(stmt,SQL_UNBIND);
+	SQLFreeStmt(stmt,SQL_RESET_PARAMS);
+	erg=SQLExecDirect(stmt,(SQLCHAR *)
+		"delete from testtable",SQL_NTS);
+	assertSuccessStmt(stmt,erg);
 	stdoutput.printf("\n");
 
 
 
 	// rebinding
 	stdoutput.printf("REBINDING: \n");
-	// FreeTDS has no support for stored-procedure output parameters (no
-	// cursor/RPC output binds), so this is disabled - same as c++/freetds.
-	#if 0
+	// insert-and-select-back formulation here too, for the same
+	// reason as above; the parameter is bound once and re-executed
+	// with a new value each iteration
 	SQLFreeStmt(stmt,SQL_CLOSE);
 	SQLFreeStmt(stmt,SQL_UNBIND);
 	SQLFreeStmt(stmt,SQL_RESET_PARAMS);
-	// a procedure that copies its input to its output; re-executed with a
-	// rebound input each iteration
-	SQLExecDirect(stmt,(SQLCHAR *)"drop procedure testproc",SQL_NTS);
-	// the input parameter is declared first; sap binds rpc parameters by
-	// position, and the SQL Relay driver sends input binds before output
-	// binds, so an input-then-output signature keeps them in order
-	erg=SQLExecDirect(stmt,(SQLCHAR *)
-		"create procedure testproc "
-		"	@in1 int, "
-		"	@out1 int output "
-		"as select @out1=@in1",
-		SQL_NTS);
-	assertSuccessOrNoDataStmt(stmt,erg);
-	erg=SQLPrepare(stmt,(SQLCHAR *)"{call testproc(?,?)}",SQL_NTS);
+	if (issqlrelay) {
+		erg=SQLPrepare(stmt,(SQLCHAR *)
+			"insert into testtable values (@1)",SQL_NTS);
+	} else {
+		erg=SQLPrepare(stmt,(SQLCHAR *)
+			"insert into testtable values (?)",SQL_NTS);
+	}
 	assertSuccessStmt(stmt,erg);
-	SQLINTEGER	rebindout=0;
-	SQLLEN		rebindoutind=0;
-	SQLINTEGER	rebindin=1;
+	SQLINTEGER	rebindin=0;
 	SQLLEN		rebindinlen=sizeof(rebindin);
 	erg=SQLBindParameter(stmt,1,SQL_PARAM_INPUT,
 				SQL_C_SLONG,SQL_INTEGER,
@@ -6935,24 +6999,36 @@ int main(int argc, char **argv) {
 				(SQLPOINTER)&rebindin,
 				rebindinlen,&rebindinlen);
 	assertSuccessStmt(stmt,erg);
-	erg=SQLBindParameter(stmt,2,SQL_PARAM_OUTPUT,
-				SQL_C_SLONG,SQL_INTEGER,
-				0,0,
-				(SQLPOINTER)&rebindout,
-				sizeof(rebindout),&rebindoutind);
-	assertSuccessStmt(stmt,erg);
 	for (int rb=1; rb<=3; rb++) {
 		rebindin=rb;
 		erg=SQLExecute(stmt);
 		assertSuccessStmt(stmt,erg);
-		assertEqualStmt(stmt,(int)rebindout,rb);
 	}
+
+	// all three rows made it
 	SQLFreeStmt(stmt,SQL_CLOSE);
 	SQLFreeStmt(stmt,SQL_UNBIND);
 	SQLFreeStmt(stmt,SQL_RESET_PARAMS);
-	erg=SQLExecDirect(stmt,(SQLCHAR *)"drop procedure testproc",SQL_NTS);
+	erg=SQLExecDirect(stmt,(SQLCHAR *)
+		"select testval from testtable order by testval",SQL_NTS);
+	assertSuccessStmt(stmt,erg);
+	SQLINTEGER	rebindout=0;
+	SQLLEN		rebindoutind=0;
+	erg=SQLBindCol(stmt,1,SQL_C_SLONG,
+			&rebindout,sizeof(rebindout),&rebindoutind);
+	assertSuccessStmt(stmt,erg);
+	for (int rb=1; rb<=3; rb++) {
+		erg=SQLFetch(stmt);
+		assertSuccessStmt(stmt,erg);
+		assertEqualStmt(stmt,(int)rebindout,rb);
+	}
+	erg=SQLFetch(stmt);
+	assertEqualStmt(stmt,(int)erg,(int)SQL_NO_DATA);
+	SQLFreeStmt(stmt,SQL_CLOSE);
+	SQLFreeStmt(stmt,SQL_UNBIND);
+	SQLFreeStmt(stmt,SQL_RESET_PARAMS);
+	erg=SQLExecDirect(stmt,(SQLCHAR *)"drop table testtable",SQL_NTS);
 	assertSuccessOrNoDataStmt(stmt,erg);
-	#endif
 	stdoutput.printf("\n");
 
 

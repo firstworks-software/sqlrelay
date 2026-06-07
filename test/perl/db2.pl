@@ -1486,7 +1486,7 @@ assertTrue($cur->sendQuery(
 assertTrue($con->commit());
 $cur->prepareQuery("call testproc(?,?,?)");
 $cur->inputBind("1",1);
-$cur->inputBind("2",1.1,2,1);
+$cur->inputBind("2",2.5,2,1);
 $cur->inputBind("3","hello");
 assertTrue($cur->executeQuery());
 assertTrue($cur->sendQuery("drop procedure testproc"));
@@ -1510,7 +1510,7 @@ assertTrue($cur->sendQuery(
 assertTrue($con->commit());
 $cur->prepareQuery("select testfunc(?,?,?) from sysibm.sysdummy1");
 $cur->inputBind("1",1);
-$cur->inputBind("2",1.1,2,1);
+$cur->inputBind("2",2.5,2,1);
 $cur->inputBind("3","hello");
 assertTrue($cur->executeQuery());
 assertEquals($cur->getField(0,0),"1");
@@ -1545,7 +1545,7 @@ assertTrue($cur->sendQuery(
 assertTrue($con->commit());
 $cur->prepareQuery("call testproc(?,?,?,?,?,?,?,?,?,?)");
 $cur->inputBind("1",1);
-$cur->inputBind("2",1.1,2,1);
+$cur->inputBind("2",2.5,2,1);
 $cur->inputBind("3","hello");
 $cur->inputBindClob("4","clob",4);
 $cur->inputBindBlob("5","blob",4);
@@ -1556,7 +1556,7 @@ $cur->defineOutputBindClob("9");
 $cur->defineOutputBindBlob("10");
 assertTrue($cur->executeQuery());
 assertEquals($cur->getOutputBindInteger("6"),1);
-assertEquals($cur->getOutputBindDouble("7"),1.1);
+assertEquals($cur->getOutputBindDouble("7"),2.5);
 assertEquals($cur->getOutputBindString("8"),"hello");
 assertEquals($cur->getOutputBindClob("9"),"clob");
 assertEquals($cur->getOutputBindBlob("10"),"blob");

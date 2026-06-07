@@ -104,6 +104,10 @@
 		ordinal positions
 	postgresql connection formats doubles bound with unspecified
 		precision/scale now
+	odbc driver sets the indicator to the type size for fixed-size
+		output binds now
+	odbc driver null-terminates the SQLDriverConnect output connect
+		string now
 
 2.1.1 - added tns_admin support
 	fixed sqlr-start ... -strace ...

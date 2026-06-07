@@ -1526,7 +1526,7 @@ int main(int argc, char **argv) {
 		"end;"));
 	cur->prepareQuery("begin testproc(:in1,:in2,:in3); end;");
 	cur->inputBind("in1",1);
-	cur->inputBind("in2",1.1,2,1);
+	cur->inputBind("in2",2.5,2,1);
 	cur->inputBind("in3","hello");
 	assertTrue(cur->executeQuery());
 	assertTrue(cur->sendQuery("drop procedure testproc"));
@@ -1550,7 +1550,7 @@ int main(int argc, char **argv) {
 		"end;"));
 	cur->prepareQuery("select testproc(:in1,:in2,:in3) from dual");
 	cur->inputBind("in1",1);
-	cur->inputBind("in2",1.1,2,1);
+	cur->inputBind("in2",2.5,2,1);
 	cur->inputBind("in3","hello");
 	assertTrue(cur->executeQuery());
 	assertEquals(cur->getField(0,(uint32_t)0),"1");
@@ -1559,7 +1559,7 @@ int main(int argc, char **argv) {
 		"	:out1:=testproc(:in1,:in2,:in3); "
 		"end;");
 	cur->inputBind("in1",1);
-	cur->inputBind("in2",1.1,2,1);
+	cur->inputBind("in2",2.5,2,1);
 	cur->inputBind("in3","hello");
 	cur->defineOutputBindInteger("out1");
 	assertTrue(cur->executeQuery());
@@ -1592,14 +1592,14 @@ int main(int argc, char **argv) {
 		"	testproc(:in1,:in2,:in3,:out1,:out2,:out3); "
 		"end;");
 	cur->inputBind("in1",1);
-	cur->inputBind("in2",1.1,2,1);
+	cur->inputBind("in2",2.5,2,1);
 	cur->inputBind("in3","hello");
 	cur->defineOutputBindInteger("out1");
 	cur->defineOutputBindDouble("out2");
 	cur->defineOutputBindString("out3",20);
 	assertTrue(cur->executeQuery());
 	assertEquals(cur->getOutputBindInteger("out1"),1);
-	assertEquals(cur->getOutputBindDouble("out2"),1.1);
+	assertEquals(cur->getOutputBindDouble("out2"),2.5);
 	assertEquals(cur->getOutputBindString("out3"),"hello");
 	assertTrue(cur->sendQuery("drop procedure testproc"));
 	stdoutput.printf("\n");

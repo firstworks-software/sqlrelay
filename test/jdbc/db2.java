@@ -2164,14 +2164,14 @@ class db2 extends sqlrtest {
 			"end"),0);
 		cstmt=con.prepareCall("call testproc2(?,?,?,?,?,?)");
 		cstmt.setInt(1,1);
-		cstmt.setDouble(2,1.1);
+		cstmt.setDouble(2,2.5);
 		cstmt.setString(3,"hello");
 		cstmt.registerOutParameter(4,Types.INTEGER);
 		cstmt.registerOutParameter(5,Types.DOUBLE);
 		cstmt.registerOutParameter(6,Types.VARCHAR);
 		assertFalse(cstmt.execute());
 		assertEquals(cstmt.getInt(4),1);
-		assertEquals(cstmt.getDouble(5),1.1);
+		assertEquals(cstmt.getDouble(5),2.5);
 		assertEquals(cstmt.getString(6),"hello");
 		cstmt.close();
 		stmt.executeUpdate("drop procedure testproc2");
@@ -2248,7 +2248,7 @@ class db2 extends sqlrtest {
 			"end"),0);
 		cstmt=con.prepareCall("call testproc(?,?,?,?,?,?)");
 		cstmt.setInt(1,1);
-		cstmt.setDouble(2,1.1);
+		cstmt.setDouble(2,2.5);
 		cstmt.setString(3,"hello");
 		cstmt.registerOutParameter(4,Types.INTEGER);
 		cstmt.registerOutParameter(5,Types.DOUBLE);

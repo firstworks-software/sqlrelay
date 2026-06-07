@@ -32,4 +32,12 @@ echo "set term ^; create procedure testproc1(in1 blob) returns (out1 blob) as be
 
 isql-fb -u testuser -p testpassword '/opt/firebird/testdb.gdb' -i createscript.sql
 
+echo "drop table testtable4;" > createscript.sql
+
+isql-fb -u testuser -p testpassword '/opt/firebird/testdb.gdb' -i createscript.sql
+
+echo "create table testtable4 (testclob blob sub_type text);" > createscript.sql
+
+isql-fb -u testuser -p testpassword '/opt/firebird/testdb.gdb' -i createscript.sql
+
 rm createscript.sql

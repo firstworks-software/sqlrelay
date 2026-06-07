@@ -1287,7 +1287,7 @@ catch {$cur sendQuery "drop procedure testproc"}
 assertTrue [$cur sendQuery "create or replace procedure testproc(in1 in number, in2 in number, in3 in varchar2) is begin  return; end;"]
 $cur prepareQuery "begin testproc(:in1,:in2,:in3); end;"
 $cur inputBind "in1" 1
-$cur inputBind "in2" 1.1 2 1
+$cur inputBind "in2" 2.5 2 1
 $cur inputBind "in3" "hello"
 assertTrue [$cur executeQuery]
 assertTrue [$cur sendQuery "drop procedure testproc"]
@@ -1301,13 +1301,13 @@ catch {$cur sendQuery "drop procedure testproc"}
 assertTrue [$cur sendQuery "create or replace function testproc(in1 in number, in2 in number, in3 in varchar2) return number is begin  return in1; end;"]
 $cur prepareQuery "select testproc(:in1,:in2,:in3) from dual"
 $cur inputBind "in1" 1
-$cur inputBind "in2" 1.1 2 1
+$cur inputBind "in2" 2.5 2 1
 $cur inputBind "in3" "hello"
 assertTrue [$cur executeQuery]
 assertEqual [$cur getFieldByIndex 0 0] "1"
 $cur prepareQuery "begin  :out1:=testproc(:in1,:in2,:in3); end;"
 $cur inputBind "in1" 1
-$cur inputBind "in2" 1.1 2 1
+$cur inputBind "in2" 2.5 2 1
 $cur inputBind "in3" "hello"
 $cur defineOutputBindInteger "out1"
 assertTrue [$cur executeQuery]
@@ -1323,14 +1323,14 @@ catch {$cur sendQuery "drop procedure testproc"}
 assertTrue [$cur sendQuery "create or replace procedure testproc(in1 in number, in2 in number, in3 in varchar2, out1 out number, out2 out number, out3 out varchar2) is begin  out1:=in1;  out2:=in2;  out3:=in3; end;"]
 $cur prepareQuery "begin  testproc(:in1,:in2,:in3,:out1,:out2,:out3); end;"
 $cur inputBind "in1" 1
-$cur inputBind "in2" 1.1 2 1
+$cur inputBind "in2" 2.5 2 1
 $cur inputBind "in3" "hello"
 $cur defineOutputBindInteger "out1"
 $cur defineOutputBindDouble "out2"
 $cur defineOutputBindString "out3" 20
 assertTrue [$cur executeQuery]
 assertEqual [$cur getOutputBindInteger "out1"] 1
-assertEqual [$cur getOutputBindDouble "out2"] 1.1
+assertEqual [$cur getOutputBindDouble "out2"] 2.5
 assertEqual [$cur getOutputBindString "out3"] "hello"
 assertTrue [$cur sendQuery "drop procedure testproc"]
 puts ""

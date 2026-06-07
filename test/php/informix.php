@@ -1691,7 +1691,7 @@
 	assertTrue(sqlrcon_commit($con));
 	sqlrcur_prepareQuery($cur,"{call testproc(?,?,?)}");
 	sqlrcur_inputBind($cur,"1",1);
-	sqlrcur_inputBind($cur,"2",1.1,2,1);
+	sqlrcur_inputBind($cur,"2",2.5,2,1);
 	sqlrcur_inputBind($cur,"3","hello");
 	assertTrue(sqlrcur_executeQuery($cur));
 	assertTrue(sqlrcur_sendQuery($cur,"drop procedure testproc"));
@@ -1713,7 +1713,7 @@
 	assertTrue(sqlrcon_commit($con));
 	sqlrcur_prepareQuery($cur,"{call testproc(?,?,?,?)}");
 	sqlrcur_inputBind($cur,"1",1);
-	sqlrcur_inputBind($cur,"2",1.1,2,1);
+	sqlrcur_inputBind($cur,"2",2.5,2,1);
 	sqlrcur_inputBind($cur,"3","hello");
 	sqlrcur_defineOutputBindInteger($cur,"4");
 	assertTrue(sqlrcur_executeQuery($cur));
@@ -1741,14 +1741,14 @@
 	assertTrue(sqlrcon_commit($con));
 	sqlrcur_prepareQuery($cur,"{call testproc(?,?,?,?,?,?)}");
 	sqlrcur_inputBind($cur,"1",1);
-	sqlrcur_inputBind($cur,"2",1.1,2,1);
+	sqlrcur_inputBind($cur,"2",2.5,2,1);
 	sqlrcur_inputBind($cur,"3","hello");
 	sqlrcur_defineOutputBindInteger($cur,"4");
 	sqlrcur_defineOutputBindDouble($cur,"5");
 	sqlrcur_defineOutputBindString($cur,"6",20);
 	assertTrue(sqlrcur_executeQuery($cur));
 	assertEqInt(sqlrcur_getOutputBindInteger($cur,"4"),1);
-	assertEqDbl(sqlrcur_getOutputBindDouble($cur,"5"),1.1);
+	assertEqDbl(sqlrcur_getOutputBindDouble($cur,"5"),2.5);
 	assertEqStr(sqlrcur_getOutputBindString($cur,"6"),"hello");
 	assertTrue(sqlrcur_sendQuery($cur,"drop procedure testproc"));
 	assertTrue(sqlrcon_commit($con));

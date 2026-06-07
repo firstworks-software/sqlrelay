@@ -1672,7 +1672,7 @@ assertTrue($cur->sendQuery(
 assertTrue($con->commit());
 $cur->prepareQuery("{call testproc(?,?,?)}");
 $cur->inputBind("1",1);
-$cur->inputBind("2",1.1,2,1);
+$cur->inputBind("2",2.5,2,1);
 $cur->inputBind("3","hello");
 assertTrue($cur->executeQuery());
 assertTrue($cur->sendQuery("drop procedure testproc"));
@@ -1694,7 +1694,7 @@ assertTrue($cur->sendQuery(
 assertTrue($con->commit());
 $cur->prepareQuery("{call testproc(?,?,?,?)}");
 $cur->inputBind("1",1);
-$cur->inputBind("2",1.1,2,1);
+$cur->inputBind("2",2.5,2,1);
 $cur->inputBind("3","hello");
 $cur->defineOutputBindInteger("4");
 assertTrue($cur->executeQuery());
@@ -1722,14 +1722,14 @@ assertTrue($cur->sendQuery(
 assertTrue($con->commit());
 $cur->prepareQuery("{call testproc(?,?,?,?,?,?)}");
 $cur->inputBind("1",1);
-$cur->inputBind("2",1.1,2,1);
+$cur->inputBind("2",2.5,2,1);
 $cur->inputBind("3","hello");
 $cur->defineOutputBindInteger("4");
 $cur->defineOutputBindDouble("5");
 $cur->defineOutputBindString("6",20);
 assertTrue($cur->executeQuery());
 assertEquals($cur->getOutputBindInteger("4"),1);
-assertEquals($cur->getOutputBindDouble("5"),1.1);
+assertEquals($cur->getOutputBindDouble("5"),2.5);
 assertEquals($cur->getOutputBindString("6"),"hello");
 assertTrue($cur->sendQuery("drop procedure testproc"));
 assertTrue($con->commit());

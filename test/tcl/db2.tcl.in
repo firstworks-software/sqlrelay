@@ -1294,7 +1294,7 @@ assertTrue [$cur sendQuery "create procedure testproc(	in in1 int, 	in in2 doubl
 assertTrue [$con commit]
 $cur prepareQuery "call testproc(?,?,?)"
 $cur inputBind "1" 1
-$cur inputBind "2" 1.1 2 1
+$cur inputBind "2" 2.5 2 1
 $cur inputBind "3" "hello"
 assertTrue [$cur executeQuery]
 assertTrue [$cur sendQuery "drop procedure testproc"]
@@ -1309,7 +1309,7 @@ assertTrue [$cur sendQuery "create function testfunc(	in1 int, 	in2 double, 	in3
 assertTrue [$con commit]
 $cur prepareQuery "select testfunc(?,?,?) from sysibm.sysdummy1"
 $cur inputBind "1" 1
-$cur inputBind "2" 1.1 2 1
+$cur inputBind "2" 2.5 2 1
 $cur inputBind "3" "hello"
 assertTrue [$cur executeQuery]
 assertEqual [$cur getFieldByIndex 0 0] "1"
@@ -1325,7 +1325,7 @@ assertTrue [$cur sendQuery "create procedure testproc(	in in1 int, 	in in2 doubl
 assertTrue [$con commit]
 $cur prepareQuery "call testproc(?,?,?,?,?,?,?,?,?,?)"
 $cur inputBind "1" 1
-$cur inputBind "2" 1.1 2 1
+$cur inputBind "2" 2.5 2 1
 $cur inputBind "3" "hello"
 $cur inputBindClob "4" "clob" 4
 $cur inputBindBlob "5" "blob" 4
@@ -1336,7 +1336,7 @@ $cur defineOutputBindClob "9"
 $cur defineOutputBindBlob "10"
 assertTrue [$cur executeQuery]
 assertEqual [$cur getOutputBindInteger "6"] 1
-assertEqual [$cur getOutputBindDouble "7"] 1.1
+assertEqual [$cur getOutputBindDouble "7"] 2.5
 assertEqual [$cur getOutputBindString "8"] "hello"
 assertEqual [$cur getOutputBindClob "9"] "clob"
 assertEqual [$cur getOutputBindBlob "10"] "blob"

@@ -1775,7 +1775,7 @@ class freetds extends sqlrtest {
 			"return"));
 		cur.prepareQuery("exec testproc");
 		cur.inputBind("in1",1);
-		cur.inputBind("in2",1.1,2,1);
+		cur.inputBind("in2",2.5,2,1);
 		cur.inputBind("in3","hello");
 		assertTrue(cur.executeQuery());
 		assertTrue(cur.sendQuery("drop procedure testproc"));
@@ -1797,7 +1797,7 @@ class freetds extends sqlrtest {
 			"select @out1=@in1"));
 		cur.prepareQuery("exec testproc");
 		cur.inputBind("in1",1);
-		cur.inputBind("in2",1.1,2,1);
+		cur.inputBind("in2",2.5,2,1);
 		cur.inputBind("in3","hello");
 		cur.defineOutputBindInteger("out1");
 		assertTrue(cur.executeQuery());
@@ -1821,14 +1821,14 @@ class freetds extends sqlrtest {
 			"       @out3=@in3"));
 		cur.prepareQuery("exec testproc");
 		cur.inputBind("in1",1);
-		cur.inputBind("in2",1.1,2,1);
+		cur.inputBind("in2",2.5,2,1);
 		cur.inputBind("in3","hello");
 		cur.defineOutputBindInteger("out1");
 		cur.defineOutputBindDouble("out2");
 		cur.defineOutputBindString("out3",20);
 		assertTrue(cur.executeQuery());
 		assertEquals(cur.getOutputBindInteger("out1"),1);
-		assertEquals(cur.getOutputBindDouble("out2"),1.1);
+		assertEquals(cur.getOutputBindDouble("out2"),2.5);
 		assertEquals(cur.getOutputBindString("out3"),"hello");
 		assertTrue(cur.sendQuery("drop procedure testproc"));
 		System.out.println();

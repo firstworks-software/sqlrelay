@@ -326,7 +326,8 @@ int main(int argc, char **argv) {
 
 
 	// SQL_ATTR_PACKET_SIZE
-	// must be set before connect and can't be read until after; set only
+	// must be set before connect and can't be read until after; the
+	// connect section reads it back
 	stdoutput.printf("  SQL_ATTR_PACKET_SIZE\n");
 	erg=SQLSetConnectAttr(dbc,SQL_ATTR_PACKET_SIZE,
 			(SQLPOINTER)(uintptr_t)2048,0);
@@ -393,6 +394,30 @@ int main(int argc, char **argv) {
 			&outcstringlen,
 			SQL_DRIVER_NOPROMPT);
 	assertSuccessDbc(dbc,erg);
+	if (issqlrelay) {
+		// the SQL Relay driver echoes the connect string back
+		assertEqualDbc(dbc,(int)outcstringlen,
+				(int)incstr.getStringLength());
+		assertEqualDbc(dbc,(const char *)outcstring,
+				incstr.getString());
+	} else {
+		// the native informix driver returns an empty completed
+		// connect string
+		assertEqualDbc(dbc,(int)outcstringlen,0);
+		assertEqualDbc(dbc,(const char *)outcstring,"");
+	}
+	// SQL_ATTR_PACKET_SIZE was set pre-connect and can be read now
+	// (pass a null string-length; the native informix driver
+	// scribbles an 8-byte length through it on this call)
+	erg=SQLGetConnectAttr(dbc,SQL_ATTR_PACKET_SIZE,
+			(SQLPOINTER)&dbcuintval,0,NULL);
+	if (issqlrelay) {
+		assertSuccessDbc(dbc,erg);
+		assertEqualDbc(dbc,(int)dbcuintval,2048);
+	} else {
+		// the native informix driver can't read it back
+		assertFailureDbc(dbc,erg);
+	}
 	stdoutput.printf("\n");
 
 
@@ -686,6 +711,9 @@ int main(int argc, char **argv) {
 	erg=SQLGetConnectAttr(dbc,SQL_ATTR_CURRENT_CATALOG,
 			(SQLPOINTER)dbcstrinit,sizeof(dbcstrinit),&dbcstrlen);
 	assertSuccessDbc(dbc,erg);
+	// the initial catalog is the database from the connect string
+	// (named after the host)
+	assertEqualDbc(dbc,(const char *)dbcstrinit,hostname);
 	// set is a no-op for many drivers, but round-tripping the
 	// initial value should always succeed
 	erg=SQLSetConnectAttr(dbc,SQL_ATTR_CURRENT_CATALOG,
@@ -855,6 +883,14 @@ int main(int argc, char **argv) {
 			(SQLPOINTER)dbcstrinit,
 			sizeof(dbcstrinit),&dbcstrlen);
 	assertSuccessDbc(dbc,erg);
+	if (issqlrelay) {
+		// the SQL Relay driver's initial translate lib is empty
+		assertEqualDbc(dbc,(const char *)dbcstrinit,"");
+	} else {
+		// the native driver defaults to its gls conversion library
+		assertEqualDbc(dbc,(const char *)dbcstrinit,
+				"/opt/informix/lib//esql/igo4a304.so");
+	}
 	// round-trip to the initial value
 	erg=SQLSetConnectAttr(dbc,SQL_ATTR_TRANSLATE_LIB,
 			(SQLPOINTER)dbcstrinit,SQL_NTS);
@@ -1332,8 +1368,7 @@ int main(int argc, char **argv) {
 	erg=SQLGetInfo(dbc,SQL_USER_NAME,
 			(SQLPOINTER)strval,(SQLSMALLINT)sizeof(strval),
 			&vallen);
-	assertTrueDbc(dbc,!charstring::compareIgnoringCase(
-					(const char *)strval,"testuser"));
+	assertEqualDbc(dbc,(const char *)strval,"testuser");
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
 
@@ -1682,9 +1717,20 @@ int main(int argc, char **argv) {
 
 
 	// SQL_DRIVER_HSTMT
-	// needs a valid SQLHSTMT input; skip the call, just reference the macro
+	// driver-manager-level; pass the dm statement handle in, the
+	// underlying driver's handle (non-zero) comes back
 	stdoutput.printf("  SQL_DRIVER_HSTMT\n");
-	(void)SQL_DRIVER_HSTMT;
+	SQLHSTMT	hstmtval;
+	erg=SQLAllocHandle(SQL_HANDLE_STMT,dbc,&hstmtval);
+	assertSuccessDbc(dbc,erg);
+	handleval=(SQLULEN)hstmtval;
+	erg=SQLGetInfo(dbc,SQL_DRIVER_HSTMT,
+			(SQLPOINTER)&handleval,
+			(SQLSMALLINT)sizeof(handleval),&vallen);
+	assertSuccessDbc(dbc,erg);
+	assertTrueDbc(dbc,handleval!=0);
+	erg=SQLFreeHandle(SQL_HANDLE_STMT,hstmtval);
+	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
 
 
@@ -1993,7 +2039,11 @@ int main(int argc, char **argv) {
 
 
 	// SQL_CONVERT_FUNCTIONS
+	// (uintval is poisoned before each get in the conversion run;
+	// many expected values are identical, so a success-without-write
+	// would otherwise false-pass)
 	stdoutput.printf("  SQL_CONVERT_FUNCTIONS\n");
+	uintval=0xffffffff;
 	erg=SQLGetInfo(dbc,SQL_CONVERT_FUNCTIONS,
 			(SQLPOINTER)&uintval,
 			(SQLSMALLINT)sizeof(uintval),&vallen);
@@ -2064,6 +2114,7 @@ int main(int argc, char **argv) {
 
 	// SQL_CONVERT_BIGINT
 	stdoutput.printf("  SQL_CONVERT_BIGINT\n");
+	uintval=0xffffffff;
 	erg=SQLGetInfo(dbc,SQL_CONVERT_BIGINT,
 			(SQLPOINTER)&uintval,
 			(SQLSMALLINT)sizeof(uintval),&vallen);
@@ -2078,6 +2129,7 @@ int main(int argc, char **argv) {
 
 	// SQL_CONVERT_BINARY
 	stdoutput.printf("  SQL_CONVERT_BINARY\n");
+	uintval=0xffffffff;
 	erg=SQLGetInfo(dbc,SQL_CONVERT_BINARY,
 			(SQLPOINTER)&uintval,
 			(SQLSMALLINT)sizeof(uintval),&vallen);
@@ -2088,6 +2140,7 @@ int main(int argc, char **argv) {
 
 	// SQL_CONVERT_BIT
 	stdoutput.printf("  SQL_CONVERT_BIT\n");
+	uintval=0xffffffff;
 	erg=SQLGetInfo(dbc,SQL_CONVERT_BIT,
 			(SQLPOINTER)&uintval,
 			(SQLSMALLINT)sizeof(uintval),&vallen);
@@ -2102,6 +2155,7 @@ int main(int argc, char **argv) {
 
 	// SQL_CONVERT_CHAR
 	stdoutput.printf("  SQL_CONVERT_CHAR\n");
+	uintval=0xffffffff;
 	erg=SQLGetInfo(dbc,SQL_CONVERT_CHAR,
 			(SQLPOINTER)&uintval,
 			(SQLSMALLINT)sizeof(uintval),&vallen);
@@ -2116,6 +2170,7 @@ int main(int argc, char **argv) {
 
 	// SQL_CONVERT_DATE
 	stdoutput.printf("  SQL_CONVERT_DATE\n");
+	uintval=0xffffffff;
 	erg=SQLGetInfo(dbc,SQL_CONVERT_DATE,
 			(SQLPOINTER)&uintval,
 			(SQLSMALLINT)sizeof(uintval),&vallen);
@@ -2130,6 +2185,7 @@ int main(int argc, char **argv) {
 
 	// SQL_CONVERT_DECIMAL
 	stdoutput.printf("  SQL_CONVERT_DECIMAL\n");
+	uintval=0xffffffff;
 	erg=SQLGetInfo(dbc,SQL_CONVERT_DECIMAL,
 			(SQLPOINTER)&uintval,
 			(SQLSMALLINT)sizeof(uintval),&vallen);
@@ -2144,6 +2200,7 @@ int main(int argc, char **argv) {
 
 	// SQL_CONVERT_DOUBLE
 	stdoutput.printf("  SQL_CONVERT_DOUBLE\n");
+	uintval=0xffffffff;
 	erg=SQLGetInfo(dbc,SQL_CONVERT_DOUBLE,
 			(SQLPOINTER)&uintval,
 			(SQLSMALLINT)sizeof(uintval),&vallen);
@@ -2158,6 +2215,7 @@ int main(int argc, char **argv) {
 
 	// SQL_CONVERT_FLOAT
 	stdoutput.printf("  SQL_CONVERT_FLOAT\n");
+	uintval=0xffffffff;
 	erg=SQLGetInfo(dbc,SQL_CONVERT_FLOAT,
 			(SQLPOINTER)&uintval,
 			(SQLSMALLINT)sizeof(uintval),&vallen);
@@ -2172,6 +2230,7 @@ int main(int argc, char **argv) {
 
 	// SQL_CONVERT_INTEGER
 	stdoutput.printf("  SQL_CONVERT_INTEGER\n");
+	uintval=0xffffffff;
 	erg=SQLGetInfo(dbc,SQL_CONVERT_INTEGER,
 			(SQLPOINTER)&uintval,
 			(SQLSMALLINT)sizeof(uintval),&vallen);
@@ -2186,6 +2245,7 @@ int main(int argc, char **argv) {
 
 	// SQL_CONVERT_LONGVARCHAR
 	stdoutput.printf("  SQL_CONVERT_LONGVARCHAR\n");
+	uintval=0xffffffff;
 	erg=SQLGetInfo(dbc,SQL_CONVERT_LONGVARCHAR,
 			(SQLPOINTER)&uintval,
 			(SQLSMALLINT)sizeof(uintval),&vallen);
@@ -2196,6 +2256,7 @@ int main(int argc, char **argv) {
 
 	// SQL_CONVERT_NUMERIC
 	stdoutput.printf("  SQL_CONVERT_NUMERIC\n");
+	uintval=0xffffffff;
 	erg=SQLGetInfo(dbc,SQL_CONVERT_NUMERIC,
 			(SQLPOINTER)&uintval,
 			(SQLSMALLINT)sizeof(uintval),&vallen);
@@ -2210,6 +2271,7 @@ int main(int argc, char **argv) {
 
 	// SQL_CONVERT_REAL
 	stdoutput.printf("  SQL_CONVERT_REAL\n");
+	uintval=0xffffffff;
 	erg=SQLGetInfo(dbc,SQL_CONVERT_REAL,
 			(SQLPOINTER)&uintval,
 			(SQLSMALLINT)sizeof(uintval),&vallen);
@@ -2224,6 +2286,7 @@ int main(int argc, char **argv) {
 
 	// SQL_CONVERT_SMALLINT
 	stdoutput.printf("  SQL_CONVERT_SMALLINT\n");
+	uintval=0xffffffff;
 	erg=SQLGetInfo(dbc,SQL_CONVERT_SMALLINT,
 			(SQLPOINTER)&uintval,
 			(SQLSMALLINT)sizeof(uintval),&vallen);
@@ -2238,6 +2301,7 @@ int main(int argc, char **argv) {
 
 	// SQL_CONVERT_TIME
 	stdoutput.printf("  SQL_CONVERT_TIME\n");
+	uintval=0xffffffff;
 	erg=SQLGetInfo(dbc,SQL_CONVERT_TIME,
 			(SQLPOINTER)&uintval,
 			(SQLSMALLINT)sizeof(uintval),&vallen);
@@ -2248,6 +2312,7 @@ int main(int argc, char **argv) {
 
 	// SQL_CONVERT_TIMESTAMP
 	stdoutput.printf("  SQL_CONVERT_TIMESTAMP\n");
+	uintval=0xffffffff;
 	erg=SQLGetInfo(dbc,SQL_CONVERT_TIMESTAMP,
 			(SQLPOINTER)&uintval,
 			(SQLSMALLINT)sizeof(uintval),&vallen);
@@ -2262,6 +2327,7 @@ int main(int argc, char **argv) {
 
 	// SQL_CONVERT_TINYINT
 	stdoutput.printf("  SQL_CONVERT_TINYINT\n");
+	uintval=0xffffffff;
 	erg=SQLGetInfo(dbc,SQL_CONVERT_TINYINT,
 			(SQLPOINTER)&uintval,
 			(SQLSMALLINT)sizeof(uintval),&vallen);
@@ -2276,6 +2342,7 @@ int main(int argc, char **argv) {
 
 	// SQL_CONVERT_VARBINARY
 	stdoutput.printf("  SQL_CONVERT_VARBINARY\n");
+	uintval=0xffffffff;
 	erg=SQLGetInfo(dbc,SQL_CONVERT_VARBINARY,
 			(SQLPOINTER)&uintval,
 			(SQLSMALLINT)sizeof(uintval),&vallen);
@@ -2286,6 +2353,7 @@ int main(int argc, char **argv) {
 
 	// SQL_CONVERT_VARCHAR
 	stdoutput.printf("  SQL_CONVERT_VARCHAR\n");
+	uintval=0xffffffff;
 	erg=SQLGetInfo(dbc,SQL_CONVERT_VARCHAR,
 			(SQLPOINTER)&uintval,
 			(SQLSMALLINT)sizeof(uintval),&vallen);
@@ -2300,6 +2368,7 @@ int main(int argc, char **argv) {
 
 	// SQL_CONVERT_LONGVARBINARY
 	stdoutput.printf("  SQL_CONVERT_LONGVARBINARY\n");
+	uintval=0xffffffff;
 	erg=SQLGetInfo(dbc,SQL_CONVERT_LONGVARBINARY,
 			(SQLPOINTER)&uintval,
 			(SQLSMALLINT)sizeof(uintval),&vallen);
@@ -2311,6 +2380,7 @@ int main(int argc, char **argv) {
 	// SQL_CONVERT_GUID
 	// neither the native informix driver nor sqlrelay supports it
 	stdoutput.printf("  SQL_CONVERT_GUID\n");
+	uintval=0xffffffff;
 	erg=SQLGetInfo(dbc,SQL_CONVERT_GUID,
 			(SQLPOINTER)&uintval,
 			(SQLSMALLINT)sizeof(uintval),&vallen);
@@ -2743,6 +2813,7 @@ int main(int argc, char **argv) {
 	#if (ODBCVER >= 0x0300)
 	// SQL_CONVERT_WCHAR
 	stdoutput.printf("  SQL_CONVERT_WCHAR\n");
+	uintval=0xffffffff;
 	erg=SQLGetInfo(dbc,SQL_CONVERT_WCHAR,
 			(SQLPOINTER)&uintval,
 			(SQLSMALLINT)sizeof(uintval),&vallen);
@@ -2755,6 +2826,7 @@ int main(int argc, char **argv) {
 	#if (ODBCVER >= 0x0300)
 	// SQL_CONVERT_INTERVAL_DAY_TIME
 	stdoutput.printf("  SQL_CONVERT_INTERVAL_DAY_TIME\n");
+	uintval=0xffffffff;
 	erg=SQLGetInfo(dbc,SQL_CONVERT_INTERVAL_DAY_TIME,
 			(SQLPOINTER)&uintval,
 			(SQLSMALLINT)sizeof(uintval),&vallen);
@@ -2767,6 +2839,7 @@ int main(int argc, char **argv) {
 	#if (ODBCVER >= 0x0300)
 	// SQL_CONVERT_INTERVAL_YEAR_MONTH
 	stdoutput.printf("  SQL_CONVERT_INTERVAL_YEAR_MONTH\n");
+	uintval=0xffffffff;
 	erg=SQLGetInfo(dbc,SQL_CONVERT_INTERVAL_YEAR_MONTH,
 			(SQLPOINTER)&uintval,
 			(SQLSMALLINT)sizeof(uintval),&vallen);
@@ -2779,6 +2852,7 @@ int main(int argc, char **argv) {
 	#if (ODBCVER >= 0x0300)
 	// SQL_CONVERT_WLONGVARCHAR
 	stdoutput.printf("  SQL_CONVERT_WLONGVARCHAR\n");
+	uintval=0xffffffff;
 	erg=SQLGetInfo(dbc,SQL_CONVERT_WLONGVARCHAR,
 			(SQLPOINTER)&uintval,
 			(SQLSMALLINT)sizeof(uintval),&vallen);
@@ -2791,6 +2865,7 @@ int main(int argc, char **argv) {
 	#if (ODBCVER >= 0x0300)
 	// SQL_CONVERT_WVARCHAR
 	stdoutput.printf("  SQL_CONVERT_WVARCHAR\n");
+	uintval=0xffffffff;
 	erg=SQLGetInfo(dbc,SQL_CONVERT_WVARCHAR,
 			(SQLPOINTER)&uintval,
 			(SQLSMALLINT)sizeof(uintval),&vallen);
@@ -5518,9 +5593,9 @@ int main(int argc, char **argv) {
 	dateval.year=2002;
 	dateval.month=1;
 	dateval.day=1;
-	dateval.hour=0;
-	dateval.minute=0;
-	dateval.second=0;
+	dateval.hour=2;
+	dateval.minute=3;
+	dateval.second=4;
 	dateval.fraction=0;
 	longval=(SQLCHAR *)"testtext2";
 	charstring::copy((char *)clobval,"testclob2");
@@ -5586,9 +5661,9 @@ int main(int argc, char **argv) {
 	dateval.year=2003;
 	dateval.month=1;
 	dateval.day=1;
-	dateval.hour=0;
-	dateval.minute=0;
-	dateval.second=0;
+	dateval.hour=3;
+	dateval.minute=4;
+	dateval.second=5;
 	dateval.fraction=0;
 	longval=(SQLCHAR *)"testtext3";
 	charstring::copy((char *)clobval,"testclob3");
@@ -5686,9 +5761,9 @@ int main(int argc, char **argv) {
 	dateval.year=2004;
 	dateval.month=1;
 	dateval.day=1;
-	dateval.hour=0;
-	dateval.minute=0;
-	dateval.second=0;
+	dateval.hour=4;
+	dateval.minute=5;
+	dateval.second=6;
 	dateval.fraction=0;
 	longval=(SQLCHAR *)"testtext4";
 	charstring::copy((char *)clobval,"testclob4");
@@ -5940,6 +6015,10 @@ int main(int argc, char **argv) {
 	assertEqualStmt(stmt,(int)datefield.year,2001);
 	assertEqualStmt(stmt,(int)datefield.month,1);
 	assertEqualStmt(stmt,(int)datefield.day,1);
+	assertEqualStmt(stmt,(int)datefield.hour,1);
+	assertEqualStmt(stmt,(int)datefield.minute,0);
+	assertEqualStmt(stmt,(int)datefield.second,0);
+	assertEqualStmt(stmt,(int)datefield.fraction,0);
 	assertEqualStmt(stmt,(int)longind,9);
 	assertEqualStmt(stmt,(const char *)longfield,"testtext1");
 	assertEqualStmt(stmt,(int)clobind,9);
@@ -5961,6 +6040,10 @@ int main(int argc, char **argv) {
 	assertEqualStmt(stmt,(int)datefield.year,2002);
 	assertEqualStmt(stmt,(int)datefield.month,1);
 	assertEqualStmt(stmt,(int)datefield.day,1);
+	assertEqualStmt(stmt,(int)datefield.hour,2);
+	assertEqualStmt(stmt,(int)datefield.minute,3);
+	assertEqualStmt(stmt,(int)datefield.second,4);
+	assertEqualStmt(stmt,(int)datefield.fraction,0);
 	assertEqualStmt(stmt,(int)longind,9);
 	assertEqualStmt(stmt,(const char *)longfield,"testtext2");
 	assertEqualStmt(stmt,(int)clobind,9);
@@ -5982,6 +6065,10 @@ int main(int argc, char **argv) {
 	assertEqualStmt(stmt,(int)datefield.year,2003);
 	assertEqualStmt(stmt,(int)datefield.month,1);
 	assertEqualStmt(stmt,(int)datefield.day,1);
+	assertEqualStmt(stmt,(int)datefield.hour,3);
+	assertEqualStmt(stmt,(int)datefield.minute,4);
+	assertEqualStmt(stmt,(int)datefield.second,5);
+	assertEqualStmt(stmt,(int)datefield.fraction,0);
 	assertEqualStmt(stmt,(int)longind,9);
 	assertEqualStmt(stmt,(const char *)longfield,"testtext3");
 	assertEqualStmt(stmt,(int)clobind,9);
@@ -6003,6 +6090,10 @@ int main(int argc, char **argv) {
 	assertEqualStmt(stmt,(int)datefield.year,2004);
 	assertEqualStmt(stmt,(int)datefield.month,1);
 	assertEqualStmt(stmt,(int)datefield.day,1);
+	assertEqualStmt(stmt,(int)datefield.hour,4);
+	assertEqualStmt(stmt,(int)datefield.minute,5);
+	assertEqualStmt(stmt,(int)datefield.second,6);
+	assertEqualStmt(stmt,(int)datefield.fraction,0);
 	assertEqualStmt(stmt,(int)longind,9);
 	assertEqualStmt(stmt,(const char *)longfield,"testtext4");
 	// row 4 was SQLPutData'd with length 9, so the CLOB is genuinely
@@ -6080,6 +6171,10 @@ int main(int argc, char **argv) {
 	assertEqualStmt(stmt,(int)gdatefield.year,2001);
 	assertEqualStmt(stmt,(int)gdatefield.month,1);
 	assertEqualStmt(stmt,(int)gdatefield.day,1);
+	assertEqualStmt(stmt,(int)gdatefield.hour,1);
+	assertEqualStmt(stmt,(int)gdatefield.minute,0);
+	assertEqualStmt(stmt,(int)gdatefield.second,0);
+	assertEqualStmt(stmt,(int)gdatefield.fraction,0);
 	erg=SQLGetData(stmt,5,SQL_C_CHAR,
 			glongfield,sizeof(glongfield),&glongind);
 	assertSuccessStmt(stmt,erg);
@@ -6122,6 +6217,10 @@ int main(int argc, char **argv) {
 	assertEqualStmt(stmt,(int)gdatefield.year,2002);
 	assertEqualStmt(stmt,(int)gdatefield.month,1);
 	assertEqualStmt(stmt,(int)gdatefield.day,1);
+	assertEqualStmt(stmt,(int)gdatefield.hour,2);
+	assertEqualStmt(stmt,(int)gdatefield.minute,3);
+	assertEqualStmt(stmt,(int)gdatefield.second,4);
+	assertEqualStmt(stmt,(int)gdatefield.fraction,0);
 	erg=SQLGetData(stmt,5,SQL_C_CHAR,
 			glongfield,sizeof(glongfield),&glongind);
 	assertSuccessStmt(stmt,erg);
@@ -6164,6 +6263,10 @@ int main(int argc, char **argv) {
 	assertEqualStmt(stmt,(int)gdatefield.year,2003);
 	assertEqualStmt(stmt,(int)gdatefield.month,1);
 	assertEqualStmt(stmt,(int)gdatefield.day,1);
+	assertEqualStmt(stmt,(int)gdatefield.hour,3);
+	assertEqualStmt(stmt,(int)gdatefield.minute,4);
+	assertEqualStmt(stmt,(int)gdatefield.second,5);
+	assertEqualStmt(stmt,(int)gdatefield.fraction,0);
 	erg=SQLGetData(stmt,5,SQL_C_CHAR,
 			glongfield,sizeof(glongfield),&glongind);
 	assertSuccessStmt(stmt,erg);
@@ -6206,6 +6309,10 @@ int main(int argc, char **argv) {
 	assertEqualStmt(stmt,(int)gdatefield.year,2004);
 	assertEqualStmt(stmt,(int)gdatefield.month,1);
 	assertEqualStmt(stmt,(int)gdatefield.day,1);
+	assertEqualStmt(stmt,(int)gdatefield.hour,4);
+	assertEqualStmt(stmt,(int)gdatefield.minute,5);
+	assertEqualStmt(stmt,(int)gdatefield.second,6);
+	assertEqualStmt(stmt,(int)gdatefield.fraction,0);
 	erg=SQLGetData(stmt,5,SQL_C_CHAR,
 			glongfield,sizeof(glongfield),&glongind);
 	assertSuccessStmt(stmt,erg);
@@ -6227,6 +6334,42 @@ int main(int argc, char **argv) {
 	// no more rows
 	erg=SQLFetch(stmt);
 	assertEqualStmt(stmt,(int)erg,(int)SQL_NO_DATA);
+	stdoutput.printf("\n");
+
+
+
+	// column info - not null
+	stdoutput.printf("COLUMN INFO - not null: \n");
+	SQLFreeStmt(stmt,SQL_CLOSE);
+	SQLFreeStmt(stmt,SQL_UNBIND);
+	SQLFreeStmt(stmt,SQL_RESET_PARAMS);
+	SQLExecDirect(stmt,(SQLCHAR *)"drop table testtable2",SQL_NTS);
+	erg=SQLExecDirect(stmt,(SQLCHAR *)
+		"create table testtable2 ("
+		"	col1 int not null, "
+		"	col2 int)",
+		SQL_NTS);
+	assertSuccessStmt(stmt,erg);
+	erg=SQLExecDirect(stmt,(SQLCHAR *)
+		"insert into testtable2 values (1,1)",SQL_NTS);
+	assertSuccessStmt(stmt,erg);
+	erg=SQLExecDirect(stmt,(SQLCHAR *)
+		"select * from testtable2",SQL_NTS);
+	assertSuccessStmt(stmt,erg);
+	erg=SQLDescribeCol(stmt,1,colname,sizeof(colname),&colnamelen,
+				&datatype,&colsize,&decdigits,&nullable);
+	assertSuccessStmt(stmt,erg);
+	assertEqualStmt(stmt,(int)nullable,SQL_NO_NULLS);
+	erg=SQLDescribeCol(stmt,2,colname,sizeof(colname),&colnamelen,
+				&datatype,&colsize,&decdigits,&nullable);
+	assertSuccessStmt(stmt,erg);
+	assertEqualStmt(stmt,(int)nullable,SQL_NULLABLE);
+	SQLFreeStmt(stmt,SQL_CLOSE);
+	SQLFreeStmt(stmt,SQL_UNBIND);
+	SQLFreeStmt(stmt,SQL_RESET_PARAMS);
+	erg=SQLExecDirect(stmt,(SQLCHAR *)
+			"drop table testtable2",SQL_NTS);
+	assertSuccessStmt(stmt,erg);
 	stdoutput.printf("\n");
 
 
@@ -6801,8 +6944,11 @@ int main(int argc, char **argv) {
 	erg=SQLExecute(stmt);
 	assertSuccessStmt(stmt,erg);
 	assertEqualStmt(stmt,(int)obnumvar,1);
+	assertEqualStmt(stmt,(int)obnumvarind,(int)sizeof(SQLINTEGER));
 	assertEqualStmt(stmt,(const char *)obstringvar,"hello");
+	assertEqualStmt(stmt,(int)obstringvarind,5);
 	assertTrueStmt(stmt,obfloatvar==2.5);
+	assertEqualStmt(stmt,(int)obfloatvarind,(int)sizeof(SQLDOUBLE));
 	assertEqualStmt(stmt,(int)obnullvarind,(int)SQL_NULL_DATA);
 	SQLFreeStmt(stmt,SQL_CLOSE);
 	SQLFreeStmt(stmt,SQL_UNBIND);

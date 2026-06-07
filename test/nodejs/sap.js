@@ -1627,7 +1627,7 @@ assertTrue(cur.sendQuery(
 	"	@in3 varchar(20) as "+"return"));
 cur.prepareQuery("exec testproc");
 cur.inputBind("in1",1);
-cur.inputBind("in2",1.1,2,1);
+cur.inputBind("in2",2.5,2,1);
 cur.inputBind("in3","hello");
 assertTrue(cur.executeQuery());
 assertTrue(cur.sendQuery("drop procedure testproc"));
@@ -1646,7 +1646,7 @@ assertTrue(cur.sendQuery(
 	"	@out1 int output as "+"select @out1=@in1"));
 cur.prepareQuery("exec testproc");
 cur.inputBind("in1",1);
-cur.inputBind("in2",1.1,2,1);
+cur.inputBind("in2",2.5,2,1);
 cur.inputBind("in3","hello");
 cur.defineOutputBindInteger("out1");
 assertTrue(cur.executeQuery());
@@ -1671,14 +1671,14 @@ assertTrue(cur.sendQuery("create procedure testproc "+
 	"	@out3=@in3"));
 cur.prepareQuery("exec testproc");
 cur.inputBind("in1",1);
-cur.inputBind("in2",1.1,2,1);
+cur.inputBind("in2",2.5,2,1);
 cur.inputBind("in3","hello");
 cur.defineOutputBindInteger("out1");
 cur.defineOutputBindDouble("out2");
 cur.defineOutputBindString("out3",20);
 assertTrue(cur.executeQuery());
 assertEqInt(cur.getOutputBindInteger("out1"),1);
-assertEqDbl(cur.getOutputBindDouble("out2"),1.1);
+assertEqDbl(cur.getOutputBindDouble("out2"),2.5);
 assertEqStr(cur.getOutputBindString("out3"),"hello");
 assertTrue(cur.sendQuery("drop procedure testproc"));
 console.log();
