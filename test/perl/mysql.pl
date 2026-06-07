@@ -126,9 +126,9 @@ assertTrue($cur->sendQuery(
 	"	1, ".
 	"	1, ".
 	"	1, ".
-	"	1.1, ".
-	"	1.1, ".
-	"	1.1, ".
+	"	1.5, ".
+	"	1.5, ".
+	"	1.5, ".
 	"	'2001-01-01', ".
 	"	'01:00:00', ".
 	"	'2001-01-01 01:00:00', ".
@@ -153,9 +153,9 @@ assertTrue($cur->sendQuery(
 	"	2, ".
 	"	2, ".
 	"	2, ".
-	"	2.1, ".
-	"	2.1, ".
-	"	2.1, ".
+	"	2.5, ".
+	"	2.5, ".
+	"	2.5, ".
 	"	'2002-01-01', ".
 	"	'02:00:00', ".
 	"	'2002-01-01 02:00:00', ".
@@ -180,9 +180,9 @@ assertTrue($cur->sendQuery(
 	"	3, ".
 	"	3, ".
 	"	3, ".
-	"	3.1, ".
-	"	3.1, ".
-	"	3.1, ".
+	"	3.5, ".
+	"	3.5, ".
+	"	3.5, ".
 	"	'2003-01-01', ".
 	"	'03:00:00', ".
 	"	'2003-01-01 03:00:00', ".
@@ -207,9 +207,9 @@ assertTrue($cur->sendQuery(
 	"	4, ".
 	"	4, ".
 	"	4, ".
-	"	4.1, ".
-	"	4.1, ".
-	"	4.1, ".
+	"	4.5, ".
+	"	4.5, ".
+	"	4.5, ".
 	"	'2004-01-01', ".
 	"	'04:00:00', ".
 	"	'2004-01-01 04:00:00', ".
@@ -269,9 +269,9 @@ $cur->inputBind("2",5);
 $cur->inputBind("3",5);
 $cur->inputBind("4",5);
 $cur->inputBind("5",5);
-$cur->inputBind("6",5.1,2,1);
-$cur->inputBind("7",5.1,2,1);
-$cur->inputBind("8",5.1,2,1);
+$cur->inputBind("6",5.5,2,1);
+$cur->inputBind("7",5.5,2,1);
+$cur->inputBind("8",5.5,2,1);
 $cur->inputBind("9","2005-01-01");
 $cur->inputBind("10","05:00:00");
 $cur->inputBindDate("11",2005,1,1,5,0,0,0,undef,0);
@@ -293,9 +293,9 @@ $cur->inputBind("2",6);
 $cur->inputBind("3",6);
 $cur->inputBind("4",6);
 $cur->inputBind("5",6);
-$cur->inputBind("6",6.1,2,1);
-$cur->inputBind("7",6.1,2,1);
-$cur->inputBind("8",6.1,2,1);
+$cur->inputBind("6",6.5,2,1);
+$cur->inputBind("7",6.5,2,1);
+$cur->inputBind("8",6.5,2,1);
 $cur->inputBind("9","2006-01-01");
 $cur->inputBind("10","06:00:00");
 $cur->inputBindDate("11",2006,1,1,6,0,0,0,undef,0);
@@ -317,9 +317,9 @@ $cur->inputBind("2",7);
 $cur->inputBind("3",7);
 $cur->inputBind("4",7);
 $cur->inputBind("5",7);
-$cur->inputBind("6",7.1,2,1);
-$cur->inputBind("7",7.1,2,1);
-$cur->inputBind("8",7.1,2,1);
+$cur->inputBind("6",7.5,2,1);
+$cur->inputBind("7",7.5,2,1);
+$cur->inputBind("8",7.5,2,1);
 $cur->inputBind("9","2007-01-01");
 $cur->inputBind("10","07:00:00");
 $cur->inputBindDate("11",2007,1,1,7,0,0,0,undef,0);
@@ -351,9 +351,9 @@ $cur->inputBind("2",8);
 $cur->inputBind("3",8);
 $cur->inputBind("4",8);
 $cur->inputBind("5",8);
-$cur->inputBind("6",8.1,2,1);
-$cur->inputBind("7",8.1,2,1);
-$cur->inputBind("8",8.1,2,1);
+$cur->inputBind("6",8.5,2,1);
+$cur->inputBind("7",8.5,2,1);
+$cur->inputBind("8",8.5,2,1);
 $cur->inputBind("9","2008-01-01");
 $cur->inputBind("10","08:00:00");
 $cur->inputBindDate("11",2008,1,1,8,0,0,0,undef,0);
@@ -574,7 +574,7 @@ assertEquals($cur->getLongest(1),1);
 assertEquals($cur->getLongest(2),1);
 assertEquals($cur->getLongest(3),1);
 assertEquals($cur->getLongest(4),1);
-#assertEquals($cur->getLongest(5),3);
+assertEquals($cur->getLongest(5),3);
 assertEquals($cur->getLongest(6),3);
 assertEquals($cur->getLongest(7),3);
 assertEquals($cur->getLongest(8),10);
@@ -601,7 +601,7 @@ assertEquals($cur->getLongest("testsmallint"),1);
 assertEquals($cur->getLongest("testmediumint"),1);
 assertEquals($cur->getLongest("testint"),1);
 assertEquals($cur->getLongest("testbigint"),1);
-#assertEquals($cur->getLongest("testfloat"),3);
+assertEquals($cur->getLongest("testfloat"),3);
 assertEquals($cur->getLongest("testreal"),3);
 assertEquals($cur->getLongest("testdecimal"),3);
 assertEquals($cur->getLongest("testdate"),10);
@@ -658,9 +658,9 @@ assertEquals($cur->getField(0,1),"1");
 assertEquals($cur->getField(0,2),"1");
 assertEquals($cur->getField(0,3),"1");
 assertEquals($cur->getField(0,4),"1");
-#assertEquals($cur->getField(0,5),"1.1");
-assertEquals($cur->getField(0,6),"1.1");
-assertEquals($cur->getField(0,7),"1.1");
+assertEquals($cur->getField(0,5),"1.5");
+assertEquals($cur->getField(0,6),"1.5");
+assertEquals($cur->getField(0,7),"1.5");
 assertEquals($cur->getField(0,8),"2001-01-01");
 assertEquals($cur->getField(0,9),"01:00:00");
 assertEquals($cur->getField(0,10),"2001-01-01 01:00:00");
@@ -681,9 +681,9 @@ assertEquals($cur->getField(7,1),"8");
 assertEquals($cur->getField(7,2),"8");
 assertEquals($cur->getField(7,3),"8");
 assertEquals($cur->getField(7,4),"8");
-#assertEquals($cur->getField(7,5),"8.1");
-assertEquals($cur->getField(7,6),"8.1");
-assertEquals($cur->getField(7,7),"8.1");
+assertEquals($cur->getField(7,5),"8.5");
+assertEquals($cur->getField(7,6),"8.5");
+assertEquals($cur->getField(7,7),"8.5");
 assertEquals($cur->getField(7,8),"2008-01-01");
 assertEquals($cur->getField(7,9),"08:00:00");
 assertEquals($cur->getField(7,10),"2008-01-01 08:00:00");
@@ -708,7 +708,7 @@ assertEquals($cur->getFieldLength(0,1),1);
 assertEquals($cur->getFieldLength(0,2),1);
 assertEquals($cur->getFieldLength(0,3),1);
 assertEquals($cur->getFieldLength(0,4),1);
-#assertEquals($cur->getFieldLength(0,5),3);
+assertEquals($cur->getFieldLength(0,5),3);
 assertEquals($cur->getFieldLength(0,6),3);
 assertEquals($cur->getFieldLength(0,7),3);
 assertEquals($cur->getFieldLength(0,8),10);
@@ -731,7 +731,7 @@ assertEquals($cur->getFieldLength(7,1),1);
 assertEquals($cur->getFieldLength(7,2),1);
 assertEquals($cur->getFieldLength(7,3),1);
 assertEquals($cur->getFieldLength(7,4),1);
-#assertEquals($cur->getFieldLength(7,5),3);
+assertEquals($cur->getFieldLength(7,5),3);
 assertEquals($cur->getFieldLength(7,6),3);
 assertEquals($cur->getFieldLength(7,7),3);
 assertEquals($cur->getFieldLength(7,8),10);
@@ -758,9 +758,9 @@ assertEquals($cur->getField(0,"testsmallint"),"1");
 assertEquals($cur->getField(0,"testmediumint"),"1");
 assertEquals($cur->getField(0,"testint"),"1");
 assertEquals($cur->getField(0,"testbigint"),"1");
-#assertEquals($cur->getField(0,"testfloat"),"1.1");
-assertEquals($cur->getField(0,"testreal"),"1.1");
-assertEquals($cur->getField(0,"testdecimal"),"1.1");
+assertEquals($cur->getField(0,"testfloat"),"1.5");
+assertEquals($cur->getField(0,"testreal"),"1.5");
+assertEquals($cur->getField(0,"testdecimal"),"1.5");
 assertEquals($cur->getField(0,"testdate"),"2001-01-01");
 assertEquals($cur->getField(0,"testtime"),"01:00:00");
 assertEquals($cur->getField(0,"testdatetime"),"2001-01-01 01:00:00");
@@ -781,9 +781,9 @@ assertEquals($cur->getField(7,"testsmallint"),"8");
 assertEquals($cur->getField(7,"testmediumint"),"8");
 assertEquals($cur->getField(7,"testint"),"8");
 assertEquals($cur->getField(7,"testbigint"),"8");
-#assertEquals($cur->getField(7,"testfloat"),"8.1");
-assertEquals($cur->getField(7,"testreal"),"8.1");
-assertEquals($cur->getField(7,"testdecimal"),"8.1");
+assertEquals($cur->getField(7,"testfloat"),"8.5");
+assertEquals($cur->getField(7,"testreal"),"8.5");
+assertEquals($cur->getField(7,"testdecimal"),"8.5");
 assertEquals($cur->getField(7,"testdate"),"2008-01-01");
 assertEquals($cur->getField(7,"testtime"),"08:00:00");
 assertEquals($cur->getField(7,"testdatetime"),"2008-01-01 08:00:00");
@@ -808,7 +808,7 @@ assertEquals($cur->getFieldLength(0,"testsmallint"),1);
 assertEquals($cur->getFieldLength(0,"testmediumint"),1);
 assertEquals($cur->getFieldLength(0,"testint"),1);
 assertEquals($cur->getFieldLength(0,"testbigint"),1);
-#assertEquals($cur->getFieldLength(0,"testfloat"),3);
+assertEquals($cur->getFieldLength(0,"testfloat"),3);
 assertEquals($cur->getFieldLength(0,"testreal"),3);
 assertEquals($cur->getFieldLength(0,"testdecimal"),3);
 assertEquals($cur->getFieldLength(0,"testdate"),10);
@@ -831,7 +831,7 @@ assertEquals($cur->getFieldLength(7,"testsmallint"),1);
 assertEquals($cur->getFieldLength(7,"testmediumint"),1);
 assertEquals($cur->getFieldLength(7,"testint"),1);
 assertEquals($cur->getFieldLength(7,"testbigint"),1);
-#assertEquals($cur->getFieldLength(7,"testfloat"),3);
+assertEquals($cur->getFieldLength(7,"testfloat"),3);
 assertEquals($cur->getFieldLength(7,"testreal"),3);
 assertEquals($cur->getFieldLength(7,"testdecimal"),3);
 assertEquals($cur->getFieldLength(7,"testdate"),10);
@@ -859,9 +859,9 @@ assertEquals($fields[1],"1");
 assertEquals($fields[2],"1");
 assertEquals($fields[3],"1");
 assertEquals($fields[4],"1");
-#assertEquals($fields[5],"1.1");
-assertEquals($fields[6],"1.1");
-assertEquals($fields[7],"1.1");
+assertEquals($fields[5],"1.5");
+assertEquals($fields[6],"1.5");
+assertEquals($fields[7],"1.5");
 assertEquals($fields[8],"2001-01-01");
 assertEquals($fields[9],"01:00:00");
 assertEquals($fields[10],"2001-01-01 01:00:00");
@@ -887,7 +887,7 @@ assertEquals($fieldlens[1],1);
 assertEquals($fieldlens[2],1);
 assertEquals($fieldlens[3],1);
 assertEquals($fieldlens[4],1);
-#assertEquals($fieldlens[5],3);
+assertEquals($fieldlens[5],3);
 assertEquals($fieldlens[6],3);
 assertEquals($fieldlens[7],3);
 assertEquals($fieldlens[8],10);
@@ -1879,14 +1879,14 @@ if ($majorversion>3) {
 		"	out out2 float, ".
 		"	out out3 char(20)) ".
 		"begin ".
-		"	select 1, 1.1, 'hello' ".
+		"	select 1, 2.5, 'hello' ".
 		"		into out1, out2, out3; ".
 		"end;"));
 	assertTrue($cur->sendQuery("set \@out1=0, \@out2=0.0, \@out3=''"));
 	assertTrue($cur->sendQuery("call testproc(\@out1,\@out2,\@out3)"));
 	assertTrue($cur->sendQuery("select \@out1, \@out2, \@out3"));
 	assertEquals($cur->getField(0,0),"1");
-	#assertEquals($cur->getFieldAsDouble(0,1),1.1);
+	assertEquals($cur->getFieldAsDouble(0,1),2.5);
 	assertEquals($cur->getField(0,2),"hello");
 	$cur->sendQuery("drop procedure testproc");
 	print("\n");

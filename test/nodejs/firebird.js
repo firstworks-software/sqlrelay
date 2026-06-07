@@ -1289,7 +1289,8 @@ cur.defineOutputBindString("3",20);
 cur.defineOutputBindBlob("4");
 assertTrue(cur.executeQuery());
 assertEqInt(cur.getOutputBindInteger("1"),1);
-//assertEqDbl(cur.getOutputBindDouble("2"),1.1);
+var d=cur.getOutputBindDouble("2");
+assertTrue(d>1.09 && d<1.11);
 assertEqStr(cur.getOutputBindString("3"),
 	"hello               ");
 assertEqStr(cur.getOutputBindBlob("4"),"blob");

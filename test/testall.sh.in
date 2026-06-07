@@ -1,10 +1,17 @@
 #!/bin/sh
 
+# determine set of databases to test
+TESTDBS="@TESTDBS@"
+if ( test -n "$1" )
+then
+	TESTDBS="$1"
+fi
+
 
 # tee output to testdetails.log
 if ( test "$CHILD" != "1" )
 then
-	CHILD=1 $0 2>&1 | tee testdetails.log &
+	CHILD=1 $0 "$@" 2>&1 | tee testdetails.log &
 	PID=$!
 	wait $PID
 	exit $?
@@ -36,7 +43,7 @@ fi
 sleep 2
 
 # for each database/configuration...
-for DB in @TESTDBS@
+for DB in $TESTDBS
 do
 
 	# make sure that support for the appropriate database exists
@@ -253,7 +260,7 @@ do
 				fi
 				cd ../..
 			else
-				./test.sh $DB
+				./test.sh $DB "$2"
 			fi
 		else
 			echo

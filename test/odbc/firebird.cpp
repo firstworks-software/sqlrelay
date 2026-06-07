@@ -5180,10 +5180,10 @@ int main(int argc, char **argv) {
 		"values ("
 		"	1, "
 		"	1, "
-		"	1.1, "
-		"	1.1, "
-		"	1.1, "
-		"	1.1, "
+		"	1.5, "
+		"	1.5, "
+		"	1.5, "
+		"	1.5, "
 		"	'01-JAN-2001', "
 		"	'01:00:00', "
 		"	'testchar1', "
@@ -5212,9 +5212,9 @@ int main(int argc, char **argv) {
 
 	// input bind by position
 	stdoutput.printf("INPUT BIND BY POSITION (prepare, bind, execute): \n");
-	erg=SQLFreeStmt(stmt,SQL_CLOSE);
-	erg=SQLFreeStmt(stmt,SQL_UNBIND);
-	erg=SQLFreeStmt(stmt,SQL_RESET_PARAMS);
+	SQLFreeStmt(stmt,SQL_CLOSE);
+	SQLFreeStmt(stmt,SQL_UNBIND);
+	SQLFreeStmt(stmt,SQL_RESET_PARAMS);
 	erg=SQLPrepare(stmt,(SQLCHAR *)
 		"insert into "
 		"	testtable "
@@ -5240,7 +5240,7 @@ int main(int argc, char **argv) {
 
 	SQLINTEGER	intval;
 	SQLSMALLINT	smallintval;
-	SQLCHAR		decimalval[8];
+	SQLCHAR		*decimalval;
 	SQLDOUBLE	numericval;
 	SQLDOUBLE	floatval;
 	SQLDOUBLE	doubleval;
@@ -5265,10 +5265,10 @@ int main(int argc, char **argv) {
 	// row 2
 	intval=2;
 	smallintval=2;
-	charstring::copy((char *)decimalval,"2.20");
-	numericval=2.2;
-	floatval=2.2;
-	doubleval=2.2;
+	decimalval=(SQLCHAR *)"2.50";
+	numericval=2.5;
+	floatval=2.5;
+	doubleval=2.5;
 	dateval.year=2002;
 	dateval.month=1;
 	dateval.day=1;
@@ -5358,17 +5358,17 @@ int main(int argc, char **argv) {
 
 	// input bind by position (bind, exec-direct)
 	stdoutput.printf("INPUT BIND BY POSITION (bind, exec-direct): \n");
-	erg=SQLFreeStmt(stmt,SQL_CLOSE);
-	erg=SQLFreeStmt(stmt,SQL_UNBIND);
-	erg=SQLFreeStmt(stmt,SQL_RESET_PARAMS);
+	SQLFreeStmt(stmt,SQL_CLOSE);
+	SQLFreeStmt(stmt,SQL_UNBIND);
+	SQLFreeStmt(stmt,SQL_RESET_PARAMS);
 
 	// row 3
 	intval=3;
 	smallintval=3;
-	charstring::copy((char *)decimalval,"3.30");
-	numericval=3.3;
-	floatval=3.3;
-	doubleval=3.3;
+	decimalval=(SQLCHAR *)"3.50";
+	numericval=3.5;
+	floatval=3.5;
+	doubleval=3.5;
 	dateval.year=2003;
 	dateval.month=1;
 	dateval.day=1;
@@ -5480,9 +5480,9 @@ int main(int argc, char **argv) {
 	// input bind by position (prepare, bind, execute, putdata)
 	stdoutput.printf("INPUT BIND BY POSITION "
 			"(prepare, bind, execute, putdata): \n");
-	erg=SQLFreeStmt(stmt,SQL_CLOSE);
-	erg=SQLFreeStmt(stmt,SQL_UNBIND);
-	erg=SQLFreeStmt(stmt,SQL_RESET_PARAMS);
+	SQLFreeStmt(stmt,SQL_CLOSE);
+	SQLFreeStmt(stmt,SQL_UNBIND);
+	SQLFreeStmt(stmt,SQL_RESET_PARAMS);
 	erg=SQLPrepare(stmt,(SQLCHAR *)
 		"insert into "
 		"	testtable "
@@ -5505,10 +5505,10 @@ int main(int argc, char **argv) {
 	// row 4
 	intval=4;
 	smallintval=4;
-	charstring::copy((char *)decimalval,"4.40");
-	numericval=4.4;
-	floatval=4.4;
-	doubleval=4.4;
+	decimalval=(SQLCHAR *)"4.50";
+	numericval=4.5;
+	floatval=4.5;
+	doubleval=4.5;
 	dateval.year=2004;
 	dateval.month=1;
 	dateval.day=1;
@@ -5616,9 +5616,9 @@ int main(int argc, char **argv) {
 
 	// select
 	stdoutput.printf("SELECT: \n");
-	erg=SQLFreeStmt(stmt,SQL_CLOSE);
-	erg=SQLFreeStmt(stmt,SQL_UNBIND);
-	erg=SQLFreeStmt(stmt,SQL_RESET_PARAMS);
+	SQLFreeStmt(stmt,SQL_CLOSE);
+	SQLFreeStmt(stmt,SQL_UNBIND);
+	SQLFreeStmt(stmt,SQL_RESET_PARAMS);
 	erg=SQLExecDirect(stmt,(SQLCHAR *)
 		"select "
 		"	* "
@@ -5875,13 +5875,13 @@ int main(int argc, char **argv) {
 	assertEqualStmt(stmt,(int)fsmallintind,(int)sizeof(SQLSMALLINT));
 	assertEqualStmt(stmt,(int)fsmallintval,1);
 	assertEqualStmt(stmt,(int)fdecimalind,4);
-	assertEqualStmt(stmt,(const char *)fdecimalval,"1.10");
+	assertEqualStmt(stmt,(const char *)fdecimalval,"1.50");
 	assertEqualStmt(stmt,(int)fnumericind,4);
-	assertEqualStmt(stmt,(const char *)fnumericval,"1.10");
+	assertEqualStmt(stmt,(const char *)fnumericval,"1.50");
 	assertEqualStmt(stmt,(int)ffloatind,6);
-	assertEqualStmt(stmt,(const char *)ffloatval,"1.1000");
+	assertEqualStmt(stmt,(const char *)ffloatval,"1.5000");
 	assertEqualStmt(stmt,(int)fdoubleind,6);
-	assertEqualStmt(stmt,(const char *)fdoubleval,"1.1000");
+	assertEqualStmt(stmt,(const char *)fdoubleval,"1.5000");
 	assertEqualStmt(stmt,(int)fdateind,(int)sizeof(SQL_DATE_STRUCT));
 	assertEqualStmt(stmt,(int)fdateval.year,2001);
 	assertEqualStmt(stmt,(int)fdateval.month,1);
@@ -5904,10 +5904,10 @@ int main(int argc, char **argv) {
 	assertSuccessStmt(stmt,erg);
 	assertEqualStmt(stmt,(int)fintval,2);
 	assertEqualStmt(stmt,(int)fsmallintval,2);
-	assertEqualStmt(stmt,(const char *)fdecimalval,"2.20");
-	assertEqualStmt(stmt,(const char *)fnumericval,"2.20");
-	assertEqualStmt(stmt,(const char *)ffloatval,"2.2000");
-	assertEqualStmt(stmt,(const char *)fdoubleval,"2.2000");
+	assertEqualStmt(stmt,(const char *)fdecimalval,"2.50");
+	assertEqualStmt(stmt,(const char *)fnumericval,"2.50");
+	assertEqualStmt(stmt,(const char *)ffloatval,"2.5000");
+	assertEqualStmt(stmt,(const char *)fdoubleval,"2.5000");
 	assertEqualStmt(stmt,(int)fdateval.year,2002);
 	assertEqualStmt(stmt,(int)fdateval.month,1);
 	assertEqualStmt(stmt,(int)fdateval.day,1);
@@ -5927,10 +5927,10 @@ int main(int argc, char **argv) {
 	assertSuccessStmt(stmt,erg);
 	assertEqualStmt(stmt,(int)fintval,3);
 	assertEqualStmt(stmt,(int)fsmallintval,3);
-	assertEqualStmt(stmt,(const char *)fdecimalval,"3.30");
-	assertEqualStmt(stmt,(const char *)fnumericval,"3.30");
-	assertEqualStmt(stmt,(const char *)ffloatval,"3.3000");
-	assertEqualStmt(stmt,(const char *)fdoubleval,"3.3000");
+	assertEqualStmt(stmt,(const char *)fdecimalval,"3.50");
+	assertEqualStmt(stmt,(const char *)fnumericval,"3.50");
+	assertEqualStmt(stmt,(const char *)ffloatval,"3.5000");
+	assertEqualStmt(stmt,(const char *)fdoubleval,"3.5000");
 	assertEqualStmt(stmt,(int)fdateval.year,2003);
 	assertEqualStmt(stmt,(int)fdateval.month,1);
 	assertEqualStmt(stmt,(int)fdateval.day,1);
@@ -5949,10 +5949,10 @@ int main(int argc, char **argv) {
 	assertSuccessStmt(stmt,erg);
 	assertEqualStmt(stmt,(int)fintval,4);
 	assertEqualStmt(stmt,(int)fsmallintval,4);
-	assertEqualStmt(stmt,(const char *)fdecimalval,"4.40");
-	assertEqualStmt(stmt,(const char *)fnumericval,"4.40");
-	assertEqualStmt(stmt,(const char *)ffloatval,"4.4000");
-	assertEqualStmt(stmt,(const char *)fdoubleval,"4.4000");
+	assertEqualStmt(stmt,(const char *)fdecimalval,"4.50");
+	assertEqualStmt(stmt,(const char *)fnumericval,"4.50");
+	assertEqualStmt(stmt,(const char *)ffloatval,"4.5000");
+	assertEqualStmt(stmt,(const char *)fdoubleval,"4.5000");
 	assertEqualStmt(stmt,(int)fdateval.year,2004);
 	assertEqualStmt(stmt,(int)fdateval.month,1);
 	assertEqualStmt(stmt,(int)fdateval.day,1);
@@ -5976,9 +5976,9 @@ int main(int argc, char **argv) {
 
 	// select
 	stdoutput.printf("SELECT: \n");
-	erg=SQLFreeStmt(stmt,SQL_CLOSE);
-	erg=SQLFreeStmt(stmt,SQL_UNBIND);
-	erg=SQLFreeStmt(stmt,SQL_RESET_PARAMS);
+	SQLFreeStmt(stmt,SQL_CLOSE);
+	SQLFreeStmt(stmt,SQL_UNBIND);
+	SQLFreeStmt(stmt,SQL_RESET_PARAMS);
 	erg=SQLExecDirect(stmt,(SQLCHAR *)
 		"select "
 		"	* "
@@ -6035,19 +6035,19 @@ int main(int argc, char **argv) {
 			gdecimalval,sizeof(gdecimalval),&gdecimalind);
 	assertSuccessStmt(stmt,erg);
 	assertEqualStmt(stmt,(int)gdecimalind,4);
-	assertEqualStmt(stmt,(const char *)gdecimalval,"1.10");
+	assertEqualStmt(stmt,(const char *)gdecimalval,"1.50");
 	erg=SQLGetData(stmt,4,SQL_C_CHAR,
 			gnumericval,sizeof(gnumericval),&gnumericind);
 	assertSuccessStmt(stmt,erg);
-	assertEqualStmt(stmt,(const char *)gnumericval,"1.10");
+	assertEqualStmt(stmt,(const char *)gnumericval,"1.50");
 	erg=SQLGetData(stmt,5,SQL_C_CHAR,
 			gfloatval,sizeof(gfloatval),&gfloatind);
 	assertSuccessStmt(stmt,erg);
-	assertEqualStmt(stmt,(const char *)gfloatval,"1.1000");
+	assertEqualStmt(stmt,(const char *)gfloatval,"1.5000");
 	erg=SQLGetData(stmt,6,SQL_C_CHAR,
 			gdoubleval,sizeof(gdoubleval),&gdoubleind);
 	assertSuccessStmt(stmt,erg);
-	assertEqualStmt(stmt,(const char *)gdoubleval,"1.1000");
+	assertEqualStmt(stmt,(const char *)gdoubleval,"1.5000");
 	erg=SQLGetData(stmt,7,SQL_C_TYPE_DATE,
 			&gdateval,sizeof(gdateval),&gdateind);
 	assertSuccessStmt(stmt,erg);
@@ -6111,19 +6111,19 @@ int main(int argc, char **argv) {
 	erg=SQLGetData(stmt,3,SQL_C_CHAR,
 			gdecimalval,sizeof(gdecimalval),&gdecimalind);
 	assertSuccessStmt(stmt,erg);
-	assertEqualStmt(stmt,(const char *)gdecimalval,"4.40");
+	assertEqualStmt(stmt,(const char *)gdecimalval,"4.50");
 	erg=SQLGetData(stmt,4,SQL_C_CHAR,
 			gnumericval,sizeof(gnumericval),&gnumericind);
 	assertSuccessStmt(stmt,erg);
-	assertEqualStmt(stmt,(const char *)gnumericval,"4.40");
+	assertEqualStmt(stmt,(const char *)gnumericval,"4.50");
 	erg=SQLGetData(stmt,5,SQL_C_CHAR,
 			gfloatval,sizeof(gfloatval),&gfloatind);
 	assertSuccessStmt(stmt,erg);
-	assertEqualStmt(stmt,(const char *)gfloatval,"4.4000");
+	assertEqualStmt(stmt,(const char *)gfloatval,"4.5000");
 	erg=SQLGetData(stmt,6,SQL_C_CHAR,
 			gdoubleval,sizeof(gdoubleval),&gdoubleind);
 	assertSuccessStmt(stmt,erg);
-	assertEqualStmt(stmt,(const char *)gdoubleval,"4.4000");
+	assertEqualStmt(stmt,(const char *)gdoubleval,"4.5000");
 	erg=SQLGetData(stmt,7,SQL_C_TYPE_DATE,
 			&gdateval,sizeof(gdateval),&gdateind);
 	assertSuccessStmt(stmt,erg);
@@ -6162,8 +6162,8 @@ int main(int argc, char **argv) {
 
 	// nested selects
 	stdoutput.printf("NESTED SELECTS: \n");
-	erg=SQLFreeStmt(stmt,SQL_CLOSE);
-	erg=SQLFreeStmt(stmt,SQL_UNBIND);
+	SQLFreeStmt(stmt,SQL_CLOSE);
+	SQLFreeStmt(stmt,SQL_UNBIND);
 	// save initial SQL_ROWSET_SIZE to restore later; unixODBC's driver
 	// manager rejects a set to 0 with HY024
 	erg=SQLGetStmtAttr(stmt,SQL_ROWSET_SIZE,
@@ -6217,8 +6217,8 @@ int main(int argc, char **argv) {
 
 	// commit and rollback
 	stdoutput.printf("COMMIT AND ROLLBACK: \n");
-	erg=SQLFreeStmt(stmt,SQL_CLOSE);
-	erg=SQLFreeStmt(stmt,SQL_UNBIND);
+	SQLFreeStmt(stmt,SQL_CLOSE);
+	SQLFreeStmt(stmt,SQL_UNBIND);
 
 	// open second connection and statement
 	SQLHDBC		dbc2;
@@ -6247,6 +6247,8 @@ int main(int argc, char **argv) {
 	assertSuccessStmt(stmt2,erg);
 	erg=SQLBindCol(stmt2,1,SQL_C_SLONG,
 		&rowcount,sizeof(rowcount),&rowcountind);
+	assertSuccessStmt(stmt2,erg);
+	rowcount=-1;
 	erg=SQLFetch(stmt2);
 	assertSuccessStmt(stmt2,erg);
 	assertEqualStmt(stmt2,(int)rowcount,0);
@@ -6256,14 +6258,16 @@ int main(int argc, char **argv) {
 	assertSuccessDbc(dbc,erg);
 
 	// get row count (should be 4)
-	erg=SQLFreeStmt(stmt2,SQL_CLOSE);
-	erg=SQLFreeStmt(stmt2,SQL_UNBIND);
+	SQLFreeStmt(stmt2,SQL_CLOSE);
+	SQLFreeStmt(stmt2,SQL_UNBIND);
 	erg=SQLExecDirect(stmt2,(SQLCHAR *)
 		"select count(*) from testtable",
 		SQL_NTS);
 	assertSuccessStmt(stmt2,erg);
 	erg=SQLBindCol(stmt2,1,SQL_C_SLONG,
 		&rowcount,sizeof(rowcount),&rowcountind);
+	assertSuccessStmt(stmt2,erg);
+	rowcount=-1;
 	erg=SQLFetch(stmt2);
 	assertSuccessStmt(stmt2,erg);
 	assertEqualStmt(stmt2,(int)rowcount,4);
@@ -6279,14 +6283,16 @@ int main(int argc, char **argv) {
 	assertSuccessDbc(dbc,erg);
 
 	// get row count (should still be 4)
-	erg=SQLFreeStmt(stmt2,SQL_CLOSE);
-	erg=SQLFreeStmt(stmt2,SQL_UNBIND);
+	SQLFreeStmt(stmt2,SQL_CLOSE);
+	SQLFreeStmt(stmt2,SQL_UNBIND);
 	erg=SQLExecDirect(stmt2,(SQLCHAR *)
 		"select count(*) from testtable",
 		SQL_NTS);
 	assertSuccessStmt(stmt2,erg);
 	erg=SQLBindCol(stmt2,1,SQL_C_SLONG,
 		&rowcount,sizeof(rowcount),&rowcountind);
+	assertSuccessStmt(stmt2,erg);
+	rowcount=-1;
 	erg=SQLFetch(stmt2);
 	assertSuccessStmt(stmt2,erg);
 	assertEqualStmt(stmt2,(int)rowcount,4);
@@ -6303,14 +6309,16 @@ int main(int argc, char **argv) {
 	assertSuccessStmt(stmt,erg);
 
 	// get row count (should be 5)
-	erg=SQLFreeStmt(stmt2,SQL_CLOSE);
-	erg=SQLFreeStmt(stmt2,SQL_UNBIND);
+	SQLFreeStmt(stmt2,SQL_CLOSE);
+	SQLFreeStmt(stmt2,SQL_UNBIND);
 	erg=SQLExecDirect(stmt2,(SQLCHAR *)
 		"select count(*) from testtable",
 		SQL_NTS);
 	assertSuccessStmt(stmt2,erg);
 	erg=SQLBindCol(stmt2,1,SQL_C_SLONG,
 		&rowcount,sizeof(rowcount),&rowcountind);
+	assertSuccessStmt(stmt2,erg);
+	rowcount=-1;
 	erg=SQLFetch(stmt2);
 	assertSuccessStmt(stmt2,erg);
 	assertEqualStmt(stmt2,(int)rowcount,5);
@@ -6331,8 +6339,8 @@ int main(int argc, char **argv) {
 
 	// null values
 	stdoutput.printf("NULL VALUES: \n");
-	erg=SQLFreeStmt(stmt,SQL_CLOSE);
-	erg=SQLFreeStmt(stmt,SQL_UNBIND);
+	SQLFreeStmt(stmt,SQL_CLOSE);
+	SQLFreeStmt(stmt,SQL_UNBIND);
 	erg=SQLExecDirect(stmt,(SQLCHAR *)
 		"select NULL,1,NULL from rdb$database",
 		SQL_NTS);
@@ -6345,10 +6353,13 @@ int main(int argc, char **argv) {
 	SQLLEN		nullind2;
 	erg=SQLBindCol(stmt,1,SQL_C_CHAR,
 			nullfield1,sizeof(nullfield1),&nullind1);
+	assertSuccessStmt(stmt,erg);
 	erg=SQLBindCol(stmt,2,SQL_C_SLONG,
 			&intfield,sizeof(intfield),&intind);
+	assertSuccessStmt(stmt,erg);
 	erg=SQLBindCol(stmt,3,SQL_C_CHAR,
 			nullfield2,sizeof(nullfield2),&nullind2);
+	assertSuccessStmt(stmt,erg);
 	erg=SQLFetch(stmt);
 	assertSuccessStmt(stmt,erg);
 	assertEqualStmt(stmt,(int)nullind1,(int)SQL_NULL_DATA);
@@ -6360,9 +6371,9 @@ int main(int argc, char **argv) {
 
 	// null and empty lobs
 	stdoutput.printf("NULL AND EMPTY LOBS: \n");
-	erg=SQLFreeStmt(stmt,SQL_CLOSE);
-	erg=SQLFreeStmt(stmt,SQL_UNBIND);
-	erg=SQLFreeStmt(stmt,SQL_RESET_PARAMS);
+	SQLFreeStmt(stmt,SQL_CLOSE);
+	SQLFreeStmt(stmt,SQL_UNBIND);
+	SQLFreeStmt(stmt,SQL_RESET_PARAMS);
 	SQLExecDirect(stmt,(SQLCHAR *)"delete from testtable1",SQL_NTS);
 	// empty blob
 	erg=SQLPrepare(stmt,(SQLCHAR *)
@@ -6379,9 +6390,9 @@ int main(int argc, char **argv) {
 	assertSuccessStmt(stmt,erg);
 	erg=SQLExecute(stmt);
 	assertSuccessStmt(stmt,erg);
-	erg=SQLFreeStmt(stmt,SQL_CLOSE);
-	erg=SQLFreeStmt(stmt,SQL_UNBIND);
-	erg=SQLFreeStmt(stmt,SQL_RESET_PARAMS);
+	SQLFreeStmt(stmt,SQL_CLOSE);
+	SQLFreeStmt(stmt,SQL_UNBIND);
+	SQLFreeStmt(stmt,SQL_RESET_PARAMS);
 	erg=SQLExecDirect(stmt,(SQLCHAR *)
 		"select testblob from testtable1",SQL_NTS);
 	assertSuccessStmt(stmt,erg);
@@ -6389,13 +6400,14 @@ int main(int argc, char **argv) {
 	SQLLEN		lobind;
 	erg=SQLBindCol(stmt,1,SQL_C_BINARY,
 			lobfield,sizeof(lobfield),&lobind);
+	assertSuccessStmt(stmt,erg);
 	erg=SQLFetch(stmt);
 	assertSuccessStmt(stmt,erg);
 	// firebird preserves the empty-vs-NULL distinction for blobs
 	assertEqualStmt(stmt,(int)lobind,0);
-	erg=SQLFreeStmt(stmt,SQL_CLOSE);
-	erg=SQLFreeStmt(stmt,SQL_UNBIND);
-	erg=SQLFreeStmt(stmt,SQL_RESET_PARAMS);
+	SQLFreeStmt(stmt,SQL_CLOSE);
+	SQLFreeStmt(stmt,SQL_UNBIND);
+	SQLFreeStmt(stmt,SQL_RESET_PARAMS);
 	SQLExecDirect(stmt,(SQLCHAR *)"delete from testtable1",SQL_NTS);
 	// null blob
 	erg=SQLPrepare(stmt,(SQLCHAR *)
@@ -6411,20 +6423,21 @@ int main(int argc, char **argv) {
 	assertSuccessStmt(stmt,erg);
 	erg=SQLExecute(stmt);
 	assertSuccessStmt(stmt,erg);
-	erg=SQLFreeStmt(stmt,SQL_CLOSE);
-	erg=SQLFreeStmt(stmt,SQL_UNBIND);
-	erg=SQLFreeStmt(stmt,SQL_RESET_PARAMS);
+	SQLFreeStmt(stmt,SQL_CLOSE);
+	SQLFreeStmt(stmt,SQL_UNBIND);
+	SQLFreeStmt(stmt,SQL_RESET_PARAMS);
 	erg=SQLExecDirect(stmt,(SQLCHAR *)
 		"select testblob from testtable1",SQL_NTS);
 	assertSuccessStmt(stmt,erg);
 	erg=SQLBindCol(stmt,1,SQL_C_BINARY,
 			lobfield,sizeof(lobfield),&lobind);
+	assertSuccessStmt(stmt,erg);
 	erg=SQLFetch(stmt);
 	assertSuccessStmt(stmt,erg);
 	assertEqualStmt(stmt,(int)lobind,(int)SQL_NULL_DATA);
-	erg=SQLFreeStmt(stmt,SQL_CLOSE);
-	erg=SQLFreeStmt(stmt,SQL_UNBIND);
-	erg=SQLFreeStmt(stmt,SQL_RESET_PARAMS);
+	SQLFreeStmt(stmt,SQL_CLOSE);
+	SQLFreeStmt(stmt,SQL_UNBIND);
+	SQLFreeStmt(stmt,SQL_RESET_PARAMS);
 	SQLExecDirect(stmt,(SQLCHAR *)"delete from testtable1",SQL_NTS);
 	stdoutput.printf("\n");
 
@@ -6432,9 +6445,9 @@ int main(int argc, char **argv) {
 
 	// long lobs (prepare, bind, execute)
 	stdoutput.printf("LONG LOBS (prepare, bind, execute): \n");
-	erg=SQLFreeStmt(stmt,SQL_CLOSE);
-	erg=SQLFreeStmt(stmt,SQL_UNBIND);
-	erg=SQLFreeStmt(stmt,SQL_RESET_PARAMS);
+	SQLFreeStmt(stmt,SQL_CLOSE);
+	SQLFreeStmt(stmt,SQL_UNBIND);
+	SQLFreeStmt(stmt,SQL_RESET_PARAMS);
 	SQLExecDirect(stmt,(SQLCHAR *)"delete from testtable1",SQL_NTS);
 	for (int i=0; i<LARGE_BUFFER_LENGTH; i++) {
 		largebuffer[i]='C';
@@ -6453,9 +6466,9 @@ int main(int argc, char **argv) {
 	assertSuccessStmt(stmt,erg);
 	erg=SQLExecute(stmt);
 	assertSuccessStmt(stmt,erg);
-	erg=SQLFreeStmt(stmt,SQL_CLOSE);
-	erg=SQLFreeStmt(stmt,SQL_UNBIND);
-	erg=SQLFreeStmt(stmt,SQL_RESET_PARAMS);
+	SQLFreeStmt(stmt,SQL_CLOSE);
+	SQLFreeStmt(stmt,SQL_UNBIND);
+	SQLFreeStmt(stmt,SQL_RESET_PARAMS);
 	erg=SQLExecDirect(stmt,(SQLCHAR *)
 		"select testblob from testtable1",SQL_NTS);
 	assertSuccessStmt(stmt,erg);
@@ -6463,15 +6476,16 @@ int main(int argc, char **argv) {
 	SQLLEN	largeblobind;
 	erg=SQLBindCol(stmt,1,SQL_C_BINARY,
 			largeblobout,sizeof(largeblobout),&largeblobind);
+	assertSuccessStmt(stmt,erg);
 	erg=SQLFetch(stmt);
 	assertSuccessStmt(stmt,erg);
 	assertEqualStmt(stmt,(int)largeblobind,LARGE_BUFFER_LENGTH);
 	assertTrueStmt(stmt,
 		!bytestring::compare(largeblobout,largebuffer,
 						LARGE_BUFFER_LENGTH));
-	erg=SQLFreeStmt(stmt,SQL_CLOSE);
-	erg=SQLFreeStmt(stmt,SQL_UNBIND);
-	erg=SQLFreeStmt(stmt,SQL_RESET_PARAMS);
+	SQLFreeStmt(stmt,SQL_CLOSE);
+	SQLFreeStmt(stmt,SQL_UNBIND);
+	SQLFreeStmt(stmt,SQL_RESET_PARAMS);
 	SQLExecDirect(stmt,(SQLCHAR *)"delete from testtable1",SQL_NTS);
 	stdoutput.printf("\n");
 
@@ -6479,12 +6493,12 @@ int main(int argc, char **argv) {
 
 	// long lobs (prepare, bind, execute, putdata)
 	stdoutput.printf("LONG LOBS (prepare, bind, execute, putdata): \n");
-	erg=SQLFreeStmt(stmt,SQL_CLOSE);
-	erg=SQLFreeStmt(stmt,SQL_UNBIND);
-	erg=SQLFreeStmt(stmt,SQL_RESET_PARAMS);
+	SQLFreeStmt(stmt,SQL_CLOSE);
+	SQLFreeStmt(stmt,SQL_UNBIND);
+	SQLFreeStmt(stmt,SQL_RESET_PARAMS);
 	SQLExecDirect(stmt,(SQLCHAR *)"delete from testtable1",SQL_NTS);
 	for (int i=0; i<LARGE_BUFFER_LENGTH; i++) {
-		largebuffer[i]='C';
+		largebuffer[i]='D';
 	}
 	largebuffer[LARGE_BUFFER_LENGTH]='\0';
 	erg=SQLPrepare(stmt,(SQLCHAR *)
@@ -6517,23 +6531,27 @@ int main(int argc, char **argv) {
 	erg=SQLParamData(stmt,&largetoken);
 	assertSuccessStmt(stmt,erg);
 	// fetch the row back and verify it matches the source buffer
-	erg=SQLFreeStmt(stmt,SQL_CLOSE);
-	erg=SQLFreeStmt(stmt,SQL_UNBIND);
-	erg=SQLFreeStmt(stmt,SQL_RESET_PARAMS);
+	SQLFreeStmt(stmt,SQL_CLOSE);
+	SQLFreeStmt(stmt,SQL_UNBIND);
+	SQLFreeStmt(stmt,SQL_RESET_PARAMS);
 	erg=SQLExecDirect(stmt,(SQLCHAR *)
 		"select testblob from testtable1",SQL_NTS);
 	assertSuccessStmt(stmt,erg);
+	// re-init output buffer
+	bytestring::zero(largeblobout,sizeof(largeblobout));
+	largeblobind=-1;
 	erg=SQLBindCol(stmt,1,SQL_C_BINARY,
 			largeblobout,sizeof(largeblobout),&largeblobind);
+	assertSuccessStmt(stmt,erg);
 	erg=SQLFetch(stmt);
 	assertSuccessStmt(stmt,erg);
 	assertEqualStmt(stmt,(int)largeblobind,LARGE_BUFFER_LENGTH);
 	assertTrueStmt(stmt,
 		!bytestring::compare(largeblobout,largebuffer,
 					LARGE_BUFFER_LENGTH));
-	erg=SQLFreeStmt(stmt,SQL_CLOSE);
-	erg=SQLFreeStmt(stmt,SQL_UNBIND);
-	erg=SQLFreeStmt(stmt,SQL_RESET_PARAMS);
+	SQLFreeStmt(stmt,SQL_CLOSE);
+	SQLFreeStmt(stmt,SQL_UNBIND);
+	SQLFreeStmt(stmt,SQL_RESET_PARAMS);
 	SQLExecDirect(stmt,(SQLCHAR *)"delete from testtable1",SQL_NTS);
 	stdoutput.printf("\n");
 
@@ -6548,9 +6566,9 @@ int main(int argc, char **argv) {
 	// to SQL Relay's input/output binds, which the firebird connection
 	// module doesn't support), so the result-set form is used here.
 	stdoutput.printf("STORED PROCEDURE RETURNING VALUES: \n");
-	erg=SQLFreeStmt(stmt,SQL_CLOSE);
-	erg=SQLFreeStmt(stmt,SQL_UNBIND);
-	erg=SQLFreeStmt(stmt,SQL_RESET_PARAMS);
+	SQLFreeStmt(stmt,SQL_CLOSE);
+	SQLFreeStmt(stmt,SQL_UNBIND);
+	SQLFreeStmt(stmt,SQL_RESET_PARAMS);
 	erg=SQLPrepare(stmt,(SQLCHAR *)
 		"select * from testproc(?,?,?,?)",SQL_NTS);
 	assertSuccessStmt(stmt,erg);
@@ -6624,9 +6642,9 @@ int main(int argc, char **argv) {
 
 	// stored procedure returning lob
 	stdoutput.printf("STORED PROCEDURE RETURNING LOB: \n");
-	erg=SQLFreeStmt(stmt,SQL_CLOSE);
-	erg=SQLFreeStmt(stmt,SQL_UNBIND);
-	erg=SQLFreeStmt(stmt,SQL_RESET_PARAMS);
+	SQLFreeStmt(stmt,SQL_CLOSE);
+	SQLFreeStmt(stmt,SQL_UNBIND);
+	SQLFreeStmt(stmt,SQL_RESET_PARAMS);
 	erg=SQLPrepare(stmt,(SQLCHAR *)
 		"select * from testproc1(?)",SQL_NTS);
 	assertSuccessStmt(stmt,erg);
@@ -6655,9 +6673,9 @@ int main(int argc, char **argv) {
 
 	// stored procedure returning long lob
 	stdoutput.printf("STORED PROCEDURE RETURNING LONG LOB: \n");
-	erg=SQLFreeStmt(stmt,SQL_CLOSE);
-	erg=SQLFreeStmt(stmt,SQL_UNBIND);
-	erg=SQLFreeStmt(stmt,SQL_RESET_PARAMS);
+	SQLFreeStmt(stmt,SQL_CLOSE);
+	SQLFreeStmt(stmt,SQL_UNBIND);
+	SQLFreeStmt(stmt,SQL_RESET_PARAMS);
 	for (int i=0; i<LARGE_BUFFER_LENGTH; i++) {
 		largebuffer[i]='C';
 	}
@@ -6689,9 +6707,9 @@ int main(int argc, char **argv) {
 
 	// negative input bind
 	stdoutput.printf("NEGATIVE INPUT BIND: \n");
-	erg=SQLFreeStmt(stmt,SQL_CLOSE);
-	erg=SQLFreeStmt(stmt,SQL_UNBIND);
-	erg=SQLFreeStmt(stmt,SQL_RESET_PARAMS);
+	SQLFreeStmt(stmt,SQL_CLOSE);
+	SQLFreeStmt(stmt,SQL_UNBIND);
+	SQLFreeStmt(stmt,SQL_RESET_PARAMS);
 	erg=SQLPrepare(stmt,(SQLCHAR *)
 		"select cast(? as integer) from rdb$database",SQL_NTS);
 	assertSuccessStmt(stmt,erg);
@@ -6709,6 +6727,7 @@ int main(int argc, char **argv) {
 	SQLLEN		negoutind=0;
 	erg=SQLBindCol(stmt,1,SQL_C_SLONG,
 			&negoutval,sizeof(negoutval),&negoutind);
+	assertSuccessStmt(stmt,erg);
 	erg=SQLFetch(stmt);
 	assertSuccessStmt(stmt,erg);
 	assertEqualStmt(stmt,(int)negoutval,-1);
@@ -6720,9 +6739,9 @@ int main(int argc, char **argv) {
 	stdoutput.printf("BIND BEFORE PREPARE: \n");
 
 	// bind, prepare, execute
-	erg=SQLFreeStmt(stmt,SQL_CLOSE);
-	erg=SQLFreeStmt(stmt,SQL_UNBIND);
-	erg=SQLFreeStmt(stmt,SQL_RESET_PARAMS);
+	SQLFreeStmt(stmt,SQL_CLOSE);
+	SQLFreeStmt(stmt,SQL_UNBIND);
+	SQLFreeStmt(stmt,SQL_RESET_PARAMS);
 	SQLINTEGER	bbpinval=42;
 	SQLLEN		bbpinind=0;
 	SQLCHAR		bbpoutval[16]={0};
@@ -6746,9 +6765,9 @@ int main(int argc, char **argv) {
 	assertEqualStmt(stmt,(const char *)bbpoutval,"42");
 
 	// bind, exec-direct
-	erg=SQLFreeStmt(stmt,SQL_CLOSE);
-	erg=SQLFreeStmt(stmt,SQL_UNBIND);
-	erg=SQLFreeStmt(stmt,SQL_RESET_PARAMS);
+	SQLFreeStmt(stmt,SQL_CLOSE);
+	SQLFreeStmt(stmt,SQL_UNBIND);
+	SQLFreeStmt(stmt,SQL_RESET_PARAMS);
 	bbpinval=99;
 	bytestring::zero(bbpoutval,sizeof(bbpoutval));
 	bbpoutind=0;
@@ -6773,9 +6792,9 @@ int main(int argc, char **argv) {
 
 	// rebinding
 	stdoutput.printf("REBINDING: \n");
-	erg=SQLFreeStmt(stmt,SQL_CLOSE);
-	erg=SQLFreeStmt(stmt,SQL_UNBIND);
-	erg=SQLFreeStmt(stmt,SQL_RESET_PARAMS);
+	SQLFreeStmt(stmt,SQL_CLOSE);
+	SQLFreeStmt(stmt,SQL_UNBIND);
+	SQLFreeStmt(stmt,SQL_RESET_PARAMS);
 	erg=SQLPrepare(stmt,(SQLCHAR *)
 		"select cast(? as integer) from rdb$database",SQL_NTS);
 	assertSuccessStmt(stmt,erg);
@@ -6807,9 +6826,9 @@ int main(int argc, char **argv) {
 
 	// reexecute
 	stdoutput.printf("REEXECUTE: \n");
-	erg=SQLFreeStmt(stmt,SQL_CLOSE);
-	erg=SQLFreeStmt(stmt,SQL_UNBIND);
-	erg=SQLFreeStmt(stmt,SQL_RESET_PARAMS);
+	SQLFreeStmt(stmt,SQL_CLOSE);
+	SQLFreeStmt(stmt,SQL_UNBIND);
+	SQLFreeStmt(stmt,SQL_RESET_PARAMS);
 	erg=SQLPrepare(stmt,(SQLCHAR *)
 		"select 1 from rdb$database",SQL_NTS);
 	assertSuccessStmt(stmt,erg);
@@ -6817,20 +6836,23 @@ int main(int argc, char **argv) {
 	SQLLEN		reexind=0;
 	erg=SQLBindCol(stmt,1,SQL_C_SLONG,
 			&reexval,sizeof(reexval),&reexind);
+	assertSuccessStmt(stmt,erg);
+	reexval=0;
 	erg=SQLExecute(stmt);
 	assertSuccessStmt(stmt,erg);
 	erg=SQLFetch(stmt);
 	assertSuccessStmt(stmt,erg);
 	assertEqualStmt(stmt,(int)reexval,1);
 	SQLCloseCursor(stmt);
+	reexval=0;
 	erg=SQLExecute(stmt);
 	assertSuccessStmt(stmt,erg);
 	erg=SQLFetch(stmt);
 	assertSuccessStmt(stmt,erg);
 	assertEqualStmt(stmt,(int)reexval,1);
 	SQLCloseCursor(stmt);
-	erg=SQLFreeStmt(stmt,SQL_UNBIND);
-	erg=SQLFreeStmt(stmt,SQL_RESET_PARAMS);
+	SQLFreeStmt(stmt,SQL_UNBIND);
+	SQLFreeStmt(stmt,SQL_RESET_PARAMS);
 	erg=SQLPrepare(stmt,(SQLCHAR *)
 		"select cast(? as integer) from rdb$database",SQL_NTS);
 	assertSuccessStmt(stmt,erg);
@@ -6844,12 +6866,15 @@ int main(int argc, char **argv) {
 	assertSuccessStmt(stmt,erg);
 	erg=SQLBindCol(stmt,1,SQL_C_SLONG,
 			&reexval,sizeof(reexval),&reexind);
+	assertSuccessStmt(stmt,erg);
+	reexval=0;
 	erg=SQLExecute(stmt);
 	assertSuccessStmt(stmt,erg);
 	erg=SQLFetch(stmt);
 	assertSuccessStmt(stmt,erg);
 	assertEqualStmt(stmt,(int)reexval,1);
 	SQLCloseCursor(stmt);
+	reexval=0;
 	erg=SQLExecute(stmt);
 	assertSuccessStmt(stmt,erg);
 	erg=SQLFetch(stmt);
@@ -6868,9 +6893,9 @@ int main(int argc, char **argv) {
 
 	// bind survives SQLFreeStmt(SQL_CLOSE)
 	stdoutput.printf("BIND SURVIVES SQL_CLOSE: \n");
-	erg=SQLFreeStmt(stmt,SQL_CLOSE);
-	erg=SQLFreeStmt(stmt,SQL_UNBIND);
-	erg=SQLFreeStmt(stmt,SQL_RESET_PARAMS);
+	SQLFreeStmt(stmt,SQL_CLOSE);
+	SQLFreeStmt(stmt,SQL_UNBIND);
+	SQLFreeStmt(stmt,SQL_RESET_PARAMS);
 	SQLExecDirect(stmt,(SQLCHAR *)"delete from testtable",SQL_NTS);
 	erg=SQLPrepare(stmt,(SQLCHAR *)
 		"insert into testtable (testinteger) values (?)",SQL_NTS);
@@ -6895,9 +6920,9 @@ int main(int argc, char **argv) {
 	// execute again WITHOUT rebinding
 	erg=SQLExecute(stmt);
 	assertSuccessStmt(stmt,erg);
-	erg=SQLFreeStmt(stmt,SQL_CLOSE);
-	erg=SQLFreeStmt(stmt,SQL_UNBIND);
-	erg=SQLFreeStmt(stmt,SQL_RESET_PARAMS);
+	SQLFreeStmt(stmt,SQL_CLOSE);
+	SQLFreeStmt(stmt,SQL_UNBIND);
+	SQLFreeStmt(stmt,SQL_RESET_PARAMS);
 	// read back both rows in ascending order
 	erg=SQLExecDirect(stmt,(SQLCHAR *)
 		"select testinteger from testtable "
@@ -6919,9 +6944,9 @@ int main(int argc, char **argv) {
 	// no row 3
 	erg=SQLFetch(stmt);
 	assertEqualStmt(stmt,(int)erg,(int)SQL_NO_DATA);
-	erg=SQLFreeStmt(stmt,SQL_CLOSE);
-	erg=SQLFreeStmt(stmt,SQL_UNBIND);
-	erg=SQLFreeStmt(stmt,SQL_RESET_PARAMS);
+	SQLFreeStmt(stmt,SQL_CLOSE);
+	SQLFreeStmt(stmt,SQL_UNBIND);
+	SQLFreeStmt(stmt,SQL_RESET_PARAMS);
 	SQLExecDirect(stmt,(SQLCHAR *)"delete from testtable",SQL_NTS);
 	stdoutput.printf("\n");
 
@@ -6929,9 +6954,9 @@ int main(int argc, char **argv) {
 
 	// leftover bind ignored
 	stdoutput.printf("LEFTOVER BIND IGNORED: \n");
-	erg=SQLFreeStmt(stmt,SQL_CLOSE);
-	erg=SQLFreeStmt(stmt,SQL_UNBIND);
-	erg=SQLFreeStmt(stmt,SQL_RESET_PARAMS);
+	SQLFreeStmt(stmt,SQL_CLOSE);
+	SQLFreeStmt(stmt,SQL_UNBIND);
+	SQLFreeStmt(stmt,SQL_RESET_PARAMS);
 	SQLExecDirect(stmt,(SQLCHAR *)"delete from testtable",SQL_NTS);
 	// bind two parameters
 	SQLINTEGER	lbi1=11;
@@ -6960,16 +6985,16 @@ int main(int argc, char **argv) {
 		"insert into testtable (testinteger,testsmallint) "
 		"values (33,44)",SQL_NTS);
 	assertSuccessStmt(stmt,erg);
-	erg=SQLFreeStmt(stmt,SQL_CLOSE);
+	SQLFreeStmt(stmt,SQL_CLOSE);
 	// fewer-but-nonzero path: binds 1 and 2 are still stashed, but
 	// this statement has only one marker, so only bind 1 should apply
 	erg=SQLExecDirect(stmt,(SQLCHAR *)
 		"insert into testtable (testinteger,testsmallint) "
 		"values (?,99)",SQL_NTS);
 	assertSuccessStmt(stmt,erg);
-	erg=SQLFreeStmt(stmt,SQL_CLOSE);
-	erg=SQLFreeStmt(stmt,SQL_UNBIND);
-	erg=SQLFreeStmt(stmt,SQL_RESET_PARAMS);
+	SQLFreeStmt(stmt,SQL_CLOSE);
+	SQLFreeStmt(stmt,SQL_UNBIND);
+	SQLFreeStmt(stmt,SQL_RESET_PARAMS);
 	// read back: rows should be (11,22), (11,99), (33,44)
 	erg=SQLExecDirect(stmt,(SQLCHAR *)
 		"select testinteger, testsmallint from testtable "
@@ -7002,9 +7027,9 @@ int main(int argc, char **argv) {
 	// no row 4
 	erg=SQLFetch(stmt);
 	assertEqualStmt(stmt,(int)erg,(int)SQL_NO_DATA);
-	erg=SQLFreeStmt(stmt,SQL_CLOSE);
-	erg=SQLFreeStmt(stmt,SQL_UNBIND);
-	erg=SQLFreeStmt(stmt,SQL_RESET_PARAMS);
+	SQLFreeStmt(stmt,SQL_CLOSE);
+	SQLFreeStmt(stmt,SQL_UNBIND);
+	SQLFreeStmt(stmt,SQL_RESET_PARAMS);
 	SQLExecDirect(stmt,(SQLCHAR *)"delete from testtable",SQL_NTS);
 	stdoutput.printf("\n");
 
@@ -7012,9 +7037,9 @@ int main(int argc, char **argv) {
 
 	// encoded binary data
 	stdoutput.printf("ENCODED BINARY DATA: \n");
-	erg=SQLFreeStmt(stmt,SQL_CLOSE);
-	erg=SQLFreeStmt(stmt,SQL_UNBIND);
-	erg=SQLFreeStmt(stmt,SQL_RESET_PARAMS);
+	SQLFreeStmt(stmt,SQL_CLOSE);
+	SQLFreeStmt(stmt,SQL_UNBIND);
+	SQLFreeStmt(stmt,SQL_RESET_PARAMS);
 	SQLExecDirect(stmt,(SQLCHAR *)"delete from testtable1",SQL_NTS);
 	unsigned char	encbuf[256];
 	for (int i=0; i<256; i++) {
@@ -7032,9 +7057,9 @@ int main(int argc, char **argv) {
 	assertSuccessStmt(stmt,erg);
 	erg=SQLExecute(stmt);
 	assertSuccessStmt(stmt,erg);
-	erg=SQLFreeStmt(stmt,SQL_CLOSE);
-	erg=SQLFreeStmt(stmt,SQL_UNBIND);
-	erg=SQLFreeStmt(stmt,SQL_RESET_PARAMS);
+	SQLFreeStmt(stmt,SQL_CLOSE);
+	SQLFreeStmt(stmt,SQL_UNBIND);
+	SQLFreeStmt(stmt,SQL_RESET_PARAMS);
 	erg=SQLExecDirect(stmt,(SQLCHAR *)
 		"select testblob from testtable1",SQL_NTS);
 	assertSuccessStmt(stmt,erg);
@@ -7042,14 +7067,15 @@ int main(int argc, char **argv) {
 	SQLLEN		encoutind=0;
 	erg=SQLBindCol(stmt,1,SQL_C_BINARY,
 			encout,sizeof(encout),&encoutind);
+	assertSuccessStmt(stmt,erg);
 	erg=SQLFetch(stmt);
 	assertSuccessStmt(stmt,erg);
 	assertEqualStmt(stmt,(int)encoutind,(int)sizeof(encbuf));
 	assertTrueStmt(stmt,
 		!bytestring::compare(encout,encbuf,sizeof(encbuf)));
-	erg=SQLFreeStmt(stmt,SQL_CLOSE);
-	erg=SQLFreeStmt(stmt,SQL_UNBIND);
-	erg=SQLFreeStmt(stmt,SQL_RESET_PARAMS);
+	SQLFreeStmt(stmt,SQL_CLOSE);
+	SQLFreeStmt(stmt,SQL_UNBIND);
+	SQLFreeStmt(stmt,SQL_RESET_PARAMS);
 	SQLExecDirect(stmt,(SQLCHAR *)"delete from testtable1",SQL_NTS);
 	stdoutput.printf("\n");
 
@@ -7057,9 +7083,9 @@ int main(int argc, char **argv) {
 
 	// quotes
 	stdoutput.printf("QUOTES: \n");
-	erg=SQLFreeStmt(stmt,SQL_CLOSE);
-	erg=SQLFreeStmt(stmt,SQL_UNBIND);
-	erg=SQLFreeStmt(stmt,SQL_RESET_PARAMS);
+	SQLFreeStmt(stmt,SQL_CLOSE);
+	SQLFreeStmt(stmt,SQL_UNBIND);
+	SQLFreeStmt(stmt,SQL_RESET_PARAMS);
 	SQLExecDirect(stmt,(SQLCHAR *)"delete from testtable1",SQL_NTS);
 	erg=SQLExecDirect(stmt,(SQLCHAR *)
 		"insert into testtable1 values ('''''')",SQL_NTS);
@@ -7071,13 +7097,14 @@ int main(int argc, char **argv) {
 	SQLLEN	quotesind=0;
 	erg=SQLBindCol(stmt,1,SQL_C_CHAR,
 			quotesout,sizeof(quotesout),&quotesind);
+	assertSuccessStmt(stmt,erg);
 	erg=SQLFetch(stmt);
 	assertSuccessStmt(stmt,erg);
 	assertEqualStmt(stmt,(int)quotesind,2);
 	assertEqualStmt(stmt,(const char *)quotesout,"''");
-	erg=SQLFreeStmt(stmt,SQL_CLOSE);
-	erg=SQLFreeStmt(stmt,SQL_UNBIND);
-	erg=SQLFreeStmt(stmt,SQL_RESET_PARAMS);
+	SQLFreeStmt(stmt,SQL_CLOSE);
+	SQLFreeStmt(stmt,SQL_UNBIND);
+	SQLFreeStmt(stmt,SQL_RESET_PARAMS);
 	SQLExecDirect(stmt,(SQLCHAR *)"delete from testtable1",SQL_NTS);
 	stdoutput.printf("\n");
 
@@ -7085,9 +7112,9 @@ int main(int argc, char **argv) {
 
 	// catalog list
 	stdoutput.printf("CATALOG LIST: \n");
-	erg=SQLFreeStmt(stmt,SQL_CLOSE);
-	erg=SQLFreeStmt(stmt,SQL_UNBIND);
-	erg=SQLFreeStmt(stmt,SQL_RESET_PARAMS);
+	SQLFreeStmt(stmt,SQL_CLOSE);
+	SQLFreeStmt(stmt,SQL_UNBIND);
+	SQLFreeStmt(stmt,SQL_RESET_PARAMS);
 	erg=SQLTables(stmt,
 			(SQLCHAR *)SQL_ALL_CATALOGS,SQL_NTS,
 			(SQLCHAR *)"",SQL_NTS,
@@ -7105,16 +7132,16 @@ int main(int argc, char **argv) {
 			break;
 		}
 	}
-	erg=SQLFreeStmt(stmt,SQL_CLOSE);
+	SQLFreeStmt(stmt,SQL_CLOSE);
 	stdoutput.printf("\n");
 
 
 
 	// schema list
 	stdoutput.printf("SCHEMA LIST: \n");
-	erg=SQLFreeStmt(stmt,SQL_CLOSE);
-	erg=SQLFreeStmt(stmt,SQL_UNBIND);
-	erg=SQLFreeStmt(stmt,SQL_RESET_PARAMS);
+	SQLFreeStmt(stmt,SQL_CLOSE);
+	SQLFreeStmt(stmt,SQL_UNBIND);
+	SQLFreeStmt(stmt,SQL_RESET_PARAMS);
 	erg=SQLTables(stmt,
 			(SQLCHAR *)"",SQL_NTS,
 			(SQLCHAR *)SQL_ALL_SCHEMAS,SQL_NTS,
@@ -7126,6 +7153,7 @@ int main(int argc, char **argv) {
 	SQLLEN		schnameind;
 	erg=SQLBindCol(stmt,2,SQL_C_CHAR,
 			schname,sizeof(schname),&schnameind);
+	assertSuccessStmt(stmt,erg);
 	bool		schfound=false;
 	for (;;) {
 		erg=SQLFetch(stmt);
@@ -7142,17 +7170,17 @@ int main(int argc, char **argv) {
 		}
 	}
 	assertTrueStmt(stmt,schfound);
-	erg=SQLFreeStmt(stmt,SQL_CLOSE);
-	erg=SQLFreeStmt(stmt,SQL_UNBIND);
+	SQLFreeStmt(stmt,SQL_CLOSE);
+	SQLFreeStmt(stmt,SQL_UNBIND);
 	stdoutput.printf("\n");
 
 
 
 	// table type list
 	stdoutput.printf("TABLE TYPE LIST: \n");
-	erg=SQLFreeStmt(stmt,SQL_CLOSE);
-	erg=SQLFreeStmt(stmt,SQL_UNBIND);
-	erg=SQLFreeStmt(stmt,SQL_RESET_PARAMS);
+	SQLFreeStmt(stmt,SQL_CLOSE);
+	SQLFreeStmt(stmt,SQL_UNBIND);
+	SQLFreeStmt(stmt,SQL_RESET_PARAMS);
 	erg=SQLTables(stmt,
 			(SQLCHAR *)"",SQL_NTS,
 			(SQLCHAR *)"",SQL_NTS,
@@ -7163,6 +7191,7 @@ int main(int argc, char **argv) {
 	SQLLEN		tabletypeind;
 	erg=SQLBindCol(stmt,4,SQL_C_CHAR,
 			tabletype,sizeof(tabletype),&tabletypeind);
+	assertSuccessStmt(stmt,erg);
 	bool		foundtable=false;
 	for (;;) {
 		erg=SQLFetch(stmt);
@@ -7178,17 +7207,17 @@ int main(int argc, char **argv) {
 		}
 	}
 	assertTrueStmt(stmt,foundtable);
-	erg=SQLFreeStmt(stmt,SQL_CLOSE);
-	erg=SQLFreeStmt(stmt,SQL_UNBIND);
+	SQLFreeStmt(stmt,SQL_CLOSE);
+	SQLFreeStmt(stmt,SQL_UNBIND);
 	stdoutput.printf("\n");
 
 
 
 	// table list
 	stdoutput.printf("TABLE LIST: \n");
-	erg=SQLFreeStmt(stmt,SQL_CLOSE);
-	erg=SQLFreeStmt(stmt,SQL_UNBIND);
-	erg=SQLFreeStmt(stmt,SQL_RESET_PARAMS);
+	SQLFreeStmt(stmt,SQL_CLOSE);
+	SQLFreeStmt(stmt,SQL_UNBIND);
+	SQLFreeStmt(stmt,SQL_RESET_PARAMS);
 	erg=SQLTables(stmt,
 			(SQLCHAR *)"",SQL_NTS,
 			(SQLCHAR *)"",SQL_NTS,
@@ -7199,6 +7228,7 @@ int main(int argc, char **argv) {
 	SQLLEN		tblnameind;
 	erg=SQLBindCol(stmt,3,SQL_C_CHAR,
 			tblname,sizeof(tblname),&tblnameind);
+	assertSuccessStmt(stmt,erg);
 	int		tblcounter=0;
 	for (;;) {
 		erg=SQLFetch(stmt);
@@ -7220,17 +7250,17 @@ int main(int argc, char **argv) {
 		}
 	}
 	assertEqualStmt(stmt,tblcounter,4);
-	erg=SQLFreeStmt(stmt,SQL_CLOSE);
-	erg=SQLFreeStmt(stmt,SQL_UNBIND);
+	SQLFreeStmt(stmt,SQL_CLOSE);
+	SQLFreeStmt(stmt,SQL_UNBIND);
 	stdoutput.printf("\n");
 
 
 
 	// type info list
 	stdoutput.printf("TYPE INFO LIST: \n");
-	erg=SQLFreeStmt(stmt,SQL_CLOSE);
-	erg=SQLFreeStmt(stmt,SQL_UNBIND);
-	erg=SQLFreeStmt(stmt,SQL_RESET_PARAMS);
+	SQLFreeStmt(stmt,SQL_CLOSE);
+	SQLFreeStmt(stmt,SQL_UNBIND);
+	SQLFreeStmt(stmt,SQL_RESET_PARAMS);
 	erg=SQLGetTypeInfo(stmt,SQL_ALL_TYPES);
 	assertSuccessStmt(stmt,erg);
 	// walk through the list and find INTEGER, CHAR, VARCHAR, DATE
@@ -7238,6 +7268,7 @@ int main(int argc, char **argv) {
 	SQLLEN		typnameind;
 	erg=SQLBindCol(stmt,1,SQL_C_CHAR,
 			typname,sizeof(typname),&typnameind);
+	assertSuccessStmt(stmt,erg);
 	bool		foundinteger=false;
 	bool		foundchar=false;
 	bool		foundvarchar=false;
@@ -7269,17 +7300,17 @@ int main(int argc, char **argv) {
 	assertTrueStmt(stmt,foundchar);
 	assertTrueStmt(stmt,foundvarchar);
 	assertTrueStmt(stmt,founddate);
-	erg=SQLFreeStmt(stmt,SQL_CLOSE);
-	erg=SQLFreeStmt(stmt,SQL_UNBIND);
+	SQLFreeStmt(stmt,SQL_CLOSE);
+	SQLFreeStmt(stmt,SQL_UNBIND);
 	stdoutput.printf("\n");
 
 
 
 	// column list
 	stdoutput.printf("COLUMN LIST: \n");
-	erg=SQLFreeStmt(stmt,SQL_CLOSE);
-	erg=SQLFreeStmt(stmt,SQL_UNBIND);
-	erg=SQLFreeStmt(stmt,SQL_RESET_PARAMS);
+	SQLFreeStmt(stmt,SQL_CLOSE);
+	SQLFreeStmt(stmt,SQL_UNBIND);
+	SQLFreeStmt(stmt,SQL_RESET_PARAMS);
 	erg=SQLColumns(stmt,
 			NULL,0,
 			(SQLCHAR *)"",SQL_NTS,
@@ -7290,6 +7321,7 @@ int main(int argc, char **argv) {
 	SQLLEN		clcolnameind;
 	erg=SQLBindCol(stmt,4,SQL_C_CHAR,
 			clcolname,sizeof(clcolname),&clcolnameind);
+	assertSuccessStmt(stmt,erg);
 	const char	*expcols[]={"TESTINTEGER","TESTSMALLINT",
 				"TESTDECIMAL","TESTNUMERIC",
 				"TESTFLOAT","TESTDOUBLE",
@@ -7303,17 +7335,17 @@ int main(int argc, char **argv) {
 	}
 	erg=SQLFetch(stmt);
 	assertEqualStmt(stmt,(int)erg,(int)SQL_NO_DATA);
-	erg=SQLFreeStmt(stmt,SQL_CLOSE);
-	erg=SQLFreeStmt(stmt,SQL_UNBIND);
+	SQLFreeStmt(stmt,SQL_CLOSE);
+	SQLFreeStmt(stmt,SQL_UNBIND);
 	stdoutput.printf("\n");
 
 
 
 	// primary keys list
 	stdoutput.printf("PRIMARY KEYS LIST: \n");
-	erg=SQLFreeStmt(stmt,SQL_CLOSE);
-	erg=SQLFreeStmt(stmt,SQL_UNBIND);
-	erg=SQLFreeStmt(stmt,SQL_RESET_PARAMS);
+	SQLFreeStmt(stmt,SQL_CLOSE);
+	SQLFreeStmt(stmt,SQL_UNBIND);
+	SQLFreeStmt(stmt,SQL_RESET_PARAMS);
 	erg=SQLPrimaryKeys(stmt,
 			NULL,0,
 			(SQLCHAR *)"",SQL_NTS,
@@ -7329,11 +7361,15 @@ int main(int argc, char **argv) {
 	SQLLEN		pknameind;
 	erg=SQLBindCol(stmt,3,SQL_C_CHAR,
 			pktable,sizeof(pktable),&pktableind);
+	assertSuccessStmt(stmt,erg);
 	erg=SQLBindCol(stmt,4,SQL_C_CHAR,
 			pkcol,sizeof(pkcol),&pkcolind);
+	assertSuccessStmt(stmt,erg);
 	erg=SQLBindCol(stmt,5,SQL_C_SHORT,&pkseq,sizeof(pkseq),&pkseqind);
+	assertSuccessStmt(stmt,erg);
 	erg=SQLBindCol(stmt,6,SQL_C_CHAR,
 			pkname,sizeof(pkname),&pknameind);
+	assertSuccessStmt(stmt,erg);
 	erg=SQLFetch(stmt);
 	assertSuccessStmt(stmt,erg);
 	assertEqualStmt(stmt,(const char *)pktable,"TESTTABLE2");
@@ -7342,17 +7378,17 @@ int main(int argc, char **argv) {
 	assertTrueStmt(stmt,pknameind>0);
 	erg=SQLFetch(stmt);
 	assertEqualStmt(stmt,(int)erg,(int)SQL_NO_DATA);
-	erg=SQLFreeStmt(stmt,SQL_CLOSE);
-	erg=SQLFreeStmt(stmt,SQL_UNBIND);
+	SQLFreeStmt(stmt,SQL_CLOSE);
+	SQLFreeStmt(stmt,SQL_UNBIND);
 	stdoutput.printf("\n");
 
 
 
 	// key and index list
 	stdoutput.printf("KEY AND INDEX LIST: \n");
-	erg=SQLFreeStmt(stmt,SQL_CLOSE);
-	erg=SQLFreeStmt(stmt,SQL_UNBIND);
-	erg=SQLFreeStmt(stmt,SQL_RESET_PARAMS);
+	SQLFreeStmt(stmt,SQL_CLOSE);
+	SQLFreeStmt(stmt,SQL_UNBIND);
+	SQLFreeStmt(stmt,SQL_RESET_PARAMS);
 	erg=SQLStatistics(stmt,
 			NULL,0,
 			(SQLCHAR *)"",SQL_NTS,
@@ -7371,14 +7407,19 @@ int main(int argc, char **argv) {
 	SQLLEN		idxcolind;
 	erg=SQLBindCol(stmt,3,SQL_C_CHAR,
 			idxtable,sizeof(idxtable),&idxtableind);
+	assertSuccessStmt(stmt,erg);
 	erg=SQLBindCol(stmt,4,SQL_C_SHORT,
 			&idxnonunique,sizeof(idxnonunique),&idxnonuniqueind);
+	assertSuccessStmt(stmt,erg);
 	erg=SQLBindCol(stmt,7,SQL_C_SHORT,
 			&idxtype,sizeof(idxtype),&idxtypeind);
+	assertSuccessStmt(stmt,erg);
 	erg=SQLBindCol(stmt,8,SQL_C_SHORT,
 			&idxseq,sizeof(idxseq),&idxseqind);
+	assertSuccessStmt(stmt,erg);
 	erg=SQLBindCol(stmt,9,SQL_C_CHAR,
 			idxcol,sizeof(idxcol),&idxcolind);
+	assertSuccessStmt(stmt,erg);
 	// SQLStatistics may return a SQL_TABLE_STAT row (type=0, no
 	// column) interleaved with the index rows; walk the result set
 	// and look for the COL1 index row.
@@ -7403,17 +7444,17 @@ int main(int argc, char **argv) {
 		}
 	}
 	assertTrueStmt(stmt,foundidxcol1);
-	erg=SQLFreeStmt(stmt,SQL_CLOSE);
-	erg=SQLFreeStmt(stmt,SQL_UNBIND);
+	SQLFreeStmt(stmt,SQL_CLOSE);
+	SQLFreeStmt(stmt,SQL_UNBIND);
 	stdoutput.printf("\n");
 
 
 
 	// procedure list
 	stdoutput.printf("PROCEDURE LIST: \n");
-	erg=SQLFreeStmt(stmt,SQL_CLOSE);
-	erg=SQLFreeStmt(stmt,SQL_UNBIND);
-	erg=SQLFreeStmt(stmt,SQL_RESET_PARAMS);
+	SQLFreeStmt(stmt,SQL_CLOSE);
+	SQLFreeStmt(stmt,SQL_UNBIND);
+	SQLFreeStmt(stmt,SQL_RESET_PARAMS);
 	erg=SQLProcedures(stmt,
 			(SQLCHAR *)"",SQL_NTS,
 			(SQLCHAR *)"",SQL_NTS,
@@ -7423,6 +7464,7 @@ int main(int argc, char **argv) {
 	SQLLEN		procnameind;
 	erg=SQLBindCol(stmt,3,SQL_C_CHAR,
 			procname,sizeof(procname),&procnameind);
+	assertSuccessStmt(stmt,erg);
 	int		proccounter=0;
 	for (;;) {
 		erg=SQLFetch(stmt);
@@ -7441,17 +7483,17 @@ int main(int argc, char **argv) {
 		}
 	}
 	assertEqualStmt(stmt,proccounter,2);
-	erg=SQLFreeStmt(stmt,SQL_CLOSE);
-	erg=SQLFreeStmt(stmt,SQL_UNBIND);
+	SQLFreeStmt(stmt,SQL_CLOSE);
+	SQLFreeStmt(stmt,SQL_UNBIND);
 	stdoutput.printf("\n");
 
 
 
 	// procedure parameter list
 	stdoutput.printf("PROCEDURE PARAMETER LIST: \n");
-	erg=SQLFreeStmt(stmt,SQL_CLOSE);
-	erg=SQLFreeStmt(stmt,SQL_UNBIND);
-	erg=SQLFreeStmt(stmt,SQL_RESET_PARAMS);
+	SQLFreeStmt(stmt,SQL_CLOSE);
+	SQLFreeStmt(stmt,SQL_UNBIND);
+	SQLFreeStmt(stmt,SQL_RESET_PARAMS);
 	erg=SQLProcedureColumns(stmt,
 			(SQLCHAR *)"",SQL_NTS,
 			(SQLCHAR *)"",SQL_NTS,
@@ -7468,12 +7510,16 @@ int main(int argc, char **argv) {
 	SQLLEN		ppordinalind;
 	erg=SQLBindCol(stmt,4,SQL_C_CHAR,
 			ppname,sizeof(ppname),&ppnameind);
+	assertSuccessStmt(stmt,erg);
 	erg=SQLBindCol(stmt,5,SQL_C_SHORT,
 			&ppmode,sizeof(ppmode),&ppmodeind);
+	assertSuccessStmt(stmt,erg);
 	erg=SQLBindCol(stmt,7,SQL_C_CHAR,
 			pptypename,sizeof(pptypename),&pptypenameind);
+	assertSuccessStmt(stmt,erg);
 	erg=SQLBindCol(stmt,18,SQL_C_SHORT,
 			&ppordinal,sizeof(ppordinal),&ppordinalind);
+	assertSuccessStmt(stmt,erg);
 	// firebird returns output parameters first, then input parameters,
 	// each numbered from 1
 	// OUT1
@@ -7534,16 +7580,16 @@ int main(int argc, char **argv) {
 	assertEqualStmt(stmt,(int)ppordinal,4);
 	erg=SQLFetch(stmt);
 	assertEqualStmt(stmt,(int)erg,(int)SQL_NO_DATA);
-	erg=SQLFreeStmt(stmt,SQL_CLOSE);
-	erg=SQLFreeStmt(stmt,SQL_UNBIND);
+	SQLFreeStmt(stmt,SQL_CLOSE);
+	SQLFreeStmt(stmt,SQL_UNBIND);
 	stdoutput.printf("\n");
 
 
 
 	// invalid queries
 	stdoutput.printf("INVALID QUERIES: \n");
-	erg=SQLFreeStmt(stmt,SQL_CLOSE);
-	erg=SQLFreeStmt(stmt,SQL_UNBIND);
+	SQLFreeStmt(stmt,SQL_CLOSE);
+	SQLFreeStmt(stmt,SQL_UNBIND);
 	erg=SQLExecDirect(stmt,(SQLCHAR *)
 		"select "
 		"	* "

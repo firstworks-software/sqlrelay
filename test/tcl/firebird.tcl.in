@@ -1136,7 +1136,8 @@ $cur defineOutputBindString "3" 20
 $cur defineOutputBindBlob "4"
 assertTrue [$cur executeQuery]
 assertEqual [$cur getOutputBindInteger "1"] 1
-#assertEqual [$cur getOutputBindDouble "2"] 1.1
+set d [$cur getOutputBindDouble "2"]
+assertTrue [expr {$d>1.09 && $d<1.11}]
 assertEqual [$cur getOutputBindString "3"] "hello               "
 assertEqual [$cur getOutputBindBlob "4"] "blob"
 puts ""

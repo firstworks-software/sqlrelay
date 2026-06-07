@@ -1265,7 +1265,8 @@ namespace SQLRClientTest
             cur.defineOutputBindBlob("4");
             assertTrue(cur.executeQuery());
             assertEquals(cur.getOutputBindInteger("1"),(Int64)1);
-            //assertEquals(cur.getOutputBindDouble("2"),1.1);
+            double d=cur.getOutputBindDouble("2");
+            assertTrue(d>1.09 && d<1.11);
             assertEquals(cur.getOutputBindString("3"),"hello               ");
             assertEquals(cur.getOutputBindBlob("4"),System.Text.Encoding.ASCII.GetBytes("blob"));
             cur.getNullsAsEmptyStrings();

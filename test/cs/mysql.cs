@@ -147,9 +147,9 @@ namespace SQLRClientTest
                 + "	1, "
                 + "	1, "
                 + "	1, "
-                + "	1.1, "
-                + "	1.1, "
-                + "	1.1, "
+                + "	1.5, "
+                + "	1.5, "
+                + "	1.5, "
                 + "	'2001-01-01', "
                 + "	'01:00:00', "
                 + "	'2001-01-01 01:00:00', "
@@ -174,9 +174,9 @@ namespace SQLRClientTest
                 + "	2, "
                 + "	2, "
                 + "	2, "
-                + "	2.1, "
-                + "	2.1, "
-                + "	2.1, "
+                + "	2.5, "
+                + "	2.5, "
+                + "	2.5, "
                 + "	'2002-01-01', "
                 + "	'02:00:00', "
                 + "	'2002-01-01 02:00:00', "
@@ -201,9 +201,9 @@ namespace SQLRClientTest
                 + "	3, "
                 + "	3, "
                 + "	3, "
-                + "	3.1, "
-                + "	3.1, "
-                + "	3.1, "
+                + "	3.5, "
+                + "	3.5, "
+                + "	3.5, "
                 + "	'2003-01-01', "
                 + "	'03:00:00', "
                 + "	'2003-01-01 03:00:00', "
@@ -228,9 +228,9 @@ namespace SQLRClientTest
                 + "	4, "
                 + "	4, "
                 + "	4, "
-                + "	4.1, "
-                + "	4.1, "
-                + "	4.1, "
+                + "	4.5, "
+                + "	4.5, "
+                + "	4.5, "
                 + "	'2004-01-01', "
                 + "	'04:00:00', "
                 + "	'2004-01-01 04:00:00', "
@@ -290,9 +290,9 @@ namespace SQLRClientTest
             cur.inputBind("3", (Int64)5);
             cur.inputBind("4", (Int64)5);
             cur.inputBind("5", (Int64)5);
-            cur.inputBind("6", 5.1, 2, 1);
-            cur.inputBind("7", 5.1, 2, 1);
-            cur.inputBind("8", 5.1, 2, 1);
+            cur.inputBind("6", 5.5, 2, 1);
+            cur.inputBind("7", 5.5, 2, 1);
+            cur.inputBind("8", 5.5, 2, 1);
             cur.inputBind("9", "2005-01-01");
             cur.inputBind("10", "05:00:00");
             cur.inputBind("11", (Int16)2005, (Int16)1, (Int16)1, (Int16)5, (Int16)0, (Int16)0, (Int32)0, (String)null, false);
@@ -314,9 +314,9 @@ namespace SQLRClientTest
             cur.inputBind("3", (Int64)6);
             cur.inputBind("4", (Int64)6);
             cur.inputBind("5", (Int64)6);
-            cur.inputBind("6", 6.1, 2, 1);
-            cur.inputBind("7", 6.1, 2, 1);
-            cur.inputBind("8", 6.1, 2, 1);
+            cur.inputBind("6", 6.5, 2, 1);
+            cur.inputBind("7", 6.5, 2, 1);
+            cur.inputBind("8", 6.5, 2, 1);
             cur.inputBind("9", "2006-01-01");
             cur.inputBind("10", "06:00:00");
             cur.inputBind("11", (Int16)2006, (Int16)1, (Int16)1, (Int16)6, (Int16)0, (Int16)0, (Int32)0, (String)null, false);
@@ -338,9 +338,9 @@ namespace SQLRClientTest
             cur.inputBind("3", (Int64)7);
             cur.inputBind("4", (Int64)7);
             cur.inputBind("5", (Int64)7);
-            cur.inputBind("6", 7.1, 2, 1);
-            cur.inputBind("7", 7.1, 2, 1);
-            cur.inputBind("8", 7.1, 2, 1);
+            cur.inputBind("6", 7.5, 2, 1);
+            cur.inputBind("7", 7.5, 2, 1);
+            cur.inputBind("8", 7.5, 2, 1);
             cur.inputBind("9", "2007-01-01");
             cur.inputBind("10", "07:00:00");
             cur.inputBind("11", (Int16)2007, (Int16)1, (Int16)1, (Int16)7, (Int16)0, (Int16)0, (Int32)0, (String)null, false);
@@ -372,9 +372,9 @@ namespace SQLRClientTest
             cur.inputBind("3", (Int64)8);
             cur.inputBind("4", (Int64)8);
             cur.inputBind("5", (Int64)8);
-            cur.inputBind("6", 8.1, 2, 1);
-            cur.inputBind("7", 8.1, 2, 1);
-            cur.inputBind("8", 8.1, 2, 1);
+            cur.inputBind("6", 8.5, 2, 1);
+            cur.inputBind("7", 8.5, 2, 1);
+            cur.inputBind("8", 8.5, 2, 1);
             cur.inputBind("9", "2008-01-01");
             cur.inputBind("10", "08:00:00");
             cur.inputBind("11", (Int16)2008, (Int16)1, (Int16)1, (Int16)8, (Int16)0, (Int16)0, (Int32)0, (String)null, false);
@@ -601,7 +601,7 @@ namespace SQLRClientTest
             assertEquals(cur.getLongest((UInt32)2), (UInt32)1);
             assertEquals(cur.getLongest((UInt32)3), (UInt32)1);
             assertEquals(cur.getLongest((UInt32)4), (UInt32)1);
-            //assertEquals(cur.getLongest((UInt32)5),(UInt32)3);
+            assertEquals(cur.getLongest((UInt32)5),(UInt32)3);
             assertEquals(cur.getLongest((UInt32)6), (UInt32)3);
             assertEquals(cur.getLongest((UInt32)7), (UInt32)3);
             assertEquals(cur.getLongest((UInt32)8), (UInt32)10);
@@ -631,7 +631,7 @@ namespace SQLRClientTest
             assertEquals(cur.getLongest("testmediumint"), (UInt32)1);
             assertEquals(cur.getLongest("testint"), (UInt32)1);
             assertEquals(cur.getLongest("testbigint"), (UInt32)1);
-            //assertEquals(cur.getLongest("testfloat"),(UInt32)3);
+            assertEquals(cur.getLongest("testfloat"), (UInt32)3);
             assertEquals(cur.getLongest("testreal"), (UInt32)3);
             assertEquals(cur.getLongest("testdecimal"), (UInt32)3);
             assertEquals(cur.getLongest("testdate"), (UInt32)10);
@@ -691,9 +691,9 @@ namespace SQLRClientTest
             assertEquals(cur.getField((UInt64)0, (UInt32)2), "1");
             assertEquals(cur.getField((UInt64)0, (UInt32)3), "1");
             assertEquals(cur.getField((UInt64)0, (UInt32)4), "1");
-            //assertEquals(cur.getField((UInt64)0,(UInt32)5),"1.1");
-            assertEquals(cur.getField((UInt64)0, (UInt32)6), "1.1");
-            assertEquals(cur.getField((UInt64)0, (UInt32)7), "1.1");
+            assertEquals(cur.getField((UInt64)0, (UInt32)5), "1.5");
+            assertEquals(cur.getField((UInt64)0, (UInt32)6), "1.5");
+            assertEquals(cur.getField((UInt64)0, (UInt32)7), "1.5");
             assertEquals(cur.getField((UInt64)0, (UInt32)8), "2001-01-01");
             assertEquals(cur.getField((UInt64)0, (UInt32)9), "01:00:00");
             assertEquals(cur.getField((UInt64)0, (UInt32)10), "2001-01-01 01:00:00");
@@ -714,9 +714,9 @@ namespace SQLRClientTest
             assertEquals(cur.getField((UInt64)7, (UInt32)2), "8");
             assertEquals(cur.getField((UInt64)7, (UInt32)3), "8");
             assertEquals(cur.getField((UInt64)7, (UInt32)4), "8");
-            //assertEquals(cur.getField((UInt64)7,(UInt32)5),"8.1");
-            assertEquals(cur.getField((UInt64)7, (UInt32)6), "8.1");
-            assertEquals(cur.getField((UInt64)7, (UInt32)7), "8.1");
+            assertEquals(cur.getField((UInt64)7, (UInt32)5), "8.5");
+            assertEquals(cur.getField((UInt64)7, (UInt32)6), "8.5");
+            assertEquals(cur.getField((UInt64)7, (UInt32)7), "8.5");
             assertEquals(cur.getField((UInt64)7, (UInt32)8), "2008-01-01");
             assertEquals(cur.getField((UInt64)7, (UInt32)9), "08:00:00");
             assertEquals(cur.getField((UInt64)7, (UInt32)10), "2008-01-01 08:00:00");
@@ -741,7 +741,7 @@ namespace SQLRClientTest
             assertEquals(cur.getFieldLength((UInt64)0, (UInt32)2), (UInt32)1);
             assertEquals(cur.getFieldLength((UInt64)0, (UInt32)3), (UInt32)1);
             assertEquals(cur.getFieldLength((UInt64)0, (UInt32)4), (UInt32)1);
-            //assertEquals(cur.getFieldLength((UInt64)0,(UInt32)5),(UInt32)3);
+            assertEquals(cur.getFieldLength((UInt64)0,(UInt32)5),(UInt32)3);
             assertEquals(cur.getFieldLength((UInt64)0, (UInt32)6), (UInt32)3);
             assertEquals(cur.getFieldLength((UInt64)0, (UInt32)7), (UInt32)3);
             assertEquals(cur.getFieldLength((UInt64)0, (UInt32)8), (UInt32)10);
@@ -764,7 +764,7 @@ namespace SQLRClientTest
             assertEquals(cur.getFieldLength((UInt64)7, (UInt32)2), (UInt32)1);
             assertEquals(cur.getFieldLength((UInt64)7, (UInt32)3), (UInt32)1);
             assertEquals(cur.getFieldLength((UInt64)7, (UInt32)4), (UInt32)1);
-            //assertEquals(cur.getFieldLength((UInt64)7,(UInt32)5),(UInt32)3);
+            assertEquals(cur.getFieldLength((UInt64)7,(UInt32)5),(UInt32)3);
             assertEquals(cur.getFieldLength((UInt64)7, (UInt32)6), (UInt32)3);
             assertEquals(cur.getFieldLength((UInt64)7, (UInt32)7), (UInt32)3);
             assertEquals(cur.getFieldLength((UInt64)7, (UInt32)8), (UInt32)10);
@@ -791,9 +791,9 @@ namespace SQLRClientTest
             assertEquals(cur.getField((UInt64)0, "testmediumint"), "1");
             assertEquals(cur.getField((UInt64)0, "testint"), "1");
             assertEquals(cur.getField((UInt64)0, "testbigint"), "1");
-            //assertEquals(cur.getField((UInt64)0,"testfloat"),"1.1");
-            assertEquals(cur.getField((UInt64)0, "testreal"), "1.1");
-            assertEquals(cur.getField((UInt64)0, "testdecimal"), "1.1");
+            assertEquals(cur.getField((UInt64)0, "testfloat"), "1.5");
+            assertEquals(cur.getField((UInt64)0, "testreal"), "1.5");
+            assertEquals(cur.getField((UInt64)0, "testdecimal"), "1.5");
             assertEquals(cur.getField((UInt64)0, "testdate"), "2001-01-01");
             assertEquals(cur.getField((UInt64)0, "testtime"), "01:00:00");
             assertEquals(cur.getField((UInt64)0, "testdatetime"), "2001-01-01 01:00:00");
@@ -814,9 +814,9 @@ namespace SQLRClientTest
             assertEquals(cur.getField((UInt64)7, "testmediumint"), "8");
             assertEquals(cur.getField((UInt64)7, "testint"), "8");
             assertEquals(cur.getField((UInt64)7, "testbigint"), "8");
-            //assertEquals(cur.getField((UInt64)7,"testfloat"),"8.1");
-            assertEquals(cur.getField((UInt64)7, "testreal"), "8.1");
-            assertEquals(cur.getField((UInt64)7, "testdecimal"), "8.1");
+            assertEquals(cur.getField((UInt64)7, "testfloat"), "8.5");
+            assertEquals(cur.getField((UInt64)7, "testreal"), "8.5");
+            assertEquals(cur.getField((UInt64)7, "testdecimal"), "8.5");
             assertEquals(cur.getField((UInt64)7, "testdate"), "2008-01-01");
             assertEquals(cur.getField((UInt64)7, "testtime"), "08:00:00");
             assertEquals(cur.getField((UInt64)7, "testdatetime"), "2008-01-01 08:00:00");
@@ -841,7 +841,7 @@ namespace SQLRClientTest
             assertEquals(cur.getFieldLength((UInt64)0, "testmediumint"), (UInt32)1);
             assertEquals(cur.getFieldLength((UInt64)0, "testint"), (UInt32)1);
             assertEquals(cur.getFieldLength((UInt64)0, "testbigint"), (UInt32)1);
-            //assertEquals(cur.getFieldLength((UInt64)0,"testfloat"),(UInt32)3);
+            assertEquals(cur.getFieldLength((UInt64)0, "testfloat"), (UInt32)3);
             assertEquals(cur.getFieldLength((UInt64)0, "testreal"), (UInt32)3);
             assertEquals(cur.getFieldLength((UInt64)0, "testdecimal"), (UInt32)3);
             assertEquals(cur.getFieldLength((UInt64)0, "testdate"), (UInt32)10);
@@ -864,7 +864,7 @@ namespace SQLRClientTest
             assertEquals(cur.getFieldLength((UInt64)7, "testmediumint"), (UInt32)1);
             assertEquals(cur.getFieldLength((UInt64)7, "testint"), (UInt32)1);
             assertEquals(cur.getFieldLength((UInt64)7, "testbigint"), (UInt32)1);
-            //assertEquals(cur.getFieldLength((UInt64)7,"testfloat"),(UInt32)3);
+            assertEquals(cur.getFieldLength((UInt64)7, "testfloat"), (UInt32)3);
             assertEquals(cur.getFieldLength((UInt64)7, "testreal"), (UInt32)3);
             assertEquals(cur.getFieldLength((UInt64)7, "testdecimal"), (UInt32)3);
             assertEquals(cur.getFieldLength((UInt64)7, "testdate"), (UInt32)10);
@@ -892,9 +892,9 @@ namespace SQLRClientTest
             assertEquals(fields[2], "1");
             assertEquals(fields[3], "1");
             assertEquals(fields[4], "1");
-            //assertEquals(fields[5],"1.1");
-            assertEquals(fields[6], "1.1");
-            assertEquals(fields[7], "1.1");
+            assertEquals(fields[5], "1.5");
+            assertEquals(fields[6], "1.5");
+            assertEquals(fields[7], "1.5");
             assertEquals(fields[8], "2001-01-01");
             assertEquals(fields[9], "01:00:00");
             assertEquals(fields[10], "2001-01-01 01:00:00");
@@ -920,7 +920,7 @@ namespace SQLRClientTest
             assertEquals(fieldlens[2], (UInt32)1);
             assertEquals(fieldlens[3], (UInt32)1);
             assertEquals(fieldlens[4], (UInt32)1);
-            //assertEquals(fieldlens[5],(UInt32)3);
+            assertEquals(fieldlens[5],(UInt32)3);
             assertEquals(fieldlens[6], (UInt32)3);
             assertEquals(fieldlens[7], (UInt32)3);
             assertEquals(fieldlens[8], (UInt32)10);
@@ -1910,14 +1910,14 @@ namespace SQLRClientTest
                     + "	out out2 float, "
                     + "	out out3 char(20)) "
                     + "begin "
-                    + "	select 1, 1.1, 'hello' "
+                    + "	select 1, 2.5, 'hello' "
                     + "		into out1, out2, out3; "
                     + "end;"));
                 assertTrue(cur.sendQuery("set @out1=0, @out2=0.0, @out3=''"));
                 assertTrue(cur.sendQuery("call testproc(@out1,@out2,@out3)"));
                 assertTrue(cur.sendQuery("select @out1, @out2, @out3"));
                 assertEquals(cur.getField((UInt64)0, (UInt32)0), "1");
-                //assertEquals(cur.getFieldAsDouble((UInt64)0,(UInt32)1),1.1);
+                assertEquals(cur.getFieldAsDouble((UInt64)0, (UInt32)1), 2.5);
                 assertEquals(cur.getField((UInt64)0, (UInt32)2), "hello");
                 cur.sendQuery("drop procedure testproc");
                 Console.WriteLine("");

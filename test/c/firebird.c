@@ -1309,7 +1309,8 @@ int main(int argc, char **argv) {
 	sqlrcur_defineOutputBindBlob(cur,"4");
 	assertTrue(sqlrcur_executeQuery(cur));
 	assertEqInt(sqlrcur_getOutputBindInteger(cur,"1"),1);
-	//assertEqDbl(sqlrcur_getOutputBindDouble(cur,"2"),1.1);
+	double d=sqlrcur_getOutputBindDouble(cur,"2");
+	assertTrue(d>1.09 && d<1.11);
 	assertEqStr(sqlrcur_getOutputBindString(cur,"3"),
 		"hello               ");
 	assertEqStr(sqlrcur_getOutputBindBlob(cur,"4"),"blob");

@@ -1828,9 +1828,9 @@ class mysql extends sqlrtest {
 			"	1, "+
 			"	1, "+
 			"	1, "+
-			"	1.1, "+
-			"	1.1, "+
-			"	1.1, "+
+			"	1.5, "+
+			"	1.5, "+
+			"	1.5, "+
 			"	'2001-01-01', "+
 			"	'01:00:00', "+
 			"	'2001-01-01 01:00:00', "+
@@ -1891,9 +1891,9 @@ class mysql extends sqlrtest {
 			pstmt.setInt(3,i);
 			pstmt.setInt(4,i);
 			pstmt.setLong(5,i);
-			pstmt.setDouble(6,i+0.1);
-			pstmt.setDouble(7,i+0.1);
-			pstmt.setDouble(8,i+0.1);
+			pstmt.setDouble(6,i+0.5);
+			pstmt.setDouble(7,i+0.5);
+			pstmt.setDouble(8,i+0.5);
 
 			cal.set(Calendar.YEAR,2000+i);
 			cal.set(Calendar.MONTH,Calendar.JANUARY);
@@ -2426,19 +2426,19 @@ if (issqlrelay) {
 
 			// float
 			System.out.println("  row "+i+" - float");
-			assertTrue(rs.getString("testfloat")!=null);
+			assertEquals(rs.getString("testfloat"),i+".5");
 			assertFalse(rs.wasNull());
 			System.out.println();
 
 			// real
 			System.out.println("  row "+i+" - real");
-			assertEquals(rs.getString("testreal"),i+".1");
+			assertEquals(rs.getString("testreal"),i+".5");
 			assertFalse(rs.wasNull());
 			System.out.println();
 
 			// decimal
 			System.out.println("  row "+i+" - decimal");
-			assertEquals(rs.getString("testdecimal"),i+".1");
+			assertEquals(rs.getString("testdecimal"),i+".5");
 			assertFalse(rs.wasNull());
 			System.out.println();
 
@@ -2852,8 +2852,8 @@ if (issqlrelay) {
 			"	10, "+
 			"	10, "+
 			"	10, "+
-			"	10.1, "+
-			"	10.1, "+
+			"	10.5, "+
+			"	10.5, "+
 			"	1.0, "+
 			"	'2010-01-01', "+
 			"	'10:00:00', "+
@@ -2901,8 +2901,8 @@ if (issqlrelay) {
 			"	10, "+
 			"	10, "+
 			"	10, "+
-			"	10.1, "+
-			"	10.1, "+
+			"	10.5, "+
+			"	10.5, "+
 			"	1.0, "+
 			"	'2010-01-01', "+
 			"	'10:00:00', "+
@@ -3132,13 +3132,14 @@ if (issqlrelay) {
 		cstmt=con.prepareCall(
 			"call testproc(?,?,?)");
 		cstmt.setInt(1,1);
-		cstmt.setDouble(2,1.1);
+		cstmt.setDouble(2,2.5);
 		cstmt.setString(3,"hello");
 		assertTrue(cstmt.execute());
 		rs=cstmt.getResultSet();
 		assertTrue((rs!=null));
 		assertTrue(rs.next());
 		assertEquals(rs.getString(1),"1");
+		assertEquals(rs.getString(2),"2.5");
 		assertEquals(rs.getString(3),"hello");
 		rs.close();
 		cstmt.close();
@@ -3174,7 +3175,7 @@ if (issqlrelay) {
 			"	out out2 float, "+
 			"	out out3 char(20)) "+
 			"begin "+
-			"	select 1, 1.1, 'hello' "+
+			"	select 1, 2.5, 'hello' "+
 			"		into out1, out2, out3; "+
 			"end"),0);
 		stmt.executeUpdate("set @out1=0, @out2=0.0, @out3=''");
@@ -3183,6 +3184,7 @@ if (issqlrelay) {
 		assertTrue((rs!=null));
 		assertTrue(rs.next());
 		assertEquals(rs.getString(1),"1");
+		assertEquals(rs.getString(2),"2.5");
 		assertEquals(rs.getString(3),"hello");
 		rs.close();
 		stmt.executeUpdate("drop procedure if exists testproc");

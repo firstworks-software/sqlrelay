@@ -124,9 +124,9 @@ var {
 		"	1, "+
 		"	1, "+
 		"	1, "+
-		"	1.1, "+
-		"	1.1, "+
-		"	1.1, "+
+		"	1.5, "+
+		"	1.5, "+
+		"	1.5, "+
 		"	'2001-01-01', "+
 		"	'01:00:00', "+
 		"	'2001-01-01 01:00:00', "+
@@ -151,9 +151,9 @@ var {
 		"	2, "+
 		"	2, "+
 		"	2, "+
-		"	2.1, "+
-		"	2.1, "+
-		"	2.1, "+
+		"	2.5, "+
+		"	2.5, "+
+		"	2.5, "+
 		"	'2002-01-01', "+
 		"	'02:00:00', "+
 		"	'2002-01-01 02:00:00', "+
@@ -178,9 +178,9 @@ var {
 		"	3, "+
 		"	3, "+
 		"	3, "+
-		"	3.1, "+
-		"	3.1, "+
-		"	3.1, "+
+		"	3.5, "+
+		"	3.5, "+
+		"	3.5, "+
 		"	'2003-01-01', "+
 		"	'03:00:00', "+
 		"	'2003-01-01 03:00:00', "+
@@ -205,9 +205,9 @@ var {
 		"	4, "+
 		"	4, "+
 		"	4, "+
-		"	4.1, "+
-		"	4.1, "+
-		"	4.1, "+
+		"	4.5, "+
+		"	4.5, "+
+		"	4.5, "+
 		"	'2004-01-01', "+
 		"	'04:00:00', "+
 		"	'2004-01-01 04:00:00', "+
@@ -267,9 +267,9 @@ var {
 	cur.inputBind("3",5);
 	cur.inputBind("4",5);
 	cur.inputBind("5",5);
-	cur.inputBind("6",5.1,2,1);
-	cur.inputBind("7",5.1,2,1);
-	cur.inputBind("8",5.1,2,1);
+	cur.inputBind("6",5.5,2,1);
+	cur.inputBind("7",5.5,2,1);
+	cur.inputBind("8",5.5,2,1);
 	cur.inputBind("9","2005-01-01");
 	cur.inputBind("10","05:00:00");
 	cur.inputBind("11",2005,1,1,5,0,0,0,null,0);
@@ -291,9 +291,9 @@ var {
 	cur.inputBind("3",6);
 	cur.inputBind("4",6);
 	cur.inputBind("5",6);
-	cur.inputBind("6",6.1,2,1);
-	cur.inputBind("7",6.1,2,1);
-	cur.inputBind("8",6.1,2,1);
+	cur.inputBind("6",6.5,2,1);
+	cur.inputBind("7",6.5,2,1);
+	cur.inputBind("8",6.5,2,1);
 	cur.inputBind("9","2006-01-01");
 	cur.inputBind("10","06:00:00");
 	cur.inputBind("11",2006,1,1,6,0,0,0,null,0);
@@ -315,9 +315,9 @@ var {
 	cur.inputBind("3",7);
 	cur.inputBind("4",7);
 	cur.inputBind("5",7);
-	cur.inputBind("6",7.1,2,1);
-	cur.inputBind("7",7.1,2,1);
-	cur.inputBind("8",7.1,2,1);
+	cur.inputBind("6",7.5,2,1);
+	cur.inputBind("7",7.5,2,1);
+	cur.inputBind("8",7.5,2,1);
 	cur.inputBind("9","2007-01-01");
 	cur.inputBind("10","07:00:00");
 	cur.inputBind("11",2007,1,1,7,0,0,0,null,0);
@@ -352,9 +352,9 @@ var {
 	cur.inputBind("3",8);
 	cur.inputBind("4",8);
 	cur.inputBind("5",8);
-	cur.inputBind("6",8.1,2,1);
-	cur.inputBind("7",8.1,2,1);
-	cur.inputBind("8",8.1,2,1);
+	cur.inputBind("6",8.5,2,1);
+	cur.inputBind("7",8.5,2,1);
+	cur.inputBind("8",8.5,2,1);
 	cur.inputBind("9","2008-01-01");
 	cur.inputBind("10","08:00:00");
 	cur.inputBind("11",2008,1,1,8,0,0,0,null,0);
@@ -587,7 +587,7 @@ var {
 	assertEqInt(cur.getLongest(2),1);
 	assertEqInt(cur.getLongest(3),1);
 	assertEqInt(cur.getLongest(4),1);
-	//assertEqInt(cur.getLongest(5),3);
+	assertEqInt(cur.getLongest(5),3);
 	assertEqInt(cur.getLongest(6),3);
 	assertEqInt(cur.getLongest(7),3);
 	assertEqInt(cur.getLongest(8),10);
@@ -614,7 +614,7 @@ var {
 	assertEqInt(cur.getLongest("testmediumint"),1);
 	assertEqInt(cur.getLongest("testint"),1);
 	assertEqInt(cur.getLongest("testbigint"),1);
-	//assertEqInt(cur.getLongest("testfloat"),3);
+	assertEqInt(cur.getLongest("testfloat"),3);
 	assertEqInt(cur.getLongest("testreal"),3);
 	assertEqInt(cur.getLongest("testdecimal"),3);
 	assertEqInt(cur.getLongest("testdate"),10);
@@ -671,9 +671,9 @@ var {
 	assertEqStr(cur.getField(0,2),"1");
 	assertEqStr(cur.getField(0,3),"1");
 	assertEqStr(cur.getField(0,4),"1");
-	//assertEqStr(cur.getField(0,5),"1.1");
-	assertEqStr(cur.getField(0,6),"1.1");
-	assertEqStr(cur.getField(0,7),"1.1");
+	assertEqStr(cur.getField(0,5),"1.5");
+	assertEqStr(cur.getField(0,6),"1.5");
+	assertEqStr(cur.getField(0,7),"1.5");
 	assertEqStr(cur.getField(0,8),"2001-01-01");
 	assertEqStr(cur.getField(0,9),"01:00:00");
 	assertEqStr(cur.getField(0,10),"2001-01-01 01:00:00");
@@ -694,9 +694,9 @@ var {
 	assertEqStr(cur.getField(7,2),"8");
 	assertEqStr(cur.getField(7,3),"8");
 	assertEqStr(cur.getField(7,4),"8");
-	//assertEqStr(cur.getField(7,5),"8.1");
-	assertEqStr(cur.getField(7,6),"8.1");
-	assertEqStr(cur.getField(7,7),"8.1");
+	assertEqStr(cur.getField(7,5),"8.5");
+	assertEqStr(cur.getField(7,6),"8.5");
+	assertEqStr(cur.getField(7,7),"8.5");
 	assertEqStr(cur.getField(7,8),"2008-01-01");
 	assertEqStr(cur.getField(7,9),"08:00:00");
 	assertEqStr(cur.getField(7,10),"2008-01-01 08:00:00");
@@ -721,7 +721,7 @@ var {
 	assertEqInt(cur.getFieldLength(0,2),1);
 	assertEqInt(cur.getFieldLength(0,3),1);
 	assertEqInt(cur.getFieldLength(0,4),1);
-	//assertEqInt(cur.getFieldLength(0,5),3);
+	assertEqInt(cur.getFieldLength(0,5),3);
 	assertEqInt(cur.getFieldLength(0,6),3);
 	assertEqInt(cur.getFieldLength(0,7),3);
 	assertEqInt(cur.getFieldLength(0,8),10);
@@ -744,7 +744,7 @@ var {
 	assertEqInt(cur.getFieldLength(7,2),1);
 	assertEqInt(cur.getFieldLength(7,3),1);
 	assertEqInt(cur.getFieldLength(7,4),1);
-	//assertEqInt(cur.getFieldLength(7,5),3);
+	assertEqInt(cur.getFieldLength(7,5),3);
 	assertEqInt(cur.getFieldLength(7,6),3);
 	assertEqInt(cur.getFieldLength(7,7),3);
 	assertEqInt(cur.getFieldLength(7,8),10);
@@ -771,9 +771,9 @@ var {
 	assertEqStr(cur.getField(0,"testmediumint"),"1");
 	assertEqStr(cur.getField(0,"testint"),"1");
 	assertEqStr(cur.getField(0,"testbigint"),"1");
-	//assertEqStr(cur.getField(0,"testfloat"),"1.1");
-	assertEqStr(cur.getField(0,"testreal"),"1.1");
-	assertEqStr(cur.getField(0,"testdecimal"),"1.1");
+	assertEqStr(cur.getField(0,"testfloat"),"1.5");
+	assertEqStr(cur.getField(0,"testreal"),"1.5");
+	assertEqStr(cur.getField(0,"testdecimal"),"1.5");
 	assertEqStr(cur.getField(0,"testdate"),"2001-01-01");
 	assertEqStr(cur.getField(0,"testtime"),"01:00:00");
 	assertEqStr(cur.getField(0,"testdatetime"),
@@ -797,9 +797,9 @@ var {
 	assertEqStr(cur.getField(7,"testmediumint"),"8");
 	assertEqStr(cur.getField(7,"testint"),"8");
 	assertEqStr(cur.getField(7,"testbigint"),"8");
-	//assertEqStr(cur.getField(7,"testfloat"),"8.1");
-	assertEqStr(cur.getField(7,"testreal"),"8.1");
-	assertEqStr(cur.getField(7,"testdecimal"),"8.1");
+	assertEqStr(cur.getField(7,"testfloat"),"8.5");
+	assertEqStr(cur.getField(7,"testreal"),"8.5");
+	assertEqStr(cur.getField(7,"testdecimal"),"8.5");
 	assertEqStr(cur.getField(7,"testdate"),"2008-01-01");
 	assertEqStr(cur.getField(7,"testtime"),"08:00:00");
 	assertEqStr(cur.getField(7,"testdatetime"),
@@ -827,7 +827,7 @@ var {
 	assertEqInt(cur.getFieldLength(0,"testmediumint"),1);
 	assertEqInt(cur.getFieldLength(0,"testint"),1);
 	assertEqInt(cur.getFieldLength(0,"testbigint"),1);
-	//assertEqInt(cur.getFieldLength(0,"testfloat"),3);
+	assertEqInt(cur.getFieldLength(0,"testfloat"),3);
 	assertEqInt(cur.getFieldLength(0,"testreal"),3);
 	assertEqInt(cur.getFieldLength(0,"testdecimal"),3);
 	assertEqInt(cur.getFieldLength(0,"testdate"),10);
@@ -850,7 +850,7 @@ var {
 	assertEqInt(cur.getFieldLength(7,"testmediumint"),1);
 	assertEqInt(cur.getFieldLength(7,"testint"),1);
 	assertEqInt(cur.getFieldLength(7,"testbigint"),1);
-	//assertEqInt(cur.getFieldLength(7,"testfloat"),3);
+	assertEqInt(cur.getFieldLength(7,"testfloat"),3);
 	assertEqInt(cur.getFieldLength(7,"testreal"),3);
 	assertEqInt(cur.getFieldLength(7,"testdecimal"),3);
 	assertEqInt(cur.getFieldLength(7,"testdate"),10);
@@ -878,9 +878,9 @@ var {
 	assertEqStr(fields[2],"1");
 	assertEqStr(fields[3],"1");
 	assertEqStr(fields[4],"1");
-	//assertEqStr(fields[5],"1.1");
-	assertEqStr(fields[6],"1.1");
-	assertEqStr(fields[7],"1.1");
+	assertEqStr(fields[5],"1.5");
+	assertEqStr(fields[6],"1.5");
+	assertEqStr(fields[7],"1.5");
 	assertEqStr(fields[8],"2001-01-01");
 	assertEqStr(fields[9],"01:00:00");
 	assertEqStr(fields[10],"2001-01-01 01:00:00");
@@ -906,7 +906,7 @@ var {
 	assertEqInt(fieldlens[2],1);
 	assertEqInt(fieldlens[3],1);
 	assertEqInt(fieldlens[4],1);
-	//assertEqInt(fieldlens[5],3);
+	assertEqInt(fieldlens[5],3);
 	assertEqInt(fieldlens[6],3);
 	assertEqInt(fieldlens[7],3);
 	assertEqInt(fieldlens[8],10);
@@ -1914,7 +1914,7 @@ var {
 			"	out out3 "+
 			"	char(20)) "+
 			"begin "+
-			"	select 1, 1.1,"+
+			"	select 1, 2.5,"+
 			"	'hello' "+
 			"	into out1, "+
 			"	out2, out3; end;"));
@@ -1925,7 +1925,7 @@ var {
 		assertTrue(cur.sendQuery("select @out1, "+
 			"@out2, @out3"));
 		assertEqStr(cur.getField(0,0),"1");
-		//assertEqDbl(cur.getFieldAsDouble(0,1),1.1);
+		assertEqDbl(cur.getFieldAsDouble(0,1),2.5);
 		assertEqStr(cur.getField(0,2),"hello");
 		cur.sendQuery("drop procedure testproc");
 		console.log("");

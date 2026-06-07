@@ -112,9 +112,9 @@ main() ->
         "	1, "
         "	1, "
         "	1, "
-        "	1.1, "
-        "	1.1, "
-        "	1.1, "
+        "	1.5, "
+        "	1.5, "
+        "	1.5, "
         "	'2001-01-01', "
         "	'01:00:00', "
         "	'2001-01-01 01:00:00', "
@@ -139,9 +139,9 @@ main() ->
         "	2, "
         "	2, "
         "	2, "
-        "	2.1, "
-        "	2.1, "
-        "	2.1, "
+        "	2.5, "
+        "	2.5, "
+        "	2.5, "
         "	'2002-01-01', "
         "	'02:00:00', "
         "	'2002-01-01 02:00:00', "
@@ -166,9 +166,9 @@ main() ->
         "	3, "
         "	3, "
         "	3, "
-        "	3.1, "
-        "	3.1, "
-        "	3.1, "
+        "	3.5, "
+        "	3.5, "
+        "	3.5, "
         "	'2003-01-01', "
         "	'03:00:00', "
         "	'2003-01-01 03:00:00', "
@@ -193,9 +193,9 @@ main() ->
         "	4, "
         "	4, "
         "	4, "
-        "	4.1, "
-        "	4.1, "
-        "	4.1, "
+        "	4.5, "
+        "	4.5, "
+        "	4.5, "
         "	'2004-01-01', "
         "	'04:00:00', "
         "	'2004-01-01 04:00:00', "
@@ -253,9 +253,9 @@ main() ->
     sqlrelay:inputBindLong("3", 5),
     sqlrelay:inputBindLong("4", 5),
     sqlrelay:inputBindLong("5", 5),
-    sqlrelay:inputBindDouble("6", 5.1, 2, 1),
-    sqlrelay:inputBindDouble("7", 5.1, 2, 1),
-    sqlrelay:inputBindDouble("8", 5.1, 2, 1),
+    sqlrelay:inputBindDouble("6", 5.5, 2, 1),
+    sqlrelay:inputBindDouble("7", 5.5, 2, 1),
+    sqlrelay:inputBindDouble("8", 5.5, 2, 1),
     sqlrelay:inputBindString("9", "2005-01-01"),
     sqlrelay:inputBindString("10", "05:00:00"),
     sqlrelay:inputBindDate("11", 2005, 1, 1, 5, 0, 0, 0, "", 0),
@@ -277,9 +277,9 @@ main() ->
     sqlrelay:inputBindLong("3", 6),
     sqlrelay:inputBindLong("4", 6),
     sqlrelay:inputBindLong("5", 6),
-    sqlrelay:inputBindDouble("6", 6.1, 2, 1),
-    sqlrelay:inputBindDouble("7", 6.1, 2, 1),
-    sqlrelay:inputBindDouble("8", 6.1, 2, 1),
+    sqlrelay:inputBindDouble("6", 6.5, 2, 1),
+    sqlrelay:inputBindDouble("7", 6.5, 2, 1),
+    sqlrelay:inputBindDouble("8", 6.5, 2, 1),
     sqlrelay:inputBindString("9", "2006-01-01"),
     sqlrelay:inputBindString("10", "06:00:00"),
     sqlrelay:inputBindDate("11", 2006, 1, 1, 6, 0, 0, 0, "", 0),
@@ -301,9 +301,9 @@ main() ->
     sqlrelay:inputBindLong("3", 7),
     sqlrelay:inputBindLong("4", 7),
     sqlrelay:inputBindLong("5", 7),
-    sqlrelay:inputBindDouble("6", 7.1, 2, 1),
-    sqlrelay:inputBindDouble("7", 7.1, 2, 1),
-    sqlrelay:inputBindDouble("8", 7.1, 2, 1),
+    sqlrelay:inputBindDouble("6", 7.5, 2, 1),
+    sqlrelay:inputBindDouble("7", 7.5, 2, 1),
+    sqlrelay:inputBindDouble("8", 7.5, 2, 1),
     sqlrelay:inputBindString("9", "2007-01-01"),
     sqlrelay:inputBindString("10", "07:00:00"),
     sqlrelay:inputBindDate("11", 2007, 1, 1, 7, 0, 0, 0, "", 0),
@@ -333,9 +333,9 @@ main() ->
     sqlrelay:inputBindLong("3", 8),
     sqlrelay:inputBindLong("4", 8),
     sqlrelay:inputBindLong("5", 8),
-    sqlrelay:inputBindDouble("6", 8.1, 2, 1),
-    sqlrelay:inputBindDouble("7", 8.1, 2, 1),
-    sqlrelay:inputBindDouble("8", 8.1, 2, 1),
+    sqlrelay:inputBindDouble("6", 8.5, 2, 1),
+    sqlrelay:inputBindDouble("7", 8.5, 2, 1),
+    sqlrelay:inputBindDouble("8", 8.5, 2, 1),
     sqlrelay:inputBindString("9", "2008-01-01"),
     sqlrelay:inputBindString("10", "08:00:00"),
     sqlrelay:inputBindDate("11", 2008, 1, 1, 8, 0, 0, 0, "", 0),
@@ -539,7 +539,7 @@ main() ->
     assertEqualsInt(sqlrelay:getLongestByIndex(2), 1),
     assertEqualsInt(sqlrelay:getLongestByIndex(3), 1),
     assertEqualsInt(sqlrelay:getLongestByIndex(4), 1),
-    %% assertEqualsInt(sqlrelay:getLongestByIndex(5), 3),
+    assertEqualsInt(sqlrelay:getLongestByIndex(5), 3),
     assertEqualsInt(sqlrelay:getLongestByIndex(6), 3),
     assertEqualsInt(sqlrelay:getLongestByIndex(7), 3),
     assertEqualsInt(sqlrelay:getLongestByIndex(8), 10),
@@ -562,7 +562,7 @@ main() ->
     assertEqualsInt(sqlrelay:getLongestByName("testmediumint"), 1),
     assertEqualsInt(sqlrelay:getLongestByName("testint"), 1),
     assertEqualsInt(sqlrelay:getLongestByName("testbigint"), 1),
-    %% assertEqualsInt(sqlrelay:getLongestByName("testfloat"), 3),
+    assertEqualsInt(sqlrelay:getLongestByName("testfloat"), 3),
     assertEqualsInt(sqlrelay:getLongestByName("testreal"), 3),
     assertEqualsInt(sqlrelay:getLongestByName("testdecimal"), 3),
     assertEqualsInt(sqlrelay:getLongestByName("testdate"), 10),
@@ -610,9 +610,9 @@ main() ->
     assertEqualsString(sqlrelay:getFieldByIndex(0, 2), "1"),
     assertEqualsString(sqlrelay:getFieldByIndex(0, 3), "1"),
     assertEqualsString(sqlrelay:getFieldByIndex(0, 4), "1"),
-    %% assertEqualsString(sqlrelay:getFieldByIndex(0, 5), "1.1"),
-    assertEqualsString(sqlrelay:getFieldByIndex(0, 6), "1.1"),
-    assertEqualsString(sqlrelay:getFieldByIndex(0, 7), "1.1"),
+    assertEqualsString(sqlrelay:getFieldByIndex(0, 5), "1.5"),
+    assertEqualsString(sqlrelay:getFieldByIndex(0, 6), "1.5"),
+    assertEqualsString(sqlrelay:getFieldByIndex(0, 7), "1.5"),
     assertEqualsString(sqlrelay:getFieldByIndex(0, 8), "2001-01-01"),
     assertEqualsString(sqlrelay:getFieldByIndex(0, 9), "01:00:00"),
     assertEqualsString(sqlrelay:getFieldByIndex(0, 10), "2001-01-01 01:00:00"),
@@ -633,9 +633,9 @@ main() ->
     assertEqualsString(sqlrelay:getFieldByIndex(7, 2), "8"),
     assertEqualsString(sqlrelay:getFieldByIndex(7, 3), "8"),
     assertEqualsString(sqlrelay:getFieldByIndex(7, 4), "8"),
-    %% assertEqualsString(sqlrelay:getFieldByIndex(7, 5), "8.1"),
-    assertEqualsString(sqlrelay:getFieldByIndex(7, 6), "8.1"),
-    assertEqualsString(sqlrelay:getFieldByIndex(7, 7), "8.1"),
+    assertEqualsString(sqlrelay:getFieldByIndex(7, 5), "8.5"),
+    assertEqualsString(sqlrelay:getFieldByIndex(7, 6), "8.5"),
+    assertEqualsString(sqlrelay:getFieldByIndex(7, 7), "8.5"),
     assertEqualsString(sqlrelay:getFieldByIndex(7, 8), "2008-01-01"),
     assertEqualsString(sqlrelay:getFieldByIndex(7, 9), "08:00:00"),
     assertEqualsString(sqlrelay:getFieldByIndex(7, 10), "2008-01-01 08:00:00"),
@@ -659,7 +659,7 @@ main() ->
     assertEqualsInt(sqlrelay:getFieldLengthByIndex(0, 2), 1),
     assertEqualsInt(sqlrelay:getFieldLengthByIndex(0, 3), 1),
     assertEqualsInt(sqlrelay:getFieldLengthByIndex(0, 4), 1),
-    %% assertEqualsInt(sqlrelay:getFieldLengthByIndex(0, 5), 3),
+    assertEqualsInt(sqlrelay:getFieldLengthByIndex(0, 5), 3),
     assertEqualsInt(sqlrelay:getFieldLengthByIndex(0, 6), 3),
     assertEqualsInt(sqlrelay:getFieldLengthByIndex(0, 7), 3),
     assertEqualsInt(sqlrelay:getFieldLengthByIndex(0, 8), 10),
@@ -682,7 +682,7 @@ main() ->
     assertEqualsInt(sqlrelay:getFieldLengthByIndex(7, 2), 1),
     assertEqualsInt(sqlrelay:getFieldLengthByIndex(7, 3), 1),
     assertEqualsInt(sqlrelay:getFieldLengthByIndex(7, 4), 1),
-    %% assertEqualsInt(sqlrelay:getFieldLengthByIndex(7, 5), 3),
+    assertEqualsInt(sqlrelay:getFieldLengthByIndex(7, 5), 3),
     assertEqualsInt(sqlrelay:getFieldLengthByIndex(7, 6), 3),
     assertEqualsInt(sqlrelay:getFieldLengthByIndex(7, 7), 3),
     assertEqualsInt(sqlrelay:getFieldLengthByIndex(7, 8), 10),
@@ -708,9 +708,9 @@ main() ->
     assertEqualsString(sqlrelay:getFieldByName(0, "testmediumint"), "1"),
     assertEqualsString(sqlrelay:getFieldByName(0, "testint"), "1"),
     assertEqualsString(sqlrelay:getFieldByName(0, "testbigint"), "1"),
-    %% assertEqualsString(sqlrelay:getFieldByName(0, "testfloat"), "1.1"),
-    assertEqualsString(sqlrelay:getFieldByName(0, "testreal"), "1.1"),
-    assertEqualsString(sqlrelay:getFieldByName(0, "testdecimal"), "1.1"),
+    assertEqualsString(sqlrelay:getFieldByName(0, "testfloat"), "1.5"),
+    assertEqualsString(sqlrelay:getFieldByName(0, "testreal"), "1.5"),
+    assertEqualsString(sqlrelay:getFieldByName(0, "testdecimal"), "1.5"),
     assertEqualsString(sqlrelay:getFieldByName(0, "testdate"), "2001-01-01"),
     assertEqualsString(sqlrelay:getFieldByName(0, "testtime"), "01:00:00"),
     assertEqualsString(sqlrelay:getFieldByName(0, "testdatetime"),
@@ -734,9 +734,9 @@ main() ->
     assertEqualsString(sqlrelay:getFieldByName(7, "testmediumint"), "8"),
     assertEqualsString(sqlrelay:getFieldByName(7, "testint"), "8"),
     assertEqualsString(sqlrelay:getFieldByName(7, "testbigint"), "8"),
-    %% assertEqualsString(sqlrelay:getFieldByName(7, "testfloat"), "8.1"),
-    assertEqualsString(sqlrelay:getFieldByName(7, "testreal"), "8.1"),
-    assertEqualsString(sqlrelay:getFieldByName(7, "testdecimal"), "8.1"),
+    assertEqualsString(sqlrelay:getFieldByName(7, "testfloat"), "8.5"),
+    assertEqualsString(sqlrelay:getFieldByName(7, "testreal"), "8.5"),
+    assertEqualsString(sqlrelay:getFieldByName(7, "testdecimal"), "8.5"),
     assertEqualsString(sqlrelay:getFieldByName(7, "testdate"), "2008-01-01"),
     assertEqualsString(sqlrelay:getFieldByName(7, "testtime"), "08:00:00"),
     assertEqualsString(sqlrelay:getFieldByName(7, "testdatetime"),
@@ -763,7 +763,7 @@ main() ->
     assertEqualsInt(sqlrelay:getFieldLengthByName(0, "testmediumint"), 1),
     assertEqualsInt(sqlrelay:getFieldLengthByName(0, "testint"), 1),
     assertEqualsInt(sqlrelay:getFieldLengthByName(0, "testbigint"), 1),
-    %% assertEqualsInt(sqlrelay:getFieldLengthByName(0, "testfloat"), 3),
+    assertEqualsInt(sqlrelay:getFieldLengthByName(0, "testfloat"), 3),
     assertEqualsInt(sqlrelay:getFieldLengthByName(0, "testreal"), 3),
     assertEqualsInt(sqlrelay:getFieldLengthByName(0, "testdecimal"), 3),
     assertEqualsInt(sqlrelay:getFieldLengthByName(0, "testdate"), 10),
@@ -786,7 +786,7 @@ main() ->
     assertEqualsInt(sqlrelay:getFieldLengthByName(7, "testmediumint"), 1),
     assertEqualsInt(sqlrelay:getFieldLengthByName(7, "testint"), 1),
     assertEqualsInt(sqlrelay:getFieldLengthByName(7, "testbigint"), 1),
-    %% assertEqualsInt(sqlrelay:getFieldLengthByName(7, "testfloat"), 3),
+    assertEqualsInt(sqlrelay:getFieldLengthByName(7, "testfloat"), 3),
     assertEqualsInt(sqlrelay:getFieldLengthByName(7, "testreal"), 3),
     assertEqualsInt(sqlrelay:getFieldLengthByName(7, "testdecimal"), 3),
     assertEqualsInt(sqlrelay:getFieldLengthByName(7, "testdate"), 10),
@@ -813,9 +813,9 @@ main() ->
     assertEqualsString(lists:nth(3, Row0), "1"),
     assertEqualsString(lists:nth(4, Row0), "1"),
     assertEqualsString(lists:nth(5, Row0), "1"),
-    %% assertEqualsString(lists:nth(6, Row0), "1.1"),
-    assertEqualsString(lists:nth(7, Row0), "1.1"),
-    assertEqualsString(lists:nth(8, Row0), "1.1"),
+    assertEqualsString(lists:nth(6, Row0), "1.5"),
+    assertEqualsString(lists:nth(7, Row0), "1.5"),
+    assertEqualsString(lists:nth(8, Row0), "1.5"),
     assertEqualsString(lists:nth(9, Row0), "2001-01-01"),
     assertEqualsString(lists:nth(10, Row0), "01:00:00"),
     assertEqualsString(lists:nth(11, Row0), "2001-01-01 01:00:00"),
@@ -840,7 +840,7 @@ main() ->
     assertEqualsInt(lists:nth(3, Rowlens0), 1),
     assertEqualsInt(lists:nth(4, Rowlens0), 1),
     assertEqualsInt(lists:nth(5, Rowlens0), 1),
-    %% assertEqualsInt(lists:nth(6, Rowlens0), 3),
+    assertEqualsInt(lists:nth(6, Rowlens0), 3),
     assertEqualsInt(lists:nth(7, Rowlens0), 3),
     assertEqualsInt(lists:nth(8, Rowlens0), 3),
     assertEqualsInt(lists:nth(9, Rowlens0), 10),
@@ -1576,14 +1576,14 @@ main() ->
         "	out out2 float, "
         "	out out3 char(20)) "
         "begin "
-        "	select 1, 1.1, 'hello' "
+        "	select 1, 2.5, 'hello' "
         "		into out1, out2, out3; "
         "end;")),
     assertTrue(sqlrelay:sendQuery("set @out1=0, @out2=0.0, @out3=''")),
     assertTrue(sqlrelay:sendQuery("call testproc(@out1,@out2,@out3)")),
     assertTrue(sqlrelay:sendQuery("select @out1, @out2, @out3")),
     assertEqualsString(sqlrelay:getFieldByIndex(0, 0), "1"),
-    %% assertEqualsDouble(sqlrelay:getFieldAsDoubleByIndex(0, 1), 1.1),
+    assertEqualsDouble(sqlrelay:getFieldAsDoubleByIndex(0, 1), 2.5),
     assertEqualsString(sqlrelay:getFieldByIndex(0, 2), "hello"),
     sqlrelay:sendQuery("drop procedure testproc"),
     io:format("~n"),

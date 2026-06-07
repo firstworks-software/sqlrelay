@@ -113,9 +113,9 @@
 		"	1, ".
 		"	1, ".
 		"	1, ".
-		"	1.1, ".
-		"	1.1, ".
-		"	1.1, ".
+		"	1.5, ".
+		"	1.5, ".
+		"	1.5, ".
 		"	'2001-01-01', ".
 		"	'01:00:00', ".
 		"	'2001-01-01 01:00:00', ".
@@ -140,9 +140,9 @@
 		"	2, ".
 		"	2, ".
 		"	2, ".
-		"	2.1, ".
-		"	2.1, ".
-		"	2.1, ".
+		"	2.5, ".
+		"	2.5, ".
+		"	2.5, ".
 		"	'2002-01-01', ".
 		"	'02:00:00', ".
 		"	'2002-01-01 02:00:00', ".
@@ -167,9 +167,9 @@
 		"	3, ".
 		"	3, ".
 		"	3, ".
-		"	3.1, ".
-		"	3.1, ".
-		"	3.1, ".
+		"	3.5, ".
+		"	3.5, ".
+		"	3.5, ".
 		"	'2003-01-01', ".
 		"	'03:00:00', ".
 		"	'2003-01-01 03:00:00', ".
@@ -194,9 +194,9 @@
 		"	4, ".
 		"	4, ".
 		"	4, ".
-		"	4.1, ".
-		"	4.1, ".
-		"	4.1, ".
+		"	4.5, ".
+		"	4.5, ".
+		"	4.5, ".
 		"	'2004-01-01', ".
 		"	'04:00:00', ".
 		"	'2004-01-01 04:00:00', ".
@@ -256,9 +256,9 @@
 	sqlrcur_inputBind($cur,"3",5);
 	sqlrcur_inputBind($cur,"4",5);
 	sqlrcur_inputBind($cur,"5",5);
-	sqlrcur_inputBind($cur,"6",5.1,2,1);
-	sqlrcur_inputBind($cur,"7",5.1,2,1);
-	sqlrcur_inputBind($cur,"8",5.1,2,1);
+	sqlrcur_inputBind($cur,"6",5.5,2,1);
+	sqlrcur_inputBind($cur,"7",5.5,2,1);
+	sqlrcur_inputBind($cur,"8",5.5,2,1);
 	sqlrcur_inputBind($cur,"9","2005-01-01");
 	sqlrcur_inputBind($cur,"10","05:00:00");
 	sqlrcur_inputBindDate($cur,"11",2005,1,1,5,0,0,0,NULL,0);
@@ -280,9 +280,9 @@
 	sqlrcur_inputBind($cur,"3",6);
 	sqlrcur_inputBind($cur,"4",6);
 	sqlrcur_inputBind($cur,"5",6);
-	sqlrcur_inputBind($cur,"6",6.1,2,1);
-	sqlrcur_inputBind($cur,"7",6.1,2,1);
-	sqlrcur_inputBind($cur,"8",6.1,2,1);
+	sqlrcur_inputBind($cur,"6",6.5,2,1);
+	sqlrcur_inputBind($cur,"7",6.5,2,1);
+	sqlrcur_inputBind($cur,"8",6.5,2,1);
 	sqlrcur_inputBind($cur,"9","2006-01-01");
 	sqlrcur_inputBind($cur,"10","06:00:00");
 	sqlrcur_inputBindDate($cur,"11",2006,1,1,6,0,0,0,NULL,0);
@@ -304,9 +304,9 @@
 	sqlrcur_inputBind($cur,"3",7);
 	sqlrcur_inputBind($cur,"4",7);
 	sqlrcur_inputBind($cur,"5",7);
-	sqlrcur_inputBind($cur,"6",7.1,2,1);
-	sqlrcur_inputBind($cur,"7",7.1,2,1);
-	sqlrcur_inputBind($cur,"8",7.1,2,1);
+	sqlrcur_inputBind($cur,"6",7.5,2,1);
+	sqlrcur_inputBind($cur,"7",7.5,2,1);
+	sqlrcur_inputBind($cur,"8",7.5,2,1);
 	sqlrcur_inputBind($cur,"9","2007-01-01");
 	sqlrcur_inputBind($cur,"10","07:00:00");
 	sqlrcur_inputBindDate($cur,"11",2007,1,1,7,0,0,0,NULL,0);
@@ -341,9 +341,9 @@
 	sqlrcur_inputBind($cur,"3",8);
 	sqlrcur_inputBind($cur,"4",8);
 	sqlrcur_inputBind($cur,"5",8);
-	sqlrcur_inputBind($cur,"6",8.1,2,1);
-	sqlrcur_inputBind($cur,"7",8.1,2,1);
-	sqlrcur_inputBind($cur,"8",8.1,2,1);
+	sqlrcur_inputBind($cur,"6",8.5,2,1);
+	sqlrcur_inputBind($cur,"7",8.5,2,1);
+	sqlrcur_inputBind($cur,"8",8.5,2,1);
 	sqlrcur_inputBind($cur,"9","2008-01-01");
 	sqlrcur_inputBind($cur,"10","08:00:00");
 	sqlrcur_inputBindDate($cur,"11",2008,1,1,8,0,0,0,NULL,0);
@@ -576,7 +576,7 @@
 	assertEqInt(sqlrcur_getLongest($cur,2),1);
 	assertEqInt(sqlrcur_getLongest($cur,3),1);
 	assertEqInt(sqlrcur_getLongest($cur,4),1);
-	//assertEqInt(sqlrcur_getLongest($cur,5),3);
+	assertEqInt(sqlrcur_getLongest($cur,5),3);
 	assertEqInt(sqlrcur_getLongest($cur,6),3);
 	assertEqInt(sqlrcur_getLongest($cur,7),3);
 	assertEqInt(sqlrcur_getLongest($cur,8),10);
@@ -603,7 +603,7 @@
 	assertEqInt(sqlrcur_getLongest($cur,"testmediumint"),1);
 	assertEqInt(sqlrcur_getLongest($cur,"testint"),1);
 	assertEqInt(sqlrcur_getLongest($cur,"testbigint"),1);
-	//assertEqInt(sqlrcur_getLongest($cur,"testfloat"),3);
+	assertEqInt(sqlrcur_getLongest($cur,"testfloat"),3);
 	assertEqInt(sqlrcur_getLongest($cur,"testreal"),3);
 	assertEqInt(sqlrcur_getLongest($cur,"testdecimal"),3);
 	assertEqInt(sqlrcur_getLongest($cur,"testdate"),10);
@@ -660,9 +660,9 @@
 	assertEqStr(sqlrcur_getField($cur,0,2),"1");
 	assertEqStr(sqlrcur_getField($cur,0,3),"1");
 	assertEqStr(sqlrcur_getField($cur,0,4),"1");
-	//assertEqStr(sqlrcur_getField($cur,0,5),"1.1");
-	assertEqStr(sqlrcur_getField($cur,0,6),"1.1");
-	assertEqStr(sqlrcur_getField($cur,0,7),"1.1");
+	assertEqStr(sqlrcur_getField($cur,0,5),"1.5");
+	assertEqStr(sqlrcur_getField($cur,0,6),"1.5");
+	assertEqStr(sqlrcur_getField($cur,0,7),"1.5");
 	assertEqStr(sqlrcur_getField($cur,0,8),"2001-01-01");
 	assertEqStr(sqlrcur_getField($cur,0,9),"01:00:00");
 	assertEqStr(sqlrcur_getField($cur,0,10),"2001-01-01 01:00:00");
@@ -683,9 +683,9 @@
 	assertEqStr(sqlrcur_getField($cur,7,2),"8");
 	assertEqStr(sqlrcur_getField($cur,7,3),"8");
 	assertEqStr(sqlrcur_getField($cur,7,4),"8");
-	//assertEqStr(sqlrcur_getField($cur,7,5),"8.1");
-	assertEqStr(sqlrcur_getField($cur,7,6),"8.1");
-	assertEqStr(sqlrcur_getField($cur,7,7),"8.1");
+	assertEqStr(sqlrcur_getField($cur,7,5),"8.5");
+	assertEqStr(sqlrcur_getField($cur,7,6),"8.5");
+	assertEqStr(sqlrcur_getField($cur,7,7),"8.5");
 	assertEqStr(sqlrcur_getField($cur,7,8),"2008-01-01");
 	assertEqStr(sqlrcur_getField($cur,7,9),"08:00:00");
 	assertEqStr(sqlrcur_getField($cur,7,10),"2008-01-01 08:00:00");
@@ -710,7 +710,7 @@
 	assertEqInt(sqlrcur_getFieldLength($cur,0,2),1);
 	assertEqInt(sqlrcur_getFieldLength($cur,0,3),1);
 	assertEqInt(sqlrcur_getFieldLength($cur,0,4),1);
-	//assertEqInt(sqlrcur_getFieldLength($cur,0,5),3);
+	assertEqInt(sqlrcur_getFieldLength($cur,0,5),3);
 	assertEqInt(sqlrcur_getFieldLength($cur,0,6),3);
 	assertEqInt(sqlrcur_getFieldLength($cur,0,7),3);
 	assertEqInt(sqlrcur_getFieldLength($cur,0,8),10);
@@ -733,7 +733,7 @@
 	assertEqInt(sqlrcur_getFieldLength($cur,7,2),1);
 	assertEqInt(sqlrcur_getFieldLength($cur,7,3),1);
 	assertEqInt(sqlrcur_getFieldLength($cur,7,4),1);
-	//assertEqInt(sqlrcur_getFieldLength($cur,7,5),3);
+	assertEqInt(sqlrcur_getFieldLength($cur,7,5),3);
 	assertEqInt(sqlrcur_getFieldLength($cur,7,6),3);
 	assertEqInt(sqlrcur_getFieldLength($cur,7,7),3);
 	assertEqInt(sqlrcur_getFieldLength($cur,7,8),10);
@@ -760,9 +760,9 @@
 	assertEqStr(sqlrcur_getField($cur,0,"testmediumint"),"1");
 	assertEqStr(sqlrcur_getField($cur,0,"testint"),"1");
 	assertEqStr(sqlrcur_getField($cur,0,"testbigint"),"1");
-	//assertEqStr(sqlrcur_getField($cur,0,"testfloat"),"1.1");
-	assertEqStr(sqlrcur_getField($cur,0,"testreal"),"1.1");
-	assertEqStr(sqlrcur_getField($cur,0,"testdecimal"),"1.1");
+	assertEqStr(sqlrcur_getField($cur,0,"testfloat"),"1.5");
+	assertEqStr(sqlrcur_getField($cur,0,"testreal"),"1.5");
+	assertEqStr(sqlrcur_getField($cur,0,"testdecimal"),"1.5");
 	assertEqStr(sqlrcur_getField($cur,0,"testdate"),"2001-01-01");
 	assertEqStr(sqlrcur_getField($cur,0,"testtime"),"01:00:00");
 	assertEqStr(sqlrcur_getField($cur,0,"testdatetime"),
@@ -786,9 +786,9 @@
 	assertEqStr(sqlrcur_getField($cur,7,"testmediumint"),"8");
 	assertEqStr(sqlrcur_getField($cur,7,"testint"),"8");
 	assertEqStr(sqlrcur_getField($cur,7,"testbigint"),"8");
-	//assertEqStr(sqlrcur_getField($cur,7,"testfloat"),"8.1");
-	assertEqStr(sqlrcur_getField($cur,7,"testreal"),"8.1");
-	assertEqStr(sqlrcur_getField($cur,7,"testdecimal"),"8.1");
+	assertEqStr(sqlrcur_getField($cur,7,"testfloat"),"8.5");
+	assertEqStr(sqlrcur_getField($cur,7,"testreal"),"8.5");
+	assertEqStr(sqlrcur_getField($cur,7,"testdecimal"),"8.5");
 	assertEqStr(sqlrcur_getField($cur,7,"testdate"),"2008-01-01");
 	assertEqStr(sqlrcur_getField($cur,7,"testtime"),"08:00:00");
 	assertEqStr(sqlrcur_getField($cur,7,"testdatetime"),
@@ -816,7 +816,7 @@
 	assertEqInt(sqlrcur_getFieldLength($cur,0,"testmediumint"),1);
 	assertEqInt(sqlrcur_getFieldLength($cur,0,"testint"),1);
 	assertEqInt(sqlrcur_getFieldLength($cur,0,"testbigint"),1);
-	//assertEqInt(sqlrcur_getFieldLength($cur,0,"testfloat"),3);
+	assertEqInt(sqlrcur_getFieldLength($cur,0,"testfloat"),3);
 	assertEqInt(sqlrcur_getFieldLength($cur,0,"testreal"),3);
 	assertEqInt(sqlrcur_getFieldLength($cur,0,"testdecimal"),3);
 	assertEqInt(sqlrcur_getFieldLength($cur,0,"testdate"),10);
@@ -839,7 +839,7 @@
 	assertEqInt(sqlrcur_getFieldLength($cur,7,"testmediumint"),1);
 	assertEqInt(sqlrcur_getFieldLength($cur,7,"testint"),1);
 	assertEqInt(sqlrcur_getFieldLength($cur,7,"testbigint"),1);
-	//assertEqInt(sqlrcur_getFieldLength($cur,7,"testfloat"),3);
+	assertEqInt(sqlrcur_getFieldLength($cur,7,"testfloat"),3);
 	assertEqInt(sqlrcur_getFieldLength($cur,7,"testreal"),3);
 	assertEqInt(sqlrcur_getFieldLength($cur,7,"testdecimal"),3);
 	assertEqInt(sqlrcur_getFieldLength($cur,7,"testdate"),10);
@@ -867,9 +867,9 @@
 	assertEqStr($fields[2],"1");
 	assertEqStr($fields[3],"1");
 	assertEqStr($fields[4],"1");
-	//assertEqStr($fields[5],"1.1");
-	assertEqStr($fields[6],"1.1");
-	assertEqStr($fields[7],"1.1");
+	assertEqStr($fields[5],"1.5");
+	assertEqStr($fields[6],"1.5");
+	assertEqStr($fields[7],"1.5");
 	assertEqStr($fields[8],"2001-01-01");
 	assertEqStr($fields[9],"01:00:00");
 	assertEqStr($fields[10],"2001-01-01 01:00:00");
@@ -895,7 +895,7 @@
 	assertEqInt($fieldlens[2],1);
 	assertEqInt($fieldlens[3],1);
 	assertEqInt($fieldlens[4],1);
-	//assertEqInt($fieldlens[5],3);
+	assertEqInt($fieldlens[5],3);
 	assertEqInt($fieldlens[6],3);
 	assertEqInt($fieldlens[7],3);
 	assertEqInt($fieldlens[8],10);
@@ -1901,7 +1901,7 @@
 			"	out out3 ".
 			"	char(20)) ".
 			"begin ".
-			"	select 1, 1.1,".
+			"	select 1, 2.5,".
 			"	'hello' ".
 			"	into out1, ".
 			"	out2, out3; end;"));
@@ -1912,7 +1912,7 @@
 		assertTrue(sqlrcur_sendQuery($cur,"select @out1, ".
 			"@out2, @out3"));
 		assertEqStr(sqlrcur_getField($cur,0,0),"1");
-		//assertEqDbl(sqlrcur_getFieldAsDouble($cur,0,1),1.1);
+		assertEqDbl(sqlrcur_getFieldAsDouble($cur,0,1),2.5);
 		assertEqStr(sqlrcur_getField($cur,0,2),"hello");
 		sqlrcur_sendQuery($cur,"drop procedure testproc");
 		echo("\n");

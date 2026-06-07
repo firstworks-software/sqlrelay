@@ -6,7 +6,14 @@ then
 	exit
 fi
 
-for DIR in @TESTAPIS@
+# determine set of apis to test
+TESTAPIS="@TESTAPIS@"
+if ( test -n "$2" )
+then
+	TESTAPIS="$2"
+fi
+
+for DIR in $TESTAPIS
 do
 	echo "testing $1 in $DIR"
 	echo
