@@ -1783,8 +1783,8 @@ int main(int argc, char **argv) {
 	if (issqlrelay) {
 		assertEqualDbc(dbc,(const char *)strval,"libsqlrodbc.so");
 	} else {
-		// driver filename varies; just verify non-empty
-		assertTrueDbc(dbc,vallen>0);
+		// the psqlODBC unicode driver
+		assertEqualDbc(dbc,(const char *)strval,"psqlodbcw.so");
 	}
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");

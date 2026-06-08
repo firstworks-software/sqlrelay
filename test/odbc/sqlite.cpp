@@ -1134,9 +1134,9 @@ int main(int argc, char **argv) {
 	if (issqlrelay) {
 		assertEqualDbc(dbc,(const char *)strval,"sqlrelay");
 	} else {
-		// the native driver returns some server identifier;
-		// just verify non-empty
-		assertTrueDbc(dbc,vallen>0);
+		// the sqlite odbc driver returns the database file path
+		assertEqualDbc(dbc,(const char *)strval,
+				"../sqlrelay.conf.d/sqlite/sqlite.db");
 	}
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");

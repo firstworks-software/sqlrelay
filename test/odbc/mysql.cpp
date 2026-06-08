@@ -1148,8 +1148,8 @@ int main(int argc, char **argv) {
 	if (issqlrelay) {
 		assertEqualDbc(dbc,(const char *)strval,"sqlrelay");
 	} else {
-		// MySQL ODBC reports the connected server name; verify non-empty
-		assertTrueDbc(dbc,vallen>0);
+		// the MariaDB connector echoes the Server= connect-string value
+		assertEqualDbc(dbc,(const char *)strval,"mysql");
 	}
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
@@ -1792,9 +1792,8 @@ int main(int argc, char **argv) {
 	if (issqlrelay) {
 		assertEqualDbc(dbc,(const char *)strval,"libsqlrodbc.so");
 	} else {
-		// TODO: pin native filename (libmyodbc8w.so etc.);
-		// for now require non-empty
-		assertTrueDbc(dbc,vallen>0);
+		// the mysql fixture connects via the MariaDB connector
+		assertEqualDbc(dbc,(const char *)strval,"libmaodbc.so");
 	}
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");

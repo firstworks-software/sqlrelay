@@ -1189,8 +1189,8 @@ int main(int argc, char **argv) {
 	if (issqlrelay) {
 		assertEqualDbc(dbc,(const char *)strval,"sqlrelay");
 	} else {
-		// native driver returns the database/server name; verify non-empty
-		assertTrueDbc(dbc,vallen>0);
+		// the native db2 driver returns the instance/server name
+		assertEqualDbc(dbc,(const char *)strval,"db2inst1");
 	}
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
@@ -1839,8 +1839,10 @@ int main(int argc, char **argv) {
 	if (issqlrelay) {
 		assertEqualDbc(dbc,(const char *)strval,"libsqlrodbc.so");
 	} else {
-		// native driver file name varies by platform; verify non-empty
-		assertTrueDbc(dbc,vallen>0);
+		// native db2 driver bug: SQLGetInfo for this string info type
+		// returns the SQL_DRIVER_ODBC_VER value ("03.80") instead of
+		// the real value; pin the bug so a fix gets noticed
+		assertEqualDbc(dbc,(const char *)strval,"03.80");
 	}
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
@@ -2103,8 +2105,10 @@ int main(int argc, char **argv) {
 	if (issqlrelay) {
 		assertEqualDbc(dbc,(const char *)strval,"stored procedure");
 	} else {
-		// the native db2 ODBC driver's term for a procedure
-		assertTrueDbc(dbc,vallen>0);
+		// native db2 driver bug: SQLGetInfo for this string info type
+		// returns the SQL_DRIVER_ODBC_VER value ("03.80") instead of
+		// the real value; pin the bug so a fix gets noticed
+		assertEqualDbc(dbc,(const char *)strval,"03.80");
 	}
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
@@ -2725,8 +2729,15 @@ int main(int argc, char **argv) {
 	erg=SQLGetInfo(dbc,SQL_KEYWORDS,
 			(SQLPOINTER)strval,(SQLSMALLINT)sizeof(strval),
 			&vallen);
-	// keyword list varies by driver/version; verify non-empty
-	assertTrueDbc(dbc,vallen>0);
+	if (issqlrelay) {
+		// long keyword list; just verify non-empty
+		assertTrueDbc(dbc,vallen>0);
+	} else {
+		// native db2 driver bug: SQLGetInfo for this string info type
+		// returns the SQL_DRIVER_ODBC_VER value ("03.80") instead of
+		// the real value; pin the bug so a fix gets noticed
+		assertEqualDbc(dbc,(const char *)strval,"03.80");
+	}
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
 

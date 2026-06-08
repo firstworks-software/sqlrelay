@@ -1124,8 +1124,13 @@ int main(int argc, char **argv) {
 	if (issqlrelay) {
 		assertEqualDbc(dbc,(const char *)strval,"sqlrelay");
 	} else {
-		// oracle returns the full TNS description string; verify non-empty
-		assertTrueDbc(dbc,vallen>0);
+		// oracle echoes the DBQ connect descriptor
+		assertEqualDbc(dbc,(const char *)strval,
+				"(DESCRIPTION = "
+				"(ADDRESS = (PROTOCOL = TCP)"
+				"(HOST = oracle)(PORT = 1521)) "
+				"(CONNECT_DATA = (SERVER = DEDICATED) "
+				"(SERVICE_NAME = ora1)))");
 	}
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
