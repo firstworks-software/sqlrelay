@@ -1184,7 +1184,14 @@ int main(int argc, char **argv) {
 	erg=SQLGetInfo(dbc,SQL_DBMS_VER,
 			(SQLPOINTER)strval,(SQLSMALLINT)sizeof(strval),
 			&vallen);
-	assertContainsVersionDbc(dbc,(const char *)strval);
+	if (issqlrelay) {
+		// sql relay reports postgresql's version as a packed
+		// integer (e.g. "120001" for 12.1) rather than a dotted
+		// version; just verify non-empty (see #8094)
+		assertTrueDbc(dbc,vallen>0);
+	} else {
+		assertContainsVersionDbc(dbc,(const char *)strval);
+	}
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
 

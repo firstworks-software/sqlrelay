@@ -248,7 +248,8 @@ class firebird extends sqlrtest {
 		System.out.println("  getDatabaseProductVersion");
 		stringval=md.getDatabaseProductVersion();
 		System.out.println("    "+stringval);
-		assertTrue(stringval!=null);
+		// varies by server installation
+		assertContainsVersion(stringval);
 		System.out.println();
 
 		// getDefaultTransactionIsolation
@@ -287,8 +288,8 @@ class firebird extends sqlrtest {
 		System.out.println("  getDriverVersion");
 		stringval=md.getDriverVersion();
 		System.out.println("    "+stringval);
-		// not null and only contains numbers and dots
-		assertTrue(stringval!=null && stringval.matches("[0-9.]+$"));
+		// varies by driver version
+		assertContainsVersion(stringval);
 		System.out.println();
 
 		// getExtraNameCharacters

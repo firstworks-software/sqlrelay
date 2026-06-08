@@ -250,7 +250,7 @@ class informix extends sqlrtest {
 		stringval=md.getDatabaseProductVersion();
 		System.out.println("    "+stringval);
 		// varies by server installation
-		assertTrue(stringval!=null);
+		assertContainsVersion(stringval);
 		System.out.println();
 
 		// getDefaultTransactionIsolation
@@ -294,7 +294,7 @@ class informix extends sqlrtest {
 		stringval=md.getDriverVersion();
 		System.out.println("    "+stringval);
 		// varies by driver version
-		assertTrue(stringval!=null);
+		assertContainsVersion(stringval);
 		System.out.println();
 
 		// getExtraNameCharacters

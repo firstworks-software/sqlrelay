@@ -286,8 +286,13 @@ class postgresql extends sqlrtest {
 		System.out.println("  getDatabaseProductVersion");
 		stringval=md.getDatabaseProductVersion();
 		System.out.println("    "+stringval);
-		// varies by server installation
-		assertTrue(stringval!=null);
+		if (issqlrelay) {
+			// sql relay reports postgresql's version as a
+			// packed integer (e.g. "120001" for 12.1)
+			assertTrue(stringval!=null && stringval.length()>0);
+		} else {
+			assertContainsVersion(stringval);
+		}
 		System.out.println();
 
 		// getDefaultTransactionIsolation
@@ -328,8 +333,8 @@ class postgresql extends sqlrtest {
 		System.out.println("  getDriverVersion");
 		stringval=md.getDriverVersion();
 		System.out.println("    "+stringval);
-		// not null and only contains numbers and dots
-		assertTrue(stringval!=null && stringval.matches("[0-9.]+$"));
+		// varies by driver version
+		assertContainsVersion(stringval);
 		System.out.println();
 
 		// getExtraNameCharacters

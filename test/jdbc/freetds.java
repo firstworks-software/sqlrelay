@@ -254,7 +254,8 @@ class freetds extends sqlrtest {
 		System.out.println("  getDatabaseProductVersion");
 		stringval=md.getDatabaseProductVersion();
 		System.out.println("    "+stringval);
-		assertTrue(stringval!=null);
+		// varies by server version
+		assertContainsVersion(stringval);
 		System.out.println();
 
 		// getDefaultTransactionIsolation
@@ -294,7 +295,8 @@ class freetds extends sqlrtest {
 		System.out.println("  getDriverVersion");
 		stringval=md.getDriverVersion();
 		System.out.println("    "+stringval);
-		assertTrue(stringval!=null||stringval==null);
+		// varies by driver version
+		assertContainsVersion(stringval);
 		System.out.println();
 
 		// getExtraNameCharacters

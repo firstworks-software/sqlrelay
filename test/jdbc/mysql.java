@@ -367,7 +367,7 @@ class mysql extends sqlrtest {
 		stringval=md.getDatabaseProductVersion();
 		System.out.println("    "+stringval);
 		// varies by server version
-		assertTrue(stringval!=null && stringval.length()>0);
+		assertContainsVersion(stringval);
 		System.out.println();
 
 		// getDefaultTransactionIsolation
@@ -409,7 +409,7 @@ class mysql extends sqlrtest {
 		stringval=md.getDriverVersion();
 		System.out.println("    "+stringval);
 		// varies by driver version
-		assertTrue(stringval!=null);
+		assertContainsVersion(stringval);
 		System.out.println();
 
 		// getExtraNameCharacters

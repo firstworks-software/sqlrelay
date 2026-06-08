@@ -262,8 +262,13 @@ class db2 extends sqlrtest {
 		System.out.println("  getDatabaseProductVersion");
 		stringval=md.getDatabaseProductVersion();
 		System.out.println("    "+stringval);
-		// varies by server installation
-		assertTrue(stringval!=null);
+		if (issqlrelay) {
+			assertContainsVersion(stringval);
+		} else {
+			// db2's jdbc driver reports the product version as
+			// a non-dotted signature (e.g. "SQL10050")
+			assertTrue(stringval!=null && stringval.length()>0);
+		}
 		System.out.println();
 
 		// getDefaultTransactionIsolation
@@ -305,8 +310,8 @@ class db2 extends sqlrtest {
 		System.out.println("  getDriverVersion");
 		stringval=md.getDriverVersion();
 		System.out.println("    "+stringval);
-		// not null and only contains numbers and dots
-		assertTrue(stringval!=null && stringval.matches("[0-9.]+$"));
+		// varies by driver version
+		assertContainsVersion(stringval);
 		System.out.println();
 
 		// getExtraNameCharacters
