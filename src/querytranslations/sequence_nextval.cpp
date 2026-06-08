@@ -14,6 +14,10 @@ enum style_t {
 	STYLE_NEXT_VALUE_FOR
 };
 
+// markers for the "nextval()" and "next value for" input syntaxes
+static const char	nextvalparenmark[]="nextval(";
+static const char	nextvalueformark[]="next value for ";
+
 class SQLRSERVER_DLLSPEC sqlrquerytranslation_sequence_nextval :
 					public sqlrquerytranslation {
 	public:
@@ -26,6 +30,7 @@ class SQLRSERVER_DLLSPEC sqlrquerytranslation_sequence_nextval :
 					uint32_t querylength,
 					stringbuffer *translatedquery);
 	private:
+		bool		isIdentChar(char c);
 		const char	*matchDotNextval(const char *ptr,
 						const char *start,
 						const char *end,
@@ -74,7 +79,7 @@ sqlrquerytranslation_sequence_nextval::
 	}
 }
 
-static bool isIdentChar(char c) {
+bool sqlrquerytranslation_sequence_nextval::isIdentChar(char c) {
 	return character::isAlphanumeric(c) || c=='_';
 }
 
@@ -222,13 +227,12 @@ const char *sqlrquerytranslation_sequence_nextval::matchNextvalParen(
 						const char **nameend) {
 
 	// require "nextval(" as its own token
-	static const char	mark[]="nextval(";
-	static const size_t	marklen=sizeof(mark)-1;
+	const size_t	marklen=sizeof(nextvalparenmark)-1;
 	if (ptr>start && isIdentChar(*(ptr-1))) {
 		return NULL;
 	}
 	if (ptr+marklen>end ||
-		charstring::compareIgnoringCase(ptr,mark,marklen)) {
+		charstring::compareIgnoringCase(ptr,nextvalparenmark,marklen)) {
 		return NULL;
 	}
 	const char	*p=ptr+marklen;
@@ -280,13 +284,12 @@ const char *sqlrquerytranslation_sequence_nextval::matchNextValueFor(
 
 	// require "next value for " as its own token, with a single space
 	// between words (the query is assumed already normalized)
-	static const char	mark[]="next value for ";
-	static const size_t	marklen=sizeof(mark)-1;
+	const size_t	marklen=sizeof(nextvalueformark)-1;
 	if (ptr>start && isIdentChar(*(ptr-1))) {
 		return NULL;
 	}
 	if (ptr+marklen>end ||
-		charstring::compareIgnoringCase(ptr,mark,marklen)) {
+		charstring::compareIgnoringCase(ptr,nextvalueformark,marklen)) {
 		return NULL;
 	}
 	const char	*p=ptr+marklen;

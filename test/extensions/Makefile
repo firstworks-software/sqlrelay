@@ -20,10 +20,11 @@ all: router \
 	postgresqlupsert \
 	postgresqlsavepoint \
 	postgresqlglobaltemptables \
-	postgresqlstringagg
+	postgresqlstringagg \
+	postgresqlsequencenextval
 
 clean:
-	$(RM) *.lo *.o *.obj router$(EXE) extensions$(EXE) mysqldeadlockreplay$(EXE) mysqlsplitmultiinsert$(EXE) mysqlupsert$(EXE) mysqlexport$(EXE) mysqlimportexport$(EXE) emoji$(EXE) postgresqlupsert$(EXE) postgresqlsavepoint$(EXE) postgresqlglobaltemptables$(EXE) postgresqlstringagg$(EXE) *.csv cachefile* sqlnet.log
+	$(RM) *.lo *.o *.obj router$(EXE) extensions$(EXE) mysqldeadlockreplay$(EXE) mysqlsplitmultiinsert$(EXE) mysqlupsert$(EXE) mysqlexport$(EXE) mysqlimportexport$(EXE) emoji$(EXE) postgresqlupsert$(EXE) postgresqlsavepoint$(EXE) postgresqlglobaltemptables$(EXE) postgresqlstringagg$(EXE) postgresqlsequencenextval$(EXE) *.csv cachefile* sqlnet.log
 	$(RMTREE) .libs
 
 router: router.cpp router.$(OBJ)
@@ -58,3 +59,6 @@ postgresqlglobaltemptables: postgresqlglobaltemptables.cpp postgresqlglobaltempt
 
 postgresqlstringagg: postgresqlstringagg.cpp postgresqlstringagg.$(OBJ)
 	$(LTLINK) $(LINK) $(LDFLAGS) $(OUT)$@$(EXE) postgresqlstringagg.$(OBJ) $(CPPTESTLIBS)
+
+postgresqlsequencenextval: postgresqlsequencenextval.cpp postgresqlsequencenextval.$(OBJ)
+	$(LTLINK) $(LINK) $(LDFLAGS) $(OUT)$@$(EXE) postgresqlsequencenextval.$(OBJ) $(CPPTESTLIBS)
