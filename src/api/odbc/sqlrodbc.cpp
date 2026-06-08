@@ -6259,7 +6259,12 @@ SQLRETURN SQL_API SQLGetEnvAttr(SQLHENV environmenthandle,
 		return SQL_INVALID_HANDLE;
 	}
 
-	SQLUINTEGER	val;
+	union {
+		const char	*strval;
+		SQLUINTEGER	uintval;
+		SQLPOINTER	ptrval;
+	} val;
+	int16_t	type=-1;
 
 	switch (attribute) {
 		case SQL_ATTR_OUTPUT_NTS:
@@ -6267,12 +6272,14 @@ SQLRETURN SQL_API SQLGetEnvAttr(SQLHENV environmenthandle,
 					"SQL_ATTR_OUTPUT_NTS\n");
 			// this one is hardcoded to true
 			// and can't be set to false
-			val=SQL_TRUE;
+			val.uintval=SQL_TRUE;
+			type=1;
 			break;
 		case SQL_ATTR_ODBC_VERSION:
 			debugPrintf("  attribute: "
 					"SQL_ATTR_ODBC_VERSION\n");
-			val=env->odbcversion;
+			val.uintval=env->odbcversion;
+			type=1;
 			debugPrintf("    odbcversion: %d\n",
 						(int)env->odbcversion);
 			break;
@@ -6281,14 +6288,16 @@ SQLRETURN SQL_API SQLGetEnvAttr(SQLHENV environmenthandle,
 					"SQL_ATTR_CONNECTION_POOLING\n");
 			// this one is hardcoded to "off"
 			// and can't be changed
-			val=SQL_CP_OFF;
+			val.uintval=SQL_CP_OFF;
+			type=1;
 			break;
 		case SQL_ATTR_CP_MATCH:
 			debugPrintf("  attribute: "
 					"SQL_ATTR_CP_MATCH\n");
 			// this one is hardcoded to "default"
 			// and can't be changed
-			val=SQL_CP_MATCH_DEFAULT;
+			val.uintval=SQL_CP_MATCH_DEFAULT;
+			type=1;
 			break;
 		case 1061:
 			// Progress SQL_ATTR_APP_WCHAR_TYPE
@@ -6299,7 +6308,9 @@ SQLRETURN SQL_API SQLGetEnvAttr(SQLHENV environmenthandle,
 			// SQL_DD_CP_UTF8  - 2
 			// SQL_DD_CP_UCS2  - 1
 			// SQL_DD_CP_ANSI  - 0
-			val=2;
+			// progress reads these back as a SQLPOINTER
+			val.ptrval=(SQLPOINTER)(SQLULEN)2;
+			type=2;
 			break;
 		case 1062:
 			// Progress SQL_ATTR_APP_UNICODE_TYPE
@@ -6310,7 +6321,9 @@ SQLRETURN SQL_API SQLGetEnvAttr(SQLHENV environmenthandle,
 			// SQL_DD_CP_UTF8  - 2
 			// SQL_DD_CP_UCS2  - 1
 			// SQL_DD_CP_ANSI  - 0
-			val=2;
+			// progress reads these back as a SQLPOINTER
+			val.ptrval=(SQLPOINTER)(SQLULEN)2;
+			type=2;
 			break;
 		case 1065:
 			// Progress SQL_ATTR_DRIVER_UNICODE_TYPE
@@ -6321,7 +6334,9 @@ SQLRETURN SQL_API SQLGetEnvAttr(SQLHENV environmenthandle,
 			// SQL_DD_CP_UTF8  - 2
 			// SQL_DD_CP_UCS2  - 1
 			// SQL_DD_CP_ANSI  - 0
-			val=2;
+			// progress reads these back as a SQLPOINTER
+			val.ptrval=(SQLPOINTER)(SQLULEN)2;
+			type=2;
 			break;
 		default:
 			debugPrintf("  invalid attribute: %d\n",attribute);
@@ -6333,12 +6348,60 @@ SQLRETURN SQL_API SQLGetEnvAttr(SQLHENV environmenthandle,
 
 
 	// copy out the value and length
-	SQLSMALLINT	valuelength=sizeof(SQLUINTEGER);
-	if (value) {
-		debugPrintf("  uintval: %d\n",val);
-		*((SQLUINTEGER *)value)=val;
-	} else {
-		debugPrintf("  NULL value (not copying out uintval)\n");
+	SQLSMALLINT	valuelength=0;
+	switch (type) {
+		case -1:
+			debugPrintf("  (not copying out any value)\n");
+			break;
+		case 0:
+			debugPrintf("  strval: %s\n",val.strval);
+			valuelength=charstring::getLength(val.strval);
+			debugPrintf("  bufferlength: %d\n",(int)bufferlength);
+			if (value && bufferlength) {
+
+				charstring::safeCopy((char *)value,
+							bufferlength,
+							val.strval);
+
+				// make sure to null-terminate
+				// (even if data has to be truncated)
+				((char *)value)[bufferlength-1]='\0';
+
+				if (valuelength>bufferlength) {
+					debugPrintf("  WARNING! valuelength>"
+							"bufferlength\n");
+				}
+			} else {
+				if (!value) {
+					debugPrintf("  NULL value "
+						"(not copying out strval)\n");
+				}
+				if (!bufferlength) {
+					debugPrintf("  0 bufferlength "
+						"(not copying out strval)\n");
+				}
+			}
+			break;
+		case 1:
+			debugPrintf("  uintval: %d\n",val.uintval);
+			valuelength=sizeof(SQLUINTEGER);
+			if (value) {
+				*((SQLUINTEGER *)value)=val.uintval;
+			} else {
+				debugPrintf("  NULL value "
+						"(not copying out uintval)\n");
+			}
+			break;
+		case 2:
+			debugPrintf("  ptrval: %p\n",val.ptrval);
+			valuelength=sizeof(SQLPOINTER);
+			if (value) {
+				*((SQLPOINTER *)value)=val.ptrval;
+			} else {
+				debugPrintf("  NULL value "
+						"(not copying out ptrval)\n");
+			}
+			break;
 	}
 	debugPrintf("  valuelength: %d\n",(int)valuelength);
 	if (stringlength) {
