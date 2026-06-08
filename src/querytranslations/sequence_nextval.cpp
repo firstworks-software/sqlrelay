@@ -14,7 +14,6 @@ enum style_t {
 	STYLE_NEXT_VALUE_FOR
 };
 
-// markers for the "nextval()" and "next value for" input syntaxes
 static const char	nextvalparenmark[]="nextval(";
 static const char	nextvalueformark[]="next value for ";
 
