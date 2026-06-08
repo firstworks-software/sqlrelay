@@ -8,6 +8,9 @@
 //#define DEBUG_MESSAGES 1
 #include <rudiments/debugprint.h>
 
+static const char	withinmark[]=" within group (";
+static const char	orderbymark[]="order by ";
+
 class SQLRSERVER_DLLSPEC sqlrquerytranslation_listagg_to_string_agg :
 					public sqlrquerytranslation {
 	public:
@@ -20,6 +23,7 @@ class SQLRSERVER_DLLSPEC sqlrquerytranslation_listagg_to_string_agg :
 					uint32_t querylength,
 					stringbuffer *translatedquery);
 	private:
+		bool		isIdentChar(char c);
 		void		translateRange(const char *ptr,
 						const char *end,
 						stringbuffer *out);
@@ -36,7 +40,7 @@ sqlrquerytranslation_listagg_to_string_agg::
 	debugFunction();
 }
 
-static bool isIdentChar(char c) {
+bool sqlrquerytranslation_listagg_to_string_agg::isIdentChar(char c) {
 	return character::isAlphanumeric(c) || c=='_';
 }
 
@@ -127,8 +131,7 @@ const char *sqlrquerytranslation_listagg_to_string_agg::translateListagg(
 	const char	*p=separatorend+1;
 
 	// require " within group (" immediately after the closing ")"
-	static const char	withinmark[]=" within group (";
-	static const size_t	withinmarklen=sizeof(withinmark)-1;
+	const size_t	withinmarklen=sizeof(withinmark)-1;
 	if (p+withinmarklen>end ||
 		charstring::compare(p,withinmark,withinmarklen)) {
 		return NULL;
@@ -152,8 +155,7 @@ const char *sqlrquerytranslation_listagg_to_string_agg::translateListagg(
 	p=ogend+1;
 
 	// bail if the "within group" contents don't begin with "order by "
-	static const char	orderbymark[]="order by ";
-	static const size_t	orderbymarklen=sizeof(orderbymark)-1;
+	const size_t	orderbymarklen=sizeof(orderbymark)-1;
 	if ((size_t)(ogend-ogstart)<orderbymarklen ||
 		charstring::compare(ogstart,orderbymark,orderbymarklen)) {
 		return NULL;
