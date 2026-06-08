@@ -8,7 +8,6 @@
 //#define DEBUG_MESSAGES 1
 #include <rudiments/debugprint.h>
 
-// target syntax to emit
 enum style_t {
 	STYLE_DOT_NEXTVAL=0,
 	STYLE_NEXTVAL_PAREN,
@@ -228,7 +227,8 @@ const char *sqlrquerytranslation_sequence_nextval::matchNextvalParen(
 	if (ptr>start && isIdentChar(*(ptr-1))) {
 		return NULL;
 	}
-	if (ptr+marklen>end || charstring::compareIgnoringCase(ptr,mark,marklen)) {
+	if (ptr+marklen>end ||
+		charstring::compareIgnoringCase(ptr,mark,marklen)) {
 		return NULL;
 	}
 	const char	*p=ptr+marklen;
@@ -285,7 +285,8 @@ const char *sqlrquerytranslation_sequence_nextval::matchNextValueFor(
 	if (ptr>start && isIdentChar(*(ptr-1))) {
 		return NULL;
 	}
-	if (ptr+marklen>end || charstring::compareIgnoringCase(ptr,mark,marklen)) {
+	if (ptr+marklen>end ||
+		charstring::compareIgnoringCase(ptr,mark,marklen)) {
 		return NULL;
 	}
 	const char	*p=ptr+marklen;
