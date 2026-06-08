@@ -198,33 +198,21 @@ void assertFailureDbc(SQLHDBC dbc, SQLRETURN erg) {
 	}
 }
 
-void assertIsVersionDbc(SQLHDBC dbc, const char *value) {
+void assertContainsVersionDbc(SQLHDBC dbc, const char *value) {
 
-	// value must contain a version number - a digits/dots run with a digit
-	// on both sides of a dot (so bare integers or vendor text alone fail,
-	// but a "##.##" embedded in a product banner passes)
-	bool		hasversion=false;
-	for (const char *c=value; c && *c && !hasversion; c++) {
-		if (*c<'0' || *c>'9') {
-			continue;
+	// succeeds if the value contains a version number - a digit, a dot,
+	// and a digit ("#.#") anywhere (bare version or banner both pass;
+	// empty/text-only fails)
+	bool		found=false;
+	for (const char *c=value; c && *c && *(c+1) && *(c+2); c++) {
+		if (*c>='0' && *c<='9' &&
+				*(c+1)=='.' &&
+				*(c+2)>='0' && *(c+2)<='9') {
+			found=true;
+			break;
 		}
-		bool		dot=false;
-		bool		digitafterdot=false;
-		const char	*p=c;
-		while (*p && ((*p>='0' && *p<='9') || *p=='.')) {
-			if (*p=='.') {
-				dot=true;
-			} else if (dot) {
-				digitafterdot=true;
-			}
-			p++;
-		}
-		if (dot && digitafterdot) {
-			hasversion=true;
-		}
-		c=p-1;
 	}
-	if (hasversion) {
+	if (found) {
 		stdoutput.printf("%s ",success);
 	} else {
 		stdoutput.printf("%s\n",failure);

@@ -1184,7 +1184,7 @@ int main(int argc, char **argv) {
 	erg=SQLGetInfo(dbc,SQL_DBMS_VER,
 			(SQLPOINTER)strval,(SQLSMALLINT)sizeof(strval),
 			&vallen);
-	assertIsVersionDbc(dbc,(const char *)strval);
+	assertContainsVersionDbc(dbc,(const char *)strval);
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
 
@@ -1788,7 +1788,7 @@ int main(int argc, char **argv) {
 	erg=SQLGetInfo(dbc,SQL_DRIVER_VER,
 			(SQLPOINTER)strval,(SQLSMALLINT)sizeof(strval),
 			&vallen);
-	assertIsVersionDbc(dbc,(const char *)strval);
+	assertContainsVersionDbc(dbc,(const char *)strval);
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
 
@@ -1812,7 +1812,7 @@ int main(int argc, char **argv) {
 	erg=SQLGetInfo(dbc,SQL_ODBC_VER,
 			(SQLPOINTER)strval,(SQLSMALLINT)sizeof(strval),
 			&vallen);
-	assertIsVersionDbc(dbc,(const char *)strval);
+	assertContainsVersionDbc(dbc,(const char *)strval);
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
 
@@ -2547,7 +2547,7 @@ int main(int argc, char **argv) {
 	erg=SQLGetInfo(dbc,SQL_DRIVER_ODBC_VER,
 			(SQLPOINTER)strval,(SQLSMALLINT)sizeof(strval),
 			&vallen);
-	assertIsVersionDbc(dbc,(const char *)strval);
+	assertContainsVersionDbc(dbc,(const char *)strval);
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
 
@@ -3961,7 +3961,7 @@ int main(int argc, char **argv) {
 	erg=SQLGetInfo(dbc,SQL_DM_VER,
 			(SQLPOINTER)strval,(SQLSMALLINT)sizeof(strval),
 			&vallen);
-	assertIsVersionDbc(dbc,(const char *)strval);
+	assertContainsVersionDbc(dbc,(const char *)strval);
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
 	#endif

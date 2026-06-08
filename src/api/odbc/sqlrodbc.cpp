@@ -6290,6 +6290,39 @@ SQLRETURN SQL_API SQLGetEnvAttr(SQLHENV environmenthandle,
 			// and can't be changed
 			val=SQL_CP_MATCH_DEFAULT;
 			break;
+		case 1061:
+			// Progress SQL_ATTR_APP_WCHAR_TYPE
+			debugPrintf("  attribute: "
+					"SQL_ATTR_APP_WCHAR_TYPE\n");
+			// options include:
+			// SQL_DD_CP_UTF16 - 3
+			// SQL_DD_CP_UTF8  - 2
+			// SQL_DD_CP_UCS2  - 1
+			// SQL_DD_CP_ANSI  - 0
+			val=2;
+			break;
+		case 1062:
+			// Progress SQL_ATTR_APP_UNICODE_TYPE
+			debugPrintf("  attribute: "
+					"SQL_ATTR_APP_UNICODE_TYPE\n");
+			// options include:
+			// SQL_DD_CP_UTF16 - 3
+			// SQL_DD_CP_UTF8  - 2
+			// SQL_DD_CP_UCS2  - 1
+			// SQL_DD_CP_ANSI  - 0
+			val=2;
+			break;
+		case 1065:
+			// Progress SQL_ATTR_DRIVER_UNICODE_TYPE
+			debugPrintf("  attribute: "
+					"SQL_ATTR_DRIVER_UNICODE_TYPE\n");
+			// options include:
+			// SQL_DD_CP_UTF16 - 3
+			// SQL_DD_CP_UTF8  - 2
+			// SQL_DD_CP_UCS2  - 1
+			// SQL_DD_CP_ANSI  - 0
+			val=2;
+			break;
 		default:
 			debugPrintf("  invalid attribute: %d\n",attribute);
 			SQLR_ENVSetError(env,
