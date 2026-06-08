@@ -1659,25 +1659,61 @@ class sqlite extends sqlrtest {
 
 		// column types
 		System.out.println("COLUMN TYPES:");
-		assertTrue(rsmd.getColumnTypeName(1)!=null);
-		assertTrue(rsmd.getColumnTypeName(2)!=null);
-		assertTrue(rsmd.getColumnTypeName(3)!=null);
-		assertTrue(rsmd.getColumnTypeName(4)!=null);
-		assertTrue(rsmd.getColumnTypeName(5)!=null);
-		assertTrue(rsmd.getColumnTypeName(6)!=null);
-		assertTrue(rsmd.getColumnTypeName(7)!=null);
+		if (issqlrelay) {
+			assertEquals(rsmd.getColumnTypeName(1),"INTEGER");
+		} else {
+			assertEquals(rsmd.getColumnTypeName(1),"INT");
+		}
+		assertEquals(rsmd.getColumnTypeName(2),"FLOAT");
+		if (issqlrelay) {
+			assertEquals(rsmd.getColumnTypeName(3),"STRING");
+		} else {
+			assertEquals(rsmd.getColumnTypeName(3),"CHAR");
+		}
+		if (issqlrelay) {
+			assertEquals(rsmd.getColumnTypeName(4),"STRING");
+		} else {
+			assertEquals(rsmd.getColumnTypeName(4),"VARCHAR");
+		}
+		if (issqlrelay) {
+			assertEquals(rsmd.getColumnTypeName(5),"STRING");
+		} else {
+			assertEquals(rsmd.getColumnTypeName(5),"CLOB");
+		}
+		if (issqlrelay) {
+			assertEquals(rsmd.getColumnTypeName(6),"STRING");
+		} else {
+			assertEquals(rsmd.getColumnTypeName(6),"BLOB");
+		}
+		if (issqlrelay) {
+			assertEquals(rsmd.getColumnTypeName(7),"STRING");
+		} else {
+			assertEquals(rsmd.getColumnTypeName(7),"VARCHAR");
+		}
 		System.out.println();
 
 
 		// column length
 		System.out.println("COLUMN LENGTH:");
-		assertTrue(rsmd.getPrecision(1)>=0);
-		assertTrue(rsmd.getPrecision(2)>=0);
-		assertTrue(rsmd.getPrecision(3)>=0);
-		assertTrue(rsmd.getPrecision(4)>=0);
-		assertTrue(rsmd.getPrecision(5)>=0);
-		assertTrue(rsmd.getPrecision(6)>=0);
-		assertTrue(rsmd.getPrecision(7)>=0);
+		assertEquals(rsmd.getPrecision(1),0);
+		assertEquals(rsmd.getPrecision(2),0);
+		if (issqlrelay) {
+			assertEquals(rsmd.getPrecision(3),0);
+		} else {
+			assertEquals(rsmd.getPrecision(3),40);
+		}
+		if (issqlrelay) {
+			assertEquals(rsmd.getPrecision(4),0);
+		} else {
+			assertEquals(rsmd.getPrecision(4),40);
+		}
+		assertEquals(rsmd.getPrecision(5),0);
+		assertEquals(rsmd.getPrecision(6),0);
+		if (issqlrelay) {
+			assertEquals(rsmd.getPrecision(7),0);
+		} else {
+			assertEquals(rsmd.getPrecision(7),60);
+		}
 		System.out.println();
 
 

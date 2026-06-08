@@ -13,6 +13,7 @@ include ../../config.mk
 all: $(SQLR)querytranslation_normalize.$(LIBEXT) \
 	$(SQLR)querytranslation_patterns.$(LIBEXT) \
 	$(SQLR)querytranslation_listagg_to_string_agg.$(LIBEXT) \
+	$(SQLR)querytranslation_sequence_nextval.$(LIBEXT) \
 
 clean:
 	$(RM) *.lo *.o *.obj *.$(LIBEXT) *.lib *.exp *.idb *.pdb *.manifest *.ii
@@ -27,6 +28,9 @@ $(SQLR)querytranslation_patterns.$(LIBEXT): patterns.cpp patterns.$(OBJ)
 $(SQLR)querytranslation_listagg_to_string_agg.$(LIBEXT): listagg_to_string_agg.cpp listagg_to_string_agg.$(OBJ)
 	$(LTLINK) $(LINK) $(OUT)$@ listagg_to_string_agg.$(OBJ) $(LDFLAGS) $(PLUGINLIBS) $(MODLINKFLAGS)
 
+$(SQLR)querytranslation_sequence_nextval.$(LIBEXT): sequence_nextval.cpp sequence_nextval.$(OBJ)
+	$(LTLINK) $(LINK) $(OUT)$@ sequence_nextval.$(OBJ) $(LDFLAGS) $(PLUGINLIBS) $(MODLINKFLAGS)
+
 install: $(INSTALLLIB)
 
 installdll:
@@ -34,6 +38,7 @@ installdll:
 	$(LTINSTALL) $(CP) $(SQLR)querytranslation_normalize.$(LIBEXT) $(libexecdir)
 	$(LTINSTALL) $(CP) $(SQLR)querytranslation_patterns.$(LIBEXT) $(libexecdir)
 	$(LTINSTALL) $(CP) $(SQLR)querytranslation_listagg_to_string_agg.$(LIBEXT) $(libexecdir)
+	$(LTINSTALL) $(CP) $(SQLR)querytranslation_sequence_nextval.$(LIBEXT) $(libexecdir)
 
 installlib: $(INSTALLSHAREDLIB)
 
@@ -51,11 +56,16 @@ installsharedlib:
 	$(RM) $(libexecdir)/$(SQLR)querytranslation_listagg_to_string_agg.a
 	$(RM) $(libexecdir)/$(SQLR)querytranslation_listagg_to_string_agg.$(LIBEXT)
 	$(MODULERENAME) $(libexecdir)/$(SQLR)querytranslation_listagg_to_string_agg.so so $(MODULESUFFIX)
+	$(LTINSTALL) $(CP) $(SQLR)querytranslation_sequence_nextval.$(LIBEXT) $(libexecdir)
+	$(RM) $(libexecdir)/$(SQLR)querytranslation_sequence_nextval.a
+	$(RM) $(libexecdir)/$(SQLR)querytranslation_sequence_nextval.$(LIBEXT)
+	$(MODULERENAME) $(libexecdir)/$(SQLR)querytranslation_sequence_nextval.so so $(MODULESUFFIX)
 
 uninstall:
 	$(RM) $(libexecdir)/$(SQLR)querytranslation_normalize.* \
 		$(libexecdir)/$(SQLR)querytranslation_patterns.* \
 		$(libexecdir)/$(SQLR)querytranslation_listagg_to_string_agg.* \
+		$(libexecdir)/$(SQLR)querytranslation_sequence_nextval.* \
 		$(libexecdir)/$(SQLR)translation_normalize.* \
 		$(libexecdir)/$(SQLR)translation_patterns.* \
 		$(libexecdir)/sqlrtranslation_normalize.*

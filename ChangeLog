@@ -112,6 +112,7 @@
 		DECIMAL) and lvarchar columns as LVARCHAR (rather than VARCHAR),
 		distinguishing them by the type name reported by the cli
 	added LVARCHAR data type
+	added sequence_nextval query translation module
 
 2.1.1 - added tns_admin support
 	fixed sqlr-start ... -strace ...

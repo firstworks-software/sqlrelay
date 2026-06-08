@@ -416,8 +416,7 @@ class mysql extends sqlrtest {
 		System.out.println("  getExtraNameCharacters");
 		stringval=md.getExtraNameCharacters();
 		System.out.println("    "+stringval);
-		// varies by driver
-		assertTrue(stringval!=null);
+		assertEquals(stringval,"$");
 		System.out.println();
 
 		// getIdentifierQuoteString
@@ -447,16 +446,14 @@ class mysql extends sqlrtest {
 		System.out.println("  getMaxBinaryLiteralLength");
 		intval=md.getMaxBinaryLiteralLength();
 		System.out.println("    "+intval);
-		// varies by server version/config
-		assertTrue(intval>=0);
+		assertEquals(intval,16777208);
 		System.out.println();
 
 		// getMaxCatalogNameLength
 		System.out.println("  getMaxCatalogNameLength");
 		intval=md.getMaxCatalogNameLength();
 		System.out.println("    "+intval);
-		// varies by server version
-		assertTrue(intval>=0);
+		assertEquals(intval,32);
 		System.out.println();
 
 		// getMaxCharLiteralLength
@@ -470,8 +467,7 @@ class mysql extends sqlrtest {
 		System.out.println("  getMaxColumnNameLength");
 		intval=md.getMaxColumnNameLength();
 		System.out.println("    "+intval);
-		// varies by server version
-		assertTrue(intval>=0);
+		assertEquals(intval,64);
 		System.out.println();
 
 		// getMaxColumnsInGroupBy
@@ -485,8 +481,7 @@ class mysql extends sqlrtest {
 		System.out.println("  getMaxColumnsInIndex");
 		intval=md.getMaxColumnsInIndex();
 		System.out.println("    "+intval);
-		// varies by storage engine and server version
-		assertTrue(intval>=0);
+		assertEquals(intval,16);
 		System.out.println();
 
 		// getMaxColumnsInOrderBy
@@ -507,8 +502,7 @@ class mysql extends sqlrtest {
 		System.out.println("  getMaxColumnsInTable");
 		intval=md.getMaxColumnsInTable();
 		System.out.println("    "+intval);
-		// varies by storage engine and server version
-		assertTrue(intval>=0);
+		assertEquals(intval,512);
 		System.out.println();
 
 		// getMaxConnections
@@ -542,8 +536,7 @@ class mysql extends sqlrtest {
 		System.out.println("  getMaxProcedureNameLength");
 		intval=md.getMaxProcedureNameLength();
 		System.out.println("    "+intval);
-		// varies by server version
-		assertTrue(intval>=0);
+		assertEquals(intval,0);
 		System.out.println();
 
 		// getMaxRowSize
@@ -557,16 +550,14 @@ class mysql extends sqlrtest {
 		System.out.println("  getMaxSchemaNameLength");
 		intval=md.getMaxSchemaNameLength();
 		System.out.println("    "+intval);
-		// varies by server version
-		assertTrue(intval>=0);
+		assertEquals(intval,0);
 		System.out.println();
 
 		// getMaxStatementLength
 		System.out.println("  getMaxStatementLength");
 		intval=md.getMaxStatementLength();
 		System.out.println("    "+intval);
-		// varies by max_allowed_packet config
-		assertTrue(intval>=0);
+		assertEquals(intval,65531);
 		System.out.println();
 
 		// getMaxStatements
@@ -580,8 +571,7 @@ class mysql extends sqlrtest {
 		System.out.println("  getMaxTableNameLength");
 		intval=md.getMaxTableNameLength();
 		System.out.println("    "+intval);
-		// varies by server version
-		assertTrue(intval>=0);
+		assertEquals(intval,64);
 		System.out.println();
 
 		// getMaxTablesInSelect
@@ -595,8 +585,7 @@ class mysql extends sqlrtest {
 		System.out.println("  getMaxUserNameLength");
 		intval=md.getMaxUserNameLength();
 		System.out.println("    "+intval);
-		// varies by server version
-		assertTrue(intval>=0);
+		assertEquals(intval,16);
 		System.out.println();
 
 		// getNumericFunctions

@@ -198,6 +198,43 @@ void assertFailureDbc(SQLHDBC dbc, SQLRETURN erg) {
 	}
 }
 
+void assertIsVersionDbc(SQLHDBC dbc, const char *value) {
+
+	// value must contain a version number - a digits/dots run with a digit
+	// on both sides of a dot (so bare integers or vendor text alone fail,
+	// but a "##.##" embedded in a product banner passes)
+	bool		hasversion=false;
+	for (const char *c=value; c && *c && !hasversion; c++) {
+		if (*c<'0' || *c>'9') {
+			continue;
+		}
+		bool		dot=false;
+		bool		digitafterdot=false;
+		const char	*p=c;
+		while (*p && ((*p>='0' && *p<='9') || *p=='.')) {
+			if (*p=='.') {
+				dot=true;
+			} else if (dot) {
+				digitafterdot=true;
+			}
+			p++;
+		}
+		if (dot && digitafterdot) {
+			hasversion=true;
+		}
+		c=p-1;
+	}
+	if (hasversion) {
+		stdoutput.printf("%s ",success);
+	} else {
+		stdoutput.printf("%s\n",failure);
+		stdoutput.printf("\"%s\" does not contain a version number\n",
+						(value)?value:"(null)");
+		printError(SQL_NULL_HENV,dbc,SQL_NULL_HSTMT);
+		status=1;
+	}
+}
+
 void assertEqualStmt(SQLHSTMT stmt, const char *actual, const char *expected) {
 
 	if (!expected) {

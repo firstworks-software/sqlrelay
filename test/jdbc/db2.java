@@ -296,8 +296,8 @@ class db2 extends sqlrtest {
 		if (issqlrelay) {
 			assertEquals(stringval,"SQL Relay JDBC driver");
 		} else {
-			// varies by driver version
-			assertTrue(stringval!=null);
+			assertEquals(stringval,
+			"IBM Data Server Driver for JDBC and SQLJ");
 		}
 		System.out.println();
 
@@ -1678,40 +1678,60 @@ class db2 extends sqlrtest {
 
 		// column types
 		System.out.println("COLUMN TYPES:");
-		assertTrue(rsmd.getColumnTypeName(1)!=null);
-		assertTrue(rsmd.getColumnTypeName(2)!=null);
-		assertTrue(rsmd.getColumnTypeName(3)!=null);
-		assertTrue(rsmd.getColumnTypeName(4)!=null);
-		assertTrue(rsmd.getColumnTypeName(5)!=null);
-		assertTrue(rsmd.getColumnTypeName(6)!=null);
-		assertTrue(rsmd.getColumnTypeName(7)!=null);
-		assertTrue(rsmd.getColumnTypeName(8)!=null);
-		assertTrue(rsmd.getColumnTypeName(9)!=null);
-		assertTrue(rsmd.getColumnTypeName(10)!=null);
-		assertTrue(rsmd.getColumnTypeName(11)!=null);
-		assertTrue(rsmd.getColumnTypeName(12)!=null);
-		assertTrue(rsmd.getColumnTypeName(13)!=null);
-		assertTrue(rsmd.getColumnTypeName(14)!=null);
+		assertEquals(rsmd.getColumnTypeName(1),"SMALLINT");
+		assertEquals(rsmd.getColumnTypeName(2),"INTEGER");
+		assertEquals(rsmd.getColumnTypeName(3),"BIGINT");
+		assertEquals(rsmd.getColumnTypeName(4),"DECIMAL");
+		assertEquals(rsmd.getColumnTypeName(5),"REAL");
+		assertEquals(rsmd.getColumnTypeName(6),"DOUBLE");
+		assertEquals(rsmd.getColumnTypeName(7),"CHAR");
+		assertEquals(rsmd.getColumnTypeName(8),"VARCHAR");
+		assertEquals(rsmd.getColumnTypeName(9),"DATE");
+		assertEquals(rsmd.getColumnTypeName(10),"TIME");
+		assertEquals(rsmd.getColumnTypeName(11),"TIMESTAMP");
+		assertEquals(rsmd.getColumnTypeName(12),"CLOB");
+		assertEquals(rsmd.getColumnTypeName(13),"BLOB");
+		assertEquals(rsmd.getColumnTypeName(14),"VARCHAR");
 		System.out.println();
 
 
 		// column length
 		System.out.println("COLUMN LENGTH:");
-		assertTrue(rsmd.getPrecision(1)>=0);
-		assertTrue(rsmd.getPrecision(2)>=0);
-		assertTrue(rsmd.getPrecision(3)>=0);
-		assertTrue(rsmd.getPrecision(4)>=0);
-		assertTrue(rsmd.getPrecision(5)>=0);
-		assertTrue(rsmd.getPrecision(6)>=0);
-		assertTrue(rsmd.getPrecision(7)>=0);
-		assertTrue(rsmd.getPrecision(8)>=0);
-		assertTrue(rsmd.getPrecision(9)>=0);
-		assertTrue(rsmd.getPrecision(10)>=0);
-		assertTrue(rsmd.getPrecision(11)>=0);
-		// these can be (2^32)-1, which gets converted to -1
-		//assertTrue(rsmd.getPrecision(12)>=0);
-		//assertTrue(rsmd.getPrecision(13)>=0);
-		assertTrue(rsmd.getPrecision(14)>=0);
+		assertEquals(rsmd.getPrecision(1),5);
+		assertEquals(rsmd.getPrecision(2),10);
+		assertEquals(rsmd.getPrecision(3),19);
+		assertEquals(rsmd.getPrecision(4),10);
+		assertEquals(rsmd.getPrecision(5),7);
+		assertEquals(rsmd.getPrecision(6),15);
+		assertEquals(rsmd.getPrecision(7),40);
+		assertEquals(rsmd.getPrecision(8),40);
+		if (issqlrelay) {
+			assertEquals(rsmd.getPrecision(9),7);
+		} else {
+			assertEquals(rsmd.getPrecision(9),10);
+		}
+		if (issqlrelay) {
+			assertEquals(rsmd.getPrecision(10),7);
+		} else {
+			assertEquals(rsmd.getPrecision(10),8);
+		}
+		if (issqlrelay) {
+			assertEquals(rsmd.getPrecision(11),7);
+		} else {
+			assertEquals(rsmd.getPrecision(11),26);
+		}
+		// sqlrelay returns the (2^32)-1 lob precision as -1
+		if (issqlrelay) {
+			assertEquals(rsmd.getPrecision(12),-1);
+		} else {
+			assertEquals(rsmd.getPrecision(12),1048576);
+		}
+		if (issqlrelay) {
+			assertEquals(rsmd.getPrecision(13),-1);
+		} else {
+			assertEquals(rsmd.getPrecision(13),1048576);
+		}
+		assertEquals(rsmd.getPrecision(14),60);
 		System.out.println();
 
 

@@ -1682,41 +1682,137 @@ class freetds extends sqlrtest {
 
 		// column types
 		System.out.println("COLUMN TYPES:");
-		assertTrue(rsmd.getColumnTypeName(1)!=null);
-		assertTrue(rsmd.getColumnTypeName(2)!=null);
-		assertTrue(rsmd.getColumnTypeName(3)!=null);
-		assertTrue(rsmd.getColumnTypeName(4)!=null);
-		assertTrue(rsmd.getColumnTypeName(5)!=null);
-		assertTrue(rsmd.getColumnTypeName(6)!=null);
-		assertTrue(rsmd.getColumnTypeName(7)!=null);
-		assertTrue(rsmd.getColumnTypeName(8)!=null);
-		assertTrue(rsmd.getColumnTypeName(9)!=null);
-		assertTrue(rsmd.getColumnTypeName(10)!=null);
-		assertTrue(rsmd.getColumnTypeName(11)!=null);
-		assertTrue(rsmd.getColumnTypeName(12)!=null);
-		assertTrue(rsmd.getColumnTypeName(13)!=null);
-		assertTrue(rsmd.getColumnTypeName(14)!=null);
-		assertTrue(rsmd.getColumnTypeName(15)!=null);
+		if (issqlrelay) {
+			assertEquals(rsmd.getColumnTypeName(1),"INT");
+		} else {
+			assertEquals(rsmd.getColumnTypeName(1),"int");
+		}
+		if (issqlrelay) {
+			assertEquals(rsmd.getColumnTypeName(2),"SMALLINT");
+		} else {
+			assertEquals(rsmd.getColumnTypeName(2),"smallint");
+		}
+		if (issqlrelay) {
+			assertEquals(rsmd.getColumnTypeName(3),"TINYINT");
+		} else {
+			assertEquals(rsmd.getColumnTypeName(3),"tinyint");
+		}
+		if (issqlrelay) {
+			assertEquals(rsmd.getColumnTypeName(4),"REAL");
+		} else {
+			assertEquals(rsmd.getColumnTypeName(4),"real");
+		}
+		if (issqlrelay) {
+			assertEquals(rsmd.getColumnTypeName(5),"FLOAT");
+		} else {
+			assertEquals(rsmd.getColumnTypeName(5),"float");
+		}
+		if (issqlrelay) {
+			assertEquals(rsmd.getColumnTypeName(6),"DECIMAL");
+		} else {
+			assertEquals(rsmd.getColumnTypeName(6),"decimal");
+		}
+		if (issqlrelay) {
+			assertEquals(rsmd.getColumnTypeName(7),"NUMERIC");
+		} else {
+			assertEquals(rsmd.getColumnTypeName(7),"numeric");
+		}
+		if (issqlrelay) {
+			assertEquals(rsmd.getColumnTypeName(8),"MONEY");
+		} else {
+			assertEquals(rsmd.getColumnTypeName(8),"money");
+		}
+		if (issqlrelay) {
+			assertEquals(rsmd.getColumnTypeName(9),"SMALLMONEY");
+		} else {
+			assertEquals(rsmd.getColumnTypeName(9),"smallmoney");
+		}
+		if (issqlrelay) {
+			assertEquals(rsmd.getColumnTypeName(10),"DATETIME");
+		} else {
+			assertEquals(rsmd.getColumnTypeName(10),"datetime");
+		}
+		if (issqlrelay) {
+			assertEquals(rsmd.getColumnTypeName(11),"SMALLDATETIME");
+		} else {
+			assertEquals(rsmd.getColumnTypeName(11),"smalldatetime");
+		}
+		if (issqlrelay) {
+			assertEquals(rsmd.getColumnTypeName(12),"CHAR");
+		} else {
+			assertEquals(rsmd.getColumnTypeName(12),"char");
+		}
+		if (issqlrelay) {
+			assertEquals(rsmd.getColumnTypeName(13),"CHAR");
+		} else {
+			assertEquals(rsmd.getColumnTypeName(13),"varchar");
+		}
+		if (issqlrelay) {
+			assertEquals(rsmd.getColumnTypeName(14),"BIT");
+		} else {
+			assertEquals(rsmd.getColumnTypeName(14),"bit");
+		}
+		if (issqlrelay) {
+			assertEquals(rsmd.getColumnTypeName(15),"CHAR");
+		} else {
+			assertEquals(rsmd.getColumnTypeName(15),"varchar");
+		}
 		System.out.println();
 
 
 		// column length
 		System.out.println("COLUMN LENGTH:");
-		assertTrue(rsmd.getPrecision(1)>=0);
-		assertTrue(rsmd.getPrecision(2)>=0);
-		assertTrue(rsmd.getPrecision(3)>=0);
-		assertTrue(rsmd.getPrecision(4)>=0);
-		assertTrue(rsmd.getPrecision(5)>=0);
-		assertTrue(rsmd.getPrecision(6)>=0);
-		assertTrue(rsmd.getPrecision(7)>=0);
-		assertTrue(rsmd.getPrecision(8)>=0);
-		assertTrue(rsmd.getPrecision(9)>=0);
-		assertTrue(rsmd.getPrecision(10)>=0);
-		assertTrue(rsmd.getPrecision(11)>=0);
-		assertTrue(rsmd.getPrecision(12)>=0);
-		assertTrue(rsmd.getPrecision(13)>=0);
-		assertTrue(rsmd.getPrecision(14)>=0);
-		assertTrue(rsmd.getPrecision(15)>=0);
+		if (issqlrelay) {
+			assertEquals(rsmd.getPrecision(1),0);
+		} else {
+			assertEquals(rsmd.getPrecision(1),10);
+		}
+		if (issqlrelay) {
+			assertEquals(rsmd.getPrecision(2),0);
+		} else {
+			assertEquals(rsmd.getPrecision(2),5);
+		}
+		if (issqlrelay) {
+			assertEquals(rsmd.getPrecision(3),0);
+		} else {
+			assertEquals(rsmd.getPrecision(3),3);
+		}
+		if (issqlrelay) {
+			assertEquals(rsmd.getPrecision(4),0);
+		} else {
+			assertEquals(rsmd.getPrecision(4),7);
+		}
+		if (issqlrelay) {
+			assertEquals(rsmd.getPrecision(5),0);
+		} else {
+			assertEquals(rsmd.getPrecision(5),15);
+		}
+		assertEquals(rsmd.getPrecision(6),4);
+		assertEquals(rsmd.getPrecision(7),4);
+		if (issqlrelay) {
+			assertEquals(rsmd.getPrecision(8),0);
+		} else {
+			assertEquals(rsmd.getPrecision(8),19);
+		}
+		if (issqlrelay) {
+			assertEquals(rsmd.getPrecision(9),0);
+		} else {
+			assertEquals(rsmd.getPrecision(9),10);
+		}
+		if (issqlrelay) {
+			assertEquals(rsmd.getPrecision(10),7);
+		} else {
+			assertEquals(rsmd.getPrecision(10),23);
+		}
+		if (issqlrelay) {
+			assertEquals(rsmd.getPrecision(11),7);
+		} else {
+			assertEquals(rsmd.getPrecision(11),16);
+		}
+		assertEquals(rsmd.getPrecision(12),40);
+		assertEquals(rsmd.getPrecision(13),40);
+		assertEquals(rsmd.getPrecision(14),1);
+		assertEquals(rsmd.getPrecision(15),60);
 		System.out.println();
 
 

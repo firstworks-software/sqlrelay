@@ -236,7 +236,12 @@ class firebird extends sqlrtest {
 		System.out.println("  getDatabaseProductName");
 		stringval=md.getDatabaseProductName();
 		System.out.println("    "+stringval);
-		assertTrue(stringval!=null);
+		if (issqlrelay) {
+			assertEquals(stringval,"firebird");
+		} else {
+			// native product name embeds the server version
+			assertTrue(stringval.startsWith("Firebird"));
+		}
 		System.out.println();
 
 		// getDatabaseProductVersion
@@ -1647,40 +1652,75 @@ class firebird extends sqlrtest {
 
 		// column types
 		System.out.println("COLUMN TYPES:");
-		assertTrue(rsmd.getColumnTypeName(1)!=null);
-		assertTrue(rsmd.getColumnTypeName(2)!=null);
-		assertTrue(rsmd.getColumnTypeName(3)!=null);
-		assertTrue(rsmd.getColumnTypeName(4)!=null);
-		assertTrue(rsmd.getColumnTypeName(5)!=null);
-		assertTrue(rsmd.getColumnTypeName(6)!=null);
-		assertTrue(rsmd.getColumnTypeName(7)!=null);
-		assertTrue(rsmd.getColumnTypeName(8)!=null);
-		assertTrue(rsmd.getColumnTypeName(9)!=null);
-		assertTrue(rsmd.getColumnTypeName(10)!=null);
-		assertTrue(rsmd.getColumnTypeName(11)!=null);
-		assertTrue(rsmd.getColumnTypeName(12)!=null);
+		assertEquals(rsmd.getColumnTypeName(1),"INTEGER");
+		assertEquals(rsmd.getColumnTypeName(2),"SMALLINT");
+		assertEquals(rsmd.getColumnTypeName(3),"DECIMAL");
+		assertEquals(rsmd.getColumnTypeName(4),"NUMERIC");
+		assertEquals(rsmd.getColumnTypeName(5),"FLOAT");
+		assertEquals(rsmd.getColumnTypeName(6),"DOUBLE PRECISION");
+		assertEquals(rsmd.getColumnTypeName(7),"DATE");
+		assertEquals(rsmd.getColumnTypeName(8),"TIME");
+		assertEquals(rsmd.getColumnTypeName(9),"CHAR");
+		assertEquals(rsmd.getColumnTypeName(10),"VARCHAR");
+		assertEquals(rsmd.getColumnTypeName(11),"TIMESTAMP");
+		if (issqlrelay) {
+			assertEquals(rsmd.getColumnTypeName(12),"BLOB");
+		} else {
+			assertEquals(rsmd.getColumnTypeName(12),"BLOB SUB_TYPE 0");
+		}
 		System.out.println();
 
 
 		// column length
 		System.out.println("COLUMN LENGTH:");
-		assertTrue(rsmd.getPrecision(1)>=0);
-		assertTrue(rsmd.getPrecision(2)>=0);
-		assertTrue(rsmd.getPrecision(3)>=0);
-		assertTrue(rsmd.getPrecision(4)>=0);
-		assertTrue(rsmd.getPrecision(5)>=0);
-		assertTrue(rsmd.getPrecision(6)>=0);
-		assertTrue(rsmd.getPrecision(7)>=0);
-		assertTrue(rsmd.getPrecision(8)>=0);
-		assertTrue(rsmd.getPrecision(9)>=0);
-		assertTrue(rsmd.getPrecision(10)>=0);
-		assertTrue(rsmd.getPrecision(11)>=0);
 		if (issqlrelay) {
-			// sqlrelay JDBC driver issue:
-			// blob precision returns negative
-			assertTrue(true);
+			assertEquals(rsmd.getPrecision(1),11);
 		} else {
-			assertTrue(rsmd.getPrecision(12)>=0);
+			assertEquals(rsmd.getPrecision(1),10);
+		}
+		assertEquals(rsmd.getPrecision(2),5);
+		if (issqlrelay) {
+			assertEquals(rsmd.getPrecision(3),16);
+		} else {
+			assertEquals(rsmd.getPrecision(3),10);
+		}
+		if (issqlrelay) {
+			assertEquals(rsmd.getPrecision(4),16);
+		} else {
+			assertEquals(rsmd.getPrecision(4),10);
+		}
+		if (issqlrelay) {
+			assertEquals(rsmd.getPrecision(5),0);
+		} else {
+			assertEquals(rsmd.getPrecision(5),7);
+		}
+		if (issqlrelay) {
+			assertEquals(rsmd.getPrecision(6),0);
+		} else {
+			assertEquals(rsmd.getPrecision(6),15);
+		}
+		if (issqlrelay) {
+			assertEquals(rsmd.getPrecision(7),7);
+		} else {
+			assertEquals(rsmd.getPrecision(7),10);
+		}
+		if (issqlrelay) {
+			assertEquals(rsmd.getPrecision(8),7);
+		} else {
+			assertEquals(rsmd.getPrecision(8),8);
+		}
+		assertEquals(rsmd.getPrecision(9),50);
+		assertEquals(rsmd.getPrecision(10),50);
+		if (issqlrelay) {
+			assertEquals(rsmd.getPrecision(11),7);
+		} else {
+			assertEquals(rsmd.getPrecision(11),19);
+		}
+		// sqlrelay JDBC driver returns -1 for blob precision
+		if (issqlrelay) {
+			assertEquals(rsmd.getPrecision(12),-1);
+		} else {
+			assertEquals(rsmd.getPrecision(12),0);
 		}
 		System.out.println();
 

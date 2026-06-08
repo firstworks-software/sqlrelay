@@ -438,8 +438,7 @@ class oracle extends sqlrtest {
 		if (issqlrelay) {
 			assertEquals(stringval,"SQL Relay JDBC driver");
 		} else {
-			// varies by driver version
-			assertTrue(stringval!=null);
+			assertEquals(stringval,"Oracle JDBC driver");
 		}
 		System.out.println();
 

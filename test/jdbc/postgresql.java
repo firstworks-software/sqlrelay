@@ -320,8 +320,7 @@ class postgresql extends sqlrtest {
 		if (issqlrelay) {
 			assertEquals(stringval,"SQL Relay JDBC driver");
 		} else {
-			// varies by driver version
-			assertTrue(stringval!=null);
+			assertEquals(stringval,"PostgreSQL JDBC Driver");
 		}
 		System.out.println();
 
@@ -1691,35 +1690,71 @@ class postgresql extends sqlrtest {
 
 		// column types
 		System.out.println("COLUMN TYPES:");
-		assertTrue(rsmd.getColumnTypeName(1)!=null);
-		assertTrue(rsmd.getColumnTypeName(2)!=null);
-		assertTrue(rsmd.getColumnTypeName(3)!=null);
-		assertTrue(rsmd.getColumnTypeName(4)!=null);
-		assertTrue(rsmd.getColumnTypeName(5)!=null);
-		assertTrue(rsmd.getColumnTypeName(6)!=null);
-		assertTrue(rsmd.getColumnTypeName(7)!=null);
-		assertTrue(rsmd.getColumnTypeName(8)!=null);
-		assertTrue(rsmd.getColumnTypeName(9)!=null);
-		assertTrue(rsmd.getColumnTypeName(10)!=null);
-		assertTrue(rsmd.getColumnTypeName(11)!=null);
-		assertTrue(rsmd.getColumnTypeName(12)!=null);
+		assertEquals(rsmd.getColumnTypeName(1),"int4");
+		assertEquals(rsmd.getColumnTypeName(2),"float8");
+		assertEquals(rsmd.getColumnTypeName(3),"float4");
+		assertEquals(rsmd.getColumnTypeName(4),"int2");
+		assertEquals(rsmd.getColumnTypeName(5),"bpchar");
+		assertEquals(rsmd.getColumnTypeName(6),"varchar");
+		assertEquals(rsmd.getColumnTypeName(7),"date");
+		assertEquals(rsmd.getColumnTypeName(8),"time");
+		assertEquals(rsmd.getColumnTypeName(9),"timestamp");
+		assertEquals(rsmd.getColumnTypeName(10),"text");
+		assertEquals(rsmd.getColumnTypeName(11),"bytea");
+		assertEquals(rsmd.getColumnTypeName(12),"varchar");
 		System.out.println();
 
 
 		// column length
 		System.out.println("COLUMN LENGTH:");
-		assertTrue(rsmd.getPrecision(1)>=0);
-		assertTrue(rsmd.getPrecision(2)>=0);
-		assertTrue(rsmd.getPrecision(3)>=0);
-		assertTrue(rsmd.getPrecision(4)>=0);
-		assertTrue(rsmd.getPrecision(5)>=0);
-		assertTrue(rsmd.getPrecision(6)>=0);
-		assertTrue(rsmd.getPrecision(7)>=0);
-		assertTrue(rsmd.getPrecision(8)>=0);
-		assertTrue(rsmd.getPrecision(9)>=0);
-		assertTrue(rsmd.getPrecision(10)>=0);
-		assertTrue(rsmd.getPrecision(11)>=0);
-		assertTrue(rsmd.getPrecision(12)>=0);
+		if (issqlrelay) {
+			assertEquals(rsmd.getPrecision(1),0);
+		} else {
+			assertEquals(rsmd.getPrecision(1),10);
+		}
+		if (issqlrelay) {
+			assertEquals(rsmd.getPrecision(2),0);
+		} else {
+			assertEquals(rsmd.getPrecision(2),17);
+		}
+		if (issqlrelay) {
+			assertEquals(rsmd.getPrecision(3),0);
+		} else {
+			assertEquals(rsmd.getPrecision(3),8);
+		}
+		if (issqlrelay) {
+			assertEquals(rsmd.getPrecision(4),0);
+		} else {
+			assertEquals(rsmd.getPrecision(4),5);
+		}
+		assertEquals(rsmd.getPrecision(5),40);
+		assertEquals(rsmd.getPrecision(6),40);
+		if (issqlrelay) {
+			assertEquals(rsmd.getPrecision(7),7);
+		} else {
+			assertEquals(rsmd.getPrecision(7),13);
+		}
+		if (issqlrelay) {
+			assertEquals(rsmd.getPrecision(8),7);
+		} else {
+			assertEquals(rsmd.getPrecision(8),15);
+		}
+		if (issqlrelay) {
+			assertEquals(rsmd.getPrecision(9),7);
+		} else {
+			assertEquals(rsmd.getPrecision(9),29);
+		}
+		if (issqlrelay) {
+			assertEquals(rsmd.getPrecision(10),0);
+		} else {
+			assertEquals(rsmd.getPrecision(10),2147483647);
+		}
+		if (issqlrelay) {
+			assertEquals(rsmd.getPrecision(11),0);
+		} else {
+			assertEquals(rsmd.getPrecision(11),2147483647);
+		}
+		assertEquals(rsmd.getPrecision(12),60);
 		System.out.println();
 
 
