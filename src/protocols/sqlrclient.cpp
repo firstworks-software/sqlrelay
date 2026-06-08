@@ -4738,6 +4738,9 @@ bool sqlrprotocol_sqlrclient::getObjectList(sqlrservercursor *cursor,
 			objecttype="database";
 			break;
 		case SQLRCLIENTQUERYTYPE_CATALOG_LIST:
+			objecttype="catalog";
+			break;
+		case SQLRCLIENTQUERYTYPE_SCHEMA_LIST:
 			objecttype="schema";
 			break;
 		default:
@@ -4751,11 +4754,26 @@ bool sqlrprotocol_sqlrclient::getObjectList(sqlrservercursor *cursor,
 					objecttype,object,
 					&catalog,&schema,&obj);
 
-	// when fetching lists in mysql format, we only want to fetch for
-	// the current database/schema
 	if (listformat==SQLRSERVERLISTFORMAT_MYSQL) {
-		catalog=currentcatalog;
-		schema=currentschema;
+
+		// when fetching lists in mysql format...
+		switch (querytype) {
+			case SQLRCLIENTQUERYTYPE_CATALOG_LIST:
+				// when fetching the catalog list,
+				// fetch all catalogs
+				break;
+			case SQLRCLIENTQUERYTYPE_SCHEMA_LIST:
+				// when fetching the schema list, we only want
+				// to fetch for the current catalog
+				catalog=currentcatalog;
+				break;
+			default:
+				// when fetching other objects, we only want
+				// to fetch for the current catalog/schema
+				catalog=currentcatalog;
+				schema=currentschema;
+				break;
+		}
 	}
 
 	// get the appropriate list and set the list format
