@@ -3681,6 +3681,9 @@ if (issqlrelay) {
 				name.equals("testproc2") ||
 				name.equals("testproc3") ||
 				name.equals("testproc4")) {
+				// created to return no result set
+				assertEquals(rs.getShort("PROCEDURE_TYPE"),
+					DatabaseMetaData.procedureNoResult);
 				counter++;
 			}
 		}

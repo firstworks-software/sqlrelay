@@ -7953,6 +7953,11 @@ int main(int argc, char **argv) {
 	erg=SQLBindCol(stmt,3,SQL_C_CHAR,
 			tblname,sizeof(tblname),&tblnameind);
 	assertSuccessStmt(stmt,erg);
+	SQLCHAR		tbltype[256];
+	SQLLEN		tbltypeind;
+	erg=SQLBindCol(stmt,4,SQL_C_CHAR,
+			tbltype,sizeof(tbltype),&tbltypeind);
+	assertSuccessStmt(stmt,erg);
 	int		tblcounter=0;
 	for (;;) {
 		erg=SQLFetch(stmt);
@@ -7970,6 +7975,8 @@ int main(int argc, char **argv) {
 					(const char *)tblname,"TESTTABLE3") ||
 			!charstring::compare(
 					(const char *)tblname,"TESTTABLE4")) {
+			// filtered on TABLE, so each match must report that type
+			assertEqualStmt(stmt,(const char *)tbltype,"TABLE");
 			tblcounter++;
 		}
 	}
@@ -8000,6 +8007,11 @@ int main(int argc, char **argv) {
 	erg=SQLBindCol(stmt,1,SQL_C_CHAR,
 			typname,sizeof(typname),&typnameind);
 	assertSuccessStmt(stmt,erg);
+	SQLSMALLINT	typdatatype;
+	SQLLEN		typdatatypeind;
+	erg=SQLBindCol(stmt,2,SQL_C_SHORT,&typdatatype,
+			sizeof(typdatatype),&typdatatypeind);
+	assertSuccessStmt(stmt,erg);
 	bool		foundnumber=false;
 	bool		founddecimal=false;
 	bool		foundchar=false;
@@ -8014,6 +8026,9 @@ int main(int argc, char **argv) {
 		if (erg!=SQL_SUCCESS && erg!=SQL_SUCCESS_WITH_INFO) {
 			break;
 		}
+		// Oracle deliberately lists NUMBER and DATE under several ODBC
+		// type codes, so only the clean 1:1 CHAR/VARCHAR2 names get a
+		// type-code check (on first match)
 		if (!charstring::compareIgnoringCase(
 					(const char *)typname,"NUMBER")) {
 			foundnumber=true;
@@ -8022,9 +8037,16 @@ int main(int argc, char **argv) {
 			founddecimal=true;
 		} else if (!charstring::compareIgnoringCase(
 					(const char *)typname,"CHAR")) {
+			if (!foundchar) {
+				assertEqualStmt(stmt,(int)typdatatype,SQL_CHAR);
+			}
 			foundchar=true;
 		} else if (!charstring::compareIgnoringCase(
 					(const char *)typname,"VARCHAR2")) {
+			if (!foundvarchar2) {
+				assertEqualStmt(stmt,(int)typdatatype,
+							SQL_VARCHAR);
+			}
 			foundvarchar2=true;
 		} else if (!charstring::compareIgnoringCase(
 					(const char *)typname,"DATE")) {
@@ -8133,6 +8155,11 @@ int main(int argc, char **argv) {
 	erg=SQLBindCol(stmt,4,SQL_C_CHAR,
 			pkcolname,sizeof(pkcolname),&pkcolnameind);
 	assertSuccessStmt(stmt,erg);
+	SQLSMALLINT	pkkeyseq;
+	SQLLEN		pkkeyseqind;
+	erg=SQLBindCol(stmt,5,SQL_C_SHORT,&pkkeyseq,
+			sizeof(pkkeyseq),&pkkeyseqind);
+	assertSuccessStmt(stmt,erg);
 	bool		foundcol1=false;
 	bool		foundcol2=false;
 	for (;;) {
@@ -8145,6 +8172,8 @@ int main(int argc, char **argv) {
 			break;
 		}
 		if (!charstring::compare((const char *)pkcolname,"COL1")) {
+			// single-column key, so col1 is at sequence 1
+			assertEqualStmt(stmt,(int)pkkeyseq,1);
 			foundcol1=true;
 		} else if (!charstring::compare(
 					(const char *)pkcolname,"COL2")) {
@@ -8350,6 +8379,11 @@ int main(int argc, char **argv) {
 	erg=SQLBindCol(stmt,3,SQL_C_CHAR,
 			procname,sizeof(procname),&procnameind);
 	assertSuccessStmt(stmt,erg);
+	SQLSMALLINT	proctype;
+	SQLLEN		proctypeind;
+	erg=SQLBindCol(stmt,8,SQL_C_SHORT,&proctype,
+			sizeof(proctype),&proctypeind);
+	assertSuccessStmt(stmt,erg);
 	int		proccounter=0;
 	for (;;) {
 		erg=SQLFetch(stmt);
@@ -8368,6 +8402,8 @@ int main(int argc, char **argv) {
 				(const char *)procname,"TESTPROC3") ||
 			!charstring::compare(
 				(const char *)procname,"TESTPROC4")) {
+			// created as procedures, not functions
+			assertEqualStmt(stmt,(int)proctype,SQL_PT_PROCEDURE);
 			proccounter++;
 		}
 	}

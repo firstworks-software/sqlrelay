@@ -7415,6 +7415,11 @@ int main(int argc, char **argv) {
 	erg=SQLBindCol(stmt,3,SQL_C_CHAR,
 			tblname,sizeof(tblname),&tblnameind);
 	assertSuccessStmt(stmt,erg);
+	SQLCHAR		tbltype[256];
+	SQLLEN		tbltypeind;
+	erg=SQLBindCol(stmt,4,SQL_C_CHAR,
+			tbltype,sizeof(tbltype),&tbltypeind);
+	assertSuccessStmt(stmt,erg);
 	int		tblcounter=0;
 	for (;;) {
 		erg=SQLFetch(stmt);
@@ -7432,6 +7437,8 @@ int main(int argc, char **argv) {
 					(const char *)tblname,"TESTTABLE2") ||
 			!charstring::compare(
 					(const char *)tblname,"TESTTABLE3")) {
+			// filtered on TABLE, so each match must report that type
+			assertEqualStmt(stmt,(const char *)tbltype,"TABLE");
 			tblcounter++;
 		}
 	}
@@ -7455,6 +7462,11 @@ int main(int argc, char **argv) {
 	erg=SQLBindCol(stmt,1,SQL_C_CHAR,
 			typname,sizeof(typname),&typnameind);
 	assertSuccessStmt(stmt,erg);
+	SQLSMALLINT	typdatatype;
+	SQLLEN		typdatatypeind;
+	erg=SQLBindCol(stmt,2,SQL_C_SHORT,&typdatatype,
+			sizeof(typdatatype),&typdatatypeind);
+	assertSuccessStmt(stmt,erg);
 	bool		foundinteger=false;
 	bool		foundchar=false;
 	bool		foundvarchar=false;
@@ -7470,15 +7482,23 @@ int main(int argc, char **argv) {
 		}
 		if (!charstring::compareIgnoringCase(
 					(const char *)typname,"INTEGER")) {
+			assertEqualStmt(stmt,(int)typdatatype,SQL_INTEGER);
 			foundinteger=true;
 		} else if (!charstring::compareIgnoringCase(
 					(const char *)typname,"CHAR")) {
+			assertEqualStmt(stmt,(int)typdatatype,SQL_CHAR);
 			foundchar=true;
 		} else if (!charstring::compareIgnoringCase(
 					(const char *)typname,"VARCHAR")) {
+			assertEqualStmt(stmt,(int)typdatatype,SQL_VARCHAR);
 			foundvarchar=true;
 		} else if (!charstring::compareIgnoringCase(
 					(const char *)typname,"DATE")) {
+			#if (ODBCVER >= 0x0300)
+			assertEqualStmt(stmt,(int)typdatatype,SQL_TYPE_DATE);
+			#else
+			assertEqualStmt(stmt,(int)typdatatype,SQL_DATE);
+			#endif
 			founddate=true;
 		}
 	}
@@ -7654,6 +7674,11 @@ int main(int argc, char **argv) {
 	erg=SQLBindCol(stmt,3,SQL_C_CHAR,
 			procname,sizeof(procname),&procnameind);
 	assertSuccessStmt(stmt,erg);
+	SQLSMALLINT	proctype;
+	SQLLEN		proctypeind;
+	erg=SQLBindCol(stmt,8,SQL_C_SHORT,&proctype,
+			sizeof(proctype),&proctypeind);
+	assertSuccessStmt(stmt,erg);
 	int		proccounter=0;
 	for (;;) {
 		erg=SQLFetch(stmt);
@@ -7668,6 +7693,8 @@ int main(int argc, char **argv) {
 			(const char *)procname,"TESTPROC") ||
 			!charstring::compare(
 				(const char *)procname,"TESTPROC1")) {
+			// created as procedures, not functions
+			assertEqualStmt(stmt,(int)proctype,SQL_PT_PROCEDURE);
 			proccounter++;
 		}
 	}

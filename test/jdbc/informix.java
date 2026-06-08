@@ -3087,6 +3087,9 @@ class informix extends sqlrtest {
 					name.equalsIgnoreCase("testproc2") ||
 					name.equalsIgnoreCase("testproc3") ||
 					name.equalsIgnoreCase("testproc4")) {
+				// created to return no result set
+				assertEquals(rs.getShort("procedure_type"),
+					DatabaseMetaData.procedureNoResult);
 				counter++;
 			}
 		}

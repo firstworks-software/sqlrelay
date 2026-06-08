@@ -2920,6 +2920,19 @@ class firebird extends sqlrtest {
 			String name=rs.getString("PROCEDURE_NAME");
 			if (name.equals("TESTPROC") ||
 					name.equals("TESTPROC1")) {
+				if (issqlrelay) {
+					assertEquals(
+						rs.getShort("PROCEDURE_TYPE"),
+						DatabaseMetaData.
+							procedureNoResult);
+				} else {
+					// native Jaybird reports the type as
+					// procedureReturnsResult
+					assertEquals(
+						rs.getShort("PROCEDURE_TYPE"),
+						DatabaseMetaData.
+							procedureReturnsResult);
+				}
 				counter++;
 			}
 		}

@@ -1312,6 +1312,8 @@ if (dot>-1) {
 		assertTrue(secondcur.sendQuery("select * from "+
 				"testtable"));
 	}
+	// the nested selects must not disturb the outer result set
+	assertEqInt(i,cur.rowCount());
 	secondcur.closeResultSet();
 	//cur.setResultSetBufferSize(0);
 	assertTrue(cur.sendQuery("drop table testtable"));

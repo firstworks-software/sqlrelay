@@ -3788,6 +3788,9 @@ class oracle extends sqlrtest {
 				name.equalsIgnoreCase("TESTPROC2") ||
 				name.equalsIgnoreCase("TESTPROC3") ||
 				name.equalsIgnoreCase("TESTPROC4")) {
+				// created to return no result set
+				assertEquals(rs.getShort("PROCEDURE_TYPE"),
+					DatabaseMetaData.procedureNoResult);
 				counter++;
 			}
 		}

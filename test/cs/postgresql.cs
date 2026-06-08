@@ -837,10 +837,14 @@ namespace SQLRClientTest
             assertTrue(cur.sendQuery("select * from testtable"));
             secondcur = new SQLRCursor(con);
             secondcur.setResultSetBufferSize(1);
+            UInt64 nestedrows = 0;
             for (UInt32 i = 0; cur.getRow((UInt64)i) != null; i++)
             {
                 assertTrue(secondcur.sendQuery("select * from testtable"));
+                nestedrows++;
             }
+            // the nested selects must not disturb the outer result set
+            assertEquals(nestedrows, cur.rowCount());
             secondcur.closeResultSet();
             cur.setResultSetBufferSize(0);
             assertTrue(cur.sendQuery("drop table testtable"));

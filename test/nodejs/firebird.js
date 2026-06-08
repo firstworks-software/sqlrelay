@@ -918,6 +918,8 @@ for (var i=0; cur.getRow(i); i++) {
 	assertTrue(secondcur.sendQuery(
 		"select * from testtable"));
 }
+// the nested selects must not disturb the outer result set
+assertEqInt(i,cur.rowCount());
 secondcur.closeResultSet();
 cur.setResultSetBufferSize(0);
 console.log();

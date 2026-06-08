@@ -2741,6 +2741,9 @@ class postgresql extends sqlrtest {
 					name.equals("testproc2") ||
 					name.equals("testproc3") ||
 					name.equals("testproc4")) {
+				// reported as a result-returning function
+				assertEquals(rs.getShort("PROCEDURE_TYPE"),
+					DatabaseMetaData.procedureReturnsResult);
 				counter++;
 			}
 		}

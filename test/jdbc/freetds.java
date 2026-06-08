@@ -2692,6 +2692,19 @@ class freetds extends sqlrtest {
 					name.equals("testproc2") ||
 					name.equals("testproc3") ||
 					name.equals("testproc4")) {
+				if (issqlrelay) {
+					assertEquals(
+						rs.getShort("PROCEDURE_TYPE"),
+						DatabaseMetaData.
+							procedureNoResult);
+				} else {
+					// native jTDS reports the type as
+					// procedureReturnsResult
+					assertEquals(
+						rs.getShort("PROCEDURE_TYPE"),
+						DatabaseMetaData.
+							procedureReturnsResult);
+				}
 				counter++;
 			}
 		}

@@ -2986,6 +2986,10 @@ class sap extends sqlrtest {
 					name.equals("testproc2") ||
 					name.equals("testproc3") ||
 					name.equals("testproc4")) {
+					assertEquals(
+						rs.getShort("PROCEDURE_TYPE"),
+						DatabaseMetaData.
+							procedureNoResult);
 					counter++;
 				}
 			} else {
@@ -2995,6 +2999,12 @@ class sap extends sqlrtest {
 					name.startsWith("testproc2") ||
 					name.startsWith("testproc3") ||
 					name.startsWith("testproc4")) {
+					// native jConnect reports the type as
+					// procedureResultUnknown
+					assertEquals(
+						rs.getShort("PROCEDURE_TYPE"),
+						DatabaseMetaData.
+							procedureResultUnknown);
 					counter++;
 				}
 			}

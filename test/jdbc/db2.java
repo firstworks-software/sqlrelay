@@ -2778,6 +2778,9 @@ class db2 extends sqlrtest {
 					name.equals("TESTPROC2") ||
 					name.equals("TESTPROC3") ||
 					name.equals("TESTPROC4")) {
+				// created to return no result set
+				assertEquals(rs.getShort("PROCEDURE_TYPE"),
+					DatabaseMetaData.procedureNoResult);
 				counter++;
 			}
 		}
