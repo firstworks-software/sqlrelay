@@ -1496,6 +1496,9 @@ static SQLSMALLINT SQLR_MapColumnType(CONN *conn,
 	if (!charstring::compareIgnoringCase(ctype,"BOOLEAN")) {
 		return SQL_CHAR;
 	}
+	if (!charstring::compareIgnoringCase(ctype,"LVARCHAR")) {
+		return SQL_VARCHAR;
+	}
 	// also added by mysql
 	if (!charstring::compareIgnoringCase(ctype,"TINYTEXT")) {
 		return SQL_LONGVARCHAR;

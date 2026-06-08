@@ -424,10 +424,8 @@ assertEqStr(cur.getColumnType(4),"INT8");
 assertEqStr(cur.getColumnType("testint8"),"INT8");
 assertEqStr(cur.getColumnType(5),"DECIMAL");
 assertEqStr(cur.getColumnType("testdecimal"),"DECIMAL");
-//assertEqStr(cur.getColumnType(6),"MONEY");
-//assertEqStr(cur.getColumnType("testmoney"),"MONEY");
-assertEqStr(cur.getColumnType(6),"DECIMAL");
-assertEqStr(cur.getColumnType("testmoney"),"DECIMAL");
+assertEqStr(cur.getColumnType(6),"MONEY");
+assertEqStr(cur.getColumnType("testmoney"),"MONEY");
 assertEqStr(cur.getColumnType(7),"SMALLFLOAT");
 assertEqStr(cur.getColumnType("testsmallfloat"),
 						"SMALLFLOAT");
@@ -435,22 +433,16 @@ assertEqStr(cur.getColumnType(8),"FLOAT");
 assertEqStr(cur.getColumnType("testfloat"),"FLOAT");
 assertEqStr(cur.getColumnType(9),"CHAR");
 assertEqStr(cur.getColumnType("testchar"),"CHAR");
-//assertEqStr(cur.getColumnType(10),"NCHAR");
-//assertEqStr(cur.getColumnType("testnchar"),"NCHAR");
+// informix reports nchar as char, with no way to tell them apart
 assertEqStr(cur.getColumnType(10),"CHAR");
 assertEqStr(cur.getColumnType("testnchar"),"CHAR");
 assertEqStr(cur.getColumnType(11),"VARCHAR");
 assertEqStr(cur.getColumnType("testvarchar"),"VARCHAR");
-//assertEqStr(cur.getColumnType(12),"NVARCHAR");
-//assertEqStr(cur.getColumnType("testnvarchar"),
-//						"NVARCHAR");
+// informix reports nvarchar as varchar, with no way to tell them apart
 assertEqStr(cur.getColumnType(12),"VARCHAR");
 assertEqStr(cur.getColumnType("testnvarchar"),"VARCHAR");
-//assertEqStr(cur.getColumnType(13),"LVARCHAR");
-//assertEqStr(cur.getColumnType("testlvarchar"),
-//						"LVARCHAR");
-assertEqStr(cur.getColumnType(13),"VARCHAR");
-assertEqStr(cur.getColumnType("testlvarchar"),"VARCHAR");
+assertEqStr(cur.getColumnType(13),"LVARCHAR");
+assertEqStr(cur.getColumnType("testlvarchar"),"LVARCHAR");
 assertEqStr(cur.getColumnType(14),"DATE");
 assertEqStr(cur.getColumnType("testdate"),"DATE");
 assertEqStr(cur.getColumnType(15),"DATETIME");
@@ -500,9 +492,9 @@ assertEqInt(cur.getColumnLength("testdatetime"),19);
 assertEqInt(cur.getColumnLength(16),2147483647);
 assertEqInt(cur.getColumnLength("testtext"),
 						2147483647);
-//assertEqInt(cur.getColumnLength(17),2157483647);
-//assertEqInt(cur.getColumnLength("testbyte"),
-//						2157483647);
+assertEqInt(cur.getColumnLength(17),2147483647);
+assertEqInt(cur.getColumnLength("testbyte"),
+						2147483647);
 console.log("");
 
 

@@ -108,6 +108,10 @@
 		output binds now
 	odbc driver null-terminates the SQLDriverConnect output connect
 		string now
+	informix connection now reports money columns as MONEY (rather than
+		DECIMAL) and lvarchar columns as LVARCHAR (rather than VARCHAR),
+		distinguishing them by the type name reported by the cli
+	added LVARCHAR data type
 
 2.1.1 - added tns_admin support
 	fixed sqlr-start ... -strace ...

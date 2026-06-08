@@ -401,8 +401,8 @@ main() ->
     assertEqualsString(sqlrelay:getColumnTypeByName("testint8"), "INT8"),
     assertEqualsString(sqlrelay:getColumnTypeByIndex(5), "DECIMAL"),
     assertEqualsString(sqlrelay:getColumnTypeByName("testdecimal"), "DECIMAL"),
-    assertEqualsString(sqlrelay:getColumnTypeByIndex(6), "DECIMAL"),
-    assertEqualsString(sqlrelay:getColumnTypeByName("testmoney"), "DECIMAL"),
+    assertEqualsString(sqlrelay:getColumnTypeByIndex(6), "MONEY"),
+    assertEqualsString(sqlrelay:getColumnTypeByName("testmoney"), "MONEY"),
     assertEqualsString(sqlrelay:getColumnTypeByIndex(7), "SMALLFLOAT"),
     assertEqualsString(sqlrelay:getColumnTypeByName("testsmallfloat"),
                        "SMALLFLOAT"),
@@ -410,14 +410,16 @@ main() ->
     assertEqualsString(sqlrelay:getColumnTypeByName("testfloat"), "FLOAT"),
     assertEqualsString(sqlrelay:getColumnTypeByIndex(9), "CHAR"),
     assertEqualsString(sqlrelay:getColumnTypeByName("testchar"), "CHAR"),
+    % informix reports nchar as char, with no way to tell them apart
     assertEqualsString(sqlrelay:getColumnTypeByIndex(10), "CHAR"),
     assertEqualsString(sqlrelay:getColumnTypeByName("testnchar"), "CHAR"),
     assertEqualsString(sqlrelay:getColumnTypeByIndex(11), "VARCHAR"),
     assertEqualsString(sqlrelay:getColumnTypeByName("testvarchar"), "VARCHAR"),
+    % informix reports nvarchar as varchar, with no way to tell them apart
     assertEqualsString(sqlrelay:getColumnTypeByIndex(12), "VARCHAR"),
     assertEqualsString(sqlrelay:getColumnTypeByName("testnvarchar"), "VARCHAR"),
-    assertEqualsString(sqlrelay:getColumnTypeByIndex(13), "VARCHAR"),
-    assertEqualsString(sqlrelay:getColumnTypeByName("testlvarchar"), "VARCHAR"),
+    assertEqualsString(sqlrelay:getColumnTypeByIndex(13), "LVARCHAR"),
+    assertEqualsString(sqlrelay:getColumnTypeByName("testlvarchar"), "LVARCHAR"),
     assertEqualsString(sqlrelay:getColumnTypeByIndex(14), "DATE"),
     assertEqualsString(sqlrelay:getColumnTypeByName("testdate"), "DATE"),
     assertEqualsString(sqlrelay:getColumnTypeByIndex(15), "DATETIME"),
@@ -464,6 +466,8 @@ main() ->
     assertEqualsInt(sqlrelay:getColumnLengthByName("testdatetime"), 19),
     assertEqualsInt(sqlrelay:getColumnLengthByIndex(16), 2147483647),
     assertEqualsInt(sqlrelay:getColumnLengthByName("testtext"), 2147483647),
+    assertEqualsInt(sqlrelay:getColumnLengthByIndex(17), 2147483647),
+    assertEqualsInt(sqlrelay:getColumnLengthByName("testbyte"), 2147483647),
     io:format("~n"),
 
     %% LONGEST COLUMN

@@ -412,10 +412,8 @@
 	assertEqStr(sqlrcur_getColumnType($cur,"testint8"),"INT8");
 	assertEqStr(sqlrcur_getColumnType($cur,5),"DECIMAL");
 	assertEqStr(sqlrcur_getColumnType($cur,"testdecimal"),"DECIMAL");
-	#assertEqStr(sqlrcur_getColumnType($cur,6),"MONEY");
-	#assertEqStr(sqlrcur_getColumnType($cur,"testmoney"),"MONEY");
-	assertEqStr(sqlrcur_getColumnType($cur,6),"DECIMAL");
-	assertEqStr(sqlrcur_getColumnType($cur,"testmoney"),"DECIMAL");
+	assertEqStr(sqlrcur_getColumnType($cur,6),"MONEY");
+	assertEqStr(sqlrcur_getColumnType($cur,"testmoney"),"MONEY");
 	assertEqStr(sqlrcur_getColumnType($cur,7),"SMALLFLOAT");
 	assertEqStr(sqlrcur_getColumnType($cur,"testsmallfloat"),
 							"SMALLFLOAT");
@@ -423,22 +421,16 @@
 	assertEqStr(sqlrcur_getColumnType($cur,"testfloat"),"FLOAT");
 	assertEqStr(sqlrcur_getColumnType($cur,9),"CHAR");
 	assertEqStr(sqlrcur_getColumnType($cur,"testchar"),"CHAR");
-	#assertEqStr(sqlrcur_getColumnType($cur,10),"NCHAR");
-	#assertEqStr(sqlrcur_getColumnType($cur,"testnchar"),"NCHAR");
+	# informix reports nchar as char, with no way to tell them apart
 	assertEqStr(sqlrcur_getColumnType($cur,10),"CHAR");
 	assertEqStr(sqlrcur_getColumnType($cur,"testnchar"),"CHAR");
 	assertEqStr(sqlrcur_getColumnType($cur,11),"VARCHAR");
 	assertEqStr(sqlrcur_getColumnType($cur,"testvarchar"),"VARCHAR");
-	#assertEqStr(sqlrcur_getColumnType($cur,12),"NVARCHAR");
-	#assertEqStr(sqlrcur_getColumnType($cur,"testnvarchar"),
-	#						"NVARCHAR");
+	# informix reports nvarchar as varchar, with no way to tell them apart
 	assertEqStr(sqlrcur_getColumnType($cur,12),"VARCHAR");
 	assertEqStr(sqlrcur_getColumnType($cur,"testnvarchar"),"VARCHAR");
-	#assertEqStr(sqlrcur_getColumnType($cur,13),"LVARCHAR");
-	#assertEqStr(sqlrcur_getColumnType($cur,"testlvarchar"),
-	#						"LVARCHAR");
-	assertEqStr(sqlrcur_getColumnType($cur,13),"VARCHAR");
-	assertEqStr(sqlrcur_getColumnType($cur,"testlvarchar"),"VARCHAR");
+	assertEqStr(sqlrcur_getColumnType($cur,13),"LVARCHAR");
+	assertEqStr(sqlrcur_getColumnType($cur,"testlvarchar"),"LVARCHAR");
 	assertEqStr(sqlrcur_getColumnType($cur,14),"DATE");
 	assertEqStr(sqlrcur_getColumnType($cur,"testdate"),"DATE");
 	assertEqStr(sqlrcur_getColumnType($cur,15),"DATETIME");
@@ -488,9 +480,9 @@
 	assertEqInt(sqlrcur_getColumnLength($cur,16),2147483647);
 	assertEqInt(sqlrcur_getColumnLength($cur,"testtext"),
 							2147483647);
-	#assertEqInt(sqlrcur_getColumnLength($cur,17),2157483647);
-	#assertEqInt(sqlrcur_getColumnLength($cur,"testbyte"),
-	#						2157483647);
+	assertEqInt(sqlrcur_getColumnLength($cur,17),2147483647);
+	assertEqInt(sqlrcur_getColumnLength($cur,"testbyte"),
+							2147483647);
 	echo("\n");
 
 

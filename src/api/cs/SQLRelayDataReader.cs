@@ -403,6 +403,10 @@ namespace SQLRClient
             {
                 return typeof(String);
             }
+            else if (type == "LVARCHAR")
+            {
+                return typeof(String);
+            }
             else if (type == "VARBINARY")
             {
                 return typeof(Byte[]);
@@ -1184,6 +1188,10 @@ namespace SQLRClient
                 return System.Text.Encoding.Default.GetString(field);
             }
             else if (type == "VARCHAR")
+            {
+                return System.Text.Encoding.Default.GetString(field);
+            }
+            else if (type == "LVARCHAR")
             {
                 return System.Text.Encoding.Default.GetString(field);
             }

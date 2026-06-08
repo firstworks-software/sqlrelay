@@ -217,6 +217,8 @@ typedef	enum {
 	NTEXT_DATATYPE,
 	XML_DATATYPE,
 	DATETIMEOFFSET_DATATYPE,
+	// also added by informix
+	LVARCHAR_DATATYPE,
 	END_DATATYPE
 } datatype;
 
@@ -428,6 +430,8 @@ static const char	*datatypestring[] = {
 	"NTEXT",
 	"XML",
 	"DATETIMEOFFSET",
+	// also added by informix
+	"LVARCHAR",
 	NULL
 };
 #endif

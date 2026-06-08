@@ -438,30 +438,24 @@ namespace SQLRClientTest
             assertEquals(cur.getColumnType("testint8"), "INT8");
             assertEquals(cur.getColumnType((UInt32)5), "DECIMAL");
             assertEquals(cur.getColumnType("testdecimal"), "DECIMAL");
-            //assertEquals(cur.getColumnType((UInt32)6),"MONEY");
-            //assertEquals(cur.getColumnType("testmoney"),"MONEY");
-            assertEquals(cur.getColumnType((UInt32)6), "DECIMAL");
-            assertEquals(cur.getColumnType("testmoney"), "DECIMAL");
+            assertEquals(cur.getColumnType((UInt32)6), "MONEY");
+            assertEquals(cur.getColumnType("testmoney"), "MONEY");
             assertEquals(cur.getColumnType((UInt32)7), "SMALLFLOAT");
             assertEquals(cur.getColumnType("testsmallfloat"), "SMALLFLOAT");
             assertEquals(cur.getColumnType((UInt32)8), "FLOAT");
             assertEquals(cur.getColumnType("testfloat"), "FLOAT");
             assertEquals(cur.getColumnType((UInt32)9), "CHAR");
             assertEquals(cur.getColumnType("testchar"), "CHAR");
-            //assertEquals(cur.getColumnType((UInt32)10),"NCHAR");
-            //assertEquals(cur.getColumnType("testnchar"),"NCHAR");
+            // informix reports nchar as char, with no way to tell them apart
             assertEquals(cur.getColumnType((UInt32)10), "CHAR");
             assertEquals(cur.getColumnType("testnchar"), "CHAR");
             assertEquals(cur.getColumnType((UInt32)11), "VARCHAR");
             assertEquals(cur.getColumnType("testvarchar"), "VARCHAR");
-            //assertEquals(cur.getColumnType((UInt32)12),"NVARCHAR");
-            //assertEquals(cur.getColumnType("testnvarchar"),"NVARCHAR");
+            // informix reports nvarchar as varchar, with no way to tell them apart
             assertEquals(cur.getColumnType((UInt32)12), "VARCHAR");
             assertEquals(cur.getColumnType("testnvarchar"), "VARCHAR");
-            //assertEquals(cur.getColumnType((UInt32)13),"LVARCHAR");
-            //assertEquals(cur.getColumnType("testlvarchar"),"LVARCHAR");
-            assertEquals(cur.getColumnType((UInt32)13), "VARCHAR");
-            assertEquals(cur.getColumnType("testlvarchar"), "VARCHAR");
+            assertEquals(cur.getColumnType((UInt32)13), "LVARCHAR");
+            assertEquals(cur.getColumnType("testlvarchar"), "LVARCHAR");
             assertEquals(cur.getColumnType((UInt32)14), "DATE");
             assertEquals(cur.getColumnType("testdate"), "DATE");
             assertEquals(cur.getColumnType((UInt32)15), "DATETIME");
@@ -509,8 +503,8 @@ namespace SQLRClientTest
             assertEquals(cur.getColumnLength("testdatetime"), (UInt32)19);
             assertEquals(cur.getColumnLength((UInt32)16), (UInt32)2147483647);
             assertEquals(cur.getColumnLength("testtext"), (UInt32)2147483647);
-            //assertEquals(cur.getColumnLength((UInt32)17),(UInt32)2157483647);
-            //assertEquals(cur.getColumnLength("testbyte"),(UInt32)2157483647);
+            assertEquals(cur.getColumnLength((UInt32)17), (UInt32)2147483647);
+            assertEquals(cur.getColumnLength("testbyte"), (UInt32)2147483647);
             Console.WriteLine("");
 
 

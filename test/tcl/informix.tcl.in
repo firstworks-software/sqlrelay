@@ -314,22 +314,24 @@ assertEqual [$cur getColumnTypeByIndex 4] "INT8"
 assertEqual [$cur getColumnTypeByName "testint8"] "INT8"
 assertEqual [$cur getColumnTypeByIndex 5] "DECIMAL"
 assertEqual [$cur getColumnTypeByName "testdecimal"] "DECIMAL"
-assertEqual [$cur getColumnTypeByIndex 6] "DECIMAL"
-assertEqual [$cur getColumnTypeByName "testmoney"] "DECIMAL"
+assertEqual [$cur getColumnTypeByIndex 6] "MONEY"
+assertEqual [$cur getColumnTypeByName "testmoney"] "MONEY"
 assertEqual [$cur getColumnTypeByIndex 7] "SMALLFLOAT"
 assertEqual [$cur getColumnTypeByName "testsmallfloat"] "SMALLFLOAT"
 assertEqual [$cur getColumnTypeByIndex 8] "FLOAT"
 assertEqual [$cur getColumnTypeByName "testfloat"] "FLOAT"
 assertEqual [$cur getColumnTypeByIndex 9] "CHAR"
 assertEqual [$cur getColumnTypeByName "testchar"] "CHAR"
+# informix reports nchar as char, with no way to tell them apart
 assertEqual [$cur getColumnTypeByIndex 10] "CHAR"
 assertEqual [$cur getColumnTypeByName "testnchar"] "CHAR"
 assertEqual [$cur getColumnTypeByIndex 11] "VARCHAR"
 assertEqual [$cur getColumnTypeByName "testvarchar"] "VARCHAR"
+# informix reports nvarchar as varchar, with no way to tell them apart
 assertEqual [$cur getColumnTypeByIndex 12] "VARCHAR"
 assertEqual [$cur getColumnTypeByName "testnvarchar"] "VARCHAR"
-assertEqual [$cur getColumnTypeByIndex 13] "VARCHAR"
-assertEqual [$cur getColumnTypeByName "testlvarchar"] "VARCHAR"
+assertEqual [$cur getColumnTypeByIndex 13] "LVARCHAR"
+assertEqual [$cur getColumnTypeByName "testlvarchar"] "LVARCHAR"
 assertEqual [$cur getColumnTypeByIndex 14] "DATE"
 assertEqual [$cur getColumnTypeByName "testdate"] "DATE"
 assertEqual [$cur getColumnTypeByIndex 15] "DATETIME"
@@ -377,6 +379,8 @@ assertEqual [$cur getColumnLengthByIndex 15] 19
 assertEqual [$cur getColumnLengthByName "testdatetime"] 19
 assertEqual [$cur getColumnLengthByIndex 16] 2147483647
 assertEqual [$cur getColumnLengthByName "testtext"] 2147483647
+assertEqual [$cur getColumnLengthByIndex 17] 2147483647
+assertEqual [$cur getColumnLengthByName "testbyte"] 2147483647
 puts ""
 
 

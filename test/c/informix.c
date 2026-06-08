@@ -449,10 +449,8 @@ int main(int argc, char **argv) {
 	assertEqStr(sqlrcur_getColumnTypeByName(cur,"testint8"),"INT8");
 	assertEqStr(sqlrcur_getColumnTypeByIndex(cur,5),"DECIMAL");
 	assertEqStr(sqlrcur_getColumnTypeByName(cur,"testdecimal"),"DECIMAL");
-	//assertEqStr(sqlrcur_getColumnTypeByIndex(cur,6),"MONEY");
-	//assertEqStr(sqlrcur_getColumnTypeByName(cur,"testmoney"),"MONEY");
-	assertEqStr(sqlrcur_getColumnTypeByIndex(cur,6),"DECIMAL");
-	assertEqStr(sqlrcur_getColumnTypeByName(cur,"testmoney"),"DECIMAL");
+	assertEqStr(sqlrcur_getColumnTypeByIndex(cur,6),"MONEY");
+	assertEqStr(sqlrcur_getColumnTypeByName(cur,"testmoney"),"MONEY");
 	assertEqStr(sqlrcur_getColumnTypeByIndex(cur,7),"SMALLFLOAT");
 	assertEqStr(sqlrcur_getColumnTypeByName(cur,"testsmallfloat"),
 							"SMALLFLOAT");
@@ -460,22 +458,16 @@ int main(int argc, char **argv) {
 	assertEqStr(sqlrcur_getColumnTypeByName(cur,"testfloat"),"FLOAT");
 	assertEqStr(sqlrcur_getColumnTypeByIndex(cur,9),"CHAR");
 	assertEqStr(sqlrcur_getColumnTypeByName(cur,"testchar"),"CHAR");
-	//assertEqStr(sqlrcur_getColumnTypeByIndex(cur,10),"NCHAR");
-	//assertEqStr(sqlrcur_getColumnTypeByName(cur,"testnchar"),"NCHAR");
+	// informix reports nchar as char, with no way to tell them apart
 	assertEqStr(sqlrcur_getColumnTypeByIndex(cur,10),"CHAR");
 	assertEqStr(sqlrcur_getColumnTypeByName(cur,"testnchar"),"CHAR");
 	assertEqStr(sqlrcur_getColumnTypeByIndex(cur,11),"VARCHAR");
 	assertEqStr(sqlrcur_getColumnTypeByName(cur,"testvarchar"),"VARCHAR");
-	//assertEqStr(sqlrcur_getColumnTypeByIndex(cur,12),"NVARCHAR");
-	//assertEqStr(sqlrcur_getColumnTypeByName(cur,"testnvarchar"),
-	//						"NVARCHAR");
+	// informix reports nvarchar as varchar, with no way to tell them apart
 	assertEqStr(sqlrcur_getColumnTypeByIndex(cur,12),"VARCHAR");
 	assertEqStr(sqlrcur_getColumnTypeByName(cur,"testnvarchar"),"VARCHAR");
-	//assertEqStr(sqlrcur_getColumnTypeByIndex(cur,13),"LVARCHAR");
-	//assertEqStr(sqlrcur_getColumnTypeByName(cur,"testlvarchar"),
-	//						"LVARCHAR");
-	assertEqStr(sqlrcur_getColumnTypeByIndex(cur,13),"VARCHAR");
-	assertEqStr(sqlrcur_getColumnTypeByName(cur,"testlvarchar"),"VARCHAR");
+	assertEqStr(sqlrcur_getColumnTypeByIndex(cur,13),"LVARCHAR");
+	assertEqStr(sqlrcur_getColumnTypeByName(cur,"testlvarchar"),"LVARCHAR");
 	assertEqStr(sqlrcur_getColumnTypeByIndex(cur,14),"DATE");
 	assertEqStr(sqlrcur_getColumnTypeByName(cur,"testdate"),"DATE");
 	assertEqStr(sqlrcur_getColumnTypeByIndex(cur,15),"DATETIME");
@@ -525,9 +517,9 @@ int main(int argc, char **argv) {
 	assertEqInt(sqlrcur_getColumnLengthByIndex(cur,16),2147483647);
 	assertEqInt(sqlrcur_getColumnLengthByName(cur,"testtext"),
 							2147483647);
-	//assertEqInt(sqlrcur_getColumnLengthByIndex(cur,17),2157483647);
-	//assertEqInt(sqlrcur_getColumnLengthByName(cur,"testbyte"),
-	//						2157483647);
+	assertEqInt(sqlrcur_getColumnLengthByIndex(cur,17),2147483647);
+	assertEqInt(sqlrcur_getColumnLengthByName(cur,"testbyte"),
+							2147483647);
 	printf("\n");
 
 

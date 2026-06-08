@@ -418,30 +418,24 @@ assertEquals($cur->getColumnType(4),"INT8");
 assertEquals($cur->getColumnType("testint8"),"INT8");
 assertEquals($cur->getColumnType(5),"DECIMAL");
 assertEquals($cur->getColumnType("testdecimal"),"DECIMAL");
-#assertEquals($cur->getColumnType(6),"MONEY");
-#assertEquals($cur->getColumnType("testmoney"),"MONEY");
-assertEquals($cur->getColumnType(6),"DECIMAL");
-assertEquals($cur->getColumnType("testmoney"),"DECIMAL");
+assertEquals($cur->getColumnType(6),"MONEY");
+assertEquals($cur->getColumnType("testmoney"),"MONEY");
 assertEquals($cur->getColumnType(7),"SMALLFLOAT");
 assertEquals($cur->getColumnType("testsmallfloat"),"SMALLFLOAT");
 assertEquals($cur->getColumnType(8),"FLOAT");
 assertEquals($cur->getColumnType("testfloat"),"FLOAT");
 assertEquals($cur->getColumnType(9),"CHAR");
 assertEquals($cur->getColumnType("testchar"),"CHAR");
-#assertEquals($cur->getColumnType(10),"NCHAR");
-#assertEquals($cur->getColumnType("testnchar"),"NCHAR");
+# informix reports nchar as char, with no way to tell them apart
 assertEquals($cur->getColumnType(10),"CHAR");
 assertEquals($cur->getColumnType("testnchar"),"CHAR");
 assertEquals($cur->getColumnType(11),"VARCHAR");
 assertEquals($cur->getColumnType("testvarchar"),"VARCHAR");
-#assertEquals($cur->getColumnType(12),"NVARCHAR");
-#assertEquals($cur->getColumnType("testnvarchar"),"NVARCHAR");
+# informix reports nvarchar as varchar, with no way to tell them apart
 assertEquals($cur->getColumnType(12),"VARCHAR");
 assertEquals($cur->getColumnType("testnvarchar"),"VARCHAR");
-#assertEquals($cur->getColumnType(13),"LVARCHAR");
-#assertEquals($cur->getColumnType("testlvarchar"),"LVARCHAR");
-assertEquals($cur->getColumnType(13),"VARCHAR");
-assertEquals($cur->getColumnType("testlvarchar"),"VARCHAR");
+assertEquals($cur->getColumnType(13),"LVARCHAR");
+assertEquals($cur->getColumnType("testlvarchar"),"LVARCHAR");
 assertEquals($cur->getColumnType(14),"DATE");
 assertEquals($cur->getColumnType("testdate"),"DATE");
 assertEquals($cur->getColumnType(15),"DATETIME");
@@ -489,8 +483,8 @@ assertEquals($cur->getColumnLength(15),19);
 assertEquals($cur->getColumnLength("testdatetime"),19);
 assertEquals($cur->getColumnLength(16),2147483647);
 assertEquals($cur->getColumnLength("testtext"),2147483647);
-#assertEquals($cur->getColumnLength(17),2157483647);
-#assertEquals($cur->getColumnLength("testbyte"),2157483647);
+assertEquals($cur->getColumnLength(17),2147483647);
+assertEquals($cur->getColumnLength("testbyte"),2147483647);
 print("\n");
 
 

@@ -22,6 +22,7 @@ struct informixcolumn {
 	char		*name;
 	SQLSMALLINT	namesize;
 	SQLLEN		type;
+	char		dbtypename[32];
 	SQLLEN		precision;
 	SQLLEN		scale;
 	SQLLEN		flags;
@@ -3330,6 +3331,22 @@ bool informixcursor::executeQuery(const char *query, uint32_t size) {
 				return false;
 			}
 
+			// column type name
+			// Informix reports money and decimal both as
+			// SQL_DECIMAL, and varchar, nvarchar, and lvarchar
+			// all as SQL_VARCHAR.  The type name is the only way
+			// to tell money from decimal and lvarchar from
+			// varchar (nvarchar is reported identically to
+			// varchar, with no way to distinguish it).
+			SQLSMALLINT	dbtypenamesize;
+			erg=SQLColAttribute(stmt,i+1,SQL_DESC_TYPE_NAME,
+					column[i].dbtypename,
+					sizeof(column[i].dbtypename),
+					&dbtypenamesize,NULL);
+			if (erg!=SQL_SUCCESS && erg!=SQL_SUCCESS_WITH_INFO) {
+				return false;
+			}
+
 			// informix doesn't support column size,
 			// so we'll just use the precision
 
@@ -3495,14 +3512,19 @@ uint16_t informixcursor::getColumnNameSize(uint32_t i) {
 uint16_t informixcursor::getColumnType(uint32_t i) {
 	switch (column[i].type) {
 		case SQL_CHAR:
-			// SQL_CHAR is returned for char and nchar
-			// FIXME: is there some way to distinguish them?
+			// SQL_CHAR is returned for both char and nchar, and
+			// the type name is "CHAR" in both cases, so there's
+			// no way to tell nchar from char.
 			return CHAR_DATATYPE;
 		case SQL_NUMERIC:
 			return NUMERIC_DATATYPE;
 		case SQL_DECIMAL:
-			// SQL_DECIMAL is returned for decimal and money
-			// FIXME: is there some way to distinguish them?
+			// SQL_DECIMAL is returned for both decimal and money;
+			// the type name is the only way to tell them apart.
+			if (!charstring::compareIgnoringCase(
+					column[i].dbtypename,"MONEY")) {
+				return MONEY_DATATYPE;
+			}
 			return DECIMAL_DATATYPE;
 		case SQL_INTEGER:
 			return INTEGER_DATATYPE;
@@ -3520,6 +3542,14 @@ uint16_t informixcursor::getColumnType(uint32_t i) {
 			// SQL_DATETIME is returned for date
 			return DATE_DATATYPE;
 		case SQL_VARCHAR:
+			// SQL_VARCHAR is returned for varchar, nvarchar, and
+			// lvarchar.  Only lvarchar is distinguishable, by its
+			// type name; nvarchar is reported identically to
+			// varchar, with no way to tell them apart.
+			if (!charstring::compareIgnoringCase(
+					column[i].dbtypename,"LVARCHAR")) {
+				return LVARCHAR_DATATYPE;
+			}
 			return VARCHAR_DATATYPE;
 		case SQL_WCHAR:
 		case SQL_WVARCHAR:
@@ -3570,6 +3600,7 @@ uint16_t informixcursor::getColumnType(uint32_t i) {
 		case SQL_INFX_UDT_CLOB:
 			return CLOB_DATATYPE;
 		case SQL_INFX_UDT_LVARCHAR:
+			return LVARCHAR_DATATYPE;
 		case SQL_INFX_RC_ROW:
 		case SQL_INFX_RC_COLLECTION:
 		case SQL_INFX_RC_LIST:

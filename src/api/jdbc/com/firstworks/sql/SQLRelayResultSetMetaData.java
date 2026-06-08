@@ -107,6 +107,9 @@ public class SQLRelayResultSetMetaData implements ResultSetMetaData {
 			case "VARCHAR":
 				retval="java.lang.String";
 				break;
+			case "LVARCHAR":
+				retval="java.lang.String";
+				break;
 			case "VARBINARY":
 				retval="java.lang.Byte";
 				break;
@@ -907,6 +910,7 @@ public class SQLRelayResultSetMetaData implements ResultSetMetaData {
 			case "VARCHAR":
 			case "VARSTRING":
 			case "VARCHAR2":
+			case "LVARCHAR":
 				retval=Types.VARCHAR;
 				break;
 			case "VARBINARY":
