@@ -8,6 +8,7 @@ var	{
 	assertEqStr, assertEqStrLen,
 	assertEqInt, assertEqDbl, assertEqual,
 	assertTrue, assertFalse,
+	assertInResultSet,
 	getStatus, reportTestStatus
 }=require("./asserts.js");
 
@@ -1695,7 +1696,7 @@ console.log();
 console.log("CATALOG LIST: ");
 assertTrue(cur.getCatalogList(null));
 assertEqStr(cur.getColumnName(0),"Database");
-assertTrue(cur.rowCount()>0);
+assertInResultSet(cur,"Database",hostname);
 console.log();
 
 
@@ -1711,7 +1712,7 @@ assertTrue(cur.sendQuery("create table testtable "+
 	"(col1 int)"));
 assertTrue(cur.getSchemaList(null));
 assertEqStr(cur.getColumnName(0),"Database");
-assertTrue(cur.rowCount()>0);
+assertInResultSet(cur,"Database","dbo");
 assertTrue(cur.sendQuery("drop table testtable"));
 console.log();
 
@@ -1720,14 +1721,7 @@ console.log();
 console.log("TABLE TYPE LIST: ");
 assertTrue(cur.getTableTypeList());
 assertEqStr(cur.getColumnName(0),"table_type");
-found=0;
-for (var i=0; i<cur.rowCount(); i++) {
-	if (cur.getField(i,"table_type")==="TABLE") {
-		found=1;
-		break;
-	}
-}
-assertTrue(found);
+assertInResultSet(cur,"table_type","TABLE");
 console.log();
 
 
@@ -1754,15 +1748,10 @@ assertTrue(cur.sendQuery(
 	"	col1 int, "+
 	"	col2 int)"));
 assertTrue(cur.getTableList(null));
-counter=0;
-for (var i=0; i<cur.rowCount(); i++) {
-	name=cur.getField(i,"Tables_in_xxx");
-	if (name==="testtable1" || name==="testtable2" ||
-		name==="testtable3" || name==="testtable4") {
-		counter++;
-	}
-}
-assertEqInt(counter,4);
+assertInResultSet(cur,"Tables_in_xxx","testtable1");
+assertInResultSet(cur,"Tables_in_xxx","testtable2");
+assertInResultSet(cur,"Tables_in_xxx","testtable3");
+assertInResultSet(cur,"Tables_in_xxx","testtable4");
 assertTrue(cur.sendQuery("drop table testtable1"));
 assertTrue(cur.sendQuery("drop table testtable2"));
 assertTrue(cur.sendQuery("drop table testtable3"));
@@ -2003,15 +1992,10 @@ assertTrue(cur.sendQuery(
 	"	@in4 datetime "+
 	"as select 1"));
 assertTrue(cur.getProcedureList(null));
-counter=0;
-for (var i=0; i<cur.rowCount(); i++) {
-	name=cur.getField(i,"routine_name");
-	if (name==="testproc1" || name==="testproc2" ||
-		name==="testproc3" || name==="testproc4") {
-		counter++;
-	}
-}
-assertEqInt(counter,4);
+assertInResultSet(cur,"routine_name","testproc1");
+assertInResultSet(cur,"routine_name","testproc2");
+assertInResultSet(cur,"routine_name","testproc3");
+assertInResultSet(cur,"routine_name","testproc4");
 console.log();
 
 

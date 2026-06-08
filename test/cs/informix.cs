@@ -44,11 +44,16 @@ namespace SQLRClientTest
             String socket;
             UInt16 id;
             String filename;
-            UInt64 counter = 0;
 
             Int32 LARGE_BUFFER_LENGTH = 20 * 1024;
             char[] largebufferchars = new char[LARGE_BUFFER_LENGTH + 1];
             String largebuffer;
+
+
+            // hostname
+            String hostname = System.Net.Dns.GetHostName();
+            int dot = hostname.IndexOf('.');
+            if (dot > 0) { hostname = hostname.Substring(0, dot); }
 
 
             // instantiation
@@ -1970,7 +1975,7 @@ namespace SQLRClientTest
             Console.WriteLine("CATALOG LIST: ");
             assertTrue(cur.getCatalogList((String)null));
             assertEquals(cur.getColumnName((UInt32)0), "Database");
-            assertTrue(cur.rowCount() > 0);
+            assertInResultSet(cur, "Database", hostname);
             Console.WriteLine("");
 
 
@@ -1986,7 +1991,7 @@ namespace SQLRClientTest
             assertTrue(con.commit());
             assertTrue(cur.getSchemaList((String)null));
             assertEquals(cur.getColumnName((UInt32)0), "Database");
-            assertTrue(cur.rowCount() > 0);
+            assertInResultSet(cur, "Database", "testuser");
             assertTrue(cur.sendQuery("drop table testtable"));
             assertTrue(con.commit());
             Console.WriteLine("");
@@ -1996,17 +2001,8 @@ namespace SQLRClientTest
             Console.WriteLine("TABLE TYPE LIST: ");
             assertTrue(cur.getTableTypeList());
             assertEquals(cur.getColumnName((UInt32)0), "table_type");
-            assertTrue(cur.rowCount() > 0);
-            Boolean found = false;
-            for (UInt64 i = 0; i < cur.rowCount(); i++)
-            {
-                if (cur.getField(i, "table_type") == "TABLE")
-                {
-                    found = true;
-                    break;
-                }
-            }
-            assertTrue(found);
+            assertEquals(cur.rowCount(), (UInt64)3);
+            assertInResultSet(cur, "table_type", "TABLE");
             Console.WriteLine("");
 
 
@@ -2034,19 +2030,10 @@ namespace SQLRClientTest
                 "	col2 integer)"));
             assertTrue(con.commit());
             assertTrue(cur.getTableList((String)null));
-            counter = 0;
-            for (UInt64 i = 0; i < cur.rowCount(); i++)
-            {
-                String name = cur.getField(i, "Tables_in_xxx");
-                if (name == "testtable1" ||
-                    name == "testtable2" ||
-                    name == "testtable3" ||
-                    name == "testtable4")
-                {
-                    counter++;
-                }
-            }
-            assertEquals(counter, (UInt64)4);
+            assertInResultSet(cur, "Tables_in_xxx", "testtable1");
+            assertInResultSet(cur, "Tables_in_xxx", "testtable2");
+            assertInResultSet(cur, "Tables_in_xxx", "testtable3");
+            assertInResultSet(cur, "Tables_in_xxx", "testtable4");
             assertTrue(cur.sendQuery("drop table testtable1"));
             assertTrue(cur.sendQuery("drop table testtable2"));
             assertTrue(cur.sendQuery("drop table testtable3"));
@@ -2313,19 +2300,10 @@ namespace SQLRClientTest
                 "end procedure;"));
             assertTrue(con.commit());
             assertTrue(cur.getProcedureList((String)null));
-            counter = 0;
-            for (UInt64 i = 0; i < cur.rowCount(); i++)
-            {
-                String name = cur.getField(i, "routine_name");
-                if (name == "testproc1" ||
-                    name == "testproc2" ||
-                    name == "testproc3" ||
-                    name == "testproc4")
-                {
-                    counter++;
-                }
-            }
-            assertEquals(counter, (UInt64)4);
+            assertInResultSet(cur, "routine_name", "testproc1");
+            assertInResultSet(cur, "routine_name", "testproc2");
+            assertInResultSet(cur, "routine_name", "testproc3");
+            assertInResultSet(cur, "routine_name", "testproc4");
             Console.WriteLine("");
 
 

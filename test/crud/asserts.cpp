@@ -180,6 +180,21 @@ void assertFalse(bool actual) {
 	}
 }
 
+void assertInResultSet(sqlrcursor *cursor, const char *column,
+						const char *value) {
+
+	for (uint64_t i=0; i<cursor->rowCount(); i++) {
+		if (!charstring::compare(cursor->getField(i,column),value)) {
+			stdoutput.printf("%s ",success);
+			return;
+		}
+	}
+	stdoutput.printf("%s\n",failure);
+	stdoutput.printf("\"%s\" not found in column \"%s\"\n",value,column);
+	printErrors();
+	status=1;
+}
+
 void reportTestStatus() {
 
 	if (status==0) {

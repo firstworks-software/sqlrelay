@@ -23,7 +23,6 @@ class sqlite extends sqlrtest {
 		String		socket;
 		short		id;
 		String		filename;
-		long		counter=0;
 
 		int		LARGE_BUFFER_LENGTH=8192;
 
@@ -1405,15 +1404,7 @@ class sqlite extends sqlrtest {
 		System.out.println("TABLE TYPE LIST: ");
 		assertTrue(cur.getTableTypeList());
 		assertEquals(cur.getColumnName(0),"table_type");
-		boolean found=false;
-		for (long i=0; i<cur.rowCount(); i++) {
-			String val=cur.getField((int)i,"table_type");
-			if (val!=null &&val.equals("TABLE")) {
-				found=true;
-				break;
-			}
-		}
-		assertTrue(found);
+		assertInResultSet(cur,"table_type","TABLE");
 		System.out.println();
 
 
@@ -1440,17 +1431,10 @@ class sqlite extends sqlrtest {
 			"	col1 int, "+
 			"	col2 int)"));
 		assertTrue(cur.getTableList(null));
-		counter=0;
-		for (long i=0; i<cur.rowCount(); i++) {
-			String name=cur.getField((int)i,"Tables_in_xxx");
-			if (name!=null && (name.equals("testtable1") ||
-						name.equals("testtable2") ||
-						name.equals("testtable3") ||
-						name.equals("testtable4"))) {
-				counter++;
-			}
-		}
-		assertEquals(counter,4);
+		assertInResultSet(cur,"Tables_in_xxx","testtable1");
+		assertInResultSet(cur,"Tables_in_xxx","testtable2");
+		assertInResultSet(cur,"Tables_in_xxx","testtable3");
+		assertInResultSet(cur,"Tables_in_xxx","testtable4");
 		assertTrue(cur.sendQuery("drop table if exists testtable1"));
 		assertTrue(cur.sendQuery("drop table if exists testtable2"));
 		assertTrue(cur.sendQuery("drop table if exists testtable3"));

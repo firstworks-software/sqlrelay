@@ -154,6 +154,19 @@ function assertFalse(actual) {
 	}
 }
 
+function assertInResultSet(cursor, column, value) {
+	for (var i=0; i<cursor.rowCount(); i++) {
+		if (cursor.getField(i,column)==value) {
+			process.stdout.write(success+" ");
+			return;
+		}
+	}
+	console.log(failure);
+	console.log("\""+value+"\" not found in column \""+column+"\"");
+	printErrors();
+	status=1;
+}
+
 function getStatus() {
 	return status;
 }
@@ -172,5 +185,6 @@ module.exports={
 	assertEqStr, assertEqStrLen,
 	assertEqInt, assertEqDbl, assertEqual,
 	assertTrue, assertFalse,
+	assertInResultSet,
 	getStatus, reportTestStatus
 };

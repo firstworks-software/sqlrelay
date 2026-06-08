@@ -1311,12 +1311,7 @@ def main():
 	print("TABLE TYPE LIST: ")
 	assertTrue(cur.getTableTypeList())
 	assertEquals(cur.getColumnName(0),"table_type")
-	found=False
-	for i in range(cur.rowCount()):
-		if cur.getField(i,"table_type")=="TABLE":
-			found=True
-			break
-	assertTrue(found)
+	assertInResultSet(cur,"table_type","TABLE")
 	print()
 
 
@@ -1343,12 +1338,10 @@ def main():
 		"	col1 int, "
 		"	col2 int)"))
 	assertTrue(cur.getTableList(None))
-	counter=0
-	for i in range(cur.rowCount()):
-		name=cur.getField(i,"Tables_in_xxx")
-		if name in ("testtable1","testtable2","testtable3","testtable4"):
-			counter+=1
-	assertEquals(counter,4)
+	assertInResultSet(cur,"Tables_in_xxx","testtable1")
+	assertInResultSet(cur,"Tables_in_xxx","testtable2")
+	assertInResultSet(cur,"Tables_in_xxx","testtable3")
+	assertInResultSet(cur,"Tables_in_xxx","testtable4")
 	assertTrue(cur.sendQuery("drop table if exists testtable1"))
 	assertTrue(cur.sendQuery("drop table if exists testtable2"))
 	assertTrue(cur.sendQuery("drop table if exists testtable3"))

@@ -212,6 +212,22 @@ namespace SQLRClientTest
             if (!actual) { pass(); } else { fail(actual,false); }
         }
 
+        protected static void assertInResultSet(SQLRCursor cursor, String column, String value)
+        {
+            for (UInt64 i = 0; i < cursor.rowCount(); i++)
+            {
+                if (cursor.getField(i, column) == value)
+                {
+                    pass();
+                    return;
+                }
+            }
+            Console.WriteLine(failure);
+            Console.WriteLine("\"" + value + "\" not found in column \"" + column + "\"");
+            printErrors();
+            status = 1;
+        }
+
         protected static void reportTestStatus()
         {
             if (status==0)

@@ -1494,12 +1494,7 @@ def main():
 	print("SCHEMA LIST: ")
 	assertTrue(cur.getSchemaList(None))
 	assertEquals(cur.getColumnName(0),"Database")
-	found=False
-	for i in range(cur.rowCount()):
-		if cur.getField(i,"Database")=="TESTUSER":
-			found=True
-			break
-	assertTrue(found)
+	assertInResultSet(cur,"Database","TESTUSER")
 	print()
 
 
@@ -1507,24 +1502,16 @@ def main():
 	print("TABLE TYPE LIST: ")
 	assertTrue(cur.getTableTypeList())
 	assertEquals(cur.getColumnName(0),"table_type")
-	found=False
-	for i in range(cur.rowCount()):
-		if cur.getField(i,"table_type")=="TABLE":
-			found=True
-			break
-	assertTrue(found)
+	assertInResultSet(cur,"table_type","TABLE")
 	print()
 
 
 	# table list
 	print("TABLE LIST: ")
 	assertTrue(cur.getTableList(None))
-	counter=0
-	for i in range(cur.rowCount()):
-		name=cur.getField(i,"Tables_in_xxx")
-		if name in ("TESTTABLE1","TESTTABLE2","TESTTABLE3"):
-			counter+=1
-	assertEquals(counter,3)
+	assertInResultSet(cur,"Tables_in_xxx","TESTTABLE1")
+	assertInResultSet(cur,"Tables_in_xxx","TESTTABLE2")
+	assertInResultSet(cur,"Tables_in_xxx","TESTTABLE3")
 	print()
 
 
@@ -1689,12 +1676,8 @@ def main():
 	# procedure list
 	print("PROCEDURE LIST: ")
 	assertTrue(cur.getProcedureList(None))
-	counter=0
-	for i in range(cur.rowCount()):
-		name=cur.getField(i,"routine_name")
-		if name in ("TESTPROC","TESTPROC1"):
-			counter+=1
-	assertEquals(counter,2)
+	assertInResultSet(cur,"routine_name","TESTPROC")
+	assertInResultSet(cur,"routine_name","TESTPROC1")
 	print()
 
 

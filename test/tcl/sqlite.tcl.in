@@ -1192,14 +1192,7 @@ puts ""
 puts "TABLE TYPE LIST: "
 assertTrue [$cur getTableTypeList]
 assertEqual [$cur getColumnName 0] "table_type"
-set found 0
-for {set i 0} {$i < [$cur rowCount]} {incr i} {
-	if {[string equal [$cur getFieldByName $i "table_type"] "TABLE"]} {
-		set found 1
-		break
-	}
-}
-assertTrue $found
+assertInResultSet $cur "table_type" "TABLE"
 puts ""
 
 
@@ -1214,17 +1207,10 @@ assertTrue [$cur sendQuery "create table testtable2 (	col1 int, 	col2 int)"]
 assertTrue [$cur sendQuery "create table testtable3 (	col1 int, 	col2 int)"]
 assertTrue [$cur sendQuery "create table testtable4 (	col1 int, 	col2 int)"]
 assertTrue [$cur getTableList ""]
-set counter 0
-for {set i 0} {$i < [$cur rowCount]} {incr i} {
-	set name [$cur getFieldByName $i "Tables_in_xxx"]
-	if {[string equal $name "testtable1"] ||
-		[string equal $name "testtable2"] ||
-		[string equal $name "testtable3"] ||
-		[string equal $name "testtable4"]} {
-		incr counter
-	}
-}
-assertEqual $counter 4
+assertInResultSet $cur "Tables_in_xxx" "testtable1"
+assertInResultSet $cur "Tables_in_xxx" "testtable2"
+assertInResultSet $cur "Tables_in_xxx" "testtable3"
+assertInResultSet $cur "Tables_in_xxx" "testtable4"
 assertTrue [$cur sendQuery "drop table if exists testtable1"]
 assertTrue [$cur sendQuery "drop table if exists testtable2"]
 assertTrue [$cur sendQuery "drop table if exists testtable3"]

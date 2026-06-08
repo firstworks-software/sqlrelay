@@ -124,6 +124,17 @@ def assertNone(actual):
 		printErrors()
 		status=1
 
+def assertInResultSet(cur,column,value):
+	global status
+	for i in range(cur.rowCount()):
+		if cur.getField(i,column)==value:
+			print(success,end=" ")
+			return
+	print(failure)
+	print("\""+value+"\" not found in column \""+column+"\"")
+	printErrors()
+	status=1
+
 def reportTestStatus():
 	global status
 	if status==0:

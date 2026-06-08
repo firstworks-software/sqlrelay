@@ -58,7 +58,6 @@ int main(int argc, char **argv) {
 	uint32_t	clobvarlength;
 	const char	*blobvar;
 	uint32_t	blobvarlength;
-	uint16_t	counter;
 	#define	LARGE_BUFFER_LENGTH	8192
 	char		largebuffer[LARGE_BUFFER_LENGTH+1];
 
@@ -68,6 +67,8 @@ int main(int argc, char **argv) {
 	char	*hostname=sys::getHostName();
 	char	*dot=(char *)charstring::findFirstOrEnd(hostname,'.');
 	*dot='\0';
+	char	*upperhostname=charstring::duplicate(hostname);
+	charstring::upper(upperhostname);
 
 
 	// instantiation
@@ -1790,15 +1791,7 @@ int main(int argc, char **argv) {
 	stdoutput.printf("SCHEMA LIST: \n");
 	assertTrue(cur->getSchemaList(NULL));
 	assertEquals(cur->getColumnName(0),"Database");
-	bool	found=false;
-	for (uint64_t i=0; i<cur->rowCount(); i++) {
-		if (!charstring::compareIgnoringCase(
-				cur->getField(i,"Database"),hostname)) {
-			found=true;
-			break;
-		}
-	}
-	assertTrue(found);
+	assertInResultSet(cur,"Database",upperhostname);
 	stdoutput.printf("\n");
 
 
@@ -1855,17 +1848,10 @@ int main(int argc, char **argv) {
 		"	testclob clob, "
 		"	testblob blob)"));
 	assertTrue(cur->getTableList(NULL));
-	counter=0;
-	for (uint64_t i=0; i<cur->rowCount(); i++) {
-		const char	*name=cur->getField(i,"Tables_in_xxx");
-		if (!charstring::compare(name,"TESTTABLE1") ||
-			!charstring::compare(name,"TESTTABLE2") ||
-			!charstring::compare(name,"TESTTABLE3") ||
-			!charstring::compare(name,"TESTTABLE4")) {
-			counter++;
-		}
-	}
-	assertEquals(counter,4);
+	assertInResultSet(cur,"Tables_in_xxx","TESTTABLE1");
+	assertInResultSet(cur,"Tables_in_xxx","TESTTABLE2");
+	assertInResultSet(cur,"Tables_in_xxx","TESTTABLE3");
+	assertInResultSet(cur,"Tables_in_xxx","TESTTABLE4");
 	assertTrue(cur->sendQuery("drop table testtable1"));
 	assertTrue(cur->sendQuery("drop table testtable2"));
 	assertTrue(cur->sendQuery("drop table testtable3"));
@@ -2077,17 +2063,10 @@ int main(int argc, char **argv) {
 		"	null; "
 		"end;"));
 	assertTrue(cur->getProcedureList(NULL));
-	counter=0;
-	for (uint64_t i=0; i<cur->rowCount(); i++) {
-		const char	*name=cur->getField(i,"routine_name");
-		if (!charstring::compare(name,"TESTPROC1") ||
-			!charstring::compare(name,"TESTPROC2") ||
-			!charstring::compare(name,"TESTPROC3") ||
-			!charstring::compare(name,"TESTPROC4")) {
-			counter++;
-		}
-	}
-	assertEquals(counter,4);
+	assertInResultSet(cur,"routine_name","TESTPROC1");
+	assertInResultSet(cur,"routine_name","TESTPROC2");
+	assertInResultSet(cur,"routine_name","TESTPROC3");
+	assertInResultSet(cur,"routine_name","TESTPROC4");
 	stdoutput.printf("\n");
 
 

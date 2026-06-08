@@ -1304,14 +1304,7 @@ print "\n"
 print "TABLE TYPE LIST: \n"
 assertTrue(cur.getTableTypeList())
 assertEqual(cur.getColumnName(0),"table_type")
-found=false
-for i in 0...cur.rowCount()
-	if cur.getField(i,"table_type").eql?("TABLE")
-		found=true
-		break
-	end
-end
-assertTrue(found)
+assertInResultSet(cur,"table_type","TABLE")
 print "\n"
 
 
@@ -1338,17 +1331,10 @@ assertTrue(cur.sendQuery(
 	"	col1 int, "+
 	"	col2 int)"))
 assertTrue(cur.getTableList(nil))
-counter=0
-for i in 0...cur.rowCount()
-	name=cur.getField(i,"Tables_in_xxx")
-	if name.eql?("testtable1") ||
-		name.eql?("testtable2") ||
-		name.eql?("testtable3") ||
-		name.eql?("testtable4")
-		counter=counter+1
-	end
-end
-assertEqual(counter,4)
+assertInResultSet(cur,"Tables_in_xxx","testtable1")
+assertInResultSet(cur,"Tables_in_xxx","testtable2")
+assertInResultSet(cur,"Tables_in_xxx","testtable3")
+assertInResultSet(cur,"Tables_in_xxx","testtable4")
 assertTrue(cur.sendQuery("drop table if exists testtable1"))
 assertTrue(cur.sendQuery("drop table if exists testtable2"))
 assertTrue(cur.sendQuery("drop table if exists testtable3"))

@@ -32,7 +32,6 @@ int main(int argc, char **argv) {
 	char		*socket;
 	uint16_t	id;
 	char		*filename;
-	uint64_t	counter=0;
 
 	#define	LARGE_BUFFER_LENGTH	(20*1024)
 	char		largebuffer[LARGE_BUFFER_LENGTH+1];
@@ -1539,15 +1538,7 @@ int main(int argc, char **argv) {
 	stdoutput.printf("SCHEMA LIST: \n");
 	assertTrue(cur->getSchemaList(NULL));
 	assertEquals(cur->getColumnName(0),"Database");
-	bool    found=false;
-	for (uint64_t i=0; i<cur->rowCount(); i++) {
-		if (!charstring::compare(
-				cur->getField(i,"Database"),"TESTUSER")) {
-			found=true;
-			break;
-		}
-	}
-	assertTrue(found);
+	assertInResultSet(cur,"Database","TESTUSER");
 	stdoutput.printf("\n");
 
 
@@ -1555,31 +1546,16 @@ int main(int argc, char **argv) {
 	stdoutput.printf("TABLE TYPE LIST: \n");
 	assertTrue(cur->getTableTypeList());
 	assertEquals(cur->getColumnName(0),"table_type");
-	found=false;
-	for (uint64_t i=0; i<cur->rowCount(); i++) {
-		if (!charstring::compare(
-				cur->getField(i,"table_type"),"TABLE")) {
-			found=true;
-			break;
-		}
-	}
-	assertTrue(found);
+	assertInResultSet(cur,"table_type","TABLE");
 	stdoutput.printf("\n");
 
 
 	// table list
 	stdoutput.printf("TABLE LIST: \n");
 	assertTrue(cur->getTableList(NULL));
-	counter=0;
-	for (uint64_t i=0; i<cur->rowCount(); i++) {
-		const char	*name=cur->getField(i,"Tables_in_xxx");
-		if (!charstring::compare(name,"TESTTABLE1") ||
-			!charstring::compare(name,"TESTTABLE2") ||
-			!charstring::compare(name,"TESTTABLE3")) {
-			counter++;
-		}
-	}
-	assertEquals(counter,3);
+	assertInResultSet(cur,"Tables_in_xxx","TESTTABLE1");
+	assertInResultSet(cur,"Tables_in_xxx","TESTTABLE2");
+	assertInResultSet(cur,"Tables_in_xxx","TESTTABLE3");
 	stdoutput.printf("\n");
 
 
@@ -1764,15 +1740,8 @@ int main(int argc, char **argv) {
 	// procedure list
 	stdoutput.printf("PROCEDURE LIST: \n");
 	assertTrue(cur->getProcedureList(NULL));
-	counter=0;
-	for (uint64_t i=0; i<cur->rowCount(); i++) {
-		const char	*name=cur->getField(i,"routine_name");
-		if (!charstring::compare(name,"TESTPROC") ||
-			!charstring::compare(name,"TESTPROC1")) {
-			counter++;
-		}
-	}
-	assertEquals(counter,2);
+	assertInResultSet(cur,"routine_name","TESTPROC");
+	assertInResultSet(cur,"routine_name","TESTPROC1");
 	stdoutput.printf("\n");
 
 

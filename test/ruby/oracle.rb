@@ -1710,14 +1710,7 @@ print "\n"
 print "SCHEMA LIST: \n"
 assertTrue(cur.getSchemaList(nil))
 assertEqual(cur.getColumnName(0),"Database")
-found=false
-for i in 0..cur.rowCount()-1
-	if cur.getField(i,"Database").to_s.downcase==hostname.downcase
-		found=true
-		break
-	end
-end
-assertTrue(found)
+assertInResultSet(cur,"Database",hostname.upcase)
 print "\n"
 
 
@@ -1774,17 +1767,10 @@ assertTrue(cur.sendQuery(
 	"	testclob clob, "+
 	"	testblob blob)"))
 assertTrue(cur.getTableList(nil))
-counter=0
-for i in 0..cur.rowCount()-1
-	name=cur.getField(i,"Tables_in_xxx")
-	if name=="TESTTABLE1" ||
-		name=="TESTTABLE2" ||
-		name=="TESTTABLE3" ||
-		name=="TESTTABLE4"
-		counter=counter+1
-	end
-end
-assertEqual(counter,4)
+assertInResultSet(cur,"Tables_in_xxx","TESTTABLE1")
+assertInResultSet(cur,"Tables_in_xxx","TESTTABLE2")
+assertInResultSet(cur,"Tables_in_xxx","TESTTABLE3")
+assertInResultSet(cur,"Tables_in_xxx","TESTTABLE4")
 assertTrue(cur.sendQuery("drop table testtable1"))
 assertTrue(cur.sendQuery("drop table testtable2"))
 assertTrue(cur.sendQuery("drop table testtable3"))
@@ -1996,17 +1982,10 @@ assertTrue(cur.sendQuery(
 	"	null; "+
 	"end;"))
 assertTrue(cur.getProcedureList(nil))
-counter=0
-for i in 0..cur.rowCount()-1
-	name=cur.getField(i,"routine_name")
-	if name=="TESTPROC1" ||
-		name=="TESTPROC2" ||
-		name=="TESTPROC3" ||
-		name=="TESTPROC4"
-		counter=counter+1
-	end
-end
-assertEqual(counter,4)
+assertInResultSet(cur,"routine_name","TESTPROC1")
+assertInResultSet(cur,"routine_name","TESTPROC2")
+assertInResultSet(cur,"routine_name","TESTPROC3")
+assertInResultSet(cur,"routine_name","TESTPROC4")
 print "\n"
 
 

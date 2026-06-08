@@ -45,7 +45,6 @@ int main(int argc, char **argv) {
 	char		*socket;
 	uint16_t	id;
 	char		*filename;
-	uint64_t	counter=0;
 
 	#define	LARGE_BUFFER_LENGTH	255
 	char		largebuffer[LARGE_BUFFER_LENGTH+1];
@@ -1808,7 +1807,7 @@ int main(int argc, char **argv) {
 	stdoutput.printf("CATALOG LIST: \n");
 	assertTrue(cur->getCatalogList(NULL));
 	assertEquals(cur->getColumnName(0),"Database");
-	assertTrue(cur->rowCount()>0);
+	assertInResultSet(cur,"Database",hostname);
 	stdoutput.printf("\n");
 
 
@@ -1821,7 +1820,7 @@ int main(int argc, char **argv) {
 	assertTrue(cur->sendQuery("create table testtable (col1 int)"));
 	assertTrue(cur->getSchemaList(NULL));
 	assertEquals(cur->getColumnName(0),"Database");
-	assertTrue(cur->rowCount()>0);
+	assertInResultSet(cur,"Database","dbo");
 	assertTrue(cur->sendQuery("drop table testtable"));
 	stdoutput.printf("\n");
 
@@ -1830,15 +1829,7 @@ int main(int argc, char **argv) {
 	stdoutput.printf("TABLE TYPE LIST: \n");
 	assertTrue(cur->getTableTypeList());
 	assertEquals(cur->getColumnName(0),"table_type");
-	bool	found=false;
-	for (uint64_t i=0; i<cur->rowCount(); i++) {
-		if (!charstring::compare(
-				cur->getField(i,"table_type"),"TABLE")) {
-			found=true;
-			break;
-		}
-	}
-	assertTrue(found);
+	assertInResultSet(cur,"table_type","TABLE");
 	stdoutput.printf("\n");
 
 
@@ -1865,17 +1856,10 @@ int main(int argc, char **argv) {
 		"	col1 int, "
 		"	col2 int)"));
 	assertTrue(cur->getTableList(NULL));
-	counter=0;
-	for (uint64_t i=0; i<cur->rowCount(); i++) {
-		const char	*name=cur->getField(i,"Tables_in_xxx");
-		if (!charstring::compare(name,"testtable1") ||
-			!charstring::compare(name,"testtable2") ||
-			!charstring::compare(name,"testtable3") ||
-			!charstring::compare(name,"testtable4")) {
-			counter++;
-		}
-	}
-	assertEquals(counter,4);
+	assertInResultSet(cur,"Tables_in_xxx","testtable1");
+	assertInResultSet(cur,"Tables_in_xxx","testtable2");
+	assertInResultSet(cur,"Tables_in_xxx","testtable3");
+	assertInResultSet(cur,"Tables_in_xxx","testtable4");
 	assertTrue(cur->sendQuery("drop table testtable1"));
 	assertTrue(cur->sendQuery("drop table testtable2"));
 	assertTrue(cur->sendQuery("drop table testtable3"));
@@ -2150,17 +2134,10 @@ int main(int argc, char **argv) {
 		"	@in4 datetime "
 		"as select 1"));
 	assertTrue(cur->getProcedureList(NULL));
-	counter=0;
-	for (uint64_t i=0; i<cur->rowCount(); i++) {
-		const char	*name=cur->getField(i,"routine_name");
-		if (!charstring::compare(name,"testproc1") ||
-			!charstring::compare(name,"testproc2") ||
-			!charstring::compare(name,"testproc3") ||
-			!charstring::compare(name,"testproc4")) {
-			counter++;
-		}
-	}
-	assertEquals(counter,4);
+	assertInResultSet(cur,"routine_name","testproc1");
+	assertInResultSet(cur,"routine_name","testproc2");
+	assertInResultSet(cur,"routine_name","testproc3");
+	assertInResultSet(cur,"routine_name","testproc4");
 	stdoutput.printf("\n");
 
 

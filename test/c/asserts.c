@@ -130,6 +130,25 @@ void assertFalse(int actual) {
 	}
 }
 
+void assertInResultSet(sqlrcur cursor, const char *column,
+						const char *value) {
+
+	uint64_t	i;
+	const char	*field;
+
+	for (i=0; i<sqlrcur_rowCount(cursor); i++) {
+		field=sqlrcur_getFieldByName(cursor,i,column);
+		if (field && !strcmp(field,value)) {
+			printf("%s ",success);
+			return;
+		}
+	}
+	printf("%s\n",failure);
+	printf("\"%s\" not found in column \"%s\"\n",value,column);
+	printErrors();
+	status=1;
+}
+
 void reportTestStatus() {
 
 	if (status==0) {

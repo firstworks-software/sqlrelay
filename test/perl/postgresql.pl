@@ -6,6 +6,7 @@
 
 use SQLRelay::Connection;
 use SQLRelay::Cursor;
+use Sys::Hostname;
 require "./asserts.pl";
 
 
@@ -20,6 +21,11 @@ require "./asserts.pl";
 $counter=0;
 
 $LARGE_BUFFER_LENGTH=8192;
+
+
+# hostname
+$hostname=hostname();
+$hostname=~s/\..*//;
 
 
 # instantiation
@@ -1449,7 +1455,7 @@ print("\n");
 print("CATALOG LIST: \n");
 assertTrue($cur->getCatalogList(undef));
 assertEquals($cur->getColumnName(0),"Database");
-assertTrue($cur->rowCount()>0);
+assertInResultSet($cur,"Database",$hostname);
 print("\n");
 
 
@@ -1457,7 +1463,7 @@ print("\n");
 print("SCHEMA LIST: \n");
 assertTrue($cur->getSchemaList(undef));
 assertEquals($cur->getColumnName(0),"Database");
-assertTrue($cur->rowCount()>0);
+assertInResultSet($cur,"Database","public");
 print("\n");
 
 
@@ -1465,14 +1471,7 @@ print("\n");
 print("TABLE TYPE LIST: \n");
 assertTrue($cur->getTableTypeList());
 assertEquals($cur->getColumnName(0),"table_type");
-$found=0;
-for ($i=0; $i<$cur->rowCount(); $i++) {
-	if ($cur->getField($i,"table_type") eq "TABLE") {
-		$found=1;
-		last;
-	}
-}
-assertTrue($found);
+assertInResultSet($cur,"table_type","TABLE");
 print("\n");
 
 
@@ -1499,18 +1498,10 @@ assertTrue($cur->sendQuery(
 	"	col1 int, ".
 	"	col2 int)"));
 assertTrue($cur->getTableList(undef));
-$counter=0;
-for ($i=0; $i<$cur->rowCount(); $i++) {
-	$name=$cur->getField($i,"Tables_in_xxx");
-	if (defined($name) &&
-		($name eq "testtable1" ||
-		$name eq "testtable2" ||
-		$name eq "testtable3" ||
-		$name eq "testtable4")) {
-		$counter++;
-	}
-}
-assertEquals($counter,4);
+assertInResultSet($cur,"Tables_in_xxx","testtable1");
+assertInResultSet($cur,"Tables_in_xxx","testtable2");
+assertInResultSet($cur,"Tables_in_xxx","testtable3");
+assertInResultSet($cur,"Tables_in_xxx","testtable4");
 assertTrue($cur->sendQuery("drop table testtable1"));
 assertTrue($cur->sendQuery("drop table testtable2"));
 assertTrue($cur->sendQuery("drop table testtable3"));
@@ -1747,18 +1738,10 @@ assertTrue($cur->sendQuery(
 	"as 'begin end;' ".
 	"language plpgsql"));
 assertTrue($cur->getProcedureList(undef));
-$counter=0;
-for ($i=0; $i<$cur->rowCount(); $i++) {
-	$name=$cur->getField($i,"routine_name");
-	if (defined($name) &&
-		($name eq "testproc1" ||
-		$name eq "testproc2" ||
-		$name eq "testproc3" ||
-		$name eq "testproc4")) {
-		$counter++;
-	}
-}
-assertEquals($counter,4);
+assertInResultSet($cur,"routine_name","testproc1");
+assertInResultSet($cur,"routine_name","testproc2");
+assertInResultSet($cur,"routine_name","testproc3");
+assertInResultSet($cur,"routine_name","testproc4");
 print("\n");
 
 

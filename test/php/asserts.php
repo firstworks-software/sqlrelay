@@ -139,6 +139,23 @@
 		}
 	}
 
+	function assertInResultSet($cur,$column,$value) {
+
+		global $status;
+
+		for ($i=0; $i<sqlrcur_rowCount($cur); $i++) {
+			if (!strcmp(sqlrcur_getField($cur,$i,$column),
+								$value)) {
+				echo(success." ");
+				return;
+			}
+		}
+		echo(failure."\n");
+		echo("\"$value\" not found in column \"$column\"\n");
+		printErrors();
+		$status=1;
+	}
+
 	function reportTestStatus() {
 
 		global $status;

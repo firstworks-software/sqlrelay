@@ -1719,14 +1719,7 @@ print("\n");
 print("SCHEMA LIST: \n");
 assertTrue($cur->getSchemaList(undef));
 assertEquals($cur->getColumnName(0),"Database");
-$found=0;
-for ($i=0; $i<$cur->rowCount(); $i++) {
-	if (lc($cur->getField($i,"Database")) eq lc($hostname)) {
-		$found=1;
-		last;
-	}
-}
-assertTrue($found);
+assertInResultSet($cur,"Database",uc($hostname));
 print("\n");
 
 
@@ -1783,18 +1776,10 @@ assertTrue($cur->sendQuery(
 	"	testclob clob, ".
 	"	testblob blob)"));
 assertTrue($cur->getTableList(undef));
-$counter=0;
-for ($i=0; $i<$cur->rowCount(); $i++) {
-	$name=$cur->getField($i,"Tables_in_xxx");
-	if (defined($name) &&
-		($name eq "TESTTABLE1" ||
-		$name eq "TESTTABLE2" ||
-		$name eq "TESTTABLE3" ||
-		$name eq "TESTTABLE4")) {
-		$counter++;
-	}
-}
-assertEquals($counter,4);
+assertInResultSet($cur,"Tables_in_xxx","TESTTABLE1");
+assertInResultSet($cur,"Tables_in_xxx","TESTTABLE2");
+assertInResultSet($cur,"Tables_in_xxx","TESTTABLE3");
+assertInResultSet($cur,"Tables_in_xxx","TESTTABLE4");
 assertTrue($cur->sendQuery("drop table testtable1"));
 assertTrue($cur->sendQuery("drop table testtable2"));
 assertTrue($cur->sendQuery("drop table testtable3"));
@@ -2008,18 +1993,10 @@ assertTrue($cur->sendQuery(
 	"	null; ".
 	"end;"));
 assertTrue($cur->getProcedureList(undef));
-$counter=0;
-for ($i=0; $i<$cur->rowCount(); $i++) {
-	$name=$cur->getField($i,"routine_name");
-	if (defined($name) &&
-		($name eq "TESTPROC1" ||
-		$name eq "TESTPROC2" ||
-		$name eq "TESTPROC3" ||
-		$name eq "TESTPROC4")) {
-		$counter++;
-	}
-}
-assertEquals($counter,4);
+assertInResultSet($cur,"routine_name","TESTPROC1");
+assertInResultSet($cur,"routine_name","TESTPROC2");
+assertInResultSet($cur,"routine_name","TESTPROC3");
+assertInResultSet($cur,"routine_name","TESTPROC4");
 print("\n");
 
 

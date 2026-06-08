@@ -11,6 +11,14 @@ set LARGE_BUFFER_LENGTH [expr 20*1024]
 set largebuffer [string repeat "C" $LARGE_BUFFER_LENGTH]
 
 
+# hostname
+set hostname [info hostname]
+set dot [string first "." $hostname]
+if {$dot > 0} {
+	set hostname [string range $hostname 0 [expr {$dot - 1}]]
+}
+
+
 # instantiation
 set con [sqlrcon -server "sqlrelay" -port 9000 -socket "/tmp/test.socket" -user "testuser" -password "testpassword" -retrytime 0 -tries 1]
 set cur [$con sqlrcur]
@@ -1587,7 +1595,7 @@ puts ""
 puts "CATALOG LIST: "
 assertTrue [$cur getCatalogList ""]
 assertEqual [$cur getColumnName 0] "Database"
-assertTrue [expr {[$cur rowCount] > 0}]
+assertInResultSet $cur "Database" $hostname
 puts ""
 
 
@@ -1600,7 +1608,7 @@ assertTrue [$cur sendQuery "create table testtable (col1 integer, col2 integer)"
 assertTrue [$con commit]
 assertTrue [$cur getSchemaList ""]
 assertEqual [$cur getColumnName 0] "Database"
-assertTrue [expr {[$cur rowCount] > 0}]
+assertInResultSet $cur "Database" "testuser"
 assertTrue [$cur sendQuery "drop table testtable"]
 assertTrue [$con commit]
 puts ""
@@ -1610,14 +1618,7 @@ puts ""
 puts "TABLE TYPE LIST: "
 assertTrue [$cur getTableTypeList]
 assertEqual [$cur getColumnName 0] "table_type"
-set found 0
-for {set i 0} {$i < [$cur rowCount]} {incr i} {
-	if {[$cur getFieldByName $i "table_type"] eq "TABLE"} {
-		set found 1
-		break
-	}
-}
-assertTrue $found
+assertInResultSet $cur "table_type" "TABLE"
 puts ""
 
 
@@ -1633,15 +1634,10 @@ assertTrue [$cur sendQuery "create table testtable3 (col1 integer, col2 integer)
 assertTrue [$cur sendQuery "create table testtable4 (col1 integer, col2 integer)"]
 assertTrue [$con commit]
 assertTrue [$cur getTableList ""]
-set counter 0
-for {set i 0} {$i < [$cur rowCount]} {incr i} {
-	set name [$cur getFieldByName $i "Tables_in_xxx"]
-	if {$name eq "testtable1" || $name eq "testtable2" ||
-		$name eq "testtable3" || $name eq "testtable4"} {
-		incr counter
-	}
-}
-assertEqual $counter 4
+assertInResultSet $cur "Tables_in_xxx" "testtable1"
+assertInResultSet $cur "Tables_in_xxx" "testtable2"
+assertInResultSet $cur "Tables_in_xxx" "testtable3"
+assertInResultSet $cur "Tables_in_xxx" "testtable4"
 assertTrue [$cur sendQuery "drop table testtable1"]
 assertTrue [$cur sendQuery "drop table testtable2"]
 assertTrue [$cur sendQuery "drop table testtable3"]
@@ -1847,15 +1843,10 @@ assertTrue [$cur sendQuery "create procedure testproc3(in1 integer, in2 char(20)
 assertTrue [$cur sendQuery "create procedure testproc4(in1 integer, in2 char(20), in3 varchar(20), in4 date) define x integer; let x = 1; end procedure;"]
 assertTrue [$con commit]
 assertTrue [$cur getProcedureList ""]
-set counter 0
-for {set i 0} {$i < [$cur rowCount]} {incr i} {
-	set name [$cur getFieldByName $i "routine_name"]
-	if {$name eq "testproc1" || $name eq "testproc2" ||
-		$name eq "testproc3" || $name eq "testproc4"} {
-		incr counter
-	}
-}
-assertEqual $counter 4
+assertInResultSet $cur "routine_name" "testproc1"
+assertInResultSet $cur "routine_name" "testproc2"
+assertInResultSet $cur "routine_name" "testproc3"
+assertInResultSet $cur "routine_name" "testproc4"
 puts ""
 
 

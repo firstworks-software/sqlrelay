@@ -1486,14 +1486,7 @@ print "\n"
 print "SCHEMA LIST: \n"
 assertTrue(cur.getSchemaList(nil))
 assertEqual(cur.getColumnName(0),"Database")
-found=false
-for i in 0..cur.rowCount()-1
-	if cur.getField(i,"Database")=="TESTUSER"
-		found=true
-		break
-	end
-end
-assertTrue(found)
+assertInResultSet(cur,"Database","TESTUSER")
 print "\n"
 
 
@@ -1501,30 +1494,16 @@ print "\n"
 print "TABLE TYPE LIST: \n"
 assertTrue(cur.getTableTypeList())
 assertEqual(cur.getColumnName(0),"table_type")
-found=false
-for i in 0..cur.rowCount()-1
-	if cur.getField(i,"table_type")=="TABLE"
-		found=true
-		break
-	end
-end
-assertTrue(found)
+assertInResultSet(cur,"table_type","TABLE")
 print "\n"
 
 
 # table list
 print "TABLE LIST: \n"
 assertTrue(cur.getTableList(nil))
-counter=0
-for i in 0..cur.rowCount()-1
-	name=cur.getField(i,"Tables_in_xxx")
-	if name=="TESTTABLE1" ||
-		name=="TESTTABLE2" ||
-		name=="TESTTABLE3"
-		counter=counter+1
-	end
-end
-assertEqual(counter,3)
+assertInResultSet(cur,"Tables_in_xxx","TESTTABLE1")
+assertInResultSet(cur,"Tables_in_xxx","TESTTABLE2")
+assertInResultSet(cur,"Tables_in_xxx","TESTTABLE3")
 print "\n"
 
 
@@ -1679,15 +1658,8 @@ print "\n"
 # procedure list
 print "PROCEDURE LIST: \n"
 assertTrue(cur.getProcedureList(nil))
-counter=0
-for i in 0..cur.rowCount()-1
-	name=cur.getField(i,"routine_name")
-	if name=="TESTPROC" ||
-		name=="TESTPROC1"
-		counter=counter+1
-	end
-end
-assertEqual(counter,2)
+assertInResultSet(cur,"routine_name","TESTPROC")
+assertInResultSet(cur,"routine_name","TESTPROC1")
 print "\n"
 
 

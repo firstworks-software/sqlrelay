@@ -1429,14 +1429,7 @@ puts ""
 puts "SCHEMA LIST: "
 assertTrue [$cur getSchemaList ""]
 assertEqual [$cur getColumnName 0] "Database"
-set found 0
-for {set i 0} {$i < [$cur rowCount]} {incr i} {
-	if {[string equal [$cur getFieldByName $i "Database"] "DB2INST1"]} {
-		set found 1
-		break
-	}
-}
-assertTrue $found
+assertInResultSet $cur "Database" "DB2INST1"
 puts ""
 
 
@@ -1444,14 +1437,7 @@ puts ""
 puts "TABLE TYPE LIST: "
 assertTrue [$cur getTableTypeList]
 assertEqual [$cur getColumnName 0] "table_type"
-set found 0
-for {set i 0} {$i < [$cur rowCount]} {incr i} {
-	if {[string equal [$cur getFieldByName $i "table_type"] "TABLE"]} {
-		set found 1
-		break
-	}
-}
-assertTrue $found
+assertInResultSet $cur "table_type" "TABLE"
 puts ""
 
 
@@ -1467,17 +1453,10 @@ assertTrue [$cur sendQuery "create table testtable3 (	col1 integer, 	col2 intege
 assertTrue [$cur sendQuery "create table testtable4 (	col1 integer, 	col2 integer)"]
 assertTrue [$con commit]
 assertTrue [$cur getTableList ""]
-set counter 0
-for {set i 0} {$i < [$cur rowCount]} {incr i} {
-	set name [$cur getFieldByName $i "Tables_in_xxx"]
-	if {[string equal $name "TESTTABLE1"] ||
-		[string equal $name "TESTTABLE2"] ||
-		[string equal $name "TESTTABLE3"] ||
-		[string equal $name "TESTTABLE4"]} {
-		incr counter
-	}
-}
-assertEqual $counter 4
+assertInResultSet $cur "Tables_in_xxx" "TESTTABLE1"
+assertInResultSet $cur "Tables_in_xxx" "TESTTABLE2"
+assertInResultSet $cur "Tables_in_xxx" "TESTTABLE3"
+assertInResultSet $cur "Tables_in_xxx" "TESTTABLE4"
 assertTrue [$cur sendQuery "drop table testtable1"]
 assertTrue [$cur sendQuery "drop table testtable2"]
 assertTrue [$cur sendQuery "drop table testtable3"]
@@ -1671,17 +1650,10 @@ assertTrue [$cur sendQuery "create procedure testproc3(	in in1 integer, 	in in2 
 assertTrue [$cur sendQuery "create procedure testproc4(	in in1 integer, 	in in2 char(20), 	in in3 varchar(20), 	in in4 date) language sql begin end"]
 assertTrue [$con commit]
 assertTrue [$cur getProcedureList ""]
-set counter 0
-for {set i 0} {$i < [$cur rowCount]} {incr i} {
-	set name [$cur getFieldByName $i "routine_name"]
-	if {[string equal $name "TESTPROC1"] ||
-		[string equal $name "TESTPROC2"] ||
-		[string equal $name "TESTPROC3"] ||
-		[string equal $name "TESTPROC4"]} {
-		incr counter
-	}
-}
-assertEqual $counter 4
+assertInResultSet $cur "routine_name" "TESTPROC1"
+assertInResultSet $cur "routine_name" "TESTPROC2"
+assertInResultSet $cur "routine_name" "TESTPROC3"
+assertInResultSet $cur "routine_name" "TESTPROC4"
 puts ""
 
 

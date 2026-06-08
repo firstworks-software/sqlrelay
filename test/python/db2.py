@@ -1683,12 +1683,7 @@ def main():
 	print("SCHEMA LIST: ")
 	assertTrue(cur.getSchemaList(None))
 	assertEquals(cur.getColumnName(0),"Database")
-	found=False
-	for i in range(cur.rowCount()):
-		if cur.getField(i,"Database")=="DB2INST1":
-			found=True
-			break
-	assertTrue(found)
+	assertInResultSet(cur,"Database","DB2INST1")
 	print()
 
 
@@ -1696,12 +1691,7 @@ def main():
 	print("TABLE TYPE LIST: ")
 	assertTrue(cur.getTableTypeList())
 	assertEquals(cur.getColumnName(0),"table_type")
-	found=False
-	for i in range(cur.rowCount()):
-		if cur.getField(i,"table_type")=="TABLE":
-			found=True
-			break
-	assertTrue(found)
+	assertInResultSet(cur,"table_type","TABLE")
 	print()
 
 
@@ -1729,12 +1719,10 @@ def main():
 		"	col2 integer)"))
 	assertTrue(con.commit())
 	assertTrue(cur.getTableList(None))
-	counter=0
-	for i in range(cur.rowCount()):
-		name=cur.getField(i,"Tables_in_xxx")
-		if name in ("TESTTABLE1","TESTTABLE2","TESTTABLE3","TESTTABLE4"):
-			counter+=1
-	assertEquals(counter,4)
+	assertInResultSet(cur,"Tables_in_xxx","TESTTABLE1")
+	assertInResultSet(cur,"Tables_in_xxx","TESTTABLE2")
+	assertInResultSet(cur,"Tables_in_xxx","TESTTABLE3")
+	assertInResultSet(cur,"Tables_in_xxx","TESTTABLE4")
 	assertTrue(cur.sendQuery("drop table testtable1"))
 	assertTrue(cur.sendQuery("drop table testtable2"))
 	assertTrue(cur.sendQuery("drop table testtable3"))
@@ -1986,12 +1974,10 @@ def main():
 		"language sql begin end"))
 	assertTrue(con.commit())
 	assertTrue(cur.getProcedureList(None))
-	counter=0
-	for i in range(cur.rowCount()):
-		name=cur.getField(i,"routine_name")
-		if name in ("TESTPROC1","TESTPROC2","TESTPROC3","TESTPROC4"):
-			counter+=1
-	assertEquals(counter,4)
+	assertInResultSet(cur,"routine_name","TESTPROC1")
+	assertInResultSet(cur,"routine_name","TESTPROC2")
+	assertInResultSet(cur,"routine_name","TESTPROC3")
+	assertInResultSet(cur,"routine_name","TESTPROC4")
 	print()
 
 

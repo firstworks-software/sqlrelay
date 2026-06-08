@@ -5,6 +5,7 @@ include ../../config.mk
 all: db2.class\
 	freetds.class \
 	firebird.class \
+	informix.class \
 	mysql.class \
 	oracle.class \
 	postgresql.class \

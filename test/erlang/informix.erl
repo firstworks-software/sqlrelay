@@ -9,6 +9,7 @@
                   assertEqualsString/2, assertEqualsStringLen/3,
                   assertEqualsInt/2, assertEqualsDouble/2,
                   assertTrue/1, assertFalse/1,
+                  assertInResultSet/2,
                   waitForPort/1, largeBuffer/1, shortHostname/0]).
 
 %% Iterate through an isolation-level list.
@@ -1645,8 +1646,7 @@ main() ->
     io:format("CATALOG LIST: ~n"),
     assertTrue(sqlrelay:getCatalogList("")),
     assertEqualsString(sqlrelay:getColumnName(0), "Database"),
-    {ok, CatalogRowCount} = sqlrelay:rowCount(),
-    assertTrue(CatalogRowCount > 0),
+    assertInResultSet("Database", Hostname),
     io:format("~n"),
 
     %% SCHEMA LIST
@@ -1661,8 +1661,7 @@ main() ->
     assertTrue(sqlrelay:commit()),
     assertTrue(sqlrelay:getSchemaList("")),
     assertEqualsString(sqlrelay:getColumnName(0), "Database"),
-    {ok, SchemaRowCount} = sqlrelay:rowCount(),
-    assertTrue(SchemaRowCount > 0),
+    assertInResultSet("Database", "testuser"),
     assertTrue(sqlrelay:sendQuery("drop table testtable")),
     assertTrue(sqlrelay:commit()),
     io:format("~n"),
@@ -1671,9 +1670,7 @@ main() ->
     io:format("TABLE TYPE LIST: ~n"),
     assertTrue(sqlrelay:getTableTypeList()),
     assertEqualsString(sqlrelay:getColumnName(0), "table_type"),
-    {ok, TableTypeRowCount} = sqlrelay:rowCount(),
-    TableTypeFound = searchTableTypes(0, TableTypeRowCount),
-    assertTrue(TableTypeFound),
+    assertInResultSet("table_type", "TABLE"),
     io:format("~n"),
 
     %% TABLE LIST
@@ -1700,9 +1697,10 @@ main() ->
         "	col2 integer)")),
     assertTrue(sqlrelay:commit()),
     assertTrue(sqlrelay:getTableList("")),
-    {ok, TableListRowCount} = sqlrelay:rowCount(),
-    TableCount = countMatchingTables(0, TableListRowCount, 0),
-    assertEqualsInt(TableCount, 4),
+    assertInResultSet("Tables_in_xxx", "testtable1"),
+    assertInResultSet("Tables_in_xxx", "testtable2"),
+    assertInResultSet("Tables_in_xxx", "testtable3"),
+    assertInResultSet("Tables_in_xxx", "testtable4"),
     assertTrue(sqlrelay:sendQuery("drop table testtable1")),
     assertTrue(sqlrelay:sendQuery("drop table testtable2")),
     assertTrue(sqlrelay:sendQuery("drop table testtable3")),
@@ -1984,9 +1982,10 @@ main() ->
         "end procedure;")),
     assertTrue(sqlrelay:commit()),
     assertTrue(sqlrelay:getProcedureList("")),
-    {ok, ProcRowCount} = sqlrelay:rowCount(),
-    ProcCount = countMatchingProcs(0, ProcRowCount, 0),
-    assertEqualsInt(ProcCount, 4),
+    assertInResultSet("routine_name", "testproc1"),
+    assertInResultSet("routine_name", "testproc2"),
+    assertInResultSet("routine_name", "testproc3"),
+    assertInResultSet("routine_name", "testproc4"),
     io:format("~n"),
 
     %% PROCEDURE PARAMETER LIST
@@ -2063,7 +2062,6 @@ main() ->
     assertFalse(sqlrelay:sendQuery("create table testtable")),
     io:format("~n"),
 
-    _ = Hostname,
 
     reportTestStatus(),
 
@@ -2093,49 +2091,3 @@ contains(Haystack, Needle) when is_list(Haystack), is_list(Needle) ->
     string:str(Haystack, Needle) > 0;
 contains(_, _) ->
     false.
-
-%% Walk the table-type-list result looking for a row whose "table_type"
-%% column is "TABLE".
-searchTableTypes(I, Count) when I >= Count ->
-    false;
-searchTableTypes(I, Count) ->
-    case sqlrelay:getFieldByName(I, "table_type") of
-        {ok, "TABLE"} -> true;
-        _             -> searchTableTypes(I + 1, Count)
-    end.
-
-%% Count rows in the table-list result whose "Tables_in_xxx" column is
-%% one of the four test table names.
-countMatchingTables(I, Count, Acc) when I >= Count ->
-    Acc;
-countMatchingTables(I, Count, Acc) ->
-    Name = case sqlrelay:getFieldByName(I, "Tables_in_xxx") of
-               {ok, N} when is_list(N) -> N;
-               _ -> ""
-           end,
-    NewAcc = case Name of
-                 "testtable1" -> Acc + 1;
-                 "testtable2" -> Acc + 1;
-                 "testtable3" -> Acc + 1;
-                 "testtable4" -> Acc + 1;
-                 _            -> Acc
-             end,
-    countMatchingTables(I + 1, Count, NewAcc).
-
-%% Count rows in the procedure-list result whose "routine_name" is one
-%% of the four test procedure names.
-countMatchingProcs(I, Count, Acc) when I >= Count ->
-    Acc;
-countMatchingProcs(I, Count, Acc) ->
-    Name = case sqlrelay:getFieldByName(I, "routine_name") of
-               {ok, N} when is_list(N) -> N;
-               _ -> ""
-           end,
-    NewAcc = case Name of
-                 "testproc1" -> Acc + 1;
-                 "testproc2" -> Acc + 1;
-                 "testproc3" -> Acc + 1;
-                 "testproc4" -> Acc + 1;
-                 _           -> Acc
-             end,
-    countMatchingProcs(I + 1, Count, NewAcc).

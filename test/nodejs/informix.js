@@ -8,6 +8,7 @@ var {
     assertEqStr, assertEqStrLen,
     assertEqInt, assertEqDbl, assertEqual,
     assertTrue, assertFalse,
+    assertInResultSet,
     getStatus, reportTestStatus
 }=require("./asserts.js");
 
@@ -29,6 +30,14 @@ var subvalstrings=["hi","hello","bye"];
 var subvaldoubles=[10.55,10.556,10.5556];
 var precs=[4,5,6];
 var scales=[2,3,4];
+
+
+// hostname
+var hostname=require("os").hostname();
+var dot=hostname.indexOf(".");
+if (dot>-1) {
+	hostname=hostname.substring(0,dot);
+}
 
 
 // instantiation
@@ -1993,7 +2002,7 @@ console.log("");
 console.log("CATALOG LIST: ");
 assertTrue(cur.getCatalogList(null));
 assertEqStr(cur.getColumnName(0),"Database");
-assertTrue(cur.rowCount()>0);
+assertInResultSet(cur,"Database",hostname);
 console.log("");
 
 
@@ -2009,7 +2018,7 @@ assertTrue(cur.sendQuery(
 assertTrue(con.commit());
 assertTrue(cur.getSchemaList(null));
 assertEqStr(cur.getColumnName(0),"Database");
-assertTrue(cur.rowCount()>0);
+assertInResultSet(cur,"Database","testuser");
 assertTrue(cur.sendQuery("drop table testtable"));
 assertTrue(con.commit());
 console.log("");
@@ -2019,14 +2028,7 @@ console.log("");
 console.log("TABLE TYPE LIST: ");
 assertTrue(cur.getTableTypeList());
 assertEqStr(cur.getColumnName(0),"table_type");
-var found=0;
-for (var i=0; i<cur.rowCount(); i++) {
-	if (cur.getField(i,"table_type")==="TABLE") {
-		found=1;
-		break;
-	}
-}
-assertTrue(found);
+assertInResultSet(cur,"table_type","TABLE");
 console.log("");
 
 
@@ -2054,17 +2056,10 @@ assertTrue(cur.sendQuery(
 	"	col2 integer)"));
 assertTrue(con.commit());
 assertTrue(cur.getTableList(null));
-var counter=0;
-for (var i=0; i<cur.rowCount(); i++) {
-	var name=cur.getField(i,"Tables_in_xxx");
-	if (name==="testtable1" ||
-		name==="testtable2" ||
-		name==="testtable3" ||
-		name==="testtable4") {
-		counter++;
-	}
-}
-assertEqInt(counter,4);
+assertInResultSet(cur,"Tables_in_xxx","testtable1");
+assertInResultSet(cur,"Tables_in_xxx","testtable2");
+assertInResultSet(cur,"Tables_in_xxx","testtable3");
+assertInResultSet(cur,"Tables_in_xxx","testtable4");
 assertTrue(cur.sendQuery("drop table testtable1"));
 assertTrue(cur.sendQuery("drop table testtable2"));
 assertTrue(cur.sendQuery("drop table testtable3"));
@@ -2361,17 +2356,10 @@ assertTrue(cur.sendQuery(
 	"end procedure;"));
 assertTrue(con.commit());
 assertTrue(cur.getProcedureList(null));
-counter=0;
-for (var i=0; i<cur.rowCount(); i++) {
-	var name=cur.getField(i,"routine_name");
-	if (name==="testproc1" ||
-		name==="testproc2" ||
-		name==="testproc3" ||
-		name==="testproc4") {
-		counter++;
-	}
-}
-assertEqInt(counter,4);
+assertInResultSet(cur,"routine_name","testproc1");
+assertInResultSet(cur,"routine_name","testproc2");
+assertInResultSet(cur,"routine_name","testproc3");
+assertInResultSet(cur,"routine_name","testproc4");
 console.log("");
 
 

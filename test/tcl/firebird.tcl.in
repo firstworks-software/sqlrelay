@@ -1319,14 +1319,7 @@ puts ""
 puts "SCHEMA LIST: "
 assertTrue [$cur getSchemaList ""]
 assertEqual [$cur getColumnName 0] "Database"
-set found 0
-for {set i 0} {$i < [$cur rowCount]} {incr i} {
-	if {[string equal [$cur getFieldByName $i "Database"] "TESTUSER"]} {
-		set found 1
-		break
-	}
-}
-assertTrue $found
+assertInResultSet $cur "Database" "TESTUSER"
 puts ""
 
 
@@ -1334,30 +1327,16 @@ puts ""
 puts "TABLE TYPE LIST: "
 assertTrue [$cur getTableTypeList]
 assertEqual [$cur getColumnName 0] "table_type"
-set found 0
-for {set i 0} {$i < [$cur rowCount]} {incr i} {
-	if {[string equal [$cur getFieldByName $i "table_type"] "TABLE"]} {
-		set found 1
-		break
-	}
-}
-assertTrue $found
+assertInResultSet $cur "table_type" "TABLE"
 puts ""
 
 
 # table list
 puts "TABLE LIST: "
 assertTrue [$cur getTableList ""]
-set counter 0
-for {set i 0} {$i < [$cur rowCount]} {incr i} {
-	set name [$cur getFieldByName $i "Tables_in_xxx"]
-	if {[string equal $name "TESTTABLE1"] ||
-		[string equal $name "TESTTABLE2"] ||
-		[string equal $name "TESTTABLE3"]} {
-		incr counter
-	}
-}
-assertEqual $counter 3
+assertInResultSet $cur "Tables_in_xxx" "TESTTABLE1"
+assertInResultSet $cur "Tables_in_xxx" "TESTTABLE2"
+assertInResultSet $cur "Tables_in_xxx" "TESTTABLE3"
 puts ""
 
 
@@ -1512,15 +1491,8 @@ puts ""
 # procedure list
 puts "PROCEDURE LIST: "
 assertTrue [$cur getProcedureList ""]
-set counter 0
-for {set i 0} {$i < [$cur rowCount]} {incr i} {
-	set name [$cur getFieldByName $i "routine_name"]
-	if {[string equal $name "TESTPROC"] ||
-		[string equal $name "TESTPROC1"]} {
-		incr counter
-	}
-}
-assertEqual $counter 2
+assertInResultSet $cur "routine_name" "TESTPROC"
+assertInResultSet $cur "routine_name" "TESTPROC1"
 puts ""
 
 

@@ -23,6 +23,14 @@
 	$scales=array(2,3,4);
 
 
+	# hostname
+	$hostname=gethostname();
+	$dot=strpos($hostname,'.');
+	if ($dot) {
+		$hostname=substr($hostname,0,$dot);
+	}
+
+
 	# instantiation
 	$con=sqlrcon_alloc("sqlrelay",9000,"/tmp/test.socket",
 						"testuser","testpassword",0,1);
@@ -1981,7 +1989,7 @@
 	echo("CATALOG LIST: \n");
 	assertTrue(sqlrcur_getCatalogList($cur,NULL));
 	assertEqStr(sqlrcur_getColumnName($cur,0),"Database");
-	assertTrue(sqlrcur_rowCount($cur)>0);
+	assertInResultSet($cur,"Database",$hostname);
 	echo("\n");
 
 
@@ -1997,7 +2005,7 @@
 	assertTrue(sqlrcon_commit($con));
 	assertTrue(sqlrcur_getSchemaList($cur,NULL));
 	assertEqStr(sqlrcur_getColumnName($cur,0),"Database");
-	assertTrue(sqlrcur_rowCount($cur)>0);
+	assertInResultSet($cur,"Database","testuser");
 	assertTrue(sqlrcur_sendQuery($cur,"drop table testtable"));
 	assertTrue(sqlrcon_commit($con));
 	echo("\n");
@@ -2007,15 +2015,7 @@
 	echo("TABLE TYPE LIST: \n");
 	assertTrue(sqlrcur_getTableTypeList($cur));
 	assertEqStr(sqlrcur_getColumnName($cur,0),"table_type");
-	$found=0;
-	for ($i=0; $i<sqlrcur_rowCount($cur); $i++) {
-		if (!strcmp(sqlrcur_getField($cur,$i,"table_type"),
-								"TABLE")) {
-			$found=1;
-			break;
-		}
-	}
-	assertTrue($found);
+	assertInResultSet($cur,"table_type","TABLE");
 	echo("\n");
 
 
@@ -2043,17 +2043,10 @@
 		"	col2 integer)"));
 	assertTrue(sqlrcon_commit($con));
 	assertTrue(sqlrcur_getTableList($cur,NULL));
-	$counter=0;
-	for ($i=0; $i<sqlrcur_rowCount($cur); $i++) {
-		$name=sqlrcur_getField($cur,$i,"Tables_in_xxx");
-		if (!strcmp($name,"testtable1") ||
-			!strcmp($name,"testtable2") ||
-			!strcmp($name,"testtable3") ||
-			!strcmp($name,"testtable4")) {
-			$counter++;
-		}
-	}
-	assertEqInt($counter,4);
+	assertInResultSet($cur,"Tables_in_xxx","testtable1");
+	assertInResultSet($cur,"Tables_in_xxx","testtable2");
+	assertInResultSet($cur,"Tables_in_xxx","testtable3");
+	assertInResultSet($cur,"Tables_in_xxx","testtable4");
 	assertTrue(sqlrcur_sendQuery($cur,"drop table testtable1"));
 	assertTrue(sqlrcur_sendQuery($cur,"drop table testtable2"));
 	assertTrue(sqlrcur_sendQuery($cur,"drop table testtable3"));
@@ -2354,17 +2347,10 @@
 		"end procedure;"));
 	assertTrue(sqlrcon_commit($con));
 	assertTrue(sqlrcur_getProcedureList($cur,NULL));
-	$counter=0;
-	for ($i=0; $i<sqlrcur_rowCount($cur); $i++) {
-		$name=sqlrcur_getField($cur,$i,"routine_name");
-		if (!strcmp($name,"testproc1") ||
-			!strcmp($name,"testproc2") ||
-			!strcmp($name,"testproc3") ||
-			!strcmp($name,"testproc4")) {
-			$counter++;
-		}
-	}
-	assertEqInt($counter,4);
+	assertInResultSet($cur,"routine_name","testproc1");
+	assertInResultSet($cur,"routine_name","testproc2");
+	assertInResultSet($cur,"routine_name","testproc3");
+	assertInResultSet($cur,"routine_name","testproc4");
 	echo("\n");
 
 

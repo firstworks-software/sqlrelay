@@ -42,8 +42,19 @@ class informix extends sqlrtest {
 		String		socket;
 		short		id;
 		String		filename;
-		long		counter=0;
 		int		LARGE_BUFFER_LENGTH=20*1024;
+
+
+		// hostname
+		String	hostname="";
+		try {
+			hostname=java.net.InetAddress
+					.getLocalHost().getHostName();
+			int idx=hostname.indexOf('.');
+			if (idx>0) {
+				hostname=hostname.substring(0,idx);
+			}
+		} catch (Exception e) { }
 
 
 		// instantiation
@@ -2019,7 +2030,7 @@ class informix extends sqlrtest {
 		System.out.println("CATALOG LIST: ");
 		assertTrue(cur.getCatalogList(null));
 		assertEquals(cur.getColumnName(0),"Database");
-		assertTrue(cur.rowCount()>0);
+		assertInResultSet(cur,"Database",hostname);
 		System.out.println();
 
 
@@ -2035,7 +2046,7 @@ class informix extends sqlrtest {
 		assertTrue(con.commit());
 		assertTrue(cur.getSchemaList(null));
 		assertEquals(cur.getColumnName(0),"Database");
-		assertTrue(cur.rowCount()>0);
+		assertInResultSet(cur,"Database","testuser");
 		assertTrue(cur.sendQuery("drop table testtable"));
 		assertTrue(con.commit());
 		System.out.println();
@@ -2045,15 +2056,7 @@ class informix extends sqlrtest {
 		System.out.println("TABLE TYPE LIST: ");
 		assertTrue(cur.getTableTypeList());
 		assertEquals(cur.getColumnName(0),"table_type");
-		boolean found=false;
-		for (long i=0; i<cur.rowCount(); i++) {
-			String val=cur.getField((int)i,"table_type");
-			if (val!=null && val.equals("TABLE")) {
-				found=true;
-				break;
-			}
-		}
-		assertTrue(found);
+		assertInResultSet(cur,"table_type","TABLE");
 		System.out.println();
 
 
@@ -2081,17 +2084,10 @@ class informix extends sqlrtest {
 			"	col2 integer)"));
 		assertTrue(con.commit());
 		assertTrue(cur.getTableList(null));
-		counter=0;
-		for (long i=0; i<cur.rowCount(); i++) {
-			String name=cur.getField((int)i,"Tables_in_xxx");
-			if ("testtable1".equals(name) ||
-				"testtable2".equals(name) ||
-				"testtable3".equals(name) ||
-				"testtable4".equals(name)) {
-				counter++;
-			}
-		}
-		assertEquals(counter,4);
+		assertInResultSet(cur,"Tables_in_xxx","testtable1");
+		assertInResultSet(cur,"Tables_in_xxx","testtable2");
+		assertInResultSet(cur,"Tables_in_xxx","testtable3");
+		assertInResultSet(cur,"Tables_in_xxx","testtable4");
 		assertTrue(cur.sendQuery("drop table testtable1"));
 		assertTrue(cur.sendQuery("drop table testtable2"));
 		assertTrue(cur.sendQuery("drop table testtable3"));
@@ -2364,17 +2360,10 @@ class informix extends sqlrtest {
 			"end procedure;"));
 		assertTrue(con.commit());
 		assertTrue(cur.getProcedureList(null));
-		counter=0;
-		for (long i=0; i<cur.rowCount(); i++) {
-			String name=cur.getField((int)i,"routine_name");
-			if ("testproc1".equals(name) ||
-				"testproc2".equals(name) ||
-				"testproc3".equals(name) ||
-				"testproc4".equals(name)) {
-				counter++;
-			}
-		}
-		assertEquals(counter,4);
+		assertInResultSet(cur,"routine_name","testproc1");
+		assertInResultSet(cur,"routine_name","testproc2");
+		assertInResultSet(cur,"routine_name","testproc3");
+		assertInResultSet(cur,"routine_name","testproc4");
 		System.out.println();
 
 

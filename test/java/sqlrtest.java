@@ -200,6 +200,22 @@ class sqlrtest {
 		}
 	}
 
+	protected static void assertInResultSet(SQLRCursor cursor,
+						String column, String value) {
+
+		for (long i=0; i<cursor.rowCount(); i++) {
+			if (value.equals(cursor.getField(i,column))) {
+				System.out.print(success+" ");
+				return;
+			}
+		}
+		System.out.println(failure);
+		System.out.println("\""+value+"\" not found in column \""+
+								column+"\"");
+		printErrors();
+		status=1;
+	}
+
 	protected static void reportTestStatus() {
 
 		if (status==0) {

@@ -48,7 +48,6 @@ class tls extends sqlrtest {
 		long		clobvarlength;
 		byte[]		blobvar;
 		long		blobvarlength;
-		short		counter;
 		int		LARGE_BUFFER_LENGTH=8192;
 
 		String	cert="../sqlrelay.conf.d/tls/client.pem";
@@ -1862,15 +1861,7 @@ class tls extends sqlrtest {
 		System.out.println("SCHEMA LIST: ");
 		assertTrue(cur.getSchemaList(null));
 		assertEquals(cur.getColumnName(0),"Database");
-		boolean found=false;
-		for (long i=0; i<cur.rowCount(); i++) {
-			String val=cur.getField((int)i,"Database");
-			if (val!=null &&val.equalsIgnoreCase(hostname)) {
-				found=true;
-				break;
-			}
-		}
-		assertTrue(found);
+		assertInResultSet(cur,"Database",hostname.toUpperCase());
 		System.out.println();
 
 
@@ -1927,17 +1918,10 @@ class tls extends sqlrtest {
 			"	testclob clob, "+
 			"	testblob blob)"));
 		assertTrue(cur.getTableList(null));
-		counter=0;
-		for (long i=0; i<cur.rowCount(); i++) {
-			String name=cur.getField((int)i,"Tables_in_xxx");
-			if ("TESTTABLE1".equals(name) ||
-				"TESTTABLE2".equals(name) ||
-				"TESTTABLE3".equals(name) ||
-				"TESTTABLE4".equals(name)) {
-				counter++;
-			}
-		}
-		assertEquals(counter,4);
+		assertInResultSet(cur,"Tables_in_xxx","TESTTABLE1");
+		assertInResultSet(cur,"Tables_in_xxx","TESTTABLE2");
+		assertInResultSet(cur,"Tables_in_xxx","TESTTABLE3");
+		assertInResultSet(cur,"Tables_in_xxx","TESTTABLE4");
 		assertTrue(cur.sendQuery("drop table testtable1"));
 		assertTrue(cur.sendQuery("drop table testtable2"));
 		assertTrue(cur.sendQuery("drop table testtable3"));
@@ -2152,17 +2136,10 @@ class tls extends sqlrtest {
 			"	null; "+
 			"end;"));
 		assertTrue(cur.getProcedureList(null));
-		counter=0;
-		for (long i=0; i<cur.rowCount(); i++) {
-			String name=cur.getField((int)i,"routine_name");
-			if ("TESTPROC1".equals(name) ||
-				"TESTPROC2".equals(name) ||
-				"TESTPROC3".equals(name) ||
-				"TESTPROC4".equals(name)) {
-				counter++;
-			}
-		}
-		assertEquals(counter,4);
+		assertInResultSet(cur,"routine_name","TESTPROC1");
+		assertInResultSet(cur,"routine_name","TESTPROC2");
+		assertInResultSet(cur,"routine_name","TESTPROC3");
+		assertInResultSet(cur,"routine_name","TESTPROC4");
 		System.out.println();
 
 

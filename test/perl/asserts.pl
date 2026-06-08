@@ -148,6 +148,23 @@ sub assertUndef {
 	}
 }
 
+sub assertInResultSet {
+
+	my ($cur,$column,$value)=@_;
+
+	for (my $i=0; $i<$cur->rowCount(); $i++) {
+		my $field=$cur->getField($i,$column);
+		if (defined($field) && $field eq $value) {
+			print("$success ");
+			return;
+		}
+	}
+	print("$failure\n");
+	print("\"$value\" not found in column \"$column\"\n");
+	printErrors();
+	$status=1;
+}
+
 sub reportTestStatus {
 
 	if ($status==0) {

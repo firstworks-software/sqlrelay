@@ -8,6 +8,7 @@ var {
 	assertEqStr, assertEqStrLen,
 	assertEqInt, assertEqDbl, assertEqual,
 	assertTrue, assertFalse,
+	assertInResultSet,
 	getStatus, reportTestStatus
 }=require("./asserts.js");
 
@@ -1748,15 +1749,7 @@ console.log("");
 console.log("SCHEMA LIST: ");
 assertTrue(cur.getSchemaList(null));
 assertEqStr(cur.getColumnName(0),"Database");
-var found=0;
-for (var i=0; i<cur.rowCount(); i++) {
-	if (String(cur.getField(i,"Database")).toLowerCase()===
-			String(hostname).toLowerCase()) {
-		found=1;
-		break;
-	}
-}
-assertTrue(found);
+assertInResultSet(cur,"Database",hostname.toUpperCase());
 console.log("");
 
 
@@ -1813,17 +1806,10 @@ assertTrue(cur.sendQuery(
 	"	testclob clob, "+
 	"	testblob blob)"));
 assertTrue(cur.getTableList(null));
-var counter=0;
-for (var i=0; i<cur.rowCount(); i++) {
-	var name=cur.getField(i,"Tables_in_xxx");
-	if (name==="TESTTABLE1" ||
-		name==="TESTTABLE2" ||
-		name==="TESTTABLE3" ||
-		name==="TESTTABLE4") {
-		counter++;
-	}
-}
-assertEqInt(counter,4);
+assertInResultSet(cur,"Tables_in_xxx","TESTTABLE1");
+assertInResultSet(cur,"Tables_in_xxx","TESTTABLE2");
+assertInResultSet(cur,"Tables_in_xxx","TESTTABLE3");
+assertInResultSet(cur,"Tables_in_xxx","TESTTABLE4");
 assertTrue(cur.sendQuery("drop table testtable1"));
 assertTrue(cur.sendQuery("drop table testtable2"));
 assertTrue(cur.sendQuery("drop table testtable3"));
@@ -2037,17 +2023,10 @@ assertTrue(cur.sendQuery(
 	"	null; "+
 	"end;"));
 assertTrue(cur.getProcedureList(null));
-counter=0;
-for (var i=0; i<cur.rowCount(); i++) {
-	var name=cur.getField(i,"routine_name");
-	if (name==="TESTPROC1" ||
-		name==="TESTPROC2" ||
-		name==="TESTPROC3" ||
-		name==="TESTPROC4") {
-		counter++;
-	}
-}
-assertEqInt(counter,4);
+assertInResultSet(cur,"routine_name","TESTPROC1");
+assertInResultSet(cur,"routine_name","TESTPROC2");
+assertInResultSet(cur,"routine_name","TESTPROC3");
+assertInResultSet(cur,"routine_name","TESTPROC4");
 console.log("");
 
 

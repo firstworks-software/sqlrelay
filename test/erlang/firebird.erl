@@ -9,6 +9,7 @@
                   assertEqualsString/2, assertEqualsStringLen/3,
                   assertEqualsInt/2, assertEqualsDouble/2,
                   assertTrue/1, assertFalse/1,
+                  assertInResultSet/2,
                   waitForPort/1, largeBuffer/1, shortHostname/0]).
 
 main() ->
@@ -1217,26 +1218,22 @@ main() ->
     io:format("SCHEMA LIST: ~n"),
     assertTrue(sqlrelay:getSchemaList("")),
     assertEqualsString(sqlrelay:getColumnName(0), "Database"),
-    {ok, SchemaRowCount} = sqlrelay:rowCount(),
-    SchemaFound = searchSchemaList(0, SchemaRowCount),
-    assertTrue(SchemaFound),
+    assertInResultSet("Database", "TESTUSER"),
     io:format("~n"),
 
     %% TABLE TYPE LIST
     io:format("TABLE TYPE LIST: ~n"),
     assertTrue(sqlrelay:getTableTypeList()),
     assertEqualsString(sqlrelay:getColumnName(0), "table_type"),
-    {ok, TtlRowCount} = sqlrelay:rowCount(),
-    TableTypeFound = searchTableTypeList(0, TtlRowCount),
-    assertTrue(TableTypeFound),
+    assertInResultSet("table_type", "TABLE"),
     io:format("~n"),
 
     %% TABLE LIST
     io:format("TABLE LIST: ~n"),
     assertTrue(sqlrelay:getTableList("")),
-    {ok, TableListRowCount} = sqlrelay:rowCount(),
-    TableCount = countMatchingTables(0, TableListRowCount, 0),
-    assertEqualsInt(TableCount, 3),
+    assertInResultSet("Tables_in_xxx", "TESTTABLE1"),
+    assertInResultSet("Tables_in_xxx", "TESTTABLE2"),
+    assertInResultSet("Tables_in_xxx", "TESTTABLE3"),
     io:format("~n"),
 
     %% TYPE INFO LIST
@@ -1406,9 +1403,8 @@ main() ->
     %% PROCEDURE LIST
     io:format("PROCEDURE LIST: ~n"),
     assertTrue(sqlrelay:getProcedureList("")),
-    {ok, ProcRowCount} = sqlrelay:rowCount(),
-    ProcCount = countMatchingProcs(0, ProcRowCount, 0),
-    assertEqualsInt(ProcCount, 2),
+    assertInResultSet("routine_name", "TESTPROC"),
+    assertInResultSet("routine_name", "TESTPROC1"),
     io:format("~n"),
 
     %% PROCEDURE PARAMETER LIST
@@ -1520,56 +1516,3 @@ contains(Haystack, Needle) when is_list(Haystack), is_list(Needle) ->
     string:str(Haystack, Needle) > 0;
 contains(_, _) ->
     false.
-
-%% Walk the schema-list result looking for a row whose "Database"
-%% column equals "TESTUSER".
-searchSchemaList(I, Count) when I >= Count ->
-    false;
-searchSchemaList(I, Count) ->
-    case sqlrelay:getFieldByName(I, "Database") of
-        {ok, "TESTUSER"} -> true;
-        _                -> searchSchemaList(I + 1, Count)
-    end.
-
-%% Walk the table-type-list result looking for a row whose "table_type"
-%% column equals "TABLE".
-searchTableTypeList(I, Count) when I >= Count ->
-    false;
-searchTableTypeList(I, Count) ->
-    case sqlrelay:getFieldByName(I, "table_type") of
-        {ok, "TABLE"} -> true;
-        _             -> searchTableTypeList(I + 1, Count)
-    end.
-
-%% Count rows in the table-list result whose "Tables_in_xxx" column is
-%% one of the three test table names.
-countMatchingTables(I, Count, Acc) when I >= Count ->
-    Acc;
-countMatchingTables(I, Count, Acc) ->
-    Name = case sqlrelay:getFieldByName(I, "Tables_in_xxx") of
-               {ok, N} when is_list(N) -> N;
-               _ -> ""
-           end,
-    NewAcc = case Name of
-                 "TESTTABLE1" -> Acc + 1;
-                 "TESTTABLE2" -> Acc + 1;
-                 "TESTTABLE3" -> Acc + 1;
-                 _            -> Acc
-             end,
-    countMatchingTables(I + 1, Count, NewAcc).
-
-%% Count rows in the procedure-list result whose "routine_name" is one
-%% of the two test procedure names.
-countMatchingProcs(I, Count, Acc) when I >= Count ->
-    Acc;
-countMatchingProcs(I, Count, Acc) ->
-    Name = case sqlrelay:getFieldByName(I, "routine_name") of
-               {ok, N} when is_list(N) -> N;
-               _ -> ""
-           end,
-    NewAcc = case Name of
-                 "TESTPROC"  -> Acc + 1;
-                 "TESTPROC1" -> Acc + 1;
-                 _           -> Acc
-             end,
-    countMatchingProcs(I + 1, Count, NewAcc).

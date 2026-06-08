@@ -25,10 +25,21 @@ class mysql extends sqlrtest {
 		String		socket;
 		short		id;
 		String		filename;
-		long		counter=0;
 
 		int		LARGE_BUFFER_LENGTH=8192;
 		StringBuilder	largebuffer=new StringBuilder();
+
+
+		// hostname
+		String	hostname="";
+		try {
+			hostname=java.net.InetAddress
+					.getLocalHost().getHostName();
+			int idx=hostname.indexOf('.');
+			if (idx>0) {
+				hostname=hostname.substring(0,idx);
+			}
+		} catch (Exception e) { }
 
 
 		// instantiation
@@ -2235,7 +2246,7 @@ class mysql extends sqlrtest {
 		System.out.println("CATALOG LIST: ");
 		assertTrue(cur.getCatalogList(null));
 		assertEquals(cur.getColumnName(0),"Database");
-		assertTrue(cur.rowCount()>0);
+		assertInResultSet(cur,"Database","def");
 		System.out.println();
 
 
@@ -2243,7 +2254,7 @@ class mysql extends sqlrtest {
 		System.out.println("SCHEMA LIST: ");
 		assertTrue(cur.getSchemaList(null));
 		assertEquals(cur.getColumnName(0),"Database");
-		assertTrue(cur.rowCount()>0);
+		assertInResultSet(cur,"Database",hostname);
 		System.out.println();
 
 
@@ -2251,15 +2262,7 @@ class mysql extends sqlrtest {
 		System.out.println("TABLE TYPE LIST: ");
 		assertTrue(cur.getTableTypeList());
 		assertEquals(cur.getColumnName(0),"table_type");
-		boolean	found=false;
-		for (long i=0; i<cur.rowCount(); i++) {
-			String	tt=cur.getField(i,"table_type");
-			if (tt!=null &&tt.equals("TABLE")) {
-				found=true;
-				break;
-			}
-		}
-		assertTrue(found);
+		assertInResultSet(cur,"table_type","TABLE");
 		System.out.println();
 
 
@@ -2286,17 +2289,10 @@ class mysql extends sqlrtest {
 			"	col1 int, "+
 			"	col2 int)"));
 		assertTrue(cur.getTableList(null));
-		counter=0;
-		for (long i=0; i<cur.rowCount(); i++) {
-			String	name=cur.getField(i,"Tables_in_xxx");
-			if (name!=null && (name.equals("testtable1") ||
-						name.equals("testtable2") ||
-						name.equals("testtable3") ||
-						name.equals("testtable4"))) {
-				counter++;
-			}
-		}
-		assertEquals(counter,4);
+		assertInResultSet(cur,"Tables_in_xxx","testtable1");
+		assertInResultSet(cur,"Tables_in_xxx","testtable2");
+		assertInResultSet(cur,"Tables_in_xxx","testtable3");
+		assertInResultSet(cur,"Tables_in_xxx","testtable4");
 		assertTrue(cur.sendQuery("drop table testtable1"));
 		assertTrue(cur.sendQuery("drop table testtable2"));
 		assertTrue(cur.sendQuery("drop table testtable3"));
@@ -2582,17 +2578,10 @@ class mysql extends sqlrtest {
 			"	in in4 date) "+
 			"begin end"));
 		assertTrue(cur.getProcedureList(null));
-		counter=0;
-		for (long i=0; i<cur.rowCount(); i++) {
-			String	name=cur.getField(i,"routine_name");
-			if (name!=null && (name.equals("testproc1") ||
-						name.equals("testproc2") ||
-						name.equals("testproc3") ||
-						name.equals("testproc4"))) {
-				counter++;
-			}
-		}
-		assertEquals(counter,4);
+		assertInResultSet(cur,"routine_name","testproc1");
+		assertInResultSet(cur,"routine_name","testproc2");
+		assertInResultSet(cur,"routine_name","testproc3");
+		assertInResultSet(cur,"routine_name","testproc4");
 		System.out.println();
 
 

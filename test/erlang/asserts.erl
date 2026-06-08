@@ -14,6 +14,7 @@
 -export([assertEqualsString/2, assertEqualsStringLen/3]).
 -export([assertEqualsInt/2, assertEqualsDouble/2]).
 -export([assertTrue/1, assertFalse/1]).
+-export([assertInResultSet/2]).
 -export([waitForPort/1, largeBuffer/1, shortHostname/0]).
 
 success()            -> "\e[32msuccess\e[0m".
@@ -128,6 +129,21 @@ assertFalse({ok, Other})      -> fail(Other, 0);
 assertFalse(false)            -> pass();
 assertFalse(0)                -> pass();
 assertFalse(Other)            -> fail(Other, false).
+
+assertInResultSet(Column, Value) ->
+    {ok, RowCount} = sqlrelay:rowCount(),
+    assertInResultSet(Column, Value, 0, RowCount).
+
+assertInResultSet(Column, Value, I, RowCount) when I >= RowCount ->
+    io:format("~s~n", [failure()]),
+    io:format("~p not found in column ~p~n", [Value, Column]),
+    printErrors(),
+    setFailed();
+assertInResultSet(Column, Value, I, RowCount) ->
+    case sqlrelay:getFieldByName(I, Column) of
+        {ok, Value} -> pass();
+        _           -> assertInResultSet(Column, Value, I + 1, RowCount)
+    end.
 
 reportTestStatus() ->
     case getStatus() of

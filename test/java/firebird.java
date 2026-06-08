@@ -28,7 +28,6 @@ class firebird extends sqlrtest {
 		String		socket;
 		short		id;
 		String		filename;
-		long		counter=0;
 
 		int		LARGE_BUFFER_LENGTH=20*1024;
 		StringBuilder	largebuffer=new StringBuilder();
@@ -1545,15 +1544,7 @@ class firebird extends sqlrtest {
 		System.out.println("SCHEMA LIST: ");
 		assertTrue(cur.getSchemaList(null));
 		assertEquals(cur.getColumnName(0),"Database");
-		boolean found=false;
-		for (long i=0; i<cur.rowCount(); i++) {
-			String val=cur.getField(i,"Database");
-			if (val!=null &&val.equals("TESTUSER")) {
-				found=true;
-				break;
-			}
-		}
-		assertTrue(found);
+		assertInResultSet(cur,"Database","TESTUSER");
 		System.out.println();
 
 
@@ -1561,31 +1552,16 @@ class firebird extends sqlrtest {
 		System.out.println("TABLE TYPE LIST: ");
 		assertTrue(cur.getTableTypeList());
 		assertEquals(cur.getColumnName(0),"table_type");
-		found=false;
-		for (long i=0; i<cur.rowCount(); i++) {
-			String val=cur.getField(i,"table_type");
-			if (val!=null &&val.equals("TABLE")) {
-				found=true;
-				break;
-			}
-		}
-		assertTrue(found);
+		assertInResultSet(cur,"table_type","TABLE");
 		System.out.println();
 
 
 		// table list
 		System.out.println("TABLE LIST: ");
 		assertTrue(cur.getTableList(null));
-		counter=0;
-		for (long i=0; i<cur.rowCount(); i++) {
-			String name=cur.getField(i,"Tables_in_xxx");
-			if (name!=null &&(name.equals("TESTTABLE1") ||
-				name.equals("TESTTABLE2") ||name.equals(
-					"TESTTABLE3"))) {
-				counter++;
-			}
-		}
-		assertEquals(counter,3);
+		assertInResultSet(cur,"Tables_in_xxx","TESTTABLE1");
+		assertInResultSet(cur,"Tables_in_xxx","TESTTABLE2");
+		assertInResultSet(cur,"Tables_in_xxx","TESTTABLE3");
 		System.out.println();
 
 
@@ -1747,15 +1723,8 @@ class firebird extends sqlrtest {
 		// procedure list
 		System.out.println("PROCEDURE LIST: ");
 		assertTrue(cur.getProcedureList(null));
-		counter=0;
-		for (long i=0; i<cur.rowCount(); i++) {
-			String name=cur.getField(i,"routine_name");
-			if (name!=null &&(name.equals("TESTPROC") ||name.equals(
-					"TESTPROC1"))) {
-				counter++;
-			}
-		}
-		assertEquals(counter,2);
+		assertInResultSet(cur,"routine_name","TESTPROC");
+		assertInResultSet(cur,"routine_name","TESTPROC1");
 		System.out.println();
 
 

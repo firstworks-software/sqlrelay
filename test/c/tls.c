@@ -3,6 +3,7 @@
 
 #include <sqlrelay/sqlrclientwrapper.h>
 #include <string.h>
+#include <ctype.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <strings.h>
@@ -57,21 +58,19 @@ int main(int argc, char **argv) {
 	uint32_t	clobvarlength;
 	const char	*blobvar;
 	uint32_t	blobvarlength;
-	uint16_t	counter;
 	#define	LARGE_BUFFER_LENGTH	8192
 	char		largebuffer[LARGE_BUFFER_LENGTH+1];
 	const char	**il;
 	uint64_t	i;
 	char		*dot;
 	char		*hostname;
+	char		*upperhostname;
 	char		query[LARGE_BUFFER_LENGTH+25];
 	unsigned char	buffer[256];
 	char		querystr[1024];
 	char		hex[3];
-	const char	*name;
 	sqlrcur		bindcur1;
 	sqlrcur		bindcur2;
-	int		found;
 
 	const char	*cert="../sqlrelay.conf.d/tls/client.pem";
 	const char	*ca="../sqlrelay.conf.d/tls/ca.pem";
@@ -88,6 +87,11 @@ int main(int argc, char **argv) {
 	if (dot) {
 		*dot='\0';
 	}
+	upperhostname=(char *)malloc(256);
+	for (i=0; hostname[i]; i++) {
+		upperhostname[i]=toupper(hostname[i]);
+	}
+	upperhostname[i]='\0';
 
 
 	// instantiation
@@ -1804,17 +1808,7 @@ int main(int argc, char **argv) {
 	printf("SCHEMA LIST: \n");
 	assertTrue(sqlrcur_getSchemaList(cur,NULL));
 	assertEqStr(sqlrcur_getColumnName(cur,0),"Database");
-	found=0;
-	for (i=0; i<sqlrcur_rowCount(cur); i++) {
-		if (!strcasecmp(
-				sqlrcur_getFieldByName(
-					cur,i,"Database"),
-				hostname)) {
-			found=1;
-			break;
-		}
-	}
-	assertTrue(found);
+	assertInResultSet(cur,"Database",upperhostname);
 	printf("\n");
 
 
@@ -1871,17 +1865,10 @@ int main(int argc, char **argv) {
 		"	testclob clob, "
 		"	testblob blob)"));
 	assertTrue(sqlrcur_getTableList(cur,NULL));
-	counter=0;
-	for (i=0; i<sqlrcur_rowCount(cur); i++) {
-		name=sqlrcur_getFieldByName(cur,i,"Tables_in_xxx");
-		if (!strcmp(name,"TESTTABLE1") ||
-			!strcmp(name,"TESTTABLE2") ||
-			!strcmp(name,"TESTTABLE3") ||
-			!strcmp(name,"TESTTABLE4")) {
-			counter++;
-		}
-	}
-	assertEqInt(counter,4);
+	assertInResultSet(cur,"Tables_in_xxx","TESTTABLE1");
+	assertInResultSet(cur,"Tables_in_xxx","TESTTABLE2");
+	assertInResultSet(cur,"Tables_in_xxx","TESTTABLE3");
+	assertInResultSet(cur,"Tables_in_xxx","TESTTABLE4");
 	assertTrue(sqlrcur_sendQuery(cur,"drop table testtable1"));
 	assertTrue(sqlrcur_sendQuery(cur,"drop table testtable2"));
 	assertTrue(sqlrcur_sendQuery(cur,"drop table testtable3"));
@@ -2101,17 +2088,10 @@ int main(int argc, char **argv) {
 		"	null; "
 		"end;"));
 	assertTrue(sqlrcur_getProcedureList(cur,NULL));
-	counter=0;
-	for (i=0; i<sqlrcur_rowCount(cur); i++) {
-		name=sqlrcur_getFieldByName(cur,i,"routine_name");
-		if (!strcmp(name,"TESTPROC1") ||
-			!strcmp(name,"TESTPROC2") ||
-			!strcmp(name,"TESTPROC3") ||
-			!strcmp(name,"TESTPROC4")) {
-			counter++;
-		}
-	}
-	assertEqInt(counter,4);
+	assertInResultSet(cur,"routine_name","TESTPROC1");
+	assertInResultSet(cur,"routine_name","TESTPROC2");
+	assertInResultSet(cur,"routine_name","TESTPROC3");
+	assertInResultSet(cur,"routine_name","TESTPROC4");
 	printf("\n");
 
 

@@ -42,7 +42,6 @@ namespace SQLRClientTest
             String socket;
             UInt16 id;
             String filename;
-            UInt64 counter = 0;
 
             const Int32 LARGE_BUFFER_LENGTH = 255;
             Byte[] largebuffer = new Byte[LARGE_BUFFER_LENGTH + 1];
@@ -1773,7 +1772,7 @@ namespace SQLRClientTest
             Console.WriteLine("CATALOG LIST: ");
             assertTrue(cur.getCatalogList(null));
             assertEquals(cur.getColumnName(0), "Database");
-            assertTrue(cur.rowCount() > 0);
+            assertInResultSet(cur, "Database", hostname);
             Console.WriteLine("");
 
 
@@ -1786,7 +1785,7 @@ namespace SQLRClientTest
             assertTrue(cur.sendQuery("create table testtable (col1 int)"));
             assertTrue(cur.getSchemaList(null));
             assertEquals(cur.getColumnName(0), "Database");
-            assertTrue(cur.rowCount() > 0);
+            assertInResultSet(cur, "Database", "dbo");
             assertTrue(cur.sendQuery("drop table testtable"));
             Console.WriteLine("");
 
@@ -1795,17 +1794,8 @@ namespace SQLRClientTest
             Console.WriteLine("TABLE TYPE LIST: ");
             assertTrue(cur.getTableTypeList());
             assertEquals(cur.getColumnName(0), "table_type");
-            assertTrue(cur.rowCount() > 0);
-            Boolean found = false;
-            for (UInt64 i = 0; i < cur.rowCount(); i++)
-            {
-                if (cur.getField(i, "table_type") == "TABLE")
-                {
-                    found = true;
-                    break;
-                }
-            }
-            assertTrue(found);
+            assertEquals(cur.rowCount(), (UInt64)3);
+            assertInResultSet(cur, "table_type", "TABLE");
             Console.WriteLine("");
 
 
@@ -1832,19 +1822,10 @@ namespace SQLRClientTest
                 "	col1 int, " +
                 "	col2 int)"));
             assertTrue(cur.getTableList(null));
-            counter = 0;
-            for (UInt64 i = 0; i < cur.rowCount(); i++)
-            {
-                String name = cur.getField(i, "Tables_in_xxx");
-                if (name == "testtable1" ||
-                    name == "testtable2" ||
-                    name == "testtable3" ||
-                    name == "testtable4")
-                {
-                    counter++;
-                }
-            }
-            assertEquals(counter, (UInt64)4);
+            assertInResultSet(cur, "Tables_in_xxx", "testtable1");
+            assertInResultSet(cur, "Tables_in_xxx", "testtable2");
+            assertInResultSet(cur, "Tables_in_xxx", "testtable3");
+            assertInResultSet(cur, "Tables_in_xxx", "testtable4");
             assertTrue(cur.sendQuery("drop table testtable1"));
             assertTrue(cur.sendQuery("drop table testtable2"));
             assertTrue(cur.sendQuery("drop table testtable3"));
@@ -2083,19 +2064,10 @@ namespace SQLRClientTest
                 "	@in4 datetime " +
                 "as select 1"));
             assertTrue(cur.getProcedureList(null));
-            counter = 0;
-            for (UInt64 i = 0; i < cur.rowCount(); i++)
-            {
-                String name = cur.getField(i, "routine_name");
-                if (name == "testproc1" ||
-                    name == "testproc2" ||
-                    name == "testproc3" ||
-                    name == "testproc4")
-                {
-                    counter++;
-                }
-            }
-            assertEquals(counter, (UInt64)4);
+            assertInResultSet(cur, "routine_name", "testproc1");
+            assertInResultSet(cur, "routine_name", "testproc2");
+            assertInResultSet(cur, "routine_name", "testproc3");
+            assertInResultSet(cur, "routine_name", "testproc4");
             Console.WriteLine("");
 
 

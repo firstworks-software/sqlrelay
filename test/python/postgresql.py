@@ -6,6 +6,7 @@
 
 from SQLRelay import PySQLRClient
 import sys
+from socket import gethostname
 import asserts
 from asserts import *
 
@@ -23,6 +24,10 @@ def main():
 	counter=0
 
 	LARGE_BUFFER_LENGTH=8192
+
+
+	# hostname
+	hostname=gethostname().split(".")[0]
 
 
 	# instantiation
@@ -1459,7 +1464,7 @@ def main():
 	print("CATALOG LIST: ")
 	assertTrue(cur.getCatalogList(None))
 	assertEquals(cur.getColumnName(0),"Database")
-	assertTrue(cur.rowCount()>0)
+	assertInResultSet(cur,"Database",hostname)
 	print()
 
 
@@ -1467,7 +1472,7 @@ def main():
 	print("SCHEMA LIST: ")
 	assertTrue(cur.getSchemaList(None))
 	assertEquals(cur.getColumnName(0),"Database")
-	assertTrue(cur.rowCount()>0)
+	assertInResultSet(cur,"Database","public")
 	print()
 
 
@@ -1475,12 +1480,7 @@ def main():
 	print("TABLE TYPE LIST: ")
 	assertTrue(cur.getTableTypeList())
 	assertEquals(cur.getColumnName(0),"table_type")
-	found=False
-	for i in range(cur.rowCount()):
-		if cur.getField(i,"table_type")=="TABLE":
-			found=True
-			break
-	assertTrue(found)
+	assertInResultSet(cur,"table_type","TABLE")
 	print()
 
 
@@ -1507,12 +1507,10 @@ def main():
 		"	col1 int, "
 		"	col2 int)"))
 	assertTrue(cur.getTableList(None))
-	counter=0
-	for i in range(cur.rowCount()):
-		name=cur.getField(i,"Tables_in_xxx")
-		if name in ("testtable1","testtable2","testtable3","testtable4"):
-			counter+=1
-	assertEquals(counter,4)
+	assertInResultSet(cur,"Tables_in_xxx","testtable1")
+	assertInResultSet(cur,"Tables_in_xxx","testtable2")
+	assertInResultSet(cur,"Tables_in_xxx","testtable3")
+	assertInResultSet(cur,"Tables_in_xxx","testtable4")
 	assertTrue(cur.sendQuery("drop table testtable1"))
 	assertTrue(cur.sendQuery("drop table testtable2"))
 	assertTrue(cur.sendQuery("drop table testtable3"))
@@ -1755,12 +1753,10 @@ def main():
 		"as 'begin end;' "
 		"language plpgsql"))
 	assertTrue(cur.getProcedureList(None))
-	counter=0
-	for i in range(cur.rowCount()):
-		name=cur.getField(i,"routine_name")
-		if name in ("testproc1","testproc2","testproc3","testproc4"):
-			counter+=1
-	assertEquals(counter,4)
+	assertInResultSet(cur,"routine_name","testproc1")
+	assertInResultSet(cur,"routine_name","testproc2")
+	assertInResultSet(cur,"routine_name","testproc3")
+	assertInResultSet(cur,"routine_name","testproc4")
 	print()
 
 

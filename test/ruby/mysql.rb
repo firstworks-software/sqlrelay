@@ -6,10 +6,15 @@
 
 
 require 'rbconfig'
+require 'socket'
 require 'sqlrelay'
 require './asserts'
 
 
+
+
+# hostname
+hostname=Socket.gethostname.split(".")[0]
 
 
 # instantiation
@@ -2099,7 +2104,7 @@ print "\n"
 print "CATALOG LIST: \n"
 assertTrue(cur.getCatalogList(nil))
 assertEqual(cur.getColumnName(0),"Database")
-assertTrue(cur.rowCount()>0)
+assertInResultSet(cur,"Database","def")
 print "\n"
 
 
@@ -2107,7 +2112,7 @@ print "\n"
 print "SCHEMA LIST: \n"
 assertTrue(cur.getSchemaList(nil))
 assertEqual(cur.getColumnName(0),"Database")
-assertTrue(cur.rowCount()>0)
+assertInResultSet(cur,"Database",hostname)
 print "\n"
 
 
@@ -2115,14 +2120,7 @@ print "\n"
 print "TABLE TYPE LIST: \n"
 assertTrue(cur.getTableTypeList())
 assertEqual(cur.getColumnName(0),"table_type")
-found=false
-for i in 0..cur.rowCount()-1
-	if cur.getField(i,"table_type")=="TABLE"
-		found=true
-		break
-	end
-end
-assertTrue(found)
+assertInResultSet(cur,"table_type","TABLE")
 print "\n"
 
 
@@ -2149,17 +2147,10 @@ assertTrue(cur.sendQuery(
 	"	col1 int, "+
 	"	col2 int)"))
 assertTrue(cur.getTableList(nil))
-counter=0
-for i in 0..cur.rowCount()-1
-	name=cur.getField(i,"Tables_in_xxx")
-	if name=="testtable1" ||
-		name=="testtable2" ||
-		name=="testtable3" ||
-		name=="testtable4"
-		counter=counter+1
-	end
-end
-assertEqual(counter,4)
+assertInResultSet(cur,"Tables_in_xxx","testtable1")
+assertInResultSet(cur,"Tables_in_xxx","testtable2")
+assertInResultSet(cur,"Tables_in_xxx","testtable3")
+assertInResultSet(cur,"Tables_in_xxx","testtable4")
 assertTrue(cur.sendQuery("drop table testtable1"))
 assertTrue(cur.sendQuery("drop table testtable2"))
 assertTrue(cur.sendQuery("drop table testtable3"))
@@ -2422,17 +2413,10 @@ assertTrue(cur.sendQuery(
 	"	in in4 date) "+
 	"begin end"))
 assertTrue(cur.getProcedureList(nil))
-counter=0
-for i in 0..cur.rowCount()-1
-	name=cur.getField(i,"routine_name")
-	if name=="testproc1" ||
-		name=="testproc2" ||
-		name=="testproc3" ||
-		name=="testproc4"
-		counter=counter+1
-	end
-end
-assertEqual(counter,4)
+assertInResultSet(cur,"routine_name","testproc1")
+assertInResultSet(cur,"routine_name","testproc2")
+assertInResultSet(cur,"routine_name","testproc3")
+assertInResultSet(cur,"routine_name","testproc4")
 print "\n"
 
 

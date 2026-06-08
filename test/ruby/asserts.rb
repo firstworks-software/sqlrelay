@@ -115,6 +115,19 @@ def assertFalse(actual)
 	end
 end
 
+def assertInResultSet(cur,column,value)
+	for i in 0..cur.rowCount()-1
+		if cur.getField(i,column)==value
+			print $success , " "
+			return
+		end
+	end
+	puts $failure
+	print "\"" , value , "\" not found in column \"" , column , "\"\n"
+	printErrors()
+	$status=1
+end
+
 def reportTestStatus()
 	if $status==0
 		puts $alltestssucceeded

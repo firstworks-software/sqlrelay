@@ -1484,15 +1484,7 @@
 	echo("SCHEMA LIST: \n");
 	assertTrue(sqlrcur_getSchemaList($cur,NULL));
 	assertEqStr(sqlrcur_getColumnName($cur,0),"Database");
-	$found=0;
-	for ($i=0; $i<sqlrcur_rowCount($cur); $i++) {
-		if (!strcmp(sqlrcur_getField($cur,$i,"Database"),
-			"TESTUSER")) {
-			$found=1;
-			break;
-		}
-	}
-	assertTrue($found);
+	assertInResultSet($cur,"Database","TESTUSER");
 	echo("\n");
 
 
@@ -1500,30 +1492,16 @@
 	echo("TABLE TYPE LIST: \n");
 	assertTrue(sqlrcur_getTableTypeList($cur));
 	assertEqStr(sqlrcur_getColumnName($cur,0),"table_type");
-	$found=0;
-	for ($i=0; $i<sqlrcur_rowCount($cur); $i++) {
-		if (!strcmp(sqlrcur_getField($cur,$i,"table_type"),
-			"TABLE")) {
-			$found=1;
-			break;
-		}
-	}
-	assertTrue($found);
+	assertInResultSet($cur,"table_type","TABLE");
 	echo("\n");
 
 
 	# table list
 	echo("TABLE LIST: \n");
 	assertTrue(sqlrcur_getTableList($cur,NULL));
-	$counter=0;
-	for ($i=0; $i<sqlrcur_rowCount($cur); $i++) {
-		$name=sqlrcur_getField($cur,$i,"Tables_in_xxx");
-		if (!strcmp($name,"TESTTABLE1") ||!strcmp($name,"TESTTABLE2") ||
-			!strcmp($name,"TESTTABLE3")) {
-			$counter++;
-		}
-	}
-	assertEqInt($counter,3);
+	assertInResultSet($cur,"Tables_in_xxx","TESTTABLE1");
+	assertInResultSet($cur,"Tables_in_xxx","TESTTABLE2");
+	assertInResultSet($cur,"Tables_in_xxx","TESTTABLE3");
 	echo("\n");
 
 
@@ -1706,14 +1684,8 @@
 	# procedure list
 	echo("PROCEDURE LIST: \n");
 	assertTrue(sqlrcur_getProcedureList($cur,NULL));
-	$counter=0;
-	for ($i=0; $i<sqlrcur_rowCount($cur); $i++) {
-		$name=sqlrcur_getField($cur,$i,"routine_name");
-		if (!strcmp($name,"TESTPROC") ||!strcmp($name,"TESTPROC1")) {
-			$counter++;
-		}
-	}
-	assertEqInt($counter,2);
+	assertInResultSet($cur,"routine_name","TESTPROC");
+	assertInResultSet($cur,"routine_name","TESTPROC1");
 	echo("\n");
 
 

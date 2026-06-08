@@ -1690,15 +1690,7 @@
 	echo("SCHEMA LIST: \n");
 	assertTrue(sqlrcur_getSchemaList($cur,NULL));
 	assertEqStr(sqlrcur_getColumnName($cur,0),"Database");
-	$found=0;
-	for ($i=0; $i<sqlrcur_rowCount($cur); $i++) {
-		if (!strcmp(sqlrcur_getField($cur,$i,"Database"),
-			"DB2INST1")) {
-			$found=1;
-			break;
-		}
-	}
-	assertTrue($found);
+	assertInResultSet($cur,"Database","DB2INST1");
 	echo("\n");
 
 
@@ -1706,15 +1698,7 @@
 	echo("TABLE TYPE LIST: \n");
 	assertTrue(sqlrcur_getTableTypeList($cur));
 	assertEqStr(sqlrcur_getColumnName($cur,0),"table_type");
-	$found=0;
-	for ($i=0; $i<sqlrcur_rowCount($cur); $i++) {
-		if (!strcmp(sqlrcur_getField($cur,$i,"table_type"),
-			"TABLE")) {
-			$found=1;
-			break;
-		}
-	}
-	assertTrue($found);
+	assertInResultSet($cur,"table_type","TABLE");
 	echo("\n");
 
 
@@ -1742,16 +1726,10 @@
 		"	col2 integer)"));
 	assertTrue(sqlrcon_commit($con));
 	assertTrue(sqlrcur_getTableList($cur,NULL));
-	$counter=0;
-	for ($i=0; $i<sqlrcur_rowCount($cur); $i++) {
-		$name=sqlrcur_getField($cur,$i,"Tables_in_xxx");
-		if (!strcmp($name,"TESTTABLE1") || !strcmp($name,"TESTTABLE2") ||
-			!strcmp($name,"TESTTABLE3") ||
-			!strcmp($name,"TESTTABLE4")) {
-			$counter++;
-		}
-	}
-	assertEqInt($counter,4);
+	assertInResultSet($cur,"Tables_in_xxx","TESTTABLE1");
+	assertInResultSet($cur,"Tables_in_xxx","TESTTABLE2");
+	assertInResultSet($cur,"Tables_in_xxx","TESTTABLE3");
+	assertInResultSet($cur,"Tables_in_xxx","TESTTABLE4");
 	assertTrue(sqlrcur_sendQuery($cur,"drop table testtable1"));
 	assertTrue(sqlrcur_sendQuery($cur,"drop table testtable2"));
 	assertTrue(sqlrcur_sendQuery($cur,"drop table testtable3"));
@@ -2005,15 +1983,10 @@
 		"	in in4 date) language sql begin end"));
 	assertTrue(sqlrcon_commit($con));
 	assertTrue(sqlrcur_getProcedureList($cur,NULL));
-	$counter=0;
-	for ($i=0; $i<sqlrcur_rowCount($cur); $i++) {
-		$name=sqlrcur_getField($cur,$i,"routine_name");
-		if (!strcmp($name,"TESTPROC1") || !strcmp($name,"TESTPROC2") ||
-			!strcmp($name,"TESTPROC3") || !strcmp($name,"TESTPROC4")) {
-			$counter++;
-		}
-	}
-	assertEqInt($counter,4);
+	assertInResultSet($cur,"routine_name","TESTPROC1");
+	assertInResultSet($cur,"routine_name","TESTPROC2");
+	assertInResultSet($cur,"routine_name","TESTPROC3");
+	assertInResultSet($cur,"routine_name","TESTPROC4");
 	echo("\n");
 
 

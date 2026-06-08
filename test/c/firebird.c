@@ -36,15 +36,11 @@ int main(int argc, char **argv) {
 	char		*socket;
 	uint16_t	id;
 	char		*filename;
-	uint64_t	counter;
 	uint64_t	i;
-	const char	*name;
-	int		found;
 
 	#define	LARGE_BUFFER_LENGTH	(20*1024)
 	char		largebuffer[LARGE_BUFFER_LENGTH+1];
 
-	counter=0;
 
 
 	// instantiation
@@ -1530,15 +1526,7 @@ int main(int argc, char **argv) {
 	printf("SCHEMA LIST: \n");
 	assertTrue(sqlrcur_getSchemaList(cur,NULL));
 	assertEqStr(sqlrcur_getColumnName(cur,0),"Database");
-	found=0;
-	for (i=0; i<sqlrcur_rowCount(cur); i++) {
-		if (!strcmp(sqlrcur_getFieldByName(cur,i,"Database"),
-			"TESTUSER")) {
-			found=1;
-			break;
-		}
-	}
-	assertTrue(found);
+	assertInResultSet(cur,"Database","TESTUSER");
 	printf("\n");
 
 
@@ -1546,30 +1534,16 @@ int main(int argc, char **argv) {
 	printf("TABLE TYPE LIST: \n");
 	assertTrue(sqlrcur_getTableTypeList(cur));
 	assertEqStr(sqlrcur_getColumnName(cur,0),"table_type");
-	found=0;
-	for (i=0; i<sqlrcur_rowCount(cur); i++) {
-		if (!strcmp(sqlrcur_getFieldByName(cur,i,"table_type"),
-			"TABLE")) {
-			found=1;
-			break;
-		}
-	}
-	assertTrue(found);
+	assertInResultSet(cur,"table_type","TABLE");
 	printf("\n");
 
 
 	// table list
 	printf("TABLE LIST: \n");
 	assertTrue(sqlrcur_getTableList(cur,NULL));
-	counter=0;
-	for (i=0; i<sqlrcur_rowCount(cur); i++) {
-		name=sqlrcur_getFieldByName(cur,i,"Tables_in_xxx");
-		if (!strcmp(name,"TESTTABLE1") ||!strcmp(name,"TESTTABLE2") ||
-			!strcmp(name,"TESTTABLE3")) {
-			counter++;
-		}
-	}
-	assertEqInt(counter,3);
+	assertInResultSet(cur,"Tables_in_xxx","TESTTABLE1");
+	assertInResultSet(cur,"Tables_in_xxx","TESTTABLE2");
+	assertInResultSet(cur,"Tables_in_xxx","TESTTABLE3");
 	printf("\n");
 
 
@@ -1752,14 +1726,8 @@ int main(int argc, char **argv) {
 	// procedure list
 	printf("PROCEDURE LIST: \n");
 	assertTrue(sqlrcur_getProcedureList(cur,NULL));
-	counter=0;
-	for (i=0; i<sqlrcur_rowCount(cur); i++) {
-		name=sqlrcur_getFieldByName(cur,i,"routine_name");
-		if (!strcmp(name,"TESTPROC") ||!strcmp(name,"TESTPROC1")) {
-			counter++;
-		}
-	}
-	assertEqInt(counter,2);
+	assertInResultSet(cur,"routine_name","TESTPROC");
+	assertInResultSet(cur,"routine_name","TESTPROC1");
 	printf("\n");
 
 

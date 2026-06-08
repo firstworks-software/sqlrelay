@@ -1483,14 +1483,7 @@ print("\n");
 print("SCHEMA LIST: \n");
 assertTrue($cur->getSchemaList(undef));
 assertEquals($cur->getColumnName(0),"Database");
-$found=0;
-for ($i=0; $i<$cur->rowCount(); $i++) {
-	if ($cur->getField($i,"Database") eq "TESTUSER") {
-		$found=1;
-		last;
-	}
-}
-assertTrue($found);
+assertInResultSet($cur,"Database","TESTUSER");
 print("\n");
 
 
@@ -1498,31 +1491,16 @@ print("\n");
 print("TABLE TYPE LIST: \n");
 assertTrue($cur->getTableTypeList());
 assertEquals($cur->getColumnName(0),"table_type");
-$found=0;
-for ($i=0; $i<$cur->rowCount(); $i++) {
-	if ($cur->getField($i,"table_type") eq "TABLE") {
-		$found=1;
-		last;
-	}
-}
-assertTrue($found);
+assertInResultSet($cur,"table_type","TABLE");
 print("\n");
 
 
 # table list
 print("TABLE LIST: \n");
 assertTrue($cur->getTableList(undef));
-$counter=0;
-for ($i=0; $i<$cur->rowCount(); $i++) {
-	$name=$cur->getField($i,"Tables_in_xxx");
-	if (defined($name) &&
-		($name eq "TESTTABLE1" ||
-		$name eq "TESTTABLE2" ||
-		$name eq "TESTTABLE3")) {
-		$counter++;
-	}
-}
-assertEquals($counter,3);
+assertInResultSet($cur,"Tables_in_xxx","TESTTABLE1");
+assertInResultSet($cur,"Tables_in_xxx","TESTTABLE2");
+assertInResultSet($cur,"Tables_in_xxx","TESTTABLE3");
 print("\n");
 
 
@@ -1679,16 +1657,8 @@ print("\n");
 # procedure list
 print("PROCEDURE LIST: \n");
 assertTrue($cur->getProcedureList(undef));
-$counter=0;
-for ($i=0; $i<$cur->rowCount(); $i++) {
-	$name=$cur->getField($i,"routine_name");
-	if (defined($name) &&
-		($name eq "TESTPROC" ||
-		$name eq "TESTPROC1")) {
-		$counter++;
-	}
-}
-assertEquals($counter,2);
+assertInResultSet($cur,"routine_name","TESTPROC");
+assertInResultSet($cur,"routine_name","TESTPROC1");
 print("\n");
 
 

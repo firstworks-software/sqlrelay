@@ -1674,14 +1674,7 @@ print("\n");
 print("SCHEMA LIST: \n");
 assertTrue($cur->getSchemaList(undef));
 assertEquals($cur->getColumnName(0),"Database");
-$found=0;
-for ($i=0; $i<$cur->rowCount(); $i++) {
-	if ($cur->getField($i,"Database") eq "DB2INST1") {
-		$found=1;
-		last;
-	}
-}
-assertTrue($found);
+assertInResultSet($cur,"Database","DB2INST1");
 print("\n");
 
 
@@ -1689,14 +1682,7 @@ print("\n");
 print("TABLE TYPE LIST: \n");
 assertTrue($cur->getTableTypeList());
 assertEquals($cur->getColumnName(0),"table_type");
-$found=0;
-for ($i=0; $i<$cur->rowCount(); $i++) {
-	if ($cur->getField($i,"table_type") eq "TABLE") {
-		$found=1;
-		last;
-	}
-}
-assertTrue($found);
+assertInResultSet($cur,"table_type","TABLE");
 print("\n");
 
 
@@ -1724,18 +1710,10 @@ assertTrue($cur->sendQuery(
 	"	col2 integer)"));
 assertTrue($con->commit());
 assertTrue($cur->getTableList(undef));
-$counter=0;
-for ($i=0; $i<$cur->rowCount(); $i++) {
-	$name=$cur->getField($i,"Tables_in_xxx");
-	if (defined($name) &&
-		($name eq "TESTTABLE1" ||
-		$name eq "TESTTABLE2" ||
-		$name eq "TESTTABLE3" ||
-		$name eq "TESTTABLE4")) {
-		$counter++;
-	}
-}
-assertEquals($counter,4);
+assertInResultSet($cur,"Tables_in_xxx","TESTTABLE1");
+assertInResultSet($cur,"Tables_in_xxx","TESTTABLE2");
+assertInResultSet($cur,"Tables_in_xxx","TESTTABLE3");
+assertInResultSet($cur,"Tables_in_xxx","TESTTABLE4");
 assertTrue($cur->sendQuery("drop table testtable1"));
 assertTrue($cur->sendQuery("drop table testtable2"));
 assertTrue($cur->sendQuery("drop table testtable3"));
@@ -1981,18 +1959,10 @@ assertTrue($cur->sendQuery(
 	"language sql begin end"));
 assertTrue($con->commit());
 assertTrue($cur->getProcedureList(undef));
-$counter=0;
-for ($i=0; $i<$cur->rowCount(); $i++) {
-	$name=$cur->getField($i,"routine_name");
-	if (defined($name) &&
-		($name eq "TESTPROC1" ||
-		$name eq "TESTPROC2" ||
-		$name eq "TESTPROC3" ||
-		$name eq "TESTPROC4")) {
-		$counter++;
-	}
-}
-assertEquals($counter,4);
+assertInResultSet($cur,"routine_name","TESTPROC1");
+assertInResultSet($cur,"routine_name","TESTPROC2");
+assertInResultSet($cur,"routine_name","TESTPROC3");
+assertInResultSet($cur,"routine_name","TESTPROC4");
 print("\n");
 
 

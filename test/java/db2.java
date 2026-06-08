@@ -45,7 +45,6 @@ class db2 extends sqlrtest {
 		long		clobvarlength;
 		byte[]		blobvar;
 		long		blobvarlength;
-		long		counter=0;
 
 		int		LARGE_BUFFER_LENGTH=20*1024;
 
@@ -1808,15 +1807,7 @@ class db2 extends sqlrtest {
 		System.out.println("SCHEMA LIST: ");
 		assertTrue(cur.getSchemaList(null));
 		assertEquals(cur.getColumnName(0),"Database");
-		boolean	found=false;
-		for (long i=0; i<cur.rowCount(); i++) {
-			String val=cur.getField(i,"Database");
-			if (val!=null &&val.equals("DB2INST1")) {
-				found=true;
-				break;
-			}
-		}
-		assertTrue(found);
+		assertInResultSet(cur,"Database","DB2INST1");
 		System.out.println();
 
 
@@ -1824,15 +1815,7 @@ class db2 extends sqlrtest {
 		System.out.println("TABLE TYPE LIST: ");
 		assertTrue(cur.getTableTypeList());
 		assertEquals(cur.getColumnName(0),"table_type");
-		found=false;
-		for (long i=0; i<cur.rowCount(); i++) {
-			String val=cur.getField(i,"table_type");
-			if (val!=null &&val.equals("TABLE")) {
-				found=true;
-				break;
-			}
-		}
-		assertTrue(found);
+		assertInResultSet(cur,"table_type","TABLE");
 		System.out.println();
 
 
@@ -1860,17 +1843,10 @@ class db2 extends sqlrtest {
 			"	col2 integer)"));
 		assertTrue(con.commit());
 		assertTrue(cur.getTableList(null));
-		counter=0;
-		for (long i=0; i<cur.rowCount(); i++) {
-			String name=cur.getField(i,"Tables_in_xxx");
-			if (name!=null &&(name.equals("TESTTABLE1") ||
-				name.equals("TESTTABLE2") ||name.equals(
-					"TESTTABLE3") ||name.equals(
-					"TESTTABLE4"))) {
-				counter++;
-			}
-		}
-		assertEquals(counter,4);
+		assertInResultSet(cur,"Tables_in_xxx","TESTTABLE1");
+		assertInResultSet(cur,"Tables_in_xxx","TESTTABLE2");
+		assertInResultSet(cur,"Tables_in_xxx","TESTTABLE3");
+		assertInResultSet(cur,"Tables_in_xxx","TESTTABLE4");
 		assertTrue(cur.sendQuery("drop table testtable1"));
 		assertTrue(cur.sendQuery("drop table testtable2"));
 		assertTrue(cur.sendQuery("drop table testtable3"));
@@ -2125,17 +2101,10 @@ class db2 extends sqlrtest {
 			"language sql begin end"));
 		assertTrue(con.commit());
 		assertTrue(cur.getProcedureList(null));
-		counter=0;
-		for (long i=0; i<cur.rowCount(); i++) {
-			String name=cur.getField(i,"routine_name");
-			if (name!=null &&(name.equals("TESTPROC1") ||
-				name.equals("TESTPROC2") ||name.equals(
-					"TESTPROC3") ||name.equals(
-					"TESTPROC4"))) {
-				counter++;
-			}
-		}
-		assertEquals(counter,4);
+		assertInResultSet(cur,"routine_name","TESTPROC1");
+		assertInResultSet(cur,"routine_name","TESTPROC2");
+		assertInResultSet(cur,"routine_name","TESTPROC3");
+		assertInResultSet(cur,"routine_name","TESTPROC4");
 		System.out.println();
 
 

@@ -158,6 +158,23 @@ proc assertFalse {actual} {
 	}
 }
 
+proc assertInResultSet {cur column value} {
+
+	global status
+	global success
+	global failure
+	for {set i 0} {$i<[$cur rowCount]} {incr i} {
+		if {[string equal [$cur getFieldByName $i $column] $value]} {
+			puts -nonewline "$success "
+			return
+		}
+	}
+	puts $failure
+	puts "\"$value\" not found in column \"$column\""
+	printErrors
+	set status 1
+}
+
 proc reportTestStatus {} {
 
 	global status

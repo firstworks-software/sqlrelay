@@ -24,7 +24,6 @@ namespace SQLRClientTest
             String socket;
             UInt16 id;
             String filename;
-            UInt64 counter = 0;
             UInt32[] fieldlens;
 
             const int LARGE_BUFFER_LENGTH = 8192;
@@ -1327,14 +1326,7 @@ namespace SQLRClientTest
             Console.WriteLine("TABLE TYPE LIST: ");
             assertTrue(cur.getTableTypeList());
             assertEquals(cur.getColumnName((UInt32)0), "table_type");
-            bool found = false;
-            for (UInt64 i = 0; i < cur.rowCount(); i++) {
-                if (cur.getField(i, "table_type") == "TABLE") {
-                    found = true;
-                    break;
-                }
-            }
-            assertTrue(found);
+            assertInResultSet(cur, "table_type", "TABLE");
             Console.WriteLine("");
 
 
@@ -1361,17 +1353,10 @@ namespace SQLRClientTest
                 "	col1 int, " +
                 "	col2 int)"));
             assertTrue(cur.getTableList((String)null));
-            counter = 0;
-            for (UInt64 i = 0; i < cur.rowCount(); i++) {
-                String name = cur.getField(i, "Tables_in_xxx");
-                if (name == "testtable1" ||
-                    name == "testtable2" ||
-                    name == "testtable3" ||
-                    name == "testtable4") {
-                    counter++;
-                }
-            }
-            assertEquals(counter, (UInt64)4);
+            assertInResultSet(cur, "Tables_in_xxx", "testtable1");
+            assertInResultSet(cur, "Tables_in_xxx", "testtable2");
+            assertInResultSet(cur, "Tables_in_xxx", "testtable3");
+            assertInResultSet(cur, "Tables_in_xxx", "testtable4");
             assertTrue(cur.sendQuery("drop table if exists testtable1"));
             assertTrue(cur.sendQuery("drop table if exists testtable2"));
             assertTrue(cur.sendQuery("drop table if exists testtable3"));

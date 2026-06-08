@@ -8,6 +8,7 @@ var {
     assertEqStr, assertEqStrLen,
     assertEqInt, assertEqDbl, assertEqual,
     assertTrue, assertFalse,
+    assertInResultSet,
     getStatus, reportTestStatus
 }=require("./asserts.js");
 
@@ -1507,14 +1508,7 @@ console.log();
 console.log("SCHEMA LIST: ");
 assertTrue(cur.getSchemaList(null));
 assertEqStr(cur.getColumnName(0),"Database");
-found=0;
-for (var i=0; i<cur.rowCount(); i++) {
-	if (cur.getField(i,"Database")==="TESTUSER") {
-		found=1;
-		break;
-	}
-}
-assertTrue(found);
+assertInResultSet(cur,"Database","TESTUSER");
 console.log();
 
 
@@ -1522,29 +1516,16 @@ console.log();
 console.log("TABLE TYPE LIST: ");
 assertTrue(cur.getTableTypeList());
 assertEqStr(cur.getColumnName(0),"table_type");
-found=0;
-for (var i=0; i<cur.rowCount(); i++) {
-	if (cur.getField(i,"table_type")==="TABLE") {
-		found=1;
-		break;
-	}
-}
-assertTrue(found);
+assertInResultSet(cur,"table_type","TABLE");
 console.log();
 
 
 // table list
 console.log("TABLE LIST: ");
 assertTrue(cur.getTableList(null));
-counter=0;
-for (var i=0; i<cur.rowCount(); i++) {
-	name=cur.getField(i,"Tables_in_xxx");
-	if (name==="TESTTABLE1" || name==="TESTTABLE2" ||
-		name==="TESTTABLE3") {
-		counter++;
-	}
-}
-assertEqInt(counter,3);
+assertInResultSet(cur,"Tables_in_xxx","TESTTABLE1");
+assertInResultSet(cur,"Tables_in_xxx","TESTTABLE2");
+assertInResultSet(cur,"Tables_in_xxx","TESTTABLE3");
 console.log();
 
 
@@ -1701,14 +1682,8 @@ console.log();
 // procedure list
 console.log("PROCEDURE LIST: ");
 assertTrue(cur.getProcedureList(null));
-counter=0;
-for (var i=0; i<cur.rowCount(); i++) {
-	name=cur.getField(i,"routine_name");
-	if (name==="TESTPROC" || name==="TESTPROC1") {
-		counter++;
-	}
-}
-assertEqInt(counter,2);
+assertInResultSet(cur,"routine_name","TESTPROC");
+assertInResultSet(cur,"routine_name","TESTPROC1");
 console.log();
 
 
