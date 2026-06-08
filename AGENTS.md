@@ -114,23 +114,7 @@ Result/detail logs land at `test/testresults.log` and `test/testdetails.log` aft
 
 - **C++ standard is C++98.** Don't use C++11+ features in `.cpp` / `.h` files — no `auto` type deduction, no lambdas, no range-based `for`, no `nullptr`, no `std::move`, no `=delete`/`=default`, no strongly-typed enums, no brace-init-list constructors, no variadic templates. Use plain functions (or pass state via structs) instead of lambdas; `NULL` instead of `nullptr`.
 - **Copyright header**: every `.cpp` / `.h` starts with `// Copyright (c) David Muse` / `// See the file COPYING for more information`. Preserve it on edits; add it to new files.
-- **Comment style.** Match the terse style already in the source. Comments sit on the line(s) *above* the block they describe, never to the right of code, and one comment covers a logical block of several lines — don't annotate every statement. Put comments *inside* the function/method, above the specific block they describe, rather than as one block summarizing the whole function/method from outside; a method-header comment, if any, stays to one short line. There are two registers, and they are different:
-    - **Step labels (the common case):** a 2-6 word *lowercase* fragment naming what the next block does, at a higher level than the code itself — e.g. `// log in`, `// detach`, `// clean up`, `// init some variables`, `// run the query...`, `// initialize notification modules`, `// re-init error data`. Not a sentence: no capital, no trailing period, no articles/filler. Don't restate the code.
-    - **Why-comments (rare, reserved):** full prose, capitalized and punctuated, used *only* to record something the next reader could not infer from the code — a bug workaround, a version/compatibility quirk, a race condition, or why an obvious approach was avoided. These earn their length; routine code does not get them.
-  Default to no comment, then a short label; reach for prose only when there is a genuine non-obvious *why*. If a label would just echo the code (`// increment i` over `i++`), omit it. This applies to new functions/methods and to adding comments to existing ones.
-
-  Avoid the verbose default:
-  ```
-  // Initialize the database connection structure. This must be done before
-  // any other MySQL call, since mysql_init allocates the connection handle
-  // that all subsequent calls operate on.
-  mysqlptr=mysql_init(NULL);
-  ```
-  Prefer:
-  ```
-  // initialize database connection structure
-  mysqlptr=mysql_init(NULL);
-  ```
+- **Comment style.** See "Conventions worth knowing" -> "Comment style" in `~/AGENTS.md` (cross-project) for the terse step-label vs. why-comment conventions and the rewrite patterns to apply up front.
 - **ASCII only in code comments and docs you write.** Don't introduce non-ASCII characters into source comments, documentation (`doc/**`, `.wt`, `.html`), or other text you author. Use a regular hyphen-minus (U+002D) instead of em-dash (U+2014) or en-dash (U+2013); straight ASCII quotes instead of smart/curly quotes; three ASCII dots instead of a horizontal ellipsis (U+2026); a regular space instead of NBSP (U+00A0); and so on for accented letters, math symbols, arrows, etc. Existing non-ASCII content in files you didn't write is fine, don't churn it.
 - **`config.mk` is generated** — never edit it; edit `config.mk.in` and rerun configure. Same for `config.h` (from `config.h.in`) and `src/common/defines.h` (from `defines.h.in`).
 - **Most `.in` files are processed by `configure`**, but a few are processed by `make` in their directory instead: `test/tcl/*.tcl.in` (→ `*.tcl`), `src/api/python/PySQLRDB.py.in` (→ `PySQLRDB.py`), and `src/api/erlang/sqlrelay.erl.in` (→ `sqlrelay.erl`). After editing any of those, run `make` in that directory to regenerate the output — rerunning `./configure` won't do it.
