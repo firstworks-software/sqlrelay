@@ -127,7 +127,19 @@ int	main(int argc, char **argv) {
 	assertEquals(mysql_field_count(&mysql),1);
 	assertEquals(mysql_num_fields(result),1);
 	field=mysql_fetch_field_direct(result,0);
-	assertEquals(!charstring::compare(field->name,"Tables_in_",10),1);
+	// like mysql_list_dbs above, the mariadb connector appends the wildcard
+	// it filters on, so the column is "Tables_in_<db> (%)"; the backend db
+	// is the short hostname in both modes (issqlrelay's mysqlprotocol.conf
+	// connects to db=@HOSTNAME@, native connects with db=hostname)
+	char	*tableshostname=sys::getHostName();
+	char	*tableshostnamedot=
+			(char *)charstring::findFirstOrEnd(tableshostname,'.');
+	*tableshostnamedot='\0';
+	char	tablesincolumn[256];
+	charstring::printf(tablesincolumn,sizeof(tablesincolumn),
+						"Tables_in_%s (%%)",tableshostname);
+	assertEquals(field->name,tablesincolumn);
+	delete[] tableshostname;
 	row=mysql_fetch_row(result);
 	assertEquals(row[0],"testtable");
 	row=mysql_fetch_row(result);
@@ -542,11 +554,11 @@ int	main(int argc, char **argv) {
 	assertEquals(row[10],"2001-01-01 01:00:00");
 	assertEquals(row[11],"2001");
 	assertEquals(row[12],"char1");
-	assertEquals(!charstring::compare(row[13],"text1",5),1);
+	assertEquals(row[13],"text1");
 	assertEquals(row[14],"varchar1");
-	assertEquals(!charstring::compare(row[15],"tinytext1",9),1);
-	assertEquals(!charstring::compare(row[16],"mediumtext1",11),1);
-	assertEquals(!charstring::compare(row[17],"longtext1",9),1);
+	assertEquals(row[15],"tinytext1");
+	assertEquals(row[16],"mediumtext1");
+	assertEquals(row[17],"longtext1");
 	stdoutput.printf("\n");
 
 
@@ -589,11 +601,11 @@ int	main(int argc, char **argv) {
 	assertEquals(row[10],"2002-01-01 02:00:00");
 	assertEquals(row[11],"2002");
 	assertEquals(row[12],"char2");
-	assertEquals(!charstring::compare(row[13],"text2",5),1);
+	assertEquals(row[13],"text2");
 	assertEquals(row[14],"varchar2");
-	assertEquals(!charstring::compare(row[15],"tinytext2",9),1);
-	assertEquals(!charstring::compare(row[16],"mediumtext2",11),1);
-	assertEquals(!charstring::compare(row[17],"longtext2",9),1);
+	assertEquals(row[15],"tinytext2");
+	assertEquals(row[16],"mediumtext2");
+	assertEquals(row[17],"longtext2");
 	stdoutput.printf("\n");
 
 
@@ -620,6 +632,8 @@ int	main(int argc, char **argv) {
 	stdoutput.printf("mysql_eof:\n");
 	mysql_data_seek(result,1);
 	row=mysql_fetch_row(result);
+	assertEquals((row!=NULL),1);
+	assertEquals(row[0],"2");
 	assertEquals(mysql_eof(result),1);
 	stdoutput.printf("\n");
 
@@ -655,11 +669,11 @@ int	main(int argc, char **argv) {
 	assertEquals(row[10],"2001-01-01 01:00:00");
 	assertEquals(row[11],"2001");
 	assertEquals(row[12],"char1");
-	assertEquals(!charstring::compare(row[13],"text1",5),1);
+	assertEquals(row[13],"text1");
 	assertEquals(row[14],"varchar1");
-	assertEquals(!charstring::compare(row[15],"tinytext1",9),1);
-	assertEquals(!charstring::compare(row[16],"mediumtext1",11),1);
-	assertEquals(!charstring::compare(row[17],"longtext1",9),1);
+	assertEquals(row[15],"tinytext1");
+	assertEquals(row[16],"mediumtext1");
+	assertEquals(row[17],"longtext1");
 	row=mysql_fetch_row(result);
 	assertEquals(row[0],"2");
 	assertEquals(row[1],"2");
@@ -674,11 +688,11 @@ int	main(int argc, char **argv) {
 	assertEquals(row[10],"2002-01-01 02:00:00");
 	assertEquals(row[11],"2002");
 	assertEquals(row[12],"char2");
-	assertEquals(!charstring::compare(row[13],"text2",5),1);
+	assertEquals(row[13],"text2");
 	assertEquals(row[14],"varchar2");
-	assertEquals(!charstring::compare(row[15],"tinytext2",9),1);
-	assertEquals(!charstring::compare(row[16],"mediumtext2",11),1);
-	assertEquals(!charstring::compare(row[17],"longtext2",9),1);
+	assertEquals(row[15],"tinytext2");
+	assertEquals(row[16],"mediumtext2");
+	assertEquals(row[17],"longtext2");
 	assertEquals((long)mysql_fetch_row(result),0);
 	stdoutput.printf("\n");
 
@@ -725,12 +739,17 @@ int	main(int argc, char **argv) {
 	stdoutput.printf("mysql_error/mysql_errno\n");
 	query="known bad query";
 	assertEquals(mysql_real_query(&mysql,query,charstring::getLength(query)),1);
-	char	*error=charstring::duplicate(mysql_error(&mysql));
-	if (charstring::getLength(error)>36) {
-		error[36]='\0';
-	}
-	assertEquals(error,"You have an error in your SQL syntax");
-	delete[] error;
+	const char	*error=mysql_error(&mysql);
+	// the full syntax-error text echoes the offending query and ends at the
+	// line number; only the server-product name in the middle varies (MySQL
+	// vs MariaDB, set by the backend not the client), so head and tail are
+	// pinned around it
+	assertTrue(charstring::startsWith(error,
+		"You have an error in your SQL syntax; "
+		"check the manual that corresponds to your "));
+	assertTrue(charstring::endsWith(error,
+		" server version for the right syntax to use "
+		"near 'known bad query' at line 1"));
 	assertEquals(mysql_errno(&mysql),1064);
 	stdoutput.printf("\n");
 
@@ -1020,15 +1039,11 @@ int	main(int argc, char **argv) {
 	assertEquals((const char *)fieldbind[10].buffer,"2001-01-01 01:00:00");
 	assertEquals((const char *)fieldbind[11].buffer,"2001");
 	assertEquals((const char *)fieldbind[12].buffer,"char1");
-	assertEquals(!charstring::compare(
-			(const char *)fieldbind[13].buffer,"text1",5),1);
+	assertEquals((const char *)fieldbind[13].buffer,"text1");
 	assertEquals((const char *)fieldbind[14].buffer,"varchar1");
-	assertEquals(!charstring::compare(
-			(const char *)fieldbind[15].buffer,"tinytext1",9),1);
-	assertEquals(!charstring::compare(
-			(const char *)fieldbind[16].buffer,"mediumtext1",11),1);
-	assertEquals(!charstring::compare(
-			(const char *)fieldbind[17].buffer,"longtext1",9),1);
+	assertEquals((const char *)fieldbind[15].buffer,"tinytext1");
+	assertEquals((const char *)fieldbind[16].buffer,"mediumtext1");
+	assertEquals((const char *)fieldbind[17].buffer,"longtext1");
 	stdoutput.printf("\n");
 	assertEquals(mysql_stmt_fetch(stmt),0);
 	assertEquals((const char *)fieldbind[0].buffer,"2");
@@ -1044,15 +1059,11 @@ int	main(int argc, char **argv) {
 	assertEquals((const char *)fieldbind[10].buffer,"2002-01-01 02:00:00");
 	assertEquals((const char *)fieldbind[11].buffer,"2002");
 	assertEquals((const char *)fieldbind[12].buffer,"char2");
-	assertEquals(!charstring::compare(
-			(const char *)fieldbind[13].buffer,"text2",5),1);
+	assertEquals((const char *)fieldbind[13].buffer,"text2");
 	assertEquals((const char *)fieldbind[14].buffer,"varchar2");
-	assertEquals(!charstring::compare(
-			(const char *)fieldbind[15].buffer,"tinytext2",9),1);
-	assertEquals(!charstring::compare(
-			(const char *)fieldbind[16].buffer,"mediumtext2",11),1);
-	assertEquals(!charstring::compare(
-			(const char *)fieldbind[17].buffer,"longtext2",9),1);
+	assertEquals((const char *)fieldbind[15].buffer,"tinytext2");
+	assertEquals((const char *)fieldbind[16].buffer,"mediumtext2");
+	assertEquals((const char *)fieldbind[17].buffer,"longtext2");
 	stdoutput.printf("\n");
 	assertEquals(mysql_stmt_fetch(stmt),MYSQL_NO_DATA);
 	stdoutput.printf("\n");

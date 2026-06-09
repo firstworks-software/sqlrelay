@@ -1,5 +1,8 @@
+#include <libpq-fe.h>
 #include <rudiments/charstring.h>
 #include <rudiments/stdio.h>
+
+extern PGconn *pgconn;
 
 int status=0;
 
@@ -9,7 +12,9 @@ const char *alltestssucceeded="\n\033[34mAll tests succeeded\033[0m\n";
 const char *sometestsfailed="\n\033[38;5;208mSome tests failed\033[0m\n";
 
 void printErrors() {
-	// FIXME: actually print errors
+	if (pgconn) {
+		stdoutput.printf("%s\n",PQerrorMessage(pgconn));
+	}
 }
 
 void assertEquals(const char *actual, const char *expected) {

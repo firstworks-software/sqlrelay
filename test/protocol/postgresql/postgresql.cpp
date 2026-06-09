@@ -9,6 +9,8 @@
 
 #include "asserts.cpp"
 
+PGconn	*pgconn;
+
 int	main(int argc, char **argv) {
 
 #ifdef HAVE_POSTGRESQL_PQEXECPREPARED
@@ -50,7 +52,7 @@ int	main(int argc, char **argv) {
 	stdoutput.printf("\n");
 
 	stdoutput.printf("PQstatus:\n");
-	PGconn	*pgconn=PQsetdbLogin(host,port,NULL,NULL,db,user,password);
+	pgconn=PQsetdbLogin(host,port,NULL,NULL,db,user,password);
 	assertEquals(PQstatus(pgconn),CONNECTION_OK);
 	stdoutput.printf("\n");
 
@@ -236,6 +238,8 @@ int	main(int argc, char **argv) {
 	assertEquals(PQgetisnull(pgresult,0,5),0);
 	assertEquals(PQgetisnull(pgresult,0,6),0);
 	assertEquals(PQgetisnull(pgresult,0,7),0);
+	// testtimestamp (column 8) is the one column inserted as NULL
+	assertEquals(PQgetisnull(pgresult,0,8),1);
 	assertEquals(PQgetisnull(pgresult,1,0),0);
 	assertEquals(PQgetisnull(pgresult,1,1),0);
 	assertEquals(PQgetisnull(pgresult,1,2),0);
@@ -244,6 +248,7 @@ int	main(int argc, char **argv) {
 	assertEquals(PQgetisnull(pgresult,1,5),0);
 	assertEquals(PQgetisnull(pgresult,1,6),0);
 	assertEquals(PQgetisnull(pgresult,1,7),0);
+	assertEquals(PQgetisnull(pgresult,1,8),1);
 	stdoutput.printf("\n");
 
 	stdoutput.printf("PQgetvalue:\n");
