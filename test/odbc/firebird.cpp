@@ -6129,6 +6129,13 @@ int main(int argc, char **argv) {
 	assertSuccessStmt(stmt,erg);
 	assertEqualStmt(stmt,(int)gintind,(int)sizeof(SQLINTEGER));
 	assertEqualStmt(stmt,(int)gintval,1);
+	// SQL Relay returns SQL_NO_DATA on a repeat SQLGetData() of a
+	// fixed-length column; native drivers vary on this.
+	if (issqlrelay) {
+		erg=SQLGetData(stmt,1,SQL_C_SLONG,
+				&gintval,sizeof(gintval),&gintind);
+		assertEqualStmt(stmt,(int)erg,(int)SQL_NO_DATA);
+	}
 	erg=SQLGetData(stmt,2,SQL_C_SSHORT,
 			&gsmallintval,sizeof(gsmallintval),&gsmallintind);
 	assertSuccessStmt(stmt,erg);
@@ -6177,6 +6184,14 @@ int main(int argc, char **argv) {
 			gtimestampval,sizeof(gtimestampval),&gtimestampind);
 	assertSuccessStmt(stmt,erg);
 	assertEqualStmt(stmt,(int)gtimestampind,(int)SQL_NULL_DATA);
+	// SQL Relay returns SQL_NO_DATA on a repeat SQLGetData() of a NULL
+	// column; native drivers vary on this.
+	if (issqlrelay) {
+		erg=SQLGetData(stmt,11,SQL_C_CHAR,
+				gtimestampval,sizeof(gtimestampval),
+				&gtimestampind);
+		assertEqualStmt(stmt,(int)erg,(int)SQL_NO_DATA);
+	}
 	erg=SQLGetData(stmt,12,SQL_C_BINARY,
 			gblobval,sizeof(gblobval),&gblobind);
 	assertSuccessStmt(stmt,erg);

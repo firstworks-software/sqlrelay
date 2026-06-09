@@ -134,6 +134,8 @@
 		restores the catalog/schema/isolation level on relogin when a
 		dead connection prompted it, not at startup or load-balancer
 		redistribution
+	odbc SQLGetData() now returns SQL_NO_DATA on a second call for a
+		fixed-length or NULL column rather than re-fetching the value
 
 2.1.1 - added tns_admin support
 	fixed sqlr-start ... -strace ...

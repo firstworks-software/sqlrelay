@@ -5483,6 +5483,13 @@ static SQLRETURN SQLR_SQLGetData(SQLHSTMT statementhandle,
 
 	// handle NULL fields
 	if (!field) {
+		// the NULL is fully returned on the first call; a repeat
+		// call for the same field returns SQL_NO_DATA
+		if (*offset) {
+			debugPrintf("  null field already fetched\n");
+			return SQL_NO_DATA;
+		}
+		*offset=1;
 		if (strlen_or_ind) {
 			*strlen_or_ind=SQL_NULL_DATA;
 		}
@@ -5498,6 +5505,20 @@ static SQLRETURN SQLR_SQLGetData(SQLHSTMT statementhandle,
 						"mapped to: %d (from %s)\n",
 						(int)targettype,
 						stmt->cur->getColumnType(col));
+	}
+
+	// Fixed-length types (everything but the character and binary types,
+	// which can be fetched in successive chunks below) can only be fetched
+	// once.  A second SQLGetData() call for the same field must return
+	// SQL_NO_DATA rather than re-fetch the value.
+	bool	fixedlength=(targettype!=SQL_C_CHAR
+				#ifdef SQL_C_WCHAR
+				&& targettype!=SQL_C_WCHAR
+				#endif
+				&& targettype!=SQL_C_BINARY);
+	if (fixedlength && *offset) {
+		debugPrintf("  fixed-length field already fetched\n");
+		return SQL_NO_DATA;
 	}
 
 	// initialize strlen indicator
@@ -5811,6 +5832,12 @@ static SQLRETURN SQLR_SQLGetData(SQLHSTMT statementhandle,
 		default:
 			debugPrintf("  invalid targettype\n");
 			return SQL_ERROR;
+	}
+
+	// mark fixed-length fields as fetched so the next call returns
+	// SQL_NO_DATA (variable-length types track this via *offset above)
+	if (fixedlength) {
+		*offset=1;
 	}
 
 	debugPrintf("  offset: %lld\n",*offset);
