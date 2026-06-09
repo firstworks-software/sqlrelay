@@ -1787,8 +1787,7 @@ class postgresql extends sqlrtest {
 		assertTrue("testtable".equals(cur.getField(0,"table")));
 		assertEquals(cur.getField(0,"seq_in_index"),"1");
 		assertTrue("col1".equals(cur.getField(0,"column_name")));
-		String keyName=cur.getField(0,"key_name");
-		assertTrue(keyName!=null &&!keyName.isEmpty());
+		assertEquals(cur.getField(0,"key_name"),"testtable_pkey");
 		assertTrue(cur.sendQuery("drop table testtable"));
 		System.out.println();
 
@@ -1821,8 +1820,7 @@ class postgresql extends sqlrtest {
 		assertTrue("col1".equals(cur.getField(0,"column_name")));
 		assertEquals(cur.getField(0,"collation"),"A");
 		assertEquals(cur.getField(0,"index_type"),"3");
-		keyName=cur.getField(0,"key_name");
-		assertTrue(keyName!=null &&!keyName.isEmpty());
+		assertEquals(cur.getField(0,"key_name"),"testtable_pkey");
 		assertTrue(cur.sendQuery("drop table testtable"));
 		System.out.println();
 

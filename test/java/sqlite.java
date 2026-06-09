@@ -1607,8 +1607,7 @@ class sqlite extends sqlrtest {
 		assertEquals(cur.getField(0,"column_name"),"col1");
 		assertEquals(cur.getField(0,"collation"),"A");
 		assertEquals(cur.getField(0,"index_type"),"3");
-		String	keyname=cur.getField(0,"key_name");
-		assertTrue(keyname!=null && !keyname.isEmpty());
+		assertEquals(cur.getField(0,"key_name"),"sqlite_autoindex_testtable_1");
 		assertTrue(cur.sendQuery("drop table if exists testtable"));
 		System.out.println();
 

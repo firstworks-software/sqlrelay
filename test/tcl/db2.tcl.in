@@ -1600,7 +1600,7 @@ assertEqual [$cur rowCount] 1
 assertTrue [string equal [$cur getFieldByName 0 "table"] "TESTTABLE"]
 assertEqual [$cur getFieldByName 0 "seq_in_index"] "1"
 assertTrue [string equal [$cur getFieldByName 0 "column_name"] "COL1"]
-assertTrue [expr {[$cur getFieldByName 0 "key_name"] ne ""}]
+assertStartsWith [$cur getFieldByName 0 "key_name"] "SQL"
 assertTrue [$cur sendQuery "drop table testtable"]
 assertTrue [$con commit]
 puts ""
@@ -1632,7 +1632,7 @@ assertEqual [$cur getFieldByName 0 "seq_in_index"] "1"
 assertTrue [string equal [$cur getFieldByName 0 "column_name"] "COL1"]
 assertEqual [$cur getFieldByName 0 "collation"] "A"
 assertEqual [$cur getFieldByName 0 "index_type"] "3"
-assertTrue [expr {[$cur getFieldByName 0 "key_name"] ne ""}]
+assertStartsWith [$cur getFieldByName 0 "key_name"] "SQL"
 assertTrue [$cur sendQuery "drop table testtable"]
 assertTrue [$con commit]
 puts ""

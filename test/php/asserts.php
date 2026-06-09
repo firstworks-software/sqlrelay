@@ -139,6 +139,21 @@
 		}
 	}
 
+	function assertStartsWith($actual,$prefix) {
+
+		global $status;
+
+		if ($actual!==false && $actual!==NULL &&
+				strncmp($actual,$prefix,strlen($prefix))==0) {
+			echo(success." ");
+		} else {
+			echo(failure."\n");
+			echo("\"$actual\" doesn't start with \"$prefix\"\n");
+			printErrors();
+			$status=1;
+		}
+	}
+
 	function assertInResultSet($cur,$column,$value) {
 
 		global $status;

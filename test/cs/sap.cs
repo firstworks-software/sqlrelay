@@ -1995,7 +1995,7 @@ namespace SQLRClientTest
             assertTrue(cur.getField((UInt64)0, "table") == "testtable");
             assertEquals(cur.getField((UInt64)0, "seq_in_index"), "1");
             assertTrue(cur.getField((UInt64)0, "column_name") == "col1");
-            assertTrue(!String.IsNullOrEmpty(cur.getField((UInt64)0, "key_name")));
+            assertStartsWith(cur.getField((UInt64)0, "key_name"), "testtable_col1_");
             assertTrue(cur.sendQuery("drop table testtable"));
             Console.WriteLine("");
 
@@ -2028,7 +2028,7 @@ namespace SQLRClientTest
             assertTrue(cur.getField((UInt64)0, "column_name") == "col1");
             assertEquals(cur.getField((UInt64)0, "collation"), "A");
             assertEquals(cur.getField((UInt64)0, "index_type"), "1");
-            assertTrue(!String.IsNullOrEmpty(cur.getField((UInt64)0, "key_name")));
+            assertStartsWith(cur.getField((UInt64)0, "key_name"), "testtable_col1_");
             assertTrue(cur.sendQuery("drop table testtable"));
             Console.WriteLine("");
 

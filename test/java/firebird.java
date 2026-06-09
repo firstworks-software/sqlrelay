@@ -1687,8 +1687,7 @@ class firebird extends sqlrtest {
 		assertTrue(cur.getField(0,"table").equals("TESTTABLE2"));
 		assertEquals(cur.getField(0,"seq_in_index"),"1");
 		assertTrue(cur.getField(0,"column_name").equals("COL1"));
-		assertTrue(cur.getField(0,"key_name")!=null &&!cur.getField(0,
-				"key_name").isEmpty());
+		assertStartsWith(cur.getField(0,"key_name"),"INTEG_");
 		System.out.println();
 
 
@@ -1715,8 +1714,7 @@ class firebird extends sqlrtest {
 		assertTrue(cur.getField(0,"column_name").equals("COL1"));
 		assertEquals(cur.getField(0,"collation"),"A");
 		assertEquals(cur.getField(0,"index_type"),"3");
-		assertTrue(cur.getField(0,"key_name")!=null &&!cur.getField(0,
-				"key_name").isEmpty());
+		assertStartsWith(cur.getField(0,"key_name"),"RDB$PRIMARY");
 		System.out.println();
 
 

@@ -134,6 +134,21 @@ sub assertFalse {
 	}
 }
 
+sub assertStartsWith {
+
+	my ($actual,$prefix)=@_;
+
+	if (defined($actual) && index($actual,$prefix)==0) {
+		print("$success ");
+	} else {
+		print("$failure\n");
+		my $val=(defined($actual))?$actual:"<undef>";
+		print("$val doesn't start with $prefix\n");
+		printErrors();
+		$status=1;
+	}
+}
+
 sub assertUndef {
 
 	my ($actual)=@_;

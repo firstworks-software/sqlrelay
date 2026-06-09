@@ -1665,7 +1665,7 @@ def main():
 	assertEquals(cur.getField(0,"seq_in_index"),"1")
 	assertEquals(cur.getField(0,"column_name"),"col1")
 	keyname=cur.getField(0,"key_name")
-	assertTrue(keyname is not None and len(keyname)>0)
+	assertEquals(keyname,"testtable_pkey")
 	assertTrue(cur.sendQuery("drop table testtable"))
 	print()
 
@@ -1699,7 +1699,7 @@ def main():
 	assertEquals(cur.getField(0,"collation"),"A")
 	assertEquals(cur.getField(0,"index_type"),"3")
 	keyname=cur.getField(0,"key_name")
-	assertTrue(keyname is not None and len(keyname)>0)
+	assertEquals(keyname,"testtable_pkey")
 	assertTrue(cur.sendQuery("drop table testtable"))
 	print()
 

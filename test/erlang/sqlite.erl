@@ -1240,7 +1240,7 @@ main() ->
     assertEqualsString(sqlrelay:getFieldByName(0, "collation"), "A"),
     assertEqualsString(sqlrelay:getFieldByName(0, "index_type"), "3"),
     {ok, KeyName} = sqlrelay:getFieldByName(0, "key_name"),
-    assertTrue(not isNullOrEmpty(KeyName)),
+    assertEqualsString(KeyName, "sqlite_autoindex_testtable_1"),
     assertTrue(sqlrelay:sendQuery("drop table if exists testtable")),
     io:format("~n"),
 
@@ -1289,12 +1289,6 @@ main() ->
 %%
 %% Small helpers used in the main flow.
 %%
-
-%% case-insensitive substring search for isNullOrEmpty
-isNullOrEmpty(undefined) -> true;
-isNullOrEmpty(null)      -> true;
-isNullOrEmpty([])        -> true;
-isNullOrEmpty(_)         -> false.
 
 %% String substring containment: does Haystack contain Needle ?
 contains(Haystack, Needle) when is_list(Haystack), is_list(Needle) ->

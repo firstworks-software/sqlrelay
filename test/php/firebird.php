@@ -1642,8 +1642,7 @@
 	assertTrue(!strcmp(sqlrcur_getField($cur,0,"table"),"TESTTABLE2"));
 	assertEqStr(sqlrcur_getField($cur,0,"seq_in_index"),"1");
 	assertTrue(!strcmp(sqlrcur_getField($cur,0,"column_name"),"COL1"));
-	assertTrue(sqlrcur_getField($cur,0,"key_name")!=NULL &&strlen(
-		sqlrcur_getField($cur,0,"key_name"))>0);
+	assertStartsWith(sqlrcur_getField($cur,0,"key_name"),"INTEG_");
 	echo("\n");
 
 
@@ -1670,8 +1669,7 @@
 	assertTrue(!strcmp(sqlrcur_getField($cur,0,"column_name"),"COL1"));
 	assertEqStr(sqlrcur_getField($cur,0,"collation"),"A");
 	assertEqStr(sqlrcur_getField($cur,0,"index_type"),"3");
-	assertTrue(sqlrcur_getField($cur,0,"key_name")!=NULL &&strlen(
-		sqlrcur_getField($cur,0,"key_name"))>0);
+	assertStartsWith(sqlrcur_getField($cur,0,"key_name"),"RDB$PRIMARY");
 	echo("\n");
 
 

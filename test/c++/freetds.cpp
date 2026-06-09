@@ -2083,7 +2083,7 @@ int main(int argc, char **argv) {
 	assertTrue(!charstring::compare(cur->getField(0,"table"),"testtable"));
 	assertEquals(cur->getField(0,"seq_in_index"),"1");
 	assertTrue(!charstring::compare(cur->getField(0,"column_name"),"col1"));
-	assertTrue(!charstring::isNullOrEmpty(cur->getField(0,"key_name")));
+	assertStartsWith(cur->getField(0,"key_name"),"testtable_col1_");
 	assertTrue(cur->sendQuery("drop table testtable"));
 	stdoutput.printf("\n");
 
@@ -2116,7 +2116,7 @@ int main(int argc, char **argv) {
 	assertTrue(!charstring::compare(cur->getField(0,"column_name"),"col1"));
 	assertEquals(cur->getField(0,"collation"),"A");
 	assertEquals(cur->getField(0,"index_type"),"1");
-	assertTrue(!charstring::isNullOrEmpty(cur->getField(0,"key_name")));
+	assertStartsWith(cur->getField(0,"key_name"),"testtable_col1_");
 	assertTrue(cur->sendQuery("drop table testtable"));
 	stdoutput.printf("\n");
 

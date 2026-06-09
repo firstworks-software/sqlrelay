@@ -2130,8 +2130,7 @@ class sap extends sqlrtest {
 		assertEquals(cur.getField(0,"table"),"testtable");
 		assertEquals(cur.getField(0,"seq_in_index"),"1");
 		assertEquals(cur.getField(0,"column_name"),"col1");
-		assertTrue(cur.getField(0,"key_name")!=null &&
-				!cur.getField(0,"key_name").isEmpty());
+		assertStartsWith(cur.getField(0,"key_name"),"testtable_col1_");
 		assertTrue(cur.sendQuery("drop table testtable"));
 		System.out.println();
 
@@ -2164,8 +2163,7 @@ class sap extends sqlrtest {
 		assertEquals(cur.getField(0,"column_name"),"col1");
 		assertEquals(cur.getField(0,"collation"),"A");
 		assertEquals(cur.getField(0,"index_type"),"1");
-		assertTrue(cur.getField(0,"key_name")!=null &&
-				!cur.getField(0,"key_name").isEmpty());
+		assertStartsWith(cur.getField(0,"key_name"),"testtable_col1_");
 		assertTrue(cur.sendQuery("drop table testtable"));
 		System.out.println();
 

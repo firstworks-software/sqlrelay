@@ -212,6 +212,11 @@ namespace SQLRClientTest
             if (!actual) { pass(); } else { fail(actual,false); }
         }
 
+        protected static void assertStartsWith(String actual, String prefix)
+        {
+            if (actual != null && actual.StartsWith(prefix)) { pass(); } else { fail(actual,prefix); }
+        }
+
         protected static void assertInResultSet(SQLRCursor cursor, String column, String value)
         {
             for (UInt64 i = 0; i < cursor.rowCount(); i++)

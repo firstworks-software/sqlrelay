@@ -124,6 +124,17 @@ def assertNone(actual):
 		printErrors()
 		status=1
 
+def assertStartsWith(actual,prefix):
+	global status
+	if actual is not None and actual.startswith(prefix):
+		print(success,end=" ")
+	else:
+		print(failure)
+		print("wanted prefix",prefix)
+		print("got         ",type(actual),":",actual)
+		printErrors()
+		status=1
+
 def assertInResultSet(cur,column,value):
 	global status
 	for i in range(cur.rowCount()):

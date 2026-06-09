@@ -1543,7 +1543,7 @@ var {
 	assertEqStr(cur.getField(0,"collation"),"A");
 	assertEqStr(cur.getField(0,"index_type"),"3");
 	var kn=cur.getField(0,"key_name");
-	assertTrue(!((!kn) || (!kn[0])));
+	assertEqStr(kn,"sqlite_autoindex_testtable_1");
 	assertTrue(cur.sendQuery("drop table if exists testtable"));
 	console.log("");
 

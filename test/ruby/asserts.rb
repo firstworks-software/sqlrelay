@@ -115,6 +115,17 @@ def assertFalse(actual)
 	end
 end
 
+def assertStartsWith(actual,prefix)
+	if actual && actual.start_with?(prefix)
+		print $success , " "
+	else
+		puts $failure
+		print actual , " doesn't start with " , prefix , "\n"
+		printErrors()
+		$status=1
+	end
+end
+
 def assertInResultSet(cur,column,value)
 	for i in 0..cur.rowCount()-1
 		if cur.getField(i,column)==value

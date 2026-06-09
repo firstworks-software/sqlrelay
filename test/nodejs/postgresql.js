@@ -1715,7 +1715,7 @@ assertTrue(cur.getField(0,"table")=="testtable");
 assertEqStr(cur.getField(0,"seq_in_index"),"1");
 assertTrue(cur.getField(0,"column_name")=="col1");
 var keyname=cur.getField(0,"key_name");
-assertTrue(keyname && keyname[0]);
+assertEqStr(keyname,"testtable_pkey");
 assertTrue(cur.sendQuery("drop table testtable"));
 console.log("");
 
@@ -1749,7 +1749,7 @@ assertTrue(cur.getField(0,"column_name")=="col1");
 assertEqStr(cur.getField(0,"collation"),"A");
 assertEqStr(cur.getField(0,"index_type"),"3");
 var keyname=cur.getField(0,"key_name");
-assertTrue(keyname && keyname[0]);
+assertEqStr(keyname,"testtable_pkey");
 assertTrue(cur.sendQuery("drop table testtable"));
 console.log("");
 

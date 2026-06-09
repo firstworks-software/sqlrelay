@@ -143,6 +143,17 @@ function assertTrue(actual) {
 	}
 }
 
+function assertStartsWith(actual, prefix) {
+	if (actual!=null && String(actual).startsWith(prefix)) {
+		process.stdout.write(success+" ");
+	} else {
+		console.log(failure);
+		console.log("\""+actual+"\" doesn't start with \""+prefix+"\"");
+		printErrors();
+		status=1;
+	}
+}
+
 function assertFalse(actual) {
 	if (!actual) {
 		process.stdout.write(success+" ");
@@ -184,7 +195,7 @@ module.exports={
 	setSecondConnection, setSecondCursor,
 	assertEqStr, assertEqStrLen,
 	assertEqInt, assertEqDbl, assertEqual,
-	assertTrue, assertFalse,
+	assertTrue, assertFalse, assertStartsWith,
 	assertInResultSet,
 	getStatus, reportTestStatus
 };

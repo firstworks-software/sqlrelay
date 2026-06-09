@@ -1543,7 +1543,7 @@ assertEquals($cur->getField(0,"column_name"),"col1");
 assertEquals($cur->getField(0,"collation"),"A");
 assertEquals($cur->getField(0,"index_type"),"3");
 $keyname=$cur->getField(0,"key_name");
-assertTrue(defined($keyname) && length($keyname)>0);
+assertEquals($keyname,"sqlite_autoindex_testtable_1");
 assertTrue($cur->sendQuery("drop table if exists testtable"));
 print("\n");
 

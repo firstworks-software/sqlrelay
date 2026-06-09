@@ -1519,7 +1519,7 @@ include("./asserts.php");
 	assertEqStr(sqlrcur_getField($cur,0,"collation"),"A");
 	assertEqStr(sqlrcur_getField($cur,0,"index_type"),"3");
 	$kn=sqlrcur_getField($cur,0,"key_name");
-	assertTrue(!((!$kn) || (!$kn[0])));
+	assertEqStr($kn,"sqlite_autoindex_testtable_1");
 	assertTrue(sqlrcur_sendQuery($cur,"drop table if exists testtable"));
 	echo("\n");
 

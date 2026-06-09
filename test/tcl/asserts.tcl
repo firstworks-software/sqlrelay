@@ -158,6 +158,21 @@ proc assertFalse {actual} {
 	}
 }
 
+proc assertStartsWith {actual prefix} {
+
+	global status
+	global success
+	global failure
+	if {[string first $prefix $actual]==0} {
+		puts -nonewline "$success "
+	} else {
+		puts $failure
+		puts "$actual doesn't start with $prefix"
+		printErrors
+		set status 1
+	}
+}
+
 proc assertInResultSet {cur column value} {
 
 	global status

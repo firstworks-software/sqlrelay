@@ -12,6 +12,7 @@
 -export([pass/0, fail/2]).
 -export([getStatus/0, setFailed/0, reportTestStatus/0]).
 -export([assertEqualsString/2, assertEqualsStringLen/3]).
+-export([assertStartsWith/2]).
 -export([assertEqualsInt/2, assertEqualsDouble/2]).
 -export([assertTrue/1, assertFalse/1]).
 -export([assertInResultSet/2]).
@@ -95,6 +96,17 @@ assertEqualsStringLen(Actual, Expected, Length)
     end;
 assertEqualsStringLen(Actual, Expected, _Length) ->
     fail(Actual, Expected).
+
+%% String prefix check - actual must start with prefix.
+assertStartsWith({ok, Actual}, Prefix) ->
+    assertStartsWith(Actual, Prefix);
+assertStartsWith(Actual, Prefix) when is_list(Actual), is_list(Prefix) ->
+    case lists:prefix(Prefix, Actual) of
+        true  -> pass();
+        false -> fail(Actual, Prefix)
+    end;
+assertStartsWith(Actual, Prefix) ->
+    fail(Actual, Prefix).
 
 assertEqualsInt({ok, Actual}, Expected) ->
     assertEqualsInt(Actual, Expected);

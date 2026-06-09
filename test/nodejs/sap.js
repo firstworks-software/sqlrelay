@@ -7,7 +7,7 @@ var {
 	setSecondConnection, setSecondCursor,
 	assertEqStr, assertEqStrLen,
 	assertEqInt, assertEqDbl, assertEqual,
-	assertTrue, assertFalse,
+	assertTrue, assertFalse, assertStartsWith,
 	assertInResultSet,
 	getStatus, reportTestStatus
 }=require("./asserts.js");
@@ -2020,7 +2020,7 @@ assertTrue(cur.getField(0,"table")==="testtable");
 assertEqStr(cur.getField(0,"seq_in_index"),"1");
 assertTrue(cur.getField(0,"column_name")==="col1");
 var kn=cur.getField(0,"key_name");
-assertTrue(kn!==null && kn.length>0);
+assertStartsWith(kn,"testtable_col1_");
 assertTrue(cur.sendQuery("drop table testtable"));
 console.log();
 
@@ -2055,7 +2055,7 @@ assertTrue(cur.getField(0,"column_name")==="col1");
 assertEqStr(cur.getField(0,"collation"),"A");
 assertEqStr(cur.getField(0,"index_type"),"1");
 kn=cur.getField(0,"key_name");
-assertTrue(kn!==null && kn.length>0);
+assertStartsWith(kn,"testtable_col1_");
 assertTrue(cur.sendQuery("drop table testtable"));
 console.log();
 

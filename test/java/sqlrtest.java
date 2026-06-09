@@ -200,6 +200,18 @@ class sqlrtest {
 		}
 	}
 
+	protected static void assertStartsWith(String actual, String prefix) {
+
+		if (actual!=null && actual.startsWith(prefix)) {
+			System.out.print(success+" ");
+		} else {
+			System.out.println(failure);
+			System.out.println(actual+"!="+prefix);
+			printErrors();
+			status=1;
+		}
+	}
+
 	protected static void assertInResultSet(SQLRCursor cursor,
 						String column, String value) {
 

@@ -1622,7 +1622,7 @@ assertTrue($cur->getField(0,"table") eq "TESTTABLE2");
 assertEquals($cur->getField(0,"seq_in_index"),"1");
 assertTrue($cur->getField(0,"column_name") eq "COL1");
 $keyname=$cur->getField(0,"key_name");
-assertTrue(defined($keyname) && length($keyname)>0);
+assertStartsWith($keyname,"INTEG_");
 print("\n");
 
 
@@ -1650,7 +1650,7 @@ assertTrue($cur->getField(0,"column_name") eq "COL1");
 assertEquals($cur->getField(0,"collation"),"A");
 assertEquals($cur->getField(0,"index_type"),"3");
 $keyname=$cur->getField(0,"key_name");
-assertTrue(defined($keyname) && length($keyname)>0);
+assertStartsWith($keyname,"RDB$PRIMARY");
 print("\n");
 
 

@@ -1397,7 +1397,7 @@ main() ->
     assertEqualsString(sqlrelay:getFieldByName(0, "seq_in_index"), "1"),
     assertEqualsString(sqlrelay:getFieldByName(0, "column_name"), "col1"),
     {ok, PkName} = sqlrelay:getFieldByName(0, "key_name"),
-    assertTrue(not isNullOrEmpty(PkName)),
+    assertEqualsString(PkName, "testtable_pkey"),
     assertTrue(sqlrelay:sendQuery("drop table testtable")),
     io:format("~n"),
 
@@ -1430,7 +1430,7 @@ main() ->
     assertEqualsString(sqlrelay:getFieldByName(0, "collation"), "A"),
     assertEqualsString(sqlrelay:getFieldByName(0, "index_type"), "3"),
     {ok, KeyName2} = sqlrelay:getFieldByName(0, "key_name"),
-    assertTrue(not isNullOrEmpty(KeyName2)),
+    assertEqualsString(KeyName2, "testtable_pkey"),
     assertTrue(sqlrelay:sendQuery("drop table testtable")),
     io:format("~n"),
 
@@ -1551,12 +1551,6 @@ main() ->
 %%
 %% Small helpers used in the main flow.
 %%
-
-%% case-insensitive emptiness check
-isNullOrEmpty(undefined) -> true;
-isNullOrEmpty(null)      -> true;
-isNullOrEmpty([])        -> true;
-isNullOrEmpty(_)         -> false.
 
 %% String substring containment: does Haystack contain Needle ?
 contains({ok, Haystack}, Needle) ->

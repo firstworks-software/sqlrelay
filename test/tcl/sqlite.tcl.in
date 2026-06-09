@@ -1362,7 +1362,7 @@ assertEqual [$cur getFieldByName 0 "seq_in_index"] "1"
 assertTrue [string equal [$cur getFieldByName 0 "column_name"] "col1"]
 assertEqual [$cur getFieldByName 0 "collation"] "A"
 assertEqual [$cur getFieldByName 0 "index_type"] "3"
-assertTrue [expr {[$cur getFieldByName 0 "key_name"] ne ""}]
+assertEqual [$cur getFieldByName 0 "key_name"] "sqlite_autoindex_testtable_1"
 assertTrue [$cur sendQuery "drop table if exists testtable"]
 puts ""
 

@@ -1656,7 +1656,7 @@ assertTrue($cur->getField(0,"table") eq "testtable");
 assertEquals($cur->getField(0,"seq_in_index"),"1");
 assertTrue($cur->getField(0,"column_name") eq "col1");
 $keyname=$cur->getField(0,"key_name");
-assertTrue(defined($keyname) && length($keyname)>0);
+assertEquals($keyname,"testtable_pkey");
 assertTrue($cur->sendQuery("drop table testtable"));
 print("\n");
 
@@ -1690,7 +1690,7 @@ assertTrue($cur->getField(0,"column_name") eq "col1");
 assertEquals($cur->getField(0,"collation"),"A");
 assertEquals($cur->getField(0,"index_type"),"3");
 $keyname=$cur->getField(0,"key_name");
-assertTrue(defined($keyname) && length($keyname)>0);
+assertEquals($keyname,"testtable_pkey");
 assertTrue($cur->sendQuery("drop table testtable"));
 print("\n");
 

@@ -1624,7 +1624,7 @@ assertEqual(cur.rowCount(),1)
 assertEqual(cur.getField(0,"table"),"TESTTABLE2")
 assertEqual(cur.getField(0,"seq_in_index"),"1")
 assertEqual(cur.getField(0,"column_name"),"COL1")
-assertFalse(cur.getField(0,"key_name").nil? || cur.getField(0,"key_name").empty?)
+assertStartsWith(cur.getField(0,"key_name"),"INTEG_")
 print "\n"
 
 
@@ -1651,7 +1651,7 @@ assertEqual(cur.getField(0,"seq_in_index"),"1")
 assertEqual(cur.getField(0,"column_name"),"COL1")
 assertEqual(cur.getField(0,"collation"),"A")
 assertEqual(cur.getField(0,"index_type"),"3")
-assertFalse(cur.getField(0,"key_name").nil? || cur.getField(0,"key_name").empty?)
+assertStartsWith(cur.getField(0,"key_name"),"RDB$PRIMARY")
 print "\n"
 
 

@@ -2053,8 +2053,7 @@ class tls extends sqlrtest {
 		assertEquals(cur.getField(0,"table"),"TESTTABLE");
 		assertEquals(cur.getField(0,"seq_in_index"),"1");
 		assertEquals(cur.getField(0,"column_name"),"COL1");
-		assertTrue(cur.getField(0,"key_name")!=null &&
-				!cur.getField(0,"key_name").isEmpty());
+		assertStartsWith(cur.getField(0,"key_name"),"SYS_C");
 		assertTrue(cur.sendQuery("drop table testtable"));
 		System.out.println();
 
@@ -2087,8 +2086,7 @@ class tls extends sqlrtest {
 		assertEquals(cur.getField(0,"column_name"),"COL1");
 		assertEquals(cur.getField(0,"collation"),"A");
 		assertEquals(cur.getField(0,"index_type"),"3");
-		assertTrue(cur.getField(0,"key_name")!=null &&
-				!cur.getField(0,"key_name").isEmpty());
+		assertStartsWith(cur.getField(0,"key_name"),"SYS_C");
 		assertTrue(cur.sendQuery("drop table testtable"));
 		System.out.println();
 

@@ -1959,7 +1959,7 @@ def main():
 	assertEquals(cur.getField(0,"seq_in_index"),"1")
 	assertEquals(cur.getField(0,"column_name"),"col1")
 	keyname=cur.getField(0,"key_name")
-	assertTrue(keyname)
+	assertStartsWith(keyname,"testtable_col1_")
 	assertTrue(cur.sendQuery("drop table testtable"))
 	print()
 
@@ -1993,7 +1993,7 @@ def main():
 	assertEquals(cur.getField(0,"collation"),"A")
 	assertEquals(cur.getField(0,"index_type"),"1")
 	keyname=cur.getField(0,"key_name")
-	assertTrue(keyname)
+	assertStartsWith(keyname,"testtable_col1_")
 	assertTrue(cur.sendQuery("drop table testtable"))
 	print()
 

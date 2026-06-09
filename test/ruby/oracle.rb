@@ -1901,7 +1901,7 @@ assertEqual(cur.rowCount(),1)
 assertEqual(cur.getField(0,"table"),"TESTTABLE")
 assertEqual(cur.getField(0,"seq_in_index"),"1")
 assertEqual(cur.getField(0,"column_name"),"COL1")
-assertTrue(cur.getField(0,"key_name").to_s.length>0)
+assertStartsWith(cur.getField(0,"key_name"),"SYS_C")
 assertTrue(cur.sendQuery("drop table testtable"))
 print "\n"
 
@@ -1934,7 +1934,7 @@ assertEqual(cur.getField(0,"seq_in_index"),"1")
 assertEqual(cur.getField(0,"column_name"),"COL1")
 assertEqual(cur.getField(0,"collation"),"A")
 assertEqual(cur.getField(0,"index_type"),"3")
-assertTrue(cur.getField(0,"key_name").to_s.length>0)
+assertStartsWith(cur.getField(0,"key_name"),"SYS_C")
 assertTrue(cur.sendQuery("drop table testtable"))
 print "\n"
 

@@ -1531,7 +1531,7 @@ namespace SQLRClientTest
             assertTrue(cur.getField((UInt64)0, "column_name") == "col1");
             assertEquals(cur.getField((UInt64)0, "collation"), "A");
             assertEquals(cur.getField((UInt64)0, "index_type"), "3");
-            assertTrue(!String.IsNullOrEmpty(cur.getField((UInt64)0, "key_name")));
+            assertEquals(cur.getField((UInt64)0, "key_name"), "sqlite_autoindex_testtable_1");
             assertTrue(cur.sendQuery("drop table if exists testtable"));
             Console.WriteLine("");
 

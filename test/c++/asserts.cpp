@@ -97,6 +97,19 @@ void assertEquals(const char *actual, const char *expected, size_t length) {
 	}
 }
 
+void assertStartsWith(const char *actual, const char *prefix) {
+
+	if (actual && !charstring::compare(actual,prefix,
+						charstring::getLength(prefix))) {
+		stdoutput.printf("%s ",success);
+	} else {
+		stdoutput.printf("%s\n",failure);
+		stdoutput.printf("%s doesn't start with %s\n",actual,prefix);
+		printErrors();
+		status=1;
+	}
+}
+
 void assertEquals(bool actual, bool expected) {
 
 	if (actual==expected) {

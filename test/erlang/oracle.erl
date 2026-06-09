@@ -7,6 +7,7 @@
 -import(asserts, [pass/0, fail/2,
                   getStatus/0, reportTestStatus/0,
                   assertEqualsString/2, assertEqualsStringLen/3,
+                  assertStartsWith/2,
                   assertEqualsInt/2, assertEqualsDouble/2,
                   assertTrue/1, assertFalse/1,
                   assertInResultSet/2,
@@ -1546,7 +1547,7 @@ main() ->
     assertEqualsString(sqlrelay:getFieldByName(0, "seq_in_index"), "1"),
     assertEqualsString(sqlrelay:getFieldByName(0, "column_name"), "COL1"),
     {ok, PkName} = sqlrelay:getFieldByName(0, "key_name"),
-    assertTrue(not isNullOrEmpty(PkName)),
+    assertStartsWith(PkName, "SYS_C"),
     assertTrue(sqlrelay:sendQuery("drop table testtable")),
     io:format("~n"),
 
@@ -1579,7 +1580,7 @@ main() ->
     assertEqualsString(sqlrelay:getFieldByName(0, "collation"), "A"),
     assertEqualsString(sqlrelay:getFieldByName(0, "index_type"), "3"),
     {ok, KeyName2} = sqlrelay:getFieldByName(0, "key_name"),
-    assertTrue(not isNullOrEmpty(KeyName2)),
+    assertStartsWith(KeyName2, "SYS_C"),
     assertTrue(sqlrelay:sendQuery("drop table testtable")),
     io:format("~n"),
 
@@ -1715,12 +1716,6 @@ main() ->
 %%
 %% Small helpers used in the main flow.
 %%
-
-%% case-insensitive substring search for isNullOrEmpty
-isNullOrEmpty(undefined) -> true;
-isNullOrEmpty(null)      -> true;
-isNullOrEmpty([])        -> true;
-isNullOrEmpty(_)         -> false.
 
 %% String substring containment: does Haystack contain Needle ?
 contains(Haystack, Needle) when is_list(Haystack), is_list(Needle) ->

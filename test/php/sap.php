@@ -2024,7 +2024,7 @@ include("./asserts.php");
 	assertEqStr(sqlrcur_getField($cur,0,"seq_in_index"),"1");
 	assertTrue(strcmp(sqlrcur_getField($cur,0,"column_name"),"col1")==0);
 	$kn=sqlrcur_getField($cur,0,"key_name");
-	assertTrue($kn!==NULL && strlen($kn)>0);
+	assertStartsWith($kn,"testtable_col1_");
 	assertTrue(sqlrcur_sendQuery($cur,"drop table testtable"));
 	echo("\n");
 
@@ -2059,7 +2059,7 @@ include("./asserts.php");
 	assertEqStr(sqlrcur_getField($cur,0,"collation"),"A");
 	assertEqStr(sqlrcur_getField($cur,0,"index_type"),"1");
 	$kn=sqlrcur_getField($cur,0,"key_name");
-	assertTrue($kn!==NULL && strlen($kn)>0);
+	assertStartsWith($kn,"testtable_col1_");
 	assertTrue(sqlrcur_sendQuery($cur,"drop table testtable"));
 	echo("\n");
 

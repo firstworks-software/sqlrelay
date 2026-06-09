@@ -1691,7 +1691,7 @@
 	assertEqStr(sqlrcur_getField($cur,0,"seq_in_index"),"1");
 	assertTrue(!strcmp(sqlrcur_getField($cur,0,"column_name"),"col1"));
 	$keyname=sqlrcur_getField($cur,0,"key_name");
-	assertTrue($keyname && $keyname[0]);
+	assertEqStr($keyname,"testtable_pkey");
 	assertTrue(sqlrcur_sendQuery($cur,"drop table testtable"));
 	echo("\n");
 
@@ -1725,7 +1725,7 @@
 	assertEqStr(sqlrcur_getField($cur,0,"collation"),"A");
 	assertEqStr(sqlrcur_getField($cur,0,"index_type"),"3");
 	$keyname=sqlrcur_getField($cur,0,"key_name");
-	assertTrue($keyname && $keyname[0]);
+	assertEqStr($keyname,"testtable_pkey");
 	assertTrue(sqlrcur_sendQuery($cur,"drop table testtable"));
 	echo("\n");
 
