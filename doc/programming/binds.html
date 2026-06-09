@@ -90,7 +90,19 @@ where
 by Lorenzo Bettini
 http://www.lorenzobettini.it
 http://www.gnu.org/software/src-highlite -->
-<pre><tt>@parts<font color="#990000">/</font>binds<font color="#990000">-</font>inputbind<font color="#990000">-</font>numeric<font color="#990000">.</font>sql@</tt></pre>
+<pre><tt>select
+	first_name<font color="#990000">,</font>
+	middle_initial<font color="#990000">,</font>
+	last_name
+from
+	$<font color="#990000">(</font>schema<font color="#990000">).</font>people
+where
+	person_id<font color="#990000">=?</font>
+	and
+	age<font color="#990000">&gt;=?</font>
+	and
+	age<font color="#990000">&lt;=?</font>
+</tt></pre>
 
 </blockquote>
 <p>In this query, you should use "1", "2" and "3" as variable names in the inputBind functions.</p>

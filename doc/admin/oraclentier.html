@@ -138,7 +138,15 @@ configuration.</p>
 by Lorenzo Bettini
 http://www.lorenzobettini.it
 http://www.gnu.org/software/src-highlite -->
-<pre><tt>@parts<font color="#990000">/</font>sqlrelay<font color="#990000">-</font>proxied<font color="#990000">.</font>conf<font color="#990000">.</font>html@</tt></pre>
+<pre><tt><b><font color="#000080">&lt;?xml</font></b> <font color="#009900">version</font><font color="#990000">=</font><font color="#FF0000">"1.0"</font><b><font color="#000080">?&gt;</font></b>
+<b><font color="#0000FF">&lt;instances&gt;</font></b>
+        <b><font color="#0000FF">&lt;instance</font></b> <font color="#009900">id</font><font color="#990000">=</font><font color="#FF0000">"proxiedexample"</font> <font color="#009900">authtier</font><font color="#990000">=</font><font color="#FF0000">"proxied"</font><b><font color="#0000FF">&gt;</font></b>
+                <b><font color="#0000FF">&lt;connections&gt;</font></b>
+                        <b><font color="#0000FF">&lt;connection</font></b> <font color="#009900">string</font><font color="#990000">=</font><font color="#FF0000">"user=proxyuser;password=proxyuser;oracle_sid=ora1;"</font><b><font color="#0000FF">/&gt;</font></b>
+                <b><font color="#0000FF">&lt;/connections&gt;</font></b>
+        <b><font color="#0000FF">&lt;/instance&gt;</font></b>
+<b><font color="#0000FF">&lt;/instances&gt;</font></b>
+</tt></pre>
 
 </blockquote>
 <h2>Running SQL Relay</h2>
