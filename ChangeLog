@@ -130,6 +130,10 @@
 	postgresql getDbVersion() now consistently returns dotted version
 	make uninstall no longer aborts when the init/systemd services
 		aren't installed
+	sqlr-connection now only runs the session start/end queries and
+		restores the catalog/schema/isolation level on relogin when a
+		dead connection prompted it, not at startup or load-balancer
+		redistribution
 
 2.1.1 - added tns_admin support
 	fixed sqlr-start ... -strace ...

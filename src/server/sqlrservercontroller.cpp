@@ -1773,20 +1773,27 @@ void sqlrservercontroller::reLogIn(bool deadconnection) {
 
 	markDatabaseUnavailable();
 
-	// FIXME: only run these if a dead connection prompted
-	// a relogin, not if we couldn't login at startup
+	// Only end the current session and capture its catalog/schema/
+	// isolation state when a dead connection prompted the relogin.  At
+	// startup the db was never up, and on load-balancer redistribution
+	// the session already ended - there's no live session to preserve.
+	char		*currentcatalog=NULL;
+	char		*currentschema=NULL;
+	const char	*isolevel=NULL;
+	if (deadconnection) {
 
-	// run the session end queries
-	sessionEndQueries();
+		// run the session end queries
+		sessionEndQueries();
 
-	// get the current catalog so we can restore it
-	char	*currentcatalog=pvt->_conn->getCurrentCatalog();
+		// get the current catalog so we can restore it
+		currentcatalog=pvt->_conn->getCurrentCatalog();
 
-	// get the current schema so we can restore it
-	char	*currentschema=pvt->_conn->getCurrentSchema();
+		// get the current schema so we can restore it
+		currentschema=pvt->_conn->getCurrentSchema();
 
-	// get the isolation level so we can restore it
-	const char	*isolevel=pvt->_conn->getIsolationLevel();
+		// get the isolation level so we can restore it
+		isolevel=pvt->_conn->getIsolationLevel();
+	}
 
 	debugStart("relogging in");
 
@@ -1819,21 +1826,22 @@ void sqlrservercontroller::reLogIn(bool deadconnection) {
 
 	debugEnd();
 
-	// run the session-start queries
-	// FIXME: only run these if a dead connection prompted
-	// a relogin, not if we couldn't login at startup
-	sessionStartQueries();
+	if (deadconnection) {
 
-	// restore the catalog
-	pvt->_conn->selectCatalog(currentcatalog);
-	delete[] currentcatalog;
+		// run the session-start queries
+		sessionStartQueries();
 
-	// restore the schema
-	pvt->_conn->selectSchema(currentschema);
-	delete[] currentschema;
+		// restore the catalog
+		pvt->_conn->selectCatalog(currentcatalog);
+		delete[] currentcatalog;
 
-	// restore the isolation level
-	pvt->_conn->setIsolationLevel(isolevel);
+		// restore the schema
+		pvt->_conn->selectSchema(currentschema);
+		delete[] currentschema;
+
+		// restore the isolation level
+		pvt->_conn->setIsolationLevel(isolevel);
+	}
 
 	markDatabaseAvailable();
 }
