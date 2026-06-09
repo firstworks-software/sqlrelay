@@ -18,10 +18,13 @@ SRCS = SQLRConnection.cs \
 all: SQLRClient.dll
 
 clean:
-	$(RM) *.snk *.il *.dll.in *.dll *.mdb AssemblyInfo.cs
+	$(RM) *.snk *.il *.dll.in *.dll *.mdb AssemblyInfo.cs AssemblyInfo.cs.out1 AssemblyInfo.cs.out2
 
 AssemblyInfo.cs: AssemblyInfo.cs.in
-	$(REPLACE) @SQLR_VERSION@ $(SQLR_VERSION) AssemblyInfo.cs.in > AssemblyInfo.cs
+	$(REPLACE) @SQLR_VERSION@ $(SQLR_VERSION) AssemblyInfo.cs.in > AssemblyInfo.cs.out1
+	$(REPLACE) @DONOTEDIT@ "$(DONOTEDIT)" AssemblyInfo.cs.out1 > AssemblyInfo.cs.out2
+	$(MV) AssemblyInfo.cs.out2 AssemblyInfo.cs
+	$(RM) AssemblyInfo.cs.out1
 
 SQLRClient.dll: $(SRCS)
 	$(CSC) $(CSCFLAGS) /optimize /target:library /out:$@ $(SRCS)

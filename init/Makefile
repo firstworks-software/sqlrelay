@@ -22,9 +22,24 @@ endif
 endif
 endif
 
-all:
+all: sqlrelay.service sqlrcachemanager.service
 
-install:
+sqlrelay.service: sqlrelay.service.in
+	$(REPLACE) @bindir@ "$(bindir)" $< > $@.out1
+	$(REPLACE) @libdir@ "$(libdir)" $@.out1 > $@.out2
+	$(MV) $@.out2 $@
+	$(RM) $@.out1
+
+sqlrcachemanager.service: sqlrcachemanager.service.in
+	$(REPLACE) @bindir@ "$(bindir)" $< > $@.out1
+	$(REPLACE) @libdir@ "$(libdir)" $@.out1 > $@.out2
+	$(MV) $@.out2 $@
+	$(RM) $@.out1
+
+clean:
+	$(RM) sqlrelay.service sqlrcachemanager.service *.out1 *.out2
+
+install: sqlrelay.service sqlrcachemanager.service
 	if ( test -x "/usr/bin/systemctl" -a -z "`grep ID=debian /etc/os-release 2> /dev/null`" -a -z "`grep ID_LIKE=debian /etc/os-release 2> /dev/null`" ); \
 	then \
 		if ( test -d "/usr/lib/systemd/system" ); \

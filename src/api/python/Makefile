@@ -13,16 +13,17 @@ include ../../../config.mk
 all: CSQLRelay.$(LIBEXT) PySQLRDB.py
 
 clean:
-	$(RM) *.lo *.o *.obj *.$(LIBEXT) *.lib *.exp *.idb *.pdb *.manifest PySQLRDB.py temp.py.in *.pyc *.ii
+	$(RM) *.lo *.o *.obj *.$(LIBEXT) *.lib *.exp *.idb *.pdb *.manifest PySQLRDB.py PySQLRDB.py.out1 PySQLRDB.py.out2 *.pyc *.ii
 	$(RMTREE) .libs __pycache__
 
 CSQLRelay.$(LIBEXT): CSQLRelay.cpp CSQLRelay.$(OBJ)
 	$(LTLINK) $(LINK) $(OUT)$@ CSQLRelay.$(OBJ) $(LDFLAGS) $(PYTHONLIBS) $(MODLINKFLAGS)
 
 PySQLRDB.py: PySQLRDB.py.in
-	$(REPLACE) @IMPORTEXCEPTIONS@ "$(IMPORTEXCEPTIONS)" PySQLRDB.py.in > temp.py.in
-	$(REPLACE) @EXCEPTIONSSTANDARDERROR@ "$(EXCEPTIONSSTANDARDERROR)" temp.py.in > PySQLRDB.py
-	$(RM) temp.py.in
+	$(REPLACE) @IMPORTEXCEPTIONS@ "$(IMPORTEXCEPTIONS)" PySQLRDB.py.in > PySQLRDB.py.out1
+	$(REPLACE) @EXCEPTIONSSTANDARDERROR@ "$(EXCEPTIONSSTANDARDERROR)" PySQLRDB.py.out1 > PySQLRDB.py.out2
+	$(MV) PySQLRDB.py.out2 PySQLRDB.py
+	$(RM) PySQLRDB.py.out1
 
 install: $(INSTALLLIB)
 	$(CP) PySQLRClient.py $(DESTDIR)$(PYTHONSITEDIR)/SQLRelay

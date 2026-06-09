@@ -16,11 +16,12 @@ LOBJS = erl_comm.$(OBJ) relay_driver.$(OBJ)
 all: sqlrelay.beam sqlrelay
 
 clean:
-	$(RM) *.lo *.o *.obj sqlrelay.erl sqlrelay *.beam *.lib *.exp *.idb *.pdb *.manifest *.ii
+	$(RM) *.lo *.o *.obj sqlrelay.erl sqlrelay.erl.out1 sqlrelay *.beam *.lib *.exp *.idb *.pdb *.manifest *.ii
 	$(RMTREE) .libs
 
 sqlrelay.erl: sqlrelay.erl.in
-	sed -e "s|@SQLRELAY_PATH@|$(ERLANG_ROOT_DIR)/lib/sqlrelay-$(SQLR_VERSION)/priv/bin|g" $< > $@
+	$(REPLACE) @SQLRELAY_PATH@ "$(ERLANG_ROOT_DIR)/lib/sqlrelay-$(SQLR_VERSION)/priv/bin" $< > $@.out1
+	$(MV) $@.out1 $@
 
 sqlrelay.beam: sqlrelay.erl
 	$(ERLC) $(ERLCFLAGS) -W $<
