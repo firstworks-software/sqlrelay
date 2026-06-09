@@ -117,10 +117,7 @@
 		SQL_ATTR_APP_WCHAR_TYPE, SQL_ATTR_APP_UNICODE_TYPE, and
 		SQL_ATTR_DRIVER_UNICODE_TYPE environment attributes, returning
 		their values as a SQLPOINTER
-	fixed a client hang when openCachedResultSet() read back a cache file
-		written for a query that errored - cacheError() now caches a
-		valid empty result set instead of bytes the reader misread as
-		an error and then blocked on the server waiting for
+	fixed sqlrclient cacheError() bug - missing END_COLUMN_INFO
 
 2.1.1 - added tns_admin support
 	fixed sqlr-start ... -strace ...
