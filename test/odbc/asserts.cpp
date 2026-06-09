@@ -2,6 +2,7 @@
 // See the file COPYING for more information.
 
 #include <rudiments/charstring.h>
+#include <rudiments/regularexpression.h>
 #include <rudiments/stdio.h>
 
 int status=0;
@@ -203,16 +204,7 @@ void assertContainsVersionDbc(SQLHDBC dbc, const char *value) {
 	// succeeds if the value contains a version number - a digit, a dot,
 	// and a digit ("#.#") anywhere (bare version or banner both pass;
 	// empty/text-only fails)
-	bool	found=false;
-	for (const char *c=value; c && *c && *(c+1) && *(c+2); c++) {
-		if (*c>='0' && *c<='9' &&
-				*(c+1)=='.' &&
-				*(c+2)>='0' && *(c+2)<='9') {
-			found=true;
-			break;
-		}
-	}
-	if (found) {
+	if (regularexpression::match(value,"[0-9]\\.[0-9]")) {
 		stdoutput.printf("%s ",success);
 	} else {
 		stdoutput.printf("%s\n",failure);

@@ -171,18 +171,7 @@ class sqlrtest {
 		// succeeds if the value contains a version number - a digit, a
 		// dot, and a digit ("#.#") anywhere (bare version or banner both
 		// pass; empty/text-only fails)
-		boolean	found=false;
-		if (value!=null) {
-			for (int i=0; i+2<value.length(); i++) {
-				if (Character.isDigit(value.charAt(i)) &&
-					value.charAt(i+1)=='.' &&
-					Character.isDigit(value.charAt(i+2))) {
-					found=true;
-					break;
-				}
-			}
-		}
-		if (found) {
+		if (value!=null && value.matches(".*[0-9]\\.[0-9].*")) {
 			System.out.print(success+" ");
 		} else {
 			System.out.println(failure);
