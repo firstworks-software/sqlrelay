@@ -410,12 +410,11 @@
 	assertEqInt(sqlrcur_getColumnLength($cur,"testreal"),4);
 	assertEqInt(sqlrcur_getColumnLength($cur,4),8);
 	assertEqInt(sqlrcur_getColumnLength($cur,"testfloat"),8);
-	# these seem to fluctuate with every
-	# freetds release
-	#assertEqInt(sqlrcur_getColumnLength($cur,5),3);
-	#assertEqInt(sqlrcur_getColumnLength($cur,"testdecimal"),3);
-	#assertEqInt(sqlrcur_getColumnLength($cur,6),3);
-	#assertEqInt(sqlrcur_getColumnLength($cur,"testnumeric"),3);
+	# freetds reports the decimal/numeric display length as 35
+	assertEqInt(sqlrcur_getColumnLength($cur,5),35);
+	assertEqInt(sqlrcur_getColumnLength($cur,"testdecimal"),35);
+	assertEqInt(sqlrcur_getColumnLength($cur,6),35);
+	assertEqInt(sqlrcur_getColumnLength($cur,"testnumeric"),35);
 	assertEqInt(sqlrcur_getColumnLength($cur,7),8);
 	assertEqInt(sqlrcur_getColumnLength($cur,"testmoney"),8);
 	assertEqInt(sqlrcur_getColumnLength($cur,8),4);
@@ -424,11 +423,11 @@
 	assertEqInt(sqlrcur_getColumnLength($cur,"testdatetime"),8);
 	assertEqInt(sqlrcur_getColumnLength($cur,10),4);
 	assertEqInt(sqlrcur_getColumnLength($cur,"testsmalldatetime"),4);
-	# these seem to fluctuate too
-	#assertEqInt(sqlrcur_getColumnLength($cur,11),40);
-	#assertEqInt(sqlrcur_getColumnLength($cur,"testchar"),40);
-	#assertEqInt(sqlrcur_getColumnLength($cur,12),40);
-	#assertEqInt(sqlrcur_getColumnLength($cur,"testvarchar"),40);
+	# char(40)/varchar(40) report the declared length 40 (not multiplied)
+	assertEqInt(sqlrcur_getColumnLength($cur,11),40);
+	assertEqInt(sqlrcur_getColumnLength($cur,"testchar"),40);
+	assertEqInt(sqlrcur_getColumnLength($cur,12),40);
+	assertEqInt(sqlrcur_getColumnLength($cur,"testvarchar"),40);
 	assertEqInt(sqlrcur_getColumnLength($cur,13),1);
 	assertEqInt(sqlrcur_getColumnLength($cur,"testbit"),1);
 	echo("\n");
@@ -454,12 +453,11 @@
 	assertEqInt(sqlrcur_getLongest($cur,"testmoney"),6);
 	assertEqInt(sqlrcur_getLongest($cur,8),6);
 	assertEqInt(sqlrcur_getLongest($cur,"testsmallmoney"),6);
-	# datetime formatting fluctuates with
-	# every freetds release
-	#assertEqInt(sqlrcur_getLongest($cur,9),26);
-	#assertEqInt(sqlrcur_getLongest($cur,"testdatetime"),26);
-	#assertEqInt(sqlrcur_getLongest($cur,10),26);
-	#assertEqInt(sqlrcur_getLongest($cur,"testsmalldatetime"),26);
+	# freetds datetime rendering for the fixture tds version
+	assertEqInt(sqlrcur_getLongest($cur,9),26);
+	assertEqInt(sqlrcur_getLongest($cur,"testdatetime"),26);
+	assertEqInt(sqlrcur_getLongest($cur,10),26);
+	assertEqInt(sqlrcur_getLongest($cur,"testsmalldatetime"),26);
 	assertEqInt(sqlrcur_getLongest($cur,11),40);
 	assertEqInt(sqlrcur_getLongest($cur,"testchar"),40);
 	assertEqInt(sqlrcur_getLongest($cur,12),12);
@@ -504,12 +502,11 @@
 	assertEqStr(sqlrcur_getField($cur,0,6),"1.5");
 	assertEqStr(sqlrcur_getField($cur,0,7),"1.0000");
 	assertEqStr(sqlrcur_getField($cur,0,8),"1.0000");
-	# datetime formatting fluctuates with
-	# every freetds release
-	#assertEqStr(sqlrcur_getField($cur,0,9),
-	#	"Jan  1 2001 01:00:00:000AM");
-	#assertEqStr(sqlrcur_getField($cur,0,10),
-	#	"Jan  1 2001 01:00:00:000AM");
+	# freetds datetime rendering for the fixture tds version
+	assertEqStr(sqlrcur_getField($cur,0,9),
+		"Jan  1 2001 01:00:00:000AM");
+	assertEqStr(sqlrcur_getField($cur,0,10),
+		"Jan  1 2001 01:00:00:000AM");
 	assertEqStr(sqlrcur_getField($cur,0,11),"testchar1".
 		"                               ");
 	assertEqStr(sqlrcur_getField($cur,0,12),"testvarchar1");
@@ -524,12 +521,11 @@
 	assertEqStr(sqlrcur_getField($cur,7,6),"8.5");
 	assertEqStr(sqlrcur_getField($cur,7,7),"8.0000");
 	assertEqStr(sqlrcur_getField($cur,7,8),"8.0000");
-	# datetime formatting fluctuates with
-	# every freetds release
-	#assertEqStr(sqlrcur_getField($cur,7,9),
-	#	"Jan  1 2008 08:00:00:000AM");
-	#assertEqStr(sqlrcur_getField($cur,7,10),
-	#	"Jan  1 2008 08:00:00:000AM");
+	# freetds datetime rendering for the fixture tds version
+	assertEqStr(sqlrcur_getField($cur,7,9),
+		"Jan  1 2008 08:00:00:000AM");
+	assertEqStr(sqlrcur_getField($cur,7,10),
+		"Jan  1 2008 08:00:00:000AM");
 	assertEqStr(sqlrcur_getField($cur,7,11),"testchar8".
 		"                               ");
 	assertEqStr(sqlrcur_getField($cur,7,12),"testvarchar8");
@@ -548,10 +544,9 @@
 	assertEqInt(sqlrcur_getFieldLength($cur,0,6),3);
 	assertEqInt(sqlrcur_getFieldLength($cur,0,7),6);
 	assertEqInt(sqlrcur_getFieldLength($cur,0,8),6);
-	# datetime formatting fluctuates with
-	# every freetds release
-	#assertEqInt(sqlrcur_getFieldLength($cur,0,9),26);
-	#assertEqInt(sqlrcur_getFieldLength($cur,0,10),26);
+	# freetds datetime rendering for the fixture tds version
+	assertEqInt(sqlrcur_getFieldLength($cur,0,9),26);
+	assertEqInt(sqlrcur_getFieldLength($cur,0,10),26);
 	assertEqInt(sqlrcur_getFieldLength($cur,0,11),40);
 	assertEqInt(sqlrcur_getFieldLength($cur,0,12),12);
 	assertEqInt(sqlrcur_getFieldLength($cur,0,13),1);
@@ -565,10 +560,9 @@
 	assertEqInt(sqlrcur_getFieldLength($cur,7,6),3);
 	assertEqInt(sqlrcur_getFieldLength($cur,7,7),6);
 	assertEqInt(sqlrcur_getFieldLength($cur,7,8),6);
-	# datetime formatting fluctuates with
-	# every freetds release
-	#assertEqInt(sqlrcur_getFieldLength($cur,7,9),26);
-	#assertEqInt(sqlrcur_getFieldLength($cur,7,10),26);
+	# freetds datetime rendering for the fixture tds version
+	assertEqInt(sqlrcur_getFieldLength($cur,7,9),26);
+	assertEqInt(sqlrcur_getFieldLength($cur,7,10),26);
 	assertEqInt(sqlrcur_getFieldLength($cur,7,11),40);
 	assertEqInt(sqlrcur_getFieldLength($cur,7,12),12);
 	assertEqInt(sqlrcur_getFieldLength($cur,7,13),1);
@@ -586,12 +580,11 @@
 	assertEqStr(sqlrcur_getField($cur,0,"testnumeric"),"1.5");
 	assertEqStr(sqlrcur_getField($cur,0,"testmoney"),"1.0000");
 	assertEqStr(sqlrcur_getField($cur,0,"testsmallmoney"),"1.0000");
-	# datetime formatting fluctuates with
-	# every freetds release
-	#assertEqStr(sqlrcur_getField($cur,0,"testdatetime"),
-	#	"Jan  1 2001 01:00:00:000AM");
-	#assertEqStr(sqlrcur_getField($cur,0,"testsmalldatetime"),
-	#	"Jan  1 2001 01:00:00:000AM");
+	# freetds datetime rendering for the fixture tds version
+	assertEqStr(sqlrcur_getField($cur,0,"testdatetime"),
+		"Jan  1 2001 01:00:00:000AM");
+	assertEqStr(sqlrcur_getField($cur,0,"testsmalldatetime"),
+		"Jan  1 2001 01:00:00:000AM");
 	assertEqStr(sqlrcur_getField($cur,0,"testchar"),"testchar1".
 		"                               ");
 	assertEqStr(sqlrcur_getField($cur,0,"testvarchar"),"testvarchar1");
@@ -606,12 +599,11 @@
 	assertEqStr(sqlrcur_getField($cur,7,"testnumeric"),"8.5");
 	assertEqStr(sqlrcur_getField($cur,7,"testmoney"),"8.0000");
 	assertEqStr(sqlrcur_getField($cur,7,"testsmallmoney"),"8.0000");
-	# datetime formatting fluctuates with
-	# every freetds release
-	#assertEqStr(sqlrcur_getField($cur,7,"testdatetime"),
-	#	"Jan  1 2008 08:00:00:000AM");
-	#assertEqStr(sqlrcur_getField($cur,7,"testsmalldatetime"),
-	#	"Jan  1 2008 08:00:00:000AM");
+	# freetds datetime rendering for the fixture tds version
+	assertEqStr(sqlrcur_getField($cur,7,"testdatetime"),
+		"Jan  1 2008 08:00:00:000AM");
+	assertEqStr(sqlrcur_getField($cur,7,"testsmalldatetime"),
+		"Jan  1 2008 08:00:00:000AM");
 	assertEqStr(sqlrcur_getField($cur,7,"testchar"),"testchar8".
 		"                               ");
 	assertEqStr(sqlrcur_getField($cur,7,"testvarchar"),"testvarchar8");
@@ -630,11 +622,10 @@
 	assertEqInt(sqlrcur_getFieldLength($cur,0,"testnumeric"),3);
 	assertEqInt(sqlrcur_getFieldLength($cur,0,"testmoney"),6);
 	assertEqInt(sqlrcur_getFieldLength($cur,0,"testsmallmoney"),6);
-	# datetime formatting fluctuates with
-	# every freetds release
-	#assertEqInt(sqlrcur_getFieldLength($cur,0,"testdatetime"),26);
-	#assertEqInt(sqlrcur_getFieldLength($cur,0,"testsmalldatetime"),
-	#	26);
+	# freetds datetime rendering for the fixture tds version
+	assertEqInt(sqlrcur_getFieldLength($cur,0,"testdatetime"),26);
+	assertEqInt(sqlrcur_getFieldLength($cur,0,"testsmalldatetime"),
+		26);
 	assertEqInt(sqlrcur_getFieldLength($cur,0,"testchar"),40);
 	assertEqInt(sqlrcur_getFieldLength($cur,0,"testvarchar"),12);
 	assertEqInt(sqlrcur_getFieldLength($cur,0,"testbit"),1);
@@ -648,11 +639,10 @@
 	assertEqInt(sqlrcur_getFieldLength($cur,7,"testnumeric"),3);
 	assertEqInt(sqlrcur_getFieldLength($cur,7,"testmoney"),6);
 	assertEqInt(sqlrcur_getFieldLength($cur,7,"testsmallmoney"),6);
-	# datetime formatting fluctuates with
-	# every freetds release
-	#assertEqInt(sqlrcur_getFieldLength($cur,7,"testdatetime"),26);
-	#assertEqInt(sqlrcur_getFieldLength($cur,7,"testsmalldatetime"),
-	#	26);
+	# freetds datetime rendering for the fixture tds version
+	assertEqInt(sqlrcur_getFieldLength($cur,7,"testdatetime"),26);
+	assertEqInt(sqlrcur_getFieldLength($cur,7,"testsmalldatetime"),
+		26);
 	assertEqInt(sqlrcur_getFieldLength($cur,7,"testchar"),40);
 	assertEqInt(sqlrcur_getFieldLength($cur,7,"testvarchar"),12);
 	assertEqInt(sqlrcur_getFieldLength($cur,7,"testbit"),1);
@@ -671,10 +661,9 @@
 	assertEqStr($fields[6],"1.5");
 	assertEqStr($fields[7],"1.0000");
 	assertEqStr($fields[8],"1.0000");
-	# datetime formatting fluctuates with
-	# every freetds release
-	#assertEqStr($fields[9],"Jan  1 2001 01:00:00:000AM");
-	#assertEqStr($fields[10],"Jan  1 2001 01:00:00:000AM");
+	# freetds datetime rendering for the fixture tds version
+	assertEqStr($fields[9],"Jan  1 2001 01:00:00:000AM");
+	assertEqStr($fields[10],"Jan  1 2001 01:00:00:000AM");
 	assertEqStr($fields[11],"testchar1".
 		"                               ");
 	assertEqStr($fields[12],"testvarchar1");
@@ -694,10 +683,9 @@
 	assertEqInt($fieldlens[6],3);
 	assertEqInt($fieldlens[7],6);
 	assertEqInt($fieldlens[8],6);
-	# datetime formatting fluctuates with
-	# every freetds release
-	#assertEqInt($fieldlens[9],26);
-	#assertEqInt($fieldlens[10],26);
+	# freetds datetime rendering for the fixture tds version
+	assertEqInt($fieldlens[9],26);
+	assertEqInt($fieldlens[10],26);
 	assertEqInt($fieldlens[11],40);
 	assertEqInt($fieldlens[12],12);
 	assertEqInt($fieldlens[13],1);

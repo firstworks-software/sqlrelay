@@ -6387,7 +6387,7 @@ int main(int argc, char **argv) {
 	assertEqualStmt(stmt,(int)datatype,SQL_INTEGER);
 	assertEqualStmt(stmt,(int)colsize,10);
 	assertEqualStmt(stmt,(int)decdigits,0);
-	//assertEqualStmt(stmt,(int)nullable,SQL_NULLABLE);
+	assertEqualStmt(stmt,(int)nullable,SQL_NULLABLE);
 
 	// col 2: testfloat (double precision)
 	erg=SQLDescribeCol(stmt,2,colname,sizeof(colname),&colnamelen,
@@ -6404,7 +6404,7 @@ int main(int argc, char **argv) {
 		assertEqualStmt(stmt,(int)colsize,17);
 	}
 	assertEqualStmt(stmt,(int)decdigits,0);
-	//assertEqualStmt(stmt,(int)nullable,SQL_NULLABLE);
+	assertEqualStmt(stmt,(int)nullable,SQL_NULLABLE);
 
 	// col 3: testreal
 	erg=SQLDescribeCol(stmt,3,colname,sizeof(colname),&colnamelen,
@@ -6420,7 +6420,7 @@ int main(int argc, char **argv) {
 		assertEqualStmt(stmt,(int)colsize,9);
 	}
 	assertEqualStmt(stmt,(int)decdigits,0);
-	//assertEqualStmt(stmt,(int)nullable,SQL_NULLABLE);
+	assertEqualStmt(stmt,(int)nullable,SQL_NULLABLE);
 
 	// col 4: testsmallint
 	erg=SQLDescribeCol(stmt,4,colname,sizeof(colname),&colnamelen,
@@ -6431,7 +6431,7 @@ int main(int argc, char **argv) {
 	assertEqualStmt(stmt,(int)datatype,SQL_SMALLINT);
 	assertEqualStmt(stmt,(int)colsize,5);
 	assertEqualStmt(stmt,(int)decdigits,0);
-	//assertEqualStmt(stmt,(int)nullable,SQL_NULLABLE);
+	assertEqualStmt(stmt,(int)nullable,SQL_NULLABLE);
 
 	// col 5: testchar
 	erg=SQLDescribeCol(stmt,5,colname,sizeof(colname),&colnamelen,
@@ -6442,7 +6442,7 @@ int main(int argc, char **argv) {
 	assertEqualStmt(stmt,(int)datatype,SQL_CHAR);
 	assertEqualStmt(stmt,(int)colsize,40);
 	assertEqualStmt(stmt,(int)decdigits,0);
-	//assertEqualStmt(stmt,(int)nullable,SQL_NULLABLE);
+	assertEqualStmt(stmt,(int)nullable,SQL_NULLABLE);
 
 	// col 6: testvarchar
 	erg=SQLDescribeCol(stmt,6,colname,sizeof(colname),&colnamelen,
@@ -6453,7 +6453,7 @@ int main(int argc, char **argv) {
 	assertEqualStmt(stmt,(int)datatype,SQL_VARCHAR);
 	assertEqualStmt(stmt,(int)colsize,40);
 	assertEqualStmt(stmt,(int)decdigits,0);
-	//assertEqualStmt(stmt,(int)nullable,SQL_NULLABLE);
+	assertEqualStmt(stmt,(int)nullable,SQL_NULLABLE);
 
 	// col 7: testdate
 	erg=SQLDescribeCol(stmt,7,colname,sizeof(colname),&colnamelen,
@@ -6468,7 +6468,7 @@ int main(int argc, char **argv) {
 	#endif
 	assertEqualStmt(stmt,(int)colsize,10);
 	assertEqualStmt(stmt,(int)decdigits,0);
-	//assertEqualStmt(stmt,(int)nullable,SQL_NULLABLE);
+	assertEqualStmt(stmt,(int)nullable,SQL_NULLABLE);
 
 	// col 8: testtime
 	erg=SQLDescribeCol(stmt,8,colname,sizeof(colname),&colnamelen,
@@ -6490,7 +6490,7 @@ int main(int argc, char **argv) {
 		assertEqualStmt(stmt,(int)colsize,8);
 	}
 	assertEqualStmt(stmt,(int)decdigits,6);
-	//assertEqualStmt(stmt,(int)nullable,SQL_NULLABLE);
+	assertEqualStmt(stmt,(int)nullable,SQL_NULLABLE);
 
 	// col 9: testtimestamp
 	erg=SQLDescribeCol(stmt,9,colname,sizeof(colname),&colnamelen,
@@ -6505,7 +6505,7 @@ int main(int argc, char **argv) {
 	#endif
 	assertEqualStmt(stmt,(int)colsize,26);
 	assertEqualStmt(stmt,(int)decdigits,6);
-	//assertEqualStmt(stmt,(int)nullable,SQL_NULLABLE);
+	assertEqualStmt(stmt,(int)nullable,SQL_NULLABLE);
 
 	// col 10: testtext
 	erg=SQLDescribeCol(stmt,10,colname,sizeof(colname),&colnamelen,
@@ -6515,7 +6515,7 @@ int main(int argc, char **argv) {
 	assertEqualStmt(stmt,(int)colnamelen,8);
 	assertEqualStmt(stmt,(int)datatype,SQL_LONGVARCHAR);
 	assertEqualStmt(stmt,(int)decdigits,0);
-	//assertEqualStmt(stmt,(int)nullable,SQL_NULLABLE);
+	assertEqualStmt(stmt,(int)nullable,SQL_NULLABLE);
 
 	// col 11: testbytea
 	erg=SQLDescribeCol(stmt,11,colname,sizeof(colname),&colnamelen,
@@ -6525,7 +6525,7 @@ int main(int argc, char **argv) {
 	assertEqualStmt(stmt,(int)colnamelen,9);
 	assertEqualStmt(stmt,(int)datatype,SQL_LONGVARBINARY);
 	assertEqualStmt(stmt,(int)decdigits,0);
-	//assertEqualStmt(stmt,(int)nullable,SQL_NULLABLE);
+	assertEqualStmt(stmt,(int)nullable,SQL_NULLABLE);
 	stdoutput.printf("\n");
 
 

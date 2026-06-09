@@ -364,9 +364,10 @@ assertEqual [$cur getColumnLengthByIndex 8] 3
 assertEqual [$cur getColumnLengthByIndex 9] 3
 assertEqual [$cur getColumnLengthByIndex 10] 8
 assertEqual [$cur getColumnLengthByIndex 11] 1
-# these can be 120/121 if the db charset is utf8
-#assertEqual [$cur getColumnLengthByIndex 12] 40
-#assertEqual [$cur getColumnLengthByIndex 13] 41
+# testchar/testvarchar are char(40)/varchar(40); the connection charset
+# is utf8mb4 (4 bytes/char) so the lengths are 160/161
+assertEqual [$cur getColumnLengthByIndex 12] 160
+assertEqual [$cur getColumnLengthByIndex 13] 161
 assertEqual [$cur getColumnLengthByIndex 14] 65535
 assertEqual [$cur getColumnLengthByIndex 15] 255
 assertEqual [$cur getColumnLengthByIndex 16] 16777215
@@ -388,9 +389,10 @@ assertEqual [$cur getColumnLengthByName "testdate"] 3
 assertEqual [$cur getColumnLengthByName "testtime"] 3
 assertEqual [$cur getColumnLengthByName "testdatetime"] 8
 assertEqual [$cur getColumnLengthByName "testyear"] 1
-# these can be 120/121 if the db charset is utf8
-#assertEqual [$cur getColumnLengthByName "testchar"] 40
-#assertEqual [$cur getColumnLengthByName "testvarchar"] 41
+# testchar/testvarchar are char(40)/varchar(40); the connection charset
+# is utf8mb4 (4 bytes/char) so the lengths are 160/161
+assertEqual [$cur getColumnLengthByName "testchar"] 160
+assertEqual [$cur getColumnLengthByName "testvarchar"] 161
 assertEqual [$cur getColumnLengthByName "testtext"] 65535
 assertEqual [$cur getColumnLengthByName "testtinytext"] 255
 assertEqual [$cur getColumnLengthByName "testmediumtext"] 16777215

@@ -957,12 +957,10 @@ main() ->
     io:format("~n"),
 
     %% NULL AND EMPTY LOBS
-    %% Note: the Erlang inputBindBlob function requires a list Value, so
-    %% we cannot pass a true NULL. The empty string case is preserved;
-    %% the NULL case uses an empty string and expects the resulting
-    %% field to be the empty string or null (accepted by
-    %% assertEqualsString(..., null) when the server treats empties as
-    %% nulls for blobs).
+    %% the Erlang inputBindBlob function requires a list Value, so a true
+    %% NULL cannot be bound; the blob is bound as an empty string and
+    %% round-trips as an empty string (the true-NULL LOB case is
+    %% exercised by the c++ test)
     io:format("NULL AND EMPTY LOBS: ~n"),
     sqlrelay:getNullsAsNulls(),
     sqlrelay:sendQuery("delete from testtable1"),
@@ -976,7 +974,7 @@ main() ->
     sqlrelay:inputBindBlob("1", "", 0),
     assertTrue(sqlrelay:executeQuery()),
     sqlrelay:sendQuery("select testblob from testtable1"),
-    assertEqualsString(sqlrelay:getFieldByName(0, "TESTBLOB"), null),
+    assertEqualsString(sqlrelay:getFieldByName(0, "TESTBLOB"), ""),
     sqlrelay:getNullsAsEmptyStrings(),
     assertTrue(sqlrelay:sendQuery("delete from testtable1")),
     io:format("~n"),

@@ -413,11 +413,11 @@ namespace SQLRClientTest
             assertEquals(cur.getColumnLength("testreal"), (UInt32)4);
             assertEquals(cur.getColumnLength(4), (UInt32)8);
             assertEquals(cur.getColumnLength("testfloat"), (UInt32)8);
-            // these seem to fluctuate with every freetds release
-            //assertEquals(cur.getColumnLength(5),(UInt32)3);
-            //assertEquals(cur.getColumnLength("testdecimal"),(UInt32)3);
-            //assertEquals(cur.getColumnLength(6),(UInt32)3);
-            //assertEquals(cur.getColumnLength("testnumeric"),(UInt32)3);
+            // freetds reports the decimal/numeric display length as 35
+            assertEquals(cur.getColumnLength(5),(UInt32)35);
+            assertEquals(cur.getColumnLength("testdecimal"),(UInt32)35);
+            assertEquals(cur.getColumnLength(6),(UInt32)35);
+            assertEquals(cur.getColumnLength("testnumeric"),(UInt32)35);
             assertEquals(cur.getColumnLength(7), (UInt32)8);
             assertEquals(cur.getColumnLength("testmoney"), (UInt32)8);
             assertEquals(cur.getColumnLength(8), (UInt32)4);
@@ -426,11 +426,11 @@ namespace SQLRClientTest
             assertEquals(cur.getColumnLength("testdatetime"), (UInt32)8);
             assertEquals(cur.getColumnLength(10), (UInt32)4);
             assertEquals(cur.getColumnLength("testsmalldatetime"), (UInt32)4);
-            // these seem to fluctuate too
-            //assertEquals(cur.getColumnLength(11),(UInt32)40);
-            //assertEquals(cur.getColumnLength("testchar"),(UInt32)40);
-            //assertEquals(cur.getColumnLength(12),(UInt32)40);
-            //assertEquals(cur.getColumnLength("testvarchar"),(UInt32)40);
+            // char(40)/varchar(40) report the declared length 40 (not multiplied)
+            assertEquals(cur.getColumnLength(11),(UInt32)40);
+            assertEquals(cur.getColumnLength("testchar"),(UInt32)40);
+            assertEquals(cur.getColumnLength(12),(UInt32)40);
+            assertEquals(cur.getColumnLength("testvarchar"),(UInt32)40);
             assertEquals(cur.getColumnLength(13), (UInt32)1);
             assertEquals(cur.getColumnLength("testbit"), (UInt32)1);
             Console.WriteLine("");
@@ -456,11 +456,11 @@ namespace SQLRClientTest
             assertEquals(cur.getLongest("testmoney"), (UInt32)6);
             assertEquals(cur.getLongest(8), (UInt32)6);
             assertEquals(cur.getLongest("testsmallmoney"), (UInt32)6);
-            // datetime formatting fluctuates with every freetds release
-            //assertEquals(cur.getLongest(9),(UInt32)26);
-            //assertEquals(cur.getLongest("testdatetime"),(UInt32)26);
-            //assertEquals(cur.getLongest(10),(UInt32)26);
-            //assertEquals(cur.getLongest("testsmalldatetime"),(UInt32)26);
+            // freetds datetime rendering for the fixture tds version
+            assertEquals(cur.getLongest(9),(UInt32)26);
+            assertEquals(cur.getLongest("testdatetime"),(UInt32)26);
+            assertEquals(cur.getLongest(10),(UInt32)26);
+            assertEquals(cur.getLongest("testsmalldatetime"),(UInt32)26);
             assertEquals(cur.getLongest(11), (UInt32)40);
             assertEquals(cur.getLongest("testchar"), (UInt32)40);
             assertEquals(cur.getLongest(12), (UInt32)12);
@@ -505,9 +505,9 @@ namespace SQLRClientTest
             assertEquals(cur.getField((UInt64)0, (UInt32)6), "1.5");
             assertEquals(cur.getField((UInt64)0, (UInt32)7), "1.0000");
             assertEquals(cur.getField((UInt64)0, (UInt32)8), "1.0000");
-            // datetime formatting fluctuates with every freetds release
-            //assertEquals(cur.getField((UInt64)0,(UInt32)9),"Jan  1 2001 01:00:00:000AM");
-            //assertEquals(cur.getField((UInt64)0,(UInt32)10),"Jan  1 2001 01:00:00:000AM");
+            // freetds datetime rendering for the fixture tds version
+            assertEquals(cur.getField((UInt64)0,(UInt32)9),"Jan  1 2001 01:00:00:000AM");
+            assertEquals(cur.getField((UInt64)0,(UInt32)10),"Jan  1 2001 01:00:00:000AM");
             assertEquals(cur.getField((UInt64)0, (UInt32)11), "testchar1                               ");
             assertEquals(cur.getField((UInt64)0, (UInt32)12), "testvarchar1");
             assertEquals(cur.getField((UInt64)0, (UInt32)13), "1");
@@ -521,9 +521,9 @@ namespace SQLRClientTest
             assertEquals(cur.getField((UInt64)7, (UInt32)6), "8.5");
             assertEquals(cur.getField((UInt64)7, (UInt32)7), "8.0000");
             assertEquals(cur.getField((UInt64)7, (UInt32)8), "8.0000");
-            // datetime formatting fluctuates with every freetds release
-            //assertEquals(cur.getField((UInt64)7,(UInt32)9),"Jan  1 2008 08:00:00:000AM");
-            //assertEquals(cur.getField((UInt64)7,(UInt32)10),"Jan  1 2008 08:00:00:000AM");
+            // freetds datetime rendering for the fixture tds version
+            assertEquals(cur.getField((UInt64)7,(UInt32)9),"Jan  1 2008 08:00:00:000AM");
+            assertEquals(cur.getField((UInt64)7,(UInt32)10),"Jan  1 2008 08:00:00:000AM");
             assertEquals(cur.getField((UInt64)7, (UInt32)11), "testchar8                               ");
             assertEquals(cur.getField((UInt64)7, (UInt32)12), "testvarchar8");
             assertEquals(cur.getField((UInt64)7, (UInt32)13), "1");
@@ -541,9 +541,9 @@ namespace SQLRClientTest
             assertEquals(cur.getFieldLength((UInt64)0, (UInt32)6), (UInt32)3);
             assertEquals(cur.getFieldLength((UInt64)0, (UInt32)7), (UInt32)6);
             assertEquals(cur.getFieldLength((UInt64)0, (UInt32)8), (UInt32)6);
-            // datetime formatting fluctuates with every freetds release
-            //assertEquals(cur.getFieldLength((UInt64)0,(UInt32)9),(UInt32)26);
-            //assertEquals(cur.getFieldLength((UInt64)0,(UInt32)10),(UInt32)26);
+            // freetds datetime rendering for the fixture tds version
+            assertEquals(cur.getFieldLength((UInt64)0,(UInt32)9),(UInt32)26);
+            assertEquals(cur.getFieldLength((UInt64)0,(UInt32)10),(UInt32)26);
             assertEquals(cur.getFieldLength((UInt64)0, (UInt32)11), (UInt32)40);
             assertEquals(cur.getFieldLength((UInt64)0, (UInt32)12), (UInt32)12);
             assertEquals(cur.getFieldLength((UInt64)0, (UInt32)13), (UInt32)1);
@@ -557,9 +557,9 @@ namespace SQLRClientTest
             assertEquals(cur.getFieldLength((UInt64)7, (UInt32)6), (UInt32)3);
             assertEquals(cur.getFieldLength((UInt64)7, (UInt32)7), (UInt32)6);
             assertEquals(cur.getFieldLength((UInt64)7, (UInt32)8), (UInt32)6);
-            // datetime formatting fluctuates with every freetds release
-            //assertEquals(cur.getFieldLength((UInt64)7,(UInt32)9),(UInt32)26);
-            //assertEquals(cur.getFieldLength((UInt64)7,(UInt32)10),(UInt32)26);
+            // freetds datetime rendering for the fixture tds version
+            assertEquals(cur.getFieldLength((UInt64)7,(UInt32)9),(UInt32)26);
+            assertEquals(cur.getFieldLength((UInt64)7,(UInt32)10),(UInt32)26);
             assertEquals(cur.getFieldLength((UInt64)7, (UInt32)11), (UInt32)40);
             assertEquals(cur.getFieldLength((UInt64)7, (UInt32)12), (UInt32)12);
             assertEquals(cur.getFieldLength((UInt64)7, (UInt32)13), (UInt32)1);
@@ -577,9 +577,9 @@ namespace SQLRClientTest
             assertEquals(cur.getField((UInt64)0, "testnumeric"), "1.5");
             assertEquals(cur.getField((UInt64)0, "testmoney"), "1.0000");
             assertEquals(cur.getField((UInt64)0, "testsmallmoney"), "1.0000");
-            // datetime formatting fluctuates with every freetds release
-            //assertEquals(cur.getField((UInt64)0,"testdatetime"),"Jan  1 2001 01:00:00:000AM");
-            //assertEquals(cur.getField((UInt64)0,"testsmalldatetime"),"Jan  1 2001 01:00:00:000AM");
+            // freetds datetime rendering for the fixture tds version
+            assertEquals(cur.getField((UInt64)0,"testdatetime"),"Jan  1 2001 01:00:00:000AM");
+            assertEquals(cur.getField((UInt64)0,"testsmalldatetime"),"Jan  1 2001 01:00:00:000AM");
             assertEquals(cur.getField((UInt64)0, "testchar"), "testchar1                               ");
             assertEquals(cur.getField((UInt64)0, "testvarchar"), "testvarchar1");
             assertEquals(cur.getField((UInt64)0, "testbit"), "1");
@@ -593,9 +593,9 @@ namespace SQLRClientTest
             assertEquals(cur.getField((UInt64)7, "testnumeric"), "8.5");
             assertEquals(cur.getField((UInt64)7, "testmoney"), "8.0000");
             assertEquals(cur.getField((UInt64)7, "testsmallmoney"), "8.0000");
-            // datetime formatting fluctuates with every freetds release
-            //assertEquals(cur.getField((UInt64)7,"testdatetime"),"Jan  1 2008 08:00:00:000AM");
-            //assertEquals(cur.getField((UInt64)7,"testsmalldatetime"),"Jan  1 2008 08:00:00:000AM");
+            // freetds datetime rendering for the fixture tds version
+            assertEquals(cur.getField((UInt64)7,"testdatetime"),"Jan  1 2008 08:00:00:000AM");
+            assertEquals(cur.getField((UInt64)7,"testsmalldatetime"),"Jan  1 2008 08:00:00:000AM");
             assertEquals(cur.getField((UInt64)7, "testchar"), "testchar8                               ");
             assertEquals(cur.getField((UInt64)7, "testvarchar"), "testvarchar8");
             assertEquals(cur.getField((UInt64)7, "testbit"), "1");
@@ -613,9 +613,9 @@ namespace SQLRClientTest
             assertEquals(cur.getFieldLength((UInt64)0, "testnumeric"), (UInt32)3);
             assertEquals(cur.getFieldLength((UInt64)0, "testmoney"), (UInt32)6);
             assertEquals(cur.getFieldLength((UInt64)0, "testsmallmoney"), (UInt32)6);
-            // datetime formatting fluctuates with every freetds release
-            //assertEquals(cur.getFieldLength((UInt64)0,"testdatetime"),(UInt32)26);
-            //assertEquals(cur.getFieldLength((UInt64)0,"testsmalldatetime"),(UInt32)26);
+            // freetds datetime rendering for the fixture tds version
+            assertEquals(cur.getFieldLength((UInt64)0,"testdatetime"),(UInt32)26);
+            assertEquals(cur.getFieldLength((UInt64)0,"testsmalldatetime"),(UInt32)26);
             assertEquals(cur.getFieldLength((UInt64)0, "testchar"), (UInt32)40);
             assertEquals(cur.getFieldLength((UInt64)0, "testvarchar"), (UInt32)12);
             assertEquals(cur.getFieldLength((UInt64)0, "testbit"), (UInt32)1);
@@ -629,9 +629,9 @@ namespace SQLRClientTest
             assertEquals(cur.getFieldLength((UInt64)7, "testnumeric"), (UInt32)3);
             assertEquals(cur.getFieldLength((UInt64)7, "testmoney"), (UInt32)6);
             assertEquals(cur.getFieldLength((UInt64)7, "testsmallmoney"), (UInt32)6);
-            // datetime formatting fluctuates with every freetds release
-            //assertEquals(cur.getFieldLength((UInt64)7,"testdatetime"),(UInt32)26);
-            //assertEquals(cur.getFieldLength((UInt64)7,"testsmalldatetime"),(UInt32)26);
+            // freetds datetime rendering for the fixture tds version
+            assertEquals(cur.getFieldLength((UInt64)7,"testdatetime"),(UInt32)26);
+            assertEquals(cur.getFieldLength((UInt64)7,"testsmalldatetime"),(UInt32)26);
             assertEquals(cur.getFieldLength((UInt64)7, "testchar"), (UInt32)40);
             assertEquals(cur.getFieldLength((UInt64)7, "testvarchar"), (UInt32)12);
             assertEquals(cur.getFieldLength((UInt64)7, "testbit"), (UInt32)1);
@@ -650,9 +650,9 @@ namespace SQLRClientTest
             assertEquals(fields[6], "1.5");
             assertEquals(fields[7], "1.0000");
             assertEquals(fields[8], "1.0000");
-            // datetime formatting fluctuates with every freetds release
-            //assertEquals(fields[9],"Jan  1 2001 01:00:00:000AM");
-            //assertEquals(fields[10],"Jan  1 2001 01:00:00:000AM");
+            // freetds datetime rendering for the fixture tds version
+            assertEquals(fields[9],"Jan  1 2001 01:00:00:000AM");
+            assertEquals(fields[10],"Jan  1 2001 01:00:00:000AM");
             assertEquals(fields[11], "testchar1                               ");
             assertEquals(fields[12], "testvarchar1");
             assertEquals(fields[13], "1");
@@ -671,9 +671,9 @@ namespace SQLRClientTest
             assertEquals(fieldlens[6], (UInt32)3);
             assertEquals(fieldlens[7], (UInt32)6);
             assertEquals(fieldlens[8], (UInt32)6);
-            // datetime formatting fluctuates with every freetds release
-            //assertEquals(fieldlens[9],(UInt32)26);
-            //assertEquals(fieldlens[10],(UInt32)26);
+            // freetds datetime rendering for the fixture tds version
+            assertEquals(fieldlens[9],(UInt32)26);
+            assertEquals(fieldlens[10],(UInt32)26);
             assertEquals(fieldlens[11], (UInt32)40);
             assertEquals(fieldlens[12], (UInt32)12);
             assertEquals(fieldlens[13], (UInt32)1);

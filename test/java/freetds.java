@@ -429,17 +429,17 @@ class freetds extends sqlrtest {
 		assertEquals(cur.getColumnLength("testreal"),4);
 		assertEquals(cur.getColumnLength(4),8);
 		assertEquals(cur.getColumnLength("testfloat"),8);
-		// these seem to fluctuate with every freetds release
-		//assertEquals(
-		//	cur.getColumnLength(5),3);
-		//assertEquals(
-		//	cur.getColumnLength(
-		//		"testdecimal"),3);
-		//assertEquals(
-		//	cur.getColumnLength(6),3);
-		//assertEquals(
-		//	cur.getColumnLength(
-		//		"testnumeric"),3);
+		// freetds reports the decimal/numeric display length as 35
+		assertEquals(
+			cur.getColumnLength(5),35);
+		assertEquals(
+			cur.getColumnLength(
+				"testdecimal"),35);
+		assertEquals(
+			cur.getColumnLength(6),35);
+		assertEquals(
+			cur.getColumnLength(
+				"testnumeric"),35);
 		assertEquals(cur.getColumnLength(7),8);
 		assertEquals(cur.getColumnLength("testmoney"),8);
 		assertEquals(cur.getColumnLength(8),4);
@@ -448,17 +448,17 @@ class freetds extends sqlrtest {
 		assertEquals(cur.getColumnLength("testdatetime"),8);
 		assertEquals(cur.getColumnLength(10),4);
 		assertEquals(cur.getColumnLength("testsmalldatetime"),4);
-		// these seem to fluctuate too
-		//assertEquals(
-		//	cur.getColumnLength(11),40);
-		//assertEquals(
-		//	cur.getColumnLength(
-		//		"testchar"),40);
-		//assertEquals(
-		//	cur.getColumnLength(12),40);
-		//assertEquals(
-		//	cur.getColumnLength(
-		//		"testvarchar"),40);
+		// char(40)/varchar(40) report the declared length 40 (not multiplied)
+		assertEquals(
+			cur.getColumnLength(11),40);
+		assertEquals(
+			cur.getColumnLength(
+				"testchar"),40);
+		assertEquals(
+			cur.getColumnLength(12),40);
+		assertEquals(
+			cur.getColumnLength(
+				"testvarchar"),40);
 		assertEquals(cur.getColumnLength(13),1);
 		assertEquals(cur.getColumnLength("testbit"),1);
 		System.out.println();
@@ -484,15 +484,15 @@ class freetds extends sqlrtest {
 		assertEquals(cur.getLongest("testmoney"),6);
 		assertEquals(cur.getLongest(8),6);
 		assertEquals(cur.getLongest("testsmallmoney"),6);
-		// datetime formatting fluctuates with every freetds release
-		//assertEquals(cur.getLongest(9),26);
-		//assertEquals(
-		//	cur.getLongest("testdatetime"),
-		//	26);
-		//assertEquals(cur.getLongest(10),26);
-		//assertEquals(
-		//	cur.getLongest(
-		//		"testsmalldatetime"),26);
+		// freetds datetime rendering for the fixture tds version
+		assertEquals(cur.getLongest(9),26);
+		assertEquals(
+			cur.getLongest("testdatetime"),
+			26);
+		assertEquals(cur.getLongest(10),26);
+		assertEquals(
+			cur.getLongest(
+				"testsmalldatetime"),26);
 		assertEquals(cur.getLongest(11),40);
 		assertEquals(cur.getLongest("testchar"),40);
 		assertEquals(cur.getLongest(12),12);
@@ -537,11 +537,11 @@ class freetds extends sqlrtest {
 		assertEquals(cur.getField(0,6),"1.5");
 		assertEquals(cur.getField(0,7),"1.0000");
 		assertEquals(cur.getField(0,8),"1.0000");
-		// datetime formatting fluctuates with every freetds release
-		//assertEquals(cur.getField(0,9),
-		//	"Jan  1 2001 01:00:00:000AM");
-		//assertEquals(cur.getField(0,10),
-		//	"Jan  1 2001 01:00:00:000AM");
+		// freetds datetime rendering for the fixture tds version
+		assertEquals(cur.getField(0,9),
+			"Jan  1 2001 01:00:00:000AM");
+		assertEquals(cur.getField(0,10),
+			"Jan  1 2001 01:00:00:000AM");
 		assertEquals(cur.getField(0,11),"testchar1"+
 					"                               ");
 		assertEquals(cur.getField(0,12),"testvarchar1");
@@ -556,11 +556,11 @@ class freetds extends sqlrtest {
 		assertEquals(cur.getField(7,6),"8.5");
 		assertEquals(cur.getField(7,7),"8.0000");
 		assertEquals(cur.getField(7,8),"8.0000");
-		// datetime formatting fluctuates with every freetds release
-		//assertEquals(cur.getField(7,9),
-		//	"Jan  1 2008 08:00:00:000AM");
-		//assertEquals(cur.getField(7,10),
-		//	"Jan  1 2008 08:00:00:000AM");
+		// freetds datetime rendering for the fixture tds version
+		assertEquals(cur.getField(7,9),
+			"Jan  1 2008 08:00:00:000AM");
+		assertEquals(cur.getField(7,10),
+			"Jan  1 2008 08:00:00:000AM");
 		assertEquals(cur.getField(7,11),"testchar8"+
 					"                               ");
 		assertEquals(cur.getField(7,12),"testvarchar8");
@@ -579,11 +579,11 @@ class freetds extends sqlrtest {
 		assertEquals(cur.getFieldLength(0,6),3);
 		assertEquals(cur.getFieldLength(0,7),6);
 		assertEquals(cur.getFieldLength(0,8),6);
-		// datetime formatting fluctuates with every freetds release
-		//assertEquals(
-		//	cur.getFieldLength(0,9),26);
-		//assertEquals(
-		//	cur.getFieldLength(0,10),26);
+		// freetds datetime rendering for the fixture tds version
+		assertEquals(
+			cur.getFieldLength(0,9),26);
+		assertEquals(
+			cur.getFieldLength(0,10),26);
 		assertEquals(cur.getFieldLength(0,11),40);
 		assertEquals(cur.getFieldLength(0,12),12);
 		assertEquals(cur.getFieldLength(0,13),1);
@@ -597,11 +597,11 @@ class freetds extends sqlrtest {
 		assertEquals(cur.getFieldLength(7,6),3);
 		assertEquals(cur.getFieldLength(7,7),6);
 		assertEquals(cur.getFieldLength(7,8),6);
-		// datetime formatting fluctuates with every freetds release
-		//assertEquals(
-		//	cur.getFieldLength(7,9),26);
-		//assertEquals(
-		//	cur.getFieldLength(7,10),26);
+		// freetds datetime rendering for the fixture tds version
+		assertEquals(
+			cur.getFieldLength(7,9),26);
+		assertEquals(
+			cur.getFieldLength(7,10),26);
 		assertEquals(cur.getFieldLength(7,11),40);
 		assertEquals(cur.getFieldLength(7,12),12);
 		assertEquals(cur.getFieldLength(7,13),1);
@@ -619,14 +619,14 @@ class freetds extends sqlrtest {
 		assertEquals(cur.getField(0,"testnumeric"),"1.5");
 		assertEquals(cur.getField(0,"testmoney"),"1.0000");
 		assertEquals(cur.getField(0,"testsmallmoney"),"1.0000");
-		// datetime formatting fluctuates with every freetds release
-		//assertEquals(
-		//	cur.getField(0,"testdatetime"),
-		//	"Jan  1 2001 01:00:00:000AM");
-		//assertEquals(
-		//	cur.getField(0,
-		//		"testsmalldatetime"),
-		//	"Jan  1 2001 01:00:00:000AM");
+		// freetds datetime rendering for the fixture tds version
+		assertEquals(
+			cur.getField(0,"testdatetime"),
+			"Jan  1 2001 01:00:00:000AM");
+		assertEquals(
+			cur.getField(0,
+				"testsmalldatetime"),
+			"Jan  1 2001 01:00:00:000AM");
 		assertEquals(cur.getField(0,"testchar"),"testchar1"+
 					"                               ");
 		assertEquals(cur.getField(0,"testvarchar"),"testvarchar1");
@@ -641,14 +641,14 @@ class freetds extends sqlrtest {
 		assertEquals(cur.getField(7,"testnumeric"),"8.5");
 		assertEquals(cur.getField(7,"testmoney"),"8.0000");
 		assertEquals(cur.getField(7,"testsmallmoney"),"8.0000");
-		// datetime formatting fluctuates with every freetds release
-		//assertEquals(
-		//	cur.getField(7,"testdatetime"),
-		//	"Jan  1 2008 08:00:00:000AM");
-		//assertEquals(
-		//	cur.getField(7,
-		//		"testsmalldatetime"),
-		//	"Jan  1 2008 08:00:00:000AM");
+		// freetds datetime rendering for the fixture tds version
+		assertEquals(
+			cur.getField(7,"testdatetime"),
+			"Jan  1 2008 08:00:00:000AM");
+		assertEquals(
+			cur.getField(7,
+				"testsmalldatetime"),
+			"Jan  1 2008 08:00:00:000AM");
 		assertEquals(cur.getField(7,"testchar"),"testchar8"+
 					"                               ");
 		assertEquals(cur.getField(7,"testvarchar"),"testvarchar8");
@@ -667,14 +667,14 @@ class freetds extends sqlrtest {
 		assertEquals(cur.getFieldLength(0,"testnumeric"),3);
 		assertEquals(cur.getFieldLength(0,"testmoney"),6);
 		assertEquals(cur.getFieldLength(0,"testsmallmoney"),6);
-		// datetime formatting fluctuates with every freetds release
-		//assertEquals(
-		//	cur.getFieldLength(0,
-		//		"testdatetime"),26);
-		//assertEquals(
-		//	cur.getFieldLength(0,
-		//		"testsmalldatetime"),
-		//	26);
+		// freetds datetime rendering for the fixture tds version
+		assertEquals(
+			cur.getFieldLength(0,
+				"testdatetime"),26);
+		assertEquals(
+			cur.getFieldLength(0,
+				"testsmalldatetime"),
+			26);
 		assertEquals(cur.getFieldLength(0,"testchar"),40);
 		assertEquals(cur.getFieldLength(0,"testvarchar"),12);
 		assertEquals(cur.getFieldLength(0,"testbit"),1);
@@ -688,14 +688,14 @@ class freetds extends sqlrtest {
 		assertEquals(cur.getFieldLength(7,"testnumeric"),3);
 		assertEquals(cur.getFieldLength(7,"testmoney"),6);
 		assertEquals(cur.getFieldLength(7,"testsmallmoney"),6);
-		// datetime formatting fluctuates with every freetds release
-		//assertEquals(
-		//	cur.getFieldLength(7,
-		//		"testdatetime"),26);
-		//assertEquals(
-		//	cur.getFieldLength(7,
-		//		"testsmalldatetime"),
-		//	26);
+		// freetds datetime rendering for the fixture tds version
+		assertEquals(
+			cur.getFieldLength(7,
+				"testdatetime"),26);
+		assertEquals(
+			cur.getFieldLength(7,
+				"testsmalldatetime"),
+			26);
 		assertEquals(cur.getFieldLength(7,"testchar"),40);
 		assertEquals(cur.getFieldLength(7,"testvarchar"),12);
 		assertEquals(cur.getFieldLength(7,"testbit"),1);
@@ -714,11 +714,11 @@ class freetds extends sqlrtest {
 		assertEquals(fields[6],"1.5");
 		assertEquals(fields[7],"1.0000");
 		assertEquals(fields[8],"1.0000");
-		// datetime formatting fluctuates with every freetds release
-		//assertEquals(fields[9],
-		//	"Jan  1 2001 01:00:00:000AM");
-		//assertEquals(fields[10],
-		//	"Jan  1 2001 01:00:00:000AM");
+		// freetds datetime rendering for the fixture tds version
+		assertEquals(fields[9],
+			"Jan  1 2001 01:00:00:000AM");
+		assertEquals(fields[10],
+			"Jan  1 2001 01:00:00:000AM");
 		assertEquals(fields[11],"testchar1"+
 					"                               ");
 		assertEquals(fields[12],"testvarchar1");
@@ -738,9 +738,9 @@ class freetds extends sqlrtest {
 		assertEquals(fieldlens[6],3);
 		assertEquals(fieldlens[7],6);
 		assertEquals(fieldlens[8],6);
-		// datetime formatting fluctuates with every freetds release
-		//assertEquals(fieldlens[9],26);
-		//assertEquals(fieldlens[10],26);
+		// freetds datetime rendering for the fixture tds version
+		assertEquals(fieldlens[9],26);
+		assertEquals(fieldlens[10],26);
 		assertEquals(fieldlens[11],40);
 		assertEquals(fieldlens[12],12);
 		assertEquals(fieldlens[13],1);

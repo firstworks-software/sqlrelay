@@ -329,11 +329,11 @@ assertEqual [$cur getColumnLengthByIndex 3] 4
 assertEqual [$cur getColumnLengthByName "testreal"] 4
 assertEqual [$cur getColumnLengthByIndex 4] 8
 assertEqual [$cur getColumnLengthByName "testfloat"] 8
-# these seem to fluctuate with every freetds release
-#assertEqual [$cur getColumnLengthByIndex 5] 3
-#assertEqual [$cur getColumnLengthByName "testdecimal"] 3
-#assertEqual [$cur getColumnLengthByIndex 6] 3
-#assertEqual [$cur getColumnLengthByName "testnumeric"] 3
+# freetds reports the decimal/numeric display length as 35
+assertEqual [$cur getColumnLengthByIndex 5] 35
+assertEqual [$cur getColumnLengthByName "testdecimal"] 35
+assertEqual [$cur getColumnLengthByIndex 6] 35
+assertEqual [$cur getColumnLengthByName "testnumeric"] 35
 assertEqual [$cur getColumnLengthByIndex 7] 8
 assertEqual [$cur getColumnLengthByName "testmoney"] 8
 assertEqual [$cur getColumnLengthByIndex 8] 4
@@ -342,11 +342,11 @@ assertEqual [$cur getColumnLengthByIndex 9] 8
 assertEqual [$cur getColumnLengthByName "testdatetime"] 8
 assertEqual [$cur getColumnLengthByIndex 10] 4
 assertEqual [$cur getColumnLengthByName "testsmalldatetime"] 4
-# these seem to fluctuate too
-#assertEqual [$cur getColumnLengthByIndex 11] 40
-#assertEqual [$cur getColumnLengthByName "testchar"] 40
-#assertEqual [$cur getColumnLengthByIndex 12] 40
-#assertEqual [$cur getColumnLengthByName "testvarchar"] 40
+# char(40)/varchar(40) report the declared length 40 (not multiplied)
+assertEqual [$cur getColumnLengthByIndex 11] 40
+assertEqual [$cur getColumnLengthByName "testchar"] 40
+assertEqual [$cur getColumnLengthByIndex 12] 40
+assertEqual [$cur getColumnLengthByName "testvarchar"] 40
 assertEqual [$cur getColumnLengthByIndex 13] 1
 assertEqual [$cur getColumnLengthByName "testbit"] 1
 puts ""
@@ -372,11 +372,11 @@ assertEqual [$cur getLongestByIndex 7] 6
 assertEqual [$cur getLongestByName "testmoney"] 6
 assertEqual [$cur getLongestByIndex 8] 6
 assertEqual [$cur getLongestByName "testsmallmoney"] 6
-# datetime formatting fluctuates with every freetds release
-#assertEqual [$cur getLongestByIndex 9] 26
-#assertEqual [$cur getLongestByName "testdatetime"] 26
-#assertEqual [$cur getLongestByIndex 10] 26
-#assertEqual [$cur getLongestByName "testsmalldatetime"] 26
+# freetds datetime rendering for the fixture tds version
+assertEqual [$cur getLongestByIndex 9] 26
+assertEqual [$cur getLongestByName "testdatetime"] 26
+assertEqual [$cur getLongestByIndex 10] 26
+assertEqual [$cur getLongestByName "testsmalldatetime"] 26
 assertEqual [$cur getLongestByIndex 11] 40
 assertEqual [$cur getLongestByName "testchar"] 40
 assertEqual [$cur getLongestByIndex 12] 12
@@ -421,9 +421,9 @@ assertEqual [$cur getFieldByIndex 0 5] "1.5"
 assertEqual [$cur getFieldByIndex 0 6] "1.5"
 assertEqual [$cur getFieldByIndex 0 7] "1.0000"
 assertEqual [$cur getFieldByIndex 0 8] "1.0000"
-# datetime formatting fluctuates with every freetds release
-#assertEqual [$cur getFieldByIndex 0 9] "Jan  1 2001 01:00:00:000AM"
-#assertEqual [$cur getFieldByIndex 0 10] "Jan  1 2001 01:00:00:000AM"
+# freetds datetime rendering for the fixture tds version
+assertEqual [$cur getFieldByIndex 0 9] "Jan  1 2001 01:00:00:000AM"
+assertEqual [$cur getFieldByIndex 0 10] "Jan  1 2001 01:00:00:000AM"
 assertEqual [$cur getFieldByIndex 0 11] "testchar1                               "
 assertEqual [$cur getFieldByIndex 0 12] "testvarchar1"
 assertEqual [$cur getFieldByIndex 0 13] "1"
@@ -437,9 +437,9 @@ assertEqual [$cur getFieldByIndex 7 5] "8.5"
 assertEqual [$cur getFieldByIndex 7 6] "8.5"
 assertEqual [$cur getFieldByIndex 7 7] "8.0000"
 assertEqual [$cur getFieldByIndex 7 8] "8.0000"
-# datetime formatting fluctuates with every freetds release
-#assertEqual [$cur getFieldByIndex 7 9] "Jan  1 2008 08:00:00:000AM"
-#assertEqual [$cur getFieldByIndex 7 10] "Jan  1 2008 08:00:00:000AM"
+# freetds datetime rendering for the fixture tds version
+assertEqual [$cur getFieldByIndex 7 9] "Jan  1 2008 08:00:00:000AM"
+assertEqual [$cur getFieldByIndex 7 10] "Jan  1 2008 08:00:00:000AM"
 assertEqual [$cur getFieldByIndex 7 11] "testchar8                               "
 assertEqual [$cur getFieldByIndex 7 12] "testvarchar8"
 assertEqual [$cur getFieldByIndex 7 13] "1"
@@ -457,9 +457,9 @@ assertEqual [$cur getFieldLengthByIndex 0 5] 3
 assertEqual [$cur getFieldLengthByIndex 0 6] 3
 assertEqual [$cur getFieldLengthByIndex 0 7] 6
 assertEqual [$cur getFieldLengthByIndex 0 8] 6
-# datetime formatting fluctuates with every freetds release
-#assertEqual [$cur getFieldLengthByIndex 0 9] 26
-#assertEqual [$cur getFieldLengthByIndex 0 10] 26
+# freetds datetime rendering for the fixture tds version
+assertEqual [$cur getFieldLengthByIndex 0 9] 26
+assertEqual [$cur getFieldLengthByIndex 0 10] 26
 assertEqual [$cur getFieldLengthByIndex 0 11] 40
 assertEqual [$cur getFieldLengthByIndex 0 12] 12
 assertEqual [$cur getFieldLengthByIndex 0 13] 1
@@ -473,9 +473,9 @@ assertEqual [$cur getFieldLengthByIndex 7 5] 3
 assertEqual [$cur getFieldLengthByIndex 7 6] 3
 assertEqual [$cur getFieldLengthByIndex 7 7] 6
 assertEqual [$cur getFieldLengthByIndex 7 8] 6
-# datetime formatting fluctuates with every freetds release
-#assertEqual [$cur getFieldLengthByIndex 7 9] 26
-#assertEqual [$cur getFieldLengthByIndex 7 10] 26
+# freetds datetime rendering for the fixture tds version
+assertEqual [$cur getFieldLengthByIndex 7 9] 26
+assertEqual [$cur getFieldLengthByIndex 7 10] 26
 assertEqual [$cur getFieldLengthByIndex 7 11] 40
 assertEqual [$cur getFieldLengthByIndex 7 12] 12
 assertEqual [$cur getFieldLengthByIndex 7 13] 1
@@ -493,9 +493,9 @@ assertEqual [$cur getFieldByName 0 "testdecimal"] "1.5"
 assertEqual [$cur getFieldByName 0 "testnumeric"] "1.5"
 assertEqual [$cur getFieldByName 0 "testmoney"] "1.0000"
 assertEqual [$cur getFieldByName 0 "testsmallmoney"] "1.0000"
-# datetime formatting fluctuates with every freetds release
-#assertEqual [$cur getFieldByName 0 "testdatetime"] "Jan  1 2001 01:00:00:000AM"
-#assertEqual [$cur getFieldByName 0 "testsmalldatetime"] "Jan  1 2001 01:00:00:000AM"
+# freetds datetime rendering for the fixture tds version
+assertEqual [$cur getFieldByName 0 "testdatetime"] "Jan  1 2001 01:00:00:000AM"
+assertEqual [$cur getFieldByName 0 "testsmalldatetime"] "Jan  1 2001 01:00:00:000AM"
 assertEqual [$cur getFieldByName 0 "testchar"] "testchar1                               "
 assertEqual [$cur getFieldByName 0 "testvarchar"] "testvarchar1"
 assertEqual [$cur getFieldByName 0 "testbit"] "1"
@@ -509,9 +509,9 @@ assertEqual [$cur getFieldByName 7 "testdecimal"] "8.5"
 assertEqual [$cur getFieldByName 7 "testnumeric"] "8.5"
 assertEqual [$cur getFieldByName 7 "testmoney"] "8.0000"
 assertEqual [$cur getFieldByName 7 "testsmallmoney"] "8.0000"
-# datetime formatting fluctuates with every freetds release
-#assertEqual [$cur getFieldByName 7 "testdatetime"] "Jan  1 2008 08:00:00:000AM"
-#assertEqual [$cur getFieldByName 7 "testsmalldatetime"] "Jan  1 2008 08:00:00:000AM"
+# freetds datetime rendering for the fixture tds version
+assertEqual [$cur getFieldByName 7 "testdatetime"] "Jan  1 2008 08:00:00:000AM"
+assertEqual [$cur getFieldByName 7 "testsmalldatetime"] "Jan  1 2008 08:00:00:000AM"
 assertEqual [$cur getFieldByName 7 "testchar"] "testchar8                               "
 assertEqual [$cur getFieldByName 7 "testvarchar"] "testvarchar8"
 assertEqual [$cur getFieldByName 7 "testbit"] "1"
@@ -529,9 +529,9 @@ assertEqual [$cur getFieldLengthByName 0 "testdecimal"] 3
 assertEqual [$cur getFieldLengthByName 0 "testnumeric"] 3
 assertEqual [$cur getFieldLengthByName 0 "testmoney"] 6
 assertEqual [$cur getFieldLengthByName 0 "testsmallmoney"] 6
-# datetime formatting fluctuates with every freetds release
-#assertEqual [$cur getFieldLengthByName 0 "testdatetime"] 26
-#assertEqual [$cur getFieldLengthByName 0 "testsmalldatetime"] 26
+# freetds datetime rendering for the fixture tds version
+assertEqual [$cur getFieldLengthByName 0 "testdatetime"] 26
+assertEqual [$cur getFieldLengthByName 0 "testsmalldatetime"] 26
 assertEqual [$cur getFieldLengthByName 0 "testchar"] 40
 assertEqual [$cur getFieldLengthByName 0 "testvarchar"] 12
 assertEqual [$cur getFieldLengthByName 0 "testbit"] 1
@@ -545,9 +545,9 @@ assertEqual [$cur getFieldLengthByName 7 "testdecimal"] 3
 assertEqual [$cur getFieldLengthByName 7 "testnumeric"] 3
 assertEqual [$cur getFieldLengthByName 7 "testmoney"] 6
 assertEqual [$cur getFieldLengthByName 7 "testsmallmoney"] 6
-# datetime formatting fluctuates with every freetds release
-#assertEqual [$cur getFieldLengthByName 7 "testdatetime"] 26
-#assertEqual [$cur getFieldLengthByName 7 "testsmalldatetime"] 26
+# freetds datetime rendering for the fixture tds version
+assertEqual [$cur getFieldLengthByName 7 "testdatetime"] 26
+assertEqual [$cur getFieldLengthByName 7 "testsmalldatetime"] 26
 assertEqual [$cur getFieldLengthByName 7 "testchar"] 40
 assertEqual [$cur getFieldLengthByName 7 "testvarchar"] 12
 assertEqual [$cur getFieldLengthByName 7 "testbit"] 1
@@ -566,9 +566,9 @@ assertEqual [lindex $fields 5] "1.5"
 assertEqual [lindex $fields 6] "1.5"
 assertEqual [lindex $fields 7] "1.0000"
 assertEqual [lindex $fields 8] "1.0000"
-# datetime formatting fluctuates with every freetds release
-#assertEqual [lindex $fields 9] "Jan  1 2001 01:00:00:000AM"
-#assertEqual [lindex $fields 10] "Jan  1 2001 01:00:00:000AM"
+# freetds datetime rendering for the fixture tds version
+assertEqual [lindex $fields 9] "Jan  1 2001 01:00:00:000AM"
+assertEqual [lindex $fields 10] "Jan  1 2001 01:00:00:000AM"
 assertEqual [lindex $fields 11] "testchar1                               "
 assertEqual [lindex $fields 12] "testvarchar1"
 assertEqual [lindex $fields 13] "1"
@@ -587,9 +587,9 @@ assertEqual [lindex $fieldlens 5] 3
 assertEqual [lindex $fieldlens 6] 3
 assertEqual [lindex $fieldlens 7] 6
 assertEqual [lindex $fieldlens 8] 6
-# datetime formatting fluctuates with every freetds release
-#assertEqual [lindex $fieldlens 9] 26
-#assertEqual [lindex $fieldlens 10] 26
+# freetds datetime rendering for the fixture tds version
+assertEqual [lindex $fieldlens 9] 26
+assertEqual [lindex $fieldlens 10] 26
 assertEqual [lindex $fieldlens 11] 40
 assertEqual [lindex $fieldlens 12] 12
 assertEqual [lindex $fieldlens 13] 1

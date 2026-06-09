@@ -532,10 +532,10 @@
 	assertEqInt(sqlrcur_getColumnLength($cur,9),3);
 	assertEqInt(sqlrcur_getColumnLength($cur,10),8);
 	assertEqInt(sqlrcur_getColumnLength($cur,11),1);
-	// these can be 120/121 if the db
-	// charset is utf8
-	//assertEqInt(sqlrcur_getColumnLength($cur,12),40);
-	//assertEqInt(sqlrcur_getColumnLength($cur,13),41);
+	// testchar/testvarchar are char(40)/varchar(40); the connection
+	// charset is utf8mb4 (4 bytes/char) so the lengths are 160/161
+	assertEqInt(sqlrcur_getColumnLength($cur,12),160);
+	assertEqInt(sqlrcur_getColumnLength($cur,13),161);
 	assertEqInt(sqlrcur_getColumnLength($cur,14),65535);
 	assertEqInt(sqlrcur_getColumnLength($cur,15),255);
 	assertEqInt(sqlrcur_getColumnLength($cur,16),16777215);
@@ -557,10 +557,10 @@
 	assertEqInt(sqlrcur_getColumnLength($cur,"testtime"),3);
 	assertEqInt(sqlrcur_getColumnLength($cur,"testdatetime"),8);
 	assertEqInt(sqlrcur_getColumnLength($cur,"testyear"),1);
-	// these can be 120/121 if the db
-	// charset is utf8
-	//assertEqInt(sqlrcur_getColumnLength($cur,"testchar"),40);
-	//assertEqInt(sqlrcur_getColumnLength($cur,"testvarchar"),41);
+	// testchar/testvarchar are char(40)/varchar(40); the connection
+	// charset is utf8mb4 (4 bytes/char) so the lengths are 160/161
+	assertEqInt(sqlrcur_getColumnLength($cur,"testchar"),160);
+	assertEqInt(sqlrcur_getColumnLength($cur,"testvarchar"),161);
 	assertEqInt(sqlrcur_getColumnLength($cur,"testtext"),65535);
 	assertEqInt(sqlrcur_getColumnLength($cur,"testtinytext"),255);
 	assertEqInt(sqlrcur_getColumnLength($cur,"testmediumtext"),

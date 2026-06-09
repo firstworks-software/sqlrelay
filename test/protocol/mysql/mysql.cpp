@@ -138,8 +138,9 @@ int	main(int argc, char **argv) {
 
 	stdoutput.printf("mysql_list_fields\n");
 	result=mysql_list_fields(&mysql,"testtable",NULL);
-	// this specific case of mysql_field_count often returns 0
-	//assertEquals(mysql_field_count(&mysql),19);
+	// mysql_field_count reflects the last query, not mysql_list_fields,
+	// so it is 0 here (mysql_num_fields on the result gives the real count)
+	assertEquals(mysql_field_count(&mysql),0);
 	assertEquals(mysql_num_fields(result),19);
 	stdoutput.printf("\n");
 
@@ -161,8 +162,8 @@ int	main(int argc, char **argv) {
 		assertEquals(field->db_length,6);
 	}*/
 	assertEquals(field->catalog_length,3);
-	// Some client API's don't set this if def is NULL
-	//assertEquals(field->def_length,0);
+	// def is NULL so def_length is 0
+	assertEquals(field->def_length,0);
 	assertEquals(field->flags,NUM_FLAG);
 	assertEquals(field->decimals,0);
 	/*if (argc==2) {
@@ -223,8 +224,8 @@ int	main(int argc, char **argv) {
 	field=mysql_fetch_field_direct(result,7);
 	assertEquals(field->name,"testdecimal");
 	assertEquals(field->length,4);
-	// MariaDB LGPL connector doesn't always get this right
-	//assertEquals(field->flags,NUM_FLAG);
+	// decimal columns carry NUM_FLAG
+	assertEquals(field->flags,NUM_FLAG);
 	assertEquals(field->type,MYSQL_TYPE_NEWDECIMAL);
 	assertEquals(field->decimals,1);
 	stdoutput.printf("\n");
@@ -304,8 +305,9 @@ int	main(int argc, char **argv) {
 	stdoutput.printf("longtext\n");
 	field=mysql_fetch_field_direct(result,17);
 	assertEquals(field->name,"testlongtext");
-	// The length of these can be reported by the db as either
-	// 2^31-1 or 2^32-1.  It's not clear why it varies, but it can.
+	// the client library reports the longtext max length as either
+	// 2^31-1 or 2^32-1 depending on its signedness handling, so it is
+	// not pinned here
 	//assertEquals(field->length,2147483647);
 	assertEquals(field->flags,BLOB_FLAG);
 	assertEquals(field->type,MYSQL_TYPE_BLOB);
@@ -524,8 +526,8 @@ int	main(int argc, char **argv) {
 	assertEquals(row[2],"1");
 	assertEquals(row[3],"1");
 	assertEquals(row[4],"1");
-	//assertEquals(row[5],"1.5");
-	//assertEquals(row[6],"1.5");
+	assertEquals(row[5],"1.5");
+	assertEquals(row[6],"1.5");
 	assertEquals(row[7],"1.5");
 	assertEquals(row[8],"2001-01-01");
 	assertEquals(row[9],"01:00:00");
@@ -548,8 +550,8 @@ int	main(int argc, char **argv) {
 	assertEquals(lengths[2],1);
 	assertEquals(lengths[3],1);
 	assertEquals(lengths[4],1);
-	//assertEquals(lengths[5],3);
-	//assertEquals(lengths[6],3);
+	assertEquals(lengths[5],3);
+	assertEquals(lengths[6],3);
 	assertEquals(lengths[7],3);
 	assertEquals(lengths[8],10);
 	assertEquals(lengths[9],8);
@@ -571,8 +573,8 @@ int	main(int argc, char **argv) {
 	assertEquals(row[2],"2");
 	assertEquals(row[3],"2");
 	assertEquals(row[4],"2");
-	//assertEquals(row[5],"2.5");
-	//assertEquals(row[6],"2.5");
+	assertEquals(row[5],"2.5");
+	assertEquals(row[6],"2.5");
 	assertEquals(row[7],"2.5");
 	assertEquals(row[8],"2002-01-01");
 	assertEquals(row[9],"02:00:00");
@@ -637,8 +639,8 @@ int	main(int argc, char **argv) {
 	assertEquals(row[2],"1");
 	assertEquals(row[3],"1");
 	assertEquals(row[4],"1");
-	//assertEquals(row[5],"1.5");
-	//assertEquals(row[6],"1.5");
+	assertEquals(row[5],"1.5");
+	assertEquals(row[6],"1.5");
 	assertEquals(row[7],"1.5");
 	assertEquals(row[8],"2001-01-01");
 	assertEquals(row[9],"01:00:00");
@@ -656,8 +658,8 @@ int	main(int argc, char **argv) {
 	assertEquals(row[2],"2");
 	assertEquals(row[3],"2");
 	assertEquals(row[4],"2");
-	//assertEquals(row[5],"2.5");
-	//assertEquals(row[6],"2.5");
+	assertEquals(row[5],"2.5");
+	assertEquals(row[6],"2.5");
 	assertEquals(row[7],"2.5");
 	assertEquals(row[8],"2002-01-01");
 	assertEquals(row[9],"02:00:00");
@@ -993,8 +995,8 @@ int	main(int argc, char **argv) {
 	assertEquals((const char *)fieldbind[2].buffer,"1");
 	assertEquals((const char *)fieldbind[3].buffer,"1");
 	assertEquals((const char *)fieldbind[4].buffer,"1");
-	//assertEquals((const char *)fieldbind[5].buffer,"1.5");
-	//assertEquals((const char *)fieldbind[6].buffer,"1.5");
+	assertEquals((const char *)fieldbind[5].buffer,"1.5");
+	assertEquals((const char *)fieldbind[6].buffer,"1.5");
 	assertEquals((const char *)fieldbind[7].buffer,"1.5");
 	assertEquals((const char *)fieldbind[8].buffer,"2001-01-01");
 	assertEquals((const char *)fieldbind[9].buffer,"01:00:00");
@@ -1017,8 +1019,8 @@ int	main(int argc, char **argv) {
 	assertEquals((const char *)fieldbind[2].buffer,"2");
 	assertEquals((const char *)fieldbind[3].buffer,"2");
 	assertEquals((const char *)fieldbind[4].buffer,"2");
-	//assertEquals((const char *)fieldbind[5].buffer,"2.5");
-	//assertEquals((const char *)fieldbind[6].buffer,"2.5");
+	assertEquals((const char *)fieldbind[5].buffer,"2.5");
+	assertEquals((const char *)fieldbind[6].buffer,"2.5");
 	assertEquals((const char *)fieldbind[7].buffer,"2.5");
 	assertEquals((const char *)fieldbind[8].buffer,"2002-01-01");
 	assertEquals((const char *)fieldbind[9].buffer,"02:00:00");
@@ -1238,8 +1240,8 @@ int	main(int argc, char **argv) {
 	assertEquals((const char *)fieldbind[1].buffer,"1");
 	assertEquals((const char *)fieldbind[2].buffer,"1");
 	assertEquals((const char *)fieldbind[3].buffer,"1");
-	//assertEquals((const char *)fieldbind[4].buffer,"1.5");
-	//assertEquals((const char *)fieldbind[5].buffer,"1.5");
+	assertEquals((const char *)fieldbind[4].buffer,"1.5");
+	assertEquals((const char *)fieldbind[5].buffer,"1.5");
 	assertEquals((const char *)fieldbind[6].buffer,"string1");
 	assertEquals((const char *)fieldbind[7].buffer,"varstring1");
 	assertEquals((const char *)fieldbind[8].buffer,"tinyblob1");

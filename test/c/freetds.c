@@ -442,12 +442,11 @@ int main(int argc, char **argv) {
 	assertEqInt(sqlrcur_getColumnLengthByName(cur,"testreal"),4);
 	assertEqInt(sqlrcur_getColumnLengthByIndex(cur,4),8);
 	assertEqInt(sqlrcur_getColumnLengthByName(cur,"testfloat"),8);
-	// these seem to fluctuate with every
-	// freetds release
-	//assertEqInt(sqlrcur_getColumnLengthByIndex(cur,5),3);
-	//assertEqInt(sqlrcur_getColumnLengthByName(cur,"testdecimal"),3);
-	//assertEqInt(sqlrcur_getColumnLengthByIndex(cur,6),3);
-	//assertEqInt(sqlrcur_getColumnLengthByName(cur,"testnumeric"),3);
+	// freetds reports the decimal/numeric display length as 35
+	assertEqInt(sqlrcur_getColumnLengthByIndex(cur,5),35);
+	assertEqInt(sqlrcur_getColumnLengthByName(cur,"testdecimal"),35);
+	assertEqInt(sqlrcur_getColumnLengthByIndex(cur,6),35);
+	assertEqInt(sqlrcur_getColumnLengthByName(cur,"testnumeric"),35);
 	assertEqInt(sqlrcur_getColumnLengthByIndex(cur,7),8);
 	assertEqInt(sqlrcur_getColumnLengthByName(cur,"testmoney"),8);
 	assertEqInt(sqlrcur_getColumnLengthByIndex(cur,8),4);
@@ -456,11 +455,11 @@ int main(int argc, char **argv) {
 	assertEqInt(sqlrcur_getColumnLengthByName(cur,"testdatetime"),8);
 	assertEqInt(sqlrcur_getColumnLengthByIndex(cur,10),4);
 	assertEqInt(sqlrcur_getColumnLengthByName(cur,"testsmalldatetime"),4);
-	// these seem to fluctuate too
-	//assertEqInt(sqlrcur_getColumnLengthByIndex(cur,11),40);
-	//assertEqInt(sqlrcur_getColumnLengthByName(cur,"testchar"),40);
-	//assertEqInt(sqlrcur_getColumnLengthByIndex(cur,12),40);
-	//assertEqInt(sqlrcur_getColumnLengthByName(cur,"testvarchar"),40);
+	// char(40)/varchar(40) report the declared length 40 (not multiplied)
+	assertEqInt(sqlrcur_getColumnLengthByIndex(cur,11),40);
+	assertEqInt(sqlrcur_getColumnLengthByName(cur,"testchar"),40);
+	assertEqInt(sqlrcur_getColumnLengthByIndex(cur,12),40);
+	assertEqInt(sqlrcur_getColumnLengthByName(cur,"testvarchar"),40);
 	assertEqInt(sqlrcur_getColumnLengthByIndex(cur,13),1);
 	assertEqInt(sqlrcur_getColumnLengthByName(cur,"testbit"),1);
 	printf("\n");
@@ -486,12 +485,11 @@ int main(int argc, char **argv) {
 	assertEqInt(sqlrcur_getLongestByName(cur,"testmoney"),6);
 	assertEqInt(sqlrcur_getLongestByIndex(cur,8),6);
 	assertEqInt(sqlrcur_getLongestByName(cur,"testsmallmoney"),6);
-	// datetime formatting fluctuates with
-	// every freetds release
-	//assertEqInt(sqlrcur_getLongestByIndex(cur,9),26);
-	//assertEqInt(sqlrcur_getLongestByName(cur,"testdatetime"),26);
-	//assertEqInt(sqlrcur_getLongestByIndex(cur,10),26);
-	//assertEqInt(sqlrcur_getLongestByName(cur,"testsmalldatetime"),26);
+	// freetds datetime rendering for the fixture tds version
+	assertEqInt(sqlrcur_getLongestByIndex(cur,9),26);
+	assertEqInt(sqlrcur_getLongestByName(cur,"testdatetime"),26);
+	assertEqInt(sqlrcur_getLongestByIndex(cur,10),26);
+	assertEqInt(sqlrcur_getLongestByName(cur,"testsmalldatetime"),26);
 	assertEqInt(sqlrcur_getLongestByIndex(cur,11),40);
 	assertEqInt(sqlrcur_getLongestByName(cur,"testchar"),40);
 	assertEqInt(sqlrcur_getLongestByIndex(cur,12),12);
@@ -536,12 +534,11 @@ int main(int argc, char **argv) {
 	assertEqStr(sqlrcur_getFieldByIndex(cur,0,6),"1.5");
 	assertEqStr(sqlrcur_getFieldByIndex(cur,0,7),"1.0000");
 	assertEqStr(sqlrcur_getFieldByIndex(cur,0,8),"1.0000");
-	// datetime formatting fluctuates with
-	// every freetds release
-	//assertEqStr(sqlrcur_getFieldByIndex(cur,0,9),
-	//	"Jan  1 2001 01:00:00:000AM");
-	//assertEqStr(sqlrcur_getFieldByIndex(cur,0,10),
-	//	"Jan  1 2001 01:00:00:000AM");
+	// freetds datetime rendering for the fixture tds version
+	assertEqStr(sqlrcur_getFieldByIndex(cur,0,9),
+		"Jan  1 2001 01:00:00:000AM");
+	assertEqStr(sqlrcur_getFieldByIndex(cur,0,10),
+		"Jan  1 2001 01:00:00:000AM");
 	assertEqStr(sqlrcur_getFieldByIndex(cur,0,11),"testchar1"
 		"                               ");
 	assertEqStr(sqlrcur_getFieldByIndex(cur,0,12),"testvarchar1");
@@ -556,12 +553,11 @@ int main(int argc, char **argv) {
 	assertEqStr(sqlrcur_getFieldByIndex(cur,7,6),"8.5");
 	assertEqStr(sqlrcur_getFieldByIndex(cur,7,7),"8.0000");
 	assertEqStr(sqlrcur_getFieldByIndex(cur,7,8),"8.0000");
-	// datetime formatting fluctuates with
-	// every freetds release
-	//assertEqStr(sqlrcur_getFieldByIndex(cur,7,9),
-	//	"Jan  1 2008 08:00:00:000AM");
-	//assertEqStr(sqlrcur_getFieldByIndex(cur,7,10),
-	//	"Jan  1 2008 08:00:00:000AM");
+	// freetds datetime rendering for the fixture tds version
+	assertEqStr(sqlrcur_getFieldByIndex(cur,7,9),
+		"Jan  1 2008 08:00:00:000AM");
+	assertEqStr(sqlrcur_getFieldByIndex(cur,7,10),
+		"Jan  1 2008 08:00:00:000AM");
 	assertEqStr(sqlrcur_getFieldByIndex(cur,7,11),"testchar8"
 		"                               ");
 	assertEqStr(sqlrcur_getFieldByIndex(cur,7,12),"testvarchar8");
@@ -580,10 +576,9 @@ int main(int argc, char **argv) {
 	assertEqInt(sqlrcur_getFieldLengthByIndex(cur,0,6),3);
 	assertEqInt(sqlrcur_getFieldLengthByIndex(cur,0,7),6);
 	assertEqInt(sqlrcur_getFieldLengthByIndex(cur,0,8),6);
-	// datetime formatting fluctuates with
-	// every freetds release
-	//assertEqInt(sqlrcur_getFieldLengthByIndex(cur,0,9),26);
-	//assertEqInt(sqlrcur_getFieldLengthByIndex(cur,0,10),26);
+	// freetds datetime rendering for the fixture tds version
+	assertEqInt(sqlrcur_getFieldLengthByIndex(cur,0,9),26);
+	assertEqInt(sqlrcur_getFieldLengthByIndex(cur,0,10),26);
 	assertEqInt(sqlrcur_getFieldLengthByIndex(cur,0,11),40);
 	assertEqInt(sqlrcur_getFieldLengthByIndex(cur,0,12),12);
 	assertEqInt(sqlrcur_getFieldLengthByIndex(cur,0,13),1);
@@ -597,10 +592,9 @@ int main(int argc, char **argv) {
 	assertEqInt(sqlrcur_getFieldLengthByIndex(cur,7,6),3);
 	assertEqInt(sqlrcur_getFieldLengthByIndex(cur,7,7),6);
 	assertEqInt(sqlrcur_getFieldLengthByIndex(cur,7,8),6);
-	// datetime formatting fluctuates with
-	// every freetds release
-	//assertEqInt(sqlrcur_getFieldLengthByIndex(cur,7,9),26);
-	//assertEqInt(sqlrcur_getFieldLengthByIndex(cur,7,10),26);
+	// freetds datetime rendering for the fixture tds version
+	assertEqInt(sqlrcur_getFieldLengthByIndex(cur,7,9),26);
+	assertEqInt(sqlrcur_getFieldLengthByIndex(cur,7,10),26);
 	assertEqInt(sqlrcur_getFieldLengthByIndex(cur,7,11),40);
 	assertEqInt(sqlrcur_getFieldLengthByIndex(cur,7,12),12);
 	assertEqInt(sqlrcur_getFieldLengthByIndex(cur,7,13),1);
@@ -618,12 +612,11 @@ int main(int argc, char **argv) {
 	assertEqStr(sqlrcur_getFieldByName(cur,0,"testnumeric"),"1.5");
 	assertEqStr(sqlrcur_getFieldByName(cur,0,"testmoney"),"1.0000");
 	assertEqStr(sqlrcur_getFieldByName(cur,0,"testsmallmoney"),"1.0000");
-	// datetime formatting fluctuates with
-	// every freetds release
-	//assertEqStr(sqlrcur_getFieldByName(cur,0,"testdatetime"),
-	//	"Jan  1 2001 01:00:00:000AM");
-	//assertEqStr(sqlrcur_getFieldByName(cur,0,"testsmalldatetime"),
-	//	"Jan  1 2001 01:00:00:000AM");
+	// freetds datetime rendering for the fixture tds version
+	assertEqStr(sqlrcur_getFieldByName(cur,0,"testdatetime"),
+		"Jan  1 2001 01:00:00:000AM");
+	assertEqStr(sqlrcur_getFieldByName(cur,0,"testsmalldatetime"),
+		"Jan  1 2001 01:00:00:000AM");
 	assertEqStr(sqlrcur_getFieldByName(cur,0,"testchar"),"testchar1"
 		"                               ");
 	assertEqStr(sqlrcur_getFieldByName(cur,0,"testvarchar"),"testvarchar1");
@@ -638,12 +631,11 @@ int main(int argc, char **argv) {
 	assertEqStr(sqlrcur_getFieldByName(cur,7,"testnumeric"),"8.5");
 	assertEqStr(sqlrcur_getFieldByName(cur,7,"testmoney"),"8.0000");
 	assertEqStr(sqlrcur_getFieldByName(cur,7,"testsmallmoney"),"8.0000");
-	// datetime formatting fluctuates with
-	// every freetds release
-	//assertEqStr(sqlrcur_getFieldByName(cur,7,"testdatetime"),
-	//	"Jan  1 2008 08:00:00:000AM");
-	//assertEqStr(sqlrcur_getFieldByName(cur,7,"testsmalldatetime"),
-	//	"Jan  1 2008 08:00:00:000AM");
+	// freetds datetime rendering for the fixture tds version
+	assertEqStr(sqlrcur_getFieldByName(cur,7,"testdatetime"),
+		"Jan  1 2008 08:00:00:000AM");
+	assertEqStr(sqlrcur_getFieldByName(cur,7,"testsmalldatetime"),
+		"Jan  1 2008 08:00:00:000AM");
 	assertEqStr(sqlrcur_getFieldByName(cur,7,"testchar"),"testchar8"
 		"                               ");
 	assertEqStr(sqlrcur_getFieldByName(cur,7,"testvarchar"),"testvarchar8");
@@ -662,11 +654,10 @@ int main(int argc, char **argv) {
 	assertEqInt(sqlrcur_getFieldLengthByName(cur,0,"testnumeric"),3);
 	assertEqInt(sqlrcur_getFieldLengthByName(cur,0,"testmoney"),6);
 	assertEqInt(sqlrcur_getFieldLengthByName(cur,0,"testsmallmoney"),6);
-	// datetime formatting fluctuates with
-	// every freetds release
-	//assertEqInt(sqlrcur_getFieldLengthByName(cur,0,"testdatetime"),26);
-	//assertEqInt(sqlrcur_getFieldLengthByName(cur,0,"testsmalldatetime"),
-	//	26);
+	// freetds datetime rendering for the fixture tds version
+	assertEqInt(sqlrcur_getFieldLengthByName(cur,0,"testdatetime"),26);
+	assertEqInt(sqlrcur_getFieldLengthByName(cur,0,"testsmalldatetime"),
+		26);
 	assertEqInt(sqlrcur_getFieldLengthByName(cur,0,"testchar"),40);
 	assertEqInt(sqlrcur_getFieldLengthByName(cur,0,"testvarchar"),12);
 	assertEqInt(sqlrcur_getFieldLengthByName(cur,0,"testbit"),1);
@@ -680,11 +671,10 @@ int main(int argc, char **argv) {
 	assertEqInt(sqlrcur_getFieldLengthByName(cur,7,"testnumeric"),3);
 	assertEqInt(sqlrcur_getFieldLengthByName(cur,7,"testmoney"),6);
 	assertEqInt(sqlrcur_getFieldLengthByName(cur,7,"testsmallmoney"),6);
-	// datetime formatting fluctuates with
-	// every freetds release
-	//assertEqInt(sqlrcur_getFieldLengthByName(cur,7,"testdatetime"),26);
-	//assertEqInt(sqlrcur_getFieldLengthByName(cur,7,"testsmalldatetime"),
-	//	26);
+	// freetds datetime rendering for the fixture tds version
+	assertEqInt(sqlrcur_getFieldLengthByName(cur,7,"testdatetime"),26);
+	assertEqInt(sqlrcur_getFieldLengthByName(cur,7,"testsmalldatetime"),
+		26);
 	assertEqInt(sqlrcur_getFieldLengthByName(cur,7,"testchar"),40);
 	assertEqInt(sqlrcur_getFieldLengthByName(cur,7,"testvarchar"),12);
 	assertEqInt(sqlrcur_getFieldLengthByName(cur,7,"testbit"),1);
@@ -703,10 +693,9 @@ int main(int argc, char **argv) {
 	assertEqStr(fields[6],"1.5");
 	assertEqStr(fields[7],"1.0000");
 	assertEqStr(fields[8],"1.0000");
-	// datetime formatting fluctuates with
-	// every freetds release
-	//assertEqStr(fields[9],"Jan  1 2001 01:00:00:000AM");
-	//assertEqStr(fields[10],"Jan  1 2001 01:00:00:000AM");
+	// freetds datetime rendering for the fixture tds version
+	assertEqStr(fields[9],"Jan  1 2001 01:00:00:000AM");
+	assertEqStr(fields[10],"Jan  1 2001 01:00:00:000AM");
 	assertEqStr(fields[11],"testchar1""                               ");
 	assertEqStr(fields[12],"testvarchar1");
 	assertEqStr(fields[13],"1");
@@ -725,10 +714,9 @@ int main(int argc, char **argv) {
 	assertEqInt(fieldlens[6],3);
 	assertEqInt(fieldlens[7],6);
 	assertEqInt(fieldlens[8],6);
-	// datetime formatting fluctuates with
-	// every freetds release
-	//assertEqInt(fieldlens[9],26);
-	//assertEqInt(fieldlens[10],26);
+	// freetds datetime rendering for the fixture tds version
+	assertEqInt(fieldlens[9],26);
+	assertEqInt(fieldlens[10],26);
 	assertEqInt(fieldlens[11],40);
 	assertEqInt(fieldlens[12],12);
 	assertEqInt(fieldlens[13],1);

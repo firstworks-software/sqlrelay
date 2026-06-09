@@ -916,7 +916,9 @@ if (PHP_VERSION_ID < 70000) {
 	assertEqual($stmt->nextRowset(),0);
 	assertEqual($stmt->setAttribute(PDO::ATTR_AUTOCOMMIT,FALSE),0);
 	assertEqual($stmt->getAttribute(PDO::ATTR_AUTOCOMMIT),0);
-	#assertTrue($stmt->bindValue(1,1,9999));
+	# bindValue with an invalid PDO::PARAM type (9999) is not rejected - the
+	# driver forwards the bogus type to the backend and fails at bind time
+	# instead of returning false (#8101)
 
 	echo("\n");
 

@@ -427,13 +427,12 @@ int main(int argc, char **argv) {
 	assertEquals(cur->getColumnLength("testreal"),8);
 	assertEquals(cur->getColumnLength(3),2);
 	assertEquals(cur->getColumnLength("testsmallint"),2);
-	// not reliable... some mysql client return the number of bytes
-	// rather than chars, which can be 3 times the number of chars if
-	// the db supports multibyte characters
-	//assertEquals(cur->getColumnLength(4),40);
-	//assertEquals(cur->getColumnLength("testchar"),40);
-	//assertEquals(cur->getColumnLength(5),41);
-	//assertEquals(cur->getColumnLength("testvarchar"),41);
+	// testchar/testvarchar are char(40)/varchar(40); the mysql connection
+	// charset is utf8mb4 (4 bytes/char) so the lengths are 160/161
+	assertEquals(cur->getColumnLength(4),160);
+	assertEquals(cur->getColumnLength("testchar"),160);
+	assertEquals(cur->getColumnLength(5),161);
+	assertEquals(cur->getColumnLength("testvarchar"),161);
 	assertEquals(cur->getColumnLength(6),3);
 	assertEquals(cur->getColumnLength("testdate"),3);
 	assertEquals(cur->getColumnLength(7),3);
@@ -484,8 +483,8 @@ int main(int argc, char **argv) {
 	// fields by index
 	stdoutput.printf("FIELDS BY INDEX: \n");
 	assertEquals(cur->getField(0,(uint32_t)0),"1");
-	//assertEquals(cur->getField(0,1),"1.5");
-	//assertEquals(cur->getField(0,2),"1.5");
+	assertEquals(cur->getField(0,1),"1.5");
+	assertEquals(cur->getField(0,2),"1.5");
 	assertEquals(cur->getField(0,3),"1");
 	assertEquals(cur->getField(0,4),"testchar1");
 	assertEquals(cur->getField(0,5),"testvarchar1");
@@ -493,8 +492,8 @@ int main(int argc, char **argv) {
 	assertEquals(cur->getField(0,7),"01:00:00");
 	stdoutput.printf("\n");
 	assertEquals(cur->getField(7,(uint32_t)0),"8");
-	//assertEquals(cur->getField(7,1),"8.5");
-	//assertEquals(cur->getField(7,2),"8.5");
+	assertEquals(cur->getField(7,1),"8.5");
+	assertEquals(cur->getField(7,2),"8.5");
 	assertEquals(cur->getField(7,3),"8");
 	assertEquals(cur->getField(7,4),"testchar8");
 	assertEquals(cur->getField(7,5),"testvarchar8");
@@ -506,8 +505,8 @@ int main(int argc, char **argv) {
 	// field lengths by index
 	stdoutput.printf("FIELD LENGTHS BY INDEX: \n");
 	assertEquals(cur->getFieldLength(0,(uint32_t)0),1);
-	//assertEquals(cur->getFieldLength(0,1),3);
-	//assertEquals(cur->getFieldLength(0,2),3);
+	assertEquals(cur->getFieldLength(0,1),3);
+	assertEquals(cur->getFieldLength(0,2),3);
 	assertEquals(cur->getFieldLength(0,3),1);
 	assertEquals(cur->getFieldLength(0,4),9);
 	assertEquals(cur->getFieldLength(0,5),12);
@@ -515,8 +514,8 @@ int main(int argc, char **argv) {
 	assertEquals(cur->getFieldLength(0,7),8);
 	stdoutput.printf("\n");
 	assertEquals(cur->getFieldLength(7,(uint32_t)0),1);
-	//assertEquals(cur->getFieldLength(7,1),3);
-	//assertEquals(cur->getFieldLength(7,2),3);
+	assertEquals(cur->getFieldLength(7,1),3);
+	assertEquals(cur->getFieldLength(7,2),3);
 	assertEquals(cur->getFieldLength(7,3),1);
 	assertEquals(cur->getFieldLength(7,4),9);
 	assertEquals(cur->getFieldLength(7,5),12);
@@ -528,8 +527,8 @@ int main(int argc, char **argv) {
 	// fields by name
 	stdoutput.printf("FIELDS BY NAME: \n");
 	assertEquals(cur->getField(0,"testint"),"1");
-	//assertEquals(cur->getField(0,"testfloat"),"1.5");
-	//assertEquals(cur->getField(0,"testreal"),"1.5");
+	assertEquals(cur->getField(0,"testfloat"),"1.5");
+	assertEquals(cur->getField(0,"testreal"),"1.5");
 	assertEquals(cur->getField(0,"testsmallint"),"1");
 	assertEquals(cur->getField(0,"testchar"),"testchar1");
 	assertEquals(cur->getField(0,"testvarchar"),"testvarchar1");
@@ -537,8 +536,8 @@ int main(int argc, char **argv) {
 	assertEquals(cur->getField(0,"testtime"),"01:00:00");
 	stdoutput.printf("\n");
 	assertEquals(cur->getField(7,"testint"),"8");
-	//assertEquals(cur->getField(7,"testfloat"),"8.5");
-	//assertEquals(cur->getField(7,"testreal"),"8.5");
+	assertEquals(cur->getField(7,"testfloat"),"8.5");
+	assertEquals(cur->getField(7,"testreal"),"8.5");
 	assertEquals(cur->getField(7,"testsmallint"),"8");
 	assertEquals(cur->getField(7,"testchar"),"testchar8");
 	assertEquals(cur->getField(7,"testvarchar"),"testvarchar8");
@@ -550,8 +549,8 @@ int main(int argc, char **argv) {
 	// field lengths by name
 	stdoutput.printf("FIELD LENGTHS BY NAME: \n");
 	assertEquals(cur->getFieldLength(0,"testint"),1);
-	//assertEquals(cur->getFieldLength(0,"testfloat"),3);
-	//assertEquals(cur->getFieldLength(0,"testreal"),3);
+	assertEquals(cur->getFieldLength(0,"testfloat"),3);
+	assertEquals(cur->getFieldLength(0,"testreal"),3);
 	assertEquals(cur->getFieldLength(0,"testsmallint"),1);
 	assertEquals(cur->getFieldLength(0,"testchar"),9);
 	assertEquals(cur->getFieldLength(0,"testvarchar"),12);
@@ -559,8 +558,8 @@ int main(int argc, char **argv) {
 	assertEquals(cur->getFieldLength(0,"testtime"),8);
 	stdoutput.printf("\n");
 	assertEquals(cur->getFieldLength(7,"testint"),1);
-	//assertEquals(cur->getFieldLength(7,"testfloat"),3);
-	//assertEquals(cur->getFieldLength(7,"testreal"),3);
+	assertEquals(cur->getFieldLength(7,"testfloat"),3);
+	assertEquals(cur->getFieldLength(7,"testreal"),3);
 	assertEquals(cur->getFieldLength(7,"testsmallint"),1);
 	assertEquals(cur->getFieldLength(7,"testchar"),9);
 	assertEquals(cur->getFieldLength(7,"testvarchar"),12);
@@ -573,8 +572,8 @@ int main(int argc, char **argv) {
 	stdoutput.printf("FIELDS BY ARRAY: \n");
 	fields=cur->getRow(0);
 	assertEquals(fields[0],"1");
-	//assertEquals(fields[1],"1.5");
-	//assertEquals(fields[2],"1.5");
+	assertEquals(fields[1],"1.5");
+	assertEquals(fields[2],"1.5");
 	assertEquals(fields[3],"1");
 	assertEquals(fields[4],"testchar1");
 	assertEquals(fields[5],"testvarchar1");
@@ -587,8 +586,8 @@ int main(int argc, char **argv) {
 	stdoutput.printf("FIELD LENGTHS BY ARRAY: \n");
 	fieldlens=cur->getRowLengths(0);
 	assertEquals(fieldlens[0],1);
-	//assertEquals(fieldlens[1],3);
-	//assertEquals(fieldlens[2],3);
+	assertEquals(fieldlens[1],3);
+	assertEquals(fieldlens[2],3);
 	assertEquals(fieldlens[3],1);
 	assertEquals(fieldlens[4],9);
 	assertEquals(fieldlens[5],12);
@@ -694,10 +693,12 @@ int main(int argc, char **argv) {
 	assertEquals(cur->getColumnLength("testreal"),8);
 	assertEquals(cur->getColumnLength(3),2);
 	assertEquals(cur->getColumnLength("testsmallint"),2);
-	//assertEquals(cur->getColumnLength(4),40);
-	//assertEquals(cur->getColumnLength("testchar"),40);
-	//assertEquals(cur->getColumnLength(5),41);
-	//assertEquals(cur->getColumnLength("testvarchar"),41);
+	// testchar/testvarchar are char(40)/varchar(40); the mysql connection
+	// charset is utf8mb4 (4 bytes/char) so the lengths are 160/161
+	assertEquals(cur->getColumnLength(4),160);
+	assertEquals(cur->getColumnLength("testchar"),160);
+	assertEquals(cur->getColumnLength(5),161);
+	assertEquals(cur->getColumnLength("testvarchar"),161);
 	assertEquals(cur->getColumnLength(6),3);
 	assertEquals(cur->getColumnLength("testdate"),3);
 	assertEquals(cur->getColumnLength(7),3);
@@ -711,10 +712,10 @@ int main(int argc, char **argv) {
 	stdoutput.printf("LONGEST COLUMN: \n");
 	assertEquals(cur->getLongest((uint32_t)0),1);
 	assertEquals(cur->getLongest("testint"),1);
-	//assertEquals(cur->getLongest(1),3);
-	//assertEquals(cur->getLongest("testfloat"),3);
-	//assertEquals(cur->getLongest(2),3);
-	//assertEquals(cur->getLongest("testreal"),3);
+	assertEquals(cur->getLongest(1),3);
+	assertEquals(cur->getLongest("testfloat"),3);
+	assertEquals(cur->getLongest(2),3);
+	assertEquals(cur->getLongest("testreal"),3);
 	assertEquals(cur->getLongest(3),1);
 	assertEquals(cur->getLongest("testsmallint"),1);
 	assertEquals(cur->getLongest(4),9);
@@ -749,8 +750,8 @@ int main(int argc, char **argv) {
 	// fields by index
 	stdoutput.printf("FIELDS BY INDEX: \n");
 	assertEquals(cur->getField(0,(uint32_t)0),"1");
-	//assertEquals(cur->getField(0,1),"1.5");
-	//assertEquals(cur->getField(0,2),"1.5");
+	assertEquals(cur->getField(0,1),"1.5");
+	assertEquals(cur->getField(0,2),"1.5");
 	assertEquals(cur->getField(0,3),"1");
 	assertEquals(cur->getField(0,4),"testchar1");
 	assertEquals(cur->getField(0,5),"testvarchar1");
@@ -758,8 +759,8 @@ int main(int argc, char **argv) {
 	assertEquals(cur->getField(0,7),"01:00:00");
 	stdoutput.printf("\n");
 	assertEquals(cur->getField(7,(uint32_t)0),"8");
-	//assertEquals(cur->getField(7,1),"8.5");
-	//assertEquals(cur->getField(7,2),"8.5");
+	assertEquals(cur->getField(7,1),"8.5");
+	assertEquals(cur->getField(7,2),"8.5");
 	assertEquals(cur->getField(7,3),"8");
 	assertEquals(cur->getField(7,4),"testchar8");
 	assertEquals(cur->getField(7,5),"testvarchar8");
@@ -771,8 +772,8 @@ int main(int argc, char **argv) {
 	// field lengths by index
 	stdoutput.printf("FIELD LENGTHS BY INDEX: \n");
 	assertEquals(cur->getFieldLength(0,(uint32_t)0),1);
-	//assertEquals(cur->getFieldLength(0,1),3);
-	//assertEquals(cur->getFieldLength(0,2),3);
+	assertEquals(cur->getFieldLength(0,1),3);
+	assertEquals(cur->getFieldLength(0,2),3);
 	assertEquals(cur->getFieldLength(0,3),1);
 	assertEquals(cur->getFieldLength(0,4),9);
 	assertEquals(cur->getFieldLength(0,5),12);
@@ -780,8 +781,8 @@ int main(int argc, char **argv) {
 	assertEquals(cur->getFieldLength(0,7),8);
 	stdoutput.printf("\n");
 	assertEquals(cur->getFieldLength(7,(uint32_t)0),1);
-	//assertEquals(cur->getFieldLength(7,1),3);
-	//assertEquals(cur->getFieldLength(7,2),3);
+	assertEquals(cur->getFieldLength(7,1),3);
+	assertEquals(cur->getFieldLength(7,2),3);
 	assertEquals(cur->getFieldLength(7,3),1);
 	assertEquals(cur->getFieldLength(7,4),9);
 	assertEquals(cur->getFieldLength(7,5),12);
@@ -793,8 +794,8 @@ int main(int argc, char **argv) {
 	// fields by name
 	stdoutput.printf("FIELDS BY NAME: \n");
 	assertEquals(cur->getField(0,"testint"),"1");
-	//assertEquals(cur->getField(0,"testfloat"),"1.5");
-	//assertEquals(cur->getField(0,"testreal"),"1.5");
+	assertEquals(cur->getField(0,"testfloat"),"1.5");
+	assertEquals(cur->getField(0,"testreal"),"1.5");
 	assertEquals(cur->getField(0,"testsmallint"),"1");
 	assertEquals(cur->getField(0,"testchar"),"testchar1");
 	assertEquals(cur->getField(0,"testvarchar"),"testvarchar1");
@@ -802,8 +803,8 @@ int main(int argc, char **argv) {
 	assertEquals(cur->getField(0,"testtime"),"01:00:00");
 	stdoutput.printf("\n");
 	assertEquals(cur->getField(7,"testint"),"8");
-	//assertEquals(cur->getField(7,"testfloat"),"8.5");
-	//assertEquals(cur->getField(7,"testreal"),"8.5");
+	assertEquals(cur->getField(7,"testfloat"),"8.5");
+	assertEquals(cur->getField(7,"testreal"),"8.5");
 	assertEquals(cur->getField(7,"testsmallint"),"8");
 	assertEquals(cur->getField(7,"testchar"),"testchar8");
 	assertEquals(cur->getField(7,"testvarchar"),"testvarchar8");
@@ -815,8 +816,8 @@ int main(int argc, char **argv) {
 	// field lengths by name
 	stdoutput.printf("FIELD LENGTHS BY NAME: \n");
 	assertEquals(cur->getFieldLength(0,"testint"),1);
-	//assertEquals(cur->getFieldLength(0,"testfloat"),3);
-	//assertEquals(cur->getFieldLength(0,"testreal"),3);
+	assertEquals(cur->getFieldLength(0,"testfloat"),3);
+	assertEquals(cur->getFieldLength(0,"testreal"),3);
 	assertEquals(cur->getFieldLength(0,"testsmallint"),1);
 	assertEquals(cur->getFieldLength(0,"testchar"),9);
 	assertEquals(cur->getFieldLength(0,"testvarchar"),12);
@@ -824,8 +825,8 @@ int main(int argc, char **argv) {
 	assertEquals(cur->getFieldLength(0,"testtime"),8);
 	stdoutput.printf("\n");
 	assertEquals(cur->getFieldLength(7,"testint"),1);
-	//assertEquals(cur->getFieldLength(7,"testfloat"),3);
-	//assertEquals(cur->getFieldLength(7,"testreal"),3);
+	assertEquals(cur->getFieldLength(7,"testfloat"),3);
+	assertEquals(cur->getFieldLength(7,"testreal"),3);
 	assertEquals(cur->getFieldLength(7,"testsmallint"),1);
 	assertEquals(cur->getFieldLength(7,"testchar"),9);
 	assertEquals(cur->getFieldLength(7,"testvarchar"),12);
@@ -838,8 +839,8 @@ int main(int argc, char **argv) {
 	stdoutput.printf("FIELDS BY ARRAY: \n");
 	fields=cur->getRow(0);
 	assertEquals(fields[0],"1");
-	//assertEquals(fields[1],"1.5");
-	//assertEquals(fields[2],"1.5");
+	assertEquals(fields[1],"1.5");
+	assertEquals(fields[2],"1.5");
 	assertEquals(fields[3],"1");
 	assertEquals(fields[4],"testchar1");
 	assertEquals(fields[5],"testvarchar1");
@@ -852,8 +853,8 @@ int main(int argc, char **argv) {
 	stdoutput.printf("FIELD LENGTHS BY ARRAY: \n");
 	fieldlens=cur->getRowLengths(0);
 	assertEquals(fieldlens[0],1);
-	//assertEquals(fieldlens[1],3);
-	//assertEquals(fieldlens[2],3);
+	assertEquals(fieldlens[1],3);
+	assertEquals(fieldlens[2],3);
 	assertEquals(fieldlens[3],1);
 	assertEquals(fieldlens[4],9);
 	assertEquals(fieldlens[5],12);

@@ -6,6 +6,7 @@
 use DBI;
 use DBI::Const::GetInfoType;
 use Data::Dumper;
+use Sys::Hostname;
 
 require "./asserts.pl";
 
@@ -905,10 +906,16 @@ print("\n");
 
 # get info
 print("GET INFO: \n");
-#assertEqualString(
-#	$dbh->get_info(
-#		$GetInfoType{SQL_DATA_SOURCE_NAME}),
-#	"TESTUSER");
+# SQL_DATA_SOURCE_NAME comes back as the backend oracle schema, which is
+# the build's uppercased short hostname (the fixture connects as that user)
+my $hostname=hostname();
+if (index($hostname,".")!=-1) {
+	($hostname)=split(/\./,$hostname);
+}
+$hostname=uc($hostname);
+assertEqualString(
+	$dbh->get_info($GetInfoType{SQL_DATA_SOURCE_NAME}),
+	$hostname);
 assertEqualString($dbh->get_info($GetInfoType{SQL_DBMS_NAME}),"oracle");
 assertEqualString(
 	$dbh->get_info($GetInfoType{SQL_DBMS_VER}),

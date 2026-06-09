@@ -495,9 +495,10 @@ main() ->
     assertEqualsInt(sqlrelay:getColumnLengthByIndex(9), 3),
     assertEqualsInt(sqlrelay:getColumnLengthByIndex(10), 8),
     assertEqualsInt(sqlrelay:getColumnLengthByIndex(11), 1),
-    %% these can be 120/121 if the db charset is utf8
-    %% assertEqualsInt(sqlrelay:getColumnLengthByIndex(12), 40),
-    %% assertEqualsInt(sqlrelay:getColumnLengthByIndex(13), 41),
+    %% testchar/testvarchar are char(40)/varchar(40); the connection charset
+    %% is utf8mb4 (4 bytes/char) so the lengths are 160/161
+    assertEqualsInt(sqlrelay:getColumnLengthByIndex(12), 160),
+    assertEqualsInt(sqlrelay:getColumnLengthByIndex(13), 161),
     assertEqualsInt(sqlrelay:getColumnLengthByIndex(14), 65535),
     assertEqualsInt(sqlrelay:getColumnLengthByIndex(15), 255),
     assertEqualsInt(sqlrelay:getColumnLengthByIndex(16), 16777215),
@@ -519,9 +520,10 @@ main() ->
     assertEqualsInt(sqlrelay:getColumnLengthByName("testtime"), 3),
     assertEqualsInt(sqlrelay:getColumnLengthByName("testdatetime"), 8),
     assertEqualsInt(sqlrelay:getColumnLengthByName("testyear"), 1),
-    %% these can be 120/121 if the db charset is utf8
-    %% assertEqualsInt(sqlrelay:getColumnLengthByName("testchar"), 40),
-    %% assertEqualsInt(sqlrelay:getColumnLengthByName("testvarchar"), 41),
+    %% testchar/testvarchar are char(40)/varchar(40); the connection charset
+    %% is utf8mb4 (4 bytes/char) so the lengths are 160/161
+    assertEqualsInt(sqlrelay:getColumnLengthByName("testchar"), 160),
+    assertEqualsInt(sqlrelay:getColumnLengthByName("testvarchar"), 161),
     assertEqualsInt(sqlrelay:getColumnLengthByName("testtext"), 65535),
     assertEqualsInt(sqlrelay:getColumnLengthByName("testtinytext"), 255),
     assertEqualsInt(sqlrelay:getColumnLengthByName("testmediumtext"), 16777215),

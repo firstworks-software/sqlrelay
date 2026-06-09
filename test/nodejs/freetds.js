@@ -438,12 +438,11 @@ assertEqInt(cur.getColumnLength(3),4);
 assertEqInt(cur.getColumnLength("testreal"),4);
 assertEqInt(cur.getColumnLength(4),8);
 assertEqInt(cur.getColumnLength("testfloat"),8);
-// these seem to fluctuate with every
-// freetds release
-//assertEqInt(cur.getColumnLength(5),3);
-//assertEqInt(cur.getColumnLength("testdecimal"),3);
-//assertEqInt(cur.getColumnLength(6),3);
-//assertEqInt(cur.getColumnLength("testnumeric"),3);
+// freetds reports the decimal/numeric display length as 35
+assertEqInt(cur.getColumnLength(5),35);
+assertEqInt(cur.getColumnLength("testdecimal"),35);
+assertEqInt(cur.getColumnLength(6),35);
+assertEqInt(cur.getColumnLength("testnumeric"),35);
 assertEqInt(cur.getColumnLength(7),8);
 assertEqInt(cur.getColumnLength("testmoney"),8);
 assertEqInt(cur.getColumnLength(8),4);
@@ -452,11 +451,11 @@ assertEqInt(cur.getColumnLength(9),8);
 assertEqInt(cur.getColumnLength("testdatetime"),8);
 assertEqInt(cur.getColumnLength(10),4);
 assertEqInt(cur.getColumnLength("testsmalldatetime"),4);
-// these seem to fluctuate too
-//assertEqInt(cur.getColumnLength(11),40);
-//assertEqInt(cur.getColumnLength("testchar"),40);
-//assertEqInt(cur.getColumnLength(12),40);
-//assertEqInt(cur.getColumnLength("testvarchar"),40);
+// char(40)/varchar(40) report the declared length 40 (not multiplied)
+assertEqInt(cur.getColumnLength(11),40);
+assertEqInt(cur.getColumnLength("testchar"),40);
+assertEqInt(cur.getColumnLength(12),40);
+assertEqInt(cur.getColumnLength("testvarchar"),40);
 assertEqInt(cur.getColumnLength(13),1);
 assertEqInt(cur.getColumnLength("testbit"),1);
 console.log();
@@ -482,12 +481,11 @@ assertEqInt(cur.getLongest(7),6);
 assertEqInt(cur.getLongest("testmoney"),6);
 assertEqInt(cur.getLongest(8),6);
 assertEqInt(cur.getLongest("testsmallmoney"),6);
-// datetime formatting fluctuates with
-// every freetds release
-//assertEqInt(cur.getLongest(9),26);
-//assertEqInt(cur.getLongest("testdatetime"),26);
-//assertEqInt(cur.getLongest(10),26);
-//assertEqInt(cur.getLongest("testsmalldatetime"),26);
+// freetds datetime rendering for the fixture tds version
+assertEqInt(cur.getLongest(9),26);
+assertEqInt(cur.getLongest("testdatetime"),26);
+assertEqInt(cur.getLongest(10),26);
+assertEqInt(cur.getLongest("testsmalldatetime"),26);
 assertEqInt(cur.getLongest(11),40);
 assertEqInt(cur.getLongest("testchar"),40);
 assertEqInt(cur.getLongest(12),12);
@@ -532,12 +530,11 @@ assertEqStr(cur.getField(0,5),"1.5");
 assertEqStr(cur.getField(0,6),"1.5");
 assertEqStr(cur.getField(0,7),"1.0000");
 assertEqStr(cur.getField(0,8),"1.0000");
-// datetime formatting fluctuates with
-// every freetds release
-//assertEqStr(cur.getField(0,9),
-//	"Jan  1 2001 01:00:00:000AM");
-//assertEqStr(cur.getField(0,10),
-//	"Jan  1 2001 01:00:00:000AM");
+// freetds datetime rendering for the fixture tds version
+assertEqStr(cur.getField(0,9),
+	"Jan  1 2001 01:00:00:000AM");
+assertEqStr(cur.getField(0,10),
+	"Jan  1 2001 01:00:00:000AM");
 assertEqStr(cur.getField(0,11),"testchar1"+
 	"                               ");
 assertEqStr(cur.getField(0,12),"testvarchar1");
@@ -552,12 +549,11 @@ assertEqStr(cur.getField(7,5),"8.5");
 assertEqStr(cur.getField(7,6),"8.5");
 assertEqStr(cur.getField(7,7),"8.0000");
 assertEqStr(cur.getField(7,8),"8.0000");
-// datetime formatting fluctuates with
-// every freetds release
-//assertEqStr(cur.getField(7,9),
-//	"Jan  1 2008 08:00:00:000AM");
-//assertEqStr(cur.getField(7,10),
-//	"Jan  1 2008 08:00:00:000AM");
+// freetds datetime rendering for the fixture tds version
+assertEqStr(cur.getField(7,9),
+	"Jan  1 2008 08:00:00:000AM");
+assertEqStr(cur.getField(7,10),
+	"Jan  1 2008 08:00:00:000AM");
 assertEqStr(cur.getField(7,11),"testchar8"+
 	"                               ");
 assertEqStr(cur.getField(7,12),"testvarchar8");
@@ -576,10 +572,9 @@ assertEqInt(cur.getFieldLength(0,5),3);
 assertEqInt(cur.getFieldLength(0,6),3);
 assertEqInt(cur.getFieldLength(0,7),6);
 assertEqInt(cur.getFieldLength(0,8),6);
-// datetime formatting fluctuates with
-// every freetds release
-//assertEqInt(cur.getFieldLength(0,9),26);
-//assertEqInt(cur.getFieldLength(0,10),26);
+// freetds datetime rendering for the fixture tds version
+assertEqInt(cur.getFieldLength(0,9),26);
+assertEqInt(cur.getFieldLength(0,10),26);
 assertEqInt(cur.getFieldLength(0,11),40);
 assertEqInt(cur.getFieldLength(0,12),12);
 assertEqInt(cur.getFieldLength(0,13),1);
@@ -593,10 +588,9 @@ assertEqInt(cur.getFieldLength(7,5),3);
 assertEqInt(cur.getFieldLength(7,6),3);
 assertEqInt(cur.getFieldLength(7,7),6);
 assertEqInt(cur.getFieldLength(7,8),6);
-// datetime formatting fluctuates with
-// every freetds release
-//assertEqInt(cur.getFieldLength(7,9),26);
-//assertEqInt(cur.getFieldLength(7,10),26);
+// freetds datetime rendering for the fixture tds version
+assertEqInt(cur.getFieldLength(7,9),26);
+assertEqInt(cur.getFieldLength(7,10),26);
 assertEqInt(cur.getFieldLength(7,11),40);
 assertEqInt(cur.getFieldLength(7,12),12);
 assertEqInt(cur.getFieldLength(7,13),1);
@@ -614,12 +608,11 @@ assertEqStr(cur.getField(0,"testdecimal"),"1.5");
 assertEqStr(cur.getField(0,"testnumeric"),"1.5");
 assertEqStr(cur.getField(0,"testmoney"),"1.0000");
 assertEqStr(cur.getField(0,"testsmallmoney"),"1.0000");
-// datetime formatting fluctuates with
-// every freetds release
-//assertEqStr(cur.getField(0,"testdatetime"),
-//	"Jan  1 2001 01:00:00:000AM");
-//assertEqStr(cur.getField(0,"testsmalldatetime"),
-//	"Jan  1 2001 01:00:00:000AM");
+// freetds datetime rendering for the fixture tds version
+assertEqStr(cur.getField(0,"testdatetime"),
+	"Jan  1 2001 01:00:00:000AM");
+assertEqStr(cur.getField(0,"testsmalldatetime"),
+	"Jan  1 2001 01:00:00:000AM");
 assertEqStr(cur.getField(0,"testchar"),"testchar1"+
 	"                               ");
 assertEqStr(cur.getField(0,"testvarchar"),"testvarchar1");
@@ -634,12 +627,11 @@ assertEqStr(cur.getField(7,"testdecimal"),"8.5");
 assertEqStr(cur.getField(7,"testnumeric"),"8.5");
 assertEqStr(cur.getField(7,"testmoney"),"8.0000");
 assertEqStr(cur.getField(7,"testsmallmoney"),"8.0000");
-// datetime formatting fluctuates with
-// every freetds release
-//assertEqStr(cur.getField(7,"testdatetime"),
-//	"Jan  1 2008 08:00:00:000AM");
-//assertEqStr(cur.getField(7,"testsmalldatetime"),
-//	"Jan  1 2008 08:00:00:000AM");
+// freetds datetime rendering for the fixture tds version
+assertEqStr(cur.getField(7,"testdatetime"),
+	"Jan  1 2008 08:00:00:000AM");
+assertEqStr(cur.getField(7,"testsmalldatetime"),
+	"Jan  1 2008 08:00:00:000AM");
 assertEqStr(cur.getField(7,"testchar"),"testchar8"+
 	"                               ");
 assertEqStr(cur.getField(7,"testvarchar"),"testvarchar8");
@@ -658,11 +650,10 @@ assertEqInt(cur.getFieldLength(0,"testdecimal"),3);
 assertEqInt(cur.getFieldLength(0,"testnumeric"),3);
 assertEqInt(cur.getFieldLength(0,"testmoney"),6);
 assertEqInt(cur.getFieldLength(0,"testsmallmoney"),6);
-// datetime formatting fluctuates with
-// every freetds release
-//assertEqInt(cur.getFieldLength(0,"testdatetime"),26);
-//assertEqInt(cur.getFieldLength(0,"testsmalldatetime"),
-//	26);
+// freetds datetime rendering for the fixture tds version
+assertEqInt(cur.getFieldLength(0,"testdatetime"),26);
+assertEqInt(cur.getFieldLength(0,"testsmalldatetime"),
+	26);
 assertEqInt(cur.getFieldLength(0,"testchar"),40);
 assertEqInt(cur.getFieldLength(0,"testvarchar"),12);
 assertEqInt(cur.getFieldLength(0,"testbit"),1);
@@ -676,11 +667,10 @@ assertEqInt(cur.getFieldLength(7,"testdecimal"),3);
 assertEqInt(cur.getFieldLength(7,"testnumeric"),3);
 assertEqInt(cur.getFieldLength(7,"testmoney"),6);
 assertEqInt(cur.getFieldLength(7,"testsmallmoney"),6);
-// datetime formatting fluctuates with
-// every freetds release
-//assertEqInt(cur.getFieldLength(7,"testdatetime"),26);
-//assertEqInt(cur.getFieldLength(7,"testsmalldatetime"),
-//	26);
+// freetds datetime rendering for the fixture tds version
+assertEqInt(cur.getFieldLength(7,"testdatetime"),26);
+assertEqInt(cur.getFieldLength(7,"testsmalldatetime"),
+	26);
 assertEqInt(cur.getFieldLength(7,"testchar"),40);
 assertEqInt(cur.getFieldLength(7,"testvarchar"),12);
 assertEqInt(cur.getFieldLength(7,"testbit"),1);
@@ -699,10 +689,9 @@ assertEqStr(fields[5],"1.5");
 assertEqStr(fields[6],"1.5");
 assertEqStr(fields[7],"1.0000");
 assertEqStr(fields[8],"1.0000");
-// datetime formatting fluctuates with
-// every freetds release
-//assertEqStr(fields[9],"Jan  1 2001 01:00:00:000AM");
-//assertEqStr(fields[10],"Jan  1 2001 01:00:00:000AM");
+// freetds datetime rendering for the fixture tds version
+assertEqStr(fields[9],"Jan  1 2001 01:00:00:000AM");
+assertEqStr(fields[10],"Jan  1 2001 01:00:00:000AM");
 assertEqStr(fields[11],"testchar1"+
 	"                               ");
 assertEqStr(fields[12],"testvarchar1");
@@ -722,10 +711,9 @@ assertEqInt(fieldlens[5],3);
 assertEqInt(fieldlens[6],3);
 assertEqInt(fieldlens[7],6);
 assertEqInt(fieldlens[8],6);
-// datetime formatting fluctuates with
-// every freetds release
-//assertEqInt(fieldlens[9],26);
-//assertEqInt(fieldlens[10],26);
+// freetds datetime rendering for the fixture tds version
+assertEqInt(fieldlens[9],26);
+assertEqInt(fieldlens[10],26);
 assertEqInt(fieldlens[11],40);
 assertEqInt(fieldlens[12],12);
 assertEqInt(fieldlens[13],1);
