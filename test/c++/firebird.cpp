@@ -1263,13 +1263,13 @@ int main(int argc, char **argv) {
 	cur->prepareQuery("insert into testtable1 values (?)");
 	cur->inputBindBlob("1","",0);
 	assertTrue(cur->executeQuery());
-	cur->sendQuery("select testblob from testtable1");
+	assertTrue(cur->sendQuery("select testblob from testtable1"));
 	assertEquals(cur->getField(0,"TESTBLOB"),"");
 	cur->sendQuery("delete from testtable1");
 	cur->prepareQuery("insert into testtable1 values (?)");
 	cur->inputBindBlob("1",NULL,0);
 	assertTrue(cur->executeQuery());
-	cur->sendQuery("select testblob from testtable1");
+	assertTrue(cur->sendQuery("select testblob from testtable1"));
 	assertEquals(cur->getField(0,"TESTBLOB"),NULL);
 	cur->getNullsAsEmptyStrings();
 	assertTrue(cur->sendQuery("delete from testtable1"));
@@ -1286,7 +1286,7 @@ int main(int argc, char **argv) {
 	largebuffer[LARGE_BUFFER_LENGTH]='\0';
 	cur->inputBindClob("1",largebuffer,LARGE_BUFFER_LENGTH);
 	assertTrue(cur->executeQuery());
-	cur->sendQuery("select testblob from testtable1");
+	assertTrue(cur->sendQuery("select testblob from testtable1"));
 	assertEquals(cur->getFieldLength(0,"TESTBLOB"),LARGE_BUFFER_LENGTH);
 	assertEquals(cur->getField(0,"TESTBLOB"),largebuffer);
 	assertTrue(cur->sendQuery("delete from testtable1"));

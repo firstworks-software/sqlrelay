@@ -1370,7 +1370,7 @@ int main(int argc, char **argv) {
 	cur->inputBindBlob("3","",0);
 	cur->inputBindBlob("4",NULL,0);
 	assertTrue(cur->executeQuery());
-	cur->sendQuery("select * from testtable");
+	assertTrue(cur->sendQuery("select * from testtable"));
 	// sap converts empty strings to a single space.  It's possible that
 	// if we had true input bind support on the backend, then this would
 	// work correctly, but for now we're faking binds, and inserting an
@@ -1391,10 +1391,10 @@ int main(int argc, char **argv) {
 	// long lobs
 	stdoutput.printf("LONG LOBS: \n");
 	cur->sendQuery("drop table testtable");
-	cur->sendQuery(
+	assertTrue(cur->sendQuery(
 		"create table testtable ("
 		"	testclob text, "
-		"	testblob image) lock datarows");
+		"	testblob image) lock datarows"));
 	cur->prepareQuery("insert into testtable values (?,?)");
 	for (int i=0; i<LARGE_BUFFER_LENGTH; i++) {
 		largebuffer[i]='C';
@@ -1403,7 +1403,7 @@ int main(int argc, char **argv) {
 	cur->inputBindClob("1",largebuffer,LARGE_BUFFER_LENGTH);
 	cur->inputBindBlob("2",largebuffer,LARGE_BUFFER_LENGTH);
 	assertTrue(cur->executeQuery());
-	cur->sendQuery("select * from testtable");
+	assertTrue(cur->sendQuery("select * from testtable"));
 	assertEquals(cur->getFieldLength(0,"testclob"),LARGE_BUFFER_LENGTH);
 	assertEquals(cur->getField(0,"testclob"),largebuffer);
 	assertEquals(cur->getFieldLength(0,"testblob"),LARGE_BUFFER_LENGTH);
@@ -1560,11 +1560,11 @@ int main(int argc, char **argv) {
 	// negative input bind
 	stdoutput.printf("NEGATIVE INPUT BIND: \n");
 	cur->sendQuery("drop table testtable");
-	cur->sendQuery("create table testtable (testval int)");
+	assertTrue(cur->sendQuery("create table testtable (testval int)"));
 	cur->prepareQuery("insert into testtable values (@testval)");
 	cur->inputBind("testval",-1);
 	assertTrue(cur->executeQuery());
-	cur->sendQuery("select testval from testtable");
+	assertTrue(cur->sendQuery("select testval from testtable"));
 	assertEquals(cur->getField(0,"testval"),"-1");
 	assertTrue(cur->sendQuery("drop table testtable"));
 	stdoutput.printf("\n");
@@ -1573,11 +1573,11 @@ int main(int argc, char **argv) {
 	// bind validation
 	stdoutput.printf("BIND VALIDATION: \n");
 	cur->sendQuery("drop table testtable");
-	cur->sendQuery(
+	assertTrue(cur->sendQuery(
 		"create table testtable ("
 		"	col1 varchar(20), "
 		"	col2 varchar(20), "
-		"	col3 varchar(20))");
+		"	col3 varchar(20))"));
 	cur->prepareQuery(
 		"insert into "
 		"	testtable "
@@ -1769,7 +1769,7 @@ int main(int argc, char **argv) {
 	// temporary tables
 	stdoutput.printf("TEMPORARY TABLES: \n");
 	cur->sendQuery("drop table #temptable");
-	cur->sendQuery("create table #temptable (col1 int)");
+	assertTrue(cur->sendQuery("create table #temptable (col1 int)"));
 	assertTrue(cur->sendQuery("insert into #temptable values (1)"));
 	assertTrue(cur->sendQuery("select count(*) from #temptable"));
 	assertEquals(cur->getField(0,(uint32_t)0),"1");

@@ -1298,7 +1298,7 @@ int main(int argc, char **argv) {
 	cur->inputBindBlob("3","",0);
 	cur->inputBindBlob("4",NULL,0);
 	assertTrue(cur->executeQuery());
-	cur->sendQuery("select * from testtable");
+	assertTrue(cur->sendQuery("select * from testtable"));
 	assertEquals(cur->getField(0,(uint32_t)0),"");
 	assertEquals(cur->getField(0,1),NULL);
 	assertEquals(cur->getField(0,2),"");
@@ -1325,7 +1325,7 @@ int main(int argc, char **argv) {
 	cur->inputBindClob("1",largebuffer,LARGE_BUFFER_LENGTH);
 	cur->inputBindBlob("2",largebuffer,LARGE_BUFFER_LENGTH);
 	assertTrue(cur->executeQuery());
-	cur->sendQuery("select * from testtable");
+	assertTrue(cur->sendQuery("select * from testtable"));
 	assertEquals(cur->getFieldLength(0,"TESTCLOB"),LARGE_BUFFER_LENGTH);
 	assertEquals(cur->getField(0,"TESTCLOB"),largebuffer);
 	assertEquals(cur->getFieldLength(0,"TESTBLOB"),LARGE_BUFFER_LENGTH);
@@ -1401,10 +1401,10 @@ int main(int argc, char **argv) {
 	// lob output bind
 	stdoutput.printf("LOB OUTPUT BIND: \n");
 	cur->sendQuery("drop table testtable");
-	cur->sendQuery(
+	assertTrue(cur->sendQuery(
 		"create table testtable ("
 		"	testclob clob, "
-		"	testblob blob)");
+		"	testblob blob)"));
 	assertTrue(con->commit());
 	cur->prepareQuery("insert into testtable values ('hello',?)");
 	cur->inputBindBlob("1","hello",5);
@@ -1468,12 +1468,12 @@ int main(int argc, char **argv) {
 	// negative input bind
 	stdoutput.printf("NEGATIVE INPUT BIND: \n");
 	cur->sendQuery("drop table testtable");
-	cur->sendQuery("create table testtable (testval integer)");
+	assertTrue(cur->sendQuery("create table testtable (testval integer)"));
 	assertTrue(con->commit());
 	cur->prepareQuery("insert into testtable values (?)");
 	cur->inputBind("1",-1);
 	assertTrue(cur->executeQuery());
-	cur->sendQuery("select testval from testtable");
+	assertTrue(cur->sendQuery("select testval from testtable"));
 	assertEquals(cur->getField(0,"TESTVAL"),"-1");
 	assertTrue(cur->sendQuery("drop table testtable"));
 	assertTrue(con->commit());

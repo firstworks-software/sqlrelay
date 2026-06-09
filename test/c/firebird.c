@@ -1260,13 +1260,13 @@ int main(int argc, char **argv) {
 	sqlrcur_prepareQuery(cur,"insert into testtable1 values (?)");
 	sqlrcur_inputBindBlob(cur,"1","",0);
 	assertTrue(sqlrcur_executeQuery(cur));
-	sqlrcur_sendQuery(cur,"select testblob from testtable1");
+	assertTrue(sqlrcur_sendQuery(cur,"select testblob from testtable1"));
 	assertEqStr(sqlrcur_getFieldByName(cur,0,"TESTBLOB"),"");
 	sqlrcur_sendQuery(cur,"delete from testtable1");
 	sqlrcur_prepareQuery(cur,"insert into testtable1 values (?)");
 	sqlrcur_inputBindBlob(cur,"1",NULL,0);
 	assertTrue(sqlrcur_executeQuery(cur));
-	sqlrcur_sendQuery(cur,"select testblob from testtable1");
+	assertTrue(sqlrcur_sendQuery(cur,"select testblob from testtable1"));
 	assertEqStr(sqlrcur_getFieldByName(cur,0,"TESTBLOB"),NULL);
 	sqlrcur_getNullsAsEmptyStrings(cur);
 	assertTrue(sqlrcur_sendQuery(cur,"delete from testtable1"));
@@ -1283,7 +1283,7 @@ int main(int argc, char **argv) {
 	largebuffer[LARGE_BUFFER_LENGTH]='\0';
 	sqlrcur_inputBindClob(cur,"1",largebuffer,LARGE_BUFFER_LENGTH);
 	assertTrue(sqlrcur_executeQuery(cur));
-	sqlrcur_sendQuery(cur,"select testblob from testtable1");
+	assertTrue(sqlrcur_sendQuery(cur,"select testblob from testtable1"));
 	assertEqInt(sqlrcur_getFieldLengthByName(cur,0,
 					"TESTBLOB"),LARGE_BUFFER_LENGTH);
 	assertEqStr(sqlrcur_getFieldByName(cur,0,"TESTBLOB"),largebuffer);

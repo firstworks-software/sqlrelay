@@ -1289,7 +1289,7 @@ int main(int argc, char **argv) {
 	sqlrcur_inputBindBlob(cur,"3","",0);
 	sqlrcur_inputBindBlob(cur,"4",NULL,0);
 	assertTrue(sqlrcur_executeQuery(cur));
-	sqlrcur_sendQuery(cur,"select * from testtable");
+	assertTrue(sqlrcur_sendQuery(cur,"select * from testtable"));
 	assertEqStr(sqlrcur_getFieldByIndex(cur,0,0),"");
 	assertEqStr(sqlrcur_getFieldByIndex(cur,0,1),NULL);
 	assertEqStr(sqlrcur_getFieldByIndex(cur,0,2),"");
@@ -1316,7 +1316,7 @@ int main(int argc, char **argv) {
 	sqlrcur_inputBindClob(cur,"1",largebuffer,LARGE_BUFFER_LENGTH);
 	sqlrcur_inputBindBlob(cur,"2",largebuffer,LARGE_BUFFER_LENGTH);
 	assertTrue(sqlrcur_executeQuery(cur));
-	sqlrcur_sendQuery(cur,"select * from testtable");
+	assertTrue(sqlrcur_sendQuery(cur,"select * from testtable"));
 	assertEqInt(sqlrcur_getFieldLengthByName(cur,0,"TESTCLOB"),
 		LARGE_BUFFER_LENGTH);
 	assertEqStr(sqlrcur_getFieldByName(cur,0,"TESTCLOB"),largebuffer);
@@ -1391,10 +1391,10 @@ int main(int argc, char **argv) {
 	// lob output bind
 	printf("LOB OUTPUT BIND: \n");
 	sqlrcur_sendQuery(cur,"drop table testtable");
-	sqlrcur_sendQuery(cur,
+	assertTrue(sqlrcur_sendQuery(cur,
 		"create table testtable ("
 		"	testclob clob, "
-		"	testblob blob)");
+		"	testblob blob)"));
 	assertTrue(sqlrcon_commit(con));
 	sqlrcur_prepareQuery(cur,"insert into testtable ""values ('hello',?)");
 	sqlrcur_inputBindBlob(cur,"1","hello",5);
@@ -1456,12 +1456,12 @@ int main(int argc, char **argv) {
 	// negative input bind
 	printf("NEGATIVE INPUT BIND: \n");
 	sqlrcur_sendQuery(cur,"drop table testtable");
-	sqlrcur_sendQuery(cur,"create table testtable ""(testval integer)");
+	assertTrue(sqlrcur_sendQuery(cur,"create table testtable ""(testval integer)"));
 	assertTrue(sqlrcon_commit(con));
 	sqlrcur_prepareQuery(cur,"insert into testtable ""values (?)");
 	sqlrcur_inputBindLong(cur,"1",-1);
 	assertTrue(sqlrcur_executeQuery(cur));
-	sqlrcur_sendQuery(cur,"select testval from testtable");
+	assertTrue(sqlrcur_sendQuery(cur,"select testval from testtable"));
 	assertEqStr(sqlrcur_getFieldByName(cur,0,"TESTVAL"),"-1");
 	assertTrue(sqlrcur_sendQuery(cur,"drop table testtable"));
 	assertTrue(sqlrcon_commit(con));

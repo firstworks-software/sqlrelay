@@ -1686,7 +1686,7 @@ int main(int argc, char **argv) {
 	sqlrcur_inputBindBlob(cur,"3","",0);
 	sqlrcur_inputBindBlob(cur,"4",NULL,0);
 	assertTrue(sqlrcur_executeQuery(cur));
-	sqlrcur_sendQuery(cur,"select * from testtable");
+	assertTrue(sqlrcur_sendQuery(cur,"select * from testtable"));
 	assertEqStr(sqlrcur_getFieldByIndex(cur,0,0),"");
 	assertEqStr(sqlrcur_getFieldByIndex(cur,0,1),NULL);
 	assertEqStr(sqlrcur_getFieldByIndex(cur,0,2),"");
@@ -1699,10 +1699,10 @@ int main(int argc, char **argv) {
 	// long lobs
 	printf("LONG LOBS: \n");
 	sqlrcur_sendQuery(cur,"drop table testtable");
-	sqlrcur_sendQuery(cur,
+	assertTrue(sqlrcur_sendQuery(cur,
 		"create table testtable ("
 		"	testtext longtext, "
-		"	testblob longblob)");
+		"	testblob longblob)"));
 	sqlrcur_prepareQuery(cur,"insert into testtable ""values (?,?)");
 	for (i=0;i<LARGE_BUFFER_LENGTH;i++) {
 		largebuffer[i]='C';
@@ -1711,7 +1711,7 @@ int main(int argc, char **argv) {
 	sqlrcur_inputBindClob(cur,"1",largebuffer,LARGE_BUFFER_LENGTH);
 	sqlrcur_inputBindBlob(cur,"2",largebuffer,LARGE_BUFFER_LENGTH);
 	assertTrue(sqlrcur_executeQuery(cur));
-	sqlrcur_sendQuery(cur,"select * from testtable");
+	assertTrue(sqlrcur_sendQuery(cur,"select * from testtable"));
 	assertEqInt(sqlrcur_getFieldLengthByName(cur,0,"testtext"),
 		LARGE_BUFFER_LENGTH);
 	assertEqStr(sqlrcur_getFieldByName(cur,0,"testtext"),largebuffer);
@@ -1744,11 +1744,11 @@ int main(int argc, char **argv) {
 	// negative input bind
 	printf("NEGATIVE INPUT BIND: \n");
 	sqlrcur_sendQuery(cur,"drop table testtable");
-	sqlrcur_sendQuery(cur,"create table testtable ""(testval int)");
+	assertTrue(sqlrcur_sendQuery(cur,"create table testtable ""(testval int)"));
 	sqlrcur_prepareQuery(cur,"insert into testtable ""values (?)");
 	sqlrcur_inputBindLong(cur,"1",-1);
 	assertTrue(sqlrcur_executeQuery(cur));
-	sqlrcur_sendQuery(cur,"select testval ""from testtable");
+	assertTrue(sqlrcur_sendQuery(cur,"select testval ""from testtable"));
 	assertEqStr(sqlrcur_getFieldByName(cur,0,"testval"),"-1");
 	assertTrue(sqlrcur_sendQuery(cur,"drop table testtable"));
 	printf("\n");
@@ -1900,7 +1900,7 @@ int main(int argc, char **argv) {
 	// temporary tables
 	printf("TEMPORARY TABLES: \n");
 	sqlrcur_sendQuery(cur,"drop table temptable");
-	sqlrcur_sendQuery(cur,"create temporary table ""temptable (col1 int)");
+	assertTrue(sqlrcur_sendQuery(cur,"create temporary table ""temptable (col1 int)"));
 	assertTrue(sqlrcur_sendQuery(cur,"insert into temptable ""values (1)"));
 	assertTrue(sqlrcur_sendQuery(cur,"select count(*) ""from temptable"));
 	assertEqStr(sqlrcur_getFieldByIndex(cur,0,0),"1");

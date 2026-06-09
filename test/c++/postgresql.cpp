@@ -1214,7 +1214,7 @@ int main(int argc, char **argv) {
 	cur->inputBindBlob("3","",0);
 	cur->inputBindBlob("4",NULL,0);
 	assertTrue(cur->executeQuery());
-	cur->sendQuery("select * from testtable");
+	assertTrue(cur->sendQuery("select * from testtable"));
 	assertEquals(cur->getField(0,(uint32_t)0),"");
 	assertEquals(cur->getField(0,1),NULL);
 	assertEquals(cur->getField(0,2),"");
@@ -1227,10 +1227,10 @@ int main(int argc, char **argv) {
 	// long lobs
 	stdoutput.printf("LONG LOBS: \n");
 	cur->sendQuery("drop table testtable");
-	cur->sendQuery(
+	assertTrue(cur->sendQuery(
 		"create table testtable ("
 		"	testtext text, "
-		"	testbytea bytea)");
+		"	testbytea bytea)"));
 	cur->prepareQuery("insert into testtable values ($1,$2)");
 	for (int i=0; i<LARGE_BUFFER_LENGTH; i++) {
 		largebuffer[i]='C';
@@ -1239,7 +1239,7 @@ int main(int argc, char **argv) {
 	cur->inputBindClob("1",largebuffer,LARGE_BUFFER_LENGTH);
 	cur->inputBindBlob("2",largebuffer,LARGE_BUFFER_LENGTH);
 	assertTrue(cur->executeQuery());
-	cur->sendQuery("select * from testtable");
+	assertTrue(cur->sendQuery("select * from testtable"));
 	assertEquals(cur->getFieldLength(0,"testtext"),LARGE_BUFFER_LENGTH);
 	assertEquals(cur->getField(0,"testtext"),largebuffer);
 	assertEquals(cur->getFieldLength(0,"testbytea"),LARGE_BUFFER_LENGTH);
@@ -1272,11 +1272,11 @@ int main(int argc, char **argv) {
 	// negative input bind
 	stdoutput.printf("NEGATIVE INPUT BIND: \n");
 	cur->sendQuery("drop table testtable");
-	cur->sendQuery("create table testtable (testval int)");
+	assertTrue(cur->sendQuery("create table testtable (testval int)"));
 	cur->prepareQuery("insert into testtable values ($1)");
 	cur->inputBind("1",-1);
 	assertTrue(cur->executeQuery());
-	cur->sendQuery("select testval from testtable");
+	assertTrue(cur->sendQuery("select testval from testtable"));
 	assertEquals(cur->getField(0,"testval"),"-1");
 	assertTrue(cur->sendQuery("drop table testtable"));
 	stdoutput.printf("\n");
@@ -1449,7 +1449,7 @@ int main(int argc, char **argv) {
 	// temporary tables
 	stdoutput.printf("TEMPORARY TABLES: \n");
 	cur->sendQuery("drop table temptable\n");
-	cur->sendQuery("create temporary table temptable (col1 int)");
+	assertTrue(cur->sendQuery("create temporary table temptable (col1 int)"));
 	assertTrue(cur->sendQuery("insert into temptable values (1)"));
 	assertTrue(cur->sendQuery("select count(*) from temptable"));
 	assertEquals(cur->getField(0,(uint32_t)0),"1");

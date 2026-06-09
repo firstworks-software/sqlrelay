@@ -1204,7 +1204,7 @@ int main(int argc, char **argv) {
 	cur->inputBindBlob("var3","",0);
 	cur->inputBindBlob("var4",NULL,0);
 	assertTrue(cur->executeQuery());
-	cur->sendQuery("select * from testtable");
+	assertTrue(cur->sendQuery("select * from testtable"));
 	assertEquals(cur->getField(0,(uint32_t)0),"");
 	assertEquals(cur->getField(0,1),NULL);
 	assertEquals(cur->getField(0,2),"");
@@ -1217,10 +1217,10 @@ int main(int argc, char **argv) {
 	// long lobs
 	stdoutput.printf("LONG LOBS: \n");
 	cur->sendQuery("drop table testtable");
-	cur->sendQuery(
+	assertTrue(cur->sendQuery(
 		"create table testtable ("
 		"	testclob clob, "
-		"	testblob blob)");
+		"	testblob blob)"));
 	cur->prepareQuery("insert into testtable values (:clobval,:blobval)");
 	for (int i=0; i<LARGE_BUFFER_LENGTH; i++) {
 		largebuffer[i]='C';
@@ -1229,7 +1229,7 @@ int main(int argc, char **argv) {
 	cur->inputBindClob("clobval",largebuffer,LARGE_BUFFER_LENGTH);
 	cur->inputBindBlob("blobval",largebuffer,LARGE_BUFFER_LENGTH);
 	assertTrue(cur->executeQuery());
-	cur->sendQuery("select * from testtable");
+	assertTrue(cur->sendQuery("select * from testtable"));
 	assertEquals(cur->getFieldLength(0,"TESTCLOB"),LARGE_BUFFER_LENGTH);
 	assertEquals(cur->getField(0,"TESTCLOB"),largebuffer);
 	assertEquals(cur->getFieldLength(0,"TESTBLOB"),LARGE_BUFFER_LENGTH);
@@ -1401,11 +1401,11 @@ int main(int argc, char **argv) {
 	// negative input bind
 	stdoutput.printf("NEGATIVE INPUT BIND: \n");
 	cur->sendQuery("drop table testtable");
-	cur->sendQuery("create table testtable (testval number)");
+	assertTrue(cur->sendQuery("create table testtable (testval number)"));
 	cur->prepareQuery("insert into testtable values (:testval)");
 	cur->inputBind("testval",-1);
 	assertTrue(cur->executeQuery());
-	cur->sendQuery("select testval from testtable");
+	assertTrue(cur->sendQuery("select testval from testtable"));
 	assertEquals(cur->getField(0,"TESTVAL"),"-1");
 	assertTrue(cur->sendQuery("drop table testtable"));
 	stdoutput.printf("\n");
@@ -1414,11 +1414,11 @@ int main(int argc, char **argv) {
 	// bind validation
 	stdoutput.printf("BIND VALIDATION: \n");
 	cur->sendQuery("drop table testtable");
-	cur->sendQuery(
+	assertTrue(cur->sendQuery(
 		"create table testtable ("
 		"	col1 varchar2(20), "
 		"	col2 varchar2(20), "
-		"	col3 varchar2(20))");
+		"	col3 varchar2(20))"));
 	cur->prepareQuery(
 		"insert into "
 		"	testtable "
