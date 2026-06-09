@@ -286,13 +286,7 @@ class postgresql extends sqlrtest {
 		System.out.println("  getDatabaseProductVersion");
 		stringval=md.getDatabaseProductVersion();
 		System.out.println("    "+stringval);
-		if (issqlrelay) {
-			// sql relay reports postgresql's version as a
-			// packed integer (e.g. "120001" for 12.1)
-			assertTrue(stringval!=null && stringval.length()>0);
-		} else {
-			assertContainsVersion(stringval);
-		}
+		assertContainsVersion(stringval);
 		System.out.println();
 
 		// getDefaultTransactionIsolation
