@@ -246,7 +246,7 @@ or a tnsnames-style expression such as:
   <li><b>dbtype</b>: Overrides the default value returned when a client request the database type using the identify() method (or similar method/function).</li>
 </ul>
 
-<br/><a name="freetds"/><p>For <b>freetds</b> databases, the connect string syntax is "sybase=SYBASE;lang=LANG;user=USER;password=PASSWORD;server=SERVER;db=DATABASE;autocommit=yes/no/default;charset=CHARSET;language=LANGUAGE;hostname=HOSTNAME;packetsize=PACKETSIZE;maxcolumncount=MAXCOLUMNCOUNT;maxfieldsize=MAXFIELDSIZE;decodeblobs=yes/no;dbtype=ID"</p>
+<br/><a name="freetds"/><p>For <b>freetds</b> databases, the connect string syntax is "sybase=SYBASE;lang=LANG;user=USER;password=PASSWORD;server=SERVER;db=DATABASE;autocommit=yes/no/default;charset=CHARSET;language=LANGUAGE;hostname=HOSTNAME;packetsize=PACKETSIZE;csversion=CSVERSION;maxcolumncount=MAXCOLUMNCOUNT;maxfieldsize=MAXFIELDSIZE;decodeblobs=yes/no;dbtype=ID"</p>
 
 <ul>
   <li><b>sybase</b>: The directory containing the "freetds.conf" file.  Optional if the SYBASE environment variable is set.  Overrides the SYBASE environment variable.</li>
@@ -260,13 +260,14 @@ or a tnsnames-style expression such as:
   <li><b>language</b>: The language to use.  Optional.</li>
   <li><b>hostname</b>: The host to connect to.  Optional, overrides the host in the "interfaces" or "freetds.conf" file.</li>
   <li><b>packetsize</b>: The packetsize to use.  Optional.</li>
+  <li><b>csversion</b>: The highest Client-Library (ctlib) protocol version to attempt, one of 100, 110, 120, 125, or 150, or "current" for the newest version the client library supports.  SQL Relay tries the requested version first and falls back to lower versions until one is accepted by the client library, logging a warning if a numeric version was requested but could not be used.  "current" - also the default, and the meaning of any non-numeric value - starts from the newest version and never warns.  Older versions support fewer features; eg. version 100 (the protocol for ASE 10.0) limits blobs to 255 bytes.  Optional.</li>
   <li><b>maxcolumncount</b>: The maximum number of columns that can be fetched in a query.  Defaults to 256.  Setting this parameter to -1 causes result set buffers to be dynamically allocated, allowing any number of columns to be fetched.  Using -1 is flexible and conserves memory but there is a performance penalty.  (see <a href="tuning.html#memoryusage">here</a> for more info on this parameter)</li>
   <li><b>maxfieldsize</b>: The maximum size, in bytes, of a non-lob field.  Non-lob fields longer than this will be truncated.  Defaults to 32768. (see <a href="tuning.html#memoryusage">here</a> for more info on this parameter)</li>
   <li><b>decodeblobs</b>: Blob field values are returned by the SAP/Sybase client library to SQL Relay in a text-encoded form.  By default SQL Relay decodes these to raw binary before passing them to the client.  Set to "no" to leave the values text-encoded and let the client decode them itself.  Optional, defaults to yes.</li>
   <li><b>dbtype</b>: Overrides the default value returned when a client request the database type using the identify() method (or similar method/function).</li>
 </ul>
 
-<br/><a name="sap"/><p>For <b>sap</b> (or <b>sybase</b>) databases, the connect string syntax is "sybase=SYBASE;lang=LANG;user=USER;password=PASSWORD;server=SERVER;db=DATABASE;autocommit=yes/no/default;charset=CHARSET;language=LANGUAGE;hostname=HOSTNAME;packetsize=PACKETSIZE;fetchatonce=FETCHATONCE;maxcolumncount=MAXCOLUMNCOUNT;maxfieldsize=MAXFIELDSIZE;decodeblobs=yes/no;dbtype=ID"</p>
+<br/><a name="sap"/><p>For <b>sap</b> (or <b>sybase</b>) databases, the connect string syntax is "sybase=SYBASE;lang=LANG;user=USER;password=PASSWORD;server=SERVER;db=DATABASE;autocommit=yes/no/default;charset=CHARSET;language=LANGUAGE;hostname=HOSTNAME;packetsize=PACKETSIZE;csversion=CSVERSION;fetchatonce=FETCHATONCE;maxcolumncount=MAXCOLUMNCOUNT;maxfieldsize=MAXFIELDSIZE;decodeblobs=yes/no;dbtype=ID"</p>
 
 <ul>
   <li><b>sybase</b>: The directory containing the "interfaces" file.  Optional if the SYBASE environment variable is set.  Overrides the SYBASE environment variable.  If SQL Relay was built to load the SAP/Sybase libraries at runtime, then the lib subdirectory of this directory will be searched for the SAP/Sybase client libraries.</li>
@@ -280,6 +281,7 @@ or a tnsnames-style expression such as:
   <li><b>language</b>: The language to use.  Optional.</li>
   <li><b>hostname</b>: The host to connect to.  Optional, overrides the host in the "interfaces" or "freetds.conf" file.</li>
   <li><b>packetsize</b>: The packetsize to use.  Optional.</li>
+  <li><b>csversion</b>: The highest Client-Library (ctlib) protocol version to attempt, one of 100, 110, 120, 125, 150, 155, 157, or 160, or "current" for the newest version the client library supports.  SQL Relay tries the requested version first and falls back to lower versions until one is accepted by the client library, logging a warning if a numeric version was requested but could not be used.  "current" - also the default, and the meaning of any non-numeric value - starts from the newest version and never warns.  Older versions support fewer features; eg. version 100 (the protocol for ASE 10.0) limits blobs to 255 bytes.  Optional.</li>
   <li><b>fetchatonce</b>: The number of rows that SQL Relay fetches from the database in each round trip.  Defaults to 10. (see <a href="tuning.html#memoryusage">here</a> for more info on this parameter)</li>
   <li><b>maxcolumncount</b>: The maximum number of columns that can be fetched in a query.  Defaults to 256.  Setting this parameter to -1 causes result set buffers to be dynamically allocated, allowing any number of columns to be fetched.  Using -1 is flexible and conserves memory but there is a performance penalty.  (see <a href="tuning.html#memoryusage">here</a> for more info on this parameter)</li>
   <li><b>maxfieldsize</b>: The maximum size, in bytes, of a non-lob field.  Non-lob fields longer than this will be truncated.  Defaults to 32768. (see <a href="tuning.html#memoryusage">here</a> for more info on this parameter)</li>

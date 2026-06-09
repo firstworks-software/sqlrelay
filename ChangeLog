@@ -121,6 +121,11 @@
 	php pdo driver now coerces an unrecognized bind type to PDO_PARAM_STR
 		(like the native pdo drivers) instead of forwarding a bogus
 		type to the backend
+	sap and freetds connections now negotiate the newest available
+		ctlib version (rather than CS_VERSION_100, which limited blobs
+		to 255 bytes), falling back to lower versions as needed, and
+		added a csversion connect string option to cap the version
+		tried (warning if the requested version can't be used)
 
 2.1.1 - added tns_admin support
 	fixed sqlr-start ... -strace ...

@@ -32,6 +32,8 @@ class SQLRSERVER_DLLSPEC sapconnection : public sqlrserverconnection {
 		void		handleConnectString();
 		bool		logIn(const char **error, const char **warning);
 		const char	*logInError(const char *error, uint16_t stage);
+		CS_INT		ctlibVersion(const char *version);
+		const char	*ctlibVersionString(CS_INT version);
 		sqlrservercursor	*newCursor(uint16_t id);
 		void		deleteCursor(sqlrservercursor *curs);
 		void		logOut();
@@ -112,6 +114,7 @@ class SQLRSERVER_DLLSPEC sapconnection : public sqlrserverconnection {
 		const char	*language;
 		const char	*hostname;
 		const char	*packetsize;
+		const char	*csversion;
 
 		bool		dbused;
 
@@ -131,6 +134,7 @@ class SQLRSERVER_DLLSPEC sapconnection : public sqlrserverconnection {
 						CS_SERVERMSG *msgp);
 
 		stringbuffer	loginerror;
+		stringbuffer	loginwarning;
 
 		stringbuffer	cataloglistquery;
 		stringbuffer	schemalistquery;
@@ -777,12 +781,97 @@ void sapconnection::handleConnectString() {
 	language=cont->getConnectStringValue("language");
 	hostname=cont->getConnectStringValue("hostname");
 	packetsize=cont->getConnectStringValue("packetsize");
+	csversion=cont->getConnectStringValue("csversion");
 
 	if (cont->getMaxColumnCount()==1) {
 		// if max column count is set to 1 then force it
 		// to 2 so the db version detection doesn't crash
 		cont->setMaxColumnCount(2);
 	}
+}
+
+CS_INT sapconnection::ctlibVersion(const char *version) {
+	#ifdef CS_VERSION_100
+	if (!charstring::compare(version,"100")) {
+		return CS_VERSION_100;
+	}
+	#endif
+	#ifdef CS_VERSION_110
+	if (!charstring::compare(version,"110")) {
+		return CS_VERSION_110;
+	}
+	#endif
+	#ifdef CS_VERSION_120
+	if (!charstring::compare(version,"120")) {
+		return CS_VERSION_120;
+	}
+	#endif
+	#ifdef CS_VERSION_125
+	if (!charstring::compare(version,"125")) {
+		return CS_VERSION_125;
+	}
+	#endif
+	#ifdef CS_VERSION_150
+	if (!charstring::compare(version,"150")) {
+		return CS_VERSION_150;
+	}
+	#endif
+	#ifdef CS_VERSION_155
+	if (!charstring::compare(version,"155")) {
+		return CS_VERSION_155;
+	}
+	#endif
+	#ifdef CS_VERSION_157
+	if (!charstring::compare(version,"157")) {
+		return CS_VERSION_157;
+	}
+	#endif
+	#ifdef CS_VERSION_160
+	if (!charstring::compare(version,"160")) {
+		return CS_VERSION_160;
+	}
+	#endif
+	return 0;
+}
+
+// maps a CS_VERSION_* constant back to its csversion label
+const char *sapconnection::ctlibVersionString(CS_INT version) {
+	#ifdef CS_VERSION_160
+	if (version==CS_VERSION_160) {
+		return "160";
+	}
+	#endif
+	#ifdef CS_VERSION_157
+	if (version==CS_VERSION_157) {
+		return "157";
+	}
+	#endif
+	#ifdef CS_VERSION_155
+	if (version==CS_VERSION_155) {
+		return "155";
+	}
+	#endif
+	#ifdef CS_VERSION_150
+	if (version==CS_VERSION_150) {
+		return "150";
+	}
+	#endif
+	#ifdef CS_VERSION_125
+	if (version==CS_VERSION_125) {
+		return "125";
+	}
+	#endif
+	#ifdef CS_VERSION_110
+	if (version==CS_VERSION_110) {
+		return "110";
+	}
+	#endif
+	#ifdef CS_VERSION_100
+	if (version==CS_VERSION_100) {
+		return "100";
+	}
+	#endif
+	return "unknown";
 }
 
 bool sapconnection::logIn(const char **error, const char **warning) {
@@ -810,19 +899,74 @@ bool sapconnection::logIn(const char **error, const char **warning) {
 	}
 	#endif
 
-	// allocate a context
+	// try client-library versions newest to oldest.  older versions
+	// support fewer features (eg. CS_VERSION_100 caps blobs at 255
+	// bytes), but the newer versions aren't supported by older client
+	// libraries, so fall back until one is accepted.
+	CS_INT		versions[8];
+	uint16_t	versioncount=0;
+	#ifdef CS_VERSION_160
+	versions[versioncount++]=CS_VERSION_160;
+	#endif
+	#ifdef CS_VERSION_157
+	versions[versioncount++]=CS_VERSION_157;
+	#endif
+	#ifdef CS_VERSION_155
+	versions[versioncount++]=CS_VERSION_155;
+	#endif
+	#ifdef CS_VERSION_150
+	versions[versioncount++]=CS_VERSION_150;
+	#endif
+	#ifdef CS_VERSION_125
+	versions[versioncount++]=CS_VERSION_125;
+	#endif
+	#ifdef CS_VERSION_110
+	versions[versioncount++]=CS_VERSION_110;
+	#endif
+	#ifdef CS_VERSION_100
+	versions[versioncount++]=CS_VERSION_100;
+	#endif
+
+	// if a version was requested, start the walk there (skip newer)
+	CS_INT		requested=(charstring::isNullOrEmpty(csversion))?
+						0:ctlibVersion(csversion);
+
+	// use the first version that both calls accept
 	context=(CS_CONTEXT *)NULL;
-	if (cs_ctx_alloc(CS_VERSION_100,&context)!=CS_SUCCEED) {
+	CS_INT		usedversion=0;
+	for (uint16_t i=0; i<versioncount; i++) {
+		if (requested && versions[i]>requested) {
+			continue;
+		}
+		if (cs_ctx_alloc(versions[i],&context)!=CS_SUCCEED) {
+			context=(CS_CONTEXT *)NULL;
+			continue;
+		}
+		if (ct_init(context,versions[i])!=CS_SUCCEED) {
+			cs_ctx_drop(context);
+			context=(CS_CONTEXT *)NULL;
+			continue;
+		}
+		usedversion=versions[i];
+		break;
+	}
+	if (!usedversion) {
 		*error=logInError(
-			"Failed to allocate a context structure",2);
+			"Failed to allocate/initialize a context structure",2);
 		return false;
 	}
 
-	// init the context
-	if (ct_init(context,CS_VERSION_100)!=CS_SUCCEED) {
-		*error=logInError(
-			"Failed to initialize a context structure",3);
-		return false;
+	// warn if a numeric version was requested but isn't the one used.
+	// a non-numeric value (eg. "current") means "newest available",
+	// like leaving it unset, and never warns.
+	if (!charstring::isNullOrEmpty(csversion) &&
+			charstring::isInteger(csversion) &&
+			usedversion!=requested) {
+		loginwarning.clear();
+		loginwarning.append("csversion ")->append(csversion)->
+			append(" not supported, falling back to ")->
+			append(ctlibVersionString(usedversion));
+		*warning=loginwarning.getString();
 	}
 
 
