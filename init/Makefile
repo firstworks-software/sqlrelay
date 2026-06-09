@@ -207,20 +207,20 @@ endif
 uninstall:
 	if ( test -x "/usr/bin/systemctl" ); \
 	then \
-		/usr/bin/systemctl disable sqlrelay.service; \
-		/usr/bin/systemctl disable sqlrcachemanager.service; \
+		/usr/bin/systemctl disable sqlrelay.service || true; \
+		/usr/bin/systemctl disable sqlrcachemanager.service || true; \
 	elif ( test -x "/usr/sbin/systemctl" ); \
 	then \
-		/usr/sbin/systemctl disable sqlrelay.service; \
-		/usr/sbin/systemctl disable sqlrcachemanager.service; \
+		/usr/sbin/systemctl disable sqlrelay.service || true; \
+		/usr/sbin/systemctl disable sqlrcachemanager.service || true; \
 	elif ( test -x "/bin/systemctl" ); \
 	then \
-		/bin/systemctl disable sqlrelay.service; \
-		/bin/systemctl disable sqlrcachemanager.service; \
+		/bin/systemctl disable sqlrelay.service || true; \
+		/bin/systemctl disable sqlrcachemanager.service || true; \
 	elif ( test -x "/sbin/systemctl" ); \
 	then \
-		/sbin/systemctl disable sqlrelay.service; \
-		/sbin/systemctl disable sqlrcachemanager.service; \
+		/sbin/systemctl disable sqlrelay.service || true; \
+		/sbin/systemctl disable sqlrcachemanager.service || true; \
 	elif ( test -x "/sbin/chkconfig" -a "$(UNAME)" != "IRIX" ); \
 	then \
 		if ( test -n "`/sbin/chkconfig --list sqlrelay 2> /dev/null`"); \
@@ -251,12 +251,12 @@ uninstall:
 		$(initroot)/usr/local/etc/rc.d/sqlrcachemanager
 	if ( test -x "/usr/sbin/update-rc.d" ); \
 	then \
-		/usr/sbin/update-rc.d sqlrelay remove; \
-		/usr/sbin/update-rc.d sqlrcachemanager remove; \
+		/usr/sbin/update-rc.d sqlrelay remove || true; \
+		/usr/sbin/update-rc.d sqlrcachemanager remove || true; \
 	elif ( test -x "/bin/launchctl" ); \
 	then \
-		/bin/launchctl unload /Library/LaunchDaemons/com.firstworks.sqlrelay.plist; \
-		/bin/launchctl unload /Library/LaunchDaemons/com.firstworks.sqlrcachemanager.plist; \
+		/bin/launchctl unload /Library/LaunchDaemons/com.firstworks.sqlrelay.plist || true; \
+		/bin/launchctl unload /Library/LaunchDaemons/com.firstworks.sqlrcachemanager.plist || true; \
 	elif ( test ! -x "/sbin/chkconfig" -o "$(UNAME)" = "IRIX" ); \
 	then \
 		$(RM) /etc/rc0.d/*sqlrelay \
