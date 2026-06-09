@@ -388,7 +388,11 @@ main() ->
     assertEqualsInt(sqlrelay:getColumnLengthByName("testreal"), 4),
     assertEqualsInt(sqlrelay:getColumnLengthByIndex(4), 8),
     assertEqualsInt(sqlrelay:getColumnLengthByName("testfloat"), 8),
-    %% these seem to fluctuate with every freetds release
+    %% freetds reports the decimal/numeric display length as 35
+    assertEqualsInt(sqlrelay:getColumnLengthByIndex(5), 35),
+    assertEqualsInt(sqlrelay:getColumnLengthByName("testdecimal"), 35),
+    assertEqualsInt(sqlrelay:getColumnLengthByIndex(6), 35),
+    assertEqualsInt(sqlrelay:getColumnLengthByName("testnumeric"), 35),
     assertEqualsInt(sqlrelay:getColumnLengthByIndex(7), 8),
     assertEqualsInt(sqlrelay:getColumnLengthByName("testmoney"), 8),
     assertEqualsInt(sqlrelay:getColumnLengthByIndex(8), 4),
@@ -397,7 +401,11 @@ main() ->
     assertEqualsInt(sqlrelay:getColumnLengthByName("testdatetime"), 8),
     assertEqualsInt(sqlrelay:getColumnLengthByIndex(10), 4),
     assertEqualsInt(sqlrelay:getColumnLengthByName("testsmalldatetime"), 4),
-    %% these seem to fluctuate too
+    %% char(40)/varchar(40) report the declared length 40 (not multiplied)
+    assertEqualsInt(sqlrelay:getColumnLengthByIndex(11), 40),
+    assertEqualsInt(sqlrelay:getColumnLengthByName("testchar"), 40),
+    assertEqualsInt(sqlrelay:getColumnLengthByIndex(12), 40),
+    assertEqualsInt(sqlrelay:getColumnLengthByName("testvarchar"), 40),
     assertEqualsInt(sqlrelay:getColumnLengthByIndex(13), 1),
     assertEqualsInt(sqlrelay:getColumnLengthByName("testbit"), 1),
     io:format("~n"),
@@ -422,7 +430,11 @@ main() ->
     assertEqualsInt(sqlrelay:getLongestByName("testmoney"), 6),
     assertEqualsInt(sqlrelay:getLongestByIndex(8), 6),
     assertEqualsInt(sqlrelay:getLongestByName("testsmallmoney"), 6),
-    %% datetime formatting fluctuates with every freetds release
+    %% freetds datetime rendering for the fixture tds version
+    assertEqualsInt(sqlrelay:getLongestByIndex(9), 26),
+    assertEqualsInt(sqlrelay:getLongestByName("testdatetime"), 26),
+    assertEqualsInt(sqlrelay:getLongestByIndex(10), 26),
+    assertEqualsInt(sqlrelay:getLongestByName("testsmalldatetime"), 26),
     assertEqualsInt(sqlrelay:getLongestByIndex(11), 40),
     assertEqualsInt(sqlrelay:getLongestByName("testchar"), 40),
     assertEqualsInt(sqlrelay:getLongestByIndex(12), 12),
@@ -462,7 +474,11 @@ main() ->
     assertEqualsString(sqlrelay:getFieldByIndex(0, 6), "1.5"),
     assertEqualsString(sqlrelay:getFieldByIndex(0, 7), "1.0000"),
     assertEqualsString(sqlrelay:getFieldByIndex(0, 8), "1.0000"),
-    %% datetime formatting fluctuates with every freetds release
+    %% freetds datetime rendering for the fixture tds version
+    assertEqualsString(sqlrelay:getFieldByIndex(0, 9),
+                       "Jan  1 2001 01:00:00:000AM"),
+    assertEqualsString(sqlrelay:getFieldByIndex(0, 10),
+                       "Jan  1 2001 01:00:00:000AM"),
     assertEqualsString(sqlrelay:getFieldByIndex(0, 11),
                        "testchar1                               "),
     assertEqualsString(sqlrelay:getFieldByIndex(0, 12), "testvarchar1"),
@@ -477,7 +493,11 @@ main() ->
     assertEqualsString(sqlrelay:getFieldByIndex(7, 6), "8.5"),
     assertEqualsString(sqlrelay:getFieldByIndex(7, 7), "8.0000"),
     assertEqualsString(sqlrelay:getFieldByIndex(7, 8), "8.0000"),
-    %% datetime formatting fluctuates with every freetds release
+    %% freetds datetime rendering for the fixture tds version
+    assertEqualsString(sqlrelay:getFieldByIndex(7, 9),
+                       "Jan  1 2008 08:00:00:000AM"),
+    assertEqualsString(sqlrelay:getFieldByIndex(7, 10),
+                       "Jan  1 2008 08:00:00:000AM"),
     assertEqualsString(sqlrelay:getFieldByIndex(7, 11),
                        "testchar8                               "),
     assertEqualsString(sqlrelay:getFieldByIndex(7, 12), "testvarchar8"),
@@ -495,7 +515,9 @@ main() ->
     assertEqualsInt(sqlrelay:getFieldLengthByIndex(0, 6), 3),
     assertEqualsInt(sqlrelay:getFieldLengthByIndex(0, 7), 6),
     assertEqualsInt(sqlrelay:getFieldLengthByIndex(0, 8), 6),
-    %% datetime formatting fluctuates with every freetds release
+    %% freetds datetime rendering for the fixture tds version
+    assertEqualsInt(sqlrelay:getFieldLengthByIndex(0, 9), 26),
+    assertEqualsInt(sqlrelay:getFieldLengthByIndex(0, 10), 26),
     assertEqualsInt(sqlrelay:getFieldLengthByIndex(0, 11), 40),
     assertEqualsInt(sqlrelay:getFieldLengthByIndex(0, 12), 12),
     assertEqualsInt(sqlrelay:getFieldLengthByIndex(0, 13), 1),
@@ -509,7 +531,9 @@ main() ->
     assertEqualsInt(sqlrelay:getFieldLengthByIndex(7, 6), 3),
     assertEqualsInt(sqlrelay:getFieldLengthByIndex(7, 7), 6),
     assertEqualsInt(sqlrelay:getFieldLengthByIndex(7, 8), 6),
-    %% datetime formatting fluctuates with every freetds release
+    %% freetds datetime rendering for the fixture tds version
+    assertEqualsInt(sqlrelay:getFieldLengthByIndex(7, 9), 26),
+    assertEqualsInt(sqlrelay:getFieldLengthByIndex(7, 10), 26),
     assertEqualsInt(sqlrelay:getFieldLengthByIndex(7, 11), 40),
     assertEqualsInt(sqlrelay:getFieldLengthByIndex(7, 12), 12),
     assertEqualsInt(sqlrelay:getFieldLengthByIndex(7, 13), 1),
@@ -527,7 +551,11 @@ main() ->
     assertEqualsString(sqlrelay:getFieldByName(0, "testmoney"), "1.0000"),
     assertEqualsString(sqlrelay:getFieldByName(0, "testsmallmoney"),
                        "1.0000"),
-    %% datetime formatting fluctuates with every freetds release
+    %% freetds datetime rendering for the fixture tds version
+    assertEqualsString(sqlrelay:getFieldByName(0, "testdatetime"),
+                       "Jan  1 2001 01:00:00:000AM"),
+    assertEqualsString(sqlrelay:getFieldByName(0, "testsmalldatetime"),
+                       "Jan  1 2001 01:00:00:000AM"),
     assertEqualsString(sqlrelay:getFieldByName(0, "testchar"),
                        "testchar1                               "),
     assertEqualsString(sqlrelay:getFieldByName(0, "testvarchar"),
@@ -544,7 +572,11 @@ main() ->
     assertEqualsString(sqlrelay:getFieldByName(7, "testmoney"), "8.0000"),
     assertEqualsString(sqlrelay:getFieldByName(7, "testsmallmoney"),
                        "8.0000"),
-    %% datetime formatting fluctuates with every freetds release
+    %% freetds datetime rendering for the fixture tds version
+    assertEqualsString(sqlrelay:getFieldByName(7, "testdatetime"),
+                       "Jan  1 2008 08:00:00:000AM"),
+    assertEqualsString(sqlrelay:getFieldByName(7, "testsmalldatetime"),
+                       "Jan  1 2008 08:00:00:000AM"),
     assertEqualsString(sqlrelay:getFieldByName(7, "testchar"),
                        "testchar8                               "),
     assertEqualsString(sqlrelay:getFieldByName(7, "testvarchar"),
@@ -563,7 +595,9 @@ main() ->
     assertEqualsInt(sqlrelay:getFieldLengthByName(0, "testnumeric"), 3),
     assertEqualsInt(sqlrelay:getFieldLengthByName(0, "testmoney"), 6),
     assertEqualsInt(sqlrelay:getFieldLengthByName(0, "testsmallmoney"), 6),
-    %% datetime formatting fluctuates with every freetds release
+    %% freetds datetime rendering for the fixture tds version
+    assertEqualsInt(sqlrelay:getFieldLengthByName(0, "testdatetime"), 26),
+    assertEqualsInt(sqlrelay:getFieldLengthByName(0, "testsmalldatetime"), 26),
     assertEqualsInt(sqlrelay:getFieldLengthByName(0, "testchar"), 40),
     assertEqualsInt(sqlrelay:getFieldLengthByName(0, "testvarchar"), 12),
     assertEqualsInt(sqlrelay:getFieldLengthByName(0, "testbit"), 1),
@@ -577,7 +611,9 @@ main() ->
     assertEqualsInt(sqlrelay:getFieldLengthByName(7, "testnumeric"), 3),
     assertEqualsInt(sqlrelay:getFieldLengthByName(7, "testmoney"), 6),
     assertEqualsInt(sqlrelay:getFieldLengthByName(7, "testsmallmoney"), 6),
-    %% datetime formatting fluctuates with every freetds release
+    %% freetds datetime rendering for the fixture tds version
+    assertEqualsInt(sqlrelay:getFieldLengthByName(7, "testdatetime"), 26),
+    assertEqualsInt(sqlrelay:getFieldLengthByName(7, "testsmalldatetime"), 26),
     assertEqualsInt(sqlrelay:getFieldLengthByName(7, "testchar"), 40),
     assertEqualsInt(sqlrelay:getFieldLengthByName(7, "testvarchar"), 12),
     assertEqualsInt(sqlrelay:getFieldLengthByName(7, "testbit"), 1),
@@ -595,7 +631,9 @@ main() ->
     assertEqualsString(lists:nth(7, Row0), "1.5"),
     assertEqualsString(lists:nth(8, Row0), "1.0000"),
     assertEqualsString(lists:nth(9, Row0), "1.0000"),
-    %% datetime formatting fluctuates with every freetds release
+    %% freetds datetime rendering for the fixture tds version
+    assertEqualsString(lists:nth(10, Row0), "Jan  1 2001 01:00:00:000AM"),
+    assertEqualsString(lists:nth(11, Row0), "Jan  1 2001 01:00:00:000AM"),
     assertEqualsString(lists:nth(12, Row0),
                        "testchar1                               "),
     assertEqualsString(lists:nth(13, Row0), "testvarchar1"),
@@ -614,7 +652,9 @@ main() ->
     assertEqualsInt(lists:nth(7, Rowlens0), 3),
     assertEqualsInt(lists:nth(8, Rowlens0), 6),
     assertEqualsInt(lists:nth(9, Rowlens0), 6),
-    %% datetime formatting fluctuates with every freetds release
+    %% freetds datetime rendering for the fixture tds version
+    assertEqualsInt(lists:nth(10, Rowlens0), 26),
+    assertEqualsInt(lists:nth(11, Rowlens0), 26),
     assertEqualsInt(lists:nth(12, Rowlens0), 40),
     assertEqualsInt(lists:nth(13, Rowlens0), 12),
     assertEqualsInt(lists:nth(14, Rowlens0), 1),
