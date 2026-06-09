@@ -4752,8 +4752,9 @@ int main(int argc, char **argv) {
 	if (issqlrelay) {
 		assertEqualStmt(stmt,(int)stmtulenval,10);
 	} else {
-		// native value unverified (no firebird odbc driver available)
-		assertTrueStmt(stmt,(stmtulenval==10 || stmtulenval==0));
+		// the set value should round-trip per spec; unverified, no
+		// firebird odbc driver available
+		assertEqualStmt(stmt,(int)stmtulenval,10);
 	}
 	erg=SQLSetStmtAttr(stmt,SQL_ATTR_KEYSET_SIZE,
 			(SQLPOINTER)(uintptr_t)stmtinitial,0);

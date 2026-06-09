@@ -1897,13 +1897,7 @@ class informix extends sqlrtest {
 
 			// money
 			System.out.println("  row "+i+" - money");
-			String moneyval=rs.getString(7);
-			// apparently inserting a literal value causes the
-			// field to be populated without a leading $, but
-			// inserting a value via bind causes it to be populated
-			// with a leading $
-			assertTrue(moneyval.equals(i+".50") ||
-					moneyval.equals("$"+i+".50"));
+			assertEquals(rs.getString(7),i+".50");
 			assertFalse(rs.wasNull());
 			System.out.println();
 
@@ -2087,14 +2081,7 @@ class informix extends sqlrtest {
 
 			// money
 			System.out.println("  row "+i+" - money");
-			// apparently, via the informix odbc driver, which
-			// sqlrelay uses on the backend, inserting a literal
-			// value causes the field to be populated without a
-			// leading $, but inserting a value via bind causes it
-			// to be populated with a leading $
-			String moneyval=rs.getString("testmoney");
-			assertTrue(moneyval.equals(i+".50") ||
-					moneyval.equals("$"+i+".50"));
+			assertEquals(rs.getString("testmoney"),i+".50");
 			assertFalse(rs.wasNull());
 			System.out.println();
 

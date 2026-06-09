@@ -48,6 +48,9 @@ int	main(int argc, char **argv) {
 		db="";
 	}
 
+	// no host arg means we're talking to sqlrelay's mysql protocol
+	bool	issqlrelay=(argc!=2);
+
 
 	stdoutput.printf("\n============ Traditional API ============\n\n");
 
@@ -85,9 +88,15 @@ int	main(int argc, char **argv) {
 
 	stdoutput.printf("mysql_character_set_name:\n");
 	const char	*charset=mysql_character_set_name(&mysql);
-	assertEquals(!charstring::compare(charset,"latin1") ||
-				!charstring::compare(charset,"utf8") ||
-				!charstring::compare(charset,"utf8mb4"),true);
+	// this reflects the client library's default connection charset, not
+	// anything sqlrelay does: the mariadb connector and mysql 8+ default to
+	// utf8mb4, older mysql clients default to latin1
+	#if defined(MARIADB_BASE_VERSION) || \
+		(defined(MYSQL_VERSION_ID) && MYSQL_VERSION_ID>=80000)
+		assertEquals(charset,"utf8mb4");
+	#else
+		assertEquals(charset,"latin1");
+	#endif
 	stdoutput.printf("\n");
 
 	stdoutput.printf("mysql_list_dbs\n");
@@ -95,8 +104,13 @@ int	main(int argc, char **argv) {
 	assertEquals(mysql_field_count(&mysql),1);
 	assertEquals(mysql_num_fields(result),1);
 	field=mysql_fetch_field_direct(result,0);
-	assertEquals(!charstring::compare(field->name,"Database") || 
-			!charstring::compare(field->name,"Database (%)"),1);
+	if (issqlrelay) {
+		// sqlrelay lists databases with a wildcard, so the column is
+		// labelled "Database (%)" rather than plain "Database"
+		assertEquals(field->name,"Database (%)");
+	} else {
+		assertEquals(field->name,"Database");
+	}
 	mysql_free_result(result);
 	stdoutput.printf("\n");
 
@@ -722,7 +736,14 @@ int	main(int argc, char **argv) {
 	stdoutput.printf("mysql_list_processes\n");
 	result=mysql_list_processes(&mysql);
 	uint16_t	numfields=mysql_num_fields(result);
-	assertEquals((numfields==8 || numfields==9),1);
+	if (issqlrelay) {
+		// sqlrelay forwards to the mysql backend, which has 8 columns
+		// (mariadb would add a 9th "Progress" column)
+		assertEquals(numfields,8);
+	} else {
+		// native: mysql has 8, mariadb adds a 9th "Progress" column
+		assertEquals((numfields==8 || numfields==9),1);
+	}
 	field=mysql_fetch_field_direct(result,0);
 	assertEquals(field->name,"Id");
 	field=mysql_fetch_field_direct(result,1);
