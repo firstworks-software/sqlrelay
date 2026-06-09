@@ -2316,10 +2316,10 @@ assertTrue($cur->sendQuery(
 	"	col1 int auto_increment primary key, ".
 	"	col2 int)"));
 assertTrue($cur->getColumnList("testtable",undef));
-assertTrue(index($cur->getField(0,"extra"),"auto_increment")>=0);
-assertTrue(index($cur->getField(0,"column_key"),"PRI")>=0);
-assertFalse(index($cur->getField(1,"extra"),"auto_increment")>=0);
-assertFalse(index($cur->getField(1,"column_key"),"PRI")>=0);
+assertEquals($cur->getField(0,"extra"),"auto_increment");
+assertEquals($cur->getField(0,"column_key"),"PRI");
+assertEquals($cur->getField(1,"extra"),"");
+assertEquals($cur->getField(1,"column_key"),"");
 print("\n");
 assertTrue($cur->sendQuery("drop table testtable"));
 assertTrue($cur->sendQuery(
@@ -2327,8 +2327,8 @@ assertTrue($cur->sendQuery(
 	"	col1 int primary key, ".
 	"	col2 int)"));
 assertTrue($cur->getColumnList("testtable",undef));
-assertFalse(index($cur->getField(0,"extra"),"auto_increment")>=0);
-assertTrue(index($cur->getField(0,"column_key"),"PRI")>=0);
+assertEquals($cur->getField(0,"extra"),"");
+assertEquals($cur->getField(0,"column_key"),"PRI");
 assertTrue($cur->sendQuery("drop table testtable"));
 print("\n");
 

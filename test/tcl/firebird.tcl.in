@@ -1426,14 +1426,14 @@ puts ""
 # column list - auto_increment, primary key
 puts "COLUMN LIST - auto_increment, primary key: "
 assertTrue [$cur getColumnList "testtable2" ""]
-assertTrue [expr {[string first "auto_increment" [$cur getFieldByName 0 "extra"]] != -1}]
-assertTrue [expr {[string first "PRI" [$cur getFieldByName 0 "column_key"]] != -1}]
-assertFalse [expr {[string first "auto_increment" [$cur getFieldByName 1 "extra"]] != -1}]
-assertFalse [expr {[string first "PRI" [$cur getFieldByName 1 "column_key"]] != -1}]
+assertEqual [$cur getFieldByName 0 "extra"] "auto_increment"
+assertEqual [$cur getFieldByName 0 "column_key"] "PRI"
+assertEqual [$cur getFieldByName 1 "extra"] ""
+assertEqual [$cur getFieldByName 1 "column_key"] ""
 puts ""
 assertTrue [$cur getColumnList "testtable3" ""]
-assertFalse [expr {[string first "auto_increment" [$cur getFieldByName 0 "extra"]] != -1}]
-assertTrue [expr {[string first "PRI" [$cur getFieldByName 0 "column_key"]] != -1}]
+assertEqual [$cur getFieldByName 0 "extra"] ""
+assertEqual [$cur getFieldByName 0 "column_key"] "PRI"
 puts ""
 
 

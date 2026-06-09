@@ -1875,8 +1875,8 @@ assertTrue($cur->sendQuery(
 	"	col1 number primary key, ".
 	"	col2 number)"));
 assertTrue($cur->getColumnList("testtable",undef));
-assertTrue(index($cur->getField(0,"column_key"),"PRI")>=0);
-assertFalse(index($cur->getField(1,"column_key"),"PRI")>=0);
+assertEquals($cur->getField(0,"column_key"),"PRI");
+assertEquals($cur->getField(1,"column_key"),"");
 assertTrue($cur->sendQuery("drop table testtable"));
 print("\n");
 

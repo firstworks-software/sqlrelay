@@ -1940,8 +1940,8 @@ const char *sapconnection::getColumnListQuery(const char *catalog,
 		"	(co.status&8)/8 as nullable, "
 		"	case "
 		"		when (co.status&128)=128 "
-		"			then 'auto_increment ' "
-		"		else '' "
+		"			then 'auto_increment' "
+		"		else null "
 		"	end as remarks, "
 		"	null as column_default, "
 		"	null as sql_data_type, "
@@ -1957,7 +1957,7 @@ const char *sapconnection::getColumnListQuery(const char *catalog,
 		"		when 1 then 'PRI' "
 		"		when 2 then 'UNI' "
 		"		when 3 then 'MUL' "
-		"		else '' "
+		"		else null "
 		"	end as column_key, "
 		"	null ");
 

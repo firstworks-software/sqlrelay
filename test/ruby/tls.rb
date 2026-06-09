@@ -1889,8 +1889,8 @@ assertTrue(cur.sendQuery(
 	"	col1 number primary key, "+
 	"	col2 number)"))
 assertTrue(cur.getColumnList("testtable",nil))
-assertTrue(cur.getField(0,"column_key").include?("PRI"))
-assertFalse(cur.getField(1,"column_key").include?("PRI"))
+assertEqual(cur.getField(0,"column_key"),"PRI")
+assertEqual(cur.getField(1,"column_key"),"")
 assertTrue(cur.sendQuery("drop table testtable"))
 print "\n"
 

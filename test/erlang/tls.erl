@@ -1519,9 +1519,9 @@ main() ->
         "	col2 number)")),
     assertTrue(sqlrelay:getColumnList("testtable", "")),
     {ok, Ck0} = sqlrelay:getFieldByName(0, "column_key"),
-    assertTrue(contains(Ck0, "PRI")),
+    assertEqualsString(Ck0, "PRI"),
     {ok, Ck1} = sqlrelay:getFieldByName(1, "column_key"),
-    assertFalse(contains(Ck1, "PRI")),
+    assertEqualsString(Ck1, ""),
     assertTrue(sqlrelay:sendQuery("drop table testtable")),
     io:format("~n"),
 

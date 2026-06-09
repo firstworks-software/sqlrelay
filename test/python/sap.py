@@ -1916,14 +1916,10 @@ def main():
 		"	col1 int identity primary key, "
 		"	col2 int)"))
 	assertTrue(cur.getColumnList("testtable",None))
-	extra0=cur.getField(0,"extra")
-	colkey0=cur.getField(0,"column_key")
-	extra1=cur.getField(1,"extra")
-	colkey1=cur.getField(1,"column_key")
-	assertTrue(extra0 is not None and "auto_increment" in extra0)
-	assertTrue(colkey0 is not None and "PRI" in colkey0)
-	assertFalse(extra1 is not None and "auto_increment" in extra1)
-	assertFalse(colkey1 is not None and "PRI" in colkey1)
+	assertEquals(cur.getField(0,"extra"),"auto_increment")
+	assertEquals(cur.getField(0,"column_key"),"PRI")
+	assertEquals(cur.getField(1,"extra"),"")
+	assertEquals(cur.getField(1,"column_key"),"")
 	print()
 	assertTrue(cur.sendQuery("drop table testtable"))
 	assertTrue(cur.sendQuery(
@@ -1931,10 +1927,8 @@ def main():
 		"	col1 int primary key, "
 		"	col2 int)"))
 	assertTrue(cur.getColumnList("testtable",None))
-	extra0=cur.getField(0,"extra")
-	colkey0=cur.getField(0,"column_key")
-	assertFalse(extra0 is not None and "auto_increment" in extra0)
-	assertTrue(colkey0 is not None and "PRI" in colkey0)
+	assertEquals(cur.getField(0,"extra"),"")
+	assertEquals(cur.getField(0,"column_key"),"PRI")
 	assertTrue(cur.sendQuery("drop table testtable"))
 	print()
 

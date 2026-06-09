@@ -1457,10 +1457,10 @@ namespace SQLRClientTest
                 "	col1 integer primary key autoincrement, " +
                 "	col2 int)"));
             assertTrue(cur.getColumnList("testtable", (String)null));
-            assertTrue(cur.getField((UInt64)0, "extra").IndexOf("auto_increment") != -1);
-            assertTrue(cur.getField((UInt64)0, "column_key").IndexOf("PRI") != -1);
-            assertFalse(cur.getField((UInt64)1, "extra").IndexOf("auto_increment") != -1);
-            assertFalse(cur.getField((UInt64)1, "column_key").IndexOf("PRI") != -1);
+            assertEquals(cur.getField((UInt64)0, "extra"), "auto_increment");
+            assertEquals(cur.getField((UInt64)0, "column_key"), "PRI");
+            assertEquals(cur.getField((UInt64)1, "extra"), "");
+            assertEquals(cur.getField((UInt64)1, "column_key"), "");
             Console.WriteLine("");
             assertTrue(cur.sendQuery("drop table if exists testtable"));
             assertTrue(cur.sendQuery(
@@ -1468,8 +1468,8 @@ namespace SQLRClientTest
                 "	col1 int primary key, " +
                 "	col2 int)"));
             assertTrue(cur.getColumnList("testtable", (String)null));
-            assertFalse(cur.getField((UInt64)0, "extra").IndexOf("auto_increment") != -1);
-            assertTrue(cur.getField((UInt64)0, "column_key").IndexOf("PRI") != -1);
+            assertEquals(cur.getField((UInt64)0, "extra"), "");
+            assertEquals(cur.getField((UInt64)0, "column_key"), "PRI");
             assertTrue(cur.sendQuery("drop table if exists testtable"));
             Console.WriteLine("");
 

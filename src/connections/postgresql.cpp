@@ -1972,7 +1972,7 @@ const char *postgresqlconnection::getColumnListQuery(const char *catalog,
 		"	end as nullable, "
 		"	case "
 		"		when co.column_default like 'nextval(%' "
-		"			then 'auto_increment ' "
+		"			then 'auto_increment' "
 		"		else '' "
 		"	end as remarks, "
 		"	co.column_default, "

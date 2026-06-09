@@ -1916,14 +1916,10 @@ int main(int argc, char **argv) {
 		"	col2 int)"));
 	assertTrue(con->commit());
 	assertTrue(cur->getColumnList("testtable",NULL));
-	assertTrue(charstring::contains(
-			cur->getField(0,"extra"),"auto_increment"));
-	assertTrue(charstring::contains(
-			cur->getField(0,"column_key"),"PRI"));
-	assertFalse(charstring::contains(
-			cur->getField(1,"extra"),"auto_increment"));
-	assertFalse(charstring::contains(
-			cur->getField(1,"column_key"),"PRI"));
+	assertEquals(cur->getField(0,"extra"),"auto_increment");
+	assertEquals(cur->getField(0,"column_key"),"PRI");
+	assertEquals(cur->getField(1,"extra"),"");
+	assertEquals(cur->getField(1,"column_key"),"");
 	stdoutput.printf("\n");
 	assertTrue(cur->sendQuery("drop table testtable"));
 	assertTrue(cur->sendQuery(
@@ -1932,10 +1928,8 @@ int main(int argc, char **argv) {
 		"	col2 int)"));
 	assertTrue(con->commit());
 	assertTrue(cur->getColumnList("testtable",NULL));
-	assertFalse(charstring::contains(
-			cur->getField(0,"extra"),"auto_increment"));
-	assertTrue(charstring::contains(
-			cur->getField(0,"column_key"),"PRI"));
+	assertEquals(cur->getField(0,"extra"),"");
+	assertEquals(cur->getField(0,"column_key"),"PRI");
 	assertTrue(cur->sendQuery("drop table testtable"));
 	assertTrue(con->commit());
 	stdoutput.printf("\n");

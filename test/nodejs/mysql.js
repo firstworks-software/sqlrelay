@@ -2415,14 +2415,10 @@ if (dot>-1) {
 		"	primary key, "+
 		"	col2 int)"));
 	assertTrue(cur.getColumnList("testtable",null));
-	assertTrue(String(cur.getField(0,"extra")).indexOf(
-		"auto_increment")!==-1);
-	assertTrue(String(cur.getField(0,"column_key")).indexOf(
-		"PRI")!==-1);
-	assertFalse(String(cur.getField(1,"extra")).indexOf(
-		"auto_increment")!==-1);
-	assertFalse(String(cur.getField(1,"column_key")).indexOf(
-		"PRI")!==-1);
+	assertEqStr(cur.getField(0,"extra"),"auto_increment");
+	assertEqStr(cur.getField(0,"column_key"),"PRI");
+	assertEqStr(cur.getField(1,"extra"),"");
+	assertEqStr(cur.getField(1,"column_key"),"");
 	console.log("");
 	assertTrue(cur.sendQuery("drop table testtable"));
 	assertTrue(cur.sendQuery(
@@ -2431,10 +2427,8 @@ if (dot>-1) {
 		"	primary key, "+
 		"	col2 int)"));
 	assertTrue(cur.getColumnList("testtable",null));
-	assertFalse(String(cur.getField(0,"extra")).indexOf(
-		"auto_increment")!==-1);
-	assertTrue(String(cur.getField(0,"column_key")).indexOf(
-		"PRI")!==-1);
+	assertEqStr(cur.getField(0,"extra"),"");
+	assertEqStr(cur.getField(0,"column_key"),"PRI");
 	assertTrue(cur.sendQuery("drop table testtable"));
 	console.log("");
 

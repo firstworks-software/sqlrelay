@@ -1964,8 +1964,8 @@ int main(int argc, char **argv) {
 		"	col1 number primary key, "
 		"	col2 number)"));
 	assertTrue(cur->getColumnList("testtable",NULL));
-	assertTrue(charstring::contains(cur->getField(0,"column_key"),"PRI"));
-	assertFalse(charstring::contains(cur->getField(1,"column_key"),"PRI"));
+	assertEquals(cur->getField(0,"column_key"),"PRI");
+	assertEquals(cur->getField(1,"column_key"),"");
 	assertTrue(cur->sendQuery("drop table testtable"));
 	stdoutput.printf("\n");
 

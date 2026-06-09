@@ -2892,7 +2892,7 @@ const char *oracleconnection::getColumnListQuery(const char *catalog,
 			"	end as nullable, "
 			"	case "
 			"		when tc.identity_column='YES' "
-			"			then 'auto_increment ' "
+			"			then 'auto_increment' "
 			"		else '' "
 			"	end as remarks, "
 			"	tc.data_default as column_default, "

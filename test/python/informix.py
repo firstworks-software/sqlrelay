@@ -2140,12 +2140,10 @@ def main():
 		"	col2 int)"))
 	assertTrue(con.commit())
 	assertTrue(cur.getColumnList("testtable",None))
-	assertTrue("auto_increment" in cur.getField(0,"extra"))
-	assertTrue("PRI" in cur.getField(0,"column_key"))
-	assertFalse(cur.getField(1,"extra") is not None and
-				"auto_increment" in cur.getField(1,"extra"))
-	assertFalse(cur.getField(1,"column_key") is not None and
-				"PRI" in cur.getField(1,"column_key"))
+	assertEquals(cur.getField(0,"extra"),"auto_increment")
+	assertEquals(cur.getField(0,"column_key"),"PRI")
+	assertEquals(cur.getField(1,"extra"),"")
+	assertEquals(cur.getField(1,"column_key"),"")
 	print()
 	assertTrue(cur.sendQuery("drop table testtable"))
 	assertTrue(con.commit())
@@ -2154,9 +2152,8 @@ def main():
 		"	col1 int primary key, "
 		"	col2 int)"))
 	assertTrue(cur.getColumnList("testtable",None))
-	assertFalse(cur.getField(0,"extra") is not None and
-				"auto_increment" in cur.getField(0,"extra"))
-	assertTrue("PRI" in cur.getField(0,"column_key"))
+	assertEquals(cur.getField(0,"extra"),"")
+	assertEquals(cur.getField(0,"column_key"),"PRI")
 	assertTrue(cur.sendQuery("drop table testtable"))
 	assertTrue(con.commit())
 	print()

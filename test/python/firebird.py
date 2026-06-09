@@ -1603,20 +1603,14 @@ def main():
 	assertTrue(cur.getColumnList("testtable2",None))
 	# firebird may return extra/column_key as bytes; normalize to str
 	def _s(v): return v.decode() if isinstance(v,bytes) else v
-	extra0=_s(cur.getField(0,"extra"))
-	colkey0=_s(cur.getField(0,"column_key"))
-	extra1=_s(cur.getField(1,"extra"))
-	colkey1=_s(cur.getField(1,"column_key"))
-	assertTrue(extra0 is not None and "auto_increment" in extra0)
-	assertTrue(colkey0 is not None and "PRI" in colkey0)
-	assertFalse(extra1 is not None and "auto_increment" in extra1)
-	assertFalse(colkey1 is not None and "PRI" in colkey1)
+	assertEquals(_s(cur.getField(0,"extra")),"auto_increment")
+	assertEquals(_s(cur.getField(0,"column_key")),"PRI")
+	assertEquals(_s(cur.getField(1,"extra")),"")
+	assertEquals(_s(cur.getField(1,"column_key")),"")
 	print()
 	assertTrue(cur.getColumnList("testtable3",None))
-	extra0=_s(cur.getField(0,"extra"))
-	colkey0=_s(cur.getField(0,"column_key"))
-	assertFalse(extra0 is not None and "auto_increment" in extra0)
-	assertTrue(colkey0 is not None and "PRI" in colkey0)
+	assertEquals(_s(cur.getField(0,"extra")),"")
+	assertEquals(_s(cur.getField(0,"column_key")),"PRI")
 	print()
 
 

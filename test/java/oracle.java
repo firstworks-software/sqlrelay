@@ -2012,8 +2012,8 @@ class oracle extends sqlrtest {
 			"	col1 number primary key, "+
 			"	col2 number)"));
 		assertTrue(cur.getColumnList("testtable",null));
-		assertTrue(cur.getField(0,"column_key").contains("PRI"));
-		assertFalse(cur.getField(1,"column_key").contains("PRI"));
+		assertEquals(cur.getField(0,"column_key"),"PRI");
+		assertEquals(cur.getField(1,"column_key"),"");
 		assertTrue(cur.sendQuery("drop table testtable"));
 		System.out.println();
 

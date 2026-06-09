@@ -1617,14 +1617,14 @@ console.log();
 // column list - auto_increment, primary key
 console.log("COLUMN LIST - auto_increment, primary key: ");
 assertTrue(cur.getColumnList("testtable2",null));
-assertTrue(cur.getField(0,"extra").indexOf("auto_increment")!=-1);
-assertTrue(cur.getField(0,"column_key").indexOf("PRI")!=-1);
-assertFalse(cur.getField(1,"extra").indexOf("auto_increment")!=-1);
-assertFalse(cur.getField(1,"column_key").indexOf("PRI")!=-1);
+assertEqStr(cur.getField(0,"extra"),"auto_increment");
+assertEqStr(cur.getField(0,"column_key"),"PRI");
+assertEqStr(cur.getField(1,"extra"),"");
+assertEqStr(cur.getField(1,"column_key"),"");
 console.log();
 assertTrue(cur.getColumnList("testtable3",null));
-assertFalse(cur.getField(0,"extra").indexOf("auto_increment")!=-1);
-assertTrue(cur.getField(0,"column_key").indexOf("PRI")!=-1);
+assertEqStr(cur.getField(0,"extra"),"");
+assertEqStr(cur.getField(0,"column_key"),"PRI");
 console.log();
 
 

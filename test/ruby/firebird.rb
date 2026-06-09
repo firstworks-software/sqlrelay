@@ -1593,14 +1593,14 @@ print "\n"
 # column list - auto_increment, primary key
 print "COLUMN LIST - auto_increment, primary key: \n"
 assertTrue(cur.getColumnList("testtable2",nil))
-assertTrue(cur.getField(0,"extra").include?("auto_increment"))
-assertTrue(cur.getField(0,"column_key").include?("PRI"))
-assertFalse(cur.getField(1,"extra").include?("auto_increment"))
-assertFalse(cur.getField(1,"column_key").include?("PRI"))
+assertEqual(cur.getField(0,"extra"),"auto_increment")
+assertEqual(cur.getField(0,"column_key"),"PRI")
+assertEqual(cur.getField(1,"extra"),"")
+assertEqual(cur.getField(1,"column_key"),"")
 print "\n"
 assertTrue(cur.getColumnList("testtable3",nil))
-assertFalse(cur.getField(0,"extra").include?("auto_increment"))
-assertTrue(cur.getField(0,"column_key").include?("PRI"))
+assertEqual(cur.getField(0,"extra"),"")
+assertEqual(cur.getField(0,"column_key"),"PRI")
 print "\n"
 
 

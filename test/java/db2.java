@@ -1974,10 +1974,10 @@ class db2 extends sqlrtest {
 			"	col2 int)"));
 		assertTrue(con.commit());
 		assertTrue(cur.getColumnList("testtable",null));
-		assertTrue(cur.getField(0,"extra").contains("auto_increment"));
-		assertTrue(cur.getField(0,"column_key").contains("PRI"));
-		assertFalse(cur.getField(1,"extra").contains("auto_increment"));
-		assertFalse(cur.getField(1,"column_key").contains("PRI"));
+		assertEquals(cur.getField(0,"extra"),"auto_increment");
+		assertEquals(cur.getField(0,"column_key"),"PRI");
+		assertEquals(cur.getField(1,"extra"),"");
+		assertEquals(cur.getField(1,"column_key"),"");
 		System.out.println();
 		assertTrue(cur.sendQuery("drop table testtable"));
 		assertTrue(cur.sendQuery(
@@ -1987,8 +1987,8 @@ class db2 extends sqlrtest {
 			"	col2 int)"));
 		assertTrue(con.commit());
 		assertTrue(cur.getColumnList("testtable",null));
-		assertFalse(cur.getField(0,"extra").contains("auto_increment"));
-		assertTrue(cur.getField(0,"column_key").contains("PRI"));
+		assertEquals(cur.getField(0,"extra"),"");
+		assertEquals(cur.getField(0,"column_key"),"PRI");
 		assertTrue(cur.sendQuery("drop table testtable"));
 		assertTrue(con.commit());
 		System.out.println();

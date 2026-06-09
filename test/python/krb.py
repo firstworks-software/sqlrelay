@@ -1887,10 +1887,8 @@ def main():
 		"	col1 number primary key, "
 		"	col2 number)"))
 	assertTrue(cur.getColumnList("testtable",None))
-	ck0=cur.getField(0,"column_key")
-	assertTrue(ck0 is not None and "PRI" in ck0)
-	ck1=cur.getField(1,"column_key")
-	assertFalse(ck1 is not None and "PRI" in ck1)
+	assertEquals(cur.getField(0,"column_key"),"PRI")
+	assertEquals(cur.getField(1,"column_key"),"")
 	assertTrue(cur.sendQuery("drop table testtable"))
 	print()
 

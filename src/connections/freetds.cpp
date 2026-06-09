@@ -2438,8 +2438,8 @@ const char *freetdsconnection::getColumnListQuerySybase(
 		"	(co.status&8)/8 as nullable, "
 		"	case "
 		"		when (co.status&128)=128 "
-		"			then 'auto_increment ' "
-		"		else '' "
+		"			then 'auto_increment' "
+		"		else null "
 		"	end as remarks, "
 		"	null as column_default, "
 		"	null as sql_data_type, "
@@ -2455,7 +2455,7 @@ const char *freetdsconnection::getColumnListQuerySybase(
 		"		when 1 then 'PRI' "
 		"		when 2 then 'UNI' "
 		"		when 3 then 'MUL' "
-		"		else '' "
+		"		else null "
 		"	end as column_key, "
 		"	null ");
 
@@ -2609,8 +2609,8 @@ const char *freetdsconnection::getColumnListQuerySqlServer(
 	columnlistquery.append(
 		"			co.column_name, "
 		"			'IsIdentity')=1 "
-		"			then 'auto_increment ' "
-		"		else '' "
+		"			then 'auto_increment' "
+		"		else null "
 		"	end as remarks, "
 		"	co.column_default, "
 		"	null as sql_data_type, "
@@ -2624,7 +2624,7 @@ const char *freetdsconnection::getColumnListQuerySqlServer(
 		"		when 1 then 'PRI' "
 		"		when 2 then 'UNI' "
 		"		when 3 then 'MUL' "
-		"		else '' "
+		"		else null "
 		"	end as column_key, "
 		"	null ");
 

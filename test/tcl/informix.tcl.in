@@ -1756,17 +1756,17 @@ catch {$cur sendQuery "drop table testtable"}
 assertTrue [$cur sendQuery "create table testtable (col1 serial primary key, col2 int)"]
 assertTrue [$con commit]
 assertTrue [$cur getColumnList "testtable" ""]
-assertTrue [expr {[string first "auto_increment" [$cur getFieldByName 0 "extra"]] >= 0}]
-assertTrue [expr {[string first "PRI" [$cur getFieldByName 0 "column_key"]] >= 0}]
-assertFalse [expr {[string first "auto_increment" [$cur getFieldByName 1 "extra"]] >= 0}]
-assertFalse [expr {[string first "PRI" [$cur getFieldByName 1 "column_key"]] >= 0}]
+assertEqual [$cur getFieldByName 0 "extra"] "auto_increment"
+assertEqual [$cur getFieldByName 0 "column_key"] "PRI"
+assertEqual [$cur getFieldByName 1 "extra"] ""
+assertEqual [$cur getFieldByName 1 "column_key"] ""
 puts ""
 assertTrue [$cur sendQuery "drop table testtable"]
 assertTrue [$con commit]
 assertTrue [$cur sendQuery "create table testtable (col1 int primary key, col2 int)"]
 assertTrue [$cur getColumnList "testtable" ""]
-assertFalse [expr {[string first "auto_increment" [$cur getFieldByName 0 "extra"]] >= 0}]
-assertTrue [expr {[string first "PRI" [$cur getFieldByName 0 "column_key"]] >= 0}]
+assertEqual [$cur getFieldByName 0 "extra"] ""
+assertEqual [$cur getFieldByName 0 "column_key"] "PRI"
 assertTrue [$cur sendQuery "drop table testtable"]
 assertTrue [$con commit]
 puts ""

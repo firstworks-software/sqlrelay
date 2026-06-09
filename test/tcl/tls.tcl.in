@@ -1598,8 +1598,8 @@ puts ""
 puts "COLUMN LIST - auto_increment, primary key: "
 assertTrue [$cur sendQuery "create table testtable (col1 number primary key, col2 number)"]
 assertTrue [$cur getColumnList "testtable" ""]
-assertTrue [expr {[string first "PRI" [$cur getFieldByName 0 "column_key"]] >= 0}]
-assertFalse [expr {[string first "PRI" [$cur getFieldByName 1 "column_key"]] >= 0}]
+assertEqual [$cur getFieldByName 0 "column_key"] "PRI"
+assertEqual [$cur getFieldByName 1 "column_key"] ""
 assertTrue [$cur sendQuery "drop table testtable"]
 puts ""
 

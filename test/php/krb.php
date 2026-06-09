@@ -1899,10 +1899,8 @@
 		"	col1 number primary key, ".
 		"	col2 number)"));
 	assertTrue(sqlrcur_getColumnList($cur,"testtable",NULL));
-	assertTrue(strstr(sqlrcur_getField($cur,0,"column_key"),
-				"PRI")!=NULL);
-	assertFalse(strstr(sqlrcur_getField($cur,1,"column_key"),
-				"PRI")!=NULL);
+	assertEqStr(sqlrcur_getField($cur,0,"column_key"),"PRI");
+	assertEqStr(sqlrcur_getField($cur,1,"column_key"),"");
 	assertTrue(sqlrcur_sendQuery($cur,"drop table testtable"));
 	echo("\n");
 

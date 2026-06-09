@@ -1903,8 +1903,8 @@ namespace SQLRClientTest
                 "	col1 number primary key, " +
                 "	col2 number)"));
             assertTrue(cur.getColumnList("testtable", null));
-            assertTrue(cur.getField((UInt64)0, "column_key") != null && cur.getField((UInt64)0, "column_key").Contains("PRI"));
-            assertFalse(cur.getField((UInt64)1, "column_key") != null && cur.getField((UInt64)1, "column_key").Contains("PRI"));
+            assertEquals(cur.getField((UInt64)0, "column_key"), "PRI");
+            assertEquals(cur.getField((UInt64)1, "column_key"), "");
             assertTrue(cur.sendQuery("drop table testtable"));
             Console.WriteLine("");
 

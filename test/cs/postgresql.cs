@@ -1639,14 +1639,10 @@ namespace SQLRClientTest
                 + "	col1 serial primary key, "
                 + "	col2 int)"));
             assertTrue(cur.getColumnList("testtable", null));
-            assertTrue(cur.getField((UInt64)0, "extra") != null &&
-                    cur.getField((UInt64)0, "extra").Contains("auto_increment"));
-            assertTrue(cur.getField((UInt64)0, "column_key") != null &&
-                    cur.getField((UInt64)0, "column_key").Contains("PRI"));
-            assertFalse(cur.getField((UInt64)1, "extra") != null &&
-                    cur.getField((UInt64)1, "extra").Contains("auto_increment"));
-            assertFalse(cur.getField((UInt64)1, "column_key") != null &&
-                    cur.getField((UInt64)1, "column_key").Contains("PRI"));
+            assertEquals(cur.getField((UInt64)0, "extra"), "auto_increment");
+            assertEquals(cur.getField((UInt64)0, "column_key"), "PRI");
+            assertEquals(cur.getField((UInt64)1, "extra"), "");
+            assertEquals(cur.getField((UInt64)1, "column_key"), "");
             Console.WriteLine("");
             assertTrue(cur.sendQuery("drop table testtable"));
             assertTrue(cur.sendQuery(
@@ -1654,10 +1650,8 @@ namespace SQLRClientTest
                 + "	col1 int primary key, "
                 + "	col2 int)"));
             assertTrue(cur.getColumnList("testtable", null));
-            assertFalse(cur.getField((UInt64)0, "extra") != null &&
-                    cur.getField((UInt64)0, "extra").Contains("auto_increment"));
-            assertTrue(cur.getField((UInt64)0, "column_key") != null &&
-                    cur.getField((UInt64)0, "column_key").Contains("PRI"));
+            assertEquals(cur.getField((UInt64)0, "extra"), "");
+            assertEquals(cur.getField((UInt64)0, "column_key"), "PRI");
             assertTrue(cur.sendQuery("drop table testtable"));
             Console.WriteLine("");
 

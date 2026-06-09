@@ -1533,14 +1533,10 @@ class sqlite extends sqlrtest {
 			"	col1 integer primary key autoincrement, "+
 			"	col2 int)"));
 		assertTrue(cur.getColumnList("testtable",null));
-		String extra0=cur.getField(0,"extra");
-		assertTrue(extra0!=null &&extra0.contains("auto_increment"));
-		String colkey0=cur.getField(0,"column_key");
-		assertTrue(colkey0!=null &&colkey0.contains("PRI"));
-		String extra1=cur.getField(1,"extra");
-		assertFalse(extra1!=null &&extra1.contains("auto_increment"));
-		String colkey1=cur.getField(1,"column_key");
-		assertFalse(colkey1!=null &&colkey1.contains("PRI"));
+		assertEquals(cur.getField(0,"extra"),"auto_increment");
+		assertEquals(cur.getField(0,"column_key"),"PRI");
+		assertEquals(cur.getField(1,"extra"),"");
+		assertEquals(cur.getField(1,"column_key"),"");
 		System.out.println();
 		assertTrue(cur.sendQuery("drop table if exists testtable"));
 		assertTrue(cur.sendQuery(
@@ -1548,10 +1544,8 @@ class sqlite extends sqlrtest {
 			"	col1 int primary key, "+
 			"	col2 int)"));
 		assertTrue(cur.getColumnList("testtable",null));
-		extra0=cur.getField(0,"extra");
-		assertFalse(extra0!=null &&extra0.contains("auto_increment"));
-		colkey0=cur.getField(0,"column_key");
-		assertTrue(colkey0!=null &&colkey0.contains("PRI"));
+		assertEquals(cur.getField(0,"extra"),"");
+		assertEquals(cur.getField(0,"column_key"),"PRI");
 		assertTrue(cur.sendQuery("drop table if exists testtable"));
 		System.out.println();
 

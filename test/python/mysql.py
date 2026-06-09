@@ -2309,10 +2309,10 @@ def main():
 		"	col1 int auto_increment primary key, "
 		"	col2 int)"))
 	assertTrue(cur.getColumnList("testtable",None))
-	assertTrue("auto_increment" in cur.getField(0,"extra"))
-	assertTrue("PRI" in cur.getField(0,"column_key"))
-	assertFalse("auto_increment" in cur.getField(1,"extra"))
-	assertFalse("PRI" in cur.getField(1,"column_key"))
+	assertEquals(cur.getField(0,"extra"),"auto_increment")
+	assertEquals(cur.getField(0,"column_key"),"PRI")
+	assertEquals(cur.getField(1,"extra"),"")
+	assertEquals(cur.getField(1,"column_key"),"")
 	print()
 	assertTrue(cur.sendQuery("drop table testtable"))
 	assertTrue(cur.sendQuery(
@@ -2320,8 +2320,8 @@ def main():
 		"	col1 int primary key, "
 		"	col2 int)"))
 	assertTrue(cur.getColumnList("testtable",None))
-	assertFalse("auto_increment" in cur.getField(0,"extra"))
-	assertTrue("PRI" in cur.getField(0,"column_key"))
+	assertEquals(cur.getField(0,"extra"),"")
+	assertEquals(cur.getField(0,"column_key"),"PRI")
 	assertTrue(cur.sendQuery("drop table testtable"))
 	print()
 

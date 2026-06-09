@@ -1590,14 +1590,14 @@ print("\n");
 # column list - auto_increment, primary key
 print("COLUMN LIST - auto_increment, primary key: \n");
 assertTrue($cur->getColumnList("testtable2",undef));
-assertTrue(index($cur->getField(0,"extra"),"auto_increment")>=0);
-assertTrue(index($cur->getField(0,"column_key"),"PRI")>=0);
-assertFalse(index($cur->getField(1,"extra"),"auto_increment")>=0);
-assertFalse(index($cur->getField(1,"column_key"),"PRI")>=0);
+assertEquals($cur->getField(0,"extra"),"auto_increment");
+assertEquals($cur->getField(0,"column_key"),"PRI");
+assertEquals($cur->getField(1,"extra"),"");
+assertEquals($cur->getField(1,"column_key"),"");
 print("\n");
 assertTrue($cur->getColumnList("testtable3",undef));
-assertFalse(index($cur->getField(0,"extra"),"auto_increment")>=0);
-assertTrue(index($cur->getField(0,"column_key"),"PRI")>=0);
+assertEquals($cur->getField(0,"extra"),"");
+assertEquals($cur->getField(0,"column_key"),"PRI");
 print("\n");
 
 

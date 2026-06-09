@@ -1919,8 +1919,8 @@ assertTrue(cur.sendQuery(
 	"	col1 number primary key, "+
 	"	col2 number)"));
 assertTrue(cur.getColumnList("testtable",null));
-assertTrue(String(cur.getField(0,"column_key")).indexOf("PRI")>=0);
-assertFalse(String(cur.getField(1,"column_key")).indexOf("PRI")>=0);
+assertEqStr(cur.getField(0,"column_key"),"PRI");
+assertEqStr(cur.getField(1,"column_key"),"");
 assertTrue(cur.sendQuery("drop table testtable"));
 console.log("");
 

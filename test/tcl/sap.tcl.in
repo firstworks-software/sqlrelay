@@ -1712,16 +1712,16 @@ puts "COLUMN LIST - auto_increment, primary key: "
 catch {$cur sendQuery "drop table testtable"}
 assertTrue [$cur sendQuery "create table testtable (	col1 int identity primary key, 	col2 int)"]
 assertTrue [$cur getColumnList "testtable" ""]
-assertTrue [string match "*auto_increment*" [$cur getFieldByName 0 "extra"]]
-assertTrue [string match "*PRI*" [$cur getFieldByName 0 "column_key"]]
-assertFalse [string match "*auto_increment*" [$cur getFieldByName 1 "extra"]]
-assertFalse [string match "*PRI*" [$cur getFieldByName 1 "column_key"]]
+assertEqual [$cur getFieldByName 0 "extra"] "auto_increment"
+assertEqual [$cur getFieldByName 0 "column_key"] "PRI"
+assertEqual [$cur getFieldByName 1 "extra"] ""
+assertEqual [$cur getFieldByName 1 "column_key"] ""
 puts ""
 assertTrue [$cur sendQuery "drop table testtable"]
 assertTrue [$cur sendQuery "create table testtable (	col1 int primary key, 	col2 int)"]
 assertTrue [$cur getColumnList "testtable" ""]
-assertFalse [string match "*auto_increment*" [$cur getFieldByName 0 "extra"]]
-assertTrue [string match "*PRI*" [$cur getFieldByName 0 "column_key"]]
+assertEqual [$cur getFieldByName 0 "extra"] ""
+assertEqual [$cur getFieldByName 0 "column_key"] "PRI"
 assertTrue [$cur sendQuery "drop table testtable"]
 puts ""
 

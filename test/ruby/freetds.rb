@@ -1736,10 +1736,10 @@ assertTrue(cur.sendQuery(
 	"	col1 int identity primary key, "+
 	"	col2 int)"))
 assertTrue(cur.getColumnList("testtable",nil))
-assertTrue(cur.getField(0,"extra").include?("auto_increment"))
-assertTrue(cur.getField(0,"column_key").include?("PRI"))
-assertFalse(cur.getField(1,"extra").include?("auto_increment"))
-assertFalse(cur.getField(1,"column_key").include?("PRI"))
+assertEqual(cur.getField(0,"extra"),"auto_increment")
+assertEqual(cur.getField(0,"column_key"),"PRI")
+assertEqual(cur.getField(1,"extra"),"")
+assertEqual(cur.getField(1,"column_key"),"")
 print "\n"
 assertTrue(cur.sendQuery("drop table testtable"))
 assertTrue(cur.sendQuery(
@@ -1747,8 +1747,8 @@ assertTrue(cur.sendQuery(
 	"	col1 int primary key, "+
 	"	col2 int)"))
 assertTrue(cur.getColumnList("testtable",nil))
-assertFalse(cur.getField(0,"extra").include?("auto_increment"))
-assertTrue(cur.getField(0,"column_key").include?("PRI"))
+assertEqual(cur.getField(0,"extra"),"")
+assertEqual(cur.getField(0,"column_key"),"PRI")
 assertTrue(cur.sendQuery("drop table testtable"))
 print "\n"
 

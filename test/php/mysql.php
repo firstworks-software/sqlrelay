@@ -2394,14 +2394,10 @@
 		"	primary key, ".
 		"	col2 int)"));
 	assertTrue(sqlrcur_getColumnList($cur,"testtable",NULL));
-	assertTrue(strstr(sqlrcur_getField($cur,0,"extra"),
-		"auto_increment")!==FALSE);
-	assertTrue(strstr(sqlrcur_getField($cur,0,"column_key"),
-		"PRI")!==FALSE);
-	assertFalse(strstr(sqlrcur_getField($cur,1,"extra"),
-		"auto_increment")!==FALSE);
-	assertFalse(strstr(sqlrcur_getField($cur,1,"column_key"),
-		"PRI")!==FALSE);
+	assertEqStr(sqlrcur_getField($cur,0,"extra"),"auto_increment");
+	assertEqStr(sqlrcur_getField($cur,0,"column_key"),"PRI");
+	assertEqStr(sqlrcur_getField($cur,1,"extra"),"");
+	assertEqStr(sqlrcur_getField($cur,1,"column_key"),"");
 	echo("\n");
 	assertTrue(sqlrcur_sendQuery($cur,"drop table testtable"));
 	assertTrue(sqlrcur_sendQuery($cur,
@@ -2410,10 +2406,8 @@
 		"	primary key, ".
 		"	col2 int)"));
 	assertTrue(sqlrcur_getColumnList($cur,"testtable",NULL));
-	assertFalse(strstr(sqlrcur_getField($cur,0,"extra"),
-		"auto_increment")!==FALSE);
-	assertTrue(strstr(sqlrcur_getField($cur,0,"column_key"),
-		"PRI")!==FALSE);
+	assertEqStr(sqlrcur_getField($cur,0,"extra"),"");
+	assertEqStr(sqlrcur_getField($cur,0,"column_key"),"PRI");
 	assertTrue(sqlrcur_sendQuery($cur,"drop table testtable"));
 	echo("\n");
 
