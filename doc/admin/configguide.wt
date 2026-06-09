@@ -109,6 +109,8 @@
  * [#querytranslation Query Translation]
   * [#normalize normalize]
   * [#patterns patterns]
+  * [#listagg_to_string_agg listagg_to_string_agg]
+  * [#sequence_nextval sequence_nextval]
  * [#bindvariabletranslation Bind Variable Translation]
  * [#resultsetheadertranslation Result Set Header Translation]
  * [#resultsettranslation Result Set Translation]
@@ -4044,7 +4046,7 @@ The '''sequence_nextval''' module rewrites expressions that fetch the next value
 The module recognizes the following three syntaxes:
 
 * //seqname.nextval// - used by Oracle and DB2
-* //nextval('seqname')// - used by PostgreSQL
+* //nextval('seqname')// - used by !PostgreSQL
 * //next value for seqname// - used by SQL Server, Sybase, Firebird, and DB2
 
 It rewrites any of these that it finds into the single target syntax selected by the '''style''' attribute.  The sequence name, including any schema or owner prefix (eg. //myschema.myseq//), is preserved.
