@@ -221,18 +221,6 @@ int _sqlrelayError(pdo_dbh_t *dbh,
 	return errornumber;
 }
 
-void _bindFormatError() {
-	TSRMLS_FETCH();
-	int64_t		errornumber=
-			SQLR_ERROR_INVALIDBINDVARIABLEFORMAT;
-	const char	*errormessage=
-			SQLR_ERROR_INVALIDBINDVARIABLEFORMAT_STRING;
-	zend_throw_exception_ex(php_pdo_get_exception(),
-					errornumber TSRMLS_CC,
-					"SQLSTATE[HY000] [%lld] %s",
-					(long long)errornumber,errormessage);
-}
-
 static void clearList(singlylinkedlist< char * > *list) {
 	for (listnode< char * > *node=list->getFirst();
 					node; node=node->getNext()) {
@@ -855,8 +843,8 @@ static int sqlrcursorBind(pdo_stmt_t *stmt,
 		name++;
 	}
 
-	// validate types
-	bool	validtype=false;
+	// coerce an unrecognized bind type to PDO_PARAM_STR (like the native
+	// PDO drivers) rather than forwarding a bogus type to the backend
 	switch (PDO_PARAM_TYPE(param->param_type)) {
 		case PDO_PARAM_NULL:
 		case PDO_PARAM_BOOL:
@@ -864,11 +852,11 @@ static int sqlrcursorBind(pdo_stmt_t *stmt,
 		case PDO_PARAM_STR:
 		case PDO_PARAM_LOB:
 		//case PDO_PARAM_STMT:
-			validtype=true;
-	}
-	if (!validtype) {
-		_bindFormatError();
-		return 1;
+			break;
+		default:
+			param->param_type=(enum pdo_param_type)
+				((param->param_type&PDO_PARAM_FLAGS)|
+								PDO_PARAM_STR);
 	}
 
 	// FIXME: what does this mean?
