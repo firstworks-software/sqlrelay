@@ -3808,6 +3808,7 @@ Currently, the following query translation modules are available in the standard
 * '''normalize'''
 * '''patterns'''
 * '''listagg_to_string_agg'''
+* '''sequence_nextval'''
 
 Custom modules may also be developed.  For more information, please contact [mailto:dev@firstworks.com dev@firstworks.com]. [[Image(http://sqlrelay.sourceforge.net/images/us.png)]] [[Image(http://sqlrelay.sourceforge.net/images/br.png)]]
 
@@ -4033,6 +4034,56 @@ Calls inside string literals are left alone.  Identifiers like //mylistagg(...)/
 The match is fairly strict.  A //listagg()// call is only rewritten if it is followed by '' within group ('' (a single space, then the keywords, then a space, then the open paren) and the contents of the //within group// clause begin with //order by // (lowercase, single space).  If you have queries with unusual spacing or case, run the [#normalize normalize] translation first; otherwise the call will be passed through to the database untranslated and will fail there.
 
 The module does not implement the //on overflow truncate// or //on overflow error// clauses, and does not implement //listagg()// used as a window function (//over (...)//).  Calls using either of these forms will not match and will be passed through untranslated.
+
+
+[[br]][=#sequence_nextval]
+=== sequence_nextval ===
+
+The '''sequence_nextval''' module rewrites expressions that fetch the next value from a sequence, converting them from one database's syntax into another's.  Different databases express this in different ways, so this is useful when running an application written for one database against another.
+
+The module recognizes the following three syntaxes:
+
+* //seqname.nextval// - used by Oracle and DB2
+* //nextval('seqname')// - used by PostgreSQL
+* //next value for seqname// - used by SQL Server, Sybase, Firebird, and DB2
+
+It rewrites any of these that it finds into the single target syntax selected by the '''style''' attribute.  The sequence name, including any schema or owner prefix (eg. //myschema.myseq//), is preserved.
+
+For example, with style=".nextval", a query like:
+
+{{{#!blockquote
+{{{#!code
+insert into mytable (id, name) values (nextval('myseq'), 'hello')
+}}}
+}}}
+
+Would be translated to:
+
+{{{#!blockquote
+{{{#!code
+insert into mytable (id, name) values (myseq.nextval, 'hello')
+}}}
+}}}
+
+An example configuration:
+
+{{{#!blockquote
+{{{#!code
+@parts/sqlrelay-querytranslations-sequence-nextval.conf@
+}}}
+}}}
+
+The following attribute is supported, in addition to the standard '''module''', '''enabled''', and '''debug''' attributes:
+
+* '''style''' - The target syntax to convert sequence-nextval expressions to.  Options include:
+ * //.nextval// - eg. //myseq.nextval// (Oracle, DB2)
+ * //nextval()// - eg. //nextval('myseq')// (PostgreSQL)
+ * //next value for// - eg. //next value for myseq// (SQL Server, Sybase, Firebird, DB2)
+ * If omitted or set to an unrecognized value, queries are passed through untranslated.
+
+Sequence references inside string literals are left alone.
+
+The module assumes the query has already been normalized (single spaces between words, single dots in dotted names).  As with the other modules, loading the [#normalize normalize] translation first helps it match reliably.
 
 
 [[br]][=#bindvariabletranslation]

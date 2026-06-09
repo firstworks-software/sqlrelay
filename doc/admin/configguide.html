@@ -5581,6 +5581,7 @@ http://www.gnu.org/software/src-highlite -->
   <li><b>normalize</b></li>
   <li><b>patterns</b></li>
   <li><b>listagg_to_string_agg</b></li>
+  <li><b>sequence_nextval</b></li>
 </ul>
 
 <p>Custom modules may also be developed.  For more information, please contact <a href="mailto:dev@firstworks.com">dev@firstworks.com</a>. <a target="_blank" href="http://sqlrelay.sourceforge.net/images/us.png"><img src="http://sqlrelay.sourceforge.net/images/us.png"/></a> <a target="_blank" href="http://sqlrelay.sourceforge.net/images/br.png"><img src="http://sqlrelay.sourceforge.net/images/br.png"/></a></p>
@@ -6003,6 +6004,80 @@ http://www.gnu.org/software/src-highlite -->
 <p>The match is fairly strict.  A <i>listagg()</i> call is only rewritten if it is followed by '' within group ('' (a single space, then the keywords, then a space, then the open paren) and the contents of the <i>within group</i> clause begin with <i>order by </i> (lowercase, single space).  If you have queries with unusual spacing or case, run the <a href="#normalize">normalize</a> translation first; otherwise the call will be passed through to the database untranslated and will fail there.</p>
 
 <p>The module does not implement the <i>on overflow truncate</i> or <i>on overflow error</i> clauses, and does not implement <i>listagg()</i> used as a window function (//over (...)//).  Calls using either of these forms will not match and will be passed through untranslated.</p>
+
+<br/><a name="sequence_nextval"/><h3>sequence_nextval</h3>
+
+<p>The <b>sequence_nextval</b> module rewrites expressions that fetch the next value from a sequence, converting them from one database's syntax into another's.  Different databases express this in different ways, so this is useful when running an application written for one database against another.</p>
+
+<p>The module recognizes the following three syntaxes:</p>
+
+<ul>
+  <li><i>seqname.nextval</i> - used by Oracle and DB2</li>
+  <li><i>nextval('seqname')</i> - used by <a href="PostgreSQL">PostgreSQL</a></li>
+  <li><i>next value for seqname</i> - used by SQL Server, Sybase, Firebird, and DB2</li>
+</ul>
+
+<p>It rewrites any of these that it finds into the single target syntax selected by the <b>style</b> attribute.  The sequence name, including any schema or owner prefix (eg. <i>myschema.myseq</i>), is preserved.</p>
+
+<p>For example, with style=".nextval", a query like:</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt>insert <font color="#008080">into</font> <b><font color="#000000">mytable</font></b> <font color="#990000">(</font>id<font color="#990000">,</font> name<font color="#990000">)</font> <b><font color="#000000">values</font></b> <font color="#990000">(</font><b><font color="#000000">nextval</font></b><font color="#990000">(</font><font color="#FF0000">'myseq'</font><font color="#990000">),</font> <font color="#FF0000">'hello'</font><font color="#990000">)</font></tt></pre>
+
+</blockquote>
+<p>Would be translated to:</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt>insert <font color="#008080">into</font> <b><font color="#000000">mytable</font></b> <font color="#990000">(</font>id<font color="#990000">,</font> name<font color="#990000">)</font> <b><font color="#000000">values</font></b> <font color="#990000">(</font>myseq<font color="#990000">.</font>nextval<font color="#990000">,</font> <font color="#FF0000">'hello'</font><font color="#990000">)</font></tt></pre>
+
+</blockquote>
+<p>An example configuration:</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt><b><font color="#000080">&lt;?xml</font></b> <font color="#009900">version</font><font color="#990000">=</font><font color="#FF0000">"1.0"</font><b><font color="#000080">?&gt;</font></b>
+<b><font color="#0000FF">&lt;instances&gt;</font></b>
+	...
+	<b><font color="#0000FF">&lt;instance</font></b> <font color="#009900">id</font><font color="#990000">=</font><font color="#FF0000">"example"</font> ... <b><font color="#0000FF">&gt;</font></b>
+		...
+		<b><font color="#0000FF">&lt;querytranslations&gt;</font></b>
+			<b><font color="#0000FF">&lt;querytranslation</font></b> <font color="#009900">module</font><font color="#990000">=</font><font color="#FF0000">"normalize"</font><b><font color="#0000FF">/&gt;</font></b>
+			<b><font color="#0000FF">&lt;querytranslation</font></b> <font color="#009900">module</font><font color="#990000">=</font><font color="#FF0000">"sequence_nextval"</font> <font color="#009900">style</font><font color="#990000">=</font><font color="#FF0000">".nextval"</font><b><font color="#0000FF">/&gt;</font></b>
+		<b><font color="#0000FF">&lt;/querytranslations&gt;</font></b>
+		...
+	<b><font color="#0000FF">&lt;/instance&gt;</font></b>
+	...
+<b><font color="#0000FF">&lt;/instances&gt;</font></b>
+</tt></pre>
+
+</blockquote>
+<p>The following attribute is supported, in addition to the standard <b>module</b>, <b>enabled</b>, and <b>debug</b> attributes:</p>
+
+<ul>
+  <li><b>style</b> - The target syntax to convert sequence-nextval expressions to.  Options include:</li>
+  <ul>
+    <li><i>.nextval</i> - eg. <i>myseq.nextval</i> (Oracle, DB2)</li>
+    <li><i>nextval()</i> - eg. <i>nextval('myseq')</i> (PostgreSQL)</li>
+    <li><i>next value for</i> - eg. <i>next value for myseq</i> (SQL Server, Sybase, Firebird, DB2)</li>
+    <li>If omitted or set to an unrecognized value, queries are passed through untranslated.</li>
+  </ul>
+
+</ul>
+
+<p>Sequence references inside string literals are left alone.</p>
+
+<p>The module assumes the query has already been normalized (single spaces between words, single dots in dotted names).  As with the other modules, loading the <a href="#normalize">normalize</a> translation first helps it match reliably.</p>
 
 <br/><a name="bindvariabletranslation"/><h2>Bind Variable Translation</h2>
 
