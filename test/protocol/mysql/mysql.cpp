@@ -106,13 +106,10 @@ int	main(int argc, char **argv) {
 	assertEquals(mysql_field_count(&mysql),1);
 	assertEquals(mysql_num_fields(result),1);
 	field=mysql_fetch_field_direct(result,0);
-	if (issqlrelay) {
-		// sqlrelay lists databases with a wildcard, so the column is
-		// labelled "Database (%)" rather than plain "Database"
-		assertEquals(field->name,"Database (%)");
-	} else {
-		assertEquals(field->name,"Database");
-	}
+	// the mariadb connector labels the mysql_list_dbs column with the
+	// wildcard it filters on ("Database (%)"), against both sqlrelay and a
+	// native server
+	assertEquals(field->name,"Database (%)");
 	mysql_free_result(result);
 	stdoutput.printf("\n");
 
@@ -267,7 +264,9 @@ int	main(int argc, char **argv) {
 	stdoutput.printf("char\n");
 	field=mysql_fetch_field_direct(result,12);
 	assertEquals(field->name,"testchar");
-	assertEquals(field->length,40);
+	// the sqlrelay emulation reports char/text lengths in characters; a
+	// native server on a utf8mb4 connection reports bytes (4x per char)
+	assertEquals(field->length,(issqlrelay)?40:160);
 	assertEquals(field->flags,0);
 	assertEquals(field->type,MYSQL_TYPE_STRING);
 	stdoutput.printf("\n");
@@ -275,7 +274,7 @@ int	main(int argc, char **argv) {
 	stdoutput.printf("text\n");
 	field=mysql_fetch_field_direct(result,13);
 	assertEquals(field->name,"testtext");
-	assertEquals(field->length,65535);
+	assertEquals(field->length,(issqlrelay)?65535:262140);
 	assertEquals(field->flags,BLOB_FLAG);
 	assertEquals(field->type,MYSQL_TYPE_BLOB);
 	stdoutput.printf("\n");
@@ -283,7 +282,7 @@ int	main(int argc, char **argv) {
 	stdoutput.printf("varchar\n");
 	field=mysql_fetch_field_direct(result,14);
 	assertEquals(field->name,"testvarchar");
-	assertEquals(field->length,40);
+	assertEquals(field->length,(issqlrelay)?40:160);
 	assertEquals(field->flags,0);
 	assertEquals(field->type,MYSQL_TYPE_VAR_STRING);
 	stdoutput.printf("\n");
@@ -291,7 +290,7 @@ int	main(int argc, char **argv) {
 	stdoutput.printf("tinytext\n");
 	field=mysql_fetch_field_direct(result,15);
 	assertEquals(field->name,"testtinytext");
-	assertEquals(field->length,255);
+	assertEquals(field->length,(issqlrelay)?255:1020);
 	assertEquals(field->flags,BLOB_FLAG);
 	assertEquals(field->type,MYSQL_TYPE_BLOB);
 	stdoutput.printf("\n");
@@ -299,7 +298,7 @@ int	main(int argc, char **argv) {
 	stdoutput.printf("mediumtext\n");
 	field=mysql_fetch_field_direct(result,16);
 	assertEquals(field->name,"testmediumtext");
-	assertEquals(field->length,16777215);
+	assertEquals(field->length,(issqlrelay)?16777215:67108860);
 	assertEquals(field->flags,BLOB_FLAG);
 	assertEquals(field->type,MYSQL_TYPE_BLOB);
 	stdoutput.printf("\n");
@@ -335,7 +334,10 @@ int	main(int argc, char **argv) {
 	assertEquals(field->flags&ON_UPDATE_NOW_FLAG,ON_UPDATE_NOW_FLAG);
 	#endif
 	assertEquals(field->flags&BINARY_FLAG,BINARY_FLAG);
-	assertEquals(field->flags&UNSIGNED_FLAG,UNSIGNED_FLAG);
+	// real mysql 5.7 doesn't set UNSIGNED_FLAG on timestamp
+	if (issqlrelay) {
+		assertEquals(field->flags&UNSIGNED_FLAG,UNSIGNED_FLAG);
+	}
 	assertEquals(field->flags&NOT_NULL_FLAG,NOT_NULL_FLAG);
 #endif
 	assertEquals(field->type,MYSQL_TYPE_TIMESTAMP);
@@ -391,7 +393,9 @@ int	main(int argc, char **argv) {
 	field=mysql_fetch_field(result);
 	assertEquals(mysql_field_tell(result),1);
 	assertEquals(field->name,"testtinyint");
-	// FIXME: field->...
+	// only field->name is pinned here; the other members (type/length/
+	// flags) diverge between sqlrelay and native in the result-set paths
+	// (#8105)
 	field=mysql_fetch_field(result);
 	assertEquals(mysql_field_tell(result),2);
 	assertEquals(field->name,"testsmallint");
@@ -457,7 +461,9 @@ int	main(int argc, char **argv) {
 	stdoutput.printf("mysql_fetch_field_direct:\n");
 	field=mysql_fetch_field_direct(result,0);
 	assertEquals(field->name,"testtinyint");
-	// FIXME: field->...
+	// only field->name is pinned here; the other members (type/length/
+	// flags) diverge between sqlrelay and native in the result-set paths
+	// (#8105)
 	field=mysql_fetch_field_direct(result,1);
 	assertEquals(field->name,"testsmallint");
 	field=mysql_fetch_field_direct(result,2);
@@ -774,14 +780,13 @@ int	main(int argc, char **argv) {
 	stdoutput.printf("\n");
 	#endif
 
-	// FIXME: mysql_info for:
-	// insert into ... select ...
-	// insert into ... values (...),(...),(...)...
-	// load data infile ...
-	// alter table
-	// update
+	// sqlrelay's mysql protocol doesn't populate mysql_info for
+	// insert-select, multi-row insert, alter, or update (#8106), and
+	// doesn't support load data infile (#8107), so those aren't asserted
+	// here
 
-	// FIXME: mysql_change_user
+	// mysql_change_user isn't implemented in sqlrelay's mysql protocol
+	// (#8108), so it isn't exercised here
 
 	#if defined(MARIADB_BASE_VERSION) || \
 		(defined(MYSQL_VERSION_ID) && MYSQL_VERSION_ID<80000)
@@ -832,8 +837,16 @@ int	main(int argc, char **argv) {
 	assertEquals(mysql_kill(&mysql,0),1);
 	stdoutput.printf("\n");
 
-	// FIXME: mysql_options
-	// (no options are currently supported, except against a real database)
+	stdoutput.printf("mysql_options\n");
+	// client-side options are handled by the client library, so they
+	// succeed (0) against both sqlrelay and a real database; options that
+	// would require server interaction aren't supported by the emulation
+	unsigned int	opttimeout=10;
+	assertEquals(mysql_options(&mysql,MYSQL_OPT_CONNECT_TIMEOUT,
+							&opttimeout),0);
+	assertEquals(mysql_options(&mysql,MYSQL_OPT_READ_TIMEOUT,
+							&opttimeout),0);
+	stdoutput.printf("\n");
 
 	mysql_close(&mysql);
 
@@ -913,6 +926,8 @@ int	main(int argc, char **argv) {
 	field=mysql_fetch_field(result);
 	assertEquals(mysql_field_tell(result),1);
 	assertEquals(field->name,"testtinyint");
+	// only field->name is pinned here; the other members diverge between
+	// sqlrelay and native (#8105)
 	field=mysql_fetch_field(result);
 	assertEquals(mysql_field_tell(result),2);
 	assertEquals(field->name,"testsmallint");
