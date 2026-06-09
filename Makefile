@@ -5,6 +5,7 @@ include config.mk
 all:
 	cd src $(AND) $(MAKE) all
 	cd init $(AND) $(MAKE) all
+	cd test $(AND) $(MAKE) testscripts
 
 clean:
 	cd src $(AND) $(MAKE) clean
@@ -103,10 +104,6 @@ distclean: clean
 		sqlrelay-c.pc \
 		sqlrelay-c++.pc \
 		src/api/cs/SQLRClient/SQLRClient.suo \
-		test/testall.sh \
-		test/testall.vbs \
-		test/test.sh \
-		test/test.bat \
 		test/erlang/run \
 		test/sqlrelay.conf.d/*.conf \
 		msvc/setupx64/setupx64.vdproj \

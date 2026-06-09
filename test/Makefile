@@ -2,7 +2,7 @@ top_builddir = ..
 
 include ../config.mk
 
-all: $(TESTALLSUBDIRS) 
+all: $(TESTALLSUBDIRS) $(TESTSCRIPTS) 
 
 all-c:
 	cd c $(AND) $(MAKE) all
@@ -67,7 +67,31 @@ clean:
 	cd legacy $(AND) $(MAKE) clean
 	cd protocol $(AND) $(MAKE) clean
 	cd stress $(AND) $(MAKE) clean
-	$(RM) sqlr-*.*.bt sybinit.err sqlrelay.conf.d/sqlite/sqlite.db temp1 temp2 temp3
+	$(RM) sqlr-*.*.bt sybinit.err sqlrelay.conf.d/sqlite/sqlite.db temp1 temp2 temp3 $(TESTSCRIPTS) *.out1 *.out2
 
 tests: all
 	$(SCRIPTINT) $(THISDIR)testall$(SCRIPTEXT)
+
+testscripts: $(TESTSCRIPTS)
+
+testall.sh: testall.sh.in
+	$(REPLACE) @abs_top_builddir@ "$(abs_top_builddir)" $@.in > $@.out1
+	$(REPLACE) @prefix@ "$(prefix)" $@.out1 > $@.out2
+	$(REPLACE) @TESTDBS@ "$(TESTDBS)" $@.out2 > $@.out1
+	$(MV) $@.out1 $@
+	$(RM) $@.out2
+	$(CHMOD) 755 $@
+
+test.sh: test.sh.in
+	$(REPLACE) @PYTHON@ "$(PYTHON)" $@.in > $@.out1
+	$(REPLACE) @TESTAPIS@ "$(TESTAPIS)" $@.out1 > $@.out2
+	$(MV) $@.out2 $@
+	$(RM) $@.out1
+	$(CHMOD) 755 $@
+
+testall.vbs: testall.vbs.in
+	$(REPLACE) @prefix@ "$(prefix)" $@.in > $@.out1
+	$(REPLACE) @TESTDBS@ "$(TESTDBS)" $@.out1 > $@.out2
+	$(REPLACE) @TESTAPIS@ "$(TESTAPIS)" $@.out2 > $@.out1
+	$(MV) $@.out1 $@
+	$(RM) $@.out2

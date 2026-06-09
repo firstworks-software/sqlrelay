@@ -1075,7 +1075,6 @@ infiles=Array(_
 	"bin\\sqlrclient-config.in",_
 	"bin\\sqlrclientwrapper-config.in",_
 	"bin\\sqlrserver-config.in",_
-	"test\\testall.vbs.in",_
 	"sqlrelay-c.pc.in",_
 	"sqlrelay-c++.pc.in",_
 	"msvc\\setupx64\\setupx64.vdproj.in",_
