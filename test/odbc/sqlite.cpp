@@ -7468,6 +7468,29 @@ int main(int argc, char **argv) {
 	SQLFreeStmt(stmt,SQL_CLOSE);
 	SQLFreeStmt(stmt,SQL_UNBIND);
 	SQLFreeStmt(stmt,SQL_RESET_PARAMS);
+	// The native sqlite odbc driver has no real catalogs or schemas to
+	// enumerate, so it implements SQL_ALL_CATALOGS and SQL_ALL_SCHEMAS
+	// by returning one null-named row per table/view in the database.
+	// The count therefore tracks however many tables/views happen to
+	// exist - including the undroppable sqlite_sequence left behind by
+	// any prior autoincrement use - so derive the expected count from
+	// the live inventory rather than hardcoding a number that leftover
+	// state makes nondeterministic.
+	SQLINTEGER	nativetabcount=0;
+	if (!issqlrelay) {
+		SQLLEN	nativetabcountind;
+		erg=SQLExecDirect(stmt,(SQLCHAR *)
+				"select count(*) from sqlite_master "
+				"where type in ('table','view')",SQL_NTS);
+		assertSuccessStmt(stmt,erg);
+		erg=SQLBindCol(stmt,1,SQL_C_SLONG,&nativetabcount,
+				sizeof(nativetabcount),&nativetabcountind);
+		assertSuccessStmt(stmt,erg);
+		erg=SQLFetch(stmt);
+		assertSuccessStmt(stmt,erg);
+		SQLFreeStmt(stmt,SQL_CLOSE);
+		SQLFreeStmt(stmt,SQL_UNBIND);
+	}
 	erg=SQLTables(stmt,
 			(SQLCHAR *)SQL_ALL_CATALOGS,SQL_NTS,
 			(SQLCHAR *)"",SQL_NTS,
@@ -7492,14 +7515,14 @@ int main(int argc, char **argv) {
 		catrows++;
 	}
 	// sqlite has no catalogs; through sqlrelay the list is a single
-	// row with an empty catalog name, the native driver returns a
-	// couple of placeholder rows with null catalog names
+	// row with an empty catalog name, the native driver returns one
+	// null-catalog-name row per table/view (see nativetabcount above)
 	if (issqlrelay) {
 		assertEqualStmt(stmt,catrows,1);
 		assertEqualStmt(stmt,(int)catnameind,0);
 		assertEqualStmt(stmt,(const char *)catname,"");
 	} else {
-		assertEqualStmt(stmt,catrows,2);
+		assertEqualStmt(stmt,catrows,(int)nativetabcount);
 		assertEqualStmt(stmt,(int)catnameind,(int)SQL_NULL_DATA);
 	}
 	SQLFreeStmt(stmt,SQL_CLOSE);
@@ -7519,8 +7542,9 @@ int main(int argc, char **argv) {
 			(SQLCHAR *)"",SQL_NTS,
 			(SQLCHAR *)"",SQL_NTS);
 	assertSuccessStmt(stmt,erg);
-	// sqlite has no schemas; through sqlrelay the list is empty,
-	// the native driver returns a couple of placeholder rows
+	// sqlite has no schemas; through sqlrelay the list is empty, the
+	// native driver returns one null-schema-name row per table/view
+	// (same nativetabcount as the catalog list - no ddl runs between)
 	int	schemarows=0;
 	for (;;) {
 		erg=SQLFetch(stmt);
@@ -7536,7 +7560,7 @@ int main(int argc, char **argv) {
 	if (issqlrelay) {
 		assertEqualStmt(stmt,schemarows,0);
 	} else {
-		assertEqualStmt(stmt,schemarows,2);
+		assertEqualStmt(stmt,schemarows,(int)nativetabcount);
 	}
 	SQLFreeStmt(stmt,SQL_CLOSE);
 	SQLFreeStmt(stmt,SQL_UNBIND);
