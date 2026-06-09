@@ -1,5 +1,6 @@
 #include <libpq-fe.h>
 #include <config.h>
+#include <rudiments/sys.h>
 #include <rudiments/charstring.h>
 #include <rudiments/process.h>
 #include <rudiments/environment.h>
@@ -12,18 +13,26 @@ int	main(int argc, char **argv) {
 
 #ifdef HAVE_POSTGRESQL_PQEXECPREPARED
 
-	const char	*host="127.0.0.1";
+	const char	*host;
 	const char	*port;
 	const char	*user;
 	const char	*password;
 	const char	*db;
-	// to run against a real postgresql instance, provide a host
-	// name eg: ./postgresql db64
-	if (argc==2) {
-		host=argv[1];
-		db="testdb";
-	} else {
+
+	// pass "native" to test a real postgresql instance instead of
+	// sqlrelay's postgresql protocol
+	bool	issqlrelay=!(argc==2 && !charstring::compare(argv[1],"native"));
+
+	if (issqlrelay) {
+		host="127.0.0.1";
 		db="testuser";
+	} else {
+		// short hostname, matching the db the native odbc tests use
+		char	*hostname=sys::getHostName();
+		char	*dot=(char *)charstring::findFirstOrEnd(hostname,'.');
+		*dot='\0';
+		host="postgresql";
+		db=hostname;
 	}
 	port="5432";
 	user="testuser";

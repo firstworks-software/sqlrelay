@@ -40,13 +40,10 @@ int	main(int argc, char **argv) {
 	ub4		currentrow;
 
 
-	// to run against a real instance, provide an sid
-	// eg: ./oracle ora1
-	if (argc==2) {
-		sid=argv[1];
-	} else {
-		sid="sqlrelay";
-	}
+	// pass "native" to test a real oracle instance instead of
+	// sqlrelay's oracle protocol
+	bool	issqlrelay=!(argc==2 && !charstring::compare(argv[1],"native"));
+	sid=(issqlrelay)?"sqlrelay":"ora1";
 	user="scott";
 	password="tiger";
 

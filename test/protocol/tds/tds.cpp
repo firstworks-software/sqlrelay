@@ -1,6 +1,7 @@
 extern "C" {
 	#include <ctpublic.h>
 }
+#include <rudiments/sys.h>
 #include <rudiments/process.h>
 #include <rudiments/charstring.h>
 #include <rudiments/bytestring.h>
@@ -87,14 +88,20 @@ int	main(int argc, char **argv) {
 	const char	*db;
 	const char	*language="us_english";
 	const char	*charset="utf-8";
-	// to run against a real instance, provide a server name
-	// eg: ./tds mssql
-	if (argc==2) {
-		server=argv[1];
-		db="testdb";
-	} else {
+
+	// pass "native" to test a real sql server/sybase instance
+	// instead of sqlrelay's tds protocol
+	bool	issqlrelay=!(argc==2 && !charstring::compare(argv[1],"native"));
+	if (issqlrelay) {
 		server="localhost";
 		db="";
+	} else {
+		// short hostname, matching the db the native odbc tests use
+		char	*hostname=sys::getHostName();
+		char	*dot=(char *)charstring::findFirstOrEnd(hostname,'.');
+		*dot='\0';
+		server="mssql";
+		db=hostname;
 	}
 	user="testuser";
 	password="testpassword";

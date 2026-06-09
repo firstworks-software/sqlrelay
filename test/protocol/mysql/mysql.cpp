@@ -1,4 +1,5 @@
 #include <mysql.h>
+#include <rudiments/sys.h>
 #include <rudiments/process.h>
 #include <rudiments/charstring.h>
 #include <rudiments/bytestring.h>
@@ -25,31 +26,32 @@ int	main(int argc, char **argv) {
 
 	#ifdef HAVE_MYSQL_STMT_PREPARE
 
-	const char	*host="127.0.0.1";
+	const char	*host;
 	const char	*port;
 	const char	*socket;
 	const char	*user;
 	const char	*password;
 	const char	*db;
-	// to run against a real mysql instance, provide a host name
-	// eg: ./mysql db64
-	if (argc==2) {
-		host=argv[1];
-	}
+
+	// pass "native" to test a real mysql instance instead of
+	// sqlrelay's mysql protocol
+	bool	issqlrelay=!(argc==2 && !charstring::compare(argv[1],"native"));
+
 	port="3306";
 	socket="/var/lib/mysql/mysql.sock";
 	user="testuser";
 	password="testpassword";
-	// set the db when running against a real mysql instance,
-	// otherwise use whatever sqlrelay defaults to
-	if (argc==2) {
-		db="testdb";
-	} else {
+	if (issqlrelay) {
+		host="127.0.0.1";
 		db="";
+	} else {
+		// short hostname, matching the db the native odbc tests use
+		char	*hostname=sys::getHostName();
+		char	*dot=(char *)charstring::findFirstOrEnd(hostname,'.');
+		*dot='\0';
+		host="mysql";
+		db=hostname;
 	}
-
-	// no host arg means we're talking to sqlrelay's mysql protocol
-	bool	issqlrelay=(argc!=2);
 
 
 	stdoutput.printf("\n============ Traditional API ============\n\n");
@@ -147,7 +149,7 @@ int	main(int argc, char **argv) {
 	stdoutput.printf("tinyint\n");
 	field=mysql_fetch_field_direct(result,0);
 	assertEquals(field->name,"testtinyint");
-	/*if (argc==2) {
+	/*if (!issqlrelay) {
 		assertEquals(field->org_name,"testtinyint");
 		assertEquals(field->table,"testtable");
 		assertEquals(field->org_table,"testtable");
@@ -157,7 +159,7 @@ int	main(int argc, char **argv) {
 	assertEquals(field->length,4);
 	assertEquals(field->max_length,0);
 	assertEquals(field->name_length,11);
-	/*if (argc==2) {
+	/*if (!issqlrelay) {
 		assertEquals(field->org_name_length,11);
 		assertEquals(field->db_length,6);
 	}*/
@@ -166,7 +168,7 @@ int	main(int argc, char **argv) {
 	assertEquals(field->def_length,0);
 	assertEquals(field->flags,NUM_FLAG);
 	assertEquals(field->decimals,0);
-	/*if (argc==2) {
+	/*if (!issqlrelay) {
 		assertEquals(field->charsetnr,63);
 	}*/
 	assertEquals(field->type,MYSQL_TYPE_TINY);
@@ -799,7 +801,7 @@ int	main(int argc, char **argv) {
 	assertEquals(mysql_refresh(&mysql,REFRESH_STATUS),1);
 	assertEquals(mysql_refresh(&mysql,REFRESH_SLAVE),1);
 	assertEquals(mysql_refresh(&mysql,REFRESH_MASTER),1);
-	/*if (argc==2) {
+	/*if (!issqlrelay) {
 		assertEquals(mysql_refresh(&mysql,REFRESH_THREADS),1);
 	} else {
 		// no-op in this case
