@@ -2073,10 +2073,10 @@ class mysql extends sqlrtest {
 		if (issqlrelay) {
 			assertEquals(rsmd.getColumnTypeName(13),"STRING");
 			assertEquals(rsmd.getColumnTypeName(14),"VARSTRING");
-			assertEquals(rsmd.getColumnTypeName(15),"BLOB");
-			assertEquals(rsmd.getColumnTypeName(16),"TINYBLOB");
-			assertEquals(rsmd.getColumnTypeName(17),"MEDIUMBLOB");
-			assertEquals(rsmd.getColumnTypeName(18),"LONGBLOB");
+			assertEquals(rsmd.getColumnTypeName(15),"TEXT");
+			assertEquals(rsmd.getColumnTypeName(16),"TINYTEXT");
+			assertEquals(rsmd.getColumnTypeName(17),"MEDIUMTEXT");
+			assertEquals(rsmd.getColumnTypeName(18),"LONGTEXT");
 		} else {
 			assertEquals(rsmd.getColumnTypeName(13),"CHAR");
 			assertEquals(rsmd.getColumnTypeName(14),"VARCHAR");

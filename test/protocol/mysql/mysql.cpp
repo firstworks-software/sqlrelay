@@ -459,11 +459,11 @@ int	main(int argc, char **argv) {
 	assertColumn(field,"testchar",160,0,MYSQL_TYPE_STRING);
 	field=mysql_fetch_field(result);
 	assertEquals(mysql_field_tell(result),14);
-	// native collapses all text subtypes to MYSQL_TYPE_BLOB (#8105); native
-	// reports flags 16 (BLOB), sqlrelay adds BINARY_FLAG because it
-	// represents text as a blob datatype (#8111)
+	// native collapses all text subtypes to MYSQL_TYPE_BLOB (#8105) with
+	// flags 16 (BLOB); sqlrelay matches now that text columns map to the
+	// TEXT datatypes rather than blobs (#8111)
 	assertColumn(field,"testtext",262140,
-			(issqlrelay)?(BLOB_FLAG|BINARY_FLAG):BLOB_FLAG,
+			BLOB_FLAG,
 			MYSQL_TYPE_BLOB);
 	field=mysql_fetch_field(result);
 	assertEquals(mysql_field_tell(result),15);
@@ -471,19 +471,19 @@ int	main(int argc, char **argv) {
 	field=mysql_fetch_field(result);
 	assertEquals(mysql_field_tell(result),16);
 	assertColumn(field,"testtinytext",1020,
-			(issqlrelay)?(BLOB_FLAG|BINARY_FLAG):BLOB_FLAG,
+			BLOB_FLAG,
 			MYSQL_TYPE_BLOB);
 	field=mysql_fetch_field(result);
 	assertEquals(mysql_field_tell(result),17);
 	assertColumn(field,"testmediumtext",67108860,
-			(issqlrelay)?(BLOB_FLAG|BINARY_FLAG):BLOB_FLAG,
+			BLOB_FLAG,
 			MYSQL_TYPE_BLOB);
 	field=mysql_fetch_field(result);
 	assertEquals(mysql_field_tell(result),18);
 	// longtext length is 2^31-1 or 2^32-1 depending on the client's
 	// signedness handling, so it is not pinned
 	assertColumn(field,"testlongtext",-1,
-			(issqlrelay)?(BLOB_FLAG|BINARY_FLAG):BLOB_FLAG,
+			BLOB_FLAG,
 			MYSQL_TYPE_BLOB);
 	field=mysql_fetch_field(result);
 	assertEquals(mysql_field_tell(result),19);
@@ -539,25 +539,25 @@ int	main(int argc, char **argv) {
 	field=mysql_fetch_field_direct(result,12);
 	assertColumn(field,"testchar",160,0,MYSQL_TYPE_STRING);
 	field=mysql_fetch_field_direct(result,13);
-	// native collapses all text subtypes to MYSQL_TYPE_BLOB (#8105); native
-	// reports flags 16 (BLOB), sqlrelay adds BINARY_FLAG (#8111)
+	// native collapses all text subtypes to MYSQL_TYPE_BLOB (#8105) with
+	// flags 16 (BLOB); sqlrelay matches now that text maps to TEXT (#8111)
 	assertColumn(field,"testtext",262140,
-			(issqlrelay)?(BLOB_FLAG|BINARY_FLAG):BLOB_FLAG,
+			BLOB_FLAG,
 			MYSQL_TYPE_BLOB);
 	field=mysql_fetch_field_direct(result,14);
 	assertColumn(field,"testvarchar",160,0,MYSQL_TYPE_VAR_STRING);
 	field=mysql_fetch_field_direct(result,15);
 	assertColumn(field,"testtinytext",1020,
-			(issqlrelay)?(BLOB_FLAG|BINARY_FLAG):BLOB_FLAG,
+			BLOB_FLAG,
 			MYSQL_TYPE_BLOB);
 	field=mysql_fetch_field_direct(result,16);
 	assertColumn(field,"testmediumtext",67108860,
-			(issqlrelay)?(BLOB_FLAG|BINARY_FLAG):BLOB_FLAG,
+			BLOB_FLAG,
 			MYSQL_TYPE_BLOB);
 	field=mysql_fetch_field_direct(result,17);
 	// longtext length not pinned (signedness, see above)
 	assertColumn(field,"testlongtext",-1,
-			(issqlrelay)?(BLOB_FLAG|BINARY_FLAG):BLOB_FLAG,
+			BLOB_FLAG,
 			MYSQL_TYPE_BLOB);
 	field=mysql_fetch_field_direct(result,18);
 	assertEquals(field->name,"testtimestamp");
@@ -1046,10 +1046,10 @@ int	main(int argc, char **argv) {
 	assertColumn(field,"testchar",160,0,MYSQL_TYPE_STRING);
 	field=mysql_fetch_field(result);
 	assertEquals(mysql_field_tell(result),14);
-	// native collapses all text subtypes to MYSQL_TYPE_BLOB (#8105); native
-	// reports flags 16 (BLOB), sqlrelay adds BINARY_FLAG (#8111)
+	// native collapses all text subtypes to MYSQL_TYPE_BLOB (#8105) with
+	// flags 16 (BLOB); sqlrelay matches now that text maps to TEXT (#8111)
 	assertColumn(field,"testtext",262140,
-			(issqlrelay)?(BLOB_FLAG|BINARY_FLAG):BLOB_FLAG,
+			BLOB_FLAG,
 			MYSQL_TYPE_BLOB);
 	field=mysql_fetch_field(result);
 	assertEquals(mysql_field_tell(result),15);
@@ -1057,18 +1057,18 @@ int	main(int argc, char **argv) {
 	field=mysql_fetch_field(result);
 	assertEquals(mysql_field_tell(result),16);
 	assertColumn(field,"testtinytext",1020,
-			(issqlrelay)?(BLOB_FLAG|BINARY_FLAG):BLOB_FLAG,
+			BLOB_FLAG,
 			MYSQL_TYPE_BLOB);
 	field=mysql_fetch_field(result);
 	assertEquals(mysql_field_tell(result),17);
 	assertColumn(field,"testmediumtext",67108860,
-			(issqlrelay)?(BLOB_FLAG|BINARY_FLAG):BLOB_FLAG,
+			BLOB_FLAG,
 			MYSQL_TYPE_BLOB);
 	field=mysql_fetch_field(result);
 	assertEquals(mysql_field_tell(result),18);
 	// longtext length not pinned (signedness, see above)
 	assertColumn(field,"testlongtext",-1,
-			(issqlrelay)?(BLOB_FLAG|BINARY_FLAG):BLOB_FLAG,
+			BLOB_FLAG,
 			MYSQL_TYPE_BLOB);
 	field=mysql_fetch_field(result);
 	assertEquals(mysql_field_tell(result),19);

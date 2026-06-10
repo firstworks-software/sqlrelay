@@ -473,10 +473,10 @@
 		assertEqStr(sqlrcur_getColumnType($cur,12),"STRING");
 	}
 	assertEqStr(sqlrcur_getColumnType($cur,13),"VARSTRING");
-	assertEqStr(sqlrcur_getColumnType($cur,14),"BLOB");
-	assertEqStr(sqlrcur_getColumnType($cur,15),"TINYBLOB");
-	assertEqStr(sqlrcur_getColumnType($cur,16),"MEDIUMBLOB");
-	assertEqStr(sqlrcur_getColumnType($cur,17),"LONGBLOB");
+	assertEqStr(sqlrcur_getColumnType($cur,14),"TEXT");
+	assertEqStr(sqlrcur_getColumnType($cur,15),"TINYTEXT");
+	assertEqStr(sqlrcur_getColumnType($cur,16),"MEDIUMTEXT");
+	assertEqStr(sqlrcur_getColumnType($cur,17),"LONGTEXT");
 	assertEqStr(sqlrcur_getColumnType($cur,18),"BLOB");
 	assertEqStr(sqlrcur_getColumnType($cur,19),"TINYBLOB");
 	assertEqStr(sqlrcur_getColumnType($cur,20),"MEDIUMBLOB");
@@ -503,11 +503,11 @@
 		    "STRING");
 	}
 	assertEqStr(sqlrcur_getColumnType($cur,"testvarchar"),"VARSTRING");
-	assertEqStr(sqlrcur_getColumnType($cur,"testtext"),"BLOB");
-	assertEqStr(sqlrcur_getColumnType($cur,"testtinytext"),"TINYBLOB");
+	assertEqStr(sqlrcur_getColumnType($cur,"testtext"),"TEXT");
+	assertEqStr(sqlrcur_getColumnType($cur,"testtinytext"),"TINYTEXT");
 	assertEqStr(sqlrcur_getColumnType($cur,"testmediumtext"),
-		"MEDIUMBLOB");
-	assertEqStr(sqlrcur_getColumnType($cur,"testlongtext"),"LONGBLOB");
+		"MEDIUMTEXT");
+	assertEqStr(sqlrcur_getColumnType($cur,"testlongtext"),"LONGTEXT");
 	assertEqStr(sqlrcur_getColumnType($cur,"testblob"),"BLOB");
 	assertEqStr(sqlrcur_getColumnType($cur,"testtinyblob"),"TINYBLOB");
 	assertEqStr(sqlrcur_getColumnType($cur,"testmediumblob"),

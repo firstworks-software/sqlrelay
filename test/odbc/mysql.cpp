@@ -6519,7 +6519,7 @@ int main(int argc, char **argv) {
 	assertEqualStmt(stmt,(const char *)colname,"testtext");
 	assertEqualStmt(stmt,(int)colnamelen,8);
 	if (issqlrelay) {
-		assertEqualStmt(stmt,(int)datatype,-2);
+		assertEqualStmt(stmt,(int)datatype,-1);
 		assertEqualStmt(stmt,(int)colsize,262140);
 	} else {
 		// MariaDB reports SQL_LONGVARCHAR/65535.
@@ -6536,7 +6536,7 @@ int main(int argc, char **argv) {
 	assertEqualStmt(stmt,(const char *)colname,"testtinytext");
 	assertEqualStmt(stmt,(int)colnamelen,12);
 	if (issqlrelay) {
-		assertEqualStmt(stmt,(int)datatype,-2);
+		assertEqualStmt(stmt,(int)datatype,-1);
 		assertEqualStmt(stmt,(int)colsize,1020);
 	} else {
 		// TINYTEXT: MariaDB reports SQL_LONGVARCHAR/255.
@@ -6553,7 +6553,7 @@ int main(int argc, char **argv) {
 	assertEqualStmt(stmt,(const char *)colname,"testmediumtext");
 	assertEqualStmt(stmt,(int)colnamelen,14);
 	if (issqlrelay) {
-		assertEqualStmt(stmt,(int)datatype,-2);
+		assertEqualStmt(stmt,(int)datatype,-1);
 		assertEqualStmt(stmt,(int)colsize,67108860);
 	} else {
 		// MEDIUMTEXT: MariaDB reports SQL_LONGVARCHAR/16777215.
@@ -6570,7 +6570,7 @@ int main(int argc, char **argv) {
 	assertEqualStmt(stmt,(const char *)colname,"testlongtext");
 	assertEqualStmt(stmt,(int)colnamelen,12);
 	if (issqlrelay) {
-		assertEqualStmt(stmt,(int)datatype,-2);
+		assertEqualStmt(stmt,(int)datatype,-1);
 	} else {
 		// LONGTEXT: MariaDB reports SQL_LONGVARCHAR (-1).
 		assertEqualStmt(stmt,(int)datatype,-1);

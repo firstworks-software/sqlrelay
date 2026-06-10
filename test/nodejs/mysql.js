@@ -485,10 +485,10 @@ if (dot>-1) {
 		assertEqStr(cur.getColumnType(12),"STRING");
 	}
 	assertEqStr(cur.getColumnType(13),"VARSTRING");
-	assertEqStr(cur.getColumnType(14),"BLOB");
-	assertEqStr(cur.getColumnType(15),"TINYBLOB");
-	assertEqStr(cur.getColumnType(16),"MEDIUMBLOB");
-	assertEqStr(cur.getColumnType(17),"LONGBLOB");
+	assertEqStr(cur.getColumnType(14),"TEXT");
+	assertEqStr(cur.getColumnType(15),"TINYTEXT");
+	assertEqStr(cur.getColumnType(16),"MEDIUMTEXT");
+	assertEqStr(cur.getColumnType(17),"LONGTEXT");
 	assertEqStr(cur.getColumnType(18),"BLOB");
 	assertEqStr(cur.getColumnType(19),"TINYBLOB");
 	assertEqStr(cur.getColumnType(20),"MEDIUMBLOB");
@@ -515,11 +515,11 @@ if (dot>-1) {
 		    "STRING");
 	}
 	assertEqStr(cur.getColumnType("testvarchar"),"VARSTRING");
-	assertEqStr(cur.getColumnType("testtext"),"BLOB");
-	assertEqStr(cur.getColumnType("testtinytext"),"TINYBLOB");
+	assertEqStr(cur.getColumnType("testtext"),"TEXT");
+	assertEqStr(cur.getColumnType("testtinytext"),"TINYTEXT");
 	assertEqStr(cur.getColumnType("testmediumtext"),
-		"MEDIUMBLOB");
-	assertEqStr(cur.getColumnType("testlongtext"),"LONGBLOB");
+		"MEDIUMTEXT");
+	assertEqStr(cur.getColumnType("testlongtext"),"LONGTEXT");
 	assertEqStr(cur.getColumnType("testblob"),"BLOB");
 	assertEqStr(cur.getColumnType("testtinyblob"),"TINYBLOB");
 	assertEqStr(cur.getColumnType("testmediumblob"),

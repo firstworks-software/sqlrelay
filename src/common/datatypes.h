@@ -669,11 +669,12 @@ static bool isBlobTypeInt(int16_t type) {
 #endif
 
 #ifdef NEED_IS_CLOB_TYPE_CHAR
-static bool isClobTypeChar(const char *type) { 
+static bool isClobTypeChar(const char *type) {
 	return (!charstring::compareIgnoringCase(type,"LONGCHAR") ||
 		!charstring::compareIgnoringCase(type,"LONGVARCHAR") ||
 		!charstring::compareIgnoringCase(type,"CLOB") ||
 		!charstring::compareIgnoringCase(type,"DBCLOB") ||
+		!charstring::compareIgnoringCase(type,"TEXT") ||
 		!charstring::compareIgnoringCase(type,"TINYTEXT") ||
 		!charstring::compareIgnoringCase(type,"MEDIUMTEXT") ||
 		!charstring::compareIgnoringCase(type,"LONGTEXT") ||
@@ -684,11 +685,12 @@ static bool isClobTypeChar(const char *type) {
 #endif
 
 #ifdef NEED_IS_CLOB_TYPE_INT
-static bool isClobTypeInt(int16_t type) { 
+static bool isClobTypeInt(int16_t type) {
 	return (type==LONGCHAR_DATATYPE ||
 		type==LONGVARCHAR_DATATYPE ||
 		type==CLOB_DATATYPE ||
 		type==DBCLOB_DATATYPE ||
+		type==TEXT_DATATYPE ||
 		type==TINYTEXT_DATATYPE ||
 		type==MEDIUMTEXT_DATATYPE ||
 		type==LONGTEXT_DATATYPE ||

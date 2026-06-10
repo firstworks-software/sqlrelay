@@ -399,6 +399,18 @@ namespace SQLRClient
             {
                 return typeof(String);
             }
+            else if (type == "TINYTEXT")
+            {
+                return typeof(String);
+            }
+            else if (type == "MEDIUMTEXT")
+            {
+                return typeof(String);
+            }
+            else if (type == "LONGTEXT")
+            {
+                return typeof(String);
+            }
             else if (type == "VARCHAR")
             {
                 return typeof(String);
@@ -1184,6 +1196,18 @@ namespace SQLRClient
                 return Convert.ToSingle(System.Text.Encoding.Default.GetString(field));
             }
             else if (type == "TEXT")
+            {
+                return System.Text.Encoding.Default.GetString(field);
+            }
+            else if (type == "TINYTEXT")
+            {
+                return System.Text.Encoding.Default.GetString(field);
+            }
+            else if (type == "MEDIUMTEXT")
+            {
+                return System.Text.Encoding.Default.GetString(field);
+            }
+            else if (type == "LONGTEXT")
             {
                 return System.Text.Encoding.Default.GetString(field);
             }

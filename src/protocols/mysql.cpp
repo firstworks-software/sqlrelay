@@ -3392,17 +3392,17 @@ uint16_t sqlrprotocol_mysql::getColumnFlags(sqlrservercursor *cursor,
 		columntype==MYSQL_TYPE_BLOB) {
 		flags|=BLOB_FLAG;
 	}
-	if (isunsigned || (sqlrcolumntype!=(uint16_t)-1)?
+	if (isunsigned || ((sqlrcolumntype!=(uint16_t)-1)?
 				cont->isUnsignedType(sqlrcolumntype):
-				cont->isUnsignedType(columntypestring)) {
+				cont->isUnsignedType(columntypestring))) {
 		flags|=UNSIGNED_FLAG;
 	}
 	if (iszerofilled) {
 		flags|=ZEROFILL_FLAG;
 	}
-	if (isbinary || (sqlrcolumntype!=(uint16_t)-1)?
+	if (isbinary || ((sqlrcolumntype!=(uint16_t)-1)?
 				cont->isBinaryType(sqlrcolumntype):
-				cont->isBinaryType(columntypestring)) {
+				cont->isBinaryType(columntypestring))) {
 		flags|=BINARY_FLAG;
 	}
 	if (columntype==MYSQL_TYPE_ENUM) {

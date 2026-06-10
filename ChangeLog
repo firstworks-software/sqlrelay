@@ -145,6 +145,9 @@
 		DOUBLE rather than DECIMAL, text subtypes collapse to BLOB, and
 		numeric columns report native display widths rather than the
 		raw precision
+	mysql connection now handles text columns as distinct TEXT datatypes
+	fixed a bug in the mysql protocol that caused per-column unsigned and
+		binary flags to be ignored
 
 2.1.1 - added tns_admin support
 	fixed sqlr-start ... -strace ...

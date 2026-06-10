@@ -521,10 +521,10 @@ int main(int argc, char **argv) {
 		assertEqStr(sqlrcur_getColumnTypeByIndex(cur,12),"STRING");
 	}
 	assertEqStr(sqlrcur_getColumnTypeByIndex(cur,13),"VARSTRING");
-	assertEqStr(sqlrcur_getColumnTypeByIndex(cur,14),"BLOB");
-	assertEqStr(sqlrcur_getColumnTypeByIndex(cur,15),"TINYBLOB");
-	assertEqStr(sqlrcur_getColumnTypeByIndex(cur,16),"MEDIUMBLOB");
-	assertEqStr(sqlrcur_getColumnTypeByIndex(cur,17),"LONGBLOB");
+	assertEqStr(sqlrcur_getColumnTypeByIndex(cur,14),"TEXT");
+	assertEqStr(sqlrcur_getColumnTypeByIndex(cur,15),"TINYTEXT");
+	assertEqStr(sqlrcur_getColumnTypeByIndex(cur,16),"MEDIUMTEXT");
+	assertEqStr(sqlrcur_getColumnTypeByIndex(cur,17),"LONGTEXT");
 	assertEqStr(sqlrcur_getColumnTypeByIndex(cur,18),"BLOB");
 	assertEqStr(sqlrcur_getColumnTypeByIndex(cur,19),"TINYBLOB");
 	assertEqStr(sqlrcur_getColumnTypeByIndex(cur,20),"MEDIUMBLOB");
@@ -551,11 +551,11 @@ int main(int argc, char **argv) {
 		    "STRING");
 	}
 	assertEqStr(sqlrcur_getColumnTypeByName(cur,"testvarchar"),"VARSTRING");
-	assertEqStr(sqlrcur_getColumnTypeByName(cur,"testtext"),"BLOB");
-	assertEqStr(sqlrcur_getColumnTypeByName(cur,"testtinytext"),"TINYBLOB");
+	assertEqStr(sqlrcur_getColumnTypeByName(cur,"testtext"),"TEXT");
+	assertEqStr(sqlrcur_getColumnTypeByName(cur,"testtinytext"),"TINYTEXT");
 	assertEqStr(sqlrcur_getColumnTypeByName(cur,"testmediumtext"),
-		"MEDIUMBLOB");
-	assertEqStr(sqlrcur_getColumnTypeByName(cur,"testlongtext"),"LONGBLOB");
+		"MEDIUMTEXT");
+	assertEqStr(sqlrcur_getColumnTypeByName(cur,"testlongtext"),"LONGTEXT");
 	assertEqStr(sqlrcur_getColumnTypeByName(cur,"testblob"),"BLOB");
 	assertEqStr(sqlrcur_getColumnTypeByName(cur,"testtinyblob"),"TINYBLOB");
 	assertEqStr(sqlrcur_getColumnTypeByName(cur,"testmediumblob"),

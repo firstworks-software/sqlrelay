@@ -504,10 +504,10 @@ namespace SQLRClientTest
                 assertEquals(cur.getColumnType((UInt32)12), "STRING");
             }
             assertEquals(cur.getColumnType((UInt32)13), "VARSTRING");
-            assertEquals(cur.getColumnType((UInt32)14), "BLOB");
-            assertEquals(cur.getColumnType((UInt32)15), "TINYBLOB");
-            assertEquals(cur.getColumnType((UInt32)16), "MEDIUMBLOB");
-            assertEquals(cur.getColumnType((UInt32)17), "LONGBLOB");
+            assertEquals(cur.getColumnType((UInt32)14), "TEXT");
+            assertEquals(cur.getColumnType((UInt32)15), "TINYTEXT");
+            assertEquals(cur.getColumnType((UInt32)16), "MEDIUMTEXT");
+            assertEquals(cur.getColumnType((UInt32)17), "LONGTEXT");
             assertEquals(cur.getColumnType((UInt32)18), "BLOB");
             assertEquals(cur.getColumnType((UInt32)19), "TINYBLOB");
             assertEquals(cur.getColumnType((UInt32)20), "MEDIUMBLOB");
@@ -534,10 +534,10 @@ namespace SQLRClientTest
                 assertEquals(cur.getColumnType("testchar"), "STRING");
             }
             assertEquals(cur.getColumnType("testvarchar"), "VARSTRING");
-            assertEquals(cur.getColumnType("testtext"), "BLOB");
-            assertEquals(cur.getColumnType("testtinytext"), "TINYBLOB");
-            assertEquals(cur.getColumnType("testmediumtext"), "MEDIUMBLOB");
-            assertEquals(cur.getColumnType("testlongtext"), "LONGBLOB");
+            assertEquals(cur.getColumnType("testtext"), "TEXT");
+            assertEquals(cur.getColumnType("testtinytext"), "TINYTEXT");
+            assertEquals(cur.getColumnType("testmediumtext"), "MEDIUMTEXT");
+            assertEquals(cur.getColumnType("testlongtext"), "LONGTEXT");
             assertEquals(cur.getColumnType("testblob"), "BLOB");
             assertEquals(cur.getColumnType("testtinyblob"), "TINYBLOB");
             assertEquals(cur.getColumnType("testmediumblob"), "MEDIUMBLOB");

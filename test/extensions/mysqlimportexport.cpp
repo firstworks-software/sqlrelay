@@ -67,16 +67,16 @@ field_t field[]={
 #endif
 			"char%lld\t\"<>",true},
 	{"testvarchar","varchar(40)","VARSTRING","varchar%lld\t\"<>",true},
-	{"testtext","text","BLOB","text%lld\t\"<>",true},
-	{"testtinytext","tinytext","TINYBLOB","tinytext%lld\t\"<>",true},
+	{"testtext","text","TEXT","text%lld\t\"<>",true},
+	{"testtinytext","tinytext","TINYTEXT","tinytext%lld\t\"<>",true},
 	{"testmediumtext","mediumtext",
 #ifdef HAVE_MYSQL_STMT_PREPARE
-			"MEDIUMBLOB",
+			"MEDIUMTEXT",
 #else
-			"LONGBLOB",
+			"LONGTEXT",
 #endif
 			"mediumtext%lld\t\"<>",true},
-	{"testlongtext","longtext","LONGBLOB","longtext%lld\t\"<>",true},
+	{"testlongtext","longtext","LONGTEXT","longtext%lld\t\"<>",true},
 	{"testblob","blob","BLOB","blob%lld\t\"<>",true},
 	{"testtinyblob","tinyblob","TINYBLOB","tinyblob%lld\t\"<>",true},
 	{"testmediumblob","mediumblob",

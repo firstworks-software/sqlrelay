@@ -3651,62 +3651,68 @@ uint16_t mysqlcursor::getColumnType(uint32_t col) {
 		// predictable sizes though, so we'll use those to
 		// differentiate them. 
 		case FIELD_TYPE_BLOB:
+			{
+			// the size tier (tiny/64k/medium/long) is conveyed
+			// by the reported length, with thresholds that vary
+			// by server version
+			unsigned long	length=mysqlfields[col]->length;
+			int		tier=1;
 			#if defined(MYSQL_VERSION_ID) && \
 					MYSQL_VERSION_ID>100505
+				#ifdef BINARY_FLAG
 				if (mysqlfields[col]->flags&BINARY_FLAG) {
+				#endif
 					// MariaDB 10.6+ and some versions of
 					// 10.5 appear to use these sizes for
 					// blobs
-					if (mysqlfields[col]->length<=255) {
-						return TINY_BLOB_DATATYPE;
-					} else if (mysqlfields[col]->
-							length<=65535) {
-						return BLOB_DATATYPE;
-					} else if (mysqlfields[col]->
-							length<=16777215) {
-						return MEDIUM_BLOB_DATATYPE;
+					if (length<=255) {
+						tier=0;
+					} else if (length<=65535) {
+						tier=1;
+					} else if (length<=16777215) {
+						tier=2;
 					} else {
-						return LONG_BLOB_DATATYPE;
+						tier=3;
 					}
+				#ifdef BINARY_FLAG
 				} else {
 					// ...and these lengths for texts
-					if (mysqlfields[col]->length<=1020) {
-						return TINY_BLOB_DATATYPE;
-					} else if (mysqlfields[col]->
-							length<=262140) {
-						return BLOB_DATATYPE;
-					} else if (mysqlfields[col]->
-							length<=67108860) {
-						return MEDIUM_BLOB_DATATYPE;
+					if (length<=1020) {
+						tier=0;
+					} else if (length<=262140) {
+						tier=1;
+					} else if (length<=67108860) {
+						tier=2;
 					} else {
-						return LONG_BLOB_DATATYPE;
+						tier=3;
 					}
 				}
+				#endif
 			#elif defined(MYSQL_VERSION_ID) && \
 					MYSQL_VERSION_ID>=100000
 				// MariaDB 10.5- appears to use these lengths
 				// for both blobs and texts
-				if (mysqlfields[col]->length<=255) {
-					return TINY_BLOB_DATATYPE;
-				} else if (mysqlfields[col]->length<=65535) {
-					return BLOB_DATATYPE;
-				} else if (mysqlfields[col]->length<=16777215) {
-					return MEDIUM_BLOB_DATATYPE;
+				if (length<=255) {
+					tier=0;
+				} else if (length<=65535) {
+					tier=1;
+				} else if (length<=16777215) {
+					tier=2;
 				} else {
-					return LONG_BLOB_DATATYPE;
+					tier=3;
 				}
 			#elif defined(MYSQL_VERSION_ID) && \
 					MYSQL_VERSION_ID>=50000
 				// MySQL 5/8 appears to use these sizes
 				// for both blobs and texts
-				if (mysqlfields[col]->length<=765) {
-					return TINY_BLOB_DATATYPE;
-				} else if (mysqlfields[col]->length<=196605) {
-					return BLOB_DATATYPE;
-				} else if (mysqlfields[col]->length<=50441645) {
-					return MEDIUM_BLOB_DATATYPE;
+				if (length<=765) {
+					tier=0;
+				} else if (length<=196605) {
+					tier=1;
+				} else if (length<=50441645) {
+					tier=2;
 				} else {
-					return LONG_BLOB_DATATYPE;
+					tier=3;
 				}
 			#else
 				// MySQL 3/4 uses these sizes for tiny and
@@ -3715,17 +3721,47 @@ uint16_t mysqlcursor::getColumnType(uint32_t col) {
 				// their max_lengths of 11 and 9 respectively.
 				// No idea what the 11 and 9 actually mean.
 				// Text types are the same.
-				if (mysqlfields[col]->length<=255) {
-					return TINY_BLOB_DATATYPE;
-				} else if (mysqlfields[col]->length<=65535) {
-					return BLOB_DATATYPE;
-				} else if (mysqlfields[col]->length<=16777215 &&
+				if (length<=255) {
+					tier=0;
+				} else if (length<=65535) {
+					tier=1;
+				} else if (length<=16777215 &&
 					mysqlfields[col]->max_length==11) {
-					return MEDIUM_BLOB_DATATYPE;
+					tier=2;
 				} else {
-					return LONG_BLOB_DATATYPE;
+					tier=3;
 				}
 			#endif
+
+			// text columns map to the TEXT datatypes and binary
+			// columns to the BLOB datatypes; representing text as a
+			// blob made the mysql protocol mark text columns binary
+			// (#8111)
+			#ifdef BINARY_FLAG
+			if (!(mysqlfields[col]->flags&BINARY_FLAG)) {
+				switch (tier) {
+					case 0:
+						return TINYTEXT_DATATYPE;
+					case 1:
+						return TEXT_DATATYPE;
+					case 2:
+						return MEDIUMTEXT_DATATYPE;
+					default:
+						return LONGTEXT_DATATYPE;
+				}
+			}
+			#endif
+			switch (tier) {
+				case 0:
+					return TINY_BLOB_DATATYPE;
+				case 1:
+					return BLOB_DATATYPE;
+				case 2:
+					return MEDIUM_BLOB_DATATYPE;
+				default:
+					return LONG_BLOB_DATATYPE;
+			}
+			}
 		case FIELD_TYPE_MEDIUM_BLOB:
 			return MEDIUM_BLOB_DATATYPE;
 		case FIELD_TYPE_LONG_BLOB:
@@ -3798,12 +3834,16 @@ uint32_t mysqlcursor::getColumnSize(uint32_t col) {
 			return 8;
 #endif
 		case TINY_BLOB_DATATYPE:
+		case TINYTEXT_DATATYPE:
 			return 255;
 		case BLOB_DATATYPE:
+		case TEXT_DATATYPE:
 			return 65535;
 		case MEDIUM_BLOB_DATATYPE:
+		case MEDIUMTEXT_DATATYPE:
 			return 16777215;
 		case LONG_BLOB_DATATYPE:
+		case LONGTEXT_DATATYPE:
 			return 2147483647;
 	}
 	return (uint32_t)mysqlfields[col]->length;
