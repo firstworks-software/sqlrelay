@@ -22,6 +22,17 @@ MYSQL_RES	*result;
 MYSQL_FIELD	*field;
 MYSQL_ROW	row;
 
+// pin a result-set column's metadata; pass length -1 to skip the length check
+static void assertColumn(MYSQL_FIELD *field, const char *name,
+				int length, int flags, int type) {
+	assertEquals(field->name,name);
+	if (length!=-1) {
+		assertEquals((int)field->length,length);
+	}
+	assertEquals((int)field->flags,flags);
+	assertEquals((int)field->type,type);
+}
+
 int	main(int argc, char **argv) {
 
 	#ifdef HAVE_MYSQL_STMT_PREPARE
@@ -404,64 +415,91 @@ int	main(int argc, char **argv) {
 	stdoutput.printf("mysql_fetch_field/mysql_field_tell:\n");
 	field=mysql_fetch_field(result);
 	assertEquals(mysql_field_tell(result),1);
-	assertEquals(field->name,"testtinyint");
-	// only field->name is pinned here; the other members (type/length/
-	// flags) diverge between sqlrelay and native in the result-set paths
-	// (#8105)
+	assertColumn(field,"testtinyint",4,NUM_FLAG,MYSQL_TYPE_TINY);
 	field=mysql_fetch_field(result);
 	assertEquals(mysql_field_tell(result),2);
-	assertEquals(field->name,"testsmallint");
+	assertColumn(field,"testsmallint",6,NUM_FLAG,MYSQL_TYPE_SHORT);
 	field=mysql_fetch_field(result);
 	assertEquals(mysql_field_tell(result),3);
-	assertEquals(field->name,"testmediumint");
+	assertColumn(field,"testmediumint",9,NUM_FLAG,MYSQL_TYPE_INT24);
 	field=mysql_fetch_field(result);
 	assertEquals(mysql_field_tell(result),4);
-	assertEquals(field->name,"testint");
+	assertColumn(field,"testint",11,NUM_FLAG,MYSQL_TYPE_LONG);
 	field=mysql_fetch_field(result);
 	assertEquals(mysql_field_tell(result),5);
-	assertEquals(field->name,"testbigint");
+	assertColumn(field,"testbigint",20,NUM_FLAG,MYSQL_TYPE_LONGLONG);
 	field=mysql_fetch_field(result);
 	assertEquals(mysql_field_tell(result),6);
-	assertEquals(field->name,"testfloat");
+	assertColumn(field,"testfloat",12,NUM_FLAG,MYSQL_TYPE_FLOAT);
 	field=mysql_fetch_field(result);
 	assertEquals(mysql_field_tell(result),7);
-	assertEquals(field->name,"testreal");
+	// testreal reports as MYSQL_TYPE_DOUBLE, not DECIMAL (#8105)
+	assertColumn(field,"testreal",22,NUM_FLAG,MYSQL_TYPE_DOUBLE);
 	field=mysql_fetch_field(result);
 	assertEquals(mysql_field_tell(result),8);
-	assertEquals(field->name,"testdecimal");
+	assertColumn(field,"testdecimal",4,NUM_FLAG,MYSQL_TYPE_NEWDECIMAL);
+	assertEquals(field->decimals,1);
 	field=mysql_fetch_field(result);
 	assertEquals(mysql_field_tell(result),9);
-	assertEquals(field->name,"testdate");
+	assertColumn(field,"testdate",10,BINARY_FLAG,MYSQL_TYPE_DATE);
 	field=mysql_fetch_field(result);
 	assertEquals(mysql_field_tell(result),10);
-	assertEquals(field->name,"testtime");
+	assertColumn(field,"testtime",10,BINARY_FLAG,MYSQL_TYPE_TIME);
 	field=mysql_fetch_field(result);
 	assertEquals(mysql_field_tell(result),11);
-	assertEquals(field->name,"testdatetime");
+	assertColumn(field,"testdatetime",19,BINARY_FLAG,MYSQL_TYPE_DATETIME);
 	field=mysql_fetch_field(result);
 	assertEquals(mysql_field_tell(result),12);
-	assertEquals(field->name,"testyear");
+	assertColumn(field,"testyear",4,
+			NUM_FLAG|UNSIGNED_FLAG|ZEROFILL_FLAG,MYSQL_TYPE_YEAR);
 	field=mysql_fetch_field(result);
 	assertEquals(mysql_field_tell(result),13);
-	assertEquals(field->name,"testchar");
+	// result-set metadata reports the byte length (utf8mb4: 4 per char) on
+	// both sides here, unlike the list_fields path above
+	assertColumn(field,"testchar",160,0,MYSQL_TYPE_STRING);
 	field=mysql_fetch_field(result);
 	assertEquals(mysql_field_tell(result),14);
-	assertEquals(field->name,"testtext");
+	// native collapses all text subtypes to MYSQL_TYPE_BLOB (#8105); native
+	// reports flags 16 (BLOB), sqlrelay adds BINARY_FLAG because it
+	// represents text as a blob datatype (#8111)
+	assertColumn(field,"testtext",262140,
+			(issqlrelay)?(BLOB_FLAG|BINARY_FLAG):BLOB_FLAG,
+			MYSQL_TYPE_BLOB);
 	field=mysql_fetch_field(result);
 	assertEquals(mysql_field_tell(result),15);
-	assertEquals(field->name,"testvarchar");
+	assertColumn(field,"testvarchar",160,0,MYSQL_TYPE_VAR_STRING);
 	field=mysql_fetch_field(result);
 	assertEquals(mysql_field_tell(result),16);
-	assertEquals(field->name,"testtinytext");
+	assertColumn(field,"testtinytext",1020,
+			(issqlrelay)?(BLOB_FLAG|BINARY_FLAG):BLOB_FLAG,
+			MYSQL_TYPE_BLOB);
 	field=mysql_fetch_field(result);
 	assertEquals(mysql_field_tell(result),17);
-	assertEquals(field->name,"testmediumtext");
+	assertColumn(field,"testmediumtext",67108860,
+			(issqlrelay)?(BLOB_FLAG|BINARY_FLAG):BLOB_FLAG,
+			MYSQL_TYPE_BLOB);
 	field=mysql_fetch_field(result);
 	assertEquals(mysql_field_tell(result),18);
-	assertEquals(field->name,"testlongtext");
+	// longtext length is 2^31-1 or 2^32-1 depending on the client's
+	// signedness handling, so it is not pinned
+	assertColumn(field,"testlongtext",-1,
+			(issqlrelay)?(BLOB_FLAG|BINARY_FLAG):BLOB_FLAG,
+			MYSQL_TYPE_BLOB);
 	field=mysql_fetch_field(result);
 	assertEquals(mysql_field_tell(result),19);
 	assertEquals(field->name,"testtimestamp");
+	assertEquals(field->length,19);
+	assertEquals(field->flags&TIMESTAMP_FLAG,TIMESTAMP_FLAG);
+	#ifdef ON_UPDATE_NOW_FLAG
+	assertEquals(field->flags&ON_UPDATE_NOW_FLAG,ON_UPDATE_NOW_FLAG);
+	#endif
+	assertEquals(field->flags&BINARY_FLAG,BINARY_FLAG);
+	// real mysql 5.7 doesn't set UNSIGNED_FLAG on timestamp
+	if (issqlrelay) {
+		assertEquals(field->flags&UNSIGNED_FLAG,UNSIGNED_FLAG);
+	}
+	assertEquals(field->flags&NOT_NULL_FLAG,NOT_NULL_FLAG);
+	assertEquals(field->type,MYSQL_TYPE_TIMESTAMP);
 	stdoutput.printf("\n");
 
 
@@ -472,46 +510,68 @@ int	main(int argc, char **argv) {
 
 	stdoutput.printf("mysql_fetch_field_direct:\n");
 	field=mysql_fetch_field_direct(result,0);
-	assertEquals(field->name,"testtinyint");
-	// only field->name is pinned here; the other members (type/length/
-	// flags) diverge between sqlrelay and native in the result-set paths
-	// (#8105)
+	assertColumn(field,"testtinyint",4,NUM_FLAG,MYSQL_TYPE_TINY);
 	field=mysql_fetch_field_direct(result,1);
-	assertEquals(field->name,"testsmallint");
+	assertColumn(field,"testsmallint",6,NUM_FLAG,MYSQL_TYPE_SHORT);
 	field=mysql_fetch_field_direct(result,2);
-	assertEquals(field->name,"testmediumint");
+	assertColumn(field,"testmediumint",9,NUM_FLAG,MYSQL_TYPE_INT24);
 	field=mysql_fetch_field_direct(result,3);
-	assertEquals(field->name,"testint");
+	assertColumn(field,"testint",11,NUM_FLAG,MYSQL_TYPE_LONG);
 	field=mysql_fetch_field_direct(result,4);
-	assertEquals(field->name,"testbigint");
+	assertColumn(field,"testbigint",20,NUM_FLAG,MYSQL_TYPE_LONGLONG);
 	field=mysql_fetch_field_direct(result,5);
-	assertEquals(field->name,"testfloat");
+	assertColumn(field,"testfloat",12,NUM_FLAG,MYSQL_TYPE_FLOAT);
 	field=mysql_fetch_field_direct(result,6);
-	assertEquals(field->name,"testreal");
+	// testreal reports as MYSQL_TYPE_DOUBLE, not DECIMAL (#8105)
+	assertColumn(field,"testreal",22,NUM_FLAG,MYSQL_TYPE_DOUBLE);
 	field=mysql_fetch_field_direct(result,7);
-	assertEquals(field->name,"testdecimal");
+	assertColumn(field,"testdecimal",4,NUM_FLAG,MYSQL_TYPE_NEWDECIMAL);
+	assertEquals(field->decimals,1);
 	field=mysql_fetch_field_direct(result,8);
-	assertEquals(field->name,"testdate");
+	assertColumn(field,"testdate",10,BINARY_FLAG,MYSQL_TYPE_DATE);
 	field=mysql_fetch_field_direct(result,9);
-	assertEquals(field->name,"testtime");
+	assertColumn(field,"testtime",10,BINARY_FLAG,MYSQL_TYPE_TIME);
 	field=mysql_fetch_field_direct(result,10);
-	assertEquals(field->name,"testdatetime");
+	assertColumn(field,"testdatetime",19,BINARY_FLAG,MYSQL_TYPE_DATETIME);
 	field=mysql_fetch_field_direct(result,11);
-	assertEquals(field->name,"testyear");
+	assertColumn(field,"testyear",4,
+			NUM_FLAG|UNSIGNED_FLAG|ZEROFILL_FLAG,MYSQL_TYPE_YEAR);
 	field=mysql_fetch_field_direct(result,12);
-	assertEquals(field->name,"testchar");
+	assertColumn(field,"testchar",160,0,MYSQL_TYPE_STRING);
 	field=mysql_fetch_field_direct(result,13);
-	assertEquals(field->name,"testtext");
+	// native collapses all text subtypes to MYSQL_TYPE_BLOB (#8105); native
+	// reports flags 16 (BLOB), sqlrelay adds BINARY_FLAG (#8111)
+	assertColumn(field,"testtext",262140,
+			(issqlrelay)?(BLOB_FLAG|BINARY_FLAG):BLOB_FLAG,
+			MYSQL_TYPE_BLOB);
 	field=mysql_fetch_field_direct(result,14);
-	assertEquals(field->name,"testvarchar");
+	assertColumn(field,"testvarchar",160,0,MYSQL_TYPE_VAR_STRING);
 	field=mysql_fetch_field_direct(result,15);
-	assertEquals(field->name,"testtinytext");
+	assertColumn(field,"testtinytext",1020,
+			(issqlrelay)?(BLOB_FLAG|BINARY_FLAG):BLOB_FLAG,
+			MYSQL_TYPE_BLOB);
 	field=mysql_fetch_field_direct(result,16);
-	assertEquals(field->name,"testmediumtext");
+	assertColumn(field,"testmediumtext",67108860,
+			(issqlrelay)?(BLOB_FLAG|BINARY_FLAG):BLOB_FLAG,
+			MYSQL_TYPE_BLOB);
 	field=mysql_fetch_field_direct(result,17);
-	assertEquals(field->name,"testlongtext");
+	// longtext length not pinned (signedness, see above)
+	assertColumn(field,"testlongtext",-1,
+			(issqlrelay)?(BLOB_FLAG|BINARY_FLAG):BLOB_FLAG,
+			MYSQL_TYPE_BLOB);
 	field=mysql_fetch_field_direct(result,18);
 	assertEquals(field->name,"testtimestamp");
+	assertEquals(field->length,19);
+	assertEquals(field->flags&TIMESTAMP_FLAG,TIMESTAMP_FLAG);
+	#ifdef ON_UPDATE_NOW_FLAG
+	assertEquals(field->flags&ON_UPDATE_NOW_FLAG,ON_UPDATE_NOW_FLAG);
+	#endif
+	assertEquals(field->flags&BINARY_FLAG,BINARY_FLAG);
+	if (issqlrelay) {
+		assertEquals(field->flags&UNSIGNED_FLAG,UNSIGNED_FLAG);
+	}
+	assertEquals(field->flags&NOT_NULL_FLAG,NOT_NULL_FLAG);
+	assertEquals(field->type,MYSQL_TYPE_TIMESTAMP);
 	stdoutput.printf("\n");
 
 
@@ -944,63 +1004,86 @@ int	main(int argc, char **argv) {
 	result=mysql_stmt_result_metadata(stmt);
 	field=mysql_fetch_field(result);
 	assertEquals(mysql_field_tell(result),1);
-	assertEquals(field->name,"testtinyint");
-	// only field->name is pinned here; the other members diverge between
-	// sqlrelay and native (#8105)
+	assertColumn(field,"testtinyint",4,NUM_FLAG,MYSQL_TYPE_TINY);
 	field=mysql_fetch_field(result);
 	assertEquals(mysql_field_tell(result),2);
-	assertEquals(field->name,"testsmallint");
+	assertColumn(field,"testsmallint",6,NUM_FLAG,MYSQL_TYPE_SHORT);
 	field=mysql_fetch_field(result);
 	assertEquals(mysql_field_tell(result),3);
-	assertEquals(field->name,"testmediumint");
+	assertColumn(field,"testmediumint",9,NUM_FLAG,MYSQL_TYPE_INT24);
 	field=mysql_fetch_field(result);
 	assertEquals(mysql_field_tell(result),4);
-	assertEquals(field->name,"testint");
+	assertColumn(field,"testint",11,NUM_FLAG,MYSQL_TYPE_LONG);
 	field=mysql_fetch_field(result);
 	assertEquals(mysql_field_tell(result),5);
-	assertEquals(field->name,"testbigint");
+	assertColumn(field,"testbigint",20,NUM_FLAG,MYSQL_TYPE_LONGLONG);
 	field=mysql_fetch_field(result);
 	assertEquals(mysql_field_tell(result),6);
-	assertEquals(field->name,"testfloat");
+	assertColumn(field,"testfloat",12,NUM_FLAG,MYSQL_TYPE_FLOAT);
 	field=mysql_fetch_field(result);
 	assertEquals(mysql_field_tell(result),7);
-	assertEquals(field->name,"testreal");
+	// testreal reports as MYSQL_TYPE_DOUBLE, not DECIMAL (#8105)
+	assertColumn(field,"testreal",22,NUM_FLAG,MYSQL_TYPE_DOUBLE);
 	field=mysql_fetch_field(result);
 	assertEquals(mysql_field_tell(result),8);
-	assertEquals(field->name,"testdecimal");
+	assertColumn(field,"testdecimal",4,NUM_FLAG,MYSQL_TYPE_NEWDECIMAL);
+	assertEquals(field->decimals,1);
 	field=mysql_fetch_field(result);
 	assertEquals(mysql_field_tell(result),9);
-	assertEquals(field->name,"testdate");
+	assertColumn(field,"testdate",10,BINARY_FLAG,MYSQL_TYPE_DATE);
 	field=mysql_fetch_field(result);
 	assertEquals(mysql_field_tell(result),10);
-	assertEquals(field->name,"testtime");
+	assertColumn(field,"testtime",10,BINARY_FLAG,MYSQL_TYPE_TIME);
 	field=mysql_fetch_field(result);
 	assertEquals(mysql_field_tell(result),11);
-	assertEquals(field->name,"testdatetime");
+	assertColumn(field,"testdatetime",19,BINARY_FLAG,MYSQL_TYPE_DATETIME);
 	field=mysql_fetch_field(result);
 	assertEquals(mysql_field_tell(result),12);
-	assertEquals(field->name,"testyear");
+	assertColumn(field,"testyear",4,
+			NUM_FLAG|UNSIGNED_FLAG|ZEROFILL_FLAG,MYSQL_TYPE_YEAR);
 	field=mysql_fetch_field(result);
 	assertEquals(mysql_field_tell(result),13);
-	assertEquals(field->name,"testchar");
+	assertColumn(field,"testchar",160,0,MYSQL_TYPE_STRING);
 	field=mysql_fetch_field(result);
 	assertEquals(mysql_field_tell(result),14);
-	assertEquals(field->name,"testtext");
+	// native collapses all text subtypes to MYSQL_TYPE_BLOB (#8105); native
+	// reports flags 16 (BLOB), sqlrelay adds BINARY_FLAG (#8111)
+	assertColumn(field,"testtext",262140,
+			(issqlrelay)?(BLOB_FLAG|BINARY_FLAG):BLOB_FLAG,
+			MYSQL_TYPE_BLOB);
 	field=mysql_fetch_field(result);
 	assertEquals(mysql_field_tell(result),15);
-	assertEquals(field->name,"testvarchar");
+	assertColumn(field,"testvarchar",160,0,MYSQL_TYPE_VAR_STRING);
 	field=mysql_fetch_field(result);
 	assertEquals(mysql_field_tell(result),16);
-	assertEquals(field->name,"testtinytext");
+	assertColumn(field,"testtinytext",1020,
+			(issqlrelay)?(BLOB_FLAG|BINARY_FLAG):BLOB_FLAG,
+			MYSQL_TYPE_BLOB);
 	field=mysql_fetch_field(result);
 	assertEquals(mysql_field_tell(result),17);
-	assertEquals(field->name,"testmediumtext");
+	assertColumn(field,"testmediumtext",67108860,
+			(issqlrelay)?(BLOB_FLAG|BINARY_FLAG):BLOB_FLAG,
+			MYSQL_TYPE_BLOB);
 	field=mysql_fetch_field(result);
 	assertEquals(mysql_field_tell(result),18);
-	assertEquals(field->name,"testlongtext");
+	// longtext length not pinned (signedness, see above)
+	assertColumn(field,"testlongtext",-1,
+			(issqlrelay)?(BLOB_FLAG|BINARY_FLAG):BLOB_FLAG,
+			MYSQL_TYPE_BLOB);
 	field=mysql_fetch_field(result);
 	assertEquals(mysql_field_tell(result),19);
 	assertEquals(field->name,"testtimestamp");
+	assertEquals(field->length,19);
+	assertEquals(field->flags&TIMESTAMP_FLAG,TIMESTAMP_FLAG);
+	#ifdef ON_UPDATE_NOW_FLAG
+	assertEquals(field->flags&ON_UPDATE_NOW_FLAG,ON_UPDATE_NOW_FLAG);
+	#endif
+	assertEquals(field->flags&BINARY_FLAG,BINARY_FLAG);
+	if (issqlrelay) {
+		assertEquals(field->flags&UNSIGNED_FLAG,UNSIGNED_FLAG);
+	}
+	assertEquals(field->flags&NOT_NULL_FLAG,NOT_NULL_FLAG);
+	assertEquals(field->type,MYSQL_TYPE_TIMESTAMP);
 	stdoutput.printf("\n");
 
 

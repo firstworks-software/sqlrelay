@@ -157,7 +157,10 @@ static byte_t	mysqltypemap[]={
 	// "BIT"
 	(byte_t)MYSQL_TYPE_TINY,
 	// "REAL"
-	(byte_t)MYSQL_TYPE_DECIMAL,
+	// (the mysql connection maps a result-set FIELD_TYPE_DOUBLE column to
+	// REAL_DATATYPE, and mysql has no separate real wire type, so report it
+	// as DOUBLE - matching native and the list_fields path)
+	(byte_t)MYSQL_TYPE_DOUBLE,
 	// "FLOAT"
 	(byte_t)MYSQL_TYPE_FLOAT,
 	// "TEXT"
@@ -197,7 +200,7 @@ static byte_t	mysqltypemap[]={
 	// "UINT"
 	(byte_t)MYSQL_TYPE_LONG,
 	// "LASTREAL"
-	(byte_t)MYSQL_TYPE_DECIMAL,
+	(byte_t)MYSQL_TYPE_DOUBLE,
 	// added by mysql
 	// "STRING"
 	(byte_t)MYSQL_TYPE_STRING,
@@ -218,11 +221,13 @@ static byte_t	mysqltypemap[]={
 	// "SET"
 	(byte_t)MYSQL_TYPE_SET,
 	// "TINYBLOB"
-	(byte_t)MYSQL_TYPE_TINY_BLOB,
+	// (native mysql reports all blob/text subtypes as MYSQL_TYPE_BLOB in
+	// result-set metadata; the subtype is conveyed by length, not type)
+	(byte_t)MYSQL_TYPE_BLOB,
 	// "MEDIUMBLOB"
-	(byte_t)MYSQL_TYPE_MEDIUM_BLOB,
+	(byte_t)MYSQL_TYPE_BLOB,
 	// "LONGBLOB"
-	(byte_t)MYSQL_TYPE_LONG_BLOB,
+	(byte_t)MYSQL_TYPE_BLOB,
 	// "BLOB"
 	(byte_t)MYSQL_TYPE_BLOB,
 	// added by oracle
@@ -746,6 +751,9 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_mysql : public sqlrprotocol {
 		byte_t		getColumnType(const char *columntypestring,
 						uint16_t columntypesize,
 						uint32_t scale);
+		uint32_t	getColumnDisplaySize(byte_t columntype,
+						uint32_t precision,
+						uint32_t fallbacksize);
 		uint16_t	getColumnFlags(sqlrservercursor *cursor,
 						uint32_t column,
 						uint16_t sqlrcolumntype,
@@ -3091,6 +3099,12 @@ bool sqlrprotocol_mysql::sendColumnDefinition(sqlrservercursor *cursor,
 							columntypestring);
 	const char	*columntable=cont->getColumnTable(cursor,column);
 
+	// the backend reports the precision for numeric types and the byte
+	// length for everything else; translate that to the display width that
+	// native mysql sends on the wire
+	uint32_t	precision=cont->getColumnPrecision(cursor,column);
+	uint32_t	size=getColumnDisplaySize(columntype,precision,precision);
+
 	return sendColumnDefinition(cursor,
 					column,
 					"def",
@@ -3104,7 +3118,7 @@ bool sqlrprotocol_mysql::sendColumnDefinition(sqlrservercursor *cursor,
 					// FIXME: get the original
 					// column name somehow
 					"",
-					cont->getColumnPrecision(cursor,column),
+					size,
 					columntypestring,
 					cont->getColumnScale(cursor,column),
 					columntype,
@@ -3274,7 +3288,60 @@ byte_t sqlrprotocol_mysql::getColumnType(const char *columntypestring,
 	}
 	return MYSQL_TYPE_NULL;
 }
-		
+
+uint32_t sqlrprotocol_mysql::getColumnDisplaySize(byte_t columntype,
+							uint32_t precision,
+							uint32_t fallbacksize) {
+
+	// native mysql reports a display width (room for digits plus a sign,
+	// and for decimals a decimal point) rather than the raw precision the
+	// backend reports, so map the fixed-width numeric and temporal types to
+	// their native widths; variable-width types fall back to the backend
+	// size
+	switch (columntype) {
+		case MYSQL_TYPE_DECIMAL:
+		case MYSQL_TYPE_NEWDECIMAL:
+			return precision+2;
+		case MYSQL_TYPE_TINY:
+			return 4;
+		case MYSQL_TYPE_SHORT:
+			return 6;
+		case MYSQL_TYPE_LONG:
+			return 11;
+		case MYSQL_TYPE_FLOAT:
+			return 12;
+		case MYSQL_TYPE_DOUBLE:
+			return 22;
+		case MYSQL_TYPE_TIMESTAMP:
+		case MYSQL_TYPE_TIMESTAMP2:
+			return 19;
+		case MYSQL_TYPE_LONGLONG:
+			return 20;
+		case MYSQL_TYPE_INT24:
+			return 9;
+		case MYSQL_TYPE_DATE:
+		case MYSQL_TYPE_NEWDATE:
+			return 10;
+		case MYSQL_TYPE_TIME:
+		case MYSQL_TYPE_TIME2:
+			return 10;
+		case MYSQL_TYPE_DATETIME:
+		case MYSQL_TYPE_DATETIME2:
+			return 19;
+		case MYSQL_TYPE_YEAR:
+			return 4;
+		case MYSQL_TYPE_BIT:
+			return 1;
+		case MYSQL_TYPE_ENUM:
+		case MYSQL_TYPE_SET:
+		case MYSQL_TYPE_GEOMETRY:
+			// FIXME: not really sure about these
+			return 8;
+		default:
+			return fallbacksize;
+	}
+}
+
 uint16_t sqlrprotocol_mysql::getColumnFlags(sqlrservercursor *cursor,
 						uint32_t column,
 						uint16_t sqlrcolumntype,
@@ -4048,75 +4115,8 @@ bool sqlrprotocol_mysql::sendFieldListResponse(sqlrservercursor *cursor) {
 		if (!charstring::isNullOrEmpty(sizestring)) {
 			size=charstring::convertToInteger(sizestring);
 		} else {
-			switch ((byte_t)type) {
-				case MYSQL_TYPE_DECIMAL:
-					size=prec+2;
-					break;
-				case MYSQL_TYPE_TINY:
-					size=4;
-					break;
-				case MYSQL_TYPE_SHORT:
-					size=6;
-					break;
-				case MYSQL_TYPE_LONG:
-					size=11;
-					break;
-				case MYSQL_TYPE_FLOAT:
-					size=12;
-					break;
-				case MYSQL_TYPE_DOUBLE:
-					size=22;
-					break;
-				case MYSQL_TYPE_TIMESTAMP:
-					size=19;
-					break;
-				case MYSQL_TYPE_LONGLONG:
-					size=20;
-					break;
-				case MYSQL_TYPE_INT24:
-					size=9;
-					break;
-				case MYSQL_TYPE_DATE:
-					size=10;
-					break;
-				case MYSQL_TYPE_TIME:
-					size=10;
-					break;
-				case MYSQL_TYPE_DATETIME:
-					size=19;
-					break;
-				case MYSQL_TYPE_YEAR:
-					size=4;
-					break;
-				case MYSQL_TYPE_NEWDATE:
-					size=10;
-					break;
-				case MYSQL_TYPE_BIT:
-					size=1;
-					break;
-				case MYSQL_TYPE_TIMESTAMP2:
-					size=19;
-					break;
-				case MYSQL_TYPE_DATETIME2:
-					size=19;
-					break;
-				case MYSQL_TYPE_TIME2:
-					size=10;
-					break;
-				case MYSQL_TYPE_NEWDECIMAL:
-					size=prec+2;
-					break;
-				case MYSQL_TYPE_ENUM:
-				case MYSQL_TYPE_SET:
-				case MYSQL_TYPE_GEOMETRY:
-					// FIXME: not really sure about these
-					size=8;
-					break;
-				default:
-					// fall back to 50
-					size=50;
-					break;
-			}
+			// fall back to 50 for variable-width types
+			size=getColumnDisplaySize((byte_t)type,prec,50);
 		}
 
 		// FIXME: this won't work with most db's

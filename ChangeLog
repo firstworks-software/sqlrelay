@@ -140,6 +140,11 @@
 		findCommaOrCloseParen() now handle backslash-escaped
 		delimiters, and findCommaOrCloseParen() now also skips
 		double-quoted and back-tick-quoted string literals
+	fixed the mysql protocol's SELECT/prepared-statement result-set column
+		metadata to match native mysql: real columns now report as
+		DOUBLE rather than DECIMAL, text subtypes collapse to BLOB, and
+		numeric columns report native display widths rather than the
+		raw precision
 
 2.1.1 - added tns_admin support
 	fixed sqlr-start ... -strace ...
