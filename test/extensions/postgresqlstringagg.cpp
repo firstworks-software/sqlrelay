@@ -108,6 +108,58 @@ int main(int argc, char **argv) {
 	stdoutput.printf("\n");
 
 
+	stdoutput.printf("NO SEPARATOR:\n");
+	assertTrue(cur->sendQuery(
+		"select grp,"
+		" listagg(name) within group (order by id asc) "
+		"from testtable group by grp order by grp"));
+	assertEquals(cur->getField(0,(uint32_t)0),"a");
+	assertEquals(cur->getField(0,1),"alphabravocharlie");
+	assertEquals(cur->getField(1,(uint32_t)0),"b");
+	assertEquals(cur->getField(1,1),"deltaecho");
+	stdoutput.printf("\n");
+
+
+	stdoutput.printf("DISTINCT:\n");
+	assertTrue(cur->sendQuery(
+		"select listagg(distinct grp,',') "
+		" within group (order by grp) "
+		"from testtable"));
+	assertEquals(cur->getField(0,(uint32_t)0),"a,b");
+	stdoutput.printf("\n");
+
+
+	stdoutput.printf("DISTINCT DESC:\n");
+	assertTrue(cur->sendQuery(
+		"select listagg(distinct grp,',') "
+		" within group (order by grp desc) "
+		"from testtable"));
+	assertEquals(cur->getField(0,(uint32_t)0),"b,a");
+	stdoutput.printf("\n");
+
+
+	stdoutput.printf("DISTINCT NO SEPARATOR:\n");
+	assertTrue(cur->sendQuery(
+		"select listagg(distinct grp) "
+		" within group (order by grp) "
+		"from testtable"));
+	assertEquals(cur->getField(0,(uint32_t)0),"ab");
+	stdoutput.printf("\n");
+
+
+	stdoutput.printf("DISTINCT EXPRESSION:\n");
+	assertTrue(cur->sendQuery(
+		"select grp,"
+		" listagg(distinct coalesce(nullable,'?'),',') "
+		" within group (order by coalesce(nullable,'?')) "
+		"from testtable group by grp order by grp"));
+	assertEquals(cur->getField(0,(uint32_t)0),"a");
+	assertEquals(cur->getField(0,1),"?,x,y");
+	assertEquals(cur->getField(1,(uint32_t)0),"b");
+	assertEquals(cur->getField(1,1),"?,z");
+	stdoutput.printf("\n");
+
+
 	stdoutput.printf("LISTAGG INSIDE STRING LITERAL:\n");
 	assertTrue(cur->sendQuery(
 		"select 'listagg(foo,bar) within group (order by baz)' "

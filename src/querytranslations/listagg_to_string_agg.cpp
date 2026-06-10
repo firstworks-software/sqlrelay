@@ -115,20 +115,48 @@ const char *sqlrquerytranslation_listagg_to_string_agg::translateListagg(
 	// "ptr" points to "listagg(", step past it
 	const char	*exprstart=ptr+8;
 
-	// find the comma that separates EXPR from SEP
-	const char	*exprend=cont->findCommaOrCloseParen(exprstart,end,true);
-	if (!exprend || *exprend!=',') {
-		return NULL;
+	// pull off a leading "distinct" quantifier, if present, so it can
+	// be emitted before the cast - postgresql rejects it inside
+	// cast(... as text)
+	bool		distinct=false;
+	while (exprstart<end && character::isWhitespace(*exprstart)) {
+		exprstart++;
 	}
-	const char	*separatorstart=exprend+1;
+	if (exprstart+8<end &&
+		!charstring::compare(exprstart,"distinct",8) &&
+		character::isWhitespace(*(exprstart+8))) {
+		distinct=true;
+		exprstart+=8;
+		while (exprstart<end && character::isWhitespace(*exprstart)) {
+			exprstart++;
+		}
+	}
 
-	// find the matching ")" of the listagg(...) call
-	const char	*separatorend=cont->findCommaOrCloseParen(
-							separatorstart,end,true);
-	if (!separatorend || *separatorend!=')') {
+	// find the end of EXPR: either the comma before SEP, or the
+	// closing ")" of the listagg(...) call when no separator is given
+	const char	*exprend=cont->findCommaOrCloseParen(exprstart,end,true);
+	if (!exprend) {
 		return NULL;
 	}
-	const char	*p=separatorend+1;
+
+	// SEP defaults to '' when listagg(EXPR) has no separator argument
+	// (oracle's default NULL separator concatenates with nothing
+	// between items)
+	const char	*separatorstart=NULL;
+	const char	*separatorend=NULL;
+	const char	*listaggend=exprend;
+	if (*exprend==',') {
+		separatorstart=exprend+1;
+		separatorend=cont->findCommaOrCloseParen(
+						separatorstart,end,true);
+		if (!separatorend || *separatorend!=')') {
+			return NULL;
+		}
+		listaggend=separatorend;
+	} else if (*exprend!=')') {
+		return NULL;
+	}
+	const char	*p=listaggend+1;
 
 	// require " within group (" immediately after the closing ")"
 	const size_t	withinmarklen=sizeof(withinmark)-1;
@@ -161,14 +189,39 @@ const char *sqlrquerytranslation_listagg_to_string_agg::translateListagg(
 		return NULL;
 	}
 
-	// write out string_agg(cast(EXPR as text),SEP order by SORT)
-	out->append("string_agg(cast(");
+	// write out string_agg([distinct] cast(EXPR as text),SEP order by SORT)
+	out->append("string_agg(");
+	if (distinct) {
+		out->append("distinct ");
+	}
+	out->append("cast(");
 	translateRange(exprstart,exprend,out);
 	out->append(" as text),");
-	out->append(separatorstart,separatorend-separatorstart);
+	if (separatorstart) {
+		out->append(separatorstart,separatorend-separatorstart);
+	} else {
+		out->append("''");
+	}
 	out->append(' ');
 	out->append(ogstart,orderbymarklen);
-	translateRange(ogstart+orderbymarklen,ogend,out);
+
+	// postgresql requires a "distinct" aggregate's "order by" key to
+	// match an argument; oracle only lets "distinct" listagg order by
+	// the measure expr, so when SORT is that expr, cast it to match
+	const char	*sortstart=ogstart+orderbymarklen;
+	const size_t	exprlen=exprend-exprstart;
+	if (distinct &&
+		(size_t)(ogend-sortstart)>=exprlen &&
+		!charstring::compare(sortstart,exprstart,exprlen) &&
+		((size_t)(ogend-sortstart)==exprlen ||
+			character::isWhitespace(*(sortstart+exprlen)))) {
+		out->append("cast(");
+		translateRange(exprstart,exprend,out);
+		out->append(" as text)");
+		out->append(sortstart+exprlen,ogend-(sortstart+exprlen));
+	} else {
+		translateRange(sortstart,ogend,out);
+	}
 	out->append(')');
 
 	return p;
