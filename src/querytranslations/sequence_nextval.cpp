@@ -143,7 +143,7 @@ bool sqlrquerytranslation_sequence_nextval::run(
 
 		// copy out string literals verbatim
 		if (*ptr=='\'') {
-			ptr=cont->copyStringLiteral(ptr,end,translatedquery);
+			ptr=cont->copyStringLiteral(ptr,end,translatedquery,true);
 			continue;
 		}
 

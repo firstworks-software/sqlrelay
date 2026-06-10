@@ -3661,61 +3661,35 @@ const char *sqlrservercontroller::skipWhitespaceAndComments(const char *query) {
 
 const char *sqlrservercontroller::copyStringLiteral(const char *ptr,
 							const char *end,
-							stringbuffer *out) {
+							stringbuffer *out,
+							bool backslash) {
 
-	// "ptr" points at the opening delimiter, grab and copy it out
-	char	delim=*ptr;
-	out->append(delim);
-	ptr++;
+	// "ptr" points at the opening delimiter; find the end of the
+	// literal, honoring doubled (and optionally backslash-escaped)
+	// delimiters
+	const char	*literalend=charstring::findEndOfQuotedString(
+						ptr,end-ptr,*ptr,backslash,true);
 
-	// copy characters until the closing delimiter,
-	// handle a doubled delimiter as an embedded delimiter
-	// FIXME: we should handle \-escaped quotes
-	while (ptr<end) {
-		if (*ptr==delim) {
-			out->append(*ptr);
-			ptr++;
-			if (ptr<end && *ptr==delim) {
-				out->append(*ptr);
-				ptr++;
-				continue;
-			}
-			return ptr;
-		}
-		out->append(*ptr);
-		ptr++;
-	}
+	// copy it out verbatim
+	out->append(ptr,literalend-ptr);
 
-	return ptr;
+	return literalend;
 }
 
 const char *sqlrservercontroller::skipStringLiteral(const char *ptr,
-							const char *end) {
+							const char *end,
+							bool backslash) {
 
-	// "ptr" points at the opening delimiter, grab and skip it
-	char	delim=*ptr;
-	ptr++;
-
-	// skip characters until the closing delimiter,
-	// handle a doubled delimiter as an embedded delimiter
-	// FIXME: we should handle \-escaped quotes
-	while (ptr<end) {
-		if (*ptr==delim) {
-			ptr++;
-			if (ptr<end && *ptr==delim) {
-				ptr++;
-				continue;
-			}
-			return ptr;
-		}
-		ptr++;
-	}
-
-	return ptr;
+	// "ptr" points at the opening delimiter; find the end of the
+	// literal, honoring doubled (and optionally backslash-escaped)
+	// delimiters
+	return charstring::findEndOfQuotedString(ptr,end-ptr,*ptr,
+							backslash,true);
 }
 
 const char *sqlrservercontroller::findCommaOrCloseParen(const char *ptr,
-							const char *end) {
+							const char *end,
+							bool backslash) {
 
 	// walk [ptr, end), tracking nested parens and skipping string
 	// literals, returning the next top-level "," or the ")" that
@@ -3724,9 +3698,10 @@ const char *sqlrservercontroller::findCommaOrCloseParen(const char *ptr,
 	int32_t		depth=0;
 	while (ptr<end) {
 
-		// FIXME: handle double quotes and back ticks
-		if (*ptr=='\'') {
-			ptr=skipStringLiteral(ptr,end);
+		// skip single-quoted, double-quoted, and back-tick-quoted
+		// string literals
+		if (character::isInSet(*ptr,"'\"`")) {
+			ptr=skipStringLiteral(ptr,end,backslash);
 			continue;
 		}
 

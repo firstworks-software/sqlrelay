@@ -84,7 +84,7 @@ void sqlrquerytranslation_listagg_to_string_agg::translateRange(
 
 		// copy out string literals verbatim
 		if (*ptr=='\'') {
-			ptr=cont->copyStringLiteral(ptr,end,out);
+			ptr=cont->copyStringLiteral(ptr,end,out,true);
 			continue;
 		}
 
@@ -116,7 +116,7 @@ const char *sqlrquerytranslation_listagg_to_string_agg::translateListagg(
 	const char	*exprstart=ptr+8;
 
 	// find the comma that separates EXPR from SEP
-	const char	*exprend=cont->findCommaOrCloseParen(exprstart,end);
+	const char	*exprend=cont->findCommaOrCloseParen(exprstart,end,true);
 	if (!exprend || *exprend!=',') {
 		return NULL;
 	}
@@ -124,7 +124,7 @@ const char *sqlrquerytranslation_listagg_to_string_agg::translateListagg(
 
 	// find the matching ")" of the listagg(...) call
 	const char	*separatorend=cont->findCommaOrCloseParen(
-							separatorstart,end);
+							separatorstart,end,true);
 	if (!separatorend || *separatorend!=')') {
 		return NULL;
 	}
@@ -143,7 +143,7 @@ const char *sqlrquerytranslation_listagg_to_string_agg::translateListagg(
 	const char	*ogstart=p;
 	const char	*ogend=ogstart;
 	for (;;) {
-		ogend=cont->findCommaOrCloseParen(ogend,end);
+		ogend=cont->findCommaOrCloseParen(ogend,end,true);
 		if (!ogend) {
 			return NULL;
 		}

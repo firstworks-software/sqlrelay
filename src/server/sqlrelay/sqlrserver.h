@@ -2882,31 +2882,40 @@ class SQLRSERVER_DLLSPEC sqlrservercontroller : public sqlrserverbase {
 		 *  "out".  "ptr" must point at the opening delimiter character,
 		 *  which is also taken to be the closing delimiter.  A doubled
 		 *  delimiter (eg. '' or "") is treated as an embedded
+		 *  delimiter.  If "backslash" is true, a backslash-escaped
+		 *  delimiter (eg. \' or \") is also treated as an embedded
 		 *  delimiter.
 		 *
 		 *  Returns a pointer to the character after the closing
 		 *  delimiter, or to "end" if the literal is unterminated. */
 		const char	*copyStringLiteral(const char *ptr,
 							const char *end,
-							stringbuffer *out);
+							stringbuffer *out,
+							bool backslash);
 
 		/** Skips past a delimited (eg. quoted) string literal.  "ptr"
 		 *  must point at the opening delimiter character, which is
 		 *  also taken to be the closing delimiter.  A doubled
 		 *  delimiter (eg. '' or "") is treated as an embedded
+		 *  delimiter.  If "backslash" is true, a backslash-escaped
+		 *  delimiter (eg. \' or \") is also treated as an embedded
 		 *  delimiter.
 		 *
 		 *  Returns a pointer to the character after the closing
 		 *  delimiter, or to "end" if the literal is unterminated. */
 		const char	*skipStringLiteral(const char *ptr,
-							const char *end);
+							const char *end,
+							bool backslash);
 
 		/** Walks [ptr, end), tracking nested parens and skipping
-		 *  string literals, and returns a pointer to the next
-		 *  top-level "," or the ")" that closes the enclosing paren
-		 *  scope - or NULL if neither is found before "end". */
+		 *  single-quoted, double-quoted, and back-tick-quoted string
+		 *  literals, and returns a pointer to the next top-level ","
+		 *  or the ")" that closes the enclosing paren scope - or NULL
+		 *  if neither is found before "end".  "backslash" is passed
+		 *  through to skipStringLiteral(). */
 		const char	*findCommaOrCloseParen(const char *ptr,
-							const char *end);
+							const char *end,
+							bool backslash);
 
 		/** Returns a 2-character hex representation of "ch". */
 		const char	*asciiToHex(byte_t ch);

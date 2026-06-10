@@ -136,6 +136,10 @@
 		redistribution
 	odbc SQLGetData() now returns SQL_NO_DATA on a second call for a
 		fixed-length or NULL column rather than re-fetching the value
+	the controller's copyStringLiteral(), skipStringLiteral(), and
+		findCommaOrCloseParen() now handle backslash-escaped
+		delimiters, and findCommaOrCloseParen() now also skips
+		double-quoted and back-tick-quoted string literals
 
 2.1.1 - added tns_admin support
 	fixed sqlr-start ... -strace ...
