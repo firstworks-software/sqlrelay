@@ -744,6 +744,7 @@ public class SQLRelayResultSetMetaData implements ResultSetMetaData {
 			case "CHAR":
 			case "MONEY":
 			case "SMALLMONEY":
+			case "TEXT":
 			case "LONGCHAR":
 			case "LONG":
 			case "ILLEGAL":
@@ -960,7 +961,6 @@ public class SQLRelayResultSetMetaData implements ResultSetMetaData {
 			case "CLOB":
 			case "LONGVARCHAR":
 			case "DBCLOB":
-			case "TEXT":
 			case "TINYTEXT":
 			case "MEDIUMTEXT":
 			case "LONGTEXT":
