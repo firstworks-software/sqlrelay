@@ -10448,28 +10448,20 @@ AC_SUBST(FDECLSPEC)
 ])
 
 
-dnl checks to see if -std=c++98 or -std=gnu++98 compiler options work
-dnl if one of them does, then it sets the variable STDCXX98 to the option
-dnl if neither does, then it sets the variable STDCXX98=""
-AC_DEFUN([FW_CHECK_STDCXX98],
+dnl checks to see if -std=gnu++98 compiler option works
+dnl if it does, then it sets the variable STDGNU98="-std=gnu++98"
+dnl if neither does, then it sets the variable STDGNU98=""
+AC_DEFUN([FW_CHECK_STDGNU98],
 [
-AC_MSG_CHECKING(for -std=c++98 option)
-FW_TRY_LINK([],[int a; a=1;],[-std=c++98],[],[],[STDCXX98="-std=c++98"],[STDCXX98=""])
-if ( test -n "$STDCXX98" )
+AC_MSG_CHECKING(for -std=gnu++98 option)
+FW_TRY_LINK([],[int a; a=1;],[-std=gnu++98],[],[],[STDGNU98="-std=gnu++98"],[STDGNU98=""])
+if ( test -n "$STDGNU98" )
 then
 	AC_MSG_RESULT(yes)
 else
 	AC_MSG_RESULT(no)
-	AC_MSG_CHECKING(for -std=gnu++98 option)
-	FW_TRY_LINK([],[int a; a=1;],[-std=gnu++98],[],[],[STDCXX98="-std=gnu++98"],[STDCXX98=""])
-	if ( test -n "$STDCXX98" )
-	then
-		AC_MSG_RESULT(yes)
-	else
-		AC_MSG_RESULT(no)
-	fi
 fi
-AC_SUBST(STDCXX98)
+AC_SUBST(STDGNU98)
 ])
 
 
