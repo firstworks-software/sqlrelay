@@ -1547,15 +1547,3 @@ main() ->
     sqlrelay:connectionFree(),
     sqlrelay:stop(),
     init:stop(getStatus()).
-
-%%
-%% Small helpers used in the main flow.
-%%
-
-%% String substring containment: does Haystack contain Needle ?
-contains({ok, Haystack}, Needle) ->
-    contains(Haystack, Needle);
-contains(Haystack, Needle) when is_list(Haystack), is_list(Needle) ->
-    string:str(Haystack, Needle) > 0;
-contains(_, _) ->
-    false.

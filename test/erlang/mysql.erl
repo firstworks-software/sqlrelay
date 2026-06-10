@@ -2162,12 +2162,6 @@ main() ->
 %% Small helpers used in the main flow.
 %%
 
-%% String substring containment: does Haystack contain Needle?
-contains(Haystack, Needle) when is_list(Haystack), is_list(Needle) ->
-    string:str(Haystack, Needle) > 0;
-contains(_, _) ->
-    false.
-
 %% Encode a single byte for an _binary'...'  mysql literal, escaping
 %% ', ", and \ with a leading backslash. All other bytes pass through.
 encodeByteBackslash($') -> [$\\, $'];

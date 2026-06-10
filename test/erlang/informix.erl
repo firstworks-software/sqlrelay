@@ -2089,9 +2089,3 @@ trimNull(undefined) -> "";
 trimNull(null)      -> "";
 trimNull(L) when is_list(L) ->
     lists:takewhile(fun(C) -> C =/= 0 end, L).
-
-%% String substring containment: does Haystack contain Needle ?
-contains(Haystack, Needle) when is_list(Haystack), is_list(Needle) ->
-    string:str(Haystack, Needle) > 0;
-contains(_, _) ->
-    false.
