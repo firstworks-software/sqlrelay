@@ -1674,6 +1674,44 @@ int main(int argc, char **argv) {
 			cur,"select count(*) from session.temptable"));
 	printf("\n");
 
+	// declared temp table with an unqualified name; session. must be
+	// prepended for the end-of-session drop to succeed
+	sqlrcur_sendQuery(cur,"drop table session.temptable");
+	assertTrue(sqlrcur_sendQuery(cur,
+		"declare global temporary table temptable ("
+		"	col1 int "
+		") not logged"));
+	assertTrue(sqlrcur_sendQuery(
+			cur,"insert into session.temptable values (1)"));
+	assertTrue(sqlrcur_sendQuery(
+			cur,"select count(*) from session.temptable"));
+	assertEqStr(sqlrcur_getFieldByIndex(cur,0,0),"1");
+	sqlrcon_endSession(con);
+	printf("\n");
+	assertFalse(sqlrcur_sendQuery(
+			cur,"select count(*) from session.temptable"));
+	printf("\n");
+
+	// created temp table; its rows are truncated rather than the table
+	// being dropped at the end of the session (it isn't dropped here -
+	// dropping a still-instantiated created temp table hangs in db2)
+	sqlrcur_sendQuery(cur,"drop table ctemptable");
+	assertTrue(sqlrcur_sendQuery(cur,
+		"create global temporary table ctemptable ("
+		"	col1 int "
+		") on commit preserve rows"));
+	assertTrue(sqlrcur_sendQuery(
+			cur,"insert into ctemptable values (1)"));
+	assertTrue(sqlrcur_sendQuery(
+			cur,"select count(*) from ctemptable"));
+	assertEqStr(sqlrcur_getFieldByIndex(cur,0,0),"1");
+	sqlrcon_endSession(con);
+	printf("\n");
+	assertTrue(sqlrcur_sendQuery(
+			cur,"select count(*) from ctemptable"));
+	assertEqStr(sqlrcur_getFieldByIndex(cur,0,0),"0");
+	printf("\n");
+
 
 	// encoded binary data
 	printf("ENCODED BINARY DATA: \n");

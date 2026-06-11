@@ -19,6 +19,7 @@ class sqlrservercursorprivate {
 	 friend class sqlrservercursor;
 
 		regularexpression	_createtemp;
+		regularexpression	_preserverows;
 
 		uint16_t	_id;
 
@@ -159,6 +160,7 @@ sqlrservercursor::sqlrservercursor(sqlrserverconnection *conn, uint16_t id) :
 	setState(SQLRCURSORSTATE_AVAILABLE);
 
 	setCreateTempTablePattern("(create|CREATE|declare|DECLARE)[ 	\\r\\n]+((global|GLOBAL|local|LOCAL)?[ 	\\r\\n]+)?(temp|TEMP|temporary|TEMPORARY)?[ 	\\r\\n]+(table|TABLE)[ 	\\r\\n]+");
+	setOnCommitPreserveRowsPattern("(on|ON)[ 	\\r\\n]+(commit|COMMIT)[ 	\\r\\n]+(preserve|PRESERVE)[ 	\\r\\n]+(rows|ROWS)");
 
 	pvt->_querybuffer=
 		new char[conn->cont->getConfig()->getMaxQuerySize()+1];
@@ -1704,6 +1706,16 @@ const char *sqlrservercursor::skipCreateTempTableClause(const char *query) {
 		return pvt->_createtemp.getSubstringEnd(0);
 	}
 	return NULL;
+}
+
+void sqlrservercursor::setOnCommitPreserveRowsPattern(
+						const char *preserverows) {
+	pvt->_preserverows.setPattern(preserverows);
+	pvt->_preserverows.study();
+}
+
+bool sqlrservercursor::onCommitPreserveRows(const char *query) {
+	return pvt->_preserverows.match(query);
 }
 
 bool sqlrservercursor::columnInfoIsValidAfterPrepare() {

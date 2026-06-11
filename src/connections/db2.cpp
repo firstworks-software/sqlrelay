@@ -148,6 +148,8 @@ class SQLRSERVER_DLLSPEC db2cursor : public sqlrservercursor {
 							uint64_t *charsread);
 		bool		executeQuery(const char *query,
 						uint32_t size);
+		void		checkForTempTable(const char *query,
+						uint32_t size);
 		void		getError(char *errorbuffer,
 						uint32_t errorbuffersize,
 						uint32_t *errorsize,
@@ -3125,6 +3127,45 @@ bool db2cursor::executeQuery(const char *query, uint32_t size) {
 	}
 	
 	return true;
+}
+
+void db2cursor::checkForTempTable(const char *query, uint32_t size) {
+
+	// see if the query creates or declares a temp table
+	const char	*ptr=skipCreateTempTableClause(query);
+	if (!ptr) {
+		return;
+	}
+
+	// get the table name
+	stringbuffer	tablename;
+	const char	*endptr=query+size;
+	while (ptr && *ptr && *ptr!=' ' &&
+		*ptr!='\n' && *ptr!='	' && ptr<endptr) {
+		tablename.append(*ptr);
+		ptr++;
+	}
+
+	// declared temp tables must be dropped at the end of the session,
+	// created temp tables whose rows were preserved on commit must be
+	// truncated at the end of the session
+	const char	*start=conn->cont->skipWhitespaceAndComments(query);
+	if (!charstring::compareIgnoringCase(start,"declare",7)) {
+
+		// db2 puts declared global temp tables in the SESSION schema,
+		// so the name must be qualified with session. for the drop
+		// to work
+		stringbuffer	droptable;
+		if (charstring::compareIgnoringCase(
+				tablename.getString(),"session.",8)) {
+			droptable.append("session.");
+		}
+		droptable.append(tablename.getString());
+		conn->cont->addTempTableForDrop(droptable.getString());
+
+	} else if (onCommitPreserveRows(ptr)) {
+		conn->cont->addTempTableForTrunc(tablename.getString());
+	}
 }
 
 void db2cursor::getError(char *errorbuffer,

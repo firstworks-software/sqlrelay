@@ -148,6 +148,11 @@
 	mysql connection now handles text columns as distinct TEXT datatypes
 	fixed a bug in the mysql protocol that caused per-column unsigned and
 		binary flags to be ignored
+	db2 connection now drops declared global temporary tables (qualified
+		with session.) and truncates created global temporary tables
+		at end of session
+	added shared onCommitPreserveRows()/setOnCommitPreserveRowsPattern()
+		to the server cursor
 
 2.1.1 - added tns_admin support
 	fixed sqlr-start ... -strace ...

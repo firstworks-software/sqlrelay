@@ -1619,6 +1619,44 @@
 			$cur,"select count(*) from session.temptable"));
 	echo("\n");
 
+	# declared temp table with an unqualified name; session. must be
+	# prepended for the end-of-session drop to succeed
+	sqlrcur_sendQuery($cur,"drop table session.temptable");
+	assertTrue(sqlrcur_sendQuery($cur,
+		"declare global temporary table temptable (".
+		"	col1 int ".
+		") not logged"));
+	assertTrue(sqlrcur_sendQuery(
+			$cur,"insert into session.temptable values (1)"));
+	assertTrue(sqlrcur_sendQuery(
+			$cur,"select count(*) from session.temptable"));
+	assertEqStr(sqlrcur_getField($cur,0,0),"1");
+	sqlrcon_endSession($con);
+	echo("\n");
+	assertFalse(sqlrcur_sendQuery(
+			$cur,"select count(*) from session.temptable"));
+	echo("\n");
+
+	# created temp table; its rows are truncated rather than the table
+	# being dropped at the end of the session (it isn't dropped here -
+	# dropping a still-instantiated created temp table hangs in db2)
+	sqlrcur_sendQuery($cur,"drop table ctemptable");
+	assertTrue(sqlrcur_sendQuery($cur,
+		"create global temporary table ctemptable (".
+		"	col1 int ".
+		") on commit preserve rows"));
+	assertTrue(sqlrcur_sendQuery(
+			$cur,"insert into ctemptable values (1)"));
+	assertTrue(sqlrcur_sendQuery(
+			$cur,"select count(*) from ctemptable"));
+	assertEqStr(sqlrcur_getField($cur,0,0),"1");
+	sqlrcon_endSession($con);
+	echo("\n");
+	assertTrue(sqlrcur_sendQuery(
+			$cur,"select count(*) from ctemptable"));
+	assertEqStr(sqlrcur_getField($cur,0,0),"0");
+	echo("\n");
+
 
 	# encoded binary data
 	echo("ENCODED BINARY DATA: \n");

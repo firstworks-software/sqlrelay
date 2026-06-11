@@ -1683,6 +1683,41 @@ int main(int argc, char **argv) {
 	assertFalse(cur->sendQuery("select count(*) from session.temptable"));
 	stdoutput.printf("\n");
 
+	// declared temp table with an unqualified name; session. must be
+	// prepended for the end-of-session drop to succeed
+	cur->sendQuery("drop table session.temptable");
+	assertTrue(cur->sendQuery(
+			"declare global temporary table temptable ("
+			"	col1 int "
+			") not logged"));
+	assertTrue(cur->sendQuery("insert into session.temptable values (1)"));
+	assertTrue(cur->sendQuery("select count(*) from session.temptable"));
+	assertEquals(cur->getField(0,(uint32_t)0),"1");
+	con->endSession();
+	stdoutput.printf("\n");
+	assertFalse(cur->sendQuery("select count(*) from session.temptable"));
+	stdoutput.printf("\n");
+
+	// created temp table; at the end of the session its rows are
+	// truncated rather than the table being dropped, so the table still
+	// exists afterward but is empty
+	// (no drop here - dropping a created global temp table while it's
+	// still instantiated on the pooled connection blocks indefinitely in
+	// db2; the table goes away when the instance is shut down)
+	cur->sendQuery("drop table ctemptable");
+	assertTrue(cur->sendQuery(
+			"create global temporary table ctemptable ("
+			"	col1 int "
+			") on commit preserve rows"));
+	assertTrue(cur->sendQuery("insert into ctemptable values (1)"));
+	assertTrue(cur->sendQuery("select count(*) from ctemptable"));
+	assertEquals(cur->getField(0,(uint32_t)0),"1");
+	con->endSession();
+	stdoutput.printf("\n");
+	assertTrue(cur->sendQuery("select count(*) from ctemptable"));
+	assertEquals(cur->getField(0,(uint32_t)0),"0");
+	stdoutput.printf("\n");
+
 
 	// encoded binary data
 	stdoutput.printf("ENCODED BINARY DATA: \n");

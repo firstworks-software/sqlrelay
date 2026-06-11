@@ -1343,6 +1343,38 @@ main() ->
     assertFalse(sqlrelay:sendQuery("select count(*) from session.temptable")),
     io:format("~n"),
 
+    %% declared temp table with an unqualified name; session. must be
+    %% prepended for the end-of-session drop to succeed
+    sqlrelay:sendQuery("drop table session.temptable"),
+    assertTrue(sqlrelay:sendQuery(
+        "declare global temporary table temptable ("
+        "	col1 int "
+        ") not logged")),
+    assertTrue(sqlrelay:sendQuery("insert into session.temptable values (1)")),
+    assertTrue(sqlrelay:sendQuery("select count(*) from session.temptable")),
+    assertEqualsString(sqlrelay:getFieldByIndex(0, 0), "1"),
+    sqlrelay:endSession(),
+    io:format("~n"),
+    assertFalse(sqlrelay:sendQuery("select count(*) from session.temptable")),
+    io:format("~n"),
+
+    %% created temp table; its rows are truncated rather than the table
+    %% being dropped at the end of the session (it isn't dropped here -
+    %% dropping a still-instantiated created temp table hangs in db2)
+    sqlrelay:sendQuery("drop table ctemptable"),
+    assertTrue(sqlrelay:sendQuery(
+        "create global temporary table ctemptable ("
+        "	col1 int "
+        ") on commit preserve rows")),
+    assertTrue(sqlrelay:sendQuery("insert into ctemptable values (1)")),
+    assertTrue(sqlrelay:sendQuery("select count(*) from ctemptable")),
+    assertEqualsString(sqlrelay:getFieldByIndex(0, 0), "1"),
+    sqlrelay:endSession(),
+    io:format("~n"),
+    assertTrue(sqlrelay:sendQuery("select count(*) from ctemptable")),
+    assertEqualsString(sqlrelay:getFieldByIndex(0, 0), "0"),
+    io:format("~n"),
+
     %% ENCODED BINARY DATA
     io:format("ENCODED BINARY DATA: ~n"),
     sqlrelay:sendQuery("drop table testtable"),

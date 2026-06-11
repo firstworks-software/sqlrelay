@@ -1719,6 +1719,45 @@ class db2 extends sqlrtest {
 			"	session.temptable"));
 		System.out.println();
 
+		// declared temp table with an unqualified name; session. must
+		// be prepended for the end-of-session drop to succeed
+		cur.sendQuery("drop table session.temptable");
+		assertTrue(cur.sendQuery(
+			"declare global temporary table temptable ("+
+			"	col1 int "+
+			") not logged"));
+		assertTrue(cur.sendQuery(
+			"insert into session.temptable values (1)"));
+		assertTrue(cur.sendQuery(
+			"select count(*) from session.temptable"));
+		assertEquals(cur.getField(0,0),"1");
+		con.endSession();
+		System.out.println();
+		assertFalse(cur.sendQuery(
+			"select count(*) from session.temptable"));
+		System.out.println();
+
+		// created temp table; its rows are truncated rather than the
+		// table being dropped at the end of the session (it isn't
+		// dropped here - dropping a still-instantiated created temp
+		// table hangs in db2)
+		cur.sendQuery("drop table ctemptable");
+		assertTrue(cur.sendQuery(
+			"create global temporary table ctemptable ("+
+			"	col1 int "+
+			") on commit preserve rows"));
+		assertTrue(cur.sendQuery(
+			"insert into ctemptable values (1)"));
+		assertTrue(cur.sendQuery(
+			"select count(*) from ctemptable"));
+		assertEquals(cur.getField(0,0),"1");
+		con.endSession();
+		System.out.println();
+		assertTrue(cur.sendQuery(
+			"select count(*) from ctemptable"));
+		assertEquals(cur.getField(0,0),"0");
+		System.out.println();
+
 
 		// encoded binary data
 		System.out.println("ENCODED BINARY DATA: ");

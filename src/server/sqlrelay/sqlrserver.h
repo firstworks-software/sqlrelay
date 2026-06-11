@@ -5410,6 +5410,17 @@ class SQLRSERVER_DLLSPEC sqlrservercursor : public sqlrserverbase {
 		 *  found. */
 		const char	*skipCreateTempTableClause(const char *query);
 
+		/** Sets the regular expression pattern used to identify an
+		 *  "on commit preserve rows" clause to "preserverows".
+		 *
+		 *  Defaults to "(on|ON)[ 	\\r\\n]+(commit|COMMIT)[ 	\\r\\n]+(preserve|PRESERVE)[ 	\\r\\n]+(rows|ROWS)" */
+		void	setOnCommitPreserveRowsPattern(const char *preserverows);
+
+		/** Returns true if "query" contains an "on commit preserve rows"
+		 *  clause matching the pattern set by
+		 *  setOnCommitPreserveRowsPattern(), and false otherwise. */
+		bool	onCommitPreserveRows(const char *query);
+
 		/** Sets whether column info is currently valid to "valid". */
 		void	setColumnInfoIsValid(bool valid);
 
