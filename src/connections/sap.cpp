@@ -1336,6 +1336,13 @@ const char *sapconnection::getTableListQuery(const char *catalog,
 	tablelistquery.append(
 		"where "
 		"	user_name(uid) is not null ");
+	if (!charstring::isNullOrEmpty(catalog)) {
+		tablelistquery.append(
+			"	and "
+			"	db_name() like '");
+		tablelistquery.append(catalog);
+		tablelistquery.append("' ");
+	}
 	if (schema) {
 		tablelistquery.append(
 			"	and "
@@ -2182,6 +2189,13 @@ const char *sapconnection::getColumnListQuery(const char *catalog,
 		"	co.id=ob.id "
 		"	and "
 		"	ty.usertype=co.usertype ");
+	if (!charstring::isNullOrEmpty(catalog)) {
+		columnlistquery.append(
+			"	and "
+			"	db_name() like '");
+		columnlistquery.append(catalog);
+		columnlistquery.append("' ");
+	}
 	if (!charstring::isNullOrEmpty(schema)) {
 		columnlistquery.append(
 			"	and "
@@ -2246,6 +2260,13 @@ const char *sapconnection::getPrimaryKeysListQuery(const char *catalog,
 		"	o.id=c.id "
 		"	and "
 		"	c.colid<=i.keycnt ");
+	if (!charstring::isNullOrEmpty(catalog)) {
+		primarykeyslistquery.append(
+			"	and "
+			"	db_name() like '");
+		primarykeyslistquery.append(catalog);
+		primarykeyslistquery.append("' ");
+	}
 	if (!charstring::isNullOrEmpty(table)) {
 		primarykeyslistquery.append(
 			"	and "
@@ -2318,6 +2339,13 @@ const char *sapconnection::getKeyAndIndexListQuery(const char *catalog,
 		"	o.id=c.id "
 		"	and "
 		"	c.colid<=i.keycnt ");
+	if (!charstring::isNullOrEmpty(catalog)) {
+		keyandindexlistquery.append(
+			"	and "
+			"	db_name() like '");
+		keyandindexlistquery.append(catalog);
+		keyandindexlistquery.append("' ");
+	}
 	if (!charstring::isNullOrEmpty(table)) {
 		keyandindexlistquery.append(
 			"	and "

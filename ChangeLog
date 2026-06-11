@@ -173,6 +173,10 @@
 		null for the schema, matching the native odbc/jdbc drivers;
 		mysql's catalog list now enumerates the databases and its schema
 		list, like firebird's, is empty
+	the sap, freetds, and informix connections now gate their get*List()
+		queries on the catalog parameter, returning an empty result when
+		the requested catalog is not the connection's current catalog,
+		matching the native odbc/jdbc drivers
 
 2.1.1 - added tns_admin support
 	fixed sqlr-start ... -strace ...

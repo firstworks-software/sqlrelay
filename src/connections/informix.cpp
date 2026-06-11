@@ -2101,6 +2101,13 @@ const char *informixconnection::getColumnListQuery(const char *catalog,
 	columnlistquery.append(
 		"where "
 		"	tb.tabid=cl.tabid ");
+	if (!charstring::isNullOrEmpty(catalog)) {
+		columnlistquery.append(
+			"	and "
+			"	trim(dbinfo('dbname')) like '");
+		columnlistquery.append(catalog);
+		columnlistquery.append("' ");
+	}
 	if (!charstring::isNullOrEmpty(schema)) {
 		columnlistquery.append(
 			"	and "
@@ -2204,6 +2211,13 @@ const char *informixconnection::getPrimaryKeysListQuery(const char *catalog,
 		"	or sc.colno=si.part14 "
 		"	or sc.colno=si.part15 "
 		"	or sc.colno=si.part16) ");
+	if (!charstring::isNullOrEmpty(catalog)) {
+		primarykeyslistquery.append(
+			"	and "
+			"	trim(dbinfo('dbname')) like '");
+		primarykeyslistquery.append(catalog);
+		primarykeyslistquery.append("' ");
+	}
 	if (!charstring::isNullOrEmpty(schema)) {
 		primarykeyslistquery.append(
 			"	and "
@@ -2355,6 +2369,13 @@ const char *informixconnection::getKeyAndIndexListQuery(const char *catalog,
 		"	or sc.colno=abs(si.part14) "
 		"	or sc.colno=abs(si.part15) "
 		"	or sc.colno=abs(si.part16)) ");
+	if (!charstring::isNullOrEmpty(catalog)) {
+		keyandindexlistquery.append(
+			"	and "
+			"	trim(dbinfo('dbname')) like '");
+		keyandindexlistquery.append(catalog);
+		keyandindexlistquery.append("' ");
+	}
 	if (!charstring::isNullOrEmpty(schema)) {
 		keyandindexlistquery.append(
 			"	and "
@@ -2414,12 +2435,23 @@ const char *informixconnection::getProcedureListQuery(
 		"	sysprocedures ");
 
 	// where clause
-	if (!charstring::isNullOrEmpty(schema) ||
+	if (!charstring::isNullOrEmpty(catalog) ||
+		!charstring::isNullOrEmpty(schema) ||
 		!charstring::isNullOrEmpty(procedure)) {
 
 		bool	first=true;
 		procedurelistquery.append("where ");
+		if (!charstring::isNullOrEmpty(catalog)) {
+			procedurelistquery.append(
+				"trim(dbinfo('dbname')) like '");
+			procedurelistquery.append(catalog);
+			procedurelistquery.append("' ");
+			first=false;
+		}
 		if (!charstring::isNullOrEmpty(schema)) {
+			if (!first) {
+				procedurelistquery.append("and ");
+			}
 			procedurelistquery.append(
 				"owner like '");
 			procedurelistquery.append(schema);
@@ -2518,6 +2550,13 @@ const char *informixconnection::getProcedureParameterListQuery(
 	procedureparameterlistquery.append(
 		"where "
 		"	spc.procid=sp.procid ");
+	if (!charstring::isNullOrEmpty(catalog)) {
+		procedureparameterlistquery.append(
+			"	and "
+			"	trim(dbinfo('dbname')) like '");
+		procedureparameterlistquery.append(catalog);
+		procedureparameterlistquery.append("' ");
+	}
 	if (!charstring::isNullOrEmpty(schema)) {
 		procedureparameterlistquery.append(
 			"	and "
