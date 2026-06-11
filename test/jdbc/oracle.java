@@ -1273,7 +1273,13 @@ class oracle extends sqlrtest {
 		System.out.println("  supportsMultipleResultSets");
 		boolval=md.supportsMultipleResultSets();
 		System.out.println("    "+boolval);
-		assertFalse(boolval);
+		if (issqlrelay) {
+			// oracle supports multiple result sets (ref cursors,
+			// implicit results); the native jdbc driver underreports
+			assertTrue(boolval);
+		} else {
+			assertFalse(boolval);
+		}
 		System.out.println();
 
 		// supportsMultipleTransactions

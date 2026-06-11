@@ -219,6 +219,8 @@
 	db2, sap and freetds now report grant_clauses; db2, sap, freetds and
 		informix now report revoke_clauses, matched to their native odbc
 		drivers
+	oracle now reports supports_multiple_result_sets (ref cursors,
+		implicit results); matches its native odbc driver
 
 2.1.1 - added tns_admin support
 	fixed sqlr-start ... -strace ...

@@ -1894,11 +1894,7 @@ int main(int argc, char **argv) {
 	erg=SQLGetInfo(dbc,SQL_MULT_RESULT_SETS,
 			(SQLPOINTER)strval,(SQLSMALLINT)sizeof(strval),
 			&vallen);
-	if (issqlrelay) {
-		assertEqualDbc(dbc,(const char *)strval,"N");
-	} else {
-		assertEqualDbc(dbc,(const char *)strval,"Y");
-	}
+	assertEqualDbc(dbc,(const char *)strval,"Y");
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
 

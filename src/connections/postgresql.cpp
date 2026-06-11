@@ -430,6 +430,8 @@ void postgresqlconnection::initDatabaseFeatures() {
 	databasefeatures[FEATURE_DROP_VIEW_CLAUSES]=
 		"DROP_VIEW,CASCADE,RESTRICT";
 
+	// native odbc reports "_", native jdbc reports "";
+	// matching native jdbc for now
 	databasefeatures[FEATURE_EXTRA_NAME_CHARACTERS]=
 		"";
 

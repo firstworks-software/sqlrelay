@@ -526,6 +526,9 @@ void sqliteconnection::initDatabaseFeatures() {
 	databasefeatures[FEATURE_PROCEDURE_TERM]=
 		"";
 
+	// native odbc reports SQL_IC_SENSITIVE, native jdbc reports neither
+	// stored- nor mixed-case-supported (sqlite is case-insensitive even
+	// for quoted identifiers); matching native jdbc for now
 	databasefeatures[FEATURE_QUOTED_IDENTIFIER_CASE_STORAGE]=
 		"";
 

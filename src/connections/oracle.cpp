@@ -536,9 +536,13 @@ void oracleconnection::initDatabaseFeatures() {
 	databasefeatures[FEATURE_BATCH_ROW_COUNTS]=
 		"";
 
+	// native odbc reports "@" (oracle's db-link separator), native jdbc
+	// reports ""; matching native jdbc for now
 	databasefeatures[FEATURE_CATALOG_SEPARATOR]=
 		"";
 
+	// native odbc reports "Database Link" (oracle treats db-links as
+	// catalogs), native jdbc reports ""; matching native jdbc for now
 	databasefeatures[FEATURE_CATALOG_TERM]=
 		"";
 
@@ -894,7 +898,7 @@ void oracleconnection::initDatabaseFeatures() {
 		"true";
 
 	databasefeatures[FEATURE_SUPPORTS_MULTIPLE_RESULT_SETS]=
-		"";
+		"true";
 
 	databasefeatures[FEATURE_SUPPORTS_MULTIPLE_TRANSACTIONS]=
 		"true";
