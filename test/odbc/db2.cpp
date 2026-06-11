@@ -3513,15 +3513,7 @@ int main(int argc, char **argv) {
 	erg=SQLGetInfo(dbc,SQL_INDEX_KEYWORDS,
 			(SQLPOINTER)&uintval,
 			(SQLSMALLINT)sizeof(uintval),&vallen);
-	if (issqlrelay) {
-		// the db2 backend module reports no index keywords
-		assertEqualDbc(dbc,(int)uintval,0);
-	} else {
-		// native db2 reports 3
-		assertEqualDbc(dbc,(int)uintval,
-			(int)(SQL_IK_ASC|
-				SQL_IK_DESC));
-	}
+	assertEqualDbc(dbc,(int)uintval,(int)(SQL_IK_ASC|SQL_IK_DESC));
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
 	#endif
@@ -3871,17 +3863,11 @@ int main(int argc, char **argv) {
 	erg=SQLGetInfo(dbc,SQL_SQL92_VALUE_EXPRESSIONS,
 			(SQLPOINTER)&uintval,
 			(SQLSMALLINT)sizeof(uintval),&vallen);
-	if (issqlrelay) {
-		// the db2 backend module reports no value expressions
-		assertEqualDbc(dbc,(int)uintval,0);
-	} else {
-		// native db2 reports 15
-		assertEqualDbc(dbc,(int)uintval,
-			(int)(SQL_SVE_CASE|
-				SQL_SVE_CAST|
-				SQL_SVE_COALESCE|
-				SQL_SVE_NULLIF));
-	}
+	assertEqualDbc(dbc,(int)uintval,
+		(int)(SQL_SVE_CASE|
+			SQL_SVE_CAST|
+			SQL_SVE_COALESCE|
+			SQL_SVE_NULLIF));
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
 	#endif

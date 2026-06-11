@@ -3232,13 +3232,7 @@ int main(int argc, char **argv) {
 	erg=SQLGetInfo(dbc,SQL_INDEX_KEYWORDS,
 			(SQLPOINTER)&uintval,
 			(SQLSMALLINT)sizeof(uintval),&vallen);
-	if (issqlrelay) {
-		assertEqualDbc(dbc,(int)uintval,0);
-	} else {
-		assertEqualDbc(dbc,(int)uintval,
-			(int)(SQL_IK_ASC|
-				SQL_IK_DESC));
-	}
+	assertEqualDbc(dbc,(int)uintval,(int)(SQL_IK_ASC|SQL_IK_DESC));
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
 	#endif

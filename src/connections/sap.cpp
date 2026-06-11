@@ -463,7 +463,7 @@ void sapconnection::initDatabaseFeatures() {
 		"\"";
 
 	databasefeatures[FEATURE_INDEX_KEYWORDS]=
-		"";
+		"ASC,DESC";
 
 	databasefeatures[FEATURE_INFO_SCHEMA_VIEWS]=
 		"";

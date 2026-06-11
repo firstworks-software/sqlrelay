@@ -600,7 +600,7 @@ void freetdsconnection::initDatabaseFeatures() {
 		"\"";
 
 	databasefeatures[FEATURE_INDEX_KEYWORDS]=
-		"";
+		"ASC,DESC";
 
 	databasefeatures[FEATURE_INFO_SCHEMA_VIEWS]=
 		"";
@@ -899,7 +899,7 @@ void freetdsconnection::initDatabaseFeatures() {
 		"";
 
 	databasefeatures[FEATURE_VALUE_EXPRESSIONS]=
-		"";
+		"CASE,CAST,COALESCE,NULLIF";
 
 	databasefeatures[FEATURE_WHERE_CURRENT_OF_OPERATIONS]=
 		"DELETE,UPDATE";

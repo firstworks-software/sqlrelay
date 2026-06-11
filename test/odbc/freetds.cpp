@@ -3102,11 +3102,7 @@ int main(int argc, char **argv) {
 	erg=SQLGetInfo(dbc,SQL_INDEX_KEYWORDS,
 			(SQLPOINTER)&uintval,
 			(SQLSMALLINT)sizeof(uintval),&vallen);
-	if (issqlrelay) {
-		assertEqualDbc(dbc,(int)uintval,(int)SQL_IK_NONE);
-	} else {
-		assertEqualDbc(dbc,(int)uintval,(int)SQL_IK_ALL);
-	}
+	assertEqualDbc(dbc,(int)uintval,(int)SQL_IK_ALL);
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
 	#endif
@@ -3379,15 +3375,11 @@ int main(int argc, char **argv) {
 	erg=SQLGetInfo(dbc,SQL_SQL92_VALUE_EXPRESSIONS,
 			(SQLPOINTER)&uintval,
 			(SQLSMALLINT)sizeof(uintval),&vallen);
-	if (issqlrelay) {
-		assertEqualDbc(dbc,(int)uintval,0);
-	} else {
-		assertEqualDbc(dbc,(int)uintval,
-			(int)(SQL_SVE_CASE|
-				SQL_SVE_CAST|
-				SQL_SVE_COALESCE|
-				SQL_SVE_NULLIF));
-	}
+	assertEqualDbc(dbc,(int)uintval,
+		(int)(SQL_SVE_CASE|
+			SQL_SVE_CAST|
+			SQL_SVE_COALESCE|
+			SQL_SVE_NULLIF));
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
 	#endif
