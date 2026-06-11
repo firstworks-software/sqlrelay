@@ -418,7 +418,7 @@ void db2connection::initDatabaseFeatures() {
 		"";
 
 	databasefeatures[FEATURE_CREATE_TABLE_CLAUSES]=
-		"";
+		"CREATE_TABLE,COLUMN_CONSTRAINT,COLUMN_DEFAULT,CONSTRAINT_NAME_DEFINITION";
 
 	databasefeatures[FEATURE_CREATE_TRANSLATION_CLAUSES]=
 		"";

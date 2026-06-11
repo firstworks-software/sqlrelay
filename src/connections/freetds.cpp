@@ -525,7 +525,7 @@ void freetdsconnection::initDatabaseFeatures() {
 		"";
 
 	databasefeatures[FEATURE_CREATE_TABLE_CLAUSES]=
-		"";
+		"CREATE_TABLE";
 
 	databasefeatures[FEATURE_CREATE_TRANSLATION_CLAUSES]=
 		"";

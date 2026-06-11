@@ -191,6 +191,8 @@
 		set-default and collation support from ADD_COLUMN/DROP_COLUMN;
 		those operations are reported only when their own
 		alter_table_operations tokens are present
+	mysql now reports max_identifier_length (64)
+	db2, sap, freetds and informix now report create_table_clauses
 
 2.1.1 - added tns_admin support
 	fixed sqlr-start ... -strace ...

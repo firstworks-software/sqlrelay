@@ -3007,11 +3007,7 @@ int main(int argc, char **argv) {
 	erg=SQLGetInfo(dbc,SQL_CREATE_TABLE,
 			(SQLPOINTER)&uintval,
 			(SQLSMALLINT)sizeof(uintval),&vallen);
-	if (issqlrelay) {
-		assertEqualDbc(dbc,(int)uintval,0);
-	} else {
-		assertEqualDbc(dbc,(int)uintval,(int)SQL_CT_CREATE_TABLE);
-	}
+	assertEqualDbc(dbc,(int)uintval,(int)SQL_CT_CREATE_TABLE);
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
 	#endif

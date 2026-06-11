@@ -3209,17 +3209,13 @@ int main(int argc, char **argv) {
 	erg=SQLGetInfo(dbc,SQL_CREATE_TABLE,
 			(SQLPOINTER)&uintval,
 			(SQLSMALLINT)sizeof(uintval),&vallen);
-	if (issqlrelay) {
-		assertEqualDbc(dbc,(int)uintval,0);
-	} else {
-		assertEqualDbc(dbc,(int)uintval,
-			(int)(SQL_CT_CREATE_TABLE|
-				SQL_CT_COLUMN_CONSTRAINT|
-				SQL_CT_COLUMN_DEFAULT|
-				SQL_CT_COLUMN_COLLATION|
-				SQL_CT_TABLE_CONSTRAINT|
-				SQL_CT_CONSTRAINT_NAME_DEFINITION));
-	}
+	assertEqualDbc(dbc,(int)uintval,
+		(int)(SQL_CT_CREATE_TABLE|
+			SQL_CT_TABLE_CONSTRAINT|
+			SQL_CT_COLUMN_CONSTRAINT|
+			SQL_CT_COLUMN_DEFAULT|
+			SQL_CT_COLUMN_COLLATION|
+			SQL_CT_CONSTRAINT_NAME_DEFINITION));
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
 	#endif

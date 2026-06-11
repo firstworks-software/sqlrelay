@@ -588,7 +588,7 @@ void mysqlconnection::initDatabaseFeatures() {
 		"64";
 
 	databasefeatures[FEATURE_MAX_IDENTIFIER_LENGTH]=
-		"";
+		"64";
 
 	databasefeatures[FEATURE_MAX_INDEX_LENGTH]=
 		"256";

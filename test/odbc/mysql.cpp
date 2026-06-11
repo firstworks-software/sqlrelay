@@ -1752,7 +1752,8 @@ int main(int argc, char **argv) {
 			(SQLPOINTER)&usmallintval,
 			(SQLSMALLINT)sizeof(usmallintval),&vallen);
 	if (issqlrelay) {
-		assertEqualDbc(dbc,(int)usmallintval,0);
+		// mysql limits identifiers to 64; the mariadb driver reports 256
+		assertEqualDbc(dbc,(int)usmallintval,64);
 	} else {
 		// MariaDB reports 256.
 		assertEqualDbc(dbc,(int)usmallintval,256);
