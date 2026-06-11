@@ -741,10 +741,12 @@ void sapconnection::initDatabaseFeatures() {
 		"table";
 
 	databasefeatures[FEATURE_TIME_DATE_ADD_INTERVALS]=
-		"";
+		"FRAC_SECOND,SECOND,MINUTE,HOUR,"
+			"DAY,WEEK,MONTH,QUARTER,YEAR";
 
 	databasefeatures[FEATURE_TIME_DATE_DIFF_INTERVALS]=
-		"";
+		"FRAC_SECOND,SECOND,MINUTE,HOUR,"
+			"DAY,WEEK,MONTH,QUARTER,YEAR";
 
 	databasefeatures[FEATURE_TIME_DATE_FUNCTIONS]=
 		"curdate,curtime,current_date,current_time,current_timestamp,"

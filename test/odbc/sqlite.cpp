@@ -3519,7 +3519,11 @@ int main(int argc, char **argv) {
 			(SQLPOINTER)&uintval,
 			(SQLSMALLINT)sizeof(uintval),&vallen);
 	if (issqlrelay) {
-		assertEqualDbc(dbc,(int)uintval,0);
+		assertEqualDbc(dbc,(int)uintval,
+			(int)(SQL_SFKD_CASCADE|
+				SQL_SFKD_NO_ACTION|
+				SQL_SFKD_SET_DEFAULT|
+				SQL_SFKD_SET_NULL));
 		assertSuccessDbc(dbc,erg);
 	} else {
 		// the native driver doesn't implement this infotype
@@ -3536,7 +3540,11 @@ int main(int argc, char **argv) {
 			(SQLPOINTER)&uintval,
 			(SQLSMALLINT)sizeof(uintval),&vallen);
 	if (issqlrelay) {
-		assertEqualDbc(dbc,(int)uintval,0);
+		assertEqualDbc(dbc,(int)uintval,
+			(int)(SQL_SFKU_CASCADE|
+				SQL_SFKU_NO_ACTION|
+				SQL_SFKU_SET_DEFAULT|
+				SQL_SFKU_SET_NULL));
 		assertSuccessDbc(dbc,erg);
 	} else {
 		// the native driver doesn't implement this infotype

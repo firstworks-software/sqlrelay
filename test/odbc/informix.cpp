@@ -3357,8 +3357,11 @@ int main(int argc, char **argv) {
 			(SQLPOINTER)&uintval,
 			(SQLSMALLINT)sizeof(uintval),&vallen);
 	if (issqlrelay) {
-		assertEqualDbc(dbc,(int)uintval,0);
+		assertEqualDbc(dbc,(int)uintval,
+			(int)(SQL_SFKD_CASCADE|
+				SQL_SFKD_NO_ACTION));
 	} else {
+		// the native driver underreports; informix supports these
 		assertEqualDbc(dbc,(int)uintval,0);
 	}
 	assertSuccessDbc(dbc,erg);
@@ -3373,8 +3376,9 @@ int main(int argc, char **argv) {
 			(SQLPOINTER)&uintval,
 			(SQLSMALLINT)sizeof(uintval),&vallen);
 	if (issqlrelay) {
-		assertEqualDbc(dbc,(int)uintval,0);
+		assertEqualDbc(dbc,(int)uintval,(int)SQL_SFKU_NO_ACTION);
 	} else {
+		// the native driver underreports; informix supports these
 		assertEqualDbc(dbc,(int)uintval,0);
 	}
 	assertSuccessDbc(dbc,erg);

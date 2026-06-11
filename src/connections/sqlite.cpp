@@ -366,10 +366,10 @@ void sqliteconnection::initDatabaseFeatures() {
 		"";
 
 	databasefeatures[FEATURE_FOREIGN_KEY_DELETE_RULES]=
-		"";
+		"CASCADE,NO_ACTION,SET_DEFAULT,SET_NULL";
 
 	databasefeatures[FEATURE_FOREIGN_KEY_UPDATE_RULES]=
-		"";
+		"CASCADE,NO_ACTION,SET_DEFAULT,SET_NULL";
 
 	databasefeatures[FEATURE_FORWARD_ONLY_CURSOR_ATTRIBUTES]=
 		"";

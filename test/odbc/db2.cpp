@@ -2937,21 +2937,16 @@ int main(int argc, char **argv) {
 	erg=SQLGetInfo(dbc,SQL_TIMEDATE_ADD_INTERVALS,
 			(SQLPOINTER)&uintval,
 			(SQLSMALLINT)sizeof(uintval),&vallen);
-	if (issqlrelay) {
-		assertEqualDbc(dbc,(int)uintval,0);
-	} else {
-		// native db2 reports 511
-		assertEqualDbc(dbc,(int)uintval,
-			(int)(SQL_FN_TSI_FRAC_SECOND|
-				SQL_FN_TSI_SECOND|
-				SQL_FN_TSI_MINUTE|
-				SQL_FN_TSI_HOUR|
-				SQL_FN_TSI_DAY|
-				SQL_FN_TSI_WEEK|
-				SQL_FN_TSI_MONTH|
-				SQL_FN_TSI_QUARTER|
-				SQL_FN_TSI_YEAR));
-	}
+	assertEqualDbc(dbc,(int)uintval,
+		(int)(SQL_FN_TSI_FRAC_SECOND|
+			SQL_FN_TSI_SECOND|
+			SQL_FN_TSI_MINUTE|
+			SQL_FN_TSI_HOUR|
+			SQL_FN_TSI_DAY|
+			SQL_FN_TSI_WEEK|
+			SQL_FN_TSI_MONTH|
+			SQL_FN_TSI_QUARTER|
+			SQL_FN_TSI_YEAR));
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
 
@@ -2961,21 +2956,16 @@ int main(int argc, char **argv) {
 	erg=SQLGetInfo(dbc,SQL_TIMEDATE_DIFF_INTERVALS,
 			(SQLPOINTER)&uintval,
 			(SQLSMALLINT)sizeof(uintval),&vallen);
-	if (issqlrelay) {
-		assertEqualDbc(dbc,(int)uintval,0);
-	} else {
-		// native db2 reports 511
-		assertEqualDbc(dbc,(int)uintval,
-			(int)(SQL_FN_TSI_FRAC_SECOND|
-				SQL_FN_TSI_SECOND|
-				SQL_FN_TSI_MINUTE|
-				SQL_FN_TSI_HOUR|
-				SQL_FN_TSI_DAY|
-				SQL_FN_TSI_WEEK|
-				SQL_FN_TSI_MONTH|
-				SQL_FN_TSI_QUARTER|
-				SQL_FN_TSI_YEAR));
-	}
+	assertEqualDbc(dbc,(int)uintval,
+		(int)(SQL_FN_TSI_FRAC_SECOND|
+			SQL_FN_TSI_SECOND|
+			SQL_FN_TSI_MINUTE|
+			SQL_FN_TSI_HOUR|
+			SQL_FN_TSI_DAY|
+			SQL_FN_TSI_WEEK|
+			SQL_FN_TSI_MONTH|
+			SQL_FN_TSI_QUARTER|
+			SQL_FN_TSI_YEAR));
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
 
@@ -3673,16 +3663,10 @@ int main(int argc, char **argv) {
 	erg=SQLGetInfo(dbc,SQL_SQL92_FOREIGN_KEY_DELETE_RULE,
 			(SQLPOINTER)&uintval,
 			(SQLSMALLINT)sizeof(uintval),&vallen);
-	if (issqlrelay) {
-		// the db2 backend module reports no foreign-key delete rules
-		assertEqualDbc(dbc,(int)uintval,0);
-	} else {
-		// native db2 reports 11
-		assertEqualDbc(dbc,(int)uintval,
-			(int)(SQL_SFKD_CASCADE|
-				SQL_SFKD_NO_ACTION|
-				SQL_SFKD_SET_NULL));
-	}
+	assertEqualDbc(dbc,(int)uintval,
+		(int)(SQL_SFKD_CASCADE|
+			SQL_SFKD_NO_ACTION|
+			SQL_SFKD_SET_NULL));
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
 	#endif
@@ -3694,13 +3678,7 @@ int main(int argc, char **argv) {
 	erg=SQLGetInfo(dbc,SQL_SQL92_FOREIGN_KEY_UPDATE_RULE,
 			(SQLPOINTER)&uintval,
 			(SQLSMALLINT)sizeof(uintval),&vallen);
-	if (issqlrelay) {
-		// the db2 backend module reports no foreign-key update rules
-		assertEqualDbc(dbc,(int)uintval,0);
-	} else {
-		// native db2 reports 2
-		assertEqualDbc(dbc,(int)uintval,(int)SQL_SFKU_NO_ACTION);
-	}
+	assertEqualDbc(dbc,(int)uintval,(int)SQL_SFKU_NO_ACTION);
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
 	#endif

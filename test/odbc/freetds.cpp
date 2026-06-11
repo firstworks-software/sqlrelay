@@ -2599,7 +2599,21 @@ int main(int argc, char **argv) {
 	erg=SQLGetInfo(dbc,SQL_TIMEDATE_ADD_INTERVALS,
 			(SQLPOINTER)&uintval,
 			(SQLSMALLINT)sizeof(uintval),&vallen);
-	assertEqualDbc(dbc,(int)uintval,0);
+	if (issqlrelay) {
+		assertEqualDbc(dbc,(int)uintval,
+			(int)(SQL_FN_TSI_FRAC_SECOND|
+				SQL_FN_TSI_SECOND|
+				SQL_FN_TSI_MINUTE|
+				SQL_FN_TSI_HOUR|
+				SQL_FN_TSI_DAY|
+				SQL_FN_TSI_WEEK|
+				SQL_FN_TSI_MONTH|
+				SQL_FN_TSI_QUARTER|
+				SQL_FN_TSI_YEAR));
+	} else {
+		// the native driver underreports; freetds supports these
+		assertEqualDbc(dbc,(int)uintval,0);
+	}
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
 
@@ -2609,7 +2623,21 @@ int main(int argc, char **argv) {
 	erg=SQLGetInfo(dbc,SQL_TIMEDATE_DIFF_INTERVALS,
 			(SQLPOINTER)&uintval,
 			(SQLSMALLINT)sizeof(uintval),&vallen);
-	assertEqualDbc(dbc,(int)uintval,0);
+	if (issqlrelay) {
+		assertEqualDbc(dbc,(int)uintval,
+			(int)(SQL_FN_TSI_FRAC_SECOND|
+				SQL_FN_TSI_SECOND|
+				SQL_FN_TSI_MINUTE|
+				SQL_FN_TSI_HOUR|
+				SQL_FN_TSI_DAY|
+				SQL_FN_TSI_WEEK|
+				SQL_FN_TSI_MONTH|
+				SQL_FN_TSI_QUARTER|
+				SQL_FN_TSI_YEAR));
+	} else {
+		// the native driver underreports; freetds supports these
+		assertEqualDbc(dbc,(int)uintval,0);
+	}
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
 

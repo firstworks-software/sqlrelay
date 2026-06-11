@@ -3100,7 +3100,16 @@ int main(int argc, char **argv) {
 	erg=SQLGetInfo(dbc,SQL_SQL92_FOREIGN_KEY_DELETE_RULE,
 			(SQLPOINTER)&uintval,
 			(SQLSMALLINT)sizeof(uintval),&vallen);
-	assertEqualDbc(dbc,(int)uintval,0);
+	if (issqlrelay) {
+		assertEqualDbc(dbc,(int)uintval,
+			(int)(SQL_SFKD_CASCADE|
+				SQL_SFKD_NO_ACTION|
+				SQL_SFKD_SET_DEFAULT|
+				SQL_SFKD_SET_NULL));
+	} else {
+		// the native driver underreports; firebird supports these
+		assertEqualDbc(dbc,(int)uintval,0);
+	}
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
 	#endif
@@ -3112,7 +3121,16 @@ int main(int argc, char **argv) {
 	erg=SQLGetInfo(dbc,SQL_SQL92_FOREIGN_KEY_UPDATE_RULE,
 			(SQLPOINTER)&uintval,
 			(SQLSMALLINT)sizeof(uintval),&vallen);
-	assertEqualDbc(dbc,(int)uintval,0);
+	if (issqlrelay) {
+		assertEqualDbc(dbc,(int)uintval,
+			(int)(SQL_SFKU_CASCADE|
+				SQL_SFKU_NO_ACTION|
+				SQL_SFKU_SET_DEFAULT|
+				SQL_SFKU_SET_NULL));
+	} else {
+		// the native driver underreports; firebird supports these
+		assertEqualDbc(dbc,(int)uintval,0);
+	}
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
 	#endif

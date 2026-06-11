@@ -469,10 +469,10 @@ void db2connection::initDatabaseFeatures() {
 		"@#";
 
 	databasefeatures[FEATURE_FOREIGN_KEY_DELETE_RULES]=
-		"";
+		"CASCADE,NO_ACTION,SET_NULL";
 
 	databasefeatures[FEATURE_FOREIGN_KEY_UPDATE_RULES]=
-		"";
+		"NO_ACTION";
 
 	databasefeatures[FEATURE_FORWARD_ONLY_CURSOR_ATTRIBUTES]=
 		"";
@@ -798,10 +798,12 @@ void db2connection::initDatabaseFeatures() {
 		"table";
 
 	databasefeatures[FEATURE_TIME_DATE_ADD_INTERVALS]=
-		"";
+		"FRAC_SECOND,SECOND,MINUTE,HOUR,"
+			"DAY,WEEK,MONTH,QUARTER,YEAR";
 
 	databasefeatures[FEATURE_TIME_DATE_DIFF_INTERVALS]=
-		"";
+		"FRAC_SECOND,SECOND,MINUTE,HOUR,"
+			"DAY,WEEK,MONTH,QUARTER,YEAR";
 
 	databasefeatures[FEATURE_TIME_DATE_FUNCTIONS]=
 		"DAYNAME,DAYOFWEEK,DAYOFYEAR,HOUR,MINUTE,"

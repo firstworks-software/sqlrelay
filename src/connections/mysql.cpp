@@ -501,10 +501,10 @@ void mysqlconnection::initDatabaseFeatures() {
 		"$";
 
 	databasefeatures[FEATURE_FOREIGN_KEY_DELETE_RULES]=
-		"";
+		"CASCADE,NO_ACTION,SET_NULL";
 
 	databasefeatures[FEATURE_FOREIGN_KEY_UPDATE_RULES]=
-		"";
+		"CASCADE,NO_ACTION,SET_NULL";
 
 	databasefeatures[FEATURE_FORWARD_ONLY_CURSOR_ATTRIBUTES]=
 		"";
@@ -832,10 +832,12 @@ void mysqlconnection::initDatabaseFeatures() {
 		"table";
 
 	databasefeatures[FEATURE_TIME_DATE_ADD_INTERVALS]=
-		"";
+		"FRAC_SECOND,SECOND,MINUTE,HOUR,"
+			"DAY,WEEK,MONTH,QUARTER,YEAR";
 
 	databasefeatures[FEATURE_TIME_DATE_DIFF_INTERVALS]=
-		"";
+		"FRAC_SECOND,SECOND,MINUTE,HOUR,"
+			"DAY,WEEK,MONTH,QUARTER,YEAR";
 
 	databasefeatures[FEATURE_TIME_DATE_FUNCTIONS]=
 		"DAYOFWEEK,WEEKDAY,DAYOFMONTH,DAYOFYEAR,MONTH,"
