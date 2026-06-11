@@ -158,6 +158,9 @@
 		preserverows regular expressions
 	containsOnCommitPreserveRows() now ignores string literals, delimited
 		identifiers, and comments so it can't false-match inside one
+	made the sqlite and firebird connections return an empty catalog
+		list, matching db2/oracle and the odbc/jdbc convention for
+		databases with no way to enumerate catalogs
 
 2.1.1 - added tns_admin support
 	fixed sqlr-start ... -strace ...

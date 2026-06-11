@@ -760,14 +760,16 @@ const char *sqliteconnection::getDbHostName() {
 }
 
 const char *sqliteconnection::getCatalogListQuery(const char *catalog) {
-	//return "pragma database_list";
+	// no good way to get a list of catalogs in sqlite
 	return "select "
 		"	'' as table_cat, "
 		"	'' as table_schem, "
 		"	'' as table_name, "
 		"	'' as table_type, "
 		"	'' as remarks, "
-		"	null";
+		"	null "
+		"where "
+		"	1=0";
 }
 
 const char *sqliteconnection::getSchemaListQuery(const char *catalog,

@@ -1531,6 +1531,7 @@ int main(int argc, char **argv) {
 	stdoutput.printf("CATALOG LIST: \n");
 	assertTrue(cur->getCatalogList(NULL));
 	assertEquals(cur->getColumnName(0),"Database");
+	assertEquals(cur->rowCount(),0);
 	stdoutput.printf("\n");
 
 

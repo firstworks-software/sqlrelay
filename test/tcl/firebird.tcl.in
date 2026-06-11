@@ -1313,6 +1313,7 @@ puts ""
 puts "CATALOG LIST: "
 assertTrue [$cur getCatalogList ""]
 assertEqual [$cur getColumnName 0] "Database"
+assertEqual [$cur rowCount] 0
 puts ""
 
 

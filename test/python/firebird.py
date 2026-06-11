@@ -1487,6 +1487,7 @@ def main():
 	print("CATALOG LIST: ")
 	assertTrue(cur.getCatalogList(None))
 	assertEquals(cur.getColumnName(0),"Database")
+	assertEquals(cur.rowCount(),0)
 	print()
 
 

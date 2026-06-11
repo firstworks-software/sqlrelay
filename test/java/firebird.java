@@ -1537,6 +1537,7 @@ class firebird extends sqlrtest {
 		System.out.println("CATALOG LIST: ");
 		assertTrue(cur.getCatalogList(null));
 		assertEquals(cur.getColumnName(0),"Database");
+		assertEquals(cur.rowCount(),0);
 		System.out.println();
 
 

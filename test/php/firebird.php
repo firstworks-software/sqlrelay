@@ -1477,6 +1477,7 @@
 	echo("CATALOG LIST: \n");
 	assertTrue(sqlrcur_getCatalogList($cur,NULL));
 	assertEqStr(sqlrcur_getColumnName($cur,0),"Database");
+	assertEqInt(sqlrcur_rowCount($cur),0);
 	echo("\n");
 
 

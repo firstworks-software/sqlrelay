@@ -7521,13 +7521,11 @@ int main(int argc, char **argv) {
 		}
 		catrows++;
 	}
-	// sqlite has no catalogs; through sqlrelay the list is a single
-	// row with an empty catalog name, the native driver returns one
-	// null-catalog-name row per table/view (see nativetabcount above)
+	// sqlite has no catalogs; through sqlrelay the list is empty, the
+	// native driver returns one null-catalog-name row per table/view
+	// (see nativetabcount above)
 	if (issqlrelay) {
-		assertEqualStmt(stmt,catrows,1);
-		assertEqualStmt(stmt,(int)catnameind,0);
-		assertEqualStmt(stmt,(const char *)catname,"");
+		assertEqualStmt(stmt,catrows,0);
 	} else {
 		assertEqualStmt(stmt,catrows,(int)nativetabcount);
 		assertEqualStmt(stmt,(int)catnameind,(int)SQL_NULL_DATA);

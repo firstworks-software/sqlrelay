@@ -1290,6 +1290,7 @@ print "\n"
 print "CATALOG LIST: \n"
 assertTrue(cur.getCatalogList(nil))
 assertEqual(cur.getColumnName(0),"Database")
+assertEqual(cur.rowCount(),0)
 print "\n"
 
 

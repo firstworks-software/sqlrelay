@@ -1476,6 +1476,7 @@ print("\n");
 print("CATALOG LIST: \n");
 assertTrue($cur->getCatalogList(undef));
 assertEquals($cur->getColumnName(0),"Database");
+assertEquals($cur->rowCount(),0);
 print("\n");
 
 

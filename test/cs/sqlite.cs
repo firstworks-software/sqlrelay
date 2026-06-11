@@ -1316,6 +1316,7 @@ namespace SQLRClientTest
             Console.WriteLine("CATALOG LIST: ");
             assertTrue(cur.getCatalogList((String)null));
             assertEquals(cur.getColumnName((UInt32)0), "Database");
+            assertEquals(cur.rowCount(), (UInt64)0);
             Console.WriteLine("");
 
 

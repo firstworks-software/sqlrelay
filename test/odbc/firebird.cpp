@@ -7321,18 +7321,10 @@ int main(int argc, char **argv) {
 		}
 		catrows++;
 	}
-	if (issqlrelay) {
-		// firebird has no catalogs; sqlrelay returns a single row
-		// with an empty catalog name
-		assertEqualStmt(stmt,catrows,1);
-		assertEqualStmt(stmt,(int)catnameind,0);
-		assertEqualStmt(stmt,(const char *)catname,"");
-	} else {
-		// the native driver is assumed to return an empty list
-		// (firebird has no catalogs; unverified, no firebird odbc
-		// driver available)
-		assertEqualStmt(stmt,catrows,0);
-	}
+	// firebird has no catalogs, so the catalog list is empty - both
+	// through sqlrelay and (assumed) the native driver, though the
+	// native side is unverified, no firebird odbc driver available
+	assertEqualStmt(stmt,catrows,0);
 	SQLFreeStmt(stmt,SQL_CLOSE);
 	SQLFreeStmt(stmt,SQL_UNBIND);
 	stdoutput.printf("\n");

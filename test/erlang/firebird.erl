@@ -1211,6 +1211,7 @@ main() ->
     io:format("CATALOG LIST: ~n"),
     assertTrue(sqlrelay:getCatalogList("")),
     assertEqualsString(sqlrelay:getColumnName(0), "Database"),
+    assertEqualsInt(sqlrelay:rowCount(), 0),
     io:format("~n"),
 
     %% SCHEMA LIST

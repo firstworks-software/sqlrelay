@@ -1167,7 +1167,9 @@ const char *firebirdconnection::getCatalogListQuery(const char *catalog) {
 		"	trim('') as remarks, "
 		"	null "
 		"from "
-		"	rdb$database";
+		"	rdb$database "
+		"where "
+		"	1=0";
 }
 
 const char *firebirdconnection::getSchemaListQuery(const char *catalog,

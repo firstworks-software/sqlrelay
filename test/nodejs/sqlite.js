@@ -1325,6 +1325,7 @@ var {
 	console.log("CATALOG LIST: ");
 	assertTrue(cur.getCatalogList(null));
 	assertEqStr(cur.getColumnName(0),"Database");
+	assertEqInt(cur.rowCount(),0);
 	console.log("");
 
 

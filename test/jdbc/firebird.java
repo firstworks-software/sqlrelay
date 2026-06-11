@@ -2653,6 +2653,7 @@ class firebird extends sqlrtest {
 		assertEquals(rsmd.getColumnCount(),1);
 		col=1;
 		assertEquals(rsmd.getColumnName(col++),"TABLE_CAT");
+		assertFalse(rs.next());
 		rs.close();
 		System.out.println();
 
