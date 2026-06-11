@@ -418,7 +418,7 @@ void informixconnection::initDatabaseFeatures() {
 		"";
 
 	databasefeatures[FEATURE_DDL_INDEX_OPERATIONS]=
-		"";
+		"CREATE_INDEX,DROP_INDEX";
 
 	databasefeatures[FEATURE_DEFAULT_RESULT_SET_HOLDABILITY]=
 		"CLOSE_CURSORS_AT_COMMIT";
@@ -490,7 +490,7 @@ void informixconnection::initDatabaseFeatures() {
 		"";
 
 	databasefeatures[FEATURE_INSERT_OPERATIONS]=
-		"";
+		"INSERT_LITERALS,INSERT_SEARCHED,SELECT_INTO";
 
 	databasefeatures[FEATURE_ISOLATION_LEVELS]=
 		"READ_UNCOMMITTED,READ_COMMITTED,"

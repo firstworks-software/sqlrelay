@@ -212,6 +212,10 @@
 		the supported referential actions were verified against each
 		backend (sap ase, for instance, has no foreign-key referential
 		actions, so it is left empty)
+	mysql, db2, sap, freetds and informix now report ddl_index_operations
+		(CREATE_INDEX, DROP_INDEX) and insert_operations (INSERT_LITERALS,
+		INSERT_SEARCHED, SELECT_INTO), matched to native; freetds is pinned
+		per side (its native odbc driver underreports)
 
 2.1.1 - added tns_admin support
 	fixed sqlr-start ... -strace ...

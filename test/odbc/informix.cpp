@@ -3627,13 +3627,9 @@ int main(int argc, char **argv) {
 	erg=SQLGetInfo(dbc,SQL_DDL_INDEX,
 			(SQLPOINTER)&uintval,
 			(SQLSMALLINT)sizeof(uintval),&vallen);
-	if (issqlrelay) {
-		assertEqualDbc(dbc,(int)uintval,0);
-	} else {
-		assertEqualDbc(dbc,(int)uintval,
-			(int)(SQL_DI_CREATE_INDEX|
-				SQL_DI_DROP_INDEX));
-	}
+	assertEqualDbc(dbc,(int)uintval,
+		(int)(SQL_DI_CREATE_INDEX|
+			SQL_DI_DROP_INDEX));
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
 	#endif
@@ -3657,14 +3653,10 @@ int main(int argc, char **argv) {
 	erg=SQLGetInfo(dbc,SQL_INSERT_STATEMENT,
 			(SQLPOINTER)&uintval,
 			(SQLSMALLINT)sizeof(uintval),&vallen);
-	if (issqlrelay) {
-		assertEqualDbc(dbc,(int)uintval,0);
-	} else {
-		assertEqualDbc(dbc,(int)uintval,
-			(int)(SQL_IS_INSERT_LITERALS|
-				SQL_IS_INSERT_SEARCHED|
-				SQL_IS_SELECT_INTO));
-	}
+	assertEqualDbc(dbc,(int)uintval,
+		(int)(SQL_IS_INSERT_LITERALS|
+			SQL_IS_INSERT_SEARCHED|
+			SQL_IS_SELECT_INTO));
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
 	#endif

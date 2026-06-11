@@ -462,7 +462,7 @@ void mysqlconnection::initDatabaseFeatures() {
 		"CAUSES_COMMIT";
 
 	databasefeatures[FEATURE_DDL_INDEX_OPERATIONS]=
-		"";
+		"CREATE_INDEX,DROP_INDEX";
 
 	databasefeatures[FEATURE_DEFAULT_RESULT_SET_HOLDABILITY]=
 		"HOLD_CURSORS_OVER_COMMIT";
@@ -537,7 +537,7 @@ void mysqlconnection::initDatabaseFeatures() {
 		"";
 
 	databasefeatures[FEATURE_INSERT_OPERATIONS]=
-		"";
+		"INSERT_LITERALS,INSERT_SEARCHED,SELECT_INTO";
 
 	databasefeatures[FEATURE_ISOLATION_LEVELS]=
 		"READ_UNCOMMITTED,READ_COMMITTED,"
