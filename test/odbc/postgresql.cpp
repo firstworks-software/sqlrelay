@@ -2937,9 +2937,8 @@ int main(int argc, char **argv) {
 			(SQLPOINTER)&uintval,
 			(SQLSMALLINT)sizeof(uintval),&vallen);
 	if (issqlrelay) {
-		// sqlrelay reports PROCEDURES|EXPLICIT
-		assertEqualDbc(dbc,(int)uintval,
-			(int)(SQL_BRC_PROCEDURES|SQL_BRC_EXPLICIT));
+		// sqlrelay returns no batch row counts
+		assertEqualDbc(dbc,(int)uintval,0);
 	} else {
 		// postgresql odbc reports EXPLICIT
 		assertEqualDbc(dbc,(int)uintval,(int)SQL_BRC_EXPLICIT);
@@ -2956,9 +2955,9 @@ int main(int argc, char **argv) {
 			(SQLPOINTER)&uintval,
 			(SQLSMALLINT)sizeof(uintval),&vallen);
 	if (issqlrelay) {
-		assertEqualDbc(dbc,(int)uintval,
-			(int)(SQL_BS_SELECT_EXPLICIT|SQL_BS_ROW_COUNT_EXPLICIT|
-				SQL_BS_SELECT_PROC|SQL_BS_ROW_COUNT_PROC));
+		// postgresql supports batches, but sqlrelay can't pass them
+		// through
+		assertEqualDbc(dbc,(int)uintval,0);
 	} else {
 		// postgresql odbc reports SELECT_EXPLICIT|ROW_COUNT_EXPLICIT
 		assertEqualDbc(dbc,(int)uintval,

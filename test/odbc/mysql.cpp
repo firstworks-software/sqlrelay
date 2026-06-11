@@ -3305,8 +3305,12 @@ int main(int argc, char **argv) {
 	erg=SQLGetInfo(dbc,SQL_BATCH_ROW_COUNT,
 			(SQLPOINTER)&uintval,
 			(SQLSMALLINT)sizeof(uintval),&vallen);
-	// Both drivers report SQL_BRC_EXPLICIT.
-	assertEqualDbc(dbc,(int)uintval,(int)SQL_BRC_EXPLICIT);
+	if (issqlrelay) {
+		// sqlrelay returns no batch row counts
+		assertEqualDbc(dbc,(int)uintval,0);
+	} else {
+		assertEqualDbc(dbc,(int)uintval,(int)SQL_BRC_EXPLICIT);
+	}
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
 	#endif
@@ -3318,12 +3322,17 @@ int main(int argc, char **argv) {
 	erg=SQLGetInfo(dbc,SQL_BATCH_SUPPORT,
 			(SQLPOINTER)&uintval,
 			(SQLSMALLINT)sizeof(uintval),&vallen);
-	// Both drivers report all four SQL_BS_* flags.
-	assertEqualDbc(dbc,(int)uintval,
-		(int)(SQL_BS_SELECT_EXPLICIT|
-			SQL_BS_ROW_COUNT_EXPLICIT|
-			SQL_BS_SELECT_PROC|
-			SQL_BS_ROW_COUNT_PROC));
+	if (issqlrelay) {
+		// mysql supports batches, but sqlrelay can't pass them through
+		assertEqualDbc(dbc,(int)uintval,0);
+	} else {
+		// native reports all four SQL_BS_* flags
+		assertEqualDbc(dbc,(int)uintval,
+			(int)(SQL_BS_SELECT_EXPLICIT|
+				SQL_BS_ROW_COUNT_EXPLICIT|
+				SQL_BS_SELECT_PROC|
+				SQL_BS_ROW_COUNT_PROC));
+	}
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
 	#endif

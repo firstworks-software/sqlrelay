@@ -412,12 +412,14 @@ void mysqlconnection::initDatabaseFeatures() {
 	databasefeatures[FEATURE_AUTO_COMMIT_FAILURE_CLOSES_ALL_RESULT_SETS]=
 		"false";
 
+	// the native odbc driver reports batch support, but sqlrelay runs
+	// one statement per query and returns one result set, so it can't
 	databasefeatures[FEATURE_BATCH_OPERATIONS]=
-		"SELECT_EXPLICIT,ROW_COUNT_EXPLICIT,"
-			"SELECT_PROC,ROW_COUNT_PROC";
+		"";
 
+	// sqlrelay returns no batch row counts (see batch_operations above)
 	databasefeatures[FEATURE_BATCH_ROW_COUNTS]=
-		"EXPLICIT";
+		"";
 
 	databasefeatures[FEATURE_CATALOG_SEPARATOR]=
 		".";

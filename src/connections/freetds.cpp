@@ -489,9 +489,12 @@ void freetdsconnection::initDatabaseFeatures() {
 	databasefeatures[FEATURE_AUTO_COMMIT_FAILURE_CLOSES_ALL_RESULT_SETS]=
 		"false";
 
+	// the native odbc driver reports batch support, but sqlrelay runs
+	// one statement per query and returns one result set, so it can't
 	databasefeatures[FEATURE_BATCH_OPERATIONS]=
 		"";
 
+	// sqlrelay returns no batch row counts (see batch_operations above)
 	databasefeatures[FEATURE_BATCH_ROW_COUNTS]=
 		"";
 

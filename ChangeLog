@@ -227,6 +227,11 @@
 	time_date_add_intervals and time_date_diff_intervals now match the
 		native odbc drivers (postgresql, mysql and freetds no longer
 		over-report)
+	batch_operations and batch_row_counts now report empty for all
+		databases; sqlrelay executes one statement per query and
+		returns a single result set, so it can't pass through the
+		batches the backends support (mysql and postgresql no longer
+		over-report)
 
 2.1.1 - added tns_admin support
 	fixed sqlr-start ... -strace ...
