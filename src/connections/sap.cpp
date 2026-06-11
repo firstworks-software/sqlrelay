@@ -2603,6 +2603,7 @@ const char *sapconnection::mapIsolationLevel(
 }
 
 const char * const *sapconnection::getDatabaseFeatures() {
+	cont->capDatabaseFeatures(databasefeatures);
 	return databasefeatures;
 }
 

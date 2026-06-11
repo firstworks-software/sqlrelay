@@ -1674,6 +1674,7 @@ const char *sqliteconnection::mapIsolationLevel(
 }
 
 const char * const *sqliteconnection::getDatabaseFeatures() {
+	cont->capDatabaseFeatures(databasefeatures);
 	return databasefeatures;
 }
 

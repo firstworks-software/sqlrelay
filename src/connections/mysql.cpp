@@ -2654,6 +2654,7 @@ const char *mysqlconnection::mapIsolationLevel(
 }
 
 const char * const *mysqlconnection::getDatabaseFeatures() {
+	cont->capDatabaseFeatures(databasefeatures);
 	return databasefeatures;
 }
 

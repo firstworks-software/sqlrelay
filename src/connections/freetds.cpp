@@ -3744,6 +3744,7 @@ const char *freetdsconnection::mapIsolationLevel(
 }
 
 const char * const *freetdsconnection::getDatabaseFeatures() {
+	cont->capDatabaseFeatures(databasefeatures);
 	return databasefeatures;
 }
 

@@ -177,6 +177,20 @@
 		queries on the catalog parameter, returning an empty result when
 		the requested catalog is not the connection's current catalog,
 		matching the native odbc/jdbc drivers
+	the max-statements, max-statement-length, and max-columns-in-select
+		database features are now capped at the corresponding sql relay
+		configured limits (maxcursors, maxquerysize, maxcolumncount) for
+		all database connection modules, via a new
+		sqlrservercontroller::capDatabaseFeatures() helper
+	oracle now reports max_cursor_name_length per server version (30 prior
+		to 12.2, 128 for 12.2+) and includes DROP_COLUMN in its
+		alter_table_operations; db2 now includes DROP_COLUMN too
+	the odbc driver now derives SQL_CURSOR_SENSITIVITY from the backend's
+		result set types instead of always reporting SQL_INSENSITIVE
+	the odbc driver's SQL_ALTER_TABLE no longer infers constraint,
+		set-default and collation support from ADD_COLUMN/DROP_COLUMN;
+		those operations are reported only when their own
+		alter_table_operations tokens are present
 
 2.1.1 - added tns_admin support
 	fixed sqlr-start ... -strace ...

@@ -1081,7 +1081,12 @@ int main(int argc, char **argv) {
 	erg=SQLGetInfo(dbc,SQL_MAX_CONCURRENT_ACTIVITIES,
 			(SQLPOINTER)&usmallintval,
 			(SQLSMALLINT)sizeof(usmallintval),&vallen);
-	assertEqualDbc(dbc,(int)usmallintval,0);
+	if (issqlrelay) {
+		// capped at maxcursors by sql relay
+		assertEqualDbc(dbc,(int)usmallintval,5);
+	} else {
+		assertEqualDbc(dbc,(int)usmallintval,0);
+	}
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
 	#endif
@@ -1279,11 +1284,7 @@ int main(int argc, char **argv) {
 	erg=SQLGetInfo(dbc,SQL_MAX_CURSOR_NAME_LEN,
 			(SQLPOINTER)&usmallintval,
 			(SQLSMALLINT)sizeof(usmallintval),&vallen);
-	if (issqlrelay) {
-		assertEqualDbc(dbc,(int)usmallintval,0);
-	} else {
-		assertEqualDbc(dbc,(int)usmallintval,128);
-	}
+	assertEqualDbc(dbc,(int)usmallintval,128);
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
 
@@ -1421,21 +1422,12 @@ int main(int argc, char **argv) {
 			(SQLPOINTER)&uintval,(SQLSMALLINT)sizeof(uintval),
 			&vallen);
 	if (issqlrelay) {
-		// sqlrelay bundles these bits whenever the backend reports
-		// ADD_COLUMN, and omits DROP_COLUMN bits because the oracle
-		// backend module doesn't report it (oracle supports it since 8i)
+		// sqlrelay's odbc driver reports only the add/drop column flags
 		assertEqualDbc(dbc,(int)uintval,
 			(int)(SQL_AT_ADD_COLUMN|
 				SQL_AT_ADD_COLUMN_SINGLE|
 				SQL_AT_ADD_COLUMN_DEFAULT|
-				SQL_AT_ADD_COLUMN_COLLATION|
-				SQL_AT_SET_COLUMN_DEFAULT|
-				SQL_AT_ADD_TABLE_CONSTRAINT|
-				SQL_AT_CONSTRAINT_NAME_DEFINITION|
-				SQL_AT_CONSTRAINT_INITIALLY_DEFERRED|
-				SQL_AT_CONSTRAINT_INITIALLY_IMMEDIATE|
-				SQL_AT_CONSTRAINT_DEFERRABLE|
-				SQL_AT_CONSTRAINT_NON_DEFERRABLE));
+				SQL_AT_DROP_COLUMN));
 	} else {
 		// oracle odbc (and jdbc) wrongly omit drop-column features
 		// though oracle 8i+ supports them
@@ -1506,7 +1498,8 @@ int main(int argc, char **argv) {
 			(SQLPOINTER)&usmallintval,
 			(SQLSMALLINT)sizeof(usmallintval),&vallen);
 	if (issqlrelay) {
-		assertEqualDbc(dbc,(int)usmallintval,0);
+		// capped at maxcolumncount by sql relay
+		assertEqualDbc(dbc,(int)usmallintval,256);
 	} else {
 		// oracle odbc returns 1000; jdbc getMaxColumnsInSelect() returns 0
 		assertEqualDbc(dbc,(int)usmallintval,1000);
@@ -1622,7 +1615,12 @@ int main(int argc, char **argv) {
 	erg=SQLGetInfo(dbc,SQL_CURSOR_SENSITIVITY,
 			(SQLPOINTER)&uintval,(SQLSMALLINT)sizeof(uintval),
 			&vallen);
-	assertEqualDbc(dbc,(int)uintval,(int)SQL_INSENSITIVE);
+	if (issqlrelay) {
+		// mirrors the backend scroll sensitivity
+		assertEqualDbc(dbc,(int)uintval,(int)SQL_SENSITIVE);
+	} else {
+		assertEqualDbc(dbc,(int)uintval,(int)SQL_INSENSITIVE);
+	}
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
 	#endif

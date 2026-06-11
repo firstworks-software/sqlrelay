@@ -522,7 +522,7 @@ void oracleconnection::initDatabaseFeatures() {
 		"";
 
 	databasefeatures[FEATURE_ALTER_TABLE_OPERATIONS]=
-		"ADD_COLUMN";
+		"ADD_COLUMN,DROP_COLUMN";
 
 	databasefeatures[FEATURE_ANSI92_SQL_LEVELS]=
 		"ENTRY_LEVEL";
@@ -689,9 +689,9 @@ void oracleconnection::initDatabaseFeatures() {
 	databasefeatures[FEATURE_MAX_COLUMNS_IN_ORDER_BY]=
 		"0";
 
-	// FIXME: configurable, but limited to 1000 (oracle limit)
+	// capped at maxcolumncount by getDatabaseFeatures()
 	databasefeatures[FEATURE_MAX_COLUMNS_IN_SELECT]=
-		"0";
+		"1000";
 
 	databasefeatures[FEATURE_MAX_COLUMNS_IN_TABLE]=
 		"1000";
@@ -701,9 +701,9 @@ void oracleconnection::initDatabaseFeatures() {
 
 	databasefeatures[FEATURE_MAX_CONNECTIONS]=maxconnections;
 
-	// FIXME: 30 prior to oracle 12.2, 128 for oracle 12.2+
+	// set from the server version in logIn (30 prior to 12.2, else 128)
 	databasefeatures[FEATURE_MAX_CURSOR_NAME_LENGTH]=
-		"0";
+		"128";
 
 	databasefeatures[FEATURE_MAX_IDENTIFIER_LENGTH]=
 		"128";
@@ -723,7 +723,7 @@ void oracleconnection::initDatabaseFeatures() {
 	databasefeatures[FEATURE_MAX_STATEMENTS]=
 		"0";
 
-	// FIXME: configurable, but limited to 65535 (oracle limit)
+	// capped at maxquerysize by getDatabaseFeatures()
 	databasefeatures[FEATURE_MAX_STATEMENT_LENGTH]=
 		"65535";
 
@@ -1429,6 +1429,10 @@ bool oracleconnection::logIn(const char **error, const char **warning) {
 		if (major<9) {
 			requiresreprepare=true;
 		}
+
+		// identifier/cursor name length grew from 30 to 128 in 12.2
+		databasefeatures[FEATURE_MAX_CURSOR_NAME_LENGTH]=
+			(major>12 || (major==12 && minor>=2))?"128":"30";
 	}
 
 	// reprepare is required when using OCI 8 (not 8i or higher)
@@ -3493,6 +3497,7 @@ const char *oracleconnection::mapIsolationLevel(
 }
 
 const char * const * oracleconnection::getDatabaseFeatures() {
+	cont->capDatabaseFeatures(databasefeatures);
 	return databasefeatures;
 }
 

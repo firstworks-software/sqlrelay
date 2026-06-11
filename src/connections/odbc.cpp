@@ -1938,7 +1938,9 @@ const char * const *odbcconnection::getDatabaseFeatures() {
 	SQLGetInfo(dbc,SQL_MAX_COLUMNS_IN_SELECT,
 				&usmallintbuf,sizeof(usmallintbuf),&size);
 	databasefeatures[FEATURE_MAX_COLUMNS_IN_SELECT]=
-		charstring::parseNumber(usmallintbuf);
+		charstring::parseNumber(
+			cont->capDatabaseFeatureLimit(
+				usmallintbuf,cont->getMaxColumnCount()));
 
 	// SQL_MAX_COLUMNS_IN_TABLE -> usmallint
 	usmallintbuf=0;
@@ -1995,14 +1997,18 @@ const char * const *odbcconnection::getDatabaseFeatures() {
 	uintbuf=0;
 	SQLGetInfo(dbc,SQL_MAX_STATEMENT_LEN,&uintbuf,sizeof(uintbuf),&size);
 	databasefeatures[FEATURE_MAX_STATEMENT_LENGTH]=
-		charstring::parseNumber(uintbuf);
+		charstring::parseNumber(
+			cont->capDatabaseFeatureLimit(
+				uintbuf,cont->getConfig()->getMaxQuerySize()));
 
 	// SQL_ACTIVE_STATEMENTS -> usmallint
 	usmallintbuf=0;
 	SQLGetInfo(dbc,SQL_ACTIVE_STATEMENTS,
 				&usmallintbuf,sizeof(usmallintbuf),&size);
 	databasefeatures[FEATURE_MAX_STATEMENTS]=
-		charstring::parseNumber(usmallintbuf);
+		charstring::parseNumber(
+			cont->capDatabaseFeatureLimit(
+				usmallintbuf,cont->getConfig()->getMaxCursors()));
 
 	// SQL_MAX_TABLE_NAME_LEN -> usmallint
 	usmallintbuf=0;

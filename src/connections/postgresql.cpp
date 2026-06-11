@@ -2568,6 +2568,7 @@ const char *postgresqlconnection::mapIsolationLevel(
 }
 
 const char * const *postgresqlconnection::getDatabaseFeatures() {
+	cont->capDatabaseFeatures(databasefeatures);
 	return databasefeatures;
 }
 

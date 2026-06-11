@@ -564,7 +564,12 @@ class mysql extends sqlrtest {
 		System.out.println("  getMaxStatements");
 		intval=md.getMaxStatements();
 		System.out.println("    "+intval);
-		assertEquals(intval,0);
+		if (issqlrelay) {
+			// capped at maxcursors by sql relay
+			assertEquals(intval,5);
+		} else {
+			assertEquals(intval,0);
+		}
 		System.out.println();
 
 		// getMaxTableNameLength

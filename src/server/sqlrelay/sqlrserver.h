@@ -508,6 +508,20 @@ class SQLRSERVER_DLLSPEC sqlrservercontroller : public sqlrserverbase {
 		 *  contain. */
 		uint32_t	getMaxColumnCount();
 
+		/** Returns the smaller of the database-reported limit
+		 *  "dblimit" and the SQL Relay configured limit
+		 *  "configlimit", treating a value of 0 on either side as
+		 *  "no limit". */
+		uint64_t	capDatabaseFeatureLimit(uint64_t dblimit,
+							uint64_t configlimit);
+
+		/** Caps the max-statements, max-statement-length, and
+		 *  max-columns-in-select entries of "databasefeatures" at the
+		 *  corresponding SQL Relay configured limits.  The capped
+		 *  strings are owned by the controller.  Intended to be called
+		 *  from a connection module's getDatabaseFeatures(). */
+		void	capDatabaseFeatures(const char **databasefeatures);
+
 		/** Sets the maximum number of bytes that a non-LOB field can
 		 *  contain to "maxfieldsize".  Additional bytes will be
 		 *  truncated. */

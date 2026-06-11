@@ -2261,6 +2261,7 @@ const char *firebirdconnection::mapIsolationLevel(
 }
 
 const char * const *firebirdconnection::getDatabaseFeatures() {
+	cont->capDatabaseFeatures(databasefeatures);
 	return databasefeatures;
 }
 

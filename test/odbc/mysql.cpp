@@ -1108,7 +1108,12 @@ int main(int argc, char **argv) {
 	erg=SQLGetInfo(dbc,SQL_MAX_CONCURRENT_ACTIVITIES,
 			(SQLPOINTER)&usmallintval,
 			(SQLSMALLINT)sizeof(usmallintval),&vallen);
-	assertEqualDbc(dbc,(int)usmallintval,0);
+	if (issqlrelay) {
+		// capped at maxcursors by sql relay
+		assertEqualDbc(dbc,(int)usmallintval,5);
+	} else {
+		assertEqualDbc(dbc,(int)usmallintval,0);
+	}
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
 	#endif
@@ -1449,7 +1454,12 @@ int main(int argc, char **argv) {
 			(SQLPOINTER)&uintval,(SQLSMALLINT)sizeof(uintval),
 			&vallen);
 	if (issqlrelay) {
-		assertEqualDbc(dbc,(int)uintval,1048547);
+		// sqlrelay's odbc driver reports only the add/drop column flags
+		assertEqualDbc(dbc,(int)uintval,
+			(int)(SQL_AT_ADD_COLUMN|
+				SQL_AT_ADD_COLUMN_SINGLE|
+				SQL_AT_ADD_COLUMN_DEFAULT|
+				SQL_AT_DROP_COLUMN));
 	} else {
 		// MariaDB reports SQL_AT_ADD_COLUMN|SQL_AT_DROP_COLUMN.
 		assertEqualDbc(dbc,(int)uintval,
@@ -1642,10 +1652,20 @@ int main(int argc, char **argv) {
 			(SQLPOINTER)&uintval,(SQLSMALLINT)sizeof(uintval),
 			&vallen);
 	if (issqlrelay) {
-		assertEqualDbc(dbc,(int)uintval,123);
+		assertEqualDbc(dbc,(int)uintval,
+			(int)(SQL_OJ_LEFT|
+				SQL_OJ_RIGHT|
+				SQL_OJ_NESTED|
+				SQL_OJ_NOT_ORDERED|
+				SQL_OJ_INNER|
+				SQL_OJ_ALL_COMPARISON_OPS));
 	} else {
 		// MariaDB reports 43.
-		assertEqualDbc(dbc,(int)uintval,43);
+		assertEqualDbc(dbc,(int)uintval,
+			(int)(SQL_OJ_LEFT|
+				SQL_OJ_RIGHT|
+				SQL_OJ_NESTED|
+				SQL_OJ_INNER));
 	}
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
@@ -2086,10 +2106,57 @@ int main(int argc, char **argv) {
 			(SQLPOINTER)&uintval,
 			(SQLSMALLINT)sizeof(uintval),&vallen);
 	if (issqlrelay) {
-		assertEqualDbc(dbc,(int)uintval,16773119);
+		assertEqualDbc(dbc,(int)uintval,
+			(int)(SQL_FN_NUM_ABS|
+				SQL_FN_NUM_ACOS|
+				SQL_FN_NUM_ASIN|
+				SQL_FN_NUM_ATAN|
+				SQL_FN_NUM_ATAN2|
+				SQL_FN_NUM_CEILING|
+				SQL_FN_NUM_COS|
+				SQL_FN_NUM_COT|
+				SQL_FN_NUM_EXP|
+				SQL_FN_NUM_FLOOR|
+				SQL_FN_NUM_LOG|
+				SQL_FN_NUM_MOD|
+				SQL_FN_NUM_SIN|
+				SQL_FN_NUM_SQRT|
+				SQL_FN_NUM_TAN|
+				SQL_FN_NUM_PI|
+				SQL_FN_NUM_RAND|
+				SQL_FN_NUM_DEGREES|
+				SQL_FN_NUM_LOG10|
+				SQL_FN_NUM_POWER|
+				SQL_FN_NUM_RADIANS|
+				SQL_FN_NUM_ROUND|
+				SQL_FN_NUM_TRUNCATE));
 	} else {
 		// MariaDB reports 16777215 (all SQL_FN_NUM_* flags).
-		assertEqualDbc(dbc,(int)uintval,16777215);
+		assertEqualDbc(dbc,(int)uintval,
+			(int)(SQL_FN_NUM_ABS|
+				SQL_FN_NUM_ACOS|
+				SQL_FN_NUM_ASIN|
+				SQL_FN_NUM_ATAN|
+				SQL_FN_NUM_ATAN2|
+				SQL_FN_NUM_CEILING|
+				SQL_FN_NUM_COS|
+				SQL_FN_NUM_COT|
+				SQL_FN_NUM_EXP|
+				SQL_FN_NUM_FLOOR|
+				SQL_FN_NUM_LOG|
+				SQL_FN_NUM_MOD|
+				SQL_FN_NUM_SIGN|
+				SQL_FN_NUM_SIN|
+				SQL_FN_NUM_SQRT|
+				SQL_FN_NUM_TAN|
+				SQL_FN_NUM_PI|
+				SQL_FN_NUM_RAND|
+				SQL_FN_NUM_DEGREES|
+				SQL_FN_NUM_LOG10|
+				SQL_FN_NUM_POWER|
+				SQL_FN_NUM_RADIANS|
+				SQL_FN_NUM_ROUND|
+				SQL_FN_NUM_TRUNCATE));
 	}
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
@@ -2101,10 +2168,54 @@ int main(int argc, char **argv) {
 			(SQLPOINTER)&uintval,
 			(SQLSMALLINT)sizeof(uintval),&vallen);
 	if (issqlrelay) {
-		assertEqualDbc(dbc,(int)uintval,16678911);
+		assertEqualDbc(dbc,(int)uintval,
+			(int)(SQL_FN_STR_CONCAT|
+				SQL_FN_STR_INSERT|
+				SQL_FN_STR_LEFT|
+				SQL_FN_STR_LTRIM|
+				SQL_FN_STR_LENGTH|
+				SQL_FN_STR_LOCATE|
+				SQL_FN_STR_LCASE|
+				SQL_FN_STR_REPEAT|
+				SQL_FN_STR_REPLACE|
+				SQL_FN_STR_RIGHT|
+				SQL_FN_STR_RTRIM|
+				SQL_FN_STR_SUBSTRING|
+				SQL_FN_STR_UCASE|
+				SQL_FN_STR_ASCII|
+				SQL_FN_STR_CHAR|
+				SQL_FN_STR_SOUNDEX|
+				SQL_FN_STR_SPACE|
+				SQL_FN_STR_BIT_LENGTH|
+				SQL_FN_STR_CHAR_LENGTH|
+				SQL_FN_STR_CHARACTER_LENGTH|
+				SQL_FN_STR_OCTET_LENGTH|
+				SQL_FN_STR_POSITION));
 	} else {
 		// MariaDB reports 14647295.
-		assertEqualDbc(dbc,(int)uintval,14647295);
+		assertEqualDbc(dbc,(int)uintval,
+			(int)(SQL_FN_STR_CONCAT|
+				SQL_FN_STR_INSERT|
+				SQL_FN_STR_LEFT|
+				SQL_FN_STR_LTRIM|
+				SQL_FN_STR_LENGTH|
+				SQL_FN_STR_LOCATE|
+				SQL_FN_STR_LCASE|
+				SQL_FN_STR_REPEAT|
+				SQL_FN_STR_REPLACE|
+				SQL_FN_STR_RIGHT|
+				SQL_FN_STR_RTRIM|
+				SQL_FN_STR_SUBSTRING|
+				SQL_FN_STR_UCASE|
+				SQL_FN_STR_ASCII|
+				SQL_FN_STR_CHAR|
+				SQL_FN_STR_LOCATE_2|
+				SQL_FN_STR_SOUNDEX|
+				SQL_FN_STR_SPACE|
+				SQL_FN_STR_BIT_LENGTH|
+				SQL_FN_STR_CHAR_LENGTH|
+				SQL_FN_STR_OCTET_LENGTH|
+				SQL_FN_STR_POSITION));
 	}
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
@@ -2135,10 +2246,49 @@ int main(int argc, char **argv) {
 			(SQLPOINTER)&uintval,
 			(SQLSMALLINT)sizeof(uintval),&vallen);
 	if (issqlrelay) {
-		assertEqualDbc(dbc,(int)uintval,1023999);
+		assertEqualDbc(dbc,(int)uintval,
+			(int)(SQL_FN_TD_NOW|
+				SQL_FN_TD_CURDATE|
+				SQL_FN_TD_DAYOFMONTH|
+				SQL_FN_TD_DAYOFWEEK|
+				SQL_FN_TD_DAYOFYEAR|
+				SQL_FN_TD_MONTH|
+				SQL_FN_TD_QUARTER|
+				SQL_FN_TD_WEEK|
+				SQL_FN_TD_YEAR|
+				SQL_FN_TD_CURTIME|
+				SQL_FN_TD_HOUR|
+				SQL_FN_TD_MINUTE|
+				SQL_FN_TD_SECOND|
+				SQL_FN_TD_DAYNAME|
+				SQL_FN_TD_MONTHNAME|
+				SQL_FN_TD_CURRENT_DATE|
+				SQL_FN_TD_CURRENT_TIME|
+				SQL_FN_TD_CURRENT_TIMESTAMP));
 	} else {
 		// MariaDB reports 2097151 (all SQL_FN_TD_* flags).
-		assertEqualDbc(dbc,(int)uintval,2097151);
+		assertEqualDbc(dbc,(int)uintval,
+			(int)(SQL_FN_TD_NOW|
+				SQL_FN_TD_CURDATE|
+				SQL_FN_TD_DAYOFMONTH|
+				SQL_FN_TD_DAYOFWEEK|
+				SQL_FN_TD_DAYOFYEAR|
+				SQL_FN_TD_MONTH|
+				SQL_FN_TD_QUARTER|
+				SQL_FN_TD_WEEK|
+				SQL_FN_TD_YEAR|
+				SQL_FN_TD_CURTIME|
+				SQL_FN_TD_HOUR|
+				SQL_FN_TD_MINUTE|
+				SQL_FN_TD_SECOND|
+				SQL_FN_TD_TIMESTAMPADD|
+				SQL_FN_TD_TIMESTAMPDIFF|
+				SQL_FN_TD_DAYNAME|
+				SQL_FN_TD_MONTHNAME|
+				SQL_FN_TD_CURRENT_DATE|
+				SQL_FN_TD_CURRENT_TIME|
+				SQL_FN_TD_CURRENT_TIMESTAMP|
+				SQL_FN_TD_EXTRACT));
 	}
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
@@ -2154,7 +2304,26 @@ int main(int argc, char **argv) {
 		assertEqualDbc(dbc,(int)uintval,0);
 	} else {
 		// MariaDB reports 0xE3F3FF.
-		assertEqualDbc(dbc,(int)uintval,0xE3F3FF);
+		assertEqualDbc(dbc,(int)uintval,
+			(int)(SQL_CVT_CHAR|
+				SQL_CVT_NUMERIC|
+				SQL_CVT_DECIMAL|
+				SQL_CVT_INTEGER|
+				SQL_CVT_SMALLINT|
+				SQL_CVT_FLOAT|
+				SQL_CVT_REAL|
+				SQL_CVT_DOUBLE|
+				SQL_CVT_VARCHAR|
+				SQL_CVT_LONGVARCHAR|
+				SQL_CVT_BIT|
+				SQL_CVT_TINYINT|
+				SQL_CVT_BIGINT|
+				SQL_CVT_DATE|
+				SQL_CVT_TIME|
+				SQL_CVT_TIMESTAMP|
+				SQL_CVT_WCHAR|
+				SQL_CVT_WLONGVARCHAR|
+				SQL_CVT_WVARCHAR));
 	}
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
@@ -2181,7 +2350,26 @@ int main(int argc, char **argv) {
 		assertEqualDbc(dbc,(int)uintval,0);
 	} else {
 		// MariaDB reports 0xE3F3FF.
-		assertEqualDbc(dbc,(int)uintval,0xE3F3FF);
+		assertEqualDbc(dbc,(int)uintval,
+			(int)(SQL_CVT_CHAR|
+				SQL_CVT_NUMERIC|
+				SQL_CVT_DECIMAL|
+				SQL_CVT_INTEGER|
+				SQL_CVT_SMALLINT|
+				SQL_CVT_FLOAT|
+				SQL_CVT_REAL|
+				SQL_CVT_DOUBLE|
+				SQL_CVT_VARCHAR|
+				SQL_CVT_LONGVARCHAR|
+				SQL_CVT_BIT|
+				SQL_CVT_TINYINT|
+				SQL_CVT_BIGINT|
+				SQL_CVT_DATE|
+				SQL_CVT_TIME|
+				SQL_CVT_TIMESTAMP|
+				SQL_CVT_WCHAR|
+				SQL_CVT_WLONGVARCHAR|
+				SQL_CVT_WVARCHAR));
 	}
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
@@ -2197,7 +2385,26 @@ int main(int argc, char **argv) {
 		assertEqualDbc(dbc,(int)uintval,0);
 	} else {
 		// MariaDB reports 0xE3F3FF.
-		assertEqualDbc(dbc,(int)uintval,0xE3F3FF);
+		assertEqualDbc(dbc,(int)uintval,
+			(int)(SQL_CVT_CHAR|
+				SQL_CVT_NUMERIC|
+				SQL_CVT_DECIMAL|
+				SQL_CVT_INTEGER|
+				SQL_CVT_SMALLINT|
+				SQL_CVT_FLOAT|
+				SQL_CVT_REAL|
+				SQL_CVT_DOUBLE|
+				SQL_CVT_VARCHAR|
+				SQL_CVT_LONGVARCHAR|
+				SQL_CVT_BIT|
+				SQL_CVT_TINYINT|
+				SQL_CVT_BIGINT|
+				SQL_CVT_DATE|
+				SQL_CVT_TIME|
+				SQL_CVT_TIMESTAMP|
+				SQL_CVT_WCHAR|
+				SQL_CVT_WLONGVARCHAR|
+				SQL_CVT_WVARCHAR));
 	}
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
@@ -2213,7 +2420,26 @@ int main(int argc, char **argv) {
 		assertEqualDbc(dbc,(int)uintval,0);
 	} else {
 		// MariaDB reports 0xE3F3FF.
-		assertEqualDbc(dbc,(int)uintval,0xE3F3FF);
+		assertEqualDbc(dbc,(int)uintval,
+			(int)(SQL_CVT_CHAR|
+				SQL_CVT_NUMERIC|
+				SQL_CVT_DECIMAL|
+				SQL_CVT_INTEGER|
+				SQL_CVT_SMALLINT|
+				SQL_CVT_FLOAT|
+				SQL_CVT_REAL|
+				SQL_CVT_DOUBLE|
+				SQL_CVT_VARCHAR|
+				SQL_CVT_LONGVARCHAR|
+				SQL_CVT_BIT|
+				SQL_CVT_TINYINT|
+				SQL_CVT_BIGINT|
+				SQL_CVT_DATE|
+				SQL_CVT_TIME|
+				SQL_CVT_TIMESTAMP|
+				SQL_CVT_WCHAR|
+				SQL_CVT_WLONGVARCHAR|
+				SQL_CVT_WVARCHAR));
 	}
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
@@ -2229,7 +2455,26 @@ int main(int argc, char **argv) {
 		assertEqualDbc(dbc,(int)uintval,0);
 	} else {
 		// MariaDB reports 0xE3F3FF.
-		assertEqualDbc(dbc,(int)uintval,0xE3F3FF);
+		assertEqualDbc(dbc,(int)uintval,
+			(int)(SQL_CVT_CHAR|
+				SQL_CVT_NUMERIC|
+				SQL_CVT_DECIMAL|
+				SQL_CVT_INTEGER|
+				SQL_CVT_SMALLINT|
+				SQL_CVT_FLOAT|
+				SQL_CVT_REAL|
+				SQL_CVT_DOUBLE|
+				SQL_CVT_VARCHAR|
+				SQL_CVT_LONGVARCHAR|
+				SQL_CVT_BIT|
+				SQL_CVT_TINYINT|
+				SQL_CVT_BIGINT|
+				SQL_CVT_DATE|
+				SQL_CVT_TIME|
+				SQL_CVT_TIMESTAMP|
+				SQL_CVT_WCHAR|
+				SQL_CVT_WLONGVARCHAR|
+				SQL_CVT_WVARCHAR));
 	}
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
@@ -2245,7 +2490,26 @@ int main(int argc, char **argv) {
 		assertEqualDbc(dbc,(int)uintval,0);
 	} else {
 		// MariaDB reports 0xE3F3FF.
-		assertEqualDbc(dbc,(int)uintval,0xE3F3FF);
+		assertEqualDbc(dbc,(int)uintval,
+			(int)(SQL_CVT_CHAR|
+				SQL_CVT_NUMERIC|
+				SQL_CVT_DECIMAL|
+				SQL_CVT_INTEGER|
+				SQL_CVT_SMALLINT|
+				SQL_CVT_FLOAT|
+				SQL_CVT_REAL|
+				SQL_CVT_DOUBLE|
+				SQL_CVT_VARCHAR|
+				SQL_CVT_LONGVARCHAR|
+				SQL_CVT_BIT|
+				SQL_CVT_TINYINT|
+				SQL_CVT_BIGINT|
+				SQL_CVT_DATE|
+				SQL_CVT_TIME|
+				SQL_CVT_TIMESTAMP|
+				SQL_CVT_WCHAR|
+				SQL_CVT_WLONGVARCHAR|
+				SQL_CVT_WVARCHAR));
 	}
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
@@ -2261,7 +2525,26 @@ int main(int argc, char **argv) {
 		assertEqualDbc(dbc,(int)uintval,0);
 	} else {
 		// MariaDB reports 0xE3F3FF.
-		assertEqualDbc(dbc,(int)uintval,0xE3F3FF);
+		assertEqualDbc(dbc,(int)uintval,
+			(int)(SQL_CVT_CHAR|
+				SQL_CVT_NUMERIC|
+				SQL_CVT_DECIMAL|
+				SQL_CVT_INTEGER|
+				SQL_CVT_SMALLINT|
+				SQL_CVT_FLOAT|
+				SQL_CVT_REAL|
+				SQL_CVT_DOUBLE|
+				SQL_CVT_VARCHAR|
+				SQL_CVT_LONGVARCHAR|
+				SQL_CVT_BIT|
+				SQL_CVT_TINYINT|
+				SQL_CVT_BIGINT|
+				SQL_CVT_DATE|
+				SQL_CVT_TIME|
+				SQL_CVT_TIMESTAMP|
+				SQL_CVT_WCHAR|
+				SQL_CVT_WLONGVARCHAR|
+				SQL_CVT_WVARCHAR));
 	}
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
@@ -2277,7 +2560,26 @@ int main(int argc, char **argv) {
 		assertEqualDbc(dbc,(int)uintval,0);
 	} else {
 		// MariaDB reports 0xE3F3FF.
-		assertEqualDbc(dbc,(int)uintval,0xE3F3FF);
+		assertEqualDbc(dbc,(int)uintval,
+			(int)(SQL_CVT_CHAR|
+				SQL_CVT_NUMERIC|
+				SQL_CVT_DECIMAL|
+				SQL_CVT_INTEGER|
+				SQL_CVT_SMALLINT|
+				SQL_CVT_FLOAT|
+				SQL_CVT_REAL|
+				SQL_CVT_DOUBLE|
+				SQL_CVT_VARCHAR|
+				SQL_CVT_LONGVARCHAR|
+				SQL_CVT_BIT|
+				SQL_CVT_TINYINT|
+				SQL_CVT_BIGINT|
+				SQL_CVT_DATE|
+				SQL_CVT_TIME|
+				SQL_CVT_TIMESTAMP|
+				SQL_CVT_WCHAR|
+				SQL_CVT_WLONGVARCHAR|
+				SQL_CVT_WVARCHAR));
 	}
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
@@ -2293,7 +2595,26 @@ int main(int argc, char **argv) {
 		assertEqualDbc(dbc,(int)uintval,0);
 	} else {
 		// MariaDB reports 0xE3F3FF.
-		assertEqualDbc(dbc,(int)uintval,0xE3F3FF);
+		assertEqualDbc(dbc,(int)uintval,
+			(int)(SQL_CVT_CHAR|
+				SQL_CVT_NUMERIC|
+				SQL_CVT_DECIMAL|
+				SQL_CVT_INTEGER|
+				SQL_CVT_SMALLINT|
+				SQL_CVT_FLOAT|
+				SQL_CVT_REAL|
+				SQL_CVT_DOUBLE|
+				SQL_CVT_VARCHAR|
+				SQL_CVT_LONGVARCHAR|
+				SQL_CVT_BIT|
+				SQL_CVT_TINYINT|
+				SQL_CVT_BIGINT|
+				SQL_CVT_DATE|
+				SQL_CVT_TIME|
+				SQL_CVT_TIMESTAMP|
+				SQL_CVT_WCHAR|
+				SQL_CVT_WLONGVARCHAR|
+				SQL_CVT_WVARCHAR));
 	}
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
@@ -2309,7 +2630,26 @@ int main(int argc, char **argv) {
 		assertEqualDbc(dbc,(int)uintval,0);
 	} else {
 		// MariaDB reports 0xE3F3FF.
-		assertEqualDbc(dbc,(int)uintval,0xE3F3FF);
+		assertEqualDbc(dbc,(int)uintval,
+			(int)(SQL_CVT_CHAR|
+				SQL_CVT_NUMERIC|
+				SQL_CVT_DECIMAL|
+				SQL_CVT_INTEGER|
+				SQL_CVT_SMALLINT|
+				SQL_CVT_FLOAT|
+				SQL_CVT_REAL|
+				SQL_CVT_DOUBLE|
+				SQL_CVT_VARCHAR|
+				SQL_CVT_LONGVARCHAR|
+				SQL_CVT_BIT|
+				SQL_CVT_TINYINT|
+				SQL_CVT_BIGINT|
+				SQL_CVT_DATE|
+				SQL_CVT_TIME|
+				SQL_CVT_TIMESTAMP|
+				SQL_CVT_WCHAR|
+				SQL_CVT_WLONGVARCHAR|
+				SQL_CVT_WVARCHAR));
 	}
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
@@ -2325,7 +2665,26 @@ int main(int argc, char **argv) {
 		assertEqualDbc(dbc,(int)uintval,0);
 	} else {
 		// MariaDB reports 0xE3F3FF.
-		assertEqualDbc(dbc,(int)uintval,0xE3F3FF);
+		assertEqualDbc(dbc,(int)uintval,
+			(int)(SQL_CVT_CHAR|
+				SQL_CVT_NUMERIC|
+				SQL_CVT_DECIMAL|
+				SQL_CVT_INTEGER|
+				SQL_CVT_SMALLINT|
+				SQL_CVT_FLOAT|
+				SQL_CVT_REAL|
+				SQL_CVT_DOUBLE|
+				SQL_CVT_VARCHAR|
+				SQL_CVT_LONGVARCHAR|
+				SQL_CVT_BIT|
+				SQL_CVT_TINYINT|
+				SQL_CVT_BIGINT|
+				SQL_CVT_DATE|
+				SQL_CVT_TIME|
+				SQL_CVT_TIMESTAMP|
+				SQL_CVT_WCHAR|
+				SQL_CVT_WLONGVARCHAR|
+				SQL_CVT_WVARCHAR));
 	}
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
@@ -2341,7 +2700,26 @@ int main(int argc, char **argv) {
 		assertEqualDbc(dbc,(int)uintval,0);
 	} else {
 		// MariaDB reports 0xE3F3FF.
-		assertEqualDbc(dbc,(int)uintval,0xE3F3FF);
+		assertEqualDbc(dbc,(int)uintval,
+			(int)(SQL_CVT_CHAR|
+				SQL_CVT_NUMERIC|
+				SQL_CVT_DECIMAL|
+				SQL_CVT_INTEGER|
+				SQL_CVT_SMALLINT|
+				SQL_CVT_FLOAT|
+				SQL_CVT_REAL|
+				SQL_CVT_DOUBLE|
+				SQL_CVT_VARCHAR|
+				SQL_CVT_LONGVARCHAR|
+				SQL_CVT_BIT|
+				SQL_CVT_TINYINT|
+				SQL_CVT_BIGINT|
+				SQL_CVT_DATE|
+				SQL_CVT_TIME|
+				SQL_CVT_TIMESTAMP|
+				SQL_CVT_WCHAR|
+				SQL_CVT_WLONGVARCHAR|
+				SQL_CVT_WVARCHAR));
 	}
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
@@ -2357,7 +2735,26 @@ int main(int argc, char **argv) {
 		assertEqualDbc(dbc,(int)uintval,0);
 	} else {
 		// MariaDB reports 0xE3F3FF.
-		assertEqualDbc(dbc,(int)uintval,0xE3F3FF);
+		assertEqualDbc(dbc,(int)uintval,
+			(int)(SQL_CVT_CHAR|
+				SQL_CVT_NUMERIC|
+				SQL_CVT_DECIMAL|
+				SQL_CVT_INTEGER|
+				SQL_CVT_SMALLINT|
+				SQL_CVT_FLOAT|
+				SQL_CVT_REAL|
+				SQL_CVT_DOUBLE|
+				SQL_CVT_VARCHAR|
+				SQL_CVT_LONGVARCHAR|
+				SQL_CVT_BIT|
+				SQL_CVT_TINYINT|
+				SQL_CVT_BIGINT|
+				SQL_CVT_DATE|
+				SQL_CVT_TIME|
+				SQL_CVT_TIMESTAMP|
+				SQL_CVT_WCHAR|
+				SQL_CVT_WLONGVARCHAR|
+				SQL_CVT_WVARCHAR));
 	}
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
@@ -2373,7 +2770,26 @@ int main(int argc, char **argv) {
 		assertEqualDbc(dbc,(int)uintval,0);
 	} else {
 		// MariaDB reports 0xE3F3FF.
-		assertEqualDbc(dbc,(int)uintval,0xE3F3FF);
+		assertEqualDbc(dbc,(int)uintval,
+			(int)(SQL_CVT_CHAR|
+				SQL_CVT_NUMERIC|
+				SQL_CVT_DECIMAL|
+				SQL_CVT_INTEGER|
+				SQL_CVT_SMALLINT|
+				SQL_CVT_FLOAT|
+				SQL_CVT_REAL|
+				SQL_CVT_DOUBLE|
+				SQL_CVT_VARCHAR|
+				SQL_CVT_LONGVARCHAR|
+				SQL_CVT_BIT|
+				SQL_CVT_TINYINT|
+				SQL_CVT_BIGINT|
+				SQL_CVT_DATE|
+				SQL_CVT_TIME|
+				SQL_CVT_TIMESTAMP|
+				SQL_CVT_WCHAR|
+				SQL_CVT_WLONGVARCHAR|
+				SQL_CVT_WVARCHAR));
 	}
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
@@ -2389,7 +2805,26 @@ int main(int argc, char **argv) {
 		assertEqualDbc(dbc,(int)uintval,0);
 	} else {
 		// MariaDB reports 0xE3F3FF.
-		assertEqualDbc(dbc,(int)uintval,0xE3F3FF);
+		assertEqualDbc(dbc,(int)uintval,
+			(int)(SQL_CVT_CHAR|
+				SQL_CVT_NUMERIC|
+				SQL_CVT_DECIMAL|
+				SQL_CVT_INTEGER|
+				SQL_CVT_SMALLINT|
+				SQL_CVT_FLOAT|
+				SQL_CVT_REAL|
+				SQL_CVT_DOUBLE|
+				SQL_CVT_VARCHAR|
+				SQL_CVT_LONGVARCHAR|
+				SQL_CVT_BIT|
+				SQL_CVT_TINYINT|
+				SQL_CVT_BIGINT|
+				SQL_CVT_DATE|
+				SQL_CVT_TIME|
+				SQL_CVT_TIMESTAMP|
+				SQL_CVT_WCHAR|
+				SQL_CVT_WLONGVARCHAR|
+				SQL_CVT_WVARCHAR));
 	}
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
@@ -2416,7 +2851,26 @@ int main(int argc, char **argv) {
 		assertEqualDbc(dbc,(int)uintval,0);
 	} else {
 		// MariaDB reports 0xE3F3FF.
-		assertEqualDbc(dbc,(int)uintval,0xE3F3FF);
+		assertEqualDbc(dbc,(int)uintval,
+			(int)(SQL_CVT_CHAR|
+				SQL_CVT_NUMERIC|
+				SQL_CVT_DECIMAL|
+				SQL_CVT_INTEGER|
+				SQL_CVT_SMALLINT|
+				SQL_CVT_FLOAT|
+				SQL_CVT_REAL|
+				SQL_CVT_DOUBLE|
+				SQL_CVT_VARCHAR|
+				SQL_CVT_LONGVARCHAR|
+				SQL_CVT_BIT|
+				SQL_CVT_TINYINT|
+				SQL_CVT_BIGINT|
+				SQL_CVT_DATE|
+				SQL_CVT_TIME|
+				SQL_CVT_TIMESTAMP|
+				SQL_CVT_WCHAR|
+				SQL_CVT_WLONGVARCHAR|
+				SQL_CVT_WVARCHAR));
 	}
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
@@ -2881,7 +3335,26 @@ int main(int argc, char **argv) {
 		assertEqualDbc(dbc,(int)uintval,0);
 	} else {
 		// MariaDB reports 0xE3F3FF.
-		assertEqualDbc(dbc,(int)uintval,0xE3F3FF);
+		assertEqualDbc(dbc,(int)uintval,
+			(int)(SQL_CVT_CHAR|
+				SQL_CVT_NUMERIC|
+				SQL_CVT_DECIMAL|
+				SQL_CVT_INTEGER|
+				SQL_CVT_SMALLINT|
+				SQL_CVT_FLOAT|
+				SQL_CVT_REAL|
+				SQL_CVT_DOUBLE|
+				SQL_CVT_VARCHAR|
+				SQL_CVT_LONGVARCHAR|
+				SQL_CVT_BIT|
+				SQL_CVT_TINYINT|
+				SQL_CVT_BIGINT|
+				SQL_CVT_DATE|
+				SQL_CVT_TIME|
+				SQL_CVT_TIMESTAMP|
+				SQL_CVT_WCHAR|
+				SQL_CVT_WLONGVARCHAR|
+				SQL_CVT_WVARCHAR));
 	}
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
@@ -2925,7 +3398,26 @@ int main(int argc, char **argv) {
 		assertEqualDbc(dbc,(int)uintval,0);
 	} else {
 		// MariaDB reports 0xE3F3FF.
-		assertEqualDbc(dbc,(int)uintval,0xE3F3FF);
+		assertEqualDbc(dbc,(int)uintval,
+			(int)(SQL_CVT_CHAR|
+				SQL_CVT_NUMERIC|
+				SQL_CVT_DECIMAL|
+				SQL_CVT_INTEGER|
+				SQL_CVT_SMALLINT|
+				SQL_CVT_FLOAT|
+				SQL_CVT_REAL|
+				SQL_CVT_DOUBLE|
+				SQL_CVT_VARCHAR|
+				SQL_CVT_LONGVARCHAR|
+				SQL_CVT_BIT|
+				SQL_CVT_TINYINT|
+				SQL_CVT_BIGINT|
+				SQL_CVT_DATE|
+				SQL_CVT_TIME|
+				SQL_CVT_TIMESTAMP|
+				SQL_CVT_WCHAR|
+				SQL_CVT_WLONGVARCHAR|
+				SQL_CVT_WVARCHAR));
 	}
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
@@ -2943,7 +3435,26 @@ int main(int argc, char **argv) {
 		assertEqualDbc(dbc,(int)uintval,0);
 	} else {
 		// MariaDB reports 0xE3F3FF.
-		assertEqualDbc(dbc,(int)uintval,0xE3F3FF);
+		assertEqualDbc(dbc,(int)uintval,
+			(int)(SQL_CVT_CHAR|
+				SQL_CVT_NUMERIC|
+				SQL_CVT_DECIMAL|
+				SQL_CVT_INTEGER|
+				SQL_CVT_SMALLINT|
+				SQL_CVT_FLOAT|
+				SQL_CVT_REAL|
+				SQL_CVT_DOUBLE|
+				SQL_CVT_VARCHAR|
+				SQL_CVT_LONGVARCHAR|
+				SQL_CVT_BIT|
+				SQL_CVT_TINYINT|
+				SQL_CVT_BIGINT|
+				SQL_CVT_DATE|
+				SQL_CVT_TIME|
+				SQL_CVT_TIMESTAMP|
+				SQL_CVT_WCHAR|
+				SQL_CVT_WLONGVARCHAR|
+				SQL_CVT_WVARCHAR));
 	}
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
@@ -3232,7 +3743,18 @@ int main(int argc, char **argv) {
 		assertEqualDbc(dbc,(int)uintval,0);
 	} else {
 		// MariaDB reports 97863.
-		assertEqualDbc(dbc,(int)uintval,97863);
+		assertEqualDbc(dbc,(int)uintval,
+			(int)(SQL_CA1_NEXT|
+				SQL_CA1_ABSOLUTE|
+				SQL_CA1_RELATIVE|
+				SQL_CA1_LOCK_NO_CHANGE|
+				SQL_CA1_POS_POSITION|
+				SQL_CA1_POS_UPDATE|
+				SQL_CA1_POS_DELETE|
+				SQL_CA1_POS_REFRESH|
+				SQL_CA1_POSITIONED_UPDATE|
+				SQL_CA1_POSITIONED_DELETE|
+				SQL_CA1_BULK_ADD));
 	}
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
@@ -3249,7 +3771,12 @@ int main(int argc, char **argv) {
 		assertEqualDbc(dbc,(int)uintval,0);
 	} else {
 		// MariaDB reports 6016.
-		assertEqualDbc(dbc,(int)uintval,6016);
+		assertEqualDbc(dbc,(int)uintval,
+			(int)(SQL_CA2_MAX_ROWS_SELECT|
+				SQL_CA2_MAX_ROWS_INSERT|
+				SQL_CA2_MAX_ROWS_DELETE|
+				SQL_CA2_MAX_ROWS_UPDATE|
+				SQL_CA2_CRC_EXACT));
 	}
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
@@ -3280,7 +3807,17 @@ int main(int argc, char **argv) {
 		assertEqualDbc(dbc,(int)uintval,0);
 	} else {
 		// MariaDB reports 4429930.
-		assertEqualDbc(dbc,(int)uintval,4429930);
+		assertEqualDbc(dbc,(int)uintval,
+			(int)(SQL_ISV_CHARACTER_SETS|
+				SQL_ISV_COLLATIONS|
+				SQL_ISV_COLUMN_PRIVILEGES|
+				SQL_ISV_COLUMNS|
+				SQL_ISV_KEY_COLUMN_USAGE|
+				SQL_ISV_REFERENTIAL_CONSTRAINTS|
+				SQL_ISV_TABLE_CONSTRAINTS|
+				SQL_ISV_TABLE_PRIVILEGES|
+				SQL_ISV_TABLES|
+				SQL_ISV_VIEWS));
 	}
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
@@ -3430,10 +3967,21 @@ int main(int argc, char **argv) {
 			(SQLPOINTER)&uintval,
 			(SQLSMALLINT)sizeof(uintval),&vallen);
 	if (issqlrelay) {
-		assertEqualDbc(dbc,(int)uintval,55);
+		assertEqualDbc(dbc,(int)uintval,
+			(int)(SQL_SNVF_BIT_LENGTH|
+				SQL_SNVF_CHAR_LENGTH|
+				SQL_SNVF_CHARACTER_LENGTH|
+				SQL_SNVF_OCTET_LENGTH|
+				SQL_SNVF_POSITION));
 	} else {
 		// MariaDB reports 63 (all SQL_SNVF_* flags).
-		assertEqualDbc(dbc,(int)uintval,63);
+		assertEqualDbc(dbc,(int)uintval,
+			(int)(SQL_SNVF_BIT_LENGTH|
+				SQL_SNVF_CHAR_LENGTH|
+				SQL_SNVF_CHARACTER_LENGTH|
+				SQL_SNVF_EXTRACT|
+				SQL_SNVF_OCTET_LENGTH|
+				SQL_SNVF_POSITION));
 	}
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
@@ -3518,7 +4066,15 @@ int main(int argc, char **argv) {
 				SQL_SSF_SUBSTRING|SQL_SSF_TRIM_BOTH));
 	} else {
 		// MariaDB reports 255 (all SQL_SSF_* flags).
-		assertEqualDbc(dbc,(int)uintval,255);
+		assertEqualDbc(dbc,(int)uintval,
+			(int)(SQL_SSF_CONVERT|
+				SQL_SSF_LOWER|
+				SQL_SSF_UPPER|
+				SQL_SSF_SUBSTRING|
+				SQL_SSF_TRANSLATE|
+				SQL_SSF_TRIM_BOTH|
+				SQL_SSF_TRIM_LEADING|
+				SQL_SSF_TRIM_TRAILING));
 	}
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");

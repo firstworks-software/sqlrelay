@@ -1092,7 +1092,12 @@ int main(int argc, char **argv) {
 	erg=SQLGetInfo(dbc,SQL_MAX_CONCURRENT_ACTIVITIES,
 			(SQLPOINTER)&usmallintval,
 			(SQLSMALLINT)sizeof(usmallintval),&vallen);
-	assertEqualDbc(dbc,(int)usmallintval,0);
+	if (issqlrelay) {
+		// capped at maxcursors by sql relay
+		assertEqualDbc(dbc,(int)usmallintval,5);
+	} else {
+		assertEqualDbc(dbc,(int)usmallintval,0);
+	}
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
 	#endif
@@ -1442,27 +1447,12 @@ int main(int argc, char **argv) {
 			(SQLPOINTER)&uintval,(SQLSMALLINT)sizeof(uintval),
 			&vallen);
 	if (issqlrelay) {
-		// sqlrelay bundles these bits whenever the backend reports
-		// ADD_COLUMN/DROP_COLUMN, and the sqlite backend module
-		// reports both
+		// sqlrelay's odbc driver reports only the add/drop column flags
 		assertEqualDbc(dbc,(int)uintval,
 			(int)(SQL_AT_ADD_COLUMN|
 				SQL_AT_ADD_COLUMN_SINGLE|
 				SQL_AT_ADD_COLUMN_DEFAULT|
-				SQL_AT_ADD_COLUMN_COLLATION|
-				SQL_AT_SET_COLUMN_DEFAULT|
-				SQL_AT_ADD_TABLE_CONSTRAINT|
-				SQL_AT_CONSTRAINT_NAME_DEFINITION|
-				SQL_AT_CONSTRAINT_INITIALLY_DEFERRED|
-				SQL_AT_CONSTRAINT_INITIALLY_IMMEDIATE|
-				SQL_AT_CONSTRAINT_DEFERRABLE|
-				SQL_AT_CONSTRAINT_NON_DEFERRABLE|
-				SQL_AT_DROP_COLUMN|
-				SQL_AT_DROP_COLUMN_DEFAULT|
-				SQL_AT_DROP_COLUMN_CASCADE|
-				SQL_AT_DROP_COLUMN_RESTRICT|
-				SQL_AT_DROP_TABLE_CONSTRAINT_CASCADE|
-				SQL_AT_DROP_TABLE_CONSTRAINT_RESTRICT));
+				SQL_AT_DROP_COLUMN));
 	} else {
 		// the native driver reports no alter-table support
 		assertEqualDbc(dbc,(int)uintval,0);
@@ -1567,7 +1557,8 @@ int main(int argc, char **argv) {
 			(SQLPOINTER)&uintval,(SQLSMALLINT)sizeof(uintval),
 			&vallen);
 	if (issqlrelay) {
-		assertEqualDbc(dbc,(int)uintval,0);
+		// capped at maxquerysize by sql relay
+		assertEqualDbc(dbc,(int)uintval,65536);
 	} else {
 		assertEqualDbc(dbc,(int)uintval,16384);
 	}
@@ -1636,11 +1627,7 @@ int main(int argc, char **argv) {
 	erg=SQLGetInfo(dbc,SQL_CURSOR_SENSITIVITY,
 			(SQLPOINTER)&uintval,(SQLSMALLINT)sizeof(uintval),
 			&vallen);
-	if (issqlrelay) {
-		assertEqualDbc(dbc,(int)uintval,(int)SQL_INSENSITIVE);
-	} else {
-		assertEqualDbc(dbc,(int)uintval,(int)SQL_UNSPECIFIED);
-	}
+	assertEqualDbc(dbc,(int)uintval,(int)SQL_UNSPECIFIED);
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
 	#endif

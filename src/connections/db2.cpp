@@ -376,7 +376,7 @@ void db2connection::initDatabaseFeatures() {
 		"";
 
 	databasefeatures[FEATURE_ALTER_TABLE_OPERATIONS]=
-		"ADD_COLUMN";
+		"ADD_COLUMN,DROP_COLUMN";
 
 	databasefeatures[FEATURE_ANSI92_SQL_LEVELS]=
 		"ENTRY_LEVEL";
@@ -2317,6 +2317,7 @@ const char *db2connection::mapIsolationLevel(
 }
 
 const char * const *db2connection::getDatabaseFeatures() {
+	cont->capDatabaseFeatures(databasefeatures);
 	return databasefeatures;
 }
 

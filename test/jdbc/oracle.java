@@ -533,7 +533,12 @@ class oracle extends sqlrtest {
 		System.out.println("  getMaxColumnsInSelect");
 		intval=md.getMaxColumnsInSelect();
 		System.out.println("    "+intval);
-		assertEquals(intval,0);
+		if (issqlrelay) {
+			// capped at maxcolumncount by sql relay
+			assertEquals(intval,256);
+		} else {
+			assertEquals(intval,0);
+		}
 		System.out.println();
 
 		// getMaxColumnsInTable
@@ -560,7 +565,12 @@ class oracle extends sqlrtest {
 		System.out.println("  getMaxCursorNameLength");
 		intval=md.getMaxCursorNameLength();
 		System.out.println("    "+intval);
-		assertEquals(intval,0);
+		if (issqlrelay) {
+			// 128 for oracle 12.2+
+			assertEquals(intval,128);
+		} else {
+			assertEquals(intval,0);
+		}
 		System.out.println();
 
 		// getMaxIndexLength
@@ -602,7 +612,12 @@ class oracle extends sqlrtest {
 		System.out.println("  getMaxStatements");
 		intval=md.getMaxStatements();
 		System.out.println("    "+intval);
-		assertEquals(intval,0);
+		if (issqlrelay) {
+			// capped at maxcursors by sql relay
+			assertEquals(intval,5);
+		} else {
+			assertEquals(intval,0);
+		}
 		System.out.println();
 
 		// getMaxTableNameLength
@@ -1022,7 +1037,12 @@ class oracle extends sqlrtest {
 		System.out.println("  supportsAlterTableWithDropColumn");
 		boolval=md.supportsAlterTableWithDropColumn();
 		System.out.println("    "+boolval);
-		assertFalse(boolval);
+		if (issqlrelay) {
+			// oracle supports drop column; the native driver reports otherwise
+			assertTrue(boolval);
+		} else {
+			assertFalse(boolval);
+		}
 		System.out.println();
 
 		// supportsANSI92EntryLevelSQL

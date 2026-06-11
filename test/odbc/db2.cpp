@@ -1149,7 +1149,12 @@ int main(int argc, char **argv) {
 	erg=SQLGetInfo(dbc,SQL_MAX_CONCURRENT_ACTIVITIES,
 			(SQLPOINTER)&usmallintval,
 			(SQLSMALLINT)sizeof(usmallintval),&vallen);
-	assertEqualDbc(dbc,(int)usmallintval,0);
+	if (issqlrelay) {
+		// capped at maxcursors by sql relay
+		assertEqualDbc(dbc,(int)usmallintval,5);
+	} else {
+		assertEqualDbc(dbc,(int)usmallintval,0);
+	}
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
 	#endif
@@ -1174,7 +1179,8 @@ int main(int argc, char **argv) {
 		// sqlrelay only supports SQL_FD_FETCH_NEXT
 		assertEqualDbc(dbc,(int)uintval,(int)SQL_FD_FETCH_NEXT);
 	} else {
-		// native db2 reports 255
+		// native db2 reports 255 - the standard fetch directions plus
+		// the removed SQL_FD_FETCH_RESUME (0x40), which has no current macro
 		assertEqualDbc(dbc,(int)uintval,255);
 	}
 	assertSuccessDbc(dbc,erg);
@@ -1481,7 +1487,10 @@ int main(int argc, char **argv) {
 					SQL_GD_BOUND|SQL_GD_BLOCK));
 	} else {
 		// native db2 reports 7
-		assertEqualDbc(dbc,(int)uintval,7);
+		assertEqualDbc(dbc,(int)uintval,
+			(int)(SQL_GD_ANY_COLUMN|
+				SQL_GD_ANY_ORDER|
+				SQL_GD_BLOCK));
 	}
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
@@ -1508,25 +1517,23 @@ int main(int argc, char **argv) {
 			(SQLPOINTER)&uintval,(SQLSMALLINT)sizeof(uintval),
 			&vallen);
 	if (issqlrelay) {
-		// sqlrelay bundles these bits whenever the backend reports
-		// ADD_COLUMN, though most are orthogonal to ADD COLUMN; it
-		// omits the DROP_COLUMN bits, which the db2 backend doesn't
-		// report
+		// sqlrelay's odbc driver reports only the add/drop column flags
 		assertEqualDbc(dbc,(int)uintval,
 			(int)(SQL_AT_ADD_COLUMN|
 				SQL_AT_ADD_COLUMN_SINGLE|
 				SQL_AT_ADD_COLUMN_DEFAULT|
-				SQL_AT_ADD_COLUMN_COLLATION|
-				SQL_AT_SET_COLUMN_DEFAULT|
-				SQL_AT_ADD_TABLE_CONSTRAINT|
-				SQL_AT_CONSTRAINT_NAME_DEFINITION|
-				SQL_AT_CONSTRAINT_INITIALLY_DEFERRED|
-				SQL_AT_CONSTRAINT_INITIALLY_IMMEDIATE|
-				SQL_AT_CONSTRAINT_DEFERRABLE|
-				SQL_AT_CONSTRAINT_NON_DEFERRABLE));
+				SQL_AT_DROP_COLUMN));
 	} else {
 		// native db2 reports 61545
-		assertEqualDbc(dbc,(int)uintval,61545);
+		assertEqualDbc(dbc,(int)uintval,
+			(int)(SQL_AT_ADD_COLUMN|
+				SQL_AT_ADD_CONSTRAINT|
+				SQL_AT_ADD_COLUMN_SINGLE|
+				SQL_AT_ADD_COLUMN_DEFAULT|
+				SQL_AT_ADD_TABLE_CONSTRAINT|
+				SQL_AT_DROP_TABLE_CONSTRAINT_CASCADE|
+				SQL_AT_DROP_TABLE_CONSTRAINT_RESTRICT|
+				SQL_AT_CONSTRAINT_NAME_DEFINITION));
 	}
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
@@ -1601,7 +1608,12 @@ int main(int argc, char **argv) {
 	erg=SQLGetInfo(dbc,SQL_MAX_COLUMNS_IN_SELECT,
 			(SQLPOINTER)&usmallintval,
 			(SQLSMALLINT)sizeof(usmallintval),&vallen);
-	assertEqualDbc(dbc,(int)usmallintval,1012);
+	if (issqlrelay) {
+		// capped at maxcolumncount by sql relay
+		assertEqualDbc(dbc,(int)usmallintval,256);
+	} else {
+		assertEqualDbc(dbc,(int)usmallintval,1012);
+	}
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
 
@@ -1641,7 +1653,12 @@ int main(int argc, char **argv) {
 	erg=SQLGetInfo(dbc,SQL_MAX_STATEMENT_LEN,
 			(SQLPOINTER)&uintval,(SQLSMALLINT)sizeof(uintval),
 			&vallen);
-	assertEqualDbc(dbc,(int)uintval,2097152);
+	if (issqlrelay) {
+		// capped at maxquerysize by sql relay
+		assertEqualDbc(dbc,(int)uintval,65536);
+	} else {
+		assertEqualDbc(dbc,(int)uintval,2097152);
+	}
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
 
@@ -1684,7 +1701,14 @@ int main(int argc, char **argv) {
 				SQL_OJ_INNER|SQL_OJ_ALL_COMPARISON_OPS));
 	} else {
 		// native db2 reports 127
-		assertEqualDbc(dbc,(int)uintval,127);
+		assertEqualDbc(dbc,(int)uintval,
+			(int)(SQL_OJ_LEFT|
+				SQL_OJ_RIGHT|
+				SQL_OJ_FULL|
+				SQL_OJ_NESTED|
+				SQL_OJ_NOT_ORDERED|
+				SQL_OJ_INNER|
+				SQL_OJ_ALL_COMPARISON_OPS));
 	}
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
@@ -1710,7 +1734,8 @@ int main(int argc, char **argv) {
 			(SQLPOINTER)&uintval,(SQLSMALLINT)sizeof(uintval),
 			&vallen);
 	if (issqlrelay) {
-		assertEqualDbc(dbc,(int)uintval,(int)SQL_INSENSITIVE);
+		// mirrors the backend scroll sensitivity
+		assertEqualDbc(dbc,(int)uintval,(int)SQL_SENSITIVE);
 	} else {
 		// native db2 reports 0
 		assertEqualDbc(dbc,(int)uintval,0);
@@ -2187,7 +2212,9 @@ int main(int argc, char **argv) {
 		assertEqualDbc(dbc,(int)uintval,(int)SQL_FN_CVT_CAST);
 	} else {
 		// native db2 reports 3
-		assertEqualDbc(dbc,(int)uintval,3);
+		assertEqualDbc(dbc,(int)uintval,
+			(int)(SQL_FN_CVT_CONVERT|
+				SQL_FN_CVT_CAST));
 	}
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
@@ -2215,7 +2242,31 @@ int main(int argc, char **argv) {
 				SQL_FN_NUM_TRUNCATE));
 	} else {
 		// native db2 reports 16777215
-		assertEqualDbc(dbc,(int)uintval,16777215);
+		assertEqualDbc(dbc,(int)uintval,
+			(int)(SQL_FN_NUM_ABS|
+				SQL_FN_NUM_ACOS|
+				SQL_FN_NUM_ASIN|
+				SQL_FN_NUM_ATAN|
+				SQL_FN_NUM_ATAN2|
+				SQL_FN_NUM_CEILING|
+				SQL_FN_NUM_COS|
+				SQL_FN_NUM_COT|
+				SQL_FN_NUM_EXP|
+				SQL_FN_NUM_FLOOR|
+				SQL_FN_NUM_LOG|
+				SQL_FN_NUM_MOD|
+				SQL_FN_NUM_SIGN|
+				SQL_FN_NUM_SIN|
+				SQL_FN_NUM_SQRT|
+				SQL_FN_NUM_TAN|
+				SQL_FN_NUM_PI|
+				SQL_FN_NUM_RAND|
+				SQL_FN_NUM_DEGREES|
+				SQL_FN_NUM_LOG10|
+				SQL_FN_NUM_POWER|
+				SQL_FN_NUM_RADIANS|
+				SQL_FN_NUM_ROUND|
+				SQL_FN_NUM_TRUNCATE));
 	}
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
@@ -2240,7 +2291,26 @@ int main(int argc, char **argv) {
 				SQL_FN_STR_SUBSTRING|SQL_FN_STR_UCASE));
 	} else {
 		// native db2 reports 524287
-		assertEqualDbc(dbc,(int)uintval,524287);
+		assertEqualDbc(dbc,(int)uintval,
+			(int)(SQL_FN_STR_CONCAT|
+				SQL_FN_STR_INSERT|
+				SQL_FN_STR_LEFT|
+				SQL_FN_STR_LTRIM|
+				SQL_FN_STR_LENGTH|
+				SQL_FN_STR_LOCATE|
+				SQL_FN_STR_LCASE|
+				SQL_FN_STR_REPEAT|
+				SQL_FN_STR_REPLACE|
+				SQL_FN_STR_RIGHT|
+				SQL_FN_STR_RTRIM|
+				SQL_FN_STR_SUBSTRING|
+				SQL_FN_STR_UCASE|
+				SQL_FN_STR_ASCII|
+				SQL_FN_STR_CHAR|
+				SQL_FN_STR_DIFFERENCE|
+				SQL_FN_STR_LOCATE_2|
+				SQL_FN_STR_SOUNDEX|
+				SQL_FN_STR_SPACE));
 	}
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
@@ -2256,7 +2326,10 @@ int main(int argc, char **argv) {
 		assertEqualDbc(dbc,(int)uintval,0);
 	} else {
 		// native db2 reports 7
-		assertEqualDbc(dbc,(int)uintval,7);
+		assertEqualDbc(dbc,(int)uintval,
+			(int)(SQL_FN_SYS_USERNAME|
+				SQL_FN_SYS_DBNAME|
+				SQL_FN_SYS_IFNULL));
 	}
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
@@ -2280,7 +2353,24 @@ int main(int argc, char **argv) {
 				SQL_FN_TD_MONTHNAME));
 	} else {
 		// native db2 reports 131071
-		assertEqualDbc(dbc,(int)uintval,131071);
+		assertEqualDbc(dbc,(int)uintval,
+			(int)(SQL_FN_TD_NOW|
+				SQL_FN_TD_CURDATE|
+				SQL_FN_TD_DAYOFMONTH|
+				SQL_FN_TD_DAYOFWEEK|
+				SQL_FN_TD_DAYOFYEAR|
+				SQL_FN_TD_MONTH|
+				SQL_FN_TD_QUARTER|
+				SQL_FN_TD_WEEK|
+				SQL_FN_TD_YEAR|
+				SQL_FN_TD_CURTIME|
+				SQL_FN_TD_HOUR|
+				SQL_FN_TD_MINUTE|
+				SQL_FN_TD_SECOND|
+				SQL_FN_TD_TIMESTAMPADD|
+				SQL_FN_TD_TIMESTAMPDIFF|
+				SQL_FN_TD_DAYNAME|
+				SQL_FN_TD_MONTHNAME));
 	}
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
@@ -2329,7 +2419,9 @@ int main(int argc, char **argv) {
 		assertEqualDbc(dbc,(int)uintval,0);
 	} else {
 		// native db2 reports 129
-		assertEqualDbc(dbc,(int)uintval,129);
+		assertEqualDbc(dbc,(int)uintval,
+			(int)(SQL_CVT_CHAR|
+				SQL_CVT_DOUBLE));
 	}
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
@@ -2345,7 +2437,7 @@ int main(int argc, char **argv) {
 		assertEqualDbc(dbc,(int)uintval,0);
 	} else {
 		// native db2 reports 1
-		assertEqualDbc(dbc,(int)uintval,1);
+		assertEqualDbc(dbc,(int)uintval,(int)SQL_CVT_CHAR);
 	}
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
@@ -2361,7 +2453,9 @@ int main(int argc, char **argv) {
 		assertEqualDbc(dbc,(int)uintval,0);
 	} else {
 		// native db2 reports 129
-		assertEqualDbc(dbc,(int)uintval,129);
+		assertEqualDbc(dbc,(int)uintval,
+			(int)(SQL_CVT_CHAR|
+				SQL_CVT_DOUBLE));
 	}
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
@@ -2377,7 +2471,9 @@ int main(int argc, char **argv) {
 		assertEqualDbc(dbc,(int)uintval,0);
 	} else {
 		// native db2 reports 129
-		assertEqualDbc(dbc,(int)uintval,129);
+		assertEqualDbc(dbc,(int)uintval,
+			(int)(SQL_CVT_CHAR|
+				SQL_CVT_DOUBLE));
 	}
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
@@ -2393,7 +2489,9 @@ int main(int argc, char **argv) {
 		assertEqualDbc(dbc,(int)uintval,0);
 	} else {
 		// native db2 reports 129
-		assertEqualDbc(dbc,(int)uintval,129);
+		assertEqualDbc(dbc,(int)uintval,
+			(int)(SQL_CVT_CHAR|
+				SQL_CVT_DOUBLE));
 	}
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
@@ -2409,7 +2507,9 @@ int main(int argc, char **argv) {
 		assertEqualDbc(dbc,(int)uintval,0);
 	} else {
 		// native db2 reports 129
-		assertEqualDbc(dbc,(int)uintval,129);
+		assertEqualDbc(dbc,(int)uintval,
+			(int)(SQL_CVT_CHAR|
+				SQL_CVT_DOUBLE));
 	}
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
@@ -2436,7 +2536,9 @@ int main(int argc, char **argv) {
 		assertEqualDbc(dbc,(int)uintval,0);
 	} else {
 		// native db2 reports 129
-		assertEqualDbc(dbc,(int)uintval,129);
+		assertEqualDbc(dbc,(int)uintval,
+			(int)(SQL_CVT_CHAR|
+				SQL_CVT_DOUBLE));
 	}
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
@@ -2463,7 +2565,9 @@ int main(int argc, char **argv) {
 		assertEqualDbc(dbc,(int)uintval,0);
 	} else {
 		// native db2 reports 129
-		assertEqualDbc(dbc,(int)uintval,129);
+		assertEqualDbc(dbc,(int)uintval,
+			(int)(SQL_CVT_CHAR|
+				SQL_CVT_DOUBLE));
 	}
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
@@ -2479,7 +2583,7 @@ int main(int argc, char **argv) {
 		assertEqualDbc(dbc,(int)uintval,0);
 	} else {
 		// native db2 reports 1
-		assertEqualDbc(dbc,(int)uintval,1);
+		assertEqualDbc(dbc,(int)uintval,(int)SQL_CVT_CHAR);
 	}
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
@@ -2495,7 +2599,7 @@ int main(int argc, char **argv) {
 		assertEqualDbc(dbc,(int)uintval,0);
 	} else {
 		// native db2 reports 1
-		assertEqualDbc(dbc,(int)uintval,1);
+		assertEqualDbc(dbc,(int)uintval,(int)SQL_CVT_CHAR);
 	}
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
@@ -2533,7 +2637,7 @@ int main(int argc, char **argv) {
 		assertEqualDbc(dbc,(int)uintval,0);
 	} else {
 		// native db2 reports 128
-		assertEqualDbc(dbc,(int)uintval,128);
+		assertEqualDbc(dbc,(int)uintval,(int)SQL_CVT_DOUBLE);
 	}
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
@@ -2662,7 +2766,11 @@ int main(int argc, char **argv) {
 		assertEqualDbc(dbc,(int)uintval,0);
 	} else {
 		// native db2 reports 90
-		assertEqualDbc(dbc,(int)uintval,90);
+		assertEqualDbc(dbc,(int)uintval,
+			(int)(SQL_BP_DELETE|
+				SQL_BP_TRANSACTION|
+				SQL_BP_UPDATE|
+				SQL_BP_SCROLL));
 	}
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
@@ -2833,7 +2941,16 @@ int main(int argc, char **argv) {
 		assertEqualDbc(dbc,(int)uintval,0);
 	} else {
 		// native db2 reports 511
-		assertEqualDbc(dbc,(int)uintval,511);
+		assertEqualDbc(dbc,(int)uintval,
+			(int)(SQL_FN_TSI_FRAC_SECOND|
+				SQL_FN_TSI_SECOND|
+				SQL_FN_TSI_MINUTE|
+				SQL_FN_TSI_HOUR|
+				SQL_FN_TSI_DAY|
+				SQL_FN_TSI_WEEK|
+				SQL_FN_TSI_MONTH|
+				SQL_FN_TSI_QUARTER|
+				SQL_FN_TSI_YEAR));
 	}
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
@@ -2848,7 +2965,16 @@ int main(int argc, char **argv) {
 		assertEqualDbc(dbc,(int)uintval,0);
 	} else {
 		// native db2 reports 511
-		assertEqualDbc(dbc,(int)uintval,511);
+		assertEqualDbc(dbc,(int)uintval,
+			(int)(SQL_FN_TSI_FRAC_SECOND|
+				SQL_FN_TSI_SECOND|
+				SQL_FN_TSI_MINUTE|
+				SQL_FN_TSI_HOUR|
+				SQL_FN_TSI_DAY|
+				SQL_FN_TSI_WEEK|
+				SQL_FN_TSI_MONTH|
+				SQL_FN_TSI_QUARTER|
+				SQL_FN_TSI_YEAR));
 	}
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
@@ -2993,7 +3119,7 @@ int main(int argc, char **argv) {
 		assertEqualDbc(dbc,(int)uintval,0);
 	} else {
 		// native db2 reports 4
-		assertEqualDbc(dbc,(int)uintval,4);
+		assertEqualDbc(dbc,(int)uintval,(int)SQL_BRC_ROLLED_UP);
 	}
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
@@ -3010,7 +3136,10 @@ int main(int argc, char **argv) {
 		assertEqualDbc(dbc,(int)uintval,0);
 	} else {
 		// native db2 reports 7
-		assertEqualDbc(dbc,(int)uintval,7);
+		assertEqualDbc(dbc,(int)uintval,
+			(int)(SQL_BS_SELECT_EXPLICIT|
+				SQL_BS_ROW_COUNT_EXPLICIT|
+				SQL_BS_SELECT_PROC));
 	}
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
@@ -3141,7 +3270,9 @@ int main(int argc, char **argv) {
 		assertEqualDbc(dbc,(int)uintval,0);
 	} else {
 		// native db2 reports 3
-		assertEqualDbc(dbc,(int)uintval,3);
+		assertEqualDbc(dbc,(int)uintval,
+			(int)(SQL_CS_CREATE_SCHEMA|
+				SQL_CS_AUTHORIZATION));
 	}
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
@@ -3159,7 +3290,11 @@ int main(int argc, char **argv) {
 		assertEqualDbc(dbc,(int)uintval,0);
 	} else {
 		// native db2 reports 9729
-		assertEqualDbc(dbc,(int)uintval,9729);
+		assertEqualDbc(dbc,(int)uintval,
+			(int)(SQL_CT_CREATE_TABLE|
+				SQL_CT_COLUMN_CONSTRAINT|
+				SQL_CT_COLUMN_DEFAULT|
+				SQL_CT_CONSTRAINT_NAME_DEFINITION));
 	}
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
@@ -3189,7 +3324,11 @@ int main(int argc, char **argv) {
 		assertEqualDbc(dbc,(int)uintval,0);
 	} else {
 		// native db2 reports 15
-		assertEqualDbc(dbc,(int)uintval,15);
+		assertEqualDbc(dbc,(int)uintval,
+			(int)(SQL_CV_CREATE_VIEW|
+				SQL_CV_CHECK_OPTION|
+				SQL_CV_CASCADED|
+				SQL_CV_LOCAL));
 	}
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
@@ -3269,7 +3408,9 @@ int main(int argc, char **argv) {
 		assertEqualDbc(dbc,(int)uintval,0);
 	} else {
 		// native db2 reports 3
-		assertEqualDbc(dbc,(int)uintval,3);
+		assertEqualDbc(dbc,(int)uintval,
+			(int)(SQL_DS_DROP_SCHEMA|
+				SQL_DS_RESTRICT));
 	}
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
@@ -3377,7 +3518,11 @@ int main(int argc, char **argv) {
 		assertEqualDbc(dbc,(int)uintval,0);
 	} else {
 		// native db2 reports 2179
-		assertEqualDbc(dbc,(int)uintval,2179);
+		assertEqualDbc(dbc,(int)uintval,
+			(int)(SQL_CA2_READ_ONLY_CONCURRENCY|
+				SQL_CA2_LOCK_CONCURRENCY|
+				SQL_CA2_MAX_ROWS_SELECT|
+				SQL_CA2_MAX_ROWS_CATALOG));
 	}
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
@@ -3395,7 +3540,9 @@ int main(int argc, char **argv) {
 		assertEqualDbc(dbc,(int)uintval,0);
 	} else {
 		// native db2 reports 3
-		assertEqualDbc(dbc,(int)uintval,3);
+		assertEqualDbc(dbc,(int)uintval,
+			(int)(SQL_IK_ASC|
+				SQL_IK_DESC));
 	}
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
@@ -3424,7 +3571,20 @@ int main(int argc, char **argv) {
 		assertEqualDbc(dbc,(int)uintval,0);
 	} else {
 		// native db2 reports 990799
-		assertEqualDbc(dbc,(int)uintval,990799);
+		assertEqualDbc(dbc,(int)uintval,
+			(int)(SQL_CA1_NEXT|
+				SQL_CA1_ABSOLUTE|
+				SQL_CA1_RELATIVE|
+				SQL_CA1_BOOKMARK|
+				SQL_CA1_LOCK_NO_CHANGE|
+				SQL_CA1_POS_POSITION|
+				SQL_CA1_POS_UPDATE|
+				SQL_CA1_POS_DELETE|
+				SQL_CA1_POS_REFRESH|
+				SQL_CA1_BULK_ADD|
+				SQL_CA1_BULK_UPDATE_BY_BOOKMARK|
+				SQL_CA1_BULK_DELETE_BY_BOOKMARK|
+				SQL_CA1_BULK_FETCH_BY_BOOKMARK));
 	}
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
@@ -3441,7 +3601,11 @@ int main(int argc, char **argv) {
 		assertEqualDbc(dbc,(int)uintval,0);
 	} else {
 		// native db2 reports 16395
-		assertEqualDbc(dbc,(int)uintval,16395);
+		assertEqualDbc(dbc,(int)uintval,
+			(int)(SQL_CA2_READ_ONLY_CONCURRENCY|
+				SQL_CA2_LOCK_CONCURRENCY|
+				SQL_CA2_OPT_VALUES_CONCURRENCY|
+				SQL_CA2_SIMULATE_NON_UNIQUE));
 	}
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
@@ -3523,7 +3687,10 @@ int main(int argc, char **argv) {
 		assertEqualDbc(dbc,(int)uintval,0);
 	} else {
 		// native db2 reports 7
-		assertEqualDbc(dbc,(int)uintval,7);
+		assertEqualDbc(dbc,(int)uintval,
+			(int)(SQL_SDF_CURRENT_DATE|
+				SQL_SDF_CURRENT_TIME|
+				SQL_SDF_CURRENT_TIMESTAMP));
 	}
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
@@ -3541,7 +3708,10 @@ int main(int argc, char **argv) {
 		assertEqualDbc(dbc,(int)uintval,0);
 	} else {
 		// native db2 reports 11
-		assertEqualDbc(dbc,(int)uintval,11);
+		assertEqualDbc(dbc,(int)uintval,
+			(int)(SQL_SFKD_CASCADE|
+				SQL_SFKD_NO_ACTION|
+				SQL_SFKD_SET_NULL));
 	}
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
@@ -3559,7 +3729,7 @@ int main(int argc, char **argv) {
 		assertEqualDbc(dbc,(int)uintval,0);
 	} else {
 		// native db2 reports 2
-		assertEqualDbc(dbc,(int)uintval,2);
+		assertEqualDbc(dbc,(int)uintval,(int)SQL_SFKU_NO_ACTION);
 	}
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
@@ -3577,7 +3747,15 @@ int main(int argc, char **argv) {
 		assertEqualDbc(dbc,(int)uintval,0);
 	} else {
 		// native db2 reports 8048
-		assertEqualDbc(dbc,(int)uintval,8048);
+		assertEqualDbc(dbc,(int)uintval,
+			(int)(SQL_SG_WITH_GRANT_OPTION|
+				SQL_SG_DELETE_TABLE|
+				SQL_SG_INSERT_TABLE|
+				SQL_SG_REFERENCES_TABLE|
+				SQL_SG_REFERENCES_COLUMN|
+				SQL_SG_SELECT_TABLE|
+				SQL_SG_UPDATE_TABLE|
+				SQL_SG_UPDATE_COLUMN));
 	}
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
@@ -3608,7 +3786,15 @@ int main(int argc, char **argv) {
 		assertEqualDbc(dbc,(int)uintval,0);
 	} else {
 		// native db2 reports 15879
-		assertEqualDbc(dbc,(int)uintval,15879);
+		assertEqualDbc(dbc,(int)uintval,
+			(int)(SQL_SP_EXISTS|
+				SQL_SP_ISNOTNULL|
+				SQL_SP_ISNULL|
+				SQL_SP_LIKE|
+				SQL_SP_IN|
+				SQL_SP_BETWEEN|
+				SQL_SP_COMPARISON|
+				SQL_SP_QUANTIFIED_COMPARISON));
 	}
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
@@ -3626,7 +3812,13 @@ int main(int argc, char **argv) {
 		assertEqualDbc(dbc,(int)uintval,0);
 	} else {
 		// native db2 reports 380
-		assertEqualDbc(dbc,(int)uintval,380);
+		assertEqualDbc(dbc,(int)uintval,
+			(int)(SQL_SRJO_EXCEPT_JOIN|
+				SQL_SRJO_FULL_OUTER_JOIN|
+				SQL_SRJO_INNER_JOIN|
+				SQL_SRJO_INTERSECT_JOIN|
+				SQL_SRJO_LEFT_OUTER_JOIN|
+				SQL_SRJO_RIGHT_OUTER_JOIN));
 	}
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
@@ -3644,7 +3836,12 @@ int main(int argc, char **argv) {
 		assertEqualDbc(dbc,(int)uintval,0);
 	} else {
 		// native db2 reports 13696
-		assertEqualDbc(dbc,(int)uintval,13696);
+		assertEqualDbc(dbc,(int)uintval,
+			(int)(SQL_SR_DELETE_TABLE|
+				SQL_SR_INSERT_TABLE|
+				SQL_SR_REFERENCES_TABLE|
+				SQL_SR_SELECT_TABLE|
+				SQL_SR_UPDATE_TABLE));
 	}
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
@@ -3662,7 +3859,10 @@ int main(int argc, char **argv) {
 		assertEqualDbc(dbc,(int)uintval,0);
 	} else {
 		// native db2 reports 11
-		assertEqualDbc(dbc,(int)uintval,11);
+		assertEqualDbc(dbc,(int)uintval,
+			(int)(SQL_SRVC_VALUE_EXPRESSION|
+				SQL_SRVC_NULL|
+				SQL_SRVC_ROW_SUBQUERY));
 	}
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
@@ -3698,7 +3898,11 @@ int main(int argc, char **argv) {
 		assertEqualDbc(dbc,(int)uintval,0);
 	} else {
 		// native db2 reports 15
-		assertEqualDbc(dbc,(int)uintval,15);
+		assertEqualDbc(dbc,(int)uintval,
+			(int)(SQL_SVE_CASE|
+				SQL_SVE_CAST|
+				SQL_SVE_COALESCE|
+				SQL_SVE_NULLIF));
 	}
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
@@ -3733,7 +3937,11 @@ int main(int argc, char **argv) {
 		assertEqualDbc(dbc,(int)uintval,0);
 	} else {
 		// native db2 reports 15
-		assertEqualDbc(dbc,(int)uintval,15);
+		assertEqualDbc(dbc,(int)uintval,
+			(int)(SQL_CA1_NEXT|
+				SQL_CA1_ABSOLUTE|
+				SQL_CA1_RELATIVE|
+				SQL_CA1_BOOKMARK));
 	}
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
@@ -3750,7 +3958,10 @@ int main(int argc, char **argv) {
 		assertEqualDbc(dbc,(int)uintval,0);
 	} else {
 		// native db2 reports 131
-		assertEqualDbc(dbc,(int)uintval,131);
+		assertEqualDbc(dbc,(int)uintval,
+			(int)(SQL_CA2_READ_ONLY_CONCURRENCY|
+				SQL_CA2_LOCK_CONCURRENCY|
+				SQL_CA2_MAX_ROWS_SELECT));
 	}
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
@@ -3788,7 +3999,9 @@ int main(int argc, char **argv) {
 		assertEqualDbc(dbc,(int)uintval,0);
 	} else {
 		// native db2 reports 3 (create/drop index)
-		assertEqualDbc(dbc,(int)uintval,3);
+		assertEqualDbc(dbc,(int)uintval,
+			(int)(SQL_DI_CREATE_INDEX|
+				SQL_DI_DROP_INDEX));
 	}
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
@@ -3818,7 +4031,10 @@ int main(int argc, char **argv) {
 		assertEqualDbc(dbc,(int)uintval,0);
 	} else {
 		// native db2 reports 7 (insert searched/select/bulk)
-		assertEqualDbc(dbc,(int)uintval,7);
+		assertEqualDbc(dbc,(int)uintval,
+			(int)(SQL_IS_INSERT_LITERALS|
+				SQL_IS_INSERT_SEARCHED|
+				SQL_IS_SELECT_INTO));
 	}
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");

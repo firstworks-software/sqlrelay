@@ -334,6 +334,8 @@ class sqlrservercontrollerprivate {
 	uint32_t	_maxcolumncount;
 	uint32_t	_maxfieldsize;
 
+	char		*_cappeddatabasefeatures[FEATURE_COUNT];
+
 	uint64_t	_connecttimeout;
 	uint64_t	_querytimeout;
 	bool		_executedirect;
@@ -549,6 +551,10 @@ sqlrservercontroller::sqlrservercontroller() : sqlrserverbase() {
 	pvt->_maxcolumncount=0;
 	pvt->_maxfieldsize=0;
 
+	for (uint16_t i=0; i<FEATURE_COUNT; i++) {
+		pvt->_cappeddatabasefeatures[i]=NULL;
+	}
+
 	pvt->_connecttimeout=0;
 	pvt->_querytimeout=0;
 	pvt->_executedirect=false;
@@ -660,6 +666,10 @@ sqlrservercontroller::~sqlrservercontroller() {
 
 	delete[] pvt->_originalcatalog;
 	delete[] pvt->_originalschema;
+
+	for (uint16_t i=0; i<FEATURE_COUNT; i++) {
+		delete[] pvt->_cappeddatabasefeatures[i];
+	}
 
 	delete pvt->_pth;
 
@@ -10644,6 +10654,48 @@ uint32_t sqlrservercontroller::getFetchAtOnce() {
 
 uint32_t sqlrservercontroller::getMaxColumnCount() {
 	return pvt->_maxcolumncount;
+}
+
+uint64_t sqlrservercontroller::capDatabaseFeatureLimit(uint64_t dblimit,
+							uint64_t configlimit) {
+	// 0 means "no limit" on either side
+	if (!dblimit) {
+		return configlimit;
+	}
+	if (!configlimit) {
+		return dblimit;
+	}
+	return (dblimit<configlimit)?dblimit:configlimit;
+}
+
+void sqlrservercontroller::capDatabaseFeatures(const char **databasefeatures) {
+
+	// each feature and the configured limit that caps it
+	uint16_t	features[3];
+	uint64_t	configlimits[3];
+	features[0]=FEATURE_MAX_STATEMENTS;
+	configlimits[0]=getConfig()->getMaxCursors();
+	features[1]=FEATURE_MAX_STATEMENT_LENGTH;
+	configlimits[1]=getConfig()->getMaxQuerySize();
+	features[2]=FEATURE_MAX_COLUMNS_IN_SELECT;
+	configlimits[2]=pvt->_maxcolumncount;
+
+	for (uint16_t i=0; i<3; i++) {
+		uint16_t	feature=features[i];
+		// compute once from the db-reported value in the slot; the
+		// slot is overwritten with our owned string on the first call
+		if (!pvt->_cappeddatabasefeatures[feature]) {
+			uint64_t	dblimit=charstring::
+				convertToUnsignedInteger(
+						databasefeatures[feature]);
+			pvt->_cappeddatabasefeatures[feature]=
+				charstring::parseNumber(
+					capDatabaseFeatureLimit(
+						dblimit,configlimits[i]));
+		}
+		databasefeatures[feature]=
+				pvt->_cappeddatabasefeatures[feature];
+	}
 }
 
 uint32_t sqlrservercontroller::getMaxFieldSize() {

@@ -7208,8 +7208,25 @@ static SQLUSMALLINT SQLR_NullCollation(CONN *conn) {
 	return SQL_NC_LOW;
 }
 
+static SQLUINTEGER SQLR_CursorSensitivity(CONN *conn) {
+	// mirror the backend's scroll sensitivity
+	if (SQLR_FeatureContains(conn,
+			"result_set_types","SCROLL_SENSITIVE")) {
+		return SQL_SENSITIVE;
+	}
+	if (SQLR_FeatureContains(conn,
+			"result_set_types","SCROLL_INSENSITIVE")) {
+		return SQL_INSENSITIVE;
+	}
+	return SQL_UNSPECIFIED;
+}
+
 static SQLUINTEGER SQLR_AlterTable(CONN *conn) {
 	SQLUINTEGER	retval=0;
+
+	// ADD_COLUMN / DROP_COLUMN only imply the column add/drop flags;
+	// the set-default, collation, and constraint operations are distinct
+	// and are reported only when their own tokens are present
 	if (SQLR_FeatureContains(conn,
 			"alter_table_operations","ADD_COLUMN")) {
 		#if (ODBCVER >= 0x0200)
@@ -7217,15 +7234,7 @@ static SQLUINTEGER SQLR_AlterTable(CONN *conn) {
 		#endif
 		#if (ODBCVER >= 0x0300)
 		retval|=SQL_AT_ADD_COLUMN_SINGLE
-			|SQL_AT_ADD_COLUMN_DEFAULT
-			|SQL_AT_ADD_COLUMN_COLLATION
-			|SQL_AT_SET_COLUMN_DEFAULT
-			|SQL_AT_ADD_TABLE_CONSTRAINT
-			|SQL_AT_CONSTRAINT_NAME_DEFINITION
-			|SQL_AT_CONSTRAINT_INITIALLY_DEFERRED
-			|SQL_AT_CONSTRAINT_INITIALLY_IMMEDIATE
-			|SQL_AT_CONSTRAINT_DEFERRABLE
-			|SQL_AT_CONSTRAINT_NON_DEFERRABLE;
+			|SQL_AT_ADD_COLUMN_DEFAULT;
 		#endif
 	}
 	if (SQLR_FeatureContains(conn,
@@ -7233,14 +7242,61 @@ static SQLUINTEGER SQLR_AlterTable(CONN *conn) {
 		#if (ODBCVER >= 0x0200)
 		retval|=SQL_AT_DROP_COLUMN;
 		#endif
-		#if (ODBCVER >= 0x0300)
-		retval|=SQL_AT_DROP_COLUMN_DEFAULT
-			|SQL_AT_DROP_COLUMN_CASCADE
-			|SQL_AT_DROP_COLUMN_RESTRICT
-			|SQL_AT_DROP_TABLE_CONSTRAINT_CASCADE
-			|SQL_AT_DROP_TABLE_CONSTRAINT_RESTRICT;
-		#endif
 	}
+	#if (ODBCVER >= 0x0300)
+	if (SQLR_FeatureContains(conn,
+			"alter_table_operations","ADD_COLUMN_COLLATION")) {
+		retval|=SQL_AT_ADD_COLUMN_COLLATION;
+	}
+	if (SQLR_FeatureContains(conn,
+			"alter_table_operations","SET_COLUMN_DEFAULT")) {
+		retval|=SQL_AT_SET_COLUMN_DEFAULT;
+	}
+	if (SQLR_FeatureContains(conn,
+			"alter_table_operations","DROP_COLUMN_DEFAULT")) {
+		retval|=SQL_AT_DROP_COLUMN_DEFAULT;
+	}
+	if (SQLR_FeatureContains(conn,
+			"alter_table_operations","DROP_COLUMN_CASCADE")) {
+		retval|=SQL_AT_DROP_COLUMN_CASCADE;
+	}
+	if (SQLR_FeatureContains(conn,
+			"alter_table_operations","DROP_COLUMN_RESTRICT")) {
+		retval|=SQL_AT_DROP_COLUMN_RESTRICT;
+	}
+	if (SQLR_FeatureContains(conn,
+			"alter_table_operations","ADD_CONSTRAINT")) {
+		retval|=SQL_AT_ADD_TABLE_CONSTRAINT;
+	}
+	if (SQLR_FeatureContains(conn,
+			"alter_table_operations","CONSTRAINT_NAME_DEFINITION")) {
+		retval|=SQL_AT_CONSTRAINT_NAME_DEFINITION;
+	}
+	if (SQLR_FeatureContains(conn,
+			"alter_table_operations","CONSTRAINT_INITIALLY_DEFERRED")) {
+		retval|=SQL_AT_CONSTRAINT_INITIALLY_DEFERRED;
+	}
+	if (SQLR_FeatureContains(conn,
+			"alter_table_operations","CONSTRAINT_INITIALLY_IMMEDIATE")) {
+		retval|=SQL_AT_CONSTRAINT_INITIALLY_IMMEDIATE;
+	}
+	if (SQLR_FeatureContains(conn,
+			"alter_table_operations","CONSTRAINT_DEFERRABLE")) {
+		retval|=SQL_AT_CONSTRAINT_DEFERRABLE;
+	}
+	if (SQLR_FeatureContains(conn,
+			"alter_table_operations","CONSTRAINT_NON_DEFERRABLE")) {
+		retval|=SQL_AT_CONSTRAINT_NON_DEFERRABLE;
+	}
+	if (SQLR_FeatureContains(conn,
+			"alter_table_operations","DROP_CONSTRAINT_CASCADE")) {
+		retval|=SQL_AT_DROP_TABLE_CONSTRAINT_CASCADE;
+	}
+	if (SQLR_FeatureContains(conn,
+			"alter_table_operations","DROP_CONSTRAINT_RESTRICT")) {
+		retval|=SQL_AT_DROP_TABLE_CONSTRAINT_RESTRICT;
+	}
+	#endif
 	return retval;
 }
 
@@ -10163,7 +10219,7 @@ SQLRETURN SQL_API SQLGetInfo(SQLHDBC connectionhandle,
 		case SQL_CURSOR_SENSITIVITY:
 			debugPrintf("  infotype: "
 					"SQL_CURSOR_SENSITIVITY\n");
-			val.uintval=SQL_INSENSITIVE;
+			val.uintval=SQLR_CursorSensitivity(conn);
 			type=1;
 			break;
 		case SQL_DESCRIBE_PARAMETER:

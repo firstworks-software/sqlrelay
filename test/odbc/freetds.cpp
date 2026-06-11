@@ -1086,7 +1086,8 @@ int main(int argc, char **argv) {
 			(SQLPOINTER)&usmallintval,
 			(SQLSMALLINT)sizeof(usmallintval),&vallen);
 	if (issqlrelay) {
-		assertEqualDbc(dbc,(int)usmallintval,0);
+		// capped at maxcursors by sql relay
+		assertEqualDbc(dbc,(int)usmallintval,5);
 	} else {
 		assertEqualDbc(dbc,(int)usmallintval,1);
 	}
@@ -1393,7 +1394,7 @@ int main(int argc, char **argv) {
 			(int)(SQL_GD_ANY_COLUMN|SQL_GD_ANY_ORDER|
 				SQL_GD_BOUND|SQL_GD_BLOCK));
 	} else {
-		assertEqualDbc(dbc,(int)uintval,4);
+		assertEqualDbc(dbc,(int)uintval,(int)SQL_GD_BLOCK);
 	}
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
@@ -1422,9 +1423,21 @@ int main(int argc, char **argv) {
 			(SQLPOINTER)&uintval,(SQLSMALLINT)sizeof(uintval),
 			&vallen);
 	if (issqlrelay) {
-		assertEqualDbc(dbc,(int)uintval,1048547);
+		// sqlrelay's odbc driver reports only the add/drop column flags
+		assertEqualDbc(dbc,(int)uintval,
+			(int)(SQL_AT_ADD_COLUMN|
+				SQL_AT_ADD_COLUMN_SINGLE|
+				SQL_AT_ADD_COLUMN_DEFAULT|
+				SQL_AT_DROP_COLUMN));
 	} else {
-		assertEqualDbc(dbc,(int)uintval,39017);
+		assertEqualDbc(dbc,(int)uintval,
+			(int)(SQL_AT_ADD_COLUMN|
+				SQL_AT_ADD_CONSTRAINT|
+				SQL_AT_ADD_COLUMN_SINGLE|
+				SQL_AT_ADD_COLUMN_DEFAULT|
+				SQL_AT_DROP_COLUMN_RESTRICT|
+				SQL_AT_ADD_TABLE_CONSTRAINT|
+				SQL_AT_CONSTRAINT_NAME_DEFINITION));
 	}
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
@@ -1491,7 +1504,8 @@ int main(int argc, char **argv) {
 			(SQLPOINTER)&usmallintval,
 			(SQLSMALLINT)sizeof(usmallintval),&vallen);
 	if (issqlrelay) {
-		assertEqualDbc(dbc,(int)usmallintval,4096);
+		// capped at maxcolumncount by sql relay
+		assertEqualDbc(dbc,(int)usmallintval,256);
 	} else {
 		assertEqualDbc(dbc,(int)usmallintval,4000);
 	}
@@ -1539,7 +1553,8 @@ int main(int argc, char **argv) {
 			(SQLPOINTER)&uintval,(SQLSMALLINT)sizeof(uintval),
 			&vallen);
 	if (issqlrelay) {
-		assertEqualDbc(dbc,(int)uintval,0);
+		// capped at maxquerysize by sql relay
+		assertEqualDbc(dbc,(int)uintval,65536);
 	} else {
 		assertEqualDbc(dbc,(int)uintval,131072);
 	}
@@ -1601,7 +1616,8 @@ int main(int argc, char **argv) {
 			(SQLPOINTER)&uintval,(SQLSMALLINT)sizeof(uintval),
 			&vallen);
 	if (issqlrelay) {
-		assertEqualDbc(dbc,(int)uintval,(int)SQL_INSENSITIVE);
+		// mirrors the backend scroll sensitivity
+		assertEqualDbc(dbc,(int)uintval,(int)SQL_SENSITIVE);
 	} else {
 		assertEqualDbc(dbc,(int)uintval,2);
 	}
@@ -1983,7 +1999,30 @@ int main(int argc, char **argv) {
 			(SQLPOINTER)&uintval,
 			(SQLSMALLINT)sizeof(uintval),&vallen);
 	if (issqlrelay) {
-		assertEqualDbc(dbc,(int)uintval,8388607);
+		assertEqualDbc(dbc,(int)uintval,
+			(int)(SQL_FN_NUM_ABS|
+				SQL_FN_NUM_ACOS|
+				SQL_FN_NUM_ASIN|
+				SQL_FN_NUM_ATAN|
+				SQL_FN_NUM_ATAN2|
+				SQL_FN_NUM_CEILING|
+				SQL_FN_NUM_COS|
+				SQL_FN_NUM_COT|
+				SQL_FN_NUM_EXP|
+				SQL_FN_NUM_FLOOR|
+				SQL_FN_NUM_LOG|
+				SQL_FN_NUM_MOD|
+				SQL_FN_NUM_SIGN|
+				SQL_FN_NUM_SIN|
+				SQL_FN_NUM_SQRT|
+				SQL_FN_NUM_TAN|
+				SQL_FN_NUM_PI|
+				SQL_FN_NUM_RAND|
+				SQL_FN_NUM_DEGREES|
+				SQL_FN_NUM_LOG10|
+				SQL_FN_NUM_POWER|
+				SQL_FN_NUM_RADIANS|
+				SQL_FN_NUM_ROUND));
 	} else {
 		assertEqualDbc(dbc,(int)uintval,0);
 	}
@@ -1997,7 +2036,22 @@ int main(int argc, char **argv) {
 			(SQLPOINTER)&uintval,
 			(SQLSMALLINT)sizeof(uintval),&vallen);
 	if (issqlrelay) {
-		assertEqualDbc(dbc,(int)uintval,458459);
+		assertEqualDbc(dbc,(int)uintval,
+			(int)(SQL_FN_STR_CONCAT|
+				SQL_FN_STR_INSERT|
+				SQL_FN_STR_LTRIM|
+				SQL_FN_STR_LENGTH|
+				SQL_FN_STR_LCASE|
+				SQL_FN_STR_REPEAT|
+				SQL_FN_STR_RIGHT|
+				SQL_FN_STR_RTRIM|
+				SQL_FN_STR_SUBSTRING|
+				SQL_FN_STR_UCASE|
+				SQL_FN_STR_ASCII|
+				SQL_FN_STR_CHAR|
+				SQL_FN_STR_DIFFERENCE|
+				SQL_FN_STR_SOUNDEX|
+				SQL_FN_STR_SPACE));
 	} else {
 		assertEqualDbc(dbc,(int)uintval,0);
 	}
@@ -2023,7 +2077,24 @@ int main(int argc, char **argv) {
 			(SQLPOINTER)&uintval,
 			(SQLSMALLINT)sizeof(uintval),&vallen);
 	if (issqlrelay) {
-		assertEqualDbc(dbc,(int)uintval,131071);
+		assertEqualDbc(dbc,(int)uintval,
+			(int)(SQL_FN_TD_NOW|
+				SQL_FN_TD_CURDATE|
+				SQL_FN_TD_DAYOFMONTH|
+				SQL_FN_TD_DAYOFWEEK|
+				SQL_FN_TD_DAYOFYEAR|
+				SQL_FN_TD_MONTH|
+				SQL_FN_TD_QUARTER|
+				SQL_FN_TD_WEEK|
+				SQL_FN_TD_YEAR|
+				SQL_FN_TD_CURTIME|
+				SQL_FN_TD_HOUR|
+				SQL_FN_TD_MINUTE|
+				SQL_FN_TD_SECOND|
+				SQL_FN_TD_TIMESTAMPADD|
+				SQL_FN_TD_TIMESTAMPDIFF|
+				SQL_FN_TD_DAYNAME|
+				SQL_FN_TD_MONTHNAME));
 	} else {
 		assertEqualDbc(dbc,(int)uintval,0);
 	}
@@ -2660,7 +2731,7 @@ int main(int argc, char **argv) {
 	if (issqlrelay) {
 		assertEqualDbc(dbc,(int)uintval,0);
 	} else {
-		assertEqualDbc(dbc,(int)uintval,2);
+		assertEqualDbc(dbc,(int)uintval,(int)SQL_BRC_EXPLICIT);
 	}
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
@@ -2676,7 +2747,11 @@ int main(int argc, char **argv) {
 	if (issqlrelay) {
 		assertEqualDbc(dbc,(int)uintval,0);
 	} else {
-		assertEqualDbc(dbc,(int)uintval,15);
+		assertEqualDbc(dbc,(int)uintval,
+			(int)(SQL_BS_SELECT_EXPLICIT|
+				SQL_BS_ROW_COUNT_EXPLICIT|
+				SQL_BS_SELECT_PROC|
+				SQL_BS_ROW_COUNT_PROC));
 	}
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
@@ -2815,7 +2890,9 @@ int main(int argc, char **argv) {
 	if (issqlrelay) {
 		assertEqualDbc(dbc,(int)uintval,0);
 	} else {
-		assertEqualDbc(dbc,(int)uintval,3);
+		assertEqualDbc(dbc,(int)uintval,
+			(int)(SQL_CS_CREATE_SCHEMA|
+				SQL_CS_AUTHORIZATION));
 	}
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
@@ -2831,7 +2908,7 @@ int main(int argc, char **argv) {
 	if (issqlrelay) {
 		assertEqualDbc(dbc,(int)uintval,0);
 	} else {
-		assertEqualDbc(dbc,(int)uintval,1);
+		assertEqualDbc(dbc,(int)uintval,(int)SQL_CT_CREATE_TABLE);
 	}
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
@@ -3195,7 +3272,7 @@ int main(int argc, char **argv) {
 	if (issqlrelay) {
 		assertEqualDbc(dbc,(int)uintval,0);
 	} else {
-		assertEqualDbc(dbc,(int)uintval,16);
+		assertEqualDbc(dbc,(int)uintval,(int)SQL_SG_WITH_GRANT_OPTION);
 	}
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
@@ -3223,7 +3300,10 @@ int main(int argc, char **argv) {
 	if (issqlrelay) {
 		assertEqualDbc(dbc,(int)uintval,0);
 	} else {
-		assertEqualDbc(dbc,(int)uintval,7);
+		assertEqualDbc(dbc,(int)uintval,
+			(int)(SQL_SP_EXISTS|
+				SQL_SP_ISNOTNULL|
+				SQL_SP_ISNULL));
 	}
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
@@ -3239,7 +3319,13 @@ int main(int argc, char **argv) {
 	if (issqlrelay) {
 		assertEqualDbc(dbc,(int)uintval,0);
 	} else {
-		assertEqualDbc(dbc,(int)uintval,858);
+		assertEqualDbc(dbc,(int)uintval,
+			(int)(SQL_SRJO_CROSS_JOIN|
+				SQL_SRJO_FULL_OUTER_JOIN|
+				SQL_SRJO_INNER_JOIN|
+				SQL_SRJO_LEFT_OUTER_JOIN|
+				SQL_SRJO_RIGHT_OUTER_JOIN|
+				SQL_SRJO_UNION_JOIN));
 	}
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
@@ -3255,7 +3341,7 @@ int main(int argc, char **argv) {
 	if (issqlrelay) {
 		assertEqualDbc(dbc,(int)uintval,0);
 	} else {
-		assertEqualDbc(dbc,(int)uintval,16);
+		assertEqualDbc(dbc,(int)uintval,(int)SQL_SR_GRANT_OPTION_FOR);
 	}
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
@@ -3271,7 +3357,11 @@ int main(int argc, char **argv) {
 	if (issqlrelay) {
 		assertEqualDbc(dbc,(int)uintval,0);
 	} else {
-		assertEqualDbc(dbc,(int)uintval,15);
+		assertEqualDbc(dbc,(int)uintval,
+			(int)(SQL_SRVC_VALUE_EXPRESSION|
+				SQL_SRVC_NULL|
+				SQL_SRVC_DEFAULT|
+				SQL_SRVC_ROW_SUBQUERY));
 	}
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
@@ -3289,7 +3379,9 @@ int main(int argc, char **argv) {
 			(int)(SQL_SSF_LOWER|SQL_SSF_UPPER|
 				SQL_SSF_SUBSTRING));
 	} else {
-		assertEqualDbc(dbc,(int)uintval,6);
+		assertEqualDbc(dbc,(int)uintval,
+			(int)(SQL_SSF_LOWER|
+				SQL_SSF_UPPER));
 	}
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
@@ -3305,7 +3397,11 @@ int main(int argc, char **argv) {
 	if (issqlrelay) {
 		assertEqualDbc(dbc,(int)uintval,0);
 	} else {
-		assertEqualDbc(dbc,(int)uintval,15);
+		assertEqualDbc(dbc,(int)uintval,
+			(int)(SQL_SVE_CASE|
+				SQL_SVE_CAST|
+				SQL_SVE_COALESCE|
+				SQL_SVE_NULLIF));
 	}
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");

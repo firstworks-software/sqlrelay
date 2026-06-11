@@ -1111,7 +1111,12 @@ int main(int argc, char **argv) {
 	erg=SQLGetInfo(dbc,SQL_MAX_CONCURRENT_ACTIVITIES,
 			(SQLPOINTER)&usmallintval,
 			(SQLSMALLINT)sizeof(usmallintval),&vallen);
-	assertEqualDbc(dbc,(int)usmallintval,0);
+	if (issqlrelay) {
+		// capped at maxcursors by sql relay
+		assertEqualDbc(dbc,(int)usmallintval,5);
+	} else {
+		assertEqualDbc(dbc,(int)usmallintval,0);
+	}
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
 	#endif
@@ -1136,7 +1141,7 @@ int main(int argc, char **argv) {
 		// sqlrelay only supports SQL_FD_FETCH_NEXT
 		assertEqualDbc(dbc,(int)uintval,(int)SQL_FD_FETCH_NEXT);
 	} else {
-		assertEqualDbc(dbc,(int)uintval,1);
+		assertEqualDbc(dbc,(int)uintval,(int)SQL_FD_FETCH_NEXT);
 	}
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
@@ -1436,12 +1441,17 @@ int main(int argc, char **argv) {
 			(SQLPOINTER)&uintval,(SQLSMALLINT)sizeof(uintval),
 			&vallen);
 	if (issqlrelay) {
-		// sqlrelay bundles these bits whenever the backend reports
-		// ADD_COLUMN, and omits DROP_COLUMN bits because the informix
-		// backend module doesn't report it
-		assertEqualDbc(dbc,(int)uintval,1048547);
+		// sqlrelay's odbc driver reports only the add/drop column flags
+		assertEqualDbc(dbc,(int)uintval,
+			(int)(SQL_AT_ADD_COLUMN|
+				SQL_AT_ADD_COLUMN_SINGLE|
+				SQL_AT_ADD_COLUMN_DEFAULT|
+				SQL_AT_DROP_COLUMN));
 	} else {
-		assertEqualDbc(dbc,(int)uintval,11);
+		assertEqualDbc(dbc,(int)uintval,
+			(int)(SQL_AT_ADD_COLUMN|
+				SQL_AT_DROP_COLUMN|
+				SQL_AT_ADD_CONSTRAINT));
 	}
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
@@ -1519,7 +1529,8 @@ int main(int argc, char **argv) {
 			(SQLPOINTER)&usmallintval,
 			(SQLSMALLINT)sizeof(usmallintval),&vallen);
 	if (issqlrelay) {
-		assertEqualDbc(dbc,(int)usmallintval,32767);
+		// capped at maxcolumncount by sql relay
+		assertEqualDbc(dbc,(int)usmallintval,256);
 	} else {
 		assertEqualDbc(dbc,(int)usmallintval,0);
 	}
@@ -1567,7 +1578,8 @@ int main(int argc, char **argv) {
 			(SQLPOINTER)&uintval,(SQLSMALLINT)sizeof(uintval),
 			&vallen);
 	if (issqlrelay) {
-		assertEqualDbc(dbc,(int)uintval,2147483647);
+		// capped at maxquerysize by sql relay
+		assertEqualDbc(dbc,(int)uintval,65536);
 	} else {
 		// the native informix driver returns 0
 		assertEqualDbc(dbc,(int)uintval,0);
@@ -1608,7 +1620,12 @@ int main(int argc, char **argv) {
 				SQL_OJ_NESTED|SQL_OJ_NOT_ORDERED|
 				SQL_OJ_INNER|SQL_OJ_ALL_COMPARISON_OPS));
 	} else {
-		assertEqualDbc(dbc,(int)uintval,107);
+		assertEqualDbc(dbc,(int)uintval,
+			(int)(SQL_OJ_LEFT|
+				SQL_OJ_RIGHT|
+				SQL_OJ_NESTED|
+				SQL_OJ_INNER|
+				SQL_OJ_ALL_COMPARISON_OPS));
 	}
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
@@ -2013,7 +2030,7 @@ int main(int argc, char **argv) {
 		assertEqualDbc(dbc,(int)uintval,
 			(int)(SQL_SO_FORWARD_ONLY|SQL_SO_STATIC));
 	} else {
-		assertEqualDbc(dbc,(int)uintval,1);
+		assertEqualDbc(dbc,(int)uintval,(int)SQL_SO_FORWARD_ONLY);
 	}
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
@@ -2057,9 +2074,38 @@ int main(int argc, char **argv) {
 			(SQLPOINTER)&uintval,
 			(SQLSMALLINT)sizeof(uintval),&vallen);
 	if (issqlrelay) {
-		assertEqualDbc(dbc,(int)uintval,4778335);
+		assertEqualDbc(dbc,(int)uintval,
+			(int)(SQL_FN_NUM_ABS|
+				SQL_FN_NUM_ACOS|
+				SQL_FN_NUM_ASIN|
+				SQL_FN_NUM_ATAN|
+				SQL_FN_NUM_ATAN2|
+				SQL_FN_NUM_COS|
+				SQL_FN_NUM_EXP|
+				SQL_FN_NUM_MOD|
+				SQL_FN_NUM_SIN|
+				SQL_FN_NUM_SQRT|
+				SQL_FN_NUM_TAN|
+				SQL_FN_NUM_LOG10|
+				SQL_FN_NUM_ROUND));
 	} else {
-		assertEqualDbc(dbc,(int)uintval,14216543);
+		assertEqualDbc(dbc,(int)uintval,
+			(int)(SQL_FN_NUM_ABS|
+				SQL_FN_NUM_ACOS|
+				SQL_FN_NUM_ASIN|
+				SQL_FN_NUM_ATAN|
+				SQL_FN_NUM_ATAN2|
+				SQL_FN_NUM_COS|
+				SQL_FN_NUM_EXP|
+				SQL_FN_NUM_LOG|
+				SQL_FN_NUM_MOD|
+				SQL_FN_NUM_SIN|
+				SQL_FN_NUM_SQRT|
+				SQL_FN_NUM_TAN|
+				SQL_FN_NUM_LOG10|
+				SQL_FN_NUM_POWER|
+				SQL_FN_NUM_ROUND|
+				SQL_FN_NUM_TRUNCATE));
 	}
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
@@ -2071,9 +2117,19 @@ int main(int argc, char **argv) {
 			(SQLPOINTER)&uintval,
 			(SQLSMALLINT)sizeof(uintval),&vallen);
 	if (issqlrelay) {
-		assertEqualDbc(dbc,(int)uintval,16);
+		assertEqualDbc(dbc,(int)uintval,(int)SQL_FN_STR_LENGTH);
 	} else {
-		assertEqualDbc(dbc,(int)uintval,8029);
+		assertEqualDbc(dbc,(int)uintval,
+			(int)(SQL_FN_STR_CONCAT|
+				SQL_FN_STR_LEFT|
+				SQL_FN_STR_LTRIM|
+				SQL_FN_STR_LENGTH|
+				SQL_FN_STR_LCASE|
+				SQL_FN_STR_REPLACE|
+				SQL_FN_STR_RIGHT|
+				SQL_FN_STR_RTRIM|
+				SQL_FN_STR_SUBSTRING|
+				SQL_FN_STR_UCASE));
 	}
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
@@ -2087,7 +2143,10 @@ int main(int argc, char **argv) {
 	if (issqlrelay) {
 		assertEqualDbc(dbc,(int)uintval,0);
 	} else {
-		assertEqualDbc(dbc,(int)uintval,7);
+		assertEqualDbc(dbc,(int)uintval,
+			(int)(SQL_FN_SYS_USERNAME|
+				SQL_FN_SYS_DBNAME|
+				SQL_FN_SYS_IFNULL));
 	}
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
@@ -2099,9 +2158,21 @@ int main(int argc, char **argv) {
 			(SQLPOINTER)&uintval,
 			(SQLSMALLINT)sizeof(uintval),&vallen);
 	if (issqlrelay) {
-		assertEqualDbc(dbc,(int)uintval,288);
+		assertEqualDbc(dbc,(int)uintval,
+			(int)(SQL_FN_TD_MONTH|
+				SQL_FN_TD_YEAR));
 	} else {
-		assertEqualDbc(dbc,(int)uintval,99183);
+		assertEqualDbc(dbc,(int)uintval,
+			(int)(SQL_FN_TD_NOW|
+				SQL_FN_TD_CURDATE|
+				SQL_FN_TD_DAYOFMONTH|
+				SQL_FN_TD_DAYOFWEEK|
+				SQL_FN_TD_MONTH|
+				SQL_FN_TD_QUARTER|
+				SQL_FN_TD_YEAR|
+				SQL_FN_TD_CURTIME|
+				SQL_FN_TD_DAYNAME|
+				SQL_FN_TD_MONTHNAME));
 	}
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
@@ -2451,7 +2522,11 @@ int main(int argc, char **argv) {
 	if (issqlrelay) {
 		assertEqualDbc(dbc,(int)uintval,(int)SQL_POS_POSITION);
 	} else {
-		assertEqualDbc(dbc,(int)uintval,30);
+		assertEqualDbc(dbc,(int)uintval,
+			(int)(SQL_POS_REFRESH|
+				SQL_POS_UPDATE|
+				SQL_POS_DELETE|
+				SQL_POS_ADD));
 	}
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
@@ -2482,7 +2557,7 @@ int main(int argc, char **argv) {
 	if (issqlrelay) {
 		assertEqualDbc(dbc,(int)uintval,0);
 	} else {
-		assertEqualDbc(dbc,(int)uintval,64);
+		assertEqualDbc(dbc,(int)uintval,(int)SQL_BP_SCROLL);
 	}
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
@@ -2935,7 +3010,7 @@ int main(int argc, char **argv) {
 	if (issqlrelay) {
 		assertEqualDbc(dbc,(int)uintval,0);
 	} else {
-		assertEqualDbc(dbc,(int)uintval,1);
+		assertEqualDbc(dbc,(int)uintval,(int)SQL_CT_CREATE_TABLE);
 	}
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
@@ -3057,7 +3132,10 @@ int main(int argc, char **argv) {
 	if (issqlrelay) {
 		assertEqualDbc(dbc,(int)uintval,0);
 	} else {
-		assertEqualDbc(dbc,(int)uintval,7);
+		assertEqualDbc(dbc,(int)uintval,
+			(int)(SQL_DT_DROP_TABLE|
+				SQL_DT_RESTRICT|
+				SQL_DT_CASCADE));
 	}
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
@@ -3085,7 +3163,10 @@ int main(int argc, char **argv) {
 	if (issqlrelay) {
 		assertEqualDbc(dbc,(int)uintval,0);
 	} else {
-		assertEqualDbc(dbc,(int)uintval,7);
+		assertEqualDbc(dbc,(int)uintval,
+			(int)(SQL_DV_DROP_VIEW|
+				SQL_DV_RESTRICT|
+				SQL_DV_CASCADE));
 	}
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
@@ -3127,7 +3208,13 @@ int main(int argc, char **argv) {
 	if (issqlrelay) {
 		assertEqualDbc(dbc,(int)uintval,0);
 	} else {
-		assertEqualDbc(dbc,(int)uintval,73217);
+		assertEqualDbc(dbc,(int)uintval,
+			(int)(SQL_CA1_NEXT|
+				SQL_CA1_POS_POSITION|
+				SQL_CA1_POS_UPDATE|
+				SQL_CA1_POS_DELETE|
+				SQL_CA1_POS_REFRESH|
+				SQL_CA1_BULK_ADD));
 	}
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
@@ -3143,7 +3230,11 @@ int main(int argc, char **argv) {
 	if (issqlrelay) {
 		assertEqualDbc(dbc,(int)uintval,0);
 	} else {
-		assertEqualDbc(dbc,(int)uintval,2179);
+		assertEqualDbc(dbc,(int)uintval,
+			(int)(SQL_CA2_READ_ONLY_CONCURRENCY|
+				SQL_CA2_LOCK_CONCURRENCY|
+				SQL_CA2_MAX_ROWS_SELECT|
+				SQL_CA2_MAX_ROWS_CATALOG));
 	}
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
@@ -3159,7 +3250,9 @@ int main(int argc, char **argv) {
 	if (issqlrelay) {
 		assertEqualDbc(dbc,(int)uintval,0);
 	} else {
-		assertEqualDbc(dbc,(int)uintval,3);
+		assertEqualDbc(dbc,(int)uintval,
+			(int)(SQL_IK_ASC|
+				SQL_IK_DESC));
 	}
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
@@ -3383,7 +3476,9 @@ int main(int argc, char **argv) {
 	if (issqlrelay) {
 		assertEqualDbc(dbc,(int)uintval,0);
 	} else {
-		assertEqualDbc(dbc,(int)uintval,96);
+		assertEqualDbc(dbc,(int)uintval,
+			(int)(SQL_SR_CASCADE|
+				SQL_SR_RESTRICT));
 	}
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
@@ -3466,7 +3561,12 @@ int main(int argc, char **argv) {
 	if (issqlrelay) {
 		assertEqualDbc(dbc,(int)uintval,0);
 	} else {
-		assertEqualDbc(dbc,(int)uintval,7681);
+		assertEqualDbc(dbc,(int)uintval,
+			(int)(SQL_CA1_NEXT|
+				SQL_CA1_POS_POSITION|
+				SQL_CA1_POS_UPDATE|
+				SQL_CA1_POS_DELETE|
+				SQL_CA1_POS_REFRESH));
 	}
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
@@ -3482,7 +3582,12 @@ int main(int argc, char **argv) {
 	if (issqlrelay) {
 		assertEqualDbc(dbc,(int)uintval,0);
 	} else {
-		assertEqualDbc(dbc,(int)uintval,10371);
+		assertEqualDbc(dbc,(int)uintval,
+			(int)(SQL_CA2_READ_ONLY_CONCURRENCY|
+				SQL_CA2_LOCK_CONCURRENCY|
+				SQL_CA2_MAX_ROWS_SELECT|
+				SQL_CA2_MAX_ROWS_CATALOG|
+				SQL_CA2_CRC_APPROXIMATE));
 	}
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
@@ -3518,7 +3623,9 @@ int main(int argc, char **argv) {
 	if (issqlrelay) {
 		assertEqualDbc(dbc,(int)uintval,0);
 	} else {
-		assertEqualDbc(dbc,(int)uintval,3);
+		assertEqualDbc(dbc,(int)uintval,
+			(int)(SQL_DI_CREATE_INDEX|
+				SQL_DI_DROP_INDEX));
 	}
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
@@ -3546,7 +3653,10 @@ int main(int argc, char **argv) {
 	if (issqlrelay) {
 		assertEqualDbc(dbc,(int)uintval,0);
 	} else {
-		assertEqualDbc(dbc,(int)uintval,7);
+		assertEqualDbc(dbc,(int)uintval,
+			(int)(SQL_IS_INSERT_LITERALS|
+				SQL_IS_INSERT_SEARCHED|
+				SQL_IS_SELECT_INTO));
 	}
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");

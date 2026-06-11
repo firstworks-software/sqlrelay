@@ -2705,6 +2705,7 @@ const char *informixconnection::mapIsolationLevel(
 }
 
 const char * const *informixconnection::getDatabaseFeatures() {
+	cont->capDatabaseFeatures(databasefeatures);
 	return databasefeatures;
 }
 
