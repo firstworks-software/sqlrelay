@@ -578,12 +578,8 @@ class sqlite extends sqlrtest {
 		System.out.println("  getSystemFunctions");
 		stringval=md.getSystemFunctions();
 		System.out.println("    "+stringval);
-		if (issqlrelay) {
-			assertEquals(stringval,"IFNULL");
-		} else {
-			// the native driver reports no system functions
-			assertEquals(stringval,"");
-		}
+		// sqlite has IFNULL, but its native jdbc driver reports none
+		assertEquals(stringval,"");
 		System.out.println();
 
 		// getTimeDateFunctions

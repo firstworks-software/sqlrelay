@@ -2087,7 +2087,9 @@ int main(int argc, char **argv) {
 			(SQLPOINTER)&uintval,
 			(SQLSMALLINT)sizeof(uintval),&vallen);
 	if (issqlrelay) {
-		assertEqualDbc(dbc,(int)uintval,(int)SQL_FN_SYS_IFNULL);
+		// sqlite has IFNULL, but system_functions is empty to match
+		// the native jdbc driver, so the odbc driver reports none
+		assertEqualDbc(dbc,(int)uintval,0);
 	}
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");

@@ -753,6 +753,9 @@ void informixconnection::initDatabaseFeatures() {
 	databasefeatures[FEATURE_SUPPORTS_TRANSACTIONS]=
 		"true";
 
+	// these are mostly aggregate/blob functions, not system functions,
+	// but this is what informix's native jdbc driver reports for
+	// getSystemFunctions(); matching native
 	databasefeatures[FEATURE_SYSTEM_FUNCTIONS]=
 		"avg,max,min,sum,count,range,stdev,"
 			"variance,trim,hex,filetoblob,"

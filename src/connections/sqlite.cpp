@@ -638,8 +638,10 @@ void sqliteconnection::initDatabaseFeatures() {
 	databasefeatures[FEATURE_SUPPORTS_TRANSACTIONS]=
 		"true";
 
+	// sqlite has IFNULL, but its native jdbc driver reports no system
+	// functions; matching native
 	databasefeatures[FEATURE_SYSTEM_FUNCTIONS]=
-		"IFNULL";
+		"";
 
 	databasefeatures[FEATURE_TABLE_CORRELATION_NAMES]=
 		"BASIC";
