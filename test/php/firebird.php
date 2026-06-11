@@ -1485,7 +1485,7 @@
 	echo("SCHEMA LIST: \n");
 	assertTrue(sqlrcur_getSchemaList($cur,NULL));
 	assertEqStr(sqlrcur_getColumnName($cur,0),"Database");
-	assertInResultSet($cur,"Database","TESTUSER");
+	assertEqInt(sqlrcur_rowCount($cur),0);
 	echo("\n");
 
 

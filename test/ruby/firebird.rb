@@ -1487,7 +1487,8 @@ print "\n"
 print "SCHEMA LIST: \n"
 assertTrue(cur.getSchemaList(nil))
 assertEqual(cur.getColumnName(0),"Database")
-assertInResultSet(cur,"Database","TESTUSER")
+# firebird has no schemas
+assertEqual(cur.rowCount(),0)
 print "\n"
 
 

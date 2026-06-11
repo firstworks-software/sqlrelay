@@ -1539,7 +1539,8 @@ int main(int argc, char **argv) {
 	stdoutput.printf("SCHEMA LIST: \n");
 	assertTrue(cur->getSchemaList(NULL));
 	assertEquals(cur->getColumnName(0),"Database");
-	assertInResultSet(cur,"Database","TESTUSER");
+	// firebird has no schemas
+	assertEquals(cur->rowCount(),0);
 	stdoutput.printf("\n");
 
 

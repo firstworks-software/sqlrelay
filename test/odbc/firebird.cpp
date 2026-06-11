@@ -7348,7 +7348,7 @@ int main(int argc, char **argv) {
 	erg=SQLBindCol(stmt,2,SQL_C_CHAR,
 			schname,sizeof(schname),&schnameind);
 	assertSuccessStmt(stmt,erg);
-	bool		schfound=false;
+	int		schrows=0;
 	for (;;) {
 		erg=SQLFetch(stmt);
 		if (erg==SQL_NO_DATA) {
@@ -7358,12 +7358,10 @@ int main(int argc, char **argv) {
 		if (erg!=SQL_SUCCESS && erg!=SQL_SUCCESS_WITH_INFO) {
 			break;
 		}
-		if (!charstring::compareIgnoringCase(
-					(const char *)schname,"testuser")) {
-			schfound=true;
-		}
+		schrows++;
 	}
-	assertTrueStmt(stmt,schfound);
+	// firebird has no schemas; the list is empty
+	assertEqualStmt(stmt,schrows,0);
 	SQLFreeStmt(stmt,SQL_CLOSE);
 	SQLFreeStmt(stmt,SQL_UNBIND);
 	stdoutput.printf("\n");
@@ -7541,6 +7539,11 @@ int main(int argc, char **argv) {
 	erg=SQLBindCol(stmt,1,SQL_C_CHAR,
 			clcat,sizeof(clcat),&clcatind);
 	assertSuccessStmt(stmt,erg);
+	SQLCHAR		clschem[64];
+	SQLLEN		clschemind;
+	erg=SQLBindCol(stmt,2,SQL_C_CHAR,
+			clschem,sizeof(clschem),&clschemind);
+	assertSuccessStmt(stmt,erg);
 	const char	*expcols[]={"TESTINTEGER","TESTSMALLINT",
 				"TESTDECIMAL","TESTNUMERIC",
 				"TESTFLOAT","TESTDOUBLE",
@@ -7551,10 +7554,13 @@ int main(int argc, char **argv) {
 		erg=SQLFetch(stmt);
 		assertSuccessStmt(stmt,erg);
 		assertEqualStmt(stmt,(const char *)clcolname,expcols[c]);
-		// #7971 - firebird has no catalogs (native odbc unmaintained)
+		// #7971 - firebird has no catalogs or schemas (native odbc
+		// unmaintained)
 		if (issqlrelay) {
 			assertEqualStmt(stmt,(int)clcatind,
 						(int)SQL_NULL_DATA);
+			assertTrueStmt(stmt,clschemind==SQL_NULL_DATA ||
+						clschem[0]=='\0');
 		}
 	}
 	erg=SQLFetch(stmt);

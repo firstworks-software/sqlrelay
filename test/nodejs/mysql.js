@@ -2189,7 +2189,7 @@ if (dot>-1) {
 
 	// database is schema
 	console.log("DATABASE IS SCHEMA: ");
-	assertTrue(con.getDatabaseIsSchema());
+	assertFalse(con.getDatabaseIsSchema());
 	console.log("");
 
 
@@ -2197,7 +2197,7 @@ if (dot>-1) {
 	console.log("CATALOG LIST: ");
 	assertTrue(cur.getCatalogList(null));
 	assertEqStr(cur.getColumnName(0),"Database");
-	assertInResultSet(cur,"Database","def");
+	assertInResultSet(cur,"Database",hostname);
 	console.log("");
 
 
@@ -2205,7 +2205,8 @@ if (dot>-1) {
 	console.log("SCHEMA LIST: ");
 	assertTrue(cur.getSchemaList(null));
 	assertEqStr(cur.getColumnName(0),"Database");
-	assertInResultSet(cur,"Database",hostname);
+	// mysql has no schemas
+	assertEqInt(cur.rowCount(),0);
 	console.log("");
 
 

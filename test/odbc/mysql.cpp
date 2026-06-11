@@ -8363,9 +8363,7 @@ int main(int argc, char **argv) {
 	erg=SQLBindCol(stmt,1,SQL_C_CHAR,
 			catname,sizeof(catname),&catnameind);
 	assertSuccessStmt(stmt,erg);
-	int		catrows=0;
 	bool		catfound=false;
-	bool		catdeffound=false;
 	for (;;) {
 		erg=SQLFetch(stmt);
 		if (erg==SQL_NO_DATA) {
@@ -8379,21 +8377,10 @@ int main(int argc, char **argv) {
 					(const char *)catname,hostname)) {
 			catfound=true;
 		}
-		if (!charstring::compare((const char *)catname,"def")) {
-			catdeffound=true;
-		}
-		catrows++;
 	}
-	// Through sqlrelay the list follows information_schema's model -
-	// the lone catalog is "def" and the databases are schemas.  The
-	// native driver treats databases as catalogs instead; the connected
-	// database, named after the host, appears in the list.
-	if (issqlrelay) {
-		assertEqualStmt(stmt,catrows,1);
-		assertTrueStmt(stmt,catdeffound);
-	} else {
-		assertTrueStmt(stmt,catfound);
-	}
+	// the catalogs are the databases; the connected database, named
+	// after the host, appears in the list
+	assertTrueStmt(stmt,catfound);
 	SQLFreeStmt(stmt,SQL_CLOSE);
 	SQLFreeStmt(stmt,SQL_UNBIND);
 	stdoutput.printf("\n");
@@ -8417,7 +8404,6 @@ int main(int argc, char **argv) {
 			schname,sizeof(schname),&schnameind);
 	assertSuccessStmt(stmt,erg);
 	int		schrows=0;
-	bool		schfound=false;
 	for (;;) {
 		erg=SQLFetch(stmt);
 		if (erg==SQL_NO_DATA) {
@@ -8427,21 +8413,10 @@ int main(int argc, char **argv) {
 		if (erg!=SQL_SUCCESS && erg!=SQL_SUCCESS_WITH_INFO) {
 			break;
 		}
-		if (!charstring::compareIgnoringCase(
-					(const char *)schname,hostname)) {
-			schfound=true;
-		}
 		schrows++;
 	}
-	if (issqlrelay) {
-		// mysql databases are schemas through sqlrelay; the connected
-		// database, named after the host, should appear in the list
-		assertTrueStmt(stmt,schfound);
-	} else {
-		// the native driver treats databases as catalogs and
-		// has no schemas; the list is empty
-		assertEqualStmt(stmt,schrows,0);
-	}
+	// mysql has no schemas; the list is empty
+	assertEqualStmt(stmt,schrows,0);
 	SQLFreeStmt(stmt,SQL_CLOSE);
 	SQLFreeStmt(stmt,SQL_UNBIND);
 	stdoutput.printf("\n");
@@ -8726,6 +8701,16 @@ int main(int argc, char **argv) {
 	erg=SQLBindCol(stmt,4,SQL_C_CHAR,
 			clcolname,sizeof(clcolname),&clcolnameind);
 	assertSuccessStmt(stmt,erg);
+	SQLCHAR		clcat[64];
+	SQLLEN		clcatind;
+	erg=SQLBindCol(stmt,1,SQL_C_CHAR,
+			clcat,sizeof(clcat),&clcatind);
+	assertSuccessStmt(stmt,erg);
+	SQLCHAR		clschem[64];
+	SQLLEN		clschemind;
+	erg=SQLBindCol(stmt,2,SQL_C_CHAR,
+			clschem,sizeof(clschem),&clschemind);
+	assertSuccessStmt(stmt,erg);
 	const char	*clexpcolnames[]={
 		"testtinyint","testsmallint","testmediumint","testint",
 		"testbigint","testfloat","testreal","testdecimal",
@@ -8737,6 +8722,10 @@ int main(int argc, char **argv) {
 		erg=SQLFetch(stmt);
 		assertSuccessStmt(stmt,erg);
 		assertEqualStmt(stmt,(const char *)clcolname,clexpcolnames[c]);
+		// #7971 - catalog is the database; mysql has no schemas
+		assertTrueStmt(stmt,clcatind!=SQL_NULL_DATA && clcat[0]!='\0');
+		assertTrueStmt(stmt,clschemind==SQL_NULL_DATA ||
+					clschem[0]=='\0');
 	}
 	erg=SQLFetch(stmt);
 	assertEqualStmt(stmt,(int)erg,(int)SQL_NO_DATA);

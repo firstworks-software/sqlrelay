@@ -3573,6 +3573,7 @@ class oracle extends sqlrtest {
 		assertTrue(rs.next());
 		// #7971 - oracle has no catalogs
 		assertEquals(rs.getString("TABLE_CAT"),(String)null);
+		assertEquals(rs.getString("TABLE_SCHEM"),con.getSchema());
 		assertEquals(rs.getString("COLUMN_NAME"),"TESTNUMBER");
 		assertEquals(rs.getString("TYPE_NAME"),"NUMBER");
 		assertTrue(rs.next());

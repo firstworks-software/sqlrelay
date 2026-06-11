@@ -2116,7 +2116,7 @@ print("\n");
 
 # database is schema
 print("DATABASE IS SCHEMA: \n");
-assertTrue($con->getDatabaseIsSchema());
+assertFalse($con->getDatabaseIsSchema());
 print("\n");
 
 
@@ -2124,7 +2124,7 @@ print("\n");
 print("CATALOG LIST: \n");
 assertTrue($cur->getCatalogList(undef));
 assertEquals($cur->getColumnName(0),"Database");
-assertInResultSet($cur,"Database","def");
+assertInResultSet($cur,"Database",$hostname);
 print("\n");
 
 
@@ -2132,7 +2132,8 @@ print("\n");
 print("SCHEMA LIST: \n");
 assertTrue($cur->getSchemaList(undef));
 assertEquals($cur->getColumnName(0),"Database");
-assertInResultSet($cur,"Database",$hostname);
+# mysql has no schemas
+assertEquals($cur->rowCount(),0);
 print("\n");
 
 

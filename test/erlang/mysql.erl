@@ -1742,21 +1742,21 @@ main() ->
 
     %% DATABASE IS SCHEMA
     io:format("DATABASE IS SCHEMA: ~n"),
-    assertTrue(sqlrelay:getDatabaseIsSchema()),
+    assertFalse(sqlrelay:getDatabaseIsSchema()),
     io:format("~n"),
 
     %% CATALOG LIST
     io:format("CATALOG LIST: ~n"),
     assertTrue(sqlrelay:getCatalogList("")),
     assertEqualsString(sqlrelay:getColumnName(0), "Database"),
-    assertInResultSet("Database", "def"),
+    assertInResultSet("Database", Hostname),
     io:format("~n"),
 
     %% SCHEMA LIST
     io:format("SCHEMA LIST: ~n"),
     assertTrue(sqlrelay:getSchemaList("")),
     assertEqualsString(sqlrelay:getColumnName(0), "Database"),
-    assertInResultSet("Database", Hostname),
+    assertEqualsInt(sqlrelay:rowCount(), 0),
     io:format("~n"),
 
     %% TABLE TYPE LIST

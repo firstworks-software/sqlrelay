@@ -1511,7 +1511,8 @@ console.log();
 console.log("SCHEMA LIST: ");
 assertTrue(cur.getSchemaList(null));
 assertEqStr(cur.getColumnName(0),"Database");
-assertInResultSet(cur,"Database","TESTUSER");
+// firebird has no schemas
+assertEqInt(cur.rowCount(),0);
 console.log();
 
 

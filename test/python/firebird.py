@@ -1495,7 +1495,7 @@ def main():
 	print("SCHEMA LIST: ")
 	assertTrue(cur.getSchemaList(None))
 	assertEquals(cur.getColumnName(0),"Database")
-	assertInResultSet(cur,"Database","TESTUSER")
+	assertEquals(cur.rowCount(),0)
 	print()
 
 

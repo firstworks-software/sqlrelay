@@ -2202,7 +2202,7 @@ for (uint16_t a=0; a<50; a++) {
 
 	// database is schema
 	stdoutput.printf("DATABASE IS SCHEMA: \n");
-	assertTrue(con->getDatabaseIsSchema());
+	assertFalse(con->getDatabaseIsSchema());
 	stdoutput.printf("\n");
 
 
@@ -2210,7 +2210,7 @@ for (uint16_t a=0; a<50; a++) {
 	stdoutput.printf("CATALOG LIST: \n");
 	assertTrue(cur->getCatalogList(NULL));
 	assertEquals(cur->getColumnName(0),"Database");
-	assertInResultSet(cur,"Database","def");
+	assertInResultSet(cur,"Database",hostname);
 	stdoutput.printf("\n");
 
 
@@ -2218,7 +2218,8 @@ for (uint16_t a=0; a<50; a++) {
 	stdoutput.printf("SCHEMA LIST: \n");
 	assertTrue(cur->getSchemaList(NULL));
 	assertEquals(cur->getColumnName(0),"Database");
-	assertInResultSet(cur,"Database",hostname);
+	// mysql has no schemas
+	assertEquals(cur->rowCount(),0);
 	stdoutput.printf("\n");
 
 

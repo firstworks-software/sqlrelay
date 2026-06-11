@@ -2465,6 +2465,9 @@ class postgresql extends sqlrtest {
                 assertEquals(rsmd.getColumnName(col++),"IS_AUTOINCREMENT");
                 assertEquals(rsmd.getColumnName(col++),"IS_GENERATEDCOLUMN");
 		assertTrue(rs.next());
+		// #7971 - catalog/schema track the connection
+		assertEquals(rs.getString("TABLE_CAT"),con.getCatalog());
+		assertEquals(rs.getString("TABLE_SCHEM"),con.getSchema());
 		assertEquals(rs.getString("COLUMN_NAME"),"testint");
 		// sqlrelay gets the data type directly from the
 		// information_schema.columns table, odd that they're not

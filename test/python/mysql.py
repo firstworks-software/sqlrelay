@@ -2109,7 +2109,7 @@ def main():
 
 	# database is schema
 	print("DATABASE IS SCHEMA: ")
-	assertTrue(con.getDatabaseIsSchema())
+	assertFalse(con.getDatabaseIsSchema())
 	print()
 
 
@@ -2117,7 +2117,7 @@ def main():
 	print("CATALOG LIST: ")
 	assertTrue(cur.getCatalogList(None))
 	assertEquals(cur.getColumnName(0),"Database")
-	assertInResultSet(cur,"Database","def")
+	assertInResultSet(cur,"Database",hostname)
 	print()
 
 
@@ -2125,7 +2125,7 @@ def main():
 	print("SCHEMA LIST: ")
 	assertTrue(cur.getSchemaList(None))
 	assertEquals(cur.getColumnName(0),"Database")
-	assertInResultSet(cur,"Database",hostname)
+	assertEquals(cur.rowCount(),0)
 	print()
 
 

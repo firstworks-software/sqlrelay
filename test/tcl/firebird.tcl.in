@@ -1321,7 +1321,7 @@ puts ""
 puts "SCHEMA LIST: "
 assertTrue [$cur getSchemaList ""]
 assertEqual [$cur getColumnName 0] "Database"
-assertInResultSet $cur "Database" "TESTUSER"
+assertEqual [$cur rowCount] 0
 puts ""
 
 

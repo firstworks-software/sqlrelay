@@ -8304,6 +8304,11 @@ int main(int argc, char **argv) {
 	erg=SQLBindCol(stmt,1,SQL_C_CHAR,
 			clcat,sizeof(clcat),&clcatind);
 	assertSuccessStmt(stmt,erg);
+	SQLCHAR		clschem[64];
+	SQLLEN		clschemind;
+	erg=SQLBindCol(stmt,2,SQL_C_CHAR,
+			clschem,sizeof(clschem),&clschemind);
+	assertSuccessStmt(stmt,erg);
 	const char	*expcols[]={"TESTSMALLINT","TESTINT","TESTBIGINT",
 				"TESTDECIMAL","TESTREAL","TESTDOUBLE",
 				"TESTCHAR","TESTVARCHAR","TESTDATE",
@@ -8331,6 +8336,9 @@ int main(int argc, char **argv) {
 			assertTrueStmt(stmt,clcatind==SQL_NULL_DATA ||
 						clcat[0]=='\0');
 		}
+		// schema is the table's schema
+		assertTrueStmt(stmt,clschemind!=SQL_NULL_DATA &&
+					clschem[0]!='\0');
 	}
 	erg=SQLFetch(stmt);
 	assertEqualStmt(stmt,(int)erg,(int)SQL_NO_DATA);

@@ -2098,7 +2098,7 @@ print "\n"
 
 # database is schema
 print "DATABASE IS SCHEMA: \n"
-assertTrue(con.getDatabaseIsSchema())
+assertFalse(con.getDatabaseIsSchema())
 print "\n"
 
 
@@ -2106,7 +2106,7 @@ print "\n"
 print "CATALOG LIST: \n"
 assertTrue(cur.getCatalogList(nil))
 assertEqual(cur.getColumnName(0),"Database")
-assertInResultSet(cur,"Database","def")
+assertInResultSet(cur,"Database",hostname)
 print "\n"
 
 
@@ -2114,7 +2114,8 @@ print "\n"
 print "SCHEMA LIST: \n"
 assertTrue(cur.getSchemaList(nil))
 assertEqual(cur.getColumnName(0),"Database")
-assertInResultSet(cur,"Database",hostname)
+# mysql has no schemas
+assertEqual(cur.rowCount(),0)
 print "\n"
 
 

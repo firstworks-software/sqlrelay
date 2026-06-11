@@ -3212,19 +3212,17 @@ if (issqlrelay) {
 		assertEquals(rsmd.getColumnCount(),1);
 		col=1;
 		assertEquals(rsmd.getColumnName(col++),"TABLE_CAT");
-		if (!issqlrelay) {
-			// mysql jdbc returns schemas as catalogs
-			found=false;
-			while (rs.next()) {
-				String catname=rs.getString("TABLE_CAT");
-				if (catname!=null &&
-					catname.equals(hostname)) {
-					found=true;
-					break;
-				}
+		// the catalogs are the databases
+		found=false;
+		while (rs.next()) {
+			String catname=rs.getString("TABLE_CAT");
+			if (catname!=null &&
+				catname.equals(hostname)) {
+				found=true;
+				break;
 			}
-			assertTrue(found);
 		}
+		assertTrue(found);
 		rs.close();
 		System.out.println();
 
@@ -3239,19 +3237,7 @@ if (issqlrelay) {
 		col=1;
 		assertEquals(rsmd.getColumnName(col++),"TABLE_SCHEM");
 		assertEquals(rsmd.getColumnName(col++),"TABLE_CATALOG");
-		if (issqlrelay) {
-			// mysql jdbc returns schemas as catalogs
-			found=false;
-			while (rs.next()) {
-				String schemaname=rs.getString("TABLE_SCHEM");
-				if (schemaname!=null &&
-					schemaname.equals(hostname)) {
-					found=true;
-					break;
-				}
-			}
-			assertTrue(found);
-		}
+		// mysql has no schemas
 		rs.close();
 		System.out.println();
 
@@ -3446,6 +3432,9 @@ if (issqlrelay) {
 		assertEquals(rsmd.getColumnName(col++),"IS_AUTOINCREMENT");
 		assertEquals(rsmd.getColumnName(col++),"IS_GENERATEDCOLUMN");
 		assertTrue(rs.next());
+		// #7971 - catalog/schema track the connection
+		assertEquals(rs.getString("TABLE_CAT"),con.getCatalog());
+		assertEquals(rs.getString("TABLE_SCHEM"),con.getSchema());
 		assertEquals(rs.getString("COLUMN_NAME"),"testtinyint");
 		assertEquals(rs.getString("TYPE_NAME"),"TINYINT");
 		assertTrue(rs.next());

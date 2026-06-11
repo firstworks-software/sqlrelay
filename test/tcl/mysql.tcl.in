@@ -1781,7 +1781,7 @@ puts ""
 
 # database is schema
 puts "DATABASE IS SCHEMA: "
-assertTrue [$con getDatabaseIsSchema]
+assertFalse [$con getDatabaseIsSchema]
 puts ""
 
 
@@ -1789,7 +1789,7 @@ puts ""
 puts "CATALOG LIST: "
 assertTrue [$cur getCatalogList ""]
 assertEqual [$cur getColumnName 0] "Database"
-assertInResultSet $cur "Database" "def"
+assertInResultSet $cur "Database" $hostname
 puts ""
 
 
@@ -1797,7 +1797,7 @@ puts ""
 puts "SCHEMA LIST: "
 assertTrue [$cur getSchemaList ""]
 assertEqual [$cur getColumnName 0] "Database"
-assertInResultSet $cur "Database" $hostname
+assertEqual [$cur rowCount] 0
 puts ""
 
 

@@ -7778,6 +7778,11 @@ int main(int argc, char **argv) {
 	erg=SQLBindCol(stmt,1,SQL_C_CHAR,
 			clcat,sizeof(clcat),&clcatind);
 	assertSuccessStmt(stmt,erg);
+	SQLCHAR		clschem[64];
+	SQLLEN		clschemind;
+	erg=SQLBindCol(stmt,2,SQL_C_CHAR,
+			clschem,sizeof(clschem),&clschemind);
+	assertSuccessStmt(stmt,erg);
 	const char	*expcols[]={"testint","testfloat","testchar",
 				"testvarchar","testclob","testblob"};
 	const char	*expctypes[]={"INT","FLOAT","CHAR",
@@ -7795,6 +7800,9 @@ int main(int argc, char **argv) {
 			assertTrueStmt(stmt,clcatind==SQL_NULL_DATA ||
 						clcat[0]=='\0');
 		}
+		// sqlite has no schemas
+		assertTrueStmt(stmt,clschemind==SQL_NULL_DATA ||
+					clschem[0]=='\0');
 		if (issqlrelay) {
 			assertEqualStmt(stmt,
 				(const char *)clcoltype,expctypes[c]);

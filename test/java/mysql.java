@@ -2240,7 +2240,7 @@ class mysql extends sqlrtest {
 
 		// database is schema
 		System.out.println("DATABASE IS SCHEMA: ");
-		assertTrue(con.getDatabaseIsSchema());
+		assertFalse(con.getDatabaseIsSchema());
 		System.out.println();
 
 
@@ -2248,7 +2248,7 @@ class mysql extends sqlrtest {
 		System.out.println("CATALOG LIST: ");
 		assertTrue(cur.getCatalogList(null));
 		assertEquals(cur.getColumnName(0),"Database");
-		assertInResultSet(cur,"Database","def");
+		assertInResultSet(cur,"Database",hostname);
 		System.out.println();
 
 
@@ -2256,7 +2256,7 @@ class mysql extends sqlrtest {
 		System.out.println("SCHEMA LIST: ");
 		assertTrue(cur.getSchemaList(null));
 		assertEquals(cur.getColumnName(0),"Database");
-		assertInResultSet(cur,"Database",hostname);
+		assertEquals(cur.rowCount(),0);
 		System.out.println();
 
 

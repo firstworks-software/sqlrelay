@@ -1496,7 +1496,8 @@ namespace SQLRClientTest
             Console.WriteLine("SCHEMA LIST: ");
             assertTrue(cur.getSchemaList(null));
             assertEquals(cur.getColumnName(0),"Database");
-            assertInResultSet(cur, "Database", "TESTUSER");
+            // firebird has no schemas
+            assertEquals(cur.rowCount(), (UInt64)0);
             Console.WriteLine("");
 
 

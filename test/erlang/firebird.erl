@@ -1218,7 +1218,7 @@ main() ->
     io:format("SCHEMA LIST: ~n"),
     assertTrue(sqlrelay:getSchemaList("")),
     assertEqualsString(sqlrelay:getColumnName(0), "Database"),
-    assertInResultSet("Database", "TESTUSER"),
+    assertEqualsInt(sqlrelay:rowCount(), 0),
     io:format("~n"),
 
     %% TABLE TYPE LIST

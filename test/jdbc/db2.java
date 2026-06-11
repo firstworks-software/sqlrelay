@@ -2547,7 +2547,7 @@ class db2 extends sqlrtest {
 		assertTrue(rs.next());
 		// #7971 - db2 has no catalogs, schema is the table's schema
 		assertEquals(rs.getString("TABLE_CAT"),(String)null);
-		assertEquals(rs.getString("TABLE_SCHEM"),user.toUpperCase());
+		assertEquals(rs.getString("TABLE_SCHEM"),con.getSchema());
 		assertEquals(rs.getString("COLUMN_NAME"),"TESTSMALLINT");
 		assertEquals(rs.getString("TYPE_NAME"),"SMALLINT");
 		assertTrue(rs.next());

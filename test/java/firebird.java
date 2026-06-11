@@ -1545,7 +1545,7 @@ class firebird extends sqlrtest {
 		System.out.println("SCHEMA LIST: ");
 		assertTrue(cur.getSchemaList(null));
 		assertEquals(cur.getColumnName(0),"Database");
-		assertInResultSet(cur,"Database","TESTUSER");
+		assertEquals(cur.rowCount(),0);
 		System.out.println();
 
 

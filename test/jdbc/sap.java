@@ -2718,6 +2718,7 @@ class sap extends sqlrtest {
 		assertTrue(rs.next());
 		// #7971 - sap returns the current catalog (the database)
 		assertEquals(rs.getString("TABLE_CAT"),con.getCatalog());
+		assertEquals(rs.getString("TABLE_SCHEM"),con.getSchema());
 		assertEquals(rs.getString("COLUMN_NAME"),"testint");
 		assertEquals(rs.getString("TYPE_NAME"),
 					"int");

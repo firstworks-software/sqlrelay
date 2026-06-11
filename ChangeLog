@@ -167,6 +167,12 @@
 		string, the db2, oracle, firebird, and sqlite connections return
 		null (those databases have no catalogs), and oracle's legacy
 		user_* path returns the current schema
+	the mysql connection now reports the database as the catalog and null
+		as the schema (rather than the literal "def" catalog with the
+		database as the schema) and the firebird connection now reports
+		null for the schema, matching the native odbc/jdbc drivers;
+		mysql's catalog list now enumerates the databases and its schema
+		list, like firebird's, is empty
 
 2.1.1 - added tns_admin support
 	fixed sqlr-start ... -strace ...

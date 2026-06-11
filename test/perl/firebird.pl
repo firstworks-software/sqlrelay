@@ -1484,7 +1484,8 @@ print("\n");
 print("SCHEMA LIST: \n");
 assertTrue($cur->getSchemaList(undef));
 assertEquals($cur->getColumnName(0),"Database");
-assertInResultSet($cur,"Database","TESTUSER");
+# firebird has no schemas
+assertEquals($cur->rowCount(),0);
 print("\n");
 
 

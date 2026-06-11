@@ -1175,41 +1175,18 @@ const char *firebirdconnection::getCatalogListQuery(const char *catalog) {
 const char *firebirdconnection::getSchemaListQuery(const char *catalog,
 							const char *schema) {
 
-	schemalistquery.clear();
-
-	// select clause
-	schemalistquery.append(
-		"select distinct "
+	// firebird has no schemas
+	return "select "
 		"	null as table_cat, "
-		"	trim(rdb$owner_name) as table_schem, "
+		"	null as table_schem, "
 		"	trim('') as table_name, "
 		"	trim('') as table_type, "
 		"	trim('') as remarks, "
-		"	null ");
-
-	// from clause
-	schemalistquery.append(
+		"	null "
 		"from "
-		"	rdb$relations ");
-
-	// where clause
-	schemalistquery.append(
+		"	rdb$database "
 		"where "
-		"	rdb$system_flag=0 ");
-	if (schema) {
-		schemalistquery.append(
-			"	and "
-			"	trim(rdb$owner_name) like upper('");
-		schemalistquery.append(schema);
-		schemalistquery.append("') ");
-	}
-
-	// order by clause
-	schemalistquery.append(
-		"order by "
-		"	rdb$owner_name");
-
-	return schemalistquery.getString();
+		"	1=0";
 }
 
 const char *firebirdconnection::getTableTypeListQuery(
@@ -1281,7 +1258,7 @@ const char *firebirdconnection::getTableListQuery(const char *catalog,
 	tablelistquery.append(
 		"select "
 		"	null as table_cat, "
-		"	trim(rdb$owner_name) as table_schem, "
+		"	null as table_schem, "
 		"	trim(rdb$relation_name) as table_name, "
 		"	trim('TABLE') as table_type, "
 		"	trim('') as remarks, "
@@ -1783,7 +1760,7 @@ const char *firebirdconnection::getColumnListQuery(const char *catalog,
 	columnlistquery.append(
 		"select "
 		"	null as table_cat, "
-		"	trim(rl.rdb$owner_name) as table_schem, "
+		"	null as table_schem, "
 		"	trim(rf.rdb$relation_name) as table_name, "
 		"	trim(rf.rdb$field_name) as column_name, "
 		"	fd.rdb$field_type as data_type,"

@@ -2190,7 +2190,7 @@ namespace SQLRClientTest
 
             // database is schema
             Console.WriteLine("DATABASE IS SCHEMA: ");
-            assertTrue(con.getDatabaseIsSchema());
+            assertFalse(con.getDatabaseIsSchema());
             Console.WriteLine("");
 
 
@@ -2198,7 +2198,7 @@ namespace SQLRClientTest
             Console.WriteLine("CATALOG LIST: ");
             assertTrue(cur.getCatalogList(null));
             assertEquals(cur.getColumnName(0), "Database");
-            assertInResultSet(cur, "Database", "def");
+            assertInResultSet(cur, "Database", hostname);
             Console.WriteLine("");
 
 
@@ -2206,7 +2206,8 @@ namespace SQLRClientTest
             Console.WriteLine("SCHEMA LIST: ");
             assertTrue(cur.getSchemaList(null));
             assertEquals(cur.getColumnName(0), "Database");
-            assertInResultSet(cur, "Database", hostname);
+            // mysql has no schemas
+            assertEquals(cur.rowCount(), (UInt64)0);
             Console.WriteLine("");
 
 

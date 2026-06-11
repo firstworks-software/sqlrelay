@@ -2168,7 +2168,7 @@
 
 	// database is schema
 	echo("DATABASE IS SCHEMA: \n");
-	assertTrue(sqlrcon_getDatabaseIsSchema($con));
+	assertFalse(sqlrcon_getDatabaseIsSchema($con));
 	echo("\n");
 
 
@@ -2176,7 +2176,7 @@
 	echo("CATALOG LIST: \n");
 	assertTrue(sqlrcur_getCatalogList($cur,NULL));
 	assertEqStr(sqlrcur_getColumnName($cur,0),"Database");
-	assertInResultSet($cur,"Database","def");
+	assertInResultSet($cur,"Database",$hostname);
 	echo("\n");
 
 
@@ -2184,7 +2184,7 @@
 	echo("SCHEMA LIST: \n");
 	assertTrue(sqlrcur_getSchemaList($cur,NULL));
 	assertEqStr(sqlrcur_getColumnName($cur,0),"Database");
-	assertInResultSet($cur,"Database",$hostname);
+	assertEqInt(sqlrcur_rowCount($cur),0);
 	echo("\n");
 
 
