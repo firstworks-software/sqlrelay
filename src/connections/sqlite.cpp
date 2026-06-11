@@ -529,9 +529,9 @@ void sqliteconnection::initDatabaseFeatures() {
 	databasefeatures[FEATURE_QUOTED_IDENTIFIER_CASE_STORAGE]=
 		"";
 
-	// left blank: backend SQL-92 join-operator support undetermined
 	databasefeatures[FEATURE_RELATIONAL_JOIN_OPERATORS]=
-		"";
+		"CROSS_JOIN,FULL_OUTER_JOIN,INNER_JOIN,"
+			"LEFT_OUTER_JOIN,RIGHT_OUTER_JOIN";
 
 	databasefeatures[FEATURE_RESULT_SET_CONCURRENCIES]=
 		"FORWARD_ONLY/READ_ONLY";
@@ -549,7 +549,7 @@ void sqliteconnection::initDatabaseFeatures() {
 		"ROWID_UNSUPPORTED";
 
 	databasefeatures[FEATURE_ROW_VALUE_CONSTRUCTOR_EXPRESSIONS]=
-		"";
+		"VALUE_EXPRESSION,NULL,ROW_SUBQUERY";
 
 	databasefeatures[FEATURE_SCHEMA_TERM]=
 		"schema";

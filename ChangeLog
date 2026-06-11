@@ -200,6 +200,10 @@
 	db2, sap, freetds and informix now report predicates (the sap, freetds
 		and informix native odbc drivers underreport, so those are pinned
 		per side)
+	db2, sap, freetds, informix, firebird and sqlite now report
+		relational_join_operators and row_value_constructor_expressions,
+		pinned per side where the native driver underreports (sap,
+		informix, firebird) or doesn't implement the infotype (sqlite)
 
 2.1.1 - added tns_admin support
 	fixed sqlr-start ... -strace ...

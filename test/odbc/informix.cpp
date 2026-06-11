@@ -3446,8 +3446,14 @@ int main(int argc, char **argv) {
 			(SQLPOINTER)&uintval,
 			(SQLSMALLINT)sizeof(uintval),&vallen);
 	if (issqlrelay) {
-		assertEqualDbc(dbc,(int)uintval,0);
+		assertEqualDbc(dbc,(int)uintval,
+			(int)(SQL_SRJO_CROSS_JOIN|
+				SQL_SRJO_FULL_OUTER_JOIN|
+				SQL_SRJO_INNER_JOIN|
+				SQL_SRJO_LEFT_OUTER_JOIN|
+				SQL_SRJO_RIGHT_OUTER_JOIN));
 	} else {
+		// the native driver underreports; informix supports these
 		assertEqualDbc(dbc,(int)uintval,0);
 	}
 	assertSuccessDbc(dbc,erg);
@@ -3480,8 +3486,12 @@ int main(int argc, char **argv) {
 			(SQLPOINTER)&uintval,
 			(SQLSMALLINT)sizeof(uintval),&vallen);
 	if (issqlrelay) {
-		assertEqualDbc(dbc,(int)uintval,0);
+		assertEqualDbc(dbc,(int)uintval,
+			(int)(SQL_SRVC_VALUE_EXPRESSION|
+				SQL_SRVC_NULL|
+				SQL_SRVC_ROW_SUBQUERY));
 	} else {
+		// the native driver underreports; informix supports these
 		assertEqualDbc(dbc,(int)uintval,0);
 	}
 	assertSuccessDbc(dbc,erg);

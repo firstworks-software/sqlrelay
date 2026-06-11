@@ -3771,19 +3771,13 @@ int main(int argc, char **argv) {
 	erg=SQLGetInfo(dbc,SQL_SQL92_RELATIONAL_JOIN_OPERATORS,
 			(SQLPOINTER)&uintval,
 			(SQLSMALLINT)sizeof(uintval),&vallen);
-	if (issqlrelay) {
-		// the db2 backend module reports no relational join operators
-		assertEqualDbc(dbc,(int)uintval,0);
-	} else {
-		// native db2 reports 380
-		assertEqualDbc(dbc,(int)uintval,
-			(int)(SQL_SRJO_EXCEPT_JOIN|
-				SQL_SRJO_FULL_OUTER_JOIN|
-				SQL_SRJO_INNER_JOIN|
-				SQL_SRJO_INTERSECT_JOIN|
-				SQL_SRJO_LEFT_OUTER_JOIN|
-				SQL_SRJO_RIGHT_OUTER_JOIN));
-	}
+	assertEqualDbc(dbc,(int)uintval,
+		(int)(SQL_SRJO_EXCEPT_JOIN|
+			SQL_SRJO_FULL_OUTER_JOIN|
+			SQL_SRJO_INNER_JOIN|
+			SQL_SRJO_INTERSECT_JOIN|
+			SQL_SRJO_LEFT_OUTER_JOIN|
+			SQL_SRJO_RIGHT_OUTER_JOIN));
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
 	#endif
@@ -3818,16 +3812,10 @@ int main(int argc, char **argv) {
 	erg=SQLGetInfo(dbc,SQL_SQL92_ROW_VALUE_CONSTRUCTOR,
 			(SQLPOINTER)&uintval,
 			(SQLSMALLINT)sizeof(uintval),&vallen);
-	if (issqlrelay) {
-		// the db2 backend module reports no row value constructors
-		assertEqualDbc(dbc,(int)uintval,0);
-	} else {
-		// native db2 reports 11
-		assertEqualDbc(dbc,(int)uintval,
-			(int)(SQL_SRVC_VALUE_EXPRESSION|
-				SQL_SRVC_NULL|
-				SQL_SRVC_ROW_SUBQUERY));
-	}
+	assertEqualDbc(dbc,(int)uintval,
+		(int)(SQL_SRVC_VALUE_EXPRESSION|
+			SQL_SRVC_NULL|
+			SQL_SRVC_ROW_SUBQUERY));
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
 	#endif

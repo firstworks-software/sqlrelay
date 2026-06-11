@@ -3632,7 +3632,18 @@ int main(int argc, char **argv) {
 	erg=SQLGetInfo(dbc,SQL_SQL92_RELATIONAL_JOIN_OPERATORS,
 			(SQLPOINTER)&uintval,
 			(SQLSMALLINT)sizeof(uintval),&vallen);
-	assertEqualDbc(dbc,(int)uintval,0);
+	if (issqlrelay) {
+		assertEqualDbc(dbc,(int)uintval,
+			(int)(SQL_SRJO_CROSS_JOIN|
+				SQL_SRJO_FULL_OUTER_JOIN|
+				SQL_SRJO_INNER_JOIN|
+				SQL_SRJO_LEFT_OUTER_JOIN|
+				SQL_SRJO_RIGHT_OUTER_JOIN|
+				SQL_SRJO_UNION_JOIN));
+	} else {
+		// the native driver underreports; sap supports these
+		assertEqualDbc(dbc,(int)uintval,0);
+	}
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
 	#endif
@@ -3664,7 +3675,16 @@ int main(int argc, char **argv) {
 	erg=SQLGetInfo(dbc,SQL_SQL92_ROW_VALUE_CONSTRUCTOR,
 			(SQLPOINTER)&uintval,
 			(SQLSMALLINT)sizeof(uintval),&vallen);
-	assertEqualDbc(dbc,(int)uintval,0);
+	if (issqlrelay) {
+		assertEqualDbc(dbc,(int)uintval,
+			(int)(SQL_SRVC_VALUE_EXPRESSION|
+				SQL_SRVC_NULL|
+				SQL_SRVC_DEFAULT|
+				SQL_SRVC_ROW_SUBQUERY));
+	} else {
+		// the native driver underreports; sap supports these
+		assertEqualDbc(dbc,(int)uintval,0);
+	}
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
 	#endif
