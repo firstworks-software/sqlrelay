@@ -5419,7 +5419,7 @@ class SQLRSERVER_DLLSPEC sqlrservercursor : public sqlrserverbase {
 		/** Returns true if "query" contains an "on commit preserve rows"
 		 *  clause matching the pattern set by
 		 *  setOnCommitPreserveRowsPattern(), and false otherwise. */
-		bool	onCommitPreserveRows(const char *query);
+		bool	containsOnCommitPreserveRows(const char *query);
 
 		/** Sets whether column info is currently valid to "valid". */
 		void	setColumnInfoIsValid(bool valid);

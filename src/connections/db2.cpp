@@ -3163,7 +3163,7 @@ void db2cursor::checkForTempTable(const char *query, uint32_t size) {
 		droptable.append(tablename.getString());
 		conn->cont->addTempTableForDrop(droptable.getString());
 
-	} else if (onCommitPreserveRows(ptr)) {
+	} else if (containsOnCommitPreserveRows(ptr)) {
 		conn->cont->addTempTableForTrunc(tablename.getString());
 	}
 }

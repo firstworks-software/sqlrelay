@@ -214,7 +214,6 @@ class SQLRSERVER_DLLSPEC firebirdcursor : public sqlrservercursor {
 		bool	bindformaterror;
 
 		regularexpression	executeprocedure;
-		regularexpression	preserverows;
 };
 
 class SQLRSERVER_DLLSPEC firebirdconnection : public sqlrserverconnection {
@@ -2327,8 +2326,6 @@ firebirdcursor::firebirdcursor(sqlrserverconnection *conn, uint16_t id) :
 	bindformaterror=false;
 
 	setCreateTempTablePattern("(create|CREATE)[ 	\n\r]+(global|GLOBAL)[ 	\n\r]+(temporary|TEMPORARY)[ 	\n\r]+(table|TABLE)[ 	\n\r]+");
-	preserverows.setPattern("(on|ON)[ 	\n\r]+(commit|COMMIT)[ 	\n\r]+(preserve|PRESERVE)[ 	\n\r]+(rows|ROWS)");
-	preserverows.study();
 	executeprocedure.setPattern("(execute|EXECUTE)[ 	\n\r]+(procedure|PROCEDURE)");
 	executeprocedure.study();
 }
@@ -3250,7 +3247,7 @@ void firebirdcursor::checkForTempTable(const char *query, uint32_t size) {
 	}
 
 	// look for "on commit preserve rows"
-	bool	preserverowsoncommit=preserverows.match(ptr);
+	bool	preserverowsoncommit=containsOnCommitPreserveRows(ptr);
 
 	if (firebirdconn->droptemptables) {
 

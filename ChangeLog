@@ -151,8 +151,13 @@
 	db2 connection now drops declared global temporary tables (qualified
 		with session.) and truncates created global temporary tables
 		at end of session
-	added shared onCommitPreserveRows()/setOnCommitPreserveRowsPattern()
-		to the server cursor
+	added shared containsOnCommitPreserveRows()/
+		setOnCommitPreserveRowsPattern() to the server cursor
+	migrated the oracle and firebird connections to the shared
+		containsOnCommitPreserveRows() and dropped their duplicate
+		preserverows regular expressions
+	containsOnCommitPreserveRows() now ignores string literals, delimited
+		identifiers, and comments so it can't false-match inside one
 
 2.1.1 - added tns_admin support
 	fixed sqlr-start ... -strace ...

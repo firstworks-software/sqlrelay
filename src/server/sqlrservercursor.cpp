@@ -1714,8 +1714,42 @@ void sqlrservercursor::setOnCommitPreserveRowsPattern(
 	pvt->_preserverows.study();
 }
 
-bool sqlrservercursor::onCommitPreserveRows(const char *query) {
-	return pvt->_preserverows.match(query);
+bool sqlrservercursor::containsOnCommitPreserveRows(const char *query) {
+
+	if (charstring::isNullOrEmpty(query)) {
+		return false;
+	}
+
+	// blank out string literals, delimited identifiers, and comments,
+	// so "on commit preserve rows" can't false-match inside one - eg. a
+	// column default like default 'on commit preserve rows', a quoted
+	// identifier, or a comment
+	stringbuffer	stripped;
+	const char	*ptr=query;
+	const char	*end=query+charstring::getLength(query);
+	while (ptr<end) {
+		if (character::isInSet(*ptr,"'\"`")) {
+			ptr=conn->cont->skipStringLiteral(ptr,end,true);
+			stripped.append(' ');
+		} else if (!charstring::compare(ptr,"--",2)) {
+			while (ptr<end && *ptr!='\n') {
+				ptr++;
+			}
+			stripped.append(' ');
+		} else if (!charstring::compare(ptr,"/*",2)) {
+			ptr+=2;
+			while (ptr<end && charstring::compare(ptr,"*/",2)) {
+				ptr++;
+			}
+			ptr+=2;
+			stripped.append(' ');
+		} else {
+			stripped.append(*ptr);
+			ptr++;
+		}
+	}
+
+	return pvt->_preserverows.match(stripped.getString());
 }
 
 bool sqlrservercursor::columnInfoIsValidAfterPrepare() {

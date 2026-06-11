@@ -18,10 +18,6 @@
 	#include "oracleatruntime.cpp"
 #endif
 
-#ifdef HAVE_ORACLE_8i
-	#include <rudiments/regularexpression.h>
-#endif
-
 #define MAX_BYTES_PER_CHAR	4
 
 #ifdef OCI_STMT_CACHE
@@ -459,10 +455,6 @@ class SQLRSERVER_DLLSPEC oraclecursor : public sqlrservercursor {
 		bool		resultfreed;
 
 		oracleconnection	*oracleconn;
-
-		#ifdef HAVE_ORACLE_8i
-		regularexpression	preserverows;
-		#endif
 };
 
 oracleconnection::oracleconnection(sqlrservercontroller *cont) :
@@ -3579,8 +3571,6 @@ oraclecursor::oraclecursor(sqlrserverconnection *conn, uint16_t id) :
 
 	#ifdef HAVE_ORACLE_8i
 	setCreateTempTablePattern("(create|CREATE)[ 	\n\r]+(global|GLOBAL)[ 	\n\r]+(temporary|TEMPORARY)[ 	\n\r]+(table|TABLE)[ 	\n\r]+");
-	preserverows.setPattern("(on|ON)[ 	\n\r]+(commit|COMMIT)[ 	\n\r]+(preserve|PRESERVE)[ 	\n\r]+(rows|ROWS)");
-	preserverows.study();
 	#endif
 }
 
@@ -4586,7 +4576,7 @@ void oraclecursor::checkForTempTable(const char *query, uint32_t size) {
 	}
 
 	// look for "on commit preserve rows"
-	bool	preserverowsoncommit=preserverows.match(ptr);
+	bool	preserverowsoncommit=containsOnCommitPreserveRows(ptr);
 
 	if (oracleconn->droptemptables) {
 
