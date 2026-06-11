@@ -628,7 +628,9 @@ void db2connection::initDatabaseFeatures() {
 		"FORWARD_ONLY,SCROLL_INSENSITIVE,SCROLL_SENSITIVE";
 
 	databasefeatures[FEATURE_PREDICATES]=
-		"";
+		"BETWEEN,COMPARISON,EXISTS,IN,"
+			"ISNOTNULL,ISNULL,LIKE,"
+			"QUANTIFIED_COMPARISON";
 
 	databasefeatures[FEATURE_PROCEDURE_TERM]=
 		"stored procedure";

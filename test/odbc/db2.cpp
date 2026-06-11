@@ -3751,21 +3751,15 @@ int main(int argc, char **argv) {
 	erg=SQLGetInfo(dbc,SQL_SQL92_PREDICATES,
 			(SQLPOINTER)&uintval,
 			(SQLSMALLINT)sizeof(uintval),&vallen);
-	if (issqlrelay) {
-		// the db2 backend module reports no predicates
-		assertEqualDbc(dbc,(int)uintval,0);
-	} else {
-		// native db2 reports 15879
-		assertEqualDbc(dbc,(int)uintval,
-			(int)(SQL_SP_EXISTS|
-				SQL_SP_ISNOTNULL|
-				SQL_SP_ISNULL|
-				SQL_SP_LIKE|
-				SQL_SP_IN|
-				SQL_SP_BETWEEN|
-				SQL_SP_COMPARISON|
-				SQL_SP_QUANTIFIED_COMPARISON));
-	}
+	assertEqualDbc(dbc,(int)uintval,
+		(int)(SQL_SP_BETWEEN|
+			SQL_SP_COMPARISON|
+			SQL_SP_EXISTS|
+			SQL_SP_IN|
+			SQL_SP_ISNOTNULL|
+			SQL_SP_ISNULL|
+			SQL_SP_LIKE|
+			SQL_SP_QUANTIFIED_COMPARISON));
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
 	#endif

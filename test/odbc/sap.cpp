@@ -3607,7 +3607,20 @@ int main(int argc, char **argv) {
 	erg=SQLGetInfo(dbc,SQL_SQL92_PREDICATES,
 			(SQLPOINTER)&uintval,
 			(SQLSMALLINT)sizeof(uintval),&vallen);
-	assertEqualDbc(dbc,(int)uintval,0);
+	if (issqlrelay) {
+		assertEqualDbc(dbc,(int)uintval,
+			(int)(SQL_SP_BETWEEN|
+				SQL_SP_COMPARISON|
+				SQL_SP_EXISTS|
+				SQL_SP_IN|
+				SQL_SP_ISNOTNULL|
+				SQL_SP_ISNULL|
+				SQL_SP_LIKE|
+				SQL_SP_QUANTIFIED_COMPARISON));
+	} else {
+		// the native driver underreports; sap supports these
+		assertEqualDbc(dbc,(int)uintval,0);
+	}
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
 	#endif

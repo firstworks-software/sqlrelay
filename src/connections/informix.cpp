@@ -614,7 +614,9 @@ void informixconnection::initDatabaseFeatures() {
 		"";
 
 	databasefeatures[FEATURE_PREDICATES]=
-		"";
+		"BETWEEN,COMPARISON,EXISTS,IN,"
+			"ISNOTNULL,ISNULL,LIKE,"
+			"QUANTIFIED_COMPARISON";
 
 	databasefeatures[FEATURE_PROCEDURE_TERM]=
 		"function";
