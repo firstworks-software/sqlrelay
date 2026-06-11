@@ -622,6 +622,7 @@ void informixconnection::initDatabaseFeatures() {
 	databasefeatures[FEATURE_QUOTED_IDENTIFIER_CASE_STORAGE]=
 		"LOWER";
 
+	// left blank: backend SQL-92 join-operator support undetermined
 	databasefeatures[FEATURE_RELATIONAL_JOIN_OPERATORS]=
 		"";
 
@@ -783,6 +784,7 @@ void informixconnection::initDatabaseFeatures() {
 	databasefeatures[FEATURE_UPDATES_ARE_DETECTED]=
 		"";
 
+	// left blank: backend SQL-92 value-expression support undetermined
 	databasefeatures[FEATURE_VALUE_EXPRESSIONS]=
 		"";
 

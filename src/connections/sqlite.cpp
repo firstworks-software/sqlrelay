@@ -529,6 +529,7 @@ void sqliteconnection::initDatabaseFeatures() {
 	databasefeatures[FEATURE_QUOTED_IDENTIFIER_CASE_STORAGE]=
 		"";
 
+	// left blank: backend SQL-92 join-operator support undetermined
 	databasefeatures[FEATURE_RELATIONAL_JOIN_OPERATORS]=
 		"";
 

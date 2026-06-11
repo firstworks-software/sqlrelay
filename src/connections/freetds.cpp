@@ -741,6 +741,7 @@ void freetdsconnection::initDatabaseFeatures() {
 	databasefeatures[FEATURE_QUOTED_IDENTIFIER_CASE_STORAGE]=
 		"MIXED";
 
+	// left blank: backend SQL-92 join-operator support undetermined
 	databasefeatures[FEATURE_RELATIONAL_JOIN_OPERATORS]=
 		"";
 
