@@ -767,13 +767,16 @@ void postgresqlconnection::initDatabaseFeatures() {
 	databasefeatures[FEATURE_TABLE_TERM]=
 		"table";
 
+	// postgresql also supports QUARTER, but its native odbc driver
+	// omits it; matching native
 	databasefeatures[FEATURE_TIME_DATE_ADD_INTERVALS]=
 		"FRAC_SECOND,SECOND,MINUTE,HOUR,DAY,"
-			"WEEK,MONTH,QUARTER,YEAR";
+			"WEEK,MONTH,YEAR";
 
+	// postgresql supports more, but its native odbc driver reports only
+	// these; matching native
 	databasefeatures[FEATURE_TIME_DATE_DIFF_INTERVALS]=
-		"FRAC_SECOND,SECOND,MINUTE,HOUR,DAY,"
-			"WEEK,MONTH,QUARTER,YEAR";
+		"SECOND,MINUTE,HOUR,DAY";
 
 	databasefeatures[FEATURE_TIME_DATE_FUNCTIONS]=
 		"curdate,curtime,dayname,dayofmonth,dayofweek,"

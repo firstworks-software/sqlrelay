@@ -878,13 +878,15 @@ void freetdsconnection::initDatabaseFeatures() {
 	databasefeatures[FEATURE_TABLE_TERM]=
 		"table";
 
+	// sap ase supports these, but the freetds odbc driver reports 0;
+	// matching native
 	databasefeatures[FEATURE_TIME_DATE_ADD_INTERVALS]=
-		"FRAC_SECOND,SECOND,MINUTE,HOUR,"
-			"DAY,WEEK,MONTH,QUARTER,YEAR";
+		"";
 
+	// sap ase supports these, but the freetds odbc driver reports 0;
+	// matching native
 	databasefeatures[FEATURE_TIME_DATE_DIFF_INTERVALS]=
-		"FRAC_SECOND,SECOND,MINUTE,HOUR,"
-			"DAY,WEEK,MONTH,QUARTER,YEAR";
+		"";
 
 	databasefeatures[FEATURE_TIME_DATE_FUNCTIONS]=
 		"curdate,curtime,dayname,dayofmonth,dayofweek,"

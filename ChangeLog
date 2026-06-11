@@ -224,6 +224,9 @@
 	info_schema_views and time_date_literals now match the native odbc
 		drivers (oracle, mysql and sap report info_schema_views;
 		oracle and postgresql no longer over-report)
+	time_date_add_intervals and time_date_diff_intervals now match the
+		native odbc drivers (postgresql, mysql and freetds no longer
+		over-report)
 
 2.1.1 - added tns_admin support
 	fixed sqlr-start ... -strace ...

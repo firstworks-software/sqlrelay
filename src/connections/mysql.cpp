@@ -836,13 +836,15 @@ void mysqlconnection::initDatabaseFeatures() {
 	databasefeatures[FEATURE_TABLE_TERM]=
 		"table";
 
+	// mysql supports these, but its native odbc driver reports 0;
+	// matching native (see #8114 re mariadb vs mysql)
 	databasefeatures[FEATURE_TIME_DATE_ADD_INTERVALS]=
-		"FRAC_SECOND,SECOND,MINUTE,HOUR,"
-			"DAY,WEEK,MONTH,QUARTER,YEAR";
+		"";
 
+	// mysql supports these, but its native odbc driver reports 0;
+	// matching native (see #8114 re mariadb vs mysql)
 	databasefeatures[FEATURE_TIME_DATE_DIFF_INTERVALS]=
-		"FRAC_SECOND,SECOND,MINUTE,HOUR,"
-			"DAY,WEEK,MONTH,QUARTER,YEAR";
+		"";
 
 	databasefeatures[FEATURE_TIME_DATE_FUNCTIONS]=
 		"DAYOFWEEK,WEEKDAY,DAYOFMONTH,DAYOFYEAR,MONTH,"
