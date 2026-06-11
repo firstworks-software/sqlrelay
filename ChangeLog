@@ -192,7 +192,8 @@
 		those operations are reported only when their own
 		alter_table_operations tokens are present
 	mysql now reports max_identifier_length (64)
-	db2, sap, freetds and informix now report create_table_clauses
+	db2, sap, freetds and informix now report create_table_clauses,
+		create_view_clauses, drop_table_clauses and drop_view_clauses
 
 2.1.1 - added tns_admin support
 	fixed sqlr-start ... -strace ...

@@ -3313,17 +3313,11 @@ int main(int argc, char **argv) {
 	erg=SQLGetInfo(dbc,SQL_CREATE_VIEW,
 			(SQLPOINTER)&uintval,
 			(SQLSMALLINT)sizeof(uintval),&vallen);
-	if (issqlrelay) {
-		// the db2 backend module reports no create-view clauses
-		assertEqualDbc(dbc,(int)uintval,0);
-	} else {
-		// native db2 reports 15
-		assertEqualDbc(dbc,(int)uintval,
-			(int)(SQL_CV_CREATE_VIEW|
-				SQL_CV_CHECK_OPTION|
-				SQL_CV_CASCADED|
-				SQL_CV_LOCAL));
-	}
+	assertEqualDbc(dbc,(int)uintval,
+		(int)(SQL_CV_CREATE_VIEW|
+			SQL_CV_CHECK_OPTION|
+			SQL_CV_CASCADED|
+			SQL_CV_LOCAL));
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
 	#endif
@@ -3417,12 +3411,7 @@ int main(int argc, char **argv) {
 	erg=SQLGetInfo(dbc,SQL_DROP_TABLE,
 			(SQLPOINTER)&uintval,
 			(SQLSMALLINT)sizeof(uintval),&vallen);
-	if (issqlrelay) {
-		// the db2 backend module reports no drop-table clauses
-		assertEqualDbc(dbc,(int)uintval,0);
-	} else {
-		assertEqualDbc(dbc,(int)uintval,(int)SQL_DT_DROP_TABLE);
-	}
+	assertEqualDbc(dbc,(int)uintval,(int)SQL_DT_DROP_TABLE);
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
 	#endif
@@ -3446,12 +3435,7 @@ int main(int argc, char **argv) {
 	erg=SQLGetInfo(dbc,SQL_DROP_VIEW,
 			(SQLPOINTER)&uintval,
 			(SQLSMALLINT)sizeof(uintval),&vallen);
-	if (issqlrelay) {
-		// the db2 backend module reports no drop-view clauses
-		assertEqualDbc(dbc,(int)uintval,0);
-	} else {
-		assertEqualDbc(dbc,(int)uintval,(int)SQL_DV_DROP_VIEW);
-	}
+	assertEqualDbc(dbc,(int)uintval,(int)SQL_DV_DROP_VIEW);
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
 	#endif

@@ -424,7 +424,7 @@ void db2connection::initDatabaseFeatures() {
 		"";
 
 	databasefeatures[FEATURE_CREATE_VIEW_CLAUSES]=
-		"";
+		"CREATE_VIEW,CHECK_OPTION,CASCADED,LOCAL";
 
 	databasefeatures[FEATURE_DATA_DEFINITION_TRANSACTION_BEHAVIOR]=
 		"";
@@ -457,13 +457,13 @@ void db2connection::initDatabaseFeatures() {
 		"";
 
 	databasefeatures[FEATURE_DROP_TABLE_CLAUSES]=
-		"";
+		"DROP_TABLE";
 
 	databasefeatures[FEATURE_DROP_TRANSLATION_CLAUSES]=
 		"";
 
 	databasefeatures[FEATURE_DROP_VIEW_CLAUSES]=
-		"";
+		"DROP_VIEW";
 
 	databasefeatures[FEATURE_EXTRA_NAME_CHARACTERS]=
 		"@#";

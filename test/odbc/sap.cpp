@@ -3239,12 +3239,9 @@ int main(int argc, char **argv) {
 	erg=SQLGetInfo(dbc,SQL_CREATE_VIEW,
 			(SQLPOINTER)&uintval,
 			(SQLSMALLINT)sizeof(uintval),&vallen);
-	if (issqlrelay) {
-		assertEqualDbc(dbc,(int)uintval,0);
-	} else {
-		assertEqualDbc(dbc,(int)uintval,
-			(int)(SQL_CV_CREATE_VIEW|SQL_CV_CHECK_OPTION));
-	}
+	assertEqualDbc(dbc,(int)uintval,
+		(int)(SQL_CV_CREATE_VIEW|
+			SQL_CV_CHECK_OPTION));
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
 	#endif
@@ -3329,11 +3326,7 @@ int main(int argc, char **argv) {
 	erg=SQLGetInfo(dbc,SQL_DROP_TABLE,
 			(SQLPOINTER)&uintval,
 			(SQLSMALLINT)sizeof(uintval),&vallen);
-	if (issqlrelay) {
-		assertEqualDbc(dbc,(int)uintval,0);
-	} else {
-		assertEqualDbc(dbc,(int)uintval,(int)SQL_DT_DROP_TABLE);
-	}
+	assertEqualDbc(dbc,(int)uintval,(int)SQL_DT_DROP_TABLE);
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
 	#endif
@@ -3357,11 +3350,7 @@ int main(int argc, char **argv) {
 	erg=SQLGetInfo(dbc,SQL_DROP_VIEW,
 			(SQLPOINTER)&uintval,
 			(SQLSMALLINT)sizeof(uintval),&vallen);
-	if (issqlrelay) {
-		assertEqualDbc(dbc,(int)uintval,0);
-	} else {
-		assertEqualDbc(dbc,(int)uintval,(int)SQL_DV_DROP_VIEW);
-	}
+	assertEqualDbc(dbc,(int)uintval,(int)SQL_DV_DROP_VIEW);
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
 	#endif
