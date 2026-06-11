@@ -221,6 +221,9 @@
 		drivers
 	oracle now reports supports_multiple_result_sets (ref cursors,
 		implicit results); matches its native odbc driver
+	info_schema_views and time_date_literals now match the native odbc
+		drivers (oracle, mysql and sap report info_schema_views;
+		oracle and postgresql no longer over-report)
 
 2.1.1 - added tns_admin support
 	fixed sqlr-start ... -strace ...

@@ -530,8 +530,13 @@ void mysqlconnection::initDatabaseFeatures() {
 	databasefeatures[FEATURE_INDEX_KEYWORDS]=
 		"ASC,DESC";
 
+	// matches the native (mariadb) odbc driver; see #8114 re mariadb
+	// vs mysql
 	databasefeatures[FEATURE_INFO_SCHEMA_VIEWS]=
-		"";
+		"CHARACTER_SETS,COLLATIONS,COLUMN_PRIVILEGES,"
+			"COLUMNS,KEY_COLUMN_USAGE,"
+			"REFERENTIAL_CONSTRAINTS,TABLE_CONSTRAINTS,"
+			"TABLE_PRIVILEGES,TABLES,VIEWS";
 
 	databasefeatures[FEATURE_INSERTS_ARE_DETECTED]=
 		"";

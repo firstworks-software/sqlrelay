@@ -2861,14 +2861,8 @@ int main(int argc, char **argv) {
 	erg=SQLGetInfo(dbc,SQL_DATETIME_LITERALS,
 			(SQLPOINTER)&uintval,
 			(SQLSMALLINT)sizeof(uintval),&vallen);
-	if (issqlrelay) {
-		assertEqualDbc(dbc,(int)uintval,
-			(int)(SQL_DL_SQL92_DATE|SQL_DL_SQL92_TIMESTAMP|
-				SQL_DL_SQL92_INTERVAL_YEAR_TO_MONTH|
-				SQL_DL_SQL92_INTERVAL_DAY_TO_SECOND));
-	} else {
-		assertEqualDbc(dbc,(int)uintval,0);
-	}
+	// oracle supports these, but its native odbc driver reports 0
+	assertEqualDbc(dbc,(int)uintval,0);
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
 	#endif
@@ -3324,13 +3318,9 @@ int main(int argc, char **argv) {
 	erg=SQLGetInfo(dbc,SQL_INFO_SCHEMA_VIEWS,
 			(SQLPOINTER)&uintval,
 			(SQLSMALLINT)sizeof(uintval),&vallen);
-	if (issqlrelay) {
-		assertEqualDbc(dbc,(int)uintval,0);
-	} else {
-		assertEqualDbc(dbc,(int)uintval,
-			(int)(SQL_ISV_COLUMN_PRIVILEGES|
-				SQL_ISV_TABLE_PRIVILEGES));
-	}
+	assertEqualDbc(dbc,(int)uintval,
+		(int)(SQL_ISV_COLUMN_PRIVILEGES|
+			SQL_ISV_TABLE_PRIVILEGES));
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
 	#endif

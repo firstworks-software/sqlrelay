@@ -651,8 +651,9 @@ void oracleconnection::initDatabaseFeatures() {
 	databasefeatures[FEATURE_INDEX_KEYWORDS]=
 		"ASC,DESC";
 
+	// matches native odbc
 	databasefeatures[FEATURE_INFO_SCHEMA_VIEWS]=
-		"";
+		"COLUMN_PRIVILEGES,TABLE_PRIVILEGES";
 
 	databasefeatures[FEATURE_INSERTS_ARE_DETECTED]=
 		"";
@@ -940,10 +941,10 @@ void oracleconnection::initDatabaseFeatures() {
 		"CURRENT_DATE,CURRENT_TIMESTAMP,CURDATE,EXTRACT,"
 			"HOUR,MINUTE,MONTH,SECOND,YEAR";
 
+	// oracle supports these, but its native odbc driver reports 0;
+	// matching native
 	databasefeatures[FEATURE_TIME_DATE_LITERALS]=
-		"DATE,TIMESTAMP,"
-			"INTERVAL_YEAR_TO_MONTH,"
-			"INTERVAL_DAY_TO_SECOND";
+		"";
 
 	databasefeatures[FEATURE_TRANSACTION_DDL_DML]=
 		"DML_ONLY";

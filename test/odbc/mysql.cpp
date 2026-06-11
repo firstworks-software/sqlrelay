@@ -3832,22 +3832,19 @@ int main(int argc, char **argv) {
 	erg=SQLGetInfo(dbc,SQL_INFO_SCHEMA_VIEWS,
 			(SQLPOINTER)&uintval,
 			(SQLSMALLINT)sizeof(uintval),&vallen);
-	if (issqlrelay) {
-		assertEqualDbc(dbc,(int)uintval,0);
-	} else {
-		// MariaDB reports 4429930.
-		assertEqualDbc(dbc,(int)uintval,
-			(int)(SQL_ISV_CHARACTER_SETS|
-				SQL_ISV_COLLATIONS|
-				SQL_ISV_COLUMN_PRIVILEGES|
-				SQL_ISV_COLUMNS|
-				SQL_ISV_KEY_COLUMN_USAGE|
-				SQL_ISV_REFERENTIAL_CONSTRAINTS|
-				SQL_ISV_TABLE_CONSTRAINTS|
-				SQL_ISV_TABLE_PRIVILEGES|
-				SQL_ISV_TABLES|
-				SQL_ISV_VIEWS));
-	}
+	// MariaDB reports 4429930; sqlrelay matches (see #8114 re mariadb
+	// vs mysql)
+	assertEqualDbc(dbc,(int)uintval,
+		(int)(SQL_ISV_CHARACTER_SETS|
+			SQL_ISV_COLLATIONS|
+			SQL_ISV_COLUMN_PRIVILEGES|
+			SQL_ISV_COLUMNS|
+			SQL_ISV_KEY_COLUMN_USAGE|
+			SQL_ISV_REFERENTIAL_CONSTRAINTS|
+			SQL_ISV_TABLE_CONSTRAINTS|
+			SQL_ISV_TABLE_PRIVILEGES|
+			SQL_ISV_TABLES|
+			SQL_ISV_VIEWS));
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
 	#endif

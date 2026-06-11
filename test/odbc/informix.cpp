@@ -2830,11 +2830,7 @@ int main(int argc, char **argv) {
 	erg=SQLGetInfo(dbc,SQL_DATETIME_LITERALS,
 			(SQLPOINTER)&uintval,
 			(SQLSMALLINT)sizeof(uintval),&vallen);
-	if (issqlrelay) {
-		assertEqualDbc(dbc,(int)uintval,0);
-	} else {
-		assertEqualDbc(dbc,(int)uintval,0);
-	}
+	assertEqualDbc(dbc,(int)uintval,0);
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
 	#endif
@@ -3244,11 +3240,7 @@ int main(int argc, char **argv) {
 	erg=SQLGetInfo(dbc,SQL_INFO_SCHEMA_VIEWS,
 			(SQLPOINTER)&uintval,
 			(SQLSMALLINT)sizeof(uintval),&vallen);
-	if (issqlrelay) {
-		assertEqualDbc(dbc,(int)uintval,0);
-	} else {
-		assertEqualDbc(dbc,(int)uintval,0);
-	}
+	assertEqualDbc(dbc,(int)uintval,0);
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
 	#endif

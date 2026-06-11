@@ -466,16 +466,10 @@ void postgresqlconnection::initDatabaseFeatures() {
 	databasefeatures[FEATURE_INDEX_KEYWORDS]=
 		"ASC,DESC";
 
+	// postgresql supports these, but its native odbc driver reports 0;
+	// matching native
 	databasefeatures[FEATURE_INFO_SCHEMA_VIEWS]=
-		"CHECK_CONSTRAINTS,COLLATIONS,"
-			"COLUMN_DOMAIN_USAGE,COLUMN_PRIVILEGES,"
-			"COLUMNS,CONSTRAINT_COLUMN_USAGE,"
-			"CONSTRAINT_TABLE_USAGE,DOMAIN_CONSTRAINTS,"
-			"DOMAINS,KEY_COLUMN_USAGE,"
-			"REFERENTIAL_CONSTRAINTS,SCHEMATA,"
-			"SQL_LANGUAGES,TABLE_CONSTRAINTS,"
-			"TABLE_PRIVILEGES,TABLES,USAGE_PRIVILEGES,"
-			"VIEW_COLUMN_USAGE,VIEW_TABLE_USAGE,VIEWS";
+		"";
 
 	databasefeatures[FEATURE_INSERTS_ARE_DETECTED]=
 		"";
@@ -786,18 +780,10 @@ void postgresqlconnection::initDatabaseFeatures() {
 			"dayofyear,hour,minute,month,monthname,now,"
 			"quarter,second,week,year,timestampadd";
 
+	// postgresql supports these, but its native odbc driver doesn't
+	// implement this infotype; matching native (reports 0)
 	databasefeatures[FEATURE_TIME_DATE_LITERALS]=
-		"DATE,TIME,TIMESTAMP,"
-			"INTERVAL_YEAR,INTERVAL_MONTH,INTERVAL_DAY,"
-			"INTERVAL_HOUR,INTERVAL_MINUTE,"
-			"INTERVAL_SECOND,"
-			"INTERVAL_YEAR_TO_MONTH,"
-			"INTERVAL_DAY_TO_HOUR,"
-			"INTERVAL_DAY_TO_MINUTE,"
-			"INTERVAL_DAY_TO_SECOND,"
-			"INTERVAL_HOUR_TO_MINUTE,"
-			"INTERVAL_HOUR_TO_SECOND,"
-			"INTERVAL_MINUTE_TO_SECOND";
+		"";
 
 	databasefeatures[FEATURE_TRANSACTION_DDL_DML]=
 		"DDL_AND_DML";

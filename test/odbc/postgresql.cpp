@@ -2923,23 +2923,9 @@ int main(int argc, char **argv) {
 			(SQLPOINTER)&uintval,
 			(SQLSMALLINT)sizeof(uintval),&vallen);
 	if (issqlrelay) {
-		// sqlrelay reports the full set of SQL92 datetime literals
-		assertEqualDbc(dbc,(int)uintval,
-			(int)(SQL_DL_SQL92_DATE|SQL_DL_SQL92_TIME|
-				SQL_DL_SQL92_TIMESTAMP|
-				SQL_DL_SQL92_INTERVAL_YEAR|
-				SQL_DL_SQL92_INTERVAL_MONTH|
-				SQL_DL_SQL92_INTERVAL_DAY|
-				SQL_DL_SQL92_INTERVAL_HOUR|
-				SQL_DL_SQL92_INTERVAL_MINUTE|
-				SQL_DL_SQL92_INTERVAL_SECOND|
-				SQL_DL_SQL92_INTERVAL_YEAR_TO_MONTH|
-				SQL_DL_SQL92_INTERVAL_DAY_TO_HOUR|
-				SQL_DL_SQL92_INTERVAL_DAY_TO_MINUTE|
-				SQL_DL_SQL92_INTERVAL_DAY_TO_SECOND|
-				SQL_DL_SQL92_INTERVAL_HOUR_TO_MINUTE|
-				SQL_DL_SQL92_INTERVAL_HOUR_TO_SECOND|
-				SQL_DL_SQL92_INTERVAL_MINUTE_TO_SECOND));
+		// postgresql supports these, but its native odbc driver
+		// doesn't recognize this infotype, so sqlrelay reports 0
+		assertEqualDbc(dbc,(int)uintval,0);
 		assertSuccessDbc(dbc,erg);
 	} else {
 		// postgresql odbc doesn't recognize this info type
@@ -3466,33 +3452,8 @@ int main(int argc, char **argv) {
 	erg=SQLGetInfo(dbc,SQL_INFO_SCHEMA_VIEWS,
 			(SQLPOINTER)&uintval,
 			(SQLSMALLINT)sizeof(uintval),&vallen);
-	if (issqlrelay) {
-		// sqlrelay reports almost the entire SQL_ISV_* set,
-		// minus ASSERTIONS, CHARACTER_SETS, and TRANSLATIONS
-		assertEqualDbc(dbc,(int)uintval,
-			(int)(SQL_ISV_CHECK_CONSTRAINTS|
-				SQL_ISV_COLLATIONS|
-				SQL_ISV_COLUMN_DOMAIN_USAGE|
-				SQL_ISV_COLUMN_PRIVILEGES|
-				SQL_ISV_COLUMNS|
-				SQL_ISV_CONSTRAINT_COLUMN_USAGE|
-				SQL_ISV_CONSTRAINT_TABLE_USAGE|
-				SQL_ISV_DOMAIN_CONSTRAINTS|
-				SQL_ISV_DOMAINS|
-				SQL_ISV_KEY_COLUMN_USAGE|
-				SQL_ISV_REFERENTIAL_CONSTRAINTS|
-				SQL_ISV_SCHEMATA|
-				SQL_ISV_SQL_LANGUAGES|
-				SQL_ISV_TABLE_CONSTRAINTS|
-				SQL_ISV_TABLE_PRIVILEGES|
-				SQL_ISV_TABLES|
-				SQL_ISV_USAGE_PRIVILEGES|
-				SQL_ISV_VIEW_COLUMN_USAGE|
-				SQL_ISV_VIEW_TABLE_USAGE|
-				SQL_ISV_VIEWS));
-	} else {
-		assertEqualDbc(dbc,(int)uintval,0);
-	}
+	// postgresql supports these, but its native odbc driver reports 0
+	assertEqualDbc(dbc,(int)uintval,0);
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
 	#endif

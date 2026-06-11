@@ -466,8 +466,9 @@ void sapconnection::initDatabaseFeatures() {
 	databasefeatures[FEATURE_INDEX_KEYWORDS]=
 		"ASC,DESC";
 
+	// matches native odbc (the native sap driver; freetds reports 0)
 	databasefeatures[FEATURE_INFO_SCHEMA_VIEWS]=
-		"";
+		"ASSERTIONS,CHARACTER_SETS";
 
 	databasefeatures[FEATURE_INSERTS_ARE_DETECTED]=
 		"";
