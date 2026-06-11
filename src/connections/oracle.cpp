@@ -1725,7 +1725,7 @@ const char *oracleconnection::getDbHostNameQuery() {
 const char *oracleconnection::getCatalogListQuery(const char *catalog) {
 	// no good way to get a list of catalogs in oracle
 	return "select "
-		"	'' as table_cat, "
+		"	null as table_cat, "
 		"	'' as table_schem, "
 		"	'' as table_name, "
 		"	'' as table_type, "
@@ -1745,7 +1745,7 @@ const char *oracleconnection::getSchemaListQuery(const char *catalog,
 	// select clause
 	schemalistquery.append(
 		"select "
-		"	'' as table_cat, "
+		"	null as table_cat, "
 		"	username as table_schem, "
 		"	'' as table_name, "
 		"	'' as table_type, "
@@ -1787,7 +1787,7 @@ const char *oracleconnection::getTableTypeListQuery(
 	// select clause
 	tabletypelistquery.append(
 		"select "
-		"	'' as table_cat, "
+		"	null as table_cat, "
 		"	'' as table_schem, "
 		"	'' as table_name, "
 		"	table_type, "
@@ -1862,7 +1862,7 @@ const char *oracleconnection::getTableListQuery(const char *catalog,
 		// select clause
 		tablelistquery.append(
 			"select "
-			"	'' as table_cat, "
+			"	null as table_cat, "
 			"	owner as table_schem, "
 			"	table_name as table_name, "
 			"	'TABLE' as table_type, "
@@ -1908,7 +1908,7 @@ const char *oracleconnection::getTableListQuery(const char *catalog,
 		// select clause
 		tablelistquery.append(
 			"select "
-			"	'' as table_cat, "
+			"	null as table_cat, "
 			"	owner as table_schem, "
 			"	view_name as table_name, "
 			"	'VIEW' as table_type, "
@@ -1954,7 +1954,7 @@ const char *oracleconnection::getTableListQuery(const char *catalog,
 		// select clause
 		tablelistquery.append(
 			"select "
-			"	'' as table_cat, "
+			"	null as table_cat, "
 			"	owner as table_schem, "
 			"	synonym_name as table_name, "
 			"	'SYNONYM' as table_type, "
@@ -2861,13 +2861,13 @@ const char *oracleconnection::getColumnListQuery(const char *catalog,
 
 	// select clause
 	columnlistquery.append("select "
-			"	'' as table_cat, ");
+			"	null as table_cat, ");
 	if (supportssyscontext) {
 		columnlistquery.append(
 			"	tc.owner as table_schem, ");
 	} else {
 		columnlistquery.append(
-			"	'' as table_schem, ");
+			"	user as table_schem, ");
 	}
 	columnlistquery.append(
 			"	tc.table_name, "
@@ -3060,13 +3060,13 @@ const char *oracleconnection::getPrimaryKeysListQuery(const char *catalog,
 	// select clause
 	primarykeyslistquery.append(
 		"select "
-		"	'' as table_cat, ");
+		"	null as table_cat, ");
 	if (supportssyscontext) {
 		primarykeyslistquery.append(
 			"	cc.owner as table_schem, ");
 	} else {
 		primarykeyslistquery.append(
-			"	'' as table_schem, ");
+			"	user as table_schem, ");
 	}
 	primarykeyslistquery.append(
 		"	cc.table_name, "
@@ -3145,13 +3145,13 @@ const char *oracleconnection::getKeyAndIndexListQuery(const char *catalog,
 	// select clause
 	keyandindexlistquery.append(
 		"select "
-		"	'' as table_cat, ");
+		"	null as table_cat, ");
 	if (supportssyscontext) {
 		keyandindexlistquery.append(
 			"	i.owner as table_schem, ");
 	} else {
 		keyandindexlistquery.append(
-			"	'' as table_schem, ");
+			"	user as table_schem, ");
 	}
 	keyandindexlistquery.append(
 		"	i.table_name, "

@@ -1934,7 +1934,7 @@ const char *informixconnection::getColumnListQuery(const char *catalog,
 	// select clause
 	columnlistquery.append(
 		"select "
-		"	trim('') as table_cat, "
+		"	trim(dbinfo('dbname')) as table_cat, "
 		"	trim(tb.owner) as table_schem, "
 		"	trim(tb.tabname) as table_name, "
 		"	trim(cl.colname) as column_name, "
@@ -2144,7 +2144,7 @@ const char *informixconnection::getPrimaryKeysListQuery(const char *catalog,
 	// select clause
 	primarykeyslistquery.append(
 		"select "
-		"	trim('') as table_cat, "
+		"	trim(dbinfo('dbname')) as table_cat, "
 		"	trim(st.owner) as table_schem, "
 		"	trim(st.tabname) as table_name, "
 		"	trim(sc.colname) as column_name, "
@@ -2241,7 +2241,7 @@ const char *informixconnection::getKeyAndIndexListQuery(const char *catalog,
 	// select clause
 	keyandindexlistquery.append(
 		"select "
-		"	trim('') as table_cat, "
+		"	trim(dbinfo('dbname')) as table_cat, "
 		"	trim(st.owner) as table_schem, "
 		"	trim(st.tabname) as table_name, "
 		"	case "
@@ -2395,7 +2395,7 @@ const char *informixconnection::getProcedureListQuery(
 	// select clause
 	procedurelistquery.append(
 		"select "
-		"	trim('') as procedure_cat, "
+		"	trim(dbinfo('dbname')) as procedure_cat, "
 		"	trim(owner) as procedure_schem, "
 		"	trim(procname) as procedure_name, "
 		"	0 as num_input_params, "
@@ -2461,7 +2461,7 @@ const char *informixconnection::getProcedureParameterListQuery(
 	// select clause
 	procedureparameterlistquery.append(
 		"select "
-		"	trim('') as procedure_cat, "
+		"	trim(dbinfo('dbname')) as procedure_cat, "
 		"	trim(sp.owner) as procedure_schem, "
 		"	trim(sp.procname) as procedure_name, "
 		"	trim(spc.paramname) as column_name, "

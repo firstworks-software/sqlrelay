@@ -1236,7 +1236,7 @@ const char *sapconnection::getSchemaListQuery(const char *catalog,
 	// select clause
 	schemalistquery.append(
 		"select distinct "
-		"	'' as table_cat, "
+		"	db_name() as table_cat, "
 		"	user_name(uid) as table_schem, "
 		"	'' as table_name, "
 		"	'' as table_type, "
@@ -1277,8 +1277,8 @@ const char *sapconnection::getTableTypeListQuery(const char *catalog,
 	// select clause
 	tabletypelistquery.append(
 		"select "
-		"	'' as table_cat, "
-		"	'' as table_schem, "
+		"	null as table_cat, "
+		"	null as table_schem, "
 		"	'' as table_name, "
 		"	table_type, "
 		"	'' as remarks, "
@@ -1320,7 +1320,7 @@ const char *sapconnection::getTableListQuery(const char *catalog,
 	// select clause
 	tablelistquery.append(
 		"select "
-		"	'' as table_cat, "
+		"	db_name() as table_cat, "
 		"	user_name(uid) as table_schem, "
 		"	name as table_name, "
 		"	'TABLE' as table_type, "
@@ -2071,7 +2071,7 @@ const char *sapconnection::getColumnListQuery(const char *catalog,
 	// select clause
 	columnlistquery.append(
 		"select "
-		"	'' as table_cat, "
+		"	db_name() as table_cat, "
 		"	user_name(ob.uid) as table_schem, "
 		"	ob.name as table_name, "
 		"	co.name as column_name, "
@@ -2221,7 +2221,7 @@ const char *sapconnection::getPrimaryKeysListQuery(const char *catalog,
 	// select clause
 	primarykeyslistquery.append(
 		"select "
-		"	'' as table_cat, "
+		"	db_name() as table_cat, "
 		"	user_name(o.uid) as table_schem, "
 		"	o.name as table_name, "
 		"	index_col(o.name,i.indid,c.colid) as column_name, "
@@ -2279,7 +2279,7 @@ const char *sapconnection::getKeyAndIndexListQuery(const char *catalog,
 	// select clause
 	keyandindexlistquery.append(
 		"select "
-		"	'' as table_cat, "
+		"	db_name() as table_cat, "
 		"	user_name(o.uid) as table_schem, "
 		"	o.name as table_name, "
 		"	case "

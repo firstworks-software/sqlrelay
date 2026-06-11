@@ -762,8 +762,8 @@ const char *sqliteconnection::getDbHostName() {
 const char *sqliteconnection::getCatalogListQuery(const char *catalog) {
 	// no good way to get a list of catalogs in sqlite
 	return "select "
-		"	'' as table_cat, "
-		"	'' as table_schem, "
+		"	null as table_cat, "
+		"	null as table_schem, "
 		"	'' as table_name, "
 		"	'' as table_type, "
 		"	'' as remarks, "
@@ -775,8 +775,8 @@ const char *sqliteconnection::getCatalogListQuery(const char *catalog) {
 const char *sqliteconnection::getSchemaListQuery(const char *catalog,
 						const char *schema) {
 	return "select "
-		"	'' as table_cat, "
-		"	'' as table_schem, "
+		"	null as table_cat, "
+		"	null as table_schem, "
 		"	'' as table_name, "
 		"	'' as table_type, "
 		"	'' as remarks, "
@@ -794,8 +794,8 @@ const char *sqliteconnection::getTableTypeListQuery(
 	// select clause
 	tabletypelistquery.append(
 		"select "
-		"	'' as table_cat, "
-		"	'' as table_schem, "
+		"	null as table_cat, "
+		"	null as table_schem, "
 		"	'' as table_name, "
 		"	table_type, "
 		"	'' as remarks, "
@@ -839,8 +839,8 @@ const char *sqliteconnection::getTableListQuery(const char *catalog,
 	// select clause
 	tablelistquery.append(
 		"select "
-		"	'' as table_cat, "
-		"	'' as table_schem, "
+		"	null as table_cat, "
+		"	null as table_schem, "
 		"	tbl_name as table_name, "
 		"	'TABLE' as table_type, "
 		"	'' as remarks, "
@@ -1388,8 +1388,8 @@ const char *sqliteconnection::getColumnListQuery(const char *catalog,
 	// select clause
 	columnlistquery.append(
 		"select "
-		"	'' as table_cat, "
-		"	'' as table_schem, "
+		"	null as table_cat, "
+		"	null as table_schem, "
 		"	'")->append(table)->append("' as table_name, "
 		"	p.name as column_name, "
 		"	null as data_type, "
@@ -1466,8 +1466,8 @@ const char *sqliteconnection::getPrimaryKeysListQuery(const char *catalog,
 	// select clause
 	primarykeyslistquery.append(
 		"select "
-		"	'' as table_cat, "
-		"	'' as table_schem, "
+		"	null as table_cat, "
+		"	null as table_schem, "
 		"	'")->append(table)->append("' as table_name, "
 		"	p.name as column_name, "
 		"	p.pk as key_seq, "
@@ -1502,8 +1502,8 @@ const char *sqliteconnection::getKeyAndIndexListQuery(const char *catalog,
 	// select clause
 	keyandindexlistquery.append(
 		"select "
-		"	'' as table_cat, "
-		"	'' as table_schem, "
+		"	null as table_cat, "
+		"	null as table_schem, "
 		"	'")->append(table)->append("' as table_name, "
 		"	case il.'unique' "
 		"		when 1 then 0 "
@@ -1550,7 +1550,7 @@ const char *sqliteconnection::getProcedureListQuery(
 						const char *schema,
 						const char *procedure) {
 	return "select "
-		"	'' as procedure_cat, "
+		"	null as procedure_cat, "
 		"	'' as procedure_schem, "
 		"	'' as procedure_name, "
 		"	0 as num_input_params, "
@@ -1568,7 +1568,7 @@ const char *sqliteconnection::getProcedureParameterListQuery(
 						const char *schema,
 						const char *procedure) {
 	return "select "
-		"	'' as procedure_cat, "
+		"	null as procedure_cat, "
 		"	'' as procedure_schem, "
 		"	'' as procedure_name, "
 		"	'' as column_name, "

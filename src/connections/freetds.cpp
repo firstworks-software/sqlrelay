@@ -1433,7 +1433,7 @@ const char *freetdsconnection::getSchemaListQuerySybase(
 	// select clause
 	schemalistquery.append(
 		"select distinct "
-		"	'' as table_cat, "
+		"	db_name() as table_cat, "
 		"	user_name(uid) as table_schem, "
 		"	'' as table_name, "
 		"	'' as table_type, "
@@ -1536,8 +1536,8 @@ const char *freetdsconnection::getTableTypeListQuerySybase(
 	// select clause
 	tabletypelistquery.append(
 		"select "
-		"	'' as table_cat, "
-		"	'' as table_schem, "
+		"	null as table_cat, "
+		"	null as table_schem, "
 		"	'' as table_name, "
 		"	table_type, "
 		"	'' as remarks, "
@@ -1579,8 +1579,8 @@ const char *freetdsconnection::getTableTypeListQuerySqlServer(
 	// select clause
 	tabletypelistquery.append(
 		"select "
-		"	'' as table_cat, "
-		"	'' as table_schem, "
+		"	null as table_cat, "
+		"	null as table_schem, "
 		"	'' as table_name, "
 		"	table_type, "
 		"	'' as remarks, "
@@ -1634,7 +1634,7 @@ const char *freetdsconnection::getTableListQuerySybase(
 	// select clause
 	tablelistquery.append(
 		"select "
-		"	'' as table_cat, "
+		"	db_name() as table_cat, "
 		"	user_name(uid) as table_schem, "
 		"	name as table_name, "
 		"	'TABLE' as table_type, "
@@ -2570,7 +2570,7 @@ const char *freetdsconnection::getColumnListQuerySybase(
 	// select clause
 	columnlistquery.append(
 		"select "
-		"	'' as table_cat, "
+		"	db_name() as table_cat, "
 		"	user_name(ob.uid) as table_schem, "
 		"	ob.name as table_name, "
 		"	co.name as column_name, "
@@ -2908,7 +2908,7 @@ const char *freetdsconnection::getPrimaryKeysListQuerySybase(
 	// select clause
 	primarykeyslistquery.append(
 		"select "
-		"	'' as table_cat, "
+		"	db_name() as table_cat, "
 		"	user_name(o.uid) as table_schem, "
 		"	o.name as table_name, "
 		"	index_col(o.name,i.indid,c.colid) as column_name, "
@@ -3041,7 +3041,7 @@ const char *freetdsconnection::getKeyAndIndexListQuerySybase(
 	// select clause
 	keyandindexlistquery.append(
 		"select "
-		"	'' as table_cat, "
+		"	db_name() as table_cat, "
 		"	user_name(o.uid) as table_schem, "
 		"	o.name as table_name, "
 		"	case "

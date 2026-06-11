@@ -161,6 +161,12 @@
 	made the sqlite and firebird connections return an empty catalog
 		list, matching db2/oracle and the odbc/jdbc convention for
 		databases with no way to enumerate catalogs
+	get*List() methods now fill in the catalog/schema columns the way the
+		native odbc/jdbc drivers do: the sap, freetds, and informix
+		connections return the current catalog instead of an empty
+		string, the db2, oracle, firebird, and sqlite connections return
+		null (those databases have no catalogs), and oracle's legacy
+		user_* path returns the current schema
 
 2.1.1 - added tns_admin support
 	fixed sqlr-start ... -strace ...

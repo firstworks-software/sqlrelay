@@ -2799,6 +2799,8 @@ class firebird extends sqlrtest {
 		assertEquals(rsmd.getColumnName(col++),"ORDINAL_POSITION");
 		assertEquals(rsmd.getColumnName(col++),"IS_NULLABLE");
 		assertTrue(rs.next());
+		// #7971 - firebird has no catalogs
+		assertEquals(rs.getString("TABLE_CAT"),(String)null);
 		assertEquals(rs.getString("COLUMN_NAME"),"TESTINTEGER");
 		assertEquals(rs.getString("TYPE_NAME"),"INTEGER");
 		assertTrue(rs.next());

@@ -2233,6 +2233,9 @@ class sqlite extends sqlrtest {
 		assertEquals(rsmd.getColumnName(col++),"IS_GENERATEDCOLUMN");
 		System.out.println();
 		assertTrue(rs.next());
+		// #7971 - sqlite has no catalogs or schemas
+		assertEquals(rs.getString("TABLE_CAT"),(String)null);
+		assertEquals(rs.getString("TABLE_SCHEM"),(String)null);
 		assertEquals(rs.getString("COLUMN_NAME"),"testint");
 		assertEquals(rs.getString("TYPE_NAME"),"INT");
 		assertTrue(rs.next());

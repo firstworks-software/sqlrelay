@@ -2757,6 +2757,8 @@ class informix extends sqlrtest {
 						"is_nullable");
 		}
 		assertTrue(rs.next());
+		// #7971 - informix returns the current catalog (the database)
+		assertEquals(rs.getString("table_cat"),con.getCatalog());
 		assertEquals(rs.getString("column_name"),"testboolean");
 		assertTrue(rs.getString("type_name").
 					equalsIgnoreCase("BOOLEAN"));

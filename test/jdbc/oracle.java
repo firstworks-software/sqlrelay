@@ -3571,6 +3571,8 @@ class oracle extends sqlrtest {
 		assertEquals(rsmd.getColumnName(col++),"IS_AUTOINCREMENT");
 		assertEquals(rsmd.getColumnName(col++),"IS_GENERATEDCOLUMN");
 		assertTrue(rs.next());
+		// #7971 - oracle has no catalogs
+		assertEquals(rs.getString("TABLE_CAT"),(String)null);
 		assertEquals(rs.getString("COLUMN_NAME"),"TESTNUMBER");
 		assertEquals(rs.getString("TYPE_NAME"),"NUMBER");
 		assertTrue(rs.next());

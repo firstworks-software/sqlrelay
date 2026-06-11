@@ -7536,6 +7536,11 @@ int main(int argc, char **argv) {
 	erg=SQLBindCol(stmt,4,SQL_C_CHAR,
 			clcolname,sizeof(clcolname),&clcolnameind);
 	assertSuccessStmt(stmt,erg);
+	SQLCHAR		clcat[64];
+	SQLLEN		clcatind;
+	erg=SQLBindCol(stmt,1,SQL_C_CHAR,
+			clcat,sizeof(clcat),&clcatind);
+	assertSuccessStmt(stmt,erg);
 	const char	*expcols[]={"TESTINTEGER","TESTSMALLINT",
 				"TESTDECIMAL","TESTNUMERIC",
 				"TESTFLOAT","TESTDOUBLE",
@@ -7546,6 +7551,11 @@ int main(int argc, char **argv) {
 		erg=SQLFetch(stmt);
 		assertSuccessStmt(stmt,erg);
 		assertEqualStmt(stmt,(const char *)clcolname,expcols[c]);
+		// #7971 - firebird has no catalogs (native odbc unmaintained)
+		if (issqlrelay) {
+			assertEqualStmt(stmt,(int)clcatind,
+						(int)SQL_NULL_DATA);
+		}
 	}
 	erg=SQLFetch(stmt);
 	assertEqualStmt(stmt,(int)erg,(int)SQL_NO_DATA);

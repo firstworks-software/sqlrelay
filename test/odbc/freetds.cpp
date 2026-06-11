@@ -7669,6 +7669,11 @@ int main(int argc, char **argv) {
 	erg=SQLBindCol(stmt,6,SQL_C_CHAR,
 			clcoltype,sizeof(clcoltype),&clcoltypeind);
 	assertSuccessStmt(stmt,erg);
+	SQLCHAR		clcat[64];
+	SQLLEN		clcatind;
+	erg=SQLBindCol(stmt,1,SQL_C_CHAR,
+			clcat,sizeof(clcat),&clcatind);
+	assertSuccessStmt(stmt,erg);
 	const char	*expcols[]={"testint","testchar","testvarchar",
 				"testdatetime","testtext","testimage"};
 	const char	*expcoltypes[]={"int","char","varchar",
@@ -7678,6 +7683,8 @@ int main(int argc, char **argv) {
 		assertSuccessStmt(stmt,erg);
 		assertEqualStmt(stmt,(const char *)clcolname,expcols[c]);
 		assertEqualStmt(stmt,(const char *)clcoltype,expcoltypes[c]);
+		// #7971 - freetds returns the current catalog (the database)
+		assertTrueStmt(stmt,clcatind!=SQL_NULL_DATA && clcat[0]!='\0');
 	}
 	erg=SQLFetch(stmt);
 	assertEqualStmt(stmt,(int)erg,(int)SQL_NO_DATA);

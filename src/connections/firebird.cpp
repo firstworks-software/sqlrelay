@@ -1160,8 +1160,8 @@ const char *firebirdconnection::getDbHostName() {
 const char *firebirdconnection::getCatalogListQuery(const char *catalog) {
 	// no good way to get a list of catalogs in firebird
 	return "select "
-		"	trim('') as table_cat, "
-		"	trim('') as table_schem, "
+		"	null as table_cat, "
+		"	null as table_schem, "
 		"	trim('') as table_name, "
 		"	trim('') as table_type, "
 		"	trim('') as remarks, "
@@ -1180,7 +1180,7 @@ const char *firebirdconnection::getSchemaListQuery(const char *catalog,
 	// select clause
 	schemalistquery.append(
 		"select distinct "
-		"	trim('') as table_cat, "
+		"	null as table_cat, "
 		"	trim(rdb$owner_name) as table_schem, "
 		"	trim('') as table_name, "
 		"	trim('') as table_type, "
@@ -1221,8 +1221,8 @@ const char *firebirdconnection::getTableTypeListQuery(
 	// select clause
 	tabletypelistquery.append(
 		"select "
-		"	trim('') as table_cat, "
-		"	trim('') as table_schem, "
+		"	null as table_cat, "
+		"	null as table_schem, "
 		"	trim('') as table_name, "
 		"	trim(table_type), "
 		"	trim('') as remarks, "
@@ -1280,7 +1280,7 @@ const char *firebirdconnection::getTableListQuery(const char *catalog,
 	// select clause
 	tablelistquery.append(
 		"select "
-		"	trim('') as table_cat, "
+		"	null as table_cat, "
 		"	trim(rdb$owner_name) as table_schem, "
 		"	trim(rdb$relation_name) as table_name, "
 		"	trim('TABLE') as table_type, "
@@ -1782,7 +1782,7 @@ const char *firebirdconnection::getColumnListQuery(const char *catalog,
 	// select clause
 	columnlistquery.append(
 		"select "
-		"	trim('') as table_cat, "
+		"	null as table_cat, "
 		"	trim(rl.rdb$owner_name) as table_schem, "
 		"	trim(rf.rdb$relation_name) as table_name, "
 		"	trim(rf.rdb$field_name) as column_name, "
@@ -1932,8 +1932,8 @@ const char *firebirdconnection::getPrimaryKeysListQuery(const char *catalog,
 	// select clause
 	primarykeyslistquery.append(
 		"select "
-		"	trim('') as table_cat, "
-		"	trim('') as table_schem, "
+		"	null as table_cat, "
+		"	null as table_schem, "
 		"	trim(rc.rdb$relation_name) as table_name, "
 		"	trim(isg.rdb$field_name) as column_name, "
 		"	isg.rdb$field_position+1 as key_seq, "
@@ -1978,8 +1978,8 @@ const char *firebirdconnection::getKeyAndIndexListQuery(const char *catalog,
 	// select clause
 	keyandindexlistquery.append(
 		"select "
-		"	trim('') as table_cat, "
-		"	trim('') as table_schem, "
+		"	null as table_cat, "
+		"	null as table_schem, "
 		"	trim(i.rdb$relation_name) as table_name, "
 		"	case i.rdb$unique_flag "
 		"		when 1 then 0 "
@@ -2037,7 +2037,7 @@ const char *firebirdconnection::getProcedureListQuery(
 	// select clause
 	procedurelistquery.append(
 		"select "
-		"	trim('') as procedure_cat, "
+		"	null as procedure_cat, "
 		"	trim(rdb$owner_name) as procedure_schem, "
 		"	trim(rdb$procedure_name) as procedure_name, "
 		"	0 as num_input_params, "
@@ -2095,7 +2095,7 @@ const char *firebirdconnection::getProcedureParameterListQuery(
 	// select clause
 	procedureparameterlistquery.append(
 		"select "
-		"	trim('') as procedure_cat, "
+		"	null as procedure_cat, "
 		"	trim('') as procedure_schem, "
 		"	trim(pp.rdb$procedure_name) as procedure_name, "
 		"	trim(pp.rdb$parameter_name) as column_name, "

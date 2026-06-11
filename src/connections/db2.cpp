@@ -1108,7 +1108,7 @@ const char *db2connection::getSchemaListQuery(const char *catalog,
 	// select clause
 	schemalistquery.append(
 		"select "
-		"	'' as table_cat, "
+		"	null as table_cat, "
 		"	schemaname as table_schem, "
 		"	'' as table_name, "
 		"	'' as table_type, "
@@ -1146,7 +1146,7 @@ const char *db2connection::getTableTypeListQuery(const char *catalog,
 	// select clause
 	tabletypelistquery.append(
 		"select "
-		"	'' as table_cat, "
+		"	null as table_cat, "
 		"	'' as table_schem, "
 		"	'' as table_name, "
 		"	table_type, "
@@ -1199,7 +1199,7 @@ const char *db2connection::getTableListQuery(const char *catalog,
 	// select clause
 	tablelistquery.append(
 		"select distinct "
-		"	'' as table_cat, "
+		"	null as table_cat, "
 		"	tabschema as table_schem, "
 		"	tabname as table_name, "
 		"	'TABLE' as table_type, "
@@ -1862,7 +1862,7 @@ const char *db2connection::getColumnListQuery(const char *catalog,
 	// select clause
 	columnlistquery.append(
 		"select "
-		"	'' as table_cat, "
+		"	null as table_cat, "
 		"	tabschema as table_schem, "
 		"	tabname as table_name, "
 		"	colname as column_name, "
@@ -1957,7 +1957,7 @@ const char *db2connection::getPrimaryKeysListQuery(const char *catalog,
 	// select clause
 	primarykeyslistquery.append(
 		"select "
-		"	'' as table_cat, "
+		"	null as table_cat, "
 		"	trim(kcu.tabschema) as table_schem, "
 		"	trim(kcu.tabname) as table_name, "
 		"	trim(kcu.colname) as column_name, "
@@ -2014,7 +2014,7 @@ const char *db2connection::getKeyAndIndexListQuery(const char *catalog,
 	// select clause
 	keyandindexlistquery.append(
 		"select "
-		"	'' as table_cat, "
+		"	null as table_cat, "
 		"	trim(i.tabschema) as table_schem, "
 		"	trim(i.tabname) as table_name, "
 		"	case i.uniquerule "
@@ -2083,7 +2083,7 @@ const char *db2connection::getProcedureListQuery(const char *catalog,
 	// select clause
 	procedurelistquery.append(
 		"select "
-		"	'' as procedure_cat, "
+		"	null as procedure_cat, "
 		"	routineschema as procedure_schem, "
 		"	routinename as procedure_name, "
 		"	0 as num_input_params, "
@@ -2139,7 +2139,7 @@ const char *db2connection::getProcedureParameterListQuery(
 	// select clause
 	procedureparameterlistquery.append(
 		"select "
-		"	'' as procedure_cat, "
+		"	null as procedure_cat, "
 		"	trim(procschema) as procedure_schem, "
 		"	trim(procname) as procedure_name, "
 		"	trim(parmname) as column_name, "

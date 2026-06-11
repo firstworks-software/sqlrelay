@@ -2446,6 +2446,8 @@ class freetds extends sqlrtest {
 		assertEquals(rsmd.getColumnName(col++),"ORDINAL_POSITION");
 		assertEquals(rsmd.getColumnName(col++),"IS_NULLABLE");
 		assertTrue(rs.next());
+		// #7971 - freetds returns the current catalog (the database)
+		assertEquals(rs.getString("TABLE_CAT"),con.getCatalog());
 		assertEquals(rs.getString("COLUMN_NAME"),"testint");
 		assertEquals(rs.getString("TYPE_NAME"),"int");
 		assertTrue(rs.next());

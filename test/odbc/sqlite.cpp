@@ -7773,6 +7773,11 @@ int main(int argc, char **argv) {
 	erg=SQLBindCol(stmt,6,SQL_C_CHAR,
 			clcoltype,sizeof(clcoltype),&clcoltypeind);
 	assertSuccessStmt(stmt,erg);
+	SQLCHAR		clcat[64];
+	SQLLEN		clcatind;
+	erg=SQLBindCol(stmt,1,SQL_C_CHAR,
+			clcat,sizeof(clcat),&clcatind);
+	assertSuccessStmt(stmt,erg);
 	const char	*expcols[]={"testint","testfloat","testchar",
 				"testvarchar","testclob","testblob"};
 	const char	*expctypes[]={"INT","FLOAT","CHAR",
@@ -7781,6 +7786,15 @@ int main(int argc, char **argv) {
 		erg=SQLFetch(stmt);
 		assertSuccessStmt(stmt,erg);
 		assertEqualStmt(stmt,(const char *)clcolname,expcols[c]);
+		// #7971 - no catalogs; sqlrelay reports null, but native
+		// odbc drivers may report null or empty
+		if (issqlrelay) {
+			assertEqualStmt(stmt,(int)clcatind,
+						(int)SQL_NULL_DATA);
+		} else {
+			assertTrueStmt(stmt,clcatind==SQL_NULL_DATA ||
+						clcat[0]=='\0');
+		}
 		if (issqlrelay) {
 			assertEqualStmt(stmt,
 				(const char *)clcoltype,expctypes[c]);
