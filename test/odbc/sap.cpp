@@ -3681,7 +3681,16 @@ int main(int argc, char **argv) {
 	erg=SQLGetInfo(dbc,SQL_SQL92_VALUE_EXPRESSIONS,
 			(SQLPOINTER)&uintval,
 			(SQLSMALLINT)sizeof(uintval),&vallen);
-	assertEqualDbc(dbc,(int)uintval,0);
+	if (issqlrelay) {
+		assertEqualDbc(dbc,(int)uintval,
+			(int)(SQL_SVE_CASE|
+				SQL_SVE_CAST|
+				SQL_SVE_COALESCE|
+				SQL_SVE_NULLIF));
+	} else {
+		// the native driver underreports; sap supports these
+		assertEqualDbc(dbc,(int)uintval,0);
+	}
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
 	#endif

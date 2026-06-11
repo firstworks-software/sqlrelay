@@ -194,8 +194,9 @@
 	mysql now reports max_identifier_length (64)
 	db2, sap, freetds and informix now report create_table_clauses,
 		create_view_clauses, drop_table_clauses and drop_view_clauses
-	db2, sap, freetds and informix now report index_keywords; db2 and
-		freetds now report value_expressions
+	db2, sap, freetds and informix now report index_keywords and
+		value_expressions (the sap and informix native odbc drivers
+		underreport value_expressions, so those are pinned per side)
 
 2.1.1 - added tns_admin support
 	fixed sqlr-start ... -strace ...

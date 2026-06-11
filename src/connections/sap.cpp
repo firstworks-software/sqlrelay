@@ -762,9 +762,8 @@ void sapconnection::initDatabaseFeatures() {
 	databasefeatures[FEATURE_UPDATES_ARE_DETECTED]=
 		"";
 
-	// left blank: backend SQL-92 value-expression support undetermined
 	databasefeatures[FEATURE_VALUE_EXPRESSIONS]=
-		"";
+		"CASE,CAST,COALESCE,NULLIF";
 
 	databasefeatures[FEATURE_WHERE_CURRENT_OF_OPERATIONS]=
 		"DELETE,UPDATE";
