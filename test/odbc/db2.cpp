@@ -3690,21 +3690,15 @@ int main(int argc, char **argv) {
 	erg=SQLGetInfo(dbc,SQL_SQL92_GRANT,
 			(SQLPOINTER)&uintval,
 			(SQLSMALLINT)sizeof(uintval),&vallen);
-	if (issqlrelay) {
-		// the db2 backend module reports no grant clauses
-		assertEqualDbc(dbc,(int)uintval,0);
-	} else {
-		// native db2 reports 8048
-		assertEqualDbc(dbc,(int)uintval,
-			(int)(SQL_SG_WITH_GRANT_OPTION|
-				SQL_SG_DELETE_TABLE|
-				SQL_SG_INSERT_TABLE|
-				SQL_SG_REFERENCES_TABLE|
-				SQL_SG_REFERENCES_COLUMN|
-				SQL_SG_SELECT_TABLE|
-				SQL_SG_UPDATE_TABLE|
-				SQL_SG_UPDATE_COLUMN));
-	}
+	assertEqualDbc(dbc,(int)uintval,
+		(int)(SQL_SG_WITH_GRANT_OPTION|
+			SQL_SG_DELETE_TABLE|
+			SQL_SG_INSERT_TABLE|
+			SQL_SG_REFERENCES_TABLE|
+			SQL_SG_REFERENCES_COLUMN|
+			SQL_SG_SELECT_TABLE|
+			SQL_SG_UPDATE_TABLE|
+			SQL_SG_UPDATE_COLUMN));
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
 	#endif
@@ -3767,18 +3761,12 @@ int main(int argc, char **argv) {
 	erg=SQLGetInfo(dbc,SQL_SQL92_REVOKE,
 			(SQLPOINTER)&uintval,
 			(SQLSMALLINT)sizeof(uintval),&vallen);
-	if (issqlrelay) {
-		// the db2 backend module reports no revoke clauses
-		assertEqualDbc(dbc,(int)uintval,0);
-	} else {
-		// native db2 reports 13696
-		assertEqualDbc(dbc,(int)uintval,
-			(int)(SQL_SR_DELETE_TABLE|
-				SQL_SR_INSERT_TABLE|
-				SQL_SR_REFERENCES_TABLE|
-				SQL_SR_SELECT_TABLE|
-				SQL_SR_UPDATE_TABLE));
-	}
+	assertEqualDbc(dbc,(int)uintval,
+		(int)(SQL_SR_DELETE_TABLE|
+			SQL_SR_INSERT_TABLE|
+			SQL_SR_REFERENCES_TABLE|
+			SQL_SR_SELECT_TABLE|
+			SQL_SR_UPDATE_TABLE));
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
 	#endif

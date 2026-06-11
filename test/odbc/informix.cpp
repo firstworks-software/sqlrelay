@@ -3471,13 +3471,9 @@ int main(int argc, char **argv) {
 	erg=SQLGetInfo(dbc,SQL_SQL92_REVOKE,
 			(SQLPOINTER)&uintval,
 			(SQLSMALLINT)sizeof(uintval),&vallen);
-	if (issqlrelay) {
-		assertEqualDbc(dbc,(int)uintval,0);
-	} else {
-		assertEqualDbc(dbc,(int)uintval,
-			(int)(SQL_SR_CASCADE|
-				SQL_SR_RESTRICT));
-	}
+	assertEqualDbc(dbc,(int)uintval,
+		(int)(SQL_SR_CASCADE|
+			SQL_SR_RESTRICT));
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
 	#endif

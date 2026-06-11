@@ -216,6 +216,9 @@
 		(CREATE_INDEX, DROP_INDEX) and insert_operations (INSERT_LITERALS,
 		INSERT_SEARCHED, SELECT_INTO), matched to native; freetds is pinned
 		per side (its native odbc driver underreports)
+	db2, sap and freetds now report grant_clauses; db2, sap, freetds and
+		informix now report revoke_clauses, matched to their native odbc
+		drivers
 
 2.1.1 - added tns_admin support
 	fixed sqlr-start ... -strace ...

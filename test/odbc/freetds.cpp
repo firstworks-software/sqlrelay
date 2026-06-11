@@ -3278,11 +3278,9 @@ int main(int argc, char **argv) {
 	erg=SQLGetInfo(dbc,SQL_SQL92_GRANT,
 			(SQLPOINTER)&uintval,
 			(SQLSMALLINT)sizeof(uintval),&vallen);
-	if (issqlrelay) {
-		assertEqualDbc(dbc,(int)uintval,0);
-	} else {
-		assertEqualDbc(dbc,(int)uintval,(int)SQL_SG_WITH_GRANT_OPTION);
-	}
+	assertEqualDbc(dbc,(int)uintval,
+		(int)(SQL_SG_WITH_GRANT_OPTION|
+			SQL_SG_WITH_GRANT_OPTION));
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
 	#endif
@@ -3352,11 +3350,9 @@ int main(int argc, char **argv) {
 	erg=SQLGetInfo(dbc,SQL_SQL92_REVOKE,
 			(SQLPOINTER)&uintval,
 			(SQLSMALLINT)sizeof(uintval),&vallen);
-	if (issqlrelay) {
-		assertEqualDbc(dbc,(int)uintval,0);
-	} else {
-		assertEqualDbc(dbc,(int)uintval,(int)SQL_SR_GRANT_OPTION_FOR);
-	}
+	assertEqualDbc(dbc,(int)uintval,
+		(int)(SQL_SR_GRANT_OPTION_FOR|
+			SQL_SR_GRANT_OPTION_FOR));
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
 	#endif

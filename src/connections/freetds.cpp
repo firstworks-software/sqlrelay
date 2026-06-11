@@ -588,7 +588,7 @@ void freetdsconnection::initDatabaseFeatures() {
 		"false";
 
 	databasefeatures[FEATURE_GRANT_CLAUSES]=
-		"";
+		"WITH_GRANT_OPTION";
 
 	databasefeatures[FEATURE_GROUP_BY_CLAUSES]=
 		"BASIC,BEYOND_SELECT,UNRELATED";
@@ -759,7 +759,7 @@ void freetdsconnection::initDatabaseFeatures() {
 		"FORWARD_ONLY,SCROLL_INSENSITIVE,SCROLL_SENSITIVE";
 
 	databasefeatures[FEATURE_REVOKE_CLAUSES]=
-		"";
+		"GRANT_OPTION_FOR";
 
 	databasefeatures[FEATURE_ROW_ID_LIFETIME]=
 		"ROWID_UNSUPPORTED";

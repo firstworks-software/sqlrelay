@@ -451,7 +451,8 @@ void sapconnection::initDatabaseFeatures() {
 		"false";
 
 	databasefeatures[FEATURE_GRANT_CLAUSES]=
-		"";
+		"USAGE_ON_DOMAIN,REFERENCES_COLUMN,SELECT_TABLE,"
+			"UPDATE_TABLE,UPDATE_COLUMN";
 
 	databasefeatures[FEATURE_GROUP_BY_CLAUSES]=
 		"BASIC,BEYOND_SELECT,UNRELATED";
@@ -620,7 +621,8 @@ void sapconnection::initDatabaseFeatures() {
 		"FORWARD_ONLY,SCROLL_INSENSITIVE";
 
 	databasefeatures[FEATURE_REVOKE_CLAUSES]=
-		"";
+		"CASCADE,DELETE_TABLE,SELECT_TABLE,"
+			"UPDATE_TABLE";
 
 	databasefeatures[FEATURE_ROW_ID_LIFETIME]=
 		"ROWID_UNSUPPORTED";

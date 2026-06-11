@@ -639,7 +639,7 @@ void informixconnection::initDatabaseFeatures() {
 		"FORWARD_ONLY,SCROLL_INSENSITIVE";
 
 	databasefeatures[FEATURE_REVOKE_CLAUSES]=
-		"";
+		"CASCADE,RESTRICT";
 
 	databasefeatures[FEATURE_ROW_ID_LIFETIME]=
 		"ROWID_UNSUPPORTED";

@@ -3560,16 +3560,12 @@ int main(int argc, char **argv) {
 	erg=SQLGetInfo(dbc,SQL_SQL92_GRANT,
 			(SQLPOINTER)&uintval,
 			(SQLSMALLINT)sizeof(uintval),&vallen);
-	if (issqlrelay) {
-		assertEqualDbc(dbc,(int)uintval,0);
-	} else {
-		assertEqualDbc(dbc,(int)uintval,
-			(int)(SQL_SG_USAGE_ON_DOMAIN|
-				SQL_SG_REFERENCES_COLUMN|
-				SQL_SG_SELECT_TABLE|
-				SQL_SG_UPDATE_TABLE|
-				SQL_SG_UPDATE_COLUMN));
-	}
+	assertEqualDbc(dbc,(int)uintval,
+		(int)(SQL_SG_USAGE_ON_DOMAIN|
+			SQL_SG_REFERENCES_COLUMN|
+			SQL_SG_SELECT_TABLE|
+			SQL_SG_UPDATE_TABLE|
+			SQL_SG_UPDATE_COLUMN));
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
 	#endif
@@ -3647,15 +3643,11 @@ int main(int argc, char **argv) {
 	erg=SQLGetInfo(dbc,SQL_SQL92_REVOKE,
 			(SQLPOINTER)&uintval,
 			(SQLSMALLINT)sizeof(uintval),&vallen);
-	if (issqlrelay) {
-		assertEqualDbc(dbc,(int)uintval,0);
-	} else {
-		assertEqualDbc(dbc,(int)uintval,
-			(int)(SQL_SR_CASCADE|
-				SQL_SR_DELETE_TABLE|
-				SQL_SR_SELECT_TABLE|
-				SQL_SR_UPDATE_TABLE));
-	}
+	assertEqualDbc(dbc,(int)uintval,
+		(int)(SQL_SR_CASCADE|
+			SQL_SR_DELETE_TABLE|
+			SQL_SR_SELECT_TABLE|
+			SQL_SR_UPDATE_TABLE));
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
 	#endif
