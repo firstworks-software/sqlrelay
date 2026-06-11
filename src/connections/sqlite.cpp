@@ -490,6 +490,7 @@ void sqliteconnection::initDatabaseFeatures() {
 	databasefeatures[FEATURE_NULL_SORT_ORDER]=
 		"HIGH,AT_START";
 
+	// sqlite has these, but its native jdbc driver incorrectly reports ""
 	databasefeatures[FEATURE_NUMERIC_FUNCTIONS]=
 		"ABS,ROUND,SIGN";
 
@@ -581,6 +582,7 @@ void sqliteconnection::initDatabaseFeatures() {
 	databasefeatures[FEATURE_STORED_PROGRAMS]=
 		"";
 
+	// sqlite has these, but its native jdbc driver incorrectly reports ""
 	databasefeatures[FEATURE_STRING_FUNCTIONS]=
 		"CHAR,CONCAT,LCASE,LENGTH,LTRIM,REPLACE,RTRIM,SUBSTRING,UCASE";
 
@@ -638,10 +640,9 @@ void sqliteconnection::initDatabaseFeatures() {
 	databasefeatures[FEATURE_SUPPORTS_TRANSACTIONS]=
 		"true";
 
-	// sqlite has IFNULL, but its native jdbc driver reports no system
-	// functions; matching native
+	// sqlite has IFNULL, but its native jdbc driver incorrectly reports ""
 	databasefeatures[FEATURE_SYSTEM_FUNCTIONS]=
-		"";
+		"IFNULL";
 
 	databasefeatures[FEATURE_TABLE_CORRELATION_NAMES]=
 		"BASIC";
@@ -655,6 +656,8 @@ void sqliteconnection::initDatabaseFeatures() {
 	databasefeatures[FEATURE_TIME_DATE_DIFF_INTERVALS]=
 		"";
 
+	// sqlite has these; its native jdbc driver omits the CURRENT_*
+	// functions
 	databasefeatures[FEATURE_TIME_DATE_FUNCTIONS]=
 		"DATE,TIME,DATETIME,JULIANDAY,STRFTIME,CURRENT_DATE,CURRENT_TIME,CURRENT_TIMESTAMP";
 

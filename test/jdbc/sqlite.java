@@ -498,7 +498,8 @@ class sqlite extends sqlrtest {
 		if (issqlrelay) {
 			assertEquals(stringval,"ABS,ROUND,SIGN");
 		} else {
-			// the native driver reports no numeric functions
+			// sqlite has these, but its native jdbc driver
+			// incorrectly reports ""
 			assertEquals(stringval,"");
 		}
 		System.out.println();
@@ -569,7 +570,8 @@ class sqlite extends sqlrtest {
 				"CHAR,CONCAT,LCASE,LENGTH,LTRIM,REPLACE,"+
 				"RTRIM,SUBSTRING,UCASE");
 		} else {
-			// the native driver reports no string functions
+			// sqlite has these, but its native jdbc driver
+			// incorrectly reports ""
 			assertEquals(stringval,"");
 		}
 		System.out.println();
@@ -578,8 +580,13 @@ class sqlite extends sqlrtest {
 		System.out.println("  getSystemFunctions");
 		stringval=md.getSystemFunctions();
 		System.out.println("    "+stringval);
-		// sqlite has IFNULL, but its native jdbc driver reports none
-		assertEquals(stringval,"");
+		if (issqlrelay) {
+			assertEquals(stringval,"IFNULL");
+		} else {
+			// sqlite has IFNULL, but its native jdbc driver
+			// incorrectly reports ""
+			assertEquals(stringval,"");
+		}
 		System.out.println();
 
 		// getTimeDateFunctions
