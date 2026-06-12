@@ -461,7 +461,7 @@ void sapconnection::initDatabaseFeatures() {
 		"BASIC,BEYOND_SELECT,UNRELATED";
 
 	databasefeatures[FEATURE_IDENTIFIER_CASE_STORAGE]=
-		"";
+		"SENSITIVE";
 
 	databasefeatures[FEATURE_IDENTIFIER_QUOTE_STRING]=
 		"\"";
@@ -556,9 +556,6 @@ void sapconnection::initDatabaseFeatures() {
 	databasefeatures[FEATURE_MAX_USER_NAME_LENGTH]=
 		"30";
 
-	databasefeatures[FEATURE_MIXED_CASE_IDENTIFIERS]=
-		"IDENTIFIERS,QUOTED_IDENTIFIERS";
-
 	databasefeatures[FEATURE_NEED_LONG_DATA_LENGTH]=
 		"false";
 
@@ -608,7 +605,7 @@ void sapconnection::initDatabaseFeatures() {
 		"stored procedure";
 
 	databasefeatures[FEATURE_QUOTED_IDENTIFIER_CASE_STORAGE]=
-		"";
+		"SENSITIVE";
 
 	databasefeatures[FEATURE_RELATIONAL_JOIN_OPERATORS]=
 		"CROSS_JOIN,FULL_OUTER_JOIN,INNER_JOIN,"

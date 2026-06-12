@@ -570,9 +570,6 @@ void informixconnection::initDatabaseFeatures() {
 	databasefeatures[FEATURE_MAX_USER_NAME_LENGTH]=
 		"32";
 
-	databasefeatures[FEATURE_MIXED_CASE_IDENTIFIERS]=
-		"";
-
 	databasefeatures[FEATURE_NEED_LONG_DATA_LENGTH]=
 		"";
 

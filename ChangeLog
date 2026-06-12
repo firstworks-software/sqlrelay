@@ -232,6 +232,11 @@
 		returns a single result set, so it can't pass through the
 		batches the backends support (mysql and postgresql no longer
 		over-report)
+	removed the redundant mixed_case_identifiers database feature and
+		folded its case-sensitivity into identifier_case_storage and
+		quoted_identifier_case_storage, which now also accept SENSITIVE
+		(the four storage states upper/lower/mixed/sensitive are
+		mutually exclusive, so one feature each expresses all of it)
 
 2.1.1 - added tns_admin support
 	fixed sqlr-start ... -strace ...

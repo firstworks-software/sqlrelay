@@ -2712,9 +2712,8 @@ int main(int argc, char **argv) {
 			(SQLPOINTER)&usmallintval,
 			(SQLSMALLINT)sizeof(usmallintval),&vallen);
 	if (issqlrelay) {
-		// the sqlite connection module's
-		// quoted_identifier_case_storage feature is empty, so the
-		// driver falls back to SQL_IC_MIXED
+		// the sqlite connection module reports
+		// quoted_identifier_case_storage as MIXED
 		assertEqualDbc(dbc,(int)usmallintval,(int)SQL_IC_MIXED);
 	} else {
 		assertEqualDbc(dbc,(int)usmallintval,(int)SQL_IC_SENSITIVE);

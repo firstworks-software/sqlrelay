@@ -1009,7 +1009,14 @@ class oracle extends sqlrtest {
 		System.out.println("  storesMixedCaseQuotedIdentifiers");
 		boolval=md.storesMixedCaseQuotedIdentifiers();
 		System.out.println("    "+boolval);
-		assertTrue(boolval);
+		if (issqlrelay) {
+			// SQL Relay reports SENSITIVE quoted-identifier storage,
+			// which is mutually exclusive with mixed-case storage;
+			// the native Oracle driver reports both
+			assertFalse(boolval);
+		} else {
+			assertTrue(boolval);
+		}
 		System.out.println();
 
 		// storesUpperCaseIdentifiers

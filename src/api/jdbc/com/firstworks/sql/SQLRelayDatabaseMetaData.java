@@ -1999,8 +1999,8 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 	public
 	boolean supportsMixedCaseIdentifiers() throws SQLException {
 		drv.debugFunction(this);
-		boolean	result=listContains("mixed_case_identifiers",
-								"IDENTIFIERS");
+		boolean	result=listContains(
+			"identifier_case_storage","SENSITIVE");
 		drv.debugPrintln("supports mixed case identifiers: "+result);
 		drv.debugEnd();
 		return result;
@@ -2010,7 +2010,7 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 	boolean supportsMixedCaseQuotedIdentifiers() throws SQLException {
 		drv.debugFunction(this);
 		boolean	result=listContains(
-			"mixed_case_identifiers","QUOTED_IDENTIFIERS");
+			"quoted_identifier_case_storage","SENSITIVE");
 		drv.debugPrintln(
 			"supports mixed case quoted identifiers: "+result);
 		drv.debugEnd();

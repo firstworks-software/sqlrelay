@@ -564,9 +564,6 @@ void routerconnection::initDatabaseFeatures() {
 	databasefeatures[FEATURE_MAX_USER_NAME_LENGTH]=
 		"";
 
-	databasefeatures[FEATURE_MIXED_CASE_IDENTIFIERS]=
-		"";
-
 	databasefeatures[FEATURE_NEED_LONG_DATA_LENGTH]=
 		"";
 

@@ -601,9 +601,6 @@ void firebirdconnection::initDatabaseFeatures() {
 	databasefeatures[FEATURE_MAX_USER_NAME_LENGTH]=
 		"31";
 
-	databasefeatures[FEATURE_MIXED_CASE_IDENTIFIERS]=
-		"QUOTED_IDENTIFIERS";
-
 	databasefeatures[FEATURE_NEED_LONG_DATA_LENGTH]=
 		"false";
 
@@ -654,7 +651,7 @@ void firebirdconnection::initDatabaseFeatures() {
 		"PROCEDURE";
 
 	databasefeatures[FEATURE_QUOTED_IDENTIFIER_CASE_STORAGE]=
-		"";
+		"SENSITIVE";
 
 	databasefeatures[FEATURE_RELATIONAL_JOIN_OPERATORS]=
 		"CROSS_JOIN,FULL_OUTER_JOIN,INNER_JOIN,"

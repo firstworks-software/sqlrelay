@@ -384,7 +384,7 @@ void sqliteconnection::initDatabaseFeatures() {
 		"BASIC";
 
 	databasefeatures[FEATURE_IDENTIFIER_CASE_STORAGE]=
-		"MIXED";
+		"SENSITIVE";
 
 	databasefeatures[FEATURE_IDENTIFIER_QUOTE_STRING]=
 		"\"";
@@ -478,9 +478,6 @@ void sqliteconnection::initDatabaseFeatures() {
 	databasefeatures[FEATURE_MAX_USER_NAME_LENGTH]=
 		"0";
 
-	databasefeatures[FEATURE_MIXED_CASE_IDENTIFIERS]=
-		"IDENTIFIERS";
-
 	databasefeatures[FEATURE_NEED_LONG_DATA_LENGTH]=
 		"";
 
@@ -531,7 +528,7 @@ void sqliteconnection::initDatabaseFeatures() {
 	// stored- nor mixed-case-supported (sqlite is case-insensitive even
 	// for quoted identifiers); matching native jdbc for now
 	databasefeatures[FEATURE_QUOTED_IDENTIFIER_CASE_STORAGE]=
-		"";
+		"MIXED";
 
 	databasefeatures[FEATURE_RELATIONAL_JOIN_OPERATORS]=
 		"CROSS_JOIN,FULL_OUTER_JOIN,INNER_JOIN,"

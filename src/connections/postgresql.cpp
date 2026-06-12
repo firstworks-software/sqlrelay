@@ -557,9 +557,6 @@ void postgresqlconnection::initDatabaseFeatures() {
 	databasefeatures[FEATURE_MAX_USER_NAME_LENGTH]=
 		"63";
 
-	databasefeatures[FEATURE_MIXED_CASE_IDENTIFIERS]=
-		"QUOTED_IDENTIFIERS";
-
 	databasefeatures[FEATURE_NEED_LONG_DATA_LENGTH]=
 		"false";
 
@@ -610,7 +607,7 @@ void postgresqlconnection::initDatabaseFeatures() {
 		"function";
 
 	databasefeatures[FEATURE_QUOTED_IDENTIFIER_CASE_STORAGE]=
-		"";
+		"SENSITIVE";
 
 	databasefeatures[FEATURE_RELATIONAL_JOIN_OPERATORS]=
 		"CROSS_JOIN,EXCEPT_JOIN,FULL_OUTER_JOIN,"

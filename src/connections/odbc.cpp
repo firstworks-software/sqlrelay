@@ -1767,8 +1767,8 @@ const char * const *odbcconnection::getDatabaseFeatures() {
 		charstring::duplicate(
 			(usmallintbuf==SQL_IC_LOWER)?"LOWER":
 			(usmallintbuf==SQL_IC_MIXED)?"MIXED":
-			(usmallintbuf==SQL_IC_UPPER)?"UPPER":"");
-	bool	identifiersSensitive=(usmallintbuf==SQL_IC_SENSITIVE);
+			(usmallintbuf==SQL_IC_UPPER)?"UPPER":
+			(usmallintbuf==SQL_IC_SENSITIVE)?"SENSITIVE":"");
 
 	// SQL_IDENTIFIER_QUOTE_CHAR -> string
 	strbuf[0]='\0';
@@ -2031,20 +2031,6 @@ const char * const *odbcconnection::getDatabaseFeatures() {
 	databasefeatures[FEATURE_MAX_USER_NAME_LENGTH]=
 		charstring::parseNumber(usmallintbuf);
 
-	// SQL_QUOTED_IDENTIFIER_CASE -> enum
-	usmallintbuf=0;
-	SQLGetInfo(dbc,SQL_QUOTED_IDENTIFIER_CASE,
-				&usmallintbuf,sizeof(usmallintbuf),&size);
-	databasefeatures[FEATURE_MIXED_CASE_IDENTIFIERS]=
-		charstring::duplicate(
-			(identifiersSensitive &&
-				usmallintbuf==SQL_IC_SENSITIVE)?
-				"IDENTIFIERS,QUOTED_IDENTIFIERS":
-			identifiersSensitive?
-				"IDENTIFIERS":
-			(usmallintbuf==SQL_IC_SENSITIVE)?
-				"QUOTED_IDENTIFIERS":"");
-
 	// SQL_NEED_LONG_DATA_LEN -> Y/N
 	strbuf[0]='\0';
 	SQLGetInfo(dbc,SQL_NEED_LONG_DATA_LEN,
@@ -2187,7 +2173,8 @@ const char * const *odbcconnection::getDatabaseFeatures() {
 		charstring::duplicate(
 			(usmallintbuf==SQL_IC_LOWER)?"LOWER":
 			(usmallintbuf==SQL_IC_MIXED)?"MIXED":
-			(usmallintbuf==SQL_IC_UPPER)?"UPPER":"");
+			(usmallintbuf==SQL_IC_UPPER)?"UPPER":
+			(usmallintbuf==SQL_IC_SENSITIVE)?"SENSITIVE":"");
 
 	// SQL_SQL92_RELATIONAL_JOIN_OPERATORS -> bitmask
 	uintbuf=0;

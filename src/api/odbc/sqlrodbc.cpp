@@ -7088,15 +7088,14 @@ static bool SQLR_FeatureContains(CONN *conn,
 
 static SQLUSMALLINT SQLR_IdentifierCase(CONN *conn) {
 	if (SQLR_FeatureContains(conn,
-			"mixed_case_identifiers",
-			"IDENTIFIERS")) {
-		return SQL_IC_SENSITIVE;
-	} else if (SQLR_FeatureContains(conn,
 			"identifier_case_storage","UPPER")) {
 		return SQL_IC_UPPER;
 	} else if (SQLR_FeatureContains(conn,
 			"identifier_case_storage","LOWER")) {
 		return SQL_IC_LOWER;
+	} else if (SQLR_FeatureContains(conn,
+			"identifier_case_storage","SENSITIVE")) {
+		return SQL_IC_SENSITIVE;
 	}
 	return SQL_IC_MIXED;
 }
@@ -7856,15 +7855,14 @@ static SQLUINTEGER SQLR_QualifierUsage(CONN *conn) {
 
 static SQLUSMALLINT SQLR_QuotedIdentifierCase(CONN *conn) {
 	if (SQLR_FeatureContains(conn,
-			"mixed_case_identifiers",
-			"QUOTED_IDENTIFIERS")) {
-		return SQL_IC_SENSITIVE;
-	} else if (SQLR_FeatureContains(conn,
 			"quoted_identifier_case_storage","UPPER")) {
 		return SQL_IC_UPPER;
 	} else if (SQLR_FeatureContains(conn,
 			"quoted_identifier_case_storage","LOWER")) {
 		return SQL_IC_LOWER;
+	} else if (SQLR_FeatureContains(conn,
+			"quoted_identifier_case_storage","SENSITIVE")) {
+		return SQL_IC_SENSITIVE;
 	}
 	return SQL_IC_MIXED;
 }

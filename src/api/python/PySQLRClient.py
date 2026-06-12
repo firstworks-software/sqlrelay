@@ -731,7 +731,7 @@ class sqlrconnection:
         * group_by_clauses
          * list - BASIC,BEYOND_SELECT,UNRELATED
         * identifier_case_storage
-         * list - LOWER,MIXED,UPPER
+         * list - LOWER,MIXED,SENSITIVE,UPPER
         * identifier_quote_string
          * string
         * index_keywords
@@ -794,8 +794,6 @@ class sqlrconnection:
          * number
         * max_user_name_length
          * number
-        * mixed_case_identifiers
-         * list - IDENTIFIERS,QUOTED_IDENTIFIERS
         * need_long_data_length
          * true/false
         * null_plus_non_null_is_null
@@ -827,7 +825,7 @@ class sqlrconnection:
         * procedure_term
          * string
         * quoted_identifier_case_storage
-         * list - LOWER,MIXED,UPPER
+         * list - LOWER,MIXED,SENSITIVE,UPPER
         * relational_join_operators
          * list - CORRESPONDING_CLAUSE,CROSS_JOIN,EXCEPT_JOIN,...
         * result_set_concurrencies

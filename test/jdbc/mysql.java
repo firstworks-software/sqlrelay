@@ -940,14 +940,28 @@ class mysql extends sqlrtest {
 		System.out.println("  storesMixedCaseIdentifiers");
 		boolval=md.storesMixedCaseIdentifiers();
 		System.out.println("    "+boolval);
-		assertTrue(boolval);
+		if (issqlrelay) {
+			// SQL Relay reports SENSITIVE identifier storage,
+			// which is mutually exclusive with mixed-case storage;
+			// the native MariaDB driver reports both
+			assertFalse(boolval);
+		} else {
+			assertTrue(boolval);
+		}
 		System.out.println();
 
 		// storesMixedCaseQuotedIdentifiers
 		System.out.println("  storesMixedCaseQuotedIdentifiers");
 		boolval=md.storesMixedCaseQuotedIdentifiers();
 		System.out.println("    "+boolval);
-		assertTrue(boolval);
+		if (issqlrelay) {
+			// SQL Relay reports SENSITIVE quoted-identifier storage,
+			// which is mutually exclusive with mixed-case storage;
+			// the native MariaDB driver reports both
+			assertFalse(boolval);
+		} else {
+			assertTrue(boolval);
+		}
 		System.out.println();
 
 		// storesUpperCaseIdentifiers

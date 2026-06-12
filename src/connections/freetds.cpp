@@ -691,9 +691,6 @@ void freetdsconnection::initDatabaseFeatures() {
 	databasefeatures[FEATURE_MAX_USER_NAME_LENGTH]=
 		"30";
 
-	databasefeatures[FEATURE_MIXED_CASE_IDENTIFIERS]=
-		"";
-
 	databasefeatures[FEATURE_NEED_LONG_DATA_LENGTH]=
 		"false";
 
