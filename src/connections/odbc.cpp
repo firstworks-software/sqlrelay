@@ -193,6 +193,9 @@ class SQLRSERVER_DLLSPEC odbccursor : public sqlrservercursor {
 						uint32_t size);
 		bool		handleColumns(bool getcolumninfo,
 						bool bindcolumns);
+		bool		appendNullColumns(uint8_t count);
+		bool		appendNullColumn();
+		bool		appendColumnListColumns();
 		void		getError(char *errorbuffer,
 						uint32_t errorbuffersize,
 						uint32_t *errorsize,
@@ -2719,7 +2722,9 @@ bool odbcconnection::getCatalogList(sqlrservercursor *cursor,
 	bool	retval=(erg==SQL_SUCCESS || erg==SQL_SUCCESS_WITH_INFO);
 
 	// parse the column information
-	return (retval)?odbccur->handleColumns(true,true):false;
+	return (retval)?
+		(odbccur->handleColumns(true,true) &&
+		odbccur->appendNullColumn()):false;
 }
 
 bool odbcconnection::getSchemaList(sqlrservercursor *cursor,
@@ -2752,7 +2757,9 @@ bool odbcconnection::getSchemaList(sqlrservercursor *cursor,
 	bool	retval=(erg==SQL_SUCCESS || erg==SQL_SUCCESS_WITH_INFO);
 
 	// parse the column information
-	return (retval)?odbccur->handleColumns(true,true):false;
+	return (retval)?
+		(odbccur->handleColumns(true,true) &&
+		odbccur->appendNullColumn()):false;
 }
 
 bool odbcconnection::getTableTypeList(sqlrservercursor *cursor,
@@ -2790,7 +2797,9 @@ bool odbcconnection::getTableTypeList(sqlrservercursor *cursor,
 	bool	retval=(erg==SQL_SUCCESS || erg==SQL_SUCCESS_WITH_INFO);
 
 	// parse the column information
-	return (retval)?odbccur->handleColumns(true,true):false;
+	return (retval)?
+		(odbccur->handleColumns(true,true) &&
+		odbccur->appendNullColumn()):false;
 }
 
 bool odbcconnection::getTableList(sqlrservercursor *cursor,
@@ -2857,7 +2866,9 @@ bool odbcconnection::getTableList(sqlrservercursor *cursor,
 	bool	retval=(erg==SQL_SUCCESS || erg==SQL_SUCCESS_WITH_INFO);
 
 	// parse the column information
-	return (retval)?odbccur->handleColumns(true,true):false;
+	return (retval)?
+		(odbccur->handleColumns(true,true) &&
+		odbccur->appendNullColumn()):false;
 }
 
 bool odbcconnection::getTypeInfoList(sqlrservercursor *cursor,
@@ -3015,7 +3026,9 @@ bool odbcconnection::getTypeInfoList(sqlrservercursor *cursor,
 	bool	retval=(erg==SQL_SUCCESS || erg==SQL_SUCCESS_WITH_INFO);
 
 	// parse the column information
-	return (retval)?odbccur->handleColumns(true,true):false;
+	return (retval)?
+		(odbccur->handleColumns(true,true) &&
+		odbccur->appendNullColumn()):false;
 }
 
 bool odbcconnection::getColumnList(sqlrservercursor *cursor,
@@ -3060,8 +3073,12 @@ bool odbcconnection::getColumnList(sqlrservercursor *cursor,
 			(SQLCHAR *)column,SQL_NTS);
 	bool	retval=(erg==SQL_SUCCESS || erg==SQL_SUCCESS_WITH_INFO);
 
-	// parse the column information
-	return (retval)?odbccur->handleColumns(true,true):false;
+	// parse the column information, then append the synthetic columns
+	// that bring the result up to the SQLColumns()+ format
+	return (retval)?
+		(odbccur->handleColumns(true,true) &&
+		odbccur->appendColumnListColumns() &&
+		odbccur->appendNullColumn()):false;
 }
 
 bool odbcconnection::getPrimaryKeysList(sqlrservercursor *cursor,
@@ -3102,7 +3119,9 @@ bool odbcconnection::getPrimaryKeysList(sqlrservercursor *cursor,
 	bool	retval=(erg==SQL_SUCCESS || erg==SQL_SUCCESS_WITH_INFO);
 
 	// parse the column information
-	return (retval)?odbccur->handleColumns(true,true):false;
+	return (retval)?
+		(odbccur->handleColumns(true,true) &&
+		odbccur->appendNullColumn()):false;
 }
 
 bool odbcconnection::getKeyAndIndexList(sqlrservercursor *cursor,
@@ -3145,7 +3164,9 @@ bool odbcconnection::getKeyAndIndexList(sqlrservercursor *cursor,
 	bool	retval=(erg==SQL_SUCCESS || erg==SQL_SUCCESS_WITH_INFO);
 
 	// parse the column information
-	return (retval)?odbccur->handleColumns(true,true):false;
+	return (retval)?
+		(odbccur->handleColumns(true,true) &&
+		odbccur->appendNullColumn()):false;
 }
 
 bool odbcconnection::getProcedureList(sqlrservercursor *cursor,
@@ -3187,7 +3208,9 @@ bool odbcconnection::getProcedureList(sqlrservercursor *cursor,
 	bool	retval=(erg==SQL_SUCCESS || erg==SQL_SUCCESS_WITH_INFO);
 
 	// parse the column information
-	return (retval)?odbccur->handleColumns(true,true):false;
+	return (retval)?
+		(odbccur->handleColumns(true,true) &&
+		odbccur->appendNullColumn()):false;
 }
 
 bool odbcconnection::getProcedureParameterList(
@@ -3229,7 +3252,9 @@ bool odbcconnection::getProcedureParameterList(
 	bool	retval=(erg==SQL_SUCCESS || erg==SQL_SUCCESS_WITH_INFO);
 
 	// parse the column information
-	return (retval)?odbccur->handleColumns(true,true):false;
+	return (retval)?
+		(odbccur->handleColumns(true,true) &&
+		odbccur->appendNullColumn()):false;
 }
 
 const char *odbcconnection::selectCatalogQuery() {
@@ -5076,6 +5101,86 @@ bool odbccursor::handleColumns(bool getcolumninfo, bool bindcolumns) {
 	}
 
 	return true;
+}
+
+bool odbccursor::appendNullColumns(uint8_t count) {
+
+	// the various get*List() result sets need trailing NULL
+	// columns for the sqlrservercontroller to map unprovided
+	// columns to...
+
+	// grow the column buffers, if necessary...
+	if (ncols+count>columncount) {
+
+		// bump the column count
+		int32_t		newcount=ncols+count;
+
+		// allocate a new set of column buffers
+		char		**newfield=new char *[newcount];
+		#ifdef SQLBINDCOL_SQLLEN
+		SQLLEN		*newloblength=new SQLLEN[newcount];
+		SQLLEN		*newindicator=new SQLLEN[newcount];
+		#else
+		SQLINTEGER	*newloblength=new SQLINTEGER[newcount];
+		SQLINTEGER	*newindicator=new SQLINTEGER[newcount];
+		#endif
+		odbccolumn	*newcolumn=new odbccolumn[newcount];
+
+		// keep the existing columns
+		for (int32_t i=0; i<columncount; i++) {
+			newfield[i]=field[i];
+			newloblength[i]=loblength[i];
+			newindicator[i]=indicator[i];
+			newcolumn[i]=column[i];
+		}
+
+		// the appended columns are null and need no data buffers
+		for (int32_t i=columncount; i<newcount; i++) {
+			newfield[i]=NULL;
+		}
+
+		delete[] field;
+		delete[] loblength;
+		delete[] indicator;
+		delete[] column;
+
+		field=newfield;
+		loblength=newloblength;
+		indicator=newindicator;
+		column=newcolumn;
+		columncount=newcount;
+	}
+
+	// append null columns
+	for (uint8_t i=0; i<count; i++) {
+		column[ncols].name[0]='\0';
+		column[ncols].namesize=0;
+		column[ncols].type=SQL_CHAR;
+		column[ncols].size=0;
+		column[ncols].precision=0;
+		column[ncols].scale=0;
+		column[ncols].nullable=SQL_NULLABLE;
+		column[ncols].unsignednumber=0;
+		column[ncols].autoincrement=0;
+		column[ncols].table[0]='\0';
+		column[ncols].tablesize=0;
+		indicator[ncols]=SQL_NULL_DATA;
+		ncols++;
+	}
+
+	return true;
+}
+
+bool odbccursor::appendNullColumn() {
+	return appendNullColumns(1);
+}
+
+bool odbccursor::appendColumnListColumns() {
+
+	// the native SQLColumns() result lacks the numeric_precision,
+	// column_key, and is_autoincrement columns of the SQLColumns()+
+	// format; the odbc api can't supply them, so append them as nulls
+	return appendNullColumns(3);
 }
 
 void odbccursor::getError(char *errorbuffer,

@@ -6320,19 +6320,6 @@ void sqlrservercontroller::setDatabaseListFormat(
 void sqlrservercontroller::setCatalogListFormat(
 					sqlrserverlistformat_t listformat) {
 
-	// FIXME: for now, don't remap columns if api calls are used to get
-	// lists, as the the columns won't have an extra NULL at the end that
-	// unsupported columns can be mapped to.
-	//
-	// this "happens to work" for odbc passthrough:
-	// ODBC -> sqlrelay client -> sqlrelay server -> ODBC -> some db
-	// but wouldn't if either ODBC were replaced with something else
-	if (pvt->_conn->getListsByApiCalls()) {
-		pvt->_columnmap=NULL;
-		pvt->_columnnamemap=NULL;
-		return;
-	}
-
 	switch (listformat) {
 		case SQLRSERVERLISTFORMAT_MYSQL:
 			pvt->_columnmap=
@@ -6362,21 +6349,6 @@ void sqlrservercontroller::setCatalogListFormat(
 void sqlrservercontroller::setSchemaListFormat(
 					sqlrserverlistformat_t listformat) {
 
-	// FIXME: for now, don't remap columns if api calls are used to get
-	// lists, as the the columns won't have an extra NULL at the end that
-	// unsupported columns can be mapped to.
-	//
-	// this "happens to work" for odbc passthrough:
-	// ODBC -> sqlrelay client -> sqlrelay server -> ODBC -> some db
-	// but wouldn't if either ODBC were replaced with something else
-	if (pvt->_conn->getListsByApiCalls()) {
-		pvt->_columnmap=NULL;
-		pvt->_columnnamemap=NULL;
-		return;
-	}
-
-	// currently only iplemented for oracle
-	// FIXME: ...and probably not correctly
 	switch (listformat) {
 		case SQLRSERVERLISTFORMAT_MYSQL:
 			pvt->_columnmap=
@@ -6406,20 +6378,6 @@ void sqlrservercontroller::setSchemaListFormat(
 void sqlrservercontroller::setTableTypeListFormat(
 					sqlrserverlistformat_t listformat) {
 
-	// FIXME: for now, don't remap columns if api calls are used to get
-	// lists, as the the columns won't have an extra NULL at the end that
-	// unsupported columns can be mapped to.
-	//
-	// this "happens to work" for odbc passthrough:
-	// ODBC -> sqlrelay client -> sqlrelay server -> ODBC -> some db
-	// but wouldn't if either ODBC were replaced with something else
-	if (pvt->_conn->getListsByApiCalls()) {
-		pvt->_columnmap=NULL;
-		pvt->_columnnamemap=NULL;
-		return;
-	}
-
-	// currently only implemented for oracle
 	switch (listformat) {
 		case SQLRSERVERLISTFORMAT_MYSQL:
 			pvt->_columnmap=
@@ -6448,19 +6406,6 @@ void sqlrservercontroller::setTableTypeListFormat(
 
 void sqlrservercontroller::setTableListFormat(
 					sqlrserverlistformat_t listformat) {
-
-	// FIXME: for now, don't remap columns if api calls are used to get
-	// lists, as the the columns won't have an extra NULL at the end that
-	// unsupported columns can be mapped to.
-	//
-	// this "happens to work" for odbc passthrough:
-	// ODBC -> sqlrelay client -> sqlrelay server -> ODBC -> some db
-	// but wouldn't if either ODBC were replaced with something else
-	if (pvt->_conn->getListsByApiCalls()) {
-		pvt->_columnmap=NULL;
-		pvt->_columnnamemap=NULL;
-		return;
-	}
 
 	switch (listformat) {
 		case SQLRSERVERLISTFORMAT_MYSQL:
@@ -6491,20 +6436,6 @@ void sqlrservercontroller::setTableListFormat(
 void sqlrservercontroller::setTypeInfoListFormat(
 					sqlrserverlistformat_t listformat) {
 
-	// FIXME: for now, don't remap columns if api calls are used to get
-	// lists, as the the columns won't have an extra NULL at the end that
-	// unsupported columns can be mapped to.
-	//
-	// this "happens to work" for odbc passthrough:
-	// ODBC -> sqlrelay client -> sqlrelay server -> ODBC -> some db
-	// but wouldn't if either ODBC were replaced with something else
-	if (pvt->_conn->getListsByApiCalls()) {
-		pvt->_columnmap=NULL;
-		pvt->_columnnamemap=NULL;
-		return;
-	}
-
-	// currently only implemented for oracle
 	switch (listformat) {
 		case SQLRSERVERLISTFORMAT_MYSQL:
 			pvt->_columnmap=
@@ -6533,19 +6464,6 @@ void sqlrservercontroller::setTypeInfoListFormat(
 
 void sqlrservercontroller::setColumnListFormat(
 					sqlrserverlistformat_t listformat) {
-
-	// FIXME: for now, don't remap columns if api calls are used to get
-	// lists, as the the columns won't have an extra NULL at the end that
-	// unsupported columns can be mapped to.
-	//
-	// this "happens to work" for odbc passthrough:
-	// ODBC -> sqlrelay client -> sqlrelay server -> ODBC -> some db
-	// but wouldn't if either ODBC were replaced with something else
-	if (pvt->_conn->getListsByApiCalls()) {
-		pvt->_columnmap=NULL;
-		pvt->_columnnamemap=NULL;
-		return;
-	}
 
 	switch (listformat) {
 		case SQLRSERVERLISTFORMAT_MYSQL:
@@ -6576,19 +6494,6 @@ void sqlrservercontroller::setColumnListFormat(
 void sqlrservercontroller::setPrimaryKeyListFormat(
 					sqlrserverlistformat_t listformat) {
 
-	// FIXME: for now, don't remap columns if api calls are used to get
-	// lists, as the the columns won't have an extra NULL at the end that
-	// unsupported columns can be mapped to.
-	//
-	// this "happens to work" for odbc passthrough:
-	// ODBC -> sqlrelay client -> sqlrelay server -> ODBC -> some db
-	// but wouldn't if either ODBC were replaced with something else
-	if (pvt->_conn->getListsByApiCalls()) {
-		pvt->_columnmap=NULL;
-		pvt->_columnnamemap=NULL;
-		return;
-	}
-
 	switch (listformat) {
 		case SQLRSERVERLISTFORMAT_MYSQL:
 			pvt->_columnmap=
@@ -6617,19 +6522,6 @@ void sqlrservercontroller::setPrimaryKeyListFormat(
 
 void sqlrservercontroller::setKeyAndIndexListFormat(
 					sqlrserverlistformat_t listformat) {
-
-	// FIXME: for now, don't remap columns if api calls are used to get
-	// lists, as the the columns won't have an extra NULL at the end that
-	// unsupported columns can be mapped to.
-	//
-	// this "happens to work" for odbc passthrough:
-	// ODBC -> sqlrelay client -> sqlrelay server -> ODBC -> some db
-	// but wouldn't if either ODBC were replaced with something else
-	if (pvt->_conn->getListsByApiCalls()) {
-		pvt->_columnmap=NULL;
-		pvt->_columnnamemap=NULL;
-		return;
-	}
 
 	switch (listformat) {
 		case SQLRSERVERLISTFORMAT_MYSQL:
@@ -6660,20 +6552,6 @@ void sqlrservercontroller::setKeyAndIndexListFormat(
 void sqlrservercontroller::setProcedureListFormat(
 					sqlrserverlistformat_t listformat) {
 
-	// FIXME: for now, don't remap columns if api calls are used to get
-	// lists, as the the columns won't have an extra NULL at the end that
-	// unsupported columns can be mapped to.
-	//
-	// this "happens to work" for odbc passthrough:
-	// ODBC -> sqlrelay client -> sqlrelay server -> ODBC -> some db
-	// but wouldn't if either ODBC were replaced with something else
-	if (pvt->_conn->getListsByApiCalls()) {
-		pvt->_columnmap=NULL;
-		pvt->_columnnamemap=NULL;
-		return;
-	}
-
-	// currently only implemented for oracle
 	switch (listformat) {
 		case SQLRSERVERLISTFORMAT_MYSQL:
 			pvt->_columnmap=
@@ -6702,19 +6580,6 @@ void sqlrservercontroller::setProcedureListFormat(
 
 void sqlrservercontroller::setProcedureParameterListFormat(
 					sqlrserverlistformat_t listformat) {
-
-	// FIXME: for now, don't remap columns if api calls are used to get
-	// lists, as the the columns won't have an extra NULL at the end that
-	// unsupported columns can be mapped to.
-	//
-	// this "happens to work" for odbc passthrough:
-	// ODBC -> sqlrelay client -> sqlrelay server -> ODBC -> some db
-	// but wouldn't if either ODBC were replaced with something else
-	if (pvt->_conn->getListsByApiCalls()) {
-		pvt->_columnmap=NULL;
-		pvt->_columnnamemap=NULL;
-		return;
-	}
 
 	switch (listformat) {
 		case SQLRSERVERLISTFORMAT_MYSQL:

@@ -245,6 +245,9 @@
 	getColumnListQuery() now returns a dedicated is_autoincrement column
 		and the jdbc driver's getColumns() maps it to IS_AUTOINCREMENT
 		(YES/NO) instead of null
+	the odbc connection's get*List() results are now mapped to the
+		requested mysql/odbc/jdbc format instead of always being
+		returned in odbc format
 
 2.1.1 - added tns_admin support
 	fixed sqlr-start ... -strace ...
