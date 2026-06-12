@@ -543,8 +543,10 @@ void mysqlconnection::initDatabaseFeatures() {
 	databasefeatures[FEATURE_INSERTS_ARE_DETECTED]=
 		"";
 
+	// no SELECT_INTO; mysql has no SQL-standard SELECT ... INTO
+	// <table> (it uses CREATE TABLE ... AS SELECT)
 	databasefeatures[FEATURE_INSERT_OPERATIONS]=
-		"INSERT_LITERALS,INSERT_SEARCHED,SELECT_INTO";
+		"INSERT_LITERALS,INSERT_SEARCHED";
 
 	databasefeatures[FEATURE_ISOLATION_LEVELS]=
 		"READ_UNCOMMITTED,READ_COMMITTED,"
@@ -835,15 +837,13 @@ void mysqlconnection::initDatabaseFeatures() {
 	databasefeatures[FEATURE_TABLE_TERM]=
 		"table";
 
-	// mysql supports these, but its native odbc driver reports 0;
-	// matching native (see #8114 re mariadb vs mysql)
 	databasefeatures[FEATURE_TIME_DATE_ADD_INTERVALS]=
-		"";
+		"FRAC_SECOND,SECOND,MINUTE,HOUR,"
+			"DAY,WEEK,MONTH,QUARTER,YEAR";
 
-	// mysql supports these, but its native odbc driver reports 0;
-	// matching native (see #8114 re mariadb vs mysql)
 	databasefeatures[FEATURE_TIME_DATE_DIFF_INTERVALS]=
-		"";
+		"FRAC_SECOND,SECOND,MINUTE,HOUR,"
+			"DAY,WEEK,MONTH,QUARTER,YEAR";
 
 	databasefeatures[FEATURE_TIME_DATE_FUNCTIONS]=
 		"DAYOFWEEK,WEEKDAY,DAYOFMONTH,DAYOFYEAR,MONTH,"

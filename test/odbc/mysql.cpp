@@ -3165,9 +3165,22 @@ int main(int argc, char **argv) {
 	erg=SQLGetInfo(dbc,SQL_TIMEDATE_ADD_INTERVALS,
 			(SQLPOINTER)&uintval,
 			(SQLSMALLINT)sizeof(uintval),&vallen);
-	// mysql supports these, but its native odbc driver reports 0
-	// (see #8114 re mariadb vs mysql)
-	assertEqualDbc(dbc,(int)uintval,0);
+	if (issqlrelay) {
+		assertEqualDbc(dbc,(int)uintval,
+			(int)(SQL_FN_TSI_FRAC_SECOND|
+				SQL_FN_TSI_SECOND|
+				SQL_FN_TSI_MINUTE|
+				SQL_FN_TSI_HOUR|
+				SQL_FN_TSI_DAY|
+				SQL_FN_TSI_WEEK|
+				SQL_FN_TSI_MONTH|
+				SQL_FN_TSI_QUARTER|
+				SQL_FN_TSI_YEAR));
+	} else {
+		// the native driver incorrectly reports 0; mysql
+		// supports these via TIMESTAMPADD
+		assertEqualDbc(dbc,(int)uintval,0);
+	}
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
 
@@ -3177,9 +3190,22 @@ int main(int argc, char **argv) {
 	erg=SQLGetInfo(dbc,SQL_TIMEDATE_DIFF_INTERVALS,
 			(SQLPOINTER)&uintval,
 			(SQLSMALLINT)sizeof(uintval),&vallen);
-	// mysql supports these, but its native odbc driver reports 0
-	// (see #8114 re mariadb vs mysql)
-	assertEqualDbc(dbc,(int)uintval,0);
+	if (issqlrelay) {
+		assertEqualDbc(dbc,(int)uintval,
+			(int)(SQL_FN_TSI_FRAC_SECOND|
+				SQL_FN_TSI_SECOND|
+				SQL_FN_TSI_MINUTE|
+				SQL_FN_TSI_HOUR|
+				SQL_FN_TSI_DAY|
+				SQL_FN_TSI_WEEK|
+				SQL_FN_TSI_MONTH|
+				SQL_FN_TSI_QUARTER|
+				SQL_FN_TSI_YEAR));
+	} else {
+		// the native driver incorrectly reports 0; mysql
+		// supports these via TIMESTAMPDIFF
+		assertEqualDbc(dbc,(int)uintval,0);
+	}
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
 
@@ -4226,10 +4252,18 @@ int main(int argc, char **argv) {
 	erg=SQLGetInfo(dbc,SQL_INSERT_STATEMENT,
 			(SQLPOINTER)&uintval,
 			(SQLSMALLINT)sizeof(uintval),&vallen);
-	assertEqualDbc(dbc,(int)uintval,
-		(int)(SQL_IS_INSERT_LITERALS|
-			SQL_IS_INSERT_SEARCHED|
-			SQL_IS_SELECT_INTO));
+	if (issqlrelay) {
+		assertEqualDbc(dbc,(int)uintval,
+			(int)(SQL_IS_INSERT_LITERALS|
+				SQL_IS_INSERT_SEARCHED));
+	} else {
+		// the native driver incorrectly reports SELECT_INTO;
+		// mysql has no SQL-standard SELECT ... INTO <table>
+		assertEqualDbc(dbc,(int)uintval,
+			(int)(SQL_IS_INSERT_LITERALS|
+				SQL_IS_INSERT_SEARCHED|
+				SQL_IS_SELECT_INTO));
+	}
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
 	#endif

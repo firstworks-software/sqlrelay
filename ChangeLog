@@ -237,6 +237,11 @@
 		quoted_identifier_case_storage, which now also accept SENSITIVE
 		(the four storage states upper/lower/mixed/sensitive are
 		mutually exclusive, so one feature each expresses all of it)
+	mysql now reports the time_date_add_intervals and
+		time_date_diff_intervals it actually supports (its native odbc
+		driver under-reports them as none) and no longer claims
+		select_into in insert_operations (mysql has no SQL-standard
+		SELECT ... INTO <table>; its native odbc driver over-reports it)
 
 2.1.1 - added tns_admin support
 	fixed sqlr-start ... -strace ...
