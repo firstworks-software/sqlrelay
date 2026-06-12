@@ -3908,6 +3908,11 @@ class SQLRSERVER_DLLSPEC sqlrserverconnection : public sqlrserverbase {
 		 *      * PRI - primary key
 		 *      * UNI - first column of a unique index
 		 *      * MUL - first column of a non-unique index
+		 *  * IS_AUTOINCREMENT
+		 *    * not included in ODBC SQLColumns()
+		 *    * valid values are:
+		 *      * YES - column is auto-incremented
+		 *      * NO - column is not auto-incremented
 		 *  * NULL
 		 *
 		 *  ...returning an empty string, 0, or null as appropriate for

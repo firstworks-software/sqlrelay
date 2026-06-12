@@ -2911,6 +2911,10 @@ const char *oracleconnection::getColumnListQuery(const char *catalog,
 			"	null as column_key, ");
 	}
 	columnlistquery.append(
+			"	case "
+			"		when tc.identity_column='YES' then 'YES' "
+			"		else 'NO' "
+			"	end as is_autoincrement, "
 			"	null ");
 
 	// from clause

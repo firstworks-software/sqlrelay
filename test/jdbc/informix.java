@@ -2855,6 +2855,26 @@ class informix extends sqlrtest {
 		System.out.println();
 
 
+		// column list - is_autoincrement
+		System.out.println("COLUMN LIST - is_autoincrement:");
+		stmt.executeUpdate(
+			"create table testtable ("+
+			"	col1 serial primary key, "+
+			"	col2 int)");
+		rs=md.getColumns(null,null,"testtable","%");
+		assertTrue((rs!=null));
+		assertTrue(rs.next());
+		assertEquals(rs.getString("COLUMN_NAME"),"col1");
+		assertEquals(rs.getString("IS_AUTOINCREMENT"),"YES");
+		assertTrue(rs.next());
+		assertEquals(rs.getString("COLUMN_NAME"),"col2");
+		assertEquals(rs.getString("IS_AUTOINCREMENT"),"NO");
+		assertFalse(rs.next());
+		rs.close();
+		stmt.executeUpdate("drop table testtable");
+		System.out.println();
+
+
 		// primary key list
 		System.out.println("PRIMARY KEY LIST:");
 		try {

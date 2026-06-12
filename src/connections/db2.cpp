@@ -1904,6 +1904,10 @@ const char *db2connection::getColumnListQuery(const char *catalog,
 		"		when keyseq is not null then 'PRI' "
 		"		else '' "
 		"	end as column_key, "
+		"	case "
+		"		when identity='Y' then 'YES' "
+		"		else 'NO' "
+		"	end as is_autoincrement, "
 		"	null ");
 
 	// from clause

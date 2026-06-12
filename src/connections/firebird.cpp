@@ -1813,6 +1813,10 @@ const char *firebirdconnection::getColumnListQuery(const char *catalog,
 		"		when 3 then 'MUL' "
 		"		else null "
 		"	end) as column_key, "
+		"	trim(case "
+		"		when rf.rdb$identity_type is not null then 'YES' "
+		"		else 'NO' "
+		"	end) as is_autoincrement, "
 		"	null ");
 
 	// from clause

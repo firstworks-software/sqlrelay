@@ -242,6 +242,9 @@
 		driver under-reports them as none) and no longer claims
 		select_into in insert_operations (mysql has no SQL-standard
 		SELECT ... INTO <table>; its native odbc driver over-reports it)
+	getColumnListQuery() now returns a dedicated is_autoincrement column
+		and the jdbc driver's getColumns() maps it to IS_AUTOINCREMENT
+		(YES/NO) instead of null
 
 2.1.1 - added tns_admin support
 	fixed sqlr-start ... -strace ...

@@ -2118,6 +2118,10 @@ const char *sapconnection::getColumnListQuery(const char *catalog,
 		"		when 3 then 'MUL' "
 		"		else null "
 		"	end as column_key, "
+		"	case "
+		"		when (co.status&128)=128 then 'YES' "
+		"		else 'NO' "
+		"	end as is_autoincrement, "
 		"	null ");
 
 	// from clause

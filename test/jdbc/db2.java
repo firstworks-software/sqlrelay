@@ -2619,6 +2619,27 @@ class db2 extends sqlrtest {
 		System.out.println();
 
 
+		// column list - is_autoincrement
+		System.out.println("COLUMN LIST - is_autoincrement:");
+		stmt.executeUpdate(
+			"create table testtable ("+
+			"	col1 int "+
+			"generated always as identity primary key, "+
+			"	col2 int)");
+		rs=md.getColumns(null,null,"TESTTABLE","%");
+		assertTrue((rs!=null));
+		assertTrue(rs.next());
+		assertEquals(rs.getString("COLUMN_NAME"),"COL1");
+		assertEquals(rs.getString("IS_AUTOINCREMENT"),"YES");
+		assertTrue(rs.next());
+		assertEquals(rs.getString("COLUMN_NAME"),"COL2");
+		assertEquals(rs.getString("IS_AUTOINCREMENT"),"NO");
+		assertFalse(rs.next());
+		rs.close();
+		stmt.executeUpdate("drop table testtable");
+		System.out.println();
+
+
 		// primary key list
 		System.out.println("PRIMARY KEY LIST:");
 		try {

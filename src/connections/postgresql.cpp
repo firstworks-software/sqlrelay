@@ -1975,6 +1975,11 @@ const char *postgresqlconnection::getColumnListQuery(const char *catalog,
 		"		when 3 then 'MUL' "
 		"		else null "
 		"	end as column_key, "
+		"	case "
+		"		when co.column_default like 'nextval(%' "
+		"			then 'YES' "
+		"		else 'NO' "
+		"	end as is_autoincrement, "
 		"	null ");
 	columnlistquery.append(
 		"from "

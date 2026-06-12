@@ -3530,6 +3530,27 @@ if (issqlrelay) {
 		System.out.println();
 
 
+		// column list - is_autoincrement
+		System.out.println("COLUMN LIST - is_autoincrement:");
+		stmt.executeUpdate("drop table if exists testtable");
+		stmt.executeUpdate(
+			"create table testtable ("+
+			"	col1 int auto_increment primary key, "+
+			"	col2 int)");
+		rs=md.getColumns(null,null,"testtable","%");
+		assertTrue((rs!=null));
+		assertTrue(rs.next());
+		assertEquals(rs.getString("COLUMN_NAME"),"col1");
+		assertEquals(rs.getString("IS_AUTOINCREMENT"),"YES");
+		assertTrue(rs.next());
+		assertEquals(rs.getString("COLUMN_NAME"),"col2");
+		assertEquals(rs.getString("IS_AUTOINCREMENT"),"NO");
+		assertFalse(rs.next());
+		rs.close();
+		stmt.executeUpdate("drop table if exists testtable");
+		System.out.println();
+
+
 		// primary key list
 		System.out.println("PRIMARY KEY LIST:");
 		stmt.executeUpdate("drop table if exists testtable");

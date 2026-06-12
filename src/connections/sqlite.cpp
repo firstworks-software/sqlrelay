@@ -1436,6 +1436,16 @@ const char *sqliteconnection::getColumnListQuery(const char *catalog,
 		"		when p.pk=1 then 'PRI' "
 		"		else '' "
 		"	end as column_key, "
+		"	case "
+		"		when p.pk>0 "
+		"		and (select count(*) "
+		"			from sqlite_master "
+		"			where name='")->append(table)->append("' "
+		"			and upper(sql) "
+		"				like '%AUTOINCREMENT%')>0 "
+		"		then 'YES' "
+		"		else 'NO' "
+		"	end as is_autoincrement, "
 		"	null ");
 
 	// from clause

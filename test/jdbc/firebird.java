@@ -2856,6 +2856,23 @@ class firebird extends sqlrtest {
 		System.out.println();
 
 
+		// column list - is_autoincrement
+		// (the pre-existing testtable2 has col1 as an identity
+		// primary key and col2 as a plain integer)
+		System.out.println("COLUMN LIST - is_autoincrement:");
+		rs=md.getColumns(null,null,"TESTTABLE2","%");
+		assertTrue((rs!=null));
+		assertTrue(rs.next());
+		assertEquals(rs.getString("COLUMN_NAME"),"COL1");
+		assertEquals(rs.getString("IS_AUTOINCREMENT"),"YES");
+		assertTrue(rs.next());
+		assertEquals(rs.getString("COLUMN_NAME"),"COL2");
+		assertEquals(rs.getString("IS_AUTOINCREMENT"),"NO");
+		assertFalse(rs.next());
+		rs.close();
+		System.out.println();
+
+
 		// primary key list
 		System.out.println("PRIMARY KEY LIST:");
 		rs=md.getPrimaryKeys(null,null,"TESTTABLE");

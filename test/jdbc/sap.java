@@ -2800,6 +2800,30 @@ class sap extends sqlrtest {
 		System.out.println();
 
 
+		// column list - is_autoincrement
+		System.out.println("COLUMN LIST - is_autoincrement:");
+		con.setAutoCommit(true);
+		stmt.executeUpdate(
+			"create table testtable ("+
+			"	col1 numeric(8,0) identity, "+
+			"	col2 int)");
+		con.setAutoCommit(false);
+		rs=md.getColumns(null,null,"testtable","%");
+		assertTrue((rs!=null));
+		assertTrue(rs.next());
+		assertEquals(rs.getString("COLUMN_NAME"),"col1");
+		assertEquals(rs.getString("IS_AUTOINCREMENT"),"YES");
+		assertTrue(rs.next());
+		assertEquals(rs.getString("COLUMN_NAME"),"col2");
+		assertEquals(rs.getString("IS_AUTOINCREMENT"),"NO");
+		assertFalse(rs.next());
+		rs.close();
+		con.setAutoCommit(true);
+		stmt.executeUpdate("drop table testtable");
+		con.setAutoCommit(false);
+		System.out.println();
+
+
 		// primary key list
 		System.out.println("PRIMARY KEY LIST:");
 		con.setAutoCommit(true);

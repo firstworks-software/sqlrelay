@@ -2032,6 +2032,10 @@ const char *informixconnection::getColumnListQuery(const char *catalog,
 		"		when 3 then 'MUL' "
 		"		else '' "
 		"	end) as column_key, "
+		"	trim(case "
+		"		when mod(cl.coltype,256) in (6,18) then 'YES' "
+		"		else 'NO' "
+		"	end) as is_autoincrement, "
 		"	trim('') ");
 
 	// from clause

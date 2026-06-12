@@ -7551,19 +7551,17 @@ void sqlrservercontroller::buildToJDBCColumnMaps() {
 	// IS_NULLABLE <- IS_NULLABLE
 	pvt->_jdbccolumnscolumnmap.setValue(17,17);
 	// SCOPE_CATALOG <- NULL
-	pvt->_jdbccolumnscolumnmap.setValue(18,20);
+	pvt->_jdbccolumnscolumnmap.setValue(18,21);
 	// SCOPE_SCHEMA <- NULL
-	pvt->_jdbccolumnscolumnmap.setValue(19,20);
+	pvt->_jdbccolumnscolumnmap.setValue(19,21);
 	// SCOPE_TABLE <- NULL
-	pvt->_jdbccolumnscolumnmap.setValue(20,20);
+	pvt->_jdbccolumnscolumnmap.setValue(20,21);
 	// SOURCE_DATA_TYPE <- NULL
-	pvt->_jdbccolumnscolumnmap.setValue(21,20);
-	// IS_AUTOINCREMENT <- NULL
-	// (FIXME: we do have this info, just not as a boolean field,
-	// currently, it's part of the remarks)
+	pvt->_jdbccolumnscolumnmap.setValue(21,21);
+	// IS_AUTOINCREMENT <- IS_AUTOINCREMENT
 	pvt->_jdbccolumnscolumnmap.setValue(22,20);
 	// IS_GENERATEDCOLUMN <- NULL
-	pvt->_jdbccolumnscolumnmap.setValue(23,20);
+	pvt->_jdbccolumnscolumnmap.setValue(23,21);
 	pvt->_jdbccolumnscolumnnamemap.setValue(0,"TABLE_CAT");
 	pvt->_jdbccolumnscolumnnamemap.setValue(1,"TABLE_SCHEM");
 	pvt->_jdbccolumnscolumnnamemap.setValue(2,"TABLE_NAME");

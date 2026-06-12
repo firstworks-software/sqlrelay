@@ -2186,6 +2186,10 @@ const char *mysqlconnection::getColumnListQuery(const char *catalog,
 		"	is_nullable, "
 		"	numeric_precision, "
 		"	column_key, "
+		"	case "
+		"		when extra like '%auto_increment%' then 'YES' "
+		"		else 'NO' "
+		"	end as is_autoincrement, "
 		"	null ");
 
 	// from clause

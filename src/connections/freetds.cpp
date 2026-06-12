@@ -2616,6 +2616,10 @@ const char *freetdsconnection::getColumnListQuerySybase(
 		"		when 3 then 'MUL' "
 		"		else null "
 		"	end as column_key, "
+		"	case "
+		"		when (co.status&128)=128 then 'YES' "
+		"		else 'NO' "
+		"	end as is_autoincrement, "
 		"	null ");
 
 	// from clause
@@ -2792,6 +2796,22 @@ const char *freetdsconnection::getColumnListQuerySqlServer(
 		"		when 3 then 'MUL' "
 		"		else null "
 		"	end as column_key, "
+		"	case "
+		"		when COLUMNPROPERTY( "
+		"			OBJECT_ID(");
+	if (temptable) {
+		columnlistquery.append(
+			"			'tempdb..'+co.table_name), ");
+	} else {
+		columnlistquery.append(
+			"			co.table_name), ");
+	}
+	columnlistquery.append(
+		"			co.column_name, "
+		"			'IsIdentity')=1 "
+		"			then 'YES' "
+		"		else 'NO' "
+		"	end as is_autoincrement, "
 		"	null ");
 
 	// from clause
