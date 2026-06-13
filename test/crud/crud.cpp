@@ -152,6 +152,117 @@ int main(int argc, char **argv) {
 	stdoutput.printf("\n");
 
 
+	// read (xml)
+
+
+	// repeat the selects above, but with xml-formatted criteria/sort
+	stdoutput.printf("READ (xml): \n");
+	for (uint16_t i=0; i<5; i++) {
+
+		for (uint16_t j=1; j<4; j++) {
+
+			// build criteria/sort xml
+			if (j>1) {
+				criteria.append("<and>\n");
+			}
+			sort.append("<sort>\n");
+			for (uint16_t k=1; k<=j; k++) {
+				criteria.printf(
+					"<eq><v n=\"%s\"/><s v=\"%s\"/></eq>\n",
+					cols[k],vals[i][k-1]);
+				sort.printf(
+					"<%s v=\"asc\"/>\n",
+					cols[k]);
+			}
+			if (j>1) {
+				criteria.append("</and>\n");
+			}
+			sort.append("</sort>\n");
+
+			// run the query
+			assertTrue(crud->doRead(criteria.getString(),
+							sort.getString(),0));
+
+			tablecollection<const char *>	*t=
+						crud->getResultSetTable();
+
+			// check col/row counts
+			assertEquals(t->getColumnCount(),4);
+			assertEquals(t->getRowCount(),1);
+			stdoutput.printf("\n");
+
+			// check results
+			for (uint16_t k=0; k<3; k++) {
+				assertTrue(!charstring::compare(
+							t->getValue(0,k+1),
+							vals[i][k]));
+			}
+			stdoutput.printf("\n");
+
+			// clean up
+			criteria.clear();
+			sort.clear();
+		}
+	}
+	stdoutput.printf("\n");
+
+
+	// read (xml operators)
+
+
+	// exercise the operators the loop above doesn't, against the
+	// original 5 rows (col2=1..5, col3 not null)
+	stdoutput.printf("READ (xml operators): \n");
+
+	// col2 in (1, 2, 3) -> 3 rows
+	assertTrue(crud->doRead(
+		"<in><v n=\"col2\"/><n v=\"1\"/><n v=\"2\"/><n v=\"3\"/></in>",
+		NULL,0));
+	assertEquals(crud->getResultSetTable()->getRowCount(),3);
+
+	// col2 != 5 -> 4 rows
+	assertTrue(crud->doRead(
+		"<ne><v n=\"col2\"/><n v=\"5\"/></ne>",NULL,0));
+	assertEquals(crud->getResultSetTable()->getRowCount(),4);
+
+	// col2 > 3 -> 2 rows
+	assertTrue(crud->doRead(
+		"<gt><v n=\"col2\"/><n v=\"3\"/></gt>",NULL,0));
+	assertEquals(crud->getResultSetTable()->getRowCount(),2);
+
+	// col3 is null -> 0 rows
+	assertTrue(crud->doRead(
+		"<isnull><v n=\"col3\"/></isnull>",NULL,0));
+	assertEquals(crud->getResultSetTable()->getRowCount(),0);
+
+	// col1 is not null -> 5 rows
+	assertTrue(crud->doRead(
+		"<isnotnull><v n=\"col1\"/></isnotnull>",NULL,0));
+	assertEquals(crud->getResultSetTable()->getRowCount(),5);
+
+	// (col2 = 1) or (col2 = 2) -> 2 rows
+	assertTrue(crud->doRead(
+		"<or><eq><v n=\"col2\"/><n v=\"1\"/></eq>"
+		"<eq><v n=\"col2\"/><n v=\"2\"/></eq></or>",NULL,0));
+	assertEquals(crud->getResultSetTable()->getRowCount(),2);
+
+	stdoutput.printf("\n");
+
+
+	// read (json in)
+
+
+	// regression: json in-list values must be comma-separated
+	stdoutput.printf("READ (json in): \n");
+
+	// col2 in (1, 2, 3) -> 3 rows
+	assertTrue(crud->doRead(
+		"{ \"in\" : [ { \"var\" : \"col2\" }, 1, 2, 3 ] }",NULL,0));
+	assertEquals(crud->getResultSetTable()->getRowCount(),3);
+
+	stdoutput.printf("\n");
+
+
 	// update
 
 

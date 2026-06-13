@@ -50,6 +50,22 @@
  *      ] }
  *    ] }
  *
+ *  The criteria may also be supplied as XML.  Operators are element names
+ *  (and, or, eq, ne, gt, lt, ge, le, in, isnull, isnotnull), variables are
+ *  <v n="col"/>, and literals are <s v="str"/>, <n v="num"/>, <t/>, <f/>,
+ *  and <null/>.  The example above becomes:
+ *
+ *    <and>
+ *      <eq>
+ *        <v n="col1"/>
+ *        <n v="1"/>
+ *      </eq>
+ *      <ne>
+ *        <v n="col2"/>
+ *        <s v="one"/>
+ *      </ne>
+ *    </and>
+ *
  *  The doRead() method also takes a "sort" argument.  This should be a JSON
  *  string conforming to the following format, and will be used to construct
  *  the order-by clause for these operations:
@@ -59,6 +75,15 @@
  *      "col2" : "asc",
  *      "col3" : "desc"
  *    }
+ *
+ *  The sort may also be supplied as XML, with one element per column named
+ *  for the column and a "v" attribute giving the direction:
+ *
+ *    <sort>
+ *      <col1 v="asc"/>
+ *      <col2 v="asc"/>
+ *      <col3 v="desc"/>
+ *    </sort>
  *
  *  The class also provides methods for overriding the template queries that
  *  are automatically built by buildQueries() as well as any primary key or

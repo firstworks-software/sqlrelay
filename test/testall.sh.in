@@ -261,6 +261,21 @@ do
 				cd ../..
 			else
 				./test.sh $DB "$2"
+
+				# the crud test uses oracle-specific sql, so
+				# run it only against the oracle instance
+				if ( test "$DB" = "oracle" )
+				then
+					cd crud
+					./crud
+					if ( test "$?" = "0" )
+					then
+						printf "    % 8s: success\n" "crud" >> ../testresults.log
+					else
+						printf "    % 8s: failed\n" "crud" >> ../testresults.log
+					fi
+					cd ..
+				fi
 			fi
 		else
 			echo

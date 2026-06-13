@@ -39,6 +39,9 @@
 		bool	buildXmlWhere(domnode *criteria,
 					stringbuffer *wherestr,
 					bool containspartial);
+		bool	appendXmlOperand(domnode *operand,
+					stringbuffer *wherestr,
+					bool containspartial);
 		bool	buildJsonOrderBy(domnode *sort,
 					stringbuffer *orderbystr,
 					bool containspartial);

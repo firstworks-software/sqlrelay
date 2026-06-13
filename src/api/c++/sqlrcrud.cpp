@@ -735,6 +735,9 @@ bool sqlrcrud::buildJsonWhere(domnode *criteria,
 				wherestr->append(" in (");
 			} else if (last) {
 				wherestr->append("))");
+			} else {
+				// comma-separate the in-list values
+				wherestr->append(", ");
 			}
 		} else {
 			if (last) {
@@ -752,11 +755,173 @@ bool sqlrcrud::buildJsonWhere(domnode *criteria,
 	return true;
 }
 
+// maps an xml criteria operator tag to its sql operator
+static const char *xmlOpToSql(const char *tag) {
+	if (!charstring::compare(tag,"and")) {
+		return "and";
+	}
+	if (!charstring::compare(tag,"or")) {
+		return "or";
+	}
+	if (!charstring::compare(tag,"eq")) {
+		return "=";
+	}
+	if (!charstring::compare(tag,"ne")) {
+		return "!=";
+	}
+	if (!charstring::compare(tag,"gt")) {
+		return ">";
+	}
+	if (!charstring::compare(tag,"lt")) {
+		return "<";
+	}
+	if (!charstring::compare(tag,"ge")) {
+		return ">=";
+	}
+	if (!charstring::compare(tag,"le")) {
+		return "<=";
+	}
+	return NULL;
+}
+
 bool sqlrcrud::buildXmlWhere(domnode *criteria,
 				stringbuffer *wherestr,
 				bool containspartial) {
-	// FIXME: implement this...
-	return false;
+
+	// criteria mirrors the jsonlogic where clause, but as xml: operators
+	// are tag names (and, or, eq, ne, gt, lt, ge, le, in, isnull,
+	// isnotnull), variables are <v n="col"/>, and literals are
+	// <s v="str"/>, <n v="num"/>, <t/>, <f/>, <null/>
+
+	// handle degenerate case
+	if (criteria->isNullNode()) {
+		return true;
+	}
+
+	// descend through the dom root
+	if (criteria->getType()==ROOT_DOMNODETYPE) {
+		return buildXmlWhere(criteria->getFirstTagChild(),
+						wherestr,containspartial);
+	}
+
+	// the top-level element must be an operation, not a bare variable
+	const char	*tag=criteria->getName();
+	if (!charstring::compare(tag,"v")) {
+		error.append("in criteria, top-level XML element "
+						"must be an operation");
+		return false;
+	}
+
+	// classify the operator
+	bool		isin=!charstring::compare(tag,"in");
+	bool		isnull=!charstring::compare(tag,"isnull");
+	bool		isnotnull=!charstring::compare(tag,"isnotnull");
+	const char	*sqlop=xmlOpToSql(tag);
+	if (!sqlop && !isin && !isnull && !isnotnull) {
+		error.append("in criteria, unrecognized operator \"")->
+			append(tag)->append('"');
+		return false;
+	}
+
+	// begin the where clause and open the group
+	if (!wherestr->getSize()) {
+		wherestr->append((containspartial)?" and ":" where ");
+	}
+	wherestr->append('(');
+
+	// is null / is not null take just the first operand
+	if (isnull || isnotnull) {
+		if (!appendXmlOperand(criteria->getFirstTagChild(),
+						wherestr,containspartial)) {
+			return false;
+		}
+		wherestr->append((isnull)?" is null)":" is not null)");
+		return true;
+	}
+
+	// in takes the column followed by a parenthesized value list
+	if (isin) {
+		domnode	*node=criteria->getFirstTagChild();
+		if (!appendXmlOperand(node,wherestr,containspartial)) {
+			return false;
+		}
+		wherestr->append(" in (");
+		bool	firstinlist=true;
+		for (node=node->getNextTagSibling();
+					!node->isNullNode();
+					node=node->getNextTagSibling()) {
+			if (!firstinlist) {
+				wherestr->append(", ");
+			}
+			if (!appendXmlOperand(node,wherestr,containspartial)) {
+				return false;
+			}
+			firstinlist=false;
+		}
+		wherestr->append("))");
+		return true;
+	}
+
+	// boolean and comparison operators put the sql operator between
+	// each operand
+	bool	first=true;
+	for (domnode *node=criteria->getFirstTagChild();
+					!node->isNullNode();
+					node=node->getNextTagSibling()) {
+		if (!first) {
+			wherestr->append(' ')->append(sqlop)->append(' ');
+		}
+		if (!appendXmlOperand(node,wherestr,containspartial)) {
+			return false;
+		}
+		first=false;
+	}
+	wherestr->append(')');
+	return true;
+}
+
+bool sqlrcrud::appendXmlOperand(domnode *operand,
+				stringbuffer *wherestr,
+				bool containspartial) {
+
+	const char	*tag=operand->getName();
+
+	// variable - emit the column name
+	if (!charstring::compare(tag,"v")) {
+		wherestr->append(operand->getAttributeValue("n"));
+		return true;
+	}
+
+	// string literal
+	if (!charstring::compare(tag,"s")) {
+		wherestr->append('\'')->
+			append(operand->getAttributeValue("v"))->
+			append('\'');
+		return true;
+	}
+
+	// numeric literal
+	if (!charstring::compare(tag,"n")) {
+		wherestr->append(operand->getAttributeValue("v"));
+		return true;
+	}
+
+	// boolean and null literals
+	if (!charstring::compare(tag,"t")) {
+		wherestr->append("true");
+		return true;
+	}
+	if (!charstring::compare(tag,"f")) {
+		wherestr->append("false");
+		return true;
+	}
+	if (!charstring::compare(tag,"null")) {
+		wherestr->append("null");
+		return true;
+	}
+
+	// anything else is a nested operation
+	return buildXmlWhere(operand,wherestr,containspartial);
 }
 
 bool sqlrcrud::buildJsonOrderBy(domnode *sort,
@@ -805,8 +970,44 @@ bool sqlrcrud::buildJsonOrderBy(domnode *sort,
 bool sqlrcrud::buildXmlOrderBy(domnode *sort,
 				stringbuffer *orderbystr,
 				bool containspartial) {
-	// FIXME: implement this...
-	return false;
+
+	// sort should be something like:
+	// <sort>
+	//   <col1 v="asc"/>
+	//   <col2 v="asc"/>
+	//   <col3 v="desc"/>
+	// </sort>
+
+	// handle degenerate case
+	if (sort->isNullNode()) {
+		return true;
+	}
+
+	// descend through the dom root to the wrapper element
+	if (sort->getType()==ROOT_DOMNODETYPE) {
+		return buildXmlOrderBy(sort->getFirstTagChild(),
+					orderbystr,containspartial);
+	}
+
+	bool		first=true;
+	const char	*col;
+	size_t		collen;
+	for (domnode *node=sort->getFirstTagChild();
+				!node->isNullNode();
+				node=node->getNextTagSibling()) {
+
+		if (first) {
+			orderbystr->append((containspartial)?
+						", ":" order by ");
+			first=false;
+		} else {
+			orderbystr->append(", ");
+		}
+		getValidColumnName(node->getName(),&col,&collen);
+		orderbystr->append(col,collen)->append(' ')->
+				append(node->getAttributeValue("v"));
+	}
+	return true;
 }
 
 bool sqlrcrud::doUpdate(const char * const *columns,

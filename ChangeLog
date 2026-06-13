@@ -248,6 +248,9 @@
 	the odbc connection's get*List() results are now mapped to the
 		requested mysql/odbc/jdbc format instead of always being
 		returned in odbc format
+	sqlrcrud now accepts XML-formatted criteria and sort in addition to
+		JSON
+	fixed sqlrcrud's json in-list criteria to comma-separate the values
 
 2.1.1 - added tns_admin support
 	fixed sqlr-start ... -strace ...
