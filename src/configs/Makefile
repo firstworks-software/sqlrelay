@@ -5,10 +5,10 @@ include ../../config.mk
 .SUFFIXES: .lo .obj .cpp
 
 .cpp.lo:
-	$(LTCOMPILE) $(CXX) $(CXXFLAGS) $(WERROR) $(AUTHCPPFLAGS) $(COMPILE) $< $(OUT)$@
+	$(LTCOMPILE) $(CXX) $(CXXFLAGS) $(CXXSTD) $(WERROR) $(AUTHCPPFLAGS) $(COMPILE) $< $(OUT)$@
 
 .cpp.obj:
-	$(CXX) $(CXXFLAGS) $(WERROR) $(AUTHCPPFLAGS) $(COMPILE) $<
+	$(CXX) $(CXXFLAGS) $(CXXSTD) $(WERROR) $(AUTHCPPFLAGS) $(COMPILE) $<
 
 all: $(SQLR)config_xmldom.$(LIBEXT)
 

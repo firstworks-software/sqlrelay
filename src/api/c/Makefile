@@ -8,10 +8,10 @@ LOBJS = sqlrclientwrapper.$(OBJ)
 .SUFFIXES: .lo .obj .cpp
 
 .cpp.lo:
-	$(LTCOMPILE) $(CXX) $(CXXFLAGS) $(CCPPFLAGS) $(COMPILE) $< $(OUT)$@
+	$(LTCOMPILE) $(CXX) $(CXXFLAGS) $(CXXSTD) $(CCPPFLAGS) $(COMPILE) $< $(OUT)$@
 
 .cpp.obj:
-	$(CXX) $(CXXFLAGS) $(CCPPFLAGS) $(COMPILE) $<
+	$(CXX) $(CXXFLAGS) $(CXXSTD) $(CCPPFLAGS) $(COMPILE) $<
 
 all: lib$(SQLR)clientwrapper.$(LIBEXT)
 

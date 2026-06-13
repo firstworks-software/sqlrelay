@@ -35,10 +35,10 @@ clean:
 
 
 db2.lo: db2.cpp
-	$(LTCOMPILE) $(CXX) $(CXXFLAGS) $(DB2CONNECTIONCPPFLAGS) $(COMPILE) $< $(OUT)$@
+	$(LTCOMPILE) $(CXX) $(CXXFLAGS) $(CXXSTD) $(DB2CONNECTIONCPPFLAGS) $(COMPILE) $< $(OUT)$@
 
 db2.obj: db2.cpp
-	$(CXX) $(CXXFLAGS) $(DB2CONNECTIONCPPFLAGS) $(COMPILE) db2.cpp
+	$(CXX) $(CXXFLAGS) $(CXXSTD) $(DB2CONNECTIONCPPFLAGS) $(COMPILE) db2.cpp
 
 $(SQLR)connection_db2.$(LIBEXT): db2.$(OBJ) db2.cpp
 	$(LTLINK) $(LINK) $(OUT)$@ db2.$(OBJ) $(LDFLAGS) $(DB2CONNECTIONLIBS) $(MODLINKFLAGS)
@@ -46,10 +46,10 @@ $(SQLR)connection_db2.$(LIBEXT): db2.$(OBJ) db2.cpp
 
 
 firebird.lo: firebird.cpp
-	$(LTCOMPILE) $(CXX) $(CXXFLAGS) $(FIREBIRDCONNECTIONCPPFLAGS) $(COMPILE) $< $(OUT)$@
+	$(LTCOMPILE) $(CXX) $(CXXFLAGS) $(CXXSTD) $(FIREBIRDCONNECTIONCPPFLAGS) $(COMPILE) $< $(OUT)$@
 
 firebird.obj: firebird.cpp
-	$(CXX) $(CXXFLAGS) $(FIREBIRDCONNECTIONCPPFLAGS) $(COMPILE) firebird.cpp
+	$(CXX) $(CXXFLAGS) $(CXXSTD) $(FIREBIRDCONNECTIONCPPFLAGS) $(COMPILE) firebird.cpp
 
 $(SQLR)connection_firebird.$(LIBEXT): firebird.$(OBJ) firebird.cpp
 	$(LTLINK) $(LINK) $(OUT)$@ firebird.$(OBJ) $(LDFLAGS) $(FIREBIRDCONNECTIONLIBS) $(MODLINKFLAGS)
@@ -57,10 +57,10 @@ $(SQLR)connection_firebird.$(LIBEXT): firebird.$(OBJ) firebird.cpp
 
 
 freetds.lo: freetds.cpp
-	$(LTCOMPILE) $(CXX) $(CXXFLAGS) $(FREETDSCONNECTIONCPPFLAGS) $(COMPILE) $< $(OUT)$@
+	$(LTCOMPILE) $(CXX) $(CXXFLAGS) $(CXXSTD) $(FREETDSCONNECTIONCPPFLAGS) $(COMPILE) $< $(OUT)$@
 
 freetds.obj: freetds.cpp
-	$(CXX) $(CXXFLAGS) $(FREETDSCONNECTIONCPPFLAGS) $(COMPILE) freetds.cpp
+	$(CXX) $(CXXFLAGS) $(CXXSTD) $(FREETDSCONNECTIONCPPFLAGS) $(COMPILE) freetds.cpp
 
 $(SQLR)connection_freetds.$(LIBEXT): freetds.$(OBJ) freetds.cpp
 	$(LTLINK) $(LINK) $(OUT)$@ freetds.$(OBJ) $(LDFLAGS) $(FREETDSCONNECTIONLIBS) $(MODLINKFLAGS)
@@ -68,10 +68,10 @@ $(SQLR)connection_freetds.$(LIBEXT): freetds.$(OBJ) freetds.cpp
 
 
 informix.lo: informix.cpp
-	$(LTCOMPILE) $(CXX) $(CXXFLAGS) $(INFORMIXCONNECTIONCPPFLAGS) $(COMPILE) $< $(OUT)$@
+	$(LTCOMPILE) $(CXX) $(CXXFLAGS) $(CXXSTD) $(INFORMIXCONNECTIONCPPFLAGS) $(COMPILE) $< $(OUT)$@
 
 informix.obj: informix.cpp
-	$(CXX) $(CXXFLAGS) $(INFORMIXCONNECTIONCPPFLAGS) $(COMPILE) informix.cpp
+	$(CXX) $(CXXFLAGS) $(CXXSTD) $(INFORMIXCONNECTIONCPPFLAGS) $(COMPILE) informix.cpp
 
 $(SQLR)connection_informix.$(LIBEXT): informix.$(OBJ) informix.cpp
 	$(LTLINK) $(LINK) $(OUT)$@ informix.$(OBJ) $(LDFLAGS) $(INFORMIXCONNECTIONLIBS) $(MODLINKFLAGS)
@@ -79,10 +79,10 @@ $(SQLR)connection_informix.$(LIBEXT): informix.$(OBJ) informix.cpp
 
 
 mysql.lo: mysql.cpp
-	$(LTCOMPILE) $(CXX) $(CXXFLAGS) $(MYSQLCONNECTIONCPPFLAGS) $(COMPILE) $< $(OUT)$@
+	$(LTCOMPILE) $(CXX) $(CXXFLAGS) $(CXXSTD) $(MYSQLCONNECTIONCPPFLAGS) $(COMPILE) $< $(OUT)$@
 
 mysql.obj: mysql.cpp
-	$(CXX) $(CXXFLAGS) $(MYSQLCONNECTIONCPPFLAGS) $(COMPILE) mysql.cpp
+	$(CXX) $(CXXFLAGS) $(CXXSTD) $(MYSQLCONNECTIONCPPFLAGS) $(COMPILE) mysql.cpp
 
 $(SQLR)connection_mysql.$(LIBEXT): mysql.$(OBJ) mysql.cpp
 	$(LTLINK) $(LINK) $(OUT)$@ mysql.$(OBJ) $(LDFLAGS) $(MYSQLCONNECTIONLIBS) $(MODLINKFLAGS)
@@ -90,10 +90,10 @@ $(SQLR)connection_mysql.$(LIBEXT): mysql.$(OBJ) mysql.cpp
 
 
 odbc.lo: odbc.cpp
-	$(LTCOMPILE) $(CXX) $(CXXFLAGS) $(ODBCCONNECTIONCPPFLAGS) $(COMPILE) $< $(OUT)$@
+	$(LTCOMPILE) $(CXX) $(CXXFLAGS) $(CXXSTD) $(ODBCCONNECTIONCPPFLAGS) $(COMPILE) $< $(OUT)$@
 
 odbc.obj: odbc.cpp
-	$(CXX) $(CXXFLAGS) $(ODBCCONNECTIONCPPFLAGS) $(COMPILE) odbc.cpp
+	$(CXX) $(CXXFLAGS) $(CXXSTD) $(ODBCCONNECTIONCPPFLAGS) $(COMPILE) odbc.cpp
 
 $(SQLR)connection_odbc.$(LIBEXT): odbc.$(OBJ) odbc.cpp
 	$(LTLINK) $(LINK) $(OUT)$@ odbc.$(OBJ) $(LDFLAGS) $(ODBCCONNECTIONLIBS) $(MODLINKFLAGS)
@@ -101,10 +101,10 @@ $(SQLR)connection_odbc.$(LIBEXT): odbc.$(OBJ) odbc.cpp
 
 
 oracle.lo: oracle.cpp
-	$(LTCOMPILE) $(CXX) $(CXXFLAGS) $(ORACLECONNECTIONCPPFLAGS) $(COMPILE) $< $(OUT)$@
+	$(LTCOMPILE) $(CXX) $(CXXFLAGS) $(CXXSTD) $(ORACLECONNECTIONCPPFLAGS) $(COMPILE) $< $(OUT)$@
 
 oracle.obj: oracle.cpp
-	$(CXX) $(CXXFLAGS) $(ORACLECONNECTIONCPPFLAGS) $(COMPILE) oracle.cpp
+	$(CXX) $(CXXFLAGS) $(CXXSTD) $(ORACLECONNECTIONCPPFLAGS) $(COMPILE) oracle.cpp
 
 $(SQLR)connection_oracle.$(LIBEXT): oracle.$(OBJ) oracle.cpp
 	$(LTLINK) $(LINK) $(OUT)$@ oracle.$(OBJ) $(LDFLAGS) $(ORACLECONNECTIONLIBS) $(MODLINKFLAGS)
@@ -112,10 +112,10 @@ $(SQLR)connection_oracle.$(LIBEXT): oracle.$(OBJ) oracle.cpp
 
 
 postgresql.lo: postgresql.cpp
-	$(LTCOMPILE) $(CXX) $(CXXFLAGS) $(POSTGRESQLCONNECTIONCPPFLAGS) $(COMPILE) $< $(OUT)$@
+	$(LTCOMPILE) $(CXX) $(CXXFLAGS) $(CXXSTD) $(POSTGRESQLCONNECTIONCPPFLAGS) $(COMPILE) $< $(OUT)$@
 
 postgresql.obj: postgresql.cpp
-	$(CXX) $(CXXFLAGS) $(POSTGRESQLCONNECTIONCPPFLAGS) $(COMPILE) postgresql.cpp
+	$(CXX) $(CXXFLAGS) $(CXXSTD) $(POSTGRESQLCONNECTIONCPPFLAGS) $(COMPILE) postgresql.cpp
 
 $(SQLR)connection_postgresql.$(LIBEXT): postgresql.$(OBJ) postgresql.cpp
 	$(LTLINK) $(LINK) $(OUT)$@ postgresql.$(OBJ) $(LDFLAGS) $(POSTGRESQLCONNECTIONLIBS) $(MODLINKFLAGS)
@@ -123,10 +123,10 @@ $(SQLR)connection_postgresql.$(LIBEXT): postgresql.$(OBJ) postgresql.cpp
 
 
 router.lo: router.cpp
-	$(LTCOMPILE) $(CXX) $(CXXFLAGS) $(ROUTERCONNECTIONCPPFLAGS) $(COMPILE) $< $(OUT)$@
+	$(LTCOMPILE) $(CXX) $(CXXFLAGS) $(CXXSTD) $(ROUTERCONNECTIONCPPFLAGS) $(COMPILE) $< $(OUT)$@
 
 router.obj: router.cpp
-	$(CXX) $(CXXFLAGS) $(ROUTERCONNECTIONCPPFLAGS) $(COMPILE) router.cpp
+	$(CXX) $(CXXFLAGS) $(CXXSTD) $(ROUTERCONNECTIONCPPFLAGS) $(COMPILE) router.cpp
 
 $(SQLR)connection_router.$(LIBEXT): router.$(OBJ) router.cpp
 	$(LTLINK) $(LINK) $(OUT)$@ router.$(OBJ) $(LDFLAGS) $(ROUTERCONNECTIONLIBS) $(MODLINKFLAGS)
@@ -134,10 +134,10 @@ $(SQLR)connection_router.$(LIBEXT): router.$(OBJ) router.cpp
 
 
 sqlite.lo: sqlite.cpp
-	$(LTCOMPILE) $(CXX) $(CXXFLAGS) $(SQLITECONNECTIONCPPFLAGS) $(COMPILE) $< $(OUT)$@
+	$(LTCOMPILE) $(CXX) $(CXXFLAGS) $(CXXSTD) $(SQLITECONNECTIONCPPFLAGS) $(COMPILE) $< $(OUT)$@
 
 sqlite.obj: sqlite.cpp
-	$(CXX) $(CXXFLAGS) $(SQLITECONNECTIONCPPFLAGS) $(COMPILE) sqlite.cpp
+	$(CXX) $(CXXFLAGS) $(CXXSTD) $(SQLITECONNECTIONCPPFLAGS) $(COMPILE) sqlite.cpp
 
 $(SQLR)connection_sqlite.$(LIBEXT): sqlite.$(OBJ) sqlite.cpp
 	$(LTLINK) $(LINK) $(OUT)$@ sqlite.$(OBJ) $(LDFLAGS) $(SQLITECONNECTIONLIBS) $(MODLINKFLAGS)
@@ -145,10 +145,10 @@ $(SQLR)connection_sqlite.$(LIBEXT): sqlite.$(OBJ) sqlite.cpp
 
 
 sap.lo: sap.cpp
-	$(LTCOMPILE) $(CXX) $(CXXFLAGS) $(SYBASECONNECTIONCPPFLAGS) $(COMPILE) $< $(OUT)$@
+	$(LTCOMPILE) $(CXX) $(CXXFLAGS) $(CXXSTD) $(SYBASECONNECTIONCPPFLAGS) $(COMPILE) $< $(OUT)$@
 
 sap.obj: sap.cpp
-	$(CXX) $(CXXFLAGS) $(SYBASECONNECTIONCPPFLAGS) $(COMPILE) sap.cpp
+	$(CXX) $(CXXFLAGS) $(CXXSTD) $(SYBASECONNECTIONCPPFLAGS) $(COMPILE) sap.cpp
 
 $(SQLR)connection_sap.$(LIBEXT): sap.$(OBJ) sap.cpp
 	$(LTLINK) $(LINK) $(OUT)$@ sap.$(OBJ) $(LDFLAGS) $(SYBASECONNECTIONLIBS) $(MODLINKFLAGS)

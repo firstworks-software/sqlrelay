@@ -5,10 +5,10 @@ include ../../config.mk
 .SUFFIXES: .lo .obj .cpp
 
 .cpp.lo:
-	$(LTCOMPILE) $(CXX) $(CXXFLAGS) $(WERROR) $(PLUGINCPPFLAGS) $(DIRCPPFLAG) $(COMPILE) $< $(OUT)$@
+	$(LTCOMPILE) $(CXX) $(CXXFLAGS) $(CXXSTD) $(WERROR) $(PLUGINCPPFLAGS) $(DIRCPPFLAG) $(COMPILE) $< $(OUT)$@
 
 .cpp.obj:
-	$(CXX) $(CXXFLAGS) $(WERROR) $(PLUGINCPPFLAGS) $(DIRCPPFLAG) $(COMPILE) $<
+	$(CXX) $(CXXFLAGS) $(CXXSTD) $(WERROR) $(PLUGINCPPFLAGS) $(DIRCPPFLAG) $(COMPILE) $<
 
 all: $(SQLR)pwdenc_rot.$(LIBEXT) \
 	$(SQLR)pwdenc_md5.$(LIBEXT) \

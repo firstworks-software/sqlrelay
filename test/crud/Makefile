@@ -5,10 +5,10 @@ include ../../config.mk
 .SUFFIXES: .lo .obj .cpp
 
 .cpp.lo:
-	$(LTCOMPILE) $(CXX) $(CXXFLAGS) $(CPPTESTCPPFLAGS) $(COMPILE) $< $(OUT)$@
+	$(LTCOMPILE) $(CXX) $(CXXFLAGS) $(CXXSTD) $(CPPTESTCPPFLAGS) $(COMPILE) $< $(OUT)$@
 
 .cpp.obj:
-	$(CXX) $(CXXFLAGS) $(CPPTESTCPPFLAGS) $(COMPILE) $<
+	$(CXX) $(CXXFLAGS) $(CXXSTD) $(CPPTESTCPPFLAGS) $(COMPILE) $<
 
 all: crud mvccrud.cgi $(MODMVCCRUD)
 
@@ -19,7 +19,7 @@ mvccrud.cgi: mvccrud.cpp mvccrud.$(OBJ)
 	$(LTLINK) $(LINK) $(LDFLAGS) $(OUT)$@$(EXE) mvccrud.$(OBJ) $(CPPTESTLIBS)
 
 mvccrud-apache.$(OBJ): mvccrud.cpp
-	$(LTCOMPILE) $(CXX) $(CXXFLAGS) $(CPPTESTCPPFLAGS) `rudiments-config --apache-cflags` -DAPACHE $(COMPILE) $< $(OUT)$@
+	$(LTCOMPILE) $(CXX) $(CXXFLAGS) $(CXXSTD) $(CPPTESTCPPFLAGS) `rudiments-config --apache-cflags` -DAPACHE $(COMPILE) $< $(OUT)$@
 
 mod_mvccrud.$(LIBEXT): mvccrud.cpp mvccrud-apache.$(OBJ)
 	$(LTLINK) $(LINK) $(OUT)$@ mvccrud-apache.$(OBJ) $(LDFLAGS) $(CPPTESTLIBS) -lrudiments-apache $(APACHELINKFLAGS)

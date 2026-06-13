@@ -5,10 +5,10 @@ include ../../../config.mk
 .SUFFIXES: .lo .obj .cpp
 
 .cpp.lo:
-	$(LTCOMPILE) $(CXX) $(CXXFLAGS) $(CPPTESTCPPFLAGS) $(MYSQLINCLUDES) $(COMPILE) $< $(OUT)$@
+	$(LTCOMPILE) $(CXX) $(CXXFLAGS) $(CXXSTD) $(CPPTESTCPPFLAGS) $(MYSQLINCLUDES) $(COMPILE) $< $(OUT)$@
 
 .cpp.obj:
-	$(CXX) $(CXXFLAGS) $(CPPTESTCPPFLAGS) $(MYSQLINCLUDES) $(COMPILE) $<
+	$(CXX) $(CXXFLAGS) $(CXXSTD) $(CPPTESTCPPFLAGS) $(MYSQLINCLUDES) $(COMPILE) $<
 
 all: mysql bind mysqldatetodatetime
 

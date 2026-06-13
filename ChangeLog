@@ -251,6 +251,10 @@
 	sqlrcrud now accepts XML-formatted criteria and sort in addition to
 		JSON
 	fixed sqlrcrud's json in-list criteria to comma-separate the values
+	moved -std=gnu++98 out of CXXFLAGS into a separate CXXSTD variable
+		applied only to the non-wrapper-api makefiles, so the language
+		wrapper apis build with the compiler's default c++ standard
+		(fixes the ruby api failing to build against ruby 3.0 on gcc 11)
 
 2.1.1 - added tns_admin support
 	fixed sqlr-start ... -strace ...

@@ -20,10 +20,10 @@ LOBJS = sqlrcmdline.$(OBJ) \
 .SUFFIXES: .lo .obj .cpp
 
 .cpp.lo:
-	$(LTCOMPILE) $(CXX) $(CXXFLAGS) $(UTILCPPFLAGS) $(COMPILE) $< $(OUT)$@
+	$(LTCOMPILE) $(CXX) $(CXXFLAGS) $(CXXSTD) $(UTILCPPFLAGS) $(COMPILE) $< $(OUT)$@
 
 .cpp.obj:
-	$(CXX) $(CXXFLAGS) $(UTILCPPFLAGS) $(COMPILE) $<
+	$(CXX) $(CXXFLAGS) $(CXXSTD) $(UTILCPPFLAGS) $(COMPILE) $<
 
 all: $(STATICUTILPLUGINSRCS) lib$(SQLR)util.$(LIBEXT)
 
