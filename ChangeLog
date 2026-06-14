@@ -261,6 +261,9 @@
 		Tcl_NewByteArrayObj() in the tcl api (fixes the build against
 		tcl 8.4 on solaris 10, whose Tcl_NewByteArrayObj() takes a
 		non-const buffer)
+	fixed the debug logger's init() to actually set the process name and
+		debug dir (dead early-returns left them null, so openDebug()
+		passed null to printf %s and hung the connection on solaris)
 
 2.1.1 - added tns_admin support
 	fixed sqlr-start ... -strace ...

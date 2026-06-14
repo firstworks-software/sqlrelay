@@ -98,14 +98,6 @@ bool sqlrlogger_debug::init(sqlrlistener *sqlrl,
 
 	closeDebug();
 
-	// Log listener or connection.
-	// Log both by default, but either can be disabled.
-	if (sqlrl) {
-		return true;
-	}
-	if (sqlrc) {
-		return true;
-	}
 	processname=(sqlrl)?("sqlr-listener"):("sqlr-connection");
 	debugdir=(sqlrc)?sqlrc->getPaths()->getDebugDir():
 				sqlrl->getPaths()->getDebugDir();
