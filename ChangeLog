@@ -255,6 +255,8 @@
 		applied only to the non-wrapper-api makefiles, so the language
 		wrapper apis build with the compiler's default c++ standard
 		(fixes the ruby api failing to build against ruby 3.0 on gcc 11)
+	used uint16_t instead of c++11 char16_t in the teradata sidechannel auth
+		(fixes the build under -std=gnu++98 on solaris/older gcc)
 
 2.1.1 - added tns_admin support
 	fixed sqlr-start ... -strace ...

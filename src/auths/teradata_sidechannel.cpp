@@ -53,7 +53,7 @@ class SQLRSERVER_DLLSPEC sqlrauth_teradata_sidechannel : public sqlrauth {
 					size_t size,
 					byte_t **rpout);
 		void	copyOut(byte_t *rp,
-					char16_t *value,
+					uint16_t *value,
 					size_t size,
 					byte_t **rpout);
 		void	copyOut(byte_t *rp,
@@ -465,11 +465,11 @@ void sqlrauth_teradata_sidechannel::copyOut(byte_t *rp,
 }
 
 void sqlrauth_teradata_sidechannel::copyOut(byte_t *rp,
-						char16_t *value,
+						uint16_t *value,
 						size_t size,
 						byte_t **rpout) {
-	bytestring::copy(value,rp,size*sizeof(char16_t));
-	*rpout=rp+size*sizeof(char16_t);
+	bytestring::copy(value,rp,size*sizeof(uint16_t));
+	*rpout=rp+size*sizeof(uint16_t);
 }
 
 void sqlrauth_teradata_sidechannel::copyOut(byte_t *rp,
