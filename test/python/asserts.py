@@ -17,6 +17,13 @@ con=None
 secondcur=None
 secondcon=None
 
+# python 2's print is a statement, so the python 3 print() forms used here -
+# print(), print(a,b) and print(x,end=...) - don't parse or behave the same
+# there.  route output through this helper so the tests run unchanged under
+# both python 2 and python 3.
+def output(*args,**kwargs):
+	sys.stdout.write(" ".join([str(a) for a in args])+kwargs.get("end","\n"))
+
 def setConnection(c):
 	global con
 	con=c
@@ -41,97 +48,97 @@ def printErrors():
 	if cur:
 		err=cur.errorMessage()
 		if err:
-			print(err)
+			output(err)
 			return
 	if secondcur:
 		err=secondcur.errorMessage()
 		if err:
-			print(err)
+			output(err)
 			return
 	if con:
 		err=con.errorMessage()
 		if err:
-			print(err)
+			output(err)
 			return
 	if secondcon:
 		err=secondcon.errorMessage()
 		if err:
-			print(err)
+			output(err)
 			return
 
 def assertEquals(actual,expected):
 	global status
 	if actual==expected:
-		print(success,end=" ")
+		output(success,end=" ")
 	else:
-		print(failure)
-		print("wanted",type(expected),":",expected)
-		print("got   ",type(actual),":",actual)
+		output(failure)
+		output("wanted",type(expected),":",expected)
+		output("got   ",type(actual),":",actual)
 		printErrors()
 		status=1
 
 def assertEqualsBytes(actual,expected,length):
 	global status
 	if actual is None and expected is None:
-		print(success,end=" ")
+		output(success,end=" ")
 		return
 	if actual is None or expected is None:
-		print(failure)
-		print("wanted",expected)
-		print("got   ",actual)
+		output(failure)
+		output("wanted",expected)
+		output("got   ",actual)
 		printErrors()
 		status=1
 		return
 	if actual[:length]==expected[:length]:
-		print(success,end=" ")
+		output(success,end=" ")
 	else:
-		print(failure)
-		print("wanted",expected[:length])
-		print("got   ",actual[:length])
+		output(failure)
+		output("wanted",expected[:length])
+		output("got   ",actual[:length])
 		printErrors()
 		status=1
 
 def assertTrue(actual):
 	global status
 	if actual:
-		print(success,end=" ")
+		output(success,end=" ")
 	else:
-		print(failure)
-		print("wanted","true")
-		print("got   ",type(actual),":",actual)
+		output(failure)
+		output("wanted","true")
+		output("got   ",type(actual),":",actual)
 		printErrors()
 		status=1
 
 def assertFalse(actual):
 	global status
 	if not actual:
-		print(success,end=" ")
+		output(success,end=" ")
 	else:
-		print(failure)
-		print("wanted","false")
-		print("got   ",type(actual),":",actual)
+		output(failure)
+		output("wanted","false")
+		output("got   ",type(actual),":",actual)
 		printErrors()
 		status=1
 
 def assertNone(actual):
 	global status
 	if actual is None:
-		print(success,end=" ")
+		output(success,end=" ")
 	else:
-		print(failure)
-		print("wanted",None)
-		print("got   ",type(actual),":",actual)
+		output(failure)
+		output("wanted",None)
+		output("got   ",type(actual),":",actual)
 		printErrors()
 		status=1
 
 def assertStartsWith(actual,prefix):
 	global status
 	if actual is not None and actual.startswith(prefix):
-		print(success,end=" ")
+		output(success,end=" ")
 	else:
-		print(failure)
-		print("wanted prefix",prefix)
-		print("got         ",type(actual),":",actual)
+		output(failure)
+		output("wanted prefix",prefix)
+		output("got         ",type(actual),":",actual)
 		printErrors()
 		status=1
 
@@ -139,19 +146,19 @@ def assertInResultSet(cur,column,value):
 	global status
 	for i in range(cur.rowCount()):
 		if cur.getField(i,column)==value:
-			print(success,end=" ")
+			output(success,end=" ")
 			return
-	print(failure)
-	print("\""+value+"\" not found in column \""+column+"\"")
+	output(failure)
+	output("\""+value+"\" not found in column \""+column+"\"")
 	printErrors()
 	status=1
 
 def reportTestStatus():
 	global status
 	if status==0:
-		print(alltestssucceeded)
+		output(alltestssucceeded)
 	else:
-		print(sometestsfailed)
+		output(sometestsfailed)
 
 # keep the old name for any tests that still reference it
 assertEqual=assertEquals
