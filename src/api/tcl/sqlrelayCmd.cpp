@@ -1680,7 +1680,7 @@ int sqlrcurObjCmd(ClientData data, Tcl_Interp *interp,
 	if ((field = cur->getField(row, col)) == (const char *)NULL) {
 	  field = "";
 	}
-	Tcl_SetObjResult(interp, Tcl_NewByteArrayObj((const unsigned char *)field, cur->getFieldLength(row,col)));
+	Tcl_SetObjResult(interp, Tcl_NewByteArrayObj((unsigned char *)field, cur->getFieldLength(row,col)));
 	break;
       }
     case SQLRCUR_getFieldByName:
@@ -1697,7 +1697,7 @@ int sqlrcurObjCmd(ClientData data, Tcl_Interp *interp,
 	if ((field = cur->getField(row, Tcl_GetString(objv[3]))) == (const char *)NULL) {
 	  field = "";
 	}
-	Tcl_SetObjResult(interp, Tcl_NewByteArrayObj((const unsigned char *)field, cur->getFieldLength(row, Tcl_GetString(objv[3]))));
+	Tcl_SetObjResult(interp, Tcl_NewByteArrayObj((unsigned char *)field, cur->getFieldLength(row, Tcl_GetString(objv[3]))));
 	break;
       }
     case SQLRCUR_getFieldByNameIgnoringCase:
@@ -1714,7 +1714,7 @@ int sqlrcurObjCmd(ClientData data, Tcl_Interp *interp,
 	if ((field = cur->getFieldIgnoringCase(row, Tcl_GetString(objv[3]))) == (const char *)NULL) {
 	  field = "";
 	}
-	Tcl_SetObjResult(interp, Tcl_NewByteArrayObj((const unsigned char *)field, cur->getFieldLength(row, Tcl_GetString(objv[3]))));
+	Tcl_SetObjResult(interp, Tcl_NewByteArrayObj((unsigned char *)field, cur->getFieldLength(row, Tcl_GetString(objv[3]))));
 	break;
       }
     case SQLRCUR_getFieldAsIntegerByIndex:
@@ -2579,7 +2579,7 @@ int sqlrcurObjCmd(ClientData data, Tcl_Interp *interp,
 	lengtharray = cur->getRowLengths(row);
 	for (col = 0; col < cur->colCount(); col++) {
 	  if (Tcl_ListObjAppendElement(interp, resultList,
-				       Tcl_NewByteArrayObj((const unsigned char *)((rowarray[col])?rowarray[col]:""), lengtharray[col])) != TCL_OK) {
+				       Tcl_NewByteArrayObj((unsigned char *)((rowarray[col])?rowarray[col]:""), lengtharray[col])) != TCL_OK) {
 	    return TCL_ERROR;
 	  }
 	}

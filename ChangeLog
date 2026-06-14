@@ -257,6 +257,10 @@
 		(fixes the ruby api failing to build against ruby 3.0 on gcc 11)
 	used uint16_t instead of c++11 char16_t in the teradata sidechannel auth
 		(fixes the build under -std=gnu++98 on solaris/older gcc)
+	passed (unsigned char *) rather than (const unsigned char *) to
+		Tcl_NewByteArrayObj() in the tcl api (fixes the build against
+		tcl 8.4 on solaris 10, whose Tcl_NewByteArrayObj() takes a
+		non-const buffer)
 
 2.1.1 - added tns_admin support
 	fixed sqlr-start ... -strace ...
