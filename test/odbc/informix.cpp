@@ -27,17 +27,12 @@ static bool	issqlrelay=false;
 	// and cause unixODBC to fall back to the ascii versions and just avoid
 	// the issue altogether.
 
-	// for RTLD_NEXT
-	#ifndef _GNU_SOURCE
-		#define _GNU_SOURCE
-	#endif
-	// for dlvsym()
-	#include <dlfcn.h>
+	#include <rudiments/dynamiclib.h>
 	extern "C" void *dlsym(void *handle, const char *name) {
 		static void	*(*realdlsym)(void *, const char *)=NULL;
 		if (!realdlsym) {
 			realdlsym=(void *(*)(void *, const char *))
-					dlvsym(RTLD_NEXT,"dlsym","GLIBC_2.2.5");
+					dynamiclib::getNextSymbol("dlsym");
 		}
 		if (!issqlrelay &&
 				(!charstring::compare(name,"SQLGetDiagRecW") ||
