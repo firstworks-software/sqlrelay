@@ -2243,7 +2243,7 @@ int main(int argc, char **argv) {
 
 	// database is schema
 	printf("DATABASE IS SCHEMA: \n");
-	assertTrue(sqlrcon_getDatabaseIsSchema(con));
+	assertFalse(sqlrcon_getDatabaseIsSchema(con));
 	printf("\n");
 
 
@@ -2253,7 +2253,7 @@ int main(int argc, char **argv) {
 		printf("CATALOG LIST: \n");
 		assertTrue(sqlrcur_getCatalogList(cur,NULL));
 		assertEqStr(sqlrcur_getColumnName(cur,0),"Database");
-		assertInResultSet(cur,"Database","def");
+		assertInResultSet(cur,"Database",hostname);
 		printf("\n");
 
 
@@ -2261,7 +2261,8 @@ int main(int argc, char **argv) {
 		printf("SCHEMA LIST: \n");
 		assertTrue(sqlrcur_getSchemaList(cur,NULL));
 		assertEqStr(sqlrcur_getColumnName(cur,0),"Database");
-		assertInResultSet(cur,"Database",hostname);
+		// mysql has no schemas
+		assertEqInt(sqlrcur_rowCount(cur),0);
 		printf("\n");
 
 
