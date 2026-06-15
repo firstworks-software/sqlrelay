@@ -3962,4 +3962,11 @@ DLLEXPORT int Sqlrelay_Init(Tcl_Interp *interp) {
   return Tcl_PkgProvide(interp, "sqlrelay", "1.0");
 }
 
+// tcl 9.0 derives the init function name from the load prefix as-is (lowercase
+// "sqlrelay" -> sqlrelay_Init); tcl 8.x capitalized it (-> Sqlrelay_Init).
+// provide both so "load ... sqlrelay" works on either tcl.
+DLLEXPORT int sqlrelay_Init(Tcl_Interp *interp) {
+  return Sqlrelay_Init(interp);
+}
+
 }
