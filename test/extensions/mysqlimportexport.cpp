@@ -2002,6 +2002,16 @@ int main(int argc, char **argv) {
 						"testuser","testpassword",0,1);
 	cur=new sqlrcursor(con);
 
+	// the exported column metadata differs on mysql before 5
+	const char	*dbversion=con->dbVersion();
+	uint32_t	majorversion=dbversion[0]-'0';
+	if (majorversion<5) {
+		stdoutput.printf("MySQL version < 5, skipping tests\n");
+		delete cur;
+		delete con;
+		return 0;
+	}
+
 	exportTests();
 	importTests();
 

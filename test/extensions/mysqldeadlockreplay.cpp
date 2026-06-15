@@ -90,6 +90,20 @@ void assertTrue(bool actual) {
 
 int main(int argc, char **argv) {
 
+	// deadlock replay needs a transactional storage engine, which the
+	// mysql 3.23 backend lacks; skip on mysql before 5
+	{
+		sqlrconnection	versioncon("sqlrelay",9000,"/tmp/test.socket",
+					"testuser","testpassword",0,1);
+		const char	*dbversion=versioncon.dbVersion();
+		uint32_t	majorversion=dbversion[0]-'0';
+		if (majorversion<5) {
+			stdoutput.printf("MySQL version < 5, "
+						"skipping tests\n");
+			return 0;
+		}
+	}
+
 	sessionid=0;
 
 	sem=new semaphoreset();
