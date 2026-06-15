@@ -31,6 +31,16 @@
 	#define _Tcl_NewStringObj(a,b) Tcl_NewStringObj((char *)(a),b)
 #endif
 
+// tcl 9.0 removed the CONST compatibility macro
+#ifndef CONST
+	#define CONST const
+#endif
+
+// tcl 9.0 changed object/list/byte-array lengths from int to Tcl_Size
+#ifndef TCL_SIZE_MAX
+	typedef int Tcl_Size;
+#endif
+
 extern "C" {
 
 /*
@@ -925,7 +935,7 @@ int sqlrcurObjCmd(ClientData data, Tcl_Interp *interp,
 	  return TCL_ERROR;
 	}
 	Tcl_GetIntFromObj(interp, objv[3], &length);
-	int bytelen = 0;
+	Tcl_Size bytelen = 0;
 	const char *bytes = (const char *)Tcl_GetByteArrayFromObj(objv[2], &bytelen);
 	if (!(result = cur->sendQuery(bytes,length))) {
 	  Tcl_AppendResult(interp,cur->errorMessage(),(char *)NULL);
@@ -966,7 +976,7 @@ int sqlrcurObjCmd(ClientData data, Tcl_Interp *interp,
 	  return TCL_ERROR;
 	}
 	Tcl_GetIntFromObj(interp, objv[3], &length);
-	int bytelen = 0;
+	Tcl_Size bytelen = 0;
 	const char *bytes = (const char *)Tcl_GetByteArrayFromObj(objv[2], &bytelen);
 	cur->prepareQuery(bytes,length);
 	break;
@@ -1111,7 +1121,7 @@ int sqlrcurObjCmd(ClientData data, Tcl_Interp *interp,
 	if (Tcl_GetLongFromObj(interp, objv[4], &size) != TCL_OK) {
 	  return TCL_ERROR;
 	}
-	int bytelen = 0;
+	Tcl_Size bytelen = 0;
 	const char *bytes = (const char *)Tcl_GetByteArrayFromObj(objv[3], &bytelen);
 	cur->inputBindBlob(Tcl_GetString(objv[2]),
 			      bytes,
@@ -1128,7 +1138,7 @@ int sqlrcurObjCmd(ClientData data, Tcl_Interp *interp,
 	if (Tcl_GetLongFromObj(interp, objv[4], &size) != TCL_OK) {
 	  return TCL_ERROR;
 	}
-	int bytelen = 0;
+	Tcl_Size bytelen = 0;
 	const char *bytes = (const char *)Tcl_GetByteArrayFromObj(objv[3], &bytelen);
 	cur->inputBindClob(Tcl_GetString(objv[2]),
 			      bytes,
@@ -1204,7 +1214,7 @@ int sqlrcurObjCmd(ClientData data, Tcl_Interp *interp,
       }
     case SQLRCUR_substitutions:
       {
-	int num = 0, len = 0, i = 0;
+	Tcl_Size num = 0, len = 0, i = 0;
 	Tcl_Obj **argList, *variableObj, *valueObj, *precisionObj, *scaleObj;
 	if (objc != 3) {
 	  Tcl_WrongNumArgs(interp, 2, objv, "{{variable value ?precision scale?}...}");
@@ -1261,7 +1271,7 @@ int sqlrcurObjCmd(ClientData data, Tcl_Interp *interp,
       }
     case SQLRCUR_inputBinds:
       {
-	int num = 0, len = 0, i = 0;
+	Tcl_Size num = 0, len = 0, i = 0;
 	Tcl_Obj **argList, *variableObj, *valueObj, *precisionObj, *scaleObj;
 	if (objc != 3) {
 	  Tcl_WrongNumArgs(interp, 2, objv, "{{variable value ?precision scale?}...}");

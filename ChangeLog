@@ -264,6 +264,8 @@
 	fixed the debug logger's init() to actually set the process name and
 		debug dir (dead early-returns left them null, so openDebug()
 		passed null to printf %s and hung the connection on solaris)
+	fixed the tcl api to build against tcl 9.0 (the CONST macro was
+		removed and object/list/byte-array lengths are now Tcl_Size)
 
 2.1.1 - added tns_admin support
 	fixed sqlr-start ... -strace ...
