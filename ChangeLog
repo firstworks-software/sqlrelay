@@ -266,6 +266,8 @@
 		passed null to printf %s and hung the connection on solaris)
 	fixed the tcl api to build against tcl 9.0 (the CONST macro was
 		removed and object/list/byte-array lengths are now Tcl_Size)
+	fixed the erlang api to build under gcc 15 / c23 (colCount() is
+		declared with no arguments but was being called with one)
 
 2.1.1 - added tns_admin support
 	fixed sqlr-start ... -strace ...

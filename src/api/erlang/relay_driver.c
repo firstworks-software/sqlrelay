@@ -73,7 +73,7 @@ int checkRowLimitsOK(int row) {
 
 // check that the given column is within the limits of the cursor
 int checkColLimitsOK(int col) {
-	if (col < 0 || col >= colCount(cur)) {
+	if (col < 0 || col >= colCount()) {
 		return FALSE;
 	} else {
 		return TRUE;
