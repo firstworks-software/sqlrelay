@@ -272,6 +272,9 @@
 		init function name from the load prefix as-is and so looked
 		for sqlrelay_Init; added it as an alias for Sqlrelay_Init
 	added dependency info to the debian/ubuntu package control file
+	fixed the informix at-runtime build (informixatruntime.cpp was
+		missing SQL_DESC_TYPE_NAME, which informix.cpp uses to read
+		column type names)
 
 2.1.1 - added tns_admin support
 	fixed sqlr-start ... -strace ...

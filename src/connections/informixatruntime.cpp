@@ -191,8 +191,12 @@ SQLRETURN (*SQLCloseCursor)(SQLHSTMT hStmt);
 #define	SQL_COLUMN_SCALE		5
 #define	SQL_COLUMN_UNSIGNED		8
 #define	SQL_COLUMN_AUTO_INCREMENT	11
+#define	SQL_COLUMN_TYPE_NAME		14
 #define	SQL_COLUMN_TABLE_NAME		15
 #define	SQL_COLUMN_LABEL		18
+
+// odbc 3.x name for the column-type-name attribute
+#define	SQL_DESC_TYPE_NAME		SQL_COLUMN_TYPE_NAME
 
 #define	SQL_CHAR			1
 #define	SQL_NUMERIC			2
