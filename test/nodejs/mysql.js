@@ -74,17 +74,20 @@ if (dot>-1) {
 
 
 	// isolation levels
+	// (mysql before 4.0 doesn't support setting the isolation level)
 	console.log("ISOLATION LEVELS: ");
 	var isolationlevels=["REPEATABLE-READ","READ-UNCOMMITTED",
 				"READ-COMMITTED","SERIALIZABLE"];
-	for (var i=0;i<isolationlevels.length;i++) {
-		var il=isolationlevels[i];
-		assertTrue(con.setIsolationLevel(il));
-		assertEqStr(con.getIsolationLevel(),il);
-		console.log("");
+	if (majorversion>3) {
+		for (var i=0;i<isolationlevels.length;i++) {
+			var il=isolationlevels[i];
+			assertTrue(con.setIsolationLevel(il));
+			assertEqStr(con.getIsolationLevel(),il);
+			console.log("");
+		}
+		// reset to the default isolation level
+		assertTrue(con.setIsolationLevel(isolationlevels[0]));
 	}
-	// reset to the default isolation level
-	assertTrue(con.setIsolationLevel(isolationlevels[0]));
 	console.log("");
 
 
@@ -530,63 +533,66 @@ if (dot>-1) {
 	console.log("");
 
 
-	// column length
-	console.log("COLUMN LENGTH: ");
-	assertEqInt(cur.getColumnLength(0),1);
-	assertEqInt(cur.getColumnLength(1),2);
-	assertEqInt(cur.getColumnLength(2),3);
-	assertEqInt(cur.getColumnLength(3),4);
-	assertEqInt(cur.getColumnLength(4),8);
-	assertEqInt(cur.getColumnLength(5),4);
-	assertEqInt(cur.getColumnLength(6),8);
-	assertEqInt(cur.getColumnLength(7),6);
-	assertEqInt(cur.getColumnLength(8),3);
-	assertEqInt(cur.getColumnLength(9),3);
-	assertEqInt(cur.getColumnLength(10),8);
-	assertEqInt(cur.getColumnLength(11),1);
-	// testchar/testvarchar are char(40)/varchar(40); the connection
-	// charset is utf8mb4 (4 bytes/char) so the lengths are 160/161
-	assertEqInt(cur.getColumnLength(12),160);
-	assertEqInt(cur.getColumnLength(13),161);
-	assertEqInt(cur.getColumnLength(14),65535);
-	assertEqInt(cur.getColumnLength(15),255);
-	assertEqInt(cur.getColumnLength(16),16777215);
-	assertEqInt(cur.getColumnLength(17),2147483647);
-	assertEqInt(cur.getColumnLength(18),65535);
-	assertEqInt(cur.getColumnLength(19),255);
-	assertEqInt(cur.getColumnLength(20),16777215);
-	assertEqInt(cur.getColumnLength(21),2147483647);
-	assertEqInt(cur.getColumnLength(22),4);
-	assertEqInt(cur.getColumnLength("testtinyint"),1);
-	assertEqInt(cur.getColumnLength("testsmallint"),2);
-	assertEqInt(cur.getColumnLength("testmediumint"),3);
-	assertEqInt(cur.getColumnLength("testint"),4);
-	assertEqInt(cur.getColumnLength("testbigint"),8);
-	assertEqInt(cur.getColumnLength("testfloat"),4);
-	assertEqInt(cur.getColumnLength("testreal"),8);
-	assertEqInt(cur.getColumnLength("testdecimal"),6);
-	assertEqInt(cur.getColumnLength("testdate"),3);
-	assertEqInt(cur.getColumnLength("testtime"),3);
-	assertEqInt(cur.getColumnLength("testdatetime"),8);
-	assertEqInt(cur.getColumnLength("testyear"),1);
-	// testchar/testvarchar are char(40)/varchar(40); the connection
-	// charset is utf8mb4 (4 bytes/char) so the lengths are 160/161
-	assertEqInt(cur.getColumnLength("testchar"),160);
-	assertEqInt(cur.getColumnLength("testvarchar"),161);
-	assertEqInt(cur.getColumnLength("testtext"),65535);
-	assertEqInt(cur.getColumnLength("testtinytext"),255);
-	assertEqInt(cur.getColumnLength("testmediumtext"),
-		16777215);
-	assertEqInt(cur.getColumnLength("testlongtext"),
-		2147483647);
-	assertEqInt(cur.getColumnLength("testblob"),65535);
-	assertEqInt(cur.getColumnLength("testtinyblob"),255);
-	assertEqInt(cur.getColumnLength("testmediumblob"),
-		16777215);
-	assertEqInt(cur.getColumnLength("testlongblob"),
-		2147483647);
-	assertEqInt(cur.getColumnLength("testtimestamp"),4);
-	console.log("");
+	// mysql before 4 reports column lengths differently (charset)
+	if (majorversion>3) {
+		// column length
+		console.log("COLUMN LENGTH: ");
+		assertEqInt(cur.getColumnLength(0),1);
+		assertEqInt(cur.getColumnLength(1),2);
+		assertEqInt(cur.getColumnLength(2),3);
+		assertEqInt(cur.getColumnLength(3),4);
+		assertEqInt(cur.getColumnLength(4),8);
+		assertEqInt(cur.getColumnLength(5),4);
+		assertEqInt(cur.getColumnLength(6),8);
+		assertEqInt(cur.getColumnLength(7),6);
+		assertEqInt(cur.getColumnLength(8),3);
+		assertEqInt(cur.getColumnLength(9),3);
+		assertEqInt(cur.getColumnLength(10),8);
+		assertEqInt(cur.getColumnLength(11),1);
+		// testchar/testvarchar are char(40)/varchar(40); the connection
+		// charset is utf8mb4 (4 bytes/char) so the lengths are 160/161
+		assertEqInt(cur.getColumnLength(12),160);
+		assertEqInt(cur.getColumnLength(13),161);
+		assertEqInt(cur.getColumnLength(14),65535);
+		assertEqInt(cur.getColumnLength(15),255);
+		assertEqInt(cur.getColumnLength(16),16777215);
+		assertEqInt(cur.getColumnLength(17),2147483647);
+		assertEqInt(cur.getColumnLength(18),65535);
+		assertEqInt(cur.getColumnLength(19),255);
+		assertEqInt(cur.getColumnLength(20),16777215);
+		assertEqInt(cur.getColumnLength(21),2147483647);
+		assertEqInt(cur.getColumnLength(22),4);
+		assertEqInt(cur.getColumnLength("testtinyint"),1);
+		assertEqInt(cur.getColumnLength("testsmallint"),2);
+		assertEqInt(cur.getColumnLength("testmediumint"),3);
+		assertEqInt(cur.getColumnLength("testint"),4);
+		assertEqInt(cur.getColumnLength("testbigint"),8);
+		assertEqInt(cur.getColumnLength("testfloat"),4);
+		assertEqInt(cur.getColumnLength("testreal"),8);
+		assertEqInt(cur.getColumnLength("testdecimal"),6);
+		assertEqInt(cur.getColumnLength("testdate"),3);
+		assertEqInt(cur.getColumnLength("testtime"),3);
+		assertEqInt(cur.getColumnLength("testdatetime"),8);
+		assertEqInt(cur.getColumnLength("testyear"),1);
+		// testchar/testvarchar are char(40)/varchar(40); the connection
+		// charset is utf8mb4 (4 bytes/char) so the lengths are 160/161
+		assertEqInt(cur.getColumnLength("testchar"),160);
+		assertEqInt(cur.getColumnLength("testvarchar"),161);
+		assertEqInt(cur.getColumnLength("testtext"),65535);
+		assertEqInt(cur.getColumnLength("testtinytext"),255);
+		assertEqInt(cur.getColumnLength("testmediumtext"),
+			16777215);
+		assertEqInt(cur.getColumnLength("testlongtext"),
+			2147483647);
+		assertEqInt(cur.getColumnLength("testblob"),65535);
+		assertEqInt(cur.getColumnLength("testtinyblob"),255);
+		assertEqInt(cur.getColumnLength("testmediumblob"),
+			16777215);
+		assertEqInt(cur.getColumnLength("testlongblob"),
+			2147483647);
+		assertEqInt(cur.getColumnLength("testtimestamp"),4);
+		console.log("");
+	}
 
 
 	// longest column
@@ -1320,250 +1326,257 @@ if (dot>-1) {
 	console.log("");
 
 
-	// reset transaction state
-	console.log("RESET TRANSACTION STATE: ");
-	assertTrue(con.commit());
-	assertEqStr(con.getTransactionModel(),"explicit-deferred");
-	assertTrue(con.getAutoCommit());
-	console.log("");
+	// transaction behavior differs on mysql before 4
+	if (majorversion>3) {
+		// reset transaction state
+		console.log("RESET TRANSACTION STATE: ");
+		assertTrue(con.commit());
+		assertEqStr(con.getTransactionModel(),"explicit-deferred");
+		assertTrue(con.getAutoCommit());
+		console.log("");
 
 
-	// transaction behavior - implicit
-	console.log("TRANSACTION BEHAVIOR - implicit: ");
-	assertTrue(con.setTransactionModel("implicit"));
-	assertEqStr(con.getTransactionModel(),"implicit");
-	assertTrue(cur.sendQuery("create table testtable (col1 integer)"));
-	var secondcon=new sqlrelay.SQLRConnection("sqlrelay",9000,"/tmp/test.socket",
-		"testuser","testpassword",0,1);
-	var secondcur=new sqlrelay.SQLRCursor(secondcon);
-	setSecondConnection(secondcon);
-	setSecondCursor(secondcur);
-	// session is in a transaction; insert is not visible until commit
-	assertTrue(con.getInTransaction());
-	assertFalse(con.getAutoCommit());
-	assertTrue(cur.sendQuery("insert into testtable values (1)"));
-	assertTrue(secondcur.sendQuery("select count(*) from testtable"));
-	assertEqStr(secondcur.getField(0,0),"0");
-	// commit makes it visible, and implicitly starts a new transaction
-	assertTrue(con.commit());
-	assertTrue(con.getInTransaction());
-	assertTrue(secondcur.sendQuery("select count(*) from testtable"));
-	assertEqStr(secondcur.getField(0,0),"1");
-	// rollback discards, and implicitly starts a new transaction
-	assertTrue(cur.sendQuery("insert into testtable values (2)"));
-	assertTrue(con.rollback());
-	assertTrue(con.getInTransaction());
-	assertTrue(secondcur.sendQuery("select count(*) from testtable"));
-	assertEqStr(secondcur.getField(0,0),"1");
-	// autoCommitOn takes effect immediately
-	assertTrue(con.autoCommitOn());
-	assertTrue(con.getAutoCommit());
-	assertFalse(con.getInTransaction());
-	assertTrue(cur.sendQuery("insert into testtable values (3)"));
-	assertTrue(secondcur.sendQuery("select count(*) from testtable"));
-	assertEqStr(secondcur.getField(0,0),"2");
-	// autoCommitOff takes effect immediately
-	assertTrue(con.autoCommitOff());
-	assertFalse(con.getAutoCommit());
-	assertTrue(con.getInTransaction());
-	secondcur.closeResultSet();
-	assertTrue(cur.sendQuery("drop table testtable"));
-	console.log("");
+		// transaction behavior - implicit
+		console.log("TRANSACTION BEHAVIOR - implicit: ");
+		assertTrue(con.setTransactionModel("implicit"));
+		assertEqStr(con.getTransactionModel(),"implicit");
+		assertTrue(cur.sendQuery("create table testtable (col1 integer)"));
+		var secondcon=new sqlrelay.SQLRConnection("sqlrelay",9000,"/tmp/test.socket",
+			"testuser","testpassword",0,1);
+		var secondcur=new sqlrelay.SQLRCursor(secondcon);
+		setSecondConnection(secondcon);
+		setSecondCursor(secondcur);
+		// session is in a transaction; insert is not visible until commit
+		assertTrue(con.getInTransaction());
+		assertFalse(con.getAutoCommit());
+		assertTrue(cur.sendQuery("insert into testtable values (1)"));
+		assertTrue(secondcur.sendQuery("select count(*) from testtable"));
+		assertEqStr(secondcur.getField(0,0),"0");
+		// commit makes it visible, and implicitly starts a new transaction
+		assertTrue(con.commit());
+		assertTrue(con.getInTransaction());
+		assertTrue(secondcur.sendQuery("select count(*) from testtable"));
+		assertEqStr(secondcur.getField(0,0),"1");
+		// rollback discards, and implicitly starts a new transaction
+		assertTrue(cur.sendQuery("insert into testtable values (2)"));
+		assertTrue(con.rollback());
+		assertTrue(con.getInTransaction());
+		assertTrue(secondcur.sendQuery("select count(*) from testtable"));
+		assertEqStr(secondcur.getField(0,0),"1");
+		// autoCommitOn takes effect immediately
+		assertTrue(con.autoCommitOn());
+		assertTrue(con.getAutoCommit());
+		assertFalse(con.getInTransaction());
+		assertTrue(cur.sendQuery("insert into testtable values (3)"));
+		assertTrue(secondcur.sendQuery("select count(*) from testtable"));
+		assertEqStr(secondcur.getField(0,0),"2");
+		// autoCommitOff takes effect immediately
+		assertTrue(con.autoCommitOff());
+		assertFalse(con.getAutoCommit());
+		assertTrue(con.getInTransaction());
+		secondcur.closeResultSet();
+		assertTrue(cur.sendQuery("drop table testtable"));
+		console.log("");
 
 
-	// transaction behavior - explicit
-	console.log("TRANSACTION BEHAVIOR - explicit: ");
-	assertTrue(con.setTransactionModel("explicit"));
-	assertEqStr(con.getTransactionModel(),"explicit");
-	assertTrue(cur.sendQuery("create table testtable (col1 integer)"));
-	// begin starts a new transaction; insert is not visible until commit
-	assertTrue(con.begin());
-	assertTrue(con.getInTransaction());
-	assertTrue(cur.sendQuery("insert into testtable values (1)"));
-	assertTrue(secondcur.sendQuery("select count(*) from testtable"));
-	assertEqStr(secondcur.getField(0,0),"0");
-	// commit makes it visible; no new transaction is started
-	assertTrue(con.commit());
-	assertFalse(con.getInTransaction());
-	assertTrue(secondcur.sendQuery("select count(*) from testtable"));
-	assertEqStr(secondcur.getField(0,0),"1");
-	// begin, insert, rollback discards; no new transaction is started
-	assertTrue(con.begin());
-	assertTrue(cur.sendQuery("insert into testtable values (2)"));
-	assertTrue(con.rollback());
-	assertFalse(con.getInTransaction());
-	assertTrue(secondcur.sendQuery("select count(*) from testtable"));
-	assertEqStr(secondcur.getField(0,0),"1");
-	// autoCommitOn takes effect immediately
-	assertTrue(con.autoCommitOn());
-	assertTrue(con.getAutoCommit());
-	assertTrue(cur.sendQuery("insert into testtable values (3)"));
-	assertTrue(secondcur.sendQuery("select count(*) from testtable"));
-	assertEqStr(secondcur.getField(0,0),"2");
-	// autoCommitOff takes effect immediately
-	assertTrue(con.autoCommitOff());
-	assertFalse(con.getAutoCommit());
-	secondcur.closeResultSet();
-	assertTrue(cur.sendQuery("drop table testtable"));
-	console.log("");
+		// transaction behavior - explicit
+		console.log("TRANSACTION BEHAVIOR - explicit: ");
+		assertTrue(con.setTransactionModel("explicit"));
+		assertEqStr(con.getTransactionModel(),"explicit");
+		assertTrue(cur.sendQuery("create table testtable (col1 integer)"));
+		// begin starts a new transaction; insert is not visible until commit
+		assertTrue(con.begin());
+		assertTrue(con.getInTransaction());
+		assertTrue(cur.sendQuery("insert into testtable values (1)"));
+		assertTrue(secondcur.sendQuery("select count(*) from testtable"));
+		assertEqStr(secondcur.getField(0,0),"0");
+		// commit makes it visible; no new transaction is started
+		assertTrue(con.commit());
+		assertFalse(con.getInTransaction());
+		assertTrue(secondcur.sendQuery("select count(*) from testtable"));
+		assertEqStr(secondcur.getField(0,0),"1");
+		// begin, insert, rollback discards; no new transaction is started
+		assertTrue(con.begin());
+		assertTrue(cur.sendQuery("insert into testtable values (2)"));
+		assertTrue(con.rollback());
+		assertFalse(con.getInTransaction());
+		assertTrue(secondcur.sendQuery("select count(*) from testtable"));
+		assertEqStr(secondcur.getField(0,0),"1");
+		// autoCommitOn takes effect immediately
+		assertTrue(con.autoCommitOn());
+		assertTrue(con.getAutoCommit());
+		assertTrue(cur.sendQuery("insert into testtable values (3)"));
+		assertTrue(secondcur.sendQuery("select count(*) from testtable"));
+		assertEqStr(secondcur.getField(0,0),"2");
+		// autoCommitOff takes effect immediately
+		assertTrue(con.autoCommitOff());
+		assertFalse(con.getAutoCommit());
+		secondcur.closeResultSet();
+		assertTrue(cur.sendQuery("drop table testtable"));
+		console.log("");
 
 
-	// transaction behavior - explicit-deferred
-	console.log("TRANSACTION BEHAVIOR - explicit-deferred: ");
-	assertTrue(con.setTransactionModel("explicit-deferred"));
-	assertEqStr(con.getTransactionModel(),"explicit-deferred");
-	// switch to autocommit-on so the begin/commit cycles below
-	// bracket explicit transactions (autocommit-off semantics are
-	// exercised at the end of this block)
-	assertTrue(con.autoCommitOn());
-	assertTrue(con.getAutoCommit());
-	assertTrue(cur.sendQuery("create table testtable (col1 integer)"));
-	// begin starts a transaction; commit makes it visible
-	assertTrue(con.begin());
-	assertTrue(con.getInTransaction());
-	assertTrue(cur.sendQuery("insert into testtable values (1)"));
-	assertTrue(con.commit());
-	assertFalse(con.getInTransaction());
-	assertTrue(secondcur.sendQuery("select count(*) from testtable"));
-	assertEqStr(secondcur.getField(0,0),"1");
-	// begin, insert, rollback discards
-	assertTrue(con.begin());
-	assertTrue(cur.sendQuery("insert into testtable values (2)"));
-	assertTrue(con.rollback());
-	assertTrue(secondcur.sendQuery("select count(*) from testtable"));
-	assertEqStr(secondcur.getField(0,0),"1");
-	// during a transaction started by begin(), autoCommitOn is a
-	// no-op: the autocommit setting takes effect after the user
-	// explicitly commits/rollbacks the tx (mysql-native semantic)
-	assertTrue(con.begin());
-	assertTrue(cur.sendQuery("insert into testtable values (3)"));
-	assertTrue(con.autoCommitOn());
-	assertFalse(con.getAutoCommit());
-	assertTrue(con.getInTransaction());
-	assertTrue(secondcur.sendQuery("select count(*) from testtable"));
-	assertEqStr(secondcur.getField(0,0),"1");
-	// explicit commit ends the tx; autocommit-on now takes effect
-	assertTrue(con.commit());
-	assertTrue(con.getAutoCommit());
-	assertFalse(con.getInTransaction());
-	assertTrue(secondcur.sendQuery("select count(*) from testtable"));
-	assertEqStr(secondcur.getField(0,0),"2");
-	// autocommit is on; subsequent inserts are visible immediately
-	assertTrue(cur.sendQuery("insert into testtable values (4)"));
-	assertTrue(secondcur.sendQuery("select count(*) from testtable"));
-	assertEqStr(secondcur.getField(0,0),"3");
-	// autoCommitOff takes effect immediately when not in a transaction
-	assertTrue(con.autoCommitOff());
-	assertFalse(con.getAutoCommit());
-	// autocommit-off persists across commit/rollback; each commit or
-	// rollback ends the current implicit tx and a new one starts for
-	// the next statement
-	assertTrue(cur.sendQuery("insert into testtable values (5)"));
-	assertTrue(con.commit());
-	assertFalse(con.getAutoCommit());
-	assertTrue(con.getInTransaction());
-	assertTrue(secondcur.sendQuery("select count(*) from testtable"));
-	assertEqStr(secondcur.getField(0,0),"4");
-	assertTrue(cur.sendQuery("insert into testtable values (6)"));
-	assertTrue(con.rollback());
-	assertFalse(con.getAutoCommit());
-	assertTrue(con.getInTransaction());
-	assertTrue(secondcur.sendQuery("select count(*) from testtable"));
-	assertEqStr(secondcur.getField(0,0),"4");
-	// autoCommitOff during a transaction changes the variable
-	// immediately but the in-flight tx continues; only after the
-	// next explicit commit/rollback does the new autocommit-off
-	// setting drop us into a new implicit tx (mysql-asymmetric
-	// semantic)
-	assertTrue(con.autoCommitOn());
-	assertTrue(con.getAutoCommit());
-	assertTrue(con.begin());
-	assertTrue(cur.sendQuery("insert into testtable values (7)"));
-	assertTrue(con.autoCommitOff());
-	assertFalse(con.getAutoCommit());
-	assertTrue(con.getInTransaction());
-	assertTrue(secondcur.sendQuery("select count(*) from testtable"));
-	assertEqStr(secondcur.getField(0,0),"4");
-	assertTrue(con.commit());
-	assertFalse(con.getAutoCommit());
-	assertTrue(con.getInTransaction());
-	assertTrue(secondcur.sendQuery("select count(*) from testtable"));
-	assertEqStr(secondcur.getField(0,0),"5");
-	secondcur.closeResultSet();
-	assertTrue(cur.sendQuery("drop table testtable"));
-	console.log("");
+		// transaction behavior - explicit-deferred
+		console.log("TRANSACTION BEHAVIOR - explicit-deferred: ");
+		assertTrue(con.setTransactionModel("explicit-deferred"));
+		assertEqStr(con.getTransactionModel(),"explicit-deferred");
+		// switch to autocommit-on so the begin/commit cycles below
+		// bracket explicit transactions (autocommit-off semantics are
+		// exercised at the end of this block)
+		assertTrue(con.autoCommitOn());
+		assertTrue(con.getAutoCommit());
+		assertTrue(cur.sendQuery("create table testtable (col1 integer)"));
+		// begin starts a transaction; commit makes it visible
+		assertTrue(con.begin());
+		assertTrue(con.getInTransaction());
+		assertTrue(cur.sendQuery("insert into testtable values (1)"));
+		assertTrue(con.commit());
+		assertFalse(con.getInTransaction());
+		assertTrue(secondcur.sendQuery("select count(*) from testtable"));
+		assertEqStr(secondcur.getField(0,0),"1");
+		// begin, insert, rollback discards
+		assertTrue(con.begin());
+		assertTrue(cur.sendQuery("insert into testtable values (2)"));
+		assertTrue(con.rollback());
+		assertTrue(secondcur.sendQuery("select count(*) from testtable"));
+		assertEqStr(secondcur.getField(0,0),"1");
+		// during a transaction started by begin(), autoCommitOn is a
+		// no-op: the autocommit setting takes effect after the user
+		// explicitly commits/rollbacks the tx (mysql-native semantic)
+		assertTrue(con.begin());
+		assertTrue(cur.sendQuery("insert into testtable values (3)"));
+		assertTrue(con.autoCommitOn());
+		assertFalse(con.getAutoCommit());
+		assertTrue(con.getInTransaction());
+		assertTrue(secondcur.sendQuery("select count(*) from testtable"));
+		assertEqStr(secondcur.getField(0,0),"1");
+		// explicit commit ends the tx; autocommit-on now takes effect
+		assertTrue(con.commit());
+		assertTrue(con.getAutoCommit());
+		assertFalse(con.getInTransaction());
+		assertTrue(secondcur.sendQuery("select count(*) from testtable"));
+		assertEqStr(secondcur.getField(0,0),"2");
+		// autocommit is on; subsequent inserts are visible immediately
+		assertTrue(cur.sendQuery("insert into testtable values (4)"));
+		assertTrue(secondcur.sendQuery("select count(*) from testtable"));
+		assertEqStr(secondcur.getField(0,0),"3");
+		// autoCommitOff takes effect immediately when not in a transaction
+		assertTrue(con.autoCommitOff());
+		assertFalse(con.getAutoCommit());
+		// autocommit-off persists across commit/rollback; each commit or
+		// rollback ends the current implicit tx and a new one starts for
+		// the next statement
+		assertTrue(cur.sendQuery("insert into testtable values (5)"));
+		assertTrue(con.commit());
+		assertFalse(con.getAutoCommit());
+		assertTrue(con.getInTransaction());
+		assertTrue(secondcur.sendQuery("select count(*) from testtable"));
+		assertEqStr(secondcur.getField(0,0),"4");
+		assertTrue(cur.sendQuery("insert into testtable values (6)"));
+		assertTrue(con.rollback());
+		assertFalse(con.getAutoCommit());
+		assertTrue(con.getInTransaction());
+		assertTrue(secondcur.sendQuery("select count(*) from testtable"));
+		assertEqStr(secondcur.getField(0,0),"4");
+		// autoCommitOff during a transaction changes the variable
+		// immediately but the in-flight tx continues; only after the
+		// next explicit commit/rollback does the new autocommit-off
+		// setting drop us into a new implicit tx (mysql-asymmetric
+		// semantic)
+		assertTrue(con.autoCommitOn());
+		assertTrue(con.getAutoCommit());
+		assertTrue(con.begin());
+		assertTrue(cur.sendQuery("insert into testtable values (7)"));
+		assertTrue(con.autoCommitOff());
+		assertFalse(con.getAutoCommit());
+		assertTrue(con.getInTransaction());
+		assertTrue(secondcur.sendQuery("select count(*) from testtable"));
+		assertEqStr(secondcur.getField(0,0),"4");
+		assertTrue(con.commit());
+		assertFalse(con.getAutoCommit());
+		assertTrue(con.getInTransaction());
+		assertTrue(secondcur.sendQuery("select count(*) from testtable"));
+		assertEqStr(secondcur.getField(0,0),"5");
+		secondcur.closeResultSet();
+		assertTrue(cur.sendQuery("drop table testtable"));
+		console.log("");
 
 
-	// transaction behavior - explicit-error
-	console.log("TRANSACTION BEHAVIOR - explicit-error: ");
-	assertTrue(con.setTransactionModel("explicit-error"));
-	assertEqStr(con.getTransactionModel(),"explicit-error");
-	assertTrue(cur.sendQuery("create table testtable (col1 integer)"));
-	// begin, insert, commit
-	assertTrue(con.begin());
-	assertTrue(con.getInTransaction());
-	assertTrue(cur.sendQuery("insert into testtable values (1)"));
-	assertTrue(con.commit());
-	assertFalse(con.getInTransaction());
-	assertTrue(secondcur.sendQuery("select count(*) from testtable"));
-	assertEqStr(secondcur.getField(0,0),"1");
-	// begin, insert, rollback
-	assertTrue(con.begin());
-	assertTrue(cur.sendQuery("insert into testtable values (2)"));
-	assertTrue(con.rollback());
-	assertTrue(secondcur.sendQuery("select count(*) from testtable"));
-	assertEqStr(secondcur.getField(0,0),"1");
-	// while in a transaction, autoCommitOn/Off throw an error
-	assertTrue(con.begin());
-	assertFalse(con.autoCommitOn());
-	assertFalse(con.autoCommitOff());
-	assertTrue(con.commit());
-	// outside of a transaction, autoCommitOn takes effect immediately
-	assertTrue(con.autoCommitOn());
-	assertTrue(con.getAutoCommit());
-	assertTrue(cur.sendQuery("insert into testtable values (3)"));
-	assertTrue(secondcur.sendQuery("select count(*) from testtable"));
-	assertEqStr(secondcur.getField(0,0),"2");
-	// autoCommitOff takes effect immediately
-	assertTrue(con.autoCommitOff());
-	assertFalse(con.getAutoCommit());
-	secondcur.closeResultSet();
-	assertTrue(cur.sendQuery("drop table testtable"));
-	console.log("");
+		// transaction behavior - explicit-error
+		console.log("TRANSACTION BEHAVIOR - explicit-error: ");
+		assertTrue(con.setTransactionModel("explicit-error"));
+		assertEqStr(con.getTransactionModel(),"explicit-error");
+		assertTrue(cur.sendQuery("create table testtable (col1 integer)"));
+		// begin, insert, commit
+		assertTrue(con.begin());
+		assertTrue(con.getInTransaction());
+		assertTrue(cur.sendQuery("insert into testtable values (1)"));
+		assertTrue(con.commit());
+		assertFalse(con.getInTransaction());
+		assertTrue(secondcur.sendQuery("select count(*) from testtable"));
+		assertEqStr(secondcur.getField(0,0),"1");
+		// begin, insert, rollback
+		assertTrue(con.begin());
+		assertTrue(cur.sendQuery("insert into testtable values (2)"));
+		assertTrue(con.rollback());
+		assertTrue(secondcur.sendQuery("select count(*) from testtable"));
+		assertEqStr(secondcur.getField(0,0),"1");
+		// while in a transaction, autoCommitOn/Off throw an error
+		assertTrue(con.begin());
+		assertFalse(con.autoCommitOn());
+		assertFalse(con.autoCommitOff());
+		assertTrue(con.commit());
+		// outside of a transaction, autoCommitOn takes effect immediately
+		assertTrue(con.autoCommitOn());
+		assertTrue(con.getAutoCommit());
+		assertTrue(cur.sendQuery("insert into testtable values (3)"));
+		assertTrue(secondcur.sendQuery("select count(*) from testtable"));
+		assertEqStr(secondcur.getField(0,0),"2");
+		// autoCommitOff takes effect immediately
+		assertTrue(con.autoCommitOff());
+		assertFalse(con.getAutoCommit());
+		secondcur.closeResultSet();
+		assertTrue(cur.sendQuery("drop table testtable"));
+		console.log("");
 
 
-	// transaction behavior - none
-	console.log("TRANSACTION BEHAVIOR - none: ");
-	assertTrue(con.setTransactionModel("none"));
-	assertEqStr(con.getTransactionModel(),"none");
-	assertTrue(cur.sendQuery("create table testtable (col1 integer)"));
-	// no transactions; everything is visible immediately
-	assertTrue(con.getAutoCommit());
-	assertFalse(con.getInTransaction());
-	assertTrue(cur.sendQuery("insert into testtable values (1)"));
-	assertTrue(secondcur.sendQuery("select count(*) from testtable"));
-	assertEqStr(secondcur.getField(0,0),"1");
-	// commit and rollback are no-ops
-	assertTrue(con.commit());
-	assertTrue(cur.sendQuery("insert into testtable values (2)"));
-	assertTrue(con.rollback());
-	assertTrue(secondcur.sendQuery("select count(*) from testtable"));
-	assertEqStr(secondcur.getField(0,0),"2");
-	// autocommit is always on; autoCommitOff is an error
-	assertFalse(con.autoCommitOff());
-	assertTrue(con.getAutoCommit());
-	assertTrue(con.autoCommitOn());
-	assertTrue(con.getAutoCommit());
-	secondcur.closeResultSet();
-	assertTrue(cur.sendQuery("drop table testtable"));
-	console.log("");
+		// transaction behavior - none
+		console.log("TRANSACTION BEHAVIOR - none: ");
+		assertTrue(con.setTransactionModel("none"));
+		assertEqStr(con.getTransactionModel(),"none");
+		assertTrue(cur.sendQuery("create table testtable (col1 integer)"));
+		// no transactions; everything is visible immediately
+		assertTrue(con.getAutoCommit());
+		assertFalse(con.getInTransaction());
+		assertTrue(cur.sendQuery("insert into testtable values (1)"));
+		assertTrue(secondcur.sendQuery("select count(*) from testtable"));
+		assertEqStr(secondcur.getField(0,0),"1");
+		// commit and rollback are no-ops
+		assertTrue(con.commit());
+		assertTrue(cur.sendQuery("insert into testtable values (2)"));
+		assertTrue(con.rollback());
+		assertTrue(secondcur.sendQuery("select count(*) from testtable"));
+		assertEqStr(secondcur.getField(0,0),"2");
+		// autocommit is always on; autoCommitOff is an error
+		assertFalse(con.autoCommitOff());
+		assertTrue(con.getAutoCommit());
+		assertTrue(con.autoCommitOn());
+		assertTrue(con.getAutoCommit());
+		secondcur.closeResultSet();
+		assertTrue(cur.sendQuery("drop table testtable"));
+		console.log("");
+	}
 
 
 	// reset transaction behavior
+	// (mysql before 4 has limited transaction support)
 	console.log("RESET TRANSACTION BEHAVIOR: ");
-	assertTrue(con.setTransactionModel(con.getDefaultTransactionModel()));
-	assertEqStr(con.getTransactionModel(),"explicit-deferred");
-	assertTrue(con.getAutoCommit());
+	if (majorversion>3) {
+		assertTrue(con.setTransactionModel(
+				con.getDefaultTransactionModel()));
+		assertEqStr(con.getTransactionModel(),"explicit-deferred");
+		assertTrue(con.getAutoCommit());
+	}
 	console.log("");
 
 
@@ -1720,26 +1733,29 @@ if (dot>-1) {
 	// mysql doesn't support bind by name
 
 
-	// rebinding
-	console.log("REBINDING: ");
-	cur.sendQuery("drop procedure testproc");
-	assertTrue(cur.sendQuery(
-		"create procedure testproc("+
-		"	in in1 int) "+
-		"begin "+
-		"	select in1; end"));
-	cur.prepareQuery("call testproc(?)");
-	cur.inputBind("1",1);
-	assertTrue(cur.executeQuery());
-	assertEqStr(cur.getField(0,0),"1");
-	cur.inputBind("1",2);
-	assertTrue(cur.executeQuery());
-	assertEqStr(cur.getField(0,0),"2");
-	cur.inputBind("1",3);
-	assertTrue(cur.executeQuery());
-	assertEqStr(cur.getField(0,0),"3");
-	assertTrue(cur.sendQuery("drop procedure testproc"));
-	console.log("");
+	// mysql before 5.0 has no stored procedures
+	if (majorversion>3) {
+		// rebinding
+		console.log("REBINDING: ");
+		cur.sendQuery("drop procedure testproc");
+		assertTrue(cur.sendQuery(
+			"create procedure testproc("+
+			"	in in1 int) "+
+			"begin "+
+			"	select in1; end"));
+		cur.prepareQuery("call testproc(?)");
+		cur.inputBind("1",1);
+		assertTrue(cur.executeQuery());
+		assertEqStr(cur.getField(0,0),"1");
+		cur.inputBind("1",2);
+		assertTrue(cur.executeQuery());
+		assertEqStr(cur.getField(0,0),"2");
+		cur.inputBind("1",3);
+		assertTrue(cur.executeQuery());
+		assertEqStr(cur.getField(0,0),"3");
+		assertTrue(cur.sendQuery("drop procedure testproc"));
+		console.log("");
+	}
 
 
 	// reexecute
@@ -1770,106 +1786,109 @@ if (dot>-1) {
 	console.log("");
 
 
-	// stored procedure returning no value
-	console.log("STORED PROCEDURE RETURNING NO VALUE: ");
-	cur.sendQuery("drop procedure testproc");
-	assertTrue(cur.sendQuery(
-		"create procedure testproc("+
-		"	in in1 int, "+
-		"	in in2 double, "+
-		"	in in3 varchar(20)) begin end"));
-	cur.prepareQuery("call testproc(?,?,?)");
-	cur.inputBind("1",1);
-	cur.inputBind("2",1.5,2,1);
-	cur.inputBind("3","hello");
-	assertTrue(cur.executeQuery());
-	assertTrue(cur.sendQuery("drop procedure testproc"));
-	console.log("");
+	// mysql before 5.0 has no stored procedures
+	if (majorversion>3) {
+		// stored procedure returning no value
+		console.log("STORED PROCEDURE RETURNING NO VALUE: ");
+		cur.sendQuery("drop procedure testproc");
+		assertTrue(cur.sendQuery(
+			"create procedure testproc("+
+			"	in in1 int, "+
+			"	in in2 double, "+
+			"	in in3 varchar(20)) begin end"));
+		cur.prepareQuery("call testproc(?,?,?)");
+		cur.inputBind("1",1);
+		cur.inputBind("2",1.5,2,1);
+		cur.inputBind("3","hello");
+		assertTrue(cur.executeQuery());
+		assertTrue(cur.sendQuery("drop procedure testproc"));
+		console.log("");
 
 
-	// stored procedure returning single
-	// value
-	console.log("STORED PROCEDURE RETURNING SINGLE VALUE: ");
-	cur.sendQuery("drop procedure testproc");
-	assertTrue(cur.sendQuery(
-		"create procedure testproc("+
-		"	in in1 int, "+
-		"	in in2 double, "+
-		"	in in3 varchar(20)) "+
-		"begin "+
-		"	select in1; end"));
-	cur.prepareQuery("call testproc(?,?,?)");
-	cur.inputBind("1",1);
-	cur.inputBind("2",1.5,2,1);
-	cur.inputBind("3","hello");
-	assertTrue(cur.executeQuery());
-	assertEqStr(cur.getField(0,0),"1");
-	assertTrue(cur.sendQuery("drop procedure testproc"));
-	console.log("");
+		// stored procedure returning single
+		// value
+		console.log("STORED PROCEDURE RETURNING SINGLE VALUE: ");
+		cur.sendQuery("drop procedure testproc");
+		assertTrue(cur.sendQuery(
+			"create procedure testproc("+
+			"	in in1 int, "+
+			"	in in2 double, "+
+			"	in in3 varchar(20)) "+
+			"begin "+
+			"	select in1; end"));
+		cur.prepareQuery("call testproc(?,?,?)");
+		cur.inputBind("1",1);
+		cur.inputBind("2",1.5,2,1);
+		cur.inputBind("3","hello");
+		assertTrue(cur.executeQuery());
+		assertEqStr(cur.getField(0,0),"1");
+		assertTrue(cur.sendQuery("drop procedure testproc"));
+		console.log("");
 
 
-	// stored procedure returning multiple
-	// values
-	console.log("STORED PROCEDURE RETURNING MULTIPLE VALUES: ");
-	cur.sendQuery("drop procedure testproc");
-	assertTrue(cur.sendQuery(
-		"create procedure testproc("+
-		"	in in1 int, "+
-		"	in in2 double, "+
-		"	in in3 varchar(20)) "+
-		"begin "+
-		"	select in1, in2, "+
-		"	in3; end"));
-	cur.prepareQuery("call testproc(?,?,?)");
-	cur.inputBind("1",1);
-	cur.inputBind("2",1.5,2,1);
-	cur.inputBind("3","hello");
-	assertTrue(cur.executeQuery());
-	assertEqStr(cur.getField(0,0),"1");
-	assertEqStr(cur.getField(0,1),"1.5");
-	assertEqStr(cur.getField(0,2),"hello");
-	assertTrue(cur.sendQuery("drop procedure testproc"));
-	console.log("");
+		// stored procedure returning multiple
+		// values
+		console.log("STORED PROCEDURE RETURNING MULTIPLE VALUES: ");
+		cur.sendQuery("drop procedure testproc");
+		assertTrue(cur.sendQuery(
+			"create procedure testproc("+
+			"	in in1 int, "+
+			"	in in2 double, "+
+			"	in in3 varchar(20)) "+
+			"begin "+
+			"	select in1, in2, "+
+			"	in3; end"));
+		cur.prepareQuery("call testproc(?,?,?)");
+		cur.inputBind("1",1);
+		cur.inputBind("2",1.5,2,1);
+		cur.inputBind("3","hello");
+		assertTrue(cur.executeQuery());
+		assertEqStr(cur.getField(0,0),"1");
+		assertEqStr(cur.getField(0,1),"1.5");
+		assertEqStr(cur.getField(0,2),"hello");
+		assertTrue(cur.sendQuery("drop procedure testproc"));
+		console.log("");
 
 
-	// stored procedure returning result
-	// set
-	console.log("STORED PROCEDURE RETURNING RESULT SET: ");
-	cur.sendQuery("drop procedure testselectproc");
-	assertTrue(cur.sendQuery("create procedure testselectproc() "+
-		"begin "+
-		"	select 1 "+
-		"	union "+
-		"	select 2 "+
-		"	union "+
-		"	select 3 "+
-		"	union "+
-		"	select 4 "+
-		"	union "+
-		"	select 5 "+
-		"	union "+
-		"	select 6 "+
-		"	union "+
-		"	select 7 "+
-		"	union "+
-		"	select 8; end"));
-	assertTrue(cur.sendQuery("call testselectproc()"));
-	assertEqInt(cur.rowCount(),8);
-	assertTrue(cur.sendQuery("drop procedure testselectproc"));
-	console.log("");
+		// stored procedure returning result
+		// set
+		console.log("STORED PROCEDURE RETURNING RESULT SET: ");
+		cur.sendQuery("drop procedure testselectproc");
+		assertTrue(cur.sendQuery("create procedure testselectproc() "+
+			"begin "+
+			"	select 1 "+
+			"	union "+
+			"	select 2 "+
+			"	union "+
+			"	select 3 "+
+			"	union "+
+			"	select 4 "+
+			"	union "+
+			"	select 5 "+
+			"	union "+
+			"	select 6 "+
+			"	union "+
+			"	select 7 "+
+			"	union "+
+			"	select 8; end"));
+		assertTrue(cur.sendQuery("call testselectproc()"));
+		assertEqInt(cur.rowCount(),8);
+		assertTrue(cur.sendQuery("drop procedure testselectproc"));
+		console.log("");
 
 
-	// temporary tables
-	console.log("TEMPORARY TABLES: ");
-	cur.sendQuery("drop table temptable");
-	cur.sendQuery("create temporary table temptable (col1 int)");
-	assertTrue(cur.sendQuery("insert into temptable values (1)"));
-	assertTrue(cur.sendQuery("select count(*) from temptable"));
-	assertEqStr(cur.getField(0,0),"1");
-	con.endSession();
-	console.log("");
-	assertFalse(cur.sendQuery("select count(*) from temptable"));
-	console.log("");
+		// temporary tables
+		console.log("TEMPORARY TABLES: ");
+		cur.sendQuery("drop table temptable");
+		cur.sendQuery("create temporary table temptable (col1 int)");
+		assertTrue(cur.sendQuery("insert into temptable values (1)"));
+		assertTrue(cur.sendQuery("select count(*) from temptable"));
+		assertEqStr(cur.getField(0,0),"1");
+		con.endSession();
+		console.log("");
+		assertFalse(cur.sendQuery("select count(*) from temptable"));
+		console.log("");
+	}
 
 	if (majorversion>3) {
 
@@ -2125,12 +2144,12 @@ if (dot>-1) {
 	console.log("QUOTES - random - '',\\-escaped: ");
 	cur.sendQuery("drop table testtable");
 	assertTrue(cur.sendQuery("create table testtable "+
-		"(col1 varchar(512))"));
+		"(col1 varchar(255))"));
 	// Build a random buffer of [', ", \, \0] bytes. Keep it as a Buffer
 	// so \0 doesn't truncate when passed through the Node.js binding.
 	var ch=[0x27,0x22,0x5c,0x00];
-	var buffer=Buffer.alloc(256);
-	for (var i=0;i<256;i++) {
+	var buffer=Buffer.alloc(255);
+	for (var i=0;i<255;i++) {
 		buffer[i]=ch[Math.floor(Math.random()*4)];
 	}
 	var chunks=[Buffer.from("insert into testtable values ('")];
@@ -2193,380 +2212,383 @@ if (dot>-1) {
 	console.log("");
 
 
-	// catalog list
-	console.log("CATALOG LIST: ");
-	assertTrue(cur.getCatalogList(null));
-	assertEqStr(cur.getColumnName(0),"Database");
-	assertInResultSet(cur,"Database",hostname);
-	console.log("");
+	// mysql before 5.0 has no information_schema for these metadata queries
+	if (majorversion>3) {
+		// catalog list
+		console.log("CATALOG LIST: ");
+		assertTrue(cur.getCatalogList(null));
+		assertEqStr(cur.getColumnName(0),"Database");
+		assertInResultSet(cur,"Database",hostname);
+		console.log("");
 
 
-	// schema list
-	console.log("SCHEMA LIST: ");
-	assertTrue(cur.getSchemaList(null));
-	assertEqStr(cur.getColumnName(0),"Database");
-	// mysql has no schemas
-	assertEqInt(cur.rowCount(),0);
-	console.log("");
+		// schema list
+		console.log("SCHEMA LIST: ");
+		assertTrue(cur.getSchemaList(null));
+		assertEqStr(cur.getColumnName(0),"Database");
+		// mysql has no schemas
+		assertEqInt(cur.rowCount(),0);
+		console.log("");
 
 
-	// table type list
-	console.log("TABLE TYPE LIST: ");
-	assertTrue(cur.getTableTypeList());
-	assertEqStr(cur.getColumnName(0),"table_type");
-	assertInResultSet(cur,"table_type","TABLE");
-	console.log("");
+		// table type list
+		console.log("TABLE TYPE LIST: ");
+		assertTrue(cur.getTableTypeList());
+		assertEqStr(cur.getColumnName(0),"table_type");
+		assertInResultSet(cur,"table_type","TABLE");
+		console.log("");
 
 
-	// table list
-	console.log("TABLE LIST: ");
-	cur.sendQuery("drop table testtable1");
-	cur.sendQuery("drop table testtable2");
-	cur.sendQuery("drop table testtable3");
-	cur.sendQuery("drop table testtable4");
-	assertTrue(cur.sendQuery(
-		"create table testtable1 ("+
-		"	col1 int, "+
-		"	col2 int)"));
-	assertTrue(cur.sendQuery(
-		"create table testtable2 ("+
-		"	col1 int, "+
-		"	col2 int)"));
-	assertTrue(cur.sendQuery(
-		"create table testtable3 ("+
-		"	col1 int, "+
-		"	col2 int)"));
-	assertTrue(cur.sendQuery(
-		"create table testtable4 ("+
-		"	col1 int, "+
-		"	col2 int)"));
-	assertTrue(cur.getTableList(null));
-	assertInResultSet(cur,"Tables_in_xxx","testtable1");
-	assertInResultSet(cur,"Tables_in_xxx","testtable2");
-	assertInResultSet(cur,"Tables_in_xxx","testtable3");
-	assertInResultSet(cur,"Tables_in_xxx","testtable4");
-	assertTrue(cur.sendQuery("drop table testtable1"));
-	assertTrue(cur.sendQuery("drop table testtable2"));
-	assertTrue(cur.sendQuery("drop table testtable3"));
-	assertTrue(cur.sendQuery("drop table testtable4"));
-	console.log("");
+		// table list
+		console.log("TABLE LIST: ");
+		cur.sendQuery("drop table testtable1");
+		cur.sendQuery("drop table testtable2");
+		cur.sendQuery("drop table testtable3");
+		cur.sendQuery("drop table testtable4");
+		assertTrue(cur.sendQuery(
+			"create table testtable1 ("+
+			"	col1 int, "+
+			"	col2 int)"));
+		assertTrue(cur.sendQuery(
+			"create table testtable2 ("+
+			"	col1 int, "+
+			"	col2 int)"));
+		assertTrue(cur.sendQuery(
+			"create table testtable3 ("+
+			"	col1 int, "+
+			"	col2 int)"));
+		assertTrue(cur.sendQuery(
+			"create table testtable4 ("+
+			"	col1 int, "+
+			"	col2 int)"));
+		assertTrue(cur.getTableList(null));
+		assertInResultSet(cur,"Tables_in_xxx","testtable1");
+		assertInResultSet(cur,"Tables_in_xxx","testtable2");
+		assertInResultSet(cur,"Tables_in_xxx","testtable3");
+		assertInResultSet(cur,"Tables_in_xxx","testtable4");
+		assertTrue(cur.sendQuery("drop table testtable1"));
+		assertTrue(cur.sendQuery("drop table testtable2"));
+		assertTrue(cur.sendQuery("drop table testtable3"));
+		assertTrue(cur.sendQuery("drop table testtable4"));
+		console.log("");
 
 
-	// type info list
-	console.log("TYPE INFO LIST: ");
-	assertTrue(cur.getTypeInfoList("int"));
-	assertEqStr(cur.getColumnName(0),"type_name");
-	assertEqStr(cur.getColumnName(1),"data_type");
-	assertEqStr(cur.getColumnName(2),"precision");
-	assertEqStr(cur.getColumnName(3),"literal_prefix");
-	assertEqStr(cur.getColumnName(4),"literal_suffix");
-	assertEqStr(cur.getColumnName(5),"create_params");
-	assertEqStr(cur.getColumnName(6),"nullable");
-	assertEqStr(cur.getColumnName(7),"case_sensitive");
-	assertEqStr(cur.getColumnName(8),"searchable");
-	assertEqStr(cur.getColumnName(9),"unsigned_attribute");
-	assertEqStr(cur.getColumnName(10),"fixed_prec_scale");
-	assertEqStr(cur.getColumnName(11),"auto_increment");
-	assertEqStr(cur.getColumnName(12),"local_type_name");
-	assertEqStr(cur.getColumnName(13),"minumum_scale");
-	assertEqStr(cur.getColumnName(14),"maxiumm_scale");
-	assertEqStr(cur.getColumnName(15),"sql_data_type");
-	assertEqStr(cur.getColumnName(16),"sql_datetime_sub");
-	assertEqStr(cur.getColumnName(17),"num_prec_radix");
-	assertEqStr(cur.getColumnName(18),"interval_precision");
-	assertEqStr(cur.getField(0,"type_name"),"INT");
-	assertEqStr(cur.getField(0,"data_type"),"4");
-	assertEqStr(cur.getField(0,"precision"),"10");
-	assertEqStr(cur.getField(0,"local_type_name"),"INT");
-	assertTrue(cur.getTypeInfoList("char"));
-	assertEqStr(cur.getField(0,"type_name"),"CHAR");
-	assertEqStr(cur.getField(0,"data_type"),"1");
-	assertEqStr(cur.getField(0,"precision"),"255");
-	assertEqStr(cur.getField(0,"local_type_name"),"CHAR");
-	assertTrue(cur.getTypeInfoList("varchar"));
-	assertEqStr(cur.getField(0,"type_name"),"VARCHAR");
-	assertEqStr(cur.getField(0,"data_type"),"12");
-	assertEqStr(cur.getField(0,"precision"),"65535");
-	assertEqStr(cur.getField(0,"local_type_name"),"VARCHAR");
-	assertTrue(cur.getTypeInfoList("date"));
-	assertEqStr(cur.getField(0,"type_name"),"DATE");
-	assertEqStr(cur.getField(0,"data_type"),"91");
-	assertEqStr(cur.getField(0,"precision"),"10");
-	assertEqStr(cur.getField(0,"local_type_name"),"DATE");
-	console.log("");
+		// type info list
+		console.log("TYPE INFO LIST: ");
+		assertTrue(cur.getTypeInfoList("int"));
+		assertEqStr(cur.getColumnName(0),"type_name");
+		assertEqStr(cur.getColumnName(1),"data_type");
+		assertEqStr(cur.getColumnName(2),"precision");
+		assertEqStr(cur.getColumnName(3),"literal_prefix");
+		assertEqStr(cur.getColumnName(4),"literal_suffix");
+		assertEqStr(cur.getColumnName(5),"create_params");
+		assertEqStr(cur.getColumnName(6),"nullable");
+		assertEqStr(cur.getColumnName(7),"case_sensitive");
+		assertEqStr(cur.getColumnName(8),"searchable");
+		assertEqStr(cur.getColumnName(9),"unsigned_attribute");
+		assertEqStr(cur.getColumnName(10),"fixed_prec_scale");
+		assertEqStr(cur.getColumnName(11),"auto_increment");
+		assertEqStr(cur.getColumnName(12),"local_type_name");
+		assertEqStr(cur.getColumnName(13),"minumum_scale");
+		assertEqStr(cur.getColumnName(14),"maxiumm_scale");
+		assertEqStr(cur.getColumnName(15),"sql_data_type");
+		assertEqStr(cur.getColumnName(16),"sql_datetime_sub");
+		assertEqStr(cur.getColumnName(17),"num_prec_radix");
+		assertEqStr(cur.getColumnName(18),"interval_precision");
+		assertEqStr(cur.getField(0,"type_name"),"INT");
+		assertEqStr(cur.getField(0,"data_type"),"4");
+		assertEqStr(cur.getField(0,"precision"),"10");
+		assertEqStr(cur.getField(0,"local_type_name"),"INT");
+		assertTrue(cur.getTypeInfoList("char"));
+		assertEqStr(cur.getField(0,"type_name"),"CHAR");
+		assertEqStr(cur.getField(0,"data_type"),"1");
+		assertEqStr(cur.getField(0,"precision"),"255");
+		assertEqStr(cur.getField(0,"local_type_name"),"CHAR");
+		assertTrue(cur.getTypeInfoList("varchar"));
+		assertEqStr(cur.getField(0,"type_name"),"VARCHAR");
+		assertEqStr(cur.getField(0,"data_type"),"12");
+		assertEqStr(cur.getField(0,"precision"),"65535");
+		assertEqStr(cur.getField(0,"local_type_name"),"VARCHAR");
+		assertTrue(cur.getTypeInfoList("date"));
+		assertEqStr(cur.getField(0,"type_name"),"DATE");
+		assertEqStr(cur.getField(0,"data_type"),"91");
+		assertEqStr(cur.getField(0,"precision"),"10");
+		assertEqStr(cur.getField(0,"local_type_name"),"DATE");
+		console.log("");
 
 
-	// column list
-	console.log("COLUMN LIST: ");
-	cur.sendQuery("drop table testtable");
-	assertTrue(cur.sendQuery(
-		"create table testtable ("+
-		"	testtinyint tinyint, "+
-		"	testsmallint smallint,"+
-		"	testmediumint "+
-		"	mediumint, "+
-		"	testint int, "+
-		"	testbigint bigint, "+
-		"	testfloat float, "+
-		"	testreal real, "+
-		"	testdecimal "+
-		"	decimal(2,1), "+
-		"	testdate date, "+
-		"	testtime time, "+
-		"	testdatetime "+
-		"	datetime, "+
-		"	testyear year, "+
-		"	testchar char(40), "+
-		"	testvarchar "+
-		"	varchar(40), "+
-		"	testtext text, "+
-		"	testtinytext "+
-		"	tinytext, "+
-		"	testmediumtext "+
-		"	mediumtext, "+
-		"	testlongtext "+
-		"	longtext, "+
-		"	testblob blob, "+
-		"	testtinyblob "+
-		"	tinyblob, "+
-		"	testmediumblob "+
-		"	mediumblob, "+
-		"	testlongblob "+
-		"	longblob, "+
-		"	testtimestamp "+
-		"	timestamp)"));
-	assertTrue(cur.getColumnList("testtable",null));
-	assertEqStr(cur.getColumnName(0),"column_name");
-	assertEqStr(cur.getColumnName(1),"data_type");
-	assertEqStr(cur.getColumnName(2),"character_maximum_length");
-	assertEqStr(cur.getColumnName(3),"numeric_precision");
-	assertEqStr(cur.getColumnName(4),"numeric_scale");
-	assertEqStr(cur.getColumnName(5),"is_nullable");
-	assertEqStr(cur.getColumnName(6),"column_key");
-	assertEqStr(cur.getColumnName(7),"column_default");
-	assertEqStr(cur.getColumnName(8),"extra");
-	assertEqStr(cur.getField(0,"column_name"),"testtinyint");
-	assertEqStr(cur.getField(1,"column_name"),"testsmallint");
-	assertEqStr(cur.getField(2,"column_name"),
-		"testmediumint");
-	assertEqStr(cur.getField(3,"column_name"),"testint");
-	assertEqStr(cur.getField(4,"column_name"),"testbigint");
-	assertEqStr(cur.getField(5,"column_name"),"testfloat");
-	assertEqStr(cur.getField(6,"column_name"),"testreal");
-	assertEqStr(cur.getField(7,"column_name"),"testdecimal");
-	assertEqStr(cur.getField(8,"column_name"),"testdate");
-	assertEqStr(cur.getField(9,"column_name"),"testtime");
-	assertEqStr(cur.getField(10,"column_name"),
-		"testdatetime");
-	assertEqStr(cur.getField(11,"column_name"),"testyear");
-	assertEqStr(cur.getField(12,"column_name"),"testchar");
-	assertEqStr(cur.getField(13,"column_name"),"testvarchar");
-	assertEqStr(cur.getField(14,"column_name"),"testtext");
-	assertEqStr(cur.getField(15,"column_name"),
-		"testtinytext");
-	assertEqStr(cur.getField(16,"column_name"),
-		"testmediumtext");
-	assertEqStr(cur.getField(17,"column_name"),
-		"testlongtext");
-	assertEqStr(cur.getField(18,"column_name"),"testblob");
-	assertEqStr(cur.getField(19,"column_name"),
-		"testtinyblob");
-	assertEqStr(cur.getField(20,"column_name"),
-		"testmediumblob");
-	assertEqStr(cur.getField(21,"column_name"),
-		"testlongblob");
-	assertEqStr(cur.getField(22,"column_name"),
-		"testtimestamp");
-	assertEqStr(cur.getField(0,"data_type"),"TINYINT");
-	assertEqStr(cur.getField(1,"data_type"),"SMALLINT");
-	assertEqStr(cur.getField(2,"data_type"),"MEDIUMINT");
-	assertEqStr(cur.getField(3,"data_type"),"INT");
-	assertEqStr(cur.getField(4,"data_type"),"BIGINT");
-	assertEqStr(cur.getField(5,"data_type"),"FLOAT");
-	// not "REAL"
-	assertEqStr(cur.getField(6,"data_type"),"DOUBLE");
-	assertEqStr(cur.getField(7,"data_type"),"DECIMAL");
-	assertEqStr(cur.getField(8,"data_type"),"DATE");
-	assertEqStr(cur.getField(9,"data_type"),"TIME");
-	assertEqStr(cur.getField(10,"data_type"),"DATETIME");
-	assertEqStr(cur.getField(11,"data_type"),"YEAR");
-	assertEqStr(cur.getField(12,"data_type"),"CHAR");
-	assertEqStr(cur.getField(13,"data_type"),"VARCHAR");
-	assertEqStr(cur.getField(14,"data_type"),"TEXT");
-	assertEqStr(cur.getField(15,"data_type"),"TINYTEXT");
-	assertEqStr(cur.getField(16,"data_type"),"MEDIUMTEXT");
-	assertEqStr(cur.getField(17,"data_type"),"LONGTEXT");
-	assertEqStr(cur.getField(18,"data_type"),"BLOB");
-	assertEqStr(cur.getField(19,"data_type"),"TINYBLOB");
-	assertEqStr(cur.getField(20,"data_type"),"MEDIUMBLOB");
-	assertEqStr(cur.getField(21,"data_type"),"LONGBLOB");
-	assertEqStr(cur.getField(22,"data_type"),"TIMESTAMP");
-	assertTrue(cur.sendQuery("drop table testtable"));
-	console.log("");
+		// column list
+		console.log("COLUMN LIST: ");
+		cur.sendQuery("drop table testtable");
+		assertTrue(cur.sendQuery(
+			"create table testtable ("+
+			"	testtinyint tinyint, "+
+			"	testsmallint smallint,"+
+			"	testmediumint "+
+			"	mediumint, "+
+			"	testint int, "+
+			"	testbigint bigint, "+
+			"	testfloat float, "+
+			"	testreal real, "+
+			"	testdecimal "+
+			"	decimal(2,1), "+
+			"	testdate date, "+
+			"	testtime time, "+
+			"	testdatetime "+
+			"	datetime, "+
+			"	testyear year, "+
+			"	testchar char(40), "+
+			"	testvarchar "+
+			"	varchar(40), "+
+			"	testtext text, "+
+			"	testtinytext "+
+			"	tinytext, "+
+			"	testmediumtext "+
+			"	mediumtext, "+
+			"	testlongtext "+
+			"	longtext, "+
+			"	testblob blob, "+
+			"	testtinyblob "+
+			"	tinyblob, "+
+			"	testmediumblob "+
+			"	mediumblob, "+
+			"	testlongblob "+
+			"	longblob, "+
+			"	testtimestamp "+
+			"	timestamp)"));
+		assertTrue(cur.getColumnList("testtable",null));
+		assertEqStr(cur.getColumnName(0),"column_name");
+		assertEqStr(cur.getColumnName(1),"data_type");
+		assertEqStr(cur.getColumnName(2),"character_maximum_length");
+		assertEqStr(cur.getColumnName(3),"numeric_precision");
+		assertEqStr(cur.getColumnName(4),"numeric_scale");
+		assertEqStr(cur.getColumnName(5),"is_nullable");
+		assertEqStr(cur.getColumnName(6),"column_key");
+		assertEqStr(cur.getColumnName(7),"column_default");
+		assertEqStr(cur.getColumnName(8),"extra");
+		assertEqStr(cur.getField(0,"column_name"),"testtinyint");
+		assertEqStr(cur.getField(1,"column_name"),"testsmallint");
+		assertEqStr(cur.getField(2,"column_name"),
+			"testmediumint");
+		assertEqStr(cur.getField(3,"column_name"),"testint");
+		assertEqStr(cur.getField(4,"column_name"),"testbigint");
+		assertEqStr(cur.getField(5,"column_name"),"testfloat");
+		assertEqStr(cur.getField(6,"column_name"),"testreal");
+		assertEqStr(cur.getField(7,"column_name"),"testdecimal");
+		assertEqStr(cur.getField(8,"column_name"),"testdate");
+		assertEqStr(cur.getField(9,"column_name"),"testtime");
+		assertEqStr(cur.getField(10,"column_name"),
+			"testdatetime");
+		assertEqStr(cur.getField(11,"column_name"),"testyear");
+		assertEqStr(cur.getField(12,"column_name"),"testchar");
+		assertEqStr(cur.getField(13,"column_name"),"testvarchar");
+		assertEqStr(cur.getField(14,"column_name"),"testtext");
+		assertEqStr(cur.getField(15,"column_name"),
+			"testtinytext");
+		assertEqStr(cur.getField(16,"column_name"),
+			"testmediumtext");
+		assertEqStr(cur.getField(17,"column_name"),
+			"testlongtext");
+		assertEqStr(cur.getField(18,"column_name"),"testblob");
+		assertEqStr(cur.getField(19,"column_name"),
+			"testtinyblob");
+		assertEqStr(cur.getField(20,"column_name"),
+			"testmediumblob");
+		assertEqStr(cur.getField(21,"column_name"),
+			"testlongblob");
+		assertEqStr(cur.getField(22,"column_name"),
+			"testtimestamp");
+		assertEqStr(cur.getField(0,"data_type"),"TINYINT");
+		assertEqStr(cur.getField(1,"data_type"),"SMALLINT");
+		assertEqStr(cur.getField(2,"data_type"),"MEDIUMINT");
+		assertEqStr(cur.getField(3,"data_type"),"INT");
+		assertEqStr(cur.getField(4,"data_type"),"BIGINT");
+		assertEqStr(cur.getField(5,"data_type"),"FLOAT");
+		// not "REAL"
+		assertEqStr(cur.getField(6,"data_type"),"DOUBLE");
+		assertEqStr(cur.getField(7,"data_type"),"DECIMAL");
+		assertEqStr(cur.getField(8,"data_type"),"DATE");
+		assertEqStr(cur.getField(9,"data_type"),"TIME");
+		assertEqStr(cur.getField(10,"data_type"),"DATETIME");
+		assertEqStr(cur.getField(11,"data_type"),"YEAR");
+		assertEqStr(cur.getField(12,"data_type"),"CHAR");
+		assertEqStr(cur.getField(13,"data_type"),"VARCHAR");
+		assertEqStr(cur.getField(14,"data_type"),"TEXT");
+		assertEqStr(cur.getField(15,"data_type"),"TINYTEXT");
+		assertEqStr(cur.getField(16,"data_type"),"MEDIUMTEXT");
+		assertEqStr(cur.getField(17,"data_type"),"LONGTEXT");
+		assertEqStr(cur.getField(18,"data_type"),"BLOB");
+		assertEqStr(cur.getField(19,"data_type"),"TINYBLOB");
+		assertEqStr(cur.getField(20,"data_type"),"MEDIUMBLOB");
+		assertEqStr(cur.getField(21,"data_type"),"LONGBLOB");
+		assertEqStr(cur.getField(22,"data_type"),"TIMESTAMP");
+		assertTrue(cur.sendQuery("drop table testtable"));
+		console.log("");
 
 
-	// column list - auto_increment,
-	// primary key
-	console.log("COLUMN LIST - auto_increment, primary key: ");
-	cur.sendQuery("drop table testtable");
-	assertTrue(cur.sendQuery(
-		"create table testtable ("+
-		"	col1 int "+
-		"	auto_increment "+
-		"	primary key, "+
-		"	col2 int)"));
-	assertTrue(cur.getColumnList("testtable",null));
-	assertEqStr(cur.getField(0,"extra"),"auto_increment");
-	assertEqStr(cur.getField(0,"column_key"),"PRI");
-	assertEqStr(cur.getField(1,"extra"),"");
-	assertEqStr(cur.getField(1,"column_key"),"");
-	console.log("");
-	assertTrue(cur.sendQuery("drop table testtable"));
-	assertTrue(cur.sendQuery(
-		"create table testtable ("+
-		"	col1 int "+
-		"	primary key, "+
-		"	col2 int)"));
-	assertTrue(cur.getColumnList("testtable",null));
-	assertEqStr(cur.getField(0,"extra"),"");
-	assertEqStr(cur.getField(0,"column_key"),"PRI");
-	assertTrue(cur.sendQuery("drop table testtable"));
-	console.log("");
+		// column list - auto_increment,
+		// primary key
+		console.log("COLUMN LIST - auto_increment, primary key: ");
+		cur.sendQuery("drop table testtable");
+		assertTrue(cur.sendQuery(
+			"create table testtable ("+
+			"	col1 int "+
+			"	auto_increment "+
+			"	primary key, "+
+			"	col2 int)"));
+		assertTrue(cur.getColumnList("testtable",null));
+		assertEqStr(cur.getField(0,"extra"),"auto_increment");
+		assertEqStr(cur.getField(0,"column_key"),"PRI");
+		assertEqStr(cur.getField(1,"extra"),"");
+		assertEqStr(cur.getField(1,"column_key"),"");
+		console.log("");
+		assertTrue(cur.sendQuery("drop table testtable"));
+		assertTrue(cur.sendQuery(
+			"create table testtable ("+
+			"	col1 int "+
+			"	primary key, "+
+			"	col2 int)"));
+		assertTrue(cur.getColumnList("testtable",null));
+		assertEqStr(cur.getField(0,"extra"),"");
+		assertEqStr(cur.getField(0,"column_key"),"PRI");
+		assertTrue(cur.sendQuery("drop table testtable"));
+		console.log("");
 
 
-	// primary keys list
-	console.log("PRIMARY KEYS LIST: ");
-	cur.sendQuery("drop table testtable");
-	assertTrue(cur.sendQuery(
-		"create table testtable ("+
-		"	col1 int "+
-		"	primary key, "+
-		"	col2 int)"));
-	assertTrue(cur.getPrimaryKeysList("testtable",null));
-	assertEqStr(cur.getColumnName(0),"table");
-	assertEqStr(cur.getColumnName(1),"non_unique");
-	assertEqStr(cur.getColumnName(2),"key_name");
-	assertEqStr(cur.getColumnName(3),"seq_in_index");
-	assertEqStr(cur.getColumnName(4),"column_name");
-	assertEqStr(cur.getColumnName(5),"collation");
-	assertEqStr(cur.getColumnName(6),"cardinality");
-	assertEqStr(cur.getColumnName(7),"sub_part");
-	assertEqStr(cur.getColumnName(8),"packed");
-	assertEqStr(cur.getColumnName(9),"null");
-	assertEqStr(cur.getColumnName(10),"index_type");
-	assertEqStr(cur.getColumnName(11),"comment");
-	assertEqStr(cur.getColumnName(12),"index_comment");
-	assertEqInt(cur.rowCount(),1);
-	assertTrue(cur.getField(0,"table")=="testtable");
-	assertEqStr(cur.getField(0,"seq_in_index"),"1");
-	assertTrue(cur.getField(0,"column_name")=="col1");
-	assertEqStr(cur.getField(0,"key_name"),"PRIMARY");
-	assertTrue(cur.sendQuery("drop table testtable"));
-	console.log("");
+		// primary keys list
+		console.log("PRIMARY KEYS LIST: ");
+		cur.sendQuery("drop table testtable");
+		assertTrue(cur.sendQuery(
+			"create table testtable ("+
+			"	col1 int "+
+			"	primary key, "+
+			"	col2 int)"));
+		assertTrue(cur.getPrimaryKeysList("testtable",null));
+		assertEqStr(cur.getColumnName(0),"table");
+		assertEqStr(cur.getColumnName(1),"non_unique");
+		assertEqStr(cur.getColumnName(2),"key_name");
+		assertEqStr(cur.getColumnName(3),"seq_in_index");
+		assertEqStr(cur.getColumnName(4),"column_name");
+		assertEqStr(cur.getColumnName(5),"collation");
+		assertEqStr(cur.getColumnName(6),"cardinality");
+		assertEqStr(cur.getColumnName(7),"sub_part");
+		assertEqStr(cur.getColumnName(8),"packed");
+		assertEqStr(cur.getColumnName(9),"null");
+		assertEqStr(cur.getColumnName(10),"index_type");
+		assertEqStr(cur.getColumnName(11),"comment");
+		assertEqStr(cur.getColumnName(12),"index_comment");
+		assertEqInt(cur.rowCount(),1);
+		assertTrue(cur.getField(0,"table")=="testtable");
+		assertEqStr(cur.getField(0,"seq_in_index"),"1");
+		assertTrue(cur.getField(0,"column_name")=="col1");
+		assertEqStr(cur.getField(0,"key_name"),"PRIMARY");
+		assertTrue(cur.sendQuery("drop table testtable"));
+		console.log("");
 
 
-	// key and index list
-	console.log("KEY AND INDEX LIST: ");
-	cur.sendQuery("drop table testtable");
-	assertTrue(cur.sendQuery(
-		"create table testtable ("+
-		"	col1 int "+
-		"	primary key, "+
-		"	col2 int)"));
-	assertTrue(cur.getKeyAndIndexList("testtable",null));
-	assertEqStr(cur.getColumnName(0),"table");
-	assertEqStr(cur.getColumnName(1),"non_unique");
-	assertEqStr(cur.getColumnName(2),"key_name");
-	assertEqStr(cur.getColumnName(3),"seq_in_index");
-	assertEqStr(cur.getColumnName(4),"column_name");
-	assertEqStr(cur.getColumnName(5),"collation");
-	assertEqStr(cur.getColumnName(6),"cardinality");
-	assertEqStr(cur.getColumnName(7),"sub_part");
-	assertEqStr(cur.getColumnName(8),"packed");
-	assertEqStr(cur.getColumnName(9),"null");
-	assertEqStr(cur.getColumnName(10),"index_type");
-	assertEqStr(cur.getColumnName(11),"comment");
-	assertEqStr(cur.getColumnName(12),"index_comment");
-	assertEqInt(cur.rowCount(),1);
-	assertTrue(cur.getField(0,"table")=="testtable");
-	assertEqStr(cur.getField(0,"non_unique"),"false");
-	assertEqStr(cur.getField(0,"seq_in_index"),"1");
-	assertTrue(cur.getField(0,"column_name")=="col1");
-	assertEqStr(cur.getField(0,"collation"),"A");
-	assertEqStr(cur.getField(0,"index_type"),"3");
-	assertEqStr(cur.getField(0,"key_name"),"PRIMARY");
-	assertTrue(cur.sendQuery("drop table testtable"));
-	console.log("");
+		// key and index list
+		console.log("KEY AND INDEX LIST: ");
+		cur.sendQuery("drop table testtable");
+		assertTrue(cur.sendQuery(
+			"create table testtable ("+
+			"	col1 int "+
+			"	primary key, "+
+			"	col2 int)"));
+		assertTrue(cur.getKeyAndIndexList("testtable",null));
+		assertEqStr(cur.getColumnName(0),"table");
+		assertEqStr(cur.getColumnName(1),"non_unique");
+		assertEqStr(cur.getColumnName(2),"key_name");
+		assertEqStr(cur.getColumnName(3),"seq_in_index");
+		assertEqStr(cur.getColumnName(4),"column_name");
+		assertEqStr(cur.getColumnName(5),"collation");
+		assertEqStr(cur.getColumnName(6),"cardinality");
+		assertEqStr(cur.getColumnName(7),"sub_part");
+		assertEqStr(cur.getColumnName(8),"packed");
+		assertEqStr(cur.getColumnName(9),"null");
+		assertEqStr(cur.getColumnName(10),"index_type");
+		assertEqStr(cur.getColumnName(11),"comment");
+		assertEqStr(cur.getColumnName(12),"index_comment");
+		assertEqInt(cur.rowCount(),1);
+		assertTrue(cur.getField(0,"table")=="testtable");
+		assertEqStr(cur.getField(0,"non_unique"),"false");
+		assertEqStr(cur.getField(0,"seq_in_index"),"1");
+		assertTrue(cur.getField(0,"column_name")=="col1");
+		assertEqStr(cur.getField(0,"collation"),"A");
+		assertEqStr(cur.getField(0,"index_type"),"3");
+		assertEqStr(cur.getField(0,"key_name"),"PRIMARY");
+		assertTrue(cur.sendQuery("drop table testtable"));
+		console.log("");
 
 
-	// procedure list
-	console.log("PROCEDURE LIST: ");
-	cur.sendQuery("drop procedure testproc1");
-	cur.sendQuery("drop procedure testproc2");
-	cur.sendQuery("drop procedure testproc3");
-	cur.sendQuery("drop procedure testproc4");
-	assertTrue(cur.sendQuery("create procedure "+
-		"testproc1("+
-		"	in in1 int, "+
-		"	in in2 char(20), "+
-		"	in in3 varchar(20), "+
-		"	in in4 date) begin end"));
-	assertTrue(cur.sendQuery("create procedure "+
-		"testproc2("+
-		"	in in1 int, "+
-		"	in in2 char(20), "+
-		"	in in3 varchar(20), "+
-		"	in in4 date) begin end"));
-	assertTrue(cur.sendQuery("create procedure "+
-		"testproc3("+
-		"	in in1 int, "+
-		"	in in2 char(20), "+
-		"	in in3 varchar(20), "+
-		"	in in4 date) begin end"));
-	assertTrue(cur.sendQuery("create procedure "+
-		"testproc4("+
-		"	in in1 int, "+
-		"	in in2 char(20), "+
-		"	in in3 varchar(20), "+
-		"	in in4 date) begin end"));
-	assertTrue(cur.getProcedureList(null));
-	assertInResultSet(cur,"routine_name","testproc1");
-	assertInResultSet(cur,"routine_name","testproc2");
-	assertInResultSet(cur,"routine_name","testproc3");
-	assertInResultSet(cur,"routine_name","testproc4");
-	console.log("");
+		// procedure list
+		console.log("PROCEDURE LIST: ");
+		cur.sendQuery("drop procedure testproc1");
+		cur.sendQuery("drop procedure testproc2");
+		cur.sendQuery("drop procedure testproc3");
+		cur.sendQuery("drop procedure testproc4");
+		assertTrue(cur.sendQuery("create procedure "+
+			"testproc1("+
+			"	in in1 int, "+
+			"	in in2 char(20), "+
+			"	in in3 varchar(20), "+
+			"	in in4 date) begin end"));
+		assertTrue(cur.sendQuery("create procedure "+
+			"testproc2("+
+			"	in in1 int, "+
+			"	in in2 char(20), "+
+			"	in in3 varchar(20), "+
+			"	in in4 date) begin end"));
+		assertTrue(cur.sendQuery("create procedure "+
+			"testproc3("+
+			"	in in1 int, "+
+			"	in in2 char(20), "+
+			"	in in3 varchar(20), "+
+			"	in in4 date) begin end"));
+		assertTrue(cur.sendQuery("create procedure "+
+			"testproc4("+
+			"	in in1 int, "+
+			"	in in2 char(20), "+
+			"	in in3 varchar(20), "+
+			"	in in4 date) begin end"));
+		assertTrue(cur.getProcedureList(null));
+		assertInResultSet(cur,"routine_name","testproc1");
+		assertInResultSet(cur,"routine_name","testproc2");
+		assertInResultSet(cur,"routine_name","testproc3");
+		assertInResultSet(cur,"routine_name","testproc4");
+		console.log("");
 
 
-	// procedure parameter list
-	console.log("PROCEDURE PARAMETER LIST: ");
-	assertTrue(cur.getProcedureParameterList("testproc1",null));
-	assertEqStr(cur.getColumnName(0),"parameter_name");
-	assertEqStr(cur.getColumnName(1),"parameter_mode");
-	assertEqStr(cur.getColumnName(2),"data_type");
-	assertEqStr(cur.getColumnName(3),"character_maximum_length");
-	assertEqStr(cur.getColumnName(4),"ordinal_position");
-	assertEqInt(cur.rowCount(),4);
-	assertEqStr(cur.getField(0,"parameter_name"),"in1");
-	assertEqStr(cur.getField(0,"parameter_mode"),"1");
-	assertEqStr(cur.getField(0,"data_type"),"INT");
-	assertEqStr(cur.getField(0,"ordinal_position"),"1");
-	assertEqStr(cur.getField(1,"parameter_name"),"in2");
-	assertEqStr(cur.getField(1,"parameter_mode"),"1");
-	assertEqStr(cur.getField(1,"data_type"),"CHAR");
-	assertEqStr(cur.getField(1,"ordinal_position"),"2");
-	assertEqStr(cur.getField(2,"parameter_name"),"in3");
-	assertEqStr(cur.getField(2,"parameter_mode"),"1");
-	assertEqStr(cur.getField(2,"data_type"),"VARCHAR");
-	assertEqStr(cur.getField(2,"ordinal_position"),"3");
-	assertEqStr(cur.getField(3,"parameter_name"),"in4");
-	assertEqStr(cur.getField(3,"parameter_mode"),"1");
-	assertEqStr(cur.getField(3,"data_type"),"DATE");
-	assertEqStr(cur.getField(3,"ordinal_position"),"4");
-	assertTrue(cur.sendQuery("drop procedure testproc1"));
-	assertTrue(cur.sendQuery("drop procedure testproc2"));
-	assertTrue(cur.sendQuery("drop procedure testproc3"));
-	assertTrue(cur.sendQuery("drop procedure testproc4"));
-	console.log("");
+		// procedure parameter list
+		console.log("PROCEDURE PARAMETER LIST: ");
+		assertTrue(cur.getProcedureParameterList("testproc1",null));
+		assertEqStr(cur.getColumnName(0),"parameter_name");
+		assertEqStr(cur.getColumnName(1),"parameter_mode");
+		assertEqStr(cur.getColumnName(2),"data_type");
+		assertEqStr(cur.getColumnName(3),"character_maximum_length");
+		assertEqStr(cur.getColumnName(4),"ordinal_position");
+		assertEqInt(cur.rowCount(),4);
+		assertEqStr(cur.getField(0,"parameter_name"),"in1");
+		assertEqStr(cur.getField(0,"parameter_mode"),"1");
+		assertEqStr(cur.getField(0,"data_type"),"INT");
+		assertEqStr(cur.getField(0,"ordinal_position"),"1");
+		assertEqStr(cur.getField(1,"parameter_name"),"in2");
+		assertEqStr(cur.getField(1,"parameter_mode"),"1");
+		assertEqStr(cur.getField(1,"data_type"),"CHAR");
+		assertEqStr(cur.getField(1,"ordinal_position"),"2");
+		assertEqStr(cur.getField(2,"parameter_name"),"in3");
+		assertEqStr(cur.getField(2,"parameter_mode"),"1");
+		assertEqStr(cur.getField(2,"data_type"),"VARCHAR");
+		assertEqStr(cur.getField(2,"ordinal_position"),"3");
+		assertEqStr(cur.getField(3,"parameter_name"),"in4");
+		assertEqStr(cur.getField(3,"parameter_mode"),"1");
+		assertEqStr(cur.getField(3,"data_type"),"DATE");
+		assertEqStr(cur.getField(3,"ordinal_position"),"4");
+		assertTrue(cur.sendQuery("drop procedure testproc1"));
+		assertTrue(cur.sendQuery("drop procedure testproc2"));
+		assertTrue(cur.sendQuery("drop procedure testproc3"));
+		assertTrue(cur.sendQuery("drop procedure testproc4"));
+		console.log("");
+	}
 
 
 	// invalid queries

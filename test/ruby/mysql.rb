@@ -70,16 +70,19 @@ print "\n"
 
 
 # isolation levels
+# (mysql before 4.0 doesn't support setting the isolation level)
 print "ISOLATION LEVELS: \n"
-isolationlevels=["REPEATABLE-READ","READ-UNCOMMITTED",
-		"READ-COMMITTED","SERIALIZABLE"]
-for il in isolationlevels
-	assertTrue(con.setIsolationLevel(il))
-	assertEqual(con.getIsolationLevel(),il)
-	print "\n"
+if majorversion>3
+	isolationlevels=["REPEATABLE-READ","READ-UNCOMMITTED",
+			"READ-COMMITTED","SERIALIZABLE"]
+	for il in isolationlevels
+		assertTrue(con.setIsolationLevel(il))
+		assertEqual(con.getIsolationLevel(),il)
+		print "\n"
+	end
+	# reset to the default isolation level
+	assertTrue(con.setIsolationLevel(isolationlevels[0]))
 end
-# reset to the default isolation level
-assertTrue(con.setIsolationLevel(isolationlevels[0]))
 print "\n"
 
 
@@ -514,59 +517,62 @@ assertEqual(cur.getColumnType("testtimestamp"),"TIMESTAMP")
 print "\n"
 
 
-# column length
-print "COLUMN LENGTH: \n"
-assertEqual(cur.getColumnLength(0),1)
-assertEqual(cur.getColumnLength(1),2)
-assertEqual(cur.getColumnLength(2),3)
-assertEqual(cur.getColumnLength(3),4)
-assertEqual(cur.getColumnLength(4),8)
-assertEqual(cur.getColumnLength(5),4)
-assertEqual(cur.getColumnLength(6),8)
-assertEqual(cur.getColumnLength(7),6)
-assertEqual(cur.getColumnLength(8),3)
-assertEqual(cur.getColumnLength(9),3)
-assertEqual(cur.getColumnLength(10),8)
-assertEqual(cur.getColumnLength(11),1)
-# testchar/testvarchar are char(40)/varchar(40); the connection charset
-# is utf8mb4 (4 bytes/char) so the lengths are 160/161
-assertEqual(cur.getColumnLength(12),160)
-assertEqual(cur.getColumnLength(13),161)
-assertEqual(cur.getColumnLength(14),65535)
-assertEqual(cur.getColumnLength(15),255)
-assertEqual(cur.getColumnLength(16),16777215)
-assertEqual(cur.getColumnLength(17),2147483647)
-assertEqual(cur.getColumnLength(18),65535)
-assertEqual(cur.getColumnLength(19),255)
-assertEqual(cur.getColumnLength(20),16777215)
-assertEqual(cur.getColumnLength(21),2147483647)
-assertEqual(cur.getColumnLength(22),4)
-assertEqual(cur.getColumnLength("testtinyint"),1)
-assertEqual(cur.getColumnLength("testsmallint"),2)
-assertEqual(cur.getColumnLength("testmediumint"),3)
-assertEqual(cur.getColumnLength("testint"),4)
-assertEqual(cur.getColumnLength("testbigint"),8)
-assertEqual(cur.getColumnLength("testfloat"),4)
-assertEqual(cur.getColumnLength("testreal"),8)
-assertEqual(cur.getColumnLength("testdecimal"),6)
-assertEqual(cur.getColumnLength("testdate"),3)
-assertEqual(cur.getColumnLength("testtime"),3)
-assertEqual(cur.getColumnLength("testdatetime"),8)
-assertEqual(cur.getColumnLength("testyear"),1)
-# testchar/testvarchar are char(40)/varchar(40); the connection charset
-# is utf8mb4 (4 bytes/char) so the lengths are 160/161
-assertEqual(cur.getColumnLength("testchar"),160)
-assertEqual(cur.getColumnLength("testvarchar"),161)
-assertEqual(cur.getColumnLength("testtext"),65535)
-assertEqual(cur.getColumnLength("testtinytext"),255)
-assertEqual(cur.getColumnLength("testmediumtext"),16777215)
-assertEqual(cur.getColumnLength("testlongtext"),2147483647)
-assertEqual(cur.getColumnLength("testblob"),65535)
-assertEqual(cur.getColumnLength("testtinyblob"),255)
-assertEqual(cur.getColumnLength("testmediumblob"),16777215)
-assertEqual(cur.getColumnLength("testlongblob"),2147483647)
-assertEqual(cur.getColumnLength("testtimestamp"),4)
-print "\n"
+# mysql before 4 reports column lengths differently (charset)
+if majorversion>3
+	# column length
+	print "COLUMN LENGTH: \n"
+	assertEqual(cur.getColumnLength(0),1)
+	assertEqual(cur.getColumnLength(1),2)
+	assertEqual(cur.getColumnLength(2),3)
+	assertEqual(cur.getColumnLength(3),4)
+	assertEqual(cur.getColumnLength(4),8)
+	assertEqual(cur.getColumnLength(5),4)
+	assertEqual(cur.getColumnLength(6),8)
+	assertEqual(cur.getColumnLength(7),6)
+	assertEqual(cur.getColumnLength(8),3)
+	assertEqual(cur.getColumnLength(9),3)
+	assertEqual(cur.getColumnLength(10),8)
+	assertEqual(cur.getColumnLength(11),1)
+	# testchar/testvarchar are char(40)/varchar(40); the connection charset
+	# is utf8mb4 (4 bytes/char) so the lengths are 160/161
+	assertEqual(cur.getColumnLength(12),160)
+	assertEqual(cur.getColumnLength(13),161)
+	assertEqual(cur.getColumnLength(14),65535)
+	assertEqual(cur.getColumnLength(15),255)
+	assertEqual(cur.getColumnLength(16),16777215)
+	assertEqual(cur.getColumnLength(17),2147483647)
+	assertEqual(cur.getColumnLength(18),65535)
+	assertEqual(cur.getColumnLength(19),255)
+	assertEqual(cur.getColumnLength(20),16777215)
+	assertEqual(cur.getColumnLength(21),2147483647)
+	assertEqual(cur.getColumnLength(22),4)
+	assertEqual(cur.getColumnLength("testtinyint"),1)
+	assertEqual(cur.getColumnLength("testsmallint"),2)
+	assertEqual(cur.getColumnLength("testmediumint"),3)
+	assertEqual(cur.getColumnLength("testint"),4)
+	assertEqual(cur.getColumnLength("testbigint"),8)
+	assertEqual(cur.getColumnLength("testfloat"),4)
+	assertEqual(cur.getColumnLength("testreal"),8)
+	assertEqual(cur.getColumnLength("testdecimal"),6)
+	assertEqual(cur.getColumnLength("testdate"),3)
+	assertEqual(cur.getColumnLength("testtime"),3)
+	assertEqual(cur.getColumnLength("testdatetime"),8)
+	assertEqual(cur.getColumnLength("testyear"),1)
+	# testchar/testvarchar are char(40)/varchar(40); the connection charset
+	# is utf8mb4 (4 bytes/char) so the lengths are 160/161
+	assertEqual(cur.getColumnLength("testchar"),160)
+	assertEqual(cur.getColumnLength("testvarchar"),161)
+	assertEqual(cur.getColumnLength("testtext"),65535)
+	assertEqual(cur.getColumnLength("testtinytext"),255)
+	assertEqual(cur.getColumnLength("testmediumtext"),16777215)
+	assertEqual(cur.getColumnLength("testlongtext"),2147483647)
+	assertEqual(cur.getColumnLength("testblob"),65535)
+	assertEqual(cur.getColumnLength("testtinyblob"),255)
+	assertEqual(cur.getColumnLength("testmediumblob"),16777215)
+	assertEqual(cur.getColumnLength("testlongblob"),2147483647)
+	assertEqual(cur.getColumnLength("testtimestamp"),4)
+	print "\n"
+end
 
 
 # longest column
@@ -1289,250 +1295,256 @@ assertTrue(cur.sendQuery("drop table testtable"))
 print "\n"
 
 
-# reset transaction state
-print "RESET TRANSACTION STATE: \n"
-assertTrue(con.commit())
-assertEqual(con.getTransactionModel(),"explicit-deferred")
-assertTrue(con.getAutoCommit())
-print "\n"
+# transaction behavior differs on mysql before 4
+if majorversion>3
+	# reset transaction state
+	print "RESET TRANSACTION STATE: \n"
+	assertTrue(con.commit())
+	assertEqual(con.getTransactionModel(),"explicit-deferred")
+	assertTrue(con.getAutoCommit())
+	print "\n"
 
 
-# transaction behavior - implicit
-print "TRANSACTION BEHAVIOR - implicit: \n"
-assertTrue(con.setTransactionModel("implicit"))
-assertEqual(con.getTransactionModel(),"implicit")
-assertTrue(cur.sendQuery("create table testtable (col1 integer)"))
-secondcon=SQLRConnection.new("sqlrelay",9000,"/tmp/test.socket",
-					"testuser","testpassword",0,1)
-secondcur=SQLRCursor.new(secondcon)
-setSecondConnection(secondcon)
-setSecondCursor(secondcur)
-# session is in a transaction; insert is not visible until commit
-assertTrue(con.getInTransaction())
-assertFalse(con.getAutoCommit())
-assertTrue(cur.sendQuery("insert into testtable values (1)"))
-assertTrue(secondcur.sendQuery("select count(*) from testtable"))
-assertEqual(secondcur.getField(0,0),"0")
-# commit makes it visible, and implicitly starts a new transaction
-assertTrue(con.commit())
-assertTrue(con.getInTransaction())
-assertTrue(secondcur.sendQuery("select count(*) from testtable"))
-assertEqual(secondcur.getField(0,0),"1")
-# rollback discards, and implicitly starts a new transaction
-assertTrue(cur.sendQuery("insert into testtable values (2)"))
-assertTrue(con.rollback())
-assertTrue(con.getInTransaction())
-assertTrue(secondcur.sendQuery("select count(*) from testtable"))
-assertEqual(secondcur.getField(0,0),"1")
-# autoCommitOn takes effect immediately
-assertTrue(con.autoCommitOn())
-assertTrue(con.getAutoCommit())
-assertFalse(con.getInTransaction())
-assertTrue(cur.sendQuery("insert into testtable values (3)"))
-assertTrue(secondcur.sendQuery("select count(*) from testtable"))
-assertEqual(secondcur.getField(0,0),"2")
-# autoCommitOff takes effect immediately
-assertTrue(con.autoCommitOff())
-assertFalse(con.getAutoCommit())
-assertTrue(con.getInTransaction())
-secondcur.closeResultSet()
-assertTrue(cur.sendQuery("drop table testtable"))
-print "\n"
+	# transaction behavior - implicit
+	print "TRANSACTION BEHAVIOR - implicit: \n"
+	assertTrue(con.setTransactionModel("implicit"))
+	assertEqual(con.getTransactionModel(),"implicit")
+	assertTrue(cur.sendQuery("create table testtable (col1 integer)"))
+	secondcon=SQLRConnection.new("sqlrelay",9000,"/tmp/test.socket",
+						"testuser","testpassword",0,1)
+	secondcur=SQLRCursor.new(secondcon)
+	setSecondConnection(secondcon)
+	setSecondCursor(secondcur)
+	# session is in a transaction; insert is not visible until commit
+	assertTrue(con.getInTransaction())
+	assertFalse(con.getAutoCommit())
+	assertTrue(cur.sendQuery("insert into testtable values (1)"))
+	assertTrue(secondcur.sendQuery("select count(*) from testtable"))
+	assertEqual(secondcur.getField(0,0),"0")
+	# commit makes it visible, and implicitly starts a new transaction
+	assertTrue(con.commit())
+	assertTrue(con.getInTransaction())
+	assertTrue(secondcur.sendQuery("select count(*) from testtable"))
+	assertEqual(secondcur.getField(0,0),"1")
+	# rollback discards, and implicitly starts a new transaction
+	assertTrue(cur.sendQuery("insert into testtable values (2)"))
+	assertTrue(con.rollback())
+	assertTrue(con.getInTransaction())
+	assertTrue(secondcur.sendQuery("select count(*) from testtable"))
+	assertEqual(secondcur.getField(0,0),"1")
+	# autoCommitOn takes effect immediately
+	assertTrue(con.autoCommitOn())
+	assertTrue(con.getAutoCommit())
+	assertFalse(con.getInTransaction())
+	assertTrue(cur.sendQuery("insert into testtable values (3)"))
+	assertTrue(secondcur.sendQuery("select count(*) from testtable"))
+	assertEqual(secondcur.getField(0,0),"2")
+	# autoCommitOff takes effect immediately
+	assertTrue(con.autoCommitOff())
+	assertFalse(con.getAutoCommit())
+	assertTrue(con.getInTransaction())
+	secondcur.closeResultSet()
+	assertTrue(cur.sendQuery("drop table testtable"))
+	print "\n"
 
 
-# transaction behavior - explicit
-print "TRANSACTION BEHAVIOR - explicit: \n"
-assertTrue(con.setTransactionModel("explicit"))
-assertEqual(con.getTransactionModel(),"explicit")
-assertTrue(cur.sendQuery("create table testtable (col1 integer)"))
-# begin starts a new transaction; insert is not visible until commit
-assertTrue(con.begin())
-assertTrue(con.getInTransaction())
-assertTrue(cur.sendQuery("insert into testtable values (1)"))
-assertTrue(secondcur.sendQuery("select count(*) from testtable"))
-assertEqual(secondcur.getField(0,0),"0")
-# commit makes it visible; no new transaction is started
-assertTrue(con.commit())
-assertFalse(con.getInTransaction())
-assertTrue(secondcur.sendQuery("select count(*) from testtable"))
-assertEqual(secondcur.getField(0,0),"1")
-# begin, insert, rollback discards; no new transaction is started
-assertTrue(con.begin())
-assertTrue(cur.sendQuery("insert into testtable values (2)"))
-assertTrue(con.rollback())
-assertFalse(con.getInTransaction())
-assertTrue(secondcur.sendQuery("select count(*) from testtable"))
-assertEqual(secondcur.getField(0,0),"1")
-# autoCommitOn takes effect immediately
-assertTrue(con.autoCommitOn())
-assertTrue(con.getAutoCommit())
-assertTrue(cur.sendQuery("insert into testtable values (3)"))
-assertTrue(secondcur.sendQuery("select count(*) from testtable"))
-assertEqual(secondcur.getField(0,0),"2")
-# autoCommitOff takes effect immediately
-assertTrue(con.autoCommitOff())
-assertFalse(con.getAutoCommit())
-secondcur.closeResultSet()
-assertTrue(cur.sendQuery("drop table testtable"))
-print "\n"
+	# transaction behavior - explicit
+	print "TRANSACTION BEHAVIOR - explicit: \n"
+	assertTrue(con.setTransactionModel("explicit"))
+	assertEqual(con.getTransactionModel(),"explicit")
+	assertTrue(cur.sendQuery("create table testtable (col1 integer)"))
+	# begin starts a new transaction; insert is not visible until commit
+	assertTrue(con.begin())
+	assertTrue(con.getInTransaction())
+	assertTrue(cur.sendQuery("insert into testtable values (1)"))
+	assertTrue(secondcur.sendQuery("select count(*) from testtable"))
+	assertEqual(secondcur.getField(0,0),"0")
+	# commit makes it visible; no new transaction is started
+	assertTrue(con.commit())
+	assertFalse(con.getInTransaction())
+	assertTrue(secondcur.sendQuery("select count(*) from testtable"))
+	assertEqual(secondcur.getField(0,0),"1")
+	# begin, insert, rollback discards; no new transaction is started
+	assertTrue(con.begin())
+	assertTrue(cur.sendQuery("insert into testtable values (2)"))
+	assertTrue(con.rollback())
+	assertFalse(con.getInTransaction())
+	assertTrue(secondcur.sendQuery("select count(*) from testtable"))
+	assertEqual(secondcur.getField(0,0),"1")
+	# autoCommitOn takes effect immediately
+	assertTrue(con.autoCommitOn())
+	assertTrue(con.getAutoCommit())
+	assertTrue(cur.sendQuery("insert into testtable values (3)"))
+	assertTrue(secondcur.sendQuery("select count(*) from testtable"))
+	assertEqual(secondcur.getField(0,0),"2")
+	# autoCommitOff takes effect immediately
+	assertTrue(con.autoCommitOff())
+	assertFalse(con.getAutoCommit())
+	secondcur.closeResultSet()
+	assertTrue(cur.sendQuery("drop table testtable"))
+	print "\n"
 
 
-# transaction behavior - explicit-deferred
-print "TRANSACTION BEHAVIOR - explicit-deferred: \n"
-assertTrue(con.setTransactionModel("explicit-deferred"))
-assertEqual(con.getTransactionModel(),"explicit-deferred")
-# switch to autocommit-on so the begin/commit cycles below
-# bracket explicit transactions (autocommit-off semantics are
-# exercised at the end of this block)
-assertTrue(con.autoCommitOn())
-assertTrue(con.getAutoCommit())
-assertTrue(cur.sendQuery("create table testtable (col1 integer)"))
-# begin starts a transaction; commit makes it visible
-assertTrue(con.begin())
-assertTrue(con.getInTransaction())
-assertTrue(cur.sendQuery("insert into testtable values (1)"))
-assertTrue(con.commit())
-assertFalse(con.getInTransaction())
-assertTrue(secondcur.sendQuery("select count(*) from testtable"))
-assertEqual(secondcur.getField(0,0),"1")
-# begin, insert, rollback discards
-assertTrue(con.begin())
-assertTrue(cur.sendQuery("insert into testtable values (2)"))
-assertTrue(con.rollback())
-assertTrue(secondcur.sendQuery("select count(*) from testtable"))
-assertEqual(secondcur.getField(0,0),"1")
-# during a transaction started by begin(), autoCommitOn is a
-# no-op: the autocommit setting takes effect after the user
-# explicitly commits/rollbacks the tx (mysql-native semantic)
-assertTrue(con.begin())
-assertTrue(cur.sendQuery("insert into testtable values (3)"))
-assertTrue(con.autoCommitOn())
-assertFalse(con.getAutoCommit())
-assertTrue(con.getInTransaction())
-assertTrue(secondcur.sendQuery("select count(*) from testtable"))
-assertEqual(secondcur.getField(0,0),"1")
-# explicit commit ends the tx; autocommit-on now takes effect
-assertTrue(con.commit())
-assertTrue(con.getAutoCommit())
-assertFalse(con.getInTransaction())
-assertTrue(secondcur.sendQuery("select count(*) from testtable"))
-assertEqual(secondcur.getField(0,0),"2")
-# autocommit is on; subsequent inserts are visible immediately
-assertTrue(cur.sendQuery("insert into testtable values (4)"))
-assertTrue(secondcur.sendQuery("select count(*) from testtable"))
-assertEqual(secondcur.getField(0,0),"3")
-# autoCommitOff takes effect immediately when not in a transaction
-assertTrue(con.autoCommitOff())
-assertFalse(con.getAutoCommit())
-# autocommit-off persists across commit/rollback; each commit or
-# rollback ends the current implicit tx and a new one starts for
-# the next statement
-assertTrue(cur.sendQuery("insert into testtable values (5)"))
-assertTrue(con.commit())
-assertFalse(con.getAutoCommit())
-assertTrue(con.getInTransaction())
-assertTrue(secondcur.sendQuery("select count(*) from testtable"))
-assertEqual(secondcur.getField(0,0),"4")
-assertTrue(cur.sendQuery("insert into testtable values (6)"))
-assertTrue(con.rollback())
-assertFalse(con.getAutoCommit())
-assertTrue(con.getInTransaction())
-assertTrue(secondcur.sendQuery("select count(*) from testtable"))
-assertEqual(secondcur.getField(0,0),"4")
-# autoCommitOff during a transaction changes the variable
-# immediately but the in-flight tx continues; only after the
-# next explicit commit/rollback does the new autocommit-off
-# setting drop us into a new implicit tx (mysql-asymmetric
-# semantic)
-assertTrue(con.autoCommitOn())
-assertTrue(con.getAutoCommit())
-assertTrue(con.begin())
-assertTrue(cur.sendQuery("insert into testtable values (7)"))
-assertTrue(con.autoCommitOff())
-assertFalse(con.getAutoCommit())
-assertTrue(con.getInTransaction())
-assertTrue(secondcur.sendQuery("select count(*) from testtable"))
-assertEqual(secondcur.getField(0,0),"4")
-assertTrue(con.commit())
-assertFalse(con.getAutoCommit())
-assertTrue(con.getInTransaction())
-assertTrue(secondcur.sendQuery("select count(*) from testtable"))
-assertEqual(secondcur.getField(0,0),"5")
-secondcur.closeResultSet()
-assertTrue(cur.sendQuery("drop table testtable"))
-print "\n"
+	# transaction behavior - explicit-deferred
+	print "TRANSACTION BEHAVIOR - explicit-deferred: \n"
+	assertTrue(con.setTransactionModel("explicit-deferred"))
+	assertEqual(con.getTransactionModel(),"explicit-deferred")
+	# switch to autocommit-on so the begin/commit cycles below
+	# bracket explicit transactions (autocommit-off semantics are
+	# exercised at the end of this block)
+	assertTrue(con.autoCommitOn())
+	assertTrue(con.getAutoCommit())
+	assertTrue(cur.sendQuery("create table testtable (col1 integer)"))
+	# begin starts a transaction; commit makes it visible
+	assertTrue(con.begin())
+	assertTrue(con.getInTransaction())
+	assertTrue(cur.sendQuery("insert into testtable values (1)"))
+	assertTrue(con.commit())
+	assertFalse(con.getInTransaction())
+	assertTrue(secondcur.sendQuery("select count(*) from testtable"))
+	assertEqual(secondcur.getField(0,0),"1")
+	# begin, insert, rollback discards
+	assertTrue(con.begin())
+	assertTrue(cur.sendQuery("insert into testtable values (2)"))
+	assertTrue(con.rollback())
+	assertTrue(secondcur.sendQuery("select count(*) from testtable"))
+	assertEqual(secondcur.getField(0,0),"1")
+	# during a transaction started by begin(), autoCommitOn is a
+	# no-op: the autocommit setting takes effect after the user
+	# explicitly commits/rollbacks the tx (mysql-native semantic)
+	assertTrue(con.begin())
+	assertTrue(cur.sendQuery("insert into testtable values (3)"))
+	assertTrue(con.autoCommitOn())
+	assertFalse(con.getAutoCommit())
+	assertTrue(con.getInTransaction())
+	assertTrue(secondcur.sendQuery("select count(*) from testtable"))
+	assertEqual(secondcur.getField(0,0),"1")
+	# explicit commit ends the tx; autocommit-on now takes effect
+	assertTrue(con.commit())
+	assertTrue(con.getAutoCommit())
+	assertFalse(con.getInTransaction())
+	assertTrue(secondcur.sendQuery("select count(*) from testtable"))
+	assertEqual(secondcur.getField(0,0),"2")
+	# autocommit is on; subsequent inserts are visible immediately
+	assertTrue(cur.sendQuery("insert into testtable values (4)"))
+	assertTrue(secondcur.sendQuery("select count(*) from testtable"))
+	assertEqual(secondcur.getField(0,0),"3")
+	# autoCommitOff takes effect immediately when not in a transaction
+	assertTrue(con.autoCommitOff())
+	assertFalse(con.getAutoCommit())
+	# autocommit-off persists across commit/rollback; each commit or
+	# rollback ends the current implicit tx and a new one starts for
+	# the next statement
+	assertTrue(cur.sendQuery("insert into testtable values (5)"))
+	assertTrue(con.commit())
+	assertFalse(con.getAutoCommit())
+	assertTrue(con.getInTransaction())
+	assertTrue(secondcur.sendQuery("select count(*) from testtable"))
+	assertEqual(secondcur.getField(0,0),"4")
+	assertTrue(cur.sendQuery("insert into testtable values (6)"))
+	assertTrue(con.rollback())
+	assertFalse(con.getAutoCommit())
+	assertTrue(con.getInTransaction())
+	assertTrue(secondcur.sendQuery("select count(*) from testtable"))
+	assertEqual(secondcur.getField(0,0),"4")
+	# autoCommitOff during a transaction changes the variable
+	# immediately but the in-flight tx continues; only after the
+	# next explicit commit/rollback does the new autocommit-off
+	# setting drop us into a new implicit tx (mysql-asymmetric
+	# semantic)
+	assertTrue(con.autoCommitOn())
+	assertTrue(con.getAutoCommit())
+	assertTrue(con.begin())
+	assertTrue(cur.sendQuery("insert into testtable values (7)"))
+	assertTrue(con.autoCommitOff())
+	assertFalse(con.getAutoCommit())
+	assertTrue(con.getInTransaction())
+	assertTrue(secondcur.sendQuery("select count(*) from testtable"))
+	assertEqual(secondcur.getField(0,0),"4")
+	assertTrue(con.commit())
+	assertFalse(con.getAutoCommit())
+	assertTrue(con.getInTransaction())
+	assertTrue(secondcur.sendQuery("select count(*) from testtable"))
+	assertEqual(secondcur.getField(0,0),"5")
+	secondcur.closeResultSet()
+	assertTrue(cur.sendQuery("drop table testtable"))
+	print "\n"
 
 
-# transaction behavior - explicit-error
-print "TRANSACTION BEHAVIOR - explicit-error: \n"
-assertTrue(con.setTransactionModel("explicit-error"))
-assertEqual(con.getTransactionModel(),"explicit-error")
-assertTrue(cur.sendQuery("create table testtable (col1 integer)"))
-# begin, insert, commit
-assertTrue(con.begin())
-assertTrue(con.getInTransaction())
-assertTrue(cur.sendQuery("insert into testtable values (1)"))
-assertTrue(con.commit())
-assertFalse(con.getInTransaction())
-assertTrue(secondcur.sendQuery("select count(*) from testtable"))
-assertEqual(secondcur.getField(0,0),"1")
-# begin, insert, rollback
-assertTrue(con.begin())
-assertTrue(cur.sendQuery("insert into testtable values (2)"))
-assertTrue(con.rollback())
-assertTrue(secondcur.sendQuery("select count(*) from testtable"))
-assertEqual(secondcur.getField(0,0),"1")
-# while in a transaction, autoCommitOn/Off throw an error
-assertTrue(con.begin())
-assertFalse(con.autoCommitOn())
-assertFalse(con.autoCommitOff())
-assertTrue(con.commit())
-# outside of a transaction, autoCommitOn takes effect immediately
-assertTrue(con.autoCommitOn())
-assertTrue(con.getAutoCommit())
-assertTrue(cur.sendQuery("insert into testtable values (3)"))
-assertTrue(secondcur.sendQuery("select count(*) from testtable"))
-assertEqual(secondcur.getField(0,0),"2")
-# autoCommitOff takes effect immediately
-assertTrue(con.autoCommitOff())
-assertFalse(con.getAutoCommit())
-secondcur.closeResultSet()
-assertTrue(cur.sendQuery("drop table testtable"))
-print "\n"
+	# transaction behavior - explicit-error
+	print "TRANSACTION BEHAVIOR - explicit-error: \n"
+	assertTrue(con.setTransactionModel("explicit-error"))
+	assertEqual(con.getTransactionModel(),"explicit-error")
+	assertTrue(cur.sendQuery("create table testtable (col1 integer)"))
+	# begin, insert, commit
+	assertTrue(con.begin())
+	assertTrue(con.getInTransaction())
+	assertTrue(cur.sendQuery("insert into testtable values (1)"))
+	assertTrue(con.commit())
+	assertFalse(con.getInTransaction())
+	assertTrue(secondcur.sendQuery("select count(*) from testtable"))
+	assertEqual(secondcur.getField(0,0),"1")
+	# begin, insert, rollback
+	assertTrue(con.begin())
+	assertTrue(cur.sendQuery("insert into testtable values (2)"))
+	assertTrue(con.rollback())
+	assertTrue(secondcur.sendQuery("select count(*) from testtable"))
+	assertEqual(secondcur.getField(0,0),"1")
+	# while in a transaction, autoCommitOn/Off throw an error
+	assertTrue(con.begin())
+	assertFalse(con.autoCommitOn())
+	assertFalse(con.autoCommitOff())
+	assertTrue(con.commit())
+	# outside of a transaction, autoCommitOn takes effect immediately
+	assertTrue(con.autoCommitOn())
+	assertTrue(con.getAutoCommit())
+	assertTrue(cur.sendQuery("insert into testtable values (3)"))
+	assertTrue(secondcur.sendQuery("select count(*) from testtable"))
+	assertEqual(secondcur.getField(0,0),"2")
+	# autoCommitOff takes effect immediately
+	assertTrue(con.autoCommitOff())
+	assertFalse(con.getAutoCommit())
+	secondcur.closeResultSet()
+	assertTrue(cur.sendQuery("drop table testtable"))
+	print "\n"
 
 
-# transaction behavior - none
-print "TRANSACTION BEHAVIOR - none: \n"
-assertTrue(con.setTransactionModel("none"))
-assertEqual(con.getTransactionModel(),"none")
-assertTrue(cur.sendQuery("create table testtable (col1 integer)"))
-# no transactions; everything is visible immediately
-assertTrue(con.getAutoCommit())
-assertFalse(con.getInTransaction())
-assertTrue(cur.sendQuery("insert into testtable values (1)"))
-assertTrue(secondcur.sendQuery("select count(*) from testtable"))
-assertEqual(secondcur.getField(0,0),"1")
-# commit and rollback are no-ops
-assertTrue(con.commit())
-assertTrue(cur.sendQuery("insert into testtable values (2)"))
-assertTrue(con.rollback())
-assertTrue(secondcur.sendQuery("select count(*) from testtable"))
-assertEqual(secondcur.getField(0,0),"2")
-# autocommit is always on; autoCommitOff is an error
-assertFalse(con.autoCommitOff())
-assertTrue(con.getAutoCommit())
-assertTrue(con.autoCommitOn())
-assertTrue(con.getAutoCommit())
-secondcur.closeResultSet()
-assertTrue(cur.sendQuery("drop table testtable"))
-print "\n"
+	# transaction behavior - none
+	print "TRANSACTION BEHAVIOR - none: \n"
+	assertTrue(con.setTransactionModel("none"))
+	assertEqual(con.getTransactionModel(),"none")
+	assertTrue(cur.sendQuery("create table testtable (col1 integer)"))
+	# no transactions; everything is visible immediately
+	assertTrue(con.getAutoCommit())
+	assertFalse(con.getInTransaction())
+	assertTrue(cur.sendQuery("insert into testtable values (1)"))
+	assertTrue(secondcur.sendQuery("select count(*) from testtable"))
+	assertEqual(secondcur.getField(0,0),"1")
+	# commit and rollback are no-ops
+	assertTrue(con.commit())
+	assertTrue(cur.sendQuery("insert into testtable values (2)"))
+	assertTrue(con.rollback())
+	assertTrue(secondcur.sendQuery("select count(*) from testtable"))
+	assertEqual(secondcur.getField(0,0),"2")
+	# autocommit is always on; autoCommitOff is an error
+	assertFalse(con.autoCommitOff())
+	assertTrue(con.getAutoCommit())
+	assertTrue(con.autoCommitOn())
+	assertTrue(con.getAutoCommit())
+	secondcur.closeResultSet()
+	assertTrue(cur.sendQuery("drop table testtable"))
+	print "\n"
+end
 
 
 # reset transaction behavior
+# (mysql before 4 has limited transaction support)
 print "RESET TRANSACTION BEHAVIOR: \n"
-assertTrue(con.setTransactionModel(con.getDefaultTransactionModel()))
-assertEqual(con.getTransactionModel(),"explicit-deferred")
-assertTrue(con.getAutoCommit())
+if majorversion>3
+	assertTrue(con.setTransactionModel(con.getDefaultTransactionModel()))
+	assertEqual(con.getTransactionModel(),"explicit-deferred")
+	assertTrue(con.getAutoCommit())
+end
 print "\n"
 
 
@@ -1679,27 +1691,30 @@ print "\n"
 # mysql doesn't support bind by name
 
 
-# rebinding
-print "REBINDING: \n"
-cur.sendQuery("drop procedure testproc")
-assertTrue(cur.sendQuery(
-	"create procedure testproc("+
-	"	in in1 int) "+
-	"begin "+
-	"	select in1; "+
-	"end"))
-cur.prepareQuery("call testproc(?)")
-cur.inputBind("1",1)
-assertTrue(cur.executeQuery())
-assertEqual(cur.getField(0,0),"1")
-cur.inputBind("1",2)
-assertTrue(cur.executeQuery())
-assertEqual(cur.getField(0,0),"2")
-cur.inputBind("1",3)
-assertTrue(cur.executeQuery())
-assertEqual(cur.getField(0,0),"3")
-assertTrue(cur.sendQuery("drop procedure testproc"))
-print "\n"
+# mysql before 5.0 has no stored procedures
+if majorversion>3
+	# rebinding
+	print "REBINDING: \n"
+	cur.sendQuery("drop procedure testproc")
+	assertTrue(cur.sendQuery(
+		"create procedure testproc("+
+		"	in in1 int) "+
+		"begin "+
+		"	select in1; "+
+		"end"))
+	cur.prepareQuery("call testproc(?)")
+	cur.inputBind("1",1)
+	assertTrue(cur.executeQuery())
+	assertEqual(cur.getField(0,0),"1")
+	cur.inputBind("1",2)
+	assertTrue(cur.executeQuery())
+	assertEqual(cur.getField(0,0),"2")
+	cur.inputBind("1",3)
+	assertTrue(cur.executeQuery())
+	assertEqual(cur.getField(0,0),"3")
+	assertTrue(cur.sendQuery("drop procedure testproc"))
+	print "\n"
+end
 
 
 # reexecute
@@ -1730,108 +1745,111 @@ assertEqual(cur.getField(0,0),"2")
 print "\n"
 
 
-# stored procedure returning no value
-print "STORED PROCEDURE RETURNING NO VALUE: \n"
-cur.sendQuery("drop procedure testproc")
-assertTrue(cur.sendQuery(
-	"create procedure testproc("+
-	"	in in1 int, "+
-	"	in in2 double, "+
-	"	in in3 varchar(20)) "+
-	"begin "+
-	"end"))
-cur.prepareQuery("call testproc(?,?,?)")
-cur.inputBind("1",1)
-cur.inputBind("2",1.5,2,1)
-cur.inputBind("3","hello")
-assertTrue(cur.executeQuery())
-assertTrue(cur.sendQuery("drop procedure testproc"))
-print "\n"
+# mysql before 5.0 has no stored procedures
+if majorversion>3
+	# stored procedure returning no value
+	print "STORED PROCEDURE RETURNING NO VALUE: \n"
+	cur.sendQuery("drop procedure testproc")
+	assertTrue(cur.sendQuery(
+		"create procedure testproc("+
+		"	in in1 int, "+
+		"	in in2 double, "+
+		"	in in3 varchar(20)) "+
+		"begin "+
+		"end"))
+	cur.prepareQuery("call testproc(?,?,?)")
+	cur.inputBind("1",1)
+	cur.inputBind("2",1.5,2,1)
+	cur.inputBind("3","hello")
+	assertTrue(cur.executeQuery())
+	assertTrue(cur.sendQuery("drop procedure testproc"))
+	print "\n"
 
 
-# stored procedure returning single value
-print "STORED PROCEDURE RETURNING SINGLE VALUE: \n"
-cur.sendQuery("drop procedure testproc")
-assertTrue(cur.sendQuery(
-	"create procedure testproc("+
-	"	in in1 int, "+
-	"	in in2 double, "+
-	"	in in3 varchar(20)) "+
-	"begin "+
-	"	select in1; "+
-	"end"))
-cur.prepareQuery("call testproc(?,?,?)")
-cur.inputBind("1",1)
-cur.inputBind("2",1.5,2,1)
-cur.inputBind("3","hello")
-assertTrue(cur.executeQuery())
-assertEqual(cur.getField(0,0),"1")
-assertTrue(cur.sendQuery("drop procedure testproc"))
-print "\n"
+	# stored procedure returning single value
+	print "STORED PROCEDURE RETURNING SINGLE VALUE: \n"
+	cur.sendQuery("drop procedure testproc")
+	assertTrue(cur.sendQuery(
+		"create procedure testproc("+
+		"	in in1 int, "+
+		"	in in2 double, "+
+		"	in in3 varchar(20)) "+
+		"begin "+
+		"	select in1; "+
+		"end"))
+	cur.prepareQuery("call testproc(?,?,?)")
+	cur.inputBind("1",1)
+	cur.inputBind("2",1.5,2,1)
+	cur.inputBind("3","hello")
+	assertTrue(cur.executeQuery())
+	assertEqual(cur.getField(0,0),"1")
+	assertTrue(cur.sendQuery("drop procedure testproc"))
+	print "\n"
 
 
-# stored procedure returning multiple values
-print "STORED PROCEDURE RETURNING MULTIPLE VALUES: \n"
-cur.sendQuery("drop procedure testproc")
-assertTrue(cur.sendQuery(
-	"create procedure testproc("+
-	"	in in1 int, "+
-	"	in in2 double, "+
-	"	in in3 varchar(20)) "+
-	"begin "+
-	"	select in1, in2, in3; "+
-	"end"))
-cur.prepareQuery("call testproc(?,?,?)")
-cur.inputBind("1",1)
-cur.inputBind("2",1.5,2,1)
-cur.inputBind("3","hello")
-assertTrue(cur.executeQuery())
-assertEqual(cur.getField(0,0),"1")
-assertEqual(cur.getField(0,1),"1.5")
-assertEqual(cur.getField(0,2),"hello")
-assertTrue(cur.sendQuery("drop procedure testproc"))
-print "\n"
+	# stored procedure returning multiple values
+	print "STORED PROCEDURE RETURNING MULTIPLE VALUES: \n"
+	cur.sendQuery("drop procedure testproc")
+	assertTrue(cur.sendQuery(
+		"create procedure testproc("+
+		"	in in1 int, "+
+		"	in in2 double, "+
+		"	in in3 varchar(20)) "+
+		"begin "+
+		"	select in1, in2, in3; "+
+		"end"))
+	cur.prepareQuery("call testproc(?,?,?)")
+	cur.inputBind("1",1)
+	cur.inputBind("2",1.5,2,1)
+	cur.inputBind("3","hello")
+	assertTrue(cur.executeQuery())
+	assertEqual(cur.getField(0,0),"1")
+	assertEqual(cur.getField(0,1),"1.5")
+	assertEqual(cur.getField(0,2),"hello")
+	assertTrue(cur.sendQuery("drop procedure testproc"))
+	print "\n"
 
 
-# stored procedure returning result set
-print "STORED PROCEDURE RETURNING RESULT SET: \n"
-cur.sendQuery("drop procedure testselectproc")
-assertTrue(cur.sendQuery(
-	"create procedure testselectproc() "+
-	"begin "+
-	"	select 1 "+
-	"	union "+
-	"	select 2 "+
-	"	union "+
-	"	select 3 "+
-	"	union "+
-	"	select 4 "+
-	"	union "+
-	"	select 5 "+
-	"	union "+
-	"	select 6 "+
-	"	union "+
-	"	select 7 "+
-	"	union "+
-	"	select 8; "+
-	"end"))
-assertTrue(cur.sendQuery("call testselectproc()"))
-assertEqual(cur.rowCount(),8)
-assertTrue(cur.sendQuery("drop procedure testselectproc"))
-print "\n"
+	# stored procedure returning result set
+	print "STORED PROCEDURE RETURNING RESULT SET: \n"
+	cur.sendQuery("drop procedure testselectproc")
+	assertTrue(cur.sendQuery(
+		"create procedure testselectproc() "+
+		"begin "+
+		"	select 1 "+
+		"	union "+
+		"	select 2 "+
+		"	union "+
+		"	select 3 "+
+		"	union "+
+		"	select 4 "+
+		"	union "+
+		"	select 5 "+
+		"	union "+
+		"	select 6 "+
+		"	union "+
+		"	select 7 "+
+		"	union "+
+		"	select 8; "+
+		"end"))
+	assertTrue(cur.sendQuery("call testselectproc()"))
+	assertEqual(cur.rowCount(),8)
+	assertTrue(cur.sendQuery("drop procedure testselectproc"))
+	print "\n"
 
 
-# temporary tables
-print "TEMPORARY TABLES: \n"
-cur.sendQuery("drop table temptable")
-cur.sendQuery("create temporary table temptable (col1 int)")
-assertTrue(cur.sendQuery("insert into temptable values (1)"))
-assertTrue(cur.sendQuery("select count(*) from temptable"))
-assertEqual(cur.getField(0,0),"1")
-con.endSession()
-print "\n"
-assertFalse(cur.sendQuery("select count(*) from temptable"))
-print "\n"
+	# temporary tables
+	print "TEMPORARY TABLES: \n"
+	cur.sendQuery("drop table temptable")
+	cur.sendQuery("create temporary table temptable (col1 int)")
+	assertTrue(cur.sendQuery("insert into temptable values (1)"))
+	assertTrue(cur.sendQuery("select count(*) from temptable"))
+	assertEqual(cur.getField(0,0),"1")
+	con.endSession()
+	print "\n"
+	assertFalse(cur.sendQuery("select count(*) from temptable"))
+	print "\n"
+end
 
 if majorversion>3
 
@@ -2046,14 +2064,14 @@ print "\n"
 print "QUOTES - random - '',\\-escaped: \n"
 cur.sendQuery("drop table testtable")
 assertTrue(cur.sendQuery("create table testtable "+
-				"(col1 varchar(512))"))
+				"(col1 varchar(255))"))
 ch=["'","\"","\\","\0"]
 buffer=""
-for i in 0..255
+for i in 0..254
 	buffer=buffer+ch[rand(4)]
 end
 query="insert into testtable values ('"
-for i in 0..255
+for i in 0..254
 	if buffer[i]=="'"
 		# randomly escape with \ or ''
 		if rand(2)==1
@@ -2077,7 +2095,7 @@ end
 query=query+"')"
 assertTrue(cur.sendQueryWithLength(query,query.bytesize))
 assertTrue(cur.sendQuery("select col1 from testtable"))
-assertEqual(cur.getFieldLength(0,0),256)
+assertEqual(cur.getFieldLength(0,0),255)
 assertEqual(cur.getField(0,0),buffer)
 assertTrue(cur.sendQuery("drop table testtable"))
 print "\n"
@@ -2102,357 +2120,360 @@ assertFalse(con.getDatabaseIsSchema())
 print "\n"
 
 
-# catalog list
-print "CATALOG LIST: \n"
-assertTrue(cur.getCatalogList(nil))
-assertEqual(cur.getColumnName(0),"Database")
-assertInResultSet(cur,"Database",hostname)
-print "\n"
+# mysql before 5.0 has no information_schema for these metadata queries
+if majorversion>3
+	# catalog list
+	print "CATALOG LIST: \n"
+	assertTrue(cur.getCatalogList(nil))
+	assertEqual(cur.getColumnName(0),"Database")
+	assertInResultSet(cur,"Database",hostname)
+	print "\n"
 
 
-# schema list
-print "SCHEMA LIST: \n"
-assertTrue(cur.getSchemaList(nil))
-assertEqual(cur.getColumnName(0),"Database")
-# mysql has no schemas
-assertEqual(cur.rowCount(),0)
-print "\n"
+	# schema list
+	print "SCHEMA LIST: \n"
+	assertTrue(cur.getSchemaList(nil))
+	assertEqual(cur.getColumnName(0),"Database")
+	# mysql has no schemas
+	assertEqual(cur.rowCount(),0)
+	print "\n"
 
 
-# table type list
-print "TABLE TYPE LIST: \n"
-assertTrue(cur.getTableTypeList())
-assertEqual(cur.getColumnName(0),"table_type")
-assertInResultSet(cur,"table_type","TABLE")
-print "\n"
+	# table type list
+	print "TABLE TYPE LIST: \n"
+	assertTrue(cur.getTableTypeList())
+	assertEqual(cur.getColumnName(0),"table_type")
+	assertInResultSet(cur,"table_type","TABLE")
+	print "\n"
 
 
-# table list
-print "TABLE LIST: \n"
-cur.sendQuery("drop table testtable1")
-cur.sendQuery("drop table testtable2")
-cur.sendQuery("drop table testtable3")
-cur.sendQuery("drop table testtable4")
-assertTrue(cur.sendQuery(
-	"create table testtable1 ("+
-	"	col1 int, "+
-	"	col2 int)"))
-assertTrue(cur.sendQuery(
-	"create table testtable2 ("+
-	"	col1 int, "+
-	"	col2 int)"))
-assertTrue(cur.sendQuery(
-	"create table testtable3 ("+
-	"	col1 int, "+
-	"	col2 int)"))
-assertTrue(cur.sendQuery(
-	"create table testtable4 ("+
-	"	col1 int, "+
-	"	col2 int)"))
-assertTrue(cur.getTableList(nil))
-assertInResultSet(cur,"Tables_in_xxx","testtable1")
-assertInResultSet(cur,"Tables_in_xxx","testtable2")
-assertInResultSet(cur,"Tables_in_xxx","testtable3")
-assertInResultSet(cur,"Tables_in_xxx","testtable4")
-assertTrue(cur.sendQuery("drop table testtable1"))
-assertTrue(cur.sendQuery("drop table testtable2"))
-assertTrue(cur.sendQuery("drop table testtable3"))
-assertTrue(cur.sendQuery("drop table testtable4"))
-print "\n"
+	# table list
+	print "TABLE LIST: \n"
+	cur.sendQuery("drop table testtable1")
+	cur.sendQuery("drop table testtable2")
+	cur.sendQuery("drop table testtable3")
+	cur.sendQuery("drop table testtable4")
+	assertTrue(cur.sendQuery(
+		"create table testtable1 ("+
+		"	col1 int, "+
+		"	col2 int)"))
+	assertTrue(cur.sendQuery(
+		"create table testtable2 ("+
+		"	col1 int, "+
+		"	col2 int)"))
+	assertTrue(cur.sendQuery(
+		"create table testtable3 ("+
+		"	col1 int, "+
+		"	col2 int)"))
+	assertTrue(cur.sendQuery(
+		"create table testtable4 ("+
+		"	col1 int, "+
+		"	col2 int)"))
+	assertTrue(cur.getTableList(nil))
+	assertInResultSet(cur,"Tables_in_xxx","testtable1")
+	assertInResultSet(cur,"Tables_in_xxx","testtable2")
+	assertInResultSet(cur,"Tables_in_xxx","testtable3")
+	assertInResultSet(cur,"Tables_in_xxx","testtable4")
+	assertTrue(cur.sendQuery("drop table testtable1"))
+	assertTrue(cur.sendQuery("drop table testtable2"))
+	assertTrue(cur.sendQuery("drop table testtable3"))
+	assertTrue(cur.sendQuery("drop table testtable4"))
+	print "\n"
 
 
-# type info list
-print "TYPE INFO LIST: \n"
-assertTrue(cur.getTypeInfoList("int"))
-assertEqual(cur.getColumnName(0),"type_name")
-assertEqual(cur.getColumnName(1),"data_type")
-assertEqual(cur.getColumnName(2),"precision")
-assertEqual(cur.getColumnName(3),"literal_prefix")
-assertEqual(cur.getColumnName(4),"literal_suffix")
-assertEqual(cur.getColumnName(5),"create_params")
-assertEqual(cur.getColumnName(6),"nullable")
-assertEqual(cur.getColumnName(7),"case_sensitive")
-assertEqual(cur.getColumnName(8),"searchable")
-assertEqual(cur.getColumnName(9),"unsigned_attribute")
-assertEqual(cur.getColumnName(10),"fixed_prec_scale")
-assertEqual(cur.getColumnName(11),"auto_increment")
-assertEqual(cur.getColumnName(12),"local_type_name")
-assertEqual(cur.getColumnName(13),"minumum_scale")
-assertEqual(cur.getColumnName(14),"maxiumm_scale")
-assertEqual(cur.getColumnName(15),"sql_data_type")
-assertEqual(cur.getColumnName(16),"sql_datetime_sub")
-assertEqual(cur.getColumnName(17),"num_prec_radix")
-assertEqual(cur.getColumnName(18),"interval_precision")
-assertEqual(cur.getField(0,"type_name"),"INT")
-assertEqual(cur.getField(0,"data_type"),"4")
-assertEqual(cur.getField(0,"precision"),"10")
-assertEqual(cur.getField(0,"local_type_name"),"INT")
-assertTrue(cur.getTypeInfoList("char"))
-assertEqual(cur.getField(0,"type_name"),"CHAR")
-assertEqual(cur.getField(0,"data_type"),"1")
-assertEqual(cur.getField(0,"precision"),"255")
-assertEqual(cur.getField(0,"local_type_name"),"CHAR")
-assertTrue(cur.getTypeInfoList("varchar"))
-assertEqual(cur.getField(0,"type_name"),"VARCHAR")
-assertEqual(cur.getField(0,"data_type"),"12")
-assertEqual(cur.getField(0,"precision"),"65535")
-assertEqual(cur.getField(0,"local_type_name"),"VARCHAR")
-assertTrue(cur.getTypeInfoList("date"))
-assertEqual(cur.getField(0,"type_name"),"DATE")
-assertEqual(cur.getField(0,"data_type"),"91")
-assertEqual(cur.getField(0,"precision"),"10")
-assertEqual(cur.getField(0,"local_type_name"),"DATE")
-print "\n"
+	# type info list
+	print "TYPE INFO LIST: \n"
+	assertTrue(cur.getTypeInfoList("int"))
+	assertEqual(cur.getColumnName(0),"type_name")
+	assertEqual(cur.getColumnName(1),"data_type")
+	assertEqual(cur.getColumnName(2),"precision")
+	assertEqual(cur.getColumnName(3),"literal_prefix")
+	assertEqual(cur.getColumnName(4),"literal_suffix")
+	assertEqual(cur.getColumnName(5),"create_params")
+	assertEqual(cur.getColumnName(6),"nullable")
+	assertEqual(cur.getColumnName(7),"case_sensitive")
+	assertEqual(cur.getColumnName(8),"searchable")
+	assertEqual(cur.getColumnName(9),"unsigned_attribute")
+	assertEqual(cur.getColumnName(10),"fixed_prec_scale")
+	assertEqual(cur.getColumnName(11),"auto_increment")
+	assertEqual(cur.getColumnName(12),"local_type_name")
+	assertEqual(cur.getColumnName(13),"minumum_scale")
+	assertEqual(cur.getColumnName(14),"maxiumm_scale")
+	assertEqual(cur.getColumnName(15),"sql_data_type")
+	assertEqual(cur.getColumnName(16),"sql_datetime_sub")
+	assertEqual(cur.getColumnName(17),"num_prec_radix")
+	assertEqual(cur.getColumnName(18),"interval_precision")
+	assertEqual(cur.getField(0,"type_name"),"INT")
+	assertEqual(cur.getField(0,"data_type"),"4")
+	assertEqual(cur.getField(0,"precision"),"10")
+	assertEqual(cur.getField(0,"local_type_name"),"INT")
+	assertTrue(cur.getTypeInfoList("char"))
+	assertEqual(cur.getField(0,"type_name"),"CHAR")
+	assertEqual(cur.getField(0,"data_type"),"1")
+	assertEqual(cur.getField(0,"precision"),"255")
+	assertEqual(cur.getField(0,"local_type_name"),"CHAR")
+	assertTrue(cur.getTypeInfoList("varchar"))
+	assertEqual(cur.getField(0,"type_name"),"VARCHAR")
+	assertEqual(cur.getField(0,"data_type"),"12")
+	assertEqual(cur.getField(0,"precision"),"65535")
+	assertEqual(cur.getField(0,"local_type_name"),"VARCHAR")
+	assertTrue(cur.getTypeInfoList("date"))
+	assertEqual(cur.getField(0,"type_name"),"DATE")
+	assertEqual(cur.getField(0,"data_type"),"91")
+	assertEqual(cur.getField(0,"precision"),"10")
+	assertEqual(cur.getField(0,"local_type_name"),"DATE")
+	print "\n"
 
 
-# column list
-print "COLUMN LIST: \n"
-cur.sendQuery("drop table testtable")
-assertTrue(cur.sendQuery(
-	"create table testtable ("+
-	"	testtinyint tinyint, "+
-	"	testsmallint smallint, "+
-	"	testmediumint mediumint, "+
-	"	testint int, "+
-	"	testbigint bigint, "+
-	"	testfloat float, "+
-	"	testreal real, "+
-	"	testdecimal decimal(2,1), "+
-	"	testdate date, "+
-	"	testtime time, "+
-	"	testdatetime datetime, "+
-	"	testyear year, "+
-	"	testchar char(40), "+
-	"	testvarchar varchar(40), "+
-	"	testtext text, "+
-	"	testtinytext tinytext, "+
-	"	testmediumtext mediumtext, "+
-	"	testlongtext longtext, "+
-	"	testblob blob, "+
-	"	testtinyblob tinyblob, "+
-	"	testmediumblob mediumblob, "+
-	"	testlongblob longblob, "+
-	"	testtimestamp timestamp)"))
-assertTrue(cur.getColumnList("testtable",nil))
-assertEqual(cur.getColumnName(0),"column_name")
-assertEqual(cur.getColumnName(1),"data_type")
-assertEqual(cur.getColumnName(2),"character_maximum_length")
-assertEqual(cur.getColumnName(3),"numeric_precision")
-assertEqual(cur.getColumnName(4),"numeric_scale")
-assertEqual(cur.getColumnName(5),"is_nullable")
-assertEqual(cur.getColumnName(6),"column_key")
-assertEqual(cur.getColumnName(7),"column_default")
-assertEqual(cur.getColumnName(8),"extra")
-assertEqual(cur.getField(0,"column_name"),"testtinyint")
-assertEqual(cur.getField(1,"column_name"),"testsmallint")
-assertEqual(cur.getField(2,"column_name"),"testmediumint")
-assertEqual(cur.getField(3,"column_name"),"testint")
-assertEqual(cur.getField(4,"column_name"),"testbigint")
-assertEqual(cur.getField(5,"column_name"),"testfloat")
-assertEqual(cur.getField(6,"column_name"),"testreal")
-assertEqual(cur.getField(7,"column_name"),"testdecimal")
-assertEqual(cur.getField(8,"column_name"),"testdate")
-assertEqual(cur.getField(9,"column_name"),"testtime")
-assertEqual(cur.getField(10,"column_name"),"testdatetime")
-assertEqual(cur.getField(11,"column_name"),"testyear")
-assertEqual(cur.getField(12,"column_name"),"testchar")
-assertEqual(cur.getField(13,"column_name"),"testvarchar")
-assertEqual(cur.getField(14,"column_name"),"testtext")
-assertEqual(cur.getField(15,"column_name"),"testtinytext")
-assertEqual(cur.getField(16,"column_name"),"testmediumtext")
-assertEqual(cur.getField(17,"column_name"),"testlongtext")
-assertEqual(cur.getField(18,"column_name"),"testblob")
-assertEqual(cur.getField(19,"column_name"),"testtinyblob")
-assertEqual(cur.getField(20,"column_name"),"testmediumblob")
-assertEqual(cur.getField(21,"column_name"),"testlongblob")
-assertEqual(cur.getField(22,"column_name"),"testtimestamp")
-assertEqual(cur.getField(0,"data_type"),"TINYINT")
-assertEqual(cur.getField(1,"data_type"),"SMALLINT")
-assertEqual(cur.getField(2,"data_type"),"MEDIUMINT")
-assertEqual(cur.getField(3,"data_type"),"INT")
-assertEqual(cur.getField(4,"data_type"),"BIGINT")
-assertEqual(cur.getField(5,"data_type"),"FLOAT")
-assertEqual(cur.getField(6,"data_type"),"DOUBLE") # not "REAL"
-assertEqual(cur.getField(7,"data_type"),"DECIMAL")
-assertEqual(cur.getField(8,"data_type"),"DATE")
-assertEqual(cur.getField(9,"data_type"),"TIME")
-assertEqual(cur.getField(10,"data_type"),"DATETIME")
-assertEqual(cur.getField(11,"data_type"),"YEAR")
-assertEqual(cur.getField(12,"data_type"),"CHAR")
-assertEqual(cur.getField(13,"data_type"),"VARCHAR")
-assertEqual(cur.getField(14,"data_type"),"TEXT")
-assertEqual(cur.getField(15,"data_type"),"TINYTEXT")
-assertEqual(cur.getField(16,"data_type"),"MEDIUMTEXT")
-assertEqual(cur.getField(17,"data_type"),"LONGTEXT")
-assertEqual(cur.getField(18,"data_type"),"BLOB")
-assertEqual(cur.getField(19,"data_type"),"TINYBLOB")
-assertEqual(cur.getField(20,"data_type"),"MEDIUMBLOB")
-assertEqual(cur.getField(21,"data_type"),"LONGBLOB")
-assertEqual(cur.getField(22,"data_type"),"TIMESTAMP")
-assertTrue(cur.sendQuery("drop table testtable"))
-print "\n"
+	# column list
+	print "COLUMN LIST: \n"
+	cur.sendQuery("drop table testtable")
+	assertTrue(cur.sendQuery(
+		"create table testtable ("+
+		"	testtinyint tinyint, "+
+		"	testsmallint smallint, "+
+		"	testmediumint mediumint, "+
+		"	testint int, "+
+		"	testbigint bigint, "+
+		"	testfloat float, "+
+		"	testreal real, "+
+		"	testdecimal decimal(2,1), "+
+		"	testdate date, "+
+		"	testtime time, "+
+		"	testdatetime datetime, "+
+		"	testyear year, "+
+		"	testchar char(40), "+
+		"	testvarchar varchar(40), "+
+		"	testtext text, "+
+		"	testtinytext tinytext, "+
+		"	testmediumtext mediumtext, "+
+		"	testlongtext longtext, "+
+		"	testblob blob, "+
+		"	testtinyblob tinyblob, "+
+		"	testmediumblob mediumblob, "+
+		"	testlongblob longblob, "+
+		"	testtimestamp timestamp)"))
+	assertTrue(cur.getColumnList("testtable",nil))
+	assertEqual(cur.getColumnName(0),"column_name")
+	assertEqual(cur.getColumnName(1),"data_type")
+	assertEqual(cur.getColumnName(2),"character_maximum_length")
+	assertEqual(cur.getColumnName(3),"numeric_precision")
+	assertEqual(cur.getColumnName(4),"numeric_scale")
+	assertEqual(cur.getColumnName(5),"is_nullable")
+	assertEqual(cur.getColumnName(6),"column_key")
+	assertEqual(cur.getColumnName(7),"column_default")
+	assertEqual(cur.getColumnName(8),"extra")
+	assertEqual(cur.getField(0,"column_name"),"testtinyint")
+	assertEqual(cur.getField(1,"column_name"),"testsmallint")
+	assertEqual(cur.getField(2,"column_name"),"testmediumint")
+	assertEqual(cur.getField(3,"column_name"),"testint")
+	assertEqual(cur.getField(4,"column_name"),"testbigint")
+	assertEqual(cur.getField(5,"column_name"),"testfloat")
+	assertEqual(cur.getField(6,"column_name"),"testreal")
+	assertEqual(cur.getField(7,"column_name"),"testdecimal")
+	assertEqual(cur.getField(8,"column_name"),"testdate")
+	assertEqual(cur.getField(9,"column_name"),"testtime")
+	assertEqual(cur.getField(10,"column_name"),"testdatetime")
+	assertEqual(cur.getField(11,"column_name"),"testyear")
+	assertEqual(cur.getField(12,"column_name"),"testchar")
+	assertEqual(cur.getField(13,"column_name"),"testvarchar")
+	assertEqual(cur.getField(14,"column_name"),"testtext")
+	assertEqual(cur.getField(15,"column_name"),"testtinytext")
+	assertEqual(cur.getField(16,"column_name"),"testmediumtext")
+	assertEqual(cur.getField(17,"column_name"),"testlongtext")
+	assertEqual(cur.getField(18,"column_name"),"testblob")
+	assertEqual(cur.getField(19,"column_name"),"testtinyblob")
+	assertEqual(cur.getField(20,"column_name"),"testmediumblob")
+	assertEqual(cur.getField(21,"column_name"),"testlongblob")
+	assertEqual(cur.getField(22,"column_name"),"testtimestamp")
+	assertEqual(cur.getField(0,"data_type"),"TINYINT")
+	assertEqual(cur.getField(1,"data_type"),"SMALLINT")
+	assertEqual(cur.getField(2,"data_type"),"MEDIUMINT")
+	assertEqual(cur.getField(3,"data_type"),"INT")
+	assertEqual(cur.getField(4,"data_type"),"BIGINT")
+	assertEqual(cur.getField(5,"data_type"),"FLOAT")
+	assertEqual(cur.getField(6,"data_type"),"DOUBLE") # not "REAL"
+	assertEqual(cur.getField(7,"data_type"),"DECIMAL")
+	assertEqual(cur.getField(8,"data_type"),"DATE")
+	assertEqual(cur.getField(9,"data_type"),"TIME")
+	assertEqual(cur.getField(10,"data_type"),"DATETIME")
+	assertEqual(cur.getField(11,"data_type"),"YEAR")
+	assertEqual(cur.getField(12,"data_type"),"CHAR")
+	assertEqual(cur.getField(13,"data_type"),"VARCHAR")
+	assertEqual(cur.getField(14,"data_type"),"TEXT")
+	assertEqual(cur.getField(15,"data_type"),"TINYTEXT")
+	assertEqual(cur.getField(16,"data_type"),"MEDIUMTEXT")
+	assertEqual(cur.getField(17,"data_type"),"LONGTEXT")
+	assertEqual(cur.getField(18,"data_type"),"BLOB")
+	assertEqual(cur.getField(19,"data_type"),"TINYBLOB")
+	assertEqual(cur.getField(20,"data_type"),"MEDIUMBLOB")
+	assertEqual(cur.getField(21,"data_type"),"LONGBLOB")
+	assertEqual(cur.getField(22,"data_type"),"TIMESTAMP")
+	assertTrue(cur.sendQuery("drop table testtable"))
+	print "\n"
 
 
-# column list - auto_increment, primary key
-print "COLUMN LIST - auto_increment, primary key: \n"
-cur.sendQuery("drop table testtable")
-assertTrue(cur.sendQuery(
-	"create table testtable ("+
-	"	col1 int auto_increment primary key, "+
-	"	col2 int)"))
-assertTrue(cur.getColumnList("testtable",nil))
-assertEqual(cur.getField(0,"extra"),"auto_increment")
-assertEqual(cur.getField(0,"column_key"),"PRI")
-assertEqual(cur.getField(1,"extra"),"")
-assertEqual(cur.getField(1,"column_key"),"")
-print "\n"
-assertTrue(cur.sendQuery("drop table testtable"))
-assertTrue(cur.sendQuery(
-	"create table testtable ("+
-	"	col1 int primary key, "+
-	"	col2 int)"))
-assertTrue(cur.getColumnList("testtable",nil))
-assertEqual(cur.getField(0,"extra"),"")
-assertEqual(cur.getField(0,"column_key"),"PRI")
-assertTrue(cur.sendQuery("drop table testtable"))
-print "\n"
+	# column list - auto_increment, primary key
+	print "COLUMN LIST - auto_increment, primary key: \n"
+	cur.sendQuery("drop table testtable")
+	assertTrue(cur.sendQuery(
+		"create table testtable ("+
+		"	col1 int auto_increment primary key, "+
+		"	col2 int)"))
+	assertTrue(cur.getColumnList("testtable",nil))
+	assertEqual(cur.getField(0,"extra"),"auto_increment")
+	assertEqual(cur.getField(0,"column_key"),"PRI")
+	assertEqual(cur.getField(1,"extra"),"")
+	assertEqual(cur.getField(1,"column_key"),"")
+	print "\n"
+	assertTrue(cur.sendQuery("drop table testtable"))
+	assertTrue(cur.sendQuery(
+		"create table testtable ("+
+		"	col1 int primary key, "+
+		"	col2 int)"))
+	assertTrue(cur.getColumnList("testtable",nil))
+	assertEqual(cur.getField(0,"extra"),"")
+	assertEqual(cur.getField(0,"column_key"),"PRI")
+	assertTrue(cur.sendQuery("drop table testtable"))
+	print "\n"
 
 
-# primary keys list
-print "PRIMARY KEYS LIST: \n"
-cur.sendQuery("drop table testtable")
-assertTrue(cur.sendQuery(
-	"create table testtable ("+
-	"	col1 int primary key, "+
-	"	col2 int)"))
-assertTrue(cur.getPrimaryKeysList("testtable",nil))
-assertEqual(cur.getColumnName(0),"table")
-assertEqual(cur.getColumnName(1),"non_unique")
-assertEqual(cur.getColumnName(2),"key_name")
-assertEqual(cur.getColumnName(3),"seq_in_index")
-assertEqual(cur.getColumnName(4),"column_name")
-assertEqual(cur.getColumnName(5),"collation")
-assertEqual(cur.getColumnName(6),"cardinality")
-assertEqual(cur.getColumnName(7),"sub_part")
-assertEqual(cur.getColumnName(8),"packed")
-assertEqual(cur.getColumnName(9),"null")
-assertEqual(cur.getColumnName(10),"index_type")
-assertEqual(cur.getColumnName(11),"comment")
-assertEqual(cur.getColumnName(12),"index_comment")
-assertEqual(cur.rowCount(),1)
-assertEqual(cur.getField(0,"table"),"testtable")
-assertEqual(cur.getField(0,"seq_in_index"),"1")
-assertEqual(cur.getField(0,"column_name"),"col1")
-assertEqual(cur.getField(0,"key_name"),"PRIMARY")
-assertTrue(cur.sendQuery("drop table testtable"))
-print "\n"
+	# primary keys list
+	print "PRIMARY KEYS LIST: \n"
+	cur.sendQuery("drop table testtable")
+	assertTrue(cur.sendQuery(
+		"create table testtable ("+
+		"	col1 int primary key, "+
+		"	col2 int)"))
+	assertTrue(cur.getPrimaryKeysList("testtable",nil))
+	assertEqual(cur.getColumnName(0),"table")
+	assertEqual(cur.getColumnName(1),"non_unique")
+	assertEqual(cur.getColumnName(2),"key_name")
+	assertEqual(cur.getColumnName(3),"seq_in_index")
+	assertEqual(cur.getColumnName(4),"column_name")
+	assertEqual(cur.getColumnName(5),"collation")
+	assertEqual(cur.getColumnName(6),"cardinality")
+	assertEqual(cur.getColumnName(7),"sub_part")
+	assertEqual(cur.getColumnName(8),"packed")
+	assertEqual(cur.getColumnName(9),"null")
+	assertEqual(cur.getColumnName(10),"index_type")
+	assertEqual(cur.getColumnName(11),"comment")
+	assertEqual(cur.getColumnName(12),"index_comment")
+	assertEqual(cur.rowCount(),1)
+	assertEqual(cur.getField(0,"table"),"testtable")
+	assertEqual(cur.getField(0,"seq_in_index"),"1")
+	assertEqual(cur.getField(0,"column_name"),"col1")
+	assertEqual(cur.getField(0,"key_name"),"PRIMARY")
+	assertTrue(cur.sendQuery("drop table testtable"))
+	print "\n"
 
 
-# key and index list
-print "KEY AND INDEX LIST: \n"
-cur.sendQuery("drop table testtable")
-assertTrue(cur.sendQuery(
-	"create table testtable ("+
-	"	col1 int primary key, "+
-	"	col2 int)"))
-assertTrue(cur.getKeyAndIndexList("testtable",nil))
-assertEqual(cur.getColumnName(0),"table")
-assertEqual(cur.getColumnName(1),"non_unique")
-assertEqual(cur.getColumnName(2),"key_name")
-assertEqual(cur.getColumnName(3),"seq_in_index")
-assertEqual(cur.getColumnName(4),"column_name")
-assertEqual(cur.getColumnName(5),"collation")
-assertEqual(cur.getColumnName(6),"cardinality")
-assertEqual(cur.getColumnName(7),"sub_part")
-assertEqual(cur.getColumnName(8),"packed")
-assertEqual(cur.getColumnName(9),"null")
-assertEqual(cur.getColumnName(10),"index_type")
-assertEqual(cur.getColumnName(11),"comment")
-assertEqual(cur.getColumnName(12),"index_comment")
-assertEqual(cur.rowCount(),1)
-assertEqual(cur.getField(0,"table"),"testtable")
-assertEqual(cur.getField(0,"non_unique"),"false")
-assertEqual(cur.getField(0,"seq_in_index"),"1")
-assertEqual(cur.getField(0,"column_name"),"col1")
-assertEqual(cur.getField(0,"collation"),"A")
-assertEqual(cur.getField(0,"index_type"),"3")
-assertEqual(cur.getField(0,"key_name"),"PRIMARY")
-assertTrue(cur.sendQuery("drop table testtable"))
-print "\n"
+	# key and index list
+	print "KEY AND INDEX LIST: \n"
+	cur.sendQuery("drop table testtable")
+	assertTrue(cur.sendQuery(
+		"create table testtable ("+
+		"	col1 int primary key, "+
+		"	col2 int)"))
+	assertTrue(cur.getKeyAndIndexList("testtable",nil))
+	assertEqual(cur.getColumnName(0),"table")
+	assertEqual(cur.getColumnName(1),"non_unique")
+	assertEqual(cur.getColumnName(2),"key_name")
+	assertEqual(cur.getColumnName(3),"seq_in_index")
+	assertEqual(cur.getColumnName(4),"column_name")
+	assertEqual(cur.getColumnName(5),"collation")
+	assertEqual(cur.getColumnName(6),"cardinality")
+	assertEqual(cur.getColumnName(7),"sub_part")
+	assertEqual(cur.getColumnName(8),"packed")
+	assertEqual(cur.getColumnName(9),"null")
+	assertEqual(cur.getColumnName(10),"index_type")
+	assertEqual(cur.getColumnName(11),"comment")
+	assertEqual(cur.getColumnName(12),"index_comment")
+	assertEqual(cur.rowCount(),1)
+	assertEqual(cur.getField(0,"table"),"testtable")
+	assertEqual(cur.getField(0,"non_unique"),"false")
+	assertEqual(cur.getField(0,"seq_in_index"),"1")
+	assertEqual(cur.getField(0,"column_name"),"col1")
+	assertEqual(cur.getField(0,"collation"),"A")
+	assertEqual(cur.getField(0,"index_type"),"3")
+	assertEqual(cur.getField(0,"key_name"),"PRIMARY")
+	assertTrue(cur.sendQuery("drop table testtable"))
+	print "\n"
 
 
-# procedure list
-print "PROCEDURE LIST: \n"
-cur.sendQuery("drop procedure testproc1")
-cur.sendQuery("drop procedure testproc2")
-cur.sendQuery("drop procedure testproc3")
-cur.sendQuery("drop procedure testproc4")
-assertTrue(cur.sendQuery(
-	"create procedure testproc1("+
-	"	in in1 int, "+
-	"	in in2 char(20), "+
-	"	in in3 varchar(20), "+
-	"	in in4 date) "+
-	"begin end"))
-assertTrue(cur.sendQuery(
-	"create procedure testproc2("+
-	"	in in1 int, "+
-	"	in in2 char(20), "+
-	"	in in3 varchar(20), "+
-	"	in in4 date) "+
-	"begin end"))
-assertTrue(cur.sendQuery(
-	"create procedure testproc3("+
-	"	in in1 int, "+
-	"	in in2 char(20), "+
-	"	in in3 varchar(20), "+
-	"	in in4 date) "+
-	"begin end"))
-assertTrue(cur.sendQuery(
-	"create procedure testproc4("+
-	"	in in1 int, "+
-	"	in in2 char(20), "+
-	"	in in3 varchar(20), "+
-	"	in in4 date) "+
-	"begin end"))
-assertTrue(cur.getProcedureList(nil))
-assertInResultSet(cur,"routine_name","testproc1")
-assertInResultSet(cur,"routine_name","testproc2")
-assertInResultSet(cur,"routine_name","testproc3")
-assertInResultSet(cur,"routine_name","testproc4")
-print "\n"
+	# procedure list
+	print "PROCEDURE LIST: \n"
+	cur.sendQuery("drop procedure testproc1")
+	cur.sendQuery("drop procedure testproc2")
+	cur.sendQuery("drop procedure testproc3")
+	cur.sendQuery("drop procedure testproc4")
+	assertTrue(cur.sendQuery(
+		"create procedure testproc1("+
+		"	in in1 int, "+
+		"	in in2 char(20), "+
+		"	in in3 varchar(20), "+
+		"	in in4 date) "+
+		"begin end"))
+	assertTrue(cur.sendQuery(
+		"create procedure testproc2("+
+		"	in in1 int, "+
+		"	in in2 char(20), "+
+		"	in in3 varchar(20), "+
+		"	in in4 date) "+
+		"begin end"))
+	assertTrue(cur.sendQuery(
+		"create procedure testproc3("+
+		"	in in1 int, "+
+		"	in in2 char(20), "+
+		"	in in3 varchar(20), "+
+		"	in in4 date) "+
+		"begin end"))
+	assertTrue(cur.sendQuery(
+		"create procedure testproc4("+
+		"	in in1 int, "+
+		"	in in2 char(20), "+
+		"	in in3 varchar(20), "+
+		"	in in4 date) "+
+		"begin end"))
+	assertTrue(cur.getProcedureList(nil))
+	assertInResultSet(cur,"routine_name","testproc1")
+	assertInResultSet(cur,"routine_name","testproc2")
+	assertInResultSet(cur,"routine_name","testproc3")
+	assertInResultSet(cur,"routine_name","testproc4")
+	print "\n"
 
 
-# procedure parameter list
-print "PROCEDURE PARAMETER LIST: \n"
-assertTrue(cur.getProcedureParameterList("testproc1",nil))
-assertEqual(cur.getColumnName(0),"parameter_name")
-assertEqual(cur.getColumnName(1),"parameter_mode")
-assertEqual(cur.getColumnName(2),"data_type")
-assertEqual(cur.getColumnName(3),"character_maximum_length")
-assertEqual(cur.getColumnName(4),"ordinal_position")
-assertEqual(cur.rowCount(),4)
-assertEqual(cur.getField(0,"parameter_name"),"in1")
-assertEqual(cur.getField(0,"parameter_mode"),"1")
-assertEqual(cur.getField(0,"data_type"),"INT")
-assertEqual(cur.getField(0,"ordinal_position"),"1")
-assertEqual(cur.getField(1,"parameter_name"),"in2")
-assertEqual(cur.getField(1,"parameter_mode"),"1")
-assertEqual(cur.getField(1,"data_type"),"CHAR")
-assertEqual(cur.getField(1,"ordinal_position"),"2")
-assertEqual(cur.getField(2,"parameter_name"),"in3")
-assertEqual(cur.getField(2,"parameter_mode"),"1")
-assertEqual(cur.getField(2,"data_type"),"VARCHAR")
-assertEqual(cur.getField(2,"ordinal_position"),"3")
-assertEqual(cur.getField(3,"parameter_name"),"in4")
-assertEqual(cur.getField(3,"parameter_mode"),"1")
-assertEqual(cur.getField(3,"data_type"),"DATE")
-assertEqual(cur.getField(3,"ordinal_position"),"4")
-assertTrue(cur.sendQuery("drop procedure testproc1"))
-assertTrue(cur.sendQuery("drop procedure testproc2"))
-assertTrue(cur.sendQuery("drop procedure testproc3"))
-assertTrue(cur.sendQuery("drop procedure testproc4"))
-print "\n"
+	# procedure parameter list
+	print "PROCEDURE PARAMETER LIST: \n"
+	assertTrue(cur.getProcedureParameterList("testproc1",nil))
+	assertEqual(cur.getColumnName(0),"parameter_name")
+	assertEqual(cur.getColumnName(1),"parameter_mode")
+	assertEqual(cur.getColumnName(2),"data_type")
+	assertEqual(cur.getColumnName(3),"character_maximum_length")
+	assertEqual(cur.getColumnName(4),"ordinal_position")
+	assertEqual(cur.rowCount(),4)
+	assertEqual(cur.getField(0,"parameter_name"),"in1")
+	assertEqual(cur.getField(0,"parameter_mode"),"1")
+	assertEqual(cur.getField(0,"data_type"),"INT")
+	assertEqual(cur.getField(0,"ordinal_position"),"1")
+	assertEqual(cur.getField(1,"parameter_name"),"in2")
+	assertEqual(cur.getField(1,"parameter_mode"),"1")
+	assertEqual(cur.getField(1,"data_type"),"CHAR")
+	assertEqual(cur.getField(1,"ordinal_position"),"2")
+	assertEqual(cur.getField(2,"parameter_name"),"in3")
+	assertEqual(cur.getField(2,"parameter_mode"),"1")
+	assertEqual(cur.getField(2,"data_type"),"VARCHAR")
+	assertEqual(cur.getField(2,"ordinal_position"),"3")
+	assertEqual(cur.getField(3,"parameter_name"),"in4")
+	assertEqual(cur.getField(3,"parameter_mode"),"1")
+	assertEqual(cur.getField(3,"data_type"),"DATE")
+	assertEqual(cur.getField(3,"ordinal_position"),"4")
+	assertTrue(cur.sendQuery("drop procedure testproc1"))
+	assertTrue(cur.sendQuery("drop procedure testproc2"))
+	assertTrue(cur.sendQuery("drop procedure testproc3"))
+	assertTrue(cur.sendQuery("drop procedure testproc4"))
+	print "\n"
+end
 
 
 # invalid queries

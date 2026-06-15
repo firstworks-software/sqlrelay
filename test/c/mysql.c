@@ -44,6 +44,7 @@ int main(int argc, char **argv) {
 	uint32_t	result1;
 	uint32_t	result2;
 	unsigned char	buffer[256];
+	unsigned char	randbuffer[255];
 	char		ch[]={'\'','"','\\','\0'};
 	char		query[2048];
 	int		qlen;
@@ -113,14 +114,17 @@ int main(int argc, char **argv) {
 
 
 	// isolation levels
+	// (mysql before 4.0 doesn't support setting the isolation level)
 	printf("ISOLATION LEVELS: \n");
-	for (il=isolationlevels; *il; il++) {
-		assertTrue(sqlrcon_setIsolationLevel(con,*il));
-		assertEqStr(sqlrcon_getIsolationLevel(con),*il);
-		printf("\n");
+	if (majorversion>3) {
+		for (il=isolationlevels; *il; il++) {
+			assertTrue(sqlrcon_setIsolationLevel(con,*il));
+			assertEqStr(sqlrcon_getIsolationLevel(con),*il);
+			printf("\n");
+		}
+		// reset to the default isolation level
+		assertTrue(sqlrcon_setIsolationLevel(con,isolationlevels[0]));
 	}
-	// reset to the default isolation level
-	assertTrue(sqlrcon_setIsolationLevel(con,isolationlevels[0]));
 	printf("\n");
 
 
@@ -566,65 +570,68 @@ int main(int argc, char **argv) {
 	printf("\n");
 
 
-	// column length
-	printf("COLUMN LENGTH: \n");
-	assertEqInt(sqlrcur_getColumnLengthByIndex(cur,0),1);
-	assertEqInt(sqlrcur_getColumnLengthByIndex(cur,1),2);
-	assertEqInt(sqlrcur_getColumnLengthByIndex(cur,2),3);
-	assertEqInt(sqlrcur_getColumnLengthByIndex(cur,3),4);
-	assertEqInt(sqlrcur_getColumnLengthByIndex(cur,4),8);
-	assertEqInt(sqlrcur_getColumnLengthByIndex(cur,5),4);
-	assertEqInt(sqlrcur_getColumnLengthByIndex(cur,6),8);
-	assertEqInt(sqlrcur_getColumnLengthByIndex(cur,7),6);
-	assertEqInt(sqlrcur_getColumnLengthByIndex(cur,8),3);
-	assertEqInt(sqlrcur_getColumnLengthByIndex(cur,9),3);
-	assertEqInt(sqlrcur_getColumnLengthByIndex(cur,10),8);
-	assertEqInt(sqlrcur_getColumnLengthByIndex(cur,11),1);
-	// testchar/testvarchar are char(40)/varchar(40); the connection
-	// charset is utf8mb4 (4 bytes/char) so the reported lengths are 160/161
-	assertEqInt(sqlrcur_getColumnLengthByIndex(cur,12),160);
-	assertEqInt(sqlrcur_getColumnLengthByIndex(cur,13),161);
-	assertEqInt(sqlrcur_getColumnLengthByIndex(cur,14),65535);
-	assertEqInt(sqlrcur_getColumnLengthByIndex(cur,15),255);
-	assertEqInt(sqlrcur_getColumnLengthByIndex(cur,16),16777215);
-	assertEqInt(sqlrcur_getColumnLengthByIndex(cur,17),2147483647);
-	assertEqInt(sqlrcur_getColumnLengthByIndex(cur,18),65535);
-	assertEqInt(sqlrcur_getColumnLengthByIndex(cur,19),255);
-	assertEqInt(sqlrcur_getColumnLengthByIndex(cur,20),16777215);
-	assertEqInt(sqlrcur_getColumnLengthByIndex(cur,21),2147483647);
-	assertEqInt(sqlrcur_getColumnLengthByIndex(cur,22),4);
-	assertEqInt(sqlrcur_getColumnLengthByName(cur,"testtinyint"),1);
-	assertEqInt(sqlrcur_getColumnLengthByName(cur,"testsmallint"),2);
-	assertEqInt(sqlrcur_getColumnLengthByName(cur,"testmediumint"),3);
-	assertEqInt(sqlrcur_getColumnLengthByName(cur,"testint"),4);
-	assertEqInt(sqlrcur_getColumnLengthByName(cur,"testbigint"),8);
-	assertEqInt(sqlrcur_getColumnLengthByName(cur,"testfloat"),4);
-	assertEqInt(sqlrcur_getColumnLengthByName(cur,"testreal"),8);
-	assertEqInt(sqlrcur_getColumnLengthByName(cur,"testdecimal"),6);
-	assertEqInt(sqlrcur_getColumnLengthByName(cur,"testdate"),3);
-	assertEqInt(sqlrcur_getColumnLengthByName(cur,"testtime"),3);
-	assertEqInt(sqlrcur_getColumnLengthByName(cur,"testdatetime"),8);
-	assertEqInt(sqlrcur_getColumnLengthByName(cur,"testyear"),1);
-	// testchar/testvarchar are char(40)/varchar(40); the connection
-	// charset is utf8mb4 (4 bytes/char) so the reported lengths are 160/161
-	assertEqInt(sqlrcur_getColumnLengthByName(cur,"testchar"),160);
-	assertEqInt(sqlrcur_getColumnLengthByName(cur,"testvarchar"),161);
-	assertEqInt(sqlrcur_getColumnLengthByName(cur,"testtext"),65535);
-	assertEqInt(sqlrcur_getColumnLengthByName(cur,"testtinytext"),255);
-	assertEqInt(sqlrcur_getColumnLengthByName(cur,"testmediumtext"),
-		16777215);
-	assertEqInt(sqlrcur_getColumnLengthByName(cur,"testlongtext"),
-		2147483647);
-	assertEqInt(sqlrcur_getColumnLengthByName(cur,"testblob"),65535);
-	assertEqInt(sqlrcur_getColumnLengthByName(cur,"testtinyblob"),255);
-	assertEqInt(sqlrcur_getColumnLengthByName(cur,"testmediumblob"),
-		16777215);
-	assertEqInt(sqlrcur_getColumnLengthByName(cur,"testlongblob"),
-		2147483647);
-	assertEqInt(sqlrcur_getColumnLengthByName(cur,"testtimestamp"),4);
-	printf("\n");
+	// mysql before 4 reports column lengths differently (charset)
+	if (majorversion>3) {
+		// column length
+		printf("COLUMN LENGTH: \n");
+		assertEqInt(sqlrcur_getColumnLengthByIndex(cur,0),1);
+		assertEqInt(sqlrcur_getColumnLengthByIndex(cur,1),2);
+		assertEqInt(sqlrcur_getColumnLengthByIndex(cur,2),3);
+		assertEqInt(sqlrcur_getColumnLengthByIndex(cur,3),4);
+		assertEqInt(sqlrcur_getColumnLengthByIndex(cur,4),8);
+		assertEqInt(sqlrcur_getColumnLengthByIndex(cur,5),4);
+		assertEqInt(sqlrcur_getColumnLengthByIndex(cur,6),8);
+		assertEqInt(sqlrcur_getColumnLengthByIndex(cur,7),6);
+		assertEqInt(sqlrcur_getColumnLengthByIndex(cur,8),3);
+		assertEqInt(sqlrcur_getColumnLengthByIndex(cur,9),3);
+		assertEqInt(sqlrcur_getColumnLengthByIndex(cur,10),8);
+		assertEqInt(sqlrcur_getColumnLengthByIndex(cur,11),1);
+		// testchar/testvarchar are char(40)/varchar(40); the connection
+		// charset is utf8mb4 (4 bytes/char) so the reported lengths are 160/161
+		assertEqInt(sqlrcur_getColumnLengthByIndex(cur,12),160);
+		assertEqInt(sqlrcur_getColumnLengthByIndex(cur,13),161);
+		assertEqInt(sqlrcur_getColumnLengthByIndex(cur,14),65535);
+		assertEqInt(sqlrcur_getColumnLengthByIndex(cur,15),255);
+		assertEqInt(sqlrcur_getColumnLengthByIndex(cur,16),16777215);
+		assertEqInt(sqlrcur_getColumnLengthByIndex(cur,17),2147483647);
+		assertEqInt(sqlrcur_getColumnLengthByIndex(cur,18),65535);
+		assertEqInt(sqlrcur_getColumnLengthByIndex(cur,19),255);
+		assertEqInt(sqlrcur_getColumnLengthByIndex(cur,20),16777215);
+		assertEqInt(sqlrcur_getColumnLengthByIndex(cur,21),2147483647);
+		assertEqInt(sqlrcur_getColumnLengthByIndex(cur,22),4);
+		assertEqInt(sqlrcur_getColumnLengthByName(cur,"testtinyint"),1);
+		assertEqInt(sqlrcur_getColumnLengthByName(cur,"testsmallint"),2);
+		assertEqInt(sqlrcur_getColumnLengthByName(cur,"testmediumint"),3);
+		assertEqInt(sqlrcur_getColumnLengthByName(cur,"testint"),4);
+		assertEqInt(sqlrcur_getColumnLengthByName(cur,"testbigint"),8);
+		assertEqInt(sqlrcur_getColumnLengthByName(cur,"testfloat"),4);
+		assertEqInt(sqlrcur_getColumnLengthByName(cur,"testreal"),8);
+		assertEqInt(sqlrcur_getColumnLengthByName(cur,"testdecimal"),6);
+		assertEqInt(sqlrcur_getColumnLengthByName(cur,"testdate"),3);
+		assertEqInt(sqlrcur_getColumnLengthByName(cur,"testtime"),3);
+		assertEqInt(sqlrcur_getColumnLengthByName(cur,"testdatetime"),8);
+		assertEqInt(sqlrcur_getColumnLengthByName(cur,"testyear"),1);
+		// testchar/testvarchar are char(40)/varchar(40); the connection
+		// charset is utf8mb4 (4 bytes/char) so the reported lengths are 160/161
+		assertEqInt(sqlrcur_getColumnLengthByName(cur,"testchar"),160);
+		assertEqInt(sqlrcur_getColumnLengthByName(cur,"testvarchar"),161);
+		assertEqInt(sqlrcur_getColumnLengthByName(cur,"testtext"),65535);
+		assertEqInt(sqlrcur_getColumnLengthByName(cur,"testtinytext"),255);
+		assertEqInt(sqlrcur_getColumnLengthByName(cur,"testmediumtext"),
+			16777215);
+		assertEqInt(sqlrcur_getColumnLengthByName(cur,"testlongtext"),
+			2147483647);
+		assertEqInt(sqlrcur_getColumnLengthByName(cur,"testblob"),65535);
+		assertEqInt(sqlrcur_getColumnLengthByName(cur,"testtinyblob"),255);
+		assertEqInt(sqlrcur_getColumnLengthByName(cur,"testmediumblob"),
+			16777215);
+		assertEqInt(sqlrcur_getColumnLengthByName(cur,"testlongblob"),
+			2147483647);
+		assertEqInt(sqlrcur_getColumnLengthByName(cur,"testtimestamp"),4);
+		printf("\n");
 
 
+	}
 	// longest column
 	printf("LONGEST COLUMN: \n");
 	assertEqInt(sqlrcur_getLongestByIndex(cur,0),1);
@@ -1363,250 +1370,256 @@ int main(int argc, char **argv) {
 	printf("\n");
 
 
-	// reset transaction state
-	printf("RESET TRANSACTION STATE: \n");
-	assertTrue(sqlrcon_commit(con));
-	assertEqStr(sqlrcon_getTransactionModel(con),"explicit-deferred");
-	assertTrue(sqlrcon_getAutoCommit(con));
-	printf("\n");
+	// transaction behavior differs on mysql before 4
+	if (majorversion>3) {
+		// reset transaction state
+		printf("RESET TRANSACTION STATE: \n");
+		assertTrue(sqlrcon_commit(con));
+		assertEqStr(sqlrcon_getTransactionModel(con),"explicit-deferred");
+		assertTrue(sqlrcon_getAutoCommit(con));
+		printf("\n");
 
 
-	// transaction behavior - implicit
-	printf("TRANSACTION BEHAVIOR - implicit: \n");
-	assertTrue(sqlrcon_setTransactionModel(con,"implicit"));
-	assertEqStr(sqlrcon_getTransactionModel(con),"implicit");
-	assertTrue(sqlrcur_sendQuery(cur,"create table testtable (col1 integer)"));
-	secondcon=sqlrcon_alloc("sqlrelay",9000,"/tmp/test.socket",
-						"testuser","testpassword",0,1);
-	secondcur=sqlrcur_alloc(secondcon);
-	// session is in a transaction; insert is not visible until commit
-	assertTrue(sqlrcon_getInTransaction(con));
-	assertFalse(sqlrcon_getAutoCommit(con));
-	assertTrue(sqlrcur_sendQuery(cur,"insert into testtable values (1)"));
-	assertTrue(sqlrcur_sendQuery(secondcur,"select count(*) from testtable"));
-	assertEqStr(sqlrcur_getFieldByIndex(secondcur,0,0),"0");
-	// commit makes it visible, and implicitly starts a new transaction
-	assertTrue(sqlrcon_commit(con));
-	assertTrue(sqlrcon_getInTransaction(con));
-	assertTrue(sqlrcur_sendQuery(secondcur,"select count(*) from testtable"));
-	assertEqStr(sqlrcur_getFieldByIndex(secondcur,0,0),"1");
-	// rollback discards, and implicitly starts a new transaction
-	assertTrue(sqlrcur_sendQuery(cur,"insert into testtable values (2)"));
-	assertTrue(sqlrcon_rollback(con));
-	assertTrue(sqlrcon_getInTransaction(con));
-	assertTrue(sqlrcur_sendQuery(secondcur,"select count(*) from testtable"));
-	assertEqStr(sqlrcur_getFieldByIndex(secondcur,0,0),"1");
-	// autoCommitOn takes effect immediately
-	assertTrue(sqlrcon_autoCommitOn(con));
-	assertTrue(sqlrcon_getAutoCommit(con));
-	assertFalse(sqlrcon_getInTransaction(con));
-	assertTrue(sqlrcur_sendQuery(cur,"insert into testtable values (3)"));
-	assertTrue(sqlrcur_sendQuery(secondcur,"select count(*) from testtable"));
-	assertEqStr(sqlrcur_getFieldByIndex(secondcur,0,0),"2");
-	// autoCommitOff takes effect immediately
-	assertTrue(sqlrcon_autoCommitOff(con));
-	assertFalse(sqlrcon_getAutoCommit(con));
-	assertTrue(sqlrcon_getInTransaction(con));
-	sqlrcur_closeResultSet(secondcur);
-	assertTrue(sqlrcur_sendQuery(cur,"drop table testtable"));
-	printf("\n");
+		// transaction behavior - implicit
+		printf("TRANSACTION BEHAVIOR - implicit: \n");
+		assertTrue(sqlrcon_setTransactionModel(con,"implicit"));
+		assertEqStr(sqlrcon_getTransactionModel(con),"implicit");
+		assertTrue(sqlrcur_sendQuery(cur,"create table testtable (col1 integer)"));
+		secondcon=sqlrcon_alloc("sqlrelay",9000,"/tmp/test.socket",
+							"testuser","testpassword",0,1);
+		secondcur=sqlrcur_alloc(secondcon);
+		// session is in a transaction; insert is not visible until commit
+		assertTrue(sqlrcon_getInTransaction(con));
+		assertFalse(sqlrcon_getAutoCommit(con));
+		assertTrue(sqlrcur_sendQuery(cur,"insert into testtable values (1)"));
+		assertTrue(sqlrcur_sendQuery(secondcur,"select count(*) from testtable"));
+		assertEqStr(sqlrcur_getFieldByIndex(secondcur,0,0),"0");
+		// commit makes it visible, and implicitly starts a new transaction
+		assertTrue(sqlrcon_commit(con));
+		assertTrue(sqlrcon_getInTransaction(con));
+		assertTrue(sqlrcur_sendQuery(secondcur,"select count(*) from testtable"));
+		assertEqStr(sqlrcur_getFieldByIndex(secondcur,0,0),"1");
+		// rollback discards, and implicitly starts a new transaction
+		assertTrue(sqlrcur_sendQuery(cur,"insert into testtable values (2)"));
+		assertTrue(sqlrcon_rollback(con));
+		assertTrue(sqlrcon_getInTransaction(con));
+		assertTrue(sqlrcur_sendQuery(secondcur,"select count(*) from testtable"));
+		assertEqStr(sqlrcur_getFieldByIndex(secondcur,0,0),"1");
+		// autoCommitOn takes effect immediately
+		assertTrue(sqlrcon_autoCommitOn(con));
+		assertTrue(sqlrcon_getAutoCommit(con));
+		assertFalse(sqlrcon_getInTransaction(con));
+		assertTrue(sqlrcur_sendQuery(cur,"insert into testtable values (3)"));
+		assertTrue(sqlrcur_sendQuery(secondcur,"select count(*) from testtable"));
+		assertEqStr(sqlrcur_getFieldByIndex(secondcur,0,0),"2");
+		// autoCommitOff takes effect immediately
+		assertTrue(sqlrcon_autoCommitOff(con));
+		assertFalse(sqlrcon_getAutoCommit(con));
+		assertTrue(sqlrcon_getInTransaction(con));
+		sqlrcur_closeResultSet(secondcur);
+		assertTrue(sqlrcur_sendQuery(cur,"drop table testtable"));
+		printf("\n");
 
 
-	// transaction behavior - explicit
-	printf("TRANSACTION BEHAVIOR - explicit: \n");
-	assertTrue(sqlrcon_setTransactionModel(con,"explicit"));
-	assertEqStr(sqlrcon_getTransactionModel(con),"explicit");
-	assertTrue(sqlrcur_sendQuery(cur,"create table testtable (col1 integer)"));
-	// begin starts a new transaction; insert is not visible until commit
-	assertTrue(sqlrcon_begin(con));
-	assertTrue(sqlrcon_getInTransaction(con));
-	assertTrue(sqlrcur_sendQuery(cur,"insert into testtable values (1)"));
-	assertTrue(sqlrcur_sendQuery(secondcur,"select count(*) from testtable"));
-	assertEqStr(sqlrcur_getFieldByIndex(secondcur,0,0),"0");
-	// commit makes it visible; no new transaction is started
-	assertTrue(sqlrcon_commit(con));
-	assertFalse(sqlrcon_getInTransaction(con));
-	assertTrue(sqlrcur_sendQuery(secondcur,"select count(*) from testtable"));
-	assertEqStr(sqlrcur_getFieldByIndex(secondcur,0,0),"1");
-	// begin, insert, rollback discards; no new transaction is started
-	assertTrue(sqlrcon_begin(con));
-	assertTrue(sqlrcur_sendQuery(cur,"insert into testtable values (2)"));
-	assertTrue(sqlrcon_rollback(con));
-	assertFalse(sqlrcon_getInTransaction(con));
-	assertTrue(sqlrcur_sendQuery(secondcur,"select count(*) from testtable"));
-	assertEqStr(sqlrcur_getFieldByIndex(secondcur,0,0),"1");
-	// autoCommitOn takes effect immediately
-	assertTrue(sqlrcon_autoCommitOn(con));
-	assertTrue(sqlrcon_getAutoCommit(con));
-	assertTrue(sqlrcur_sendQuery(cur,"insert into testtable values (3)"));
-	assertTrue(sqlrcur_sendQuery(secondcur,"select count(*) from testtable"));
-	assertEqStr(sqlrcur_getFieldByIndex(secondcur,0,0),"2");
-	// autoCommitOff takes effect immediately
-	assertTrue(sqlrcon_autoCommitOff(con));
-	assertFalse(sqlrcon_getAutoCommit(con));
-	sqlrcur_closeResultSet(secondcur);
-	assertTrue(sqlrcur_sendQuery(cur,"drop table testtable"));
-	printf("\n");
+		// transaction behavior - explicit
+		printf("TRANSACTION BEHAVIOR - explicit: \n");
+		assertTrue(sqlrcon_setTransactionModel(con,"explicit"));
+		assertEqStr(sqlrcon_getTransactionModel(con),"explicit");
+		assertTrue(sqlrcur_sendQuery(cur,"create table testtable (col1 integer)"));
+		// begin starts a new transaction; insert is not visible until commit
+		assertTrue(sqlrcon_begin(con));
+		assertTrue(sqlrcon_getInTransaction(con));
+		assertTrue(sqlrcur_sendQuery(cur,"insert into testtable values (1)"));
+		assertTrue(sqlrcur_sendQuery(secondcur,"select count(*) from testtable"));
+		assertEqStr(sqlrcur_getFieldByIndex(secondcur,0,0),"0");
+		// commit makes it visible; no new transaction is started
+		assertTrue(sqlrcon_commit(con));
+		assertFalse(sqlrcon_getInTransaction(con));
+		assertTrue(sqlrcur_sendQuery(secondcur,"select count(*) from testtable"));
+		assertEqStr(sqlrcur_getFieldByIndex(secondcur,0,0),"1");
+		// begin, insert, rollback discards; no new transaction is started
+		assertTrue(sqlrcon_begin(con));
+		assertTrue(sqlrcur_sendQuery(cur,"insert into testtable values (2)"));
+		assertTrue(sqlrcon_rollback(con));
+		assertFalse(sqlrcon_getInTransaction(con));
+		assertTrue(sqlrcur_sendQuery(secondcur,"select count(*) from testtable"));
+		assertEqStr(sqlrcur_getFieldByIndex(secondcur,0,0),"1");
+		// autoCommitOn takes effect immediately
+		assertTrue(sqlrcon_autoCommitOn(con));
+		assertTrue(sqlrcon_getAutoCommit(con));
+		assertTrue(sqlrcur_sendQuery(cur,"insert into testtable values (3)"));
+		assertTrue(sqlrcur_sendQuery(secondcur,"select count(*) from testtable"));
+		assertEqStr(sqlrcur_getFieldByIndex(secondcur,0,0),"2");
+		// autoCommitOff takes effect immediately
+		assertTrue(sqlrcon_autoCommitOff(con));
+		assertFalse(sqlrcon_getAutoCommit(con));
+		sqlrcur_closeResultSet(secondcur);
+		assertTrue(sqlrcur_sendQuery(cur,"drop table testtable"));
+		printf("\n");
 
 
-	// transaction behavior - explicit-deferred
-	printf("TRANSACTION BEHAVIOR - explicit-deferred: \n");
-	assertTrue(sqlrcon_setTransactionModel(con,"explicit-deferred"));
-	assertEqStr(sqlrcon_getTransactionModel(con),"explicit-deferred");
-	// switch to autocommit-on so the begin/commit cycles below
-	// bracket explicit transactions (autocommit-off semantics are
-	// exercised at the end of this block)
-	assertTrue(sqlrcon_autoCommitOn(con));
-	assertTrue(sqlrcon_getAutoCommit(con));
-	assertTrue(sqlrcur_sendQuery(cur,"create table testtable (col1 integer)"));
-	// begin starts a transaction; commit makes it visible
-	assertTrue(sqlrcon_begin(con));
-	assertTrue(sqlrcon_getInTransaction(con));
-	assertTrue(sqlrcur_sendQuery(cur,"insert into testtable values (1)"));
-	assertTrue(sqlrcon_commit(con));
-	assertFalse(sqlrcon_getInTransaction(con));
-	assertTrue(sqlrcur_sendQuery(secondcur,"select count(*) from testtable"));
-	assertEqStr(sqlrcur_getFieldByIndex(secondcur,0,0),"1");
-	// begin, insert, rollback discards
-	assertTrue(sqlrcon_begin(con));
-	assertTrue(sqlrcur_sendQuery(cur,"insert into testtable values (2)"));
-	assertTrue(sqlrcon_rollback(con));
-	assertTrue(sqlrcur_sendQuery(secondcur,"select count(*) from testtable"));
-	assertEqStr(sqlrcur_getFieldByIndex(secondcur,0,0),"1");
-	// during a transaction started by begin(), autoCommitOn is a
-	// no-op: the autocommit setting takes effect after the user
-	// explicitly commits/rollbacks the tx (mysql-native semantic)
-	assertTrue(sqlrcon_begin(con));
-	assertTrue(sqlrcur_sendQuery(cur,"insert into testtable values (3)"));
-	assertTrue(sqlrcon_autoCommitOn(con));
-	assertFalse(sqlrcon_getAutoCommit(con));
-	assertTrue(sqlrcon_getInTransaction(con));
-	assertTrue(sqlrcur_sendQuery(secondcur,"select count(*) from testtable"));
-	assertEqStr(sqlrcur_getFieldByIndex(secondcur,0,0),"1");
-	// explicit commit ends the tx; autocommit-on now takes effect
-	assertTrue(sqlrcon_commit(con));
-	assertTrue(sqlrcon_getAutoCommit(con));
-	assertFalse(sqlrcon_getInTransaction(con));
-	assertTrue(sqlrcur_sendQuery(secondcur,"select count(*) from testtable"));
-	assertEqStr(sqlrcur_getFieldByIndex(secondcur,0,0),"2");
-	// autocommit is on; subsequent inserts are visible immediately
-	assertTrue(sqlrcur_sendQuery(cur,"insert into testtable values (4)"));
-	assertTrue(sqlrcur_sendQuery(secondcur,"select count(*) from testtable"));
-	assertEqStr(sqlrcur_getFieldByIndex(secondcur,0,0),"3");
-	// autoCommitOff takes effect immediately when not in a transaction
-	assertTrue(sqlrcon_autoCommitOff(con));
-	assertFalse(sqlrcon_getAutoCommit(con));
-	// autocommit-off persists across commit/rollback; each commit or
-	// rollback ends the current implicit tx and a new one starts for
-	// the next statement
-	assertTrue(sqlrcur_sendQuery(cur,"insert into testtable values (5)"));
-	assertTrue(sqlrcon_commit(con));
-	assertFalse(sqlrcon_getAutoCommit(con));
-	assertTrue(sqlrcon_getInTransaction(con));
-	assertTrue(sqlrcur_sendQuery(secondcur,"select count(*) from testtable"));
-	assertEqStr(sqlrcur_getFieldByIndex(secondcur,0,0),"4");
-	assertTrue(sqlrcur_sendQuery(cur,"insert into testtable values (6)"));
-	assertTrue(sqlrcon_rollback(con));
-	assertFalse(sqlrcon_getAutoCommit(con));
-	assertTrue(sqlrcon_getInTransaction(con));
-	assertTrue(sqlrcur_sendQuery(secondcur,"select count(*) from testtable"));
-	assertEqStr(sqlrcur_getFieldByIndex(secondcur,0,0),"4");
-	// autoCommitOff during a transaction changes the variable
-	// immediately but the in-flight tx continues; only after the
-	// next explicit commit/rollback does the new autocommit-off
-	// setting drop us into a new implicit tx (mysql-asymmetric
-	// semantic)
-	assertTrue(sqlrcon_autoCommitOn(con));
-	assertTrue(sqlrcon_getAutoCommit(con));
-	assertTrue(sqlrcon_begin(con));
-	assertTrue(sqlrcur_sendQuery(cur,"insert into testtable values (7)"));
-	assertTrue(sqlrcon_autoCommitOff(con));
-	assertFalse(sqlrcon_getAutoCommit(con));
-	assertTrue(sqlrcon_getInTransaction(con));
-	assertTrue(sqlrcur_sendQuery(secondcur,"select count(*) from testtable"));
-	assertEqStr(sqlrcur_getFieldByIndex(secondcur,0,0),"4");
-	assertTrue(sqlrcon_commit(con));
-	assertFalse(sqlrcon_getAutoCommit(con));
-	assertTrue(sqlrcon_getInTransaction(con));
-	assertTrue(sqlrcur_sendQuery(secondcur,"select count(*) from testtable"));
-	assertEqStr(sqlrcur_getFieldByIndex(secondcur,0,0),"5");
-	sqlrcur_closeResultSet(secondcur);
-	assertTrue(sqlrcur_sendQuery(cur,"drop table testtable"));
-	printf("\n");
+		// transaction behavior - explicit-deferred
+		printf("TRANSACTION BEHAVIOR - explicit-deferred: \n");
+		assertTrue(sqlrcon_setTransactionModel(con,"explicit-deferred"));
+		assertEqStr(sqlrcon_getTransactionModel(con),"explicit-deferred");
+		// switch to autocommit-on so the begin/commit cycles below
+		// bracket explicit transactions (autocommit-off semantics are
+		// exercised at the end of this block)
+		assertTrue(sqlrcon_autoCommitOn(con));
+		assertTrue(sqlrcon_getAutoCommit(con));
+		assertTrue(sqlrcur_sendQuery(cur,"create table testtable (col1 integer)"));
+		// begin starts a transaction; commit makes it visible
+		assertTrue(sqlrcon_begin(con));
+		assertTrue(sqlrcon_getInTransaction(con));
+		assertTrue(sqlrcur_sendQuery(cur,"insert into testtable values (1)"));
+		assertTrue(sqlrcon_commit(con));
+		assertFalse(sqlrcon_getInTransaction(con));
+		assertTrue(sqlrcur_sendQuery(secondcur,"select count(*) from testtable"));
+		assertEqStr(sqlrcur_getFieldByIndex(secondcur,0,0),"1");
+		// begin, insert, rollback discards
+		assertTrue(sqlrcon_begin(con));
+		assertTrue(sqlrcur_sendQuery(cur,"insert into testtable values (2)"));
+		assertTrue(sqlrcon_rollback(con));
+		assertTrue(sqlrcur_sendQuery(secondcur,"select count(*) from testtable"));
+		assertEqStr(sqlrcur_getFieldByIndex(secondcur,0,0),"1");
+		// during a transaction started by begin(), autoCommitOn is a
+		// no-op: the autocommit setting takes effect after the user
+		// explicitly commits/rollbacks the tx (mysql-native semantic)
+		assertTrue(sqlrcon_begin(con));
+		assertTrue(sqlrcur_sendQuery(cur,"insert into testtable values (3)"));
+		assertTrue(sqlrcon_autoCommitOn(con));
+		assertFalse(sqlrcon_getAutoCommit(con));
+		assertTrue(sqlrcon_getInTransaction(con));
+		assertTrue(sqlrcur_sendQuery(secondcur,"select count(*) from testtable"));
+		assertEqStr(sqlrcur_getFieldByIndex(secondcur,0,0),"1");
+		// explicit commit ends the tx; autocommit-on now takes effect
+		assertTrue(sqlrcon_commit(con));
+		assertTrue(sqlrcon_getAutoCommit(con));
+		assertFalse(sqlrcon_getInTransaction(con));
+		assertTrue(sqlrcur_sendQuery(secondcur,"select count(*) from testtable"));
+		assertEqStr(sqlrcur_getFieldByIndex(secondcur,0,0),"2");
+		// autocommit is on; subsequent inserts are visible immediately
+		assertTrue(sqlrcur_sendQuery(cur,"insert into testtable values (4)"));
+		assertTrue(sqlrcur_sendQuery(secondcur,"select count(*) from testtable"));
+		assertEqStr(sqlrcur_getFieldByIndex(secondcur,0,0),"3");
+		// autoCommitOff takes effect immediately when not in a transaction
+		assertTrue(sqlrcon_autoCommitOff(con));
+		assertFalse(sqlrcon_getAutoCommit(con));
+		// autocommit-off persists across commit/rollback; each commit or
+		// rollback ends the current implicit tx and a new one starts for
+		// the next statement
+		assertTrue(sqlrcur_sendQuery(cur,"insert into testtable values (5)"));
+		assertTrue(sqlrcon_commit(con));
+		assertFalse(sqlrcon_getAutoCommit(con));
+		assertTrue(sqlrcon_getInTransaction(con));
+		assertTrue(sqlrcur_sendQuery(secondcur,"select count(*) from testtable"));
+		assertEqStr(sqlrcur_getFieldByIndex(secondcur,0,0),"4");
+		assertTrue(sqlrcur_sendQuery(cur,"insert into testtable values (6)"));
+		assertTrue(sqlrcon_rollback(con));
+		assertFalse(sqlrcon_getAutoCommit(con));
+		assertTrue(sqlrcon_getInTransaction(con));
+		assertTrue(sqlrcur_sendQuery(secondcur,"select count(*) from testtable"));
+		assertEqStr(sqlrcur_getFieldByIndex(secondcur,0,0),"4");
+		// autoCommitOff during a transaction changes the variable
+		// immediately but the in-flight tx continues; only after the
+		// next explicit commit/rollback does the new autocommit-off
+		// setting drop us into a new implicit tx (mysql-asymmetric
+		// semantic)
+		assertTrue(sqlrcon_autoCommitOn(con));
+		assertTrue(sqlrcon_getAutoCommit(con));
+		assertTrue(sqlrcon_begin(con));
+		assertTrue(sqlrcur_sendQuery(cur,"insert into testtable values (7)"));
+		assertTrue(sqlrcon_autoCommitOff(con));
+		assertFalse(sqlrcon_getAutoCommit(con));
+		assertTrue(sqlrcon_getInTransaction(con));
+		assertTrue(sqlrcur_sendQuery(secondcur,"select count(*) from testtable"));
+		assertEqStr(sqlrcur_getFieldByIndex(secondcur,0,0),"4");
+		assertTrue(sqlrcon_commit(con));
+		assertFalse(sqlrcon_getAutoCommit(con));
+		assertTrue(sqlrcon_getInTransaction(con));
+		assertTrue(sqlrcur_sendQuery(secondcur,"select count(*) from testtable"));
+		assertEqStr(sqlrcur_getFieldByIndex(secondcur,0,0),"5");
+		sqlrcur_closeResultSet(secondcur);
+		assertTrue(sqlrcur_sendQuery(cur,"drop table testtable"));
+		printf("\n");
 
 
-	// transaction behavior - explicit-error
-	printf("TRANSACTION BEHAVIOR - explicit-error: \n");
-	assertTrue(sqlrcon_setTransactionModel(con,"explicit-error"));
-	assertEqStr(sqlrcon_getTransactionModel(con),"explicit-error");
-	assertTrue(sqlrcur_sendQuery(cur,"create table testtable (col1 integer)"));
-	// begin, insert, commit
-	assertTrue(sqlrcon_begin(con));
-	assertTrue(sqlrcon_getInTransaction(con));
-	assertTrue(sqlrcur_sendQuery(cur,"insert into testtable values (1)"));
-	assertTrue(sqlrcon_commit(con));
-	assertFalse(sqlrcon_getInTransaction(con));
-	assertTrue(sqlrcur_sendQuery(secondcur,"select count(*) from testtable"));
-	assertEqStr(sqlrcur_getFieldByIndex(secondcur,0,0),"1");
-	// begin, insert, rollback
-	assertTrue(sqlrcon_begin(con));
-	assertTrue(sqlrcur_sendQuery(cur,"insert into testtable values (2)"));
-	assertTrue(sqlrcon_rollback(con));
-	assertTrue(sqlrcur_sendQuery(secondcur,"select count(*) from testtable"));
-	assertEqStr(sqlrcur_getFieldByIndex(secondcur,0,0),"1");
-	// while in a transaction, autoCommitOn/Off throw an error
-	assertTrue(sqlrcon_begin(con));
-	assertFalse(sqlrcon_autoCommitOn(con));
-	assertFalse(sqlrcon_autoCommitOff(con));
-	assertTrue(sqlrcon_commit(con));
-	// outside of a transaction, autoCommitOn takes effect immediately
-	assertTrue(sqlrcon_autoCommitOn(con));
-	assertTrue(sqlrcon_getAutoCommit(con));
-	assertTrue(sqlrcur_sendQuery(cur,"insert into testtable values (3)"));
-	assertTrue(sqlrcur_sendQuery(secondcur,"select count(*) from testtable"));
-	assertEqStr(sqlrcur_getFieldByIndex(secondcur,0,0),"2");
-	// autoCommitOff takes effect immediately
-	assertTrue(sqlrcon_autoCommitOff(con));
-	assertFalse(sqlrcon_getAutoCommit(con));
-	sqlrcur_closeResultSet(secondcur);
-	assertTrue(sqlrcur_sendQuery(cur,"drop table testtable"));
-	printf("\n");
+		// transaction behavior - explicit-error
+		printf("TRANSACTION BEHAVIOR - explicit-error: \n");
+		assertTrue(sqlrcon_setTransactionModel(con,"explicit-error"));
+		assertEqStr(sqlrcon_getTransactionModel(con),"explicit-error");
+		assertTrue(sqlrcur_sendQuery(cur,"create table testtable (col1 integer)"));
+		// begin, insert, commit
+		assertTrue(sqlrcon_begin(con));
+		assertTrue(sqlrcon_getInTransaction(con));
+		assertTrue(sqlrcur_sendQuery(cur,"insert into testtable values (1)"));
+		assertTrue(sqlrcon_commit(con));
+		assertFalse(sqlrcon_getInTransaction(con));
+		assertTrue(sqlrcur_sendQuery(secondcur,"select count(*) from testtable"));
+		assertEqStr(sqlrcur_getFieldByIndex(secondcur,0,0),"1");
+		// begin, insert, rollback
+		assertTrue(sqlrcon_begin(con));
+		assertTrue(sqlrcur_sendQuery(cur,"insert into testtable values (2)"));
+		assertTrue(sqlrcon_rollback(con));
+		assertTrue(sqlrcur_sendQuery(secondcur,"select count(*) from testtable"));
+		assertEqStr(sqlrcur_getFieldByIndex(secondcur,0,0),"1");
+		// while in a transaction, autoCommitOn/Off throw an error
+		assertTrue(sqlrcon_begin(con));
+		assertFalse(sqlrcon_autoCommitOn(con));
+		assertFalse(sqlrcon_autoCommitOff(con));
+		assertTrue(sqlrcon_commit(con));
+		// outside of a transaction, autoCommitOn takes effect immediately
+		assertTrue(sqlrcon_autoCommitOn(con));
+		assertTrue(sqlrcon_getAutoCommit(con));
+		assertTrue(sqlrcur_sendQuery(cur,"insert into testtable values (3)"));
+		assertTrue(sqlrcur_sendQuery(secondcur,"select count(*) from testtable"));
+		assertEqStr(sqlrcur_getFieldByIndex(secondcur,0,0),"2");
+		// autoCommitOff takes effect immediately
+		assertTrue(sqlrcon_autoCommitOff(con));
+		assertFalse(sqlrcon_getAutoCommit(con));
+		sqlrcur_closeResultSet(secondcur);
+		assertTrue(sqlrcur_sendQuery(cur,"drop table testtable"));
+		printf("\n");
 
 
-	// transaction behavior - none
-	printf("TRANSACTION BEHAVIOR - none: \n");
-	assertTrue(sqlrcon_setTransactionModel(con,"none"));
-	assertEqStr(sqlrcon_getTransactionModel(con),"none");
-	assertTrue(sqlrcur_sendQuery(cur,"create table testtable (col1 integer)"));
-	// no transactions; everything is visible immediately
-	assertTrue(sqlrcon_getAutoCommit(con));
-	assertFalse(sqlrcon_getInTransaction(con));
-	assertTrue(sqlrcur_sendQuery(cur,"insert into testtable values (1)"));
-	assertTrue(sqlrcur_sendQuery(secondcur,"select count(*) from testtable"));
-	assertEqStr(sqlrcur_getFieldByIndex(secondcur,0,0),"1");
-	// commit and rollback are no-ops
-	assertTrue(sqlrcon_commit(con));
-	assertTrue(sqlrcur_sendQuery(cur,"insert into testtable values (2)"));
-	assertTrue(sqlrcon_rollback(con));
-	assertTrue(sqlrcur_sendQuery(secondcur,"select count(*) from testtable"));
-	assertEqStr(sqlrcur_getFieldByIndex(secondcur,0,0),"2");
-	// autocommit is always on; autoCommitOff is an error
-	assertFalse(sqlrcon_autoCommitOff(con));
-	assertTrue(sqlrcon_getAutoCommit(con));
-	assertTrue(sqlrcon_autoCommitOn(con));
-	assertTrue(sqlrcon_getAutoCommit(con));
-	sqlrcur_closeResultSet(secondcur);
-	sqlrcur_free(secondcur);
-	sqlrcon_free(secondcon);
-	assertTrue(sqlrcur_sendQuery(cur,"drop table testtable"));
-	printf("\n");
+		// transaction behavior - none
+		printf("TRANSACTION BEHAVIOR - none: \n");
+		assertTrue(sqlrcon_setTransactionModel(con,"none"));
+		assertEqStr(sqlrcon_getTransactionModel(con),"none");
+		assertTrue(sqlrcur_sendQuery(cur,"create table testtable (col1 integer)"));
+		// no transactions; everything is visible immediately
+		assertTrue(sqlrcon_getAutoCommit(con));
+		assertFalse(sqlrcon_getInTransaction(con));
+		assertTrue(sqlrcur_sendQuery(cur,"insert into testtable values (1)"));
+		assertTrue(sqlrcur_sendQuery(secondcur,"select count(*) from testtable"));
+		assertEqStr(sqlrcur_getFieldByIndex(secondcur,0,0),"1");
+		// commit and rollback are no-ops
+		assertTrue(sqlrcon_commit(con));
+		assertTrue(sqlrcur_sendQuery(cur,"insert into testtable values (2)"));
+		assertTrue(sqlrcon_rollback(con));
+		assertTrue(sqlrcur_sendQuery(secondcur,"select count(*) from testtable"));
+		assertEqStr(sqlrcur_getFieldByIndex(secondcur,0,0),"2");
+		// autocommit is always on; autoCommitOff is an error
+		assertFalse(sqlrcon_autoCommitOff(con));
+		assertTrue(sqlrcon_getAutoCommit(con));
+		assertTrue(sqlrcon_autoCommitOn(con));
+		assertTrue(sqlrcon_getAutoCommit(con));
+		sqlrcur_closeResultSet(secondcur);
+		sqlrcur_free(secondcur);
+		sqlrcon_free(secondcon);
+		assertTrue(sqlrcur_sendQuery(cur,"drop table testtable"));
+		printf("\n");
 
 
+	}
 	// reset transaction behavior
+	// (mysql before 4 has limited transaction support)
 	printf("RESET TRANSACTION BEHAVIOR: \n");
-	assertTrue(sqlrcon_setTransactionModel(con,sqlrcon_getDefaultTransactionModel(con)));
-	assertEqStr(sqlrcon_getTransactionModel(con),"explicit-deferred");
-	assertTrue(sqlrcon_getAutoCommit(con));
+	if (majorversion>3) {
+		assertTrue(sqlrcon_setTransactionModel(con,sqlrcon_getDefaultTransactionModel(con)));
+		assertEqStr(sqlrcon_getTransactionModel(con),"explicit-deferred");
+		assertTrue(sqlrcon_getAutoCommit(con));
+	}
 	printf("\n");
 
 
@@ -1758,28 +1771,31 @@ int main(int argc, char **argv) {
 	// mysql doesn't support bind by name
 
 
-	// rebinding
-	printf("REBINDING: \n");
-	sqlrcur_sendQuery(cur,"drop procedure testproc");
-	assertTrue(sqlrcur_sendQuery(cur,
-		"create procedure testproc("
-		"	in in1 int) "
-		"begin "
-		"	select in1; ""end"));
-	sqlrcur_prepareQuery(cur,"call testproc(?)");
-	sqlrcur_inputBindLong(cur,"1",1);
-	assertTrue(sqlrcur_executeQuery(cur));
-	assertEqStr(sqlrcur_getFieldByIndex(cur,0,0),"1");
-	sqlrcur_inputBindLong(cur,"1",2);
-	assertTrue(sqlrcur_executeQuery(cur));
-	assertEqStr(sqlrcur_getFieldByIndex(cur,0,0),"2");
-	sqlrcur_inputBindLong(cur,"1",3);
-	assertTrue(sqlrcur_executeQuery(cur));
-	assertEqStr(sqlrcur_getFieldByIndex(cur,0,0),"3");
-	assertTrue(sqlrcur_sendQuery(cur,"drop procedure testproc"));
-	printf("\n");
+	// mysql before 5.0 has no stored procedures
+	if (majorversion>3) {
+		// rebinding
+		printf("REBINDING: \n");
+		sqlrcur_sendQuery(cur,"drop procedure testproc");
+		assertTrue(sqlrcur_sendQuery(cur,
+			"create procedure testproc("
+			"	in in1 int) "
+			"begin "
+			"	select in1; ""end"));
+		sqlrcur_prepareQuery(cur,"call testproc(?)");
+		sqlrcur_inputBindLong(cur,"1",1);
+		assertTrue(sqlrcur_executeQuery(cur));
+		assertEqStr(sqlrcur_getFieldByIndex(cur,0,0),"1");
+		sqlrcur_inputBindLong(cur,"1",2);
+		assertTrue(sqlrcur_executeQuery(cur));
+		assertEqStr(sqlrcur_getFieldByIndex(cur,0,0),"2");
+		sqlrcur_inputBindLong(cur,"1",3);
+		assertTrue(sqlrcur_executeQuery(cur));
+		assertEqStr(sqlrcur_getFieldByIndex(cur,0,0),"3");
+		assertTrue(sqlrcur_sendQuery(cur,"drop procedure testproc"));
+		printf("\n");
 
 
+	}
 	// reexecute
 	printf("REEXECUTE: \n");
 	sqlrcur_prepareQuery(cur,"select 1");
@@ -1808,107 +1824,110 @@ int main(int argc, char **argv) {
 	printf("\n");
 
 
-	// stored procedure returning no value
-	printf("STORED PROCEDURE ""RETURNING NO VALUE: \n");
-	sqlrcur_sendQuery(cur,"drop procedure testproc");
-	assertTrue(sqlrcur_sendQuery(cur,
-		"create procedure testproc("
-		"	in in1 int, "
-		"	in in2 double, "
-		"	in in3 varchar(20)) ""begin ""end"));
-	sqlrcur_prepareQuery(cur,"call testproc(?,?,?)");
-	sqlrcur_inputBindLong(cur,"1",1);
-	sqlrcur_inputBindDouble(cur,"2",1.5,2,1);
-	sqlrcur_inputBindString(cur,"3","hello");
-	assertTrue(sqlrcur_executeQuery(cur));
-	assertTrue(sqlrcur_sendQuery(cur,"drop procedure testproc"));
-	printf("\n");
+	// mysql before 5.0 has no stored procedures
+	if (majorversion>3) {
+		// stored procedure returning no value
+		printf("STORED PROCEDURE ""RETURNING NO VALUE: \n");
+		sqlrcur_sendQuery(cur,"drop procedure testproc");
+		assertTrue(sqlrcur_sendQuery(cur,
+			"create procedure testproc("
+			"	in in1 int, "
+			"	in in2 double, "
+			"	in in3 varchar(20)) ""begin ""end"));
+		sqlrcur_prepareQuery(cur,"call testproc(?,?,?)");
+		sqlrcur_inputBindLong(cur,"1",1);
+		sqlrcur_inputBindDouble(cur,"2",1.5,2,1);
+		sqlrcur_inputBindString(cur,"3","hello");
+		assertTrue(sqlrcur_executeQuery(cur));
+		assertTrue(sqlrcur_sendQuery(cur,"drop procedure testproc"));
+		printf("\n");
 
 
-	// stored procedure returning single
-	// value
-	printf("STORED PROCEDURE ""RETURNING SINGLE ""VALUE: \n");
-	sqlrcur_sendQuery(cur,"drop procedure testproc");
-	assertTrue(sqlrcur_sendQuery(cur,
-		"create procedure testproc("
-		"	in in1 int, "
-		"	in in2 double, "
-		"	in in3 varchar(20)) "
-		"begin "
-		"	select in1; ""end"));
-	sqlrcur_prepareQuery(cur,"call testproc(?,?,?)");
-	sqlrcur_inputBindLong(cur,"1",1);
-	sqlrcur_inputBindDouble(cur,"2",1.5,2,1);
-	sqlrcur_inputBindString(cur,"3","hello");
-	assertTrue(sqlrcur_executeQuery(cur));
-	assertEqStr(sqlrcur_getFieldByIndex(cur,0,0),"1");
-	assertTrue(sqlrcur_sendQuery(cur,"drop procedure testproc"));
-	printf("\n");
+		// stored procedure returning single
+		// value
+		printf("STORED PROCEDURE ""RETURNING SINGLE ""VALUE: \n");
+		sqlrcur_sendQuery(cur,"drop procedure testproc");
+		assertTrue(sqlrcur_sendQuery(cur,
+			"create procedure testproc("
+			"	in in1 int, "
+			"	in in2 double, "
+			"	in in3 varchar(20)) "
+			"begin "
+			"	select in1; ""end"));
+		sqlrcur_prepareQuery(cur,"call testproc(?,?,?)");
+		sqlrcur_inputBindLong(cur,"1",1);
+		sqlrcur_inputBindDouble(cur,"2",1.5,2,1);
+		sqlrcur_inputBindString(cur,"3","hello");
+		assertTrue(sqlrcur_executeQuery(cur));
+		assertEqStr(sqlrcur_getFieldByIndex(cur,0,0),"1");
+		assertTrue(sqlrcur_sendQuery(cur,"drop procedure testproc"));
+		printf("\n");
 
 
-	// stored procedure returning multiple
-	// values
-	printf("STORED PROCEDURE ""RETURNING MULTIPLE ""VALUES: \n");
-	sqlrcur_sendQuery(cur,"drop procedure testproc");
-	assertTrue(sqlrcur_sendQuery(cur,
-		"create procedure testproc("
-		"	in in1 int, "
-		"	in in2 double, "
-		"	in in3 varchar(20)) "
-		"begin "
-		"	select in1, in2, "
-		"	in3; ""end"));
-	sqlrcur_prepareQuery(cur,"call testproc(?,?,?)");
-	sqlrcur_inputBindLong(cur,"1",1);
-	sqlrcur_inputBindDouble(cur,"2",1.5,2,1);
-	sqlrcur_inputBindString(cur,"3","hello");
-	assertTrue(sqlrcur_executeQuery(cur));
-	assertEqStr(sqlrcur_getFieldByIndex(cur,0,0),"1");
-	assertEqStr(sqlrcur_getFieldByIndex(cur,0,1),"1.5");
-	assertEqStr(sqlrcur_getFieldByIndex(cur,0,2),"hello");
-	assertTrue(sqlrcur_sendQuery(cur,"drop procedure testproc"));
-	printf("\n");
+		// stored procedure returning multiple
+		// values
+		printf("STORED PROCEDURE ""RETURNING MULTIPLE ""VALUES: \n");
+		sqlrcur_sendQuery(cur,"drop procedure testproc");
+		assertTrue(sqlrcur_sendQuery(cur,
+			"create procedure testproc("
+			"	in in1 int, "
+			"	in in2 double, "
+			"	in in3 varchar(20)) "
+			"begin "
+			"	select in1, in2, "
+			"	in3; ""end"));
+		sqlrcur_prepareQuery(cur,"call testproc(?,?,?)");
+		sqlrcur_inputBindLong(cur,"1",1);
+		sqlrcur_inputBindDouble(cur,"2",1.5,2,1);
+		sqlrcur_inputBindString(cur,"3","hello");
+		assertTrue(sqlrcur_executeQuery(cur));
+		assertEqStr(sqlrcur_getFieldByIndex(cur,0,0),"1");
+		assertEqStr(sqlrcur_getFieldByIndex(cur,0,1),"1.5");
+		assertEqStr(sqlrcur_getFieldByIndex(cur,0,2),"hello");
+		assertTrue(sqlrcur_sendQuery(cur,"drop procedure testproc"));
+		printf("\n");
 
 
-	// stored procedure returning result
-	// set
-	printf("STORED PROCEDURE ""RETURNING RESULT SET: \n");
-	sqlrcur_sendQuery(cur,"drop procedure ""testselectproc");
-	assertTrue(sqlrcur_sendQuery(cur,"create procedure ""testselectproc() "
-		"begin "
-		"	select 1 "
-		"	union "
-		"	select 2 "
-		"	union "
-		"	select 3 "
-		"	union "
-		"	select 4 "
-		"	union "
-		"	select 5 "
-		"	union "
-		"	select 6 "
-		"	union "
-		"	select 7 "
-		"	union "
-		"	select 8; ""end"));
-	assertTrue(sqlrcur_sendQuery(cur,"call testselectproc()"));
-	assertEqInt(sqlrcur_rowCount(cur),8);
-	assertTrue(sqlrcur_sendQuery(cur,"drop procedure ""testselectproc"));
-	printf("\n");
+		// stored procedure returning result
+		// set
+		printf("STORED PROCEDURE ""RETURNING RESULT SET: \n");
+		sqlrcur_sendQuery(cur,"drop procedure ""testselectproc");
+		assertTrue(sqlrcur_sendQuery(cur,"create procedure ""testselectproc() "
+			"begin "
+			"	select 1 "
+			"	union "
+			"	select 2 "
+			"	union "
+			"	select 3 "
+			"	union "
+			"	select 4 "
+			"	union "
+			"	select 5 "
+			"	union "
+			"	select 6 "
+			"	union "
+			"	select 7 "
+			"	union "
+			"	select 8; ""end"));
+		assertTrue(sqlrcur_sendQuery(cur,"call testselectproc()"));
+		assertEqInt(sqlrcur_rowCount(cur),8);
+		assertTrue(sqlrcur_sendQuery(cur,"drop procedure ""testselectproc"));
+		printf("\n");
 
 
-	// temporary tables
-	printf("TEMPORARY TABLES: \n");
-	sqlrcur_sendQuery(cur,"drop table temptable");
-	assertTrue(sqlrcur_sendQuery(cur,"create temporary table ""temptable (col1 int)"));
-	assertTrue(sqlrcur_sendQuery(cur,"insert into temptable ""values (1)"));
-	assertTrue(sqlrcur_sendQuery(cur,"select count(*) ""from temptable"));
-	assertEqStr(sqlrcur_getFieldByIndex(cur,0,0),"1");
-	sqlrcon_endSession(con);
-	printf("\n");
-	assertFalse(sqlrcur_sendQuery(cur,"select count(*) ""from temptable"));
-	printf("\n");
+		// temporary tables
+		printf("TEMPORARY TABLES: \n");
+		sqlrcur_sendQuery(cur,"drop table temptable");
+		assertTrue(sqlrcur_sendQuery(cur,"create temporary table ""temptable (col1 int)"));
+		assertTrue(sqlrcur_sendQuery(cur,"insert into temptable ""values (1)"));
+		assertTrue(sqlrcur_sendQuery(cur,"select count(*) ""from temptable"));
+		assertEqStr(sqlrcur_getFieldByIndex(cur,0,0),"1");
+		sqlrcon_endSession(con);
+		printf("\n");
+		assertFalse(sqlrcur_sendQuery(cur,"select count(*) ""from temptable"));
+		printf("\n");
 
+	}
 	if (majorversion>3) {
 
 		// stored procedure returning
@@ -2156,23 +2175,23 @@ int main(int argc, char **argv) {
 	printf("QUOTES - random - ""'',\\-escaped: \n");
 	sqlrcur_sendQuery(cur,"drop table testtable");
 	assertTrue(sqlrcur_sendQuery(cur,"create table testtable "
-		"(col1 varchar(512))"));
+		"(col1 varchar(255))"));
 	srand(time(NULL));
 	seed1=rand();
 	seed2=rand();
 	srand(seed1);
-	for (i=0; i<sizeof(buffer); i++) {
+	for (i=0; i<sizeof(randbuffer); i++) {
 		result1=rand();
 		srand(result1);
-		buffer[i]=ch[result1%4];
+		randbuffer[i]=ch[result1%4];
 	}
 	strcpy(query,"insert into testtable ""values ('");
 	qlen=strlen(query);
 	srand(seed2);
-	for (i=0; i<sizeof(buffer); i++) {
+	for (i=0; i<sizeof(randbuffer); i++) {
 		result2=rand();
 		srand(result2);
-		if (buffer[i]=='\'') {
+		if (randbuffer[i]=='\'') {
 			// randomly escape
 			// with \ or ''
 			if (result2%2) {
@@ -2181,28 +2200,28 @@ int main(int argc, char **argv) {
 				query[qlen++]='\\';
 			}
 		}
-		if (buffer[i]=='"') {
+		if (randbuffer[i]=='"') {
 			// randomly escape
 			// with \ or don't
 			if (result2%2) {
 				query[qlen++]='\\';
 			}
 		}
-		if (buffer[i]=='\\') {
+		if (randbuffer[i]=='\\') {
 			// escape with
 			// backslash
 			query[qlen++]='\\';
 		}
-		query[qlen++]=buffer[i];
+		query[qlen++]=randbuffer[i];
 	}
 	query[qlen++]='\'';
 	query[qlen++]=')';
 	query[qlen]='\0';
 	assertTrue(sqlrcur_sendQueryWithLength(cur,query,qlen));
 	assertTrue(sqlrcur_sendQuery(cur,"select col1 ""from testtable"));
-	assertEqInt(sqlrcur_getFieldLengthByIndex(cur,0,0),sizeof(buffer));
+	assertEqInt(sqlrcur_getFieldLengthByIndex(cur,0,0),sizeof(randbuffer));
 	assertEqInt(memcmp(sqlrcur_getFieldByIndex(cur,0,0),
-		buffer,sizeof(buffer)),0);
+		randbuffer,sizeof(randbuffer)),0);
 	assertTrue(sqlrcur_sendQuery(cur,"drop table testtable"));
 	printf("\n");
 
@@ -2228,387 +2247,390 @@ int main(int argc, char **argv) {
 	printf("\n");
 
 
-	// catalog list
-	printf("CATALOG LIST: \n");
-	assertTrue(sqlrcur_getCatalogList(cur,NULL));
-	assertEqStr(sqlrcur_getColumnName(cur,0),"Database");
-	assertInResultSet(cur,"Database","def");
-	printf("\n");
+	// mysql before 5.0 has no information_schema for these metadata queries
+	if (majorversion>3) {
+		// catalog list
+		printf("CATALOG LIST: \n");
+		assertTrue(sqlrcur_getCatalogList(cur,NULL));
+		assertEqStr(sqlrcur_getColumnName(cur,0),"Database");
+		assertInResultSet(cur,"Database","def");
+		printf("\n");
 
 
-	// schema list
-	printf("SCHEMA LIST: \n");
-	assertTrue(sqlrcur_getSchemaList(cur,NULL));
-	assertEqStr(sqlrcur_getColumnName(cur,0),"Database");
-	assertInResultSet(cur,"Database",hostname);
-	printf("\n");
+		// schema list
+		printf("SCHEMA LIST: \n");
+		assertTrue(sqlrcur_getSchemaList(cur,NULL));
+		assertEqStr(sqlrcur_getColumnName(cur,0),"Database");
+		assertInResultSet(cur,"Database",hostname);
+		printf("\n");
 
 
-	// table type list
-	printf("TABLE TYPE LIST: \n");
-	assertTrue(sqlrcur_getTableTypeList(cur));
-	assertEqStr(sqlrcur_getColumnName(cur,0),"table_type");
-	assertInResultSet(cur,"table_type","TABLE");
-	printf("\n");
+		// table type list
+		printf("TABLE TYPE LIST: \n");
+		assertTrue(sqlrcur_getTableTypeList(cur));
+		assertEqStr(sqlrcur_getColumnName(cur,0),"table_type");
+		assertInResultSet(cur,"table_type","TABLE");
+		printf("\n");
 
 
-	// table list
-	printf("TABLE LIST: \n");
-	sqlrcur_sendQuery(cur,"drop table testtable1");
-	sqlrcur_sendQuery(cur,"drop table testtable2");
-	sqlrcur_sendQuery(cur,"drop table testtable3");
-	sqlrcur_sendQuery(cur,"drop table testtable4");
-	assertTrue(sqlrcur_sendQuery(cur,
-		"create table testtable1 ("
-		"	col1 int, "
-		"	col2 int)"));
-	assertTrue(sqlrcur_sendQuery(cur,
-		"create table testtable2 ("
-		"	col1 int, "
-		"	col2 int)"));
-	assertTrue(sqlrcur_sendQuery(cur,
-		"create table testtable3 ("
-		"	col1 int, "
-		"	col2 int)"));
-	assertTrue(sqlrcur_sendQuery(cur,
-		"create table testtable4 ("
-		"	col1 int, "
-		"	col2 int)"));
-	assertTrue(sqlrcur_getTableList(cur,NULL));
-	assertInResultSet(cur,"Tables_in_xxx","testtable1");
-	assertInResultSet(cur,"Tables_in_xxx","testtable2");
-	assertInResultSet(cur,"Tables_in_xxx","testtable3");
-	assertInResultSet(cur,"Tables_in_xxx","testtable4");
-	assertTrue(sqlrcur_sendQuery(cur,"drop table testtable1"));
-	assertTrue(sqlrcur_sendQuery(cur,"drop table testtable2"));
-	assertTrue(sqlrcur_sendQuery(cur,"drop table testtable3"));
-	assertTrue(sqlrcur_sendQuery(cur,"drop table testtable4"));
-	printf("\n");
+		// table list
+		printf("TABLE LIST: \n");
+		sqlrcur_sendQuery(cur,"drop table testtable1");
+		sqlrcur_sendQuery(cur,"drop table testtable2");
+		sqlrcur_sendQuery(cur,"drop table testtable3");
+		sqlrcur_sendQuery(cur,"drop table testtable4");
+		assertTrue(sqlrcur_sendQuery(cur,
+			"create table testtable1 ("
+			"	col1 int, "
+			"	col2 int)"));
+		assertTrue(sqlrcur_sendQuery(cur,
+			"create table testtable2 ("
+			"	col1 int, "
+			"	col2 int)"));
+		assertTrue(sqlrcur_sendQuery(cur,
+			"create table testtable3 ("
+			"	col1 int, "
+			"	col2 int)"));
+		assertTrue(sqlrcur_sendQuery(cur,
+			"create table testtable4 ("
+			"	col1 int, "
+			"	col2 int)"));
+		assertTrue(sqlrcur_getTableList(cur,NULL));
+		assertInResultSet(cur,"Tables_in_xxx","testtable1");
+		assertInResultSet(cur,"Tables_in_xxx","testtable2");
+		assertInResultSet(cur,"Tables_in_xxx","testtable3");
+		assertInResultSet(cur,"Tables_in_xxx","testtable4");
+		assertTrue(sqlrcur_sendQuery(cur,"drop table testtable1"));
+		assertTrue(sqlrcur_sendQuery(cur,"drop table testtable2"));
+		assertTrue(sqlrcur_sendQuery(cur,"drop table testtable3"));
+		assertTrue(sqlrcur_sendQuery(cur,"drop table testtable4"));
+		printf("\n");
 
 
-	// type info list
-	printf("TYPE INFO LIST: \n");
-	assertTrue(sqlrcur_getTypeInfoList(cur,"int"));
-	assertEqStr(sqlrcur_getColumnName(cur,0),"type_name");
-	assertEqStr(sqlrcur_getColumnName(cur,1),"data_type");
-	assertEqStr(sqlrcur_getColumnName(cur,2),"precision");
-	assertEqStr(sqlrcur_getColumnName(cur,3),"literal_prefix");
-	assertEqStr(sqlrcur_getColumnName(cur,4),"literal_suffix");
-	assertEqStr(sqlrcur_getColumnName(cur,5),"create_params");
-	assertEqStr(sqlrcur_getColumnName(cur,6),"nullable");
-	assertEqStr(sqlrcur_getColumnName(cur,7),"case_sensitive");
-	assertEqStr(sqlrcur_getColumnName(cur,8),"searchable");
-	assertEqStr(sqlrcur_getColumnName(cur,9),"unsigned_attribute");
-	assertEqStr(sqlrcur_getColumnName(cur,10),"fixed_prec_scale");
-	assertEqStr(sqlrcur_getColumnName(cur,11),"auto_increment");
-	assertEqStr(sqlrcur_getColumnName(cur,12),"local_type_name");
-	assertEqStr(sqlrcur_getColumnName(cur,13),"minumum_scale");
-	assertEqStr(sqlrcur_getColumnName(cur,14),"maxiumm_scale");
-	assertEqStr(sqlrcur_getColumnName(cur,15),"sql_data_type");
-	assertEqStr(sqlrcur_getColumnName(cur,16),"sql_datetime_sub");
-	assertEqStr(sqlrcur_getColumnName(cur,17),"num_prec_radix");
-	assertEqStr(sqlrcur_getColumnName(cur,18),"interval_precision");
-	assertEqStr(sqlrcur_getFieldByName(cur,0,"type_name"),"INT");
-	assertEqStr(sqlrcur_getFieldByName(cur,0,"data_type"),"4");
-	assertEqStr(sqlrcur_getFieldByName(cur,0,"precision"),"10");
-	assertEqStr(sqlrcur_getFieldByName(cur,0,"local_type_name"),"INT");
-	assertTrue(sqlrcur_getTypeInfoList(cur,"char"));
-	assertEqStr(sqlrcur_getFieldByName(cur,0,"type_name"),"CHAR");
-	assertEqStr(sqlrcur_getFieldByName(cur,0,"data_type"),"1");
-	assertEqStr(sqlrcur_getFieldByName(cur,0,"precision"),"255");
-	assertEqStr(sqlrcur_getFieldByName(cur,0,"local_type_name"),"CHAR");
-	assertTrue(sqlrcur_getTypeInfoList(cur,"varchar"));
-	assertEqStr(sqlrcur_getFieldByName(cur,0,"type_name"),"VARCHAR");
-	assertEqStr(sqlrcur_getFieldByName(cur,0,"data_type"),"12");
-	assertEqStr(sqlrcur_getFieldByName(cur,0,"precision"),"65535");
-	assertEqStr(sqlrcur_getFieldByName(cur,0,"local_type_name"),"VARCHAR");
-	assertTrue(sqlrcur_getTypeInfoList(cur,"date"));
-	assertEqStr(sqlrcur_getFieldByName(cur,0,"type_name"),"DATE");
-	assertEqStr(sqlrcur_getFieldByName(cur,0,"data_type"),"91");
-	assertEqStr(sqlrcur_getFieldByName(cur,0,"precision"),"10");
-	assertEqStr(sqlrcur_getFieldByName(cur,0,"local_type_name"),"DATE");
-	printf("\n");
+		// type info list
+		printf("TYPE INFO LIST: \n");
+		assertTrue(sqlrcur_getTypeInfoList(cur,"int"));
+		assertEqStr(sqlrcur_getColumnName(cur,0),"type_name");
+		assertEqStr(sqlrcur_getColumnName(cur,1),"data_type");
+		assertEqStr(sqlrcur_getColumnName(cur,2),"precision");
+		assertEqStr(sqlrcur_getColumnName(cur,3),"literal_prefix");
+		assertEqStr(sqlrcur_getColumnName(cur,4),"literal_suffix");
+		assertEqStr(sqlrcur_getColumnName(cur,5),"create_params");
+		assertEqStr(sqlrcur_getColumnName(cur,6),"nullable");
+		assertEqStr(sqlrcur_getColumnName(cur,7),"case_sensitive");
+		assertEqStr(sqlrcur_getColumnName(cur,8),"searchable");
+		assertEqStr(sqlrcur_getColumnName(cur,9),"unsigned_attribute");
+		assertEqStr(sqlrcur_getColumnName(cur,10),"fixed_prec_scale");
+		assertEqStr(sqlrcur_getColumnName(cur,11),"auto_increment");
+		assertEqStr(sqlrcur_getColumnName(cur,12),"local_type_name");
+		assertEqStr(sqlrcur_getColumnName(cur,13),"minumum_scale");
+		assertEqStr(sqlrcur_getColumnName(cur,14),"maxiumm_scale");
+		assertEqStr(sqlrcur_getColumnName(cur,15),"sql_data_type");
+		assertEqStr(sqlrcur_getColumnName(cur,16),"sql_datetime_sub");
+		assertEqStr(sqlrcur_getColumnName(cur,17),"num_prec_radix");
+		assertEqStr(sqlrcur_getColumnName(cur,18),"interval_precision");
+		assertEqStr(sqlrcur_getFieldByName(cur,0,"type_name"),"INT");
+		assertEqStr(sqlrcur_getFieldByName(cur,0,"data_type"),"4");
+		assertEqStr(sqlrcur_getFieldByName(cur,0,"precision"),"10");
+		assertEqStr(sqlrcur_getFieldByName(cur,0,"local_type_name"),"INT");
+		assertTrue(sqlrcur_getTypeInfoList(cur,"char"));
+		assertEqStr(sqlrcur_getFieldByName(cur,0,"type_name"),"CHAR");
+		assertEqStr(sqlrcur_getFieldByName(cur,0,"data_type"),"1");
+		assertEqStr(sqlrcur_getFieldByName(cur,0,"precision"),"255");
+		assertEqStr(sqlrcur_getFieldByName(cur,0,"local_type_name"),"CHAR");
+		assertTrue(sqlrcur_getTypeInfoList(cur,"varchar"));
+		assertEqStr(sqlrcur_getFieldByName(cur,0,"type_name"),"VARCHAR");
+		assertEqStr(sqlrcur_getFieldByName(cur,0,"data_type"),"12");
+		assertEqStr(sqlrcur_getFieldByName(cur,0,"precision"),"65535");
+		assertEqStr(sqlrcur_getFieldByName(cur,0,"local_type_name"),"VARCHAR");
+		assertTrue(sqlrcur_getTypeInfoList(cur,"date"));
+		assertEqStr(sqlrcur_getFieldByName(cur,0,"type_name"),"DATE");
+		assertEqStr(sqlrcur_getFieldByName(cur,0,"data_type"),"91");
+		assertEqStr(sqlrcur_getFieldByName(cur,0,"precision"),"10");
+		assertEqStr(sqlrcur_getFieldByName(cur,0,"local_type_name"),"DATE");
+		printf("\n");
 
 
-	// column list
-	printf("COLUMN LIST: \n");
-	sqlrcur_sendQuery(cur,"drop table testtable");
-	assertTrue(sqlrcur_sendQuery(cur,
-		"create table testtable ("
-		"	testtinyint tinyint, "
-		"	testsmallint smallint,"
-		"	testmediumint "
-		"	mediumint, "
-		"	testint int, "
-		"	testbigint bigint, "
-		"	testfloat float, "
-		"	testreal real, "
-		"	testdecimal "
-		"	decimal(2,1), "
-		"	testdate date, "
-		"	testtime time, "
-		"	testdatetime "
-		"	datetime, "
-		"	testyear year, "
-		"	testchar char(40), "
-		"	testvarchar "
-		"	varchar(40), "
-		"	testtext text, "
-		"	testtinytext "
-		"	tinytext, "
-		"	testmediumtext "
-		"	mediumtext, "
-		"	testlongtext "
-		"	longtext, "
-		"	testblob blob, "
-		"	testtinyblob "
-		"	tinyblob, "
-		"	testmediumblob "
-		"	mediumblob, "
-		"	testlongblob "
-		"	longblob, "
-		"	testtimestamp "
-		"	timestamp)"));
-	assertTrue(sqlrcur_getColumnList(cur,"testtable",NULL));
-	assertEqStr(sqlrcur_getColumnName(cur,0),"column_name");
-	assertEqStr(sqlrcur_getColumnName(cur,1),"data_type");
-	assertEqStr(sqlrcur_getColumnName(cur,2),"character_maximum_length");
-	assertEqStr(sqlrcur_getColumnName(cur,3),"numeric_precision");
-	assertEqStr(sqlrcur_getColumnName(cur,4),"numeric_scale");
-	assertEqStr(sqlrcur_getColumnName(cur,5),"is_nullable");
-	assertEqStr(sqlrcur_getColumnName(cur,6),"column_key");
-	assertEqStr(sqlrcur_getColumnName(cur,7),"column_default");
-	assertEqStr(sqlrcur_getColumnName(cur,8),"extra");
-	assertEqStr(sqlrcur_getFieldByName(cur,0,"column_name"),"testtinyint");
-	assertEqStr(sqlrcur_getFieldByName(cur,1,"column_name"),"testsmallint");
-	assertEqStr(sqlrcur_getFieldByName(cur,2,"column_name"),
-		"testmediumint");
-	assertEqStr(sqlrcur_getFieldByName(cur,3,"column_name"),"testint");
-	assertEqStr(sqlrcur_getFieldByName(cur,4,"column_name"),"testbigint");
-	assertEqStr(sqlrcur_getFieldByName(cur,5,"column_name"),"testfloat");
-	assertEqStr(sqlrcur_getFieldByName(cur,6,"column_name"),"testreal");
-	assertEqStr(sqlrcur_getFieldByName(cur,7,"column_name"),"testdecimal");
-	assertEqStr(sqlrcur_getFieldByName(cur,8,"column_name"),"testdate");
-	assertEqStr(sqlrcur_getFieldByName(cur,9,"column_name"),"testtime");
-	assertEqStr(sqlrcur_getFieldByName(cur,10,"column_name"),
-		"testdatetime");
-	assertEqStr(sqlrcur_getFieldByName(cur,11,"column_name"),"testyear");
-	assertEqStr(sqlrcur_getFieldByName(cur,12,"column_name"),"testchar");
-	assertEqStr(sqlrcur_getFieldByName(cur,13,"column_name"),"testvarchar");
-	assertEqStr(sqlrcur_getFieldByName(cur,14,"column_name"),"testtext");
-	assertEqStr(sqlrcur_getFieldByName(cur,15,"column_name"),
-		"testtinytext");
-	assertEqStr(sqlrcur_getFieldByName(cur,16,"column_name"),
-		"testmediumtext");
-	assertEqStr(sqlrcur_getFieldByName(cur,17,"column_name"),
-		"testlongtext");
-	assertEqStr(sqlrcur_getFieldByName(cur,18,"column_name"),"testblob");
-	assertEqStr(sqlrcur_getFieldByName(cur,19,"column_name"),
-		"testtinyblob");
-	assertEqStr(sqlrcur_getFieldByName(cur,20,"column_name"),
-		"testmediumblob");
-	assertEqStr(sqlrcur_getFieldByName(cur,21,"column_name"),
-		"testlongblob");
-	assertEqStr(sqlrcur_getFieldByName(cur,22,"column_name"),
-		"testtimestamp");
-	assertEqStr(sqlrcur_getFieldByName(cur,0,"data_type"),"TINYINT");
-	assertEqStr(sqlrcur_getFieldByName(cur,1,"data_type"),"SMALLINT");
-	assertEqStr(sqlrcur_getFieldByName(cur,2,"data_type"),"MEDIUMINT");
-	assertEqStr(sqlrcur_getFieldByName(cur,3,"data_type"),"INT");
-	assertEqStr(sqlrcur_getFieldByName(cur,4,"data_type"),"BIGINT");
-	assertEqStr(sqlrcur_getFieldByName(cur,5,"data_type"),"FLOAT");
-	// not "REAL"
-	assertEqStr(sqlrcur_getFieldByName(cur,6,"data_type"),"DOUBLE");
-	assertEqStr(sqlrcur_getFieldByName(cur,7,"data_type"),"DECIMAL");
-	assertEqStr(sqlrcur_getFieldByName(cur,8,"data_type"),"DATE");
-	assertEqStr(sqlrcur_getFieldByName(cur,9,"data_type"),"TIME");
-	assertEqStr(sqlrcur_getFieldByName(cur,10,"data_type"),"DATETIME");
-	assertEqStr(sqlrcur_getFieldByName(cur,11,"data_type"),"YEAR");
-	assertEqStr(sqlrcur_getFieldByName(cur,12,"data_type"),"CHAR");
-	assertEqStr(sqlrcur_getFieldByName(cur,13,"data_type"),"VARCHAR");
-	assertEqStr(sqlrcur_getFieldByName(cur,14,"data_type"),"TEXT");
-	assertEqStr(sqlrcur_getFieldByName(cur,15,"data_type"),"TINYTEXT");
-	assertEqStr(sqlrcur_getFieldByName(cur,16,"data_type"),"MEDIUMTEXT");
-	assertEqStr(sqlrcur_getFieldByName(cur,17,"data_type"),"LONGTEXT");
-	assertEqStr(sqlrcur_getFieldByName(cur,18,"data_type"),"BLOB");
-	assertEqStr(sqlrcur_getFieldByName(cur,19,"data_type"),"TINYBLOB");
-	assertEqStr(sqlrcur_getFieldByName(cur,20,"data_type"),"MEDIUMBLOB");
-	assertEqStr(sqlrcur_getFieldByName(cur,21,"data_type"),"LONGBLOB");
-	assertEqStr(sqlrcur_getFieldByName(cur,22,"data_type"),"TIMESTAMP");
-	assertTrue(sqlrcur_sendQuery(cur,"drop table testtable"));
-	printf("\n");
+		// column list
+		printf("COLUMN LIST: \n");
+		sqlrcur_sendQuery(cur,"drop table testtable");
+		assertTrue(sqlrcur_sendQuery(cur,
+			"create table testtable ("
+			"	testtinyint tinyint, "
+			"	testsmallint smallint,"
+			"	testmediumint "
+			"	mediumint, "
+			"	testint int, "
+			"	testbigint bigint, "
+			"	testfloat float, "
+			"	testreal real, "
+			"	testdecimal "
+			"	decimal(2,1), "
+			"	testdate date, "
+			"	testtime time, "
+			"	testdatetime "
+			"	datetime, "
+			"	testyear year, "
+			"	testchar char(40), "
+			"	testvarchar "
+			"	varchar(40), "
+			"	testtext text, "
+			"	testtinytext "
+			"	tinytext, "
+			"	testmediumtext "
+			"	mediumtext, "
+			"	testlongtext "
+			"	longtext, "
+			"	testblob blob, "
+			"	testtinyblob "
+			"	tinyblob, "
+			"	testmediumblob "
+			"	mediumblob, "
+			"	testlongblob "
+			"	longblob, "
+			"	testtimestamp "
+			"	timestamp)"));
+		assertTrue(sqlrcur_getColumnList(cur,"testtable",NULL));
+		assertEqStr(sqlrcur_getColumnName(cur,0),"column_name");
+		assertEqStr(sqlrcur_getColumnName(cur,1),"data_type");
+		assertEqStr(sqlrcur_getColumnName(cur,2),"character_maximum_length");
+		assertEqStr(sqlrcur_getColumnName(cur,3),"numeric_precision");
+		assertEqStr(sqlrcur_getColumnName(cur,4),"numeric_scale");
+		assertEqStr(sqlrcur_getColumnName(cur,5),"is_nullable");
+		assertEqStr(sqlrcur_getColumnName(cur,6),"column_key");
+		assertEqStr(sqlrcur_getColumnName(cur,7),"column_default");
+		assertEqStr(sqlrcur_getColumnName(cur,8),"extra");
+		assertEqStr(sqlrcur_getFieldByName(cur,0,"column_name"),"testtinyint");
+		assertEqStr(sqlrcur_getFieldByName(cur,1,"column_name"),"testsmallint");
+		assertEqStr(sqlrcur_getFieldByName(cur,2,"column_name"),
+			"testmediumint");
+		assertEqStr(sqlrcur_getFieldByName(cur,3,"column_name"),"testint");
+		assertEqStr(sqlrcur_getFieldByName(cur,4,"column_name"),"testbigint");
+		assertEqStr(sqlrcur_getFieldByName(cur,5,"column_name"),"testfloat");
+		assertEqStr(sqlrcur_getFieldByName(cur,6,"column_name"),"testreal");
+		assertEqStr(sqlrcur_getFieldByName(cur,7,"column_name"),"testdecimal");
+		assertEqStr(sqlrcur_getFieldByName(cur,8,"column_name"),"testdate");
+		assertEqStr(sqlrcur_getFieldByName(cur,9,"column_name"),"testtime");
+		assertEqStr(sqlrcur_getFieldByName(cur,10,"column_name"),
+			"testdatetime");
+		assertEqStr(sqlrcur_getFieldByName(cur,11,"column_name"),"testyear");
+		assertEqStr(sqlrcur_getFieldByName(cur,12,"column_name"),"testchar");
+		assertEqStr(sqlrcur_getFieldByName(cur,13,"column_name"),"testvarchar");
+		assertEqStr(sqlrcur_getFieldByName(cur,14,"column_name"),"testtext");
+		assertEqStr(sqlrcur_getFieldByName(cur,15,"column_name"),
+			"testtinytext");
+		assertEqStr(sqlrcur_getFieldByName(cur,16,"column_name"),
+			"testmediumtext");
+		assertEqStr(sqlrcur_getFieldByName(cur,17,"column_name"),
+			"testlongtext");
+		assertEqStr(sqlrcur_getFieldByName(cur,18,"column_name"),"testblob");
+		assertEqStr(sqlrcur_getFieldByName(cur,19,"column_name"),
+			"testtinyblob");
+		assertEqStr(sqlrcur_getFieldByName(cur,20,"column_name"),
+			"testmediumblob");
+		assertEqStr(sqlrcur_getFieldByName(cur,21,"column_name"),
+			"testlongblob");
+		assertEqStr(sqlrcur_getFieldByName(cur,22,"column_name"),
+			"testtimestamp");
+		assertEqStr(sqlrcur_getFieldByName(cur,0,"data_type"),"TINYINT");
+		assertEqStr(sqlrcur_getFieldByName(cur,1,"data_type"),"SMALLINT");
+		assertEqStr(sqlrcur_getFieldByName(cur,2,"data_type"),"MEDIUMINT");
+		assertEqStr(sqlrcur_getFieldByName(cur,3,"data_type"),"INT");
+		assertEqStr(sqlrcur_getFieldByName(cur,4,"data_type"),"BIGINT");
+		assertEqStr(sqlrcur_getFieldByName(cur,5,"data_type"),"FLOAT");
+		// not "REAL"
+		assertEqStr(sqlrcur_getFieldByName(cur,6,"data_type"),"DOUBLE");
+		assertEqStr(sqlrcur_getFieldByName(cur,7,"data_type"),"DECIMAL");
+		assertEqStr(sqlrcur_getFieldByName(cur,8,"data_type"),"DATE");
+		assertEqStr(sqlrcur_getFieldByName(cur,9,"data_type"),"TIME");
+		assertEqStr(sqlrcur_getFieldByName(cur,10,"data_type"),"DATETIME");
+		assertEqStr(sqlrcur_getFieldByName(cur,11,"data_type"),"YEAR");
+		assertEqStr(sqlrcur_getFieldByName(cur,12,"data_type"),"CHAR");
+		assertEqStr(sqlrcur_getFieldByName(cur,13,"data_type"),"VARCHAR");
+		assertEqStr(sqlrcur_getFieldByName(cur,14,"data_type"),"TEXT");
+		assertEqStr(sqlrcur_getFieldByName(cur,15,"data_type"),"TINYTEXT");
+		assertEqStr(sqlrcur_getFieldByName(cur,16,"data_type"),"MEDIUMTEXT");
+		assertEqStr(sqlrcur_getFieldByName(cur,17,"data_type"),"LONGTEXT");
+		assertEqStr(sqlrcur_getFieldByName(cur,18,"data_type"),"BLOB");
+		assertEqStr(sqlrcur_getFieldByName(cur,19,"data_type"),"TINYBLOB");
+		assertEqStr(sqlrcur_getFieldByName(cur,20,"data_type"),"MEDIUMBLOB");
+		assertEqStr(sqlrcur_getFieldByName(cur,21,"data_type"),"LONGBLOB");
+		assertEqStr(sqlrcur_getFieldByName(cur,22,"data_type"),"TIMESTAMP");
+		assertTrue(sqlrcur_sendQuery(cur,"drop table testtable"));
+		printf("\n");
 
 
-	// column list - auto_increment,
-	// primary key
-	printf("COLUMN LIST - ""auto_increment, ""primary key: \n");
-	sqlrcur_sendQuery(cur,"drop table testtable");
-	assertTrue(sqlrcur_sendQuery(cur,
-		"create table testtable ("
-		"	col1 int "
-		"	auto_increment "
-		"	primary key, "
-		"	col2 int)"));
-	assertTrue(sqlrcur_getColumnList(cur,"testtable",NULL));
-	assertTrue(strstr(sqlrcur_getFieldByName(cur,0,"extra"),
-		"auto_increment")!=NULL);
-	assertTrue(strstr(sqlrcur_getFieldByName(cur,0,"column_key"),
-		"PRI")!=NULL);
-	assertFalse(strstr(sqlrcur_getFieldByName(cur,1,"extra"),
-		"auto_increment")!=NULL);
-	assertFalse(strstr(sqlrcur_getFieldByName(cur,1,"column_key"),
-		"PRI")!=NULL);
-	printf("\n");
-	assertTrue(sqlrcur_sendQuery(cur,"drop table testtable"));
-	assertTrue(sqlrcur_sendQuery(cur,
-		"create table testtable ("
-		"	col1 int "
-		"	primary key, "
-		"	col2 int)"));
-	assertTrue(sqlrcur_getColumnList(cur,"testtable",NULL));
-	assertFalse(strstr(sqlrcur_getFieldByName(cur,0,"extra"),
-		"auto_increment")!=NULL);
-	assertTrue(strstr(sqlrcur_getFieldByName(cur,0,"column_key"),
-		"PRI")!=NULL);
-	assertTrue(sqlrcur_sendQuery(cur,"drop table testtable"));
-	printf("\n");
+		// column list - auto_increment,
+		// primary key
+		printf("COLUMN LIST - ""auto_increment, ""primary key: \n");
+		sqlrcur_sendQuery(cur,"drop table testtable");
+		assertTrue(sqlrcur_sendQuery(cur,
+			"create table testtable ("
+			"	col1 int "
+			"	auto_increment "
+			"	primary key, "
+			"	col2 int)"));
+		assertTrue(sqlrcur_getColumnList(cur,"testtable",NULL));
+		assertTrue(strstr(sqlrcur_getFieldByName(cur,0,"extra"),
+			"auto_increment")!=NULL);
+		assertTrue(strstr(sqlrcur_getFieldByName(cur,0,"column_key"),
+			"PRI")!=NULL);
+		assertFalse(strstr(sqlrcur_getFieldByName(cur,1,"extra"),
+			"auto_increment")!=NULL);
+		assertFalse(strstr(sqlrcur_getFieldByName(cur,1,"column_key"),
+			"PRI")!=NULL);
+		printf("\n");
+		assertTrue(sqlrcur_sendQuery(cur,"drop table testtable"));
+		assertTrue(sqlrcur_sendQuery(cur,
+			"create table testtable ("
+			"	col1 int "
+			"	primary key, "
+			"	col2 int)"));
+		assertTrue(sqlrcur_getColumnList(cur,"testtable",NULL));
+		assertFalse(strstr(sqlrcur_getFieldByName(cur,0,"extra"),
+			"auto_increment")!=NULL);
+		assertTrue(strstr(sqlrcur_getFieldByName(cur,0,"column_key"),
+			"PRI")!=NULL);
+		assertTrue(sqlrcur_sendQuery(cur,"drop table testtable"));
+		printf("\n");
 
 
-	// primary keys list
-	printf("PRIMARY KEYS LIST: \n");
-	sqlrcur_sendQuery(cur,"drop table testtable");
-	assertTrue(sqlrcur_sendQuery(cur,
-		"create table testtable ("
-		"	col1 int "
-		"	primary key, "
-		"	col2 int)"));
-	assertTrue(sqlrcur_getPrimaryKeysList(cur,"testtable",NULL));
-	assertEqStr(sqlrcur_getColumnName(cur,0),"table");
-	assertEqStr(sqlrcur_getColumnName(cur,1),"non_unique");
-	assertEqStr(sqlrcur_getColumnName(cur,2),"key_name");
-	assertEqStr(sqlrcur_getColumnName(cur,3),"seq_in_index");
-	assertEqStr(sqlrcur_getColumnName(cur,4),"column_name");
-	assertEqStr(sqlrcur_getColumnName(cur,5),"collation");
-	assertEqStr(sqlrcur_getColumnName(cur,6),"cardinality");
-	assertEqStr(sqlrcur_getColumnName(cur,7),"sub_part");
-	assertEqStr(sqlrcur_getColumnName(cur,8),"packed");
-	assertEqStr(sqlrcur_getColumnName(cur,9),"null");
-	assertEqStr(sqlrcur_getColumnName(cur,10),"index_type");
-	assertEqStr(sqlrcur_getColumnName(cur,11),"comment");
-	assertEqStr(sqlrcur_getColumnName(cur,12),"index_comment");
-	assertEqInt(sqlrcur_rowCount(cur),1);
-	assertTrue(!strcmp(sqlrcur_getFieldByName(cur,0,"table"),"testtable"));
-	assertEqStr(sqlrcur_getFieldByName(cur,0,"seq_in_index"),"1");
-	assertTrue(!strcmp(sqlrcur_getFieldByName(cur,0,"column_name"),"col1"));
-	assertEqStr(sqlrcur_getFieldByName(cur,0,"key_name"),"PRIMARY");
-	assertTrue(sqlrcur_sendQuery(cur,"drop table testtable"));
-	printf("\n");
+		// primary keys list
+		printf("PRIMARY KEYS LIST: \n");
+		sqlrcur_sendQuery(cur,"drop table testtable");
+		assertTrue(sqlrcur_sendQuery(cur,
+			"create table testtable ("
+			"	col1 int "
+			"	primary key, "
+			"	col2 int)"));
+		assertTrue(sqlrcur_getPrimaryKeysList(cur,"testtable",NULL));
+		assertEqStr(sqlrcur_getColumnName(cur,0),"table");
+		assertEqStr(sqlrcur_getColumnName(cur,1),"non_unique");
+		assertEqStr(sqlrcur_getColumnName(cur,2),"key_name");
+		assertEqStr(sqlrcur_getColumnName(cur,3),"seq_in_index");
+		assertEqStr(sqlrcur_getColumnName(cur,4),"column_name");
+		assertEqStr(sqlrcur_getColumnName(cur,5),"collation");
+		assertEqStr(sqlrcur_getColumnName(cur,6),"cardinality");
+		assertEqStr(sqlrcur_getColumnName(cur,7),"sub_part");
+		assertEqStr(sqlrcur_getColumnName(cur,8),"packed");
+		assertEqStr(sqlrcur_getColumnName(cur,9),"null");
+		assertEqStr(sqlrcur_getColumnName(cur,10),"index_type");
+		assertEqStr(sqlrcur_getColumnName(cur,11),"comment");
+		assertEqStr(sqlrcur_getColumnName(cur,12),"index_comment");
+		assertEqInt(sqlrcur_rowCount(cur),1);
+		assertTrue(!strcmp(sqlrcur_getFieldByName(cur,0,"table"),"testtable"));
+		assertEqStr(sqlrcur_getFieldByName(cur,0,"seq_in_index"),"1");
+		assertTrue(!strcmp(sqlrcur_getFieldByName(cur,0,"column_name"),"col1"));
+		assertEqStr(sqlrcur_getFieldByName(cur,0,"key_name"),"PRIMARY");
+		assertTrue(sqlrcur_sendQuery(cur,"drop table testtable"));
+		printf("\n");
 
 
-	// key and index list
-	printf("KEY AND INDEX LIST: \n");
-	sqlrcur_sendQuery(cur,"drop table testtable");
-	assertTrue(sqlrcur_sendQuery(cur,
-		"create table testtable ("
-		"	col1 int "
-		"	primary key, "
-		"	col2 int)"));
-	assertTrue(sqlrcur_getKeyAndIndexList(cur,"testtable",NULL));
-	assertEqStr(sqlrcur_getColumnName(cur,0),"table");
-	assertEqStr(sqlrcur_getColumnName(cur,1),"non_unique");
-	assertEqStr(sqlrcur_getColumnName(cur,2),"key_name");
-	assertEqStr(sqlrcur_getColumnName(cur,3),"seq_in_index");
-	assertEqStr(sqlrcur_getColumnName(cur,4),"column_name");
-	assertEqStr(sqlrcur_getColumnName(cur,5),"collation");
-	assertEqStr(sqlrcur_getColumnName(cur,6),"cardinality");
-	assertEqStr(sqlrcur_getColumnName(cur,7),"sub_part");
-	assertEqStr(sqlrcur_getColumnName(cur,8),"packed");
-	assertEqStr(sqlrcur_getColumnName(cur,9),"null");
-	assertEqStr(sqlrcur_getColumnName(cur,10),"index_type");
-	assertEqStr(sqlrcur_getColumnName(cur,11),"comment");
-	assertEqStr(sqlrcur_getColumnName(cur,12),"index_comment");
-	assertEqInt(sqlrcur_rowCount(cur),1);
-	assertTrue(!strcmp(sqlrcur_getFieldByName(cur,0,"table"),"testtable"));
-	assertEqStr(sqlrcur_getFieldByName(cur,0,"non_unique"),"false");
-	assertEqStr(sqlrcur_getFieldByName(cur,0,"seq_in_index"),"1");
-	assertTrue(!strcmp(sqlrcur_getFieldByName(cur,0,"column_name"),"col1"));
-	assertEqStr(sqlrcur_getFieldByName(cur,0,"collation"),"A");
-	assertEqStr(sqlrcur_getFieldByName(cur,0,"index_type"),"3");
-	assertEqStr(sqlrcur_getFieldByName(cur,0,"key_name"),"PRIMARY");
-	assertTrue(sqlrcur_sendQuery(cur,"drop table testtable"));
-	printf("\n");
+		// key and index list
+		printf("KEY AND INDEX LIST: \n");
+		sqlrcur_sendQuery(cur,"drop table testtable");
+		assertTrue(sqlrcur_sendQuery(cur,
+			"create table testtable ("
+			"	col1 int "
+			"	primary key, "
+			"	col2 int)"));
+		assertTrue(sqlrcur_getKeyAndIndexList(cur,"testtable",NULL));
+		assertEqStr(sqlrcur_getColumnName(cur,0),"table");
+		assertEqStr(sqlrcur_getColumnName(cur,1),"non_unique");
+		assertEqStr(sqlrcur_getColumnName(cur,2),"key_name");
+		assertEqStr(sqlrcur_getColumnName(cur,3),"seq_in_index");
+		assertEqStr(sqlrcur_getColumnName(cur,4),"column_name");
+		assertEqStr(sqlrcur_getColumnName(cur,5),"collation");
+		assertEqStr(sqlrcur_getColumnName(cur,6),"cardinality");
+		assertEqStr(sqlrcur_getColumnName(cur,7),"sub_part");
+		assertEqStr(sqlrcur_getColumnName(cur,8),"packed");
+		assertEqStr(sqlrcur_getColumnName(cur,9),"null");
+		assertEqStr(sqlrcur_getColumnName(cur,10),"index_type");
+		assertEqStr(sqlrcur_getColumnName(cur,11),"comment");
+		assertEqStr(sqlrcur_getColumnName(cur,12),"index_comment");
+		assertEqInt(sqlrcur_rowCount(cur),1);
+		assertTrue(!strcmp(sqlrcur_getFieldByName(cur,0,"table"),"testtable"));
+		assertEqStr(sqlrcur_getFieldByName(cur,0,"non_unique"),"false");
+		assertEqStr(sqlrcur_getFieldByName(cur,0,"seq_in_index"),"1");
+		assertTrue(!strcmp(sqlrcur_getFieldByName(cur,0,"column_name"),"col1"));
+		assertEqStr(sqlrcur_getFieldByName(cur,0,"collation"),"A");
+		assertEqStr(sqlrcur_getFieldByName(cur,0,"index_type"),"3");
+		assertEqStr(sqlrcur_getFieldByName(cur,0,"key_name"),"PRIMARY");
+		assertTrue(sqlrcur_sendQuery(cur,"drop table testtable"));
+		printf("\n");
 
 
-	// procedure list
-	printf("PROCEDURE LIST: \n");
-	sqlrcur_sendQuery(cur,"drop procedure testproc1");
-	sqlrcur_sendQuery(cur,"drop procedure testproc2");
-	sqlrcur_sendQuery(cur,"drop procedure testproc3");
-	sqlrcur_sendQuery(cur,"drop procedure testproc4");
-	assertTrue(sqlrcur_sendQuery(cur,"create procedure "
-		"testproc1("
-		"	in in1 int, "
-		"	in in2 char(20), "
-		"	in in3 varchar(20), "
-		"	in in4 date) ""begin end"));
-	assertTrue(sqlrcur_sendQuery(cur,"create procedure "
-		"testproc2("
-		"	in in1 int, "
-		"	in in2 char(20), "
-		"	in in3 varchar(20), "
-		"	in in4 date) ""begin end"));
-	assertTrue(sqlrcur_sendQuery(cur,"create procedure "
-		"testproc3("
-		"	in in1 int, "
-		"	in in2 char(20), "
-		"	in in3 varchar(20), "
-		"	in in4 date) ""begin end"));
-	assertTrue(sqlrcur_sendQuery(cur,"create procedure "
-		"testproc4("
-		"	in in1 int, "
-		"	in in2 char(20), "
-		"	in in3 varchar(20), "
-		"	in in4 date) ""begin end"));
-	assertTrue(sqlrcur_getProcedureList(cur,NULL));
-	assertInResultSet(cur,"routine_name","testproc1");
-	assertInResultSet(cur,"routine_name","testproc2");
-	assertInResultSet(cur,"routine_name","testproc3");
-	assertInResultSet(cur,"routine_name","testproc4");
-	printf("\n");
+		// procedure list
+		printf("PROCEDURE LIST: \n");
+		sqlrcur_sendQuery(cur,"drop procedure testproc1");
+		sqlrcur_sendQuery(cur,"drop procedure testproc2");
+		sqlrcur_sendQuery(cur,"drop procedure testproc3");
+		sqlrcur_sendQuery(cur,"drop procedure testproc4");
+		assertTrue(sqlrcur_sendQuery(cur,"create procedure "
+			"testproc1("
+			"	in in1 int, "
+			"	in in2 char(20), "
+			"	in in3 varchar(20), "
+			"	in in4 date) ""begin end"));
+		assertTrue(sqlrcur_sendQuery(cur,"create procedure "
+			"testproc2("
+			"	in in1 int, "
+			"	in in2 char(20), "
+			"	in in3 varchar(20), "
+			"	in in4 date) ""begin end"));
+		assertTrue(sqlrcur_sendQuery(cur,"create procedure "
+			"testproc3("
+			"	in in1 int, "
+			"	in in2 char(20), "
+			"	in in3 varchar(20), "
+			"	in in4 date) ""begin end"));
+		assertTrue(sqlrcur_sendQuery(cur,"create procedure "
+			"testproc4("
+			"	in in1 int, "
+			"	in in2 char(20), "
+			"	in in3 varchar(20), "
+			"	in in4 date) ""begin end"));
+		assertTrue(sqlrcur_getProcedureList(cur,NULL));
+		assertInResultSet(cur,"routine_name","testproc1");
+		assertInResultSet(cur,"routine_name","testproc2");
+		assertInResultSet(cur,"routine_name","testproc3");
+		assertInResultSet(cur,"routine_name","testproc4");
+		printf("\n");
 
 
-	// procedure parameter list
-	printf("PROCEDURE PARAMETER ""LIST: \n");
-	assertTrue(sqlrcur_getProcedureParameterList(cur,"testproc1",NULL));
-	assertEqStr(sqlrcur_getColumnName(cur,0),"parameter_name");
-	assertEqStr(sqlrcur_getColumnName(cur,1),"parameter_mode");
-	assertEqStr(sqlrcur_getColumnName(cur,2),"data_type");
-	assertEqStr(sqlrcur_getColumnName(cur,3),"character_maximum_length");
-	assertEqStr(sqlrcur_getColumnName(cur,4),"ordinal_position");
-	assertEqInt(sqlrcur_rowCount(cur),4);
-	assertEqStr(sqlrcur_getFieldByName(cur,0,"parameter_name"),"in1");
-	assertEqStr(sqlrcur_getFieldByName(cur,0,"parameter_mode"),"1");
-	assertEqStr(sqlrcur_getFieldByName(cur,0,"data_type"),"INT");
-	assertEqStr(sqlrcur_getFieldByName(cur,0,"ordinal_position"),"1");
-	assertEqStr(sqlrcur_getFieldByName(cur,1,"parameter_name"),"in2");
-	assertEqStr(sqlrcur_getFieldByName(cur,1,"parameter_mode"),"1");
-	assertEqStr(sqlrcur_getFieldByName(cur,1,"data_type"),"CHAR");
-	assertEqStr(sqlrcur_getFieldByName(cur,1,"ordinal_position"),"2");
-	assertEqStr(sqlrcur_getFieldByName(cur,2,"parameter_name"),"in3");
-	assertEqStr(sqlrcur_getFieldByName(cur,2,"parameter_mode"),"1");
-	assertEqStr(sqlrcur_getFieldByName(cur,2,"data_type"),"VARCHAR");
-	assertEqStr(sqlrcur_getFieldByName(cur,2,"ordinal_position"),"3");
-	assertEqStr(sqlrcur_getFieldByName(cur,3,"parameter_name"),"in4");
-	assertEqStr(sqlrcur_getFieldByName(cur,3,"parameter_mode"),"1");
-	assertEqStr(sqlrcur_getFieldByName(cur,3,"data_type"),"DATE");
-	assertEqStr(sqlrcur_getFieldByName(cur,3,"ordinal_position"),"4");
-	assertTrue(sqlrcur_sendQuery(cur,"drop procedure testproc1"));
-	assertTrue(sqlrcur_sendQuery(cur,"drop procedure testproc2"));
-	assertTrue(sqlrcur_sendQuery(cur,"drop procedure testproc3"));
-	assertTrue(sqlrcur_sendQuery(cur,"drop procedure testproc4"));
-	printf("\n");
+		// procedure parameter list
+		printf("PROCEDURE PARAMETER ""LIST: \n");
+		assertTrue(sqlrcur_getProcedureParameterList(cur,"testproc1",NULL));
+		assertEqStr(sqlrcur_getColumnName(cur,0),"parameter_name");
+		assertEqStr(sqlrcur_getColumnName(cur,1),"parameter_mode");
+		assertEqStr(sqlrcur_getColumnName(cur,2),"data_type");
+		assertEqStr(sqlrcur_getColumnName(cur,3),"character_maximum_length");
+		assertEqStr(sqlrcur_getColumnName(cur,4),"ordinal_position");
+		assertEqInt(sqlrcur_rowCount(cur),4);
+		assertEqStr(sqlrcur_getFieldByName(cur,0,"parameter_name"),"in1");
+		assertEqStr(sqlrcur_getFieldByName(cur,0,"parameter_mode"),"1");
+		assertEqStr(sqlrcur_getFieldByName(cur,0,"data_type"),"INT");
+		assertEqStr(sqlrcur_getFieldByName(cur,0,"ordinal_position"),"1");
+		assertEqStr(sqlrcur_getFieldByName(cur,1,"parameter_name"),"in2");
+		assertEqStr(sqlrcur_getFieldByName(cur,1,"parameter_mode"),"1");
+		assertEqStr(sqlrcur_getFieldByName(cur,1,"data_type"),"CHAR");
+		assertEqStr(sqlrcur_getFieldByName(cur,1,"ordinal_position"),"2");
+		assertEqStr(sqlrcur_getFieldByName(cur,2,"parameter_name"),"in3");
+		assertEqStr(sqlrcur_getFieldByName(cur,2,"parameter_mode"),"1");
+		assertEqStr(sqlrcur_getFieldByName(cur,2,"data_type"),"VARCHAR");
+		assertEqStr(sqlrcur_getFieldByName(cur,2,"ordinal_position"),"3");
+		assertEqStr(sqlrcur_getFieldByName(cur,3,"parameter_name"),"in4");
+		assertEqStr(sqlrcur_getFieldByName(cur,3,"parameter_mode"),"1");
+		assertEqStr(sqlrcur_getFieldByName(cur,3,"data_type"),"DATE");
+		assertEqStr(sqlrcur_getFieldByName(cur,3,"ordinal_position"),"4");
+		assertTrue(sqlrcur_sendQuery(cur,"drop procedure testproc1"));
+		assertTrue(sqlrcur_sendQuery(cur,"drop procedure testproc2"));
+		assertTrue(sqlrcur_sendQuery(cur,"drop procedure testproc3"));
+		assertTrue(sqlrcur_sendQuery(cur,"drop procedure testproc4"));
+		printf("\n");
 
 
+	}
 	// invalid queries
 	printf("INVALID QUERIES: \n");
 	assertFalse(sqlrcur_sendQuery(cur,

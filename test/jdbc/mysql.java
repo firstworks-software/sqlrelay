@@ -185,36 +185,43 @@ class mysql extends sqlrtest {
 		}
 		System.out.println();
 
+		// backend major version (derived from the backend dbVersion);
+		// used below to gate features the old mysql 3.23 backend lacks
+		int	majorversion=con.getMetaData().getDatabaseMajorVersion();
+
 		// isolation levels
 		System.out.println("  isolation levels");
 
-		// mysql supports all four isolation levels
-		// (autocommit is on here, so no commit() between changes -
-		// the native driver rejects commit() in autocommit mode)
-		con.setTransactionIsolation(
-			Connection.TRANSACTION_READ_UNCOMMITTED);
-		assertEquals(con.getTransactionIsolation(),
-			Connection.TRANSACTION_READ_UNCOMMITTED);
+		// mysql before 4.0 doesn't support setting the isolation level
+		if (majorversion>3) {
+			// mysql supports all four isolation levels
+			// (autocommit is on here, so no commit() between changes -
+			// the native driver rejects commit() in autocommit mode)
+			con.setTransactionIsolation(
+				Connection.TRANSACTION_READ_UNCOMMITTED);
+			assertEquals(con.getTransactionIsolation(),
+				Connection.TRANSACTION_READ_UNCOMMITTED);
 
-		con.setTransactionIsolation(
-			Connection.TRANSACTION_READ_COMMITTED);
-		assertEquals(con.getTransactionIsolation(),
-			Connection.TRANSACTION_READ_COMMITTED);
+			con.setTransactionIsolation(
+				Connection.TRANSACTION_READ_COMMITTED);
+			assertEquals(con.getTransactionIsolation(),
+				Connection.TRANSACTION_READ_COMMITTED);
 
-		con.setTransactionIsolation(
-			Connection.
-			TRANSACTION_REPEATABLE_READ);
-		assertEquals(con.getTransactionIsolation(),
-			Connection.TRANSACTION_REPEATABLE_READ);
+			con.setTransactionIsolation(
+				Connection.
+				TRANSACTION_REPEATABLE_READ);
+			assertEquals(con.getTransactionIsolation(),
+				Connection.TRANSACTION_REPEATABLE_READ);
 
-		con.setTransactionIsolation(
-			Connection.TRANSACTION_SERIALIZABLE);
-		assertEquals(con.getTransactionIsolation(),
-			Connection.TRANSACTION_SERIALIZABLE);
+			con.setTransactionIsolation(
+				Connection.TRANSACTION_SERIALIZABLE);
+			assertEquals(con.getTransactionIsolation(),
+				Connection.TRANSACTION_SERIALIZABLE);
 
-		// reset to default
-		con.setTransactionIsolation(
-			Connection.TRANSACTION_REPEATABLE_READ);
+			// reset to default
+			con.setTransactionIsolation(
+				Connection.TRANSACTION_REPEATABLE_READ);
+		}
 		System.out.println();
 
 		// warnings
@@ -2811,6 +2818,10 @@ if (issqlrelay) {
 
 		// commit and rollback
 		System.out.println("COMMIT AND ROLLBACK:");
+		// relies on transactional isolation (repeatable-read snapshots,
+		// rollback discarding an insert); mysql before 4.0 has no
+		// transactional storage engine
+		if (majorversion>3) {
 		Connection	secondcon=DriverManager.getConnection(
 							url,props);
 		assertTrue((secondcon!=null));
@@ -2945,6 +2956,12 @@ if (issqlrelay) {
 		secondcon.close();
 		con.setAutoCommit(false);
 		stmt.executeUpdate("drop table testtable");
+		}
+		// re-open a statement for the following sections (the gated
+		// block above creates and closes its own) and make sure
+		// testtable is gone (the gated block drops it otherwise)
+		stmt=con.createStatement();
+		stmt.executeUpdate("drop table if exists testtable");
 		System.out.println();
 
 
@@ -3127,76 +3144,79 @@ if (issqlrelay) {
 
 		// stored procedures
 		System.out.println("STORED PROCEDURES:");
-		// return no value
-		stmt.executeUpdate("drop procedure if exists testproc");
-		assertEquals(stmt.executeUpdate(
-			"create procedure testproc("+
-			"	in in1 int, "+
-			"	in in2 float, "+
-			"	in in3 char(20)) "+
-			"begin "+
-			"	select in1, in2, in3; "+
-			"end"),0);
-		cstmt=con.prepareCall(
-			"call testproc(?,?,?)");
-		cstmt.setInt(1,1);
-		cstmt.setDouble(2,2.5);
-		cstmt.setString(3,"hello");
-		assertTrue(cstmt.execute());
-		rs=cstmt.getResultSet();
-		assertTrue((rs!=null));
-		assertTrue(rs.next());
-		assertEquals(rs.getString(1),"1");
-		assertEquals(rs.getString(2),"2.5");
-		assertEquals(rs.getString(3),"hello");
-		rs.close();
-		cstmt.close();
-		stmt.executeUpdate("drop procedure if exists testproc");
-		System.out.println();
-		// return single value (function)
-		stmt.executeUpdate("drop function if exists testfunc");
-		assertEquals(stmt.executeUpdate(
-			"create function testfunc("+
-			"	in1 int, "+
-			"	in2 int) "+
-			"returns int "+
-			"deterministic "+
-			"return in1+in2"),0);
-		pstmt=con.prepareStatement(
-			"select testfunc(?,?)");
-		assertTrue((pstmt!=null));
-		pstmt.setInt(1,1);
-		pstmt.setInt(2,2);
-		rs=pstmt.executeQuery();
-		assertTrue((rs!=null));
-		assertTrue(rs.getStatement()==pstmt);
-		rs.next();
-		assertEquals(rs.getString(1),"3");
-		rs.close();
-		pstmt.close();
-		stmt.executeUpdate("drop function if exists testfunc");
-		System.out.println();
-		// return values
-		assertEquals(stmt.executeUpdate(
-			"create procedure testproc("+
-			"	out out1 int, "+
-			"	out out2 float, "+
-			"	out out3 char(20)) "+
-			"begin "+
-			"	select 1, 2.5, 'hello' "+
-			"		into out1, out2, out3; "+
-			"end"),0);
-		stmt.executeUpdate("set @out1=0, @out2=0.0, @out3=''");
-		stmt.executeUpdate("call testproc(@out1,@out2,@out3)");
-		rs=stmt.executeQuery("select @out1, @out2, @out3");
-		assertTrue((rs!=null));
-		assertTrue(rs.next());
-		assertEquals(rs.getString(1),"1");
-		assertEquals(rs.getString(2),"2.5");
-		assertEquals(rs.getString(3),"hello");
-		rs.close();
-		stmt.executeUpdate("drop procedure if exists testproc");
-		System.out.println();
+		// mysql before 5.0 has no stored procedures or functions
+		if (majorversion>3) {
+			// return no value
+			stmt.executeUpdate("drop procedure if exists testproc");
+			assertEquals(stmt.executeUpdate(
+				"create procedure testproc("+
+				"	in in1 int, "+
+				"	in in2 float, "+
+				"	in in3 char(20)) "+
+				"begin "+
+				"	select in1, in2, in3; "+
+				"end"),0);
+			cstmt=con.prepareCall(
+				"call testproc(?,?,?)");
+			cstmt.setInt(1,1);
+			cstmt.setDouble(2,2.5);
+			cstmt.setString(3,"hello");
+			assertTrue(cstmt.execute());
+			rs=cstmt.getResultSet();
+			assertTrue((rs!=null));
+			assertTrue(rs.next());
+			assertEquals(rs.getString(1),"1");
+			assertEquals(rs.getString(2),"2.5");
+			assertEquals(rs.getString(3),"hello");
+			rs.close();
+			cstmt.close();
+			stmt.executeUpdate("drop procedure if exists testproc");
+			System.out.println();
+			// return single value (function)
+			stmt.executeUpdate("drop function if exists testfunc");
+			assertEquals(stmt.executeUpdate(
+				"create function testfunc("+
+				"	in1 int, "+
+				"	in2 int) "+
+				"returns int "+
+				"deterministic "+
+				"return in1+in2"),0);
+			pstmt=con.prepareStatement(
+				"select testfunc(?,?)");
+			assertTrue((pstmt!=null));
+			pstmt.setInt(1,1);
+			pstmt.setInt(2,2);
+			rs=pstmt.executeQuery();
+			assertTrue((rs!=null));
+			assertTrue(rs.getStatement()==pstmt);
+			rs.next();
+			assertEquals(rs.getString(1),"3");
+			rs.close();
+			pstmt.close();
+			stmt.executeUpdate("drop function if exists testfunc");
+			System.out.println();
+			// return values
+			assertEquals(stmt.executeUpdate(
+				"create procedure testproc("+
+				"	out out1 int, "+
+				"	out out2 float, "+
+				"	out out3 char(20)) "+
+				"begin "+
+				"	select 1, 2.5, 'hello' "+
+				"		into out1, out2, out3; "+
+				"end"),0);
+			stmt.executeUpdate("set @out1=0, @out2=0.0, @out3=''");
+			stmt.executeUpdate("call testproc(@out1,@out2,@out3)");
+			rs=stmt.executeQuery("select @out1, @out2, @out3");
+			assertTrue((rs!=null));
+			assertTrue(rs.next());
+			assertEquals(rs.getString(1),"1");
+			assertEquals(rs.getString(2),"2.5");
+			assertEquals(rs.getString(3),"hello");
+			rs.close();
+			stmt.executeUpdate("drop procedure if exists testproc");
+			System.out.println();
+		}
 
 
 		// client info properties
@@ -3221,9 +3241,14 @@ if (issqlrelay) {
 		}
 
 
+		stmt=con.createStatement();
+
+		// these metadata queries hit information_schema, which mysql
+		// before 5.0 doesn't have
+		if (majorversion>3) {
+
 		// catalog list
 		System.out.println("CATALOG LIST:");
-		stmt=con.createStatement();
 		rs=md.getCatalogs();
 		assertTrue((rs!=null));
 		rsmd=rs.getMetaData();
@@ -3792,6 +3817,8 @@ if (issqlrelay) {
 		stmt.executeUpdate("drop procedure if exists testproc3");
 		stmt.executeUpdate("drop procedure if exists testproc4");
 		System.out.println();
+
+		}
 
 
 		// invalid queries

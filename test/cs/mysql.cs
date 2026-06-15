@@ -97,15 +97,19 @@ namespace SQLRClientTest
 
 
             // isolation levels
+            // (mysql before 4.0 doesn't support setting the isolation level)
             Console.WriteLine("ISOLATION LEVELS: ");
-            foreach (String il in isolationlevels)
+            if (majorversion > 3)
             {
-                assertTrue(con.setIsolationLevel(il));
-                assertEquals(con.getIsolationLevel(), il);
-                Console.WriteLine("");
+                foreach (String il in isolationlevels)
+                {
+                    assertTrue(con.setIsolationLevel(il));
+                    assertEquals(con.getIsolationLevel(), il);
+                    Console.WriteLine("");
+                }
+                // reset to the default isolation level
+                assertTrue(con.setIsolationLevel(isolationlevels[0]));
             }
-            // reset to the default isolation level
-            assertTrue(con.setIsolationLevel(isolationlevels[0]));
             Console.WriteLine("");
 
 
@@ -546,59 +550,63 @@ namespace SQLRClientTest
             Console.WriteLine("");
 
 
-            // column length
-            Console.WriteLine("COLUMN LENGTH: ");
-            assertEquals(cur.getColumnLength((UInt32)0), (UInt32)1);
-            assertEquals(cur.getColumnLength((UInt32)1), (UInt32)2);
-            assertEquals(cur.getColumnLength((UInt32)2), (UInt32)3);
-            assertEquals(cur.getColumnLength((UInt32)3), (UInt32)4);
-            assertEquals(cur.getColumnLength((UInt32)4), (UInt32)8);
-            assertEquals(cur.getColumnLength((UInt32)5), (UInt32)4);
-            assertEquals(cur.getColumnLength((UInt32)6), (UInt32)8);
-            assertEquals(cur.getColumnLength((UInt32)7), (UInt32)6);
-            assertEquals(cur.getColumnLength((UInt32)8), (UInt32)3);
-            assertEquals(cur.getColumnLength((UInt32)9), (UInt32)3);
-            assertEquals(cur.getColumnLength((UInt32)10), (UInt32)8);
-            assertEquals(cur.getColumnLength((UInt32)11), (UInt32)1);
-            // testchar/testvarchar are char(40)/varchar(40); the connection
-            // charset is utf8mb4 (4 bytes/char) so the lengths are 160/161
-            assertEquals(cur.getColumnLength((UInt32)12), (UInt32)160);
-            assertEquals(cur.getColumnLength((UInt32)13), (UInt32)161);
-            assertEquals(cur.getColumnLength((UInt32)14), (UInt32)65535);
-            assertEquals(cur.getColumnLength((UInt32)15), (UInt32)255);
-            assertEquals(cur.getColumnLength((UInt32)16), (UInt32)16777215);
-            assertEquals(cur.getColumnLength((UInt32)17), (UInt32)2147483647);
-            assertEquals(cur.getColumnLength((UInt32)18), (UInt32)65535);
-            assertEquals(cur.getColumnLength((UInt32)19), (UInt32)255);
-            assertEquals(cur.getColumnLength((UInt32)20), (UInt32)16777215);
-            assertEquals(cur.getColumnLength((UInt32)21), (UInt32)2147483647);
-            assertEquals(cur.getColumnLength((UInt32)22), (UInt32)4);
-            assertEquals(cur.getColumnLength("testtinyint"), (UInt32)1);
-            assertEquals(cur.getColumnLength("testsmallint"), (UInt32)2);
-            assertEquals(cur.getColumnLength("testmediumint"), (UInt32)3);
-            assertEquals(cur.getColumnLength("testint"), (UInt32)4);
-            assertEquals(cur.getColumnLength("testbigint"), (UInt32)8);
-            assertEquals(cur.getColumnLength("testfloat"), (UInt32)4);
-            assertEquals(cur.getColumnLength("testreal"), (UInt32)8);
-            assertEquals(cur.getColumnLength("testdecimal"), (UInt32)6);
-            assertEquals(cur.getColumnLength("testdate"), (UInt32)3);
-            assertEquals(cur.getColumnLength("testtime"), (UInt32)3);
-            assertEquals(cur.getColumnLength("testdatetime"), (UInt32)8);
-            assertEquals(cur.getColumnLength("testyear"), (UInt32)1);
-            // testchar/testvarchar are char(40)/varchar(40); the connection
-            // charset is utf8mb4 (4 bytes/char) so the lengths are 160/161
-            assertEquals(cur.getColumnLength("testchar"), (UInt32)160);
-            assertEquals(cur.getColumnLength("testvarchar"), (UInt32)161);
-            assertEquals(cur.getColumnLength("testtext"), (UInt32)65535);
-            assertEquals(cur.getColumnLength("testtinytext"), (UInt32)255);
-            assertEquals(cur.getColumnLength("testmediumtext"), (UInt32)16777215);
-            assertEquals(cur.getColumnLength("testlongtext"), (UInt32)2147483647);
-            assertEquals(cur.getColumnLength("testblob"), (UInt32)65535);
-            assertEquals(cur.getColumnLength("testtinyblob"), (UInt32)255);
-            assertEquals(cur.getColumnLength("testmediumblob"), (UInt32)16777215);
-            assertEquals(cur.getColumnLength("testlongblob"), (UInt32)2147483647);
-            assertEquals(cur.getColumnLength("testtimestamp"), (UInt32)4);
-            Console.WriteLine("");
+            // mysql before 4 reports column lengths differently (charset)
+            if (majorversion > 3)
+            {
+                // column length
+                Console.WriteLine("COLUMN LENGTH: ");
+                assertEquals(cur.getColumnLength((UInt32)0), (UInt32)1);
+                assertEquals(cur.getColumnLength((UInt32)1), (UInt32)2);
+                assertEquals(cur.getColumnLength((UInt32)2), (UInt32)3);
+                assertEquals(cur.getColumnLength((UInt32)3), (UInt32)4);
+                assertEquals(cur.getColumnLength((UInt32)4), (UInt32)8);
+                assertEquals(cur.getColumnLength((UInt32)5), (UInt32)4);
+                assertEquals(cur.getColumnLength((UInt32)6), (UInt32)8);
+                assertEquals(cur.getColumnLength((UInt32)7), (UInt32)6);
+                assertEquals(cur.getColumnLength((UInt32)8), (UInt32)3);
+                assertEquals(cur.getColumnLength((UInt32)9), (UInt32)3);
+                assertEquals(cur.getColumnLength((UInt32)10), (UInt32)8);
+                assertEquals(cur.getColumnLength((UInt32)11), (UInt32)1);
+                // testchar/testvarchar are char(40)/varchar(40); the connection
+                // charset is utf8mb4 (4 bytes/char) so the lengths are 160/161
+                assertEquals(cur.getColumnLength((UInt32)12), (UInt32)160);
+                assertEquals(cur.getColumnLength((UInt32)13), (UInt32)161);
+                assertEquals(cur.getColumnLength((UInt32)14), (UInt32)65535);
+                assertEquals(cur.getColumnLength((UInt32)15), (UInt32)255);
+                assertEquals(cur.getColumnLength((UInt32)16), (UInt32)16777215);
+                assertEquals(cur.getColumnLength((UInt32)17), (UInt32)2147483647);
+                assertEquals(cur.getColumnLength((UInt32)18), (UInt32)65535);
+                assertEquals(cur.getColumnLength((UInt32)19), (UInt32)255);
+                assertEquals(cur.getColumnLength((UInt32)20), (UInt32)16777215);
+                assertEquals(cur.getColumnLength((UInt32)21), (UInt32)2147483647);
+                assertEquals(cur.getColumnLength((UInt32)22), (UInt32)4);
+                assertEquals(cur.getColumnLength("testtinyint"), (UInt32)1);
+                assertEquals(cur.getColumnLength("testsmallint"), (UInt32)2);
+                assertEquals(cur.getColumnLength("testmediumint"), (UInt32)3);
+                assertEquals(cur.getColumnLength("testint"), (UInt32)4);
+                assertEquals(cur.getColumnLength("testbigint"), (UInt32)8);
+                assertEquals(cur.getColumnLength("testfloat"), (UInt32)4);
+                assertEquals(cur.getColumnLength("testreal"), (UInt32)8);
+                assertEquals(cur.getColumnLength("testdecimal"), (UInt32)6);
+                assertEquals(cur.getColumnLength("testdate"), (UInt32)3);
+                assertEquals(cur.getColumnLength("testtime"), (UInt32)3);
+                assertEquals(cur.getColumnLength("testdatetime"), (UInt32)8);
+                assertEquals(cur.getColumnLength("testyear"), (UInt32)1);
+                // testchar/testvarchar are char(40)/varchar(40); the connection
+                // charset is utf8mb4 (4 bytes/char) so the lengths are 160/161
+                assertEquals(cur.getColumnLength("testchar"), (UInt32)160);
+                assertEquals(cur.getColumnLength("testvarchar"), (UInt32)161);
+                assertEquals(cur.getColumnLength("testtext"), (UInt32)65535);
+                assertEquals(cur.getColumnLength("testtinytext"), (UInt32)255);
+                assertEquals(cur.getColumnLength("testmediumtext"), (UInt32)16777215);
+                assertEquals(cur.getColumnLength("testlongtext"), (UInt32)2147483647);
+                assertEquals(cur.getColumnLength("testblob"), (UInt32)65535);
+                assertEquals(cur.getColumnLength("testtinyblob"), (UInt32)255);
+                assertEquals(cur.getColumnLength("testmediumblob"), (UInt32)16777215);
+                assertEquals(cur.getColumnLength("testlongblob"), (UInt32)2147483647);
+                assertEquals(cur.getColumnLength("testtimestamp"), (UInt32)4);
+                Console.WriteLine("");
+            }
 
 
             // longest column
@@ -1330,248 +1338,256 @@ namespace SQLRClientTest
             Console.WriteLine("");
 
 
-            // reset transaction state
-            Console.WriteLine("RESET TRANSACTION STATE: ");
-            assertTrue(con.commit());
-            assertEquals(con.getTransactionModel(), "explicit-deferred");
-            assertTrue(con.getAutoCommit());
-            Console.WriteLine("");
+            // transaction behavior differs on mysql before 4
+            if (majorversion > 3)
+            {
+                // reset transaction state
+                Console.WriteLine("RESET TRANSACTION STATE: ");
+                assertTrue(con.commit());
+                assertEquals(con.getTransactionModel(), "explicit-deferred");
+                assertTrue(con.getAutoCommit());
+                Console.WriteLine("");
 
 
-            // transaction behavior - implicit
-            Console.WriteLine("TRANSACTION BEHAVIOR - implicit: ");
-            assertTrue(con.setTransactionModel("implicit"));
-            assertEquals(con.getTransactionModel(), "implicit");
-            assertTrue(cur.sendQuery("create table testtable (col1 integer)"));
-            secondcon = new SQLRConnection("sqlrelay", 9000, "/tmp/test.socket",
-                                "testuser", "testpassword", 0, 1);
-            secondcur = new SQLRCursor(secondcon);
-            // session is in a transaction; insert is not visible until commit
-            assertTrue(con.getInTransaction());
-            assertFalse(con.getAutoCommit());
-            assertTrue(cur.sendQuery("insert into testtable values (1)"));
-            assertTrue(secondcur.sendQuery("select count(*) from testtable"));
-            assertEquals(secondcur.getField((UInt64)0, (UInt32)0), "0");
-            // commit makes it visible, and implicitly starts a new transaction
-            assertTrue(con.commit());
-            assertTrue(con.getInTransaction());
-            assertTrue(secondcur.sendQuery("select count(*) from testtable"));
-            assertEquals(secondcur.getField((UInt64)0, (UInt32)0), "1");
-            // rollback discards, and implicitly starts a new transaction
-            assertTrue(cur.sendQuery("insert into testtable values (2)"));
-            assertTrue(con.rollback());
-            assertTrue(con.getInTransaction());
-            assertTrue(secondcur.sendQuery("select count(*) from testtable"));
-            assertEquals(secondcur.getField((UInt64)0, (UInt32)0), "1");
-            // autoCommitOn takes effect immediately
-            assertTrue(con.autoCommitOn());
-            assertTrue(con.getAutoCommit());
-            assertFalse(con.getInTransaction());
-            assertTrue(cur.sendQuery("insert into testtable values (3)"));
-            assertTrue(secondcur.sendQuery("select count(*) from testtable"));
-            assertEquals(secondcur.getField((UInt64)0, (UInt32)0), "2");
-            // autoCommitOff takes effect immediately
-            assertTrue(con.autoCommitOff());
-            assertFalse(con.getAutoCommit());
-            assertTrue(con.getInTransaction());
-            secondcur.closeResultSet();
-            assertTrue(cur.sendQuery("drop table testtable"));
-            Console.WriteLine("");
+                // transaction behavior - implicit
+                Console.WriteLine("TRANSACTION BEHAVIOR - implicit: ");
+                assertTrue(con.setTransactionModel("implicit"));
+                assertEquals(con.getTransactionModel(), "implicit");
+                assertTrue(cur.sendQuery("create table testtable (col1 integer)"));
+                secondcon = new SQLRConnection("sqlrelay", 9000, "/tmp/test.socket",
+                                    "testuser", "testpassword", 0, 1);
+                secondcur = new SQLRCursor(secondcon);
+                // session is in a transaction; insert is not visible until commit
+                assertTrue(con.getInTransaction());
+                assertFalse(con.getAutoCommit());
+                assertTrue(cur.sendQuery("insert into testtable values (1)"));
+                assertTrue(secondcur.sendQuery("select count(*) from testtable"));
+                assertEquals(secondcur.getField((UInt64)0, (UInt32)0), "0");
+                // commit makes it visible, and implicitly starts a new transaction
+                assertTrue(con.commit());
+                assertTrue(con.getInTransaction());
+                assertTrue(secondcur.sendQuery("select count(*) from testtable"));
+                assertEquals(secondcur.getField((UInt64)0, (UInt32)0), "1");
+                // rollback discards, and implicitly starts a new transaction
+                assertTrue(cur.sendQuery("insert into testtable values (2)"));
+                assertTrue(con.rollback());
+                assertTrue(con.getInTransaction());
+                assertTrue(secondcur.sendQuery("select count(*) from testtable"));
+                assertEquals(secondcur.getField((UInt64)0, (UInt32)0), "1");
+                // autoCommitOn takes effect immediately
+                assertTrue(con.autoCommitOn());
+                assertTrue(con.getAutoCommit());
+                assertFalse(con.getInTransaction());
+                assertTrue(cur.sendQuery("insert into testtable values (3)"));
+                assertTrue(secondcur.sendQuery("select count(*) from testtable"));
+                assertEquals(secondcur.getField((UInt64)0, (UInt32)0), "2");
+                // autoCommitOff takes effect immediately
+                assertTrue(con.autoCommitOff());
+                assertFalse(con.getAutoCommit());
+                assertTrue(con.getInTransaction());
+                secondcur.closeResultSet();
+                assertTrue(cur.sendQuery("drop table testtable"));
+                Console.WriteLine("");
 
 
-            // transaction behavior - explicit
-            Console.WriteLine("TRANSACTION BEHAVIOR - explicit: ");
-            assertTrue(con.setTransactionModel("explicit"));
-            assertEquals(con.getTransactionModel(), "explicit");
-            assertTrue(cur.sendQuery("create table testtable (col1 integer)"));
-            // begin starts a new transaction; insert is not visible until commit
-            assertTrue(con.begin());
-            assertTrue(con.getInTransaction());
-            assertTrue(cur.sendQuery("insert into testtable values (1)"));
-            assertTrue(secondcur.sendQuery("select count(*) from testtable"));
-            assertEquals(secondcur.getField((UInt64)0, (UInt32)0), "0");
-            // commit makes it visible; no new transaction is started
-            assertTrue(con.commit());
-            assertFalse(con.getInTransaction());
-            assertTrue(secondcur.sendQuery("select count(*) from testtable"));
-            assertEquals(secondcur.getField((UInt64)0, (UInt32)0), "1");
-            // begin, insert, rollback discards; no new transaction is started
-            assertTrue(con.begin());
-            assertTrue(cur.sendQuery("insert into testtable values (2)"));
-            assertTrue(con.rollback());
-            assertFalse(con.getInTransaction());
-            assertTrue(secondcur.sendQuery("select count(*) from testtable"));
-            assertEquals(secondcur.getField((UInt64)0, (UInt32)0), "1");
-            // autoCommitOn takes effect immediately
-            assertTrue(con.autoCommitOn());
-            assertTrue(con.getAutoCommit());
-            assertTrue(cur.sendQuery("insert into testtable values (3)"));
-            assertTrue(secondcur.sendQuery("select count(*) from testtable"));
-            assertEquals(secondcur.getField((UInt64)0, (UInt32)0), "2");
-            // autoCommitOff takes effect immediately
-            assertTrue(con.autoCommitOff());
-            assertFalse(con.getAutoCommit());
-            secondcur.closeResultSet();
-            assertTrue(cur.sendQuery("drop table testtable"));
-            Console.WriteLine("");
+                // transaction behavior - explicit
+                Console.WriteLine("TRANSACTION BEHAVIOR - explicit: ");
+                assertTrue(con.setTransactionModel("explicit"));
+                assertEquals(con.getTransactionModel(), "explicit");
+                assertTrue(cur.sendQuery("create table testtable (col1 integer)"));
+                // begin starts a new transaction; insert is not visible until commit
+                assertTrue(con.begin());
+                assertTrue(con.getInTransaction());
+                assertTrue(cur.sendQuery("insert into testtable values (1)"));
+                assertTrue(secondcur.sendQuery("select count(*) from testtable"));
+                assertEquals(secondcur.getField((UInt64)0, (UInt32)0), "0");
+                // commit makes it visible; no new transaction is started
+                assertTrue(con.commit());
+                assertFalse(con.getInTransaction());
+                assertTrue(secondcur.sendQuery("select count(*) from testtable"));
+                assertEquals(secondcur.getField((UInt64)0, (UInt32)0), "1");
+                // begin, insert, rollback discards; no new transaction is started
+                assertTrue(con.begin());
+                assertTrue(cur.sendQuery("insert into testtable values (2)"));
+                assertTrue(con.rollback());
+                assertFalse(con.getInTransaction());
+                assertTrue(secondcur.sendQuery("select count(*) from testtable"));
+                assertEquals(secondcur.getField((UInt64)0, (UInt32)0), "1");
+                // autoCommitOn takes effect immediately
+                assertTrue(con.autoCommitOn());
+                assertTrue(con.getAutoCommit());
+                assertTrue(cur.sendQuery("insert into testtable values (3)"));
+                assertTrue(secondcur.sendQuery("select count(*) from testtable"));
+                assertEquals(secondcur.getField((UInt64)0, (UInt32)0), "2");
+                // autoCommitOff takes effect immediately
+                assertTrue(con.autoCommitOff());
+                assertFalse(con.getAutoCommit());
+                secondcur.closeResultSet();
+                assertTrue(cur.sendQuery("drop table testtable"));
+                Console.WriteLine("");
 
 
-            // transaction behavior - explicit-deferred
-            Console.WriteLine("TRANSACTION BEHAVIOR - explicit-deferred: ");
-            assertTrue(con.setTransactionModel("explicit-deferred"));
-            assertEquals(con.getTransactionModel(), "explicit-deferred");
-            // switch to autocommit-on so the begin/commit cycles below
-            // bracket explicit transactions (autocommit-off semantics are
-            // exercised at the end of this block)
-            assertTrue(con.autoCommitOn());
-            assertTrue(con.getAutoCommit());
-            assertTrue(cur.sendQuery("create table testtable (col1 integer)"));
-            // begin starts a transaction; commit makes it visible
-            assertTrue(con.begin());
-            assertTrue(con.getInTransaction());
-            assertTrue(cur.sendQuery("insert into testtable values (1)"));
-            assertTrue(con.commit());
-            assertFalse(con.getInTransaction());
-            assertTrue(secondcur.sendQuery("select count(*) from testtable"));
-            assertEquals(secondcur.getField((UInt64)0, (UInt32)0), "1");
-            // begin, insert, rollback discards
-            assertTrue(con.begin());
-            assertTrue(cur.sendQuery("insert into testtable values (2)"));
-            assertTrue(con.rollback());
-            assertTrue(secondcur.sendQuery("select count(*) from testtable"));
-            assertEquals(secondcur.getField((UInt64)0, (UInt32)0), "1");
-            // during a transaction started by begin(), autoCommitOn is a
-            // no-op: the autocommit setting takes effect after the user
-            // explicitly commits/rollbacks the tx (mysql-native semantic)
-            assertTrue(con.begin());
-            assertTrue(cur.sendQuery("insert into testtable values (3)"));
-            assertTrue(con.autoCommitOn());
-            assertFalse(con.getAutoCommit());
-            assertTrue(con.getInTransaction());
-            assertTrue(secondcur.sendQuery("select count(*) from testtable"));
-            assertEquals(secondcur.getField((UInt64)0, (UInt32)0), "1");
-            // explicit commit ends the tx; autocommit-on now takes effect
-            assertTrue(con.commit());
-            assertTrue(con.getAutoCommit());
-            assertFalse(con.getInTransaction());
-            assertTrue(secondcur.sendQuery("select count(*) from testtable"));
-            assertEquals(secondcur.getField((UInt64)0, (UInt32)0), "2");
-            // autocommit is on; subsequent inserts are visible immediately
-            assertTrue(cur.sendQuery("insert into testtable values (4)"));
-            assertTrue(secondcur.sendQuery("select count(*) from testtable"));
-            assertEquals(secondcur.getField((UInt64)0, (UInt32)0), "3");
-            // autoCommitOff takes effect immediately when not in a transaction
-            assertTrue(con.autoCommitOff());
-            assertFalse(con.getAutoCommit());
-            // autocommit-off persists across commit/rollback; each commit or
-            // rollback ends the current implicit tx and a new one starts for
-            // the next statement
-            assertTrue(cur.sendQuery("insert into testtable values (5)"));
-            assertTrue(con.commit());
-            assertFalse(con.getAutoCommit());
-            assertTrue(con.getInTransaction());
-            assertTrue(secondcur.sendQuery("select count(*) from testtable"));
-            assertEquals(secondcur.getField((UInt64)0, (UInt32)0), "4");
-            assertTrue(cur.sendQuery("insert into testtable values (6)"));
-            assertTrue(con.rollback());
-            assertFalse(con.getAutoCommit());
-            assertTrue(con.getInTransaction());
-            assertTrue(secondcur.sendQuery("select count(*) from testtable"));
-            assertEquals(secondcur.getField((UInt64)0, (UInt32)0), "4");
-            // autoCommitOff during a transaction changes the variable
-            // immediately but the in-flight tx continues; only after the
-            // next explicit commit/rollback does the new autocommit-off
-            // setting drop us into a new implicit tx (mysql-asymmetric
-            // semantic)
-            assertTrue(con.autoCommitOn());
-            assertTrue(con.getAutoCommit());
-            assertTrue(con.begin());
-            assertTrue(cur.sendQuery("insert into testtable values (7)"));
-            assertTrue(con.autoCommitOff());
-            assertFalse(con.getAutoCommit());
-            assertTrue(con.getInTransaction());
-            assertTrue(secondcur.sendQuery("select count(*) from testtable"));
-            assertEquals(secondcur.getField((UInt64)0, (UInt32)0), "4");
-            assertTrue(con.commit());
-            assertFalse(con.getAutoCommit());
-            assertTrue(con.getInTransaction());
-            assertTrue(secondcur.sendQuery("select count(*) from testtable"));
-            assertEquals(secondcur.getField((UInt64)0, (UInt32)0), "5");
-            secondcur.closeResultSet();
-            assertTrue(cur.sendQuery("drop table testtable"));
-            Console.WriteLine("");
+                // transaction behavior - explicit-deferred
+                Console.WriteLine("TRANSACTION BEHAVIOR - explicit-deferred: ");
+                assertTrue(con.setTransactionModel("explicit-deferred"));
+                assertEquals(con.getTransactionModel(), "explicit-deferred");
+                // switch to autocommit-on so the begin/commit cycles below
+                // bracket explicit transactions (autocommit-off semantics are
+                // exercised at the end of this block)
+                assertTrue(con.autoCommitOn());
+                assertTrue(con.getAutoCommit());
+                assertTrue(cur.sendQuery("create table testtable (col1 integer)"));
+                // begin starts a transaction; commit makes it visible
+                assertTrue(con.begin());
+                assertTrue(con.getInTransaction());
+                assertTrue(cur.sendQuery("insert into testtable values (1)"));
+                assertTrue(con.commit());
+                assertFalse(con.getInTransaction());
+                assertTrue(secondcur.sendQuery("select count(*) from testtable"));
+                assertEquals(secondcur.getField((UInt64)0, (UInt32)0), "1");
+                // begin, insert, rollback discards
+                assertTrue(con.begin());
+                assertTrue(cur.sendQuery("insert into testtable values (2)"));
+                assertTrue(con.rollback());
+                assertTrue(secondcur.sendQuery("select count(*) from testtable"));
+                assertEquals(secondcur.getField((UInt64)0, (UInt32)0), "1");
+                // during a transaction started by begin(), autoCommitOn is a
+                // no-op: the autocommit setting takes effect after the user
+                // explicitly commits/rollbacks the tx (mysql-native semantic)
+                assertTrue(con.begin());
+                assertTrue(cur.sendQuery("insert into testtable values (3)"));
+                assertTrue(con.autoCommitOn());
+                assertFalse(con.getAutoCommit());
+                assertTrue(con.getInTransaction());
+                assertTrue(secondcur.sendQuery("select count(*) from testtable"));
+                assertEquals(secondcur.getField((UInt64)0, (UInt32)0), "1");
+                // explicit commit ends the tx; autocommit-on now takes effect
+                assertTrue(con.commit());
+                assertTrue(con.getAutoCommit());
+                assertFalse(con.getInTransaction());
+                assertTrue(secondcur.sendQuery("select count(*) from testtable"));
+                assertEquals(secondcur.getField((UInt64)0, (UInt32)0), "2");
+                // autocommit is on; subsequent inserts are visible immediately
+                assertTrue(cur.sendQuery("insert into testtable values (4)"));
+                assertTrue(secondcur.sendQuery("select count(*) from testtable"));
+                assertEquals(secondcur.getField((UInt64)0, (UInt32)0), "3");
+                // autoCommitOff takes effect immediately when not in a transaction
+                assertTrue(con.autoCommitOff());
+                assertFalse(con.getAutoCommit());
+                // autocommit-off persists across commit/rollback; each commit or
+                // rollback ends the current implicit tx and a new one starts for
+                // the next statement
+                assertTrue(cur.sendQuery("insert into testtable values (5)"));
+                assertTrue(con.commit());
+                assertFalse(con.getAutoCommit());
+                assertTrue(con.getInTransaction());
+                assertTrue(secondcur.sendQuery("select count(*) from testtable"));
+                assertEquals(secondcur.getField((UInt64)0, (UInt32)0), "4");
+                assertTrue(cur.sendQuery("insert into testtable values (6)"));
+                assertTrue(con.rollback());
+                assertFalse(con.getAutoCommit());
+                assertTrue(con.getInTransaction());
+                assertTrue(secondcur.sendQuery("select count(*) from testtable"));
+                assertEquals(secondcur.getField((UInt64)0, (UInt32)0), "4");
+                // autoCommitOff during a transaction changes the variable
+                // immediately but the in-flight tx continues; only after the
+                // next explicit commit/rollback does the new autocommit-off
+                // setting drop us into a new implicit tx (mysql-asymmetric
+                // semantic)
+                assertTrue(con.autoCommitOn());
+                assertTrue(con.getAutoCommit());
+                assertTrue(con.begin());
+                assertTrue(cur.sendQuery("insert into testtable values (7)"));
+                assertTrue(con.autoCommitOff());
+                assertFalse(con.getAutoCommit());
+                assertTrue(con.getInTransaction());
+                assertTrue(secondcur.sendQuery("select count(*) from testtable"));
+                assertEquals(secondcur.getField((UInt64)0, (UInt32)0), "4");
+                assertTrue(con.commit());
+                assertFalse(con.getAutoCommit());
+                assertTrue(con.getInTransaction());
+                assertTrue(secondcur.sendQuery("select count(*) from testtable"));
+                assertEquals(secondcur.getField((UInt64)0, (UInt32)0), "5");
+                secondcur.closeResultSet();
+                assertTrue(cur.sendQuery("drop table testtable"));
+                Console.WriteLine("");
 
 
-            // transaction behavior - explicit-error
-            Console.WriteLine("TRANSACTION BEHAVIOR - explicit-error: ");
-            assertTrue(con.setTransactionModel("explicit-error"));
-            assertEquals(con.getTransactionModel(), "explicit-error");
-            assertTrue(cur.sendQuery("create table testtable (col1 integer)"));
-            // begin, insert, commit
-            assertTrue(con.begin());
-            assertTrue(con.getInTransaction());
-            assertTrue(cur.sendQuery("insert into testtable values (1)"));
-            assertTrue(con.commit());
-            assertFalse(con.getInTransaction());
-            assertTrue(secondcur.sendQuery("select count(*) from testtable"));
-            assertEquals(secondcur.getField((UInt64)0, (UInt32)0), "1");
-            // begin, insert, rollback
-            assertTrue(con.begin());
-            assertTrue(cur.sendQuery("insert into testtable values (2)"));
-            assertTrue(con.rollback());
-            assertTrue(secondcur.sendQuery("select count(*) from testtable"));
-            assertEquals(secondcur.getField((UInt64)0, (UInt32)0), "1");
-            // while in a transaction, autoCommitOn/Off throw an error
-            assertTrue(con.begin());
-            assertFalse(con.autoCommitOn());
-            assertFalse(con.autoCommitOff());
-            assertTrue(con.commit());
-            // outside of a transaction, autoCommitOn takes effect immediately
-            assertTrue(con.autoCommitOn());
-            assertTrue(con.getAutoCommit());
-            assertTrue(cur.sendQuery("insert into testtable values (3)"));
-            assertTrue(secondcur.sendQuery("select count(*) from testtable"));
-            assertEquals(secondcur.getField((UInt64)0, (UInt32)0), "2");
-            // autoCommitOff takes effect immediately
-            assertTrue(con.autoCommitOff());
-            assertFalse(con.getAutoCommit());
-            secondcur.closeResultSet();
-            assertTrue(cur.sendQuery("drop table testtable"));
-            Console.WriteLine("");
+                // transaction behavior - explicit-error
+                Console.WriteLine("TRANSACTION BEHAVIOR - explicit-error: ");
+                assertTrue(con.setTransactionModel("explicit-error"));
+                assertEquals(con.getTransactionModel(), "explicit-error");
+                assertTrue(cur.sendQuery("create table testtable (col1 integer)"));
+                // begin, insert, commit
+                assertTrue(con.begin());
+                assertTrue(con.getInTransaction());
+                assertTrue(cur.sendQuery("insert into testtable values (1)"));
+                assertTrue(con.commit());
+                assertFalse(con.getInTransaction());
+                assertTrue(secondcur.sendQuery("select count(*) from testtable"));
+                assertEquals(secondcur.getField((UInt64)0, (UInt32)0), "1");
+                // begin, insert, rollback
+                assertTrue(con.begin());
+                assertTrue(cur.sendQuery("insert into testtable values (2)"));
+                assertTrue(con.rollback());
+                assertTrue(secondcur.sendQuery("select count(*) from testtable"));
+                assertEquals(secondcur.getField((UInt64)0, (UInt32)0), "1");
+                // while in a transaction, autoCommitOn/Off throw an error
+                assertTrue(con.begin());
+                assertFalse(con.autoCommitOn());
+                assertFalse(con.autoCommitOff());
+                assertTrue(con.commit());
+                // outside of a transaction, autoCommitOn takes effect immediately
+                assertTrue(con.autoCommitOn());
+                assertTrue(con.getAutoCommit());
+                assertTrue(cur.sendQuery("insert into testtable values (3)"));
+                assertTrue(secondcur.sendQuery("select count(*) from testtable"));
+                assertEquals(secondcur.getField((UInt64)0, (UInt32)0), "2");
+                // autoCommitOff takes effect immediately
+                assertTrue(con.autoCommitOff());
+                assertFalse(con.getAutoCommit());
+                secondcur.closeResultSet();
+                assertTrue(cur.sendQuery("drop table testtable"));
+                Console.WriteLine("");
 
 
-            // transaction behavior - none
-            Console.WriteLine("TRANSACTION BEHAVIOR - none: ");
-            assertTrue(con.setTransactionModel("none"));
-            assertEquals(con.getTransactionModel(), "none");
-            assertTrue(cur.sendQuery("create table testtable (col1 integer)"));
-            // no transactions; everything is visible immediately
-            assertTrue(con.getAutoCommit());
-            assertFalse(con.getInTransaction());
-            assertTrue(cur.sendQuery("insert into testtable values (1)"));
-            assertTrue(secondcur.sendQuery("select count(*) from testtable"));
-            assertEquals(secondcur.getField((UInt64)0, (UInt32)0), "1");
-            // commit and rollback are no-ops
-            assertTrue(con.commit());
-            assertTrue(cur.sendQuery("insert into testtable values (2)"));
-            assertTrue(con.rollback());
-            assertTrue(secondcur.sendQuery("select count(*) from testtable"));
-            assertEquals(secondcur.getField((UInt64)0, (UInt32)0), "2");
-            // autocommit is always on; autoCommitOff is an error
-            assertFalse(con.autoCommitOff());
-            assertTrue(con.getAutoCommit());
-            assertTrue(con.autoCommitOn());
-            assertTrue(con.getAutoCommit());
-            secondcur.closeResultSet();
-            assertTrue(cur.sendQuery("drop table testtable"));
-            Console.WriteLine("");
+                // transaction behavior - none
+                Console.WriteLine("TRANSACTION BEHAVIOR - none: ");
+                assertTrue(con.setTransactionModel("none"));
+                assertEquals(con.getTransactionModel(), "none");
+                assertTrue(cur.sendQuery("create table testtable (col1 integer)"));
+                // no transactions; everything is visible immediately
+                assertTrue(con.getAutoCommit());
+                assertFalse(con.getInTransaction());
+                assertTrue(cur.sendQuery("insert into testtable values (1)"));
+                assertTrue(secondcur.sendQuery("select count(*) from testtable"));
+                assertEquals(secondcur.getField((UInt64)0, (UInt32)0), "1");
+                // commit and rollback are no-ops
+                assertTrue(con.commit());
+                assertTrue(cur.sendQuery("insert into testtable values (2)"));
+                assertTrue(con.rollback());
+                assertTrue(secondcur.sendQuery("select count(*) from testtable"));
+                assertEquals(secondcur.getField((UInt64)0, (UInt32)0), "2");
+                // autocommit is always on; autoCommitOff is an error
+                assertFalse(con.autoCommitOff());
+                assertTrue(con.getAutoCommit());
+                assertTrue(con.autoCommitOn());
+                assertTrue(con.getAutoCommit());
+                secondcur.closeResultSet();
+                assertTrue(cur.sendQuery("drop table testtable"));
+                Console.WriteLine("");
+            }
 
 
             // reset transaction behavior
+            // (mysql before 4 has limited transaction support)
             Console.WriteLine("RESET TRANSACTION BEHAVIOR: ");
-            assertTrue(con.setTransactionModel(con.getDefaultTransactionModel()));
-            assertEquals(con.getTransactionModel(), "explicit-deferred");
-            assertTrue(con.getAutoCommit());
+            if (majorversion > 3)
+            {
+                assertTrue(con.setTransactionModel(con.getDefaultTransactionModel()));
+                assertEquals(con.getTransactionModel(), "explicit-deferred");
+                assertTrue(con.getAutoCommit());
+            }
             Console.WriteLine("");
 
 
@@ -1717,27 +1733,31 @@ namespace SQLRClientTest
             // mysql doesn't support bind by name
 
 
-            // rebinding
-            Console.WriteLine("REBINDING: ");
-            cur.sendQuery("drop procedure testproc");
-            assertTrue(cur.sendQuery(
-                "create procedure testproc("
-                + "	in in1 int) "
-                + "begin "
-                + "	select in1; "
-                + "end"));
-            cur.prepareQuery("call testproc(?)");
-            cur.inputBind("1", (Int64)1);
-            assertTrue(cur.executeQuery());
-            assertEquals(cur.getField((UInt64)0, (UInt32)0), "1");
-            cur.inputBind("1", (Int64)2);
-            assertTrue(cur.executeQuery());
-            assertEquals(cur.getField((UInt64)0, (UInt32)0), "2");
-            cur.inputBind("1", (Int64)3);
-            assertTrue(cur.executeQuery());
-            assertEquals(cur.getField((UInt64)0, (UInt32)0), "3");
-            assertTrue(cur.sendQuery("drop procedure testproc"));
-            Console.WriteLine("");
+            // mysql before 5.0 has no stored procedures
+            if (majorversion > 3)
+            {
+                // rebinding
+                Console.WriteLine("REBINDING: ");
+                cur.sendQuery("drop procedure testproc");
+                assertTrue(cur.sendQuery(
+                    "create procedure testproc("
+                    + "	in in1 int) "
+                    + "begin "
+                    + "	select in1; "
+                    + "end"));
+                cur.prepareQuery("call testproc(?)");
+                cur.inputBind("1", (Int64)1);
+                assertTrue(cur.executeQuery());
+                assertEquals(cur.getField((UInt64)0, (UInt32)0), "1");
+                cur.inputBind("1", (Int64)2);
+                assertTrue(cur.executeQuery());
+                assertEquals(cur.getField((UInt64)0, (UInt32)0), "2");
+                cur.inputBind("1", (Int64)3);
+                assertTrue(cur.executeQuery());
+                assertEquals(cur.getField((UInt64)0, (UInt32)0), "3");
+                assertTrue(cur.sendQuery("drop procedure testproc"));
+                Console.WriteLine("");
+            }
 
 
             // reexecute
@@ -1768,108 +1788,112 @@ namespace SQLRClientTest
             Console.WriteLine("");
 
 
-            // stored procedure returning no value
-            Console.WriteLine("STORED PROCEDURE RETURNING NO VALUE: ");
-            cur.sendQuery("drop procedure testproc");
-            assertTrue(cur.sendQuery(
-                "create procedure testproc("
-                + "	in in1 int, "
-                + "	in in2 double, "
-                + "	in in3 varchar(20)) "
-                + "begin "
-                + "end"));
-            cur.prepareQuery("call testproc(?,?,?)");
-            cur.inputBind("1", (Int64)1);
-            cur.inputBind("2", 1.5, 2, 1);
-            cur.inputBind("3", "hello");
-            assertTrue(cur.executeQuery());
-            assertTrue(cur.sendQuery("drop procedure testproc"));
-            Console.WriteLine("");
+            // mysql before 5.0 has no stored procedures
+            if (majorversion > 3)
+            {
+                // stored procedure returning no value
+                Console.WriteLine("STORED PROCEDURE RETURNING NO VALUE: ");
+                cur.sendQuery("drop procedure testproc");
+                assertTrue(cur.sendQuery(
+                    "create procedure testproc("
+                    + "	in in1 int, "
+                    + "	in in2 double, "
+                    + "	in in3 varchar(20)) "
+                    + "begin "
+                    + "end"));
+                cur.prepareQuery("call testproc(?,?,?)");
+                cur.inputBind("1", (Int64)1);
+                cur.inputBind("2", 1.5, 2, 1);
+                cur.inputBind("3", "hello");
+                assertTrue(cur.executeQuery());
+                assertTrue(cur.sendQuery("drop procedure testproc"));
+                Console.WriteLine("");
 
 
-            // stored procedure returning single value
-            Console.WriteLine("STORED PROCEDURE RETURNING SINGLE VALUE: ");
-            cur.sendQuery("drop procedure testproc");
-            assertTrue(cur.sendQuery(
-                "create procedure testproc("
-                + "	in in1 int, "
-                + "	in in2 double, "
-                + "	in in3 varchar(20)) "
-                + "begin "
-                + "	select in1; "
-                + "end"));
-            cur.prepareQuery("call testproc(?,?,?)");
-            cur.inputBind("1", (Int64)1);
-            cur.inputBind("2", 1.5, 2, 1);
-            cur.inputBind("3", "hello");
-            assertTrue(cur.executeQuery());
-            assertEquals(cur.getField((UInt64)0, (UInt32)0), "1");
-            assertTrue(cur.sendQuery("drop procedure testproc"));
-            Console.WriteLine("");
+                // stored procedure returning single value
+                Console.WriteLine("STORED PROCEDURE RETURNING SINGLE VALUE: ");
+                cur.sendQuery("drop procedure testproc");
+                assertTrue(cur.sendQuery(
+                    "create procedure testproc("
+                    + "	in in1 int, "
+                    + "	in in2 double, "
+                    + "	in in3 varchar(20)) "
+                    + "begin "
+                    + "	select in1; "
+                    + "end"));
+                cur.prepareQuery("call testproc(?,?,?)");
+                cur.inputBind("1", (Int64)1);
+                cur.inputBind("2", 1.5, 2, 1);
+                cur.inputBind("3", "hello");
+                assertTrue(cur.executeQuery());
+                assertEquals(cur.getField((UInt64)0, (UInt32)0), "1");
+                assertTrue(cur.sendQuery("drop procedure testproc"));
+                Console.WriteLine("");
 
 
-            // stored procedure returning multiple values
-            Console.WriteLine("STORED PROCEDURE RETURNING MULTIPLE VALUES: ");
-            cur.sendQuery("drop procedure testproc");
-            assertTrue(cur.sendQuery(
-                "create procedure testproc("
-                + "	in in1 int, "
-                + "	in in2 double, "
-                + "	in in3 varchar(20)) "
-                + "begin "
-                + "	select in1, in2, in3; "
-                + "end"));
-            cur.prepareQuery("call testproc(?,?,?)");
-            cur.inputBind("1", (Int64)1);
-            cur.inputBind("2", 1.5, 2, 1);
-            cur.inputBind("3", "hello");
-            assertTrue(cur.executeQuery());
-            assertEquals(cur.getField((UInt64)0, (UInt32)0), "1");
-            assertEquals(cur.getField((UInt64)0, (UInt32)1), "1.5");
-            assertEquals(cur.getField((UInt64)0, (UInt32)2), "hello");
-            assertTrue(cur.sendQuery("drop procedure testproc"));
-            Console.WriteLine("");
+                // stored procedure returning multiple values
+                Console.WriteLine("STORED PROCEDURE RETURNING MULTIPLE VALUES: ");
+                cur.sendQuery("drop procedure testproc");
+                assertTrue(cur.sendQuery(
+                    "create procedure testproc("
+                    + "	in in1 int, "
+                    + "	in in2 double, "
+                    + "	in in3 varchar(20)) "
+                    + "begin "
+                    + "	select in1, in2, in3; "
+                    + "end"));
+                cur.prepareQuery("call testproc(?,?,?)");
+                cur.inputBind("1", (Int64)1);
+                cur.inputBind("2", 1.5, 2, 1);
+                cur.inputBind("3", "hello");
+                assertTrue(cur.executeQuery());
+                assertEquals(cur.getField((UInt64)0, (UInt32)0), "1");
+                assertEquals(cur.getField((UInt64)0, (UInt32)1), "1.5");
+                assertEquals(cur.getField((UInt64)0, (UInt32)2), "hello");
+                assertTrue(cur.sendQuery("drop procedure testproc"));
+                Console.WriteLine("");
 
 
-            // stored procedure returning result set
-            Console.WriteLine("STORED PROCEDURE RETURNING RESULT SET: ");
-            cur.sendQuery("drop procedure testselectproc");
-            assertTrue(cur.sendQuery(
-                "create procedure testselectproc() "
-                + "begin "
-                + "	select 1 "
-                + "	union "
-                + "	select 2 "
-                + "	union "
-                + "	select 3 "
-                + "	union "
-                + "	select 4 "
-                + "	union "
-                + "	select 5 "
-                + "	union "
-                + "	select 6 "
-                + "	union "
-                + "	select 7 "
-                + "	union "
-                + "	select 8; "
-                + "end"));
-            assertTrue(cur.sendQuery("call testselectproc()"));
-            assertEquals(cur.rowCount(), (UInt64)8);
-            assertTrue(cur.sendQuery("drop procedure testselectproc"));
-            Console.WriteLine("");
+                // stored procedure returning result set
+                Console.WriteLine("STORED PROCEDURE RETURNING RESULT SET: ");
+                cur.sendQuery("drop procedure testselectproc");
+                assertTrue(cur.sendQuery(
+                    "create procedure testselectproc() "
+                    + "begin "
+                    + "	select 1 "
+                    + "	union "
+                    + "	select 2 "
+                    + "	union "
+                    + "	select 3 "
+                    + "	union "
+                    + "	select 4 "
+                    + "	union "
+                    + "	select 5 "
+                    + "	union "
+                    + "	select 6 "
+                    + "	union "
+                    + "	select 7 "
+                    + "	union "
+                    + "	select 8; "
+                    + "end"));
+                assertTrue(cur.sendQuery("call testselectproc()"));
+                assertEquals(cur.rowCount(), (UInt64)8);
+                assertTrue(cur.sendQuery("drop procedure testselectproc"));
+                Console.WriteLine("");
 
 
-            // temporary tables
-            Console.WriteLine("TEMPORARY TABLES: ");
-            cur.sendQuery("drop table temptable");
-            cur.sendQuery("create temporary table temptable (col1 int)");
-            assertTrue(cur.sendQuery("insert into temptable values (1)"));
-            assertTrue(cur.sendQuery("select count(*) from temptable"));
-            assertEquals(cur.getField((UInt64)0, (UInt32)0), "1");
-            con.endSession();
-            Console.WriteLine("");
-            assertFalse(cur.sendQuery("select count(*) from temptable"));
-            Console.WriteLine("");
+                // temporary tables
+                Console.WriteLine("TEMPORARY TABLES: ");
+                cur.sendQuery("drop table temptable");
+                cur.sendQuery("create temporary table temptable (col1 int)");
+                assertTrue(cur.sendQuery("insert into temptable values (1)"));
+                assertTrue(cur.sendQuery("select count(*) from temptable"));
+                assertEquals(cur.getField((UInt64)0, (UInt32)0), "1");
+                con.endSession();
+                Console.WriteLine("");
+                assertFalse(cur.sendQuery("select count(*) from temptable"));
+                Console.WriteLine("");
+            }
 
             if (majorversion > 3)
             {
@@ -2124,10 +2148,10 @@ namespace SQLRClientTest
             Console.WriteLine("QUOTES - random - '',\\-escaped: ");
             cur.sendQuery("drop table testtable");
             assertTrue(cur.sendQuery("create table testtable "
-                            + "(col1 varchar(512))"));
+                            + "(col1 varchar(255))"));
             Random r1 = new Random();
             Random r2 = new Random();
-            Byte[] qbuffer = new Byte[256];
+            Byte[] qbuffer = new Byte[255];
             Byte[] ch = new Byte[] { (Byte)'\'', (Byte)'"', (Byte)'\\', (Byte)'\0' };
             for (Int32 i = 0; i < qbuffer.Length; i++)
             {
@@ -2194,357 +2218,361 @@ namespace SQLRClientTest
             Console.WriteLine("");
 
 
-            // catalog list
-            Console.WriteLine("CATALOG LIST: ");
-            assertTrue(cur.getCatalogList(null));
-            assertEquals(cur.getColumnName(0), "Database");
-            assertInResultSet(cur, "Database", hostname);
-            Console.WriteLine("");
+            // mysql before 5.0 has no information_schema for these metadata queries
+            if (majorversion > 3)
+            {
+                // catalog list
+                Console.WriteLine("CATALOG LIST: ");
+                assertTrue(cur.getCatalogList(null));
+                assertEquals(cur.getColumnName(0), "Database");
+                assertInResultSet(cur, "Database", hostname);
+                Console.WriteLine("");
 
 
-            // schema list
-            Console.WriteLine("SCHEMA LIST: ");
-            assertTrue(cur.getSchemaList(null));
-            assertEquals(cur.getColumnName(0), "Database");
-            // mysql has no schemas
-            assertEquals(cur.rowCount(), (UInt64)0);
-            Console.WriteLine("");
+                // schema list
+                Console.WriteLine("SCHEMA LIST: ");
+                assertTrue(cur.getSchemaList(null));
+                assertEquals(cur.getColumnName(0), "Database");
+                // mysql has no schemas
+                assertEquals(cur.rowCount(), (UInt64)0);
+                Console.WriteLine("");
 
 
-            // table type list
-            Console.WriteLine("TABLE TYPE LIST: ");
-            assertTrue(cur.getTableTypeList());
-            assertEquals(cur.getColumnName(0), "table_type");
-            assertInResultSet(cur, "table_type", "TABLE");
-            Console.WriteLine("");
+                // table type list
+                Console.WriteLine("TABLE TYPE LIST: ");
+                assertTrue(cur.getTableTypeList());
+                assertEquals(cur.getColumnName(0), "table_type");
+                assertInResultSet(cur, "table_type", "TABLE");
+                Console.WriteLine("");
 
 
-            // table list
-            Console.WriteLine("TABLE LIST: ");
-            cur.sendQuery("drop table testtable1");
-            cur.sendQuery("drop table testtable2");
-            cur.sendQuery("drop table testtable3");
-            cur.sendQuery("drop table testtable4");
-            assertTrue(cur.sendQuery(
-                "create table testtable1 ("
-                + "	col1 int, "
-                + "	col2 int)"));
-            assertTrue(cur.sendQuery(
-                "create table testtable2 ("
-                + "	col1 int, "
-                + "	col2 int)"));
-            assertTrue(cur.sendQuery(
-                "create table testtable3 ("
-                + "	col1 int, "
-                + "	col2 int)"));
-            assertTrue(cur.sendQuery(
-                "create table testtable4 ("
-                + "	col1 int, "
-                + "	col2 int)"));
-            assertTrue(cur.getTableList(null));
-            assertInResultSet(cur, "Tables_in_xxx", "testtable1");
-            assertInResultSet(cur, "Tables_in_xxx", "testtable2");
-            assertInResultSet(cur, "Tables_in_xxx", "testtable3");
-            assertInResultSet(cur, "Tables_in_xxx", "testtable4");
-            assertTrue(cur.sendQuery("drop table testtable1"));
-            assertTrue(cur.sendQuery("drop table testtable2"));
-            assertTrue(cur.sendQuery("drop table testtable3"));
-            assertTrue(cur.sendQuery("drop table testtable4"));
-            Console.WriteLine("");
+                // table list
+                Console.WriteLine("TABLE LIST: ");
+                cur.sendQuery("drop table testtable1");
+                cur.sendQuery("drop table testtable2");
+                cur.sendQuery("drop table testtable3");
+                cur.sendQuery("drop table testtable4");
+                assertTrue(cur.sendQuery(
+                    "create table testtable1 ("
+                    + "	col1 int, "
+                    + "	col2 int)"));
+                assertTrue(cur.sendQuery(
+                    "create table testtable2 ("
+                    + "	col1 int, "
+                    + "	col2 int)"));
+                assertTrue(cur.sendQuery(
+                    "create table testtable3 ("
+                    + "	col1 int, "
+                    + "	col2 int)"));
+                assertTrue(cur.sendQuery(
+                    "create table testtable4 ("
+                    + "	col1 int, "
+                    + "	col2 int)"));
+                assertTrue(cur.getTableList(null));
+                assertInResultSet(cur, "Tables_in_xxx", "testtable1");
+                assertInResultSet(cur, "Tables_in_xxx", "testtable2");
+                assertInResultSet(cur, "Tables_in_xxx", "testtable3");
+                assertInResultSet(cur, "Tables_in_xxx", "testtable4");
+                assertTrue(cur.sendQuery("drop table testtable1"));
+                assertTrue(cur.sendQuery("drop table testtable2"));
+                assertTrue(cur.sendQuery("drop table testtable3"));
+                assertTrue(cur.sendQuery("drop table testtable4"));
+                Console.WriteLine("");
 
 
-            // type info list
-            Console.WriteLine("TYPE INFO LIST: ");
-            assertTrue(cur.getTypeInfoList("int"));
-            assertEquals(cur.getColumnName(0), "type_name");
-            assertEquals(cur.getColumnName(1), "data_type");
-            assertEquals(cur.getColumnName(2), "precision");
-            assertEquals(cur.getColumnName(3), "literal_prefix");
-            assertEquals(cur.getColumnName(4), "literal_suffix");
-            assertEquals(cur.getColumnName(5), "create_params");
-            assertEquals(cur.getColumnName(6), "nullable");
-            assertEquals(cur.getColumnName(7), "case_sensitive");
-            assertEquals(cur.getColumnName(8), "searchable");
-            assertEquals(cur.getColumnName(9), "unsigned_attribute");
-            assertEquals(cur.getColumnName(10), "fixed_prec_scale");
-            assertEquals(cur.getColumnName(11), "auto_increment");
-            assertEquals(cur.getColumnName(12), "local_type_name");
-            assertEquals(cur.getColumnName(13), "minumum_scale");
-            assertEquals(cur.getColumnName(14), "maxiumm_scale");
-            assertEquals(cur.getColumnName(15), "sql_data_type");
-            assertEquals(cur.getColumnName(16), "sql_datetime_sub");
-            assertEquals(cur.getColumnName(17), "num_prec_radix");
-            assertEquals(cur.getColumnName(18), "interval_precision");
-            assertEquals(cur.getField((UInt64)0, "type_name"), "INT");
-            assertEquals(cur.getField((UInt64)0, "data_type"), "4");
-            assertEquals(cur.getField((UInt64)0, "precision"), "10");
-            assertEquals(cur.getField((UInt64)0, "local_type_name"), "INT");
-            assertTrue(cur.getTypeInfoList("char"));
-            assertEquals(cur.getField((UInt64)0, "type_name"), "CHAR");
-            assertEquals(cur.getField((UInt64)0, "data_type"), "1");
-            assertEquals(cur.getField((UInt64)0, "precision"), "255");
-            assertEquals(cur.getField((UInt64)0, "local_type_name"), "CHAR");
-            assertTrue(cur.getTypeInfoList("varchar"));
-            assertEquals(cur.getField((UInt64)0, "type_name"), "VARCHAR");
-            assertEquals(cur.getField((UInt64)0, "data_type"), "12");
-            assertEquals(cur.getField((UInt64)0, "precision"), "65535");
-            assertEquals(cur.getField((UInt64)0, "local_type_name"), "VARCHAR");
-            assertTrue(cur.getTypeInfoList("date"));
-            assertEquals(cur.getField((UInt64)0, "type_name"), "DATE");
-            assertEquals(cur.getField((UInt64)0, "data_type"), "91");
-            assertEquals(cur.getField((UInt64)0, "precision"), "10");
-            assertEquals(cur.getField((UInt64)0, "local_type_name"), "DATE");
-            Console.WriteLine("");
+                // type info list
+                Console.WriteLine("TYPE INFO LIST: ");
+                assertTrue(cur.getTypeInfoList("int"));
+                assertEquals(cur.getColumnName(0), "type_name");
+                assertEquals(cur.getColumnName(1), "data_type");
+                assertEquals(cur.getColumnName(2), "precision");
+                assertEquals(cur.getColumnName(3), "literal_prefix");
+                assertEquals(cur.getColumnName(4), "literal_suffix");
+                assertEquals(cur.getColumnName(5), "create_params");
+                assertEquals(cur.getColumnName(6), "nullable");
+                assertEquals(cur.getColumnName(7), "case_sensitive");
+                assertEquals(cur.getColumnName(8), "searchable");
+                assertEquals(cur.getColumnName(9), "unsigned_attribute");
+                assertEquals(cur.getColumnName(10), "fixed_prec_scale");
+                assertEquals(cur.getColumnName(11), "auto_increment");
+                assertEquals(cur.getColumnName(12), "local_type_name");
+                assertEquals(cur.getColumnName(13), "minumum_scale");
+                assertEquals(cur.getColumnName(14), "maxiumm_scale");
+                assertEquals(cur.getColumnName(15), "sql_data_type");
+                assertEquals(cur.getColumnName(16), "sql_datetime_sub");
+                assertEquals(cur.getColumnName(17), "num_prec_radix");
+                assertEquals(cur.getColumnName(18), "interval_precision");
+                assertEquals(cur.getField((UInt64)0, "type_name"), "INT");
+                assertEquals(cur.getField((UInt64)0, "data_type"), "4");
+                assertEquals(cur.getField((UInt64)0, "precision"), "10");
+                assertEquals(cur.getField((UInt64)0, "local_type_name"), "INT");
+                assertTrue(cur.getTypeInfoList("char"));
+                assertEquals(cur.getField((UInt64)0, "type_name"), "CHAR");
+                assertEquals(cur.getField((UInt64)0, "data_type"), "1");
+                assertEquals(cur.getField((UInt64)0, "precision"), "255");
+                assertEquals(cur.getField((UInt64)0, "local_type_name"), "CHAR");
+                assertTrue(cur.getTypeInfoList("varchar"));
+                assertEquals(cur.getField((UInt64)0, "type_name"), "VARCHAR");
+                assertEquals(cur.getField((UInt64)0, "data_type"), "12");
+                assertEquals(cur.getField((UInt64)0, "precision"), "65535");
+                assertEquals(cur.getField((UInt64)0, "local_type_name"), "VARCHAR");
+                assertTrue(cur.getTypeInfoList("date"));
+                assertEquals(cur.getField((UInt64)0, "type_name"), "DATE");
+                assertEquals(cur.getField((UInt64)0, "data_type"), "91");
+                assertEquals(cur.getField((UInt64)0, "precision"), "10");
+                assertEquals(cur.getField((UInt64)0, "local_type_name"), "DATE");
+                Console.WriteLine("");
 
 
-            // column list
-            Console.WriteLine("COLUMN LIST: ");
-            cur.sendQuery("drop table testtable");
-            assertTrue(cur.sendQuery(
-                "create table testtable ("
-                + "	testtinyint tinyint, "
-                + "	testsmallint smallint, "
-                + "	testmediumint mediumint, "
-                + "	testint int, "
-                + "	testbigint bigint, "
-                + "	testfloat float, "
-                + "	testreal real, "
-                + "	testdecimal decimal(2,1), "
-                + "	testdate date, "
-                + "	testtime time, "
-                + "	testdatetime datetime, "
-                + "	testyear year, "
-                + "	testchar char(40), "
-                + "	testvarchar varchar(40), "
-                + "	testtext text, "
-                + "	testtinytext tinytext, "
-                + "	testmediumtext mediumtext, "
-                + "	testlongtext longtext, "
-                + "	testblob blob, "
-                + "	testtinyblob tinyblob, "
-                + "	testmediumblob mediumblob, "
-                + "	testlongblob longblob, "
-                + "	testtimestamp timestamp)"));
-            assertTrue(cur.getColumnList("testtable", null));
-            assertEquals(cur.getColumnName(0), "column_name");
-            assertEquals(cur.getColumnName(1), "data_type");
-            assertEquals(cur.getColumnName(2), "character_maximum_length");
-            assertEquals(cur.getColumnName(3), "numeric_precision");
-            assertEquals(cur.getColumnName(4), "numeric_scale");
-            assertEquals(cur.getColumnName(5), "is_nullable");
-            assertEquals(cur.getColumnName(6), "column_key");
-            assertEquals(cur.getColumnName(7), "column_default");
-            assertEquals(cur.getColumnName(8), "extra");
-            assertEquals(cur.getField((UInt64)0, "column_name"), "testtinyint");
-            assertEquals(cur.getField((UInt64)1, "column_name"), "testsmallint");
-            assertEquals(cur.getField((UInt64)2, "column_name"), "testmediumint");
-            assertEquals(cur.getField((UInt64)3, "column_name"), "testint");
-            assertEquals(cur.getField((UInt64)4, "column_name"), "testbigint");
-            assertEquals(cur.getField((UInt64)5, "column_name"), "testfloat");
-            assertEquals(cur.getField((UInt64)6, "column_name"), "testreal");
-            assertEquals(cur.getField((UInt64)7, "column_name"), "testdecimal");
-            assertEquals(cur.getField((UInt64)8, "column_name"), "testdate");
-            assertEquals(cur.getField((UInt64)9, "column_name"), "testtime");
-            assertEquals(cur.getField((UInt64)10, "column_name"), "testdatetime");
-            assertEquals(cur.getField((UInt64)11, "column_name"), "testyear");
-            assertEquals(cur.getField((UInt64)12, "column_name"), "testchar");
-            assertEquals(cur.getField((UInt64)13, "column_name"), "testvarchar");
-            assertEquals(cur.getField((UInt64)14, "column_name"), "testtext");
-            assertEquals(cur.getField((UInt64)15, "column_name"), "testtinytext");
-            assertEquals(cur.getField((UInt64)16, "column_name"), "testmediumtext");
-            assertEquals(cur.getField((UInt64)17, "column_name"), "testlongtext");
-            assertEquals(cur.getField((UInt64)18, "column_name"), "testblob");
-            assertEquals(cur.getField((UInt64)19, "column_name"), "testtinyblob");
-            assertEquals(cur.getField((UInt64)20, "column_name"), "testmediumblob");
-            assertEquals(cur.getField((UInt64)21, "column_name"), "testlongblob");
-            assertEquals(cur.getField((UInt64)22, "column_name"), "testtimestamp");
-            assertEquals(cur.getField((UInt64)0, "data_type"), "TINYINT");
-            assertEquals(cur.getField((UInt64)1, "data_type"), "SMALLINT");
-            assertEquals(cur.getField((UInt64)2, "data_type"), "MEDIUMINT");
-            assertEquals(cur.getField((UInt64)3, "data_type"), "INT");
-            assertEquals(cur.getField((UInt64)4, "data_type"), "BIGINT");
-            assertEquals(cur.getField((UInt64)5, "data_type"), "FLOAT");
-            assertEquals(cur.getField((UInt64)6, "data_type"), "DOUBLE"); // not "REAL"
-            assertEquals(cur.getField((UInt64)7, "data_type"), "DECIMAL");
-            assertEquals(cur.getField((UInt64)8, "data_type"), "DATE");
-            assertEquals(cur.getField((UInt64)9, "data_type"), "TIME");
-            assertEquals(cur.getField((UInt64)10, "data_type"), "DATETIME");
-            assertEquals(cur.getField((UInt64)11, "data_type"), "YEAR");
-            assertEquals(cur.getField((UInt64)12, "data_type"), "CHAR");
-            assertEquals(cur.getField((UInt64)13, "data_type"), "VARCHAR");
-            assertEquals(cur.getField((UInt64)14, "data_type"), "TEXT");
-            assertEquals(cur.getField((UInt64)15, "data_type"), "TINYTEXT");
-            assertEquals(cur.getField((UInt64)16, "data_type"), "MEDIUMTEXT");
-            assertEquals(cur.getField((UInt64)17, "data_type"), "LONGTEXT");
-            assertEquals(cur.getField((UInt64)18, "data_type"), "BLOB");
-            assertEquals(cur.getField((UInt64)19, "data_type"), "TINYBLOB");
-            assertEquals(cur.getField((UInt64)20, "data_type"), "MEDIUMBLOB");
-            assertEquals(cur.getField((UInt64)21, "data_type"), "LONGBLOB");
-            assertEquals(cur.getField((UInt64)22, "data_type"), "TIMESTAMP");
-            assertTrue(cur.sendQuery("drop table testtable"));
-            Console.WriteLine("");
+                // column list
+                Console.WriteLine("COLUMN LIST: ");
+                cur.sendQuery("drop table testtable");
+                assertTrue(cur.sendQuery(
+                    "create table testtable ("
+                    + "	testtinyint tinyint, "
+                    + "	testsmallint smallint, "
+                    + "	testmediumint mediumint, "
+                    + "	testint int, "
+                    + "	testbigint bigint, "
+                    + "	testfloat float, "
+                    + "	testreal real, "
+                    + "	testdecimal decimal(2,1), "
+                    + "	testdate date, "
+                    + "	testtime time, "
+                    + "	testdatetime datetime, "
+                    + "	testyear year, "
+                    + "	testchar char(40), "
+                    + "	testvarchar varchar(40), "
+                    + "	testtext text, "
+                    + "	testtinytext tinytext, "
+                    + "	testmediumtext mediumtext, "
+                    + "	testlongtext longtext, "
+                    + "	testblob blob, "
+                    + "	testtinyblob tinyblob, "
+                    + "	testmediumblob mediumblob, "
+                    + "	testlongblob longblob, "
+                    + "	testtimestamp timestamp)"));
+                assertTrue(cur.getColumnList("testtable", null));
+                assertEquals(cur.getColumnName(0), "column_name");
+                assertEquals(cur.getColumnName(1), "data_type");
+                assertEquals(cur.getColumnName(2), "character_maximum_length");
+                assertEquals(cur.getColumnName(3), "numeric_precision");
+                assertEquals(cur.getColumnName(4), "numeric_scale");
+                assertEquals(cur.getColumnName(5), "is_nullable");
+                assertEquals(cur.getColumnName(6), "column_key");
+                assertEquals(cur.getColumnName(7), "column_default");
+                assertEquals(cur.getColumnName(8), "extra");
+                assertEquals(cur.getField((UInt64)0, "column_name"), "testtinyint");
+                assertEquals(cur.getField((UInt64)1, "column_name"), "testsmallint");
+                assertEquals(cur.getField((UInt64)2, "column_name"), "testmediumint");
+                assertEquals(cur.getField((UInt64)3, "column_name"), "testint");
+                assertEquals(cur.getField((UInt64)4, "column_name"), "testbigint");
+                assertEquals(cur.getField((UInt64)5, "column_name"), "testfloat");
+                assertEquals(cur.getField((UInt64)6, "column_name"), "testreal");
+                assertEquals(cur.getField((UInt64)7, "column_name"), "testdecimal");
+                assertEquals(cur.getField((UInt64)8, "column_name"), "testdate");
+                assertEquals(cur.getField((UInt64)9, "column_name"), "testtime");
+                assertEquals(cur.getField((UInt64)10, "column_name"), "testdatetime");
+                assertEquals(cur.getField((UInt64)11, "column_name"), "testyear");
+                assertEquals(cur.getField((UInt64)12, "column_name"), "testchar");
+                assertEquals(cur.getField((UInt64)13, "column_name"), "testvarchar");
+                assertEquals(cur.getField((UInt64)14, "column_name"), "testtext");
+                assertEquals(cur.getField((UInt64)15, "column_name"), "testtinytext");
+                assertEquals(cur.getField((UInt64)16, "column_name"), "testmediumtext");
+                assertEquals(cur.getField((UInt64)17, "column_name"), "testlongtext");
+                assertEquals(cur.getField((UInt64)18, "column_name"), "testblob");
+                assertEquals(cur.getField((UInt64)19, "column_name"), "testtinyblob");
+                assertEquals(cur.getField((UInt64)20, "column_name"), "testmediumblob");
+                assertEquals(cur.getField((UInt64)21, "column_name"), "testlongblob");
+                assertEquals(cur.getField((UInt64)22, "column_name"), "testtimestamp");
+                assertEquals(cur.getField((UInt64)0, "data_type"), "TINYINT");
+                assertEquals(cur.getField((UInt64)1, "data_type"), "SMALLINT");
+                assertEquals(cur.getField((UInt64)2, "data_type"), "MEDIUMINT");
+                assertEquals(cur.getField((UInt64)3, "data_type"), "INT");
+                assertEquals(cur.getField((UInt64)4, "data_type"), "BIGINT");
+                assertEquals(cur.getField((UInt64)5, "data_type"), "FLOAT");
+                assertEquals(cur.getField((UInt64)6, "data_type"), "DOUBLE"); // not "REAL"
+                assertEquals(cur.getField((UInt64)7, "data_type"), "DECIMAL");
+                assertEquals(cur.getField((UInt64)8, "data_type"), "DATE");
+                assertEquals(cur.getField((UInt64)9, "data_type"), "TIME");
+                assertEquals(cur.getField((UInt64)10, "data_type"), "DATETIME");
+                assertEquals(cur.getField((UInt64)11, "data_type"), "YEAR");
+                assertEquals(cur.getField((UInt64)12, "data_type"), "CHAR");
+                assertEquals(cur.getField((UInt64)13, "data_type"), "VARCHAR");
+                assertEquals(cur.getField((UInt64)14, "data_type"), "TEXT");
+                assertEquals(cur.getField((UInt64)15, "data_type"), "TINYTEXT");
+                assertEquals(cur.getField((UInt64)16, "data_type"), "MEDIUMTEXT");
+                assertEquals(cur.getField((UInt64)17, "data_type"), "LONGTEXT");
+                assertEquals(cur.getField((UInt64)18, "data_type"), "BLOB");
+                assertEquals(cur.getField((UInt64)19, "data_type"), "TINYBLOB");
+                assertEquals(cur.getField((UInt64)20, "data_type"), "MEDIUMBLOB");
+                assertEquals(cur.getField((UInt64)21, "data_type"), "LONGBLOB");
+                assertEquals(cur.getField((UInt64)22, "data_type"), "TIMESTAMP");
+                assertTrue(cur.sendQuery("drop table testtable"));
+                Console.WriteLine("");
 
 
-            // column list - auto_increment, primary key
-            Console.WriteLine("COLUMN LIST - auto_increment, primary key: ");
-            cur.sendQuery("drop table testtable");
-            assertTrue(cur.sendQuery(
-                "create table testtable ("
-                + "	col1 int auto_increment primary key, "
-                + "	col2 int)"));
-            assertTrue(cur.getColumnList("testtable", null));
-            assertEquals(cur.getField((UInt64)0, "extra"), "auto_increment");
-            assertEquals(cur.getField((UInt64)0, "column_key"), "PRI");
-            assertEquals(cur.getField((UInt64)1, "extra"), "");
-            assertEquals(cur.getField((UInt64)1, "column_key"), "");
-            Console.WriteLine("");
-            assertTrue(cur.sendQuery("drop table testtable"));
-            assertTrue(cur.sendQuery(
-                "create table testtable ("
-                + "	col1 int primary key, "
-                + "	col2 int)"));
-            assertTrue(cur.getColumnList("testtable", null));
-            assertEquals(cur.getField((UInt64)0, "extra"), "");
-            assertEquals(cur.getField((UInt64)0, "column_key"), "PRI");
-            assertTrue(cur.sendQuery("drop table testtable"));
-            Console.WriteLine("");
+                // column list - auto_increment, primary key
+                Console.WriteLine("COLUMN LIST - auto_increment, primary key: ");
+                cur.sendQuery("drop table testtable");
+                assertTrue(cur.sendQuery(
+                    "create table testtable ("
+                    + "	col1 int auto_increment primary key, "
+                    + "	col2 int)"));
+                assertTrue(cur.getColumnList("testtable", null));
+                assertEquals(cur.getField((UInt64)0, "extra"), "auto_increment");
+                assertEquals(cur.getField((UInt64)0, "column_key"), "PRI");
+                assertEquals(cur.getField((UInt64)1, "extra"), "");
+                assertEquals(cur.getField((UInt64)1, "column_key"), "");
+                Console.WriteLine("");
+                assertTrue(cur.sendQuery("drop table testtable"));
+                assertTrue(cur.sendQuery(
+                    "create table testtable ("
+                    + "	col1 int primary key, "
+                    + "	col2 int)"));
+                assertTrue(cur.getColumnList("testtable", null));
+                assertEquals(cur.getField((UInt64)0, "extra"), "");
+                assertEquals(cur.getField((UInt64)0, "column_key"), "PRI");
+                assertTrue(cur.sendQuery("drop table testtable"));
+                Console.WriteLine("");
 
 
-            // primary keys list
-            Console.WriteLine("PRIMARY KEYS LIST: ");
-            cur.sendQuery("drop table testtable");
-            assertTrue(cur.sendQuery(
-                "create table testtable ("
-                + "	col1 int primary key, "
-                + "	col2 int)"));
-            assertTrue(cur.getPrimaryKeysList("testtable", null));
-            assertEquals(cur.getColumnName(0), "table");
-            assertEquals(cur.getColumnName(1), "non_unique");
-            assertEquals(cur.getColumnName(2), "key_name");
-            assertEquals(cur.getColumnName(3), "seq_in_index");
-            assertEquals(cur.getColumnName(4), "column_name");
-            assertEquals(cur.getColumnName(5), "collation");
-            assertEquals(cur.getColumnName(6), "cardinality");
-            assertEquals(cur.getColumnName(7), "sub_part");
-            assertEquals(cur.getColumnName(8), "packed");
-            assertEquals(cur.getColumnName(9), "null");
-            assertEquals(cur.getColumnName(10), "index_type");
-            assertEquals(cur.getColumnName(11), "comment");
-            assertEquals(cur.getColumnName(12), "index_comment");
-            assertEquals(cur.rowCount(), (UInt64)1);
-            assertTrue(cur.getField((UInt64)0, "table") == "testtable");
-            assertEquals(cur.getField((UInt64)0, "seq_in_index"), "1");
-            assertTrue(cur.getField((UInt64)0, "column_name") == "col1");
-            assertEquals(cur.getField((UInt64)0, "key_name"), "PRIMARY");
-            assertTrue(cur.sendQuery("drop table testtable"));
-            Console.WriteLine("");
+                // primary keys list
+                Console.WriteLine("PRIMARY KEYS LIST: ");
+                cur.sendQuery("drop table testtable");
+                assertTrue(cur.sendQuery(
+                    "create table testtable ("
+                    + "	col1 int primary key, "
+                    + "	col2 int)"));
+                assertTrue(cur.getPrimaryKeysList("testtable", null));
+                assertEquals(cur.getColumnName(0), "table");
+                assertEquals(cur.getColumnName(1), "non_unique");
+                assertEquals(cur.getColumnName(2), "key_name");
+                assertEquals(cur.getColumnName(3), "seq_in_index");
+                assertEquals(cur.getColumnName(4), "column_name");
+                assertEquals(cur.getColumnName(5), "collation");
+                assertEquals(cur.getColumnName(6), "cardinality");
+                assertEquals(cur.getColumnName(7), "sub_part");
+                assertEquals(cur.getColumnName(8), "packed");
+                assertEquals(cur.getColumnName(9), "null");
+                assertEquals(cur.getColumnName(10), "index_type");
+                assertEquals(cur.getColumnName(11), "comment");
+                assertEquals(cur.getColumnName(12), "index_comment");
+                assertEquals(cur.rowCount(), (UInt64)1);
+                assertTrue(cur.getField((UInt64)0, "table") == "testtable");
+                assertEquals(cur.getField((UInt64)0, "seq_in_index"), "1");
+                assertTrue(cur.getField((UInt64)0, "column_name") == "col1");
+                assertEquals(cur.getField((UInt64)0, "key_name"), "PRIMARY");
+                assertTrue(cur.sendQuery("drop table testtable"));
+                Console.WriteLine("");
 
 
-            // key and index list
-            Console.WriteLine("KEY AND INDEX LIST: ");
-            cur.sendQuery("drop table testtable");
-            assertTrue(cur.sendQuery(
-                "create table testtable ("
-                + "	col1 int primary key, "
-                + "	col2 int)"));
-            assertTrue(cur.getKeyAndIndexList("testtable", null));
-            assertEquals(cur.getColumnName(0), "table");
-            assertEquals(cur.getColumnName(1), "non_unique");
-            assertEquals(cur.getColumnName(2), "key_name");
-            assertEquals(cur.getColumnName(3), "seq_in_index");
-            assertEquals(cur.getColumnName(4), "column_name");
-            assertEquals(cur.getColumnName(5), "collation");
-            assertEquals(cur.getColumnName(6), "cardinality");
-            assertEquals(cur.getColumnName(7), "sub_part");
-            assertEquals(cur.getColumnName(8), "packed");
-            assertEquals(cur.getColumnName(9), "null");
-            assertEquals(cur.getColumnName(10), "index_type");
-            assertEquals(cur.getColumnName(11), "comment");
-            assertEquals(cur.getColumnName(12), "index_comment");
-            assertEquals(cur.rowCount(), (UInt64)1);
-            assertTrue(cur.getField((UInt64)0, "table") == "testtable");
-            assertEquals(cur.getField((UInt64)0, "non_unique"), "false");
-            assertEquals(cur.getField((UInt64)0, "seq_in_index"), "1");
-            assertTrue(cur.getField((UInt64)0, "column_name") == "col1");
-            assertEquals(cur.getField((UInt64)0, "collation"), "A");
-            assertEquals(cur.getField((UInt64)0, "index_type"), "3");
-            assertEquals(cur.getField((UInt64)0, "key_name"), "PRIMARY");
-            assertTrue(cur.sendQuery("drop table testtable"));
-            Console.WriteLine("");
+                // key and index list
+                Console.WriteLine("KEY AND INDEX LIST: ");
+                cur.sendQuery("drop table testtable");
+                assertTrue(cur.sendQuery(
+                    "create table testtable ("
+                    + "	col1 int primary key, "
+                    + "	col2 int)"));
+                assertTrue(cur.getKeyAndIndexList("testtable", null));
+                assertEquals(cur.getColumnName(0), "table");
+                assertEquals(cur.getColumnName(1), "non_unique");
+                assertEquals(cur.getColumnName(2), "key_name");
+                assertEquals(cur.getColumnName(3), "seq_in_index");
+                assertEquals(cur.getColumnName(4), "column_name");
+                assertEquals(cur.getColumnName(5), "collation");
+                assertEquals(cur.getColumnName(6), "cardinality");
+                assertEquals(cur.getColumnName(7), "sub_part");
+                assertEquals(cur.getColumnName(8), "packed");
+                assertEquals(cur.getColumnName(9), "null");
+                assertEquals(cur.getColumnName(10), "index_type");
+                assertEquals(cur.getColumnName(11), "comment");
+                assertEquals(cur.getColumnName(12), "index_comment");
+                assertEquals(cur.rowCount(), (UInt64)1);
+                assertTrue(cur.getField((UInt64)0, "table") == "testtable");
+                assertEquals(cur.getField((UInt64)0, "non_unique"), "false");
+                assertEquals(cur.getField((UInt64)0, "seq_in_index"), "1");
+                assertTrue(cur.getField((UInt64)0, "column_name") == "col1");
+                assertEquals(cur.getField((UInt64)0, "collation"), "A");
+                assertEquals(cur.getField((UInt64)0, "index_type"), "3");
+                assertEquals(cur.getField((UInt64)0, "key_name"), "PRIMARY");
+                assertTrue(cur.sendQuery("drop table testtable"));
+                Console.WriteLine("");
 
 
-            // procedure list
-            Console.WriteLine("PROCEDURE LIST: ");
-            cur.sendQuery("drop procedure testproc1");
-            cur.sendQuery("drop procedure testproc2");
-            cur.sendQuery("drop procedure testproc3");
-            cur.sendQuery("drop procedure testproc4");
-            assertTrue(cur.sendQuery(
-                "create procedure testproc1("
-                + "	in in1 int, "
-                + "	in in2 char(20), "
-                + "	in in3 varchar(20), "
-                + "	in in4 date) "
-                + "begin end"));
-            assertTrue(cur.sendQuery(
-                "create procedure testproc2("
-                + "	in in1 int, "
-                + "	in in2 char(20), "
-                + "	in in3 varchar(20), "
-                + "	in in4 date) "
-                + "begin end"));
-            assertTrue(cur.sendQuery(
-                "create procedure testproc3("
-                + "	in in1 int, "
-                + "	in in2 char(20), "
-                + "	in in3 varchar(20), "
-                + "	in in4 date) "
-                + "begin end"));
-            assertTrue(cur.sendQuery(
-                "create procedure testproc4("
-                + "	in in1 int, "
-                + "	in in2 char(20), "
-                + "	in in3 varchar(20), "
-                + "	in in4 date) "
-                + "begin end"));
-            assertTrue(cur.getProcedureList(null));
-            assertInResultSet(cur, "routine_name", "testproc1");
-            assertInResultSet(cur, "routine_name", "testproc2");
-            assertInResultSet(cur, "routine_name", "testproc3");
-            assertInResultSet(cur, "routine_name", "testproc4");
-            Console.WriteLine("");
+                // procedure list
+                Console.WriteLine("PROCEDURE LIST: ");
+                cur.sendQuery("drop procedure testproc1");
+                cur.sendQuery("drop procedure testproc2");
+                cur.sendQuery("drop procedure testproc3");
+                cur.sendQuery("drop procedure testproc4");
+                assertTrue(cur.sendQuery(
+                    "create procedure testproc1("
+                    + "	in in1 int, "
+                    + "	in in2 char(20), "
+                    + "	in in3 varchar(20), "
+                    + "	in in4 date) "
+                    + "begin end"));
+                assertTrue(cur.sendQuery(
+                    "create procedure testproc2("
+                    + "	in in1 int, "
+                    + "	in in2 char(20), "
+                    + "	in in3 varchar(20), "
+                    + "	in in4 date) "
+                    + "begin end"));
+                assertTrue(cur.sendQuery(
+                    "create procedure testproc3("
+                    + "	in in1 int, "
+                    + "	in in2 char(20), "
+                    + "	in in3 varchar(20), "
+                    + "	in in4 date) "
+                    + "begin end"));
+                assertTrue(cur.sendQuery(
+                    "create procedure testproc4("
+                    + "	in in1 int, "
+                    + "	in in2 char(20), "
+                    + "	in in3 varchar(20), "
+                    + "	in in4 date) "
+                    + "begin end"));
+                assertTrue(cur.getProcedureList(null));
+                assertInResultSet(cur, "routine_name", "testproc1");
+                assertInResultSet(cur, "routine_name", "testproc2");
+                assertInResultSet(cur, "routine_name", "testproc3");
+                assertInResultSet(cur, "routine_name", "testproc4");
+                Console.WriteLine("");
 
 
-            // procedure parameter list
-            Console.WriteLine("PROCEDURE PARAMETER LIST: ");
-            assertTrue(cur.getProcedureParameterList("testproc1", null));
-            assertEquals(cur.getColumnName(0), "parameter_name");
-            assertEquals(cur.getColumnName(1), "parameter_mode");
-            assertEquals(cur.getColumnName(2), "data_type");
-            assertEquals(cur.getColumnName(3), "character_maximum_length");
-            assertEquals(cur.getColumnName(4), "ordinal_position");
-            assertEquals(cur.rowCount(), (UInt64)4);
-            assertEquals(cur.getField((UInt64)0, "parameter_name"), "in1");
-            assertEquals(cur.getField((UInt64)0, "parameter_mode"), "1");
-            assertEquals(cur.getField((UInt64)0, "data_type"), "INT");
-            assertEquals(cur.getField((UInt64)0, "ordinal_position"), "1");
-            assertEquals(cur.getField((UInt64)1, "parameter_name"), "in2");
-            assertEquals(cur.getField((UInt64)1, "parameter_mode"), "1");
-            assertEquals(cur.getField((UInt64)1, "data_type"), "CHAR");
-            assertEquals(cur.getField((UInt64)1, "ordinal_position"), "2");
-            assertEquals(cur.getField((UInt64)2, "parameter_name"), "in3");
-            assertEquals(cur.getField((UInt64)2, "parameter_mode"), "1");
-            assertEquals(cur.getField((UInt64)2, "data_type"), "VARCHAR");
-            assertEquals(cur.getField((UInt64)2, "ordinal_position"), "3");
-            assertEquals(cur.getField((UInt64)3, "parameter_name"), "in4");
-            assertEquals(cur.getField((UInt64)3, "parameter_mode"), "1");
-            assertEquals(cur.getField((UInt64)3, "data_type"), "DATE");
-            assertEquals(cur.getField((UInt64)3, "ordinal_position"), "4");
-            assertTrue(cur.sendQuery("drop procedure testproc1"));
-            assertTrue(cur.sendQuery("drop procedure testproc2"));
-            assertTrue(cur.sendQuery("drop procedure testproc3"));
-            assertTrue(cur.sendQuery("drop procedure testproc4"));
-            Console.WriteLine("");
+                // procedure parameter list
+                Console.WriteLine("PROCEDURE PARAMETER LIST: ");
+                assertTrue(cur.getProcedureParameterList("testproc1", null));
+                assertEquals(cur.getColumnName(0), "parameter_name");
+                assertEquals(cur.getColumnName(1), "parameter_mode");
+                assertEquals(cur.getColumnName(2), "data_type");
+                assertEquals(cur.getColumnName(3), "character_maximum_length");
+                assertEquals(cur.getColumnName(4), "ordinal_position");
+                assertEquals(cur.rowCount(), (UInt64)4);
+                assertEquals(cur.getField((UInt64)0, "parameter_name"), "in1");
+                assertEquals(cur.getField((UInt64)0, "parameter_mode"), "1");
+                assertEquals(cur.getField((UInt64)0, "data_type"), "INT");
+                assertEquals(cur.getField((UInt64)0, "ordinal_position"), "1");
+                assertEquals(cur.getField((UInt64)1, "parameter_name"), "in2");
+                assertEquals(cur.getField((UInt64)1, "parameter_mode"), "1");
+                assertEquals(cur.getField((UInt64)1, "data_type"), "CHAR");
+                assertEquals(cur.getField((UInt64)1, "ordinal_position"), "2");
+                assertEquals(cur.getField((UInt64)2, "parameter_name"), "in3");
+                assertEquals(cur.getField((UInt64)2, "parameter_mode"), "1");
+                assertEquals(cur.getField((UInt64)2, "data_type"), "VARCHAR");
+                assertEquals(cur.getField((UInt64)2, "ordinal_position"), "3");
+                assertEquals(cur.getField((UInt64)3, "parameter_name"), "in4");
+                assertEquals(cur.getField((UInt64)3, "parameter_mode"), "1");
+                assertEquals(cur.getField((UInt64)3, "data_type"), "DATE");
+                assertEquals(cur.getField((UInt64)3, "ordinal_position"), "4");
+                assertTrue(cur.sendQuery("drop procedure testproc1"));
+                assertTrue(cur.sendQuery("drop procedure testproc2"));
+                assertTrue(cur.sendQuery("drop procedure testproc3"));
+                assertTrue(cur.sendQuery("drop procedure testproc4"));
+                Console.WriteLine("");
+            }
 
 
             // invalid queries

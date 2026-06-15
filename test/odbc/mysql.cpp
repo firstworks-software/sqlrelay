@@ -1191,6 +1191,9 @@ int main(int argc, char **argv) {
 			&vallen);
 	assertContainsVersionDbc(dbc,(const char *)strval);
 	assertSuccessDbc(dbc,erg);
+	// backend mysql major version (3.23 lacks features gated below)
+	uint32_t	majorversion=(strval[0]>='0' && strval[0]<='9')?
+					(uint32_t)(strval[0]-'0'):0;
 	stdoutput.printf("\n");
 
 
@@ -5143,49 +5146,53 @@ int main(int argc, char **argv) {
 
 
 	// isolation levels
+	// (mysql before 4.0 doesn't support setting the isolation level)
 	stdoutput.printf("ISOLATION LEVELS: \n");
 
-	// MySQL/InnoDB supports all four isolation levels; each set succeeds
-	erg=SQLSetConnectAttr(dbc,SQL_ATTR_TXN_ISOLATION,
-			(SQLPOINTER)(uintptr_t)SQL_TXN_READ_UNCOMMITTED,0);
-	assertSuccessDbc(dbc,erg);
-	erg=SQLGetConnectAttr(dbc,SQL_ATTR_TXN_ISOLATION,
-			(SQLPOINTER)&dbcuintval,0,&dbcstrlen);
-	assertSuccessDbc(dbc,erg);
-	assertEqualDbc(dbc,(int)dbcuintval,(int)SQL_TXN_READ_UNCOMMITTED);
+	if (majorversion>3) {
 
-	erg=SQLSetConnectAttr(dbc,SQL_ATTR_TXN_ISOLATION,
-			(SQLPOINTER)(uintptr_t)SQL_TXN_READ_COMMITTED,0);
-	assertSuccessDbc(dbc,erg);
-	erg=SQLGetConnectAttr(dbc,SQL_ATTR_TXN_ISOLATION,
-			(SQLPOINTER)&dbcuintval,0,&dbcstrlen);
-	assertSuccessDbc(dbc,erg);
-	assertEqualDbc(dbc,(int)dbcuintval,(int)SQL_TXN_READ_COMMITTED);
+		// MySQL/InnoDB supports all four isolation levels; each set succeeds
+		erg=SQLSetConnectAttr(dbc,SQL_ATTR_TXN_ISOLATION,
+				(SQLPOINTER)(uintptr_t)SQL_TXN_READ_UNCOMMITTED,0);
+		assertSuccessDbc(dbc,erg);
+		erg=SQLGetConnectAttr(dbc,SQL_ATTR_TXN_ISOLATION,
+				(SQLPOINTER)&dbcuintval,0,&dbcstrlen);
+		assertSuccessDbc(dbc,erg);
+		assertEqualDbc(dbc,(int)dbcuintval,(int)SQL_TXN_READ_UNCOMMITTED);
 
-	erg=SQLSetConnectAttr(dbc,SQL_ATTR_TXN_ISOLATION,
-			(SQLPOINTER)(uintptr_t)SQL_TXN_REPEATABLE_READ,0);
-	assertSuccessDbc(dbc,erg);
-	erg=SQLGetConnectAttr(dbc,SQL_ATTR_TXN_ISOLATION,
-			(SQLPOINTER)&dbcuintval,0,&dbcstrlen);
-	assertSuccessDbc(dbc,erg);
-	assertEqualDbc(dbc,(int)dbcuintval,(int)SQL_TXN_REPEATABLE_READ);
+		erg=SQLSetConnectAttr(dbc,SQL_ATTR_TXN_ISOLATION,
+				(SQLPOINTER)(uintptr_t)SQL_TXN_READ_COMMITTED,0);
+		assertSuccessDbc(dbc,erg);
+		erg=SQLGetConnectAttr(dbc,SQL_ATTR_TXN_ISOLATION,
+				(SQLPOINTER)&dbcuintval,0,&dbcstrlen);
+		assertSuccessDbc(dbc,erg);
+		assertEqualDbc(dbc,(int)dbcuintval,(int)SQL_TXN_READ_COMMITTED);
 
-	erg=SQLSetConnectAttr(dbc,SQL_ATTR_TXN_ISOLATION,
-			(SQLPOINTER)(uintptr_t)SQL_TXN_SERIALIZABLE,0);
-	assertSuccessDbc(dbc,erg);
-	erg=SQLGetConnectAttr(dbc,SQL_ATTR_TXN_ISOLATION,
-			(SQLPOINTER)&dbcuintval,0,&dbcstrlen);
-	assertSuccessDbc(dbc,erg);
-	assertEqualDbc(dbc,(int)dbcuintval,(int)SQL_TXN_SERIALIZABLE);
+		erg=SQLSetConnectAttr(dbc,SQL_ATTR_TXN_ISOLATION,
+				(SQLPOINTER)(uintptr_t)SQL_TXN_REPEATABLE_READ,0);
+		assertSuccessDbc(dbc,erg);
+		erg=SQLGetConnectAttr(dbc,SQL_ATTR_TXN_ISOLATION,
+				(SQLPOINTER)&dbcuintval,0,&dbcstrlen);
+		assertSuccessDbc(dbc,erg);
+		assertEqualDbc(dbc,(int)dbcuintval,(int)SQL_TXN_REPEATABLE_READ);
 
-	// reset to MySQL's default isolation level (REPEATABLE READ)
-	erg=SQLSetConnectAttr(dbc,SQL_ATTR_TXN_ISOLATION,
-			(SQLPOINTER)(uintptr_t)SQL_TXN_REPEATABLE_READ,0);
-	assertSuccessDbc(dbc,erg);
-	erg=SQLGetConnectAttr(dbc,SQL_ATTR_TXN_ISOLATION,
-			(SQLPOINTER)&dbcuintval,0,&dbcstrlen);
-	assertSuccessDbc(dbc,erg);
-	assertEqualDbc(dbc,(int)dbcuintval,(int)SQL_TXN_REPEATABLE_READ);
+		erg=SQLSetConnectAttr(dbc,SQL_ATTR_TXN_ISOLATION,
+				(SQLPOINTER)(uintptr_t)SQL_TXN_SERIALIZABLE,0);
+		assertSuccessDbc(dbc,erg);
+		erg=SQLGetConnectAttr(dbc,SQL_ATTR_TXN_ISOLATION,
+				(SQLPOINTER)&dbcuintval,0,&dbcstrlen);
+		assertSuccessDbc(dbc,erg);
+		assertEqualDbc(dbc,(int)dbcuintval,(int)SQL_TXN_SERIALIZABLE);
+
+		// reset to MySQL's default isolation level (REPEATABLE READ)
+		erg=SQLSetConnectAttr(dbc,SQL_ATTR_TXN_ISOLATION,
+				(SQLPOINTER)(uintptr_t)SQL_TXN_REPEATABLE_READ,0);
+		assertSuccessDbc(dbc,erg);
+		erg=SQLGetConnectAttr(dbc,SQL_ATTR_TXN_ISOLATION,
+				(SQLPOINTER)&dbcuintval,0,&dbcstrlen);
+		assertSuccessDbc(dbc,erg);
+		assertEqualDbc(dbc,(int)dbcuintval,(int)SQL_TXN_REPEATABLE_READ);
+	}
 	stdoutput.printf("\n");
 
 
@@ -8630,36 +8637,40 @@ int main(int argc, char **argv) {
 
 
 
-	// rebinding
-	stdoutput.printf("REBINDING: \n");
-	SQLFreeStmt(stmt,SQL_CLOSE);
-	SQLFreeStmt(stmt,SQL_UNBIND);
-	SQLFreeStmt(stmt,SQL_RESET_PARAMS);
-	erg=SQLPrepare(stmt,(SQLCHAR *)"select ?",SQL_NTS);
-	assertSuccessStmt(stmt,erg);
-	SQLINTEGER	rebindin=1;
-	SQLLEN		rebindinlen=sizeof(rebindin);
-	SQLINTEGER	rebindout=0;
-	SQLLEN		rebindoutind=0;
-	erg=SQLBindParameter(stmt,1,SQL_PARAM_INPUT,
-				SQL_C_SLONG,SQL_INTEGER,
-				0,0,
-				(SQLPOINTER)&rebindin,
-				rebindinlen,&rebindinlen);
-	assertSuccessStmt(stmt,erg);
-	erg=SQLBindCol(stmt,1,SQL_C_SLONG,
-			&rebindout,sizeof(rebindout),&rebindoutind);
-	assertSuccessStmt(stmt,erg);
-	for (int rb=1; rb<=3; rb++) {
-		rebindin=rb;
-		erg=SQLExecute(stmt);
+	// mysql before 5.0 has no stored procedures
+	if (majorversion>3) {
+
+		// rebinding
+		stdoutput.printf("REBINDING: \n");
+		SQLFreeStmt(stmt,SQL_CLOSE);
+		SQLFreeStmt(stmt,SQL_UNBIND);
+		SQLFreeStmt(stmt,SQL_RESET_PARAMS);
+		erg=SQLPrepare(stmt,(SQLCHAR *)"select ?",SQL_NTS);
 		assertSuccessStmt(stmt,erg);
-		erg=SQLFetch(stmt);
+		SQLINTEGER	rebindin=1;
+		SQLLEN		rebindinlen=sizeof(rebindin);
+		SQLINTEGER	rebindout=0;
+		SQLLEN		rebindoutind=0;
+		erg=SQLBindParameter(stmt,1,SQL_PARAM_INPUT,
+					SQL_C_SLONG,SQL_INTEGER,
+					0,0,
+					(SQLPOINTER)&rebindin,
+					rebindinlen,&rebindinlen);
 		assertSuccessStmt(stmt,erg);
-		assertEqualStmt(stmt,(int)rebindout,rb);
-		SQLCloseCursor(stmt);
+		erg=SQLBindCol(stmt,1,SQL_C_SLONG,
+				&rebindout,sizeof(rebindout),&rebindoutind);
+		assertSuccessStmt(stmt,erg);
+		for (int rb=1; rb<=3; rb++) {
+			rebindin=rb;
+			erg=SQLExecute(stmt);
+			assertSuccessStmt(stmt,erg);
+			erg=SQLFetch(stmt);
+			assertSuccessStmt(stmt,erg);
+			assertEqualStmt(stmt,(int)rebindout,rb);
+			SQLCloseCursor(stmt);
+		}
+		stdoutput.printf("\n");
 	}
-	stdoutput.printf("\n");
 
 
 
@@ -8957,775 +8968,779 @@ int main(int argc, char **argv) {
 
 
 
-	// catalog list
-	stdoutput.printf("CATALOG LIST: \n");
-	SQLFreeStmt(stmt,SQL_CLOSE);
-	SQLFreeStmt(stmt,SQL_UNBIND);
-	SQLFreeStmt(stmt,SQL_RESET_PARAMS);
-	erg=SQLTables(stmt,
-			(SQLCHAR *)SQL_ALL_CATALOGS,SQL_NTS,
-			(SQLCHAR *)"",SQL_NTS,
-			(SQLCHAR *)"",SQL_NTS,
-			(SQLCHAR *)"",SQL_NTS);
-	assertSuccessStmt(stmt,erg);
-	SQLCHAR		catname[1024];
-	SQLLEN		catnameind;
-	erg=SQLBindCol(stmt,1,SQL_C_CHAR,
-			catname,sizeof(catname),&catnameind);
-	assertSuccessStmt(stmt,erg);
-	bool		catfound=false;
-	for (;;) {
-		erg=SQLFetch(stmt);
-		if (erg==SQL_NO_DATA) {
-			break;
-		}
+	// mysql before 5.0 has no information_schema for these metadata queries
+	if (majorversion>3) {
+
+		// catalog list
+		stdoutput.printf("CATALOG LIST: \n");
+		SQLFreeStmt(stmt,SQL_CLOSE);
+		SQLFreeStmt(stmt,SQL_UNBIND);
+		SQLFreeStmt(stmt,SQL_RESET_PARAMS);
+		erg=SQLTables(stmt,
+				(SQLCHAR *)SQL_ALL_CATALOGS,SQL_NTS,
+				(SQLCHAR *)"",SQL_NTS,
+				(SQLCHAR *)"",SQL_NTS,
+				(SQLCHAR *)"",SQL_NTS);
 		assertSuccessStmt(stmt,erg);
-		if (erg!=SQL_SUCCESS && erg!=SQL_SUCCESS_WITH_INFO) {
-			break;
-		}
-		if (!charstring::compareIgnoringCase(
-					(const char *)catname,hostname)) {
-			catfound=true;
-		}
-	}
-	// the catalogs are the databases; the connected database, named
-	// after the host, appears in the list
-	assertTrueStmt(stmt,catfound);
-	SQLFreeStmt(stmt,SQL_CLOSE);
-	SQLFreeStmt(stmt,SQL_UNBIND);
-	stdoutput.printf("\n");
-
-
-
-	// schema list
-	stdoutput.printf("SCHEMA LIST: \n");
-	SQLFreeStmt(stmt,SQL_CLOSE);
-	SQLFreeStmt(stmt,SQL_UNBIND);
-	SQLFreeStmt(stmt,SQL_RESET_PARAMS);
-	erg=SQLTables(stmt,
-			(SQLCHAR *)"",SQL_NTS,
-			(SQLCHAR *)SQL_ALL_SCHEMAS,SQL_NTS,
-			(SQLCHAR *)"",SQL_NTS,
-			(SQLCHAR *)"",SQL_NTS);
-	assertSuccessStmt(stmt,erg);
-	SQLCHAR		schname[1024];
-	SQLLEN		schnameind;
-	erg=SQLBindCol(stmt,2,SQL_C_CHAR,
-			schname,sizeof(schname),&schnameind);
-	assertSuccessStmt(stmt,erg);
-	int		schrows=0;
-	for (;;) {
-		erg=SQLFetch(stmt);
-		if (erg==SQL_NO_DATA) {
-			break;
-		}
+		SQLCHAR		catname[1024];
+		SQLLEN		catnameind;
+		erg=SQLBindCol(stmt,1,SQL_C_CHAR,
+				catname,sizeof(catname),&catnameind);
 		assertSuccessStmt(stmt,erg);
-		if (erg!=SQL_SUCCESS && erg!=SQL_SUCCESS_WITH_INFO) {
-			break;
-		}
-		schrows++;
-	}
-	// mysql has no schemas; the list is empty
-	assertEqualStmt(stmt,schrows,0);
-	SQLFreeStmt(stmt,SQL_CLOSE);
-	SQLFreeStmt(stmt,SQL_UNBIND);
-	stdoutput.printf("\n");
-
-
-
-	// table type list
-	// MySQL ODBC reports TABLE, VIEW, SYSTEM TABLE
-	stdoutput.printf("TABLE TYPE LIST: \n");
-	SQLFreeStmt(stmt,SQL_CLOSE);
-	SQLFreeStmt(stmt,SQL_UNBIND);
-	SQLFreeStmt(stmt,SQL_RESET_PARAMS);
-	erg=SQLTables(stmt,
-			(SQLCHAR *)"",SQL_NTS,
-			(SQLCHAR *)"",SQL_NTS,
-			(SQLCHAR *)"",SQL_NTS,
-			(SQLCHAR *)SQL_ALL_TABLE_TYPES,SQL_NTS);
-	assertSuccessStmt(stmt,erg);
-	SQLCHAR		tabletype[64];
-	SQLLEN		tabletypeind;
-	erg=SQLBindCol(stmt,4,SQL_C_CHAR,
-			tabletype,sizeof(tabletype),&tabletypeind);
-	assertSuccessStmt(stmt,erg);
-	bool		foundtable=false;
-	bool		foundview=false;
-	for (;;) {
-		erg=SQLFetch(stmt);
-		if (erg==SQL_NO_DATA) {
-			break;
-		}
-		assertSuccessStmt(stmt,erg);
-		if (erg!=SQL_SUCCESS && erg!=SQL_SUCCESS_WITH_INFO) {
-			break;
-		}
-		if (!charstring::compare((const char *)tabletype,"TABLE")) {
-			foundtable=true;
-		} else if (!charstring::compare(
-					(const char *)tabletype,"VIEW")) {
-			foundview=true;
-		}
-	}
-	assertTrueStmt(stmt,foundtable);
-	assertTrueStmt(stmt,foundview);
-	SQLFreeStmt(stmt,SQL_CLOSE);
-	SQLFreeStmt(stmt,SQL_UNBIND);
-	stdoutput.printf("\n");
-
-
-
-	// table list
-	stdoutput.printf("TABLE LIST: \n");
-	SQLFreeStmt(stmt,SQL_CLOSE);
-	SQLFreeStmt(stmt,SQL_UNBIND);
-	SQLFreeStmt(stmt,SQL_RESET_PARAMS);
-	SQLExecDirect(stmt,(SQLCHAR *)"drop table testtable1",SQL_NTS);
-	SQLExecDirect(stmt,(SQLCHAR *)"drop table testtable2",SQL_NTS);
-	SQLExecDirect(stmt,(SQLCHAR *)"drop table testtable3",SQL_NTS);
-	SQLExecDirect(stmt,(SQLCHAR *)"drop table testtable4",SQL_NTS);
-	erg=SQLExecDirect(stmt,(SQLCHAR *)
-		"create table testtable1 (col1 int, col2 int)",SQL_NTS);
-	assertSuccessStmt(stmt,erg);
-	erg=SQLExecDirect(stmt,(SQLCHAR *)
-		"create table testtable2 (col1 int, col2 int)",SQL_NTS);
-	assertSuccessStmt(stmt,erg);
-	erg=SQLExecDirect(stmt,(SQLCHAR *)
-		"create table testtable3 (col1 int, col2 int)",SQL_NTS);
-	assertSuccessStmt(stmt,erg);
-	erg=SQLExecDirect(stmt,(SQLCHAR *)
-		"create table testtable4 (col1 int, col2 int)",SQL_NTS);
-	assertSuccessStmt(stmt,erg);
-	// commit so the catalog query sees the new tables
-	erg=SQLEndTran(SQL_HANDLE_DBC,dbc,SQL_COMMIT);
-	assertSuccessDbc(dbc,erg);
-	// force metadata_id off so the table-name pattern is honored;
-	// MariaDB embeds catalog/schema as a non-quoted identifier when true
-	SQLSetStmtAttr(stmt,SQL_ATTR_METADATA_ID,
-			(SQLPOINTER)(uintptr_t)SQL_FALSE,0);
-	// MariaDB returns no rows for empty-string catalog/schema; pass NULL.
-	// SQL Relay matches across the connected database with empty strings.
-	// FIXME: which is correct? (other list tests do the same)
-	SQLCHAR		*tlcatalog=(SQLCHAR *)(issqlrelay?"":NULL);
-	SQLSMALLINT	tlcataloglen=(issqlrelay?SQL_NTS:0);
-	SQLCHAR		*tlschema=(SQLCHAR *)(issqlrelay?"":NULL);
-	SQLSMALLINT	tlschemalen=(issqlrelay?SQL_NTS:0);
-	erg=SQLTables(stmt,
-			tlcatalog,tlcataloglen,
-			tlschema,tlschemalen,
-			(SQLCHAR *)"testtable%",SQL_NTS,
-			(SQLCHAR *)"TABLE",SQL_NTS);
-	assertSuccessStmt(stmt,erg);
-	SQLCHAR		tblname[256];
-	SQLLEN		tblnameind;
-	erg=SQLBindCol(stmt,3,SQL_C_CHAR,
-			tblname,sizeof(tblname),&tblnameind);
-	assertSuccessStmt(stmt,erg);
-	SQLCHAR		tbltype[256];
-	SQLLEN		tbltypeind;
-	erg=SQLBindCol(stmt,4,SQL_C_CHAR,
-			tbltype,sizeof(tbltype),&tbltypeind);
-	assertSuccessStmt(stmt,erg);
-	int		tblcounter=0;
-	for (;;) {
-		erg=SQLFetch(stmt);
-		if (erg==SQL_NO_DATA) {
-			break;
-		}
-		assertSuccessStmt(stmt,erg);
-		if (erg!=SQL_SUCCESS && erg!=SQL_SUCCESS_WITH_INFO) {
-			break;
-		}
-		if (!charstring::compare((const char *)tblname,"testtable1") ||
-			!charstring::compare(
-					(const char *)tblname,"testtable2") ||
-			!charstring::compare(
-					(const char *)tblname,"testtable3") ||
-			!charstring::compare(
-					(const char *)tblname,"testtable4")) {
-			// filtered on TABLE, so each match must report that type
-			assertEqualStmt(stmt,(const char *)tbltype,"TABLE");
-			tblcounter++;
-		}
-	}
-	assertEqualStmt(stmt,tblcounter,4);
-	SQLFreeStmt(stmt,SQL_CLOSE);
-	SQLFreeStmt(stmt,SQL_UNBIND);
-	for (int t=1; t<=4; t++) {
-		char dropbuf[64];
-		charstring::printf(dropbuf,sizeof(dropbuf),
-					"drop table testtable%d",t);
-		erg=SQLExecDirect(stmt,(SQLCHAR *)dropbuf,SQL_NTS);
-		assertSuccessStmt(stmt,erg);
-	}
-	stdoutput.printf("\n");
-
-
-
-	// type info list
-	// walk the result set for INT, VARCHAR, CHAR, DATE, TEXT, BLOB
-	stdoutput.printf("TYPE INFO LIST: \n");
-	SQLFreeStmt(stmt,SQL_CLOSE);
-	SQLFreeStmt(stmt,SQL_UNBIND);
-	SQLFreeStmt(stmt,SQL_RESET_PARAMS);
-	erg=SQLGetTypeInfo(stmt,SQL_ALL_TYPES);
-	assertSuccessStmt(stmt,erg);
-	SQLCHAR		typname[64];
-	SQLLEN		typnameind;
-	erg=SQLBindCol(stmt,1,SQL_C_CHAR,
-			typname,sizeof(typname),&typnameind);
-	assertSuccessStmt(stmt,erg);
-	SQLSMALLINT	typdatatype;
-	SQLLEN		typdatatypeind;
-	erg=SQLBindCol(stmt,2,SQL_C_SHORT,&typdatatype,
-			sizeof(typdatatype),&typdatatypeind);
-	assertSuccessStmt(stmt,erg);
-	bool		foundint=false;
-	bool		foundvarchar=false;
-	bool		foundchar=false;
-	bool		founddate=false;
-	bool		foundtext=false;
-	bool		foundblob=false;
-	for (;;) {
-		erg=SQLFetch(stmt);
-		if (erg==SQL_NO_DATA) {
-			break;
-		}
-		assertSuccessStmt(stmt,erg);
-		if (erg!=SQL_SUCCESS && erg!=SQL_SUCCESS_WITH_INFO) {
-			break;
-		}
-		// the native driver lists CHAR and VARCHAR twice (the national
-		// character variants reuse the names), so check the type code
-		// only on the first match for each name
-		if (!charstring::compareIgnoringCase(
-					(const char *)typname,"INT")) {
-			if (!foundint) {
-				assertEqualStmt(stmt,(int)typdatatype,
-							SQL_INTEGER);
+		bool		catfound=false;
+		for (;;) {
+			erg=SQLFetch(stmt);
+			if (erg==SQL_NO_DATA) {
+				break;
 			}
-			foundint=true;
-		} else if (!charstring::compareIgnoringCase(
-					(const char *)typname,"VARCHAR")) {
-			if (!foundvarchar) {
-				assertEqualStmt(stmt,(int)typdatatype,
-							SQL_VARCHAR);
+			assertSuccessStmt(stmt,erg);
+			if (erg!=SQL_SUCCESS && erg!=SQL_SUCCESS_WITH_INFO) {
+				break;
 			}
-			foundvarchar=true;
-		} else if (!charstring::compareIgnoringCase(
-					(const char *)typname,"CHAR")) {
-			if (!foundchar) {
-				assertEqualStmt(stmt,(int)typdatatype,SQL_CHAR);
+			if (!charstring::compareIgnoringCase(
+						(const char *)catname,hostname)) {
+				catfound=true;
 			}
-			foundchar=true;
-		} else if (!charstring::compareIgnoringCase(
-					(const char *)typname,"DATE")) {
-			if (!founddate) {
-				#if (ODBCVER >= 0x0300)
-				assertEqualStmt(stmt,(int)typdatatype,
-							SQL_TYPE_DATE);
-				#else
-				assertEqualStmt(stmt,(int)typdatatype,SQL_DATE);
-				#endif
-			}
-			founddate=true;
-		} else if (!charstring::compareIgnoringCase(
-					(const char *)typname,"TEXT")) {
-			if (!foundtext) {
-				assertEqualStmt(stmt,(int)typdatatype,
-							SQL_LONGVARCHAR);
-			}
-			foundtext=true;
-		} else if (!charstring::compareIgnoringCase(
-					(const char *)typname,"BLOB")) {
-			if (!foundblob) {
-				assertEqualStmt(stmt,(int)typdatatype,
-							SQL_LONGVARBINARY);
-			}
-			foundblob=true;
 		}
-	}
-	assertTrueStmt(stmt,foundint);
-	assertTrueStmt(stmt,foundvarchar);
-	assertTrueStmt(stmt,foundchar);
-	assertTrueStmt(stmt,founddate);
-	assertTrueStmt(stmt,foundtext);
-	assertTrueStmt(stmt,foundblob);
-	SQLFreeStmt(stmt,SQL_CLOSE);
-	SQLFreeStmt(stmt,SQL_UNBIND);
-	stdoutput.printf("\n");
+		// the catalogs are the databases; the connected database, named
+		// after the host, appears in the list
+		assertTrueStmt(stmt,catfound);
+		SQLFreeStmt(stmt,SQL_CLOSE);
+		SQLFreeStmt(stmt,SQL_UNBIND);
+		stdoutput.printf("\n");
 
 
 
-	// column list
-	stdoutput.printf("COLUMN LIST: \n");
-	SQLFreeStmt(stmt,SQL_CLOSE);
-	SQLFreeStmt(stmt,SQL_UNBIND);
-	SQLFreeStmt(stmt,SQL_RESET_PARAMS);
-	SQLExecDirect(stmt,(SQLCHAR *)"drop table testtable",SQL_NTS);
-	erg=SQLExecDirect(stmt,(SQLCHAR *)
-		"create table testtable ("
-		"	testtinyint tinyint, "
-		"	testsmallint smallint, "
-		"	testmediumint mediumint, "
-		"	testint int, "
-		"	testbigint bigint, "
-		"	testfloat float, "
-		"	testreal real, "
-		"	testdecimal decimal(2,1), "
-		"	testdate date, "
-		"	testtime time, "
-		"	testdatetime datetime, "
-		"	testyear year, "
-		"	testchar char(40), "
-		"	testvarchar varchar(40), "
-		"	testtext text, "
-		"	testtinytext tinytext, "
-		"	testmediumtext mediumtext, "
-		"	testlongtext longtext, "
-		"	testblob blob, "
-		"	testtinyblob tinyblob, "
-		"	testmediumblob mediumblob, "
-		"	testlongblob longblob, "
-		"	testtimestamp timestamp null)",
-		SQL_NTS);
-	assertSuccessStmt(stmt,erg);
-	erg=SQLEndTran(SQL_HANDLE_DBC,dbc,SQL_COMMIT);
-	assertSuccessDbc(dbc,erg);
-	// MariaDB raises "Unknown column" for a non-NULL catalog; pass NULL
-	// native, empty string for SQL Relay. Also force metadata_id off so
-	// the table name is a pattern.
-	SQLCHAR		*catalogfilter=(SQLCHAR *)(issqlrelay?"":NULL);
-	SQLSMALLINT	catalogfilterlen=(issqlrelay?SQL_NTS:0);
-	SQLSetStmtAttr(stmt,SQL_ATTR_METADATA_ID,
-			(SQLPOINTER)(uintptr_t)SQL_FALSE,0);
-	erg=SQLColumns(stmt,
-			catalogfilter,catalogfilterlen,
-			NULL,0,
-			(SQLCHAR *)"testtable",SQL_NTS,
-			NULL,0);
-	assertSuccessStmt(stmt,erg);
-	SQLCHAR		clcolname[64];
-	SQLLEN		clcolnameind;
-	erg=SQLBindCol(stmt,4,SQL_C_CHAR,
-			clcolname,sizeof(clcolname),&clcolnameind);
-	assertSuccessStmt(stmt,erg);
-	SQLCHAR		clcat[64];
-	SQLLEN		clcatind;
-	erg=SQLBindCol(stmt,1,SQL_C_CHAR,
-			clcat,sizeof(clcat),&clcatind);
-	assertSuccessStmt(stmt,erg);
-	SQLCHAR		clschem[64];
-	SQLLEN		clschemind;
-	erg=SQLBindCol(stmt,2,SQL_C_CHAR,
-			clschem,sizeof(clschem),&clschemind);
-	assertSuccessStmt(stmt,erg);
-	const char	*clexpcolnames[]={
-		"testtinyint","testsmallint","testmediumint","testint",
-		"testbigint","testfloat","testreal","testdecimal",
-		"testdate","testtime","testdatetime","testyear",
-		"testchar","testvarchar","testtext","testtinytext",
-		"testmediumtext","testlongtext","testblob","testtinyblob",
-		"testmediumblob","testlongblob","testtimestamp"};
-	for (int c=0; c<23; c++) {
+		// schema list
+		stdoutput.printf("SCHEMA LIST: \n");
+		SQLFreeStmt(stmt,SQL_CLOSE);
+		SQLFreeStmt(stmt,SQL_UNBIND);
+		SQLFreeStmt(stmt,SQL_RESET_PARAMS);
+		erg=SQLTables(stmt,
+				(SQLCHAR *)"",SQL_NTS,
+				(SQLCHAR *)SQL_ALL_SCHEMAS,SQL_NTS,
+				(SQLCHAR *)"",SQL_NTS,
+				(SQLCHAR *)"",SQL_NTS);
+		assertSuccessStmt(stmt,erg);
+		SQLCHAR		schname[1024];
+		SQLLEN		schnameind;
+		erg=SQLBindCol(stmt,2,SQL_C_CHAR,
+				schname,sizeof(schname),&schnameind);
+		assertSuccessStmt(stmt,erg);
+		int		schrows=0;
+		for (;;) {
+			erg=SQLFetch(stmt);
+			if (erg==SQL_NO_DATA) {
+				break;
+			}
+			assertSuccessStmt(stmt,erg);
+			if (erg!=SQL_SUCCESS && erg!=SQL_SUCCESS_WITH_INFO) {
+				break;
+			}
+			schrows++;
+		}
+		// mysql has no schemas; the list is empty
+		assertEqualStmt(stmt,schrows,0);
+		SQLFreeStmt(stmt,SQL_CLOSE);
+		SQLFreeStmt(stmt,SQL_UNBIND);
+		stdoutput.printf("\n");
+
+
+
+		// table type list
+		// MySQL ODBC reports TABLE, VIEW, SYSTEM TABLE
+		stdoutput.printf("TABLE TYPE LIST: \n");
+		SQLFreeStmt(stmt,SQL_CLOSE);
+		SQLFreeStmt(stmt,SQL_UNBIND);
+		SQLFreeStmt(stmt,SQL_RESET_PARAMS);
+		erg=SQLTables(stmt,
+				(SQLCHAR *)"",SQL_NTS,
+				(SQLCHAR *)"",SQL_NTS,
+				(SQLCHAR *)"",SQL_NTS,
+				(SQLCHAR *)SQL_ALL_TABLE_TYPES,SQL_NTS);
+		assertSuccessStmt(stmt,erg);
+		SQLCHAR		tabletype[64];
+		SQLLEN		tabletypeind;
+		erg=SQLBindCol(stmt,4,SQL_C_CHAR,
+				tabletype,sizeof(tabletype),&tabletypeind);
+		assertSuccessStmt(stmt,erg);
+		bool		foundtable=false;
+		bool		foundview=false;
+		for (;;) {
+			erg=SQLFetch(stmt);
+			if (erg==SQL_NO_DATA) {
+				break;
+			}
+			assertSuccessStmt(stmt,erg);
+			if (erg!=SQL_SUCCESS && erg!=SQL_SUCCESS_WITH_INFO) {
+				break;
+			}
+			if (!charstring::compare((const char *)tabletype,"TABLE")) {
+				foundtable=true;
+			} else if (!charstring::compare(
+						(const char *)tabletype,"VIEW")) {
+				foundview=true;
+			}
+		}
+		assertTrueStmt(stmt,foundtable);
+		assertTrueStmt(stmt,foundview);
+		SQLFreeStmt(stmt,SQL_CLOSE);
+		SQLFreeStmt(stmt,SQL_UNBIND);
+		stdoutput.printf("\n");
+
+
+
+		// table list
+		stdoutput.printf("TABLE LIST: \n");
+		SQLFreeStmt(stmt,SQL_CLOSE);
+		SQLFreeStmt(stmt,SQL_UNBIND);
+		SQLFreeStmt(stmt,SQL_RESET_PARAMS);
+		SQLExecDirect(stmt,(SQLCHAR *)"drop table testtable1",SQL_NTS);
+		SQLExecDirect(stmt,(SQLCHAR *)"drop table testtable2",SQL_NTS);
+		SQLExecDirect(stmt,(SQLCHAR *)"drop table testtable3",SQL_NTS);
+		SQLExecDirect(stmt,(SQLCHAR *)"drop table testtable4",SQL_NTS);
+		erg=SQLExecDirect(stmt,(SQLCHAR *)
+			"create table testtable1 (col1 int, col2 int)",SQL_NTS);
+		assertSuccessStmt(stmt,erg);
+		erg=SQLExecDirect(stmt,(SQLCHAR *)
+			"create table testtable2 (col1 int, col2 int)",SQL_NTS);
+		assertSuccessStmt(stmt,erg);
+		erg=SQLExecDirect(stmt,(SQLCHAR *)
+			"create table testtable3 (col1 int, col2 int)",SQL_NTS);
+		assertSuccessStmt(stmt,erg);
+		erg=SQLExecDirect(stmt,(SQLCHAR *)
+			"create table testtable4 (col1 int, col2 int)",SQL_NTS);
+		assertSuccessStmt(stmt,erg);
+		// commit so the catalog query sees the new tables
+		erg=SQLEndTran(SQL_HANDLE_DBC,dbc,SQL_COMMIT);
+		assertSuccessDbc(dbc,erg);
+		// force metadata_id off so the table-name pattern is honored;
+		// MariaDB embeds catalog/schema as a non-quoted identifier when true
+		SQLSetStmtAttr(stmt,SQL_ATTR_METADATA_ID,
+				(SQLPOINTER)(uintptr_t)SQL_FALSE,0);
+		// MariaDB returns no rows for empty-string catalog/schema; pass NULL.
+		// SQL Relay matches across the connected database with empty strings.
+		// FIXME: which is correct? (other list tests do the same)
+		SQLCHAR		*tlcatalog=(SQLCHAR *)(issqlrelay?"":NULL);
+		SQLSMALLINT	tlcataloglen=(issqlrelay?SQL_NTS:0);
+		SQLCHAR		*tlschema=(SQLCHAR *)(issqlrelay?"":NULL);
+		SQLSMALLINT	tlschemalen=(issqlrelay?SQL_NTS:0);
+		erg=SQLTables(stmt,
+				tlcatalog,tlcataloglen,
+				tlschema,tlschemalen,
+				(SQLCHAR *)"testtable%",SQL_NTS,
+				(SQLCHAR *)"TABLE",SQL_NTS);
+		assertSuccessStmt(stmt,erg);
+		SQLCHAR		tblname[256];
+		SQLLEN		tblnameind;
+		erg=SQLBindCol(stmt,3,SQL_C_CHAR,
+				tblname,sizeof(tblname),&tblnameind);
+		assertSuccessStmt(stmt,erg);
+		SQLCHAR		tbltype[256];
+		SQLLEN		tbltypeind;
+		erg=SQLBindCol(stmt,4,SQL_C_CHAR,
+				tbltype,sizeof(tbltype),&tbltypeind);
+		assertSuccessStmt(stmt,erg);
+		int		tblcounter=0;
+		for (;;) {
+			erg=SQLFetch(stmt);
+			if (erg==SQL_NO_DATA) {
+				break;
+			}
+			assertSuccessStmt(stmt,erg);
+			if (erg!=SQL_SUCCESS && erg!=SQL_SUCCESS_WITH_INFO) {
+				break;
+			}
+			if (!charstring::compare((const char *)tblname,"testtable1") ||
+				!charstring::compare(
+						(const char *)tblname,"testtable2") ||
+				!charstring::compare(
+						(const char *)tblname,"testtable3") ||
+				!charstring::compare(
+						(const char *)tblname,"testtable4")) {
+				// filtered on TABLE, so each match must report that type
+				assertEqualStmt(stmt,(const char *)tbltype,"TABLE");
+				tblcounter++;
+			}
+		}
+		assertEqualStmt(stmt,tblcounter,4);
+		SQLFreeStmt(stmt,SQL_CLOSE);
+		SQLFreeStmt(stmt,SQL_UNBIND);
+		for (int t=1; t<=4; t++) {
+			char dropbuf[64];
+			charstring::printf(dropbuf,sizeof(dropbuf),
+						"drop table testtable%d",t);
+			erg=SQLExecDirect(stmt,(SQLCHAR *)dropbuf,SQL_NTS);
+			assertSuccessStmt(stmt,erg);
+		}
+		stdoutput.printf("\n");
+
+
+
+		// type info list
+		// walk the result set for INT, VARCHAR, CHAR, DATE, TEXT, BLOB
+		stdoutput.printf("TYPE INFO LIST: \n");
+		SQLFreeStmt(stmt,SQL_CLOSE);
+		SQLFreeStmt(stmt,SQL_UNBIND);
+		SQLFreeStmt(stmt,SQL_RESET_PARAMS);
+		erg=SQLGetTypeInfo(stmt,SQL_ALL_TYPES);
+		assertSuccessStmt(stmt,erg);
+		SQLCHAR		typname[64];
+		SQLLEN		typnameind;
+		erg=SQLBindCol(stmt,1,SQL_C_CHAR,
+				typname,sizeof(typname),&typnameind);
+		assertSuccessStmt(stmt,erg);
+		SQLSMALLINT	typdatatype;
+		SQLLEN		typdatatypeind;
+		erg=SQLBindCol(stmt,2,SQL_C_SHORT,&typdatatype,
+				sizeof(typdatatype),&typdatatypeind);
+		assertSuccessStmt(stmt,erg);
+		bool		foundint=false;
+		bool		foundvarchar=false;
+		bool		foundchar=false;
+		bool		founddate=false;
+		bool		foundtext=false;
+		bool		foundblob=false;
+		for (;;) {
+			erg=SQLFetch(stmt);
+			if (erg==SQL_NO_DATA) {
+				break;
+			}
+			assertSuccessStmt(stmt,erg);
+			if (erg!=SQL_SUCCESS && erg!=SQL_SUCCESS_WITH_INFO) {
+				break;
+			}
+			// the native driver lists CHAR and VARCHAR twice (the national
+			// character variants reuse the names), so check the type code
+			// only on the first match for each name
+			if (!charstring::compareIgnoringCase(
+						(const char *)typname,"INT")) {
+				if (!foundint) {
+					assertEqualStmt(stmt,(int)typdatatype,
+								SQL_INTEGER);
+				}
+				foundint=true;
+			} else if (!charstring::compareIgnoringCase(
+						(const char *)typname,"VARCHAR")) {
+				if (!foundvarchar) {
+					assertEqualStmt(stmt,(int)typdatatype,
+								SQL_VARCHAR);
+				}
+				foundvarchar=true;
+			} else if (!charstring::compareIgnoringCase(
+						(const char *)typname,"CHAR")) {
+				if (!foundchar) {
+					assertEqualStmt(stmt,(int)typdatatype,SQL_CHAR);
+				}
+				foundchar=true;
+			} else if (!charstring::compareIgnoringCase(
+						(const char *)typname,"DATE")) {
+				if (!founddate) {
+					#if (ODBCVER >= 0x0300)
+					assertEqualStmt(stmt,(int)typdatatype,
+								SQL_TYPE_DATE);
+					#else
+					assertEqualStmt(stmt,(int)typdatatype,SQL_DATE);
+					#endif
+				}
+				founddate=true;
+			} else if (!charstring::compareIgnoringCase(
+						(const char *)typname,"TEXT")) {
+				if (!foundtext) {
+					assertEqualStmt(stmt,(int)typdatatype,
+								SQL_LONGVARCHAR);
+				}
+				foundtext=true;
+			} else if (!charstring::compareIgnoringCase(
+						(const char *)typname,"BLOB")) {
+				if (!foundblob) {
+					assertEqualStmt(stmt,(int)typdatatype,
+								SQL_LONGVARBINARY);
+				}
+				foundblob=true;
+			}
+		}
+		assertTrueStmt(stmt,foundint);
+		assertTrueStmt(stmt,foundvarchar);
+		assertTrueStmt(stmt,foundchar);
+		assertTrueStmt(stmt,founddate);
+		assertTrueStmt(stmt,foundtext);
+		assertTrueStmt(stmt,foundblob);
+		SQLFreeStmt(stmt,SQL_CLOSE);
+		SQLFreeStmt(stmt,SQL_UNBIND);
+		stdoutput.printf("\n");
+
+
+
+		// column list
+		stdoutput.printf("COLUMN LIST: \n");
+		SQLFreeStmt(stmt,SQL_CLOSE);
+		SQLFreeStmt(stmt,SQL_UNBIND);
+		SQLFreeStmt(stmt,SQL_RESET_PARAMS);
+		SQLExecDirect(stmt,(SQLCHAR *)"drop table testtable",SQL_NTS);
+		erg=SQLExecDirect(stmt,(SQLCHAR *)
+			"create table testtable ("
+			"	testtinyint tinyint, "
+			"	testsmallint smallint, "
+			"	testmediumint mediumint, "
+			"	testint int, "
+			"	testbigint bigint, "
+			"	testfloat float, "
+			"	testreal real, "
+			"	testdecimal decimal(2,1), "
+			"	testdate date, "
+			"	testtime time, "
+			"	testdatetime datetime, "
+			"	testyear year, "
+			"	testchar char(40), "
+			"	testvarchar varchar(40), "
+			"	testtext text, "
+			"	testtinytext tinytext, "
+			"	testmediumtext mediumtext, "
+			"	testlongtext longtext, "
+			"	testblob blob, "
+			"	testtinyblob tinyblob, "
+			"	testmediumblob mediumblob, "
+			"	testlongblob longblob, "
+			"	testtimestamp timestamp null)",
+			SQL_NTS);
+		assertSuccessStmt(stmt,erg);
+		erg=SQLEndTran(SQL_HANDLE_DBC,dbc,SQL_COMMIT);
+		assertSuccessDbc(dbc,erg);
+		// MariaDB raises "Unknown column" for a non-NULL catalog; pass NULL
+		// native, empty string for SQL Relay. Also force metadata_id off so
+		// the table name is a pattern.
+		SQLCHAR		*catalogfilter=(SQLCHAR *)(issqlrelay?"":NULL);
+		SQLSMALLINT	catalogfilterlen=(issqlrelay?SQL_NTS:0);
+		SQLSetStmtAttr(stmt,SQL_ATTR_METADATA_ID,
+				(SQLPOINTER)(uintptr_t)SQL_FALSE,0);
+		erg=SQLColumns(stmt,
+				catalogfilter,catalogfilterlen,
+				NULL,0,
+				(SQLCHAR *)"testtable",SQL_NTS,
+				NULL,0);
+		assertSuccessStmt(stmt,erg);
+		SQLCHAR		clcolname[64];
+		SQLLEN		clcolnameind;
+		erg=SQLBindCol(stmt,4,SQL_C_CHAR,
+				clcolname,sizeof(clcolname),&clcolnameind);
+		assertSuccessStmt(stmt,erg);
+		SQLCHAR		clcat[64];
+		SQLLEN		clcatind;
+		erg=SQLBindCol(stmt,1,SQL_C_CHAR,
+				clcat,sizeof(clcat),&clcatind);
+		assertSuccessStmt(stmt,erg);
+		SQLCHAR		clschem[64];
+		SQLLEN		clschemind;
+		erg=SQLBindCol(stmt,2,SQL_C_CHAR,
+				clschem,sizeof(clschem),&clschemind);
+		assertSuccessStmt(stmt,erg);
+		const char	*clexpcolnames[]={
+			"testtinyint","testsmallint","testmediumint","testint",
+			"testbigint","testfloat","testreal","testdecimal",
+			"testdate","testtime","testdatetime","testyear",
+			"testchar","testvarchar","testtext","testtinytext",
+			"testmediumtext","testlongtext","testblob","testtinyblob",
+			"testmediumblob","testlongblob","testtimestamp"};
+		for (int c=0; c<23; c++) {
+			erg=SQLFetch(stmt);
+			assertSuccessStmt(stmt,erg);
+			assertEqualStmt(stmt,(const char *)clcolname,clexpcolnames[c]);
+			// #7971 - catalog is the database; mysql has no schemas
+			assertTrueStmt(stmt,clcatind!=SQL_NULL_DATA && clcat[0]!='\0');
+			assertTrueStmt(stmt,clschemind==SQL_NULL_DATA ||
+						clschem[0]=='\0');
+		}
+		erg=SQLFetch(stmt);
+		assertEqualStmt(stmt,(int)erg,(int)SQL_NO_DATA);
+		SQLFreeStmt(stmt,SQL_CLOSE);
+		SQLFreeStmt(stmt,SQL_UNBIND);
+		erg=SQLExecDirect(stmt,(SQLCHAR *)"drop table testtable",SQL_NTS);
+		assertSuccessStmt(stmt,erg);
+		stdoutput.printf("\n");
+
+
+
+		// column list - auto_increment, primary key
+		stdoutput.printf("COLUMN LIST - auto_increment, primary key: \n");
+		SQLFreeStmt(stmt,SQL_CLOSE);
+		SQLFreeStmt(stmt,SQL_UNBIND);
+		SQLFreeStmt(stmt,SQL_RESET_PARAMS);
+		SQLExecDirect(stmt,(SQLCHAR *)"drop table testtable",SQL_NTS);
+		erg=SQLExecDirect(stmt,(SQLCHAR *)
+			"create table testtable ("
+			"	col1 int primary key, "
+			"	col2 int)",SQL_NTS);
+		assertSuccessStmt(stmt,erg);
+		erg=SQLEndTran(SQL_HANDLE_DBC,dbc,SQL_COMMIT);
+		assertSuccessDbc(dbc,erg);
+		erg=SQLPrimaryKeys(stmt,
+				catalogfilter,catalogfilterlen,
+				NULL,0,
+				(SQLCHAR *)"testtable",SQL_NTS);
+		assertSuccessStmt(stmt,erg);
+		SQLCHAR		pkcolname[64];
+		SQLLEN		pkcolnameind;
+		erg=SQLBindCol(stmt,4,SQL_C_CHAR,
+				pkcolname,sizeof(pkcolname),&pkcolnameind);
+		assertSuccessStmt(stmt,erg);
+		SQLSMALLINT	pkkeyseq;
+		SQLLEN		pkkeyseqind;
+		erg=SQLBindCol(stmt,5,SQL_C_SHORT,&pkkeyseq,
+				sizeof(pkkeyseq),&pkkeyseqind);
+		assertSuccessStmt(stmt,erg);
+		bool		foundcol1=false;
+		bool		foundcol2=false;
+		for (;;) {
+			erg=SQLFetch(stmt);
+			if (erg==SQL_NO_DATA) {
+				break;
+			}
+			assertSuccessStmt(stmt,erg);
+			if (erg!=SQL_SUCCESS && erg!=SQL_SUCCESS_WITH_INFO) {
+				break;
+			}
+			if (!charstring::compare((const char *)pkcolname,"col1")) {
+				// single-column key, so col1 is at sequence 1
+				assertEqualStmt(stmt,(int)pkkeyseq,1);
+				foundcol1=true;
+			} else if (!charstring::compare(
+						(const char *)pkcolname,"col2")) {
+				foundcol2=true;
+			}
+		}
+		assertTrueStmt(stmt,foundcol1);
+		assertFalseStmt(stmt,foundcol2);
+		SQLFreeStmt(stmt,SQL_CLOSE);
+		SQLFreeStmt(stmt,SQL_UNBIND);
+		erg=SQLExecDirect(stmt,(SQLCHAR *)"drop table testtable",SQL_NTS);
+		assertSuccessStmt(stmt,erg);
+		stdoutput.printf("\n");
+
+
+
+		// primary keys list
+		stdoutput.printf("PRIMARY KEYS LIST: \n");
+		SQLFreeStmt(stmt,SQL_CLOSE);
+		SQLFreeStmt(stmt,SQL_UNBIND);
+		SQLFreeStmt(stmt,SQL_RESET_PARAMS);
+		SQLExecDirect(stmt,(SQLCHAR *)"drop table testtable",SQL_NTS);
+		erg=SQLExecDirect(stmt,(SQLCHAR *)
+			"create table testtable ("
+			"	col1 int primary key, "
+			"	col2 int)",SQL_NTS);
+		assertSuccessStmt(stmt,erg);
+		erg=SQLEndTran(SQL_HANDLE_DBC,dbc,SQL_COMMIT);
+		assertSuccessDbc(dbc,erg);
+		erg=SQLPrimaryKeys(stmt,
+				catalogfilter,catalogfilterlen,
+				NULL,0,
+				(SQLCHAR *)"testtable",SQL_NTS);
+		assertSuccessStmt(stmt,erg);
+		SQLCHAR		pkname[64];
+		SQLLEN		pknameind;
+		SQLSMALLINT	pkseq;
+		SQLLEN		pkseqind;
+		SQLCHAR		pktable[64];
+		SQLLEN		pktableind;
+		SQLCHAR		pkcol[64];
+		SQLLEN		pkcolind;
+		erg=SQLBindCol(stmt,3,SQL_C_CHAR,
+				pktable,sizeof(pktable),&pktableind);
+		assertSuccessStmt(stmt,erg);
+		erg=SQLBindCol(stmt,4,SQL_C_CHAR,
+				pkcol,sizeof(pkcol),&pkcolind);
+		assertSuccessStmt(stmt,erg);
+		erg=SQLBindCol(stmt,5,SQL_C_SHORT,&pkseq,sizeof(pkseq),&pkseqind);
+		assertSuccessStmt(stmt,erg);
+		erg=SQLBindCol(stmt,6,SQL_C_CHAR,
+				pkname,sizeof(pkname),&pknameind);
+		assertSuccessStmt(stmt,erg);
 		erg=SQLFetch(stmt);
 		assertSuccessStmt(stmt,erg);
-		assertEqualStmt(stmt,(const char *)clcolname,clexpcolnames[c]);
-		// #7971 - catalog is the database; mysql has no schemas
-		assertTrueStmt(stmt,clcatind!=SQL_NULL_DATA && clcat[0]!='\0');
-		assertTrueStmt(stmt,clschemind==SQL_NULL_DATA ||
-					clschem[0]=='\0');
-	}
-	erg=SQLFetch(stmt);
-	assertEqualStmt(stmt,(int)erg,(int)SQL_NO_DATA);
-	SQLFreeStmt(stmt,SQL_CLOSE);
-	SQLFreeStmt(stmt,SQL_UNBIND);
-	erg=SQLExecDirect(stmt,(SQLCHAR *)"drop table testtable",SQL_NTS);
-	assertSuccessStmt(stmt,erg);
-	stdoutput.printf("\n");
-
-
-
-	// column list - auto_increment, primary key
-	stdoutput.printf("COLUMN LIST - auto_increment, primary key: \n");
-	SQLFreeStmt(stmt,SQL_CLOSE);
-	SQLFreeStmt(stmt,SQL_UNBIND);
-	SQLFreeStmt(stmt,SQL_RESET_PARAMS);
-	SQLExecDirect(stmt,(SQLCHAR *)"drop table testtable",SQL_NTS);
-	erg=SQLExecDirect(stmt,(SQLCHAR *)
-		"create table testtable ("
-		"	col1 int primary key, "
-		"	col2 int)",SQL_NTS);
-	assertSuccessStmt(stmt,erg);
-	erg=SQLEndTran(SQL_HANDLE_DBC,dbc,SQL_COMMIT);
-	assertSuccessDbc(dbc,erg);
-	erg=SQLPrimaryKeys(stmt,
-			catalogfilter,catalogfilterlen,
-			NULL,0,
-			(SQLCHAR *)"testtable",SQL_NTS);
-	assertSuccessStmt(stmt,erg);
-	SQLCHAR		pkcolname[64];
-	SQLLEN		pkcolnameind;
-	erg=SQLBindCol(stmt,4,SQL_C_CHAR,
-			pkcolname,sizeof(pkcolname),&pkcolnameind);
-	assertSuccessStmt(stmt,erg);
-	SQLSMALLINT	pkkeyseq;
-	SQLLEN		pkkeyseqind;
-	erg=SQLBindCol(stmt,5,SQL_C_SHORT,&pkkeyseq,
-			sizeof(pkkeyseq),&pkkeyseqind);
-	assertSuccessStmt(stmt,erg);
-	bool		foundcol1=false;
-	bool		foundcol2=false;
-	for (;;) {
+		assertEqualStmt(stmt,(const char *)pktable,"testtable");
+		assertEqualStmt(stmt,(const char *)pkcol,"col1");
+		assertEqualStmt(stmt,(int)pkseq,1);
+		assertEqualStmt(stmt,(int)pknameind,7);
+		assertEqualStmt(stmt,(const char *)pkname,"PRIMARY");
 		erg=SQLFetch(stmt);
-		if (erg==SQL_NO_DATA) {
-			break;
-		}
+		assertEqualStmt(stmt,(int)erg,(int)SQL_NO_DATA);
+		SQLFreeStmt(stmt,SQL_CLOSE);
+		SQLFreeStmt(stmt,SQL_UNBIND);
+		erg=SQLExecDirect(stmt,(SQLCHAR *)"drop table testtable",SQL_NTS);
 		assertSuccessStmt(stmt,erg);
-		if (erg!=SQL_SUCCESS && erg!=SQL_SUCCESS_WITH_INFO) {
-			break;
+		stdoutput.printf("\n");
+
+
+
+		// key and index list
+		stdoutput.printf("KEY AND INDEX LIST: \n");
+		SQLFreeStmt(stmt,SQL_CLOSE);
+		SQLFreeStmt(stmt,SQL_UNBIND);
+		SQLFreeStmt(stmt,SQL_RESET_PARAMS);
+		SQLExecDirect(stmt,(SQLCHAR *)"drop table testtable",SQL_NTS);
+		erg=SQLExecDirect(stmt,(SQLCHAR *)
+			"create table testtable ("
+			"	col1 int primary key, "
+			"	col2 int)",SQL_NTS);
+		assertSuccessStmt(stmt,erg);
+		erg=SQLEndTran(SQL_HANDLE_DBC,dbc,SQL_COMMIT);
+		assertSuccessDbc(dbc,erg);
+		erg=SQLStatistics(stmt,
+				catalogfilter,catalogfilterlen,
+				NULL,0,
+				(SQLCHAR *)"testtable",SQL_NTS,
+				SQL_INDEX_ALL,SQL_QUICK);
+		assertSuccessStmt(stmt,erg);
+		SQLCHAR		idxtable[64];
+		SQLLEN		idxtableind;
+		SQLSMALLINT	idxnonunique;
+		SQLLEN		idxnonuniqueind;
+		SQLSMALLINT	idxseq;
+		SQLLEN		idxseqind;
+		SQLCHAR		idxcol[64];
+		SQLLEN		idxcolind;
+		SQLSMALLINT	idxtype;
+		SQLLEN		idxtypeind;
+		erg=SQLBindCol(stmt,3,SQL_C_CHAR,
+				idxtable,sizeof(idxtable),&idxtableind);
+		assertSuccessStmt(stmt,erg);
+		erg=SQLBindCol(stmt,4,SQL_C_SHORT,
+				&idxnonunique,sizeof(idxnonunique),&idxnonuniqueind);
+		assertSuccessStmt(stmt,erg);
+		erg=SQLBindCol(stmt,7,SQL_C_SHORT,
+				&idxtype,sizeof(idxtype),&idxtypeind);
+		assertSuccessStmt(stmt,erg);
+		erg=SQLBindCol(stmt,8,SQL_C_SHORT,
+				&idxseq,sizeof(idxseq),&idxseqind);
+		assertSuccessStmt(stmt,erg);
+		erg=SQLBindCol(stmt,9,SQL_C_CHAR,
+				idxcol,sizeof(idxcol),&idxcolind);
+		assertSuccessStmt(stmt,erg);
+		bool	foundidxcol1=false;
+		for (;;) {
+			erg=SQLFetch(stmt);
+			if (erg==SQL_NO_DATA) {
+				break;
+			}
+			assertSuccessStmt(stmt,erg);
+			if (erg!=SQL_SUCCESS && erg!=SQL_SUCCESS_WITH_INFO) {
+				break;
+			}
+			if (idxtype==SQL_TABLE_STAT) {
+				continue;
+			}
+			assertEqualStmt(stmt,(const char *)idxtable,"testtable");
+			assertEqualStmt(stmt,(int)idxnonunique,0);
+			assertEqualStmt(stmt,(int)idxseq,1);
+			if (!charstring::compare((const char *)idxcol,"col1")) {
+				foundidxcol1=true;
+			}
 		}
-		if (!charstring::compare((const char *)pkcolname,"col1")) {
-			// single-column key, so col1 is at sequence 1
-			assertEqualStmt(stmt,(int)pkkeyseq,1);
-			foundcol1=true;
-		} else if (!charstring::compare(
-					(const char *)pkcolname,"col2")) {
-			foundcol2=true;
+		assertTrueStmt(stmt,foundidxcol1);
+		SQLFreeStmt(stmt,SQL_CLOSE);
+		SQLFreeStmt(stmt,SQL_UNBIND);
+		erg=SQLExecDirect(stmt,(SQLCHAR *)"drop table testtable",SQL_NTS);
+		assertSuccessStmt(stmt,erg);
+		stdoutput.printf("\n");
+
+
+
+		// procedure list
+		stdoutput.printf("PROCEDURE LIST: \n");
+		SQLFreeStmt(stmt,SQL_CLOSE);
+		SQLFreeStmt(stmt,SQL_UNBIND);
+		SQLFreeStmt(stmt,SQL_RESET_PARAMS);
+		SQLExecDirect(stmt,(SQLCHAR *)
+				"drop procedure if exists testproc1",SQL_NTS);
+		SQLExecDirect(stmt,(SQLCHAR *)
+				"drop procedure if exists testproc2",SQL_NTS);
+		SQLExecDirect(stmt,(SQLCHAR *)
+				"drop procedure if exists testproc3",SQL_NTS);
+		SQLExecDirect(stmt,(SQLCHAR *)
+				"drop procedure if exists testproc4",SQL_NTS);
+		// 'create procedure ... begin end'; no `or replace`, no trailing
+		// `;` (some clients reject it)
+		erg=SQLExecDirect(stmt,(SQLCHAR *)
+			"create procedure testproc1 ("
+			"	in in1 int, "
+			"	in in2 char(20), "
+			"	in in3 varchar(20), "
+			"	in in4 date) "
+			"begin end",SQL_NTS);
+		assertSuccessStmt(stmt,erg);
+		erg=SQLExecDirect(stmt,(SQLCHAR *)
+			"create procedure testproc2 ("
+			"	in in1 int, "
+			"	in in2 char(20), "
+			"	in in3 varchar(20), "
+			"	in in4 date) "
+			"begin end",SQL_NTS);
+		assertSuccessStmt(stmt,erg);
+		erg=SQLExecDirect(stmt,(SQLCHAR *)
+			"create procedure testproc3 ("
+			"	in in1 int, "
+			"	in in2 char(20), "
+			"	in in3 varchar(20), "
+			"	in in4 date) "
+			"begin end",SQL_NTS);
+		assertSuccessStmt(stmt,erg);
+		erg=SQLExecDirect(stmt,(SQLCHAR *)
+			"create procedure testproc4 ("
+			"	in in1 int, "
+			"	in in2 char(20), "
+			"	in in3 varchar(20), "
+			"	in in4 date) "
+			"begin end",SQL_NTS);
+		assertSuccessStmt(stmt,erg);
+		erg=SQLEndTran(SQL_HANDLE_DBC,dbc,SQL_COMMIT);
+		assertSuccessDbc(dbc,erg);
+		// force metadata_id off so the procedure name pattern is honored
+		SQLSetStmtAttr(stmt,SQL_ATTR_METADATA_ID,
+				(SQLPOINTER)(uintptr_t)SQL_FALSE,0);
+		erg=SQLProcedures(stmt,
+				catalogfilter,catalogfilterlen,
+				(SQLCHAR *)(issqlrelay?"":NULL),
+				(issqlrelay?SQL_NTS:0),
+				(SQLCHAR *)"testproc%",SQL_NTS);
+		assertSuccessStmt(stmt,erg);
+		SQLCHAR		procname[64];
+		SQLLEN		procnameind;
+		erg=SQLBindCol(stmt,3,SQL_C_CHAR,
+				procname,sizeof(procname),&procnameind);
+		assertSuccessStmt(stmt,erg);
+		SQLSMALLINT	proctype;
+		SQLLEN		proctypeind;
+		erg=SQLBindCol(stmt,8,SQL_C_SHORT,&proctype,
+				sizeof(proctype),&proctypeind);
+		assertSuccessStmt(stmt,erg);
+		int		proccounter=0;
+		for (;;) {
+			erg=SQLFetch(stmt);
+			if (erg==SQL_NO_DATA) {
+				break;
+			}
+			assertSuccessStmt(stmt,erg);
+			if (erg!=SQL_SUCCESS && erg!=SQL_SUCCESS_WITH_INFO) {
+				break;
+			}
+			if (!charstring::compare(
+				(const char *)procname,"testproc1") ||
+				!charstring::compare(
+					(const char *)procname,"testproc2") ||
+				!charstring::compare(
+					(const char *)procname,"testproc3") ||
+				!charstring::compare(
+					(const char *)procname,"testproc4")) {
+				// created as procedures, not functions
+				assertEqualStmt(stmt,(int)proctype,SQL_PT_PROCEDURE);
+				proccounter++;
+			}
 		}
-	}
-	assertTrueStmt(stmt,foundcol1);
-	assertFalseStmt(stmt,foundcol2);
-	SQLFreeStmt(stmt,SQL_CLOSE);
-	SQLFreeStmt(stmt,SQL_UNBIND);
-	erg=SQLExecDirect(stmt,(SQLCHAR *)"drop table testtable",SQL_NTS);
-	assertSuccessStmt(stmt,erg);
-	stdoutput.printf("\n");
+		assertEqualStmt(stmt,proccounter,4);
+		SQLFreeStmt(stmt,SQL_CLOSE);
+		SQLFreeStmt(stmt,SQL_UNBIND);
+		stdoutput.printf("\n");
 
 
 
-	// primary keys list
-	stdoutput.printf("PRIMARY KEYS LIST: \n");
-	SQLFreeStmt(stmt,SQL_CLOSE);
-	SQLFreeStmt(stmt,SQL_UNBIND);
-	SQLFreeStmt(stmt,SQL_RESET_PARAMS);
-	SQLExecDirect(stmt,(SQLCHAR *)"drop table testtable",SQL_NTS);
-	erg=SQLExecDirect(stmt,(SQLCHAR *)
-		"create table testtable ("
-		"	col1 int primary key, "
-		"	col2 int)",SQL_NTS);
-	assertSuccessStmt(stmt,erg);
-	erg=SQLEndTran(SQL_HANDLE_DBC,dbc,SQL_COMMIT);
-	assertSuccessDbc(dbc,erg);
-	erg=SQLPrimaryKeys(stmt,
-			catalogfilter,catalogfilterlen,
-			NULL,0,
-			(SQLCHAR *)"testtable",SQL_NTS);
-	assertSuccessStmt(stmt,erg);
-	SQLCHAR		pkname[64];
-	SQLLEN		pknameind;
-	SQLSMALLINT	pkseq;
-	SQLLEN		pkseqind;
-	SQLCHAR		pktable[64];
-	SQLLEN		pktableind;
-	SQLCHAR		pkcol[64];
-	SQLLEN		pkcolind;
-	erg=SQLBindCol(stmt,3,SQL_C_CHAR,
-			pktable,sizeof(pktable),&pktableind);
-	assertSuccessStmt(stmt,erg);
-	erg=SQLBindCol(stmt,4,SQL_C_CHAR,
-			pkcol,sizeof(pkcol),&pkcolind);
-	assertSuccessStmt(stmt,erg);
-	erg=SQLBindCol(stmt,5,SQL_C_SHORT,&pkseq,sizeof(pkseq),&pkseqind);
-	assertSuccessStmt(stmt,erg);
-	erg=SQLBindCol(stmt,6,SQL_C_CHAR,
-			pkname,sizeof(pkname),&pknameind);
-	assertSuccessStmt(stmt,erg);
-	erg=SQLFetch(stmt);
-	assertSuccessStmt(stmt,erg);
-	assertEqualStmt(stmt,(const char *)pktable,"testtable");
-	assertEqualStmt(stmt,(const char *)pkcol,"col1");
-	assertEqualStmt(stmt,(int)pkseq,1);
-	assertEqualStmt(stmt,(int)pknameind,7);
-	assertEqualStmt(stmt,(const char *)pkname,"PRIMARY");
-	erg=SQLFetch(stmt);
-	assertEqualStmt(stmt,(int)erg,(int)SQL_NO_DATA);
-	SQLFreeStmt(stmt,SQL_CLOSE);
-	SQLFreeStmt(stmt,SQL_UNBIND);
-	erg=SQLExecDirect(stmt,(SQLCHAR *)"drop table testtable",SQL_NTS);
-	assertSuccessStmt(stmt,erg);
-	stdoutput.printf("\n");
-
-
-
-	// key and index list
-	stdoutput.printf("KEY AND INDEX LIST: \n");
-	SQLFreeStmt(stmt,SQL_CLOSE);
-	SQLFreeStmt(stmt,SQL_UNBIND);
-	SQLFreeStmt(stmt,SQL_RESET_PARAMS);
-	SQLExecDirect(stmt,(SQLCHAR *)"drop table testtable",SQL_NTS);
-	erg=SQLExecDirect(stmt,(SQLCHAR *)
-		"create table testtable ("
-		"	col1 int primary key, "
-		"	col2 int)",SQL_NTS);
-	assertSuccessStmt(stmt,erg);
-	erg=SQLEndTran(SQL_HANDLE_DBC,dbc,SQL_COMMIT);
-	assertSuccessDbc(dbc,erg);
-	erg=SQLStatistics(stmt,
-			catalogfilter,catalogfilterlen,
-			NULL,0,
-			(SQLCHAR *)"testtable",SQL_NTS,
-			SQL_INDEX_ALL,SQL_QUICK);
-	assertSuccessStmt(stmt,erg);
-	SQLCHAR		idxtable[64];
-	SQLLEN		idxtableind;
-	SQLSMALLINT	idxnonunique;
-	SQLLEN		idxnonuniqueind;
-	SQLSMALLINT	idxseq;
-	SQLLEN		idxseqind;
-	SQLCHAR		idxcol[64];
-	SQLLEN		idxcolind;
-	SQLSMALLINT	idxtype;
-	SQLLEN		idxtypeind;
-	erg=SQLBindCol(stmt,3,SQL_C_CHAR,
-			idxtable,sizeof(idxtable),&idxtableind);
-	assertSuccessStmt(stmt,erg);
-	erg=SQLBindCol(stmt,4,SQL_C_SHORT,
-			&idxnonunique,sizeof(idxnonunique),&idxnonuniqueind);
-	assertSuccessStmt(stmt,erg);
-	erg=SQLBindCol(stmt,7,SQL_C_SHORT,
-			&idxtype,sizeof(idxtype),&idxtypeind);
-	assertSuccessStmt(stmt,erg);
-	erg=SQLBindCol(stmt,8,SQL_C_SHORT,
-			&idxseq,sizeof(idxseq),&idxseqind);
-	assertSuccessStmt(stmt,erg);
-	erg=SQLBindCol(stmt,9,SQL_C_CHAR,
-			idxcol,sizeof(idxcol),&idxcolind);
-	assertSuccessStmt(stmt,erg);
-	bool	foundidxcol1=false;
-	for (;;) {
+		// procedure parameter list
+		// types reported uppercase INT/CHAR/VARCHAR/DATE,
+		// parameter mode 1 (SQL_PARAM_INPUT)
+		stdoutput.printf("PROCEDURE PARAMETER LIST: \n");
+		SQLFreeStmt(stmt,SQL_CLOSE);
+		SQLFreeStmt(stmt,SQL_UNBIND);
+		SQLFreeStmt(stmt,SQL_RESET_PARAMS);
+		SQLSetStmtAttr(stmt,SQL_ATTR_METADATA_ID,
+				(SQLPOINTER)(uintptr_t)SQL_FALSE,0);
+		erg=SQLProcedureColumns(stmt,
+				catalogfilter,catalogfilterlen,
+				(SQLCHAR *)(issqlrelay?"":NULL),
+				(issqlrelay?SQL_NTS:0),
+				(SQLCHAR *)"testproc1",SQL_NTS,
+				(SQLCHAR *)(issqlrelay?"":NULL),
+				(issqlrelay?SQL_NTS:0));
+		assertSuccessStmt(stmt,erg);
+		SQLCHAR		ppname[64];
+		SQLLEN		ppnameind;
+		SQLSMALLINT	ppmode;
+		SQLLEN		ppmodeind;
+		SQLCHAR		pptypename[64];
+		SQLLEN		pptypenameind;
+		SQLSMALLINT	ppordinal;
+		SQLLEN		ppordinalind;
+		erg=SQLBindCol(stmt,4,SQL_C_CHAR,
+				ppname,sizeof(ppname),&ppnameind);
+		assertSuccessStmt(stmt,erg);
+		erg=SQLBindCol(stmt,5,SQL_C_SHORT,
+				&ppmode,sizeof(ppmode),&ppmodeind);
+		assertSuccessStmt(stmt,erg);
+		erg=SQLBindCol(stmt,7,SQL_C_CHAR,
+				pptypename,sizeof(pptypename),&pptypenameind);
+		assertSuccessStmt(stmt,erg);
+		erg=SQLBindCol(stmt,18,SQL_C_SHORT,
+				&ppordinal,sizeof(ppordinal),&ppordinalind);
+		assertSuccessStmt(stmt,erg);
+		// SQL Relay reports type names upper case; MariaDB lower.
+		// in1
 		erg=SQLFetch(stmt);
-		if (erg==SQL_NO_DATA) {
-			break;
-		}
 		assertSuccessStmt(stmt,erg);
-		if (erg!=SQL_SUCCESS && erg!=SQL_SUCCESS_WITH_INFO) {
-			break;
+		assertEqualStmt(stmt,(const char *)ppname,"in1");
+		assertEqualStmt(stmt,(int)ppmode,(int)SQL_PARAM_INPUT);
+		if (issqlrelay) {
+			assertEqualStmt(stmt,(const char *)pptypename,"INT");
+		} else {
+			assertEqualStmt(stmt,(const char *)pptypename,"int");
 		}
-		if (idxtype==SQL_TABLE_STAT) {
-			continue;
-		}
-		assertEqualStmt(stmt,(const char *)idxtable,"testtable");
-		assertEqualStmt(stmt,(int)idxnonunique,0);
-		assertEqualStmt(stmt,(int)idxseq,1);
-		if (!charstring::compare((const char *)idxcol,"col1")) {
-			foundidxcol1=true;
-		}
-	}
-	assertTrueStmt(stmt,foundidxcol1);
-	SQLFreeStmt(stmt,SQL_CLOSE);
-	SQLFreeStmt(stmt,SQL_UNBIND);
-	erg=SQLExecDirect(stmt,(SQLCHAR *)"drop table testtable",SQL_NTS);
-	assertSuccessStmt(stmt,erg);
-	stdoutput.printf("\n");
-
-
-
-	// procedure list
-	stdoutput.printf("PROCEDURE LIST: \n");
-	SQLFreeStmt(stmt,SQL_CLOSE);
-	SQLFreeStmt(stmt,SQL_UNBIND);
-	SQLFreeStmt(stmt,SQL_RESET_PARAMS);
-	SQLExecDirect(stmt,(SQLCHAR *)
-			"drop procedure if exists testproc1",SQL_NTS);
-	SQLExecDirect(stmt,(SQLCHAR *)
-			"drop procedure if exists testproc2",SQL_NTS);
-	SQLExecDirect(stmt,(SQLCHAR *)
-			"drop procedure if exists testproc3",SQL_NTS);
-	SQLExecDirect(stmt,(SQLCHAR *)
-			"drop procedure if exists testproc4",SQL_NTS);
-	// 'create procedure ... begin end'; no `or replace`, no trailing
-	// `;` (some clients reject it)
-	erg=SQLExecDirect(stmt,(SQLCHAR *)
-		"create procedure testproc1 ("
-		"	in in1 int, "
-		"	in in2 char(20), "
-		"	in in3 varchar(20), "
-		"	in in4 date) "
-		"begin end",SQL_NTS);
-	assertSuccessStmt(stmt,erg);
-	erg=SQLExecDirect(stmt,(SQLCHAR *)
-		"create procedure testproc2 ("
-		"	in in1 int, "
-		"	in in2 char(20), "
-		"	in in3 varchar(20), "
-		"	in in4 date) "
-		"begin end",SQL_NTS);
-	assertSuccessStmt(stmt,erg);
-	erg=SQLExecDirect(stmt,(SQLCHAR *)
-		"create procedure testproc3 ("
-		"	in in1 int, "
-		"	in in2 char(20), "
-		"	in in3 varchar(20), "
-		"	in in4 date) "
-		"begin end",SQL_NTS);
-	assertSuccessStmt(stmt,erg);
-	erg=SQLExecDirect(stmt,(SQLCHAR *)
-		"create procedure testproc4 ("
-		"	in in1 int, "
-		"	in in2 char(20), "
-		"	in in3 varchar(20), "
-		"	in in4 date) "
-		"begin end",SQL_NTS);
-	assertSuccessStmt(stmt,erg);
-	erg=SQLEndTran(SQL_HANDLE_DBC,dbc,SQL_COMMIT);
-	assertSuccessDbc(dbc,erg);
-	// force metadata_id off so the procedure name pattern is honored
-	SQLSetStmtAttr(stmt,SQL_ATTR_METADATA_ID,
-			(SQLPOINTER)(uintptr_t)SQL_FALSE,0);
-	erg=SQLProcedures(stmt,
-			catalogfilter,catalogfilterlen,
-			(SQLCHAR *)(issqlrelay?"":NULL),
-			(issqlrelay?SQL_NTS:0),
-			(SQLCHAR *)"testproc%",SQL_NTS);
-	assertSuccessStmt(stmt,erg);
-	SQLCHAR		procname[64];
-	SQLLEN		procnameind;
-	erg=SQLBindCol(stmt,3,SQL_C_CHAR,
-			procname,sizeof(procname),&procnameind);
-	assertSuccessStmt(stmt,erg);
-	SQLSMALLINT	proctype;
-	SQLLEN		proctypeind;
-	erg=SQLBindCol(stmt,8,SQL_C_SHORT,&proctype,
-			sizeof(proctype),&proctypeind);
-	assertSuccessStmt(stmt,erg);
-	int		proccounter=0;
-	for (;;) {
+		assertEqualStmt(stmt,(int)ppordinal,1);
+		// in2
 		erg=SQLFetch(stmt);
-		if (erg==SQL_NO_DATA) {
-			break;
-		}
 		assertSuccessStmt(stmt,erg);
-		if (erg!=SQL_SUCCESS && erg!=SQL_SUCCESS_WITH_INFO) {
-			break;
+		assertEqualStmt(stmt,(const char *)ppname,"in2");
+		assertEqualStmt(stmt,(int)ppmode,(int)SQL_PARAM_INPUT);
+		if (issqlrelay) {
+			assertEqualStmt(stmt,(const char *)pptypename,"CHAR");
+		} else {
+			assertEqualStmt(stmt,(const char *)pptypename,"char");
 		}
-		if (!charstring::compare(
-			(const char *)procname,"testproc1") ||
-			!charstring::compare(
-				(const char *)procname,"testproc2") ||
-			!charstring::compare(
-				(const char *)procname,"testproc3") ||
-			!charstring::compare(
-				(const char *)procname,"testproc4")) {
-			// created as procedures, not functions
-			assertEqualStmt(stmt,(int)proctype,SQL_PT_PROCEDURE);
-			proccounter++;
+		assertEqualStmt(stmt,(int)ppordinal,2);
+		// in3
+		erg=SQLFetch(stmt);
+		assertSuccessStmt(stmt,erg);
+		assertEqualStmt(stmt,(const char *)ppname,"in3");
+		assertEqualStmt(stmt,(int)ppmode,(int)SQL_PARAM_INPUT);
+		if (issqlrelay) {
+			assertEqualStmt(stmt,(const char *)pptypename,"VARCHAR");
+		} else {
+			assertEqualStmt(stmt,(const char *)pptypename,"varchar");
 		}
+		assertEqualStmt(stmt,(int)ppordinal,3);
+		// in4
+		erg=SQLFetch(stmt);
+		assertSuccessStmt(stmt,erg);
+		assertEqualStmt(stmt,(const char *)ppname,"in4");
+		assertEqualStmt(stmt,(int)ppmode,(int)SQL_PARAM_INPUT);
+		if (issqlrelay) {
+			assertEqualStmt(stmt,(const char *)pptypename,"DATE");
+		} else {
+			assertEqualStmt(stmt,(const char *)pptypename,"date");
+		}
+		assertEqualStmt(stmt,(int)ppordinal,4);
+		// no more rows
+		erg=SQLFetch(stmt);
+		assertEqualStmt(stmt,(int)erg,(int)SQL_NO_DATA);
+		SQLFreeStmt(stmt,SQL_CLOSE);
+		SQLFreeStmt(stmt,SQL_UNBIND);
+		erg=SQLExecDirect(stmt,(SQLCHAR *)"drop procedure testproc1",SQL_NTS);
+		assertSuccessStmt(stmt,erg);
+		erg=SQLExecDirect(stmt,(SQLCHAR *)"drop procedure testproc2",SQL_NTS);
+		assertSuccessStmt(stmt,erg);
+		erg=SQLExecDirect(stmt,(SQLCHAR *)"drop procedure testproc3",SQL_NTS);
+		assertSuccessStmt(stmt,erg);
+		erg=SQLExecDirect(stmt,(SQLCHAR *)"drop procedure testproc4",SQL_NTS);
+		assertSuccessStmt(stmt,erg);
+		stdoutput.printf("\n");
 	}
-	assertEqualStmt(stmt,proccounter,4);
-	SQLFreeStmt(stmt,SQL_CLOSE);
-	SQLFreeStmt(stmt,SQL_UNBIND);
-	stdoutput.printf("\n");
-
-
-
-	// procedure parameter list
-	// types reported uppercase INT/CHAR/VARCHAR/DATE,
-	// parameter mode 1 (SQL_PARAM_INPUT)
-	stdoutput.printf("PROCEDURE PARAMETER LIST: \n");
-	SQLFreeStmt(stmt,SQL_CLOSE);
-	SQLFreeStmt(stmt,SQL_UNBIND);
-	SQLFreeStmt(stmt,SQL_RESET_PARAMS);
-	SQLSetStmtAttr(stmt,SQL_ATTR_METADATA_ID,
-			(SQLPOINTER)(uintptr_t)SQL_FALSE,0);
-	erg=SQLProcedureColumns(stmt,
-			catalogfilter,catalogfilterlen,
-			(SQLCHAR *)(issqlrelay?"":NULL),
-			(issqlrelay?SQL_NTS:0),
-			(SQLCHAR *)"testproc1",SQL_NTS,
-			(SQLCHAR *)(issqlrelay?"":NULL),
-			(issqlrelay?SQL_NTS:0));
-	assertSuccessStmt(stmt,erg);
-	SQLCHAR		ppname[64];
-	SQLLEN		ppnameind;
-	SQLSMALLINT	ppmode;
-	SQLLEN		ppmodeind;
-	SQLCHAR		pptypename[64];
-	SQLLEN		pptypenameind;
-	SQLSMALLINT	ppordinal;
-	SQLLEN		ppordinalind;
-	erg=SQLBindCol(stmt,4,SQL_C_CHAR,
-			ppname,sizeof(ppname),&ppnameind);
-	assertSuccessStmt(stmt,erg);
-	erg=SQLBindCol(stmt,5,SQL_C_SHORT,
-			&ppmode,sizeof(ppmode),&ppmodeind);
-	assertSuccessStmt(stmt,erg);
-	erg=SQLBindCol(stmt,7,SQL_C_CHAR,
-			pptypename,sizeof(pptypename),&pptypenameind);
-	assertSuccessStmt(stmt,erg);
-	erg=SQLBindCol(stmt,18,SQL_C_SHORT,
-			&ppordinal,sizeof(ppordinal),&ppordinalind);
-	assertSuccessStmt(stmt,erg);
-	// SQL Relay reports type names upper case; MariaDB lower.
-	// in1
-	erg=SQLFetch(stmt);
-	assertSuccessStmt(stmt,erg);
-	assertEqualStmt(stmt,(const char *)ppname,"in1");
-	assertEqualStmt(stmt,(int)ppmode,(int)SQL_PARAM_INPUT);
-	if (issqlrelay) {
-		assertEqualStmt(stmt,(const char *)pptypename,"INT");
-	} else {
-		assertEqualStmt(stmt,(const char *)pptypename,"int");
-	}
-	assertEqualStmt(stmt,(int)ppordinal,1);
-	// in2
-	erg=SQLFetch(stmt);
-	assertSuccessStmt(stmt,erg);
-	assertEqualStmt(stmt,(const char *)ppname,"in2");
-	assertEqualStmt(stmt,(int)ppmode,(int)SQL_PARAM_INPUT);
-	if (issqlrelay) {
-		assertEqualStmt(stmt,(const char *)pptypename,"CHAR");
-	} else {
-		assertEqualStmt(stmt,(const char *)pptypename,"char");
-	}
-	assertEqualStmt(stmt,(int)ppordinal,2);
-	// in3
-	erg=SQLFetch(stmt);
-	assertSuccessStmt(stmt,erg);
-	assertEqualStmt(stmt,(const char *)ppname,"in3");
-	assertEqualStmt(stmt,(int)ppmode,(int)SQL_PARAM_INPUT);
-	if (issqlrelay) {
-		assertEqualStmt(stmt,(const char *)pptypename,"VARCHAR");
-	} else {
-		assertEqualStmt(stmt,(const char *)pptypename,"varchar");
-	}
-	assertEqualStmt(stmt,(int)ppordinal,3);
-	// in4
-	erg=SQLFetch(stmt);
-	assertSuccessStmt(stmt,erg);
-	assertEqualStmt(stmt,(const char *)ppname,"in4");
-	assertEqualStmt(stmt,(int)ppmode,(int)SQL_PARAM_INPUT);
-	if (issqlrelay) {
-		assertEqualStmt(stmt,(const char *)pptypename,"DATE");
-	} else {
-		assertEqualStmt(stmt,(const char *)pptypename,"date");
-	}
-	assertEqualStmt(stmt,(int)ppordinal,4);
-	// no more rows
-	erg=SQLFetch(stmt);
-	assertEqualStmt(stmt,(int)erg,(int)SQL_NO_DATA);
-	SQLFreeStmt(stmt,SQL_CLOSE);
-	SQLFreeStmt(stmt,SQL_UNBIND);
-	erg=SQLExecDirect(stmt,(SQLCHAR *)"drop procedure testproc1",SQL_NTS);
-	assertSuccessStmt(stmt,erg);
-	erg=SQLExecDirect(stmt,(SQLCHAR *)"drop procedure testproc2",SQL_NTS);
-	assertSuccessStmt(stmt,erg);
-	erg=SQLExecDirect(stmt,(SQLCHAR *)"drop procedure testproc3",SQL_NTS);
-	assertSuccessStmt(stmt,erg);
-	erg=SQLExecDirect(stmt,(SQLCHAR *)"drop procedure testproc4",SQL_NTS);
-	assertSuccessStmt(stmt,erg);
-	stdoutput.printf("\n");
 
 
 

@@ -36,7 +36,8 @@ main() ->
 
     %% DB VERSION
     io:format("DB VERSION: ~n"),
-    sqlrelay:dbVersion(),
+    {ok, DbVersion} = sqlrelay:dbVersion(),
+    MajorVersion = hd(DbVersion) - $0,
     io:format("~n"),
 
     %% PING
@@ -54,7 +55,10 @@ main() ->
 
     %% BIND FORMAT
     io:format("BIND FORMAT: ~n"),
-    assertEqualsString(sqlrelay:bindFormat(), "?"),
+    case MajorVersion > 3 of
+        true -> assertEqualsString(sqlrelay:bindFormat(), "?");
+        false -> assertEqualsString(sqlrelay:bindFormat(), ":*")
+    end,
     io:format("~n"),
 
     %% NEXTVAL FORMAT
@@ -63,12 +67,17 @@ main() ->
     io:format("~n"),
 
     %% ISOLATION LEVELS
+    %% (mysql before 4.0 doesn't support setting the isolation level)
     io:format("ISOLATION LEVELS: ~n"),
     IsolationLevels = ["REPEATABLE-READ", "READ-UNCOMMITTED",
                        "READ-COMMITTED", "SERIALIZABLE"],
-    setIsolationLevels(IsolationLevels),
-    %% reset to the default isolation level
-    assertTrue(sqlrelay:setIsolationLevel(hd(IsolationLevels))),
+    case MajorVersion > 3 of
+        true ->
+            setIsolationLevels(IsolationLevels),
+            %% reset to the default isolation level
+            assertTrue(sqlrelay:setIsolationLevel(hd(IsolationLevels)));
+        false -> ok
+    end,
     io:format("~n"),
 
     %% CREATE TESTTABLE
@@ -445,7 +454,10 @@ main() ->
     assertEqualsString(sqlrelay:getColumnTypeByIndex(9), "TIME"),
     assertEqualsString(sqlrelay:getColumnTypeByIndex(10), "DATETIME"),
     assertEqualsString(sqlrelay:getColumnTypeByIndex(11), "YEAR"),
-    assertEqualsString(sqlrelay:getColumnTypeByIndex(12), "STRING"),
+    case MajorVersion > 3 of
+        true -> assertEqualsString(sqlrelay:getColumnTypeByIndex(12), "STRING");
+        false -> assertEqualsString(sqlrelay:getColumnTypeByIndex(12), "VARSTRING")
+    end,
     assertEqualsString(sqlrelay:getColumnTypeByIndex(13), "VARSTRING"),
     assertEqualsString(sqlrelay:getColumnTypeByIndex(14), "TEXT"),
     assertEqualsString(sqlrelay:getColumnTypeByIndex(15), "TINYTEXT"),
@@ -468,7 +480,10 @@ main() ->
     assertEqualsString(sqlrelay:getColumnTypeByName("testtime"), "TIME"),
     assertEqualsString(sqlrelay:getColumnTypeByName("testdatetime"), "DATETIME"),
     assertEqualsString(sqlrelay:getColumnTypeByName("testyear"), "YEAR"),
-    assertEqualsString(sqlrelay:getColumnTypeByName("testchar"), "STRING"),
+    case MajorVersion > 3 of
+        true -> assertEqualsString(sqlrelay:getColumnTypeByName("testchar"), "STRING");
+        false -> assertEqualsString(sqlrelay:getColumnTypeByName("testchar"), "VARSTRING")
+    end,
     assertEqualsString(sqlrelay:getColumnTypeByName("testvarchar"), "VARSTRING"),
     assertEqualsString(sqlrelay:getColumnTypeByName("testtext"), "TEXT"),
     assertEqualsString(sqlrelay:getColumnTypeByName("testtinytext"), "TINYTEXT"),
@@ -482,6 +497,9 @@ main() ->
     io:format("~n"),
 
     %% COLUMN LENGTH
+    %% mysql before 4 reports column lengths differently (charset)
+    case MajorVersion > 3 of
+        true ->
     io:format("COLUMN LENGTH: ~n"),
     assertEqualsInt(sqlrelay:getColumnLengthByIndex(0), 1),
     assertEqualsInt(sqlrelay:getColumnLengthByIndex(1), 2),
@@ -533,7 +551,9 @@ main() ->
     assertEqualsInt(sqlrelay:getColumnLengthByName("testmediumblob"), 16777215),
     assertEqualsInt(sqlrelay:getColumnLengthByName("testlongblob"), 2147483647),
     assertEqualsInt(sqlrelay:getColumnLengthByName("testtimestamp"), 4),
-    io:format("~n"),
+    io:format("~n");
+        false -> ok
+    end,
 
     %% LONGEST COLUMN
     io:format("LONGEST COLUMN: ~n"),
@@ -559,7 +579,10 @@ main() ->
     assertEqualsInt(sqlrelay:getLongestByIndex(19), 9),
     assertEqualsInt(sqlrelay:getLongestByIndex(20), 11),
     assertEqualsInt(sqlrelay:getLongestByIndex(21), 9),
-    assertEqualsInt(sqlrelay:getLongestByIndex(22), 19),
+    case MajorVersion > 3 of
+        true -> assertEqualsInt(sqlrelay:getLongestByIndex(22), 19);
+        false -> assertEqualsInt(sqlrelay:getLongestByIndex(22), 14)
+    end,
     assertEqualsInt(sqlrelay:getLongestByName("testtinyint"), 1),
     assertEqualsInt(sqlrelay:getLongestByName("testsmallint"), 1),
     assertEqualsInt(sqlrelay:getLongestByName("testmediumint"), 1),
@@ -582,7 +605,10 @@ main() ->
     assertEqualsInt(sqlrelay:getLongestByName("testtinyblob"), 9),
     assertEqualsInt(sqlrelay:getLongestByName("testmediumblob"), 11),
     assertEqualsInt(sqlrelay:getLongestByName("testlongblob"), 9),
-    assertEqualsInt(sqlrelay:getLongestByName("testtimestamp"), 19),
+    case MajorVersion > 3 of
+        true -> assertEqualsInt(sqlrelay:getLongestByName("testtimestamp"), 19);
+        false -> assertEqualsInt(sqlrelay:getLongestByName("testtimestamp"), 14)
+    end,
     io:format("~n"),
 
     %% ROW COUNT
@@ -1221,27 +1247,40 @@ main() ->
     io:format("~n"),
 
     %% RESET TRANSACTION STATE
-    io:format("RESET TRANSACTION STATE: ~n"),
-    assertTrue(sqlrelay:commit()),
-    assertEqualsString(sqlrelay:getTransactionModel(), "explicit-deferred"),
-    assertTrue(sqlrelay:getAutoCommit()),
-    io:format("~n"),
+    %% (transaction behavior differs on mysql before 4)
+    case MajorVersion > 3 of
+        true ->
+            io:format("RESET TRANSACTION STATE: ~n"),
+            assertTrue(sqlrelay:commit()),
+            assertEqualsString(sqlrelay:getTransactionModel(),
+                               "explicit-deferred"),
+            assertTrue(sqlrelay:getAutoCommit()),
+            io:format("~n"),
 
-    %% TRANSACTION BEHAVIOR - implicit/explicit/explicit-deferred/explicit-error/none
-    %% SKIPPED: these blocks require a second concurrent connection
-    %% (secondcon) and cursor (secondcur) to verify cross-connection
-    %% isolation. The Erlang binding only supports one connection per
-    %% process, so a second connection cannot be instantiated here.
-    io:format("TRANSACTION BEHAVIOR - implicit/explicit/explicit-deferred/explicit-error/none: ~n"),
-    io:format("(skipped - requires second concurrent connection)~n"),
-    io:format("~n"),
+            %% TRANSACTION BEHAVIOR -
+            %% implicit/explicit/explicit-deferred/explicit-error/none
+            %% SKIPPED: these blocks require a second concurrent connection
+            %% (secondcon) and cursor (secondcur) to verify cross-connection
+            %% isolation. The Erlang binding only supports one connection per
+            %% process, so a second connection cannot be instantiated here.
+            io:format("TRANSACTION BEHAVIOR - implicit/explicit/explicit-deferred/explicit-error/none: ~n"),
+            io:format("(skipped - requires second concurrent connection)~n"),
+            io:format("~n");
+        false -> ok
+    end,
 
     %% RESET TRANSACTION BEHAVIOR
+    %% (mysql before 4 has limited transaction support)
     io:format("RESET TRANSACTION BEHAVIOR: ~n"),
-    {ok, DefaultModel} = sqlrelay:getDefaultTransactionModel(),
-    assertTrue(sqlrelay:setTransactionModel(DefaultModel)),
-    assertEqualsString(sqlrelay:getTransactionModel(), "explicit-deferred"),
-    assertTrue(sqlrelay:getAutoCommit()),
+    case MajorVersion > 3 of
+        true ->
+            {ok, DefaultModel} = sqlrelay:getDefaultTransactionModel(),
+            assertTrue(sqlrelay:setTransactionModel(DefaultModel)),
+            assertEqualsString(sqlrelay:getTransactionModel(),
+                               "explicit-deferred"),
+            assertTrue(sqlrelay:getAutoCommit());
+        false -> ok
+    end,
     io:format("~n"),
 
     %% INDIVIDUAL SUBSTITUTIONS
@@ -1387,6 +1426,9 @@ main() ->
     %% mysql doesn't support bind by name
 
     %% REBINDING
+    %% mysql before 5.0 has no stored procedures
+    case MajorVersion > 3 of
+        true ->
     io:format("REBINDING: ~n"),
     sqlrelay:sendQuery("drop procedure testproc"),
     assertTrue(sqlrelay:sendQuery(
@@ -1406,7 +1448,9 @@ main() ->
     assertTrue(sqlrelay:executeQuery()),
     assertEqualsString(sqlrelay:getFieldByIndex(0, 0), "3"),
     assertTrue(sqlrelay:sendQuery("drop procedure testproc")),
-    io:format("~n"),
+    io:format("~n");
+        false -> ok
+    end,
 
     %% REEXECUTE
     io:format("REEXECUTE: ~n"),
@@ -1436,6 +1480,9 @@ main() ->
     io:format("~n"),
 
     %% STORED PROCEDURE RETURNING NO VALUE
+    %% mysql before 5.0 has no stored procedures
+    case MajorVersion > 3 of
+        true ->
     io:format("STORED PROCEDURE RETURNING NO VALUE: ~n"),
     sqlrelay:sendQuery("drop procedure testproc"),
     assertTrue(sqlrelay:sendQuery(
@@ -1532,9 +1579,14 @@ main() ->
     sqlrelay:endSession(),
     io:format("~n"),
     assertFalse(sqlrelay:sendQuery("select count(*) from temptable")),
-    io:format("~n"),
+    io:format("~n");
+        false -> ok
+    end,
 
     %% STORED PROCEDURE RETURNING NO VALUE (v > 3)
+    %% mysql before 5.0 has no stored procedures
+    case MajorVersion > 3 of
+        true ->
     io:format("STORED PROCEDURE RETURNING NO VALUE: ~n"),
     sqlrelay:sendQuery("drop procedure if exists testproc"),
     assertTrue(sqlrelay:sendQuery(
@@ -1616,9 +1668,13 @@ main() ->
     assertTrue(sqlrelay:sendQuery("call testselectproc()")),
     assertEqualsInt(sqlrelay:rowCount(), 8),
     sqlrelay:sendQuery("drop procedure testselectproc"),
-    io:format("~n"),
+    io:format("~n");
+        false -> ok
+    end,
 
     %% ENCODED BINARY DATA - all chars - \-escaped
+    case MajorVersion > 3 of
+        true ->
     io:format("ENCODED BINARY DATA - all chars - \\-escaped: ~n"),
     sqlrelay:sendQuery("drop table testtable"),
     assertTrue(sqlrelay:sendQuery("create table testtable (col1 longblob)")),
@@ -1667,7 +1723,9 @@ main() ->
         false -> fail(RawBytes3, [0, $", $"])
     end,
     assertTrue(sqlrelay:sendQuery("drop table testtable")),
-    io:format("~n"),
+    io:format("~n");
+        false -> ok
+    end,
 
     %% QUOTES - '' - ''-escaped
     io:format("QUOTES - '' - ''-escaped: ~n"),
@@ -1746,6 +1804,9 @@ main() ->
     io:format("~n"),
 
     %% CATALOG LIST
+    %% mysql before 5.0 has no information_schema for these metadata queries
+    case MajorVersion > 3 of
+        true ->
     io:format("CATALOG LIST: ~n"),
     assertTrue(sqlrelay:getCatalogList("")),
     assertEqualsString(sqlrelay:getColumnName(0), "Database"),
@@ -2106,7 +2167,9 @@ main() ->
     assertTrue(sqlrelay:sendQuery("drop procedure testproc2")),
     assertTrue(sqlrelay:sendQuery("drop procedure testproc3")),
     assertTrue(sqlrelay:sendQuery("drop procedure testproc4")),
-    io:format("~n"),
+    io:format("~n");
+        false -> ok
+    end,
 
     %% INVALID QUERIES
     io:format("INVALID QUERIES: ~n"),
