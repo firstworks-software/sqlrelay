@@ -271,6 +271,7 @@
 	fixed the tcl api to load under tcl 9.0, which derives the package
 		init function name from the load prefix as-is and so looked
 		for sqlrelay_Init; added it as an alias for Sqlrelay_Init
+	added dependency info to the debian/ubuntu package control file
 
 2.1.1 - added tns_admin support
 	fixed sqlr-start ... -strace ...

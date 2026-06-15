@@ -32,7 +32,7 @@ Description: Debug symbols for sqlrelay.
 Package: sqlrelay-server-dev
 Section: libdevel
 Architecture: any
-Depends: sqlrelay (= ${binary:Version}), ${misc:Depends}
+Depends: sqlrelay (= ${binary:Version}), ${shlibs:Depends}, ${misc:Depends}
 Description: Development files for SQL Relay server modules
  Development files for SQL Relay server modules.
 
@@ -45,7 +45,7 @@ Description: Debug symbols for sqlrelay-server-dev.
 Package: sqlrelay-clients
 Section: libdevel
 Architecture: any
-Depends: sqlrelay (= ${binary:Version}), ${misc:Depends}
+Depends: sqlrelay (= ${binary:Version}), ${shlibs:Depends}, ${misc:Depends}
 Description: Command line clients for accessing databases via SQL Relay
  Command line clients for accessing databases via SQL Relay.
 
@@ -58,7 +58,7 @@ Description: Debug symbols for sqlrelay-clients.
 Package: sqlrelay-cachemanager
 Section: libdevel
 Architecture: any
-Depends: sqlrelay (= ${binary:Version}), ${misc:Depends}
+Depends: sqlrelay (= ${binary:Version}), ${shlibs:Depends}, ${misc:Depends}
 Description: SQL Relay client-side result-set cache manager
  SQL Relay client-side result-set cache manager.
 
@@ -71,7 +71,7 @@ Description: Debug symbols for sqlrelay-cachemanager.
 Package: sqlrelay-common
 Section: libdevel
 Architecture: any
-Depends: sqlrelay (= ${binary:Version}), ${misc:Depends}
+Depends: sqlrelay (= ${binary:Version}), ${shlibs:Depends}, ${misc:Depends}
 Description: Components used by SQL Relay client-side and server-side programs
  Components used by SQL Relay client-side and server-side programs.
 
@@ -84,7 +84,7 @@ Description: Debug symbols for sqlrelay-common.
 Package: sqlrelay-common-dev
 Section: libdevel
 Architecture: any
-Depends: sqlrelay (= ${binary:Version}), ${misc:Depends}
+Depends: sqlrelay (= ${binary:Version}), ${shlibs:Depends}, ${misc:Depends}
 Description: Development files for SQL Relay common components
  Development files for SQL Relay common components.
 
@@ -97,7 +97,7 @@ Description: Debug symbols for sqlrelay-common-dev.
 Package: sqlrelay-c++
 Section: libdevel
 Architecture: any
-Depends: sqlrelay (= ${binary:Version}), ${misc:Depends}
+Depends: sqlrelay (= ${binary:Version}), ${shlibs:Depends}, ${misc:Depends}
 Description: The SQL Relay C++ client library
  The SQL Relay C++ client library.
 
@@ -110,7 +110,7 @@ Description: Debug symbols for sqlrelay-c++.
 Package: sqlrelay-c
 Section: libdevel
 Architecture: any
-Depends: sqlrelay (= ${binary:Version}), ${misc:Depends}
+Depends: sqlrelay (= ${binary:Version}), ${shlibs:Depends}, ${misc:Depends}
 Description: The SQL Relay C client library
  The SQL Relay C client library.
 
@@ -123,7 +123,7 @@ Description: Debug symbols for sqlrelay-c.
 Package: sqlrelay-c++-dev
 Section: libdevel
 Architecture: any
-Depends: sqlrelay (= ${binary:Version}), ${misc:Depends}
+Depends: sqlrelay (= ${binary:Version}), ${shlibs:Depends}, ${misc:Depends}, rudiments-dev
 Description: Development files for the SQL Relay C++ client library
  Development files for the SQL Relay C++ client library.
 
@@ -136,7 +136,7 @@ Description: Debug symbols for sqlrelay-c++-dev.
 Package: sqlrelay-c-dev
 Section: libdevel
 Architecture: any
-Depends: sqlrelay (= ${binary:Version}), ${misc:Depends}
+Depends: sqlrelay (= ${binary:Version}), ${shlibs:Depends}, ${misc:Depends}, sqlrelay-c++-dev
 Description: Development files for the SQL Relay C client library
  Development files for the SQL Relay C client library.
 
@@ -149,7 +149,7 @@ Description: Debug symbols for sqlrelay-c-dev.
 Package: odbc-sqlrelay
 Section: libdevel
 Architecture: any
-Depends: sqlrelay (= ${binary:Version}), ${misc:Depends}
+Depends: sqlrelay (= ${binary:Version}), ${shlibs:Depends}, ${misc:Depends}
 Description: ODBC driver for SQL Relay
  ODBC driver for SQL Relay.
 
@@ -162,7 +162,7 @@ Description: Debug symbols for odbc-sqlrelay.
 Package: perl-sqlrelay
 Section: libdevel
 Architecture: any
-Depends: sqlrelay (= ${binary:Version}), ${misc:Depends}
+Depends: sqlrelay (= ${binary:Version}), ${shlibs:Depends}, ${misc:Depends}
 Description: Perl bindings for the SQL Relay client API
  Perl bindings for the SQL Relay client API.
 
@@ -175,7 +175,7 @@ Description: Debug symbols for perl-sqlrelay.
 Package: perl-dbd-sqlrelay
 Section: libdevel
 Architecture: any
-Depends: sqlrelay (= ${binary:Version}), ${misc:Depends}
+Depends: sqlrelay (= ${binary:Version}), ${shlibs:Depends}, ${misc:Depends}, perl-sqlrelay
 Description: Perl DBI driver for SQL Relay
  Perl DBI driver for SQL Relay.
 
@@ -188,7 +188,7 @@ Description: Debug symbols for perl-dbd-sqlrelay.
 Package: python3-sqlrelay
 Section: libdevel
 Architecture: any
-Depends: sqlrelay (= ${binary:Version}), ${misc:Depends}
+Depends: sqlrelay (= ${binary:Version}), ${shlibs:Depends}, ${misc:Depends}
 Description: Python bindings for the SQL Relay client API
  Python bindings for the SQL Relay client API.
 
@@ -201,7 +201,7 @@ Description: Debug symbols for python3-sqlrelay.
 Package: python3-db-sqlrelay
 Section: libdevel
 Architecture: any
-Depends: sqlrelay (= ${binary:Version}), ${misc:Depends}
+Depends: sqlrelay (= ${binary:Version}), ${shlibs:Depends}, ${misc:Depends}, python3-sqlrelay
 Description: Python DB bindings for SQL Relay
  Python DB bindings for SQL Relay.
 
@@ -214,7 +214,7 @@ Description: Debug symbols for python3-db-sqlrelay.
 Package: ruby-sqlrelay
 Section: libdevel
 Architecture: any
-Depends: sqlrelay (= ${binary:Version}), ${misc:Depends}
+Depends: sqlrelay (= ${binary:Version}), ${shlibs:Depends}, ${misc:Depends}, ruby
 Description: Ruby bindings for the SQL Relay client API
  Ruby bindings for the SQL Relay client API.
 
@@ -227,7 +227,7 @@ Description: Debug symbols for ruby-sqlrelay.
 Package: php-sqlrelay
 Section: libdevel
 Architecture: any
-Depends: sqlrelay (= ${binary:Version}), ${misc:Depends}
+Depends: sqlrelay (= ${binary:Version}), ${shlibs:Depends}, ${misc:Depends}, php-cli
 Description: PHP bindings for the SQL Relay client API
  PHP bindings for the SQL Relay client API.
 
@@ -240,7 +240,7 @@ Description: Debug symbols for php-sqlrelay.
 Package: php-pdo-sqlrelay
 Section: libdevel
 Architecture: any
-Depends: sqlrelay (= ${binary:Version}), ${misc:Depends}
+Depends: sqlrelay (= ${binary:Version}), ${shlibs:Depends}, ${misc:Depends}, php-cli
 Description: PHP PDO driver for SQL Relay
  PHP PDO driver for SQL Relay.
 
@@ -253,7 +253,7 @@ Description: Debug symbols for php-pdo-sqlrelay.
 Package: java-sqlrelay
 Section: libdevel
 Architecture: any
-Depends: sqlrelay (= ${binary:Version}), ${misc:Depends}
+Depends: sqlrelay (= ${binary:Version}), ${shlibs:Depends}, ${misc:Depends}, default-jre-headless
 Description: Java bindings for the SQL Relay client API
  Java bindings for the SQL Relay client API.
 
@@ -266,14 +266,14 @@ Description: Debug symbols for java-sqlrelay.
 Package: jdbc-sqlrelay
 Section: libdevel
 Architecture: all
-Depends: java-sqlrelay (= ${binary:Version}), ${misc:Depends}
+Depends: java-sqlrelay (= ${binary:Version}), ${misc:Depends}, default-jre-headless
 Description: JDBC driver for SQL Relay
  JDBC driver for SQL Relay.
 
 Package: tcl-sqlrelay
 Section: libdevel
 Architecture: any
-Depends: sqlrelay (= ${binary:Version}), ${misc:Depends}
+Depends: sqlrelay (= ${binary:Version}), ${shlibs:Depends}, ${misc:Depends}, tcl
 Description: TCL bindings for the SQL Relay client API
  TCL bindings for the SQL Relay client API.
 
@@ -286,7 +286,7 @@ Description: Debug symbols for tcl-sqlrelay.
 Package: erlang-sqlrelay
 Section: libdevel
 Architecture: any
-Depends: sqlrelay (= ${binary:Version}), ${misc:Depends}
+Depends: sqlrelay (= ${binary:Version}), ${shlibs:Depends}, ${misc:Depends}, erlang
 Description: Erlang bindings for the SQL Relay client API
  Erlang bindings for the SQL Relay client API.
 
@@ -299,7 +299,7 @@ Description: Debug symbols for erlang-sqlrelay.
 Package: libmono-sqlrelay
 Section: libdevel
 Architecture: any
-Depends: sqlrelay (= ${binary:Version}), ${misc:Depends}
+Depends: sqlrelay (= ${binary:Version}), ${shlibs:Depends}, ${misc:Depends}, mono-runtime
 Description: Mono bindings for the SQL Relay client API and ADO.NET driver
  Mono bindings for the SQL Relay client API and ADO.NET driver.
 
@@ -312,7 +312,7 @@ Description: Debug symbols for libmono-sqlrelay.
 Package: node-sqlrelay
 Section: libdevel
 Architecture: any
-Depends: sqlrelay (= ${binary:Version}), ${misc:Depends}
+Depends: sqlrelay (= ${binary:Version}), ${shlibs:Depends}, ${misc:Depends}
 Description: Nodejs bindings for the SQL Relay client API
  Nodejs bindings for the SQL Relay client API.
 
@@ -325,7 +325,7 @@ Description: Debug symbols for node-sqlrelay.
 Package: sqlrelay-oracle
 Section: libdevel
 Architecture: any
-Depends: sqlrelay (= ${binary:Version}), ${misc:Depends}
+Depends: sqlrelay (= ${binary:Version}), ${shlibs:Depends}, ${misc:Depends}
 Description: Oracle back-end module for SQL Relay
  Oracle back-end module for SQL Relay.
 
@@ -338,7 +338,7 @@ Description: Debug symbols for sqlrelay-oracle.
 Package: sqlrelay-mysql
 Section: libdevel
 Architecture: any
-Depends: sqlrelay (= ${binary:Version}), ${misc:Depends}
+Depends: sqlrelay (= ${binary:Version}), ${shlibs:Depends}, ${misc:Depends}
 Description: MySQL back-end module for SQL Relay
  MySQL back-end module for SQL Relay.
 
@@ -351,7 +351,7 @@ Description: Debug symbols for sqlrelay-mysql.
 Package: sqlrelay-postgresql
 Section: libdevel
 Architecture: any
-Depends: sqlrelay (= ${binary:Version}), ${misc:Depends}
+Depends: sqlrelay (= ${binary:Version}), ${shlibs:Depends}, ${misc:Depends}
 Description: PostgreSQL back-end module for SQL Relay
  PostgreSQL back-end module for SQL Relay.
 
@@ -364,7 +364,7 @@ Description: Debug symbols for sqlrelay-postgresql.
 Package: sqlrelay-sqlite
 Section: libdevel
 Architecture: any
-Depends: sqlrelay (= ${binary:Version}), ${misc:Depends}
+Depends: sqlrelay (= ${binary:Version}), ${shlibs:Depends}, ${misc:Depends}
 Description: SQLite back-end module for SQL Relay
  SQLite back-end module for SQL Relay.
 
@@ -377,7 +377,7 @@ Description: Debug symbols for sqlrelay-sqlite.
 Package: sqlrelay-freetds
 Section: libdevel
 Architecture: any
-Depends: sqlrelay (= ${binary:Version}), ${misc:Depends}
+Depends: sqlrelay (= ${binary:Version}), ${shlibs:Depends}, ${misc:Depends}
 Description: FreeTDS back-end module for SQL Relay
  FreeTDS back-end module for SQL Relay.
 
@@ -390,7 +390,7 @@ Description: Debug symbols for sqlrelay-freetds.
 Package: sqlrelay-odbc
 Section: libdevel
 Architecture: any
-Depends: sqlrelay (= ${binary:Version}), ${misc:Depends}
+Depends: sqlrelay (= ${binary:Version}), ${shlibs:Depends}, ${misc:Depends}
 Description: ODBC back-end module for SQL Relay
  ODBC back-end module for SQL Relay.
 
@@ -403,7 +403,7 @@ Description: Debug symbols for sqlrelay-odbc.
 Package: sqlrelay-db2
 Section: libdevel
 Architecture: any
-Depends: sqlrelay (= ${binary:Version}), ${misc:Depends}
+Depends: sqlrelay (= ${binary:Version}), ${shlibs:Depends}, ${misc:Depends}
 Description: DB2 back-end module for SQL Relay
  DB2 back-end module for SQL Relay.
 
@@ -416,7 +416,7 @@ Description: Debug symbols for sqlrelay-db2.
 Package: sqlrelay-firebird
 Section: libdevel
 Architecture: any
-Depends: sqlrelay (= ${binary:Version}), ${misc:Depends}
+Depends: sqlrelay (= ${binary:Version}), ${shlibs:Depends}, ${misc:Depends}
 Description: Firebird back-end module for SQL Relay
  Firebird back-end module for SQL Relay.
 
@@ -429,7 +429,7 @@ Description: Debug symbols for sqlrelay-firebird.
 Package: sqlrelay-informix
 Section: libdevel
 Architecture: any
-Depends: sqlrelay (= ${binary:Version}), ${misc:Depends}
+Depends: sqlrelay (= ${binary:Version}), ${shlibs:Depends}, ${misc:Depends}
 Description: Informix back-end module for SQL Relay
  Informix back-end module for SQL Relay.
 
@@ -442,7 +442,7 @@ Description: Debug symbols for sqlrelay-informix.
 Package: sqlrelay-router
 Section: libdevel
 Architecture: any
-Depends: sqlrelay (= ${binary:Version}), ${misc:Depends}
+Depends: sqlrelay (= ${binary:Version}), ${shlibs:Depends}, ${misc:Depends}
 Description: Router back-end module for SQL Relay
  Router back-end module for SQL Relay.
 
@@ -455,6 +455,6 @@ Description: Debug symbols for sqlrelay-router.
 Package: sqlrelay-doc
 Section: libdevel
 Architecture: any
-Depends: sqlrelay (= ${binary:Version}), ${misc:Depends}
+Depends: sqlrelay (= ${binary:Version}), ${shlibs:Depends}, ${misc:Depends}
 Description: Documentation for SQL Relay
  Documentation for SQL Relay.
