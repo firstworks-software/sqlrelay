@@ -18,6 +18,11 @@ const char *failure="\033[31mfailure\033[0m";
 const char *alltestssucceeded="\n\033[34mAll tests succeeded\033[0m\n";
 const char *sometestsfailed="\n\033[38;5;208mSome tests failed\033[0m\n";
 
+// some platforms (e.g. solaris) crash on printf("%s",NULL); render it safely
+static const char *nullSafe(const char *s) {
+	return (s)?s:"(null)";
+}
+
 void printErrors() {
 	if (cur) {
 		const char	*err=cur->errorMessage();
@@ -56,7 +61,7 @@ void assertEquals(const char *actual, const char *expected) {
 			stdoutput.printf("%s ",success);
 		} else {
 			stdoutput.printf("%s\n",failure);
-			stdoutput.printf("%s!=%s\n",actual,expected);
+			stdoutput.printf("%s!=%s\n",nullSafe(actual),nullSafe(expected));
 			printErrors();
 			status=1;
 		}
@@ -67,7 +72,7 @@ void assertEquals(const char *actual, const char *expected) {
 		stdoutput.printf("%s ",success);
 	} else {
 		stdoutput.printf("%s\n",failure);
-		stdoutput.printf("%s!=%s\n",actual,expected);
+		stdoutput.printf("%s!=%s\n",nullSafe(actual),nullSafe(expected));
 		printErrors();
 		status=1;
 	}
@@ -80,7 +85,7 @@ void assertEquals(const char *actual, const char *expected, size_t length) {
 			stdoutput.printf("%s ",success);
 		} else {
 			stdoutput.printf("%s\n",failure);
-			stdoutput.printf("%s!=%s\n",actual,expected);
+			stdoutput.printf("%s!=%s\n",nullSafe(actual),nullSafe(expected));
 			printErrors();
 			status=1;
 		}
@@ -91,7 +96,7 @@ void assertEquals(const char *actual, const char *expected, size_t length) {
 		stdoutput.printf("%s ",success);
 	} else {
 		stdoutput.printf("%s\n",failure);
-		stdoutput.printf("%s!=%s\n",actual,expected);
+		stdoutput.printf("%s!=%s\n",nullSafe(actual),nullSafe(expected));
 		printErrors();
 		status=1;
 	}
@@ -104,7 +109,8 @@ void assertStartsWith(const char *actual, const char *prefix) {
 		stdoutput.printf("%s ",success);
 	} else {
 		stdoutput.printf("%s\n",failure);
-		stdoutput.printf("%s doesn't start with %s\n",actual,prefix);
+		stdoutput.printf("%s doesn't start with %s\n",
+					nullSafe(actual),nullSafe(prefix));
 		printErrors();
 		status=1;
 	}
@@ -116,7 +122,9 @@ void assertEquals(bool actual, bool expected) {
 		stdoutput.printf("%s ",success);
 	} else {
 		stdoutput.printf("%s\n",failure);
-		stdoutput.printf("%s!=%s\n",actual,expected);
+		stdoutput.printf("%s!=%s\n",
+				(actual)?"true":"false",
+				(expected)?"true":"false");
 		printErrors();
 		status=1;
 	}
@@ -216,7 +224,8 @@ void assertInResultSet(sqlrcursor *cursor, const char *column,
 		}
 	}
 	stdoutput.printf("%s\n",failure);
-	stdoutput.printf("\"%s\" not found in column \"%s\"\n",value,column);
+	stdoutput.printf("\"%s\" not found in column \"%s\"\n",
+				nullSafe(value),nullSafe(column));
 	printErrors();
 	status=1;
 }
