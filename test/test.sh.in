@@ -26,6 +26,7 @@ do
 		then
 			echo "skipping odbc (no [SQL Relay] in /etc/odbcinst.ini)..."
 			echo
+			cd ..
 			continue
 		fi
 	fi
