@@ -47,6 +47,16 @@ void assertEqStr(const char *actual, const char *expected) {
 		return;
 	}
 
+	// a null actual (e.g. a null field from a failed or empty query) is a
+	// mismatch, not a reason to crash
+	if (!actual) {
+		printf("%s\n",failure);
+		printf("\"(null)\"!=\"%s\"\n",expected);
+		printErrors();
+		status=1;
+		return;
+	}
+
 	if (!strcmp(actual,expected)) {
 		printf("%s ",success);
 	} else {
@@ -69,6 +79,16 @@ void assertEqStrLen(const char *actual, const char *expected,
 			printErrors();
 			status=1;
 		}
+		return;
+	}
+
+	// a null actual (e.g. a null field from a failed or empty query) is a
+	// mismatch, not a reason to crash
+	if (!actual) {
+		printf("%s\n",failure);
+		printf("\"(null)\"!=\"%s\"\n",expected);
+		printErrors();
+		status=1;
 		return;
 	}
 
