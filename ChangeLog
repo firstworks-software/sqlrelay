@@ -277,6 +277,8 @@
 		column type names)
 	fixed the python api build on python < 2.5, which has no Py_ssize_t
 		(added a compatibility typedef)
+	fixed the ruby api build on ruby < 1.8.6, which has no RARRAY_LEN
+		(added a compatibility macro)
 
 2.1.1 - added tns_admin support
 	fixed sqlr-start ... -strace ...

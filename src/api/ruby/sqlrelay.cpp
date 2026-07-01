@@ -36,6 +36,11 @@
 
 #include "rubyincludes.h"
 
+// RARRAY_LEN was added in Ruby 1.8.6; older rubies use RARRAY(a)->len
+#ifndef RARRAY_LEN
+	#define RARRAY_LEN(a) (RARRAY(a)->len)
+#endif
+
 
 // macros and other things to help with the global VM lock
 #ifdef HAVE_RUBY_THREAD_H
