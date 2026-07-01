@@ -12,6 +12,7 @@
 #endif
 
 #include <Python.h>
+
 #include <sqlrelay/sqlrclient.h>
 #include <rudiments/character.h>
 
@@ -31,6 +32,12 @@
 #else
         #define PyBytes_Check PyString_Check
         #define PyBytes_AsString PyString_AsString
+#endif
+
+#ifndef PY_SSIZE_T_MIN
+	typedef int Py_ssize_t;
+	#define PY_SSIZE_T_MAX INT_MAX
+	#define PY_SSIZE_T_MIN INT_MIN
 #endif
 
 
