@@ -277,8 +277,7 @@
 		column type names)
 	added a Py_ssize_t compatibility typedef for python < 2.5
 	added a RARRAY_LEN compatitility macro for ruby < 1.8.6
-	cast SQLUINTEGER to uint32_t at the parseNumber() calls in the odbc
-		connection module, to avoid an ambiguous overload on old gcc
+	added parseNumber(SQLUINTEGER) casts for older gcc
 
 2.1.1 - added tns_admin support
 	fixed sqlr-start ... -strace ...
