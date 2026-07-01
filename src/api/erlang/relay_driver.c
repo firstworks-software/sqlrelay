@@ -957,11 +957,11 @@ int main() {
 		}
 
 		if (strcmp("getDatabaseFeature", command) == TRUE) {
+			char feature[256];
 			// check number of arguments
 		    	if (arity != 1) return ERR_NUMBER_OF_ARGS;
 
 			// get the arguments
-			char feature[256];
 			if (ei_decode_string(buf, &index, feature)) return ERR_DECODING_ARGS;
 
 			// encode result
@@ -972,11 +972,12 @@ int main() {
 		}
 
 		if (strcmp("connectionErrorMessage", command) == TRUE) {
+			const char *emsg;
 			// check number of arguments
 		    	if (arity != 0) return ERR_NUMBER_OF_ARGS;
 
 			// encode result
-			const char *emsg = sqlrcon_errorMessage(con);
+			emsg = sqlrcon_errorMessage(con);
 			if (ei_x_encode_atom(&result, "ok") ||
 				ei_x_encode_string(&result, emsg ? emsg : "")) {
 				return ERR_ENCODING_ARGS;
@@ -2430,11 +2431,12 @@ int main() {
 		}
 
 		if (strcmp("errorMessage", command) == TRUE) {
+			const char *emsg;
 			// check number of arguments
 		    	if (arity != 0) return ERR_NUMBER_OF_ARGS;
 
 			// encode result
-			const char *emsg = sqlrcur_errorMessage(cur);
+			emsg = sqlrcur_errorMessage(cur);
 			if (ei_x_encode_atom(&result, "ok") ||
 				ei_x_encode_string(&result, emsg ? emsg : "")) {
 				return ERR_ENCODING_ARGS;
@@ -4790,6 +4792,7 @@ int main() {
 				const char * const *fields =
 					sqlrcur_getRow(cur, row);
 				uint32_t colcount = sqlrcur_colCount(cur);
+				uint32_t i;
 				if (ei_x_encode_atom(&result, "ok")) {
 					return ERR_ENCODING_ARGS;
 				}
@@ -4804,7 +4807,7 @@ int main() {
 							&result, colcount)) {
 						return ERR_ENCODING_ARGS;
 					}
-					for (uint32_t i = 0; i < colcount;
+					for (i = 0; i < colcount;
 									i++) {
 						if (ei_x_encode_string(
 							&result,
@@ -4846,6 +4849,7 @@ int main() {
 				uint32_t *lengths =
 					sqlrcur_getRowLengths(cur, row);
 				uint32_t colcount = sqlrcur_colCount(cur);
+				uint32_t i;
 				if (ei_x_encode_atom(&result, "ok")) {
 					return ERR_ENCODING_ARGS;
 				}
@@ -4860,7 +4864,7 @@ int main() {
 							&result, colcount)) {
 						return ERR_ENCODING_ARGS;
 					}
-					for (uint32_t i = 0; i < colcount;
+					for (i = 0; i < colcount;
 									i++) {
 						if (ei_x_encode_long(
 							&result,
@@ -4881,6 +4885,7 @@ int main() {
 			const char * const *names =
 				sqlrcur_getColumnNames(cur);
 			uint32_t colcount = sqlrcur_colCount(cur);
+			uint32_t i;
 			if (ei_x_encode_atom(&result, "ok")) {
 				return ERR_ENCODING_ARGS;
 			}
@@ -4895,7 +4900,7 @@ int main() {
 						&result, colcount)) {
 					return ERR_ENCODING_ARGS;
 				}
-				for (uint32_t i = 0; i < colcount; i++) {
+				for (i = 0; i < colcount; i++) {
 					if (ei_x_encode_string(&result,
 							names[i] ?
 							names[i] : "")) {
