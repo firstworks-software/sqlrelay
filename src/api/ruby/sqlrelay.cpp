@@ -36,7 +36,6 @@
 
 #include "rubyincludes.h"
 
-// RARRAY_LEN was added in Ruby 1.8.6; older rubies use RARRAY(a)->len
 #ifndef RARRAY_LEN
 	#define RARRAY_LEN(a) (RARRAY(a)->len)
 #endif
