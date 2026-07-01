@@ -3313,20 +3313,20 @@ RET SQLRCursor::getRow(const ARGS &args) {
 	const char * const *fields=sqlrcur(args)->getRow(toInteger(args[0]));
 	if (!fields) {
 		returnNull();
-		return;
-	}
-	uint32_t	colcount=sqlrcur(args)->colCount();
+	} else {
+		uint32_t	colcount=sqlrcur(args)->colCount();
 
-	Handle<Array>	result=newArray(colcount);
-	for (uint32_t i=0; i<colcount; i++) {
-		if (fields[i]) {
-			set(result,newInteger(i),newString(fields[i]));
-		} else {
-			set(result,newInteger(i),nullValue());
+		Handle<Array>	result=newArray(colcount);
+		for (uint32_t i=0; i<colcount; i++) {
+			if (fields[i]) {
+				set(result,newInteger(i),newString(fields[i]));
+			} else {
+				set(result,newInteger(i),nullValue());
+			}
 		}
-	}
 
-	returnObject(result);
+		returnObject(result);
+	}
 }
 
 RET SQLRCursor::getRowLengths(const ARGS &args) {
@@ -3339,16 +3339,16 @@ RET SQLRCursor::getRowLengths(const ARGS &args) {
 						toInteger(args[0]));
 	if (!lengths) {
 		returnNull();
-		return;
-	}
-	uint32_t	colcount=sqlrcur(args)->colCount();
+	} else {
+		uint32_t	colcount=sqlrcur(args)->colCount();
 
-	Handle<Array>	result=newArray(colcount);
-	for (uint32_t i=0; i<colcount; i++) {
-		set(result,newInteger(i),newUint32(lengths[i]));
-	}
+		Handle<Array>	result=newArray(colcount);
+		for (uint32_t i=0; i<colcount; i++) {
+			set(result,newInteger(i),newUint32(lengths[i]));
+		}
 
-	returnObject(result);
+		returnObject(result);
+	}
 }
 
 RET SQLRCursor::getColumnNames(const ARGS &args) {
