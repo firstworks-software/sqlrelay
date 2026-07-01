@@ -279,8 +279,7 @@
 	added a RARRAY_LEN compatitility macro for ruby < 1.8.6
 	added parseNumber(SQLUINTEGER) casts for older gcc
 	fixed the erlang binding to build with a C89 compiler (gcc 2.95)
-	fixed the nodejs binding getRow()/getRowLengths() to build against old
-		v8 (bare return in a value-returning method)
+	fixed nodejs getRow()/getRowLengths() to build against old v8
 
 2.1.1 - added tns_admin support
 	fixed sqlr-start ... -strace ...
