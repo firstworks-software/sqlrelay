@@ -1892,7 +1892,7 @@ const char * const *odbcconnection::getDatabaseFeatures() {
 	SQLGetInfo(dbc,SQL_MAX_BINARY_LITERAL_LEN,
 					&uintbuf,sizeof(uintbuf),&size);
 	databasefeatures[FEATURE_MAX_BINARY_LITERAL_LENGTH]=
-		charstring::parseNumber(uintbuf);
+		charstring::parseNumber((uint32_t)uintbuf);
 
 	// SQL_MAX_CATALOG_NAME_LEN -> usmallint
 	usmallintbuf=0;
@@ -1906,7 +1906,7 @@ const char * const *odbcconnection::getDatabaseFeatures() {
 	SQLGetInfo(dbc,SQL_MAX_CHAR_LITERAL_LEN,
 					&uintbuf,sizeof(uintbuf),&size);
 	databasefeatures[FEATURE_MAX_CHAR_LITERAL_LENGTH]=
-		charstring::parseNumber(uintbuf);
+		charstring::parseNumber((uint32_t)uintbuf);
 
 	// SQL_MAX_COLUMN_NAME_LEN -> usmallint
 	usmallintbuf=0;
@@ -1974,7 +1974,7 @@ const char * const *odbcconnection::getDatabaseFeatures() {
 	uintbuf=0;
 	SQLGetInfo(dbc,SQL_MAX_INDEX_SIZE,&uintbuf,sizeof(uintbuf),&size);
 	databasefeatures[FEATURE_MAX_INDEX_LENGTH]=
-		charstring::parseNumber(uintbuf);
+		charstring::parseNumber((uint32_t)uintbuf);
 
 	// SQL_MAX_PROCEDURE_NAME_LEN -> usmallint
 	usmallintbuf=0;
@@ -1987,7 +1987,7 @@ const char * const *odbcconnection::getDatabaseFeatures() {
 	uintbuf=0;
 	SQLGetInfo(dbc,SQL_MAX_ROW_SIZE,&uintbuf,sizeof(uintbuf),&size);
 	databasefeatures[FEATURE_MAX_ROW_SIZE]=
-		charstring::parseNumber(uintbuf);
+		charstring::parseNumber((uint32_t)uintbuf);
 
 	// SQL_MAX_OWNER_NAME_LEN -> usmallint
 	usmallintbuf=0;
