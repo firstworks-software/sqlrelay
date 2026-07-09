@@ -99,6 +99,13 @@ extern "C" {
 		#define TSRMLS_DC
 		#define TSRMLS_CC
 		#define TSRMLS_FETCH()
+		// PHP 8.5 dropped the plain REGISTER_PDO_CLASS_CONST_LONG macro,
+		// leaving only deprecated variants, so define it here from the
+		// zend/pdo API that it still exposes.
+		#ifndef REGISTER_PDO_CLASS_CONST_LONG
+			#define REGISTER_PDO_CLASS_CONST_LONG(const_name, value) \
+				zend_declare_class_constant_long(php_pdo_get_dbh_ce(), const_name, sizeof(const_name)-1, (zend_long)value);
+		#endif
 	#endif
 
 #else
