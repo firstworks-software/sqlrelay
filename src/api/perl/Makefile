@@ -9,10 +9,10 @@ include ../../../config.mk
 	$(MV) $<c $@
 
 .cpp.lo:
-	$(LTCOMPILE) $(CXX) $(CXXFLAGS) $(PERLCPPFLAGS) $(COMPILE) $< $(OUT)$@
+	$(LTCOMPILE) $(CXX) $(CXXFLAGS) $(CXXSTD) $(PERLCPPFLAGS) $(COMPILE) $< $(OUT)$@
 
 .cpp.obj:
-	$(CXX) $(CXXFLAGS) $(PERLCPPFLAGS) $(COMPILE) $<
+	$(CXX) $(CXXFLAGS) $(CXXSTD) $(PERLCPPFLAGS) $(COMPILE) $<
 
 all: Connection.$(LIBEXT) Cursor.$(LIBEXT)
 

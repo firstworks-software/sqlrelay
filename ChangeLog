@@ -1,4 +1,6 @@
 2.1.2 - added some install targets for unfinished modules
+	fixed perl binding build on freebsd 15 (perl.h/libc++ pair.h) by
+		adding CXXSTD to its Makefile compile rules
 	fixed some subtle debug attritbute-related problems
 	fixed setProtocolIsBingEndian() (assignment reversal)
 	jdbc driver debugging improvements
