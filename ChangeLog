@@ -2,6 +2,8 @@
 	fixed perl binding build on freebsd 15 (perl.h/libc++ pair.h) by
 		adding CXXSTD to its Makefile compile rules
 	fixed phppdo build with php 8.5 (REGISTER_PDO_CLASS_CONST_LONG removed)
+	fixed mysql protocol test build with the mysql 8.4 client
+		(REFRESH_HOSTS/SLAVE/MASTER removed)
 	fixed some subtle debug attritbute-related problems
 	fixed setProtocolIsBingEndian() (assignment reversal)
 	jdbc driver debugging improvements

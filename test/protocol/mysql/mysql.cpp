@@ -881,10 +881,17 @@ int	main(int argc, char **argv) {
 	assertEquals(mysql_refresh(&mysql,REFRESH_GRANT),1);
 	assertEquals(mysql_refresh(&mysql,REFRESH_LOG),1);
 	assertEquals(mysql_refresh(&mysql,REFRESH_TABLES),1);
+	// REFRESH_HOSTS/SLAVE/MASTER were removed from the MySQL 8.4 client
+#ifdef REFRESH_HOSTS
 	assertEquals(mysql_refresh(&mysql,REFRESH_HOSTS),1);
+#endif
 	assertEquals(mysql_refresh(&mysql,REFRESH_STATUS),1);
+#ifdef REFRESH_SLAVE
 	assertEquals(mysql_refresh(&mysql,REFRESH_SLAVE),1);
+#endif
+#ifdef REFRESH_MASTER
 	assertEquals(mysql_refresh(&mysql,REFRESH_MASTER),1);
+#endif
 	/*if (!issqlrelay) {
 		assertEquals(mysql_refresh(&mysql,REFRESH_THREADS),1);
 	} else {
