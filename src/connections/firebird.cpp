@@ -1029,9 +1029,19 @@ void firebirdconnection::getError(char *errorbuffer,
 		errormsg.append(msg)->append(" \n");
 	}
 
-	// get the error message
+	// get the sql code
 	ISC_LONG	sqlcode=isc_sqlcode(error);
-	isc_sql_interprete(sqlcode,errorbuffer,errorbuffersize);
+
+	// return the detailed status-vector message rather than the
+	// generic sqlcode text, which hides the real cause (e.g. -901);
+	// fall back to the sqlcode text if there was no detail
+	if (errormsg.getStringLength()) {
+		charstring::safeCopy(errorbuffer,errorbuffersize,
+					errormsg.getString(),
+					errormsg.getStringLength());
+	} else {
+		isc_sql_interprete(sqlcode,errorbuffer,errorbuffersize);
+	}
 
 	// set return values
 	*errorsize=charstring::getLength(errorbuffer);

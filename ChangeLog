@@ -285,6 +285,9 @@
 	added parseNumber(SQLUINTEGER) casts for older gcc
 	fixed the erlang binding to build with a C89 compiler (gcc 2.95)
 	fixed nodejs getRow()/getRowLengths() to build against old v8
+	firebird connection now reports the detailed status-vector error
+		instead of the generic sqlcode text (which hid the real cause,
+		e.g. the -901 "system error" message)
 
 2.1.1 - added tns_admin support
 	fixed sqlr-start ... -strace ...
