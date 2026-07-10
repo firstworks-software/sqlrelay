@@ -1527,7 +1527,8 @@ int main(int argc, char **argv) {
 	printf("SCHEMA LIST: \n");
 	assertTrue(sqlrcur_getSchemaList(cur,NULL));
 	assertEqStr(sqlrcur_getColumnName(cur,0),"Database");
-	assertInResultSet(cur,"Database","TESTUSER");
+	// firebird has no schemas
+	assertEqInt(sqlrcur_rowCount(cur),0);
 	printf("\n");
 
 
