@@ -585,10 +585,10 @@ public class SQLRelayResultSet implements ResultSet {
 		drv.debugPrintln("was null: "+wasnull);
 		Blob	b=null;
 		if (!wasnull) {
-			b=conn.createBlob();
-			if (b!=null) {
-				b.setBytes(1,field);
-			}
+			// construct directly from the field bytes; creating a
+			// zero-length blob and setBytes(1,...) into it throws on
+			// strict SerialBlob (JDK 8u471+)
+			b=new SQLRelayBlob(field);
 		}
 		drv.debugEnd();
 		return b;
@@ -611,10 +611,10 @@ public class SQLRelayResultSet implements ResultSet {
 		drv.debugPrintln("was null: "+wasnull);
 		Blob	b=null;
 		if (!wasnull) {
-			b=conn.createBlob();
-			if (b!=null) {
-				b.setBytes(1,field);
-			}
+			// construct directly from the field bytes; creating a
+			// zero-length blob and setBytes(1,...) into it throws on
+			// strict SerialBlob (JDK 8u471+)
+			b=new SQLRelayBlob(field);
 		}
 		drv.debugEnd();
 		return b;
@@ -803,10 +803,10 @@ public class SQLRelayResultSet implements ResultSet {
 		drv.debugPrintln("was null: "+wasnull);
 		Clob	c=null;
 		if (!wasnull) {
-			c=conn.createClob();
-			if (c!=null) {
-				c.setString(1,new String(field));
-			}
+			// construct directly from the field chars; creating a
+			// zero-length clob and setString(1,...) into it throws on
+			// strict SerialClob (JDK 8u471+)
+			c=new SerialClob(field);
 		}
 		drv.debugEnd();
 		return c;
@@ -834,10 +834,10 @@ public class SQLRelayResultSet implements ResultSet {
 		drv.debugPrintln("was null: "+wasnull);
 		Clob	c=null;
 		if (!wasnull) {
-			c=conn.createClob();
-			if (c!=null) {
-				c.setString(1,new String(field));
-			}
+			// construct directly from the field chars; creating a
+			// zero-length clob and setString(1,...) into it throws on
+			// strict SerialClob (JDK 8u471+)
+			c=new SerialClob(field);
 		}
 		drv.debugEnd();
 		return c;
