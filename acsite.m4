@@ -1596,8 +1596,14 @@ then
 		
 		if ( test -n "$DB2PATH" )
 		then
+			dnl prefer lib64 on 64-bit builds; some installs (eg. V11.5) keep the 64-bit lib in lib64 with no plain lib
+			if ( test "$X64" = "x64" )
+			then
+				FW_CHECK_HEADER_LIB([$DB2PATH/include/sql.h],[DB2INCLUDES=\"-I$DB2PATH/include\"],[$DB2PATH/lib64/libdb2.$SOSUFFIX],[DB2LIBSPATH64=\"$DB2PATH/lib64\"; DB2LIBS64=\"-L$DB2PATH/lib64 -ldb2\"],[$DB2PATH/lib64/libdb2.a],[DB2LIBS64=\"-L$DB2PATH/lib64 -ldb2\"; DB2STATIC=\"$STATICFLAG\"])
+			fi
+			FW_CHECK_HEADER_LIB([$DB2PATH/include/sql.h],[DB2INCLUDES=\"-I$DB2PATH/include\"],[$DB2PATH/lib32/libdb2.$SOSUFFIX],[DB2LIBSPATH32=\"$DB2PATH/lib32\"; DB2LIBS32=\"-L$DB2PATH/lib32 -ldb2\"],[$DB2PATH/lib32/libdb2.a],[DB2LIBS32=\"-L$DB2PATH/lib32 -ldb2\"; DB2STATIC=\"$STATICFLAG\"])
 			FW_CHECK_HEADER_LIB([$DB2PATH/include/sql.h],[DB2INCLUDES=\"-I$DB2PATH/include\"],[$DB2PATH/lib/libdb2.$SOSUFFIX],[DB2LIBSPATH=\"$DB2PATH/lib\"; DB2LIBS=\"-L$DB2PATH/lib -ldb2\"],[$DB2PATH/lib/libdb2.a],[DB2LIBS=\"-L$DB2PATH/lib -ldb2\"; DB2STATIC=\"$STATICFLAG\"])
-		
+
 		else
 
 			dnl check /opt for 7.1
@@ -1606,73 +1612,17 @@ then
 			dnl check /usr for 7.2
 			FW_CHECK_HEADER_LIB([/usr/IBMdb2/V7.1/include/sql.h],[DB2INCLUDES=\"-I/usr/IBMdb2/V7.1/include\"; DB2VERSION=\"7\"],[/usr/IBMdb2/V7.1/lib/libdb2.$SOSUFFIX],[DB2LIBSPATH=\"/usr/IBMdb2/V7.1/lib\"; DB2LIBS=\"-L/usr/IBMdb2/V7.1/lib -ldb2\"; DB2VERSION=\"7\"],[/usr/IBMdb2/V7.1/lib/libdb2.a],[DB2LIBS=\"-L/usr/IBMdb2/V7.1/lib -ldb2\"; DB2STATIC=\"$STATICFLAG\"; DB2VERSION=\"7\"])
 	
-			dnl check /opt for 8.1
-			FW_CHECK_HEADER_LIB([/opt/IBM/db2/V8.1/include/sql.h],[DB2INCLUDES=\"-I/opt/IBM/db2/V8.1/include\"; DB2VERSION=\"8\"],[/opt/IBM/db2/V8.1/lib/libdb2.$SOSUFFIX],[DB2LIBSPATH=\"/opt/IBM/db2/V8.1/lib\"; DB2LIBS=\"-L/opt/IBM/db2/V8.1/lib -ldb2\"; DB2VERSION=\"8\"],[/opt/IBM/db2/V8.1/lib/libdb2.a],[DB2LIBS=\"-L/opt/IBM/db2/V8.1/lib -ldb2\"; DB2STATIC=\"$STATICFLAG\"; DB2VERSION=\"8\"])
-	
-			dnl check /opt for 9.1
-			FW_CHECK_HEADER_LIB([/opt/ibm/db2/V9.1/include/sql.h],[DB2INCLUDES=\"-I/opt/ibm/db2/V9.1/include\"; DB2VERSION=\"9\"],[/opt/ibm/db2/V9.1/lib/libdb2.$SOSUFFIX],[DB2LIBSPATH=\"/opt/ibm/db2/V9.1/lib\"; DB2LIBS=\"-L/opt/ibm/db2/V9.1/lib -ldb2\"; DB2VERSION=\"9\"],[/opt/ibm/db2/V9.1/lib/libdb2.a],[DB2LIBS=\"-L/opt/ibm/db2/V9.1/lib -ldb2\"; DB2STATIC=\"$STATICFLAG\"; DB2VERSION=\"9\"])
-			FW_CHECK_HEADER_LIB([/opt/IBM/db2/V9.1/include/sql.h],[DB2INCLUDES=\"-I/opt/IBM/db2/V9.1/include\"; DB2VERSION=\"9\"],[/opt/IBM/db2/V9.1/lib/libdb2.$SOSUFFIX],[DB2LIBSPATH=\"/opt/IBM/db2/V9.1/lib\"; DB2LIBS=\"-L/opt/IBM/db2/V9.1/lib -ldb2\"; DB2VERSION=\"9\"],[/opt/IBM/db2/V9.1/lib/libdb2.a],[DB2LIBS=\"-L/opt/IBM/db2/V9.1/lib -ldb2\"; DB2STATIC=\"$STATICFLAG\"; DB2VERSION=\"9\"])
-			FW_CHECK_HEADER_LIB([/opt/ibm/db2/V9.1/include/sql.h],[DB2INCLUDES=\"-I/opt/ibm/db2/V9.1/include\"; DB2VERSION=\"9\"],[/opt/ibm/db2/V9.1/lib32/libdb2.$SOSUFFIX],[DB2LIBSPATH32=\"/opt/ibm/db2/V9.1/lib32\"; DB2LIBS32=\"-L/opt/ibm/db2/V9.1/lib32 -ldb2\"; DB2VERSION=\"9\"],[/opt/ibm/db2/V9.1/lib32/libdb2.a],[DB2LIBS32=\"-L/opt/ibm/db2/V9.1/lib32 -ldb2\"; DB2STATIC=\"$STATICFLAG\"; DB2VERSION=\"9\"])
-			if ( test "$X64" = "x64" )
-			then
-				FW_CHECK_HEADER_LIB([/opt/IBM/db2/V9.1/include/sql.h],[DB2INCLUDES=\"-I/opt/IBM/db2/V9.1/include\"; DB2VERSION=\"9\"],[/opt/IBM/db2/V9.1/lib64/libdb2.$SOSUFFIX],[DB2LIBSPATH=\"/opt/IBM/db2/V9.1/lib64\"; DB2LIBS=\"-L/opt/IBM/db2/V9.1/lib64 -ldb2\"; DB2VERSION=\"9\"],[/opt/IBM/db2/V9.1/lib64/libdb2.a],[DB2LIBS=\"-L/opt/IBM/db2/V9.1/lib64 -ldb2\"; DB2STATIC=\"$STATICFLAG\"; DB2VERSION=\"9\"])
-			fi
-	
-			dnl check /opt for 9.5
-			FW_CHECK_HEADER_LIB([/opt/ibm/db2/V9.5/include/sql.h],[DB2INCLUDES=\"-I/opt/ibm/db2/V9.5/include\"; DB2VERSION=\"9\"],[/opt/ibm/db2/V9.5/lib/libdb2.$SOSUFFIX],[DB2LIBSPATH=\"/opt/ibm/db2/V9.5/lib\"; DB2LIBS=\"-L/opt/ibm/db2/V9.5/lib -ldb2\"; DB2VERSION=\"9\"],[/opt/ibm/db2/V9.5/lib/libdb2.a],[DB2LIBS=\"-L/opt/ibm/db2/V9.5/lib -ldb2\"; DB2STATIC=\"$STATICFLAG\"; DB2VERSION=\"9\"])
-
-			FW_CHECK_HEADER_LIB([/opt/IBM/db2/V9.5/include/sql.h],[DB2INCLUDES=\"-I/opt/IBM/db2/V9.5/include\"; DB2VERSION=\"9\"],[/opt/IBM/db2/V9.5/lib/libdb2.$SOSUFFIX],[DB2LIBSPATH=\"/opt/IBM/db2/V9.5/lib\"; DB2LIBS=\"-L/opt/IBM/db2/V9.5/lib -ldb2\"; DB2VERSION=\"9\"],[/opt/IBM/db2/V9.5/lib/libdb2.a],[DB2LIBS=\"-L/opt/IBM/db2/V9.5/lib -ldb2\"; DB2STATIC=\"$STATICFLAG\"; DB2VERSION=\"9\"])
-			FW_CHECK_HEADER_LIB([/opt/ibm/db2/V9.5/include/sql.h],[DB2INCLUDES=\"-I/opt/ibm/db2/V9.5/include\"; DB2VERSION=\"9\"],[/opt/ibm/db2/V9.5/lib32/libdb2.$SOSUFFIX],[DB2LIBSPATH32=\"/opt/ibm/db2/V9.5/lib32\"; DB2LIBS32=\"-L/opt/ibm/db2/V9.5/lib32 -ldb2\"; DB2VERSION=\"9\"],[/opt/ibm/db2/V9.5/lib32/libdb2.a],[DB2LIBS32=\"-L/opt/ibm/db2/V9.5/lib32 -ldb2\"; DB2STATIC=\"$STATICFLAG\"; DB2VERSION=\"9\"])
-			FW_CHECK_HEADER_LIB([/opt/IBM/db2/V9.5/include/sql.h],[DB2INCLUDES=\"-I/opt/IBM/db2/V9.5/include\"; DB2VERSION=\"9\"],[/opt/IBM/db2/V9.5/lib32/libdb2.$SOSUFFIX],[DB2LIBSPATH32=\"/opt/IBM/db2/V9.5/lib32\"; DB2LIBS32=\"-L/opt/IBM/db2/V9.5/lib32 -ldb2\"; DB2VERSION=\"9\"],[/opt/IBM/db2/V9.5/lib32/libdb2.a],[DB2LIBS32=\"-L/opt/IBM/db2/V9.5/lib32 -ldb2\"; DB2STATIC=\"$STATICFLAG\"; DB2VERSION=\"9\"])
-			if ( test "$X64" = "x64" )
-			then
-				FW_CHECK_HEADER_LIB([/opt/ibm/db2/V9.5/include/sql.h],[DB2INCLUDES=\"-I/opt/ibm/db2/V9.5/include\"; DB2VERSION=\"9\"],[/opt/ibm/db2/V9.5/lib64/libdb2.$SOSUFFIX],[DB2LIBSPATH64=\"/opt/ibm/db2/V9.5/lib64\"; DB2LIBS64=\"-L/opt/ibm/db2/V9.5/lib64 -ldb2\"; DB2VERSION=\"9\"],[/opt/ibm/db2/V9.5/lib64/libdb2.a],[DB2LIBS64=\"-L/opt/ibm/db2/V9.5/lib64 -ldb2\"; DB2STATIC=\"$STATICFLAG\"; DB2VERSION=\"9\"])
-				FW_CHECK_HEADER_LIB([/opt/IBM/db2/V9.5/include/sql.h],[DB2INCLUDES=\"-I/opt/IBM/db2/V9.5/include\"; DB2VERSION=\"9\"],[/opt/IBM/db2/V9.5/lib64/libdb2.$SOSUFFIX],[DB2LIBSPATH64=\"/opt/IBM/db2/V9.5/lib64\"; DB2LIBS64=\"-L/opt/IBM/db2/V9.5/lib64 -ldb2\"; DB2VERSION=\"9\"],[/opt/IBM/db2/V9.5/lib64/libdb2.a],[DB2LIBS64=\"-L/opt/IBM/db2/V9.5/lib64 -ldb2\"; DB2STATIC=\"$STATICFLAG\"; DB2VERSION=\"9\"])
-			fi
-	
-			dnl check /opt for 9.7
-			FW_CHECK_HEADER_LIB([/opt/ibm/db2/V9.7/include/sql.h],[DB2INCLUDES=\"-I/opt/ibm/db2/V9.7/include\"; DB2VERSION=\"9\"],[/opt/ibm/db2/V9.7/lib/libdb2.$SOSUFFIX],[DB2LIBSPATH=\"/opt/ibm/db2/V9.7/lib\"; DB2LIBS=\"-L/opt/ibm/db2/V9.7/lib -ldb2\"; DB2VERSION=\"9\"],[/opt/ibm/db2/V9.7/lib/libdb2.a],[DB2LIBS=\"-L/opt/ibm/db2/V9.7/lib -ldb2\"; DB2STATIC=\"$STATICFLAG\"; DB2VERSION=\"9\"])
-			FW_CHECK_HEADER_LIB([/opt/IBM/db2/V9.7/include/sql.h],[DB2INCLUDES=\"-I/opt/IBM/db2/V9.7/include\"; DB2VERSION=\"9\"],[/opt/IBM/db2/V9.7/lib/libdb2.$SOSUFFIX],[DB2LIBSPATH=\"/opt/IBM/db2/V9.7/lib\"; DB2LIBS=\"-L/opt/IBM/db2/V9.7/lib -ldb2\"; DB2VERSION=\"9\"],[/opt/IBM/db2/V9.7/lib/libdb2.a],[DB2LIBS=\"-L/opt/IBM/db2/V9.7/lib -ldb2\"; DB2STATIC=\"$STATICFLAG\"; DB2VERSION=\"9\"])
-			FW_CHECK_HEADER_LIB([/opt/ibm/db2/V9.7/include/sql.h],[DB2INCLUDES=\"-I/opt/ibm/db2/V9.7/include\"; DB2VERSION=\"9\"],[/opt/ibm/db2/V9.7/lib32/libdb2.$SOSUFFIX],[DB2LIBSPATH32=\"/opt/ibm/db2/V9.7/lib32\"; DB2LIBS32=\"-L/opt/ibm/db2/V9.7/lib32 -ldb2\"; DB2VERSION=\"9\"],[/opt/ibm/db2/V9.7/lib32/libdb2.a],[DB2LIBS32=\"-L/opt/ibm/db2/V9.7/lib32 -ldb2\"; DB2STATIC=\"$STATICFLAG\"; DB2VERSION=\"9\"])
-			FW_CHECK_HEADER_LIB([/opt/IBM/db2/V9.7/include/sql.h],[DB2INCLUDES=\"-I/opt/IBM/db2/V9.7/include\"; DB2VERSION=\"9\"],[/opt/IBM/db2/V9.7/lib32/libdb2.$SOSUFFIX],[DB2LIBSPATH32=\"/opt/IBM/db2/V9.7/lib32\"; DB2LIBS32=\"-L/opt/IBM/db2/V9.7/lib32 -ldb2\"; DB2VERSION=\"9\"],[/opt/IBM/db2/V9.7/lib32/libdb2.a],[DB2LIBS32=\"-L/opt/IBM/db2/V9.7/lib32 -ldb2\"; DB2STATIC=\"$STATICFLAG\"; DB2VERSION=\"9\"])
-			if ( test "$X64" = "x64" )
-			then
-				FW_CHECK_HEADER_LIB([/opt/ibm/db2/V9.7/include/sql.h],[DB2INCLUDES=\"-I/opt/ibm/db2/V9.7/include\"; DB2VERSION=\"9\"],[/opt/ibm/db2/V9.7/lib64/libdb2.$SOSUFFIX],[DB2LIBSPATH64=\"/opt/ibm/db2/V9.7/lib64\"; DB2LIBS64=\"-L/opt/ibm/db2/V9.7/lib64 -ldb2\"; DB2VERSION=\"9\"],[/opt/ibm/db2/V9.7/lib64/libdb2.a],[DB2LIBS64=\"-L/opt/ibm/db2/V9.7/lib64 -ldb2\"; DB2STATIC=\"$STATICFLAG\"; DB2VERSION=\"9\"])
-				FW_CHECK_HEADER_LIB([/opt/IBM/db2/V9.7/include/sql.h],[DB2INCLUDES=\"-I/opt/IBM/db2/V9.7/include\"; DB2VERSION=\"9\"],[/opt/IBM/db2/V9.7/lib64/libdb2.$SOSUFFIX],[DB2LIBSPATH64=\"/opt/IBM/db2/V9.7/lib64\"; DB2LIBS64=\"-L/opt/IBM/db2/V9.7/lib64 -ldb2\"; DB2VERSION=\"9\"],[/opt/IBM/db2/V9.7/lib64/libdb2.a],[DB2LIBS64=\"-L/opt/IBM/db2/V9.7/lib64 -ldb2\"; DB2STATIC=\"$STATICFLAG\"; DB2VERSION=\"9\"])
-			fi
-	
-			dnl check /opt for 10.1
-			FW_CHECK_HEADER_LIB([/opt/ibm/db2/V10.1/include/sql.h],[DB2INCLUDES=\"-I/opt/ibm/db2/V10.1/include\"; DB2VERSION=\"10\"],[/opt/ibm/db2/V10.1/lib/libdb2.$SOSUFFIX],[DB2LIBSPATH=\"/opt/ibm/db2/V10.1/lib\"; DB2LIBS=\"-L/opt/ibm/db2/V10.1/lib -ldb2\"; DB2VERSION=\"10\"],[/opt/ibm/db2/V10.1/lib/libdb2.a],[DB2LIBS=\"-L/opt/ibm/db2/V10.1/lib -ldb2\"; DB2STATIC=\"$STATICFLAG\"; DB2VERSION=\"10\"])
-			FW_CHECK_HEADER_LIB([/opt/IBM/db2/V10.1/include/sql.h],[DB2INCLUDES=\"-I/opt/IBM/db2/V10.1/include\"; DB2VERSION=\"10\"],[/opt/IBM/db2/V10.1/lib/libdb2.$SOSUFFIX],[DB2LIBSPATH=\"/opt/IBM/db2/V10.1/lib\"; DB2LIBS=\"-L/opt/IBM/db2/V10.1/lib -ldb2\"; DB2VERSION=\"10\"],[/opt/IBM/db2/V10.1/lib/libdb2.a],[DB2LIBS=\"-L/opt/IBM/db2/V10.1/lib -ldb2\"; DB2STATIC=\"$STATICFLAG\"; DB2VERSION=\"10\"])
-			FW_CHECK_HEADER_LIB([/opt/ibm/db2/V10.1/include/sql.h],[DB2INCLUDES=\"-I/opt/ibm/db2/V10.1/include\"; DB2VERSION=\"10\"],[/opt/ibm/db2/V10.1/lib32/libdb2.$SOSUFFIX],[DB2LIBSPATH32=\"/opt/ibm/db2/V10.1/lib32\"; DB2LIBS32=\"-L/opt/ibm/db2/V10.1/lib32 -ldb2\"; DB2VERSION=\"10\"],[/opt/ibm/db2/V10.1/lib32/libdb2.a],[DB2LIBS32=\"-L/opt/ibm/db2/V10.1/lib32 -ldb2\"; DB2STATIC=\"$STATICFLAG\"; DB2VERSION=\"10\"])
-			FW_CHECK_HEADER_LIB([/opt/IBM/db2/V10.1/include/sql.h],[DB2INCLUDES=\"-I/opt/IBM/db2/V10.1/include\"; DB2VERSION=\"10\"],[/opt/IBM/db2/V10.1/lib32/libdb2.$SOSUFFIX],[DB2LIBSPATH32=\"/opt/IBM/db2/V10.1/lib32\"; DB2LIBS32=\"-L/opt/IBM/db2/V10.1/lib32 -ldb2\"; DB2VERSION=\"10\"],[/opt/IBM/db2/V10.1/lib32/libdb2.a],[DB2LIBS32=\"-L/opt/IBM/db2/V10.1/lib32 -ldb2\"; DB2STATIC=\"$STATICFLAG\"; DB2VERSION=\"10\"])
-			if ( test "$X64" = "x64" )
-			then
-				FW_CHECK_HEADER_LIB([/opt/ibm/db2/V10.1/include/sql.h],[DB2INCLUDES=\"-I/opt/ibm/db2/V10.1/include\"; DB2VERSION=\"10\"],[/opt/ibm/db2/V10.1/lib64/libdb2.$SOSUFFIX],[DB2LIBSPATH64=\"/opt/ibm/db2/V10.1/lib64\"; DB2LIBS64=\"-L/opt/ibm/db2/V10.1/lib64 -ldb2\"; DB2VERSION=\"10\"],[/opt/ibm/db2/V10.1/lib64/libdb2.a],[DB2LIBS64=\"-L/opt/ibm/db2/V10.1/lib64 -ldb2\"; DB2STATIC=\"$STATICFLAG\"; DB2VERSION=\"10\"])
-				FW_CHECK_HEADER_LIB([/opt/IBM/db2/V10.1/include/sql.h],[DB2INCLUDES=\"-I/opt/IBM/db2/V10.1/include\"; DB2VERSION=\"10\"],[/opt/IBM/db2/V10.1/lib64/libdb2.$SOSUFFIX],[DB2LIBSPATH64=\"/opt/IBM/db2/V10.1/lib64\"; DB2LIBS64=\"-L/opt/IBM/db2/V10.1/lib64 -ldb2\"; DB2VERSION=\"10\"],[/opt/IBM/db2/V10.1/lib64/libdb2.a],[DB2LIBS64=\"-L/opt/IBM/db2/V10.1/lib64 -ldb2\"; DB2STATIC=\"$STATICFLAG\"; DB2VERSION=\"10\"])
-			fi
-	
-			dnl check /opt for 10.5
-			FW_CHECK_HEADER_LIB([/opt/ibm/db2/V10.5/include/sql.h],[DB2INCLUDES=\"-I/opt/ibm/db2/V10.5/include\"; DB2VERSION=\"10\"],[/opt/ibm/db2/V10.5/lib/libdb2.$SOSUFFIX],[DB2LIBSPATH=\"/opt/ibm/db2/V10.5/lib\"; DB2LIBS=\"-L/opt/ibm/db2/V10.5/lib -ldb2\"; DB2VERSION=\"10\"],[/opt/ibm/db2/V10.5/lib/libdb2.a],[DB2LIBS=\"-L/opt/ibm/db2/V10.5/lib -ldb2\"; DB2STATIC=\"$STATICFLAG\"; DB2VERSION=\"10\"])
-			FW_CHECK_HEADER_LIB([/opt/IBM/db2/V10.5/include/sql.h],[DB2INCLUDES=\"-I/opt/IBM/db2/V10.5/include\"; DB2VERSION=\"10\"],[/opt/IBM/db2/V10.5/lib/libdb2.$SOSUFFIX],[DB2LIBSPATH=\"/opt/IBM/db2/V10.5/lib\"; DB2LIBS=\"-L/opt/IBM/db2/V10.5/lib -ldb2\"; DB2VERSION=\"10\"],[/opt/IBM/db2/V10.5/lib/libdb2.a],[DB2LIBS=\"-L/opt/IBM/db2/V10.5/lib -ldb2\"; DB2STATIC=\"$STATICFLAG\"; DB2VERSION=\"10\"])
-			FW_CHECK_HEADER_LIB([/opt/ibm/db2/V10.5/include/sql.h],[DB2INCLUDES=\"-I/opt/ibm/db2/V10.5/include\"; DB2VERSION=\"10\"],[/opt/ibm/db2/V10.5/lib32/libdb2.$SOSUFFIX],[DB2LIBSPATH32=\"/opt/ibm/db2/V10.5/lib32\"; DB2LIBS32=\"-L/opt/ibm/db2/V10.5/lib32 -ldb2\"; DB2VERSION=\"10\"],[/opt/ibm/db2/V10.5/lib32/libdb2.a],[DB2LIBS32=\"-L/opt/ibm/db2/V10.5/lib32 -ldb2\"; DB2STATIC=\"$STATICFLAG\"; DB2VERSION=\"10\"])
-			FW_CHECK_HEADER_LIB([/opt/IBM/db2/V10.5/include/sql.h],[DB2INCLUDES=\"-I/opt/IBM/db2/V10.5/include\"; DB2VERSION=\"10\"],[/opt/IBM/db2/V10.5/lib32/libdb2.$SOSUFFIX],[DB2LIBSPATH32=\"/opt/IBM/db2/V10.5/lib32\"; DB2LIBS32=\"-L/opt/IBM/db2/V10.5/lib32 -ldb2\"; DB2VERSION=\"10\"],[/opt/IBM/db2/V10.5/lib32/libdb2.a],[DB2LIBS32=\"-L/opt/IBM/db2/V10.5/lib32 -ldb2\"; DB2STATIC=\"$STATICFLAG\"; DB2VERSION=\"10\"])
-			if ( test "$X64" = "x64" )
-			then
-				FW_CHECK_HEADER_LIB([/opt/ibm/db2/V10.5/include/sql.h],[DB2INCLUDES=\"-I/opt/ibm/db2/V10.5/include\"; DB2VERSION=\"10\"],[/opt/ibm/db2/V10.5/lib64/libdb2.$SOSUFFIX],[DB2LIBSPATH64=\"/opt/ibm/db2/V10.5/lib64\"; DB2LIBS64=\"-L/opt/ibm/db2/V10.5/lib64 -ldb2\"; DB2VERSION=\"10\"],[/opt/ibm/db2/V10.5/lib64/libdb2.a],[DB2LIBS64=\"-L/opt/ibm/db2/V10.5/lib64 -ldb2\"; DB2STATIC=\"$STATICFLAG\"; DB2VERSION=\"10\"])
-				FW_CHECK_HEADER_LIB([/opt/IBM/db2/V10.5/include/sql.h],[DB2INCLUDES=\"-I/opt/IBM/db2/V10.5/include\"; DB2VERSION=\"10\"],[/opt/IBM/db2/V10.5/lib64/libdb2.$SOSUFFIX],[DB2LIBSPATH64=\"/opt/IBM/db2/V10.5/lib64\"; DB2LIBS64=\"-L/opt/IBM/db2/V10.5/lib64 -ldb2\"; DB2VERSION=\"10\"],[/opt/IBM/db2/V10.5/lib64/libdb2.a],[DB2LIBS64=\"-L/opt/IBM/db2/V10.5/lib64 -ldb2\"; DB2STATIC=\"$STATICFLAG\"; DB2VERSION=\"10\"])
-			fi
-	
-			dnl check /opt for 11.1
-			FW_CHECK_HEADER_LIB([/opt/ibm/db2/V11.1/include/sql.h],[DB2INCLUDES=\"-I/opt/ibm/db2/V11.1/include\"; DB2VERSION=\"11\"],[/opt/ibm/db2/V11.1/lib/libdb2.$SOSUFFIX],[DB2LIBSPATH=\"/opt/ibm/db2/V11.1/lib\"; DB2LIBS=\"-L/opt/ibm/db2/V11.1/lib -ldb2\"; DB2VERSION=\"11\"],[/opt/ibm/db2/V11.1/lib/libdb2.a],[DB2LIBS=\"-L/opt/ibm/db2/V11.1/lib -ldb2\"; DB2STATIC=\"$STATICFLAG\"; DB2VERSION=\"11\"])
-			FW_CHECK_HEADER_LIB([/opt/IBM/db2/V11.1/include/sql.h],[DB2INCLUDES=\"-I/opt/IBM/db2/V11.1/include\"; DB2VERSION=\"11\"],[/opt/IBM/db2/V11.1/lib/libdb2.$SOSUFFIX],[DB2LIBSPATH=\"/opt/IBM/db2/V11.1/lib\"; DB2LIBS=\"-L/opt/IBM/db2/V11.1/lib -ldb2\"; DB2VERSION=\"11\"],[/opt/IBM/db2/V11.1/lib/libdb2.a],[DB2LIBS=\"-L/opt/IBM/db2/V11.1/lib -ldb2\"; DB2STATIC=\"$STATICFLAG\"; DB2VERSION=\"11\"])
-			FW_CHECK_HEADER_LIB([/opt/ibm/db2/V11.1/include/sql.h],[DB2INCLUDES=\"-I/opt/ibm/db2/V11.1/include\"; DB2VERSION=\"11\"],[/opt/ibm/db2/V11.1/lib32/libdb2.$SOSUFFIX],[DB2LIBSPATH32=\"/opt/ibm/db2/V11.1/lib32\"; DB2LIBS32=\"-L/opt/ibm/db2/V11.1/lib32 -ldb2\"; DB2VERSION=\"11\"],[/opt/ibm/db2/V11.1/lib32/libdb2.a],[DB2LIBS32=\"-L/opt/ibm/db2/V11.1/lib32 -ldb2\"; DB2STATIC=\"$STATICFLAG\"; DB2VERSION=\"11\"])
-			FW_CHECK_HEADER_LIB([/opt/IBM/db2/V11.1/include/sql.h],[DB2INCLUDES=\"-I/opt/IBM/db2/V11.1/include\"; DB2VERSION=\"11\"],[/opt/IBM/db2/V11.1/lib32/libdb2.$SOSUFFIX],[DB2LIBSPATH32=\"/opt/IBM/db2/V11.1/lib32\"; DB2LIBS32=\"-L/opt/IBM/db2/V11.1/lib32 -ldb2\"; DB2VERSION=\"11\"],[/opt/IBM/db2/V11.1/lib32/libdb2.a],[DB2LIBS32=\"-L/opt/IBM/db2/V11.1/lib32 -ldb2\"; DB2STATIC=\"$STATICFLAG\"; DB2VERSION=\"11\"])
-			if ( test "$X64" = "x64" )
-			then
-				FW_CHECK_HEADER_LIB([/opt/ibm/db2/V11.1/include/sql.h],[DB2INCLUDES=\"-I/opt/ibm/db2/V11.1/include\"; DB2VERSION=\"11\"],[/opt/ibm/db2/V11.1/lib64/libdb2.$SOSUFFIX],[DB2LIBSPATH64=\"/opt/ibm/db2/V11.1/lib64\"; DB2LIBS64=\"-L/opt/ibm/db2/V11.1/lib64 -ldb2\"; DB2VERSION=\"11\"],[/opt/ibm/db2/V11.1/lib64/libdb2.a],[DB2LIBS64=\"-L/opt/ibm/db2/V11.1/lib64 -ldb2\"; DB2STATIC=\"$STATICFLAG\"; DB2VERSION=\"11\"])
-				FW_CHECK_HEADER_LIB([/opt/IBM/db2/V11.1/include/sql.h],[DB2INCLUDES=\"-I/opt/IBM/db2/V11.1/include\"; DB2VERSION=\"11\"],[/opt/IBM/db2/V11.1/lib64/libdb2.$SOSUFFIX],[DB2LIBSPATH64=\"/opt/IBM/db2/V11.1/lib64\"; DB2LIBS64=\"-L/opt/IBM/db2/V11.1/lib64 -ldb2\"; DB2VERSION=\"11\"],[/opt/IBM/db2/V11.1/lib64/libdb2.a],[DB2LIBS64=\"-L/opt/IBM/db2/V11.1/lib64 -ldb2\"; DB2STATIC=\"$STATICFLAG\"; DB2VERSION=\"11\"])
-			fi
+			dnl scan /opt for V8.1 and up, newest last so it wins if several coexist
+			for db2dir in `ls -d /opt/ibm/db2/V* /opt/IBM/db2/V* 2> /dev/null | sort -t V -k 2 -n`
+			do
+				DB2VER=`echo "$db2dir" | sed -e 's|.*/V||' -e 's|\..*||'`
+				if ( test "$X64" = "x64" )
+				then
+					FW_CHECK_HEADER_LIB([$db2dir/include/sql.h],[DB2INCLUDES=\"-I$db2dir/include\"; DB2VERSION=\"$DB2VER\"],[$db2dir/lib64/libdb2.$SOSUFFIX],[DB2LIBSPATH64=\"$db2dir/lib64\"; DB2LIBS64=\"-L$db2dir/lib64 -ldb2\"; DB2VERSION=\"$DB2VER\"],[$db2dir/lib64/libdb2.a],[DB2LIBS64=\"-L$db2dir/lib64 -ldb2\"; DB2STATIC=\"$STATICFLAG\"; DB2VERSION=\"$DB2VER\"])
+				fi
+				FW_CHECK_HEADER_LIB([$db2dir/include/sql.h],[DB2INCLUDES=\"-I$db2dir/include\"; DB2VERSION=\"$DB2VER\"],[$db2dir/lib32/libdb2.$SOSUFFIX],[DB2LIBSPATH32=\"$db2dir/lib32\"; DB2LIBS32=\"-L$db2dir/lib32 -ldb2\"; DB2VERSION=\"$DB2VER\"],[$db2dir/lib32/libdb2.a],[DB2LIBS32=\"-L$db2dir/lib32 -ldb2\"; DB2STATIC=\"$STATICFLAG\"; DB2VERSION=\"$DB2VER\"])
+				FW_CHECK_HEADER_LIB([$db2dir/include/sql.h],[DB2INCLUDES=\"-I$db2dir/include\"; DB2VERSION=\"$DB2VER\"],[$db2dir/lib/libdb2.$SOSUFFIX],[DB2LIBSPATH=\"$db2dir/lib\"; DB2LIBS=\"-L$db2dir/lib -ldb2\"; DB2VERSION=\"$DB2VER\"],[$db2dir/lib/libdb2.a],[DB2LIBS=\"-L$db2dir/lib -ldb2\"; DB2STATIC=\"$STATICFLAG\"; DB2VERSION=\"$DB2VER\"])
+			done
 		fi
 
 		dnl determine if we need to use the 64 or 32 bit libs

@@ -291,6 +291,9 @@
 	fixed odbc test build against iODBC / older ODBC managers (guarded the
 		ODBC 3.8 SQL_DRIVER_AWARE_POOLING_SUPPORTED infotype block and the
 		SQL_NULL_DESC uses, which iODBC does not define)
+	configure now auto-detects DB2 11.5 and later by scanning /opt/ibm/db2
+		and /opt/IBM/db2 for any installed version, and checks lib64 (not
+		just lib) for libdb2, including under --with-db2-prefix
 
 2.1.1 - added tns_admin support
 	fixed sqlr-start ... -strace ...
