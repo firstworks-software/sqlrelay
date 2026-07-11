@@ -6,7 +6,7 @@
 			<listener socket="/tmp/routermaster.socket"/>
 		</listeners>
 		<connections>
-			<connection string="host=mysqlmaster;user=testuser;password=testpassword;db=@HOSTNAME@"/>
+			<connection string="host=mysqlmaster;user=testuser;password=testpassword;db=@HOSTNAME@;charset=latin1"/>
 		</connections>
 	</instance>
 
@@ -15,7 +15,7 @@
 			<listener socket="/tmp/routerslave.socket"/>
 		</listeners>
 		<connections>
-			<connection string="host=mysqlslave;user=testuser;password=testpassword;db=@HOSTNAME@"/>
+			<connection string="host=mysqlslave;user=testuser;password=testpassword;db=@HOSTNAME@;charset=latin1"/>
 		</connections>
 	</instance>
 

@@ -428,11 +428,11 @@ int main(int argc, char **argv) {
 	assertEquals(cur->getColumnLength(3),2);
 	assertEquals(cur->getColumnLength("testsmallint"),2);
 	// testchar/testvarchar are char(40)/varchar(40); the mysql connection
-	// charset is utf8mb4 (4 bytes/char) so the lengths are 160/161
-	assertEquals(cur->getColumnLength(4),160);
-	assertEquals(cur->getColumnLength("testchar"),160);
-	assertEquals(cur->getColumnLength(5),161);
-	assertEquals(cur->getColumnLength("testvarchar"),161);
+	// charset is latin1 (1 byte/char) so the lengths are 40/41
+	assertEquals(cur->getColumnLength(4),40);
+	assertEquals(cur->getColumnLength("testchar"),40);
+	assertEquals(cur->getColumnLength(5),41);
+	assertEquals(cur->getColumnLength("testvarchar"),41);
 	assertEquals(cur->getColumnLength(6),3);
 	assertEquals(cur->getColumnLength("testdate"),3);
 	assertEquals(cur->getColumnLength(7),3);
@@ -694,11 +694,11 @@ int main(int argc, char **argv) {
 	assertEquals(cur->getColumnLength(3),2);
 	assertEquals(cur->getColumnLength("testsmallint"),2);
 	// testchar/testvarchar are char(40)/varchar(40); the mysql connection
-	// charset is utf8mb4 (4 bytes/char) so the lengths are 160/161
-	assertEquals(cur->getColumnLength(4),160);
-	assertEquals(cur->getColumnLength("testchar"),160);
-	assertEquals(cur->getColumnLength(5),161);
-	assertEquals(cur->getColumnLength("testvarchar"),161);
+	// charset is latin1 (1 byte/char) so the lengths are 40/41
+	assertEquals(cur->getColumnLength(4),40);
+	assertEquals(cur->getColumnLength("testchar"),40);
+	assertEquals(cur->getColumnLength(5),41);
+	assertEquals(cur->getColumnLength("testvarchar"),41);
 	assertEquals(cur->getColumnLength(6),3);
 	assertEquals(cur->getColumnLength("testdate"),3);
 	assertEquals(cur->getColumnLength(7),3);

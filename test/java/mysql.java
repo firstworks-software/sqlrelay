@@ -581,11 +581,11 @@ class mysql extends sqlrtest {
 			assertEquals(cur.getColumnLength(10),8);
 			assertEquals(cur.getColumnLength(11),1);
 			// testchar/testvarchar are char(40)/varchar(40); the connection
-			// charset is utf8mb4 (4 bytes/char) so the lengths are 160/161
+			// charset is latin1 (1 byte/char) so the lengths are 40/41
 			assertEquals(
-				cur.getColumnLength(12),160);
+				cur.getColumnLength(12),40);
 			assertEquals(
-				cur.getColumnLength(13),161);
+				cur.getColumnLength(13),41);
 			assertEquals(cur.getColumnLength(14),65535);
 			assertEquals(cur.getColumnLength(15),255);
 			assertEquals(cur.getColumnLength(16),16777215);
@@ -608,13 +608,13 @@ class mysql extends sqlrtest {
 			assertEquals(cur.getColumnLength("testdatetime"),8);
 			assertEquals(cur.getColumnLength("testyear"),1);
 			// testchar/testvarchar are char(40)/varchar(40); the connection
-			// charset is utf8mb4 (4 bytes/char) so the lengths are 160/161
+			// charset is latin1 (1 byte/char) so the lengths are 40/41
 			assertEquals(
 				cur.getColumnLength(
-					"testchar"),160);
+					"testchar"),40);
 			assertEquals(
 				cur.getColumnLength(
-					"testvarchar"),161);
+					"testvarchar"),41);
 			assertEquals(cur.getColumnLength("testtext"),65535);
 			assertEquals(cur.getColumnLength("testtinytext"),255);
 			assertEquals(cur.getColumnLength("testmediumtext"),16777215);

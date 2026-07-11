@@ -534,9 +534,9 @@ if majorversion>3
 	assertEqual(cur.getColumnLength(10),8)
 	assertEqual(cur.getColumnLength(11),1)
 	# testchar/testvarchar are char(40)/varchar(40); the connection charset
-	# is utf8mb4 (4 bytes/char) so the lengths are 160/161
-	assertEqual(cur.getColumnLength(12),160)
-	assertEqual(cur.getColumnLength(13),161)
+	# is latin1 (1 byte/char) so the lengths are 40/41
+	assertEqual(cur.getColumnLength(12),40)
+	assertEqual(cur.getColumnLength(13),41)
 	assertEqual(cur.getColumnLength(14),65535)
 	assertEqual(cur.getColumnLength(15),255)
 	assertEqual(cur.getColumnLength(16),16777215)
@@ -559,9 +559,9 @@ if majorversion>3
 	assertEqual(cur.getColumnLength("testdatetime"),8)
 	assertEqual(cur.getColumnLength("testyear"),1)
 	# testchar/testvarchar are char(40)/varchar(40); the connection charset
-	# is utf8mb4 (4 bytes/char) so the lengths are 160/161
-	assertEqual(cur.getColumnLength("testchar"),160)
-	assertEqual(cur.getColumnLength("testvarchar"),161)
+	# is latin1 (1 byte/char) so the lengths are 40/41
+	assertEqual(cur.getColumnLength("testchar"),40)
+	assertEqual(cur.getColumnLength("testvarchar"),41)
 	assertEqual(cur.getColumnLength("testtext"),65535)
 	assertEqual(cur.getColumnLength("testtinytext"),255)
 	assertEqual(cur.getColumnLength("testmediumtext"),16777215)

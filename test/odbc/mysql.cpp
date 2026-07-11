@@ -7105,9 +7105,10 @@ int main(int argc, char **argv) {
 	assertEqualStmt(stmt,(int)colnamelen,8);
 	assertEqualStmt(stmt,(int)datatype,SQL_CHAR);
 	if (issqlrelay) {
-		assertEqualStmt(stmt,(int)colsize,160);
+		// latin1 connection: char(40) byte width is 40
+		assertEqualStmt(stmt,(int)colsize,40);
 	} else {
-		// MariaDB reports char count (40), not utf8mb4 byte width (160)
+		// MariaDB reports the char count (40)
 		assertEqualStmt(stmt,(int)colsize,40);
 	}
 	assertEqualStmt(stmt,(int)decdigits,0);
@@ -7121,9 +7122,10 @@ int main(int argc, char **argv) {
 	assertEqualStmt(stmt,(int)colnamelen,11);
 	assertEqualStmt(stmt,(int)datatype,SQL_VARCHAR);
 	if (issqlrelay) {
-		assertEqualStmt(stmt,(int)colsize,161);
+		// latin1 connection: varchar(40) byte width + 1 is 41
+		assertEqualStmt(stmt,(int)colsize,41);
 	} else {
-		// MariaDB reports char count (40), not utf8mb4 byte width (161)
+		// MariaDB reports the char count (40)
 		assertEqualStmt(stmt,(int)colsize,40);
 	}
 	assertEqualStmt(stmt,(int)decdigits,0);

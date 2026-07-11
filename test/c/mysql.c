@@ -587,9 +587,9 @@ int main(int argc, char **argv) {
 		assertEqInt(sqlrcur_getColumnLengthByIndex(cur,10),8);
 		assertEqInt(sqlrcur_getColumnLengthByIndex(cur,11),1);
 		// testchar/testvarchar are char(40)/varchar(40); the connection
-		// charset is utf8mb4 (4 bytes/char) so the reported lengths are 160/161
-		assertEqInt(sqlrcur_getColumnLengthByIndex(cur,12),160);
-		assertEqInt(sqlrcur_getColumnLengthByIndex(cur,13),161);
+		// charset is latin1 (1 byte/char) so the reported lengths are 40/41
+		assertEqInt(sqlrcur_getColumnLengthByIndex(cur,12),40);
+		assertEqInt(sqlrcur_getColumnLengthByIndex(cur,13),41);
 		assertEqInt(sqlrcur_getColumnLengthByIndex(cur,14),65535);
 		assertEqInt(sqlrcur_getColumnLengthByIndex(cur,15),255);
 		assertEqInt(sqlrcur_getColumnLengthByIndex(cur,16),16777215);
@@ -612,9 +612,9 @@ int main(int argc, char **argv) {
 		assertEqInt(sqlrcur_getColumnLengthByName(cur,"testdatetime"),8);
 		assertEqInt(sqlrcur_getColumnLengthByName(cur,"testyear"),1);
 		// testchar/testvarchar are char(40)/varchar(40); the connection
-		// charset is utf8mb4 (4 bytes/char) so the reported lengths are 160/161
-		assertEqInt(sqlrcur_getColumnLengthByName(cur,"testchar"),160);
-		assertEqInt(sqlrcur_getColumnLengthByName(cur,"testvarchar"),161);
+		// charset is latin1 (1 byte/char) so the reported lengths are 40/41
+		assertEqInt(sqlrcur_getColumnLengthByName(cur,"testchar"),40);
+		assertEqInt(sqlrcur_getColumnLengthByName(cur,"testvarchar"),41);
 		assertEqInt(sqlrcur_getColumnLengthByName(cur,"testtext"),65535);
 		assertEqInt(sqlrcur_getColumnLengthByName(cur,"testtinytext"),255);
 		assertEqInt(sqlrcur_getColumnLengthByName(cur,"testmediumtext"),

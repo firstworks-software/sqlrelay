@@ -550,9 +550,9 @@ if (dot>-1) {
 		assertEqInt(cur.getColumnLength(10),8);
 		assertEqInt(cur.getColumnLength(11),1);
 		// testchar/testvarchar are char(40)/varchar(40); the connection
-		// charset is utf8mb4 (4 bytes/char) so the lengths are 160/161
-		assertEqInt(cur.getColumnLength(12),160);
-		assertEqInt(cur.getColumnLength(13),161);
+		// charset is latin1 (1 byte/char) so the lengths are 40/41
+		assertEqInt(cur.getColumnLength(12),40);
+		assertEqInt(cur.getColumnLength(13),41);
 		assertEqInt(cur.getColumnLength(14),65535);
 		assertEqInt(cur.getColumnLength(15),255);
 		assertEqInt(cur.getColumnLength(16),16777215);
@@ -575,9 +575,9 @@ if (dot>-1) {
 		assertEqInt(cur.getColumnLength("testdatetime"),8);
 		assertEqInt(cur.getColumnLength("testyear"),1);
 		// testchar/testvarchar are char(40)/varchar(40); the connection
-		// charset is utf8mb4 (4 bytes/char) so the lengths are 160/161
-		assertEqInt(cur.getColumnLength("testchar"),160);
-		assertEqInt(cur.getColumnLength("testvarchar"),161);
+		// charset is latin1 (1 byte/char) so the lengths are 40/41
+		assertEqInt(cur.getColumnLength("testchar"),40);
+		assertEqInt(cur.getColumnLength("testvarchar"),41);
 		assertEqInt(cur.getColumnLength("testtext"),65535);
 		assertEqInt(cur.getColumnLength("testtinytext"),255);
 		assertEqInt(cur.getColumnLength("testmediumtext"),

@@ -568,9 +568,9 @@ namespace SQLRClientTest
                 assertEquals(cur.getColumnLength((UInt32)10), (UInt32)8);
                 assertEquals(cur.getColumnLength((UInt32)11), (UInt32)1);
                 // testchar/testvarchar are char(40)/varchar(40); the connection
-                // charset is utf8mb4 (4 bytes/char) so the lengths are 160/161
-                assertEquals(cur.getColumnLength((UInt32)12), (UInt32)160);
-                assertEquals(cur.getColumnLength((UInt32)13), (UInt32)161);
+                // charset is latin1 (1 byte/char) so the lengths are 40/41
+                assertEquals(cur.getColumnLength((UInt32)12), (UInt32)40);
+                assertEquals(cur.getColumnLength((UInt32)13), (UInt32)41);
                 assertEquals(cur.getColumnLength((UInt32)14), (UInt32)65535);
                 assertEquals(cur.getColumnLength((UInt32)15), (UInt32)255);
                 assertEquals(cur.getColumnLength((UInt32)16), (UInt32)16777215);
@@ -593,9 +593,9 @@ namespace SQLRClientTest
                 assertEquals(cur.getColumnLength("testdatetime"), (UInt32)8);
                 assertEquals(cur.getColumnLength("testyear"), (UInt32)1);
                 // testchar/testvarchar are char(40)/varchar(40); the connection
-                // charset is utf8mb4 (4 bytes/char) so the lengths are 160/161
-                assertEquals(cur.getColumnLength("testchar"), (UInt32)160);
-                assertEquals(cur.getColumnLength("testvarchar"), (UInt32)161);
+                // charset is latin1 (1 byte/char) so the lengths are 40/41
+                assertEquals(cur.getColumnLength("testchar"), (UInt32)40);
+                assertEquals(cur.getColumnLength("testvarchar"), (UInt32)41);
                 assertEquals(cur.getColumnLength("testtext"), (UInt32)65535);
                 assertEquals(cur.getColumnLength("testtinytext"), (UInt32)255);
                 assertEquals(cur.getColumnLength("testmediumtext"), (UInt32)16777215);
