@@ -454,28 +454,29 @@ int	main(int argc, char **argv) {
 			NUM_FLAG|UNSIGNED_FLAG|ZEROFILL_FLAG,MYSQL_TYPE_YEAR);
 	field=mysql_fetch_field(result);
 	assertEquals(mysql_field_tell(result),13);
-	// result-set metadata reports the byte length (utf8mb4: 4 per char) on
-	// both sides here, unlike the list_fields path above
-	assertColumn(field,"testchar",160,0,MYSQL_TYPE_STRING);
+	// result-set metadata reports byte widths: the sqlrelay side follows
+	// the backend's latin1 connection (1 byte/char), the native side the
+	// client's utf8mb4 default (4 bytes/char), like the list_fields path
+	assertColumn(field,"testchar",(issqlrelay)?40:160,0,MYSQL_TYPE_STRING);
 	field=mysql_fetch_field(result);
 	assertEquals(mysql_field_tell(result),14);
 	// native collapses all text subtypes to MYSQL_TYPE_BLOB (#8105) with
 	// flags 16 (BLOB); sqlrelay matches now that text columns map to the
 	// TEXT datatypes rather than blobs (#8111)
-	assertColumn(field,"testtext",262140,
+	assertColumn(field,"testtext",(issqlrelay)?65535:262140,
 			BLOB_FLAG,
 			MYSQL_TYPE_BLOB);
 	field=mysql_fetch_field(result);
 	assertEquals(mysql_field_tell(result),15);
-	assertColumn(field,"testvarchar",160,0,MYSQL_TYPE_VAR_STRING);
+	assertColumn(field,"testvarchar",(issqlrelay)?40:160,0,MYSQL_TYPE_VAR_STRING);
 	field=mysql_fetch_field(result);
 	assertEquals(mysql_field_tell(result),16);
-	assertColumn(field,"testtinytext",1020,
+	assertColumn(field,"testtinytext",(issqlrelay)?255:1020,
 			BLOB_FLAG,
 			MYSQL_TYPE_BLOB);
 	field=mysql_fetch_field(result);
 	assertEquals(mysql_field_tell(result),17);
-	assertColumn(field,"testmediumtext",67108860,
+	assertColumn(field,"testmediumtext",(issqlrelay)?16777215:67108860,
 			BLOB_FLAG,
 			MYSQL_TYPE_BLOB);
 	field=mysql_fetch_field(result);
@@ -537,21 +538,21 @@ int	main(int argc, char **argv) {
 	assertColumn(field,"testyear",4,
 			NUM_FLAG|UNSIGNED_FLAG|ZEROFILL_FLAG,MYSQL_TYPE_YEAR);
 	field=mysql_fetch_field_direct(result,12);
-	assertColumn(field,"testchar",160,0,MYSQL_TYPE_STRING);
+	assertColumn(field,"testchar",(issqlrelay)?40:160,0,MYSQL_TYPE_STRING);
 	field=mysql_fetch_field_direct(result,13);
 	// native collapses all text subtypes to MYSQL_TYPE_BLOB (#8105) with
 	// flags 16 (BLOB); sqlrelay matches now that text maps to TEXT (#8111)
-	assertColumn(field,"testtext",262140,
+	assertColumn(field,"testtext",(issqlrelay)?65535:262140,
 			BLOB_FLAG,
 			MYSQL_TYPE_BLOB);
 	field=mysql_fetch_field_direct(result,14);
-	assertColumn(field,"testvarchar",160,0,MYSQL_TYPE_VAR_STRING);
+	assertColumn(field,"testvarchar",(issqlrelay)?40:160,0,MYSQL_TYPE_VAR_STRING);
 	field=mysql_fetch_field_direct(result,15);
-	assertColumn(field,"testtinytext",1020,
+	assertColumn(field,"testtinytext",(issqlrelay)?255:1020,
 			BLOB_FLAG,
 			MYSQL_TYPE_BLOB);
 	field=mysql_fetch_field_direct(result,16);
-	assertColumn(field,"testmediumtext",67108860,
+	assertColumn(field,"testmediumtext",(issqlrelay)?16777215:67108860,
 			BLOB_FLAG,
 			MYSQL_TYPE_BLOB);
 	field=mysql_fetch_field_direct(result,17);
@@ -1050,25 +1051,25 @@ int	main(int argc, char **argv) {
 			NUM_FLAG|UNSIGNED_FLAG|ZEROFILL_FLAG,MYSQL_TYPE_YEAR);
 	field=mysql_fetch_field(result);
 	assertEquals(mysql_field_tell(result),13);
-	assertColumn(field,"testchar",160,0,MYSQL_TYPE_STRING);
+	assertColumn(field,"testchar",(issqlrelay)?40:160,0,MYSQL_TYPE_STRING);
 	field=mysql_fetch_field(result);
 	assertEquals(mysql_field_tell(result),14);
 	// native collapses all text subtypes to MYSQL_TYPE_BLOB (#8105) with
 	// flags 16 (BLOB); sqlrelay matches now that text maps to TEXT (#8111)
-	assertColumn(field,"testtext",262140,
+	assertColumn(field,"testtext",(issqlrelay)?65535:262140,
 			BLOB_FLAG,
 			MYSQL_TYPE_BLOB);
 	field=mysql_fetch_field(result);
 	assertEquals(mysql_field_tell(result),15);
-	assertColumn(field,"testvarchar",160,0,MYSQL_TYPE_VAR_STRING);
+	assertColumn(field,"testvarchar",(issqlrelay)?40:160,0,MYSQL_TYPE_VAR_STRING);
 	field=mysql_fetch_field(result);
 	assertEquals(mysql_field_tell(result),16);
-	assertColumn(field,"testtinytext",1020,
+	assertColumn(field,"testtinytext",(issqlrelay)?255:1020,
 			BLOB_FLAG,
 			MYSQL_TYPE_BLOB);
 	field=mysql_fetch_field(result);
 	assertEquals(mysql_field_tell(result),17);
-	assertColumn(field,"testmediumtext",67108860,
+	assertColumn(field,"testmediumtext",(issqlrelay)?16777215:67108860,
 			BLOB_FLAG,
 			MYSQL_TYPE_BLOB);
 	field=mysql_fetch_field(result);

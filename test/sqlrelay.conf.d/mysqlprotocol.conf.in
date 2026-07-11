@@ -6,7 +6,7 @@
 			<listener protocol="mysql" port="3306"/>
 		</listeners>
 		<connections>
-			<connection string="host=mysql;user=testuser;password=testpassword;db=@HOSTNAME@;foundrows=yes"/>
+			<connection string="host=mysql;user=testuser;password=testpassword;db=@HOSTNAME@;charset=latin1;foundrows=yes"/>
 		</connections>
 	</instance>
 
