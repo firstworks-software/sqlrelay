@@ -288,6 +288,9 @@
 	firebird connection now reports the detailed status-vector error
 		instead of the generic sqlcode text (which hid the real cause,
 		e.g. the -901 "system error" message)
+	fixed odbc test build against iODBC / older ODBC managers (guarded the
+		ODBC 3.8 SQL_DRIVER_AWARE_POOLING_SUPPORTED infotype block and the
+		SQL_NULL_DESC uses, which iODBC does not define)
 
 2.1.1 - added tns_admin support
 	fixed sqlr-start ... -strace ...

@@ -3517,6 +3517,7 @@ int main(int argc, char **argv) {
 
 	// SQL_DRIVER_AWARE_POOLING_SUPPORTED
 	// freetds doesn't implement this infotype
+	#if (ODBCVER >= 0x0380)
 	stdoutput.printf("  SQL_DRIVER_AWARE_POOLING_SUPPORTED\n");
 	erg=SQLGetInfo(dbc,SQL_DRIVER_AWARE_POOLING_SUPPORTED,
 			(SQLPOINTER)&uintval,
@@ -3530,6 +3531,7 @@ int main(int argc, char **argv) {
 		assertFailureDbc(dbc,erg);
 	}
 	stdoutput.printf("\n");
+	#endif
 
 
 	#if (ODBCVER >= 0x0380)
@@ -4469,9 +4471,11 @@ int main(int argc, char **argv) {
 	assertSuccessStmt(stmt,erg);
 	assertEqualStmt(stmt,(int)(stmtptrval==stmtptrinit),1);
 	// SQL_NULL_DESC resets to the implicit descriptor
+	#if defined(SQL_NULL_DESC)
 	erg=SQLSetStmtAttr(stmt,SQL_ATTR_APP_ROW_DESC,
 			(SQLPOINTER)SQL_NULL_DESC,SQL_IS_POINTER);
 	assertSuccessStmt(stmt,erg);
+	#endif
 	stdoutput.printf("\n");
 
 
@@ -4487,9 +4491,11 @@ int main(int argc, char **argv) {
 			(SQLPOINTER)&stmtptrval,0,&stmtstrlen);
 	assertSuccessStmt(stmt,erg);
 	assertEqualStmt(stmt,(int)(stmtptrval==stmtptrinit),1);
+	#if defined(SQL_NULL_DESC)
 	erg=SQLSetStmtAttr(stmt,SQL_ATTR_APP_PARAM_DESC,
 		(SQLPOINTER)SQL_NULL_DESC,SQL_IS_POINTER);
 	assertSuccessStmt(stmt,erg);
+	#endif
 	stdoutput.printf("\n");
 
 
