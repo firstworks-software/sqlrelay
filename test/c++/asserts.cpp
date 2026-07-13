@@ -178,6 +178,20 @@ void assertEquals(uint64_t actual, int expected) {
 	}
 }
 
+// distinct from the (uint64_t,int) overload above so a uint64_t expected value
+// (e.g. a pointer cast to uint64_t) is not silently truncated to int
+void assertEquals(uint64_t actual, uint64_t expected) {
+
+	if (actual==expected) {
+		stdoutput.printf("%s ",success);
+	} else {
+		stdoutput.printf("%s\n",failure);
+		stdoutput.printf("%lld!=%lld\n",actual,expected);
+		printErrors();
+		status=1;
+	}
+}
+
 void assertEquals(double actual, double expected) {
 
 	if (actual==expected) {

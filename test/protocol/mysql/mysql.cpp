@@ -119,8 +119,13 @@ int	main(int argc, char **argv) {
 	field=mysql_fetch_field_direct(result,0);
 	// the mariadb connector labels the mysql_list_dbs column with the
 	// wildcard it filters on ("Database (%)"), against both sqlrelay and a
-	// native server
+	// native server; the mysql 8.4 client sends a plain SHOW DATABASES, so
+	// the column is just "Database"
+	#ifdef MARIADB_BASE_VERSION
 	assertEquals(field->name,"Database (%)");
+	#else
+	assertEquals(field->name,"Database");
+	#endif
 	mysql_free_result(result);
 	stdoutput.printf("\n");
 
@@ -139,16 +144,23 @@ int	main(int argc, char **argv) {
 	assertEquals(mysql_num_fields(result),1);
 	field=mysql_fetch_field_direct(result,0);
 	// like mysql_list_dbs above, the mariadb connector appends the wildcard
-	// it filters on, so the column is "Tables_in_<db> (%)"; the backend db
-	// is the short hostname in both modes (issqlrelay's mysqlprotocol.conf
-	// connects to db=@HOSTNAME@, native connects with db=hostname)
+	// it filters on, so the column is "Tables_in_<db> (%)"; the mysql 8.4
+	// client sends a plain SHOW TABLES, so it is just "Tables_in_<db>".  the
+	// backend db is the short hostname in both modes (issqlrelay's
+	// mysqlprotocol.conf connects to db=@HOSTNAME@, native connects with
+	// db=hostname)
 	char	*tableshostname=sys::getHostName();
 	char	*tableshostnamedot=
 			(char *)charstring::findFirstOrEnd(tableshostname,'.');
 	*tableshostnamedot='\0';
 	char	tablesincolumn[256];
+	#ifdef MARIADB_BASE_VERSION
 	charstring::printf(tablesincolumn,sizeof(tablesincolumn),
 						"Tables_in_%s (%%)",tableshostname);
+	#else
+	charstring::printf(tablesincolumn,sizeof(tablesincolumn),
+						"Tables_in_%s",tableshostname);
+	#endif
 	assertEquals(field->name,tablesincolumn);
 	delete[] tableshostname;
 	row=mysql_fetch_row(result);
@@ -160,9 +172,15 @@ int	main(int argc, char **argv) {
 
 	stdoutput.printf("mysql_list_fields\n");
 	result=mysql_list_fields(&mysql,"testtable",NULL);
-	// mysql_field_count reflects the last query, not mysql_list_fields,
-	// so it is 0 here (mysql_num_fields on the result gives the real count)
+	// with the mariadb connector mysql_field_count reflects the last query,
+	// not mysql_list_fields, so it is 0 here; the mysql 8.4 client reports
+	// the list_fields count instead.  mysql_num_fields on the result gives
+	// the real count (19) in both
+	#ifdef MARIADB_BASE_VERSION
 	assertEquals(mysql_field_count(&mysql),0);
+	#else
+	assertEquals(mysql_field_count(&mysql),19);
+	#endif
 	assertEquals(mysql_num_fields(result),19);
 	stdoutput.printf("\n");
 
