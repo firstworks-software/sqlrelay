@@ -7,16 +7,16 @@
 = Getting Started With IBM DB2 =
 
 * [#installation Installation]
-  * [#older For Older Versions of DB2]
-    * [#rpm Install RPM]
-    * [#env PATH Environment Variable]
-  * [#db2 DB2 Installation]
+ * [#older For Older Versions of DB2]
+  * [#rpm Install RPM]
+  * [#env PATH Environment Variable]
+ * [#db2 DB2 Installation]
 * [#creating Creating a Database]
 * [#accessing Accessing a Database]
-  * [#accessinglocal Accessing a Local Database]
-  * [#accessingremote Accessing a Remote Database]
-  * [#usingdb2 Using the DB2 Client Program]
-  * [#usingdb2icc Using the DB2 Information and Control Centers]
+ * [#accessinglocal Accessing a Local Database]
+ * [#accessingremote Accessing a Remote Database]
+ * [#usingdb2 Using the DB2 Client Program]
+ * [#usingdb2icc Using the DB2 Information and Control Centers]
 
 [=#installation]
 
