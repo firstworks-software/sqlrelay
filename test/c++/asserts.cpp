@@ -178,15 +178,17 @@ void assertEquals(uint64_t actual, int expected) {
 	}
 }
 
-// distinct from the (uint64_t,int) overload above so a uint64_t expected value
-// (e.g. a pointer cast to uint64_t) is not silently truncated to int
-void assertEquals(uint64_t actual, uint64_t expected) {
+// compare pointers as pointers, not as integers - casting a pointer to
+// uint64_t and using the (uint64_t,int) overload silently truncated the
+// expected value to 32 bits (a (uint64_t,uint64_t) overload instead made
+// assertEquals(uint32_t,unsigned long) calls ambiguous)
+void assertEquals(const void *actual, const void *expected) {
 
 	if (actual==expected) {
 		stdoutput.printf("%s ",success);
 	} else {
 		stdoutput.printf("%s\n",failure);
-		stdoutput.printf("%lld!=%lld\n",actual,expected);
+		stdoutput.printf("%p!=%p\n",actual,expected);
 		printErrors();
 		status=1;
 	}

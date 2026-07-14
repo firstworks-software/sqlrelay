@@ -1575,8 +1575,8 @@ void exportTests() {
 	testsqlrexportcsv	tsec;
 	tsec.setSqlrConnection(con);
 	tsec.setSqlrCursor(cur);
-	assertEquals((uint64_t)tsec.getSqlrConnection(),(uint64_t)con);
-	assertEquals((uint64_t)tsec.getSqlrCursor(),(uint64_t)cur);
+	assertEquals((const void *)tsec.getSqlrConnection(),(const void *)con);
+	assertEquals((const void *)tsec.getSqlrCursor(),(const void *)cur);
 	stdoutput.printf("\n");
 
 
@@ -1585,8 +1585,8 @@ void exportTests() {
 	testsqlrexportxml	tsex;
 	tsex.setSqlrConnection(con);
 	tsex.setSqlrCursor(cur);
-	assertEquals((uint64_t)tsex.getSqlrConnection(),(uint64_t)con);
-	assertEquals((uint64_t)tsex.getSqlrCursor(),(uint64_t)cur);
+	assertEquals((const void *)tsex.getSqlrConnection(),(const void *)con);
+	assertEquals((const void *)tsex.getSqlrCursor(),(const void *)cur);
 	stdoutput.printf("\n");
 
 
@@ -1595,8 +1595,8 @@ void exportTests() {
 	testsqlrexporttable	tset;
 	tset.setSqlrConnection(con);
 	tset.setSqlrCursor(cur);
-	assertEquals((uint64_t)tset.getSqlrConnection(),(uint64_t)con);
-	assertEquals((uint64_t)tset.getSqlrCursor(),(uint64_t)cur);
+	assertEquals((const void *)tset.getSqlrConnection(),(const void *)con);
+	assertEquals((const void *)tset.getSqlrCursor(),(const void *)cur);
 	stdoutput.printf("\n");
 
 	// iterate through options...
@@ -1865,8 +1865,8 @@ void importTests() {
 	tsic.setSqlrConnection(con);
 	tsic.setSqlrCursor(cur);
 	tsic.setDbType(con->identify());
-	assertEquals((uint64_t)tsic.getSqlrConnection(),(uint64_t)con);
-	assertEquals((uint64_t)tsic.getSqlrCursor(),(uint64_t)cur);
+	assertEquals((const void *)tsic.getSqlrConnection(),(const void *)con);
+	assertEquals((const void *)tsic.getSqlrCursor(),(const void *)cur);
 	stdoutput.printf("\n");
 
 
@@ -1876,8 +1876,8 @@ void importTests() {
 	tsix.setSqlrConnection(con);
 	tsix.setSqlrCursor(cur);
 	tsix.setDbType(con->identify());
-	assertEquals((uint64_t)tsix.getSqlrConnection(),(uint64_t)con);
-	assertEquals((uint64_t)tsix.getSqlrCursor(),(uint64_t)cur);
+	assertEquals((const void *)tsix.getSqlrConnection(),(const void *)con);
+	assertEquals((const void *)tsix.getSqlrCursor(),(const void *)cur);
 	stdoutput.printf("\n");
 
 	// iterate through options...
