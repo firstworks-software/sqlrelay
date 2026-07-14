@@ -26,29 +26,44 @@
 
 <p>For example, version 12.5:</p>
 
-<pre>rpm -i sybase-openclient-12.5.0.1ESD-1.i386.rpm \
-sybase-common-12.5.0.1DE-1.i386.rpm \
-sybase-ase-12.5.0.1ESD-1.i386.rpm
-</pre>
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt>rpm <font color="#990000">-</font><font color="#008080">i</font> sybase<font color="#990000">-</font>openclient<font color="#990000">-</font><font color="#993399">12.5</font><font color="#990000">.</font><font color="#993399">0</font><font color="#990000">.</font>1ESD<font color="#990000">-</font><font color="#993399">1</font><font color="#990000">.</font>i386<font color="#990000">.</font>rpm <font color="#990000">\</font>
+sybase<font color="#990000">-</font>common<font color="#990000">-</font><font color="#993399">12.5</font><font color="#990000">.</font><font color="#993399">0</font><font color="#990000">.</font>1DE<font color="#990000">-</font><font color="#993399">1</font><font color="#990000">.</font>i386<font color="#990000">.</font>rpm <font color="#990000">\</font>
+sybase<font color="#990000">-</font>ase<font color="#990000">-</font><font color="#993399">12.5</font><font color="#990000">.</font><font color="#993399">0</font><font color="#990000">.</font>1ESD<font color="#990000">-</font><font color="#993399">1</font><font color="#990000">.</font>i386<font color="#990000">.</font>rpm</tt></pre>
 
+</blockquote>
 <p>To install them on Debian Linux, install ''alien'' by running ''apt-get install alien'' then convert the RPM's to DEB's uisng ''alien --to-deb'' and install them them with ''dpkg''.</p>
 
 <p>For example, version 12.5:</p>
 
-<pre>alien --to-deb sybase-openclient-12.5.0.1ESD-1.i386.rpm
-alien --to-deb sybase-common-12.5.0.1DE-1.i386.rpm
-alien --to-deb sybase-ase-12.5.0.1ESD-1.i386.rpm
-dpkg -i sybase-openclient-12.5.0.1ESD-1.i386.deb
-dpkg -i sybase-common-12.5.0.1DE-1.i386.deb
-dpkg -i sybase-ase-12.5.0.1ESD-1.i386.deb
-</pre>
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt>alien <font color="#990000">--</font>to<font color="#990000">-</font><font color="#008080">deb</font> sybase<font color="#990000">-</font>openclient<font color="#990000">-</font><font color="#993399">12.5</font><font color="#990000">.</font><font color="#993399">0</font><font color="#990000">.</font>1ESD<font color="#990000">-</font><font color="#993399">1</font><font color="#990000">.</font>i386<font color="#990000">.</font>rpm
+alien <font color="#990000">--</font>to<font color="#990000">-</font><font color="#008080">deb</font> sybase<font color="#990000">-</font>common<font color="#990000">-</font><font color="#993399">12.5</font><font color="#990000">.</font><font color="#993399">0</font><font color="#990000">.</font>1DE<font color="#990000">-</font><font color="#993399">1</font><font color="#990000">.</font>i386<font color="#990000">.</font>rpm
+alien <font color="#990000">--</font>to<font color="#990000">-</font><font color="#008080">deb</font> sybase<font color="#990000">-</font>ase<font color="#990000">-</font><font color="#993399">12.5</font><font color="#990000">.</font><font color="#993399">0</font><font color="#990000">.</font>1ESD<font color="#990000">-</font><font color="#993399">1</font><font color="#990000">.</font>i386<font color="#990000">.</font>rpm
+dpkg <font color="#990000">-</font><font color="#008080">i</font> sybase<font color="#990000">-</font>openclient<font color="#990000">-</font><font color="#993399">12.5</font><font color="#990000">.</font><font color="#993399">0</font><font color="#990000">.</font>1ESD<font color="#990000">-</font><font color="#993399">1</font><font color="#990000">.</font>i386<font color="#990000">.</font>deb
+dpkg <font color="#990000">-</font><font color="#008080">i</font> sybase<font color="#990000">-</font>common<font color="#990000">-</font><font color="#993399">12.5</font><font color="#990000">.</font><font color="#993399">0</font><font color="#990000">.</font>1DE<font color="#990000">-</font><font color="#993399">1</font><font color="#990000">.</font>i386<font color="#990000">.</font>deb
+dpkg <font color="#990000">-</font><font color="#008080">i</font> sybase<font color="#990000">-</font>ase<font color="#990000">-</font><font color="#993399">12.5</font><font color="#990000">.</font><font color="#993399">0</font><font color="#990000">.</font>1ESD<font color="#990000">-</font><font color="#993399">1</font><font color="#990000">.</font>i386<font color="#990000">.</font>deb</tt></pre>
 
+</blockquote>
 <p>Version 11.0.3.3 does not create a sybase user when the RPMS are installed. After installation, you must run the following commands as root.</p>
 
-<pre>export SYBASE=/opt/sybase
-/opt/sybase/install/sybinstall.sh
-</pre>
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt><b><font color="#0000FF">export</font></b> SYBASE<font color="#990000">=/</font>opt<font color="#990000">/</font>sybase
+<font color="#990000">/</font>opt<font color="#990000">/</font>sybase<font color="#990000">/</font>install<font color="#990000">/</font>sybinstall<font color="#990000">.</font>sh</tt></pre>
 
+</blockquote>
 <p>Answer Yes or y to all questions. The script will create a sybase user and prompt you for a password.</p>
 
 <a name="creating"/><h2>Creating a Database</h2>
@@ -71,15 +86,25 @@ dpkg -i sybase-ase-12.5.0.1ESD-1.i386.deb
 
 <p>For Bourne shells:</p>
 
-<pre>PATH=$PATH:/opt/sybase/OCS/bin
-export PATH
-</pre>
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt>PATH<font color="#990000">=</font>$PATH<font color="#990000">:/</font>opt<font color="#990000">/</font>sybase<font color="#990000">/</font>OCS<font color="#990000">/</font>bin
+<b><font color="#0000FF">export</font></b> PATH</tt></pre>
 
+</blockquote>
 <p>For C-shells:</p>
 
-<pre>setenv PATH ${PATH}:/opt/sybase/OCS/bin
-</pre>
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt><font color="#008080">setenv</font> PATH $<font color="#FF0000">{</font>PATH<font color="#FF0000">}</font><font color="#990000">:/</font>opt<font color="#990000">/</font>sybase<font color="#990000">/</font>OCS<font color="#990000">/</font>bin</tt></pre>
 
+</blockquote>
 <p>Now log out and log back in and you can use the ''isql'' client to create a database.</p>
 
 <p>The initialization process should have created a server named ''LOCALHOST'' (or ''localhost'' for version 11.9.2 or older) with an administrative user named ''sa''. Versions 15.7 and newer allow you to set the password for the ''sa'' user during installation. In versions 15.5 and older, the user is created with no password.</p>
@@ -88,122 +113,217 @@ export PATH
 
 <p>For version 12.5 or newer:</p>
 
-<pre>isql -U sa -S LOCALHOST
-</pre>
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt>isql <font color="#990000">-</font><font color="#008080">U</font> sa <font color="#990000">-</font>S LOCALHOST</tt></pre>
 
+</blockquote>
 <p>For version 11.9.2 or older:</p>
 
-<pre>isql -U sa -S localhost
-</pre>
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt>isql <font color="#990000">-</font><font color="#008080">U</font> sa <font color="#990000">-</font>S localhost</tt></pre>
 
+</blockquote>
 <p>At the prompt, run the following stored procedure to give ''sa'' the password ''Passw0rd''.</p>
 
-<pre>sp_password null,"Passw0rd","sa"
-go
-</pre>
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt><font color="#008080">sp_password</font> null<font color="#990000">,</font><font color="#FF0000">"Passw0rd"</font><font color="#990000">,</font><font color="#FF0000">"sa"</font>
+go</tt></pre>
 
+</blockquote>
 <p>Now logout.</p>
 
-<pre>quit
-</pre>
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt>quit</tt></pre>
 
+</blockquote>
 <p>Log back in using the following command. When it prompts you for a password, type ''Passw0rd''.</p>
 
 <p>For version 12.5 or newer:</p>
 
-<pre>isql -U sa -S LOCALHOST
-</pre>
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt>isql <font color="#990000">-</font><font color="#008080">U</font> sa <font color="#990000">-</font>S LOCALHOST</tt></pre>
 
+</blockquote>
 <p>For version 11.9.2 or older:</p>
 
-<pre>isql -U sa -S localhost
-</pre>
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt>isql <font color="#990000">-</font><font color="#008080">U</font> sa <font color="#990000">-</font>S localhost</tt></pre>
 
+</blockquote>
 <p>Though you could create your own tables using the ''sa'' user and the system database, it's not a good idea. You should create a user database. The following commands create a database named ''testdb''.</p>
 
-<pre>create database testdb
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt>create database testdb
 go
-quit
-</pre>
+quit</tt></pre>
 
+</blockquote>
 <p>Now log into the database you just created with the following command.</p>
 
 <p>For version 12.5 or newer:</p>
 
-<pre>isql -U sa -S LOCALHOST -D testdb
-</pre>
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt>isql <font color="#990000">-</font><font color="#008080">U</font> sa <font color="#990000">-</font><font color="#008080">S</font> LOCALHOST <font color="#990000">-</font>D testdb</tt></pre>
 
+</blockquote>
 <p>For version 11.9.2 or older:</p>
 
-<pre>isql -U sa -S localhost -D testdb
-</pre>
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt>isql <font color="#990000">-</font><font color="#008080">U</font> sa <font color="#990000">-</font><font color="#008080">S</font> localhost <font color="#990000">-</font>D testdb</tt></pre>
 
+</blockquote>
 <p>Creating a user is a 2 step process. First a universal login must be created, then it must be added as a user to a particular database. Execute the following stored procedures and queries to create a login named ''testuser'' with password ''testpassword'', add it as a user of ''testdb'' and give it all permissions.</p>
 
-<pre>sp_addlogin "testuser","testpassword"
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt>sp_addlogin <font color="#FF0000">"testuser"</font><font color="#990000">,</font><font color="#FF0000">"testpassword"</font>
 go
-sp_adduser "testuser"
+sp_adduser <font color="#FF0000">"testuser"</font>
 go
 grant all to testuser
 go
-quit
-</pre>
+quit</tt></pre>
 
+</blockquote>
 <p>Now you can log in as ''testuser'' using the following command. When promted for a password, enter ''testpassword''.</p>
 
 <p>For version 12.5 or newer:</p>
 
-<pre>isql -U testuser -S LOCALHOST -D testdb
-</pre>
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt>isql <font color="#990000">-</font><font color="#008080">U</font> testuser <font color="#990000">-</font><font color="#008080">S</font> LOCALHOST <font color="#990000">-</font>D testdb</tt></pre>
 
+</blockquote>
 <p>For version 11.9.2 or older:</p>
 
-<pre>isql -U testuser -S localhost -D testdb
-</pre>
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt>isql <font color="#990000">-</font><font color="#008080">U</font> testuser <font color="#990000">-</font><font color="#008080">S</font> localhost <font color="#990000">-</font>D testdb</tt></pre>
 
+</blockquote>
 <p>A common problem when using ASE in this minimal configuration is running out of log space. If you run out of log space, queries will hang until space is freed up. You might get an error like this:</p>
 
-<pre>The transaction log in database testdb is almost full.  Your transaction is
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt>The transaction log in database testdb is <font color="#008080">almost</font> full<font color="#990000">.</font>  Your transaction is
 
-being suspended until space is made available in the log.
-</pre>
+being suspended until space is made available in <font color="#008080">the</font> log<font color="#990000">.</font></tt></pre>
 
+</blockquote>
 <p>To dump the log, log into the testdb database as the ''sa'' user as follows. When it promts you for a password, type ''Passw0rd''.</p>
 
 <p>For version 12.5 or newer:</p>
 
-<pre>isql -U sa -S LOCALHOST -D testdb
-</pre>
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt>isql <font color="#990000">-</font><font color="#008080">U</font> sa <font color="#990000">-</font><font color="#008080">S</font> LOCALHOST <font color="#990000">-</font>D testdb</tt></pre>
 
+</blockquote>
 <p>For version 11.9.2 or older:</p>
 
-<pre>isql -U sa -S localhost -D testdb
-</pre>
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt>isql <font color="#990000">-</font><font color="#008080">U</font> sa <font color="#990000">-</font><font color="#008080">S</font> localhost <font color="#990000">-</font>D testdb</tt></pre>
 
+</blockquote>
 <p>Once logged in, execute the following series of commands.</p>
 
-<pre>dump tran testdb with no_log
-go
-</pre>
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt>dump tran testdb <font color="#008080">with</font> no_log
+go</tt></pre>
 
+</blockquote>
 <p>A longer term solution is to configure the database to truncate its log at each checkpoint. To configure this, log into the master database as the ''sa'' user as follows. When it prompts you for a password, type ''Passw0rd''.</p>
 
 <p>For version 12.5 or newer:</p>
 
-<pre>isql -U sa -S LOCALHOST -D master
-</pre>
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt>isql <font color="#990000">-</font><font color="#008080">U</font> sa <font color="#990000">-</font><font color="#008080">S</font> LOCALHOST <font color="#990000">-</font>D master</tt></pre>
 
+</blockquote>
 <p>For version 11.9.2 or older:</p>
 
-<pre>isql -U sa -S localhost -D master
-</pre>
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt>isql <font color="#990000">-</font><font color="#008080">U</font> sa <font color="#990000">-</font><font color="#008080">S</font> localhost <font color="#990000">-</font>D master</tt></pre>
 
+</blockquote>
 <p>Once logged in, execute the following series of commands.</p>
 
-<pre>sp_dboption testdb, 'trunc log on chkpt', true
-go
-</pre>
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt><font color="#008080">sp_dboption</font> testdb<font color="#990000">,</font> <font color="#FF0000">'trunc log on chkpt'</font><font color="#990000">,</font> <b><font color="#0000FF">true</font></b>
+go</tt></pre>
 
+</blockquote>
 <p>This is not something you should do in production. Without the transaction log, there is no way to recover from certain failure conditions. It is only safe to do in development or test environments where data could be reconstructed or recovered some other way.</p>
 
 <p>This should be enough to get you started. To set up more complex configurations, consult the ASE documentation.</p>
@@ -218,125 +338,150 @@ go
 
 <p>For Bourne shells:</p>
 
-<pre>SYBASE=/opt/sybase
-export SYBASE
-</pre>
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt>SYBASE<font color="#990000">=/</font>opt<font color="#990000">/</font>sybase
+<b><font color="#0000FF">export</font></b> SYBASE</tt></pre>
 
+</blockquote>
 <p>For C-shells:</p>
 
-<pre>setenv SYBASE /opt/sybase
-</pre>
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt><font color="#008080">setenv</font> SYBASE <font color="#990000">/</font>opt<font color="#990000">/</font>sybase</tt></pre>
 
+</blockquote>
 <p>Now log out and log back in and you can use the ''isql'' client to access the database.</p>
 
 <p>''isql'' requires a <b>username</b>, <b>server</b> and <b>database</b> name to access a database. The <b>server</b> parameter does not refer to the hostname of the machine you want to connect to, but rather to an entry in the ''$SYBASE/interfaces'' file. When a database is created, the process puts an entry in the ''$SYBASE/interfaces'' file on the machine the database was created on. This entry can then be copied into the ''$SYBASE/interfaces'' file on other machines to provide them remote access to the database. Below is a sample entry for a server named ''REMOTEHOST'' which refers to an instance of ASE running on ''testhost.testdomain.com'', on port 4100, accessible over tcp on ethernet and a similar entry for a server named ''LOCALHOST'' which is running on ''localhost''.</p>
 
-<pre>REMOTEHOST
- master tcp ether testhost.testdomain.com 4100
- query tcp ether testhost.testdomain.com 4100
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt>REMOTEHOST
+ master tcp <font color="#008080">ether</font> testhost<font color="#990000">.</font>testdomain<font color="#990000">.</font>com <font color="#993399">4100</font>
+ query tcp <font color="#008080">ether</font> testhost<font color="#990000">.</font>testdomain<font color="#990000">.</font>com <font color="#993399">4100</font>
 
 LOCALHOST
- master tcp ether localhost 4100
- query tcp ether localhost 4100
-</pre>
+ master tcp ether localhost <font color="#993399">4100</font>
+ query tcp ether localhost <font color="#993399">4100</font></tt></pre>
 
+</blockquote>
 <p>Similar entries can be made to access servers running on other hosts.</p>
 
 <p>To access the database ''testdb'' on the server ''LOCALHOST'' as the user ''testuser'', run the following command.</p>
 
-<pre>isql -U testuser -S LOCALHOST -D testdb
-</pre>
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt>isql <font color="#990000">-</font><font color="#008080">U</font> testuser <font color="#990000">-</font><font color="#008080">S</font> LOCALHOST <font color="#990000">-</font>D testdb</tt></pre>
 
+</blockquote>
 <p>Once you're connected to the database, the ''isql'' client prompts you to enter a query. Queries may be split across multiple lines. To run a query, type go on a line by itself. To exit, type quit on a line by itself.</p>
 
 <p>A sample ''isql''session follows.</p>
 
-<pre>[user@localhost user]$ /opt/sybase/OCS/bin/isql -U testuser -S LOCALHOST -D testdb
-Password: 
-1&gt; create table testtable (
-2&gt; col1 char(40),
-3&gt; col2 integer
-4&gt; )
-5&gt; go
-1&gt; select name from sysobjects where type='U'
-2&gt; go
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt><font color="#990000">[</font>user@<font color="#008080">localhost</font> user<font color="#990000">]</font>$ <font color="#990000">/</font>opt<font color="#990000">/</font>sybase<font color="#990000">/</font>OCS<font color="#990000">/</font>bin<font color="#990000">/</font>isql <font color="#990000">-</font><font color="#008080">U</font> testuser <font color="#990000">-</font><font color="#008080">S</font> LOCALHOST <font color="#990000">-</font>D testdb
+<b><font color="#008080">Password: </font></b>
+<font color="#993399">1</font><font color="#990000">&gt;</font> create <font color="#008080">table</font> <b><font color="#000000">testtable</font></b> <font color="#990000">(</font>
+<font color="#993399">2</font><font color="#990000">&gt;</font> <font color="#008080">col1</font> <font color="#009900">char</font><font color="#990000">(</font><font color="#993399">40</font><font color="#990000">),</font>
+<font color="#993399">3</font><font color="#990000">&gt;</font> col2 integer
+<font color="#993399">4</font><font color="#990000">&gt;</font> <font color="#990000">)</font>
+<font color="#993399">5</font><font color="#990000">&gt;</font> go
+<font color="#993399">1</font><font color="#990000">&gt;</font> select name from sysobjects <font color="#008080">where</font> type<font color="#990000">=</font><font color="#FF0000">'U'</font>
+<font color="#993399">2</font><font color="#990000">&gt;</font> go
  name                           
- ------------------------------ 
+ <font color="#990000">------------------------------</font> 
  testtable                      
 
-(1 row affected)
-1&gt; sp_help testtable
-2&gt; go
+<font color="#990000">(</font><font color="#993399">1</font> <font color="#008080">row</font> affected<font color="#990000">)</font>
+<font color="#993399">1</font><font color="#990000">&gt;</font> sp_help testtable
+<font color="#993399">2</font><font color="#990000">&gt;</font> go
  Name                           Owner                         
          Type
- ------------------------------ ------------------------------ ---------------------- 
+ <font color="#990000">------------------------------</font> <font color="#990000">------------------------------</font> <font color="#990000">----------------------</font> 
  testtable                      testuser                      user table             
 
-(1 row affected)
- Data_located_on_segment        When_created               
- ------------------------------ -------------------------- 
- default                               Jan 14 2002 12:24PM 
- Column_name     Type            Length Prec Scale Nulls Default_name   
+<font color="#990000">(</font><font color="#993399">1</font> <font color="#008080">row</font> affected<font color="#990000">)</font>
+ <font color="#008080">Data_located_on_segment</font>        When_created               
+ <font color="#990000">------------------------------</font> <font color="#990000">--------------------------</font> 
+ <b><font color="#0000FF">default</font></b>                               Jan <font color="#993399">14</font> <font color="#993399">2002</font> <font color="#993399">12</font><font color="#990000">:</font>24PM 
+ Column_name     Type            Length Prec Scale <font color="#008080">Nulls</font> Default_name   
          Rule_name       Identity 
- --------------- --------------- ------ ---- ----- ----- --------------- --------------- -------- 
- col1            char                40 NULL  NULL     0 NULL           NULL                   0 
- col2            int                  4 NULL  NULL     0 NULL           NULL                   0 
-Object does not have any indexes.
-No defined keys for this object.
-Object is not partitioned.
+ <font color="#990000">---------------</font> <font color="#990000">---------------</font> <font color="#990000">------</font> <font color="#990000">----</font> <font color="#990000">-----</font> <font color="#990000">-----</font> <font color="#990000">---------------</font> <font color="#990000">---------------</font> <font color="#990000">--------</font> 
+ col1            <font color="#009900">char</font>                <font color="#993399">40</font> NULL  NULL     <font color="#993399">0</font> NULL           NULL                   <font color="#993399">0</font> 
+ col2            <font color="#009900">int</font>                  <font color="#993399">4</font> NULL  NULL     <font color="#993399">0</font> NULL           NULL                   <font color="#993399">0</font> 
+Object does not have <font color="#008080">any</font> indexes<font color="#990000">.</font>
+No defined keys <b><font color="#0000FF">for</font></b> <b><font color="#0000FF">this</font></b> object<font color="#990000">.</font>
+Object is <font color="#008080">not</font> partitioned<font color="#990000">.</font>
 Lock scheme Allpages
-The attribute 'exp_row_size' is not applicable to tables with allpages lock scheme.
+<font color="#008080">The</font> attribute <font color="#FF0000">'exp_row_size'</font> is not applicable to tables with allpages <font color="#008080">lock</font> scheme<font color="#990000">.</font>
  
- exp_row_size reservepagegap fillfactor max_rows_per_page 
- ------------ -------------- ---------- ----------------- 
-            1              0          0                 0 
-(return status = 0)
-1&gt; insert into testtable values ('hello',50)
-2&gt; go
-(1 row affected)
-1&gt; insert into testtable values ('hi',60)
-2&gt; go
-(1 row affected)
-1&gt; insert into testtable values ('bye',70)
-2&gt; go
-(1 row affected)
-1&gt; select * from testtable
-2&gt; go
+ exp_row_size reservepagegap <font color="#008080">fillfactor</font> max_rows_per_page 
+ <font color="#990000">------------</font> <font color="#990000">--------------</font> <font color="#990000">----------</font> <font color="#990000">-----------------</font> 
+            <font color="#993399">1</font>              <font color="#993399">0</font>          <font color="#993399">0</font>                 <font color="#993399">0</font> 
+<font color="#990000">(</font><b><font color="#0000FF">return</font></b> status <font color="#990000">=</font> <font color="#993399">0</font><font color="#990000">)</font>
+<font color="#993399">1</font><font color="#990000">&gt;</font> insert into <font color="#008080">testtable</font> <b><font color="#000000">values</font></b> <font color="#990000">(</font><font color="#FF0000">'hello'</font><font color="#990000">,</font><font color="#993399">50</font><font color="#990000">)</font>
+<font color="#993399">2</font><font color="#990000">&gt;</font> go
+<font color="#990000">(</font><font color="#993399">1</font> <font color="#008080">row</font> affected<font color="#990000">)</font>
+<font color="#993399">1</font><font color="#990000">&gt;</font> insert into <font color="#008080">testtable</font> <b><font color="#000000">values</font></b> <font color="#990000">(</font><font color="#FF0000">'hi'</font><font color="#990000">,</font><font color="#993399">60</font><font color="#990000">)</font>
+<font color="#993399">2</font><font color="#990000">&gt;</font> go
+<font color="#990000">(</font><font color="#993399">1</font> <font color="#008080">row</font> affected<font color="#990000">)</font>
+<font color="#993399">1</font><font color="#990000">&gt;</font> insert into <font color="#008080">testtable</font> <b><font color="#000000">values</font></b> <font color="#990000">(</font><font color="#FF0000">'bye'</font><font color="#990000">,</font><font color="#993399">70</font><font color="#990000">)</font>
+<font color="#993399">2</font><font color="#990000">&gt;</font> go
+<font color="#990000">(</font><font color="#993399">1</font> <font color="#008080">row</font> affected<font color="#990000">)</font>
+<font color="#993399">1</font><font color="#990000">&gt;</font> select <font color="#990000">*</font> from testtable
+<font color="#993399">2</font><font color="#990000">&gt;</font> go
  col1                                     col2        
- ---------------------------------------- ----------- 
- hello                                             50 
- hi                                                60 
- bye                                               70 
+ <font color="#990000">----------------------------------------</font> <font color="#990000">-----------</font> 
+ hello                                             <font color="#993399">50</font> 
+ hi                                                <font color="#993399">60</font> 
+ bye                                               <font color="#993399">70</font> 
 
-(3 rows affected)
-1&gt; update testtable set col2=0 where col1='hi'
-2&gt; go
-(1 row affected)
-1&gt; select * from testtable
-2&gt; go
+<font color="#990000">(</font><font color="#993399">3</font> <font color="#008080">rows</font> affected<font color="#990000">)</font>
+<font color="#993399">1</font><font color="#990000">&gt;</font> update testtable <font color="#008080">set</font> col2<font color="#990000">=</font><font color="#993399">0</font> <font color="#008080">where</font> col1<font color="#990000">=</font><font color="#FF0000">'hi'</font>
+<font color="#993399">2</font><font color="#990000">&gt;</font> go
+<font color="#990000">(</font><font color="#993399">1</font> <font color="#008080">row</font> affected<font color="#990000">)</font>
+<font color="#993399">1</font><font color="#990000">&gt;</font> select <font color="#990000">*</font> from testtable
+<font color="#993399">2</font><font color="#990000">&gt;</font> go
  col1                                     col2        
- ---------------------------------------- ----------- 
- hello                                             50 
- hi                                                 0 
- bye                                               70 
+ <font color="#990000">----------------------------------------</font> <font color="#990000">-----------</font> 
+ hello                                             <font color="#993399">50</font> 
+ hi                                                 <font color="#993399">0</font> 
+ bye                                               <font color="#993399">70</font> 
 
-(3 rows affected)
-1&gt; delete from testtable where col2=50
-2&gt; go
-(1 row affected)
-1&gt; select * from testtable
-2&gt; go
+<font color="#990000">(</font><font color="#993399">3</font> <font color="#008080">rows</font> affected<font color="#990000">)</font>
+<font color="#993399">1</font><font color="#990000">&gt;</font> <b><font color="#0000FF">delete</font></b> from testtable <font color="#008080">where</font> col2<font color="#990000">=</font><font color="#993399">50</font>
+<font color="#993399">2</font><font color="#990000">&gt;</font> go
+<font color="#990000">(</font><font color="#993399">1</font> <font color="#008080">row</font> affected<font color="#990000">)</font>
+<font color="#993399">1</font><font color="#990000">&gt;</font> select <font color="#990000">*</font> from testtable
+<font color="#993399">2</font><font color="#990000">&gt;</font> go
  col1                                     col2        
- ---------------------------------------- ----------- 
- hi                                                 0 
- bye                                               70 
+ <font color="#990000">----------------------------------------</font> <font color="#990000">-----------</font> 
+ hi                                                 <font color="#993399">0</font> 
+ bye                                               <font color="#993399">70</font> 
 
-(2 rows affected)
-1&gt; drop table testtable
-2&gt; go
-1&gt; quit
-</pre>
+<font color="#990000">(</font><font color="#993399">2</font> <font color="#008080">rows</font> affected<font color="#990000">)</font>
+<font color="#993399">1</font><font color="#990000">&gt;</font> drop table testtable
+<font color="#993399">2</font><font color="#990000">&gt;</font> go
+<font color="#993399">1</font><font color="#990000">&gt;</font> quit</tt></pre>
 
+</blockquote>
 <!--#include virtual="../contentend.html"-->
 
 <!--#include virtual="footer.html"-->

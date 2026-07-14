@@ -20,9 +20,14 @@
 
 <p>The database server requires more shared memory than the typical linux system is configured to allow by default. Run the following command (as root) prior to installation.</p>
 
-<pre>echo 268435456 &gt; /proc/sys/kernel/shmmax
-</pre>
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt>echo <font color="#993399">268435456</font> <font color="#990000">&gt;</font> <font color="#990000">/</font>proc<font color="#990000">/</font>sys<font color="#990000">/</font>kernel<font color="#990000">/</font>shmmax</tt></pre>
 
+</blockquote>
 <h2>Download Upgrade</h2>
 
 <p>Modern versions of linux use NPTL (Native Posix Theading Library), but Sybase 15.0.2 requires the old Linuxthreads implementation. Some versions of Linux such as Fedora Core 4 support both. But as of Fedora Core 5, Linuxthreads support was dropped. The same is true for other modern distro's. The Sybase 15.0.2 installer will run on a linux that doesn't support Linuxthreads, but the DB will fail to start.</p>
@@ -33,27 +38,42 @@
 
 <p>The distribution comes as a tarball. Extract it as follows:</p>
 
-<pre>mkdir sybase
-mv ase1502_xe_linux.tgz sybase
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt>mkdir sybase
+<font color="#008080">mv</font> ase1502_xe_linux<font color="#990000">.</font>tgz sybase
 cd sybase
-tar xfz ase1502_xe_linux.tgz
-</pre>
+tar <font color="#008080">xfz</font> ase1502_xe_linux<font color="#990000">.</font>tgz</tt></pre>
 
+</blockquote>
 <p>The Sybase update comes as a tarball as well. Extract it as follows:</p>
 
-<pre>mkdir ebf
-mv EBF15672.tgz ebf
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt>mkdir ebf
+<font color="#008080">mv</font> EBF15672<font color="#990000">.</font>tgz ebf
 cd ebf
-tar xfz EBF15672.tgz
-</pre>
+tar <font color="#008080">xfz</font> EBF15672<font color="#990000">.</font>tgz</tt></pre>
 
+</blockquote>
 <h2>Install The Software Distribution</h2>
 
 <p>Now, go into the directory the sybase software distribution was extracted into and, as root, run the following command:</p>
 
-<pre>./setup
-</pre>
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt><font color="#990000">./</font>setup</tt></pre>
 
+</blockquote>
 <p>A java-based installer should run.</p>
 
 <p>When prompted <b>What would you like to install?</b>, check the Adaptive Server Enterprise (Express Edition) check box.<br/>Click Next.</p>
@@ -80,9 +100,14 @@ tar xfz EBF15672.tgz
 
 <p>Now, go into the directory the update was extracted into and, as root, run the following command:</p>
 
-<pre>./setup
-</pre>
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt><font color="#990000">./</font>setup</tt></pre>
 
+</blockquote>
 <p>A java-based installer should run. On the main page, click Next.</p>
 
 <p>When prompted for the <b>End-user license agreement</b> select the country that you are in from the <b>Please Select</b> pulldown.<br/>Read the license and click the <b>I agree to the terms of the Sybase license, for the install location specified.</b> check box.<br/>Click Next.</p>
@@ -121,7 +146,8 @@ tar xfz EBF15672.tgz
 
 <p>To start the database at boot time, you need to install a script like the following. Replace ''/opt/sybase'' with whatever directory Sybase ASE is installed in.</p>
 
-<pre> #!/bin/sh
+<blockquote>
+  <pre> #!/bin/sh
 
 export SYBASE=/opt/sybase
 
@@ -147,6 +173,7 @@ esac
 exit 0
 </pre>
 
+</blockquote>
 <p>Install this script and run it with the "start" option to start up the database. Running it with the "stop" option shuts the database down. To access a database, it must be running.</p>
 
 <!--#include virtual="../contentend.html"-->

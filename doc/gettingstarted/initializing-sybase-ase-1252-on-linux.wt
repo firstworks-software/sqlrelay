@@ -22,27 +22,33 @@ Be sure to add the path of the java program to your PATH environment variable.
 
 The database server requires more shared memory than the typical linux system is configured to allow by default. Run the following command (as root) prior to installation.
 
-{{{
-echo 268435456 &gt; /proc/sys/kernel/shmmax
+{{{#!blockquote
+{{{#!code
+echo 268435456 > /proc/sys/kernel/shmmax
+}}}
 }}}
 
 == Extract The Distribution ==
 
 The distribution comes as a tarball. Extract it as follows:
 
-{{{
+{{{#!blockquote
+{{{#!code
 mkdir sybase
 mv ase1252_de_linux.tgz sybase
 cd sybase
 tar xfz ase1252_de_linux.tgz
+}}}
 }}}
 
 == Install The Server ==
 
 Now, as root, run the following command:
 
-{{{
+{{{#!blockquote
+{{{#!code
 ./setup
+}}}
 }}}
 
 A java-based installer should run.
@@ -83,6 +89,7 @@ A screen will appear titled '''The installation was successful'''[[br]]Click Fin
 
 The RPM distribution of Sybase ASE installs a script in /etc/rc.d/init.d which starts the database at boot time. For non-RPM distributions, you may need to install a script like the following. Replace ''/opt/sybase'' with whatever directory Sybase ASE is installed in.
 
+{{{#!blockquote
 {{{
  #!/bin/sh
 
@@ -110,6 +117,7 @@ case "$1" in
 esac
 
 exit 0
+}}}
 }}}
 
 Install this script and run it with the "start" option to start up the database. Running it with the "stop" option shuts the database down. To access a database, it must be running.

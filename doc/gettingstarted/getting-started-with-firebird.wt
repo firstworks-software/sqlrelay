@@ -24,14 +24,18 @@ There are 2 versions of Firebird: Classic Server (CS) and Super Server (SS). Cla
 
 Firebird is available on Fedora using yum and may be installed using:
 
-{{{
+{{{#!blockquote
+{{{#!code
 yum install firebird-superserver
+}}}
 }}}
 
 It is also available on Ubuntu using apt-get and may be installed using:
 
-{{{
+{{{#!blockquote
+{{{#!code
 apt-get install firebirdversion-super
+}}}
 }}}
 
 Where ''version'' is replaced with the version you want to install.
@@ -44,15 +48,19 @@ Firebird distributions from the Firebird web site prior to version 1.5 create a 
 
 Some rpm's of Firebird versions 1.5 and higher leave /opt/firebird owned by root, with -r-xr-xr-x permissions. This is wrong and will cause the server not to start. Change the permissions and ownership as follows (as root):
 
-{{{
+{{{#!blockquote
+{{{#!code
 chmod 775 /opt/firebird
 chown firebird:firebird /opt/firebird
+}}}
 }}}
 
 Many versions of Firebird from the web site require libstdc++.so.5 but most Linux distributions ship with a more recent version. If your system doesn't have /usr/lib/libstdc++.so.5 then you may need to install a compatibility library. On Fedora, you need to install compat-libstdc++-33 as follows (as root):
 
-{{{
+{{{#!blockquote
+{{{#!code
 yum install compat-libstdc++-33
+}}}
 }}}
 
 [=#creating]
@@ -65,28 +73,36 @@ If you are using Firebird prior to version 1.5, in the configuration script for 
 
 For Bourne shells:
 
-{{{
+{{{#!blockquote
+{{{#!code
 PATH=$PATH:/opt/firebird/bin
 export PATH
+}}}
 }}}
 
 or
 
-{{{
+{{{#!blockquote
+{{{#!code
 PATH=$PATH:/opt/interbase/bin
 export PATH
+}}}
 }}}
 
 For C-shells:
 
-{{{
+{{{#!blockquote
+{{{#!code
 setenv PATH ${PATH}:/opt/firebird/bin
+}}}
 }}}
 
 or
 
-{{{
+{{{#!blockquote
+{{{#!code
 setenv PATH ${PATH}:/opt/interbase/bin
+}}}
 }}}
 
 [=#password]
@@ -111,11 +127,13 @@ Run ''gsec'' from within the directory containing the file ''security2.fdb''.
 
 Create a user as follows (replacing ''masterkey'' with the sysdba password if it isn't masterkey)...
 
-{{{
+{{{#!blockquote
+{{{#!code
 [root@localhost root]# /opt/firebird/bin/gsec -user sysdba -password masterkey
-GSEC&gt; add testuser -pw testpassword
+GSEC> add testuser -pw testpassword
 Warning - maximum 8 significant bytes of password used
-GSEC&gt; quit 
+GSEC> quit 
+}}}
 }}}
 
 For Firebird 1.5, the installation process creates a security database called ''security.fdb'' containing host and user privileges and an administrative user named ''SYSDBA'' with a randomly generated password. This password is listed in ''SYSDBA.password''.
@@ -124,12 +142,14 @@ Run ''gsec'' from within the directory containing the file ''security.fdb''.
 
 Create a user as follows (replacing ''masterkey'' with the sysdba password if it isn't masterkey)...
 
-{{{
+{{{#!blockquote
+{{{#!code
 [root@localhost root]# /opt/firebird/bin/gsec -user sysdba -password masterkey
-GSEC&gt; add testuser
-GSEC&gt; modify testuser -pw testpassword
+GSEC> add testuser
+GSEC> modify testuser -pw testpassword
 Warning - maximum 8 significant bytes of password used
-GSEC&gt; quit 
+GSEC> quit 
+}}}
 }}}
 
 For Firebird prior to version 1.5, the installation process creates a security database named ''isc4.gdb'' containing host and user privileges and an administrative user named ''SYSDBA'' with a password of either ''changeme'' or ''masterkey''.
@@ -138,12 +158,14 @@ Run ''gsec'' from within the directory containing the file ''isc4.gdb''.
 
 Create a user as follows...
 
-{{{
+{{{#!blockquote
+{{{#!code
 [root@localhost interbase]# /opt/interbase/bin/gsec
-GSEC&gt; add testuser
-GSEC&gt; modify testuser -pw testpassword
+GSEC> add testuser
+GSEC> modify testuser -pw testpassword
 Warning - maximum 8 significant bytes of password used
-GSEC&gt; quit 
+GSEC> quit 
+}}}
 }}}
 
 [=#startingatboot]
@@ -156,6 +178,7 @@ If you compiled from source, you'll need to install a script like one of the fol
 
 For Firebird versions 2.5 and up, use the following script:
 
+{{{#!blockquote
 {{{
  #!/bin/sh
 
@@ -173,11 +196,13 @@ esac
 
 exit 0
 }}}
+}}}
 
 For Firebird version 1.5 to 2.1, use the following script:
 
-{{{
- #!/bin/sh
+{{{#!blockquote
+{{{#!code
+#!/bin/sh
 
 case "$1" in
   start)
@@ -193,11 +218,13 @@ esac
 
 exit 0
 }}}
+}}}
 
 For Firebird prior to version 1.5, use the following script:
 
-{{{
- #!/bin/sh
+{{{#!blockquote
+{{{#!code
+#!/bin/sh
 
 case "$1" in
   start)
@@ -212,6 +239,7 @@ case "$1" in
 esac
 
 exit 0
+}}}
 }}}
 
 Install this script and run it with the "start" option to start up the database. Running it with the "stop" option shuts the database down. To access a database, it must be running.
@@ -228,20 +256,24 @@ Though you can create tables in the ''isc4.gdb'' database using the SYSDBA user,
 
 For Firebird version 1.5 or higher, these commands create a database called ''/opt/firebird/testdb.gdb'' which is owned by ''testuser''.
 
-{{{
+{{{#!blockquote
+{{{#!code
 [user@localhost user]$ isql -u testuser -p testpassword
 Use CONNECT or CREATE DATABASE to specify a database
-SQL&gt; create database '/opt/firebird/testdb.gdb';
-SQL&gt; quit;
+SQL> create database '/opt/firebird/testdb.gdb';
+SQL> quit;
+}}}
 }}}
 
 For Firebird prior to version 1.5, these commands create a database called ''/opt/interbase/testdb.gdb'' which is owned by ''testuser''.
 
-{{{
+{{{#!blockquote
+{{{#!code
 [user@localhost user]$ isql -u testuser -p testpassword
 Use CONNECT or CREATE DATABASE to specify a database
-SQL&gt; create database '/opt/interbase/testdb.gdb';
-SQL&gt; quit;
+SQL> create database '/opt/interbase/testdb.gdb';
+SQL> quit;
+}}}
 }}}
 
 Firebird databases are referenced by the pathname of the database file. If you try to create a database using a file name that already exists or if you forget to enclose the file name in single quotes, you'll get a cryptic error indicating that the 'database' token is unknown. So, if you get a message like that, make sure that you enclosed the file name in single quotes and make sure that the database file that you're trying to create doesn't already exist.
@@ -250,54 +282,66 @@ Now you can log into the database as ''testuser''.
 
 Use the following command for Firebird 1.5 or higher.
 
-{{{
+{{{#!blockquote
+{{{#!code
 isql -u testuser -p testpassword /opt/firebird/testdb.gdb
+}}}
 }}}
 
 Use the following command for Firebird prior to version 1.5.
 
-{{{
+{{{#!blockquote
+{{{#!code
 isql -u testuser -p testpassword /opt/interbase/testdb.gdb
+}}}
 }}}
 
 The only users that can drop a database are the user that owns the database and the ''SYSDBA'' user. If you want to drop the database, you can do so using ''isql'' as follows for Firebird version 1.5 or higher...
 
-{{{
+{{{#!blockquote
+{{{#!code
 [user@localhost user]$ isql -u testuser -p testpassword /opt/firebird/testdb.gdb 
 Database:  /opt/firebird/testdb.gdb, User: testuser
-SQL&gt; drop database;
-SQL&gt; quit;
+SQL> drop database;
+SQL> quit;
+}}}
 }}}
 
 Or as follows for Firebird prior to version 1.5.
 
-{{{
+{{{#!blockquote
+{{{#!code
 [user@localhost user]$ isql -u testuser -p testpassword /opt/interbase/testdb.gdb 
 Database:  /opt/interbase/testdb.gdb, User: testuser
-SQL&gt; drop database;
-SQL&gt; quit;
+SQL> drop database;
+SQL> quit;
+}}}
 }}}
 
 To delete a user, use the ''gsec'' utility as the root user and delete the appropriate user as follows for Firebird version 1.5 or higher.
 
-{{{
+{{{#!blockquote
+{{{#!code
 [root@localhost root]# cd /opt/firebird
 [root@localhost firebird]# ls -l isc4.gdb
 -rw-rw-rw-    1 root     root       626688 Feb 18 20:43 isc4.gdb
 [root@localhost firebird]# /opt/firebird/bin/gsec
-GSEC&gt; delete testuser
-GSEC&gt; quit
+GSEC> delete testuser
+GSEC> quit
+}}}
 }}}
 
 Or as follows for Firebird prior to version 1.5.
 
-{{{
+{{{#!blockquote
+{{{#!code
 [root@localhost root]# cd /opt/interbase
 [root@localhost interbase]# ls -l isc4.gdb
 -rw-rw-rw-    1 root     root       626688 Feb 18 20:43 isc4.gdb
 [root@localhost interbase]# /opt/interbase/bin/gsec
-GSEC&gt; delete testuser
-GSEC&gt; quit
+GSEC> delete testuser
+GSEC> quit
+}}}
 }}}
 
 This should be enough to get you started. To set up more complex configurations, consult the [http://firebird.sourceforge.net/index.php?op=doc Firebird documentation].
@@ -308,34 +352,39 @@ This should be enough to get you started. To set up more complex configurations,
 
 To access a database called ''/opt/firebird/testdb.gdb'' on the local machine as the ''testuser'' user with password ''testpassword'', use the following command.
 
-{{{
+{{{#!blockquote
+{{{#!code
 isql -u testuser -p testpassword /opt/firebird/testdb.gdb
+}}}
 }}}
 
 To connect to a database on a remote machine, prepend the database filename with the remote hostname, followed by a colon. For example, to access a database called ''/opt/firebird/testdb.gdb'' on the remote machine ''testhost'' as the ''testuser'' user with password ''testpassword'', use the following command.
 
-{{{
+{{{#!blockquote
+{{{#!code
 isql -u testuser -p testpassword testhost:/opt/firebird/testdb.gdb
+}}}
 }}}
 
 Once you're connected to the database, the isql client prompts you to enter a query. Queries may be split across multiple lines. To run a query, end it with a semicolon. To exit, type quit;.
 
 A sample ''isql'' session follows.
 
-{{{
+{{{#!blockquote
+{{{#!code
 [user@localhost user]$ isql -u testuser -p testpass /opt/firebird/testdb.gdb
 Database:  /opt/firebird/testdb.gdb, User: testuser
-SQL&gt; create table testtable (
-CON&gt; col1 char(40),
-CON&gt; col2 integer
-CON&gt; );
-SQL&gt; show table testtable;
+SQL> create table testtable (
+CON> col1 char(40),
+CON> col2 integer
+CON> );
+SQL> show table testtable;
 COL1                            CHAR(40) Nullable 
 COL2                            INTEGER Nullable 
-SQL&gt; insert into testtable values ('hello',50);
-SQL&gt; insert into testtable values ('hi',60);
-SQL&gt; insert into testtable values ('bye',70);
-SQL&gt; select * from testtable;
+SQL> insert into testtable values ('hello',50);
+SQL> insert into testtable values ('hi',60);
+SQL> insert into testtable values ('bye',70);
+SQL> select * from testtable;
 
 COL1                                             COL2 
 ======================================== ============ 
@@ -344,8 +393,8 @@ hello                                              50
 hi                                                 60 
 bye                                                70 
 
-SQL&gt; update testtable set col2=0 where col1='hi';
-SQL&gt; select * from testtable;
+SQL> update testtable set col2=0 where col1='hi';
+SQL> select * from testtable;
 
 COL1                                             COL2 
 ======================================== ============ 
@@ -354,8 +403,8 @@ hello                                              50
 hi                                                  0 
 bye                                                70 
 
-SQL&gt; delete from testtable where col2=50;
-SQL&gt; select * from testtable;
+SQL> delete from testtable where col2=50;
+SQL> select * from testtable;
 
 COL1                                             COL2 
 ======================================== ============ 
@@ -363,9 +412,10 @@ COL1                                             COL2
 hi                                                  0 
 bye                                                70 
 
-SQL&gt; commit;
-SQL&gt; drop table testtable;
-SQL&gt; quit;
+SQL> commit;
+SQL> drop table testtable;
+SQL> quit;
+}}}
 }}}
 
 [=#quirks]

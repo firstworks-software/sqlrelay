@@ -84,6 +84,7 @@ To create a sample database, run the command ''/opt/IBM/db2/V8.1/bin/db2sampl''.
 
 You can use the following script to start/stop the database at boot/shutdown time.
 
+{{{#!blockquote
 {{{
  #!/bin/sh
 
@@ -101,21 +102,26 @@ esac
 
 exit 0
 }}}
+}}}
 
 Install this script and run it with the "start" option to start up the database. Running it with the "stop" option shuts the database down. To access a database, it must be running.
 
 During instance configuration, there's a check box indicating whether the instance will be configured to start at boot time. If you didn't check it, to get each instance to start at boot time, you need to run the following command as root for each instance.
 
-{{{
+{{{#!blockquote
+{{{#!code
 /opt/IBM/db2/V8.1/instance/db2iauto -on INSTANCE_USER
+}}}
 }}}
 
 Where INSTANCE_USER is replaced by the username of the user associated with the instance you want to start at boot time.
 
 If you want to disable instances from starting at boot time, you need to run the following command as root for each instance:
 
-{{{
+{{{#!blockquote
+{{{#!code
 /opt/IBM/db2/V8.1/instance/db2iauto -off INSTANCE_USER
+}}}
 }}}
 
 {{{#!include ../contentend.html}}}

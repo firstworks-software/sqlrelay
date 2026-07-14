@@ -10,9 +10,14 @@
 
 <p>First, ''su'' to the sybase user using the -l option.</p>
 
-<pre>su -l sybase
-</pre>
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt>su <font color="#990000">-</font>l sybase</tt></pre>
 
+</blockquote>
 <p>Run <b>install/sybinit</b>, a text-based installation program. When prompted, follow these instructions.</p>
 
 <p>select <b>3. Configure a Server product</b><br/>select <b>1. SQL Server</b><br/>select <b>1. Configure a new Adaptive Server</b><br/>type ctrl-a to accept the default server name<br/><br/>select <b>1. CONFIGURE SERVER'S INTERFACES FILE ENTRY</b><br/>select <b>3. Add a new listener service</b><br/>don't modify the default hostname/address<br/>select <b>2. Port:</b><br/>enter 4100<br/>type ctrl-a to <b>Accept and Continue</b><br/>type y when prompted with <b>Is this information correct?</b><br/>type ctrl-a to <b>Accept and Continue</b><br/>type y when prompted with <b>Write the changes to the interfaces file now?</b><br/><br/>select <b>2. MASTER DEVICE CONFIGURATION</b><br/>type ctrl-a to <b>Accept and Continue</b><br/>Press &lt;return&gt; to continue, ignoring all WARNING's. <br/>select <b>3. SYBSYSTEMPROCS DATABASE CONFIGURATION</b><br/>type ctrl-a to <b>Accept and Continue</b><br/><br/>select <b>4. SET ERRORLOG LOCATION</b><br/>type ctrl-a to <b>Accept and Continue</b><br/><br/>select <b>5. CONFIGURE DEFAULT BACKUP SERVER</b><br/>type ctrl-a to <b>Accept and Continue</b><br/><br/>select <b>6. CONFIGURE LANGUAGES</b><br/>type ctrl-a to <b>Accept and Continue</b><br/><br/>select <b>7. CONFIGURE CHARACTER SETS</b><br/>type ctrl-a to <b>Accept and Continue</b><br/><br/>select <b>8. CONFIGURE SORT ORDER</b><br/>type ctrl-a to <b>Accept and Continue</b><br/><br/>select <b>9. CONFIGURE AUDITING</b><br/>type ctrl-a to <b>Accept and Continue</b><br/><br/>on the <b>SYBASE SERVER CONFIGURATION</b> screen, type ctrl-a to <b>Accept and Continue</b><br/>type y when prompted with <b>Execute the Sybase Server Configuration now?</b><br/>Press &lt;return&gt; to continue, ignoring all WARNING's.</p>
@@ -25,7 +30,8 @@
 
 <p>Replace ''/usr/local/sybase'' with whatever directory Sybase ASE is installed in.</p>
 
-<pre> #!/bin/sh
+<blockquote>
+  <pre> #!/bin/sh
 
 export SYBASE=/usr/local/sybase
 
@@ -49,6 +55,7 @@ esac
 exit 0
 </pre>
 
+</blockquote>
 <p>Install this script and run it with the "start" option to start up the database. Running it with the "stop" option shuts the database down. To access a database, it must be running.</p>
 
 <!--#include virtual="../contentend.html"-->

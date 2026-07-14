@@ -10,14 +10,24 @@
 
 <p>First, ''su'' to the sybase user using the -l option.</p>
 
-<pre>su -l sybase
-</pre>
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt>su <font color="#990000">-</font>l sybase</tt></pre>
 
+</blockquote>
 <p>You should be presented with the a great deal of text and prompted at the end.</p>
 
-<pre>Do you want to start 'srvbuild' now? [y/n]
-</pre>
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt>Do you want <font color="#008080">to</font> start <font color="#FF0000">'srvbuild'</font> now<font color="#990000">?</font> <font color="#990000">[</font>y<font color="#990000">/</font>n<font color="#990000">]</font></tt></pre>
 
+</blockquote>
 <p>Answer 'y'. Next time you log in, you won't be prompted. If you were not prompted with that text, or if you accidentally answer something other than 'y', you can run the ''srvbuild'' command from the command line.</p>
 
 <p>When you run ''svrbuild'', a dialog will appear, prompting you to <b>Click the check boxes for the types of servers to create and provide names for these servers.</b></p>
@@ -48,7 +58,8 @@
 
 <p>The RPM distribution of Sybase ASE installs a script in /etc/rc.d/init.d which starts the database at boot time. For non-RPM distributions, you may need to install a script like the following. Replace ''/opt/sybase-11.9.2'' with whatever directory Sybase ASE is installed in.</p>
 
-<pre> #!/bin/sh
+<blockquote>
+  <pre> #!/bin/sh
 
 export SYBASE=/opt/sybase-11.9.2
 
@@ -72,6 +83,7 @@ esac
 exit 0
 </pre>
 
+</blockquote>
 <p>Install this script and run it with the "start" option to start up the database. Running it with the "stop" option shuts the database down. To access a database, it must be running.</p>
 
 <!--#include virtual="../contentend.html"-->

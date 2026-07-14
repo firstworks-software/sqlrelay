@@ -32,13 +32,18 @@
 
 <p>For example, lets say you're using the Linux ODBC Driver for Microsoft SQL Server to access a Microsoft SQL Server database from Linux. The following lines would need to be appended to ''odbcinst.ini'' to make the system aware of the driver.</p>
 
-<pre>[ODBC Driver 11 for SQL Server] 
-Description=Microsoft ODBC Driver 11 for SQL Server
-Driver=/opt/microsoft/msodbcsql/lib64/libmsodbcsql-11.0.so.2270.0
-Threading=1 
-UsageCount=1
-</pre>
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt><font color="#990000">[</font>ODBC Driver <font color="#993399">11</font> <b><font color="#0000FF">for</font></b> <font color="#008080">SQL</font> Server<font color="#990000">]</font> 
+Description<font color="#990000">=</font>Microsoft ODBC Driver <font color="#993399">11</font> <b><font color="#0000FF">for</font></b> SQL Server
+Driver<font color="#990000">=/</font>opt<font color="#990000">/</font>microsoft<font color="#990000">/</font>msodbcsql<font color="#990000">/</font>lib64<font color="#990000">/</font>libmsodbcsql<font color="#990000">-</font><font color="#993399">11.0</font><font color="#990000">.</font>so<font color="#990000">.</font><font color="#993399">2270.0</font>
+Threading<font color="#990000">=</font><font color="#993399">1</font> 
+UsageCount<font color="#990000">=</font><font color="#993399">1</font></tt></pre>
 
+</blockquote>
 <p>The <b>&#91;ODBC Driver 11 for SQL Server&#93;</b> line defines the name that will be used in other files when referring to this driver.</p>
 
 <p>The <b>Driver</b> argument is set to the full pathname of the driver.</p>
@@ -52,16 +57,21 @@ UsageCount=1
 <p>The file ''odbc.ini'' defines specific database connections, often called Data Source Names or DSN's for short.<br/>
 For example, lets say that you wanted to connect to a database on the machine ''examplehost'' on port ''1433'' using username ''testuser'' and password ''testpassword'' and then use database ''testdb'' once logged in. Your odbc.ini entry might look like:</p>
 
-<pre>[exampledsn]
-Description = SQL Server
-Driver  = ODBC Driver 11 for SQL Server
-Host  = examplehost
-Port  = 1422
-User = testuser
-Password = testpassword
-Database = testdb
-</pre>
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt><font color="#990000">[</font>exampledsn<font color="#990000">]</font>
+Description <font color="#990000">=</font> SQL Server
+Driver  <font color="#990000">=</font> ODBC Driver <font color="#993399">11</font> <b><font color="#0000FF">for</font></b> SQL Server
+Host  <font color="#990000">=</font> examplehost
+Port  <font color="#990000">=</font> <font color="#993399">1422</font>
+User <font color="#990000">=</font> testuser
+Password <font color="#990000">=</font> testpassword
+Database <font color="#990000">=</font> testdb</tt></pre>
 
+</blockquote>
 <p>The <b>&#91;exampledsn&#93;</b> line defines the name of this DSN to be ''exampledsn''. Programs which use ODBC may use the name ''exampledsn'' to refer to this set of connection parameters.</p>
 
 <p>The <b>Description</b> parameter defines a user-friendly name for this DSN.</p>
@@ -78,53 +88,58 @@ Database = testdb
 
 <p>Note that Firebird also comes with a command line program, also called ''isql'' and it is important to make sure you are using the ODBC program rather than the Firebird program. Running the ''isql'' command with no arguments should give you some indication of which one it is. The ''isql'' program that comes with unixODBC has output like the following:</p>
 
-<pre>**********************************************
-* unixODBC - isql                            *
-**********************************************
-* Syntax                                     *
-*                                            *
-*      isql DSN [UID [PWD]] [options]        *
-*                                            *
-* Options                                    *
-*                                            *
-* -b         batch.(no prompting etc)        *
-* -dx        delimit columns with x          *
-* -x0xXX     delimit columns with XX, where  *
-*            x is in hex, ie 0x09 is tab     *
-* -w         wrap results in an HTML table   *
-* -c         column names on first row.      *
-*            (only used when -d)             *
-* -mn        limit column display width to n *
-* -v         verbose.                        *
-* -lx        set locale to x                 *
-* -q         wrap char fields in dquotes     *
-* -3         Use ODBC 3 calls                *
-* -n         Use new line processing         *
-* --version  version                         *
-*                                            *
-* Commands                                   *
-*                                            *
-* help - list tables                         *
-* help table - list columns in table         *
-* help help - list all help options          *
-*                                            *
-* Examples                                   *
-*                                            *
-*      isql WebDB MyID MyPWD -w &lt; My.sql     *
-*                                            *
-*      Each line in My.sql must contain      *
-*      exactly 1 SQL command except for the  *
-*      last line which must be blank (unless *
-*      -n option specified).                 *
-*                                            *
-* Please visit;                              *
-*                                            *
-*      http://www.unixodbc.org               *
-*      pharvey@codebydesign.com              *
-*      nick@easysoft.com                     *
-**********************************************
-</pre>
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt><font color="#990000">**********************************************</font>
+<font color="#990000">*</font> unixODBC <font color="#990000">-</font> isql                            <font color="#990000">*</font>
+<font color="#990000">**********************************************</font>
+<font color="#990000">*</font> Syntax                                     <font color="#990000">*</font>
+<font color="#990000">*</font>                                            <font color="#990000">*</font>
+<font color="#990000">*</font>      <font color="#008080">isql</font> DSN <font color="#990000">[</font>UID <font color="#990000">[</font>PWD<font color="#990000">]]</font> <font color="#990000">[</font>options<font color="#990000">]</font>        <font color="#990000">*</font>
+<font color="#990000">*</font>                                            <font color="#990000">*</font>
+<font color="#990000">*</font> Options                                    <font color="#990000">*</font>
+<font color="#990000">*</font>                                            <font color="#990000">*</font>
+<font color="#990000">*</font> <font color="#990000">-</font><font color="#008080">b</font>         batch<font color="#990000">.(</font>no <font color="#008080">prompting</font> etc<font color="#990000">)</font>        <font color="#990000">*</font>
+<font color="#990000">*</font> <font color="#990000">-</font>dx        delimit columns <font color="#008080">with</font> x          <font color="#990000">*</font>
+<font color="#990000">*</font> <font color="#990000">-</font>x0xXX     delimit columns <font color="#008080">with</font> XX<font color="#990000">,</font> where  <font color="#990000">*</font>
+<font color="#990000">*</font>            x is <font color="#008080">in</font> hex<font color="#990000">,</font> ie <font color="#993399">0x09</font> <font color="#008080">is</font> tab     <font color="#990000">*</font>
+<font color="#990000">*</font> <font color="#990000">-</font>w         wrap results in an <font color="#008080">HTML</font> table   <font color="#990000">*</font>
+<font color="#990000">*</font> <font color="#990000">-</font>c         column names on <font color="#008080">first</font> row<font color="#990000">.</font>      <font color="#990000">*</font>
+<font color="#990000">*</font>            <font color="#990000">(</font>only <font color="#008080">used</font> when <font color="#990000">-</font>d<font color="#990000">)</font>             <font color="#990000">*</font>
+<font color="#990000">*</font> <font color="#990000">-</font>mn        limit column display width <font color="#008080">to</font> n <font color="#990000">*</font>
+<font color="#990000">*</font> <font color="#990000">-</font><font color="#008080">v</font>         verbose<font color="#990000">.</font>                        <font color="#990000">*</font>
+<font color="#990000">*</font> <font color="#990000">-</font>lx        set locale <font color="#008080">to</font> x                 <font color="#990000">*</font>
+<font color="#990000">*</font> <font color="#990000">-</font>q         wrap <font color="#009900">char</font> fields <font color="#008080">in</font> dquotes     <font color="#990000">*</font>
+<font color="#990000">*</font> <font color="#990000">-</font><font color="#993399">3</font>         Use ODBC <font color="#993399">3</font> calls                <font color="#990000">*</font>
+<font color="#990000">*</font> <font color="#990000">-</font>n         Use <b><font color="#0000FF">new</font></b> <font color="#008080">line</font> processing         <font color="#990000">*</font>
+<font color="#990000">*</font> <font color="#990000">--</font><font color="#008080">version</font>  version                         <font color="#990000">*</font>
+<font color="#990000">*</font>                                            <font color="#990000">*</font>
+<font color="#990000">*</font> Commands                                   <font color="#990000">*</font>
+<font color="#990000">*</font>                                            <font color="#990000">*</font>
+<font color="#990000">*</font> help <font color="#990000">-</font> <font color="#008080">list</font> tables                         <font color="#990000">*</font>
+<font color="#990000">*</font> <font color="#008080">help</font> table <font color="#990000">-</font> list columns <font color="#008080">in</font> table         <font color="#990000">*</font>
+<font color="#990000">*</font> <font color="#008080">help</font> help <font color="#990000">-</font> list all <font color="#008080">help</font> options          <font color="#990000">*</font>
+<font color="#990000">*</font>                                            <font color="#990000">*</font>
+<font color="#990000">*</font> Examples                                   <font color="#990000">*</font>
+<font color="#990000">*</font>                                            <font color="#990000">*</font>
+<font color="#990000">*</font>      isql WebDB <font color="#008080">MyID</font> MyPWD <font color="#990000">-</font>w <font color="#990000">&lt;</font> My<font color="#990000">.</font>sql     <font color="#990000">*</font>
+<font color="#990000">*</font>                                            <font color="#990000">*</font>
+<font color="#990000">*</font>      Each line <font color="#008080">in</font> My<font color="#990000">.</font>sql <font color="#008080">must</font> contain      <font color="#990000">*</font>
+<font color="#990000">*</font>      exactly <font color="#993399">1</font> SQL command except <font color="#008080">for</font> the  <font color="#990000">*</font>
+<font color="#990000">*</font>      last line which must <font color="#008080">be</font> <b><font color="#000000">blank</font></b> <font color="#990000">(</font>unless <font color="#990000">*</font>
+<font color="#990000">*</font>      <font color="#990000">-</font>n <font color="#008080">option</font> specified<font color="#990000">).</font>                 <font color="#990000">*</font>
+<font color="#990000">*</font>                                            <font color="#990000">*</font>
+<font color="#990000">*</font> <font color="#008080">Please</font> visit<font color="#990000">;</font>                              <font color="#990000">*</font>
+<font color="#990000">*</font>                                            <font color="#990000">*</font>
+<font color="#990000">*</font>      http<font color="#990000">:</font><i><font color="#9A1900">//www.unixodbc.org               *</font></i>
+<font color="#990000">*</font>      pharvey@codebydesign<font color="#990000">.</font>com              <font color="#990000">*</font>
+<font color="#990000">*</font>      nick@easysoft<font color="#990000">.</font>com                     <font color="#990000">*</font>
+<font color="#990000">**********************************************</font></tt></pre>
 
+</blockquote>
 <p>To connect to the database defined by the exampledsn DSN, run the following command:</p>
 
 <p><b>isql exampledsn</b></p>

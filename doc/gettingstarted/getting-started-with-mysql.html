@@ -32,67 +32,112 @@
 
 <p>To install <a href="MySQL">MySQL</a> on an RPM-based Linux distribution run:</p>
 
-<pre>yum install mysql-server mysql-devel
-</pre>
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt>yum <font color="#008080">install</font> mysql<font color="#990000">-</font><font color="#008080">server</font> mysql<font color="#990000">-</font>devel</tt></pre>
 
+</blockquote>
 <p>Or on an old RPM-based distribution that doesn't support yum, install them from the CD/DVD's using ''rpm -i''.</p>
 
 <a name="debian"/><h2>Debian and Ubuntu Linux</h2>
 
 <p>To install <a href="MySQL">MySQL</a> on Debian and Ubuntu Linux, run:</p>
 
-<pre>apt-get install mysql-server libmysqlclient-dev
-</pre>
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt>apt<font color="#990000">-</font>get <font color="#008080">install</font> mysql<font color="#990000">-</font><font color="#008080">server</font> libmysqlclient<font color="#990000">-</font>dev</tt></pre>
 
+</blockquote>
 <p><a href="MySQL">MySQL</a> packages don't appear to be available for older Debian releases, so for those releases, I've always compiled it from source. Alternatively, you can download a binary distribution in tar.gz format from <a target="_blank" href="http://www.mysql.com">the MySQL site</a>.</p>
 
 <a name="freebsd"/><h2><a href="FreeBSD">FreeBSD</a></h2>
 
 <p>To install <a href="MySQL">MySQL</a> on <a href="FreeBSD">FreeBSD</a>, run:</p>
 
-<pre>pkg install mysql56-server mysql56-client
-</pre>
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt>pkg <font color="#008080">install</font> mysql56<font color="#990000">-</font><font color="#008080">server</font> mysql56<font color="#990000">-</font>client</tt></pre>
 
+</blockquote>
 <p>(replacing 56 with the major/minor version of mysql that you want to install)</p>
 
 <p>On older versions of <a href="FreeBSD">FreeBSD</a>, run:</p>
 
-<pre>pkg_add -r mysql56-server mysql56-client
-</pre>
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt>pkg_add <font color="#990000">-</font><font color="#008080">r</font> mysql56<font color="#990000">-</font><font color="#008080">server</font> mysql56<font color="#990000">-</font>client</tt></pre>
 
+</blockquote>
 <p>You can also install <a href="MySQL">MySQL</a> from the Ports CD(s) that came with your distribution using ''/stand/sysinstall''.</p>
 
 <a name="openbsd"/><h2><a href="OpenBSD">OpenBSD</a></h2>
 
 <p>To install <a href="MySQL">MySQL</a> on <a href="OpenBSD">OpenBSD</a>, verify that /etc/pkg.conf has a valid path in it, like:</p>
 
-<pre>installpath = ftp://ftp.usa.openbsd.org/pub/OpenBSD/5.6/packages/amd64/
-</pre>
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt>installpath <font color="#990000">=</font> ftp<font color="#990000">:</font><i><font color="#9A1900">//ftp.usa.openbsd.org/pub/OpenBSD/5.6/packages/amd64/</font></i></tt></pre>
 
+</blockquote>
 <p>And run:</p>
 
-<pre>pkg_add mysql-server mysql-client
-</pre>
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt><font color="#008080">pkg_add</font> mysql<font color="#990000">-</font><font color="#008080">server</font> mysql<font color="#990000">-</font>client</tt></pre>
 
+</blockquote>
 <p>Packages are also available from <a target="_blank" href="ftp://ftp.openbsd.org">ftp.openbsd.org</a> and on the CD's that came with your distribution and can be installed manually using ''pkg_add''.</p>
 
 <a name="netbsd"/><h2><a href="NetBSD">NetBSD</a></h2>
 
 <p>To install <a href="MySQL">MySQL</a> on <a href="NetBSD">NetBSD</a>, run:</p>
 
-<pre>pkgin install mysql-server mysql-client
-</pre>
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt>pkgin <font color="#008080">install</font> mysql<font color="#990000">-</font><font color="#008080">server</font> mysql<font color="#990000">-</font>client</tt></pre>
 
+</blockquote>
 <p>On older versions of <a href="NetBSD">NetBSD</a>, verify that the PKG_PATH environment variable is configured to a valid path like:</p>
 
-<pre>ftp://ftp.netbsd.org/pub/pkgsrc/packages/NetBSD/i386/4.0.1_2012Q3/All
-</pre>
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt>ftp<font color="#990000">:</font><i><font color="#9A1900">//ftp.netbsd.org/pub/pkgsrc/packages/NetBSD/i386/4.0.1_2012Q3/All</font></i></tt></pre>
 
+</blockquote>
 <p>And run:</p>
 
-<pre>pkg_add mysql-server myql-client
-</pre>
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt><font color="#008080">pkg_add</font> mysql<font color="#990000">-</font><font color="#008080">server</font> myql<font color="#990000">-</font>client</tt></pre>
 
+</blockquote>
 <p>Packages are also available from <a target="_blank" href="ftp://ftp.netbsd.org">ftp.netbsd.org</a> and on the CD's that came with your distribution and can be installed manually using ''pkg_add''.</p>
 
 <a name="solaris"/><h2>Solaris</h2>
@@ -111,7 +156,8 @@
 
 <p>For <a href="MySQL">MySQL</a> 4 and higher:</p>
 
-<pre> #!/bin/sh
+<blockquote>
+  <pre> #!/bin/sh
 
 case "$1" in
         start)
@@ -145,9 +191,11 @@ esac
 exit 0
 </pre>
 
+</blockquote>
 <p>For <a href="MySQL">MySQL</a> 3:</p>
 
-<pre> #!/bin/sh
+<blockquote>
+  <pre> #!/bin/sh
 
 case "$1" in
         start)
@@ -169,6 +217,7 @@ esac
 exit 0
 </pre>
 
+</blockquote>
 <p>Install this script and run it with the "start" option to start up the database. Running it with the "stop" option shuts the database down. To access a database, it must be running.</p>
 
 <a name="creating"/><h2>Creating a Database</h2>
@@ -179,182 +228,267 @@ exit 0
 
 <p>The following commands give the ''root'' user the password ''Passw0rd''.</p>
 
-<pre>mysql -uroot -e "update user set password=password('Passw0rd') where user='root'" mysql
-mysqladmin -uroot reload
-</pre>
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt>mysql <font color="#990000">-</font>uroot <font color="#990000">-</font>e <font color="#FF0000">"update user set password=password('Passw0rd') where user='root'"</font> mysql
+mysqladmin <font color="#990000">-</font>uroot reload</tt></pre>
 
+</blockquote>
 <p>Though you can create tables in the ''mysql'' database, it's not a good idea. You should create a new database. The following command creates a database called ''testdb''.</p>
 
-<pre>mysqladmin -uroot -pPassw0rd create testdb
-</pre>
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt>mysqladmin <font color="#990000">-</font>uroot <font color="#990000">-</font>pPassw0rd create testdb</tt></pre>
 
+</blockquote>
 <p>To create a user, log into the ''mysql'' database using the following command.</p>
 
-<pre>mysql -uroot -pPassw0rd mysql
-</pre>
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt>mysql <font color="#990000">-</font>uroot <font color="#990000">-</font>pPassw0rd mysql</tt></pre>
 
+</blockquote>
 <p>On modern versions of mysql, the following queries create a user called ''testuser'' with password ''testpassword'' and allows it to log in from the local machine or any remote host.</p>
 
-<pre>create user 'testuser'@'localhost' identified by 'testpassword'
-create user 'testuser'@'%' identified by 'testpassword'
-</pre>
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt><font color="#008080">create</font> user <font color="#FF0000">'testuser'</font>@<font color="#FF0000">'localhost'</font> <font color="#008080">identified</font> by <font color="#FF0000">'testpassword'</font>
+<font color="#008080">create</font> user <font color="#FF0000">'testuser'</font>@<font color="#FF0000">'%'</font> <font color="#008080">identified</font> by <font color="#FF0000">'testpassword'</font></tt></pre>
 
+</blockquote>
 <p>On sufficiently old versions of mysql, you have to insert rows directly into the user table:</p>
 
-<pre>insert into user (host,user,password) values ('localhost','testuser',password('testpassword'));
-insert into user (host,user,password) values ('%','testuser',password('testpassword'));
-</pre>
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt>insert <font color="#008080">into</font> <b><font color="#000000">user</font></b> <font color="#990000">(</font>host<font color="#990000">,</font>user<font color="#990000">,</font>password<font color="#990000">)</font> <b><font color="#000000">values</font></b> <font color="#990000">(</font><font color="#FF0000">'localhost'</font><font color="#990000">,</font><font color="#FF0000">'testuser'</font><font color="#990000">,</font><b><font color="#000000">password</font></b><font color="#990000">(</font><font color="#FF0000">'testpassword'</font><font color="#990000">));</font>
+insert <font color="#008080">into</font> <b><font color="#000000">user</font></b> <font color="#990000">(</font>host<font color="#990000">,</font>user<font color="#990000">,</font>password<font color="#990000">)</font> <b><font color="#000000">values</font></b> <font color="#990000">(</font><font color="#FF0000">'%'</font><font color="#990000">,</font><font color="#FF0000">'testuser'</font><font color="#990000">,</font><b><font color="#000000">password</font></b><font color="#990000">(</font><font color="#FF0000">'testpassword'</font><font color="#990000">));</font></tt></pre>
 
+</blockquote>
 <p>Once the user is created, it must be given database-specific priveleges.</p>
 
 <p>On modern versions of mysql, the following queries grant ''testuser'' all privileges on the ''testdb'' database.</p>
 
-<pre>grant all privileges on testdb.* to 'testuser'@'%'
-</pre>
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt>grant all privileges <font color="#008080">on</font> testdb<font color="#990000">.*</font> to <font color="#FF0000">'testuser'</font>@<font color="#FF0000">'%'</font></tt></pre>
 
+</blockquote>
 <p>On sufficiently old versions of mysql, you have to insert rows directly into the db table:</p>
 
-<pre>insert into db values ('%','testdb','testuser','Y','Y','Y','Y','Y','Y','Y','Y','Y','Y','Y','Y','Y','Y','Y','Y','Y','Y','Y');
-</pre>
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt>insert into <font color="#008080">db</font> <b><font color="#000000">values</font></b> <font color="#990000">(</font><font color="#FF0000">'%'</font><font color="#990000">,</font><font color="#FF0000">'testdb'</font><font color="#990000">,</font><font color="#FF0000">'testuser'</font><font color="#990000">,</font><font color="#FF0000">'Y'</font><font color="#990000">,</font><font color="#FF0000">'Y'</font><font color="#990000">,</font><font color="#FF0000">'Y'</font><font color="#990000">,</font><font color="#FF0000">'Y'</font><font color="#990000">,</font><font color="#FF0000">'Y'</font><font color="#990000">,</font><font color="#FF0000">'Y'</font><font color="#990000">,</font><font color="#FF0000">'Y'</font><font color="#990000">,</font><font color="#FF0000">'Y'</font><font color="#990000">,</font><font color="#FF0000">'Y'</font><font color="#990000">,</font><font color="#FF0000">'Y'</font><font color="#990000">,</font><font color="#FF0000">'Y'</font><font color="#990000">,</font><font color="#FF0000">'Y'</font><font color="#990000">,</font><font color="#FF0000">'Y'</font><font color="#990000">,</font><font color="#FF0000">'Y'</font><font color="#990000">,</font><font color="#FF0000">'Y'</font><font color="#990000">,</font><font color="#FF0000">'Y'</font><font color="#990000">,</font><font color="#FF0000">'Y'</font><font color="#990000">,</font><font color="#FF0000">'Y'</font><font color="#990000">,</font><font color="#FF0000">'Y'</font><font color="#990000">);</font></tt></pre>
 
+</blockquote>
 <p>Different versions of <a href="MySQL">MySQL</a> have different numbers of columns in the ''db'' table, if the query above fails, run:.</p>
 
-<pre>desc db
-</pre>
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt>desc db</tt></pre>
 
+</blockquote>
 <p>Then count the number of columns with Type <b>enum('N','Y')</b> and re-run the query above using that number of <b>'Y</b>' values.</p>
 
 <p>Exit the mysql client and run the following command to activate these changes.</p>
 
-<pre>mysqladmin -uroot -pPassw0rd reload
-</pre>
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt>mysqladmin <font color="#990000">-</font>uroot <font color="#990000">-</font>pPassw0rd reload</tt></pre>
 
+</blockquote>
 <p>To delete a user, log into the ''mysql'' database using the following command.</p>
 
-<pre>mysql -uroot -pPassw0rd mysql
-</pre>
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt>mysql <font color="#990000">-</font>uroot <font color="#990000">-</font>pPassw0rd mysql</tt></pre>
 
+</blockquote>
 <p>On modern versions of mysql, the following queries drop the user ''testuser''.</p>
 
-<pre>drop user 'testuser'@'localhost';
-drop user 'testuser'@'%';
-</pre>
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt><font color="#008080">drop</font> user <font color="#FF0000">'testuser'</font>@<font color="#FF0000">'localhost'</font><font color="#990000">;</font>
+<font color="#008080">drop</font> user <font color="#FF0000">'testuser'</font>@<font color="#FF0000">'%'</font><font color="#990000">;</font></tt></pre>
 
+</blockquote>
 <p>On sufficiently old versions of mysql, you have to delete rows directly from the user and db tables.</p>
 
-<pre>delete from user where user='testuser';
-delete from db where user='testuser';
-</pre>
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt><b><font color="#0000FF">delete</font></b> from user <font color="#008080">where</font> user<font color="#990000">=</font><font color="#FF0000">'testuser'</font><font color="#990000">;</font>
+<b><font color="#0000FF">delete</font></b> from db <font color="#008080">where</font> user<font color="#990000">=</font><font color="#FF0000">'testuser'</font><font color="#990000">;</font></tt></pre>
 
+</blockquote>
 <p>Exit the mysql client and run the following command to activate these changes.</p>
 
-<pre>mysqladmin -uroot -pPassw0rd reload
-</pre>
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt>mysqladmin <font color="#990000">-</font>uroot <font color="#990000">-</font>pPassw0rd reload</tt></pre>
 
+</blockquote>
 <p>If you want to drop the database, you can do so with the following command.</p>
 
-<pre>mysqladmin -uroot -pPassw0rd drop testdb
-</pre>
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt>mysqladmin <font color="#990000">-</font>uroot <font color="#990000">-</font>pPassw0rd drop testdb</tt></pre>
 
+</blockquote>
 <p>This should be enough to get you started. To set up more complex configurations, consult the <a href="MySQL">MySQL</a> <a target="_blank" href="http://dev.mysql.com/doc/refman/en/">online documentation</a>.</p>
 
 <a name="accessing"/><h2>Accessing a Database</h2>
 
 <p>Accessing a <a href="MySQL">MySQL</a> database using the ''mysql'' client tool is simple. For example, to access a database called ''testdb'' on the local machine as the ''testuser'' user with password ''testpassword'', use the following command.</p>
 
-<pre>mysql -utestuser -ptestpassword testdb
-</pre>
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt>mysql <font color="#990000">-</font>utestuser <font color="#990000">-</font>ptestpassword testdb</tt></pre>
 
+</blockquote>
 <p>If you want to access a database on a remote machine, say on ''testhost'', use the -h option as follows.</p>
 
-<pre>mysql -htesthost -utestuser -ptestpassword testdb
-</pre>
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt>mysql <font color="#990000">-</font>htesthost <font color="#990000">-</font>utestuser <font color="#990000">-</font>ptestpassword testdb</tt></pre>
 
+</blockquote>
 <p>Once you're connected to the database, the ''mysql'' client prompts you to enter a query. Queries may be split across multiple lines. To run a query, end it with a semicolon or type \g on the next line. To exit, type \q.</p>
 
 <p>A sample ''mysql'' session follows.</p>
 
-<pre>[user@localhost user]$ mysql -utestuser -ptestpassword testdb
-Welcome to the MySQL monitor.  Commands end with ; or \g.
-Your MySQL connection id is 5 to server version: 3.23.41
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt><font color="#990000">[</font>user@<font color="#008080">localhost</font> user<font color="#990000">]</font>$ mysql <font color="#990000">-</font>utestuser <font color="#990000">-</font>ptestpassword testdb
+Welcome to the <font color="#008080">MySQL</font> monitor<font color="#990000">.</font>  Commands <font color="#008080">end</font> with <font color="#990000">;</font> or <font color="#990000">\</font>g<font color="#990000">.</font>
+Your MySQL connection id is <font color="#993399">5</font> to <font color="#008080">server</font> version<font color="#990000">:</font> <font color="#993399">3.23</font><font color="#990000">.</font><font color="#993399">41</font>
 
-Type 'help;' or '\h' for help. Type '\c' to clear the buffer.
+Type <font color="#FF0000">'help;'</font> or <font color="#FF0000">'</font><font color="#CC33CC">\h</font><font color="#FF0000">'</font> <b><font color="#0000FF">for</font></b> help<font color="#990000">.</font> Type <font color="#FF0000">'</font><font color="#CC33CC">\c</font><font color="#FF0000">'</font> to clear <font color="#008080">the</font> buffer<font color="#990000">.</font>
 
-mysql&gt; create table testtable (
-    -&gt; col1 char(40),
-    -&gt; col2 integer 
-    -&gt; );
-Query OK, 0 rows affected (0.00 sec)
+mysql<font color="#990000">&gt;</font> create <font color="#008080">table</font> <b><font color="#000000">testtable</font></b> <font color="#990000">(</font>
+    <font color="#990000">-&gt;</font> <font color="#008080">col1</font> <font color="#009900">char</font><font color="#990000">(</font><font color="#993399">40</font><font color="#990000">),</font>
+    <font color="#990000">-&gt;</font> col2 integer 
+    <font color="#990000">-&gt;</font> <font color="#990000">);</font>
+<font color="#008080">Query</font> OK<font color="#990000">,</font> <font color="#993399">0</font> <font color="#008080">rows</font> <b><font color="#000000">affected</font></b> <font color="#990000">(</font><font color="#993399">0.00</font> sec<font color="#990000">)</font>
 
-mysql&gt; show tables;
-+------------------+
-| Tables_in_testdb |
-+------------------+
-| testtable        |
-+------------------+
-1 row in set (0.00 sec)
+mysql<font color="#990000">&gt;</font> <font color="#008080">show</font> tables<font color="#990000">;</font>
+<font color="#990000">+------------------+</font>
+<font color="#990000">|</font> Tables_in_testdb <font color="#990000">|</font>
+<font color="#990000">+------------------+</font>
+<font color="#990000">|</font> testtable        <font color="#990000">|</font>
+<font color="#990000">+------------------+</font>
+<font color="#993399">1</font> row <font color="#008080">in</font> <b><font color="#000000">set</font></b> <font color="#990000">(</font><font color="#993399">0.00</font> sec<font color="#990000">)</font>
 
-mysql&gt; describe testtable;
-+-------+----------+------+-----+---------+-------+
-| Field | Type     | Null | Key | Default | Extra |
-+-------+----------+------+-----+---------+-------+
-| col1  | char(40) | YES  |     | NULL    |       |
-| col2  | int(11)  | YES  |     | NULL    |       |
-+-------+----------+------+-----+---------+-------+
-2 rows in set (0.00 sec)
+mysql<font color="#990000">&gt;</font> <font color="#008080">describe</font> testtable<font color="#990000">;</font>
+<font color="#990000">+-------+----------+------+-----+---------+-------+</font>
+<font color="#990000">|</font> Field <font color="#990000">|</font> Type     <font color="#990000">|</font> Null <font color="#990000">|</font> Key <font color="#990000">|</font> Default <font color="#990000">|</font> Extra <font color="#990000">|</font>
+<font color="#990000">+-------+----------+------+-----+---------+-------+</font>
+<font color="#990000">|</font> col1  <font color="#990000">|</font> <font color="#009900">char</font><font color="#990000">(</font><font color="#993399">40</font><font color="#990000">)</font> <font color="#990000">|</font> YES  <font color="#990000">|</font>     <font color="#990000">|</font> NULL    <font color="#990000">|</font>       <font color="#990000">|</font>
+<font color="#990000">|</font> col2  <font color="#990000">|</font> <font color="#009900">int</font><font color="#990000">(</font><font color="#993399">11</font><font color="#990000">)</font>  <font color="#990000">|</font> YES  <font color="#990000">|</font>     <font color="#990000">|</font> NULL    <font color="#990000">|</font>       <font color="#990000">|</font>
+<font color="#990000">+-------+----------+------+-----+---------+-------+</font>
+<font color="#993399">2</font> rows <font color="#008080">in</font> <b><font color="#000000">set</font></b> <font color="#990000">(</font><font color="#993399">0.00</font> sec<font color="#990000">)</font>
 
-mysql&gt; insert into testtable values ('hello',50);
-Query OK, 1 row affected (0.00 sec)
+mysql<font color="#990000">&gt;</font> insert into <font color="#008080">testtable</font> <b><font color="#000000">values</font></b> <font color="#990000">(</font><font color="#FF0000">'hello'</font><font color="#990000">,</font><font color="#993399">50</font><font color="#990000">);</font>
+<font color="#008080">Query</font> OK<font color="#990000">,</font> <font color="#993399">1</font> <font color="#008080">row</font> <b><font color="#000000">affected</font></b> <font color="#990000">(</font><font color="#993399">0.00</font> sec<font color="#990000">)</font>
 
-mysql&gt; insert into testtable values ('hi',60);
-Query OK, 1 row affected (0.00 sec)
+mysql<font color="#990000">&gt;</font> insert into <font color="#008080">testtable</font> <b><font color="#000000">values</font></b> <font color="#990000">(</font><font color="#FF0000">'hi'</font><font color="#990000">,</font><font color="#993399">60</font><font color="#990000">);</font>
+<font color="#008080">Query</font> OK<font color="#990000">,</font> <font color="#993399">1</font> <font color="#008080">row</font> <b><font color="#000000">affected</font></b> <font color="#990000">(</font><font color="#993399">0.00</font> sec<font color="#990000">)</font>
 
-mysql&gt; insert into testtable values ('bye',70);
-Query OK, 1 row affected (0.00 sec)
+mysql<font color="#990000">&gt;</font> insert into <font color="#008080">testtable</font> <b><font color="#000000">values</font></b> <font color="#990000">(</font><font color="#FF0000">'bye'</font><font color="#990000">,</font><font color="#993399">70</font><font color="#990000">);</font>
+<font color="#008080">Query</font> OK<font color="#990000">,</font> <font color="#993399">1</font> <font color="#008080">row</font> <b><font color="#000000">affected</font></b> <font color="#990000">(</font><font color="#993399">0.00</font> sec<font color="#990000">)</font>
 
-mysql&gt; select * from testtable;
-+-------+------+
-| col1  | col2 |
-+-------+------+
-| hello |   50 |
-| hi    |   60 |
-| bye   |   70 |
-+-------+------+
-3 rows in set (0.00 sec)
+mysql<font color="#990000">&gt;</font> select <font color="#990000">*</font> <font color="#008080">from</font> testtable<font color="#990000">;</font>
+<font color="#990000">+-------+------+</font>
+<font color="#990000">|</font> col1  <font color="#990000">|</font> col2 <font color="#990000">|</font>
+<font color="#990000">+-------+------+</font>
+<font color="#990000">|</font> hello <font color="#990000">|</font>   <font color="#993399">50</font> <font color="#990000">|</font>
+<font color="#990000">|</font> hi    <font color="#990000">|</font>   <font color="#993399">60</font> <font color="#990000">|</font>
+<font color="#990000">|</font> bye   <font color="#990000">|</font>   <font color="#993399">70</font> <font color="#990000">|</font>
+<font color="#990000">+-------+------+</font>
+<font color="#993399">3</font> rows <font color="#008080">in</font> <b><font color="#000000">set</font></b> <font color="#990000">(</font><font color="#993399">0.00</font> sec<font color="#990000">)</font>
 
-mysql&gt; update testtable set col2=0 where col1='hi';
-Query OK, 1 row affected (0.00 sec)
-Rows matched: 1  Changed: 1  Warnings: 0
+mysql<font color="#990000">&gt;</font> update testtable <font color="#008080">set</font> col2<font color="#990000">=</font><font color="#993399">0</font> <font color="#008080">where</font> col1<font color="#990000">=</font><font color="#FF0000">'hi'</font><font color="#990000">;</font>
+<font color="#008080">Query</font> OK<font color="#990000">,</font> <font color="#993399">1</font> <font color="#008080">row</font> <b><font color="#000000">affected</font></b> <font color="#990000">(</font><font color="#993399">0.00</font> sec<font color="#990000">)</font>
+<font color="#008080">Rows</font> matched<font color="#990000">:</font> <font color="#993399">1</font>  Changed<font color="#990000">:</font> <font color="#993399">1</font>  Warnings<font color="#990000">:</font> <font color="#993399">0</font>
 
-mysql&gt; select * from testtable;
-+-------+------+
-| col1  | col2 |
-+-------+------+
-| hello |   50 |
-| hi    |    0 |
-| bye   |   70 |
-+-------+------+
-3 rows in set (0.00 sec)
+mysql<font color="#990000">&gt;</font> select <font color="#990000">*</font> <font color="#008080">from</font> testtable<font color="#990000">;</font>
+<font color="#990000">+-------+------+</font>
+<font color="#990000">|</font> col1  <font color="#990000">|</font> col2 <font color="#990000">|</font>
+<font color="#990000">+-------+------+</font>
+<font color="#990000">|</font> hello <font color="#990000">|</font>   <font color="#993399">50</font> <font color="#990000">|</font>
+<font color="#990000">|</font> hi    <font color="#990000">|</font>    <font color="#993399">0</font> <font color="#990000">|</font>
+<font color="#990000">|</font> bye   <font color="#990000">|</font>   <font color="#993399">70</font> <font color="#990000">|</font>
+<font color="#990000">+-------+------+</font>
+<font color="#993399">3</font> rows <font color="#008080">in</font> <b><font color="#000000">set</font></b> <font color="#990000">(</font><font color="#993399">0.00</font> sec<font color="#990000">)</font>
 
-mysql&gt; delete from testtable where col2=50;
-Query OK, 1 row affected (0.00 sec)
+mysql<font color="#990000">&gt;</font> <b><font color="#0000FF">delete</font></b> from testtable <font color="#008080">where</font> col2<font color="#990000">=</font><font color="#993399">50</font><font color="#990000">;</font>
+<font color="#008080">Query</font> OK<font color="#990000">,</font> <font color="#993399">1</font> <font color="#008080">row</font> <b><font color="#000000">affected</font></b> <font color="#990000">(</font><font color="#993399">0.00</font> sec<font color="#990000">)</font>
 
-mysql&gt; select * from testtable;
-+------+------+
-| col1 | col2 |
-+------+------+
-| hi   |    0 |
-| bye  |   70 |
-+------+------+
-2 rows in set (0.00 sec)
+mysql<font color="#990000">&gt;</font> select <font color="#990000">*</font> <font color="#008080">from</font> testtable<font color="#990000">;</font>
+<font color="#990000">+------+------+</font>
+<font color="#990000">|</font> col1 <font color="#990000">|</font> col2 <font color="#990000">|</font>
+<font color="#990000">+------+------+</font>
+<font color="#990000">|</font> hi   <font color="#990000">|</font>    <font color="#993399">0</font> <font color="#990000">|</font>
+<font color="#990000">|</font> bye  <font color="#990000">|</font>   <font color="#993399">70</font> <font color="#990000">|</font>
+<font color="#990000">+------+------+</font>
+<font color="#993399">2</font> rows <font color="#008080">in</font> <b><font color="#000000">set</font></b> <font color="#990000">(</font><font color="#993399">0.00</font> sec<font color="#990000">)</font>
 
-mysql&gt; drop table testtable;
-Query OK, 0 rows affected (0.00 sec)
+mysql<font color="#990000">&gt;</font> drop <font color="#008080">table</font> testtable<font color="#990000">;</font>
+<font color="#008080">Query</font> OK<font color="#990000">,</font> <font color="#993399">0</font> <font color="#008080">rows</font> <b><font color="#000000">affected</font></b> <font color="#990000">(</font><font color="#993399">0.00</font> sec<font color="#990000">)</font>
 
-mysql&gt; \q
-Bye
-</pre>
+mysql<font color="#990000">&gt;</font> <font color="#990000">\</font>q
+Bye</tt></pre>
 
+</blockquote>
 <a name="quirks"/><h2><a href="MySQL">MySQL</a> Quirks</h2>
 
 <p>Ancient versions of <a href="MySQL">MySQL</a> don't support transactions.</p>

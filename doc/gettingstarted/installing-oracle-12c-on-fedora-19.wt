@@ -10,27 +10,31 @@
 
 Oracle 12c requires some software packages that may not have been installed on your system. Run the following yum command to install them:
 
-{{{
+{{{#!blockquote
+{{{#!code
 yum install libaio libaio-devel compat-libstdc++-33 elfutils-libelf-devel \
 sysstat unixODBC unixODBC-devel ksh
+}}}
 }}}
 
 == Configure the Kernel ==
 
 Oracle 12c requires that you at least temporarily increase the values of a couple of kernel parameters. To temporarily increase these values, follow these instructions (as root):
 
-{{{
-echo 6815744 &gt; /proc/sys/fs/file-max
-echo "9000 65500" &gt; /proc/sys/net/ipv4/ip_local_port_range
-echo 262144 &gt; /proc/sys/net/core/rmem_default
-echo 4194304 &gt; /proc/sys/net/core/rmem_max
-echo 262144 &gt; /proc/sys/net/core/wmem_default
-echo 1048576 &gt; /proc/sys/net/core/wmem_max
-echo 1048576 &gt; /proc/sys/fs/aio-max-nr
-echo 1073741824 &gt; /proc/sys/kernel/shmall
-echo 4398046511104 &gt; /proc/sys/kernel/shmmax
-echo 4096 &gt; /proc/sys/kernel/shmmni
-echo "250 32000 100 128" &gt; /proc/sys/kernel/sem
+{{{#!blockquote
+{{{#!code
+echo 6815744 > /proc/sys/fs/file-max
+echo "9000 65500" > /proc/sys/net/ipv4/ip_local_port_range
+echo 262144 > /proc/sys/net/core/rmem_default
+echo 4194304 > /proc/sys/net/core/rmem_max
+echo 262144 > /proc/sys/net/core/wmem_default
+echo 1048576 > /proc/sys/net/core/wmem_max
+echo 1048576 > /proc/sys/fs/aio-max-nr
+echo 1073741824 > /proc/sys/kernel/shmall
+echo 4398046511104 > /proc/sys/kernel/shmmax
+echo 4096 > /proc/sys/kernel/shmmni
+echo "250 32000 100 128" > /proc/sys/kernel/sem
+}}}
 }}}
 
 == Install Oracle ==
@@ -43,40 +47,50 @@ I have had problems with the graphical installer on enlightenment and fluxbox wi
 
 If you have a CD, mount it and cd to the mount point. If you have a zip distribution, extract the file using:
 
-{{{
+{{{#!blockquote
+{{{#!code
 unzip linuxamd64_12c_database_1of2.zip
 unzip linuxamd64_12c_database_2of2.zip
+}}}
 }}}
 
 Change directories to the database directory.[[br]][[br]] Type '''./runInstaller'''[[br]][[br]] On the '''Configure Security Updates''' screen, leave the Email box blank, uncheck the box next to '''I wish to receive security updates via My Oracle Support''' and click '''Next'''.[[br]][[br]] When the '''Email Address Not Specified''' popup appears, click '''Yes'''.[[br]][[br]] On the '''Download Software Updates''' screen, leave '''Skip software update''' checked and click '''Next'''.[[br]][[br]] If an '''Environment does not meet minimum requirements''' popup appears, just click '''Yes''' to continue. I'm not sure what it's looking for but I've always been able to continue safely.
 
 On the '''Select Installation Option''' screen, accept the default '''Create and configure a database'''and click '''Next'''.[[br]][[br]] On the '''System Class''' screen, accept the default '''Desktop Class''' and click '''Next'''.[[br]][[br]] On the '''Typical Install Configuration''' screen, change the '''Global database name''' from "orcl.localdomain" to "ora1.localdomain". Enter a password in the '''Administrative Password''' and '''Confirm Password''' boxes. Change the '''Pluggable database name''' from "pdborcl" to "pdbora1". Click '''Next'''.[[br]][[br]] If a popup comes up indicating that '''The ADMIN password entered does not conform to the Oracle recommended standards''' click '''Yes''' to continue.[[br]][[br]] On the '''Summary''' screen, click '''Install'''[[br]][[br]] The '''Install Product''' screen will show the progress of the installation[[br]][[br]][[br]] Partway through the '''Link binaries''' phase of the installation, you might get an error indicating that the target '''links proc gen_pcsfg procob''' failed. To resolve this, edit /u01/app/oracle/product/12.1.0/rdbms/lib/env_rdbms.mk and add -lons to the end of the line for RMAN_LINKLINE. While you're at it, to avoid further errors, add -lons to the end of the line for PLSHPROF_LINKLINE and add -lnnz12 to the end of the line for TG4PWD_LINKLINE.[[br]][[br]] Afterwards, they should look like:
 
-{{{
+{{{#!blockquote
+{{{#!code
 RMAN_LINKLINE=$(LINK) $(OPT) $(S0MAIN) $(SSKRMED) $(SKRMPT) \
         $(LLIBDBTOOLS) $(LLIBCLIENT) $(LLIBSQL) $(LLIBPLSQL) \
         $(LLIBSNLSRTL) $(LLIBUNLSRTL) $(LLIBNLSRTL) \
         $(LLIBSLAX) $(LLIBPLSQL) $(LIBPLCN) $(LINKTTLIBS) -lons
 }}}
-
-and:
-
-{{{
-PLSHPROF_LINKLINE=$(LINK) $(OPT) $(PLSTMAI) $(SSDBED) \
-        $(LLIBCLIENT) $(LLIBPLSQL) $(LLIBSLAX) $(LLIBPLSQL) $(LINKTTLIBS) -lons
 }}}
 
 and:
 
-{{{
+{{{#!blockquote
+{{{#!code
+PLSHPROF_LINKLINE=$(LINK) $(OPT) $(PLSTMAI) $(SSDBED) \
+        $(LLIBCLIENT) $(LLIBPLSQL) $(LLIBSLAX) $(LLIBPLSQL) $(LINKTTLIBS) -lons
+}}}
+}}}
+
+and:
+
+{{{#!blockquote
+{{{#!code
 TG4PWD_LINKLINE= $(LINK) $(OPT) $(TG4PWDMAI) \
         $(LLIBTHREAD) $(LLIBCLNTSH) $(LINKLDLIBS) -lnnz12
+}}}
 }}}
 
 Then rename /u01/app/oracle/product/12.1.0/lib/stubs to /u01/app/oracle/product/12.1.0/lib/stubs.bak as follows:
 
-{{{
+{{{#!blockquote
+{{{#!code
 mv /u01/app/oracle/product/12.1.0/lib/stubs /u01/app/oracle/product/12.1.0/lib/stubs.bak
+}}}
 }}}
 
 Then click '''Retry'''.
@@ -87,8 +101,10 @@ Eventually, a dialog will pop up asking you to run some scripts as root. Just fo
 
 During the installation, the tnsnames.ora file which tells clients how to connect to the database will most likely have been created in 640 mode, leaving it unreadable by anyone not in the oinstall group. There are 2 options here, either add every user that you want to be able to access oracle to the oinstall group, or change permissions on tnsnames.ora to make it world-readable. If you opt for the latter, you can do so using the following command:
 
-{{{
+{{{#!blockquote
+{{{#!code
 chmod o+r /u01/app/oracle/product/11.2.0/network/admin/tnsnames.ora
+}}}
 }}}
 
 '''IMPORTANT!!!...'''
@@ -107,7 +123,8 @@ Run sqlplus with:
 
 Then run the following script:
 
-{{{
+{{{#!blockquote
+{{{#!code
 SET CMDSEP /
 CREATE TRIGGER open_all_pdbs
 AFTER STARTUP
@@ -116,6 +133,7 @@ BEGIN
 EXECUTE IMMEDIATE 'alter pluggable database all open';
 END open_all_pdbs;
 /
+}}}
 }}}
 
 Now the ora1 pluggable database and any other databases you create will be started when the cdbora1 database is started.

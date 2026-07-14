@@ -26,17 +26,20 @@ To install them on an RPM-based linux system, simply use ''rpm -i''.
 
 For example, version 12.5:
 
-{{{
+{{{#!blockquote
+{{{#!code
 rpm -i sybase-openclient-12.5.0.1ESD-1.i386.rpm \
 sybase-common-12.5.0.1DE-1.i386.rpm \
 sybase-ase-12.5.0.1ESD-1.i386.rpm
+}}}
 }}}
 
 To install them on Debian Linux, install ''alien'' by running ''apt-get install alien'' then convert the RPM's to DEB's uisng ''alien --to-deb'' and install them them with ''dpkg''.
 
 For example, version 12.5:
 
-{{{
+{{{#!blockquote
+{{{#!code
 alien --to-deb sybase-openclient-12.5.0.1ESD-1.i386.rpm
 alien --to-deb sybase-common-12.5.0.1DE-1.i386.rpm
 alien --to-deb sybase-ase-12.5.0.1ESD-1.i386.rpm
@@ -44,12 +47,15 @@ dpkg -i sybase-openclient-12.5.0.1ESD-1.i386.deb
 dpkg -i sybase-common-12.5.0.1DE-1.i386.deb
 dpkg -i sybase-ase-12.5.0.1ESD-1.i386.deb
 }}}
+}}}
 
 Version 11.0.3.3 does not create a sybase user when the RPMS are installed. After installation, you must run the following commands as root.
 
-{{{
+{{{#!blockquote
+{{{#!code
 export SYBASE=/opt/sybase
 /opt/sybase/install/sybinstall.sh
+}}}
 }}}
 
 Answer Yes or y to all questions. The script will create a sybase user and prompt you for a password.
@@ -76,15 +82,19 @@ In the configuration script for your shell, add the path to the SAP/Sybase isql 
 
 For Bourne shells:
 
-{{{
+{{{#!blockquote
+{{{#!code
 PATH=$PATH:/opt/sybase/OCS/bin
 export PATH
+}}}
 }}}
 
 For C-shells:
 
-{{{
+{{{#!blockquote
+{{{#!code
 setenv PATH ${PATH}:/opt/sybase/OCS/bin
+}}}
 }}}
 
 Now log out and log back in and you can use the ''isql'' client to create a database.
@@ -95,68 +105,87 @@ If you need to set the administrative user's password, log into the database wit
 
 For version 12.5 or newer:
 
-{{{
+{{{#!blockquote
+{{{#!code
 isql -U sa -S LOCALHOST
+}}}
 }}}
 
 For version 11.9.2 or older:
 
-{{{
+{{{#!blockquote
+{{{#!code
 isql -U sa -S localhost
+}}}
 }}}
 
 At the prompt, run the following stored procedure to give ''sa'' the password ''Passw0rd''.
 
-{{{
+{{{#!blockquote
+{{{#!code
 sp_password null,"Passw0rd","sa"
 go
+}}}
 }}}
 
 Now logout.
 
-{{{
+{{{#!blockquote
+{{{#!code
 quit
+}}}
 }}}
 
 Log back in using the following command. When it prompts you for a password, type ''Passw0rd''.
 
 For version 12.5 or newer:
 
-{{{
+{{{#!blockquote
+{{{#!code
 isql -U sa -S LOCALHOST
+}}}
 }}}
 
 For version 11.9.2 or older:
 
-{{{
+{{{#!blockquote
+{{{#!code
 isql -U sa -S localhost
+}}}
 }}}
 
 Though you could create your own tables using the ''sa'' user and the system database, it's not a good idea. You should create a user database. The following commands create a database named ''testdb''.
 
-{{{
+{{{#!blockquote
+{{{#!code
 create database testdb
 go
 quit
+}}}
 }}}
 
 Now log into the database you just created with the following command.
 
 For version 12.5 or newer:
 
-{{{
+{{{#!blockquote
+{{{#!code
 isql -U sa -S LOCALHOST -D testdb
+}}}
 }}}
 
 For version 11.9.2 or older:
 
-{{{
+{{{#!blockquote
+{{{#!code
 isql -U sa -S localhost -D testdb
+}}}
 }}}
 
 Creating a user is a 2 step process. First a universal login must be created, then it must be added as a user to a particular database. Execute the following stored procedures and queries to create a login named ''testuser'' with password ''testpassword'', add it as a user of ''testdb'' and give it all permissions.
 
-{{{
+{{{#!blockquote
+{{{#!code
 sp_addlogin "testuser","testpassword"
 go
 sp_adduser "testuser"
@@ -165,69 +194,88 @@ grant all to testuser
 go
 quit
 }}}
+}}}
 
 Now you can log in as ''testuser'' using the following command. When promted for a password, enter ''testpassword''.
 
 For version 12.5 or newer:
 
-{{{
+{{{#!blockquote
+{{{#!code
 isql -U testuser -S LOCALHOST -D testdb
+}}}
 }}}
 
 For version 11.9.2 or older:
 
-{{{
+{{{#!blockquote
+{{{#!code
 isql -U testuser -S localhost -D testdb
+}}}
 }}}
 
 A common problem when using ASE in this minimal configuration is running out of log space. If you run out of log space, queries will hang until space is freed up. You might get an error like this:
 
-{{{
+{{{#!blockquote
+{{{#!code
 The transaction log in database testdb is almost full.  Your transaction is
 
 being suspended until space is made available in the log.
+}}}
 }}}
 
 To dump the log, log into the testdb database as the ''sa'' user as follows. When it promts you for a password, type ''Passw0rd''.
 
 For version 12.5 or newer:
 
-{{{
+{{{#!blockquote
+{{{#!code
 isql -U sa -S LOCALHOST -D testdb
+}}}
 }}}
 
 For version 11.9.2 or older:
 
-{{{
+{{{#!blockquote
+{{{#!code
 isql -U sa -S localhost -D testdb
+}}}
 }}}
 
 Once logged in, execute the following series of commands.
 
-{{{
+{{{#!blockquote
+{{{#!code
 dump tran testdb with no_log
 go
+}}}
 }}}
 
 A longer term solution is to configure the database to truncate its log at each checkpoint. To configure this, log into the master database as the ''sa'' user as follows. When it prompts you for a password, type ''Passw0rd''.
 
 For version 12.5 or newer:
 
-{{{
+{{{#!blockquote
+{{{#!code
 isql -U sa -S LOCALHOST -D master
+}}}
 }}}
 
 For version 11.9.2 or older:
 
-{{{
+{{{#!blockquote
+{{{#!code
 isql -U sa -S localhost -D master
+}}}
 }}}
 
 Once logged in, execute the following series of commands.
 
-{{{
+{{{#!blockquote
+{{{#!code
 sp_dboption testdb, 'trunc log on chkpt', true
 go
+}}}
 }}}
 
 This is not something you should do in production. Without the transaction log, there is no way to recover from certain failure conditions. It is only safe to do in development or test environments where data could be reconstructed or recovered some other way.
@@ -246,22 +294,27 @@ In the configuration script for whatever shell you use, create an environment va
 
 For Bourne shells:
 
-{{{
+{{{#!blockquote
+{{{#!code
 SYBASE=/opt/sybase
 export SYBASE
+}}}
 }}}
 
 For C-shells:
 
-{{{
+{{{#!blockquote
+{{{#!code
 setenv SYBASE /opt/sybase
+}}}
 }}}
 
 Now log out and log back in and you can use the ''isql'' client to access the database.
 
 ''isql'' requires a '''username''', '''server''' and '''database''' name to access a database. The '''server''' parameter does not refer to the hostname of the machine you want to connect to, but rather to an entry in the ''$SYBASE/interfaces'' file. When a database is created, the process puts an entry in the ''$SYBASE/interfaces'' file on the machine the database was created on. This entry can then be copied into the ''$SYBASE/interfaces'' file on other machines to provide them remote access to the database. Below is a sample entry for a server named ''REMOTEHOST'' which refers to an instance of ASE running on ''testhost.testdomain.com'', on port 4100, accessible over tcp on ethernet and a similar entry for a server named ''LOCALHOST'' which is running on ''localhost''.
 
-{{{
+{{{#!blockquote
+{{{#!code
 REMOTEHOST
  master tcp ether testhost.testdomain.com 4100
  query tcp ether testhost.testdomain.com 4100
@@ -270,36 +323,40 @@ LOCALHOST
  master tcp ether localhost 4100
  query tcp ether localhost 4100
 }}}
+}}}
 
 Similar entries can be made to access servers running on other hosts.
 
 To access the database ''testdb'' on the server ''LOCALHOST'' as the user ''testuser'', run the following command.
 
-{{{
+{{{#!blockquote
+{{{#!code
 isql -U testuser -S LOCALHOST -D testdb
+}}}
 }}}
 
 Once you're connected to the database, the ''isql'' client prompts you to enter a query. Queries may be split across multiple lines. To run a query, type go on a line by itself. To exit, type quit on a line by itself.
 
 A sample ''isql''session follows.
 
-{{{
+{{{#!blockquote
+{{{#!code
 [user@localhost user]$ /opt/sybase/OCS/bin/isql -U testuser -S LOCALHOST -D testdb
 Password: 
-1&gt; create table testtable (
-2&gt; col1 char(40),
-3&gt; col2 integer
-4&gt; )
-5&gt; go
-1&gt; select name from sysobjects where type='U'
-2&gt; go
+1> create table testtable (
+2> col1 char(40),
+3> col2 integer
+4> )
+5> go
+1> select name from sysobjects where type='U'
+2> go
  name                           
  ------------------------------ 
  testtable                      
 
 (1 row affected)
-1&gt; sp_help testtable
-2&gt; go
+1> sp_help testtable
+2> go
  Name                           Owner                         
          Type
  ------------------------------ ------------------------------ ---------------------- 
@@ -324,17 +381,17 @@ The attribute 'exp_row_size' is not applicable to tables with allpages lock sche
  ------------ -------------- ---------- ----------------- 
             1              0          0                 0 
 (return status = 0)
-1&gt; insert into testtable values ('hello',50)
-2&gt; go
+1> insert into testtable values ('hello',50)
+2> go
 (1 row affected)
-1&gt; insert into testtable values ('hi',60)
-2&gt; go
+1> insert into testtable values ('hi',60)
+2> go
 (1 row affected)
-1&gt; insert into testtable values ('bye',70)
-2&gt; go
+1> insert into testtable values ('bye',70)
+2> go
 (1 row affected)
-1&gt; select * from testtable
-2&gt; go
+1> select * from testtable
+2> go
  col1                                     col2        
  ---------------------------------------- ----------- 
  hello                                             50 
@@ -342,11 +399,11 @@ The attribute 'exp_row_size' is not applicable to tables with allpages lock sche
  bye                                               70 
 
 (3 rows affected)
-1&gt; update testtable set col2=0 where col1='hi'
-2&gt; go
+1> update testtable set col2=0 where col1='hi'
+2> go
 (1 row affected)
-1&gt; select * from testtable
-2&gt; go
+1> select * from testtable
+2> go
  col1                                     col2        
  ---------------------------------------- ----------- 
  hello                                             50 
@@ -354,20 +411,21 @@ The attribute 'exp_row_size' is not applicable to tables with allpages lock sche
  bye                                               70 
 
 (3 rows affected)
-1&gt; delete from testtable where col2=50
-2&gt; go
+1> delete from testtable where col2=50
+2> go
 (1 row affected)
-1&gt; select * from testtable
-2&gt; go
+1> select * from testtable
+2> go
  col1                                     col2        
  ---------------------------------------- ----------- 
  hi                                                 0 
  bye                                               70 
 
 (2 rows affected)
-1&gt; drop table testtable
-2&gt; go
-1&gt; quit
+1> drop table testtable
+2> go
+1> quit
+}}}
 }}}
 
 {{{#!include ../contentend.html}}}

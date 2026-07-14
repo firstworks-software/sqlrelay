@@ -31,8 +31,10 @@ I've sucessfully installed MySQL on Linux, FreeBSD, NetBSD, OpenBSD and Solaris.
 
 To install MySQL on an RPM-based Linux distribution run:
 
-{{{
+{{{#!blockquote
+{{{#!code
 yum install mysql-server mysql-devel
+}}}
 }}}
 
 Or on an old RPM-based distribution that doesn't support yum, install them from the CD/DVD's using ''rpm -i''.
@@ -43,8 +45,10 @@ Or on an old RPM-based distribution that doesn't support yum, install them from 
 
 To install MySQL on Debian and Ubuntu Linux, run:
 
-{{{
+{{{#!blockquote
+{{{#!code
 apt-get install mysql-server libmysqlclient-dev
+}}}
 }}}
 
 MySQL packages don't appear to be available for older Debian releases, so for those releases, I've always compiled it from source. Alternatively, you can download a binary distribution in tar.gz format from [http://www.mysql.com the MySQL site].
@@ -55,16 +59,20 @@ MySQL packages don't appear to be available for older Debian releases, so for th
 
 To install MySQL on FreeBSD, run:
 
-{{{
+{{{#!blockquote
+{{{#!code
 pkg install mysql56-server mysql56-client
+}}}
 }}}
 
 (replacing 56 with the major/minor version of mysql that you want to install)
 
 On older versions of FreeBSD, run:
 
-{{{
+{{{#!blockquote
+{{{#!code
 pkg_add -r mysql56-server mysql56-client
+}}}
 }}}
 
 You can also install MySQL from the Ports CD(s) that came with your distribution using ''/stand/sysinstall''.
@@ -75,14 +83,18 @@ You can also install MySQL from the Ports CD(s) that came with your distribution
 
 To install MySQL on OpenBSD, verify that /etc/pkg.conf has a valid path in it, like:
 
-{{{
+{{{#!blockquote
+{{{#!code
 installpath = ftp://ftp.usa.openbsd.org/pub/OpenBSD/5.6/packages/amd64/
+}}}
 }}}
 
 And run:
 
-{{{
+{{{#!blockquote
+{{{#!code
 pkg_add mysql-server mysql-client
+}}}
 }}}
 
 Packages are also available from [ftp://ftp.openbsd.org ftp.openbsd.org] and on the CD's that came with your distribution and can be installed manually using ''pkg_add''.
@@ -93,20 +105,26 @@ Packages are also available from [ftp://ftp.openbsd.org ftp.openbsd.org] and on 
 
 To install MySQL on NetBSD, run:
 
-{{{
+{{{#!blockquote
+{{{#!code
 pkgin install mysql-server mysql-client
+}}}
 }}}
 
 On older versions of NetBSD, verify that the PKG_PATH environment variable is configured to a valid path like:
 
-{{{
+{{{#!blockquote
+{{{#!code
 ftp://ftp.netbsd.org/pub/pkgsrc/packages/NetBSD/i386/4.0.1_2012Q3/All
+}}}
 }}}
 
 And run:
 
-{{{
+{{{#!blockquote
+{{{#!code
 pkg_add mysql-server myql-client
+}}}
 }}}
 
 Packages are also available from [ftp://ftp.netbsd.org ftp.netbsd.org] and on the CD's that came with your distribution and can be installed manually using ''pkg_add''.
@@ -133,6 +151,7 @@ If you compiled from source on a platform that supports init-style system initia
 
 For MySQL 4 and higher:
 
+{{{#!blockquote
 {{{
  #!/bin/sh
 
@@ -167,9 +186,11 @@ esac
 
 exit 0
 }}}
+}}}
 
 For MySQL 3:
 
+{{{#!blockquote
 {{{
  #!/bin/sh
 
@@ -192,6 +213,7 @@ esac
 
 exit 0
 }}}
+}}}
 
 Install this script and run it with the "start" option to start up the database. Running it with the "stop" option shuts the database down. To access a database, it must be running.
 
@@ -205,95 +227,123 @@ The installation process creates a database named ''mysql'' containing privilege
 
 The following commands give the ''root'' user the password ''Passw0rd''.
 
-{{{
+{{{#!blockquote
+{{{#!code
 mysql -uroot -e "update user set password=password('Passw0rd') where user='root'" mysql
 mysqladmin -uroot reload
+}}}
 }}}
 
 Though you can create tables in the ''mysql'' database, it's not a good idea. You should create a new database. The following command creates a database called ''testdb''.
 
-{{{
+{{{#!blockquote
+{{{#!code
 mysqladmin -uroot -pPassw0rd create testdb
+}}}
 }}}
 
 To create a user, log into the ''mysql'' database using the following command.
 
-{{{
+{{{#!blockquote
+{{{#!code
 mysql -uroot -pPassw0rd mysql
+}}}
 }}}
 
 On modern versions of mysql, the following queries create a user called ''testuser'' with password ''testpassword'' and allows it to log in from the local machine or any remote host.
 
-{{{
+{{{#!blockquote
+{{{#!code
 create user 'testuser'@'localhost' identified by 'testpassword'
 create user 'testuser'@'%' identified by 'testpassword'
+}}}
 }}}
 
 On sufficiently old versions of mysql, you have to insert rows directly into the user table:
 
-{{{
+{{{#!blockquote
+{{{#!code
 insert into user (host,user,password) values ('localhost','testuser',password('testpassword'));
 insert into user (host,user,password) values ('%','testuser',password('testpassword'));
+}}}
 }}}
 
 Once the user is created, it must be given database-specific priveleges.
 
 On modern versions of mysql, the following queries grant ''testuser'' all privileges on the ''testdb'' database.
 
-{{{
+{{{#!blockquote
+{{{#!code
 grant all privileges on testdb.* to 'testuser'@'%'
+}}}
 }}}
 
 On sufficiently old versions of mysql, you have to insert rows directly into the db table:
 
-{{{
+{{{#!blockquote
+{{{#!code
 insert into db values ('%','testdb','testuser','Y','Y','Y','Y','Y','Y','Y','Y','Y','Y','Y','Y','Y','Y','Y','Y','Y','Y','Y');
+}}}
 }}}
 
 Different versions of MySQL have different numbers of columns in the ''db'' table, if the query above fails, run:.
 
-{{{
+{{{#!blockquote
+{{{#!code
 desc db
+}}}
 }}}
 
 Then count the number of columns with Type '''enum('N','Y')''' and re-run the query above using that number of ''''Y'''' values.
 
 Exit the mysql client and run the following command to activate these changes.
 
-{{{
+{{{#!blockquote
+{{{#!code
 mysqladmin -uroot -pPassw0rd reload
+}}}
 }}}
 
 To delete a user, log into the ''mysql'' database using the following command.
 
-{{{
+{{{#!blockquote
+{{{#!code
 mysql -uroot -pPassw0rd mysql
+}}}
 }}}
 
 On modern versions of mysql, the following queries drop the user ''testuser''.
 
-{{{
+{{{#!blockquote
+{{{#!code
 drop user 'testuser'@'localhost';
 drop user 'testuser'@'%';
+}}}
 }}}
 
 On sufficiently old versions of mysql, you have to delete rows directly from the user and db tables.
 
-{{{
+{{{#!blockquote
+{{{#!code
 delete from user where user='testuser';
 delete from db where user='testuser';
+}}}
 }}}
 
 Exit the mysql client and run the following command to activate these changes.
 
-{{{
+{{{#!blockquote
+{{{#!code
 mysqladmin -uroot -pPassw0rd reload
+}}}
 }}}
 
 If you want to drop the database, you can do so with the following command.
 
-{{{
+{{{#!blockquote
+{{{#!code
 mysqladmin -uroot -pPassw0rd drop testdb
+}}}
 }}}
 
 This should be enough to get you started. To set up more complex configurations, consult the MySQL [http://dev.mysql.com/doc/refman/en/ online documentation].
@@ -304,34 +354,39 @@ This should be enough to get you started. To set up more complex configurations,
 
 Accessing a MySQL database using the ''mysql'' client tool is simple. For example, to access a database called ''testdb'' on the local machine as the ''testuser'' user with password ''testpassword'', use the following command.
 
-{{{
+{{{#!blockquote
+{{{#!code
 mysql -utestuser -ptestpassword testdb
+}}}
 }}}
 
 If you want to access a database on a remote machine, say on ''testhost'', use the -h option as follows.
 
-{{{
+{{{#!blockquote
+{{{#!code
 mysql -htesthost -utestuser -ptestpassword testdb
+}}}
 }}}
 
 Once you're connected to the database, the ''mysql'' client prompts you to enter a query. Queries may be split across multiple lines. To run a query, end it with a semicolon or type \g on the next line. To exit, type \q.
 
 A sample ''mysql'' session follows.
 
-{{{
+{{{#!blockquote
+{{{#!code
 [user@localhost user]$ mysql -utestuser -ptestpassword testdb
 Welcome to the MySQL monitor.  Commands end with ; or \g.
 Your MySQL connection id is 5 to server version: 3.23.41
 
 Type 'help;' or '\h' for help. Type '\c' to clear the buffer.
 
-mysql&gt; create table testtable (
-    -&gt; col1 char(40),
-    -&gt; col2 integer 
-    -&gt; );
+mysql> create table testtable (
+    -> col1 char(40),
+    -> col2 integer 
+    -> );
 Query OK, 0 rows affected (0.00 sec)
 
-mysql&gt; show tables;
+mysql> show tables;
 +------------------+
 | Tables_in_testdb |
 +------------------+
@@ -339,7 +394,7 @@ mysql&gt; show tables;
 +------------------+
 1 row in set (0.00 sec)
 
-mysql&gt; describe testtable;
+mysql> describe testtable;
 +-------+----------+------+-----+---------+-------+
 | Field | Type     | Null | Key | Default | Extra |
 +-------+----------+------+-----+---------+-------+
@@ -348,16 +403,16 @@ mysql&gt; describe testtable;
 +-------+----------+------+-----+---------+-------+
 2 rows in set (0.00 sec)
 
-mysql&gt; insert into testtable values ('hello',50);
+mysql> insert into testtable values ('hello',50);
 Query OK, 1 row affected (0.00 sec)
 
-mysql&gt; insert into testtable values ('hi',60);
+mysql> insert into testtable values ('hi',60);
 Query OK, 1 row affected (0.00 sec)
 
-mysql&gt; insert into testtable values ('bye',70);
+mysql> insert into testtable values ('bye',70);
 Query OK, 1 row affected (0.00 sec)
 
-mysql&gt; select * from testtable;
+mysql> select * from testtable;
 +-------+------+
 | col1  | col2 |
 +-------+------+
@@ -367,11 +422,11 @@ mysql&gt; select * from testtable;
 +-------+------+
 3 rows in set (0.00 sec)
 
-mysql&gt; update testtable set col2=0 where col1='hi';
+mysql> update testtable set col2=0 where col1='hi';
 Query OK, 1 row affected (0.00 sec)
 Rows matched: 1  Changed: 1  Warnings: 0
 
-mysql&gt; select * from testtable;
+mysql> select * from testtable;
 +-------+------+
 | col1  | col2 |
 +-------+------+
@@ -381,10 +436,10 @@ mysql&gt; select * from testtable;
 +-------+------+
 3 rows in set (0.00 sec)
 
-mysql&gt; delete from testtable where col2=50;
+mysql> delete from testtable where col2=50;
 Query OK, 1 row affected (0.00 sec)
 
-mysql&gt; select * from testtable;
+mysql> select * from testtable;
 +------+------+
 | col1 | col2 |
 +------+------+
@@ -393,11 +448,12 @@ mysql&gt; select * from testtable;
 +------+------+
 2 rows in set (0.00 sec)
 
-mysql&gt; drop table testtable;
+mysql> drop table testtable;
 Query OK, 0 rows affected (0.00 sec)
 
-mysql&gt; \q
+mysql> \q
 Bye
+}}}
 }}}
 
 [=#quirks]

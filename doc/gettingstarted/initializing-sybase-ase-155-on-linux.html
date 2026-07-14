@@ -12,9 +12,14 @@
 
 <p>I've never been able to get the Monitor Server to start. During installation it fails with a series of messages like:</p>
 
-<pre>Warning: Attempt to create shared memory at addr=0xfe000000 failed
-</pre>
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt>Warning<font color="#990000">:</font> Attempt to create shared memory <font color="#008080">at</font> addr<font color="#990000">=</font><font color="#993399">0xfe000000</font> failed</tt></pre>
 
+</blockquote>
 <p>These instructions disable installation of the Monitor Server.</p>
 
 <h2>Install Required Packages</h2>
@@ -27,26 +32,41 @@
 
 <p>The database server requires more shared memory than the typical linux system is configured to allow by default. Run the following command (as root) prior to installation.</p>
 
-<pre>echo 268435456 &gt; /proc/sys/kernel/shmmax
-</pre>
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt>echo <font color="#993399">268435456</font> <font color="#990000">&gt;</font> <font color="#990000">/</font>proc<font color="#990000">/</font>sys<font color="#990000">/</font>kernel<font color="#990000">/</font>shmmax</tt></pre>
 
+</blockquote>
 <h2>Extract The Distribution</h2>
 
 <p>The distribution comes as a tarball. Extract it as follows:</p>
 
-<pre>mkdir sybase
-mv ase155_linuxx86.tgz sybase
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt>mkdir sybase
+<font color="#008080">mv</font> ase155_linuxx86<font color="#990000">.</font>tgz sybase
 cd sybase
-tar xfz ase155_linuxx86.tgz
-</pre>
+tar <font color="#008080">xfz</font> ase155_linuxx86<font color="#990000">.</font>tgz</tt></pre>
 
+</blockquote>
 <h2>Install The Software Distribution</h2>
 
 <p>Now, go into the directory the sybase software distribution was extracted into and, as root, run the following command:</p>
 
-<pre>./setup.bin
-</pre>
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt><font color="#990000">./</font>setup<font color="#990000">.</font>bin</tt></pre>
 
+</blockquote>
 <p>A java-based installer should run.</p>
 
 <p>On the <b>Introduction</b> screen, Click Next.</p>
@@ -99,7 +119,8 @@ tar xfz ase155_linuxx86.tgz
 
 <p>To start the database at boot time, you need to install a script like the following. Replace ''/opt/sybase'' with whatever directory Sybase ASE is installed in.</p>
 
-<pre> #!/bin/sh
+<blockquote>
+  <pre> #!/bin/sh
 
 export SYBASE=/opt/sybase
 
@@ -126,6 +147,7 @@ esac
 exit 0
 </pre>
 
+</blockquote>
 <p>Install this script and run it with the "start" option to start up the database. Running it with the "stop" option shuts the database down. To access a database, it must be running.</p>
 
 <!--#include virtual="../contentend.html"-->

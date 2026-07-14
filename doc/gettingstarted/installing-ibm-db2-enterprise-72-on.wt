@@ -22,9 +22,11 @@ DB2 7.2 requires libncurses.so.4. Some Linux distributions come with libncurses.
 
 (These instructions assume that your system has ncurses version 5.2 and that libncurses.so.5.2 resides in /usr/lib. If your system has a different version of ncurses or if it resides somewhere else (for example, in /lib) then modify the instructions accordingly)
 
-{{{
+{{{#!blockquote
+{{{#!code
 cd /usr/lib
 ln -s libncurses.so.5.2 libncurses.so.4
+}}}
 }}}
 
 == Install Compatibility Packages ==
@@ -45,14 +47,18 @@ IBM DB2 V7.2 was once available from the IBM website as a tarball. Extracting th
 
 On Debian Linux edit the db2_install script and comment out the line:
 
-{{{
-rpm -qa | grep rpm 1&gt;/dev/null 2&gt;/dev/null
+{{{#!blockquote
+{{{#!code
+rpm -qa | grep rpm 1>/dev/null 2>/dev/null
+}}}
 }}}
 
 If you're installing on a computer that gets moved around a lot (such as a laptop) and gets assigned more than 1 hostname, you should set the hostname to localhost now using the following command:
 
-{{{
+{{{#!blockquote
+{{{#!code
 hostname localhost
+}}}
 }}}
 
 The installer will name the database after whatever hostname your computer currently has. This will cause the database to be inaccessible when that hostname doesn't resolve or resolves to a computer other than yours.
@@ -105,17 +111,21 @@ By default, a DB2 instance only accept connections from clients running on the l
 
 log in as root[[br]]view ''/etc/services'' and look for a line like:
 
-{{{
+{{{#!blockquote
+{{{#!code
 db2cdb2inst1     50000/tcp  # Connection port for DB2 instance db2inst1
+}}}
 }}}
 
 if no such line exists, add it [[br]]log in as db2as[[br]]run the following commands:
 
-{{{
+{{{#!blockquote
+{{{#!code
 . /home/db2inst1/sqllib/db2profile
 db2 "update database manager configuration using svcename db2cdb2inst1"
 db2stop
 db2start
+}}}
 }}}
 
 Now the ''db2inst1'' instance should be accessible to remote clients on port 50000.
@@ -128,8 +138,9 @@ To create a sample database, run the command ''/usr/IDMdb2/V7.1/bin/db2sampl''.
 
 During the DB2 installation process, /etc/inittab is modified such that the database will be started at boot time. However, if you would like to start and stop the database at will, you can use the following script.
 
-{{{
- #!/bin/sh
+{{{#!blockquote
+{{{#!code
+#!/bin/sh
 
 case "$1" in
         start)
@@ -145,21 +156,26 @@ esac
 
 exit 0
 }}}
+}}}
 
 Install this script and run it with the "start" option to start up the database. Running it with the "stop" option shuts the database down. To access a database, it must be running.
 
 You can control which instances start at boot time using the following commands. To get each instance to start at boot time, you need to run the following command as root for each instance:
 
-{{{
+{{{#!blockquote
+{{{#!code
 /usr/IBMdb2/V7.1/bin/db2iauto -on INSTANCE_USER
+}}}
 }}}
 
 Where INSTANCE_USER is replaced by the username of the user associated with the instance you want to start at boot time.
 
 If you want to disable an instance from starting at boot time, you need to run the following command as root for each instance:
 
-{{{
+{{{#!blockquote
+{{{#!code
 /usr/IBMdb2/V7.1/bin/db2iauto -off INSTANCE_USER
+}}}
 }}}
 
 {{{#!include ../contentend.html}}}

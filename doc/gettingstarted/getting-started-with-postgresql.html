@@ -45,28 +45,38 @@
 
 <p>The postgresql package is available from <a target="_blank" href="ftp://ftp.openbsd.org">ftp.openbsd.org</a> or on CD's that came with your distribution. You can install it using ''pkg_add''. Once the package is installed, you should run the following commands:</p>
 
-<pre>useradd -m postgres
-passwd postgres (assign the new user a password)
-mkdir /usr/local/pgsql /usr/local/pgsql/var
-chown -R postgres:users /usr/local/pgsql
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt>useradd <font color="#990000">-</font>m postgres
+<font color="#008080">passwd</font> <b><font color="#000000">postgres</font></b> <font color="#990000">(</font>assign the <b><font color="#0000FF">new</font></b> user <font color="#008080">a</font> password<font color="#990000">)</font>
+mkdir <font color="#990000">/</font>usr<font color="#990000">/</font>local<font color="#990000">/</font>pgsql <font color="#990000">/</font>usr<font color="#990000">/</font>local<font color="#990000">/</font>pgsql<font color="#990000">/</font>var
+chown <font color="#990000">-</font><font color="#008080">R</font> postgres<font color="#990000">:</font>users <font color="#990000">/</font>usr<font color="#990000">/</font>local<font color="#990000">/</font>pgsql
 su postgres
-initdb -D /usr/local/pgsql/var
-exit
-</pre>
+initdb <font color="#990000">-</font>D <font color="#990000">/</font>usr<font color="#990000">/</font>local<font color="#990000">/</font>pgsql<font color="#990000">/</font>var
+exit</tt></pre>
 
+</blockquote>
 <a name="netbsd"/><h2><a href="NetBSD">NetBSD</a></h2>
 
 <p>The postgresql and postgresql-clients packages are available from <a target="_blank" href="ftp://ftp.netbsd.org">ftp.netbsd.org</a> or on CD's that came with your distribution. You can install it using ''pkg_add''. Once the package is installed, you should run the following commands:</p>
 
-<pre>useradd -m postgres
-passwd postgres (assign the new user a password)
-mkdir /usr/local/pgsql /usr/local/pgsql/var
-chown -R postgres:users /usr/local/pgsql
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt>useradd <font color="#990000">-</font>m postgres
+<font color="#008080">passwd</font> <b><font color="#000000">postgres</font></b> <font color="#990000">(</font>assign the <b><font color="#0000FF">new</font></b> user <font color="#008080">a</font> password<font color="#990000">)</font>
+mkdir <font color="#990000">/</font>usr<font color="#990000">/</font>local<font color="#990000">/</font>pgsql <font color="#990000">/</font>usr<font color="#990000">/</font>local<font color="#990000">/</font>pgsql<font color="#990000">/</font>var
+chown <font color="#990000">-</font><font color="#008080">R</font> postgres<font color="#990000">:</font>users <font color="#990000">/</font>usr<font color="#990000">/</font>local<font color="#990000">/</font>pgsql
 su postgres
-initdb -D /usr/local/pgsql/var
-exit
-</pre>
+initdb <font color="#990000">-</font>D <font color="#990000">/</font>usr<font color="#990000">/</font>local<font color="#990000">/</font>pgsql<font color="#990000">/</font>var
+exit</tt></pre>
 
+</blockquote>
 <a name="openserver"/><h2>SCO <a href="OpenServer">OpenServer</a></h2>
 
 <p>For SCO <a href="OpenServer">OpenServer</a>, <a href="PostgreSQL">PostgreSQL</a> packages are available from the <a target="_blank" href="ftp://ftp2.sco.com/pub/skunkware/osr5/vols">Skunkware ftp server</a>. SCO <a href="OpenServer">OpenServer</a> packages are often called VOL's because they come as a set of files named VOL.000.000, VOL.000.001, etc. These VOLS can be installed using the Software Manager (custom).</p>
@@ -87,7 +97,8 @@ exit
 
 <p>If you compiled from source, you'll need to install a script like the following to start/stop the database at boot/shutdown time.</p>
 
-<pre> #!/bin/sh
+<blockquote>
+  <pre> #!/bin/sh
 
 case "$1" in
         start)
@@ -106,6 +117,7 @@ esac
 exit 0
 </pre>
 
+</blockquote>
 <p>Install this script and run it with the "start" option to start up the database. Running it with the "stop" option shuts the database down. To access a database, it must be running.</p>
 
 <a name="initial"/><h2>Initial Configuration</h2>
@@ -120,98 +132,168 @@ exit 0
 
 <p>View the file ''pg_hba.conf'' (usually found in ''/var/lib/pgsql'', ''/var/lib/pgsql/data'' or ''/usr/local/pgsql/var/data'') and look for a line like one of the following:</p>
 
-<pre>local        all ident sameuser
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt>local        all ident sameuser
 
 local        all all   ident sameuser
-local        all all 127.0.0.1/32 ident sameuser
-local        all all ::1/128  ident sameuser
-</pre>
+local        all all <font color="#993399">127.0</font><font color="#990000">.</font><font color="#993399">0.1</font><font color="#990000">/</font><font color="#993399">32</font> ident sameuser
+local        <font color="#008080">all</font> all <font color="#990000">::</font><font color="#993399">1</font><font color="#990000">/</font><font color="#993399">128</font>  ident sameuser</tt></pre>
 
+</blockquote>
 <p>If there's a line like one of those in your file, then all database users will have the same password as the system password for the user of the same name, thus, when prompted for a password, enter the password of the user you are logged in as (which should be the postgres user).</p>
 
 <p>By default, <a href="PostgreSQL">PostgreSQL</a> has a database called ''template1'' containing privileges and other housekeeping data and an adminstrative user named ''postgres''. Unless your system uses socket credentials, the ''postgres'' database user initially has no password. To assign it a password (or to override the password assigned by socket credentials), run a command like the following. This command assigns the ''postgres'' user the password ''Passw0rd''.</p>
 
 <p>For <a href="PostgreSQL">PostgreSQL</a> 7 or higher:</p>
 
-<pre>psql -c "ALTER USER postgres WITH PASSWORD 'Passw0rd'" -d template1
-</pre>
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt>psql <font color="#990000">-</font>c <font color="#FF0000">"ALTER USER postgres WITH PASSWORD 'Passw0rd'"</font> <font color="#990000">-</font>d template1</tt></pre>
 
+</blockquote>
 <p>For <a href="PostgreSQL">PostgreSQL</a> 6:</p>
 
-<pre>psql -c "ALTER USER postgres WITH PASSWORD Passw0rd" -d template1
-</pre>
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt>psql <font color="#990000">-</font>c <font color="#FF0000">"ALTER USER postgres WITH PASSWORD Passw0rd"</font> <font color="#990000">-</font>d template1</tt></pre>
 
+</blockquote>
 <p>If your system uses socket credentials and you don't want it to, or if it does not use socket credentials, edit the ''pg_hba.conf'' file (usually found in ''/var/lib/pgsql'', ''/var/lib/pgsql/data'' or ''/usr/local/pgsql/var/data'') and look for lines like the following:</p>
 
-<pre>local all    ident sameuser
-host all all 127.0.0.1/32 ident sameuser
-host all all ::1/128  ident sameuser
-</pre>
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt>local all    ident sameuser
+host all all <font color="#993399">127.0</font><font color="#990000">.</font><font color="#993399">0.1</font><font color="#990000">/</font><font color="#993399">32</font> ident sameuser
+host <font color="#008080">all</font> all <font color="#990000">::</font><font color="#993399">1</font><font color="#990000">/</font><font color="#993399">128</font>  ident sameuser</tt></pre>
 
+</blockquote>
 <p>and modify these lines to read:</p>
 
-<pre>local all    password
-host all all 127.0.0.1/32 password
-host all all ::1/128  password
-</pre>
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt>local all    password
+host all all <font color="#993399">127.0</font><font color="#990000">.</font><font color="#993399">0.1</font><font color="#990000">/</font><font color="#993399">32</font> password
+host <font color="#008080">all</font> all <font color="#990000">::</font><font color="#993399">1</font><font color="#990000">/</font><font color="#993399">128</font>  password</tt></pre>
 
+</blockquote>
 <p>Older versions of postgresql may have lines like:</p>
 
-<pre>local        all                                           trust
-host         all         127.0.0.1     255.255.255.255     trust
-</pre>
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt>local        all                                           trust
+host         all         <font color="#993399">127.0</font><font color="#990000">.</font><font color="#993399">0.1</font>     <font color="#993399">255.255</font><font color="#990000">.</font><font color="#993399">255.255</font>     trust</tt></pre>
 
+</blockquote>
 <p>or like:</p>
 
-<pre>local        all                                           ident sameuser
-host         all         127.0.0.1     255.255.255.255     ident sameuser
-</pre>
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt>local        all                                           ident sameuser
+host         all         <font color="#993399">127.0</font><font color="#990000">.</font><font color="#993399">0.1</font>     <font color="#993399">255.255</font><font color="#990000">.</font><font color="#993399">255.255</font>     ident sameuser</tt></pre>
 
+</blockquote>
 <p>Modify these lines to read:</p>
 
-<pre>local        all                                           password
-host         all         127.0.0.1     255.255.255.255     password
-</pre>
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt>local        all                                           password
+host         all         <font color="#993399">127.0</font><font color="#990000">.</font><font color="#993399">0.1</font>     <font color="#993399">255.255</font><font color="#990000">.</font><font color="#993399">255.255</font>     password</tt></pre>
 
+</blockquote>
 <p>By default, <a href="PostgreSQL">PostgreSQL</a> listens on a unix socket, but not on an inet socket. Thus, clients running on the local machine can connect to the database, but clients running on remote hosts cannot. You must make some configuration changes to enable connections from remote hosts.</p>
 
 <p>Look for a file called postgresql.conf in the same directory as pg_hba.conf. Edit the file and look for a line like one of the following lines:</p>
 
-<pre>#listen_addresses = 'localhost' # what IP interface(s) to listen on;
-                                # defaults to localhost, '*' = any
-</pre>
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt><b><font color="#000080">#listen_addresses</font></b> <font color="#990000">=</font> <font color="#FF0000">'localhost'</font> # what <font color="#008080">IP</font> <b><font color="#000000">interface</font></b><font color="#990000">(</font>s<font color="#990000">)</font> to <font color="#008080">listen</font> on<font color="#990000">;</font>
+<b><font color="#000080">                                # defaults</font></b> <font color="#008080">to</font> localhost<font color="#990000">,</font> <font color="#FF0000">'*'</font> <font color="#990000">=</font> any</tt></pre>
 
+</blockquote>
 <p>If your postgresql.conf file has such a line, add the line:</p>
 
-<pre>listen_addresses = '*'
-</pre>
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt>listen_addresses <font color="#990000">=</font> <font color="#FF0000">'*'</font></tt></pre>
 
+</blockquote>
 <p>below it. Older versions of postgresql don't have that parameter. Instead, they use the tcpip_socket parameter. Look for a like like one of:</p>
 
-<pre>tcpip_socket = false
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt>tcpip_socket <font color="#990000">=</font> <b><font color="#0000FF">false</font></b>
 
-#tcpip_socket = false
-</pre>
+<b><font color="#000080">#tcpip_socket</font></b> <font color="#990000">=</font> <b><font color="#0000FF">false</font></b></tt></pre>
 
+</blockquote>
 <p>Change the line to read:</p>
 
-<pre>tcpip_socket = true
-</pre>
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt>tcpip_socket <font color="#990000">=</font> <b><font color="#0000FF">true</font></b></tt></pre>
 
+</blockquote>
 <p>If the file has no listen_addresses or tcpip_socket line, then add the tcpip_socket line.</p>
 
 <p>If your distribution has no postgresql.conf file, you will have to modify the pg_ctl script and add the -i option to the postmaster startup command. This script has changed a bit from version to version, so it may take a bit of trial and error to find the exact spot in the file to make the modification.</p>
 
 <p>Once you have configured <a href="PostgreSQL">PostgreSQL</a> listen on an inet socket, you must add a line to the ''pg_hba.conf'' file to allow remote hosts to access local databases. The following line allows all hosts in the 192.168.2.0 class C network to access all databases on the local machine, using password authentication.</p>
 
-<pre>host all all 192.168.2.0/24 password
-</pre>
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt>host all all <font color="#993399">192.168</font><font color="#990000">.</font><font color="#993399">2.0</font><font color="#990000">/</font><font color="#993399">24</font> password</tt></pre>
 
+</blockquote>
 <p>Older versions of Postgresql need the following line:</p>
 
-<pre>host all 192.168.2.0 255.255.255.0 password
-</pre>
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt>host all <font color="#993399">192.168</font><font color="#990000">.</font><font color="#993399">2.0</font> <font color="#993399">255.255</font><font color="#990000">.</font><font color="#993399">255.0</font> password</tt></pre>
 
+</blockquote>
 <p>After making these changes, log in as root and restart the database.</p>
 
 <a name="creating"/><h2>Creating a Database</h2>
@@ -224,32 +306,52 @@ host         all         127.0.0.1     255.255.255.255     password
 
 <p>For <a href="PostgreSQL">PostgreSQL</a> 7 or higher:</p>
 
-<pre>psql -U postgres -c "CREATE DATABASE testdb" -d template1
-Password: Passw0rd 
-</pre>
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt>psql <font color="#990000">-</font><font color="#008080">U</font> postgres <font color="#990000">-</font>c <font color="#FF0000">"CREATE DATABASE testdb"</font> <font color="#990000">-</font>d template1
+Password<font color="#990000">:</font> Passw0rd </tt></pre>
 
+</blockquote>
 <p>For <a href="PostgreSQL">PostgreSQL</a> 6:</p>
 
-<pre>psql -u -c "CREATE DATABASE testdb" -d template1
-Username: postgres
-Password: Passw0rd 
-</pre>
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt>psql <font color="#990000">-</font>u <font color="#990000">-</font>c <font color="#FF0000">"CREATE DATABASE testdb"</font> <font color="#990000">-</font>d template1
+Username<font color="#990000">:</font> postgres
+Password<font color="#990000">:</font> Passw0rd </tt></pre>
 
+</blockquote>
 <p>Once the database has been created, you can log into it as follows.</p>
 
 <p>For <a href="PostgreSQL">PostgreSQL</a> 7 or higher:</p>
 
-<pre>psql -U postgres -d testdb
-Password: Passw0rd
-</pre>
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt>psql <font color="#990000">-</font><font color="#008080">U</font> postgres <font color="#990000">-</font>d testdb
+Password<font color="#990000">:</font> Passw0rd</tt></pre>
 
+</blockquote>
 <p>For <a href="PostgreSQL">PostgreSQL</a> 6:</p>
 
-<pre>psql -u -d testdb
-Username: postgres
-Password: Passw0rd
-</pre>
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt>psql <font color="#990000">-</font>u <font color="#990000">-</font>d testdb
+Username<font color="#990000">:</font> postgres
+Password<font color="#990000">:</font> Passw0rd</tt></pre>
 
+</blockquote>
 <p>Once logged in, you can create, drop and modify tables and run queries in the database.</p>
 
 <p><a href="PostgreSQL">PostgreSQL</a> authentication is a complex topic. Lines in the ''pg_hba.conf'' file define access rules and restrictions for hosts and databases. For more information, consult the <a href="PostgreSQL">PostgreSQL</a> <a target="_blank" href="http://www.postgresql.org/idocs/">online documentation</a>.</p>
@@ -258,76 +360,121 @@ Password: Passw0rd
 
 <p>For <a href="PostgreSQL">PostgreSQL</a> 7 or higher:</p>
 
-<pre>psql -U postgres -c "CREATE USER testuser WITH PASSWORD 'testpassword'" -d testdb
-Password: Passw0rd
-</pre>
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt>psql <font color="#990000">-</font><font color="#008080">U</font> postgres <font color="#990000">-</font>c <font color="#FF0000">"CREATE USER testuser WITH PASSWORD 'testpassword'"</font> <font color="#990000">-</font>d testdb
+Password<font color="#990000">:</font> Passw0rd</tt></pre>
 
+</blockquote>
 <p>For <a href="PostgreSQL">PostgreSQL</a> 6:</p>
 
-<pre>psql -u -c "CREATE USER testuser WITH PASSWORD testpassword" -d testdb
-Username: postgres
-Password: Passw0rd
-</pre>
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt>psql <font color="#990000">-</font>u <font color="#990000">-</font>c <font color="#FF0000">"CREATE USER testuser WITH PASSWORD testpassword"</font> <font color="#990000">-</font>d testdb
+Username<font color="#990000">:</font> postgres
+Password<font color="#990000">:</font> Passw0rd</tt></pre>
 
+</blockquote>
 <p>You can now log into the database as ''testuser'' using the following command.</p>
 
 <p>For <a href="PostgreSQL">PostgreSQL</a> 7 or higher:</p>
 
-<pre>psql -U testuser -d testdb
-Password: testpassword
-</pre>
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt>psql <font color="#990000">-</font><font color="#008080">U</font> testuser <font color="#990000">-</font>d testdb
+Password<font color="#990000">:</font> testpassword</tt></pre>
 
+</blockquote>
 <p>For <a href="PostgreSQL">PostgreSQL</a> 6:</p>
 
-<pre>psql -u -d testdb
-Username: testuser
-Password: testpassword
-</pre>
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt>psql <font color="#990000">-</font>u <font color="#990000">-</font>d testdb
+Username<font color="#990000">:</font> testuser
+Password<font color="#990000">:</font> testpassword</tt></pre>
 
+</blockquote>
 <p>If you want to drop a user, you can do so. The following command drops a user named ''testuser''.</p>
 
 <p>For <a href="PostgreSQL">PostgreSQL</a> 7 or higher:</p>
 
-<pre>psql -U postgres -c "DROP USER testuser" -d testdb
-Password: Passw0rd
-</pre>
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt>psql <font color="#990000">-</font><font color="#008080">U</font> postgres <font color="#990000">-</font>c <font color="#FF0000">"DROP USER testuser"</font> <font color="#990000">-</font>d testdb
+Password<font color="#990000">:</font> Passw0rd</tt></pre>
 
+</blockquote>
 <p>For <a href="PostgreSQL">PostgreSQL</a> 6:</p>
 
-<pre>psql -u -c "DROP USER testuser" -d testdb
-Username: postgres
-Password: Passw0rd
-</pre>
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt>psql <font color="#990000">-</font>u <font color="#990000">-</font>c <font color="#FF0000">"DROP USER testuser"</font> <font color="#990000">-</font>d testdb
+Username<font color="#990000">:</font> postgres
+Password<font color="#990000">:</font> Passw0rd</tt></pre>
 
+</blockquote>
 <p>You may want to add stored procedure support to your database. <a href="PostgreSQL">PostgreSQL</a> databases can support stored procedures written in PL/pgSQL, PL/TCL, PL/Perl, and PL/Python. Different versions of <a href="PostgreSQL">PostgreSQL</a> support different procedural languages.</p>
 
 <p>You can use the ''createlang'' command to enable support for a stored procedure language in a particular database. For example, the following commands enable support for all languages in the testdb database.</p>
 
-<pre>createlang -U postgres -W plpgsql testdb
-Password: Passw0rd (you may be prompted for the password up to 4 times)
-createlang -U postgres -W pltcl testdb
-Password: Passw0rd (you may be prompted for the password up to 4 times)
-createlang -U postgres -W plperl testdb
-Password: Passw0rd (you may be prompted for the password up to 4 times)
-createlang -U postgres -W plpython testdb
-Password: Passw0rd (you may be prompted for the password up to 4 times)
-</pre>
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt>createlang <font color="#990000">-</font><font color="#008080">U</font> postgres <font color="#990000">-</font>W plpgsql testdb
+Password<font color="#990000">:</font> <b><font color="#000000">Passw0rd</font></b> <font color="#990000">(</font>you may be prompted <b><font color="#0000FF">for</font></b> the password up to <font color="#993399">4</font> times<font color="#990000">)</font>
+createlang <font color="#990000">-</font><font color="#008080">U</font> postgres <font color="#990000">-</font>W pltcl testdb
+Password<font color="#990000">:</font> <b><font color="#000000">Passw0rd</font></b> <font color="#990000">(</font>you may be prompted <b><font color="#0000FF">for</font></b> the password up to <font color="#993399">4</font> times<font color="#990000">)</font>
+createlang <font color="#990000">-</font><font color="#008080">U</font> postgres <font color="#990000">-</font>W plperl testdb
+Password<font color="#990000">:</font> <b><font color="#000000">Passw0rd</font></b> <font color="#990000">(</font>you may be prompted <b><font color="#0000FF">for</font></b> the password up to <font color="#993399">4</font> times<font color="#990000">)</font>
+createlang <font color="#990000">-</font><font color="#008080">U</font> postgres <font color="#990000">-</font>W plpython testdb
+Password<font color="#990000">:</font> <b><font color="#000000">Passw0rd</font></b> <font color="#990000">(</font>you may be prompted <b><font color="#0000FF">for</font></b> the password up to <font color="#993399">4</font> times<font color="#990000">)</font></tt></pre>
 
+</blockquote>
 <p>If you want to drop the database, you can do so with the following command.</p>
 
 <p>For <a href="PostgreSQL">PostgreSQL</a> 7 or higher:</p>
 
-<pre>psql -U postgres -c "DROP DATABASE testdb" -d template1
-Password: Passw0rd
-</pre>
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt>psql <font color="#990000">-</font><font color="#008080">U</font> postgres <font color="#990000">-</font>c <font color="#FF0000">"DROP DATABASE testdb"</font> <font color="#990000">-</font>d template1
+Password<font color="#990000">:</font> Passw0rd</tt></pre>
 
+</blockquote>
 <p>For <a href="PostgreSQL">PostgreSQL</a> 6:</p>
 
-<pre>psql -u postgres -c "DROP DATABASE testdb" -d template1
-Username: postgres
-Password: Passw0rd
-</pre>
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt>psql <font color="#990000">-</font><font color="#008080">u</font> postgres <font color="#990000">-</font>c <font color="#FF0000">"DROP DATABASE testdb"</font> <font color="#990000">-</font>d template1
+Username<font color="#990000">:</font> postgres
+Password<font color="#990000">:</font> Passw0rd</tt></pre>
 
+</blockquote>
 <p>This should be enough to get you started. To set up more complex configurations, consult the <a target="_blank" href="http://www.postgresql.org/idocs/">online documentation</a>.</p>
 
 <a name="accessing"/><h2>Accessing a Database</h2>
@@ -336,102 +483,127 @@ Password: Passw0rd
 
 <p>For <a href="PostgreSQL">PostgreSQL</a> 7 or higher:</p>
 
-<pre>psql -U testuser -d testdb
-Password: testpassword
-</pre>
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt>psql <font color="#990000">-</font><font color="#008080">U</font> testuser <font color="#990000">-</font>d testdb
+Password<font color="#990000">:</font> testpassword</tt></pre>
 
+</blockquote>
 <p>For <a href="PostgreSQL">PostgreSQL</a> 6:</p>
 
-<pre>psql -u -d testdb
-Username: testuser
-Password: testpassword
-</pre>
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt>psql <font color="#990000">-</font>u <font color="#990000">-</font>d testdb
+Username<font color="#990000">:</font> testuser
+Password<font color="#990000">:</font> testpassword</tt></pre>
 
+</blockquote>
 <p>If you want to access a database on a remote machine, say on ''testhost'', use the -h option as follows.</p>
 
 <p>For <a href="PostgreSQL">PostgreSQL</a> 7 or higher:</p>
 
-<pre>psql -U testuser -h testhost -d testdb
-Password: testpassword
-</pre>
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt>psql <font color="#990000">-</font><font color="#008080">U</font> testuser <font color="#990000">-</font><font color="#008080">h</font> testhost <font color="#990000">-</font>d testdb
+Password<font color="#990000">:</font> testpassword</tt></pre>
 
+</blockquote>
 <p>For <a href="PostgreSQL">PostgreSQL</a> 6:</p>
 
-<pre>psql -u -h testhost -d testdb
-Password: testuser
-Password: testpassword
-</pre>
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt>psql <font color="#990000">-</font>u <font color="#990000">-</font><font color="#008080">h</font> testhost <font color="#990000">-</font>d testdb
+Password<font color="#990000">:</font> testuser
+Password<font color="#990000">:</font> testpassword</tt></pre>
 
+</blockquote>
 <p>Once you're connected to the database, the ''psql'' client prompts you to enter a query. Queries may be split across multiple lines. To run a query, end it with a semicolon or type \g on the next line. To exit, type \q.</p>
 
 <p>A sample ''psql'' session follows.</p>
 
-<pre>[user@localhost user]$ psql -U testuser testdb
-Password: 
-Welcome to psql, the PostgreSQL interactive terminal.
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt><font color="#990000">[</font>user@<font color="#008080">localhost</font> user<font color="#990000">]</font>$ psql <font color="#990000">-</font>U testuser testdb
+<b><font color="#008080">Password: </font></b>
+Welcome <font color="#008080">to</font> psql<font color="#990000">,</font> the PostgreSQL <font color="#008080">interactive</font> terminal<font color="#990000">.</font>
 
-Type:  \copyright for distribution terms
-       \h for help with SQL commands
-       \? for help on internal slash commands
-       \g or terminate with semicolon to execute query
-       \q to quit
+Type<font color="#990000">:</font>  <font color="#990000">\</font>copyright <b><font color="#0000FF">for</font></b> distribution terms
+       <font color="#990000">\</font>h <b><font color="#0000FF">for</font></b> help with SQL commands
+       <font color="#990000">\?</font> <b><font color="#0000FF">for</font></b> help on internal slash commands
+       <font color="#990000">\</font>g or terminate with semicolon to execute query
+       <font color="#990000">\</font>q to quit
 
-testdb=&gt; create table testtable (
-testdb(&gt; col1 char(40),
-testdb(&gt; col2 integer
-testdb(&gt; );
+testdb<font color="#990000">=&gt;</font> create <font color="#008080">table</font> <b><font color="#000000">testtable</font></b> <font color="#990000">(</font>
+<b><font color="#000000">testdb</font></b><font color="#990000">(&gt;</font> <font color="#008080">col1</font> <font color="#009900">char</font><font color="#990000">(</font><font color="#993399">40</font><font color="#990000">),</font>
+<b><font color="#000000">testdb</font></b><font color="#990000">(&gt;</font> col2 integer
+<b><font color="#000000">testdb</font></b><font color="#990000">(&gt;</font> <font color="#990000">);</font>
 CREATE
-testdb=&gt; select * from pg_tables where tableowner='testuser';
- tablename | tableowner | hasindexes | hasrules | hastriggers 
------------+------------+------------+----------+-------------
- testtable | testuser   | f          | f        | f
-(1 row)
+testdb<font color="#990000">=&gt;</font> select <font color="#990000">*</font> <font color="#008080">from</font> pg_tables <font color="#008080">where</font> tableowner<font color="#990000">=</font><font color="#FF0000">'testuser'</font><font color="#990000">;</font>
+ tablename <font color="#990000">|</font> tableowner <font color="#990000">|</font> hasindexes <font color="#990000">|</font> hasrules <font color="#990000">|</font> hastriggers 
+<font color="#990000">-----------+------------+------------+----------+-------------</font>
+ testtable <font color="#990000">|</font> testuser   <font color="#990000">|</font> f          <font color="#990000">|</font> f        <font color="#990000">|</font> f
+<font color="#990000">(</font><font color="#993399">1</font> row<font color="#990000">)</font>
 
-testdb=&gt; \d testtable
-          Table "testtable"
- Attribute |     Type      | Modifier 
------------+---------------+----------
- col1      | character(40) | 
- col2      | integer       | 
+testdb<font color="#990000">=&gt;</font> <font color="#990000">\</font>d testtable
+          Table <font color="#FF0000">"testtable"</font>
+ Attribute <font color="#990000">|</font>     Type      <font color="#990000">|</font> Modifier 
+<font color="#990000">-----------+---------------+----------</font>
+ col1      <font color="#990000">|</font> <b><font color="#000000">character</font></b><font color="#990000">(</font><font color="#993399">40</font><font color="#990000">)</font> <font color="#990000">|</font> 
+ col2      <font color="#990000">|</font> integer       <font color="#990000">|</font> 
 
-testdb=&gt; insert into testtable values ('hello',50);
-INSERT 468520 1
-testdb=&gt; insert into testtable values ('hi',60);   
-INSERT 468521 1
-testdb=&gt; insert into testtable values ('bye',70);
-INSERT 468522 1
-testdb=&gt; select * from testtable;
-                   col1                   | col2 
-------------------------------------------+------
- hello                                    |   50
- hi                                       |   60
- bye                                      |   70
-(3 rows)
+testdb<font color="#990000">=&gt;</font> insert into <font color="#008080">testtable</font> <b><font color="#000000">values</font></b> <font color="#990000">(</font><font color="#FF0000">'hello'</font><font color="#990000">,</font><font color="#993399">50</font><font color="#990000">);</font>
+INSERT <font color="#993399">468520</font> <font color="#993399">1</font>
+testdb<font color="#990000">=&gt;</font> insert into <font color="#008080">testtable</font> <b><font color="#000000">values</font></b> <font color="#990000">(</font><font color="#FF0000">'hi'</font><font color="#990000">,</font><font color="#993399">60</font><font color="#990000">);</font>   
+INSERT <font color="#993399">468521</font> <font color="#993399">1</font>
+testdb<font color="#990000">=&gt;</font> insert into <font color="#008080">testtable</font> <b><font color="#000000">values</font></b> <font color="#990000">(</font><font color="#FF0000">'bye'</font><font color="#990000">,</font><font color="#993399">70</font><font color="#990000">);</font>
+INSERT <font color="#993399">468522</font> <font color="#993399">1</font>
+testdb<font color="#990000">=&gt;</font> select <font color="#990000">*</font> <font color="#008080">from</font> testtable<font color="#990000">;</font>
+                   col1                   <font color="#990000">|</font> col2 
+<font color="#990000">------------------------------------------+------</font>
+ hello                                    <font color="#990000">|</font>   <font color="#993399">50</font>
+ hi                                       <font color="#990000">|</font>   <font color="#993399">60</font>
+ bye                                      <font color="#990000">|</font>   <font color="#993399">70</font>
+<font color="#990000">(</font><font color="#993399">3</font> rows<font color="#990000">)</font>
 
-testdb=&gt; update testtable set col2=0 where col1='hi';
-UPDATE 1
-testdb=&gt; select * from testtable;
-                   col1                   | col2 
-------------------------------------------+------
- hello                                    |   50
- bye                                      |   70
- hi                                       |    0
-(3 rows)
+testdb<font color="#990000">=&gt;</font> update testtable <font color="#008080">set</font> col2<font color="#990000">=</font><font color="#993399">0</font> <font color="#008080">where</font> col1<font color="#990000">=</font><font color="#FF0000">'hi'</font><font color="#990000">;</font>
+UPDATE <font color="#993399">1</font>
+testdb<font color="#990000">=&gt;</font> select <font color="#990000">*</font> <font color="#008080">from</font> testtable<font color="#990000">;</font>
+                   col1                   <font color="#990000">|</font> col2 
+<font color="#990000">------------------------------------------+------</font>
+ hello                                    <font color="#990000">|</font>   <font color="#993399">50</font>
+ bye                                      <font color="#990000">|</font>   <font color="#993399">70</font>
+ hi                                       <font color="#990000">|</font>    <font color="#993399">0</font>
+<font color="#990000">(</font><font color="#993399">3</font> rows<font color="#990000">)</font>
 
-testdb=&gt; delete from testtable where col2=50;
-DELETE 1
-testdb=&gt; select * from testtable;
-                   col1                   | col2 
-------------------------------------------+------
- bye                                      |   70
- hi                                       |    0
-(2 rows)
+testdb<font color="#990000">=&gt;</font> <b><font color="#0000FF">delete</font></b> from testtable <font color="#008080">where</font> col2<font color="#990000">=</font><font color="#993399">50</font><font color="#990000">;</font>
+DELETE <font color="#993399">1</font>
+testdb<font color="#990000">=&gt;</font> select <font color="#990000">*</font> <font color="#008080">from</font> testtable<font color="#990000">;</font>
+                   col1                   <font color="#990000">|</font> col2 
+<font color="#990000">------------------------------------------+------</font>
+ bye                                      <font color="#990000">|</font>   <font color="#993399">70</font>
+ hi                                       <font color="#990000">|</font>    <font color="#993399">0</font>
+<font color="#990000">(</font><font color="#993399">2</font> rows<font color="#990000">)</font>
 
-testdb=&gt; drop table testtable;
+testdb<font color="#990000">=&gt;</font> drop <font color="#008080">table</font> testtable<font color="#990000">;</font>
 DROP
-testdb=&gt; \q
-</pre>
+testdb<font color="#990000">=&gt;</font> <font color="#990000">\</font>q</tt></pre>
 
+</blockquote>
 <!--#include virtual="../contentend.html"-->
 
 <!--#include virtual="footer.html"-->

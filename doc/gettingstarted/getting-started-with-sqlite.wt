@@ -30,18 +30,22 @@ Unlike other relational database systems, there is no daemon managing the SQLite
 
 In SQLite versions 3.X and 2.X, the database is a single file. It's only necessary to create the directory to contain the file. The database file will get created the first time a user tries to access it. I usually create a directory /usr/local/sqlite/var, as follows:
 
-{{{
+{{{#!blockquote
+{{{#!code
 mkdir -p /usr/local/sqlite/var
 chown testuser /usr/local/sqlite/var
 chmod 755 /usr/local/sqlite/var
 }}}
+}}}
 
 In SQLite version 1.0.x, the database is an entire directory. SQLite will create one file per table under this directory, but the database directory must exist. The following commands are necessary to create a database called ''testdb'' owned by the user ''testuser''.
 
-{{{
+{{{#!blockquote
+{{{#!code
 mkdir -p /usr/local/sqlite/var/testdb
 chown testuser /usr/local/sqlite/var/testdb
 chmod 755 /usr/local/sqlite/var/testdb
+}}}
 }}}
 
 [=#accessing]
@@ -50,43 +54,47 @@ chmod 755 /usr/local/sqlite/var/testdb
 
 To access an SQLite database, su to the appropriate user and run the sqlite3 command line utility (for versions 1.0.x and 2.x the command line utility is just called sqlite).
 
-{{{
+{{{#!blockquote
+{{{#!code
 su testuser
 sqlite3 /usr/local/sqlite/var/testdb
+}}}
 }}}
 
 Once you're connected to the database, the sqlite client prompts you to enter a query. Queries may be split across multiple lines. To run a query, end it with a semicolon. To exit, type .exit
 
 A sample sqlite session follows.
 
-{{{
+{{{#!blockquote
+{{{#!code
 [testuser@localhost testuser]$ sqlite3 /usr/local/sqlite/var/testdb
 SQLite version 3.0.2
 Enter ".help" for instructions
-sqlite&gt; create table testtable (
-   ...&gt; col1 char(40),
-   ...&gt; col2 integer
-   ...&gt; );
-sqlite&gt; .tables
+sqlite> create table testtable (
+   ...> col1 char(40),
+   ...> col2 integer
+   ...> );
+sqlite> .tables
 testtable
-sqlite&gt; insert into testtable values ('hello',50);
-sqlite&gt; insert into testtable values ('hi',60);
-sqlite&gt; insert into testtable values ('bye',70);
-sqlite&gt; select * from testtable;
+sqlite> insert into testtable values ('hello',50);
+sqlite> insert into testtable values ('hi',60);
+sqlite> insert into testtable values ('bye',70);
+sqlite> select * from testtable;
 hi|60
 hello|50
 bye|70
-sqlite&gt; update testtable set col2=0 where col1='hi';
-sqlite&gt; select * from testtable;
+sqlite> update testtable set col2=0 where col1='hi';
+sqlite> select * from testtable;
 hi|0
 hello|50
 bye|70
-sqlite&gt; delete from testtable where col2=50;
-sqlite&gt; select * from testtable;
+sqlite> delete from testtable where col2=50;
+sqlite> select * from testtable;
 hi|0
 bye|70
-sqlite&gt; drop table testtable;
-sqlite&gt; .exit
+sqlite> drop table testtable;
+sqlite> .exit
+}}}
 }}}
 
 {{{#!include ../contentend.html}}}

@@ -10,9 +10,14 @@
 
 <p>Since DB2's installer is Java-based, it requires libXp.so, which is a deprecated X11 library. If you're trying to install DB2 on Fedora Core 5 or another linux distribution of similar or newer vintage than you'll need to get that library. For FC5, you can install the ''xorg-x11-deprecated-libs'' RPM using:</p>
 
-<pre>yum install xorg-x11-deprecated-libs
-</pre>
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt>yum <font color="#008080">install</font> xorg<font color="#990000">-</font>x11<font color="#990000">-</font>deprecated<font color="#990000">-</font>libs</tt></pre>
 
+</blockquote>
 <p>For other rpm based platforms, you may need to find the appropriate RPM on <a target="_blank" href="http://rpmfind.net">rpmfind</a> and install it using ''rpm -i''.</p>
 
 <h2>DB2 Installation</h2>
@@ -35,9 +40,14 @@
 
 <p>IBM DB2 V8.2.4 requires IBM's java. Failure to install the IBM java distribution that comes with the DB2 distribution will cause the installation of the tools catalog to fail. Change directories to db2/linux26/Java-1.4 and rum the following command:</p>
 
-<pre>rpm -i IBMJava2-SDK-1.4.2-1.0.i386.rpm
-</pre>
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt>rpm <font color="#990000">-</font><font color="#008080">i</font> IBMJava2<font color="#990000">-</font>SDK<font color="#990000">-</font><font color="#993399">1.4</font><font color="#990000">.</font><font color="#993399">2</font><font color="#990000">-</font><font color="#993399">1.0</font><font color="#990000">.</font>i386<font color="#990000">.</font>rpm</tt></pre>
 
+</blockquote>
 <h2>Creating an Instance</h2>
 
 <p>A DB2 installation consists of an administration server and one or more instances. Each instance contains one or more databases. The administration server coordinates the instances. The administration server is owned by an OS-level user. Each instance is owned by a seperate OS-level user as well.</p>
@@ -90,7 +100,8 @@
 
 <p>You can use the following script to start/stop the database at boot/shutdown time.</p>
 
-<pre> #!/bin/sh
+<blockquote>
+  <pre> #!/bin/sh
 
 case "$1" in
         start)
@@ -107,20 +118,31 @@ esac
 exit 0
 </pre>
 
+</blockquote>
 <p>Install this script and run it with the "start" option to start up the database. Running it with the "stop" option shuts the database down. To access a database, it must be running.</p>
 
 <p>During instance configuration, there's a check box indicating whether the instance will be configured to start at boot time. If you didn't check it, to get each instance to start at boot time, you need to run the following command as root for each instance.</p>
 
-<pre>/opt/IBM/db2/V8.1/instance/db2iauto -on INSTANCE_USER
-</pre>
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt><font color="#990000">/</font>opt<font color="#990000">/</font>IBM<font color="#990000">/</font>db2<font color="#990000">/</font>V8<font color="#990000">.</font><font color="#993399">1</font><font color="#990000">/</font>instance<font color="#990000">/</font>db2iauto <font color="#990000">-</font><font color="#008080">on</font> INSTANCE_USER</tt></pre>
 
+</blockquote>
 <p>Where INSTANCE_USER is replaced by the username of the user associated with the instance you want to start at boot time.</p>
 
 <p>If you want to disable instances from starting at boot time, you need to run the following command as root for each instance:</p>
 
-<pre>/opt/IBM/db2/V8.1/instance/db2iauto -off INSTANCE_USER
-</pre>
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt><font color="#990000">/</font>opt<font color="#990000">/</font>IBM<font color="#990000">/</font>db2<font color="#990000">/</font>V8<font color="#990000">.</font><font color="#993399">1</font><font color="#990000">/</font>instance<font color="#990000">/</font>db2iauto <font color="#990000">-</font><font color="#008080">off</font> INSTANCE_USER</tt></pre>
 
+</blockquote>
 <!--#include virtual="../contentend.html"-->
 
 <!--#include virtual="footer.html"-->

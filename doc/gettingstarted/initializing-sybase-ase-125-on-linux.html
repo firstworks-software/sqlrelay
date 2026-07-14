@@ -30,23 +30,32 @@
 
 <p><b>Note:</b> If you moved /opt/sybase-12.5 to some other directory to save space on the /opt partition and then symlinked it back to /opt/sybase-12.5, the sybinstall.sh script will fail and report errors. To solve the problem, modify it as follows and re-run it. Change:</p>
 
-<pre>chmod ug+w `find ${SYBASE} -type d -print`
+<blockquote>
+  <pre>chmod ug+w `find ${SYBASE} -type d -print`
 </pre>
 
+</blockquote>
 <p>to</p>
 
-<pre>chmod ug+w `find ${SYBASE}/ -type d -print`
+<blockquote>
+  <pre>chmod ug+w `find ${SYBASE}/ -type d -print`
 </pre>
 
+</blockquote>
 <p>Log in as the sybase user.</p>
 
 <p>You're supposed to start the license manager daemon here, but it always fails, so skip this step and run the license manager client.</p>
 
 <p>The license manager client is a Java program. If you are using a kernel that supports the Native Posix Thread Library (such as the one that ships with Redhat 9), you'll need to run the following command:</p>
 
-<pre>export LD_ASSUME_KERNEL=2.4.1
-</pre>
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt><b><font color="#0000FF">export</font></b> LD_ASSUME_KERNEL<font color="#990000">=</font><font color="#993399">2.4</font><font color="#990000">.</font><font color="#993399">1</font></tt></pre>
 
+</blockquote>
 <p>Run ''lmgr''. A graphical license manager application should pop up.</p>
 
 <p><b>If you have a "real" license:</b> Leave the radio button for Ase checked and click Next. When the "Do you have a Sybase Software Asset Management Certificate to register?" dialog pops up, click Yes.</p>
@@ -95,7 +104,8 @@
 
 <p>The RPM distribution of Sybase ASE installs a script in /etc/rc.d/init.d which starts the database at boot time. For non-RPM distributions, you may need to install a script like the following. Replace ''/opt/sybase-12.5'' with whatever directory Sybase ASE is installed in.</p>
 
-<pre> #!/bin/sh
+<blockquote>
+  <pre> #!/bin/sh
 
 export SYBASE=/opt/sybase-12.5
 
@@ -121,6 +131,7 @@ esac
 exit 0
 </pre>
 
+</blockquote>
 <p>Install this script and run it with the "start" option to start up the database. Running it with the "stop" option shuts the database down. To access a database, it must be running.</p>
 
 <!--#include virtual="../contentend.html"-->

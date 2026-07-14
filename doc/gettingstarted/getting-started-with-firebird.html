@@ -24,14 +24,24 @@
 
 <p>Firebird is available on Fedora using yum and may be installed using:</p>
 
-<pre>yum install firebird-superserver
-</pre>
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt>yum <font color="#008080">install</font> firebird<font color="#990000">-</font>superserver</tt></pre>
 
+</blockquote>
 <p>It is also available on Ubuntu using apt-get and may be installed using:</p>
 
-<pre>apt-get install firebirdversion-super
-</pre>
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt>apt<font color="#990000">-</font>get <font color="#008080">install</font> firebirdversion<font color="#990000">-</font>super</tt></pre>
 
+</blockquote>
 <p>Where ''version'' is replaced with the version you want to install.</p>
 
 <p>Binary and source distributions of Firebird in many different formats (including tar.gz and RPM) for many different platforms are also available at the <a target="_blank" href="https://www.firebirdsql.org/">Firebird web site</a>.</p>
@@ -42,15 +52,25 @@
 
 <p>Some rpm's of Firebird versions 1.5 and higher leave /opt/firebird owned by root, with -r-xr-xr-x permissions. This is wrong and will cause the server not to start. Change the permissions and ownership as follows (as root):</p>
 
-<pre>chmod 775 /opt/firebird
-chown firebird:firebird /opt/firebird
-</pre>
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt>chmod <font color="#993399">775</font> <font color="#990000">/</font>opt<font color="#990000">/</font>firebird
+<font color="#008080">chown</font> firebird<font color="#990000">:</font>firebird <font color="#990000">/</font>opt<font color="#990000">/</font>firebird</tt></pre>
 
+</blockquote>
 <p>Many versions of Firebird from the web site require libstdc++.so.5 but most Linux distributions ship with a more recent version. If your system doesn't have /usr/lib/libstdc++.so.5 then you may need to install a compatibility library. On Fedora, you need to install compat-libstdc++-33 as follows (as root):</p>
 
-<pre>yum install compat-libstdc++-33
-</pre>
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt>yum <font color="#008080">install</font> compat<font color="#990000">-</font>libstdc<font color="#990000">++-</font><font color="#993399">33</font></tt></pre>
 
+</blockquote>
 <a name="creating"/><h2>Setting Up Your Environment</h2>
 
 <p>At this point, you should set up your environment. The Firebird client is called ''isql-fb'' in some distributions, but in others, it is just called ''isql''. Note that ''unixODBC'' and ''Sybase'' have a client called ''isql'' as well which could be installed in /usr/bin, /usr/local/bin, /opt/sybase*/bin or some other path. If you have ''unixODBC'' or ''Sybase'' installed, you'll have to decide which client you want the ''isql'' command to run. If you want ''isql'' to run the Firebird client, follow the instructions below. Otherwise, you'll have to run the Firebird ''isql'' client by its full pathname.</p>
@@ -59,26 +79,46 @@ chown firebird:firebird /opt/firebird
 
 <p>For Bourne shells:</p>
 
-<pre>PATH=$PATH:/opt/firebird/bin
-export PATH
-</pre>
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt>PATH<font color="#990000">=</font>$PATH<font color="#990000">:/</font>opt<font color="#990000">/</font>firebird<font color="#990000">/</font>bin
+<b><font color="#0000FF">export</font></b> PATH</tt></pre>
 
+</blockquote>
 <p>or</p>
 
-<pre>PATH=$PATH:/opt/interbase/bin
-export PATH
-</pre>
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt>PATH<font color="#990000">=</font>$PATH<font color="#990000">:/</font>opt<font color="#990000">/</font>interbase<font color="#990000">/</font>bin
+<b><font color="#0000FF">export</font></b> PATH</tt></pre>
 
+</blockquote>
 <p>For C-shells:</p>
 
-<pre>setenv PATH ${PATH}:/opt/firebird/bin
-</pre>
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt><font color="#008080">setenv</font> PATH $<font color="#FF0000">{</font>PATH<font color="#FF0000">}</font><font color="#990000">:/</font>opt<font color="#990000">/</font>firebird<font color="#990000">/</font>bin</tt></pre>
 
+</blockquote>
 <p>or</p>
 
-<pre>setenv PATH ${PATH}:/opt/interbase/bin
-</pre>
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt><font color="#008080">setenv</font> PATH $<font color="#FF0000">{</font>PATH<font color="#FF0000">}</font><font color="#990000">:/</font>opt<font color="#990000">/</font>interbase<font color="#990000">/</font>bin</tt></pre>
 
+</blockquote>
 <a name="password"/><h2>Users and Passwords</h2>
 
 <p>Use the ''gsec'' utility to create a new user named ''testuser'' with password ''testpassword''.</p>
@@ -99,38 +139,53 @@ export PATH
 
 <p>Create a user as follows (replacing ''masterkey'' with the sysdba password if it isn't masterkey)...</p>
 
-<pre>[root@localhost root]# /opt/firebird/bin/gsec -user sysdba -password masterkey
-GSEC&gt; add testuser -pw testpassword
-Warning - maximum 8 significant bytes of password used
-GSEC&gt; quit 
-</pre>
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt><font color="#990000">[</font>root@<font color="#008080">localhost</font> root<font color="#990000">]</font># <font color="#990000">/</font>opt<font color="#990000">/</font>firebird<font color="#990000">/</font>bin<font color="#990000">/</font>gsec <font color="#990000">-</font><font color="#008080">user</font> sysdba <font color="#990000">-</font>password masterkey
+GSEC<font color="#990000">&gt;</font> <font color="#008080">add</font> testuser <font color="#990000">-</font>pw testpassword
+Warning <font color="#990000">-</font> maximum <font color="#993399">8</font> significant bytes of password used
+GSEC<font color="#990000">&gt;</font> quit </tt></pre>
 
+</blockquote>
 <p>For Firebird 1.5, the installation process creates a security database called ''security.fdb'' containing host and user privileges and an administrative user named ''SYSDBA'' with a randomly generated password. This password is listed in ''SYSDBA.password''.</p>
 
 <p>Run ''gsec'' from within the directory containing the file ''security.fdb''.</p>
 
 <p>Create a user as follows (replacing ''masterkey'' with the sysdba password if it isn't masterkey)...</p>
 
-<pre>[root@localhost root]# /opt/firebird/bin/gsec -user sysdba -password masterkey
-GSEC&gt; add testuser
-GSEC&gt; modify testuser -pw testpassword
-Warning - maximum 8 significant bytes of password used
-GSEC&gt; quit 
-</pre>
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt><font color="#990000">[</font>root@<font color="#008080">localhost</font> root<font color="#990000">]</font># <font color="#990000">/</font>opt<font color="#990000">/</font>firebird<font color="#990000">/</font>bin<font color="#990000">/</font>gsec <font color="#990000">-</font><font color="#008080">user</font> sysdba <font color="#990000">-</font>password masterkey
+GSEC<font color="#990000">&gt;</font> add testuser
+GSEC<font color="#990000">&gt;</font> <font color="#008080">modify</font> testuser <font color="#990000">-</font>pw testpassword
+Warning <font color="#990000">-</font> maximum <font color="#993399">8</font> significant bytes of password used
+GSEC<font color="#990000">&gt;</font> quit </tt></pre>
 
+</blockquote>
 <p>For Firebird prior to version 1.5, the installation process creates a security database named ''isc4.gdb'' containing host and user privileges and an administrative user named ''SYSDBA'' with a password of either ''changeme'' or ''masterkey''.</p>
 
 <p>Run ''gsec'' from within the directory containing the file ''isc4.gdb''.</p>
 
 <p>Create a user as follows...</p>
 
-<pre>[root@localhost interbase]# /opt/interbase/bin/gsec
-GSEC&gt; add testuser
-GSEC&gt; modify testuser -pw testpassword
-Warning - maximum 8 significant bytes of password used
-GSEC&gt; quit 
-</pre>
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt><font color="#990000">[</font>root@<font color="#008080">localhost</font> interbase<font color="#990000">]</font># <font color="#990000">/</font>opt<font color="#990000">/</font>interbase<font color="#990000">/</font>bin<font color="#990000">/</font>gsec
+GSEC<font color="#990000">&gt;</font> add testuser
+GSEC<font color="#990000">&gt;</font> <font color="#008080">modify</font> testuser <font color="#990000">-</font>pw testpassword
+Warning <font color="#990000">-</font> maximum <font color="#993399">8</font> significant bytes of password used
+GSEC<font color="#990000">&gt;</font> quit </tt></pre>
 
+</blockquote>
 <a name="startingatboot"/><h2>Starting the Database at Boot Time</h2>
 
 <p>The package distributions of Firebird either install a script which starts the database at boot time and stops it at shutdown time or use systemd. In this case, make sure to update the init script with the new sysdba password, if necessary.</p>
@@ -139,7 +194,8 @@ GSEC&gt; quit
 
 <p>For Firebird versions 2.5 and up, use the following script:</p>
 
-<pre> #!/bin/sh
+<blockquote>
+  <pre> #!/bin/sh
 
 case "$1" in
   start)
@@ -156,44 +212,55 @@ esac
 exit 0
 </pre>
 
+</blockquote>
 <p>For Firebird version 1.5 to 2.1, use the following script:</p>
 
-<pre> #!/bin/sh
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt><i><font color="#9A1900">#!/bin/sh</font></i>
 
-case "$1" in
-  start)
-        su -l firebird "/opt/firebird/bin/fbmgr -start -forever"
-        ;;
-  stop)
-        su -l firebird "/opt/firebird/bin/fbmgr -shut -user sysdba -password Passw0rd"
-        ;;
-  *)
-        echo $"Usage: $0 {start|stop}"
-        exit 1
-esac
+<b><font color="#0000FF">case</font></b> <font color="#FF0000">"$1"</font> <b><font color="#0000FF">in</font></b>
+  start<font color="#990000">)</font>
+        su -l firebird <font color="#FF0000">"/opt/firebird/bin/fbmgr -start -forever"</font>
+        <font color="#990000">;;</font>
+  stop<font color="#990000">)</font>
+        su -l firebird <font color="#FF0000">"/opt/firebird/bin/fbmgr -shut -user sysdba -password Passw0rd"</font>
+        <font color="#990000">;;</font>
+  <font color="#990000">*)</font>
+        echo <font color="#009900">$"</font>Usage<font color="#990000">:</font> <font color="#009900">$0</font> {start<font color="#990000">|</font>stop}<font color="#FF0000">"</font>
+<font color="#FF0000">        exit 1</font>
+<font color="#FF0000">esac</font>
 
-exit 0
-</pre>
+<font color="#FF0000">exit 0</font></tt></pre>
 
+</blockquote>
 <p>For Firebird prior to version 1.5, use the following script:</p>
 
-<pre> #!/bin/sh
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt><i><font color="#9A1900">#!/bin/sh</font></i>
 
-case "$1" in
-  start)
+<b><font color="#0000FF">case</font></b> <font color="#FF0000">"$1"</font> <b><font color="#0000FF">in</font></b>
+  start<font color="#990000">)</font>
         /opt/interbase/bin/ibmgr -start
-        ;;
-  stop)
+        <font color="#990000">;;</font>
+  stop<font color="#990000">)</font>
         /opt/interbase/bin/ibmgr -shut -user sysdba -password Passw0rd
-        ;;
-  *)
-        echo $"Usage: $0 {start|stop}"
-        exit 1
-esac
+        <font color="#990000">;;</font>
+  <font color="#990000">*)</font>
+        echo <font color="#009900">$"</font>Usage<font color="#990000">:</font> <font color="#009900">$0</font> {start<font color="#990000">|</font>stop}<font color="#FF0000">"</font>
+<font color="#FF0000">        exit 1</font>
+<font color="#FF0000">esac</font>
 
-exit 0
-</pre>
+<font color="#FF0000">exit 0</font></tt></pre>
 
+</blockquote>
 <p>Install this script and run it with the "start" option to start up the database. Running it with the "stop" option shuts the database down. To access a database, it must be running.</p>
 
 <p>Note that the /etc/hosts.equiv file must contain an entry for localhost and possibly localhost.localdomain for the database to start properly and for the "local" tools such as ''ibmgr''/''fbmgr'' to function.</p>
@@ -206,133 +273,188 @@ exit 0
 
 <p>For Firebird version 1.5 or higher, these commands create a database called ''/opt/firebird/testdb.gdb'' which is owned by ''testuser''.</p>
 
-<pre>[user@localhost user]$ isql -u testuser -p testpassword
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt><font color="#990000">[</font>user@<font color="#008080">localhost</font> user<font color="#990000">]</font>$ isql <font color="#990000">-</font><font color="#008080">u</font> testuser <font color="#990000">-</font>p testpassword
 Use CONNECT or CREATE DATABASE to specify a database
-SQL&gt; create database '/opt/firebird/testdb.gdb';
-SQL&gt; quit;
-</pre>
+SQL<font color="#990000">&gt;</font> <font color="#008080">create</font> database <font color="#FF0000">'/opt/firebird/testdb.gdb'</font><font color="#990000">;</font>
+SQL<font color="#990000">&gt;</font> quit<font color="#990000">;</font></tt></pre>
 
+</blockquote>
 <p>For Firebird prior to version 1.5, these commands create a database called ''/opt/interbase/testdb.gdb'' which is owned by ''testuser''.</p>
 
-<pre>[user@localhost user]$ isql -u testuser -p testpassword
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt><font color="#990000">[</font>user@<font color="#008080">localhost</font> user<font color="#990000">]</font>$ isql <font color="#990000">-</font><font color="#008080">u</font> testuser <font color="#990000">-</font>p testpassword
 Use CONNECT or CREATE DATABASE to specify a database
-SQL&gt; create database '/opt/interbase/testdb.gdb';
-SQL&gt; quit;
-</pre>
+SQL<font color="#990000">&gt;</font> <font color="#008080">create</font> database <font color="#FF0000">'/opt/interbase/testdb.gdb'</font><font color="#990000">;</font>
+SQL<font color="#990000">&gt;</font> quit<font color="#990000">;</font></tt></pre>
 
+</blockquote>
 <p>Firebird databases are referenced by the pathname of the database file. If you try to create a database using a file name that already exists or if you forget to enclose the file name in single quotes, you'll get a cryptic error indicating that the 'database' token is unknown. So, if you get a message like that, make sure that you enclosed the file name in single quotes and make sure that the database file that you're trying to create doesn't already exist.</p>
 
 <p>Now you can log into the database as ''testuser''.</p>
 
 <p>Use the following command for Firebird 1.5 or higher.</p>
 
-<pre>isql -u testuser -p testpassword /opt/firebird/testdb.gdb
-</pre>
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt>isql <font color="#990000">-</font><font color="#008080">u</font> testuser <font color="#990000">-</font><font color="#008080">p</font> testpassword <font color="#990000">/</font>opt<font color="#990000">/</font>firebird<font color="#990000">/</font>testdb<font color="#990000">.</font>gdb</tt></pre>
 
+</blockquote>
 <p>Use the following command for Firebird prior to version 1.5.</p>
 
-<pre>isql -u testuser -p testpassword /opt/interbase/testdb.gdb
-</pre>
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt>isql <font color="#990000">-</font><font color="#008080">u</font> testuser <font color="#990000">-</font><font color="#008080">p</font> testpassword <font color="#990000">/</font>opt<font color="#990000">/</font>interbase<font color="#990000">/</font>testdb<font color="#990000">.</font>gdb</tt></pre>
 
+</blockquote>
 <p>The only users that can drop a database are the user that owns the database and the ''SYSDBA'' user. If you want to drop the database, you can do so using ''isql'' as follows for Firebird version 1.5 or higher...</p>
 
-<pre>[user@localhost user]$ isql -u testuser -p testpassword /opt/firebird/testdb.gdb 
-Database:  /opt/firebird/testdb.gdb, User: testuser
-SQL&gt; drop database;
-SQL&gt; quit;
-</pre>
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt><font color="#990000">[</font>user@<font color="#008080">localhost</font> user<font color="#990000">]</font>$ isql <font color="#990000">-</font><font color="#008080">u</font> testuser <font color="#990000">-</font><font color="#008080">p</font> testpassword <font color="#990000">/</font>opt<font color="#990000">/</font>firebird<font color="#990000">/</font>testdb<font color="#990000">.</font>gdb 
+Database<font color="#990000">:</font>  <font color="#990000">/</font>opt<font color="#990000">/</font>firebird<font color="#990000">/</font>testdb<font color="#990000">.</font>gdb<font color="#990000">,</font> User<font color="#990000">:</font> testuser
+SQL<font color="#990000">&gt;</font> <font color="#008080">drop</font> database<font color="#990000">;</font>
+SQL<font color="#990000">&gt;</font> quit<font color="#990000">;</font></tt></pre>
 
+</blockquote>
 <p>Or as follows for Firebird prior to version 1.5.</p>
 
-<pre>[user@localhost user]$ isql -u testuser -p testpassword /opt/interbase/testdb.gdb 
-Database:  /opt/interbase/testdb.gdb, User: testuser
-SQL&gt; drop database;
-SQL&gt; quit;
-</pre>
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt><font color="#990000">[</font>user@<font color="#008080">localhost</font> user<font color="#990000">]</font>$ isql <font color="#990000">-</font><font color="#008080">u</font> testuser <font color="#990000">-</font><font color="#008080">p</font> testpassword <font color="#990000">/</font>opt<font color="#990000">/</font>interbase<font color="#990000">/</font>testdb<font color="#990000">.</font>gdb 
+Database<font color="#990000">:</font>  <font color="#990000">/</font>opt<font color="#990000">/</font>interbase<font color="#990000">/</font>testdb<font color="#990000">.</font>gdb<font color="#990000">,</font> User<font color="#990000">:</font> testuser
+SQL<font color="#990000">&gt;</font> <font color="#008080">drop</font> database<font color="#990000">;</font>
+SQL<font color="#990000">&gt;</font> quit<font color="#990000">;</font></tt></pre>
 
+</blockquote>
 <p>To delete a user, use the ''gsec'' utility as the root user and delete the appropriate user as follows for Firebird version 1.5 or higher.</p>
 
-<pre>[root@localhost root]# cd /opt/firebird
-[root@localhost firebird]# ls -l isc4.gdb
--rw-rw-rw-    1 root     root       626688 Feb 18 20:43 isc4.gdb
-[root@localhost firebird]# /opt/firebird/bin/gsec
-GSEC&gt; delete testuser
-GSEC&gt; quit
-</pre>
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt><font color="#990000">[</font>root@<font color="#008080">localhost</font> root<font color="#990000">]</font># cd <font color="#990000">/</font>opt<font color="#990000">/</font>firebird
+<font color="#990000">[</font>root@<font color="#008080">localhost</font> firebird<font color="#990000">]</font># ls <font color="#990000">-</font><font color="#008080">l</font> isc4<font color="#990000">.</font>gdb
+<font color="#990000">-</font>rw<font color="#990000">-</font>rw<font color="#990000">-</font>rw<font color="#990000">-</font>    <font color="#993399">1</font> root     root       <font color="#993399">626688</font> Feb <font color="#993399">18</font> <font color="#993399">20</font><font color="#990000">:</font><font color="#993399">43</font> isc4<font color="#990000">.</font>gdb
+<font color="#990000">[</font>root@<font color="#008080">localhost</font> firebird<font color="#990000">]</font># <font color="#990000">/</font>opt<font color="#990000">/</font>firebird<font color="#990000">/</font>bin<font color="#990000">/</font>gsec
+GSEC<font color="#990000">&gt;</font> <b><font color="#0000FF">delete</font></b> testuser
+GSEC<font color="#990000">&gt;</font> quit</tt></pre>
 
+</blockquote>
 <p>Or as follows for Firebird prior to version 1.5.</p>
 
-<pre>[root@localhost root]# cd /opt/interbase
-[root@localhost interbase]# ls -l isc4.gdb
--rw-rw-rw-    1 root     root       626688 Feb 18 20:43 isc4.gdb
-[root@localhost interbase]# /opt/interbase/bin/gsec
-GSEC&gt; delete testuser
-GSEC&gt; quit
-</pre>
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt><font color="#990000">[</font>root@<font color="#008080">localhost</font> root<font color="#990000">]</font># cd <font color="#990000">/</font>opt<font color="#990000">/</font>interbase
+<font color="#990000">[</font>root@<font color="#008080">localhost</font> interbase<font color="#990000">]</font># ls <font color="#990000">-</font><font color="#008080">l</font> isc4<font color="#990000">.</font>gdb
+<font color="#990000">-</font>rw<font color="#990000">-</font>rw<font color="#990000">-</font>rw<font color="#990000">-</font>    <font color="#993399">1</font> root     root       <font color="#993399">626688</font> Feb <font color="#993399">18</font> <font color="#993399">20</font><font color="#990000">:</font><font color="#993399">43</font> isc4<font color="#990000">.</font>gdb
+<font color="#990000">[</font>root@<font color="#008080">localhost</font> interbase<font color="#990000">]</font># <font color="#990000">/</font>opt<font color="#990000">/</font>interbase<font color="#990000">/</font>bin<font color="#990000">/</font>gsec
+GSEC<font color="#990000">&gt;</font> <b><font color="#0000FF">delete</font></b> testuser
+GSEC<font color="#990000">&gt;</font> quit</tt></pre>
 
+</blockquote>
 <p>This should be enough to get you started. To set up more complex configurations, consult the <a target="_blank" href="http://firebird.sourceforge.net/index.php?op=doc">Firebird documentation</a>.</p>
 
 <a name="accessing"/><h2>Accessing a Database</h2>
 
 <p>To access a database called ''/opt/firebird/testdb.gdb'' on the local machine as the ''testuser'' user with password ''testpassword'', use the following command.</p>
 
-<pre>isql -u testuser -p testpassword /opt/firebird/testdb.gdb
-</pre>
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt>isql <font color="#990000">-</font><font color="#008080">u</font> testuser <font color="#990000">-</font><font color="#008080">p</font> testpassword <font color="#990000">/</font>opt<font color="#990000">/</font>firebird<font color="#990000">/</font>testdb<font color="#990000">.</font>gdb</tt></pre>
 
+</blockquote>
 <p>To connect to a database on a remote machine, prepend the database filename with the remote hostname, followed by a colon. For example, to access a database called ''/opt/firebird/testdb.gdb'' on the remote machine ''testhost'' as the ''testuser'' user with password ''testpassword'', use the following command.</p>
 
-<pre>isql -u testuser -p testpassword testhost:/opt/firebird/testdb.gdb
-</pre>
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt>isql <font color="#990000">-</font><font color="#008080">u</font> testuser <font color="#990000">-</font>p <font color="#008080">testpassword</font> testhost<font color="#990000">:/</font>opt<font color="#990000">/</font>firebird<font color="#990000">/</font>testdb<font color="#990000">.</font>gdb</tt></pre>
 
+</blockquote>
 <p>Once you're connected to the database, the isql client prompts you to enter a query. Queries may be split across multiple lines. To run a query, end it with a semicolon. To exit, type quit;.</p>
 
 <p>A sample ''isql'' session follows.</p>
 
-<pre>[user@localhost user]$ isql -u testuser -p testpass /opt/firebird/testdb.gdb
-Database:  /opt/firebird/testdb.gdb, User: testuser
-SQL&gt; create table testtable (
-CON&gt; col1 char(40),
-CON&gt; col2 integer
-CON&gt; );
-SQL&gt; show table testtable;
-COL1                            CHAR(40) Nullable 
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt><font color="#990000">[</font>user@<font color="#008080">localhost</font> user<font color="#990000">]</font>$ isql <font color="#990000">-</font><font color="#008080">u</font> testuser <font color="#990000">-</font><font color="#008080">p</font> testpass <font color="#990000">/</font>opt<font color="#990000">/</font>firebird<font color="#990000">/</font>testdb<font color="#990000">.</font>gdb
+Database<font color="#990000">:</font>  <font color="#990000">/</font>opt<font color="#990000">/</font>firebird<font color="#990000">/</font>testdb<font color="#990000">.</font>gdb<font color="#990000">,</font> User<font color="#990000">:</font> testuser
+SQL<font color="#990000">&gt;</font> create <font color="#008080">table</font> <b><font color="#000000">testtable</font></b> <font color="#990000">(</font>
+CON<font color="#990000">&gt;</font> <font color="#008080">col1</font> <font color="#009900">char</font><font color="#990000">(</font><font color="#993399">40</font><font color="#990000">),</font>
+CON<font color="#990000">&gt;</font> col2 integer
+CON<font color="#990000">&gt;</font> <font color="#990000">);</font>
+SQL<font color="#990000">&gt;</font> show <font color="#008080">table</font> testtable<font color="#990000">;</font>
+<font color="#008080">COL1</font>                            <b><font color="#000000">CHAR</font></b><font color="#990000">(</font><font color="#993399">40</font><font color="#990000">)</font> Nullable 
 COL2                            INTEGER Nullable 
-SQL&gt; insert into testtable values ('hello',50);
-SQL&gt; insert into testtable values ('hi',60);
-SQL&gt; insert into testtable values ('bye',70);
-SQL&gt; select * from testtable;
+SQL<font color="#990000">&gt;</font> insert into <font color="#008080">testtable</font> <b><font color="#000000">values</font></b> <font color="#990000">(</font><font color="#FF0000">'hello'</font><font color="#990000">,</font><font color="#993399">50</font><font color="#990000">);</font>
+SQL<font color="#990000">&gt;</font> insert into <font color="#008080">testtable</font> <b><font color="#000000">values</font></b> <font color="#990000">(</font><font color="#FF0000">'hi'</font><font color="#990000">,</font><font color="#993399">60</font><font color="#990000">);</font>
+SQL<font color="#990000">&gt;</font> insert into <font color="#008080">testtable</font> <b><font color="#000000">values</font></b> <font color="#990000">(</font><font color="#FF0000">'bye'</font><font color="#990000">,</font><font color="#993399">70</font><font color="#990000">);</font>
+SQL<font color="#990000">&gt;</font> select <font color="#990000">*</font> <font color="#008080">from</font> testtable<font color="#990000">;</font>
 
 COL1                                             COL2 
-======================================== ============ 
+<font color="#990000">========================================</font> <font color="#990000">============</font> 
 
-hello                                              50 
-hi                                                 60 
-bye                                                70 
+hello                                              <font color="#993399">50</font> 
+hi                                                 <font color="#993399">60</font> 
+bye                                                <font color="#993399">70</font> 
 
-SQL&gt; update testtable set col2=0 where col1='hi';
-SQL&gt; select * from testtable;
-
-COL1                                             COL2 
-======================================== ============ 
-
-hello                                              50 
-hi                                                  0 
-bye                                                70 
-
-SQL&gt; delete from testtable where col2=50;
-SQL&gt; select * from testtable;
+SQL<font color="#990000">&gt;</font> update testtable <font color="#008080">set</font> col2<font color="#990000">=</font><font color="#993399">0</font> <font color="#008080">where</font> col1<font color="#990000">=</font><font color="#FF0000">'hi'</font><font color="#990000">;</font>
+SQL<font color="#990000">&gt;</font> select <font color="#990000">*</font> <font color="#008080">from</font> testtable<font color="#990000">;</font>
 
 COL1                                             COL2 
-======================================== ============ 
+<font color="#990000">========================================</font> <font color="#990000">============</font> 
 
-hi                                                  0 
-bye                                                70 
+hello                                              <font color="#993399">50</font> 
+hi                                                  <font color="#993399">0</font> 
+bye                                                <font color="#993399">70</font> 
 
-SQL&gt; commit;
-SQL&gt; drop table testtable;
-SQL&gt; quit;
-</pre>
+SQL<font color="#990000">&gt;</font> <b><font color="#0000FF">delete</font></b> from testtable <font color="#008080">where</font> col2<font color="#990000">=</font><font color="#993399">50</font><font color="#990000">;</font>
+SQL<font color="#990000">&gt;</font> select <font color="#990000">*</font> <font color="#008080">from</font> testtable<font color="#990000">;</font>
 
+COL1                                             COL2 
+<font color="#990000">========================================</font> <font color="#990000">============</font> 
+
+hi                                                  <font color="#993399">0</font> 
+bye                                                <font color="#993399">70</font> 
+
+SQL<font color="#990000">&gt;</font> commit<font color="#990000">;</font>
+SQL<font color="#990000">&gt;</font> drop <font color="#008080">table</font> testtable<font color="#990000">;</font>
+SQL<font color="#990000">&gt;</font> quit<font color="#990000">;</font></tt></pre>
+
+</blockquote>
 <a name="quirks"/><h2>Firebird Quirks</h2>
 
 <p>In most databases, you can create, alter or drop databse objects such as tables, indices or stored procedures at will. In Firebird, you should create, alter or drop databse objects when you have exclusive access to the databse.</p>

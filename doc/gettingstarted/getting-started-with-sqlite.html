@@ -28,59 +28,79 @@
 
 <p>In SQLite versions 3.X and 2.X, the database is a single file. It's only necessary to create the directory to contain the file. The database file will get created the first time a user tries to access it. I usually create a directory /usr/local/sqlite/var, as follows:</p>
 
-<pre>mkdir -p /usr/local/sqlite/var
-chown testuser /usr/local/sqlite/var
-chmod 755 /usr/local/sqlite/var
-</pre>
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt>mkdir <font color="#990000">-</font>p <font color="#990000">/</font>usr<font color="#990000">/</font>local<font color="#990000">/</font>sqlite<font color="#990000">/</font>var
+<font color="#008080">chown</font> testuser <font color="#990000">/</font>usr<font color="#990000">/</font>local<font color="#990000">/</font>sqlite<font color="#990000">/</font>var
+chmod <font color="#993399">755</font> <font color="#990000">/</font>usr<font color="#990000">/</font>local<font color="#990000">/</font>sqlite<font color="#990000">/</font>var</tt></pre>
 
+</blockquote>
 <p>In SQLite version 1.0.x, the database is an entire directory. SQLite will create one file per table under this directory, but the database directory must exist. The following commands are necessary to create a database called ''testdb'' owned by the user ''testuser''.</p>
 
-<pre>mkdir -p /usr/local/sqlite/var/testdb
-chown testuser /usr/local/sqlite/var/testdb
-chmod 755 /usr/local/sqlite/var/testdb
-</pre>
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt>mkdir <font color="#990000">-</font>p <font color="#990000">/</font>usr<font color="#990000">/</font>local<font color="#990000">/</font>sqlite<font color="#990000">/</font>var<font color="#990000">/</font>testdb
+<font color="#008080">chown</font> testuser <font color="#990000">/</font>usr<font color="#990000">/</font>local<font color="#990000">/</font>sqlite<font color="#990000">/</font>var<font color="#990000">/</font>testdb
+chmod <font color="#993399">755</font> <font color="#990000">/</font>usr<font color="#990000">/</font>local<font color="#990000">/</font>sqlite<font color="#990000">/</font>var<font color="#990000">/</font>testdb</tt></pre>
 
+</blockquote>
 <a name="accessing"/><h2>Accessing a Database</h2>
 
 <p>To access an SQLite database, su to the appropriate user and run the sqlite3 command line utility (for versions 1.0.x and 2.x the command line utility is just called sqlite).</p>
 
-<pre>su testuser
-sqlite3 /usr/local/sqlite/var/testdb
-</pre>
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt>su testuser
+sqlite3 <font color="#990000">/</font>usr<font color="#990000">/</font>local<font color="#990000">/</font>sqlite<font color="#990000">/</font>var<font color="#990000">/</font>testdb</tt></pre>
 
+</blockquote>
 <p>Once you're connected to the database, the sqlite client prompts you to enter a query. Queries may be split across multiple lines. To run a query, end it with a semicolon. To exit, type .exit</p>
 
 <p>A sample sqlite session follows.</p>
 
-<pre>[testuser@localhost testuser]$ sqlite3 /usr/local/sqlite/var/testdb
-SQLite version 3.0.2
-Enter ".help" for instructions
-sqlite&gt; create table testtable (
-   ...&gt; col1 char(40),
-   ...&gt; col2 integer
-   ...&gt; );
-sqlite&gt; .tables
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt><font color="#990000">[</font>testuser@<font color="#008080">localhost</font> testuser<font color="#990000">]</font>$ sqlite3 <font color="#990000">/</font>usr<font color="#990000">/</font>local<font color="#990000">/</font>sqlite<font color="#990000">/</font>var<font color="#990000">/</font>testdb
+SQLite version <font color="#993399">3.0</font><font color="#990000">.</font><font color="#993399">2</font>
+Enter <font color="#FF0000">".help"</font> <b><font color="#0000FF">for</font></b> instructions
+sqlite<font color="#990000">&gt;</font> create <font color="#008080">table</font> <b><font color="#000000">testtable</font></b> <font color="#990000">(</font>
+   <font color="#990000">...&gt;</font> <font color="#008080">col1</font> <font color="#009900">char</font><font color="#990000">(</font><font color="#993399">40</font><font color="#990000">),</font>
+   <font color="#990000">...&gt;</font> col2 integer
+   <font color="#990000">...&gt;</font> <font color="#990000">);</font>
+sqlite<font color="#990000">&gt;</font> <font color="#990000">.</font>tables
 testtable
-sqlite&gt; insert into testtable values ('hello',50);
-sqlite&gt; insert into testtable values ('hi',60);
-sqlite&gt; insert into testtable values ('bye',70);
-sqlite&gt; select * from testtable;
-hi|60
-hello|50
-bye|70
-sqlite&gt; update testtable set col2=0 where col1='hi';
-sqlite&gt; select * from testtable;
-hi|0
-hello|50
-bye|70
-sqlite&gt; delete from testtable where col2=50;
-sqlite&gt; select * from testtable;
-hi|0
-bye|70
-sqlite&gt; drop table testtable;
-sqlite&gt; .exit
-</pre>
+sqlite<font color="#990000">&gt;</font> insert into <font color="#008080">testtable</font> <b><font color="#000000">values</font></b> <font color="#990000">(</font><font color="#FF0000">'hello'</font><font color="#990000">,</font><font color="#993399">50</font><font color="#990000">);</font>
+sqlite<font color="#990000">&gt;</font> insert into <font color="#008080">testtable</font> <b><font color="#000000">values</font></b> <font color="#990000">(</font><font color="#FF0000">'hi'</font><font color="#990000">,</font><font color="#993399">60</font><font color="#990000">);</font>
+sqlite<font color="#990000">&gt;</font> insert into <font color="#008080">testtable</font> <b><font color="#000000">values</font></b> <font color="#990000">(</font><font color="#FF0000">'bye'</font><font color="#990000">,</font><font color="#993399">70</font><font color="#990000">);</font>
+sqlite<font color="#990000">&gt;</font> select <font color="#990000">*</font> <font color="#008080">from</font> testtable<font color="#990000">;</font>
+hi<font color="#990000">|</font><font color="#993399">60</font>
+hello<font color="#990000">|</font><font color="#993399">50</font>
+bye<font color="#990000">|</font><font color="#993399">70</font>
+sqlite<font color="#990000">&gt;</font> update testtable <font color="#008080">set</font> col2<font color="#990000">=</font><font color="#993399">0</font> <font color="#008080">where</font> col1<font color="#990000">=</font><font color="#FF0000">'hi'</font><font color="#990000">;</font>
+sqlite<font color="#990000">&gt;</font> select <font color="#990000">*</font> <font color="#008080">from</font> testtable<font color="#990000">;</font>
+hi<font color="#990000">|</font><font color="#993399">0</font>
+hello<font color="#990000">|</font><font color="#993399">50</font>
+bye<font color="#990000">|</font><font color="#993399">70</font>
+sqlite<font color="#990000">&gt;</font> <b><font color="#0000FF">delete</font></b> from testtable <font color="#008080">where</font> col2<font color="#990000">=</font><font color="#993399">50</font><font color="#990000">;</font>
+sqlite<font color="#990000">&gt;</font> select <font color="#990000">*</font> <font color="#008080">from</font> testtable<font color="#990000">;</font>
+hi<font color="#990000">|</font><font color="#993399">0</font>
+bye<font color="#990000">|</font><font color="#993399">70</font>
+sqlite<font color="#990000">&gt;</font> drop <font color="#008080">table</font> testtable<font color="#990000">;</font>
+sqlite<font color="#990000">&gt;</font> <font color="#990000">.</font>exit</tt></pre>
 
+</blockquote>
 <!--#include virtual="../contentend.html"-->
 
 <!--#include virtual="footer.html"-->

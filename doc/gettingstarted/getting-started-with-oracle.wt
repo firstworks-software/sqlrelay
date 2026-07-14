@@ -30,18 +30,22 @@ This article describes how to get started with Oracle on Linux but much of it co
 
 The number one reason that Oracle installations have failed for me is because I ran out of memory. Oracle really needs about 725mb of total ram/swap. If your system has less than that, then you can add 725mb of swap as follows.
 
-{{{
+{{{#!blockquote
+{{{#!code
 dd if=/dev/zero of=/extraswap bs=1k count=742400
 chmod 600 /extraswap
 /sbin/mkswap /extraswap
 /sbin/swapon /extraswap
 }}}
+}}}
 
 Oracle doesn't appear to need that much ram/swap to actually run though, so after the installation is finished, you can remove it as follows:
 
-{{{
+{{{#!blockquote
+{{{#!code
 /sbin/swapoff /extraswap
 rm /extraswap
+}}}
 }}}
 
 [=#development]
@@ -56,7 +60,8 @@ The Oracle installer needs GNU make, the GNU C Compiler (gcc) and GNU Binutils (
 
 Run the following commands as root to set up the appropriate users, groups and directories.
 
-{{{
+{{{#!blockquote
+{{{#!code
 groupadd oinstall
 groupadd dba
 groupadd oper
@@ -67,11 +72,14 @@ mkdir /u01
 chown oracle:dba /u01
 chmod 775 /u01
 }}}
+}}}
 
 Edit /home/oracle/.bashrc and add the following command near the bottom.
 
-{{{
+{{{#!blockquote
+{{{#!code
 umask 022
+}}}
 }}}
 
 [=#env]
@@ -80,7 +88,8 @@ umask 022
 
 Add the following somewhere near the top of your /etc/profile (or create /etc/profile.d/oracle.sh if your system supports /etc/profile.d), replacing 12.1.0 in the ORACLE_VERSION environment variable with the version of Oracle that you are installing.
 
-{{{
+{{{#!blockquote
+{{{#!code
 export ORACLE_VERSION=12.1.0
 export ORACLE_BASE=/u01/app/oracle
 export ORACLE_HOME=$ORACLE_BASE/product/$ORACLE_VERSION
@@ -92,6 +101,7 @@ export ORA_NLS33=$ORACLE_HOME/ocommon/nls/admin/data
 export ORACLE_OWNER=oracle
 export ORACLE_TERM=386
 export NLS_LANG=american
+}}}
 }}}
 
 If you want to use a language other than US English, consult the following table and replace '''american''' with the appropriate language string.
@@ -160,8 +170,9 @@ Each version has different installation procedures. Follow the links below for t
 
 For Oracle 11g or higher, use the following script to start/stop the database at boot/shutdown time instead. Replace /u01/app/oracle/product/12.1.0 with your $ORACLE_HOME
 
-{{{
- #!/bin/sh
+{{{#!blockquote
+{{{#!code
+#!/bin/sh
 
 ORACLE_HOME=/u01/app/oracle/product/12.1.0
 
@@ -179,11 +190,13 @@ esac
 
 exit 0
 }}}
+}}}
 
 For Oracle 10g or lower, use the following script to start/stop the database at boot/shutdown time instead. Replace /u01/app/oracle/product/10.2.0 with your $ORACLE_HOME
 
-{{{
- #!/bin/sh
+{{{#!blockquote
+{{{#!code
+#!/bin/sh
 
 case "$1" in
   start)
@@ -200,6 +213,7 @@ case "$1" in
 esac
 
 exit 0
+}}}
 }}}
 
 Install this script and run it with the "start" option to start up the database. Running it with the "stop" option shuts the database down. To access a database, it must be running.
@@ -218,7 +232,8 @@ At this point, you can run the start/stop script to start up the database.
 
 To access the database, the file $ORACLE_HOME/network/admin/tnsnames.ora must also be configured. This file contains an entry for each database that the local system needs to know about. Here is an example of a tnsnames.ora entry, identifying the database ''ORA1'' on the local machine.
 
-{{{
+{{{#!blockquote
+{{{#!code
 ORA1.LOCALDOMAIN =
   (DESCRIPTION =
     (ADDRESS_LIST =
@@ -229,6 +244,7 @@ ORA1.LOCALDOMAIN =
     )
   )
 }}}
+}}}
 
 For Oracle 8i and higher, the format is SID.DOMAIN = (... parameters ...). For Oracle 7 and 8, the format is SID = (... parameters ...). In this example the SID is ORA1. The HOST parameter refers to the DNS name of the host that the database is running on. The SERVICE_NAME refers to the SID of the database as it is known on that host.
 
@@ -238,41 +254,52 @@ Database tables are stored in a file or set of files collectively called a table
 
 For Oracle 12c or higher, the directory ''/u01/app/oracle/oradata/cdbora1/ora1'' must exist. If it does not, run the following command to create it:
 
-{{{
+{{{#!blockquote
+{{{#!code
 mkdir -p /u01/app/oracle/oradata/cdbora1/ora1
 chown oracle:oinstall /u01/app/oracle/oradata/cdbora1/ora1
+}}}
 }}}
 
 For Oracle 11g or lower, the directory ''/u01/app/oracle/oradata/ora1'' must exist instead. If it does not, run the following command to create it:
 
-{{{
+{{{#!blockquote
+{{{#!code
 mkdir -p /u01/app/oracle/oradata/ora1
 chown oracle:oinstall /u01/app/oracle/oradata/ora1
+}}}
 }}}
 
 Now, for Oracle 10g or higher, use the following command to log in, replacing '''''password''''' with the password you entered during installation:
 
-{{{
+{{{#!blockquote
+{{{#!code
 sqlplus sys/password@ora1 as sysdba
+}}}
 }}}
 
 For Oracle 9i, use the following command to log in instead, replacing '''password''' with the password you entered during installation:
 
-{{{
+{{{#!blockquote
+{{{#!code
 sqlplus system/password@ora1
+}}}
 }}}
 
 For Oracle 8i or lower, use the following command to log in instead:
 
-{{{
+{{{#!blockquote
+{{{#!code
 sqlplus system/manager@ora1
+}}}
 }}}
 
 The following queries create a tablespace and temporary tablespace called ''testtablespace'' and ''testtablespacetemp'' with some minimal sizing parameters.
 
 For Oracle 12c or higher, run the following queries:
 
-{{{
+{{{#!blockquote
+{{{#!code
 ALTER PLUGGABLE DATABASE ora1 OPEN
 
 CREATE TABLESPACE testtablespace
@@ -288,10 +315,12 @@ CREATE TEMPORARY TABLESPACE testtablespacetemp
  AUTOEXTEND ON NEXT 1M
  MAXSIZE UNLIMITED;
 }}}
+}}}
 
 For Oracle 8i through 11g, run the following queries instead:
 
-{{{
+{{{#!blockquote
+{{{#!code
 CREATE TABLESPACE testtablespace
  DATAFILE '/u01/app/oracle/oradata/ora1/testtablespace01.dbf' 
  SIZE 1M REUSE
@@ -305,10 +334,12 @@ CREATE TEMPORARY TABLESPACE testtablespacetemp
  AUTOEXTEND ON NEXT 1M
  MAXSIZE UNLIMITED;
 }}}
+}}}
 
 For Oracle 8.0, run the following queries instead:
 
-{{{
+{{{#!blockquote
+{{{#!code
 CREATE TABLESPACE testtablespace
  DATAFILE '/u01/app/oracle/oradata/ora1/testtablespace01.dbf' 
  SIZE 1M REUSE
@@ -322,10 +353,12 @@ CREATE TABLESPACE testtablespacetemp
  AUTOEXTEND ON NEXT 1M
  MAXSIZE UNLIMITED;
 }}}
+}}}
 
 The set of database objects (such as tables, indexes, stored procedures and triggers) owned by a particular user is called a schema. Though schemas may be distributed across tablespaces, they are more often confined to a single tablespace. The SYSTEM and SYS schemas contain tables used by internal systems and should not be used for application data. You can create a new user and schema by logging in as SYSTEM and running the following queries:
 
-{{{
+{{{#!blockquote
+{{{#!code
 CREATE USER testuser IDENTIFIED BY testpassword
  DEFAULT TABLESPACE testtablespace 
  TEMPORARY TABLESPACE testtablespacetemp;
@@ -334,31 +367,40 @@ GRANT CREATE SESSION TO testuser;
 
 GRANT RESOURCE TO testuser;
 }}}
+}}}
 
 On Oracle 12c and higher you also have to run:
 
-{{{
+{{{#!blockquote
+{{{#!code
 GRANT UNLIMITED TABLESPACE TO testuser;
+}}}
 }}}
 
 Now you can exit and log in as the new user with the following command:
 
-{{{
+{{{#!blockquote
+{{{#!code
 sqlplus testuser/testpassword@ora1
+}}}
 }}}
 
 To delete a user and everything owned by that user, log in as SYSTEM and run the following command:
 
-{{{
+{{{#!blockquote
+{{{#!code
 DROP USER testuser CASCADE;
+}}}
 }}}
 
 To delete a tablespace, log in as SYSTEM and run the following command:
 
-{{{
+{{{#!blockquote
+{{{#!code
 DROP TABLESPACE testtablespace;
 
 DROP TABLESPACE testtablespacetemp;
+}}}
 }}}
 
 This should be enough you get you started. To set up more complex configurations, consult the documentation that came with your Oracle distribution.
@@ -373,13 +415,16 @@ The user must have read access to the $ORACLE_HOME/network/admin/tnsnames.ora fi
 
 The following command logs ''testuser'' with password ''testpassword'' into the database identified by the SID ''ora1''.
 
-{{{
+{{{#!blockquote
+{{{#!code
 sqlplus testuser/testpassword@ora1
+}}}
 }}}
 
 A sample session follows.
 
-{{{
+{{{#!blockquote
+{{{#!code
 [user@localhost user]$ sqlplus testuser/testpassword@ora1
 
 SQL*Plus: Release 12.1.0.1.0 Production on Tue Jan 27 21:21:34 2015
@@ -393,38 +438,38 @@ Oracle Database 12c Enterprise Edition Release 12.1.0.1.0 - 64bit Production
 With the Partitioning, OLAP, Advanced Analytics and Real Application Testing options
 
 
-SQL&gt; create table testtable (
+SQL> create table testtable (
   2  col1 varchar2(40),
   3  col2 number
   4  );
 
 Table created.
 
-SQL&gt; select table_name from user_tables;
+SQL> select table_name from user_tables;
 
 TABLE_NAME
 ------------------------------
 TESTTABLE
 
-SQL&gt; describe testtable;
+SQL> describe testtable;
  Name                                      Null?    Type
  ----------------------------------------- -------- ----------------------------
  COL1                                               VARCHAR2(40)
  COL2                                               NUMBER
 
-SQL&gt; insert into testtable values ('hello',50);
+SQL> insert into testtable values ('hello',50);
 
 1 row created.
 
-SQL&gt; insert into testtable values ('hi',60);
+SQL> insert into testtable values ('hi',60);
 
 1 row created.
 
-SQL&gt; insert into testtable values ('bye',70);
+SQL> insert into testtable values ('bye',70);
 
 1 row created.
 
-SQL&gt; select * from testtable;
+SQL> select * from testtable;
 
 COL1                                           COL2
 ---------------------------------------- ----------
@@ -432,35 +477,36 @@ hello                                            50
 hi                                               60
 bye                                              70
 
-SQL&gt; delete from testtable where col2=50;
+SQL> delete from testtable where col2=50;
 
 1 row deleted.
 
-SQL&gt; select * from testtable;
+SQL> select * from testtable;
 
 COL1                                           COL2
 ---------------------------------------- ----------
 hi                                               60
 bye                                              70
 
-SQL&gt; update testtable set col2=0 where col1='hi';
+SQL> update testtable set col2=0 where col1='hi';
 
 1 row updated.
 
-SQL&gt; select * from testtable;
+SQL> select * from testtable;
 
 COL1                                           COL2
 ---------------------------------------- ----------
 hi                                                0
 bye                                              70
 
-SQL&gt; drop table testtable;
+SQL> drop table testtable;
 
 Table dropped.
 
-SQL&gt; quit
+SQL> quit
 Disconnected from Oracle Database 12c Enterprise Edition Release 12.1.0.1.0 - 64bit Production
 With the Partitioning, OLAP, Advanced Analytics and Real Application Testing options
+}}}
 }}}
 
 {{{#!include ../contentend.html}}}

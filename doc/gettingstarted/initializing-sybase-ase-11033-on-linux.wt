@@ -10,8 +10,10 @@ After installing Sybase Adaptive Server Enterprise, you can initialize the serve
 
 First, ''su'' to the sybase user using the -l option.
 
-{{{
+{{{#!blockquote
+{{{#!code
 su -l sybase
+}}}
 }}}
 
 Run '''install/sybinit''', a text-based installation program. When prompted, follow these instructions.
@@ -26,6 +28,7 @@ type ctrl-x to '''Exit Screen'''[[br]]type ctrl-x to '''Exit Screen'''[[br]]type
 
 Replace ''/usr/local/sybase'' with whatever directory Sybase ASE is installed in.
 
+{{{#!blockquote
 {{{
  #!/bin/sh
 
@@ -49,6 +52,7 @@ case "$1" in
 esac
 
 exit 0
+}}}
 }}}
 
 Install this script and run it with the "start" option to start up the database. Running it with the "stop" option shuts the database down. To access a database, it must be running.

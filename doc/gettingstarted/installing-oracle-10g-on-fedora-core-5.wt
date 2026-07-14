@@ -10,38 +10,46 @@
 
 Oracle 10g requires some software packages that may not have been installed on your system. Run the following yum command to install them:
 
-{{{
+{{{#!blockquote
+{{{#!code
 yum install setarch tcl tcl-devel openmotif openmotif-devel compat-db \
 compat-libstdc++-33 compat-libf2c-32 compat-gcc-32 compat-gcc-32-c++ \
 compat-libstdc++-296 compat-libgcc-296 libaio libaio-devel \
 xorg-x11-deprecated-libs
 }}}
+}}}
 
 You'll also need to download the following package from [http://rpmfind.net rpmfind] and install it using ''rpm -i''. This package is also available in the Fedora Core 4 distribution.
 
-{{{
+{{{#!blockquote
+{{{#!code
 openmotif21-2.1.30-14.i386.rpm
+}}}
 }}}
 
 == Pretend to be Red Hat Enterprise Linux ES Release 4 ==
 
 Oracle 10g is only officially supported on a few versions of Redhat Linux and UnitedLinux. The installer checks /etc/redhat-release to see exactly what version of Redhat Linux you are running. To pretend that you are running Red Hat Enterprise Linux ES Release 4, run the following commands (as root):
 
-{{{
+{{{#!blockquote
+{{{#!code
 mv /etc/redhat-release /etc/redhat-release.old
-echo "redhat-4" &gt; /etc/redhat-release
+echo "redhat-4" > /etc/redhat-release
+}}}
 }}}
 
 == Configure the Kernel ==
 
 Oracle 10g requires that you at least temporarily increase the values of a couple of kernel parameters. To temporarily increase these values, follow these instructions (as root):
 
-{{{
-echo 65536 &gt; /proc/sys/fs/file-max
-echo 2097152 &gt; /proc/sys/kernel/shmall
-echo 2147483648 &gt; /proc/sys/kernel/shmmax
-echo 4096 &gt; /proc/sys/kernel/shmmni
-echo "250 32000 100 128" &gt; /proc/sys/kernel/sem
+{{{#!blockquote
+{{{#!code
+echo 65536 > /proc/sys/fs/file-max
+echo 2097152 > /proc/sys/kernel/shmall
+echo 2147483648 > /proc/sys/kernel/shmmax
+echo 4096 > /proc/sys/kernel/shmmni
+echo "250 32000 100 128" > /proc/sys/kernel/sem
+}}}
 }}}
 
 == Install Oracle ==
@@ -54,12 +62,15 @@ I have had problems with the graphical installer on enlightenment and fluxbox wi
 
 If you have a CD, mount it and cd to the mount point. If you have a zip distribution, extract the file using:
 
-{{{
+{{{#!blockquote
+{{{#!code
 unzip 10201_database_linux32.zip
+}}}
 }}}
 
 Change directories to the database directory.[[br]][[br]] Type '''./runInstaller'''[[br]][[br]] On the '''Installation Method''' screen, accept the default Basic Installation. Change the Global Database Name from "orcl" to "ora1". Enter a password in the Database Password and Confirm Password boxes for the SYS, SYSTEM, SYSMAN and DBSNMP accounts. Be sure to enter a password that starts with a letter, not a number. Click '''Next'''[[br]][[br]] The window will go away and a '''Preparing to install''' dialog with a progress bar will appear for a while. Then it will go away and another screen will appear.[[br]][[br]] On this screen, the installer will do a system test to make sure that the system configuration meets the installer's requirements. Your system may not meet the Network or Memory requirements. You can safely ignore these warnings. Click Next[[br]][[br]] If a dialog pops up indicating that some of the prerequisite checks have failed, click '''Yes''' to proceed.[[br]][[br]] On the '''Summary''' screen, click '''Install'''[[br]][[br]] The '''Install''' screen will show the progress of the installation[[br]][[br]] When the installation is about 30% complete, click '''Stop Installation''' and edit the file /u01/app/oracle/product/10.2.0/bin/gennttab and change the lines:
 
+{{{#!blockquote
 {{{
 LIB=`$ECHO ${TtoLIB} | $SED 's/ /\\
 /g' | $GREP "^${T}:" | $AWK -F: '{print $2}'`
@@ -68,13 +79,16 @@ INI=`$ECHO ${TtoINI} | $SED 's/ /\\
 BAS=`$ECHO ${TtoBAS} | $SED 's/ /\\
 /g' | $GREP "^${T}:" | $AWK -F: '{print $2}'`
 }}}
+}}}
 
 To:
 
+{{{#!blockquote
 {{{
 LIB=`$ECHO ${TtoLIB} | $SED 's/ /\n/g' | $GREP "^${T}:" | $AWK -F: '{print $2}'`
 INI=`$ECHO ${TtoINI} | $SED 's/ /\n/g' | $GREP "^${T}:" | $AWK -F: '{print $2}'`
 BAS=`$ECHO ${TtoBAS} | $SED 's/ /\n/g' | $GREP "^${T}:" | $AWK -F: '{print $2}'`
+}}}
 }}}
 
 Then click '''No''' to continue the installation.[[br]][[br]] Be sure to do this before the linking phase starts or the installation will stall during the linking phase.[[br]][[br]] When installation is finished, the '''Configuration Assistants''' screen will show the progress of the initial configuration processes.[[br]][[br]] A '''Database Configuration Assistant''' dialog should pop up, displaying the progress of the initial database configuration.[[br]][[br]] When database creation is complete, a dialog will pop up with a summary. Click '''OK'''.
@@ -87,7 +101,8 @@ For some reason, despite setting the oracle user's umask, the installtion create
 
 Sometimes, for some reason, during an installation, the tnslistener does not get configured to listen for connections to the ora1 database. Take a look at /u01/app/oracle/product/10.2.0/network/admin/listener.ora and make sure that there is an entry like the following:
 
-{{{
+{{{#!blockquote
+{{{#!code
 SID_LIST_LISTENER =
   (SID_LIST =
     (SID_DESC =
@@ -101,27 +116,34 @@ SID_LIST_LISTENER =
     )
   )
 }}}
+}}}
 
 The second SID_DESC section may be missing from your listener.ora file. If it is, update your listener.ora file, adding the necessary section.
 
 You'll also need to modify the line:
 
-{{{
+{{{#!blockquote
+{{{#!code
       (ADDRESS = (PROTOCOL = IPC)(KEY = EXTPROC1))
+}}}
 }}}
 
 To read:
 
-{{{
+{{{#!blockquote
+{{{#!code
       (ADDRESS = (PROTOCOL = IPC)(KEY = ORA1))
+}}}
 }}}
 
 During the installation, several ancillary processes were started. You can shut some of them down by executing the following commands (as oracle):
 
-{{{
+{{{#!blockquote
+{{{#!code
 isqlplusctl stop
 emctl stop dbconsole
 emctl stop agent
+}}}
 }}}
 
 At this point, only the database and tns listener should be running.

@@ -10,48 +10,73 @@
 
 <p>Oracle 9i requires that you at least temporarily increase the maximum shared memory segment size for installation. To temporarily increase the maximum shared memory segment size, follow these instructions (as root):</p>
 
-<pre>echo "1073741824" &gt; /proc/sys/kernel/shmmax
-</pre>
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt>echo <font color="#FF0000">"1073741824"</font> <font color="#990000">&gt;</font> <font color="#990000">/</font>proc<font color="#990000">/</font>sys<font color="#990000">/</font>kernel<font color="#990000">/</font>shmmax</tt></pre>
 
+</blockquote>
 <h2>Set Up the Environment</h2>
 
 <p>Add the following line to /home/oracle/.bashrc near the bottom:</p>
 
-<pre>export LD_ASSUME_KERNEL=2.4.1
-</pre>
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt><b><font color="#0000FF">export</font></b> LD_ASSUME_KERNEL<font color="#990000">=</font><font color="#993399">2.4</font><font color="#990000">.</font><font color="#993399">1</font></tt></pre>
 
+</blockquote>
 <h2>Install Compatibility Packages</h2>
 
 <p>The Apache web server that comes with Oracle 9i requires Berkeley DB version 3. Part of the installation process requires gcc version 2.96. Fedora Core 1 doesn't come with any version of Berkeley DB and comes with gcc version 3.3.2. However, there are compatibility RPM's available for Redhat 9 that will also work with Fedora Core 1:</p>
 
-<pre>compat-libstdc++-7.3-2.96.118.i386.rpm
-compat-db-3.3.11-4.i386.rpm
-compat-gcc-7.3-2.96.118.i386.rpm
-</pre>
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt>compat<font color="#990000">-</font>libstdc<font color="#990000">++-</font><font color="#993399">7.3</font><font color="#990000">-</font><font color="#993399">2.96</font><font color="#990000">.</font><font color="#993399">118</font><font color="#990000">.</font>i386<font color="#990000">.</font>rpm
+compat<font color="#990000">-</font>db<font color="#990000">-</font><font color="#993399">3.3</font><font color="#990000">.</font><font color="#993399">11</font><font color="#990000">-</font><font color="#993399">4</font><font color="#990000">.</font>i386<font color="#990000">.</font>rpm
+compat<font color="#990000">-</font>gcc<font color="#990000">-</font><font color="#993399">7.3</font><font color="#990000">-</font><font color="#993399">2.96</font><font color="#990000">.</font><font color="#993399">118</font><font color="#990000">.</font>i386<font color="#990000">.</font>rpm</tt></pre>
 
+</blockquote>
 <p>You can download these RPMS from <a target="_blank" href="http://rpmfind.net">rpmfind</a> and install them using ''rpm -i'' as root.</p>
 
 <p>The version of glibc that comes with Fedora Core 1 has a bug in it.</p>
 
 <p>To assure that Oracle will install and run, download and install <a target="_blank" href="http://www.firstworks.com/support/libctypefixup-1.0.tar.gz">libctypefixup</a> using the following commands (as root).</p>
 
-<pre>tar xfz libctypefixup-1.0.tar.gz
-cd libctypefixup-1.0
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt>tar <font color="#008080">xfz</font> libctypefixup<font color="#990000">-</font><font color="#993399">1.0</font><font color="#990000">.</font>tar<font color="#990000">.</font>gz
+<font color="#008080">cd</font> libctypefixup<font color="#990000">-</font><font color="#993399">1.0</font>
 make
-make install
-</pre>
+make install</tt></pre>
 
+</blockquote>
 <p>Oracle 9i uses a Java-based installer and comes with its own JRE. The version of Java that Oracle 9i comes with has a bug though and is incompatible with the version of glibc that comes with Fedora Core 1.</p>
 
 <p>To assure that the Oracle installer will run, download and install <a target="_blank" href="http://www.firstworks.com/support/libwaitfixup-1.0.tar.gz">libwaitfixup</a> using the following commands (as root).</p>
 
-<pre>tar xfz libwaitfixup-1.0.tar.gz
-cd libwaitfixup-1.0
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt>tar <font color="#008080">xfz</font> libwaitfixup<font color="#990000">-</font><font color="#993399">1.0</font><font color="#990000">.</font>tar<font color="#990000">.</font>gz
+<font color="#008080">cd</font> libwaitfixup<font color="#990000">-</font><font color="#993399">1.0</font>
 make
 make install
-echo "/lib/libwaitfixup.so" &gt;&gt; /etc/ld.so.preload
-</pre>
+echo <font color="#FF0000">"/lib/libwaitfixup.so"</font> <font color="#990000">&gt;&gt;</font> <font color="#990000">/</font>etc<font color="#990000">/</font>ld<font color="#990000">.</font>so<font color="#990000">.</font>preload</tt></pre>
 
+</blockquote>
 <h2>Install Oracle</h2>
 
 <p>Now, log in as the oracle user.</p>
@@ -62,73 +87,125 @@ echo "/lib/libwaitfixup.so" &gt;&gt; /etc/ld.so.preload
 
 <p>If you have a CD, mount it and cd to the mount point. If you have a cpio distribution, extract all three files using:</p>
 
-<pre>cpio -idmv &lt; lnx_920_disk1.cpio
-cpio -idmv &lt; lnx_920_disk2.cpio
-cpio -idmv &lt; lnx_920_disk3.cpio
-</pre>
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt>cpio <font color="#990000">-</font>idmv <font color="#990000">&lt;</font> lnx_920_disk1<font color="#990000">.</font>cpio
+cpio <font color="#990000">-</font>idmv <font color="#990000">&lt;</font> lnx_920_disk2<font color="#990000">.</font>cpio
+cpio <font color="#990000">-</font>idmv <font color="#990000">&lt;</font> lnx_920_disk3<font color="#990000">.</font>cpio</tt></pre>
 
+</blockquote>
 <p>Change directories to the Disk1 directory.<br/><br/> Type <b>./runInstaller</b><br/><br/> On the <b>Welcome</b> screen click <b>Next</b><br/><br/> An <b>Inventory Location</b> dialog will pop up.<br/>Accept the default base directory and click <b>OK</b><br/><br/> On the <b>Unix Group Name</b> screen, enter ''oinstall'' for the <b>UNIX Group Name</b> and click <b>Next</b><br/><br/> A dialog will pop up and prompt you to run /tmp/orainstRoot.sh as root.<br/>Follow the instructions and click <b>Continue</b><br/><br/> On the <b>File Locations</b> screen, accept the defaults and click <b>Next</b><br/><br/> On the <b>Available Products</b> screen, accept the default selection <b>Oracle9i Database 9.2.0.1.0</b> and click <b>Next</b><br/><br/> On the <b>Installation Types</b> screen, accept the default selection <b>Enterprise Edition</b> and click <b>Next</b><br/><br/> On the <b>Database Configuration</b> screen, accept the default selection <b>General Purpose</b> and click <b>Next</b><br/><br/> On the <b>Database Identification</b> screen, enter ''ora1'' for both <b>Global Database Name</b> and <b>SID</b> and click <b>Next</b><br/><br/> On the <b>Database File Location</b> screen, accept the default <b>Directory for Database Files</b> and click <b>Next</b><br/><br/> On the <b>Database Character Set</b> screen, accept the default selection <b>Use the default character set</b> and click <b>Next</b><br/><br/> On the <b>Summary</b> screen, click <b>Install</b><br/><br/> The <b>Install</b> screen will show the progress of the installation<br/><br/> If a dialog pops up indicating:</p>
 
 <p>Error in invoking target install of makefile<br/>/u01/app/oracle/product/9.2.0/network/lib/ins_oemagent.mk edit /u01/app/oracle/product/9.2.0/network/lib/env_oemagent.mk and change:</p>
 
-<pre> LDLIBS=$(EXPDLIBS) $(EXOSLIBS) $(SYSLIBS) $(EXSYSLIBS) $(MATHLIB) $(USRLIBS)
-</pre>
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt> LDLIBS<font color="#990000">=</font>$<font color="#990000">(</font>EXPDLIBS<font color="#990000">)</font> $<font color="#990000">(</font>EXOSLIBS<font color="#990000">)</font> $<font color="#990000">(</font>SYSLIBS<font color="#990000">)</font> $<font color="#990000">(</font>EXSYSLIBS<font color="#990000">)</font> $<font color="#990000">(</font>MATHLIB<font color="#990000">)</font> $<font color="#990000">(</font>USRLIBS<font color="#990000">)</font></tt></pre>
 
+</blockquote>
 <p>to:</p>
 
-<pre> LDLIBS=$(EXPDLIBS) $(EXOSLIBS) $(SYSLIBS) $(EXSYSLIBS) $(MATHLIB) $(USRLIBS) -lctypefixup
-</pre>
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt> LDLIBS<font color="#990000">=</font>$<font color="#990000">(</font>EXPDLIBS<font color="#990000">)</font> $<font color="#990000">(</font>EXOSLIBS<font color="#990000">)</font> $<font color="#990000">(</font>SYSLIBS<font color="#990000">)</font> $<font color="#990000">(</font>EXSYSLIBS<font color="#990000">)</font> $<font color="#990000">(</font>MATHLIB<font color="#990000">)</font> $<font color="#990000">(</font>USRLIBS<font color="#990000">)</font> <font color="#990000">-</font>lctypefixup</tt></pre>
 
+</blockquote>
 <p>then click <b>Retry</b><br/><br/><br/> If a dialog pops up indicating:</p>
 
 <p>Error in invoking target install of makefile<br/>/u01/app/oracle/product/9.2.0/rdbms/lib/ins_rdbms.mk edit /u01/app/oracle/product/9.2.0/rdbms/lib/env_rdbms.mk and change:</p>
 
-<pre> LINK=$(PURECMDS) gcc $(LDFLAGS) $(COMPSOBJS)
-</pre>
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt> LINK<font color="#990000">=</font>$<font color="#990000">(</font>PURECMDS<font color="#990000">)</font> gcc $<font color="#990000">(</font>LDFLAGS<font color="#990000">)</font> $<font color="#990000">(</font>COMPSOBJS<font color="#990000">)</font></tt></pre>
 
+</blockquote>
 <p>to:</p>
 
-<pre> LINK=$(PURECMDS) gcc296 $(LDFLAGS) $(COMPSOBJS)
-</pre>
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt> LINK<font color="#990000">=</font>$<font color="#990000">(</font>PURECMDS<font color="#990000">)</font> gcc296 $<font color="#990000">(</font>LDFLAGS<font color="#990000">)</font> $<font color="#990000">(</font>COMPSOBJS<font color="#990000">)</font></tt></pre>
 
+</blockquote>
 <p>and change:</p>
 
-<pre> ORACLE_LINKER=$(ADE_DEL_FILE_CMD) $(PURECMDS) gcc $(OLAPPRELINKOPTS) $(LDFLAGS) $(COMPSOBJS)
-</pre>
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt> ORACLE_LINKER<font color="#990000">=</font>$<font color="#990000">(</font>ADE_DEL_FILE_CMD<font color="#990000">)</font> $<font color="#990000">(</font>PURECMDS<font color="#990000">)</font> gcc $<font color="#990000">(</font>OLAPPRELINKOPTS<font color="#990000">)</font> $<font color="#990000">(</font>LDFLAGS<font color="#990000">)</font> $<font color="#990000">(</font>COMPSOBJS<font color="#990000">)</font></tt></pre>
 
+</blockquote>
 <p>to:</p>
 
-<pre> ORACLE_LINKER=$(ADE_DEL_FILE_CMD) $(PURECMDS) gcc296 $(OLAPPRELINKOPTS) $(LDFLAGS) $(COMPSOBJS)
-</pre>
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt> ORACLE_LINKER<font color="#990000">=</font>$<font color="#990000">(</font>ADE_DEL_FILE_CMD<font color="#990000">)</font> $<font color="#990000">(</font>PURECMDS<font color="#990000">)</font> gcc296 $<font color="#990000">(</font>OLAPPRELINKOPTS<font color="#990000">)</font> $<font color="#990000">(</font>LDFLAGS<font color="#990000">)</font> $<font color="#990000">(</font>COMPSOBJS<font color="#990000">)</font></tt></pre>
 
+</blockquote>
 <p>then click <b>Retry</b><br/><br/><br/> If a dialog pops up indicating:</p>
 
 <p>Error in invoking target install of makefile<br/>/u01/app/oracle/product/9.2.0/ctx/lib/ins_ctx.mk Click <b>Ignore</b>. There is no known workaround for this problem and the affected system doesn't appear to be critical.</p>
 
 <p>At the end of the installation, a dialog will pop up asking you to run root.sh. Just follow the directions on the dialog and click <b>Ok</b><br/><br/> On the <b>Configuration Tools</b> screen, the Database Creation Assistant will run and a dialog will most likely pop up, indicating that it failed. In that case, click Ok on the dialog and, run the following command as root:</p>
 
-<pre>touch /etc/rac_on
-</pre>
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt>touch <font color="#990000">/</font>etc<font color="#990000">/</font>rac_on</tt></pre>
 
+</blockquote>
 <p>Now select <b>Oracle Database Configuration Assistant</b> And click <b>Retry</b><br/><br/> A dialog will pop up indicating that a database is being created. After a while, another dialog will pop up instructing you to provide passwords for the SYS and SYSTEM users. Enter new passwords for these users. Note that you cannont use the classic "manager" and "change_on_install" passwords.<br/>Click <b>OK</b><br/><br/> Sometimes the Database Creation Assistant will just hang here. Select <b>Oracle Database Configuration Assistant</b> And click Stop. If it doesn't stop, you may have to kill it from the command line using the following command:</p>
 
-<pre>kill `ps -efa | grep "JDBC_PROTOCOL=thin" | cut -c10-15`
+<blockquote>
+  <pre>kill `ps -efa | grep "JDBC_PROTOCOL=thin" | cut -c10-15`
 </pre>
 
+</blockquote>
 <p>When the Database Creation Assistant is finished (or killed), click Next.<br/><br/> On the <b>End Of Installation</b> screen click <b>Exit</b><br/><br/> A dialog will pop up asking: Do you really want to exit? Click <b>Yes</b>.<br/><br/> The Oracle Enterprise Manager, a graphical database management interface should start up soon. You can exit it by clicking <b>File</b> and then <b>Exit</b>.</p>
 
 <p>In some cases, dbstart and dbshut don't work after installation. To ensure that they will work, you need to run the following command:</p>
 
-<pre>cp /u01/app/oracle/admin/ora1/pfile/initora1.ora.* /u01/app/oracle/product/9.2.0/dbs/initora1.ora
-</pre>
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt>cp <font color="#990000">/</font>u01<font color="#990000">/</font>app<font color="#990000">/</font>oracle<font color="#990000">/</font>admin<font color="#990000">/</font>ora1<font color="#990000">/</font>pfile<font color="#990000">/</font>initora1<font color="#990000">.</font>ora<font color="#990000">.*</font> <font color="#990000">/</font>u01<font color="#990000">/</font>app<font color="#990000">/</font>oracle<font color="#990000">/</font>product<font color="#990000">/</font><font color="#993399">9.2</font><font color="#990000">.</font><font color="#993399">0</font><font color="#990000">/</font>dbs<font color="#990000">/</font>initora1<font color="#990000">.</font>ora</tt></pre>
 
+</blockquote>
 <h2>Post-Installation</h2>
 
 <p>During the installation, the oracle web server was started. You can shut it down by executing the following command (as oracle):</p>
 
-<pre>/u01/app/oracle/product/9.2.0/Apache/Apache/bin/apachectl stop
-</pre>
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt><font color="#990000">/</font>u01<font color="#990000">/</font>app<font color="#990000">/</font>oracle<font color="#990000">/</font>product<font color="#990000">/</font><font color="#993399">9.2</font><font color="#990000">.</font><font color="#993399">0</font><font color="#990000">/</font>Apache<font color="#990000">/</font>Apache<font color="#990000">/</font>bin<font color="#990000">/</font>apachectl stop</tt></pre>
 
+</blockquote>
 <p>At this point, only the database and tns listener should be running.</p>
 
 <!--#include virtual="../contentend.html"-->

@@ -12,8 +12,10 @@ To install and initialize Sybase Adaptive Server Enterprise, follow these instru
 
 I've never been able to get the Monitor Server to start. During installation it fails with a series of messages like:
 
-{{{
+{{{#!blockquote
+{{{#!code
 Warning: Attempt to create shared memory at addr=0xfe000000 failed
+}}}
 }}}
 
 These instructions disable installation of the Monitor Server.
@@ -28,27 +30,33 @@ This packages is available from [http://rpmfind.net rpmfind] or using yum.
 
 The database server requires more shared memory than the typical linux system is configured to allow by default. Run the following command (as root) prior to installation.
 
-{{{
-echo 268435456 &gt; /proc/sys/kernel/shmmax
+{{{#!blockquote
+{{{#!code
+echo 268435456 > /proc/sys/kernel/shmmax
+}}}
 }}}
 
 == Extract The Distribution ==
 
 The distribution comes as a tarball. Extract it as follows:
 
-{{{
+{{{#!blockquote
+{{{#!code
 mkdir sybase
 mv ase155_linuxx86.tgz sybase
 cd sybase
 tar xfz ase155_linuxx86.tgz
+}}}
 }}}
 
 == Install The Software Distribution ==
 
 Now, go into the directory the sybase software distribution was extracted into and, as root, run the following command:
 
-{{{
+{{{#!blockquote
+{{{#!code
 ./setup.bin
+}}}
 }}}
 
 A java-based installer should run.
@@ -103,6 +111,7 @@ A screen will appear titled '''Installation Completed'''[[br]]Click Done.
 
 To start the database at boot time, you need to install a script like the following. Replace ''/opt/sybase'' with whatever directory Sybase ASE is installed in.
 
+{{{#!blockquote
 {{{
  #!/bin/sh
 
@@ -129,6 +138,7 @@ case "$1" in
 esac
 
 exit 0
+}}}
 }}}
 
 Install this script and run it with the "start" option to start up the database. Running it with the "stop" option shuts the database down. To access a database, it must be running.

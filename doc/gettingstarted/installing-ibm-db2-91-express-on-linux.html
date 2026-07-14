@@ -64,7 +64,8 @@
 
 <p>You can use the following script to start/stop the database at boot/shutdown time.</p>
 
-<pre> #!/bin/sh
+<blockquote>
+  <pre> #!/bin/sh
 
 case "$1" in
         start)
@@ -81,22 +82,33 @@ esac
 exit 0
 </pre>
 
+</blockquote>
 <p>Be sure to replace all instances of /opt/ibm/db2/V9.1 with your installation directory.</p>
 
 <p>Install this script and run it with the "start" option to start up the database. Running it with the "stop" option shuts the database down. To access a database, it must be running.</p>
 
 <p>During instance configuration, there's a check box indicating whether the instance will be configured to start at boot time. If you didn't check it, to get each instance to start at boot time, you need to go into the installation directory and run the following command as root for each instance.</p>
 
-<pre>instance/db2iauto -on INSTANCE_USER
-</pre>
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt>instance<font color="#990000">/</font>db2iauto <font color="#990000">-</font><font color="#008080">on</font> INSTANCE_USER</tt></pre>
 
+</blockquote>
 <p>Where INSTANCE_USER is replaced by the username of the user associated with the instance you want to start at boot time.</p>
 
 <p>If you want to disable instances from starting at boot time, you need to go into the installation directory and run the following command as root for each instance:</p>
 
-<pre>instance/db2iauto -off INSTANCE_USER
-</pre>
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt>instance<font color="#990000">/</font>db2iauto <font color="#990000">-</font><font color="#008080">off</font> INSTANCE_USER</tt></pre>
 
+</blockquote>
 <!--#include virtual="../contentend.html"-->
 
 <!--#include virtual="footer.html"-->

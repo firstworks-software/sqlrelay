@@ -28,14 +28,18 @@ Log in as root and run /opt/sybase-12.5/install/sybinstall.sh
 
 '''Note:''' If you moved /opt/sybase-12.5 to some other directory to save space on the /opt partition and then symlinked it back to /opt/sybase-12.5, the sybinstall.sh script will fail and report errors. To solve the problem, modify it as follows and re-run it. Change:
 
+{{{#!blockquote
 {{{
 chmod ug+w `find ${SYBASE} -type d -print`
+}}}
 }}}
 
 to
 
+{{{#!blockquote
 {{{
 chmod ug+w `find ${SYBASE}/ -type d -print`
+}}}
 }}}
 
 Log in as the sybase user.
@@ -44,8 +48,10 @@ You're supposed to start the license manager daemon here, but it always fails, s
 
 The license manager client is a Java program. If you are using a kernel that supports the Native Posix Thread Library (such as the one that ships with Redhat 9), you'll need to run the following command:
 
-{{{
+{{{#!blockquote
+{{{#!code
 export LD_ASSUME_KERNEL=2.4.1
+}}}
 }}}
 
 Run ''lmgr''. A graphical license manager application should pop up.
@@ -96,6 +102,7 @@ You should now be returned to the original dialog. Click '''Exit'''.
 
 The RPM distribution of Sybase ASE installs a script in /etc/rc.d/init.d which starts the database at boot time. For non-RPM distributions, you may need to install a script like the following. Replace ''/opt/sybase-12.5'' with whatever directory Sybase ASE is installed in.
 
+{{{#!blockquote
 {{{
  #!/bin/sh
 
@@ -121,6 +128,7 @@ case "$1" in
 esac
 
 exit 0
+}}}
 }}}
 
 Install this script and run it with the "start" option to start up the database. Running it with the "stop" option shuts the database down. To access a database, it must be running.

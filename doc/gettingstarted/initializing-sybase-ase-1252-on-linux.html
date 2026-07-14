@@ -22,26 +22,41 @@
 
 <p>The database server requires more shared memory than the typical linux system is configured to allow by default. Run the following command (as root) prior to installation.</p>
 
-<pre>echo 268435456 &gt; /proc/sys/kernel/shmmax
-</pre>
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt>echo <font color="#993399">268435456</font> <font color="#990000">&gt;</font> <font color="#990000">/</font>proc<font color="#990000">/</font>sys<font color="#990000">/</font>kernel<font color="#990000">/</font>shmmax</tt></pre>
 
+</blockquote>
 <h2>Extract The Distribution</h2>
 
 <p>The distribution comes as a tarball. Extract it as follows:</p>
 
-<pre>mkdir sybase
-mv ase1252_de_linux.tgz sybase
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt>mkdir sybase
+<font color="#008080">mv</font> ase1252_de_linux<font color="#990000">.</font>tgz sybase
 cd sybase
-tar xfz ase1252_de_linux.tgz
-</pre>
+tar <font color="#008080">xfz</font> ase1252_de_linux<font color="#990000">.</font>tgz</tt></pre>
 
+</blockquote>
 <h2>Install The Server</h2>
 
 <p>Now, as root, run the following command:</p>
 
-<pre>./setup
-</pre>
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt><font color="#990000">./</font>setup</tt></pre>
 
+</blockquote>
 <p>A java-based installer should run.</p>
 
 <p>On the screen titled: <b>Welcome to the <a href="InstallSheild">InstallSheild</a> Wizard for Sybase Adaptive Server Enterprise Suite</b><br/>Click Next.</p>
@@ -80,7 +95,8 @@ tar xfz ase1252_de_linux.tgz
 
 <p>The RPM distribution of Sybase ASE installs a script in /etc/rc.d/init.d which starts the database at boot time. For non-RPM distributions, you may need to install a script like the following. Replace ''/opt/sybase'' with whatever directory Sybase ASE is installed in.</p>
 
-<pre> #!/bin/sh
+<blockquote>
+  <pre> #!/bin/sh
 
 export SYBASE=/opt/sybase
 
@@ -108,6 +124,7 @@ esac
 exit 0
 </pre>
 
+</blockquote>
 <p>Install this script and run it with the "start" option to start up the database. Running it with the "stop" option shuts the database down. To access a database, it must be running.</p>
 
 <!--#include virtual="../contentend.html"-->

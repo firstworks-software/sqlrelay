@@ -10,14 +10,18 @@ After installing Sybase Adaptive Server Enterprise, you can initialize the serve
 
 First, ''su'' to the sybase user using the -l option.
 
-{{{
+{{{#!blockquote
+{{{#!code
 su -l sybase
+}}}
 }}}
 
 You should be presented with the a great deal of text and prompted at the end.
 
-{{{
+{{{#!blockquote
+{{{#!code
 Do you want to start 'srvbuild' now? [y/n]
+}}}
 }}}
 
 Answer 'y'. Next time you log in, you won't be prompted. If you were not prompted with that text, or if you accidentally answer something other than 'y', you can run the ''srvbuild'' command from the command line.
@@ -50,6 +54,7 @@ A dialog will appear above the Status Output dialog asking if you would like to 
 
 The RPM distribution of Sybase ASE installs a script in /etc/rc.d/init.d which starts the database at boot time. For non-RPM distributions, you may need to install a script like the following. Replace ''/opt/sybase-11.9.2'' with whatever directory Sybase ASE is installed in.
 
+{{{#!blockquote
 {{{
  #!/bin/sh
 
@@ -73,6 +78,7 @@ case "$1" in
 esac
 
 exit 0
+}}}
 }}}
 
 Install this script and run it with the "start" option to start up the database. Running it with the "stop" option shuts the database down. To access a database, it must be running.

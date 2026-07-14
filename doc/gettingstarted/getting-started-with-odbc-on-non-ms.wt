@@ -34,12 +34,14 @@ The file ''odbcinst.ini'' contains entries describing the database drivers. Spec
 
 For example, lets say you're using the Linux ODBC Driver for Microsoft SQL Server to access a Microsoft SQL Server database from Linux. The following lines would need to be appended to ''odbcinst.ini'' to make the system aware of the driver.
 
-{{{
+{{{#!blockquote
+{{{#!code
 [ODBC Driver 11 for SQL Server] 
 Description=Microsoft ODBC Driver 11 for SQL Server
 Driver=/opt/microsoft/msodbcsql/lib64/libmsodbcsql-11.0.so.2270.0
 Threading=1 
 UsageCount=1
+}}}
 }}}
 
 The '''&#91;ODBC Driver 11 for SQL Server&#93;''' line defines the name that will be used in other files when referring to this driver.
@@ -55,7 +57,8 @@ The '''FileUsage''' parameter is ambiguous. I've never been able to find a good 
 The file ''odbc.ini'' defines specific database connections, often called Data Source Names or DSN's for short.[[br]]
 For example, lets say that you wanted to connect to a database on the machine ''examplehost'' on port ''1433'' using username ''testuser'' and password ''testpassword'' and then use database ''testdb'' once logged in. Your odbc.ini entry might look like:
 
-{{{
+{{{#!blockquote
+{{{#!code
 [exampledsn]
 Description = SQL Server
 Driver  = ODBC Driver 11 for SQL Server
@@ -64,6 +67,7 @@ Port  = 1422
 User = testuser
 Password = testpassword
 Database = testdb
+}}}
 }}}
 
 The '''&#91;exampledsn&#93;''' line defines the name of this DSN to be ''exampledsn''. Programs which use ODBC may use the name ''exampledsn'' to refer to this set of connection parameters.
@@ -82,7 +86,8 @@ The command line program ''isql'' can be used to test a DSN.
 
 Note that Firebird also comes with a command line program, also called ''isql'' and it is important to make sure you are using the ODBC program rather than the Firebird program. Running the ''isql'' command with no arguments should give you some indication of which one it is. The ''isql'' program that comes with unixODBC has output like the following:
 
-{{{
+{{{#!blockquote
+{{{#!code
 **********************************************
 * unixODBC - isql                            *
 **********************************************
@@ -115,7 +120,7 @@ Note that Firebird also comes with a command line program, also called ''isql'' 
 *                                            *
 * Examples                                   *
 *                                            *
-*      isql WebDB MyID MyPWD -w &lt; My.sql     *
+*      isql WebDB MyID MyPWD -w < My.sql     *
 *                                            *
 *      Each line in My.sql must contain      *
 *      exactly 1 SQL command except for the  *
@@ -128,6 +133,7 @@ Note that Firebird also comes with a command line program, also called ''isql'' 
 *      pharvey@codebydesign.com              *
 *      nick@easysoft.com                     *
 **********************************************
+}}}
 }}}
 
 To connect to the database defined by the exampledsn DSN, run the following command:

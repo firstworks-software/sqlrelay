@@ -10,8 +10,10 @@
 
 Oracle 11g requires some software packages that may not have been installed on your system. Run the following yum command to install them:
 
-{{{
+{{{#!blockquote
+{{{#!code
 yum install libaio libaio-devel
+}}}
 }}}
 
 It also requires the '''pdksh''' package, version 5.2.14, which is not available on many modern linux systems. Versions for older linux systems may be found at [http://rpmfind.net rpmfind]. You could either build and instal an rpm for your system from a source rpm or just try an older version and see if it works on your system.
@@ -20,18 +22,20 @@ It also requires the '''pdksh''' package, version 5.2.14, which is not available
 
 Oracle 11g requires that you at least temporarily increase the values of a couple of kernel parameters. To temporarily increase these values, follow these instructions (as root):
 
-{{{
-echo 6815744 &gt; /proc/sys/fs/file-max
-echo "9000 65500" &gt; /proc/sys/net/ipv4/ip_local_port_range
-echo 262144 &gt; /proc/sys/net/core/rmem_default
-echo 4194304 &gt; /proc/sys/net/core/rmem_max
-echo 262144 &gt; /proc/sys/net/core/wmem_default
-echo 1048576 &gt; /proc/sys/net/core/wmem_max
-echo 1048576 &gt; /proc/sys/fs/aio-max-nr
-echo 2097152 &gt; /proc/sys/kernel/shmall
-echo 2147483648 &gt; /proc/sys/kernel/shmmax
-echo 4096 &gt; /proc/sys/kernel/shmmni
-echo "250 32000 100 128" &gt; /proc/sys/kernel/sem
+{{{#!blockquote
+{{{#!code
+echo 6815744 > /proc/sys/fs/file-max
+echo "9000 65500" > /proc/sys/net/ipv4/ip_local_port_range
+echo 262144 > /proc/sys/net/core/rmem_default
+echo 4194304 > /proc/sys/net/core/rmem_max
+echo 262144 > /proc/sys/net/core/wmem_default
+echo 1048576 > /proc/sys/net/core/wmem_max
+echo 1048576 > /proc/sys/fs/aio-max-nr
+echo 2097152 > /proc/sys/kernel/shmall
+echo 2147483648 > /proc/sys/kernel/shmmax
+echo 4096 > /proc/sys/kernel/shmmni
+echo "250 32000 100 128" > /proc/sys/kernel/sem
+}}}
 }}}
 
 == Install Oracle ==
@@ -44,9 +48,11 @@ I have had problems with the graphical installer on enlightenment and fluxbox wi
 
 If you have a CD, mount it and cd to the mount point. If you have a zip distribution, extract the file using:
 
-{{{
+{{{#!blockquote
+{{{#!code
 unzip linux_11gR2_database_1of2.zip
 unzip linux_11gR2_database_2of2.zip
+}}}
 }}}
 
 Change directories to the database directory.[[br]][[br]] Type '''./runInstaller'''[[br]][[br]] On the first screen, leave the Email box blank, uncheck the box next to '''I wish to receive security updates via My Oracle Support''' and click '''Next'''.[[br]][[br]] When the '''Email Address Not Specified''' popup appears, click '''Yes'''.[[br]][[br]] On the '''Select Installation Option''' screen, accept the default '''Create and configure a database'''and click '''Next'''.[[br]][[br]] On the '''System Class''' screen, accept the default '''Desktop Class''' and click '''Next'''.[[br]][[br]] On the '''Typical Install Configuration''' screen, change the '''Global database name''' from "orcl.localdomain" to "ora1.localdomain". Enter a password in the '''Administrative Password''' and '''Confirm Password''' boxes. Click '''Next'''[[br]][[br]] On the '''Create Inventory''' screen, accept the defaults and click '''Next'''[[br]][[br]] On the '''Perform Prerequisite Checks''' screen, operating system requirements will be checked. When it's done, click '''Next'''.[[br]][[br]] Some of the prerequisite checks have failed. Many are likely tunable system parameters and may be fixed by clicking '''Fix &amp; Check Again''' and following the instructions. Others, such as missing packages, may not be fixable by the installer and may require manual intervention. After fixing them, click '''Check Again'''. When all is well, a '''Summary''' screen will appear. Click '''Finish'''.[[br]][[br]] On the '''Oracle Configuration Manager Registration''' screen, just click '''Next'''.[[br]][[br]] On the '''Summary''' screen, click '''Install'''[[br]][[br]] The '''Install Product''' screen will show the progress of the installation[[br]][[br]][[br]] A '''Database Configuration Assistant''' dialog should pop up. The image on the left hand side will change regularlry, but the dialog itself may not display anything. Ignore this, the configuration is occurring.[[br]][[br]] When database creation is complete, a dialog will pop up with a summary. Click '''OK'''.
@@ -57,27 +63,33 @@ A dialog will pop up asking you to run some scripts as root. Just follow the dir
 
 During my installation, several directories got created with "localhost" in their names, but then various utilities expected directories with "localhost.localdomain" in them. I created symbolic links to resolve the problem:
 
-{{{
+{{{#!blockquote
+{{{#!code
 cd /u01/app/oracle/product/11.2.0
 ln -s localhost_ora1 localhost.localdomain_ora1
 cd oc4j/j2ee
 ln -s OC4J_DBConsole_localhost_ora1 OC4J_DBConsole_localhost.localdomain_ora1
+}}}
 }}}
 
 You may or may not run into the same problem.
 
 During the installation, several ancillary processes were started. You can shut some of them down by executing the following commands (as oracle):
 
-{{{
+{{{#!blockquote
+{{{#!code
 emctl stop dbconsole
+}}}
 }}}
 
 At this point, only the database and tns listener should be running.
 
 During the installation, the tnsnames.ora file which tells clients how to connect to the database will most likely have been created in 640 mode, leaving it unreadable by anyone not in the oinstall group. There are 2 options here, either add every user that you want to be able to access oracle to the oinstall group, or change permissions on tnsnames.ora to make it world-readable. If you opt for the latter, you can do so using the following command:
 
-{{{
+{{{#!blockquote
+{{{#!code
 chmod o+r /u01/app/oracle/product/11.2.0/network/admin/tnsnames.ora
+}}}
 }}}
 
 {{{#!include ../contentend.html}}}

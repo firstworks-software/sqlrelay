@@ -20,8 +20,10 @@ These packages are available from [http://rpmfind.net rpmfind] or using yum.
 
 The database server requires more shared memory than the typical linux system is configured to allow by default. Run the following command (as root) prior to installation.
 
-{{{
-echo 268435456 &gt; /proc/sys/kernel/shmmax
+{{{#!blockquote
+{{{#!code
+echo 268435456 > /proc/sys/kernel/shmmax
+}}}
 }}}
 
 == Download Upgrade ==
@@ -34,28 +36,34 @@ However Sybase has released an update that will allow Sybase 15.0.2 to run on an
 
 The distribution comes as a tarball. Extract it as follows:
 
-{{{
+{{{#!blockquote
+{{{#!code
 mkdir sybase
 mv ase1502_xe_linux.tgz sybase
 cd sybase
 tar xfz ase1502_xe_linux.tgz
 }}}
+}}}
 
 The Sybase update comes as a tarball as well. Extract it as follows:
 
-{{{
+{{{#!blockquote
+{{{#!code
 mkdir ebf
 mv EBF15672.tgz ebf
 cd ebf
 tar xfz EBF15672.tgz
+}}}
 }}}
 
 == Install The Software Distribution ==
 
 Now, go into the directory the sybase software distribution was extracted into and, as root, run the following command:
 
-{{{
+{{{#!blockquote
+{{{#!code
 ./setup
+}}}
 }}}
 
 A java-based installer should run.
@@ -84,8 +92,10 @@ A screen will appear titled '''The installation was successful'''[[br]]Click Fin
 
 Now, go into the directory the update was extracted into and, as root, run the following command:
 
-{{{
+{{{#!blockquote
+{{{#!code
 ./setup
+}}}
 }}}
 
 A java-based installer should run. On the main page, click Next.
@@ -126,6 +136,7 @@ A screen will appear titled '''The installation was successful'''[[br]]Click Fin
 
 To start the database at boot time, you need to install a script like the following. Replace ''/opt/sybase'' with whatever directory Sybase ASE is installed in.
 
+{{{#!blockquote
 {{{
  #!/bin/sh
 
@@ -151,6 +162,7 @@ case "$1" in
 esac
 
 exit 0
+}}}
 }}}
 
 Install this script and run it with the "start" option to start up the database. Running it with the "stop" option shuts the database down. To access a database, it must be running.

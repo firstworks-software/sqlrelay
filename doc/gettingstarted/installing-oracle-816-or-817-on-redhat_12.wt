@@ -8,13 +8,15 @@
 
 8.1.6 and 8.1.7 require a particilar JRE be installed. Download '''jre118_v3-glibc-2.1.3.tar.bz2''' (not a newer version). This jre is hard to come by these days but can currently be downloaded from [http://ftp.vim.org/languages/java/jdk/JDK-1.1.8/i386/v3/ vim]. Download it and execute the following commands as root.
 
-{{{
+{{{#!blockquote
+{{{#!code
 mv jre118_v3-glibc-2.1.3.tar.bz2 /usr/local
 cd /usr/local
 bunzip2 jre118_v3-glibc-2.1.3.tar.bz2
 tar xf jre118_v3-glibc-2.1.3.tar
 ln -s jre118_v3 java
 rm jre118_v3-glibc-2.1.3.tar
+}}}
 }}}
 
 Now, log in as the oracle user.

@@ -8,19 +8,29 @@
 
 <p>8.1.6 and 8.1.7 require a particilar JRE be installed. Download <b>jre118_v3-glibc-2.1.3.tar.bz2</b> (not a newer version). This jre is hard to come by these days but can currently be downloaded from <a target="_blank" href="http://ftp.vim.org/languages/java/jdk/JDK-1.1.8/i386/v3/">vim</a>. Download it and execute the following commands as root.</p>
 
-<pre>mv jre118_v3-glibc-2.1.3.tar.bz2 /usr/local
-cd /usr/local
-bunzip2 jre118_v3-glibc-2.1.3.tar.bz2
-tar xf jre118_v3-glibc-2.1.3.tar
-ln -s jre118_v3 java
-rm jre118_v3-glibc-2.1.3.tar
-</pre>
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt><font color="#008080">mv</font> jre118_v3<font color="#990000">-</font>glibc<font color="#990000">-</font><font color="#993399">2.1</font><font color="#990000">.</font><font color="#993399">3</font><font color="#990000">.</font>tar<font color="#990000">.</font>bz2 <font color="#990000">/</font>usr<font color="#990000">/</font>local
+cd <font color="#990000">/</font>usr<font color="#990000">/</font>local
+<font color="#008080">bunzip2</font> jre118_v3<font color="#990000">-</font>glibc<font color="#990000">-</font><font color="#993399">2.1</font><font color="#990000">.</font><font color="#993399">3</font><font color="#990000">.</font>tar<font color="#990000">.</font>bz2
+tar <font color="#008080">xf</font> jre118_v3<font color="#990000">-</font>glibc<font color="#990000">-</font><font color="#993399">2.1</font><font color="#990000">.</font><font color="#993399">3</font><font color="#990000">.</font>tar
+ln <font color="#990000">-</font><font color="#008080">s</font> jre118_v3 java
+<font color="#008080">rm</font> jre118_v3<font color="#990000">-</font>glibc<font color="#990000">-</font><font color="#993399">2.1</font><font color="#990000">.</font><font color="#993399">3</font><font color="#990000">.</font>tar</tt></pre>
 
+</blockquote>
 <p>Add the following line to /home/oracle/.bashrc near the bottom:</p>
 
-<pre>export LD_ASSUME_KERNEL=2.2.5
-</pre>
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt><b><font color="#0000FF">export</font></b> LD_ASSUME_KERNEL<font color="#990000">=</font><font color="#993399">2.2</font><font color="#990000">.</font><font color="#993399">5</font></tt></pre>
 
+</blockquote>
 <p>Download the following RPM's from <a target="_blank" href="http://rpmfind.net">rpmfind</a> or apt-get them if your system is set up to use apt.</p>
 
 <ul>
@@ -32,9 +42,14 @@ rm jre118_v3-glibc-2.1.3.tar
 
 <p>Now edit /home/oracle/.bashrc and add the following command near the bottom.</p>
 
-<pre>. /usr/i386-glibc21-linux/bin/i386-glibc21-linux-env.sh
-</pre>
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt><font color="#990000">.</font> <font color="#990000">/</font>usr<font color="#990000">/</font>i386<font color="#990000">-</font>glibc21<font color="#990000">-</font>linux<font color="#990000">/</font>bin<font color="#990000">/</font>i386<font color="#990000">-</font>glibc21<font color="#990000">-</font>linux<font color="#990000">-</font>env<font color="#990000">.</font>sh</tt></pre>
 
+</blockquote>
 <p>Now, log in as the oracle user.</p>
 
 <p>Since Oracle 8.1.6 and 8.1.7 use a graphical installer, you need to be running X Windows or point the DISPLAY environment variable to an X Windows session running somewhere.</p>

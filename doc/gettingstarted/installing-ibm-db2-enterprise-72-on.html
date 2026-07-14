@@ -20,10 +20,15 @@
 
 <p>(These instructions assume that your system has ncurses version 5.2 and that libncurses.so.5.2 resides in /usr/lib. If your system has a different version of ncurses or if it resides somewhere else (for example, in /lib) then modify the instructions accordingly)</p>
 
-<pre>cd /usr/lib
-ln -s libncurses.so.5.2 libncurses.so.4
-</pre>
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt>cd <font color="#990000">/</font>usr<font color="#990000">/</font>lib
+ln <font color="#990000">-</font><font color="#008080">s</font> libncurses<font color="#990000">.</font>so<font color="#990000">.</font><font color="#993399">5.2</font> libncurses<font color="#990000">.</font>so<font color="#990000">.</font><font color="#993399">4</font></tt></pre>
 
+</blockquote>
 <h2>Install Compatibility Packages</h2>
 
 <p>DB2 V7.2 for Linux requires glibc 2.1. On distributions that come with newer versions of glibc it is necessary to install some compatibility packages.</p>
@@ -44,14 +49,24 @@ ln -s libncurses.so.5.2 libncurses.so.4
 
 <p>On Debian Linux edit the db2_install script and comment out the line:</p>
 
-<pre>rpm -qa | grep rpm 1&gt;/dev/null 2&gt;/dev/null
-</pre>
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt>rpm <font color="#990000">-</font>qa <font color="#990000">|</font> grep rpm <font color="#993399">1</font><font color="#990000">&gt;/</font>dev<font color="#990000">/</font>null <font color="#993399">2</font><font color="#990000">&gt;/</font>dev<font color="#990000">/</font>null</tt></pre>
 
+</blockquote>
 <p>If you're installing on a computer that gets moved around a lot (such as a laptop) and gets assigned more than 1 hostname, you should set the hostname to localhost now using the following command:</p>
 
-<pre>hostname localhost
-</pre>
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt>hostname localhost</tt></pre>
 
+</blockquote>
 <p>The installer will name the database after whatever hostname your computer currently has. This will cause the database to be inaccessible when that hostname doesn't resolve or resolves to a computer other than yours.</p>
 
 <p>Run the db2_install script.</p>
@@ -100,17 +115,27 @@ ln -s libncurses.so.5.2 libncurses.so.4
 
 <p>log in as root<br/>view ''/etc/services'' and look for a line like:</p>
 
-<pre>db2cdb2inst1     50000/tcp  # Connection port for DB2 instance db2inst1
-</pre>
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt>db2cdb2inst1     <font color="#993399">50000</font><font color="#990000">/</font>tcp  # Connection port <b><font color="#0000FF">for</font></b> DB2 instance db2inst1</tt></pre>
 
+</blockquote>
 <p>if no such line exists, add it <br/>log in as db2as<br/>run the following commands:</p>
 
-<pre>. /home/db2inst1/sqllib/db2profile
-db2 "update database manager configuration using svcename db2cdb2inst1"
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt><font color="#990000">.</font> <font color="#990000">/</font>home<font color="#990000">/</font>db2inst1<font color="#990000">/</font>sqllib<font color="#990000">/</font>db2profile
+db2 <font color="#FF0000">"update database manager configuration using svcename db2cdb2inst1"</font>
 db2stop
-db2start
-</pre>
+db2start</tt></pre>
 
+</blockquote>
 <p>Now the ''db2inst1'' instance should be accessible to remote clients on port 50000.</p>
 
 <h2>Creating a Sample Database</h2>
@@ -121,37 +146,52 @@ db2start
 
 <p>During the DB2 installation process, /etc/inittab is modified such that the database will be started at boot time. However, if you would like to start and stop the database at will, you can use the following script.</p>
 
-<pre> #!/bin/sh
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt><i><font color="#9A1900">#!/bin/sh</font></i>
 
-case "$1" in
-        start)
-                /usr/IBMdb2/V7.1/instance/db2istrt
-        ;;
-        stop)
-                /usr/IBMdb2/V7.1/instance/db2ishut
-        ;;
-        *)
-        echo $"Usage: $0 {start|stop}"
-        exit 1
-esac
+<b><font color="#0000FF">case</font></b> <font color="#FF0000">"$1"</font> <b><font color="#0000FF">in</font></b>
+        start<font color="#990000">)</font>
+                /usr/IBMdb<font color="#993399">2</font>/V<font color="#993399">7.1</font>/instance/db2istrt
+        <font color="#990000">;;</font>
+        stop<font color="#990000">)</font>
+                /usr/IBMdb<font color="#993399">2</font>/V<font color="#993399">7.1</font>/instance/db2ishut
+        <font color="#990000">;;</font>
+        <font color="#990000">*)</font>
+        echo <font color="#009900">$"</font>Usage<font color="#990000">:</font> <font color="#009900">$0</font> {start<font color="#990000">|</font>stop}<font color="#FF0000">"</font>
+<font color="#FF0000">        exit 1</font>
+<font color="#FF0000">esac</font>
 
-exit 0
-</pre>
+<font color="#FF0000">exit 0</font></tt></pre>
 
+</blockquote>
 <p>Install this script and run it with the "start" option to start up the database. Running it with the "stop" option shuts the database down. To access a database, it must be running.</p>
 
 <p>You can control which instances start at boot time using the following commands. To get each instance to start at boot time, you need to run the following command as root for each instance:</p>
 
-<pre>/usr/IBMdb2/V7.1/bin/db2iauto -on INSTANCE_USER
-</pre>
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt><font color="#990000">/</font>usr<font color="#990000">/</font>IBMdb2<font color="#990000">/</font>V7<font color="#990000">.</font><font color="#993399">1</font><font color="#990000">/</font>bin<font color="#990000">/</font>db2iauto <font color="#990000">-</font><font color="#008080">on</font> INSTANCE_USER</tt></pre>
 
+</blockquote>
 <p>Where INSTANCE_USER is replaced by the username of the user associated with the instance you want to start at boot time.</p>
 
 <p>If you want to disable an instance from starting at boot time, you need to run the following command as root for each instance:</p>
 
-<pre>/usr/IBMdb2/V7.1/bin/db2iauto -off INSTANCE_USER
-</pre>
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt><font color="#990000">/</font>usr<font color="#990000">/</font>IBMdb2<font color="#990000">/</font>V7<font color="#990000">.</font><font color="#993399">1</font><font color="#990000">/</font>bin<font color="#990000">/</font>db2iauto <font color="#990000">-</font><font color="#008080">off</font> INSTANCE_USER</tt></pre>
 
+</blockquote>
 <!--#include virtual="../contentend.html"-->
 
 <!--#include virtual="footer.html"-->

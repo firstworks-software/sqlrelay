@@ -10,36 +10,56 @@
 
 <p>Oracle 10g requires some software packages that may not have been installed on your system. Run the following yum command to install them:</p>
 
-<pre>yum install setarch tcl tcl-devel openmotif openmotif-devel compat-db \
-compat-libstdc++-33 compat-libf2c-32 compat-gcc-32 compat-gcc-32-c++ \
-compat-libstdc++-296 compat-libgcc-296 libaio libaio-devel \
-xorg-x11-deprecated-libs
-</pre>
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt>yum install setarch <font color="#008080">tcl</font> tcl<font color="#990000">-</font>devel <font color="#008080">openmotif</font> openmotif<font color="#990000">-</font><font color="#008080">devel</font> compat<font color="#990000">-</font>db <font color="#990000">\</font>
+compat<font color="#990000">-</font>libstdc<font color="#990000">++-</font><font color="#993399">33</font> compat<font color="#990000">-</font>libf2c<font color="#990000">-</font><font color="#993399">32</font> compat<font color="#990000">-</font>gcc<font color="#990000">-</font><font color="#993399">32</font> compat<font color="#990000">-</font>gcc<font color="#990000">-</font><font color="#993399">32</font><font color="#990000">-</font>c<font color="#990000">++</font> <font color="#990000">\</font>
+compat<font color="#990000">-</font>libstdc<font color="#990000">++-</font><font color="#993399">296</font> compat<font color="#990000">-</font>libgcc<font color="#990000">-</font><font color="#993399">296</font> <font color="#008080">libaio</font> libaio<font color="#990000">-</font>devel <font color="#990000">\</font>
+xorg<font color="#990000">-</font>x11<font color="#990000">-</font>deprecated<font color="#990000">-</font>libs</tt></pre>
 
+</blockquote>
 <p>You'll also need to download the following package from <a target="_blank" href="http://rpmfind.net">rpmfind</a> and install it using ''rpm -i''. This package is also available in the Fedora Core 4 distribution.</p>
 
-<pre>openmotif21-2.1.30-14.i386.rpm
-</pre>
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt>openmotif21<font color="#990000">-</font><font color="#993399">2.1</font><font color="#990000">.</font><font color="#993399">30</font><font color="#990000">-</font><font color="#993399">14</font><font color="#990000">.</font>i386<font color="#990000">.</font>rpm</tt></pre>
 
+</blockquote>
 <h2>Pretend to be Red Hat Enterprise Linux ES Release 4</h2>
 
 <p>Oracle 10g is only officially supported on a few versions of Redhat Linux and <a href="UnitedLinux">UnitedLinux</a>. The installer checks /etc/redhat-release to see exactly what version of Redhat Linux you are running. To pretend that you are running Red Hat Enterprise Linux ES Release 4, run the following commands (as root):</p>
 
-<pre>mv /etc/redhat-release /etc/redhat-release.old
-echo "redhat-4" &gt; /etc/redhat-release
-</pre>
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt>mv <font color="#990000">/</font>etc<font color="#990000">/</font>redhat<font color="#990000">-</font>release <font color="#990000">/</font>etc<font color="#990000">/</font>redhat<font color="#990000">-</font>release<font color="#990000">.</font>old
+echo <font color="#FF0000">"redhat-4"</font> <font color="#990000">&gt;</font> <font color="#990000">/</font>etc<font color="#990000">/</font>redhat<font color="#990000">-</font>release</tt></pre>
 
+</blockquote>
 <h2>Configure the Kernel</h2>
 
 <p>Oracle 10g requires that you at least temporarily increase the values of a couple of kernel parameters. To temporarily increase these values, follow these instructions (as root):</p>
 
-<pre>echo 65536 &gt; /proc/sys/fs/file-max
-echo 2097152 &gt; /proc/sys/kernel/shmall
-echo 2147483648 &gt; /proc/sys/kernel/shmmax
-echo 4096 &gt; /proc/sys/kernel/shmmni
-echo "250 32000 100 128" &gt; /proc/sys/kernel/sem
-</pre>
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt>echo <font color="#993399">65536</font> <font color="#990000">&gt;</font> <font color="#990000">/</font>proc<font color="#990000">/</font>sys<font color="#990000">/</font>fs<font color="#990000">/</font>file<font color="#990000">-</font>max
+echo <font color="#993399">2097152</font> <font color="#990000">&gt;</font> <font color="#990000">/</font>proc<font color="#990000">/</font>sys<font color="#990000">/</font>kernel<font color="#990000">/</font>shmall
+echo <font color="#993399">2147483648</font> <font color="#990000">&gt;</font> <font color="#990000">/</font>proc<font color="#990000">/</font>sys<font color="#990000">/</font>kernel<font color="#990000">/</font>shmmax
+echo <font color="#993399">4096</font> <font color="#990000">&gt;</font> <font color="#990000">/</font>proc<font color="#990000">/</font>sys<font color="#990000">/</font>kernel<font color="#990000">/</font>shmmni
+echo <font color="#FF0000">"250 32000 100 128"</font> <font color="#990000">&gt;</font> <font color="#990000">/</font>proc<font color="#990000">/</font>sys<font color="#990000">/</font>kernel<font color="#990000">/</font>sem</tt></pre>
 
+</blockquote>
 <h2>Install Oracle</h2>
 
 <p>Now, log in as the oracle user.</p>
@@ -50,12 +70,18 @@ echo "250 32000 100 128" &gt; /proc/sys/kernel/sem
 
 <p>If you have a CD, mount it and cd to the mount point. If you have a zip distribution, extract the file using:</p>
 
-<pre>unzip 10201_database_linux32.zip
-</pre>
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt>unzip 10201_database_linux32<font color="#990000">.</font>zip</tt></pre>
 
+</blockquote>
 <p>Change directories to the database directory.<br/><br/> Type <b>./runInstaller</b><br/><br/> On the <b>Installation Method</b> screen, accept the default Basic Installation. Change the Global Database Name from "orcl" to "ora1". Enter a password in the Database Password and Confirm Password boxes for the SYS, SYSTEM, SYSMAN and DBSNMP accounts. Be sure to enter a password that starts with a letter, not a number. Click <b>Next</b><br/><br/> The window will go away and a <b>Preparing to install</b> dialog with a progress bar will appear for a while. Then it will go away and another screen will appear.<br/><br/> On this screen, the installer will do a system test to make sure that the system configuration meets the installer's requirements. Your system may not meet the Network or Memory requirements. You can safely ignore these warnings. Click Next<br/><br/> If a dialog pops up indicating that some of the prerequisite checks have failed, click <b>Yes</b> to proceed.<br/><br/> On the <b>Summary</b> screen, click <b>Install</b><br/><br/> The <b>Install</b> screen will show the progress of the installation<br/><br/> When the installation is about 30% complete, click <b>Stop Installation</b> and edit the file /u01/app/oracle/product/10.2.0/bin/gennttab and change the lines:</p>
 
-<pre>LIB=`$ECHO ${TtoLIB} | $SED 's/ /\\
+<blockquote>
+  <pre>LIB=`$ECHO ${TtoLIB} | $SED 's/ /\\
 /g' | $GREP "^${T}:" | $AWK -F: '{print $2}'`
 INI=`$ECHO ${TtoINI} | $SED 's/ /\\
 /g' | $GREP "^${T}:" | $AWK -F: '{print $2}'`
@@ -63,13 +89,16 @@ BAS=`$ECHO ${TtoBAS} | $SED 's/ /\\
 /g' | $GREP "^${T}:" | $AWK -F: '{print $2}'`
 </pre>
 
+</blockquote>
 <p>To:</p>
 
-<pre>LIB=`$ECHO ${TtoLIB} | $SED 's/ /\n/g' | $GREP "^${T}:" | $AWK -F: '{print $2}'`
+<blockquote>
+  <pre>LIB=`$ECHO ${TtoLIB} | $SED 's/ /\n/g' | $GREP "^${T}:" | $AWK -F: '{print $2}'`
 INI=`$ECHO ${TtoINI} | $SED 's/ /\n/g' | $GREP "^${T}:" | $AWK -F: '{print $2}'`
 BAS=`$ECHO ${TtoBAS} | $SED 's/ /\n/g' | $GREP "^${T}:" | $AWK -F: '{print $2}'`
 </pre>
 
+</blockquote>
 <p>Then click <b>No</b> to continue the installation.<br/><br/> Be sure to do this before the linking phase starts or the installation will stall during the linking phase.<br/><br/> When installation is finished, the <b>Configuration Assistants</b> screen will show the progress of the initial configuration processes.<br/><br/> A <b>Database Configuration Assistant</b> dialog should pop up, displaying the progress of the initial database configuration.<br/><br/> When database creation is complete, a dialog will pop up with a summary. Click <b>OK</b>.</p>
 
 <p>A dialog will pop up asking you to run some scripts as root. Just follow the directions on the dialog (they may take a while to complete) and click <b>Ok</b><br/><br/> On the <b>End Of Installation</b> screen click <b>Exit</b><br/><br/> A dialog will pop up asking: Do you really want to exit? Click <b>Yes</b>.</p>
@@ -80,39 +109,59 @@ BAS=`$ECHO ${TtoBAS} | $SED 's/ /\n/g' | $GREP "^${T}:" | $AWK -F: '{print $2}'`
 
 <p>Sometimes, for some reason, during an installation, the tnslistener does not get configured to listen for connections to the ora1 database. Take a look at /u01/app/oracle/product/10.2.0/network/admin/listener.ora and make sure that there is an entry like the following:</p>
 
-<pre>SID_LIST_LISTENER =
-  (SID_LIST =
-    (SID_DESC =
-      (SID_NAME = PLSExtProc)
-      (ORACLE_HOME = /u01/app/oracle/product/10.2.0)
-      (PROGRAM = extproc)
-    )
-    (SID_DESC =
-      (SID_NAME = ora1)
-      (ORACLE_HOME = /u01/app/oracle/product/10.2.0)
-    )
-  )
-</pre>
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt>SID_LIST_LISTENER <font color="#990000">=</font>
+  <font color="#990000">(</font>SID_LIST <font color="#990000">=</font>
+    <font color="#990000">(</font>SID_DESC <font color="#990000">=</font>
+      <font color="#990000">(</font>SID_NAME <font color="#990000">=</font> PLSExtProc<font color="#990000">)</font>
+      <font color="#990000">(</font>ORACLE_HOME <font color="#990000">=</font> <font color="#990000">/</font>u01<font color="#990000">/</font>app<font color="#990000">/</font>oracle<font color="#990000">/</font>product<font color="#990000">/</font><font color="#993399">10.2</font><font color="#990000">.</font><font color="#993399">0</font><font color="#990000">)</font>
+      <font color="#990000">(</font>PROGRAM <font color="#990000">=</font> extproc<font color="#990000">)</font>
+    <font color="#990000">)</font>
+    <font color="#990000">(</font>SID_DESC <font color="#990000">=</font>
+      <font color="#990000">(</font>SID_NAME <font color="#990000">=</font> ora1<font color="#990000">)</font>
+      <font color="#990000">(</font>ORACLE_HOME <font color="#990000">=</font> <font color="#990000">/</font>u01<font color="#990000">/</font>app<font color="#990000">/</font>oracle<font color="#990000">/</font>product<font color="#990000">/</font><font color="#993399">10.2</font><font color="#990000">.</font><font color="#993399">0</font><font color="#990000">)</font>
+    <font color="#990000">)</font>
+  <font color="#990000">)</font></tt></pre>
 
+</blockquote>
 <p>The second SID_DESC section may be missing from your listener.ora file. If it is, update your listener.ora file, adding the necessary section.</p>
 
 <p>You'll also need to modify the line:</p>
 
-<pre>      (ADDRESS = (PROTOCOL = IPC)(KEY = EXTPROC1))
-</pre>
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt>      <font color="#990000">(</font>ADDRESS <font color="#990000">=</font> <font color="#990000">(</font>PROTOCOL <font color="#990000">=</font> IPC<font color="#990000">)(</font>KEY <font color="#990000">=</font> EXTPROC1<font color="#990000">))</font></tt></pre>
 
+</blockquote>
 <p>To read:</p>
 
-<pre>      (ADDRESS = (PROTOCOL = IPC)(KEY = ORA1))
-</pre>
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt>      <font color="#990000">(</font>ADDRESS <font color="#990000">=</font> <font color="#990000">(</font>PROTOCOL <font color="#990000">=</font> IPC<font color="#990000">)(</font>KEY <font color="#990000">=</font> ORA1<font color="#990000">))</font></tt></pre>
 
+</blockquote>
 <p>During the installation, several ancillary processes were started. You can shut some of them down by executing the following commands (as oracle):</p>
 
-<pre>isqlplusctl stop
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt>isqlplusctl stop
 emctl stop dbconsole
-emctl stop agent
-</pre>
+emctl stop agent</tt></pre>
 
+</blockquote>
 <p>At this point, only the database and tns listener should be running.</p>
 
 <!--#include virtual="../contentend.html"-->
