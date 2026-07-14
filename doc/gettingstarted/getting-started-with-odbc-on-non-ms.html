@@ -1,0 +1,159 @@
+<!--#include virtual="header.html"-->
+
+<!--#include virtual="projectheader.html"-->
+
+<!--#include virtual="../contentstart.html"-->
+
+<h1>Getting Started With ODBC (on a non-MS platform)</h1>
+
+<ul>
+  <li><a href="#installation">Installation</a></li>
+  <li><a href="#accessing">Accessing a Database</a></li>
+  <li><a href="#quirks">ODBC Quirks</a></li>
+</ul>
+
+<a name="installation"/><h2>Installation</h2>
+
+<p>One or both of <a target="_blank" href="http://www.unixodbc.org/">unixODBC</a> and <a target="_blank" href="http://www.iodbc.org/">iODBC</a> are available for most Unix-like platforms.</p>
+
+<p>On modern Linux platforms, they can be installed via yum, apt-get or similar. On BSD systems, pkg_add or pkgin may be used to install one or the other. Modern versions of Solaris come with unixODBC pre-installed. I have also been able to build and install many versions of each from source on many different platforms.</p>
+
+<p>ODBC provides a common API for accessing different databases, but to access a database, you also need an ODBC driver for that database. ODBC drivers are generally available as shared object libraries from the database manufacturer. Most databases have ODBC drivers available for them, but not all drivers are available for Unix or Linux.</p>
+
+<p>ODBC drivers are generally installed in the <b>libdir</b> of the ODBC package - generally /usr/lib or /usr/local/lib, but they can really be installed anywhere.</p>
+
+<a name="accessing"/><h2>Accessing a Database</h2>
+
+<p>To access a database via ODBC, you have to add entries to two separate files.</p>
+
+<h2>odbcinst.ini</h2>
+
+<p>The file ''odbcinst.ini'' contains entries describing the database drivers. Specifically, they map a driver name (such as ODBC Driver 11 for SQL Server) to a user-friendly description of the driver and the driver files themselves.</p>
+
+<p>For example, lets say you're using the Linux ODBC Driver for Microsoft SQL Server to access a Microsoft SQL Server database from Linux. The following lines would need to be appended to ''odbcinst.ini'' to make the system aware of the driver.</p>
+
+<pre>[ODBC Driver 11 for SQL Server] 
+Description=Microsoft ODBC Driver 11 for SQL Server
+Driver=/opt/microsoft/msodbcsql/lib64/libmsodbcsql-11.0.so.2270.0
+Threading=1 
+UsageCount=1
+</pre>
+
+<p>The <b>&#91;ODBC Driver 11 for SQL Server&#93;</b> line defines the name that will be used in other files when referring to this driver.</p>
+
+<p>The <b>Driver</b> argument is set to the full pathname of the driver.</p>
+
+<p>If you have both 32-bin and 64-bit drivers, then you can set the <b>Driver</b> argument to the full pathname of the 32-bit driver, and set a <b>Driver64</b> argument to the full pathname of the 64-bit driver. If you only have a 64-bit driver then you can use either argument.</p>
+
+<p>The <b><a href="FileUsage">FileUsage</a></b> parameter is ambiguous. I've never been able to find a good description of it. It appears to always exist and always be set to 1.</p>
+
+<h2>odbc.ini</h2>
+
+<p>The file ''odbc.ini'' defines specific database connections, often called Data Source Names or DSN's for short.<br/>
+For example, lets say that you wanted to connect to a database on the machine ''examplehost'' on port ''1433'' using username ''testuser'' and password ''testpassword'' and then use database ''testdb'' once logged in. Your odbc.ini entry might look like:</p>
+
+<pre>[exampledsn]
+Description = SQL Server
+Driver  = ODBC Driver 11 for SQL Server
+Host  = examplehost
+Port  = 1422
+User = testuser
+Password = testpassword
+Database = testdb
+</pre>
+
+<p>The <b>&#91;exampledsn&#93;</b> line defines the name of this DSN to be ''exampledsn''. Programs which use ODBC may use the name ''exampledsn'' to refer to this set of connection parameters.</p>
+
+<p>The <b>Description</b> parameter defines a user-friendly name for this DSN.</p>
+
+<p>The <b>Driver</b> parameter refers back to a driver definied the ''odbcinst.ini'' file. Applications which use this DSN will load that driver.</p>
+
+<p>The remaining parameters are specific to the driver, are given only as examples and might be different for other drivers. For example, another driver may not have the <b>Database</b> parameter at all, may refer to the <b>User</b> as <b><a href="UserName">UserName</a></b> instead or may have additional parameters.</p>
+
+<p>That said, the <b>User</b> and <b>Password</b> parameters are fairly well standardized and many tools allow them to be overridden at connect-time. As such, they are often left blank in the ''odbc.ini'' file. To leave a parameter blank, include the line but place no value after the equals sign.</p>
+
+<h2>isql</h2>
+
+<p>The command line program ''isql'' can be used to test a DSN.</p>
+
+<p>Note that Firebird also comes with a command line program, also called ''isql'' and it is important to make sure you are using the ODBC program rather than the Firebird program. Running the ''isql'' command with no arguments should give you some indication of which one it is. The ''isql'' program that comes with unixODBC has output like the following:</p>
+
+<pre>**********************************************
+* unixODBC - isql                            *
+**********************************************
+* Syntax                                     *
+*                                            *
+*      isql DSN [UID [PWD]] [options]        *
+*                                            *
+* Options                                    *
+*                                            *
+* -b         batch.(no prompting etc)        *
+* -dx        delimit columns with x          *
+* -x0xXX     delimit columns with XX, where  *
+*            x is in hex, ie 0x09 is tab     *
+* -w         wrap results in an HTML table   *
+* -c         column names on first row.      *
+*            (only used when -d)             *
+* -mn        limit column display width to n *
+* -v         verbose.                        *
+* -lx        set locale to x                 *
+* -q         wrap char fields in dquotes     *
+* -3         Use ODBC 3 calls                *
+* -n         Use new line processing         *
+* --version  version                         *
+*                                            *
+* Commands                                   *
+*                                            *
+* help - list tables                         *
+* help table - list columns in table         *
+* help help - list all help options          *
+*                                            *
+* Examples                                   *
+*                                            *
+*      isql WebDB MyID MyPWD -w &lt; My.sql     *
+*                                            *
+*      Each line in My.sql must contain      *
+*      exactly 1 SQL command except for the  *
+*      last line which must be blank (unless *
+*      -n option specified).                 *
+*                                            *
+* Please visit;                              *
+*                                            *
+*      http://www.unixodbc.org               *
+*      pharvey@codebydesign.com              *
+*      nick@easysoft.com                     *
+**********************************************
+</pre>
+
+<p>To connect to the database defined by the exampledsn DSN, run the following command:</p>
+
+<p><b>isql exampledsn</b></p>
+
+<p>or optionally...</p>
+
+<p><b>isql exampledsn testuser testpassword</b></p>
+
+<p>to override the user and password.</p>
+
+<p>You should now be presented with a session resembling the command line interfaces to other databases. You can run queries, view result sets, etc.</p>
+
+<a name="quirks"/><h2>ODBC Quirks</h2>
+
+<p>Many databases support named bind variables. For example, in Oracle, you can have a query like:</p>
+
+<p><b>select * from mytable where col1=:value1 and col2=:value2 </b></p>
+
+<p>In this query, <b>value1</b> and <b>value2</b> are the names of the bind variables.</p>
+
+<p>Oracle also supports bind-by-position. For example, you can also have a query like:</p>
+
+<p><b>select * from mytable where col1=:1 and col2=:2 </b></p>
+
+<p>In this query, <b>1</b> and <b>2</b> are the "names" of the bind variables.</p>
+
+<p>ODBC does not appear to support binding by name, even if the underlying database does, or if ODBC does support it, I can't figure out how. As such, if you use ODBC to connect to a database, then your client programs must bind by position (as in the second example), not by name (as in the first example), even if the underlying database supports binding by name.</p>
+
+<!--#include virtual="../contentend.html"-->
+
+<!--#include virtual="footer.html"-->
+

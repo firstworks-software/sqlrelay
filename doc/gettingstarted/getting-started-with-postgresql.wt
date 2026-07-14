@@ -1,0 +1,493 @@
+{{{#!include header.html}}}
+
+{{{#!include projectheader.html}}}
+
+{{{#!include ../contentstart.html}}}
+
+= Getting Started With PostgreSQL =
+
+* [#installation Installation]
+  * [#rpm RPM-based Linux]
+  * [#debian Debian and Ubuntu Linux]
+  * [#freebsd FreeBSD]
+  * [#openbsd OpenBSD]
+  * [#netbsd NetBSD]
+  * [#openserver SCO OpenServer]
+  * [#solaris Solaris]
+  * [#source Compiling From Source]
+  * [#startingatboot Starting the Database at Boot Time]
+  * [#initial Initial Configuration]
+* [#creating Creating a Database]
+* [#accessing Accessing a Database]
+
+[=#installation]
+
+== Installation ==
+
+I've sucessfully installed PostgreSQL on Linux, FreeBSD, NetBSD, OpenBSD, Solaris and SCO OpenServer.
+
+[=#rpm]
+
+== RPM-based Linux ==
+
+To install PostgreSQL on an RPM-based Linux distribution, install the postgresql, postgresql-server, postgresql-devel and postgresql-libs RPMS using yum or install them from the CD/DVD's that came with your distribution using ''rpm -i''.
+
+[=#debian]
+
+== Debian and Ubuntu Linux ==
+
+To install PostgreSQL on Debian and Ubuntu Linux, run ''apt-get install postgresql'' and ''apt-get install postgresql-dev''.
+
+[=#freebsd]
+
+== FreeBSD ==
+
+If you have an internet connection, run ''pkg_add -r postgresql''. When the command completes, PostgreSQL will be installed. You can also install PostgreSQL from the Ports CD(s) that came with your distribution using ''/stand/sysinstall''.
+
+[=#openbsd]
+
+== OpenBSD ==
+
+The postgresql package is available from [ftp://ftp.openbsd.org ftp.openbsd.org] or on CD's that came with your distribution. You can install it using ''pkg_add''. Once the package is installed, you should run the following commands:
+
+{{{
+useradd -m postgres
+passwd postgres (assign the new user a password)
+mkdir /usr/local/pgsql /usr/local/pgsql/var
+chown -R postgres:users /usr/local/pgsql
+su postgres
+initdb -D /usr/local/pgsql/var
+exit
+}}}
+
+[=#netbsd]
+
+== NetBSD ==
+
+The postgresql and postgresql-clients packages are available from [ftp://ftp.netbsd.org ftp.netbsd.org] or on CD's that came with your distribution. You can install it using ''pkg_add''. Once the package is installed, you should run the following commands:
+
+{{{
+useradd -m postgres
+passwd postgres (assign the new user a password)
+mkdir /usr/local/pgsql /usr/local/pgsql/var
+chown -R postgres:users /usr/local/pgsql
+su postgres
+initdb -D /usr/local/pgsql/var
+exit
+}}}
+
+[=#openserver]
+
+== SCO OpenServer ==
+
+For SCO OpenServer, PostgreSQL packages are available from the [ftp://ftp2.sco.com/pub/skunkware/osr5/vols Skunkware ftp server]. SCO OpenServer packages are often called VOL's because they come as a set of files named VOL.000.000, VOL.000.001, etc. These VOLS can be installed using the Software Manager (custom).
+
+[=#solaris]
+
+== Solaris ==
+
+If there are PostgreSQL packages for Solaris, I've never been able to find them. I've always had to compile from source.
+
+[=#source]
+
+== Compiling From Source ==
+
+If you want to compile PostgreSQL from source, it should compile cleanly on all of the platforms mentioned above with the exception of SCO OpenServer. I have never been able to get it to compile on SCO. The source code is available from [http://www.postgresql.org the PostgreSQL site]. You should create a user named postgres and assign it a password, then build and install PostgreSQL using that user. By default, PostgreSQL installs itself in /usr/local/pgsql. Note that you should add /usr/local/pgsql/bin to your PATH environment variable and /usr/local/pgsql/lib to your LD_LIBRARY_PATH environment variable.
+
+After compiling and installing PostgreSQL, you should log in as the postgres user and run ''initdb -D /usr/local/pgsql/var'' to initialize the database.
+
+[=#startingatboot]
+
+== Starting the Database at Boot Time ==
+
+The package distributions of PostgreSQL either install a script which starts the database at boot time and stops it at shutdown time or use systemd.
+
+If you compiled from source, you'll need to install a script like the following to start/stop the database at boot/shutdown time.
+
+{{{
+ #!/bin/sh
+
+case "$1" in
+        start)
+                su -l postgres -s /bin/sh -c "/usr/local/pgsql/bin/pg_ctl \
+                        -D /usr/local/pgsql/var \
+                        -p /usr/local/pgsql/bin/postmaster start  &gt; /dev/null 2&gt;&amp;1" &lt; /dev/null
+                ;;
+        stop)
+                kill `ps -efa | grep postmaster | grep -v grep | awk '{print $2}'`
+                ;;
+        *)
+                echo $"Usage: $0 {start|stop}"
+                exit 1
+esac
+
+exit 0
+}}}
+
+Install this script and run it with the "start" option to start up the database. Running it with the "stop" option shuts the database down. To access a database, it must be running.
+
+[=#initial]
+
+== Initial Configuration ==
+
+To configure the database, it must be running, so start it up now.
+
+It's necessary to perform administrative tasks as the ''postgres'' user. Assigning it a password makes this easier.
+
+Once you have assigned the ''postgres'' user a password, log in as ''postgres''.
+
+Many distributions of PostgreSQL are fairly insecure by default; any user on the local machine can connect to the database without supplying a password. Some distributions of PostgreSQL are secured using socket credentials by default.
+
+View the file ''pg_hba.conf'' (usually found in ''/var/lib/pgsql'', ''/var/lib/pgsql/data'' or ''/usr/local/pgsql/var/data'') and look for a line like one of the following:
+
+{{{
+local        all ident sameuser
+
+local        all all   ident sameuser
+local        all all 127.0.0.1/32 ident sameuser
+local        all all ::1/128  ident sameuser
+}}}
+
+If there's a line like one of those in your file, then all database users will have the same password as the system password for the user of the same name, thus, when prompted for a password, enter the password of the user you are logged in as (which should be the postgres user).
+
+By default, PostgreSQL has a database called ''template1'' containing privileges and other housekeeping data and an adminstrative user named ''postgres''. Unless your system uses socket credentials, the ''postgres'' database user initially has no password. To assign it a password (or to override the password assigned by socket credentials), run a command like the following. This command assigns the ''postgres'' user the password ''Passw0rd''.
+
+For PostgreSQL 7 or higher:
+
+{{{
+psql -c "ALTER USER postgres WITH PASSWORD 'Passw0rd'" -d template1
+}}}
+
+For PostgreSQL 6:
+
+{{{
+psql -c "ALTER USER postgres WITH PASSWORD Passw0rd" -d template1
+}}}
+
+If your system uses socket credentials and you don't want it to, or if it does not use socket credentials, edit the ''pg_hba.conf'' file (usually found in ''/var/lib/pgsql'', ''/var/lib/pgsql/data'' or ''/usr/local/pgsql/var/data'') and look for lines like the following:
+
+{{{
+local all    ident sameuser
+host all all 127.0.0.1/32 ident sameuser
+host all all ::1/128  ident sameuser
+}}}
+
+and modify these lines to read:
+
+{{{
+local all    password
+host all all 127.0.0.1/32 password
+host all all ::1/128  password
+}}}
+
+Older versions of postgresql may have lines like:
+
+{{{
+local        all                                           trust
+host         all         127.0.0.1     255.255.255.255     trust
+}}}
+
+or like:
+
+{{{
+local        all                                           ident sameuser
+host         all         127.0.0.1     255.255.255.255     ident sameuser
+}}}
+
+Modify these lines to read:
+
+{{{
+local        all                                           password
+host         all         127.0.0.1     255.255.255.255     password
+}}}
+
+By default, PostgreSQL listens on a unix socket, but not on an inet socket. Thus, clients running on the local machine can connect to the database, but clients running on remote hosts cannot. You must make some configuration changes to enable connections from remote hosts.
+
+Look for a file called postgresql.conf in the same directory as pg_hba.conf. Edit the file and look for a line like one of the following lines:
+
+{{{
+#listen_addresses = 'localhost' # what IP interface(s) to listen on;
+                                # defaults to localhost, '*' = any
+}}}
+
+If your postgresql.conf file has such a line, add the line:
+
+{{{
+listen_addresses = '*'
+}}}
+
+below it. Older versions of postgresql don't have that parameter. Instead, they use the tcpip_socket parameter. Look for a like like one of:
+
+{{{
+tcpip_socket = false
+
+#tcpip_socket = false
+}}}
+
+Change the line to read:
+
+{{{
+tcpip_socket = true
+}}}
+
+If the file has no listen_addresses or tcpip_socket line, then add the tcpip_socket line.
+
+If your distribution has no postgresql.conf file, you will have to modify the pg_ctl script and add the -i option to the postmaster startup command. This script has changed a bit from version to version, so it may take a bit of trial and error to find the exact spot in the file to make the modification.
+
+Once you have configured PostgreSQL listen on an inet socket, you must add a line to the ''pg_hba.conf'' file to allow remote hosts to access local databases. The following line allows all hosts in the 192.168.2.0 class C network to access all databases on the local machine, using password authentication.
+
+{{{
+host all all 192.168.2.0/24 password
+}}}
+
+Older versions of Postgresql need the following line:
+
+{{{
+host all 192.168.2.0 255.255.255.0 password
+}}}
+
+After making these changes, log in as root and restart the database.
+
+[=#creating]
+
+== Creating a Database ==
+
+After installation and database initialization, PostgreSQL is ready to use but to do any useful work, you'll have to create a database.
+
+In PostgreSQL terminology, a database is a collection of files managed by a program called ''postmaster''. Technically, any user can create a database and run a ''postmaster'' to manage it, but for simplicity's sake, we'll just make our database owned by the postgres user.
+
+To create a database named ''testdb'' with an administrator named ''postgres'', log in as ''postgres'' and run the following command.
+
+For PostgreSQL 7 or higher:
+
+{{{
+psql -U postgres -c "CREATE DATABASE testdb" -d template1
+Password: Passw0rd 
+}}}
+
+For PostgreSQL 6:
+
+{{{
+psql -u -c "CREATE DATABASE testdb" -d template1
+Username: postgres
+Password: Passw0rd 
+}}}
+
+Once the database has been created, you can log into it as follows.
+
+For PostgreSQL 7 or higher:
+
+{{{
+psql -U postgres -d testdb
+Password: Passw0rd
+}}}
+
+For PostgreSQL 6:
+
+{{{
+psql -u -d testdb
+Username: postgres
+Password: Passw0rd
+}}}
+
+Once logged in, you can create, drop and modify tables and run queries in the database.
+
+PostgreSQL authentication is a complex topic. Lines in the ''pg_hba.conf'' file define access rules and restrictions for hosts and databases. For more information, consult the PostgreSQL [http://www.postgresql.org/idocs/ online documentation].
+
+To create database users, use commands like the following. This command creates a user named ''testuser'' with password ''testpassword''.
+
+For PostgreSQL 7 or higher:
+
+{{{
+psql -U postgres -c "CREATE USER testuser WITH PASSWORD 'testpassword'" -d testdb
+Password: Passw0rd
+}}}
+
+For PostgreSQL 6:
+
+{{{
+psql -u -c "CREATE USER testuser WITH PASSWORD testpassword" -d testdb
+Username: postgres
+Password: Passw0rd
+}}}
+
+You can now log into the database as ''testuser'' using the following command.
+
+For PostgreSQL 7 or higher:
+
+{{{
+psql -U testuser -d testdb
+Password: testpassword
+}}}
+
+For PostgreSQL 6:
+
+{{{
+psql -u -d testdb
+Username: testuser
+Password: testpassword
+}}}
+
+If you want to drop a user, you can do so. The following command drops a user named ''testuser''.
+
+For PostgreSQL 7 or higher:
+
+{{{
+psql -U postgres -c "DROP USER testuser" -d testdb
+Password: Passw0rd
+}}}
+
+For PostgreSQL 6:
+
+{{{
+psql -u -c "DROP USER testuser" -d testdb
+Username: postgres
+Password: Passw0rd
+}}}
+
+You may want to add stored procedure support to your database. PostgreSQL databases can support stored procedures written in PL/pgSQL, PL/TCL, PL/Perl, and PL/Python. Different versions of PostgreSQL support different procedural languages.
+
+You can use the ''createlang'' command to enable support for a stored procedure language in a particular database. For example, the following commands enable support for all languages in the testdb database.
+
+{{{
+createlang -U postgres -W plpgsql testdb
+Password: Passw0rd (you may be prompted for the password up to 4 times)
+createlang -U postgres -W pltcl testdb
+Password: Passw0rd (you may be prompted for the password up to 4 times)
+createlang -U postgres -W plperl testdb
+Password: Passw0rd (you may be prompted for the password up to 4 times)
+createlang -U postgres -W plpython testdb
+Password: Passw0rd (you may be prompted for the password up to 4 times)
+}}}
+
+If you want to drop the database, you can do so with the following command.
+
+For PostgreSQL 7 or higher:
+
+{{{
+psql -U postgres -c "DROP DATABASE testdb" -d template1
+Password: Passw0rd
+}}}
+
+For PostgreSQL 6:
+
+{{{
+psql -u postgres -c "DROP DATABASE testdb" -d template1
+Username: postgres
+Password: Passw0rd
+}}}
+
+This should be enough to get you started. To set up more complex configurations, consult the [http://www.postgresql.org/idocs/ online documentation].
+
+[=#accessing]
+
+== Accessing a Database ==
+
+Accessing a PostgreSQL database using the ''psql'' client tool is simple. For example, to access a database called ''testdb'' on the local machine as the ''testuser'' user with password ''testpassword'', use the following command.
+
+For PostgreSQL 7 or higher:
+
+{{{
+psql -U testuser -d testdb
+Password: testpassword
+}}}
+
+For PostgreSQL 6:
+
+{{{
+psql -u -d testdb
+Username: testuser
+Password: testpassword
+}}}
+
+If you want to access a database on a remote machine, say on ''testhost'', use the -h option as follows.
+
+For PostgreSQL 7 or higher:
+
+{{{
+psql -U testuser -h testhost -d testdb
+Password: testpassword
+}}}
+
+For PostgreSQL 6:
+
+{{{
+psql -u -h testhost -d testdb
+Password: testuser
+Password: testpassword
+}}}
+
+Once you're connected to the database, the ''psql'' client prompts you to enter a query. Queries may be split across multiple lines. To run a query, end it with a semicolon or type \g on the next line. To exit, type \q.
+
+A sample ''psql'' session follows.
+
+{{{
+[user@localhost user]$ psql -U testuser testdb
+Password: 
+Welcome to psql, the PostgreSQL interactive terminal.
+
+Type:  \copyright for distribution terms
+       \h for help with SQL commands
+       \? for help on internal slash commands
+       \g or terminate with semicolon to execute query
+       \q to quit
+
+testdb=&gt; create table testtable (
+testdb(&gt; col1 char(40),
+testdb(&gt; col2 integer
+testdb(&gt; );
+CREATE
+testdb=&gt; select * from pg_tables where tableowner='testuser';
+ tablename | tableowner | hasindexes | hasrules | hastriggers 
+-----------+------------+------------+----------+-------------
+ testtable | testuser   | f          | f        | f
+(1 row)
+
+testdb=&gt; \d testtable
+          Table "testtable"
+ Attribute |     Type      | Modifier 
+-----------+---------------+----------
+ col1      | character(40) | 
+ col2      | integer       | 
+
+testdb=&gt; insert into testtable values ('hello',50);
+INSERT 468520 1
+testdb=&gt; insert into testtable values ('hi',60);   
+INSERT 468521 1
+testdb=&gt; insert into testtable values ('bye',70);
+INSERT 468522 1
+testdb=&gt; select * from testtable;
+                   col1                   | col2 
+------------------------------------------+------
+ hello                                    |   50
+ hi                                       |   60
+ bye                                      |   70
+(3 rows)
+
+testdb=&gt; update testtable set col2=0 where col1='hi';
+UPDATE 1
+testdb=&gt; select * from testtable;
+                   col1                   | col2 
+------------------------------------------+------
+ hello                                    |   50
+ bye                                      |   70
+ hi                                       |    0
+(3 rows)
+
+testdb=&gt; delete from testtable where col2=50;
+DELETE 1
+testdb=&gt; select * from testtable;
+                   col1                   | col2 
+------------------------------------------+------
+ bye                                      |   70
+ hi                                       |    0
+(2 rows)
+
+testdb=&gt; drop table testtable;
+DROP
+testdb=&gt; \q
+}}}
+
+{{{#!include ../contentend.html}}}
+
+{{{#!include footer.html}}}

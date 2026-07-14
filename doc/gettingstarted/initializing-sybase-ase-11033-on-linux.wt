@@ -1,0 +1,58 @@
+{{{#!include header.html}}}
+
+{{{#!include projectheader.html}}}
+
+{{{#!include ../contentstart.html}}}
+
+= Initializing Sybase ASE 11.0.3.3 on Linux =
+
+After installing Sybase Adaptive Server Enterprise, you can initialize the server by following these steps.
+
+First, ''su'' to the sybase user using the -l option.
+
+{{{
+su -l sybase
+}}}
+
+Run '''install/sybinit''', a text-based installation program. When prompted, follow these instructions.
+
+select '''3. Configure a Server product'''[[br]]select '''1. SQL Server'''[[br]]select '''1. Configure a new Adaptive Server'''[[br]]type ctrl-a to accept the default server name[[br]][[br]]select '''1. CONFIGURE SERVER'S INTERFACES FILE ENTRY'''[[br]]select '''3. Add a new listener service'''[[br]]don't modify the default hostname/address[[br]]select '''2. Port:'''[[br]]enter 4100[[br]]type ctrl-a to '''Accept and Continue'''[[br]]type y when prompted with '''Is this information correct?'''[[br]]type ctrl-a to '''Accept and Continue'''[[br]]type y when prompted with '''Write the changes to the interfaces file now?'''[[br]][[br]]select '''2. MASTER DEVICE CONFIGURATION'''[[br]]type ctrl-a to '''Accept and Continue'''[[br]]Press &lt;return&gt; to continue, ignoring all WARNING's. [[br]]select '''3. SYBSYSTEMPROCS DATABASE CONFIGURATION'''[[br]]type ctrl-a to '''Accept and Continue'''[[br]][[br]]select '''4. SET ERRORLOG LOCATION'''[[br]]type ctrl-a to '''Accept and Continue'''[[br]][[br]]select '''5. CONFIGURE DEFAULT BACKUP SERVER'''[[br]]type ctrl-a to '''Accept and Continue'''[[br]][[br]]select '''6. CONFIGURE LANGUAGES'''[[br]]type ctrl-a to '''Accept and Continue'''[[br]][[br]]select '''7. CONFIGURE CHARACTER SETS'''[[br]]type ctrl-a to '''Accept and Continue'''[[br]][[br]]select '''8. CONFIGURE SORT ORDER'''[[br]]type ctrl-a to '''Accept and Continue'''[[br]][[br]]select '''9. CONFIGURE AUDITING'''[[br]]type ctrl-a to '''Accept and Continue'''[[br]][[br]]on the '''SYBASE SERVER CONFIGURATION''' screen, type ctrl-a to '''Accept and Continue'''[[br]]type y when prompted with '''Execute the Sybase Server Configuration now?'''[[br]]Press &lt;return&gt; to continue, ignoring all WARNING's.
+
+If all goes well, you should see several '''Running task:''' and '''Task succeeded:''' messages. When you get a '''Configuration completed successfully''' message, press &lt;return&gt; to continue.
+
+type ctrl-x to '''Exit Screen'''[[br]]type ctrl-x to '''Exit Screen'''[[br]]type ctrl-x to '''Exit Screen'''
+
+== Starting the Database at Boot Time ==
+
+Replace ''/usr/local/sybase'' with whatever directory Sybase ASE is installed in.
+
+{{{
+ #!/bin/sh
+
+export SYBASE=/usr/local/sybase
+
+export PATH=$PATH:$SYBASE/bin:$SYBASE/install
+
+case "$1" in
+        start)
+                for i in `ls $SYBASE/install/RUN_*`
+                do
+                        su -c "startserver -f $i" sybase &gt; /dev/null 2&gt;&amp;1;
+                done
+                ;;
+        stop)
+                kill `ps -efa | grep sybase | grep -v grep | awk '{print $2}'`
+                ;;
+        *)
+                echo $"Usage: $0 {start|stop}"
+                exit 1
+esac
+
+exit 0
+}}}
+
+Install this script and run it with the "start" option to start up the database. Running it with the "stop" option shuts the database down. To access a database, it must be running.
+
+{{{#!include ../contentend.html}}}
+
+{{{#!include footer.html}}}

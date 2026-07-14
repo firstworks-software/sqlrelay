@@ -1,0 +1,347 @@
+{{{#!include header.html}}}
+
+{{{#!include projectheader.html}}}
+
+{{{#!include ../contentstart.html}}}
+
+= Getting Started With IBM DB2 =
+
+* [#installation Installation]
+  * [#older For Older Versions of DB2]
+    * [#rpm Install RPM]
+    * [#env PATH Environment Variable]
+  * [#db2 DB2 Installation]
+* [#creating Creating a Database]
+* [#accessing Accessing a Database]
+  * [#accessinglocal Accessing a Local Database]
+  * [#accessingremote Accessing a Remote Database]
+  * [#usingdb2 Using the DB2 Client Program]
+  * [#usingdb2icc Using the DB2 Information and Control Centers]
+
+[=#installation]
+
+== Installation ==
+
+I've sucessfully installed various versions of DB2 Enterprise Edition, DB2 Personal Edition and DB2 Express Edition on Linux and Solaris x86.
+
+[=#older]
+
+== For Older Versions of DB2 ==
+
+[=#rpm]
+
+== Install RPM ==
+
+When installing versions of DB2 below 9.1, on non-RPM based systems, you'll need to install RPM.
+
+On Ubuntu and Debian, run ''apt-get install rpm''. If your distribution came with RPM, you may be prompted to enter a CD. If not, it will be downloaded from the internet. Once RPM is installed, log in as root and run ''rpm --initdb''.
+
+On systems where the ''rpm'' command resides in /usr/bin, you need to create a symbolic link between ''/usr/bin/rpm'' and ''/bin/rpm'' as follows.
+
+{{{
+ln -s /usr/bin/rpm /bin/rpm
+}}}
+
+[=#env]
+
+== PATH Environment Variable ==
+
+For versions 7.2 through 8.2 (though apparently not for versions above 8.2), the DB2 installer tries to run some command line programs that are found in sbin and /usr/sbin. Make sure that these directories are in the root user's PATH.
+
+[=#db2]
+
+== DB2 Installation ==
+
+Each version of DB2 has a slightly different installation procedure. Follow the links below for the version of DB2 that you are installing.
+
+[installing-ibm-db2-enterprise-72-on.html Installing IBM DB2 Enterprise V7.2][[br]][installing-ibm-db2-81-enterprise-on.html Installing IBM DB2 Enterprise V8.1][[br]][installing-ibm-db2-82-personal-on-linux.html Installing IBM DB2 Personal V8.2][[br]][installing-ibm-db2-824-express-on-linux.html Installing IBM DB2 Express V8.2.4][[br]][installing-ibm-db2-91-express-on-linux.html Installing IBM DB2 Express V9.1][[br]][installing-ibm-db2-971-express-on-linux.html Installing IBM DB2 Express V9.7.1][[br]][installing-ibm-db2-101-express-on-linux.html Installing IBM DB2 Express V10.1][[br]][installing-ibm-db2-105-express-on-linux.html Installing IBM DB2 Express V10.5]
+
+[=#creating]
+
+== Creating a Database ==
+
+Now that you have created an instance, you must create a database within the instance. Log in as db2inst1 and run the following command to create a database named ''testdb''.
+
+{{{
+db2 "create database testdb"
+}}}
+
+(Note: Even in modern DB2, database names may only be 8 characters long, or less.)
+
+Should you need to drop a database, the following command drops a database named ''testdb''.
+
+{{{
+db2 "drop database testdb"
+}}}
+
+[=#accessing]
+
+== Accessing a Database ==
+
+[=#accessinglocal]
+
+== Accessing a Local Database ==
+
+Accessing a local DB2 database using the db2 client tool is simple. For example, to access a database called ''testdb'' in the ''db2inst1'' instance, owned by the ''db2inst1'' user on the local machine, log in as ''db2inst1'' and run the ''db2'' command. Then use the CONNECT command to connect to a particular database.
+
+{{{
+[db2inst1@localhost db2inst1]$ db2
+c(c) Copyright IBM Corporation 1993,2001
+Command Line Processor for DB2 SDK 7.2.0
+
+You can issue database manager commands and SQL statements from the command 
+prompt. For example:
+    db2 =&gt; connect to sample
+    db2 =&gt; bind sample.bnd
+
+For general help, type: ?.
+For command help, type: ? command, where command can be
+the first few keywords of a database manager command. For example:
+ ? CATALOG DATABASE for help on the CATALOG DATABASE command
+ ? CATALOG          for help on all of the CATALOG commands.
+
+To exit db2 interactive mode, type QUIT at the command prompt. Outside 
+interactive mode, all commands must be prefixed with 'db2'.
+To list the current command option settings, type LIST COMMAND OPTIONS.
+
+For more detailed help, refer to the Online Reference Manual.
+
+db2 =&gt; connect to testdb
+
+   Database Connection Information
+
+ Database server        = DB2/LINUX 7.2.0
+ SQL authorization ID   = DB2INST1
+ Local database alias   = TESTDB
+}}}
+
+[=#accessingremote]
+
+== Accessing a Remote Database ==
+
+If you want to access a database on a remote machine, the process is more complex. DB2 or "DB2 Connect" must be installed on the local and remote machines and a DB2 or "DB2 Connect" instance must be created on the local machine. "DB2 Connect" is a lightweight version of the DB2 database system whose instances cannot support a local database, and can only provide connectivity to a remote instance. In the instance on the local machine, use the CATALOG command to create aliases for the remote instance and database. Once these aliases are created, you can use the database alias to connect to the remote database.
+
+Take the following scenario:
+
+||'''local machine'''||
+||Hostname||''localhost''||
+||Instance||''db2inst1''||
+
+||'''remote machine'''||
+||Hostname||''remotehost''||
+||Instance||''testinst[[br]][[br]] owned by user testinst with password testpassword[[br]] allows remote connections on port 50000[[br]]''||
+||Database||''testdb''||
+
+On ''localhost'', in the ''db2inst1'' instance, to create an instance alias named ''remote'' referring to ''testinst'' on ''remotehost'', and a database alias named ''remotedb'' referring to ''testdb'', follow this procedure.
+
+log in as db2inst1 on localhost[[br]]create the instance alias using the following commands:
+
+{{{
+db2 "catalog tcpip node remote remote remotehost server
+50000"
+
+db2 "terminate"
+}}}
+
+create the database alias using the following commands:
+
+{{{
+db2 "catalog database testdb as remotedb at node 
+remote authentication server"
+
+db2 "terminate"
+}}}
+
+Now that the aliases have been created, you can connect to the database alias using the CONNECT comamnd. Note that you must supply the user name and password.
+
+{{{
+[db2inst1@localhost db2inst1]$ db2
+c(c) Copyright IBM Corporation 1993,2001
+Command Line Processor for DB2 SDK 7.2.0
+
+You can issue database manager commands and SQL statements from the command 
+prompt. For example:
+    db2 =&gt; connect to sample
+    db2 =&gt; bind sample.bnd
+
+For general help, type: ?.
+For command help, type: ? command, where command can be
+the first few keywords of a database manager command. For example:
+ ? CATALOG DATABASE for help on the CATALOG DATABASE command
+ ? CATALOG          for help on all of the CATALOG commands.
+
+To exit db2 interactive mode, type QUIT at the command prompt. Outside 
+interactive mode, all commands must be prefixed with 'db2'.
+To list the current command option settings, type LIST COMMAND OPTIONS.
+
+For more detailed help, refer to the Online Reference Manual.
+
+db2 =&gt; connect to remotedb user testinst using testpassword
+
+   Database Connection Information
+
+ Database server        = DB2/LINUX 7.2.0
+ SQL authorization ID   = TESTINST
+ Local database alias   = REMOTEDB
+}}}
+
+If you need to get a list of instance aliases, you can use the LIST NODE DIRECTORY command as follows.
+
+{{{
+db2 "list node directory"
+}}}
+
+To list the database aliases, you can use the LIST DATABASE DIRECTORY command. Note that this command lists local databases as well as remote databases.
+
+{{{
+db2 "list database directory"
+}}}
+
+If you need to drop a database or instance alias, use the UNCATALOG command. The following commands remove the ''remotedb'' database alias and the ''remote'' instance alias.
+
+{{{
+db2 "uncatalog database remotedb"
+
+db2 "uncatalog node remote"
+
+db2 "terminate"
+}}}
+
+[=#usingdb2]
+
+== Using the DB2 Client Program ==
+
+When run with no arguments, the ''db2'' client program provides an interactive shell, prompting you to enter commands or an SQL queries. Commands or queries must be entered on a single line and will run when the Enter or Return key is pressed. To exit, type quit.
+
+A sample ''db2'' session follows.
+
+{{{
+[db2inst1@localhost db2inst1]$ db2
+c(c) Copyright IBM Corporation 1993,2001
+Command Line Processor for DB2 SDK 7.2.0
+
+You can issue database manager commands and SQL statements from the command 
+prompt. For example:
+    db2 =&gt; connect to sample
+    db2 =&gt; bind sample.bnd
+
+For general help, type: ?.
+For command help, type: ? command, where command can be
+the first few keywords of a database manager command. For example:
+ ? CATALOG DATABASE for help on the CATALOG DATABASE command
+ ? CATALOG          for help on all of the CATALOG commands.
+
+To exit db2 interactive mode, type QUIT at the command prompt. Outside 
+interactive mode, all commands must be prefixed with 'db2'.
+To list the current command option settings, type LIST COMMAND OPTIONS.
+
+For more detailed help, refer to the Online Reference Manual.
+
+db2 =&gt; connect to testdb
+
+   Database Connection Information
+
+ Database server        = DB2/LINUX 7.2.0
+ SQL authorization ID   = DB2INST1
+ Local database alias   = TESTDB
+
+db2 =&gt; create table testtable (col1 char(40), col2 int)
+DB20000I  The SQL command completed successfully.
+db2 =&gt; list tables
+
+Table/View                      Schema          Type  Creation time
+------------------------------- --------------- ----- --------------------------
+TESTTABLE                       DB2INST1        T     2002-03-01-01.55.19.671629
+
+  1 record(s) selected.
+
+db2 =&gt; insert into testtable values ('hello',50)
+DB20000I  The SQL command completed successfully.
+db2 =&gt; insert into testtable values ('hi',60)
+DB20000I  The SQL command completed successfully.
+db2 =&gt; insert into testtable values ('bye',70)
+DB20000I  The SQL command completed successfully.
+db2 =&gt; select * from testtable
+
+COL1                                     COL2       
+---------------------------------------- -----------
+hello                                             50
+hi                                                60
+bye                                               70
+
+  3 record(s) selected.
+
+db2 =&gt; update testtable set col2=0 where col1='hi'
+DB20000I  The SQL command completed successfully.
+db2 =&gt; select * from testtable
+
+COL1                                     COL2       
+---------------------------------------- -----------
+hello                                             50
+hi                                                 0
+bye                                               70
+
+  3 record(s) selected.
+
+db2 =&gt; delete from testtable where col2=50
+DB20000I  The SQL command completed successfully.
+db2 =&gt; select * from testtable
+
+COL1                                     COL2       
+---------------------------------------- -----------
+hi                                                 0
+bye                                               70
+
+  2 record(s) selected.
+
+db2 =&gt; drop table testtable
+DB20000I  The SQL command completed successfully.
+db2 =&gt; quit
+DB20000I  The QUIT command completed successfully.
+}}}
+
+[=#usingdb2icc]
+
+== Using the DB2 Information and Control Centers ==
+
+IBM DB2 comes with a set of graphical, Java-based utilities for browsing and configuring database instances.
+
+To run the DB2 Information Center or Control Center, you have to log in as a database instance or adminstrative server owner such as ''db2as'' or ''db2inst1''.
+
+Modern versions of DB2 install a compatible JRE but very old versions of DB2 require that the Java Runtime Enviroment version 1.1.8 or higher be installed. Version 1.1.8 is hard to come by these days, but can currently be downloaded from [http://ftp.vim.org/languages/java/jdk/JDK-1.1.8/i386/v3/ vim]. If you install a third party JRE, Make sure that the ''jre'' command is in the PATH environment variable for that user. If it isn't, modify that user's .bashrc to include it.
+
+If you are running an older JRE and a 2.4 Linux kernel that doesn't support the Native Posix Threading Library (such as on Redhat 8 or earlier), then add the following line to the user's .bashrc
+
+{{{
+export LD_ASSUME_KERNEL=2.2.5
+}}}
+
+If you are running an older JRE and a 2.4 Linux kernel that supports the Native Posix Threading Library (such as on Redhat 9), then add the following line to the user's .bashrc
+
+{{{
+export LD_ASSUME_KERNEL=2.4.1
+}}}
+
+To run the Information Center or Control Center, you first have to run the DB2 Java Server and give it a port number as follows.
+
+{{{
+db2jstrt 6720
+}}}
+
+Once it's running, you can run the DB2 Information Center or Control Center, also supplying the port.
+
+{{{
+db2ic 6720
+}}}
+
+or
+
+{{{
+db2cc 6720
+}}}
+
+Both utilities will ask for the username and password of an instance owner. Once you supply these credentials, you can browse and/or configure the instance owned by that user.
+
+{{{#!include ../contentend.html}}}
+
+{{{#!include footer.html}}}

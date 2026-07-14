@@ -294,6 +294,9 @@
 	configure now auto-detects DB2 11.5 and later by scanning /opt/ibm/db2
 		and /opt/IBM/db2 for any installed version, and checks lib64 (not
 		just lib) for libdb2, including under --with-db2-prefix
+	localized the database getting-started guides into the doc website
+		(new doc/gettingstarted/ directory) instead of linking out to
+		the external blog
 
 2.1.1 - added tns_admin support
 	fixed sqlr-start ... -strace ...

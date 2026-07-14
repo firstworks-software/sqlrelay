@@ -1,0 +1,87 @@
+<!--#include virtual="header.html"-->
+
+<!--#include virtual="projectheader.html"-->
+
+<!--#include virtual="../contentstart.html"-->
+
+<h1>Getting Started With SQLite</h1>
+
+<ul>
+  <li><a href="#installation">Installation</a></li>
+  <li><a href="#creating">Creating a Database</a></li>
+  <li><a href="#accessing">Accessing a Database</a></li>
+</ul>
+
+<a name="installation"/><h2>Installation</h2>
+
+<p>I've successfully installed SQLite on Linux, <a href="FreeBSD">FreeBSD</a>, <a href="NetBSD">NetBSD</a>, <a href="OpenBSD">OpenBSD</a>, SCO <a href="OpenServer">OpenServer</a> and Solaris. On SCO and Solaris platforms, I've had to compile it from source.</p>
+
+<p>SQLite is available from the <a target="_blank" href="http://www.sqlite.org">SQLite home page</a>. I usually give the ''configure'' script the ''--prefix=/usr/local/sqlite'' parameter so that SQLite will be installed entirely under /usr/local/sqlite and add /usr/local/sqlite/bin to my PATH environment variable and /usr/local/sqlite/lib to my LD_LIBRARY_PATH environment variable.</p>
+
+<h2>RPM Based Linux</h2>
+
+<p>To install SQLite on an RPM-based Linux distribution, install the sqlite and sqlite-devel (or sqlite3 and sqlite3-devel) RPMS using yum, install them from the CD/DVD's that came with your distribution using ''rpm -i'' or acquire the sqlite RPM from the <a target="_blank" href="http://www.sqlite.org">SQLite home page</a> and install it using ''rpm -i''.</p>
+
+<a name="creating"/><h2>Creating a Database</h2>
+
+<p>Unlike other relational database systems, there is no daemon managing the SQLite database. Instead, the SQLite API interprets queries and runs them against the database files directly. As such, SQLite database users are equivalent to unix users. Database directory and file permissions dictate what permissions a user has on the database.</p>
+
+<p>In SQLite versions 3.X and 2.X, the database is a single file. It's only necessary to create the directory to contain the file. The database file will get created the first time a user tries to access it. I usually create a directory /usr/local/sqlite/var, as follows:</p>
+
+<pre>mkdir -p /usr/local/sqlite/var
+chown testuser /usr/local/sqlite/var
+chmod 755 /usr/local/sqlite/var
+</pre>
+
+<p>In SQLite version 1.0.x, the database is an entire directory. SQLite will create one file per table under this directory, but the database directory must exist. The following commands are necessary to create a database called ''testdb'' owned by the user ''testuser''.</p>
+
+<pre>mkdir -p /usr/local/sqlite/var/testdb
+chown testuser /usr/local/sqlite/var/testdb
+chmod 755 /usr/local/sqlite/var/testdb
+</pre>
+
+<a name="accessing"/><h2>Accessing a Database</h2>
+
+<p>To access an SQLite database, su to the appropriate user and run the sqlite3 command line utility (for versions 1.0.x and 2.x the command line utility is just called sqlite).</p>
+
+<pre>su testuser
+sqlite3 /usr/local/sqlite/var/testdb
+</pre>
+
+<p>Once you're connected to the database, the sqlite client prompts you to enter a query. Queries may be split across multiple lines. To run a query, end it with a semicolon. To exit, type .exit</p>
+
+<p>A sample sqlite session follows.</p>
+
+<pre>[testuser@localhost testuser]$ sqlite3 /usr/local/sqlite/var/testdb
+SQLite version 3.0.2
+Enter ".help" for instructions
+sqlite&gt; create table testtable (
+   ...&gt; col1 char(40),
+   ...&gt; col2 integer
+   ...&gt; );
+sqlite&gt; .tables
+testtable
+sqlite&gt; insert into testtable values ('hello',50);
+sqlite&gt; insert into testtable values ('hi',60);
+sqlite&gt; insert into testtable values ('bye',70);
+sqlite&gt; select * from testtable;
+hi|60
+hello|50
+bye|70
+sqlite&gt; update testtable set col2=0 where col1='hi';
+sqlite&gt; select * from testtable;
+hi|0
+hello|50
+bye|70
+sqlite&gt; delete from testtable where col2=50;
+sqlite&gt; select * from testtable;
+hi|0
+bye|70
+sqlite&gt; drop table testtable;
+sqlite&gt; .exit
+</pre>
+
+<!--#include virtual="../contentend.html"-->
+
+<!--#include virtual="footer.html"-->
+

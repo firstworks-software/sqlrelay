@@ -28,14 +28,14 @@ Guides and references for SQL Relay administration:
 Getting-started guides for various databases supported by SQL Relay:
 
 {{{#!td
- [http://software.firstworks.com/p/getting-started-with-oracle.html Oracle][[br]]
- [http://software.firstworks.com/p/getting-started-with-sapsybase.html SAP/Sybase][[br]]
- [http://software.firstworks.com/p/getting-started-with-ibm-db2.html IBM DB2][[br]]
- [http://software.firstworks.com/p/getting-started-with-mysql.html MySQL][[br]]
- [http://software.firstworks.com/p/getting-started-with-postgresql.html PostgreSQL][[br]]
- [http://software.firstworks.com/p/getting-started-with-firebird.html Firebird][[br]]
- [http://software.firstworks.com/p/getting-started-with-sqlite.html SQLite][[br]]
- [http://software.firstworks.com/p/getting-started-with-odbc-on-non-ms.html ODBC (on non-MS platforms)][[br]]
+ [gettingstarted/getting-started-with-oracle.html Oracle][[br]]
+ [gettingstarted/getting-started-with-sapsybase.html SAP/Sybase][[br]]
+ [gettingstarted/getting-started-with-ibm-db2.html IBM DB2][[br]]
+ [gettingstarted/getting-started-with-mysql.html MySQL][[br]]
+ [gettingstarted/getting-started-with-postgresql.html PostgreSQL][[br]]
+ [gettingstarted/getting-started-with-firebird.html Firebird][[br]]
+ [gettingstarted/getting-started-with-sqlite.html SQLite][[br]]
+ [gettingstarted/getting-started-with-odbc-on-non-ms.html ODBC (on non-MS platforms)][[br]]
 }}}
 {{{#!td
 [[Image(images/oracle.png,nolink,margin-left=260px)]]

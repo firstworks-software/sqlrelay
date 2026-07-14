@@ -1,0 +1,25 @@
+{{{#!include header.html}}}
+
+{{{#!include projectheader.html}}}
+
+{{{#!include ../contentstart.html}}}
+
+= Installing Oracle 8.0.5 on Redhat 5.2 =
+
+First, log in as the oracle user.
+
+If you have a CD, mount it and cd to the orainst directory under the mount point. If you have a tar.gz distribution, extract it using ''tar xfz'' and cd to the orainst directory created by the extraction.
+
+Type '''./orainst''', you should be presented with a text-based installer.
+
+On the '''Install Type''' dialog select '''Default Install''' then select '''OK'''[[br]] On the '''preamble''' and '''readme.txt''' dialogs select '''OK'''[[br]] On the '''Installation Activity Choice''' dialog select '''Install, Upgrade or De-Install Software''' then select '''OK'''[[br]] On the '''Installation Options''' dialog select '''Install New Product - Create DB Objects''' then select '''OK'''[[br]] On the '''ORATAB''' dialog, follow the instructions:
+
+Select '''Shell'''[[br]]su to root[[br]]Type '''export ORACLE_OWNER=oracle'''[[br]]Type '''sh oratab.sh'''[[br]]When prompted '''Is it OK to continue''' answer '''Y'''[[br]]When prompted '''Are these settings correct''' answer '''Y'''[[br]]Type '''exit'''[[br]]Type '''exit''' again[[br]]Select '''Retry'''[[br]] On the '''Environment Variables''' dialog, select '''OK'''[[br]] On the '''defaults''' dialog, select '''OK'''[[br]] On the '''Software Asset Manger''' dialog, select all of the products in the left hand window then select '''Install'''[[br]] On the '''Default Database Startup Using Prebuilt Datafiles''' dialog, select '''OK'''[[br]] On the '''Information''' dialog warning about ULIMIT not being set, select '''OK'''[[br]] On the '''Database Mount Points''' dialog, enter '''/u01''' for all 3 points then select '''OK'''[[br]] On the '''ORACLE_DOC''' dialog, select '''OK'''[[br]] On the '''Documentation Format''' dialog, select '''Both''' then select '''OK'''[[br]][[br]] A progress dialog will appear...[[br]][[br]] The installation should fail trying to install the documentation, follow these instructions.
+
+Select '''Shell'''[[br]]Type '''mkdir /u01/app/oracle/product/8.0.5/doc/server.805'''[[br]]Type '''mkdir /u01/app/oracle/product/8.0.5/doc/server.805/install'''[[br]]Type '''exit'''[[br]]Select '''Retry'''[[br]] On the '''Installer Actions Completed''' dialog, select '''OK'''[[br]] On the '''Software Asset Manger''' dialog, select '''Exit'''[[br]] On the '''Confirmation dialog''', select '''Yes'''[[br]][[br]] Now that the installation process has completed, you still need to run a script, follow these instructions.
+
+cd '''$ORACLE_HOME/orainst'''[[br]]su to root[[br]]Type '''sh root.sh'''[[br]]When prompted '''Are these setting correct''' answer '''Y'''[[br]]When prompted for the '''local bin directory''' enter '''/usr/local/bin'''[[br]]When prompted '''Okay to continue''' answer '''Y'''[[br]]Type '''exit'''
+
+{{{#!include ../contentend.html}}}
+
+{{{#!include footer.html}}}

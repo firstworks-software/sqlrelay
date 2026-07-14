@@ -1,0 +1,36 @@
+{{{#!include header.html}}}
+
+{{{#!include projectheader.html}}}
+
+{{{#!include ../contentstart.html}}}
+
+= Installing Oracle 8.1.6 or 8.1.7 on Redhat 6.2 =
+
+8.1.6 and 8.1.7 require a particilar JRE be installed. Download '''jre118_v3-glibc-2.1.3.tar.bz2''' (not a newer version). This jre is hard to come by these days but can currently be downloaded from [http://ftp.vim.org/languages/java/jdk/JDK-1.1.8/i386/v3/ vim]. Download it and execute the following commands as root.
+
+{{{
+mv jre118_v3-glibc-2.1.3.tar.bz2 /usr/local
+cd /usr/local
+bunzip2 jre118_v3-glibc-2.1.3.tar.bz2
+tar xf jre118_v3-glibc-2.1.3.tar
+ln -s jre118_v3 java
+rm jre118_v3-glibc-2.1.3.tar
+}}}
+
+Now, log in as the oracle user.
+
+Since Oracle 8.1.6 and 8.1.7 use a graphical installer, you need to be running X Windows or point the DISPLAY environment variable to an X Windows session running somewhere.
+
+I have had problems with the graphical installer on enlightenment and fluxbox window managers in the past, though they may work for you.
+
+Installing Oracle 8.1.7 tends to be easy and painless. If you have a CD, mount it and cd to the mount point. If you have a tar.gz distribution, extract it using ''tar xfz'' and cd to the Disk1 directory created by the extraction.
+
+Type '''./runInstaller'''[[br]][[br]] On the '''Welcome screen''' click '''Next'''[[br]][[br]] On the '''File Locations screen'''...[[br]] Check the '''Destination''', it should be the same as the ORACLE_HOME Environment variable.[[br]]Click '''Next'''[[br]][[br]] On the '''Available Products''' screen...[[br]]Select '''Oracle8i Enterprise Edition 8.1.7'''[[br]]Click '''Next'''[[br]][[br]] On the '''Installation Types''' screen[[br]]Select '''Typical'''[[br]]Click '''Next'''[[br]][[br]] On the '''Database Identification''' screen...[[br]]Enter ora1 for '''Global Database Name''' and '''SID'''[[br]]Click '''Next'''[[br]][[br]] On the '''Database File Location''' screen...[[br]]For '''Directory for Database Files''' enter /u01[[br]]Click '''Next'''[[br]][[br]] On the '''Choose JDK Home Directory''' screen...[[br]]For '''Enter JDK Home''' enter /usr/local/java[[br]]Click '''Next'''[[br]][[br]] On the '''Summary''' screen click '''Install'''[[br]][[br]] The '''Install''' screen will show the installation progress
+
+If you get an error such as "Error invoking target install of makefile /u01/app/oracle/product8/8.1.7/ctx/lib/ins_ctx.mk", switch to another screen and edit the file /u01/app/oracle/product8/8.1.7/ctx/lib/env_ctx.mk. Search for a line starting with INSO_LINK and append $(LDLIBFLAG)dl to the end of the line. Then click Retry.
+
+At the end of the installation, a Dialog will pop up asking you to run root.sh. Just follow the directions on the dialog and click '''Ok'''[[br]][[br]] On the '''Configuration Tools''' screen, the Net8 Configuration Dialog will pop up[[br]]Check '''Perform typical configuration'''[[br]]Click '''Next'''[[br]][[br]] A dialog will pop up indicating that a database is being created[[br]] After a while, a dialog will pop up indicating that database creation completed[[br]]Click '''Ok''' On the '''End Of Installation''' screen click '''Exit'''[[br]][[br]] On the '''Do you really want to exit?''' dialog click '''Yes'''
+
+{{{#!include ../contentend.html}}}
+
+{{{#!include footer.html}}}

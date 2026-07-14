@@ -1,0 +1,121 @@
+<!--#include virtual="header.html"-->
+
+<!--#include virtual="projectheader.html"-->
+
+<!--#include virtual="../contentstart.html"-->
+
+<h1>Installing IBM DB2 8.2 Personal on Linux</h1>
+
+<h2>Java Installation</h2>
+
+<p>The DB2 distribution comes with an RPM of the IBM Java SDK version 1.4.1. You can install it from the db2/linux/Java-1.4 directory of the distribution using rpm -i. It will install java into /opt/IBMJava2-141. Make sure to set your JAVA_HOME variable to /opt/IBMJava2-141 if you want to use this version of java to install DB2.</p>
+
+<p>The DB2 distribution also comes with IBM JRE 1.4.1 under the db2/linux/java/jre directory of the distribution. You can use it to install DB2 by setting your JAVA_HOME variable to this directory.</p>
+
+<p>If you already have a different version of Java installed, it may or may not work properly. I have had success with sun's Java-1.5.1. Again, make sure to set your JAVA_HOME variable to the directory that the version of Java that you want to use to install DB2 is installed under.</p>
+
+<h2>DB2 Installation</h2>
+
+<p>IBM DB2 V8.2 was once available from the IBM website as a tarball. Create a temp directory, copy the tarball into the temp directory and extract the tarball using ''tar xf''.</p>
+
+<p>Run the db2_install script.</p>
+
+<p>When prompted to specify a keyword, type DB2.PE and press return.</p>
+
+<p>When the script completes, run ''rpm -qa'' and verify that the following RPM's were installed:</p>
+
+<p><b>IBM_db2cucs81-8.1.0-64<br/>IBM_db2sp81-8.1.0-64<br/>IBM_db2fs81-8.1.0-64<br/>IBM_db2dj81-8.1.0-64<br/>IBM_db2icms81-8.1.0-64<br/>IBM_db2icw81-8.1.0-64<br/>IBM_db2icut81-8.1.0-64<br/>IBM_db2cj81-8.1.0-64<br/>IBM_db2ca81-8.1.0-64<br/>IBM_db2pesg81-8.1.0-64<br/>IBM_db2ldap81-8.1.0-64<br/>IBM_db2secl81-8.1.0-64<br/>IBM_db2jhen81-8.1.0-64<br/>IBM_db2adt81-8.1.0-64<br/>IBM_db2dc81-8.1.0-64<br/>IBM_db2wbdb81-8.1.0-64<br/>IBM_db2rte81-8.1.0-64<br/>IBM_db2smpl81-8.1.0-64<br/>IBM_db2cc81-8.1.0-64<br/>IBM_db2msen81-8.1.0-64<br/>IBM_db2wmsa81-8.1.0-64<br/>IBM_db2sesm81-8.1.0-64<br/>IBM_db2repl81-8.1.0-64<br/>IBM_db2adts81-8.1.0-64<br/>IBM_db2dwcm81-8.1.0-64<br/>IBM_db2xml81-8.1.0-64<br/>IBM_db2das81-8.1.0-64<br/>IBM_db2djx81-8.1.0-64<br/>IBM_db2icc81-8.1.0-64<br/>IBM_db2cliv81-8.1.0-64<br/>IBM_db2icuc81-8.1.0-64<br/>IBM_db2xmls81-8.1.0-64<br/>IBM_db2jdbc81-8.1.0-64<br/>IBM_db2inx81-8.1.0-64<br/>IBM_db2conv81-8.1.0-64<br/>IBM_db2chen81-8.1.0-64<br/>IBM_db2inst81-8.1.0-64<br/>IBM_db2engn81-8.1.0-64<br/></b></p>
+
+<h2>Ignore the Misinformation</h2>
+
+<p>There are many, many instances where the DB2 Version 8.2 distribution identifies itself as version 8.1 instead of 8.2. For example, the RPM's have a 8.1.0 version number. These clues might lead one to think that he or she has accidentally installed version 8.1 instead of version 8.2, but this is not the case.</p>
+
+<h2>Creating an Instance</h2>
+
+<p>A DB2 installation consists of an administration server and one or more instances. Each instance contains one or more databases. The administration server coordinates the instances. The administration server is owned by an OS-level user. Each instance is owned by a seperate OS-level user as well.</p>
+
+<p>To create an instance and an administration server, run ''/opt/IBM/db2/V8.1/instance/db2isetup'', a java-based installation program.</p>
+
+<p>On the screen titled <b>Welcome to the DB2 Instance Setup wizard</b>, click Next</p>
+
+<p>On the screen titled <b>Set user information for the DB2 Administration Server</b>, leave the defaults, enter a password into the Password and Confirm Password text boxes and click Next</p>
+
+<p>On the screen titled <b>Set up a DB2 instance</b>, leave the default radio button checked (Create a DB2 instance) and click Next</p>
+
+<p>On the screen titled <b>Set user information for the DB2 instance owner</b>, leave the defaults, enter a password into the Password and Confirm Password text boxes and click Next</p>
+
+<p>On the screen titled <b>Set user information for the DB2 fenced user</b>, leave the defaults, enter a password into the Password and Confirm Password text boxes and click Next</p>
+
+<p>On the screen titled <b>Configure DB2 instance TCP/IP communication</b>, leave the default radio button checked (Configure), leave the default Service name and Port number and click Next</p>
+
+<p>On the screen titled <b>Set instance properties</b>, leave the default Authentication type pulldown (Server), leave the default Startup box checked (Autostart the instance at system startup) and click Next</p>
+
+<p>On the screen titled <b>Prepare the DB2 tools catalog</b>, click the radio button next to "Use a local database" and click Next</p>
+
+<p>On the screen titled <b>Specify a local database to store the DB2 tools catalog</b>, leave the defaults then click Next</p>
+
+<p>On the screen titled <b>Set up the administration contact list</b>, leave the defaults and click Next. (You may have to check and then uncheck the "Enable notification" button before Next is enabled)</p>
+
+<p>A dialog will come up with a warning about not being able to send notifications until the smtp server has been specified. Click OK.</p>
+
+<p>On the screen titled <b>Specify a contact for health monitor notification</b>, enter your Name and Email address and click Next.</p>
+
+<p>On the screen titled <b>Set up Informix data source support</b>, click the check box next to "Defer this task until after installation is complete" and click Next.</p>
+
+<p>On the screen titled <b>Start copying files</b>, click Finish.</p>
+
+<p>A progress dialog will come up. When the process is finished, it will go away.</p>
+
+<p>On the screen titled <b>Setup is complete</b>, click Finish.</p>
+
+<p>Should you need to create additional DB2 instances, follow this procedure again using a different user name and skipping the steps pertaining to the Administration Server. The ''/opt/IBM/db2/V8.1/instance/db2ilist'' command lists all of the DB2 instances on the local computer.</p>
+
+<p>If you need to drop an instance, run ''/opt/IBM/db2/V8.1/instance/db2idrop instancename'', substituting the name of the instance you want to drop for instancename.</p>
+
+<p>The ''/opt/IBM/db2/V8.1/instance/daslist'' command lists all of the DB2 administration servers on the local computer.</p>
+
+<p>If you need to drop an administration server, run ''/opt/IBM/db2/V8.1/instance/dasdrop servername'', substituting the name of the administration server you want to drop for servername.</p>
+
+<h2>Creating a Sample Database</h2>
+
+<p>To create a sample database, run the command ''/opt/IBM/db2/V8.1/bin/db2sampl''.</p>
+
+<h2>Starting the Database at Boot Time</h2>
+
+<p>You can use the following script to start/stop the database at boot/shutdown time.</p>
+
+<pre> #!/bin/sh
+
+case "$1" in
+        start)
+                /opt/IBM/db2/V8.1/instance/db2istrt
+        ;;
+        stop)
+                kill -9 `ps -efa | grep db2wdog | grep -v grep | cut -c10-15`
+        ;;
+        *)
+        echo $"Usage: $0 {start|stop}"
+        exit 1
+esac
+
+exit 0
+</pre>
+
+<p>Install this script and run it with the "start" option to start up the database. Running it with the "stop" option shuts the database down. To access a database, it must be running.</p>
+
+<p>During instance configuration, there's a check box indicating whether the instance will be configured to start at boot time. If you didn't check it, to get each instance to start at boot time, you need to run the following command as root for each instance.</p>
+
+<pre>/opt/IBM/db2/V8.1/instance/db2iauto -on INSTANCE_USER
+</pre>
+
+<p>Where INSTANCE_USER is replaced by the username of the user associated with the instance you want to start at boot time.</p>
+
+<p>If you want to disable instances from starting at boot time, you need to run the following command as root for each instance:</p>
+
+<pre>/opt/IBM/db2/V8.1/instance/db2iauto -off INSTANCE_USER
+</pre>
+
+<!--#include virtual="../contentend.html"-->
+
+<!--#include virtual="footer.html"-->
+

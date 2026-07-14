@@ -1,0 +1,468 @@
+{{{#!include header.html}}}
+
+{{{#!include projectheader.html}}}
+
+{{{#!include ../contentstart.html}}}
+
+= Getting Started With Oracle =
+
+* [#installation Installation]
+ * [#memory Make Sure You Have Enough Memory]
+ * [#development Install the Development Software]
+ * [#users Create Users, Groups and Directories]
+ * [#env Set Up the Environment]
+ * [#oracle Install Oracle]
+ * [#startingatboot Starting the Database at Boot Time]
+* [#creating Creating a Database]
+* [#accessing Accessing a Database]
+
+[=#installation]
+
+== Installation ==
+
+Oracle versions 8.0.5 through 12c have been or are currently available, free for development purposes, from [http://oracle.com oracle.com] and have been available on CD from various sources as well. I've successfully installed Oracle on Linux and Solaris.
+
+This article describes how to get started with Oracle on Linux but much of it could be applied to Solaris or other Unix systems as well.
+
+[=#memory]
+
+== Make Sure You Have Enough Memory ==
+
+The number one reason that Oracle installations have failed for me is because I ran out of memory. Oracle really needs about 725mb of total ram/swap. If your system has less than that, then you can add 725mb of swap as follows.
+
+{{{
+dd if=/dev/zero of=/extraswap bs=1k count=742400
+chmod 600 /extraswap
+/sbin/mkswap /extraswap
+/sbin/swapon /extraswap
+}}}
+
+Oracle doesn't appear to need that much ram/swap to actually run though, so after the installation is finished, you can remove it as follows:
+
+{{{
+/sbin/swapoff /extraswap
+rm /extraswap
+}}}
+
+[=#development]
+
+== Install the Development Software ==
+
+The Oracle installer needs GNU make, the GNU C Compiler (gcc) and GNU Binutils (ar, as, ld, etc.) to compile and link several libraries at installation time. Make sure that these packages are installed.
+
+[=#users]
+
+== Create Users, Groups and Directories ==
+
+Run the following commands as root to set up the appropriate users, groups and directories.
+
+{{{
+groupadd oinstall
+groupadd dba
+groupadd oper
+useradd -m oracle -g oinstall -G dba,oper
+chown -R oracle:dba /home/oracle
+passwd oracle  (assign the oracle user a password)
+mkdir /u01
+chown oracle:dba /u01
+chmod 775 /u01
+}}}
+
+Edit /home/oracle/.bashrc and add the following command near the bottom.
+
+{{{
+umask 022
+}}}
+
+[=#env]
+
+== Set Up the Environment ==
+
+Add the following somewhere near the top of your /etc/profile (or create /etc/profile.d/oracle.sh if your system supports /etc/profile.d), replacing 12.1.0 in the ORACLE_VERSION environment variable with the version of Oracle that you are installing.
+
+{{{
+export ORACLE_VERSION=12.1.0
+export ORACLE_BASE=/u01/app/oracle
+export ORACLE_HOME=$ORACLE_BASE/product/$ORACLE_VERSION
+export ORACLE_SID=ora1
+export PATH=$PATH:$ORACLE_HOME/bin
+export CLASSPATH=$ORACLE_BASE/jdbc/lib/classes111.zip
+export LD_LIBRARY_PATH=$ORACLE_HOME/lib
+export ORA_NLS33=$ORACLE_HOME/ocommon/nls/admin/data
+export ORACLE_OWNER=oracle
+export ORACLE_TERM=386
+export NLS_LANG=american
+}}}
+
+If you want to use a language other than US English, consult the following table and replace '''american''' with the appropriate language string.
+
+||= Language =||= NLS_LANG value =||
+||US English||american||
+||Arabic||arabic||
+||Brazilian Portugese||"brazilian portuguese"||
+||Canadian French||frc||
+||Czech||czech||
+||Danish||danish||
+||Dutch||dutch||
+||Finnish||finnish||
+||French||french||
+||German||german||
+||Hungarian||hungarian||
+||Icelandic||is||
+||Italian||italian||
+||Japanese||japanese||
+||Korean||korean||
+||Lithuanian||lt||
+||Mexican Spanish||esm||
+||Norweigan||norweigan||
+||Polish||polish||
+||Portugese||portugese||
+||Russian||russian||
+||Simplified Chinese||"simplified chinese"||
+||Slovak||slovak||
+||Swedish||swedish||
+||Thai||th||
+||Traditional Chinese||"traditional chinese"||
+||Turkish||turkish||
+
+[=#oracle]
+
+== Install Oracle ==
+
+At this point, you should be ready to install Oracle.
+
+Each version has different installation procedures. Follow the links below for the version of Linux and Oracle that you are installing. Each "Yes" link indicates that I was able to get that version of Oracle to install and run on that version of Linux.
+
+||||= 8.0.5 =||= 8.1.6 =||= 8.1.7 =||= 9.2.x =||= 10.1.x =||= 10.2.x =||= 11.2.0 =||= 12.1.0 =||
+||= Redhat 5.2 =||[installing-oracle-805-on-redhat-52.html Yes]||No||No||No||No||No||No||No||
+||= Redhat 6.x =||No||[installing-oracle-816-or-817-on-redhat_12.html Yes]||[installing-oracle-816-or-817-on-redhat_12.html Yes]||No||No||No||No||No||
+||= Redhat 7.x =||No||[installing-oracle-816-or-817-on-redhat.html Yes]||[installing-oracle-816-or-817-on-redhat.html Yes]||No||No||No||No||No||
+||= Redhat 8 =||No||No||No||[installing-oracle-9ir2-on-redhat-8.html Yes]||No||No||No||No||
+||= Redhat 9 =||No||No||No||[installing-oracle-9ir2-on-redhat-9.html Yes]||No||No||No||No||
+||= Fedora Core 1 =||No||No||No||[installing-oracle-9ir2-on-fedora-core-1.html Yes]||[installing-oracle-10g-on-fedora-core-1.html Yes]||No||No||No||
+||= Fedora Core 2 =||No||No||No||No||[installing-oracle-10g-on-fedora-core-2.html Yes]||No||No||No||
+||= Fedora Core 3 =||No||No||No||No||[installing-oracle-10g-on-fedora-core-3.html Yes]||No||No||No||
+||= Fedora Core 4 =||No||No||No||No||[installing-oracle-10g-on-fedora-core-3.html Yes]||No||No||No||
+||= Fedora Core 5 =||No||No||No||No||No||[installing-oracle-10g-on-fedora-core-5.html Yes]||No||No||
+||= Fedora Core 12 =||No||No||No||No||No||No||[installing-oracle-11g-on-fedora-12.html Yes]||No||
+||= Fedora Core 13 =||No||No||No||No||No||No||[installing-oracle-11g-on-fedora-13.html Yes]||No||
+||= Fedora Core 14 =||No||No||No||No||No||No||[installing-oracle-11g-on-fedora-13.html Yes]||No||
+||= Fedora Core 15 =||No||No||No||No||No||No||[installing-oracle-11g-on-fedora-13.html Yes]||No||
+||= Fedora Core 16 =||No||No||No||No||No||No||[installing-oracle-11g-on-fedora-13.html Yes]||No||
+||= Fedora Core 17 =||No||No||No||No||No||No||[installing-oracle-11g-on-fedora-13.html Yes]||No||
+||= Fedora Core 18 =||No||No||No||No||No||No||[installing-oracle-11g-on-fedora-13.html Yes]||No||
+||= Fedora Core 19 =||No||No||No||No||No||No||No||[installing-oracle-12c-on-fedora-19.html Yes]||
+||= Fedora Core 20 =||No||No||No||No||No||No||No||[installing-oracle-12c-on-fedora-19.html Yes]||
+
+[=#startingatboot]
+
+== Starting the Database at Boot Time ==
+
+For Oracle 11g or higher, use the following script to start/stop the database at boot/shutdown time instead. Replace /u01/app/oracle/product/12.1.0 with your $ORACLE_HOME
+
+{{{
+ #!/bin/sh
+
+ORACLE_HOME=/u01/app/oracle/product/12.1.0
+
+case "$1" in
+  start)
+        su -l oracle -c "$ORACLE_HOME/bin/dbstart $ORACLE_HOME"
+        ;;
+  stop)
+        su -l oracle -c "$ORACLE_HOME/bin/dbshut $ORACLE_HOME"
+        ;;
+  *)
+        echo $"Usage: $0 {start|stop}"
+        exit 1
+esac
+
+exit 0
+}}}
+
+For Oracle 10g or lower, use the following script to start/stop the database at boot/shutdown time instead. Replace /u01/app/oracle/product/10.2.0 with your $ORACLE_HOME
+
+{{{
+ #!/bin/sh
+
+case "$1" in
+  start)
+        su -l oracle -c "/u01/app/oracle/product/10.2.0/bin/dbstart"
+        su -l oracle -c "/u01/app/oracle/product/10.2.0/bin/lsnrctl start"
+        ;;
+  stop)
+        su -l oracle -c "/u01/app/oracle/product/10.2.0/bin/dbshut"
+        su -l oracle -c "/u01/app/oracle/product/10.2.0/bin/lsnrctl stop"
+        ;;
+  *)
+        echo $"Usage: $0 {start|stop}"
+        exit 1
+esac
+
+exit 0
+}}}
+
+Install this script and run it with the "start" option to start up the database. Running it with the "stop" option shuts the database down. To access a database, it must be running.
+
+[=#creating]
+
+== Creating a Database ==
+
+During the installation, you could have chosen to create a database instance. If you did not create one during installation, you can do so afterward. Log in as oracle and run $ORACLE_HOME/bin/dbassist for Oracle 8i or $ORACLE_HOME/bin/dbca for Oracle 9i or higher and follow the on-screen instructions.
+
+The dbassist/dbca program will ask you to provide an SID; a local identifier for the database. No two databases on the same machine can have the same SID. If you are using Oracle 8i or 9i you will also be asked to provide a Global Identifier. The Global Identifier should be unique among the Oracle databases on the local network.
+
+After creating the database, edit the file /etc/oratab and look for a line containing the SID of the database you just created. Change the N at the end of that line to Y. This configures the database to start when the dbstart command is issued.
+
+At this point, you can run the start/stop script to start up the database.
+
+To access the database, the file $ORACLE_HOME/network/admin/tnsnames.ora must also be configured. This file contains an entry for each database that the local system needs to know about. Here is an example of a tnsnames.ora entry, identifying the database ''ORA1'' on the local machine.
+
+{{{
+ORA1.LOCALDOMAIN =
+  (DESCRIPTION =
+    (ADDRESS_LIST =
+      (ADDRESS = (PROTOCOL = TCP)(HOST = localhost)(PORT = 1521))
+    )
+    (CONNECT_DATA =
+      (SERVICE_NAME = ora1)
+    )
+  )
+}}}
+
+For Oracle 8i and higher, the format is SID.DOMAIN = (... parameters ...). For Oracle 7 and 8, the format is SID = (... parameters ...). In this example the SID is ORA1. The HOST parameter refers to the DNS name of the host that the database is running on. The SERVICE_NAME refers to the SID of the database as it is known on that host.
+
+When a database instance is created, two special administration users are created: SYS and SYSTEM. These users own the tables that contain privileges and other housekeeping information. For Oracle 9i and higher passwords must be set during the installation process. For versions of Oracle 8i and lower, the default password for the SYSTEM user is ''manager''. The default password for the SYS user is ''change_on_install''.
+
+Database tables are stored in a file or set of files collectively called a tablespace. The tables owned by the SYS and SYSTEM users are kept in their own tablespace. Though you could create your own tables there, it's not a good idea. You should create your own tablespace.
+
+For Oracle 12c or higher, the directory ''/u01/app/oracle/oradata/cdbora1/ora1'' must exist. If it does not, run the following command to create it:
+
+{{{
+mkdir -p /u01/app/oracle/oradata/cdbora1/ora1
+chown oracle:oinstall /u01/app/oracle/oradata/cdbora1/ora1
+}}}
+
+For Oracle 11g or lower, the directory ''/u01/app/oracle/oradata/ora1'' must exist instead. If it does not, run the following command to create it:
+
+{{{
+mkdir -p /u01/app/oracle/oradata/ora1
+chown oracle:oinstall /u01/app/oracle/oradata/ora1
+}}}
+
+Now, for Oracle 10g or higher, use the following command to log in, replacing '''''password''''' with the password you entered during installation:
+
+{{{
+sqlplus sys/password@ora1 as sysdba
+}}}
+
+For Oracle 9i, use the following command to log in instead, replacing '''password''' with the password you entered during installation:
+
+{{{
+sqlplus system/password@ora1
+}}}
+
+For Oracle 8i or lower, use the following command to log in instead:
+
+{{{
+sqlplus system/manager@ora1
+}}}
+
+The following queries create a tablespace and temporary tablespace called ''testtablespace'' and ''testtablespacetemp'' with some minimal sizing parameters.
+
+For Oracle 12c or higher, run the following queries:
+
+{{{
+ALTER PLUGGABLE DATABASE ora1 OPEN
+
+CREATE TABLESPACE testtablespace
+ DATAFILE '/u01/app/oracle/oradata/cdbora1/ora1/testtablespace01.dbf' 
+ SIZE 1M REUSE
+ AUTOEXTEND ON NEXT 1M
+ MAXSIZE UNLIMITED
+ NOLOGGING;
+
+CREATE TEMPORARY TABLESPACE testtablespacetemp
+ TEMPFILE '/u01/app/oracle/oradata/cdbora1/ora1/testtablespacetemp01.dbf' 
+ SIZE 2M REUSE
+ AUTOEXTEND ON NEXT 1M
+ MAXSIZE UNLIMITED;
+}}}
+
+For Oracle 8i through 11g, run the following queries instead:
+
+{{{
+CREATE TABLESPACE testtablespace
+ DATAFILE '/u01/app/oracle/oradata/ora1/testtablespace01.dbf' 
+ SIZE 1M REUSE
+ AUTOEXTEND ON NEXT 1M
+ MAXSIZE UNLIMITED
+ NOLOGGING;
+
+CREATE TEMPORARY TABLESPACE testtablespacetemp
+ TEMPFILE '/u01/app/oracle/oradata/ora1/testtablespacetemp01.dbf' 
+ SIZE 2M REUSE
+ AUTOEXTEND ON NEXT 1M
+ MAXSIZE UNLIMITED;
+}}}
+
+For Oracle 8.0, run the following queries instead:
+
+{{{
+CREATE TABLESPACE testtablespace
+ DATAFILE '/u01/app/oracle/oradata/ora1/testtablespace01.dbf' 
+ SIZE 1M REUSE
+ AUTOEXTEND ON NEXT 1M
+ MAXSIZE UNLIMITED
+ NOLOGGING;
+
+CREATE TABLESPACE testtablespacetemp
+ DATAFILE '/u01/app/oracle/oradata/ora1/testtablespacetemp01.dbf' 
+ SIZE 2M REUSE
+ AUTOEXTEND ON NEXT 1M
+ MAXSIZE UNLIMITED;
+}}}
+
+The set of database objects (such as tables, indexes, stored procedures and triggers) owned by a particular user is called a schema. Though schemas may be distributed across tablespaces, they are more often confined to a single tablespace. The SYSTEM and SYS schemas contain tables used by internal systems and should not be used for application data. You can create a new user and schema by logging in as SYSTEM and running the following queries:
+
+{{{
+CREATE USER testuser IDENTIFIED BY testpassword
+ DEFAULT TABLESPACE testtablespace 
+ TEMPORARY TABLESPACE testtablespacetemp;
+
+GRANT CREATE SESSION TO testuser;
+
+GRANT RESOURCE TO testuser;
+}}}
+
+On Oracle 12c and higher you also have to run:
+
+{{{
+GRANT UNLIMITED TABLESPACE TO testuser;
+}}}
+
+Now you can exit and log in as the new user with the following command:
+
+{{{
+sqlplus testuser/testpassword@ora1
+}}}
+
+To delete a user and everything owned by that user, log in as SYSTEM and run the following command:
+
+{{{
+DROP USER testuser CASCADE;
+}}}
+
+To delete a tablespace, log in as SYSTEM and run the following command:
+
+{{{
+DROP TABLESPACE testtablespace;
+
+DROP TABLESPACE testtablespacetemp;
+}}}
+
+This should be enough you get you started. To set up more complex configurations, consult the documentation that came with your Oracle distribution.
+
+[=#accessing]
+
+== Accessing a Database ==
+
+Any user can access an Oracle database provided that the users environment is configured correctly. The ORACLE_HOME environment variable needs to be set to the same value that it was set for the oracle user during installation. The PATH varible must contain $ORACLE_HOME/bin and the LD_LIBRARY_PATH variable must contain $ORACLE_HOME/lib.
+
+The user must have read access to the $ORACLE_HOME/network/admin/tnsnames.ora file. Alternatively, an individual user can have a .tnsnames.ora file.
+
+The following command logs ''testuser'' with password ''testpassword'' into the database identified by the SID ''ora1''.
+
+{{{
+sqlplus testuser/testpassword@ora1
+}}}
+
+A sample session follows.
+
+{{{
+[user@localhost user]$ sqlplus testuser/testpassword@ora1
+
+SQL*Plus: Release 12.1.0.1.0 Production on Tue Jan 27 21:21:34 2015
+
+Copyright (c) 1982, 2013, Oracle.  All rights reserved.
+
+Last Successful login time: Mon Jan 19 2015 03:41:15 -05:00
+
+Connected to:
+Oracle Database 12c Enterprise Edition Release 12.1.0.1.0 - 64bit Production
+With the Partitioning, OLAP, Advanced Analytics and Real Application Testing options
+
+
+SQL&gt; create table testtable (
+  2  col1 varchar2(40),
+  3  col2 number
+  4  );
+
+Table created.
+
+SQL&gt; select table_name from user_tables;
+
+TABLE_NAME
+------------------------------
+TESTTABLE
+
+SQL&gt; describe testtable;
+ Name                                      Null?    Type
+ ----------------------------------------- -------- ----------------------------
+ COL1                                               VARCHAR2(40)
+ COL2                                               NUMBER
+
+SQL&gt; insert into testtable values ('hello',50);
+
+1 row created.
+
+SQL&gt; insert into testtable values ('hi',60);
+
+1 row created.
+
+SQL&gt; insert into testtable values ('bye',70);
+
+1 row created.
+
+SQL&gt; select * from testtable;
+
+COL1                                           COL2
+---------------------------------------- ----------
+hello                                            50
+hi                                               60
+bye                                              70
+
+SQL&gt; delete from testtable where col2=50;
+
+1 row deleted.
+
+SQL&gt; select * from testtable;
+
+COL1                                           COL2
+---------------------------------------- ----------
+hi                                               60
+bye                                              70
+
+SQL&gt; update testtable set col2=0 where col1='hi';
+
+1 row updated.
+
+SQL&gt; select * from testtable;
+
+COL1                                           COL2
+---------------------------------------- ----------
+hi                                                0
+bye                                              70
+
+SQL&gt; drop table testtable;
+
+Table dropped.
+
+SQL&gt; quit
+Disconnected from Oracle Database 12c Enterprise Edition Release 12.1.0.1.0 - 64bit Production
+With the Partitioning, OLAP, Advanced Analytics and Real Application Testing options
+}}}
+
+{{{#!include ../contentend.html}}}
+
+{{{#!include footer.html}}}

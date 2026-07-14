@@ -1,0 +1,105 @@
+{{{#!include header.html}}}
+
+{{{#!include projectheader.html}}}
+
+{{{#!include ../contentstart.html}}}
+
+= Installing IBM DB2 9.1 Express on Linux =
+
+== DB2 Installation ==
+
+IBM DB2 V9.1 was once available from the IBM website as a tarball. Extract the tarball using ''tar xfz'' and cd into the exp directory.
+
+Run the db2_install script.
+
+When prompted whether to choose a different directory than the default to install the software, type no and press return.
+
+When prompted to specify a keyword, type EXP and press return.
+
+When the script completes, DB2 will be installed.
+
+== Creating an Instance ==
+
+A DB2 installation consists of an administration server and one or more instances. Each instance contains one or more databases. The administration server coordinates the instances. The administration server is owned by an OS-level user. Each instance is owned by a seperate OS-level user as well.
+
+To create an instance and an administration server, change directories into the installation directory (usually /opt/ibm/db2/V9.1 or /opt/IBM/db2/V9.1) and run ''instance/db2isetup''
+
+On the screen titled '''Welcome to the DB2 Instance Setup wizard''', click Next
+
+On the screen titled '''Set user information for the DB2 Administration Server''', leave the defaults, enter a password into the Password and Confirm Password text boxes and click Next
+
+On the screen titled '''Set up a DB2 instance''', leave the default radio button checked (Create a DB2 instance) and click Next
+
+On the screen titled '''Set user information for the DB2 instance owner''', leave the defaults, enter a password into the Password and Confirm Password text boxes and click Next
+
+On the screen titled '''Set user information for the DB2 fenced user''', leave the defaults, enter a password into the Password and Confirm Password text boxes and click Next
+
+On the screen titled '''Configure DB2 instance TCP/IP communication''', leave the default radio button checked (Configure), leave the default Service name and Port number and click Next
+
+On the screen titled '''Set instance properties''', leave the default Authentication type pulldown (Server), leave the default Startup box checked (Autostart the instance at system startup) and click Next
+
+On the screen titled '''Prepare the DB2 tools catalog''', accept the default "Do not prepare the DB2 tools catalog on this computer" and click Next
+
+On the screen titled '''Set up the administration contact list''', select the radio button nex to "Do not set up your DB2 server to send notifications at this time". Click Next.
+
+On the screen titled '''Start copying files''', click Finish.
+
+A progress dialog will come up. When the process is finished, it will go away.
+
+On the screen titled '''Setup is complete''', click Finish.
+
+Should you need to create additional DB2 instances, follow this procedure again using a different user name and skipping the steps pertaining to the Administration Server. The command ''instance/db2ilist''(under the installation directory) lists all of the DB2 instances on the local computer.
+
+If you need to drop an instance, go into the installation directory and run ''instance/db2idrop instancename'', substituting the name of the instance you want to drop for instancename.
+
+The ''instance/daslist'' command (under the installation directory) lists all of the DB2 administration servers on the local computer.
+
+If you need to drop an administration server, go into the installation directory and run ''instance/dasdrop servername'', substituting the name of the administration server you want to drop for servername.
+
+== Creating a Sample Database ==
+
+To create a sample database, run the command ''/opt/ibm/db2/V9.1/bin/db2sampl''.
+
+== Starting the Database at Boot Time ==
+
+You can use the following script to start/stop the database at boot/shutdown time.
+
+{{{
+ #!/bin/sh
+
+case "$1" in
+        start)
+                /opt/ibm/db2/V9.1/instance/db2istrt
+        ;;
+        stop)
+                kill -9 `ps -efa | grep db2wdog | grep -v grep | cut -c10-15`
+        ;;
+        *)
+        echo $"Usage: $0 {start|stop}"
+        exit 1
+esac
+
+exit 0
+}}}
+
+Be sure to replace all instances of /opt/ibm/db2/V9.1 with your installation directory.
+
+Install this script and run it with the "start" option to start up the database. Running it with the "stop" option shuts the database down. To access a database, it must be running.
+
+During instance configuration, there's a check box indicating whether the instance will be configured to start at boot time. If you didn't check it, to get each instance to start at boot time, you need to go into the installation directory and run the following command as root for each instance.
+
+{{{
+instance/db2iauto -on INSTANCE_USER
+}}}
+
+Where INSTANCE_USER is replaced by the username of the user associated with the instance you want to start at boot time.
+
+If you want to disable instances from starting at boot time, you need to go into the installation directory and run the following command as root for each instance:
+
+{{{
+instance/db2iauto -off INSTANCE_USER
+}}}
+
+{{{#!include ../contentend.html}}}
+
+{{{#!include footer.html}}}

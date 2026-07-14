@@ -1,0 +1,125 @@
+{{{#!include header.html}}}
+
+{{{#!include projectheader.html}}}
+
+{{{#!include ../contentstart.html}}}
+
+= Initializing Sybase ASE 12.5.1 on Linux =
+
+To install and initialize Sybase Adaptive Server Enterprise, follow these instructions.
+
+== Install Compatibility Packages ==
+
+Sybase ASE version 12.5.2 requires libstdc++-libc6.2-2.so.3. Modern Linux distributions have a newer version of libstdc++. You can install compat-libstdc++-296-2.96-132.fc5.i386.rpm for Fedora Core 4 (available at [http://rpmfind.net rpmfind]) on most RPM-based linux distributions to provide this library.
+
+== Install Java ==
+
+Sybase ASE version 12.5.1 comes with a Java-based installer. The version of Java that it comes with won't work on many platforms and the installer will search for other versions of Java before using the version that it comes with. Get a new version of Java from [http://java.sun.com java.sun.com] and install it.
+
+Be sure to add the path of the java program to your PATH environment variable.
+
+== Install Compatibility Packages ==
+
+The server requires libstdc++-libc6.2-2.so.3. Many newer versions of linux come with a newer version if libstdc++. However, you can download and install compat-libstdc++-7.3-2.96.118.i386.rpm for Redhat 9 from [http://rpmfind.net rpmfind.net], even for non-redhat systems.
+
+For non-RPM based systems, you should first install and initialize RPM then install the compat-libstdc++ RPM. See the instructions for installing RPM on Debian systems on the [../sybase.html previous page].
+
+== Set Kernel Parameters ==
+
+The database server requires more shared memory than the typical linux system is configured to allow by default. Run the following command (as root) prior to installation.
+
+{{{
+echo 134217728 &gt; /proc/sys/kernel/shmmax
+}}}
+
+== Extract The Distribution ==
+
+The distribution comes as a tarball. Extract it as follows:
+
+{{{
+mkdir sybase
+mv ase1251dev_linux.tar sybase
+cd sybase
+tar xf ase1251dev_linux.tar
+}}}
+
+== Install The Server ==
+
+Now, as root, run the following command:
+
+{{{
+./setup
+}}}
+
+A java-based installer should run.
+
+On the screen titled: '''Welcome to the InstallSheild Wizard for Sybase Adaptive Server Enterprise Suite'''[[br]]Click Next.
+
+On the screen titled: '''Please select the geographic location where you are installing this software'''[[br]]Select your geographic location from the '''Please Select''' pulldown.[[br]]Read the license and click the '''I agree to the terms of the Sybase license, for the install location specified.''' check box.[[br]]Click Next.
+
+When prompted for a '''Destination Directory''', accept the default "/opt/sybase"[[br]]Click Next.
+
+If prompted with '''The directory does not exist. Do you want to create it?'''[[br]]Click Yes.
+
+On the screen titled: '''Choose the setup type that best suits your needs'''[[br]]Accept the default '''Typical''' radio button.[[br]]Click Next.
+
+An installation summary page will appear, indicating what will be installed, what directory, and the total size of the installation.[[br]]Click Next.
+
+A screen titled '''Installing Sybase Adaptive Server Enterprise Suite. Please wait...''' will appear with a progress bar indicating how much of the installation has been completed.
+
+On the screen titled '''The InstallShield Wizard has successfully installed Sybase Adaptive Server Enterprise Suite'''[[br]]Click Next.
+
+On the screen titled '''Please deselect any servers that you do not want to configure now:'''[[br]]Accept the default checkboxes (all of them should be checked)[[br]]Click Next.
+
+On the screen titled '''Please select the servers that you want to custom configure'''[[br]]Accept the default checkboxes (none of them should be checked)[[br]]Click Next.
+
+A summary page will appear with values for that each server will be configured with.[[br]]Click Next.
+
+A screen will appear titled '''Configure New Adaptive Server''' with progress messages indicating what step is currently being executed. This stage will fail at "Starting server" if shmmax wasn't configured properly.
+
+A screen will appear titled '''Configure New Backup Server''' with progress messages indicating what step is currently being executed.
+
+A screen will appear titled '''Configure New Monitor Server''' with progress messages indicating what step is currently being executed.
+
+A screen will appear titled '''Configure New XP Server''' with progress messages indicating what step is currently being executed.
+
+A screen will appear titled '''The installation was successful'''[[br]]Click Finish.
+
+== Starting the Database at Boot Time ==
+
+The RPM distribution of Sybase ASE installs a script in /etc/rc.d/init.d which starts the database at boot time. For non-RPM distributions, you may need to install a script like the following. Replace ''/opt/sybase-12.5'' with whatever directory Sybase ASE is installed in.
+
+{{{
+ #!/bin/sh
+
+export SYBASE=/opt/sybase
+
+export PATH=$PATH:$SYBASE/ASE-12.5/bin:$SYBASE/ASE-12.5/install
+
+export LANG=en_US
+
+echo 134217728 &gt; /proc/sys/kernel/shmmax
+
+case "$1" in
+        start)
+                for i in `ls $SYBASE/ASE-12.5/install/RUN_*`
+                do
+                        su -c "startserver -f $i" &gt; /dev/null 2&gt;&amp;1;
+                done
+                ;;
+        stop)
+                kill `ps -efa | grep sybase | grep -v grep | awk '{print $2}'`
+                ;;
+        *)
+                echo $"Usage: $0 {start|stop}"
+                exit 1
+esac
+
+exit 0
+}}}
+
+Install this script and run it with the "start" option to start up the database. Running it with the "stop" option shuts the database down. To access a database, it must be running.
+
+{{{#!include ../contentend.html}}}
+
+{{{#!include footer.html}}}

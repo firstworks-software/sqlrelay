@@ -1,0 +1,80 @@
+<!--#include virtual="header.html"-->
+
+<!--#include virtual="projectheader.html"-->
+
+<!--#include virtual="../contentstart.html"-->
+
+<h1>Initializing Sybase ASE 11.9.2 on Linux</h1>
+
+<p>After installing Sybase Adaptive Server Enterprise, you can initialize the server by following these steps.</p>
+
+<p>First, ''su'' to the sybase user using the -l option.</p>
+
+<pre>su -l sybase
+</pre>
+
+<p>You should be presented with the a great deal of text and prompted at the end.</p>
+
+<pre>Do you want to start 'srvbuild' now? [y/n]
+</pre>
+
+<p>Answer 'y'. Next time you log in, you won't be prompted. If you were not prompted with that text, or if you accidentally answer something other than 'y', you can run the ''srvbuild'' command from the command line.</p>
+
+<p>When you run ''svrbuild'', a dialog will appear, prompting you to <b>Click the check boxes for the types of servers to create and provide names for these servers.</b></p>
+
+<p>select <b>Adaptive Server</b><br/>enter localhost<br/>select <b>OK</b></p>
+
+<p>A new dialog will appear, prompting you to enter filenames for <b>Master</b> and <b>Sybsystemprocs</b> device files, and device and database sizes for each.</p>
+
+<p>enter ''/opt/sybase-11.9.2/master.dat'' for the <b>Master</b> device file<br/>enter ''/opt/sybase-11.9.2/sybsystemprocs.dat'' for the <b>Sybsystemprocs</b>device file<br/>Select <b>Edit Advanced Adaptive Server Attributes</b></p>
+
+<p>A new dialog will appear, prompting you to enter filenames for the <b>Sybsystemdb</b> device file, size and database sizes.</p>
+
+<p>enter ''/opt/sybase-11.9.2/sybsystemdb.dat'' for the <b>Sybsystemdb</b> device file<br/>Select <b>Go Back</b></p>
+
+<p>This should return you to the previous dialog.</p>
+
+<p>enter your localhost for <b>Host Name</b></p>
+
+<p>Select <b>Build Server!</b></p>
+
+<p>A warning dialog will appear indicating that the files are not raw device files. Ignore this warning and select <b>Yes</b> to proceed.</p>
+
+<p>A Status Output dialog will appear. As the database is built, the dialog provides feedback about the process. When it's done, select <b>OK</b>.</p>
+
+<p>A dialog will appear above the Status Output dialog asking if you would like to localize your server. Select <b>No</b> on this dialog and <b>Exit</b> on the Status Output dialog. A final dialog will appear confirming that you want to exit. Select <b>Yes</b>.</p>
+
+<h2>Starting the Database at Boot Time</h2>
+
+<p>The RPM distribution of Sybase ASE installs a script in /etc/rc.d/init.d which starts the database at boot time. For non-RPM distributions, you may need to install a script like the following. Replace ''/opt/sybase-11.9.2'' with whatever directory Sybase ASE is installed in.</p>
+
+<pre> #!/bin/sh
+
+export SYBASE=/opt/sybase-11.9.2
+
+export PATH=$PATH:$SYBASE/bin:$SYBASE/install
+
+case "$1" in
+        start)
+                for i in `ls $SYBASE/install/RUN_*`
+                do
+                        su -c "startserver -f $i" sybase &gt; /dev/null 2&gt;&amp;1;
+                done
+                ;;
+        stop)
+                kill `ps -efa | grep sybase | grep -v grep | awk '{print $2}'`
+                ;;
+        *)
+                echo $"Usage: $0 {start|stop}"
+                exit 1
+esac
+
+exit 0
+</pre>
+
+<p>Install this script and run it with the "start" option to start up the database. Running it with the "stop" option shuts the database down. To access a database, it must be running.</p>
+
+<!--#include virtual="../contentend.html"-->
+
+<!--#include virtual="footer.html"-->
+

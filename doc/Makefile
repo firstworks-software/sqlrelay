@@ -13,6 +13,7 @@ OBJS = documentation.html faq.html
 all: $(OBJS)
 	$(CHMOD) 755 $(OBJS)
 	cd admin $(AND) $(MAKE)
+	cd gettingstarted $(AND) $(MAKE)
 	cd features $(AND) $(MAKE)
 	cd programming $(AND) $(MAKE)
 
@@ -44,6 +45,7 @@ install:
 	$(CP) slides/* $(docdir)/slides
 	$(CHMOD) 755 $(docdir)/slides/*
 	$(MKINSTALLDIRS) $(docdir)/admin
+	$(MKINSTALLDIRS) $(docdir)/gettingstarted
 	$(MKINSTALLDIRS) $(docdir)/api
 	$(MKINSTALLDIRS) $(docdir)/api/ado.net/html
 	$(MKINSTALLDIRS) $(docdir)/api/c/html
@@ -74,6 +76,8 @@ install:
 	$(MKINSTALLDIRS) $(docdir)/programming
 	$(CP) admin/*.html $(docdir)/admin
 	$(CHMOD) 755 $(docdir)/admin/*.html
+	$(CP) gettingstarted/*.html $(docdir)/gettingstarted
+	$(CHMOD) 755 $(docdir)/gettingstarted/*.html
 	$(CP) css/*.css $(docdir)/css
 	$(CHMOD) 644 $(docdir)/css/*.css
 	$(CP) api/ado.net/html/*.html $(docdir)/api/ado.net/html
@@ -218,6 +222,7 @@ uninstall:
 clean:
 	$(RM) $(OBJS)
 	cd admin $(AND) $(MAKE) clean
+	cd gettingstarted $(AND) $(MAKE) clean
 	cd features $(AND) $(MAKE) clean
 	cd programming $(AND) $(MAKE) clean
 	cd howtos $(AND) $(MAKE) clean

@@ -1,0 +1,366 @@
+<!--#include virtual="header.html"-->
+
+<!--#include virtual="projectheader.html"-->
+
+<!--#include virtual="../contentstart.html"-->
+
+<h1>Getting Started With <a href="MySQL">MySQL</a></h1>
+
+<ul>
+  <li><a href="#installation">Installation</a>
+  * <a href="#rpm">RPM-based Linux</a>
+  * <a href="#debian">Debian and Ubuntu Linux</a>
+  * <a href="#freebsd">FreeBSD</a>
+  * <a href="#openbsd">OpenBSD</a>
+  * <a href="#netbsd">NetBSD</a>
+  * <a href="#solaris">Solaris</a>
+  * <a href="#source">Compiling From Source</a>
+  * <a href="#startingatboot">Starting the Database at Boot Time</a></li>
+  <li><a href="#creating">Creating a Database</a></li>
+  <li><a href="#accessing">Accessing a Database</a></li>
+  <li><a href="#quirks">MySQL Quirks</a></li>
+</ul>
+
+<a name="installation"/><h2>Installation</h2>
+
+<p>I've sucessfully installed <a href="MySQL">MySQL</a> on Linux, <a href="FreeBSD">FreeBSD</a>, <a href="NetBSD">NetBSD</a>, <a href="OpenBSD">OpenBSD</a> and Solaris.</p>
+
+<a name="rpm"/><h2>RPM-based Linux</h2>
+
+<p>To install <a href="MySQL">MySQL</a> on an RPM-based Linux distribution run:</p>
+
+<pre>yum install mysql-server mysql-devel
+</pre>
+
+<p>Or on an old RPM-based distribution that doesn't support yum, install them from the CD/DVD's using ''rpm -i''.</p>
+
+<a name="debian"/><h2>Debian and Ubuntu Linux</h2>
+
+<p>To install <a href="MySQL">MySQL</a> on Debian and Ubuntu Linux, run:</p>
+
+<pre>apt-get install mysql-server libmysqlclient-dev
+</pre>
+
+<p><a href="MySQL">MySQL</a> packages don't appear to be available for older Debian releases, so for those releases, I've always compiled it from source. Alternatively, you can download a binary distribution in tar.gz format from <a target="_blank" href="http://www.mysql.com">the MySQL site</a>.</p>
+
+<a name="freebsd"/><h2><a href="FreeBSD">FreeBSD</a></h2>
+
+<p>To install <a href="MySQL">MySQL</a> on <a href="FreeBSD">FreeBSD</a>, run:</p>
+
+<pre>pkg install mysql56-server mysql56-client
+</pre>
+
+<p>(replacing 56 with the major/minor version of mysql that you want to install)</p>
+
+<p>On older versions of <a href="FreeBSD">FreeBSD</a>, run:</p>
+
+<pre>pkg_add -r mysql56-server mysql56-client
+</pre>
+
+<p>You can also install <a href="MySQL">MySQL</a> from the Ports CD(s) that came with your distribution using ''/stand/sysinstall''.</p>
+
+<a name="openbsd"/><h2><a href="OpenBSD">OpenBSD</a></h2>
+
+<p>To install <a href="MySQL">MySQL</a> on <a href="OpenBSD">OpenBSD</a>, verify that /etc/pkg.conf has a valid path in it, like:</p>
+
+<pre>installpath = ftp://ftp.usa.openbsd.org/pub/OpenBSD/5.6/packages/amd64/
+</pre>
+
+<p>And run:</p>
+
+<pre>pkg_add mysql-server mysql-client
+</pre>
+
+<p>Packages are also available from <a target="_blank" href="ftp://ftp.openbsd.org">ftp.openbsd.org</a> and on the CD's that came with your distribution and can be installed manually using ''pkg_add''.</p>
+
+<a name="netbsd"/><h2><a href="NetBSD">NetBSD</a></h2>
+
+<p>To install <a href="MySQL">MySQL</a> on <a href="NetBSD">NetBSD</a>, run:</p>
+
+<pre>pkgin install mysql-server mysql-client
+</pre>
+
+<p>On older versions of <a href="NetBSD">NetBSD</a>, verify that the PKG_PATH environment variable is configured to a valid path like:</p>
+
+<pre>ftp://ftp.netbsd.org/pub/pkgsrc/packages/NetBSD/i386/4.0.1_2012Q3/All
+</pre>
+
+<p>And run:</p>
+
+<pre>pkg_add mysql-server myql-client
+</pre>
+
+<p>Packages are also available from <a target="_blank" href="ftp://ftp.netbsd.org">ftp.netbsd.org</a> and on the CD's that came with your distribution and can be installed manually using ''pkg_add''.</p>
+
+<a name="solaris"/><h2>Solaris</h2>
+
+<p><a href="MySQL">MySQL</a> packages are available on the Solaris Companion CD and are downloadable from many web sites including <a target="_blank" href="http://www.mysql.com">the MySQL site</a>. You can use ''pkgtool'' to install the package. Note, that with some versions of Solaris and some versions of <a href="MySQL">MySQL</a>, you have to create a "wheel" group before installing the <a href="MySQL">MySQL</a> package. You can do this (as root) using the command: ''/usr/sbin/groupadd wheel''</p>
+
+<a name="source"/><h2>Compiling From Source</h2>
+
+<p>If you want to compile <a href="MySQL">MySQL</a> from source, it should compile cleanly on all of the platforms mentioned above. The source code is available from <a target="_blank" href="http://www.mysql.com">the MySQL site</a>. With older versions of <a href="MySQL">MySQL</a>, I've run out of memory while compiling on machines with less than 64MB of ram. I don't believe that this is still a problem though. I usually give the ''configure'' script the ''--prefix=/usr/local/mysql'' parameter so that <a href="MySQL">MySQL</a> will be installed entirely under /usr/local/mysql. I then add /usr/local/mysql/bin to my PATH environment variable and /usr/local/mysql/lib/mysql to my LD_LIBRARY_PATH environment variable.</p>
+
+<a name="startingatboot"/><h2>Starting the Database at Boot Time</h2>
+
+<p>The package distributions of <a href="MySQL">MySQL</a> either install a script which starts the database at boot time or use systemd.</p>
+
+<p>If you compiled from source on a platform that supports init-style system initialization, you'll need to install a script like one of the following to start the database at boot time.</p>
+
+<p>For <a href="MySQL">MySQL</a> 4 and higher:</p>
+
+<pre> #!/bin/sh
+
+case "$1" in
+        start)
+                if ( test ! -d "/usr/local/mysql/var" ); then
+                        mkdir -p /usr/local/mysql/var/mysql
+                fi
+                if ( test ! -d "/usr/local/mysql/var/log" ); then
+                        mkdir -p /usr/local/mysql/var/log
+                fi
+                if ( test ! -d "/usr/local/mysql/var/mysql" ); then
+                        /usr/local/mysql/bin/mysql_install_db \
+                                --datadir=/usr/local/mysql/var
+                fi
+                chown -R mysql.mysql /usr/local/mysql/var
+                chmod 0755 /usr/local/mysql/var
+                chmod 0755 /usr/local/mysql/var/log
+                /usr/local/mysql/bin/mysqld_safe \
+                        --datadir=/usr/local/mysql/var \
+                        --err-log=/usr/local/mysql/var/log/mysqld.log \
+                        --log=/usr/local/mysql/var/log/mysqld.log \
+                        --socket=/tmp/mysql.sock
+                ;;
+        stop)
+                kill `ps -efa | grep mysql | grep -v grep | awk '{print $2}'`
+                ;;
+        *)
+                echo $"Usage: $0 {start|stop}"
+                exit 1
+esac
+
+exit 0
+</pre>
+
+<p>For <a href="MySQL">MySQL</a> 3:</p>
+
+<pre> #!/bin/sh
+
+case "$1" in
+        start)
+                if ( test ! -d "/usr/local/mysql/var/mysql" ); then
+                        /usr/local/mysql/bin/mysql_install_db
+                fi
+                chown -R mysql.mysql /usr/local/mysql/var
+                chmod 0755 /usr/local/mysql/var
+                /usr/local/mysql/bin/safe_mysqld
+                ;;
+        stop)
+                kill `ps -efa | grep mysql | grep -v grep | awk '{print $2}'`
+                ;;
+        *)
+                echo $"Usage: $0 {start|stop}"
+                exit 1
+esac
+
+exit 0
+</pre>
+
+<p>Install this script and run it with the "start" option to start up the database. Running it with the "stop" option shuts the database down. To access a database, it must be running.</p>
+
+<a name="creating"/><h2>Creating a Database</h2>
+
+<p>After installation, <a href="MySQL">MySQL</a> is ready to use but to do any useful work, you'll have to create a database.</p>
+
+<p>The installation process creates a database named ''mysql'' containing privileges and other housekeeping information and a ''root'' user which has no password.</p>
+
+<p>The following commands give the ''root'' user the password ''Passw0rd''.</p>
+
+<pre>mysql -uroot -e "update user set password=password('Passw0rd') where user='root'" mysql
+mysqladmin -uroot reload
+</pre>
+
+<p>Though you can create tables in the ''mysql'' database, it's not a good idea. You should create a new database. The following command creates a database called ''testdb''.</p>
+
+<pre>mysqladmin -uroot -pPassw0rd create testdb
+</pre>
+
+<p>To create a user, log into the ''mysql'' database using the following command.</p>
+
+<pre>mysql -uroot -pPassw0rd mysql
+</pre>
+
+<p>On modern versions of mysql, the following queries create a user called ''testuser'' with password ''testpassword'' and allows it to log in from the local machine or any remote host.</p>
+
+<pre>create user 'testuser'@'localhost' identified by 'testpassword'
+create user 'testuser'@'%' identified by 'testpassword'
+</pre>
+
+<p>On sufficiently old versions of mysql, you have to insert rows directly into the user table:</p>
+
+<pre>insert into user (host,user,password) values ('localhost','testuser',password('testpassword'));
+insert into user (host,user,password) values ('%','testuser',password('testpassword'));
+</pre>
+
+<p>Once the user is created, it must be given database-specific priveleges.</p>
+
+<p>On modern versions of mysql, the following queries grant ''testuser'' all privileges on the ''testdb'' database.</p>
+
+<pre>grant all privileges on testdb.* to 'testuser'@'%'
+</pre>
+
+<p>On sufficiently old versions of mysql, you have to insert rows directly into the db table:</p>
+
+<pre>insert into db values ('%','testdb','testuser','Y','Y','Y','Y','Y','Y','Y','Y','Y','Y','Y','Y','Y','Y','Y','Y','Y','Y','Y');
+</pre>
+
+<p>Different versions of <a href="MySQL">MySQL</a> have different numbers of columns in the ''db'' table, if the query above fails, run:.</p>
+
+<pre>desc db
+</pre>
+
+<p>Then count the number of columns with Type <b>enum('N','Y')</b> and re-run the query above using that number of <b>'Y</b>' values.</p>
+
+<p>Exit the mysql client and run the following command to activate these changes.</p>
+
+<pre>mysqladmin -uroot -pPassw0rd reload
+</pre>
+
+<p>To delete a user, log into the ''mysql'' database using the following command.</p>
+
+<pre>mysql -uroot -pPassw0rd mysql
+</pre>
+
+<p>On modern versions of mysql, the following queries drop the user ''testuser''.</p>
+
+<pre>drop user 'testuser'@'localhost';
+drop user 'testuser'@'%';
+</pre>
+
+<p>On sufficiently old versions of mysql, you have to delete rows directly from the user and db tables.</p>
+
+<pre>delete from user where user='testuser';
+delete from db where user='testuser';
+</pre>
+
+<p>Exit the mysql client and run the following command to activate these changes.</p>
+
+<pre>mysqladmin -uroot -pPassw0rd reload
+</pre>
+
+<p>If you want to drop the database, you can do so with the following command.</p>
+
+<pre>mysqladmin -uroot -pPassw0rd drop testdb
+</pre>
+
+<p>This should be enough to get you started. To set up more complex configurations, consult the <a href="MySQL">MySQL</a> <a target="_blank" href="http://dev.mysql.com/doc/refman/en/">online documentation</a>.</p>
+
+<a name="accessing"/><h2>Accessing a Database</h2>
+
+<p>Accessing a <a href="MySQL">MySQL</a> database using the ''mysql'' client tool is simple. For example, to access a database called ''testdb'' on the local machine as the ''testuser'' user with password ''testpassword'', use the following command.</p>
+
+<pre>mysql -utestuser -ptestpassword testdb
+</pre>
+
+<p>If you want to access a database on a remote machine, say on ''testhost'', use the -h option as follows.</p>
+
+<pre>mysql -htesthost -utestuser -ptestpassword testdb
+</pre>
+
+<p>Once you're connected to the database, the ''mysql'' client prompts you to enter a query. Queries may be split across multiple lines. To run a query, end it with a semicolon or type \g on the next line. To exit, type \q.</p>
+
+<p>A sample ''mysql'' session follows.</p>
+
+<pre>[user@localhost user]$ mysql -utestuser -ptestpassword testdb
+Welcome to the MySQL monitor.  Commands end with ; or \g.
+Your MySQL connection id is 5 to server version: 3.23.41
+
+Type 'help;' or '\h' for help. Type '\c' to clear the buffer.
+
+mysql&gt; create table testtable (
+    -&gt; col1 char(40),
+    -&gt; col2 integer 
+    -&gt; );
+Query OK, 0 rows affected (0.00 sec)
+
+mysql&gt; show tables;
++------------------+
+| Tables_in_testdb |
++------------------+
+| testtable        |
++------------------+
+1 row in set (0.00 sec)
+
+mysql&gt; describe testtable;
++-------+----------+------+-----+---------+-------+
+| Field | Type     | Null | Key | Default | Extra |
++-------+----------+------+-----+---------+-------+
+| col1  | char(40) | YES  |     | NULL    |       |
+| col2  | int(11)  | YES  |     | NULL    |       |
++-------+----------+------+-----+---------+-------+
+2 rows in set (0.00 sec)
+
+mysql&gt; insert into testtable values ('hello',50);
+Query OK, 1 row affected (0.00 sec)
+
+mysql&gt; insert into testtable values ('hi',60);
+Query OK, 1 row affected (0.00 sec)
+
+mysql&gt; insert into testtable values ('bye',70);
+Query OK, 1 row affected (0.00 sec)
+
+mysql&gt; select * from testtable;
++-------+------+
+| col1  | col2 |
++-------+------+
+| hello |   50 |
+| hi    |   60 |
+| bye   |   70 |
++-------+------+
+3 rows in set (0.00 sec)
+
+mysql&gt; update testtable set col2=0 where col1='hi';
+Query OK, 1 row affected (0.00 sec)
+Rows matched: 1  Changed: 1  Warnings: 0
+
+mysql&gt; select * from testtable;
++-------+------+
+| col1  | col2 |
++-------+------+
+| hello |   50 |
+| hi    |    0 |
+| bye   |   70 |
++-------+------+
+3 rows in set (0.00 sec)
+
+mysql&gt; delete from testtable where col2=50;
+Query OK, 1 row affected (0.00 sec)
+
+mysql&gt; select * from testtable;
++------+------+
+| col1 | col2 |
++------+------+
+| hi   |    0 |
+| bye  |   70 |
++------+------+
+2 rows in set (0.00 sec)
+
+mysql&gt; drop table testtable;
+Query OK, 0 rows affected (0.00 sec)
+
+mysql&gt; \q
+Bye
+</pre>
+
+<a name="quirks"/><h2><a href="MySQL">MySQL</a> Quirks</h2>
+
+<p>Ancient versions of <a href="MySQL">MySQL</a> don't support transactions.</p>
+
+<p>Newer, but still very old versions support foreign key constraint syntax but don't enforce the constraint.</p>
+
+<p>In modern <a href="MySQL">MySQL</a>, the default isolation level is REPEATABLE READ rather than READ COMMITTED like most databases. This means that you must commit your transaction to be able to see other users' committed changes.</p>
+
+<!--#include virtual="../contentend.html"-->
+
+<!--#include virtual="footer.html"-->
+
