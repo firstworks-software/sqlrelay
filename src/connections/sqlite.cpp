@@ -1389,6 +1389,8 @@ const char *sqliteconnection::getColumnListQuery(const char *catalog,
 							const char *table,
 							const char *column) {
 
+	#if defined(SQLITE_VERSION_NUMBER) && SQLITE_VERSION_NUMBER>=3016000
+
 	columnlistquery.clear();
 
 	// select clause
@@ -1471,11 +1473,45 @@ const char *sqliteconnection::getColumnListQuery(const char *catalog,
 		"	p.cid");
 
 	return columnlistquery.getString();
+
+	#else
+
+	// sqlite prior to 3.16.0 supports neither pragma_table_info() nor
+	// instr(), which the query above relies on
+	return "select "
+		"	null as table_cat, "
+		"	null as table_schem, "
+		"	'' as table_name, "
+		"	'' as column_name, "
+		"	null as data_type, "
+		"	'' as type_name, "
+		"	null as column_size, "
+		"	null as buffer_length, "
+		"	null as decimal_digits, "
+		"	10 as num_prec_radix, "
+		"	1 as nullable, "
+		"	'' as remarks, "
+		"	null as column_default, "
+		"	null as sql_data_type, "
+		"	null as sql_datetime_sub, "
+		"	null as char_octet_length, "
+		"	null as ordinal_position, "
+		"	'' as is_nullable, "
+		"	null as numeric_precision, "
+		"	'' as column_key, "
+		"	'' as is_autoincrement, "
+		"	null "
+		"where "
+		"	1=0";
+
+	#endif
 }
 
 const char *sqliteconnection::getPrimaryKeysListQuery(const char *catalog,
 							const char *schema,
 							const char *table) {
+
+	#if defined(SQLITE_VERSION_NUMBER) && SQLITE_VERSION_NUMBER>=3016000
 
 	primarykeyslistquery.clear();
 
@@ -1507,11 +1543,29 @@ const char *sqliteconnection::getPrimaryKeysListQuery(const char *catalog,
 		"	p.pk");
 
 	return primarykeyslistquery.getString();
+
+	#else
+
+	// sqlite prior to 3.16.0 doesn't support pragma_table_info()
+	return "select "
+		"	null as table_cat, "
+		"	null as table_schem, "
+		"	'' as table_name, "
+		"	'' as column_name, "
+		"	0 as key_seq, "
+		"	null as pk_name, "
+		"	null "
+		"where "
+		"	1=0";
+
+	#endif
 }
 
 const char *sqliteconnection::getKeyAndIndexListQuery(const char *catalog,
 							const char *schema,
 							const char *table) {
+
+	#if defined(SQLITE_VERSION_NUMBER) && SQLITE_VERSION_NUMBER>=3016000
 
 	keyandindexlistquery.clear();
 
@@ -1559,6 +1613,30 @@ const char *sqliteconnection::getKeyAndIndexListQuery(const char *catalog,
 		"	ii.seqno");
 
 	return keyandindexlistquery.getString();
+
+	#else
+
+	// sqlite prior to 3.16.0 supports neither pragma_index_list() nor
+	// pragma_index_xinfo()
+	return "select "
+		"	null as table_cat, "
+		"	null as table_schem, "
+		"	'' as table_name, "
+		"	0 as non_unique, "
+		"	'' as index_qualifier, "
+		"	'' as index_name, "
+		"	3 as type, "
+		"	0 as ordinal_position, "
+		"	'' as column_name, "
+		"	null as asc_or_desc, "
+		"	null as cardinality, "
+		"	null as pages, "
+		"	null as filter_condition, "
+		"	null "
+		"where "
+		"	1=0";
+
+	#endif
 }
 
 const char *sqliteconnection::getProcedureListQuery(

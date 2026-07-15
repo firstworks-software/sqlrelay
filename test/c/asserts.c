@@ -33,6 +33,13 @@ void printErrors() {
 	}
 }
 
+int contains(const char *actual, const char *substring) {
+
+	// a null actual (e.g. a null field from a failed or empty query)
+	// contains nothing, and isn't a reason to crash inside strstr()
+	return (actual)?(strstr(actual,substring)!=NULL):0;
+}
+
 void assertEqStr(const char *actual, const char *expected) {
 
 	if (!expected) {

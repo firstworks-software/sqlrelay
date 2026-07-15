@@ -41,6 +41,13 @@ if (!defined($dbversion) ||
 	int($dbversion)<3) {
 	$issqlite3=0;
 }
+# table-valued pragma functions were added in sqlite 3.16.0
+$haspragmafuncs=0;
+if ($issqlite3) {
+	($majorversion,$minorversion)=split(/\./,$dbversion);
+	$haspragmafuncs=(int($majorversion)>3 ||
+			(int($majorversion)==3 && int($minorversion)>=16));
+}
 print("\n");
 
 
@@ -1426,126 +1433,134 @@ print("\n");
 
 # column list
 print("COLUMN LIST: \n");
-$cur->sendQuery("drop table if exists testtable");
-assertTrue($cur->sendQuery(
-	"create table testtable (".
-	"	testint int, ".
-	"	testfloat float, ".
-	"	testchar char(40), ".
-	"	testvarchar varchar(40), ".
-	"	testclob clob, ".
-	"	testblob blob)"));
-assertTrue($cur->getColumnList("testtable",undef));
-assertEquals($cur->getColumnName(0),"column_name");
-assertEquals($cur->getColumnName(1),"data_type");
-assertEquals($cur->getColumnName(2),"character_maximum_length");
-assertEquals($cur->getColumnName(3),"numeric_precision");
-assertEquals($cur->getColumnName(4),"numeric_scale");
-assertEquals($cur->getColumnName(5),"is_nullable");
-assertEquals($cur->getColumnName(6),"column_key");
-assertEquals($cur->getColumnName(7),"column_default");
-assertEquals($cur->getColumnName(8),"extra");
-assertEquals($cur->getField(0,"column_name"),"testint");
-assertEquals($cur->getField(1,"column_name"),"testfloat");
-assertEquals($cur->getField(2,"column_name"),"testchar");
-assertEquals($cur->getField(3,"column_name"),"testvarchar");
-assertEquals($cur->getField(4,"column_name"),"testclob");
-assertEquals($cur->getField(5,"column_name"),"testblob");
-assertEquals($cur->getField(0,"data_type"),"INT");
-assertEquals($cur->getField(1,"data_type"),"FLOAT");
-assertEquals($cur->getField(2,"data_type"),"CHAR");
-assertEquals($cur->getField(3,"data_type"),"VARCHAR");
-assertEquals($cur->getField(4,"data_type"),"CLOB");
-assertEquals($cur->getField(5,"data_type"),"BLOB");
-assertTrue($cur->sendQuery("drop table if exists testtable"));
+if ($haspragmafuncs) {
+	$cur->sendQuery("drop table if exists testtable");
+	assertTrue($cur->sendQuery(
+		"create table testtable (".
+		"	testint int, ".
+		"	testfloat float, ".
+		"	testchar char(40), ".
+		"	testvarchar varchar(40), ".
+		"	testclob clob, ".
+		"	testblob blob)"));
+	assertTrue($cur->getColumnList("testtable",undef));
+	assertEquals($cur->getColumnName(0),"column_name");
+	assertEquals($cur->getColumnName(1),"data_type");
+	assertEquals($cur->getColumnName(2),"character_maximum_length");
+	assertEquals($cur->getColumnName(3),"numeric_precision");
+	assertEquals($cur->getColumnName(4),"numeric_scale");
+	assertEquals($cur->getColumnName(5),"is_nullable");
+	assertEquals($cur->getColumnName(6),"column_key");
+	assertEquals($cur->getColumnName(7),"column_default");
+	assertEquals($cur->getColumnName(8),"extra");
+	assertEquals($cur->getField(0,"column_name"),"testint");
+	assertEquals($cur->getField(1,"column_name"),"testfloat");
+	assertEquals($cur->getField(2,"column_name"),"testchar");
+	assertEquals($cur->getField(3,"column_name"),"testvarchar");
+	assertEquals($cur->getField(4,"column_name"),"testclob");
+	assertEquals($cur->getField(5,"column_name"),"testblob");
+	assertEquals($cur->getField(0,"data_type"),"INT");
+	assertEquals($cur->getField(1,"data_type"),"FLOAT");
+	assertEquals($cur->getField(2,"data_type"),"CHAR");
+	assertEquals($cur->getField(3,"data_type"),"VARCHAR");
+	assertEquals($cur->getField(4,"data_type"),"CLOB");
+	assertEquals($cur->getField(5,"data_type"),"BLOB");
+	assertTrue($cur->sendQuery("drop table if exists testtable"));
+}
 print("\n");
 
 
 # column list - auto_increment, primary key
 print("COLUMN LIST - auto_increment, primary key: \n");
-$cur->sendQuery("drop table if exists testtable");
-assertTrue($cur->sendQuery(
-	"create table testtable (".
-	"	col1 integer primary key autoincrement, ".
-	"	col2 int)"));
-assertTrue($cur->getColumnList("testtable",undef));
-assertEquals($cur->getField(0,"extra"),"auto_increment");
-assertEquals($cur->getField(0,"column_key"),"PRI");
-assertEquals($cur->getField(1,"extra"),"");
-assertEquals($cur->getField(1,"column_key"),"");
-print("\n");
-assertTrue($cur->sendQuery("drop table if exists testtable"));
-assertTrue($cur->sendQuery(
-	"create table testtable (".
-	"	col1 int primary key, ".
-	"	col2 int)"));
-assertTrue($cur->getColumnList("testtable",undef));
-assertEquals($cur->getField(0,"extra"),"");
-assertEquals($cur->getField(0,"column_key"),"PRI");
-assertTrue($cur->sendQuery("drop table if exists testtable"));
+if ($haspragmafuncs) {
+	$cur->sendQuery("drop table if exists testtable");
+	assertTrue($cur->sendQuery(
+		"create table testtable (".
+		"	col1 integer primary key autoincrement, ".
+		"	col2 int)"));
+	assertTrue($cur->getColumnList("testtable",undef));
+	assertEquals($cur->getField(0,"extra"),"auto_increment");
+	assertEquals($cur->getField(0,"column_key"),"PRI");
+	assertEquals($cur->getField(1,"extra"),"");
+	assertEquals($cur->getField(1,"column_key"),"");
+	print("\n");
+	assertTrue($cur->sendQuery("drop table if exists testtable"));
+	assertTrue($cur->sendQuery(
+		"create table testtable (".
+		"	col1 int primary key, ".
+		"	col2 int)"));
+	assertTrue($cur->getColumnList("testtable",undef));
+	assertEquals($cur->getField(0,"extra"),"");
+	assertEquals($cur->getField(0,"column_key"),"PRI");
+	assertTrue($cur->sendQuery("drop table if exists testtable"));
+}
 print("\n");
 
 
 # primary keys list
 print("PRIMARY KEYS LIST: \n");
-$cur->sendQuery("drop table if exists testtable");
-assertTrue($cur->sendQuery(
-	"create table testtable (".
-	"	col1 int primary key, ".
-	"	col2 int)"));
-assertTrue($cur->getPrimaryKeysList("testtable",undef));
-assertEquals($cur->getColumnName(0),"table");
-assertEquals($cur->getColumnName(1),"non_unique");
-assertEquals($cur->getColumnName(2),"key_name");
-assertEquals($cur->getColumnName(3),"seq_in_index");
-assertEquals($cur->getColumnName(4),"column_name");
-assertEquals($cur->getColumnName(5),"collation");
-assertEquals($cur->getColumnName(6),"cardinality");
-assertEquals($cur->getColumnName(7),"sub_part");
-assertEquals($cur->getColumnName(8),"packed");
-assertEquals($cur->getColumnName(9),"null");
-assertEquals($cur->getColumnName(10),"index_type");
-assertEquals($cur->getColumnName(11),"comment");
-assertEquals($cur->getColumnName(12),"index_comment");
-assertEquals($cur->rowCount(),1);
-assertEquals($cur->getField(0,"table"),"testtable");
-assertEquals($cur->getField(0,"seq_in_index"),"1");
-assertEquals($cur->getField(0,"column_name"),"col1");
-assertTrue($cur->sendQuery("drop table if exists testtable"));
+if ($haspragmafuncs) {
+	$cur->sendQuery("drop table if exists testtable");
+	assertTrue($cur->sendQuery(
+		"create table testtable (".
+		"	col1 int primary key, ".
+		"	col2 int)"));
+	assertTrue($cur->getPrimaryKeysList("testtable",undef));
+	assertEquals($cur->getColumnName(0),"table");
+	assertEquals($cur->getColumnName(1),"non_unique");
+	assertEquals($cur->getColumnName(2),"key_name");
+	assertEquals($cur->getColumnName(3),"seq_in_index");
+	assertEquals($cur->getColumnName(4),"column_name");
+	assertEquals($cur->getColumnName(5),"collation");
+	assertEquals($cur->getColumnName(6),"cardinality");
+	assertEquals($cur->getColumnName(7),"sub_part");
+	assertEquals($cur->getColumnName(8),"packed");
+	assertEquals($cur->getColumnName(9),"null");
+	assertEquals($cur->getColumnName(10),"index_type");
+	assertEquals($cur->getColumnName(11),"comment");
+	assertEquals($cur->getColumnName(12),"index_comment");
+	assertEquals($cur->rowCount(),1);
+	assertEquals($cur->getField(0,"table"),"testtable");
+	assertEquals($cur->getField(0,"seq_in_index"),"1");
+	assertEquals($cur->getField(0,"column_name"),"col1");
+	assertTrue($cur->sendQuery("drop table if exists testtable"));
+}
 print("\n");
 
 
 # key and index list
 print("KEY AND INDEX LIST: \n");
-$cur->sendQuery("drop table if exists testtable");
-assertTrue($cur->sendQuery(
-	"create table testtable (".
-	"	col1 int primary key, ".
-	"	col2 int)"));
-assertTrue($cur->getKeyAndIndexList("testtable",undef));
-assertEquals($cur->getColumnName(0),"table");
-assertEquals($cur->getColumnName(1),"non_unique");
-assertEquals($cur->getColumnName(2),"key_name");
-assertEquals($cur->getColumnName(3),"seq_in_index");
-assertEquals($cur->getColumnName(4),"column_name");
-assertEquals($cur->getColumnName(5),"collation");
-assertEquals($cur->getColumnName(6),"cardinality");
-assertEquals($cur->getColumnName(7),"sub_part");
-assertEquals($cur->getColumnName(8),"packed");
-assertEquals($cur->getColumnName(9),"null");
-assertEquals($cur->getColumnName(10),"index_type");
-assertEquals($cur->getColumnName(11),"comment");
-assertEquals($cur->getColumnName(12),"index_comment");
-assertEquals($cur->rowCount(),1);
-assertEquals($cur->getField(0,"table"),"testtable");
-assertEquals($cur->getField(0,"non_unique"),"0");
-assertEquals($cur->getField(0,"seq_in_index"),"1");
-assertEquals($cur->getField(0,"column_name"),"col1");
-assertEquals($cur->getField(0,"collation"),"A");
-assertEquals($cur->getField(0,"index_type"),"3");
-$keyname=$cur->getField(0,"key_name");
-assertEquals($keyname,"sqlite_autoindex_testtable_1");
-assertTrue($cur->sendQuery("drop table if exists testtable"));
+if ($haspragmafuncs) {
+	$cur->sendQuery("drop table if exists testtable");
+	assertTrue($cur->sendQuery(
+		"create table testtable (".
+		"	col1 int primary key, ".
+		"	col2 int)"));
+	assertTrue($cur->getKeyAndIndexList("testtable",undef));
+	assertEquals($cur->getColumnName(0),"table");
+	assertEquals($cur->getColumnName(1),"non_unique");
+	assertEquals($cur->getColumnName(2),"key_name");
+	assertEquals($cur->getColumnName(3),"seq_in_index");
+	assertEquals($cur->getColumnName(4),"column_name");
+	assertEquals($cur->getColumnName(5),"collation");
+	assertEquals($cur->getColumnName(6),"cardinality");
+	assertEquals($cur->getColumnName(7),"sub_part");
+	assertEquals($cur->getColumnName(8),"packed");
+	assertEquals($cur->getColumnName(9),"null");
+	assertEquals($cur->getColumnName(10),"index_type");
+	assertEquals($cur->getColumnName(11),"comment");
+	assertEquals($cur->getColumnName(12),"index_comment");
+	assertEquals($cur->rowCount(),1);
+	assertEquals($cur->getField(0,"table"),"testtable");
+	assertEquals($cur->getField(0,"non_unique"),"0");
+	assertEquals($cur->getField(0,"seq_in_index"),"1");
+	assertEquals($cur->getField(0,"column_name"),"col1");
+	assertEquals($cur->getField(0,"collation"),"A");
+	assertEquals($cur->getField(0,"index_type"),"3");
+	$keyname=$cur->getField(0,"key_name");
+	assertEquals($keyname,"sqlite_autoindex_testtable_1");
+	assertTrue($cur->sendQuery("drop table if exists testtable"));
+}
 print("\n");
 
 

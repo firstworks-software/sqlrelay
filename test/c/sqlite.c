@@ -65,6 +65,15 @@ int main(int argc, char **argv) {
 		atoi(dbversion)<3) {
 		issqlite3=0;
 	}
+	// table-valued pragma functions were added in sqlite 3.16.0
+	int		haspragmafuncs=0;
+	if (issqlite3) {
+		const char	*dot=strchr(dbversion,'.');
+		int		majorversion=atoi(dbversion);
+		int		minorversion=(dot)?atoi(dot+1):0;
+		haspragmafuncs=(majorversion>3 ||
+				(majorversion==3 && minorversion>=16));
+	}
 	printf("\n");
 
 
@@ -1448,136 +1457,144 @@ int main(int argc, char **argv) {
 
 	// column list
 	printf("COLUMN LIST: \n");
-	sqlrcur_sendQuery(cur,"drop table if exists testtable");
-	assertTrue(sqlrcur_sendQuery(cur,
-		"create table testtable ("
-		"	testint int, "
-		"	testfloat float, "
-		"	testchar char(40), "
-		"	testvarchar varchar(40), "
-		"	testclob clob, "
-		"	testblob blob)"));
-	assertTrue(sqlrcur_getColumnList(cur,"testtable",NULL));
-	assertEqStr(sqlrcur_getColumnName(cur,0),"column_name");
-	assertEqStr(sqlrcur_getColumnName(cur,1),"data_type");
-	assertEqStr(sqlrcur_getColumnName(cur,2),"character_maximum_length");
-	assertEqStr(sqlrcur_getColumnName(cur,3),"numeric_precision");
-	assertEqStr(sqlrcur_getColumnName(cur,4),"numeric_scale");
-	assertEqStr(sqlrcur_getColumnName(cur,5),"is_nullable");
-	assertEqStr(sqlrcur_getColumnName(cur,6),"column_key");
-	assertEqStr(sqlrcur_getColumnName(cur,7),"column_default");
-	assertEqStr(sqlrcur_getColumnName(cur,8),"extra");
-	assertEqStr(sqlrcur_getFieldByName(cur,0,"column_name"),"testint");
-	assertEqStr(sqlrcur_getFieldByName(cur,1,"column_name"),"testfloat");
-	assertEqStr(sqlrcur_getFieldByName(cur,2,"column_name"),"testchar");
-	assertEqStr(sqlrcur_getFieldByName(cur,3,"column_name"),"testvarchar");
-	assertEqStr(sqlrcur_getFieldByName(cur,4,"column_name"),"testclob");
-	assertEqStr(sqlrcur_getFieldByName(cur,5,"column_name"),"testblob");
-	assertEqStr(sqlrcur_getFieldByName(cur,0,"data_type"),"INT");
-	assertEqStr(sqlrcur_getFieldByName(cur,1,"data_type"),"FLOAT");
-	assertEqStr(sqlrcur_getFieldByName(cur,2,"data_type"),"CHAR");
-	assertEqStr(sqlrcur_getFieldByName(cur,3,"data_type"),"VARCHAR");
-	assertEqStr(sqlrcur_getFieldByName(cur,4,"data_type"),"CLOB");
-	assertEqStr(sqlrcur_getFieldByName(cur,5,"data_type"),"BLOB");
-	assertTrue(sqlrcur_sendQuery(cur,"drop table if exists testtable"));
+	if (haspragmafuncs) {
+		sqlrcur_sendQuery(cur,"drop table if exists testtable");
+		assertTrue(sqlrcur_sendQuery(cur,
+			"create table testtable ("
+			"	testint int, "
+			"	testfloat float, "
+			"	testchar char(40), "
+			"	testvarchar varchar(40), "
+			"	testclob clob, "
+			"	testblob blob)"));
+		assertTrue(sqlrcur_getColumnList(cur,"testtable",NULL));
+		assertEqStr(sqlrcur_getColumnName(cur,0),"column_name");
+		assertEqStr(sqlrcur_getColumnName(cur,1),"data_type");
+		assertEqStr(sqlrcur_getColumnName(cur,2),"character_maximum_length");
+		assertEqStr(sqlrcur_getColumnName(cur,3),"numeric_precision");
+		assertEqStr(sqlrcur_getColumnName(cur,4),"numeric_scale");
+		assertEqStr(sqlrcur_getColumnName(cur,5),"is_nullable");
+		assertEqStr(sqlrcur_getColumnName(cur,6),"column_key");
+		assertEqStr(sqlrcur_getColumnName(cur,7),"column_default");
+		assertEqStr(sqlrcur_getColumnName(cur,8),"extra");
+		assertEqStr(sqlrcur_getFieldByName(cur,0,"column_name"),"testint");
+		assertEqStr(sqlrcur_getFieldByName(cur,1,"column_name"),"testfloat");
+		assertEqStr(sqlrcur_getFieldByName(cur,2,"column_name"),"testchar");
+		assertEqStr(sqlrcur_getFieldByName(cur,3,"column_name"),"testvarchar");
+		assertEqStr(sqlrcur_getFieldByName(cur,4,"column_name"),"testclob");
+		assertEqStr(sqlrcur_getFieldByName(cur,5,"column_name"),"testblob");
+		assertEqStr(sqlrcur_getFieldByName(cur,0,"data_type"),"INT");
+		assertEqStr(sqlrcur_getFieldByName(cur,1,"data_type"),"FLOAT");
+		assertEqStr(sqlrcur_getFieldByName(cur,2,"data_type"),"CHAR");
+		assertEqStr(sqlrcur_getFieldByName(cur,3,"data_type"),"VARCHAR");
+		assertEqStr(sqlrcur_getFieldByName(cur,4,"data_type"),"CLOB");
+		assertEqStr(sqlrcur_getFieldByName(cur,5,"data_type"),"BLOB");
+		assertTrue(sqlrcur_sendQuery(cur,"drop table if exists testtable"));
+	}
 	printf("\n");
 
 
 	// column list - auto_increment,
 	// primary key
 	printf("COLUMN LIST - ""auto_increment, ""primary key: \n");
-	sqlrcur_sendQuery(cur,"drop table if exists testtable");
-	assertTrue(sqlrcur_sendQuery(cur,
-		"create table testtable ("
-		"	col1 integer primary key "
-		"	autoincrement, "
-		"	col2 int)"));
-	assertTrue(sqlrcur_getColumnList(cur,"testtable",NULL));
-	assertTrue(strstr(sqlrcur_getFieldByName(cur,0,"extra"),
-			"auto_increment")!=NULL);
-	assertTrue(strstr(sqlrcur_getFieldByName(cur,0,"column_key"),
-			"PRI")!=NULL);
-	assertFalse(strstr(sqlrcur_getFieldByName(cur,1,"extra"),
-			"auto_increment")!=NULL);
-	assertFalse(strstr(sqlrcur_getFieldByName(cur,1,"column_key"),
-			"PRI")!=NULL);
-	printf("\n");
-	assertTrue(sqlrcur_sendQuery(cur,"drop table if exists testtable"));
-	assertTrue(sqlrcur_sendQuery(cur,
-		"create table testtable ("
-		"	col1 int primary key, "
-		"	col2 int)"));
-	assertTrue(sqlrcur_getColumnList(cur,"testtable",NULL));
-	assertFalse(strstr(sqlrcur_getFieldByName(cur,0,"extra"),
-			"auto_increment")!=NULL);
-	assertTrue(strstr(sqlrcur_getFieldByName(cur,0,"column_key"),
-			"PRI")!=NULL);
-	assertTrue(sqlrcur_sendQuery(cur,"drop table if exists testtable"));
+	if (haspragmafuncs) {
+		sqlrcur_sendQuery(cur,"drop table if exists testtable");
+		assertTrue(sqlrcur_sendQuery(cur,
+			"create table testtable ("
+			"	col1 integer primary key "
+			"	autoincrement, "
+			"	col2 int)"));
+		assertTrue(sqlrcur_getColumnList(cur,"testtable",NULL));
+		assertTrue(contains(sqlrcur_getFieldByName(cur,0,"extra"),
+				"auto_increment"));
+		assertTrue(contains(sqlrcur_getFieldByName(cur,0,"column_key"),
+				"PRI"));
+		assertFalse(contains(sqlrcur_getFieldByName(cur,1,"extra"),
+				"auto_increment"));
+		assertFalse(contains(sqlrcur_getFieldByName(cur,1,"column_key"),
+				"PRI"));
+		printf("\n");
+		assertTrue(sqlrcur_sendQuery(cur,"drop table if exists testtable"));
+		assertTrue(sqlrcur_sendQuery(cur,
+			"create table testtable ("
+			"	col1 int primary key, "
+			"	col2 int)"));
+		assertTrue(sqlrcur_getColumnList(cur,"testtable",NULL));
+		assertFalse(contains(sqlrcur_getFieldByName(cur,0,"extra"),
+				"auto_increment"));
+		assertTrue(contains(sqlrcur_getFieldByName(cur,0,"column_key"),
+				"PRI"));
+		assertTrue(sqlrcur_sendQuery(cur,"drop table if exists testtable"));
+	}
 	printf("\n");
 
 
 	// primary keys list
 	printf("PRIMARY KEYS LIST: \n");
-	sqlrcur_sendQuery(cur,"drop table if exists testtable");
-	assertTrue(sqlrcur_sendQuery(cur,
-		"create table testtable ("
-		"	col1 int primary key, "
-		"	col2 int)"));
-	assertTrue(sqlrcur_getPrimaryKeysList(cur,"testtable",NULL));
-	assertEqStr(sqlrcur_getColumnName(cur,0),"table");
-	assertEqStr(sqlrcur_getColumnName(cur,1),"non_unique");
-	assertEqStr(sqlrcur_getColumnName(cur,2),"key_name");
-	assertEqStr(sqlrcur_getColumnName(cur,3),"seq_in_index");
-	assertEqStr(sqlrcur_getColumnName(cur,4),"column_name");
-	assertEqStr(sqlrcur_getColumnName(cur,5),"collation");
-	assertEqStr(sqlrcur_getColumnName(cur,6),"cardinality");
-	assertEqStr(sqlrcur_getColumnName(cur,7),"sub_part");
-	assertEqStr(sqlrcur_getColumnName(cur,8),"packed");
-	assertEqStr(sqlrcur_getColumnName(cur,9),"null");
-	assertEqStr(sqlrcur_getColumnName(cur,10),"index_type");
-	assertEqStr(sqlrcur_getColumnName(cur,11),"comment");
-	assertEqStr(sqlrcur_getColumnName(cur,12),"index_comment");
-	assertEqInt(sqlrcur_rowCount(cur),1);
-	assertTrue(!strcmp(sqlrcur_getFieldByName(cur,0,"table"),"testtable"));
-	assertEqStr(sqlrcur_getFieldByName(cur,0,"seq_in_index"),"1");
-	assertTrue(!strcmp(sqlrcur_getFieldByName(cur,0,"column_name"),"col1"));
-	assertTrue(sqlrcur_sendQuery(cur,"drop table if exists testtable"));
+	if (haspragmafuncs) {
+		sqlrcur_sendQuery(cur,"drop table if exists testtable");
+		assertTrue(sqlrcur_sendQuery(cur,
+			"create table testtable ("
+			"	col1 int primary key, "
+			"	col2 int)"));
+		assertTrue(sqlrcur_getPrimaryKeysList(cur,"testtable",NULL));
+		assertEqStr(sqlrcur_getColumnName(cur,0),"table");
+		assertEqStr(sqlrcur_getColumnName(cur,1),"non_unique");
+		assertEqStr(sqlrcur_getColumnName(cur,2),"key_name");
+		assertEqStr(sqlrcur_getColumnName(cur,3),"seq_in_index");
+		assertEqStr(sqlrcur_getColumnName(cur,4),"column_name");
+		assertEqStr(sqlrcur_getColumnName(cur,5),"collation");
+		assertEqStr(sqlrcur_getColumnName(cur,6),"cardinality");
+		assertEqStr(sqlrcur_getColumnName(cur,7),"sub_part");
+		assertEqStr(sqlrcur_getColumnName(cur,8),"packed");
+		assertEqStr(sqlrcur_getColumnName(cur,9),"null");
+		assertEqStr(sqlrcur_getColumnName(cur,10),"index_type");
+		assertEqStr(sqlrcur_getColumnName(cur,11),"comment");
+		assertEqStr(sqlrcur_getColumnName(cur,12),"index_comment");
+		assertEqInt(sqlrcur_rowCount(cur),1);
+		assertEqStr(sqlrcur_getFieldByName(cur,0,"table"),"testtable");
+		assertEqStr(sqlrcur_getFieldByName(cur,0,"seq_in_index"),"1");
+		assertEqStr(sqlrcur_getFieldByName(cur,0,"column_name"),"col1");
+		assertTrue(sqlrcur_sendQuery(cur,"drop table if exists testtable"));
+	}
 	printf("\n");
 
 
 	// key and index list
 	printf("KEY AND INDEX LIST: \n");
-	sqlrcur_sendQuery(cur,"drop table if exists testtable");
-	assertTrue(sqlrcur_sendQuery(cur,
-		"create table testtable ("
-		"	col1 int primary key, "
-		"	col2 int)"));
-	assertTrue(sqlrcur_getKeyAndIndexList(cur,"testtable",NULL));
-	assertEqStr(sqlrcur_getColumnName(cur,0),"table");
-	assertEqStr(sqlrcur_getColumnName(cur,1),"non_unique");
-	assertEqStr(sqlrcur_getColumnName(cur,2),"key_name");
-	assertEqStr(sqlrcur_getColumnName(cur,3),"seq_in_index");
-	assertEqStr(sqlrcur_getColumnName(cur,4),"column_name");
-	assertEqStr(sqlrcur_getColumnName(cur,5),"collation");
-	assertEqStr(sqlrcur_getColumnName(cur,6),"cardinality");
-	assertEqStr(sqlrcur_getColumnName(cur,7),"sub_part");
-	assertEqStr(sqlrcur_getColumnName(cur,8),"packed");
-	assertEqStr(sqlrcur_getColumnName(cur,9),"null");
-	assertEqStr(sqlrcur_getColumnName(cur,10),"index_type");
-	assertEqStr(sqlrcur_getColumnName(cur,11),"comment");
-	assertEqStr(sqlrcur_getColumnName(cur,12),"index_comment");
-	assertEqInt(sqlrcur_rowCount(cur),1);
-	assertTrue(!strcmp(sqlrcur_getFieldByName(cur,0,"table"),"testtable"));
-	assertEqStr(sqlrcur_getFieldByName(cur,0,"non_unique"),"0");
-	assertEqStr(sqlrcur_getFieldByName(cur,0,"seq_in_index"),"1");
-	assertTrue(!strcmp(sqlrcur_getFieldByName(cur,0,"column_name"),"col1"));
-	assertEqStr(sqlrcur_getFieldByName(cur,0,"collation"),"A");
-	assertEqStr(sqlrcur_getFieldByName(cur,0,"index_type"),"3");
-	{
-		const char *kn=sqlrcur_getFieldByName(cur,0,"key_name");
-		assertTrue(!((!kn) || (!kn[0])));
+	if (haspragmafuncs) {
+		sqlrcur_sendQuery(cur,"drop table if exists testtable");
+		assertTrue(sqlrcur_sendQuery(cur,
+			"create table testtable ("
+			"	col1 int primary key, "
+			"	col2 int)"));
+		assertTrue(sqlrcur_getKeyAndIndexList(cur,"testtable",NULL));
+		assertEqStr(sqlrcur_getColumnName(cur,0),"table");
+		assertEqStr(sqlrcur_getColumnName(cur,1),"non_unique");
+		assertEqStr(sqlrcur_getColumnName(cur,2),"key_name");
+		assertEqStr(sqlrcur_getColumnName(cur,3),"seq_in_index");
+		assertEqStr(sqlrcur_getColumnName(cur,4),"column_name");
+		assertEqStr(sqlrcur_getColumnName(cur,5),"collation");
+		assertEqStr(sqlrcur_getColumnName(cur,6),"cardinality");
+		assertEqStr(sqlrcur_getColumnName(cur,7),"sub_part");
+		assertEqStr(sqlrcur_getColumnName(cur,8),"packed");
+		assertEqStr(sqlrcur_getColumnName(cur,9),"null");
+		assertEqStr(sqlrcur_getColumnName(cur,10),"index_type");
+		assertEqStr(sqlrcur_getColumnName(cur,11),"comment");
+		assertEqStr(sqlrcur_getColumnName(cur,12),"index_comment");
+		assertEqInt(sqlrcur_rowCount(cur),1);
+		assertEqStr(sqlrcur_getFieldByName(cur,0,"table"),"testtable");
+		assertEqStr(sqlrcur_getFieldByName(cur,0,"non_unique"),"0");
+		assertEqStr(sqlrcur_getFieldByName(cur,0,"seq_in_index"),"1");
+		assertEqStr(sqlrcur_getFieldByName(cur,0,"column_name"),"col1");
+		assertEqStr(sqlrcur_getFieldByName(cur,0,"collation"),"A");
+		assertEqStr(sqlrcur_getFieldByName(cur,0,"index_type"),"3");
+		{
+			const char *kn=sqlrcur_getFieldByName(cur,0,"key_name");
+			assertTrue(!((!kn) || (!kn[0])));
+		}
+		assertTrue(sqlrcur_sendQuery(cur,"drop table if exists testtable"));
 	}
-	assertTrue(sqlrcur_sendQuery(cur,"drop table if exists testtable"));
 	printf("\n");
 
 
