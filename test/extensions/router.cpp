@@ -429,8 +429,15 @@ int main(int argc, char **argv) {
 	assertEquals(cur->getColumnLength("testsmallint"),2);
 	// testchar/testvarchar are char(40)/varchar(40); the mysql connection
 	// charset is latin1 (1 byte/char) so the lengths are 40/41
-	assertEquals(cur->getColumnLength(4),40);
-	assertEquals(cur->getColumnLength("testchar"),40);
+	// mysql 3 silently converts char to varchar, adding a length byte,
+	// which is why it reports testchar as VARSTRING above
+	if (majorversion==3) {
+		assertEquals(cur->getColumnLength(4),41);
+		assertEquals(cur->getColumnLength("testchar"),41);
+	} else {
+		assertEquals(cur->getColumnLength(4),40);
+		assertEquals(cur->getColumnLength("testchar"),40);
+	}
 	assertEquals(cur->getColumnLength(5),41);
 	assertEquals(cur->getColumnLength("testvarchar"),41);
 	assertEquals(cur->getColumnLength(6),3);
@@ -695,8 +702,15 @@ int main(int argc, char **argv) {
 	assertEquals(cur->getColumnLength("testsmallint"),2);
 	// testchar/testvarchar are char(40)/varchar(40); the mysql connection
 	// charset is latin1 (1 byte/char) so the lengths are 40/41
-	assertEquals(cur->getColumnLength(4),40);
-	assertEquals(cur->getColumnLength("testchar"),40);
+	// mysql 3 silently converts char to varchar, adding a length byte,
+	// which is why it reports testchar as VARSTRING above
+	if (majorversion==3) {
+		assertEquals(cur->getColumnLength(4),41);
+		assertEquals(cur->getColumnLength("testchar"),41);
+	} else {
+		assertEquals(cur->getColumnLength(4),40);
+		assertEquals(cur->getColumnLength("testchar"),40);
+	}
 	assertEquals(cur->getColumnLength(5),41);
 	assertEquals(cur->getColumnLength("testvarchar"),41);
 	assertEquals(cur->getColumnLength(6),3);
