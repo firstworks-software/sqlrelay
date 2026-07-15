@@ -58,7 +58,7 @@ Run //lmgr//. A graphical license manager application should pop up.
 
 '''If you have a "real" license:''' Leave the radio button for Ase checked and click Next. When the "Do you have a Sybase Software Asset Management Certificate to register?" dialog pops up, click Yes.
 
-'''If you have a "demo" license:''' Check AseDemo and click Next. A dialog will pop up asking if you have upgraded to a real license. Click No.
+'''If you have a "demo" license:''' Check !AseDemo and click Next. A dialog will pop up asking if you have upgraded to a real license. Click No.
 
 On the screen titled '''"Enter the information provided on your Sybase License Certificate"''', enter the information from the email you received from Sybase when you downloaded the software. Click Done.
 

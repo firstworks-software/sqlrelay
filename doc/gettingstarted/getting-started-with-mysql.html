@@ -4,7 +4,7 @@
 
 <!--#include virtual="../contentstart.html"-->
 
-<h1>Getting Started With <a href="MySQL">MySQL</a></h1>
+<h1>Getting Started With MySQL</h1>
 
 <ul>
   <li><a href="#installation">Installation</a></li>
@@ -26,11 +26,11 @@
 
 <a name="installation"/><h2>Installation</h2>
 
-<p>I've sucessfully installed <a href="MySQL">MySQL</a> on Linux, <a href="FreeBSD">FreeBSD</a>, <a href="NetBSD">NetBSD</a>, <a href="OpenBSD">OpenBSD</a> and Solaris.</p>
+<p>I've sucessfully installed MySQL on Linux, FreeBSD, NetBSD, OpenBSD and Solaris.</p>
 
 <a name="rpm"/><h2>RPM-based Linux</h2>
 
-<p>To install <a href="MySQL">MySQL</a> on an RPM-based Linux distribution run:</p>
+<p>To install MySQL on an RPM-based Linux distribution run:</p>
 
 <blockquote>
 <!-- Generator: GNU source-highlight 3.1.9
@@ -44,7 +44,7 @@ http://www.gnu.org/software/src-highlite -->
 
 <a name="debian"/><h2>Debian and Ubuntu Linux</h2>
 
-<p>To install <a href="MySQL">MySQL</a> on Debian and Ubuntu Linux, run:</p>
+<p>To install MySQL on Debian and Ubuntu Linux, run:</p>
 
 <blockquote>
 <!-- Generator: GNU source-highlight 3.1.9
@@ -54,11 +54,11 @@ http://www.gnu.org/software/src-highlite -->
 <pre><tt>apt<font color="#990000">-</font>get <font color="#008080">install</font> mysql<font color="#990000">-</font><font color="#008080">server</font> libmysqlclient<font color="#990000">-</font>dev</tt></pre>
 
 </blockquote>
-<p><a href="MySQL">MySQL</a> packages don't appear to be available for older Debian releases, so for those releases, I've always compiled it from source. Alternatively, you can download a binary distribution in tar.gz format from <a target="_blank" href="http://www.mysql.com">the MySQL site</a>.</p>
+<p>MySQL packages don't appear to be available for older Debian releases, so for those releases, I've always compiled it from source. Alternatively, you can download a binary distribution in tar.gz format from <a target="_blank" href="http://www.mysql.com">the MySQL site</a>.</p>
 
-<a name="freebsd"/><h2><a href="FreeBSD">FreeBSD</a></h2>
+<a name="freebsd"/><h2>FreeBSD</h2>
 
-<p>To install <a href="MySQL">MySQL</a> on <a href="FreeBSD">FreeBSD</a>, run:</p>
+<p>To install MySQL on FreeBSD, run:</p>
 
 <blockquote>
 <!-- Generator: GNU source-highlight 3.1.9
@@ -70,7 +70,7 @@ http://www.gnu.org/software/src-highlite -->
 </blockquote>
 <p>(replacing 56 with the major/minor version of mysql that you want to install)</p>
 
-<p>On older versions of <a href="FreeBSD">FreeBSD</a>, run:</p>
+<p>On older versions of FreeBSD, run:</p>
 
 <blockquote>
 <!-- Generator: GNU source-highlight 3.1.9
@@ -80,11 +80,11 @@ http://www.gnu.org/software/src-highlite -->
 <pre><tt>pkg_add <font color="#990000">-</font><font color="#008080">r</font> mysql56<font color="#990000">-</font><font color="#008080">server</font> mysql56<font color="#990000">-</font>client</tt></pre>
 
 </blockquote>
-<p>You can also install <a href="MySQL">MySQL</a> from the Ports CD(s) that came with your distribution using <i>/stand/sysinstall</i>.</p>
+<p>You can also install MySQL from the Ports CD(s) that came with your distribution using <i>/stand/sysinstall</i>.</p>
 
-<a name="openbsd"/><h2><a href="OpenBSD">OpenBSD</a></h2>
+<a name="openbsd"/><h2>OpenBSD</h2>
 
-<p>To install <a href="MySQL">MySQL</a> on <a href="OpenBSD">OpenBSD</a>, verify that /etc/pkg.conf has a valid path in it, like:</p>
+<p>To install MySQL on OpenBSD, verify that /etc/pkg.conf has a valid path in it, like:</p>
 
 <blockquote>
 <!-- Generator: GNU source-highlight 3.1.9
@@ -106,9 +106,9 @@ http://www.gnu.org/software/src-highlite -->
 </blockquote>
 <p>Packages are also available from <a target="_blank" href="ftp://ftp.openbsd.org">ftp.openbsd.org</a> and on the CD's that came with your distribution and can be installed manually using <i>pkg_add</i>.</p>
 
-<a name="netbsd"/><h2><a href="NetBSD">NetBSD</a></h2>
+<a name="netbsd"/><h2>NetBSD</h2>
 
-<p>To install <a href="MySQL">MySQL</a> on <a href="NetBSD">NetBSD</a>, run:</p>
+<p>To install MySQL on NetBSD, run:</p>
 
 <blockquote>
 <!-- Generator: GNU source-highlight 3.1.9
@@ -118,7 +118,7 @@ http://www.gnu.org/software/src-highlite -->
 <pre><tt>pkgin <font color="#008080">install</font> mysql<font color="#990000">-</font><font color="#008080">server</font> mysql<font color="#990000">-</font>client</tt></pre>
 
 </blockquote>
-<p>On older versions of <a href="NetBSD">NetBSD</a>, verify that the PKG_PATH environment variable is configured to a valid path like:</p>
+<p>On older versions of NetBSD, verify that the PKG_PATH environment variable is configured to a valid path like:</p>
 
 <blockquote>
 <!-- Generator: GNU source-highlight 3.1.9
@@ -142,19 +142,19 @@ http://www.gnu.org/software/src-highlite -->
 
 <a name="solaris"/><h2>Solaris</h2>
 
-<p><a href="MySQL">MySQL</a> packages are available on the Solaris Companion CD and are downloadable from many web sites including <a target="_blank" href="http://www.mysql.com">the MySQL site</a>. You can use <i>pkgtool</i> to install the package. Note, that with some versions of Solaris and some versions of <a href="MySQL">MySQL</a>, you have to create a "wheel" group before installing the <a href="MySQL">MySQL</a> package. You can do this (as root) using the command: <i>/usr/sbin/groupadd wheel</i></p>
+<p>MySQL packages are available on the Solaris Companion CD and are downloadable from many web sites including <a target="_blank" href="http://www.mysql.com">the MySQL site</a>. You can use <i>pkgtool</i> to install the package. Note, that with some versions of Solaris and some versions of MySQL, you have to create a "wheel" group before installing the MySQL package. You can do this (as root) using the command: <i>/usr/sbin/groupadd wheel</i></p>
 
 <a name="source"/><h2>Compiling From Source</h2>
 
-<p>If you want to compile <a href="MySQL">MySQL</a> from source, it should compile cleanly on all of the platforms mentioned above. The source code is available from <a target="_blank" href="http://www.mysql.com">the MySQL site</a>. With older versions of <a href="MySQL">MySQL</a>, I've run out of memory while compiling on machines with less than 64MB of ram. I don't believe that this is still a problem though. I usually give the <i>configure</i> script the <i>--prefix=/usr/local/mysql</i> parameter so that <a href="MySQL">MySQL</a> will be installed entirely under /usr/local/mysql. I then add /usr/local/mysql/bin to my PATH environment variable and /usr/local/mysql/lib/mysql to my LD_LIBRARY_PATH environment variable.</p>
+<p>If you want to compile MySQL from source, it should compile cleanly on all of the platforms mentioned above. The source code is available from <a target="_blank" href="http://www.mysql.com">the MySQL site</a>. With older versions of MySQL, I've run out of memory while compiling on machines with less than 64MB of ram. I don't believe that this is still a problem though. I usually give the <i>configure</i> script the <i>--prefix=/usr/local/mysql</i> parameter so that MySQL will be installed entirely under /usr/local/mysql. I then add /usr/local/mysql/bin to my PATH environment variable and /usr/local/mysql/lib/mysql to my LD_LIBRARY_PATH environment variable.</p>
 
 <a name="startingatboot"/><h2>Starting the Database at Boot Time</h2>
 
-<p>The package distributions of <a href="MySQL">MySQL</a> either install a script which starts the database at boot time or use systemd.</p>
+<p>The package distributions of MySQL either install a script which starts the database at boot time or use systemd.</p>
 
 <p>If you compiled from source on a platform that supports init-style system initialization, you'll need to install a script like one of the following to start the database at boot time.</p>
 
-<p>For <a href="MySQL">MySQL</a> 4 and higher:</p>
+<p>For MySQL 4 and higher:</p>
 
 <blockquote>
   <pre> #!/bin/sh
@@ -192,7 +192,7 @@ exit 0
 </pre>
 
 </blockquote>
-<p>For <a href="MySQL">MySQL</a> 3:</p>
+<p>For MySQL 3:</p>
 
 <blockquote>
   <pre> #!/bin/sh
@@ -222,7 +222,7 @@ exit 0
 
 <a name="creating"/><h2>Creating a Database</h2>
 
-<p>After installation, <a href="MySQL">MySQL</a> is ready to use but to do any useful work, you'll have to create a database.</p>
+<p>After installation, MySQL is ready to use but to do any useful work, you'll have to create a database.</p>
 
 <p>The installation process creates a database named <i>mysql</i> containing privileges and other housekeeping information and a <i>root</i> user which has no password.</p>
 
@@ -301,7 +301,7 @@ http://www.gnu.org/software/src-highlite -->
 <pre><tt>insert into <font color="#008080">db</font> <b><font color="#000000">values</font></b> <font color="#990000">(</font><font color="#FF0000">'%'</font><font color="#990000">,</font><font color="#FF0000">'testdb'</font><font color="#990000">,</font><font color="#FF0000">'testuser'</font><font color="#990000">,</font><font color="#FF0000">'Y'</font><font color="#990000">,</font><font color="#FF0000">'Y'</font><font color="#990000">,</font><font color="#FF0000">'Y'</font><font color="#990000">,</font><font color="#FF0000">'Y'</font><font color="#990000">,</font><font color="#FF0000">'Y'</font><font color="#990000">,</font><font color="#FF0000">'Y'</font><font color="#990000">,</font><font color="#FF0000">'Y'</font><font color="#990000">,</font><font color="#FF0000">'Y'</font><font color="#990000">,</font><font color="#FF0000">'Y'</font><font color="#990000">,</font><font color="#FF0000">'Y'</font><font color="#990000">,</font><font color="#FF0000">'Y'</font><font color="#990000">,</font><font color="#FF0000">'Y'</font><font color="#990000">,</font><font color="#FF0000">'Y'</font><font color="#990000">,</font><font color="#FF0000">'Y'</font><font color="#990000">,</font><font color="#FF0000">'Y'</font><font color="#990000">,</font><font color="#FF0000">'Y'</font><font color="#990000">,</font><font color="#FF0000">'Y'</font><font color="#990000">,</font><font color="#FF0000">'Y'</font><font color="#990000">,</font><font color="#FF0000">'Y'</font><font color="#990000">);</font></tt></pre>
 
 </blockquote>
-<p>Different versions of <a href="MySQL">MySQL</a> have different numbers of columns in the <i>db</i> table, if the query above fails, run:.</p>
+<p>Different versions of MySQL have different numbers of columns in the <i>db</i> table, if the query above fails, run:.</p>
 
 <blockquote>
 <!-- Generator: GNU source-highlight 3.1.9
@@ -375,11 +375,11 @@ http://www.gnu.org/software/src-highlite -->
 <pre><tt>mysqladmin <font color="#990000">-</font>uroot <font color="#990000">-</font>pPassw0rd drop testdb</tt></pre>
 
 </blockquote>
-<p>This should be enough to get you started. To set up more complex configurations, consult the <a href="MySQL">MySQL</a> <a target="_blank" href="http://dev.mysql.com/doc/refman/en/">online documentation</a>.</p>
+<p>This should be enough to get you started. To set up more complex configurations, consult the MySQL <a target="_blank" href="http://dev.mysql.com/doc/refman/en/">online documentation</a>.</p>
 
 <a name="accessing"/><h2>Accessing a Database</h2>
 
-<p>Accessing a <a href="MySQL">MySQL</a> database using the <i>mysql</i> client tool is simple. For example, to access a database called <i>testdb</i> on the local machine as the <i>testuser</i> user with password <i>testpassword</i>, use the following command.</p>
+<p>Accessing a MySQL database using the <i>mysql</i> client tool is simple. For example, to access a database called <i>testdb</i> on the local machine as the <i>testuser</i> user with password <i>testpassword</i>, use the following command.</p>
 
 <blockquote>
 <!-- Generator: GNU source-highlight 3.1.9
@@ -489,13 +489,13 @@ mysql<font color="#990000">&gt;</font> <font color="#990000">\</font>q
 Bye</tt></pre>
 
 </blockquote>
-<a name="quirks"/><h2><a href="MySQL">MySQL</a> Quirks</h2>
+<a name="quirks"/><h2>MySQL Quirks</h2>
 
-<p>Ancient versions of <a href="MySQL">MySQL</a> don't support transactions.</p>
+<p>Ancient versions of MySQL don't support transactions.</p>
 
 <p>Newer, but still very old versions support foreign key constraint syntax but don't enforce the constraint.</p>
 
-<p>In modern <a href="MySQL">MySQL</a>, the default isolation level is REPEATABLE READ rather than READ COMMITTED like most databases. This means that you must commit your transaction to be able to see other users' committed changes.</p>
+<p>In modern MySQL, the default isolation level is REPEATABLE READ rather than READ COMMITTED like most databases. This means that you must commit your transaction to be able to see other users' committed changes.</p>
 
 <!--#include virtual="../contentend.html"-->
 

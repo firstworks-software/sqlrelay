@@ -53,7 +53,7 @@ Now, as root, run the following command:
 
 A java-based installer should run.
 
-On the screen titled: '''Welcome to the InstallSheild Wizard for Sybase Adaptive Server Enterprise Suite'''[[br]]Click Next.
+On the screen titled: '''Welcome to the !InstallSheild Wizard for Sybase Adaptive Server Enterprise Suite'''[[br]]Click Next.
 
 On the screen titled: '''Please select the geographic location where you are installing this software'''[[br]]Select your geographic location from the '''Please Select''' pulldown.[[br]]Read the license and click the '''I agree to the terms of the Sybase license, for the install location specified.''' check box.[[br]]Click Next.
 
@@ -67,7 +67,7 @@ An installation summary page will appear, indicating what will be installed, wha
 
 A screen titled '''Installing Sybase Adaptive Server Enterprise Suite. Please wait...''' will appear with a progress bar indicating how much of the installation has been completed.
 
-On the screen titled '''The InstallShield Wizard has successfully installed Sybase Adaptive Server Enterprise Suite'''[[br]]Click Next.
+On the screen titled '''The !InstallShield Wizard has successfully installed Sybase Adaptive Server Enterprise Suite'''[[br]]Click Next.
 
 On the screen titled '''Please deselect any servers that you do not want to configure now:'''[[br]]Accept the default checkboxes (all of them should be checked)[[br]]Click Next.
 

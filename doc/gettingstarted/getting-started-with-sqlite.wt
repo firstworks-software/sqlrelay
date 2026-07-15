@@ -14,7 +14,7 @@
 
 == Installation ==
 
-I've successfully installed SQLite on Linux, FreeBSD, NetBSD, OpenBSD, SCO OpenServer and Solaris. On SCO and Solaris platforms, I've had to compile it from source.
+I've successfully installed SQLite on Linux, !FreeBSD, !NetBSD, !OpenBSD, SCO !OpenServer and Solaris. On SCO and Solaris platforms, I've had to compile it from source.
 
 SQLite is available from the [http://www.sqlite.org SQLite home page]. I usually give the //configure// script the //--prefix=/usr/local/sqlite// parameter so that SQLite will be installed entirely under /usr/local/sqlite and add /usr/local/sqlite/bin to my PATH environment variable and /usr/local/sqlite/lib to my LD_LIBRARY_PATH environment variable.
 

@@ -29,8 +29,8 @@ export LD_ASSUME_KERNEL=2.2.5
 
 Download the following RPM's from [http://rpmfind.net rpmfind] or apt-get them if your system is set up to use apt.
 
-* '''compat-glibc-6.2-2.1.3.2.i386.rpm''' for RedHat Linux 7.2
-* '''compat-egcs-6.2-1.1.2.16.i386.rpm''' for RedHat Linux 7.2
+* '''compat-glibc-6.2-2.1.3.2.i386.rpm''' for !RedHat Linux 7.2
+* '''compat-egcs-6.2-1.1.2.16.i386.rpm''' for !RedHat Linux 7.2
 
 You can install them using //rpm -i//.
 

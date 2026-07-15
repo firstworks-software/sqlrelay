@@ -4,7 +4,7 @@
 
 {{{#!include ../contentstart.html}}}
 
-= Getting Started With MySQL =
+= Getting Started With !MySQL =
 
 * [#installation Installation]
  * [#rpm RPM-based Linux]
@@ -23,13 +23,13 @@
 
 == Installation ==
 
-I've sucessfully installed MySQL on Linux, FreeBSD, NetBSD, OpenBSD and Solaris.
+I've sucessfully installed !MySQL on Linux, !FreeBSD, !NetBSD, !OpenBSD and Solaris.
 
 [=#rpm]
 
 == RPM-based Linux ==
 
-To install MySQL on an RPM-based Linux distribution run:
+To install !MySQL on an RPM-based Linux distribution run:
 
 {{{#!blockquote
 {{{#!code
@@ -43,7 +43,7 @@ Or on an old RPM-based distribution that doesn't support yum, install them from 
 
 == Debian and Ubuntu Linux ==
 
-To install MySQL on Debian and Ubuntu Linux, run:
+To install !MySQL on Debian and Ubuntu Linux, run:
 
 {{{#!blockquote
 {{{#!code
@@ -51,13 +51,13 @@ apt-get install mysql-server libmysqlclient-dev
 }}}
 }}}
 
-MySQL packages don't appear to be available for older Debian releases, so for those releases, I've always compiled it from source. Alternatively, you can download a binary distribution in tar.gz format from [http://www.mysql.com the MySQL site].
+!MySQL packages don't appear to be available for older Debian releases, so for those releases, I've always compiled it from source. Alternatively, you can download a binary distribution in tar.gz format from [http://www.mysql.com the MySQL site].
 
 [=#freebsd]
 
-== FreeBSD ==
+== !FreeBSD ==
 
-To install MySQL on FreeBSD, run:
+To install !MySQL on !FreeBSD, run:
 
 {{{#!blockquote
 {{{#!code
@@ -67,7 +67,7 @@ pkg install mysql56-server mysql56-client
 
 (replacing 56 with the major/minor version of mysql that you want to install)
 
-On older versions of FreeBSD, run:
+On older versions of !FreeBSD, run:
 
 {{{#!blockquote
 {{{#!code
@@ -75,13 +75,13 @@ pkg_add -r mysql56-server mysql56-client
 }}}
 }}}
 
-You can also install MySQL from the Ports CD(s) that came with your distribution using ///stand/sysinstall//.
+You can also install !MySQL from the Ports CD(s) that came with your distribution using ///stand/sysinstall//.
 
 [=#openbsd]
 
-== OpenBSD ==
+== !OpenBSD ==
 
-To install MySQL on OpenBSD, verify that /etc/pkg.conf has a valid path in it, like:
+To install !MySQL on !OpenBSD, verify that /etc/pkg.conf has a valid path in it, like:
 
 {{{#!blockquote
 {{{#!code
@@ -101,9 +101,9 @@ Packages are also available from [ftp://ftp.openbsd.org ftp.openbsd.org] and on 
 
 [=#netbsd]
 
-== NetBSD ==
+== !NetBSD ==
 
-To install MySQL on NetBSD, run:
+To install !MySQL on !NetBSD, run:
 
 {{{#!blockquote
 {{{#!code
@@ -111,7 +111,7 @@ pkgin install mysql-server mysql-client
 }}}
 }}}
 
-On older versions of NetBSD, verify that the PKG_PATH environment variable is configured to a valid path like:
+On older versions of !NetBSD, verify that the PKG_PATH environment variable is configured to a valid path like:
 
 {{{#!blockquote
 {{{#!code
@@ -133,23 +133,23 @@ Packages are also available from [ftp://ftp.netbsd.org ftp.netbsd.org] and on th
 
 == Solaris ==
 
-MySQL packages are available on the Solaris Companion CD and are downloadable from many web sites including [http://www.mysql.com the MySQL site]. You can use //pkgtool// to install the package. Note, that with some versions of Solaris and some versions of MySQL, you have to create a "wheel" group before installing the MySQL package. You can do this (as root) using the command: ///usr/sbin/groupadd wheel//
+!MySQL packages are available on the Solaris Companion CD and are downloadable from many web sites including [http://www.mysql.com the MySQL site]. You can use //pkgtool// to install the package. Note, that with some versions of Solaris and some versions of !MySQL, you have to create a "wheel" group before installing the !MySQL package. You can do this (as root) using the command: ///usr/sbin/groupadd wheel//
 
 [=#source]
 
 == Compiling From Source ==
 
-If you want to compile MySQL from source, it should compile cleanly on all of the platforms mentioned above. The source code is available from [http://www.mysql.com the MySQL site]. With older versions of MySQL, I've run out of memory while compiling on machines with less than 64MB of ram. I don't believe that this is still a problem though. I usually give the //configure// script the //--prefix=/usr/local/mysql// parameter so that MySQL will be installed entirely under /usr/local/mysql. I then add /usr/local/mysql/bin to my PATH environment variable and /usr/local/mysql/lib/mysql to my LD_LIBRARY_PATH environment variable.
+If you want to compile !MySQL from source, it should compile cleanly on all of the platforms mentioned above. The source code is available from [http://www.mysql.com the MySQL site]. With older versions of !MySQL, I've run out of memory while compiling on machines with less than 64MB of ram. I don't believe that this is still a problem though. I usually give the //configure// script the //--prefix=/usr/local/mysql// parameter so that !MySQL will be installed entirely under /usr/local/mysql. I then add /usr/local/mysql/bin to my PATH environment variable and /usr/local/mysql/lib/mysql to my LD_LIBRARY_PATH environment variable.
 
 [=#startingatboot]
 
 == Starting the Database at Boot Time ==
 
-The package distributions of MySQL either install a script which starts the database at boot time or use systemd.
+The package distributions of !MySQL either install a script which starts the database at boot time or use systemd.
 
 If you compiled from source on a platform that supports init-style system initialization, you'll need to install a script like one of the following to start the database at boot time.
 
-For MySQL 4 and higher:
+For !MySQL 4 and higher:
 
 {{{#!blockquote
 {{{
@@ -188,7 +188,7 @@ exit 0
 }}}
 }}}
 
-For MySQL 3:
+For !MySQL 3:
 
 {{{#!blockquote
 {{{
@@ -221,7 +221,7 @@ Install this script and run it with the "start" option to start up the database.
 
 == Creating a Database ==
 
-After installation, MySQL is ready to use but to do any useful work, you'll have to create a database.
+After installation, !MySQL is ready to use but to do any useful work, you'll have to create a database.
 
 The installation process creates a database named //mysql// containing privileges and other housekeeping information and a //root// user which has no password.
 
@@ -286,7 +286,7 @@ insert into db values ('%','testdb','testuser','Y','Y','Y','Y','Y','Y','Y','Y','
 }}}
 }}}
 
-Different versions of MySQL have different numbers of columns in the //db// table, if the query above fails, run:.
+Different versions of !MySQL have different numbers of columns in the //db// table, if the query above fails, run:.
 
 {{{#!blockquote
 {{{#!code
@@ -346,13 +346,13 @@ mysqladmin -uroot -pPassw0rd drop testdb
 }}}
 }}}
 
-This should be enough to get you started. To set up more complex configurations, consult the MySQL [http://dev.mysql.com/doc/refman/en/ online documentation].
+This should be enough to get you started. To set up more complex configurations, consult the !MySQL [http://dev.mysql.com/doc/refman/en/ online documentation].
 
 [=#accessing]
 
 == Accessing a Database ==
 
-Accessing a MySQL database using the //mysql// client tool is simple. For example, to access a database called //testdb// on the local machine as the //testuser// user with password //testpassword//, use the following command.
+Accessing a !MySQL database using the //mysql// client tool is simple. For example, to access a database called //testdb// on the local machine as the //testuser// user with password //testpassword//, use the following command.
 
 {{{#!blockquote
 {{{#!code
@@ -458,13 +458,13 @@ Bye
 
 [=#quirks]
 
-== MySQL Quirks ==
+== !MySQL Quirks ==
 
-Ancient versions of MySQL don't support transactions.
+Ancient versions of !MySQL don't support transactions.
 
 Newer, but still very old versions support foreign key constraint syntax but don't enforce the constraint.
 
-In modern MySQL, the default isolation level is REPEATABLE READ rather than READ COMMITTED like most databases. This means that you must commit your transaction to be able to see other users' committed changes.
+In modern !MySQL, the default isolation level is REPEATABLE READ rather than READ COMMITTED like most databases. This means that you must commit your transaction to be able to see other users' committed changes.
 
 {{{#!include ../contentend.html}}}
 

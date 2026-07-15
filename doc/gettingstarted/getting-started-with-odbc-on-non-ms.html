@@ -50,7 +50,7 @@ UsageCount<font color="#990000">=</font><font color="#993399">1</font></tt></pre
 
 <p>If you have both 32-bin and 64-bit drivers, then you can set the <b>Driver</b> argument to the full pathname of the 32-bit driver, and set a <b>Driver64</b> argument to the full pathname of the 64-bit driver. If you only have a 64-bit driver then you can use either argument.</p>
 
-<p>The <b><a href="FileUsage">FileUsage</a></b> parameter is ambiguous. I've never been able to find a good description of it. It appears to always exist and always be set to 1.</p>
+<p>The <b>FileUsage</b> parameter is ambiguous. I've never been able to find a good description of it. It appears to always exist and always be set to 1.</p>
 
 <h2>odbc.ini</h2>
 
@@ -78,7 +78,7 @@ Database <font color="#990000">=</font> testdb</tt></pre>
 
 <p>The <b>Driver</b> parameter refers back to a driver definied the <i>odbcinst.ini</i> file. Applications which use this DSN will load that driver.</p>
 
-<p>The remaining parameters are specific to the driver, are given only as examples and might be different for other drivers. For example, another driver may not have the <b>Database</b> parameter at all, may refer to the <b>User</b> as <b><a href="UserName">UserName</a></b> instead or may have additional parameters.</p>
+<p>The remaining parameters are specific to the driver, are given only as examples and might be different for other drivers. For example, another driver may not have the <b>Database</b> parameter at all, may refer to the <b>User</b> as <b>UserName</b> instead or may have additional parameters.</p>
 
 <p>That said, the <b>User</b> and <b>Password</b> parameters are fairly well standardized and many tools allow them to be overridden at connect-time. As such, they are often left blank in the <i>odbc.ini</i> file. To leave a parameter blank, include the line but place no value after the equals sign.</p>
 
