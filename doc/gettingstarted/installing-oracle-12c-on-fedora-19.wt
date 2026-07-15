@@ -117,7 +117,7 @@ Oracle 12c introduces a new paradigm of container and pluggable databases. In th
 
 Run sqlplus with:
 
-'''sqlplus sys/'''//password//'''@cdbora1 as sysdba'''
+'''sqlplus sys/'''**//password//**'''@cdbora1 as sysdba'''
 
 (replacing //password// with the password you entered during installation)
 
