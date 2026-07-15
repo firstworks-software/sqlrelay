@@ -22,6 +22,20 @@ foreach $name($cpp=~m/ZEND_FE\((\w+)\s*,/g) {
 	$exported{lc($name)}=1;
 }
 
+# which arities each function accepts
+#
+# Only a ZEND_NUM_ARGS() test that GET_PARAMETERS follows is a guard.
+# inputBind() and substitution() also test it mid-body, to pick an overload;
+# those aren't arities the function accepts.
+my %arity;
+while ($cpp=~m/DLEXPORT ZEND_FUNCTION\((\w+)\)(.*?)\n\}\n/gs) {
+	my $zend=lc($1);
+	my $body=$2;
+	foreach $count($body=~m/ZEND_NUM_ARGS\(\)\s*[!=]=\s*(\d+)\s*(?:\|\||&&)\s*GET_PARAMETERS/g) {
+		$arity{$zend}->{$count}=1;
+	}
+}
+
 my @errors;
 my @stub;
 my %documented;
@@ -49,6 +63,18 @@ while ($cpp=~m|/\*\*\n \*  call-seq:\n \*  (\w+)\((.*?)\)\n \*\n(.*?)\*/\nDLEXPO
 	}
 
 	$documented{lc($zend)}=1;
+
+	# ...and the arity it documents must be one the function accepts -
+	# the multi-arity functions document just one representative arity
+	my @accepted=sort {$a<=>$b} keys %{$arity{lc($zend)}};
+	my @args=grep(/\S/,split(/,/,$params));
+	if (!@accepted) {
+		push(@errors,"$name() is documented but has no arity guard");
+	} elsif (!grep($_==$#args+1,@accepted)) {
+		push(@errors,"$name() documents ".($#args+1)." argument(s) ".
+				"but the function accepts ".
+				join(" or ",@accepted));
+	}
 
 	my @prose;
 	foreach $line(split(/\n/,$body)) {

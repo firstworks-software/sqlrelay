@@ -338,6 +338,16 @@
 	fixed the doc website's link to the c api reference from the c
 		programming guide, which had one underscore where doxygen
 		generates two
+	fixed the php api's getBindVariableDelimiterQuestionMarkSupported(),
+		getBindVariableDelimiterColonSupported(),
+		getBindVariableDelimiterAtSignSupported() and
+		getBindVariableDelimiterDollarSignSupported(), which were
+		uncallable; each demanded 2 arguments but parsed only 1, so
+		calling one with 1 argument failed the arity check and calling
+		it with 2 failed the parse
+	mkstub.pl now also fails if a php api doc comment's call-seq documents
+		an arity the function doesn't accept, which is what the four
+		uncallable getBindVariableDelimiter*Supported() functions were
 
 2.1.1 - added tns_admin support
 	fixed sqlr-start ... -strace ...

@@ -514,7 +514,7 @@ DLEXPORT ZEND_FUNCTION(sqlrcon_setbindvariabledelimiters) {
 DLEXPORT ZEND_FUNCTION(sqlrcon_getbindvariabledelimiterquestionmarksupported) {
 	ZVAL sqlrcon;
 	bool r;
-	if (ZEND_NUM_ARGS() != 2 || 
+	if (ZEND_NUM_ARGS() != 1 || 
 		GET_PARAMETERS(
 				ZEND_NUM_ARGS() TSRMLS_CC,
 				PARAMS("z")
@@ -544,7 +544,7 @@ DLEXPORT ZEND_FUNCTION(sqlrcon_getbindvariabledelimiterquestionmarksupported) {
 DLEXPORT ZEND_FUNCTION(sqlrcon_getbindvariabledelimitercolonsupported) {
 	ZVAL sqlrcon;
 	bool r;
-	if (ZEND_NUM_ARGS() != 2 || 
+	if (ZEND_NUM_ARGS() != 1 || 
 		GET_PARAMETERS(
 				ZEND_NUM_ARGS() TSRMLS_CC,
 				PARAMS("z")
@@ -574,7 +574,7 @@ DLEXPORT ZEND_FUNCTION(sqlrcon_getbindvariabledelimitercolonsupported) {
 DLEXPORT ZEND_FUNCTION(sqlrcon_getbindvariabledelimiteratsignsupported) {
 	ZVAL sqlrcon;
 	bool r;
-	if (ZEND_NUM_ARGS() != 2 || 
+	if (ZEND_NUM_ARGS() != 1 || 
 		GET_PARAMETERS(
 				ZEND_NUM_ARGS() TSRMLS_CC,
 				PARAMS("z")
@@ -604,7 +604,7 @@ DLEXPORT ZEND_FUNCTION(sqlrcon_getbindvariabledelimiteratsignsupported) {
 DLEXPORT ZEND_FUNCTION(sqlrcon_getbindvariabledelimiterdollarsignsupported) {
 	ZVAL sqlrcon;
 	bool r;
-	if (ZEND_NUM_ARGS() != 2 || 
+	if (ZEND_NUM_ARGS() != 1 || 
 		GET_PARAMETERS(
 				ZEND_NUM_ARGS() TSRMLS_CC,
 				PARAMS("z")
