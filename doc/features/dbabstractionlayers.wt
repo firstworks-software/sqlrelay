@@ -16,7 +16,7 @@ The same PHP app could be configured to load the SQL Relay driver to talk to !My
 
   [[Image(../images/app-phppdo-sqlr-mysql.png,nolink)]]
 
-SQL Relay currently provides drivers for ADO.NET, PHP PDO, Python DB-API, Perl DBI, and ODBC.  JDBC is also supported via the JDBC-ODBC bridge.
+SQL Relay currently provides drivers for ADO.NET, PHP PDO, Python DB-API, Perl DBI, ODBC, and JDBC.
 
   [[Image(../images/app-phppdo-sqlr-mysql.png,nolink)]]
   [[br]]
@@ -25,6 +25,8 @@ SQL Relay currently provides drivers for ADO.NET, PHP PDO, Python DB-API, Perl D
   [[Image(../images/app-perldbi-sqlr-mysql.png,nolink)]]
   [[br]]
   [[Image(../images/app-odbc-sqlr-mysql.png,nolink)]]
+  [[br]]
+  [[Image(../images/app-jdbc-sqlr-mysql.png,nolink)]]
 
 Programming guides with sample code and API references are available for each database abstraction layer:
 
