@@ -294,7 +294,7 @@ desc db
 }}}
 }}}
 
-Then count the number of columns with Type '''enum('N','Y')''' and re-run the query above using that number of //'Y'// values.
+Then count the number of columns with Type '''enum('N','Y')''' and re-run the query above using that number of **'Y'** values.
 
 Exit the mysql client and run the following command to activate these changes.
 
