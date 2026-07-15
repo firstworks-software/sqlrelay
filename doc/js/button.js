@@ -17,9 +17,11 @@ function setButton() {
 		setActive("about","images/lightbluedenim.png");
 	} else if (contains(document.location.pathname,"/features/")) {
 		setActive("about","../images/lightbluedenim.png");
-	} else if (endsWith(document.location.pathname,"documentation.html") ||
-			contains(document.location.pathname,"/admin/") ||
+	} else if (endsWith(document.location.pathname,"documentation.html")) {
+		setActive("documentation","images/lightbluedenim.png");
+	} else if (contains(document.location.pathname,"/admin/") ||
 			contains(document.location.pathname,"/api/") ||
+			contains(document.location.pathname,"/gettingstarted/") ||
 			contains(document.location.pathname,"/howtos/") ||
 			contains(document.location.pathname,"/programming/")) {
 		setActive("documentation","../images/lightbluedenim.png");

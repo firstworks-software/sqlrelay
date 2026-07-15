@@ -297,6 +297,9 @@
 	localized the database getting-started guides into the doc website
 		(new doc/gettingstarted/ directory) instead of linking out to
 		the external blog
+	fixed the doc website's Documentation button not highlighting on
+		documentation.html (wrong relative path to the image) or on
+		the getting-started pages (missing from the button js)
 
 2.1.1 - added tns_admin support
 	fixed sqlr-start ... -strace ...
