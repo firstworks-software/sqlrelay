@@ -208,6 +208,25 @@ ZEND_MODULE_STARTUP_D(sqlrelay) {
 }
 #endif
 
+/**
+ *  call-seq:
+ *  sqlrcon_alloc($server, $port, $socket, $user, $password, $retrytime, $tries)
+ *
+ *  Initiates a connection to "server" on "port" or to the unix "socket" on
+ *  the local machine and auths with "user" and "password".  Failed
+ *  connections will be retried for "tries" times, waiting "retrytime" seconds
+ *  between each try.  If "tries" is 0 then retries will continue forever.  If
+ *  "retrytime" is 0 then retries will be attempted on a default interval.
+ *
+ *  If "server" is a comma-separated list of hosts, then an attempt will be
+ *  made to connect to each until the attempt succeeds, or there are no more
+ *  hosts left to try.
+ *
+ *  If the "socket" parameter is neither NULL nor "" then an attempt will be
+ *  made to connect through it before attempting to connect to "server" on
+ *  "port".
+ *  If it is NULL or "" then no attempt will be made to connect through the
+ *  socket. */
 DLEXPORT ZEND_FUNCTION(sqlrcon_alloc) {
 	ZVAL server;
 	ZVAL port;
@@ -250,6 +269,11 @@ DLEXPORT ZEND_FUNCTION(sqlrcon_alloc) {
 	ZEND_REGISTER_RESOURCE(return_value,connection,sqlrelay_connection);
 }
 
+/**
+ *  call-seq:
+ *  sqlrcon_free($sqlrconref)
+ *
+ *  Disconnects and ends the session if it hasn't been ended already. */
 DLEXPORT ZEND_FUNCTION(sqlrcon_free) {
 	ZVAL sqlrcon;
 	if (ZEND_NUM_ARGS() != 1 || 
@@ -269,6 +293,14 @@ DLEXPORT ZEND_FUNCTION(sqlrcon_free) {
 	ZEND_LIST_DELETE(sqlrcon);
 }
 
+/**
+ *  call-seq:
+ *  sqlrcon_setConnectTimeout($sqlrconref, $timeoutsec, $timeoutusec)
+ *
+ *  Sets the server connect timeout in seconds and
+ *  microseconds.  Setting either parameter to -1 disables the
+ *  timeout.  You can also set this timeout using the
+ *  SQLR_CLIENT_CONNECT_TIMEOUT environment variable. */
 DLEXPORT ZEND_FUNCTION(sqlrcon_setconnecttimeout) {
 	ZVAL sqlrcon;
 	ZVAL timeoutsec;
@@ -297,6 +329,11 @@ DLEXPORT ZEND_FUNCTION(sqlrcon_setconnecttimeout) {
 	}
 }
 
+/**
+ *  call-seq:
+ *  sqlrcon_getConnectTimeoutSeconds($sqlrconref)
+ *
+ *  Gets the server connect timeout in seconds. */
 DLEXPORT ZEND_FUNCTION(sqlrcon_getconnecttimeoutseconds) {
 	ZVAL sqlrcon;
 	if (ZEND_NUM_ARGS() != 1 ||
@@ -319,6 +356,11 @@ DLEXPORT ZEND_FUNCTION(sqlrcon_getconnecttimeoutseconds) {
 	RETURN_LONG(0);
 }
 
+/**
+ *  call-seq:
+ *  sqlrcon_getConnectTimeoutMicroseconds($sqlrconref)
+ *
+ *  Gets the server connect timeout in microseconds. */
 DLEXPORT ZEND_FUNCTION(sqlrcon_getconnecttimeoutmicroseconds) {
 	ZVAL sqlrcon;
 	if (ZEND_NUM_ARGS() != 1 ||
@@ -341,6 +383,15 @@ DLEXPORT ZEND_FUNCTION(sqlrcon_getconnecttimeoutmicroseconds) {
 	RETURN_LONG(0);
 }
 
+/**
+ *  call-seq:
+ *  sqlrcon_setResponseTimeout($sqlrconref, $timeoutsec, $timeoutusec)
+ *
+ *  Sets the response timeout (for queries, commits, rollbacks,
+ *  pings, etc.) in seconds and microseconds.  Setting either
+ *  parameter to -1 disables the timeout.  You can also set
+ *  this timeout using the SQLR_CLIENT_RESPONSE_TIMEOUT
+ *  environment variable. */
 DLEXPORT ZEND_FUNCTION(sqlrcon_setresponsetimeout) {
 	ZVAL sqlrcon;
 	ZVAL timeoutsec;
@@ -369,6 +420,11 @@ DLEXPORT ZEND_FUNCTION(sqlrcon_setresponsetimeout) {
 	}
 }
 
+/**
+ *  call-seq:
+ *  sqlrcon_getResponseTimeoutSeconds($sqlrconref)
+ *
+ *  Gets the response timeout in seconds. */
 DLEXPORT ZEND_FUNCTION(sqlrcon_getresponsetimeoutseconds) {
 	ZVAL sqlrcon;
 	if (ZEND_NUM_ARGS() != 1 ||
@@ -391,6 +447,11 @@ DLEXPORT ZEND_FUNCTION(sqlrcon_getresponsetimeoutseconds) {
 	RETURN_LONG(0);
 }
 
+/**
+ *  call-seq:
+ *  sqlrcon_getResponseTimeoutMicroseconds($sqlrconref)
+ *
+ *  Gets the response timeout in microseconds. */
 DLEXPORT ZEND_FUNCTION(sqlrcon_getresponsetimeoutmicroseconds) {
 	ZVAL sqlrcon;
 	if (ZEND_NUM_ARGS() != 1 ||
@@ -413,6 +474,13 @@ DLEXPORT ZEND_FUNCTION(sqlrcon_getresponsetimeoutmicroseconds) {
 	RETURN_LONG(0);
 }
 
+/**
+ *  call-seq:
+ *  sqlrcon_setBindVariableDelimiters($sqlrconref, $delimiters)
+ *
+ *  Sets which delimiters are used to identify bind variables
+ *  in countBindVariables() and validateBinds().  Valid
+ *  delimiters include ?,:,@, and $.  Defaults to "?:@$" */
 DLEXPORT ZEND_FUNCTION(sqlrcon_setbindvariabledelimiters) {
 	ZVAL sqlrcon;
 	ZVAL delimiters;
@@ -437,6 +505,12 @@ DLEXPORT ZEND_FUNCTION(sqlrcon_setbindvariabledelimiters) {
 	}
 }
 
+/**
+ *  call-seq:
+ *  sqlrcon_getBindVariableDelimiterQuestionMarkSupported($sqlrconref)
+ *
+ *  Returns true if question marks (?) are considered to be
+ *  valid bind variable delimiters. */
 DLEXPORT ZEND_FUNCTION(sqlrcon_getbindvariabledelimiterquestionmarksupported) {
 	ZVAL sqlrcon;
 	bool r;
@@ -461,6 +535,12 @@ DLEXPORT ZEND_FUNCTION(sqlrcon_getbindvariabledelimiterquestionmarksupported) {
 	RETURN_LONG(0);
 }
 
+/**
+ *  call-seq:
+ *  sqlrcon_getBindVariableDelimiterColonSupported($sqlrconref)
+ *
+ *  Returns true if colons (:) are considered to be
+ *  valid bind variable delimiters. */
 DLEXPORT ZEND_FUNCTION(sqlrcon_getbindvariabledelimitercolonsupported) {
 	ZVAL sqlrcon;
 	bool r;
@@ -485,6 +565,12 @@ DLEXPORT ZEND_FUNCTION(sqlrcon_getbindvariabledelimitercolonsupported) {
 	RETURN_LONG(0);
 }
 
+/**
+ *  call-seq:
+ *  sqlrcon_getBindVariableDelimiterAtSignSupported($sqlrconref)
+ *
+ *  Returns true if at-signs (@) are considered to be
+ *  valid bind variable delimiters. */
 DLEXPORT ZEND_FUNCTION(sqlrcon_getbindvariabledelimiteratsignsupported) {
 	ZVAL sqlrcon;
 	bool r;
@@ -509,6 +595,12 @@ DLEXPORT ZEND_FUNCTION(sqlrcon_getbindvariabledelimiteratsignsupported) {
 	RETURN_LONG(0);
 }
 
+/**
+ *  call-seq:
+ *  sqlrcon_getBindVariableDelimiterDollarSignSupported($sqlrconref)
+ *
+ *  Returns true if dollar signs ($) are considered to be
+ *  valid bind variable delimiters. */
 DLEXPORT ZEND_FUNCTION(sqlrcon_getbindvariabledelimiterdollarsignsupported) {
 	ZVAL sqlrcon;
 	bool r;
@@ -533,6 +625,45 @@ DLEXPORT ZEND_FUNCTION(sqlrcon_getbindvariabledelimiterdollarsignsupported) {
 	RETURN_LONG(0);
 }
 
+/**
+ *  call-seq:
+ *  sqlrcon_enableKerberos($sqlrconref, $service, $mech, $flags)
+ *
+ *  Enables Kerberos authentication and encryption.
+ *
+ *  "service" indicates the Kerberos service name of the
+ *  SQL Relay server.  If left empty or NULL then the service
+ *  name "sqlrelay" will be used. "sqlrelay" is the default
+ *  service name of the SQL Relay server.  Note that on Windows
+ *  platforms the service name must be fully qualified,
+ *  including the host and realm name.  For example:
+ *  "sqlrelay/sqlrserver.firstworks.com@AD.FIRSTWORKS.COM".
+ *
+ *  "mech" indicates the specific Kerberos mechanism to use.
+ *  On Linux/Unix platforms, this should be a string
+ *  representation of the mechnaism's OID, such as:
+ *      { 1 2 840 113554 1 2 2 }
+ *  On Windows platforms, this should be a string like:
+ *      Kerberos
+ *  If left empty or NULL then the default mechanism will be
+ *  used.  Only set this if you know that you have a good
+ *  reason to.
+ *
+ *  "flags" indicates what Kerberos flags to use.  Multiple
+ *  flags may be specified, separated by commas.  If left
+ *  empty or NULL then a defalt set of flags will be used.
+ *  Only set this if you know that you have a good reason to.
+ *
+ *  Valid flags include:
+ *   * GSS_C_MUTUAL_FLAG
+ *   * GSS_C_REPLAY_FLAG
+ *   * GSS_C_SEQUENCE_FLAG
+ *   * GSS_C_CONF_FLAG
+ *   * GSS_C_INTEG_FLAG
+ *
+ *  For a full list of flags, consult the GSSAPI documentation,
+ *  though note that only the flags listed above are supported
+ *  on Windows. */
 DLEXPORT ZEND_FUNCTION(sqlrcon_enablekerberos) {
 	ZVAL sqlrcon;
 	ZVAL service;
@@ -565,6 +696,79 @@ DLEXPORT ZEND_FUNCTION(sqlrcon_enablekerberos) {
 	}
 }
 
+/**
+ *  call-seq:
+ *  sqlrcon_enableTls($sqlrconref, $version, $cert, $password, $ciphers, $validate, $ca, $depth)
+ *
+ *  Enables TLS/SSL encryption, and optionally authentication.
+ *
+ *  "version" specifies the TLS/SSL protocol version that the
+ *  client will attempt to use.  Valid values include SSL2,
+ *  SSL3, TLS1, TLS1.1, TLS1.2 or any more recent version of
+ *  TLS, as supported by and enabled in the underlying TLS/SSL
+ *  library.  If left blank or empty then the highest supported
+ *  version will be negotiated.
+ *
+ *  "cert" is the file name of the certificate chain file to
+ *  send to the SQL Relay server.  This is only necessary if
+ *  the SQL Relay server is configured to authenticate and
+ *  authorize clients by certificate.
+ *
+ *  If "cert" contains a password-protected private key, then
+ *  "password" may be supplied to access it.  If the private
+ *  key is not password-protected, then this argument is
+ *  ignored, and may be left empty or NULL.
+ *
+ *  "ciphers" is a list of ciphers to allow.  Ciphers may be
+ *  separated by spaces, commas, or colons.  If "ciphers" is
+ *  empty or NULL then a default set is used.  Only set this if
+ *  you know that you have a good reason to.
+ *
+ *  For a list of valid ciphers on Linux/Unix platforms, see:
+ *      man ciphers
+ *
+ *  For a list of valid ciphers on Windows platforms, see:
+ *      https://msdn.microsoft.com/en-us/library/windows/desktop/aa375549%28v=vs.85%29.aspx
+ *  On Windows platforms, the ciphers (alg_id's) should omit
+ *  CALG_ and may be given with underscores or dashes.
+ *  For example: 3DES_112
+ *
+ *  "validate" indicates whether to validate the SQL Relay's
+ *  server certificate, and may be set to one of the following:
+ *      "no" - Don't validate the server's certificate.
+ *      "ca" - Validate that the server's certificate was
+ *             signed by a trusted certificate authority.
+ *      "ca+host" - Perform "ca" validation and also validate
+ *             that one of the subject altenate names (or the
+ *             common name if no SANs are present) in the
+ *             certificate matches the host parameter.
+ *             (Falls back to "ca" validation when a unix
+ *             socket is used.)
+ *      "ca+domain" - Perform "ca" validation and also validate
+ *             that the domain name of one of the subject
+ *             alternate names (or the common name if no SANs
+ *             are present) in the certificate matches the
+ *             domain name of the host parameter.  (Falls back
+ *             to "ca" validation when a unix socket is used.)
+ *
+ *  "ca" is the location of a certificate authority file to
+ *  use, in addition to the system's root certificates, when
+ *  validating the SQL Relay server's certificate.  This is
+ *  useful if the SQL Relay server's certificate is self-signed.
+ *
+ *  On Windows, "ca" must be a file name.
+ *
+ *  On non-Windows systems, "ca" can be either a file or
+ *  directory name.  If it is a directory name, then all
+ *  certificate authority files found in that directory will be
+ *  used.  If it a file name, then only that file will be used.
+ *
+ *
+ *  Note that the supported "cert" and "ca" file formats may
+ *  vary between platforms.  A variety of file formats are
+ *  generally supported on Linux/Unix platfoms (.pem, .pfx,
+ *  etc.) but only the .pfx format is currently supported on
+ *  Windows. */
 DLEXPORT ZEND_FUNCTION(sqlrcon_enabletls) {
 	ZVAL sqlrcon;
 	ZVAL version;
@@ -613,6 +817,11 @@ DLEXPORT ZEND_FUNCTION(sqlrcon_enabletls) {
 	}
 }
 
+/**
+ *  call-seq:
+ *  sqlrcon_disableEncryption($sqlrconref)
+ *
+ *  Disables encryption. */
 DLEXPORT ZEND_FUNCTION(sqlrcon_disableencryption) {
 	ZVAL sqlrcon;
 	if (ZEND_NUM_ARGS() != 1 || 
@@ -634,6 +843,11 @@ DLEXPORT ZEND_FUNCTION(sqlrcon_disableencryption) {
 	}
 }
 
+/**
+ *  call-seq:
+ *  sqlrcon_endSession($sqlrconref)
+ *
+ *  Ends the session. */
 DLEXPORT ZEND_FUNCTION(sqlrcon_endsession) {
 	ZVAL sqlrcon;
 	if (ZEND_NUM_ARGS() != 1 || 
@@ -655,6 +869,14 @@ DLEXPORT ZEND_FUNCTION(sqlrcon_endsession) {
 	}
 }
 
+/**
+ *  call-seq:
+ *  sqlrcon_suspendSession($sqlrconref)
+ *
+ *  Disconnects this connection from the current
+ *  session but leaves the session open so
+ *  that another connection can connect to it
+ *  using resumeSession(). */
 DLEXPORT ZEND_FUNCTION(sqlrcon_suspendsession) {
 	ZVAL sqlrcon;
 	bool r;
@@ -679,6 +901,14 @@ DLEXPORT ZEND_FUNCTION(sqlrcon_suspendsession) {
 	RETURN_LONG(0);
 }
 
+/**
+ *  call-seq:
+ *  sqlrcon_getConnectionPort($sqlrconref)
+ *
+ *  Returns the inet port that the connection is communicating over.  This
+ *  parameter may be passed to another connection for use in the
+ *  resumeSession() method.  Note: The value this method returns
+ *  is only valid after a call to suspendSession(). */
 DLEXPORT ZEND_FUNCTION(sqlrcon_getconnectionport) {
 	ZVAL sqlrcon;
 	uint16_t r;
@@ -703,6 +933,14 @@ DLEXPORT ZEND_FUNCTION(sqlrcon_getconnectionport) {
 	RETURN_LONG(0);
 }
 
+/**
+ *  call-seq:
+ *  sqlrcon_getConnectionSocket($sqlrconref)
+ *
+ *  Returns the unix socket that the connection is communicating over.  This
+ *  parameter may be passed to another connection for use in the
+ *  resumeSession() method.  Note: The value this method returns
+ *  is only valid after a call to suspendSession(). */
 DLEXPORT ZEND_FUNCTION(sqlrcon_getconnectionsocket) {
 	ZVAL sqlrcon;
 	const char *r;
@@ -729,6 +967,13 @@ DLEXPORT ZEND_FUNCTION(sqlrcon_getconnectionsocket) {
 	RETURN_FALSE;
 }
 
+/**
+ *  call-seq:
+ *  sqlrcon_resumeSession($sqlrconref, $port, $socket)
+ *
+ *  Resumes a session previously left open
+ *  using suspendSession().
+ *  Returns 1 on success and 0 on failure. */
 DLEXPORT ZEND_FUNCTION(sqlrcon_resumesession) {
 	ZVAL sqlrcon;
 	ZVAL port;
@@ -760,6 +1005,1415 @@ DLEXPORT ZEND_FUNCTION(sqlrcon_resumesession) {
 	RETURN_LONG(0);
 }
 
+/**
+ *  call-seq:
+ *  sqlrcon_ping($sqlrconref)
+ *
+ *  Returns 1 if the database is up and 0 if it's down. */
+DLEXPORT ZEND_FUNCTION(sqlrcon_ping) {
+	ZVAL sqlrcon;
+	bool r;
+	if (ZEND_NUM_ARGS() != 1 || 
+		GET_PARAMETERS(
+				ZEND_NUM_ARGS() TSRMLS_CC,
+				PARAMS("z")
+				&sqlrcon) == FAILURE) {
+		WRONG_PARAM_COUNT;
+	}
+	sqlrconnection *connection=NULL;
+	ZEND_FETCH_RESOURCE(connection,
+				sqlrconnection *,
+				sqlrcon,
+				-1,
+				"sqlrelay connection",
+				sqlrelay_connection);
+	if (connection) {
+		r=connection->ping();
+		RETURN_LONG(r);
+	}
+	RETURN_LONG(0);
+}
+
+/**
+ *  call-seq:
+ *  sqlrcon_identify($sqlrconref)
+ *
+ *  Returns the type of database: oracle, postgresql, mysql, etc. */
+DLEXPORT ZEND_FUNCTION(sqlrcon_identify) {
+	ZVAL sqlrcon;
+	const char *r;
+	if (ZEND_NUM_ARGS() != 1 || 
+		GET_PARAMETERS(
+				ZEND_NUM_ARGS() TSRMLS_CC,
+				PARAMS("z")
+				&sqlrcon) == FAILURE) {
+		WRONG_PARAM_COUNT;
+	}
+	sqlrconnection *connection=NULL;
+	ZEND_FETCH_RESOURCE(connection,
+				sqlrconnection *,
+				sqlrcon,
+				-1,
+				"sqlrelay connection",
+				sqlrelay_connection);
+	if (connection) {
+		r=connection->identify();
+		if (r) {
+			RET_STRING(const_cast<char *>(r),1);
+		}
+	}
+	RETURN_FALSE;
+}
+
+/**
+ *  call-seq:
+ *  sqlrcon_dbVersion($sqlrconref)
+ *
+ *  Returns the version of the database */
+DLEXPORT ZEND_FUNCTION(sqlrcon_dbversion) {
+	ZVAL sqlrcon;
+	const char *r;
+	if (ZEND_NUM_ARGS() != 1 || 
+		GET_PARAMETERS(
+				ZEND_NUM_ARGS() TSRMLS_CC,
+				PARAMS("z")
+				&sqlrcon) == FAILURE) {
+		WRONG_PARAM_COUNT;
+	}
+	sqlrconnection *connection=NULL;
+	ZEND_FETCH_RESOURCE(connection,
+				sqlrconnection *,
+				sqlrcon,
+				-1,
+				"sqlrelay connection",
+				sqlrelay_connection);
+	if (connection) {
+		r=connection->dbVersion();
+		if (r) {
+			RET_STRING(const_cast<char *>(r),1);
+		}
+	}
+	RETURN_FALSE;
+}
+
+/**
+ *  call-seq:
+ *  sqlrcon_dbHostName($sqlrconref)
+ *
+ *  Returns the host name of the database */
+DLEXPORT ZEND_FUNCTION(sqlrcon_dbhostname) {
+	ZVAL sqlrcon;
+	const char *r;
+	if (ZEND_NUM_ARGS() != 1 || 
+		GET_PARAMETERS(
+				ZEND_NUM_ARGS() TSRMLS_CC,
+				PARAMS("z")
+				&sqlrcon) == FAILURE) {
+		WRONG_PARAM_COUNT;
+	}
+	sqlrconnection *connection=NULL;
+	ZEND_FETCH_RESOURCE(connection,
+				sqlrconnection *,
+				sqlrcon,
+				-1,
+				"sqlrelay connection",
+				sqlrelay_connection);
+	if (connection) {
+		r=connection->dbHostName();
+		if (r) {
+			RET_STRING(const_cast<char *>(r),1);
+		}
+	}
+	RETURN_FALSE;
+}
+
+/**
+ *  call-seq:
+ *  sqlrcon_dbIpAddress($sqlrconref)
+ *
+ *  Returns the ip address of the database */
+DLEXPORT ZEND_FUNCTION(sqlrcon_dbipaddress) {
+	ZVAL sqlrcon;
+	const char *r;
+	if (ZEND_NUM_ARGS() != 1 || 
+		GET_PARAMETERS(
+				ZEND_NUM_ARGS() TSRMLS_CC,
+				PARAMS("z")
+				&sqlrcon) == FAILURE) {
+		WRONG_PARAM_COUNT;
+	}
+	sqlrconnection *connection=NULL;
+	ZEND_FETCH_RESOURCE(connection,
+				sqlrconnection *,
+				sqlrcon,
+				-1,
+				"sqlrelay connection",
+				sqlrelay_connection);
+	if (connection) {
+		r=connection->dbIpAddress();
+		if (r) {
+			RET_STRING(const_cast<char *>(r),1);
+		}
+	}
+	RETURN_FALSE;
+}
+
+/**
+ *  call-seq:
+ *  sqlrcon_serverVersion($sqlrconref)
+ *
+ *  Returns the version of the sqlrelay server software. */
+DLEXPORT ZEND_FUNCTION(sqlrcon_serverversion) {
+	ZVAL sqlrcon;
+	const char *r;
+	if (ZEND_NUM_ARGS() != 1 || 
+		GET_PARAMETERS(
+				ZEND_NUM_ARGS() TSRMLS_CC,
+				PARAMS("z")
+				&sqlrcon) == FAILURE) {
+		WRONG_PARAM_COUNT;
+	}
+	sqlrconnection *connection=NULL;
+	ZEND_FETCH_RESOURCE(connection,
+				sqlrconnection *,
+				sqlrcon,
+				-1,
+				"sqlrelay connection",
+				sqlrelay_connection);
+	if (connection) {
+		r=connection->serverVersion();
+		if (r) {
+			RET_STRING(const_cast<char *>(r),1);
+		}
+	}
+	RETURN_FALSE;
+}
+
+/**
+ *  call-seq:
+ *  sqlrcon_clientVersion($sqlrconref)
+ *
+ *  Returns the version of the sqlrelay client software. */
+DLEXPORT ZEND_FUNCTION(sqlrcon_clientversion) {
+	ZVAL sqlrcon;
+	const char *r;
+	if (ZEND_NUM_ARGS() != 1 || 
+		GET_PARAMETERS(
+				ZEND_NUM_ARGS() TSRMLS_CC,
+				PARAMS("z")
+				&sqlrcon) == FAILURE) {
+		WRONG_PARAM_COUNT;
+	}
+	sqlrconnection *connection=NULL;
+	ZEND_FETCH_RESOURCE(connection,
+				sqlrconnection *,
+				sqlrcon,
+				-1,
+				"sqlrelay connection",
+				sqlrelay_connection);
+	if (connection) {
+		r=connection->clientVersion();
+		if (r) {
+			RET_STRING(const_cast<char *>(r),1);
+		}
+	}
+	RETURN_FALSE;
+}
+
+/**
+ *  call-seq:
+ *  sqlrcon_bindFormat($sqlrconref)
+ *
+ *  Returns a string representing the bind variable format used
+ *  by the database.  For example:
+ *
+ *  ?  - database uses a ? to represent a bind variable
+ *  @* - database uses a @ followed by any characters to
+ *       represent a bind variable
+ *  $1 - database uses a $ followed by a number to represent a
+ *       bind variable
+ *  :* - database uses a : followed by any characters to
+ *       represent a bind variable */
+DLEXPORT ZEND_FUNCTION(sqlrcon_bindformat) {
+	ZVAL sqlrcon;
+	const char *r;
+	if (ZEND_NUM_ARGS() != 1 || 
+		GET_PARAMETERS(
+				ZEND_NUM_ARGS() TSRMLS_CC,
+				PARAMS("z")
+				&sqlrcon) == FAILURE) {
+		WRONG_PARAM_COUNT;
+	}
+	sqlrconnection *connection=NULL;
+	ZEND_FETCH_RESOURCE(connection,
+				sqlrconnection *,
+				sqlrcon,
+				-1,
+				"sqlrelay connection",
+				sqlrelay_connection);
+	if (connection) {
+		r=connection->bindFormat();
+		if (r) {
+			RET_STRING(const_cast<char *>(r),1);
+		}
+	}
+	RETURN_FALSE;
+}
+
+/**
+ *  call-seq:
+ *  sqlrcon_nextvalFormat($sqlrconref)
+ *
+ *  Returns a string representing the format of the sequence
+ *  nextval command used in the database.  The format will
+ *  contain a %s in place of the sequence name.  For example:
+ *
+ *  (nextval for %s)
+ *  next value for %s
+ *  nextval('%s')
+ *  %s.nextval
+ *
+ *  Returns an empty string if the database does not support
+ *  sequences. */
+DLEXPORT ZEND_FUNCTION(sqlrcon_nextvalformat) {
+	ZVAL sqlrcon;
+	const char *r;
+	if (ZEND_NUM_ARGS() != 1 || 
+		GET_PARAMETERS(
+				ZEND_NUM_ARGS() TSRMLS_CC,
+				PARAMS("z")
+				&sqlrcon) == FAILURE) {
+		WRONG_PARAM_COUNT;
+	}
+	sqlrconnection *connection=NULL;
+	ZEND_FETCH_RESOURCE(connection,
+				sqlrconnection *,
+				sqlrcon,
+				-1,
+				"sqlrelay connection",
+				sqlrelay_connection);
+	if (connection) {
+		r=connection->nextvalFormat();
+		if (r) {
+			RET_STRING(const_cast<char *>(r),1);
+		}
+	}
+	RETURN_FALSE;
+}
+
+/**
+ *  call-seq:
+ *  sqlrcon_selectDatabase($sqlrconref, $database)
+ *
+ *  Sets the current database to "database".
+ *
+ *  May set the current catalog or schema, depending on
+ *  whether the backend database equates "database" with
+ *  catalog or schema.
+ *
+ *  See getDatabaseIsSchema(). */
+DLEXPORT ZEND_FUNCTION(sqlrcon_selectdatabase) {
+	ZVAL sqlrcon;
+	ZVAL database;
+	bool r;
+	if (ZEND_NUM_ARGS() != 2 || 
+		GET_PARAMETERS(
+				ZEND_NUM_ARGS() TSRMLS_CC,
+				PARAMS("zz")
+				&sqlrcon,
+				&database) == FAILURE) {
+		WRONG_PARAM_COUNT;
+	}
+	convert_to_string_ex(database);
+	sqlrconnection *connection=NULL;
+	ZEND_FETCH_RESOURCE(connection,
+				sqlrconnection *,
+				sqlrcon,
+				-1,
+				"sqlrelay connection",
+				sqlrelay_connection);
+	if (connection) {
+		r=connection->selectDatabase(SVAL(database));
+		RETURN_LONG(r);
+	}
+	RETURN_LONG(0);
+}
+
+/**
+ *  call-seq:
+ *  sqlrcon_getCurrentDatabase($sqlrconref)
+ *
+ *  Returns the database that is currently in use.
+ *
+ *  May return the current catalog or schema, depending on
+ *  whether the backend database equates "database" with
+ *  catalog or schema.
+ *
+ *  See getDatabaseIsSchema(). */
+DLEXPORT ZEND_FUNCTION(sqlrcon_getcurrentdatabase) {
+	ZVAL sqlrcon;
+	const char *r;
+	if (ZEND_NUM_ARGS() != 1 || 
+		GET_PARAMETERS(
+				ZEND_NUM_ARGS() TSRMLS_CC,
+				PARAMS("z")
+				&sqlrcon) == FAILURE) {
+		WRONG_PARAM_COUNT;
+	}
+	sqlrconnection *connection=NULL;
+	ZEND_FETCH_RESOURCE(connection,
+				sqlrconnection *,
+				sqlrcon,
+				-1,
+				"sqlrelay connection",
+				sqlrelay_connection);
+	if (connection) {
+		r=connection->getCurrentDatabase();
+		if (r) {
+			RET_STRING(const_cast<char *>(r),1);
+		}
+	}
+	RETURN_FALSE;
+}
+
+/**
+ *  call-seq:
+ *  sqlrcon_selectCatalog($sqlrconref, $catalog)
+ *
+ *  Sets the current catalog to "catalog" */
+DLEXPORT ZEND_FUNCTION(sqlrcon_selectcatalog) {
+	ZVAL sqlrcon;
+	ZVAL catalog;
+	bool r;
+	if (ZEND_NUM_ARGS() != 2 ||
+		GET_PARAMETERS(
+				ZEND_NUM_ARGS() TSRMLS_CC,
+				PARAMS("zz")
+				&sqlrcon,
+				&catalog) == FAILURE) {
+		WRONG_PARAM_COUNT;
+	}
+	convert_to_string_ex(catalog);
+	sqlrconnection *connection=NULL;
+	ZEND_FETCH_RESOURCE(connection,
+				sqlrconnection *,
+				sqlrcon,
+				-1,
+				"sqlrelay connection",
+				sqlrelay_connection);
+	if (connection) {
+		r=connection->selectCatalog(SVAL(catalog));
+		RETURN_LONG(r);
+	}
+	RETURN_LONG(0);
+}
+
+/**
+ *  call-seq:
+ *  sqlrcon_getCurrentCatalog($sqlrconref)
+ *
+ *  Returns the catalog that is currently in use. */
+DLEXPORT ZEND_FUNCTION(sqlrcon_getcurrentcatalog) {
+	ZVAL sqlrcon;
+	const char *r;
+	if (ZEND_NUM_ARGS() != 1 ||
+		GET_PARAMETERS(
+				ZEND_NUM_ARGS() TSRMLS_CC,
+				PARAMS("z")
+				&sqlrcon) == FAILURE) {
+		WRONG_PARAM_COUNT;
+	}
+	sqlrconnection *connection=NULL;
+	ZEND_FETCH_RESOURCE(connection,
+				sqlrconnection *,
+				sqlrcon,
+				-1,
+				"sqlrelay connection",
+				sqlrelay_connection);
+	if (connection) {
+		r=connection->getCurrentCatalog();
+		if (r) {
+			RET_STRING(const_cast<char *>(r),1);
+		}
+	}
+	RETURN_FALSE;
+}
+
+/**
+ *  call-seq:
+ *  sqlrcon_selectSchema($sqlrconref, $schema)
+ *
+ *  Sets the current schema to "schema" */
+DLEXPORT ZEND_FUNCTION(sqlrcon_selectschema) {
+	ZVAL sqlrcon;
+	ZVAL schema;
+	bool r;
+	if (ZEND_NUM_ARGS() != 2 ||
+		GET_PARAMETERS(
+				ZEND_NUM_ARGS() TSRMLS_CC,
+				PARAMS("zz")
+				&sqlrcon,
+				&schema) == FAILURE) {
+		WRONG_PARAM_COUNT;
+	}
+	convert_to_string_ex(schema);
+	sqlrconnection *connection=NULL;
+	ZEND_FETCH_RESOURCE(connection,
+				sqlrconnection *,
+				sqlrcon,
+				-1,
+				"sqlrelay connection",
+				sqlrelay_connection);
+	if (connection) {
+		r=connection->selectSchema(SVAL(schema));
+		RETURN_LONG(r);
+	}
+	RETURN_LONG(0);
+}
+
+/**
+ *  call-seq:
+ *  sqlrcon_getCurrentSchema($sqlrconref)
+ *
+ *  Returns the schema that is currently in use. */
+DLEXPORT ZEND_FUNCTION(sqlrcon_getcurrentschema) {
+	ZVAL sqlrcon;
+	const char *r;
+	if (ZEND_NUM_ARGS() != 1 ||
+		GET_PARAMETERS(
+				ZEND_NUM_ARGS() TSRMLS_CC,
+				PARAMS("z")
+				&sqlrcon) == FAILURE) {
+		WRONG_PARAM_COUNT;
+	}
+	sqlrconnection *connection=NULL;
+	ZEND_FETCH_RESOURCE(connection,
+				sqlrconnection *,
+				sqlrcon,
+				-1,
+				"sqlrelay connection",
+				sqlrelay_connection);
+	if (connection) {
+		r=connection->getCurrentSchema();
+		if (r) {
+			RET_STRING(const_cast<char *>(r),1);
+		}
+	}
+	RETURN_FALSE;
+}
+
+/**
+ *  call-seq:
+ *  sqlrcon_getDatabaseIsSchema($sqlrconref)
+ *
+ *  Returns true if the backend database equates "database" with
+ *  "schema", and false if it equates "database" with "catalog". */
+DLEXPORT ZEND_FUNCTION(sqlrcon_getdatabaseisschema) {
+	ZVAL sqlrcon;
+	if (ZEND_NUM_ARGS() != 1 ||
+		GET_PARAMETERS(
+				ZEND_NUM_ARGS() TSRMLS_CC,
+				PARAMS("z")
+				&sqlrcon) == FAILURE) {
+		WRONG_PARAM_COUNT;
+	}
+	sqlrconnection *connection=NULL;
+	ZEND_FETCH_RESOURCE(connection,
+				sqlrconnection *,
+				sqlrcon,
+				-1,
+				"sqlrelay connection",
+				sqlrelay_connection);
+	if (connection) {
+		RETURN_LONG(connection->getDatabaseIsSchema());
+	}
+	RETURN_LONG(0);
+}
+
+/**
+ *  call-seq:
+ *  sqlrcon_getCurrentUser($sqlrconref)
+ *
+ *  Returns the user that sqlrelay is currently logged in to
+ *  the database as, or NULL if no user could be determined
+ *  or if an error occurred. */
+DLEXPORT ZEND_FUNCTION(sqlrcon_getcurrentuser) {
+	ZVAL sqlrcon;
+	const char *r;
+	if (ZEND_NUM_ARGS() != 1 ||
+		GET_PARAMETERS(
+				ZEND_NUM_ARGS() TSRMLS_CC,
+				PARAMS("z")
+				&sqlrcon) == FAILURE) {
+		WRONG_PARAM_COUNT;
+	}
+	sqlrconnection *connection=NULL;
+	ZEND_FETCH_RESOURCE(connection,
+				sqlrconnection *,
+				sqlrcon,
+				-1,
+				"sqlrelay connection",
+				sqlrelay_connection);
+	if (connection) {
+		r=connection->getCurrentUser();
+		if (r) {
+			RET_STRING(const_cast<char *>(r),1);
+		}
+	}
+	RETURN_FALSE;
+}
+
+/**
+ *  call-seq:
+ *  sqlrcon_getLastInsertId($sqlrconref)
+ *
+ *  Returns the value of the autoincrement column for the last insert */
+DLEXPORT ZEND_FUNCTION(sqlrcon_getlastinsertid) {
+	ZVAL sqlrcon;
+	if (ZEND_NUM_ARGS() != 1 ||
+		GET_PARAMETERS(
+				ZEND_NUM_ARGS() TSRMLS_CC,
+				PARAMS("z")
+				&sqlrcon) == FAILURE) {
+		WRONG_PARAM_COUNT;
+	}
+	sqlrconnection *connection=NULL;
+	ZEND_FETCH_RESOURCE(connection,
+				sqlrconnection *,
+				sqlrcon,
+				-1,
+				"sqlrelay connection",
+				sqlrelay_connection);
+	if (connection) {
+		RETURN_LONG(connection->getLastInsertId());
+	}
+	RETURN_FALSE;
+}
+
+/**
+ *  call-seq:
+ *  sqlrcon_autoCommitOn($sqlrconref)
+ *
+ *  Instructs the database to perform a commit after every successful query. */
+DLEXPORT ZEND_FUNCTION(sqlrcon_autocommiton) {
+	ZVAL sqlrcon;
+	bool r;
+	if (ZEND_NUM_ARGS() != 1 || 
+		GET_PARAMETERS(
+				ZEND_NUM_ARGS() TSRMLS_CC,
+				PARAMS("z")
+				&sqlrcon) == FAILURE) {
+		WRONG_PARAM_COUNT;
+	}
+	sqlrconnection *connection=NULL;
+	ZEND_FETCH_RESOURCE(connection,
+				sqlrconnection *,
+				sqlrcon,
+				-1,
+				"sqlrelay connection",
+				sqlrelay_connection);
+	if (connection) {
+		r=connection->autoCommitOn();
+		RETURN_LONG(r);
+	}
+	RETURN_LONG(0);
+}
+
+/**
+ *  call-seq:
+ *  sqlrcon_autoCommitOff($sqlrconref)
+ *
+ *  Instructs the database to wait for the client to tell it when to commit. */
+DLEXPORT ZEND_FUNCTION(sqlrcon_autocommitoff) {
+	ZVAL sqlrcon;
+	bool r;
+	if (ZEND_NUM_ARGS() != 1 ||
+		GET_PARAMETERS(
+				ZEND_NUM_ARGS() TSRMLS_CC,
+				PARAMS("z")
+				&sqlrcon) == FAILURE) {
+		WRONG_PARAM_COUNT;
+	}
+	sqlrconnection *connection=NULL;
+	ZEND_FETCH_RESOURCE(connection,
+				sqlrconnection *,
+				sqlrcon,
+				-1,
+				"sqlrelay connection",
+				sqlrelay_connection);
+	if (connection) {
+		r=connection->autoCommitOff();
+		RETURN_LONG(r);
+	}
+	RETURN_LONG(0);
+}
+
+/**
+ *  call-seq:
+ *  sqlrcon_getAutoCommit($sqlrconref)
+ *
+ *  Returns 1 if auto-commit is currently on, 0 otherwise. */
+DLEXPORT ZEND_FUNCTION(sqlrcon_getautocommit) {
+	ZVAL sqlrcon;
+	bool r;
+	if (ZEND_NUM_ARGS() != 1 ||
+		GET_PARAMETERS(
+				ZEND_NUM_ARGS() TSRMLS_CC,
+				PARAMS("z")
+				&sqlrcon) == FAILURE) {
+		WRONG_PARAM_COUNT;
+	}
+	sqlrconnection *connection=NULL;
+	ZEND_FETCH_RESOURCE(connection,
+				sqlrconnection *,
+				sqlrcon,
+				-1,
+				"sqlrelay connection",
+				sqlrelay_connection);
+	if (connection) {
+		r=connection->getAutoCommit();
+		RETURN_LONG(r);
+	}
+	RETURN_LONG(0);
+}
+
+/**
+ *  call-seq:
+ *  sqlrcon_begin($sqlrconref)
+ *
+ *  Begins a transaction.  Returns 1 if the begin succeeded, 0 if it failed.
+ *  If the database automatically begins a new transaction when a commit or
+ *  rollback is issued then this doesn't do anything unless SQL Relay is faking
+ *  transaction blocks. */
+DLEXPORT ZEND_FUNCTION(sqlrcon_begin) {
+	ZVAL sqlrcon;
+	bool r;
+	if (ZEND_NUM_ARGS() != 1 || 
+		GET_PARAMETERS(
+				ZEND_NUM_ARGS() TSRMLS_CC,
+				PARAMS("z")
+				&sqlrcon) == FAILURE) {
+		WRONG_PARAM_COUNT;
+	}
+	sqlrconnection *connection=NULL;
+	ZEND_FETCH_RESOURCE(connection,
+				sqlrconnection *,
+				sqlrcon,
+				-1,
+				"sqlrelay connection",
+				sqlrelay_connection);
+	if (connection) {
+		r=connection->begin();
+		RETURN_LONG(r);
+	}
+	RETURN_LONG(0);
+}
+
+/**
+ *  call-seq:
+ *  sqlrcon_commit($sqlrconref)
+ *
+ *  Commits a transaction.  Returns 1 if the commit succeeded, 0 if it
+ *  failed. */
+DLEXPORT ZEND_FUNCTION(sqlrcon_commit) {
+	ZVAL sqlrcon;
+	bool r;
+	if (ZEND_NUM_ARGS() != 1 || 
+		GET_PARAMETERS(
+				ZEND_NUM_ARGS() TSRMLS_CC,
+				PARAMS("z")
+				&sqlrcon) == FAILURE) {
+		WRONG_PARAM_COUNT;
+	}
+	sqlrconnection *connection=NULL;
+	ZEND_FETCH_RESOURCE(connection,
+				sqlrconnection *,
+				sqlrcon,
+				-1,
+				"sqlrelay connection",
+				sqlrelay_connection);
+	if (connection) {
+		r=connection->commit();
+		RETURN_LONG(r);
+	}
+	RETURN_LONG(0);
+}
+
+/**
+ *  call-seq:
+ *  sqlrcon_rollback($sqlrconref)
+ *
+ *  Rolls back a transaction.  Returns 1 if the rollback succeeded, 0 if it
+ *  failed. */
+DLEXPORT ZEND_FUNCTION(sqlrcon_rollback) {
+	ZVAL sqlrcon;
+	bool r;
+	if (ZEND_NUM_ARGS() != 1 ||
+		GET_PARAMETERS(
+				ZEND_NUM_ARGS() TSRMLS_CC,
+				PARAMS("z")
+				&sqlrcon) == FAILURE) {
+		WRONG_PARAM_COUNT;
+	}
+	sqlrconnection *connection=NULL;
+	ZEND_FETCH_RESOURCE(connection,
+				sqlrconnection *,
+				sqlrcon,
+				-1,
+				"sqlrelay connection",
+				sqlrelay_connection);
+	if (connection) {
+		r=connection->rollback();
+		RETURN_LONG(r);
+	}
+	RETURN_LONG(0);
+}
+
+/**
+ *  call-seq:
+ *  sqlrcon_getInTransaction($sqlrconref)
+ *
+ *  Returns 1 if the session is currently inside a transaction,
+ *  0 otherwise. */
+DLEXPORT ZEND_FUNCTION(sqlrcon_getInTransaction) {
+	ZVAL sqlrcon;
+	bool r;
+	if (ZEND_NUM_ARGS() != 1 ||
+		GET_PARAMETERS(
+				ZEND_NUM_ARGS() TSRMLS_CC,
+				PARAMS("z")
+				&sqlrcon) == FAILURE) {
+		WRONG_PARAM_COUNT;
+	}
+	sqlrconnection *connection=NULL;
+	ZEND_FETCH_RESOURCE(connection,
+				sqlrconnection *,
+				sqlrcon,
+				-1,
+				"sqlrelay connection",
+				sqlrelay_connection);
+	if (connection) {
+		r=connection->getInTransaction();
+		RETURN_LONG(r);
+	}
+	RETURN_LONG(0);
+}
+
+/**
+ *  call-seq:
+ *  sqlrcon_getDefaultTransactionModel($sqlrconref)
+ *
+ *  Returns the database's native transaction model.  See
+ *  setTranscationModel() for a list of potential return
+ *  values.  Returns NULL if an error occurred. */
+DLEXPORT ZEND_FUNCTION(sqlrcon_getDefaultTransactionModel) {
+	ZVAL sqlrcon;
+	const char *r;
+	if (ZEND_NUM_ARGS() != 1 ||
+		GET_PARAMETERS(
+				ZEND_NUM_ARGS() TSRMLS_CC,
+				PARAMS("z")
+				&sqlrcon) == FAILURE) {
+		WRONG_PARAM_COUNT;
+	}
+	sqlrconnection *connection=NULL;
+	ZEND_FETCH_RESOURCE(connection,
+				sqlrconnection *,
+				sqlrcon,
+				-1,
+				"sqlrelay connection",
+				sqlrelay_connection);
+	if (connection) {
+		r=connection->getDefaultTransactionModel();
+		if (r) {
+			RET_STRING(const_cast<char *>(r),1);
+		}
+	}
+	RETURN_FALSE;
+}
+
+/**
+ *  call-seq:
+ *  sqlrcon_setTransactionModel($sqlrconref, $txmodel)
+ *
+ *  Sets the current transaction model to "txmodel" which should be one of:
+ *
+ *  * native - the database's native transaction model
+ *  * none - no transactions
+ *  * "implicit"
+ *      * in a transaction when the session begins
+ *      * commit/rollback implicitly starts a new transcaction
+ *      * autocommit on/off take effect immediately
+ *  * "explicit"
+ *      * not in a transaction when the session begins
+ *      * begin required to start a new transaction
+ *      * commit/rollback does not start a new transcaction
+ *      * autocommit on/off take effect immediately
+ *  * "explicit-deferred"
+ *      * not in a transaction when the session begins
+ *      * begin required to start a new transaction
+ *      * commit/rollback does not start a new transcaction
+ *      * while in a begin-initiated transaction, autocommit
+ *        on takes effect at next commit/rollback (deferred)
+ *      * while in an autocommit-off-initiated transaction,
+ *        autocommit on takes effect immediately
+ *  * "explicit-error"
+ *      * not in a transaction when the session begins
+ *      * begin required to start a new transaction
+ *      * commit/rollback does not start a new transcaction
+ *      * while in a transaction, autocommit on/off throw error
+ *
+ *  Returns 1 on success and 0 on failure. */
+DLEXPORT ZEND_FUNCTION(sqlrcon_setTransactionModel) {
+	ZVAL sqlrcon;
+	ZVAL txmodel;
+	bool r;
+	if (ZEND_NUM_ARGS() != 2 ||
+		GET_PARAMETERS(
+				ZEND_NUM_ARGS() TSRMLS_CC,
+				PARAMS("zz")
+				&sqlrcon,
+				&txmodel) == FAILURE) {
+		WRONG_PARAM_COUNT;
+	}
+	convert_to_string_ex(txmodel);
+	sqlrconnection *connection=NULL;
+	ZEND_FETCH_RESOURCE(connection,
+				sqlrconnection *,
+				sqlrcon,
+				-1,
+				"sqlrelay connection",
+				sqlrelay_connection);
+	if (connection) {
+		r=connection->setTransactionModel(SVAL(txmodel));
+		RETURN_LONG(r);
+	}
+	RETURN_LONG(0);
+}
+
+/**
+ *  call-seq:
+ *  sqlrcon_getTransactionModel($sqlrconref)
+ *
+ *  Returns the current transaction model.  See
+ *  setTranscationModel() for a list of potential return
+ *  values.  Returns NULL if an error occurred. */
+DLEXPORT ZEND_FUNCTION(sqlrcon_getTransactionModel) {
+	ZVAL sqlrcon;
+	const char *r;
+	if (ZEND_NUM_ARGS() != 1 ||
+		GET_PARAMETERS(
+				ZEND_NUM_ARGS() TSRMLS_CC,
+				PARAMS("z")
+				&sqlrcon) == FAILURE) {
+		WRONG_PARAM_COUNT;
+	}
+	sqlrconnection *connection=NULL;
+	ZEND_FETCH_RESOURCE(connection,
+				sqlrconnection *,
+				sqlrcon,
+				-1,
+				"sqlrelay connection",
+				sqlrelay_connection);
+	if (connection) {
+		r=connection->getTransactionModel();
+		if (r) {
+			RET_STRING(const_cast<char *>(r),1);
+		}
+	}
+	RETURN_FALSE;
+}
+
+/**
+ *  call-seq:
+ *  sqlrcon_getDefaultIsolationLevel($sqlrconref)
+ *
+ *  Returns the database-specific default isolation level,
+ *  or NULL if an error occurred. */
+DLEXPORT ZEND_FUNCTION(sqlrcon_getDefaultIsolationLevel) {
+	ZVAL sqlrcon;
+	const char *r;
+	if (ZEND_NUM_ARGS() != 1 ||
+		GET_PARAMETERS(
+				ZEND_NUM_ARGS() TSRMLS_CC,
+				PARAMS("z")
+				&sqlrcon) == FAILURE) {
+		WRONG_PARAM_COUNT;
+	}
+	sqlrconnection *connection=NULL;
+	ZEND_FETCH_RESOURCE(connection,
+				sqlrconnection *,
+				sqlrcon,
+				-1,
+				"sqlrelay connection",
+				sqlrelay_connection);
+	if (connection) {
+		r=connection->getDefaultIsolationLevel();
+		if (r) {
+			RET_STRING(const_cast<char *>(r),1);
+		}
+	}
+	RETURN_FALSE;
+}
+
+/**
+ *  call-seq:
+ *  sqlrcon_setIsolationLevel($sqlrconref, $isolationlevel)
+ *
+ *  Sets the transaction isolation level to "isolationlevel".  The string
+ *  is the database-specific (native) name and is matched
+ *  case-insensitively.
+ *
+ *  Valid isolation levels include:
+ *
+ *  For PostgreSQL:
+ *  * READ UNCOMMITTED
+ *  * READ COMMITTED (default)
+ *  * REPEATABLE READ
+ *  * SERIALIZABLE
+ *
+ *  For MySQL/MariaDB:
+ *  * READ-UNCOMMITTED
+ *  * READ-COMMITTED
+ *  * REPEATABLE-READ (default)
+ *  * SERIALIZABLE
+ *
+ *  For Oracle:
+ *  * READ COMMITTED (default)
+ *  * SERIALIZABLE
+ *
+ *  For DB2:
+ *  * UR  (uncommitted read)
+ *  * CS  (cursor stability, default)
+ *  * RS  (read stability)
+ *  * RR  (repeatable read)
+ *
+ *  For MS SQL Server (via FreeTDS):
+ *  * READ UNCOMMITTED
+ *  * READ COMMITTED (default)
+ *  * REPEATABLE READ
+ *  * SERIALIZABLE
+ *  * SNAPSHOT
+ *
+ *  For SAP ASE (Sybase):
+ *  * 0  (read uncommitted)
+ *  * 1  (read committed, default)
+ *  * 2  (repeatable read)
+ *  * 3  (serializable)
+ *
+ *  For Informix:
+ *  * dirty read
+ *  * committed read (default)
+ *  * cursor stability
+ *  * repeatable read
+ *
+ *  For Firebird:
+ *  * read committed (default)
+ *  * read committed no record version
+ *  * read consistency
+ *  * snapshot
+ *  * snapshot table stability
+ *
+ *  For SQLite:
+ *  * 0  (serializable, default)
+ *  * 1  (read uncommitted)
+ *
+ *  For ODBC:
+ *  * SQL_TXN_READ_UNCOMMITTED
+ *  * SQL_TXN_READ_COMMITTED
+ *  * SQL_TXN_REPEATABLE_READ
+ *  * SQL_TXN_SERIALIZABLE
+ *
+ *  (whether a given level is actually supported depends on
+ *  the underlying ODBC driver and target database).  The
+ *  generic ODBC backend also accepts the database-specific
+ *  native names listed above for any of the other backends,
+ *  as well as the JDBC TRANSACTION_* names, and maps them
+ *  to the closest of the four ODBC levels above.
+ *
+ *  For other databases, the string is passed through to the
+ *  backend as the argument to "set transaction isolation
+ *  level".
+ *
+ *  Returns 1 if setting the isolation level succeeded, 0 if it
+ *  failed. */
+DLEXPORT ZEND_FUNCTION(sqlrcon_setIsolationLevel) {
+	ZVAL sqlrcon;
+	ZVAL isolationlevel;
+	bool r;
+	if (ZEND_NUM_ARGS() != 2 ||
+		GET_PARAMETERS(
+				ZEND_NUM_ARGS() TSRMLS_CC,
+				PARAMS("zz")
+				&sqlrcon,
+				&isolationlevel) == FAILURE) {
+		WRONG_PARAM_COUNT;
+	}
+	convert_to_string_ex(isolationlevel);
+	sqlrconnection *connection=NULL;
+	ZEND_FETCH_RESOURCE(connection,
+				sqlrconnection *,
+				sqlrcon,
+				-1,
+				"sqlrelay connection",
+				sqlrelay_connection);
+	if (connection) {
+		r=connection->setIsolationLevel(SVAL(isolationlevel));
+		RETURN_LONG(r);
+	}
+	RETURN_LONG(0);
+}
+
+/**
+ *  call-seq:
+ *  sqlrcon_getIsolationLevel($sqlrconref)
+ *
+ *  Returns the database-specific isolation level, "unknown" if the isolation
+ *  level is unknown, or NULL if an error occurred. */
+DLEXPORT ZEND_FUNCTION(sqlrcon_getIsolationLevel) {
+	ZVAL sqlrcon;
+	const char *r;
+	if (ZEND_NUM_ARGS() != 1 ||
+		GET_PARAMETERS(
+				ZEND_NUM_ARGS() TSRMLS_CC,
+				PARAMS("z")
+				&sqlrcon) == FAILURE) {
+		WRONG_PARAM_COUNT;
+	}
+	sqlrconnection *connection=NULL;
+	ZEND_FETCH_RESOURCE(connection,
+				sqlrconnection *,
+				sqlrcon,
+				-1,
+				"sqlrelay connection",
+				sqlrelay_connection);
+	if (connection) {
+		r=connection->getIsolationLevel();
+		if (r) {
+			RET_STRING(const_cast<char *>(r),1);
+		}
+	}
+	RETURN_FALSE;
+}
+
+/**
+ *  call-seq:
+ *  sqlrcon_getDatabaseFeature($sqlrconref,$feature)
+ *
+ *  Returns the value of the specified database "feature".
+ *
+ *  Valid features include:
+ *  * aggregate_functions
+ *   * list - ALL,AVG,COUNT,DISTINCT,MAX,MIN,SUM
+ *  * all_procedures_are_callable
+ *   * true/false
+ *  * all_tables_are_selectable
+ *   * true/false
+ *  * alter_domain_clauses
+ *   * list - ADD_DOMAIN_CONSTRAINT,ADD_DOMAIN_DEFAULT,...
+ *  * alter_table_operations
+ *   * list - ADD_COLUMN,DROP_COLUMN
+ *  * ansi92_sql_levels
+ *   * list - ENTRY_LEVEL,FULL,INTERMEDIATE
+ *  * auto_commit_failure_closes_all_result_sets
+ *   * true/false
+ *  * batch_operations
+ *   * list - SELECT_EXPLICIT,ROW_COUNT_EXPLICIT,SELECT_PROC,ROW_COUNT_PROC
+ *  * batch_row_counts
+ *   * list - PROCEDURES,EXPLICIT,ROLLED_UP
+ *  * catalog_separator
+ *   * string
+ *  * catalog_term
+ *   * string
+ *  * catalog_usage
+ *   * list - DATA_MANIPULATION,INDEX_DEFINITIONS,...
+ *  * collation_seq
+ *   * string
+ *  * create_assertion_clauses
+ *   * list - CREATE_ASSERTION,CONSTRAINT_INITIALLY_DEFERRED,...
+ *  * create_character_set_clauses
+ *   * list - CREATE_CHARACTER_SET,COLLATE_CLAUSE,...
+ *  * create_collation_clauses
+ *   * list - CREATE_COLLATION
+ *  * create_domain_clauses
+ *   * list - CREATE_DOMAIN,CONSTRAINT_NAME_DEFINITION,...
+ *  * create_schema_clauses
+ *   * list - CREATE_SCHEMA,AUTHORIZATION,DEFAULT_CHARACTER_SET
+ *  * create_table_clauses
+ *   * list - CREATE_TABLE,TABLE_CONSTRAINT,...
+ *  * create_translation_clauses
+ *   * list - CREATE_TRANSLATION
+ *  * create_view_clauses
+ *   * list - CREATE_VIEW,CHECK_OPTION,CASCADED,LOCAL
+ *  * data_definition_transaction_behavior
+ *   * list - CAUSES_COMMIT,IGNORED_IN_TRANSACTIONS
+ *  * ddl_index_operations
+ *   * list - CREATE_INDEX,DROP_INDEX
+ *   * string
+ *  * default_result_set_holdability
+ *   * string
+ *  * deletes_are_detected
+ *   * list - FORWARD_ONLY,SCROLL_INSENSITIVE,SCROLL_SENSITIVE
+ *  * does_max_row_size_include_blobs
+ *   * true/false
+ *  * drop_assertion_clauses
+ *   * list - DROP_ASSERTION
+ *  * drop_character_set_clauses
+ *   * list - DROP_CHARACTER_SET
+ *  * drop_collation_clauses
+ *   * list - DROP_COLLATION
+ *  * drop_domain_clauses
+ *   * list - DROP_DOMAIN,CASCADE,RESTRICT
+ *  * drop_schema_clauses
+ *   * list - DROP_SCHEMA,CASCADE,RESTRICT
+ *  * drop_table_clauses
+ *   * list - DROP_TABLE,CASCADE,RESTRICT
+ *  * drop_translation_clauses
+ *   * list - DROP_TRANSLATION
+ *  * drop_view_clauses
+ *   * list - DROP_VIEW,CASCADE,RESTRICT
+ *  * extra_name_characters
+ *   * string
+ *  * foreign_key_delete_rules
+ *   * list - CASCADE,NO_ACTION,SET_DEFAULT,SET_NULL
+ *  * foreign_key_update_rules
+ *   * list - CASCADE,NO_ACTION,SET_DEFAULT,SET_NULL
+ *  * forward_only_cursor_attributes
+ *   * list - NEXT,ABSOLUTE,RELATIVE,BOOKMARK,...
+ *  * generated_key_always_returned
+ *   * true/false
+ *  * grant_clauses
+ *   * list - DELETE_TABLE,INSERT_COLUMN,INSERT_TABLE,...
+ *  * group_by_clauses
+ *   * list - BASIC,BEYOND_SELECT,UNRELATED
+ *  * identifier_case_storage
+ *   * list - LOWER,MIXED,SENSITIVE,UPPER
+ *  * identifier_quote_string
+ *   * string
+ *  * index_keywords
+ *   * list - ASC,DESC
+ *  * info_schema_views
+ *   * list - ASSERTIONS,CHARACTER_SETS,CHECK_CONSTRAINTS,...
+ *  * insert_operations
+ *   * list - INSERT_LITERALS,INSERT_SEARCHED,SELECT_INTO
+ *  * inserts_are_detected
+ *   * list - FORWARD_ONLY,SCROLL_INSENSITIVE,SCROLL_SENSITIVE
+ *  * is_catalog_at_start
+ *   * true/false
+ *  * isolation_levels
+ *   * list - READ_UNCOMMITTED,READ_COMMITTED,...
+ *  * local_file_usage
+ *   * list - LOCAL_FILE_PER_TABLE,LOCAL_FILES
+ *  * locators_update_copy
+ *   * true/false
+ *  * lock_types
+ *   * list - NO_CHANGE,EXCLUSIVE,UNLOCK
+ *  * max_binary_literal_length
+ *   * number
+ *  * max_catalog_name_length
+ *   * number
+ *  * max_char_literal_length
+ *   * number
+ *  * max_column_name_length
+ *   * number
+ *  * max_columns_in_group_by
+ *   * number
+ *  * max_columns_in_index
+ *   * number
+ *  * max_columns_in_order_by
+ *   * number
+ *  * max_columns_in_select
+ *   * number
+ *  * max_columns_in_table
+ *   * number
+ *  * max_connections
+ *   * number
+ *  * max_cursor_name_length
+ *   * number
+ *  * max_identifier_length
+ *   * number
+ *  * max_index_length
+ *   * number
+ *  * max_procedure_name_length
+ *   * number
+ *  * max_row_size
+ *   * number
+ *  * max_schema_name_length
+ *   * number
+ *  * max_statement_length
+ *   * number
+ *  * max_statements
+ *   * number
+ *  * max_table_name_length
+ *   * number
+ *  * max_tables_in_select
+ *   * number
+ *  * max_user_name_length
+ *   * number
+ *  * need_long_data_length
+ *   * true/false
+ *  * null_plus_non_null_is_null
+ *   * true/false
+ *  * null_sort_order
+ *   * list - AT_END,AT_START,HIGH,LOW
+ *  * numeric_functions
+ *   * list - ABS,ACOS,ASIN,ATAN,ATAN2,CEILING,COS,COT,...
+ *  * open_cursors_across
+ *   * list - COMMIT,ROLLBACK
+ *  * open_statements_across
+ *   * list - COMMIT,ROLLBACK
+ *  * others_deletes_are_visible
+ *   * list - FORWARD_ONLY,SCROLL_INSENSITIVE,SCROLL_SENSITIVE
+ *  * others_inserts_are_visible
+ *   * list - FORWARD_ONLY,SCROLL_INSENSITIVE,SCROLL_SENSITIVE
+ *  * others_updates_are_visible
+ *   * list - FORWARD_ONLY,SCROLL_INSENSITIVE,SCROLL_SENSITIVE
+ *  * outer_joins
+ *   * list - BASIC,FULL,LIMITED
+ *  * own_deletes_are_visible
+ *   * list - FORWARD_ONLY,SCROLL_INSENSITIVE,SCROLL_SENSITIVE
+ *  * own_inserts_are_visible
+ *   * list - FORWARD_ONLY,SCROLL_INSENSITIVE,SCROLL_SENSITIVE
+ *  * own_updates_are_visible
+ *   * list - FORWARD_ONLY,SCROLL_INSENSITIVE,SCROLL_SENSITIVE
+ *  * predicates
+ *   * list - BETWEEN,COMPARISON,EXISTS,IN,ISNOTNULL,ISNULL,...
+ *  * procedure_term
+ *   * string
+ *  * quoted_identifier_case_storage
+ *   * list - LOWER,MIXED,SENSITIVE,UPPER
+ *  * relational_join_operators
+ *   * list - CORRESPONDING_CLAUSE,CROSS_JOIN,EXCEPT_JOIN,...
+ *  * result_set_concurrencies
+ *   * list - FORWARD_ONLY/READ_ONLY,FORWARD_ONLY/UPDATABLE,...
+ *  * result_set_holdabilities
+ *   * list - CLOSE_CURSORS_AT_COMMIT,HOLD_CURSORS_OVER_COMMIT
+ *  * result_set_types
+ *   * list - FORWARD_ONLY,SCROLL_INSENSITIVE,SCROLL_SENSITIVE
+ *  * revoke_clauses
+ *   * list - CASCADE,DELETE_TABLE,GRANT_OPTION_FOR,...
+ *  * row_id_lifetime
+ *   * string
+ *  * row_value_constructor_expressions
+ *   * list - VALUE_EXPRESSION,NULL,DEFAULT,ROW_SUBQUERY
+ *  * schema_term
+ *   * string
+ *  * schema_usage
+ *   * list - DATA_MANIPULATION,INDEX_DEFINITIONS,...
+ *  * scroll_concurrencies
+ *   * list - READ_ONLY,LOCK,OPT_ROWVER,OPT_VALUES
+ *  * search_string_escape
+ *   * string
+ *  * sql_grammar_levels
+ *   * list - CORE,EXTENDED,MINIMUM
+ *  * sql_keywords
+ *   * list - ACCESS,ADD,ALTER,AUDIT,CLUSTER,COLUMN,COMMENT,...
+ *  * sql_state_type
+ *   * number
+ *  * static_cursor_attributes
+ *   * list - NEXT,ABSOLUTE,RELATIVE,BOOKMARK,...
+ *  * stored_programs
+ *   * list - FUNCTIONS,PROCEDURES
+ *  * string_functions
+ *   * list - CONCAT,INSERT,LEFT,LTRIM,LENGTH,LOCATE,LCASE,...
+ *  * subquery_usage
+ *   * list - COMPARISONS,EXISTS,INS,QUANTIFIEDS
+ *  * supports_batch_updates
+ *   * true/false
+ *  * supports_column_aliasing
+ *   * true/false
+ *  * supports_convert
+ *   * true/false
+ *  * supports_correlated_subqueries
+ *   * true/false
+ *  * supports_describe_parameter
+ *   * true/false
+ *  * supports_expressions_in_order_by
+ *   * true/false
+ *  * supports_get_generated_keys
+ *   * true/false
+ *  * supports_integrity_enhancement_facility
+ *   * true/false
+ *  * supports_like_escape_clause
+ *   * true/false
+ *  * supports_multiple_result_sets
+ *   * true/false
+ *  * supports_multiple_transactions
+ *   * true/false
+ *  * supports_named_parameters
+ *   * true/false
+ *  * supports_non_nullable_columns
+ *   * true/false
+ *  * supports_order_by_unrelated
+ *   * true/false
+ *  * supports_savepoints
+ *   * true/false
+ *  * supports_select_for_update
+ *   * true/false
+ *  * supports_transactions
+ *   * true/false
+ *  * system_functions
+ *   * list - USER,DBNAME,IFNULL
+ *  * table_correlation_names
+ *   * list - BASIC,DIFFERENT
+ *  * table_term
+ *   * string
+ *  * time_date_add_intervals
+ *   * list - FRAC_SECOND,SECOND,MINUTE,HOUR,DAY,WEEK,MONTH,...
+ *  * time_date_diff_intervals
+ *   * list - FRAC_SECOND,SECOND,MINUTE,HOUR,DAY,WEEK,MONTH,...
+ *  * time_date_functions
+ *   * list - NOW,CURDATE,DAYOFMONTH,DAYOFWEEK,DAYOFYEAR,...
+ *  * time_date_literals
+ *   * list - DATE,TIME,TIMESTAMP,INTERVAL_YEAR,...
+ *  * transaction_ddl_dml
+ *   * list - DDL_AND_DML,DML_ONLY
+ *  * union_clauses
+ *   * list - UNION,UNION_ALL
+ *  * updates_are_detected
+ *   * list - FORWARD_ONLY,SCROLL_INSENSITIVE,SCROLL_SENSITIVE
+ *  * value_expressions
+ *   * list - CASE,CAST,COALESCE,NULLIF
+ *  * where_current_of_operations
+ *   * list - DELETE,UPDATE
+ *
+ *  Returns the value of the feature as a string, or NULL if
+ *  an error occurred or an invalid feature was requested. */
+DLEXPORT ZEND_FUNCTION(sqlrcon_getDatabaseFeature) {
+	ZVAL sqlrcon;
+	ZVAL feature;
+	const char *r;
+	if (ZEND_NUM_ARGS() != 2 ||
+		GET_PARAMETERS(
+				ZEND_NUM_ARGS() TSRMLS_CC,
+				PARAMS("zz")
+				&sqlrcon,
+				&feature) == FAILURE) {
+		WRONG_PARAM_COUNT;
+	}
+	convert_to_string_ex(feature);
+	sqlrconnection *connection=NULL;
+	ZEND_FETCH_RESOURCE(connection,
+				sqlrconnection *,
+				sqlrcon,
+				-1,
+				"sqlrelay connection",
+				sqlrelay_connection);
+	if (connection) {
+		r=connection->getDatabaseFeature(SVAL(feature));
+		if (r) {
+			RET_STRING(const_cast<char *>(r),1);
+		}
+	}
+	RETURN_FALSE;
+}
+
+/**
+ *  call-seq:
+ *  sqlrcon_errorMessage($sqlrconref)
+ *
+ *  If an operation failed and generated an error, the error message is
+ *  available here.  If there is no error then this method returns NULL. */
 DLEXPORT ZEND_FUNCTION(sqlrcon_errormessage) {
 	ZVAL sqlrcon;
 	const char *r;
@@ -786,6 +2440,12 @@ DLEXPORT ZEND_FUNCTION(sqlrcon_errormessage) {
 	RETURN_NULL();
 }
 
+/**
+ *  call-seq:
+ *  sqlrcon_errorNumber($sqlrconref)
+ *
+ *  If an operation failed and generated an error, the error number is
+ *  available here.  If there is no error then this method returns 0. */
 DLEXPORT ZEND_FUNCTION(sqlrcon_errornumber) {
 	ZVAL sqlrcon;
 	int64_t r;
@@ -812,6 +2472,14 @@ DLEXPORT ZEND_FUNCTION(sqlrcon_errornumber) {
 	RETURN_LONG(0);
 }
 
+/**
+ *  call-seq:
+ *  sqlrcon_debugOn($sqlrconref)
+ *
+ *  Causes verbose debugging information to be sent to standard output.
+ *  Another way to do this is to start a query with "-- debug\n".
+ *  Yet another way is to set the environment variable SQLR_CLIENT_DEBUG
+ *  to "ON" */
 DLEXPORT ZEND_FUNCTION(sqlrcon_debugon) {
 	ZVAL sqlrcon;
 	if (ZEND_NUM_ARGS() != 1 || 
@@ -833,6 +2501,11 @@ DLEXPORT ZEND_FUNCTION(sqlrcon_debugon) {
 	}
 }
 
+/**
+ *  call-seq:
+ *  sqlrcon_debugOff($sqlrconref)
+ *
+ *  Turns debugging off. */
 DLEXPORT ZEND_FUNCTION(sqlrcon_debugoff) {
 	ZVAL sqlrcon;
 	if (ZEND_NUM_ARGS() != 1 || 
@@ -854,6 +2527,11 @@ DLEXPORT ZEND_FUNCTION(sqlrcon_debugoff) {
 	}
 }
 
+/**
+ *  call-seq:
+ *  sqlrcon_getDebug($sqlrconref)
+ *
+ *  Returns 0 if debugging is off and 1 if debugging is on. */
 DLEXPORT ZEND_FUNCTION(sqlrcon_getdebug) {
 	ZVAL sqlrcon;
 	bool r;
@@ -880,6 +2558,13 @@ DLEXPORT ZEND_FUNCTION(sqlrcon_getdebug) {
 	RETURN_FALSE;
 }
 
+/**
+ *  call-seq:
+ *  sqlrcon_setDebugFile($sqlrconref, $filename)
+ *
+ *  Allows you to specify a file to write debug to.
+ *  Setting "filename" to NULL or an empty string causes debug
+ *  to be written to standard output (the default). */
 DLEXPORT ZEND_FUNCTION(sqlrcon_setdebugfile) {
 	ZVAL sqlrcon;
 	ZVAL filename;
@@ -904,6 +2589,14 @@ DLEXPORT ZEND_FUNCTION(sqlrcon_setdebugfile) {
 	}
 }
 
+/**
+ *  call-seq:
+ *  sqlrcon_setClientInfo($sqlrconref, $clientinfo)
+ *
+ *  Allows you to set a string that will be passed to the
+ *  server and ultimately included in server-side logging
+ *  along with queries that were run by this instance of
+ *  the client. */
 DLEXPORT ZEND_FUNCTION(sqlrcon_setclientinfo) {
 	ZVAL sqlrcon;
 	ZVAL clientinfo;
@@ -928,6 +2621,11 @@ DLEXPORT ZEND_FUNCTION(sqlrcon_setclientinfo) {
 	}
 }
 
+/**
+ *  call-seq:
+ *  sqlrcon_getClientInfo($sqlrconref)
+ *
+ *  Returns the string that was set by setClientInfo(). */
 DLEXPORT ZEND_FUNCTION(sqlrcon_getclientinfo) {
 	ZVAL sqlrcon;
 	const char *r;
@@ -954,6 +2652,12 @@ DLEXPORT ZEND_FUNCTION(sqlrcon_getclientinfo) {
 	RETURN_FALSE;
 }
 
+/**
+ *  call-seq:
+ *  sqlrcur_alloc($sqlrconref)
+ *
+ *  Creates a cursor to run queries and fetch
+ *  result sets using connection "sqlrconref" */
 DLEXPORT ZEND_FUNCTION(sqlrcur_alloc) {
 	zval	**sqlrcon;
 	if (ZEND_NUM_ARGS() != 1 || 
@@ -977,6 +2681,11 @@ DLEXPORT ZEND_FUNCTION(sqlrcur_alloc) {
 	ZEND_REGISTER_RESOURCE(return_value,cursor,sqlrelay_cursor);
 }
 
+/**
+ *  call-seq:
+ *  sqlrcur_free($sqlrcurref)
+ *
+ *  Destroys the cursor and cleans up all associated result set data. */
 DLEXPORT ZEND_FUNCTION(sqlrcur_free) {
 	ZVAL sqlrcur;
 	if (ZEND_NUM_ARGS() != 1 || 
@@ -996,6 +2705,12 @@ DLEXPORT ZEND_FUNCTION(sqlrcur_free) {
 	ZEND_LIST_DELETE(sqlrcur);
 }
 
+/**
+ *  call-seq:
+ *  sqlrcur_setResultSetBufferSize($sqlrcurref, $rows)
+ *
+ *  Sets the number of rows of the result set to buffer at a time.
+ *  0 (the default) means buffer the entire result set. */
 DLEXPORT ZEND_FUNCTION(sqlrcur_setresultsetbuffersize) {
 	ZVAL sqlrcur;
 	ZVAL rows;
@@ -1019,6 +2734,12 @@ DLEXPORT ZEND_FUNCTION(sqlrcur_setresultsetbuffersize) {
 	}
 }
 
+/**
+ *  call-seq:
+ *  sqlrcur_getResultSetBufferSize($sqlrcurref)
+ *
+ *  Returns the number of result set rows that will be buffered at a time or
+ *  0 for the entire result set. */
 DLEXPORT ZEND_FUNCTION(sqlrcur_getresultsetbuffersize) {
 	ZVAL sqlrcur;
 	uint64_t r;
@@ -1043,6 +2764,13 @@ DLEXPORT ZEND_FUNCTION(sqlrcur_getresultsetbuffersize) {
 	RETURN_LONG(0);
 }
 
+/**
+ *  call-seq:
+ *  sqlrcur_dontGetColumnInfo($sqlrcurref)
+ *
+ *  Tells the server not to send any column info (names, types, sizes).  If
+ *  you don't need that info, you should call this function to improve
+ *  performance. */
 DLEXPORT ZEND_FUNCTION(sqlrcur_dontgetcolumninfo) {
 	ZVAL sqlrcur;
 	if (ZEND_NUM_ARGS() != 1 || 
@@ -1064,6 +2792,11 @@ DLEXPORT ZEND_FUNCTION(sqlrcur_dontgetcolumninfo) {
 	}
 }
 
+/**
+ *  call-seq:
+ *  sqlrcur_getColumnInfo($sqlrcurref)
+ *
+ *  Tells the server to send column info. */
 DLEXPORT ZEND_FUNCTION(sqlrcur_getcolumninfo) {
 	ZVAL sqlrcur;
 	if (ZEND_NUM_ARGS() != 1 || 
@@ -1085,6 +2818,12 @@ DLEXPORT ZEND_FUNCTION(sqlrcur_getcolumninfo) {
 	}
 }
 
+/**
+ *  call-seq:
+ *  sqlrcur_mixedCaseColumnNames($sqlrcurref)
+ *
+ *  Columns names are returned in the same case as they are defined in the
+ *  database.  This is the default. */
 DLEXPORT ZEND_FUNCTION(sqlrcur_mixedcasecolumnnames) {
 	ZVAL sqlrcur;
 	if (ZEND_NUM_ARGS() != 1 || 
@@ -1106,6 +2845,11 @@ DLEXPORT ZEND_FUNCTION(sqlrcur_mixedcasecolumnnames) {
 	}
 }
 
+/**
+ *  call-seq:
+ *  sqlrcur_upperCaseColumnNames($sqlrcurref)
+ *
+ *  Columns names are converted to upper case. */
 DLEXPORT ZEND_FUNCTION(sqlrcur_uppercasecolumnnames) {
 	ZVAL sqlrcur;
 	if (ZEND_NUM_ARGS() != 1 || 
@@ -1127,6 +2871,11 @@ DLEXPORT ZEND_FUNCTION(sqlrcur_uppercasecolumnnames) {
 	}
 }
 
+/**
+ *  call-seq:
+ *  sqlrcur_lowerCaseColumnNames($sqlrcurref)
+ *
+ *  Columns names are converted to lower case. */
 DLEXPORT ZEND_FUNCTION(sqlrcur_lowercasecolumnnames) {
 	ZVAL sqlrcur;
 	if (ZEND_NUM_ARGS() != 1 || 
@@ -1148,6 +2897,22 @@ DLEXPORT ZEND_FUNCTION(sqlrcur_lowercasecolumnnames) {
 	}
 }
 
+/**
+ *  call-seq:
+ *  sqlrcur_cacheToFile($sqlrcurref, $filename)
+ *
+ *  Sets query caching on.  Future queries
+ *  will be cached to the file "filename".
+ *
+ *  A default time-to-live of 10 minutes is
+ *  also set.
+ *
+ *  Note that once cacheToFile() is called,
+ *  the result sets of all future queries will
+ *  be cached to that file until another call
+ *  to cacheToFile() changes which file to
+ *  cache to or a call to cacheOff() turns off
+ *  caching. */
 DLEXPORT ZEND_FUNCTION(sqlrcur_cachetofile) {
 	ZVAL sqlrcur;
 	ZVAL filename;
@@ -1172,6 +2937,13 @@ DLEXPORT ZEND_FUNCTION(sqlrcur_cachetofile) {
 	}
 }
 
+/**
+ *  call-seq:
+ *  sqlrcur_setCacheTtl($sqlrcurref, $ttl)
+ *
+ *  Sets the time-to-live for cached result sets. The sqlr-cachemanger will
+ *  remove each cached result set "ttl" seconds after it's created, provided
+ *  it's scanning the directory containing the cache files. */
 DLEXPORT ZEND_FUNCTION(sqlrcur_setcachettl) {
 	ZVAL sqlrcur;
 	ZVAL ttl;
@@ -1196,6 +2968,12 @@ DLEXPORT ZEND_FUNCTION(sqlrcur_setcachettl) {
 	}
 }
 
+/**
+ *  call-seq:
+ *  sqlrcur_getCacheFileName($sqlrcurref)
+ *
+ *  Returns the name of the file containing the
+ *  cached result set. */
 DLEXPORT ZEND_FUNCTION(sqlrcur_getcachefilename) {
 	ZVAL sqlrcur;
 	const char *r;
@@ -1222,6 +3000,11 @@ DLEXPORT ZEND_FUNCTION(sqlrcur_getcachefilename) {
 	RETURN_FALSE;
 }
 
+/**
+ *  call-seq:
+ *  sqlrcur_cacheOff($sqlrcurref)
+ *
+ *  Sets query caching off. */
 DLEXPORT ZEND_FUNCTION(sqlrcur_cacheoff) {
 	ZVAL sqlrcur;
 	if (ZEND_NUM_ARGS() != 1 || 
@@ -1243,6 +3026,28 @@ DLEXPORT ZEND_FUNCTION(sqlrcur_cacheoff) {
 	}
 }
 
+/**
+ *  call-seq:
+ *  sqlrcur_getDatabaseList($sqlrcurref, $wild)
+ *
+ *  Generates a result set containing databases that match the
+ *  pattern "databases".
+ *
+ *  The result set will contain the following columns:
+ *  * Database
+ *
+ *  If "databases" is empty or NULL then a result set
+ *  containing all databases will be returned.
+ *
+ *  May actually return a result set of catalogs or schemas,
+ *  depending on whether the backend database equates
+ *  "database" with catalog or schema.
+ *
+ *  See getDatabaseIsSchema().
+ *
+ *  If SQL Relay doesn't support getting a list of databases
+ *  for the current database backend (or the database doesn't)
+ *  then an empty result set will be returned. */
 DLEXPORT ZEND_FUNCTION(sqlrcur_getdatabaselist) {
 	ZVAL sqlrcur;
 	ZVAL databases;
@@ -1270,6 +3075,22 @@ DLEXPORT ZEND_FUNCTION(sqlrcur_getdatabaselist) {
 	RETURN_LONG(0);
 }
 
+/**
+ *  call-seq:
+ *  sqlrcur_getCatalogList($sqlrcurref, $wild)
+ *
+ *  Generates a result set containing catalogs that match the
+ *  pattern "catalog".
+ *
+ *  The result set will contain the following columns:
+ *  * Database
+ *
+ *  If "catalog" is empty or NULL then a result set containing
+ *  all catalogs will be returned.
+ *
+ *  If SQL Relay doesn't support getting a list of catalogs
+ *  for the current database backend (or the database doesn't)
+ *  then an empty result set will be returned. */
 DLEXPORT ZEND_FUNCTION(sqlrcur_getcataloglist) {
 	ZVAL sqlrcur;
 	ZVAL catalogs;
@@ -1297,6 +3118,25 @@ DLEXPORT ZEND_FUNCTION(sqlrcur_getcataloglist) {
 	RETURN_LONG(0);
 }
 
+/**
+ *  call-seq:
+ *  sqlrcur_getSchemaList($sqlrcurref, $wild)
+ *
+ *  Generates a result set containing schemas that match the
+ *  pattern "schemas".
+ *
+ *  The result set will contain the following columns:
+ *  * Database
+ *
+ *  (The column name is a bit of a misnomer, the results are
+ *  schemas, not databases.)
+ *
+ *  If "schemas" is empty or NULL then a result set containing
+ *  all schemas in the current database will be returned.
+ *
+ *  If SQL Relay doesn't support getting a list of schemas
+ *  for the current database backend (or the database doesn't)
+ *  then an empty result set will be returned. */
 DLEXPORT ZEND_FUNCTION(sqlrcur_getschemalist) {
 	ZVAL sqlrcur;
 	ZVAL schemas;
@@ -1324,6 +3164,18 @@ DLEXPORT ZEND_FUNCTION(sqlrcur_getschemalist) {
 	RETURN_LONG(0);
 }
 
+/**
+ *  call-seq:
+ *  sqlrcur_getTableTypeList($sqlrcurref)
+ *
+ *  Generates a result set containing supported table types.
+ *
+ *  The result set will contain the following columns:
+ *  * table_type
+ *
+ *  If SQL Relay doesn't support getting a list of table types
+ *  for the current database backend (or the database doesn't)
+ *  then an empty result set will be returned. */
 DLEXPORT ZEND_FUNCTION(sqlrcur_gettabletypelist) {
 	ZVAL sqlrcur;
 	bool r;
@@ -1348,6 +3200,22 @@ DLEXPORT ZEND_FUNCTION(sqlrcur_gettabletypelist) {
 	RETURN_LONG(0);
 }
 
+/**
+ *  call-seq:
+ *  sqlrcur_getTableList($sqlrcurref, $wild)
+ *
+ *  Generates a result set containing the tables in the current
+ *  database and schema that match the pattern "tables".
+ *
+ *  The result set will contain the following columns:
+ *  * Tables_in_xxx
+ *
+ *  If "tables" is empty or NULL then a result set containing
+ *  all tables in the current database/schema will be returned.
+ *
+ *  If SQL Relay doesn't support getting a list of tables
+ *  for the current database backend (or the database doesn't)
+ *  then an empty result set will be returned. */
 DLEXPORT ZEND_FUNCTION(sqlrcur_gettablelist) {
 	ZVAL sqlrcur;
 	ZVAL tables;
@@ -1375,6 +3243,41 @@ DLEXPORT ZEND_FUNCTION(sqlrcur_gettablelist) {
 	RETURN_LONG(0);
 }
 
+/**
+ *  call-seq:
+ *  sqlrcur_getTypeInfoList($sqlrcurref, $type)
+ *
+ *  Generates a result set containing data type information for
+ *  "type".
+ *
+ *  The result set will contain the following columns:
+ *  * type_name
+ *  * data_type
+ *  * precision
+ *  * literal_prefix
+ *  * literal_suffix
+ *  * create_params
+ *  * nullable
+ *  * case_sensitive
+ *  * searchable
+ *  * unsigned_attribute
+ *  * fixed_prec_scale
+ *  * auto_increment
+ *  * local_type_name
+ *  * minumum_scale
+ *  * maxiumm_scale
+ *  * sql_data_type
+ *  * sql_datetime_sub
+ *  * num_prec_radix
+ *  * interval_precision
+ *
+ *  If "type" is empty or NULL then a result set containing
+ *  all data types in the current databas/schema will be
+ *  returned.
+ *
+ *  If SQL Relay doesn't support getting type info
+ *  for the current database backend (or the database doesn't)
+ *  then an empty result set will be returned. */
 DLEXPORT ZEND_FUNCTION(sqlrcur_gettypeinfolist) {
 	ZVAL sqlrcur;
 	ZVAL type;
@@ -1402,6 +3305,30 @@ DLEXPORT ZEND_FUNCTION(sqlrcur_gettypeinfolist) {
 	RETURN_LONG(0);
 }
 
+/**
+ *  call-seq:
+ *  sqlrcur_getColumnList($sqlrcurref, $table, $wild)
+ *
+ *  Generates a result set containing the columns of "table",
+ *  which match the pattern "columns".
+ *
+ *  The result set will contain the following columns:
+ *  * column_name
+ *  * data_type
+ *  * character_maximum_length
+ *  * numeric_precision
+ *  * numeric_scale
+ *  * is_nullable
+ *  * column_key
+ *  * column_default
+ *  * extra
+ *
+ *  If "columns" is empty or NULL then a list of all columns
+ *  of "table" will be returned.
+ *
+ *  If SQL Relay doesn't support getting a list of columns
+ *  for the current database backend (or the database doesn't)
+ *  then an empty result set will be returned. */
 DLEXPORT ZEND_FUNCTION(sqlrcur_getcolumnlist) {
 	ZVAL sqlrcur;
 	ZVAL table;
@@ -1433,6 +3360,34 @@ DLEXPORT ZEND_FUNCTION(sqlrcur_getcolumnlist) {
 	RETURN_LONG(0);
 }
 
+/**
+ *  call-seq:
+ *  sqlrcur_getPrimaryKeysList($sqlrcurref, $table, $wild)
+ *
+ *  Generates a result set containing the primary keys of
+ *  "table", which match the pattern "columns".
+ *
+ *  The result set will contain the following columns:
+ *  * table
+ *  * non_unique
+ *  * key_name
+ *  * seq_in_index
+ *  * column_name
+ *  * collation
+ *  * cardinality
+ *  * sub_part
+ *  * packed
+ *  * null
+ *  * index_type
+ *  * comment
+ *  * index_comment
+ *
+ *  If "columns" is empty or NULL then a result set containing
+ *  all primary keys of "table" will be returned.
+ *
+ *  If SQL Relay doesn't support getting a list of primary keys
+ *  for the current database backend (or the database doesn't)
+ *  then an empty result set will be returned. */
 DLEXPORT ZEND_FUNCTION(sqlrcur_getprimarykeyslist) {
 	ZVAL sqlrcur;
 	ZVAL table;
@@ -1464,6 +3419,35 @@ DLEXPORT ZEND_FUNCTION(sqlrcur_getprimarykeyslist) {
 	RETURN_LONG(0);
 }
 
+/**
+ *  call-seq:
+ *  sqlrcur_getKeyAndIndexList($sqlrcurref, $table, $wild)
+ *
+ *  Generates a result set containing the keys and indexes of
+ *  "table", which match the pattern "qualifier".
+ *
+ *  The result set will contain the following columns:
+ *  * table
+ *  * non_unique
+ *  * key_name
+ *  * seq_in_index
+ *  * column_name
+ *  * collation
+ *  * cardinality
+ *  * sub_part
+ *  * packed
+ *  * null
+ *  * index_type
+ *  * comment
+ *  * index_comment
+ *
+ *  If "qualifier" is empty or NULL then a result set
+ *  containing all keys and indexes of "table" will be
+ *  returned.
+ *
+ *  If SQL Relay doesn't support getting a list of keys and
+ *  indexes for the current database backend (or the database
+ *  doesn't) then an empty result set will be returned. */
 DLEXPORT ZEND_FUNCTION(sqlrcur_getkeyandindexlist) {
 	ZVAL sqlrcur;
 	ZVAL table;
@@ -1495,6 +3479,26 @@ DLEXPORT ZEND_FUNCTION(sqlrcur_getkeyandindexlist) {
 	RETURN_LONG(0);
 }
 
+/**
+ *  call-seq:
+ *  sqlrcur_getProcedureList($sqlrcurref, $wild)
+ *
+ *  Generates a result set containing procedures that match the
+ *  pattern "procedures".
+ *
+ *  The result set will contain the following columns:
+ *  * routine_catalog
+ *  * routine_schema
+ *  * routine_name
+ *  * data_type
+ *
+ *  If "procedures" is empty or NULL then a result set
+ *  containing all procedures in the current database/schema
+ *  will be returned.
+ *
+ *  If SQL Relay doesn't support getting a list of procedures
+ *  for the current database backend (or the database doesn't)
+ *  then an empty result set will be returned. */
 DLEXPORT ZEND_FUNCTION(sqlrcur_getprocedurelist) {
 	ZVAL sqlrcur;
 	ZVAL procedures;
@@ -1522,6 +3526,27 @@ DLEXPORT ZEND_FUNCTION(sqlrcur_getprocedurelist) {
 	RETURN_LONG(0);
 }
 
+/**
+ *  call-seq:
+ *  sqlrcur_getProcedureParameterList($sqlrcurref, $procedure, $wild)
+ *
+ *  Generates a result set containing the parameters of
+ *  "procedure", which match the pattern "parameters".
+ *
+ *  The result set will contain the following columns:
+ *  * parameter_name
+ *  * parameter_mode
+ *  * data_type
+ *  * character_maximum_length
+ *  * ordinal_position
+ *
+ *  If "parameters" is empty or NULL then a result set
+ *  containing all parameters of "procedure" will be returned.
+ *
+ *  If SQL Relay doesn't support getting a list of procedure
+ *  parameters for the current database backend (or the
+ *  database doesn't) then an empty result set will be
+ *  returned. */
 DLEXPORT ZEND_FUNCTION(sqlrcur_getprocedureparameterlist) {
 	ZVAL sqlrcur;
 	ZVAL procedure;
@@ -1553,6 +3578,11 @@ DLEXPORT ZEND_FUNCTION(sqlrcur_getprocedureparameterlist) {
 	RETURN_LONG(0);
 }
 
+/**
+ *  call-seq:
+ *  sqlrcur_sendQuery($sqlrcurref, $query)
+ *
+ *  Sends "query" directly and gets a result set. */
 DLEXPORT ZEND_FUNCTION(sqlrcur_sendquery) {
 	ZVAL sqlrcur;
 	ZVAL query;
@@ -1580,6 +3610,12 @@ DLEXPORT ZEND_FUNCTION(sqlrcur_sendquery) {
 	RETURN_LONG(0);
 }
 
+/**
+ *  call-seq:
+ *  sqlrcur_sendQueryWithLength($sqlrcurref, $query, $length)
+ *
+ *  Sends "query" with length "length" directly and gets a result set. This
+ *  function must be used if the query contains binary data. */
 DLEXPORT ZEND_FUNCTION(sqlrcur_sendquerywithlength) {
 	ZVAL sqlrcur;
 	ZVAL query;
@@ -1611,6 +3647,11 @@ DLEXPORT ZEND_FUNCTION(sqlrcur_sendquerywithlength) {
 	RETURN_LONG(0);
 }
 
+/**
+ *  call-seq:
+ *  sqlrcur_sendFileQuery($sqlrcurref, $path, $filename)
+ *
+ *  Sends the query in file "path"/"filename" directly and gets a result set. */
 DLEXPORT ZEND_FUNCTION(sqlrcur_sendfilequery) {
 	ZVAL sqlrcur;
 	ZVAL path;
@@ -1643,6 +3684,11 @@ DLEXPORT ZEND_FUNCTION(sqlrcur_sendfilequery) {
 	RETURN_LONG(0);
 }
 
+/**
+ *  call-seq:
+ *  sqlrcur_prepareQuery($sqlrcurref, $query)
+ *
+ *  Prepare to execute "query". */
 DLEXPORT ZEND_FUNCTION(sqlrcur_preparequery) {
 	ZVAL sqlrcur;
 	ZVAL query;
@@ -1667,6 +3713,12 @@ DLEXPORT ZEND_FUNCTION(sqlrcur_preparequery) {
 	}
 }
 
+/**
+ *  call-seq:
+ *  sqlrcur_prepareQueryWithLength($sqlrcurref, $query, $length)
+ *
+ *  Prepare to execute "query" with length "length".  This function must be
+ *  used if the query contains binary data. */
 DLEXPORT ZEND_FUNCTION(sqlrcur_preparequerywithlength) {
 	ZVAL sqlrcur;
 	ZVAL query;
@@ -1695,6 +3747,12 @@ DLEXPORT ZEND_FUNCTION(sqlrcur_preparequerywithlength) {
 	}
 }
 
+/**
+ *  call-seq:
+ *  sqlrcur_prepareFileQuery($sqlrcurref, $path, $filename)
+ *
+ *  Prepare to execute the contents of "path"/"filename".  Returns false if the
+ *  file couldn't be opened. */
 DLEXPORT ZEND_FUNCTION(sqlrcur_preparefilequery) {
 	ZVAL sqlrcur;
 	ZVAL path;
@@ -1726,6 +3784,13 @@ DLEXPORT ZEND_FUNCTION(sqlrcur_preparefilequery) {
 	RETURN_LONG(0);
 }
 
+/**
+ *  call-seq:
+ *  sqlrcur_substitution($sqlrcurref, $variable, $value, $precision, $scale)
+ *
+ *  Defines a substitution variable.  The value may be a string,
+ *  integer or decimal.  If it is a decimal, then precision and scale may
+ *  also be specified */
 DLEXPORT ZEND_FUNCTION(sqlrcur_substitution) {
 	ZVAL sqlrcur;
 	ZVAL variable;
@@ -1788,15 +3853,48 @@ DLEXPORT ZEND_FUNCTION(sqlrcur_substitution) {
 	RETURN_LONG(0);
 }
 
-DLEXPORT ZEND_FUNCTION(sqlrcur_clearbinds) {
+/**
+ *  call-seq:
+ *  sqlrcur_substitutions($sqlrcurref, $variables, $values, $precisions, $scales)
+ *
+ *  Defines an array of substitution variables.  The values may be
+ *  strings, integers or decimals.  If they are decimals, then precisions and
+ *  scales may also be specified */
+DLEXPORT ZEND_FUNCTION(sqlrcur_substitutions) {
 	ZVAL sqlrcur;
-	if (ZEND_NUM_ARGS() != 1 || 
+	ZVAL variables;
+	ZVAL values;
+	ZVAL precisions;
+	ZVAL scales;
+	ZVAL var;
+	ZVAL val;
+	ZVAL precision;
+	ZVAL scale;
+	unsigned int i;
+	if (ZEND_NUM_ARGS() != 3 ||
 		GET_PARAMETERS(
 				ZEND_NUM_ARGS() TSRMLS_CC,
-				PARAMS("z")
-				&sqlrcur) == FAILURE) {
-		WRONG_PARAM_COUNT;
+				PARAMS("zzz")
+				&sqlrcur,
+				&variables,
+				&values) == FAILURE) {
+		if (ZEND_NUM_ARGS() != 5 || 
+			GET_PARAMETERS(
+				ZEND_NUM_ARGS() TSRMLS_CC,
+					PARAMS("zzzzz")
+					&sqlrcur,
+					&variables,
+					&values,
+					&precisions,
+					&scales)== FAILURE) {
+			WRONG_PARAM_COUNT;
+		} else {
+			convert_to_array_ex(precisions);
+			convert_to_array_ex(scales);
+		}
 	}
+	convert_to_array_ex(variables);
+	convert_to_array_ex(values);
 	sqlrcursor *cursor=NULL;
 	ZEND_FETCH_RESOURCE(cursor,
 				sqlrcursor *,
@@ -1804,35 +3902,51 @@ DLEXPORT ZEND_FUNCTION(sqlrcur_clearbinds) {
 				-1,
 				"sqlrelay cursor",
 				sqlrelay_cursor);
+	long	success=1;
 	if (cursor) {
-		cursor->clearBinds();
+		for (i=0; i<ARRVAL(variables)->nNumOfElements; i++) {
+			HASH_INDEX_FIND(ARRVAL(variables),i,var);
+			HASH_INDEX_FIND(ARRVAL(values),i,val);
+			if (TYPE(val)==IS_STRING) {
+				convert_to_string_ex(val);
+				cursor->substitution(SVAL(var),
+							SVAL(val));
+			} else if (TYPE(val)==IS_LONG) {
+				convert_to_long_ex(val);
+				cursor->substitution(SVAL(var),
+							LVAL(val));
+			} else if (ZEND_NUM_ARGS()==5 &&
+						TYPE(val)==IS_DOUBLE) {
+				HASH_INDEX_FIND(ARRVAL(precisions),i,precision);
+				HASH_INDEX_FIND(ARRVAL(scales),i,scale);
+				convert_to_double_ex(val);
+				convert_to_long_ex(precision);
+				convert_to_long_ex(scale);
+				cursor->substitution(
+					SVAL(var),
+					DVAL(val),
+					(unsigned short)LVAL(precision),
+					(unsigned short)LVAL(scale));
+			} else if (TYPE(val)==IS_NULL) {
+				cursor->substitution(SVAL(var),
+							(const char *)NULL);
+			} else {
+				success=0;
+			}
+		}
 	}
+	RETURN_LONG(success);
 }
 
-DLEXPORT ZEND_FUNCTION(sqlrcur_countbindvariables) {
-	ZVAL sqlrcur;
-	uint16_t r;
-	if (ZEND_NUM_ARGS() != 1 || 
-		GET_PARAMETERS(
-				ZEND_NUM_ARGS() TSRMLS_CC,
-				PARAMS("z")
-				&sqlrcur) == FAILURE) {
-		WRONG_PARAM_COUNT;
-	}
-	sqlrcursor *cursor=NULL;
-	ZEND_FETCH_RESOURCE(cursor,
-				sqlrcursor *,
-				sqlrcur,
-				-1,
-				"sqlrelay cursor",
-				sqlrelay_cursor);
-	if (cursor) {
-		r=cursor->countBindVariables();
-		RETURN_LONG(r);
-	}
-	RETURN_LONG(0);
-}
-
+/**
+ *  call-seq:
+ *  sqlrcur_inputBind($sqlrcurref, $variable, $value, $precision, $scale)
+ *
+ *  Defines an input bind variable.  The value may be a string,
+ *  integer or decimal.  If the value is a decimal, then precision and scale may
+ *  also be specified.  If you don't have the precision and scale then set them
+ *  both to 0.  However in that case you may get unexpected rounding behavior
+ *  if the server is faking binds. */
 DLEXPORT ZEND_FUNCTION(sqlrcur_inputbind) {
 	ZVAL sqlrcur;
 	ZVAL variable;
@@ -1913,393 +4027,13 @@ DLEXPORT ZEND_FUNCTION(sqlrcur_inputbind) {
 	RETURN_LONG(0);
 }
 
-DLEXPORT ZEND_FUNCTION(sqlrcur_inputbinddate) {
-	ZVAL sqlrcur;
-	ZVAL variable;
-	ZVAL year;
-	ZVAL month;
-	ZVAL day;
-	ZVAL hour;
-	ZVAL minute;
-	ZVAL second;
-	ZVAL microsecond;
-	ZVAL tz;
-	ZVAL isnegative;
-	if (ZEND_NUM_ARGS() != 11 ||
-		GET_PARAMETERS(
-				ZEND_NUM_ARGS() TSRMLS_CC,
-				PARAMS("zzzzzzzzzzz")
-				&sqlrcur,
-				&variable,
-				&year,
-				&month,
-				&day,
-				&hour,
-				&minute,
-				&second,
-				&microsecond,
-				&tz,
-				&isnegative) == FAILURE) {
-		WRONG_PARAM_COUNT;
-	}
-	convert_to_string_ex(variable);
-	convert_to_long_ex(year);
-	convert_to_long_ex(month);
-	convert_to_long_ex(day);
-	convert_to_long_ex(hour);
-	convert_to_long_ex(minute);
-	convert_to_long_ex(second);
-	convert_to_long_ex(microsecond);
-	convert_to_string_ex(tz);
-	convert_to_long_ex(isnegative);
-	sqlrcursor *cursor=NULL;
-	ZEND_FETCH_RESOURCE(cursor,
-				sqlrcursor *,
-				sqlrcur,
-				-1,
-				"sqlrelay cursor",
-				sqlrelay_cursor);
-	if (cursor) {
-		cursor->inputBind(SVAL(variable),
-					(int16_t)LVAL(year),
-					(int16_t)LVAL(month),
-					(int16_t)LVAL(day),
-					(int16_t)LVAL(hour),
-					(int16_t)LVAL(minute),
-					(int16_t)LVAL(second),
-					(int32_t)LVAL(microsecond),
-					SVAL(tz),
-					(bool)LVAL(isnegative));
-		RETURN_LONG(1);
-	}
-	RETURN_LONG(0);
-}
-
-DLEXPORT ZEND_FUNCTION(sqlrcur_inputbindblob) {
-	ZVAL sqlrcur;
-	ZVAL variable;
-	ZVAL value;
-	ZVAL size;
-	if (ZEND_NUM_ARGS() != 4 ||
-		GET_PARAMETERS(
-				ZEND_NUM_ARGS() TSRMLS_CC,
-				PARAMS("zzzz")
-				&sqlrcur,
-				&variable,
-				&value,
-				&size) == FAILURE) {
-		WRONG_PARAM_COUNT;
-	}
-	convert_to_string_ex(variable);
-	bool	valueisnull=(TYPE(value)==IS_NULL);
-	if (!valueisnull) {
-		convert_to_string_ex(value);
-	}
-	convert_to_long_ex(size);
-	sqlrcursor *cursor=NULL;
-	ZEND_FETCH_RESOURCE(cursor,
-				sqlrcursor *,
-				sqlrcur,
-				-1,
-				"sqlrelay cursor",
-				sqlrelay_cursor);
-	if (cursor) {
-		cursor->inputBindBlob(SVAL(variable),
-					(valueisnull)?NULL:SVAL(value),
-					LVAL(size));
-		RETURN_LONG(1);
-	}
-	RETURN_LONG(0);
-}
-
-DLEXPORT ZEND_FUNCTION(sqlrcur_inputbindclob) {
-	ZVAL sqlrcur;
-	ZVAL variable;
-	ZVAL value;
-	ZVAL size;
-	if (ZEND_NUM_ARGS() != 4 ||
-		GET_PARAMETERS(
-				ZEND_NUM_ARGS() TSRMLS_CC,
-				PARAMS("zzzz")
-				&sqlrcur,
-				&variable,
-				&value,
-				&size) == FAILURE) {
-		WRONG_PARAM_COUNT;
-	}
-	convert_to_string_ex(variable);
-	bool	valueisnull=(TYPE(value)==IS_NULL);
-	if (!valueisnull) {
-		convert_to_string_ex(value);
-	}
-	convert_to_long_ex(size);
-	sqlrcursor *cursor=NULL;
-	ZEND_FETCH_RESOURCE(cursor,
-				sqlrcursor *,
-				sqlrcur,
-				-1,
-				"sqlrelay cursor",
-				sqlrelay_cursor);
-	if (cursor) {
-		cursor->inputBindClob(SVAL(variable),
-					(valueisnull)?NULL:SVAL(value),
-					LVAL(size));
-		RETURN_LONG(1);
-	}
-	RETURN_LONG(0);
-}
-
-DLEXPORT ZEND_FUNCTION(sqlrcur_defineoutputbindstring) {
-	ZVAL sqlrcur;
-	ZVAL variable;
-	ZVAL length;
-	if (ZEND_NUM_ARGS() != 3 || 
-		GET_PARAMETERS(
-				ZEND_NUM_ARGS() TSRMLS_CC,
-				PARAMS("zzz")
-				&sqlrcur,
-				&variable,
-				&length) == FAILURE) {
-		WRONG_PARAM_COUNT;
-	}
-	convert_to_string_ex(variable);
-	convert_to_long_ex(length);
-	sqlrcursor *cursor=NULL;
-	ZEND_FETCH_RESOURCE(cursor,
-				sqlrcursor *,
-				sqlrcur,
-				-1,
-				"sqlrelay cursor",
-				sqlrelay_cursor);
-	if (cursor) {
-		cursor->defineOutputBindString(
-					SVAL(variable),
-					LVAL(length));
-	}
-}
-
-DLEXPORT ZEND_FUNCTION(sqlrcur_defineoutputbindinteger) {
-	ZVAL sqlrcur;
-	ZVAL variable;
-	if (ZEND_NUM_ARGS() != 2 || 
-		GET_PARAMETERS(
-				ZEND_NUM_ARGS() TSRMLS_CC,
-				PARAMS("zz")
-				&sqlrcur,
-				&variable) == FAILURE) {
-		WRONG_PARAM_COUNT;
-	}
-	convert_to_string_ex(variable);
-	sqlrcursor *cursor=NULL;
-	ZEND_FETCH_RESOURCE(cursor,
-				sqlrcursor *,
-				sqlrcur,
-				-1,
-				"sqlrelay cursor",
-				sqlrelay_cursor);
-	if (cursor) {
-		cursor->defineOutputBindInteger(SVAL(variable));
-	}
-}
-
-DLEXPORT ZEND_FUNCTION(sqlrcur_defineoutputbinddouble) {
-	ZVAL sqlrcur;
-	ZVAL variable;
-	if (ZEND_NUM_ARGS() != 2 || 
-		GET_PARAMETERS(
-				ZEND_NUM_ARGS() TSRMLS_CC,
-				PARAMS("zz")
-				&sqlrcur,
-				&variable) == FAILURE) {
-		WRONG_PARAM_COUNT;
-	}
-	convert_to_string_ex(variable);
-	sqlrcursor *cursor=NULL;
-	ZEND_FETCH_RESOURCE(cursor,
-				sqlrcursor *,
-				sqlrcur,
-				-1,
-				"sqlrelay cursor",
-				sqlrelay_cursor);
-	if (cursor) {
-		cursor->defineOutputBindDouble(SVAL(variable));
-	}
-}
-
-DLEXPORT ZEND_FUNCTION(sqlrcur_defineoutputbinddate) {
-	ZVAL sqlrcur;
-	ZVAL variable;
-	if (ZEND_NUM_ARGS() != 2 ||
-		GET_PARAMETERS(
-				ZEND_NUM_ARGS() TSRMLS_CC,
-				PARAMS("zz")
-				&sqlrcur,
-				&variable) == FAILURE) {
-		WRONG_PARAM_COUNT;
-	}
-	convert_to_string_ex(variable);
-	sqlrcursor *cursor=NULL;
-	ZEND_FETCH_RESOURCE(cursor,
-				sqlrcursor *,
-				sqlrcur,
-				-1,
-				"sqlrelay cursor",
-				sqlrelay_cursor);
-	if (cursor) {
-		cursor->defineOutputBindDate(SVAL(variable));
-	}
-}
-
-DLEXPORT ZEND_FUNCTION(sqlrcur_defineoutputbindblob) {
-	ZVAL sqlrcur;
-	ZVAL variable;
-	if (ZEND_NUM_ARGS() != 2 || 
-		GET_PARAMETERS(
-				ZEND_NUM_ARGS() TSRMLS_CC,
-				PARAMS("zz")
-				&sqlrcur,
-				&variable) == FAILURE) {
-		WRONG_PARAM_COUNT;
-	}
-	convert_to_string_ex(variable);
-	sqlrcursor *cursor=NULL;
-	ZEND_FETCH_RESOURCE(cursor,
-				sqlrcursor *,
-				sqlrcur,
-				-1,
-				"sqlrelay cursor",
-				sqlrelay_cursor);
-	if (cursor) {
-		cursor->defineOutputBindBlob(SVAL(variable));
-	}
-}
-
-DLEXPORT ZEND_FUNCTION(sqlrcur_defineoutputbindclob) {
-	ZVAL sqlrcur;
-	ZVAL variable;
-	if (ZEND_NUM_ARGS() != 2 || 
-		GET_PARAMETERS(
-				ZEND_NUM_ARGS() TSRMLS_CC,
-				PARAMS("zz")
-				&sqlrcur,
-				&variable) == FAILURE) {
-		WRONG_PARAM_COUNT;
-	}
-	convert_to_string_ex(variable);
-	sqlrcursor *cursor=NULL;
-	ZEND_FETCH_RESOURCE(cursor,
-				sqlrcursor *,
-				sqlrcur,
-				-1,
-				"sqlrelay cursor",
-				sqlrelay_cursor);
-	if (cursor) {
-		cursor->defineOutputBindClob(SVAL(variable));
-	}
-}
-
-DLEXPORT ZEND_FUNCTION(sqlrcur_defineoutputbindcursor) {
-	ZVAL sqlrcur;
-	ZVAL variable;
-	if (ZEND_NUM_ARGS() != 2 || 
-		GET_PARAMETERS(
-				ZEND_NUM_ARGS() TSRMLS_CC,
-				PARAMS("zz")
-				&sqlrcur,
-				&variable) == FAILURE) {
-		WRONG_PARAM_COUNT;
-	}
-	convert_to_string_ex(variable);
-	sqlrcursor *cursor=NULL;
-	ZEND_FETCH_RESOURCE(cursor,
-				sqlrcursor *,
-				sqlrcur,
-				-1,
-				"sqlrelay cursor",
-				sqlrelay_cursor);
-	if (cursor) {
-		cursor->defineOutputBindCursor(SVAL(variable));
-	}
-}
-
-DLEXPORT ZEND_FUNCTION(sqlrcur_substitutions) {
-	ZVAL sqlrcur;
-	ZVAL variables;
-	ZVAL values;
-	ZVAL precisions;
-	ZVAL scales;
-	ZVAL var;
-	ZVAL val;
-	ZVAL precision;
-	ZVAL scale;
-	unsigned int i;
-	if (ZEND_NUM_ARGS() != 3 ||
-		GET_PARAMETERS(
-				ZEND_NUM_ARGS() TSRMLS_CC,
-				PARAMS("zzz")
-				&sqlrcur,
-				&variables,
-				&values) == FAILURE) {
-		if (ZEND_NUM_ARGS() != 5 || 
-			GET_PARAMETERS(
-				ZEND_NUM_ARGS() TSRMLS_CC,
-					PARAMS("zzzzz")
-					&sqlrcur,
-					&variables,
-					&values,
-					&precisions,
-					&scales)== FAILURE) {
-			WRONG_PARAM_COUNT;
-		} else {
-			convert_to_array_ex(precisions);
-			convert_to_array_ex(scales);
-		}
-	}
-	convert_to_array_ex(variables);
-	convert_to_array_ex(values);
-	sqlrcursor *cursor=NULL;
-	ZEND_FETCH_RESOURCE(cursor,
-				sqlrcursor *,
-				sqlrcur,
-				-1,
-				"sqlrelay cursor",
-				sqlrelay_cursor);
-	long	success=1;
-	if (cursor) {
-		for (i=0; i<ARRVAL(variables)->nNumOfElements; i++) {
-			HASH_INDEX_FIND(ARRVAL(variables),i,var);
-			HASH_INDEX_FIND(ARRVAL(values),i,val);
-			if (TYPE(val)==IS_STRING) {
-				convert_to_string_ex(val);
-				cursor->substitution(SVAL(var),
-							SVAL(val));
-			} else if (TYPE(val)==IS_LONG) {
-				convert_to_long_ex(val);
-				cursor->substitution(SVAL(var),
-							LVAL(val));
-			} else if (ZEND_NUM_ARGS()==5 &&
-						TYPE(val)==IS_DOUBLE) {
-				HASH_INDEX_FIND(ARRVAL(precisions),i,precision);
-				HASH_INDEX_FIND(ARRVAL(scales),i,scale);
-				convert_to_double_ex(val);
-				convert_to_long_ex(precision);
-				convert_to_long_ex(scale);
-				cursor->substitution(
-					SVAL(var),
-					DVAL(val),
-					(unsigned short)LVAL(precision),
-					(unsigned short)LVAL(scale));
-			} else if (TYPE(val)==IS_NULL) {
-				cursor->substitution(SVAL(var),
-							(const char *)NULL);
-			} else {
-				success=0;
-			}
-		}
-	}
-	RETURN_LONG(success);
-}
-
+/**
+ *  call-seq:
+ *  sqlrcur_inputBinds($sqlrcurref, $variables, $values, $precisions, $scales)
+ *
+ *  Defines an array of input bind variables.  The values may be
+ *  strings, integers or decimals.  If they are decimals, then precisions and
+ *  scales may also be specified */
 DLEXPORT ZEND_FUNCTION(sqlrcur_inputbinds) {
 	ZVAL sqlrcur;
 	ZVAL variables;
@@ -2378,6 +4112,451 @@ DLEXPORT ZEND_FUNCTION(sqlrcur_inputbinds) {
 	RETURN_LONG(success);
 }
 
+/**
+ *  call-seq:
+ *  sqlrcur_inputBindDate($sqlrcurref, $variable, $year, $month, $day, $hour, $minute, $second, $microsecond, $tz, $isnegative)
+ *
+ *  Defines a date input bind variable.  "day" and "month"
+ *  are 1-based.
+ *
+ *  Some databases distinguish between date, time, and
+ *  datetime types.  For those databases...
+ *
+ *  * The input bind variable will be interpreted as a time type
+ *  if year and/or month are negative.
+ *
+ *  * The input bind variable will be interpreted as a date type
+ *  if hour, minute, second, and/or microsecond are negative.
+ *
+ *  * The input bind variable will be interpreted as a datetime
+ *  type if all parts are positive.
+ *
+ *  "tz" is the timezone abbreviation, and may be left NULL.
+ *  Most databases ignore "tz".
+ *
+ *  Set "isnegative" may be set to true to represent a negative
+ *  time interval.  However, few databases support negative
+ *  time intervals and ignore "isnegative". */
+DLEXPORT ZEND_FUNCTION(sqlrcur_inputbinddate) {
+	ZVAL sqlrcur;
+	ZVAL variable;
+	ZVAL year;
+	ZVAL month;
+	ZVAL day;
+	ZVAL hour;
+	ZVAL minute;
+	ZVAL second;
+	ZVAL microsecond;
+	ZVAL tz;
+	ZVAL isnegative;
+	if (ZEND_NUM_ARGS() != 11 ||
+		GET_PARAMETERS(
+				ZEND_NUM_ARGS() TSRMLS_CC,
+				PARAMS("zzzzzzzzzzz")
+				&sqlrcur,
+				&variable,
+				&year,
+				&month,
+				&day,
+				&hour,
+				&minute,
+				&second,
+				&microsecond,
+				&tz,
+				&isnegative) == FAILURE) {
+		WRONG_PARAM_COUNT;
+	}
+	convert_to_string_ex(variable);
+	convert_to_long_ex(year);
+	convert_to_long_ex(month);
+	convert_to_long_ex(day);
+	convert_to_long_ex(hour);
+	convert_to_long_ex(minute);
+	convert_to_long_ex(second);
+	convert_to_long_ex(microsecond);
+	convert_to_string_ex(tz);
+	convert_to_long_ex(isnegative);
+	sqlrcursor *cursor=NULL;
+	ZEND_FETCH_RESOURCE(cursor,
+				sqlrcursor *,
+				sqlrcur,
+				-1,
+				"sqlrelay cursor",
+				sqlrelay_cursor);
+	if (cursor) {
+		cursor->inputBind(SVAL(variable),
+					(int16_t)LVAL(year),
+					(int16_t)LVAL(month),
+					(int16_t)LVAL(day),
+					(int16_t)LVAL(hour),
+					(int16_t)LVAL(minute),
+					(int16_t)LVAL(second),
+					(int32_t)LVAL(microsecond),
+					SVAL(tz),
+					(bool)LVAL(isnegative));
+		RETURN_LONG(1);
+	}
+	RETURN_LONG(0);
+}
+
+/**
+ *  call-seq:
+ *  sqlrcur_inputBindBlob($sqlrcurref, $variable, $value, $size)
+ *
+ *  Defines a binary lob input bind variable. */
+DLEXPORT ZEND_FUNCTION(sqlrcur_inputbindblob) {
+	ZVAL sqlrcur;
+	ZVAL variable;
+	ZVAL value;
+	ZVAL size;
+	if (ZEND_NUM_ARGS() != 4 ||
+		GET_PARAMETERS(
+				ZEND_NUM_ARGS() TSRMLS_CC,
+				PARAMS("zzzz")
+				&sqlrcur,
+				&variable,
+				&value,
+				&size) == FAILURE) {
+		WRONG_PARAM_COUNT;
+	}
+	convert_to_string_ex(variable);
+	bool	valueisnull=(TYPE(value)==IS_NULL);
+	if (!valueisnull) {
+		convert_to_string_ex(value);
+	}
+	convert_to_long_ex(size);
+	sqlrcursor *cursor=NULL;
+	ZEND_FETCH_RESOURCE(cursor,
+				sqlrcursor *,
+				sqlrcur,
+				-1,
+				"sqlrelay cursor",
+				sqlrelay_cursor);
+	if (cursor) {
+		cursor->inputBindBlob(SVAL(variable),
+					(valueisnull)?NULL:SVAL(value),
+					LVAL(size));
+		RETURN_LONG(1);
+	}
+	RETURN_LONG(0);
+}
+
+/**
+ *  call-seq:
+ *  sqlrcur_inputBindClob($sqlrcurref, $variable, $value, $size)
+ *
+ *  Defines a character lob input bind variable. */
+DLEXPORT ZEND_FUNCTION(sqlrcur_inputbindclob) {
+	ZVAL sqlrcur;
+	ZVAL variable;
+	ZVAL value;
+	ZVAL size;
+	if (ZEND_NUM_ARGS() != 4 ||
+		GET_PARAMETERS(
+				ZEND_NUM_ARGS() TSRMLS_CC,
+				PARAMS("zzzz")
+				&sqlrcur,
+				&variable,
+				&value,
+				&size) == FAILURE) {
+		WRONG_PARAM_COUNT;
+	}
+	convert_to_string_ex(variable);
+	bool	valueisnull=(TYPE(value)==IS_NULL);
+	if (!valueisnull) {
+		convert_to_string_ex(value);
+	}
+	convert_to_long_ex(size);
+	sqlrcursor *cursor=NULL;
+	ZEND_FETCH_RESOURCE(cursor,
+				sqlrcursor *,
+				sqlrcur,
+				-1,
+				"sqlrelay cursor",
+				sqlrelay_cursor);
+	if (cursor) {
+		cursor->inputBindClob(SVAL(variable),
+					(valueisnull)?NULL:SVAL(value),
+					LVAL(size));
+		RETURN_LONG(1);
+	}
+	RETURN_LONG(0);
+}
+
+/**
+ *  call-seq:
+ *  sqlrcur_defineOutputBindString($sqlrcurref, $variable, $length)
+ *
+ *  Defines an output bind variable.
+ *  "bufferlength" bytes will be reserved
+ *  to store the value. */
+DLEXPORT ZEND_FUNCTION(sqlrcur_defineoutputbindstring) {
+	ZVAL sqlrcur;
+	ZVAL variable;
+	ZVAL length;
+	if (ZEND_NUM_ARGS() != 3 || 
+		GET_PARAMETERS(
+				ZEND_NUM_ARGS() TSRMLS_CC,
+				PARAMS("zzz")
+				&sqlrcur,
+				&variable,
+				&length) == FAILURE) {
+		WRONG_PARAM_COUNT;
+	}
+	convert_to_string_ex(variable);
+	convert_to_long_ex(length);
+	sqlrcursor *cursor=NULL;
+	ZEND_FETCH_RESOURCE(cursor,
+				sqlrcursor *,
+				sqlrcur,
+				-1,
+				"sqlrelay cursor",
+				sqlrelay_cursor);
+	if (cursor) {
+		cursor->defineOutputBindString(
+					SVAL(variable),
+					LVAL(length));
+	}
+}
+
+/**
+ *  call-seq:
+ *  sqlrcur_defineOutputBindInteger($sqlrcurref, $variable)
+ *
+ *  Defines an integer output bind variable. */
+DLEXPORT ZEND_FUNCTION(sqlrcur_defineoutputbindinteger) {
+	ZVAL sqlrcur;
+	ZVAL variable;
+	if (ZEND_NUM_ARGS() != 2 || 
+		GET_PARAMETERS(
+				ZEND_NUM_ARGS() TSRMLS_CC,
+				PARAMS("zz")
+				&sqlrcur,
+				&variable) == FAILURE) {
+		WRONG_PARAM_COUNT;
+	}
+	convert_to_string_ex(variable);
+	sqlrcursor *cursor=NULL;
+	ZEND_FETCH_RESOURCE(cursor,
+				sqlrcursor *,
+				sqlrcur,
+				-1,
+				"sqlrelay cursor",
+				sqlrelay_cursor);
+	if (cursor) {
+		cursor->defineOutputBindInteger(SVAL(variable));
+	}
+}
+
+/**
+ *  call-seq:
+ *  sqlrcur_defineOutputBindDouble($sqlrcurref, $variable)
+ *
+ *  Defines a decimal output bind variable. */
+DLEXPORT ZEND_FUNCTION(sqlrcur_defineoutputbinddouble) {
+	ZVAL sqlrcur;
+	ZVAL variable;
+	if (ZEND_NUM_ARGS() != 2 || 
+		GET_PARAMETERS(
+				ZEND_NUM_ARGS() TSRMLS_CC,
+				PARAMS("zz")
+				&sqlrcur,
+				&variable) == FAILURE) {
+		WRONG_PARAM_COUNT;
+	}
+	convert_to_string_ex(variable);
+	sqlrcursor *cursor=NULL;
+	ZEND_FETCH_RESOURCE(cursor,
+				sqlrcursor *,
+				sqlrcur,
+				-1,
+				"sqlrelay cursor",
+				sqlrelay_cursor);
+	if (cursor) {
+		cursor->defineOutputBindDouble(SVAL(variable));
+	}
+}
+
+/**
+ *  call-seq:
+ *  sqlrcur_defineOutputBindDate($sqlrcurref, $variable)
+ *
+ *  Defines a date output bind variable. */
+DLEXPORT ZEND_FUNCTION(sqlrcur_defineoutputbinddate) {
+	ZVAL sqlrcur;
+	ZVAL variable;
+	if (ZEND_NUM_ARGS() != 2 ||
+		GET_PARAMETERS(
+				ZEND_NUM_ARGS() TSRMLS_CC,
+				PARAMS("zz")
+				&sqlrcur,
+				&variable) == FAILURE) {
+		WRONG_PARAM_COUNT;
+	}
+	convert_to_string_ex(variable);
+	sqlrcursor *cursor=NULL;
+	ZEND_FETCH_RESOURCE(cursor,
+				sqlrcursor *,
+				sqlrcur,
+				-1,
+				"sqlrelay cursor",
+				sqlrelay_cursor);
+	if (cursor) {
+		cursor->defineOutputBindDate(SVAL(variable));
+	}
+}
+
+/**
+ *  call-seq:
+ *  sqlrcur_defineOutputBindBlob($sqlrcurref, $variable)
+ *
+ *  Defines a binary lob output bind variable. */
+DLEXPORT ZEND_FUNCTION(sqlrcur_defineoutputbindblob) {
+	ZVAL sqlrcur;
+	ZVAL variable;
+	if (ZEND_NUM_ARGS() != 2 || 
+		GET_PARAMETERS(
+				ZEND_NUM_ARGS() TSRMLS_CC,
+				PARAMS("zz")
+				&sqlrcur,
+				&variable) == FAILURE) {
+		WRONG_PARAM_COUNT;
+	}
+	convert_to_string_ex(variable);
+	sqlrcursor *cursor=NULL;
+	ZEND_FETCH_RESOURCE(cursor,
+				sqlrcursor *,
+				sqlrcur,
+				-1,
+				"sqlrelay cursor",
+				sqlrelay_cursor);
+	if (cursor) {
+		cursor->defineOutputBindBlob(SVAL(variable));
+	}
+}
+
+/**
+ *  call-seq:
+ *  sqlrcur_defineOutputBindClob($sqlrcurref, $variable)
+ *
+ *  Defines a character lob output bind variable. */
+DLEXPORT ZEND_FUNCTION(sqlrcur_defineoutputbindclob) {
+	ZVAL sqlrcur;
+	ZVAL variable;
+	if (ZEND_NUM_ARGS() != 2 || 
+		GET_PARAMETERS(
+				ZEND_NUM_ARGS() TSRMLS_CC,
+				PARAMS("zz")
+				&sqlrcur,
+				&variable) == FAILURE) {
+		WRONG_PARAM_COUNT;
+	}
+	convert_to_string_ex(variable);
+	sqlrcursor *cursor=NULL;
+	ZEND_FETCH_RESOURCE(cursor,
+				sqlrcursor *,
+				sqlrcur,
+				-1,
+				"sqlrelay cursor",
+				sqlrelay_cursor);
+	if (cursor) {
+		cursor->defineOutputBindClob(SVAL(variable));
+	}
+}
+
+/**
+ *  call-seq:
+ *  sqlrcur_defineOutputBindCursor($sqlrcurref, $variable)
+ *
+ *  Defines a cursor output bind variable. */
+DLEXPORT ZEND_FUNCTION(sqlrcur_defineoutputbindcursor) {
+	ZVAL sqlrcur;
+	ZVAL variable;
+	if (ZEND_NUM_ARGS() != 2 || 
+		GET_PARAMETERS(
+				ZEND_NUM_ARGS() TSRMLS_CC,
+				PARAMS("zz")
+				&sqlrcur,
+				&variable) == FAILURE) {
+		WRONG_PARAM_COUNT;
+	}
+	convert_to_string_ex(variable);
+	sqlrcursor *cursor=NULL;
+	ZEND_FETCH_RESOURCE(cursor,
+				sqlrcursor *,
+				sqlrcur,
+				-1,
+				"sqlrelay cursor",
+				sqlrelay_cursor);
+	if (cursor) {
+		cursor->defineOutputBindCursor(SVAL(variable));
+	}
+}
+
+/**
+ *  call-seq:
+ *  sqlrcur_clearBinds($sqlrcurref)
+ *
+ *  Clears all bind variables. */
+DLEXPORT ZEND_FUNCTION(sqlrcur_clearbinds) {
+	ZVAL sqlrcur;
+	if (ZEND_NUM_ARGS() != 1 || 
+		GET_PARAMETERS(
+				ZEND_NUM_ARGS() TSRMLS_CC,
+				PARAMS("z")
+				&sqlrcur) == FAILURE) {
+		WRONG_PARAM_COUNT;
+	}
+	sqlrcursor *cursor=NULL;
+	ZEND_FETCH_RESOURCE(cursor,
+				sqlrcursor *,
+				sqlrcur,
+				-1,
+				"sqlrelay cursor",
+				sqlrelay_cursor);
+	if (cursor) {
+		cursor->clearBinds();
+	}
+}
+
+/**
+ *  call-seq:
+ *  sqlrcur_countBindVariables($sqlrcurref)
+ *
+ *  Parses the previously prepared query, counts the number of bind variables
+ *  defined in it and returns that number. */
+DLEXPORT ZEND_FUNCTION(sqlrcur_countbindvariables) {
+	ZVAL sqlrcur;
+	uint16_t r;
+	if (ZEND_NUM_ARGS() != 1 || 
+		GET_PARAMETERS(
+				ZEND_NUM_ARGS() TSRMLS_CC,
+				PARAMS("z")
+				&sqlrcur) == FAILURE) {
+		WRONG_PARAM_COUNT;
+	}
+	sqlrcursor *cursor=NULL;
+	ZEND_FETCH_RESOURCE(cursor,
+				sqlrcursor *,
+				sqlrcur,
+				-1,
+				"sqlrelay cursor",
+				sqlrelay_cursor);
+	if (cursor) {
+		r=cursor->countBindVariables();
+		RETURN_LONG(r);
+	}
+	RETURN_LONG(0);
+}
+
+/**
+ *  call-seq:
+ *  sqlrcur_validateBinds($sqlrcurref)
+ *
+ *  If you are binding to any variables that might not actually be in your
+ *  query, call this to ensure that the database won't try to bind them unless
+ *  they really are in the query.  There is a performance penalty for calling
+ *  this function */
 DLEXPORT ZEND_FUNCTION(sqlrcur_validatebinds) {
 	ZVAL sqlrcur;
 	if (ZEND_NUM_ARGS() != 1 || 
@@ -2399,6 +4578,11 @@ DLEXPORT ZEND_FUNCTION(sqlrcur_validatebinds) {
 	}
 }
 
+/**
+ *  call-seq:
+ *  sqlrcur_validBind($sqlrcurref, $variable)
+ *
+ *  Returns true if "variable" was a valid bind variable of the query. */
 DLEXPORT ZEND_FUNCTION(sqlrcur_validbind) {
 	ZVAL sqlrcur;
 	ZVAL variable;
@@ -2426,6 +4610,11 @@ DLEXPORT ZEND_FUNCTION(sqlrcur_validbind) {
 	RETURN_LONG(0);
 }
 
+/**
+ *  call-seq:
+ *  sqlrcur_executeQuery($sqlrcurref)
+ *
+ *  Execute the query that was previously prepared and bound. */
 DLEXPORT ZEND_FUNCTION(sqlrcur_executequery) {
 	ZVAL sqlrcur;
 	bool r;
@@ -2450,6 +4639,11 @@ DLEXPORT ZEND_FUNCTION(sqlrcur_executequery) {
 	RETURN_LONG(0);
 }
 
+/**
+ *  call-seq:
+ *  sqlrcur_fetchFromBindCursor($sqlrcurref)
+ *
+ *  Fetch from a cursor that was returned as an output bind variable. */
 DLEXPORT ZEND_FUNCTION(sqlrcur_fetchfrombindcursor) {
 	ZVAL sqlrcur;
 	bool r;
@@ -2474,6 +4668,12 @@ DLEXPORT ZEND_FUNCTION(sqlrcur_fetchfrombindcursor) {
 	RETURN_LONG(0);
 }
 
+/**
+ *  call-seq:
+ *  sqlrcur_getOutputBindString($sqlrcurref, $variable)
+ *
+ *  Get the value stored in a previously defined
+ *  string output bind variable. */
 DLEXPORT ZEND_FUNCTION(sqlrcur_getoutputbindstring) {
 	ZVAL sqlrcur;
 	ZVAL variable;
@@ -2505,6 +4705,78 @@ DLEXPORT ZEND_FUNCTION(sqlrcur_getoutputbindstring) {
 	RETURN_NULL();
 }
 
+/**
+ *  call-seq:
+ *  sqlrcur_getOutputBindInteger($sqlrcurref, $variable)
+ *
+ *  Get the value stored in a previously defined
+ *  integer output bind variable. */
+DLEXPORT ZEND_FUNCTION(sqlrcur_getoutputbindinteger) {
+	ZVAL sqlrcur;
+	ZVAL variable;
+	int64_t r;
+	if (ZEND_NUM_ARGS() != 2 || 
+		GET_PARAMETERS(
+				ZEND_NUM_ARGS() TSRMLS_CC,
+				PARAMS("zz")
+				&sqlrcur,
+				&variable) == FAILURE) {
+		WRONG_PARAM_COUNT;
+	}
+	convert_to_string_ex(variable);
+	sqlrcursor *cursor=NULL;
+	ZEND_FETCH_RESOURCE(cursor,
+				sqlrcursor *,
+				sqlrcur,
+				-1,
+				"sqlrelay cursor",
+				sqlrelay_cursor);
+	if (cursor) {
+		r=cursor->getOutputBindInteger(SVAL(variable));
+		RETURN_LONG(r);
+	}
+	RETURN_LONG(0);
+}
+
+/**
+ *  call-seq:
+ *  sqlrcur_getOutputBindDouble($sqlrcurref, $variable)
+ *
+ *  Get the value stored in a previously defined
+ *  decimal output bind variable. */
+DLEXPORT ZEND_FUNCTION(sqlrcur_getoutputbinddouble) {
+	ZVAL sqlrcur;
+	ZVAL variable;
+	double r;
+	if (ZEND_NUM_ARGS() != 2 || 
+		GET_PARAMETERS(
+				ZEND_NUM_ARGS() TSRMLS_CC,
+				PARAMS("zz")
+				&sqlrcur,
+				&variable) == FAILURE) {
+		WRONG_PARAM_COUNT;
+	}
+	convert_to_string_ex(variable);
+	sqlrcursor *cursor=NULL;
+	ZEND_FETCH_RESOURCE(cursor,
+				sqlrcursor *,
+				sqlrcur,
+				-1,
+				"sqlrelay cursor",
+				sqlrelay_cursor);
+	if (cursor) {
+		r=cursor->getOutputBindDouble(SVAL(variable));
+		RETURN_DOUBLE(r);
+	}
+	RETURN_DOUBLE(0.0);
+}
+
+/**
+ *  call-seq:
+ *  sqlrcur_getOutputBindBlob($sqlrcurref, $variable)
+ *
+ *  Get the value stored in a previously defined
+ *  binary lob output bind variable. */
 DLEXPORT ZEND_FUNCTION(sqlrcur_getoutputbindblob) {
 	ZVAL sqlrcur;
 	ZVAL variable;
@@ -2536,6 +4808,12 @@ DLEXPORT ZEND_FUNCTION(sqlrcur_getoutputbindblob) {
 	RETURN_NULL();
 }
 
+/**
+ *  call-seq:
+ *  sqlrcur_getOutputBindClob($sqlrcurref, $variable)
+ *
+ *  Get the value stored in a previously defined
+ *  character lob output bind variable. */
 DLEXPORT ZEND_FUNCTION(sqlrcur_getoutputbindclob) {
 	ZVAL sqlrcur;
 	ZVAL variable;
@@ -2567,60 +4845,12 @@ DLEXPORT ZEND_FUNCTION(sqlrcur_getoutputbindclob) {
 	RETURN_NULL();
 }
 
-DLEXPORT ZEND_FUNCTION(sqlrcur_getoutputbindinteger) {
-	ZVAL sqlrcur;
-	ZVAL variable;
-	int64_t r;
-	if (ZEND_NUM_ARGS() != 2 || 
-		GET_PARAMETERS(
-				ZEND_NUM_ARGS() TSRMLS_CC,
-				PARAMS("zz")
-				&sqlrcur,
-				&variable) == FAILURE) {
-		WRONG_PARAM_COUNT;
-	}
-	convert_to_string_ex(variable);
-	sqlrcursor *cursor=NULL;
-	ZEND_FETCH_RESOURCE(cursor,
-				sqlrcursor *,
-				sqlrcur,
-				-1,
-				"sqlrelay cursor",
-				sqlrelay_cursor);
-	if (cursor) {
-		r=cursor->getOutputBindInteger(SVAL(variable));
-		RETURN_LONG(r);
-	}
-	RETURN_LONG(0);
-}
-
-DLEXPORT ZEND_FUNCTION(sqlrcur_getoutputbinddouble) {
-	ZVAL sqlrcur;
-	ZVAL variable;
-	double r;
-	if (ZEND_NUM_ARGS() != 2 || 
-		GET_PARAMETERS(
-				ZEND_NUM_ARGS() TSRMLS_CC,
-				PARAMS("zz")
-				&sqlrcur,
-				&variable) == FAILURE) {
-		WRONG_PARAM_COUNT;
-	}
-	convert_to_string_ex(variable);
-	sqlrcursor *cursor=NULL;
-	ZEND_FETCH_RESOURCE(cursor,
-				sqlrcursor *,
-				sqlrcur,
-				-1,
-				"sqlrelay cursor",
-				sqlrelay_cursor);
-	if (cursor) {
-		r=cursor->getOutputBindDouble(SVAL(variable));
-		RETURN_DOUBLE(r);
-	}
-	RETURN_DOUBLE(0.0);
-}
-
+/**
+ *  call-seq:
+ *  sqlrcur_getOutputBindLength($sqlrcurref, $variable)
+ *
+ *  Get the length of the value stored in a previously
+ *  defined output bind variable. */
 DLEXPORT ZEND_FUNCTION(sqlrcur_getoutputbindlength) {
 	ZVAL sqlrcur;
 	ZVAL variable;
@@ -2648,6 +4878,11 @@ DLEXPORT ZEND_FUNCTION(sqlrcur_getoutputbindlength) {
 	RETURN_LONG(0);
 }
 
+/**
+ *  call-seq:
+ *  sqlrcur_getOutputBindCursor($sqlrcurref, $variable)
+ *
+ *  Get the cursor associated with a previously defined output bind variable. */
 DLEXPORT ZEND_FUNCTION(sqlrcur_getoutputbindcursor) {
 	ZVAL sqlrcur;
 	ZVAL variable;
@@ -2676,6 +4911,12 @@ DLEXPORT ZEND_FUNCTION(sqlrcur_getoutputbindcursor) {
 	ZEND_REGISTER_RESOURCE(return_value,s,sqlrelay_cursor);
 }
 
+/**
+ *  call-seq:
+ *  sqlrcur_getOutputBindDateYear($sqlrcurref, $variable)
+ *
+ *  Get the year from a previously defined
+ *  date output bind variable. */
 DLEXPORT ZEND_FUNCTION(sqlrcur_getoutputbinddateyear) {
 	ZVAL sqlrcur;
 	ZVAL variable;
@@ -2703,6 +4944,12 @@ DLEXPORT ZEND_FUNCTION(sqlrcur_getoutputbinddateyear) {
 	RETURN_LONG(0);
 }
 
+/**
+ *  call-seq:
+ *  sqlrcur_getOutputBindDateMonth($sqlrcurref, $variable)
+ *
+ *  Get the month from a previously defined
+ *  date output bind variable. */
 DLEXPORT ZEND_FUNCTION(sqlrcur_getoutputbinddatemonth) {
 	ZVAL sqlrcur;
 	ZVAL variable;
@@ -2730,6 +4977,12 @@ DLEXPORT ZEND_FUNCTION(sqlrcur_getoutputbinddatemonth) {
 	RETURN_LONG(0);
 }
 
+/**
+ *  call-seq:
+ *  sqlrcur_getOutputBindDateDay($sqlrcurref, $variable)
+ *
+ *  Get the day from a previously defined
+ *  date output bind variable. */
 DLEXPORT ZEND_FUNCTION(sqlrcur_getoutputbinddateday) {
 	ZVAL sqlrcur;
 	ZVAL variable;
@@ -2757,6 +5010,12 @@ DLEXPORT ZEND_FUNCTION(sqlrcur_getoutputbinddateday) {
 	RETURN_LONG(0);
 }
 
+/**
+ *  call-seq:
+ *  sqlrcur_getOutputBindDateHour($sqlrcurref, $variable)
+ *
+ *  Get the hour from a previously defined
+ *  date output bind variable. */
 DLEXPORT ZEND_FUNCTION(sqlrcur_getoutputbinddatehour) {
 	ZVAL sqlrcur;
 	ZVAL variable;
@@ -2784,6 +5043,12 @@ DLEXPORT ZEND_FUNCTION(sqlrcur_getoutputbinddatehour) {
 	RETURN_LONG(0);
 }
 
+/**
+ *  call-seq:
+ *  sqlrcur_getOutputBindDateMinute($sqlrcurref, $variable)
+ *
+ *  Get the minute from a previously defined
+ *  date output bind variable. */
 DLEXPORT ZEND_FUNCTION(sqlrcur_getoutputbinddateminute) {
 	ZVAL sqlrcur;
 	ZVAL variable;
@@ -2811,6 +5076,12 @@ DLEXPORT ZEND_FUNCTION(sqlrcur_getoutputbinddateminute) {
 	RETURN_LONG(0);
 }
 
+/**
+ *  call-seq:
+ *  sqlrcur_getOutputBindDateSecond($sqlrcurref, $variable)
+ *
+ *  Get the second from a previously defined
+ *  date output bind variable. */
 DLEXPORT ZEND_FUNCTION(sqlrcur_getoutputbinddatesecond) {
 	ZVAL sqlrcur;
 	ZVAL variable;
@@ -2838,6 +5109,12 @@ DLEXPORT ZEND_FUNCTION(sqlrcur_getoutputbinddatesecond) {
 	RETURN_LONG(0);
 }
 
+/**
+ *  call-seq:
+ *  sqlrcur_getOutputBindDateMicrosecond($sqlrcurref, $variable)
+ *
+ *  Get the microsecond from a previously defined
+ *  date output bind variable. */
 DLEXPORT ZEND_FUNCTION(sqlrcur_getoutputbinddatemicrosecond) {
 	ZVAL sqlrcur;
 	ZVAL variable;
@@ -2865,6 +5142,12 @@ DLEXPORT ZEND_FUNCTION(sqlrcur_getoutputbinddatemicrosecond) {
 	RETURN_LONG(0);
 }
 
+/**
+ *  call-seq:
+ *  sqlrcur_getOutputBindDateTz($sqlrcurref, $variable)
+ *
+ *  Get the time zone from a previously defined
+ *  date output bind variable. */
 DLEXPORT ZEND_FUNCTION(sqlrcur_getoutputbinddatetz) {
 	ZVAL sqlrcur;
 	ZVAL variable;
@@ -2894,6 +5177,12 @@ DLEXPORT ZEND_FUNCTION(sqlrcur_getoutputbinddatetz) {
 	RETURN_NULL();
 }
 
+/**
+ *  call-seq:
+ *  sqlrcur_getOutputBindDateIsNegative($sqlrcurref, $variable)
+ *
+ *  Get whether the value is negative from a
+ *  previously defined date output bind variable. */
 DLEXPORT ZEND_FUNCTION(sqlrcur_getoutputbinddateisnegative) {
 	ZVAL sqlrcur;
 	ZVAL variable;
@@ -2921,6 +5210,11 @@ DLEXPORT ZEND_FUNCTION(sqlrcur_getoutputbinddateisnegative) {
 	RETURN_LONG(0);
 }
 
+/**
+ *  call-seq:
+ *  sqlrcur_openCachedResultSet($sqlrcurref, $filename)
+ *
+ *  Opens a cached result set.  Returns 1 on success and 0 on failure. */
 DLEXPORT ZEND_FUNCTION(sqlrcur_opencachedresultset) {
 	ZVAL sqlrcur;
 	ZVAL filename;
@@ -2948,6 +5242,11 @@ DLEXPORT ZEND_FUNCTION(sqlrcur_opencachedresultset) {
 	RETURN_LONG(0);
 }
 
+/**
+ *  call-seq:
+ *  sqlrcur_colCount($sqlrcurref)
+ *
+ *  Returns the number of columns in the current result set. */
 DLEXPORT ZEND_FUNCTION(sqlrcur_colcount) {
 	ZVAL sqlrcur;
 	uint32_t r;
@@ -2972,6 +5271,12 @@ DLEXPORT ZEND_FUNCTION(sqlrcur_colcount) {
 	RETURN_LONG(0);
 }
 
+/**
+ *  call-seq:
+ *  sqlrcur_rowCount($sqlrcurref)
+ *
+ *  Returns the number of rows in the current result set (if the result set is
+ *  being stepped through, this returns the number of rows processed so far). */
 DLEXPORT ZEND_FUNCTION(sqlrcur_rowcount) {
 	ZVAL sqlrcur;
 	uint64_t r;
@@ -2996,6 +5301,14 @@ DLEXPORT ZEND_FUNCTION(sqlrcur_rowcount) {
 	RETURN_LONG(0);
 }
 
+/**
+ *  call-seq:
+ *  sqlrcur_totalRows($sqlrcurref)
+ *
+ *  Returns the total number of rows that will be returned in the result set.
+ *  Not all databases support this call.  Don't use it for applications which
+ *  are designed to be portable across databases.  0 is returned by databases
+ *  which don't support this option. */
 DLEXPORT ZEND_FUNCTION(sqlrcur_totalrows) {
 	ZVAL sqlrcur;
 	uint64_t r;
@@ -3020,6 +5333,14 @@ DLEXPORT ZEND_FUNCTION(sqlrcur_totalrows) {
 	RETURN_LONG(0);
 }
 
+/**
+ *  call-seq:
+ *  sqlrcur_affectedRows($sqlrcurref)
+ *
+ *  Returns the number of rows that were updated, inserted or deleted by the
+ *  query.  Not all databases support this call.  Don't use it for applications
+ *  which are designed to be portable across databases.  0 is returned by
+ *  databases which don't support this option. */
 DLEXPORT ZEND_FUNCTION(sqlrcur_affectedrows) {
 	ZVAL sqlrcur;
 	uint64_t r;
@@ -3044,6 +5365,12 @@ DLEXPORT ZEND_FUNCTION(sqlrcur_affectedrows) {
 	RETURN_LONG(0);
 }
 
+/**
+ *  call-seq:
+ *  sqlrcur_firstRowIndex($sqlrcurref)
+ *
+ *  Returns the index of the first buffered row.  This is useful when buffering
+ *  only part of the result set at a time. */
 DLEXPORT ZEND_FUNCTION(sqlrcur_firstrowindex) {
 	ZVAL sqlrcur;
 	uint64_t r;
@@ -3068,6 +5395,13 @@ DLEXPORT ZEND_FUNCTION(sqlrcur_firstrowindex) {
 	RETURN_LONG(0);
 }
 
+/**
+ *  call-seq:
+ *  sqlrcur_endOfResultSet($sqlrcurref)
+ *
+ *  Returns 0 if part of the result set is still pending on the server and 1 if
+ *  not.  This function can only return 0 if setResultSetBufferSize() has been
+ *  called with a parameter other than 0. */
 DLEXPORT ZEND_FUNCTION(sqlrcur_endofresultset) {
 	ZVAL sqlrcur;
 	bool r;
@@ -3092,6 +5426,12 @@ DLEXPORT ZEND_FUNCTION(sqlrcur_endofresultset) {
 	RETURN_LONG(0);
 }
 
+/**
+ *  call-seq:
+ *  sqlrcur_nextResultSet($sqlrcurref)
+ *
+ *  Returns true and acts like executeQuery() when there is another result set
+ *  available from the server. */
 DLEXPORT ZEND_FUNCTION(sqlrcur_nextresultset) {
 	ZVAL sqlrcur;
 	bool r;
@@ -3116,6 +5456,12 @@ DLEXPORT ZEND_FUNCTION(sqlrcur_nextresultset) {
 	RETURN_LONG(0);
 }
 
+/**
+ *  call-seq:
+ *  sqlrcur_errorMessage($sqlrcurref)
+ *
+ *  If a query failed and generated an error, the error message is available
+ *  here.  If the query succeeded then this method returns NULL. */
 DLEXPORT ZEND_FUNCTION(sqlrcur_errormessage) {
 	ZVAL sqlrcur;
 	const char *r;
@@ -3142,6 +5488,12 @@ DLEXPORT ZEND_FUNCTION(sqlrcur_errormessage) {
 	RETURN_NULL();
 }
 
+/**
+ *  call-seq:
+ *  sqlrcur_errorNumber($sqlrcurref)
+ *
+ *  If a query failed and generated an error, the error number is available
+ *  here.  If there is no error then this method returns 0. */
 DLEXPORT ZEND_FUNCTION(sqlrcur_errornumber) {
 	ZVAL sqlrcur;
 	int64_t r;
@@ -3168,6 +5520,12 @@ DLEXPORT ZEND_FUNCTION(sqlrcur_errornumber) {
 	RETURN_LONG(0);
 }
 
+/**
+ *  call-seq:
+ *  sqlrcur_getNullsAsEmptyStrings($sqlrcurref)
+ *
+ *  Tells the connection to return NULL fields and output bind variables as
+ *  empty strings.  This is the default. */
 DLEXPORT ZEND_FUNCTION(sqlrcur_getnullsasemptystrings) {
 	ZVAL sqlrcur;
 	if (ZEND_NUM_ARGS() != 1 || 
@@ -3189,6 +5547,13 @@ DLEXPORT ZEND_FUNCTION(sqlrcur_getnullsasemptystrings) {
 	}
 }
 
+/**
+ *  call-seq:
+ *  sqlrcur_getNullsAsNulls($sqlrcurref)
+ *
+ *  Tells the connection to return NULL fields
+ *  and output bind variables as NULL's rather
+ *  than as empty strings. */
 DLEXPORT ZEND_FUNCTION(sqlrcur_getnullsasnulls) {
 	ZVAL sqlrcur;
 	if (ZEND_NUM_ARGS() != 1 || 
@@ -3210,6 +5575,12 @@ DLEXPORT ZEND_FUNCTION(sqlrcur_getnullsasnulls) {
 	}
 }
 
+/**
+ *  call-seq:
+ *  sqlrcur_getField($sqlrcurref, $row, $col)
+ *
+ *  Returns the specified field as a string. "col" may be specified as the
+ *  column name or number. */
 DLEXPORT ZEND_FUNCTION(sqlrcur_getfield) {
 	ZVAL sqlrcur;
 	ZVAL row;
@@ -3252,6 +5623,12 @@ DLEXPORT ZEND_FUNCTION(sqlrcur_getfield) {
 	RETURN_NULL();
 }
 
+/**
+ *  call-seq:
+ *  sqlrcur_getFieldIgnoringCase($sqlrcurref, $row, $col)
+ *
+ *  Returns the specified field as a string, ignoring the case of "col".
+ *  "col" must be a column name. */
 DLEXPORT ZEND_FUNCTION(sqlrcur_getfieldignoringcase) {
 	ZVAL sqlrcur;
 	ZVAL row;
@@ -3290,6 +5667,12 @@ DLEXPORT ZEND_FUNCTION(sqlrcur_getfieldignoringcase) {
 	RETURN_NULL();
 }
 
+/**
+ *  call-seq:
+ *  sqlrcur_getFieldAsInteger($sqlrcurref, $row, $col)
+ *
+ *  Returns the specified field as an integer. "col" may be specified as the
+ *  column name or number. */
 DLEXPORT ZEND_FUNCTION(sqlrcur_getfieldasinteger) {
 	ZVAL sqlrcur;
 	ZVAL row;
@@ -3327,6 +5710,12 @@ DLEXPORT ZEND_FUNCTION(sqlrcur_getfieldasinteger) {
 	RETURN_LONG(0);
 }
 
+/**
+ *  call-seq:
+ *  sqlrcur_getFieldAsDouble($sqlrcurref, $row, $col)
+ *
+ *  Returns the specified field as a decimal. "col" may be specified as the
+ *  column name or number. */
 DLEXPORT ZEND_FUNCTION(sqlrcur_getfieldasdouble) {
 	ZVAL sqlrcur;
 	ZVAL row;
@@ -3364,6 +5753,12 @@ DLEXPORT ZEND_FUNCTION(sqlrcur_getfieldasdouble) {
 	RETURN_DOUBLE(0.0);
 }
 
+/**
+ *  call-seq:
+ *  sqlrcur_getFieldAsBoolean($sqlrcurref, $row, $col)
+ *
+ *  Returns the specified field as a boolean. "col" may be specified as the
+ *  column name or number. */
 DLEXPORT ZEND_FUNCTION(sqlrcur_getfieldasboolean) {
 	ZVAL sqlrcur;
 	ZVAL row;
@@ -3401,6 +5796,12 @@ DLEXPORT ZEND_FUNCTION(sqlrcur_getfieldasboolean) {
 	RETURN_BOOL(false);
 }
 
+/**
+ *  call-seq:
+ *  sqlrcur_getFieldAsDateYear($sqlrcurref, $row, $col)
+ *
+ *  Interprets the specified field as a date and returns the year component.
+ *  "col" may be specified as the column name or number. */
 DLEXPORT ZEND_FUNCTION(sqlrcur_getfieldasdateyear) {
 	ZVAL sqlrcur;
 	ZVAL row;
@@ -3485,6 +5886,12 @@ DLEXPORT ZEND_FUNCTION(sqlrcur_getfieldasdateyear) {
 	RETURN_LONG(0);
 }
 
+/**
+ *  call-seq:
+ *  sqlrcur_getFieldAsDateMonth($sqlrcurref, $row, $col)
+ *
+ *  Interprets the specified field as a date and returns the month component.
+ *  "col" may be specified as the column name or number. */
 DLEXPORT ZEND_FUNCTION(sqlrcur_getfieldasdatemonth) {
 	ZVAL sqlrcur;
 	ZVAL row;
@@ -3569,6 +5976,12 @@ DLEXPORT ZEND_FUNCTION(sqlrcur_getfieldasdatemonth) {
 	RETURN_LONG(0);
 }
 
+/**
+ *  call-seq:
+ *  sqlrcur_getFieldAsDateDay($sqlrcurref, $row, $col)
+ *
+ *  Interprets the specified field as a date and returns the day component.
+ *  "col" may be specified as the column name or number. */
 DLEXPORT ZEND_FUNCTION(sqlrcur_getfieldasdateday) {
 	ZVAL sqlrcur;
 	ZVAL row;
@@ -3653,6 +6066,12 @@ DLEXPORT ZEND_FUNCTION(sqlrcur_getfieldasdateday) {
 	RETURN_LONG(0);
 }
 
+/**
+ *  call-seq:
+ *  sqlrcur_getFieldAsDateHour($sqlrcurref, $row, $col)
+ *
+ *  Interprets the specified field as a date and returns the hour component.
+ *  "col" may be specified as the column name or number. */
 DLEXPORT ZEND_FUNCTION(sqlrcur_getfieldasdatehour) {
 	ZVAL sqlrcur;
 	ZVAL row;
@@ -3737,6 +6156,12 @@ DLEXPORT ZEND_FUNCTION(sqlrcur_getfieldasdatehour) {
 	RETURN_LONG(0);
 }
 
+/**
+ *  call-seq:
+ *  sqlrcur_getFieldAsDateMinute($sqlrcurref, $row, $col)
+ *
+ *  Interprets the specified field as a date and returns the minute component.
+ *  "col" may be specified as the column name or number. */
 DLEXPORT ZEND_FUNCTION(sqlrcur_getfieldasdateminute) {
 	ZVAL sqlrcur;
 	ZVAL row;
@@ -3821,6 +6246,12 @@ DLEXPORT ZEND_FUNCTION(sqlrcur_getfieldasdateminute) {
 	RETURN_LONG(0);
 }
 
+/**
+ *  call-seq:
+ *  sqlrcur_getFieldAsDateSecond($sqlrcurref, $row, $col)
+ *
+ *  Interprets the specified field as a date and returns the second component.
+ *  "col" may be specified as the column name or number. */
 DLEXPORT ZEND_FUNCTION(sqlrcur_getfieldasdatesecond) {
 	ZVAL sqlrcur;
 	ZVAL row;
@@ -3905,6 +6336,12 @@ DLEXPORT ZEND_FUNCTION(sqlrcur_getfieldasdatesecond) {
 	RETURN_LONG(0);
 }
 
+/**
+ *  call-seq:
+ *  sqlrcur_getFieldAsDateMicrosecond($sqlrcurref, $row, $col)
+ *
+ *  Interprets the specified field as a date and returns the microsecond
+ *  component.  "col" may be specified as the column name or number. */
 DLEXPORT ZEND_FUNCTION(sqlrcur_getfieldasdatemicrosecond) {
 	ZVAL sqlrcur;
 	ZVAL row;
@@ -3989,6 +6426,13 @@ DLEXPORT ZEND_FUNCTION(sqlrcur_getfieldasdatemicrosecond) {
 	RETURN_LONG(0);
 }
 
+/**
+ *  call-seq:
+ *  sqlrcur_getFieldAsDateIsNegative($sqlrcurref, $row, $col)
+ *
+ *  Interprets the specified field as a date and returns whether the hour
+ *  component is negative.  "col" may be specified as the column name or
+ *  number. */
 DLEXPORT ZEND_FUNCTION(sqlrcur_getfieldasdateisnegative) {
 	ZVAL sqlrcur;
 	ZVAL row;
@@ -4073,6 +6517,11 @@ DLEXPORT ZEND_FUNCTION(sqlrcur_getfieldasdateisnegative) {
 	RETURN_LONG(0);
 }
 
+/**
+ *  call-seq:
+ *  sqlrcur_getFieldAsIntegerIgnoringCase($sqlrcurref, $row, $col)
+ *
+ *  Returns the specified field as an integer, ignoring case of "col". */
 DLEXPORT ZEND_FUNCTION(sqlrcur_getfieldasintegerignoringcase) {
 	ZVAL sqlrcur;
 	ZVAL row;
@@ -4106,6 +6555,11 @@ DLEXPORT ZEND_FUNCTION(sqlrcur_getfieldasintegerignoringcase) {
 	RETURN_LONG(0);
 }
 
+/**
+ *  call-seq:
+ *  sqlrcur_getFieldAsDoubleIgnoringCase($sqlrcurref, $row, $col)
+ *
+ *  Returns the specified field as a decimal, ignoring case of "col". */
 DLEXPORT ZEND_FUNCTION(sqlrcur_getfieldasdoubleignoringcase) {
 	ZVAL sqlrcur;
 	ZVAL row;
@@ -4139,6 +6593,11 @@ DLEXPORT ZEND_FUNCTION(sqlrcur_getfieldasdoubleignoringcase) {
 	RETURN_DOUBLE(0.0);
 }
 
+/**
+ *  call-seq:
+ *  sqlrcur_getFieldAsBooleanIgnoringCase($sqlrcurref, $row, $col)
+ *
+ *  Returns the specified field as a boolean, ignoring case of "col". */
 DLEXPORT ZEND_FUNCTION(sqlrcur_getfieldasbooleanignoringcase) {
 	ZVAL sqlrcur;
 	ZVAL row;
@@ -4172,6 +6631,12 @@ DLEXPORT ZEND_FUNCTION(sqlrcur_getfieldasbooleanignoringcase) {
 	RETURN_BOOL(false);
 }
 
+/**
+ *  call-seq:
+ *  sqlrcur_getFieldAsDateYearIgnoringCase($sqlrcurref, $row, $col)
+ *
+ *  Interprets the specified field as a date and returns the year component,
+ *  ignoring case of "col". */
 DLEXPORT ZEND_FUNCTION(sqlrcur_getfieldasdateyearignoringcase) {
 	ZVAL sqlrcur;
 	ZVAL row;
@@ -4243,6 +6708,12 @@ DLEXPORT ZEND_FUNCTION(sqlrcur_getfieldasdateyearignoringcase) {
 	RETURN_LONG(0);
 }
 
+/**
+ *  call-seq:
+ *  sqlrcur_getFieldAsDateMonthIgnoringCase($sqlrcurref, $row, $col)
+ *
+ *  Interprets the specified field as a date and returns the month component,
+ *  ignoring case of "col". */
 DLEXPORT ZEND_FUNCTION(sqlrcur_getfieldasdatemonthignoringcase) {
 	ZVAL sqlrcur;
 	ZVAL row;
@@ -4314,6 +6785,12 @@ DLEXPORT ZEND_FUNCTION(sqlrcur_getfieldasdatemonthignoringcase) {
 	RETURN_LONG(0);
 }
 
+/**
+ *  call-seq:
+ *  sqlrcur_getFieldAsDateDayIgnoringCase($sqlrcurref, $row, $col)
+ *
+ *  Interprets the specified field as a date and returns the day component,
+ *  ignoring case of "col". */
 DLEXPORT ZEND_FUNCTION(sqlrcur_getfieldasdatedayignoringcase) {
 	ZVAL sqlrcur;
 	ZVAL row;
@@ -4385,6 +6862,12 @@ DLEXPORT ZEND_FUNCTION(sqlrcur_getfieldasdatedayignoringcase) {
 	RETURN_LONG(0);
 }
 
+/**
+ *  call-seq:
+ *  sqlrcur_getFieldAsDateHourIgnoringCase($sqlrcurref, $row, $col)
+ *
+ *  Interprets the specified field as a date and returns the hour component,
+ *  ignoring case of "col". */
 DLEXPORT ZEND_FUNCTION(sqlrcur_getfieldasdatehourignoringcase) {
 	ZVAL sqlrcur;
 	ZVAL row;
@@ -4456,6 +6939,12 @@ DLEXPORT ZEND_FUNCTION(sqlrcur_getfieldasdatehourignoringcase) {
 	RETURN_LONG(0);
 }
 
+/**
+ *  call-seq:
+ *  sqlrcur_getFieldAsDateMinuteIgnoringCase($sqlrcurref, $row, $col)
+ *
+ *  Interprets the specified field as a date and returns the minute component,
+ *  ignoring case of "col". */
 DLEXPORT ZEND_FUNCTION(sqlrcur_getfieldasdateminuteignoringcase) {
 	ZVAL sqlrcur;
 	ZVAL row;
@@ -4527,6 +7016,12 @@ DLEXPORT ZEND_FUNCTION(sqlrcur_getfieldasdateminuteignoringcase) {
 	RETURN_LONG(0);
 }
 
+/**
+ *  call-seq:
+ *  sqlrcur_getFieldAsDateSecondIgnoringCase($sqlrcurref, $row, $col)
+ *
+ *  Interprets the specified field as a date and returns the second component,
+ *  ignoring case of "col". */
 DLEXPORT ZEND_FUNCTION(sqlrcur_getfieldasdatesecondignoringcase) {
 	ZVAL sqlrcur;
 	ZVAL row;
@@ -4598,6 +7093,12 @@ DLEXPORT ZEND_FUNCTION(sqlrcur_getfieldasdatesecondignoringcase) {
 	RETURN_LONG(0);
 }
 
+/**
+ *  call-seq:
+ *  sqlrcur_getFieldAsDateMicrosecondIgnoringCase($sqlrcurref, $row, $col)
+ *
+ *  Interprets the specified field as a date and returns the microsecond
+ *  component, ignoring case of "col". */
 DLEXPORT ZEND_FUNCTION(sqlrcur_getfieldasdatemicrosecondignoringcase) {
 	ZVAL sqlrcur;
 	ZVAL row;
@@ -4669,6 +7170,12 @@ DLEXPORT ZEND_FUNCTION(sqlrcur_getfieldasdatemicrosecondignoringcase) {
 	RETURN_LONG(0);
 }
 
+/**
+ *  call-seq:
+ *  sqlrcur_getFieldAsDateIsNegativeIgnoringCase($sqlrcurref, $row, $col)
+ *
+ *  Interprets the specified field as a date and returns whether the hour
+ *  component is negative, ignoring case of "col". */
 DLEXPORT ZEND_FUNCTION(sqlrcur_getfieldasdateisnegativeignoringcase) {
 	ZVAL sqlrcur;
 	ZVAL row;
@@ -4740,6 +7247,12 @@ DLEXPORT ZEND_FUNCTION(sqlrcur_getfieldasdateisnegativeignoringcase) {
 	RETURN_LONG(0);
 }
 
+/**
+ *  call-seq:
+ *  sqlrcur_getFieldLength($sqlrcurref, $row, $col)
+ *
+ *  Returns the length of the specified field. "col" may be
+ *  specified as the column name or number. */
 DLEXPORT ZEND_FUNCTION(sqlrcur_getfieldlength) {
 	ZVAL sqlrcur;
 	ZVAL row;
@@ -4777,6 +7290,11 @@ DLEXPORT ZEND_FUNCTION(sqlrcur_getfieldlength) {
 	RETURN_LONG(0);
 }
 
+/**
+ *  call-seq:
+ *  sqlrcur_getRow($sqlrcurref, $row)
+ *
+ *  Returns an array of the values of the fields in the specified row. */
 DLEXPORT ZEND_FUNCTION(sqlrcur_getrow) {
 	ZVAL sqlrcur;
 	ZVAL row;
@@ -4826,6 +7344,12 @@ DLEXPORT ZEND_FUNCTION(sqlrcur_getrow) {
 	}
 }
 
+/**
+ *  call-seq:
+ *  sqlrcur_getRowAssoc($sqlrcurref, $row)
+ *
+ *  Returns an associative array of the
+ *  values of the fields in the specified row. */
 DLEXPORT ZEND_FUNCTION(sqlrcur_getrowassoc) {
 	ZVAL sqlrcur;
 	ZVAL row;
@@ -4885,6 +7409,11 @@ DLEXPORT ZEND_FUNCTION(sqlrcur_getrowassoc) {
 	}
 }
 
+/**
+ *  call-seq:
+ *  sqlrcur_getRowLengths($sqlrcurref, $row)
+ *
+ *  Returns an array of the lengths of the fields in the specified row. */
 DLEXPORT ZEND_FUNCTION(sqlrcur_getrowlengths) {
 	ZVAL sqlrcur;
 	ZVAL row;
@@ -4925,6 +7454,12 @@ DLEXPORT ZEND_FUNCTION(sqlrcur_getrowlengths) {
 	}
 }
 
+/**
+ *  call-seq:
+ *  sqlrcur_getRowLengthsAssoc($sqlrcurref, $row)
+ *
+ *  Returns an associative array of the
+ *  lengths of the fields in the specified row. */
 DLEXPORT ZEND_FUNCTION(sqlrcur_getrowlengthsassoc) {
 	ZVAL sqlrcur;
 	ZVAL row;
@@ -4974,6 +7509,11 @@ DLEXPORT ZEND_FUNCTION(sqlrcur_getrowlengthsassoc) {
 	}
 }
 
+/**
+ *  call-seq:
+ *  sqlrcur_getColumnNames($sqlrcurref)
+ *
+ *  Returns an array of the column names of the current result set. */
 DLEXPORT ZEND_FUNCTION(sqlrcur_getcolumnnames) {
 	ZVAL sqlrcur;
 	const char * const *r;
@@ -5011,6 +7551,11 @@ DLEXPORT ZEND_FUNCTION(sqlrcur_getcolumnnames) {
 	}
 }
 
+/**
+ *  call-seq:
+ *  sqlrcur_getColumnName($sqlrcurref, $col)
+ *
+ *  Returns the name of the specified column. */
 DLEXPORT ZEND_FUNCTION(sqlrcur_getcolumnname) {
 	ZVAL sqlrcur;
 	ZVAL col;
@@ -5040,6 +7585,12 @@ DLEXPORT ZEND_FUNCTION(sqlrcur_getcolumnname) {
 	RETURN_FALSE;
 }
 
+/**
+ *  call-seq:
+ *  sqlrcur_getColumnType($sqlrcurref, $col)
+ *
+ *  Returns the type of the specified column.  "col" may be specified as the
+ *  column name or number. */
 DLEXPORT ZEND_FUNCTION(sqlrcur_getcolumntype) {
 	ZVAL sqlrcur;
 	ZVAL col;
@@ -5074,6 +7625,13 @@ DLEXPORT ZEND_FUNCTION(sqlrcur_getcolumntype) {
 	RETURN_FALSE;
 }
 
+/**
+ *  call-seq:
+ *  sqlrcur_getColumnLength($sqlrcurref, $col)
+ *
+ *  Returns the number of bytes required on the server to store the data for
+ *  the specified column.  "col" may be specified as the column name or
+ *  number. */
 DLEXPORT ZEND_FUNCTION(sqlrcur_getcolumnlength) {
 	ZVAL sqlrcur;
 	ZVAL col;
@@ -5106,6 +7664,14 @@ DLEXPORT ZEND_FUNCTION(sqlrcur_getcolumnlength) {
 	RETURN_LONG(0);
 }
 
+/**
+ *  call-seq:
+ *  sqlrcur_getColumnPrecision($sqlrcurref, $col)
+ *
+ *  Returns the precision of the specified column.  Precision is the total
+ *  number of digits in a number.  eg: 123.45 has a precision of 5.  For
+ *  non-numeric types, it's the number of characters in the string.  "col"
+ *  may be specified as the column name or number. */
 DLEXPORT ZEND_FUNCTION(sqlrcur_getcolumnprecision) {
 	ZVAL sqlrcur;
 	ZVAL col;
@@ -5138,6 +7704,13 @@ DLEXPORT ZEND_FUNCTION(sqlrcur_getcolumnprecision) {
 	RETURN_LONG(0);
 }
 
+/**
+ *  call-seq:
+ *  sqlrcur_getColumnScale($sqlrcurref, $col)
+ *
+ *  Returns the scale of the specified column.  Scale is the total number of
+ *  digits to the right of the decimal point in a number.  eg: 123.45 has a
+ *  scale of 2.  "col" may be specified as the column name or number. */
 DLEXPORT ZEND_FUNCTION(sqlrcur_getcolumnscale) {
 	ZVAL sqlrcur;
 	ZVAL col;
@@ -5170,6 +7743,12 @@ DLEXPORT ZEND_FUNCTION(sqlrcur_getcolumnscale) {
 	RETURN_LONG(0);
 }
 
+/**
+ *  call-seq:
+ *  sqlrcur_getColumnIsNullable($sqlrcurref, $col)
+ *
+ *  Returns 1 if the specified column can contain nulls and 0 otherwise.
+ *  "col" may be specified as the column name or number. */
 DLEXPORT ZEND_FUNCTION(sqlrcur_getcolumnisnullable) {
 	ZVAL sqlrcur;
 	ZVAL col;
@@ -5202,6 +7781,12 @@ DLEXPORT ZEND_FUNCTION(sqlrcur_getcolumnisnullable) {
 	RETURN_LONG(0);
 }
 
+/**
+ *  call-seq:
+ *  sqlrcur_getColumnIsPrimaryKey($sqlrcurref, $col)
+ *
+ *  Returns 1 if the specified column is a primary key and 0 otherwise.
+ *  "col" may be specified as the column name or number. */
 DLEXPORT ZEND_FUNCTION(sqlrcur_getcolumnisprimarykey) {
 	ZVAL sqlrcur;
 	ZVAL col;
@@ -5234,6 +7819,12 @@ DLEXPORT ZEND_FUNCTION(sqlrcur_getcolumnisprimarykey) {
 	RETURN_LONG(0);
 }
 
+/**
+ *  call-seq:
+ *  sqlrcur_getColumnIsUnique($sqlrcurref, $col)
+ *
+ *  Returns 1 if the specified column is unique and 0 otherwise.  "col"
+ *  may be specified as the column name or number. */
 DLEXPORT ZEND_FUNCTION(sqlrcur_getcolumnisunique) {
 	ZVAL sqlrcur;
 	ZVAL col;
@@ -5266,6 +7857,12 @@ DLEXPORT ZEND_FUNCTION(sqlrcur_getcolumnisunique) {
 	RETURN_LONG(0);
 }
 
+/**
+ *  call-seq:
+ *  sqlrcur_getColumnIsPartOfKey($sqlrcurref, $col)
+ *
+ *  Returns 1 if the specified column is part of a composite key and 0
+ *  otherwise.  "col" may be specified as the column name or number. */
 DLEXPORT ZEND_FUNCTION(sqlrcur_getcolumnispartofkey) {
 	ZVAL sqlrcur;
 	ZVAL col;
@@ -5298,6 +7895,12 @@ DLEXPORT ZEND_FUNCTION(sqlrcur_getcolumnispartofkey) {
 	RETURN_LONG(0);
 }
 
+/**
+ *  call-seq:
+ *  sqlrcur_getColumnIsUnsigned($sqlrcurref, $col)
+ *
+ *  Returns 1 if the specified column is an unsigned number and 0 otherwise.
+ *  "col" may be specified as the column name or number. */
 DLEXPORT ZEND_FUNCTION(sqlrcur_getcolumnisunsigned) {
 	ZVAL sqlrcur;
 	ZVAL col;
@@ -5330,6 +7933,12 @@ DLEXPORT ZEND_FUNCTION(sqlrcur_getcolumnisunsigned) {
 	RETURN_LONG(0);
 }
 
+/**
+ *  call-seq:
+ *  sqlrcur_getColumnIsZeroFilled($sqlrcurref, $col)
+ *
+ *  Returns 1 if the specified column was created with the zero-fill flag and
+ *  0 otherwise.  "col" may be specified as the column name or number. */
 DLEXPORT ZEND_FUNCTION(sqlrcur_getcolumniszerofilled) {
 	ZVAL sqlrcur;
 	ZVAL col;
@@ -5362,6 +7971,12 @@ DLEXPORT ZEND_FUNCTION(sqlrcur_getcolumniszerofilled) {
 	RETURN_LONG(0);
 }
 
+/**
+ *  call-seq:
+ *  sqlrcur_getColumnIsBinary($sqlrcurref, $col)
+ *
+ *  Returns 1 if the specified column contains binary data and 0 otherwise.
+ *  "col" may be specified as the column name or number. */
 DLEXPORT ZEND_FUNCTION(sqlrcur_getcolumnisbinary) {
 	ZVAL sqlrcur;
 	ZVAL col;
@@ -5394,6 +8009,12 @@ DLEXPORT ZEND_FUNCTION(sqlrcur_getcolumnisbinary) {
 	RETURN_LONG(0);
 }
 
+/**
+ *  call-seq:
+ *  sqlrcur_getColumnIsAutoIncrement($sqlrcurref, $col)
+ *
+ *  Returns 1 if the specified column auto-increments and 0 otherwise.
+ *  "col" may be specified as the column name or number. */
 DLEXPORT ZEND_FUNCTION(sqlrcur_getcolumnisautoincrement) {
 	ZVAL sqlrcur;
 	ZVAL col;
@@ -5426,6 +8047,12 @@ DLEXPORT ZEND_FUNCTION(sqlrcur_getcolumnisautoincrement) {
 	RETURN_LONG(0);
 }
 
+/**
+ *  call-seq:
+ *  sqlrcur_getLongest($sqlrcurref, $col)
+ *
+ *  Returns the length of the longest field in the specified column.
+ *  "col" may be specified as the column name or number. */
 DLEXPORT ZEND_FUNCTION(sqlrcur_getlongest) {
 	ZVAL sqlrcur;
 	ZVAL col;
@@ -5458,6 +8085,42 @@ DLEXPORT ZEND_FUNCTION(sqlrcur_getlongest) {
 	RETURN_LONG(0);
 }
 
+/**
+ *  call-seq:
+ *  sqlrcur_suspendResultSet($sqlrcurref)
+ *
+ *  Tells the server to leave this result set open when the connection calls
+ *  suspendSession() so that another connection can connect to it using
+ *  resumeResultSet() after it calls resumeSession(). */
+DLEXPORT ZEND_FUNCTION(sqlrcur_suspendresultset) {
+	ZVAL sqlrcur;
+	if (ZEND_NUM_ARGS() != 1 || 
+		GET_PARAMETERS(
+				ZEND_NUM_ARGS() TSRMLS_CC,
+				PARAMS("z")
+				&sqlrcur) == FAILURE) {
+		WRONG_PARAM_COUNT;
+	}
+	sqlrcursor *cursor=NULL;
+	ZEND_FETCH_RESOURCE(cursor,
+				sqlrcursor *,
+				sqlrcur,
+				-1,
+				"sqlrelay cursor",
+				sqlrelay_cursor);
+	if (cursor) {
+		cursor->suspendResultSet();
+	}
+}
+
+/**
+ *  call-seq:
+ *  sqlrcur_getResultSetId($sqlrcurref)
+ *
+ *  Returns the internal ID of this result set.  This parameter may be passed
+ *  to another cursor for use in the resumeResultSet() method.  Note: The
+ *  value this method returns is only valid after a call to
+ *  suspendResultSet(). */
 DLEXPORT ZEND_FUNCTION(sqlrcur_getresultsetid) {
 	ZVAL sqlrcur;
 	uint16_t r;
@@ -5482,27 +8145,12 @@ DLEXPORT ZEND_FUNCTION(sqlrcur_getresultsetid) {
 	RETURN_LONG(0);
 }
 
-DLEXPORT ZEND_FUNCTION(sqlrcur_suspendresultset) {
-	ZVAL sqlrcur;
-	if (ZEND_NUM_ARGS() != 1 || 
-		GET_PARAMETERS(
-				ZEND_NUM_ARGS() TSRMLS_CC,
-				PARAMS("z")
-				&sqlrcur) == FAILURE) {
-		WRONG_PARAM_COUNT;
-	}
-	sqlrcursor *cursor=NULL;
-	ZEND_FETCH_RESOURCE(cursor,
-				sqlrcursor *,
-				sqlrcur,
-				-1,
-				"sqlrelay cursor",
-				sqlrelay_cursor);
-	if (cursor) {
-		cursor->suspendResultSet();
-	}
-}
-
+/**
+ *  call-seq:
+ *  sqlrcur_resumeResultSet($sqlrcurref, $id)
+ *
+ *  Resumes a result set previously left open using suspendSession().
+ *  Returns 1 on success and 0 on failure. */
 DLEXPORT ZEND_FUNCTION(sqlrcur_resumeresultset) {
 	ZVAL sqlrcur;
 	ZVAL id;
@@ -5530,6 +8178,13 @@ DLEXPORT ZEND_FUNCTION(sqlrcur_resumeresultset) {
 	RETURN_LONG(0);
 }
 
+/**
+ *  call-seq:
+ *  sqlrcur_resumeCachedResultSet($sqlrcurref, $id, $filename)
+ *
+ *  Resumes a result set previously left open using suspendSession() and
+ *  continues caching the result set to "filename".  Returns 1 on success and 0
+ *  on failure. */
 DLEXPORT ZEND_FUNCTION(sqlrcur_resumecachedresultset) {
 	ZVAL sqlrcur;
 	ZVAL id;
@@ -5561,6 +8216,14 @@ DLEXPORT ZEND_FUNCTION(sqlrcur_resumecachedresultset) {
 	RETURN_LONG(0);
 }
 
+/**
+ *  call-seq:
+ *  sqlrcur_closeResultSet($sqlrcurref)
+ *
+ *  Closes the current result set, if one is open.  Data
+ *  that has been fetched already is still available but
+ *  no more data may be fetched.  Server side resources
+ *  for the result set are freed as well. */
 DLEXPORT ZEND_FUNCTION(sqlrcur_closeresultset) {
 	ZVAL sqlrcur;
 	if (ZEND_NUM_ARGS() != 1 || 
@@ -5580,824 +8243,6 @@ DLEXPORT ZEND_FUNCTION(sqlrcur_closeresultset) {
 	if (cursor) {
 		cursor->closeResultSet();
 	}
-}
-
-DLEXPORT ZEND_FUNCTION(sqlrcon_ping) {
-	ZVAL sqlrcon;
-	bool r;
-	if (ZEND_NUM_ARGS() != 1 || 
-		GET_PARAMETERS(
-				ZEND_NUM_ARGS() TSRMLS_CC,
-				PARAMS("z")
-				&sqlrcon) == FAILURE) {
-		WRONG_PARAM_COUNT;
-	}
-	sqlrconnection *connection=NULL;
-	ZEND_FETCH_RESOURCE(connection,
-				sqlrconnection *,
-				sqlrcon,
-				-1,
-				"sqlrelay connection",
-				sqlrelay_connection);
-	if (connection) {
-		r=connection->ping();
-		RETURN_LONG(r);
-	}
-	RETURN_LONG(0);
-}
-
-DLEXPORT ZEND_FUNCTION(sqlrcon_selectdatabase) {
-	ZVAL sqlrcon;
-	ZVAL database;
-	bool r;
-	if (ZEND_NUM_ARGS() != 2 || 
-		GET_PARAMETERS(
-				ZEND_NUM_ARGS() TSRMLS_CC,
-				PARAMS("zz")
-				&sqlrcon,
-				&database) == FAILURE) {
-		WRONG_PARAM_COUNT;
-	}
-	convert_to_string_ex(database);
-	sqlrconnection *connection=NULL;
-	ZEND_FETCH_RESOURCE(connection,
-				sqlrconnection *,
-				sqlrcon,
-				-1,
-				"sqlrelay connection",
-				sqlrelay_connection);
-	if (connection) {
-		r=connection->selectDatabase(SVAL(database));
-		RETURN_LONG(r);
-	}
-	RETURN_LONG(0);
-}
-
-DLEXPORT ZEND_FUNCTION(sqlrcon_getcurrentdatabase) {
-	ZVAL sqlrcon;
-	const char *r;
-	if (ZEND_NUM_ARGS() != 1 || 
-		GET_PARAMETERS(
-				ZEND_NUM_ARGS() TSRMLS_CC,
-				PARAMS("z")
-				&sqlrcon) == FAILURE) {
-		WRONG_PARAM_COUNT;
-	}
-	sqlrconnection *connection=NULL;
-	ZEND_FETCH_RESOURCE(connection,
-				sqlrconnection *,
-				sqlrcon,
-				-1,
-				"sqlrelay connection",
-				sqlrelay_connection);
-	if (connection) {
-		r=connection->getCurrentDatabase();
-		if (r) {
-			RET_STRING(const_cast<char *>(r),1);
-		}
-	}
-	RETURN_FALSE;
-}
-
-
-DLEXPORT ZEND_FUNCTION(sqlrcon_getdatabaseisschema) {
-	ZVAL sqlrcon;
-	if (ZEND_NUM_ARGS() != 1 ||
-		GET_PARAMETERS(
-				ZEND_NUM_ARGS() TSRMLS_CC,
-				PARAMS("z")
-				&sqlrcon) == FAILURE) {
-		WRONG_PARAM_COUNT;
-	}
-	sqlrconnection *connection=NULL;
-	ZEND_FETCH_RESOURCE(connection,
-				sqlrconnection *,
-				sqlrcon,
-				-1,
-				"sqlrelay connection",
-				sqlrelay_connection);
-	if (connection) {
-		RETURN_LONG(connection->getDatabaseIsSchema());
-	}
-	RETURN_LONG(0);
-}
-
-DLEXPORT ZEND_FUNCTION(sqlrcon_selectcatalog) {
-	ZVAL sqlrcon;
-	ZVAL catalog;
-	bool r;
-	if (ZEND_NUM_ARGS() != 2 ||
-		GET_PARAMETERS(
-				ZEND_NUM_ARGS() TSRMLS_CC,
-				PARAMS("zz")
-				&sqlrcon,
-				&catalog) == FAILURE) {
-		WRONG_PARAM_COUNT;
-	}
-	convert_to_string_ex(catalog);
-	sqlrconnection *connection=NULL;
-	ZEND_FETCH_RESOURCE(connection,
-				sqlrconnection *,
-				sqlrcon,
-				-1,
-				"sqlrelay connection",
-				sqlrelay_connection);
-	if (connection) {
-		r=connection->selectCatalog(SVAL(catalog));
-		RETURN_LONG(r);
-	}
-	RETURN_LONG(0);
-}
-
-DLEXPORT ZEND_FUNCTION(sqlrcon_getcurrentcatalog) {
-	ZVAL sqlrcon;
-	const char *r;
-	if (ZEND_NUM_ARGS() != 1 ||
-		GET_PARAMETERS(
-				ZEND_NUM_ARGS() TSRMLS_CC,
-				PARAMS("z")
-				&sqlrcon) == FAILURE) {
-		WRONG_PARAM_COUNT;
-	}
-	sqlrconnection *connection=NULL;
-	ZEND_FETCH_RESOURCE(connection,
-				sqlrconnection *,
-				sqlrcon,
-				-1,
-				"sqlrelay connection",
-				sqlrelay_connection);
-	if (connection) {
-		r=connection->getCurrentCatalog();
-		if (r) {
-			RET_STRING(const_cast<char *>(r),1);
-		}
-	}
-	RETURN_FALSE;
-}
-
-DLEXPORT ZEND_FUNCTION(sqlrcon_selectschema) {
-	ZVAL sqlrcon;
-	ZVAL schema;
-	bool r;
-	if (ZEND_NUM_ARGS() != 2 ||
-		GET_PARAMETERS(
-				ZEND_NUM_ARGS() TSRMLS_CC,
-				PARAMS("zz")
-				&sqlrcon,
-				&schema) == FAILURE) {
-		WRONG_PARAM_COUNT;
-	}
-	convert_to_string_ex(schema);
-	sqlrconnection *connection=NULL;
-	ZEND_FETCH_RESOURCE(connection,
-				sqlrconnection *,
-				sqlrcon,
-				-1,
-				"sqlrelay connection",
-				sqlrelay_connection);
-	if (connection) {
-		r=connection->selectSchema(SVAL(schema));
-		RETURN_LONG(r);
-	}
-	RETURN_LONG(0);
-}
-
-DLEXPORT ZEND_FUNCTION(sqlrcon_getcurrentschema) {
-	ZVAL sqlrcon;
-	const char *r;
-	if (ZEND_NUM_ARGS() != 1 ||
-		GET_PARAMETERS(
-				ZEND_NUM_ARGS() TSRMLS_CC,
-				PARAMS("z")
-				&sqlrcon) == FAILURE) {
-		WRONG_PARAM_COUNT;
-	}
-	sqlrconnection *connection=NULL;
-	ZEND_FETCH_RESOURCE(connection,
-				sqlrconnection *,
-				sqlrcon,
-				-1,
-				"sqlrelay connection",
-				sqlrelay_connection);
-	if (connection) {
-		r=connection->getCurrentSchema();
-		if (r) {
-			RET_STRING(const_cast<char *>(r),1);
-		}
-	}
-	RETURN_FALSE;
-}
-DLEXPORT ZEND_FUNCTION(sqlrcon_getcurrentuser) {
-	ZVAL sqlrcon;
-	const char *r;
-	if (ZEND_NUM_ARGS() != 1 ||
-		GET_PARAMETERS(
-				ZEND_NUM_ARGS() TSRMLS_CC,
-				PARAMS("z")
-				&sqlrcon) == FAILURE) {
-		WRONG_PARAM_COUNT;
-	}
-	sqlrconnection *connection=NULL;
-	ZEND_FETCH_RESOURCE(connection,
-				sqlrconnection *,
-				sqlrcon,
-				-1,
-				"sqlrelay connection",
-				sqlrelay_connection);
-	if (connection) {
-		r=connection->getCurrentUser();
-		if (r) {
-			RET_STRING(const_cast<char *>(r),1);
-		}
-	}
-	RETURN_FALSE;
-}
-
-DLEXPORT ZEND_FUNCTION(sqlrcon_getlastinsertid) {
-	ZVAL sqlrcon;
-	if (ZEND_NUM_ARGS() != 1 ||
-		GET_PARAMETERS(
-				ZEND_NUM_ARGS() TSRMLS_CC,
-				PARAMS("z")
-				&sqlrcon) == FAILURE) {
-		WRONG_PARAM_COUNT;
-	}
-	sqlrconnection *connection=NULL;
-	ZEND_FETCH_RESOURCE(connection,
-				sqlrconnection *,
-				sqlrcon,
-				-1,
-				"sqlrelay connection",
-				sqlrelay_connection);
-	if (connection) {
-		RETURN_LONG(connection->getLastInsertId());
-	}
-	RETURN_FALSE;
-}
-
-DLEXPORT ZEND_FUNCTION(sqlrcon_autocommiton) {
-	ZVAL sqlrcon;
-	bool r;
-	if (ZEND_NUM_ARGS() != 1 || 
-		GET_PARAMETERS(
-				ZEND_NUM_ARGS() TSRMLS_CC,
-				PARAMS("z")
-				&sqlrcon) == FAILURE) {
-		WRONG_PARAM_COUNT;
-	}
-	sqlrconnection *connection=NULL;
-	ZEND_FETCH_RESOURCE(connection,
-				sqlrconnection *,
-				sqlrcon,
-				-1,
-				"sqlrelay connection",
-				sqlrelay_connection);
-	if (connection) {
-		r=connection->autoCommitOn();
-		RETURN_LONG(r);
-	}
-	RETURN_LONG(0);
-}
-
-DLEXPORT ZEND_FUNCTION(sqlrcon_autocommitoff) {
-	ZVAL sqlrcon;
-	bool r;
-	if (ZEND_NUM_ARGS() != 1 ||
-		GET_PARAMETERS(
-				ZEND_NUM_ARGS() TSRMLS_CC,
-				PARAMS("z")
-				&sqlrcon) == FAILURE) {
-		WRONG_PARAM_COUNT;
-	}
-	sqlrconnection *connection=NULL;
-	ZEND_FETCH_RESOURCE(connection,
-				sqlrconnection *,
-				sqlrcon,
-				-1,
-				"sqlrelay connection",
-				sqlrelay_connection);
-	if (connection) {
-		r=connection->autoCommitOff();
-		RETURN_LONG(r);
-	}
-	RETURN_LONG(0);
-}
-
-DLEXPORT ZEND_FUNCTION(sqlrcon_getautocommit) {
-	ZVAL sqlrcon;
-	bool r;
-	if (ZEND_NUM_ARGS() != 1 ||
-		GET_PARAMETERS(
-				ZEND_NUM_ARGS() TSRMLS_CC,
-				PARAMS("z")
-				&sqlrcon) == FAILURE) {
-		WRONG_PARAM_COUNT;
-	}
-	sqlrconnection *connection=NULL;
-	ZEND_FETCH_RESOURCE(connection,
-				sqlrconnection *,
-				sqlrcon,
-				-1,
-				"sqlrelay connection",
-				sqlrelay_connection);
-	if (connection) {
-		r=connection->getAutoCommit();
-		RETURN_LONG(r);
-	}
-	RETURN_LONG(0);
-}
-
-DLEXPORT ZEND_FUNCTION(sqlrcon_begin) {
-	ZVAL sqlrcon;
-	bool r;
-	if (ZEND_NUM_ARGS() != 1 || 
-		GET_PARAMETERS(
-				ZEND_NUM_ARGS() TSRMLS_CC,
-				PARAMS("z")
-				&sqlrcon) == FAILURE) {
-		WRONG_PARAM_COUNT;
-	}
-	sqlrconnection *connection=NULL;
-	ZEND_FETCH_RESOURCE(connection,
-				sqlrconnection *,
-				sqlrcon,
-				-1,
-				"sqlrelay connection",
-				sqlrelay_connection);
-	if (connection) {
-		r=connection->begin();
-		RETURN_LONG(r);
-	}
-	RETURN_LONG(0);
-}
-
-DLEXPORT ZEND_FUNCTION(sqlrcon_commit) {
-	ZVAL sqlrcon;
-	bool r;
-	if (ZEND_NUM_ARGS() != 1 || 
-		GET_PARAMETERS(
-				ZEND_NUM_ARGS() TSRMLS_CC,
-				PARAMS("z")
-				&sqlrcon) == FAILURE) {
-		WRONG_PARAM_COUNT;
-	}
-	sqlrconnection *connection=NULL;
-	ZEND_FETCH_RESOURCE(connection,
-				sqlrconnection *,
-				sqlrcon,
-				-1,
-				"sqlrelay connection",
-				sqlrelay_connection);
-	if (connection) {
-		r=connection->commit();
-		RETURN_LONG(r);
-	}
-	RETURN_LONG(0);
-}
-
-DLEXPORT ZEND_FUNCTION(sqlrcon_rollback) {
-	ZVAL sqlrcon;
-	bool r;
-	if (ZEND_NUM_ARGS() != 1 ||
-		GET_PARAMETERS(
-				ZEND_NUM_ARGS() TSRMLS_CC,
-				PARAMS("z")
-				&sqlrcon) == FAILURE) {
-		WRONG_PARAM_COUNT;
-	}
-	sqlrconnection *connection=NULL;
-	ZEND_FETCH_RESOURCE(connection,
-				sqlrconnection *,
-				sqlrcon,
-				-1,
-				"sqlrelay connection",
-				sqlrelay_connection);
-	if (connection) {
-		r=connection->rollback();
-		RETURN_LONG(r);
-	}
-	RETURN_LONG(0);
-}
-
-DLEXPORT ZEND_FUNCTION(sqlrcon_getInTransaction) {
-	ZVAL sqlrcon;
-	bool r;
-	if (ZEND_NUM_ARGS() != 1 ||
-		GET_PARAMETERS(
-				ZEND_NUM_ARGS() TSRMLS_CC,
-				PARAMS("z")
-				&sqlrcon) == FAILURE) {
-		WRONG_PARAM_COUNT;
-	}
-	sqlrconnection *connection=NULL;
-	ZEND_FETCH_RESOURCE(connection,
-				sqlrconnection *,
-				sqlrcon,
-				-1,
-				"sqlrelay connection",
-				sqlrelay_connection);
-	if (connection) {
-		r=connection->getInTransaction();
-		RETURN_LONG(r);
-	}
-	RETURN_LONG(0);
-}
-
-DLEXPORT ZEND_FUNCTION(sqlrcon_getDefaultTransactionModel) {
-	ZVAL sqlrcon;
-	const char *r;
-	if (ZEND_NUM_ARGS() != 1 ||
-		GET_PARAMETERS(
-				ZEND_NUM_ARGS() TSRMLS_CC,
-				PARAMS("z")
-				&sqlrcon) == FAILURE) {
-		WRONG_PARAM_COUNT;
-	}
-	sqlrconnection *connection=NULL;
-	ZEND_FETCH_RESOURCE(connection,
-				sqlrconnection *,
-				sqlrcon,
-				-1,
-				"sqlrelay connection",
-				sqlrelay_connection);
-	if (connection) {
-		r=connection->getDefaultTransactionModel();
-		if (r) {
-			RET_STRING(const_cast<char *>(r),1);
-		}
-	}
-	RETURN_FALSE;
-}
-
-DLEXPORT ZEND_FUNCTION(sqlrcon_setTransactionModel) {
-	ZVAL sqlrcon;
-	ZVAL txmodel;
-	bool r;
-	if (ZEND_NUM_ARGS() != 2 ||
-		GET_PARAMETERS(
-				ZEND_NUM_ARGS() TSRMLS_CC,
-				PARAMS("zz")
-				&sqlrcon,
-				&txmodel) == FAILURE) {
-		WRONG_PARAM_COUNT;
-	}
-	convert_to_string_ex(txmodel);
-	sqlrconnection *connection=NULL;
-	ZEND_FETCH_RESOURCE(connection,
-				sqlrconnection *,
-				sqlrcon,
-				-1,
-				"sqlrelay connection",
-				sqlrelay_connection);
-	if (connection) {
-		r=connection->setTransactionModel(SVAL(txmodel));
-		RETURN_LONG(r);
-	}
-	RETURN_LONG(0);
-}
-
-DLEXPORT ZEND_FUNCTION(sqlrcon_getTransactionModel) {
-	ZVAL sqlrcon;
-	const char *r;
-	if (ZEND_NUM_ARGS() != 1 ||
-		GET_PARAMETERS(
-				ZEND_NUM_ARGS() TSRMLS_CC,
-				PARAMS("z")
-				&sqlrcon) == FAILURE) {
-		WRONG_PARAM_COUNT;
-	}
-	sqlrconnection *connection=NULL;
-	ZEND_FETCH_RESOURCE(connection,
-				sqlrconnection *,
-				sqlrcon,
-				-1,
-				"sqlrelay connection",
-				sqlrelay_connection);
-	if (connection) {
-		r=connection->getTransactionModel();
-		if (r) {
-			RET_STRING(const_cast<char *>(r),1);
-		}
-	}
-	RETURN_FALSE;
-}
-
-DLEXPORT ZEND_FUNCTION(sqlrcon_getDefaultIsolationLevel) {
-	ZVAL sqlrcon;
-	const char *r;
-	if (ZEND_NUM_ARGS() != 1 ||
-		GET_PARAMETERS(
-				ZEND_NUM_ARGS() TSRMLS_CC,
-				PARAMS("z")
-				&sqlrcon) == FAILURE) {
-		WRONG_PARAM_COUNT;
-	}
-	sqlrconnection *connection=NULL;
-	ZEND_FETCH_RESOURCE(connection,
-				sqlrconnection *,
-				sqlrcon,
-				-1,
-				"sqlrelay connection",
-				sqlrelay_connection);
-	if (connection) {
-		r=connection->getDefaultIsolationLevel();
-		if (r) {
-			RET_STRING(const_cast<char *>(r),1);
-		}
-	}
-	RETURN_FALSE;
-}
-
-DLEXPORT ZEND_FUNCTION(sqlrcon_setIsolationLevel) {
-	ZVAL sqlrcon;
-	ZVAL isolationlevel;
-	bool r;
-	if (ZEND_NUM_ARGS() != 2 ||
-		GET_PARAMETERS(
-				ZEND_NUM_ARGS() TSRMLS_CC,
-				PARAMS("zz")
-				&sqlrcon,
-				&isolationlevel) == FAILURE) {
-		WRONG_PARAM_COUNT;
-	}
-	convert_to_string_ex(isolationlevel);
-	sqlrconnection *connection=NULL;
-	ZEND_FETCH_RESOURCE(connection,
-				sqlrconnection *,
-				sqlrcon,
-				-1,
-				"sqlrelay connection",
-				sqlrelay_connection);
-	if (connection) {
-		r=connection->setIsolationLevel(SVAL(isolationlevel));
-		RETURN_LONG(r);
-	}
-	RETURN_LONG(0);
-}
-
-DLEXPORT ZEND_FUNCTION(sqlrcon_getIsolationLevel) {
-	ZVAL sqlrcon;
-	const char *r;
-	if (ZEND_NUM_ARGS() != 1 ||
-		GET_PARAMETERS(
-				ZEND_NUM_ARGS() TSRMLS_CC,
-				PARAMS("z")
-				&sqlrcon) == FAILURE) {
-		WRONG_PARAM_COUNT;
-	}
-	sqlrconnection *connection=NULL;
-	ZEND_FETCH_RESOURCE(connection,
-				sqlrconnection *,
-				sqlrcon,
-				-1,
-				"sqlrelay connection",
-				sqlrelay_connection);
-	if (connection) {
-		r=connection->getIsolationLevel();
-		if (r) {
-			RET_STRING(const_cast<char *>(r),1);
-		}
-	}
-	RETURN_FALSE;
-}
-
-DLEXPORT ZEND_FUNCTION(sqlrcon_getDatabaseFeature) {
-	ZVAL sqlrcon;
-	ZVAL feature;
-	const char *r;
-	if (ZEND_NUM_ARGS() != 2 ||
-		GET_PARAMETERS(
-				ZEND_NUM_ARGS() TSRMLS_CC,
-				PARAMS("zz")
-				&sqlrcon,
-				&feature) == FAILURE) {
-		WRONG_PARAM_COUNT;
-	}
-	convert_to_string_ex(feature);
-	sqlrconnection *connection=NULL;
-	ZEND_FETCH_RESOURCE(connection,
-				sqlrconnection *,
-				sqlrcon,
-				-1,
-				"sqlrelay connection",
-				sqlrelay_connection);
-	if (connection) {
-		r=connection->getDatabaseFeature(SVAL(feature));
-		if (r) {
-			RET_STRING(const_cast<char *>(r),1);
-		}
-	}
-	RETURN_FALSE;
-}
-
-DLEXPORT ZEND_FUNCTION(sqlrcon_identify) {
-	ZVAL sqlrcon;
-	const char *r;
-	if (ZEND_NUM_ARGS() != 1 || 
-		GET_PARAMETERS(
-				ZEND_NUM_ARGS() TSRMLS_CC,
-				PARAMS("z")
-				&sqlrcon) == FAILURE) {
-		WRONG_PARAM_COUNT;
-	}
-	sqlrconnection *connection=NULL;
-	ZEND_FETCH_RESOURCE(connection,
-				sqlrconnection *,
-				sqlrcon,
-				-1,
-				"sqlrelay connection",
-				sqlrelay_connection);
-	if (connection) {
-		r=connection->identify();
-		if (r) {
-			RET_STRING(const_cast<char *>(r),1);
-		}
-	}
-	RETURN_FALSE;
-}
-
-DLEXPORT ZEND_FUNCTION(sqlrcon_bindformat) {
-	ZVAL sqlrcon;
-	const char *r;
-	if (ZEND_NUM_ARGS() != 1 || 
-		GET_PARAMETERS(
-				ZEND_NUM_ARGS() TSRMLS_CC,
-				PARAMS("z")
-				&sqlrcon) == FAILURE) {
-		WRONG_PARAM_COUNT;
-	}
-	sqlrconnection *connection=NULL;
-	ZEND_FETCH_RESOURCE(connection,
-				sqlrconnection *,
-				sqlrcon,
-				-1,
-				"sqlrelay connection",
-				sqlrelay_connection);
-	if (connection) {
-		r=connection->bindFormat();
-		if (r) {
-			RET_STRING(const_cast<char *>(r),1);
-		}
-	}
-	RETURN_FALSE;
-}
-
-DLEXPORT ZEND_FUNCTION(sqlrcon_nextvalformat) {
-	ZVAL sqlrcon;
-	const char *r;
-	if (ZEND_NUM_ARGS() != 1 || 
-		GET_PARAMETERS(
-				ZEND_NUM_ARGS() TSRMLS_CC,
-				PARAMS("z")
-				&sqlrcon) == FAILURE) {
-		WRONG_PARAM_COUNT;
-	}
-	sqlrconnection *connection=NULL;
-	ZEND_FETCH_RESOURCE(connection,
-				sqlrconnection *,
-				sqlrcon,
-				-1,
-				"sqlrelay connection",
-				sqlrelay_connection);
-	if (connection) {
-		r=connection->nextvalFormat();
-		if (r) {
-			RET_STRING(const_cast<char *>(r),1);
-		}
-	}
-	RETURN_FALSE;
-}
-
-DLEXPORT ZEND_FUNCTION(sqlrcon_dbversion) {
-	ZVAL sqlrcon;
-	const char *r;
-	if (ZEND_NUM_ARGS() != 1 || 
-		GET_PARAMETERS(
-				ZEND_NUM_ARGS() TSRMLS_CC,
-				PARAMS("z")
-				&sqlrcon) == FAILURE) {
-		WRONG_PARAM_COUNT;
-	}
-	sqlrconnection *connection=NULL;
-	ZEND_FETCH_RESOURCE(connection,
-				sqlrconnection *,
-				sqlrcon,
-				-1,
-				"sqlrelay connection",
-				sqlrelay_connection);
-	if (connection) {
-		r=connection->dbVersion();
-		if (r) {
-			RET_STRING(const_cast<char *>(r),1);
-		}
-	}
-	RETURN_FALSE;
-}
-
-
-DLEXPORT ZEND_FUNCTION(sqlrcon_dbhostname) {
-	ZVAL sqlrcon;
-	const char *r;
-	if (ZEND_NUM_ARGS() != 1 || 
-		GET_PARAMETERS(
-				ZEND_NUM_ARGS() TSRMLS_CC,
-				PARAMS("z")
-				&sqlrcon) == FAILURE) {
-		WRONG_PARAM_COUNT;
-	}
-	sqlrconnection *connection=NULL;
-	ZEND_FETCH_RESOURCE(connection,
-				sqlrconnection *,
-				sqlrcon,
-				-1,
-				"sqlrelay connection",
-				sqlrelay_connection);
-	if (connection) {
-		r=connection->dbHostName();
-		if (r) {
-			RET_STRING(const_cast<char *>(r),1);
-		}
-	}
-	RETURN_FALSE;
-}
-
-
-DLEXPORT ZEND_FUNCTION(sqlrcon_dbipaddress) {
-	ZVAL sqlrcon;
-	const char *r;
-	if (ZEND_NUM_ARGS() != 1 || 
-		GET_PARAMETERS(
-				ZEND_NUM_ARGS() TSRMLS_CC,
-				PARAMS("z")
-				&sqlrcon) == FAILURE) {
-		WRONG_PARAM_COUNT;
-	}
-	sqlrconnection *connection=NULL;
-	ZEND_FETCH_RESOURCE(connection,
-				sqlrconnection *,
-				sqlrcon,
-				-1,
-				"sqlrelay connection",
-				sqlrelay_connection);
-	if (connection) {
-		r=connection->dbIpAddress();
-		if (r) {
-			RET_STRING(const_cast<char *>(r),1);
-		}
-	}
-	RETURN_FALSE;
-}
-
-DLEXPORT ZEND_FUNCTION(sqlrcon_serverversion) {
-	ZVAL sqlrcon;
-	const char *r;
-	if (ZEND_NUM_ARGS() != 1 || 
-		GET_PARAMETERS(
-				ZEND_NUM_ARGS() TSRMLS_CC,
-				PARAMS("z")
-				&sqlrcon) == FAILURE) {
-		WRONG_PARAM_COUNT;
-	}
-	sqlrconnection *connection=NULL;
-	ZEND_FETCH_RESOURCE(connection,
-				sqlrconnection *,
-				sqlrcon,
-				-1,
-				"sqlrelay connection",
-				sqlrelay_connection);
-	if (connection) {
-		r=connection->serverVersion();
-		if (r) {
-			RET_STRING(const_cast<char *>(r),1);
-		}
-	}
-	RETURN_FALSE;
-}
-
-DLEXPORT ZEND_FUNCTION(sqlrcon_clientversion) {
-	ZVAL sqlrcon;
-	const char *r;
-	if (ZEND_NUM_ARGS() != 1 || 
-		GET_PARAMETERS(
-				ZEND_NUM_ARGS() TSRMLS_CC,
-				PARAMS("z")
-				&sqlrcon) == FAILURE) {
-		WRONG_PARAM_COUNT;
-	}
-	sqlrconnection *connection=NULL;
-	ZEND_FETCH_RESOURCE(connection,
-				sqlrconnection *,
-				sqlrcon,
-				-1,
-				"sqlrelay connection",
-				sqlrelay_connection);
-	if (connection) {
-		r=connection->clientVersion();
-		if (r) {
-			RET_STRING(const_cast<char *>(r),1);
-		}
-	}
-	RETURN_FALSE;
 }
 
 // FIXME: flesh these out

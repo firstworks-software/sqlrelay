@@ -311,6 +311,33 @@
 		below getDatabaseFeature(), documented getCatalogList(), and
 		regenerated the erlang docs, which had fallen 101 functions
 		behind while edoc was failing
+	switched the php api docs from phpdoc to doxygen, which already builds
+		the c, c++, cs, ado.net and nodejs docs, since phpdoc
+		(phpDocumentor 1.x) is long dead and won't run on modern php,
+		and its makedoc deleted the docs before ever calling it
+	renamed the php api's sqlrcur_substitutions() and sqlrcur_inputBinds()
+		doc stubs, which carried the singular names of the functions
+		above them so phpdoc dropped them as duplicates and never
+		published them, and fixed the sqlrcur_getRowLengthsAssoc()
+		doc stub, which was spelled "Lenghts"
+	moved the php api's doc comments out of the sql_relay.doc.php stub and
+		into sql_relay.cpp, above the functions they document, with a
+		call-seq line carrying the php-visible signature the way the
+		ruby api's docs already do; doc/api/php/makedoc now generates
+		the stub with the new mkstub.pl and deletes it again, and
+		mkstub.pl fails the build if a doc comment names a function it
+		isn't attached to, names a function the extension doesn't
+		export, or if an exported function has no doc comment
+	reordered the php api's functions in sql_relay.cpp to follow the c/c++
+		apis, which is the order the docs were already published in
+	documented the php api's getSchemaList(), getTableTypeList(),
+		getTypeInfoList(), getPrimaryKeysList(), getKeyAndIndexList(),
+		getProcedureList() and getProcedureParameterList(), which were
+		exported but had never been documented, and fixed the grammar
+		in inputBinds()
+	fixed the doc website's link to the c api reference from the c
+		programming guide, which had one underscore where doxygen
+		generates two
 
 2.1.1 - added tns_admin support
 	fixed sqlr-start ... -strace ...

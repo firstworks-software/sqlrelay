@@ -103,7 +103,7 @@ The native SQL Relay client APIs provide advanced features like substitution and
  [api/c/html/group__sqlrclientwrapper.html C][[br]]
  [api/cs/html/annotated.html C#][[br]]
  [api/perl/perl.html Perl][[br]]
- [api/php/index.html PHP][[br]]
+ [api/php/html/group__sql__relay.html PHP][[br]]
  [api/python/PySQLRClient.py.html Python][[br]]
  [api/ruby/doc/index.html Ruby][[br]]
  [api/java/index.html Java][[br]]

@@ -101,7 +101,7 @@ session.
 
 Sessions can also be encrypted and authenticated using Kerberos/Active Directory or TLS/SSL.  The sqlrcon_enableKerberos() function is provided to enable Kerberos/Active Directory encryption and authentication and the sqlrcon_enableTls() function is provided to enable TLS/SSL encryption and authentication.  The sqlrcon_disableEncryption() function is provided to disable any previously enabled encryption.
 
-See the [../api/c/html/group_sqlrclientwrapper.html C API reference] for information about these functions and the SQL Relay Configuration Guide for more information about [../admin/configguide.html#krb Kerberos/Active Directory] and [../admin/configguide.html#tls TLS/SSL] configurations.  In particular, note that user and password are not typically used when using Kerberos/AD.
+See the [../api/c/html/group__sqlrclientwrapper.html C API reference] for information about these functions and the SQL Relay Configuration Guide for more information about [../admin/configguide.html#krb Kerberos/Active Directory] and [../admin/configguide.html#tls TLS/SSL] configurations.  In particular, note that user and password are not typically used when using Kerberos/AD.
 
 [=#query]
 == Executing Queries ==

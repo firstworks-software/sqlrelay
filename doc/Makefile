@@ -52,8 +52,7 @@ install:
 	$(MKINSTALLDIRS) $(docdir)/api/c++/html
 	$(MKINSTALLDIRS) $(docdir)/api/cs/html
 	$(MKINSTALLDIRS) $(docdir)/api/perl
-	$(MKINSTALLDIRS) $(docdir)/api/php/media
-	$(MKINSTALLDIRS) $(docdir)/api/php/sql_relay
+	$(MKINSTALLDIRS) $(docdir)/api/php/html
 	$(MKINSTALLDIRS) $(docdir)/api/python
 	$(MKINSTALLDIRS) $(docdir)/api/ruby/doc/css
 	$(MKINSTALLDIRS) $(docdir)/api/ruby/doc/fonts
@@ -128,12 +127,16 @@ install:
 	$(CHMOD) 644 $(docdir)/api/perl/Cursor.html
 	$(CP) api/perl/SQLRelay.html $(docdir)/api/perl
 	$(CHMOD) 644 $(docdir)/api/perl/SQLRelay.html
-	$(CP) api/php/*.html $(docdir)/api/php
-	$(CHMOD) 644 $(docdir)/api/php/*.html
-	$(CP) api/php/media/*.css $(docdir)/api/php/media
-	$(CHMOD) 644 $(docdir)/api/php/media/*.css
-	$(CP) api/php/sql_relay/*.html $(docdir)/api/php/sql_relay
-	$(CHMOD) 644 $(docdir)/api/php/sql_relay/*.html
+	$(CP) api/php/html/*.html $(docdir)/api/php/html
+	$(CHMOD) 644 $(docdir)/api/php/html/*.html
+	$(CP) api/php/html/*.css $(docdir)/api/php/html
+	$(CHMOD) 644 $(docdir)/api/php/html/*.css
+	$(CP) api/php/html/*.png $(docdir)/api/php/html
+	$(CHMOD) 644 $(docdir)/api/php/html/*.png
+	$(CP) api/php/html/*.svg $(docdir)/api/php/html
+	$(CHMOD) 644 $(docdir)/api/php/html/*.svg
+	$(CP) api/php/html/*.js $(docdir)/api/php/html
+	$(CHMOD) 644 $(docdir)/api/php/html/*.js
 	$(CP) api/python/*.html $(docdir)/api/python
 	$(CHMOD) 644 $(docdir)/api/python/*.html
 	$(CP) api/ruby/doc/*.html $(docdir)/api/ruby/doc

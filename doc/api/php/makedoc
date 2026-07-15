@@ -1,6 +1,8 @@
-rm -f *.html
-rm -f default/*.html
-rm -f media/*.css
-phpdoc -f ../../../src/api/php/sql_relay.doc.php -t ./ -dc sql_relay -dn sql_relay
-
-#hint - run on fedora 24
+rm -f html/*.png
+rm -f html/*.html
+rm -f html/*.js
+rm -f html/*.css
+rm -f sql_relay.doc.php
+./mkstub.pl ../../../src/api/php/sql_relay.cpp sql_relay.doc.php || exit 1
+doxygen doxygen.config
+rm -f sql_relay.doc.php
