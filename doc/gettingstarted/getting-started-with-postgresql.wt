@@ -109,14 +109,14 @@ The package distributions of !PostgreSQL either install a script which starts th
 If you compiled from source, you'll need to install a script like the following to start/stop the database at boot/shutdown time.
 
 {{{#!blockquote
-{{{
+{{{#!code
  #!/bin/sh
 
 case "$1" in
         start)
                 su -l postgres -s /bin/sh -c "/usr/local/pgsql/bin/pg_ctl \
                         -D /usr/local/pgsql/var \
-                        -p /usr/local/pgsql/bin/postmaster start  &gt; /dev/null 2&gt;&amp;1" &lt; /dev/null
+                        -p /usr/local/pgsql/bin/postmaster start  > /dev/null 2>&1" < /dev/null
                 ;;
         stop)
                 kill `ps -efa | grep postmaster | grep -v grep | awk '{print $2}'`

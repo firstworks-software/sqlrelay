@@ -137,20 +137,20 @@ A screen will appear titled '''The installation was successful'''[[br]]Click Fin
 To start the database at boot time, you need to install a script like the following. Replace ///opt/sybase// with whatever directory Sybase ASE is installed in.
 
 {{{#!blockquote
-{{{
+{{{#!code
  #!/bin/sh
 
 export SYBASE=/opt/sybase
 
 export PATH=$PATH:$SYBASE/ASE-15_0/bin:$SYBASE/ASE-15_0/install
 
-echo 268435456 &gt; /proc/sys/kernel/shmmax
+echo 268435456 > /proc/sys/kernel/shmmax
 
 case "$1" in
         start)
                 for i in `ls $SYBASE/ASE-15_0/install/RUN_*`
                 do
-                        su -c "startserver -f $i" &gt; /dev/null 2&gt;&amp;1;
+                        su -c "startserver -f $i" > /dev/null 2>&1;
                 done
                 ;;
         stop)

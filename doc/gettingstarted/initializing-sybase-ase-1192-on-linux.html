@@ -59,29 +59,32 @@ http://www.gnu.org/software/src-highlite -->
 <p>The RPM distribution of Sybase ASE installs a script in /etc/rc.d/init.d which starts the database at boot time. For non-RPM distributions, you may need to install a script like the following. Replace <i>/opt/sybase-11.9.2</i> with whatever directory Sybase ASE is installed in.</p>
 
 <blockquote>
-  <pre> #!/bin/sh
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt> <i><font color="#9A1900">#!/bin/sh</font></i>
 
-export SYBASE=/opt/sybase-11.9.2
+<b><font color="#0000FF">export</font></b> <font color="#009900">SYBASE</font><font color="#990000">=</font>/opt/sybase-<font color="#993399">11.9</font><font color="#990000">.</font><font color="#993399">2</font>
 
-export PATH=$PATH:$SYBASE/bin:$SYBASE/install
+<b><font color="#0000FF">export</font></b> <font color="#009900">PATH</font><font color="#990000">=</font><font color="#009900">$PATH</font><font color="#990000">:</font><font color="#009900">$SYBASE</font>/bin<font color="#990000">:</font><font color="#009900">$SYBASE</font>/install
 
-case "$1" in
-        start)
-                for i in `ls $SYBASE/install/RUN_*`
-                do
-                        su -c "startserver -f $i" sybase &gt; /dev/null 2&gt;&amp;1;
-                done
-                ;;
-        stop)
-                kill `ps -efa | grep sybase | grep -v grep | awk '{print $2}'`
-                ;;
-        *)
-                echo $"Usage: $0 {start|stop}"
-                exit 1
-esac
+<b><font color="#0000FF">case</font></b> <font color="#FF0000">"$1"</font> <b><font color="#0000FF">in</font></b>
+        start<font color="#990000">)</font>
+                <b><font color="#0000FF">for</font></b> i <b><font color="#0000FF">in</font></b> `ls <font color="#009900">$SYBASE</font>/install/RUN_<font color="#990000">*</font>`
+                <b><font color="#0000FF">do</font></b>
+                        su -c <font color="#FF0000">"startserver -f $i"</font> sybase <font color="#990000">&gt;</font> /dev/null <font color="#993399">2</font><font color="#990000">&gt;&amp;</font><font color="#993399">1</font><font color="#990000">;</font>
+                <b><font color="#0000FF">done</font></b>
+                <font color="#990000">;;</font>
+        stop<font color="#990000">)</font>
+                kill `ps -efa <font color="#990000">|</font> grep sybase <font color="#990000">|</font> grep -v grep <font color="#990000">|</font> awk <font color="#FF0000">'{print $2}'</font>`
+                <font color="#990000">;;</font>
+        <font color="#990000">*)</font>
+                echo <font color="#009900">$"</font>Usage<font color="#990000">:</font> <font color="#009900">$0</font> {start<font color="#990000">|</font>stop}<font color="#FF0000">"</font>
+<font color="#FF0000">                exit 1</font>
+<font color="#FF0000">esac</font>
 
-exit 0
-</pre>
+<font color="#FF0000">exit 0</font></tt></pre>
 
 </blockquote>
 <p>Install this script and run it with the "start" option to start up the database. Running it with the "stop" option shuts the database down. To access a database, it must be running.</p>

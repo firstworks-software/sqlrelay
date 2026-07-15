@@ -81,22 +81,28 @@ http://www.gnu.org/software/src-highlite -->
 <p>Change directories to the database directory.<br/><br/> Type <b>./runInstaller</b><br/><br/> On the <b>Installation Method</b> screen, accept the default Basic Installation. Change the Global Database Name from "orcl" to "ora1". Enter a password in the Database Password and Confirm Password boxes for the SYS, SYSTEM, SYSMAN and DBSNMP accounts. Be sure to enter a password that starts with a letter, not a number. Click <b>Next</b><br/><br/> The window will go away and a <b>Preparing to install</b> dialog with a progress bar will appear for a while. Then it will go away and another screen will appear.<br/><br/> On this screen, the installer will do a system test to make sure that the system configuration meets the installer's requirements. Your system may not meet the Network or Memory requirements. You can safely ignore these warnings. Click Next<br/><br/> If a dialog pops up indicating that some of the prerequisite checks have failed, click <b>Yes</b> to proceed.<br/><br/> On the <b>Summary</b> screen, click <b>Install</b><br/><br/> The <b>Install</b> screen will show the progress of the installation<br/><br/> When the installation is about 30% complete, click <b>Stop Installation</b> and edit the file /u01/app/oracle/product/10.2.0/bin/gennttab and change the lines:</p>
 
 <blockquote>
-  <pre>LIB=`$ECHO ${TtoLIB} | $SED 's/ /\\
-/g' | $GREP "^${T}:" | $AWK -F: '{print $2}'`
-INI=`$ECHO ${TtoINI} | $SED 's/ /\\
-/g' | $GREP "^${T}:" | $AWK -F: '{print $2}'`
-BAS=`$ECHO ${TtoBAS} | $SED 's/ /\\
-/g' | $GREP "^${T}:" | $AWK -F: '{print $2}'`
-</pre>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt>LIB<font color="#990000">=</font>`$ECHO $<font color="#FF0000">{</font>TtoLIB<font color="#FF0000">}</font> <font color="#990000">|</font> $SED <font color="#FF0000">'s/ /</font><font color="#CC33CC">\\</font>
+<font color="#FF0000">/g'</font> <font color="#990000">|</font> $GREP <font color="#FF0000">"^${T}:"</font> <font color="#990000">|</font> $AWK <font color="#990000">-</font>F<font color="#990000">:</font> <font color="#FF0000">'{print $2}'</font>`
+INI<font color="#990000">=</font>`$ECHO $<font color="#FF0000">{</font>TtoINI<font color="#FF0000">}</font> <font color="#990000">|</font> $SED <font color="#FF0000">'s/ /</font><font color="#CC33CC">\\</font>
+<font color="#FF0000">/g'</font> <font color="#990000">|</font> $GREP <font color="#FF0000">"^${T}:"</font> <font color="#990000">|</font> $AWK <font color="#990000">-</font>F<font color="#990000">:</font> <font color="#FF0000">'{print $2}'</font>`
+BAS<font color="#990000">=</font>`$ECHO $<font color="#FF0000">{</font>TtoBAS<font color="#FF0000">}</font> <font color="#990000">|</font> $SED <font color="#FF0000">'s/ /</font><font color="#CC33CC">\\</font>
+<font color="#FF0000">/g'</font> <font color="#990000">|</font> $GREP <font color="#FF0000">"^${T}:"</font> <font color="#990000">|</font> $AWK <font color="#990000">-</font>F<font color="#990000">:</font> <font color="#FF0000">'{print $2}'</font>`</tt></pre>
 
 </blockquote>
 <p>To:</p>
 
 <blockquote>
-  <pre>LIB=`$ECHO ${TtoLIB} | $SED 's/ /\n/g' | $GREP "^${T}:" | $AWK -F: '{print $2}'`
-INI=`$ECHO ${TtoINI} | $SED 's/ /\n/g' | $GREP "^${T}:" | $AWK -F: '{print $2}'`
-BAS=`$ECHO ${TtoBAS} | $SED 's/ /\n/g' | $GREP "^${T}:" | $AWK -F: '{print $2}'`
-</pre>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt>LIB<font color="#990000">=</font>`$ECHO $<font color="#FF0000">{</font>TtoLIB<font color="#FF0000">}</font> <font color="#990000">|</font> $SED <font color="#FF0000">'s/ /</font><font color="#CC33CC">\n</font><font color="#FF0000">/g'</font> <font color="#990000">|</font> $GREP <font color="#FF0000">"^${T}:"</font> <font color="#990000">|</font> $AWK <font color="#990000">-</font>F<font color="#990000">:</font> <font color="#FF0000">'{print $2}'</font>`
+INI<font color="#990000">=</font>`$ECHO $<font color="#FF0000">{</font>TtoINI<font color="#FF0000">}</font> <font color="#990000">|</font> $SED <font color="#FF0000">'s/ /</font><font color="#CC33CC">\n</font><font color="#FF0000">/g'</font> <font color="#990000">|</font> $GREP <font color="#FF0000">"^${T}:"</font> <font color="#990000">|</font> $AWK <font color="#990000">-</font>F<font color="#990000">:</font> <font color="#FF0000">'{print $2}'</font>`
+BAS<font color="#990000">=</font>`$ECHO $<font color="#FF0000">{</font>TtoBAS<font color="#FF0000">}</font> <font color="#990000">|</font> $SED <font color="#FF0000">'s/ /</font><font color="#CC33CC">\n</font><font color="#FF0000">/g'</font> <font color="#990000">|</font> $GREP <font color="#FF0000">"^${T}:"</font> <font color="#990000">|</font> $AWK <font color="#990000">-</font>F<font color="#990000">:</font> <font color="#FF0000">'{print $2}'</font>`</tt></pre>
 
 </blockquote>
 <p>Then click <b>No</b> to continue the installation.<br/><br/> Be sure to do this before the linking phase starts or the installation will stall during the linking phase.<br/><br/> When installation is finished, the <b>Configuration Assistants</b> screen will show the progress of the initial configuration processes.<br/><br/> A <b>Database Configuration Assistant</b> dialog should pop up, displaying the progress of the initial database configuration.<br/><br/> When database creation is complete, a dialog will pop up with a summary. Click <b>OK</b>.</p>

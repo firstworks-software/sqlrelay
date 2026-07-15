@@ -55,7 +55,7 @@ A dialog will appear above the Status Output dialog asking if you would like to 
 The RPM distribution of Sybase ASE installs a script in /etc/rc.d/init.d which starts the database at boot time. For non-RPM distributions, you may need to install a script like the following. Replace ///opt/sybase-11.9.2// with whatever directory Sybase ASE is installed in.
 
 {{{#!blockquote
-{{{
+{{{#!code
  #!/bin/sh
 
 export SYBASE=/opt/sybase-11.9.2
@@ -66,7 +66,7 @@ case "$1" in
         start)
                 for i in `ls $SYBASE/install/RUN_*`
                 do
-                        su -c "startserver -f $i" sybase &gt; /dev/null 2&gt;&amp;1;
+                        su -c "startserver -f $i" sybase > /dev/null 2>&1;
                 done
                 ;;
         stop)

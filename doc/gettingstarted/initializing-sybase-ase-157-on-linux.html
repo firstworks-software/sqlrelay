@@ -104,32 +104,35 @@ http://www.gnu.org/software/src-highlite -->
 <p>To start the database at boot time, you need to install a script like the following. Replace <i>/opt/sybase</i> with whatever directory Sybase ASE is installed in.</p>
 
 <blockquote>
-  <pre> #!/bin/sh
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt> <i><font color="#9A1900">#!/bin/sh</font></i>
 
-export SYBASE=/opt/sybase
+<b><font color="#0000FF">export</font></b> <font color="#009900">SYBASE</font><font color="#990000">=</font>/opt/sybase
 
-export PATH=$PATH:$SYBASE/ASE-15_0/bin:$SYBASE/ASE-15_0/install
-export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$SYBASE/ASE-15_0/lib:$SYBASE/OCS-15_0/lib3p
+<b><font color="#0000FF">export</font></b> <font color="#009900">PATH</font><font color="#990000">=</font><font color="#009900">$PATH</font><font color="#990000">:</font><font color="#009900">$SYBASE</font>/ASE-15_0/bin<font color="#990000">:</font><font color="#009900">$SYBASE</font>/ASE-15_0/install
+<b><font color="#0000FF">export</font></b> <font color="#009900">LD_LIBRARY_PATH</font><font color="#990000">=</font><font color="#009900">$LD_LIBRARY_PATH</font><font color="#990000">:</font><font color="#009900">$SYBASE</font>/ASE-15_0/lib<font color="#990000">:</font><font color="#009900">$SYBASE</font>/OCS-15_0/lib3p
 
-echo 268435456 &gt; /proc/sys/kernel/shmmax
+echo <font color="#993399">268435456</font> <font color="#990000">&gt;</font> /proc/sys/kernel/shmmax
 
-case "$1" in
-        start)
-                for i in `ls $SYBASE/ASE-15_0/install/RUN_*`
-                do
-                        su -c "startserver -f $i" &gt; /dev/null 2&gt;&amp;1;
-                done
-                ;;
-        stop)
-                kill `ps -efa | grep sybase | grep -v grep | awk '{print $2}'`
-                ;;
-        *)
-                echo $"Usage: $0 {start|stop}"
-                exit 1
-esac
+<b><font color="#0000FF">case</font></b> <font color="#FF0000">"$1"</font> <b><font color="#0000FF">in</font></b>
+        start<font color="#990000">)</font>
+                <b><font color="#0000FF">for</font></b> i <b><font color="#0000FF">in</font></b> `ls <font color="#009900">$SYBASE</font>/ASE-15_0/install/RUN_<font color="#990000">*</font>`
+                <b><font color="#0000FF">do</font></b>
+                        su -c <font color="#FF0000">"startserver -f $i"</font> <font color="#990000">&gt;</font> /dev/null <font color="#993399">2</font><font color="#990000">&gt;&amp;</font><font color="#993399">1</font><font color="#990000">;</font>
+                <b><font color="#0000FF">done</font></b>
+                <font color="#990000">;;</font>
+        stop<font color="#990000">)</font>
+                kill `ps -efa <font color="#990000">|</font> grep sybase <font color="#990000">|</font> grep -v grep <font color="#990000">|</font> awk <font color="#FF0000">'{print $2}'</font>`
+                <font color="#990000">;;</font>
+        <font color="#990000">*)</font>
+                echo <font color="#009900">$"</font>Usage<font color="#990000">:</font> <font color="#009900">$0</font> {start<font color="#990000">|</font>stop}<font color="#FF0000">"</font>
+<font color="#FF0000">                exit 1</font>
+<font color="#FF0000">esac</font>
 
-exit 0
-</pre>
+<font color="#FF0000">exit 0</font></tt></pre>
 
 </blockquote>
 <p>Install this script and run it with the "start" option to start up the database. Running it with the "stop" option shuts the database down. To access a database, it must be running.</p>

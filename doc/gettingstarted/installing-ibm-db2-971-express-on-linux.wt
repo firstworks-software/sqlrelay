@@ -63,7 +63,7 @@ To create a sample database, run the command ///opt/ibm/db2/V9.7/bin/db2sampl//.
 You can use the following script to start/stop the database at boot/shutdown time.
 
 {{{#!blockquote
-{{{
+{{{#!code
  #!/bin/sh
 
 case "$1" in

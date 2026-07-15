@@ -29,7 +29,7 @@ Log in as root and run /opt/sybase-12.5/install/sybinstall.sh
 '''Note:''' If you moved /opt/sybase-12.5 to some other directory to save space on the /opt partition and then symlinked it back to /opt/sybase-12.5, the sybinstall.sh script will fail and report errors. To solve the problem, modify it as follows and re-run it. Change:
 
 {{{#!blockquote
-{{{
+{{{#!code
 chmod ug+w `find ${SYBASE} -type d -print`
 }}}
 }}}
@@ -37,7 +37,7 @@ chmod ug+w `find ${SYBASE} -type d -print`
 to
 
 {{{#!blockquote
-{{{
+{{{#!code
 chmod ug+w `find ${SYBASE}/ -type d -print`
 }}}
 }}}
@@ -103,7 +103,7 @@ You should now be returned to the original dialog. Click '''Exit'''.
 The RPM distribution of Sybase ASE installs a script in /etc/rc.d/init.d which starts the database at boot time. For non-RPM distributions, you may need to install a script like the following. Replace ///opt/sybase-12.5// with whatever directory Sybase ASE is installed in.
 
 {{{#!blockquote
-{{{
+{{{#!code
  #!/bin/sh
 
 export SYBASE=/opt/sybase-12.5
@@ -116,7 +116,7 @@ case "$1" in
         start)
                 for i in `ls $SYBASE/ASE-12.5/install/RUN_*`
                 do
-                        su -c "startserver -f $i" sybase &gt; /dev/null 2&gt;&amp;1;
+                        su -c "startserver -f $i" sybase > /dev/null 2>&1;
                 done
                 ;;
         stop)

@@ -65,23 +65,26 @@
 <p>You can use the following script to start/stop the database at boot/shutdown time.</p>
 
 <blockquote>
-  <pre> #!/bin/sh
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt> <i><font color="#9A1900">#!/bin/sh</font></i>
 
-case "$1" in
-        start)
-                chmod 755 /opt/ibm/db2/V10.5/adm/db2start
-                /opt/ibm/db2/V10.5/adm/db2start
-        ;;
-        stop)
-                kill -9 `ps -efa | grep db2wdog | grep -v grep | cut -c10-15`
-        ;;
-        *)
-        echo $"Usage: $0 {start|stop}"
-        exit 1
-esac
+<b><font color="#0000FF">case</font></b> <font color="#FF0000">"$1"</font> <b><font color="#0000FF">in</font></b>
+        start<font color="#990000">)</font>
+                chmod <font color="#993399">755</font> /opt/ibm/db<font color="#993399">2</font>/V<font color="#993399">10.5</font>/adm/db2start
+                /opt/ibm/db<font color="#993399">2</font>/V<font color="#993399">10.5</font>/adm/db2start
+        <font color="#990000">;;</font>
+        stop<font color="#990000">)</font>
+                kill -<font color="#993399">9</font> `ps -efa <font color="#990000">|</font> grep db2wdog <font color="#990000">|</font> grep -v grep <font color="#990000">|</font> cut -c<font color="#993399">10</font>-<font color="#993399">15</font>`
+        <font color="#990000">;;</font>
+        <font color="#990000">*)</font>
+        echo <font color="#009900">$"</font>Usage<font color="#990000">:</font> <font color="#009900">$0</font> {start<font color="#990000">|</font>stop}<font color="#FF0000">"</font>
+<font color="#FF0000">        exit 1</font>
+<font color="#FF0000">esac</font>
 
-exit 0
-</pre>
+<font color="#FF0000">exit 0</font></tt></pre>
 
 </blockquote>
 <p>Be sure to replace all instances of /opt/ibm/db2/V10.5 with your installation directory.</p>

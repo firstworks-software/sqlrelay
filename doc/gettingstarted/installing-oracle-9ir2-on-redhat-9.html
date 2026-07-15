@@ -144,8 +144,11 @@ http://www.gnu.org/software/src-highlite -->
 <p>Now select <b>Oracle Database Configuration Assistant</b> And click <b>Retry</b><br/><br/> A dialog will pop up indicating that a database is being created. After a while, another dialog will pop up instructing you to provide passwords for the SYS and SYSTEM users. Enter new passwords for these users. Note that you cannont use the classic "manager" and "change_on_install" passwords.<br/>Click <b>OK</b><br/><br/> Sometimes the Database Creation Assistant will just hang here. Select <b>Oracle Database Configuration Assistant</b> And click Stop. If it doesn't stop, you may have to kill it from the command line using the following command:</p>
 
 <blockquote>
-  <pre>kill `ps -efa | grep "JDBC_PROTOCOL=thin" | cut -c10-15`
-</pre>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt>kill `ps <font color="#990000">-</font>efa <font color="#990000">|</font> grep <font color="#FF0000">"JDBC_PROTOCOL=thin"</font> <font color="#990000">|</font> cut <font color="#990000">-</font>c10<font color="#990000">-</font><font color="#993399">15</font>`</tt></pre>
 
 </blockquote>
 <p>When the Database Creation Assistant is finished (or killed), click Next.<br/><br/> On the <b>End Of Installation</b> screen click <b>Exit</b></p>

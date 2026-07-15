@@ -195,22 +195,25 @@ GSEC<font color="#990000">&gt;</font> quit </tt></pre>
 <p>For Firebird versions 2.5 and up, use the following script:</p>
 
 <blockquote>
-  <pre> #!/bin/sh
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt> <i><font color="#9A1900">#!/bin/sh</font></i>
 
-case "$1" in
-  start)
-        su -l firebird "/opt/firebird/bin/fbguard -pidfile /tmp/firebird.pid -daemon -forever"
-        ;;
-  stop)
-        su -l firebird "kill `cat /tmp/firebird.pid`"
-        ;;
-  *)
-        echo $"Usage: $0 {start|stop}"
-        exit 1
-esac
+<b><font color="#0000FF">case</font></b> <font color="#FF0000">"$1"</font> <b><font color="#0000FF">in</font></b>
+  start<font color="#990000">)</font>
+        su -l firebird <font color="#FF0000">"/opt/firebird/bin/fbguard -pidfile /tmp/firebird.pid -daemon -forever"</font>
+        <font color="#990000">;;</font>
+  stop<font color="#990000">)</font>
+        su -l firebird <font color="#FF0000">"kill `cat /tmp/firebird.pid`"</font>
+        <font color="#990000">;;</font>
+  <font color="#990000">*)</font>
+        echo <font color="#009900">$"</font>Usage<font color="#990000">:</font> <font color="#009900">$0</font> {start<font color="#990000">|</font>stop}<font color="#FF0000">"</font>
+<font color="#FF0000">        exit 1</font>
+<font color="#FF0000">esac</font>
 
-exit 0
-</pre>
+<font color="#FF0000">exit 0</font></tt></pre>
 
 </blockquote>
 <p>For Firebird version 1.5 to 2.1, use the following script:</p>

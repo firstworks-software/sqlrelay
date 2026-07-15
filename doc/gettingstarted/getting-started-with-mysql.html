@@ -157,65 +157,71 @@ http://www.gnu.org/software/src-highlite -->
 <p>For MySQL 4 and higher:</p>
 
 <blockquote>
-  <pre> #!/bin/sh
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt> <i><font color="#9A1900">#!/bin/sh</font></i>
 
-case "$1" in
-        start)
-                if ( test ! -d "/usr/local/mysql/var" ); then
+<b><font color="#0000FF">case</font></b> <font color="#FF0000">"$1"</font> <b><font color="#0000FF">in</font></b>
+        start<font color="#990000">)</font>
+                <b><font color="#0000FF">if</font></b> <font color="#990000">(</font> <b><font color="#0000FF">test</font></b> <font color="#990000">!</font> -d <font color="#FF0000">"/usr/local/mysql/var"</font> <font color="#990000">);</font> <b><font color="#0000FF">then</font></b>
                         mkdir -p /usr/local/mysql/var/mysql
-                fi
-                if ( test ! -d "/usr/local/mysql/var/log" ); then
+                <b><font color="#0000FF">fi</font></b>
+                <b><font color="#0000FF">if</font></b> <font color="#990000">(</font> <b><font color="#0000FF">test</font></b> <font color="#990000">!</font> -d <font color="#FF0000">"/usr/local/mysql/var/log"</font> <font color="#990000">);</font> <b><font color="#0000FF">then</font></b>
                         mkdir -p /usr/local/mysql/var/log
-                fi
-                if ( test ! -d "/usr/local/mysql/var/mysql" ); then
-                        /usr/local/mysql/bin/mysql_install_db \
-                                --datadir=/usr/local/mysql/var
-                fi
-                chown -R mysql.mysql /usr/local/mysql/var
-                chmod 0755 /usr/local/mysql/var
-                chmod 0755 /usr/local/mysql/var/log
-                /usr/local/mysql/bin/mysqld_safe \
-                        --datadir=/usr/local/mysql/var \
-                        --err-log=/usr/local/mysql/var/log/mysqld.log \
-                        --log=/usr/local/mysql/var/log/mysqld.log \
-                        --socket=/tmp/mysql.sock
-                ;;
-        stop)
-                kill `ps -efa | grep mysql | grep -v grep | awk '{print $2}'`
-                ;;
-        *)
-                echo $"Usage: $0 {start|stop}"
-                exit 1
-esac
+                <b><font color="#0000FF">fi</font></b>
+                <b><font color="#0000FF">if</font></b> <font color="#990000">(</font> <b><font color="#0000FF">test</font></b> <font color="#990000">!</font> -d <font color="#FF0000">"/usr/local/mysql/var/mysql"</font> <font color="#990000">);</font> <b><font color="#0000FF">then</font></b>
+                        /usr/local/mysql/bin/mysql_install_db <font color="#990000">\</font>
+                                --datadir<font color="#990000">=</font>/usr/local/mysql/var
+                <b><font color="#0000FF">fi</font></b>
+                chown -R mysql<font color="#990000">.</font>mysql /usr/local/mysql/var
+                chmod <font color="#993399">0755</font> /usr/local/mysql/var
+                chmod <font color="#993399">0755</font> /usr/local/mysql/var/log
+                /usr/local/mysql/bin/mysqld_safe <font color="#990000">\</font>
+                        --datadir<font color="#990000">=</font>/usr/local/mysql/var <font color="#990000">\</font>
+                        --err-log<font color="#990000">=</font>/usr/local/mysql/var/log/mysqld<font color="#990000">.</font>log <font color="#990000">\</font>
+                        --log<font color="#990000">=</font>/usr/local/mysql/var/log/mysqld<font color="#990000">.</font>log <font color="#990000">\</font>
+                        --socket<font color="#990000">=</font>/tmp/mysql<font color="#990000">.</font>sock
+                <font color="#990000">;;</font>
+        stop<font color="#990000">)</font>
+                kill `ps -efa <font color="#990000">|</font> grep mysql <font color="#990000">|</font> grep -v grep <font color="#990000">|</font> awk <font color="#FF0000">'{print $2}'</font>`
+                <font color="#990000">;;</font>
+        <font color="#990000">*)</font>
+                echo <font color="#009900">$"</font>Usage<font color="#990000">:</font> <font color="#009900">$0</font> {start<font color="#990000">|</font>stop}<font color="#FF0000">"</font>
+<font color="#FF0000">                exit 1</font>
+<font color="#FF0000">esac</font>
 
-exit 0
-</pre>
+<font color="#FF0000">exit 0</font></tt></pre>
 
 </blockquote>
 <p>For MySQL 3:</p>
 
 <blockquote>
-  <pre> #!/bin/sh
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt> <i><font color="#9A1900">#!/bin/sh</font></i>
 
-case "$1" in
-        start)
-                if ( test ! -d "/usr/local/mysql/var/mysql" ); then
+<b><font color="#0000FF">case</font></b> <font color="#FF0000">"$1"</font> <b><font color="#0000FF">in</font></b>
+        start<font color="#990000">)</font>
+                <b><font color="#0000FF">if</font></b> <font color="#990000">(</font> <b><font color="#0000FF">test</font></b> <font color="#990000">!</font> -d <font color="#FF0000">"/usr/local/mysql/var/mysql"</font> <font color="#990000">);</font> <b><font color="#0000FF">then</font></b>
                         /usr/local/mysql/bin/mysql_install_db
-                fi
-                chown -R mysql.mysql /usr/local/mysql/var
-                chmod 0755 /usr/local/mysql/var
+                <b><font color="#0000FF">fi</font></b>
+                chown -R mysql<font color="#990000">.</font>mysql /usr/local/mysql/var
+                chmod <font color="#993399">0755</font> /usr/local/mysql/var
                 /usr/local/mysql/bin/safe_mysqld
-                ;;
-        stop)
-                kill `ps -efa | grep mysql | grep -v grep | awk '{print $2}'`
-                ;;
-        *)
-                echo $"Usage: $0 {start|stop}"
-                exit 1
-esac
+                <font color="#990000">;;</font>
+        stop<font color="#990000">)</font>
+                kill `ps -efa <font color="#990000">|</font> grep mysql <font color="#990000">|</font> grep -v grep <font color="#990000">|</font> awk <font color="#FF0000">'{print $2}'</font>`
+                <font color="#990000">;;</font>
+        <font color="#990000">*)</font>
+                echo <font color="#009900">$"</font>Usage<font color="#990000">:</font> <font color="#009900">$0</font> {start<font color="#990000">|</font>stop}<font color="#FF0000">"</font>
+<font color="#FF0000">                exit 1</font>
+<font color="#FF0000">esac</font>
 
-exit 0
-</pre>
+<font color="#FF0000">exit 0</font></tt></pre>
 
 </blockquote>
 <p>Install this script and run it with the "start" option to start up the database. Running it with the "stop" option shuts the database down. To access a database, it must be running.</p>

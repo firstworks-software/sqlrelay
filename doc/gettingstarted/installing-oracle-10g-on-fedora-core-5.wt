@@ -71,7 +71,7 @@ unzip 10201_database_linux32.zip
 Change directories to the database directory.[[br]][[br]] Type '''./runInstaller'''[[br]][[br]] On the '''Installation Method''' screen, accept the default Basic Installation. Change the Global Database Name from "orcl" to "ora1". Enter a password in the Database Password and Confirm Password boxes for the SYS, SYSTEM, SYSMAN and DBSNMP accounts. Be sure to enter a password that starts with a letter, not a number. Click '''Next'''[[br]][[br]] The window will go away and a '''Preparing to install''' dialog with a progress bar will appear for a while. Then it will go away and another screen will appear.[[br]][[br]] On this screen, the installer will do a system test to make sure that the system configuration meets the installer's requirements. Your system may not meet the Network or Memory requirements. You can safely ignore these warnings. Click Next[[br]][[br]] If a dialog pops up indicating that some of the prerequisite checks have failed, click '''Yes''' to proceed.[[br]][[br]] On the '''Summary''' screen, click '''Install'''[[br]][[br]] The '''Install''' screen will show the progress of the installation[[br]][[br]] When the installation is about 30% complete, click '''Stop Installation''' and edit the file /u01/app/oracle/product/10.2.0/bin/gennttab and change the lines:
 
 {{{#!blockquote
-{{{
+{{{#!code
 LIB=`$ECHO ${TtoLIB} | $SED 's/ /\\
 /g' | $GREP "^${T}:" | $AWK -F: '{print $2}'`
 INI=`$ECHO ${TtoINI} | $SED 's/ /\\
@@ -84,7 +84,7 @@ BAS=`$ECHO ${TtoBAS} | $SED 's/ /\\
 To:
 
 {{{#!blockquote
-{{{
+{{{#!code
 LIB=`$ECHO ${TtoLIB} | $SED 's/ /\n/g' | $GREP "^${T}:" | $AWK -F: '{print $2}'`
 INI=`$ECHO ${TtoINI} | $SED 's/ /\n/g' | $GREP "^${T}:" | $AWK -F: '{print $2}'`
 BAS=`$ECHO ${TtoBAS} | $SED 's/ /\n/g' | $GREP "^${T}:" | $AWK -F: '{print $2}'`

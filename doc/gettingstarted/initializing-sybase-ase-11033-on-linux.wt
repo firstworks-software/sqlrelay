@@ -29,7 +29,7 @@ type ctrl-x to '''Exit Screen'''[[br]]type ctrl-x to '''Exit Screen'''[[br]]type
 Replace ///usr/local/sybase// with whatever directory Sybase ASE is installed in.
 
 {{{#!blockquote
-{{{
+{{{#!code
  #!/bin/sh
 
 export SYBASE=/usr/local/sybase
@@ -40,7 +40,7 @@ case "$1" in
         start)
                 for i in `ls $SYBASE/install/RUN_*`
                 do
-                        su -c "startserver -f $i" sybase &gt; /dev/null 2&gt;&amp;1;
+                        su -c "startserver -f $i" sybase > /dev/null 2>&1;
                 done
                 ;;
         stop)

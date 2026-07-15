@@ -98,24 +98,27 @@ exit</tt></pre>
 <p>If you compiled from source, you'll need to install a script like the following to start/stop the database at boot/shutdown time.</p>
 
 <blockquote>
-  <pre> #!/bin/sh
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt> <i><font color="#9A1900">#!/bin/sh</font></i>
 
-case "$1" in
-        start)
-                su -l postgres -s /bin/sh -c "/usr/local/pgsql/bin/pg_ctl \
-                        -D /usr/local/pgsql/var \
-                        -p /usr/local/pgsql/bin/postmaster start  &gt; /dev/null 2&gt;&amp;1" &lt; /dev/null
-                ;;
-        stop)
-                kill `ps -efa | grep postmaster | grep -v grep | awk '{print $2}'`
-                ;;
-        *)
-                echo $"Usage: $0 {start|stop}"
-                exit 1
-esac
+<b><font color="#0000FF">case</font></b> <font color="#FF0000">"$1"</font> <b><font color="#0000FF">in</font></b>
+        start<font color="#990000">)</font>
+                su -l postgres -s /bin/sh -c <font color="#FF0000">"/usr/local/pgsql/bin/pg_ctl \</font>
+<font color="#FF0000">                        -D /usr/local/pgsql/var \</font>
+<font color="#FF0000">                        -p /usr/local/pgsql/bin/postmaster start  &gt; /dev/null 2&gt;&amp;1"</font> <font color="#990000">&lt;</font> /dev/null
+                <font color="#990000">;;</font>
+        stop<font color="#990000">)</font>
+                kill `ps -efa <font color="#990000">|</font> grep postmaster <font color="#990000">|</font> grep -v grep <font color="#990000">|</font> awk <font color="#FF0000">'{print $2}'</font>`
+                <font color="#990000">;;</font>
+        <font color="#990000">*)</font>
+                echo <font color="#009900">$"</font>Usage<font color="#990000">:</font> <font color="#009900">$0</font> {start<font color="#990000">|</font>stop}<font color="#FF0000">"</font>
+<font color="#FF0000">                exit 1</font>
+<font color="#FF0000">esac</font>
 
-exit 0
-</pre>
+<font color="#FF0000">exit 0</font></tt></pre>
 
 </blockquote>
 <p>Install this script and run it with the "start" option to start up the database. Running it with the "stop" option shuts the database down. To access a database, it must be running.</p>

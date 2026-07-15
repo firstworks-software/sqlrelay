@@ -152,7 +152,7 @@ touch /etc/rac_on
 Now select '''Oracle Database Configuration Assistant''' And click '''Retry'''[[br]][[br]] A dialog will pop up indicating that a database is being created. After a while, another dialog will pop up instructing you to provide passwords for the SYS and SYSTEM users. Enter new passwords for these users. Note that you cannont use the classic "manager" and "change_on_install" passwords.[[br]]Click '''OK'''[[br]][[br]] Sometimes the Database Creation Assistant will just hang here. Select '''Oracle Database Configuration Assistant''' And click Stop. If it doesn't stop, you may have to kill it from the command line using the following command:
 
 {{{#!blockquote
-{{{
+{{{#!code
 kill `ps -efa | grep "JDBC_PROTOCOL=thin" | cut -c10-15`
 }}}
 }}}

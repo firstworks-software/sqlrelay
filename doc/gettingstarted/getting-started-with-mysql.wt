@@ -152,7 +152,7 @@ If you compiled from source on a platform that supports init-style system initia
 For !MySQL 4 and higher:
 
 {{{#!blockquote
-{{{
+{{{#!code
  #!/bin/sh
 
 case "$1" in
@@ -191,7 +191,7 @@ exit 0
 For !MySQL 3:
 
 {{{#!blockquote
-{{{
+{{{#!code
  #!/bin/sh
 
 case "$1" in

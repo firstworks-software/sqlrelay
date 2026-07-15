@@ -179,7 +179,7 @@ If you compiled from source, you'll need to install a script like one of the fol
 For Firebird versions 2.5 and up, use the following script:
 
 {{{#!blockquote
-{{{
+{{{#!code
  #!/bin/sh
 
 case "$1" in
