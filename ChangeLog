@@ -305,6 +305,12 @@
 		rudiments 2.2.0, and added the jdbc driver to the database
 		abstraction layers card and page (which still described jdbc
 		as bridge-only), including a new app-jdbc-sqlr-mysql.png
+	fixed the erlang api's inputBindClob() doc comment, which had drifted
+		up above inputBindNull(), leaving inputBindNull() with two
+		@doc tags and breaking edoc, dropped a stray duplicate @doc
+		below getDatabaseFeature(), documented getCatalogList(), and
+		regenerated the erlang docs, which had fallen 101 functions
+		behind while edoc was failing
 
 2.1.1 - added tns_admin support
 	fixed sqlr-start ... -strace ...
