@@ -56,7 +56,7 @@ The RPM distribution of Sybase ASE installs a script in /etc/rc.d/init.d which s
 
 {{{#!blockquote
 {{{#!code
- #!/bin/sh
+#!/bin/sh
 
 export SYBASE=/opt/sybase-11.9.2
 

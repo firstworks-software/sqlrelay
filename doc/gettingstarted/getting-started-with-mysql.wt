@@ -153,7 +153,7 @@ For !MySQL 4 and higher:
 
 {{{#!blockquote
 {{{#!code
- #!/bin/sh
+#!/bin/sh
 
 case "$1" in
         start)
@@ -192,7 +192,7 @@ For !MySQL 3:
 
 {{{#!blockquote
 {{{#!code
- #!/bin/sh
+#!/bin/sh
 
 case "$1" in
         start)

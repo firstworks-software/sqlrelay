@@ -180,7 +180,7 @@ For Firebird versions 2.5 and up, use the following script:
 
 {{{#!blockquote
 {{{#!code
- #!/bin/sh
+#!/bin/sh
 
 case "$1" in
   start)

@@ -110,7 +110,7 @@ If you compiled from source, you'll need to install a script like the following 
 
 {{{#!blockquote
 {{{#!code
- #!/bin/sh
+#!/bin/sh
 
 case "$1" in
         start)

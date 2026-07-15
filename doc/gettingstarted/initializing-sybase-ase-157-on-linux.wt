@@ -99,7 +99,7 @@ To start the database at boot time, you need to install a script like the follow
 
 {{{#!blockquote
 {{{#!code
- #!/bin/sh
+#!/bin/sh
 
 export SYBASE=/opt/sybase
 

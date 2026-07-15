@@ -30,7 +30,7 @@ Replace ///usr/local/sybase// with whatever directory Sybase ASE is installed in
 
 {{{#!blockquote
 {{{#!code
- #!/bin/sh
+#!/bin/sh
 
 export SYBASE=/usr/local/sybase
 
