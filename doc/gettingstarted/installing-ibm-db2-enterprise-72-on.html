@@ -10,9 +10,9 @@
 
 <p>DB2 7.2 requires pdksh (Public Domain Korn Shell). If it did not come with your distribution, you'll need to download and install it.</p>
 
-<p>For RPM based distributions, look for pdksh at <a target="_blank" href="http://rpmfind.net">rpmfind</a> and install it using ''rpm -i''.</p>
+<p>For RPM based distributions, look for pdksh at <a target="_blank" href="http://rpmfind.net">rpmfind</a> and install it using <i>rpm -i</i>.</p>
 
-<p>For Debian Linux, run ''apt-get install pdksh''.</p>
+<p>For Debian Linux, run <i>apt-get install pdksh</i>.</p>
 
 <h2>Install libncurses.so.4</h2>
 
@@ -41,11 +41,11 @@ ln <font color="#990000">-</font><font color="#008080">s</font> libncurses<font 
   <li><b>compat-libstdc++-6.2-2.9.0.16.i386.rpm</b> for <a href="RedHat">RedHat</a> Linux 7.3</li>
 </ul>
 
-<p>You can install the compatibility RPM's using ''rpm -i''.</p>
+<p>You can install the compatibility RPM's using <i>rpm -i</i>.</p>
 
 <h2>DB2 Installation</h2>
 
-<p>IBM DB2 V7.2 was once available from the IBM website as a tarball. Extracting the tarball using ''tar xf'' creates a directory called 018_EEE_LNX_NLV. Change directories into that directory.</p>
+<p>IBM DB2 V7.2 was once available from the IBM website as a tarball. Extracting the tarball using <i>tar xf</i> creates a directory called 018_EEE_LNX_NLV. Change directories into that directory.</p>
 
 <p>On Debian Linux edit the db2_install script and comment out the line:</p>
 
@@ -73,7 +73,7 @@ http://www.gnu.org/software/src-highlite -->
 
 <p>When prompted to specify a keyword, type DB2.EENT and press return.</p>
 
-<p>When the script completes, run ''rpm -qa'' and verify that the following RPM's were installed:</p>
+<p>When the script completes, run <i>rpm -qa</i> and verify that the following RPM's were installed:</p>
 
 <p><b>db2cnvc71-7.1.0-40<br/>db2gs71-7.1.0-40<br/>db2cucs71-7.1.0-40<br/>db2engn71-7.1.0-40<br/>db2cdrd71-7.1.0-40<br/>db2dj71-7.1.0-40<br/>db2pext71-7.1.0-40<br/>db2cliv71-7.1.0-40<br/>db2rte71-7.1.0-40<br/>db2wcc71-7.1.0-40<br/>db2hten71-7.1.0-40<br/>db2cnvk71-7.1.0-40<br/>db2cj71-7.1.0-40<br/>db2conn71-7.1.0-40<br/>db2smpl71-7.1.0-40<br/>db2xlic71-7.1.0-40<br/>db2cnvj71-7.1.0-40<br/>db2crte71-7.1.0-40<br/>db2cdb71-7.1.0-40<br/>db2das71-7.1.0-40<br/>db2cnvt71-7.1.0-40<br/>db2repl71-7.1.0-40<br/>db2adts71-7.1.0-40<br/>db2jdbc71-7.1.0-40<br/>db2adt71-7.1.0-40<br/></b></p>
 
@@ -83,7 +83,7 @@ http://www.gnu.org/software/src-highlite -->
 
 <h2>Install the Documentation</h2>
 
-<p>For version 7.2, once the RPM's are installed, you can install the documentation by running ''/usr/IBMdb2/V7.1/doc/db2insthtml en_US''. To view the documentation, point your browser at <a target="_blank" href="file://usr/IBMdb2/V7.1/doc/en_US/html">/usr/IBMdb2/V7.1/doc/en_US/html</a>.</p>
+<p>For version 7.2, once the RPM's are installed, you can install the documentation by running <i>/usr/IBMdb2/V7.1/doc/db2insthtml en_US</i>. To view the documentation, point your browser at <a target="_blank" href="file://usr/IBMdb2/V7.1/doc/en_US/html">/usr/IBMdb2/V7.1/doc/en_US/html</a>.</p>
 
 <a name="odbc"/><h2>Restore unixODBC if Necessary</h2>
 
@@ -93,27 +93,27 @@ http://www.gnu.org/software/src-highlite -->
 
 <h2>Creating an Instance</h2>
 
-<p>IBM DB2 is installed under either /opt/IBMdb2/V7.1, /usr/IBMdb2/V7.1 That directory will be referred to as ''BASE_DIR'' in this document.</p>
+<p>IBM DB2 is installed under either /opt/IBMdb2/V7.1, /usr/IBMdb2/V7.1 That directory will be referred to as <i>BASE_DIR</i> in this document.</p>
 
 <p>A DB2 installation consists of an administration server and one or more instances. Each instance contains one or more databases. The administration server coordinates the instances. The administration server is owned by an OS-level user. Each instance is owned by a seperate OS-level user as well.</p>
 
-<p>To create an instance and an administration server, run ''BASE_DIR/install/db2setup'', a text-based installation program.</p>
+<p>To create an instance and an administration server, run <i>BASE_DIR/install/db2setup</i>, a text-based installation program.</p>
 
 <p>Select <b>&#91; Create... &#93;</b><br/>Select <b>Create a DB2 Instance</b><br/>Accept the default user name (db2inst1).<br/>Accept the default UID.<br/>Accept the default group name (db2iadm1).<br/>Accept the default GID.<br/>Pick a password.<br/>Select <b>&#91; OK &#93;</b><br/><br/>A screen for creating the Fenced User (the user that will run user defined functions and stored procedures) will now appear.<br/><br/>Accept the default user name (db2fenc1).<br/>Accept the default UID.<br/>Accept the default group name (db2fadm1).<br/>Accept the default GID.<br/>Pick a password.<br/>Select <b>&#91; OK &#93;</b> This will return you to <b>Create DB2 Services</b>screen.<br/><br/>Select <b>Create the Administration Server</b><br/>Accept the default user name (db2as).<br/>Accept the default UID.<br/>Accept the default group name (db2asgrp).<br/>Accept the default GID.<br/>Pick a password.<br/>Select <b>&#91; OK &#93;</b><br/>If you get a <b>DB2SYSTEM will be set to ...</b> dialog, select <b>&#91; OK &#93;</b>.<br/><br/>On the <b>Create DB2 Services</b> screen, select <b>&#91; OK &#93;</b><br/>Select <b>&#91; Continue &#93;</b><br/>Select <b>&#91; OK &#93;</b> in the <b>This is your last chance to stop</b> dialog.<br/><br/>Now the instance and administration server will be created.<br/>If all went well, you'll get a <b>Completed Sucessfully.</b> notice.<br/>To exit,<br/>Select <b>&#91; OK &#93;</b><br/>Select <b>&#91; OK &#93;</b><br/>Select <b>&#91; Close &#93;</b><br/>Select <b>&#91; OK &#93;</b></p>
 
-<p>Should you need to create additional DB2 instances, follow this procedure again using a different user name and skipping the steps pertaining to the Administration Server. The ''BASE_DIR/instance/db2ilist'' command lists all of the DB2 instances on the local computer.</p>
+<p>Should you need to create additional DB2 instances, follow this procedure again using a different user name and skipping the steps pertaining to the Administration Server. The <i>BASE_DIR/instance/db2ilist</i> command lists all of the DB2 instances on the local computer.</p>
 
-<p>If you need to drop an instance, run ''BASE_DIR/instance/db2idrop instancename'', substituting the name of the instance you want to drop for instancename.</p>
+<p>If you need to drop an instance, run <i>BASE_DIR/instance/db2idrop instancename</i>, substituting the name of the instance you want to drop for instancename.</p>
 
-<p>The ''BASE_DIR/instance/dasilist'' command lists all of the DB2 administration servers on the local computer.</p>
+<p>The <i>BASE_DIR/instance/dasilist</i> command lists all of the DB2 administration servers on the local computer.</p>
 
-<p>If you need to drop an administration server, run ''BASE_DIR/instance/dasidrop servername'', substituting the name of the administration server you want to drop for servername.</p>
+<p>If you need to drop an administration server, run <i>BASE_DIR/instance/dasidrop servername</i>, substituting the name of the administration server you want to drop for servername.</p>
 
 <h2>Enable Remote Access</h2>
 
-<p>By default, a DB2 instance only accept connections from clients running on the local machine. To enable connections from clients running on a remote machine over TCP, execute commands like the following. These commands set up the ''db2inst1'' instance on port 50000.</p>
+<p>By default, a DB2 instance only accept connections from clients running on the local machine. To enable connections from clients running on a remote machine over TCP, execute commands like the following. These commands set up the <i>db2inst1</i> instance on port 50000.</p>
 
-<p>log in as root<br/>view ''/etc/services'' and look for a line like:</p>
+<p>log in as root<br/>view <i>/etc/services</i> and look for a line like:</p>
 
 <blockquote>
 <!-- Generator: GNU source-highlight 3.1.9
@@ -136,11 +136,11 @@ db2stop
 db2start</tt></pre>
 
 </blockquote>
-<p>Now the ''db2inst1'' instance should be accessible to remote clients on port 50000.</p>
+<p>Now the <i>db2inst1</i> instance should be accessible to remote clients on port 50000.</p>
 
 <h2>Creating a Sample Database</h2>
 
-<p>To create a sample database, run the command ''/usr/IDMdb2/V7.1/bin/db2sampl''.</p>
+<p>To create a sample database, run the command <i>/usr/IDMdb2/V7.1/bin/db2sampl</i>.</p>
 
 <h2>Starting the Database at Boot Time</h2>
 

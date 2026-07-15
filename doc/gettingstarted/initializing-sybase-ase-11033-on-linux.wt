@@ -8,7 +8,7 @@
 
 After installing Sybase Adaptive Server Enterprise, you can initialize the server by following these steps.
 
-First, ''su'' to the sybase user using the -l option.
+First, //su// to the sybase user using the -l option.
 
 {{{#!blockquote
 {{{#!code
@@ -26,7 +26,7 @@ type ctrl-x to '''Exit Screen'''[[br]]type ctrl-x to '''Exit Screen'''[[br]]type
 
 == Starting the Database at Boot Time ==
 
-Replace ''/usr/local/sybase'' with whatever directory Sybase ASE is installed in.
+Replace ///usr/local/sybase// with whatever directory Sybase ASE is installed in.
 
 {{{#!blockquote
 {{{

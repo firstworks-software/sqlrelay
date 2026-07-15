@@ -25,7 +25,7 @@ Since Oracle 8.1.6 and 8.1.7 use a graphical installer, you need to be running X
 
 I have had problems with the graphical installer on enlightenment and fluxbox window managers in the past, though they may work for you.
 
-Installing Oracle 8.1.7 tends to be easy and painless. If you have a CD, mount it and cd to the mount point. If you have a tar.gz distribution, extract it using ''tar xfz'' and cd to the Disk1 directory created by the extraction.
+Installing Oracle 8.1.7 tends to be easy and painless. If you have a CD, mount it and cd to the mount point. If you have a tar.gz distribution, extract it using //tar xfz// and cd to the Disk1 directory created by the extraction.
 
 Type '''./runInstaller'''[[br]][[br]] On the '''Welcome screen''' click '''Next'''[[br]][[br]] On the '''File Locations screen'''...[[br]] Check the '''Destination''', it should be the same as the ORACLE_HOME Environment variable.[[br]]Click '''Next'''[[br]][[br]] On the '''Available Products''' screen...[[br]]Select '''Oracle8i Enterprise Edition 8.1.7'''[[br]]Click '''Next'''[[br]][[br]] On the '''Installation Types''' screen[[br]]Select '''Typical'''[[br]]Click '''Next'''[[br]][[br]] On the '''Database Identification''' screen...[[br]]Enter ora1 for '''Global Database Name''' and '''SID'''[[br]]Click '''Next'''[[br]][[br]] On the '''Database File Location''' screen...[[br]]For '''Directory for Database Files''' enter /u01[[br]]Click '''Next'''[[br]][[br]] On the '''Choose JDK Home Directory''' screen...[[br]]For '''Enter JDK Home''' enter /usr/local/java[[br]]Click '''Next'''[[br]][[br]] On the '''Summary''' screen click '''Install'''[[br]][[br]] The '''Install''' screen will show the installation progress
 

@@ -8,7 +8,7 @@
 
 After installing Sybase Adaptive Server Enterprise, you can initialize the server by following these steps.
 
-First, ''su'' to the sybase user using the -l option.
+First, //su// to the sybase user using the -l option.
 
 {{{#!blockquote
 {{{#!code
@@ -24,19 +24,19 @@ Do you want to start 'srvbuild' now? [y/n]
 }}}
 }}}
 
-Answer 'y'. Next time you log in, you won't be prompted. If you were not prompted with that text, or if you accidentally answer something other than 'y', you can run the ''srvbuild'' command from the command line.
+Answer 'y'. Next time you log in, you won't be prompted. If you were not prompted with that text, or if you accidentally answer something other than 'y', you can run the //srvbuild// command from the command line.
 
-When you run ''svrbuild'', a dialog will appear, prompting you to '''Click the check boxes for the types of servers to create and provide names for these servers.'''
+When you run //svrbuild//, a dialog will appear, prompting you to '''Click the check boxes for the types of servers to create and provide names for these servers.'''
 
 select '''Adaptive Server'''[[br]]enter localhost[[br]]select '''OK'''
 
 A new dialog will appear, prompting you to enter filenames for '''Master''' and '''Sybsystemprocs''' device files, and device and database sizes for each.
 
-enter ''/opt/sybase-11.9.2/master.dat'' for the '''Master''' device file[[br]]enter ''/opt/sybase-11.9.2/sybsystemprocs.dat'' for the '''Sybsystemprocs'''device file[[br]]Select '''Edit Advanced Adaptive Server Attributes'''
+enter ///opt/sybase-11.9.2/master.dat// for the '''Master''' device file[[br]]enter ///opt/sybase-11.9.2/sybsystemprocs.dat// for the '''Sybsystemprocs'''device file[[br]]Select '''Edit Advanced Adaptive Server Attributes'''
 
 A new dialog will appear, prompting you to enter filenames for the '''Sybsystemdb''' device file, size and database sizes.
 
-enter ''/opt/sybase-11.9.2/sybsystemdb.dat'' for the '''Sybsystemdb''' device file[[br]]Select '''Go Back'''
+enter ///opt/sybase-11.9.2/sybsystemdb.dat// for the '''Sybsystemdb''' device file[[br]]Select '''Go Back'''
 
 This should return you to the previous dialog.
 
@@ -52,7 +52,7 @@ A dialog will appear above the Status Output dialog asking if you would like to 
 
 == Starting the Database at Boot Time ==
 
-The RPM distribution of Sybase ASE installs a script in /etc/rc.d/init.d which starts the database at boot time. For non-RPM distributions, you may need to install a script like the following. Replace ''/opt/sybase-11.9.2'' with whatever directory Sybase ASE is installed in.
+The RPM distribution of Sybase ASE installs a script in /etc/rc.d/init.d which starts the database at boot time. For non-RPM distributions, you may need to install a script like the following. Replace ///opt/sybase-11.9.2// with whatever directory Sybase ASE is installed in.
 
 {{{#!blockquote
 {{{

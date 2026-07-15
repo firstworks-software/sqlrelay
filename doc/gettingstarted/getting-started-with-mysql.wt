@@ -37,7 +37,7 @@ yum install mysql-server mysql-devel
 }}}
 }}}
 
-Or on an old RPM-based distribution that doesn't support yum, install them from the CD/DVD's using ''rpm -i''.
+Or on an old RPM-based distribution that doesn't support yum, install them from the CD/DVD's using //rpm -i//.
 
 [=#debian]
 
@@ -75,7 +75,7 @@ pkg_add -r mysql56-server mysql56-client
 }}}
 }}}
 
-You can also install MySQL from the Ports CD(s) that came with your distribution using ''/stand/sysinstall''.
+You can also install MySQL from the Ports CD(s) that came with your distribution using ///stand/sysinstall//.
 
 [=#openbsd]
 
@@ -97,7 +97,7 @@ pkg_add mysql-server mysql-client
 }}}
 }}}
 
-Packages are also available from [ftp://ftp.openbsd.org ftp.openbsd.org] and on the CD's that came with your distribution and can be installed manually using ''pkg_add''.
+Packages are also available from [ftp://ftp.openbsd.org ftp.openbsd.org] and on the CD's that came with your distribution and can be installed manually using //pkg_add//.
 
 [=#netbsd]
 
@@ -127,19 +127,19 @@ pkg_add mysql-server myql-client
 }}}
 }}}
 
-Packages are also available from [ftp://ftp.netbsd.org ftp.netbsd.org] and on the CD's that came with your distribution and can be installed manually using ''pkg_add''.
+Packages are also available from [ftp://ftp.netbsd.org ftp.netbsd.org] and on the CD's that came with your distribution and can be installed manually using //pkg_add//.
 
 [=#solaris]
 
 == Solaris ==
 
-MySQL packages are available on the Solaris Companion CD and are downloadable from many web sites including [http://www.mysql.com the MySQL site]. You can use ''pkgtool'' to install the package. Note, that with some versions of Solaris and some versions of MySQL, you have to create a "wheel" group before installing the MySQL package. You can do this (as root) using the command: ''/usr/sbin/groupadd wheel''
+MySQL packages are available on the Solaris Companion CD and are downloadable from many web sites including [http://www.mysql.com the MySQL site]. You can use //pkgtool// to install the package. Note, that with some versions of Solaris and some versions of MySQL, you have to create a "wheel" group before installing the MySQL package. You can do this (as root) using the command: ///usr/sbin/groupadd wheel//
 
 [=#source]
 
 == Compiling From Source ==
 
-If you want to compile MySQL from source, it should compile cleanly on all of the platforms mentioned above. The source code is available from [http://www.mysql.com the MySQL site]. With older versions of MySQL, I've run out of memory while compiling on machines with less than 64MB of ram. I don't believe that this is still a problem though. I usually give the ''configure'' script the ''--prefix=/usr/local/mysql'' parameter so that MySQL will be installed entirely under /usr/local/mysql. I then add /usr/local/mysql/bin to my PATH environment variable and /usr/local/mysql/lib/mysql to my LD_LIBRARY_PATH environment variable.
+If you want to compile MySQL from source, it should compile cleanly on all of the platforms mentioned above. The source code is available from [http://www.mysql.com the MySQL site]. With older versions of MySQL, I've run out of memory while compiling on machines with less than 64MB of ram. I don't believe that this is still a problem though. I usually give the //configure// script the //--prefix=/usr/local/mysql// parameter so that MySQL will be installed entirely under /usr/local/mysql. I then add /usr/local/mysql/bin to my PATH environment variable and /usr/local/mysql/lib/mysql to my LD_LIBRARY_PATH environment variable.
 
 [=#startingatboot]
 
@@ -223,9 +223,9 @@ Install this script and run it with the "start" option to start up the database.
 
 After installation, MySQL is ready to use but to do any useful work, you'll have to create a database.
 
-The installation process creates a database named ''mysql'' containing privileges and other housekeeping information and a ''root'' user which has no password.
+The installation process creates a database named //mysql// containing privileges and other housekeeping information and a //root// user which has no password.
 
-The following commands give the ''root'' user the password ''Passw0rd''.
+The following commands give the //root// user the password //Passw0rd//.
 
 {{{#!blockquote
 {{{#!code
@@ -234,7 +234,7 @@ mysqladmin -uroot reload
 }}}
 }}}
 
-Though you can create tables in the ''mysql'' database, it's not a good idea. You should create a new database. The following command creates a database called ''testdb''.
+Though you can create tables in the //mysql// database, it's not a good idea. You should create a new database. The following command creates a database called //testdb//.
 
 {{{#!blockquote
 {{{#!code
@@ -242,7 +242,7 @@ mysqladmin -uroot -pPassw0rd create testdb
 }}}
 }}}
 
-To create a user, log into the ''mysql'' database using the following command.
+To create a user, log into the //mysql// database using the following command.
 
 {{{#!blockquote
 {{{#!code
@@ -250,7 +250,7 @@ mysql -uroot -pPassw0rd mysql
 }}}
 }}}
 
-On modern versions of mysql, the following queries create a user called ''testuser'' with password ''testpassword'' and allows it to log in from the local machine or any remote host.
+On modern versions of mysql, the following queries create a user called //testuser// with password //testpassword// and allows it to log in from the local machine or any remote host.
 
 {{{#!blockquote
 {{{#!code
@@ -270,7 +270,7 @@ insert into user (host,user,password) values ('%','testuser',password('testpassw
 
 Once the user is created, it must be given database-specific priveleges.
 
-On modern versions of mysql, the following queries grant ''testuser'' all privileges on the ''testdb'' database.
+On modern versions of mysql, the following queries grant //testuser// all privileges on the //testdb// database.
 
 {{{#!blockquote
 {{{#!code
@@ -286,7 +286,7 @@ insert into db values ('%','testdb','testuser','Y','Y','Y','Y','Y','Y','Y','Y','
 }}}
 }}}
 
-Different versions of MySQL have different numbers of columns in the ''db'' table, if the query above fails, run:.
+Different versions of MySQL have different numbers of columns in the //db// table, if the query above fails, run:.
 
 {{{#!blockquote
 {{{#!code
@@ -294,7 +294,7 @@ desc db
 }}}
 }}}
 
-Then count the number of columns with Type '''enum('N','Y')''' and re-run the query above using that number of ''''Y'''' values.
+Then count the number of columns with Type '''enum('N','Y')''' and re-run the query above using that number of //'Y'// values.
 
 Exit the mysql client and run the following command to activate these changes.
 
@@ -304,7 +304,7 @@ mysqladmin -uroot -pPassw0rd reload
 }}}
 }}}
 
-To delete a user, log into the ''mysql'' database using the following command.
+To delete a user, log into the //mysql// database using the following command.
 
 {{{#!blockquote
 {{{#!code
@@ -312,7 +312,7 @@ mysql -uroot -pPassw0rd mysql
 }}}
 }}}
 
-On modern versions of mysql, the following queries drop the user ''testuser''.
+On modern versions of mysql, the following queries drop the user //testuser//.
 
 {{{#!blockquote
 {{{#!code
@@ -352,7 +352,7 @@ This should be enough to get you started. To set up more complex configurations,
 
 == Accessing a Database ==
 
-Accessing a MySQL database using the ''mysql'' client tool is simple. For example, to access a database called ''testdb'' on the local machine as the ''testuser'' user with password ''testpassword'', use the following command.
+Accessing a MySQL database using the //mysql// client tool is simple. For example, to access a database called //testdb// on the local machine as the //testuser// user with password //testpassword//, use the following command.
 
 {{{#!blockquote
 {{{#!code
@@ -360,7 +360,7 @@ mysql -utestuser -ptestpassword testdb
 }}}
 }}}
 
-If you want to access a database on a remote machine, say on ''testhost'', use the -h option as follows.
+If you want to access a database on a remote machine, say on //testhost//, use the -h option as follows.
 
 {{{#!blockquote
 {{{#!code
@@ -368,9 +368,9 @@ mysql -htesthost -utestuser -ptestpassword testdb
 }}}
 }}}
 
-Once you're connected to the database, the ''mysql'' client prompts you to enter a query. Queries may be split across multiple lines. To run a query, end it with a semicolon or type \g on the next line. To exit, type \q.
+Once you're connected to the database, the //mysql// client prompts you to enter a query. Queries may be split across multiple lines. To run a query, end it with a semicolon or type \g on the next line. To exit, type \q.
 
-A sample ''mysql'' session follows.
+A sample //mysql// session follows.
 
 {{{#!blockquote
 {{{#!code

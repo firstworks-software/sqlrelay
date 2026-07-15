@@ -22,7 +22,7 @@
 
 <p>Versions 12.5 and older were distributed as RPM's. They must be installed before the server can be initialized.</p>
 
-<p>To install them on an RPM-based linux system, simply use ''rpm -i''.</p>
+<p>To install them on an RPM-based linux system, simply use <i>rpm -i</i>.</p>
 
 <p>For example, version 12.5:</p>
 
@@ -36,7 +36,7 @@ sybase<font color="#990000">-</font>common<font color="#990000">-</font><font co
 sybase<font color="#990000">-</font>ase<font color="#990000">-</font><font color="#993399">12.5</font><font color="#990000">.</font><font color="#993399">0</font><font color="#990000">.</font>1ESD<font color="#990000">-</font><font color="#993399">1</font><font color="#990000">.</font>i386<font color="#990000">.</font>rpm</tt></pre>
 
 </blockquote>
-<p>To install them on Debian Linux, install ''alien'' by running ''apt-get install alien'' then convert the RPM's to DEB's uisng ''alien --to-deb'' and install them them with ''dpkg''.</p>
+<p>To install them on Debian Linux, install <i>alien</i> by running <i>apt-get install alien</i> then convert the RPM's to DEB's uisng <i>alien --to-deb</i> and install them them with <i>dpkg</i>.</p>
 
 <p>For example, version 12.5:</p>
 
@@ -80,7 +80,7 @@ http://www.gnu.org/software/src-highlite -->
 
 <p>Once you have initialized the server, you should start the server. From this point on, the database creation process is the same for all versions.</p>
 
-<p>At this point, you should set up your environment. The SAP/Sybase client is called ''isql''. Note that ''unixODBC'' and ''Interbase/Firebird'' have a client called ''isql'' as well which could be installed in /usr/bin, /usr/local/bin or some other path. If you have ''unixODBC'' or ''Interbase/Firebird'' installed, you'll have to decide which client you want the ''isql'' command to run. If you want it to run the SAP/Sybase client, follow the instructions below. Otherwise, you'll have to run the SAP/Sybase ''isql'' client by its full pathname which could be /opt/sybase/OCS-15_0/bin/isql, /opt/sybase/OCS/bin/isql, /opt/sybase-12.5/OCS/bin/isql, /opt/sybase-11.9.2/bin/isql or some other path.</p>
+<p>At this point, you should set up your environment. The SAP/Sybase client is called <i>isql</i>. Note that <i>unixODBC</i> and <i>Interbase/Firebird</i> have a client called <i>isql</i> as well which could be installed in /usr/bin, /usr/local/bin or some other path. If you have <i>unixODBC</i> or <i>Interbase/Firebird</i> installed, you'll have to decide which client you want the <i>isql</i> command to run. If you want it to run the SAP/Sybase client, follow the instructions below. Otherwise, you'll have to run the SAP/Sybase <i>isql</i> client by its full pathname which could be /opt/sybase/OCS-15_0/bin/isql, /opt/sybase/OCS/bin/isql, /opt/sybase-12.5/OCS/bin/isql, /opt/sybase-11.9.2/bin/isql or some other path.</p>
 
 <p>In the configuration script for your shell, add the path to the SAP/Sybase isql client to your PATH environment variable as follows. In these examples, /opt/sybase/OCS/bin is used, but your SAP/Sybase isql client may be installed elsewhere.</p>
 
@@ -105,9 +105,9 @@ http://www.gnu.org/software/src-highlite -->
 <pre><tt><font color="#008080">setenv</font> PATH $<font color="#FF0000">{</font>PATH<font color="#FF0000">}</font><font color="#990000">:/</font>opt<font color="#990000">/</font>sybase<font color="#990000">/</font>OCS<font color="#990000">/</font>bin</tt></pre>
 
 </blockquote>
-<p>Now log out and log back in and you can use the ''isql'' client to create a database.</p>
+<p>Now log out and log back in and you can use the <i>isql</i> client to create a database.</p>
 
-<p>The initialization process should have created a server named ''LOCALHOST'' (or ''localhost'' for version 11.9.2 or older) with an administrative user named ''sa''. Versions 15.7 and newer allow you to set the password for the ''sa'' user during installation. In versions 15.5 and older, the user is created with no password.</p>
+<p>The initialization process should have created a server named <i>LOCALHOST</i> (or <i>localhost</i> for version 11.9.2 or older) with an administrative user named <i>sa</i>. Versions 15.7 and newer allow you to set the password for the <i>sa</i> user during installation. In versions 15.5 and older, the user is created with no password.</p>
 
 <p>If you need to set the administrative user's password, log into the database with the following command. When it prompts you for a password, just press return.</p>
 
@@ -131,7 +131,7 @@ http://www.gnu.org/software/src-highlite -->
 <pre><tt>isql <font color="#990000">-</font><font color="#008080">U</font> sa <font color="#990000">-</font>S localhost</tt></pre>
 
 </blockquote>
-<p>At the prompt, run the following stored procedure to give ''sa'' the password ''Passw0rd''.</p>
+<p>At the prompt, run the following stored procedure to give <i>sa</i> the password <i>Passw0rd</i>.</p>
 
 <blockquote>
 <!-- Generator: GNU source-highlight 3.1.9
@@ -152,7 +152,7 @@ http://www.gnu.org/software/src-highlite -->
 <pre><tt>quit</tt></pre>
 
 </blockquote>
-<p>Log back in using the following command. When it prompts you for a password, type ''Passw0rd''.</p>
+<p>Log back in using the following command. When it prompts you for a password, type <i>Passw0rd</i>.</p>
 
 <p>For version 12.5 or newer:</p>
 
@@ -174,7 +174,7 @@ http://www.gnu.org/software/src-highlite -->
 <pre><tt>isql <font color="#990000">-</font><font color="#008080">U</font> sa <font color="#990000">-</font>S localhost</tt></pre>
 
 </blockquote>
-<p>Though you could create your own tables using the ''sa'' user and the system database, it's not a good idea. You should create a user database. The following commands create a database named ''testdb''.</p>
+<p>Though you could create your own tables using the <i>sa</i> user and the system database, it's not a good idea. You should create a user database. The following commands create a database named <i>testdb</i>.</p>
 
 <blockquote>
 <!-- Generator: GNU source-highlight 3.1.9
@@ -208,7 +208,7 @@ http://www.gnu.org/software/src-highlite -->
 <pre><tt>isql <font color="#990000">-</font><font color="#008080">U</font> sa <font color="#990000">-</font><font color="#008080">S</font> localhost <font color="#990000">-</font>D testdb</tt></pre>
 
 </blockquote>
-<p>Creating a user is a 2 step process. First a universal login must be created, then it must be added as a user to a particular database. Execute the following stored procedures and queries to create a login named ''testuser'' with password ''testpassword'', add it as a user of ''testdb'' and give it all permissions.</p>
+<p>Creating a user is a 2 step process. First a universal login must be created, then it must be added as a user to a particular database. Execute the following stored procedures and queries to create a login named <i>testuser</i> with password <i>testpassword</i>, add it as a user of <i>testdb</i> and give it all permissions.</p>
 
 <blockquote>
 <!-- Generator: GNU source-highlight 3.1.9
@@ -224,7 +224,7 @@ go
 quit</tt></pre>
 
 </blockquote>
-<p>Now you can log in as ''testuser'' using the following command. When promted for a password, enter ''testpassword''.</p>
+<p>Now you can log in as <i>testuser</i> using the following command. When promted for a password, enter <i>testpassword</i>.</p>
 
 <p>For version 12.5 or newer:</p>
 
@@ -258,7 +258,7 @@ http://www.gnu.org/software/src-highlite -->
 being suspended until space is made available in <font color="#008080">the</font> log<font color="#990000">.</font></tt></pre>
 
 </blockquote>
-<p>To dump the log, log into the testdb database as the ''sa'' user as follows. When it promts you for a password, type ''Passw0rd''.</p>
+<p>To dump the log, log into the testdb database as the <i>sa</i> user as follows. When it promts you for a password, type <i>Passw0rd</i>.</p>
 
 <p>For version 12.5 or newer:</p>
 
@@ -291,7 +291,7 @@ http://www.gnu.org/software/src-highlite -->
 go</tt></pre>
 
 </blockquote>
-<p>A longer term solution is to configure the database to truncate its log at each checkpoint. To configure this, log into the master database as the ''sa'' user as follows. When it prompts you for a password, type ''Passw0rd''.</p>
+<p>A longer term solution is to configure the database to truncate its log at each checkpoint. To configure this, log into the master database as the <i>sa</i> user as follows. When it prompts you for a password, type <i>Passw0rd</i>.</p>
 
 <p>For version 12.5 or newer:</p>
 
@@ -357,9 +357,9 @@ http://www.gnu.org/software/src-highlite -->
 <pre><tt><font color="#008080">setenv</font> SYBASE <font color="#990000">/</font>opt<font color="#990000">/</font>sybase</tt></pre>
 
 </blockquote>
-<p>Now log out and log back in and you can use the ''isql'' client to access the database.</p>
+<p>Now log out and log back in and you can use the <i>isql</i> client to access the database.</p>
 
-<p>''isql'' requires a <b>username</b>, <b>server</b> and <b>database</b> name to access a database. The <b>server</b> parameter does not refer to the hostname of the machine you want to connect to, but rather to an entry in the ''$SYBASE/interfaces'' file. When a database is created, the process puts an entry in the ''$SYBASE/interfaces'' file on the machine the database was created on. This entry can then be copied into the ''$SYBASE/interfaces'' file on other machines to provide them remote access to the database. Below is a sample entry for a server named ''REMOTEHOST'' which refers to an instance of ASE running on ''testhost.testdomain.com'', on port 4100, accessible over tcp on ethernet and a similar entry for a server named ''LOCALHOST'' which is running on ''localhost''.</p>
+<p><i>isql</i> requires a <b>username</b>, <b>server</b> and <b>database</b> name to access a database. The <b>server</b> parameter does not refer to the hostname of the machine you want to connect to, but rather to an entry in the <i>$SYBASE/interfaces</i> file. When a database is created, the process puts an entry in the <i>$SYBASE/interfaces</i> file on the machine the database was created on. This entry can then be copied into the <i>$SYBASE/interfaces</i> file on other machines to provide them remote access to the database. Below is a sample entry for a server named <i>REMOTEHOST</i> which refers to an instance of ASE running on <i>testhost.testdomain.com</i>, on port 4100, accessible over tcp on ethernet and a similar entry for a server named <i>LOCALHOST</i> which is running on <i>localhost</i>.</p>
 
 <blockquote>
 <!-- Generator: GNU source-highlight 3.1.9
@@ -377,7 +377,7 @@ LOCALHOST
 </blockquote>
 <p>Similar entries can be made to access servers running on other hosts.</p>
 
-<p>To access the database ''testdb'' on the server ''LOCALHOST'' as the user ''testuser'', run the following command.</p>
+<p>To access the database <i>testdb</i> on the server <i>LOCALHOST</i> as the user <i>testuser</i>, run the following command.</p>
 
 <blockquote>
 <!-- Generator: GNU source-highlight 3.1.9
@@ -387,9 +387,9 @@ http://www.gnu.org/software/src-highlite -->
 <pre><tt>isql <font color="#990000">-</font><font color="#008080">U</font> testuser <font color="#990000">-</font><font color="#008080">S</font> LOCALHOST <font color="#990000">-</font>D testdb</tt></pre>
 
 </blockquote>
-<p>Once you're connected to the database, the ''isql'' client prompts you to enter a query. Queries may be split across multiple lines. To run a query, type go on a line by itself. To exit, type quit on a line by itself.</p>
+<p>Once you're connected to the database, the <i>isql</i> client prompts you to enter a query. Queries may be split across multiple lines. To run a query, type go on a line by itself. To exit, type quit on a line by itself.</p>
 
-<p>A sample ''isql''session follows.</p>
+<p>A sample <i>isql</i>session follows.</p>
 
 <blockquote>
 <!-- Generator: GNU source-highlight 3.1.9

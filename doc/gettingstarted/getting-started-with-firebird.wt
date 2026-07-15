@@ -38,11 +38,11 @@ apt-get install firebirdversion-super
 }}}
 }}}
 
-Where ''version'' is replaced with the version you want to install.
+Where //version// is replaced with the version you want to install.
 
 Binary and source distributions of Firebird in many different formats (including tar.gz and RPM) for many different platforms are also available at the [https://www.firebirdsql.org/ Firebird web site].
 
-The tar.gz distributions come with an install script. The RPM distributions can be installed using ''rpm -i''.
+The tar.gz distributions come with an install script. The RPM distributions can be installed using //rpm -i//.
 
 Firebird distributions from the Firebird web site prior to version 1.5 create a directory called /opt/interbase. Firebird versions 1.5 higher create /opt/firebird.
 
@@ -67,9 +67,9 @@ yum install compat-libstdc++-33
 
 == Setting Up Your Environment ==
 
-At this point, you should set up your environment. The Firebird client is called ''isql-fb'' in some distributions, but in others, it is just called ''isql''. Note that ''unixODBC'' and ''Sybase'' have a client called ''isql'' as well which could be installed in /usr/bin, /usr/local/bin, /opt/sybase*/bin or some other path. If you have ''unixODBC'' or ''Sybase'' installed, you'll have to decide which client you want the ''isql'' command to run. If you want ''isql'' to run the Firebird client, follow the instructions below. Otherwise, you'll have to run the Firebird ''isql'' client by its full pathname.
+At this point, you should set up your environment. The Firebird client is called //isql-fb// in some distributions, but in others, it is just called //isql//. Note that //unixODBC// and //Sybase// have a client called //isql// as well which could be installed in /usr/bin, /usr/local/bin, /opt/sybase*/bin or some other path. If you have //unixODBC// or //Sybase// installed, you'll have to decide which client you want the //isql// command to run. If you want //isql// to run the Firebird client, follow the instructions below. Otherwise, you'll have to run the Firebird //isql// client by its full pathname.
 
-If you are using Firebird prior to version 1.5, in the configuration script for your shell, add ''/opt/interbase/bin'' to your PATH environment variable. If you are using Firebird version 1.5 or higher, add ''/opt/firebird/bin'' to your PATH environment variable. You can add the paths as follows.
+If you are using Firebird prior to version 1.5, in the configuration script for your shell, add ///opt/interbase/bin// to your PATH environment variable. If you are using Firebird version 1.5 or higher, add ///opt/firebird/bin// to your PATH environment variable. You can add the paths as follows.
 
 For Bourne shells:
 
@@ -109,23 +109,23 @@ setenv PATH ${PATH}:/opt/interbase/bin
 
 == Users and Passwords ==
 
-Use the ''gsec'' utility to create a new user named ''testuser'' with password ''testpassword''.
+Use the //gsec// utility to create a new user named //testuser// with password //testpassword//.
 
 There are some quirks though...
 
 Firebird user names are case insensitive and can be up to 31 characters long. Firebird passwords are case sensitive and can be up to 32 characters long, but only the first 8 characters are actually used.
 
-Sometimes the /etc/hosts.equiv file must contain an entry for localhost and possibly localhost.localdomain for the ''gsec'' to function at all, so if you're having trouble, try that.
+Sometimes the /etc/hosts.equiv file must contain an entry for localhost and possibly localhost.localdomain for the //gsec// to function at all, so if you're having trouble, try that.
 
-''gsec'' must always be run as root, and sometimes from within the directory containing the security database.
+//gsec// must always be run as root, and sometimes from within the directory containing the security database.
 
 The instructions are slightly different for different versions of Firebird.
 
-For Firebird 2.0 and higher, the installation process creates a security database called ''security2.fdb'' containing host and user privileges and an administrative user named ''SYSDBA'' with either a randomly generated password or the password ''masterkey''. In the case of a randomly generated password, it is listed in ''SYSDBA.password''.
+For Firebird 2.0 and higher, the installation process creates a security database called //security2.fdb// containing host and user privileges and an administrative user named //SYSDBA// with either a randomly generated password or the password //masterkey//. In the case of a randomly generated password, it is listed in //SYSDBA.password//.
 
-Run ''gsec'' from within the directory containing the file ''security2.fdb''.
+Run //gsec// from within the directory containing the file //security2.fdb//.
 
-Create a user as follows (replacing ''masterkey'' with the sysdba password if it isn't masterkey)...
+Create a user as follows (replacing //masterkey// with the sysdba password if it isn't masterkey)...
 
 {{{#!blockquote
 {{{#!code
@@ -136,11 +136,11 @@ GSEC> quit
 }}}
 }}}
 
-For Firebird 1.5, the installation process creates a security database called ''security.fdb'' containing host and user privileges and an administrative user named ''SYSDBA'' with a randomly generated password. This password is listed in ''SYSDBA.password''.
+For Firebird 1.5, the installation process creates a security database called //security.fdb// containing host and user privileges and an administrative user named //SYSDBA// with a randomly generated password. This password is listed in //SYSDBA.password//.
 
-Run ''gsec'' from within the directory containing the file ''security.fdb''.
+Run //gsec// from within the directory containing the file //security.fdb//.
 
-Create a user as follows (replacing ''masterkey'' with the sysdba password if it isn't masterkey)...
+Create a user as follows (replacing //masterkey// with the sysdba password if it isn't masterkey)...
 
 {{{#!blockquote
 {{{#!code
@@ -152,9 +152,9 @@ GSEC> quit
 }}}
 }}}
 
-For Firebird prior to version 1.5, the installation process creates a security database named ''isc4.gdb'' containing host and user privileges and an administrative user named ''SYSDBA'' with a password of either ''changeme'' or ''masterkey''.
+For Firebird prior to version 1.5, the installation process creates a security database named //isc4.gdb// containing host and user privileges and an administrative user named //SYSDBA// with a password of either //changeme// or //masterkey//.
 
-Run ''gsec'' from within the directory containing the file ''isc4.gdb''.
+Run //gsec// from within the directory containing the file //isc4.gdb//.
 
 Create a user as follows...
 
@@ -244,7 +244,7 @@ exit 0
 
 Install this script and run it with the "start" option to start up the database. Running it with the "stop" option shuts the database down. To access a database, it must be running.
 
-Note that the /etc/hosts.equiv file must contain an entry for localhost and possibly localhost.localdomain for the database to start properly and for the "local" tools such as ''ibmgr''/''fbmgr'' to function.
+Note that the /etc/hosts.equiv file must contain an entry for localhost and possibly localhost.localdomain for the database to start properly and for the "local" tools such as //ibmgr/fbmgr// to function.
 
 [=#creating]
 
@@ -252,9 +252,9 @@ Note that the /etc/hosts.equiv file must contain an entry for localhost and poss
 
 Firebird should now be ready to use, but to do any useful work, you'll have to create a database.
 
-Though you can create tables in the ''isc4.gdb'' database using the SYSDBA user, it's not a good idea. You should create a new database using a regular user. The following sequence of commands creates a database.
+Though you can create tables in the //isc4.gdb// database using the SYSDBA user, it's not a good idea. You should create a new database using a regular user. The following sequence of commands creates a database.
 
-For Firebird version 1.5 or higher, these commands create a database called ''/opt/firebird/testdb.gdb'' which is owned by ''testuser''.
+For Firebird version 1.5 or higher, these commands create a database called ///opt/firebird/testdb.gdb// which is owned by //testuser//.
 
 {{{#!blockquote
 {{{#!code
@@ -265,7 +265,7 @@ SQL> quit;
 }}}
 }}}
 
-For Firebird prior to version 1.5, these commands create a database called ''/opt/interbase/testdb.gdb'' which is owned by ''testuser''.
+For Firebird prior to version 1.5, these commands create a database called ///opt/interbase/testdb.gdb// which is owned by //testuser//.
 
 {{{#!blockquote
 {{{#!code
@@ -278,7 +278,7 @@ SQL> quit;
 
 Firebird databases are referenced by the pathname of the database file. If you try to create a database using a file name that already exists or if you forget to enclose the file name in single quotes, you'll get a cryptic error indicating that the 'database' token is unknown. So, if you get a message like that, make sure that you enclosed the file name in single quotes and make sure that the database file that you're trying to create doesn't already exist.
 
-Now you can log into the database as ''testuser''.
+Now you can log into the database as //testuser//.
 
 Use the following command for Firebird 1.5 or higher.
 
@@ -296,7 +296,7 @@ isql -u testuser -p testpassword /opt/interbase/testdb.gdb
 }}}
 }}}
 
-The only users that can drop a database are the user that owns the database and the ''SYSDBA'' user. If you want to drop the database, you can do so using ''isql'' as follows for Firebird version 1.5 or higher...
+The only users that can drop a database are the user that owns the database and the //SYSDBA// user. If you want to drop the database, you can do so using //isql// as follows for Firebird version 1.5 or higher...
 
 {{{#!blockquote
 {{{#!code
@@ -318,7 +318,7 @@ SQL> quit;
 }}}
 }}}
 
-To delete a user, use the ''gsec'' utility as the root user and delete the appropriate user as follows for Firebird version 1.5 or higher.
+To delete a user, use the //gsec// utility as the root user and delete the appropriate user as follows for Firebird version 1.5 or higher.
 
 {{{#!blockquote
 {{{#!code
@@ -350,7 +350,7 @@ This should be enough to get you started. To set up more complex configurations,
 
 == Accessing a Database ==
 
-To access a database called ''/opt/firebird/testdb.gdb'' on the local machine as the ''testuser'' user with password ''testpassword'', use the following command.
+To access a database called ///opt/firebird/testdb.gdb// on the local machine as the //testuser// user with password //testpassword//, use the following command.
 
 {{{#!blockquote
 {{{#!code
@@ -358,7 +358,7 @@ isql -u testuser -p testpassword /opt/firebird/testdb.gdb
 }}}
 }}}
 
-To connect to a database on a remote machine, prepend the database filename with the remote hostname, followed by a colon. For example, to access a database called ''/opt/firebird/testdb.gdb'' on the remote machine ''testhost'' as the ''testuser'' user with password ''testpassword'', use the following command.
+To connect to a database on a remote machine, prepend the database filename with the remote hostname, followed by a colon. For example, to access a database called ///opt/firebird/testdb.gdb// on the remote machine //testhost// as the //testuser// user with password //testpassword//, use the following command.
 
 {{{#!blockquote
 {{{#!code
@@ -368,7 +368,7 @@ isql -u testuser -p testpassword testhost:/opt/firebird/testdb.gdb
 
 Once you're connected to the database, the isql client prompts you to enter a query. Queries may be split across multiple lines. To run a query, end it with a semicolon. To exit, type quit;.
 
-A sample ''isql'' session follows.
+A sample //isql// session follows.
 
 {{{#!blockquote
 {{{#!code

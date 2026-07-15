@@ -8,7 +8,7 @@
 
 == DB2 Installation ==
 
-IBM DB2 V10.1 was once available from the IBM website as a tarball. Extract the tarball using ''tar xfz'' and cd into the exp directory.
+IBM DB2 V10.1 was once available from the IBM website as a tarball. Extract the tarball using //tar xfz// and cd into the exp directory.
 
 Run the db2_install script.
 
@@ -20,7 +20,7 @@ When the script completes, DB2 will be installed.
 
 A DB2 installation consists of an administration server and one or more instances. Each instance contains one or more databases. The administration server coordinates the instances. The administration server is owned by an OS-level user. Each instance is owned by a seperate OS-level user as well.
 
-To create an instance and an administration server, change directories into the installation directory (usually /opt/ibm/db2/V10.1 or /opt/IBM/db2/V10.1) and run ''instance/db2isetup''
+To create an instance and an administration server, change directories into the installation directory (usually /opt/ibm/db2/V10.1 or /opt/IBM/db2/V10.1) and run //instance/db2isetup//
 
 On the screen titled '''Welcome to the DB2 Instance Setup wizard''', click Next
 
@@ -48,17 +48,17 @@ A progress dialog will come up. When the process is finished, it will go away.
 
 On the screen titled '''Setup has completed successfully''', click Finish.
 
-Should you need to create additional DB2 instances, follow this procedure again using a different user name and skipping the steps pertaining to the Administration Server. The command ''instance/db2ilist'' (under the installation directory) lists all of the DB2 instances on the local computer.
+Should you need to create additional DB2 instances, follow this procedure again using a different user name and skipping the steps pertaining to the Administration Server. The command //instance/db2ilist// (under the installation directory) lists all of the DB2 instances on the local computer.
 
-If you need to drop an instance, go into the installation directory and run ''instance/db2idrop instancename'', substituting the name of the instance you want to drop for instancename.
+If you need to drop an instance, go into the installation directory and run //instance/db2idrop instancename//, substituting the name of the instance you want to drop for instancename.
 
-The ''instance/daslist'' command (under the installation directory) lists all of the DB2 administration servers on the local computer.
+The //instance/daslist// command (under the installation directory) lists all of the DB2 administration servers on the local computer.
 
-If you need to drop an administration server, go into the installation directory and run ''instance/dasdrop servername'', substituting the name of the administration server you want to drop for servername.
+If you need to drop an administration server, go into the installation directory and run //instance/dasdrop servername//, substituting the name of the administration server you want to drop for servername.
 
 == Creating a Sample Database ==
 
-To create a sample database, run the command ''/opt/ibm/db2/V10.1/bin/db2sampl''.
+To create a sample database, run the command ///opt/ibm/db2/V10.1/bin/db2sampl//.
 
 == Starting the Database at Boot Time ==
 

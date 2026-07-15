@@ -19,7 +19,7 @@ xorg-x11-deprecated-libs
 }}}
 }}}
 
-You'll also need to download the following package from [http://rpmfind.net rpmfind] and install it using ''rpm -i''. This package is also available in the Fedora Core 4 distribution.
+You'll also need to download the following package from [http://rpmfind.net rpmfind] and install it using //rpm -i//. This package is also available in the Fedora Core 4 distribution.
 
 {{{#!blockquote
 {{{#!code

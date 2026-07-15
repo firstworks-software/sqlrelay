@@ -8,7 +8,7 @@
 
 First, log in as the oracle user.
 
-If you have a CD, mount it and cd to the orainst directory under the mount point. If you have a tar.gz distribution, extract it using ''tar xfz'' and cd to the orainst directory created by the extraction.
+If you have a CD, mount it and cd to the orainst directory under the mount point. If you have a tar.gz distribution, extract it using //tar xfz// and cd to the orainst directory created by the extraction.
 
 Type '''./orainst''', you should be presented with a text-based installer.
 

@@ -87,7 +87,7 @@ A screen will appear titled '''The installation was successful'''[[br]]Click Fin
 
 == Starting the Database at Boot Time ==
 
-The RPM distribution of Sybase ASE installs a script in /etc/rc.d/init.d which starts the database at boot time. For non-RPM distributions, you may need to install a script like the following. Replace ''/opt/sybase'' with whatever directory Sybase ASE is installed in.
+The RPM distribution of Sybase ASE installs a script in /etc/rc.d/init.d which starts the database at boot time. For non-RPM distributions, you may need to install a script like the following. Replace ///opt/sybase// with whatever directory Sybase ASE is installed in.
 
 {{{#!blockquote
 {{{

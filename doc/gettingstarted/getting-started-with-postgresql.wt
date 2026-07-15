@@ -30,25 +30,25 @@ I've sucessfully installed PostgreSQL on Linux, FreeBSD, NetBSD, OpenBSD, Solari
 
 == RPM-based Linux ==
 
-To install PostgreSQL on an RPM-based Linux distribution, install the postgresql, postgresql-server, postgresql-devel and postgresql-libs RPMS using yum or install them from the CD/DVD's that came with your distribution using ''rpm -i''.
+To install PostgreSQL on an RPM-based Linux distribution, install the postgresql, postgresql-server, postgresql-devel and postgresql-libs RPMS using yum or install them from the CD/DVD's that came with your distribution using //rpm -i//.
 
 [=#debian]
 
 == Debian and Ubuntu Linux ==
 
-To install PostgreSQL on Debian and Ubuntu Linux, run ''apt-get install postgresql'' and ''apt-get install postgresql-dev''.
+To install PostgreSQL on Debian and Ubuntu Linux, run //apt-get install postgresql// and //apt-get install postgresql-dev//.
 
 [=#freebsd]
 
 == FreeBSD ==
 
-If you have an internet connection, run ''pkg_add -r postgresql''. When the command completes, PostgreSQL will be installed. You can also install PostgreSQL from the Ports CD(s) that came with your distribution using ''/stand/sysinstall''.
+If you have an internet connection, run //pkg_add -r postgresql//. When the command completes, PostgreSQL will be installed. You can also install PostgreSQL from the Ports CD(s) that came with your distribution using ///stand/sysinstall//.
 
 [=#openbsd]
 
 == OpenBSD ==
 
-The postgresql package is available from [ftp://ftp.openbsd.org ftp.openbsd.org] or on CD's that came with your distribution. You can install it using ''pkg_add''. Once the package is installed, you should run the following commands:
+The postgresql package is available from [ftp://ftp.openbsd.org ftp.openbsd.org] or on CD's that came with your distribution. You can install it using //pkg_add//. Once the package is installed, you should run the following commands:
 
 {{{#!blockquote
 {{{#!code
@@ -66,7 +66,7 @@ exit
 
 == NetBSD ==
 
-The postgresql and postgresql-clients packages are available from [ftp://ftp.netbsd.org ftp.netbsd.org] or on CD's that came with your distribution. You can install it using ''pkg_add''. Once the package is installed, you should run the following commands:
+The postgresql and postgresql-clients packages are available from [ftp://ftp.netbsd.org ftp.netbsd.org] or on CD's that came with your distribution. You can install it using //pkg_add//. Once the package is installed, you should run the following commands:
 
 {{{#!blockquote
 {{{#!code
@@ -98,7 +98,7 @@ If there are PostgreSQL packages for Solaris, I've never been able to find them.
 
 If you want to compile PostgreSQL from source, it should compile cleanly on all of the platforms mentioned above with the exception of SCO OpenServer. I have never been able to get it to compile on SCO. The source code is available from [http://www.postgresql.org the PostgreSQL site]. You should create a user named postgres and assign it a password, then build and install PostgreSQL using that user. By default, PostgreSQL installs itself in /usr/local/pgsql. Note that you should add /usr/local/pgsql/bin to your PATH environment variable and /usr/local/pgsql/lib to your LD_LIBRARY_PATH environment variable.
 
-After compiling and installing PostgreSQL, you should log in as the postgres user and run ''initdb -D /usr/local/pgsql/var'' to initialize the database.
+After compiling and installing PostgreSQL, you should log in as the postgres user and run //initdb -D /usr/local/pgsql/var// to initialize the database.
 
 [=#startingatboot]
 
@@ -138,13 +138,13 @@ Install this script and run it with the "start" option to start up the database.
 
 To configure the database, it must be running, so start it up now.
 
-It's necessary to perform administrative tasks as the ''postgres'' user. Assigning it a password makes this easier.
+It's necessary to perform administrative tasks as the //postgres// user. Assigning it a password makes this easier.
 
-Once you have assigned the ''postgres'' user a password, log in as ''postgres''.
+Once you have assigned the //postgres// user a password, log in as //postgres//.
 
 Many distributions of PostgreSQL are fairly insecure by default; any user on the local machine can connect to the database without supplying a password. Some distributions of PostgreSQL are secured using socket credentials by default.
 
-View the file ''pg_hba.conf'' (usually found in ''/var/lib/pgsql'', ''/var/lib/pgsql/data'' or ''/usr/local/pgsql/var/data'') and look for a line like one of the following:
+View the file //pg_hba.conf// (usually found in ///var/lib/pgsql//, ///var/lib/pgsql/data// or ///usr/local/pgsql/var/data//) and look for a line like one of the following:
 
 {{{#!blockquote
 {{{#!code
@@ -158,7 +158,7 @@ local        all all ::1/128  ident sameuser
 
 If there's a line like one of those in your file, then all database users will have the same password as the system password for the user of the same name, thus, when prompted for a password, enter the password of the user you are logged in as (which should be the postgres user).
 
-By default, PostgreSQL has a database called ''template1'' containing privileges and other housekeeping data and an adminstrative user named ''postgres''. Unless your system uses socket credentials, the ''postgres'' database user initially has no password. To assign it a password (or to override the password assigned by socket credentials), run a command like the following. This command assigns the ''postgres'' user the password ''Passw0rd''.
+By default, PostgreSQL has a database called //template1// containing privileges and other housekeeping data and an adminstrative user named //postgres//. Unless your system uses socket credentials, the //postgres// database user initially has no password. To assign it a password (or to override the password assigned by socket credentials), run a command like the following. This command assigns the //postgres// user the password //Passw0rd//.
 
 For PostgreSQL 7 or higher:
 
@@ -176,7 +176,7 @@ psql -c "ALTER USER postgres WITH PASSWORD Passw0rd" -d template1
 }}}
 }}}
 
-If your system uses socket credentials and you don't want it to, or if it does not use socket credentials, edit the ''pg_hba.conf'' file (usually found in ''/var/lib/pgsql'', ''/var/lib/pgsql/data'' or ''/usr/local/pgsql/var/data'') and look for lines like the following:
+If your system uses socket credentials and you don't want it to, or if it does not use socket credentials, edit the //pg_hba.conf// file (usually found in ///var/lib/pgsql//, ///var/lib/pgsql/data// or ///usr/local/pgsql/var/data//) and look for lines like the following:
 
 {{{#!blockquote
 {{{#!code
@@ -264,7 +264,7 @@ If the file has no listen_addresses or tcpip_socket line, then add the tcpip_soc
 
 If your distribution has no postgresql.conf file, you will have to modify the pg_ctl script and add the -i option to the postmaster startup command. This script has changed a bit from version to version, so it may take a bit of trial and error to find the exact spot in the file to make the modification.
 
-Once you have configured PostgreSQL listen on an inet socket, you must add a line to the ''pg_hba.conf'' file to allow remote hosts to access local databases. The following line allows all hosts in the 192.168.2.0 class C network to access all databases on the local machine, using password authentication.
+Once you have configured PostgreSQL listen on an inet socket, you must add a line to the //pg_hba.conf// file to allow remote hosts to access local databases. The following line allows all hosts in the 192.168.2.0 class C network to access all databases on the local machine, using password authentication.
 
 {{{#!blockquote
 {{{#!code
@@ -288,9 +288,9 @@ After making these changes, log in as root and restart the database.
 
 After installation and database initialization, PostgreSQL is ready to use but to do any useful work, you'll have to create a database.
 
-In PostgreSQL terminology, a database is a collection of files managed by a program called ''postmaster''. Technically, any user can create a database and run a ''postmaster'' to manage it, but for simplicity's sake, we'll just make our database owned by the postgres user.
+In PostgreSQL terminology, a database is a collection of files managed by a program called //postmaster//. Technically, any user can create a database and run a //postmaster// to manage it, but for simplicity's sake, we'll just make our database owned by the postgres user.
 
-To create a database named ''testdb'' with an administrator named ''postgres'', log in as ''postgres'' and run the following command.
+To create a database named //testdb// with an administrator named //postgres//, log in as //postgres// and run the following command.
 
 For PostgreSQL 7 or higher:
 
@@ -334,9 +334,9 @@ Password: Passw0rd
 
 Once logged in, you can create, drop and modify tables and run queries in the database.
 
-PostgreSQL authentication is a complex topic. Lines in the ''pg_hba.conf'' file define access rules and restrictions for hosts and databases. For more information, consult the PostgreSQL [http://www.postgresql.org/idocs/ online documentation].
+PostgreSQL authentication is a complex topic. Lines in the //pg_hba.conf// file define access rules and restrictions for hosts and databases. For more information, consult the PostgreSQL [http://www.postgresql.org/idocs/ online documentation].
 
-To create database users, use commands like the following. This command creates a user named ''testuser'' with password ''testpassword''.
+To create database users, use commands like the following. This command creates a user named //testuser// with password //testpassword//.
 
 For PostgreSQL 7 or higher:
 
@@ -357,7 +357,7 @@ Password: Passw0rd
 }}}
 }}}
 
-You can now log into the database as ''testuser'' using the following command.
+You can now log into the database as //testuser// using the following command.
 
 For PostgreSQL 7 or higher:
 
@@ -378,7 +378,7 @@ Password: testpassword
 }}}
 }}}
 
-If you want to drop a user, you can do so. The following command drops a user named ''testuser''.
+If you want to drop a user, you can do so. The following command drops a user named //testuser//.
 
 For PostgreSQL 7 or higher:
 
@@ -401,7 +401,7 @@ Password: Passw0rd
 
 You may want to add stored procedure support to your database. PostgreSQL databases can support stored procedures written in PL/pgSQL, PL/TCL, PL/Perl, and PL/Python. Different versions of PostgreSQL support different procedural languages.
 
-You can use the ''createlang'' command to enable support for a stored procedure language in a particular database. For example, the following commands enable support for all languages in the testdb database.
+You can use the //createlang// command to enable support for a stored procedure language in a particular database. For example, the following commands enable support for all languages in the testdb database.
 
 {{{#!blockquote
 {{{#!code
@@ -443,7 +443,7 @@ This should be enough to get you started. To set up more complex configurations,
 
 == Accessing a Database ==
 
-Accessing a PostgreSQL database using the ''psql'' client tool is simple. For example, to access a database called ''testdb'' on the local machine as the ''testuser'' user with password ''testpassword'', use the following command.
+Accessing a PostgreSQL database using the //psql// client tool is simple. For example, to access a database called //testdb// on the local machine as the //testuser// user with password //testpassword//, use the following command.
 
 For PostgreSQL 7 or higher:
 
@@ -464,7 +464,7 @@ Password: testpassword
 }}}
 }}}
 
-If you want to access a database on a remote machine, say on ''testhost'', use the -h option as follows.
+If you want to access a database on a remote machine, say on //testhost//, use the -h option as follows.
 
 For PostgreSQL 7 or higher:
 
@@ -485,9 +485,9 @@ Password: testpassword
 }}}
 }}}
 
-Once you're connected to the database, the ''psql'' client prompts you to enter a query. Queries may be split across multiple lines. To run a query, end it with a semicolon or type \g on the next line. To exit, type \q.
+Once you're connected to the database, the //psql// client prompts you to enter a query. Queries may be split across multiple lines. To run a query, end it with a semicolon or type \g on the next line. To exit, type \q.
 
-A sample ''psql'' session follows.
+A sample //psql// session follows.
 
 {{{#!blockquote
 {{{#!code

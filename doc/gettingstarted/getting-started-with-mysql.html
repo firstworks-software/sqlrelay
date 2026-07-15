@@ -40,7 +40,7 @@ http://www.gnu.org/software/src-highlite -->
 <pre><tt>yum <font color="#008080">install</font> mysql<font color="#990000">-</font><font color="#008080">server</font> mysql<font color="#990000">-</font>devel</tt></pre>
 
 </blockquote>
-<p>Or on an old RPM-based distribution that doesn't support yum, install them from the CD/DVD's using ''rpm -i''.</p>
+<p>Or on an old RPM-based distribution that doesn't support yum, install them from the CD/DVD's using <i>rpm -i</i>.</p>
 
 <a name="debian"/><h2>Debian and Ubuntu Linux</h2>
 
@@ -80,7 +80,7 @@ http://www.gnu.org/software/src-highlite -->
 <pre><tt>pkg_add <font color="#990000">-</font><font color="#008080">r</font> mysql56<font color="#990000">-</font><font color="#008080">server</font> mysql56<font color="#990000">-</font>client</tt></pre>
 
 </blockquote>
-<p>You can also install <a href="MySQL">MySQL</a> from the Ports CD(s) that came with your distribution using ''/stand/sysinstall''.</p>
+<p>You can also install <a href="MySQL">MySQL</a> from the Ports CD(s) that came with your distribution using <i>/stand/sysinstall</i>.</p>
 
 <a name="openbsd"/><h2><a href="OpenBSD">OpenBSD</a></h2>
 
@@ -104,7 +104,7 @@ http://www.gnu.org/software/src-highlite -->
 <pre><tt><font color="#008080">pkg_add</font> mysql<font color="#990000">-</font><font color="#008080">server</font> mysql<font color="#990000">-</font>client</tt></pre>
 
 </blockquote>
-<p>Packages are also available from <a target="_blank" href="ftp://ftp.openbsd.org">ftp.openbsd.org</a> and on the CD's that came with your distribution and can be installed manually using ''pkg_add''.</p>
+<p>Packages are also available from <a target="_blank" href="ftp://ftp.openbsd.org">ftp.openbsd.org</a> and on the CD's that came with your distribution and can be installed manually using <i>pkg_add</i>.</p>
 
 <a name="netbsd"/><h2><a href="NetBSD">NetBSD</a></h2>
 
@@ -138,15 +138,15 @@ http://www.gnu.org/software/src-highlite -->
 <pre><tt><font color="#008080">pkg_add</font> mysql<font color="#990000">-</font><font color="#008080">server</font> myql<font color="#990000">-</font>client</tt></pre>
 
 </blockquote>
-<p>Packages are also available from <a target="_blank" href="ftp://ftp.netbsd.org">ftp.netbsd.org</a> and on the CD's that came with your distribution and can be installed manually using ''pkg_add''.</p>
+<p>Packages are also available from <a target="_blank" href="ftp://ftp.netbsd.org">ftp.netbsd.org</a> and on the CD's that came with your distribution and can be installed manually using <i>pkg_add</i>.</p>
 
 <a name="solaris"/><h2>Solaris</h2>
 
-<p><a href="MySQL">MySQL</a> packages are available on the Solaris Companion CD and are downloadable from many web sites including <a target="_blank" href="http://www.mysql.com">the MySQL site</a>. You can use ''pkgtool'' to install the package. Note, that with some versions of Solaris and some versions of <a href="MySQL">MySQL</a>, you have to create a "wheel" group before installing the <a href="MySQL">MySQL</a> package. You can do this (as root) using the command: ''/usr/sbin/groupadd wheel''</p>
+<p><a href="MySQL">MySQL</a> packages are available on the Solaris Companion CD and are downloadable from many web sites including <a target="_blank" href="http://www.mysql.com">the MySQL site</a>. You can use <i>pkgtool</i> to install the package. Note, that with some versions of Solaris and some versions of <a href="MySQL">MySQL</a>, you have to create a "wheel" group before installing the <a href="MySQL">MySQL</a> package. You can do this (as root) using the command: <i>/usr/sbin/groupadd wheel</i></p>
 
 <a name="source"/><h2>Compiling From Source</h2>
 
-<p>If you want to compile <a href="MySQL">MySQL</a> from source, it should compile cleanly on all of the platforms mentioned above. The source code is available from <a target="_blank" href="http://www.mysql.com">the MySQL site</a>. With older versions of <a href="MySQL">MySQL</a>, I've run out of memory while compiling on machines with less than 64MB of ram. I don't believe that this is still a problem though. I usually give the ''configure'' script the ''--prefix=/usr/local/mysql'' parameter so that <a href="MySQL">MySQL</a> will be installed entirely under /usr/local/mysql. I then add /usr/local/mysql/bin to my PATH environment variable and /usr/local/mysql/lib/mysql to my LD_LIBRARY_PATH environment variable.</p>
+<p>If you want to compile <a href="MySQL">MySQL</a> from source, it should compile cleanly on all of the platforms mentioned above. The source code is available from <a target="_blank" href="http://www.mysql.com">the MySQL site</a>. With older versions of <a href="MySQL">MySQL</a>, I've run out of memory while compiling on machines with less than 64MB of ram. I don't believe that this is still a problem though. I usually give the <i>configure</i> script the <i>--prefix=/usr/local/mysql</i> parameter so that <a href="MySQL">MySQL</a> will be installed entirely under /usr/local/mysql. I then add /usr/local/mysql/bin to my PATH environment variable and /usr/local/mysql/lib/mysql to my LD_LIBRARY_PATH environment variable.</p>
 
 <a name="startingatboot"/><h2>Starting the Database at Boot Time</h2>
 
@@ -224,9 +224,9 @@ exit 0
 
 <p>After installation, <a href="MySQL">MySQL</a> is ready to use but to do any useful work, you'll have to create a database.</p>
 
-<p>The installation process creates a database named ''mysql'' containing privileges and other housekeeping information and a ''root'' user which has no password.</p>
+<p>The installation process creates a database named <i>mysql</i> containing privileges and other housekeeping information and a <i>root</i> user which has no password.</p>
 
-<p>The following commands give the ''root'' user the password ''Passw0rd''.</p>
+<p>The following commands give the <i>root</i> user the password <i>Passw0rd</i>.</p>
 
 <blockquote>
 <!-- Generator: GNU source-highlight 3.1.9
@@ -237,7 +237,7 @@ http://www.gnu.org/software/src-highlite -->
 mysqladmin <font color="#990000">-</font>uroot reload</tt></pre>
 
 </blockquote>
-<p>Though you can create tables in the ''mysql'' database, it's not a good idea. You should create a new database. The following command creates a database called ''testdb''.</p>
+<p>Though you can create tables in the <i>mysql</i> database, it's not a good idea. You should create a new database. The following command creates a database called <i>testdb</i>.</p>
 
 <blockquote>
 <!-- Generator: GNU source-highlight 3.1.9
@@ -247,7 +247,7 @@ http://www.gnu.org/software/src-highlite -->
 <pre><tt>mysqladmin <font color="#990000">-</font>uroot <font color="#990000">-</font>pPassw0rd create testdb</tt></pre>
 
 </blockquote>
-<p>To create a user, log into the ''mysql'' database using the following command.</p>
+<p>To create a user, log into the <i>mysql</i> database using the following command.</p>
 
 <blockquote>
 <!-- Generator: GNU source-highlight 3.1.9
@@ -257,7 +257,7 @@ http://www.gnu.org/software/src-highlite -->
 <pre><tt>mysql <font color="#990000">-</font>uroot <font color="#990000">-</font>pPassw0rd mysql</tt></pre>
 
 </blockquote>
-<p>On modern versions of mysql, the following queries create a user called ''testuser'' with password ''testpassword'' and allows it to log in from the local machine or any remote host.</p>
+<p>On modern versions of mysql, the following queries create a user called <i>testuser</i> with password <i>testpassword</i> and allows it to log in from the local machine or any remote host.</p>
 
 <blockquote>
 <!-- Generator: GNU source-highlight 3.1.9
@@ -281,7 +281,7 @@ insert <font color="#008080">into</font> <b><font color="#000000">user</font></b
 </blockquote>
 <p>Once the user is created, it must be given database-specific priveleges.</p>
 
-<p>On modern versions of mysql, the following queries grant ''testuser'' all privileges on the ''testdb'' database.</p>
+<p>On modern versions of mysql, the following queries grant <i>testuser</i> all privileges on the <i>testdb</i> database.</p>
 
 <blockquote>
 <!-- Generator: GNU source-highlight 3.1.9
@@ -301,7 +301,7 @@ http://www.gnu.org/software/src-highlite -->
 <pre><tt>insert into <font color="#008080">db</font> <b><font color="#000000">values</font></b> <font color="#990000">(</font><font color="#FF0000">'%'</font><font color="#990000">,</font><font color="#FF0000">'testdb'</font><font color="#990000">,</font><font color="#FF0000">'testuser'</font><font color="#990000">,</font><font color="#FF0000">'Y'</font><font color="#990000">,</font><font color="#FF0000">'Y'</font><font color="#990000">,</font><font color="#FF0000">'Y'</font><font color="#990000">,</font><font color="#FF0000">'Y'</font><font color="#990000">,</font><font color="#FF0000">'Y'</font><font color="#990000">,</font><font color="#FF0000">'Y'</font><font color="#990000">,</font><font color="#FF0000">'Y'</font><font color="#990000">,</font><font color="#FF0000">'Y'</font><font color="#990000">,</font><font color="#FF0000">'Y'</font><font color="#990000">,</font><font color="#FF0000">'Y'</font><font color="#990000">,</font><font color="#FF0000">'Y'</font><font color="#990000">,</font><font color="#FF0000">'Y'</font><font color="#990000">,</font><font color="#FF0000">'Y'</font><font color="#990000">,</font><font color="#FF0000">'Y'</font><font color="#990000">,</font><font color="#FF0000">'Y'</font><font color="#990000">,</font><font color="#FF0000">'Y'</font><font color="#990000">,</font><font color="#FF0000">'Y'</font><font color="#990000">,</font><font color="#FF0000">'Y'</font><font color="#990000">,</font><font color="#FF0000">'Y'</font><font color="#990000">);</font></tt></pre>
 
 </blockquote>
-<p>Different versions of <a href="MySQL">MySQL</a> have different numbers of columns in the ''db'' table, if the query above fails, run:.</p>
+<p>Different versions of <a href="MySQL">MySQL</a> have different numbers of columns in the <i>db</i> table, if the query above fails, run:.</p>
 
 <blockquote>
 <!-- Generator: GNU source-highlight 3.1.9
@@ -311,7 +311,7 @@ http://www.gnu.org/software/src-highlite -->
 <pre><tt>desc db</tt></pre>
 
 </blockquote>
-<p>Then count the number of columns with Type <b>enum('N','Y')</b> and re-run the query above using that number of <b>'Y</b>' values.</p>
+<p>Then count the number of columns with Type <b>enum('N','Y')</b> and re-run the query above using that number of <i>'Y'</i> values.</p>
 
 <p>Exit the mysql client and run the following command to activate these changes.</p>
 
@@ -323,7 +323,7 @@ http://www.gnu.org/software/src-highlite -->
 <pre><tt>mysqladmin <font color="#990000">-</font>uroot <font color="#990000">-</font>pPassw0rd reload</tt></pre>
 
 </blockquote>
-<p>To delete a user, log into the ''mysql'' database using the following command.</p>
+<p>To delete a user, log into the <i>mysql</i> database using the following command.</p>
 
 <blockquote>
 <!-- Generator: GNU source-highlight 3.1.9
@@ -333,7 +333,7 @@ http://www.gnu.org/software/src-highlite -->
 <pre><tt>mysql <font color="#990000">-</font>uroot <font color="#990000">-</font>pPassw0rd mysql</tt></pre>
 
 </blockquote>
-<p>On modern versions of mysql, the following queries drop the user ''testuser''.</p>
+<p>On modern versions of mysql, the following queries drop the user <i>testuser</i>.</p>
 
 <blockquote>
 <!-- Generator: GNU source-highlight 3.1.9
@@ -379,7 +379,7 @@ http://www.gnu.org/software/src-highlite -->
 
 <a name="accessing"/><h2>Accessing a Database</h2>
 
-<p>Accessing a <a href="MySQL">MySQL</a> database using the ''mysql'' client tool is simple. For example, to access a database called ''testdb'' on the local machine as the ''testuser'' user with password ''testpassword'', use the following command.</p>
+<p>Accessing a <a href="MySQL">MySQL</a> database using the <i>mysql</i> client tool is simple. For example, to access a database called <i>testdb</i> on the local machine as the <i>testuser</i> user with password <i>testpassword</i>, use the following command.</p>
 
 <blockquote>
 <!-- Generator: GNU source-highlight 3.1.9
@@ -389,7 +389,7 @@ http://www.gnu.org/software/src-highlite -->
 <pre><tt>mysql <font color="#990000">-</font>utestuser <font color="#990000">-</font>ptestpassword testdb</tt></pre>
 
 </blockquote>
-<p>If you want to access a database on a remote machine, say on ''testhost'', use the -h option as follows.</p>
+<p>If you want to access a database on a remote machine, say on <i>testhost</i>, use the -h option as follows.</p>
 
 <blockquote>
 <!-- Generator: GNU source-highlight 3.1.9
@@ -399,9 +399,9 @@ http://www.gnu.org/software/src-highlite -->
 <pre><tt>mysql <font color="#990000">-</font>htesthost <font color="#990000">-</font>utestuser <font color="#990000">-</font>ptestpassword testdb</tt></pre>
 
 </blockquote>
-<p>Once you're connected to the database, the ''mysql'' client prompts you to enter a query. Queries may be split across multiple lines. To run a query, end it with a semicolon or type \g on the next line. To exit, type \q.</p>
+<p>Once you're connected to the database, the <i>mysql</i> client prompts you to enter a query. Queries may be split across multiple lines. To run a query, end it with a semicolon or type \g on the next line. To exit, type \q.</p>
 
-<p>A sample ''mysql'' session follows.</p>
+<p>A sample <i>mysql</i> session follows.</p>
 
 <blockquote>
 <!-- Generator: GNU source-highlight 3.1.9

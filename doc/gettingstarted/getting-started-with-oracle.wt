@@ -230,7 +230,7 @@ After creating the database, edit the file /etc/oratab and look for a line conta
 
 At this point, you can run the start/stop script to start up the database.
 
-To access the database, the file $ORACLE_HOME/network/admin/tnsnames.ora must also be configured. This file contains an entry for each database that the local system needs to know about. Here is an example of a tnsnames.ora entry, identifying the database ''ORA1'' on the local machine.
+To access the database, the file $ORACLE_HOME/network/admin/tnsnames.ora must also be configured. This file contains an entry for each database that the local system needs to know about. Here is an example of a tnsnames.ora entry, identifying the database //ORA1// on the local machine.
 
 {{{#!blockquote
 {{{#!code
@@ -248,11 +248,11 @@ ORA1.LOCALDOMAIN =
 
 For Oracle 8i and higher, the format is SID.DOMAIN = (... parameters ...). For Oracle 7 and 8, the format is SID = (... parameters ...). In this example the SID is ORA1. The HOST parameter refers to the DNS name of the host that the database is running on. The SERVICE_NAME refers to the SID of the database as it is known on that host.
 
-When a database instance is created, two special administration users are created: SYS and SYSTEM. These users own the tables that contain privileges and other housekeeping information. For Oracle 9i and higher passwords must be set during the installation process. For versions of Oracle 8i and lower, the default password for the SYSTEM user is ''manager''. The default password for the SYS user is ''change_on_install''.
+When a database instance is created, two special administration users are created: SYS and SYSTEM. These users own the tables that contain privileges and other housekeeping information. For Oracle 9i and higher passwords must be set during the installation process. For versions of Oracle 8i and lower, the default password for the SYSTEM user is //manager//. The default password for the SYS user is //change_on_install//.
 
 Database tables are stored in a file or set of files collectively called a tablespace. The tables owned by the SYS and SYSTEM users are kept in their own tablespace. Though you could create your own tables there, it's not a good idea. You should create your own tablespace.
 
-For Oracle 12c or higher, the directory ''/u01/app/oracle/oradata/cdbora1/ora1'' must exist. If it does not, run the following command to create it:
+For Oracle 12c or higher, the directory ///u01/app/oracle/oradata/cdbora1/ora1// must exist. If it does not, run the following command to create it:
 
 {{{#!blockquote
 {{{#!code
@@ -261,7 +261,7 @@ chown oracle:oinstall /u01/app/oracle/oradata/cdbora1/ora1
 }}}
 }}}
 
-For Oracle 11g or lower, the directory ''/u01/app/oracle/oradata/ora1'' must exist instead. If it does not, run the following command to create it:
+For Oracle 11g or lower, the directory ///u01/app/oracle/oradata/ora1// must exist instead. If it does not, run the following command to create it:
 
 {{{#!blockquote
 {{{#!code
@@ -270,7 +270,7 @@ chown oracle:oinstall /u01/app/oracle/oradata/ora1
 }}}
 }}}
 
-Now, for Oracle 10g or higher, use the following command to log in, replacing '''''password''''' with the password you entered during installation:
+Now, for Oracle 10g or higher, use the following command to log in, replacing '''//password//''' with the password you entered during installation:
 
 {{{#!blockquote
 {{{#!code
@@ -294,7 +294,7 @@ sqlplus system/manager@ora1
 }}}
 }}}
 
-The following queries create a tablespace and temporary tablespace called ''testtablespace'' and ''testtablespacetemp'' with some minimal sizing parameters.
+The following queries create a tablespace and temporary tablespace called //testtablespace// and //testtablespacetemp// with some minimal sizing parameters.
 
 For Oracle 12c or higher, run the following queries:
 
@@ -413,7 +413,7 @@ Any user can access an Oracle database provided that the users environment is co
 
 The user must have read access to the $ORACLE_HOME/network/admin/tnsnames.ora file. Alternatively, an individual user can have a .tnsnames.ora file.
 
-The following command logs ''testuser'' with password ''testpassword'' into the database identified by the SID ''ora1''.
+The following command logs //testuser// with password //testpassword// into the database identified by the SID //ora1//.
 
 {{{#!blockquote
 {{{#!code

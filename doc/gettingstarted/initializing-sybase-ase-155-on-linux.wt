@@ -109,7 +109,7 @@ A screen will appear titled '''Installation Completed'''[[br]]Click Done.
 
 == Starting the Database at Boot Time ==
 
-To start the database at boot time, you need to install a script like the following. Replace ''/opt/sybase'' with whatever directory Sybase ASE is installed in.
+To start the database at boot time, you need to install a script like the following. Replace ///opt/sybase// with whatever directory Sybase ASE is installed in.
 
 {{{#!blockquote
 {{{

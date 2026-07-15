@@ -62,7 +62,7 @@ chmod +x oracle
 }}}
 }}}
 
-Then click Retry. During the '''Completing Database Creation''' phase, two dialogs may pop up with the following error: ORA-00988: missing or invalid password(s). These ''appear'' to be harmless. For each, just click '''OK'''.[[br]][[br]] When database creation is complete, a dialog will pop up with a summary. Click '''OK'''.
+Then click Retry. During the '''Completing Database Creation''' phase, two dialogs may pop up with the following error: ORA-00988: missing or invalid password(s). These //appear// to be harmless. For each, just click '''OK'''.[[br]][[br]] When database creation is complete, a dialog will pop up with a summary. Click '''OK'''.
 
 A dialog will pop up asking you to run root.sh. Just follow the directions on the dialog (they may take a while to complete) and click '''Ok'''[[br]][[br]] On the '''End Of Installation''' screen click '''Exit'''[[br]][[br]] A dialog will pop up asking: Do you really want to exit? Click '''Yes'''.
 

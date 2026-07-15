@@ -8,7 +8,7 @@
 
 <p>After installing Sybase Adaptive Server Enterprise, you can initialize the server by following these steps.</p>
 
-<p>First, ''su'' to the sybase user using the -l option.</p>
+<p>First, <i>su</i> to the sybase user using the -l option.</p>
 
 <blockquote>
 <!-- Generator: GNU source-highlight 3.1.9
@@ -28,19 +28,19 @@ http://www.gnu.org/software/src-highlite -->
 <pre><tt>Do you want <font color="#008080">to</font> start <font color="#FF0000">'srvbuild'</font> now<font color="#990000">?</font> <font color="#990000">[</font>y<font color="#990000">/</font>n<font color="#990000">]</font></tt></pre>
 
 </blockquote>
-<p>Answer 'y'. Next time you log in, you won't be prompted. If you were not prompted with that text, or if you accidentally answer something other than 'y', you can run the ''srvbuild'' command from the command line.</p>
+<p>Answer 'y'. Next time you log in, you won't be prompted. If you were not prompted with that text, or if you accidentally answer something other than 'y', you can run the <i>srvbuild</i> command from the command line.</p>
 
-<p>When you run ''svrbuild'', a dialog will appear, prompting you to <b>Click the check boxes for the types of servers to create and provide names for these servers.</b></p>
+<p>When you run <i>svrbuild</i>, a dialog will appear, prompting you to <b>Click the check boxes for the types of servers to create and provide names for these servers.</b></p>
 
 <p>select <b>Adaptive Server</b><br/>enter localhost<br/>select <b>OK</b></p>
 
 <p>A new dialog will appear, prompting you to enter filenames for <b>Master</b> and <b>Sybsystemprocs</b> device files, and device and database sizes for each.</p>
 
-<p>enter ''/opt/sybase-11.9.2/master.dat'' for the <b>Master</b> device file<br/>enter ''/opt/sybase-11.9.2/sybsystemprocs.dat'' for the <b>Sybsystemprocs</b>device file<br/>Select <b>Edit Advanced Adaptive Server Attributes</b></p>
+<p>enter <i>/opt/sybase-11.9.2/master.dat</i> for the <b>Master</b> device file<br/>enter <i>/opt/sybase-11.9.2/sybsystemprocs.dat</i> for the <b>Sybsystemprocs</b>device file<br/>Select <b>Edit Advanced Adaptive Server Attributes</b></p>
 
 <p>A new dialog will appear, prompting you to enter filenames for the <b>Sybsystemdb</b> device file, size and database sizes.</p>
 
-<p>enter ''/opt/sybase-11.9.2/sybsystemdb.dat'' for the <b>Sybsystemdb</b> device file<br/>Select <b>Go Back</b></p>
+<p>enter <i>/opt/sybase-11.9.2/sybsystemdb.dat</i> for the <b>Sybsystemdb</b> device file<br/>Select <b>Go Back</b></p>
 
 <p>This should return you to the previous dialog.</p>
 
@@ -56,7 +56,7 @@ http://www.gnu.org/software/src-highlite -->
 
 <h2>Starting the Database at Boot Time</h2>
 
-<p>The RPM distribution of Sybase ASE installs a script in /etc/rc.d/init.d which starts the database at boot time. For non-RPM distributions, you may need to install a script like the following. Replace ''/opt/sybase-11.9.2'' with whatever directory Sybase ASE is installed in.</p>
+<p>The RPM distribution of Sybase ASE installs a script in /etc/rc.d/init.d which starts the database at boot time. For non-RPM distributions, you may need to install a script like the following. Replace <i>/opt/sybase-11.9.2</i> with whatever directory Sybase ASE is installed in.</p>
 
 <blockquote>
   <pre> #!/bin/sh

@@ -34,9 +34,9 @@ I've sucessfully installed various versions of DB2 Enterprise Edition, DB2 Perso
 
 When installing versions of DB2 below 9.1, on non-RPM based systems, you'll need to install RPM.
 
-On Ubuntu and Debian, run ''apt-get install rpm''. If your distribution came with RPM, you may be prompted to enter a CD. If not, it will be downloaded from the internet. Once RPM is installed, log in as root and run ''rpm --initdb''.
+On Ubuntu and Debian, run //apt-get install rpm//. If your distribution came with RPM, you may be prompted to enter a CD. If not, it will be downloaded from the internet. Once RPM is installed, log in as root and run //rpm --initdb//.
 
-On systems where the ''rpm'' command resides in /usr/bin, you need to create a symbolic link between ''/usr/bin/rpm'' and ''/bin/rpm'' as follows.
+On systems where the //rpm// command resides in /usr/bin, you need to create a symbolic link between ///usr/bin/rpm// and ///bin/rpm// as follows.
 
 {{{#!blockquote
 {{{#!code
@@ -62,7 +62,7 @@ Each version of DB2 has a slightly different installation procedure. Follow the 
 
 == Creating a Database ==
 
-Now that you have created an instance, you must create a database within the instance. Log in as db2inst1 and run the following command to create a database named ''testdb''.
+Now that you have created an instance, you must create a database within the instance. Log in as db2inst1 and run the following command to create a database named //testdb//.
 
 {{{#!blockquote
 {{{#!code
@@ -72,7 +72,7 @@ db2 "create database testdb"
 
 (Note: Even in modern DB2, database names may only be 8 characters long, or less.)
 
-Should you need to drop a database, the following command drops a database named ''testdb''.
+Should you need to drop a database, the following command drops a database named //testdb//.
 
 {{{#!blockquote
 {{{#!code
@@ -88,7 +88,7 @@ db2 "drop database testdb"
 
 == Accessing a Local Database ==
 
-Accessing a local DB2 database using the db2 client tool is simple. For example, to access a database called ''testdb'' in the ''db2inst1'' instance, owned by the ''db2inst1'' user on the local machine, log in as ''db2inst1'' and run the ''db2'' command. Then use the CONNECT command to connect to a particular database.
+Accessing a local DB2 database using the db2 client tool is simple. For example, to access a database called //testdb// in the //db2inst1// instance, owned by the //db2inst1// user on the local machine, log in as //db2inst1// and run the //db2// command. Then use the CONNECT command to connect to a particular database.
 
 {{{#!blockquote
 {{{#!code
@@ -132,15 +132,15 @@ If you want to access a database on a remote machine, the process is more comple
 Take the following scenario:
 
 ||'''local machine'''||
-||Hostname||''localhost''||
-||Instance||''db2inst1''||
+||Hostname||//localhost//||
+||Instance||//db2inst1//||
 
 ||'''remote machine'''||
-||Hostname||''remotehost''||
-||Instance||''testinst[[br]][[br]] owned by user testinst with password testpassword[[br]] allows remote connections on port 50000[[br]]''||
-||Database||''testdb''||
+||Hostname||//remotehost//||
+||Instance||//testinst[[br]][[br]] owned by user testinst with password testpassword[[br]] allows remote connections on port 50000[[br]]//||
+||Database||//testdb//||
 
-On ''localhost'', in the ''db2inst1'' instance, to create an instance alias named ''remote'' referring to ''testinst'' on ''remotehost'', and a database alias named ''remotedb'' referring to ''testdb'', follow this procedure.
+On //localhost//, in the //db2inst1// instance, to create an instance alias named //remote// referring to //testinst// on //remotehost//, and a database alias named //remotedb// referring to //testdb//, follow this procedure.
 
 log in as db2inst1 on localhost[[br]]create the instance alias using the following commands:
 
@@ -215,7 +215,7 @@ db2 "list database directory"
 }}}
 }}}
 
-If you need to drop a database or instance alias, use the UNCATALOG command. The following commands remove the ''remotedb'' database alias and the ''remote'' instance alias.
+If you need to drop a database or instance alias, use the UNCATALOG command. The following commands remove the //remotedb// database alias and the //remote// instance alias.
 
 {{{#!blockquote
 {{{#!code
@@ -231,9 +231,9 @@ db2 "terminate"
 
 == Using the DB2 Client Program ==
 
-When run with no arguments, the ''db2'' client program provides an interactive shell, prompting you to enter commands or an SQL queries. Commands or queries must be entered on a single line and will run when the Enter or Return key is pressed. To exit, type quit.
+When run with no arguments, the //db2// client program provides an interactive shell, prompting you to enter commands or an SQL queries. Commands or queries must be entered on a single line and will run when the Enter or Return key is pressed. To exit, type quit.
 
-A sample ''db2'' session follows.
+A sample //db2// session follows.
 
 {{{#!blockquote
 {{{#!code
@@ -328,9 +328,9 @@ DB20000I  The QUIT command completed successfully.
 
 IBM DB2 comes with a set of graphical, Java-based utilities for browsing and configuring database instances.
 
-To run the DB2 Information Center or Control Center, you have to log in as a database instance or adminstrative server owner such as ''db2as'' or ''db2inst1''.
+To run the DB2 Information Center or Control Center, you have to log in as a database instance or adminstrative server owner such as //db2as// or //db2inst1//.
 
-Modern versions of DB2 install a compatible JRE but very old versions of DB2 require that the Java Runtime Enviroment version 1.1.8 or higher be installed. Version 1.1.8 is hard to come by these days, but can currently be downloaded from [http://ftp.vim.org/languages/java/jdk/JDK-1.1.8/i386/v3/ vim]. If you install a third party JRE, Make sure that the ''jre'' command is in the PATH environment variable for that user. If it isn't, modify that user's .bashrc to include it.
+Modern versions of DB2 install a compatible JRE but very old versions of DB2 require that the Java Runtime Enviroment version 1.1.8 or higher be installed. Version 1.1.8 is hard to come by these days, but can currently be downloaded from [http://ftp.vim.org/languages/java/jdk/JDK-1.1.8/i386/v3/ vim]. If you install a third party JRE, Make sure that the //jre// command is in the PATH environment variable for that user. If it isn't, modify that user's .bashrc to include it.
 
 If you are running an older JRE and a 2.4 Linux kernel that doesn't support the Native Posix Threading Library (such as on Redhat 8 or earlier), then add the following line to the user's .bashrc
 

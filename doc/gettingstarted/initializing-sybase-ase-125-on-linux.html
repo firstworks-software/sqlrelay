@@ -56,7 +56,7 @@ http://www.gnu.org/software/src-highlite -->
 <pre><tt><b><font color="#0000FF">export</font></b> LD_ASSUME_KERNEL<font color="#990000">=</font><font color="#993399">2.4</font><font color="#990000">.</font><font color="#993399">1</font></tt></pre>
 
 </blockquote>
-<p>Run ''lmgr''. A graphical license manager application should pop up.</p>
+<p>Run <i>lmgr</i>. A graphical license manager application should pop up.</p>
 
 <p><b>If you have a "real" license:</b> Leave the radio button for Ase checked and click Next. When the "Do you have a Sybase Software Asset Management Certificate to register?" dialog pops up, click Yes.</p>
 
@@ -66,7 +66,7 @@ http://www.gnu.org/software/src-highlite -->
 
 <p>The program will bomb out, complaining that it tried to restart the license manager, but couldn't.</p>
 
-<p>Start the license server by running ''startd.sh $SYBASE/$SYBASE_SYSAM'' manually.</p>
+<p>Start the license server by running <i>startd.sh $SYBASE/$SYBASE_SYSAM</i> manually.</p>
 
 <p>Now that the software has been licensed, it can be initialized.</p>
 
@@ -74,7 +74,7 @@ http://www.gnu.org/software/src-highlite -->
 
 <p>After installing Sybase Adaptive Server Enterprise, you can initialize the server by following these steps.</p>
 
-<p>Run ''asecfg''. A dialog will appear. Click <b>Configure a new server</b>.</p>
+<p>Run <i>asecfg</i>. A dialog will appear. Click <b>Configure a new server</b>.</p>
 
 <p>Another dialog will appear, prompting you to <b>Click the check boxes for the types of servers to create and provide names for these servers.</b></p>
 
@@ -82,11 +82,11 @@ http://www.gnu.org/software/src-highlite -->
 
 <p>A new dialog will appear, prompting you to enter filenames for <b>Master</b> and <b>Sybsystemprocs</b> device files, and device and database sizes for each.</p>
 
-<p>enter ''/opt/sybase-12.5/ASE/master.dat'' for the <b>Master</b> device file<br/>enter ''/opt/sybase-12.5/ASE/sybsystemprocs.dat'' for the <b>Sybsystemprocs</b>device file<br/>Select <b>Edit Advanced Adaptive Server Attributes</b></p>
+<p>enter <i>/opt/sybase-12.5/ASE/master.dat</i> for the <b>Master</b> device file<br/>enter <i>/opt/sybase-12.5/ASE/sybsystemprocs.dat</i> for the <b>Sybsystemprocs</b>device file<br/>Select <b>Edit Advanced Adaptive Server Attributes</b></p>
 
 <p>A new dialog will appear, prompting you to enter filenames for the <b>Sybsystemdb</b> device file, size and database sizes.</p>
 
-<p>enter ''/opt/sybase-12.5/ASE/sybsystemdb.dat'' for the <b>Sybsystemdb</b> device file<br/>Select <b>Go Back</b></p>
+<p>enter <i>/opt/sybase-12.5/ASE/sybsystemdb.dat</i> for the <b>Sybsystemdb</b> device file<br/>Select <b>Go Back</b></p>
 
 <p>This should return you to the previous dialog.</p>
 
@@ -102,7 +102,7 @@ http://www.gnu.org/software/src-highlite -->
 
 <h2>Starting the Database at Boot Time</h2>
 
-<p>The RPM distribution of Sybase ASE installs a script in /etc/rc.d/init.d which starts the database at boot time. For non-RPM distributions, you may need to install a script like the following. Replace ''/opt/sybase-12.5'' with whatever directory Sybase ASE is installed in.</p>
+<p>The RPM distribution of Sybase ASE installs a script in /etc/rc.d/init.d which starts the database at boot time. For non-RPM distributions, you may need to install a script like the following. Replace <i>/opt/sybase-12.5</i> with whatever directory Sybase ASE is installed in.</p>
 
 <blockquote>
   <pre> #!/bin/sh

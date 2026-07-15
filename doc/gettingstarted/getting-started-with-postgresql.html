@@ -31,19 +31,19 @@
 
 <a name="rpm"/><h2>RPM-based Linux</h2>
 
-<p>To install <a href="PostgreSQL">PostgreSQL</a> on an RPM-based Linux distribution, install the postgresql, postgresql-server, postgresql-devel and postgresql-libs RPMS using yum or install them from the CD/DVD's that came with your distribution using ''rpm -i''.</p>
+<p>To install <a href="PostgreSQL">PostgreSQL</a> on an RPM-based Linux distribution, install the postgresql, postgresql-server, postgresql-devel and postgresql-libs RPMS using yum or install them from the CD/DVD's that came with your distribution using <i>rpm -i</i>.</p>
 
 <a name="debian"/><h2>Debian and Ubuntu Linux</h2>
 
-<p>To install <a href="PostgreSQL">PostgreSQL</a> on Debian and Ubuntu Linux, run ''apt-get install postgresql'' and ''apt-get install postgresql-dev''.</p>
+<p>To install <a href="PostgreSQL">PostgreSQL</a> on Debian and Ubuntu Linux, run <i>apt-get install postgresql</i> and <i>apt-get install postgresql-dev</i>.</p>
 
 <a name="freebsd"/><h2><a href="FreeBSD">FreeBSD</a></h2>
 
-<p>If you have an internet connection, run ''pkg_add -r postgresql''. When the command completes, <a href="PostgreSQL">PostgreSQL</a> will be installed. You can also install <a href="PostgreSQL">PostgreSQL</a> from the Ports CD(s) that came with your distribution using ''/stand/sysinstall''.</p>
+<p>If you have an internet connection, run <i>pkg_add -r postgresql</i>. When the command completes, <a href="PostgreSQL">PostgreSQL</a> will be installed. You can also install <a href="PostgreSQL">PostgreSQL</a> from the Ports CD(s) that came with your distribution using <i>/stand/sysinstall</i>.</p>
 
 <a name="openbsd"/><h2><a href="OpenBSD">OpenBSD</a></h2>
 
-<p>The postgresql package is available from <a target="_blank" href="ftp://ftp.openbsd.org">ftp.openbsd.org</a> or on CD's that came with your distribution. You can install it using ''pkg_add''. Once the package is installed, you should run the following commands:</p>
+<p>The postgresql package is available from <a target="_blank" href="ftp://ftp.openbsd.org">ftp.openbsd.org</a> or on CD's that came with your distribution. You can install it using <i>pkg_add</i>. Once the package is installed, you should run the following commands:</p>
 
 <blockquote>
 <!-- Generator: GNU source-highlight 3.1.9
@@ -61,7 +61,7 @@ exit</tt></pre>
 </blockquote>
 <a name="netbsd"/><h2><a href="NetBSD">NetBSD</a></h2>
 
-<p>The postgresql and postgresql-clients packages are available from <a target="_blank" href="ftp://ftp.netbsd.org">ftp.netbsd.org</a> or on CD's that came with your distribution. You can install it using ''pkg_add''. Once the package is installed, you should run the following commands:</p>
+<p>The postgresql and postgresql-clients packages are available from <a target="_blank" href="ftp://ftp.netbsd.org">ftp.netbsd.org</a> or on CD's that came with your distribution. You can install it using <i>pkg_add</i>. Once the package is installed, you should run the following commands:</p>
 
 <blockquote>
 <!-- Generator: GNU source-highlight 3.1.9
@@ -89,7 +89,7 @@ exit</tt></pre>
 
 <p>If you want to compile <a href="PostgreSQL">PostgreSQL</a> from source, it should compile cleanly on all of the platforms mentioned above with the exception of SCO <a href="OpenServer">OpenServer</a>. I have never been able to get it to compile on SCO. The source code is available from <a target="_blank" href="http://www.postgresql.org">the PostgreSQL site</a>. You should create a user named postgres and assign it a password, then build and install <a href="PostgreSQL">PostgreSQL</a> using that user. By default, <a href="PostgreSQL">PostgreSQL</a> installs itself in /usr/local/pgsql. Note that you should add /usr/local/pgsql/bin to your PATH environment variable and /usr/local/pgsql/lib to your LD_LIBRARY_PATH environment variable.</p>
 
-<p>After compiling and installing <a href="PostgreSQL">PostgreSQL</a>, you should log in as the postgres user and run ''initdb -D /usr/local/pgsql/var'' to initialize the database.</p>
+<p>After compiling and installing <a href="PostgreSQL">PostgreSQL</a>, you should log in as the postgres user and run <i>initdb -D /usr/local/pgsql/var</i> to initialize the database.</p>
 
 <a name="startingatboot"/><h2>Starting the Database at Boot Time</h2>
 
@@ -124,13 +124,13 @@ exit 0
 
 <p>To configure the database, it must be running, so start it up now.</p>
 
-<p>It's necessary to perform administrative tasks as the ''postgres'' user. Assigning it a password makes this easier.</p>
+<p>It's necessary to perform administrative tasks as the <i>postgres</i> user. Assigning it a password makes this easier.</p>
 
-<p>Once you have assigned the ''postgres'' user a password, log in as ''postgres''.</p>
+<p>Once you have assigned the <i>postgres</i> user a password, log in as <i>postgres</i>.</p>
 
 <p>Many distributions of <a href="PostgreSQL">PostgreSQL</a> are fairly insecure by default; any user on the local machine can connect to the database without supplying a password. Some distributions of <a href="PostgreSQL">PostgreSQL</a> are secured using socket credentials by default.</p>
 
-<p>View the file ''pg_hba.conf'' (usually found in ''/var/lib/pgsql'', ''/var/lib/pgsql/data'' or ''/usr/local/pgsql/var/data'') and look for a line like one of the following:</p>
+<p>View the file <i>pg_hba.conf</i> (usually found in <i>/var/lib/pgsql</i>, <i>/var/lib/pgsql/data</i> or <i>/usr/local/pgsql/var/data</i>) and look for a line like one of the following:</p>
 
 <blockquote>
 <!-- Generator: GNU source-highlight 3.1.9
@@ -146,7 +146,7 @@ local        <font color="#008080">all</font> all <font color="#990000">::</font
 </blockquote>
 <p>If there's a line like one of those in your file, then all database users will have the same password as the system password for the user of the same name, thus, when prompted for a password, enter the password of the user you are logged in as (which should be the postgres user).</p>
 
-<p>By default, <a href="PostgreSQL">PostgreSQL</a> has a database called ''template1'' containing privileges and other housekeeping data and an adminstrative user named ''postgres''. Unless your system uses socket credentials, the ''postgres'' database user initially has no password. To assign it a password (or to override the password assigned by socket credentials), run a command like the following. This command assigns the ''postgres'' user the password ''Passw0rd''.</p>
+<p>By default, <a href="PostgreSQL">PostgreSQL</a> has a database called <i>template1</i> containing privileges and other housekeeping data and an adminstrative user named <i>postgres</i>. Unless your system uses socket credentials, the <i>postgres</i> database user initially has no password. To assign it a password (or to override the password assigned by socket credentials), run a command like the following. This command assigns the <i>postgres</i> user the password <i>Passw0rd</i>.</p>
 
 <p>For <a href="PostgreSQL">PostgreSQL</a> 7 or higher:</p>
 
@@ -168,7 +168,7 @@ http://www.gnu.org/software/src-highlite -->
 <pre><tt>psql <font color="#990000">-</font>c <font color="#FF0000">"ALTER USER postgres WITH PASSWORD Passw0rd"</font> <font color="#990000">-</font>d template1</tt></pre>
 
 </blockquote>
-<p>If your system uses socket credentials and you don't want it to, or if it does not use socket credentials, edit the ''pg_hba.conf'' file (usually found in ''/var/lib/pgsql'', ''/var/lib/pgsql/data'' or ''/usr/local/pgsql/var/data'') and look for lines like the following:</p>
+<p>If your system uses socket credentials and you don't want it to, or if it does not use socket credentials, edit the <i>pg_hba.conf</i> file (usually found in <i>/var/lib/pgsql</i>, <i>/var/lib/pgsql/data</i> or <i>/usr/local/pgsql/var/data</i>) and look for lines like the following:</p>
 
 <blockquote>
 <!-- Generator: GNU source-highlight 3.1.9
@@ -274,7 +274,7 @@ http://www.gnu.org/software/src-highlite -->
 
 <p>If your distribution has no postgresql.conf file, you will have to modify the pg_ctl script and add the -i option to the postmaster startup command. This script has changed a bit from version to version, so it may take a bit of trial and error to find the exact spot in the file to make the modification.</p>
 
-<p>Once you have configured <a href="PostgreSQL">PostgreSQL</a> listen on an inet socket, you must add a line to the ''pg_hba.conf'' file to allow remote hosts to access local databases. The following line allows all hosts in the 192.168.2.0 class C network to access all databases on the local machine, using password authentication.</p>
+<p>Once you have configured <a href="PostgreSQL">PostgreSQL</a> listen on an inet socket, you must add a line to the <i>pg_hba.conf</i> file to allow remote hosts to access local databases. The following line allows all hosts in the 192.168.2.0 class C network to access all databases on the local machine, using password authentication.</p>
 
 <blockquote>
 <!-- Generator: GNU source-highlight 3.1.9
@@ -300,9 +300,9 @@ http://www.gnu.org/software/src-highlite -->
 
 <p>After installation and database initialization, <a href="PostgreSQL">PostgreSQL</a> is ready to use but to do any useful work, you'll have to create a database.</p>
 
-<p>In <a href="PostgreSQL">PostgreSQL</a> terminology, a database is a collection of files managed by a program called ''postmaster''. Technically, any user can create a database and run a ''postmaster'' to manage it, but for simplicity's sake, we'll just make our database owned by the postgres user.</p>
+<p>In <a href="PostgreSQL">PostgreSQL</a> terminology, a database is a collection of files managed by a program called <i>postmaster</i>. Technically, any user can create a database and run a <i>postmaster</i> to manage it, but for simplicity's sake, we'll just make our database owned by the postgres user.</p>
 
-<p>To create a database named ''testdb'' with an administrator named ''postgres'', log in as ''postgres'' and run the following command.</p>
+<p>To create a database named <i>testdb</i> with an administrator named <i>postgres</i>, log in as <i>postgres</i> and run the following command.</p>
 
 <p>For <a href="PostgreSQL">PostgreSQL</a> 7 or higher:</p>
 
@@ -354,9 +354,9 @@ Password<font color="#990000">:</font> Passw0rd</tt></pre>
 </blockquote>
 <p>Once logged in, you can create, drop and modify tables and run queries in the database.</p>
 
-<p><a href="PostgreSQL">PostgreSQL</a> authentication is a complex topic. Lines in the ''pg_hba.conf'' file define access rules and restrictions for hosts and databases. For more information, consult the <a href="PostgreSQL">PostgreSQL</a> <a target="_blank" href="http://www.postgresql.org/idocs/">online documentation</a>.</p>
+<p><a href="PostgreSQL">PostgreSQL</a> authentication is a complex topic. Lines in the <i>pg_hba.conf</i> file define access rules and restrictions for hosts and databases. For more information, consult the <a href="PostgreSQL">PostgreSQL</a> <a target="_blank" href="http://www.postgresql.org/idocs/">online documentation</a>.</p>
 
-<p>To create database users, use commands like the following. This command creates a user named ''testuser'' with password ''testpassword''.</p>
+<p>To create database users, use commands like the following. This command creates a user named <i>testuser</i> with password <i>testpassword</i>.</p>
 
 <p>For <a href="PostgreSQL">PostgreSQL</a> 7 or higher:</p>
 
@@ -381,7 +381,7 @@ Username<font color="#990000">:</font> postgres
 Password<font color="#990000">:</font> Passw0rd</tt></pre>
 
 </blockquote>
-<p>You can now log into the database as ''testuser'' using the following command.</p>
+<p>You can now log into the database as <i>testuser</i> using the following command.</p>
 
 <p>For <a href="PostgreSQL">PostgreSQL</a> 7 or higher:</p>
 
@@ -406,7 +406,7 @@ Username<font color="#990000">:</font> testuser
 Password<font color="#990000">:</font> testpassword</tt></pre>
 
 </blockquote>
-<p>If you want to drop a user, you can do so. The following command drops a user named ''testuser''.</p>
+<p>If you want to drop a user, you can do so. The following command drops a user named <i>testuser</i>.</p>
 
 <p>For <a href="PostgreSQL">PostgreSQL</a> 7 or higher:</p>
 
@@ -433,7 +433,7 @@ Password<font color="#990000">:</font> Passw0rd</tt></pre>
 </blockquote>
 <p>You may want to add stored procedure support to your database. <a href="PostgreSQL">PostgreSQL</a> databases can support stored procedures written in PL/pgSQL, PL/TCL, PL/Perl, and PL/Python. Different versions of <a href="PostgreSQL">PostgreSQL</a> support different procedural languages.</p>
 
-<p>You can use the ''createlang'' command to enable support for a stored procedure language in a particular database. For example, the following commands enable support for all languages in the testdb database.</p>
+<p>You can use the <i>createlang</i> command to enable support for a stored procedure language in a particular database. For example, the following commands enable support for all languages in the testdb database.</p>
 
 <blockquote>
 <!-- Generator: GNU source-highlight 3.1.9
@@ -479,7 +479,7 @@ Password<font color="#990000">:</font> Passw0rd</tt></pre>
 
 <a name="accessing"/><h2>Accessing a Database</h2>
 
-<p>Accessing a <a href="PostgreSQL">PostgreSQL</a> database using the ''psql'' client tool is simple. For example, to access a database called ''testdb'' on the local machine as the ''testuser'' user with password ''testpassword'', use the following command.</p>
+<p>Accessing a <a href="PostgreSQL">PostgreSQL</a> database using the <i>psql</i> client tool is simple. For example, to access a database called <i>testdb</i> on the local machine as the <i>testuser</i> user with password <i>testpassword</i>, use the following command.</p>
 
 <p>For <a href="PostgreSQL">PostgreSQL</a> 7 or higher:</p>
 
@@ -504,7 +504,7 @@ Username<font color="#990000">:</font> testuser
 Password<font color="#990000">:</font> testpassword</tt></pre>
 
 </blockquote>
-<p>If you want to access a database on a remote machine, say on ''testhost'', use the -h option as follows.</p>
+<p>If you want to access a database on a remote machine, say on <i>testhost</i>, use the -h option as follows.</p>
 
 <p>For <a href="PostgreSQL">PostgreSQL</a> 7 or higher:</p>
 
@@ -529,9 +529,9 @@ Password<font color="#990000">:</font> testuser
 Password<font color="#990000">:</font> testpassword</tt></pre>
 
 </blockquote>
-<p>Once you're connected to the database, the ''psql'' client prompts you to enter a query. Queries may be split across multiple lines. To run a query, end it with a semicolon or type \g on the next line. To exit, type \q.</p>
+<p>Once you're connected to the database, the <i>psql</i> client prompts you to enter a query. Queries may be split across multiple lines. To run a query, end it with a semicolon or type \g on the next line. To exit, type \q.</p>
 
-<p>A sample ''psql'' session follows.</p>
+<p>A sample <i>psql</i> session follows.</p>
 
 <blockquote>
 <!-- Generator: GNU source-highlight 3.1.9

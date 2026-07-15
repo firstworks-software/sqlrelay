@@ -54,7 +54,7 @@ export LD_ASSUME_KERNEL=2.4.1
 }}}
 }}}
 
-Run ''lmgr''. A graphical license manager application should pop up.
+Run //lmgr//. A graphical license manager application should pop up.
 
 '''If you have a "real" license:''' Leave the radio button for Ase checked and click Next. When the "Do you have a Sybase Software Asset Management Certificate to register?" dialog pops up, click Yes.
 
@@ -64,7 +64,7 @@ On the screen titled '''"Enter the information provided on your Sybase License C
 
 The program will bomb out, complaining that it tried to restart the license manager, but couldn't.
 
-Start the license server by running ''startd.sh $SYBASE/$SYBASE_SYSAM'' manually.
+Start the license server by running //startd.sh $SYBASE/$SYBASE_SYSAM// manually.
 
 Now that the software has been licensed, it can be initialized.
 
@@ -72,7 +72,7 @@ Now that the software has been licensed, it can be initialized.
 
 After installing Sybase Adaptive Server Enterprise, you can initialize the server by following these steps.
 
-Run ''asecfg''. A dialog will appear. Click '''Configure a new server'''.
+Run //asecfg//. A dialog will appear. Click '''Configure a new server'''.
 
 Another dialog will appear, prompting you to '''Click the check boxes for the types of servers to create and provide names for these servers.'''
 
@@ -80,11 +80,11 @@ select '''Adaptive Server'''[[br]]enter a server name, I usually use localhost b
 
 A new dialog will appear, prompting you to enter filenames for '''Master''' and '''Sybsystemprocs''' device files, and device and database sizes for each.
 
-enter ''/opt/sybase-12.5/ASE/master.dat'' for the '''Master''' device file[[br]]enter ''/opt/sybase-12.5/ASE/sybsystemprocs.dat'' for the '''Sybsystemprocs'''device file[[br]]Select '''Edit Advanced Adaptive Server Attributes'''
+enter ///opt/sybase-12.5/ASE/master.dat// for the '''Master''' device file[[br]]enter ///opt/sybase-12.5/ASE/sybsystemprocs.dat// for the '''Sybsystemprocs'''device file[[br]]Select '''Edit Advanced Adaptive Server Attributes'''
 
 A new dialog will appear, prompting you to enter filenames for the '''Sybsystemdb''' device file, size and database sizes.
 
-enter ''/opt/sybase-12.5/ASE/sybsystemdb.dat'' for the '''Sybsystemdb''' device file[[br]]Select '''Go Back'''
+enter ///opt/sybase-12.5/ASE/sybsystemdb.dat// for the '''Sybsystemdb''' device file[[br]]Select '''Go Back'''
 
 This should return you to the previous dialog.
 
@@ -100,7 +100,7 @@ You should now be returned to the original dialog. Click '''Exit'''.
 
 == Starting the Database at Boot Time ==
 
-The RPM distribution of Sybase ASE installs a script in /etc/rc.d/init.d which starts the database at boot time. For non-RPM distributions, you may need to install a script like the following. Replace ''/opt/sybase-12.5'' with whatever directory Sybase ASE is installed in.
+The RPM distribution of Sybase ASE installs a script in /etc/rc.d/init.d which starts the database at boot time. For non-RPM distributions, you may need to install a script like the following. Replace ///opt/sybase-12.5// with whatever directory Sybase ASE is installed in.
 
 {{{#!blockquote
 {{{

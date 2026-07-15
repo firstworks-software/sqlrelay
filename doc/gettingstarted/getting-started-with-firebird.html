@@ -42,11 +42,11 @@ http://www.gnu.org/software/src-highlite -->
 <pre><tt>apt<font color="#990000">-</font>get <font color="#008080">install</font> firebirdversion<font color="#990000">-</font>super</tt></pre>
 
 </blockquote>
-<p>Where ''version'' is replaced with the version you want to install.</p>
+<p>Where <i>version</i> is replaced with the version you want to install.</p>
 
 <p>Binary and source distributions of Firebird in many different formats (including tar.gz and RPM) for many different platforms are also available at the <a target="_blank" href="https://www.firebirdsql.org/">Firebird web site</a>.</p>
 
-<p>The tar.gz distributions come with an install script. The RPM distributions can be installed using ''rpm -i''.</p>
+<p>The tar.gz distributions come with an install script. The RPM distributions can be installed using <i>rpm -i</i>.</p>
 
 <p>Firebird distributions from the Firebird web site prior to version 1.5 create a directory called /opt/interbase. Firebird versions 1.5 higher create /opt/firebird.</p>
 
@@ -73,9 +73,9 @@ http://www.gnu.org/software/src-highlite -->
 </blockquote>
 <a name="creating"/><h2>Setting Up Your Environment</h2>
 
-<p>At this point, you should set up your environment. The Firebird client is called ''isql-fb'' in some distributions, but in others, it is just called ''isql''. Note that ''unixODBC'' and ''Sybase'' have a client called ''isql'' as well which could be installed in /usr/bin, /usr/local/bin, /opt/sybase*/bin or some other path. If you have ''unixODBC'' or ''Sybase'' installed, you'll have to decide which client you want the ''isql'' command to run. If you want ''isql'' to run the Firebird client, follow the instructions below. Otherwise, you'll have to run the Firebird ''isql'' client by its full pathname.</p>
+<p>At this point, you should set up your environment. The Firebird client is called <i>isql-fb</i> in some distributions, but in others, it is just called <i>isql</i>. Note that <i>unixODBC</i> and <i>Sybase</i> have a client called <i>isql</i> as well which could be installed in /usr/bin, /usr/local/bin, /opt/sybase*/bin or some other path. If you have <i>unixODBC</i> or <i>Sybase</i> installed, you'll have to decide which client you want the <i>isql</i> command to run. If you want <i>isql</i> to run the Firebird client, follow the instructions below. Otherwise, you'll have to run the Firebird <i>isql</i> client by its full pathname.</p>
 
-<p>If you are using Firebird prior to version 1.5, in the configuration script for your shell, add ''/opt/interbase/bin'' to your PATH environment variable. If you are using Firebird version 1.5 or higher, add ''/opt/firebird/bin'' to your PATH environment variable. You can add the paths as follows.</p>
+<p>If you are using Firebird prior to version 1.5, in the configuration script for your shell, add <i>/opt/interbase/bin</i> to your PATH environment variable. If you are using Firebird version 1.5 or higher, add <i>/opt/firebird/bin</i> to your PATH environment variable. You can add the paths as follows.</p>
 
 <p>For Bourne shells:</p>
 
@@ -121,23 +121,23 @@ http://www.gnu.org/software/src-highlite -->
 </blockquote>
 <a name="password"/><h2>Users and Passwords</h2>
 
-<p>Use the ''gsec'' utility to create a new user named ''testuser'' with password ''testpassword''.</p>
+<p>Use the <i>gsec</i> utility to create a new user named <i>testuser</i> with password <i>testpassword</i>.</p>
 
 <p>There are some quirks though...</p>
 
 <p>Firebird user names are case insensitive and can be up to 31 characters long. Firebird passwords are case sensitive and can be up to 32 characters long, but only the first 8 characters are actually used.</p>
 
-<p>Sometimes the /etc/hosts.equiv file must contain an entry for localhost and possibly localhost.localdomain for the ''gsec'' to function at all, so if you're having trouble, try that.</p>
+<p>Sometimes the /etc/hosts.equiv file must contain an entry for localhost and possibly localhost.localdomain for the <i>gsec</i> to function at all, so if you're having trouble, try that.</p>
 
-<p>''gsec'' must always be run as root, and sometimes from within the directory containing the security database.</p>
+<p><i>gsec</i> must always be run as root, and sometimes from within the directory containing the security database.</p>
 
 <p>The instructions are slightly different for different versions of Firebird.</p>
 
-<p>For Firebird 2.0 and higher, the installation process creates a security database called ''security2.fdb'' containing host and user privileges and an administrative user named ''SYSDBA'' with either a randomly generated password or the password ''masterkey''. In the case of a randomly generated password, it is listed in ''SYSDBA.password''.</p>
+<p>For Firebird 2.0 and higher, the installation process creates a security database called <i>security2.fdb</i> containing host and user privileges and an administrative user named <i>SYSDBA</i> with either a randomly generated password or the password <i>masterkey</i>. In the case of a randomly generated password, it is listed in <i>SYSDBA.password</i>.</p>
 
-<p>Run ''gsec'' from within the directory containing the file ''security2.fdb''.</p>
+<p>Run <i>gsec</i> from within the directory containing the file <i>security2.fdb</i>.</p>
 
-<p>Create a user as follows (replacing ''masterkey'' with the sysdba password if it isn't masterkey)...</p>
+<p>Create a user as follows (replacing <i>masterkey</i> with the sysdba password if it isn't masterkey)...</p>
 
 <blockquote>
 <!-- Generator: GNU source-highlight 3.1.9
@@ -150,11 +150,11 @@ Warning <font color="#990000">-</font> maximum <font color="#993399">8</font> si
 GSEC<font color="#990000">&gt;</font> quit </tt></pre>
 
 </blockquote>
-<p>For Firebird 1.5, the installation process creates a security database called ''security.fdb'' containing host and user privileges and an administrative user named ''SYSDBA'' with a randomly generated password. This password is listed in ''SYSDBA.password''.</p>
+<p>For Firebird 1.5, the installation process creates a security database called <i>security.fdb</i> containing host and user privileges and an administrative user named <i>SYSDBA</i> with a randomly generated password. This password is listed in <i>SYSDBA.password</i>.</p>
 
-<p>Run ''gsec'' from within the directory containing the file ''security.fdb''.</p>
+<p>Run <i>gsec</i> from within the directory containing the file <i>security.fdb</i>.</p>
 
-<p>Create a user as follows (replacing ''masterkey'' with the sysdba password if it isn't masterkey)...</p>
+<p>Create a user as follows (replacing <i>masterkey</i> with the sysdba password if it isn't masterkey)...</p>
 
 <blockquote>
 <!-- Generator: GNU source-highlight 3.1.9
@@ -168,9 +168,9 @@ Warning <font color="#990000">-</font> maximum <font color="#993399">8</font> si
 GSEC<font color="#990000">&gt;</font> quit </tt></pre>
 
 </blockquote>
-<p>For Firebird prior to version 1.5, the installation process creates a security database named ''isc4.gdb'' containing host and user privileges and an administrative user named ''SYSDBA'' with a password of either ''changeme'' or ''masterkey''.</p>
+<p>For Firebird prior to version 1.5, the installation process creates a security database named <i>isc4.gdb</i> containing host and user privileges and an administrative user named <i>SYSDBA</i> with a password of either <i>changeme</i> or <i>masterkey</i>.</p>
 
-<p>Run ''gsec'' from within the directory containing the file ''isc4.gdb''.</p>
+<p>Run <i>gsec</i> from within the directory containing the file <i>isc4.gdb</i>.</p>
 
 <p>Create a user as follows...</p>
 
@@ -263,15 +263,15 @@ http://www.gnu.org/software/src-highlite -->
 </blockquote>
 <p>Install this script and run it with the "start" option to start up the database. Running it with the "stop" option shuts the database down. To access a database, it must be running.</p>
 
-<p>Note that the /etc/hosts.equiv file must contain an entry for localhost and possibly localhost.localdomain for the database to start properly and for the "local" tools such as ''ibmgr''/''fbmgr'' to function.</p>
+<p>Note that the /etc/hosts.equiv file must contain an entry for localhost and possibly localhost.localdomain for the database to start properly and for the "local" tools such as <i>ibmgr/fbmgr</i> to function.</p>
 
 <a name="creating"/><h2>Creating a Database</h2>
 
 <p>Firebird should now be ready to use, but to do any useful work, you'll have to create a database.</p>
 
-<p>Though you can create tables in the ''isc4.gdb'' database using the SYSDBA user, it's not a good idea. You should create a new database using a regular user. The following sequence of commands creates a database.</p>
+<p>Though you can create tables in the <i>isc4.gdb</i> database using the SYSDBA user, it's not a good idea. You should create a new database using a regular user. The following sequence of commands creates a database.</p>
 
-<p>For Firebird version 1.5 or higher, these commands create a database called ''/opt/firebird/testdb.gdb'' which is owned by ''testuser''.</p>
+<p>For Firebird version 1.5 or higher, these commands create a database called <i>/opt/firebird/testdb.gdb</i> which is owned by <i>testuser</i>.</p>
 
 <blockquote>
 <!-- Generator: GNU source-highlight 3.1.9
@@ -284,7 +284,7 @@ SQL<font color="#990000">&gt;</font> <font color="#008080">create</font> databas
 SQL<font color="#990000">&gt;</font> quit<font color="#990000">;</font></tt></pre>
 
 </blockquote>
-<p>For Firebird prior to version 1.5, these commands create a database called ''/opt/interbase/testdb.gdb'' which is owned by ''testuser''.</p>
+<p>For Firebird prior to version 1.5, these commands create a database called <i>/opt/interbase/testdb.gdb</i> which is owned by <i>testuser</i>.</p>
 
 <blockquote>
 <!-- Generator: GNU source-highlight 3.1.9
@@ -299,7 +299,7 @@ SQL<font color="#990000">&gt;</font> quit<font color="#990000">;</font></tt></pr
 </blockquote>
 <p>Firebird databases are referenced by the pathname of the database file. If you try to create a database using a file name that already exists or if you forget to enclose the file name in single quotes, you'll get a cryptic error indicating that the 'database' token is unknown. So, if you get a message like that, make sure that you enclosed the file name in single quotes and make sure that the database file that you're trying to create doesn't already exist.</p>
 
-<p>Now you can log into the database as ''testuser''.</p>
+<p>Now you can log into the database as <i>testuser</i>.</p>
 
 <p>Use the following command for Firebird 1.5 or higher.</p>
 
@@ -321,7 +321,7 @@ http://www.gnu.org/software/src-highlite -->
 <pre><tt>isql <font color="#990000">-</font><font color="#008080">u</font> testuser <font color="#990000">-</font><font color="#008080">p</font> testpassword <font color="#990000">/</font>opt<font color="#990000">/</font>interbase<font color="#990000">/</font>testdb<font color="#990000">.</font>gdb</tt></pre>
 
 </blockquote>
-<p>The only users that can drop a database are the user that owns the database and the ''SYSDBA'' user. If you want to drop the database, you can do so using ''isql'' as follows for Firebird version 1.5 or higher...</p>
+<p>The only users that can drop a database are the user that owns the database and the <i>SYSDBA</i> user. If you want to drop the database, you can do so using <i>isql</i> as follows for Firebird version 1.5 or higher...</p>
 
 <blockquote>
 <!-- Generator: GNU source-highlight 3.1.9
@@ -347,7 +347,7 @@ SQL<font color="#990000">&gt;</font> <font color="#008080">drop</font> database<
 SQL<font color="#990000">&gt;</font> quit<font color="#990000">;</font></tt></pre>
 
 </blockquote>
-<p>To delete a user, use the ''gsec'' utility as the root user and delete the appropriate user as follows for Firebird version 1.5 or higher.</p>
+<p>To delete a user, use the <i>gsec</i> utility as the root user and delete the appropriate user as follows for Firebird version 1.5 or higher.</p>
 
 <blockquote>
 <!-- Generator: GNU source-highlight 3.1.9
@@ -381,7 +381,7 @@ GSEC<font color="#990000">&gt;</font> quit</tt></pre>
 
 <a name="accessing"/><h2>Accessing a Database</h2>
 
-<p>To access a database called ''/opt/firebird/testdb.gdb'' on the local machine as the ''testuser'' user with password ''testpassword'', use the following command.</p>
+<p>To access a database called <i>/opt/firebird/testdb.gdb</i> on the local machine as the <i>testuser</i> user with password <i>testpassword</i>, use the following command.</p>
 
 <blockquote>
 <!-- Generator: GNU source-highlight 3.1.9
@@ -391,7 +391,7 @@ http://www.gnu.org/software/src-highlite -->
 <pre><tt>isql <font color="#990000">-</font><font color="#008080">u</font> testuser <font color="#990000">-</font><font color="#008080">p</font> testpassword <font color="#990000">/</font>opt<font color="#990000">/</font>firebird<font color="#990000">/</font>testdb<font color="#990000">.</font>gdb</tt></pre>
 
 </blockquote>
-<p>To connect to a database on a remote machine, prepend the database filename with the remote hostname, followed by a colon. For example, to access a database called ''/opt/firebird/testdb.gdb'' on the remote machine ''testhost'' as the ''testuser'' user with password ''testpassword'', use the following command.</p>
+<p>To connect to a database on a remote machine, prepend the database filename with the remote hostname, followed by a colon. For example, to access a database called <i>/opt/firebird/testdb.gdb</i> on the remote machine <i>testhost</i> as the <i>testuser</i> user with password <i>testpassword</i>, use the following command.</p>
 
 <blockquote>
 <!-- Generator: GNU source-highlight 3.1.9
@@ -403,7 +403,7 @@ http://www.gnu.org/software/src-highlite -->
 </blockquote>
 <p>Once you're connected to the database, the isql client prompts you to enter a query. Queries may be split across multiple lines. To run a query, end it with a semicolon. To exit, type quit;.</p>
 
-<p>A sample ''isql'' session follows.</p>
+<p>A sample <i>isql</i> session follows.</p>
 
 <blockquote>
 <!-- Generator: GNU source-highlight 3.1.9

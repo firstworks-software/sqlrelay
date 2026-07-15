@@ -26,7 +26,7 @@ http://www.gnu.org/software/src-highlite -->
 
 <h2>DB2 Installation</h2>
 
-<p>IBM DB2 V8.1 was once available from the IBM website as a tarball. Extracting the tarball using ''tar xf'' creates a directory called 009_ESE_LNX_32_NLV. Change directories into that directory.</p>
+<p>IBM DB2 V8.1 was once available from the IBM website as a tarball. Extracting the tarball using <i>tar xf</i> creates a directory called 009_ESE_LNX_32_NLV. Change directories into that directory.</p>
 
 <p>On Debian Linux edit the db2/linux/db2_install script and modify the line:</p>
 
@@ -52,7 +52,7 @@ http://www.gnu.org/software/src-highlite -->
 
 <p>When prompted to specify a keyword, type DB2.ESE and press return.</p>
 
-<p>When the script completes, run ''rpm -qa'' and verify that the following RPM's were installed:</p>
+<p>When the script completes, run <i>rpm -qa</i> and verify that the following RPM's were installed:</p>
 
 <p><b>IBM_db2icw81-8.1.0-0<br/>IBM_db2repl81-8.1.0-0<br/>IBM_db2dwcm81-8.1.0-0<br/>IBM_db2dj81-8.1.0-0<br/>IBM_db2icc81-8.1.0-0<br/>IBM_db2icuc81-8.1.0-0<br/>IBM_db2xmls81-8.1.0-0<br/>IBM_db2jdbc81-8.1.0-0<br/>IBM_db2djx81-8.1.0-0<br/>IBM_db2msen81-8.1.0-0<br/>IBM_db2conv81-8.1.0-0<br/>IBM_db2icut81-8.1.0-0<br/>IBM_db2chen81-8.1.0-0<br/>IBM_db2cj81-8.1.0-0<br/>IBM_db2inst81-8.1.0-0<br/>IBM_db2ca81-8.1.0-0<br/>IBM_db2crte81-8.1.0-0<br/>IBM_db2smpl81-8.1.0-0<br/>IBM_db2essg81-8.1.0-0<br/>IBM_db2cliv81-8.1.0-0<br/>IBM_db2secl81-8.1.0-0<br/>IBM_db2jhen81-8.1.0-0<br/>IBM_db2adt81-8.1.0-0<br/>IBM_db2dc81-8.1.0-0<br/>IBM_db2wbdb81-8.1.0-0<br/>IBM_db2conn81-8.1.0-0<br/>IBM_db2engn81-8.1.0-0<br/>IBM_db2pext81-8.1.0-0<br/>IBM_db2icms81-8.1.0-0<br/>IBM_db2sesm81-8.1.0-0<br/>IBM_db2adts81-8.1.0-0<br/>IBM_db2xml81-8.1.0-0<br/>IBM_db2rte81-8.1.0-0<br/>IBM_db2inx81-8.1.0-0<br/>IBM_db2cucs81-8.1.0-0<br/>IBM_db2sp81-8.1.0-0<br/>IBM_db2fs81-8.1.0-0<br/>IBM_db2das81-8.1.0-0<br/>IBM_db2cc81-8.1.0-0<br/></b></p>
 
@@ -60,7 +60,7 @@ http://www.gnu.org/software/src-highlite -->
 
 <p>A DB2 installation consists of an administration server and one or more instances. Each instance contains one or more databases. The administration server coordinates the instances. The administration server is owned by an OS-level user. Each instance is owned by a seperate OS-level user as well.</p>
 
-<p>To create an instance and an administration server, run ''/opt/IBM/db2/V8.1/instance/db2isetup'', a java-based installation program.</p>
+<p>To create an instance and an administration server, run <i>/opt/IBM/db2/V8.1/instance/db2isetup</i>, a java-based installation program.</p>
 
 <p>On the screen titled <b>Welcome to the DB2 Instance Setup wizard</b>, click Next</p>
 
@@ -96,17 +96,17 @@ http://www.gnu.org/software/src-highlite -->
 
 <p>On the screen titled <b>Setup is complete</b>, click Finish.</p>
 
-<p>Should you need to create additional DB2 instances, follow this procedure again using a different user name and skipping the steps pertaining to the Administration Server. The ''/opt/IBM/db2/V8.1/instance/db2ilist'' command lists all of the DB2 instances on the local computer.</p>
+<p>Should you need to create additional DB2 instances, follow this procedure again using a different user name and skipping the steps pertaining to the Administration Server. The <i>/opt/IBM/db2/V8.1/instance/db2ilist</i> command lists all of the DB2 instances on the local computer.</p>
 
-<p>If you need to drop an instance, run ''/opt/IBM/db2/V8.1/instance/db2idrop instancename'', substituting the name of the instance you want to drop for instancename.</p>
+<p>If you need to drop an instance, run <i>/opt/IBM/db2/V8.1/instance/db2idrop instancename</i>, substituting the name of the instance you want to drop for instancename.</p>
 
-<p>The ''/opt/IBM/db2/V8.1/instance/daslist'' command lists all of the DB2 administration servers on the local computer.</p>
+<p>The <i>/opt/IBM/db2/V8.1/instance/daslist</i> command lists all of the DB2 administration servers on the local computer.</p>
 
-<p>If you need to drop an administration server, run ''/opt/IBM/db2/V8.1/instance/dasdrop servername'', substituting the name of the administration server you want to drop for servername.</p>
+<p>If you need to drop an administration server, run <i>/opt/IBM/db2/V8.1/instance/dasdrop servername</i>, substituting the name of the administration server you want to drop for servername.</p>
 
 <h2>Creating a Sample Database</h2>
 
-<p>To create a sample database, run the command ''/opt/ibm/db2/V8.1/bin/db2sampl''.</p>
+<p>To create a sample database, run the command <i>/opt/ibm/db2/V8.1/bin/db2sampl</i>.</p>
 
 <h2>Starting the Database at Boot Time</h2>
 

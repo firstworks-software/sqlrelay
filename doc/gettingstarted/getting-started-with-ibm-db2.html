@@ -39,9 +39,9 @@
 
 <p>When installing versions of DB2 below 9.1, on non-RPM based systems, you'll need to install RPM.</p>
 
-<p>On Ubuntu and Debian, run ''apt-get install rpm''. If your distribution came with RPM, you may be prompted to enter a CD. If not, it will be downloaded from the internet. Once RPM is installed, log in as root and run ''rpm --initdb''.</p>
+<p>On Ubuntu and Debian, run <i>apt-get install rpm</i>. If your distribution came with RPM, you may be prompted to enter a CD. If not, it will be downloaded from the internet. Once RPM is installed, log in as root and run <i>rpm --initdb</i>.</p>
 
-<p>On systems where the ''rpm'' command resides in /usr/bin, you need to create a symbolic link between ''/usr/bin/rpm'' and ''/bin/rpm'' as follows.</p>
+<p>On systems where the <i>rpm</i> command resides in /usr/bin, you need to create a symbolic link between <i>/usr/bin/rpm</i> and <i>/bin/rpm</i> as follows.</p>
 
 <blockquote>
 <!-- Generator: GNU source-highlight 3.1.9
@@ -63,7 +63,7 @@ http://www.gnu.org/software/src-highlite -->
 
 <a name="creating"/><h2>Creating a Database</h2>
 
-<p>Now that you have created an instance, you must create a database within the instance. Log in as db2inst1 and run the following command to create a database named ''testdb''.</p>
+<p>Now that you have created an instance, you must create a database within the instance. Log in as db2inst1 and run the following command to create a database named <i>testdb</i>.</p>
 
 <blockquote>
 <!-- Generator: GNU source-highlight 3.1.9
@@ -75,7 +75,7 @@ http://www.gnu.org/software/src-highlite -->
 </blockquote>
 <p>(Note: Even in modern DB2, database names may only be 8 characters long, or less.)</p>
 
-<p>Should you need to drop a database, the following command drops a database named ''testdb''.</p>
+<p>Should you need to drop a database, the following command drops a database named <i>testdb</i>.</p>
 
 <blockquote>
 <!-- Generator: GNU source-highlight 3.1.9
@@ -89,7 +89,7 @@ http://www.gnu.org/software/src-highlite -->
 
 <a name="accessinglocal"/><h2>Accessing a Local Database</h2>
 
-<p>Accessing a local DB2 database using the db2 client tool is simple. For example, to access a database called ''testdb'' in the ''db2inst1'' instance, owned by the ''db2inst1'' user on the local machine, log in as ''db2inst1'' and run the ''db2'' command. Then use the CONNECT command to connect to a particular database.</p>
+<p>Accessing a local DB2 database using the db2 client tool is simple. For example, to access a database called <i>testdb</i> in the <i>db2inst1</i> instance, owned by the <i>db2inst1</i> user on the local machine, log in as <i>db2inst1</i> and run the <i>db2</i> command. Then use the CONNECT command to connect to a particular database.</p>
 
 <blockquote>
 <!-- Generator: GNU source-highlight 3.1.9
@@ -140,13 +140,13 @@ db2 <font color="#990000">=&gt;</font> connect to testdb
   <tr>
     <td>Hostname
 </td>
-    <td>''localhost''
+    <td><i>localhost</i>
 </td>
   </tr>
   <tr>
     <td>Instance
 </td>
-    <td>''db2inst1''
+    <td><i>db2inst1</i>
 </td>
   </tr>
 </table>
@@ -159,24 +159,24 @@ db2 <font color="#990000">=&gt;</font> connect to testdb
   <tr>
     <td>Hostname
 </td>
-    <td>''remotehost''
+    <td><i>remotehost</i>
 </td>
   </tr>
   <tr>
     <td>Instance
 </td>
-    <td>''testinst<br/><br/> owned by user testinst with password testpassword<br/> allows remote connections on port 50000<br/>''
+    <td><i>testinst<br/><br/> owned by user testinst with password testpassword<br/> allows remote connections on port 50000<br/></i>
 </td>
   </tr>
   <tr>
     <td>Database
 </td>
-    <td>''testdb''
+    <td><i>testdb</i>
 </td>
   </tr>
 </table>
 
-<br/><p>On ''localhost'', in the ''db2inst1'' instance, to create an instance alias named ''remote'' referring to ''testinst'' on ''remotehost'', and a database alias named ''remotedb'' referring to ''testdb'', follow this procedure.</p>
+<br/><p>On <i>localhost</i>, in the <i>db2inst1</i> instance, to create an instance alias named <i>remote</i> referring to <i>testinst</i> on <i>remotehost</i>, and a database alias named <i>remotedb</i> referring to <i>testdb</i>, follow this procedure.</p>
 
 <p>log in as db2inst1 on localhost<br/>create the instance alias using the following commands:</p>
 
@@ -261,7 +261,7 @@ http://www.gnu.org/software/src-highlite -->
 <pre><tt>db2 <font color="#FF0000">"list database directory"</font></tt></pre>
 
 </blockquote>
-<p>If you need to drop a database or instance alias, use the UNCATALOG command. The following commands remove the ''remotedb'' database alias and the ''remote'' instance alias.</p>
+<p>If you need to drop a database or instance alias, use the UNCATALOG command. The following commands remove the <i>remotedb</i> database alias and the <i>remote</i> instance alias.</p>
 
 <blockquote>
 <!-- Generator: GNU source-highlight 3.1.9
@@ -277,9 +277,9 @@ db2 <font color="#FF0000">"terminate"</font></tt></pre>
 </blockquote>
 <a name="usingdb2"/><h2>Using the DB2 Client Program</h2>
 
-<p>When run with no arguments, the ''db2'' client program provides an interactive shell, prompting you to enter commands or an SQL queries. Commands or queries must be entered on a single line and will run when the Enter or Return key is pressed. To exit, type quit.</p>
+<p>When run with no arguments, the <i>db2</i> client program provides an interactive shell, prompting you to enter commands or an SQL queries. Commands or queries must be entered on a single line and will run when the Enter or Return key is pressed. To exit, type quit.</p>
 
-<p>A sample ''db2'' session follows.</p>
+<p>A sample <i>db2</i> session follows.</p>
 
 <blockquote>
 <!-- Generator: GNU source-highlight 3.1.9
@@ -374,9 +374,9 @@ DB20000I  The QUIT command <font color="#008080">completed</font> successfully<f
 
 <p>IBM DB2 comes with a set of graphical, Java-based utilities for browsing and configuring database instances.</p>
 
-<p>To run the DB2 Information Center or Control Center, you have to log in as a database instance or adminstrative server owner such as ''db2as'' or ''db2inst1''.</p>
+<p>To run the DB2 Information Center or Control Center, you have to log in as a database instance or adminstrative server owner such as <i>db2as</i> or <i>db2inst1</i>.</p>
 
-<p>Modern versions of DB2 install a compatible JRE but very old versions of DB2 require that the Java Runtime Enviroment version 1.1.8 or higher be installed. Version 1.1.8 is hard to come by these days, but can currently be downloaded from <a target="_blank" href="http://ftp.vim.org/languages/java/jdk/JDK-1.1.8/i386/v3/">vim</a>. If you install a third party JRE, Make sure that the ''jre'' command is in the PATH environment variable for that user. If it isn't, modify that user's .bashrc to include it.</p>
+<p>Modern versions of DB2 install a compatible JRE but very old versions of DB2 require that the Java Runtime Enviroment version 1.1.8 or higher be installed. Version 1.1.8 is hard to come by these days, but can currently be downloaded from <a target="_blank" href="http://ftp.vim.org/languages/java/jdk/JDK-1.1.8/i386/v3/">vim</a>. If you install a third party JRE, Make sure that the <i>jre</i> command is in the PATH environment variable for that user. If it isn't, modify that user's .bashrc to include it.</p>
 
 <p>If you are running an older JRE and a 2.4 Linux kernel that doesn't support the Native Posix Threading Library (such as on Redhat 8 or earlier), then add the following line to the user's .bashrc</p>
 
