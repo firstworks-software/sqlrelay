@@ -449,10 +449,10 @@
 	assertEqInt(sqlrcur_getLongest($cur,"testdecimal"),3);
 	assertEqInt(sqlrcur_getLongest($cur,6),3);
 	assertEqInt(sqlrcur_getLongest($cur,"testnumeric"),3);
-	assertEqInt(sqlrcur_getLongest($cur,7),6);
-	assertEqInt(sqlrcur_getLongest($cur,"testmoney"),6);
-	assertEqInt(sqlrcur_getLongest($cur,8),6);
-	assertEqInt(sqlrcur_getLongest($cur,"testsmallmoney"),6);
+	assertMoneyEqLen(sqlrcur_getLongest($cur,7),6);
+	assertMoneyEqLen(sqlrcur_getLongest($cur,"testmoney"),6);
+	assertMoneyEqLen(sqlrcur_getLongest($cur,8),6);
+	assertMoneyEqLen(sqlrcur_getLongest($cur,"testsmallmoney"),6);
 	# freetds datetime rendering for the fixture tds version
 	assertEqInt(sqlrcur_getLongest($cur,9),26);
 	assertEqInt(sqlrcur_getLongest($cur,"testdatetime"),26);
@@ -500,8 +500,8 @@
 	assertEqStr(sqlrcur_getField($cur,0,4),"1.5");
 	assertEqStr(sqlrcur_getField($cur,0,5),"1.5");
 	assertEqStr(sqlrcur_getField($cur,0,6),"1.5");
-	assertEqStr(sqlrcur_getField($cur,0,7),"1.0000");
-	assertEqStr(sqlrcur_getField($cur,0,8),"1.0000");
+	assertMoneyEqStr(sqlrcur_getField($cur,0,7),"1.0000");
+	assertMoneyEqStr(sqlrcur_getField($cur,0,8),"1.0000");
 	# freetds datetime rendering for the fixture tds version
 	assertEqStr(sqlrcur_getField($cur,0,9),
 		"Jan  1 2001 01:00:00:000AM");
@@ -519,8 +519,8 @@
 	assertEqStr(sqlrcur_getField($cur,7,4),"8.5");
 	assertEqStr(sqlrcur_getField($cur,7,5),"8.5");
 	assertEqStr(sqlrcur_getField($cur,7,6),"8.5");
-	assertEqStr(sqlrcur_getField($cur,7,7),"8.0000");
-	assertEqStr(sqlrcur_getField($cur,7,8),"8.0000");
+	assertMoneyEqStr(sqlrcur_getField($cur,7,7),"8.0000");
+	assertMoneyEqStr(sqlrcur_getField($cur,7,8),"8.0000");
 	# freetds datetime rendering for the fixture tds version
 	assertEqStr(sqlrcur_getField($cur,7,9),
 		"Jan  1 2008 08:00:00:000AM");
@@ -542,8 +542,8 @@
 	assertEqInt(sqlrcur_getFieldLength($cur,0,4),3);
 	assertEqInt(sqlrcur_getFieldLength($cur,0,5),3);
 	assertEqInt(sqlrcur_getFieldLength($cur,0,6),3);
-	assertEqInt(sqlrcur_getFieldLength($cur,0,7),6);
-	assertEqInt(sqlrcur_getFieldLength($cur,0,8),6);
+	assertMoneyEqLen(sqlrcur_getFieldLength($cur,0,7),6);
+	assertMoneyEqLen(sqlrcur_getFieldLength($cur,0,8),6);
 	# freetds datetime rendering for the fixture tds version
 	assertEqInt(sqlrcur_getFieldLength($cur,0,9),26);
 	assertEqInt(sqlrcur_getFieldLength($cur,0,10),26);
@@ -558,8 +558,8 @@
 	assertEqInt(sqlrcur_getFieldLength($cur,7,4),3);
 	assertEqInt(sqlrcur_getFieldLength($cur,7,5),3);
 	assertEqInt(sqlrcur_getFieldLength($cur,7,6),3);
-	assertEqInt(sqlrcur_getFieldLength($cur,7,7),6);
-	assertEqInt(sqlrcur_getFieldLength($cur,7,8),6);
+	assertMoneyEqLen(sqlrcur_getFieldLength($cur,7,7),6);
+	assertMoneyEqLen(sqlrcur_getFieldLength($cur,7,8),6);
 	# freetds datetime rendering for the fixture tds version
 	assertEqInt(sqlrcur_getFieldLength($cur,7,9),26);
 	assertEqInt(sqlrcur_getFieldLength($cur,7,10),26);
@@ -578,8 +578,8 @@
 	assertEqStr(sqlrcur_getField($cur,0,"testfloat"),"1.5");
 	assertEqStr(sqlrcur_getField($cur,0,"testdecimal"),"1.5");
 	assertEqStr(sqlrcur_getField($cur,0,"testnumeric"),"1.5");
-	assertEqStr(sqlrcur_getField($cur,0,"testmoney"),"1.0000");
-	assertEqStr(sqlrcur_getField($cur,0,"testsmallmoney"),"1.0000");
+	assertMoneyEqStr(sqlrcur_getField($cur,0,"testmoney"),"1.0000");
+	assertMoneyEqStr(sqlrcur_getField($cur,0,"testsmallmoney"),"1.0000");
 	# freetds datetime rendering for the fixture tds version
 	assertEqStr(sqlrcur_getField($cur,0,"testdatetime"),
 		"Jan  1 2001 01:00:00:000AM");
@@ -597,8 +597,8 @@
 	assertEqStr(sqlrcur_getField($cur,7,"testfloat"),"8.5");
 	assertEqStr(sqlrcur_getField($cur,7,"testdecimal"),"8.5");
 	assertEqStr(sqlrcur_getField($cur,7,"testnumeric"),"8.5");
-	assertEqStr(sqlrcur_getField($cur,7,"testmoney"),"8.0000");
-	assertEqStr(sqlrcur_getField($cur,7,"testsmallmoney"),"8.0000");
+	assertMoneyEqStr(sqlrcur_getField($cur,7,"testmoney"),"8.0000");
+	assertMoneyEqStr(sqlrcur_getField($cur,7,"testsmallmoney"),"8.0000");
 	# freetds datetime rendering for the fixture tds version
 	assertEqStr(sqlrcur_getField($cur,7,"testdatetime"),
 		"Jan  1 2008 08:00:00:000AM");
@@ -620,8 +620,8 @@
 	assertEqInt(sqlrcur_getFieldLength($cur,0,"testfloat"),3);
 	assertEqInt(sqlrcur_getFieldLength($cur,0,"testdecimal"),3);
 	assertEqInt(sqlrcur_getFieldLength($cur,0,"testnumeric"),3);
-	assertEqInt(sqlrcur_getFieldLength($cur,0,"testmoney"),6);
-	assertEqInt(sqlrcur_getFieldLength($cur,0,"testsmallmoney"),6);
+	assertMoneyEqLen(sqlrcur_getFieldLength($cur,0,"testmoney"),6);
+	assertMoneyEqLen(sqlrcur_getFieldLength($cur,0,"testsmallmoney"),6);
 	# freetds datetime rendering for the fixture tds version
 	assertEqInt(sqlrcur_getFieldLength($cur,0,"testdatetime"),26);
 	assertEqInt(sqlrcur_getFieldLength($cur,0,"testsmalldatetime"),
@@ -637,8 +637,8 @@
 	assertEqInt(sqlrcur_getFieldLength($cur,7,"testfloat"),3);
 	assertEqInt(sqlrcur_getFieldLength($cur,7,"testdecimal"),3);
 	assertEqInt(sqlrcur_getFieldLength($cur,7,"testnumeric"),3);
-	assertEqInt(sqlrcur_getFieldLength($cur,7,"testmoney"),6);
-	assertEqInt(sqlrcur_getFieldLength($cur,7,"testsmallmoney"),6);
+	assertMoneyEqLen(sqlrcur_getFieldLength($cur,7,"testmoney"),6);
+	assertMoneyEqLen(sqlrcur_getFieldLength($cur,7,"testsmallmoney"),6);
 	# freetds datetime rendering for the fixture tds version
 	assertEqInt(sqlrcur_getFieldLength($cur,7,"testdatetime"),26);
 	assertEqInt(sqlrcur_getFieldLength($cur,7,"testsmalldatetime"),
@@ -659,8 +659,8 @@
 	assertEqStr($fields[4],"1.5");
 	assertEqStr($fields[5],"1.5");
 	assertEqStr($fields[6],"1.5");
-	assertEqStr($fields[7],"1.0000");
-	assertEqStr($fields[8],"1.0000");
+	assertMoneyEqStr($fields[7],"1.0000");
+	assertMoneyEqStr($fields[8],"1.0000");
 	# freetds datetime rendering for the fixture tds version
 	assertEqStr($fields[9],"Jan  1 2001 01:00:00:000AM");
 	assertEqStr($fields[10],"Jan  1 2001 01:00:00:000AM");
@@ -681,8 +681,8 @@
 	assertEqInt($fieldlens[4],3);
 	assertEqInt($fieldlens[5],3);
 	assertEqInt($fieldlens[6],3);
-	assertEqInt($fieldlens[7],6);
-	assertEqInt($fieldlens[8],6);
+	assertMoneyEqLen($fieldlens[7],6);
+	assertMoneyEqLen($fieldlens[8],6);
 	# freetds datetime rendering for the fixture tds version
 	assertEqInt($fieldlens[9],26);
 	assertEqInt($fieldlens[10],26);

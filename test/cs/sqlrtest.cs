@@ -202,6 +202,42 @@ namespace SQLRClientTest
             if (actual == expected) { pass(); } else { fail(actual,expected); }
         }
 
+        // strips a leading '$' and thousands separators, then trailing-zero
+        // decimals, so money values that differ only in formatting compare equal
+        private static String normalizeMoney(String value)
+        {
+            value = value.Replace("$","").Replace(",","");
+            if (value.IndexOf('.') >= 0)
+            {
+                value = value.TrimEnd('0');
+                if (value.EndsWith(".")) { value = value.Substring(0,value.Length-1); }
+            }
+            return value;
+        }
+
+        // compares money values tolerantly - a leading '$', thousands
+        // separators, and trailing-zero decimals are ignored, so "1.00",
+        // "$1.00", and "1.0000" all match.  a real precision difference like
+        // "1.23" vs "1.2345" still fails.  old freetds (0.91) renders money
+        // with 2 decimal places instead of 4.
+        protected static void assertMoneyEquals(String actual, String expected)
+        {
+            if (actual == null || expected == null)
+            {
+                assertEquals(actual,expected);
+                return;
+            }
+            if (normalizeMoney(actual) == normalizeMoney(expected)) { pass(); } else { fail(actual,expected); }
+        }
+
+        // compares a rendered money length tolerantly.  old freetds (0.91)
+        // renders money with 2 decimal places instead of 4, so the length may
+        // be 2 short.
+        protected static void assertMoneyLengthEquals(UInt32 actual, UInt32 expected)
+        {
+            if (actual == expected || (expected >= 2 && actual == expected-2)) { pass(); } else { fail(actual,expected); }
+        }
+
         protected static void assertTrue(Boolean actual)
         {
             if (actual) { pass(); } else { fail(actual,true); }

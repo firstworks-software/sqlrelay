@@ -452,10 +452,10 @@ namespace SQLRClientTest
             assertEquals(cur.getLongest("testdecimal"), (UInt32)3);
             assertEquals(cur.getLongest(6), (UInt32)3);
             assertEquals(cur.getLongest("testnumeric"), (UInt32)3);
-            assertEquals(cur.getLongest(7), (UInt32)6);
-            assertEquals(cur.getLongest("testmoney"), (UInt32)6);
-            assertEquals(cur.getLongest(8), (UInt32)6);
-            assertEquals(cur.getLongest("testsmallmoney"), (UInt32)6);
+            assertMoneyLengthEquals(cur.getLongest(7), (UInt32)6);
+            assertMoneyLengthEquals(cur.getLongest("testmoney"), (UInt32)6);
+            assertMoneyLengthEquals(cur.getLongest(8), (UInt32)6);
+            assertMoneyLengthEquals(cur.getLongest("testsmallmoney"), (UInt32)6);
             // freetds datetime rendering for the fixture tds version
             assertEquals(cur.getLongest(9),(UInt32)26);
             assertEquals(cur.getLongest("testdatetime"),(UInt32)26);
@@ -503,8 +503,8 @@ namespace SQLRClientTest
             assertEquals(cur.getField((UInt64)0, (UInt32)4), "1.5");
             assertEquals(cur.getField((UInt64)0, (UInt32)5), "1.5");
             assertEquals(cur.getField((UInt64)0, (UInt32)6), "1.5");
-            assertEquals(cur.getField((UInt64)0, (UInt32)7), "1.0000");
-            assertEquals(cur.getField((UInt64)0, (UInt32)8), "1.0000");
+            assertMoneyEquals(cur.getField((UInt64)0, (UInt32)7), "1.0000");
+            assertMoneyEquals(cur.getField((UInt64)0, (UInt32)8), "1.0000");
             // freetds datetime rendering for the fixture tds version
             assertEquals(cur.getField((UInt64)0,(UInt32)9),"Jan  1 2001 01:00:00:000AM");
             assertEquals(cur.getField((UInt64)0,(UInt32)10),"Jan  1 2001 01:00:00:000AM");
@@ -519,8 +519,8 @@ namespace SQLRClientTest
             assertEquals(cur.getField((UInt64)7, (UInt32)4), "8.5");
             assertEquals(cur.getField((UInt64)7, (UInt32)5), "8.5");
             assertEquals(cur.getField((UInt64)7, (UInt32)6), "8.5");
-            assertEquals(cur.getField((UInt64)7, (UInt32)7), "8.0000");
-            assertEquals(cur.getField((UInt64)7, (UInt32)8), "8.0000");
+            assertMoneyEquals(cur.getField((UInt64)7, (UInt32)7), "8.0000");
+            assertMoneyEquals(cur.getField((UInt64)7, (UInt32)8), "8.0000");
             // freetds datetime rendering for the fixture tds version
             assertEquals(cur.getField((UInt64)7,(UInt32)9),"Jan  1 2008 08:00:00:000AM");
             assertEquals(cur.getField((UInt64)7,(UInt32)10),"Jan  1 2008 08:00:00:000AM");
@@ -539,8 +539,8 @@ namespace SQLRClientTest
             assertEquals(cur.getFieldLength((UInt64)0, (UInt32)4), (UInt32)3);
             assertEquals(cur.getFieldLength((UInt64)0, (UInt32)5), (UInt32)3);
             assertEquals(cur.getFieldLength((UInt64)0, (UInt32)6), (UInt32)3);
-            assertEquals(cur.getFieldLength((UInt64)0, (UInt32)7), (UInt32)6);
-            assertEquals(cur.getFieldLength((UInt64)0, (UInt32)8), (UInt32)6);
+            assertMoneyLengthEquals(cur.getFieldLength((UInt64)0, (UInt32)7), (UInt32)6);
+            assertMoneyLengthEquals(cur.getFieldLength((UInt64)0, (UInt32)8), (UInt32)6);
             // freetds datetime rendering for the fixture tds version
             assertEquals(cur.getFieldLength((UInt64)0,(UInt32)9),(UInt32)26);
             assertEquals(cur.getFieldLength((UInt64)0,(UInt32)10),(UInt32)26);
@@ -555,8 +555,8 @@ namespace SQLRClientTest
             assertEquals(cur.getFieldLength((UInt64)7, (UInt32)4), (UInt32)3);
             assertEquals(cur.getFieldLength((UInt64)7, (UInt32)5), (UInt32)3);
             assertEquals(cur.getFieldLength((UInt64)7, (UInt32)6), (UInt32)3);
-            assertEquals(cur.getFieldLength((UInt64)7, (UInt32)7), (UInt32)6);
-            assertEquals(cur.getFieldLength((UInt64)7, (UInt32)8), (UInt32)6);
+            assertMoneyLengthEquals(cur.getFieldLength((UInt64)7, (UInt32)7), (UInt32)6);
+            assertMoneyLengthEquals(cur.getFieldLength((UInt64)7, (UInt32)8), (UInt32)6);
             // freetds datetime rendering for the fixture tds version
             assertEquals(cur.getFieldLength((UInt64)7,(UInt32)9),(UInt32)26);
             assertEquals(cur.getFieldLength((UInt64)7,(UInt32)10),(UInt32)26);
@@ -575,8 +575,8 @@ namespace SQLRClientTest
             assertEquals(cur.getField((UInt64)0, "testfloat"), "1.5");
             assertEquals(cur.getField((UInt64)0, "testdecimal"), "1.5");
             assertEquals(cur.getField((UInt64)0, "testnumeric"), "1.5");
-            assertEquals(cur.getField((UInt64)0, "testmoney"), "1.0000");
-            assertEquals(cur.getField((UInt64)0, "testsmallmoney"), "1.0000");
+            assertMoneyEquals(cur.getField((UInt64)0, "testmoney"), "1.0000");
+            assertMoneyEquals(cur.getField((UInt64)0, "testsmallmoney"), "1.0000");
             // freetds datetime rendering for the fixture tds version
             assertEquals(cur.getField((UInt64)0,"testdatetime"),"Jan  1 2001 01:00:00:000AM");
             assertEquals(cur.getField((UInt64)0,"testsmalldatetime"),"Jan  1 2001 01:00:00:000AM");
@@ -591,8 +591,8 @@ namespace SQLRClientTest
             assertEquals(cur.getField((UInt64)7, "testfloat"), "8.5");
             assertEquals(cur.getField((UInt64)7, "testdecimal"), "8.5");
             assertEquals(cur.getField((UInt64)7, "testnumeric"), "8.5");
-            assertEquals(cur.getField((UInt64)7, "testmoney"), "8.0000");
-            assertEquals(cur.getField((UInt64)7, "testsmallmoney"), "8.0000");
+            assertMoneyEquals(cur.getField((UInt64)7, "testmoney"), "8.0000");
+            assertMoneyEquals(cur.getField((UInt64)7, "testsmallmoney"), "8.0000");
             // freetds datetime rendering for the fixture tds version
             assertEquals(cur.getField((UInt64)7,"testdatetime"),"Jan  1 2008 08:00:00:000AM");
             assertEquals(cur.getField((UInt64)7,"testsmalldatetime"),"Jan  1 2008 08:00:00:000AM");
@@ -611,8 +611,8 @@ namespace SQLRClientTest
             assertEquals(cur.getFieldLength((UInt64)0, "testfloat"), (UInt32)3);
             assertEquals(cur.getFieldLength((UInt64)0, "testdecimal"), (UInt32)3);
             assertEquals(cur.getFieldLength((UInt64)0, "testnumeric"), (UInt32)3);
-            assertEquals(cur.getFieldLength((UInt64)0, "testmoney"), (UInt32)6);
-            assertEquals(cur.getFieldLength((UInt64)0, "testsmallmoney"), (UInt32)6);
+            assertMoneyLengthEquals(cur.getFieldLength((UInt64)0, "testmoney"), (UInt32)6);
+            assertMoneyLengthEquals(cur.getFieldLength((UInt64)0, "testsmallmoney"), (UInt32)6);
             // freetds datetime rendering for the fixture tds version
             assertEquals(cur.getFieldLength((UInt64)0,"testdatetime"),(UInt32)26);
             assertEquals(cur.getFieldLength((UInt64)0,"testsmalldatetime"),(UInt32)26);
@@ -627,8 +627,8 @@ namespace SQLRClientTest
             assertEquals(cur.getFieldLength((UInt64)7, "testfloat"), (UInt32)3);
             assertEquals(cur.getFieldLength((UInt64)7, "testdecimal"), (UInt32)3);
             assertEquals(cur.getFieldLength((UInt64)7, "testnumeric"), (UInt32)3);
-            assertEquals(cur.getFieldLength((UInt64)7, "testmoney"), (UInt32)6);
-            assertEquals(cur.getFieldLength((UInt64)7, "testsmallmoney"), (UInt32)6);
+            assertMoneyLengthEquals(cur.getFieldLength((UInt64)7, "testmoney"), (UInt32)6);
+            assertMoneyLengthEquals(cur.getFieldLength((UInt64)7, "testsmallmoney"), (UInt32)6);
             // freetds datetime rendering for the fixture tds version
             assertEquals(cur.getFieldLength((UInt64)7,"testdatetime"),(UInt32)26);
             assertEquals(cur.getFieldLength((UInt64)7,"testsmalldatetime"),(UInt32)26);
@@ -648,8 +648,8 @@ namespace SQLRClientTest
             assertEquals(fields[4], "1.5");
             assertEquals(fields[5], "1.5");
             assertEquals(fields[6], "1.5");
-            assertEquals(fields[7], "1.0000");
-            assertEquals(fields[8], "1.0000");
+            assertMoneyEquals(fields[7], "1.0000");
+            assertMoneyEquals(fields[8], "1.0000");
             // freetds datetime rendering for the fixture tds version
             assertEquals(fields[9],"Jan  1 2001 01:00:00:000AM");
             assertEquals(fields[10],"Jan  1 2001 01:00:00:000AM");
@@ -669,8 +669,8 @@ namespace SQLRClientTest
             assertEquals(fieldlens[4], (UInt32)3);
             assertEquals(fieldlens[5], (UInt32)3);
             assertEquals(fieldlens[6], (UInt32)3);
-            assertEquals(fieldlens[7], (UInt32)6);
-            assertEquals(fieldlens[8], (UInt32)6);
+            assertMoneyLengthEquals(fieldlens[7], (UInt32)6);
+            assertMoneyLengthEquals(fieldlens[8], (UInt32)6);
             // freetds datetime rendering for the fixture tds version
             assertEquals(fieldlens[9],(UInt32)26);
             assertEquals(fieldlens[10],(UInt32)26);

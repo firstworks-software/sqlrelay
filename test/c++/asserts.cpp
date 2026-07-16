@@ -206,6 +206,75 @@ void assertEquals(double actual, double expected) {
 	}
 }
 
+// strips a leading '$' and thousands separators, then trailing-zero decimal
+// digits, so money values that differ only in formatting compare equal
+static char *normalizeMoney(const char *value) {
+
+	char	*result=charstring::duplicate(value);
+
+	// drop '$' and ','
+	size_t	j=0;
+	for (size_t i=0; result[i]; i++) {
+		if (result[i]!='$' && result[i]!=',') {
+			result[j++]=result[i];
+		}
+	}
+	result[j]='\0';
+
+	// drop trailing-zero decimals
+	if (charstring::contains(result,'.')) {
+		while (j>0 && result[j-1]=='0') {
+			result[--j]='\0';
+		}
+		if (j>0 && result[j-1]=='.') {
+			result[--j]='\0';
+		}
+	}
+	return result;
+}
+
+// compares money values tolerantly - a leading '$', thousands separators, and
+// trailing-zero decimals are ignored, so "1.00", "$1.00", and "1.0000" all
+// match.  a real precision difference like "1.23" vs "1.2345" still fails.
+// old freetds (0.91) renders money with 2 decimal places instead of 4.
+void assertMoneyEquals(const char *actual, const char *expected) {
+
+	if (!expected || !actual) {
+		assertEquals(actual,expected);
+		return;
+	}
+
+	char	*a=normalizeMoney(actual);
+	char	*e=normalizeMoney(expected);
+
+	if (!charstring::compare(a,e)) {
+		stdoutput.printf("%s ",success);
+	} else {
+		stdoutput.printf("%s\n",failure);
+		stdoutput.printf("%s!=%s\n",nullSafe(actual),nullSafe(expected));
+		printErrors();
+		status=1;
+	}
+
+	delete[] a;
+	delete[] e;
+}
+
+// compares a rendered money length tolerantly.  old freetds (0.91) renders
+// money with 2 decimal places instead of 4, so the length may be 2 short.
+void assertMoneyLengthEquals(uint32_t actual, int expected) {
+
+	if (actual==(uint32_t)expected ||
+			(expected>=2 && actual==(uint32_t)(expected-2))) {
+		stdoutput.printf("%s ",success);
+	} else {
+		stdoutput.printf("%s\n",failure);
+		stdoutput.printf("%d!=%d\n",actual,expected);
+		printErrors();
+		status=1;
+	}
+}
+
 void assertTrue(bool actual) {
 
 	if (actual) {

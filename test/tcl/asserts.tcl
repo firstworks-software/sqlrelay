@@ -193,6 +193,52 @@ proc assertInResultSet {cur column value} {
 	set status 1
 }
 
+# Tolerant money asserts.  Old freetds (0.91) renders sap ase money/smallmoney
+# with 2 decimal places ("1.00") instead of 4 ("1.0000"), and reports a
+# rendered length 2 chars shorter.  These asserts ignore a leading '$',
+# thousands commas, and trailing-zero decimals, but still fail on real
+# precision loss ("1.23" != "1.2345").
+
+proc normalizeMoney {v} {
+
+	set v [string map {$ {} , {}} $v]
+	if {[string first "." $v] >= 0} {
+		set v [string trimright $v "0"]
+		set v [string trimright $v "."]
+	}
+	return $v
+}
+
+proc assertMoneyEqual {actual expected} {
+
+	global status
+	global success
+	global failure
+	if {[normalizeMoney $actual] eq [normalizeMoney $expected]} {
+		puts -nonewline "$success "
+	} else {
+		puts $failure
+		puts "$actual != $expected"
+		printErrors
+		set status 1
+	}
+}
+
+proc assertMoneyEqualLen {actual expected} {
+
+	global status
+	global success
+	global failure
+	if {$actual==$expected || $actual==$expected-2} {
+		puts -nonewline "$success "
+	} else {
+		puts $failure
+		puts "$actual != $expected"
+		printErrors
+		set status 1
+	}
+}
+
 proc reportTestStatus {} {
 
 	global status

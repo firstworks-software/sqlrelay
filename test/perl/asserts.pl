@@ -183,6 +183,68 @@ sub assertInResultSet {
 	$status=1;
 }
 
+# strips a leading '$' and thousands separators, then trailing-zero decimal
+# digits, so money values that differ only in formatting compare equal
+sub normalizeMoney {
+
+	my ($value)=@_;
+
+	if (!defined($value)) {
+		return $value;
+	}
+
+	# drop '$' and ','
+	$value=~s/[\$,]//g;
+
+	# drop trailing-zero decimals
+	if (index($value,".")>=0) {
+		$value=~s/0+$//;
+		$value=~s/\.$//;
+	}
+	return $value;
+}
+
+# compares money values tolerantly - a leading '$', thousands separators, and
+# trailing-zero decimals are ignored, so "1.00", "$1.00", and "1.0000" all
+# match.  a real precision difference like "1.23" vs "1.2345" still fails.
+# old freetds (0.91) renders money with 2 decimal places instead of 4.
+sub assertMoneyEquals {
+
+	my ($actual,$expected)=@_;
+
+	if (!defined($expected) || !defined($actual)) {
+		assertEquals($actual,$expected);
+		return;
+	}
+
+	if (normalizeMoney($actual) eq normalizeMoney($expected)) {
+		print("$success ");
+	} else {
+		print("$failure\n");
+		print("$actual!=$expected\n");
+		printErrors();
+		$status=1;
+	}
+}
+
+# compares a rendered money length tolerantly.  old freetds (0.91) renders
+# money with 2 decimal places instead of 4, so the length may be 2 short.
+sub assertMoneyLengthEquals {
+
+	my ($actual,$expected)=@_;
+
+	if (defined($actual) &&
+		($actual==$expected || $actual==$expected-2)) {
+		print("$success ");
+	} else {
+		print("$failure\n");
+		my $val=(defined($actual))?$actual:"<undef>";
+		print("$val!=$expected\n");
+		printErrors();
+		$status=1;
+	}
+}
+
 sub reportTestStatus {
 
 	if ($status==0) {

@@ -369,10 +369,10 @@ assertEqual [$cur getLongestByIndex 5] 3
 assertEqual [$cur getLongestByName "testdecimal"] 3
 assertEqual [$cur getLongestByIndex 6] 3
 assertEqual [$cur getLongestByName "testnumeric"] 3
-assertEqual [$cur getLongestByIndex 7] 6
-assertEqual [$cur getLongestByName "testmoney"] 6
-assertEqual [$cur getLongestByIndex 8] 6
-assertEqual [$cur getLongestByName "testsmallmoney"] 6
+assertMoneyEqualLen [$cur getLongestByIndex 7] 6
+assertMoneyEqualLen [$cur getLongestByName "testmoney"] 6
+assertMoneyEqualLen [$cur getLongestByIndex 8] 6
+assertMoneyEqualLen [$cur getLongestByName "testsmallmoney"] 6
 # freetds datetime rendering for the fixture tds version
 assertEqual [$cur getLongestByIndex 9] 26
 assertEqual [$cur getLongestByName "testdatetime"] 26
@@ -420,8 +420,8 @@ assertEqual [$cur getFieldByIndex 0 3] "1.5"
 assertEqual [$cur getFieldByIndex 0 4] "1.5"
 assertEqual [$cur getFieldByIndex 0 5] "1.5"
 assertEqual [$cur getFieldByIndex 0 6] "1.5"
-assertEqual [$cur getFieldByIndex 0 7] "1.0000"
-assertEqual [$cur getFieldByIndex 0 8] "1.0000"
+assertMoneyEqual [$cur getFieldByIndex 0 7] "1.0000"
+assertMoneyEqual [$cur getFieldByIndex 0 8] "1.0000"
 # freetds datetime rendering for the fixture tds version
 assertEqual [$cur getFieldByIndex 0 9] "Jan  1 2001 01:00:00:000AM"
 assertEqual [$cur getFieldByIndex 0 10] "Jan  1 2001 01:00:00:000AM"
@@ -436,8 +436,8 @@ assertEqual [$cur getFieldByIndex 7 3] "8.5"
 assertEqual [$cur getFieldByIndex 7 4] "8.5"
 assertEqual [$cur getFieldByIndex 7 5] "8.5"
 assertEqual [$cur getFieldByIndex 7 6] "8.5"
-assertEqual [$cur getFieldByIndex 7 7] "8.0000"
-assertEqual [$cur getFieldByIndex 7 8] "8.0000"
+assertMoneyEqual [$cur getFieldByIndex 7 7] "8.0000"
+assertMoneyEqual [$cur getFieldByIndex 7 8] "8.0000"
 # freetds datetime rendering for the fixture tds version
 assertEqual [$cur getFieldByIndex 7 9] "Jan  1 2008 08:00:00:000AM"
 assertEqual [$cur getFieldByIndex 7 10] "Jan  1 2008 08:00:00:000AM"
@@ -456,8 +456,8 @@ assertEqual [$cur getFieldLengthByIndex 0 3] 3
 assertEqual [$cur getFieldLengthByIndex 0 4] 3
 assertEqual [$cur getFieldLengthByIndex 0 5] 3
 assertEqual [$cur getFieldLengthByIndex 0 6] 3
-assertEqual [$cur getFieldLengthByIndex 0 7] 6
-assertEqual [$cur getFieldLengthByIndex 0 8] 6
+assertMoneyEqualLen [$cur getFieldLengthByIndex 0 7] 6
+assertMoneyEqualLen [$cur getFieldLengthByIndex 0 8] 6
 # freetds datetime rendering for the fixture tds version
 assertEqual [$cur getFieldLengthByIndex 0 9] 26
 assertEqual [$cur getFieldLengthByIndex 0 10] 26
@@ -472,8 +472,8 @@ assertEqual [$cur getFieldLengthByIndex 7 3] 3
 assertEqual [$cur getFieldLengthByIndex 7 4] 3
 assertEqual [$cur getFieldLengthByIndex 7 5] 3
 assertEqual [$cur getFieldLengthByIndex 7 6] 3
-assertEqual [$cur getFieldLengthByIndex 7 7] 6
-assertEqual [$cur getFieldLengthByIndex 7 8] 6
+assertMoneyEqualLen [$cur getFieldLengthByIndex 7 7] 6
+assertMoneyEqualLen [$cur getFieldLengthByIndex 7 8] 6
 # freetds datetime rendering for the fixture tds version
 assertEqual [$cur getFieldLengthByIndex 7 9] 26
 assertEqual [$cur getFieldLengthByIndex 7 10] 26
@@ -492,8 +492,8 @@ assertEqual [$cur getFieldByName 0 "testreal"] "1.5"
 assertEqual [$cur getFieldByName 0 "testfloat"] "1.5"
 assertEqual [$cur getFieldByName 0 "testdecimal"] "1.5"
 assertEqual [$cur getFieldByName 0 "testnumeric"] "1.5"
-assertEqual [$cur getFieldByName 0 "testmoney"] "1.0000"
-assertEqual [$cur getFieldByName 0 "testsmallmoney"] "1.0000"
+assertMoneyEqual [$cur getFieldByName 0 "testmoney"] "1.0000"
+assertMoneyEqual [$cur getFieldByName 0 "testsmallmoney"] "1.0000"
 # freetds datetime rendering for the fixture tds version
 assertEqual [$cur getFieldByName 0 "testdatetime"] "Jan  1 2001 01:00:00:000AM"
 assertEqual [$cur getFieldByName 0 "testsmalldatetime"] "Jan  1 2001 01:00:00:000AM"
@@ -508,8 +508,8 @@ assertEqual [$cur getFieldByName 7 "testreal"] "8.5"
 assertEqual [$cur getFieldByName 7 "testfloat"] "8.5"
 assertEqual [$cur getFieldByName 7 "testdecimal"] "8.5"
 assertEqual [$cur getFieldByName 7 "testnumeric"] "8.5"
-assertEqual [$cur getFieldByName 7 "testmoney"] "8.0000"
-assertEqual [$cur getFieldByName 7 "testsmallmoney"] "8.0000"
+assertMoneyEqual [$cur getFieldByName 7 "testmoney"] "8.0000"
+assertMoneyEqual [$cur getFieldByName 7 "testsmallmoney"] "8.0000"
 # freetds datetime rendering for the fixture tds version
 assertEqual [$cur getFieldByName 7 "testdatetime"] "Jan  1 2008 08:00:00:000AM"
 assertEqual [$cur getFieldByName 7 "testsmalldatetime"] "Jan  1 2008 08:00:00:000AM"
@@ -528,8 +528,8 @@ assertEqual [$cur getFieldLengthByName 0 "testreal"] 3
 assertEqual [$cur getFieldLengthByName 0 "testfloat"] 3
 assertEqual [$cur getFieldLengthByName 0 "testdecimal"] 3
 assertEqual [$cur getFieldLengthByName 0 "testnumeric"] 3
-assertEqual [$cur getFieldLengthByName 0 "testmoney"] 6
-assertEqual [$cur getFieldLengthByName 0 "testsmallmoney"] 6
+assertMoneyEqualLen [$cur getFieldLengthByName 0 "testmoney"] 6
+assertMoneyEqualLen [$cur getFieldLengthByName 0 "testsmallmoney"] 6
 # freetds datetime rendering for the fixture tds version
 assertEqual [$cur getFieldLengthByName 0 "testdatetime"] 26
 assertEqual [$cur getFieldLengthByName 0 "testsmalldatetime"] 26
@@ -544,8 +544,8 @@ assertEqual [$cur getFieldLengthByName 7 "testreal"] 3
 assertEqual [$cur getFieldLengthByName 7 "testfloat"] 3
 assertEqual [$cur getFieldLengthByName 7 "testdecimal"] 3
 assertEqual [$cur getFieldLengthByName 7 "testnumeric"] 3
-assertEqual [$cur getFieldLengthByName 7 "testmoney"] 6
-assertEqual [$cur getFieldLengthByName 7 "testsmallmoney"] 6
+assertMoneyEqualLen [$cur getFieldLengthByName 7 "testmoney"] 6
+assertMoneyEqualLen [$cur getFieldLengthByName 7 "testsmallmoney"] 6
 # freetds datetime rendering for the fixture tds version
 assertEqual [$cur getFieldLengthByName 7 "testdatetime"] 26
 assertEqual [$cur getFieldLengthByName 7 "testsmalldatetime"] 26
@@ -565,8 +565,8 @@ assertEqual [lindex $fields 3] "1.5"
 assertEqual [lindex $fields 4] "1.5"
 assertEqual [lindex $fields 5] "1.5"
 assertEqual [lindex $fields 6] "1.5"
-assertEqual [lindex $fields 7] "1.0000"
-assertEqual [lindex $fields 8] "1.0000"
+assertMoneyEqual [lindex $fields 7] "1.0000"
+assertMoneyEqual [lindex $fields 8] "1.0000"
 # freetds datetime rendering for the fixture tds version
 assertEqual [lindex $fields 9] "Jan  1 2001 01:00:00:000AM"
 assertEqual [lindex $fields 10] "Jan  1 2001 01:00:00:000AM"
@@ -586,8 +586,8 @@ assertEqual [lindex $fieldlens 3] 3
 assertEqual [lindex $fieldlens 4] 3
 assertEqual [lindex $fieldlens 5] 3
 assertEqual [lindex $fieldlens 6] 3
-assertEqual [lindex $fieldlens 7] 6
-assertEqual [lindex $fieldlens 8] 6
+assertMoneyEqualLen [lindex $fieldlens 7] 6
+assertMoneyEqualLen [lindex $fieldlens 8] 6
 # freetds datetime rendering for the fixture tds version
 assertEqual [lindex $fieldlens 9] 26
 assertEqual [lindex $fieldlens 10] 26

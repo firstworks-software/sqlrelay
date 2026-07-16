@@ -128,6 +128,51 @@ function assertEqDbl(actual, expected) {
 	}
 }
 
+function normalizeMoney(v) {
+	if (v===null || v===undefined) {
+		return v;
+	}
+	// ignore a leading '$' and thousands commas
+	var s=String(v).replace(/[$,]/g,"");
+	// ignore trailing-zero decimals
+	if (s.indexOf(".")>-1) {
+		s=s.replace(/0+$/,"");
+		if (s.charAt(s.length-1)===".") {
+			s=s.substring(0,s.length-1);
+		}
+	}
+	return s;
+}
+
+function assertMoneyEqStr(actual, expected) {
+	// null handling matches assertEqStr
+	if (actual===null || actual===undefined ||
+		expected===null || expected===undefined) {
+		assertEqStr(actual,expected);
+		return;
+	}
+	if (normalizeMoney(actual)===normalizeMoney(expected)) {
+		process.stdout.write(success+" ");
+	} else {
+		console.log(failure);
+		console.log("\""+actual+"\"!=\""+expected+"\"");
+		printErrors();
+		status=1;
+	}
+}
+
+function assertMoneyEqLen(actual, expected) {
+	// old freetds renders money with 2 decimal places instead of 4
+	if (actual===expected || actual===expected-2) {
+		process.stdout.write(success+" ");
+	} else {
+		console.log(failure);
+		console.log("\""+actual+"\"!=\""+expected+"\"");
+		printErrors();
+		status=1;
+	}
+}
+
 function assertEqual(actual, expected) {
 	assertEqStr(actual,expected);
 }
@@ -195,6 +240,7 @@ module.exports={
 	setSecondConnection, setSecondCursor,
 	assertEqStr, assertEqStrLen,
 	assertEqInt, assertEqDbl, assertEqual,
+	assertMoneyEqStr, assertMoneyEqLen,
 	assertTrue, assertFalse, assertStartsWith,
 	assertInResultSet,
 	getStatus, reportTestStatus

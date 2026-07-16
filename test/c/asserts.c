@@ -203,6 +203,83 @@ void assertEqDbl(double actual, double expected) {
 	}
 }
 
+// strips a leading '$' and thousands separators, then trailing-zero decimals,
+// so money values that differ only in formatting compare equal.  the returned
+// string is malloc'd; the caller frees it.
+static char *normalizeMoney(const char *value) {
+
+	char	*result;
+	int	i;
+	int	j;
+
+	result=(char *)malloc(strlen(value)+1);
+	strcpy(result,value);
+
+	// drop '$' and ','
+	j=0;
+	for (i=0; result[i]; i++) {
+		if (result[i]!='$' && result[i]!=',') {
+			result[j++]=result[i];
+		}
+	}
+	result[j]='\0';
+
+	// drop trailing-zero decimals
+	if (strchr(result,'.')) {
+		while (j>0 && result[j-1]=='0') {
+			result[--j]='\0';
+		}
+		if (j>0 && result[j-1]=='.') {
+			result[--j]='\0';
+		}
+	}
+	return result;
+}
+
+// compares money values tolerantly - a leading '$', thousands separators, and
+// trailing-zero decimals are ignored, so "1.00", "$1.00", and "1.0000" all
+// match.  a real precision difference like "1.23" vs "1.2345" still fails.
+// old freetds (0.91) renders money with 2 decimal places instead of 4.
+void assertMoneyEqStr(const char *actual, const char *expected) {
+
+	char	*a;
+	char	*e;
+
+	if (!expected || !actual) {
+		assertEqStr(actual,expected);
+		return;
+	}
+
+	a=normalizeMoney(actual);
+	e=normalizeMoney(expected);
+
+	if (!strcmp(a,e)) {
+		printf("%s ",success);
+	} else {
+		printf("%s\n",failure);
+		printf("\"%s\"!=\"%s\"\n",actual,expected);
+		printErrors();
+		status=1;
+	}
+
+	free(a);
+	free(e);
+}
+
+// compares a rendered money length tolerantly.  old freetds (0.91) renders
+// money with 2 decimal places instead of 4, so the length may be 2 short.
+void assertMoneyEqLen(int actual, int expected) {
+
+	if (actual==expected || (expected>=2 && actual==expected-2)) {
+		printf("%s ",success);
+	} else {
+		printf("%s\n",failure);
+		printf("\"%d\"!=\"%d\"\n",actual,expected);
+		printErrors();
+		status=1;
+	}
+}
+
 void assertTrue(int actual) {
 
 	if (actual) {

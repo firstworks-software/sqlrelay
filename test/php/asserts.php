@@ -111,6 +111,62 @@
 		}
 	}
 
+	# Old freetds (0.91) renders SAP ASE money/smallmoney with 2
+	# decimal places ("1.00") instead of 4 ("1.0000"), and reports a
+	# rendered length 2 chars shorter.  These asserts tolerate a
+	# leading '$', thousands commas, and trailing-zero decimals, but
+	# still fail on real precision loss ("1.23" vs "1.2345").
+
+	function normalizeMoney($v) {
+
+		if ($v===NULL) {
+			return $v;
+		}
+
+		$v=str_replace(array('$',','),"",$v);
+
+		if (strpos($v,'.')!==false) {
+			$v=rtrim($v,'0');
+			$v=rtrim($v,'.');
+		}
+
+		return $v;
+	}
+
+	function assertMoneyEqStr($actual,$expected) {
+
+		global $status;
+
+		if ($actual===NULL || $expected===NULL) {
+			assertEqStr($actual,$expected);
+			return;
+		}
+
+		if (normalizeMoney($actual)===normalizeMoney($expected)) {
+			echo(success." ");
+		} else {
+			echo(failure."\n");
+			echo("\"$actual\"!=\"$expected\"\n");
+			printErrors();
+			$status=1;
+		}
+	}
+
+	function assertMoneyEqLen($actual,$expected) {
+
+		global $status;
+
+		# old freetds renders money with 2 decimal places instead of 4
+		if ($actual===$expected || $actual===$expected-2) {
+			echo(success." ");
+		} else {
+			echo(failure."\n");
+			echo("\"$actual\"!=\"$expected\"\n");
+			printErrors();
+			$status=1;
+		}
+	}
+
 	function assertTrue($actual) {
 
 		global $status;

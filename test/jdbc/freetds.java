@@ -1894,13 +1894,13 @@ class freetds extends sqlrtest {
 
 			// money
 			System.out.println("  row "+i+" - money");
-			assertEquals(rs.getString(8),i+".5000");
+			assertMoneyEquals(rs.getString(8),i+".5000");
 			assertFalse(rs.wasNull());
 			System.out.println();
 
 			// smallmoney
 			System.out.println("  row "+i+" - smallmoney");
-			assertEquals(rs.getString(9),i+".5000");
+			assertMoneyEquals(rs.getString(9),i+".5000");
 			assertFalse(rs.wasNull());
 			System.out.println();
 
@@ -2020,13 +2020,13 @@ class freetds extends sqlrtest {
 
 			// money
 			System.out.println("  row "+i+" - money");
-			assertEquals(rs.getString("testmoney"),i+".5000");
+			assertMoneyEquals(rs.getString("testmoney"),i+".5000");
 			assertFalse(rs.wasNull());
 			System.out.println();
 
 			// smallmoney
 			System.out.println("  row "+i+" - smallmoney");
-			assertEquals(rs.getString("testsmallmoney"),i+".5000");
+			assertMoneyEquals(rs.getString("testsmallmoney"),i+".5000");
 			assertFalse(rs.wasNull());
 			System.out.println();
 

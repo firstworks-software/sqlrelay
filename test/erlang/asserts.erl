@@ -12,6 +12,7 @@
 -export([pass/0, fail/2]).
 -export([getStatus/0, setFailed/0, reportTestStatus/0]).
 -export([assertEqualsString/2, assertEqualsStringLen/3]).
+-export([assertMoneyEqualsString/2, assertMoneyEqualsIntLen/2]).
 -export([assertStartsWith/2]).
 -export([assertEqualsInt/2, assertEqualsDouble/2]).
 -export([assertTrue/1, assertFalse/1]).
@@ -116,6 +117,53 @@ assertEqualsInt(Actual, Expected) when is_integer(Actual), is_integer(Expected) 
         false -> fail(Actual, Expected)
     end;
 assertEqualsInt(Actual, Expected) ->
+    fail(Actual, Expected).
+
+%% Money comparison.  Strips a leading '$', thousands separators, and
+%% trailing-zero decimals, so "1.00", "$1.00", and "1.0000" all match, but a
+%% real precision difference like "1.23" vs "1.2345" still fails.  Old freetds
+%% (0.91) renders money with 2 decimal places instead of 4.
+assertMoneyEqualsString({ok, Actual}, Expected) ->
+    assertMoneyEqualsString(Actual, Expected);
+assertMoneyEqualsString(Actual, null) ->
+    case isNullish(Actual) of
+        true  -> pass();
+        false -> fail(Actual, null)
+    end;
+assertMoneyEqualsString(Actual, Expected) when is_list(Actual), is_list(Expected) ->
+    case normalizeMoney(Actual) =:= normalizeMoney(Expected) of
+        true  -> pass();
+        false -> fail(Actual, Expected)
+    end;
+assertMoneyEqualsString(Actual, Expected) ->
+    fail(Actual, Expected).
+
+normalizeMoney(Value) ->
+    Stripped = [C || C <- Value, C =/= $$, C =/= $,],
+    case lists:member($., Stripped) of
+        true  -> stripTrailingMoneyZeros(Stripped);
+        false -> Stripped
+    end.
+
+stripTrailingMoneyZeros(S) ->
+    R = lists:dropwhile(fun(C) -> C =:= $0 end, lists:reverse(S)),
+    R2 = case R of
+             [$. | Rest] -> Rest;
+             _           -> R
+         end,
+    lists:reverse(R2).
+
+%% Money length comparison.  Old freetds (0.91) renders money with 2 decimal
+%% places instead of 4, so the rendered length may be 2 short.
+assertMoneyEqualsIntLen({ok, Actual}, Expected) ->
+    assertMoneyEqualsIntLen(Actual, Expected);
+assertMoneyEqualsIntLen(Actual, Expected)
+        when is_integer(Actual), is_integer(Expected) ->
+    case (Actual =:= Expected) orelse (Actual =:= Expected - 2) of
+        true  -> pass();
+        false -> fail(Actual, Expected)
+    end;
+assertMoneyEqualsIntLen(Actual, Expected) ->
     fail(Actual, Expected).
 
 assertEqualsDouble({ok, Actual}, Expected) ->

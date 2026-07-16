@@ -153,6 +153,43 @@ def assertInResultSet(cur,column,value):
 	printErrors()
 	status=1
 
+def normalizeMoney(v):
+	if v is None:
+		return v
+	v=v.replace("$","").replace(",","")
+	if "." in v:
+		v=v.rstrip("0")
+		if v.endswith("."):
+			v=v[:-1]
+	return v
+
+def assertMoneyEquals(actual,expected):
+	global status
+	# old freetds renders money with 2 decimal places instead of 4
+	if actual is None or expected is None:
+		assertEquals(actual,expected)
+		return
+	if normalizeMoney(actual)==normalizeMoney(expected):
+		output(success,end=" ")
+	else:
+		output(failure)
+		output("wanted",type(expected),":",expected)
+		output("got   ",type(actual),":",actual)
+		printErrors()
+		status=1
+
+def assertMoneyLengthEquals(actual,expected):
+	global status
+	# old freetds renders money with 2 decimal places instead of 4
+	if actual is not None and (actual==expected or actual==expected-2):
+		output(success,end=" ")
+	else:
+		output(failure)
+		output("wanted",type(expected),":",expected)
+		output("got   ",type(actual),":",actual)
+		printErrors()
+		status=1
+
 def reportTestStatus():
 	global status
 	if status==0:

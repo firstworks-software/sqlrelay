@@ -96,6 +96,45 @@ def assertEqualLen(actual,expected,length)
 	end
 end
 
+def normalizeMoney(v)
+	if v.nil?
+		return v
+	end
+	v=v.gsub("$","").gsub(",","")
+	if v.include?(".")
+		v=v.sub(/0+\z/,"")
+		v=v.chomp(".")
+	end
+	return v
+end
+
+def assertMoneyEqual(actual,expected)
+	if actual.nil? || expected.nil?
+		assertEqual(actual,expected)
+		return
+	end
+	if normalizeMoney(actual)==normalizeMoney(expected)
+		print $success , " "
+	else
+		puts $failure
+		print actual , " != " , expected , "\n"
+		printErrors()
+		$status=1
+	end
+end
+
+def assertMoneyEqualLen(actual,expected)
+	# old freetds renders money with 2 decimal places instead of 4
+	if !actual.nil? && (actual==expected || actual==expected-2)
+		print $success , " "
+	else
+		puts $failure
+		print actual , " != " , expected , "\n"
+		printErrors()
+		$status=1
+	end
+end
+
 def assertTrue(actual)
 	if actual==1 || actual==true
 		print $success , " "

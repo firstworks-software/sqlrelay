@@ -7,6 +7,7 @@ var	{
 	setSecondConnection, setSecondCursor,
 	assertEqStr, assertEqStrLen,
 	assertEqInt, assertEqDbl, assertEqual,
+	assertMoneyEqStr, assertMoneyEqLen,
 	assertTrue, assertFalse, assertStartsWith,
 	assertInResultSet,
 	getStatus, reportTestStatus
@@ -477,10 +478,10 @@ assertEqInt(cur.getLongest(5),3);
 assertEqInt(cur.getLongest("testdecimal"),3);
 assertEqInt(cur.getLongest(6),3);
 assertEqInt(cur.getLongest("testnumeric"),3);
-assertEqInt(cur.getLongest(7),6);
-assertEqInt(cur.getLongest("testmoney"),6);
-assertEqInt(cur.getLongest(8),6);
-assertEqInt(cur.getLongest("testsmallmoney"),6);
+assertMoneyEqLen(cur.getLongest(7),6);
+assertMoneyEqLen(cur.getLongest("testmoney"),6);
+assertMoneyEqLen(cur.getLongest(8),6);
+assertMoneyEqLen(cur.getLongest("testsmallmoney"),6);
 // freetds datetime rendering for the fixture tds version
 assertEqInt(cur.getLongest(9),26);
 assertEqInt(cur.getLongest("testdatetime"),26);
@@ -528,8 +529,8 @@ assertEqStr(cur.getField(0,3),"1.5");
 assertEqStr(cur.getField(0,4),"1.5");
 assertEqStr(cur.getField(0,5),"1.5");
 assertEqStr(cur.getField(0,6),"1.5");
-assertEqStr(cur.getField(0,7),"1.0000");
-assertEqStr(cur.getField(0,8),"1.0000");
+assertMoneyEqStr(cur.getField(0,7),"1.0000");
+assertMoneyEqStr(cur.getField(0,8),"1.0000");
 // freetds datetime rendering for the fixture tds version
 assertEqStr(cur.getField(0,9),
 	"Jan  1 2001 01:00:00:000AM");
@@ -547,8 +548,8 @@ assertEqStr(cur.getField(7,3),"8.5");
 assertEqStr(cur.getField(7,4),"8.5");
 assertEqStr(cur.getField(7,5),"8.5");
 assertEqStr(cur.getField(7,6),"8.5");
-assertEqStr(cur.getField(7,7),"8.0000");
-assertEqStr(cur.getField(7,8),"8.0000");
+assertMoneyEqStr(cur.getField(7,7),"8.0000");
+assertMoneyEqStr(cur.getField(7,8),"8.0000");
 // freetds datetime rendering for the fixture tds version
 assertEqStr(cur.getField(7,9),
 	"Jan  1 2008 08:00:00:000AM");
@@ -570,8 +571,8 @@ assertEqInt(cur.getFieldLength(0,3),3);
 assertEqInt(cur.getFieldLength(0,4),3);
 assertEqInt(cur.getFieldLength(0,5),3);
 assertEqInt(cur.getFieldLength(0,6),3);
-assertEqInt(cur.getFieldLength(0,7),6);
-assertEqInt(cur.getFieldLength(0,8),6);
+assertMoneyEqLen(cur.getFieldLength(0,7),6);
+assertMoneyEqLen(cur.getFieldLength(0,8),6);
 // freetds datetime rendering for the fixture tds version
 assertEqInt(cur.getFieldLength(0,9),26);
 assertEqInt(cur.getFieldLength(0,10),26);
@@ -586,8 +587,8 @@ assertEqInt(cur.getFieldLength(7,3),3);
 assertEqInt(cur.getFieldLength(7,4),3);
 assertEqInt(cur.getFieldLength(7,5),3);
 assertEqInt(cur.getFieldLength(7,6),3);
-assertEqInt(cur.getFieldLength(7,7),6);
-assertEqInt(cur.getFieldLength(7,8),6);
+assertMoneyEqLen(cur.getFieldLength(7,7),6);
+assertMoneyEqLen(cur.getFieldLength(7,8),6);
 // freetds datetime rendering for the fixture tds version
 assertEqInt(cur.getFieldLength(7,9),26);
 assertEqInt(cur.getFieldLength(7,10),26);
@@ -606,8 +607,8 @@ assertEqStr(cur.getField(0,"testreal"),"1.5");
 assertEqStr(cur.getField(0,"testfloat"),"1.5");
 assertEqStr(cur.getField(0,"testdecimal"),"1.5");
 assertEqStr(cur.getField(0,"testnumeric"),"1.5");
-assertEqStr(cur.getField(0,"testmoney"),"1.0000");
-assertEqStr(cur.getField(0,"testsmallmoney"),"1.0000");
+assertMoneyEqStr(cur.getField(0,"testmoney"),"1.0000");
+assertMoneyEqStr(cur.getField(0,"testsmallmoney"),"1.0000");
 // freetds datetime rendering for the fixture tds version
 assertEqStr(cur.getField(0,"testdatetime"),
 	"Jan  1 2001 01:00:00:000AM");
@@ -625,8 +626,8 @@ assertEqStr(cur.getField(7,"testreal"),"8.5");
 assertEqStr(cur.getField(7,"testfloat"),"8.5");
 assertEqStr(cur.getField(7,"testdecimal"),"8.5");
 assertEqStr(cur.getField(7,"testnumeric"),"8.5");
-assertEqStr(cur.getField(7,"testmoney"),"8.0000");
-assertEqStr(cur.getField(7,"testsmallmoney"),"8.0000");
+assertMoneyEqStr(cur.getField(7,"testmoney"),"8.0000");
+assertMoneyEqStr(cur.getField(7,"testsmallmoney"),"8.0000");
 // freetds datetime rendering for the fixture tds version
 assertEqStr(cur.getField(7,"testdatetime"),
 	"Jan  1 2008 08:00:00:000AM");
@@ -648,8 +649,8 @@ assertEqInt(cur.getFieldLength(0,"testreal"),3);
 assertEqInt(cur.getFieldLength(0,"testfloat"),3);
 assertEqInt(cur.getFieldLength(0,"testdecimal"),3);
 assertEqInt(cur.getFieldLength(0,"testnumeric"),3);
-assertEqInt(cur.getFieldLength(0,"testmoney"),6);
-assertEqInt(cur.getFieldLength(0,"testsmallmoney"),6);
+assertMoneyEqLen(cur.getFieldLength(0,"testmoney"),6);
+assertMoneyEqLen(cur.getFieldLength(0,"testsmallmoney"),6);
 // freetds datetime rendering for the fixture tds version
 assertEqInt(cur.getFieldLength(0,"testdatetime"),26);
 assertEqInt(cur.getFieldLength(0,"testsmalldatetime"),
@@ -665,8 +666,8 @@ assertEqInt(cur.getFieldLength(7,"testreal"),3);
 assertEqInt(cur.getFieldLength(7,"testfloat"),3);
 assertEqInt(cur.getFieldLength(7,"testdecimal"),3);
 assertEqInt(cur.getFieldLength(7,"testnumeric"),3);
-assertEqInt(cur.getFieldLength(7,"testmoney"),6);
-assertEqInt(cur.getFieldLength(7,"testsmallmoney"),6);
+assertMoneyEqLen(cur.getFieldLength(7,"testmoney"),6);
+assertMoneyEqLen(cur.getFieldLength(7,"testsmallmoney"),6);
 // freetds datetime rendering for the fixture tds version
 assertEqInt(cur.getFieldLength(7,"testdatetime"),26);
 assertEqInt(cur.getFieldLength(7,"testsmalldatetime"),
@@ -687,8 +688,8 @@ assertEqStr(fields[3],"1.5");
 assertEqStr(fields[4],"1.5");
 assertEqStr(fields[5],"1.5");
 assertEqStr(fields[6],"1.5");
-assertEqStr(fields[7],"1.0000");
-assertEqStr(fields[8],"1.0000");
+assertMoneyEqStr(fields[7],"1.0000");
+assertMoneyEqStr(fields[8],"1.0000");
 // freetds datetime rendering for the fixture tds version
 assertEqStr(fields[9],"Jan  1 2001 01:00:00:000AM");
 assertEqStr(fields[10],"Jan  1 2001 01:00:00:000AM");
@@ -709,8 +710,8 @@ assertEqInt(fieldlens[3],3);
 assertEqInt(fieldlens[4],3);
 assertEqInt(fieldlens[5],3);
 assertEqInt(fieldlens[6],3);
-assertEqInt(fieldlens[7],6);
-assertEqInt(fieldlens[8],6);
+assertMoneyEqLen(fieldlens[7],6);
+assertMoneyEqLen(fieldlens[8],6);
 // freetds datetime rendering for the fixture tds version
 assertEqInt(fieldlens[9],26);
 assertEqInt(fieldlens[10],26);
