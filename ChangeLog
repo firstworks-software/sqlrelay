@@ -348,6 +348,11 @@
 	mkstub.pl now also fails if a php api doc comment's call-seq documents
 		an arity the function doesn't accept, which is what the four
 		uncallable getBindVariableDelimiter*Supported() functions were
+	filled in the php api's arginfo blocks, which declared no arguments and
+		no required argument count for any of the 188 functions, so
+		reflection reported every one of them as taking 0 parameters;
+		they now carry an entry per argument, named as the docs name
+		it, and a required count, which also makes named arguments work
 
 2.1.1 - added tns_admin support
 	fixed sqlr-start ... -strace ...
