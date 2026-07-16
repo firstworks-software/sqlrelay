@@ -1408,7 +1408,7 @@ bool sqlrcursor::prepareFileQuery(const char *path, const char *filename) {
 
 		// set the error
 		char	*err=new char[32+charstring::getLength(pvt->_fullpath)];
-		charstring::append(err,"The file ");
+		charstring::copy(err,"The file ");
 		charstring::append(err,pvt->_fullpath);
 		charstring::append(err," could not be opened.\n");
 		if (pvt->_sqlrc->debug()) {

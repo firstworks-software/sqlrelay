@@ -357,6 +357,10 @@
 		8 said the function returns true or false when it returns 1 or
 		0, and getDebug() said it returns 1 or 0 when it returns true
 		or false
+	fixed a heap overflow in the c++ api's sqlrcursor::prepareFileQuery(),
+		which built its "could not be opened" error message by
+		appending to an uninitialized buffer, corrupting the heap on
+		the file-cannot-be-opened path in every language binding
 
 2.1.1 - added tns_admin support
 	fixed sqlr-start ... -strace ...
