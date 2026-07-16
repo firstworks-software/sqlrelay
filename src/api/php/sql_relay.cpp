@@ -510,8 +510,8 @@ DLEXPORT ZEND_FUNCTION(sqlrcon_setbindvariabledelimiters) {
  *  call-seq:
  *  sqlrcon_getBindVariableDelimiterQuestionMarkSupported($sqlrconref)
  *
- *  Returns true if question marks (?) are considered to be
- *  valid bind variable delimiters. */
+ *  Returns 1 if question marks (?) are considered to be
+ *  valid bind variable delimiters and 0 otherwise. */
 DLEXPORT ZEND_FUNCTION(sqlrcon_getbindvariabledelimiterquestionmarksupported) {
 	ZVAL sqlrcon;
 	bool r;
@@ -540,8 +540,8 @@ DLEXPORT ZEND_FUNCTION(sqlrcon_getbindvariabledelimiterquestionmarksupported) {
  *  call-seq:
  *  sqlrcon_getBindVariableDelimiterColonSupported($sqlrconref)
  *
- *  Returns true if colons (:) are considered to be
- *  valid bind variable delimiters. */
+ *  Returns 1 if colons (:) are considered to be
+ *  valid bind variable delimiters and 0 otherwise. */
 DLEXPORT ZEND_FUNCTION(sqlrcon_getbindvariabledelimitercolonsupported) {
 	ZVAL sqlrcon;
 	bool r;
@@ -570,8 +570,8 @@ DLEXPORT ZEND_FUNCTION(sqlrcon_getbindvariabledelimitercolonsupported) {
  *  call-seq:
  *  sqlrcon_getBindVariableDelimiterAtSignSupported($sqlrconref)
  *
- *  Returns true if at-signs (@) are considered to be
- *  valid bind variable delimiters. */
+ *  Returns 1 if at-signs (@) are considered to be
+ *  valid bind variable delimiters and 0 otherwise. */
 DLEXPORT ZEND_FUNCTION(sqlrcon_getbindvariabledelimiteratsignsupported) {
 	ZVAL sqlrcon;
 	bool r;
@@ -600,8 +600,8 @@ DLEXPORT ZEND_FUNCTION(sqlrcon_getbindvariabledelimiteratsignsupported) {
  *  call-seq:
  *  sqlrcon_getBindVariableDelimiterDollarSignSupported($sqlrconref)
  *
- *  Returns true if dollar signs ($) are considered to be
- *  valid bind variable delimiters. */
+ *  Returns 1 if dollar signs ($) are considered to be
+ *  valid bind variable delimiters and 0 otherwise. */
 DLEXPORT ZEND_FUNCTION(sqlrcon_getbindvariabledelimiterdollarsignsupported) {
 	ZVAL sqlrcon;
 	bool r;
@@ -1507,8 +1507,8 @@ DLEXPORT ZEND_FUNCTION(sqlrcon_getcurrentschema) {
  *  call-seq:
  *  sqlrcon_getDatabaseIsSchema($sqlrconref)
  *
- *  Returns true if the backend database equates "database" with
- *  "schema", and false if it equates "database" with "catalog". */
+ *  Returns 1 if the backend database equates "database" with
+ *  "schema", and 0 if it equates "database" with "catalog". */
 DLEXPORT ZEND_FUNCTION(sqlrcon_getdatabaseisschema) {
 	ZVAL sqlrcon;
 	if (ZEND_NUM_ARGS() != 1 ||
@@ -2532,7 +2532,7 @@ DLEXPORT ZEND_FUNCTION(sqlrcon_debugoff) {
  *  call-seq:
  *  sqlrcon_getDebug($sqlrconref)
  *
- *  Returns 0 if debugging is off and 1 if debugging is on. */
+ *  Returns false if debugging is off and true if debugging is on. */
 DLEXPORT ZEND_FUNCTION(sqlrcon_getdebug) {
 	ZVAL sqlrcon;
 	bool r;
@@ -3752,8 +3752,8 @@ DLEXPORT ZEND_FUNCTION(sqlrcur_preparequerywithlength) {
  *  call-seq:
  *  sqlrcur_prepareFileQuery($sqlrcurref, $path, $filename)
  *
- *  Prepare to execute the contents of "path"/"filename".  Returns false if the
- *  file couldn't be opened. */
+ *  Prepare to execute the contents of "path"/"filename".  Returns 1 on
+ *  success and 0 if the file couldn't be opened. */
 DLEXPORT ZEND_FUNCTION(sqlrcur_preparefilequery) {
 	ZVAL sqlrcur;
 	ZVAL path;
@@ -4583,7 +4583,8 @@ DLEXPORT ZEND_FUNCTION(sqlrcur_validatebinds) {
  *  call-seq:
  *  sqlrcur_validBind($sqlrcurref, $variable)
  *
- *  Returns true if "variable" was a valid bind variable of the query. */
+ *  Returns 1 if "variable" was a valid bind variable of the query
+ *  and 0 otherwise. */
 DLEXPORT ZEND_FUNCTION(sqlrcur_validbind) {
 	ZVAL sqlrcur;
 	ZVAL variable;
@@ -5431,8 +5432,8 @@ DLEXPORT ZEND_FUNCTION(sqlrcur_endofresultset) {
  *  call-seq:
  *  sqlrcur_nextResultSet($sqlrcurref)
  *
- *  Returns true and acts like executeQuery() when there is another result set
- *  available from the server. */
+ *  Returns 1 and acts like executeQuery() when there is another result set
+ *  available from the server, 0 otherwise. */
 DLEXPORT ZEND_FUNCTION(sqlrcur_nextresultset) {
 	ZVAL sqlrcur;
 	bool r;

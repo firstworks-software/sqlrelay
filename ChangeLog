@@ -353,6 +353,10 @@
 		reflection reported every one of them as taking 0 parameters;
 		they now carry an entry per argument, named as the docs name
 		it, and a required count, which also makes named arguments work
+	fixed 9 php api doc comments that described the wrong return value;
+		8 said the function returns true or false when it returns 1 or
+		0, and getDebug() said it returns 1 or 0 when it returns true
+		or false
 
 2.1.1 - added tns_admin support
 	fixed sqlr-start ... -strace ...
