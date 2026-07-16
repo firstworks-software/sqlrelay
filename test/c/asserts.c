@@ -37,7 +37,53 @@ int contains(const char *actual, const char *substring) {
 
 	// a null actual (e.g. a null field from a failed or empty query)
 	// contains nothing, and isn't a reason to crash inside strstr()
-	return (actual)?(strstr(actual,substring)!=NULL):0;
+	return (actual && substring)?(strstr(actual,substring)!=NULL):0;
+}
+
+void assertContains(const char *actual, const char *substring) {
+
+	// a null actual (e.g. a null field from a failed or empty query) is a
+	// mismatch, not a reason to crash
+	if (!actual) {
+		printf("%s\n",failure);
+		printf("\"(null)\" doesn't contain \"%s\"\n",substring);
+		printErrors();
+		status=1;
+		return;
+	}
+
+	if (contains(actual,substring)) {
+		printf("%s ",success);
+	} else {
+		printf("%s\n",failure);
+		printf("\"%s\" doesn't contain \"%s\"\n",actual,substring);
+		printErrors();
+		status=1;
+	}
+}
+
+void assertNotContains(const char *actual, const char *substring) {
+
+	// A null actual has to fail here rather than pass.  It contains no
+	// substring, so it would satisfy a not-contains test, but a null field
+	// means the query returned nothing and the test never ran.  Passing on
+	// it would hide the empty result set instead of reporting it.
+	if (!actual) {
+		printf("%s\n",failure);
+		printf("\"(null)\" - no data to check for \"%s\"\n",substring);
+		printErrors();
+		status=1;
+		return;
+	}
+
+	if (!contains(actual,substring)) {
+		printf("%s ",success);
+	} else {
+		printf("%s\n",failure);
+		printf("\"%s\" contains \"%s\"\n",actual,substring);
+		printErrors();
+		status=1;
+	}
 }
 
 void assertEqStr(const char *actual, const char *expected) {
@@ -104,6 +150,30 @@ void assertEqStrLen(const char *actual, const char *expected,
 	} else {
 		printf("%s\n",failure);
 		printf("\"%s\"!=\"%s\"\n",actual,expected);
+		printErrors();
+		status=1;
+	}
+}
+
+void assertEqBin(const char *actual, const void *expected, int length) {
+
+	// a null actual (e.g. a null field from a failed or empty query) is a
+	// mismatch, not a reason to crash
+	if (!actual) {
+		printf("%s\n",failure);
+		printf("\"(null)\"!=(%d bytes)\n",length);
+		printErrors();
+		status=1;
+		return;
+	}
+
+	// The data is binary and can contain nulls, so neither side can be
+	// printed as a string.  Report the length instead.
+	if (!memcmp(actual,expected,length)) {
+		printf("%s ",success);
+	} else {
+		printf("%s\n",failure);
+		printf("(%d bytes) don't match\n",length);
 		printErrors();
 		status=1;
 	}

@@ -1986,7 +1986,7 @@ int main(int argc, char **argv) {
 	assertTrue(sqlrcur_sendQuery(cur,
 		"select col1 from testtable"));
 	assertEqInt(sqlrcur_getFieldLengthByIndex(cur,0,0),2);
-	assertEqInt(strcmp(sqlrcur_getFieldByIndex(cur,0,0),"''"),0);
+	assertEqStr(sqlrcur_getFieldByIndex(cur,0,0),"''");
 	assertTrue(sqlrcur_sendQuery(cur,"drop table testtable"));
 	printf("\n");
 
@@ -2231,14 +2231,14 @@ int main(int argc, char **argv) {
 		"	col2 int)"));
 	assertTrue(sqlrcon_commit(con));
 	assertTrue(sqlrcur_getColumnList(cur,"testtable",NULL));
-	assertTrue(strstr(sqlrcur_getFieldByName(cur,0,"extra"),
-				"auto_increment")!=NULL);
-	assertTrue(strstr(sqlrcur_getFieldByName(cur,0,"column_key"),
-				"PRI")!=NULL);
-	assertFalse(strstr(sqlrcur_getFieldByName(cur,1,"extra"),
-				"auto_increment")!=NULL);
-	assertFalse(strstr(sqlrcur_getFieldByName(cur,1,"column_key"),
-				"PRI")!=NULL);
+	assertContains(sqlrcur_getFieldByName(cur,0,"extra"),
+				"auto_increment");
+	assertContains(sqlrcur_getFieldByName(cur,0,"column_key"),
+				"PRI");
+	assertNotContains(sqlrcur_getFieldByName(cur,1,"extra"),
+				"auto_increment");
+	assertNotContains(sqlrcur_getFieldByName(cur,1,"column_key"),
+				"PRI");
 	printf("\n");
 	assertTrue(sqlrcur_sendQuery(cur,"drop table testtable"));
 	assertTrue(sqlrcon_commit(con));
@@ -2247,10 +2247,10 @@ int main(int argc, char **argv) {
 		"	col1 int primary key, "
 		"	col2 int)"));
 	assertTrue(sqlrcur_getColumnList(cur,"testtable",NULL));
-	assertFalse(strstr(sqlrcur_getFieldByName(cur,0,"extra"),
-				"auto_increment")!=NULL);
-	assertTrue(strstr(sqlrcur_getFieldByName(cur,0,"column_key"),
-				"PRI")!=NULL);
+	assertNotContains(sqlrcur_getFieldByName(cur,0,"extra"),
+				"auto_increment");
+	assertContains(sqlrcur_getFieldByName(cur,0,"column_key"),
+				"PRI");
 	assertTrue(sqlrcur_sendQuery(cur,"drop table testtable"));
 	assertTrue(sqlrcon_commit(con));
 	printf("\n");
@@ -2279,11 +2279,11 @@ int main(int argc, char **argv) {
 	assertEqStr(sqlrcur_getColumnName(cur,11),"comment");
 	assertEqStr(sqlrcur_getColumnName(cur,12),"index_comment");
 	assertEqInt(sqlrcur_rowCount(cur),1);
-	assertTrue(!strcmp(sqlrcur_getFieldByName(cur,0,"table"),
-							"testtable"));
+	assertEqStr(sqlrcur_getFieldByName(cur,0,"table"),
+							"testtable");
 	assertEqStr(sqlrcur_getFieldByName(cur,0,"seq_in_index"),"1");
-	assertTrue(!strcmp(sqlrcur_getFieldByName(cur,0,"column_name"),
-							"col1"));
+	assertEqStr(sqlrcur_getFieldByName(cur,0,"column_name"),
+							"col1");
 	{
 		const char *keyname=
 			sqlrcur_getFieldByName(cur,0,"key_name");
@@ -2317,12 +2317,12 @@ int main(int argc, char **argv) {
 	assertEqStr(sqlrcur_getColumnName(cur,11),"comment");
 	assertEqStr(sqlrcur_getColumnName(cur,12),"index_comment");
 	assertEqInt(sqlrcur_rowCount(cur),1);
-	assertTrue(!strcmp(sqlrcur_getFieldByName(cur,0,"table"),
-							"testtable"));
+	assertEqStr(sqlrcur_getFieldByName(cur,0,"table"),
+							"testtable");
 	assertEqStr(sqlrcur_getFieldByName(cur,0,"non_unique"),"0");
 	assertEqStr(sqlrcur_getFieldByName(cur,0,"seq_in_index"),"1");
-	assertTrue(!strcmp(sqlrcur_getFieldByName(cur,0,"column_name"),
-							"col1"));
+	assertEqStr(sqlrcur_getFieldByName(cur,0,"column_name"),
+							"col1");
 	assertEqStr(sqlrcur_getFieldByName(cur,0,"collation"),"A");
 	assertEqStr(sqlrcur_getFieldByName(cur,0,"index_type"),"3");
 	{

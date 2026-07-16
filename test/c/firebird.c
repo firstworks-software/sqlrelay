@@ -1500,7 +1500,7 @@ int main(int argc, char **argv) {
 		"values ('''''')"));
 	assertTrue(sqlrcur_sendQuery(cur,"select testblob from testtable1"));
 	assertEqInt(sqlrcur_getFieldLengthByIndex(cur,0,0),2);
-	assertTrue(!memcmp(sqlrcur_getFieldByIndex(cur,0,0),"''",2));
+	assertEqBin(sqlrcur_getFieldByIndex(cur,0,0),"''",2);
 	assertTrue(sqlrcur_sendQuery(cur,"delete from testtable1"));
 	printf("\n");
 
@@ -1605,70 +1605,70 @@ int main(int argc, char **argv) {
 	assertEqStr(sqlrcur_getColumnName(cur,6),"column_key");
 	assertEqStr(sqlrcur_getColumnName(cur,7),"column_default");
 	assertEqStr(sqlrcur_getColumnName(cur,8),"extra");
-	assertTrue(!strcmp(sqlrcur_getFieldByName(cur,0,"column_name"),
-		"TESTINTEGER"));
-	assertTrue(!strcmp(sqlrcur_getFieldByName(cur,1,"column_name"),
-		"TESTSMALLINT"));
-	assertTrue(!strcmp(sqlrcur_getFieldByName(cur,2,"column_name"),
-		"TESTDECIMAL"));
-	assertTrue(!strcmp(sqlrcur_getFieldByName(cur,3,"column_name"),
-		"TESTNUMERIC"));
-	assertTrue(!strcmp(sqlrcur_getFieldByName(cur,4,"column_name"),
-		"TESTFLOAT"));
-	assertTrue(!strcmp(sqlrcur_getFieldByName(cur,5,"column_name"),
-		"TESTDOUBLE"));
-	assertTrue(!strcmp(sqlrcur_getFieldByName(cur,6,"column_name"),
-		"TESTDATE"));
-	assertTrue(!strcmp(sqlrcur_getFieldByName(cur,7,"column_name"),
-		"TESTTIME"));
-	assertTrue(!strcmp(sqlrcur_getFieldByName(cur,8,"column_name"),
-		"TESTCHAR"));
-	assertTrue(!strcmp(sqlrcur_getFieldByName(cur,9,"column_name"),
-		"TESTVARCHAR"));
-	assertTrue(!strcmp(sqlrcur_getFieldByName(cur,10,"column_name"),
-		"TESTTIMESTAMP"));
-	assertTrue(!strcmp(sqlrcur_getFieldByName(cur,11,"column_name"),
-		"TESTBLOB"));
-	assertTrue(!strcmp(sqlrcur_getFieldByName(cur,0,"data_type"),
-		"INTEGER"));
-	assertTrue(!strcmp(sqlrcur_getFieldByName(cur,1,"data_type"),
-		"SMALLINT"));
-	assertTrue(!strcmp(sqlrcur_getFieldByName(cur,2,"data_type"),
-		"DECIMAL"));
-	assertTrue(!strcmp(sqlrcur_getFieldByName(cur,3,"data_type"),
-		"NUMERIC"));
-	assertTrue(!strcmp(sqlrcur_getFieldByName(cur,4,"data_type"),"FLOAT"));
-	assertTrue(!strcmp(sqlrcur_getFieldByName(cur,5,"data_type"),
-		"DOUBLE PRECISION"));
-	assertTrue(!strcmp(sqlrcur_getFieldByName(cur,6,"data_type"),"DATE"));
-	assertTrue(!strcmp(sqlrcur_getFieldByName(cur,7,"data_type"),"TIME"));
-	assertTrue(!strcmp(sqlrcur_getFieldByName(cur,8,"data_type"),"CHAR"));
-	assertTrue(!strcmp(sqlrcur_getFieldByName(cur,9,"data_type"),
-		"VARCHAR"));
-	assertTrue(!strcmp(sqlrcur_getFieldByName(cur,10,"data_type"),
-		"TIMESTAMP"));
-	assertTrue(!strcmp(sqlrcur_getFieldByName(cur,11,"data_type"),
-		"BLOB SUB_TYPE BINARY"));
+	assertEqStr(sqlrcur_getFieldByName(cur,0,"column_name"),
+		"TESTINTEGER");
+	assertEqStr(sqlrcur_getFieldByName(cur,1,"column_name"),
+		"TESTSMALLINT");
+	assertEqStr(sqlrcur_getFieldByName(cur,2,"column_name"),
+		"TESTDECIMAL");
+	assertEqStr(sqlrcur_getFieldByName(cur,3,"column_name"),
+		"TESTNUMERIC");
+	assertEqStr(sqlrcur_getFieldByName(cur,4,"column_name"),
+		"TESTFLOAT");
+	assertEqStr(sqlrcur_getFieldByName(cur,5,"column_name"),
+		"TESTDOUBLE");
+	assertEqStr(sqlrcur_getFieldByName(cur,6,"column_name"),
+		"TESTDATE");
+	assertEqStr(sqlrcur_getFieldByName(cur,7,"column_name"),
+		"TESTTIME");
+	assertEqStr(sqlrcur_getFieldByName(cur,8,"column_name"),
+		"TESTCHAR");
+	assertEqStr(sqlrcur_getFieldByName(cur,9,"column_name"),
+		"TESTVARCHAR");
+	assertEqStr(sqlrcur_getFieldByName(cur,10,"column_name"),
+		"TESTTIMESTAMP");
+	assertEqStr(sqlrcur_getFieldByName(cur,11,"column_name"),
+		"TESTBLOB");
+	assertEqStr(sqlrcur_getFieldByName(cur,0,"data_type"),
+		"INTEGER");
+	assertEqStr(sqlrcur_getFieldByName(cur,1,"data_type"),
+		"SMALLINT");
+	assertEqStr(sqlrcur_getFieldByName(cur,2,"data_type"),
+		"DECIMAL");
+	assertEqStr(sqlrcur_getFieldByName(cur,3,"data_type"),
+		"NUMERIC");
+	assertEqStr(sqlrcur_getFieldByName(cur,4,"data_type"),"FLOAT");
+	assertEqStr(sqlrcur_getFieldByName(cur,5,"data_type"),
+		"DOUBLE PRECISION");
+	assertEqStr(sqlrcur_getFieldByName(cur,6,"data_type"),"DATE");
+	assertEqStr(sqlrcur_getFieldByName(cur,7,"data_type"),"TIME");
+	assertEqStr(sqlrcur_getFieldByName(cur,8,"data_type"),"CHAR");
+	assertEqStr(sqlrcur_getFieldByName(cur,9,"data_type"),
+		"VARCHAR");
+	assertEqStr(sqlrcur_getFieldByName(cur,10,"data_type"),
+		"TIMESTAMP");
+	assertEqStr(sqlrcur_getFieldByName(cur,11,"data_type"),
+		"BLOB SUB_TYPE BINARY");
 	printf("\n");
 
 
 	// column list - auto_increment, primary key
 	printf("COLUMN LIST - ""auto_increment, primary key: \n");
 	assertTrue(sqlrcur_getColumnList(cur,"testtable2",NULL));
-	assertTrue(strstr(sqlrcur_getFieldByName(cur,0,"extra"),
-		"auto_increment")!=NULL);
-	assertTrue(strstr(sqlrcur_getFieldByName(cur,0,"column_key"),
-		"PRI")!=NULL);
-	assertFalse(strstr(sqlrcur_getFieldByName(cur,1,"extra"),
-		"auto_increment")!=NULL);
-	assertFalse(strstr(sqlrcur_getFieldByName(cur,1,"column_key"),
-		"PRI")!=NULL);
+	assertContains(sqlrcur_getFieldByName(cur,0,"extra"),
+		"auto_increment");
+	assertContains(sqlrcur_getFieldByName(cur,0,"column_key"),
+		"PRI");
+	assertNotContains(sqlrcur_getFieldByName(cur,1,"extra"),
+		"auto_increment");
+	assertNotContains(sqlrcur_getFieldByName(cur,1,"column_key"),
+		"PRI");
 	printf("\n");
 	assertTrue(sqlrcur_getColumnList(cur,"testtable3",NULL));
-	assertFalse(strstr(sqlrcur_getFieldByName(cur,0,"extra"),
-		"auto_increment")!=NULL);
-	assertTrue(strstr(sqlrcur_getFieldByName(cur,0,"column_key"),
-		"PRI")!=NULL);
+	assertNotContains(sqlrcur_getFieldByName(cur,0,"extra"),
+		"auto_increment");
+	assertContains(sqlrcur_getFieldByName(cur,0,"column_key"),
+		"PRI");
 	printf("\n");
 
 
@@ -1689,9 +1689,9 @@ int main(int argc, char **argv) {
 	assertEqStr(sqlrcur_getColumnName(cur,11),"comment");
 	assertEqStr(sqlrcur_getColumnName(cur,12),"index_comment");
 	assertEqInt(sqlrcur_rowCount(cur),1);
-	assertTrue(!strcmp(sqlrcur_getFieldByName(cur,0,"table"),"TESTTABLE2"));
+	assertEqStr(sqlrcur_getFieldByName(cur,0,"table"),"TESTTABLE2");
 	assertEqStr(sqlrcur_getFieldByName(cur,0,"seq_in_index"),"1");
-	assertTrue(!strcmp(sqlrcur_getFieldByName(cur,0,"column_name"),"COL1"));
+	assertEqStr(sqlrcur_getFieldByName(cur,0,"column_name"),"COL1");
 	assertTrue(sqlrcur_getFieldByName(cur,0,"key_name")!=NULL &&strlen(
 		sqlrcur_getFieldByName(cur,0,"key_name"))>0);
 	printf("\n");
@@ -1714,10 +1714,10 @@ int main(int argc, char **argv) {
 	assertEqStr(sqlrcur_getColumnName(cur,11),"comment");
 	assertEqStr(sqlrcur_getColumnName(cur,12),"index_comment");
 	assertEqInt(sqlrcur_rowCount(cur),1);
-	assertTrue(!strcmp(sqlrcur_getFieldByName(cur,0,"table"),"TESTTABLE2"));
+	assertEqStr(sqlrcur_getFieldByName(cur,0,"table"),"TESTTABLE2");
 	assertEqStr(sqlrcur_getFieldByName(cur,0,"non_unique"),"0");
 	assertEqStr(sqlrcur_getFieldByName(cur,0,"seq_in_index"),"1");
-	assertTrue(!strcmp(sqlrcur_getFieldByName(cur,0,"column_name"),"COL1"));
+	assertEqStr(sqlrcur_getFieldByName(cur,0,"column_name"),"COL1");
 	assertEqStr(sqlrcur_getFieldByName(cur,0,"collation"),"A");
 	assertEqStr(sqlrcur_getFieldByName(cur,0,"index_type"),"3");
 	assertTrue(sqlrcur_getFieldByName(cur,0,"key_name")!=NULL &&strlen(

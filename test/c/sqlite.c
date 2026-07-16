@@ -1313,8 +1313,8 @@ int main(int argc, char **argv) {
 	assertTrue(sqlrcur_sendQuery(cur,querystr));
 	assertTrue(sqlrcur_sendQuery(cur,"select col1 from testtable"));
 	assertEqInt(sqlrcur_getFieldLengthByIndex(cur,0,0),sizeof(buffer));
-	assertEqInt(memcmp(sqlrcur_getFieldByIndex(cur,0,0),
-			buffer,sizeof(buffer)),0);
+	assertEqBin(sqlrcur_getFieldByIndex(cur,0,0),
+			buffer,sizeof(buffer));
 	assertTrue(sqlrcur_sendQuery(cur,"drop table testtable"));
 	printf("\n");
 
@@ -1328,7 +1328,7 @@ int main(int argc, char **argv) {
 		"values ('''''')"));
 	assertTrue(sqlrcur_sendQuery(cur,"select col1 from testtable"));
 	assertEqInt(sqlrcur_getFieldLengthByIndex(cur,0,0),2);
-	assertEqInt(strcmp(sqlrcur_getFieldByIndex(cur,0,0),"''"),0);
+	assertEqStr(sqlrcur_getFieldByIndex(cur,0,0),"''");
 	assertTrue(sqlrcur_sendQuery(cur,"drop table testtable"));
 	printf("\n");
 
@@ -1505,14 +1505,14 @@ int main(int argc, char **argv) {
 			"	autoincrement, "
 			"	col2 int)"));
 		assertTrue(sqlrcur_getColumnList(cur,"testtable",NULL));
-		assertTrue(contains(sqlrcur_getFieldByName(cur,0,"extra"),
-				"auto_increment"));
-		assertTrue(contains(sqlrcur_getFieldByName(cur,0,"column_key"),
-				"PRI"));
-		assertFalse(contains(sqlrcur_getFieldByName(cur,1,"extra"),
-				"auto_increment"));
-		assertFalse(contains(sqlrcur_getFieldByName(cur,1,"column_key"),
-				"PRI"));
+		assertContains(sqlrcur_getFieldByName(cur,0,"extra"),
+				"auto_increment");
+		assertContains(sqlrcur_getFieldByName(cur,0,"column_key"),
+				"PRI");
+		assertNotContains(sqlrcur_getFieldByName(cur,1,"extra"),
+				"auto_increment");
+		assertNotContains(sqlrcur_getFieldByName(cur,1,"column_key"),
+				"PRI");
 		printf("\n");
 		assertTrue(sqlrcur_sendQuery(cur,"drop table if exists testtable"));
 		assertTrue(sqlrcur_sendQuery(cur,
@@ -1520,10 +1520,10 @@ int main(int argc, char **argv) {
 			"	col1 int primary key, "
 			"	col2 int)"));
 		assertTrue(sqlrcur_getColumnList(cur,"testtable",NULL));
-		assertFalse(contains(sqlrcur_getFieldByName(cur,0,"extra"),
-				"auto_increment"));
-		assertTrue(contains(sqlrcur_getFieldByName(cur,0,"column_key"),
-				"PRI"));
+		assertNotContains(sqlrcur_getFieldByName(cur,0,"extra"),
+				"auto_increment");
+		assertContains(sqlrcur_getFieldByName(cur,0,"column_key"),
+				"PRI");
 		assertTrue(sqlrcur_sendQuery(cur,"drop table if exists testtable"));
 	}
 	printf("\n");

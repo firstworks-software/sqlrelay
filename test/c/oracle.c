@@ -1758,8 +1758,8 @@ int main(int argc, char **argv) {
 	assertTrue(sqlrcur_sendQuery(cur,querystr));
 	assertTrue(sqlrcur_sendQuery(cur,"select col1 from testtable"));
 	assertEqInt(sqlrcur_getFieldLengthByIndex(cur,0,0),sizeof(buffer));
-	assertEqInt(memcmp(sqlrcur_getFieldByIndex(cur,0,0),
-						buffer,sizeof(buffer)),0);
+	assertEqBin(sqlrcur_getFieldByIndex(cur,0,0),
+						buffer,sizeof(buffer));
 	assertTrue(sqlrcur_sendQuery(cur,"drop table testtable"));
 	printf("\n");
 
@@ -1773,7 +1773,7 @@ int main(int argc, char **argv) {
 			cur,"insert into testtable values ('''''')"));
 	assertTrue(sqlrcur_sendQuery(cur,"select col1 from testtable"));
 	assertEqInt(sqlrcur_getFieldLengthByIndex(cur,0,0),2);
-	assertEqInt(strcmp(sqlrcur_getFieldByIndex(cur,0,0),"''"),0);
+	assertEqStr(sqlrcur_getFieldByIndex(cur,0,0),"''");
 	assertTrue(sqlrcur_sendQuery(cur,"drop table testtable"));
 	printf("\n");
 
@@ -1960,10 +1960,10 @@ int main(int argc, char **argv) {
 		"	col1 number primary key, "
 		"	col2 number)"));
 	assertTrue(sqlrcur_getColumnList(cur,"testtable",NULL));
-	assertTrue(strstr(sqlrcur_getFieldByName(cur,0,"column_key"),
-				"PRI")!=NULL);
-	assertFalse(strstr(sqlrcur_getFieldByName(cur,1,"column_key"),
-				"PRI")!=NULL);
+	assertContains(sqlrcur_getFieldByName(cur,0,"column_key"),
+				"PRI");
+	assertNotContains(sqlrcur_getFieldByName(cur,1,"column_key"),
+				"PRI");
 	assertTrue(sqlrcur_sendQuery(cur,"drop table testtable"));
 	printf("\n");
 
