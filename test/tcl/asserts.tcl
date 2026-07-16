@@ -1,6 +1,9 @@
 # Copyright (c) David Muse
 # See the file COPYING for more information.
 
+# keep stdout unbuffered so a crash is logged where it actually happens
+fconfigure stdout -buffering none
+
 set status 0
 set con ""
 set cur ""

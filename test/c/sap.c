@@ -18,6 +18,10 @@ sqlrcur	secondcur;
 
 int main(int argc, char **argv) {
 
+	// keep stdout unbuffered so a crash is logged where it actually
+	// happens, not at the last flushed line
+	setvbuf(stdout,NULL,_IONBF,0);
+
 	const char	*isolationlevels[]={"1","0","2","3",NULL};
 	const char	**il;
 	const char * const *cols;

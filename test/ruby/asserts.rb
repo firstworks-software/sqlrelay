@@ -1,6 +1,9 @@
 # Copyright (c) David Muse
 # See the file COPYING for more information.
 
+# keep stdout unbuffered so a crash is logged where it actually happens
+$stdout.sync=true
+
 $status=0
 
 $success="\e[32msuccess\e[0m"

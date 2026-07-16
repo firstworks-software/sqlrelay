@@ -126,7 +126,7 @@ do
 			@PYTHON@ --version > /dev/null 2>&1
 			if ( test "$?" = "0" )
 			then
-				TEST="@PYTHON@ $1.py"
+				TEST="@PYTHON@ -u $1.py"
 				TESTFILE="$1.py"
 			fi
 			;;
@@ -134,7 +134,7 @@ do
 			@PYTHON@ --version > /dev/null 2>&1
 			if ( test "$?" = "0" )
 			then
-				TEST="@PYTHON@ $1.py"
+				TEST="@PYTHON@ -u $1.py"
 				TESTFILE="$1.py"
 			fi
 			;;

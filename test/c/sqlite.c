@@ -18,6 +18,10 @@ sqlrcur	secondcur;
 
 int main(int argc, char **argv) {
 
+	// keep stdout unbuffered so a crash is logged where it actually
+	// happens, not at the last flushed line
+	setvbuf(stdout,NULL,_IONBF,0);
+
 	const char	*subvars[]={"var1","var2","var3",NULL};
 	const char	*subvalstrings[]={"hi","hello","bye"};
 	int64_t		subvallongs[]={1,2,3};
