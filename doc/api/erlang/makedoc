@@ -7,7 +7,7 @@ c(makedoc).
 makedoc:start().
 EOF
 
-mv ../../../src/api/erlang/doc/* html
+mv ../../../src/api/erlang/doc/* html || exit 1
 rmdir ../../../src/api/erlang/doc
 
 rm -f makedoc.beam

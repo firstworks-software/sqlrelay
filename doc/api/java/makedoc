@@ -2,6 +2,6 @@ rm -f *.html
 rm -f *.css
 rm -f com/firstworks/sqlrelay/*.html
 rm -f package-list
-javadoc ../../../src/api/java/com/firstworks/sqlrelay/*.java
+javadoc ../../../src/api/java/com/firstworks/sqlrelay/*.java || exit 1
 
 git add .

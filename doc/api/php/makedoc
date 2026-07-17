@@ -1,7 +1,7 @@
 rm -f html/*
 rm -f sql_relay.doc.php
 ./mkstub.pl ../../../src/api/php/sql_relay.cpp sql_relay.doc.php || exit 1
-doxygen doxygen.config
+doxygen doxygen.config || exit 1
 rm -f sql_relay.doc.php
 
 git add html

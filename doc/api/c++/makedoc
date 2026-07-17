@@ -1,4 +1,4 @@
 rm -f html/*
-doxygen doxygen.config
+doxygen doxygen.config || exit 1
 
 git add html
