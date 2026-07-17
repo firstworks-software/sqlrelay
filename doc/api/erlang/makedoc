@@ -1,6 +1,6 @@
 #!/bin/sh
 
-rm -f html/*
+rm -rf html/*
 
 erl << EOF
 c(makedoc).

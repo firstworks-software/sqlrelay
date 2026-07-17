@@ -903,7 +903,7 @@ Functions</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
-<p>Returns true if at-signs (@) are considered to be valid bind variable delimiters. </p>
+<p>Returns 1 if at-signs (@) are considered to be valid bind variable delimiters and 0 otherwise. </p>
 
 </div>
 </div>
@@ -921,7 +921,7 @@ Functions</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
-<p>Returns true if colons (:) are considered to be valid bind variable delimiters. </p>
+<p>Returns 1 if colons (:) are considered to be valid bind variable delimiters and 0 otherwise. </p>
 
 </div>
 </div>
@@ -939,7 +939,7 @@ Functions</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
-<p>Returns true if dollar signs ($) are considered to be valid bind variable delimiters. </p>
+<p>Returns 1 if dollar signs ($) are considered to be valid bind variable delimiters and 0 otherwise. </p>
 
 </div>
 </div>
@@ -957,7 +957,7 @@ Functions</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
-<p>Returns true if question marks (?) are considered to be valid bind variable delimiters. </p>
+<p>Returns 1 if question marks (?) are considered to be valid bind variable delimiters and 0 otherwise. </p>
 
 </div>
 </div>
@@ -1709,7 +1709,7 @@ Functions</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
-<p>Returns true if the backend database equates "database" with "schema", and false if it equates "database" with "catalog". </p>
+<p>Returns 1 if the backend database equates "database" with "schema", and 0 if it equates "database" with "catalog". </p>
 
 </div>
 </div>
@@ -1727,7 +1727,7 @@ Functions</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
-<p>Returns 0 if debugging is off and 1 if debugging is on. </p>
+<p>Returns false if debugging is off and true if debugging is on. </p>
 
 </div>
 </div>
@@ -4977,7 +4977,7 @@ level".</p>
         </tr>
       </table>
 </div><div class="memdoc">
-<p>Returns true and acts like executeQuery() when there is another result set available from the server. </p>
+<p>Returns 1 and acts like executeQuery() when there is another result set available from the server, 0 otherwise. </p>
 
 </div>
 </div>
@@ -5026,7 +5026,7 @@ level".</p>
         </tr>
       </table>
 </div><div class="memdoc">
-<p>Prepare to execute the contents of "path"/"filename". Returns false if the file couldn't be opened. </p>
+<p>Prepare to execute the contents of "path"/"filename". Returns 1 on success and 0 if the file couldn't be opened. </p>
 
 </div>
 </div>
@@ -5430,14 +5430,14 @@ level".</p>
         </tr>
       </table>
 </div><div class="memdoc">
-<p>Returns true if "variable" was a valid bind variable of the query. </p>
+<p>Returns 1 if "variable" was a valid bind variable of the query and 0 otherwise. </p>
 
 </div>
 </div>
 </div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
-Generated on Wed Jul 15 2026 17:39:45 for SQL Relay PHP API by&#160;<a href="https://www.doxygen.org/index.html"><img class="footer" src="doxygen.svg" width="104" height="31" alt="doxygen"/></a> 1.10.0
+Generated on Thu Jul 16 2026 22:50:49 for SQL Relay PHP API by&#160;<a href="https://www.doxygen.org/index.html"><img class="footer" src="doxygen.svg" width="104" height="31" alt="doxygen"/></a> 1.10.0
 </small></address>
 </body>
 </html>

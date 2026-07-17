@@ -1,11 +1,10 @@
-rm -f PySQLRClient.html
-rm -f PySQLRDB.html
+rm -rf html/*
 export PYTHONPATH=../../../src/api/python
 pydoc -w PySQLRClient || exit 1
-sed -e "s|<font.*><a href=\"\.\">index<.*<\/font>||" -e "s|<a href=\"SQLRelay\.CSQLRelay\.html\">SQLRelay\.CSQLRelay</a>|SQLRelay\.CSQLRelay|" PySQLRClient.html > PySQLRClient.py.html
+sed -e "s|<font.*><a href=\"\.\">index<.*<\/font>||" -e "s|<a href=\"SQLRelay\.CSQLRelay\.html\">SQLRelay\.CSQLRelay</a>|SQLRelay\.CSQLRelay|" PySQLRClient.html > html/PySQLRClient.py.html
 rm -f PySQLRClient.html
 pydoc -w PySQLRDB || exit 1
-sed -e "s|<font.*><a href=\"\.\">index<.*<\/font>||" -e "s|<a href=\"SQLRelay\.CSQLRelay\.html\">SQLRelay\.CSQLRelay</a>|SQLRelay\.CSQLRelay|" PySQLRDB.html > PySQLRDB.py.html
+sed -e "s|<font.*><a href=\"\.\">index<.*<\/font>||" -e "s|<a href=\"SQLRelay\.CSQLRelay\.html\">SQLRelay\.CSQLRelay</a>|SQLRelay\.CSQLRelay|" PySQLRDB.html > html/PySQLRDB.py.html
 rm -f PySQLRDB.html
 
-git add PySQLRClient.py.html PySQLRDB.py.html
+git add html

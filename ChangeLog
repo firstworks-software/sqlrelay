@@ -361,6 +361,22 @@
 		which built its "could not be opened" error message by
 		appending to an uninitialized buffer, corrupting the heap on
 		the file-cannot-be-opened path in every language binding
+	moved the java, perl, python, ruby and tcl api docs into an html
+		subdirectory, the way the doxygen apis already did, so every
+		makedoc can clear its whole output directory before
+		regenerating; each had written its output alongside its own
+		script, so a blanket rm would have deleted the script, and the
+		rm lists they used instead only named the file types their
+		generators emitted years ago, leaving java with 33 stale files
+		and ruby cleaning 6 of its 46
+	each makedoc now stages what it generates, so a regen can't silently
+		skip new pages the way the last one dropped 34 per-letter
+		member index pages each from the cs and nodejs docs, and stops
+		on a generator failure instead of staging the emptied output
+		directory as deletions
+	fixed the doc website's link to the ado.net api reference, which had a
+		dot where a slash belongs, and to the erlang api reference,
+		which was missing the html directory
 
 2.1.1 - added tns_admin support
 	fixed sqlr-start ... -strace ...

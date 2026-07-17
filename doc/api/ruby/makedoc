@@ -1,8 +1,7 @@
-find doc -name "*.html" -print | xargs rm -f
-find doc -name "*.css" -print | xargs rm -f
+rm -rf html/*
 rm -f sqlrelay.cpp
 sed -e "s|(CAST)||" ../../../src/api/ruby/sqlrelay.cpp > sqlrelay.cpp
-rdoc sqlrelay.cpp || exit 1
+rdoc -O -o html sqlrelay.cpp || exit 1
 rm -f sqlrelay.cpp
 
-git add doc
+git add html
