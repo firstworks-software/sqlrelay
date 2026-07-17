@@ -52,20 +52,19 @@ install:
 	$(MKINSTALLDIRS) $(docdir)/api/c++/html
 	$(MKINSTALLDIRS) $(docdir)/api/cs/html
 	$(MKINSTALLDIRS) $(docdir)/api/perl
+	$(MKINSTALLDIRS) $(docdir)/api/perl/html
 	$(MKINSTALLDIRS) $(docdir)/api/php/html
-	$(MKINSTALLDIRS) $(docdir)/api/python
-	$(MKINSTALLDIRS) $(docdir)/api/ruby/doc/css
-	$(MKINSTALLDIRS) $(docdir)/api/ruby/doc/fonts
-	$(MKINSTALLDIRS) $(docdir)/api/ruby/doc/images
-	$(MKINSTALLDIRS) $(docdir)/api/ruby/doc/js
-	$(MKINSTALLDIRS) $(docdir)/api/java
-	$(MKINSTALLDIRS) $(docdir)/api/java/com/firstworks/sqlrelay
-	$(MKINSTALLDIRS) $(docdir)/api/java/jquery/external/jquery
-	$(MKINSTALLDIRS) $(docdir)/api/java/jquery/images
-	$(MKINSTALLDIRS) $(docdir)/api/java/jquery/jszip/dist
-	$(MKINSTALLDIRS) $(docdir)/api/java/jquery/jszip-utils/dist
-	$(MKINSTALLDIRS) $(docdir)/api/java/resources
-	$(MKINSTALLDIRS) $(docdir)/api/tcl
+	$(MKINSTALLDIRS) $(docdir)/api/python/html
+	$(MKINSTALLDIRS) $(docdir)/api/ruby/html/css
+	$(MKINSTALLDIRS) $(docdir)/api/ruby/html/fonts
+	$(MKINSTALLDIRS) $(docdir)/api/ruby/html/images
+	$(MKINSTALLDIRS) $(docdir)/api/ruby/html/js
+	$(MKINSTALLDIRS) $(docdir)/api/java/html
+	$(MKINSTALLDIRS) $(docdir)/api/java/html/com/firstworks/sqlrelay
+	$(MKINSTALLDIRS) $(docdir)/api/java/html/legal
+	$(MKINSTALLDIRS) $(docdir)/api/java/html/resources
+	$(MKINSTALLDIRS) $(docdir)/api/java/html/script-dir
+	$(MKINSTALLDIRS) $(docdir)/api/tcl/html
 	$(MKINSTALLDIRS) $(docdir)/api/erlang/html
 	$(MKINSTALLDIRS) $(docdir)/api/nodejs/html
 	$(MKINSTALLDIRS) $(docdir)/features
@@ -121,12 +120,8 @@ install:
 	$(CHMOD) 644 $(docdir)/api/cs/html/*.js
 	$(CP) api/perl/perl.html $(docdir)/api/perl
 	$(CHMOD) 644 $(docdir)/api/perl/perl.html
-	$(CP) api/perl/Connection.html $(docdir)/api/perl
-	$(CHMOD) 644 $(docdir)/api/perl/Connection.html
-	$(CP) api/perl/Cursor.html $(docdir)/api/perl
-	$(CHMOD) 644 $(docdir)/api/perl/Cursor.html
-	$(CP) api/perl/SQLRelay.html $(docdir)/api/perl
-	$(CHMOD) 644 $(docdir)/api/perl/SQLRelay.html
+	$(CP) api/perl/html/*.html $(docdir)/api/perl/html
+	$(CHMOD) 644 $(docdir)/api/perl/html/*.html
 	$(CP) api/php/html/*.html $(docdir)/api/php/html
 	$(CHMOD) 644 $(docdir)/api/php/html/*.html
 	$(CP) api/php/html/*.css $(docdir)/api/php/html
@@ -137,56 +132,48 @@ install:
 	$(CHMOD) 644 $(docdir)/api/php/html/*.svg
 	$(CP) api/php/html/*.js $(docdir)/api/php/html
 	$(CHMOD) 644 $(docdir)/api/php/html/*.js
-	$(CP) api/python/*.html $(docdir)/api/python
-	$(CHMOD) 644 $(docdir)/api/python/*.html
-	$(CP) api/ruby/doc/*.html $(docdir)/api/ruby/doc
-	$(CHMOD) 644 $(docdir)/api/ruby/doc/*.html
-	$(CP) api/ruby/doc/*.rid $(docdir)/api/ruby/doc
-	$(CHMOD) 644 $(docdir)/api/ruby/doc/*.rid
-	$(CP) api/ruby/doc/css/*.css $(docdir)/api/ruby/doc/css
-	$(CHMOD) 644 $(docdir)/api/ruby/doc/css/*.css
-	$(CP) api/ruby/doc/images/*.png $(docdir)/api/ruby/doc/images
-	$(CHMOD) 644 $(docdir)/api/ruby/doc/images/*.png
-	$(CP) api/ruby/doc/images/*.gif $(docdir)/api/ruby/doc/images
-	$(CHMOD) 644 $(docdir)/api/ruby/doc/images/*.gif
-	$(CP) api/ruby/doc/js/*.js $(docdir)/api/ruby/doc/js
-	$(CHMOD) 644 $(docdir)/api/ruby/doc/js/*.js
-	$(CP) api/ruby/doc/js/*.js.gz $(docdir)/api/ruby/doc/js
-	$(CHMOD) 644 $(docdir)/api/ruby/doc/js/*.js.gz
-	$(CP) api/java/*.html $(docdir)/api/java
-	$(CHMOD) 644 $(docdir)/api/java/*.html
-	$(CP) api/java/*.js $(docdir)/api/java
-	$(CHMOD) 644 $(docdir)/api/java/*.js
-	$(CP) api/java/*.zip $(docdir)/api/java
-	$(CHMOD) 644 $(docdir)/api/java/*.zip
-	$(CP) api/java/*.js $(docdir)/api/java
-	$(CHMOD) 644 $(docdir)/api/java/*.js
-	$(CP) api/java/*.css $(docdir)/api/java
-	$(CHMOD) 644 $(docdir)/api/java/*.css
-	$(CP) api/java/element-list $(docdir)/api/java
-	$(CHMOD) 644 $(docdir)/api/java/element-list
-	$(CP) api/java/com/firstworks/sqlrelay/*.html $(docdir)/api/java/com/firstworks/sqlrelay
-	$(CHMOD) 644 $(docdir)/api/java/com/firstworks/sqlrelay/*.html
-	$(CP) api/java/resources/*.gif $(docdir)/api/java/resources
-	$(CHMOD) 644 $(docdir)/api/java/resources/*.gif
-	$(CP) api/java/resources/*.png $(docdir)/api/java/resources
-	$(CHMOD) 644 $(docdir)/api/java/resources/*.png
-	$(CP) api/java/jquery/*.js $(docdir)/api/java/jquery
-	$(CHMOD) 644 $(docdir)/api/java/jquery/*.js
-	$(CP) api/java/jquery/*.css $(docdir)/api/java/jquery
-	$(CHMOD) 644 $(docdir)/api/java/jquery/*.css
-	$(CP) api/java/jquery/external/jquery/*.js $(docdir)/api/java/jquery/external/jquery
-	$(CHMOD) 644 $(docdir)/api/java/jquery/external/jquery/*.js
-	$(CP) api/java/jquery/images/*.png $(docdir)/api/java/jquery/images
-	$(CHMOD) 644 $(docdir)/api/java/jquery/images/*.png
-	$(CP) api/java/jquery/jszip/dist/*.js $(docdir)/api/java/jquery/jszip/dist
-	$(CHMOD) 644 $(docdir)/api/java/jquery/jszip/dist/*.js
-	$(CP) api/java/jquery/jszip-utils/dist/*.js $(docdir)/api/java/jquery/jszip-utils/dist
-	$(CHMOD) 644 $(docdir)/api/java/jquery/jszip-utils/dist/*.js
-	$(CP) api/tcl/*.html $(docdir)/api/tcl
-	$(CHMOD) 644 $(docdir)/api/tcl/*.html
-	$(CP) api/tcl/*.txt $(docdir)/api/tcl
-	$(CHMOD) 644 $(docdir)/api/tcl/*.txt
+	$(CP) api/python/html/*.html $(docdir)/api/python/html
+	$(CHMOD) 644 $(docdir)/api/python/html/*.html
+	$(CP) api/ruby/html/*.html $(docdir)/api/ruby/html
+	$(CHMOD) 644 $(docdir)/api/ruby/html/*.html
+	$(CP) api/ruby/html/*.rid $(docdir)/api/ruby/html
+	$(CHMOD) 644 $(docdir)/api/ruby/html/*.rid
+	$(CP) api/ruby/html/css/*.css $(docdir)/api/ruby/html/css
+	$(CHMOD) 644 $(docdir)/api/ruby/html/css/*.css
+	$(CP) api/ruby/html/fonts/*.ttf $(docdir)/api/ruby/html/fonts
+	$(CHMOD) 644 $(docdir)/api/ruby/html/fonts/*.ttf
+	$(CP) api/ruby/html/images/*.png $(docdir)/api/ruby/html/images
+	$(CHMOD) 644 $(docdir)/api/ruby/html/images/*.png
+	$(CP) api/ruby/html/images/*.gif $(docdir)/api/ruby/html/images
+	$(CHMOD) 644 $(docdir)/api/ruby/html/images/*.gif
+	$(CP) api/ruby/html/js/*.js $(docdir)/api/ruby/html/js
+	$(CHMOD) 644 $(docdir)/api/ruby/html/js/*.js
+	$(CP) api/ruby/html/js/*.js.gz $(docdir)/api/ruby/html/js
+	$(CHMOD) 644 $(docdir)/api/ruby/html/js/*.js.gz
+	$(CP) api/java/html/*.html $(docdir)/api/java/html
+	$(CHMOD) 644 $(docdir)/api/java/html/*.html
+	$(CP) api/java/html/*.js $(docdir)/api/java/html
+	$(CHMOD) 644 $(docdir)/api/java/html/*.js
+	$(CP) api/java/html/*.css $(docdir)/api/java/html
+	$(CHMOD) 644 $(docdir)/api/java/html/*.css
+	$(CP) api/java/html/*.svg $(docdir)/api/java/html
+	$(CHMOD) 644 $(docdir)/api/java/html/*.svg
+	$(CP) api/java/html/element-list $(docdir)/api/java/html
+	$(CHMOD) 644 $(docdir)/api/java/html/element-list
+	$(CP) api/java/html/com/firstworks/sqlrelay/*.html $(docdir)/api/java/html/com/firstworks/sqlrelay
+	$(CHMOD) 644 $(docdir)/api/java/html/com/firstworks/sqlrelay/*.html
+	$(CP) api/java/html/legal/* $(docdir)/api/java/html/legal
+	$(CHMOD) 644 $(docdir)/api/java/html/legal/*
+	$(CP) api/java/html/resources/*.png $(docdir)/api/java/html/resources
+	$(CHMOD) 644 $(docdir)/api/java/html/resources/*.png
+	$(CP) api/java/html/script-dir/*.js $(docdir)/api/java/html/script-dir
+	$(CHMOD) 644 $(docdir)/api/java/html/script-dir/*.js
+	$(CP) api/java/html/script-dir/*.css $(docdir)/api/java/html/script-dir
+	$(CHMOD) 644 $(docdir)/api/java/html/script-dir/*.css
+	$(CP) api/tcl/html/*.html $(docdir)/api/tcl/html
+	$(CHMOD) 644 $(docdir)/api/tcl/html/*.html
+	$(CP) api/tcl/html/*.txt $(docdir)/api/tcl/html
+	$(CHMOD) 644 $(docdir)/api/tcl/html/*.txt
 	$(CP) api/erlang/html/edoc-info $(docdir)/api/erlang/html
 	$(CHMOD) 644 $(docdir)/api/erlang/html/edoc-info
 	$(CP) api/erlang/html/*.png $(docdir)/api/erlang/html
