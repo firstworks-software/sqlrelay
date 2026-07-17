@@ -8,7 +8,7 @@
 <table class="heading">
 <tr class="heading-text decor">
 <td class="title">&nbsp;<br><strong class="title">PySQLRDB</strong></td>
-<td class="extra"><a href=".">index</a><br><a href="file:/home/dmuse/src/fedora40x64/sqlrelay/src/api/python/PySQLRDB.py">/home/dmuse/src/fedora40x64/sqlrelay/src/api/python/PySQLRDB.py</a></td></tr></table>
+<td class="extra"><a href=".">index</a><br><a href="file:/home/dmuse/src/dev/sqlrelay/src/api/python/PySQLRDB.py">/home/dmuse/src/dev/sqlrelay/src/api/python/PySQLRDB.py</a></td></tr></table>
     <p><span class="code">#&nbsp;Copyright&nbsp;(c)&nbsp;2000&nbsp;Roman&nbsp;Milner<br>
 #&nbsp;See&nbsp;the&nbsp;file&nbsp;COPYING&nbsp;for&nbsp;more&nbsp;information</span></p>
 <p>
@@ -645,14 +645,14 @@ Data descriptors inherited from <a href="builtins.html#BaseException">builtins.B
 <td class="section-title" colspan=3>&nbsp;<br><a name="SQLRConnection">class <strong>SQLRConnection</strong></a>(<a href="builtins.html#object">builtins.object</a>)</td></tr>
     
 <tr><td class="decor title-decor" rowspan=2><span class="code">&nbsp;&nbsp;&nbsp;</span></td>
-<td class="decor title-decor" colspan=2><span class="code"><a href="#SQLRConnection">SQLRConnection</a>(host,&nbsp;port,&nbsp;socket,&nbsp;user,&nbsp;password,&nbsp;retrytime,&nbsp;tries,&nbsp;krb,&nbsp;krbservice,&nbsp;krbmech,&nbsp;krbflags,&nbsp;tls,&nbsp;tlsversion,&nbsp;tlscert,&nbsp;tlspassword,&nbsp;tlsciphers,&nbsp;tlsvalidate,&nbsp;tlsca,&nbsp;tlsdepth,&nbsp;db,&nbsp;debug,&nbsp;columnnamecase,&nbsp;resultsetbuffersize,&nbsp;dontgetcolumninfo,&nbsp;nullsasnone,&nbsp;lazyconnect,&nbsp;bindvariabledelimiters)<br>
+<td class="decor title-decor" colspan=2><span class="code"><a href="#SQLRConnection">SQLRConnection</a>(host,&nbsp;port,&nbsp;socket,&nbsp;user,&nbsp;password,&nbsp;retrytime,&nbsp;tries,&nbsp;krb,&nbsp;krbservice,&nbsp;krbmech,&nbsp;krbflags,&nbsp;tls,&nbsp;tlsversion,&nbsp;tlscert,&nbsp;tlspassword,&nbsp;tlsciphers,&nbsp;tlsvalidate,&nbsp;tlsca,&nbsp;tlsdepth,&nbsp;db,&nbsp;debug,&nbsp;columnnamecase,&nbsp;resultsetbuffersize,&nbsp;dontgetcolumninfo,&nbsp;nullsasnone,&nbsp;lazyconnect,&nbsp;bindvariabledelimiters,&nbsp;autocommit,&nbsp;transactionmodel)<br>
 &nbsp;<br>
 <br>&nbsp;</span></td></tr>
 <tr><td>&nbsp;</td>
 <td class="singlecolumn">Methods defined here:<br>
 <dl><dt><a name="SQLRConnection-__del__"><strong>__del__</strong></a>(self)</dt></dl>
 
-<dl><dt><a name="SQLRConnection-__init__"><strong>__init__</strong></a>(self, host, port, socket, user, password, retrytime, tries, krb, krbservice, krbmech, krbflags, tls, tlsversion, tlscert, tlspassword, tlsciphers, tlsvalidate, tlsca, tlsdepth, db, debug, columnnamecase, resultsetbuffersize, dontgetcolumninfo, nullsasnone, lazyconnect, bindvariabledelimiters)</dt><dd><span class="code">Initialize&nbsp;self.&nbsp;&nbsp;See&nbsp;help(type(self))&nbsp;for&nbsp;accurate&nbsp;signature.</span></dd></dl>
+<dl><dt><a name="SQLRConnection-__init__"><strong>__init__</strong></a>(self, host, port, socket, user, password, retrytime, tries, krb, krbservice, krbmech, krbflags, tls, tlsversion, tlscert, tlspassword, tlsciphers, tlsvalidate, tlsca, tlsdepth, db, debug, columnnamecase, resultsetbuffersize, dontgetcolumninfo, nullsasnone, lazyconnect, bindvariabledelimiters, autocommit, transactionmodel)</dt><dd><span class="code">Initialize&nbsp;self.&nbsp;&nbsp;See&nbsp;help(type(self))&nbsp;for&nbsp;accurate&nbsp;signature.</span></dd></dl>
 
 <dl><dt><a name="SQLRConnection-close"><strong>close</strong></a>(self)</dt></dl>
 
@@ -702,6 +702,8 @@ Data and other attributes defined here:<br>
 <dl><dt><a name="SQLRCursor-fetchmany"><strong>fetchmany</strong></a>(self, size=None)</dt></dl>
 
 <dl><dt><a name="SQLRCursor-fetchone"><strong>fetchone</strong></a>(self)</dt></dl>
+
+<dl><dt><a name="SQLRCursor-nextset"><strong>nextset</strong></a>(self)</dt></dl>
 
 <dl><dt><a name="SQLRCursor-setinputsizes"><strong>setinputsizes</strong></a>(self)</dt></dl>
 
@@ -788,7 +790,7 @@ Data descriptors inherited from <a href="builtins.html#BaseException">builtins.B
 <td class="section-title" colspan=3>&nbsp;<br><strong class="bigsection">Functions</strong></td></tr>
     
 <tr><td class="decor functions-decor"><span class="code">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span></td><td>&nbsp;</td>
-<td class="singlecolumn"><dl><dt><a name="-connect"><strong>connect</strong></a>(host, port, socket, user, password, retrytime=0, tries=1, krb='no', krbservice='', krbmech='', krbflags='', tls='no', tlsversion='', tlscert='', tlspassword='', tlsciphers='', tlsvalidate='', tlsca='', tlsdepth=0, db='', debug=0, columnnamecase='mixed', resultsetbuffersize=0, dontgetcolumninfo=0, nullsasnone=1, lazyconnect=1, bindvariabledelimiters='?:@$')</dt></dl>
+<td class="singlecolumn"><dl><dt><a name="-connect"><strong>connect</strong></a>(host, port, socket, user, password, retrytime=0, tries=1, krb='no', krbservice='', krbmech='', krbflags='', tls='no', tlsversion='', tlscert='', tlspassword='', tlsciphers='', tlsvalidate='', tlsca='', tlsdepth=0, db='', debug=0, columnnamecase='mixed', resultsetbuffersize=0, dontgetcolumninfo=0, nullsasnone=1, lazyconnect=1, bindvariabledelimiters='?:@$', autocommit='backend', transactionmodel='')</dt></dl>
  <dl><dt><a name="-localtime"><strong>localtime</strong></a>(...)</dt><dd><span class="code"><a href="#-localtime">localtime</a>([seconds])&nbsp;-&gt;&nbsp;(tm_year,tm_mon,tm_mday,tm_hour,tm_min,<br>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;tm_sec,tm_wday,tm_yday,tm_isdst)<br>
 &nbsp;<br>

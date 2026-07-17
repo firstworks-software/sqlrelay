@@ -90,27 +90,46 @@
     <li ><a href="#method-i-endSession">#endSession</a>
     <li ><a href="#method-i-errorMessage">#errorMessage</a>
     <li ><a href="#method-i-errorNumber">#errorNumber</a>
+    <li ><a href="#method-i-getAutoCommit">#getAutoCommit</a>
     <li ><a href="#method-i-getBindVariableDelimiterAtSignSupported">#getBindVariableDelimiterAtSignSupported</a>
     <li ><a href="#method-i-getBindVariableDelimiterColonSupported">#getBindVariableDelimiterColonSupported</a>
     <li ><a href="#method-i-getBindVariableDelimiterDollarSignSupported">#getBindVariableDelimiterDollarSignSupported</a>
     <li ><a href="#method-i-getBindVariableDelimiterQuestionMarkSupported">#getBindVariableDelimiterQuestionMarkSupported</a>
     <li ><a href="#method-i-getClientInfo">#getClientInfo</a>
+    <li ><a href="#method-i-getConnectTimeoutMicroseconds">#getConnectTimeoutMicroseconds</a>
+    <li ><a href="#method-i-getConnectTimeoutSeconds">#getConnectTimeoutSeconds</a>
     <li ><a href="#method-i-getConnectionPort">#getConnectionPort</a>
     <li ><a href="#method-i-getConnectionSocket">#getConnectionSocket</a>
+    <li ><a href="#method-i-getCurrentCatalog">#getCurrentCatalog</a>
     <li ><a href="#method-i-getCurrentDatabase">#getCurrentDatabase</a>
+    <li ><a href="#method-i-getCurrentSchema">#getCurrentSchema</a>
+    <li ><a href="#method-i-getCurrentUser">#getCurrentUser</a>
+    <li ><a href="#method-i-getDatabaseFeature">#getDatabaseFeature</a>
+    <li ><a href="#method-i-getDatabaseIsSchema">#getDatabaseIsSchema</a>
     <li ><a href="#method-i-getDebug">#getDebug</a>
+    <li ><a href="#method-i-getDefaultTransactionModel">#getDefaultTransactionModel</a>
+    <li ><a href="#method-i-getInTransaction">#getInTransaction</a>
+    <li ><a href="#method-i-getIsolationLevel">#getIsolationLevel</a>
     <li ><a href="#method-i-getLastInsertId">#getLastInsertId</a>
+    <li ><a href="#method-i-getResponseTimeoutMicroseconds">#getResponseTimeoutMicroseconds</a>
+    <li ><a href="#method-i-getResponseTimeoutSeconds">#getResponseTimeoutSeconds</a>
+    <li ><a href="#method-i-getTransactionModel">#getTransactionModel</a>
     <li ><a href="#method-i-identify">#identify</a>
+    <li ><a href="#method-i-nextvalFormat">#nextvalFormat</a>
     <li ><a href="#method-i-ping">#ping</a>
     <li ><a href="#method-i-resumeSession">#resumeSession</a>
     <li ><a href="#method-i-rollback">#rollback</a>
+    <li ><a href="#method-i-selectCatalog">#selectCatalog</a>
     <li ><a href="#method-i-selectDatabase">#selectDatabase</a>
+    <li ><a href="#method-i-selectSchema">#selectSchema</a>
     <li ><a href="#method-i-serverVersion">#serverVersion</a>
     <li ><a href="#method-i-setBindVariableDelimiters">#setBindVariableDelimiters</a>
     <li ><a href="#method-i-setClientInfo">#setClientInfo</a>
     <li ><a href="#method-i-setConnectTimeout">#setConnectTimeout</a>
     <li ><a href="#method-i-setDebugFile">#setDebugFile</a>
+    <li ><a href="#method-i-setIsolationLevel">#setIsolationLevel</a>
     <li ><a href="#method-i-setResponseTimeout">#setResponseTimeout</a>
+    <li ><a href="#method-i-setTransactionModel">#setTransactionModel</a>
     <li ><a href="#method-i-suspendSession">#suspendSession</a>
   </ul>
 </div>
@@ -153,23 +172,17 @@
 
 <p>If “server” is a comma-separated list of hosts, then an attempt will be made to connect to each until the attempt succeeds, or there are no more hosts left to try.</p>
 
-<p>If the “socket” parameter is nether nil nor “” then an attempt will be made to connect through it before attempting to connect to “host” on “port”.  If it is nil or “” then no attempt will be made to connect through the socket.</p>
+<p>If the “socket” parameter is neither nil nor “” then an attempt will be made to connect through it before attempting to connect to “host” on “port”.  If it is nil or “” then no attempt will be made to connect through the socket.</p>
 
           <div class="method-source-code" id="new-source">
             <pre>static VALUE sqlrcon_new(VALUE self, VALUE host, VALUE port, VALUE socket,
-                                VALUE user, VALUE password, 
+                                VALUE user, VALUE password,
                                 VALUE retrytime, VALUE tries) {
-        const char     *socketstr;
-        if (socket==Qnil) {
-                socketstr=&quot;&quot;;
-        } else {
-                socketstr=STR2CSTR(socket);
-        }
-        sqlrconnection *sqlrcon=new sqlrconnection(STR2CSTR(host),
+        sqlrconnection *sqlrcon=new sqlrconnection(STR2CSTR_NIL(host),
                                                         NUM2INT(port),
-                                                        socketstr,
-                                                        STR2CSTR(user),
-                                                        STR2CSTR(password),
+                                                        STR2CSTR_NIL(socket),
+                                                        STR2CSTR_NIL(user),
+                                                        STR2CSTR_NIL(password),
                                                         NUM2INT(retrytime),
                                                         NUM2INT(tries),
                                                         true);
@@ -351,7 +364,7 @@
         </div>
 
         <div class="method-description">
-          <p>Issues a commit.  Returns true if the commit succeeded, false if it failed.</p>
+          <p>Commits a transaction.  Returns true if the commit succeeded, false if it failed.</p>
 
           <div class="method-source-code" id="commit-source">
             <pre>static VALUE sqlrcon_commit(VALUE self) {
@@ -492,7 +505,7 @@
         </div>
 
         <div class="method-description">
-          <p>Causes verbose debugging information to be sent to standard output. Another way to do this is to start a query with “– debugn”.  Yet another way is to set the environment variable SQLR_CLIENT_DEBUG to “ON”</p>
+          <p>Causes verbose debugging information to be sent to standard output.  Another way to do this is to start a query with “– debugn”. Yet another way is to set the environment variable SQLR_CLIENT_DEBUG to “ON”</p>
 
           <div class="method-source-code" id="debugOn-source">
             <pre>static VALUE sqlrcon_debugOn(VALUE self) {
@@ -691,7 +704,7 @@
         </div>
 
         <div class="method-description">
-          <p>If an operation failed and generated an error, the error message is available here.  If there is no error then this method returns nil</p>
+          <p>If an operation failed and generated an error, the error message is available here. If there is no error then this method returns nil.</p>
 
           <div class="method-source-code" id="errorMessage-source">
             <pre>static VALUE sqlrcon_errorMessage(VALUE self) {
@@ -721,14 +734,40 @@
         </div>
 
         <div class="method-description">
-          <p>If an operation failed and generated an error, the error number is available here.  If there is no error then this method returns 0.</p>
+          <p>If an operation failed and generated an error, the error number is available here. If there is no error then this method returns 0.</p>
 
           <div class="method-source-code" id="errorNumber-source">
             <pre>static VALUE sqlrcon_errorNumber(VALUE self) {
         sqlrconnection *sqlrcon;
         int64_t                result;
         Data_Get_Struct(self,sqlrconnection,sqlrcon);
-        RCON(result,i64r,sqlrcon,conErrorNumber);
+        RCON(result,u64r,sqlrcon,conErrorNumber);
+        return INT2NUM(result);
+}</pre>
+          </div>
+        </div>
+
+
+      </div>
+
+      <div id="method-i-getAutoCommit" class="method-detail ">
+        <div class="method-header">
+          <div class="method-heading">
+            <span class="method-name">getAutoCommit</span><span
+              class="method-args">()</span>
+            <span class="method-click-advice">click to toggle source</span>
+          </div>
+        </div>
+
+        <div class="method-description">
+          <p>Returns true if auto-commit is currently on, false otherwise.</p>
+
+          <div class="method-source-code" id="getAutoCommit-source">
+            <pre>static VALUE sqlrcon_getAutoCommit(VALUE self) {
+        sqlrconnection *sqlrcon;
+        bool           result;
+        Data_Get_Struct(self,sqlrconnection,sqlrcon);
+        RCON(result,br,sqlrcon,getAutoCommit);
         return INT2NUM(result);
 }</pre>
           </div>
@@ -871,6 +910,60 @@
 
       </div>
 
+      <div id="method-i-getConnectTimeoutMicroseconds" class="method-detail ">
+        <div class="method-header">
+          <div class="method-heading">
+            <span class="method-callseq">
+              getConnectTimeoutMicroseconds()
+            </span>
+            <span class="method-click-advice">click to toggle source</span>
+          </div>
+        </div>
+
+        <div class="method-description">
+          <p>Gets the server connect timeout in microseconds.</p>
+
+          <div class="method-source-code" id="getConnectTimeoutMicroseconds-source">
+            <pre>static VALUE sqlrcon_getConnectTimeoutMicroseconds(VALUE self) {
+        sqlrconnection *sqlrcon;
+        int32_t        result;
+        Data_Get_Struct(self,sqlrconnection,sqlrcon);
+        RCON(result,i32r,sqlrcon,getConnectTimeoutMicroseconds)
+        return INT2NUM(result);
+}</pre>
+          </div>
+        </div>
+
+
+      </div>
+
+      <div id="method-i-getConnectTimeoutSeconds" class="method-detail ">
+        <div class="method-header">
+          <div class="method-heading">
+            <span class="method-callseq">
+              getConnectTimeoutSeconds()
+            </span>
+            <span class="method-click-advice">click to toggle source</span>
+          </div>
+        </div>
+
+        <div class="method-description">
+          <p>Gets the server connect timeout in seconds.</p>
+
+          <div class="method-source-code" id="getConnectTimeoutSeconds-source">
+            <pre>static VALUE sqlrcon_getConnectTimeoutSeconds(VALUE self) {
+        sqlrconnection *sqlrcon;
+        int32_t        result;
+        Data_Get_Struct(self,sqlrconnection,sqlrcon);
+        RCON(result,i32r,sqlrcon,getConnectTimeoutSeconds)
+        return INT2NUM(result);
+}</pre>
+          </div>
+        </div>
+
+
+      </div>
+
       <div id="method-i-getConnectionPort" class="method-detail ">
         <div class="method-header">
           <div class="method-heading">
@@ -881,7 +974,7 @@
         </div>
 
         <div class="method-description">
-          <p>Returns the inet port that the connection is communicating over.  This parameter may be passed to another connection for use in the sqlrcon_resumeSession() command.  Note: The result this function returns is only valid after a call to suspendSession().</p>
+          <p>Returns the inet port that the connection is communicating over. This parameter may be passed to another connection for use in the resumeSession() method. Note: The value this method returns is only valid after a call to suspendSession().</p>
 
           <div class="method-source-code" id="getConnectionPort-source">
             <pre>static VALUE sqlrcon_getConnectionPort(VALUE self) {
@@ -907,7 +1000,7 @@
         </div>
 
         <div class="method-description">
-          <p>Returns the unix socket that the connection is communicating over.  This parameter may be passed to another connection for use in the sqlrcon_resumeSession() command.  Note: The result this function returns is only valid after a call to suspendSession().</p>
+          <p>Returns the unix socket that the connection is communicating over. This parameter may be passed to another connection for use in the resumeSession() method. Note: The value this method returns is only valid after a call to suspendSession().</p>
 
           <div class="method-source-code" id="getConnectionSocket-source">
             <pre>static VALUE sqlrcon_getConnectionSocket(VALUE self) {
@@ -915,6 +1008,37 @@
         const char     *result;
         Data_Get_Struct(self,sqlrconnection,sqlrcon);
         RCON(result,ccpr,sqlrcon,getConnectionSocket);
+        if (result) {
+                return rb_str_new2(result);
+        } else {
+                return Qnil;
+        }
+}</pre>
+          </div>
+        </div>
+
+
+      </div>
+
+      <div id="method-i-getCurrentCatalog" class="method-detail ">
+        <div class="method-header">
+          <div class="method-heading">
+            <span class="method-callseq">
+              getCurrentCatalog()
+            </span>
+            <span class="method-click-advice">click to toggle source</span>
+          </div>
+        </div>
+
+        <div class="method-description">
+          <p>Returns the catalog that is currently in use.</p>
+
+          <div class="method-source-code" id="getCurrentCatalog-source">
+            <pre>static VALUE sqlrcon_getCurrentCatalog(VALUE self) {
+        sqlrconnection *sqlrcon;
+        const char     *result;
+        Data_Get_Struct(self,sqlrconnection,sqlrcon);
+        RCON(result,ccpr,sqlrcon,getCurrentCatalog);
         if (result) {
                 return rb_str_new2(result);
         } else {
@@ -937,7 +1061,11 @@
         </div>
 
         <div class="method-description">
-          <p>Returns the database/schema that is currently in use.</p>
+          <p>Returns the database that is currently in use.</p>
+
+<p>May return the current catalog or schema, depending on whether the backend database equates “database” with catalog or schema.</p>
+
+<p>See getDatabaseIsSchema().</p>
 
           <div class="method-source-code" id="getCurrentDatabase-source">
             <pre>static VALUE sqlrcon_getCurrentDatabase(VALUE self) {
@@ -957,6 +1085,676 @@
 
       </div>
 
+      <div id="method-i-getCurrentSchema" class="method-detail ">
+        <div class="method-header">
+          <div class="method-heading">
+            <span class="method-callseq">
+              getCurrentSchema()
+            </span>
+            <span class="method-click-advice">click to toggle source</span>
+          </div>
+        </div>
+
+        <div class="method-description">
+          <p>Returns the schema that is currently in use.</p>
+
+          <div class="method-source-code" id="getCurrentSchema-source">
+            <pre>static VALUE sqlrcon_getCurrentSchema(VALUE self) {
+        sqlrconnection *sqlrcon;
+        const char     *result;
+        Data_Get_Struct(self,sqlrconnection,sqlrcon);
+        RCON(result,ccpr,sqlrcon,getCurrentSchema);
+        if (result) {
+                return rb_str_new2(result);
+        } else {
+                return Qnil;
+        }
+}</pre>
+          </div>
+        </div>
+
+
+      </div>
+
+      <div id="method-i-getCurrentUser" class="method-detail ">
+        <div class="method-header">
+          <div class="method-heading">
+            <span class="method-callseq">
+              getCurrentUser()
+            </span>
+            <span class="method-click-advice">click to toggle source</span>
+          </div>
+        </div>
+
+        <div class="method-description">
+          <p>Returns the user that sqlrelay is currently logged in to the database as, or NULL if no user could be determined or if an error occurred.</p>
+
+          <div class="method-source-code" id="getCurrentUser-source">
+            <pre>static VALUE sqlrcon_getCurrentUser(VALUE self) {
+        sqlrconnection *sqlrcon;
+        const char     *result;
+        Data_Get_Struct(self,sqlrconnection,sqlrcon);
+        RCON(result,ccpr,sqlrcon,getCurrentUser);
+        if (result) {
+                return rb_str_new2(result);
+        } else {
+                return Qnil;
+        }
+}</pre>
+          </div>
+        </div>
+
+
+      </div>
+
+      <div id="method-i-getDatabaseFeature" class="method-detail ">
+        <div class="method-header">
+          <div class="method-heading">
+            <span class="method-name">getDatabaseFeature</span><span
+              class="method-args">(p1)</span>
+            <span class="method-click-advice">click to toggle source</span>
+          </div>
+        </div>
+
+        <div class="method-description">
+          <p>Returns the value of the specified database “feature”.</p>
+
+<p>Valid features include:</p>
+<ul><li>
+<p>aggregate_functions</p>
+</li><li>
+<p>list - ALL,AVG,COUNT,DISTINCT,MAX,MIN,SUM</p>
+</li><li>
+<p>all_procedures_are_callable</p>
+</li><li>
+<p>true/false</p>
+</li><li>
+<p>all_tables_are_selectable</p>
+</li><li>
+<p>true/false</p>
+</li><li>
+<p>alter_domain_clauses</p>
+</li><li>
+<p>list - ADD_DOMAIN_CONSTRAINT,ADD_DOMAIN_DEFAULT,…</p>
+</li><li>
+<p>alter_table_operations</p>
+</li><li>
+<p>list - ADD_COLUMN,DROP_COLUMN</p>
+</li><li>
+<p>ansi92_sql_levels</p>
+</li><li>
+<p>list - ENTRY_LEVEL,FULL,INTERMEDIATE</p>
+</li><li>
+<p>auto_commit_failure_closes_all_result_sets</p>
+</li><li>
+<p>true/false</p>
+</li><li>
+<p>batch_operations</p>
+</li><li>
+<p>list - SELECT_EXPLICIT,ROW_COUNT_EXPLICIT,SELECT_PROC,ROW_COUNT_PROC</p>
+</li><li>
+<p>batch_row_counts</p>
+</li><li>
+<p>list - PROCEDURES,EXPLICIT,ROLLED_UP</p>
+</li><li>
+<p>catalog_separator</p>
+</li><li>
+<p>string</p>
+</li><li>
+<p>catalog_term</p>
+</li><li>
+<p>string</p>
+</li><li>
+<p>catalog_usage</p>
+</li><li>
+<p>list - DATA_MANIPULATION,INDEX_DEFINITIONS,…</p>
+</li><li>
+<p>collation_seq</p>
+</li><li>
+<p>string</p>
+</li><li>
+<p>create_assertion_clauses</p>
+</li><li>
+<p>list - CREATE_ASSERTION,CONSTRAINT_INITIALLY_DEFERRED,…</p>
+</li><li>
+<p>create_character_set_clauses</p>
+</li><li>
+<p>list - CREATE_CHARACTER_SET,COLLATE_CLAUSE,…</p>
+</li><li>
+<p>create_collation_clauses</p>
+</li><li>
+<p>list - CREATE_COLLATION</p>
+</li><li>
+<p>create_domain_clauses</p>
+</li><li>
+<p>list - CREATE_DOMAIN,CONSTRAINT_NAME_DEFINITION,…</p>
+</li><li>
+<p>create_schema_clauses</p>
+</li><li>
+<p>list - CREATE_SCHEMA,AUTHORIZATION,DEFAULT_CHARACTER_SET</p>
+</li><li>
+<p>create_table_clauses</p>
+</li><li>
+<p>list - CREATE_TABLE,TABLE_CONSTRAINT,…</p>
+</li><li>
+<p>create_translation_clauses</p>
+</li><li>
+<p>list - CREATE_TRANSLATION</p>
+</li><li>
+<p>create_view_clauses</p>
+</li><li>
+<p>list - CREATE_VIEW,CHECK_OPTION,CASCADED,LOCAL</p>
+</li><li>
+<p>data_definition_transaction_behavior</p>
+</li><li>
+<p>list - CAUSES_COMMIT,IGNORED_IN_TRANSACTIONS</p>
+</li><li>
+<p>ddl_index_operations</p>
+</li><li>
+<p>list - CREATE_INDEX,DROP_INDEX</p>
+</li><li>
+<p>string</p>
+</li><li>
+<p>default_result_set_holdability</p>
+</li><li>
+<p>string</p>
+</li><li>
+<p>deletes_are_detected</p>
+</li><li>
+<p>list - FORWARD_ONLY,SCROLL_INSENSITIVE,SCROLL_SENSITIVE</p>
+</li><li>
+<p>does_max_row_size_include_blobs</p>
+</li><li>
+<p>true/false</p>
+</li><li>
+<p>drop_assertion_clauses</p>
+</li><li>
+<p>list - DROP_ASSERTION</p>
+</li><li>
+<p>drop_character_set_clauses</p>
+</li><li>
+<p>list - DROP_CHARACTER_SET</p>
+</li><li>
+<p>drop_collation_clauses</p>
+</li><li>
+<p>list - DROP_COLLATION</p>
+</li><li>
+<p>drop_domain_clauses</p>
+</li><li>
+<p>list - DROP_DOMAIN,CASCADE,RESTRICT</p>
+</li><li>
+<p>drop_schema_clauses</p>
+</li><li>
+<p>list - DROP_SCHEMA,CASCADE,RESTRICT</p>
+</li><li>
+<p>drop_table_clauses</p>
+</li><li>
+<p>list - DROP_TABLE,CASCADE,RESTRICT</p>
+</li><li>
+<p>drop_translation_clauses</p>
+</li><li>
+<p>list - DROP_TRANSLATION</p>
+</li><li>
+<p>drop_view_clauses</p>
+</li><li>
+<p>list - DROP_VIEW,CASCADE,RESTRICT</p>
+</li><li>
+<p>extra_name_characters</p>
+</li><li>
+<p>string</p>
+</li><li>
+<p>foreign_key_delete_rules</p>
+</li><li>
+<p>list - CASCADE,NO_ACTION,SET_DEFAULT,SET_NULL</p>
+</li><li>
+<p>foreign_key_update_rules</p>
+</li><li>
+<p>list - CASCADE,NO_ACTION,SET_DEFAULT,SET_NULL</p>
+</li><li>
+<p>forward_only_cursor_attributes</p>
+</li><li>
+<p>list - NEXT,ABSOLUTE,RELATIVE,BOOKMARK,…</p>
+</li><li>
+<p>generated_key_always_returned</p>
+</li><li>
+<p>true/false</p>
+</li><li>
+<p>grant_clauses</p>
+</li><li>
+<p>list - DELETE_TABLE,INSERT_COLUMN,INSERT_TABLE,…</p>
+</li><li>
+<p>group_by_clauses</p>
+</li><li>
+<p>list - BASIC,BEYOND_SELECT,UNRELATED</p>
+</li><li>
+<p>identifier_case_storage</p>
+</li><li>
+<p>list - LOWER,MIXED,SENSITIVE,UPPER</p>
+</li><li>
+<p>identifier_quote_string</p>
+</li><li>
+<p>string</p>
+</li><li>
+<p>index_keywords</p>
+</li><li>
+<p>list - ASC,DESC</p>
+</li><li>
+<p>info_schema_views</p>
+</li><li>
+<p>list - ASSERTIONS,CHARACTER_SETS,CHECK_CONSTRAINTS,…</p>
+</li><li>
+<p>insert_operations</p>
+</li><li>
+<p>list - INSERT_LITERALS,INSERT_SEARCHED,SELECT_INTO</p>
+</li><li>
+<p>inserts_are_detected</p>
+</li><li>
+<p>list - FORWARD_ONLY,SCROLL_INSENSITIVE,SCROLL_SENSITIVE</p>
+</li><li>
+<p>is_catalog_at_start</p>
+</li><li>
+<p>true/false</p>
+</li><li>
+<p>isolation_levels</p>
+</li><li>
+<p>list - READ_UNCOMMITTED,READ_COMMITTED,…</p>
+</li><li>
+<p>local_file_usage</p>
+</li><li>
+<p>list - LOCAL_FILE_PER_TABLE,LOCAL_FILES</p>
+</li><li>
+<p>locators_update_copy</p>
+</li><li>
+<p>true/false</p>
+</li><li>
+<p>lock_types</p>
+</li><li>
+<p>list - NO_CHANGE,EXCLUSIVE,UNLOCK</p>
+</li><li>
+<p>max_binary_literal_length</p>
+</li><li>
+<p>number</p>
+</li><li>
+<p>max_catalog_name_length</p>
+</li><li>
+<p>number</p>
+</li><li>
+<p>max_char_literal_length</p>
+</li><li>
+<p>number</p>
+</li><li>
+<p>max_column_name_length</p>
+</li><li>
+<p>number</p>
+</li><li>
+<p>max_columns_in_group_by</p>
+</li><li>
+<p>number</p>
+</li><li>
+<p>max_columns_in_index</p>
+</li><li>
+<p>number</p>
+</li><li>
+<p>max_columns_in_order_by</p>
+</li><li>
+<p>number</p>
+</li><li>
+<p>max_columns_in_select</p>
+</li><li>
+<p>number</p>
+</li><li>
+<p>max_columns_in_table</p>
+</li><li>
+<p>number</p>
+</li><li>
+<p>max_connections</p>
+</li><li>
+<p>number</p>
+</li><li>
+<p>max_cursor_name_length</p>
+</li><li>
+<p>number</p>
+</li><li>
+<p>max_identifier_length</p>
+</li><li>
+<p>number</p>
+</li><li>
+<p>max_index_length</p>
+</li><li>
+<p>number</p>
+</li><li>
+<p>max_procedure_name_length</p>
+</li><li>
+<p>number</p>
+</li><li>
+<p>max_row_size</p>
+</li><li>
+<p>number</p>
+</li><li>
+<p>max_schema_name_length</p>
+</li><li>
+<p>number</p>
+</li><li>
+<p>max_statement_length</p>
+</li><li>
+<p>number</p>
+</li><li>
+<p>max_statements</p>
+</li><li>
+<p>number</p>
+</li><li>
+<p>max_table_name_length</p>
+</li><li>
+<p>number</p>
+</li><li>
+<p>max_tables_in_select</p>
+</li><li>
+<p>number</p>
+</li><li>
+<p>max_user_name_length</p>
+</li><li>
+<p>number</p>
+</li><li>
+<p>need_long_data_length</p>
+</li><li>
+<p>true/false</p>
+</li><li>
+<p>null_plus_non_null_is_null</p>
+</li><li>
+<p>true/false</p>
+</li><li>
+<p>null_sort_order</p>
+</li><li>
+<p>list - AT_END,AT_START,HIGH,LOW</p>
+</li><li>
+<p>numeric_functions</p>
+</li><li>
+<p>list - ABS,ACOS,ASIN,ATAN,ATAN2,CEILING,COS,COT,…</p>
+</li><li>
+<p>open_cursors_across</p>
+</li><li>
+<p>list - COMMIT,ROLLBACK</p>
+</li><li>
+<p>open_statements_across</p>
+</li><li>
+<p>list - COMMIT,ROLLBACK</p>
+</li><li>
+<p>others_deletes_are_visible</p>
+</li><li>
+<p>list - FORWARD_ONLY,SCROLL_INSENSITIVE,SCROLL_SENSITIVE</p>
+</li><li>
+<p>others_inserts_are_visible</p>
+</li><li>
+<p>list - FORWARD_ONLY,SCROLL_INSENSITIVE,SCROLL_SENSITIVE</p>
+</li><li>
+<p>others_updates_are_visible</p>
+</li><li>
+<p>list - FORWARD_ONLY,SCROLL_INSENSITIVE,SCROLL_SENSITIVE</p>
+</li><li>
+<p>outer_joins</p>
+</li><li>
+<p>list - BASIC,FULL,LIMITED</p>
+</li><li>
+<p>own_deletes_are_visible</p>
+</li><li>
+<p>list - FORWARD_ONLY,SCROLL_INSENSITIVE,SCROLL_SENSITIVE</p>
+</li><li>
+<p>own_inserts_are_visible</p>
+</li><li>
+<p>list - FORWARD_ONLY,SCROLL_INSENSITIVE,SCROLL_SENSITIVE</p>
+</li><li>
+<p>own_updates_are_visible</p>
+</li><li>
+<p>list - FORWARD_ONLY,SCROLL_INSENSITIVE,SCROLL_SENSITIVE</p>
+</li><li>
+<p>predicates</p>
+</li><li>
+<p>list - BETWEEN,COMPARISON,EXISTS,IN,ISNOTNULL,ISNULL,…</p>
+</li><li>
+<p>procedure_term</p>
+</li><li>
+<p>string</p>
+</li><li>
+<p>quoted_identifier_case_storage</p>
+</li><li>
+<p>list - LOWER,MIXED,SENSITIVE,UPPER</p>
+</li><li>
+<p>relational_join_operators</p>
+</li><li>
+<p>list - CORRESPONDING_CLAUSE,CROSS_JOIN,EXCEPT_JOIN,…</p>
+</li><li>
+<p>result_set_concurrencies</p>
+</li><li>
+<p>list - FORWARD_ONLY/READ_ONLY,FORWARD_ONLY/UPDATABLE,…</p>
+</li><li>
+<p>result_set_holdabilities</p>
+</li><li>
+<p>list - CLOSE_CURSORS_AT_COMMIT,HOLD_CURSORS_OVER_COMMIT</p>
+</li><li>
+<p>result_set_types</p>
+</li><li>
+<p>list - FORWARD_ONLY,SCROLL_INSENSITIVE,SCROLL_SENSITIVE</p>
+</li><li>
+<p>revoke_clauses</p>
+</li><li>
+<p>list - CASCADE,DELETE_TABLE,GRANT_OPTION_FOR,…</p>
+</li><li>
+<p>row_id_lifetime</p>
+</li><li>
+<p>string</p>
+</li><li>
+<p>row_value_constructor_expressions</p>
+</li><li>
+<p>list - VALUE_EXPRESSION,NULL,DEFAULT,ROW_SUBQUERY</p>
+</li><li>
+<p>schema_term</p>
+</li><li>
+<p>string</p>
+</li><li>
+<p>schema_usage</p>
+</li><li>
+<p>list - DATA_MANIPULATION,INDEX_DEFINITIONS,…</p>
+</li><li>
+<p>scroll_concurrencies</p>
+</li><li>
+<p>list - READ_ONLY,LOCK,OPT_ROWVER,OPT_VALUES</p>
+</li><li>
+<p>search_string_escape</p>
+</li><li>
+<p>string</p>
+</li><li>
+<p>sql_grammar_levels</p>
+</li><li>
+<p>list - CORE,EXTENDED,MINIMUM</p>
+</li><li>
+<p>sql_keywords</p>
+</li><li>
+<p>list - ACCESS,ADD,ALTER,AUDIT,CLUSTER,COLUMN,COMMENT,…</p>
+</li><li>
+<p>sql_state_type</p>
+</li><li>
+<p>number</p>
+</li><li>
+<p>static_cursor_attributes</p>
+</li><li>
+<p>list - NEXT,ABSOLUTE,RELATIVE,BOOKMARK,…</p>
+</li><li>
+<p>stored_programs</p>
+</li><li>
+<p>list - FUNCTIONS,PROCEDURES</p>
+</li><li>
+<p>string_functions</p>
+</li><li>
+<p>list - CONCAT,INSERT,LEFT,LTRIM,LENGTH,LOCATE,LCASE,…</p>
+</li><li>
+<p>subquery_usage</p>
+</li><li>
+<p>list - COMPARISONS,EXISTS,INS,QUANTIFIEDS</p>
+</li><li>
+<p>supports_batch_updates</p>
+</li><li>
+<p>true/false</p>
+</li><li>
+<p>supports_column_aliasing</p>
+</li><li>
+<p>true/false</p>
+</li><li>
+<p>supports_convert</p>
+</li><li>
+<p>true/false</p>
+</li><li>
+<p>supports_correlated_subqueries</p>
+</li><li>
+<p>true/false</p>
+</li><li>
+<p>supports_describe_parameter</p>
+</li><li>
+<p>true/false</p>
+</li><li>
+<p>supports_expressions_in_order_by</p>
+</li><li>
+<p>true/false</p>
+</li><li>
+<p>supports_get_generated_keys</p>
+</li><li>
+<p>true/false</p>
+</li><li>
+<p>supports_integrity_enhancement_facility</p>
+</li><li>
+<p>true/false</p>
+</li><li>
+<p>supports_like_escape_clause</p>
+</li><li>
+<p>true/false</p>
+</li><li>
+<p>supports_multiple_result_sets</p>
+</li><li>
+<p>true/false</p>
+</li><li>
+<p>supports_multiple_transactions</p>
+</li><li>
+<p>true/false</p>
+</li><li>
+<p>supports_named_parameters</p>
+</li><li>
+<p>true/false</p>
+</li><li>
+<p>supports_non_nullable_columns</p>
+</li><li>
+<p>true/false</p>
+</li><li>
+<p>supports_order_by_unrelated</p>
+</li><li>
+<p>true/false</p>
+</li><li>
+<p>supports_savepoints</p>
+</li><li>
+<p>true/false</p>
+</li><li>
+<p>supports_select_for_update</p>
+</li><li>
+<p>true/false</p>
+</li><li>
+<p>supports_transactions</p>
+</li><li>
+<p>true/false</p>
+</li><li>
+<p>system_functions</p>
+</li><li>
+<p>list - USER,DBNAME,IFNULL</p>
+</li><li>
+<p>table_correlation_names</p>
+</li><li>
+<p>list - BASIC,DIFFERENT</p>
+</li><li>
+<p>table_term</p>
+</li><li>
+<p>string</p>
+</li><li>
+<p>time_date_add_intervals</p>
+</li><li>
+<p>list - FRAC_SECOND,SECOND,MINUTE,HOUR,DAY,WEEK,MONTH,…</p>
+</li><li>
+<p>time_date_diff_intervals</p>
+</li><li>
+<p>list - FRAC_SECOND,SECOND,MINUTE,HOUR,DAY,WEEK,MONTH,…</p>
+</li><li>
+<p>time_date_functions</p>
+</li><li>
+<p>list - NOW,CURDATE,DAYOFMONTH,DAYOFWEEK,DAYOFYEAR,…</p>
+</li><li>
+<p>time_date_literals</p>
+</li><li>
+<p>list - DATE,TIME,TIMESTAMP,INTERVAL_YEAR,…</p>
+</li><li>
+<p>transaction_ddl_dml</p>
+</li><li>
+<p>list - DDL_AND_DML,DML_ONLY</p>
+</li><li>
+<p>union_clauses</p>
+</li><li>
+<p>list - UNION,UNION_ALL</p>
+</li><li>
+<p>updates_are_detected</p>
+</li><li>
+<p>list - FORWARD_ONLY,SCROLL_INSENSITIVE,SCROLL_SENSITIVE</p>
+</li><li>
+<p>value_expressions</p>
+</li><li>
+<p>list - CASE,CAST,COALESCE,NULLIF</p>
+</li><li>
+<p>where_current_of_operations</p>
+</li><li>
+<p>list - DELETE,UPDATE</p>
+</li></ul>
+
+<p>Returns the value of the feature as a string, or nil if an error occurred or an invalid feature was requested.</p>
+
+          <div class="method-source-code" id="getDatabaseFeature-source">
+            <pre>static VALUE sqlrcon_getDatabaseFeature(VALUE self, VALUE feature) {
+        sqlrconnection *sqlrcon;
+        const char     *result;
+        Data_Get_Struct(self,sqlrconnection,sqlrcon);
+        RCON1(result,ccpr,sqlrcon,getDatabaseFeature,feature);
+        if (result) {
+                return rb_str_new2(result);
+        } else {
+                return Qnil;
+        }
+}</pre>
+          </div>
+        </div>
+
+
+      </div>
+
+      <div id="method-i-getDatabaseIsSchema" class="method-detail ">
+        <div class="method-header">
+          <div class="method-heading">
+            <span class="method-callseq">
+              getDatabaseIsSchema()
+            </span>
+            <span class="method-click-advice">click to toggle source</span>
+          </div>
+        </div>
+
+        <div class="method-description">
+          <p>Returns true if the backend database equates “database” with “schema”, and false if it equates “database” with “catalog”.</p>
+
+          <div class="method-source-code" id="getDatabaseIsSchema-source">
+            <pre>static VALUE sqlrcon_getDatabaseIsSchema(VALUE self) {
+        sqlrconnection *sqlrcon;
+        bool           result;
+        Data_Get_Struct(self,sqlrconnection,sqlrcon);
+        RCON(result,br,sqlrcon,getDatabaseIsSchema);
+        return INT2NUM(result);
+}</pre>
+          </div>
+        </div>
+
+
+      </div>
+
       <div id="method-i-getDebug" class="method-detail ">
         <div class="method-header">
           <div class="method-heading">
@@ -967,7 +1765,7 @@
         </div>
 
         <div class="method-description">
-          <p>Returns 0 if debugging is off and 1 if debugging is on.</p>
+          <p>Returns false if debugging is off and true if debugging is on.</p>
 
           <div class="method-source-code" id="getDebug-source">
             <pre>static VALUE sqlrcon_getDebug(VALUE self) {
@@ -983,11 +1781,98 @@
 
       </div>
 
+      <div id="method-i-getDefaultTransactionModel" class="method-detail ">
+        <div class="method-header">
+          <div class="method-heading">
+            <span class="method-name">getDefaultTransactionModel</span><span
+              class="method-args">()</span>
+            <span class="method-click-advice">click to toggle source</span>
+          </div>
+        </div>
+
+        <div class="method-description">
+          <p>Returns the database’s native transaction model.  See setTranscationModel() for a list of potential return values.  Returns nil if an error occurred.</p>
+
+          <div class="method-source-code" id="getDefaultTransactionModel-source">
+            <pre>static VALUE sqlrcon_getDefaultTransactionModel(VALUE self) {
+        sqlrconnection *sqlrcon;
+        const char     *result;
+        Data_Get_Struct(self,sqlrconnection,sqlrcon);
+        RCON(result,ccpr,sqlrcon,getDefaultTransactionModel);
+        if (result) {
+                return rb_str_new2(result);
+        } else {
+                return Qnil;
+        }
+}</pre>
+          </div>
+        </div>
+
+
+      </div>
+
+      <div id="method-i-getInTransaction" class="method-detail ">
+        <div class="method-header">
+          <div class="method-heading">
+            <span class="method-name">getInTransaction</span><span
+              class="method-args">()</span>
+            <span class="method-click-advice">click to toggle source</span>
+          </div>
+        </div>
+
+        <div class="method-description">
+          <p>Returns true if the session is currently inside a transaction, false otherwise.</p>
+
+          <div class="method-source-code" id="getInTransaction-source">
+            <pre>static VALUE sqlrcon_getInTransaction(VALUE self) {
+        sqlrconnection *sqlrcon;
+        bool           result;
+        Data_Get_Struct(self,sqlrconnection,sqlrcon);
+        RCON(result,br,sqlrcon,getInTransaction);
+        return INT2NUM(result);
+}</pre>
+          </div>
+        </div>
+
+
+      </div>
+
+      <div id="method-i-getIsolationLevel" class="method-detail ">
+        <div class="method-header">
+          <div class="method-heading">
+            <span class="method-name">getIsolationLevel</span><span
+              class="method-args">()</span>
+            <span class="method-click-advice">click to toggle source</span>
+          </div>
+        </div>
+
+        <div class="method-description">
+          <p>Returns the database-specific isolation level, “unknown” if the isolation level is unknown, or nil if an error occurred.</p>
+
+          <div class="method-source-code" id="getIsolationLevel-source">
+            <pre>static VALUE sqlrcon_getIsolationLevel(VALUE self) {
+        sqlrconnection *sqlrcon;
+        const char     *result;
+        Data_Get_Struct(self,sqlrconnection,sqlrcon);
+        RCON(result,ccpr,sqlrcon,getIsolationLevel);
+        if (result) {
+                return rb_str_new2(result);
+        } else {
+                return Qnil;
+        }
+}</pre>
+          </div>
+        </div>
+
+
+      </div>
+
       <div id="method-i-getLastInsertId" class="method-detail ">
         <div class="method-header">
           <div class="method-heading">
-            <span class="method-name">getLastInsertId</span><span
-              class="method-args">()</span>
+            <span class="method-callseq">
+              getLastInsertId()
+            </span>
             <span class="method-click-advice">click to toggle source</span>
           </div>
         </div>
@@ -1002,6 +1887,90 @@
         Data_Get_Struct(self,sqlrconnection,sqlrcon);
         RCON(result,u64r,sqlrcon,getLastInsertId);
         return INT2NUM(result);
+}</pre>
+          </div>
+        </div>
+
+
+      </div>
+
+      <div id="method-i-getResponseTimeoutMicroseconds" class="method-detail ">
+        <div class="method-header">
+          <div class="method-heading">
+            <span class="method-callseq">
+              getResponseTimeoutMicroseconds()
+            </span>
+            <span class="method-click-advice">click to toggle source</span>
+          </div>
+        </div>
+
+        <div class="method-description">
+          <p>Gets the response timeout in microseconds.</p>
+
+          <div class="method-source-code" id="getResponseTimeoutMicroseconds-source">
+            <pre>static VALUE sqlrcon_getResponseTimeoutMicroseconds(VALUE self) {
+        sqlrconnection *sqlrcon;
+        int32_t        result;
+        Data_Get_Struct(self,sqlrconnection,sqlrcon);
+        RCON(result,i32r,sqlrcon,getResponseTimeoutMicroseconds)
+        return INT2NUM(result);
+}</pre>
+          </div>
+        </div>
+
+
+      </div>
+
+      <div id="method-i-getResponseTimeoutSeconds" class="method-detail ">
+        <div class="method-header">
+          <div class="method-heading">
+            <span class="method-callseq">
+              getResponseTimeoutSeconds()
+            </span>
+            <span class="method-click-advice">click to toggle source</span>
+          </div>
+        </div>
+
+        <div class="method-description">
+          <p>Gets the response timeout in seconds.</p>
+
+          <div class="method-source-code" id="getResponseTimeoutSeconds-source">
+            <pre>static VALUE sqlrcon_getResponseTimeoutSeconds(VALUE self) {
+        sqlrconnection *sqlrcon;
+        int32_t        result;
+        Data_Get_Struct(self,sqlrconnection,sqlrcon);
+        RCON(result,i32r,sqlrcon,getResponseTimeoutSeconds)
+        return INT2NUM(result);
+}</pre>
+          </div>
+        </div>
+
+
+      </div>
+
+      <div id="method-i-getTransactionModel" class="method-detail ">
+        <div class="method-header">
+          <div class="method-heading">
+            <span class="method-name">getTransactionModel</span><span
+              class="method-args">()</span>
+            <span class="method-click-advice">click to toggle source</span>
+          </div>
+        </div>
+
+        <div class="method-description">
+          <p>Returns the current transaction model.  See setTranscationModel() for a list of potential return values.  Returns nil if an error occurred.</p>
+
+          <div class="method-source-code" id="getTransactionModel-source">
+            <pre>static VALUE sqlrcon_getTransactionModel(VALUE self) {
+        sqlrconnection *sqlrcon;
+        const char     *result;
+        Data_Get_Struct(self,sqlrconnection,sqlrcon);
+        RCON(result,ccpr,sqlrcon,getTransactionModel);
+        if (result) {
+                return rb_str_new2(result);
+        } else {
+                return Qnil;
+        }
 }</pre>
           </div>
         </div>
@@ -1039,6 +2008,40 @@
 
       </div>
 
+      <div id="method-i-nextvalFormat" class="method-detail ">
+        <div class="method-header">
+          <div class="method-heading">
+            <span class="method-name">nextvalFormat</span><span
+              class="method-args">()</span>
+            <span class="method-click-advice">click to toggle source</span>
+          </div>
+        </div>
+
+        <div class="method-description">
+          <p>Returns a string representing the format of the sequence nextval command used in the database.  The format will contain a %s in place of the sequence name.  For example:</p>
+
+<p>(nextval for %s) next value for %s nextval(‘%s’) %s.nextval</p>
+
+<p>Returns an empty string if the database does not support sequences.</p>
+
+          <div class="method-source-code" id="nextvalFormat-source">
+            <pre>static VALUE sqlrcon_nextvalFormat(VALUE self) {
+        sqlrconnection *sqlrcon;
+        const char     *result;
+        Data_Get_Struct(self,sqlrconnection,sqlrcon);
+        RCON(result,ccpr,sqlrcon,nextvalFormat);
+        if (result) {
+                return rb_str_new2(result);
+        } else {
+                return Qnil;
+        }
+}</pre>
+          </div>
+        </div>
+
+
+      </div>
+
       <div id="method-i-ping" class="method-detail ">
         <div class="method-header">
           <div class="method-heading">
@@ -1049,7 +2052,7 @@
         </div>
 
         <div class="method-description">
-          <p>Returns 1 if the database is up and 0 if it’s down.</p>
+          <p>Returns true if the database is up and false if it’s down.</p>
 
           <div class="method-source-code" id="ping-source">
             <pre>static VALUE sqlrcon_ping(VALUE self) {
@@ -1076,7 +2079,7 @@
         </div>
 
         <div class="method-description">
-          <p>Resumes a session previously left open using sqlrcon_suspendSession(). Returns 1 on success and 0 on failure.</p>
+          <p>Resumes a session previously left open using suspendSession(). Returns true on success and false on failure.</p>
 
           <div class="method-source-code" id="resumeSession-source">
             <pre>static VALUE sqlrcon_resumeSession(VALUE self, VALUE port, VALUE socket) {
@@ -1102,7 +2105,7 @@
         </div>
 
         <div class="method-description">
-          <p>Issues a rollback.  Returns true if the rollback succeeded, false if it failed.</p>
+          <p>Rolls back a transaction.  Returns true if the rollback succeeded, false if it failed.</p>
 
           <div class="method-source-code" id="rollback-source">
             <pre>static VALUE sqlrcon_rollback(VALUE self) {
@@ -1110,6 +2113,33 @@
         bool           result;
         Data_Get_Struct(self,sqlrconnection,sqlrcon);
         RCON(result,br,sqlrcon,rollback);
+        return INT2NUM(result);
+}</pre>
+          </div>
+        </div>
+
+
+      </div>
+
+      <div id="method-i-selectCatalog" class="method-detail ">
+        <div class="method-header">
+          <div class="method-heading">
+            <span class="method-callseq">
+              selectCatalog(catalog)
+            </span>
+            <span class="method-click-advice">click to toggle source</span>
+          </div>
+        </div>
+
+        <div class="method-description">
+          <p>Sets the current catalog to “catalog”</p>
+
+          <div class="method-source-code" id="selectCatalog-source">
+            <pre>static VALUE sqlrcon_selectCatalog(VALUE self, VALUE catalog) {
+        sqlrconnection *sqlrcon;
+        bool           result;
+        Data_Get_Struct(self,sqlrconnection,sqlrcon);
+        RCON1(result,br,sqlrcon,selectCatalog,catalog);
         return INT2NUM(result);
 }</pre>
           </div>
@@ -1129,7 +2159,11 @@
         </div>
 
         <div class="method-description">
-          <p>Sets the current database/schema to “database”</p>
+          <p>Sets the current database to “database”.</p>
+
+<p>May set the current catalog or schema, depending on whether the backend database equates “database” with catalog or schema.</p>
+
+<p>See getDatabaseIsSchema().</p>
 
           <div class="method-source-code" id="selectDatabase-source">
             <pre>static VALUE sqlrcon_selectDatabase(VALUE self, VALUE db) {
@@ -1137,6 +2171,33 @@
         bool           result;
         Data_Get_Struct(self,sqlrconnection,sqlrcon);
         RCON1(result,br,sqlrcon,selectDatabase,db);
+        return INT2NUM(result);
+}</pre>
+          </div>
+        </div>
+
+
+      </div>
+
+      <div id="method-i-selectSchema" class="method-detail ">
+        <div class="method-header">
+          <div class="method-heading">
+            <span class="method-callseq">
+              selectSchema(schema)
+            </span>
+            <span class="method-click-advice">click to toggle source</span>
+          </div>
+        </div>
+
+        <div class="method-description">
+          <p>Sets the current schema to “schema”</p>
+
+          <div class="method-source-code" id="selectSchema-source">
+            <pre>static VALUE sqlrcon_selectSchema(VALUE self, VALUE schema) {
+        sqlrconnection *sqlrcon;
+        bool           result;
+        Data_Get_Struct(self,sqlrconnection,sqlrcon);
+        RCON1(result,br,sqlrcon,selectSchema,schema);
         return INT2NUM(result);
 }</pre>
           </div>
@@ -1238,7 +2299,7 @@
         </div>
 
         <div class="method-description">
-          <p>Sets the server connect timeout in seconds and milliseconds.  Setting either parameter to -1 disables the timeout.  You can also set this timeout using the SQLR_CLIENT_CONNECT_TIMEOUT environment variable.</p>
+          <p>Sets the server connect timeout in seconds and microseconds.  Setting either parameter to -1 disables the timeout.  You can also set this timeout using the SQLR_CLIENT_CONNECT_TIMEOUT environment variable.</p>
 
           <div class="method-source-code" id="setConnectTimeout-source">
             <pre>static VALUE sqlrcon_setConnectTimeout(VALUE self,
@@ -1280,6 +2341,146 @@
 
       </div>
 
+      <div id="method-i-setIsolationLevel" class="method-detail ">
+        <div class="method-header">
+          <div class="method-heading">
+            <span class="method-name">setIsolationLevel</span><span
+              class="method-args">(p1)</span>
+            <span class="method-click-advice">click to toggle source</span>
+          </div>
+        </div>
+
+        <div class="method-description">
+          <p>Sets the transaction isolation level to “isolationlevel”.  The string is the database-specific (native) name and is matched case-insensitively.</p>
+
+<p>Valid isolation levels include:</p>
+
+<p>For PostgreSQL:</p>
+<ul><li>
+<p>READ UNCOMMITTED</p>
+</li><li>
+<p>READ COMMITTED (default)</p>
+</li><li>
+<p>REPEATABLE READ</p>
+</li><li>
+<p>SERIALIZABLE</p>
+</li></ul>
+
+<p>For MySQL/MariaDB:</p>
+<ul><li>
+<p>READ-UNCOMMITTED</p>
+</li><li>
+<p>READ-COMMITTED</p>
+</li><li>
+<p>REPEATABLE-READ (default)</p>
+</li><li>
+<p>SERIALIZABLE</p>
+</li></ul>
+
+<p>For Oracle:</p>
+<ul><li>
+<p>READ COMMITTED (default)</p>
+</li><li>
+<p>SERIALIZABLE</p>
+</li></ul>
+
+<p>For DB2:</p>
+<ul><li>
+<p>UR  (uncommitted read)</p>
+</li><li>
+<p>CS  (cursor stability, default)</p>
+</li><li>
+<p>RS  (read stability)</p>
+</li><li>
+<p>RR  (repeatable read)</p>
+</li></ul>
+
+<p>For MS SQL Server (via FreeTDS):</p>
+<ul><li>
+<p>READ UNCOMMITTED</p>
+</li><li>
+<p>READ COMMITTED (default)</p>
+</li><li>
+<p>REPEATABLE READ</p>
+</li><li>
+<p>SERIALIZABLE</p>
+</li><li>
+<p>SNAPSHOT</p>
+</li></ul>
+
+<p>For SAP ASE (Sybase):</p>
+<ul><li>
+<p>0  (read uncommitted)</p>
+</li><li>
+<p>1  (read committed, default)</p>
+</li><li>
+<p>2  (repeatable read)</p>
+</li><li>
+<p>3  (serializable)</p>
+</li></ul>
+
+<p>For Informix:</p>
+<ul><li>
+<p>dirty read</p>
+</li><li>
+<p>committed read (default)</p>
+</li><li>
+<p>cursor stability</p>
+</li><li>
+<p>repeatable read</p>
+</li></ul>
+
+<p>For Firebird:</p>
+<ul><li>
+<p>read committed (default)</p>
+</li><li>
+<p>read committed no record version</p>
+</li><li>
+<p>read consistency</p>
+</li><li>
+<p>snapshot</p>
+</li><li>
+<p>snapshot table stability</p>
+</li></ul>
+
+<p>For SQLite:</p>
+<ul><li>
+<p>0  (serializable, default)</p>
+</li><li>
+<p>1  (read uncommitted)</p>
+</li></ul>
+
+<p>For ODBC:</p>
+<ul><li>
+<p>SQL_TXN_READ_UNCOMMITTED</p>
+</li><li>
+<p>SQL_TXN_READ_COMMITTED</p>
+</li><li>
+<p>SQL_TXN_REPEATABLE_READ</p>
+</li><li>
+<p>SQL_TXN_SERIALIZABLE</p>
+</li></ul>
+
+<p>(whether a given level is actually supported depends on the underlying ODBC driver and target database).  The generic ODBC backend also accepts the database-specific native names listed above for any of the other backends, as well as the JDBC TRANSACTION_* names, and maps them to the closest of the four ODBC levels above.</p>
+
+<p>For other databases, the string is passed through to the backend as the argument to “set transaction isolation level”.</p>
+
+<p>Returns true if setting the isolation level succeeded, false if it failed.</p>
+
+          <div class="method-source-code" id="setIsolationLevel-source">
+            <pre>static VALUE sqlrcon_setIsolationLevel(VALUE self, VALUE isolationlevel) {
+        sqlrconnection *sqlrcon;
+        bool           result;
+        Data_Get_Struct(self,sqlrconnection,sqlrcon);
+        RCON1(result,br,sqlrcon,setIsolationLevel,isolationlevel);
+        return INT2NUM(result);
+}</pre>
+          </div>
+        </div>
+
+
+      </div>
+
       <div id="method-i-setResponseTimeout" class="method-detail ">
         <div class="method-header">
           <div class="method-heading">
@@ -1291,7 +2492,7 @@
         </div>
 
         <div class="method-description">
-          <p>Sets the response timeout (for queries, commits, rollbacks, pings, etc.) in seconds and milliseconds.  Setting either parameter to -1 disables the timeout.  You can also set this timeout using the SQLR_CLIENT_RESPONSE_TIMEOUT environment variable.</p>
+          <p>Sets the response timeout (for queries, commits, rollbacks, pings, etc.) in seconds and microseconds.  Setting either parameter to -1 disables the timeout.  You can also set this timeout using the SQLR_CLIENT_RESPONSE_TIMEOUT environment variable.</p>
 
           <div class="method-source-code" id="setResponseTimeout-source">
             <pre>static VALUE sqlrcon_setResponseTimeout(VALUE self,
@@ -1300,6 +2501,69 @@
         Data_Get_Struct(self,sqlrconnection,sqlrcon);
         CON2(sqlrcon,setResponseTimeout,timeoutsec,timeoutusec)
         return Qnil;
+}</pre>
+          </div>
+        </div>
+
+
+      </div>
+
+      <div id="method-i-setTransactionModel" class="method-detail ">
+        <div class="method-header">
+          <div class="method-heading">
+            <span class="method-name">setTransactionModel</span><span
+              class="method-args">(p1)</span>
+            <span class="method-click-advice">click to toggle source</span>
+          </div>
+        </div>
+
+        <div class="method-description">
+          <p>Sets the current transaction model to “txmodel” which should be one of:</p>
+<ul><li>
+<p>native - the database’s native transaction model</p>
+</li><li>
+<p>none - no transactions</p>
+</li><li>
+<p>“implicit”</p>
+
+<pre>* in a transaction when the session begins
+* commit/rollback implicitly starts a new transcaction
+* autocommit on/off take effect immediately</pre>
+</li><li>
+<p>“explicit”</p>
+
+<pre>* not in a transaction when the session begins
+* begin required to start a new transaction
+* commit/rollback does not start a new transcaction
+* autocommit on/off take effect immediately</pre>
+</li><li>
+<p>“explicit-deferred”</p>
+
+<pre>* not in a transaction when the session begins
+* begin required to start a new transaction
+* commit/rollback does not start a new transcaction
+* while in a begin-initiated transaction, autocommit
+  on takes effect at next commit/rollback (deferred)
+* while in an autocommit-off-initiated transaction,
+  autocommit on takes effect immediately</pre>
+</li><li>
+<p>“explicit-error”</p>
+
+<pre>* not in a transaction when the session begins
+* begin required to start a new transaction
+* commit/rollback does not start a new transcaction
+* while in a transaction, autocommit on/off throw error</pre>
+</li></ul>
+
+<p>Returns true on success and false on failure.</p>
+
+          <div class="method-source-code" id="setTransactionModel-source">
+            <pre>static VALUE sqlrcon_setTransactionModel(VALUE self, VALUE txmodel) {
+        sqlrconnection *sqlrcon;
+        bool           result;
+        Data_Get_Struct(self,sqlrconnection,sqlrcon);
+        RCON1(result,br,sqlrcon,setTransactionModel,txmodel);
+        return INT2NUM(result);
 }</pre>
           </div>
         </div>
@@ -1317,7 +2581,7 @@
         </div>
 
         <div class="method-description">
-          <p>Disconnects this connection from the current session but leaves the session open so that another connection can connect to it using sqlrcon_resumeSession().</p>
+          <p>Disconnects this connection from the current session but leaves the session open so that another connection can connect to it using resumeSession().</p>
 
           <div class="method-source-code" id="suspendSession-source">
             <pre>static VALUE sqlrcon_suspendSession(VALUE self) {

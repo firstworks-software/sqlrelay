@@ -83,6 +83,7 @@
     <li ><a href="#method-i-defineOutputBindBlob">#defineOutputBindBlob</a>
     <li ><a href="#method-i-defineOutputBindClob">#defineOutputBindClob</a>
     <li ><a href="#method-i-defineOutputBindCursor">#defineOutputBindCursor</a>
+    <li ><a href="#method-i-defineOutputBindDate">#defineOutputBindDate</a>
     <li ><a href="#method-i-defineOutputBindDouble">#defineOutputBindDouble</a>
     <li ><a href="#method-i-defineOutputBindInteger">#defineOutputBindInteger</a>
     <li ><a href="#method-i-defineOutputBindString">#defineOutputBindString</a>
@@ -94,6 +95,7 @@
     <li ><a href="#method-i-fetchFromBindCursor">#fetchFromBindCursor</a>
     <li ><a href="#method-i-firstRowIndex">#firstRowIndex</a>
     <li ><a href="#method-i-getCacheFileName">#getCacheFileName</a>
+    <li ><a href="#method-i-getCatalogList">#getCatalogList</a>
     <li ><a href="#method-i-getColumnInfo">#getColumnInfo</a>
     <li ><a href="#method-i-getColumnIsAutoIncrement">#getColumnIsAutoIncrement</a>
     <li ><a href="#method-i-getColumnIsBinary">#getColumnIsBinary</a>
@@ -112,32 +114,71 @@
     <li ><a href="#method-i-getColumnType">#getColumnType</a>
     <li ><a href="#method-i-getDatabaseList">#getDatabaseList</a>
     <li ><a href="#method-i-getField">#getField</a>
+    <li ><a href="#method-i-getFieldAsBoolean">#getFieldAsBoolean</a>
+    <li ><a href="#method-i-getFieldAsBooleanIgnoringCase">#getFieldAsBooleanIgnoringCase</a>
+    <li ><a href="#method-i-getFieldAsDateDay">#getFieldAsDateDay</a>
+    <li ><a href="#method-i-getFieldAsDateDayIgnoringCase">#getFieldAsDateDayIgnoringCase</a>
+    <li ><a href="#method-i-getFieldAsDateHour">#getFieldAsDateHour</a>
+    <li ><a href="#method-i-getFieldAsDateHourIgnoringCase">#getFieldAsDateHourIgnoringCase</a>
+    <li ><a href="#method-i-getFieldAsDateIsNegative">#getFieldAsDateIsNegative</a>
+    <li ><a href="#method-i-getFieldAsDateIsNegativeIgnoringCase">#getFieldAsDateIsNegativeIgnoringCase</a>
+    <li ><a href="#method-i-getFieldAsDateMicrosecond">#getFieldAsDateMicrosecond</a>
+    <li ><a href="#method-i-getFieldAsDateMicrosecondIgnoringCase">#getFieldAsDateMicrosecondIgnoringCase</a>
+    <li ><a href="#method-i-getFieldAsDateMinute">#getFieldAsDateMinute</a>
+    <li ><a href="#method-i-getFieldAsDateMinuteIgnoringCase">#getFieldAsDateMinuteIgnoringCase</a>
+    <li ><a href="#method-i-getFieldAsDateMonth">#getFieldAsDateMonth</a>
+    <li ><a href="#method-i-getFieldAsDateMonthIgnoringCase">#getFieldAsDateMonthIgnoringCase</a>
+    <li ><a href="#method-i-getFieldAsDateSecond">#getFieldAsDateSecond</a>
+    <li ><a href="#method-i-getFieldAsDateSecondIgnoringCase">#getFieldAsDateSecondIgnoringCase</a>
+    <li ><a href="#method-i-getFieldAsDateYear">#getFieldAsDateYear</a>
+    <li ><a href="#method-i-getFieldAsDateYearIgnoringCase">#getFieldAsDateYearIgnoringCase</a>
     <li ><a href="#method-i-getFieldAsDouble">#getFieldAsDouble</a>
+    <li ><a href="#method-i-getFieldAsDoubleIgnoringCase">#getFieldAsDoubleIgnoringCase</a>
     <li ><a href="#method-i-getFieldAsInteger">#getFieldAsInteger</a>
+    <li ><a href="#method-i-getFieldAsIntegerIgnoringCase">#getFieldAsIntegerIgnoringCase</a>
+    <li ><a href="#method-i-getFieldIgnoringCase">#getFieldIgnoringCase</a>
     <li ><a href="#method-i-getFieldLength">#getFieldLength</a>
+    <li ><a href="#method-i-getKeyAndIndexList">#getKeyAndIndexList</a>
     <li ><a href="#method-i-getLongest">#getLongest</a>
     <li ><a href="#method-i-getNullsAsEmptyStrings">#getNullsAsEmptyStrings</a>
     <li ><a href="#method-i-getNullsAsNils">#getNullsAsNils</a>
     <li ><a href="#method-i-getOutputBindBlob">#getOutputBindBlob</a>
     <li ><a href="#method-i-getOutputBindClob">#getOutputBindClob</a>
     <li ><a href="#method-i-getOutputBindCursor">#getOutputBindCursor</a>
+    <li ><a href="#method-i-getOutputBindDateDay">#getOutputBindDateDay</a>
+    <li ><a href="#method-i-getOutputBindDateHour">#getOutputBindDateHour</a>
+    <li ><a href="#method-i-getOutputBindDateIsNegative">#getOutputBindDateIsNegative</a>
+    <li ><a href="#method-i-getOutputBindDateMicrosecond">#getOutputBindDateMicrosecond</a>
+    <li ><a href="#method-i-getOutputBindDateMinute">#getOutputBindDateMinute</a>
+    <li ><a href="#method-i-getOutputBindDateMonth">#getOutputBindDateMonth</a>
+    <li ><a href="#method-i-getOutputBindDateSecond">#getOutputBindDateSecond</a>
+    <li ><a href="#method-i-getOutputBindDateTz">#getOutputBindDateTz</a>
+    <li ><a href="#method-i-getOutputBindDateYear">#getOutputBindDateYear</a>
     <li ><a href="#method-i-getOutputBindDouble">#getOutputBindDouble</a>
     <li ><a href="#method-i-getOutputBindInteger">#getOutputBindInteger</a>
     <li ><a href="#method-i-getOutputBindLength">#getOutputBindLength</a>
     <li ><a href="#method-i-getOutputBindString">#getOutputBindString</a>
+    <li ><a href="#method-i-getPrimaryKeysList">#getPrimaryKeysList</a>
+    <li ><a href="#method-i-getProcedureList">#getProcedureList</a>
+    <li ><a href="#method-i-getProcedureParameterList">#getProcedureParameterList</a>
     <li ><a href="#method-i-getResultSetBufferSize">#getResultSetBufferSize</a>
     <li ><a href="#method-i-getResultSetId">#getResultSetId</a>
     <li ><a href="#method-i-getRow">#getRow</a>
     <li ><a href="#method-i-getRowHash">#getRowHash</a>
     <li ><a href="#method-i-getRowLengths">#getRowLengths</a>
     <li ><a href="#method-i-getRowLengthsHash">#getRowLengthsHash</a>
+    <li ><a href="#method-i-getSchemaList">#getSchemaList</a>
     <li ><a href="#method-i-getTableList">#getTableList</a>
+    <li ><a href="#method-i-getTableTypeList">#getTableTypeList</a>
+    <li ><a href="#method-i-getTypeInfoList">#getTypeInfoList</a>
     <li ><a href="#method-i-inputBind">#inputBind</a>
     <li ><a href="#method-i-inputBindBlob">#inputBindBlob</a>
     <li ><a href="#method-i-inputBindClob">#inputBindClob</a>
+    <li ><a href="#method-i-inputBindDate">#inputBindDate</a>
     <li ><a href="#method-i-inputBinds">#inputBinds</a>
     <li ><a href="#method-i-lowerCaseColumnNames">#lowerCaseColumnNames</a>
     <li ><a href="#method-i-mixedCaseColumnNames">#mixedCaseColumnNames</a>
+    <li ><a href="#method-i-nextResultSet">#nextResultSet</a>
     <li ><a href="#method-i-openCachedResultSet">#openCachedResultSet</a>
     <li ><a href="#method-i-prepareFileQuery">#prepareFileQuery</a>
     <li ><a href="#method-i-prepareQuery">#prepareQuery</a>
@@ -187,14 +228,14 @@
         <div class="method-header">
           <div class="method-heading">
             <span class="method-callseq">
-              new(connection)
+              new(sqlrc)
             </span>
             <span class="method-click-advice">click to toggle source</span>
           </div>
         </div>
 
         <div class="method-description">
-          <p>Creates a cursor to run queries and fetch result sets using connection “connection”</p>
+          <p>Creates a cursor to run queries and fetch result sets using connecton “sqlrc”.</p>
 
           <div class="method-source-code" id="new-source">
             <pre>static VALUE sqlrcur_new(VALUE self, VALUE connection) {
@@ -229,7 +270,7 @@
         </div>
 
         <div class="method-description">
-          <p>Returns the number of rows that were updated, inserted or deleted by the query.  Not all databases support this call.  Don’t use it for applications which are designed to be portable across databases.  -1 is returned by databases which don’t support this option.</p>
+          <p>Returns the number of rows that were updated, inserted or deleted by the query. Not all databases support this call.  Don’t use it for applications which are designed to be portable across databases.  0 is returned by databases which don’t support this option.</p>
 
           <div class="method-source-code" id="affectedRows-source">
             <pre>static VALUE sqlrcur_affectedRows(VALUE self) {
@@ -406,14 +447,14 @@
         <div class="method-header">
           <div class="method-heading">
             <span class="method-callseq">
-              defineOuptutBindBlob(variable)
+              defineOutputBindBlob(variable)
             </span>
             <span class="method-click-advice">click to toggle source</span>
           </div>
         </div>
 
         <div class="method-description">
-          <p>Defines a binary lob output bind variable</p>
+          <p>Defines a binary lob output bind variable.</p>
 
           <div class="method-source-code" id="defineOutputBindBlob-source">
             <pre>static VALUE sqlrcur_defineOutputBindBlob(VALUE self, VALUE variable) {
@@ -439,7 +480,7 @@
         </div>
 
         <div class="method-description">
-          <p>Defines a character lob output bind variable</p>
+          <p>Defines a character lob output bind variable.</p>
 
           <div class="method-source-code" id="defineOutputBindClob-source">
             <pre>static VALUE sqlrcur_defineOutputBindClob(VALUE self, VALUE variable) {
@@ -465,13 +506,39 @@
         </div>
 
         <div class="method-description">
-          <p>Defines a cursor output bind variable</p>
+          <p>Defines a cursor output bind variable.</p>
 
           <div class="method-source-code" id="defineOutputBindCursor-source">
             <pre>static VALUE sqlrcur_defineOutputBindCursor(VALUE self, VALUE variable) {
         sqlrcursordata *sqlrcurdata;
         Data_Get_Struct(self,sqlrcursordata,sqlrcurdata);
         CUR1(sqlrcurdata-&gt;cur,defineOutputBindCursor,variable);
+        return Qnil;
+}</pre>
+          </div>
+        </div>
+
+
+      </div>
+
+      <div id="method-i-defineOutputBindDate" class="method-detail ">
+        <div class="method-header">
+          <div class="method-heading">
+            <span class="method-callseq">
+              defineOutputBindDate(variable)
+            </span>
+            <span class="method-click-advice">click to toggle source</span>
+          </div>
+        </div>
+
+        <div class="method-description">
+          <p>Defines a date output bind variable.</p>
+
+          <div class="method-source-code" id="defineOutputBindDate-source">
+            <pre>static VALUE sqlrcur_defineOutputBindDate(VALUE self, VALUE variable) {
+        sqlrcursordata *sqlrcurdata;
+        Data_Get_Struct(self,sqlrcursordata,sqlrcurdata);
+        CUR1(sqlrcurdata-&gt;cur,defineOutputBindDate,variable);
         return Qnil;
 }</pre>
           </div>
@@ -491,7 +558,7 @@
         </div>
 
         <div class="method-description">
-          <p>Defines an decimal output bind variable.</p>
+          <p>Defines a decimal output bind variable.</p>
 
           <div class="method-source-code" id="defineOutputBindDouble-source">
             <pre>static VALUE sqlrcur_defineOutputBindDouble(VALUE self, VALUE variable) {
@@ -536,14 +603,14 @@
         <div class="method-header">
           <div class="method-heading">
             <span class="method-callseq">
-              defineOutputBindString(variable,length)
+              defineOutputBindString(variable,bufferlength)
             </span>
             <span class="method-click-advice">click to toggle source</span>
           </div>
         </div>
 
         <div class="method-description">
-          <p>Defines a string output bind variable. “length” bytes will be reserved to store the value.</p>
+          <p>Defines an output bind variable. “bufferlength” bytes will be reserved to store the value.</p>
 
           <div class="method-source-code" id="defineOutputBindString-source">
             <pre>static VALUE sqlrcur_defineOutputBindString(VALUE self, VALUE variable,
@@ -569,7 +636,7 @@
         </div>
 
         <div class="method-description">
-          <p>Tells the server not to send any column info (names, types, sizes).  If you don’t need that info, you should call this function to improve performance.</p>
+          <p>Tells the server not to send any column info (names, types, sizes).  If you don’t need that info, you should call this method to improve performance.</p>
 
           <div class="method-source-code" id="dontGetColumnInfo-source">
             <pre>static VALUE sqlrcur_dontGetColumnInfo(VALUE self) {
@@ -594,7 +661,7 @@
         </div>
 
         <div class="method-description">
-          <p>Returns 0 if part of the result set is still pending on the server and 1 if not.  This function can only return 0 if setResultSetBufferSize() has been called with a parameter other than 0.</p>
+          <p>Returns false if part of the result set is still pending on the server and true if not. This method can only return false if setResultSetBufferSize() has been called with a parameter other than 0.</p>
 
           <div class="method-source-code" id="endOfResultSet-source">
             <pre>static VALUE sqlrcur_endOfResultSet(VALUE self) {
@@ -620,7 +687,7 @@
         </div>
 
         <div class="method-description">
-          <p>If a query failed and generated an error, the error message is available here.  If the query succeeded then this function returns a nil.</p>
+          <p>If a query failed and generated an error, the error message is available here.  If the query succeeded then this method returns nil.</p>
 
           <div class="method-source-code" id="errorMessage-source">
             <pre>static VALUE sqlrcur_errorMessage(VALUE self) {
@@ -650,7 +717,7 @@
         </div>
 
         <div class="method-description">
-          <p>If a query failed and generated an error, the error number is available here.  If there is no error then this method returns 0.</p>
+          <p>If a query failed and generated an error, the error number is available here. If there is no error then this method returns 0.</p>
 
           <div class="method-source-code" id="errorNumber-source">
             <pre>static VALUE sqlrcur_errorNumber(VALUE self) {
@@ -728,7 +795,7 @@
         </div>
 
         <div class="method-description">
-          <p>Returns the index of the first buffered row.  This is useful when buffering only part of the result set at a time.</p>
+          <p>Returns the index of the first buffered row. This is useful when buffering only part of the result set at a time.</p>
 
           <div class="method-source-code" id="firstRowIndex-source">
             <pre>static VALUE sqlrcur_firstRowIndex(VALUE self) {
@@ -754,7 +821,7 @@
         </div>
 
         <div class="method-description">
-          <p>Returns the name of the file containing the most recently cached result set.</p>
+          <p>Returns the name of the file containing the cached result set.</p>
 
           <div class="method-source-code" id="getCacheFileName-source">
             <pre>static VALUE sqlrcur_getCacheFileName(VALUE self) {
@@ -767,6 +834,42 @@
         } else {
                 return Qnil;
         }
+}</pre>
+          </div>
+        </div>
+
+
+      </div>
+
+      <div id="method-i-getCatalogList" class="method-detail ">
+        <div class="method-header">
+          <div class="method-heading">
+            <span class="method-callseq">
+              getCatalogList(catalog)
+            </span>
+            <span class="method-click-advice">click to toggle source</span>
+          </div>
+        </div>
+
+        <div class="method-description">
+          <p>Generates a result set containing catalogs that match the pattern “catalog”.</p>
+
+<p>The result set will contain the following columns:</p>
+<ul><li>
+<p>Database</p>
+</li></ul>
+
+<p>If “catalog” is empty or nil then a result set containing all catalogs will be returned.</p>
+
+<p>If SQL Relay doesn’t support getting a list of catalogs for the current database backend (or the database doesn’t) then an empty result set will be returned.</p>
+
+          <div class="method-source-code" id="getCatalogList-source">
+            <pre>static VALUE sqlrcur_getCatalogList(VALUE self, VALUE catalogs) {
+        sqlrcursordata *sqlrcurdata;
+        bool           result;
+        Data_Get_Struct(self,sqlrcursordata,sqlrcurdata);
+        RCUR1(result,br,sqlrcurdata-&gt;cur,getCatalogList,catalogs);
+        return INT2NUM(result);
 }</pre>
           </div>
         </div>
@@ -810,7 +913,7 @@
         </div>
 
         <div class="method-description">
-          <p>Returns 1 if the specified column auto-increments and 0 otherwise. “col” may be specified as the column name or number.</p>
+          <p>Returns true if the specified column auto-increments and false otherwise. “col” may be specified as the column name or number.</p>
 
           <div class="method-source-code" id="getColumnIsAutoIncrement-source">
             <pre>static VALUE sqlrcur_getColumnIsAutoIncrement(VALUE self, VALUE col) {
@@ -841,7 +944,7 @@
         </div>
 
         <div class="method-description">
-          <p>Returns 1 if the specified column contains binary data and 0 otherwise. “col” may be specified as the column name or number.</p>
+          <p>Returns true if the specified column contains binary data and false otherwise. “col” may be specified as the column name or number.</p>
 
           <div class="method-source-code" id="getColumnIsBinary-source">
             <pre>static VALUE sqlrcur_getColumnIsBinary(VALUE self, VALUE col) {
@@ -872,7 +975,7 @@
         </div>
 
         <div class="method-description">
-          <p>Returns 1 if the specified column can contain nulls and 0 otherwise. “col” may be specified as the colum name or number.</p>
+          <p>Returns true if the specified column can contain nulls and false otherwise. “col” may be specified as the colum name or number.</p>
 
           <div class="method-source-code" id="getColumnIsNullable-source">
             <pre>static VALUE sqlrcur_getColumnIsNullable(VALUE self, VALUE col) {
@@ -903,7 +1006,7 @@
         </div>
 
         <div class="method-description">
-          <p>Returns 1 if the specified column is part of a composite key and 0 otherwise.  “col” may be specified as the column name or number.</p>
+          <p>Returns true if the specified column is part of a composite key and false otherwise. “col” may be specified as the column name or number.</p>
 
           <div class="method-source-code" id="getColumnIsPartOfKey-source">
             <pre>static VALUE sqlrcur_getColumnIsPartOfKey(VALUE self, VALUE col) {
@@ -934,7 +1037,7 @@
         </div>
 
         <div class="method-description">
-          <p>Returns 1 if the specified column is a primary key and 0 otherwise. “col” may be specified as the column name or number.</p>
+          <p>Returns true if the specified column is a primary key and false otherwise. “col” may be specified as the column name or number.</p>
 
           <div class="method-source-code" id="getColumnIsPrimaryKey-source">
             <pre>static VALUE sqlrcur_getColumnIsPrimaryKey(VALUE self, VALUE col) {
@@ -965,7 +1068,7 @@
         </div>
 
         <div class="method-description">
-          <p>Returns 1 if the specified column is unique and 0 otherwise. “col” may be specified as the column name or number.</p>
+          <p>Returns true if the specified column is unique and false otherwise. “col” may be specified as the column name or number.</p>
 
           <div class="method-source-code" id="getColumnIsUnique-source">
             <pre>static VALUE sqlrcur_getColumnIsUnique(VALUE self, VALUE col) {
@@ -996,7 +1099,7 @@
         </div>
 
         <div class="method-description">
-          <p>Returns 1 if the specified column is an unsigned number and 0 otherwise. “col” may be specified as the column name or number.</p>
+          <p>Returns true if the specified column is an unsigned number and false otherwise. “col” may be specified as the column name or number.</p>
 
           <div class="method-source-code" id="getColumnIsUnsigned-source">
             <pre>static VALUE sqlrcur_getColumnIsUnsigned(VALUE self, VALUE col) {
@@ -1027,7 +1130,7 @@
         </div>
 
         <div class="method-description">
-          <p>Returns 1 if the specified column was created with the zero-fill flag and 0 otherwise.  “col” may be specified as the column name or number.</p>
+          <p>Returns true if the specified column was created with the zero-fill flag and false otherwise. “col” may be specified as the column name or number.</p>
 
           <div class="method-source-code" id="getColumnIsZeroFilled-source">
             <pre>static VALUE sqlrcur_getColumnIsZeroFilled(VALUE self, VALUE col) {
@@ -1082,21 +1185,46 @@
         <div class="method-header">
           <div class="method-heading">
             <span class="method-callseq">
-              getColumnList(table,wild)
+              getColumnList(table,columns)
             </span>
             <span class="method-click-advice">click to toggle source</span>
           </div>
         </div>
 
         <div class="method-description">
-          <p>Sends a query that returns a list of columns in the table specified by the “table” parameter matching “wild”.  If wild is empty or nil then a list of all columns will be returned.</p>
+          <p>Generates a result set containing the columns of “table”, which match the pattern “columns”.</p>
+
+<p>The result set will contain the following columns:</p>
+<ul><li>
+<p>column_name</p>
+</li><li>
+<p>data_type</p>
+</li><li>
+<p>character_maximum_length</p>
+</li><li>
+<p>numeric_precision</p>
+</li><li>
+<p>numeric_scale</p>
+</li><li>
+<p>is_nullable</p>
+</li><li>
+<p>column_key</p>
+</li><li>
+<p>column_default</p>
+</li><li>
+<p>extra</p>
+</li></ul>
+
+<p>If “columns” is empty or nil then a list of all columns of “table” will be returned.</p>
+
+<p>If SQL Relay doesn’t support getting a list of columns for the current database backend (or the database doesn’t) then an empty result set will be returned.</p>
 
           <div class="method-source-code" id="getColumnList-source">
-            <pre>static VALUE sqlrcur_getColumnList(VALUE self, VALUE table, VALUE wild) {
+            <pre>static VALUE sqlrcur_getColumnList(VALUE self, VALUE table, VALUE columns) {
         sqlrcursordata *sqlrcurdata;
         bool           result;
         Data_Get_Struct(self,sqlrcursordata,sqlrcurdata);
-        RCUR2(result,br,sqlrcurdata-&gt;cur,getColumnList,table,wild);
+        RCUR2(result,br,sqlrcurdata-&gt;cur,getColumnList,table,columns);
         return INT2NUM(result);
 }</pre>
           </div>
@@ -1276,21 +1404,34 @@
         <div class="method-header">
           <div class="method-heading">
             <span class="method-callseq">
-              getDatabaseList(wild)
+              getDatabaseList(databases)
             </span>
             <span class="method-click-advice">click to toggle source</span>
           </div>
         </div>
 
         <div class="method-description">
-          <p>Sends a query that returns a list of databases/schemas matching “wild”. If wild is empty or nil then a list of all databases/schemas will be returned.</p>
+          <p>Generates a result set containing databases that match the pattern “databases”.</p>
+
+<p>The result set will contain the following columns:</p>
+<ul><li>
+<p>Database</p>
+</li></ul>
+
+<p>If “databases” is empty or nil then a result set containing all databases will be returned.</p>
+
+<p>May actually return a result set of catalogs or schemas, depending on whether the backend database equates “database” with catalog or schema.</p>
+
+<p>See getDatabaseIsSchema().</p>
+
+<p>If SQL Relay doesn’t support getting a list of databases for the current database backend (or the database doesn’t) then an empty result set will be returned.</p>
 
           <div class="method-source-code" id="getDatabaseList-source">
-            <pre>static VALUE sqlrcur_getDatabaseList(VALUE self, VALUE wild) {
+            <pre>static VALUE sqlrcur_getDatabaseList(VALUE self, VALUE databases) {
         sqlrcursordata *sqlrcurdata;
         bool           result;
         Data_Get_Struct(self,sqlrcursordata,sqlrcurdata);
-        RCUR1(result,br,sqlrcurdata-&gt;cur,getDatabaseList,wild);
+        RCUR1(result,br,sqlrcurdata-&gt;cur,getDatabaseList,databases);
         return INT2NUM(result);
 }</pre>
           </div>
@@ -1337,6 +1478,856 @@
 
       </div>
 
+      <div id="method-i-getFieldAsBoolean" class="method-detail ">
+        <div class="method-header">
+          <div class="method-heading">
+            <span class="method-callseq">
+              getFieldAsBoolean(row,col)
+            </span>
+            <span class="method-click-advice">click to toggle source</span>
+          </div>
+        </div>
+
+        <div class="method-description">
+          <p>Returns the specified field as a boolean.  “col” may be specified as the column name or number.</p>
+
+          <div class="method-source-code" id="getFieldAsBoolean-source">
+            <pre>static VALUE sqlrcur_getFieldAsBoolean(VALUE self, VALUE row, VALUE col) {
+        sqlrcursordata *sqlrcurdata;
+        Data_Get_Struct(self,sqlrcursordata,sqlrcurdata);
+        bool   result;
+        if (rb_obj_is_instance_of(col,rb_cString)==Qtrue) {
+                RCUR2(result,u64r,sqlrcurdata-&gt;cur,getFieldAsBooleanStr,row,col);
+        } else {
+                RCUR2(result,u64r,sqlrcurdata-&gt;cur,getFieldAsBooleanInt,row,col);
+        }
+        return (result)?Qtrue:Qfalse;
+}</pre>
+          </div>
+        </div>
+
+
+      </div>
+
+      <div id="method-i-getFieldAsBooleanIgnoringCase" class="method-detail ">
+        <div class="method-header">
+          <div class="method-heading">
+            <span class="method-callseq">
+              getFieldAsBooleanIgnoringCase(row,col)
+            </span>
+            <span class="method-click-advice">click to toggle source</span>
+          </div>
+        </div>
+
+        <div class="method-description">
+          <p>Returns the specified field as a boolean, ignoring the case of “col”. “col” must be specified as a column name.</p>
+
+          <div class="method-source-code" id="getFieldAsBooleanIgnoringCase-source">
+            <pre>static VALUE sqlrcur_getFieldAsBooleanIgnoringCase(VALUE self, VALUE row, VALUE col) {
+        sqlrcursordata *sqlrcurdata;
+        Data_Get_Struct(self,sqlrcursordata,sqlrcurdata);
+        bool   result;
+        RCUR2(result,u64r,sqlrcurdata-&gt;cur,getFieldAsBooleanIgnoringCaseStr,row,col);
+        return (result)?Qtrue:Qfalse;
+}</pre>
+          </div>
+        </div>
+
+
+      </div>
+
+      <div id="method-i-getFieldAsDateDay" class="method-detail ">
+        <div class="method-header">
+          <div class="method-heading">
+            <span class="method-callseq">
+              getFieldAsDateDay(row,col)
+            </span>
+            <span class="method-click-advice">click to toggle source</span>
+          </div>
+          <div class="method-heading">
+            <span class="method-callseq">
+              getFieldAsDateDay(row,col,ddmm,yyyyddmm,datedelimiters)
+            </span>
+          </div>
+        </div>
+
+        <div class="method-description">
+          <p>Interprets the specified field as a date and returns the day component.</p>
+
+          <div class="method-source-code" id="getFieldAsDateDay-source">
+            <pre>static VALUE sqlrcur_getFieldAsDateDay(int argc,
+                                        VALUE *argv, VALUE self) {
+        sqlrcursordata *sqlrcurdata;
+        Data_Get_Struct(self,sqlrcursordata,sqlrcurdata);
+        int16_t        result=0;
+        if (argc==2) {
+                if (rb_obj_is_instance_of(argv[1],
+                                        rb_cString)==Qtrue) {
+                        RCUR2(result,i16r,sqlrcurdata-&gt;cur,
+                                getFieldAsDateDayStr,
+                                argv[0],argv[1]);
+                } else {
+                        RCUR2(result,i16r,sqlrcurdata-&gt;cur,
+                                getFieldAsDateDayInt,
+                                argv[0],argv[1]);
+                }
+        } else if (argc==5) {
+                if (rb_obj_is_instance_of(argv[1],
+                                        rb_cString)==Qtrue) {
+                        RCUR5(result,i16r,sqlrcurdata-&gt;cur,
+                                getFieldAsDateDayStrDdMm,
+                                argv[0],argv[1],argv[2],
+                                argv[3],argv[4]);
+                } else {
+                        RCUR5(result,i16r,sqlrcurdata-&gt;cur,
+                                getFieldAsDateDayIntDdMm,
+                                argv[0],argv[1],argv[2],
+                                argv[3],argv[4]);
+                }
+        }
+        return INT2NUM(result);
+}</pre>
+          </div>
+        </div>
+
+
+      </div>
+
+      <div id="method-i-getFieldAsDateDayIgnoringCase" class="method-detail ">
+        <div class="method-header">
+          <div class="method-heading">
+            <span class="method-callseq">
+              getFieldAsDateDayIgnoringCase(row,col)
+            </span>
+            <span class="method-click-advice">click to toggle source</span>
+          </div>
+          <div class="method-heading">
+            <span class="method-callseq">
+              getFieldAsDateDayIgnoringCase(row,col,ddmm,yyyyddmm,datedelimiters)
+            </span>
+          </div>
+        </div>
+
+        <div class="method-description">
+          <p>Interprets the specified field as a date and returns the day component, ignoring the case of “col”.</p>
+
+          <div class="method-source-code" id="getFieldAsDateDayIgnoringCase-source">
+            <pre>static VALUE sqlrcur_getFieldAsDateDayIgnoringCase(int argc,
+                                        VALUE *argv, VALUE self) {
+        sqlrcursordata *sqlrcurdata;
+        Data_Get_Struct(self,sqlrcursordata,sqlrcurdata);
+        int16_t        result=0;
+        if (argc==2) {
+                RCUR2(result,i16r,sqlrcurdata-&gt;cur,
+                        getFieldAsDateDayIgnoringCaseStr,
+                        argv[0],argv[1]);
+        } else if (argc==5) {
+                RCUR5(result,i16r,sqlrcurdata-&gt;cur,
+                        getFieldAsDateDayIgnoringCaseStrDdMm,
+                        argv[0],argv[1],argv[2],
+                        argv[3],argv[4]);
+        }
+        return INT2NUM(result);
+}</pre>
+          </div>
+        </div>
+
+
+      </div>
+
+      <div id="method-i-getFieldAsDateHour" class="method-detail ">
+        <div class="method-header">
+          <div class="method-heading">
+            <span class="method-callseq">
+              getFieldAsDateHour(row,col)
+            </span>
+            <span class="method-click-advice">click to toggle source</span>
+          </div>
+          <div class="method-heading">
+            <span class="method-callseq">
+              getFieldAsDateHour(row,col,ddmm,yyyyddmm,datedelimiters)
+            </span>
+          </div>
+        </div>
+
+        <div class="method-description">
+          <p>Interprets the specified field as a date and returns the hour component.</p>
+
+          <div class="method-source-code" id="getFieldAsDateHour-source">
+            <pre>static VALUE sqlrcur_getFieldAsDateHour(int argc,
+                                        VALUE *argv, VALUE self) {
+        sqlrcursordata *sqlrcurdata;
+        Data_Get_Struct(self,sqlrcursordata,sqlrcurdata);
+        int16_t        result=0;
+        if (argc==2) {
+                if (rb_obj_is_instance_of(argv[1],
+                                        rb_cString)==Qtrue) {
+                        RCUR2(result,i16r,sqlrcurdata-&gt;cur,
+                                getFieldAsDateHourStr,
+                                argv[0],argv[1]);
+                } else {
+                        RCUR2(result,i16r,sqlrcurdata-&gt;cur,
+                                getFieldAsDateHourInt,
+                                argv[0],argv[1]);
+                }
+        } else if (argc==5) {
+                if (rb_obj_is_instance_of(argv[1],
+                                        rb_cString)==Qtrue) {
+                        RCUR5(result,i16r,sqlrcurdata-&gt;cur,
+                                getFieldAsDateHourStrDdMm,
+                                argv[0],argv[1],argv[2],
+                                argv[3],argv[4]);
+                } else {
+                        RCUR5(result,i16r,sqlrcurdata-&gt;cur,
+                                getFieldAsDateHourIntDdMm,
+                                argv[0],argv[1],argv[2],
+                                argv[3],argv[4]);
+                }
+        }
+        return INT2NUM(result);
+}</pre>
+          </div>
+        </div>
+
+
+      </div>
+
+      <div id="method-i-getFieldAsDateHourIgnoringCase" class="method-detail ">
+        <div class="method-header">
+          <div class="method-heading">
+            <span class="method-callseq">
+              getFieldAsDateHourIgnoringCase(row,col)
+            </span>
+            <span class="method-click-advice">click to toggle source</span>
+          </div>
+          <div class="method-heading">
+            <span class="method-callseq">
+              getFieldAsDateHourIgnoringCase(row,col,ddmm,yyyyddmm,datedelimiters)
+            </span>
+          </div>
+        </div>
+
+        <div class="method-description">
+          <p>Interprets the specified field as a date and returns the hour component, ignoring the case of “col”.</p>
+
+          <div class="method-source-code" id="getFieldAsDateHourIgnoringCase-source">
+            <pre>static VALUE sqlrcur_getFieldAsDateHourIgnoringCase(int argc,
+                                        VALUE *argv, VALUE self) {
+        sqlrcursordata *sqlrcurdata;
+        Data_Get_Struct(self,sqlrcursordata,sqlrcurdata);
+        int16_t        result=0;
+        if (argc==2) {
+                RCUR2(result,i16r,sqlrcurdata-&gt;cur,
+                        getFieldAsDateHourIgnoringCaseStr,
+                        argv[0],argv[1]);
+        } else if (argc==5) {
+                RCUR5(result,i16r,sqlrcurdata-&gt;cur,
+                        getFieldAsDateHourIgnoringCaseStrDdMm,
+                        argv[0],argv[1],argv[2],
+                        argv[3],argv[4]);
+        }
+        return INT2NUM(result);
+}</pre>
+          </div>
+        </div>
+
+
+      </div>
+
+      <div id="method-i-getFieldAsDateIsNegative" class="method-detail ">
+        <div class="method-header">
+          <div class="method-heading">
+            <span class="method-callseq">
+              getFieldAsDateIsNegative(row,col)
+            </span>
+            <span class="method-click-advice">click to toggle source</span>
+          </div>
+          <div class="method-heading">
+            <span class="method-callseq">
+              getFieldAsDateIsNegative(row,col,ddmm,yyyyddmm,datedelimiters)
+            </span>
+          </div>
+        </div>
+
+        <div class="method-description">
+          <p>Interprets the specified field as a date and returns whether the hour component is negative.</p>
+
+          <div class="method-source-code" id="getFieldAsDateIsNegative-source">
+            <pre>static VALUE sqlrcur_getFieldAsDateIsNegative(int argc,
+                                        VALUE *argv, VALUE self) {
+        sqlrcursordata *sqlrcurdata;
+        Data_Get_Struct(self,sqlrcursordata,sqlrcurdata);
+        bool   result=false;
+        if (argc==2) {
+                if (rb_obj_is_instance_of(argv[1],
+                                        rb_cString)==Qtrue) {
+                        RCUR2(result,br,sqlrcurdata-&gt;cur,
+                                getFieldAsDateIsNegativeStr,
+                                argv[0],argv[1]);
+                } else {
+                        RCUR2(result,br,sqlrcurdata-&gt;cur,
+                                getFieldAsDateIsNegativeInt,
+                                argv[0],argv[1]);
+                }
+        } else if (argc==5) {
+                if (rb_obj_is_instance_of(argv[1],
+                                        rb_cString)==Qtrue) {
+                        RCUR5(result,br,sqlrcurdata-&gt;cur,
+                                getFieldAsDateIsNegativeStrDdMm,
+                                argv[0],argv[1],argv[2],
+                                argv[3],argv[4]);
+                } else {
+                        RCUR5(result,br,sqlrcurdata-&gt;cur,
+                                getFieldAsDateIsNegativeIntDdMm,
+                                argv[0],argv[1],argv[2],
+                                argv[3],argv[4]);
+                }
+        }
+        return (result)?Qtrue:Qfalse;
+}</pre>
+          </div>
+        </div>
+
+
+      </div>
+
+      <div id="method-i-getFieldAsDateIsNegativeIgnoringCase" class="method-detail ">
+        <div class="method-header">
+          <div class="method-heading">
+            <span class="method-callseq">
+              getFieldAsDateIsNegativeIgnoringCase(row,col)
+            </span>
+            <span class="method-click-advice">click to toggle source</span>
+          </div>
+          <div class="method-heading">
+            <span class="method-callseq">
+              getFieldAsDateIsNegativeIgnoringCase(row,col,ddmm,yyyyddmm,datedelimiters)
+            </span>
+          </div>
+        </div>
+
+        <div class="method-description">
+          <p>Interprets the specified field as a date and returns whether the hour component is negative, ignoring the case of “col”.</p>
+
+          <div class="method-source-code" id="getFieldAsDateIsNegativeIgnoringCase-source">
+            <pre>static VALUE sqlrcur_getFieldAsDateIsNegativeIgnoringCase(int argc,
+                                        VALUE *argv, VALUE self) {
+        sqlrcursordata *sqlrcurdata;
+        Data_Get_Struct(self,sqlrcursordata,sqlrcurdata);
+        bool   result=false;
+        if (argc==2) {
+                RCUR2(result,br,sqlrcurdata-&gt;cur,
+                        getFieldAsDateIsNegativeIgnoringCaseStr,
+                        argv[0],argv[1]);
+        } else if (argc==5) {
+                RCUR5(result,br,sqlrcurdata-&gt;cur,
+                        getFieldAsDateIsNegativeIgnoringCaseStrDdMm,
+                        argv[0],argv[1],argv[2],
+                        argv[3],argv[4]);
+        }
+        return (result)?Qtrue:Qfalse;
+}</pre>
+          </div>
+        </div>
+
+
+      </div>
+
+      <div id="method-i-getFieldAsDateMicrosecond" class="method-detail ">
+        <div class="method-header">
+          <div class="method-heading">
+            <span class="method-callseq">
+              getFieldAsDateMicrosecond(row,col)
+            </span>
+            <span class="method-click-advice">click to toggle source</span>
+          </div>
+          <div class="method-heading">
+            <span class="method-callseq">
+              getFieldAsDateMicrosecond(row,col,ddmm,yyyyddmm,datedelimiters)
+            </span>
+          </div>
+        </div>
+
+        <div class="method-description">
+          <p>Interprets the specified field as a date and returns the microsecond component.</p>
+
+          <div class="method-source-code" id="getFieldAsDateMicrosecond-source">
+            <pre>static VALUE sqlrcur_getFieldAsDateMicrosecond(int argc,
+                                        VALUE *argv, VALUE self) {
+        sqlrcursordata *sqlrcurdata;
+        Data_Get_Struct(self,sqlrcursordata,sqlrcurdata);
+        int32_t        result=0;
+        if (argc==2) {
+                if (rb_obj_is_instance_of(argv[1],
+                                        rb_cString)==Qtrue) {
+                        RCUR2(result,i32r,sqlrcurdata-&gt;cur,
+                                getFieldAsDateMicrosecondStr,
+                                argv[0],argv[1]);
+                } else {
+                        RCUR2(result,i32r,sqlrcurdata-&gt;cur,
+                                getFieldAsDateMicrosecondInt,
+                                argv[0],argv[1]);
+                }
+        } else if (argc==5) {
+                if (rb_obj_is_instance_of(argv[1],
+                                        rb_cString)==Qtrue) {
+                        RCUR5(result,i32r,sqlrcurdata-&gt;cur,
+                                getFieldAsDateMicrosecondStrDdMm,
+                                argv[0],argv[1],argv[2],
+                                argv[3],argv[4]);
+                } else {
+                        RCUR5(result,i32r,sqlrcurdata-&gt;cur,
+                                getFieldAsDateMicrosecondIntDdMm,
+                                argv[0],argv[1],argv[2],
+                                argv[3],argv[4]);
+                }
+        }
+        return INT2NUM(result);
+}</pre>
+          </div>
+        </div>
+
+
+      </div>
+
+      <div id="method-i-getFieldAsDateMicrosecondIgnoringCase" class="method-detail ">
+        <div class="method-header">
+          <div class="method-heading">
+            <span class="method-callseq">
+              getFieldAsDateMicrosecondIgnoringCase(row,col)
+            </span>
+            <span class="method-click-advice">click to toggle source</span>
+          </div>
+          <div class="method-heading">
+            <span class="method-callseq">
+              getFieldAsDateMicrosecondIgnoringCase(row,col,ddmm,yyyyddmm,datedelimiters)
+            </span>
+          </div>
+        </div>
+
+        <div class="method-description">
+          <p>Interprets the specified field as a date and returns the microsecond component, ignoring the case of “col”.</p>
+
+          <div class="method-source-code" id="getFieldAsDateMicrosecondIgnoringCase-source">
+            <pre>static VALUE sqlrcur_getFieldAsDateMicrosecondIgnoringCase(int argc,
+                                        VALUE *argv, VALUE self) {
+        sqlrcursordata *sqlrcurdata;
+        Data_Get_Struct(self,sqlrcursordata,sqlrcurdata);
+        int32_t        result=0;
+        if (argc==2) {
+                RCUR2(result,i32r,sqlrcurdata-&gt;cur,
+                        getFieldAsDateMicrosecondIgnoringCaseStr,
+                        argv[0],argv[1]);
+        } else if (argc==5) {
+                RCUR5(result,i32r,sqlrcurdata-&gt;cur,
+                        getFieldAsDateMicrosecondIgnoringCaseStrDdMm,
+                        argv[0],argv[1],argv[2],
+                        argv[3],argv[4]);
+        }
+        return INT2NUM(result);
+}</pre>
+          </div>
+        </div>
+
+
+      </div>
+
+      <div id="method-i-getFieldAsDateMinute" class="method-detail ">
+        <div class="method-header">
+          <div class="method-heading">
+            <span class="method-callseq">
+              getFieldAsDateMinute(row,col)
+            </span>
+            <span class="method-click-advice">click to toggle source</span>
+          </div>
+          <div class="method-heading">
+            <span class="method-callseq">
+              getFieldAsDateMinute(row,col,ddmm,yyyyddmm,datedelimiters)
+            </span>
+          </div>
+        </div>
+
+        <div class="method-description">
+          <p>Interprets the specified field as a date and returns the minute component.</p>
+
+          <div class="method-source-code" id="getFieldAsDateMinute-source">
+            <pre>static VALUE sqlrcur_getFieldAsDateMinute(int argc,
+                                        VALUE *argv, VALUE self) {
+        sqlrcursordata *sqlrcurdata;
+        Data_Get_Struct(self,sqlrcursordata,sqlrcurdata);
+        int16_t        result=0;
+        if (argc==2) {
+                if (rb_obj_is_instance_of(argv[1],
+                                        rb_cString)==Qtrue) {
+                        RCUR2(result,i16r,sqlrcurdata-&gt;cur,
+                                getFieldAsDateMinuteStr,
+                                argv[0],argv[1]);
+                } else {
+                        RCUR2(result,i16r,sqlrcurdata-&gt;cur,
+                                getFieldAsDateMinuteInt,
+                                argv[0],argv[1]);
+                }
+        } else if (argc==5) {
+                if (rb_obj_is_instance_of(argv[1],
+                                        rb_cString)==Qtrue) {
+                        RCUR5(result,i16r,sqlrcurdata-&gt;cur,
+                                getFieldAsDateMinuteStrDdMm,
+                                argv[0],argv[1],argv[2],
+                                argv[3],argv[4]);
+                } else {
+                        RCUR5(result,i16r,sqlrcurdata-&gt;cur,
+                                getFieldAsDateMinuteIntDdMm,
+                                argv[0],argv[1],argv[2],
+                                argv[3],argv[4]);
+                }
+        }
+        return INT2NUM(result);
+}</pre>
+          </div>
+        </div>
+
+
+      </div>
+
+      <div id="method-i-getFieldAsDateMinuteIgnoringCase" class="method-detail ">
+        <div class="method-header">
+          <div class="method-heading">
+            <span class="method-callseq">
+              getFieldAsDateMinuteIgnoringCase(row,col)
+            </span>
+            <span class="method-click-advice">click to toggle source</span>
+          </div>
+          <div class="method-heading">
+            <span class="method-callseq">
+              getFieldAsDateMinuteIgnoringCase(row,col,ddmm,yyyyddmm,datedelimiters)
+            </span>
+          </div>
+        </div>
+
+        <div class="method-description">
+          <p>Interprets the specified field as a date and returns the minute component, ignoring the case of “col”.</p>
+
+          <div class="method-source-code" id="getFieldAsDateMinuteIgnoringCase-source">
+            <pre>static VALUE sqlrcur_getFieldAsDateMinuteIgnoringCase(int argc,
+                                        VALUE *argv, VALUE self) {
+        sqlrcursordata *sqlrcurdata;
+        Data_Get_Struct(self,sqlrcursordata,sqlrcurdata);
+        int16_t        result=0;
+        if (argc==2) {
+                RCUR2(result,i16r,sqlrcurdata-&gt;cur,
+                        getFieldAsDateMinuteIgnoringCaseStr,
+                        argv[0],argv[1]);
+        } else if (argc==5) {
+                RCUR5(result,i16r,sqlrcurdata-&gt;cur,
+                        getFieldAsDateMinuteIgnoringCaseStrDdMm,
+                        argv[0],argv[1],argv[2],
+                        argv[3],argv[4]);
+        }
+        return INT2NUM(result);
+}</pre>
+          </div>
+        </div>
+
+
+      </div>
+
+      <div id="method-i-getFieldAsDateMonth" class="method-detail ">
+        <div class="method-header">
+          <div class="method-heading">
+            <span class="method-callseq">
+              getFieldAsDateMonth(row,col)
+            </span>
+            <span class="method-click-advice">click to toggle source</span>
+          </div>
+          <div class="method-heading">
+            <span class="method-callseq">
+              getFieldAsDateMonth(row,col,ddmm,yyyyddmm,datedelimiters)
+            </span>
+          </div>
+        </div>
+
+        <div class="method-description">
+          <p>Interprets the specified field as a date and returns the month component.</p>
+
+          <div class="method-source-code" id="getFieldAsDateMonth-source">
+            <pre>static VALUE sqlrcur_getFieldAsDateMonth(int argc,
+                                        VALUE *argv, VALUE self) {
+        sqlrcursordata *sqlrcurdata;
+        Data_Get_Struct(self,sqlrcursordata,sqlrcurdata);
+        int16_t        result=0;
+        if (argc==2) {
+                if (rb_obj_is_instance_of(argv[1],
+                                        rb_cString)==Qtrue) {
+                        RCUR2(result,i16r,sqlrcurdata-&gt;cur,
+                                getFieldAsDateMonthStr,
+                                argv[0],argv[1]);
+                } else {
+                        RCUR2(result,i16r,sqlrcurdata-&gt;cur,
+                                getFieldAsDateMonthInt,
+                                argv[0],argv[1]);
+                }
+        } else if (argc==5) {
+                if (rb_obj_is_instance_of(argv[1],
+                                        rb_cString)==Qtrue) {
+                        RCUR5(result,i16r,sqlrcurdata-&gt;cur,
+                                getFieldAsDateMonthStrDdMm,
+                                argv[0],argv[1],argv[2],
+                                argv[3],argv[4]);
+                } else {
+                        RCUR5(result,i16r,sqlrcurdata-&gt;cur,
+                                getFieldAsDateMonthIntDdMm,
+                                argv[0],argv[1],argv[2],
+                                argv[3],argv[4]);
+                }
+        }
+        return INT2NUM(result);
+}</pre>
+          </div>
+        </div>
+
+
+      </div>
+
+      <div id="method-i-getFieldAsDateMonthIgnoringCase" class="method-detail ">
+        <div class="method-header">
+          <div class="method-heading">
+            <span class="method-callseq">
+              getFieldAsDateMonthIgnoringCase(row,col)
+            </span>
+            <span class="method-click-advice">click to toggle source</span>
+          </div>
+          <div class="method-heading">
+            <span class="method-callseq">
+              getFieldAsDateMonthIgnoringCase(row,col,ddmm,yyyyddmm,datedelimiters)
+            </span>
+          </div>
+        </div>
+
+        <div class="method-description">
+          <p>Interprets the specified field as a date and returns the month component, ignoring the case of “col”.</p>
+
+          <div class="method-source-code" id="getFieldAsDateMonthIgnoringCase-source">
+            <pre>static VALUE sqlrcur_getFieldAsDateMonthIgnoringCase(int argc,
+                                        VALUE *argv, VALUE self) {
+        sqlrcursordata *sqlrcurdata;
+        Data_Get_Struct(self,sqlrcursordata,sqlrcurdata);
+        int16_t        result=0;
+        if (argc==2) {
+                RCUR2(result,i16r,sqlrcurdata-&gt;cur,
+                        getFieldAsDateMonthIgnoringCaseStr,
+                        argv[0],argv[1]);
+        } else if (argc==5) {
+                RCUR5(result,i16r,sqlrcurdata-&gt;cur,
+                        getFieldAsDateMonthIgnoringCaseStrDdMm,
+                        argv[0],argv[1],argv[2],
+                        argv[3],argv[4]);
+        }
+        return INT2NUM(result);
+}</pre>
+          </div>
+        </div>
+
+
+      </div>
+
+      <div id="method-i-getFieldAsDateSecond" class="method-detail ">
+        <div class="method-header">
+          <div class="method-heading">
+            <span class="method-callseq">
+              getFieldAsDateSecond(row,col)
+            </span>
+            <span class="method-click-advice">click to toggle source</span>
+          </div>
+          <div class="method-heading">
+            <span class="method-callseq">
+              getFieldAsDateSecond(row,col,ddmm,yyyyddmm,datedelimiters)
+            </span>
+          </div>
+        </div>
+
+        <div class="method-description">
+          <p>Interprets the specified field as a date and returns the second component.</p>
+
+          <div class="method-source-code" id="getFieldAsDateSecond-source">
+            <pre>static VALUE sqlrcur_getFieldAsDateSecond(int argc,
+                                        VALUE *argv, VALUE self) {
+        sqlrcursordata *sqlrcurdata;
+        Data_Get_Struct(self,sqlrcursordata,sqlrcurdata);
+        int16_t        result=0;
+        if (argc==2) {
+                if (rb_obj_is_instance_of(argv[1],
+                                        rb_cString)==Qtrue) {
+                        RCUR2(result,i16r,sqlrcurdata-&gt;cur,
+                                getFieldAsDateSecondStr,
+                                argv[0],argv[1]);
+                } else {
+                        RCUR2(result,i16r,sqlrcurdata-&gt;cur,
+                                getFieldAsDateSecondInt,
+                                argv[0],argv[1]);
+                }
+        } else if (argc==5) {
+                if (rb_obj_is_instance_of(argv[1],
+                                        rb_cString)==Qtrue) {
+                        RCUR5(result,i16r,sqlrcurdata-&gt;cur,
+                                getFieldAsDateSecondStrDdMm,
+                                argv[0],argv[1],argv[2],
+                                argv[3],argv[4]);
+                } else {
+                        RCUR5(result,i16r,sqlrcurdata-&gt;cur,
+                                getFieldAsDateSecondIntDdMm,
+                                argv[0],argv[1],argv[2],
+                                argv[3],argv[4]);
+                }
+        }
+        return INT2NUM(result);
+}</pre>
+          </div>
+        </div>
+
+
+      </div>
+
+      <div id="method-i-getFieldAsDateSecondIgnoringCase" class="method-detail ">
+        <div class="method-header">
+          <div class="method-heading">
+            <span class="method-callseq">
+              getFieldAsDateSecondIgnoringCase(row,col)
+            </span>
+            <span class="method-click-advice">click to toggle source</span>
+          </div>
+          <div class="method-heading">
+            <span class="method-callseq">
+              getFieldAsDateSecondIgnoringCase(row,col,ddmm,yyyyddmm,datedelimiters)
+            </span>
+          </div>
+        </div>
+
+        <div class="method-description">
+          <p>Interprets the specified field as a date and returns the second component, ignoring the case of “col”.</p>
+
+          <div class="method-source-code" id="getFieldAsDateSecondIgnoringCase-source">
+            <pre>static VALUE sqlrcur_getFieldAsDateSecondIgnoringCase(int argc,
+                                        VALUE *argv, VALUE self) {
+        sqlrcursordata *sqlrcurdata;
+        Data_Get_Struct(self,sqlrcursordata,sqlrcurdata);
+        int16_t        result=0;
+        if (argc==2) {
+                RCUR2(result,i16r,sqlrcurdata-&gt;cur,
+                        getFieldAsDateSecondIgnoringCaseStr,
+                        argv[0],argv[1]);
+        } else if (argc==5) {
+                RCUR5(result,i16r,sqlrcurdata-&gt;cur,
+                        getFieldAsDateSecondIgnoringCaseStrDdMm,
+                        argv[0],argv[1],argv[2],
+                        argv[3],argv[4]);
+        }
+        return INT2NUM(result);
+}</pre>
+          </div>
+        </div>
+
+
+      </div>
+
+      <div id="method-i-getFieldAsDateYear" class="method-detail ">
+        <div class="method-header">
+          <div class="method-heading">
+            <span class="method-callseq">
+              getFieldAsDateYear(row,col)
+            </span>
+            <span class="method-click-advice">click to toggle source</span>
+          </div>
+          <div class="method-heading">
+            <span class="method-callseq">
+              getFieldAsDateYear(row,col,ddmm,yyyyddmm,datedelimiters)
+            </span>
+          </div>
+        </div>
+
+        <div class="method-description">
+          <p>Interprets the specified field as a date and returns the year component.</p>
+
+          <div class="method-source-code" id="getFieldAsDateYear-source">
+            <pre>static VALUE sqlrcur_getFieldAsDateYear(int argc,
+                                        VALUE *argv, VALUE self) {
+        sqlrcursordata *sqlrcurdata;
+        Data_Get_Struct(self,sqlrcursordata,sqlrcurdata);
+        int16_t        result=0;
+        if (argc==2) {
+                if (rb_obj_is_instance_of(argv[1],
+                                        rb_cString)==Qtrue) {
+                        RCUR2(result,i16r,sqlrcurdata-&gt;cur,
+                                getFieldAsDateYearStr,
+                                argv[0],argv[1]);
+                } else {
+                        RCUR2(result,i16r,sqlrcurdata-&gt;cur,
+                                getFieldAsDateYearInt,
+                                argv[0],argv[1]);
+                }
+        } else if (argc==5) {
+                if (rb_obj_is_instance_of(argv[1],
+                                        rb_cString)==Qtrue) {
+                        RCUR5(result,i16r,sqlrcurdata-&gt;cur,
+                                getFieldAsDateYearStrDdMm,
+                                argv[0],argv[1],argv[2],
+                                argv[3],argv[4]);
+                } else {
+                        RCUR5(result,i16r,sqlrcurdata-&gt;cur,
+                                getFieldAsDateYearIntDdMm,
+                                argv[0],argv[1],argv[2],
+                                argv[3],argv[4]);
+                }
+        }
+        return INT2NUM(result);
+}</pre>
+          </div>
+        </div>
+
+
+      </div>
+
+      <div id="method-i-getFieldAsDateYearIgnoringCase" class="method-detail ">
+        <div class="method-header">
+          <div class="method-heading">
+            <span class="method-callseq">
+              getFieldAsDateYearIgnoringCase(row,col)
+            </span>
+            <span class="method-click-advice">click to toggle source</span>
+          </div>
+          <div class="method-heading">
+            <span class="method-callseq">
+              getFieldAsDateYearIgnoringCase(row,col,ddmm,yyyyddmm,datedelimiters)
+            </span>
+          </div>
+        </div>
+
+        <div class="method-description">
+          <p>Interprets the specified field as a date and returns the year component, ignoring the case of “col”.</p>
+
+          <div class="method-source-code" id="getFieldAsDateYearIgnoringCase-source">
+            <pre>static VALUE sqlrcur_getFieldAsDateYearIgnoringCase(int argc,
+                                        VALUE *argv, VALUE self) {
+        sqlrcursordata *sqlrcurdata;
+        Data_Get_Struct(self,sqlrcursordata,sqlrcurdata);
+        int16_t        result=0;
+        if (argc==2) {
+                RCUR2(result,i16r,sqlrcurdata-&gt;cur,
+                        getFieldAsDateYearIgnoringCaseStr,
+                        argv[0],argv[1]);
+        } else if (argc==5) {
+                RCUR5(result,i16r,sqlrcurdata-&gt;cur,
+                        getFieldAsDateYearIgnoringCaseStrDdMm,
+                        argv[0],argv[1],argv[2],
+                        argv[3],argv[4]);
+        }
+        return INT2NUM(result);
+}</pre>
+          </div>
+        </div>
+
+
+      </div>
+
       <div id="method-i-getFieldAsDouble" class="method-detail ">
         <div class="method-header">
           <div class="method-heading">
@@ -1368,6 +2359,33 @@
 
       </div>
 
+      <div id="method-i-getFieldAsDoubleIgnoringCase" class="method-detail ">
+        <div class="method-header">
+          <div class="method-heading">
+            <span class="method-callseq">
+              getFieldAsDoubleIgnoringCase(row,col)
+            </span>
+            <span class="method-click-advice">click to toggle source</span>
+          </div>
+        </div>
+
+        <div class="method-description">
+          <p>Returns the specified field as a decimal, ignoring the case of “col”. “col” must be specified as a column name.</p>
+
+          <div class="method-source-code" id="getFieldAsDoubleIgnoringCase-source">
+            <pre>static VALUE sqlrcur_getFieldAsDoubleIgnoringCase(VALUE self, VALUE row, VALUE col) {
+        sqlrcursordata *sqlrcurdata;
+        Data_Get_Struct(self,sqlrcursordata,sqlrcurdata);
+        double result;
+        RCUR2(result,dr,sqlrcurdata-&gt;cur,getFieldAsDoubleIgnoringCaseStr,row,col);
+        return rb_float_new(result);
+}</pre>
+          </div>
+        </div>
+
+
+      </div>
+
       <div id="method-i-getFieldAsInteger" class="method-detail ">
         <div class="method-header">
           <div class="method-heading">
@@ -1387,11 +2405,71 @@
         Data_Get_Struct(self,sqlrcursordata,sqlrcurdata);
         int64_t        result;
         if (rb_obj_is_instance_of(col,rb_cString)==Qtrue) {
-                RCUR2(result,i64r,sqlrcurdata-&gt;cur,getFieldAsIntegerStr,row,col);
+                RCUR2(result,u64r,sqlrcurdata-&gt;cur,getFieldAsIntegerStr,row,col);
         } else {
-                RCUR2(result,i64r,sqlrcurdata-&gt;cur,getFieldAsIntegerInt,row,col);
+                RCUR2(result,u64r,sqlrcurdata-&gt;cur,getFieldAsIntegerInt,row,col);
         }
         return INT2NUM(result);
+}</pre>
+          </div>
+        </div>
+
+
+      </div>
+
+      <div id="method-i-getFieldAsIntegerIgnoringCase" class="method-detail ">
+        <div class="method-header">
+          <div class="method-heading">
+            <span class="method-callseq">
+              getFieldAsIntegerIgnoringCase(row,col)
+            </span>
+            <span class="method-click-advice">click to toggle source</span>
+          </div>
+        </div>
+
+        <div class="method-description">
+          <p>Returns the specified field as an integer, ignoring the case of “col”. “col” must be specified as a column name.</p>
+
+          <div class="method-source-code" id="getFieldAsIntegerIgnoringCase-source">
+            <pre>static VALUE sqlrcur_getFieldAsIntegerIgnoringCase(VALUE self, VALUE row, VALUE col) {
+        sqlrcursordata *sqlrcurdata;
+        Data_Get_Struct(self,sqlrcursordata,sqlrcurdata);
+        int64_t        result;
+        RCUR2(result,u64r,sqlrcurdata-&gt;cur,getFieldAsIntegerIgnoringCaseStr,row,col);
+        return INT2NUM(result);
+}</pre>
+          </div>
+        </div>
+
+
+      </div>
+
+      <div id="method-i-getFieldIgnoringCase" class="method-detail ">
+        <div class="method-header">
+          <div class="method-heading">
+            <span class="method-callseq">
+              getFieldIgnoringCase(row,col)
+            </span>
+            <span class="method-click-advice">click to toggle source</span>
+          </div>
+        </div>
+
+        <div class="method-description">
+          <p>Returns the specified field as a string, ignoring the case of “col”. “col” must be specified as a column name.</p>
+
+          <div class="method-source-code" id="getFieldIgnoringCase-source">
+            <pre>static VALUE sqlrcur_getFieldIgnoringCase(VALUE self, VALUE row, VALUE col) {
+        sqlrcursordata *sqlrcurdata;
+        const char     *result;
+        uint64_t       length;
+        Data_Get_Struct(self,sqlrcursordata,sqlrcurdata);
+        RCUR2(result,ccpr,sqlrcurdata-&gt;cur,getFieldIgnoringCaseStr,row,col);
+        RCUR2(length,u64r,sqlrcurdata-&gt;cur,getFieldLengthIgnoringCaseStr,row,col);
+        if (result) {
+                return rb_str_new(result,length);
+        } else {
+                return Qnil;
+        }
 }</pre>
           </div>
         </div>
@@ -1422,6 +2500,67 @@
         } else {
                 RCUR2(result,u64r,sqlrcurdata-&gt;cur,getFieldLengthInt,row,col);
         }
+        return INT2NUM(result);
+}</pre>
+          </div>
+        </div>
+
+
+      </div>
+
+      <div id="method-i-getKeyAndIndexList" class="method-detail ">
+        <div class="method-header">
+          <div class="method-heading">
+            <span class="method-callseq">
+              getKeyAndIndexList(table,qualifier)
+            </span>
+            <span class="method-click-advice">click to toggle source</span>
+          </div>
+        </div>
+
+        <div class="method-description">
+          <p>Generates a result set containing the keys and indexes of “table”, which match the pattern “qualifier”.</p>
+
+<p>The result set will contain the following columns:</p>
+<ul><li>
+<p>table</p>
+</li><li>
+<p>non_unique</p>
+</li><li>
+<p>key_name</p>
+</li><li>
+<p>seq_in_index</p>
+</li><li>
+<p>column_name</p>
+</li><li>
+<p>collation</p>
+</li><li>
+<p>cardinality</p>
+</li><li>
+<p>sub_part</p>
+</li><li>
+<p>packed</p>
+</li><li>
+<p>null</p>
+</li><li>
+<p>index_type</p>
+</li><li>
+<p>comment</p>
+</li><li>
+<p>index_comment</p>
+</li></ul>
+
+<p>If “qualifier” is empty or nil then a result set containing all keys and indexes of “table” will be returned.</p>
+
+<p>If SQL Relay doesn’t support getting a list of keys and indexes for the current database backend (or the database doesn’t) then an empty result set will be returned.</p>
+
+          <div class="method-source-code" id="getKeyAndIndexList-source">
+            <pre>static VALUE sqlrcur_getKeyAndIndexList(VALUE self,
+                                        VALUE table, VALUE qualifier) {
+        sqlrcursordata *sqlrcurdata;
+        bool           result;
+        Data_Get_Struct(self,sqlrcursordata,sqlrcurdata);
+        RCUR2(result,br,sqlrcurdata-&gt;cur,getKeyAndIndexList,table,qualifier);
         return INT2NUM(result);
 }</pre>
           </div>
@@ -1471,7 +2610,7 @@
         </div>
 
         <div class="method-description">
-          <p>Tells the connection to return NULL fields and output bind variables as empty strings.  This is the default.</p>
+          <p>Tells the connection to return NULL fields and output bind variables as empty strings. This is the default.</p>
 
           <div class="method-source-code" id="getNullsAsEmptyStrings-source">
             <pre>static VALUE sqlrcur_getNullsAsEmptyStrings(VALUE self) {
@@ -1496,7 +2635,7 @@
         </div>
 
         <div class="method-description">
-          <p>Tells the connection to return NULL fields and output bind variables as nil’s.</p>
+          <p>Tells the connection to return NULL fields and output bind variables as nil’s rather than as empty strings.</p>
 
           <div class="method-source-code" id="getNullsAsNils-source">
             <pre>static VALUE sqlrcur_getNullsAsNils(VALUE self) {
@@ -1608,6 +2747,253 @@
 
       </div>
 
+      <div id="method-i-getOutputBindDateDay" class="method-detail ">
+        <div class="method-header">
+          <div class="method-heading">
+            <span class="method-callseq">
+              getOutputBindDateDay(variable)
+            </span>
+            <span class="method-click-advice">click to toggle source</span>
+          </div>
+        </div>
+
+        <div class="method-description">
+          <p>Get the day from a previously defined date output bind variable.</p>
+
+          <div class="method-source-code" id="getOutputBindDateDay-source">
+            <pre>static VALUE sqlrcur_getOutputBindDateDay(VALUE self, VALUE variable) {
+        sqlrcursordata *sqlrcurdata;
+        int16_t                result;
+        Data_Get_Struct(self,sqlrcursordata,sqlrcurdata);
+        RCUR1(result,i16r,sqlrcurdata-&gt;cur,getOutputBindDateDay,variable);
+        return INT2NUM(result);
+}</pre>
+          </div>
+        </div>
+
+
+      </div>
+
+      <div id="method-i-getOutputBindDateHour" class="method-detail ">
+        <div class="method-header">
+          <div class="method-heading">
+            <span class="method-callseq">
+              getOutputBindDateHour(variable)
+            </span>
+            <span class="method-click-advice">click to toggle source</span>
+          </div>
+        </div>
+
+        <div class="method-description">
+          <p>Get the hour from a previously defined date output bind variable.</p>
+
+          <div class="method-source-code" id="getOutputBindDateHour-source">
+            <pre>static VALUE sqlrcur_getOutputBindDateHour(VALUE self, VALUE variable) {
+        sqlrcursordata *sqlrcurdata;
+        int16_t                result;
+        Data_Get_Struct(self,sqlrcursordata,sqlrcurdata);
+        RCUR1(result,i16r,sqlrcurdata-&gt;cur,getOutputBindDateHour,variable);
+        return INT2NUM(result);
+}</pre>
+          </div>
+        </div>
+
+
+      </div>
+
+      <div id="method-i-getOutputBindDateIsNegative" class="method-detail ">
+        <div class="method-header">
+          <div class="method-heading">
+            <span class="method-callseq">
+              getOutputBindDateIsNegative(variable)
+            </span>
+            <span class="method-click-advice">click to toggle source</span>
+          </div>
+        </div>
+
+        <div class="method-description">
+          <p>Get whether the value is negative from a previously defined date output bind variable.</p>
+
+          <div class="method-source-code" id="getOutputBindDateIsNegative-source">
+            <pre>static VALUE sqlrcur_getOutputBindDateIsNegative(VALUE self, VALUE variable) {
+        sqlrcursordata *sqlrcurdata;
+        bool           result;
+        Data_Get_Struct(self,sqlrcursordata,sqlrcurdata);
+        RCUR1(result,br,sqlrcurdata-&gt;cur,getOutputBindDateIsNegative,variable);
+        return (result)?Qtrue:Qfalse;
+}</pre>
+          </div>
+        </div>
+
+
+      </div>
+
+      <div id="method-i-getOutputBindDateMicrosecond" class="method-detail ">
+        <div class="method-header">
+          <div class="method-heading">
+            <span class="method-callseq">
+              getOutputBindDateMicrosecond(variable)
+            </span>
+            <span class="method-click-advice">click to toggle source</span>
+          </div>
+        </div>
+
+        <div class="method-description">
+          <p>Get the microsecond from a previously defined date output bind variable.</p>
+
+          <div class="method-source-code" id="getOutputBindDateMicrosecond-source">
+            <pre>static VALUE sqlrcur_getOutputBindDateMicrosecond(VALUE self, VALUE variable) {
+        sqlrcursordata *sqlrcurdata;
+        int32_t                result;
+        Data_Get_Struct(self,sqlrcursordata,sqlrcurdata);
+        RCUR1(result,i32r,sqlrcurdata-&gt;cur,getOutputBindDateMicrosecond,variable);
+        return INT2NUM(result);
+}</pre>
+          </div>
+        </div>
+
+
+      </div>
+
+      <div id="method-i-getOutputBindDateMinute" class="method-detail ">
+        <div class="method-header">
+          <div class="method-heading">
+            <span class="method-callseq">
+              getOutputBindDateMinute(variable)
+            </span>
+            <span class="method-click-advice">click to toggle source</span>
+          </div>
+        </div>
+
+        <div class="method-description">
+          <p>Get the minute from a previously defined date output bind variable.</p>
+
+          <div class="method-source-code" id="getOutputBindDateMinute-source">
+            <pre>static VALUE sqlrcur_getOutputBindDateMinute(VALUE self, VALUE variable) {
+        sqlrcursordata *sqlrcurdata;
+        int16_t                result;
+        Data_Get_Struct(self,sqlrcursordata,sqlrcurdata);
+        RCUR1(result,i16r,sqlrcurdata-&gt;cur,getOutputBindDateMinute,variable);
+        return INT2NUM(result);
+}</pre>
+          </div>
+        </div>
+
+
+      </div>
+
+      <div id="method-i-getOutputBindDateMonth" class="method-detail ">
+        <div class="method-header">
+          <div class="method-heading">
+            <span class="method-callseq">
+              getOutputBindDateMonth(variable)
+            </span>
+            <span class="method-click-advice">click to toggle source</span>
+          </div>
+        </div>
+
+        <div class="method-description">
+          <p>Get the month from a previously defined date output bind variable.</p>
+
+          <div class="method-source-code" id="getOutputBindDateMonth-source">
+            <pre>static VALUE sqlrcur_getOutputBindDateMonth(VALUE self, VALUE variable) {
+        sqlrcursordata *sqlrcurdata;
+        int16_t                result;
+        Data_Get_Struct(self,sqlrcursordata,sqlrcurdata);
+        RCUR1(result,i16r,sqlrcurdata-&gt;cur,getOutputBindDateMonth,variable);
+        return INT2NUM(result);
+}</pre>
+          </div>
+        </div>
+
+
+      </div>
+
+      <div id="method-i-getOutputBindDateSecond" class="method-detail ">
+        <div class="method-header">
+          <div class="method-heading">
+            <span class="method-callseq">
+              getOutputBindDateSecond(variable)
+            </span>
+            <span class="method-click-advice">click to toggle source</span>
+          </div>
+        </div>
+
+        <div class="method-description">
+          <p>Get the second from a previously defined date output bind variable.</p>
+
+          <div class="method-source-code" id="getOutputBindDateSecond-source">
+            <pre>static VALUE sqlrcur_getOutputBindDateSecond(VALUE self, VALUE variable) {
+        sqlrcursordata *sqlrcurdata;
+        int16_t                result;
+        Data_Get_Struct(self,sqlrcursordata,sqlrcurdata);
+        RCUR1(result,i16r,sqlrcurdata-&gt;cur,getOutputBindDateSecond,variable);
+        return INT2NUM(result);
+}</pre>
+          </div>
+        </div>
+
+
+      </div>
+
+      <div id="method-i-getOutputBindDateTz" class="method-detail ">
+        <div class="method-header">
+          <div class="method-heading">
+            <span class="method-callseq">
+              getOutputBindDateTz(variable)
+            </span>
+            <span class="method-click-advice">click to toggle source</span>
+          </div>
+        </div>
+
+        <div class="method-description">
+          <p>Get the time zone from a previously defined date output bind variable.</p>
+
+          <div class="method-source-code" id="getOutputBindDateTz-source">
+            <pre>static VALUE sqlrcur_getOutputBindDateTz(VALUE self, VALUE variable) {
+        sqlrcursordata *sqlrcurdata;
+        const char     *result;
+        Data_Get_Struct(self,sqlrcursordata,sqlrcurdata);
+        RCUR1(result,ccpr,sqlrcurdata-&gt;cur,getOutputBindDateTz,variable);
+        if (result) {
+                return rb_str_new2(result);
+        } else {
+                return Qnil;
+        }
+}</pre>
+          </div>
+        </div>
+
+
+      </div>
+
+      <div id="method-i-getOutputBindDateYear" class="method-detail ">
+        <div class="method-header">
+          <div class="method-heading">
+            <span class="method-callseq">
+              getOutputBindDateYear(variable)
+            </span>
+            <span class="method-click-advice">click to toggle source</span>
+          </div>
+        </div>
+
+        <div class="method-description">
+          <p>Get the year from a previously defined date output bind variable.</p>
+
+          <div class="method-source-code" id="getOutputBindDateYear-source">
+            <pre>static VALUE sqlrcur_getOutputBindDateYear(VALUE self, VALUE variable) {
+        sqlrcursordata *sqlrcurdata;
+        int16_t                result;
+        Data_Get_Struct(self,sqlrcursordata,sqlrcurdata);
+        RCUR1(result,i16r,sqlrcurdata-&gt;cur,getOutputBindDateYear,variable);
+        return INT2NUM(result);
+}</pre>
+          </div>
+        </div>
+
+
+      </div>
+
       <div id="method-i-getOutputBindDouble" class="method-detail ">
         <div class="method-header">
           <div class="method-heading">
@@ -1653,7 +3039,7 @@
         sqlrcursordata *sqlrcurdata;
         int64_t                result;
         Data_Get_Struct(self,sqlrcursordata,sqlrcurdata);
-        RCUR1(result,i64r,sqlrcurdata-&gt;cur,getOutputBindInteger,variable);
+        RCUR1(result,u64r,sqlrcurdata-&gt;cur,getOutputBindInteger,variable);
         return INT2NUM(result);
 }</pre>
           </div>
@@ -1722,6 +3108,154 @@
 
       </div>
 
+      <div id="method-i-getPrimaryKeysList" class="method-detail ">
+        <div class="method-header">
+          <div class="method-heading">
+            <span class="method-callseq">
+              getPrimaryKeysList(table,columns)
+            </span>
+            <span class="method-click-advice">click to toggle source</span>
+          </div>
+        </div>
+
+        <div class="method-description">
+          <p>Generates a result set containing the primary keys of “table”, which match the pattern “columns”.</p>
+
+<p>The result set will contain the following columns:</p>
+<ul><li>
+<p>table</p>
+</li><li>
+<p>non_unique</p>
+</li><li>
+<p>key_name</p>
+</li><li>
+<p>seq_in_index</p>
+</li><li>
+<p>column_name</p>
+</li><li>
+<p>collation</p>
+</li><li>
+<p>cardinality</p>
+</li><li>
+<p>sub_part</p>
+</li><li>
+<p>packed</p>
+</li><li>
+<p>null</p>
+</li><li>
+<p>index_type</p>
+</li><li>
+<p>comment</p>
+</li><li>
+<p>index_comment</p>
+</li></ul>
+
+<p>If “columns” is empty or nil then a result set containing all primary keys of “table” will be returned.</p>
+
+<p>If SQL Relay doesn’t support getting a list of primary keys for the current database backend (or the database doesn’t) then an empty result set will be returned.</p>
+
+          <div class="method-source-code" id="getPrimaryKeysList-source">
+            <pre>static VALUE sqlrcur_getPrimaryKeysList(VALUE self,
+                                        VALUE table, VALUE columns) {
+        sqlrcursordata *sqlrcurdata;
+        bool           result;
+        Data_Get_Struct(self,sqlrcursordata,sqlrcurdata);
+        RCUR2(result,br,sqlrcurdata-&gt;cur,getPrimaryKeysList,table,columns);
+        return INT2NUM(result);
+}</pre>
+          </div>
+        </div>
+
+
+      </div>
+
+      <div id="method-i-getProcedureList" class="method-detail ">
+        <div class="method-header">
+          <div class="method-heading">
+            <span class="method-callseq">
+              getProcedureList(procedures)
+            </span>
+            <span class="method-click-advice">click to toggle source</span>
+          </div>
+        </div>
+
+        <div class="method-description">
+          <p>Generates a result set containing procedures that match the pattern “procedures”.</p>
+
+<p>The result set will contain the following columns:</p>
+<ul><li>
+<p>routine_catalog</p>
+</li><li>
+<p>routine_schema</p>
+</li><li>
+<p>routine_name</p>
+</li><li>
+<p>data_type</p>
+</li></ul>
+
+<p>If “procedures” is empty or nil then a result set containing all procedures in the current database/schema will be returned.</p>
+
+<p>If SQL Relay doesn’t support getting a list of procedures for the current database backend (or the database doesn’t) then an empty result set will be returned.</p>
+
+          <div class="method-source-code" id="getProcedureList-source">
+            <pre>static VALUE sqlrcur_getProcedureList(VALUE self, VALUE procedures) {
+        sqlrcursordata *sqlrcurdata;
+        bool           result;
+        Data_Get_Struct(self,sqlrcursordata,sqlrcurdata);
+        RCUR1(result,br,sqlrcurdata-&gt;cur,getProcedureList,procedures);
+        return INT2NUM(result);
+}</pre>
+          </div>
+        </div>
+
+
+      </div>
+
+      <div id="method-i-getProcedureParameterList" class="method-detail ">
+        <div class="method-header">
+          <div class="method-heading">
+            <span class="method-callseq">
+              getProcedureParameterList(procedure,parameters)
+            </span>
+            <span class="method-click-advice">click to toggle source</span>
+          </div>
+        </div>
+
+        <div class="method-description">
+          <p>Generates a result set containing the parameters of “procedure”, which match the pattern “parameters”.</p>
+
+<p>The result set will contain the following columns:</p>
+<ul><li>
+<p>parameter_name</p>
+</li><li>
+<p>parameter_mode</p>
+</li><li>
+<p>data_type</p>
+</li><li>
+<p>character_maximum_length</p>
+</li><li>
+<p>ordinal_position</p>
+</li></ul>
+
+<p>If “parameters” is empty or nil then a result set containing all parameters of “procedure” will be returned.</p>
+
+<p>If SQL Relay doesn’t support getting a list of procedure parameters for the current database backend (or the database doesn’t) then an empty result set will be returned.</p>
+
+          <div class="method-source-code" id="getProcedureParameterList-source">
+            <pre>static VALUE sqlrcur_getProcedureParameterList(VALUE self,
+                                        VALUE procedure, VALUE parameters) {
+        sqlrcursordata *sqlrcurdata;
+        bool           result;
+        Data_Get_Struct(self,sqlrcursordata,sqlrcurdata);
+        RCUR2(result,br,sqlrcurdata-&gt;cur,getProcedureParameterList,procedure,parameters);
+        return INT2NUM(result);
+}</pre>
+          </div>
+        </div>
+
+
+      </div>
+
       <div id="method-i-getResultSetBufferSize" class="method-detail ">
         <div class="method-header">
           <div class="method-heading">
@@ -1758,7 +3292,7 @@
         </div>
 
         <div class="method-description">
-          <p>Returns the internal ID of this result set.  This parameter may be passed to another statement for use in the resumeResultSet() function.  Note: The value this function returns is only valid after a call to suspendResultSet().</p>
+          <p>Returns the internal ID of this result set. This parameter may be passed to another cursor for use in the resumeResultSet() method. Note: The value this method returns is only valid after a call to suspendResultSet().</p>
 
           <div class="method-source-code" id="getResultSetId-source">
             <pre>static VALUE sqlrcur_getResultSetId(VALUE self) {
@@ -1795,9 +3329,12 @@
         uint32_t       *length;
         Data_Get_Struct(self,sqlrcursordata,sqlrcurdata);
         sqlrcur=sqlrcurdata-&gt;cur;
-        VALUE  fieldary=rb_ary_new2(sqlrcur-&gt;colCount());
         RCUR1(result,ccpcpr,sqlrcur,getRow,row);
+        if (!result) {
+                return Qnil;
+        }
         RCUR1(length,u32pr,sqlrcur,getRowLengths,row);
+        VALUE  fieldary=rb_ary_new2(sqlrcur-&gt;colCount());
         for (uint32_t i=0; i&lt;sqlrcur-&gt;colCount(); i++) {
                 if (result[i]) {
                         rb_ary_store(fieldary,i,rb_str_new(result[i],
@@ -1837,6 +3374,9 @@
         Data_Get_Struct(self,sqlrcursordata,sqlrcurdata);
         sqlrcur=sqlrcurdata-&gt;cur;
         RCUR1(result,ccpcpr,sqlrcur,getRow,row);
+        if (!result) {
+                return Qnil;
+        }
         RCUR1(length,u32pr,sqlrcur,getRowLengths,row);
         VALUE  fieldhash=rb_hash_new();
         for (uint32_t i=0; i&lt;sqlrcur-&gt;colCount(); i++) {
@@ -1917,6 +3457,9 @@
         Data_Get_Struct(self,sqlrcursordata,sqlrcurdata);
         sqlrcur=sqlrcurdata-&gt;cur;
         RCUR1(result,u32pr,sqlrcur,getRowLengths,row);
+        if (!result) {
+                return Qnil;
+        }
         VALUE  lengthhash=rb_hash_new();
         for (uint32_t i=0; i&lt;sqlrcur-&gt;colCount(); i++) {
                 RCUR1(name,ccpr,sqlrcur,getColumnName,INT2NUM(i));
@@ -1932,25 +3475,178 @@
 
       </div>
 
-      <div id="method-i-getTableList" class="method-detail ">
+      <div id="method-i-getSchemaList" class="method-detail ">
         <div class="method-header">
           <div class="method-heading">
             <span class="method-callseq">
-              getTableList(wild)
+              getSchemaList(schemas)
             </span>
             <span class="method-click-advice">click to toggle source</span>
           </div>
         </div>
 
         <div class="method-description">
-          <p>Sends a query that returns a list of tables matching “wild”.  If wild is empty or nil then a list of all tables will be returned.</p>
+          <p>Generates a result set containing schemas that match the pattern “schemas”.</p>
 
-          <div class="method-source-code" id="getTableList-source">
-            <pre>static VALUE sqlrcur_getTableList(VALUE self, VALUE wild) {
+<p>The result set will contain the following columns:</p>
+<ul><li>
+<p>Database</p>
+</li></ul>
+
+<p>(The column name is a bit of a misnomer, the results are schemas, not databases.)</p>
+
+<p>If “schemas” is empty or nil then a result set containing all schemas in the current database will be returned.</p>
+
+<p>If SQL Relay doesn’t support getting a list of schemas for the current database backend (or the database doesn’t) then an empty result set will be returned.</p>
+
+          <div class="method-source-code" id="getSchemaList-source">
+            <pre>static VALUE sqlrcur_getSchemaList(VALUE self, VALUE schemas) {
         sqlrcursordata *sqlrcurdata;
         bool           result;
         Data_Get_Struct(self,sqlrcursordata,sqlrcurdata);
-        RCUR1(result,br,sqlrcurdata-&gt;cur,getTableList,wild);
+        RCUR1(result,br,sqlrcurdata-&gt;cur,getSchemaList,schemas);
+        return INT2NUM(result);
+}</pre>
+          </div>
+        </div>
+
+
+      </div>
+
+      <div id="method-i-getTableList" class="method-detail ">
+        <div class="method-header">
+          <div class="method-heading">
+            <span class="method-callseq">
+              getTableList(tables)
+            </span>
+            <span class="method-click-advice">click to toggle source</span>
+          </div>
+        </div>
+
+        <div class="method-description">
+          <p>Generates a result set containing the tables in the current database and schema that match the pattern “tables”.</p>
+
+<p>The result set will contain the following columns:</p>
+<ul><li>
+<p>Tables_in_xxx</p>
+</li></ul>
+
+<p>If “tables” is empty or nil then a result set containing all tables in the current database/schema will be returned.</p>
+
+<p>If SQL Relay doesn’t support getting a list of tables for the current database backend (or the database doesn’t) then an empty result set will be returned.</p>
+
+          <div class="method-source-code" id="getTableList-source">
+            <pre>static VALUE sqlrcur_getTableList(VALUE self, VALUE tables) {
+        sqlrcursordata *sqlrcurdata;
+        bool           result;
+        Data_Get_Struct(self,sqlrcursordata,sqlrcurdata);
+        RCUR1(result,br,sqlrcurdata-&gt;cur,getTableList,tables);
+        return INT2NUM(result);
+}</pre>
+          </div>
+        </div>
+
+
+      </div>
+
+      <div id="method-i-getTableTypeList" class="method-detail ">
+        <div class="method-header">
+          <div class="method-heading">
+            <span class="method-callseq">
+              getTableTypeList()
+            </span>
+            <span class="method-click-advice">click to toggle source</span>
+          </div>
+        </div>
+
+        <div class="method-description">
+          <p>Generates a result set containing supported table types.</p>
+
+<p>The result set will contain the following columns:</p>
+<ul><li>
+<p>table_type</p>
+</li></ul>
+
+<p>If SQL Relay doesn’t support getting a list of table types for the current database backend (or the database doesn’t) then an empty result set will be returned.</p>
+
+          <div class="method-source-code" id="getTableTypeList-source">
+            <pre>static VALUE sqlrcur_getTableTypeList(VALUE self) {
+        sqlrcursordata *sqlrcurdata;
+        bool           result;
+        Data_Get_Struct(self,sqlrcursordata,sqlrcurdata);
+        RCUR(result,br,sqlrcurdata-&gt;cur,getTableTypeList);
+        return INT2NUM(result);
+}</pre>
+          </div>
+        </div>
+
+
+      </div>
+
+      <div id="method-i-getTypeInfoList" class="method-detail ">
+        <div class="method-header">
+          <div class="method-heading">
+            <span class="method-callseq">
+              getTypeInfoList(type)
+            </span>
+            <span class="method-click-advice">click to toggle source</span>
+          </div>
+        </div>
+
+        <div class="method-description">
+          <p>Generates a result set containing data type information for “type”.</p>
+
+<p>The result set will contain the following columns:</p>
+<ul><li>
+<p>type_name</p>
+</li><li>
+<p>data_type</p>
+</li><li>
+<p>precision</p>
+</li><li>
+<p>literal_prefix</p>
+</li><li>
+<p>literal_suffix</p>
+</li><li>
+<p>create_params</p>
+</li><li>
+<p>nullable</p>
+</li><li>
+<p>case_sensitive</p>
+</li><li>
+<p>searchable</p>
+</li><li>
+<p>unsigned_attribute</p>
+</li><li>
+<p>fixed_prec_scale</p>
+</li><li>
+<p>auto_increment</p>
+</li><li>
+<p>local_type_name</p>
+</li><li>
+<p>minumum_scale</p>
+</li><li>
+<p>maxiumm_scale</p>
+</li><li>
+<p>sql_data_type</p>
+</li><li>
+<p>sql_datetime_sub</p>
+</li><li>
+<p>num_prec_radix</p>
+</li><li>
+<p>interval_precision</p>
+</li></ul>
+
+<p>If “type” is empty or nil then a result set containing all data types in the current databas/schema will be returned.</p>
+
+<p>If SQL Relay doesn’t support getting type info for the current database backend (or the database doesn’t) then an empty result set will be returned.</p>
+
+          <div class="method-source-code" id="getTypeInfoList-source">
+            <pre>static VALUE sqlrcur_getTypeInfoList(VALUE self, VALUE type) {
+        sqlrcursordata *sqlrcurdata;
+        bool           result;
+        Data_Get_Struct(self,sqlrcursordata,sqlrcurdata);
+        RCUR1(result,br,sqlrcurdata-&gt;cur,getTypeInfoList,type);
         return INT2NUM(result);
 }</pre>
           </div>
@@ -2082,6 +3778,48 @@
 
       </div>
 
+      <div id="method-i-inputBindDate" class="method-detail ">
+        <div class="method-header">
+          <div class="method-heading">
+            <span class="method-callseq">
+              inputBindDate(variable,year,month,day,hour,minute,second,microsecond,tz,isnegative)
+            </span>
+            <span class="method-click-advice">click to toggle source</span>
+          </div>
+        </div>
+
+        <div class="method-description">
+          <p>Defines a date input bind variable.</p>
+
+          <div class="method-source-code" id="inputBindDate-source">
+            <pre>static VALUE sqlrcur_inputBindDate(VALUE self, VALUE variable,
+                                        VALUE year, VALUE month, VALUE day,
+                                        VALUE hour, VALUE minute,
+                                        VALUE second, VALUE microsecond,
+                                        VALUE tz, VALUE isnegative) {
+        sqlrcursordata *sqlrcurdata;
+        Data_Get_Struct(self,sqlrcursordata,sqlrcurdata);
+        struct params prms;
+        prms.sqlrc.sqlrcur=sqlrcurdata-&gt;cur;
+        prms.one=variable;
+        prms.two=year;
+        prms.three=month;
+        prms.four=day;
+        prms.five=hour;
+        prms.six=minute;
+        prms.seven=second;
+        prms.eight=microsecond;
+        prms.nine=tz;
+        prms.ten=isnegative;
+        CALL(inputBindDate,prms)
+        return Qnil;
+}</pre>
+          </div>
+        </div>
+
+
+      </div>
+
       <div id="method-i-inputBinds" class="method-detail ">
         <div class="method-header">
           <div class="method-heading">
@@ -2110,18 +3848,19 @@
         }
         VALUE  variable;
         VALUE  value;
-        VALUE  precision=0;
-        VALUE  scale=0;
+        VALUE  precision=INT2NUM(0);
+        VALUE  scale=INT2NUM(0);
         bool   success=true;
-        for (;;) {
-                variable=rb_ary_shift(variables);
+        long   n=RARRAY_LEN(variables);
+        for (long i=0; i&lt;n; i++) {
+                variable=rb_ary_entry(variables,i);
                 if (variable==Qnil) {
                         break;
                 }
-                value=rb_ary_shift(values);
+                value=rb_ary_entry(values,i);
                 if (argcount==4) {
-                        precision=rb_ary_shift(precisions);
-                        scale=rb_ary_shift(scales);
+                        precision=rb_ary_entry(precisions,i);
+                        scale=rb_ary_entry(scales,i);
                 }
                 if (rb_obj_is_instance_of(value,rb_cString)==Qtrue) {
                         CUR2(sqlrcurdata-&gt;cur,inputBindStr,variable,value);
@@ -2182,7 +3921,7 @@
         </div>
 
         <div class="method-description">
-          <p>Columns names are returned in the same case as they are defined in the database.  This is the default.</p>
+          <p>Columns names are returned in the same case as they are defined in the database. This is the default.</p>
 
           <div class="method-source-code" id="mixedCaseColumnNames-source">
             <pre>static VALUE sqlrcur_mixedCaseColumnNames(VALUE self) {
@@ -2190,6 +3929,32 @@
         Data_Get_Struct(self,sqlrcursordata,sqlrcurdata);
         CUR(sqlrcurdata-&gt;cur,mixedCaseColumnNames);
         return Qnil;
+}</pre>
+          </div>
+        </div>
+
+
+      </div>
+
+      <div id="method-i-nextResultSet" class="method-detail ">
+        <div class="method-header">
+          <div class="method-heading">
+            <span class="method-name">nextResultSet</span><span
+              class="method-args">()</span>
+            <span class="method-click-advice">click to toggle source</span>
+          </div>
+        </div>
+
+        <div class="method-description">
+          <p>Returns true and acts like executeQuery() when there is another result set available from the server.</p>
+
+          <div class="method-source-code" id="nextResultSet-source">
+            <pre>static VALUE sqlrcur_nextResultSet(VALUE self) {
+        sqlrcursordata *sqlrcurdata;
+        bool           result;
+        Data_Get_Struct(self,sqlrcursordata,sqlrcurdata);
+        RCUR(result,br,sqlrcurdata-&gt;cur,nextResultSet);
+        return INT2NUM(result);
 }</pre>
           </div>
         </div>
@@ -2208,7 +3973,7 @@
         </div>
 
         <div class="method-description">
-          <p>Opens a cached result set.  Returns 1 on success and 0 on failure.</p>
+          <p>Opens a cached result set. Returns true on success and false on failure.</p>
 
           <div class="method-source-code" id="openCachedResultSet-source">
             <pre>static VALUE sqlrcur_openCachedResultSet(VALUE self, VALUE filename) {
@@ -2235,7 +4000,10 @@
         </div>
 
         <div class="method-description">
-          <p>Prepare to execute the contents of “path”/“filename”.</p>
+          <pre>Prepare to execute the contents
+of &quot;path&quot;/&quot;filename&quot;.  Returns false if the</pre>
+
+<p>// file couldn’t be opened.</p>
 
           <div class="method-source-code" id="prepareFileQuery-source">
             <pre>static VALUE sqlrcur_prepareFileQuery(VALUE self, VALUE path, VALUE filename) {
@@ -2288,7 +4056,7 @@
         </div>
 
         <div class="method-description">
-          <p>Prepare to execute “query” with length “length”.  This function must be used if the query contains binary data.</p>
+          <p>Prepare to execute “query” with length “length”.  This method must be used if the query contains binary data.</p>
 
           <div class="method-source-code" id="prepareQueryWithLength-source">
             <pre>static VALUE sqlrcur_prepareQueryWithLength(VALUE self,
@@ -2315,7 +4083,7 @@
         </div>
 
         <div class="method-description">
-          <p>Resumes a result set previously left open using suspendSession() and continues caching the result set to “filename”.  Returns 1 on success and 0 on failure.</p>
+          <p>Resumes a result set previously left open using suspendSession() and continues caching the result set to “filename”. Returns true on success and false on failure.</p>
 
           <div class="method-source-code" id="resumeCachedResultSet-source">
             <pre>static VALUE sqlrcur_resumeCachedResultSet(VALUE self, 
@@ -2343,7 +4111,7 @@
         </div>
 
         <div class="method-description">
-          <p>Resumes a result set previously left open using suspendSession(). Returns 1 on success and 0 on failure.</p>
+          <p>Resumes a result set previously left open using suspendSession(). Returns true on success and false on failure.</p>
 
           <div class="method-source-code" id="resumeResultSet-source">
             <pre>static VALUE sqlrcur_resumeResultSet(VALUE self, VALUE id) {
@@ -2369,7 +4137,7 @@
         </div>
 
         <div class="method-description">
-          <p>Returns the number of rows in the current result set.</p>
+          <p>Returns the number of rows in the current result set (if the result set is being stepped through, this returns the number of rows processed so far).</p>
 
           <div class="method-source-code" id="rowCount-source">
             <pre>static VALUE sqlrcur_rowCount(VALUE self) {
@@ -2396,7 +4164,7 @@
         </div>
 
         <div class="method-description">
-          <p>Sends the query in file “path”/“filename” and gets a result set.</p>
+          <p>Sends the query in file “path”/“filename” directly and gets a result set.</p>
 
           <div class="method-source-code" id="sendFileQuery-source">
             <pre>static VALUE sqlrcur_sendFileQuery(VALUE self, VALUE path, VALUE filename) {
@@ -2450,7 +4218,7 @@
         </div>
 
         <div class="method-description">
-          <p>Sends “query” with length “length” directly and gets a result set. This function must be used if the query contains binary data.</p>
+          <p>Sends “query” with length “length” directly and gets a result set. This method must be used if the query contains binary data.</p>
 
           <div class="method-source-code" id="sendQueryWithLength-source">
             <pre>static VALUE sqlrcur_sendQueryWithLength(VALUE self,
@@ -2504,7 +4272,7 @@
         </div>
 
         <div class="method-description">
-          <p>Sets the number of rows of the result set to buffer at a time. 0 (the default) means buffer the entire result set.</p>
+          <p>Sets the number of rows of the result set to buffer at a time.  0 (the default) means buffer the entire result set.</p>
 
           <div class="method-source-code" id="setResultSetBufferSize-source">
             <pre>static VALUE sqlrcur_setResultSetBufferSize(VALUE self, VALUE rows) {
@@ -2592,18 +4360,19 @@
         }
         VALUE  variable;
         VALUE  value;
-        VALUE  precision=0;
-        VALUE  scale=0;
+        VALUE  precision=INT2NUM(0);
+        VALUE  scale=INT2NUM(0);
         bool   success=true;
-        for (;;) {
-                variable=rb_ary_shift(variables);
+        long   n=RARRAY_LEN(variables);
+        for (long i=0; i&lt;n; i++) {
+                variable=rb_ary_entry(variables,i);
                 if (variable==Qnil) {
                         break;
                 }
-                value=rb_ary_shift(values);
+                value=rb_ary_entry(values,i);
                 if (argcount==4) {
-                        precision=rb_ary_shift(precisions);
-                        scale=rb_ary_shift(scales);
+                        precision=rb_ary_entry(precisions,i);
+                        scale=rb_ary_entry(scales,i);
                 }
                 if (rb_obj_is_instance_of(value,rb_cString)==Qtrue) {
                         CUR2(sqlrcurdata-&gt;cur,substitutionStr,variable,value);
@@ -2664,7 +4433,7 @@
         </div>
 
         <div class="method-description">
-          <p>Returns the total number of rows that will be returned in the result set. Not all databases support this call.  Don’t use it for applications which are designed to be portable across databases.  -1 is returned by databases which don’t support this option.</p>
+          <p>Returns the total number of rows that will be returned in the result set.  Not all databases support this call.  Don’t use it for applications which are designed to be portable across databases.  0 is returned by databases which don’t support this option.</p>
 
           <div class="method-source-code" id="totalRows-source">
             <pre>static VALUE sqlrcur_totalRows(VALUE self) {
@@ -2742,7 +4511,7 @@
         </div>
 
         <div class="method-description">
-          <p>If you are binding to any variables that might not actually be in your query, call this to ensure that the database won’t try to bind them unless they really are in the query.  There is a performance penalty for calling this function</p>
+          <p>If you are binding to any variables that might not actually be in your query, call this to ensure that the database won’t try to bind them unless they really are in the query.  There is a performance penalty for calling this method.</p>
 
           <div class="method-source-code" id="validateBinds-source">
             <pre>static VALUE sqlrcur_validateBinds(VALUE self) {

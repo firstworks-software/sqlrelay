@@ -160,13 +160,17 @@ Public Member Functions</h2></td></tr>
 <div class="textblock"><p>The sqlrcrud class provides a generic CRUD (create, read, update, and delete) interface to SQL Relay.</p>
 <p>A typical invocation of a mycrud class which implements mvccrud, from within the dao tier of an MVC application, would be something like:</p>
 <p>// initialize crud sqlrconnection *con=new <a class="el" href="classsqlrconnection.html">sqlrconnection(...)</a>; sqlrcursor *cur=new <a class="el" href="classsqlrcursor.html">sqlrcursor(con)</a>; sqlrcrud *crud=new <a class="el" href="#a362ba56c0f68597f75b070a9e9082fef">sqlrcrud()</a>;</p>
-<p>crud-&gt;setSqlrConnection(con); crud-&gt;setSqlrCursor(cur); crud-&gt;setTable("mytable"); crud-&gt;setIdSequence("mytable_ids"); crud-&gt;<a class="el" href="#a45d3e6aa9497296c1d7888876ee4d440">buildQueries()</a>;</p>
+<p>crud-&gt;setSqlrConnection(con); crud-&gt;setSqlrCursor(cur); crud-&gt;setTable("mytable"); crud-&gt;<a class="el" href="#a45d3e6aa9497296c1d7888876ee4d440">buildQueries()</a>;</p>
 <p>// read data crud-&gt;doRead(...);</p>
 <p>// return results via instance of mvcresults mvcr-&gt;setSuccess(); mvcr-&gt;attachData("myresults","table",crud-&gt;<a class="el" href="#aa85392cd8aa675543242044b4dc84100">getResultSetTable()</a>); mvcr-&gt;getWatebasket()-&gt;attach(crud); mvcr-&gt;getWatebasket()-&gt;attach(con); mvcr-&gt;getWatebasket()-&gt;attach(cur);</p>
 <p>Various methods such as <a class="el" href="#ab7b59cf003f0fed8d6575273743ba4e0">doRead()</a>, <a class="el" href="#a496cd4e2d058a9cb7626d7d056fc2704">doUpdate()</a>, and <a class="el" href="#aa875bf2a1ca760d65812b32540cf58b2">doDelete()</a> take a "criteria" argument. This should be a JSON string in jsonlogic format (<a href="http://jsonlogic.com">http://jsonlogic.com</a>), and will be used to construct the where clause for these operations:</p>
 <p>{ "and" : [ { "=" : [ { "var" : "col1" }, 1 ] }, { "!=" : [ { "var" : "col2" }, "one" ] } ] }</p>
+<p>The criteria may also be supplied as XML. Operators are element names (and, or, eq, ne, gt, lt, ge, le, in, isnull, isnotnull), variables are &lt;v n="col"&gt;, and literals are , &lt;n v="num"&gt;, &lt;t&gt;, &lt;f&gt;, and &lt;null&gt;. The example above becomes:</p>
+<p>&lt;and&gt; &lt;eq&gt; &lt;v n="col1"&gt; &lt;n v="1"&gt; &lt;/eq&gt; &lt;ne&gt; &lt;v n="col2"&gt;  &lt;/ne&gt; &lt;/and&gt;</p>
 <p>The <a class="el" href="#ab7b59cf003f0fed8d6575273743ba4e0">doRead()</a> method also takes a "sort" argument. This should be a JSON string conforming to the following format, and will be used to construct the order-by clause for these operations:</p>
 <p>{ "col1" : "asc", "col2" : "asc", "col3" : "desc" }</p>
+<p>The sort may also be supplied as XML, with one element per column named for the column and a "v" attribute giving the direction:</p>
+<p>&lt;sort&gt; &lt;col1 v="asc"&gt; &lt;col2 v="asc"&gt; &lt;col3 v="desc"&gt; &lt;/sort&gt;</p>
 <p>The class also provides methods for overriding the template queries that are automatically built by <a class="el" href="#a45d3e6aa9497296c1d7888876ee4d440">buildQueries()</a> as well as any primary key or autoincrement columns detected by <a class="el" href="#a45d3e6aa9497296c1d7888876ee4d440">buildQueries()</a>. </p>
 </div><h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
 <a id="a362ba56c0f68597f75b070a9e9082fef" name="a362ba56c0f68597f75b070a9e9082fef"></a>
@@ -220,7 +224,7 @@ Public Member Functions</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
-<p>Uses the table set by <a class="el" href="#a3c77ac06bcc7bdc862d9f3efe89bc2c5">setTable()</a> and sequence set by <a class="el" href="#a144b95c771112cb9e77283148e87091b">setIdSequence()</a> to construct template CRUD queries (insert, select, update, and delete queries). Also detects the primary key and autoincrement columns, if the table has any. </p>
+<p>Uses the table set by <a class="el" href="#a3c77ac06bcc7bdc862d9f3efe89bc2c5">setTable()</a> to construct template CRUD queries (insert, select, update, and delete queries). If no primary key column has been set, then it detects the primary key column, if the table has one. If no autoincrement column has been set, then it detects the autoincrement column, if the table has one. If no id sequence has been set, and the table doesn't have an autoincrement column, but does have a primary key, then the id sequence name is set to "table"_ids. </p>
 
 </div>
 </div>
@@ -785,11 +789,8 @@ Public Member Functions</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
-<p>Returns the sequence set by setSequence() or <a class="el" href="#a3c77ac06bcc7bdc862d9f3efe89bc2c5">setTable()</a>.</p>
-<p>Note that this may return NULL if:</p><ul>
-<li>neither <a class="el" href="#a144b95c771112cb9e77283148e87091b">setIdSequence()</a> nor <a class="el" href="#a3c77ac06bcc7bdc862d9f3efe89bc2c5">setTable()</a> were ever called</li>
-<li><a class="el" href="#a3c77ac06bcc7bdc862d9f3efe89bc2c5">setTable()</a> was called, but then setIdSequence(NULL) was called later </li>
-</ul>
+<p>Returns the id sequence set by <a class="el" href="#a144b95c771112cb9e77283148e87091b">setIdSequence()</a>.</p>
+<p>Note that this will return NULL if <a class="el" href="#a144b95c771112cb9e77283148e87091b">setIdSequence()</a> was never called, if <a class="el" href="#a45d3e6aa9497296c1d7888876ee4d440">buildQueries()</a> was never called, or if <a class="el" href="#a45d3e6aa9497296c1d7888876ee4d440">buildQueries()</a> determined that it wasn't necessary to set. </p>
 
 </div>
 </div>
@@ -1038,7 +1039,8 @@ Public Member Functions</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
-<p>Sets the sequence to generate new ids from during create operations (insert queries). </p>
+<p>Sets the sequence to generate new ids from during create operations (insert queries). <br  />
+ </p>
 
 </div>
 </div>
@@ -1170,8 +1172,7 @@ Public Member Functions</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
-<p>Sets the table that this instance operates on.</p>
-<p>Also sets the sequence to generate new ids from during create operations to "table"_ids, if the id sequence is NULL, either because <a class="el" href="#a144b95c771112cb9e77283148e87091b">setIdSequence()</a> hasn't been called, or was called with NULL. </p>
+<p>Sets the table that this instance operates on. </p>
 
 </div>
 </div>
@@ -1218,7 +1219,7 @@ Public Member Functions</h2></td></tr>
 </div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
-Generated on Tue Dec 3 2024 02:37:16 for SQL Relay C++ API by&#160;<a href="https://www.doxygen.org/index.html"><img class="footer" src="doxygen.svg" width="104" height="31" alt="doxygen"/></a> 1.10.0
+Generated on Wed Jul 15 2026 15:34:37 for SQL Relay C++ API by&#160;<a href="https://www.doxygen.org/index.html"><img class="footer" src="doxygen.svg" width="104" height="31" alt="doxygen"/></a> 1.10.0
 </small></address>
 </body>
 </html>

@@ -28,9 +28,9 @@ Index by:  <a href="index_main.html#sqlrcurCmd.tcl">file name</a> |
 
 
 <font color="#208020"># Sets the number of rows of the result set</font>
-<font color="#208020"># to buffer at a time.  0  {the default}</font>
+<font color="#208020"># to buffer at a time.  0 (the default)</font>
 <font color="#208020"># means buffer the entire result set.</font>
-<strong><a name="setResultSetBufferSize_17">proc <a href="sqlrcurCmd.tcl-annot.html#setResultSetBufferSize">setResultSetBufferSize</a></a></strong><a name="setResultSetBufferSize"></a> {rows} 
+<strong><a name="setResultSetBufferSize_17">proc <a href="sqlrcurCmd.tcl-annot.html#setResultSetBufferSize">setResultSetBufferSize</a></a></strong><a name="setResultSetBufferSize"></a> {rows}
 
 <font color="#208020"># Returns the number of result set rows that </font>
 <font color="#208020"># will be buffered at a time or 0 for the</font>
@@ -40,10 +40,10 @@ Index by:  <a href="index_main.html#sqlrcurCmd.tcl">file name</a> |
 
 
 <font color="#208020"># Tells the server not to send any column</font>
-<font color="#208020"># info  {names types sizes}.  If you don't</font>
-<font color="#208020"># need that info you should call this</font>
+<font color="#208020"># info (names, types, sizes).  If you don't</font>
+<font color="#208020"># need that info, you should call this</font>
 <font color="#208020"># method to improve performance.</font>
-<strong><a name="dontGetColumnInfo_30">proc <a href="sqlrcurCmd.tcl-annot.html#dontGetColumnInfo">dontGetColumnInfo</a></a></strong><a name="dontGetColumnInfo"></a> {} 
+<strong><a name="dontGetColumnInfo_30">proc <a href="sqlrcurCmd.tcl-annot.html#dontGetColumnInfo">dontGetColumnInfo</a></a></strong><a name="dontGetColumnInfo"></a> {}
 
 <font color="#208020"># Tells the server to send column info.</font>
 <strong><a name="getColumnInfo_33">proc <a href="sqlrcurCmd.tcl-annot.html#getColumnInfo">getColumnInfo</a></a></strong><a name="getColumnInfo"></a> {} 
@@ -64,24 +64,24 @@ Index by:  <a href="index_main.html#sqlrcurCmd.tcl">file name</a> |
 
 <font color="#208020"># Sets query caching on.  Future queries</font>
 <font color="#208020"># will be cached to the file &#34;filename&#34;.</font>
-<font color="#208020"># </font>
+<font color="#208020">#</font>
 <font color="#208020"># A default time-to-live of 10 minutes is</font>
 <font color="#208020"># also set.</font>
-<font color="#208020"># </font>
-<font color="#208020"># Note that once cacheToFile is called</font>
+<font color="#208020">#</font>
+<font color="#208020"># Note that once cacheToFile() is called,</font>
 <font color="#208020"># the result sets of all future queries will</font>
-<font color="#208020"># be cached to that file until another call </font>
-<font color="#208020"># to cacheToFile changes which file to</font>
-<font color="#208020"># cache to or a call to cacheOff turns off</font>
+<font color="#208020"># be cached to that file until another call</font>
+<font color="#208020"># to cacheToFile() changes which file to</font>
+<font color="#208020"># cache to or a call to cacheOff() turns off</font>
 <font color="#208020"># caching.</font>
-<strong><a name="cacheToFile_61">proc <a href="sqlrcurCmd.tcl-annot.html#cacheToFile">cacheToFile</a></a></strong><a name="cacheToFile"></a> {filename} 
+<strong><a name="cacheToFile_61">proc <a href="sqlrcurCmd.tcl-annot.html#cacheToFile">cacheToFile</a></a></strong><a name="cacheToFile"></a> {filename}
 
 <font color="#208020"># Sets the time-to-live for cached result</font>
-<font color="#208020"># sets. The sqlr-cachemanger will remove each </font>
-<font color="#208020"># cached result set &#34;ttl&#34; seconds after it's </font>
-<font color="#208020"># created provided it's scanning the directory</font>
+<font color="#208020"># sets. The sqlr-cachemanger will remove each</font>
+<font color="#208020"># cached result set &#34;ttl&#34; seconds after it's</font>
+<font color="#208020"># created, provided it's scanning the directory</font>
 <font color="#208020"># containing the cache files.</font>
-<strong><a name="setCacheTtl_68">proc <a href="sqlrcurCmd.tcl-annot.html#setCacheTtl">setCacheTtl</a></a></strong><a name="setCacheTtl"></a> {ttl} 
+<strong><a name="setCacheTtl_68">proc <a href="sqlrcurCmd.tcl-annot.html#setCacheTtl">setCacheTtl</a></a></strong><a name="setCacheTtl"></a> {ttl}
 
 <font color="#208020"># Returns the name of the file containing the</font>
 <font color="#208020"># cached result set.</font>
@@ -92,59 +92,262 @@ Index by:  <a href="index_main.html#sqlrcurCmd.tcl">file name</a> |
 
 
 
-<font color="#208020"># Sends a query that returns a list of</font>
-<font color="#208020"># databases/schemas matching &#34;wild&#34;.  If wild is empty</font>
-<font color="#208020"># or NULL then a list of all databases/schemas will be</font>
+<font color="#208020"># Generates a result set containing databases that match the</font>
+<font color="#208020"># pattern &#34;databases&#34;.</font>
+<font color="#208020">#</font>
+<font color="#208020"># The result set will contain the following columns:</font>
+<font color="#208020"># * Database</font>
+<font color="#208020">#</font>
+<font color="#208020"># If &#34;databases&#34; is empty or NULL then a result set</font>
+<font color="#208020"># containing all databases will be returned.</font>
+<font color="#208020">#</font>
+<font color="#208020"># May actually return a result set of catalogs or schemas,</font>
+<font color="#208020"># depending on whether the backend database equates</font>
+<font color="#208020"># &#34;database&#34; with catalog or schema.</font>
+<font color="#208020">#</font>
+<font color="#208020"># See getDatabaseIsSchema().</font>
+<font color="#208020">#</font>
+<font color="#208020"># If SQL Relay doesn't support getting a list of databases</font>
+<font color="#208020"># for the current database backend (or the database doesn't)</font>
+<font color="#208020"># then an empty result set will be returned.</font>
+<strong><a name="getDatabaseList_97">proc <a href="sqlrcurCmd.tcl-annot.html#getDatabaseList">getDatabaseList</a></a></strong><a name="getDatabaseList"></a> {wild}
+
+<font color="#208020"># Generates a result set containing catalogs that match the</font>
+<font color="#208020"># pattern &#34;catalog&#34;.</font>
+<font color="#208020">#</font>
+<font color="#208020"># The result set will contain the following columns:</font>
+<font color="#208020"># * Database</font>
+<font color="#208020">#</font>
+<font color="#208020"># If &#34;catalog&#34; is empty or NULL then a result set containing</font>
+<font color="#208020"># all catalogs will be returned.</font>
+<font color="#208020">#</font>
+<font color="#208020"># If SQL Relay doesn't support getting a list of catalogs</font>
+<font color="#208020"># for the current database backend (or the database doesn't)</font>
+<font color="#208020"># then an empty result set will be returned.</font>
+<strong><a name="getCatalogList_111">proc <a href="sqlrcurCmd.tcl-annot.html#getCatalogList">getCatalogList</a></a></strong><a name="getCatalogList"></a> {wild}
+
+<font color="#208020"># Generates a result set containing schemas that match the</font>
+<font color="#208020"># pattern &#34;schemas&#34;.</font>
+<font color="#208020">#</font>
+<font color="#208020"># The result set will contain the following columns:</font>
+<font color="#208020"># * Database</font>
+<font color="#208020">#</font>
+<font color="#208020"># (The column name is a bit of a misnomer, the results are</font>
+<font color="#208020"># schemas, not databases.)</font>
+<font color="#208020">#</font>
+<font color="#208020"># If &#34;schemas&#34; is empty or NULL then a result set containing</font>
+<font color="#208020"># all schemas in the current database will be returned.</font>
+<font color="#208020">#</font>
+<font color="#208020"># If SQL Relay doesn't support getting a list of schemas</font>
+<font color="#208020"># for the current database backend (or the database doesn't)</font>
+<font color="#208020"># then an empty result set will be returned.</font>
+<strong><a name="getSchemaList_128">proc <a href="sqlrcurCmd.tcl-annot.html#getSchemaList">getSchemaList</a></a></strong><a name="getSchemaList"></a> {wild}
+
+<font color="#208020"># Generates a result set containing supported table types.</font>
+<font color="#208020">#</font>
+<font color="#208020"># The result set will contain the following columns:</font>
+<font color="#208020"># * table_type</font>
+<font color="#208020">#</font>
+<font color="#208020"># If SQL Relay doesn't support getting a list of table types</font>
+<font color="#208020"># for the current database backend (or the database doesn't)</font>
+<font color="#208020"># then an empty result set will be returned.</font>
+<strong><a name="getTableTypeList_138">proc <a href="sqlrcurCmd.tcl-annot.html#getTableTypeList">getTableTypeList</a></a></strong><a name="getTableTypeList"></a> {}
+
+<font color="#208020"># Generates a result set containing the tables in the current</font>
+<font color="#208020"># database and schema that match the pattern &#34;tables&#34;.</font>
+<font color="#208020">#</font>
+<font color="#208020"># The result set will contain the following columns:</font>
+<font color="#208020"># * Tables_in_xxx</font>
+<font color="#208020">#</font>
+<font color="#208020"># If &#34;tables&#34; is empty or NULL then a result set containing</font>
+<font color="#208020"># all tables in the current database/schema will be returned.</font>
+<font color="#208020">#</font>
+<font color="#208020"># If SQL Relay doesn't support getting a list of tables</font>
+<font color="#208020"># for the current database backend (or the database doesn't)</font>
+<font color="#208020"># then an empty result set will be returned.</font>
+<strong><a name="getTableList_152">proc <a href="sqlrcurCmd.tcl-annot.html#getTableList">getTableList</a></a></strong><a name="getTableList"></a> {wild}
+
+<font color="#208020"># Generates a result set containing data type information for</font>
+<font color="#208020"># &#34;type&#34;.</font>
+<font color="#208020">#</font>
+<font color="#208020"># The result set will contain the following columns:</font>
+<font color="#208020"># * type_name</font>
+<font color="#208020"># * data_type</font>
+<font color="#208020"># * precision</font>
+<font color="#208020"># * literal_prefix</font>
+<font color="#208020"># * literal_suffix</font>
+<font color="#208020"># * create_params</font>
+<font color="#208020"># * nullable</font>
+<font color="#208020"># * case_sensitive</font>
+<font color="#208020"># * searchable</font>
+<font color="#208020"># * unsigned_attribute</font>
+<font color="#208020"># * fixed_prec_scale</font>
+<font color="#208020"># * auto_increment</font>
+<font color="#208020"># * local_type_name</font>
+<font color="#208020"># * minumum_scale</font>
+<font color="#208020"># * maxiumm_scale</font>
+<font color="#208020"># * sql_data_type</font>
+<font color="#208020"># * sql_datetime_sub</font>
+<font color="#208020"># * num_prec_radix</font>
+<font color="#208020"># * interval_precision</font>
+<font color="#208020">#</font>
+<font color="#208020"># If &#34;type&#34; is empty or NULL then a result set containing</font>
+<font color="#208020"># all data types in the current databas/schema will be</font>
 <font color="#208020"># returned.</font>
-<strong><a name="getDatabaseList_83">proc <a href="sqlrcurCmd.tcl-annot.html#getDatabaseList">getDatabaseList</a></a></strong><a name="getDatabaseList"></a> {wild} 
+<font color="#208020">#</font>
+<font color="#208020"># If SQL Relay doesn't support getting type info</font>
+<font color="#208020"># for the current database backend (or the database doesn't)</font>
+<font color="#208020"># then an empty result set will be returned.</font>
+<strong><a name="getTypeInfoList_185">proc <a href="sqlrcurCmd.tcl-annot.html#getTypeInfoList">getTypeInfoList</a></a></strong><a name="getTypeInfoList"></a> {type}
 
-<font color="#208020"># Sends a query that returns a list of tables</font>
-<font color="#208020"># matching &#34;wild&#34;.  If wild is empty or NULL then</font>
-<font color="#208020"># a list of all tables will be returned.</font>
-<strong><a name="getTableList_88">proc <a href="sqlrcurCmd.tcl-annot.html#getTableList">getTableList</a></a></strong><a name="getTableList"></a> {wild} 
+<font color="#208020"># Generates a result set containing the columns of &#34;table&#34;,</font>
+<font color="#208020"># which match the pattern &#34;columns&#34;.</font>
+<font color="#208020">#</font>
+<font color="#208020"># The result set will contain the following columns:</font>
+<font color="#208020"># * column_name</font>
+<font color="#208020"># * data_type</font>
+<font color="#208020"># * character_maximum_length</font>
+<font color="#208020"># * numeric_precision</font>
+<font color="#208020"># * numeric_scale</font>
+<font color="#208020"># * is_nullable</font>
+<font color="#208020"># * column_key</font>
+<font color="#208020"># * column_default</font>
+<font color="#208020"># * extra</font>
+<font color="#208020">#</font>
+<font color="#208020"># If &#34;columns&#34; is empty or NULL then a list of all columns</font>
+<font color="#208020"># of &#34;table&#34; will be returned.</font>
+<font color="#208020">#</font>
+<font color="#208020"># If SQL Relay doesn't support getting a list of columns</font>
+<font color="#208020"># for the current database backend (or the database doesn't)</font>
+<font color="#208020"># then an empty result set will be returned.</font>
+<strong><a name="getColumnList_207">proc <a href="sqlrcurCmd.tcl-annot.html#getColumnList">getColumnList</a></a></strong><a name="getColumnList"></a> {table wild}
 
-<font color="#208020"># Sends a query that returns a list of columns</font>
-<font color="#208020"># in the table specified by the &#34;table&#34; parameter</font>
-<font color="#208020"># matching &#34;wild&#34;.  If wild is empty or NULL then</font>
-<font color="#208020"># a list of all columns will be returned.</font>
-<strong><a name="getColumnList_94">proc <a href="sqlrcurCmd.tcl-annot.html#getColumnList">getColumnList</a></a></strong><a name="getColumnList"></a> {table wild} 
+<font color="#208020"># Generates a result set containing the primary keys of</font>
+<font color="#208020"># &#34;table&#34;, which match the pattern &#34;columns&#34;.</font>
+<font color="#208020">#</font>
+<font color="#208020"># The result set will contain the following columns:</font>
+<font color="#208020"># * table</font>
+<font color="#208020"># * non_unique</font>
+<font color="#208020"># * key_name</font>
+<font color="#208020"># * seq_in_index</font>
+<font color="#208020"># * column_name</font>
+<font color="#208020"># * collation</font>
+<font color="#208020"># * cardinality</font>
+<font color="#208020"># * sub_part</font>
+<font color="#208020"># * packed</font>
+<font color="#208020"># * null</font>
+<font color="#208020"># * index_type</font>
+<font color="#208020"># * comment</font>
+<font color="#208020"># * index_comment</font>
+<font color="#208020">#</font>
+<font color="#208020"># If &#34;columns&#34; is empty or NULL then a result set containing</font>
+<font color="#208020"># all primary keys of &#34;table&#34; will be returned.</font>
+<font color="#208020">#</font>
+<font color="#208020"># If SQL Relay doesn't support getting a list of primary keys</font>
+<font color="#208020"># for the current database backend (or the database doesn't)</font>
+<font color="#208020"># then an empty result set will be returned.</font>
+<strong><a name="getPrimaryKeysList_233">proc <a href="sqlrcurCmd.tcl-annot.html#getPrimaryKeysList">getPrimaryKeysList</a></a></strong><a name="getPrimaryKeysList"></a> {table columns}
+
+<font color="#208020"># Generates a result set containing the keys and indexes of</font>
+<font color="#208020"># &#34;table&#34;, which match the pattern &#34;qualifier&#34;.</font>
+<font color="#208020">#</font>
+<font color="#208020"># The result set will contain the following columns:</font>
+<font color="#208020"># * table</font>
+<font color="#208020"># * non_unique</font>
+<font color="#208020"># * key_name</font>
+<font color="#208020"># * seq_in_index</font>
+<font color="#208020"># * column_name</font>
+<font color="#208020"># * collation</font>
+<font color="#208020"># * cardinality</font>
+<font color="#208020"># * sub_part</font>
+<font color="#208020"># * packed</font>
+<font color="#208020"># * null</font>
+<font color="#208020"># * index_type</font>
+<font color="#208020"># * comment</font>
+<font color="#208020"># * index_comment</font>
+<font color="#208020">#</font>
+<font color="#208020"># If &#34;qualifier&#34; is empty or NULL then a result set</font>
+<font color="#208020"># containing all keys and indexes of &#34;table&#34; will be</font>
+<font color="#208020"># returned.</font>
+<font color="#208020">#</font>
+<font color="#208020"># If SQL Relay doesn't support getting a list of keys and</font>
+<font color="#208020"># indexes for the current database backend (or the database</font>
+<font color="#208020"># doesn't) then an empty result set will be returned.</font>
+<strong><a name="getKeyAndIndexList_260">proc <a href="sqlrcurCmd.tcl-annot.html#getKeyAndIndexList">getKeyAndIndexList</a></a></strong><a name="getKeyAndIndexList"></a> {table qualifier}
+
+<font color="#208020"># Generates a result set containing procedures that match the</font>
+<font color="#208020"># pattern &#34;procedures&#34;.</font>
+<font color="#208020">#</font>
+<font color="#208020"># The result set will contain the following columns:</font>
+<font color="#208020"># * routine_catalog</font>
+<font color="#208020"># * routine_schema</font>
+<font color="#208020"># * routine_name</font>
+<font color="#208020"># * data_type</font>
+<font color="#208020">#</font>
+<font color="#208020"># If &#34;procedures&#34; is empty or NULL then a result set</font>
+<font color="#208020"># containing all procedures in the current database/schema</font>
+<font color="#208020"># will be returned.</font>
+<font color="#208020">#</font>
+<font color="#208020"># If SQL Relay doesn't support getting a list of procedures</font>
+<font color="#208020"># for the current database backend (or the database doesn't)</font>
+<font color="#208020"># then an empty result set will be returned.</font>
+<strong><a name="getProcedureList_278">proc <a href="sqlrcurCmd.tcl-annot.html#getProcedureList">getProcedureList</a></a></strong><a name="getProcedureList"></a> {procedures}
+
+<font color="#208020"># Generates a result set containing the parameters of</font>
+<font color="#208020"># &#34;procedure&#34;, which match the pattern &#34;parameters&#34;.</font>
+<font color="#208020">#</font>
+<font color="#208020"># The result set will contain the following columns:</font>
+<font color="#208020"># * parameter_name</font>
+<font color="#208020"># * parameter_mode</font>
+<font color="#208020"># * data_type</font>
+<font color="#208020"># * character_maximum_length</font>
+<font color="#208020"># * ordinal_position</font>
+<font color="#208020">#</font>
+<font color="#208020"># If &#34;parameters&#34; is empty or NULL then a result set</font>
+<font color="#208020"># containing all parameters of &#34;procedure&#34; will be returned.</font>
+<font color="#208020">#</font>
+<font color="#208020"># If SQL Relay doesn't support getting a list of procedure</font>
+<font color="#208020"># parameters for the current database backend (or the</font>
+<font color="#208020"># database doesn't) then an empty result set will be</font>
+<font color="#208020"># returned.</font>
+<strong><a name="getProcedureParameterList_297">proc <a href="sqlrcurCmd.tcl-annot.html#getProcedureParameterList">getProcedureParameterList</a></a></strong><a name="getProcedureParameterList"></a> {procedure parameters}
 
 
 
 <font color="#208020"># Sends &#34;query&#34; directly and gets a result set.</font>
-<strong><a name="sendQuery_99">proc <a href="sqlrcurCmd.tcl-annot.html#sendQuery">sendQuery</a></a></strong><a name="sendQuery"></a> {query} 
+<strong><a name="sendQuery_302">proc <a href="sqlrcurCmd.tcl-annot.html#sendQuery">sendQuery</a></a></strong><a name="sendQuery"></a> {query} 
 
 <font color="#208020"># Sends &#34;query&#34; with length &#34;length&#34; directly</font>
 <font color="#208020"># and gets a result set. This method must be used</font>
 <font color="#208020"># if the query contains binary data.</font>
-<strong><a name="sendQueryWithLength_104">proc <a href="sqlrcurCmd.tcl-annot.html#sendQueryWithLength">sendQueryWithLength</a></a></strong><a name="sendQueryWithLength"></a> {query length} 
+<strong><a name="sendQueryWithLength_307">proc <a href="sqlrcurCmd.tcl-annot.html#sendQueryWithLength">sendQueryWithLength</a></a></strong><a name="sendQueryWithLength"></a> {query length} 
 
 <font color="#208020"># Sends the query in file &#34;path&#34;/&#34;filename&#34; directly</font>
 <font color="#208020"># and gets a result set.</font>
-<strong><a name="sendFileQuery_108">proc <a href="sqlrcurCmd.tcl-annot.html#sendFileQuery">sendFileQuery</a></a></strong><a name="sendFileQuery"></a> {path filename}  
+<strong><a name="sendFileQuery_311">proc <a href="sqlrcurCmd.tcl-annot.html#sendFileQuery">sendFileQuery</a></a></strong><a name="sendFileQuery"></a> {path filename}  
 
 
 
 <font color="#208020"># Prepare to execute &#34;query&#34;.</font>
-<strong><a name="prepareQuery_113">proc <a href="sqlrcurCmd.tcl-annot.html#prepareQuery">prepareQuery</a></a></strong> {query} 
+<strong><a name="prepareQuery_316">proc <a href="sqlrcurCmd.tcl-annot.html#prepareQuery">prepareQuery</a></a></strong> {query} 
 
 <font color="#208020"># Prepare to execute &#34;query&#34; with length </font>
 <font color="#208020"># &#34;length&#34;.  This method must be used if the</font>
 <font color="#208020"># query contains binary data.</font>
-<strong><a name="prepareQuery_118">proc <a href="sqlrcurCmd.tcl-annot.html#prepareQuery">prepareQuery</a></a></strong><a name="prepareQuery"></a> {query length} 
+<strong><a name="prepareQuery_321">proc <a href="sqlrcurCmd.tcl-annot.html#prepareQuery">prepareQuery</a></a></strong><a name="prepareQuery"></a> {query length} 
 
 <font color="#208020"># Prepare to execute the contents </font>
 <font color="#208020"># of &#34;path&#34;/&#34;filename&#34;.  Returns false if the</font>
 <font color="#208020"># // file couldn't be opened.</font>
-<strong><a name="prepareFileQuery_123">proc <a href="sqlrcurCmd.tcl-annot.html#prepareFileQuery">prepareFileQuery</a></a></strong><a name="prepareFileQuery"></a> {path filename} 
+<strong><a name="prepareFileQuery_326">proc <a href="sqlrcurCmd.tcl-annot.html#prepareFileQuery">prepareFileQuery</a></a></strong><a name="prepareFileQuery"></a> {path filename} 
 
 
 
 <font color="#208020"># Defines a substitution variable.</font>
-<strong><a name="substitution_128">proc <a href="sqlrcurCmd.tcl-annot.html#substitution">substitution</a></a></strong><a name="substitution"></a> {variable value precision scale} 
+<strong><a name="substitution_331">proc <a href="sqlrcurCmd.tcl-annot.html#substitution">substitution</a></a></strong><a name="substitution"></a> {variable value precision scale} 
 
 <font color="#208020"># Defines an array of substitution variables.</font>
-<strong><a name="substitutions_131">proc <a href="sqlrcurCmd.tcl-annot.html#substitutions">substitutions</a></a></strong><a name="substitutions"></a> {variables values precisions scales} 
+<strong><a name="substitutions_334">proc <a href="sqlrcurCmd.tcl-annot.html#substitutions">substitutions</a></a></strong><a name="substitutions"></a> {variables values precisions scales} 
 
 
 
@@ -153,118 +356,180 @@ Index by:  <a href="index_main.html#sqlrcurCmd.tcl">file name</a> |
 <font color="#208020"># then precision and scale may also be specified.  If you don't have the</font>
 <font color="#208020"># precision and scale then set them both to 0.  However in that case you may</font>
 <font color="#208020"># get unexpected rounding behavior if the server is faking binds.</font>
-<strong><a name="inputBind_140">proc <a href="sqlrcurCmd.tcl-annot.html#inputBind">inputBind</a></a></strong><a name="inputBind"></a> {variable value precision scale} 
+<strong><a name="inputBind_343">proc <a href="sqlrcurCmd.tcl-annot.html#inputBind">inputBind</a></a></strong><a name="inputBind"></a> {variable value precision scale}
+
+<font color="#208020"># Defines a date input bind variable.  &#34;day&#34; and &#34;month&#34;</font>
+<font color="#208020"># are 1-based.</font>
+<font color="#208020">#</font>
+<font color="#208020"># Some databases distinguish between date, time, and</font>
+<font color="#208020"># datetime types.  For those databases...</font>
+<font color="#208020">#</font>
+<font color="#208020"># * The input bind variable will be interpreted as a time type</font>
+<font color="#208020"># if year and/or month are negative.</font>
+<font color="#208020">#</font>
+<font color="#208020"># * The input bind variable will be interpreted as a date type</font>
+<font color="#208020"># if hour, minute, second, and/or microsecond are negative.</font>
+<font color="#208020">#</font>
+<font color="#208020"># * The input bind variable will be interpreted as a datetime</font>
+<font color="#208020"># type if all parts are positive.</font>
+<font color="#208020">#</font>
+<font color="#208020"># &#34;tz&#34; is the timezone abbreviation, and may be left NULL.</font>
+<font color="#208020"># Most databases ignore &#34;tz&#34;.</font>
+<font color="#208020">#</font>
+<font color="#208020"># Set &#34;isnegative&#34; may be set to true to represent a negative</font>
+<font color="#208020"># time interval.  However, few databases support negative</font>
+<font color="#208020"># time intervals and ignore &#34;isnegative&#34;.</font>
+<strong><a name="inputBindDate_366">proc <a href="sqlrcurCmd.tcl-annot.html#inputBindDate">inputBindDate</a></a></strong><a name="inputBindDate"></a> {variable year month day hour minute second microsecond tz isnegative}
 
 <font color="#208020"># Defines a binary lob input bind variable.</font>
-<strong><a name="inputBindBlob_143">proc <a href="sqlrcurCmd.tcl-annot.html#inputBindBlob">inputBindBlob</a></a></strong><a name="inputBindBlob"></a> {variable value size} 
+<strong><a name="inputBindBlob_369">proc <a href="sqlrcurCmd.tcl-annot.html#inputBindBlob">inputBindBlob</a></a></strong><a name="inputBindBlob"></a> {variable value size}
 
 <font color="#208020"># Defines a character lob input bind variable.</font>
-<strong><a name="inputBindClob_146">proc <a href="sqlrcurCmd.tcl-annot.html#inputBindClob">inputBindClob</a></a></strong><a name="inputBindClob"></a> {variable value size} 
+<strong><a name="inputBindClob_372">proc <a href="sqlrcurCmd.tcl-annot.html#inputBindClob">inputBindClob</a></a></strong><a name="inputBindClob"></a> {variable value size} 
 
 <font color="#208020"># Defines an array of input bind variables.</font>
-<strong><a name="inputBinds_149">proc <a href="sqlrcurCmd.tcl-annot.html#inputBinds">inputBinds</a></a></strong><a name="inputBinds"></a> {variables values precisions scales} 
+<strong><a name="inputBinds_375">proc <a href="sqlrcurCmd.tcl-annot.html#inputBinds">inputBinds</a></a></strong><a name="inputBinds"></a> {variables values precisions scales} 
 
 
 
 <font color="#208020"># Defines an output bind variable.</font>
 <font color="#208020"># &#34;bufferlength&#34; bytes will be reserved</font>
 <font color="#208020"># to store the value.</font>
-<strong><a name="defineOutputBindString_156">proc <a href="sqlrcurCmd.tcl-annot.html#defineOutputBindString">defineOutputBindString</a></a></strong><a name="defineOutputBindString"></a> {variable bufferlength} 
+<strong><a name="defineOutputBindString_382">proc <a href="sqlrcurCmd.tcl-annot.html#defineOutputBindString">defineOutputBindString</a></a></strong><a name="defineOutputBindString"></a> {variable bufferlength} 
 
 <font color="#208020"># Defines an integer output bind variable.</font>
-<strong><a name="defineOutputBindInteger_159">proc <a href="sqlrcurCmd.tcl-annot.html#defineOutputBindInteger">defineOutputBindInteger</a></a></strong><a name="defineOutputBindInteger"></a> {variable} 
+<strong><a name="defineOutputBindInteger_385">proc <a href="sqlrcurCmd.tcl-annot.html#defineOutputBindInteger">defineOutputBindInteger</a></a></strong><a name="defineOutputBindInteger"></a> {variable} 
 
 <font color="#208020"># Defines a decimal output bind variable.</font>
-<strong><a name="defineOutputBindDouble_162">proc <a href="sqlrcurCmd.tcl-annot.html#defineOutputBindDouble">defineOutputBindDouble</a></a></strong><a name="defineOutputBindDouble"></a> {variable} 
+<strong><a name="defineOutputBindDouble_388">proc <a href="sqlrcurCmd.tcl-annot.html#defineOutputBindDouble">defineOutputBindDouble</a></a></strong><a name="defineOutputBindDouble"></a> {variable} 
+
+<font color="#208020"># Defines a date output bind variable.</font>
+<strong><a name="defineOutputBindDate_391">proc <a href="sqlrcurCmd.tcl-annot.html#defineOutputBindDate">defineOutputBindDate</a></a></strong><a name="defineOutputBindDate"></a> {variable}
 
 <font color="#208020"># Defines a binary lob output bind variable.</font>
-<strong><a name="defineOutputBindBlob_165">proc <a href="sqlrcurCmd.tcl-annot.html#defineOutputBindBlob">defineOutputBindBlob</a></a></strong><a name="defineOutputBindBlob"></a> {variable} 
+<strong><a name="defineOutputBindBlob_394">proc <a href="sqlrcurCmd.tcl-annot.html#defineOutputBindBlob">defineOutputBindBlob</a></a></strong><a name="defineOutputBindBlob"></a> {variable}
 
 <font color="#208020"># Defines a character lob output bind variable.</font>
-<strong><a name="defineOutputBindClob_168">proc <a href="sqlrcurCmd.tcl-annot.html#defineOutputBindClob">defineOutputBindClob</a></a></strong><a name="defineOutputBindClob"></a> {variable} 
+<strong><a name="defineOutputBindClob_397">proc <a href="sqlrcurCmd.tcl-annot.html#defineOutputBindClob">defineOutputBindClob</a></a></strong><a name="defineOutputBindClob"></a> {variable} 
 
 <font color="#208020"># Defines a cursor output bind variable.</font>
-<strong><a name="defineOutputBindCursor_171">proc <a href="sqlrcurCmd.tcl-annot.html#defineOutputBindCursor">defineOutputBindCursor</a></a></strong><a name="defineOutputBindCursor"></a> {variable} 
+<strong><a name="defineOutputBindCursor_400">proc <a href="sqlrcurCmd.tcl-annot.html#defineOutputBindCursor">defineOutputBindCursor</a></a></strong><a name="defineOutputBindCursor"></a> {variable} 
 
 
 
 <font color="#208020"># Clears all bind variables.</font>
-<strong><a name="clearBinds_176">proc <a href="sqlrcurCmd.tcl-annot.html#clearBinds">clearBinds</a></a></strong><a name="clearBinds"></a> {} 
+<strong><a name="clearBinds_405">proc <a href="sqlrcurCmd.tcl-annot.html#clearBinds">clearBinds</a></a></strong><a name="clearBinds"></a> {} 
 
-<font color="#208020"># Parses the previously prepared query</font>
+<font color="#208020"># Parses the previously prepared query,</font>
 <font color="#208020"># counts the number of bind variables defined</font>
 <font color="#208020"># in it and returns that number.</font>
-<strong><a name="countBindVariables_181">proc <a href="sqlrcurCmd.tcl-annot.html#countBindVariables">countBindVariables</a></a></strong><a name="countBindVariables"></a> {} 
+<strong><a name="countBindVariables_410">proc <a href="sqlrcurCmd.tcl-annot.html#countBindVariables">countBindVariables</a></a></strong><a name="countBindVariables"></a> {}
 
-<font color="#208020"># If you are binding to any variables that </font>
-<font color="#208020"># might not actually be in your query call </font>
-<font color="#208020"># this to ensure that the database won't try </font>
-<font color="#208020"># to bind them unless they really are in the </font>
+<font color="#208020"># If you are binding to any variables that</font>
+<font color="#208020"># might not actually be in your query, call</font>
+<font color="#208020"># this to ensure that the database won't try</font>
+<font color="#208020"># to bind them unless they really are in the</font>
 <font color="#208020"># query.  There is a performance penalty for</font>
 <font color="#208020"># calling this method.</font>
-<strong><a name="validateBinds_189">proc <a href="sqlrcurCmd.tcl-annot.html#validateBinds">validateBinds</a></a></strong><a name="validateBinds"></a> {} 
+<strong><a name="validateBinds_418">proc <a href="sqlrcurCmd.tcl-annot.html#validateBinds">validateBinds</a></a></strong><a name="validateBinds"></a> {}
 
 <font color="#208020"># Returns true if &#34;variable&#34; was a valid</font>
 <font color="#208020"># bind variable of the query.</font>
-<strong><a name="validBind_193">proc <a href="sqlrcurCmd.tcl-annot.html#validBind">validBind</a></a></strong><a name="validBind"></a> {variable} 
+<strong><a name="validBind_422">proc <a href="sqlrcurCmd.tcl-annot.html#validBind">validBind</a></a></strong><a name="validBind"></a> {variable} 
 
 
 
 <font color="#208020"># Execute the query that was previously </font>
 <font color="#208020"># prepared and bound.</font>
-<strong><a name="executeQuery_199">proc <a href="sqlrcurCmd.tcl-annot.html#executeQuery">executeQuery</a></a></strong><a name="executeQuery"></a> {} 
+<strong><a name="executeQuery_428">proc <a href="sqlrcurCmd.tcl-annot.html#executeQuery">executeQuery</a></a></strong><a name="executeQuery"></a> {} 
 
 <font color="#208020"># Fetch from a cursor that was returned as</font>
 <font color="#208020"># an output bind variable.</font>
-<strong><a name="fetchFromBindCursor_203">proc <a href="sqlrcurCmd.tcl-annot.html#fetchFromBindCursor">fetchFromBindCursor</a></a></strong><a name="fetchFromBindCursor"></a> {} 
+<strong><a name="fetchFromBindCursor_432">proc <a href="sqlrcurCmd.tcl-annot.html#fetchFromBindCursor">fetchFromBindCursor</a></a></strong><a name="fetchFromBindCursor"></a> {} 
 
 
 
 <font color="#208020"># Get the value stored in a previously</font>
 <font color="#208020"># defined string output bind variable.</font>
-<strong><a name="getOutputBindString_209">proc <a href="sqlrcurCmd.tcl-annot.html#getOutputBindString">getOutputBindString</a></a></strong><a name="getOutputBindString"></a> {variable} 
+<strong><a name="getOutputBindString_438">proc <a href="sqlrcurCmd.tcl-annot.html#getOutputBindString">getOutputBindString</a></a></strong><a name="getOutputBindString"></a> {variable} 
 
 <font color="#208020"># Get the value stored in a previously</font>
 <font color="#208020"># defined integer output bind variable.</font>
-<strong><a name="getOutputBindInteger_213">proc <a href="sqlrcurCmd.tcl-annot.html#getOutputBindInteger">getOutputBindInteger</a></a></strong><a name="getOutputBindInteger"></a> {variable} 
+<strong><a name="getOutputBindInteger_442">proc <a href="sqlrcurCmd.tcl-annot.html#getOutputBindInteger">getOutputBindInteger</a></a></strong><a name="getOutputBindInteger"></a> {variable} 
 
 <font color="#208020"># Get the value stored in a previously</font>
 <font color="#208020"># defined decimal output bind variable.</font>
-<strong><a name="getOutputBindDouble_217">proc <a href="sqlrcurCmd.tcl-annot.html#getOutputBindDouble">getOutputBindDouble</a></a></strong><a name="getOutputBindDouble"></a> {variable} 
+<strong><a name="getOutputBindDouble_446">proc <a href="sqlrcurCmd.tcl-annot.html#getOutputBindDouble">getOutputBindDouble</a></a></strong><a name="getOutputBindDouble"></a> {variable} 
 
 <font color="#208020"># Get the value stored in a previously</font>
 <font color="#208020"># defined binary lob output bind variable.</font>
-<strong><a name="getOutputBindBlob_221">proc <a href="sqlrcurCmd.tcl-annot.html#getOutputBindBlob">getOutputBindBlob</a></a></strong><a name="getOutputBindBlob"></a> {variable} 
+<strong><a name="getOutputBindBlob_450">proc <a href="sqlrcurCmd.tcl-annot.html#getOutputBindBlob">getOutputBindBlob</a></a></strong><a name="getOutputBindBlob"></a> {variable} 
 
 <font color="#208020"># Get the value stored in a previously</font>
 <font color="#208020"># defined character lob output bind variable.</font>
-<strong><a name="getOutputBindClob_225">proc <a href="sqlrcurCmd.tcl-annot.html#getOutputBindClob">getOutputBindClob</a></a></strong><a name="getOutputBindClob"></a> {variable} 
+<strong><a name="getOutputBindClob_454">proc <a href="sqlrcurCmd.tcl-annot.html#getOutputBindClob">getOutputBindClob</a></a></strong><a name="getOutputBindClob"></a> {variable} 
 
 <font color="#208020"># Get the length of the value stored in a</font>
 <font color="#208020"># previously defined output bind variable.</font>
-<strong><a name="getOutputBindLength_229">proc <a href="sqlrcurCmd.tcl-annot.html#getOutputBindLength">getOutputBindLength</a></a></strong><a name="getOutputBindLength"></a> {variable} 
+<strong><a name="getOutputBindLength_458">proc <a href="sqlrcurCmd.tcl-annot.html#getOutputBindLength">getOutputBindLength</a></a></strong><a name="getOutputBindLength"></a> {variable} 
 
 <font color="#208020"># Get the cursor associated with a previously</font>
 <font color="#208020"># defined output bind variable.</font>
-<strong><a name="getOutputBindCursor_233">proc <a href="sqlrcurCmd.tcl-annot.html#getOutputBindCursor">getOutputBindCursor</a></a></strong><a name="getOutputBindCursor"></a> {variable} 
+<strong><a name="getOutputBindCursor_462">proc <a href="sqlrcurCmd.tcl-annot.html#getOutputBindCursor">getOutputBindCursor</a></a></strong><a name="getOutputBindCursor"></a> {variable}
+
+<font color="#208020"># Get the year from a previously defined</font>
+<font color="#208020"># date output bind variable.</font>
+<strong><a name="getOutputBindDateYear_466">proc <a href="sqlrcurCmd.tcl-annot.html#getOutputBindDateYear">getOutputBindDateYear</a></a></strong><a name="getOutputBindDateYear"></a> {variable}
+
+<font color="#208020"># Get the month from a previously defined</font>
+<font color="#208020"># date output bind variable.</font>
+<strong><a name="getOutputBindDateMonth_470">proc <a href="sqlrcurCmd.tcl-annot.html#getOutputBindDateMonth">getOutputBindDateMonth</a></a></strong><a name="getOutputBindDateMonth"></a> {variable}
+
+<font color="#208020"># Get the day from a previously defined</font>
+<font color="#208020"># date output bind variable.</font>
+<strong><a name="getOutputBindDateDay_474">proc <a href="sqlrcurCmd.tcl-annot.html#getOutputBindDateDay">getOutputBindDateDay</a></a></strong><a name="getOutputBindDateDay"></a> {variable}
+
+<font color="#208020"># Get the hour from a previously defined</font>
+<font color="#208020"># date output bind variable.</font>
+<strong><a name="getOutputBindDateHour_478">proc <a href="sqlrcurCmd.tcl-annot.html#getOutputBindDateHour">getOutputBindDateHour</a></a></strong><a name="getOutputBindDateHour"></a> {variable}
+
+<font color="#208020"># Get the minute from a previously defined</font>
+<font color="#208020"># date output bind variable.</font>
+<strong><a name="getOutputBindDateMinute_482">proc <a href="sqlrcurCmd.tcl-annot.html#getOutputBindDateMinute">getOutputBindDateMinute</a></a></strong><a name="getOutputBindDateMinute"></a> {variable}
+
+<font color="#208020"># Get the second from a previously defined</font>
+<font color="#208020"># date output bind variable.</font>
+<strong><a name="getOutputBindDateSecond_486">proc <a href="sqlrcurCmd.tcl-annot.html#getOutputBindDateSecond">getOutputBindDateSecond</a></a></strong><a name="getOutputBindDateSecond"></a> {variable}
+
+<font color="#208020"># Get the microsecond from a previously</font>
+<font color="#208020"># defined date output bind variable.</font>
+<strong><a name="getOutputBindDateMicrosecond_490">proc <a href="sqlrcurCmd.tcl-annot.html#getOutputBindDateMicrosecond">getOutputBindDateMicrosecond</a></a></strong><a name="getOutputBindDateMicrosecond"></a> {variable}
+
+<font color="#208020"># Get the time zone from a previously defined</font>
+<font color="#208020"># date output bind variable.</font>
+<strong><a name="getOutputBindDateTz_494">proc <a href="sqlrcurCmd.tcl-annot.html#getOutputBindDateTz">getOutputBindDateTz</a></a></strong><a name="getOutputBindDateTz"></a> {variable}
+
+<font color="#208020"># Get whether the value is negative from a</font>
+<font color="#208020"># previously defined date output bind variable.</font>
+<strong><a name="getOutputBindDateIsNegative_498">proc <a href="sqlrcurCmd.tcl-annot.html#getOutputBindDateIsNegative">getOutputBindDateIsNegative</a></a></strong><a name="getOutputBindDateIsNegative"></a> {variable}
 
 
 
 <font color="#208020"># Opens a cached result set.</font>
 <font color="#208020"># Returns true on success and false on failure.</font>
-<strong><a name="openCachedResultSet_239">proc <a href="sqlrcurCmd.tcl-annot.html#openCachedResultSet">openCachedResultSet</a></a></strong><a name="openCachedResultSet"></a> {filename} 
+<strong><a name="openCachedResultSet_504">proc <a href="sqlrcurCmd.tcl-annot.html#openCachedResultSet">openCachedResultSet</a></a></strong><a name="openCachedResultSet"></a> {filename} 
 
 
 
 <font color="#208020"># Returns the number of columns in the current</font>
 <font color="#208020"># result set.</font>
-<strong><a name="colCount_245">proc <a href="sqlrcurCmd.tcl-annot.html#colCount">colCount</a></a></strong><a name="colCount"></a> {} 
+<strong><a name="colCount_510">proc <a href="sqlrcurCmd.tcl-annot.html#colCount">colCount</a></a></strong><a name="colCount"></a> {} 
 
-<font color="#208020"># Returns the number of rows in the current </font>
-<font color="#208020"># result set  {if the result set is being</font>
-<font color="#208020"># stepped through this returns the number</font>
-<font color="#208020"># of rows processed so far}.</font>
-<strong><a name="rowCount_251">proc <a href="sqlrcurCmd.tcl-annot.html#rowCount">rowCount</a></a></strong><a name="rowCount"></a> {} 
+<font color="#208020"># Returns the number of rows in the current</font>
+<font color="#208020"># result set (if the result set is being</font>
+<font color="#208020"># stepped through, this returns the number</font>
+<font color="#208020"># of rows processed so far).</font>
+<strong><a name="rowCount_516">proc <a href="sqlrcurCmd.tcl-annot.html#rowCount">rowCount</a></a></strong><a name="rowCount"></a> {}
 
 <font color="#208020"># Returns the total number of rows that will </font>
 <font color="#208020"># be returned in the result set.  Not all </font>
@@ -272,36 +537,41 @@ Index by:  <a href="index_main.html#sqlrcurCmd.tcl">file name</a> |
 <font color="#208020"># for applications which are designed to be </font>
 <font color="#208020"># portable across databases.  0 is returned</font>
 <font color="#208020"># by databases which don't support this option.</font>
-<strong><a name="totalRows_259">proc <a href="sqlrcurCmd.tcl-annot.html#totalRows">totalRows</a></a></strong><a name="totalRows"></a> {} 
+<strong><a name="totalRows_524">proc <a href="sqlrcurCmd.tcl-annot.html#totalRows">totalRows</a></a></strong><a name="totalRows"></a> {} 
 
-<font color="#208020"># Returns the number of rows that were </font>
-<font color="#208020"># updated inserted or deleted by the query.</font>
-<font color="#208020"># Not all databases support this call.  Don't </font>
-<font color="#208020"># use it for applications which are designed </font>
-<font color="#208020"># to be portable across databases.  0 is </font>
-<font color="#208020"># returned by databases which don't support </font>
+<font color="#208020"># Returns the number of rows that were</font>
+<font color="#208020"># updated, inserted or deleted by the query.</font>
+<font color="#208020"># Not all databases support this call.  Don't</font>
+<font color="#208020"># use it for applications which are designed</font>
+<font color="#208020"># to be portable across databases.  0 is</font>
+<font color="#208020"># returned by databases which don't support</font>
 <font color="#208020"># this option.</font>
-<strong><a name="affectedRows_268">proc <a href="sqlrcurCmd.tcl-annot.html#affectedRows">affectedRows</a></a></strong><a name="affectedRows"></a> {} 
+<strong><a name="affectedRows_533">proc <a href="sqlrcurCmd.tcl-annot.html#affectedRows">affectedRows</a></a></strong><a name="affectedRows"></a> {}
 
 <font color="#208020"># Returns the index of the first buffered row.</font>
 <font color="#208020"># This is useful when buffering only part of</font>
 <font color="#208020"># the result set at a time.</font>
-<strong><a name="firstRowIndex_273">proc <a href="sqlrcurCmd.tcl-annot.html#firstRowIndex">firstRowIndex</a></a></strong><a name="firstRowIndex"></a> {} 
+<strong><a name="firstRowIndex_538">proc <a href="sqlrcurCmd.tcl-annot.html#firstRowIndex">firstRowIndex</a></a></strong><a name="firstRowIndex"></a> {} 
 
 <font color="#208020"># Returns false if part of the result set is</font>
 <font color="#208020"># still pending on the server and true if not.</font>
-<font color="#208020"># This method can only return false if </font>
-<font color="#208020"># setResultSetBufferSize {} has been called</font>
+<font color="#208020"># This method can only return false if</font>
+<font color="#208020"># setResultSetBufferSize() has been called</font>
 <font color="#208020"># with a parameter other than 0.</font>
-<strong><a name="endOfResultSet_280">proc <a href="sqlrcurCmd.tcl-annot.html#endOfResultSet">endOfResultSet</a></a></strong><a name="endOfResultSet"></a> {} 
+<strong><a name="endOfResultSet_545">proc <a href="sqlrcurCmd.tcl-annot.html#endOfResultSet">endOfResultSet</a></a></strong><a name="endOfResultSet"></a> {}
+
+<font color="#208020"># Returns true and acts like executeQuery()</font>
+<font color="#208020"># when there is another result set available</font>
+<font color="#208020"># from the server.</font>
+<strong><a name="nextResultSet_550">proc <a href="sqlrcurCmd.tcl-annot.html#nextResultSet">nextResultSet</a></a></strong><a name="nextResultSet"></a> {}
 
 
 
-<font color="#208020"># If a query failed and generated an error </font>
-<font color="#208020"># the error message is available here.  If </font>
-<font color="#208020"># the query succeeded then this method </font>
+<font color="#208020"># If a query failed and generated an error,</font>
+<font color="#208020"># the error message is available here.  If</font>
+<font color="#208020"># the query succeeded then this method</font>
 <font color="#208020"># returns NULL.</font>
-<strong><a name="errorMessage_288">proc <a href="sqlrcurCmd.tcl-annot.html#errorMessage">errorMessage</a></a></strong><a name="errorMessage"></a> {} 
+<strong><a name="errorMessage_558">proc <a href="sqlrcurCmd.tcl-annot.html#errorMessage">errorMessage</a></a></strong><a name="errorMessage"></a> {}
 
 
 
@@ -309,210 +579,841 @@ Index by:  <a href="index_main.html#sqlrcurCmd.tcl">file name</a> |
 <font color="#208020"># error, the error number is available here.</font>
 <font color="#208020"># If there is no error then this method </font>
 <font color="#208020"># returns 0.</font>
-<strong><a name="errorNumber_296">proc <a href="sqlrcurCmd.tcl-annot.html#errorNumber">errorNumber</a></a></strong><a name="errorNumber"></a> {}
+<strong><a name="errorNumber_566">proc <a href="sqlrcurCmd.tcl-annot.html#errorNumber">errorNumber</a></a></strong><a name="errorNumber"></a> {}
 
 
 
 <font color="#208020"># Returns the specified field as a string.</font>
-<strong><a name="getFieldByIndex_301">proc <a href="sqlrcurCmd.tcl-annot.html#getFieldByIndex">getFieldByIndex</a></a></strong><a name="getFieldByIndex"></a> {row  col} 
+<strong><a name="getFieldByIndex_571">proc <a href="sqlrcurCmd.tcl-annot.html#getFieldByIndex">getFieldByIndex</a></a></strong><a name="getFieldByIndex"></a> {row  col} 
 
 <font color="#208020"># Returns the specified field as a string</font>
-<strong><a name="getFieldByName_304">proc <a href="sqlrcurCmd.tcl-annot.html#getFieldByName">getFieldByName</a></a></strong><a name="getFieldByName"></a> {row col} 
+<strong><a name="getFieldByName_574">proc <a href="sqlrcurCmd.tcl-annot.html#getFieldByName">getFieldByName</a></a></strong><a name="getFieldByName"></a> {row col}
+
+<font color="#208020"># Returns the specified field as a string, ignoring the case of &#34;col&#34;.</font>
+<strong><a name="getFieldByNameIgnoringCase_577">proc <a href="sqlrcurCmd.tcl-annot.html#getFieldByNameIgnoringCase">getFieldByNameIgnoringCase</a></a></strong><a name="getFieldByNameIgnoringCase"></a> {row col}
 
 <font color="#208020"># Returns the specified field as an integer.</font>
-<strong><a name="getFieldAsIntegerByIndex_307">proc <a href="sqlrcurCmd.tcl-annot.html#getFieldAsIntegerByIndex">getFieldAsIntegerByIndex</a></a></strong><a name="getFieldAsIntegerByIndex"></a> {row  col} 
+<strong><a name="getFieldAsIntegerByIndex_580">proc <a href="sqlrcurCmd.tcl-annot.html#getFieldAsIntegerByIndex">getFieldAsIntegerByIndex</a></a></strong><a name="getFieldAsIntegerByIndex"></a> {row  col} 
 
 <font color="#208020"># Returns the specified field as an integer.</font>
-<strong><a name="getFieldAsIntegerByName_310">proc <a href="sqlrcurCmd.tcl-annot.html#getFieldAsIntegerByName">getFieldAsIntegerByName</a></a></strong><a name="getFieldAsIntegerByName"></a> {row col} 
+<strong><a name="getFieldAsIntegerByName_583">proc <a href="sqlrcurCmd.tcl-annot.html#getFieldAsIntegerByName">getFieldAsIntegerByName</a></a></strong><a name="getFieldAsIntegerByName"></a> {row col}
+
+<font color="#208020"># Returns the specified field as an integer, ignoring the case of &#34;col&#34;.</font>
+<strong><a name="getFieldAsIntegerByNameIgnoringCase_586">proc <a href="sqlrcurCmd.tcl-annot.html#getFieldAsIntegerByNameIgnoringCase">getFieldAsIntegerByNameIgnoringCase</a></a></strong><a name="getFieldAsIntegerByNameIgnoringCase"></a> {row col} 
 
 <font color="#208020"># Returns the specified field as a decimal.</font>
-<strong><a name="getFieldAsDoubleByIndex_313">proc <a href="sqlrcurCmd.tcl-annot.html#getFieldAsDoubleByIndex">getFieldAsDoubleByIndex</a></a></strong><a name="getFieldAsDoubleByIndex"></a> {row  col} 
+<strong><a name="getFieldAsDoubleByIndex_589">proc <a href="sqlrcurCmd.tcl-annot.html#getFieldAsDoubleByIndex">getFieldAsDoubleByIndex</a></a></strong><a name="getFieldAsDoubleByIndex"></a> {row  col} 
 
 <font color="#208020"># Returns the specified field as a decimal.</font>
-<strong><a name="getFieldAsDoubleByName_316">proc <a href="sqlrcurCmd.tcl-annot.html#getFieldAsDoubleByName">getFieldAsDoubleByName</a></a></strong><a name="getFieldAsDoubleByName"></a> {row col} 
+<strong><a name="getFieldAsDoubleByName_592">proc <a href="sqlrcurCmd.tcl-annot.html#getFieldAsDoubleByName">getFieldAsDoubleByName</a></a></strong><a name="getFieldAsDoubleByName"></a> {row col}
+
+<font color="#208020"># Returns the specified field as a decimal, ignoring the case of &#34;col&#34;.</font>
+<strong><a name="getFieldAsDoubleByNameIgnoringCase_595">proc <a href="sqlrcurCmd.tcl-annot.html#getFieldAsDoubleByNameIgnoringCase">getFieldAsDoubleByNameIgnoringCase</a></a></strong><a name="getFieldAsDoubleByNameIgnoringCase"></a> {row col}
+
+<font color="#208020"># Returns the specified field as a boolean.</font>
+<strong><a name="getFieldAsBooleanByIndex_598">proc <a href="sqlrcurCmd.tcl-annot.html#getFieldAsBooleanByIndex">getFieldAsBooleanByIndex</a></a></strong><a name="getFieldAsBooleanByIndex"></a> {row col}
+
+<font color="#208020"># Returns the specified field as a boolean.</font>
+<strong><a name="getFieldAsBooleanByName_601">proc <a href="sqlrcurCmd.tcl-annot.html#getFieldAsBooleanByName">getFieldAsBooleanByName</a></a></strong><a name="getFieldAsBooleanByName"></a> {row col}
+
+<font color="#208020"># Returns the specified field as a boolean, ignoring the case of &#34;col&#34;.</font>
+<strong><a name="getFieldAsBooleanByNameIgnoringCase_604">proc <a href="sqlrcurCmd.tcl-annot.html#getFieldAsBooleanByNameIgnoringCase">getFieldAsBooleanByNameIgnoringCase</a></a></strong><a name="getFieldAsBooleanByNameIgnoringCase"></a> {row col}
+
+<font color="#208020"># Interprets the specified field as a date</font>
+<font color="#208020"># and returns the year component.</font>
+<strong><a name="getFieldAsDateYearByIndex_608">proc <a href="sqlrcurCmd.tcl-annot.html#getFieldAsDateYearByIndex">getFieldAsDateYearByIndex</a></a></strong><a name="getFieldAsDateYearByIndex"></a> {row col}
+
+<font color="#208020"># Interprets the specified field as a date</font>
+<font color="#208020"># and returns the year component.</font>
+<strong><a name="getFieldAsDateYearByName_612">proc <a href="sqlrcurCmd.tcl-annot.html#getFieldAsDateYearByName">getFieldAsDateYearByName</a></a></strong><a name="getFieldAsDateYearByName"></a> {row col}
+
+<font color="#208020"># Interprets the specified field as a date</font>
+<font color="#208020"># and returns the year component, ignoring the case of &#34;col&#34;.</font>
+<strong><a name="getFieldAsDateYearByNameIgnoringCase_616">proc <a href="sqlrcurCmd.tcl-annot.html#getFieldAsDateYearByNameIgnoringCase">getFieldAsDateYearByNameIgnoringCase</a></a></strong><a name="getFieldAsDateYearByNameIgnoringCase"></a> {row col}
+
+<font color="#208020"># Interprets the specified field as a date</font>
+<font color="#208020"># and returns the year component.</font>
+<font color="#208020">#</font>
+<font color="#208020"># If &#34;ddmm&#34; is set true then the date format</font>
+<font color="#208020"># is assumed to be dd/mm/yyyy rather than</font>
+<font color="#208020"># mm/dd/yyyy when a date with a trailing year</font>
+<font color="#208020"># is encountered.</font>
+<font color="#208020">#</font>
+<font color="#208020"># If &#34;yyyyddmm&#34; is set true then the date</font>
+<font color="#208020"># format is assumed to be yyyy/dd/mm rather</font>
+<font color="#208020"># than yyyy/mm/dd when a date with a leading</font>
+<font color="#208020"># year is encountered.</font>
+<font color="#208020">#</font>
+<font color="#208020"># &#34;datedelimiters&#34; may be set to a set of</font>
+<font color="#208020"># valid date delimiters and may contain any</font>
+<font color="#208020"># combination of '/', '-', '.', and ':'.</font>
+<font color="#208020"># Eg. &#34;/-&#34; would mean that only '/' and '-'</font>
+<font color="#208020"># are valid date delimiters.  If left NULL</font>
+<font color="#208020"># then it defaults to &#34;/-.:&#34;.</font>
+<strong><a name="getFieldAsDateYearByIndexWithDdMm_637">proc <a href="sqlrcurCmd.tcl-annot.html#getFieldAsDateYearByIndexWithDdMm">getFieldAsDateYearByIndexWithDdMm</a></a></strong><a name="getFieldAsDateYearByIndexWithDdMm"></a> {row col ddmm yyyyddmm datedelimiters}
+
+<font color="#208020"># Interprets the specified field as a date</font>
+<font color="#208020"># and returns the year component.</font>
+<font color="#208020">#</font>
+<font color="#208020"># If &#34;ddmm&#34; is set true then the date format</font>
+<font color="#208020"># is assumed to be dd/mm/yyyy rather than</font>
+<font color="#208020"># mm/dd/yyyy when a date with a trailing year</font>
+<font color="#208020"># is encountered.</font>
+<font color="#208020">#</font>
+<font color="#208020"># If &#34;yyyyddmm&#34; is set true then the date</font>
+<font color="#208020"># format is assumed to be yyyy/dd/mm rather</font>
+<font color="#208020"># than yyyy/mm/dd when a date with a leading</font>
+<font color="#208020"># year is encountered.</font>
+<font color="#208020">#</font>
+<font color="#208020"># &#34;datedelimiters&#34; may be set to a set of</font>
+<font color="#208020"># valid date delimiters and may contain any</font>
+<font color="#208020"># combination of '/', '-', '.', and ':'.</font>
+<font color="#208020"># Eg. &#34;/-&#34; would mean that only '/' and '-'</font>
+<font color="#208020"># are valid date delimiters.  If left NULL</font>
+<font color="#208020"># then it defaults to &#34;/-.:&#34;.</font>
+<strong><a name="getFieldAsDateYearByNameWithDdMm_658">proc <a href="sqlrcurCmd.tcl-annot.html#getFieldAsDateYearByNameWithDdMm">getFieldAsDateYearByNameWithDdMm</a></a></strong><a name="getFieldAsDateYearByNameWithDdMm"></a> {row col ddmm yyyyddmm datedelimiters}
+
+<font color="#208020"># Interprets the specified field as a date</font>
+<font color="#208020"># and returns the year component, ignoring</font>
+<font color="#208020"># the case of &#34;col&#34;.</font>
+<font color="#208020">#</font>
+<font color="#208020"># If &#34;ddmm&#34; is set true then the date format</font>
+<font color="#208020"># is assumed to be dd/mm/yyyy rather than</font>
+<font color="#208020"># mm/dd/yyyy when a date with a trailing year</font>
+<font color="#208020"># is encountered.</font>
+<font color="#208020">#</font>
+<font color="#208020"># If &#34;yyyyddmm&#34; is set true then the date</font>
+<font color="#208020"># format is assumed to be yyyy/dd/mm rather</font>
+<font color="#208020"># than yyyy/mm/dd when a date with a leading</font>
+<font color="#208020"># year is encountered.</font>
+<font color="#208020">#</font>
+<font color="#208020"># &#34;datedelimiters&#34; may be set to a set of</font>
+<font color="#208020"># valid date delimiters and may contain any</font>
+<font color="#208020"># combination of '/', '-', '.', and ':'.</font>
+<font color="#208020"># Eg. &#34;/-&#34; would mean that only '/' and '-'</font>
+<font color="#208020"># are valid date delimiters.  If left NULL</font>
+<font color="#208020"># then it defaults to &#34;/-.:&#34;.</font>
+<strong><a name="getFieldAsDateYearByNameWithDdMmIgnoringCase_680">proc <a href="sqlrcurCmd.tcl-annot.html#getFieldAsDateYearByNameWithDdMmIgnoringCase">getFieldAsDateYearByNameWithDdMmIgnoringCase</a></a></strong><a name="getFieldAsDateYearByNameWithDdMmIgnoringCase"></a> {row col ddmm yyyyddmm datedelimiters}
+
+<font color="#208020"># Interprets the specified field as a date</font>
+<font color="#208020"># and returns the month component.</font>
+<strong><a name="getFieldAsDateMonthByIndex_684">proc <a href="sqlrcurCmd.tcl-annot.html#getFieldAsDateMonthByIndex">getFieldAsDateMonthByIndex</a></a></strong><a name="getFieldAsDateMonthByIndex"></a> {row col}
+
+<font color="#208020"># Interprets the specified field as a date</font>
+<font color="#208020"># and returns the month component.</font>
+<strong><a name="getFieldAsDateMonthByName_688">proc <a href="sqlrcurCmd.tcl-annot.html#getFieldAsDateMonthByName">getFieldAsDateMonthByName</a></a></strong><a name="getFieldAsDateMonthByName"></a> {row col}
+
+<font color="#208020"># Interprets the specified field as a date</font>
+<font color="#208020"># and returns the month component, ignoring the case of &#34;col&#34;.</font>
+<strong><a name="getFieldAsDateMonthByNameIgnoringCase_692">proc <a href="sqlrcurCmd.tcl-annot.html#getFieldAsDateMonthByNameIgnoringCase">getFieldAsDateMonthByNameIgnoringCase</a></a></strong><a name="getFieldAsDateMonthByNameIgnoringCase"></a> {row col}
+
+<font color="#208020"># Interprets the specified field as a date</font>
+<font color="#208020"># and returns the month component.</font>
+<font color="#208020">#</font>
+<font color="#208020"># If &#34;ddmm&#34; is set true then the date format</font>
+<font color="#208020"># is assumed to be dd/mm/yyyy rather than</font>
+<font color="#208020"># mm/dd/yyyy when a date with a trailing year</font>
+<font color="#208020"># is encountered.</font>
+<font color="#208020">#</font>
+<font color="#208020"># If &#34;yyyyddmm&#34; is set true then the date</font>
+<font color="#208020"># format is assumed to be yyyy/dd/mm rather</font>
+<font color="#208020"># than yyyy/mm/dd when a date with a leading</font>
+<font color="#208020"># year is encountered.</font>
+<font color="#208020">#</font>
+<font color="#208020"># &#34;datedelimiters&#34; may be set to a set of</font>
+<font color="#208020"># valid date delimiters and may contain any</font>
+<font color="#208020"># combination of '/', '-', '.', and ':'.</font>
+<font color="#208020"># Eg. &#34;/-&#34; would mean that only '/' and '-'</font>
+<font color="#208020"># are valid date delimiters.  If left NULL</font>
+<font color="#208020"># then it defaults to &#34;/-.:&#34;.</font>
+<strong><a name="getFieldAsDateMonthByIndexWithDdMm_713">proc <a href="sqlrcurCmd.tcl-annot.html#getFieldAsDateMonthByIndexWithDdMm">getFieldAsDateMonthByIndexWithDdMm</a></a></strong><a name="getFieldAsDateMonthByIndexWithDdMm"></a> {row col ddmm yyyyddmm datedelimiters}
+
+<font color="#208020"># Interprets the specified field as a date</font>
+<font color="#208020"># and returns the month component.</font>
+<font color="#208020">#</font>
+<font color="#208020"># If &#34;ddmm&#34; is set true then the date format</font>
+<font color="#208020"># is assumed to be dd/mm/yyyy rather than</font>
+<font color="#208020"># mm/dd/yyyy when a date with a trailing year</font>
+<font color="#208020"># is encountered.</font>
+<font color="#208020">#</font>
+<font color="#208020"># If &#34;yyyyddmm&#34; is set true then the date</font>
+<font color="#208020"># format is assumed to be yyyy/dd/mm rather</font>
+<font color="#208020"># than yyyy/mm/dd when a date with a leading</font>
+<font color="#208020"># year is encountered.</font>
+<font color="#208020">#</font>
+<font color="#208020"># &#34;datedelimiters&#34; may be set to a set of</font>
+<font color="#208020"># valid date delimiters and may contain any</font>
+<font color="#208020"># combination of '/', '-', '.', and ':'.</font>
+<font color="#208020"># Eg. &#34;/-&#34; would mean that only '/' and '-'</font>
+<font color="#208020"># are valid date delimiters.  If left NULL</font>
+<font color="#208020"># then it defaults to &#34;/-.:&#34;.</font>
+<strong><a name="getFieldAsDateMonthByNameWithDdMm_734">proc <a href="sqlrcurCmd.tcl-annot.html#getFieldAsDateMonthByNameWithDdMm">getFieldAsDateMonthByNameWithDdMm</a></a></strong><a name="getFieldAsDateMonthByNameWithDdMm"></a> {row col ddmm yyyyddmm datedelimiters}
+
+<font color="#208020"># Interprets the specified field as a date</font>
+<font color="#208020"># and returns the month component, ignoring</font>
+<font color="#208020"># the case of &#34;col&#34;.</font>
+<font color="#208020">#</font>
+<font color="#208020"># If &#34;ddmm&#34; is set true then the date format</font>
+<font color="#208020"># is assumed to be dd/mm/yyyy rather than</font>
+<font color="#208020"># mm/dd/yyyy when a date with a trailing year</font>
+<font color="#208020"># is encountered.</font>
+<font color="#208020">#</font>
+<font color="#208020"># If &#34;yyyyddmm&#34; is set true then the date</font>
+<font color="#208020"># format is assumed to be yyyy/dd/mm rather</font>
+<font color="#208020"># than yyyy/mm/dd when a date with a leading</font>
+<font color="#208020"># year is encountered.</font>
+<font color="#208020">#</font>
+<font color="#208020"># &#34;datedelimiters&#34; may be set to a set of</font>
+<font color="#208020"># valid date delimiters and may contain any</font>
+<font color="#208020"># combination of '/', '-', '.', and ':'.</font>
+<font color="#208020"># Eg. &#34;/-&#34; would mean that only '/' and '-'</font>
+<font color="#208020"># are valid date delimiters.  If left NULL</font>
+<font color="#208020"># then it defaults to &#34;/-.:&#34;.</font>
+<strong><a name="getFieldAsDateMonthByNameWithDdMmIgnoringCase_756">proc <a href="sqlrcurCmd.tcl-annot.html#getFieldAsDateMonthByNameWithDdMmIgnoringCase">getFieldAsDateMonthByNameWithDdMmIgnoringCase</a></a></strong><a name="getFieldAsDateMonthByNameWithDdMmIgnoringCase"></a> {row col ddmm yyyyddmm datedelimiters}
+
+<font color="#208020"># Interprets the specified field as a date</font>
+<font color="#208020"># and returns the day component.</font>
+<strong><a name="getFieldAsDateDayByIndex_760">proc <a href="sqlrcurCmd.tcl-annot.html#getFieldAsDateDayByIndex">getFieldAsDateDayByIndex</a></a></strong><a name="getFieldAsDateDayByIndex"></a> {row col}
+
+<font color="#208020"># Interprets the specified field as a date</font>
+<font color="#208020"># and returns the day component.</font>
+<strong><a name="getFieldAsDateDayByName_764">proc <a href="sqlrcurCmd.tcl-annot.html#getFieldAsDateDayByName">getFieldAsDateDayByName</a></a></strong><a name="getFieldAsDateDayByName"></a> {row col}
+
+<font color="#208020"># Interprets the specified field as a date</font>
+<font color="#208020"># and returns the day component, ignoring the case of &#34;col&#34;.</font>
+<strong><a name="getFieldAsDateDayByNameIgnoringCase_768">proc <a href="sqlrcurCmd.tcl-annot.html#getFieldAsDateDayByNameIgnoringCase">getFieldAsDateDayByNameIgnoringCase</a></a></strong><a name="getFieldAsDateDayByNameIgnoringCase"></a> {row col}
+
+<font color="#208020"># Interprets the specified field as a date</font>
+<font color="#208020"># and returns the day component.</font>
+<font color="#208020">#</font>
+<font color="#208020"># If &#34;ddmm&#34; is set true then the date format</font>
+<font color="#208020"># is assumed to be dd/mm/yyyy rather than</font>
+<font color="#208020"># mm/dd/yyyy when a date with a trailing year</font>
+<font color="#208020"># is encountered.</font>
+<font color="#208020">#</font>
+<font color="#208020"># If &#34;yyyyddmm&#34; is set true then the date</font>
+<font color="#208020"># format is assumed to be yyyy/dd/mm rather</font>
+<font color="#208020"># than yyyy/mm/dd when a date with a leading</font>
+<font color="#208020"># year is encountered.</font>
+<font color="#208020">#</font>
+<font color="#208020"># &#34;datedelimiters&#34; may be set to a set of</font>
+<font color="#208020"># valid date delimiters and may contain any</font>
+<font color="#208020"># combination of '/', '-', '.', and ':'.</font>
+<font color="#208020"># Eg. &#34;/-&#34; would mean that only '/' and '-'</font>
+<font color="#208020"># are valid date delimiters.  If left NULL</font>
+<font color="#208020"># then it defaults to &#34;/-.:&#34;.</font>
+<strong><a name="getFieldAsDateDayByIndexWithDdMm_789">proc <a href="sqlrcurCmd.tcl-annot.html#getFieldAsDateDayByIndexWithDdMm">getFieldAsDateDayByIndexWithDdMm</a></a></strong><a name="getFieldAsDateDayByIndexWithDdMm"></a> {row col ddmm yyyyddmm datedelimiters}
+
+<font color="#208020"># Interprets the specified field as a date</font>
+<font color="#208020"># and returns the day component.</font>
+<font color="#208020">#</font>
+<font color="#208020"># If &#34;ddmm&#34; is set true then the date format</font>
+<font color="#208020"># is assumed to be dd/mm/yyyy rather than</font>
+<font color="#208020"># mm/dd/yyyy when a date with a trailing year</font>
+<font color="#208020"># is encountered.</font>
+<font color="#208020">#</font>
+<font color="#208020"># If &#34;yyyyddmm&#34; is set true then the date</font>
+<font color="#208020"># format is assumed to be yyyy/dd/mm rather</font>
+<font color="#208020"># than yyyy/mm/dd when a date with a leading</font>
+<font color="#208020"># year is encountered.</font>
+<font color="#208020">#</font>
+<font color="#208020"># &#34;datedelimiters&#34; may be set to a set of</font>
+<font color="#208020"># valid date delimiters and may contain any</font>
+<font color="#208020"># combination of '/', '-', '.', and ':'.</font>
+<font color="#208020"># Eg. &#34;/-&#34; would mean that only '/' and '-'</font>
+<font color="#208020"># are valid date delimiters.  If left NULL</font>
+<font color="#208020"># then it defaults to &#34;/-.:&#34;.</font>
+<strong><a name="getFieldAsDateDayByNameWithDdMm_810">proc <a href="sqlrcurCmd.tcl-annot.html#getFieldAsDateDayByNameWithDdMm">getFieldAsDateDayByNameWithDdMm</a></a></strong><a name="getFieldAsDateDayByNameWithDdMm"></a> {row col ddmm yyyyddmm datedelimiters}
+
+<font color="#208020"># Interprets the specified field as a date</font>
+<font color="#208020"># and returns the day component, ignoring</font>
+<font color="#208020"># the case of &#34;col&#34;.</font>
+<font color="#208020">#</font>
+<font color="#208020"># If &#34;ddmm&#34; is set true then the date format</font>
+<font color="#208020"># is assumed to be dd/mm/yyyy rather than</font>
+<font color="#208020"># mm/dd/yyyy when a date with a trailing year</font>
+<font color="#208020"># is encountered.</font>
+<font color="#208020">#</font>
+<font color="#208020"># If &#34;yyyyddmm&#34; is set true then the date</font>
+<font color="#208020"># format is assumed to be yyyy/dd/mm rather</font>
+<font color="#208020"># than yyyy/mm/dd when a date with a leading</font>
+<font color="#208020"># year is encountered.</font>
+<font color="#208020">#</font>
+<font color="#208020"># &#34;datedelimiters&#34; may be set to a set of</font>
+<font color="#208020"># valid date delimiters and may contain any</font>
+<font color="#208020"># combination of '/', '-', '.', and ':'.</font>
+<font color="#208020"># Eg. &#34;/-&#34; would mean that only '/' and '-'</font>
+<font color="#208020"># are valid date delimiters.  If left NULL</font>
+<font color="#208020"># then it defaults to &#34;/-.:&#34;.</font>
+<strong><a name="getFieldAsDateDayByNameWithDdMmIgnoringCase_832">proc <a href="sqlrcurCmd.tcl-annot.html#getFieldAsDateDayByNameWithDdMmIgnoringCase">getFieldAsDateDayByNameWithDdMmIgnoringCase</a></a></strong><a name="getFieldAsDateDayByNameWithDdMmIgnoringCase"></a> {row col ddmm yyyyddmm datedelimiters}
+
+<font color="#208020"># Interprets the specified field as a date</font>
+<font color="#208020"># and returns the hour component.</font>
+<strong><a name="getFieldAsDateHourByIndex_836">proc <a href="sqlrcurCmd.tcl-annot.html#getFieldAsDateHourByIndex">getFieldAsDateHourByIndex</a></a></strong><a name="getFieldAsDateHourByIndex"></a> {row col}
+
+<font color="#208020"># Interprets the specified field as a date</font>
+<font color="#208020"># and returns the hour component.</font>
+<strong><a name="getFieldAsDateHourByName_840">proc <a href="sqlrcurCmd.tcl-annot.html#getFieldAsDateHourByName">getFieldAsDateHourByName</a></a></strong><a name="getFieldAsDateHourByName"></a> {row col}
+
+<font color="#208020"># Interprets the specified field as a date</font>
+<font color="#208020"># and returns the hour component, ignoring the case of &#34;col&#34;.</font>
+<strong><a name="getFieldAsDateHourByNameIgnoringCase_844">proc <a href="sqlrcurCmd.tcl-annot.html#getFieldAsDateHourByNameIgnoringCase">getFieldAsDateHourByNameIgnoringCase</a></a></strong><a name="getFieldAsDateHourByNameIgnoringCase"></a> {row col}
+
+<font color="#208020"># Interprets the specified field as a date</font>
+<font color="#208020"># and returns the hour component.</font>
+<font color="#208020">#</font>
+<font color="#208020"># If &#34;ddmm&#34; is set true then the date format</font>
+<font color="#208020"># is assumed to be dd/mm/yyyy rather than</font>
+<font color="#208020"># mm/dd/yyyy when a date with a trailing year</font>
+<font color="#208020"># is encountered.</font>
+<font color="#208020">#</font>
+<font color="#208020"># If &#34;yyyyddmm&#34; is set true then the date</font>
+<font color="#208020"># format is assumed to be yyyy/dd/mm rather</font>
+<font color="#208020"># than yyyy/mm/dd when a date with a leading</font>
+<font color="#208020"># year is encountered.</font>
+<font color="#208020">#</font>
+<font color="#208020"># &#34;datedelimiters&#34; may be set to a set of</font>
+<font color="#208020"># valid date delimiters and may contain any</font>
+<font color="#208020"># combination of '/', '-', '.', and ':'.</font>
+<font color="#208020"># Eg. &#34;/-&#34; would mean that only '/' and '-'</font>
+<font color="#208020"># are valid date delimiters.  If left NULL</font>
+<font color="#208020"># then it defaults to &#34;/-.:&#34;.</font>
+<strong><a name="getFieldAsDateHourByIndexWithDdMm_865">proc <a href="sqlrcurCmd.tcl-annot.html#getFieldAsDateHourByIndexWithDdMm">getFieldAsDateHourByIndexWithDdMm</a></a></strong><a name="getFieldAsDateHourByIndexWithDdMm"></a> {row col ddmm yyyyddmm datedelimiters}
+
+<font color="#208020"># Interprets the specified field as a date</font>
+<font color="#208020"># and returns the hour component.</font>
+<font color="#208020">#</font>
+<font color="#208020"># If &#34;ddmm&#34; is set true then the date format</font>
+<font color="#208020"># is assumed to be dd/mm/yyyy rather than</font>
+<font color="#208020"># mm/dd/yyyy when a date with a trailing year</font>
+<font color="#208020"># is encountered.</font>
+<font color="#208020">#</font>
+<font color="#208020"># If &#34;yyyyddmm&#34; is set true then the date</font>
+<font color="#208020"># format is assumed to be yyyy/dd/mm rather</font>
+<font color="#208020"># than yyyy/mm/dd when a date with a leading</font>
+<font color="#208020"># year is encountered.</font>
+<font color="#208020">#</font>
+<font color="#208020"># &#34;datedelimiters&#34; may be set to a set of</font>
+<font color="#208020"># valid date delimiters and may contain any</font>
+<font color="#208020"># combination of '/', '-', '.', and ':'.</font>
+<font color="#208020"># Eg. &#34;/-&#34; would mean that only '/' and '-'</font>
+<font color="#208020"># are valid date delimiters.  If left NULL</font>
+<font color="#208020"># then it defaults to &#34;/-.:&#34;.</font>
+<strong><a name="getFieldAsDateHourByNameWithDdMm_886">proc <a href="sqlrcurCmd.tcl-annot.html#getFieldAsDateHourByNameWithDdMm">getFieldAsDateHourByNameWithDdMm</a></a></strong><a name="getFieldAsDateHourByNameWithDdMm"></a> {row col ddmm yyyyddmm datedelimiters}
+
+<font color="#208020"># Interprets the specified field as a date</font>
+<font color="#208020"># and returns the hour component, ignoring</font>
+<font color="#208020"># the case of &#34;col&#34;.</font>
+<font color="#208020">#</font>
+<font color="#208020"># If &#34;ddmm&#34; is set true then the date format</font>
+<font color="#208020"># is assumed to be dd/mm/yyyy rather than</font>
+<font color="#208020"># mm/dd/yyyy when a date with a trailing year</font>
+<font color="#208020"># is encountered.</font>
+<font color="#208020">#</font>
+<font color="#208020"># If &#34;yyyyddmm&#34; is set true then the date</font>
+<font color="#208020"># format is assumed to be yyyy/dd/mm rather</font>
+<font color="#208020"># than yyyy/mm/dd when a date with a leading</font>
+<font color="#208020"># year is encountered.</font>
+<font color="#208020">#</font>
+<font color="#208020"># &#34;datedelimiters&#34; may be set to a set of</font>
+<font color="#208020"># valid date delimiters and may contain any</font>
+<font color="#208020"># combination of '/', '-', '.', and ':'.</font>
+<font color="#208020"># Eg. &#34;/-&#34; would mean that only '/' and '-'</font>
+<font color="#208020"># are valid date delimiters.  If left NULL</font>
+<font color="#208020"># then it defaults to &#34;/-.:&#34;.</font>
+<strong><a name="getFieldAsDateHourByNameWithDdMmIgnoringCase_908">proc <a href="sqlrcurCmd.tcl-annot.html#getFieldAsDateHourByNameWithDdMmIgnoringCase">getFieldAsDateHourByNameWithDdMmIgnoringCase</a></a></strong><a name="getFieldAsDateHourByNameWithDdMmIgnoringCase"></a> {row col ddmm yyyyddmm datedelimiters}
+
+<font color="#208020"># Interprets the specified field as a date</font>
+<font color="#208020"># and returns the minute component.</font>
+<strong><a name="getFieldAsDateMinuteByIndex_912">proc <a href="sqlrcurCmd.tcl-annot.html#getFieldAsDateMinuteByIndex">getFieldAsDateMinuteByIndex</a></a></strong><a name="getFieldAsDateMinuteByIndex"></a> {row col}
+
+<font color="#208020"># Interprets the specified field as a date</font>
+<font color="#208020"># and returns the minute component.</font>
+<strong><a name="getFieldAsDateMinuteByName_916">proc <a href="sqlrcurCmd.tcl-annot.html#getFieldAsDateMinuteByName">getFieldAsDateMinuteByName</a></a></strong><a name="getFieldAsDateMinuteByName"></a> {row col}
+
+<font color="#208020"># Interprets the specified field as a date</font>
+<font color="#208020"># and returns the minute component, ignoring the case of &#34;col&#34;.</font>
+<strong><a name="getFieldAsDateMinuteByNameIgnoringCase_920">proc <a href="sqlrcurCmd.tcl-annot.html#getFieldAsDateMinuteByNameIgnoringCase">getFieldAsDateMinuteByNameIgnoringCase</a></a></strong><a name="getFieldAsDateMinuteByNameIgnoringCase"></a> {row col}
+
+<font color="#208020"># Interprets the specified field as a date</font>
+<font color="#208020"># and returns the minute component.</font>
+<font color="#208020">#</font>
+<font color="#208020"># If &#34;ddmm&#34; is set true then the date format</font>
+<font color="#208020"># is assumed to be dd/mm/yyyy rather than</font>
+<font color="#208020"># mm/dd/yyyy when a date with a trailing year</font>
+<font color="#208020"># is encountered.</font>
+<font color="#208020">#</font>
+<font color="#208020"># If &#34;yyyyddmm&#34; is set true then the date</font>
+<font color="#208020"># format is assumed to be yyyy/dd/mm rather</font>
+<font color="#208020"># than yyyy/mm/dd when a date with a leading</font>
+<font color="#208020"># year is encountered.</font>
+<font color="#208020">#</font>
+<font color="#208020"># &#34;datedelimiters&#34; may be set to a set of</font>
+<font color="#208020"># valid date delimiters and may contain any</font>
+<font color="#208020"># combination of '/', '-', '.', and ':'.</font>
+<font color="#208020"># Eg. &#34;/-&#34; would mean that only '/' and '-'</font>
+<font color="#208020"># are valid date delimiters.  If left NULL</font>
+<font color="#208020"># then it defaults to &#34;/-.:&#34;.</font>
+<strong><a name="getFieldAsDateMinuteByIndexWithDdMm_941">proc <a href="sqlrcurCmd.tcl-annot.html#getFieldAsDateMinuteByIndexWithDdMm">getFieldAsDateMinuteByIndexWithDdMm</a></a></strong><a name="getFieldAsDateMinuteByIndexWithDdMm"></a> {row col ddmm yyyyddmm datedelimiters}
+
+<font color="#208020"># Interprets the specified field as a date</font>
+<font color="#208020"># and returns the minute component.</font>
+<font color="#208020">#</font>
+<font color="#208020"># If &#34;ddmm&#34; is set true then the date format</font>
+<font color="#208020"># is assumed to be dd/mm/yyyy rather than</font>
+<font color="#208020"># mm/dd/yyyy when a date with a trailing year</font>
+<font color="#208020"># is encountered.</font>
+<font color="#208020">#</font>
+<font color="#208020"># If &#34;yyyyddmm&#34; is set true then the date</font>
+<font color="#208020"># format is assumed to be yyyy/dd/mm rather</font>
+<font color="#208020"># than yyyy/mm/dd when a date with a leading</font>
+<font color="#208020"># year is encountered.</font>
+<font color="#208020">#</font>
+<font color="#208020"># &#34;datedelimiters&#34; may be set to a set of</font>
+<font color="#208020"># valid date delimiters and may contain any</font>
+<font color="#208020"># combination of '/', '-', '.', and ':'.</font>
+<font color="#208020"># Eg. &#34;/-&#34; would mean that only '/' and '-'</font>
+<font color="#208020"># are valid date delimiters.  If left NULL</font>
+<font color="#208020"># then it defaults to &#34;/-.:&#34;.</font>
+<strong><a name="getFieldAsDateMinuteByNameWithDdMm_962">proc <a href="sqlrcurCmd.tcl-annot.html#getFieldAsDateMinuteByNameWithDdMm">getFieldAsDateMinuteByNameWithDdMm</a></a></strong><a name="getFieldAsDateMinuteByNameWithDdMm"></a> {row col ddmm yyyyddmm datedelimiters}
+
+<font color="#208020"># Interprets the specified field as a date</font>
+<font color="#208020"># and returns the minute component, ignoring</font>
+<font color="#208020"># the case of &#34;col&#34;.</font>
+<font color="#208020">#</font>
+<font color="#208020"># If &#34;ddmm&#34; is set true then the date format</font>
+<font color="#208020"># is assumed to be dd/mm/yyyy rather than</font>
+<font color="#208020"># mm/dd/yyyy when a date with a trailing year</font>
+<font color="#208020"># is encountered.</font>
+<font color="#208020">#</font>
+<font color="#208020"># If &#34;yyyyddmm&#34; is set true then the date</font>
+<font color="#208020"># format is assumed to be yyyy/dd/mm rather</font>
+<font color="#208020"># than yyyy/mm/dd when a date with a leading</font>
+<font color="#208020"># year is encountered.</font>
+<font color="#208020">#</font>
+<font color="#208020"># &#34;datedelimiters&#34; may be set to a set of</font>
+<font color="#208020"># valid date delimiters and may contain any</font>
+<font color="#208020"># combination of '/', '-', '.', and ':'.</font>
+<font color="#208020"># Eg. &#34;/-&#34; would mean that only '/' and '-'</font>
+<font color="#208020"># are valid date delimiters.  If left NULL</font>
+<font color="#208020"># then it defaults to &#34;/-.:&#34;.</font>
+<strong><a name="getFieldAsDateMinuteByNameWithDdMmIgnoringCase_984">proc <a href="sqlrcurCmd.tcl-annot.html#getFieldAsDateMinuteByNameWithDdMmIgnoringCase">getFieldAsDateMinuteByNameWithDdMmIgnoringCase</a></a></strong><a name="getFieldAsDateMinuteByNameWithDdMmIgnoringCase"></a> {row col ddmm yyyyddmm datedelimiters}
+
+<font color="#208020"># Interprets the specified field as a date</font>
+<font color="#208020"># and returns the second component.</font>
+<strong><a name="getFieldAsDateSecondByIndex_988">proc <a href="sqlrcurCmd.tcl-annot.html#getFieldAsDateSecondByIndex">getFieldAsDateSecondByIndex</a></a></strong><a name="getFieldAsDateSecondByIndex"></a> {row col}
+
+<font color="#208020"># Interprets the specified field as a date</font>
+<font color="#208020"># and returns the second component.</font>
+<strong><a name="getFieldAsDateSecondByName_992">proc <a href="sqlrcurCmd.tcl-annot.html#getFieldAsDateSecondByName">getFieldAsDateSecondByName</a></a></strong><a name="getFieldAsDateSecondByName"></a> {row col}
+
+<font color="#208020"># Interprets the specified field as a date</font>
+<font color="#208020"># and returns the second component, ignoring the case of &#34;col&#34;.</font>
+<strong><a name="getFieldAsDateSecondByNameIgnoringCase_996">proc <a href="sqlrcurCmd.tcl-annot.html#getFieldAsDateSecondByNameIgnoringCase">getFieldAsDateSecondByNameIgnoringCase</a></a></strong><a name="getFieldAsDateSecondByNameIgnoringCase"></a> {row col}
+
+<font color="#208020"># Interprets the specified field as a date</font>
+<font color="#208020"># and returns the second component.</font>
+<font color="#208020">#</font>
+<font color="#208020"># If &#34;ddmm&#34; is set true then the date format</font>
+<font color="#208020"># is assumed to be dd/mm/yyyy rather than</font>
+<font color="#208020"># mm/dd/yyyy when a date with a trailing year</font>
+<font color="#208020"># is encountered.</font>
+<font color="#208020">#</font>
+<font color="#208020"># If &#34;yyyyddmm&#34; is set true then the date</font>
+<font color="#208020"># format is assumed to be yyyy/dd/mm rather</font>
+<font color="#208020"># than yyyy/mm/dd when a date with a leading</font>
+<font color="#208020"># year is encountered.</font>
+<font color="#208020">#</font>
+<font color="#208020"># &#34;datedelimiters&#34; may be set to a set of</font>
+<font color="#208020"># valid date delimiters and may contain any</font>
+<font color="#208020"># combination of '/', '-', '.', and ':'.</font>
+<font color="#208020"># Eg. &#34;/-&#34; would mean that only '/' and '-'</font>
+<font color="#208020"># are valid date delimiters.  If left NULL</font>
+<font color="#208020"># then it defaults to &#34;/-.:&#34;.</font>
+<strong><a name="getFieldAsDateSecondByIndexWithDdMm_1017">proc <a href="sqlrcurCmd.tcl-annot.html#getFieldAsDateSecondByIndexWithDdMm">getFieldAsDateSecondByIndexWithDdMm</a></a></strong><a name="getFieldAsDateSecondByIndexWithDdMm"></a> {row col ddmm yyyyddmm datedelimiters}
+
+<font color="#208020"># Interprets the specified field as a date</font>
+<font color="#208020"># and returns the second component.</font>
+<font color="#208020">#</font>
+<font color="#208020"># If &#34;ddmm&#34; is set true then the date format</font>
+<font color="#208020"># is assumed to be dd/mm/yyyy rather than</font>
+<font color="#208020"># mm/dd/yyyy when a date with a trailing year</font>
+<font color="#208020"># is encountered.</font>
+<font color="#208020">#</font>
+<font color="#208020"># If &#34;yyyyddmm&#34; is set true then the date</font>
+<font color="#208020"># format is assumed to be yyyy/dd/mm rather</font>
+<font color="#208020"># than yyyy/mm/dd when a date with a leading</font>
+<font color="#208020"># year is encountered.</font>
+<font color="#208020">#</font>
+<font color="#208020"># &#34;datedelimiters&#34; may be set to a set of</font>
+<font color="#208020"># valid date delimiters and may contain any</font>
+<font color="#208020"># combination of '/', '-', '.', and ':'.</font>
+<font color="#208020"># Eg. &#34;/-&#34; would mean that only '/' and '-'</font>
+<font color="#208020"># are valid date delimiters.  If left NULL</font>
+<font color="#208020"># then it defaults to &#34;/-.:&#34;.</font>
+<strong><a name="getFieldAsDateSecondByNameWithDdMm_1038">proc <a href="sqlrcurCmd.tcl-annot.html#getFieldAsDateSecondByNameWithDdMm">getFieldAsDateSecondByNameWithDdMm</a></a></strong><a name="getFieldAsDateSecondByNameWithDdMm"></a> {row col ddmm yyyyddmm datedelimiters}
+
+<font color="#208020"># Interprets the specified field as a date</font>
+<font color="#208020"># and returns the second component, ignoring</font>
+<font color="#208020"># the case of &#34;col&#34;.</font>
+<font color="#208020">#</font>
+<font color="#208020"># If &#34;ddmm&#34; is set true then the date format</font>
+<font color="#208020"># is assumed to be dd/mm/yyyy rather than</font>
+<font color="#208020"># mm/dd/yyyy when a date with a trailing year</font>
+<font color="#208020"># is encountered.</font>
+<font color="#208020">#</font>
+<font color="#208020"># If &#34;yyyyddmm&#34; is set true then the date</font>
+<font color="#208020"># format is assumed to be yyyy/dd/mm rather</font>
+<font color="#208020"># than yyyy/mm/dd when a date with a leading</font>
+<font color="#208020"># year is encountered.</font>
+<font color="#208020">#</font>
+<font color="#208020"># &#34;datedelimiters&#34; may be set to a set of</font>
+<font color="#208020"># valid date delimiters and may contain any</font>
+<font color="#208020"># combination of '/', '-', '.', and ':'.</font>
+<font color="#208020"># Eg. &#34;/-&#34; would mean that only '/' and '-'</font>
+<font color="#208020"># are valid date delimiters.  If left NULL</font>
+<font color="#208020"># then it defaults to &#34;/-.:&#34;.</font>
+<strong><a name="getFieldAsDateSecondByNameWithDdMmIgnoringCase_1060">proc <a href="sqlrcurCmd.tcl-annot.html#getFieldAsDateSecondByNameWithDdMmIgnoringCase">getFieldAsDateSecondByNameWithDdMmIgnoringCase</a></a></strong><a name="getFieldAsDateSecondByNameWithDdMmIgnoringCase"></a> {row col ddmm yyyyddmm datedelimiters}
+
+<font color="#208020"># Interprets the specified field as a date</font>
+<font color="#208020"># and returns the microsecond component.</font>
+<strong><a name="getFieldAsDateMicrosecondByIndex_1064">proc <a href="sqlrcurCmd.tcl-annot.html#getFieldAsDateMicrosecondByIndex">getFieldAsDateMicrosecondByIndex</a></a></strong><a name="getFieldAsDateMicrosecondByIndex"></a> {row col}
+
+<font color="#208020"># Interprets the specified field as a date</font>
+<font color="#208020"># and returns the microsecond component.</font>
+<strong><a name="getFieldAsDateMicrosecondByName_1068">proc <a href="sqlrcurCmd.tcl-annot.html#getFieldAsDateMicrosecondByName">getFieldAsDateMicrosecondByName</a></a></strong><a name="getFieldAsDateMicrosecondByName"></a> {row col}
+
+<font color="#208020"># Interprets the specified field as a date</font>
+<font color="#208020"># and returns the microsecond component, ignoring the case of &#34;col&#34;.</font>
+<strong><a name="getFieldAsDateMicrosecondByNameIgnoringCase_1072">proc <a href="sqlrcurCmd.tcl-annot.html#getFieldAsDateMicrosecondByNameIgnoringCase">getFieldAsDateMicrosecondByNameIgnoringCase</a></a></strong><a name="getFieldAsDateMicrosecondByNameIgnoringCase"></a> {row col}
+
+<font color="#208020"># Interprets the specified field as a date</font>
+<font color="#208020"># and returns the microsecond component.</font>
+<font color="#208020">#</font>
+<font color="#208020"># If &#34;ddmm&#34; is set true then the date format</font>
+<font color="#208020"># is assumed to be dd/mm/yyyy rather than</font>
+<font color="#208020"># mm/dd/yyyy when a date with a trailing year</font>
+<font color="#208020"># is encountered.</font>
+<font color="#208020">#</font>
+<font color="#208020"># If &#34;yyyyddmm&#34; is set true then the date</font>
+<font color="#208020"># format is assumed to be yyyy/dd/mm rather</font>
+<font color="#208020"># than yyyy/mm/dd when a date with a leading</font>
+<font color="#208020"># year is encountered.</font>
+<font color="#208020">#</font>
+<font color="#208020"># &#34;datedelimiters&#34; may be set to a set of</font>
+<font color="#208020"># valid date delimiters and may contain any</font>
+<font color="#208020"># combination of '/', '-', '.', and ':'.</font>
+<font color="#208020"># Eg. &#34;/-&#34; would mean that only '/' and '-'</font>
+<font color="#208020"># are valid date delimiters.  If left NULL</font>
+<font color="#208020"># then it defaults to &#34;/-.:&#34;.</font>
+<strong><a name="getFieldAsDateMicrosecondByIndexWithDdMm_1093">proc <a href="sqlrcurCmd.tcl-annot.html#getFieldAsDateMicrosecondByIndexWithDdMm">getFieldAsDateMicrosecondByIndexWithDdMm</a></a></strong><a name="getFieldAsDateMicrosecondByIndexWithDdMm"></a> {row col ddmm yyyyddmm datedelimiters}
+
+<font color="#208020"># Interprets the specified field as a date</font>
+<font color="#208020"># and returns the microsecond component.</font>
+<font color="#208020">#</font>
+<font color="#208020"># If &#34;ddmm&#34; is set true then the date format</font>
+<font color="#208020"># is assumed to be dd/mm/yyyy rather than</font>
+<font color="#208020"># mm/dd/yyyy when a date with a trailing year</font>
+<font color="#208020"># is encountered.</font>
+<font color="#208020">#</font>
+<font color="#208020"># If &#34;yyyyddmm&#34; is set true then the date</font>
+<font color="#208020"># format is assumed to be yyyy/dd/mm rather</font>
+<font color="#208020"># than yyyy/mm/dd when a date with a leading</font>
+<font color="#208020"># year is encountered.</font>
+<font color="#208020">#</font>
+<font color="#208020"># &#34;datedelimiters&#34; may be set to a set of</font>
+<font color="#208020"># valid date delimiters and may contain any</font>
+<font color="#208020"># combination of '/', '-', '.', and ':'.</font>
+<font color="#208020"># Eg. &#34;/-&#34; would mean that only '/' and '-'</font>
+<font color="#208020"># are valid date delimiters.  If left NULL</font>
+<font color="#208020"># then it defaults to &#34;/-.:&#34;.</font>
+<strong><a name="getFieldAsDateMicrosecondByNameWithDdMm_1114">proc <a href="sqlrcurCmd.tcl-annot.html#getFieldAsDateMicrosecondByNameWithDdMm">getFieldAsDateMicrosecondByNameWithDdMm</a></a></strong><a name="getFieldAsDateMicrosecondByNameWithDdMm"></a> {row col ddmm yyyyddmm datedelimiters}
+
+<font color="#208020"># Interprets the specified field as a date</font>
+<font color="#208020"># and returns the microsecond component, ignoring</font>
+<font color="#208020"># the case of &#34;col&#34;.</font>
+<font color="#208020">#</font>
+<font color="#208020"># If &#34;ddmm&#34; is set true then the date format</font>
+<font color="#208020"># is assumed to be dd/mm/yyyy rather than</font>
+<font color="#208020"># mm/dd/yyyy when a date with a trailing year</font>
+<font color="#208020"># is encountered.</font>
+<font color="#208020">#</font>
+<font color="#208020"># If &#34;yyyyddmm&#34; is set true then the date</font>
+<font color="#208020"># format is assumed to be yyyy/dd/mm rather</font>
+<font color="#208020"># than yyyy/mm/dd when a date with a leading</font>
+<font color="#208020"># year is encountered.</font>
+<font color="#208020">#</font>
+<font color="#208020"># &#34;datedelimiters&#34; may be set to a set of</font>
+<font color="#208020"># valid date delimiters and may contain any</font>
+<font color="#208020"># combination of '/', '-', '.', and ':'.</font>
+<font color="#208020"># Eg. &#34;/-&#34; would mean that only '/' and '-'</font>
+<font color="#208020"># are valid date delimiters.  If left NULL</font>
+<font color="#208020"># then it defaults to &#34;/-.:&#34;.</font>
+<strong><a name="getFieldAsDateMicrosecondByNameWithDdMmIgnoringCase_1136">proc <a href="sqlrcurCmd.tcl-annot.html#getFieldAsDateMicrosecondByNameWithDdMmIgnoringCase">getFieldAsDateMicrosecondByNameWithDdMmIgnoringCase</a></a></strong><a name="getFieldAsDateMicrosecondByNameWithDdMmIgnoringCase"></a> {row col ddmm yyyyddmm datedelimiters}
+
+<font color="#208020"># Interprets the specified field as a date</font>
+<font color="#208020"># and returns whether the hour component</font>
+<font color="#208020"># is negative.</font>
+<strong><a name="getFieldAsDateIsNegativeByIndex_1141">proc <a href="sqlrcurCmd.tcl-annot.html#getFieldAsDateIsNegativeByIndex">getFieldAsDateIsNegativeByIndex</a></a></strong><a name="getFieldAsDateIsNegativeByIndex"></a> {row col}
+
+<font color="#208020"># Interprets the specified field as a date</font>
+<font color="#208020"># and returns whether the hour component</font>
+<font color="#208020"># is negative.</font>
+<strong><a name="getFieldAsDateIsNegativeByName_1146">proc <a href="sqlrcurCmd.tcl-annot.html#getFieldAsDateIsNegativeByName">getFieldAsDateIsNegativeByName</a></a></strong><a name="getFieldAsDateIsNegativeByName"></a> {row col}
+
+<font color="#208020"># Interprets the specified field as a date</font>
+<font color="#208020"># and returns whether the hour component</font>
+<font color="#208020"># is negative, ignoring the case of &#34;col&#34;.</font>
+<strong><a name="getFieldAsDateIsNegativeByNameIgnoringCase_1151">proc <a href="sqlrcurCmd.tcl-annot.html#getFieldAsDateIsNegativeByNameIgnoringCase">getFieldAsDateIsNegativeByNameIgnoringCase</a></a></strong><a name="getFieldAsDateIsNegativeByNameIgnoringCase"></a> {row col}
+
+<font color="#208020"># Interprets the specified field as a date</font>
+<font color="#208020"># and returns whether the hour component</font>
+<font color="#208020"># is negative.</font>
+<font color="#208020">#</font>
+<font color="#208020"># If &#34;ddmm&#34; is set true then the date format</font>
+<font color="#208020"># is assumed to be dd/mm/yyyy rather than</font>
+<font color="#208020"># mm/dd/yyyy when a date with a trailing year</font>
+<font color="#208020"># is encountered.</font>
+<font color="#208020">#</font>
+<font color="#208020"># If &#34;yyyyddmm&#34; is set true then the date</font>
+<font color="#208020"># format is assumed to be yyyy/dd/mm rather</font>
+<font color="#208020"># than yyyy/mm/dd when a date with a leading</font>
+<font color="#208020"># year is encountered.</font>
+<font color="#208020">#</font>
+<font color="#208020"># &#34;datedelimiters&#34; may be set to a set of</font>
+<font color="#208020"># valid date delimiters and may contain any</font>
+<font color="#208020"># combination of '/', '-', '.', and ':'.</font>
+<font color="#208020"># Eg. &#34;/-&#34; would mean that only '/' and '-'</font>
+<font color="#208020"># are valid date delimiters.  If left NULL</font>
+<font color="#208020"># then it defaults to &#34;/-.:&#34;.</font>
+<strong><a name="getFieldAsDateIsNegativeByIndexWithDdMm_1173">proc <a href="sqlrcurCmd.tcl-annot.html#getFieldAsDateIsNegativeByIndexWithDdMm">getFieldAsDateIsNegativeByIndexWithDdMm</a></a></strong><a name="getFieldAsDateIsNegativeByIndexWithDdMm"></a> {row col ddmm yyyyddmm datedelimiters}
+
+<font color="#208020"># Interprets the specified field as a date</font>
+<font color="#208020"># and returns whether the hour component</font>
+<font color="#208020"># is negative.</font>
+<font color="#208020">#</font>
+<font color="#208020"># If &#34;ddmm&#34; is set true then the date format</font>
+<font color="#208020"># is assumed to be dd/mm/yyyy rather than</font>
+<font color="#208020"># mm/dd/yyyy when a date with a trailing year</font>
+<font color="#208020"># is encountered.</font>
+<font color="#208020">#</font>
+<font color="#208020"># If &#34;yyyyddmm&#34; is set true then the date</font>
+<font color="#208020"># format is assumed to be yyyy/dd/mm rather</font>
+<font color="#208020"># than yyyy/mm/dd when a date with a leading</font>
+<font color="#208020"># year is encountered.</font>
+<font color="#208020">#</font>
+<font color="#208020"># &#34;datedelimiters&#34; may be set to a set of</font>
+<font color="#208020"># valid date delimiters and may contain any</font>
+<font color="#208020"># combination of '/', '-', '.', and ':'.</font>
+<font color="#208020"># Eg. &#34;/-&#34; would mean that only '/' and '-'</font>
+<font color="#208020"># are valid date delimiters.  If left NULL</font>
+<font color="#208020"># then it defaults to &#34;/-.:&#34;.</font>
+<strong><a name="getFieldAsDateIsNegativeByNameWithDdMm_1195">proc <a href="sqlrcurCmd.tcl-annot.html#getFieldAsDateIsNegativeByNameWithDdMm">getFieldAsDateIsNegativeByNameWithDdMm</a></a></strong><a name="getFieldAsDateIsNegativeByNameWithDdMm"></a> {row col ddmm yyyyddmm datedelimiters}
+
+<font color="#208020"># Interprets the specified field as a date</font>
+<font color="#208020"># and returns whether the hour component</font>
+<font color="#208020"># is negative, ignoring the case of &#34;col&#34;.</font>
+<font color="#208020">#</font>
+<font color="#208020"># If &#34;ddmm&#34; is set true then the date format</font>
+<font color="#208020"># is assumed to be dd/mm/yyyy rather than</font>
+<font color="#208020"># mm/dd/yyyy when a date with a trailing year</font>
+<font color="#208020"># is encountered.</font>
+<font color="#208020">#</font>
+<font color="#208020"># If &#34;yyyyddmm&#34; is set true then the date</font>
+<font color="#208020"># format is assumed to be yyyy/dd/mm rather</font>
+<font color="#208020"># than yyyy/mm/dd when a date with a leading</font>
+<font color="#208020"># year is encountered.</font>
+<font color="#208020">#</font>
+<font color="#208020"># &#34;datedelimiters&#34; may be set to a set of</font>
+<font color="#208020"># valid date delimiters and may contain any</font>
+<font color="#208020"># combination of '/', '-', '.', and ':'.</font>
+<font color="#208020"># Eg. &#34;/-&#34; would mean that only '/' and '-'</font>
+<font color="#208020"># are valid date delimiters.  If left NULL</font>
+<font color="#208020"># then it defaults to &#34;/-.:&#34;.</font>
+<strong><a name="getFieldAsDateIsNegativeByNameWithDdMmIgnoringCase_1217">proc <a href="sqlrcurCmd.tcl-annot.html#getFieldAsDateIsNegativeByNameWithDdMmIgnoringCase">getFieldAsDateIsNegativeByNameWithDdMmIgnoringCase</a></a></strong><a name="getFieldAsDateIsNegativeByNameWithDdMmIgnoringCase"></a> {row col ddmm yyyyddmm datedelimiters}
 
 
 
 <font color="#208020"># Returns the length of the specified field.</font>
-<strong><a name="getFieldLengthByIndex_321">proc <a href="sqlrcurCmd.tcl-annot.html#getFieldLengthByIndex">getFieldLengthByIndex</a></a></strong><a name="getFieldLengthByIndex"></a> {row  col} 
+<strong><a name="getFieldLengthByIndex_1222">proc <a href="sqlrcurCmd.tcl-annot.html#getFieldLengthByIndex">getFieldLengthByIndex</a></a></strong><a name="getFieldLengthByIndex"></a> {row  col} 
 
 <font color="#208020"># Returns the length of the specified field.</font>
-<strong><a name="getFieldLengthByName_324">proc <a href="sqlrcurCmd.tcl-annot.html#getFieldLengthByName">getFieldLengthByName</a></a></strong><a name="getFieldLengthByName"></a> {row col} 
+<strong><a name="getFieldLengthByName_1225">proc <a href="sqlrcurCmd.tcl-annot.html#getFieldLengthByName">getFieldLengthByName</a></a></strong><a name="getFieldLengthByName"></a> {row col} 
 
 
 
 <font color="#208020"># Returns a null terminated array of the </font>
 <font color="#208020"># values of the fields in the specified row.</font>
-<strong><a name="getRow_330">proc <a href="sqlrcurCmd.tcl-annot.html#getRow">getRow</a></a></strong><a name="getRow"></a> {row} 
+<strong><a name="getRow_1231">proc <a href="sqlrcurCmd.tcl-annot.html#getRow">getRow</a></a></strong><a name="getRow"></a> {row} 
 
 <font color="#208020"># Returns a null terminated array of the </font>
 <font color="#208020"># lengths of the fields in the specified row.</font>
-<strong><a name="getRowLengths_334">proc <a href="sqlrcurCmd.tcl-annot.html#getRowLengths">getRowLengths</a></a></strong><a name="getRowLengths"></a> {row} 
+<strong><a name="getRowLengths_1235">proc <a href="sqlrcurCmd.tcl-annot.html#getRowLengths">getRowLengths</a></a></strong><a name="getRowLengths"></a> {row} 
 
 <font color="#208020"># Returns a null terminated array of the </font>
 <font color="#208020"># column names of the current result set.</font>
-<strong><a name="getColumnNames_338">proc <a href="sqlrcurCmd.tcl-annot.html#getColumnNames">getColumnNames</a></a></strong><a name="getColumnNames"></a> {} 
+<strong><a name="getColumnNames_1239">proc <a href="sqlrcurCmd.tcl-annot.html#getColumnNames">getColumnNames</a></a></strong><a name="getColumnNames"></a> {} 
 
 <font color="#208020"># Returns the name of the specified column.</font>
-<strong><a name="getColumnName_341">proc <a href="sqlrcurCmd.tcl-annot.html#getColumnName">getColumnName</a></a></strong><a name="getColumnName"></a> {col} 
+<strong><a name="getColumnName_1242">proc <a href="sqlrcurCmd.tcl-annot.html#getColumnName">getColumnName</a></a></strong><a name="getColumnName"></a> {col} 
 
 <font color="#208020"># Returns the name of the specified column.</font>
-<strong><a name="getColumnNameByIndex_344">proc <a href="sqlrcurCmd.tcl-annot.html#getColumnNameByIndex">getColumnNameByIndex</a></a></strong><a name="getColumnNameByIndex"></a> {col} 
+<strong><a name="getColumnNameByIndex_1245">proc <a href="sqlrcurCmd.tcl-annot.html#getColumnNameByIndex">getColumnNameByIndex</a></a></strong><a name="getColumnNameByIndex"></a> {col} 
 
 <font color="#208020"># Returns the type of the specified column.</font>
-<strong><a name="getColumnTypeByName_347">proc <a href="sqlrcurCmd.tcl-annot.html#getColumnTypeByName">getColumnTypeByName</a></a></strong> {col} 
+<strong><a name="getColumnTypeByName_1248">proc <a href="sqlrcurCmd.tcl-annot.html#getColumnTypeByName">getColumnTypeByName</a></a></strong> {col} 
 
 <font color="#208020"># Returns the type of the specified column.</font>
-<strong><a name="getColumnTypeByIndex_350">proc <a href="sqlrcurCmd.tcl-annot.html#getColumnTypeByIndex">getColumnTypeByIndex</a></a></strong><a name="getColumnTypeByIndex"></a> {col} 
+<strong><a name="getColumnTypeByIndex_1251">proc <a href="sqlrcurCmd.tcl-annot.html#getColumnTypeByIndex">getColumnTypeByIndex</a></a></strong><a name="getColumnTypeByIndex"></a> {col} 
 
 <font color="#208020"># Returns the type of the specified column.</font>
-<strong><a name="getColumnTypeByName_353">proc <a href="sqlrcurCmd.tcl-annot.html#getColumnTypeByName">getColumnTypeByName</a></a></strong><a name="getColumnTypeByName"></a> {col} 
+<strong><a name="getColumnTypeByName_1254">proc <a href="sqlrcurCmd.tcl-annot.html#getColumnTypeByName">getColumnTypeByName</a></a></strong><a name="getColumnTypeByName"></a> {col} 
 
 <font color="#208020"># Returns the number of bytes required on</font>
 <font color="#208020"># the server to store the data for the specified column</font>
-<strong><a name="getColumnLengthByIndex_357">proc <a href="sqlrcurCmd.tcl-annot.html#getColumnLengthByIndex">getColumnLengthByIndex</a></a></strong><a name="getColumnLengthByIndex"></a> {col} 
+<strong><a name="getColumnLengthByIndex_1258">proc <a href="sqlrcurCmd.tcl-annot.html#getColumnLengthByIndex">getColumnLengthByIndex</a></a></strong><a name="getColumnLengthByIndex"></a> {col} 
 
 <font color="#208020"># Returns the number of bytes required on</font>
 <font color="#208020"># the server to store the data for the specified column</font>
-<strong><a name="getColumnLengthByName_361">proc <a href="sqlrcurCmd.tcl-annot.html#getColumnLengthByName">getColumnLengthByName</a></a></strong><a name="getColumnLengthByName"></a> {col} 
+<strong><a name="getColumnLengthByName_1262">proc <a href="sqlrcurCmd.tcl-annot.html#getColumnLengthByName">getColumnLengthByName</a></a></strong><a name="getColumnLengthByName"></a> {col} 
 
 <font color="#208020"># Returns the precision of the specified</font>
 <font color="#208020"># column.</font>
 <font color="#208020"># Precision is the total number of digits in</font>
 <font color="#208020"># a number.  eg: 123.45 has a precision of 5.</font>
-<font color="#208020"># For non-numeric types it's the number of</font>
+<font color="#208020"># For non-numeric types, it's the number of</font>
 <font color="#208020"># characters in the string.</font>
-<strong><a name="getColumnPrecisionByIndex_369">proc <a href="sqlrcurCmd.tcl-annot.html#getColumnPrecisionByIndex">getColumnPrecisionByIndex</a></a></strong><a name="getColumnPrecisionByIndex"></a> {col} 
+<strong><a name="getColumnPrecisionByIndex_1270">proc <a href="sqlrcurCmd.tcl-annot.html#getColumnPrecisionByIndex">getColumnPrecisionByIndex</a></a></strong><a name="getColumnPrecisionByIndex"></a> {col}
 
 <font color="#208020"># Returns the precision of the specified</font>
 <font color="#208020"># column.</font>
 <font color="#208020"># Precision is the total number of digits in</font>
 <font color="#208020"># a number.  eg: 123.45 has a precision of 5.</font>
-<font color="#208020"># For non-numeric types it's the number of</font>
+<font color="#208020"># For non-numeric types, it's the number of</font>
 <font color="#208020"># characters in the string.</font>
-<strong><a name="getColumnPrecisionByName_377">proc <a href="sqlrcurCmd.tcl-annot.html#getColumnPrecisionByName">getColumnPrecisionByName</a></a></strong><a name="getColumnPrecisionByName"></a> {col} 
+<strong><a name="getColumnPrecisionByName_1278">proc <a href="sqlrcurCmd.tcl-annot.html#getColumnPrecisionByName">getColumnPrecisionByName</a></a></strong><a name="getColumnPrecisionByName"></a> {col}
 
 <font color="#208020"># Returns the scale of the specified column.</font>
 <font color="#208020"># Scale is the total number of digits to the</font>
 <font color="#208020"># right of the decimal point in a number.</font>
 <font color="#208020"># eg: 123.45 has a scale of 2.</font>
-<strong><a name="getColumnScaleByIndex_383">proc <a href="sqlrcurCmd.tcl-annot.html#getColumnScaleByIndex">getColumnScaleByIndex</a></a></strong><a name="getColumnScaleByIndex"></a> {col} 
+<strong><a name="getColumnScaleByIndex_1284">proc <a href="sqlrcurCmd.tcl-annot.html#getColumnScaleByIndex">getColumnScaleByIndex</a></a></strong><a name="getColumnScaleByIndex"></a> {col} 
 
 <font color="#208020"># Returns the scale of the specified column.</font>
 <font color="#208020"># Scale is the total number of digits to the</font>
 <font color="#208020"># right of the decimal point in a number.</font>
 <font color="#208020"># eg: 123.45 has a scale of 2.</font>
-<strong><a name="getColumnScaleByName_389">proc <a href="sqlrcurCmd.tcl-annot.html#getColumnScaleByName">getColumnScaleByName</a></a></strong><a name="getColumnScaleByName"></a> {col} 
+<strong><a name="getColumnScaleByName_1290">proc <a href="sqlrcurCmd.tcl-annot.html#getColumnScaleByName">getColumnScaleByName</a></a></strong><a name="getColumnScaleByName"></a> {col} 
 
 <font color="#208020"># Returns true if the specified column can</font>
 <font color="#208020"># contain nulls and false otherwise.</font>
-<strong><a name="getColumnIsNullableByIndex_393">proc <a href="sqlrcurCmd.tcl-annot.html#getColumnIsNullableByIndex">getColumnIsNullableByIndex</a></a></strong><a name="getColumnIsNullableByIndex"></a> {col} 
+<strong><a name="getColumnIsNullableByIndex_1294">proc <a href="sqlrcurCmd.tcl-annot.html#getColumnIsNullableByIndex">getColumnIsNullableByIndex</a></a></strong><a name="getColumnIsNullableByIndex"></a> {col} 
 
 <font color="#208020"># Returns true if the specified column can</font>
 <font color="#208020"># contain nulls and false otherwise.</font>
-<strong><a name="getColumnIsNullableByName_397">proc <a href="sqlrcurCmd.tcl-annot.html#getColumnIsNullableByName">getColumnIsNullableByName</a></a></strong><a name="getColumnIsNullableByName"></a> {col} 
+<strong><a name="getColumnIsNullableByName_1298">proc <a href="sqlrcurCmd.tcl-annot.html#getColumnIsNullableByName">getColumnIsNullableByName</a></a></strong><a name="getColumnIsNullableByName"></a> {col} 
 
 <font color="#208020"># Returns true if the specified column is a</font>
 <font color="#208020"># primary key and false otherwise.</font>
-<strong><a name="getColumnIsPrimaryKeyByIndex_401">proc <a href="sqlrcurCmd.tcl-annot.html#getColumnIsPrimaryKeyByIndex">getColumnIsPrimaryKeyByIndex</a></a></strong><a name="getColumnIsPrimaryKeyByIndex"></a> {col} 
+<strong><a name="getColumnIsPrimaryKeyByIndex_1302">proc <a href="sqlrcurCmd.tcl-annot.html#getColumnIsPrimaryKeyByIndex">getColumnIsPrimaryKeyByIndex</a></a></strong><a name="getColumnIsPrimaryKeyByIndex"></a> {col} 
 
 <font color="#208020"># Returns true if the specified column is a</font>
 <font color="#208020"># primary key and false otherwise.</font>
-<strong><a name="getColumnIsPrimaryKeyByName_405">proc <a href="sqlrcurCmd.tcl-annot.html#getColumnIsPrimaryKeyByName">getColumnIsPrimaryKeyByName</a></a></strong><a name="getColumnIsPrimaryKeyByName"></a> {col} 
+<strong><a name="getColumnIsPrimaryKeyByName_1306">proc <a href="sqlrcurCmd.tcl-annot.html#getColumnIsPrimaryKeyByName">getColumnIsPrimaryKeyByName</a></a></strong><a name="getColumnIsPrimaryKeyByName"></a> {col} 
 
 <font color="#208020"># Returns true if the specified column is</font>
- 	<font color="#208020"># unique and false otherwise.</font>
-<strong><a name="getColumnIsUniqueByIndex_409">proc <a href="sqlrcurCmd.tcl-annot.html#getColumnIsUniqueByIndex">getColumnIsUniqueByIndex</a></a></strong><a name="getColumnIsUniqueByIndex"></a> {col} 
+<font color="#208020"># unique and false otherwise.</font>
+<strong><a name="getColumnIsUniqueByIndex_1310">proc <a href="sqlrcurCmd.tcl-annot.html#getColumnIsUniqueByIndex">getColumnIsUniqueByIndex</a></a></strong><a name="getColumnIsUniqueByIndex"></a> {col}
 
 <font color="#208020"># Returns true if the specified column is</font>
- 	<font color="#208020"># unique and false otherwise.</font>
-<strong><a name="getColumnIsUniqueByName_413">proc <a href="sqlrcurCmd.tcl-annot.html#getColumnIsUniqueByName">getColumnIsUniqueByName</a></a></strong><a name="getColumnIsUniqueByName"></a> {col} 
-
-<font color="#208020"># Returns true if the specified column is</font>
-<font color="#208020"># part of a composite key and false otherwise.</font>
-<strong><a name="getColumnIsPartOfKeyByIndex_417">proc <a href="sqlrcurCmd.tcl-annot.html#getColumnIsPartOfKeyByIndex">getColumnIsPartOfKeyByIndex</a></a></strong><a name="getColumnIsPartOfKeyByIndex"></a> {col} 
+<font color="#208020"># unique and false otherwise.</font>
+<strong><a name="getColumnIsUniqueByName_1314">proc <a href="sqlrcurCmd.tcl-annot.html#getColumnIsUniqueByName">getColumnIsUniqueByName</a></a></strong><a name="getColumnIsUniqueByName"></a> {col}
 
 <font color="#208020"># Returns true if the specified column is</font>
 <font color="#208020"># part of a composite key and false otherwise.</font>
-<strong><a name="getColumnIsPartOfKeyByName_421">proc <a href="sqlrcurCmd.tcl-annot.html#getColumnIsPartOfKeyByName">getColumnIsPartOfKeyByName</a></a></strong><a name="getColumnIsPartOfKeyByName"></a> {col} 
+<strong><a name="getColumnIsPartOfKeyByIndex_1318">proc <a href="sqlrcurCmd.tcl-annot.html#getColumnIsPartOfKeyByIndex">getColumnIsPartOfKeyByIndex</a></a></strong><a name="getColumnIsPartOfKeyByIndex"></a> {col} 
+
+<font color="#208020"># Returns true if the specified column is</font>
+<font color="#208020"># part of a composite key and false otherwise.</font>
+<strong><a name="getColumnIsPartOfKeyByName_1322">proc <a href="sqlrcurCmd.tcl-annot.html#getColumnIsPartOfKeyByName">getColumnIsPartOfKeyByName</a></a></strong><a name="getColumnIsPartOfKeyByName"></a> {col} 
 
 <font color="#208020"># Returns true if the specified column is</font>
 <font color="#208020"># an unsigned number and false otherwise.</font>
-<strong><a name="getColumnIsUnsignedByIndex_425">proc <a href="sqlrcurCmd.tcl-annot.html#getColumnIsUnsignedByIndex">getColumnIsUnsignedByIndex</a></a></strong><a name="getColumnIsUnsignedByIndex"></a> {col} 
+<strong><a name="getColumnIsUnsignedByIndex_1326">proc <a href="sqlrcurCmd.tcl-annot.html#getColumnIsUnsignedByIndex">getColumnIsUnsignedByIndex</a></a></strong><a name="getColumnIsUnsignedByIndex"></a> {col} 
 
 <font color="#208020"># Returns true if the specified column is</font>
 <font color="#208020"># an unsigned number and false otherwise.</font>
-<strong><a name="getColumnIsUnsignedByName_429">proc <a href="sqlrcurCmd.tcl-annot.html#getColumnIsUnsignedByName">getColumnIsUnsignedByName</a></a></strong><a name="getColumnIsUnsignedByName"></a> {col} 
+<strong><a name="getColumnIsUnsignedByName_1330">proc <a href="sqlrcurCmd.tcl-annot.html#getColumnIsUnsignedByName">getColumnIsUnsignedByName</a></a></strong><a name="getColumnIsUnsignedByName"></a> {col} 
 
 <font color="#208020"># Returns true if the specified column was</font>
 <font color="#208020"># created with the zero-fill flag and false</font>
 <font color="#208020"># otherwise.</font>
-<strong><a name="getColumnIsZeroFilledByIndex_434">proc <a href="sqlrcurCmd.tcl-annot.html#getColumnIsZeroFilledByIndex">getColumnIsZeroFilledByIndex</a></a></strong><a name="getColumnIsZeroFilledByIndex"></a> {col} 
+<strong><a name="getColumnIsZeroFilledByIndex_1335">proc <a href="sqlrcurCmd.tcl-annot.html#getColumnIsZeroFilledByIndex">getColumnIsZeroFilledByIndex</a></a></strong><a name="getColumnIsZeroFilledByIndex"></a> {col} 
 
 <font color="#208020"># Returns true if the specified column was</font>
 <font color="#208020"># created with the zero-fill flag and false</font>
 <font color="#208020"># otherwise.</font>
-<strong><a name="getColumnIsZeroFilledByName_439">proc <a href="sqlrcurCmd.tcl-annot.html#getColumnIsZeroFilledByName">getColumnIsZeroFilledByName</a></a></strong><a name="getColumnIsZeroFilledByName"></a> {col} 
+<strong><a name="getColumnIsZeroFilledByName_1340">proc <a href="sqlrcurCmd.tcl-annot.html#getColumnIsZeroFilledByName">getColumnIsZeroFilledByName</a></a></strong><a name="getColumnIsZeroFilledByName"></a> {col} 
 
 <font color="#208020"># Returns true if the specified column</font>
 <font color="#208020"># contains binary data and false</font>
 <font color="#208020"># otherwise.</font>
-<strong><a name="getColumnIsBinaryByIndex_444">proc <a href="sqlrcurCmd.tcl-annot.html#getColumnIsBinaryByIndex">getColumnIsBinaryByIndex</a></a></strong><a name="getColumnIsBinaryByIndex"></a> {col} 
+<strong><a name="getColumnIsBinaryByIndex_1345">proc <a href="sqlrcurCmd.tcl-annot.html#getColumnIsBinaryByIndex">getColumnIsBinaryByIndex</a></a></strong><a name="getColumnIsBinaryByIndex"></a> {col} 
 
 <font color="#208020"># Returns true if the specified column</font>
 <font color="#208020"># contains binary data and false</font>
 <font color="#208020"># otherwise.</font>
-<strong><a name="getColumnIsBinaryByName_449">proc <a href="sqlrcurCmd.tcl-annot.html#getColumnIsBinaryByName">getColumnIsBinaryByName</a></a></strong><a name="getColumnIsBinaryByName"></a> {col} 
+<strong><a name="getColumnIsBinaryByName_1350">proc <a href="sqlrcurCmd.tcl-annot.html#getColumnIsBinaryByName">getColumnIsBinaryByName</a></a></strong><a name="getColumnIsBinaryByName"></a> {col} 
 
 <font color="#208020"># Returns true if the specified column</font>
 <font color="#208020"># auto-increments and false otherwise.</font>
-<strong><a name="getColumnIsAutoIncrementByIndex_453">proc <a href="sqlrcurCmd.tcl-annot.html#getColumnIsAutoIncrementByIndex">getColumnIsAutoIncrementByIndex</a></a></strong><a name="getColumnIsAutoIncrementByIndex"></a> {col} 
+<strong><a name="getColumnIsAutoIncrementByIndex_1354">proc <a href="sqlrcurCmd.tcl-annot.html#getColumnIsAutoIncrementByIndex">getColumnIsAutoIncrementByIndex</a></a></strong><a name="getColumnIsAutoIncrementByIndex"></a> {col} 
 
 <font color="#208020"># Returns true if the specified column</font>
 <font color="#208020"># auto-increments and false otherwise.</font>
-<strong><a name="getColumnIsAutoIncrementByName_457">proc <a href="sqlrcurCmd.tcl-annot.html#getColumnIsAutoIncrementByName">getColumnIsAutoIncrementByName</a></a></strong><a name="getColumnIsAutoIncrementByName"></a> {col} 
+<strong><a name="getColumnIsAutoIncrementByName_1358">proc <a href="sqlrcurCmd.tcl-annot.html#getColumnIsAutoIncrementByName">getColumnIsAutoIncrementByName</a></a></strong><a name="getColumnIsAutoIncrementByName"></a> {col} 
 
 <font color="#208020"># Returns the length of the longest field</font>
 <font color="#208020"># in the specified column.</font>
-<strong><a name="getLongestByIndex_461">proc <a href="sqlrcurCmd.tcl-annot.html#getLongestByIndex">getLongestByIndex</a></a></strong><a name="getLongestByIndex"></a> {col} 
+<strong><a name="getLongestByIndex_1362">proc <a href="sqlrcurCmd.tcl-annot.html#getLongestByIndex">getLongestByIndex</a></a></strong><a name="getLongestByIndex"></a> {col} 
 
 <font color="#208020"># Returns the length of the longest field</font>
 <font color="#208020"># in the specified column.</font>
-<strong><a name="getLongestByName_465">proc <a href="sqlrcurCmd.tcl-annot.html#getLongestByName">getLongestByName</a></a></strong><a name="getLongestByName"></a> {col} 
+<strong><a name="getLongestByName_1366">proc <a href="sqlrcurCmd.tcl-annot.html#getLongestByName">getLongestByName</a></a></strong><a name="getLongestByName"></a> {col} 
 
 
 
 <font color="#208020"># Tells the server to leave this result</font>
-<font color="#208020"># set open when the connection calls </font>
-<font color="#208020"># suspendSession so that another connection </font>
-<font color="#208020"># can connect to it using resumeResultSet </font>
-<font color="#208020"># after it calls resumeSession.</font>
-<strong><a name="suspendResultSet_474">proc <a href="sqlrcurCmd.tcl-annot.html#suspendResultSet">suspendResultSet</a></a></strong><a name="suspendResultSet"></a> {} 
+<font color="#208020"># set open when the connection calls</font>
+<font color="#208020"># suspendSession() so that another connection</font>
+<font color="#208020"># can connect to it using resumeResultSet()</font>
+<font color="#208020"># after it calls resumeSession().</font>
+<strong><a name="suspendResultSet_1375">proc <a href="sqlrcurCmd.tcl-annot.html#suspendResultSet">suspendResultSet</a></a></strong><a name="suspendResultSet"></a> {}
 
 <font color="#208020"># Returns the internal ID of this result set.</font>
-<font color="#208020"># This parameter may be passed to another </font>
-<font color="#208020"># cursor for use in the resumeResultSet </font>
+<font color="#208020"># This parameter may be passed to another</font>
+<font color="#208020"># cursor for use in the resumeResultSet()</font>
 <font color="#208020"># method.</font>
 <font color="#208020"># Note: The value this method returns is only</font>
-<font color="#208020"># valid after a call to suspendResultSet.</font>
-<strong><a name="getResultSetId_482">proc <a href="sqlrcurCmd.tcl-annot.html#getResultSetId">getResultSetId</a></a></strong><a name="getResultSetId"></a> {} 
-
-<font color="#208020"># Resumes a result set previously left open </font>
-<font color="#208020"># using suspendSession.</font>
-<font color="#208020"># Returns true on success and false on failure.</font>
-<strong><a name="resumeResultSet_487">proc <a href="sqlrcurCmd.tcl-annot.html#resumeResultSet">resumeResultSet</a></a></strong><a name="resumeResultSet"></a> {id} 
+<font color="#208020"># valid after a call to suspendResultSet().</font>
+<strong><a name="getResultSetId_1383">proc <a href="sqlrcurCmd.tcl-annot.html#getResultSetId">getResultSetId</a></a></strong><a name="getResultSetId"></a> {}
 
 <font color="#208020"># Resumes a result set previously left open</font>
-<font color="#208020"># using suspendSession and continues caching</font>
+<font color="#208020"># using suspendSession().</font>
+<font color="#208020"># Returns true on success and false on failure.</font>
+<strong><a name="resumeResultSet_1388">proc <a href="sqlrcurCmd.tcl-annot.html#resumeResultSet">resumeResultSet</a></a></strong><a name="resumeResultSet"></a> {id}
+
+<font color="#208020"># Resumes a result set previously left open</font>
+<font color="#208020"># using suspendSession() and continues caching</font>
 <font color="#208020"># the result set to &#34;filename&#34;.</font>
 <font color="#208020"># Returns true on success and false on failure.</font>
-<strong><a name="resumeCachedResultSet_493">proc <a href="sqlrcurCmd.tcl-annot.html#resumeCachedResultSet">resumeCachedResultSet</a></a></strong><a name="resumeCachedResultSet"></a> {id filename} 
+<strong><a name="resumeCachedResultSet_1394">proc <a href="sqlrcurCmd.tcl-annot.html#resumeCachedResultSet">resumeCachedResultSet</a></a></strong><a name="resumeCachedResultSet"></a> {id filename}
 
 <font color="#208020"># Closes the current result set, if one is open.  Data</font>
 <font color="#208020"># that has been fetched already is still available but</font>
 <font color="#208020"># no more data may be fetched.  Server side resources</font>
 <font color="#208020"># for the result set are freed as well.</font>
-<strong><a name="closeResultSet_499">proc <a href="sqlrcurCmd.tcl-annot.html#closeResultSet">closeResultSet</a></a></strong><a name="closeResultSet"></a> {}
+<strong><a name="closeResultSet_1400">proc <a href="sqlrcurCmd.tcl-annot.html#closeResultSet">closeResultSet</a></a></strong><a name="closeResultSet"></a> {}
 </pre>
 <hr>
 <font size="-2">
@@ -520,7 +1421,7 @@ Index by:  <a href="index_main.html#byfilename">file name</a> |
 <a href="index_main.html#byprocname">procedure name</a> |
 <a href="index_main.html#bycall">procedure call</a> |
 <a href="index_annot_full.html">annotation</a><br>
-<cite>File generated 2024-12-03 at 02:38.</cite>
+<cite>File generated 2026-07-15 at 15:36.</cite>
 </font>
 </body>
 </html>

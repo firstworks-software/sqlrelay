@@ -8,7 +8,7 @@
 <table class="heading">
 <tr class="heading-text decor">
 <td class="title">&nbsp;<br><strong class="title">PySQLRClient</strong></td>
-<td class="extra"><a href=".">index</a><br><a href="file:/home/dmuse/src/fedora40x64/sqlrelay/src/api/python/PySQLRClient.py">/home/dmuse/src/fedora40x64/sqlrelay/src/api/python/PySQLRClient.py</a></td></tr></table>
+<td class="extra"><a href=".">index</a><br><a href="file:/home/dmuse/src/dev/sqlrelay/src/api/python/PySQLRClient.py">/home/dmuse/src/dev/sqlrelay/src/api/python/PySQLRClient.py</a></td></tr></table>
     <p><span class="code">#&nbsp;Copyright&nbsp;(c)&nbsp;2000&nbsp;Roman&nbsp;Milner<br>
 #&nbsp;See&nbsp;the&nbsp;file&nbsp;COPYING&nbsp;for&nbsp;more&nbsp;information</span></p>
 <p>
@@ -57,13 +57,13 @@ If&nbsp;"server"&nbsp;is&nbsp;a&nbsp;comma-separated&nbsp;list&nbsp;of&nbsp;host
 made&nbsp;to&nbsp;connect&nbsp;to&nbsp;each&nbsp;until&nbsp;the&nbsp;attempt&nbsp;succeeds,&nbsp;or&nbsp;there&nbsp;are&nbsp;no<br>
 more&nbsp;hosts&nbsp;left&nbsp;to&nbsp;try.<br>
 &nbsp;<br>
-If&nbsp;the&nbsp;"socket"&nbsp;parameter&nbsp;is&nbsp;neither&nbsp;NULL&nbsp;nor&nbsp;""&nbsp;then&nbsp;an<br>
+If&nbsp;the&nbsp;"socket"&nbsp;parameter&nbsp;is&nbsp;neither&nbsp;None&nbsp;nor&nbsp;""&nbsp;then&nbsp;an<br>
 attempt&nbsp;will&nbsp;be&nbsp;made&nbsp;to&nbsp;connect&nbsp;through&nbsp;it&nbsp;before<br>
-attempting&nbsp;to&nbsp;connect&nbsp;to&nbsp;"server"&nbsp;on&nbsp;"port".&nbsp;&nbsp;If&nbsp;it&nbsp;is&nbsp;NULL<br>
+attempting&nbsp;to&nbsp;connect&nbsp;to&nbsp;"server"&nbsp;on&nbsp;"port".&nbsp;&nbsp;If&nbsp;it&nbsp;is&nbsp;None<br>
 or&nbsp;""&nbsp;then&nbsp;no&nbsp;attempt&nbsp;will&nbsp;be&nbsp;made&nbsp;to&nbsp;connect&nbsp;through&nbsp;the<br>
 socket.</span></dd></dl>
 
-<dl><dt><a name="sqlrconnection-autoCommitOff"><strong>autoCommitOff</strong></a>(self)</dt><dd><span class="code">Instructs&nbsp;the&nbsp;database&nbsp;to&nbsp;wait&nbsp;for&nbsp;the&nbsp;<br>
+<dl><dt><a name="sqlrconnection-autoCommitOff"><strong>autoCommitOff</strong></a>(self)</dt><dd><span class="code">Instructs&nbsp;the&nbsp;database&nbsp;to&nbsp;wait&nbsp;for&nbsp;the<br>
 client&nbsp;to&nbsp;tell&nbsp;it&nbsp;when&nbsp;to&nbsp;commit.</span></dd></dl>
 
 <dl><dt><a name="sqlrconnection-autoCommitOn"><strong>autoCommitOn</strong></a>(self)</dt><dd><span class="code">Instructs&nbsp;the&nbsp;database&nbsp;to&nbsp;perform&nbsp;a&nbsp;commit<br>
@@ -87,9 +87,9 @@ by&nbsp;the&nbsp;database.&nbsp;&nbsp;For&nbsp;example:<br>
 &nbsp;&nbsp;:*&nbsp;-&nbsp;database&nbsp;uses&nbsp;a&nbsp;:&nbsp;followed&nbsp;by&nbsp;any&nbsp;characters&nbsp;to<br>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;represent&nbsp;a&nbsp;bind&nbsp;variable</span></dd></dl>
 
-<dl><dt><a name="sqlrconnection-clientVersion"><strong>clientVersion</strong></a>(self)</dt><dd><span class="code">Returns&nbsp;the&nbsp;version&nbsp;of&nbsp;the&nbsp;SQL&nbsp;Relay&nbsp;client&nbsp;version</span></dd></dl>
+<dl><dt><a name="sqlrconnection-clientVersion"><strong>clientVersion</strong></a>(self)</dt><dd><span class="code">Returns&nbsp;the&nbsp;version&nbsp;of&nbsp;the&nbsp;sqlrelay&nbsp;client&nbsp;software.</span></dd></dl>
 
-<dl><dt><a name="sqlrconnection-commit"><strong>commit</strong></a>(self)</dt><dd><span class="code">Issues&nbsp;a&nbsp;commit,&nbsp;returns&nbsp;true&nbsp;if&nbsp;the&nbsp;commit<br>
+<dl><dt><a name="sqlrconnection-commit"><strong>commit</strong></a>(self)</dt><dd><span class="code">Commits&nbsp;a&nbsp;transaction.&nbsp;&nbsp;Returns&nbsp;true&nbsp;if&nbsp;the&nbsp;commit<br>
 succeeded,&nbsp;false&nbsp;if&nbsp;it&nbsp;failed.</span></dd></dl>
 
 <dl><dt><a name="sqlrconnection-dbHostName"><strong>dbHostName</strong></a>(self)</dt><dd><span class="code">Returns&nbsp;the&nbsp;host&nbsp;name&nbsp;of&nbsp;the&nbsp;database</span></dd></dl>
@@ -98,20 +98,21 @@ succeeded,&nbsp;false&nbsp;if&nbsp;it&nbsp;failed.</span></dd></dl>
 
 <dl><dt><a name="sqlrconnection-dbVersion"><strong>dbVersion</strong></a>(self)</dt><dd><span class="code">Returns&nbsp;the&nbsp;version&nbsp;of&nbsp;the&nbsp;database</span></dd></dl>
 
-<dl><dt><a name="sqlrconnection-debugOff"><strong>debugOff</strong></a>(self)</dt><dd><span class="code">Turn&nbsp;verbose&nbsp;debugging&nbsp;off.</span></dd></dl>
+<dl><dt><a name="sqlrconnection-debugOff"><strong>debugOff</strong></a>(self)</dt><dd><span class="code">Turns&nbsp;debugging&nbsp;off.</span></dd></dl>
 
-<dl><dt><a name="sqlrconnection-debugOn"><strong>debugOn</strong></a>(self)</dt><dd><span class="code">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Turn&nbsp;verbose&nbsp;debugging&nbsp;on.<br>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Another&nbsp;way&nbsp;to&nbsp;do&nbsp;this&nbsp;is&nbsp;to&nbsp;start&nbsp;a&nbsp;query&nbsp;with&nbsp;"--&nbsp;debug<br>
+<dl><dt><a name="sqlrconnection-debugOn"><strong>debugOn</strong></a>(self)</dt><dd><span class="code">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Causes&nbsp;verbose&nbsp;debugging&nbsp;information&nbsp;to&nbsp;be<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;sent&nbsp;to&nbsp;standard&nbsp;output.&nbsp;&nbsp;Another&nbsp;way&nbsp;to&nbsp;do<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;this&nbsp;is&nbsp;to&nbsp;start&nbsp;a&nbsp;query&nbsp;with&nbsp;"--&nbsp;debug<br>
 ".<br>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Yet&nbsp;another&nbsp;way&nbsp;is&nbsp;to&nbsp;set&nbsp;the&nbsp;environment&nbsp;variable&nbsp;SQLR_CLIENT_DEBUG<br>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;to&nbsp;"ON"</span></dd></dl>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Yet&nbsp;another&nbsp;way&nbsp;is&nbsp;to&nbsp;set&nbsp;the&nbsp;environment<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;variable&nbsp;SQLR_CLIENT_DEBUG&nbsp;to&nbsp;"ON"</span></dd></dl>
 
 <dl><dt><a name="sqlrconnection-disableEncryption"><strong>disableEncryption</strong></a>(self)</dt><dd><span class="code">Disables&nbsp;encryption.</span></dd></dl>
 
 <dl><dt><a name="sqlrconnection-enableKerberos"><strong>enableKerberos</strong></a>(self, service, mech, flags)</dt><dd><span class="code">Enables&nbsp;Kerberos&nbsp;authentication&nbsp;and&nbsp;encryption.<br>
 &nbsp;<br>
 "service"&nbsp;indicates&nbsp;the&nbsp;Kerberos&nbsp;service&nbsp;name&nbsp;of&nbsp;the<br>
-SQL&nbsp;Relay&nbsp;server.&nbsp;&nbsp;If&nbsp;left&nbsp;empty&nbsp;or&nbsp;NULL&nbsp;then&nbsp;the&nbsp;service<br>
+SQL&nbsp;Relay&nbsp;server.&nbsp;&nbsp;If&nbsp;left&nbsp;empty&nbsp;or&nbsp;None&nbsp;then&nbsp;the&nbsp;service<br>
 name&nbsp;"sqlrelay"&nbsp;will&nbsp;be&nbsp;used.&nbsp;"sqlrelay"&nbsp;is&nbsp;the&nbsp;default<br>
 service&nbsp;name&nbsp;of&nbsp;the&nbsp;SQL&nbsp;Relay&nbsp;server.&nbsp;&nbsp;Note&nbsp;that&nbsp;on&nbsp;Windows<br>
 platforms&nbsp;the&nbsp;service&nbsp;name&nbsp;must&nbsp;be&nbsp;fully&nbsp;qualified,<br>
@@ -124,13 +125,13 @@ representation&nbsp;of&nbsp;the&nbsp;mechnaism's&nbsp;OID,&nbsp;such&nbsp;as:<br
 &nbsp;&nbsp;&nbsp;&nbsp;{&nbsp;1&nbsp;2&nbsp;840&nbsp;113554&nbsp;1&nbsp;2&nbsp;2&nbsp;}<br>
 On&nbsp;Windows&nbsp;platforms,&nbsp;this&nbsp;should&nbsp;be&nbsp;a&nbsp;string&nbsp;like:<br>
 &nbsp;&nbsp;&nbsp;&nbsp;Kerberos<br>
-If&nbsp;left&nbsp;empty&nbsp;or&nbsp;NULL&nbsp;then&nbsp;the&nbsp;default&nbsp;mechanism&nbsp;will&nbsp;be<br>
+If&nbsp;left&nbsp;empty&nbsp;or&nbsp;None&nbsp;then&nbsp;the&nbsp;default&nbsp;mechanism&nbsp;will&nbsp;be<br>
 used.&nbsp;&nbsp;Only&nbsp;set&nbsp;this&nbsp;if&nbsp;you&nbsp;know&nbsp;that&nbsp;you&nbsp;have&nbsp;a&nbsp;good<br>
 reason&nbsp;to.<br>
 &nbsp;<br>
 "flags"&nbsp;indicates&nbsp;what&nbsp;Kerberos&nbsp;flags&nbsp;to&nbsp;use.&nbsp;&nbsp;Multiple<br>
 flags&nbsp;may&nbsp;be&nbsp;specified,&nbsp;separated&nbsp;by&nbsp;commas.&nbsp;&nbsp;If&nbsp;left<br>
-empty&nbsp;or&nbsp;NULL&nbsp;then&nbsp;a&nbsp;defalt&nbsp;set&nbsp;of&nbsp;flags&nbsp;will&nbsp;be&nbsp;used.<br>
+empty&nbsp;or&nbsp;None&nbsp;then&nbsp;a&nbsp;defalt&nbsp;set&nbsp;of&nbsp;flags&nbsp;will&nbsp;be&nbsp;used.<br>
 Only&nbsp;set&nbsp;this&nbsp;if&nbsp;you&nbsp;know&nbsp;that&nbsp;you&nbsp;have&nbsp;a&nbsp;good&nbsp;reason&nbsp;to.<br>
 &nbsp;<br>
 Valid&nbsp;flags&nbsp;include:<br>
@@ -161,11 +162,11 @@ authorize&nbsp;clients&nbsp;by&nbsp;certificate.<br>
 If&nbsp;"cert"&nbsp;contains&nbsp;a&nbsp;password-protected&nbsp;private&nbsp;key,&nbsp;then<br>
 "password"&nbsp;may&nbsp;be&nbsp;supplied&nbsp;to&nbsp;access&nbsp;it.&nbsp;&nbsp;If&nbsp;the&nbsp;private<br>
 key&nbsp;is&nbsp;not&nbsp;password-protected,&nbsp;then&nbsp;this&nbsp;argument&nbsp;is<br>
-ignored,&nbsp;and&nbsp;may&nbsp;be&nbsp;left&nbsp;empty&nbsp;or&nbsp;NULL.<br>
+ignored,&nbsp;and&nbsp;may&nbsp;be&nbsp;left&nbsp;empty&nbsp;or&nbsp;None.<br>
 &nbsp;<br>
 "ciphers"&nbsp;is&nbsp;a&nbsp;list&nbsp;of&nbsp;ciphers&nbsp;to&nbsp;allow.&nbsp;&nbsp;Ciphers&nbsp;may&nbsp;be<br>
 separated&nbsp;by&nbsp;spaces,&nbsp;commas,&nbsp;or&nbsp;colons.&nbsp;&nbsp;If&nbsp;"ciphers"&nbsp;is<br>
-empty&nbsp;or&nbsp;NULL&nbsp;then&nbsp;a&nbsp;default&nbsp;set&nbsp;is&nbsp;used.&nbsp;&nbsp;Only&nbsp;set&nbsp;this&nbsp;if<br>
+empty&nbsp;or&nbsp;None&nbsp;then&nbsp;a&nbsp;default&nbsp;set&nbsp;is&nbsp;used.&nbsp;&nbsp;Only&nbsp;set&nbsp;this&nbsp;if<br>
 you&nbsp;know&nbsp;that&nbsp;you&nbsp;have&nbsp;a&nbsp;good&nbsp;reason&nbsp;to.<br>
 &nbsp;<br>
 For&nbsp;a&nbsp;list&nbsp;of&nbsp;valid&nbsp;ciphers&nbsp;on&nbsp;Linux/Unix&nbsp;platforms,&nbsp;see:<br>
@@ -212,17 +213,22 @@ Note&nbsp;that&nbsp;the&nbsp;supported&nbsp;"cert"&nbsp;and&nbsp;"ca"&nbsp;file&
 vary&nbsp;between&nbsp;platforms.&nbsp;&nbsp;A&nbsp;variety&nbsp;of&nbsp;file&nbsp;formats&nbsp;are<br>
 generally&nbsp;supported&nbsp;on&nbsp;Linux/Unix&nbsp;platfoms&nbsp;(.pem,&nbsp;.pfx,<br>
 etc.)&nbsp;but&nbsp;only&nbsp;the&nbsp;.pfx&nbsp;format&nbsp;is&nbsp;currently&nbsp;supported&nbsp;on<br>
-Windows.&nbsp;*/</span></dd></dl>
+Windows.</span></dd></dl>
 
-<dl><dt><a name="sqlrconnection-endSession"><strong>endSession</strong></a>(self)</dt><dd><span class="code">Ends&nbsp;the&nbsp;current&nbsp;session.</span></dd></dl>
+<dl><dt><a name="sqlrconnection-endSession"><strong>endSession</strong></a>(self)</dt><dd><span class="code">Ends&nbsp;the&nbsp;session.</span></dd></dl>
 
-<dl><dt><a name="sqlrconnection-errorMessage"><strong>errorMessage</strong></a>(self)</dt><dd><span class="code">If&nbsp;the&nbsp;operation&nbsp;failed,&nbsp;the&nbsp;error&nbsp;message&nbsp;will&nbsp;be&nbsp;returned<br>
-from&nbsp;this&nbsp;method.&nbsp;&nbsp;Otherwise,&nbsp;it&nbsp;returns&nbsp;None.</span></dd></dl>
+<dl><dt><a name="sqlrconnection-errorMessage"><strong>errorMessage</strong></a>(self)</dt><dd><span class="code">If&nbsp;an&nbsp;operation&nbsp;failed&nbsp;and&nbsp;generated&nbsp;an<br>
+error,&nbsp;the&nbsp;error&nbsp;message&nbsp;is&nbsp;available&nbsp;here.<br>
+If&nbsp;there&nbsp;is&nbsp;no&nbsp;error&nbsp;then&nbsp;this&nbsp;method<br>
+returns&nbsp;None.</span></dd></dl>
 
 <dl><dt><a name="sqlrconnection-errorNumber"><strong>errorNumber</strong></a>(self)</dt><dd><span class="code">If&nbsp;an&nbsp;operation&nbsp;failed&nbsp;and&nbsp;generated&nbsp;an<br>
 error,&nbsp;the&nbsp;error&nbsp;number&nbsp;is&nbsp;available&nbsp;here.<br>
 If&nbsp;there&nbsp;is&nbsp;no&nbsp;error&nbsp;then&nbsp;this&nbsp;method&nbsp;<br>
 returns&nbsp;0.</span></dd></dl>
+
+<dl><dt><a name="sqlrconnection-getAutoCommit"><strong>getAutoCommit</strong></a>(self)</dt><dd><span class="code">Returns&nbsp;true&nbsp;if&nbsp;auto-commit&nbsp;is&nbsp;currently&nbsp;on,<br>
+false&nbsp;otherwise.</span></dd></dl>
 
 <dl><dt><a name="sqlrconnection-getBindVariableDelimiterAtSignSupported"><strong>getBindVariableDelimiterAtSignSupported</strong></a>(self)</dt><dd><span class="code">Returns&nbsp;true&nbsp;if&nbsp;at-signs&nbsp;(@)&nbsp;are&nbsp;considered&nbsp;to&nbsp;be<br>
 valid&nbsp;bind&nbsp;variable&nbsp;delimiters.</span></dd></dl>
@@ -238,25 +244,350 @@ valid&nbsp;bind&nbsp;variable&nbsp;delimiters.</span></dd></dl>
 
 <dl><dt><a name="sqlrconnection-getClientInfo"><strong>getClientInfo</strong></a>(self)</dt><dd><span class="code">Returns&nbsp;the&nbsp;string&nbsp;that&nbsp;was&nbsp;set&nbsp;by&nbsp;<a href="#sqlrconnection-setClientInfo">setClientInfo</a>().</span></dd></dl>
 
-<dl><dt><a name="sqlrconnection-getConnectionPort"><strong>getConnectionPort</strong></a>(self)</dt><dd><span class="code">Returns&nbsp;the&nbsp;inet&nbsp;port&nbsp;that&nbsp;the&nbsp;connection&nbsp;is&nbsp;<br>
-communicating&nbsp;over.&nbsp;This&nbsp;parameter&nbsp;may&nbsp;be&nbsp;<br>
+<dl><dt><a name="sqlrconnection-getConnectTimeoutMicroseconds"><strong>getConnectTimeoutMicroseconds</strong></a>(self)</dt><dd><span class="code">Gets&nbsp;the&nbsp;server&nbsp;connect&nbsp;timeout&nbsp;in&nbsp;microseconds.</span></dd></dl>
+
+<dl><dt><a name="sqlrconnection-getConnectTimeoutSeconds"><strong>getConnectTimeoutSeconds</strong></a>(self)</dt><dd><span class="code">Gets&nbsp;the&nbsp;server&nbsp;connect&nbsp;timeout&nbsp;in&nbsp;seconds.</span></dd></dl>
+
+<dl><dt><a name="sqlrconnection-getConnectionPort"><strong>getConnectionPort</strong></a>(self)</dt><dd><span class="code">Returns&nbsp;the&nbsp;inet&nbsp;port&nbsp;that&nbsp;the&nbsp;connection&nbsp;is<br>
+communicating&nbsp;over.&nbsp;This&nbsp;parameter&nbsp;may&nbsp;be<br>
 passed&nbsp;to&nbsp;another&nbsp;connection&nbsp;for&nbsp;use&nbsp;in<br>
 the&nbsp;<a href="#sqlrconnection-resumeSession">resumeSession</a>()&nbsp;method.<br>
-Note:&nbsp;the&nbsp;value&nbsp;returned&nbsp;by&nbsp;this&nbsp;method&nbsp;is<br>
-only&nbsp;valid&nbsp;after&nbsp;a&nbsp;call&nbsp;to&nbsp;<a href="#sqlrconnection-suspendSession">suspendSession</a>().</span></dd></dl>
+Note:&nbsp;The&nbsp;value&nbsp;this&nbsp;method&nbsp;returns&nbsp;is&nbsp;only<br>
+valid&nbsp;after&nbsp;a&nbsp;call&nbsp;to&nbsp;<a href="#sqlrconnection-suspendSession">suspendSession</a>().</span></dd></dl>
 
-<dl><dt><a name="sqlrconnection-getConnectionSocket"><strong>getConnectionSocket</strong></a>(self)</dt><dd><span class="code">Returns&nbsp;the&nbsp;unix&nbsp;socket&nbsp;that&nbsp;the&nbsp;connection&nbsp;is&nbsp;<br>
-communicating&nbsp;over.&nbsp;This&nbsp;parameter&nbsp;may&nbsp;be&nbsp;<br>
+<dl><dt><a name="sqlrconnection-getConnectionSocket"><strong>getConnectionSocket</strong></a>(self)</dt><dd><span class="code">Returns&nbsp;the&nbsp;unix&nbsp;socket&nbsp;that&nbsp;the&nbsp;connection<br>
+is&nbsp;communicating&nbsp;over.&nbsp;This&nbsp;parameter&nbsp;may&nbsp;be<br>
 passed&nbsp;to&nbsp;another&nbsp;connection&nbsp;for&nbsp;use&nbsp;in<br>
 the&nbsp;<a href="#sqlrconnection-resumeSession">resumeSession</a>()&nbsp;method.<br>
-Note:&nbsp;the&nbsp;value&nbsp;returned&nbsp;by&nbsp;this&nbsp;method&nbsp;is<br>
-only&nbsp;valid&nbsp;after&nbsp;a&nbsp;call&nbsp;to&nbsp;<a href="#sqlrconnection-suspendSession">suspendSession</a>().</span></dd></dl>
+Note:&nbsp;The&nbsp;value&nbsp;this&nbsp;method&nbsp;returns&nbsp;is&nbsp;only<br>
+valid&nbsp;after&nbsp;a&nbsp;call&nbsp;to&nbsp;<a href="#sqlrconnection-suspendSession">suspendSession</a>().</span></dd></dl>
 
-<dl><dt><a name="sqlrconnection-getCurrentDatabase"><strong>getCurrentDatabase</strong></a>(self)</dt><dd><span class="code">Returns&nbsp;the&nbsp;database/schema&nbsp;that&nbsp;is&nbsp;currently&nbsp;in&nbsp;use.</span></dd></dl>
+<dl><dt><a name="sqlrconnection-getCurrentCatalog"><strong>getCurrentCatalog</strong></a>(self)</dt><dd><span class="code">Returns&nbsp;the&nbsp;catalog&nbsp;that&nbsp;is&nbsp;currently&nbsp;in&nbsp;use.</span></dd></dl>
 
-<dl><dt><a name="sqlrconnection-getDebug"><strong>getDebug</strong></a>(self)</dt><dd><span class="code">Returns&nbsp;1&nbsp;if&nbsp;debugging&nbsp;is&nbsp;turned&nbsp;on&nbsp;and&nbsp;0&nbsp;if&nbsp;debugging&nbsp;is&nbsp;turned&nbsp;off.</span></dd></dl>
+<dl><dt><a name="sqlrconnection-getCurrentDatabase"><strong>getCurrentDatabase</strong></a>(self)</dt><dd><span class="code">Returns&nbsp;the&nbsp;database&nbsp;that&nbsp;is&nbsp;currently&nbsp;in&nbsp;use.<br>
+&nbsp;<br>
+May&nbsp;return&nbsp;the&nbsp;current&nbsp;catalog&nbsp;or&nbsp;schema,&nbsp;depending&nbsp;on<br>
+whether&nbsp;the&nbsp;backend&nbsp;database&nbsp;equates&nbsp;"database"&nbsp;with<br>
+catalog&nbsp;or&nbsp;schema.<br>
+&nbsp;<br>
+See&nbsp;<a href="#sqlrconnection-getDatabaseIsSchema">getDatabaseIsSchema</a>().</span></dd></dl>
+
+<dl><dt><a name="sqlrconnection-getCurrentSchema"><strong>getCurrentSchema</strong></a>(self)</dt><dd><span class="code">Returns&nbsp;the&nbsp;schema&nbsp;that&nbsp;is&nbsp;currently&nbsp;in&nbsp;use.</span></dd></dl>
+
+<dl><dt><a name="sqlrconnection-getCurrentUser"><strong>getCurrentUser</strong></a>(self)</dt><dd><span class="code">Returns&nbsp;the&nbsp;user&nbsp;that&nbsp;sqlrelay&nbsp;is&nbsp;currently&nbsp;logged&nbsp;in&nbsp;to<br>
+the&nbsp;database&nbsp;as,&nbsp;or&nbsp;None&nbsp;if&nbsp;no&nbsp;user&nbsp;could&nbsp;be&nbsp;determined<br>
+or&nbsp;if&nbsp;an&nbsp;error&nbsp;occurred.</span></dd></dl>
+
+<dl><dt><a name="sqlrconnection-getDatabaseFeature"><strong>getDatabaseFeature</strong></a>(self, feature)</dt><dd><span class="code">Returns&nbsp;the&nbsp;value&nbsp;of&nbsp;the&nbsp;specified&nbsp;database&nbsp;"feature".<br>
+&nbsp;<br>
+Valid&nbsp;features&nbsp;include:<br>
+*&nbsp;aggregate_functions<br>
+&nbsp;*&nbsp;list&nbsp;-&nbsp;ALL,AVG,COUNT,DISTINCT,MAX,MIN,SUM<br>
+*&nbsp;all_procedures_are_callable<br>
+&nbsp;*&nbsp;true/false<br>
+*&nbsp;all_tables_are_selectable<br>
+&nbsp;*&nbsp;true/false<br>
+*&nbsp;alter_domain_clauses<br>
+&nbsp;*&nbsp;list&nbsp;-&nbsp;ADD_DOMAIN_CONSTRAINT,ADD_DOMAIN_DEFAULT,...<br>
+*&nbsp;alter_table_operations<br>
+&nbsp;*&nbsp;list&nbsp;-&nbsp;ADD_COLUMN,DROP_COLUMN<br>
+*&nbsp;ansi92_sql_levels<br>
+&nbsp;*&nbsp;list&nbsp;-&nbsp;ENTRY_LEVEL,FULL,INTERMEDIATE<br>
+*&nbsp;auto_commit_failure_closes_all_result_sets<br>
+&nbsp;*&nbsp;true/false<br>
+*&nbsp;batch_operations<br>
+&nbsp;*&nbsp;list&nbsp;-&nbsp;SELECT_EXPLICIT,ROW_COUNT_EXPLICIT,SELECT_PROC,ROW_COUNT_PROC<br>
+*&nbsp;batch_row_counts<br>
+&nbsp;*&nbsp;list&nbsp;-&nbsp;PROCEDURES,EXPLICIT,ROLLED_UP<br>
+*&nbsp;catalog_separator<br>
+&nbsp;*&nbsp;string<br>
+*&nbsp;catalog_term<br>
+&nbsp;*&nbsp;string<br>
+*&nbsp;catalog_usage<br>
+&nbsp;*&nbsp;list&nbsp;-&nbsp;DATA_MANIPULATION,INDEX_DEFINITIONS,...<br>
+*&nbsp;collation_seq<br>
+&nbsp;*&nbsp;string<br>
+*&nbsp;create_assertion_clauses<br>
+&nbsp;*&nbsp;list&nbsp;-&nbsp;CREATE_ASSERTION,CONSTRAINT_INITIALLY_DEFERRED,...<br>
+*&nbsp;create_character_set_clauses<br>
+&nbsp;*&nbsp;list&nbsp;-&nbsp;CREATE_CHARACTER_SET,COLLATE_CLAUSE,...<br>
+*&nbsp;create_collation_clauses<br>
+&nbsp;*&nbsp;list&nbsp;-&nbsp;CREATE_COLLATION<br>
+*&nbsp;create_domain_clauses<br>
+&nbsp;*&nbsp;list&nbsp;-&nbsp;CREATE_DOMAIN,CONSTRAINT_NAME_DEFINITION,...<br>
+*&nbsp;create_schema_clauses<br>
+&nbsp;*&nbsp;list&nbsp;-&nbsp;CREATE_SCHEMA,AUTHORIZATION,DEFAULT_CHARACTER_SET<br>
+*&nbsp;create_table_clauses<br>
+&nbsp;*&nbsp;list&nbsp;-&nbsp;CREATE_TABLE,TABLE_CONSTRAINT,...<br>
+*&nbsp;create_translation_clauses<br>
+&nbsp;*&nbsp;list&nbsp;-&nbsp;CREATE_TRANSLATION<br>
+*&nbsp;create_view_clauses<br>
+&nbsp;*&nbsp;list&nbsp;-&nbsp;CREATE_VIEW,CHECK_OPTION,CASCADED,LOCAL<br>
+*&nbsp;data_definition_transaction_behavior<br>
+&nbsp;*&nbsp;list&nbsp;-&nbsp;CAUSES_COMMIT,IGNORED_IN_TRANSACTIONS<br>
+*&nbsp;ddl_index_operations<br>
+&nbsp;*&nbsp;list&nbsp;-&nbsp;CREATE_INDEX,DROP_INDEX<br>
+&nbsp;*&nbsp;string<br>
+*&nbsp;default_result_set_holdability<br>
+&nbsp;*&nbsp;string<br>
+*&nbsp;deletes_are_detected<br>
+&nbsp;*&nbsp;list&nbsp;-&nbsp;FORWARD_ONLY,SCROLL_INSENSITIVE,SCROLL_SENSITIVE<br>
+*&nbsp;does_max_row_size_include_blobs<br>
+&nbsp;*&nbsp;true/false<br>
+*&nbsp;drop_assertion_clauses<br>
+&nbsp;*&nbsp;list&nbsp;-&nbsp;DROP_ASSERTION<br>
+*&nbsp;drop_character_set_clauses<br>
+&nbsp;*&nbsp;list&nbsp;-&nbsp;DROP_CHARACTER_SET<br>
+*&nbsp;drop_collation_clauses<br>
+&nbsp;*&nbsp;list&nbsp;-&nbsp;DROP_COLLATION<br>
+*&nbsp;drop_domain_clauses<br>
+&nbsp;*&nbsp;list&nbsp;-&nbsp;DROP_DOMAIN,CASCADE,RESTRICT<br>
+*&nbsp;drop_schema_clauses<br>
+&nbsp;*&nbsp;list&nbsp;-&nbsp;DROP_SCHEMA,CASCADE,RESTRICT<br>
+*&nbsp;drop_table_clauses<br>
+&nbsp;*&nbsp;list&nbsp;-&nbsp;DROP_TABLE,CASCADE,RESTRICT<br>
+*&nbsp;drop_translation_clauses<br>
+&nbsp;*&nbsp;list&nbsp;-&nbsp;DROP_TRANSLATION<br>
+*&nbsp;drop_view_clauses<br>
+&nbsp;*&nbsp;list&nbsp;-&nbsp;DROP_VIEW,CASCADE,RESTRICT<br>
+*&nbsp;extra_name_characters<br>
+&nbsp;*&nbsp;string<br>
+*&nbsp;foreign_key_delete_rules<br>
+&nbsp;*&nbsp;list&nbsp;-&nbsp;CASCADE,NO_ACTION,SET_DEFAULT,SET_NULL<br>
+*&nbsp;foreign_key_update_rules<br>
+&nbsp;*&nbsp;list&nbsp;-&nbsp;CASCADE,NO_ACTION,SET_DEFAULT,SET_NULL<br>
+*&nbsp;forward_only_cursor_attributes<br>
+&nbsp;*&nbsp;list&nbsp;-&nbsp;NEXT,ABSOLUTE,RELATIVE,BOOKMARK,...<br>
+*&nbsp;generated_key_always_returned<br>
+&nbsp;*&nbsp;true/false<br>
+*&nbsp;grant_clauses<br>
+&nbsp;*&nbsp;list&nbsp;-&nbsp;DELETE_TABLE,INSERT_COLUMN,INSERT_TABLE,...<br>
+*&nbsp;group_by_clauses<br>
+&nbsp;*&nbsp;list&nbsp;-&nbsp;BASIC,BEYOND_SELECT,UNRELATED<br>
+*&nbsp;identifier_case_storage<br>
+&nbsp;*&nbsp;list&nbsp;-&nbsp;LOWER,MIXED,SENSITIVE,UPPER<br>
+*&nbsp;identifier_quote_string<br>
+&nbsp;*&nbsp;string<br>
+*&nbsp;index_keywords<br>
+&nbsp;*&nbsp;list&nbsp;-&nbsp;ASC,DESC<br>
+*&nbsp;info_schema_views<br>
+&nbsp;*&nbsp;list&nbsp;-&nbsp;ASSERTIONS,CHARACTER_SETS,CHECK_CONSTRAINTS,...<br>
+*&nbsp;insert_operations<br>
+&nbsp;*&nbsp;list&nbsp;-&nbsp;INSERT_LITERALS,INSERT_SEARCHED,SELECT_INTO<br>
+*&nbsp;inserts_are_detected<br>
+&nbsp;*&nbsp;list&nbsp;-&nbsp;FORWARD_ONLY,SCROLL_INSENSITIVE,SCROLL_SENSITIVE<br>
+*&nbsp;is_catalog_at_start<br>
+&nbsp;*&nbsp;true/false<br>
+*&nbsp;isolation_levels<br>
+&nbsp;*&nbsp;list&nbsp;-&nbsp;READ_UNCOMMITTED,READ_COMMITTED,...<br>
+*&nbsp;local_file_usage<br>
+&nbsp;*&nbsp;list&nbsp;-&nbsp;LOCAL_FILE_PER_TABLE,LOCAL_FILES<br>
+*&nbsp;locators_update_copy<br>
+&nbsp;*&nbsp;true/false<br>
+*&nbsp;lock_types<br>
+&nbsp;*&nbsp;list&nbsp;-&nbsp;NO_CHANGE,EXCLUSIVE,UNLOCK<br>
+*&nbsp;max_binary_literal_length<br>
+&nbsp;*&nbsp;number<br>
+*&nbsp;max_catalog_name_length<br>
+&nbsp;*&nbsp;number<br>
+*&nbsp;max_char_literal_length<br>
+&nbsp;*&nbsp;number<br>
+*&nbsp;max_column_name_length<br>
+&nbsp;*&nbsp;number<br>
+*&nbsp;max_columns_in_group_by<br>
+&nbsp;*&nbsp;number<br>
+*&nbsp;max_columns_in_index<br>
+&nbsp;*&nbsp;number<br>
+*&nbsp;max_columns_in_order_by<br>
+&nbsp;*&nbsp;number<br>
+*&nbsp;max_columns_in_select<br>
+&nbsp;*&nbsp;number<br>
+*&nbsp;max_columns_in_table<br>
+&nbsp;*&nbsp;number<br>
+*&nbsp;max_connections<br>
+&nbsp;*&nbsp;number<br>
+*&nbsp;max_cursor_name_length<br>
+&nbsp;*&nbsp;number<br>
+*&nbsp;max_identifier_length<br>
+&nbsp;*&nbsp;number<br>
+*&nbsp;max_index_length<br>
+&nbsp;*&nbsp;number<br>
+*&nbsp;max_procedure_name_length<br>
+&nbsp;*&nbsp;number<br>
+*&nbsp;max_row_size<br>
+&nbsp;*&nbsp;number<br>
+*&nbsp;max_schema_name_length<br>
+&nbsp;*&nbsp;number<br>
+*&nbsp;max_statement_length<br>
+&nbsp;*&nbsp;number<br>
+*&nbsp;max_statements<br>
+&nbsp;*&nbsp;number<br>
+*&nbsp;max_table_name_length<br>
+&nbsp;*&nbsp;number<br>
+*&nbsp;max_tables_in_select<br>
+&nbsp;*&nbsp;number<br>
+*&nbsp;max_user_name_length<br>
+&nbsp;*&nbsp;number<br>
+*&nbsp;need_long_data_length<br>
+&nbsp;*&nbsp;true/false<br>
+*&nbsp;null_plus_non_null_is_null<br>
+&nbsp;*&nbsp;true/false<br>
+*&nbsp;null_sort_order<br>
+&nbsp;*&nbsp;list&nbsp;-&nbsp;AT_END,AT_START,HIGH,LOW<br>
+*&nbsp;numeric_functions<br>
+&nbsp;*&nbsp;list&nbsp;-&nbsp;ABS,ACOS,ASIN,ATAN,ATAN2,CEILING,COS,COT,...<br>
+*&nbsp;open_cursors_across<br>
+&nbsp;*&nbsp;list&nbsp;-&nbsp;COMMIT,ROLLBACK<br>
+*&nbsp;open_statements_across<br>
+&nbsp;*&nbsp;list&nbsp;-&nbsp;COMMIT,ROLLBACK<br>
+*&nbsp;others_deletes_are_visible<br>
+&nbsp;*&nbsp;list&nbsp;-&nbsp;FORWARD_ONLY,SCROLL_INSENSITIVE,SCROLL_SENSITIVE<br>
+*&nbsp;others_inserts_are_visible<br>
+&nbsp;*&nbsp;list&nbsp;-&nbsp;FORWARD_ONLY,SCROLL_INSENSITIVE,SCROLL_SENSITIVE<br>
+*&nbsp;others_updates_are_visible<br>
+&nbsp;*&nbsp;list&nbsp;-&nbsp;FORWARD_ONLY,SCROLL_INSENSITIVE,SCROLL_SENSITIVE<br>
+*&nbsp;outer_joins<br>
+&nbsp;*&nbsp;list&nbsp;-&nbsp;BASIC,FULL,LIMITED<br>
+*&nbsp;own_deletes_are_visible<br>
+&nbsp;*&nbsp;list&nbsp;-&nbsp;FORWARD_ONLY,SCROLL_INSENSITIVE,SCROLL_SENSITIVE<br>
+*&nbsp;own_inserts_are_visible<br>
+&nbsp;*&nbsp;list&nbsp;-&nbsp;FORWARD_ONLY,SCROLL_INSENSITIVE,SCROLL_SENSITIVE<br>
+*&nbsp;own_updates_are_visible<br>
+&nbsp;*&nbsp;list&nbsp;-&nbsp;FORWARD_ONLY,SCROLL_INSENSITIVE,SCROLL_SENSITIVE<br>
+*&nbsp;predicates<br>
+&nbsp;*&nbsp;list&nbsp;-&nbsp;BETWEEN,COMPARISON,EXISTS,IN,ISNOTNULL,ISNULL,...<br>
+*&nbsp;procedure_term<br>
+&nbsp;*&nbsp;string<br>
+*&nbsp;quoted_identifier_case_storage<br>
+&nbsp;*&nbsp;list&nbsp;-&nbsp;LOWER,MIXED,SENSITIVE,UPPER<br>
+*&nbsp;relational_join_operators<br>
+&nbsp;*&nbsp;list&nbsp;-&nbsp;CORRESPONDING_CLAUSE,CROSS_JOIN,EXCEPT_JOIN,...<br>
+*&nbsp;result_set_concurrencies<br>
+&nbsp;*&nbsp;list&nbsp;-&nbsp;FORWARD_ONLY/READ_ONLY,FORWARD_ONLY/UPDATABLE,...<br>
+*&nbsp;result_set_holdabilities<br>
+&nbsp;*&nbsp;list&nbsp;-&nbsp;CLOSE_CURSORS_AT_COMMIT,HOLD_CURSORS_OVER_COMMIT<br>
+*&nbsp;result_set_types<br>
+&nbsp;*&nbsp;list&nbsp;-&nbsp;FORWARD_ONLY,SCROLL_INSENSITIVE,SCROLL_SENSITIVE<br>
+*&nbsp;revoke_clauses<br>
+&nbsp;*&nbsp;list&nbsp;-&nbsp;CASCADE,DELETE_TABLE,GRANT_OPTION_FOR,...<br>
+*&nbsp;row_id_lifetime<br>
+&nbsp;*&nbsp;string<br>
+*&nbsp;row_value_constructor_expressions<br>
+&nbsp;*&nbsp;list&nbsp;-&nbsp;VALUE_EXPRESSION,NULL,DEFAULT,ROW_SUBQUERY<br>
+*&nbsp;schema_term<br>
+&nbsp;*&nbsp;string<br>
+*&nbsp;schema_usage<br>
+&nbsp;*&nbsp;list&nbsp;-&nbsp;DATA_MANIPULATION,INDEX_DEFINITIONS,...<br>
+*&nbsp;scroll_concurrencies<br>
+&nbsp;*&nbsp;list&nbsp;-&nbsp;READ_ONLY,LOCK,OPT_ROWVER,OPT_VALUES<br>
+*&nbsp;search_string_escape<br>
+&nbsp;*&nbsp;string<br>
+*&nbsp;sql_grammar_levels<br>
+&nbsp;*&nbsp;list&nbsp;-&nbsp;CORE,EXTENDED,MINIMUM<br>
+*&nbsp;sql_keywords<br>
+&nbsp;*&nbsp;list&nbsp;-&nbsp;ACCESS,ADD,ALTER,AUDIT,CLUSTER,COLUMN,COMMENT,...<br>
+*&nbsp;sql_state_type<br>
+&nbsp;*&nbsp;number<br>
+*&nbsp;static_cursor_attributes<br>
+&nbsp;*&nbsp;list&nbsp;-&nbsp;NEXT,ABSOLUTE,RELATIVE,BOOKMARK,...<br>
+*&nbsp;stored_programs<br>
+&nbsp;*&nbsp;list&nbsp;-&nbsp;FUNCTIONS,PROCEDURES<br>
+*&nbsp;string_functions<br>
+&nbsp;*&nbsp;list&nbsp;-&nbsp;CONCAT,INSERT,LEFT,LTRIM,LENGTH,LOCATE,LCASE,...<br>
+*&nbsp;subquery_usage<br>
+&nbsp;*&nbsp;list&nbsp;-&nbsp;COMPARISONS,EXISTS,INS,QUANTIFIEDS<br>
+*&nbsp;supports_batch_updates<br>
+&nbsp;*&nbsp;true/false<br>
+*&nbsp;supports_column_aliasing<br>
+&nbsp;*&nbsp;true/false<br>
+*&nbsp;supports_convert<br>
+&nbsp;*&nbsp;true/false<br>
+*&nbsp;supports_correlated_subqueries<br>
+&nbsp;*&nbsp;true/false<br>
+*&nbsp;supports_describe_parameter<br>
+&nbsp;*&nbsp;true/false<br>
+*&nbsp;supports_expressions_in_order_by<br>
+&nbsp;*&nbsp;true/false<br>
+*&nbsp;supports_get_generated_keys<br>
+&nbsp;*&nbsp;true/false<br>
+*&nbsp;supports_integrity_enhancement_facility<br>
+&nbsp;*&nbsp;true/false<br>
+*&nbsp;supports_like_escape_clause<br>
+&nbsp;*&nbsp;true/false<br>
+*&nbsp;supports_multiple_result_sets<br>
+&nbsp;*&nbsp;true/false<br>
+*&nbsp;supports_multiple_transactions<br>
+&nbsp;*&nbsp;true/false<br>
+*&nbsp;supports_named_parameters<br>
+&nbsp;*&nbsp;true/false<br>
+*&nbsp;supports_non_nullable_columns<br>
+&nbsp;*&nbsp;true/false<br>
+*&nbsp;supports_order_by_unrelated<br>
+&nbsp;*&nbsp;true/false<br>
+*&nbsp;supports_savepoints<br>
+&nbsp;*&nbsp;true/false<br>
+*&nbsp;supports_select_for_update<br>
+&nbsp;*&nbsp;true/false<br>
+*&nbsp;supports_transactions<br>
+&nbsp;*&nbsp;true/false<br>
+*&nbsp;system_functions<br>
+&nbsp;*&nbsp;list&nbsp;-&nbsp;USER,DBNAME,IFNULL<br>
+*&nbsp;table_correlation_names<br>
+&nbsp;*&nbsp;list&nbsp;-&nbsp;BASIC,DIFFERENT<br>
+*&nbsp;table_term<br>
+&nbsp;*&nbsp;string<br>
+*&nbsp;time_date_add_intervals<br>
+&nbsp;*&nbsp;list&nbsp;-&nbsp;FRAC_SECOND,SECOND,MINUTE,HOUR,DAY,WEEK,MONTH,...<br>
+*&nbsp;time_date_diff_intervals<br>
+&nbsp;*&nbsp;list&nbsp;-&nbsp;FRAC_SECOND,SECOND,MINUTE,HOUR,DAY,WEEK,MONTH,...<br>
+*&nbsp;time_date_functions<br>
+&nbsp;*&nbsp;list&nbsp;-&nbsp;NOW,CURDATE,DAYOFMONTH,DAYOFWEEK,DAYOFYEAR,...<br>
+*&nbsp;time_date_literals<br>
+&nbsp;*&nbsp;list&nbsp;-&nbsp;DATE,TIME,TIMESTAMP,INTERVAL_YEAR,...<br>
+*&nbsp;transaction_ddl_dml<br>
+&nbsp;*&nbsp;list&nbsp;-&nbsp;DDL_AND_DML,DML_ONLY<br>
+*&nbsp;union_clauses<br>
+&nbsp;*&nbsp;list&nbsp;-&nbsp;UNION,UNION_ALL<br>
+*&nbsp;updates_are_detected<br>
+&nbsp;*&nbsp;list&nbsp;-&nbsp;FORWARD_ONLY,SCROLL_INSENSITIVE,SCROLL_SENSITIVE<br>
+*&nbsp;value_expressions<br>
+&nbsp;*&nbsp;list&nbsp;-&nbsp;CASE,CAST,COALESCE,NULLIF<br>
+*&nbsp;where_current_of_operations<br>
+&nbsp;*&nbsp;list&nbsp;-&nbsp;DELETE,UPDATE<br>
+&nbsp;<br>
+Returns&nbsp;the&nbsp;value&nbsp;of&nbsp;the&nbsp;feature&nbsp;as&nbsp;a&nbsp;string,&nbsp;or&nbsp;None&nbsp;if<br>
+an&nbsp;error&nbsp;occurred&nbsp;or&nbsp;an&nbsp;invalid&nbsp;feature&nbsp;was&nbsp;requested.</span></dd></dl>
+
+<dl><dt><a name="sqlrconnection-getDatabaseIsSchema"><strong>getDatabaseIsSchema</strong></a>(self)</dt><dd><span class="code">Returns&nbsp;true&nbsp;if&nbsp;the&nbsp;backend&nbsp;database&nbsp;equates&nbsp;"database"<br>
+with&nbsp;"schema",&nbsp;and&nbsp;false&nbsp;if&nbsp;it&nbsp;equates&nbsp;"database"&nbsp;with<br>
+"catalog".</span></dd></dl>
+
+<dl><dt><a name="sqlrconnection-getDebug"><strong>getDebug</strong></a>(self)</dt><dd><span class="code">Returns&nbsp;false&nbsp;if&nbsp;debugging&nbsp;is&nbsp;off&nbsp;and&nbsp;true<br>
+if&nbsp;debugging&nbsp;is&nbsp;on.</span></dd></dl>
+
+<dl><dt><a name="sqlrconnection-getDefaultIsolationLevel"><strong>getDefaultIsolationLevel</strong></a>(self)</dt><dd><span class="code">Returns&nbsp;the&nbsp;database-specific&nbsp;default&nbsp;isolation&nbsp;level,<br>
+or&nbsp;None&nbsp;if&nbsp;an&nbsp;error&nbsp;occurred.</span></dd></dl>
+
+<dl><dt><a name="sqlrconnection-getDefaultTransactionModel"><strong>getDefaultTransactionModel</strong></a>(self)</dt><dd><span class="code">Returns&nbsp;the&nbsp;database's&nbsp;native&nbsp;transaction&nbsp;model.&nbsp;&nbsp;See<br>
+setTranscationModel()&nbsp;for&nbsp;a&nbsp;list&nbsp;of&nbsp;potential&nbsp;return<br>
+values.&nbsp;&nbsp;Returns&nbsp;None&nbsp;if&nbsp;an&nbsp;error&nbsp;occurred.</span></dd></dl>
+
+<dl><dt><a name="sqlrconnection-getInTransaction"><strong>getInTransaction</strong></a>(self)</dt><dd><span class="code">Returns&nbsp;true&nbsp;if&nbsp;the&nbsp;session&nbsp;is&nbsp;currently&nbsp;inside&nbsp;a<br>
+transaction,&nbsp;false&nbsp;otherwise.</span></dd></dl>
+
+<dl><dt><a name="sqlrconnection-getIsolationLevel"><strong>getIsolationLevel</strong></a>(self)</dt><dd><span class="code">Returns&nbsp;the&nbsp;database-specific&nbsp;isolation&nbsp;level,&nbsp;"unknown"<br>
+if&nbsp;the&nbsp;isolation&nbsp;level&nbsp;is&nbsp;unknown,&nbsp;or&nbsp;None&nbsp;if&nbsp;an&nbsp;error<br>
+occurred.</span></dd></dl>
 
 <dl><dt><a name="sqlrconnection-getLastInsertId"><strong>getLastInsertId</strong></a>(self)</dt><dd><span class="code">Returns&nbsp;the&nbsp;value&nbsp;of&nbsp;the&nbsp;autoincrement&nbsp;column&nbsp;for&nbsp;the&nbsp;last&nbsp;insert</span></dd></dl>
+
+<dl><dt><a name="sqlrconnection-getResponseTimeoutMicroseconds"><strong>getResponseTimeoutMicroseconds</strong></a>(self)</dt><dd><span class="code">Gets&nbsp;the&nbsp;response&nbsp;timeout&nbsp;in&nbsp;microseconds.</span></dd></dl>
+
+<dl><dt><a name="sqlrconnection-getResponseTimeoutSeconds"><strong>getResponseTimeoutSeconds</strong></a>(self)</dt><dd><span class="code">Gets&nbsp;the&nbsp;response&nbsp;timeout&nbsp;in&nbsp;seconds.</span></dd></dl>
+
+<dl><dt><a name="sqlrconnection-getTransactionModel"><strong>getTransactionModel</strong></a>(self)</dt><dd><span class="code">Returns&nbsp;the&nbsp;current&nbsp;transaction&nbsp;model.&nbsp;&nbsp;See<br>
+setTranscationModel()&nbsp;for&nbsp;a&nbsp;list&nbsp;of&nbsp;potential&nbsp;return<br>
+values.&nbsp;&nbsp;Returns&nbsp;None&nbsp;if&nbsp;an&nbsp;error&nbsp;occurred.</span></dd></dl>
 
 <dl><dt><a name="sqlrconnection-identify"><strong>identify</strong></a>(self)</dt><dd><span class="code">Returns&nbsp;the&nbsp;type&nbsp;of&nbsp;database:&nbsp;<br>
 &nbsp;&nbsp;oracle,&nbsp;postgresql,&nbsp;mysql,&nbsp;etc.</span></dd></dl>
@@ -273,19 +604,29 @@ contain&nbsp;a&nbsp;%s&nbsp;in&nbsp;place&nbsp;of&nbsp;the&nbsp;sequence&nbsp;na
 Returns&nbsp;an&nbsp;empty&nbsp;string&nbsp;if&nbsp;the&nbsp;database&nbsp;does&nbsp;not&nbsp;support<br>
 sequences.</span></dd></dl>
 
-<dl><dt><a name="sqlrconnection-ping"><strong>ping</strong></a>(self)</dt><dd><span class="code">Returns&nbsp;1&nbsp;if&nbsp;the&nbsp;database&nbsp;is&nbsp;up&nbsp;and&nbsp;0<br>
+<dl><dt><a name="sqlrconnection-ping"><strong>ping</strong></a>(self)</dt><dd><span class="code">Returns&nbsp;true&nbsp;if&nbsp;the&nbsp;database&nbsp;is&nbsp;up&nbsp;and&nbsp;false<br>
 if&nbsp;it's&nbsp;down.</span></dd></dl>
 
-<dl><dt><a name="sqlrconnection-resumeSession"><strong>resumeSession</strong></a>(self, port, socket)</dt><dd><span class="code">Resumes&nbsp;a&nbsp;session&nbsp;previously&nbsp;left&nbsp;open&nbsp;<br>
+<dl><dt><a name="sqlrconnection-resumeSession"><strong>resumeSession</strong></a>(self, port, socket)</dt><dd><span class="code">Resumes&nbsp;a&nbsp;session&nbsp;previously&nbsp;left&nbsp;open<br>
 using&nbsp;<a href="#sqlrconnection-suspendSession">suspendSession</a>().<br>
-Returns&nbsp;1&nbsp;on&nbsp;success&nbsp;and&nbsp;0&nbsp;on&nbsp;failure.</span></dd></dl>
+Returns&nbsp;true&nbsp;on&nbsp;success&nbsp;and&nbsp;false&nbsp;on&nbsp;failure.</span></dd></dl>
 
-<dl><dt><a name="sqlrconnection-rollback"><strong>rollback</strong></a>(self)</dt><dd><span class="code">Issues&nbsp;a&nbsp;rollback,&nbsp;returns&nbsp;true&nbsp;if&nbsp;the&nbsp;rollback<br>
+<dl><dt><a name="sqlrconnection-rollback"><strong>rollback</strong></a>(self)</dt><dd><span class="code">Rolls&nbsp;back&nbsp;a&nbsp;transaction.&nbsp;&nbsp;Returns&nbsp;true&nbsp;if&nbsp;the&nbsp;rollback<br>
 succeeded,&nbsp;false&nbsp;if&nbsp;it&nbsp;failed.</span></dd></dl>
 
-<dl><dt><a name="sqlrconnection-selectDatabase"><strong>selectDatabase</strong></a>(self, database)</dt><dd><span class="code">Sets&nbsp;the&nbsp;current&nbsp;database/schema&nbsp;to&nbsp;"database"</span></dd></dl>
+<dl><dt><a name="sqlrconnection-selectCatalog"><strong>selectCatalog</strong></a>(self, catalog)</dt><dd><span class="code">Sets&nbsp;the&nbsp;current&nbsp;catalog&nbsp;to&nbsp;"catalog"</span></dd></dl>
 
-<dl><dt><a name="sqlrconnection-serverVersion"><strong>serverVersion</strong></a>(self)</dt><dd><span class="code">Returns&nbsp;the&nbsp;version&nbsp;of&nbsp;the&nbsp;SQL&nbsp;Relay&nbsp;server&nbsp;version</span></dd></dl>
+<dl><dt><a name="sqlrconnection-selectDatabase"><strong>selectDatabase</strong></a>(self, database)</dt><dd><span class="code">Sets&nbsp;the&nbsp;current&nbsp;database&nbsp;to&nbsp;"database".<br>
+&nbsp;<br>
+May&nbsp;set&nbsp;the&nbsp;current&nbsp;catalog&nbsp;or&nbsp;schema,&nbsp;depending&nbsp;on<br>
+whether&nbsp;the&nbsp;backend&nbsp;database&nbsp;equates&nbsp;"database"&nbsp;with<br>
+catalog&nbsp;or&nbsp;schema.<br>
+&nbsp;<br>
+See&nbsp;<a href="#sqlrconnection-getDatabaseIsSchema">getDatabaseIsSchema</a>().</span></dd></dl>
+
+<dl><dt><a name="sqlrconnection-selectSchema"><strong>selectSchema</strong></a>(self, schema)</dt><dd><span class="code">Sets&nbsp;the&nbsp;current&nbsp;schema&nbsp;to&nbsp;"schema"</span></dd></dl>
+
+<dl><dt><a name="sqlrconnection-serverVersion"><strong>serverVersion</strong></a>(self)</dt><dd><span class="code">Returns&nbsp;the&nbsp;version&nbsp;of&nbsp;the&nbsp;sqlrelay&nbsp;server&nbsp;software.</span></dd></dl>
 
 <dl><dt><a name="sqlrconnection-setBindVariableDelimiters"><strong>setBindVariableDelimiters</strong></a>(self, delimiters)</dt><dd><span class="code">Sets&nbsp;which&nbsp;delimiters&nbsp;are&nbsp;used&nbsp;to&nbsp;identify&nbsp;bind&nbsp;variables<br>
 in&nbsp;countBindVariables()&nbsp;and&nbsp;validateBinds().&nbsp;&nbsp;Valid<br>
@@ -297,19 +638,127 @@ along&nbsp;with&nbsp;queries&nbsp;that&nbsp;were&nbsp;run&nbsp;by&nbsp;this&nbsp
 the&nbsp;client.</span></dd></dl>
 
 <dl><dt><a name="sqlrconnection-setConnectTimeout"><strong>setConnectTimeout</strong></a>(self, timeoutsec, timeoutusec)</dt><dd><span class="code">Sets&nbsp;the&nbsp;server&nbsp;connect&nbsp;timeout&nbsp;in&nbsp;seconds&nbsp;and<br>
-milliseconds.&nbsp;&nbsp;Setting&nbsp;either&nbsp;parameter&nbsp;to&nbsp;-1&nbsp;disables&nbsp;the<br>
+microseconds.&nbsp;&nbsp;Setting&nbsp;either&nbsp;parameter&nbsp;to&nbsp;-1&nbsp;disables&nbsp;the<br>
 timeout.&nbsp;&nbsp;You&nbsp;can&nbsp;also&nbsp;set&nbsp;this&nbsp;timeout&nbsp;using&nbsp;the<br>
 SQLR_CLIENT_CONNECT_TIMEOUT&nbsp;environment&nbsp;variable.</span></dd></dl>
 
 <dl><dt><a name="sqlrconnection-setDebugFile"><strong>setDebugFile</strong></a>(self, filename)</dt><dd><span class="code">Allows&nbsp;you&nbsp;to&nbsp;specify&nbsp;a&nbsp;file&nbsp;to&nbsp;write&nbsp;debug&nbsp;to.<br>
-Setting&nbsp;"filename"&nbsp;to&nbsp;NULL&nbsp;or&nbsp;an&nbsp;empty&nbsp;string&nbsp;causes&nbsp;debug<br>
+Setting&nbsp;"filename"&nbsp;to&nbsp;None&nbsp;or&nbsp;an&nbsp;empty&nbsp;string&nbsp;causes&nbsp;debug<br>
 to&nbsp;be&nbsp;written&nbsp;to&nbsp;standard&nbsp;output&nbsp;(the&nbsp;default).</span></dd></dl>
 
+<dl><dt><a name="sqlrconnection-setIsolationLevel"><strong>setIsolationLevel</strong></a>(self, isolationlevel)</dt><dd><span class="code">Sets&nbsp;the&nbsp;transaction&nbsp;isolation&nbsp;level&nbsp;to&nbsp;"isolationlevel".<br>
+The&nbsp;string&nbsp;is&nbsp;the&nbsp;database-specific&nbsp;(native)&nbsp;name&nbsp;and&nbsp;is<br>
+matched&nbsp;case-insensitively.<br>
+&nbsp;<br>
+Valid&nbsp;isolation&nbsp;levels&nbsp;include:<br>
+&nbsp;<br>
+For&nbsp;PostgreSQL:<br>
+*&nbsp;READ&nbsp;UNCOMMITTED<br>
+*&nbsp;READ&nbsp;COMMITTED&nbsp;(default)<br>
+*&nbsp;REPEATABLE&nbsp;READ<br>
+*&nbsp;SERIALIZABLE<br>
+&nbsp;<br>
+For&nbsp;MySQL/MariaDB:<br>
+*&nbsp;READ-UNCOMMITTED<br>
+*&nbsp;READ-COMMITTED<br>
+*&nbsp;REPEATABLE-READ&nbsp;(default)<br>
+*&nbsp;SERIALIZABLE<br>
+&nbsp;<br>
+For&nbsp;Oracle:<br>
+*&nbsp;READ&nbsp;COMMITTED&nbsp;(default)<br>
+*&nbsp;SERIALIZABLE<br>
+&nbsp;<br>
+For&nbsp;DB2:<br>
+*&nbsp;UR&nbsp;&nbsp;(uncommitted&nbsp;read)<br>
+*&nbsp;CS&nbsp;&nbsp;(cursor&nbsp;stability,&nbsp;default)<br>
+*&nbsp;RS&nbsp;&nbsp;(read&nbsp;stability)<br>
+*&nbsp;RR&nbsp;&nbsp;(repeatable&nbsp;read)<br>
+&nbsp;<br>
+For&nbsp;MS&nbsp;SQL&nbsp;Server&nbsp;(via&nbsp;FreeTDS):<br>
+*&nbsp;READ&nbsp;UNCOMMITTED<br>
+*&nbsp;READ&nbsp;COMMITTED&nbsp;(default)<br>
+*&nbsp;REPEATABLE&nbsp;READ<br>
+*&nbsp;SERIALIZABLE<br>
+*&nbsp;SNAPSHOT<br>
+&nbsp;<br>
+For&nbsp;SAP&nbsp;ASE&nbsp;(Sybase):<br>
+*&nbsp;0&nbsp;&nbsp;(read&nbsp;uncommitted)<br>
+*&nbsp;1&nbsp;&nbsp;(read&nbsp;committed,&nbsp;default)<br>
+*&nbsp;2&nbsp;&nbsp;(repeatable&nbsp;read)<br>
+*&nbsp;3&nbsp;&nbsp;(serializable)<br>
+&nbsp;<br>
+For&nbsp;Informix:<br>
+*&nbsp;dirty&nbsp;read<br>
+*&nbsp;committed&nbsp;read&nbsp;(default)<br>
+*&nbsp;cursor&nbsp;stability<br>
+*&nbsp;repeatable&nbsp;read<br>
+&nbsp;<br>
+For&nbsp;Firebird:<br>
+*&nbsp;read&nbsp;committed&nbsp;(default)<br>
+*&nbsp;read&nbsp;committed&nbsp;no&nbsp;record&nbsp;version<br>
+*&nbsp;read&nbsp;consistency<br>
+*&nbsp;snapshot<br>
+*&nbsp;snapshot&nbsp;table&nbsp;stability<br>
+&nbsp;<br>
+For&nbsp;SQLite:<br>
+*&nbsp;0&nbsp;&nbsp;(serializable,&nbsp;default)<br>
+*&nbsp;1&nbsp;&nbsp;(read&nbsp;uncommitted)<br>
+&nbsp;<br>
+For&nbsp;ODBC:<br>
+*&nbsp;SQL_TXN_READ_UNCOMMITTED<br>
+*&nbsp;SQL_TXN_READ_COMMITTED<br>
+*&nbsp;SQL_TXN_REPEATABLE_READ<br>
+*&nbsp;SQL_TXN_SERIALIZABLE<br>
+&nbsp;<br>
+(whether&nbsp;a&nbsp;given&nbsp;level&nbsp;is&nbsp;actually&nbsp;supported&nbsp;depends&nbsp;on<br>
+the&nbsp;underlying&nbsp;ODBC&nbsp;driver&nbsp;and&nbsp;target&nbsp;database).&nbsp;&nbsp;The<br>
+generic&nbsp;ODBC&nbsp;backend&nbsp;also&nbsp;accepts&nbsp;the&nbsp;database-specific<br>
+native&nbsp;names&nbsp;listed&nbsp;above&nbsp;for&nbsp;any&nbsp;of&nbsp;the&nbsp;other&nbsp;backends,<br>
+as&nbsp;well&nbsp;as&nbsp;the&nbsp;JDBC&nbsp;TRANSACTION_*&nbsp;names,&nbsp;and&nbsp;maps&nbsp;them<br>
+to&nbsp;the&nbsp;closest&nbsp;of&nbsp;the&nbsp;four&nbsp;ODBC&nbsp;levels&nbsp;above.<br>
+&nbsp;<br>
+For&nbsp;other&nbsp;databases,&nbsp;the&nbsp;string&nbsp;is&nbsp;passed&nbsp;through&nbsp;to&nbsp;the<br>
+backend&nbsp;as&nbsp;the&nbsp;argument&nbsp;to&nbsp;"set&nbsp;transaction&nbsp;isolation<br>
+level".<br>
+&nbsp;<br>
+Returns&nbsp;true&nbsp;if&nbsp;setting&nbsp;the&nbsp;isolation&nbsp;level&nbsp;succeeded,<br>
+false&nbsp;if&nbsp;it&nbsp;failed.</span></dd></dl>
+
 <dl><dt><a name="sqlrconnection-setResponseTimeout"><strong>setResponseTimeout</strong></a>(self, timeoutsec, timeoutusec)</dt><dd><span class="code">Sets&nbsp;the&nbsp;response&nbsp;timeout&nbsp;(for&nbsp;queries,&nbsp;commits,&nbsp;rollbacks,<br>
-pings,&nbsp;etc.)&nbsp;in&nbsp;seconds&nbsp;and&nbsp;milliseconds.&nbsp;&nbsp;Setting&nbsp;either<br>
+pings,&nbsp;etc.)&nbsp;in&nbsp;seconds&nbsp;and&nbsp;microseconds.&nbsp;&nbsp;Setting&nbsp;either<br>
 parameter&nbsp;to&nbsp;-1&nbsp;disables&nbsp;the&nbsp;timeout.&nbsp;&nbsp;You&nbsp;can&nbsp;also&nbsp;set<br>
 this&nbsp;timeout&nbsp;using&nbsp;the&nbsp;SQLR_CLIENT_RESPONSE_TIMEOUT<br>
 environment&nbsp;variable.</span></dd></dl>
+
+<dl><dt><a name="sqlrconnection-setTransactionModel"><strong>setTransactionModel</strong></a>(self, txmodel)</dt><dd><span class="code">Sets&nbsp;the&nbsp;current&nbsp;transaction&nbsp;model&nbsp;to&nbsp;"txmodel"&nbsp;which&nbsp;should&nbsp;be<br>
+one&nbsp;of:<br>
+&nbsp;<br>
+*&nbsp;native&nbsp;-&nbsp;the&nbsp;database's&nbsp;native&nbsp;transaction&nbsp;model<br>
+*&nbsp;none&nbsp;-&nbsp;no&nbsp;transactions<br>
+*&nbsp;"implicit"<br>
+&nbsp;&nbsp;&nbsp;&nbsp;*&nbsp;in&nbsp;a&nbsp;transaction&nbsp;when&nbsp;the&nbsp;session&nbsp;begins<br>
+&nbsp;&nbsp;&nbsp;&nbsp;*&nbsp;commit/rollback&nbsp;implicitly&nbsp;starts&nbsp;a&nbsp;new&nbsp;transcaction<br>
+&nbsp;&nbsp;&nbsp;&nbsp;*&nbsp;autocommit&nbsp;on/off&nbsp;take&nbsp;effect&nbsp;immediately<br>
+*&nbsp;"explicit"<br>
+&nbsp;&nbsp;&nbsp;&nbsp;*&nbsp;not&nbsp;in&nbsp;a&nbsp;transaction&nbsp;when&nbsp;the&nbsp;session&nbsp;begins<br>
+&nbsp;&nbsp;&nbsp;&nbsp;*&nbsp;begin&nbsp;required&nbsp;to&nbsp;start&nbsp;a&nbsp;new&nbsp;transaction<br>
+&nbsp;&nbsp;&nbsp;&nbsp;*&nbsp;commit/rollback&nbsp;does&nbsp;not&nbsp;start&nbsp;a&nbsp;new&nbsp;transcaction<br>
+&nbsp;&nbsp;&nbsp;&nbsp;*&nbsp;autocommit&nbsp;on/off&nbsp;take&nbsp;effect&nbsp;immediately<br>
+*&nbsp;"explicit-deferred"<br>
+&nbsp;&nbsp;&nbsp;&nbsp;*&nbsp;not&nbsp;in&nbsp;a&nbsp;transaction&nbsp;when&nbsp;the&nbsp;session&nbsp;begins<br>
+&nbsp;&nbsp;&nbsp;&nbsp;*&nbsp;begin&nbsp;required&nbsp;to&nbsp;start&nbsp;a&nbsp;new&nbsp;transaction<br>
+&nbsp;&nbsp;&nbsp;&nbsp;*&nbsp;commit/rollback&nbsp;does&nbsp;not&nbsp;start&nbsp;a&nbsp;new&nbsp;transcaction<br>
+&nbsp;&nbsp;&nbsp;&nbsp;*&nbsp;while&nbsp;in&nbsp;a&nbsp;begin-initiated&nbsp;transaction,&nbsp;autocommit<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;on&nbsp;takes&nbsp;effect&nbsp;at&nbsp;next&nbsp;commit/rollback&nbsp;(deferred)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;*&nbsp;while&nbsp;in&nbsp;an&nbsp;autocommit-off-initiated&nbsp;transaction,<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;autocommit&nbsp;on&nbsp;takes&nbsp;effect&nbsp;immediately<br>
+*&nbsp;"explicit-error"<br>
+&nbsp;&nbsp;&nbsp;&nbsp;*&nbsp;not&nbsp;in&nbsp;a&nbsp;transaction&nbsp;when&nbsp;the&nbsp;session&nbsp;begins<br>
+&nbsp;&nbsp;&nbsp;&nbsp;*&nbsp;begin&nbsp;required&nbsp;to&nbsp;start&nbsp;a&nbsp;new&nbsp;transaction<br>
+&nbsp;&nbsp;&nbsp;&nbsp;*&nbsp;commit/rollback&nbsp;does&nbsp;not&nbsp;start&nbsp;a&nbsp;new&nbsp;transcaction<br>
+&nbsp;&nbsp;&nbsp;&nbsp;*&nbsp;while&nbsp;in&nbsp;a&nbsp;transaction,&nbsp;autocommit&nbsp;on/off&nbsp;throw&nbsp;error<br>
+&nbsp;<br>
+Returns&nbsp;true&nbsp;on&nbsp;success&nbsp;and&nbsp;false&nbsp;on&nbsp;failure.</span></dd></dl>
 
 <dl><dt><a name="sqlrconnection-suspendSession"><strong>suspendSession</strong></a>(self)</dt><dd><span class="code">Disconnects&nbsp;this&nbsp;connection&nbsp;from&nbsp;the&nbsp;current<br>
 session&nbsp;but&nbsp;leaves&nbsp;the&nbsp;session&nbsp;open&nbsp;so&nbsp;<br>
@@ -339,34 +788,32 @@ A&nbsp;wrapper&nbsp;for&nbsp;the&nbsp;sqlrelay&nbsp;cursor&nbsp;API.&nbsp;&nbsp;
 
 <dl><dt><a name="sqlrcursor-__init__"><strong>__init__</strong></a>(self, sqlrcon)</dt><dd><span class="code">Initialize&nbsp;self.&nbsp;&nbsp;See&nbsp;help(type(self))&nbsp;for&nbsp;accurate&nbsp;signature.</span></dd></dl>
 
-<dl><dt><a name="sqlrcursor-affectedRows"><strong>affectedRows</strong></a>(self)</dt><dd><span class="code">Returns&nbsp;the&nbsp;number&nbsp;of&nbsp;rows&nbsp;that&nbsp;were&nbsp;<br>
+<dl><dt><a name="sqlrcursor-affectedRows"><strong>affectedRows</strong></a>(self)</dt><dd><span class="code">Returns&nbsp;the&nbsp;number&nbsp;of&nbsp;rows&nbsp;that&nbsp;were<br>
 updated,&nbsp;inserted&nbsp;or&nbsp;deleted&nbsp;by&nbsp;the&nbsp;query.<br>
-Not&nbsp;all&nbsp;databases&nbsp;support&nbsp;this&nbsp;call.&nbsp;&nbsp;Don't&nbsp;<br>
-use&nbsp;it&nbsp;for&nbsp;applications&nbsp;which&nbsp;are&nbsp;designed&nbsp;<br>
-to&nbsp;be&nbsp;portable&nbsp;across&nbsp;databases.&nbsp;&nbsp;-1&nbsp;is&nbsp;<br>
-returned&nbsp;by&nbsp;databases&nbsp;which&nbsp;don't&nbsp;support&nbsp;<br>
+Not&nbsp;all&nbsp;databases&nbsp;support&nbsp;this&nbsp;call.&nbsp;&nbsp;Don't<br>
+use&nbsp;it&nbsp;for&nbsp;applications&nbsp;which&nbsp;are&nbsp;designed<br>
+to&nbsp;be&nbsp;portable&nbsp;across&nbsp;databases.&nbsp;&nbsp;0&nbsp;is<br>
+returned&nbsp;by&nbsp;databases&nbsp;which&nbsp;don't&nbsp;support<br>
 this&nbsp;option.</span></dd></dl>
 
 <dl><dt><a name="sqlrcursor-cacheOff"><strong>cacheOff</strong></a>(self)</dt><dd><span class="code">Sets&nbsp;query&nbsp;caching&nbsp;off.</span></dd></dl>
 
 <dl><dt><a name="sqlrcursor-cacheToFile"><strong>cacheToFile</strong></a>(self, filename)</dt><dd><span class="code">Sets&nbsp;query&nbsp;caching&nbsp;on.&nbsp;&nbsp;Future&nbsp;queries<br>
 will&nbsp;be&nbsp;cached&nbsp;to&nbsp;the&nbsp;file&nbsp;"filename".<br>
-The&nbsp;full&nbsp;pathname&nbsp;of&nbsp;the&nbsp;file&nbsp;can&nbsp;be<br>
-retrieved&nbsp;using&nbsp;<a href="#sqlrcursor-getCacheFileName">getCacheFileName</a>().<br>
 &nbsp;<br>
 A&nbsp;default&nbsp;time-to-live&nbsp;of&nbsp;10&nbsp;minutes&nbsp;is<br>
 also&nbsp;set.<br>
 &nbsp;<br>
 Note&nbsp;that&nbsp;once&nbsp;<a href="#sqlrcursor-cacheToFile">cacheToFile</a>()&nbsp;is&nbsp;called,<br>
 the&nbsp;result&nbsp;sets&nbsp;of&nbsp;all&nbsp;future&nbsp;queries&nbsp;will<br>
-be&nbsp;cached&nbsp;to&nbsp;that&nbsp;file&nbsp;until&nbsp;another&nbsp;call&nbsp;<br>
+be&nbsp;cached&nbsp;to&nbsp;that&nbsp;file&nbsp;until&nbsp;another&nbsp;call<br>
 to&nbsp;<a href="#sqlrcursor-cacheToFile">cacheToFile</a>()&nbsp;changes&nbsp;which&nbsp;file&nbsp;to<br>
 cache&nbsp;to&nbsp;or&nbsp;a&nbsp;call&nbsp;to&nbsp;<a href="#sqlrcursor-cacheOff">cacheOff</a>()&nbsp;turns&nbsp;off<br>
 caching.</span></dd></dl>
 
-<dl><dt><a name="sqlrcursor-clearBinds"><strong>clearBinds</strong></a>(self)</dt><dd><span class="code">Clear&nbsp;all&nbsp;binds&nbsp;variables.</span></dd></dl>
+<dl><dt><a name="sqlrcursor-clearBinds"><strong>clearBinds</strong></a>(self)</dt><dd><span class="code">Clears&nbsp;all&nbsp;bind&nbsp;variables.</span></dd></dl>
 
-<dl><dt><a name="sqlrcursor-closeResultSet"><strong>closeResultSet</strong></a>()</dt><dd><span class="code">Closes&nbsp;the&nbsp;current&nbsp;result&nbsp;set,&nbsp;if&nbsp;one&nbsp;is&nbsp;open.&nbsp;&nbsp;Data<br>
+<dl><dt><a name="sqlrcursor-closeResultSet"><strong>closeResultSet</strong></a>(self)</dt><dd><span class="code">Closes&nbsp;the&nbsp;current&nbsp;result&nbsp;set,&nbsp;if&nbsp;one&nbsp;is&nbsp;open.&nbsp;&nbsp;Data<br>
 that&nbsp;has&nbsp;been&nbsp;fetched&nbsp;already&nbsp;is&nbsp;still&nbsp;available&nbsp;but<br>
 no&nbsp;more&nbsp;data&nbsp;may&nbsp;be&nbsp;fetched.&nbsp;&nbsp;Server&nbsp;side&nbsp;resources<br>
 for&nbsp;the&nbsp;result&nbsp;set&nbsp;are&nbsp;freed&nbsp;as&nbsp;well.</span></dd></dl>
@@ -377,35 +824,41 @@ for&nbsp;the&nbsp;result&nbsp;set&nbsp;are&nbsp;freed&nbsp;as&nbsp;well.</span><
 counts&nbsp;the&nbsp;number&nbsp;of&nbsp;bind&nbsp;variables&nbsp;defined<br>
 in&nbsp;it&nbsp;and&nbsp;returns&nbsp;that&nbsp;number.</span></dd></dl>
 
-<dl><dt><a name="sqlrcursor-defineOutputBindBlob"><strong>defineOutputBindBlob</strong></a>(self, variable)</dt><dd><span class="code">Define&nbsp;an&nbsp;output&nbsp;bind&nbsp;varaible.</span></dd></dl>
+<dl><dt><a name="sqlrcursor-defineOutputBindBlob"><strong>defineOutputBindBlob</strong></a>(self, variable)</dt><dd><span class="code">Defines&nbsp;a&nbsp;binary&nbsp;lob&nbsp;output&nbsp;bind&nbsp;variable.</span></dd></dl>
 
-<dl><dt><a name="sqlrcursor-defineOutputBindClob"><strong>defineOutputBindClob</strong></a>(self, variable)</dt><dd><span class="code">Define&nbsp;an&nbsp;output&nbsp;bind&nbsp;varaible.</span></dd></dl>
+<dl><dt><a name="sqlrcursor-defineOutputBindClob"><strong>defineOutputBindClob</strong></a>(self, variable)</dt><dd><span class="code">Defines&nbsp;a&nbsp;character&nbsp;lob&nbsp;output&nbsp;bind&nbsp;variable.</span></dd></dl>
 
-<dl><dt><a name="sqlrcursor-defineOutputBindCursor"><strong>defineOutputBindCursor</strong></a>(self, variable)</dt><dd><span class="code">Define&nbsp;an&nbsp;output&nbsp;bind&nbsp;varaible.</span></dd></dl>
+<dl><dt><a name="sqlrcursor-defineOutputBindCursor"><strong>defineOutputBindCursor</strong></a>(self, variable)</dt><dd><span class="code">Defines&nbsp;a&nbsp;cursor&nbsp;output&nbsp;bind&nbsp;variable.</span></dd></dl>
 
-<dl><dt><a name="sqlrcursor-defineOutputBindDouble"><strong>defineOutputBindDouble</strong></a>(self, variable)</dt><dd><span class="code">Define&nbsp;a&nbsp;double&nbsp;precision&nbsp;floating&nbsp;point&nbsp;output&nbsp;bind&nbsp;varaible.</span></dd></dl>
+<dl><dt><a name="sqlrcursor-defineOutputBindDate"><strong>defineOutputBindDate</strong></a>(self, variable)</dt><dd><span class="code">Defines&nbsp;a&nbsp;date&nbsp;output&nbsp;bind&nbsp;variable.</span></dd></dl>
 
-<dl><dt><a name="sqlrcursor-defineOutputBindInteger"><strong>defineOutputBindInteger</strong></a>(self, variable)</dt><dd><span class="code">Define&nbsp;an&nbsp;integer&nbsp;output&nbsp;bind&nbsp;varaible.</span></dd></dl>
+<dl><dt><a name="sqlrcursor-defineOutputBindDouble"><strong>defineOutputBindDouble</strong></a>(self, variable)</dt><dd><span class="code">Defines&nbsp;a&nbsp;decimal&nbsp;output&nbsp;bind&nbsp;variable.</span></dd></dl>
 
-<dl><dt><a name="sqlrcursor-defineOutputBindString"><strong>defineOutputBindString</strong></a>(self, variable, length)</dt><dd><span class="code">Define&nbsp;a&nbsp;string&nbsp;output&nbsp;bind&nbsp;varaible.</span></dd></dl>
+<dl><dt><a name="sqlrcursor-defineOutputBindInteger"><strong>defineOutputBindInteger</strong></a>(self, variable)</dt><dd><span class="code">Defines&nbsp;an&nbsp;integer&nbsp;output&nbsp;bind&nbsp;variable.</span></dd></dl>
+
+<dl><dt><a name="sqlrcursor-defineOutputBindString"><strong>defineOutputBindString</strong></a>(self, variable, length)</dt><dd><span class="code">Defines&nbsp;an&nbsp;output&nbsp;bind&nbsp;variable.<br>
+"bufferlength"&nbsp;bytes&nbsp;will&nbsp;be&nbsp;reserved<br>
+to&nbsp;store&nbsp;the&nbsp;value.</span></dd></dl>
 
 <dl><dt><a name="sqlrcursor-dontGetColumnInfo"><strong>dontGetColumnInfo</strong></a>(self)</dt><dd><span class="code">Tells&nbsp;the&nbsp;server&nbsp;not&nbsp;to&nbsp;send&nbsp;any&nbsp;column<br>
 info&nbsp;(names,&nbsp;types,&nbsp;sizes).&nbsp;&nbsp;If&nbsp;you&nbsp;don't<br>
 need&nbsp;that&nbsp;info,&nbsp;you&nbsp;should&nbsp;call&nbsp;this<br>
 method&nbsp;to&nbsp;improve&nbsp;performance.</span></dd></dl>
 
-<dl><dt><a name="sqlrcursor-endOfResultSet"><strong>endOfResultSet</strong></a>(self)</dt><dd><span class="code">Returns&nbsp;0&nbsp;if&nbsp;part&nbsp;of&nbsp;the&nbsp;result&nbsp;set&nbsp;is&nbsp;still<br>
-pending&nbsp;on&nbsp;the&nbsp;server&nbsp;and&nbsp;1&nbsp;if&nbsp;not.&nbsp;&nbsp;This<br>
-method&nbsp;can&nbsp;only&nbsp;return&nbsp;0&nbsp;if&nbsp;<br>
+<dl><dt><a name="sqlrcursor-endOfResultSet"><strong>endOfResultSet</strong></a>(self)</dt><dd><span class="code">Returns&nbsp;false&nbsp;if&nbsp;part&nbsp;of&nbsp;the&nbsp;result&nbsp;set&nbsp;is<br>
+still&nbsp;pending&nbsp;on&nbsp;the&nbsp;server&nbsp;and&nbsp;true&nbsp;if&nbsp;not.<br>
+This&nbsp;method&nbsp;can&nbsp;only&nbsp;return&nbsp;false&nbsp;if<br>
 <a href="#sqlrcursor-setResultSetBufferSize">setResultSetBufferSize</a>()&nbsp;has&nbsp;been&nbsp;called<br>
 with&nbsp;a&nbsp;parameter&nbsp;other&nbsp;than&nbsp;0.</span></dd></dl>
 
-<dl><dt><a name="sqlrcursor-errorMessage"><strong>errorMessage</strong></a>(self)</dt><dd><span class="code">If&nbsp;the&nbsp;query&nbsp;failed,&nbsp;the&nbsp;error&nbsp;message&nbsp;will&nbsp;be&nbsp;returned<br>
-from&nbsp;this&nbsp;method.&nbsp;&nbsp;Otherwise,&nbsp;it&nbsp;returns&nbsp;None.</span></dd></dl>
+<dl><dt><a name="sqlrcursor-errorMessage"><strong>errorMessage</strong></a>(self)</dt><dd><span class="code">If&nbsp;a&nbsp;query&nbsp;failed&nbsp;and&nbsp;generated&nbsp;an&nbsp;error,<br>
+the&nbsp;error&nbsp;message&nbsp;is&nbsp;available&nbsp;here.&nbsp;&nbsp;If<br>
+the&nbsp;query&nbsp;succeeded&nbsp;then&nbsp;this&nbsp;method<br>
+returns&nbsp;None.</span></dd></dl>
 
-<dl><dt><a name="sqlrcursor-errorNumber"><strong>errorNumber</strong></a>(self)</dt><dd><span class="code">If&nbsp;the&nbsp;query&nbsp;failed&nbsp;and&nbsp;generated&nbsp;an<br>
+<dl><dt><a name="sqlrcursor-errorNumber"><strong>errorNumber</strong></a>(self)</dt><dd><span class="code">If&nbsp;a&nbsp;query&nbsp;failed&nbsp;and&nbsp;generated&nbsp;an<br>
 error,&nbsp;the&nbsp;error&nbsp;number&nbsp;is&nbsp;available&nbsp;here.<br>
-If&nbsp;there&nbsp;is&nbsp;no&nbsp;error&nbsp;then&nbsp;this&nbsp;method&nbsp;<br>
+If&nbsp;there&nbsp;is&nbsp;no&nbsp;error&nbsp;then&nbsp;this&nbsp;method<br>
 returns&nbsp;0.</span></dd></dl>
 
 <dl><dt><a name="sqlrcursor-executeQuery"><strong>executeQuery</strong></a>(self)</dt><dd><span class="code">Execute&nbsp;the&nbsp;query&nbsp;that&nbsp;was&nbsp;previously<br>
@@ -418,44 +871,75 @@ an&nbsp;output&nbsp;bind&nbsp;variable.</span></dd></dl>
 This&nbsp;is&nbsp;useful&nbsp;when&nbsp;buffering&nbsp;only&nbsp;part&nbsp;of<br>
 the&nbsp;result&nbsp;set&nbsp;at&nbsp;a&nbsp;time.</span></dd></dl>
 
-<dl><dt><a name="sqlrcursor-getCacheFileName"><strong>getCacheFileName</strong></a>(self)</dt><dd><span class="code">Returns&nbsp;the&nbsp;name&nbsp;of&nbsp;the&nbsp;file&nbsp;containing&nbsp;the&nbsp;most<br>
-recently&nbsp;cached&nbsp;result&nbsp;set.</span></dd></dl>
+<dl><dt><a name="sqlrcursor-getCacheFileName"><strong>getCacheFileName</strong></a>(self)</dt><dd><span class="code">Returns&nbsp;the&nbsp;name&nbsp;of&nbsp;the&nbsp;file&nbsp;containing&nbsp;the<br>
+cached&nbsp;result&nbsp;set.</span></dd></dl>
+
+<dl><dt><a name="sqlrcursor-getCatalogList"><strong>getCatalogList</strong></a>(self, wild)</dt><dd><span class="code">Generates&nbsp;a&nbsp;result&nbsp;set&nbsp;containing&nbsp;catalogs&nbsp;that&nbsp;match&nbsp;the<br>
+pattern&nbsp;"wild".<br>
+&nbsp;<br>
+The&nbsp;result&nbsp;set&nbsp;will&nbsp;contain&nbsp;the&nbsp;following&nbsp;columns:<br>
+*&nbsp;Database<br>
+&nbsp;<br>
+If&nbsp;"wild"&nbsp;is&nbsp;empty&nbsp;or&nbsp;None&nbsp;then&nbsp;a&nbsp;result&nbsp;set&nbsp;containing<br>
+all&nbsp;catalogs&nbsp;will&nbsp;be&nbsp;returned.<br>
+&nbsp;<br>
+If&nbsp;SQL&nbsp;Relay&nbsp;doesn't&nbsp;support&nbsp;getting&nbsp;a&nbsp;list&nbsp;of&nbsp;catalogs<br>
+for&nbsp;the&nbsp;current&nbsp;database&nbsp;backend&nbsp;(or&nbsp;the&nbsp;database&nbsp;doesn't)<br>
+then&nbsp;an&nbsp;empty&nbsp;result&nbsp;set&nbsp;will&nbsp;be&nbsp;returned.</span></dd></dl>
 
 <dl><dt><a name="sqlrcursor-getColumnInfo"><strong>getColumnInfo</strong></a>(self)</dt><dd><span class="code">Tells&nbsp;the&nbsp;server&nbsp;to&nbsp;send&nbsp;column&nbsp;info.</span></dd></dl>
 
-<dl><dt><a name="sqlrcursor-getColumnIsAutoIncrement"><strong>getColumnIsAutoIncrement</strong></a>(self, col)</dt><dd><span class="code">Returns&nbsp;1&nbsp;if&nbsp;the&nbsp;specified&nbsp;column&nbsp;auto-increments&nbsp;and<br>
-0&nbsp;otherwise.</span></dd></dl>
+<dl><dt><a name="sqlrcursor-getColumnIsAutoIncrement"><strong>getColumnIsAutoIncrement</strong></a>(self, col)</dt><dd><span class="code">Returns&nbsp;true&nbsp;if&nbsp;the&nbsp;specified&nbsp;column<br>
+auto-increments&nbsp;and&nbsp;false&nbsp;otherwise.</span></dd></dl>
 
-<dl><dt><a name="sqlrcursor-getColumnIsBinary"><strong>getColumnIsBinary</strong></a>(self, col)</dt><dd><span class="code">Returns&nbsp;1&nbsp;if&nbsp;the&nbsp;specified&nbsp;column&nbsp;contains&nbsp;binary&nbsp;data<br>
-and&nbsp;0&nbsp;otherwise.</span></dd></dl>
+<dl><dt><a name="sqlrcursor-getColumnIsBinary"><strong>getColumnIsBinary</strong></a>(self, col)</dt><dd><span class="code">Returns&nbsp;true&nbsp;if&nbsp;the&nbsp;specified&nbsp;column<br>
+contains&nbsp;binary&nbsp;data&nbsp;and&nbsp;false<br>
+otherwise.</span></dd></dl>
 
-<dl><dt><a name="sqlrcursor-getColumnIsNullable"><strong>getColumnIsNullable</strong></a>(self, col)</dt><dd><span class="code">Returns&nbsp;1&nbsp;if&nbsp;the&nbsp;specified&nbsp;column&nbsp;can&nbsp;contain&nbsp;nulls&nbsp;and<br>
-0&nbsp;otherwise.</span></dd></dl>
+<dl><dt><a name="sqlrcursor-getColumnIsNullable"><strong>getColumnIsNullable</strong></a>(self, col)</dt><dd><span class="code">Returns&nbsp;true&nbsp;if&nbsp;the&nbsp;specified&nbsp;column&nbsp;can<br>
+contain&nbsp;nulls&nbsp;and&nbsp;false&nbsp;otherwise.</span></dd></dl>
 
-<dl><dt><a name="sqlrcursor-getColumnIsPartOfKey"><strong>getColumnIsPartOfKey</strong></a>(self, col)</dt><dd><span class="code">Returns&nbsp;1&nbsp;if&nbsp;the&nbsp;specified&nbsp;column&nbsp;is&nbsp;part&nbsp;of&nbsp;a&nbsp;composite<br>
-key&nbsp;and&nbsp;0&nbsp;otherwise.</span></dd></dl>
+<dl><dt><a name="sqlrcursor-getColumnIsPartOfKey"><strong>getColumnIsPartOfKey</strong></a>(self, col)</dt><dd><span class="code">Returns&nbsp;true&nbsp;if&nbsp;the&nbsp;specified&nbsp;column&nbsp;is<br>
+part&nbsp;of&nbsp;a&nbsp;composite&nbsp;key&nbsp;and&nbsp;false&nbsp;otherwise.</span></dd></dl>
 
-<dl><dt><a name="sqlrcursor-getColumnIsPrimaryKey"><strong>getColumnIsPrimaryKey</strong></a>(self, col)</dt><dd><span class="code">Returns&nbsp;1&nbsp;if&nbsp;the&nbsp;specified&nbsp;column&nbsp;is&nbsp;a&nbsp;primary&nbsp;key&nbsp;and<br>
-0&nbsp;otherwise.</span></dd></dl>
+<dl><dt><a name="sqlrcursor-getColumnIsPrimaryKey"><strong>getColumnIsPrimaryKey</strong></a>(self, col)</dt><dd><span class="code">Returns&nbsp;true&nbsp;if&nbsp;the&nbsp;specified&nbsp;column&nbsp;is&nbsp;a<br>
+primary&nbsp;key&nbsp;and&nbsp;false&nbsp;otherwise.</span></dd></dl>
 
-<dl><dt><a name="sqlrcursor-getColumnIsUnique"><strong>getColumnIsUnique</strong></a>(self, col)</dt><dd><span class="code">Returns&nbsp;1&nbsp;if&nbsp;the&nbsp;specified&nbsp;column&nbsp;is&nbsp;unique&nbsp;and<br>
-0&nbsp;otherwise.</span></dd></dl>
+<dl><dt><a name="sqlrcursor-getColumnIsUnique"><strong>getColumnIsUnique</strong></a>(self, col)</dt><dd><span class="code">Returns&nbsp;true&nbsp;if&nbsp;the&nbsp;specified&nbsp;column&nbsp;is<br>
+unique&nbsp;and&nbsp;false&nbsp;otherwise.</span></dd></dl>
 
-<dl><dt><a name="sqlrcursor-getColumnIsUnsigned"><strong>getColumnIsUnsigned</strong></a>(self, col)</dt><dd><span class="code">Returns&nbsp;1&nbsp;if&nbsp;the&nbsp;specified&nbsp;column&nbsp;is&nbsp;an&nbsp;unsigned&nbsp;number<br>
-and&nbsp;0&nbsp;otherwise.</span></dd></dl>
+<dl><dt><a name="sqlrcursor-getColumnIsUnsigned"><strong>getColumnIsUnsigned</strong></a>(self, col)</dt><dd><span class="code">Returns&nbsp;true&nbsp;if&nbsp;the&nbsp;specified&nbsp;column&nbsp;is<br>
+an&nbsp;unsigned&nbsp;number&nbsp;and&nbsp;false&nbsp;otherwise.</span></dd></dl>
 
-<dl><dt><a name="sqlrcursor-getColumnIsZeroFilled"><strong>getColumnIsZeroFilled</strong></a>(self, col)</dt><dd><span class="code">Returns&nbsp;1&nbsp;if&nbsp;the&nbsp;specified&nbsp;column&nbsp;was&nbsp;created&nbsp;with&nbsp;the<br>
-zero-fill&nbsp;flag&nbsp;and&nbsp;0&nbsp;otherwise.</span></dd></dl>
+<dl><dt><a name="sqlrcursor-getColumnIsZeroFilled"><strong>getColumnIsZeroFilled</strong></a>(self, col)</dt><dd><span class="code">Returns&nbsp;true&nbsp;if&nbsp;the&nbsp;specified&nbsp;column&nbsp;was<br>
+created&nbsp;with&nbsp;the&nbsp;zero-fill&nbsp;flag&nbsp;and&nbsp;false<br>
+otherwise.</span></dd></dl>
 
-<dl><dt><a name="sqlrcursor-getColumnLength"><strong>getColumnLength</strong></a>(self, col)</dt><dd><span class="code">Returns&nbsp;the&nbsp;length&nbsp;of&nbsp;the&nbsp;specified&nbsp;column.&nbsp;&nbsp;col&nbsp;may<br>
-be&nbsp;a&nbsp;name&nbsp;or&nbsp;number.</span></dd></dl>
+<dl><dt><a name="sqlrcursor-getColumnLength"><strong>getColumnLength</strong></a>(self, col)</dt><dd><span class="code">Returns&nbsp;the&nbsp;number&nbsp;of&nbsp;bytes&nbsp;required&nbsp;on<br>
+the&nbsp;server&nbsp;to&nbsp;store&nbsp;the&nbsp;data&nbsp;for&nbsp;the&nbsp;specified&nbsp;column</span></dd></dl>
 
-<dl><dt><a name="sqlrcursor-getColumnList"><strong>getColumnList</strong></a>(sefl, table, wild)</dt><dd><span class="code">Sends&nbsp;a&nbsp;query&nbsp;that&nbsp;returns&nbsp;a&nbsp;list&nbsp;of&nbsp;columns<br>
-in&nbsp;the&nbsp;table&nbsp;specified&nbsp;by&nbsp;the&nbsp;"table"&nbsp;parameter<br>
-matching&nbsp;"wild".&nbsp;&nbsp;If&nbsp;wild&nbsp;is&nbsp;empty&nbsp;or&nbsp;NULL&nbsp;then<br>
-a&nbsp;list&nbsp;of&nbsp;all&nbsp;columns&nbsp;will&nbsp;be&nbsp;returned.</span></dd></dl>
+<dl><dt><a name="sqlrcursor-getColumnList"><strong>getColumnList</strong></a>(self, table, wild)</dt><dd><span class="code">Generates&nbsp;a&nbsp;result&nbsp;set&nbsp;containing&nbsp;the&nbsp;columns&nbsp;of&nbsp;"table",<br>
+which&nbsp;match&nbsp;the&nbsp;pattern&nbsp;"wild".<br>
+&nbsp;<br>
+The&nbsp;result&nbsp;set&nbsp;will&nbsp;contain&nbsp;the&nbsp;following&nbsp;columns:<br>
+*&nbsp;column_name<br>
+*&nbsp;data_type<br>
+*&nbsp;character_maximum_length<br>
+*&nbsp;numeric_precision<br>
+*&nbsp;numeric_scale<br>
+*&nbsp;is_nullable<br>
+*&nbsp;column_key<br>
+*&nbsp;column_default<br>
+*&nbsp;extra<br>
+&nbsp;<br>
+If&nbsp;"wild"&nbsp;is&nbsp;empty&nbsp;or&nbsp;None&nbsp;then&nbsp;a&nbsp;list&nbsp;of&nbsp;all&nbsp;columns<br>
+of&nbsp;"table"&nbsp;will&nbsp;be&nbsp;returned.<br>
+&nbsp;<br>
+If&nbsp;SQL&nbsp;Relay&nbsp;doesn't&nbsp;support&nbsp;getting&nbsp;a&nbsp;list&nbsp;of&nbsp;columns<br>
+for&nbsp;the&nbsp;current&nbsp;database&nbsp;backend&nbsp;(or&nbsp;the&nbsp;database&nbsp;doesn't)<br>
+then&nbsp;an&nbsp;empty&nbsp;result&nbsp;set&nbsp;will&nbsp;be&nbsp;returned.</span></dd></dl>
 
-<dl><dt><a name="sqlrcursor-getColumnName"><strong>getColumnName</strong></a>(self, col)</dt><dd><span class="code">Returns&nbsp;the&nbsp;name&nbsp;of&nbsp;column&nbsp;number&nbsp;col.</span></dd></dl>
+<dl><dt><a name="sqlrcursor-getColumnName"><strong>getColumnName</strong></a>(self, col)</dt><dd><span class="code">Returns&nbsp;the&nbsp;name&nbsp;of&nbsp;the&nbsp;specified&nbsp;column.</span></dd></dl>
 
 <dl><dt><a name="sqlrcursor-getColumnNames"><strong>getColumnNames</strong></a>(self)</dt><dd><span class="code">Returns&nbsp;a&nbsp;list&nbsp;of&nbsp;column&nbsp;names&nbsp;in&nbsp;the&nbsp;current&nbsp;result&nbsp;set.</span></dd></dl>
 
@@ -468,67 +952,261 @@ types,&nbsp;it's&nbsp;the&nbsp;number&nbsp;of&nbsp;characters&nbsp;in&nbsp;the&n
 the&nbsp;total&nbsp;number&nbsp;of&nbsp;digits&nbsp;to&nbsp;the&nbsp;right&nbsp;of&nbsp;the&nbsp;decimal<br>
 point&nbsp;in&nbsp;a&nbsp;number.&nbsp;&nbsp;eg:&nbsp;123.45&nbsp;has&nbsp;a&nbsp;scale&nbsp;of&nbsp;2.</span></dd></dl>
 
-<dl><dt><a name="sqlrcursor-getColumnType"><strong>getColumnType</strong></a>(self, col)</dt><dd><span class="code">Returns&nbsp;the&nbsp;type&nbsp;of&nbsp;the&nbsp;specified&nbsp;column.&nbsp;&nbsp;col&nbsp;may<br>
-be&nbsp;a&nbsp;name&nbsp;or&nbsp;number.</span></dd></dl>
+<dl><dt><a name="sqlrcursor-getColumnType"><strong>getColumnType</strong></a>(self, col)</dt><dd><span class="code">Returns&nbsp;the&nbsp;type&nbsp;of&nbsp;the&nbsp;specified&nbsp;column.</span></dd></dl>
 
-<dl><dt><a name="sqlrcursor-getDatabaseList"><strong>getDatabaseList</strong></a>(self, wild)</dt><dd><span class="code">Sends&nbsp;a&nbsp;query&nbsp;that&nbsp;returns&nbsp;a&nbsp;list&nbsp;of<br>
-databases/schemas&nbsp;matching&nbsp;"wild".&nbsp;&nbsp;If&nbsp;wild&nbsp;is&nbsp;empty<br>
-or&nbsp;NULL&nbsp;then&nbsp;a&nbsp;list&nbsp;of&nbsp;all&nbsp;databases/schemas&nbsp;will&nbsp;be<br>
-returned.</span></dd></dl>
+<dl><dt><a name="sqlrcursor-getDatabaseList"><strong>getDatabaseList</strong></a>(self, wild)</dt><dd><span class="code">Generates&nbsp;a&nbsp;result&nbsp;set&nbsp;containing&nbsp;databases&nbsp;that&nbsp;match&nbsp;the<br>
+pattern&nbsp;"wild".<br>
+&nbsp;<br>
+The&nbsp;result&nbsp;set&nbsp;will&nbsp;contain&nbsp;the&nbsp;following&nbsp;columns:<br>
+*&nbsp;Database<br>
+&nbsp;<br>
+If&nbsp;"wild"&nbsp;is&nbsp;empty&nbsp;or&nbsp;None&nbsp;then&nbsp;a&nbsp;result&nbsp;set<br>
+containing&nbsp;all&nbsp;databases&nbsp;will&nbsp;be&nbsp;returned.<br>
+&nbsp;<br>
+May&nbsp;actually&nbsp;return&nbsp;a&nbsp;result&nbsp;set&nbsp;of&nbsp;catalogs&nbsp;or&nbsp;schemas,<br>
+depending&nbsp;on&nbsp;whether&nbsp;the&nbsp;backend&nbsp;database&nbsp;equates<br>
+"database"&nbsp;with&nbsp;catalog&nbsp;or&nbsp;schema.<br>
+&nbsp;<br>
+See&nbsp;getDatabaseIsSchema().<br>
+&nbsp;<br>
+If&nbsp;SQL&nbsp;Relay&nbsp;doesn't&nbsp;support&nbsp;getting&nbsp;a&nbsp;list&nbsp;of&nbsp;databases<br>
+for&nbsp;the&nbsp;current&nbsp;database&nbsp;backend&nbsp;(or&nbsp;the&nbsp;database&nbsp;doesn't)<br>
+then&nbsp;an&nbsp;empty&nbsp;result&nbsp;set&nbsp;will&nbsp;be&nbsp;returned.</span></dd></dl>
 
-<dl><dt><a name="sqlrcursor-getField"><strong>getField</strong></a>(self, row, col)</dt><dd><span class="code">Returns&nbsp;the&nbsp;value&nbsp;of&nbsp;the&nbsp;specified&nbsp;row&nbsp;and<br>
-column.&nbsp;&nbsp;col&nbsp;may&nbsp;be&nbsp;a&nbsp;column&nbsp;name&nbsp;or&nbsp;number.</span></dd></dl>
+<dl><dt><a name="sqlrcursor-getField"><strong>getField</strong></a>(self, row, col)</dt><dd><span class="code">Returns&nbsp;the&nbsp;specified&nbsp;field&nbsp;as&nbsp;a&nbsp;string.</span></dd></dl>
 
-<dl><dt><a name="sqlrcursor-getFieldAsDouble"><strong>getFieldAsDouble</strong></a>(self, row, col)</dt><dd><span class="code">Returns&nbsp;the&nbsp;specified&nbsp;field&nbsp;as&nbsp;a&nbsp;double&nbsp;precision<br>
-floating&nbsp;point&nbsp;number.</span></dd></dl>
+<dl><dt><a name="sqlrcursor-getFieldAsBoolean"><strong>getFieldAsBoolean</strong></a>(self, row, col)</dt><dd><span class="code">Returns&nbsp;the&nbsp;specified&nbsp;field&nbsp;as&nbsp;a&nbsp;boolean.</span></dd></dl>
 
-<dl><dt><a name="sqlrcursor-getFieldAsInteger"><strong>getFieldAsInteger</strong></a>(self, row, col)</dt><dd><span class="code">Returns&nbsp;the&nbsp;specified&nbsp;field&nbsp;as&nbsp;a&nbsp;long&nbsp;integer.</span></dd></dl>
+<dl><dt><a name="sqlrcursor-getFieldAsBooleanIgnoringCase"><strong>getFieldAsBooleanIgnoringCase</strong></a>(self, row, col)</dt><dd><span class="code">Returns&nbsp;the&nbsp;specified&nbsp;field&nbsp;as&nbsp;a&nbsp;boolean,<br>
+ignoring&nbsp;the&nbsp;case&nbsp;of&nbsp;"col".</span></dd></dl>
 
-<dl><dt><a name="sqlrcursor-getFieldLength"><strong>getFieldLength</strong></a>(self, row, col)</dt><dd><span class="code">Returns&nbsp;the&nbsp;length&nbsp;of&nbsp;the&nbsp;specified&nbsp;row&nbsp;and<br>
-column.&nbsp;&nbsp;col&nbsp;may&nbsp;be&nbsp;a&nbsp;column&nbsp;name&nbsp;or&nbsp;number.</span></dd></dl>
+<dl><dt><a name="sqlrcursor-getFieldAsDateDay"><strong>getFieldAsDateDay</strong></a>(self, row, col, ddmm=None, yyyyddmm=None, datedelimiters=None)</dt><dd><span class="code">Interprets&nbsp;the&nbsp;specified&nbsp;field&nbsp;as&nbsp;a&nbsp;date<br>
+and&nbsp;returns&nbsp;the&nbsp;day&nbsp;component.</span></dd></dl>
 
-<dl><dt><a name="sqlrcursor-getLongest"><strong>getLongest</strong></a>(self, col)</dt><dd><span class="code">Returns&nbsp;the&nbsp;length&nbsp;of&nbsp;the&nbsp;specified&nbsp;column.&nbsp;&nbsp;col&nbsp;may<br>
-be&nbsp;a&nbsp;name&nbsp;or&nbsp;number.</span></dd></dl>
+<dl><dt><a name="sqlrcursor-getFieldAsDateDayIgnoringCase"><strong>getFieldAsDateDayIgnoringCase</strong></a>(self, row, col, ddmm=None, yyyyddmm=None, datedelimiters=None)</dt><dd><span class="code">Interprets&nbsp;the&nbsp;specified&nbsp;field&nbsp;as&nbsp;a&nbsp;date<br>
+and&nbsp;returns&nbsp;the&nbsp;day&nbsp;component,<br>
+ignoring&nbsp;the&nbsp;case&nbsp;of&nbsp;"col".</span></dd></dl>
 
-<dl><dt><a name="sqlrcursor-getNullsAsEmptyStrings"><strong>getNullsAsEmptyStrings</strong></a>(self)</dt><dd><span class="code">Tells&nbsp;the&nbsp;cursor&nbsp;to&nbsp;return&nbsp;NULL&nbsp;fields&nbsp;and&nbsp;output<br>
-bind&nbsp;variables&nbsp;as&nbsp;empty&nbsp;strings.<br>
+<dl><dt><a name="sqlrcursor-getFieldAsDateHour"><strong>getFieldAsDateHour</strong></a>(self, row, col, ddmm=None, yyyyddmm=None, datedelimiters=None)</dt><dd><span class="code">Interprets&nbsp;the&nbsp;specified&nbsp;field&nbsp;as&nbsp;a&nbsp;date<br>
+and&nbsp;returns&nbsp;the&nbsp;hour&nbsp;component.</span></dd></dl>
+
+<dl><dt><a name="sqlrcursor-getFieldAsDateHourIgnoringCase"><strong>getFieldAsDateHourIgnoringCase</strong></a>(self, row, col, ddmm=None, yyyyddmm=None, datedelimiters=None)</dt><dd><span class="code">Interprets&nbsp;the&nbsp;specified&nbsp;field&nbsp;as&nbsp;a&nbsp;date<br>
+and&nbsp;returns&nbsp;the&nbsp;hour&nbsp;component,<br>
+ignoring&nbsp;the&nbsp;case&nbsp;of&nbsp;"col".</span></dd></dl>
+
+<dl><dt><a name="sqlrcursor-getFieldAsDateIsNegative"><strong>getFieldAsDateIsNegative</strong></a>(self, row, col, ddmm=None, yyyyddmm=None, datedelimiters=None)</dt><dd><span class="code">Interprets&nbsp;the&nbsp;specified&nbsp;field&nbsp;as&nbsp;a&nbsp;date<br>
+and&nbsp;returns&nbsp;whether&nbsp;the&nbsp;hour&nbsp;component<br>
+is&nbsp;negative.</span></dd></dl>
+
+<dl><dt><a name="sqlrcursor-getFieldAsDateIsNegativeIgnoringCase"><strong>getFieldAsDateIsNegativeIgnoringCase</strong></a>(self, row, col, ddmm=None, yyyyddmm=None, datedelimiters=None)</dt><dd><span class="code">Interprets&nbsp;the&nbsp;specified&nbsp;field&nbsp;as&nbsp;a&nbsp;date<br>
+and&nbsp;returns&nbsp;whether&nbsp;the&nbsp;hour&nbsp;component<br>
+is&nbsp;negative,&nbsp;ignoring&nbsp;the&nbsp;case&nbsp;of&nbsp;"col".</span></dd></dl>
+
+<dl><dt><a name="sqlrcursor-getFieldAsDateMicrosecond"><strong>getFieldAsDateMicrosecond</strong></a>(self, row, col, ddmm=None, yyyyddmm=None, datedelimiters=None)</dt><dd><span class="code">Interprets&nbsp;the&nbsp;specified&nbsp;field&nbsp;as&nbsp;a&nbsp;date<br>
+and&nbsp;returns&nbsp;the&nbsp;microsecond&nbsp;component.</span></dd></dl>
+
+<dl><dt><a name="sqlrcursor-getFieldAsDateMicrosecondIgnoringCase"><strong>getFieldAsDateMicrosecondIgnoringCase</strong></a>(self, row, col, ddmm=None, yyyyddmm=None, datedelimiters=None)</dt><dd><span class="code">Interprets&nbsp;the&nbsp;specified&nbsp;field&nbsp;as&nbsp;a&nbsp;date<br>
+and&nbsp;returns&nbsp;the&nbsp;microsecond&nbsp;component,<br>
+ignoring&nbsp;the&nbsp;case&nbsp;of&nbsp;"col".</span></dd></dl>
+
+<dl><dt><a name="sqlrcursor-getFieldAsDateMinute"><strong>getFieldAsDateMinute</strong></a>(self, row, col, ddmm=None, yyyyddmm=None, datedelimiters=None)</dt><dd><span class="code">Interprets&nbsp;the&nbsp;specified&nbsp;field&nbsp;as&nbsp;a&nbsp;date<br>
+and&nbsp;returns&nbsp;the&nbsp;minute&nbsp;component.</span></dd></dl>
+
+<dl><dt><a name="sqlrcursor-getFieldAsDateMinuteIgnoringCase"><strong>getFieldAsDateMinuteIgnoringCase</strong></a>(self, row, col, ddmm=None, yyyyddmm=None, datedelimiters=None)</dt><dd><span class="code">Interprets&nbsp;the&nbsp;specified&nbsp;field&nbsp;as&nbsp;a&nbsp;date<br>
+and&nbsp;returns&nbsp;the&nbsp;minute&nbsp;component,<br>
+ignoring&nbsp;the&nbsp;case&nbsp;of&nbsp;"col".</span></dd></dl>
+
+<dl><dt><a name="sqlrcursor-getFieldAsDateMonth"><strong>getFieldAsDateMonth</strong></a>(self, row, col, ddmm=None, yyyyddmm=None, datedelimiters=None)</dt><dd><span class="code">Interprets&nbsp;the&nbsp;specified&nbsp;field&nbsp;as&nbsp;a&nbsp;date<br>
+and&nbsp;returns&nbsp;the&nbsp;month&nbsp;component.</span></dd></dl>
+
+<dl><dt><a name="sqlrcursor-getFieldAsDateMonthIgnoringCase"><strong>getFieldAsDateMonthIgnoringCase</strong></a>(self, row, col, ddmm=None, yyyyddmm=None, datedelimiters=None)</dt><dd><span class="code">Interprets&nbsp;the&nbsp;specified&nbsp;field&nbsp;as&nbsp;a&nbsp;date<br>
+and&nbsp;returns&nbsp;the&nbsp;month&nbsp;component,<br>
+ignoring&nbsp;the&nbsp;case&nbsp;of&nbsp;"col".</span></dd></dl>
+
+<dl><dt><a name="sqlrcursor-getFieldAsDateSecond"><strong>getFieldAsDateSecond</strong></a>(self, row, col, ddmm=None, yyyyddmm=None, datedelimiters=None)</dt><dd><span class="code">Interprets&nbsp;the&nbsp;specified&nbsp;field&nbsp;as&nbsp;a&nbsp;date<br>
+and&nbsp;returns&nbsp;the&nbsp;second&nbsp;component.</span></dd></dl>
+
+<dl><dt><a name="sqlrcursor-getFieldAsDateSecondIgnoringCase"><strong>getFieldAsDateSecondIgnoringCase</strong></a>(self, row, col, ddmm=None, yyyyddmm=None, datedelimiters=None)</dt><dd><span class="code">Interprets&nbsp;the&nbsp;specified&nbsp;field&nbsp;as&nbsp;a&nbsp;date<br>
+and&nbsp;returns&nbsp;the&nbsp;second&nbsp;component,<br>
+ignoring&nbsp;the&nbsp;case&nbsp;of&nbsp;"col".</span></dd></dl>
+
+<dl><dt><a name="sqlrcursor-getFieldAsDateYear"><strong>getFieldAsDateYear</strong></a>(self, row, col, ddmm=None, yyyyddmm=None, datedelimiters=None)</dt><dd><span class="code">Interprets&nbsp;the&nbsp;specified&nbsp;field&nbsp;as&nbsp;a&nbsp;date<br>
+and&nbsp;returns&nbsp;the&nbsp;year&nbsp;component.</span></dd></dl>
+
+<dl><dt><a name="sqlrcursor-getFieldAsDateYearIgnoringCase"><strong>getFieldAsDateYearIgnoringCase</strong></a>(self, row, col, ddmm=None, yyyyddmm=None, datedelimiters=None)</dt><dd><span class="code">Interprets&nbsp;the&nbsp;specified&nbsp;field&nbsp;as&nbsp;a&nbsp;date<br>
+and&nbsp;returns&nbsp;the&nbsp;year&nbsp;component,<br>
+ignoring&nbsp;the&nbsp;case&nbsp;of&nbsp;"col".</span></dd></dl>
+
+<dl><dt><a name="sqlrcursor-getFieldAsDouble"><strong>getFieldAsDouble</strong></a>(self, row, col)</dt><dd><span class="code">Returns&nbsp;the&nbsp;specified&nbsp;field&nbsp;as&nbsp;a&nbsp;decimal.</span></dd></dl>
+
+<dl><dt><a name="sqlrcursor-getFieldAsDoubleIgnoringCase"><strong>getFieldAsDoubleIgnoringCase</strong></a>(self, row, col)</dt><dd><span class="code">Returns&nbsp;the&nbsp;specified&nbsp;field&nbsp;as&nbsp;a&nbsp;decimal,&nbsp;ignoring<br>
+the&nbsp;case&nbsp;of&nbsp;"col".</span></dd></dl>
+
+<dl><dt><a name="sqlrcursor-getFieldAsInteger"><strong>getFieldAsInteger</strong></a>(self, row, col)</dt><dd><span class="code">Returns&nbsp;the&nbsp;specified&nbsp;field&nbsp;as&nbsp;an&nbsp;integer.</span></dd></dl>
+
+<dl><dt><a name="sqlrcursor-getFieldAsIntegerIgnoringCase"><strong>getFieldAsIntegerIgnoringCase</strong></a>(self, row, col)</dt><dd><span class="code">Returns&nbsp;the&nbsp;specified&nbsp;field&nbsp;as&nbsp;an&nbsp;integer,&nbsp;ignoring<br>
+the&nbsp;case&nbsp;of&nbsp;"col".</span></dd></dl>
+
+<dl><dt><a name="sqlrcursor-getFieldIgnoringCase"><strong>getFieldIgnoringCase</strong></a>(self, row, col)</dt><dd><span class="code">Returns&nbsp;the&nbsp;specified&nbsp;field&nbsp;as&nbsp;a&nbsp;string,<br>
+ignoring&nbsp;the&nbsp;case&nbsp;of&nbsp;"col".</span></dd></dl>
+
+<dl><dt><a name="sqlrcursor-getFieldLength"><strong>getFieldLength</strong></a>(self, row, col)</dt><dd><span class="code">Returns&nbsp;the&nbsp;length&nbsp;of&nbsp;the&nbsp;specified&nbsp;field.</span></dd></dl>
+
+<dl><dt><a name="sqlrcursor-getKeyAndIndexList"><strong>getKeyAndIndexList</strong></a>(self, table, wild)</dt><dd><span class="code">Generates&nbsp;a&nbsp;result&nbsp;set&nbsp;containing&nbsp;the&nbsp;keys&nbsp;and&nbsp;indexes&nbsp;of<br>
+"table",&nbsp;which&nbsp;match&nbsp;the&nbsp;pattern&nbsp;"wild".<br>
+&nbsp;<br>
+The&nbsp;result&nbsp;set&nbsp;will&nbsp;contain&nbsp;the&nbsp;following&nbsp;columns:<br>
+*&nbsp;table<br>
+*&nbsp;non_unique<br>
+*&nbsp;key_name<br>
+*&nbsp;seq_in_index<br>
+*&nbsp;column_name<br>
+*&nbsp;collation<br>
+*&nbsp;cardinality<br>
+*&nbsp;sub_part<br>
+*&nbsp;packed<br>
+*&nbsp;null<br>
+*&nbsp;index_type<br>
+*&nbsp;comment<br>
+*&nbsp;index_comment<br>
+&nbsp;<br>
+If&nbsp;"wild"&nbsp;is&nbsp;empty&nbsp;or&nbsp;None&nbsp;then&nbsp;a&nbsp;result&nbsp;set<br>
+containing&nbsp;all&nbsp;keys&nbsp;and&nbsp;indexes&nbsp;of&nbsp;"table"&nbsp;will&nbsp;be<br>
+returned.<br>
+&nbsp;<br>
+If&nbsp;SQL&nbsp;Relay&nbsp;doesn't&nbsp;support&nbsp;getting&nbsp;a&nbsp;list&nbsp;of&nbsp;keys&nbsp;and<br>
+indexes&nbsp;for&nbsp;the&nbsp;current&nbsp;database&nbsp;backend&nbsp;(or&nbsp;the&nbsp;database<br>
+doesn't)&nbsp;then&nbsp;an&nbsp;empty&nbsp;result&nbsp;set&nbsp;will&nbsp;be&nbsp;returned.</span></dd></dl>
+
+<dl><dt><a name="sqlrcursor-getLongest"><strong>getLongest</strong></a>(self, col)</dt><dd><span class="code">Returns&nbsp;the&nbsp;length&nbsp;of&nbsp;the&nbsp;longest&nbsp;field<br>
+in&nbsp;the&nbsp;specified&nbsp;column.</span></dd></dl>
+
+<dl><dt><a name="sqlrcursor-getNullsAsEmptyStrings"><strong>getNullsAsEmptyStrings</strong></a>(self)</dt><dd><span class="code">Tells&nbsp;the&nbsp;connection&nbsp;to&nbsp;return&nbsp;NULL&nbsp;fields<br>
+and&nbsp;output&nbsp;bind&nbsp;variables&nbsp;as&nbsp;empty&nbsp;strings.<br>
 This&nbsp;is&nbsp;the&nbsp;default.</span></dd></dl>
 
-<dl><dt><a name="sqlrcursor-getNullsAsNone"><strong>getNullsAsNone</strong></a>(self)</dt><dd><span class="code">Tells&nbsp;the&nbsp;cursor&nbsp;to&nbsp;return&nbsp;NULL&nbsp;fields&nbsp;and&nbsp;output<br>
-bind&nbsp;variables&nbsp;as&nbsp;NULL's.</span></dd></dl>
+<dl><dt><a name="sqlrcursor-getNullsAsNone"><strong>getNullsAsNone</strong></a>(self)</dt><dd><span class="code">Tells&nbsp;the&nbsp;connection&nbsp;to&nbsp;return&nbsp;NULL&nbsp;fields<br>
+and&nbsp;output&nbsp;bind&nbsp;variables&nbsp;as&nbsp;None&nbsp;rather<br>
+than&nbsp;as&nbsp;empty&nbsp;strings.</span></dd></dl>
 
 <dl><dt><a name="sqlrcursor-getOutputBindBlob"><strong>getOutputBindBlob</strong></a>(self, variable)</dt><dd><span class="code">Get&nbsp;the&nbsp;value&nbsp;stored&nbsp;in&nbsp;a&nbsp;previously<br>
-defined&nbsp;output&nbsp;bind&nbsp;variable.</span></dd></dl>
+defined&nbsp;binary&nbsp;lob&nbsp;output&nbsp;bind&nbsp;variable.</span></dd></dl>
 
 <dl><dt><a name="sqlrcursor-getOutputBindClob"><strong>getOutputBindClob</strong></a>(self, variable)</dt><dd><span class="code">Get&nbsp;the&nbsp;value&nbsp;stored&nbsp;in&nbsp;a&nbsp;previously<br>
-defined&nbsp;output&nbsp;bind&nbsp;variable.</span></dd></dl>
+defined&nbsp;character&nbsp;lob&nbsp;output&nbsp;bind&nbsp;variable.</span></dd></dl>
 
 <dl><dt><a name="sqlrcursor-getOutputBindCursor"><strong>getOutputBindCursor</strong></a>(self, variable)</dt><dd><span class="code">Get&nbsp;the&nbsp;cursor&nbsp;associated&nbsp;with&nbsp;a&nbsp;previously<br>
 defined&nbsp;output&nbsp;bind&nbsp;variable.</span></dd></dl>
 
+<dl><dt><a name="sqlrcursor-getOutputBindDateDay"><strong>getOutputBindDateDay</strong></a>(self, variable)</dt><dd><span class="code">Get&nbsp;the&nbsp;day&nbsp;from&nbsp;a&nbsp;previously&nbsp;defined<br>
+date&nbsp;output&nbsp;bind&nbsp;variable.</span></dd></dl>
+
+<dl><dt><a name="sqlrcursor-getOutputBindDateHour"><strong>getOutputBindDateHour</strong></a>(self, variable)</dt><dd><span class="code">Get&nbsp;the&nbsp;hour&nbsp;from&nbsp;a&nbsp;previously&nbsp;defined<br>
+date&nbsp;output&nbsp;bind&nbsp;variable.</span></dd></dl>
+
+<dl><dt><a name="sqlrcursor-getOutputBindDateIsNegative"><strong>getOutputBindDateIsNegative</strong></a>(self, variable)</dt><dd><span class="code">Get&nbsp;whether&nbsp;the&nbsp;value&nbsp;is&nbsp;negative&nbsp;from&nbsp;a<br>
+previously&nbsp;defined&nbsp;date&nbsp;output&nbsp;bind&nbsp;variable.</span></dd></dl>
+
+<dl><dt><a name="sqlrcursor-getOutputBindDateMicrosecond"><strong>getOutputBindDateMicrosecond</strong></a>(self, variable)</dt><dd><span class="code">Get&nbsp;the&nbsp;microsecond&nbsp;from&nbsp;a&nbsp;previously&nbsp;defined<br>
+date&nbsp;output&nbsp;bind&nbsp;variable.</span></dd></dl>
+
+<dl><dt><a name="sqlrcursor-getOutputBindDateMinute"><strong>getOutputBindDateMinute</strong></a>(self, variable)</dt><dd><span class="code">Get&nbsp;the&nbsp;minute&nbsp;from&nbsp;a&nbsp;previously&nbsp;defined<br>
+date&nbsp;output&nbsp;bind&nbsp;variable.</span></dd></dl>
+
+<dl><dt><a name="sqlrcursor-getOutputBindDateMonth"><strong>getOutputBindDateMonth</strong></a>(self, variable)</dt><dd><span class="code">Get&nbsp;the&nbsp;month&nbsp;from&nbsp;a&nbsp;previously&nbsp;defined<br>
+date&nbsp;output&nbsp;bind&nbsp;variable.</span></dd></dl>
+
+<dl><dt><a name="sqlrcursor-getOutputBindDateSecond"><strong>getOutputBindDateSecond</strong></a>(self, variable)</dt><dd><span class="code">Get&nbsp;the&nbsp;second&nbsp;from&nbsp;a&nbsp;previously&nbsp;defined<br>
+date&nbsp;output&nbsp;bind&nbsp;variable.</span></dd></dl>
+
+<dl><dt><a name="sqlrcursor-getOutputBindDateTz"><strong>getOutputBindDateTz</strong></a>(self, variable)</dt><dd><span class="code">Get&nbsp;the&nbsp;time&nbsp;zone&nbsp;from&nbsp;a&nbsp;previously<br>
+defined&nbsp;date&nbsp;output&nbsp;bind&nbsp;variable.</span></dd></dl>
+
+<dl><dt><a name="sqlrcursor-getOutputBindDateYear"><strong>getOutputBindDateYear</strong></a>(self, variable)</dt><dd><span class="code">Get&nbsp;the&nbsp;year&nbsp;from&nbsp;a&nbsp;previously&nbsp;defined<br>
+date&nbsp;output&nbsp;bind&nbsp;variable.</span></dd></dl>
+
 <dl><dt><a name="sqlrcursor-getOutputBindDouble"><strong>getOutputBindDouble</strong></a>(self, variable)</dt><dd><span class="code">Get&nbsp;the&nbsp;value&nbsp;stored&nbsp;in&nbsp;a&nbsp;previously<br>
-defined&nbsp;output&nbsp;bind&nbsp;variable&nbsp;as&nbsp;a&nbsp;double<br>
-precision&nbsp;floating&nbsp;point&nbsp;number.</span></dd></dl>
+defined&nbsp;decimal&nbsp;output&nbsp;bind&nbsp;variable.</span></dd></dl>
 
 <dl><dt><a name="sqlrcursor-getOutputBindInteger"><strong>getOutputBindInteger</strong></a>(self, variable)</dt><dd><span class="code">Get&nbsp;the&nbsp;value&nbsp;stored&nbsp;in&nbsp;a&nbsp;previously<br>
-defined&nbsp;output&nbsp;bind&nbsp;variable&nbsp;as&nbsp;a&nbsp;long<br>
-integer.</span></dd></dl>
+defined&nbsp;integer&nbsp;output&nbsp;bind&nbsp;variable.</span></dd></dl>
 
-<dl><dt><a name="sqlrcursor-getOutputBindLength"><strong>getOutputBindLength</strong></a>(self, variable)</dt><dd><span class="code">Retrieve&nbsp;the&nbsp;length&nbsp;of&nbsp;an&nbsp;output&nbsp;bind&nbsp;variable.</span></dd></dl>
+<dl><dt><a name="sqlrcursor-getOutputBindLength"><strong>getOutputBindLength</strong></a>(self, variable)</dt><dd><span class="code">Get&nbsp;the&nbsp;length&nbsp;of&nbsp;the&nbsp;value&nbsp;stored&nbsp;in&nbsp;a<br>
+previously&nbsp;defined&nbsp;output&nbsp;bind&nbsp;variable.</span></dd></dl>
 
 <dl><dt><a name="sqlrcursor-getOutputBindString"><strong>getOutputBindString</strong></a>(self, variable)</dt><dd><span class="code">Get&nbsp;the&nbsp;value&nbsp;stored&nbsp;in&nbsp;a&nbsp;previously<br>
-defined&nbsp;output&nbsp;bind&nbsp;variable.</span></dd></dl>
+defined&nbsp;string&nbsp;output&nbsp;bind&nbsp;variable.</span></dd></dl>
+
+<dl><dt><a name="sqlrcursor-getPrimaryKeysList"><strong>getPrimaryKeysList</strong></a>(self, table, wild)</dt><dd><span class="code">Generates&nbsp;a&nbsp;result&nbsp;set&nbsp;containing&nbsp;the&nbsp;primary&nbsp;keys&nbsp;of<br>
+"table",&nbsp;which&nbsp;match&nbsp;the&nbsp;pattern&nbsp;"wild".<br>
+&nbsp;<br>
+The&nbsp;result&nbsp;set&nbsp;will&nbsp;contain&nbsp;the&nbsp;following&nbsp;columns:<br>
+*&nbsp;table<br>
+*&nbsp;non_unique<br>
+*&nbsp;key_name<br>
+*&nbsp;seq_in_index<br>
+*&nbsp;column_name<br>
+*&nbsp;collation<br>
+*&nbsp;cardinality<br>
+*&nbsp;sub_part<br>
+*&nbsp;packed<br>
+*&nbsp;null<br>
+*&nbsp;index_type<br>
+*&nbsp;comment<br>
+*&nbsp;index_comment<br>
+&nbsp;<br>
+If&nbsp;"wild"&nbsp;is&nbsp;empty&nbsp;or&nbsp;None&nbsp;then&nbsp;a&nbsp;result&nbsp;set&nbsp;containing<br>
+all&nbsp;primary&nbsp;keys&nbsp;of&nbsp;"table"&nbsp;will&nbsp;be&nbsp;returned.<br>
+&nbsp;<br>
+If&nbsp;SQL&nbsp;Relay&nbsp;doesn't&nbsp;support&nbsp;getting&nbsp;a&nbsp;list&nbsp;of&nbsp;primary&nbsp;keys<br>
+for&nbsp;the&nbsp;current&nbsp;database&nbsp;backend&nbsp;(or&nbsp;the&nbsp;database&nbsp;doesn't)<br>
+then&nbsp;an&nbsp;empty&nbsp;result&nbsp;set&nbsp;will&nbsp;be&nbsp;returned.</span></dd></dl>
+
+<dl><dt><a name="sqlrcursor-getProcedureList"><strong>getProcedureList</strong></a>(self, wild)</dt><dd><span class="code">Generates&nbsp;a&nbsp;result&nbsp;set&nbsp;containing&nbsp;procedures&nbsp;that&nbsp;match&nbsp;the<br>
+pattern&nbsp;"wild".<br>
+&nbsp;<br>
+The&nbsp;result&nbsp;set&nbsp;will&nbsp;contain&nbsp;the&nbsp;following&nbsp;columns:<br>
+*&nbsp;routine_catalog<br>
+*&nbsp;routine_schema<br>
+*&nbsp;routine_name<br>
+*&nbsp;data_type<br>
+&nbsp;<br>
+If&nbsp;"wild"&nbsp;is&nbsp;empty&nbsp;or&nbsp;None&nbsp;then&nbsp;a&nbsp;result&nbsp;set<br>
+containing&nbsp;all&nbsp;procedures&nbsp;in&nbsp;the&nbsp;current&nbsp;database/schema<br>
+will&nbsp;be&nbsp;returned.<br>
+&nbsp;<br>
+If&nbsp;SQL&nbsp;Relay&nbsp;doesn't&nbsp;support&nbsp;getting&nbsp;a&nbsp;list&nbsp;of&nbsp;procedures<br>
+for&nbsp;the&nbsp;current&nbsp;database&nbsp;backend&nbsp;(or&nbsp;the&nbsp;database&nbsp;doesn't)<br>
+then&nbsp;an&nbsp;empty&nbsp;result&nbsp;set&nbsp;will&nbsp;be&nbsp;returned.</span></dd></dl>
+
+<dl><dt><a name="sqlrcursor-getProcedureParameterList"><strong>getProcedureParameterList</strong></a>(self, procedure, wild)</dt><dd><span class="code">Generates&nbsp;a&nbsp;result&nbsp;set&nbsp;containing&nbsp;the&nbsp;parameters&nbsp;of<br>
+"procedure",&nbsp;which&nbsp;match&nbsp;the&nbsp;pattern&nbsp;"wild".<br>
+&nbsp;<br>
+The&nbsp;result&nbsp;set&nbsp;will&nbsp;contain&nbsp;the&nbsp;following&nbsp;columns:<br>
+*&nbsp;parameter_name<br>
+*&nbsp;parameter_mode<br>
+*&nbsp;data_type<br>
+*&nbsp;character_maximum_length<br>
+*&nbsp;ordinal_position<br>
+&nbsp;<br>
+If&nbsp;"wild"&nbsp;is&nbsp;empty&nbsp;or&nbsp;None&nbsp;then&nbsp;a&nbsp;result&nbsp;set<br>
+containing&nbsp;all&nbsp;parameters&nbsp;of&nbsp;"procedure"&nbsp;will&nbsp;be&nbsp;returned.<br>
+&nbsp;<br>
+If&nbsp;SQL&nbsp;Relay&nbsp;doesn't&nbsp;support&nbsp;getting&nbsp;a&nbsp;list&nbsp;of&nbsp;procedure<br>
+parameters&nbsp;for&nbsp;the&nbsp;current&nbsp;database&nbsp;backend&nbsp;(or&nbsp;the<br>
+database&nbsp;doesn't)&nbsp;then&nbsp;an&nbsp;empty&nbsp;result&nbsp;set&nbsp;will&nbsp;be<br>
+returned.</span></dd></dl>
 
 <dl><dt><a name="sqlrcursor-getResultSetBufferSize"><strong>getResultSetBufferSize</strong></a>(self)</dt><dd><span class="code">Returns&nbsp;the&nbsp;number&nbsp;of&nbsp;result&nbsp;set&nbsp;rows&nbsp;that&nbsp;<br>
 will&nbsp;be&nbsp;buffered&nbsp;at&nbsp;a&nbsp;time&nbsp;or&nbsp;0&nbsp;for&nbsp;the<br>
 entire&nbsp;result&nbsp;set.</span></dd></dl>
 
 <dl><dt><a name="sqlrcursor-getResultSetId"><strong>getResultSetId</strong></a>(self)</dt><dd><span class="code">Returns&nbsp;the&nbsp;internal&nbsp;ID&nbsp;of&nbsp;this&nbsp;result&nbsp;set.<br>
-This&nbsp;parameter&nbsp;may&nbsp;be&nbsp;passed&nbsp;to&nbsp;another&nbsp;<br>
-cursor&nbsp;for&nbsp;use&nbsp;in&nbsp;the&nbsp;<a href="#sqlrcursor-resumeResultSet">resumeResultSet</a>()&nbsp;<br>
+This&nbsp;parameter&nbsp;may&nbsp;be&nbsp;passed&nbsp;to&nbsp;another<br>
+cursor&nbsp;for&nbsp;use&nbsp;in&nbsp;the&nbsp;<a href="#sqlrcursor-resumeResultSet">resumeResultSet</a>()<br>
 method.<br>
-Note:&nbsp;the&nbsp;value&nbsp;returned&nbsp;by&nbsp;this&nbsp;method&nbsp;is<br>
-only&nbsp;valid&nbsp;after&nbsp;a&nbsp;call&nbsp;to&nbsp;<a href="#sqlrcursor-suspendResultSet">suspendResultSet</a>().</span></dd></dl>
+Note:&nbsp;The&nbsp;value&nbsp;this&nbsp;method&nbsp;returns&nbsp;is&nbsp;only<br>
+valid&nbsp;after&nbsp;a&nbsp;call&nbsp;to&nbsp;<a href="#sqlrcursor-suspendResultSet">suspendResultSet</a>().</span></dd></dl>
 
 <dl><dt><a name="sqlrcursor-getRow"><strong>getRow</strong></a>(self, row)</dt><dd><span class="code">Returns&nbsp;a&nbsp;list&nbsp;of&nbsp;values&nbsp;in&nbsp;the&nbsp;given&nbsp;row.</span></dd></dl>
 
@@ -546,9 +1224,75 @@ Note:&nbsp;this&nbsp;function&nbsp;has&nbsp;no&nbsp;equivalent&nbsp;in&nbsp;othe
 <dl><dt><a name="sqlrcursor-getRowRange"><strong>getRowRange</strong></a>(self, beg, end)</dt><dd><span class="code">Returns&nbsp;a&nbsp;list&nbsp;of&nbsp;lists&nbsp;of&nbsp;the&nbsp;rows&nbsp;between&nbsp;beg&nbsp;and&nbsp;end.<br>
 Note:&nbsp;this&nbsp;function&nbsp;has&nbsp;no&nbsp;equivalent&nbsp;in&nbsp;other&nbsp;SQL&nbsp;Relay&nbsp;API's.</span></dd></dl>
 
-<dl><dt><a name="sqlrcursor-getTableList"><strong>getTableList</strong></a>(self, wild)</dt><dd><span class="code">Sends&nbsp;a&nbsp;query&nbsp;that&nbsp;returns&nbsp;a&nbsp;list&nbsp;of&nbsp;tables<br>
-matching&nbsp;"wild".&nbsp;&nbsp;If&nbsp;wild&nbsp;is&nbsp;empty&nbsp;or&nbsp;NULL&nbsp;then<br>
-a&nbsp;list&nbsp;of&nbsp;all&nbsp;tables&nbsp;will&nbsp;be&nbsp;returned.</span></dd></dl>
+<dl><dt><a name="sqlrcursor-getSchemaList"><strong>getSchemaList</strong></a>(self, wild)</dt><dd><span class="code">Generates&nbsp;a&nbsp;result&nbsp;set&nbsp;containing&nbsp;schemas&nbsp;that&nbsp;match&nbsp;the<br>
+pattern&nbsp;"wild".<br>
+&nbsp;<br>
+The&nbsp;result&nbsp;set&nbsp;will&nbsp;contain&nbsp;the&nbsp;following&nbsp;columns:<br>
+*&nbsp;Database<br>
+&nbsp;<br>
+(The&nbsp;column&nbsp;name&nbsp;is&nbsp;a&nbsp;bit&nbsp;of&nbsp;a&nbsp;misnomer,&nbsp;the&nbsp;results&nbsp;are<br>
+schemas,&nbsp;not&nbsp;databases.)<br>
+&nbsp;<br>
+If&nbsp;"wild"&nbsp;is&nbsp;empty&nbsp;or&nbsp;None&nbsp;then&nbsp;a&nbsp;result&nbsp;set&nbsp;containing<br>
+all&nbsp;schemas&nbsp;in&nbsp;the&nbsp;current&nbsp;database&nbsp;will&nbsp;be&nbsp;returned.<br>
+&nbsp;<br>
+If&nbsp;SQL&nbsp;Relay&nbsp;doesn't&nbsp;support&nbsp;getting&nbsp;a&nbsp;list&nbsp;of&nbsp;schemas<br>
+for&nbsp;the&nbsp;current&nbsp;database&nbsp;backend&nbsp;(or&nbsp;the&nbsp;database&nbsp;doesn't)<br>
+then&nbsp;an&nbsp;empty&nbsp;result&nbsp;set&nbsp;will&nbsp;be&nbsp;returned.</span></dd></dl>
+
+<dl><dt><a name="sqlrcursor-getTableList"><strong>getTableList</strong></a>(self, wild)</dt><dd><span class="code">Generates&nbsp;a&nbsp;result&nbsp;set&nbsp;containing&nbsp;the&nbsp;tables&nbsp;in&nbsp;the&nbsp;current<br>
+database&nbsp;and&nbsp;schema&nbsp;that&nbsp;match&nbsp;the&nbsp;pattern&nbsp;"wild".<br>
+&nbsp;<br>
+The&nbsp;result&nbsp;set&nbsp;will&nbsp;contain&nbsp;the&nbsp;following&nbsp;columns:<br>
+*&nbsp;Tables_in_xxx<br>
+&nbsp;<br>
+If&nbsp;"wild"&nbsp;is&nbsp;empty&nbsp;or&nbsp;None&nbsp;then&nbsp;a&nbsp;result&nbsp;set&nbsp;containing<br>
+all&nbsp;tables&nbsp;in&nbsp;the&nbsp;current&nbsp;database/schema&nbsp;will&nbsp;be&nbsp;returned.<br>
+&nbsp;<br>
+If&nbsp;SQL&nbsp;Relay&nbsp;doesn't&nbsp;support&nbsp;getting&nbsp;a&nbsp;list&nbsp;of&nbsp;tables<br>
+for&nbsp;the&nbsp;current&nbsp;database&nbsp;backend&nbsp;(or&nbsp;the&nbsp;database&nbsp;doesn't)<br>
+then&nbsp;an&nbsp;empty&nbsp;result&nbsp;set&nbsp;will&nbsp;be&nbsp;returned.</span></dd></dl>
+
+<dl><dt><a name="sqlrcursor-getTableTypeList"><strong>getTableTypeList</strong></a>(self)</dt><dd><span class="code">Generates&nbsp;a&nbsp;result&nbsp;set&nbsp;containing&nbsp;supported&nbsp;table&nbsp;types.<br>
+&nbsp;<br>
+The&nbsp;result&nbsp;set&nbsp;will&nbsp;contain&nbsp;the&nbsp;following&nbsp;columns:<br>
+*&nbsp;table_type<br>
+&nbsp;<br>
+If&nbsp;SQL&nbsp;Relay&nbsp;doesn't&nbsp;support&nbsp;getting&nbsp;a&nbsp;list&nbsp;of&nbsp;table&nbsp;types<br>
+for&nbsp;the&nbsp;current&nbsp;database&nbsp;backend&nbsp;(or&nbsp;the&nbsp;database&nbsp;doesn't)<br>
+then&nbsp;an&nbsp;empty&nbsp;result&nbsp;set&nbsp;will&nbsp;be&nbsp;returned.</span></dd></dl>
+
+<dl><dt><a name="sqlrcursor-getTypeInfoList"><strong>getTypeInfoList</strong></a>(self, type)</dt><dd><span class="code">Generates&nbsp;a&nbsp;result&nbsp;set&nbsp;containing&nbsp;data&nbsp;type&nbsp;information&nbsp;for<br>
+"type".<br>
+&nbsp;<br>
+The&nbsp;result&nbsp;set&nbsp;will&nbsp;contain&nbsp;the&nbsp;following&nbsp;columns:<br>
+*&nbsp;type_name<br>
+*&nbsp;data_type<br>
+*&nbsp;precision<br>
+*&nbsp;literal_prefix<br>
+*&nbsp;literal_suffix<br>
+*&nbsp;create_params<br>
+*&nbsp;nullable<br>
+*&nbsp;case_sensitive<br>
+*&nbsp;searchable<br>
+*&nbsp;unsigned_attribute<br>
+*&nbsp;fixed_prec_scale<br>
+*&nbsp;auto_increment<br>
+*&nbsp;local_type_name<br>
+*&nbsp;minumum_scale<br>
+*&nbsp;maxiumm_scale<br>
+*&nbsp;sql_data_type<br>
+*&nbsp;sql_datetime_sub<br>
+*&nbsp;num_prec_radix<br>
+*&nbsp;interval_precision<br>
+&nbsp;<br>
+If&nbsp;"type"&nbsp;is&nbsp;empty&nbsp;or&nbsp;None&nbsp;then&nbsp;a&nbsp;result&nbsp;set&nbsp;containing<br>
+all&nbsp;data&nbsp;types&nbsp;in&nbsp;the&nbsp;current&nbsp;databas/schema&nbsp;will&nbsp;be<br>
+returned.<br>
+&nbsp;<br>
+If&nbsp;SQL&nbsp;Relay&nbsp;doesn't&nbsp;support&nbsp;getting&nbsp;type&nbsp;info<br>
+for&nbsp;the&nbsp;current&nbsp;database&nbsp;backend&nbsp;(or&nbsp;the&nbsp;database&nbsp;doesn't)<br>
+then&nbsp;an&nbsp;empty&nbsp;result&nbsp;set&nbsp;will&nbsp;be&nbsp;returned.</span></dd></dl>
 
 <dl><dt><a name="sqlrcursor-inputBind"><strong>inputBind</strong></a>(self, variable, value, precision=0, scale=0)</dt><dd><span class="code">Define&nbsp;an&nbsp;input&nbsp;bind&nbsp;varaible.<br>
 Returns&nbsp;true&nbsp;if&nbsp;the&nbsp;variable&nbsp;was&nbsp;successfully&nbsp;bound&nbsp;or&nbsp;false&nbsp;if&nbsp;the<br>
@@ -557,9 +1301,31 @@ then&nbsp;precision&nbsp;and&nbsp;scale&nbsp;may&nbsp;also&nbsp;be&nbsp;specifie
 precision&nbsp;and&nbsp;scale&nbsp;then&nbsp;set&nbsp;them&nbsp;both&nbsp;to&nbsp;0.&nbsp;&nbsp;However&nbsp;in&nbsp;that&nbsp;case&nbsp;you<br>
 may&nbsp;get&nbsp;unexpected&nbsp;rounding&nbsp;behavior&nbsp;if&nbsp;the&nbsp;server&nbsp;is&nbsp;faking&nbsp;binds.</span></dd></dl>
 
-<dl><dt><a name="sqlrcursor-inputBindBlob"><strong>inputBindBlob</strong></a>(self, variable, value, length)</dt><dd><span class="code">Define&nbsp;an&nbsp;input&nbsp;bind&nbsp;varaible.</span></dd></dl>
+<dl><dt><a name="sqlrcursor-inputBindBlob"><strong>inputBindBlob</strong></a>(self, variable, value, length)</dt><dd><span class="code">Defines&nbsp;a&nbsp;binary&nbsp;lob&nbsp;input&nbsp;bind&nbsp;variable.</span></dd></dl>
 
-<dl><dt><a name="sqlrcursor-inputBindClob"><strong>inputBindClob</strong></a>(self, variable, value, length)</dt><dd><span class="code">Define&nbsp;an&nbsp;input&nbsp;bind&nbsp;varaible.</span></dd></dl>
+<dl><dt><a name="sqlrcursor-inputBindClob"><strong>inputBindClob</strong></a>(self, variable, value, length)</dt><dd><span class="code">Defines&nbsp;a&nbsp;character&nbsp;lob&nbsp;input&nbsp;bind&nbsp;variable.</span></dd></dl>
+
+<dl><dt><a name="sqlrcursor-inputBindDate"><strong>inputBindDate</strong></a>(self, variable, year, month, day, hour, minute, second, microsecond, tz, isnegative)</dt><dd><span class="code">Defines&nbsp;a&nbsp;date&nbsp;input&nbsp;bind&nbsp;variable.&nbsp;&nbsp;"day"&nbsp;and&nbsp;"month"<br>
+are&nbsp;1-based.<br>
+&nbsp;<br>
+Some&nbsp;databases&nbsp;distinguish&nbsp;between&nbsp;date,&nbsp;time,&nbsp;and<br>
+datetime&nbsp;types.&nbsp;&nbsp;For&nbsp;those&nbsp;databases...<br>
+&nbsp;<br>
+*&nbsp;The&nbsp;input&nbsp;bind&nbsp;variable&nbsp;will&nbsp;be&nbsp;interpreted&nbsp;as&nbsp;a&nbsp;time&nbsp;type<br>
+if&nbsp;year&nbsp;and/or&nbsp;month&nbsp;are&nbsp;negative.<br>
+&nbsp;<br>
+*&nbsp;The&nbsp;input&nbsp;bind&nbsp;variable&nbsp;will&nbsp;be&nbsp;interpreted&nbsp;as&nbsp;a&nbsp;date&nbsp;type<br>
+if&nbsp;hour,&nbsp;minute,&nbsp;second,&nbsp;and/or&nbsp;microsecond&nbsp;are&nbsp;negative.<br>
+&nbsp;<br>
+*&nbsp;The&nbsp;input&nbsp;bind&nbsp;variable&nbsp;will&nbsp;be&nbsp;interpreted&nbsp;as&nbsp;a&nbsp;datetime<br>
+type&nbsp;if&nbsp;all&nbsp;parts&nbsp;are&nbsp;positive.<br>
+&nbsp;<br>
+"tz"&nbsp;is&nbsp;the&nbsp;timezone&nbsp;abbreviation,&nbsp;and&nbsp;may&nbsp;be&nbsp;left&nbsp;None.<br>
+Most&nbsp;databases&nbsp;ignore&nbsp;"tz".<br>
+&nbsp;<br>
+Set&nbsp;"isnegative"&nbsp;may&nbsp;be&nbsp;set&nbsp;to&nbsp;true&nbsp;to&nbsp;represent&nbsp;a&nbsp;negative<br>
+time&nbsp;interval.&nbsp;&nbsp;However,&nbsp;few&nbsp;databases&nbsp;support&nbsp;negative<br>
+time&nbsp;intervals&nbsp;and&nbsp;ignore&nbsp;"isnegative".</span></dd></dl>
 
 <dl><dt><a name="sqlrcursor-inputBinds"><strong>inputBinds</strong></a>(self, variables, values, precisions=None, scales=None)</dt><dd><span class="code">Define&nbsp;input&nbsp;bind&nbsp;variables.<br>
 Returns&nbsp;true&nbsp;if&nbsp;the&nbsp;variables&nbsp;were&nbsp;successfully&nbsp;bound&nbsp;or&nbsp;false&nbsp;if&nbsp;one<br>
@@ -572,11 +1338,18 @@ or&nbsp;if&nbsp;precision&nbsp;and&nbsp;scale&nbsp;weren't&nbsp;provided&nbsp;fo
 case&nbsp;as&nbsp;they&nbsp;are&nbsp;defined&nbsp;in&nbsp;the&nbsp;database.<br>
 This&nbsp;is&nbsp;the&nbsp;default.</span></dd></dl>
 
-<dl><dt><a name="sqlrcursor-openCachedResultSet"><strong>openCachedResultSet</strong></a>(self, filename)</dt><dd><span class="code">Open&nbsp;a&nbsp;result&nbsp;set&nbsp;after&nbsp;a&nbsp;sendCachedQeury</span></dd></dl>
+<dl><dt><a name="sqlrcursor-nextResultSet"><strong>nextResultSet</strong></a>(self)</dt><dd><span class="code">Returns&nbsp;true&nbsp;and&nbsp;acts&nbsp;like&nbsp;<a href="#sqlrcursor-executeQuery">executeQuery</a>()<br>
+when&nbsp;there&nbsp;is&nbsp;another&nbsp;result&nbsp;set&nbsp;available<br>
+from&nbsp;the&nbsp;server.</span></dd></dl>
 
-<dl><dt><a name="sqlrcursor-prepareFileQuery"><strong>prepareFileQuery</strong></a>(self, path, file)</dt><dd><span class="code">Prepare&nbsp;to&nbsp;execute&nbsp;the&nbsp;contents&nbsp;of&nbsp;path/filename.</span></dd></dl>
+<dl><dt><a name="sqlrcursor-openCachedResultSet"><strong>openCachedResultSet</strong></a>(self, filename)</dt><dd><span class="code">Opens&nbsp;a&nbsp;cached&nbsp;result&nbsp;set.<br>
+Returns&nbsp;true&nbsp;on&nbsp;success&nbsp;and&nbsp;false&nbsp;on&nbsp;failure.</span></dd></dl>
 
-<dl><dt><a name="sqlrcursor-prepareQuery"><strong>prepareQuery</strong></a>(self, query)</dt><dd><span class="code">Prepare&nbsp;to&nbsp;execute&nbsp;query.</span></dd></dl>
+<dl><dt><a name="sqlrcursor-prepareFileQuery"><strong>prepareFileQuery</strong></a>(self, path, file)</dt><dd><span class="code">Prepare&nbsp;to&nbsp;execute&nbsp;the&nbsp;contents<br>
+of&nbsp;"path"/"filename".&nbsp;&nbsp;Returns&nbsp;false&nbsp;if&nbsp;the<br>
+//&nbsp;file&nbsp;couldn't&nbsp;be&nbsp;opened.</span></dd></dl>
+
+<dl><dt><a name="sqlrcursor-prepareQuery"><strong>prepareQuery</strong></a>(self, query)</dt><dd><span class="code">Prepare&nbsp;to&nbsp;execute&nbsp;"query".</span></dd></dl>
 
 <dl><dt><a name="sqlrcursor-prepareQueryWithLength"><strong>prepareQueryWithLength</strong></a>(self, query, length)</dt><dd><span class="code">Prepare&nbsp;to&nbsp;execute&nbsp;"query"&nbsp;with&nbsp;length&nbsp;<br>
 "length".&nbsp;&nbsp;This&nbsp;method&nbsp;must&nbsp;be&nbsp;used&nbsp;if&nbsp;the<br>
@@ -585,28 +1358,31 @@ query&nbsp;contains&nbsp;binary&nbsp;data.</span></dd></dl>
 <dl><dt><a name="sqlrcursor-resumeCachedResultSet"><strong>resumeCachedResultSet</strong></a>(self, id, filename)</dt><dd><span class="code">Resumes&nbsp;a&nbsp;result&nbsp;set&nbsp;previously&nbsp;left&nbsp;open<br>
 using&nbsp;suspendSession()&nbsp;and&nbsp;continues&nbsp;caching<br>
 the&nbsp;result&nbsp;set&nbsp;to&nbsp;"filename".<br>
-Returns&nbsp;1&nbsp;on&nbsp;success&nbsp;and&nbsp;0&nbsp;on&nbsp;failure.</span></dd></dl>
+Returns&nbsp;true&nbsp;on&nbsp;success&nbsp;and&nbsp;false&nbsp;on&nbsp;failure.</span></dd></dl>
 
-<dl><dt><a name="sqlrcursor-resumeResultSet"><strong>resumeResultSet</strong></a>(self, id)</dt><dd><span class="code">Resumes&nbsp;a&nbsp;result&nbsp;set&nbsp;previously&nbsp;left&nbsp;open&nbsp;<br>
+<dl><dt><a name="sqlrcursor-resumeResultSet"><strong>resumeResultSet</strong></a>(self, id)</dt><dd><span class="code">Resumes&nbsp;a&nbsp;result&nbsp;set&nbsp;previously&nbsp;left&nbsp;open<br>
 using&nbsp;suspendSession().<br>
-Returns&nbsp;1&nbsp;on&nbsp;success&nbsp;and&nbsp;0&nbsp;on&nbsp;failure.</span></dd></dl>
+Returns&nbsp;true&nbsp;on&nbsp;success&nbsp;and&nbsp;false&nbsp;on&nbsp;failure.</span></dd></dl>
 
-<dl><dt><a name="sqlrcursor-rowCount"><strong>rowCount</strong></a>(self)</dt><dd><span class="code">Returns&nbsp;the&nbsp;number&nbsp;of&nbsp;rows&nbsp;in&nbsp;the&nbsp;current&nbsp;result&nbsp;set.</span></dd></dl>
+<dl><dt><a name="sqlrcursor-rowCount"><strong>rowCount</strong></a>(self)</dt><dd><span class="code">Returns&nbsp;the&nbsp;number&nbsp;of&nbsp;rows&nbsp;in&nbsp;the&nbsp;current<br>
+result&nbsp;set&nbsp;(if&nbsp;the&nbsp;result&nbsp;set&nbsp;is&nbsp;being<br>
+stepped&nbsp;through,&nbsp;this&nbsp;returns&nbsp;the&nbsp;number<br>
+of&nbsp;rows&nbsp;processed&nbsp;so&nbsp;far).</span></dd></dl>
 
-<dl><dt><a name="sqlrcursor-sendFileQuery"><strong>sendFileQuery</strong></a>(self, path, file)</dt><dd><span class="code">Send&nbsp;the&nbsp;SQL&nbsp;query&nbsp;in&nbsp;path/file&nbsp;to&nbsp;the&nbsp;server&nbsp;and<br>
-gets&nbsp;a&nbsp;result&nbsp;set.</span></dd></dl>
+<dl><dt><a name="sqlrcursor-sendFileQuery"><strong>sendFileQuery</strong></a>(self, path, file)</dt><dd><span class="code">Sends&nbsp;the&nbsp;query&nbsp;in&nbsp;file&nbsp;"path"/"filename"&nbsp;directly<br>
+and&nbsp;gets&nbsp;a&nbsp;result&nbsp;set.</span></dd></dl>
 
-<dl><dt><a name="sqlrcursor-sendQuery"><strong>sendQuery</strong></a>(self, query)</dt><dd><span class="code">Send&nbsp;a&nbsp;SQL&nbsp;query&nbsp;to&nbsp;the&nbsp;server&nbsp;and<br>
-gets&nbsp;a&nbsp;result&nbsp;set.</span></dd></dl>
+<dl><dt><a name="sqlrcursor-sendQuery"><strong>sendQuery</strong></a>(self, query)</dt><dd><span class="code">Sends&nbsp;"query"&nbsp;directly&nbsp;and&nbsp;gets&nbsp;a&nbsp;result&nbsp;set.</span></dd></dl>
 
-<dl><dt><a name="sqlrcursor-sendQueryWithLength"><strong>sendQueryWithLength</strong></a>(self, query, length)</dt><dd><span class="code">Sends&nbsp;"query"&nbsp;with&nbsp;length&nbsp;"length"&nbsp;and&nbsp;gets<br>
-a&nbsp;result&nbsp;set.&nbsp;This&nbsp;method&nbsp;must&nbsp;be&nbsp;used&nbsp;if<br>
-the&nbsp;query&nbsp;contains&nbsp;binary&nbsp;data.</span></dd></dl>
+<dl><dt><a name="sqlrcursor-sendQueryWithLength"><strong>sendQueryWithLength</strong></a>(self, query, length)</dt><dd><span class="code">Sends&nbsp;"query"&nbsp;with&nbsp;length&nbsp;"length"&nbsp;directly<br>
+and&nbsp;gets&nbsp;a&nbsp;result&nbsp;set.&nbsp;This&nbsp;method&nbsp;must&nbsp;be&nbsp;used<br>
+if&nbsp;the&nbsp;query&nbsp;contains&nbsp;binary&nbsp;data.</span></dd></dl>
 
 <dl><dt><a name="sqlrcursor-setCacheTtl"><strong>setCacheTtl</strong></a>(self, ttl)</dt><dd><span class="code">Sets&nbsp;the&nbsp;time-to-live&nbsp;for&nbsp;cached&nbsp;result<br>
-sets.&nbsp;The&nbsp;sqlr-cachemanger&nbsp;will&nbsp;remove&nbsp;each&nbsp;<br>
-cached&nbsp;result&nbsp;set&nbsp;"ttl"&nbsp;seconds&nbsp;after&nbsp;it's&nbsp;<br>
-created.</span></dd></dl>
+sets.&nbsp;The&nbsp;sqlr-cachemanger&nbsp;will&nbsp;remove&nbsp;each<br>
+cached&nbsp;result&nbsp;set&nbsp;"ttl"&nbsp;seconds&nbsp;after&nbsp;it's<br>
+created,&nbsp;provided&nbsp;it's&nbsp;scanning&nbsp;the&nbsp;directory<br>
+containing&nbsp;the&nbsp;cache&nbsp;files.</span></dd></dl>
 
 <dl><dt><a name="sqlrcursor-setResultSetBufferSize"><strong>setResultSetBufferSize</strong></a>(self, rows)</dt><dd><span class="code">Sets&nbsp;the&nbsp;number&nbsp;of&nbsp;rows&nbsp;of&nbsp;the&nbsp;result&nbsp;set<br>
 to&nbsp;buffer&nbsp;at&nbsp;a&nbsp;time.&nbsp;&nbsp;0&nbsp;(the&nbsp;default)<br>
@@ -623,28 +1399,29 @@ one&nbsp;of&nbsp;the&nbsp;variables&nbsp;wasn't&nbsp;a&nbsp;string,&nbsp;integer
 or&nbsp;if&nbsp;precision&nbsp;and&nbsp;scale&nbsp;weren't&nbsp;provided&nbsp;for&nbsp;a&nbsp;floating&nbsp;point&nbsp;number.</span></dd></dl>
 
 <dl><dt><a name="sqlrcursor-suspendResultSet"><strong>suspendResultSet</strong></a>(self)</dt><dd><span class="code">Tells&nbsp;the&nbsp;server&nbsp;to&nbsp;leave&nbsp;this&nbsp;result<br>
-set&nbsp;open&nbsp;when&nbsp;the&nbsp;cursor&nbsp;calls&nbsp;<br>
-suspendSession()&nbsp;so&nbsp;that&nbsp;another&nbsp;cursor&nbsp;can&nbsp;<br>
-connect&nbsp;to&nbsp;it&nbsp;using&nbsp;<a href="#sqlrcursor-resumeResultSet">resumeResultSet</a>()&nbsp;after&nbsp;<br>
-it&nbsp;calls&nbsp;resumeSession().</span></dd></dl>
+set&nbsp;open&nbsp;when&nbsp;the&nbsp;connection&nbsp;calls<br>
+suspendSession()&nbsp;so&nbsp;that&nbsp;another&nbsp;connection<br>
+can&nbsp;connect&nbsp;to&nbsp;it&nbsp;using&nbsp;<a href="#sqlrcursor-resumeResultSet">resumeResultSet</a>()<br>
+after&nbsp;it&nbsp;calls&nbsp;resumeSession().</span></dd></dl>
 
-<dl><dt><a name="sqlrcursor-totalRows"><strong>totalRows</strong></a>(self)</dt><dd><span class="code">Returns&nbsp;the&nbsp;total&nbsp;number&nbsp;of&nbsp;rows&nbsp;that&nbsp;will&nbsp;<br>
-be&nbsp;returned&nbsp;in&nbsp;the&nbsp;result&nbsp;set.&nbsp;&nbsp;Not&nbsp;all&nbsp;<br>
-databases&nbsp;support&nbsp;this&nbsp;call.&nbsp;&nbsp;Don't&nbsp;use&nbsp;it&nbsp;<br>
-for&nbsp;applications&nbsp;which&nbsp;are&nbsp;designed&nbsp;to&nbsp;be&nbsp;<br>
-portable&nbsp;across&nbsp;databases.&nbsp;&nbsp;-1&nbsp;is&nbsp;returned<br>
+<dl><dt><a name="sqlrcursor-totalRows"><strong>totalRows</strong></a>(self)</dt><dd><span class="code">Returns&nbsp;the&nbsp;total&nbsp;number&nbsp;of&nbsp;rows&nbsp;that&nbsp;will<br>
+be&nbsp;returned&nbsp;in&nbsp;the&nbsp;result&nbsp;set.&nbsp;&nbsp;Not&nbsp;all<br>
+databases&nbsp;support&nbsp;this&nbsp;call.&nbsp;&nbsp;Don't&nbsp;use&nbsp;it<br>
+for&nbsp;applications&nbsp;which&nbsp;are&nbsp;designed&nbsp;to&nbsp;be<br>
+portable&nbsp;across&nbsp;databases.&nbsp;&nbsp;0&nbsp;is&nbsp;returned<br>
 by&nbsp;databases&nbsp;which&nbsp;don't&nbsp;support&nbsp;this&nbsp;option.</span></dd></dl>
 
 <dl><dt><a name="sqlrcursor-upperCaseColumnNames"><strong>upperCaseColumnNames</strong></a>(self)</dt><dd><span class="code">Columns&nbsp;names&nbsp;are&nbsp;converted&nbsp;to&nbsp;upper&nbsp;case.</span></dd></dl>
 
 <dl><dt><a name="sqlrcursor-validBind"><strong>validBind</strong></a>(self, variable)</dt><dd><span class="code">Returns&nbsp;true&nbsp;if&nbsp;"variable"&nbsp;was&nbsp;a&nbsp;valid<br>
-input&nbsp;bind&nbsp;variable&nbsp;of&nbsp;the&nbsp;query.</span></dd></dl>
+bind&nbsp;variable&nbsp;of&nbsp;the&nbsp;query.</span></dd></dl>
 
-<dl><dt><a name="sqlrcursor-validateBinds"><strong>validateBinds</strong></a>(self)</dt><dd><span class="code">If&nbsp;you&nbsp;are&nbsp;binding&nbsp;to&nbsp;any&nbsp;variables&nbsp;that&nbsp;<br>
-might&nbsp;not&nbsp;actually&nbsp;be&nbsp;in&nbsp;your&nbsp;query,&nbsp;call&nbsp;<br>
-this&nbsp;to&nbsp;ensure&nbsp;that&nbsp;the&nbsp;database&nbsp;won't&nbsp;try&nbsp;<br>
-to&nbsp;bind&nbsp;them&nbsp;unless&nbsp;they&nbsp;really&nbsp;are&nbsp;in&nbsp;the&nbsp;<br>
-query.</span></dd></dl>
+<dl><dt><a name="sqlrcursor-validateBinds"><strong>validateBinds</strong></a>(self)</dt><dd><span class="code">If&nbsp;you&nbsp;are&nbsp;binding&nbsp;to&nbsp;any&nbsp;variables&nbsp;that<br>
+might&nbsp;not&nbsp;actually&nbsp;be&nbsp;in&nbsp;your&nbsp;query,&nbsp;call<br>
+this&nbsp;to&nbsp;ensure&nbsp;that&nbsp;the&nbsp;database&nbsp;won't&nbsp;try<br>
+to&nbsp;bind&nbsp;them&nbsp;unless&nbsp;they&nbsp;really&nbsp;are&nbsp;in&nbsp;the<br>
+query.&nbsp;&nbsp;There&nbsp;is&nbsp;a&nbsp;performance&nbsp;penalty&nbsp;for<br>
+calling&nbsp;this&nbsp;method.</span></dd></dl>
 
 <hr>
 Data descriptors defined here:<br>
