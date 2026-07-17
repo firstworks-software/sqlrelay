@@ -1,7 +1,4 @@
-rm -f html/*.png
-rm -f html/*.html
-rm -f html/*.js
-rm -f html/*.css
+rm -f html/*
 rm -f sql_relay.doc.php
 ./mkstub.pl ../../../src/api/php/sql_relay.cpp sql_relay.doc.php || exit 1
 doxygen doxygen.config
