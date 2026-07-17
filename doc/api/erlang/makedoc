@@ -11,3 +11,5 @@ mv ../../../src/api/erlang/doc/* html
 rmdir ../../../src/api/erlang/doc
 
 rm -f makedoc.beam
+
+git add html

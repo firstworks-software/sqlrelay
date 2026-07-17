@@ -7,3 +7,5 @@ rm -f PySQLRClient.html
 pydoc -w PySQLRDB
 sed -e "s|<font.*><a href=\"\.\">index<.*<\/font>||" -e "s|<a href=\"SQLRelay\.CSQLRelay\.html\">SQLRelay\.CSQLRelay</a>|SQLRelay\.CSQLRelay|" PySQLRDB.html > PySQLRDB.py.html
 rm -f PySQLRDB.html
+
+git add PySQLRClient.py.html PySQLRDB.py.html

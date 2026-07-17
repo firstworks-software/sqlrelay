@@ -4,3 +4,5 @@ rm -f sqlrelay.cpp
 sed -e "s|(CAST)||" ../../../src/api/ruby/sqlrelay.cpp > sqlrelay.cpp
 rdoc sqlrelay.cpp
 rm -f sqlrelay.cpp
+
+git add doc
