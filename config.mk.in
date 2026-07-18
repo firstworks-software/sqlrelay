@@ -887,6 +887,11 @@ INSTALLSUBDIRS += install-man install-doc
 endif
 UNINSTALLSUBDIRS = uninstall-src uninstall-bin uninstall-etc uninstall-init uninstall-license uninstall-autoconf uninstall-pkgconfig uninstall-man uninstall-doc
 
+# The init dir builds unix-only systemd/rc/launchd files.  The windows configure
+# leaves MAKEINITALL/MAKEINITCLEAN empty so nmake's top-level all/clean skip it.
+MAKEINITALL = cd init $(AND) $(MAKE) all
+MAKEINITCLEAN = cd init $(AND) $(MAKE) clean
+
 ifeq ($(SQLRELAY_ENABLE_SHARED),yes)
 SRCALLSUBDIRS = all-api
 SRCINSTALLSUBDIRS = install-api

@@ -4,13 +4,13 @@ include config.mk
 
 all:
 	cd src $(AND) $(MAKE) all
-	cd init $(AND) $(MAKE) all
+	$(MAKEINITALL)
 	cd test $(AND) $(MAKE) testscripts
 
 clean:
 	cd src $(AND) $(MAKE) clean
 	cd test $(AND) $(MAKE) clean
-	cd init $(AND) $(MAKE) clean
+	$(MAKEINITCLEAN)
 	$(RMTREE) msvc/setupx86/Debug msvc/setupx86/Release msvc/setupx64/Debug msvc/setupx64/Release
 
 install: $(INSTALLSUBDIRS)
