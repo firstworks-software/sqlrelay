@@ -342,7 +342,10 @@ int main(int argc, char **argv) {
 			"Driver={MariaDB};"
 			"Server=mysql;"
 			"User=testuser;Password=testpassword;Database=")->
-			append(hostname)->append(";");
+			append(hostname)->append(";")->
+			// pin the connection charset so column widths match
+			// the latin1 SQL Relay connection
+			append("CHARSET=latin1;");
 	}
 	SQLCHAR		outcstring[1024];
 	SQLSMALLINT	outcstringlen;
@@ -7147,8 +7150,9 @@ int main(int argc, char **argv) {
 	assertEqualStmt(stmt,(const char *)colname,"testtext");
 	assertEqualStmt(stmt,(int)colnamelen,8);
 	if (issqlrelay) {
+		// latin1 connection: TEXT byte width is 65535
 		assertEqualStmt(stmt,(int)datatype,-1);
-		assertEqualStmt(stmt,(int)colsize,262140);
+		assertEqualStmt(stmt,(int)colsize,65535);
 	} else {
 		// MariaDB reports SQL_LONGVARCHAR/65535.
 		assertEqualStmt(stmt,(int)datatype,-1);
@@ -7164,8 +7168,9 @@ int main(int argc, char **argv) {
 	assertEqualStmt(stmt,(const char *)colname,"testtinytext");
 	assertEqualStmt(stmt,(int)colnamelen,12);
 	if (issqlrelay) {
+		// latin1 connection: TINYTEXT byte width is 255
 		assertEqualStmt(stmt,(int)datatype,-1);
-		assertEqualStmt(stmt,(int)colsize,1020);
+		assertEqualStmt(stmt,(int)colsize,255);
 	} else {
 		// TINYTEXT: MariaDB reports SQL_LONGVARCHAR/255.
 		assertEqualStmt(stmt,(int)datatype,-1);
@@ -7181,8 +7186,9 @@ int main(int argc, char **argv) {
 	assertEqualStmt(stmt,(const char *)colname,"testmediumtext");
 	assertEqualStmt(stmt,(int)colnamelen,14);
 	if (issqlrelay) {
+		// latin1 connection: MEDIUMTEXT byte width is 16777215
 		assertEqualStmt(stmt,(int)datatype,-1);
-		assertEqualStmt(stmt,(int)colsize,67108860);
+		assertEqualStmt(stmt,(int)colsize,16777215);
 	} else {
 		// MEDIUMTEXT: MariaDB reports SQL_LONGVARCHAR/16777215.
 		assertEqualStmt(stmt,(int)datatype,-1);
