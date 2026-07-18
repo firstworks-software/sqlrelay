@@ -377,6 +377,10 @@
 	fixed the doc website's link to the ado.net api reference, which had a
 		dot where a slash belongs, and to the erlang api reference,
 		which was missing the html directory
+	fixed the jdbc driver's createClob() and createBlob() to return
+		writable, growable Clob/Blob objects; setString()/setBytes()
+		into the empty ones they used to return threw on strict
+		SerialClob/SerialBlob (jdk 8u471+)
 
 2.1.1 - added tns_admin support
 	fixed sqlr-start ... -strace ...

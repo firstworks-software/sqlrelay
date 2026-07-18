@@ -3232,12 +3232,15 @@ int main(int argc, char **argv) {
 
 	#if (ODBCVER >= 0x0300)
 	// SQL_DRIVER_HDESC
-	// needs an app-allocated HDESC in InfoValuePtr; unixODBC's
-	// driver manager rejects the call here with HY024
+	// dm-internal infotype; sqlrelay has no explicit descriptors so the dm
+	// rejects it with HY024.  the buffer must be handle-sized and zeroed -
+	// a too-small (SQLUINTEGER) or uninitialized buffer makes some unixODBC
+	// versions read past it, deref garbage, and crash.
 	stdoutput.printf("  SQL_DRIVER_HDESC\n");
+	handleval=0;
 	erg=SQLGetInfo(dbc,SQL_DRIVER_HDESC,
-			(SQLPOINTER)&uintval,
-			(SQLSMALLINT)sizeof(uintval),&vallen);
+			(SQLPOINTER)&handleval,
+			(SQLSMALLINT)sizeof(handleval),&vallen);
 	assertFailureDbc(dbc,erg);
 	stdoutput.printf("\n");
 	#endif

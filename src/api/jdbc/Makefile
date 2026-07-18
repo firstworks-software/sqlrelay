@@ -3,6 +3,7 @@ top_builddir = ../../..
 include ../../../config.mk
 
 SRCS = com$(SLASH)firstworks$(SLASH)sql$(SLASH)SQLRelayBlob.java \
+	com$(SLASH)firstworks$(SLASH)sql$(SLASH)SQLRelayClob.java \
 	com$(SLASH)firstworks$(SLASH)sql$(SLASH)SQLRelayConnection.java \
 	com$(SLASH)firstworks$(SLASH)sql$(SLASH)SQLRelayDriver.java \
 	com$(SLASH)firstworks$(SLASH)sql$(SLASH)SQLRelayDatabaseMetaData.java \

@@ -3,7 +3,6 @@
 package com.firstworks.sql;
 
 import java.sql.*;
-import javax.sql.rowset.serial.SerialClob;
 
 import java.util.Properties;
 import java.util.Map;
@@ -206,7 +205,7 @@ public class SQLRelayConnection implements Connection {
 	public
 	Clob createClob() throws SQLException {
 		drv.debugFunction(this);
-		Clob	retval=new SerialClob(new char[0]);
+		Clob	retval=new SQLRelayClob();
 		drv.debugEnd();
 		return retval;
 	}
