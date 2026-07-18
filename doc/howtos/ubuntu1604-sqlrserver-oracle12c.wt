@@ -285,6 +285,40 @@ SQL Relay should also be configured to restart on reboot.  To verify this:
 
 Congratulations!  If you made it to this point, the SQL Relay server is configured correctly.
 
+=== Disable the Oracle Recycle Bin (Test and CI Databases) ===
+
+If this Oracle database is used for testing - for example, running the SQL Relay test suite - then it will create and drop many tables over time, including tables with LOB columns.  By default, Oracle keeps every dropped table in the recycle bin, so the recycle bin grows without bound.  On a long-running test database this can reach hundreds of thousands or millions of objects, which slows schema operations and can make dropping a user account take hours.
+
+For a database that is only used for testing, and where dropped tables never need to be restored, disable the recycle bin on the Oracle database server.
+
+ssh into the Oracle database server, connect as a sysdba user, disable the recycle bin, and restart the instance:
+
+{{{
+sqlplus / as sysdba
+
+alter system set recyclebin=off scope=spfile;
+shutdown immediate
+startup
+}}}
+
+With the recycle bin off, every dropped table is purged right away instead of being kept.
+
+To clear objects that already accumulated before the recycle bin was disabled, purge it.  To purge the whole database:
+
+{{{
+sqlplus / as sysdba
+
+purge dba_recyclebin;
+}}}
+
+To purge just one user's dropped objects, connect as that user and run:
+
+{{{
+purge recyclebin;
+}}}
+
+On a database with a large backlog, the purge runs at roughly a few hundred to a thousand objects per minute, so it is best run in the background.
+
 === Uninstallation ===
 
 If, for some reason, you need to completely uninstall SQL Relay, then run the following commands from the directory that the source trees were extracted to:
