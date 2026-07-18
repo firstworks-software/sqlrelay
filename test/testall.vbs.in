@@ -10,6 +10,11 @@ end if
 testdbs=Array(@TESTDBS@)
 testapis=Array(@TESTAPIS@)
 
+' count of failures (instances that wouldn't start + tests that failed); the
+' script exits non-zero if any, and never blocks waiting for input, so it can
+' run unattended (eg. from make tests over ssh)
+failures=0
+
 ' create file system object
 set fso=CreateObject("Scripting.FileSystemObject")
 
@@ -85,14 +90,13 @@ for each db in testdbs
 		WScript.Echo("success...")
 		WScript.Echo("")
 		for each api in testapis
-			runapitest db,api
+			failures=failures+runapitest(db,api)
 		next
 	else
 		WScript.Echo("")
 		WScript.Echo("failed to start " & db & "test")
 		WScript.Echo("")
-		WScript.Echo("hit enter to continue or ctrl-c to stop...")
-		Wscript.StdIn.ReadLine()
+		failures=failures+1
 	end if
 
 	' shut down the instance(s)
@@ -111,7 +115,20 @@ for each db in testdbs
 	WScript.Echo("")
 next
 
+' report and exit with a status the caller can check
+WScript.Echo("")
+if failures>0 then
+	WScript.Echo(failures & " failure(s).")
+	WScript.Quit(1)
+else
+	WScript.Echo("all tests passed.")
+	WScript.Quit(0)
+end if
+
 function runapitest(db,api)
+
+	' default to success; set to 1 below if the test fails
+	runapitest=0
 
 	WScript.echo("testing in " & api)
 	WScript.echo("")
@@ -173,7 +190,7 @@ function runapitest(db,api)
 			WScript.echo("")
 			WScript.echo("")
 			WScript.echo(db & " failed in " & api)
-			WScript.StdIn.ReadLine()
+			runapitest=1
 		else
 			WScript.echo("")
 			WScript.echo("test complete")
