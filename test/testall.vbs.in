@@ -18,6 +18,11 @@ failures=0
 ' create file system object
 set fso=CreateObject("Scripting.FileSystemObject")
 
+' local test config dir - this script lives in the test tree, so its own
+' directory holds sqlrelay.conf.d.  load the per-db config files from there
+' with -config (like testall.sh does), rather than the installed config.
+CONFDIR=fso.GetParentFolderName(WScript.ScriptFullName) & "\sqlrelay.conf.d"
+
 ' create shell object
 set WshShell=WScript.CreateObject("WScript.Shell")
 
@@ -36,15 +41,15 @@ for each db in testdbs
 
 	' for the router test, start the master/slave instances
 	if db="router" then
-		WshShell.Exec(PREFIX & "\bin\sqlr-start -id routermaster")
+		WshShell.Exec(PREFIX & "\bin\sqlr-start -config " & CONFDIR & "\" & db & ".conf -id routermaster")
 		WScript.Sleep(2000)
 
-		WshShell.Exec(PREFIX & "\bin\sqlr-start -id routerslave")
+		WshShell.Exec(PREFIX & "\bin\sqlr-start -config " & CONFDIR & "\" & db & ".conf -id routerslave")
 		WScript.Sleep(2000)
 	end if
 
 	' start the instance
-	WshShell.Exec(PREFIX & "\bin\sqlr-start -id " & db & "test")
+	WshShell.Exec(PREFIX & "\bin\sqlr-start -config " & CONFDIR & "\" & db & ".conf -id " & db & "test")
 	WScript.Sleep(2000)
 
 	' make sure that the instance is up
@@ -57,7 +62,7 @@ for each db in testdbs
 		if db="extensions" then
 			sqlrsh=PREFIX & "\bin\sqlrsh -host localhost -user test -password test -command ping"
 		else
-			sqlrsh=PREFIX & "\bin\sqlrsh -id " & db & "test -command ping"
+			sqlrsh=PREFIX & "\bin\sqlrsh -config " & CONFDIR & "\" & db & ".conf -id " & db & "test -command ping"
 		end if
 		set cmd=WshShell.Exec(sqlrsh)
 
@@ -102,12 +107,12 @@ for each db in testdbs
 	' shut down the instance(s)
 	if db="router" then
 		WScript.Sleep(2000)
-		WshShell.Exec(PREFIX & "\bin\sqlr-stop -id routermaster")
+		WshShell.Exec(PREFIX & "\bin\sqlr-stop -config " & CONFDIR & "\" & db & ".conf -id routermaster")
 		WScript.Sleep(2000)
-		WshShell.Exec(PREFIX & "\bin\sqlr-stop -id routerslave")
+		WshShell.Exec(PREFIX & "\bin\sqlr-stop -config " & CONFDIR & "\" & db & ".conf -id routerslave")
 	end if
 	WScript.Sleep(2000)
-	WshShell.Exec(PREFIX & "\bin\sqlr-stop -id " & db & "test")
+	WshShell.Exec(PREFIX & "\bin\sqlr-stop -config " & CONFDIR & "\" & db & ".conf -id " & db & "test")
 	WScript.Sleep(2000)
 
 	WScript.Echo("")
