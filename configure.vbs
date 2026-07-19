@@ -1089,6 +1089,7 @@ infiles=Array(_
 	"test\\sqlrelay.conf.d\\mysqlprotocol.conf.in",_
 	"test\\sqlrelay.conf.d\\mysqlupsert.conf.in",_
 	"test\\sqlrelay.conf.d\\mysqldeadlockreplay.conf.in",_
+	"test\\sqlrelay.conf.d\\mysqlsplitmultiinsert.conf.in",_
 	"test\\sqlrelay.conf.d\\oracle.conf.in",_
 	"test\\sqlrelay.conf.d\\oracleprotocol.conf.in",_
 	"test\\sqlrelay.conf.d\\postgresql.conf.in",_
@@ -1127,6 +1128,7 @@ outfiles=Array(_
 	"test\\sqlrelay.conf.d\\mysqlprotocol.conf",_
 	"test\\sqlrelay.conf.d\\mysqlupsert.conf",_
 	"test\\sqlrelay.conf.d\\mysqldeadlockreplay.conf",_
+	"test\\sqlrelay.conf.d\\mysqlsplitmultiinsert.conf",_
 	"test\\sqlrelay.conf.d\\oracle.conf",_
 	"test\\sqlrelay.conf.d\\oracleprotocol.conf",_
 	"test\\sqlrelay.conf.d\\postgresql.conf",_
