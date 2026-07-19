@@ -30,7 +30,7 @@ def main():
 
 
 	# hostname
-	hostname=socket.gethostname().split(".")[0]
+	hostname=socket.gethostname().split(".")[0].lower()
 
 
 	# instantiation

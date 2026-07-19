@@ -27,7 +27,7 @@ def main():
 
 
 	# hostname
-	hostname=gethostname().split(".")[0]
+	hostname=gethostname().split(".")[0].lower()
 
 
 	# instantiation
