@@ -1112,7 +1112,6 @@ outfiles=Array(_
 	"bin\\sqlrclient-config",_
 	"bin\\sqlrclientwrapper-config",_
 	"bin\\sqlrserver-config",_
-	"test\\testall.vbs",_
 	"sqlrelay-c.pc",_
 	"sqlrelay-c++.pc",_
 	"msvc\\setupx64\\setupx64.vdproj",_
