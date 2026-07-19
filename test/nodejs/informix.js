@@ -33,7 +33,7 @@ var scales=[2,3,4];
 
 
 // hostname
-var hostname=require("os").hostname();
+var hostname=require("os").hostname().toLowerCase();
 var dot=hostname.indexOf(".");
 if (dot>-1) {
 	hostname=hostname.substring(0,dot);

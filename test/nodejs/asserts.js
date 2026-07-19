@@ -1,6 +1,42 @@
 // Copyright (c) David Muse
 // See the file COPYING for more information.
 
+// node 4 compatibility shims - win7x64 ships node v4, but the tests use a few
+// newer APIs.  each is guarded, so on a modern node nothing is redefined.
+// missing Buffer.alloc marks the pre-v4.5 Buffer api; there Buffer.from is the
+// inherited (typed-array) from - wrong, and a plain assignment to it silently
+// no-ops since it is an inherited accessor, so define both properties.
+if (typeof Buffer.alloc!=="function") {
+	Object.defineProperty(Buffer,"alloc",{
+		value:function(size,fill) {
+			var b=new Buffer(size);
+			b.fill((fill===undefined)?0:fill);
+			return b;
+		},
+		writable:true,configurable:true
+	});
+	Object.defineProperty(Buffer,"from",{
+		value:function(value,a,b) {
+			return new Buffer(value,a,b);
+		},
+		writable:true,configurable:true
+	});
+}
+if (typeof String.prototype.padStart!=="function") {
+	String.prototype.padStart=function(targetlength,padstring) {
+		targetlength=targetlength>>0;
+		padstring=String((padstring===undefined)?" ":padstring);
+		if (this.length>targetlength || padstring==="") {
+			return String(this);
+		}
+		targetlength=targetlength-this.length;
+		if (targetlength>padstring.length) {
+			padstring+=padstring.repeat(targetlength/padstring.length);
+		}
+		return padstring.slice(0,targetlength)+String(this);
+	};
+}
+
 var con;
 var cur;
 var secondcon;

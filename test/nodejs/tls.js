@@ -21,7 +21,7 @@ if (/^win/.test(process.platform)) {
 
 
 // hostname
-var hostname=require("os").hostname();
+var hostname=require("os").hostname().toLowerCase();
 var dot=hostname.indexOf(".");
 if (dot>0) {
 	hostname=hostname.substring(0,dot);

@@ -180,7 +180,10 @@ function runapitest(db,api)
 			TEST="run.bat " & db
 			TESTFILE=db & ".class"
 		case "nodejs"
-			TEST="node " & db & ".js"
+			' the node on win7x64 is old (v4) and needs a flag to
+			' parse the tests' object-destructuring require; harmless
+			' on newer node, and this runner is windows-only
+			TEST="node --harmony_destructuring " & db & ".js"
 			TESTFILE=db & ".js"
 		case "perl"
 			TEST="perl " & db & ".pl"
