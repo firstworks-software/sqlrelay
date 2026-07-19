@@ -16,7 +16,7 @@ class db2 extends sqlrtest {
 
 		String classpath=System.getProperty("java.class.path");
 		String hostname=InetAddress.getLocalHost().
-					getHostName().split("\\.")[0];
+					getHostName().split("\\.")[0].toLowerCase();
 		hostname=hostname.
 			replaceAll("^centos","co").
 			replaceAll("^debian","db").

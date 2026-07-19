@@ -55,7 +55,7 @@ class oracle extends sqlrtest {
 		String	hostname="";
 		try {
 			hostname=java.net.InetAddress
-				.getLocalHost().getHostName();
+				.getLocalHost().getHostName().toLowerCase();
 			int idx=hostname.indexOf('.');
 			if (idx>=0) {
 				hostname=hostname.substring(0,idx);

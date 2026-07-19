@@ -16,7 +16,7 @@ class firebird extends sqlrtest {
 
 		String classpath=System.getProperty("java.class.path");
 		String hostname=InetAddress.getLocalHost().
-					getHostName().split("\\.")[0];
+					getHostName().split("\\.")[0].toLowerCase();
 		String driver=null;
 		String host=null;
 		short port=0;
