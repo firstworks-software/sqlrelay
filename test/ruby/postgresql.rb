@@ -14,7 +14,7 @@ require './asserts'
 
 
 # hostname
-hostname=Socket.gethostname.split(".")[0]
+hostname=Socket.gethostname.split(".")[0].downcase
 
 
 # instantiation

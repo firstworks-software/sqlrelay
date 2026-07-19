@@ -33,7 +33,7 @@ end
 
 
 # hostname
-hostname=Socket.gethostname
+hostname=Socket.gethostname.downcase
 dot=hostname.index('.')
 if dot
 	hostname=hostname[0,dot]

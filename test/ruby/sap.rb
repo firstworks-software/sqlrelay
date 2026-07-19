@@ -12,7 +12,7 @@ require './asserts'
 
 
 # hostname
-hostname=Socket.gethostname.split(".")[0]
+hostname=Socket.gethostname.split(".")[0].downcase
 dumptran="dump tran #{hostname} with truncate_only"
 
 
