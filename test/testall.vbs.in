@@ -30,7 +30,7 @@ set WshShell=WScript.CreateObject("WScript.Shell")
 COMPUTERNAME=WshShell.ExpandEnvironmentStrings("%COMPUTERNAME%")
 
 ' stop any existing instances
-WshShell.Exec(PREFIX & "\bin\sqlr-stop")
+daemon "sqlr-stop", ""
 WScript.Sleep(2000)
 
 ' for each database/configuration...
@@ -39,17 +39,20 @@ for each db in testdbs
 	' testing...
 	WScript.Echo("testing " & db & " (from " & COMPUTERNAME & ")...")
 
+	' one instance at a time - all test instances share port 9000
+	cleanslate()
+
 	' for the router test, start the master/slave instances
 	if db="router" then
-		WshShell.Exec(PREFIX & "\bin\sqlr-start -config " & CONFDIR & "\" & db & ".conf -id routermaster")
+		daemon "sqlr-start", "-config " & CONFDIR & "\" & db & ".conf -id routermaster"
 		WScript.Sleep(2000)
 
-		WshShell.Exec(PREFIX & "\bin\sqlr-start -config " & CONFDIR & "\" & db & ".conf -id routerslave")
+		daemon "sqlr-start", "-config " & CONFDIR & "\" & db & ".conf -id routerslave"
 		WScript.Sleep(2000)
 	end if
 
 	' start the instance
-	WshShell.Exec(PREFIX & "\bin\sqlr-start -config " & CONFDIR & "\" & db & ".conf -id " & db & "test")
+	daemon "sqlr-start", "-config " & CONFDIR & "\" & db & ".conf -id " & db & "test"
 	WScript.Sleep(2000)
 
 	' make sure that the instance is up
@@ -107,12 +110,12 @@ for each db in testdbs
 	' shut down the instance(s)
 	if db="router" then
 		WScript.Sleep(2000)
-		WshShell.Exec(PREFIX & "\bin\sqlr-stop -config " & CONFDIR & "\" & db & ".conf -id routermaster")
+		daemon "sqlr-stop", "-config " & CONFDIR & "\" & db & ".conf -id routermaster"
 		WScript.Sleep(2000)
-		WshShell.Exec(PREFIX & "\bin\sqlr-stop -config " & CONFDIR & "\" & db & ".conf -id routerslave")
+		daemon "sqlr-stop", "-config " & CONFDIR & "\" & db & ".conf -id routerslave"
 	end if
 	WScript.Sleep(2000)
-	WshShell.Exec(PREFIX & "\bin\sqlr-stop -config " & CONFDIR & "\" & db & ".conf -id " & db & "test")
+	daemon "sqlr-stop", "-config " & CONFDIR & "\" & db & ".conf -id " & db & "test"
 	WScript.Sleep(2000)
 
 	WScript.Echo("")
@@ -129,6 +132,25 @@ else
 	WScript.Echo("all tests passed.")
 	WScript.Quit(0)
 end if
+
+' all test instances listen on port 9000, so only one runs at a time.  make
+' sure the previous db's instance is fully gone and no stale pid files remain
+' before starting the next - sqlr-stop is asynchronous and was sometimes too
+' slow, leaving the next instance unable to come up ("failed to start").  #8484
+sub cleanslate()
+	WshShell.Run "taskkill /F /IM sqlr-listener.exe", 0, true
+	WshShell.Run "taskkill /F /IM sqlr-connection.exe", 0, true
+	WScript.Sleep 500
+	WshShell.Run "cmd /c del /q " & Chr(34) & PREFIX & "\var\run\sqlrelay\*" & Chr(34), 0, true
+end sub
+
+' start or stop a sqlrelay daemon so its spawned listener/connection outlive
+' this script.  Exec would kill them via its job object when the WshScriptExec
+' is released; Run does not, and needs the exe path quoted (it has a space).
+' #8484
+sub daemon(prog, args)
+	WshShell.Run Chr(34) & PREFIX & "\bin\" & prog & Chr(34) & " " & args, 0, false
+end sub
 
 function runapitest(db,api)
 
