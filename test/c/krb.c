@@ -12,7 +12,19 @@
 	#define snprintf _snprintf
 	static int win32gethostname(char *name, int len) {
 		DWORD sz=(DWORD)len;
-		return GetComputerNameA(name,&sz)?0:-1;
+		DWORD i;
+		if (!GetComputerNameA(name,&sz)) {
+			return -1;
+		}
+		// GetComputerNameA returns the netbios name uppercased;
+		// lowercase it to match gethostname on unix and the test db
+		// name, which is the lowercase host name
+		for (i=0; i<sz; i++) {
+			if (name[i]>='A' && name[i]<='Z') {
+				name[i]=name[i]+('a'-'A');
+			}
+		}
+		return 0;
 	}
 	#define gethostname(name,len) win32gethostname((name),(len))
 #else
