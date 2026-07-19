@@ -250,6 +250,7 @@ PHPPDOLIBS = $(PHPLIB) /LIBPATH:$(top_builddir)/src/api/c++ lib$(SQLR)client.lib
 # java
 JAVAPREFIX = @JAVAPREFIX@
 JAVAC = "$(JAVAPREFIX)\bin\javac"
+CLASSPATHSEP = ;
 JAR = "$(JAVAPREFIX)\bin\jar"
 JAVAINCLUDES = /I "$(JAVAPREFIX)\include" /I "$(JAVAPREFIX)\include\win32"
 JAVACPPFLAGS = $(BASECPPFLAGS) /I./ /I$(top_builddir) /I$(top_builddir)\src\common /I$(top_builddir)\src\api\c /I$(top_builddir)\src\api\c++ $(RUDIMENTSINCLUDES) $(JAVAINCLUDES)

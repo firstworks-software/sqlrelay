@@ -6,8 +6,19 @@
 #include <ctype.h>
 #include <stdlib.h>
 #include <stdio.h>
-#include <strings.h>
-#include <unistd.h>
+#ifdef _WIN32
+	#include <windows.h>
+	#define sleep(x) Sleep((x)*1000)
+	#define snprintf _snprintf
+	static int win32gethostname(char *name, int len) {
+		DWORD sz=(DWORD)len;
+		return GetComputerNameA(name,&sz)?0:-1;
+	}
+	#define gethostname(name,len) win32gethostname((name),(len))
+#else
+	#include <strings.h>
+	#include <unistd.h>
+#endif
 #include <stdint.h>
 
 #include "asserts.c"

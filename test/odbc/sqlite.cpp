@@ -7,6 +7,9 @@
 
 #include "../../config.h"
 
+#ifdef _WIN32
+	#include <windows.h>
+#endif
 #include <sql.h>
 #include <sqlext.h>
 #include <sqlucode.h>
