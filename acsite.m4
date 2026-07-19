@@ -184,11 +184,12 @@ then
 				then
 					OCLIENT="client64"
 				fi
-				if ( test -r "/usr/lib/oracle/$version/$OCLIENT/lib/libclntsh.$SOSUFFIX" -a -r "/usr/include/oracle/$version/$OCLIENT/oci.h" )
+				if ( test -r "`ls /usr/lib/oracle/$version/$OCLIENT/lib/libclntsh.$SOSUFFIX.* 2> /dev/null | tail -1`" -a -r "/usr/include/oracle/$version/$OCLIENT/oci.h" )
 				then
 					ORACLELIBSPATH="/usr/lib/oracle/$version/$OCLIENT/lib"
+					CLNTSH="`ls $ORACLELIBSPATH/libclntsh.$SOSUFFIX.* 2> /dev/null | tail -1`"
 					NNZ=`basename $ORACLELIBSPATH/libnnz*.$SOSUFFIX | sed -e "s|lib||" -e "s|.$SOSUFFIX||"`
-					ORACLELIBS="-L/usr/lib/oracle/$version/$OCLIENT/lib -lclntsh -l$NNZ"
+					ORACLELIBS="-Wl,$CLNTSH -L/usr/lib/oracle/$version/$OCLIENT/lib -l$NNZ"
 					if ( test "$ORACLEVERSION" = "12c" )
 					then
 						ORACLELIBS="$ORACLELIBS -lons -lclntshcore"

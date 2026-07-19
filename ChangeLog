@@ -381,6 +381,8 @@
 		writable, growable Clob/Blob objects; setString()/setBytes()
 		into the empty ones they used to return threw on strict
 		SerialClob/SerialBlob (jdk 8u471+)
+	fixed configure detection of an rpm-installed oracle instant client that
+		ships only a versioned libclntsh.so (no bare libclntsh.so symlink)
 
 2.1.1 - added tns_admin support
 	fixed sqlr-start ... -strace ...
