@@ -24,7 +24,7 @@ $LARGE_BUFFER_LENGTH=8192;
 
 
 # hostname
-$hostname=hostname();
+$hostname=lc(hostname());
 $hostname=~s/\..*//;
 
 

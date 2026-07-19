@@ -28,7 +28,7 @@ $service=undef;
 
 
 # hostname
-$hostname=hostname();
+$hostname=lc(hostname());
 $hostname=~s/\..*//;
 
 

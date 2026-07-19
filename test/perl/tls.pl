@@ -33,7 +33,7 @@ if ($^O eq "MSWin32") {
 
 
 # hostname
-$hostname=hostname();
+$hostname=lc(hostname());
 $hostname=~s/\..*//;
 
 

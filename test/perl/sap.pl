@@ -22,7 +22,7 @@ $LARGE_BUFFER_LENGTH=255;
 
 
 # hostname
-$hostname=hostname();
+$hostname=lc(hostname());
 $hostname=~s/\..*//;
 $dumptran="dump tran $hostname with truncate_only";
 
