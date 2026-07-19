@@ -1314,6 +1314,13 @@ for i=lbound(infiles) to ubound(infiles)
 	content=replace(content,"@HOSTNAME@",HOSTNAME,1,-1,0)
 	content=replace(content,"@SHORTHOSTNAME@",SHORTHOSTNAME,1,-1,0)
 
+	' the sap test config is written for a unix sybase install; adapt it for
+	' windows: the install root is C:\SAP (doubled - the connect string parser
+	' treats backslash as an escape), and the sybase locales.dat [NT] section
+	' names the us-english locale enu, not the unix en_US
+	content=replace(content,"sybase=/opt/sap","sybase=C:\\SAP",1,-1,0)
+	content=replace(content,"lang=en_US","lang=enu",1,-1,0)
+
 	' write output file
 	set outfile=fso.OpenTextFile(outfiles(i),2,true)
 	call outfile.Write(content)
