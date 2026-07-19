@@ -213,7 +213,10 @@ function runapitest(db,api)
 		do until cmd.StdOut.AtEndOfStream
 			WScript.Echo(cmd.StdOut.ReadLine())
 		loop
-		if cmd.ExitCode=1 then
+		' any non-zero exit is a failure.  the tests return 1 on a failed
+		' assertion, but a crashed test exits with a code like 0xC0000005,
+		' not 1, so checking =1 alone would let a crash pass as success.
+		if cmd.ExitCode<>0 then
 			WScript.echo("")
 			WScript.echo("")
 			WScript.echo(db & " failed in " & api)
