@@ -84,9 +84,6 @@ test.sh: test.sh.in
 	$(RM) $@.out2
 	$(CHMOD) 755 $@
 
-# pass $(prefix) unquoted - it already carries its own quotes (config_windows.mk),
-# and doubling them makes cscript split on the space in the path (#8627);
-# TESTDBS/TESTAPIS are space-separated, so they pass through fine
 test.vbs: test.vbs.in
 	$(REPLACE) @prefix@ $(prefix) $@.in > $@.out1
 	$(REPLACE) @TESTDBS@ "$(TESTDBS)" $@.out1 > $@.out2
