@@ -184,8 +184,8 @@ bool sqlrauth_postgresql_userlist::compare(const char *suppliedresponse,
 
 	// postgresql_cleartext is really simple
 	if (!charstring::compare(method,"postgresql_cleartext")) {
-		expectedresponse.append(suppliedresponse,
-					suppliedresponsesize);
+		expectedresponse.append(validpassword,
+					charstring::getLength(validpassword));
 	} else
 
 	// postgresql_md5 is more complicated...

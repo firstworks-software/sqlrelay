@@ -184,8 +184,8 @@ bool sqlrauth_mysql_userlist::compare(const char *suppliedresponse,
 
 	// mysql_clear_password is really simple
 	if (!charstring::compare(method,"mysql_clear_password")) {
-		expectedresponse.append(suppliedresponse,
-					suppliedresponsesize);
+		expectedresponse.append(validpassword,
+					charstring::getLength(validpassword));
 	} else
 
 	// mysql_native_password is more complicated...

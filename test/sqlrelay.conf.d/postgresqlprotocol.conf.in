@@ -4,6 +4,7 @@
 	<instance id="postgresqlprotocoltest" dbase="postgresql">
 		<listeners>
 			<listener protocol="postgresql" port="5432"/>
+			<listener protocol="postgresql" port="5433" passwords="cleartext"/>
 		</listeners>
 		<connections>
 			<connection string="lastinsertidfunction=testfunc();user=testuser;password=testpassword;db=@HOSTNAME@;host=postgresql;typemangling=lookup;tablemangling=no"/>

@@ -51,6 +51,25 @@ int	main(int argc, char **argv) {
 	assertEquals(PQresStatus(PGRES_FATAL_ERROR),"PGRES_FATAL_ERROR");
 	stdoutput.printf("\n");
 
+	// verify cleartext-method authentication (#8620): on the
+	// cleartext listener the right password is accepted and a
+	// wrong password is rejected
+	if (issqlrelay) {
+		stdoutput.printf("cleartext auth - right password:\n");
+		PGconn	*ctok=PQsetdbLogin(host,"5433",NULL,NULL,
+						db,user,password);
+		assertEquals(PQstatus(ctok),CONNECTION_OK);
+		PQfinish(ctok);
+		stdoutput.printf("\n");
+
+		stdoutput.printf("cleartext auth - wrong password:\n");
+		PGconn	*ctbad=PQsetdbLogin(host,"5433",NULL,NULL,
+						db,user,"wrongpassword");
+		assertEquals(PQstatus(ctbad),CONNECTION_BAD);
+		PQfinish(ctbad);
+		stdoutput.printf("\n");
+	}
+
 	stdoutput.printf("PQstatus:\n");
 	pgconn=PQsetdbLogin(host,port,NULL,NULL,db,user,password);
 	assertEquals(PQstatus(pgconn),CONNECTION_OK);
