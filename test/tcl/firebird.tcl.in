@@ -72,7 +72,9 @@ puts ""
 
 # insert
 puts "INSERT: "
-$cur sendQuery "delete from testtable"
+# tolerate an intermittent firebird "cannot update erased record" on
+# this teardown delete, as the other bindings do (#8614)
+catch {$cur sendQuery "delete from testtable"}
 $con commit
 assertTrue [$cur sendQuery "insert into testtable values (1, 1, 1.5, 1.5, 1.5, 1.5, '01-JAN-2001', '01:00:00', 'testchar1', 'testvarchar1', NULL, 'testblob1')"]
 puts ""
