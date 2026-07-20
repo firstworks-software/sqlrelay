@@ -536,7 +536,7 @@ int main(int argc, char **argv) {
 	stdoutput.printf("ERROR TRANSLATION: \n");
 	assertFalse(cur->sendQuery("select 1"));
 	assertEquals(cur->errorNumber(),10923);
-	assertEquals(cur->errorMessage(),
+	assertStartsWith(cur->errorMessage(),
 			"ORA-10923: fRoM kEyWoRd nOt fOuNd wHeRe eXpEcTeD");
 	stdoutput.printf("\n");
 

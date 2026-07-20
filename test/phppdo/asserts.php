@@ -42,6 +42,12 @@
 		}
 	}
 
+	function stripHelp($msg) {
+		# strip the "Help: <url>" line newer oracle clients append to
+		# error text, so the compare still matches older clients (#8613)
+		return preg_replace('/\nHelp:.*/s','',$msg);
+	}
+
 	function reportTestStatus() {
 
 		global $status;

@@ -888,14 +888,14 @@ if (PHP_VERSION_ID < 70000) {
 	$info=$dbh->errorInfo();
 	assertEqual($info[0],"HY000");
 	assertEqual($info[1],923);
-	assertEqual($info[2],"ORA-00923: FROM keyword not found where expected");
+	assertEqual(stripHelp($info[2]),"ORA-00923: FROM keyword not found where expected");
 	$stmt=$dbh->prepare("select 1");
 	assertEqual($stmt->execute(),0);
 	assertEqual($stmt->errorCode(),"HY000");
 	$info=$stmt->errorInfo();
 	assertEqual($info[0],"HY000");
 	assertEqual($info[1],923);
-	assertEqual($info[2],"ORA-00923: FROM keyword not found where expected");
+	assertEqual(stripHelp($info[2]),"ORA-00923: FROM keyword not found where expected");
 	echo("\n");
 
 
@@ -915,7 +915,7 @@ if (PHP_VERSION_ID < 70000) {
 	echo("INVALID OPERATIONS: \n");
 	assertEqual($stmt->nextRowset(),0);
 	assertEqual($stmt->setAttribute(PDO::ATTR_AUTOCOMMIT,FALSE),0);
-	assertEqual($stmt->getAttribute(PDO::ATTR_AUTOCOMMIT),0);
+	assertEqual(@$stmt->getAttribute(PDO::ATTR_AUTOCOMMIT),0);
 	# bindValue coerces an invalid PDO::PARAM type to PARAM_STR (#8101)
 	assertTrue($stmt->bindValue(1,1,9999));
 
