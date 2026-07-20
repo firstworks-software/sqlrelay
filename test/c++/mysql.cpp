@@ -59,6 +59,9 @@ for (uint16_t a=0; a<50; a++) {
 	char	*hostname=sys::getHostName();
 	char	*dot=(char *)charstring::findFirstOrEnd(hostname,'.');
 	*dot='\0';
+	// match the lowercase mysql db name; sys::getHostName is uppercase
+	// on windows
+	charstring::lower(hostname);
 
 
 	// instantiation
