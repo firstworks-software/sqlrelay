@@ -383,6 +383,10 @@
 		SerialClob/SerialBlob (jdk 8u471+)
 	fixed configure detection of an rpm-installed oracle instant client that
 		ships only a versioned libclntsh.so (no bare libclntsh.so symlink)
+	firebird connection uses fb_interpret() instead of the deprecated
+		isc_interprete() for error text when configure finds it (bounded
+		buffer, no overflow); falls back to isc_interprete() on pre-2.0
+		clients
 
 2.1.1 - added tns_admin support
 	fixed sqlr-start ... -strace ...

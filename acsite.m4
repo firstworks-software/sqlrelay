@@ -1875,6 +1875,16 @@ then
 		AC_MSG_WARN(replacng -lfbclient with -lgds on FreeBSD/Firebird-2.0.3)
 	fi
 
+	dnl fb_interpret (firebird 2.0+) replaces the deprecated isc_interprete;
+	dnl use it when present for bounded, non-overflowing error text, and fall
+	dnl back to isc_interprete on older clients that lack it
+	if ( test -n "$FIREBIRDLIBS" )
+	then
+		AC_MSG_CHECKING(for fb_interpret)
+		FW_TRY_LINK([#include <ibase.h>
+#include <stdlib.h>],[const ISC_STATUS *p=NULL; fb_interpret(NULL,0,&p);],[$FIREBIRDSTATIC $FIREBIRDINCLUDES],[$FIREBIRDLIBS $SOCKETLIBS],[$LD_LIBRARY_PATH],[AC_MSG_RESULT(yes); AC_DEFINE(HAVE_FB_INTERPRET,1,Firebird supports fb_interpret)],[AC_MSG_RESULT(no)])
+	fi
+
 	FW_INCLUDES(firebird,[$FIREBIRDINCLUDES])
 	FW_LIBS(firebird,[$FIREBIRDLIBS])
 

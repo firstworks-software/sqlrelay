@@ -24,6 +24,20 @@
 #define MAX_BIND_VARS 512
 #define MAX_LOB_CHUNK_SIZE 65535
 
+// fb_interpret (firebird 2.0+) supersedes the deprecated isc_interprete, whose
+// sizeless buffer walk can overflow msg and stack garbage after the real
+// error; configure sets HAVE_FB_INTERPRET when the client has it
+static ISC_LONG fbInterpret(char *msg, unsigned int msgsize,
+					const ISC_STATUS **pvector) {
+#ifdef HAVE_FB_INTERPRET
+	return fb_interpret(msg,msgsize,pvector);
+#else
+	// isc_interprete takes a non-const ISC_STATUS**; it only advances the
+	// walking pointer, so dropping const is safe
+	return isc_interprete(msg,(ISC_STATUS **)pvector);
+#endif
+}
+
 struct fieldstruct {
 	int		sqlrtype;
 	short		type;
@@ -919,10 +933,10 @@ bool firebirdconnection::logIn(const char **err, const char **warning) {
 
 		errormsg.clear();
 
-		char		msg[512];
-		ISC_STATUS	*errstatus=error;
-		bool		first=false;
-		while (isc_interprete(msg,&errstatus)) {
+		char			msg[512];
+		const ISC_STATUS	*errstatus=error;
+		bool			first=false;
+		while (fbInterpret(msg,sizeof(msg),&errstatus)) {
 			if (first) {
 				errormsg.append(": ");
 			}
@@ -940,10 +954,10 @@ bool firebirdconnection::logIn(const char **err, const char **warning) {
 
 		errormsg.clear();
 
-		char		msg[512];
-		ISC_STATUS	*errstatus=error;
-		bool		first=false;
-		while (isc_interprete(msg,&errstatus)) {
+		char			msg[512];
+		const ISC_STATUS	*errstatus=error;
+		bool			first=false;
+		while (fbInterpret(msg,sizeof(msg),&errstatus)) {
 			if (first) {
 				errormsg.append(": ");
 			}
@@ -1021,11 +1035,11 @@ void firebirdconnection::getError(char *errorbuffer,
 	// declare a buffer for the error
 	errormsg.clear();
 
-	char		msg[512];
-	ISC_STATUS	*pvector=error;
+	char			msg[512];
+	const ISC_STATUS	*pvector=error;
 
 	// get the status message
-	while (isc_interprete(msg,&pvector)) {
+	while (fbInterpret(msg,sizeof(msg),&pvector)) {
 		errormsg.append(msg)->append(" \n");
 	}
 

@@ -37780,6 +37780,49 @@ printf "%s\n" "$as_me: WARNING: Firebird support will not be built." >&2;}
 printf "%s\n" "$as_me: WARNING: replacng -lfbclient with -lgds on FreeBSD/Firebird-2.0.3" >&2;}
 	fi
 
+				if ( test -n "$FIREBIRDLIBS" )
+	then
+		{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for fb_interpret" >&5
+printf %s "checking for fb_interpret... " >&6; }
+
+SAVECPPFLAGS="$CPPFLAGS"
+SAVELIBS="$LIBS"
+SAVE_LD_LIBRARY_PATH="$LD_LIBRARY_PATH"
+CPPFLAGS="$FIREBIRDSTATIC $FIREBIRDINCLUDES"
+LIBS="$FIREBIRDLIBS $SOCKETLIBS"
+LD_LIBRARY_PATH="$LD_LIBRARY_PATH"
+export LD_LIBRARY_PATH
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+#include <ibase.h>
+#include <stdlib.h>
+int
+main (void)
+{
+const ISC_STATUS *p=NULL; fb_interpret(NULL,0,&p);
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_cxx_try_link "$LINENO"
+then :
+  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+printf "%s\n" "yes" >&6; };
+printf "%s\n" "#define HAVE_FB_INTERPRET 1" >>confdefs.h
+
+else $as_nop
+  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: no" >&5
+printf "%s\n" "no" >&6; }
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.beam \
+    conftest$ac_exeext conftest.$ac_ext
+CPPFLAGS="$SAVECPPFLAGS"
+LIBS="$SAVELIBS"
+LD_LIBRARY_PATH="$SAVE_LD_LIBRARY_PATH"
+export LD_LIBRARY_PATH
+
+	fi
+
 
 if ( test -n "$FIREBIRDINCLUDES" )
 then
