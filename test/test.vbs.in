@@ -440,16 +440,16 @@ next
 
 ' determine the set of databases to test
 if np>=1 then
-	testdbs=Split(positional(0)," ")
+	testdbs=Split(collapsews(positional(0))," ")
 else
-	testdbs=Array(@TESTDBS@)
+	testdbs=Split(collapsews("@TESTDBS@")," ")
 end if
 
 ' determine the set of apis to test
 if np>=2 then
-	testapis=Split(positional(1)," ")
+	testapis=Split(collapsews(positional(1))," ")
 else
-	testapis=Array(@TESTAPIS@)
+	testapis=Split(collapsews("@TESTAPIS@")," ")
 end if
 
 ' count of failures (instances that wouldn't start + tests that failed); the

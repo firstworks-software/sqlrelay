@@ -956,58 +956,58 @@ if disablecmdline=false then
 end if
 if disablecpp=false then
 	CPPBUILD="yes"
-	TESTAPIS=TESTAPIS & """c"",""c++"",""extensions"","
+	TESTAPIS=TESTAPIS & "c c++ extensions "
 end if
 if disableperl=false then
 	PERLBUILD="yes"
-	TESTAPIS=TESTAPIS & """perl"",""perldbi"","
+	TESTAPIS=TESTAPIS & "perl perldbi "
 end if
 if disablepython=false then
 	PYTHONBUILD="yes"
-	TESTAPIS=TESTAPIS & """python"",""pythondb"","
+	TESTAPIS=TESTAPIS & "python pythondb "
 end if
 if disableruby=false then
 	RUBYBUILD="yes"
-	TESTAPIS=TESTAPIS & """ruby"","
+	TESTAPIS=TESTAPIS & "ruby "
 end if
 if disablephp=false then
 	PHPBUILD="yes"
-	TESTAPIS=TESTAPIS & """php"","
+	TESTAPIS=TESTAPIS & "php "
 end if
 if disablephp=false then
 	PHPPDOBUILD="yes"
-	TESTAPIS=TESTAPIS & """phppdo"","
+	TESTAPIS=TESTAPIS & "phppdo "
 end if
 if disableodbcdriver=false then
 	ODBCDRIVERBUILD="yes"
 end if
 if disablejava=false then
 	JAVABUILD="yes"
-	TESTAPIS=TESTAPIS & """java"","
+	TESTAPIS=TESTAPIS & "java "
 end if
 if disablejdbc=false then
 	JDBCBUILD="yes"
-	TESTAPIS=TESTAPIS & """jdbc"","
+	TESTAPIS=TESTAPIS & "jdbc "
 end if
 if disablejdbc=false then
 	JDBCBUILD="yes"
-	TESTAPIS=TESTAPIS & """jdbc"","
+	TESTAPIS=TESTAPIS & "jdbc "
 end if
 if disabletcl=false then
 	TCLBUILD="yes"
-	TESTAPIS=TESTAPIS & """tcl"","
+	TESTAPIS=TESTAPIS & "tcl "
 end if
 if disablecs=false then
 	CSBUILD="yes"
-	TESTAPIS=TESTAPIS & """cs"","
+	TESTAPIS=TESTAPIS & "cs "
 end if
 if disablenodejs=false then
 	NODEJSBUILD="yes"
-	TESTAPIS=TESTAPIS & """nodejs"","
+	TESTAPIS=TESTAPIS & "nodejs "
 end if
 if disableodbc=false then
 	ODBCBUILD="yes"
-	TESTAPIS=TESTAPIS & """odbc"","
+	TESTAPIS=TESTAPIS & "odbc "
 end if
 ORACLE8BUILD="no     "
 MYSQLBUILD="no     "
@@ -1022,47 +1022,47 @@ INFORMIXBUILD="no     "
 ROUTERBUILD="no     "
 if disableoracle=false then
 	ORACLE8BUILD="yes    "
-	TESTDBS=TESTDBs&"""oracle"","
+	TESTDBS=TESTDBs&"oracle "
 end if
 if disablemysql=false then
 	MYSQLBUILD="yes    "
-	TESTDBS=TESTDBs&"""mysql"",""mysqlupsert"",""mysqldeadlockreplay"",""mysqlsplitmultiinsert"","
+	TESTDBS=TESTDBs&"mysql mysqlupsert mysqldeadlockreplay mysqlsplitmultiinsert "
 end if
 if disablepostgresql=false then
 	POSTGRESQLBUILD="yes    "
-	TESTDBS=TESTDBs&"""postgresql"",""postgresqlupsert"",""postgresqlsavepoint"",""postgresqlglobaltemptables"",""postgresqlstringagg"","
+	TESTDBS=TESTDBs&"postgresql postgresqlupsert postgresqlsavepoint postgresqlglobaltemptables postgresqlstringagg "
 end if
 if disablesap=false then
 	SYBASEBUILD="yes    "
-	TESTDBS=TESTDBs&"""sap"","
+	TESTDBS=TESTDBs&"sap "
 end if
 if disableodbc=false then
 	ODBCBUILD="yes    "
 end if
 if disabledb2=false then
 	DB2BUILD="yes    "
-	TESTDBS=TESTDBs&"""db2"","
+	TESTDBS=TESTDBs&"db2 "
 end if
 if disablefirebird=false then
 	FIREBIRDBUILD="yes    "
-	TESTDBS=TESTDBs&"""firebird"","
+	TESTDBS=TESTDBs&"firebird "
 end if
 if disableinformix=false then
 	INFORMIXBUILD="yes    "
-	TESTDBS=TESTDBs&"""informix"","
+	TESTDBS=TESTDBs&"informix "
 end if
 if disablerouter=false then
 	ROUTERBUILD="yes    "
-	TESTDBS=TESTDBs&"""router"","
+	TESTDBS=TESTDBs&"router "
 end if
 if disablemysql=false then
-	TESTDBS=TESTDBs&"""mysqlprotocol"","
+	TESTDBS=TESTDBs&"mysqlprotocol "
 end if
 if disablepostgresql=false then
-	TESTDBS=TESTDBs&"""postgresqlprotocol"","
+	TESTDBS=TESTDBs&"postgresqlprotocol "
 end if
 
-' truncate the trailing comma
+' truncate the trailing space
 TESTDBS=left(TESTDBS,len(TESTDBS)-1)
 TESTAPIS=left(TESTAPIS,len(TESTAPIS)-1)
 
@@ -1103,8 +1103,7 @@ infiles=Array(_
 	"test\\sqlrelay.conf.d\\sqlite.conf.in",_
 	"test\\sqlrelay.conf.d\\tdsprotocol.conf.in",_
 	"test\\sqlrelay.conf.d\\teradataprotocol.conf.in",_
-	"test\\sqlrelay.conf.d\\tls.conf.in",_
-	"test\\test.vbs.in"_
+	"test\\sqlrelay.conf.d\\tls.conf.in"_
 	)
 outfiles=Array(_
 	"config.mk",_
@@ -1142,8 +1141,7 @@ outfiles=Array(_
 	"test\\sqlrelay.conf.d\\sqlite.conf",_
 	"test\\sqlrelay.conf.d\\tdsprotocol.conf",_
 	"test\\sqlrelay.conf.d\\teradataprotocol.conf",_
-	"test\\sqlrelay.conf.d\\tls.conf",_
-	"test\\test.vbs"_
+	"test\\sqlrelay.conf.d\\tls.conf"_
 	)
 
 
