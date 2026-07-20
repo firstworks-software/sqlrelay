@@ -60,6 +60,9 @@ int	main(int argc, char **argv) {
 		char	*hostname=sys::getHostName();
 		char	*dot=(char *)charstring::findFirstOrEnd(hostname,'.');
 		*dot='\0';
+		// match the lowercase mysql db name; sys::getHostName is
+		// uppercase on windows
+		charstring::lower(hostname);
 		host="mysql";
 		db=hostname;
 	}
@@ -153,6 +156,9 @@ int	main(int argc, char **argv) {
 	char	*tableshostnamedot=
 			(char *)charstring::findFirstOrEnd(tableshostname,'.');
 	*tableshostnamedot='\0';
+	// match the lowercase mysql db name; sys::getHostName is uppercase
+	// on windows
+	charstring::lower(tableshostname);
 	char	tablesincolumn[256];
 	#ifdef MARIADB_BASE_VERSION
 	charstring::printf(tablesincolumn,sizeof(tablesincolumn),
