@@ -24,6 +24,10 @@
 #define MAX_BIND_VARS 512
 #define MAX_LOB_CHUNK_SIZE 65535
 
+// isc_dsql_prepare's length parameter is an unsigned short, so firebird can't
+// prepare a statement of 65536 bytes or more; a larger length would wrap
+#define MAX_STATEMENT_SIZE 65535
+
 // fb_interpret (firebird 2.0+) supersedes the deprecated isc_interprete, whose
 // sizeless buffer walk can overflow msg and stack garbage after the real
 // error; configure sets HAVE_FB_INTERPRET when the client has it
@@ -226,6 +230,7 @@ class SQLRSERVER_DLLSPEC firebirdcursor : public sqlrservercursor {
 
 		bool	queryisexecsp;
 		bool	bindformaterror;
+		bool	querytoolarge;
 
 		regularexpression	executeprocedure;
 };
@@ -603,8 +608,9 @@ void firebirdconnection::initDatabaseFeatures() {
 	databasefeatures[FEATURE_MAX_STATEMENTS]=
 		"0";
 
+	// isc_dsql_prepare's length is an unsigned short (see MAX_STATEMENT_SIZE)
 	databasefeatures[FEATURE_MAX_STATEMENT_LENGTH]=
-		"10485760";
+		"65535";
 
 	databasefeatures[FEATURE_MAX_TABLES_IN_SELECT]=
 		"0";
@@ -2330,6 +2336,7 @@ firebirdcursor::firebirdcursor(sqlrserverconnection *conn, uint16_t id) :
 
 	queryisexecsp=false;
 	bindformaterror=false;
+	querytoolarge=false;
 
 	setCreateTempTablePattern("(create|CREATE)[ 	\n\r]+(global|GLOBAL)[ 	\n\r]+(temporary|TEMPORARY)[ 	\n\r]+(table|TABLE)[ 	\n\r]+");
 	executeprocedure.setPattern("(execute|EXECUTE)[ 	\n\r]+(procedure|PROCEDURE)");
@@ -2391,6 +2398,14 @@ void firebirdcursor::deallocateResultSetBuffers() {
 }
 
 bool firebirdcursor::prepareQuery(const char *query, uint32_t size) {
+
+	// reject queries too large for isc_dsql_prepare's unsigned-short
+	// length rather than letting the length wrap and truncate the query
+	querytoolarge=false;
+	if (size>MAX_STATEMENT_SIZE) {
+		querytoolarge=true;
+		return false;
+	}
 
 	// initialize column count
 	outsqlda->sqld=0;
@@ -3222,6 +3237,19 @@ void firebirdcursor::getError(char *errorbuffer,
 				SQLR_ERROR_INVALIDBINDVARIABLEFORMAT_STRING,
 				*errorsize);
 		*errorcode=SQLR_ERROR_INVALIDBINDVARIABLEFORMAT;
+		*liveconnection=true;
+		return;
+	}
+
+	// handle queries too large for isc_dsql_prepare
+	if (querytoolarge) {
+		*errorsize=charstring::getLength(
+				SQLR_ERROR_MAXQUERYSIZE_STRING);
+		charstring::safeCopy(errorbuffer,
+				errorbuffersize,
+				SQLR_ERROR_MAXQUERYSIZE_STRING,
+				*errorsize);
+		*errorcode=SQLR_ERROR_MAXQUERYSIZE;
 		*liveconnection=true;
 		return;
 	}
