@@ -19614,7 +19614,7 @@ fi
 			{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: yes" >&5
 printf "%s\n" "yes" >&6; }
 
-									for try in 1 2 3 4 5 6 7 8
+									for try in 1 2 3 9 4 5 6 7 8
 			do
 
 				if ( test "$try" = "1" )
@@ -19629,6 +19629,10 @@ printf "%s\n" "yes" >&6; }
 				then
 					TESTINCLUDES="$PTHREADINCLUDES"
 					TESTLIB="$PTHREADLIB"
+				elif ( test "$try" = "9" )
+				then
+																				TESTINCLUDES="$PTHREAD_COMPILE $PTHREADINCLUDES"
+					TESTLIB="$PTHREADLIB -lpthread"
 				elif ( test "$try" = "4" )
 				then
 					TESTINCLUDES="$PTHREADINCLUDES"
@@ -19669,6 +19673,8 @@ cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 int
 main (void)
 {
+pthread_t thread;
+pthread_create(&thread,(pthread_attr_t *)0,(void *(*)(void *))0,(void *)0);
 pthread_exit(NULL);
   ;
   return 0;

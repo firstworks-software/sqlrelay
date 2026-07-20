@@ -10774,7 +10774,7 @@ else
 
 			dnl  If we found a set of headers and libs, try
 			dnl  linking with them a bunch of different ways
-			for try in 1 2 3 4 5 6 7 8
+			for try in 1 2 3 9 4 5 6 7 8
 			do
 
 				if ( test "$try" = "1" )
@@ -10791,6 +10791,13 @@ else
 				then
 					TESTINCLUDES="$PTHREADINCLUDES"
 					TESTLIB="$PTHREADLIB"
+				elif ( test "$try" = "9" )
+				then
+					dnl  libtool keeps -lpthread but strips -pthread, so
+					dnl  try -lpthread first to keep the thread library
+					dnl  NEEDED by the shared object
+					TESTINCLUDES="$PTHREAD_COMPILE $PTHREADINCLUDES"
+					TESTLIB="$PTHREADLIB -lpthread"
 				elif ( test "$try" = "4" )
 				then
 					TESTINCLUDES="$PTHREADINCLUDES"
@@ -10817,7 +10824,9 @@ else
 				dnl try to link
 				AC_MSG_CHECKING(whether $TESTINCLUDES ... $TESTLIB works)
 				FW_TRY_LINK([#include <stddef.h>
-#include <pthread.h>],[pthread_exit(NULL);],[$CPPFLAGS $TESTINCLUDES],[$TESTLIB],[],[AC_MSG_RESULT(yes); HAVE_PTHREAD="yes"],[AC_MSG_RESULT(no)])
+#include <pthread.h>],[pthread_t thread;
+pthread_create(&thread,(pthread_attr_t *)0,(void *(*)(void *))0,(void *)0);
+pthread_exit(NULL);],[$CPPFLAGS $TESTINCLUDES],[$TESTLIB],[],[AC_MSG_RESULT(yes); HAVE_PTHREAD="yes"],[AC_MSG_RESULT(no)])
 
 				dnl  If the link succeeded then keep
 				dnl  the flags.
