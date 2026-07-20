@@ -469,8 +469,22 @@ WScript.Echo("******************************")
 WScript.Echo("")
 WScript.Echo("***** MySQL ******************")
 
-'"MySQL Connector.C ",_
+' prefer MariaDB Connector/C (its libmariadb ships the caching_sha2_password
+' client plugin, needed to log into mysql 8.0 servers); fall back to the older
+' MySQL Connector C if MariaDB isn't installed.  configureDatabase sets
+' disabledb (byref) true on a miss, so save and restore it before the fallback.
+origdisablemysql=disablemysql
 configureDatabase "MySQL","mysql",disablemysql,_
+			"C:\Program Files\MariaDB",_
+			"MariaDB Connector C",_
+			"include","mysql.h",_
+			"lib","libmariadb.lib","",_
+			"\include","\lib","libmariadb.lib",_
+			MYSQLPREFIX,MYSQLINCLUDES,MYSQLLIBS,_
+			ALLMYSQL,INSTALLMYSQL
+if MYSQLLIBS="" and origdisablemysql=false then
+	disablemysql=false
+	configureDatabase "MySQL","mysql",disablemysql,_
 			"C:\Program Files\MySQL",_
 			"MySQL Connector C ",_
 			"include","mysql.h",_
@@ -478,6 +492,7 @@ configureDatabase "MySQL","mysql",disablemysql,_
 			"\include","\lib","libmysql.lib",_
 			MYSQLPREFIX,MYSQLINCLUDES,MYSQLLIBS,_
 			ALLMYSQL,INSTALLMYSQL
+end if
 
 WScript.Echo("******************************")
 
