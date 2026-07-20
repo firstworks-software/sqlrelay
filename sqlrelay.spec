@@ -2,7 +2,7 @@
 %{!?tcl_sitearch: %global tcl_sitearch %{_libdir}/tcl%{tcl_version}}
 
 Name: sqlrelay
-Version: 2.1.2
+Version: 2.2.0
 Release: 1%{?dist}
 Summary: Database proxy
 
@@ -763,9 +763,9 @@ cp -r %{buildroot}%{_docdir}/%{name}/api/java %{buildroot}%{_javadocdir}/%{name}
 %{_javadocdir}/%{name}
 
 %changelog
-* Mon Mar 16 2026 David Muse <david.muse@firstworks.com> - 2.1.2-1
+* Mon Mar 16 2026 David Muse <david.muse@firstworks.com> - 2.2.0-1
 - Added jdbc driver.
-- Updated to version 2.1.2.
+- Updated to version 2.2.0.
 
 * Mon Jan 20 2025 David Muse <david.muse@firstworks.com> - 2.1.1-1
 - Updated to version 2.1.1.

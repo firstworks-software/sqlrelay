@@ -1,4 +1,4 @@
-2.1.2 - added some install targets for unfinished modules
+2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems
 	fixed setProtocolIsBingEndian() (assignment reversal)
 	jdbc driver debugging improvements
@@ -300,8 +300,8 @@
 	fixed the doc website's Documentation button not highlighting on
 		documentation.html (wrong relative path to the image) or on
 		the getting-started pages (missing from the button js)
-	updated the doc website for the 2.1.2 release: refreshed the front
-		page slide, bumped the download page to sqlrelay 2.1.2 and
+	updated the doc website for the 2.2.0 release: refreshed the front
+		page slide, bumped the download page to sqlrelay 2.2.0 and
 		rudiments 2.2.0, and added the jdbc driver to the database
 		abstraction layers card and page (which still described jdbc
 		as bridge-only), including a new app-jdbc-sqlr-mysql.png
