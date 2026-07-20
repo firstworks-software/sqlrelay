@@ -1,170 +1,380 @@
 #!/bin/sh
 
-if ( test -z "$1" )
-then
-	echo "usage: test.sh database [apis]"
-	exit
-fi
-
-# determine set of apis to test
-TESTAPIS="@TESTAPIS@"
-if ( test -n "$2" )
-then
-	TESTAPIS="$2"
-fi
-
-for DIR in $TESTAPIS
-do
-	echo "testing $1 in $DIR"
+# print the usage message
+usage() {
+	echo "usage: test.sh [-n] [databases [apis]]"
+	echo "       test.sh -h"
 	echo
-	cd $DIR
+	echo "  For each database, start a SQL Relay instance, run the client API"
+	echo "  tests against it, then stop the instance."
+	echo
+	echo "    databases  space-separated list of databases to test"
+	echo "               (default: every database built)"
+	echo "    apis       space-separated list of client APIs to test"
+	echo "               (default: every API built)"
+	echo
+	echo "    -n         do not manage instances; assume each is already running"
+	echo "               and just run the tests against it"
+	echo "    -h         show this help and exit"
+}
 
-	# for odbc, verify that we have an odbcinst config for sqlrelay
-	if ( test "$DIR" = "odbc" )
+# stop any instances left running from a previous run
+stop_instances() {
+
+	# ask them to stop
+	$PREFIX/bin/sqlr-stop
+	sleep 2
+
+	# really kill them
+	ps aux > /dev/null 2> /dev/null
+	if ( test "$?" = "0" )
 	then
-		if ( test -z "`grep '\[SQL Relay\]' /etc/odbcinst.ini 2> /dev/null`" )
+		kill `ps aux | grep sqlr-connection | grep -v grep | cut -c10-15` 2> /dev/null
+		kill `ps aux | grep sqlr-scaler | grep -v grep | cut -c10-15` 2> /dev/null
+		kill `ps aux | grep sqlr-listener | grep -v grep | cut -c10-15` 2> /dev/null
+	else
+		kill `ps -efa | grep sqlr-connection | grep -v grep | cut -c10-15` 2> /dev/null
+		kill `ps -efa | grep sqlr-scaler | grep -v grep | cut -c10-15` 2> /dev/null
+		kill `ps -efa | grep sqlr-listener | grep -v grep | cut -c10-15` 2> /dev/null
+	fi
+	sleep 2
+}
+
+# whether this database can be tested here; returns 1 (skip) when its
+# connection module was not built or a prerequisite is missing
+db_applicable() {
+
+	db="$1"
+
+	# map the database to the connection module it needs
+	MODULE=$db
+	case "$db" in
+		tls|krb|extensions)
+			MODULE=oracle
+			;;
+		mysql*)
+			MODULE=mysql
+			;;
+		postgresql*)
+			MODULE=postgresql
+			;;
+	esac
+
+	# skip if that module was not built
+	if ( test -z "`ls $PREFIX/lib*/sqlrelay/sqlrconnection_$MODULE.* 2> /dev/null`" )
+	then
+		return 1
+	fi
+
+	# the router test also needs mysql
+	if ( test "$db" = "router" )
+	then
+		if ( test -z "`ls $PREFIX/lib*/sqlrelay/sqlrconnection_mysql.* 2> /dev/null`" )
 		then
-			echo "skipping odbc (no [SQL Relay] in /etc/odbcinst.ini)..."
-			echo
-			cd ..
-			continue
+			return 1
 		fi
 	fi
 
+	# the mssql test also needs an odbc config for it
+	if ( test "$db" = "mssql" )
+	then
+		if ( test -z "`grep mssqlodbc /etc/odbc.ini 2> /dev/null`" )
+		then
+			return 1
+		fi
+	fi
+
+	return 0
+}
+
+# start the instance(s) for a database
+start_instance() {
+
+	db="$1"
+
+	# for the router test, start the master/slave instances
+	if ( test "$db" = "router" )
+	then
+		$PREFIX/bin/sqlr-start -config $CONFDIR/${db}.conf -id routermaster -backtrace $BACKTRACEDIR
+		sleep 2
+
+		$PREFIX/bin/sqlr-start -config $CONFDIR/${db}.conf -id routerslave -backtrace $BACKTRACEDIR
+		sleep 2
+	fi
+
+	# start the instance
+	$PREFIX/bin/sqlr-start -config $CONFDIR/${db}.conf -id ${db}test -backtrace $BACKTRACEDIR
+	sleep 2
+}
+
+# stop the instance(s) for a database
+stop_instance() {
+
+	db="$1"
+
+	if ( test "$db" = "router" )
+	then
+		sleep 2
+		$PREFIX/bin/sqlr-stop -config $CONFDIR/${db}.conf -id routermaster
+		sleep 2
+		$PREFIX/bin/sqlr-stop -config $CONFDIR/${db}.conf -id routerslave
+	fi
+	sleep 2
+	$PREFIX/bin/sqlr-stop -config $CONFDIR/${db}.conf -id ${db}test
+	sleep 2
+}
+
+# wait for an instance to answer; sets PING and BYPASS and returns 0 if up
+ping_instance() {
+
+	db="$1"
+
+	PING=""
+	BYPASS="no"
+	for attempt in 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15
+	do
+		echo
+		echo "pinging $db..."
+		if ( test "$db" = "tls" )
+		then
+			PING=`$PREFIX/bin/sqlrsh -host localhost -tls -tlscert $CONFDIR/tls/client.pem -tlsca $CONFDIR/tls/ca.pem -tlsvalidate ca -command ping 2>&1`
+		elif ( test "$db" = "extensions" )
+		then
+			PING=`$PREFIX/bin/sqlrsh -host localhost -user test -password test -command ping 2>&1`
+		elif ( test "$db" = "mysqlprotocol" )
+		then
+			PING="0: Couldn't connect to the listener."
+			if ( test -n "`netstat -an 2> /dev/null | grep LISTEN | grep 3306`" )
+			then
+				PING="The database is up."
+			fi
+		elif ( test "$db" = "postgresqlprotocol" )
+		then
+			PING="0: Couldn't connect to the listener."
+			if ( test -n "`netstat -an 2> /dev/null | grep LISTEN | grep 5432`" )
+			then
+				PING="The database is up."
+			fi
+		elif ( test "$db" = "tdsprotocol" )
+		then
+			PING="0: Couldn't connect to the listener."
+			if ( test -n "`netstat -an 2> /dev/null | grep LISTEN | grep 1433`" )
+			then
+				PING="The database is up."
+			fi
+		elif ( test "$db" = "oracleprotocol" )
+		then
+			PING="0: Couldn't connect to the listener."
+			if ( test -n "`netstat -an 2> /dev/null | grep LISTEN | grep 1521`" )
+			then
+				PING="The database is up."
+			fi
+		elif ( test "$db" = "teradataprotocol" )
+		then
+			PING="0: Couldn't connect to the listener."
+			if ( test -n "`netstat -an 2> /dev/null | grep LISTEN | grep 1025`" )
+			then
+				PING="The database is up."
+			fi
+		else
+			PING=`$PREFIX/bin/sqlrsh -config $CONFDIR/${db}.conf -id ${db}test -command ping 2>&1`
+		fi
+
+		# (this collapses whitespace)
+		PING=`echo $PING`
+
+		echo $PING
+
+		if ( test "$PING" = "0: Couldn't connect to the listener." )
+		then
+			sleep 5
+		else
+
+			# If ssl is sufficiently old then the ssl test will
+			# fail like this.  Just bypass the test in that case.
+			SSLPROBLEM=`echo "$PING" | grep "unknown message digest algorithm"`
+			if ( test -n "$SSLPROBLEM" )
+			then
+				BYPASS="yes"
+			fi
+			break
+		fi
+	done
+
+	if ( test "$PING" = "The database is up." )
+	then
+		return 0
+	fi
+	return 1
+}
+
+# set TEST and TESTFILE for running database db's test under api
+api_command() {
+
+	db="$1"
+	api="$2"
+
 	TEST=""
 	TESTFILE=""
-	case "$DIR" in
+	case "$api" in
 		c)
-			TEST="./$1"
-			TESTFILE="$1"
+			TEST="./$db"
+			TESTFILE="$db"
 			;;
 		c++)
-			TEST="./$1"
-			TESTFILE="$1"
+			TEST="./$db"
+			TESTFILE="$db"
 			;;
 		extensions)
-			TEST="./$1"
-			TESTFILE="$1"
+			TEST="./$db"
+			TESTFILE="$db"
 			;;
 		cs)
 			mono --version > /dev/null 2>&1
 			if ( test "$?" = "0" )
 			then
-				TEST="mono $1.exe"
-				TESTFILE="$1.exe"
+				TEST="mono $db.exe"
+				TESTFILE="$db.exe"
 			fi
 			;;
 		ado.net)
 			mono --version > /dev/null 2>&1
 			if ( test "$?" = "0" )
 			then
-				TEST="mono $1.exe"
-				TESTFILE="$1.exe"
+				TEST="mono $db.exe"
+				TESTFILE="$db.exe"
 			fi
 			;;
 		java)
 			java -h > /dev/null 2>&1
 			if ( test "$?" = "0" )
 			then
-				TEST="./run $1"
-				TESTFILE="$1.class"
+				TEST="./run $db"
+				TESTFILE="$db.class"
 			fi
 			;;
 		jdbc)
 			java -h > /dev/null 2>&1
 			if ( test "$?" = "0" )
 			then
-				TEST="./run $1"
-				TESTFILE="$1.class"
+				TEST="./run $db"
+				TESTFILE="$db.class"
 			fi
 			;;
 		nodejs)
 			node --version > /dev/null 2>&1
 			if ( test "$?" = "0" )
 			then
-				TEST="node $1.js"
-				TESTFILE="$1.js"
+				TEST="node $db.js"
+				TESTFILE="$db.js"
 			fi
 			;;
 		odbc)
-			TEST="./$1"
-			TESTFILE="$1"
+			TEST="./$db"
+			TESTFILE="$db"
 			;;
 		perl)
 			perl --version > /dev/null 2>&1
 			if ( test "$?" = "0" )
 			then
-				TEST="perl $1.pl"
-				TESTFILE="$1.pl"
+				TEST="perl $db.pl"
+				TESTFILE="$db.pl"
 			fi
 			;;
 		perldbi)
 			perl --version > /dev/null 2>&1
 			if ( test "$?" = "0" )
 			then
-				TEST="perl $1.pl"
-				TESTFILE="$1.pl"
+				TEST="perl $db.pl"
+				TESTFILE="$db.pl"
 			fi
 			;;
 		php)
 			php --version > /dev/null 2>&1
 			if ( test "$?" = "0" )
 			then
-				TEST="php $1.php"
-				TESTFILE="$1.php"
+				TEST="php $db.php"
+				TESTFILE="$db.php"
 			fi
- 			;;
+			;;
 		phppdo)
 			php --version > /dev/null 2>&1
 			if ( test "$?" = "0" )
 			then
-				TEST="php $1.php"
-				TESTFILE="$1.php"
+				TEST="php $db.php"
+				TESTFILE="$db.php"
 			fi
 			;;
 		python)
 			@PYTHON@ --version > /dev/null 2>&1
 			if ( test "$?" = "0" )
 			then
-				TEST="@PYTHON@ -u $1.py"
-				TESTFILE="$1.py"
+				TEST="@PYTHON@ -u $db.py"
+				TESTFILE="$db.py"
 			fi
 			;;
 		pythondb)
 			@PYTHON@ --version > /dev/null 2>&1
 			if ( test "$?" = "0" )
 			then
-				TEST="@PYTHON@ -u $1.py"
-				TESTFILE="$1.py"
+				TEST="@PYTHON@ -u $db.py"
+				TESTFILE="$db.py"
 			fi
 			;;
 		ruby)
 			ruby --version > /dev/null 2>&1
 			if ( test "$?" = "0" )
 			then
-				TEST="ruby $1.rb"
-				TESTFILE="$1.rb"
+				TEST="ruby $db.rb"
+				TESTFILE="$db.rb"
 			fi
 			;;
 		tcl)
 			echo 'puts $tcl_version;exit 0'|tclsh > /dev/null 2>&1
 			if ( test "$?" = "0" )
 			then
-				TEST="tclsh $1.tcl"
-				TESTFILE="$1.tcl"
+				TEST="tclsh $db.tcl"
+				TESTFILE="$db.tcl"
 			fi
 			;;
 		erlang)
 			erl -version > /dev/null 2>&1
 			if ( test "$?" = "0" )
 			then
-				TEST="./run $1"
-				TESTFILE="$1.beam"
+				TEST="./run $db"
+				TESTFILE="$db.beam"
 			fi
 			;;
 	esac
+}
 
+# run database db's test under one api; returns 1 if the test ran and failed
+run_api_test() {
 
+	db="$1"
+	api="$2"
+
+	echo "testing $db in $api"
+	echo
+	cd $api
+
+	# for odbc, verify that we have an odbcinst config for sqlrelay
+	if ( test "$api" = "odbc" )
+	then
+		if ( test -z "`grep '\[SQL Relay\]' /etc/odbcinst.ini 2> /dev/null`" )
+		then
+			echo "skipping odbc (no [SQL Relay] in /etc/odbcinst.ini)..."
+			echo
+			cd ..
+			return 0
+		fi
+	fi
+
+	# figure out how to run this api's test
+	api_command "$db" "$api"
+
+	# run it
+	STATUS=0
 	if ( test -r "$TESTFILE" )
 	then
 		$TEST
@@ -172,16 +382,17 @@ do
 		then
 			echo
 			echo
-			echo "$1 failed in $DIR"
+			echo "$db failed in $api"
 			echo
-			printf "    % 8s: failed\n" "$DIR" >> ../testresults.log
+			printf "    % 8s: failed\n" "$api" >> ../testresults.log
+			STATUS=1
 		else
 			echo
 			echo "test complete"
-			printf "    % 8s: success\n" "$DIR" >> ../testresults.log
+			printf "    % 8s: success\n" "$api" >> ../testresults.log
 		fi
 	else
-		echo "no test found for $1 in $DIR"
+		echo "no test found for $db in $api"
 	fi
 
 	echo
@@ -189,4 +400,255 @@ do
 	echo
 
 	cd ..
+
+	return $STATUS
+}
+
+# run database db's tests across the apis
+run_api_tests() {
+
+	db="$1"
+	apis="$2"
+
+	for api in $apis
+	do
+		run_api_test "$db" "$api"
+		failures=`expr $failures + $?`
+	done
+}
+
+# run a wire-protocol test (the listener speaks another database's protocol)
+run_protocol_test() {
+
+	db="$1"
+
+	# map the database to its protocol test directory
+	dir=""
+	case "$db" in
+		mysqlprotocol)
+			dir="protocol/mysql"
+			;;
+		postgresqlprotocol)
+			dir="protocol/postgresql"
+			;;
+		tdsprotocol)
+			dir="protocol/tds"
+			;;
+		oracleprotocol)
+			dir="protocol/oracle"
+			;;
+		teradataprotocol)
+			dir="protocol/teradata"
+			;;
+	esac
+
+	# the test program is named after the last path component
+	prog=`basename $dir`
+	cd $dir
+	./$prog
+	if ( test "$?" = "0" )
+	then
+		printf "    % 8s: success\n" "protocol" >> ../../testresults.log
+		cd ../..
+		return 0
+	fi
+	printf "    % 8s: failed\n" "protocol" >> ../../testresults.log
+	cd ../..
+	return 1
+}
+
+# the crud test uses oracle-specific sql, so it runs only against oracle
+run_crud_test() {
+
+	cd crud
+	./crud
+	if ( test "$?" = "0" )
+	then
+		printf "    % 8s: success\n" "crud" >> ../testresults.log
+		cd ..
+		return 0
+	fi
+	printf "    % 8s: failed\n" "crud" >> ../testresults.log
+	cd ..
+	return 1
+}
+
+# run the appropriate tests for a database that is up
+run_db_tests() {
+
+	db="$1"
+	apis="$2"
+
+	# kinit for krb tests
+	if ( test "$db" = "krb" )
+	then
+		kdestroy
+		kinit
+	fi
+
+	echo
+	echo "success..."
+	echo
+
+	case "$db" in
+		mysqlprotocol|postgresqlprotocol|tdsprotocol|oracleprotocol|teradataprotocol)
+			run_protocol_test "$db"
+			failures=`expr $failures + $?`
+			;;
+		*)
+			run_api_tests "$db" "$apis"
+
+			# the crud test uses oracle-specific sql, so
+			# run it only against the oracle instance
+			if ( test "$db" = "oracle" )
+			then
+				run_crud_test
+				failures=`expr $failures + $?`
+			fi
+			;;
+	esac
+}
+
+
+# paths
+PREFIX=@prefix@
+CONFDIR=@abs_top_builddir@/test/sqlrelay.conf.d
+BACKTRACEDIR=@abs_top_builddir@/test
+
+# parse the options
+manage="yes"
+nflag=""
+while ( test $# -gt 0 )
+do
+	case "$1" in
+		-n)
+			manage="no"
+			nflag="-n"
+			shift
+			;;
+		-h)
+			usage
+			exit 0
+			;;
+		-*)
+			usage 1>&2
+			exit 1
+			;;
+		*)
+			break
+			;;
+	esac
 done
+
+# determine the set of databases to test
+TESTDBS="@TESTDBS@"
+if ( test -n "$1" )
+then
+	TESTDBS="$1"
+fi
+
+# determine the set of apis to test
+TESTAPIS="@TESTAPIS@"
+if ( test -n "$2" )
+then
+	TESTAPIS="$2"
+fi
+
+
+# tee output to testdetails.log, preserving the child's exit status
+if ( test "$CHILD" != "1" )
+then
+	{ CHILD=1 $0 $nflag "$@"; echo $? > testexitstatus.tmp; } 2>&1 | tee testdetails.log
+	childstatus=`cat testexitstatus.tmp 2> /dev/null`
+	rm -f testexitstatus.tmp
+	exit ${childstatus:-0}
+fi
+
+
+
+echo "SQL Relay test results:" > testresults.log
+echo >> testresults.log
+
+# count of failures (instances that wouldn't start + tests that failed); the
+# script exits non-zero if any, and never blocks waiting for input, so it can
+# run unattended (eg. from make tests over ssh)
+failures=0
+
+# stop any existing instances
+if ( test "$manage" = "yes" )
+then
+	stop_instances
+fi
+
+# for each database/configuration...
+for db in $TESTDBS
+do
+
+	# make sure that support for the appropriate database exists
+	if db_applicable "$db"
+	then
+		:
+	else
+		echo "skipping $db..."
+		echo
+		echo "================================================================================"
+		echo
+		continue
+	fi
+
+	# testing...
+	echo "testing $db (from `hostname`)..."
+	echo "$db..." >> testresults.log
+
+	# start the instance and wait for it to come up
+	up="yes"
+	BYPASS="no"
+	if ( test "$manage" = "yes" )
+	then
+		start_instance "$db"
+		if ping_instance "$db"
+		then
+			up="yes"
+		else
+			up="no"
+		fi
+	fi
+
+	# bypass the test if necessary
+	if ( test "$BYPASS" != "yes" )
+	then
+
+		# run the tests
+		if ( test "$up" = "yes" )
+		then
+			run_db_tests "$db" "$TESTAPIS"
+		else
+			echo
+			echo "failed to start ${db}test"
+			echo
+			echo "     connect: failed" >> testresults.log
+			failures=`expr $failures + 1`
+		fi
+	fi
+
+	# shut down the instance(s)
+	if ( test "$manage" = "yes" )
+	then
+		stop_instance "$db"
+	fi
+
+	echo
+	echo "================================================================================"
+	echo
+done
+
+# report and exit with a status the caller can check
+cat testresults.log
+echo
+if ( test "$failures" -gt 0 )
+then
+	echo "$failures failure(s)."
+	exit 1
+fi
+echo "all tests passed."
+exit 0

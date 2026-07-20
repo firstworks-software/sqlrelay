@@ -113,7 +113,6 @@ distclean: clean
 		configure~ \
 		test/testresults.log \
 		test/testdetails.log \
-		test/testall.fifo \
 		test/bench/benchall.sh
 	$(RMTREE) autom4te.cache \
 		autom4te-*.cache \

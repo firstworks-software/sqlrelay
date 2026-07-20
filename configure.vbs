@@ -1104,7 +1104,7 @@ infiles=Array(_
 	"test\\sqlrelay.conf.d\\tdsprotocol.conf.in",_
 	"test\\sqlrelay.conf.d\\teradataprotocol.conf.in",_
 	"test\\sqlrelay.conf.d\\tls.conf.in",_
-	"test\\testall.vbs.in"_
+	"test\\test.vbs.in"_
 	)
 outfiles=Array(_
 	"config.mk",_
@@ -1143,7 +1143,7 @@ outfiles=Array(_
 	"test\\sqlrelay.conf.d\\tdsprotocol.conf",_
 	"test\\sqlrelay.conf.d\\teradataprotocol.conf",_
 	"test\\sqlrelay.conf.d\\tls.conf",_
-	"test\\testall.vbs"_
+	"test\\test.vbs"_
 	)
 
 

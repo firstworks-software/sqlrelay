@@ -47,7 +47,7 @@ SCRIPTEXT = .sh
 abs_top_builddir = @abs_top_builddir@
 TESTDBS = @TESTDBS@
 TESTAPIS = @TESTAPIS@
-TESTSCRIPTS = testall.sh test.sh
+TESTSCRIPTS = test.sh
 
 
 # slash

@@ -1,0 +1,524 @@
+' script-level state shared across the procedures below
+dim PREFIX, CONFDIR, COMPUTERNAME, fso, WshShell
+dim testdbs, testapis, failures, manage, up, db
+dim PING, BYPASS, TEST, TESTFILE
+
+' print the usage message
+sub usage()
+	WScript.Echo("usage: cscript /nologo test.vbs [-n] [databases [apis]]")
+	WScript.Echo("       cscript /nologo test.vbs -h")
+	WScript.Echo("")
+	WScript.Echo("  For each database, start a SQL Relay instance, run the client API")
+	WScript.Echo("  tests against it, then stop the instance.")
+	WScript.Echo("")
+	WScript.Echo("    databases  space-separated list of databases to test")
+	WScript.Echo("               (default: every database built)")
+	WScript.Echo("    apis       space-separated list of client APIs to test")
+	WScript.Echo("               (default: every API built)")
+	WScript.Echo("")
+	WScript.Echo("    -n         do not manage instances; assume each is already running")
+	WScript.Echo("               and just run the tests against it")
+	WScript.Echo("    -h         show this help and exit")
+end sub
+
+' start or stop a sqlrelay daemon so its spawned listener/connection outlive
+' this script.  Exec would kill them via its job object when the WshScriptExec
+' is released; Run does not, and needs the exe path quoted (it has a space).
+' #8484
+sub daemon(prog, args)
+	WshShell.Run Chr(34) & PREFIX & "\bin\" & prog & Chr(34) & " " & args, 0, false
+end sub
+
+' all test instances listen on port 9000, so only one runs at a time.  make
+' sure the previous db's instance is fully gone and no stale pid files remain
+' before starting the next - sqlr-stop is asynchronous and was sometimes too
+' slow, leaving the next instance unable to come up ("failed to start").  #8484
+sub cleanslate()
+	WshShell.Run "taskkill /F /IM sqlr-listener.exe", 0, true
+	WshShell.Run "taskkill /F /IM sqlr-connection.exe", 0, true
+	WScript.Sleep 500
+	WshShell.Run "cmd /c del /q " & Chr(34) & PREFIX & "\var\run\sqlrelay\*" & Chr(34), 0, true
+end sub
+
+' stop any instances left running from a previous run
+sub stopinstances()
+
+	' ask them to stop (cleanslate does the forced per-db kill)
+	daemon "sqlr-stop", ""
+	WScript.Sleep(2000)
+end sub
+
+' whether this database can be tested here; Windows builds only the modules
+' that were configured, and the db list already reflects that, so nothing is
+' skipped (the shell version skips dbs whose module was not built)
+function dbapplicable(db)
+	dbapplicable=True
+end function
+
+' start the instance(s) for a database
+sub startinstance(db)
+
+	' make sure the previous db's instance is fully gone first
+	cleanslate()
+
+	' for the router test, start the master/slave instances
+	if db="router" then
+		daemon "sqlr-start", "-config " & CONFDIR & "\" & db & ".conf -id routermaster"
+		WScript.Sleep(2000)
+
+		daemon "sqlr-start", "-config " & CONFDIR & "\" & db & ".conf -id routerslave"
+		WScript.Sleep(2000)
+	end if
+
+	' start the instance
+	daemon "sqlr-start", "-config " & CONFDIR & "\" & db & ".conf -id " & db & "test"
+	WScript.Sleep(2000)
+end sub
+
+' stop the instance(s) for a database
+sub stopinstance(db)
+
+	if db="router" then
+		WScript.Sleep(2000)
+		daemon "sqlr-stop", "-config " & CONFDIR & "\" & db & ".conf -id routermaster"
+		WScript.Sleep(2000)
+		daemon "sqlr-stop", "-config " & CONFDIR & "\" & db & ".conf -id routerslave"
+	end if
+	WScript.Sleep(2000)
+	daemon "sqlr-stop", "-config " & CONFDIR & "\" & db & ".conf -id " & db & "test"
+	WScript.Sleep(2000)
+end sub
+
+' collapse runs of whitespace to single spaces and trim
+function collapsews(s)
+	dim re
+	set re=new RegExp
+	re.Pattern="\s+"
+	re.Global=True
+	collapsews=Trim(re.Replace(s," "))
+end function
+
+' run a command and return its combined output as one collapsed line
+function execoutput(cmd)
+	dim c, s
+	set c=WshShell.Exec(cmd)
+	s=""
+	do until c.StdOut.AtEndOfStream
+		s=s & c.StdOut.ReadLine() & " "
+	loop
+	do until c.StdErr.AtEndOfStream
+		s=s & c.StdErr.ReadLine() & " "
+	loop
+	execoutput=collapsews(s)
+end function
+
+' whether something is listening on a tcp port
+function portlistening(port)
+	dim c, line
+	portlistening=False
+	set c=WshShell.Exec("netstat -an")
+	do until c.StdOut.AtEndOfStream
+		line=c.StdOut.ReadLine()
+		if instr(line,"LISTENING")>0 and instr(line,port)>0 then
+			portlistening=True
+		end if
+	loop
+end function
+
+' wait for an instance to answer; sets BYPASS and returns True if up
+function pinginstance(db)
+
+	dim i
+	PING=""
+	BYPASS="no"
+	for i=1 to 15
+		WScript.Echo("")
+		WScript.Echo("pinging " & db & "...")
+		if db="tls" then
+			PING=execoutput(PREFIX & "\bin\sqlrsh -host localhost -tls -tlscert " & CONFDIR & "\tls\client.pem -tlsca " & CONFDIR & "\tls\ca.pem -tlsvalidate ca -command ping")
+		elseif db="extensions" then
+			PING=execoutput(PREFIX & "\bin\sqlrsh -host localhost -user test -password test -command ping")
+		elseif db="mysqlprotocol" then
+			if portlistening("3306") then
+				PING="The database is up."
+			else
+				PING="0: Couldn't connect to the listener."
+			end if
+		elseif db="postgresqlprotocol" then
+			if portlistening("5432") then
+				PING="The database is up."
+			else
+				PING="0: Couldn't connect to the listener."
+			end if
+		elseif db="tdsprotocol" then
+			if portlistening("1433") then
+				PING="The database is up."
+			else
+				PING="0: Couldn't connect to the listener."
+			end if
+		elseif db="oracleprotocol" then
+			if portlistening("1521") then
+				PING="The database is up."
+			else
+				PING="0: Couldn't connect to the listener."
+			end if
+		elseif db="teradataprotocol" then
+			if portlistening("1025") then
+				PING="The database is up."
+			else
+				PING="0: Couldn't connect to the listener."
+			end if
+		else
+			PING=execoutput(PREFIX & "\bin\sqlrsh -config " & CONFDIR & "\" & db & ".conf -id " & db & "test -command ping")
+		end if
+
+		WScript.Echo(PING)
+
+		if PING="0: Couldn't connect to the listener." then
+			WScript.Sleep(5000)
+		else
+
+			' If ssl is sufficiently old then the ssl test will
+			' fail like this.  Just bypass the test in that case.
+			if instr(PING,"unknown message digest algorithm")>0 then
+				BYPASS="yes"
+			end if
+			exit for
+		end if
+	next
+
+	pinginstance=(PING="The database is up.")
+end function
+
+' set TEST and TESTFILE for running database db's test under api
+sub apicommand(db, api)
+
+	TEST=""
+	TESTFILE=""
+	select case api
+		case "c"
+			TEST=db & ".exe"
+			TESTFILE=db & ".exe"
+		case "c++"
+			TEST=db & ".exe"
+			TESTFILE=db & ".exe"
+		case "extensions"
+			TEST=db & ".exe"
+			TESTFILE=db & ".exe"
+		case "cs"
+			TEST=db & ".exe"
+			TESTFILE=db & ".exe"
+		case "ado.net"
+			TEST=db & ".exe"
+			TESTFILE=db & ".exe"
+		case "java"
+			TEST="run.bat " & db
+			TESTFILE=db & ".class"
+		case "jdbc"
+			TEST="run.bat " & db
+			TESTFILE=db & ".class"
+		case "nodejs"
+			' the node on win7x64 is old (v4) and needs a flag to
+			' parse the tests' object-destructuring require; harmless
+			' on newer node, and this runner is windows-only
+			TEST="node --harmony_destructuring " & db & ".js"
+			TESTFILE=db & ".js"
+		case "odbc"
+			TEST=db & ".exe"
+			TESTFILE=db & ".exe"
+		case "perl"
+			TEST="perl " & db & ".pl"
+			TESTFILE=db & ".pl"
+		case "perldbi"
+			TEST="perl " & db & ".pl"
+			TESTFILE=db & ".pl"
+		case "php"
+			TEST="php " & db & ".php"
+			TESTFILE=db & ".php"
+		case "phppdo"
+			TEST="php " & db & ".php"
+			TESTFILE=db & ".php"
+		case "python"
+			TEST="python -u " & db & ".py"
+			TESTFILE=db & ".py"
+		case "pythondb"
+			TEST="python -u " & db & ".py"
+			TESTFILE=db & ".py"
+		case "ruby"
+			TEST="ruby " & db & ".rb"
+			TESTFILE=db & ".rb"
+		case "tcl"
+			TEST="tclsh " & db & ".tcl"
+			TESTFILE=db & ".tcl"
+		case "erlang"
+			TEST="run.bat " & db
+			TESTFILE=db & ".beam"
+	end select
+end sub
+
+' run database db's test under one api; returns 1 if the test ran and failed
+function runapitest(db, api)
+
+	dim cmd
+	runapitest=0
+
+	WScript.Echo("testing " & db & " in " & api)
+	WScript.Echo("")
+	WshShell.CurrentDirectory=api
+
+	' figure out how to run this api's test
+	apicommand db, api
+
+	' run it
+	if fso.FileExists(TESTFILE) then
+		set cmd=WshShell.Exec(TEST)
+		do until cmd.StdOut.AtEndOfStream
+			WScript.Echo(cmd.StdOut.ReadLine())
+		loop
+		if cmd.ExitCode<>0 then
+			WScript.Echo("")
+			WScript.Echo("")
+			WScript.Echo(db & " failed in " & api)
+			runapitest=1
+		else
+			WScript.Echo("")
+			WScript.Echo("test complete")
+		end if
+	else
+		WScript.Echo("no test found for " & db & " in " & api)
+	end if
+
+	WScript.Echo("")
+	WScript.Echo("================================================================================")
+	WScript.Echo("")
+
+	WshShell.CurrentDirectory=".."
+end function
+
+' run database db's tests across the apis
+sub runapitests(db, apis)
+	dim api
+	for each api in apis
+		failures=failures+runapitest(db,api)
+	next
+end sub
+
+' run a wire-protocol test (the listener speaks another database's protocol)
+function runprotocoltest(db)
+
+	dim dir, prog, cmd
+	runprotocoltest=0
+
+	' map the database to its protocol test directory and program
+	dir=""
+	prog=""
+	select case db
+		case "mysqlprotocol"
+			dir="protocol\mysql"
+			prog="mysql"
+		case "postgresqlprotocol"
+			dir="protocol\postgresql"
+			prog="postgresql"
+		case "tdsprotocol"
+			dir="protocol\tds"
+			prog="tds"
+		case "oracleprotocol"
+			dir="protocol\oracle"
+			prog="oracle"
+		case "teradataprotocol"
+			dir="protocol\teradata"
+			prog="teradata"
+	end select
+
+	WshShell.CurrentDirectory=dir
+	if fso.FileExists(prog & ".exe") then
+		set cmd=WshShell.Exec(prog & ".exe")
+		do until cmd.StdOut.AtEndOfStream
+			WScript.Echo(cmd.StdOut.ReadLine())
+		loop
+		if cmd.ExitCode<>0 then
+			WScript.Echo(db & " failed")
+			runprotocoltest=1
+		else
+			WScript.Echo("test complete")
+		end if
+	else
+		WScript.Echo("no test found for " & db)
+	end if
+	WshShell.CurrentDirectory="..\.."
+end function
+
+' the crud test uses oracle-specific sql, so it runs only against oracle
+function runcrudtest()
+
+	dim cmd
+	runcrudtest=0
+
+	WshShell.CurrentDirectory="crud"
+	if fso.FileExists("crud.exe") then
+		set cmd=WshShell.Exec("crud.exe")
+		do until cmd.StdOut.AtEndOfStream
+			WScript.Echo(cmd.StdOut.ReadLine())
+		loop
+		if cmd.ExitCode<>0 then
+			WScript.Echo("crud failed")
+			runcrudtest=1
+		else
+			WScript.Echo("test complete")
+		end if
+	else
+		WScript.Echo("no crud test found")
+	end if
+	WshShell.CurrentDirectory=".."
+end function
+
+' run the appropriate tests for a database that is up
+sub rundbtests(db, apis)
+
+	WScript.Echo("")
+	WScript.Echo("success...")
+	WScript.Echo("")
+
+	select case db
+		case "mysqlprotocol","postgresqlprotocol","tdsprotocol","oracleprotocol","teradataprotocol"
+			failures=failures+runprotocoltest(db)
+		case else
+			runapitests db, apis
+
+			' the crud test uses oracle-specific sql, so
+			' run it only against the oracle instance
+			if db="oracle" then
+				failures=failures+runcrudtest()
+			end if
+	end select
+end sub
+
+
+' --- main ---
+
+' run with cscript
+if instr(lcase(WScript.FullName),"cscript")=0 then
+	WScript.Echo("Please run:  cscript /nologo test.vbs")
+	WScript.Quit(1)
+end if
+
+' paths and objects
+PREFIX="@prefix@"
+set fso=CreateObject("Scripting.FileSystemObject")
+set WshShell=WScript.CreateObject("WScript.Shell")
+
+' local test config dir - this script lives in the test tree, so its own
+' directory holds sqlrelay.conf.d.  load the per-db config files from there
+' with -config (like test.sh does), rather than the installed config.
+CONFDIR=fso.GetParentFolderName(WScript.ScriptFullName) & "\sqlrelay.conf.d"
+
+' get hostname
+COMPUTERNAME=WshShell.ExpandEnvironmentStrings("%COMPUTERNAME%")
+
+' parse the options
+manage="yes"
+dim args, i, np, positional()
+set args=WScript.Arguments
+np=0
+redim positional(args.Count)
+for i=0 to args.Count-1
+	select case args(i)
+		case "-n"
+			manage="no"
+		case "-h"
+			usage
+			WScript.Quit(0)
+		case else
+			if Left(args(i),1)="-" then
+				usage
+				WScript.Quit(1)
+			end if
+			positional(np)=args(i)
+			np=np+1
+	end select
+next
+
+' determine the set of databases to test
+if np>=1 then
+	testdbs=Split(positional(0)," ")
+else
+	testdbs=Array(@TESTDBS@)
+end if
+
+' determine the set of apis to test
+if np>=2 then
+	testapis=Split(positional(1)," ")
+else
+	testapis=Array(@TESTAPIS@)
+end if
+
+' count of failures (instances that wouldn't start + tests that failed); the
+' script exits non-zero if any, and never blocks waiting for input, so it can
+' run unattended (eg. from make tests over ssh)
+failures=0
+
+' stop any existing instances
+if manage="yes" then
+	stopinstances
+end if
+
+' for each database/configuration...
+for each db in testdbs
+
+	' make sure that support for the appropriate database exists
+	if not dbapplicable(db) then
+		WScript.Echo("skipping " & db & "...")
+		WScript.Echo("")
+		WScript.Echo("================================================================================")
+		WScript.Echo("")
+	else
+
+		' testing...
+		WScript.Echo("testing " & db & " (from " & COMPUTERNAME & ")...")
+
+		' start the instance and wait for it to come up
+		up="yes"
+		BYPASS="no"
+		if manage="yes" then
+			startinstance db
+			if pinginstance(db) then
+				up="yes"
+			else
+				up="no"
+			end if
+		end if
+
+		' bypass the test if necessary
+		if BYPASS<>"yes" then
+
+			' run the tests
+			if up="yes" then
+				rundbtests db, testapis
+			else
+				WScript.Echo("")
+				WScript.Echo("failed to start " & db & "test")
+				WScript.Echo("")
+				failures=failures+1
+			end if
+		end if
+
+		' shut down the instance(s)
+		if manage="yes" then
+			stopinstance db
+		end if
+
+		WScript.Echo("")
+		WScript.Echo("================================================================================")
+		WScript.Echo("")
+	end if
+next
+
+' report and exit with a status the caller can check
+WScript.Echo("")
+if failures>0 then
+	WScript.Echo(failures & " failure(s).")
+	WScript.Quit(1)
+else
+	WScript.Echo("all tests passed.")
+	WScript.Quit(0)
+end if
