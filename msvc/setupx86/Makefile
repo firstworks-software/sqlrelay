@@ -2,10 +2,11 @@ top_builddir = ../..
 
 include ../../config.mk
 
-SLN = setupx86.sln
-VDPROJ = setupx86.vdproj
-SKEL = setupx86.vdproj.skel
-DAT = setupx86-vdproj.dat
+SETUP = setupx86
+SLN = $(SETUP).sln
+VDPROJ = $(SETUP).vdproj
+SKEL = $(SETUP).vdproj.skel
+DAT = $(SETUP)-vdproj.dat
 STAGE = $(MAKEDIR)\stage
 PRODROOT = $(STAGE)\C\Program Files\Firstworks
 DEVENV = "$(VS100COMNTOOLS)..\IDE\devenv.com"

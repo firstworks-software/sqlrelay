@@ -2,10 +2,11 @@ top_builddir = ../..
 
 include ../../config.mk
 
-SLN = setupx64.sln
-VDPROJ = setupx64.vdproj
-SKEL = setupx64.vdproj.skel
-DAT = setupx64-vdproj.dat
+SETUP = setupx64
+SLN = $(SETUP).sln
+VDPROJ = $(SETUP).vdproj
+SKEL = $(SETUP).vdproj.skel
+DAT = $(SETUP)-vdproj.dat
 STAGE = $(MAKEDIR)\stage
 PRODROOT = $(STAGE)\C\Program Files\Firstworks
 
