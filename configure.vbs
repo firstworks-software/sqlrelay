@@ -1092,8 +1092,6 @@ infiles=Array(_
 	"bin\\sqlrserver-config.in",_
 	"sqlrelay-c.pc.in",_
 	"sqlrelay-c++.pc.in",_
-	"msvc\\setupx64\\setupx64.vdproj.in",_
-	"msvc\\setupx86\\setupx86.vdproj.in",_
 	"test\\sqlrelay.conf.d\\db2.conf.in",_
 	"test\\sqlrelay.conf.d\\extensions.conf.in",_
 	"test\\sqlrelay.conf.d\\firebird.conf.in",_
@@ -1130,8 +1128,6 @@ outfiles=Array(_
 	"bin\\sqlrserver-config",_
 	"sqlrelay-c.pc",_
 	"sqlrelay-c++.pc",_
-	"msvc\\setupx64\\setupx64.vdproj",_
-	"msvc\\setupx86\\setupx86.vdproj",_
 	"test\\sqlrelay.conf.d\\db2.conf",_
 	"test\\sqlrelay.conf.d\\extensions.conf",_
 	"test\\sqlrelay.conf.d\\firebird.conf",_
