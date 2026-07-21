@@ -441,8 +441,9 @@ class firebird extends sqlrtest {
 		intval=md.getMaxStatementLength();
 		System.out.println("    "+intval);
 		if (issqlrelay) {
-			// capped at maxquerysize by sql relay
-			assertEquals(intval,65536);
+			// firebird caps at 65535 (isc_dsql_prepare's
+			// length is an unsigned short), below maxquerysize
+			assertEquals(intval,65535);
 		} else {
 			assertEquals(intval,10485760);
 		}

@@ -1510,8 +1510,9 @@ int main(int argc, char **argv) {
 			(SQLPOINTER)&uintval,(SQLSMALLINT)sizeof(uintval),
 			&vallen);
 	if (issqlrelay) {
-		// capped at maxquerysize by sql relay
-		assertEqualDbc(dbc,(int)uintval,65536);
+		// firebird caps at 65535 (isc_dsql_prepare's length is
+		// an unsigned short), below maxquerysize
+		assertEqualDbc(dbc,(int)uintval,65535);
 	} else {
 		assertEqualDbc(dbc,(int)uintval,0);
 	}

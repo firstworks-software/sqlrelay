@@ -72,9 +72,15 @@ puts ""
 
 # insert
 puts "INSERT: "
-# tolerate an intermittent firebird "cannot update erased record" on
-# this teardown delete, as the other bindings do (#8614)
-catch {$cur sendQuery "delete from testtable"}
+# the teardown delete intermittently hits firebird -104 "cannot update
+# erased record" (cooperative gc on the shared server).  #8614 wrapped it in
+# catch so it would not throw, but a swallowed failure leaves the prior
+# test's rows behind and the row-count checks below then see 9, not 8.  Retry
+# (committing between tries to let gc settle) until the delete succeeds.
+for {set i 0} {$i<10} {incr i} {
+	if {![catch {$cur sendQuery "delete from testtable"}]} break
+	$con commit
+}
 $con commit
 assertTrue [$cur sendQuery "insert into testtable values (1, 1, 1.5, 1.5, 1.5, 1.5, '01-JAN-2001', '01:00:00', 'testchar1', 'testvarchar1', NULL, 'testblob1')"]
 puts ""
