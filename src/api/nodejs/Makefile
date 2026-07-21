@@ -15,13 +15,13 @@ clean:
 build/Release/sqlrelay.node: binding.gyp sqlrelay.cpp package.json
 	$(NODEGYP) $(NODEGYPPYTHON) -v configure build
 
-binding.gyp: binding_in.gyp
+binding.gyp: binding_in.gyp ../../../config.mk
 	$(REPLACE) @NODEJSINCLUDEDIRS@ "$(NODEJSINCLUDEDIRS)" binding_in.gyp > temp1.gyp
 	$(REPLACE) @NODEJSCFLAGS@ "$(NODEJSCFLAGS)" temp1.gyp > temp2.gyp
 	$(REPLACE) @NODEJSLIBS@ "$(NODEJSLIBS)" temp2.gyp > binding.gyp
 	$(RM) temp1.gyp temp2.gyp
 
-package.json: package_in.json
+package.json: package_in.json ../../../config.mk
 	$(REPLACE) @SQLR_VERSION@ "$(SQLR_VERSION)" package_in.json > package.json
 
 install:
