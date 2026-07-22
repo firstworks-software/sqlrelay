@@ -105,16 +105,13 @@ int	main(int argc, char **argv) {
 	stdoutput.printf("mysql_character_set_name:\n");
 	const char	*charset=mysql_character_set_name(&mysql);
 	// this reflects the client library's default connection charset, not
-	// anything sqlrelay does: the mariadb connector and mysql 8+ default to
-	// utf8mb4, older mysql clients default to latin1 - but on windows the
-	// mariadb/mysql client defaults to the ansi codepage (latin1) instead
-	#if (defined(MARIADB_BASE_VERSION) || \
-		(defined(MYSQL_VERSION_ID) && MYSQL_VERSION_ID>=80000)) && \
-		!defined(_WIN32)
-		assertEquals(charset,"utf8mb4");
-	#else
-		assertEquals(charset,"latin1");
-	#endif
+	// anything sqlrelay does (the emulator advertises latin1): mysql 8+ and
+	// newer mariadb connectors default to utf8mb4, while older mariadb
+	// connectors (eg. 3.1.11) and mysql clients, and the windows ansi
+	// codepage, default to latin1 - so accept any of them
+	assertEquals(!charstring::compare(charset,"latin1") ||
+			!charstring::compare(charset,"utf8") ||
+			!charstring::compare(charset,"utf8mb4"),true);
 	stdoutput.printf("\n");
 
 	stdoutput.printf("mysql_list_dbs\n");
