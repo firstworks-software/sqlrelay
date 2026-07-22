@@ -402,12 +402,24 @@ API documentation for SQL Relay.
 make
 
 %install
-make install DESTDIR=%{buildroot}
+# NODEMODULEDIR=%{nodejs_sitearch} installs the nodejs binding into
+# /usr/lib/node_modules (the Fedora macro path %files expects) instead of the
+# versioned node_modules_NN dir configure detects (where node-gyp lives).
+make install DESTDIR=%{buildroot} NODEMODULEDIR=%{nodejs_sitearch}
 
 # create tmpfiles.d directories and config file
 mkdir -p %{buildroot}/run/%{name}
 mkdir -p %{buildroot}%{_tmpfilesdir}
 echo "d /run/%{name} 0775 sqlrelay sqlrelay -" > %{buildroot}%{_tmpfilesdir}/%{name}.conf
+
+# ship a sysusers.d snippet declaring the "sqlrelay" system user/group.  On
+# modern Fedora, rpm auto-generates Requires: user(sqlrelay)/group(sqlrelay) for
+# the packages that own sqlrelay-owned dirs (%attr), and shipping this file makes
+# rpm also generate the matching Provides, so the packages install.  Without it
+# the install fails - rpm checks the dependency before %pre runs the useradd.
+mkdir -p %{buildroot}%{_sysusersdir}
+echo 'u sqlrelay - "SQL Relay" %{_localstatedir}/%{name} /bin/false' \
+	> %{buildroot}%{_sysusersdir}/%{name}.conf
 
 # move tcl modules to (tcl_sitearch)/(name)
 mkdir -p %{buildroot}%{tcl_sitearch}
@@ -491,6 +503,7 @@ cp -r %{buildroot}%{_docdir}/%{name}/api/java %{buildroot}%{_javadocdir}/%{name}
 %attr(775, sqlrelay, sqlrelay) %dir %{_localstatedir}/log/%{name}/debug
 %attr(775, sqlrelay, sqlrelay) %dir /run/%{name}
 %{_tmpfilesdir}/%{name}.conf
+%{_sysusersdir}/%{name}.conf
 %if 0%{?fedora}
 %license COPYING
 %exclude %{_datadir}/licenses/%{name}
