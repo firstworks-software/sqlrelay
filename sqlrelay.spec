@@ -491,7 +491,6 @@ cp -r %{buildroot}%{_docdir}/%{name}/api/java %{buildroot}%{_javadocdir}/%{name}
 %attr(775, sqlrelay, sqlrelay) %dir %{_localstatedir}/log/%{name}/debug
 %attr(775, sqlrelay, sqlrelay) %dir /run/%{name}
 %{_tmpfilesdir}/%{name}.conf
-%exclude %{_libdir}/lib*.la
 %if 0%{?fedora}
 %license COPYING
 %exclude %{_datadir}/licenses/%{name}
@@ -535,7 +534,6 @@ cp -r %{buildroot}%{_docdir}/%{name}/api/java %{buildroot}%{_javadocdir}/%{name}
 %{_includedir}/%{name}/private/sqlrshm.h
 %{_includedir}/%{name}/private/sqlrtrigger*.h
 %{_libdir}/libsqlrserver.so
-%exclude %{_libdir}/lib*.la
 
 %files clients
 %{_bindir}/sqlrsh
@@ -608,7 +606,6 @@ cp -r %{buildroot}%{_docdir}/%{name}/api/java %{buildroot}%{_javadocdir}/%{name}
 %{_includedir}/%{name}/private/sqlrcrud*.h
 %{_libdir}/libsqlrclient.so
 %{_libdir}/pkgconfig/%{name}-c++.pc
-%exclude %{_libdir}/lib*.la
 
 %files c-devel
 %{_bindir}/sqlrclientwrapper-config
@@ -619,7 +616,6 @@ cp -r %{buildroot}%{_docdir}/%{name}/api/java %{buildroot}%{_javadocdir}/%{name}
 %{_includedir}/%{name}/private/sqlrclientwrapperincludes.h
 %{_libdir}/libsqlrclientwrapper.so
 %{_libdir}/pkgconfig/%{name}-c.pc
-%exclude %{_libdir}/lib*.la
 
 %files -n odbc-%{name}
 %{_libdir}/libsqlrodbc.so.8
