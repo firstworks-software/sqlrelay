@@ -387,6 +387,11 @@
 		isc_interprete() for error text when configure finds it (bounded
 		buffer, no overflow); falls back to isc_interprete() on pre-2.0
 		clients
+	fixed the php/phppdo extension ini install dir for remi/SCL php -
+		configure now takes the ini scan dir from the target php's
+		PHP_CONFIG_FILE_SCAN_DIR instead of guessing /etc/php.d, which the
+		SCL php does not scan (the extension never loaded, so php/phppdo
+		failed for every database)
 
 2.1.1 - added tns_admin support
 	fixed sqlr-start ... -strace ...

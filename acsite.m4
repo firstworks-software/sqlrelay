@@ -3026,6 +3026,23 @@ then
 			PHPCONFSTYLE="netbsd"
 		fi
 	fi
+	dnl the guesses above pick a fixed dir (e.g. /etc/php.d) that need not be the
+	dnl scan dir of the php we are building against - remi/SCL php puts it under
+	dnl /etc/opt/remi/phpNN/php.d.  For drop-in (fedora) styles, trust the target
+	dnl php's own PHP_CONFIG_FILE_SCAN_DIR.
+	if ( test "$PHPCONFSTYLE" = "fedora" -o "$PHPCONFSTYLE" = "unknown" )
+	then
+		PHPBINARY="`$PHPCONFIG --php-binary 2> /dev/null | grep -v Usage`"
+		if ( test -x "$PHPBINARY" )
+		then
+			PHPSCANDIR="`$PHPBINARY -r 'echo PHP_CONFIG_FILE_SCAN_DIR;' 2> /dev/null`"
+			if ( test -n "$PHPSCANDIR" -a -d "$PHPSCANDIR" )
+			then
+				PHPCONFDIR="$PHPSCANDIR"
+				PHPCONFSTYLE="fedora"
+			fi
+		fi
+	fi
 	AC_MSG_RESULT($PHPCONFDIR - $PHPCONFSTYLE style)
 
 	dnl strip trailing / from PHPEXTDIR or libtool might complain
