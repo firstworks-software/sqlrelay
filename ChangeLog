@@ -392,6 +392,11 @@
 		PHP_CONFIG_FILE_SCAN_DIR instead of guessing /etc/php.d, which the
 		SCL php does not scan (the extension never loaded, so php/phppdo
 		failed for every database)
+	added the rocky->r and win->w rules to the SHORTHOSTNAME map so it
+		mirrors the buildfarm db2 short-name map - db2 database names are
+		limited to 8 characters, and the db2 test's db name comes from
+		SHORTHOSTNAME, so a 9-char host like rocky8x64 got db=rocky8x64
+		(invalid, and not the cataloged r8x64) and the db2 connect failed
 
 2.1.1 - added tns_admin support
 	fixed sqlr-start ... -strace ...

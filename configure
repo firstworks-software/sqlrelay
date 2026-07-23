@@ -41548,6 +41548,7 @@ fi
 HOSTNAME=`hostname | cut -d'.' -f1`
 SHORTHOSTNAME=`echo $HOSTNAME | \
 sed -e "s|^centos|co|" \
+-e "s|^rocky|r|" \
 -e "s|^debian|db|" \
 -e "s|^fedora|fc|" \
 -e "s|^freebsd|fb|" \
@@ -41558,6 +41559,7 @@ sed -e "s|^centos|co|" \
 -e "s|^solaris|sl|" \
 -e "s|^syllable|sb|" \
 -e "s|^ubuntu|u|" \
+-e "s|^win|w|" \
 -e "s|alpha$|a|" \
 -e "s|mipsel$|m32|" \
 -e "s|mips64el$|m64|" \
