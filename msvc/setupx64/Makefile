@@ -3,22 +3,30 @@ top_builddir = ../..
 include ../../config.mk
 
 SETUP = setupx64
+ARCH = x64
 SLN = $(SETUP).sln
 VDPROJ = $(SETUP).vdproj
 SKEL = $(SETUP).vdproj.skel
 DAT = $(SETUP)-vdproj.dat
+MSI = sqlrelay-$(SQLR_VERSION)-$(ARCH).msi
 STAGE = $(MAKEDIR)\stage
 PRODROOT = $(STAGE)\C\Program Files\Firstworks
 
 DEVENV = "$(VS100COMNTOOLS)..\IDE\devenv.com"
 
+# scripts run as custom actions, moved into the msi's Binary table after the
+# build so that deleting the installed copy can't break the uninstall (#8682)
+CASCRIPTS = pathinstall.vbs pathuninstall.vbs
+
 all: release
 
 release: $(VDPROJ)
 	$(DEVENV) $(SLN) /build Release
+	cscript /nologo binaryca.vbs Release\$(MSI) $(CASCRIPTS)
 
 debug: $(VDPROJ)
 	$(DEVENV) $(SLN) /build Debug
+	cscript /nologo binaryca.vbs Debug\$(MSI) $(CASCRIPTS)
 
 $(VDPROJ): $(SKEL) $(DAT) gen-vdproj.vbs
 	-$(RMTREE) stage
