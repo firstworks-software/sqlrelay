@@ -94,37 +94,6 @@
     }
     "Deployable"
     {
-        "CustomAction"
-        {
-            "{4AA51A2D-7D85-4A59-BA75-B0809FC8B380}:_DEF4D19C5CAD4D34BDB2D2B5698E1E16"
-            {
-            "Name" = "8:pathuninstall.vbs"
-            "Condition" = "8:"
-            "Object" = "8:@KEY_PATHUNINSTALL@"
-            "FileType" = "3:4"
-            "InstallAction" = "3:4"
-            "Arguments" = "8:"
-            "EntryPoint" = "8:"
-            "Sequence" = "3:1"
-            "Identifier" = "8:_C9E0E1C7_8042_4051_9180_D47EA7BA03E5"
-            "InstallerClass" = "11:FALSE"
-            "CustomActionData" = "8:"
-            }
-            "{4AA51A2D-7D85-4A59-BA75-B0809FC8B380}:_ECDDC1DBB8864D5387C8FC167319A79C"
-            {
-            "Name" = "8:pathinstall.vbs"
-            "Condition" = "8:"
-            "Object" = "8:@KEY_PATHINSTALL@"
-            "FileType" = "3:4"
-            "InstallAction" = "3:2"
-            "Arguments" = "8:"
-            "EntryPoint" = "8:"
-            "Sequence" = "3:1"
-            "Identifier" = "8:_A7572FA6_28FA_4791_BAF5_9EF849377208"
-            "InstallerClass" = "11:FALSE"
-            "CustomActionData" = "8:[TARGETDIR]"
-            }
-        }
         "DefaultFeature"
         {
         "Name" = "8:DefaultFeature"

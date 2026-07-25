@@ -1,26 +1,43 @@
-' binaryca.vbs - move a built MSI's script custom actions into its Binary table.
+' binaryca.vbs - give a built MSI its script custom actions, run from its own
+' Binary table.
 '
 ' usage:
-'   cscript //nologo binaryca.vbs <msi> <script> [<script> ...]
+'   cscript //nologo binaryca.vbs <msi>
 '
-' Each <script> is a file the MSI both installs and runs as a custom action.
-' A .vdproj can only point a custom action at an installed file (msi source
-' type 16), so the installed copy has to survive for as long as the product
-' does - and "nmake uninstall" deletes it, leaving the product impossible to
-' uninstall (#8682).  Storing the script in the Binary table instead (source
-' type 0) makes the custom action self-contained, but no .vdproj setting can
-' express that, so the MSI is edited here, after devenv builds it.
+' A .vdproj can only point a custom action at a file the MSI installs, so the
+' installed copy had to survive for as long as the product did - and "nmake
+' uninstall" deleted it, leaving the product impossible to uninstall (#8682).
+' Storing the script in the Binary table instead makes the custom action
+' self-contained, but no .vdproj setting can express that, so the actions are
+' written here, after devenv builds the MSI.
 '
-' Only the source of the custom action changes.  Its identifier, its condition,
-' and its place in the install sequence are whatever the setup project built,
-' as are the in-script and no-impersonate bits of its type.
+' The setup project used to declare them and this script only repointed them,
+' which meant the scripts had to stay in the install set purely to be named by
+' the .vdproj.  They no longer are, so the CustomAction and
+' InstallExecuteSequence rows are authored here too (#8690).
+'
+' The types and sequence numbers below are the ones the setup project used to
+' generate.  The conditions are not: those were component-state conditions
+' naming the component of the script itself, which no longer exists, so they
+' are re-expressed in terms of REMOVE.
 
 Option Explicit
 
-Dim msiOpenDatabaseModeTransact, msiViewModifyUpdate, msiSourceTypeMask
+Dim msiOpenDatabaseModeTransact, msiViewModifyUpdate
 msiOpenDatabaseModeTransact = 1
 msiViewModifyUpdate         = 4
-msiSourceTypeMask           = 48
+
+' script, action identifier, type, sequence, condition, customactiondata.
+' an entry with customactiondata also gets the .SetProperty companion action
+' that carries it, one sequence number ahead, on the same condition.
+Dim ACTIONS
+ACTIONS = Array( _
+	Array("pathuninstall.vbs", _
+		"_C9E0E1C7_8042_4051_9180_D47EA7BA03E5", _
+		3078, 1699, "REMOVE=""ALL""", ""), _
+	Array("pathinstall.vbs", _
+		"_A7572FA6_28FA_4791_BAF5_9EF849377208", _
+		3590, 5999, "NOT REMOVE", "[TARGETDIR]"))
 
 Dim fso : Set fso = CreateObject("Scripting.FileSystemObject")
 Dim installer, db
@@ -40,9 +57,8 @@ End If
 Sub Main
 
 	Dim args : Set args = WScript.Arguments
-	If args.Count < 2 Then
-		WScript.StdErr.WriteLine _
-			"usage: binaryca.vbs <msi> <script> [<script> ...]"
+	If args.Count < 1 Then
+		WScript.StdErr.WriteLine "usage: binaryca.vbs <msi>"
 		WScript.Quit 1
 	End If
 
@@ -57,8 +73,8 @@ Sub Main
 	End If
 
 	Dim i
-	For i = 1 To args.Count - 1
-		Binarize args(i)
+	For i = 0 To UBound(ACTIONS)
+		AddAction ACTIONS(i)
 	Next
 
 	' nothing is written to the msi until here
@@ -67,83 +83,69 @@ Sub Main
 	Set installer = Nothing
 End Sub
 
-Sub Binarize(scriptPath)
+Sub AddAction(a)
 
-	Dim nm, pth, fkey, action
-	nm = fso.GetFileName(scriptPath)
-	pth = fso.GetAbsolutePathName(scriptPath)
+	Dim script, action, catype, seq, cond, cadata
+	script = a(0) : action = a(1) : catype = a(2)
+	seq    = a(3) : cond   = a(4) : cadata = a(5)
 
-	' the custom action's source is the installed file's key, until this
-	' script has run once, and the binary name afterward
-	fkey = FileKey(nm)
-	action = ActionWithSource(fkey)
-	If action = "" Then action = ActionWithSource(nm)
-	If action = "" Then
-		WScript.StdErr.WriteLine "binaryca.vbs: no custom action runs " & nm
+	Dim pth : pth = fso.GetAbsolutePathName(script)
+	If Not fso.FileExists(pth) Then
+		WScript.StdErr.WriteLine "binaryca.vbs: no such script: " & script
 		WScript.Quit 1
 	End If
 
 	' (re)store the script in the Binary table
-	RunSql "DELETE FROM `Binary` WHERE `Name`='" & nm & "'"
+	RunSql "DELETE FROM `Binary` WHERE `Name`='" & script & "'"
 	Dim bv, br
 	Set bv = db.OpenView("INSERT INTO `Binary` (`Name`,`Data`) VALUES (?,?)")
 	Set br = installer.CreateRecord(2)
-	br.StringData(1) = nm
+	br.StringData(1) = script
 	br.SetStream 2, pth
 	bv.Execute br
 	bv.Close
 	Set bv = Nothing
 
-	' point the custom action at it
-	Dim v, r
-	Set v = db.OpenView("SELECT `Action`,`Type`,`Source`,`Target` FROM " & _
-				"`CustomAction` WHERE `Action`='" & action & "'")
-	v.Execute
-	Set r = v.Fetch
-	r.IntegerData(2) = r.IntegerData(2) And Not msiSourceTypeMask
-	r.StringData(3) = nm
-	v.Modify msiViewModifyUpdate, r
-	v.Close
-	Set v = Nothing
+	' the action itself, then the .SetProperty that carries its data
+	AddCustomAction action, catype, script, ""
+	AddSequence action, seq, cond
+	If cadata <> "" Then
+		AddCustomAction action & ".SetProperty", 51, action, cadata
+		AddSequence action & ".SetProperty", seq - 1, cond
+	End If
 
-	WScript.StdErr.WriteLine action & " now runs " & nm & " from the Binary table"
+	WScript.StdErr.WriteLine action & " runs " & script & _
+					" from the Binary table at " & seq
 End Sub
 
-' key of the installed file named nm; "" if the MSI installs no such file
-Function FileKey(nm)
-	Dim v, r, fn, bar
-	Set v = db.OpenView("SELECT `File`,`FileName` FROM `File`")
-	v.Execute
-	FileKey = ""
-	Do
-		Set r = v.Fetch
-		If r Is Nothing Then Exit Do
-		' FileName is "shortname|longname", or just the name when short
-		fn = r.StringData(2)
-		bar = InStr(fn, "|")
-		If bar > 0 Then fn = Mid(fn, bar + 1)
-		If StrComp(fn, nm, 1) = 0 Then
-			FileKey = r.StringData(1)
-			Exit Do
-		End If
-	Loop
-	v.Close
-	Set v = Nothing
-End Function
-
-' identifier of the custom action whose source is src; "" if there is none
-Function ActionWithSource(src)
+Sub AddCustomAction(action, catype, src, tgt)
 	Dim v, r
-	ActionWithSource = ""
-	If src = "" Then Exit Function
-	Set v = db.OpenView("SELECT `Action` FROM `CustomAction` WHERE " & _
-				"`Source`='" & src & "'")
-	v.Execute
-	Set r = v.Fetch
-	If Not r Is Nothing Then ActionWithSource = r.StringData(1)
+	RunSql "DELETE FROM `CustomAction` WHERE `Action`='" & action & "'"
+	Set v = db.OpenView("INSERT INTO `CustomAction` " & _
+			"(`Action`,`Type`,`Source`,`Target`) VALUES (?,?,?,?)")
+	Set r = installer.CreateRecord(4)
+	r.StringData(1) = action
+	r.IntegerData(2) = catype
+	r.StringData(3) = src
+	If tgt <> "" Then r.StringData(4) = tgt
+	v.Execute r
 	v.Close
 	Set v = Nothing
-End Function
+End Sub
+
+Sub AddSequence(action, seq, cond)
+	Dim v, r
+	RunSql "DELETE FROM `InstallExecuteSequence` WHERE `Action`='" & action & "'"
+	Set v = db.OpenView("INSERT INTO `InstallExecuteSequence` " & _
+			"(`Action`,`Condition`,`Sequence`) VALUES (?,?,?)")
+	Set r = installer.CreateRecord(3)
+	r.StringData(1) = action
+	r.StringData(2) = cond
+	r.IntegerData(3) = seq
+	v.Execute r
+	v.Close
+	Set v = Nothing
+End Sub
 
 Function TableExists(tbl)
 	Dim v, r

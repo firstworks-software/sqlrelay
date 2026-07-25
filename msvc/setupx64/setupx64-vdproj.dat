@@ -12,5 +12,3 @@ ROOT|C/Tcl|custom|Tcl|C:\Tcl|NEWPROPERTY4|-
 ROOT|C/Program Files/nodejs|pf|#1935|-|ProgramFiles64Folder|nodejs
 # KEYREF|<token>|<staged-relative-path of the referenced file>
 KEYREF|@KEY_ICON@|C/Program Files/Firstworks/doc/sqlrelay-icon.ico
-KEYREF|@KEY_PATHINSTALL@|C/Program Files/Firstworks/share/sqlrelay/pathinstall.vbs
-KEYREF|@KEY_PATHUNINSTALL@|C/Program Files/Firstworks/share/sqlrelay/pathuninstall.vbs
