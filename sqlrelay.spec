@@ -412,6 +412,11 @@ make
 # versioned node_modules_NN dir configure detects (where node-gyp lives).
 make install DESTDIR=%{buildroot} NODEMODULEDIR=%{nodejs_sitearch}
 
+# remove libtool archives.  Fedora and el10 delete these themselves, in
+# brp-remove-la-files, but el9 has no such script and fails the unpackaged-file
+# check on them.
+find %{buildroot} -name '*.la' -delete
+
 # create tmpfiles.d directories and config file
 mkdir -p %{buildroot}/run/%{name}
 mkdir -p %{buildroot}%{_tmpfilesdir}
