@@ -240,6 +240,10 @@ Requires: tcl(abi) = 8.6
 TCL bindings for the SQL Relay client API.
 
 
+# el10 has no erlang at all - not in baseos, appstream, crb or epel - so the
+# binding is not built there and the subpackage does not exist.  0%{?rhel} is 0
+# on Fedora, so Fedora, el9 and older are unchanged.
+%if 0%{?rhel} < 10
 %package -n erlang-%{name}
 License: CC-BY
 Summary: Erlang bindings for the SQL Relay client API
@@ -248,6 +252,7 @@ Requires: erlang
 
 %description -n erlang-%{name}
 Erlang bindings for the SQL Relay client API.
+%endif
 
 
 %package -n mono-data-%{name}
@@ -704,8 +709,10 @@ cp -r %{buildroot}%{_docdir}/%{name}/api/java %{buildroot}%{_javadocdir}/%{name}
 %{tcl_sitearch}/%{name}
 
 
+%if 0%{?rhel} < 10
 %files -n erlang-%{name}
 %{_libdir}/erlang/lib/%{name}-%{version}
+%endif
 
 %files -n mono-data-%{name}
 %dir %{_libdir}/%{name}
