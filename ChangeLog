@@ -1,3 +1,5 @@
+2.2.1 - bumped the version to 2.2.1
+
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems
 	fixed setProtocolIsBingEndian() (assignment reversal)
