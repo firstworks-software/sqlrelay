@@ -113,6 +113,19 @@ static void badFormatName(const char *name) {
 	stderror.write('\n');
 }
 
+// Returns the argument that follows a command word, trimmed, or NULL if the
+// command was given without one.  The caller owns the string.
+static char *commandArgument(const char *args) {
+
+	char	*arg=charstring::duplicate(args);
+	charstring::bothTrim(arg);
+	if (charstring::isNullOrEmpty(arg)) {
+		delete[] arg;
+		return NULL;
+	}
+	return arg;
+}
+
 // These are what a program driving sqlrsh non-interactively has to go on.
 // They are part of the interface, like the output formats are.  Add to them,
 // but don't renumber them and don't change what one means.
@@ -144,6 +157,10 @@ class sqlrshenv {
 		dictionary<char *, sqlrshbindvalue *>	outputbinds;
 		dictionary<char *, sqlrshbindvalue *>	inputoutputbinds;
 		char		*cacheto;
+		// The connection keeps the socket it's handed rather than
+		// copying it, so the one a resumesession was given has to
+		// outlive the command that ran it.
+		char		*resumesocket;
 		sqlrshformat	format;
 		bool		getasnumber;
 		bool		noelapsed;
@@ -161,6 +178,7 @@ sqlrshenv::sqlrshenv() {
 	lazyfetch=false;
 	delimiter=';';
 	cacheto=NULL;
+	resumesocket=NULL;
 	format=SQLRSH_FORMAT_PLAIN;
 	getasnumber=false;
 	noelapsed=false;
@@ -176,6 +194,7 @@ sqlrshenv::~sqlrshenv() {
 	clearbinds(&outputbinds);
 	clearbinds(&inputoutputbinds);
 	delete[] cacheto;
+	delete[] resumesocket;
 }
 
 void sqlrshenv::clearbinds(dictionary<char *, sqlrshbindvalue *> *binds) {
@@ -329,6 +348,29 @@ class	sqlrsh {
 		void	writeScalarNumber(sqlrshenv *env,
 						const char *name,
 						int64_t value);
+		void	writeScalarBoolean(sqlrshenv *env,
+						const char *name,
+						bool value);
+		// writes a timeout, as seconds and microseconds, or as -1
+		// when it's disabled
+		void	writeTimeout(sqlrshenv *env,
+						const char *name,
+						int32_t sec,
+						int32_t usec);
+		// writes what a timeout-setting command produces.  "label"
+		// heads the plain sentence, "name" keys the json object.
+		void	writeTimeoutSet(sqlrshenv *env,
+						const char *name,
+						const char *label,
+						uint32_t sec,
+						uint32_t msec);
+		// writes the result of a command that asked the connection
+		// for a string.  A NULL with an error behind it is the
+		// error, a NULL without one is a null.
+		bool	writeConnectionString(sqlrconnection *sqlrcon,
+						sqlrshenv *env,
+						const char *name,
+						const char *value);
 		bool	ping(sqlrconnection *sqlrcon,
 						sqlrshenv *env);
 		bool	identify(sqlrconnection *sqlrcon,
@@ -345,6 +387,25 @@ class	sqlrsh {
 						sqlrshenv *env);
 		bool	getisolationlevel(sqlrconnection *sqlrcon,
 						sqlrshenv *env);
+		bool	usecatalog(sqlrconnection *sqlrcon,
+						sqlrshenv *env,
+						const char *args);
+		bool	useschema(sqlrconnection *sqlrcon,
+						sqlrshenv *env,
+						const char *args);
+		bool	resumesession(sqlrconnection *sqlrcon,
+						sqlrshenv *env,
+						const char *args);
+		bool	bindvariabledelimiters(sqlrconnection *sqlrcon,
+						sqlrshenv *env,
+						const char *args);
+		bool	bindvariabledelimitersupported(
+						sqlrconnection *sqlrcon,
+						sqlrshenv *env,
+						const char *args);
+		bool	databasefeature(sqlrconnection *sqlrcon,
+						sqlrshenv *env,
+						const char *args);
 		void	clientversion(sqlrconnection *sqlrcon,
 						sqlrshenv *env);
 		bool	serverversion(sqlrconnection *sqlrcon,
@@ -375,8 +436,14 @@ class	sqlrsh {
 						const char *command);
 		void	getclientinfo(sqlrconnection *sqlrcon,
 						sqlrshenv *env);
+		void	delimiter(sqlrshenv *env);
+		void	autocommit(sqlrshenv *env, bool on);
+		bool	connectTimeout(sqlrconnection *sqlrcon,
+						sqlrshenv *env,
+						const char *args);
 		void	responseTimeout(sqlrconnection *sqlrcon,
-						const char *command);
+						sqlrshenv *env,
+						const char *args);
 		bool	cache(sqlrshenv *env, sqlrcursor *sqlrcur,
 							const char *command);
 		bool	openCache(sqlrshenv *env, sqlrcursor *sqlrcur,
@@ -682,9 +749,32 @@ int sqlrsh::commandType(const char *command) {
 		!charstring::compareIgnoringCase(ptr,"clientversion") ||
 		!charstring::compareIgnoringCase(ptr,"serverversion") ||
 		!charstring::compareIgnoringCase(ptr,"use ",4) ||
+		!charstring::compareIgnoringCase(ptr,"usecatalog",10) ||
+		!charstring::compareIgnoringCase(ptr,"useschema",9) ||
 		!charstring::compareIgnoringCase(ptr,"currentdb") ||
+		!charstring::compareIgnoringCase(ptr,"currentcatalog") ||
 		!charstring::compareIgnoringCase(ptr,"currentschema") ||
 		!charstring::compareIgnoringCase(ptr,"currentuser") ||
+		!charstring::compareIgnoringCase(ptr,"databaseisschema") ||
+		!charstring::compareIgnoringCase(ptr,"databasefeature",15) ||
+		!charstring::compareIgnoringCase(ptr,"getautocommit") ||
+		!charstring::compareIgnoringCase(ptr,"intransaction") ||
+		!charstring::compareIgnoringCase(ptr,"transactionmodel",16) ||
+		!charstring::compareIgnoringCase(
+					ptr,"defaulttransactionmodel") ||
+		!charstring::compareIgnoringCase(
+					ptr,"defaultisolationlevel") ||
+		!charstring::compareIgnoringCase(ptr,"suspendsession") ||
+		!charstring::compareIgnoringCase(ptr,"resumesession",13) ||
+		!charstring::compareIgnoringCase(ptr,"connectionport") ||
+		!charstring::compareIgnoringCase(ptr,"connectionsocket") ||
+		!charstring::compareIgnoringCase(ptr,"connect timeout",15) ||
+		!charstring::compareIgnoringCase(ptr,"getconnecttimeout") ||
+		!charstring::compareIgnoringCase(ptr,"getresponsetimeout") ||
+		// this one covers bindvariabledelimitersupported too
+		!charstring::compareIgnoringCase(
+					ptr,"bindvariabledelimiters",22) ||
+		!charstring::compareIgnoringCase(ptr,"getdebug") ||
 		!charstring::compareIgnoringCase(ptr,"run",3) ||
 		!charstring::compareIgnoringCase(ptr,"@",1) ||
 		!charstring::compareIgnoringCase(ptr,"delimiter",9) ||
@@ -823,6 +913,92 @@ bool sqlrsh::internalCommand(sqlrconnection *sqlrcon, sqlrcursor *sqlrcur,
 		}
 		writeScalar(env,"currentuser",currentuser);
 		return true;
+	} else if (!charstring::compareIgnoringCase(ptr,"usecatalog",10)) {
+		return usecatalog(sqlrcon,env,ptr+10);
+	} else if (!charstring::compareIgnoringCase(ptr,"useschema",9)) {
+		return useschema(sqlrcon,env,ptr+9);
+	} else if (!charstring::compareIgnoringCase(ptr,"currentcatalog")) {
+		return writeConnectionString(sqlrcon,env,"currentcatalog",
+					sqlrcon->getCurrentCatalog());
+	} else if (!charstring::compareIgnoringCase(ptr,"databaseisschema")) {
+		writeScalarBoolean(env,"databaseisschema",
+					sqlrcon->getDatabaseIsSchema());
+		return true;
+	} else if (!charstring::compareIgnoringCase(ptr,"databasefeature",15)) {
+		return databasefeature(sqlrcon,env,ptr+15);
+	} else if (!charstring::compareIgnoringCase(ptr,"getautocommit")) {
+		writeScalarBoolean(env,"getautocommit",
+					sqlrcon->getAutoCommit());
+		return true;
+	} else if (!charstring::compareIgnoringCase(ptr,"intransaction")) {
+		writeScalarBoolean(env,"intransaction",
+					sqlrcon->getInTransaction());
+		return true;
+	} else if (!charstring::compareIgnoringCase(
+					ptr,"transactionmodel ",17)) {
+		if (!sqlrcon->setTransactionModel(ptr+17)) {
+			displayError(env,NULL,
+					sqlrcon->errorMessage(),
+					sqlrcon->errorNumber());
+			return false;
+		}
+		return true;
+	} else if (!charstring::compareIgnoringCase(ptr,"transactionmodel")) {
+		return writeConnectionString(sqlrcon,env,"transactionmodel",
+					sqlrcon->getTransactionModel());
+	} else if (!charstring::compareIgnoringCase(
+					ptr,"defaulttransactionmodel")) {
+		return writeConnectionString(sqlrcon,env,
+					"defaulttransactionmodel",
+					sqlrcon->getDefaultTransactionModel());
+	} else if (!charstring::compareIgnoringCase(
+					ptr,"defaultisolationlevel")) {
+		return writeConnectionString(sqlrcon,env,
+					"defaultisolationlevel",
+					sqlrcon->getDefaultIsolationLevel());
+	} else if (!charstring::compareIgnoringCase(ptr,"suspendsession")) {
+		// Nothing is written on success, the way the use command
+		// writes nothing.  What the caller needs next is the port and
+		// the socket, and those are commands of their own.
+		if (!sqlrcon->suspendSession()) {
+			displayError(env,NULL,
+					sqlrcon->errorMessage(),
+					sqlrcon->errorNumber());
+			return false;
+		}
+		return true;
+	} else if (!charstring::compareIgnoringCase(ptr,"resumesession",13)) {
+		return resumesession(sqlrcon,env,ptr+13);
+	} else if (!charstring::compareIgnoringCase(ptr,"connectionport")) {
+		writeScalarNumber(env,"connectionport",
+				(int64_t)sqlrcon->getConnectionPort());
+		return true;
+	} else if (!charstring::compareIgnoringCase(ptr,"connectionsocket")) {
+		return writeConnectionString(sqlrcon,env,"connectionsocket",
+					sqlrcon->getConnectionSocket());
+	} else if (!charstring::compareIgnoringCase(ptr,"connect timeout",15)) {
+		return connectTimeout(sqlrcon,env,ptr+15);
+	} else if (!charstring::compareIgnoringCase(ptr,"getconnecttimeout")) {
+		writeTimeout(env,"getconnecttimeout",
+				sqlrcon->getConnectTimeoutSeconds(),
+				sqlrcon->getConnectTimeoutMicroseconds());
+		return true;
+	} else if (!charstring::compareIgnoringCase(ptr,"getresponsetimeout")) {
+		writeTimeout(env,"getresponsetimeout",
+				sqlrcon->getResponseTimeoutSeconds(),
+				sqlrcon->getResponseTimeoutMicroseconds());
+		return true;
+	} else if (!charstring::compareIgnoringCase(
+				ptr,"bindvariabledelimitersupported",30)) {
+		// this one comes first, because the command below is a
+		// prefix of it
+		return bindvariabledelimitersupported(sqlrcon,env,ptr+30);
+	} else if (!charstring::compareIgnoringCase(
+					ptr,"bindvariabledelimiters",22)) {
+		return bindvariabledelimiters(sqlrcon,env,ptr+22);
+	} else if (!charstring::compareIgnoringCase(ptr,"getdebug")) {
+		writeScalarBoolean(env,"getdebug",sqlrcon->getDebug());
+		return true;
 	} else if (!charstring::compareIgnoringCase(ptr,"run",3)) {
 		ptr=ptr+3;
 		cmdtype=6;
@@ -942,18 +1118,37 @@ bool sqlrsh::internalCommand(sqlrconnection *sqlrcon, sqlrcursor *sqlrcur,
 	} else if (!charstring::compareIgnoringCase(ptr,"endsession")) {	
 		sqlrcon->endSession();
 		return true;
-	} else if (!charstring::compareIgnoringCase(ptr,"querytree")) {	
-		xmldom	xmld;
-		if (xmld.parseString(sqlrcur->getQueryTree())) {
-			xmld.getRootNode()->write(&stdoutput,true);
+	} else if (!charstring::compareIgnoringCase(ptr,"querytree")) {
+		// plain and csv get the tree pretty printed as xml, the way
+		// they always have.  json and jsonl get the same xml, as a
+		// string, because a query tree isn't json and giving it a
+		// json shape of its own is a ticket in itself.
+		switch (env->format) {
+			case SQLRSH_FORMAT_PLAIN:
+			case SQLRSH_FORMAT_CSV:
+				{
+					xmldom	xmld;
+					if (xmld.parseString(
+						sqlrcur->getQueryTree())) {
+						xmld.getRootNode()->
+							write(&stdoutput,true);
+					}
+				}
+				break;
+			case SQLRSH_FORMAT_JSON:
+			case SQLRSH_FORMAT_JSONL:
+				writeScalar(env,"querytree",
+						sqlrcur->getQueryTree());
+				break;
 		}
 		return true;
-	} else if (!charstring::compareIgnoringCase(ptr,"translatedquery")) {	
-		stdoutput.printf("%s\n",sqlrcur->getTranslatedQuery());
+	} else if (!charstring::compareIgnoringCase(ptr,"translatedquery")) {
+		writeScalar(env,"translatedquery",
+					sqlrcur->getTranslatedQuery());
 		return true;
 	} else if (!charstring::compareIgnoringCase(
 					ptr,"response timeout",16)) {
-		responseTimeout(sqlrcon,command);
+		responseTimeout(sqlrcon,env,ptr+16);
 		return true;
 	} else if (!charstring::compareIgnoringCase(ptr,"cache ",6)) {
 		return cache(env,sqlrcur,command);
@@ -1045,31 +1240,25 @@ bool sqlrsh::internalCommand(sqlrconnection *sqlrcon, sqlrcursor *sqlrcur,
 			break;
 		case 7:
 			env->delimiter=ptr[0];
-			stdoutput.printf("Delimiter set to %c\n",
-							env->delimiter);
+			delimiter(env);
 			break;
 		case 8:
 			if (toggle) {
-				if (sqlrcon->autoCommitOn()) {
-					stdoutput.printf(
-						"Autocommit set on\n");
-				} else {
+				if (!sqlrcon->autoCommitOn()) {
 					displayError(env,NULL,
 						sqlrcon->errorMessage(),
 						sqlrcon->errorNumber());
 					return false;
 				}
 			} else {
-				if (sqlrcon->autoCommitOff()) {
-					stdoutput.printf(
-						"Autocommit set off\n");
-				} else {
+				if (!sqlrcon->autoCommitOff()) {
 					displayError(env,NULL,
 						sqlrcon->errorMessage(),
 						sqlrcon->errorNumber());
 					return false;
 				}
 			}
+			autocommit(env,toggle);
 			break;
 		case 12:
 			env->lazyfetch=toggle;
@@ -2577,6 +2766,80 @@ void sqlrsh::writeScalarNumber(sqlrshenv *env,
 	}
 }
 
+void sqlrsh::writeScalarBoolean(sqlrshenv *env,
+				const char *name, bool value) {
+
+	switch (env->format) {
+		case SQLRSH_FORMAT_PLAIN:
+		case SQLRSH_FORMAT_CSV:
+			stdoutput.write((value)?"true\n":"false\n");
+			break;
+		case SQLRSH_FORMAT_JSON:
+		case SQLRSH_FORMAT_JSONL:
+			// a json boolean, so a reader doesn't have to match
+			// a word
+			stdoutput.write('{');
+			jsonWriteString(&stdoutput,name,
+					charstring::getLength(name));
+			stdoutput.write((value)?":true}\n":":false}\n");
+			break;
+	}
+}
+
+void sqlrsh::writeTimeout(sqlrshenv *env, const char *name,
+					int32_t sec, int32_t usec) {
+
+	// Either half negative means the timeout is off, which is what
+	// setConnectTimeout() and setResponseTimeout() say a negative value
+	// does, so it goes out as a plain -1 rather than as arithmetic on two
+	// negative numbers.
+	char	value[64];
+	if (sec<0 || usec<0) {
+		charstring::copy(value,"-1");
+	} else {
+		charstring::printf(value,sizeof(value),
+					"%d.%06d",sec,usec);
+	}
+	writeScalar(env,name,value);
+}
+
+void sqlrsh::writeTimeoutSet(sqlrshenv *env, const char *name,
+					const char *label,
+					uint32_t sec, uint32_t msec) {
+
+	switch (env->format) {
+		case SQLRSH_FORMAT_PLAIN:
+		case SQLRSH_FORMAT_CSV:
+			stdoutput.printf("%s set to %d.%04d seconds\n",
+							label,sec,msec);
+			break;
+		case SQLRSH_FORMAT_JSON:
+		case SQLRSH_FORMAT_JSONL:
+			{
+				// the value the command was given, echoed
+				// back the way the command spells one
+				char	value[64];
+				charstring::printf(value,sizeof(value),
+							"%d.%04d",sec,msec);
+				writeScalar(env,name,value);
+			}
+			break;
+	}
+}
+
+bool sqlrsh::writeConnectionString(sqlrconnection *sqlrcon, sqlrshenv *env,
+					const char *name, const char *value) {
+
+	if (!value && sqlrcon->errorMessage()) {
+		displayError(env,NULL,
+				sqlrcon->errorMessage(),
+				sqlrcon->errorNumber());
+		return false;
+	}
+	writeScalar(env,name,value);
+	return true;
+}
+
 bool sqlrsh::ping(sqlrconnection *sqlrcon, sqlrshenv *env) {
 	bool	result=sqlrcon->ping();
 	if (!result && sqlrcon->errorMessage()) {
@@ -2697,6 +2960,205 @@ bool sqlrsh::getisolationlevel(sqlrconnection *sqlrcon, sqlrshenv *env) {
 		return false;
 	}
 	writeScalar(env,"isolationlevel",value);
+	return true;
+}
+
+bool sqlrsh::usecatalog(sqlrconnection *sqlrcon,
+				sqlrshenv *env, const char *args) {
+
+	char	*catalog=commandArgument(args);
+	if (!catalog) {
+		// A command that needed an argument and didn't get one
+		// failed, the way a query with a syntax error failed, so it
+		// goes out as an error and exits SQLRSH_EXIT_QUERY.
+		displayError(env,NULL,"usecatalog needs a catalog name",0);
+		return false;
+	}
+
+	bool	success=sqlrcon->selectCatalog(catalog);
+	delete[] catalog;
+
+	if (!success) {
+		displayError(env,NULL,
+				sqlrcon->errorMessage(),
+				sqlrcon->errorNumber());
+		return false;
+	}
+	return true;
+}
+
+bool sqlrsh::useschema(sqlrconnection *sqlrcon,
+				sqlrshenv *env, const char *args) {
+
+	char	*schema=commandArgument(args);
+	if (!schema) {
+		displayError(env,NULL,"useschema needs a schema name",0);
+		return false;
+	}
+
+	bool	success=sqlrcon->selectSchema(schema);
+	delete[] schema;
+
+	if (!success) {
+		displayError(env,NULL,
+				sqlrcon->errorMessage(),
+				sqlrcon->errorNumber());
+		return false;
+	}
+	return true;
+}
+
+bool sqlrsh::resumesession(sqlrconnection *sqlrcon,
+				sqlrshenv *env, const char *args) {
+
+	char	*arg=commandArgument(args);
+	if (!arg || !character::isDigit(arg[0])) {
+		delete[] arg;
+		displayError(env,NULL,
+			"resumesession needs a port, "
+			"and a socket for a unix socket session",0);
+		return false;
+	}
+
+	uint16_t	port=(uint16_t)charstring::convertToInteger(arg);
+
+	// The socket is the rest of the argument, and an inet session doesn't
+	// have one, so it's optional.
+	const char	*socket=arg;
+	while (*socket && !character::isWhitespace(*socket)) {
+		socket++;
+	}
+	while (character::isWhitespace(*socket)) {
+		socket++;
+	}
+
+	// The connection keeps this pointer rather than copying it, and
+	// getConnectionSocket() hands it back later, so env owns it for the
+	// rest of the run, the way env owns cacheto.
+	delete[] env->resumesocket;
+	env->resumesocket=charstring::duplicate(socket);
+	delete[] arg;
+
+	bool	success=sqlrcon->resumeSession(port,env->resumesocket);
+
+	if (!success) {
+		displayError(env,NULL,
+				sqlrcon->errorMessage(),
+				sqlrcon->errorNumber());
+		return false;
+	}
+	return true;
+}
+
+bool sqlrsh::bindvariabledelimiters(sqlrconnection *sqlrcon,
+					sqlrshenv *env, const char *args) {
+
+	// with an argument it sets the delimiters
+	char	*delimiters=commandArgument(args);
+	if (delimiters) {
+		sqlrcon->setBindVariableDelimiters(delimiters);
+		delete[] delimiters;
+		return true;
+	}
+
+	// Without one it reports them.  There's no
+	// getBindVariableDelimiters(), so the answer is assembled out of the
+	// four supported() methods, in the order the default "?:@$" lists
+	// them.
+	char	current[5];
+	uint8_t	index=0;
+	if (sqlrcon->getBindVariableDelimiterQuestionMarkSupported()) {
+		current[index++]='?';
+	}
+	if (sqlrcon->getBindVariableDelimiterColonSupported()) {
+		current[index++]=':';
+	}
+	if (sqlrcon->getBindVariableDelimiterAtSignSupported()) {
+		current[index++]='@';
+	}
+	if (sqlrcon->getBindVariableDelimiterDollarSignSupported()) {
+		current[index++]='$';
+	}
+	current[index]='\0';
+
+	writeScalar(env,"bindvariabledelimiters",current);
+	return true;
+}
+
+bool sqlrsh::bindvariabledelimitersupported(sqlrconnection *sqlrcon,
+					sqlrshenv *env, const char *args) {
+
+	char	*delimiter=commandArgument(args);
+
+	// This switch is on a delimiter, not on the output format, so it does
+	// have a default label - an unrecognized delimiter is a failed
+	// command.
+	bool	supported=false;
+	bool	valid=true;
+	switch ((delimiter)?delimiter[0]:'\0') {
+		case '?':
+			supported=sqlrcon->
+			    getBindVariableDelimiterQuestionMarkSupported();
+			break;
+		case ':':
+			supported=sqlrcon->
+			    getBindVariableDelimiterColonSupported();
+			break;
+		case '@':
+			supported=sqlrcon->
+			    getBindVariableDelimiterAtSignSupported();
+			break;
+		case '$':
+			supported=sqlrcon->
+			    getBindVariableDelimiterDollarSignSupported();
+			break;
+		default:
+			valid=false;
+			break;
+	}
+	delete[] delimiter;
+
+	if (!valid) {
+		displayError(env,NULL,
+			"bindvariabledelimitersupported needs "
+			"one of ? : @ $",0);
+		return false;
+	}
+
+	writeScalarBoolean(env,"bindvariabledelimitersupported",supported);
+	return true;
+}
+
+bool sqlrsh::databasefeature(sqlrconnection *sqlrcon,
+				sqlrshenv *env, const char *args) {
+
+	char	*feature=commandArgument(args);
+	if (!feature) {
+		displayError(env,NULL,
+			"databasefeature needs a feature name",0);
+		return false;
+	}
+
+	const char	*value=sqlrcon->getDatabaseFeature(feature);
+	delete[] feature;
+
+	// A NULL means the fetch failed or the feature name wasn't one the
+	// database knows.  Either way the command failed, so it doesn't write
+	// a null the way a command that really can have one does.
+	if (!value) {
+		if (sqlrcon->errorMessage()) {
+			displayError(env,NULL,
+					sqlrcon->errorMessage(),
+					sqlrcon->errorNumber());
+		} else {
+			displayError(env,NULL,
+				"databasefeature was given a feature "
+				"the database doesn't have",0);
+		}
+		return false;
+	}
+
+	writeScalar(env,"databasefeature",value);
 	return true;
 }
 
@@ -3219,34 +3681,108 @@ void sqlrsh::getclientinfo(sqlrconnection *sqlrcon, sqlrshenv *env) {
 	writeScalar(env,"getclientinfo",sqlrcon->getClientInfo());
 }
 
-void sqlrsh::responseTimeout(sqlrconnection *sqlrcon, const char *command) {
+void sqlrsh::delimiter(sqlrshenv *env) {
 
-	// skip to timeout itself
-	const char	*value=command+16;
-	while (character::isWhitespace(*value)) {
-		value++;
+	switch (env->format) {
+		case SQLRSH_FORMAT_PLAIN:
+		case SQLRSH_FORMAT_CSV:
+			stdoutput.printf("Delimiter set to %c\n",
+							env->delimiter);
+			break;
+		case SQLRSH_FORMAT_JSON:
+		case SQLRSH_FORMAT_JSONL:
+			{
+				// a one character string, because a
+				// delimiter is a character
+				char	value[2];
+				value[0]=env->delimiter;
+				value[1]='\0';
+				writeScalar(env,"delimiter",value);
+			}
+			break;
+	}
+}
+
+void sqlrsh::autocommit(sqlrshenv *env, bool on) {
+
+	switch (env->format) {
+		case SQLRSH_FORMAT_PLAIN:
+		case SQLRSH_FORMAT_CSV:
+			stdoutput.write((on)?"Autocommit set on\n":
+						"Autocommit set off\n");
+			break;
+		case SQLRSH_FORMAT_JSON:
+		case SQLRSH_FORMAT_JSONL:
+			writeScalarBoolean(env,"autocommit",on);
+			break;
+	}
+}
+
+// Parses a timeout the way the response timeout command has always spelled
+// one: whole seconds, then an optional dot and up to 4 more digits.  Those
+// digits are handed to the connection as microseconds, which is what this
+// command has always done.
+static void parseTimeout(const char *args, uint32_t *sec, uint32_t *msec) {
+
+	// skip to the timeout itself
+	while (character::isWhitespace(*args)) {
+		args++;
 	}
 
 	// get seconds
-	uint32_t	sec=charstring::convertToInteger(value);
+	*sec=charstring::convertToInteger(args);
 
 	// get milliseconds
 	char	msecbuf[5];
 	bytestring::set(msecbuf,'0',4);
 	msecbuf[4]='\0';
-	const char	*dot=charstring::findFirst(value,'.');
+	const char	*dot=charstring::findFirst(args,'.');
 	if (dot) {
-		value=dot+1;
-		for (uint8_t i=0; i<4 && *value; i++) {
-			msecbuf[i]=*value;
-			value++;
+		args=dot+1;
+		for (uint8_t i=0; i<4 && *args; i++) {
+			msecbuf[i]=*args;
+			args++;
 		}
 	}
-	uint32_t	msec=charstring::convertToInteger(msecbuf);
+	*msec=charstring::convertToInteger(msecbuf);
+}
 
-	// set timeout
-	sqlrcon->setResponseTimeout(sec,msec);
-	stdoutput.printf("Response Timeout set to %d.%04d seconds\n",sec,msec);
+bool sqlrsh::connectTimeout(sqlrconnection *sqlrcon,
+				sqlrshenv *env, const char *args) {
+
+	char	*arg=commandArgument(args);
+	if (!arg || !character::isDigit(arg[0])) {
+		delete[] arg;
+		displayError(env,NULL,
+			"connect timeout needs a timeout in seconds, "
+			"with an optional fraction",0);
+		return false;
+	}
+
+	uint32_t	sec;
+	uint32_t	msec;
+	parseTimeout(arg,&sec,&msec);
+	delete[] arg;
+
+	// This applies to the next connect, not to the session sqlrsh is
+	// already in, so it matters for a resumesession or for the reconnect
+	// that follows an endsession.
+	sqlrcon->setConnectTimeout((int32_t)sec,(int32_t)msec);
+
+	writeTimeoutSet(env,"connecttimeout","Connect Timeout",sec,msec);
+	return true;
+}
+
+void sqlrsh::responseTimeout(sqlrconnection *sqlrcon,
+				sqlrshenv *env, const char *args) {
+
+	uint32_t	sec;
+	uint32_t	msec;
+	parseTimeout(args,&sec,&msec);
+
+	sqlrcon->setResponseTimeout((int32_t)sec,(int32_t)msec);
+
+	writeTimeoutSet(env,"responsetimeout","Response Timeout",sec,msec);
 }
 
 bool sqlrsh::cache(sqlrshenv *env, sqlrcursor *sqlrcur, const char *command) {

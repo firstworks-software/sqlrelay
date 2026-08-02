@@ -38,6 +38,20 @@
 	fixed sqlrsh -format - an unrecognized format name quietly fell back
 		to plain, it's a usage error now, and the format command and
 		the -format option share one list of names
+	added sqlrsh commands for the rest of the sqlrconnection api -
+		usecatalog, currentcatalog, useschema, databaseisschema,
+		databasefeature, getautocommit, intransaction,
+		transactionmodel, defaulttransactionmodel,
+		defaultisolationlevel, suspendsession, resumesession,
+		connectionport, connectionsocket, connect timeout,
+		getconnecttimeout, getresponsetimeout,
+		bindvariabledelimiters, bindvariabledelimitersupported, and
+		getdebug - each one honors all four output formats, and a
+		missing or invalid argument is a failed command
+	fixed sqlrsh json and jsonl output - the delimiter, autocommit,
+		response timeout, translatedquery, and querytree commands
+		wrote plain text no matter what the format was, they write
+		json now
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems
