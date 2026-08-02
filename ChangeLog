@@ -86,6 +86,12 @@
 		inputoutputbind - the command word on its own was sent to the
 		database and came back as a syntax error instead of the
 		command's usage
+	updated the sqlrsh usage text, -help output, help command, and man
+		page to cover every command and every command line option -
+		about 109 command forms and 9 options were missing, including
+		everything added in this release, and the four output formats,
+		the csv quoting and null rules, and the exit codes are all
+		written down now
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems
