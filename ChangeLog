@@ -19,6 +19,15 @@
 		failure, 4 query or command error - and sqlrsh now checks the
 		connection at startup so connection failures get their own
 		code
+	fixed sqlrsh csv output - the stats block was written after the data,
+		which broke csv by default, the stats are now written for the
+		plain format only
+	fixed sqlrsh csv output - the cache command's banner was written at
+		the top of the stream, the banner is now written for the
+		plain format only
+	fixed sqlrsh csv output - the fields command wrote the column names
+		without quoting or escaping them, the names now go through the
+		csv field writer
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems

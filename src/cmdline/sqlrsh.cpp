@@ -1004,11 +1004,21 @@ bool sqlrsh::externalCommand(sqlrconnection *sqlrcon,
 		sqlrcur->getColumnList(table,NULL);
 		delete[] table;
 
+		// write the column names, comma separated, on one line
 		for (uint64_t j=0; j<sqlrcur->rowCount(); j++) {
 			if (j>0) {
 				stdoutput.printf(",");
 			}
-			stdoutput.printf("%s",sqlrcur->getField(j,(uint32_t)0));
+			// Names go through the csv field writer in csv, so one
+			// containing a comma or a double quote can't break the
+			// line apart.
+			const char	*name=sqlrcur->getField(j,(uint32_t)0);
+			if (env->format==SQLRSH_FORMAT_PLAIN) {
+				stdoutput.printf("%s",name);
+			} else {
+				csvWriteField(name,
+					sqlrcur->getFieldLength(j,(uint32_t)0));
+			}
 		}
 		stdoutput.printf("\n");
 
@@ -1664,7 +1674,12 @@ void sqlrsh::displayError(sqlrshenv *env,
 
 void sqlrsh::displayHeader(sqlrcursor *sqlrcur, sqlrshenv *env) {
 
-	if (!env->headers && env->format!=SQLRSH_FORMAT_CSV) {
+	// The headers toggle applies to the plain format.  There the column
+	// names are a convenience for the person reading the output, so they
+	// can be turned off.  Every other format is handed to a parser, and
+	// the names are the only way it can learn what the columns are, so
+	// they're part of the data there and always written.
+	if (env->format==SQLRSH_FORMAT_PLAIN && !env->headers) {
 		return;
 	}
 
@@ -1898,33 +1913,36 @@ void sqlrsh::displayResultSet(sqlrcursor *sqlrcur, sqlrshenv *env) {
 
 void sqlrsh::displayStats(sqlrcursor *sqlrcur, sqlrshenv *env) {
 
-	if (!env->stats) {
-		return;
-	}
+	// Stats are plain format only.  They're a note to the person who ran
+	// the query, and plain is the only format a person reads directly.
+	// Every other format is handed to a parser, and a block of tab
+	// indented labels isn't part of any of them.
+	if (env->format==SQLRSH_FORMAT_PLAIN && env->stats) {
 
-	// calculate elapsed time
-	datetime	end;
-	end.initFromSystemDateTime();
-	uint64_t	startusec=start.getEpoch()*1000000+
-					start.getMicrosecond();
-	uint64_t	endusec=end.getEpoch()*1000000+
-					end.getMicrosecond();
-	double		time=((double)(endusec-startusec))/1000000;
+		// calculate elapsed time
+		datetime	end;
+		end.initFromSystemDateTime();
+		uint64_t	startusec=start.getEpoch()*1000000+
+						start.getMicrosecond();
+		uint64_t	endusec=end.getEpoch()*1000000+
+						end.getMicrosecond();
+		double		time=((double)(endusec-startusec))/1000000;
 
-	// display stats
-	stdoutput.write('\n');
-	stdoutput.printf("	Affected Rows   : ");
-	stdoutput.printf("%lld\n",(long long)sqlrcur->affectedRows());
-	stdoutput.printf("	Rows Returned   : ");
-	stdoutput.printf("%lld\n",(long long)sqlrcur->rowCount());
-	stdoutput.printf("	Fields Returned : ");
-	stdoutput.printf("%lld\n",
+		// display stats
+		stdoutput.write('\n');
+		stdoutput.printf("	Affected Rows   : ");
+		stdoutput.printf("%lld\n",(long long)sqlrcur->affectedRows());
+		stdoutput.printf("	Rows Returned   : ");
+		stdoutput.printf("%lld\n",(long long)sqlrcur->rowCount());
+		stdoutput.printf("	Fields Returned : ");
+		stdoutput.printf("%lld\n",
 			(long long)sqlrcur->rowCount()*sqlrcur->colCount());
-	if (!env->noelapsed) {
-		stdoutput.printf("	Elapsed Time    : ");
-		stdoutput.printf("%.6f sec\n",time);
+		if (!env->noelapsed) {
+			stdoutput.printf("	Elapsed Time    : ");
+			stdoutput.printf("%.6f sec\n",time);
+		}
+		stdoutput.printf("\n");
 	}
-	stdoutput.printf("\n");
 }
 
 bool sqlrsh::ping(sqlrconnection *sqlrcon, sqlrshenv *env) {
@@ -2591,8 +2609,14 @@ bool sqlrsh::cache(sqlrshenv *env, sqlrcursor *sqlrcur, const char *command) {
 		cachettl=charstring::convertToInteger(ptr);
 	}
 
-	stdoutput.printf("	Caching To       : %s\n",env->cacheto);
-	stdoutput.printf("	Cache TTL Set To : %lld seconds\n\n",cachettl);
+	// The banner is plain format only.  What this command really produces
+	// is the next result set, so in any other format the banner is two
+	// stray lines at the top of the stream.
+	if (env->format==SQLRSH_FORMAT_PLAIN) {
+		stdoutput.printf("	Caching To       : %s\n",env->cacheto);
+		stdoutput.printf("	Cache TTL Set To : %lld seconds\n\n",
+							(long long)cachettl);
+	}
 
 	// begin caching
 	sqlrcur->cacheToFile(env->cacheto);
