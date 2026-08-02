@@ -58,6 +58,9 @@ db_applicable() {
 		postgresql*)
 			MODULE=postgresql
 			;;
+		tdsprotocol)
+			MODULE=odbc
+			;;
 	esac
 
 	# skip if that module was not built
@@ -75,8 +78,8 @@ db_applicable() {
 		fi
 	fi
 
-	# the mssql test also needs an odbc config for it
-	if ( test "$db" = "mssql" )
+	# the mssql and tdsprotocol tests also need an odbc config for it
+	if ( test "$db" = "mssql" -o "$db" = "tdsprotocol" )
 	then
 		if ( test -z "`grep mssqlodbc /etc/odbc.ini 2> /dev/null`" )
 		then

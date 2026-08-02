@@ -839,6 +839,9 @@ endif
 ifneq ($(strip $(POSTGRESQLLIBS)),)
 TESTPROTOCOLSUBDIRS += all-postgresql
 endif
+ifneq ($(strip $(FREETDSLIBS)),)
+TESTPROTOCOLSUBDIRS += all-tds
+endif
 ifneq ($(strip $(APACHELINKFLAGS)),)
 MODMVCCRUD=mod_mvccrud.$(LIBEXT)
 endif

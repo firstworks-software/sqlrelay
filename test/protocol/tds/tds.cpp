@@ -124,6 +124,21 @@ int	main(int argc, char **argv) {
 	stdoutput.printf("\n");
 
 
+	// Freetds waits forever by default.  Without these timeouts, a
+	// protocol module that never finishes the login handshake hangs
+	// this test, and make tests along with it.
+	stdoutput.printf("ct_config: timeouts\n");
+	CS_INT	logintimeout=30;
+	assertEquals(ct_config(context,CS_SET,CS_LOGIN_TIMEOUT,
+				(CS_VOID *)&logintimeout,CS_UNUSED,
+				(CS_INT *)NULL),CS_SUCCEED);
+	CS_INT	cmdtimeout=60;
+	assertEquals(ct_config(context,CS_SET,CS_TIMEOUT,
+				(CS_VOID *)&cmdtimeout,CS_UNUSED,
+				(CS_INT *)NULL),CS_SUCCEED);
+	stdoutput.printf("\n");
+
+
 	stdoutput.printf("ct_config: callbacks\n");
 	assertEquals(cs_config(context,CS_SET,CS_MESSAGE_CB,
 				(CS_VOID *)csMessageCallback,
@@ -194,8 +209,17 @@ int	main(int argc, char **argv) {
 
 
 	stdoutput.printf("ct_connect\n");
-	assertEquals(ct_connect(dbconn,(CS_CHAR *)NULL,(CS_INT)0),CS_SUCCEED);
+	CS_RETCODE	connected=ct_connect(dbconn,(CS_CHAR *)NULL,(CS_INT)0);
+	assertEquals(connected,CS_SUCCEED);
 	stdoutput.printf("\n\n");
+
+	// Nothing below here can work without a connection.  Running on
+	// anyway leaves the column count unset and spins the describe
+	// loop for millions of iterations.
+	if (connected!=CS_SUCCEED) {
+		reportTestStatus();
+		return status;
+	}
 
 
 
@@ -402,7 +426,7 @@ int	main(int argc, char **argv) {
 
 
 	stdoutput.printf("ct_res_info: col count\n");
-	CS_INT	ncols;
+	CS_INT	ncols=0;
 	assertEquals(ct_res_info(cmd,CS_NUMDATA,
 					(CS_VOID *)&ncols,CS_UNUSED,
 					(CS_INT *)NULL),CS_SUCCEED);

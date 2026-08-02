@@ -41542,6 +41542,9 @@ fi
 if ( test -n "$POSTGRESQLLIBS" ); then
 	TESTDBS="$TESTDBS postgresqlprotocol"
 fi
+if ( test -n "$FREETDSLIBS" ); then
+	TESTDBS="$TESTDBS tdsprotocol"
+fi
 
 
 

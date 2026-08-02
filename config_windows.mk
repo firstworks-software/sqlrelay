@@ -427,7 +427,9 @@ CONNECTIONSINSTALLTARGETS = @INSTALLDB2@ @INSTALLFIREBIRD@ @INSTALLMYSQL@ @INSTA
 TESTALLSUBDIRS = all-c all-cpp all-legacy all-extensions all-odbc all-cs all-adonet all-java all-jdbc all-protocol all-stress all-tcl all-crud
 # mysql (connector c) and postgresql (libpq) are always built on windows, so
 # always build their wire-protocol tests; unix sets this conditionally in
-# config.mk.in from MYSQLLIBS/POSTGRESQLLIBS
+# config.mk.in from MYSQLLIBS/POSTGRESQLLIBS.  all-tds is not listed here
+# because the tds protocol test needs freetds ct-lib, which windows doesn't
+# build
 TESTPROTOCOLSUBDIRS = all-mysql all-postgresql
 
 CPPTESTCPPFLAGS = $(BASECPPFLAGS) /I $(includedir) $(RUDIMENTSINCLUDES) /I $(top_builddir)
