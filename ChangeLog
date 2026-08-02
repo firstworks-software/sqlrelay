@@ -1,4 +1,7 @@
 2.2.1 - bumped the version to 2.2.1
+	fixed sqlrsh csv output - non-ascii bytes, newlines, carriage returns,
+		tabs, and nulls were dropped, and fields containing them
+		weren't quoted
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems
