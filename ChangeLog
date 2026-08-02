@@ -12,6 +12,13 @@
 	added sqlrsh -headers, -divider, -stats, -lazyfetch, -txqueries, and
 		-delimiter command line options, and made -getasnumber,
 		-noelapsed, -nextresultset, and -quiet accept an on|off value
+	fixed sqlrsh -script - a script that ran without an error still
+		exited 1, because the end of the file was treated as a failure
+	added distinct sqlrsh exit codes - 0 success, 1 usage error, 2 script
+		file couldn't be opened, 3 connection or authentication
+		failure, 4 query or command error - and sqlrsh now checks the
+		connection at startup so connection failures get their own
+		code
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems

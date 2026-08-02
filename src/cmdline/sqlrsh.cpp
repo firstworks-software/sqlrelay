@@ -62,6 +62,17 @@ enum sqlrshformat {
 	SQLRSH_FORMAT_CSV
 };
 
+// These are what a program driving sqlrsh non-interactively has to go on.
+// They are part of the interface, like the output formats are.  Add to them,
+// but don't renumber them and don't change what one means.
+enum sqlrshexitcode {
+	SQLRSH_EXIT_SUCCESS=0,
+	SQLRSH_EXIT_USAGE=1,
+	SQLRSH_EXIT_SCRIPT=2,
+	SQLRSH_EXIT_CONNECTION=3,
+	SQLRSH_EXIT_QUERY=4
+};
+
 class sqlrshenv {
 	public:
 			sqlrshenv();
@@ -143,7 +154,8 @@ class	sqlrsh {
 	public:
 			sqlrsh();
 			~sqlrsh();
-		bool	execute(int argc, const char **argv);
+		// returns one of the sqlrshexitcode's
+		int32_t	execute(int argc, const char **argv);
 	private:
 		// returns the on/off value of command line option "arg", or
 		// "defaultvalue" if the option wasn't given.  An option given
@@ -156,9 +168,12 @@ class	sqlrsh {
 		void	userRcFile(sqlrconnection *sqlrcon, 
 					sqlrcursor *sqlrcur, 
 					sqlrshenv *env);
-		bool	runScript(sqlrconnection *sqlrcon,
+		// returns SQLRSH_EXIT_SUCCESS, SQLRSH_EXIT_SCRIPT if the
+		// file couldn't be opened, or SQLRSH_EXIT_QUERY if one of
+		// the commands in it failed
+		int32_t	runScript(sqlrconnection *sqlrcon,
 					sqlrcursor *sqlrcur,
-					sqlrshenv *env, 
+					sqlrshenv *env,
 					const char *filename,
 					bool displayerror);
 		bool	runCommands(sqlrconnection *sqlrcon,
@@ -296,11 +311,11 @@ void sqlrsh::userRcFile(sqlrconnection *sqlrcon, sqlrcursor *sqlrcur,
 	delete[] userrcfile;
 }
 
-bool sqlrsh::runScript(sqlrconnection *sqlrcon, sqlrcursor *sqlrcur, 
+int32_t sqlrsh::runScript(sqlrconnection *sqlrcon, sqlrcursor *sqlrcur,
 			sqlrshenv *env, const char *filename,
 			bool displayerror) {
 
-	bool	retval=true;
+	int32_t	exitcode=SQLRSH_EXIT_SUCCESS;
 
 	char	*trimmedfilename=charstring::duplicate(filename);
 	charstring::bothTrim(trimmedfilename);
@@ -315,12 +330,13 @@ bool sqlrsh::runScript(sqlrconnection *sqlrcon, sqlrcursor *sqlrcur,
 							trimmedfilename));
 
 		for (;;) {
-		
+
 			// get a command
+			// getCommandFromFileOrString() returns false at the
+			// end of the file, which is not an error
 			stringbuffer	command;
 			if (!getCommandFromFileOrString(
 					&scriptfile,NULL,NULL,&command,env)) {
-				retval=false;
 				break;
 			}
 
@@ -328,7 +344,7 @@ bool sqlrsh::runScript(sqlrconnection *sqlrcon, sqlrcursor *sqlrcur,
 			if (!runCommand(sqlrcon,sqlrcur,env,
 						command.getString(),
 						NULL)) {
-				retval=false;
+				exitcode=SQLRSH_EXIT_QUERY;
 				break;
 			}
 		}
@@ -343,12 +359,12 @@ bool sqlrsh::runScript(sqlrconnection *sqlrcon, sqlrcursor *sqlrcur,
 			stderror.printf("Couldn't open file: %s\n\n",
 							trimmedfilename);
 		}
-		retval=false;
+		exitcode=SQLRSH_EXIT_SCRIPT;
 	}
 
 	delete[] trimmedfilename;
 
-	return retval;
+	return exitcode;
 }
 
 bool sqlrsh::runCommands(sqlrconnection *sqlrcon,
@@ -831,8 +847,11 @@ bool sqlrsh::internalCommand(sqlrconnection *sqlrcon, sqlrcursor *sqlrcur,
 	}
 
 	// handle scripts
+	// A script that "run" couldn't open is just a failed command as far
+	// as the caller is concerned.  Code 2 is for the -script file.
 	if (cmdtype==6) {
-		return runScript(sqlrcon,sqlrcur,env,ptr,true);
+		return (runScript(sqlrcon,sqlrcur,env,ptr,true)==
+						SQLRSH_EXIT_SUCCESS);
 	}
 
 	// handle debug
@@ -2808,7 +2827,7 @@ bool sqlrsh::onOffOption(const char *arg, bool defaultvalue) {
 	return !charstring::compareIgnoringCase(value,"on",2);
 }
 
-bool sqlrsh::execute(int argc, const char **argv) {
+int32_t sqlrsh::execute(int argc, const char **argv) {
 
 	cmdline=new sqlrcmdline(argc,argv);
 	sqlrpth=new sqlrpaths(cmdline);
@@ -2881,7 +2900,7 @@ bool sqlrsh::execute(int argc, const char **argv) {
 			"        [-nextresultset]\n"
 			"        [-resultsetbuffersize rows]\n",
 			SQLR,SQLR);
-		process::exit(1);
+		return SQLRSH_EXIT_USAGE;
 	}
 
 	// if an id was specified, then get various values from the config file
@@ -2954,7 +2973,8 @@ bool sqlrsh::execute(int argc, const char **argv) {
 			(!charstring::compare(localeargument,"env"))?
 							"":localeargument)) {
 			stderror.printf("ERROR: set locale failed\n");
-			return false;
+			delete[] decryptedpassword;
+			return SQLRSH_EXIT_USAGE;
 		}
 	}
 
@@ -3013,6 +3033,21 @@ bool sqlrsh::execute(int argc, const char **argv) {
 		env.delimiter=delimiter[0];
 	}
 
+	// check the connection
+	// sqlrconnection doesn't connect until something needs the server, so
+	// without this a bad host, port, or password would first show up as a
+	// failed command, and the caller couldn't tell it from a bad query.
+	// ping() opens the session, so this costs a round trip, not a session.
+	if (!sqlrcon.ping()) {
+		const char	*error=sqlrcon.errorMessage();
+		if (charstring::isNullOrEmpty(error)) {
+			error="The database is down.";
+		}
+		displayError(&env,NULL,error,sqlrcon.errorNumber());
+		delete[] decryptedpassword;
+		return SQLRSH_EXIT_CONNECTION;
+	}
+
 	// process RC files
 	userRcFile(&sqlrcon,&sqlrcur,&env);
 
@@ -3027,16 +3062,20 @@ bool sqlrsh::execute(int argc, const char **argv) {
 		pr.setMaxHistoryLines(100);
 	}
 
-	bool	retval=true;
+	int32_t	exitcode=SQLRSH_EXIT_SUCCESS;
 
 	if (!charstring::isNullOrEmpty(script)) {
 		// if a script was specified, run it
-		retval=runScript(&sqlrcon,&sqlrcur,&env,script,true);
+		exitcode=runScript(&sqlrcon,&sqlrcur,&env,script,true);
 	} else if (!charstring::isNullOrEmpty(command)) {
 		// if a command was specified, run it
-		retval=runCommands(&sqlrcon,&sqlrcur,&env,command,NULL);
+		if (!runCommands(&sqlrcon,&sqlrcur,&env,command,NULL)) {
+			exitcode=SQLRSH_EXIT_QUERY;
+		}
 	} else {
 		// otherwise go into interactive mode
+		// An interactive session isn't a batch, so a failed query at
+		// the prompt isn't a failed run.  This always succeeds.
 		startupMessage(&env,host,port,user);
 		interactWithUser(&sqlrcon,&sqlrcur,&env);
 	}
@@ -3045,7 +3084,7 @@ bool sqlrsh::execute(int argc, const char **argv) {
 	pr.flushHistory();
 	delete[] decryptedpassword;
 
-	return retval;
+	return exitcode;
 }
 
 static void helpmessage(const char *progname) {
@@ -3131,10 +3170,10 @@ int main(int argc, const char **argv) {
 	signalmanager::ignoreSignals(&set);
 	#endif
 
-	int32_t	exitcode=0;
+	int32_t	exitcode=SQLRSH_EXIT_SUCCESS;
 	{
 		sqlrsh	s;
-		exitcode=!s.execute(argc,argv);
+		exitcode=s.execute(argc,argv);
 	}
 	process::exit(exitcode);
 }
