@@ -14,6 +14,7 @@
 #include <rudiments/xmldom.h>
 #include <rudiments/stdio.h>
 #include <rudiments/character.h>
+#include <rudiments/bytestring.h>
 #include <rudiments/memorypool.h>
 #include <rudiments/prompt.h>
 #include <rudiments/locale.h>
@@ -31,8 +32,17 @@
 
 class sqlrshbindvalue {
 	public:
+		// A union in C++98 can't hold anything with a constructor, so
+		// every member here is a plain type and the value that owns
+		// memory is freed by type, in deleteBindValue().
 		union {
-			char	*stringval;
+			// string, blob and clob values all carry their own
+			// length, so a value with an embedded null isn't cut
+			// short by a strlen somewhere downstream
+			struct {
+				char		*value;
+				uint32_t	length;
+			} stringval;
 			int64_t	integerval;
 			struct {
 				double		value;
@@ -56,6 +66,68 @@ class sqlrshbindvalue {
 
 		void	print() {}
 };
+
+// copies "length" bytes of "value" into a buffer of its own, with a null
+// after them so the copy can also be used as a string.  The caller owns it.
+static char *duplicateBytes(const char *value, uint32_t length) {
+
+	if (!value) {
+		return NULL;
+	}
+
+	char	*copy=new char[length+1];
+	bytestring::copy(copy,value,length);
+	copy[length]='\0';
+	return copy;
+}
+
+// copies "length" bytes of "value", plus a null, into "pool"
+static char *poolCopy(memorypool *pool, const char *value, size_t length) {
+
+	char	*copy=(char *)pool->allocate(length+1);
+	bytestring::copy(copy,value,length);
+	copy[length]='\0';
+	return copy;
+}
+
+// sets "bv" to a string value of exactly "length" bytes, taken from the
+// "valuelength" bytes of "value".  A value longer than "length" is cut off
+// and a shorter one is padded with nulls, which is how a value with an
+// embedded null is spelled in the shell.
+static void setStringValue(sqlrshbindvalue *bv,
+				const char *value,
+				uint32_t valuelength,
+				uint32_t length) {
+
+	char		*buffer=new char[length+1];
+	uint32_t	copylength=(valuelength<length)?valuelength:length;
+	bytestring::copy(buffer,value,copylength);
+	if (copylength<length) {
+		bytestring::zero(buffer+copylength,length-copylength);
+	}
+	buffer[length]='\0';
+
+	bv->type=SQLRCLIENTBINDVARTYPE_STRING;
+	bv->stringval.value=buffer;
+	bv->stringval.length=length;
+}
+
+// frees whatever the value owns, then the value itself.  Every site that
+// replaces or discards a bind value goes through here, so a type that owns
+// memory can't be freed one way in one place and leaked in another.
+static void deleteBindValue(sqlrshbindvalue *bv) {
+
+	if (!bv) {
+		return;
+	}
+
+	if (bv->type==SQLRCLIENTBINDVARTYPE_STRING ||
+		bv->type==SQLRCLIENTBINDVARTYPE_BLOB ||
+		bv->type==SQLRCLIENTBINDVARTYPE_CLOB) {
+		delete[] bv->stringval.value;
+	}
+	delete bv;
+}
 
 // These are part of the interface too.  Every site that acts on the format
 // switches on it, with no default label, so -Wswitch makes the compiler point
@@ -143,6 +215,7 @@ class sqlrshenv {
 			~sqlrshenv();
 		void	 clearbinds(
 			dictionary<char *, sqlrshbindvalue *> *binds);
+		void	 clearsubstitutions();
 
 		bool		headers;
 		bool		divider;
@@ -156,6 +229,14 @@ class sqlrshenv {
 		memorypool	inbindpool;
 		dictionary<char *, sqlrshbindvalue *>	outputbinds;
 		dictionary<char *, sqlrshbindvalue *>	inputoutputbinds;
+		dictionary<char *, sqlrshbindvalue *>	substitutions;
+		// The cursor keeps the names and values it's handed rather
+		// than copying them, and there's no public call that clears
+		// its substitutions, so a substitution has to outlive the
+		// clearsubstitutions that dropped it.  They come out of this
+		// pool, which is only freed when the shell exits.
+		memorypool	subpool;
+		bool		validatebinds;
 		char		*cacheto;
 		// The connection keeps the socket it's handed rather than
 		// copying it, so the one a resumesession was given has to
@@ -177,6 +258,7 @@ sqlrshenv::sqlrshenv() {
 	autocommit=false;
 	lazyfetch=false;
 	delimiter=';';
+	validatebinds=false;
 	cacheto=NULL;
 	resumesocket=NULL;
 	format=SQLRSH_FORMAT_PLAIN;
@@ -193,6 +275,7 @@ sqlrshenv::~sqlrshenv() {
 	clearbinds(&inputbinds);
 	clearbinds(&outputbinds);
 	clearbinds(&inputoutputbinds);
+	clearsubstitutions();
 	delete[] cacheto;
 	delete[] resumesocket;
 }
@@ -201,15 +284,22 @@ void sqlrshenv::clearbinds(dictionary<char *, sqlrshbindvalue *> *binds) {
 
 	for (listnode<char *> *node=binds->getKeys()->getFirst();
 						node; node=node->getNext()) {
-
-		sqlrshbindvalue	*bv=binds->getValue(node->getValue());
-		if (bv->type==SQLRCLIENTBINDVARTYPE_STRING) {
-			delete[] bv->stringval;
-		}
-		delete bv;
+		deleteBindValue(binds->getValue(node->getValue()));
 	}
 	binds->clear();
 	inbindpool.clear();
+}
+
+void sqlrshenv::clearsubstitutions() {
+
+	// Only the values are freed here.  The names and the strings they
+	// point at came out of subpool, which the cursor is still holding
+	// references into.
+	for (listnode<char *> *node=substitutions.getKeys()->getFirst();
+						node; node=node->getNext()) {
+		delete substitutions.getValue(node->getValue());
+	}
+	substitutions.clear();
 }
 
 enum querytype_t {
@@ -440,19 +530,55 @@ class	sqlrsh {
 						sqlrshenv *env);
 		bool	lastinsertid(sqlrconnection *sqlrcon,
 						sqlrshenv *env);
+		// writes the usage for a command that was given bad or
+		// missing arguments.  plain and csv get the lines on stderr,
+		// the way they always have.  json and jsonl get an error
+		// object, the same shape a failed query gives them.  Always
+		// returns false, so a caller can return what this returns.
+		bool	usageError(sqlrshenv *env, const char *usage);
 		bool	inputbind(sqlrcursor *sqlrcur,
 						sqlrshenv *env,
 						const char *command);
-		bool	inputbindblob(sqlrcursor *sqlrcur,
+		// the body of the inputbindblob and inputbindclob commands.
+		// "name" is the command word, for the usage message, and
+		// "type" is the bind type it defines.
+		bool	inputbindlob(sqlrcursor *sqlrcur,
 						sqlrshenv *env,
-						const char *command);
+						const char *command,
+						const char *name,
+						sqlrclientbindvartype_t type);
 		bool	outputbind(sqlrcursor *sqlrcur,
 						sqlrshenv *env,
 						const char *command);
 		bool	inputoutputbind(sqlrcursor *sqlrcur,
 						sqlrshenv *env,
 						const char *command);
+		// fetches from a cursor that came back as an output bind and
+		// writes the result set
+		bool	fetchfrombindcursor(sqlrcursor *sqlrcur,
+						sqlrshenv *env,
+						const char *args);
+		// with an argument it turns bind validation on or off,
+		// without one it turns it on
+		bool	validatebinds(sqlrshenv *env, const char *args);
+		bool	validbind(sqlrcursor *sqlrcur,
+						sqlrshenv *env,
+						const char *args);
+		bool	substitution(sqlrshenv *env, const char *args);
+		// prepares the query in a file, and runs it too if "execute"
+		// is set, with the binds and substitutions applied
+		bool	filequery(sqlrconnection *sqlrcon,
+						sqlrcursor *sqlrcur,
+						sqlrshenv *env,
+						const char *args,
+						bool execute);
 		void	printbinds(const char *type,
+				dictionary<char *, sqlrshbindvalue *> *binds);
+		// writes one bind variable list in the selected format.
+		// "type" heads the plain block, "key" keys the json object.
+		void	printbindlist(sqlrshenv *env,
+				const char *type,
+				const char *key,
 				dictionary<char *, sqlrshbindvalue *> *binds);
 		// writes one member of the printbinds object, "key" mapped
 		// to an object keyed by bind variable name
@@ -823,8 +949,26 @@ int sqlrsh::commandType(const char *command) {
 		!charstring::compareIgnoringCase(ptr,"delimeter",9) ||
 		!charstring::compareIgnoringCase(ptr,"inputbind ",10) ||
 		!charstring::compareIgnoringCase(ptr,"inputbindblob ",14) ||
+		!charstring::compareIgnoringCase(ptr,"inputbindclob ",14) ||
 		!charstring::compareIgnoringCase(ptr,"outputbind ",11) ||
 		!charstring::compareIgnoringCase(ptr,"inputoutputbind ",16) ||
+		// the bind commands take a trailing space above, so these
+		// catch the command word on its own, which would otherwise go
+		// to the database and come back as a syntax error
+		!charstring::compareIgnoringCase(ptr,"inputbind") ||
+		!charstring::compareIgnoringCase(ptr,"inputbindblob") ||
+		!charstring::compareIgnoringCase(ptr,"inputbindclob") ||
+		!charstring::compareIgnoringCase(ptr,"outputbind") ||
+		!charstring::compareIgnoringCase(ptr,"inputoutputbind") ||
+		!charstring::compareIgnoringCase(
+					ptr,"fetchfrombindcursor",19) ||
+		!charstring::compareIgnoringCase(ptr,"countbindvariables") ||
+		!charstring::compareIgnoringCase(ptr,"validatebinds",13) ||
+		!charstring::compareIgnoringCase(ptr,"validbind",9) ||
+		!charstring::compareIgnoringCase(ptr,"substitution",12) ||
+		!charstring::compareIgnoringCase(ptr,"clearsubstitutions") ||
+		!charstring::compareIgnoringCase(ptr,"preparefilequery",16) ||
+		!charstring::compareIgnoringCase(ptr,"filequery",9) ||
 		!charstring::compareIgnoringCase(ptr,"printinputbind",14) ||
 		!charstring::compareIgnoringCase(ptr,"printoutputbind",15) ||
 		!charstring::compareIgnoringCase(
@@ -1126,13 +1270,57 @@ bool sqlrsh::internalCommand(sqlrconnection *sqlrcon, sqlrcursor *sqlrcur,
 		return serverversion(sqlrcon,env);
 	} else if (!charstring::compareIgnoringCase(ptr,"inputbind ",10)) {	
 		return inputbind(sqlrcur,env,command);
-	} else if (!charstring::compareIgnoringCase(ptr,"inputbindblob ",14)) {	
-		return inputbindblob(sqlrcur,env,command);
-	} else if (!charstring::compareIgnoringCase(ptr,"outputbind ",11)) {	
+	} else if (!charstring::compareIgnoringCase(ptr,"inputbindblob ",14)) {
+		return inputbindlob(sqlrcur,env,command,"inputbindblob",
+					SQLRCLIENTBINDVARTYPE_BLOB);
+	} else if (!charstring::compareIgnoringCase(ptr,"inputbindclob ",14)) {
+		return inputbindlob(sqlrcur,env,command,"inputbindclob",
+					SQLRCLIENTBINDVARTYPE_CLOB);
+	} else if (!charstring::compareIgnoringCase(ptr,"outputbind ",11)) {
 		return outputbind(sqlrcur,env,command);
 	} else if (!charstring::compareIgnoringCase(
 						ptr,"inputoutputbind ",16)) {	
 		return inputoutputbind(sqlrcur,env,command);
+	// These five catch the command word on its own.  They come after the
+	// forms that take a trailing space, so a command with arguments never
+	// reaches them.
+	} else if (!charstring::compareIgnoringCase(ptr,"inputbind")) {
+		return inputbind(sqlrcur,env,command);
+	} else if (!charstring::compareIgnoringCase(ptr,"inputbindblob")) {
+		return inputbindlob(sqlrcur,env,command,"inputbindblob",
+					SQLRCLIENTBINDVARTYPE_BLOB);
+	} else if (!charstring::compareIgnoringCase(ptr,"inputbindclob")) {
+		return inputbindlob(sqlrcur,env,command,"inputbindclob",
+					SQLRCLIENTBINDVARTYPE_CLOB);
+	} else if (!charstring::compareIgnoringCase(ptr,"outputbind")) {
+		return outputbind(sqlrcur,env,command);
+	} else if (!charstring::compareIgnoringCase(ptr,"inputoutputbind")) {
+		return inputoutputbind(sqlrcur,env,command);
+	} else if (!charstring::compareIgnoringCase(
+					ptr,"fetchfrombindcursor",19)) {
+		return fetchfrombindcursor(sqlrcur,env,ptr+19);
+	} else if (!charstring::compareIgnoringCase(
+					ptr,"countbindvariables")) {
+		// this parses the query that was prepared last, so
+		// preparefilequery is what makes it useful
+		writeScalarNumber(env,"countbindvariables",
+				(int64_t)sqlrcur->countBindVariables());
+		return true;
+	} else if (!charstring::compareIgnoringCase(ptr,"validatebinds",13)) {
+		return validatebinds(env,ptr+13);
+	} else if (!charstring::compareIgnoringCase(ptr,"validbind",9)) {
+		return validbind(sqlrcur,env,ptr+9);
+	} else if (!charstring::compareIgnoringCase(ptr,"substitution",12)) {
+		return substitution(env,ptr+12);
+	} else if (!charstring::compareIgnoringCase(
+					ptr,"clearsubstitutions")) {
+		env->clearsubstitutions();
+		return true;
+	} else if (!charstring::compareIgnoringCase(
+					ptr,"preparefilequery",16)) {
+		return filequery(sqlrcon,sqlrcur,env,ptr+16,false);
+	} else if (!charstring::compareIgnoringCase(ptr,"filequery",9)) {
+		return filequery(sqlrcon,sqlrcur,env,ptr+9,true);
 	} else if (!charstring::compareIgnoringCase(ptr,"printbinds")) {
 		switch (env->format) {
 			case SQLRSH_FORMAT_PLAIN:
@@ -1160,7 +1348,18 @@ bool sqlrsh::internalCommand(sqlrconnection *sqlrcon, sqlrcursor *sqlrcur,
 				break;
 		}
 		return true;
-	} else if (!charstring::compareIgnoringCase(ptr,"clearinputbind",14)) {	
+	} else if (!charstring::compareIgnoringCase(
+					ptr,"printinputoutputbind",20)) {
+		printbindlist(env,"Input/Output","inputoutput",
+					&env->inputoutputbinds);
+		return true;
+	} else if (!charstring::compareIgnoringCase(ptr,"printinputbind",14)) {
+		printbindlist(env,"Input","input",&env->inputbinds);
+		return true;
+	} else if (!charstring::compareIgnoringCase(ptr,"printoutputbind",15)) {
+		printbindlist(env,"Output","output",&env->outputbinds);
+		return true;
+	} else if (!charstring::compareIgnoringCase(ptr,"clearinputbind",14)) {
 		env->clearbinds(&env->inputbinds);
 		return true;
 	} else if (!charstring::compareIgnoringCase(ptr,"clearoutputbind",15)) {
@@ -1170,7 +1369,7 @@ bool sqlrsh::internalCommand(sqlrconnection *sqlrcon, sqlrcursor *sqlrcur,
 						"clearinputoutputbind",20)) {
 		env->clearbinds(&env->inputoutputbinds);
 		return true;
-	} else if (!charstring::compareIgnoringCase(ptr,"clearbinds")) {	
+	} else if (!charstring::compareIgnoringCase(ptr,"clearbinds")) {
 		env->clearbinds(&env->inputbinds);
 		env->clearbinds(&env->outputbinds);
 		env->clearbinds(&env->inputoutputbinds);
@@ -1859,7 +2058,11 @@ void sqlrsh::executeQuery(sqlrcursor *sqlrcur, sqlrshenv *env) {
 			sqlrshbindvalue	*bv=
 				env->inputbinds.getValue(node->getValue());
 			if (bv->type==SQLRCLIENTBINDVARTYPE_STRING) {
-				sqlrcur->inputBind(name,bv->stringval);
+				// the length is always explicit, so a value
+				// with an embedded null goes out whole
+				sqlrcur->inputBind(name,
+						bv->stringval.value,
+						bv->stringval.length);
 			} else if (bv->type==SQLRCLIENTBINDVARTYPE_INTEGER) {
 				sqlrcur->inputBind(name,bv->integerval);
 			} else if (bv->type==SQLRCLIENTBINDVARTYPE_DOUBLE) {
@@ -1878,8 +2081,13 @@ void sqlrsh::executeQuery(sqlrcursor *sqlrcur, sqlrshenv *env) {
 						bv->dateval.tz,
 						bv->dateval.isnegative);
 			} else if (bv->type==SQLRCLIENTBINDVARTYPE_BLOB) {
-				sqlrcur->inputBindBlob(name,bv->stringval,
-					charstring::getLength(bv->stringval));
+				sqlrcur->inputBindBlob(name,
+						bv->stringval.value,
+						bv->stringval.length);
+			} else if (bv->type==SQLRCLIENTBINDVARTYPE_CLOB) {
+				sqlrcur->inputBindClob(name,
+						bv->stringval.value,
+						bv->stringval.length);
 			} else if (bv->type==SQLRCLIENTBINDVARTYPE_NULL) {
 				sqlrcur->inputBind(name,(const char *)NULL);
 			}
@@ -1896,7 +2104,6 @@ void sqlrsh::executeQuery(sqlrcursor *sqlrcur, sqlrshenv *env) {
 			sqlrshbindvalue	*bv=
 				env->outputbinds.getValue(node->getValue());
 			if (bv->type==SQLRCLIENTBINDVARTYPE_STRING) {
-				// FIXME: make buffer length variable
 				sqlrcur->defineOutputBindString(name,
 						bv->outputstringbindlength);
 			} else if (bv->type==SQLRCLIENTBINDVARTYPE_INTEGER) {
@@ -1905,6 +2112,12 @@ void sqlrsh::executeQuery(sqlrcursor *sqlrcur, sqlrshenv *env) {
 				sqlrcur->defineOutputBindDouble(name);
 			} else if (bv->type==SQLRCLIENTBINDVARTYPE_DATE) {
 				sqlrcur->defineOutputBindDate(name);
+			} else if (bv->type==SQLRCLIENTBINDVARTYPE_BLOB) {
+				sqlrcur->defineOutputBindBlob(name);
+			} else if (bv->type==SQLRCLIENTBINDVARTYPE_CLOB) {
+				sqlrcur->defineOutputBindClob(name);
+			} else if (bv->type==SQLRCLIENTBINDVARTYPE_CURSOR) {
+				sqlrcur->defineOutputBindCursor(name);
 			}
 		}
 	}
@@ -1921,7 +2134,7 @@ void sqlrsh::executeQuery(sqlrcursor *sqlrcur, sqlrshenv *env) {
 						node->getValue());
 			if (bv->type==SQLRCLIENTBINDVARTYPE_STRING) {
 				sqlrcur->defineInputOutputBindString(name,
-						bv->stringval,
+						bv->stringval.value,
 						bv->outputstringbindlength);
 			} else if (bv->type==SQLRCLIENTBINDVARTYPE_INTEGER) {
 				sqlrcur->defineInputOutputBindInteger(name,
@@ -1946,6 +2159,37 @@ void sqlrsh::executeQuery(sqlrcursor *sqlrcur, sqlrshenv *env) {
 		}
 	}
 
+	// apply substitutions
+	// prepareQuery() and prepareFileQuery() clear the ones the cursor is
+	// holding, so they have to go on again for every query.
+	if (env->substitutions.getCount()) {
+
+		for (listnode<char *> *node=
+				env->substitutions.getKeys()->getFirst();
+				node; node=node->getNext()) {
+
+			const char	*name=node->getValue();
+			sqlrshbindvalue	*bv=
+				env->substitutions.getValue(node->getValue());
+			if (bv->type==SQLRCLIENTBINDVARTYPE_STRING) {
+				sqlrcur->substitution(name,
+						bv->stringval.value);
+			} else if (bv->type==SQLRCLIENTBINDVARTYPE_INTEGER) {
+				sqlrcur->substitution(name,bv->integerval);
+			} else if (bv->type==SQLRCLIENTBINDVARTYPE_DOUBLE) {
+				sqlrcur->substitution(name,
+						bv->doubleval.value,
+						bv->doubleval.precision,
+						bv->doubleval.scale);
+			}
+		}
+	}
+
+	// prepareQuery() clears this too, so it also goes on for every query
+	if (env->validatebinds) {
+		sqlrcur->validateBinds();
+	}
+
 	sqlrcur->executeQuery();
 
 	if (env->outputbinds.getCount()) {
@@ -1958,9 +2202,27 @@ void sqlrsh::executeQuery(sqlrcursor *sqlrcur, sqlrshenv *env) {
 			sqlrshbindvalue	*bv=
 				env->outputbinds.getValue(node->getValue());
 			if (bv->type==SQLRCLIENTBINDVARTYPE_STRING) {
-				delete[] bv->stringval;
-				bv->stringval=charstring::duplicate(
-					sqlrcur->getOutputBindString(name));
+				const char	*str=
+					sqlrcur->getOutputBindString(name);
+				delete[] bv->stringval.value;
+				bv->stringval.value=
+					charstring::duplicate(str);
+				bv->stringval.length=
+					charstring::getLength(str);
+			} else if (bv->type==SQLRCLIENTBINDVARTYPE_BLOB ||
+					bv->type==SQLRCLIENTBINDVARTYPE_CLOB) {
+				// a lob's length is the only thing that says
+				// where it ends - it can hold nulls
+				const char	*lob=
+					(bv->type==SQLRCLIENTBINDVARTYPE_BLOB)?
+					sqlrcur->getOutputBindBlob(name):
+					sqlrcur->getOutputBindClob(name);
+				uint32_t	loblen=
+					sqlrcur->getOutputBindLength(name);
+				delete[] bv->stringval.value;
+				bv->stringval.value=
+					duplicateBytes(lob,loblen);
+				bv->stringval.length=(lob)?loblen:0;
 			} else if (bv->type==SQLRCLIENTBINDVARTYPE_INTEGER) {
 				bv->integerval=
 					sqlrcur->getOutputBindInteger(name);
@@ -1993,9 +2255,14 @@ void sqlrsh::executeQuery(sqlrcursor *sqlrcur, sqlrshenv *env) {
 				env->inputoutputbinds.getValue(
 						node->getValue());
 			if (bv->type==SQLRCLIENTBINDVARTYPE_STRING) {
-				delete[] bv->stringval;
-				bv->stringval=charstring::duplicate(
-				sqlrcur->getInputOutputBindString(name));
+				const char	*str=
+					sqlrcur->getInputOutputBindString(
+									name);
+				delete[] bv->stringval.value;
+				bv->stringval.value=
+					charstring::duplicate(str);
+				bv->stringval.length=
+					charstring::getLength(str);
 			} else if (bv->type==SQLRCLIENTBINDVARTYPE_INTEGER) {
 				bv->integerval=
 				sqlrcur->getInputOutputBindInteger(name);
@@ -3628,32 +3895,81 @@ bool sqlrsh::serverversion(sqlrconnection *sqlrcon, sqlrshenv *env) {
 	return true;
 }
 
+bool sqlrsh::usageError(sqlrshenv *env, const char *usage) {
+
+	switch (env->format) {
+		case SQLRSH_FORMAT_PLAIN:
+		case SQLRSH_FORMAT_CSV:
+			stderror.printf("%s\n",usage);
+			break;
+		case SQLRSH_FORMAT_JSON:
+		case SQLRSH_FORMAT_JSONL:
+			// an error object, on stderr, the same shape a failed
+			// query gives them
+			displayError(env,NULL,usage,0);
+			break;
+	}
+	return false;
+}
+
+// every form of the inputbind command, in one place
+static const char	*inputbindusage=
+	"usage: inputbind [variable] = [value]\n"
+	"       inputbind [variable] is null\n"
+	"       inputbind [variable] string [length] = [value]";
+
 bool sqlrsh::inputbind(sqlrcursor *sqlrcur,
 				sqlrshenv *env, const char *command) {
+
+	// the command word on its own
+	if (!command[9]) {
+		return usageError(env,inputbindusage);
+	}
 
 	// sanity check
 	const char	*ptr=command+10;
 	const char	*space=charstring::findFirst(ptr,' ');
 	if (!space) {
-		stderror.printf("usage: inputbind [variable] = [value]\n");
-		return false;
+		return usageError(env,
+				"usage: inputbind [variable] = [value]");
 	}
 
 	// get the variable name
 	char	*variable=charstring::duplicate(ptr,space-ptr);
 
-	// move on
+	// an explicit length comes between the variable and the =
+	bool		haslength=false;
+	uint32_t	length=0;
 	ptr=space;
+	if (!charstring::compareIgnoringCase(ptr+1,"string ",7)) {
+		const char	*lenptr=ptr+8;
+		const char	*lenend=charstring::findFirst(lenptr,' ');
+		char		*len=(lenend)?
+				charstring::duplicate(lenptr,lenend-lenptr):
+				NULL;
+		if (!len || !charstring::isInteger(len)) {
+			delete[] len;
+			delete[] variable;
+			return usageError(env,
+				"usage: inputbind [variable] string "
+				"[length] = [value]");
+		}
+		length=(uint32_t)charstring::convertToInteger(len);
+		delete[] len;
+		haslength=true;
+		ptr=lenend;
+	}
+
+	// move on
 	if (*(ptr+1)=='=' && *(ptr+2)==' ') {
 		ptr=ptr+3;
 	} else if (!charstring::compareIgnoringCase(ptr+1,"is null")) {
 		ptr=NULL;
 	} else {
-		stderror.printf("usage: inputbind [variable] = [value]\n");
-		stderror.printf("       inputbind [variable] is null\n");
-		return false;
+		delete[] variable;
+		return usageError(env,inputbindusage);
 	}
-		
+
 	// get the value
 	char	*value=charstring::duplicate(ptr);
 	charstring::bothTrim(value);
@@ -3661,37 +3977,45 @@ bool sqlrsh::inputbind(sqlrcursor *sqlrcur,
 
 	// if the bind variable is already defined, clear it...
 	sqlrshbindvalue	*bv=NULL;
-	if (env->inputbinds.getValue(variable,&bv)) {
-		if (bv->type==SQLRCLIENTBINDVARTYPE_STRING) {
-			delete[] bv->stringval;
-		}
-		delete bv;
+	bool		predefined=env->inputbinds.getValue(variable,&bv);
+	if (predefined) {
+		deleteBindValue(bv);
 	}
 
 	// define the variable
 	bv=new sqlrshbindvalue;
 
-	// first handle nulls, then...
-	// anything enclosed in quotes is a string
+	// A value in quotes is a string.  It takes at least two characters to
+	// have both of them, or the one that's there is part of the value.
+	bool	quoted=(valuelen>=2 &&
+			((value[0]=='\'' && value[valuelen-1]=='\'') ||
+			(value[0]=='"' && value[valuelen-1]=='"')));
+	if (quoted) {
+
+		// trim off the quotes and unescape what's between them
+		char		*unescaped=NULL;
+		uint64_t	unescapedlen=0;
+		charstring::unescape(value+1,valuelen-2,
+					&unescaped,&unescapedlen);
+		delete[] value;
+		value=unescaped;
+		valuelen=(size_t)unescapedlen;
+	}
+
+	// first handle nulls, then a value given with an explicit length,
+	// then quoted values, which are strings...
 	// if it's unquoted, check to see if it's an integer, float or date
 	// if it's not, then it's a string
 	if (!value) {
 		bv->type=SQLRCLIENTBINDVARTYPE_NULL;
-	} else if ((value[0]=='\'' && value[valuelen-1]=='\'') ||
-			(value[0]=='"' && value[valuelen-1]=='"')) {
-
-		bv->type=SQLRCLIENTBINDVARTYPE_STRING;
-
-		// trim off quotes
-		char	*newvalue=charstring::duplicate(value+1);
-		newvalue[valuelen-2]='\0';
+	} else if (haslength) {
+		setStringValue(bv,value,(uint32_t)valuelen,length);
 		delete[] value;
-
-		// unescape the string
-		bv->stringval=charstring::unescape(newvalue);
-		delete[] newvalue;
-
-	} else if (charstring::contains(value,"/") && 
+	} else if (quoted) {
+		bv->type=SQLRCLIENTBINDVARTYPE_STRING;
+		bv->stringval.value=value;
+		bv->stringval.length=(uint32_t)valuelen;
+	} else if (charstring::contains(value,"/") &&
 			charstring::contains(value,":")) {
 		int16_t	year;
 		int16_t	month;
@@ -3730,24 +4054,44 @@ bool sqlrsh::inputbind(sqlrcursor *sqlrcur,
 		delete[] value;
 	} else {
 		bv->type=SQLRCLIENTBINDVARTYPE_STRING;
-		bv->stringval=value;
+		bv->stringval.value=value;
+		bv->stringval.length=(uint32_t)valuelen;
 	}
 
 	// put the bind variable in the list
+	// The list keeps the name it already has, so a redefinition has to
+	// free the name it just made or it goes nowhere.
 	env->inputbinds.setValue(variable,bv);
+	if (predefined) {
+		delete[] variable;
+	}
 
 	return true;
 }
 
-bool sqlrsh::inputbindblob(sqlrcursor *sqlrcur,
-				sqlrshenv *env, const char *command) {
+bool sqlrsh::inputbindlob(sqlrcursor *sqlrcur,
+				sqlrshenv *env, const char *command,
+				const char *name,
+				sqlrclientbindvartype_t type) {
+
+	char		usage[128];
+	const char	*ptr=command+charstring::getLength(name);
+
+	// the command word on its own
+	if (!*ptr) {
+		charstring::printf(usage,sizeof(usage),
+				"usage: %s [variable] = [value]\n"
+				"       %s [variable] is null",name,name);
+		return usageError(env,usage);
+	}
 
 	// sanity check
-	const char	*ptr=command+14;
+	ptr++;
 	const char	*space=charstring::findFirst(ptr,' ');
 	if (!space) {
-		stderror.printf("usage: inputbindblob [variable] = [value]\n");
-		return false;
+		charstring::printf(usage,sizeof(usage),
+				"usage: %s [variable] = [value]",name);
+		return usageError(env,usage);
 	}
 
 	// get the variable name
@@ -3760,11 +4104,13 @@ bool sqlrsh::inputbindblob(sqlrcursor *sqlrcur,
 	} else if (!charstring::compareIgnoringCase(ptr+1,"is null")) {
 		ptr=NULL;
 	} else {
-		stderror.printf("usage: inputbindblob [variable] = [value]\n");
-		stderror.printf("       inputbindblob [variable] is null\n");
-		return false;
+		charstring::printf(usage,sizeof(usage),
+				"usage: %s [variable] = [value]\n"
+				"       %s [variable] is null",name,name);
+		delete[] variable;
+		return usageError(env,usage);
 	}
-		
+
 	// get the value
 	char	*value=charstring::duplicate(ptr);
 	charstring::bothTrim(value);
@@ -3772,46 +4118,58 @@ bool sqlrsh::inputbindblob(sqlrcursor *sqlrcur,
 
 	// if the bind variable is already defined, clear it...
 	sqlrshbindvalue	*bv=NULL;
-	if (env->inputbinds.getValue(variable,&bv)) {
-		if (bv->type==SQLRCLIENTBINDVARTYPE_STRING) {
-			delete[] bv->stringval;
-		}
-		delete bv;
+	bool		predefined=env->inputbinds.getValue(variable,&bv);
+	if (predefined) {
+		deleteBindValue(bv);
 	}
 
 	// define the variable
 	bv=new sqlrshbindvalue;
 
-	// first handle nulls, then...
-	// anything enclosed in quotes is a string
-	// if it's unquoted, check to see if it's an integer, float or date
-	// if it's not, then it's a string
+	// a value in quotes gets them trimmed off and what's between them
+	// unescaped, an unquoted value is taken as it stands
 	if (!value) {
 		bv->type=SQLRCLIENTBINDVARTYPE_NULL;
-	} else if ((value[0]=='\'' && value[valuelen-1]=='\'') ||
-			(value[0]=='"' && value[valuelen-1]=='"')) {
+	} else if (valuelen>=2 &&
+			((value[0]=='\'' && value[valuelen-1]=='\'') ||
+			(value[0]=='"' && value[valuelen-1]=='"'))) {
 
-		bv->type=SQLRCLIENTBINDVARTYPE_BLOB;
-
-		// trim off quotes
-		char	*newvalue=charstring::duplicate(value+1);
-		newvalue[valuelen-2]='\0';
+		char		*unescaped=NULL;
+		uint64_t	unescapedlen=0;
+		charstring::unescape(value+1,valuelen-2,
+					&unescaped,&unescapedlen);
 		delete[] value;
 
-		// unescape the string
-		bv->stringval=charstring::unescape(newvalue);
-		delete[] newvalue;
+		bv->type=type;
+		bv->stringval.value=unescaped;
+		bv->stringval.length=(uint32_t)unescapedlen;
 
 	} else {
-		bv->type=SQLRCLIENTBINDVARTYPE_BLOB;
-		bv->stringval=value;
+		bv->type=type;
+		bv->stringval.value=value;
+		bv->stringval.length=(uint32_t)valuelen;
 	}
 
 	// put the bind variable in the list
+	// The list keeps the name it already has, so a redefinition has to
+	// free the name it just made or it goes nowhere.
 	env->inputbinds.setValue(variable,bv);
+	if (predefined) {
+		delete[] variable;
+	}
 
 	return true;
 }
+
+// every form of the outputbind command, in one place
+static const char	*outputbindusage=
+	"usage: outputbind [variable] string [length]\n"
+	"       outputbind [variable] integer\n"
+	"       outputbind [variable] double [precision] [scale]\n"
+	"       outputbind [variable] date\n"
+	"       outputbind [variable] blob\n"
+	"       outputbind [variable] clob\n"
+	"       outputbind [variable] cursor";
 
 bool sqlrsh::outputbind(sqlrcursor *sqlrcur,
 				sqlrshenv *env, const char *command) {
@@ -3823,15 +4181,14 @@ bool sqlrsh::outputbind(sqlrcursor *sqlrcur,
 
 	// sanity check...
 	bool	sane=true;
+	bool	predefined=false;
 	if (partcount>2 && !charstring::compare(parts[0],"outputbind")) {
 
 		// if the bind variable is already defined, clear it...
 		sqlrshbindvalue	*bv=NULL;
-		if (env->outputbinds.getValue(parts[1],&bv)) {
-			if (bv->type==SQLRCLIENTBINDVARTYPE_STRING) {
-				delete[] bv->stringval;
-			}
-			delete bv;
+		predefined=env->outputbinds.getValue(parts[1],&bv);
+		if (predefined) {
+			deleteBindValue(bv);
 		}
 
 		// define the variable
@@ -3841,7 +4198,8 @@ bool sqlrsh::outputbind(sqlrcursor *sqlrcur,
 						parts[2],"string") &&
 						partcount==4) {
 			bv->type=SQLRCLIENTBINDVARTYPE_STRING;
-			bv->stringval=NULL;
+			bv->stringval.value=NULL;
+			bv->stringval.length=0;
 			bv->outputstringbindlength=
 				charstring::convertToInteger(parts[3]);
 		} else if (!charstring::compareIgnoringCase(
@@ -3871,7 +4229,27 @@ bool sqlrsh::outputbind(sqlrcursor *sqlrcur,
 			bv->dateval.microsecond=0;
 			bv->dateval.tz="";
 			bv->dateval.isnegative=false;
+		} else if (!charstring::compareIgnoringCase(
+						parts[2],"blob") &&
+						partcount==3) {
+			bv->type=SQLRCLIENTBINDVARTYPE_BLOB;
+			bv->stringval.value=NULL;
+			bv->stringval.length=0;
+		} else if (!charstring::compareIgnoringCase(
+						parts[2],"clob") &&
+						partcount==3) {
+			bv->type=SQLRCLIENTBINDVARTYPE_CLOB;
+			bv->stringval.value=NULL;
+			bv->stringval.length=0;
+		} else if (!charstring::compareIgnoringCase(
+						parts[2],"cursor") &&
+						partcount==3) {
+			// a cursor bind has no value of its own.  What comes
+			// back is a cursor, and fetchfrombindcursor is what
+			// reads it.
+			bv->type=SQLRCLIENTBINDVARTYPE_CURSOR;
 		} else {
+			delete bv;
 			sane=false;
 		}
 
@@ -3885,12 +4263,20 @@ bool sqlrsh::outputbind(sqlrcursor *sqlrcur,
 	}
 
 	// clean up
+	// The list takes parts[1] as its key and manages it from there, unless
+	// it already had one by that name, in which case it kept the one it
+	// had and this one has to go too.  The rest were only the type and its
+	// parameters.
 	if (sane) {
 		delete[] parts[0];
+		if (predefined) {
+			delete[] parts[1];
+		}
+		for (uint64_t i=2; i<partcount; i++) {
+			delete[] parts[i];
+		}
 	} else {
-		stderror.printf("usage: outputbind "
-				// FIXME: not entirely accurate
-				"[variable] [type] [length] [scale]\n");
+		usageError(env,outputbindusage);
 		for (uint64_t i=0; i<partcount; i++) {
 			delete[] parts[i];
 		}
@@ -3899,6 +4285,15 @@ bool sqlrsh::outputbind(sqlrcursor *sqlrcur,
 
 	return sane;
 }
+
+// every form of the inputoutputbind command, in one place
+static const char	*inputoutputbindusage=
+	"usage: inputoutputbind [variable] string [length] = [value]\n"
+	"       inputoutputbind [variable] integer = [value]\n"
+	"       inputoutputbind [variable] double "
+					"[precision] [scale] = [value]\n"
+	"       inputoutputbind [variable] date = [value]\n"
+	"       inputoutputbind [variable] [type] ... is null";
 
 bool sqlrsh::inputoutputbind(sqlrcursor *sqlrcur,
 				sqlrshenv *env, const char *command) {
@@ -3912,8 +4307,7 @@ bool sqlrsh::inputoutputbind(sqlrcursor *sqlrcur,
 		charstring::bothTrim(value,'\'');
 	} else if (charstring::compare(
 			command+charstring::getLength(command)-8," is null")) {
-		// FIXME: usage...
-		return false;
+		return usageError(env,inputoutputbindusage);
 	}
 
 	// split the command on ' '
@@ -3923,15 +4317,14 @@ bool sqlrsh::inputoutputbind(sqlrcursor *sqlrcur,
 
 	// sanity check...
 	bool	sane=true;
+	bool	predefined=false;
 	if (partcount>=5 && !charstring::compare(parts[0],"inputoutputbind")) {
 
 		// if the bind variable is already defined, clear it...
 		sqlrshbindvalue	*bv=NULL;
-		if (env->inputoutputbinds.getValue(parts[1],&bv)) {
-			if (bv->type==SQLRCLIENTBINDVARTYPE_STRING) {
-				delete[] bv->stringval;
-			}
-			delete bv;
+		predefined=env->inputoutputbinds.getValue(parts[1],&bv);
+		if (predefined) {
+			deleteBindValue(bv);
 		}
 
 		// define the variable
@@ -3944,7 +4337,13 @@ bool sqlrsh::inputoutputbind(sqlrcursor *sqlrcur,
 			bv->type=SQLRCLIENTBINDVARTYPE_STRING;
 			bv->outputstringbindlength=
 				charstring::convertToInteger(parts[3]);
-			bv->stringval=charstring::unescape(value);
+			char		*unescaped=NULL;
+			uint64_t	unescapedlen=0;
+			charstring::unescape(value,
+					charstring::getLength(value),
+					&unescaped,&unescapedlen);
+			bv->stringval.value=unescaped;
+			bv->stringval.length=(uint32_t)unescapedlen;
 		} else if (!charstring::compareIgnoringCase(
 						parts[2],"integer") &&
 						partcount==5) {
@@ -3988,6 +4387,7 @@ bool sqlrsh::inputoutputbind(sqlrcursor *sqlrcur,
 			bv->dateval.tz="";
 			bv->dateval.isnegative=isnegative;
 		} else {
+			delete bv;
 			sane=false;
 		}
 
@@ -4001,12 +4401,20 @@ bool sqlrsh::inputoutputbind(sqlrcursor *sqlrcur,
 	}
 
 	// clean up
+	// The list takes parts[1] as its key and manages it from there, unless
+	// it already had one by that name, in which case it kept the one it
+	// had and this one has to go too.  The rest were only the type and its
+	// parameters.
 	if (sane) {
 		delete[] parts[0];
+		if (predefined) {
+			delete[] parts[1];
+		}
+		for (uint64_t i=2; i<partcount; i++) {
+			delete[] parts[i];
+		}
 	} else {
-		stderror.printf("usage: inputoutputbind "
-				// FIXME: not entirely accurate
-				"[variable] [type] [length] [scale]\n");
+		usageError(env,inputoutputbindusage);
 		for (uint64_t i=0; i<partcount; i++) {
 			delete[] parts[i];
 		}
@@ -4015,6 +4423,31 @@ bool sqlrsh::inputoutputbind(sqlrcursor *sqlrcur,
 	delete[] value;
 
 	return sane;
+}
+
+// writes a string bind value, exactly as many bytes as it has, so an embedded
+// null can't cut it short.  A value that hasn't come back from the database
+// yet is a null pointer, and prints the way printf() prints one.
+static void writeBindString(sqlrshbindvalue *bv) {
+
+	if (!bv->stringval.value) {
+		stdoutput.write("(null)");
+		return;
+	}
+	stdoutput.write(bv->stringval.value,(size_t)bv->stringval.length);
+}
+
+// writes a blob or clob bind value, with its non-printable bytes escaped.  A
+// value that hasn't come back from the database yet is a null pointer, and
+// writes what an unset string bind writes, rather than looking like an empty
+// lob.
+static void writeBindLob(sqlrshbindvalue *bv) {
+
+	if (!bv->stringval.value) {
+		stdoutput.write("(null)");
+		return;
+	}
+	stdoutput.safePrint(bv->stringval.value,bv->stringval.length);
 }
 
 void sqlrsh::printbinds(const char *type,
@@ -4028,7 +4461,9 @@ void sqlrsh::printbinds(const char *type,
 		stdoutput.printf("    %s ",node->getValue());
 		sqlrshbindvalue	*bv=binds->getValue(node->getValue());
 		if (bv->type==SQLRCLIENTBINDVARTYPE_STRING) {
-			stdoutput.printf("(STRING) = %s\n",bv->stringval);
+			stdoutput.printf("(STRING) = ");
+			writeBindString(bv);
+			stdoutput.printf("\n");
 		} else if (bv->type==SQLRCLIENTBINDVARTYPE_INTEGER) {
 			stdoutput.printf("(INTEGER) = %lld\n",
 						(long long)bv->integerval);
@@ -4053,9 +4488,16 @@ void sqlrsh::printbinds(const char *type,
 						bv->dateval.tz);
 		} else if (bv->type==SQLRCLIENTBINDVARTYPE_BLOB) {
 			stdoutput.printf("(BLOB) = ");
-			stdoutput.safePrint(bv->stringval,
-					charstring::getLength(bv->stringval));
+			writeBindLob(bv);
 			stdoutput.printf("\n");
+		} else if (bv->type==SQLRCLIENTBINDVARTYPE_CLOB) {
+			stdoutput.printf("(CLOB) = ");
+			writeBindLob(bv);
+			stdoutput.printf("\n");
+		} else if (bv->type==SQLRCLIENTBINDVARTYPE_CURSOR) {
+			// a cursor bind has no value to write.
+			// fetchfrombindcursor is what reads one.
+			stdoutput.printf("(CURSOR)\n");
 		} else if (bv->type==SQLRCLIENTBINDVARTYPE_NULL) {
 			stdoutput.printf("NULL\n");
 		}
@@ -4085,12 +4527,15 @@ void sqlrsh::jsonPrintBinds(const char *key,
 
 		// The value carries its own type, so it goes out as the
 		// json type that matches: a number for a number, a string
-		// for a string, a date, or a blob, and null for a null.
+		// for a string, a date, a blob or a clob, and null for a
+		// null.  A cursor is a null too - it has no value json can
+		// carry, and fetchfrombindcursor is what reads one.
 		sqlrshbindvalue	*bv=binds->getValue(node->getValue());
 		if (bv->type==SQLRCLIENTBINDVARTYPE_STRING ||
-				bv->type==SQLRCLIENTBINDVARTYPE_BLOB) {
-			jsonWriteString(&stdoutput,bv->stringval,
-					charstring::getLength(bv->stringval));
+				bv->type==SQLRCLIENTBINDVARTYPE_BLOB ||
+				bv->type==SQLRCLIENTBINDVARTYPE_CLOB) {
+			jsonWriteString(&stdoutput,bv->stringval.value,
+						bv->stringval.length);
 		} else if (bv->type==SQLRCLIENTBINDVARTYPE_INTEGER) {
 			stdoutput.printf("%lld",(long long)bv->integerval);
 		} else if (bv->type==SQLRCLIENTBINDVARTYPE_DOUBLE) {
@@ -4121,6 +4566,253 @@ void sqlrsh::jsonPrintBinds(const char *key,
 	}
 
 	stdoutput.write('}');
+}
+
+void sqlrsh::printbindlist(sqlrshenv *env,
+			const char *type,
+			const char *key,
+			dictionary<char *, sqlrshbindvalue *> *binds) {
+
+	switch (env->format) {
+		case SQLRSH_FORMAT_PLAIN:
+		case SQLRSH_FORMAT_CSV:
+			printbinds(type,binds);
+			break;
+		case SQLRSH_FORMAT_JSON:
+		case SQLRSH_FORMAT_JSONL:
+			// one object, one line, with the list as its only
+			// member, keyed the way printbinds keys it
+			stdoutput.write('{');
+			jsonPrintBinds(key,binds);
+			stdoutput.write("}\n");
+			break;
+	}
+}
+
+bool sqlrsh::fetchfrombindcursor(sqlrcursor *sqlrcur,
+				sqlrshenv *env, const char *args) {
+
+	char	*variable=commandArgument(args);
+	if (!variable) {
+		return usageError(env,
+				"usage: fetchfrombindcursor [variable]");
+	}
+
+	// The cursor comes back attached to the bind, and belongs to this
+	// method from there on.
+	sqlrcursor	*bindcur=sqlrcur->getOutputBindCursor(variable);
+	delete[] variable;
+	if (!bindcur) {
+		displayError(env,NULL,
+			"fetchfrombindcursor needs a cursor output bind "
+			"of the query that just ran",0);
+		return false;
+	}
+
+	bindcur->setResultSetBufferSize(env->rsbs);
+	if (env->lazyfetch) {
+		bindcur->lazyFetch();
+	} else {
+		bindcur->dontLazyFetch();
+	}
+
+	bool	success=bindcur->fetchFromBindCursor();
+	if (success) {
+		// the rows are in hand by the time it returns
+		displayCurrentResultSet(bindcur,env);
+	} else {
+		const char	*error=bindcur->errorMessage();
+		if (charstring::isNullOrEmpty(error)) {
+			error="Couldn't fetch from the bind cursor.";
+		}
+		displayError(env,NULL,error,bindcur->errorNumber());
+	}
+
+	delete bindcur;
+
+	return success;
+}
+
+bool sqlrsh::validatebinds(sqlrshenv *env, const char *args) {
+
+	// Validating is what the command is for, so it takes on|off but no
+	// argument at all means on.
+	bool	on=true;
+	char	*arg=commandArgument(args);
+	if (arg) {
+		if (!charstring::compareIgnoringCase(arg,"off")) {
+			on=false;
+		} else if (charstring::compareIgnoringCase(arg,"on")) {
+			delete[] arg;
+			return usageError(env,"usage: validatebinds [on|off]");
+		}
+	}
+	delete[] arg;
+
+	// prepareQuery() clears the flag on the cursor, so this is kept here
+	// and put back on for every query, the way the binds are
+	env->validatebinds=on;
+
+	return true;
+}
+
+bool sqlrsh::validbind(sqlrcursor *sqlrcur,
+				sqlrshenv *env, const char *args) {
+
+	char	*variable=commandArgument(args);
+	if (!variable) {
+		return usageError(env,"usage: validbind [variable]");
+	}
+
+	writeScalarBoolean(env,"validbind",sqlrcur->validBind(variable));
+
+	delete[] variable;
+
+	return true;
+}
+
+bool sqlrsh::substitution(sqlrshenv *env, const char *args) {
+
+	static const char	*usage=
+			"usage: substitution [variable] = [value]";
+
+	char	*arg=commandArgument(args);
+	if (!arg) {
+		return usageError(env,usage);
+	}
+
+	// split the variable from the value
+	char	*space=charstring::findFirst(arg,' ');
+	if (!space || space[1]!='=' || space[2]!=' ') {
+		delete[] arg;
+		return usageError(env,usage);
+	}
+	*space='\0';
+
+	char	*value=charstring::duplicate(space+3);
+	charstring::bothTrim(value);
+	size_t	valuelen=charstring::getLength(value);
+
+	// The name and the value come out of the pool.  The cursor keeps
+	// references to both, and outlives a clearsubstitutions.
+	char	*name=poolCopy(&env->subpool,arg,charstring::getLength(arg));
+	delete[] arg;
+
+	// if the substitution variable is already defined, clear it...
+	// Only the value is freed - what it points at belongs to the pool.
+	sqlrshbindvalue	*bv=NULL;
+	if (env->substitutions.getValue(name,&bv)) {
+		delete bv;
+	}
+
+	// define the variable
+	bv=new sqlrshbindvalue;
+
+	// A value in quotes is a string.  An unquoted one is a number if it
+	// looks like one, and a string if it doesn't.  There is no date or
+	// null substitution - the api has no call for either.
+	if (valuelen>=2 &&
+		((value[0]=='\'' && value[valuelen-1]=='\'') ||
+		(value[0]=='"' && value[valuelen-1]=='"'))) {
+
+		char		*unescaped=NULL;
+		uint64_t	unescapedlen=0;
+		charstring::unescape(value+1,valuelen-2,
+					&unescaped,&unescapedlen);
+		bv->type=SQLRCLIENTBINDVARTYPE_STRING;
+		bv->stringval.value=poolCopy(&env->subpool,
+					unescaped,(size_t)unescapedlen);
+		bv->stringval.length=(uint32_t)unescapedlen;
+		delete[] unescaped;
+
+	} else if (charstring::isInteger(value)) {
+		bv->type=SQLRCLIENTBINDVARTYPE_INTEGER;
+		bv->integerval=charstring::convertToInteger(value);
+	} else if (charstring::isNumber(value)) {
+		bv->type=SQLRCLIENTBINDVARTYPE_DOUBLE;
+		bv->doubleval.value=charstring::convertToFloatC(value);
+		bv->doubleval.precision=valuelen-((value[0]=='-')?2:1);
+		bv->doubleval.scale=
+			charstring::findFirst(value,'.')-value+
+			((value[0]=='-')?0:1);
+	} else {
+		bv->type=SQLRCLIENTBINDVARTYPE_STRING;
+		bv->stringval.value=poolCopy(&env->subpool,value,valuelen);
+		bv->stringval.length=(uint32_t)valuelen;
+	}
+
+	delete[] value;
+
+	// put the substitution variable in the list
+	env->substitutions.setValue(name,bv);
+
+	return true;
+}
+
+bool sqlrsh::filequery(sqlrconnection *sqlrcon, sqlrcursor *sqlrcur,
+			sqlrshenv *env, const char *args, bool execute) {
+
+	const char	*usage=(execute)?
+			"usage: filequery [path] [filename]\n"
+			"       filequery [filename]":
+			"usage: preparefilequery [path] [filename]\n"
+			"       preparefilequery [filename]";
+
+	char	*arg=commandArgument(args);
+	if (!arg) {
+		return usageError(env,usage);
+	}
+
+	// the path is optional, so one argument is a file name on its own
+	char		**parts;
+	uint64_t	partcount;
+	charstring::split(arg," ",true,&parts,&partcount);
+	delete[] arg;
+
+	bool	prepared=false;
+	if (partcount==1) {
+		prepared=sqlrcur->prepareFileQuery(NULL,parts[0]);
+	} else if (partcount==2) {
+		prepared=sqlrcur->prepareFileQuery(parts[0],parts[1]);
+	}
+
+	if (!prepared) {
+		if (partcount==1 || partcount==2) {
+			displayError(env,NULL,
+					sqlrcur->errorMessage(),
+					sqlrcur->errorNumber());
+		} else {
+			usageError(env,usage);
+		}
+	}
+
+	for (uint64_t i=0; i<partcount; i++) {
+		delete[] parts[i];
+	}
+	delete[] parts;
+
+	// preparefilequery stops here.  reexecute is what runs what it
+	// prepared.
+	if (!prepared || !execute) {
+		return prepared;
+	}
+
+	executeQuery(sqlrcur,env);
+
+	if (sqlrcur->errorMessage()) {
+		displayError(env,NULL,
+				sqlrcur->errorMessage(),
+				sqlrcur->errorNumber());
+		return false;
+	}
+
+	displayCurrentResultSet(sqlrcur,env);
+
+	if (env->final) {
+		sqlrcon->endSession();
+	}
+
+	return true;
 }
 
 void sqlrsh::setclientinfo(sqlrconnection *sqlrcon, const char *command) {

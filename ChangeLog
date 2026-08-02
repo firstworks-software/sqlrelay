@@ -62,6 +62,30 @@
 		column in csv, and a list of objects with real booleans in
 		json and jsonl, and the two resume commands write the result
 		set they fetched, the way the opencache command does
+	added sqlrsh commands for the rest of the sqlrcursor bind variable
+		api - inputbindclob, inputbind with an explicit length,
+		outputbind blob, outputbind clob, outputbind cursor,
+		fetchfrombindcursor, countbindvariables, validatebinds,
+		validbind, substitution, clearsubstitutions, filequery, and
+		preparefilequery - each one honors all four output formats,
+		and a missing or invalid argument is a failed command
+	fixed sqlrsh printinputbind, printoutputbind, and
+		printinputoutputbind - all three were recognized as commands
+		but had no implementation at all, so they printed nothing and
+		failed
+	fixed sqlrsh bind variable values - blob values were written up to
+		their first null byte, and blob values, the bind variable name
+		when a bind was redefined, the type and its parameters, and a
+		value whose type wasn't recognized were all leaked
+	fixed sqlrsh inputbind - a value consisting of a single quote
+		character wrote off the end of a heap buffer
+	fixed sqlrsh outputbind and inputoutputbind usage messages - neither
+		listed the forms the command actually takes, and
+		inputoutputbind printed nothing at all for one of its errors
+	fixed sqlrsh inputbind, inputbindblob, outputbind, and
+		inputoutputbind - the command word on its own was sent to the
+		database and came back as a syntax error instead of the
+		command's usage
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems
