@@ -145,6 +145,10 @@ class	sqlrsh {
 			~sqlrsh();
 		bool	execute(int argc, const char **argv);
 	private:
+		// returns the on/off value of command line option "arg", or
+		// "defaultvalue" if the option wasn't given.  An option given
+		// without a value means on.
+		bool	onOffOption(const char *arg, bool defaultvalue);
 		void	startupMessage(sqlrshenv *env,
 					const char *host,
 					uint16_t port,
@@ -533,6 +537,10 @@ int sqlrsh::commandType(const char *command) {
 		!charstring::compareIgnoringCase(ptr,"nullsasnulls",12) ||
 		!charstring::compareIgnoringCase(ptr,"autocommit",10) ||
 		!charstring::compareIgnoringCase(ptr,"final",5) ||
+		!charstring::compareIgnoringCase(ptr,"getasnumber",11) ||
+		!charstring::compareIgnoringCase(ptr,"noelapsed",9) ||
+		!charstring::compareIgnoringCase(ptr,"nextresultset",13) ||
+		!charstring::compareIgnoringCase(ptr,"quiet",5) ||
 		!charstring::compareIgnoringCase(ptr,"help") ||
 		!charstring::compareIgnoringCase(ptr,"ping") ||
 		!charstring::compareIgnoringCase(ptr,"identify") ||
@@ -631,6 +639,18 @@ bool sqlrsh::internalCommand(sqlrconnection *sqlrcon, sqlrcursor *sqlrcur,
 	} else if (!charstring::compareIgnoringCase(ptr,"final",5)) {	
 		ptr=ptr+5;
 		cmdtype=5;
+	} else if (!charstring::compareIgnoringCase(ptr,"getasnumber",11)) {
+		ptr=ptr+11;
+		cmdtype=14;
+	} else if (!charstring::compareIgnoringCase(ptr,"noelapsed",9)) {
+		ptr=ptr+9;
+		cmdtype=15;
+	} else if (!charstring::compareIgnoringCase(ptr,"nextresultset",13)) {
+		ptr=ptr+13;
+		cmdtype=16;
+	} else if (!charstring::compareIgnoringCase(ptr,"quiet",5)) {
+		ptr=ptr+5;
+		cmdtype=17;
 	} else if (!charstring::compareIgnoringCase(ptr,"help")) {	
 		displayHelp(env);
 		return true;
@@ -903,6 +923,20 @@ bool sqlrsh::internalCommand(sqlrconnection *sqlrcon, sqlrcursor *sqlrcur,
 			break;
 		case 13:
 			env->txqueries=toggle;
+			break;
+		case 14:
+			env->getasnumber=toggle;
+			break;
+		case 15:
+			env->noelapsed=toggle;
+			break;
+		case 16:
+			env->nextresultset=toggle;
+			break;
+		// quiet is shorthand for headers and stats
+		case 17:
+			env->headers=!toggle;
+			env->stats=!toggle;
 			break;
 	}
 	return true;
@@ -2756,6 +2790,24 @@ void sqlrsh::interactWithUser(sqlrconnection *sqlrcon, sqlrcursor *sqlrcur,
 	}
 }
 
+bool sqlrsh::onOffOption(const char *arg, bool defaultvalue) {
+
+	if (!cmdline->isFound(arg)) {
+		return defaultvalue;
+	}
+
+	// getValue() returns an empty string for an option with no value,
+	// for an option followed by another option, and for an option that
+	// isn't there at all, so isFound() above is what decides presence
+	const char	*value=cmdline->getValue(arg);
+	if (charstring::isNullOrEmpty(value)) {
+		return true;
+	}
+
+	// same test the on/off commands use
+	return !charstring::compareIgnoringCase(value,"on",2);
+}
+
 bool sqlrsh::execute(int argc, const char **argv) {
 
 	cmdline=new sqlrcmdline(argc,argv);
@@ -2921,10 +2973,12 @@ bool sqlrsh::execute(int argc, const char **argv) {
 	// set up an sqlrshenv
 	sqlrshenv	env;
 
-	// handle quiet flag
+	// Quiet is shorthand for headers and stats.  It runs before them so
+	// that an explicit -headers or -stats wins over the shorthand.
 	if (cmdline->isFound("quiet")) {
-		env.headers=false;
-		env.stats=false;
+		bool	quiet=onOffOption("quiet",false);
+		env.headers=!quiet;
+		env.stats=!quiet;
 	}
 
 	// handle the result set format
@@ -2938,10 +2992,26 @@ bool sqlrsh::execute(int argc, const char **argv) {
 				cmdline->getValue("resultsetbuffersize"));
 	}
 
-	// FIXME: make these commands instead of commandline args
-	env.getasnumber=cmdline->isFound("getasnumber");
-	env.noelapsed=cmdline->isFound("noelapsed");
-	env.nextresultset=cmdline->isFound("nextresultset");
+	// handle the on/off settings
+	env.headers=onOffOption("headers",env.headers);
+	env.divider=onOffOption("divider",env.divider);
+	env.stats=onOffOption("stats",env.stats);
+	env.lazyfetch=onOffOption("lazyfetch",env.lazyfetch);
+	env.txqueries=onOffOption("txqueries",env.txqueries);
+	env.getasnumber=onOffOption("getasnumber",env.getasnumber);
+	env.noelapsed=onOffOption("noelapsed",env.noelapsed);
+	env.nextresultset=onOffOption("nextresultset",env.nextresultset);
+
+	// handle the delimiter
+	// The delimeter misspelling is accepted as an option because the
+	// command has always accepted it.
+	const char	*delimiter=cmdline->getValue("delimiter");
+	if (charstring::isNullOrEmpty(delimiter)) {
+		delimiter=cmdline->getValue("delimeter");
+	}
+	if (!charstring::isNullOrEmpty(delimiter)) {
+		env.delimiter=delimiter[0];
+	}
 
 	// process RC files
 	userRcFile(&sqlrcon,&sqlrcur,&env);
