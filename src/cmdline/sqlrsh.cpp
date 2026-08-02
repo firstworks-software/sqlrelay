@@ -1677,6 +1677,12 @@ void sqlrsh::displayHeader(sqlrcursor *sqlrcur, sqlrshenv *env) {
 
 void sqlrsh::csvWriteField(const char *field, uint32_t length) {
 
+	// A null is written as an unquoted empty field.  The empty string
+	// isn't a number, so it gets quoted, and the two can be told apart.
+	if (!field) {
+		return;
+	}
+
 	bool	quote=csvFieldNeedsQuotes(field,length);
 
 	if (quote) {
@@ -1803,7 +1809,8 @@ void sqlrsh::displayResultSet(sqlrcursor *sqlrcur, sqlrshenv *env) {
 					field="NULL";
 					fieldlength=4;
 				} else {
-					field="";
+					// leave it null, csvWriteField()
+					// writes an unquoted empty field
 					fieldlength=0;
 				}
 			}
