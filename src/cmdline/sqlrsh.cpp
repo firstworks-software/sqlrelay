@@ -57,10 +57,61 @@ class sqlrshbindvalue {
 		void	print() {}
 };
 
+// These are part of the interface too.  Every site that acts on the format
+// switches on it, with no default label, so -Wswitch makes the compiler point
+// at each one of them when a format is added here.
 enum sqlrshformat {
 	SQLRSH_FORMAT_PLAIN=0,
-	SQLRSH_FORMAT_CSV
+	SQLRSH_FORMAT_CSV,
+	SQLRSH_FORMAT_JSON,
+	SQLRSH_FORMAT_JSONL
 };
+
+// the format names, in one place, so the format command and the -format
+// option can't drift apart
+struct sqlrshformatname {
+	const char	*name;
+	sqlrshformat	format;
+};
+
+static const sqlrshformatname	sqlrshformatnames[]={
+	{"plain",SQLRSH_FORMAT_PLAIN},
+	{"csv",SQLRSH_FORMAT_CSV},
+	{"json",SQLRSH_FORMAT_JSON},
+	{"jsonl",SQLRSH_FORMAT_JSONL},
+	{NULL,SQLRSH_FORMAT_PLAIN}
+};
+
+// looks "name" up in the list above, ignoring case.  Returns true and sets
+// "format" if it's a format name, or false if it isn't.
+static bool formatFromName(const char *name, sqlrshformat *format) {
+
+	if (charstring::isNullOrEmpty(name)) {
+		return false;
+	}
+
+	for (const sqlrshformatname *fn=sqlrshformatnames; fn->name; fn++) {
+		if (!charstring::compareIgnoringCase(name,fn->name)) {
+			*format=fn->format;
+			return true;
+		}
+	}
+	return false;
+}
+
+// writes "name isn't a format, here are the ones that are" to stderr
+static void badFormatName(const char *name) {
+
+	stderror.printf("unrecognized format \"%s\", expected ",
+					(name)?name:"");
+	for (const sqlrshformatname *fn=sqlrshformatnames; fn->name; fn++) {
+		if (fn!=sqlrshformatnames) {
+			stderror.write('|');
+		}
+		stderror.write(fn->name);
+	}
+	stderror.write('\n');
+}
 
 // These are what a program driving sqlrsh non-interactively has to go on.
 // They are part of the interface, like the output formats are.  Add to them,
@@ -213,14 +264,71 @@ class	sqlrsh {
 					int64_t errornumber);
 		void	displayHeader(sqlrcursor *sqlrcur,
 						sqlrshenv *env);
+		void	plainDisplayHeader(sqlrcursor *sqlrcur,
+						sqlrshenv *env);
+		void	csvDisplayHeader(sqlrcursor *sqlrcur,
+						sqlrshenv *env);
+		void	jsonDisplayHeader(sqlrcursor *sqlrcur,
+						sqlrshenv *env);
 		void	csvWriteField(const char *field, uint32_t length);
 		bool	csvFieldNeedsQuotes(const char *field,
 						uint32_t length);
 		void	csvEscapeField(const char *field, uint32_t length);
+		// writes "str" as a json string, in double quotes, escaped.
+		// A NULL "str" is written as an empty string.  These take
+		// the destination because errors go to stderr and everything
+		// else goes to stdout.
+		void	jsonWriteString(filedescriptor *fd,
+						const char *str,
+						uint32_t length);
+		void	jsonEscapeString(filedescriptor *fd,
+						const char *str,
+						uint32_t length);
+		// writes "field" as a json value.  A NULL "field" is a
+		// database null, and is written as the json null literal.
+		// "asnumber" asks for a bare json number, which it gets if
+		// it really looks like one, and a json string if it doesn't.
+		void	jsonWriteValue(filedescriptor *fd,
+						const char *field,
+						uint32_t length,
+						bool asnumber);
+		// fetches field "col" of row "row", applying the getasnumber
+		// conversion.  Sets "*length" to the field's length and
+		// "*asnumber" to whether the conversion happened.  Returns
+		// NULL for a database null.  "numberbuffer" is scratch space
+		// the conversion writes into, so it has to outlive the
+		// returned pointer.
+		const char *getFieldForDisplay(sqlrcursor *sqlrcur,
+						sqlrshenv *env,
+						uint64_t row, uint32_t col,
+						uint32_t *length,
+						char *numberbuffer,
+						size_t numberbuffersize,
+						bool *asnumber);
 		void	displayResultSet(sqlrcursor *sqlrcur,
+						sqlrshenv *env);
+		void	plainDisplayResultSet(sqlrcursor *sqlrcur,
+						sqlrshenv *env);
+		void	csvDisplayResultSet(sqlrcursor *sqlrcur,
+						sqlrshenv *env);
+		void	jsonDisplayResultSet(sqlrcursor *sqlrcur,
 						sqlrshenv *env);
 		void	displayStats(sqlrcursor *sqlrcur,
 						sqlrshenv *env);
+		// writes the stats as json object members, without the
+		// enclosing braces, so json can put them in the document and
+		// jsonl in an object of its own
+		void	jsonWriteStats(sqlrcursor *sqlrcur,
+						sqlrshenv *env);
+		// writes the result of an internal command that produces a
+		// single value.  plain and csv write the value by itself,
+		// json and jsonl write a one line object keyed by "name".
+		void	writeScalar(sqlrshenv *env,
+						const char *name,
+						const char *value);
+		void	writeScalarNumber(sqlrshenv *env,
+						const char *name,
+						int64_t value);
 		bool	ping(sqlrconnection *sqlrcon,
 						sqlrshenv *env);
 		bool	identify(sqlrconnection *sqlrcon,
@@ -257,11 +365,16 @@ class	sqlrsh {
 						const char *command);
 		void	printbinds(const char *type,
 				dictionary<char *, sqlrshbindvalue *> *binds);
+		// writes one member of the printbinds object, "key" mapped
+		// to an object keyed by bind variable name
+		void	jsonPrintBinds(const char *key,
+				dictionary<char *, sqlrshbindvalue *> *binds);
 		void	clearbinds(
 				dictionary<char *, sqlrshbindvalue *> *binds);
 		void	setclientinfo(sqlrconnection *sqlrcon,
 						const char *command);
-		void	getclientinfo(sqlrconnection *sqlrcon);
+		void	getclientinfo(sqlrconnection *sqlrcon,
+						sqlrshenv *env);
 		void	responseTimeout(sqlrconnection *sqlrcon,
 						const char *command);
 		bool	cache(sqlrshenv *env, sqlrcursor *sqlrcur,
@@ -680,46 +793,37 @@ bool sqlrsh::internalCommand(sqlrconnection *sqlrcon, sqlrcursor *sqlrcur,
 			return false;
 		}
 		return true;
-	} else if (!charstring::compareIgnoringCase(ptr,"currentdb")) {	
+	} else if (!charstring::compareIgnoringCase(ptr,"currentdb")) {
 		const char	*currentdb=sqlrcon->getCurrentDatabase();
-		if (currentdb) {
-			stdoutput.printf("%s\n",currentdb);
-		} else if (sqlrcon->errorMessage()) {
+		if (!currentdb && sqlrcon->errorMessage()) {
 			displayError(env,NULL,
 					sqlrcon->errorMessage(),
 					sqlrcon->errorNumber());
 			return false;
-		} else {
-			stdoutput.printf("\n");
 		}
+		writeScalar(env,"currentdb",currentdb);
 		return true;
-	} else if (!charstring::compareIgnoringCase(ptr,"currentschema")) {	
+	} else if (!charstring::compareIgnoringCase(ptr,"currentschema")) {
 		const char	*currentschema=sqlrcon->getCurrentSchema();
-		if (currentschema) {
-			stdoutput.printf("%s\n",currentschema);
-		} else if (sqlrcon->errorMessage()) {
+		if (!currentschema && sqlrcon->errorMessage()) {
 			displayError(env,NULL,
 					sqlrcon->errorMessage(),
 					sqlrcon->errorNumber());
 			return false;
-		} else {
-			stdoutput.printf("\n");
 		}
+		writeScalar(env,"currentschema",currentschema);
 		return true;
-	} else if (!charstring::compareIgnoringCase(ptr,"currentuser")) {	
+	} else if (!charstring::compareIgnoringCase(ptr,"currentuser")) {
 		const char	*currentuser=sqlrcon->getCurrentUser();
-		if (currentuser) {
-			stdoutput.printf("%s\n",currentuser);
-		} else if (sqlrcon->errorMessage()) {
+		if (!currentuser && sqlrcon->errorMessage()) {
 			displayError(env,NULL,
 					sqlrcon->errorMessage(),
 					sqlrcon->errorNumber());
 			return false;
-		} else {
-			stdoutput.printf("\n");
 		}
+		writeScalar(env,"currentuser",currentuser);
 		return true;
-	} else if (!charstring::compareIgnoringCase(ptr,"run",3)) {	
+	} else if (!charstring::compareIgnoringCase(ptr,"run",3)) {
 		ptr=ptr+3;
 		cmdtype=6;
 	} else if (!charstring::compareIgnoringCase(ptr,"@",1)) {	
@@ -766,12 +870,32 @@ bool sqlrsh::internalCommand(sqlrconnection *sqlrcon, sqlrcursor *sqlrcur,
 	} else if (!charstring::compareIgnoringCase(
 						ptr,"inputoutputbind ",16)) {	
 		return inputoutputbind(sqlrcur,env,command);
-	} else if (!charstring::compareIgnoringCase(ptr,"printbinds")) {	
-		printbinds("Input",&env->inputbinds);
-		stdoutput.printf("\n");
-		printbinds("Output",&env->outputbinds);
-		stdoutput.printf("\n");
-		printbinds("Input/Output",&env->inputoutputbinds);
+	} else if (!charstring::compareIgnoringCase(ptr,"printbinds")) {
+		switch (env->format) {
+			case SQLRSH_FORMAT_PLAIN:
+			case SQLRSH_FORMAT_CSV:
+				printbinds("Input",&env->inputbinds);
+				stdoutput.printf("\n");
+				printbinds("Output",&env->outputbinds);
+				stdoutput.printf("\n");
+				printbinds("Input/Output",
+						&env->inputoutputbinds);
+				break;
+			case SQLRSH_FORMAT_JSON:
+			case SQLRSH_FORMAT_JSONL:
+				// one object, one line, with the three
+				// lists as members, each keyed by bind
+				// variable name
+				stdoutput.write('{');
+				jsonPrintBinds("input",&env->inputbinds);
+				stdoutput.write(',');
+				jsonPrintBinds("output",&env->outputbinds);
+				stdoutput.write(',');
+				jsonPrintBinds("inputoutput",
+						&env->inputoutputbinds);
+				stdoutput.write("}\n");
+				break;
+		}
 		return true;
 	} else if (!charstring::compareIgnoringCase(ptr,"clearinputbind",14)) {	
 		env->clearbinds(&env->inputbinds);
@@ -799,8 +923,8 @@ bool sqlrsh::internalCommand(sqlrconnection *sqlrcon, sqlrcursor *sqlrcur,
 	} else if (!charstring::compareIgnoringCase(ptr,"setclientinfo ",14)) {	
 		setclientinfo(sqlrcon,command);
 		return true;
-	} else if (!charstring::compareIgnoringCase(ptr,"getclientinfo")) {	
-		getclientinfo(sqlrcon);
+	} else if (!charstring::compareIgnoringCase(ptr,"getclientinfo")) {
+		getclientinfo(sqlrcon,env);
 		return true;
 	} else if (!charstring::compareIgnoringCase(
 					ptr,"setresultsetbuffersize ",23)) {	
@@ -811,8 +935,9 @@ bool sqlrsh::internalCommand(sqlrconnection *sqlrcon, sqlrcursor *sqlrcur,
 		ptr=ptr+10;
 		cmdtype=12;
 	} else if (!charstring::compareIgnoringCase(
-					ptr,"getresultsetbuffersize")) {	
-		stdoutput.printf("%lld\n",(long long)env->rsbs);
+					ptr,"getresultsetbuffersize")) {
+		writeScalarNumber(env,"getresultsetbuffersize",
+						(int64_t)env->rsbs);
 		return true;
 	} else if (!charstring::compareIgnoringCase(ptr,"endsession")) {	
 		sqlrcon->endSession();
@@ -880,13 +1005,22 @@ bool sqlrsh::internalCommand(sqlrconnection *sqlrcon, sqlrcursor *sqlrcur,
 	}
 
 	// handle format
+	// The name goes through the same list the -format option uses.  An
+	// unrecognized name used to quietly mean plain, so "format jsonl" on
+	// a build without jsonl looked like it had worked.  It's a failed
+	// command now, which a script stops on and exits SQLRSH_EXIT_QUERY.
 	if (cmdtype==10) {
-		if (!charstring::compareIgnoringCase(ptr,"csv",3)) {
-			env->format=SQLRSH_FORMAT_CSV;
+		char	*name=charstring::duplicate(ptr);
+		charstring::bothTrim(name);
+		sqlrshformat	format;
+		bool		valid=formatFromName(name,&format);
+		if (valid) {
+			env->format=format;
 		} else {
-			env->format=SQLRSH_FORMAT_PLAIN;
+			badFormatName(name);
 		}
-		return true;
+		delete[] name;
+		return valid;
 	}
 
 	// on or off?
@@ -1004,23 +1138,53 @@ bool sqlrsh::externalCommand(sqlrconnection *sqlrcon,
 		sqlrcur->getColumnList(table,NULL);
 		delete[] table;
 
-		// write the column names, comma separated, on one line
-		for (uint64_t j=0; j<sqlrcur->rowCount(); j++) {
-			if (j>0) {
-				stdoutput.printf(",");
-			}
-			// Names go through the csv field writer in csv, so one
-			// containing a comma or a double quote can't break the
-			// line apart.
-			const char	*name=sqlrcur->getField(j,(uint32_t)0);
-			if (env->format==SQLRSH_FORMAT_PLAIN) {
-				stdoutput.printf("%s",name);
-			} else {
-				csvWriteField(name,
-					sqlrcur->getFieldLength(j,(uint32_t)0));
-			}
+		// write the column names on one line
+		// One arm per format, for the reason displayHeader() gives.
+		// Names go through the format's own field writer, so one
+		// containing a comma or a double quote can't break the line
+		// apart.
+		uint64_t	namecount=sqlrcur->rowCount();
+		switch (env->format) {
+			case SQLRSH_FORMAT_PLAIN:
+				for (uint64_t j=0; j<namecount; j++) {
+					if (j>0) {
+						stdoutput.printf(",");
+					}
+					stdoutput.printf("%s",
+						sqlrcur->getField(
+							j,(uint32_t)0));
+				}
+				stdoutput.printf("\n");
+				break;
+			case SQLRSH_FORMAT_CSV:
+				for (uint64_t j=0; j<namecount; j++) {
+					if (j>0) {
+						stdoutput.printf(",");
+					}
+					csvWriteField(
+						sqlrcur->getField(
+							j,(uint32_t)0),
+						sqlrcur->getFieldLength(
+							j,(uint32_t)0));
+				}
+				stdoutput.printf("\n");
+				break;
+			case SQLRSH_FORMAT_JSON:
+			case SQLRSH_FORMAT_JSONL:
+				stdoutput.write("{\"fields\":[");
+				for (uint64_t j=0; j<namecount; j++) {
+					if (j>0) {
+						stdoutput.write(',');
+					}
+					jsonWriteString(&stdoutput,
+						sqlrcur->getField(
+							j,(uint32_t)0),
+						sqlrcur->getFieldLength(
+							j,(uint32_t)0));
+				}
+				stdoutput.write("]}\n");
+				break;
 		}
-		stdoutput.printf("\n");
 
 		if (env->final) {
 			sqlrcon->endSession();
@@ -1663,73 +1827,97 @@ void sqlrsh::displayError(sqlrshenv *env,
 				const char *message,
 				const char *error,
 				int64_t errornumber) {
-	if (!charstring::isNullOrEmpty(message)) {
-		stderror.printf("%s\n",message);
-	}
-	stderror.printf("%lld:\n",(long long)errornumber);
-	if (!charstring::isNullOrEmpty(error)) {
-		stderror.printf("%s\n\n",error);
+	switch (env->format) {
+		case SQLRSH_FORMAT_PLAIN:
+		case SQLRSH_FORMAT_CSV:
+			if (!charstring::isNullOrEmpty(message)) {
+				stderror.printf("%s\n",message);
+			}
+			stderror.printf("%lld:\n",(long long)errornumber);
+			if (!charstring::isNullOrEmpty(error)) {
+				stderror.printf("%s\n\n",error);
+			}
+			break;
+		case SQLRSH_FORMAT_JSON:
+		case SQLRSH_FORMAT_JSONL:
+			// One object, one line, on stderr, where it can't
+			// corrupt the document on stdout.  jsonl reads it a
+			// line at a time like the rest of the stream.
+			stderror.write("{\"error\":{");
+			if (!charstring::isNullOrEmpty(message)) {
+				stderror.write("\"context\":");
+				jsonWriteString(&stderror,message,
+					charstring::getLength(message));
+				stderror.write(',');
+			}
+			stderror.printf("\"number\":%lld,\"message\":",
+						(long long)errornumber);
+			jsonWriteString(&stderror,error,
+					charstring::getLength(error));
+			stderror.write("}}\n");
+			break;
 	}
 }
 
 void sqlrsh::displayHeader(sqlrcursor *sqlrcur, sqlrshenv *env) {
+
+	// One arm per format, rather than one arm for plain and an else that
+	// silently means every other format.  There's no default label, so
+	// -Wswitch makes the compiler point right here when a format is
+	// added to the enum.
+	switch (env->format) {
+		case SQLRSH_FORMAT_PLAIN:
+			plainDisplayHeader(sqlrcur,env);
+			break;
+		case SQLRSH_FORMAT_CSV:
+			csvDisplayHeader(sqlrcur,env);
+			break;
+		case SQLRSH_FORMAT_JSON:
+		case SQLRSH_FORMAT_JSONL:
+			jsonDisplayHeader(sqlrcur,env);
+			break;
+	}
+}
+
+void sqlrsh::plainDisplayHeader(sqlrcursor *sqlrcur, sqlrshenv *env) {
 
 	// The headers toggle applies to the plain format.  There the column
 	// names are a convenience for the person reading the output, so they
 	// can be turned off.  Every other format is handed to a parser, and
 	// the names are the only way it can learn what the columns are, so
 	// they're part of the data there and always written.
-	if (env->format==SQLRSH_FORMAT_PLAIN && !env->headers) {
+	if (!env->headers) {
+		return;
+	}
+
+	uint32_t	colcount=sqlrcur->colCount();
+	if (!colcount) {
 		return;
 	}
 
 	// display column names
 	uint32_t	charcount=0;
-	uint32_t	colcount=sqlrcur->colCount();
-	const char	*name;
-	uint32_t	namelen;
-	uint32_t	longest;
+	for (uint32_t ci=0; ci<colcount; ci++) {
 
-	if (!colcount) {
-		return;
-	}
-
-	// iterate through columns
-	for (uint32_t ci=0; ci<sqlrcur->colCount(); ci++) {
-
-		// put a comma or extra space between field names
+		// put an extra space between field names
 		if (ci) {
-			if (env->format==SQLRSH_FORMAT_PLAIN) {
-				stdoutput.write(' ');
-			} else {
-				stdoutput.write(',');
-			}
+			stdoutput.write(' ');
 			charcount=charcount+1;
 		}
 
 		// write the column name
-		name=sqlrcur->getColumnName(ci);
-		namelen=charstring::getLength(name);
-		if (env->format==SQLRSH_FORMAT_PLAIN) {
-			stdoutput.write(name);
-		} else {
-			csvWriteField(name,namelen);
-		}
+		const char	*name=sqlrcur->getColumnName(ci);
+		uint32_t	namelen=charstring::getLength(name);
+		stdoutput.write(name);
 
 		// space-pad after the name, if necessary
-		if (env->format==SQLRSH_FORMAT_PLAIN) {
-			longest=sqlrcur->getLongest(ci);
-			if (namelen>longest) {
-				longest=namelen;
-			}
-			charcount=charcount+longest;
-
-			// pad after the name with spaces
-			for (uint32_t j=namelen; j<longest; j++) {
-				stdoutput.write(' ');
-			}
-		} else {
-			charcount=charcount+namelen+2;
+		uint32_t	longest=sqlrcur->getLongest(ci);
+		if (namelen>longest) {
+			longest=namelen;
+		}
+		charcount=charcount+longest;
+		for (uint32_t j=namelen; j<longest; j++) {
+			stdoutput.write(' ');
 		}
 	}
 	stdoutput.printf("\n");
@@ -1738,11 +1926,71 @@ void sqlrsh::displayHeader(sqlrcursor *sqlrcur, sqlrshenv *env) {
 	// Only the plain format gets one.  It underlines the column names
 	// there.  Every other format is meant to be parsed, and a row of
 	// equals signs isn't part of any of them.
-	if (env->format==SQLRSH_FORMAT_PLAIN && env->divider && env->headers) {
+	if (env->divider) {
 		for (uint32_t i=0; i<charcount; i++) {
 			stdoutput.printf("=");
 		}
 		stdoutput.printf("\n");
+	}
+}
+
+void sqlrsh::csvDisplayHeader(sqlrcursor *sqlrcur, sqlrshenv *env) {
+
+	uint32_t	colcount=sqlrcur->colCount();
+	if (!colcount) {
+		return;
+	}
+
+	for (uint32_t ci=0; ci<colcount; ci++) {
+
+		// put a comma between field names
+		if (ci) {
+			stdoutput.write(',');
+		}
+
+		// write the column name
+		const char	*name=sqlrcur->getColumnName(ci);
+		csvWriteField(name,charstring::getLength(name));
+	}
+	stdoutput.printf("\n");
+}
+
+void sqlrsh::jsonDisplayHeader(sqlrcursor *sqlrcur, sqlrshenv *env) {
+
+	bool	jsonl=(env->format==SQLRSH_FORMAT_JSONL);
+
+	// json opens the one document for this result set here, and
+	// jsonDisplayResultSet() closes it.  jsonl writes a standalone
+	// columns object and every later line stands alone too.
+	// A statement with no result set - an insert, say - still gets a
+	// document, with an empty column list, so a reader gets exactly one
+	// per statement and never has to guess whether another is coming.
+	if (jsonl) {
+		stdoutput.write("{\"type\":\"columns\",\"columns\":[");
+	} else {
+		stdoutput.write("{\"columns\":[");
+	}
+
+	uint32_t	colcount=sqlrcur->colCount();
+	for (uint32_t ci=0; ci<colcount; ci++) {
+
+		if (ci) {
+			stdoutput.write(',');
+		}
+
+		const char	*name=sqlrcur->getColumnName(ci);
+		const char	*type=sqlrcur->getColumnType(ci);
+		stdoutput.write("{\"name\":");
+		jsonWriteString(&stdoutput,name,charstring::getLength(name));
+		stdoutput.write(",\"type\":");
+		jsonWriteString(&stdoutput,type,charstring::getLength(type));
+		stdoutput.write('}');
+	}
+
+	if (jsonl) {
+		stdoutput.write("]}\n");
+	} else {
+		stdoutput.write("],\"rows\":[");
 	}
 }
 
@@ -1799,18 +2047,217 @@ void sqlrsh::csvEscapeField(const char *field, uint32_t length) {
 	stdoutput.write(field+start,length-start);
 }
 
+void sqlrsh::jsonWriteString(filedescriptor *fd,
+				const char *str, uint32_t length) {
+
+	fd->write('"');
+	if (str) {
+		jsonEscapeString(fd,str,length);
+	}
+	fd->write('"');
+}
+
+void sqlrsh::jsonEscapeString(filedescriptor *fd,
+				const char *str, uint32_t length) {
+
+	// Everything json doesn't require an escape for goes through
+	// unchanged, one run of bytes at a time, so utf-8 and every other
+	// high byte comes out the way it went in.  Note the unsigned char:
+	// with a plain char every utf-8 continuation byte is negative and
+	// would read as a control character.
+	uint32_t	start=0;
+	for (uint32_t index=0; index<length; index++) {
+
+		unsigned char	ch=(unsigned char)str[index];
+		const char	*escape=NULL;
+		char		escapebuffer[7];
+
+		switch (ch) {
+			case '"':
+				escape="\\\"";
+				break;
+			case '\\':
+				escape="\\\\";
+				break;
+			case '\b':
+				escape="\\b";
+				break;
+			case '\f':
+				escape="\\f";
+				break;
+			case '\n':
+				escape="\\n";
+				break;
+			case '\r':
+				escape="\\r";
+				break;
+			case '\t':
+				escape="\\t";
+				break;
+			default:
+				// json requires an escape for every byte
+				// below 0x20 and has no short form for the
+				// rest of them
+				if (ch<0x20) {
+					charstring::printf(escapebuffer,
+							sizeof(escapebuffer),
+							"\\u%04x",(int)ch);
+					escape=escapebuffer;
+				}
+				break;
+		}
+
+		if (escape) {
+			fd->write(str+start,(size_t)(index-start));
+			fd->write(escape);
+			start=index+1;
+		}
+	}
+	fd->write(str+start,(size_t)(length-start));
+}
+
+// Returns whether "field" is a number the way json defines one:
+//	-? (0 | [1-9][0-9]*) (\.[0-9]+)? ([eE][-+]?[0-9]+)?
+// Anything else - inf, nan, a leading plus, a leading zero, a bare leading
+// dot - has to go out as a string instead, or the document won't parse.
+static bool jsonIsNumber(const char *field, uint32_t length) {
+
+	uint32_t	index=0;
+
+	// sign
+	if (index<length && field[index]=='-') {
+		index++;
+	}
+
+	// integer part
+	if (index>=length || !character::isDigit(field[index])) {
+		return false;
+	}
+	if (field[index]=='0') {
+		index++;
+	} else {
+		while (index<length && character::isDigit(field[index])) {
+			index++;
+		}
+	}
+
+	// fraction
+	if (index<length && field[index]=='.') {
+		index++;
+		if (index>=length || !character::isDigit(field[index])) {
+			return false;
+		}
+		while (index<length && character::isDigit(field[index])) {
+			index++;
+		}
+	}
+
+	// exponent
+	if (index<length && (field[index]=='e' || field[index]=='E')) {
+		index++;
+		if (index<length && (field[index]=='-' || field[index]=='+')) {
+			index++;
+		}
+		if (index>=length || !character::isDigit(field[index])) {
+			return false;
+		}
+		while (index<length && character::isDigit(field[index])) {
+			index++;
+		}
+	}
+
+	return (index==length);
+}
+
+void sqlrsh::jsonWriteValue(filedescriptor *fd, const char *field,
+					uint32_t length, bool asnumber) {
+
+	// A database null is the json null literal.  json has a real one, so
+	// there's no reason to make a reader guess at an empty string, and no
+	// way to confuse it with the string "NULL" either.
+	if (!field) {
+		fd->write("null");
+		return;
+	}
+
+	// A number only goes out bare if it really is a json number.
+	// getFieldAsDouble() can hand back inf or nan, and neither is one.
+	if (asnumber && jsonIsNumber(field,length)) {
+		fd->write(field,(size_t)length);
+		return;
+	}
+
+	jsonWriteString(fd,field,length);
+}
+
+const char *sqlrsh::getFieldForDisplay(sqlrcursor *sqlrcur, sqlrshenv *env,
+					uint64_t row, uint32_t col,
+					uint32_t *length,
+					char *numberbuffer,
+					size_t numberbuffersize,
+					bool *asnumber) {
+
+	const char	*field=sqlrcur->getField(row,col);
+	const char	*fieldtype=sqlrcur->getColumnType(col);
+	*length=sqlrcur->getFieldLength(row,col);
+	*asnumber=false;
+
+	// FIXME: move this down below the end-of-rs check?
+	// The purpose of this is to verify the functionality
+	// of the getFieldAsXXX() methods.
+	if (field && env->getasnumber &&
+		(isBitTypeChar(fieldtype) ||
+			isNumberTypeChar(fieldtype))) {
+
+		if (isFloatTypeChar(fieldtype)) {
+			double	fd=sqlrcur->getFieldAsDouble(row,col);
+			if (isNonScaleFloatTypeChar(fieldtype)) {
+				int32_t	precision=sqlrcur->getColumnPrecision(col);
+				// here precision is a number of bits, but printf %g wants digits.
+				// FIXME: precision should actually be the number of digits, not bits...
+				int32_t	digits=(int32_t)(ceil(precision/3.33));
+				charstring::printf(numberbuffer,numberbuffersize,"%.*g",digits,fd);
+			} else {
+				int	scale=sqlrcur->getColumnScale(col);
+				// NOTE: we are not using the precision to format the number to a string.
+				charstring::printf(numberbuffer,numberbuffersize,"%.*f",scale,fd);
+			}
+		} else {
+			int64_t fi = sqlrcur->getFieldAsInteger(row,col);
+			charstring::printf(numberbuffer, numberbuffersize, "%ld", fi);
+		}
+		field=numberbuffer;
+		*length=charstring::getLength(field);
+		*asnumber=true;
+	}
+
+	return field;
+}
+
 void sqlrsh::displayResultSet(sqlrcursor *sqlrcur, sqlrshenv *env) {
+
+	// One arm per format, for the reason displayHeader() gives.
+	switch (env->format) {
+		case SQLRSH_FORMAT_PLAIN:
+			plainDisplayResultSet(sqlrcur,env);
+			break;
+		case SQLRSH_FORMAT_CSV:
+			csvDisplayResultSet(sqlrcur,env);
+			break;
+		case SQLRSH_FORMAT_JSON:
+		case SQLRSH_FORMAT_JSONL:
+			jsonDisplayResultSet(sqlrcur,env);
+			break;
+	}
+}
+
+void sqlrsh::plainDisplayResultSet(sqlrcursor *sqlrcur, sqlrshenv *env) {
 
 	uint32_t	colcount=sqlrcur->colCount();
 	if (!colcount) {
 		return;
 	}
 
-	uint32_t	namelen;
-	uint32_t	longest;
-	const char	*field;
-	uint32_t	fieldlength;
-	const char	*fieldtype;
 	char		numberfieldbuffer[256];
 
 	bool		done=false;
@@ -1822,50 +2269,22 @@ void sqlrsh::displayResultSet(sqlrcursor *sqlrcur, sqlrshenv *env) {
 
 		for (uint32_t col=0; col<colcount; col++) {
 
-			// put a comma or extra space between fields
+			// put an extra space between fields
 			if (col) {
-				if (env->format==SQLRSH_FORMAT_PLAIN) {
-					stdoutput.write(' ');
-				} else {
-					stdoutput.write(',');
-				}
+				stdoutput.write(' ');
 			}
 
 			// get the field
-			field=sqlrcur->getField(row,col);
-			fieldlength=sqlrcur->getFieldLength(row,col);
-			fieldtype=sqlrcur->getColumnType(col);
-
-			// FIXME: move this down below the end-of-rs check?
-			// The purpose of this is to verify the functionality
-			// of the getFieldAsXXX() methods.
-			if (field && env->getasnumber &&
-				(isBitTypeChar(fieldtype) ||
-					isNumberTypeChar(fieldtype))) {
-
-				if (isFloatTypeChar(fieldtype)) {
-					double	fd=sqlrcur->getFieldAsDouble(row,col);
-					if (isNonScaleFloatTypeChar(fieldtype)) {
-						int32_t	precision=sqlrcur->getColumnPrecision(col);
-						// here precision is a number of bits, but printf %g wants digits.
-						// FIXME: precision should actually be the number of digits, not bits...
-						int32_t	digits=(int32_t)(ceil(precision/3.33));
-						charstring::printf(&numberfieldbuffer[0],sizeof(numberfieldbuffer),"%.*g",digits,fd);
-					} else {
-						int	scale=sqlrcur->getColumnScale(col);
-						// NOTE: we are not using the precision to format the number to a string.
-						charstring::printf(&numberfieldbuffer[0],sizeof(numberfieldbuffer),"%.*f",scale,fd);
-					}
-				} else {
-					int64_t fi = sqlrcur->getFieldAsInteger(row,col);
-					charstring::printf(&numberfieldbuffer[0], sizeof(numberfieldbuffer), "%ld", fi);
-				}
-				field=numberfieldbuffer;
-				fieldlength=charstring::getLength(field);
-			}
+			uint32_t	fieldlength;
+			bool		asnumber;
+			const char	*field=getFieldForDisplay(sqlrcur,env,
+						row,col,&fieldlength,
+						numberfieldbuffer,
+						sizeof(numberfieldbuffer),
+						&asnumber);
 
 			// check for end-of-result-set condition
-			// (since nullsasnulls might be set, we have to do 
+			// (since nullsasnulls might be set, we have to do
 			// a bit more than just check for a NULL)
 			if (!col && !field &&
 				sqlrcur->endOfResultSet() &&
@@ -1876,47 +2295,189 @@ void sqlrsh::displayResultSet(sqlrcursor *sqlrcur, sqlrshenv *env) {
 
 			// handle nulls
 			if (!field) {
-				if (env->format==SQLRSH_FORMAT_PLAIN) {
-					field="NULL";
-					fieldlength=4;
-				} else {
-					// leave it null, csvWriteField()
-					// writes an unquoted empty field
-					fieldlength=0;
-				}
+				field="NULL";
+				fieldlength=4;
 			}
 
 			// write the field
-			if (env->format==SQLRSH_FORMAT_PLAIN) {
-				stdoutput.write(field,fieldlength);
-			} else {
-				csvWriteField(field,fieldlength);
-			}
+			stdoutput.write(field,fieldlength);
 
 			// space-pad after the field, if necessary
-			if (env->format==SQLRSH_FORMAT_PLAIN) {
-				longest=sqlrcur->getLongest(col);
-				if (env->headers) {
-					namelen=charstring::getLength(
+			uint32_t	longest=sqlrcur->getLongest(col);
+			if (env->headers) {
+				uint32_t	namelen=charstring::getLength(
 						sqlrcur->getColumnName(col));
-					if (namelen>longest) {
-						longest=namelen;
-					}
+				if (namelen>longest) {
+					longest=namelen;
 				}
-				for (uint32_t i=fieldlength; i<longest; i++) {
-					stdoutput.write(' ');
-				}
+			}
+			for (uint32_t i=fieldlength; i<longest; i++) {
+				stdoutput.write(' ');
 			}
 		}
 	}
 }
 
+void sqlrsh::csvDisplayResultSet(sqlrcursor *sqlrcur, sqlrshenv *env) {
+
+	uint32_t	colcount=sqlrcur->colCount();
+	if (!colcount) {
+		return;
+	}
+
+	char		numberfieldbuffer[256];
+
+	bool		done=false;
+	for (uint64_t row=0; !done; row++) {
+
+		if (row) {
+			stdoutput.write('\n');
+		}
+
+		for (uint32_t col=0; col<colcount; col++) {
+
+			// put a comma between fields
+			if (col) {
+				stdoutput.write(',');
+			}
+
+			// get the field
+			uint32_t	fieldlength;
+			bool		asnumber;
+			const char	*field=getFieldForDisplay(sqlrcur,env,
+						row,col,&fieldlength,
+						numberfieldbuffer,
+						sizeof(numberfieldbuffer),
+						&asnumber);
+
+			// check for end-of-result-set condition
+			// (since nullsasnulls might be set, we have to do
+			// a bit more than just check for a NULL)
+			if (!col && !field &&
+				sqlrcur->endOfResultSet() &&
+				row==sqlrcur->rowCount()) {
+				done=true;
+				break;
+			}
+
+			// handle nulls
+			// leave the field null, csvWriteField() writes an
+			// unquoted empty field
+			if (!field) {
+				fieldlength=0;
+			}
+
+			// write the field
+			csvWriteField(field,fieldlength);
+		}
+	}
+}
+
+void sqlrsh::jsonDisplayResultSet(sqlrcursor *sqlrcur, sqlrshenv *env) {
+
+	bool		jsonl=(env->format==SQLRSH_FORMAT_JSONL);
+
+	uint32_t	colcount=sqlrcur->colCount();
+
+	char		numberfieldbuffer[256];
+
+	// A statement with no result set has no rows to look for, and
+	// looking anyway would never reach the end-of-result-set test,
+	// because that lives in the column loop.
+	bool		done=!colcount;
+	for (uint64_t row=0; !done; row++) {
+
+		for (uint32_t col=0; col<colcount; col++) {
+
+			// get the field
+			uint32_t	fieldlength;
+			bool		asnumber;
+			const char	*field=getFieldForDisplay(sqlrcur,env,
+						row,col,&fieldlength,
+						numberfieldbuffer,
+						sizeof(numberfieldbuffer),
+						&asnumber);
+
+			// check for end-of-result-set condition
+			// (since nullsasnulls might be set, we have to do
+			// a bit more than just check for a NULL)
+			// This runs before anything is written for the row,
+			// so the row that isn't there leaves no trace.
+			if (!col && !field &&
+				sqlrcur->endOfResultSet() &&
+				row==sqlrcur->rowCount()) {
+				done=true;
+				break;
+			}
+
+			// open the row
+			// jsonl rows are objects, keyed by column name, so
+			// each line carries its own names and stands alone.
+			// json rows are arrays, since the names are already
+			// in the columns list at the top of the document.
+			if (!col) {
+				if (jsonl) {
+					stdoutput.write(
+						"{\"type\":\"row\",\"row\":{");
+				} else {
+					if (row) {
+						stdoutput.write(',');
+					}
+					stdoutput.write('[');
+				}
+			} else {
+				stdoutput.write(',');
+			}
+
+			// write the field
+			if (jsonl) {
+				const char	*name=
+						sqlrcur->getColumnName(col);
+				jsonWriteString(&stdoutput,name,
+						charstring::getLength(name));
+				stdoutput.write(':');
+			}
+			jsonWriteValue(&stdoutput,field,fieldlength,asnumber);
+		}
+
+		// close the row
+		if (!done) {
+			if (jsonl) {
+				stdoutput.write("}}\n");
+			} else {
+				stdoutput.write(']');
+			}
+		}
+	}
+
+	// close the result set
+	// The stats go here rather than in displayStats(), because
+	// -nextresultset calls this once per result set and each one gets
+	// its own document, or its own group of lines.
+	if (jsonl) {
+		if (env->stats) {
+			stdoutput.write("{\"type\":\"stats\",");
+			jsonWriteStats(sqlrcur,env);
+			stdoutput.write("}\n");
+		}
+	} else {
+		stdoutput.write(']');
+		if (env->stats) {
+			stdoutput.write(',');
+			jsonWriteStats(sqlrcur,env);
+		}
+		stdoutput.write("}\n");
+	}
+}
+
 void sqlrsh::displayStats(sqlrcursor *sqlrcur, sqlrshenv *env) {
 
-	// Stats are plain format only.  They're a note to the person who ran
-	// the query, and plain is the only format a person reads directly.
-	// Every other format is handed to a parser, and a block of tab
-	// indented labels isn't part of any of them.
+	// This block of tab indented labels is plain format only.  It's a
+	// note to the person who ran the query, and plain is the only format
+	// a person reads directly.  csv has no place for it.  json and jsonl
+	// carry the same numbers, but as part of the document, which
+	// jsonDisplayResultSet() writes, because with -nextresultset there
+	// is a set of them per result set and this runs once per statement.
 	if (env->format==SQLRSH_FORMAT_PLAIN && env->stats) {
 
 		// calculate elapsed time
@@ -1945,17 +2506,102 @@ void sqlrsh::displayStats(sqlrcursor *sqlrcur, sqlrshenv *env) {
 	}
 }
 
+void sqlrsh::jsonWriteStats(sqlrcursor *sqlrcur, sqlrshenv *env) {
+
+	// calculate elapsed time
+	datetime	end;
+	end.initFromSystemDateTime();
+	uint64_t	startusec=start.getEpoch()*1000000+
+					start.getMicrosecond();
+	uint64_t	endusec=end.getEpoch()*1000000+
+					end.getMicrosecond();
+	double		time=((double)(endusec-startusec))/1000000;
+
+	stdoutput.printf("\"affectedrows\":%lld,"
+				"\"rowsreturned\":%lld,"
+				"\"fieldsreturned\":%lld",
+				(long long)sqlrcur->affectedRows(),
+				(long long)sqlrcur->rowCount(),
+				(long long)sqlrcur->rowCount()*
+						sqlrcur->colCount());
+	if (!env->noelapsed) {
+		stdoutput.printf(",\"elapsed\":%.6f",time);
+	}
+}
+
+void sqlrsh::writeScalar(sqlrshenv *env,
+				const char *name, const char *value) {
+
+	switch (env->format) {
+		case SQLRSH_FORMAT_PLAIN:
+		case SQLRSH_FORMAT_CSV:
+			stdoutput.printf("%s\n",(value)?value:"");
+			break;
+		case SQLRSH_FORMAT_JSON:
+		case SQLRSH_FORMAT_JSONL:
+			// One object on one line, keyed by the command name,
+			// so a reader gets the same thing from every one of
+			// these commands and never has to know which it ran.
+			// json and jsonl agree here - there's nothing to
+			// stream, so there's nothing to differ about.
+			stdoutput.write('{');
+			jsonWriteString(&stdoutput,name,
+					charstring::getLength(name));
+			stdoutput.write(':');
+			if (value) {
+				jsonWriteString(&stdoutput,value,
+						charstring::getLength(value));
+			} else {
+				stdoutput.write("null");
+			}
+			stdoutput.write("}\n");
+			break;
+	}
+}
+
+void sqlrsh::writeScalarNumber(sqlrshenv *env,
+				const char *name, int64_t value) {
+
+	switch (env->format) {
+		case SQLRSH_FORMAT_PLAIN:
+		case SQLRSH_FORMAT_CSV:
+			stdoutput.printf("%lld\n",(long long)value);
+			break;
+		case SQLRSH_FORMAT_JSON:
+		case SQLRSH_FORMAT_JSONL:
+			stdoutput.write('{');
+			jsonWriteString(&stdoutput,name,
+					charstring::getLength(name));
+			stdoutput.printf(":%lld}\n",(long long)value);
+			break;
+	}
+}
+
 bool sqlrsh::ping(sqlrconnection *sqlrcon, sqlrshenv *env) {
 	bool	result=sqlrcon->ping();
-	if (result) {
-		stdoutput.printf("	The database is up.\n");
-	} else if (sqlrcon->errorMessage()) {
+	if (!result && sqlrcon->errorMessage()) {
 		displayError(env,NULL,
 				sqlrcon->errorMessage(),
 				sqlrcon->errorNumber());
 		return false;
-	} else {
-		stdoutput.printf("	The database is down.\n");
+	}
+	switch (env->format) {
+		case SQLRSH_FORMAT_PLAIN:
+		case SQLRSH_FORMAT_CSV:
+			if (result) {
+				stdoutput.printf("	The database is up.\n");
+			} else {
+				stdoutput.printf(
+					"	The database is down.\n");
+			}
+			break;
+		case SQLRSH_FORMAT_JSON:
+		case SQLRSH_FORMAT_JSONL:
+			// a boolean, so a reader doesn't have to match a
+			// sentence
+			stdoutput.write((result)?"{\"ping\":true}\n":
+						"{\"ping\":false}\n");
+			break;
 	}
 	return true;
 }
@@ -1964,7 +2610,7 @@ bool sqlrsh::lastinsertid(sqlrconnection *sqlrcon, sqlrshenv *env) {
 	bool		retval=false;
 	uint64_t	id=sqlrcon->getLastInsertId();
 	if (id!=0 || !sqlrcon->errorMessage()) {
-		stdoutput.printf("%lld\n",(long long)id);
+		writeScalarNumber(env,"lastinsertid",(int64_t)id);
 		retval=true;
 	}
 	return retval;
@@ -1972,125 +2618,101 @@ bool sqlrsh::lastinsertid(sqlrconnection *sqlrcon, sqlrshenv *env) {
 
 bool sqlrsh::identify(sqlrconnection *sqlrcon, sqlrshenv *env) {
 	const char	*value=sqlrcon->identify();
-	if (value) {
-		stdoutput.printf("%s\n",value);
-	} else if (sqlrcon->errorMessage()) {
+	if (!value && sqlrcon->errorMessage()) {
 		displayError(env,NULL,
 				sqlrcon->errorMessage(),
 				sqlrcon->errorNumber());
 		return false;
-	} else {
-		stdoutput.printf("\n");
 	}
+	writeScalar(env,"identify",value);
 	return true;
 }
 
 bool sqlrsh::dbversion(sqlrconnection *sqlrcon, sqlrshenv *env) {
 	const char	*value=sqlrcon->dbVersion();
-	if (value) {
-		stdoutput.printf("%s\n",value);
-	} else if (sqlrcon->errorMessage()) {
+	if (!value && sqlrcon->errorMessage()) {
 		displayError(env,NULL,
 				sqlrcon->errorMessage(),
 				sqlrcon->errorNumber());
 		return false;
-	} else {
-		stdoutput.printf("\n");
 	}
+	writeScalar(env,"dbversion",value);
 	return true;
 }
 
 bool sqlrsh::dbhostname(sqlrconnection *sqlrcon, sqlrshenv *env) {
 	const char	*value=sqlrcon->dbHostName();
-	if (value) {
-		stdoutput.printf("%s\n",value);
-	} else if (sqlrcon->errorMessage()) {
+	if (!value && sqlrcon->errorMessage()) {
 		displayError(env,NULL,
 				sqlrcon->errorMessage(),
 				sqlrcon->errorNumber());
 		return false;
-	} else {
-		stdoutput.printf("\n");
 	}
+	writeScalar(env,"dbhostname",value);
 	return true;
 }
 
 bool sqlrsh::dbipaddress(sqlrconnection *sqlrcon, sqlrshenv *env) {
 	const char	*value=sqlrcon->dbIpAddress();
-	if (value) {
-		stdoutput.printf("%s\n",value);
-	} else if (sqlrcon->errorMessage()) {
+	if (!value && sqlrcon->errorMessage()) {
 		displayError(env,NULL,
 				sqlrcon->errorMessage(),
 				sqlrcon->errorNumber());
 		return false;
-	} else {
-		stdoutput.printf("\n");
 	}
+	writeScalar(env,"dbipaddress",value);
 	return true;
 }
 
 bool sqlrsh::bindformat(sqlrconnection *sqlrcon, sqlrshenv *env) {
 	const char	*value=sqlrcon->bindFormat();
-	if (value) {
-		stdoutput.printf("%s\n",value);
-	} else if (sqlrcon->errorMessage()) {
+	if (!value && sqlrcon->errorMessage()) {
 		displayError(env,NULL,
 				sqlrcon->errorMessage(),
 				sqlrcon->errorNumber());
 		return false;
-	} else {
-		stdoutput.printf("\n");
 	}
+	writeScalar(env,"bindformat",value);
 	return true;
 }
 
 bool sqlrsh::nextvalformat(sqlrconnection *sqlrcon, sqlrshenv *env) {
 	const char	*value=sqlrcon->nextvalFormat();
-	if (value) {
-		stdoutput.printf("%s\n",value);
-	} else if (sqlrcon->errorMessage()) {
+	if (!value && sqlrcon->errorMessage()) {
 		displayError(env,NULL,
 				sqlrcon->errorMessage(),
 				sqlrcon->errorNumber());
 		return false;
-	} else {
-		stdoutput.printf("\n");
 	}
+	writeScalar(env,"nextvalformat",value);
 	return true;
 }
 
 bool sqlrsh::getisolationlevel(sqlrconnection *sqlrcon, sqlrshenv *env) {
 	const char	*value=sqlrcon->getIsolationLevel();
-	if (value) {
-		stdoutput.printf("%s\n",value);
-	} else if (sqlrcon->errorMessage()) {
+	if (!value && sqlrcon->errorMessage()) {
 		displayError(env,NULL,
 				sqlrcon->errorMessage(),
 				sqlrcon->errorNumber());
 		return false;
-	} else {
-		stdoutput.printf("\n");
 	}
+	writeScalar(env,"isolationlevel",value);
 	return true;
 }
 
 void sqlrsh::clientversion(sqlrconnection *sqlrcon, sqlrshenv *env) {
-	stdoutput.printf("%s\n",sqlrcon->clientVersion());
+	writeScalar(env,"clientversion",sqlrcon->clientVersion());
 }
 
 bool sqlrsh::serverversion(sqlrconnection *sqlrcon, sqlrshenv *env) {
 	const char	*value=sqlrcon->serverVersion();
-	if (value) {
-		stdoutput.printf("%s\n",value);
-	} else if (sqlrcon->errorMessage()) {
+	if (!value && sqlrcon->errorMessage()) {
 		displayError(env,NULL,
 				sqlrcon->errorMessage(),
 				sqlrcon->errorNumber());
 		return false;
-	} else {
-		stdoutput.printf("\n");
 	}
+	writeScalar(env,"serverversion",value);
 	return true;
 }
 
@@ -2528,13 +3150,73 @@ void sqlrsh::printbinds(const char *type,
 	}
 }
 
+void sqlrsh::jsonPrintBinds(const char *key,
+			dictionary<char *, sqlrshbindvalue *> *binds) {
+
+	jsonWriteString(&stdoutput,key,charstring::getLength(key));
+	stdoutput.write(":{");
+
+	char	buffer[256];
+
+	bool	first=true;
+	for (listnode<char *> *node=binds->getKeys()->getFirst();
+						node; node=node->getNext()) {
+
+		if (!first) {
+			stdoutput.write(',');
+		}
+		first=false;
+
+		const char	*name=node->getValue();
+		jsonWriteString(&stdoutput,name,charstring::getLength(name));
+		stdoutput.write(':');
+
+		// The value carries its own type, so it goes out as the
+		// json type that matches: a number for a number, a string
+		// for a string, a date, or a blob, and null for a null.
+		sqlrshbindvalue	*bv=binds->getValue(node->getValue());
+		if (bv->type==SQLRCLIENTBINDVARTYPE_STRING ||
+				bv->type==SQLRCLIENTBINDVARTYPE_BLOB) {
+			jsonWriteString(&stdoutput,bv->stringval,
+					charstring::getLength(bv->stringval));
+		} else if (bv->type==SQLRCLIENTBINDVARTYPE_INTEGER) {
+			stdoutput.printf("%lld",(long long)bv->integerval);
+		} else if (bv->type==SQLRCLIENTBINDVARTYPE_DOUBLE) {
+			charstring::printf(buffer,sizeof(buffer),"%*.*f",
+						(int)bv->doubleval.precision,
+						(int)bv->doubleval.scale,
+						bv->doubleval.value);
+			charstring::bothTrim(buffer);
+			jsonWriteValue(&stdoutput,buffer,
+					charstring::getLength(buffer),true);
+		} else if (bv->type==SQLRCLIENTBINDVARTYPE_DATE) {
+			charstring::printf(buffer,sizeof(buffer),
+					"%02d/%02d/%04d %s%02d:%02d:%02d.%06d %s",
+					bv->dateval.month,
+					bv->dateval.day,
+					bv->dateval.year,
+					(bv->dateval.isnegative)?"-":"",
+					bv->dateval.hour,
+					bv->dateval.minute,
+					bv->dateval.second,
+					bv->dateval.microsecond,
+					bv->dateval.tz);
+			jsonWriteString(&stdoutput,buffer,
+					charstring::getLength(buffer));
+		} else {
+			stdoutput.write("null");
+		}
+	}
+
+	stdoutput.write('}');
+}
+
 void sqlrsh::setclientinfo(sqlrconnection *sqlrcon, const char *command) {
 	sqlrcon->setClientInfo(command+14);
 }
 
-void sqlrsh::getclientinfo(sqlrconnection *sqlrcon) {
-	const char	*ci=sqlrcon->getClientInfo();
-	stdoutput.printf("%s\n",(ci)?ci:"");
+void sqlrsh::getclientinfo(sqlrconnection *sqlrcon, sqlrshenv *env) {
+	writeScalar(env,"getclientinfo",sqlrcon->getClientInfo());
 }
 
 void sqlrsh::responseTimeout(sqlrconnection *sqlrcon, const char *command) {
@@ -2767,11 +3449,22 @@ void sqlrsh::displayHelp(sqlrshenv *env) {
 void sqlrsh::startupMessage(sqlrshenv *env, const char *host,
 					uint16_t port, const char *user) {
 
-	stdoutput.printf("%ssh - ",SQLR);
-	stdoutput.printf("Version %s\n",SQLR_VERSION);
-	stdoutput.printf("	Connected to: ");
-	stdoutput.printf("%s:%d as %s\n\n",host,port,user);
-	stdoutput.printf("	type help; for help.\n\n");
+	// The banner greets a person.  json and jsonl are handed to a
+	// parser, and a greeting isn't part of either, so it's left out of
+	// the stream entirely rather than written and hoped over.
+	switch (env->format) {
+		case SQLRSH_FORMAT_PLAIN:
+		case SQLRSH_FORMAT_CSV:
+			stdoutput.printf("%ssh - ",SQLR);
+			stdoutput.printf("Version %s\n",SQLR_VERSION);
+			stdoutput.printf("	Connected to: ");
+			stdoutput.printf("%s:%d as %s\n\n",host,port,user);
+			stdoutput.printf("	type help; for help.\n\n");
+			break;
+		case SQLRSH_FORMAT_JSON:
+		case SQLRSH_FORMAT_JSONL:
+			break;
+	}
 }
 
 void sqlrsh::interactWithUser(sqlrconnection *sqlrcon, sqlrcursor *sqlrcur, 
@@ -2797,9 +3490,21 @@ void sqlrsh::interactWithUser(sqlrconnection *sqlrcon, sqlrcursor *sqlrcur,
 		bool	done=false;
 		while (!done) {
 
-			prmpt.append(promptcount);
-			prmpt.append("> ");
-			pr.setPrompt(prmpt.getString());
+			// The prompt is written to the same stream the
+			// output goes to, so json and jsonl don't get one.
+			switch (env->format) {
+				case SQLRSH_FORMAT_PLAIN:
+				case SQLRSH_FORMAT_CSV:
+					prmpt.append(promptcount);
+					prmpt.append("> ");
+					break;
+				case SQLRSH_FORMAT_JSON:
+				case SQLRSH_FORMAT_JSONL:
+					break;
+			}
+			// an empty stringbuffer can hand back a NULL
+			const char	*promptstring=prmpt.getString();
+			pr.setPrompt((promptstring)?promptstring:"");
 			prmpt.clear();
 
 			char	*cmd=pr.read();
@@ -3026,8 +3731,17 @@ int32_t sqlrsh::execute(int argc, const char **argv) {
 	}
 
 	// handle the result set format
-	if (!charstring::compare(cmdline->getValue("format"),"csv")) {
-		env.format=SQLRSH_FORMAT_CSV;
+	// The name goes through the same list the format command uses.  An
+	// unrecognized name used to quietly fall back to plain, so
+	// "-format jsonl" on a build without jsonl emitted plain text and
+	// said nothing.  It's a usage error now.
+	if (cmdline->isFound("format")) {
+		const char	*formatname=cmdline->getValue("format");
+		if (!formatFromName(formatname,&env.format)) {
+			badFormatName(formatname);
+			delete[] decryptedpassword;
+			return SQLRSH_EXIT_USAGE;
+		}
 	}
 
 	// handle the result set buffer size

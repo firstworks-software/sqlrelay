@@ -28,6 +28,16 @@
 	fixed sqlrsh csv output - the fields command wrote the column names
 		without quoting or escaping them, the names now go through the
 		csv field writer
+	added sqlrsh json and jsonl output formats - json writes one compact
+		document per command, with the column names and types, the
+		rows, and the stats, and jsonl writes one object per line so
+		it streams - a database null is the json null, utf-8 and
+		every other byte pass through unchanged, and the scalar
+		commands, printbinds, the fields command, and errors all
+		emit json too
+	fixed sqlrsh -format - an unrecognized format name quietly fell back
+		to plain, it's a usage error now, and the format command and
+		the -format option share one list of names
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems
