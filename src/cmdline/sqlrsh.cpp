@@ -339,6 +339,20 @@ class	sqlrsh {
 		// jsonl in an object of its own
 		void	jsonWriteStats(sqlrcursor *sqlrcur,
 						sqlrshenv *env);
+		// writes the header, the result set and the stats for the
+		// result set the cursor is holding
+		void	displayCurrentResultSet(sqlrcursor *sqlrcur,
+						sqlrshenv *env);
+		// writes every piece of column metadata the client api
+		// reports about the current result set
+		void	columninfo(sqlrcursor *sqlrcur,
+						sqlrshenv *env);
+		void	plainColumnInfo(sqlrcursor *sqlrcur,
+						sqlrshenv *env);
+		void	csvColumnInfo(sqlrcursor *sqlrcur,
+						sqlrshenv *env);
+		void	jsonColumnInfo(sqlrcursor *sqlrcur,
+						sqlrshenv *env);
 		// writes the result of an internal command that produces a
 		// single value.  plain and csv write the value by itself,
 		// json and jsonl write a one line object keyed by "name".
@@ -404,6 +418,20 @@ class	sqlrsh {
 						sqlrshenv *env,
 						const char *args);
 		bool	databasefeature(sqlrconnection *sqlrcon,
+						sqlrshenv *env,
+						const char *args);
+		// with an argument it turns column info on or off, without
+		// one it dumps the metadata
+		bool	columninfocommand(sqlrcursor *sqlrcur,
+						sqlrshenv *env,
+						const char *args);
+		bool	columncase(sqlrcursor *sqlrcur,
+						sqlrshenv *env,
+						const char *args);
+		bool	resumeresultset(sqlrcursor *sqlrcur,
+						sqlrshenv *env,
+						const char *args);
+		bool	resumecachedresultset(sqlrcursor *sqlrcur,
 						sqlrshenv *env,
 						const char *args);
 		void	clientversion(sqlrconnection *sqlrcon,
@@ -775,6 +803,20 @@ int sqlrsh::commandType(const char *command) {
 		!charstring::compareIgnoringCase(
 					ptr,"bindvariabledelimiters",22) ||
 		!charstring::compareIgnoringCase(ptr,"getdebug") ||
+		// this one covers "columninfo on|off" too
+		!charstring::compareIgnoringCase(ptr,"columninfo",10) ||
+		!charstring::compareIgnoringCase(ptr,"columncase",10) ||
+		!charstring::compareIgnoringCase(ptr,"suspendresultset") ||
+		!charstring::compareIgnoringCase(ptr,"resultsetid") ||
+		!charstring::compareIgnoringCase(
+					ptr,"resumecachedresultset",21) ||
+		!charstring::compareIgnoringCase(ptr,"resumeresultset",15) ||
+		!charstring::compareIgnoringCase(ptr,"closeresultset") ||
+		!charstring::compareIgnoringCase(ptr,"cacheoff") ||
+		!charstring::compareIgnoringCase(ptr,"cachefilename") ||
+		!charstring::compareIgnoringCase(ptr,"totalrows") ||
+		!charstring::compareIgnoringCase(ptr,"firstrowindex") ||
+		!charstring::compareIgnoringCase(ptr,"endofresultset") ||
 		!charstring::compareIgnoringCase(ptr,"run",3) ||
 		!charstring::compareIgnoringCase(ptr,"@",1) ||
 		!charstring::compareIgnoringCase(ptr,"delimiter",9) ||
@@ -998,6 +1040,51 @@ bool sqlrsh::internalCommand(sqlrconnection *sqlrcon, sqlrcursor *sqlrcur,
 		return bindvariabledelimiters(sqlrcon,env,ptr+22);
 	} else if (!charstring::compareIgnoringCase(ptr,"getdebug")) {
 		writeScalarBoolean(env,"getdebug",sqlrcon->getDebug());
+		return true;
+	} else if (!charstring::compareIgnoringCase(ptr,"columninfo",10)) {
+		return columninfocommand(sqlrcur,env,ptr+10);
+	} else if (!charstring::compareIgnoringCase(ptr,"columncase",10)) {
+		return columncase(sqlrcur,env,ptr+10);
+	} else if (!charstring::compareIgnoringCase(ptr,"suspendresultset")) {
+		// Nothing is written on success, the way the use command
+		// writes nothing.  What the caller needs next is the id, and
+		// that's a command of its own.
+		sqlrcur->suspendResultSet();
+		return true;
+	} else if (!charstring::compareIgnoringCase(ptr,"resultsetid")) {
+		writeScalarNumber(env,"resultsetid",
+				(int64_t)sqlrcur->getResultSetId());
+		return true;
+	} else if (!charstring::compareIgnoringCase(
+					ptr,"resumecachedresultset",21)) {
+		return resumecachedresultset(sqlrcur,env,ptr+21);
+	} else if (!charstring::compareIgnoringCase(
+					ptr,"resumeresultset",15)) {
+		return resumeresultset(sqlrcur,env,ptr+15);
+	} else if (!charstring::compareIgnoringCase(ptr,"closeresultset")) {
+		sqlrcur->closeResultSet();
+		return true;
+	} else if (!charstring::compareIgnoringCase(ptr,"cacheoff")) {
+		// env->cacheto is deliberately left alone.  cacheOff() only
+		// clears the flag, so getCacheFileName() still hands back the
+		// pointer it was given, and the cachefilename command would
+		// read freed memory if this deleted it.
+		sqlrcur->cacheOff();
+		return true;
+	} else if (!charstring::compareIgnoringCase(ptr,"cachefilename")) {
+		writeScalar(env,"cachefilename",sqlrcur->getCacheFileName());
+		return true;
+	} else if (!charstring::compareIgnoringCase(ptr,"totalrows")) {
+		writeScalarNumber(env,"totalrows",
+					(int64_t)sqlrcur->totalRows());
+		return true;
+	} else if (!charstring::compareIgnoringCase(ptr,"firstrowindex")) {
+		writeScalarNumber(env,"firstrowindex",
+					(int64_t)sqlrcur->firstRowIndex());
+		return true;
+	} else if (!charstring::compareIgnoringCase(ptr,"endofresultset")) {
+		writeScalarBoolean(env,"endofresultset",
+					sqlrcur->endOfResultSet());
 		return true;
 	} else if (!charstring::compareIgnoringCase(ptr,"run",3)) {
 		ptr=ptr+3;
@@ -2718,6 +2805,208 @@ void sqlrsh::jsonWriteStats(sqlrcursor *sqlrcur, sqlrshenv *env) {
 	}
 }
 
+void sqlrsh::displayCurrentResultSet(sqlrcursor *sqlrcur, sqlrshenv *env) {
+	displayHeader(sqlrcur,env);
+	displayResultSet(sqlrcur,env);
+	displayStats(sqlrcur,env);
+}
+
+// everything the client api reports about one column of a result set
+struct sqlrshcolumninfo {
+	const char	*name;
+	const char	*type;
+	uint32_t	length;
+	uint32_t	precision;
+	uint32_t	scale;
+	bool		nullable;
+	bool		primarykey;
+	bool		unique;
+	bool		partofkey;
+	// "unsigned" is a keyword
+	bool		isunsigned;
+	bool		zerofilled;
+	bool		binary;
+	bool		autoincrement;
+};
+
+static void fillColumnInfo(sqlrcursor *sqlrcur, uint32_t col,
+					sqlrshcolumninfo *ci) {
+	ci->name=sqlrcur->getColumnName(col);
+	ci->type=sqlrcur->getColumnType(col);
+	ci->length=sqlrcur->getColumnLength(col);
+	ci->precision=sqlrcur->getColumnPrecision(col);
+	ci->scale=sqlrcur->getColumnScale(col);
+	ci->nullable=sqlrcur->getColumnIsNullable(col);
+	ci->primarykey=sqlrcur->getColumnIsPrimaryKey(col);
+	ci->unique=sqlrcur->getColumnIsUnique(col);
+	ci->partofkey=sqlrcur->getColumnIsPartOfKey(col);
+	ci->isunsigned=sqlrcur->getColumnIsUnsigned(col);
+	ci->zerofilled=sqlrcur->getColumnIsZeroFilled(col);
+	ci->binary=sqlrcur->getColumnIsBinary(col);
+	ci->autoincrement=sqlrcur->getColumnIsAutoIncrement(col);
+}
+
+// the columninfo field names, in the order the writers below use them
+static const char * const sqlrshcolumninfokeys[]={
+	"name","type","length","precision","scale","nullable","primarykey",
+	"unique","partofkey","unsigned","zerofilled","binary","autoincrement",
+	NULL
+};
+
+void sqlrsh::columninfo(sqlrcursor *sqlrcur, sqlrshenv *env) {
+
+	// One arm per format, for the reason displayHeader() gives.
+	switch (env->format) {
+		case SQLRSH_FORMAT_PLAIN:
+			plainColumnInfo(sqlrcur,env);
+			break;
+		case SQLRSH_FORMAT_CSV:
+			csvColumnInfo(sqlrcur,env);
+			break;
+		case SQLRSH_FORMAT_JSON:
+		case SQLRSH_FORMAT_JSONL:
+			jsonColumnInfo(sqlrcur,env);
+			break;
+	}
+}
+
+void sqlrsh::plainColumnInfo(sqlrcursor *sqlrcur, sqlrshenv *env) {
+
+	// A block of tab indented labels per column, the way displayStats()
+	// writes its block.  Thirteen values across a row would be too wide to
+	// read, and plain is the format a person reads directly.
+	uint32_t	colcount=sqlrcur->colCount();
+	for (uint32_t col=0; col<colcount; col++) {
+
+		sqlrshcolumninfo	ci;
+		fillColumnInfo(sqlrcur,col,&ci);
+
+		stdoutput.printf("	Name           : %s\n",
+					(ci.name)?ci.name:"");
+		stdoutput.printf("	Type           : %s\n",
+					(ci.type)?ci.type:"");
+		stdoutput.printf("	Length         : %lld\n",
+					(long long)ci.length);
+		stdoutput.printf("	Precision      : %lld\n",
+					(long long)ci.precision);
+		stdoutput.printf("	Scale          : %lld\n",
+					(long long)ci.scale);
+		stdoutput.printf("	Nullable       : %s\n",
+					(ci.nullable)?"true":"false");
+		stdoutput.printf("	Primary Key    : %s\n",
+					(ci.primarykey)?"true":"false");
+		stdoutput.printf("	Unique         : %s\n",
+					(ci.unique)?"true":"false");
+		stdoutput.printf("	Part Of Key    : %s\n",
+					(ci.partofkey)?"true":"false");
+		stdoutput.printf("	Unsigned       : %s\n",
+					(ci.isunsigned)?"true":"false");
+		stdoutput.printf("	Zero Filled    : %s\n",
+					(ci.zerofilled)?"true":"false");
+		stdoutput.printf("	Binary         : %s\n",
+					(ci.binary)?"true":"false");
+		stdoutput.printf("	Auto Increment : %s\n",
+					(ci.autoincrement)?"true":"false");
+		stdoutput.write('\n');
+	}
+}
+
+void sqlrsh::csvColumnInfo(sqlrcursor *sqlrcur, sqlrshenv *env) {
+
+	// One row per column, with a header row, the way csvDisplayHeader()
+	// always writes one.  The names are the only way a csv reader can
+	// learn what the fields are, so they're data rather than decoration.
+	for (const char * const *key=sqlrshcolumninfokeys; *key; key++) {
+		if (key!=sqlrshcolumninfokeys) {
+			stdoutput.write(',');
+		}
+		csvWriteField(*key,charstring::getLength(*key));
+	}
+	stdoutput.write('\n');
+
+	// The names and types go through csvWriteField(), so one containing a
+	// comma or a double quote can't break the row apart.  The numbers and
+	// the booleans are written bare, the way writeScalarNumber() and
+	// writeScalarBoolean() write them in csv.
+	uint32_t	colcount=sqlrcur->colCount();
+	for (uint32_t col=0; col<colcount; col++) {
+
+		sqlrshcolumninfo	ci;
+		fillColumnInfo(sqlrcur,col,&ci);
+
+		csvWriteField(ci.name,charstring::getLength(ci.name));
+		stdoutput.write(',');
+		csvWriteField(ci.type,charstring::getLength(ci.type));
+		stdoutput.printf(",%lld,%lld,%lld",
+					(long long)ci.length,
+					(long long)ci.precision,
+					(long long)ci.scale);
+		stdoutput.write((ci.nullable)?",true":",false");
+		stdoutput.write((ci.primarykey)?",true":",false");
+		stdoutput.write((ci.unique)?",true":",false");
+		stdoutput.write((ci.partofkey)?",true":",false");
+		stdoutput.write((ci.isunsigned)?",true":",false");
+		stdoutput.write((ci.zerofilled)?",true":",false");
+		stdoutput.write((ci.binary)?",true":",false");
+		stdoutput.write((ci.autoincrement)?",true":",false");
+		stdoutput.write('\n');
+	}
+}
+
+void sqlrsh::jsonColumnInfo(sqlrcursor *sqlrcur, sqlrshenv *env) {
+
+	// json and jsonl agree here.  A column list is one object on one line
+	// either way, so there's nothing to stream and nothing to differ
+	// about, the way the fields command already works.  The keys are the
+	// ones sqlrshcolumninfokeys lists.
+	stdoutput.write("{\"columninfo\":[");
+
+	uint32_t	colcount=sqlrcur->colCount();
+	for (uint32_t col=0; col<colcount; col++) {
+
+		if (col) {
+			stdoutput.write(',');
+		}
+
+		sqlrshcolumninfo	ci;
+		fillColumnInfo(sqlrcur,col,&ci);
+
+		stdoutput.write("{\"name\":");
+		jsonWriteString(&stdoutput,ci.name,
+					charstring::getLength(ci.name));
+		stdoutput.write(",\"type\":");
+		jsonWriteString(&stdoutput,ci.type,
+					charstring::getLength(ci.type));
+		stdoutput.printf(",\"length\":%lld,"
+					"\"precision\":%lld,"
+					"\"scale\":%lld",
+					(long long)ci.length,
+					(long long)ci.precision,
+					(long long)ci.scale);
+		// real json booleans, so a reader never has to match a word
+		stdoutput.write((ci.nullable)?
+				",\"nullable\":true":",\"nullable\":false");
+		stdoutput.write((ci.primarykey)?
+				",\"primarykey\":true":",\"primarykey\":false");
+		stdoutput.write((ci.unique)?
+				",\"unique\":true":",\"unique\":false");
+		stdoutput.write((ci.partofkey)?
+				",\"partofkey\":true":",\"partofkey\":false");
+		stdoutput.write((ci.isunsigned)?
+				",\"unsigned\":true":",\"unsigned\":false");
+		stdoutput.write((ci.zerofilled)?
+				",\"zerofilled\":true":",\"zerofilled\":false");
+		stdoutput.write((ci.binary)?
+				",\"binary\":true":",\"binary\":false");
+		stdoutput.write((ci.autoincrement)?
+				",\"autoincrement\":true":
+				",\"autoincrement\":false");
+		stdoutput.write('}');
+	}
+
+	stdoutput.write("]}\n");
+}
+
 void sqlrsh::writeScalar(sqlrshenv *env,
 				const char *name, const char *value) {
 
@@ -3159,6 +3448,167 @@ bool sqlrsh::databasefeature(sqlrconnection *sqlrcon,
 	}
 
 	writeScalar(env,"databasefeature",value);
+	return true;
+}
+
+bool sqlrsh::columninfocommand(sqlrcursor *sqlrcur,
+				sqlrshenv *env, const char *args) {
+
+	// With an argument it turns column info on or off, without one it
+	// dumps the metadata, the way isolationlevel sets with an argument and
+	// reports without one.
+	char	*arg=commandArgument(args);
+	if (!arg) {
+		columninfo(sqlrcur,env);
+		return true;
+	}
+
+	// The argument is validated rather than run through the loose test the
+	// older toggles use, where anything that isn't "on" quietly means off.
+	// A bad argument is a failed command here.
+	bool	on=false;
+	bool	valid=false;
+	if (!charstring::compareIgnoringCase(arg,"on")) {
+		on=true;
+		valid=true;
+	} else if (!charstring::compareIgnoringCase(arg,"off")) {
+		valid=true;
+	}
+	delete[] arg;
+
+	if (!valid) {
+		displayError(env,NULL,"columninfo needs on or off",0);
+		return false;
+	}
+
+	if (on) {
+		sqlrcur->getColumnInfo();
+	} else {
+		sqlrcur->dontGetColumnInfo();
+	}
+	return true;
+}
+
+bool sqlrsh::columncase(sqlrcursor *sqlrcur,
+				sqlrshenv *env, const char *args) {
+
+	char	*arg=commandArgument(args);
+	bool	valid=true;
+	if (!arg) {
+		valid=false;
+	} else if (!charstring::compareIgnoringCase(arg,"mixed")) {
+		sqlrcur->mixedCaseColumnNames();
+	} else if (!charstring::compareIgnoringCase(arg,"upper")) {
+		sqlrcur->upperCaseColumnNames();
+	} else if (!charstring::compareIgnoringCase(arg,"lower")) {
+		sqlrcur->lowerCaseColumnNames();
+	} else {
+		valid=false;
+	}
+	delete[] arg;
+
+	if (!valid) {
+		displayError(env,NULL,
+			"columncase needs mixed, upper, or lower",0);
+		return false;
+	}
+	return true;
+}
+
+bool sqlrsh::resumeresultset(sqlrcursor *sqlrcur,
+				sqlrshenv *env, const char *args) {
+
+	// The id is optional.  Without one the cursor's own id is used, which
+	// is the one a suspendresultset in this same sqlrsh left behind.
+	char	*arg=commandArgument(args);
+	if (arg && !character::isDigit(arg[0])) {
+		delete[] arg;
+		displayError(env,NULL,
+			"resumeresultset needs a result set id, "
+			"or no argument to resume its own",0);
+		return false;
+	}
+
+	uint16_t	id=(arg)?
+				(uint16_t)charstring::convertToInteger(arg):
+				sqlrcur->getResultSetId();
+	delete[] arg;
+
+	if (!sqlrcur->resumeResultSet(id)) {
+		const char	*error=sqlrcur->errorMessage();
+		if (charstring::isNullOrEmpty(error)) {
+			error="Couldn't resume the result set.";
+		}
+		displayError(env,NULL,error,sqlrcur->errorNumber());
+		return false;
+	}
+
+	// The rows have been fetched by now, and sqlrsh has no command that
+	// writes the result set it's holding, so they go out here, the way the
+	// opencache command writes the result set it just opened.
+	displayCurrentResultSet(sqlrcur,env);
+	return true;
+}
+
+bool sqlrsh::resumecachedresultset(sqlrcursor *sqlrcur,
+				sqlrshenv *env, const char *args) {
+
+	char	*arg=commandArgument(args);
+	if (arg && !character::isDigit(arg[0])) {
+		delete[] arg;
+		displayError(env,NULL,
+			"resumecachedresultset needs a result set id, "
+			"and optionally a file name to keep caching to",0);
+		return false;
+	}
+
+	uint16_t	id=(arg)?
+				(uint16_t)charstring::convertToInteger(arg):
+				sqlrcur->getResultSetId();
+
+	// The file name is the rest of the argument, and continuing to cache
+	// is optional, so the name is too.
+	char	*newcacheto=NULL;
+	if (arg) {
+		const char	*rest=arg;
+		while (*rest && !character::isWhitespace(*rest)) {
+			rest++;
+		}
+		while (character::isWhitespace(*rest)) {
+			rest++;
+		}
+		if (*rest) {
+			stringbuffer	fn;
+			fn.append(sqlrpth->getCacheDir())->append(rest);
+			newcacheto=fn.detachString();
+		}
+	}
+	delete[] arg;
+
+	bool	success=sqlrcur->resumeCachedResultSet(id,newcacheto);
+
+	// The cursor doesn't copy references, so whichever name it's holding
+	// now is the one that has to stay alive, and the other one is free to
+	// go.  Asking it is the only way to know: it hands the name to
+	// cacheToFile() on the way through, but it can also return before
+	// getting that far, and then it's still holding the old one.
+	if (sqlrcur->getCacheFileName()==newcacheto) {
+		delete[] env->cacheto;
+		env->cacheto=newcacheto;
+	} else {
+		delete[] newcacheto;
+	}
+
+	if (!success) {
+		const char	*error=sqlrcur->errorMessage();
+		if (charstring::isNullOrEmpty(error)) {
+			error="Couldn't resume the cached result set.";
+		}
+		displayError(env,NULL,error,sqlrcur->errorNumber());
+		return false;
+	}
+
+	displayCurrentResultSet(sqlrcur,env);
 	return true;
 }
 
