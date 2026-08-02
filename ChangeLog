@@ -5,6 +5,9 @@
 	fixed sqlrsh csv output - nulls and empty strings were written
 		identically, nulls are now written as an unquoted empty field
 		and empty strings as a quoted empty field
+	fixed sqlrsh csv output - the ===== divider row was written between
+		the header row and the data, the divider is now written for
+		the plain format only
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems

@@ -1667,7 +1667,10 @@ void sqlrsh::displayHeader(sqlrcursor *sqlrcur, sqlrshenv *env) {
 	stdoutput.printf("\n");
 
 	// display divider
-	if (env->divider && env->headers) {
+	// Only the plain format gets one.  It underlines the column names
+	// there.  Every other format is meant to be parsed, and a row of
+	// equals signs isn't part of any of them.
+	if (env->format==SQLRSH_FORMAT_PLAIN && env->divider && env->headers) {
 		for (uint32_t i=0; i<charcount; i++) {
 			stdoutput.printf("=");
 		}
