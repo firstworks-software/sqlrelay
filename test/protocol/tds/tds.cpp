@@ -89,18 +89,21 @@ int	main(int argc, char **argv) {
 	const char	*language="us_english";
 	const char	*charset="utf-8";
 
-	// pass "native" to test a real sql server/sybase instance
-	// instead of sqlrelay's tds protocol
-	bool	issqlrelay=!(argc==2 && !charstring::compare(argv[1],"native"));
+	// pass "native" to test a real sql server or sybase instance
+	// instead of sqlrelay's tds protocol.  a second argument picks
+	// which one - "mssql" (the default) or "sybase".
+	bool	issqlrelay=!(argc>=2 && !charstring::compare(argv[1],"native"));
+	bool	issybase=false;
 	if (issqlrelay) {
-		server="localhost";
+		server="sqlrelay";
 		db="";
 	} else {
+		issybase=(argc>=3 && !charstring::compare(argv[2],"sybase"));
 		// short hostname, matching the db the native odbc tests use
 		char	*hostname=sys::getHostName();
 		char	*dot=(char *)charstring::findFirstOrEnd(hostname,'.');
 		*dot='\0';
-		server="mssql";
+		server=(issybase)?"sybase":"mssql";
 		db=hostname;
 	}
 	user="testuser";
@@ -109,6 +112,13 @@ int	main(int argc, char **argv) {
 
 	CS_CONTEXT	*context=NULL;
 	CS_CONNECTION	*dbconn=NULL;
+
+	// point ct-lib at the in-tree freetds.conf rather than the system
+	// one, so the test needs no hand-edited config.  the path is
+	// relative to test/protocol/tds, where run_protocol_test runs it
+	// from.  SYBASE is ignored by ct-lib here, even set absolute.
+	environment::setValue("FREETDSCONF",
+			"../../sqlrelay.conf.d/freetds/etc/freetds.conf");
 
 	environment::setValue("DSQUERY",server);
 
@@ -169,7 +179,8 @@ int	main(int argc, char **argv) {
 			(CS_INT *)NULL),CS_SUCCEED);
 	stdoutput.printf("\n");
 	stdoutput.printf("cs_con_props: packet size\n");
-	uint16_t	ps=4096;
+	// ASE rejects anything over 2048 at login time
+	uint16_t	ps=(issybase)?2048:4096;
 	assertEquals(ct_con_props(dbconn,CS_SET,
 				CS_PACKETSIZE,(CS_VOID *)&ps,sizeof(ps),
 				(CS_INT *)NULL),CS_SUCCEED);
@@ -261,7 +272,36 @@ int	main(int argc, char **argv) {
 
 
 	stdoutput.printf("ct_command: create\n");
-	query="create table testtable ("
+	if (issybase) {
+		// sybase has no uniqueidentifier, datetime2,
+		// datetimeoffset, xml, or ntext
+		query="create table testtable ("
+				"testtinyint tinyint, "
+				"testbit bit, "
+				"testsmallint smallint, "
+				"testint int, "
+				"testsmalldatetime smalldatetime, "
+				"testreal real, "
+				"testmoney money, "
+				"testdatetime datetime, "
+				"testfloat float, "
+				"testsmallmoney smallmoney, "
+				"testbigint bigint, "
+				"testdecimal decimal(3,2), "
+				"testnumeric numeric(3,2), "
+				"testdate date, "
+				"testtime time, "
+				"testchar char(40), "
+				"testvarchar varchar(40), "
+				"testbinary binary(40), "
+				"testvarbinary varbinary(40), "
+				"testnvarchar nvarchar(40), "
+				"testnchar nchar(40), "
+				"testtext text, "
+				"testimage image"
+				") lock datarows";
+	} else {
+		query="create table testtable ("
 				"testtinyint tinyint, "
 				"testbit bit, "
 				"testsmallint smallint, "
@@ -291,6 +331,7 @@ int	main(int argc, char **argv) {
 				"testimage image, "
 				"testntext ntext"
 				")";
+	}
 	assertEquals(ct_command(cmd,CS_LANG_CMD,
 				query,charstring::getLength(query),
 				CS_UNUSED),CS_SUCCEED);
@@ -308,7 +349,34 @@ int	main(int argc, char **argv) {
 
 
 	stdoutput.printf("ct_command: insert\n");
-	query="insert into testtable values ("
+	if (issybase) {
+		query="insert into testtable values ("
+				"1,"
+				"1,"
+				"1,"
+				"1,"
+				"'2001-01-01 13:01:01.000', "
+				"1.5, "
+				"1.5, "
+				"'2001-01-01 13:01:01:000', "
+				"1.5, "
+				"1.5, "
+				"1, "
+				"1.5, "
+				"1.5, "
+				"'2001-01-01', "
+				"'13:01:01.000', "
+				"'char1', "
+				"'varchar1', "
+				"CONVERT(binary, 'binary1'), "
+				"CONVERT(varbinary, 'varbinary1'), "
+				"'nvarchar1', "
+				"'nchar1', "
+				"'text1', "
+				"CONVERT(image, 'image1')"
+				")";
+	} else {
+		query="insert into testtable values ("
 				"1,"
 				"1,"
 				"1,"
@@ -338,6 +406,7 @@ int	main(int argc, char **argv) {
 				"CONVERT(image, 'image1'), "
 				"'ntext1'"
 				")";
+	}
 	assertEquals(ct_command(cmd,CS_LANG_CMD,
 					query,charstring::getLength(query),
 					CS_UNUSED),CS_SUCCEED);
@@ -360,7 +429,34 @@ int	main(int argc, char **argv) {
 
 
 	stdoutput.printf("ct_command: insert\n");
-	query="insert into testtable values ("
+	if (issybase) {
+		query="insert into testtable values ("
+				"2,"
+				"1,"
+				"2,"
+				"2,"
+				"'2002-02-02 14:02:02.000', "
+				"2.5, "
+				"2.5, "
+				"'2002-02-02 14:02:02.000', "
+				"2.5, "
+				"2.5, "
+				"2, "
+				"2.5, "
+				"2.5, "
+				"'2002-02-02', "
+				"'14:02:02.000', "
+				"'char2', "
+				"'varchar2', "
+				"CONVERT(binary, 'binary2'), "
+				"CONVERT(varbinary, 'varbinary2'), "
+				"'nvarchar2', "
+				"'nchar2', "
+				"'text2', "
+				"CONVERT(image, 'image2')"
+				")";
+	} else {
+		query="insert into testtable values ("
 				"2,"
 				"1,"
 				"2,"
@@ -390,6 +486,7 @@ int	main(int argc, char **argv) {
 				"CONVERT(image, 'image2'), "
 				"'ntext2'"
 				")";
+	}
 	assertEquals(ct_command(cmd,CS_LANG_CMD,
 					query,charstring::getLength(query),
 					CS_UNUSED),CS_SUCCEED);
@@ -425,12 +522,28 @@ int	main(int argc, char **argv) {
 	stdoutput.printf("\n");
 
 
+	// mssql's 28 columns are the canonical order.  present[] flags the
+	// ones this server actually has, so the arrays below stay indexed
+	// by that order no matter which server we're talking to.
+	bool	present[28];
+	for (CS_INT i=0; i<28; i++) {
+		present[i]=true;
+	}
+	if (issybase) {
+		present[11]=false;	// uniqueidentifier
+		present[16]=false;	// datetime2
+		present[17]=false;	// datetimeoffset
+		present[24]=false;	// xml
+		present[27]=false;	// ntext
+	}
+
+
 	stdoutput.printf("ct_res_info: col count\n");
 	CS_INT	ncols=0;
 	assertEquals(ct_res_info(cmd,CS_NUMDATA,
 					(CS_VOID *)&ncols,CS_UNUSED,
 					(CS_INT *)NULL),CS_SUCCEED);
-	assertEquals(ncols,28);
+	assertEquals(ncols,(issybase)?23:28);
 	stdoutput.printf("\n");
 
 
@@ -439,7 +552,16 @@ int	main(int argc, char **argv) {
 	char		*data[28];
 	CS_INT		*datalength[28];
 	CS_SMALLINT	*nullindicator[28];
-	for (CS_INT i=0; i<ncols; i++) {
+	CS_INT		col=0;
+	for (CS_INT i=0; i<28; i++) {
+		if (!present[i]) {
+			data[i]=NULL;
+			datalength[i]=NULL;
+			nullindicator[i]=NULL;
+			continue;
+		}
+		col++;
+
 		data[i]=new char[1024];
 		bytestring::zero(data[i],1024);
 		datalength[i]=new CS_INT[1];
@@ -454,7 +576,7 @@ int	main(int argc, char **argv) {
 		column[i].count=1;
 		column[i].usertype=CS_UNUSED;
 		column[i].locale=NULL;
-		assertEquals(ct_bind(cmd,i+1,&(column[i]),
+		assertEquals(ct_bind(cmd,col,&(column[i]),
 						(CS_VOID *)data[i],
 						datalength[i],
 						nullindicator[i]),
@@ -464,8 +586,13 @@ int	main(int argc, char **argv) {
 
 
 	stdoutput.printf("ct_describe:\n");
-	for (CS_INT i=0; i<ncols; i++) {
-		assertEquals(ct_describe(cmd,i+1,&(column[i])),CS_SUCCEED);
+	col=0;
+	for (CS_INT i=0; i<28; i++) {
+		if (!present[i]) {
+			continue;
+		}
+		col++;
+		assertEquals(ct_describe(cmd,col,&(column[i])),CS_SUCCEED);
 	}
 	stdoutput.printf("\n");
 
@@ -479,7 +606,8 @@ int	main(int argc, char **argv) {
 	// FIXME: 48 direct, 0 via relay
 	//assertEquals(column[0].status,CS_UNUSED);
 	assertEquals(column[0].count,1);
-	assertEquals(column[0].usertype,CS_CHAR_TYPE);
+	// ase sends each column's systypes usertype, mssql sends 0
+	assertEquals(column[0].usertype,(issybase)?5:CS_CHAR_TYPE);
 	stdoutput.printf("\n");
 
 	stdoutput.printf("%s\n",column[1].name);
@@ -492,7 +620,7 @@ int	main(int argc, char **argv) {
 	// FIXME: 48 direct, 0 via relay
 	//assertEquals(column[1].status,CS_UNUSED);
 	assertEquals(column[1].count,1);
-	assertEquals(column[1].usertype,CS_CHAR_TYPE);
+	assertEquals(column[1].usertype,(issybase)?16:CS_CHAR_TYPE);
 	stdoutput.printf("\n");
 
 	stdoutput.printf("%s\n",column[2].name);
@@ -505,7 +633,7 @@ int	main(int argc, char **argv) {
 	// FIXME: 48 direct, 0 via relay
 	//assertEquals(column[2].status,CS_UNUSED);
 	assertEquals(column[2].count,1);
-	assertEquals(column[2].usertype,CS_CHAR_TYPE);
+	assertEquals(column[2].usertype,(issybase)?6:CS_CHAR_TYPE);
 	stdoutput.printf("\n");
 
 	stdoutput.printf("%s\n",column[3].name);
@@ -518,7 +646,7 @@ int	main(int argc, char **argv) {
 	// FIXME: 48 direct, 0 via relay
 	//assertEquals(column[3].status,CS_UNUSED);
 	assertEquals(column[3].count,1);
-	assertEquals(column[3].usertype,CS_CHAR_TYPE);
+	assertEquals(column[3].usertype,(issybase)?7:CS_CHAR_TYPE);
 	stdoutput.printf("\n");
 
 	stdoutput.printf("%s\n",column[4].name);
@@ -531,7 +659,7 @@ int	main(int argc, char **argv) {
 	// FIXME: 48 direct, 0 via relay
 	//assertEquals(column[4].status,CS_UNUSED);
 	assertEquals(column[4].count,1);
-	assertEquals(column[4].usertype,CS_CHAR_TYPE);
+	assertEquals(column[4].usertype,(issybase)?22:CS_CHAR_TYPE);
 	stdoutput.printf("\n");
 
 	stdoutput.printf("%s\n",column[5].name);
@@ -544,7 +672,7 @@ int	main(int argc, char **argv) {
 	// FIXME: 48 direct, 0 via relay
 	//assertEquals(column[5].status,CS_UNUSED);
 	assertEquals(column[5].count,1);
-	assertEquals(column[5].usertype,CS_CHAR_TYPE);
+	assertEquals(column[5].usertype,(issybase)?23:CS_CHAR_TYPE);
 	stdoutput.printf("\n");
 
 	stdoutput.printf("%s\n",column[6].name);
@@ -557,7 +685,7 @@ int	main(int argc, char **argv) {
 	// FIXME: 48 direct, 0 via relay
 	//assertEquals(column[6].status,CS_UNUSED);
 	assertEquals(column[6].count,1);
-	assertEquals(column[6].usertype,CS_CHAR_TYPE);
+	assertEquals(column[6].usertype,(issybase)?11:CS_CHAR_TYPE);
 	stdoutput.printf("\n");
 
 	stdoutput.printf("%s\n",column[7].name);
@@ -570,7 +698,7 @@ int	main(int argc, char **argv) {
 	// FIXME: 48 direct, 0 via relay
 	//assertEquals(column[7].status,CS_UNUSED);
 	assertEquals(column[7].count,1);
-	assertEquals(column[7].usertype,CS_CHAR_TYPE);
+	assertEquals(column[7].usertype,(issybase)?12:CS_CHAR_TYPE);
 	stdoutput.printf("\n");
 
 	stdoutput.printf("%s\n",column[8].name);
@@ -583,7 +711,7 @@ int	main(int argc, char **argv) {
 	// FIXME: 48 direct, 0 via relay
 	//assertEquals(column[8].status,CS_UNUSED);
 	assertEquals(column[8].count,1);
-	assertEquals(column[8].usertype,CS_CHAR_TYPE);
+	assertEquals(column[8].usertype,(issybase)?8:CS_CHAR_TYPE);
 	stdoutput.printf("\n");
 
 	stdoutput.printf("%s\n",column[9].name);
@@ -596,7 +724,7 @@ int	main(int argc, char **argv) {
 	// FIXME: 48 direct, 0 via relay
 	//assertEquals(column[9].status,CS_UNUSED);
 	assertEquals(column[9].count,1);
-	assertEquals(column[9].usertype,CS_CHAR_TYPE);
+	assertEquals(column[9].usertype,(issybase)?21:CS_CHAR_TYPE);
 	stdoutput.printf("\n");
 
 	stdoutput.printf("%s\n",column[10].name);
@@ -609,21 +737,23 @@ int	main(int argc, char **argv) {
 	// FIXME: 48 direct, 0 via relay
 	//assertEquals(column[10].status,CS_UNUSED);
 	assertEquals(column[10].count,1);
-	assertEquals(column[10].usertype,CS_CHAR_TYPE);
+	assertEquals(column[10].usertype,(issybase)?43:CS_CHAR_TYPE);
 	stdoutput.printf("\n");
 
-	stdoutput.printf("%s\n",column[11].name);
-	assertEquals(column[11].name,"testguid");
-	assertEquals(column[11].datatype,CS_UNIQUE_TYPE);
-	assertEquals(column[11].format,CS_FMT_NULLTERM);
-	assertEquals(column[11].maxlength,16);
-	assertEquals(column[11].precision,0);
-	assertEquals(column[11].scale,0);
-	// FIXME: 48 direct, 0 via relay
-	//assertEquals(column[11].status,CS_UNUSED);
-	assertEquals(column[11].count,1);
-	assertEquals(column[11].usertype,CS_CHAR_TYPE);
-	stdoutput.printf("\n");
+	if (present[11]) {
+		stdoutput.printf("%s\n",column[11].name);
+		assertEquals(column[11].name,"testguid");
+		assertEquals(column[11].datatype,CS_UNIQUE_TYPE);
+		assertEquals(column[11].format,CS_FMT_NULLTERM);
+		assertEquals(column[11].maxlength,16);
+		assertEquals(column[11].precision,0);
+		assertEquals(column[11].scale,0);
+		// FIXME: 48 direct, 0 via relay
+		//assertEquals(column[11].status,CS_UNUSED);
+		assertEquals(column[11].count,1);
+		assertEquals(column[11].usertype,CS_CHAR_TYPE);
+		stdoutput.printf("\n");
+	}
 
 	stdoutput.printf("%s\n",column[12].name);
 	assertEquals(column[12].name,"testdecimal");
@@ -635,7 +765,7 @@ int	main(int argc, char **argv) {
 	// FIXME: 48 direct, 0 via relay
 	//assertEquals(column[12].status,CS_UNUSED);
 	assertEquals(column[12].count,1);
-	assertEquals(column[12].usertype,CS_CHAR_TYPE);
+	assertEquals(column[12].usertype,(issybase)?26:CS_CHAR_TYPE);
 	stdoutput.printf("\n");
 
 	stdoutput.printf("%s\n",column[13].name);
@@ -648,7 +778,7 @@ int	main(int argc, char **argv) {
 	// FIXME: 48 direct, 0 via relay
 	//assertEquals(column[13].status,CS_UNUSED);
 	assertEquals(column[13].count,1);
-	assertEquals(column[13].usertype,CS_CHAR_TYPE);
+	assertEquals(column[13].usertype,(issybase)?10:CS_CHAR_TYPE);
 	stdoutput.printf("\n");
 
 	stdoutput.printf("%s\n",column[14].name);
@@ -662,12 +792,13 @@ int	main(int argc, char **argv) {
 	// FIXME: 48 direct, 0 via relay
 	//assertEquals(column[14].status,CS_UNUSED);
 	assertEquals(column[14].count,1);
-	assertEquals(column[14].usertype,CS_CHAR_TYPE);
+	assertEquals(column[14].usertype,(issybase)?37:CS_CHAR_TYPE);
 	stdoutput.printf("\n");
 
 	stdoutput.printf("%s\n",column[15].name);
 	assertEquals(column[15].name,"testtime");
-	assertEquals(column[15].datatype,CS_BIGTIME_TYPE);
+	assertEquals(column[15].datatype,
+			(issybase)?CS_TIME_TYPE:CS_BIGTIME_TYPE);
 	assertEquals(column[15].format,CS_FMT_NULLTERM);
 	// FIXME: 16/7/7 direct, 64/0/0 via relay
 	//assertEquals(column[15].maxlength,16);
@@ -676,36 +807,40 @@ int	main(int argc, char **argv) {
 	// FIXME: 48 direct, 0 via relay
 	//assertEquals(column[15].status,CS_UNUSED);
 	assertEquals(column[15].count,1);
-	assertEquals(column[15].usertype,CS_CHAR_TYPE);
+	assertEquals(column[15].usertype,(issybase)?38:CS_CHAR_TYPE);
 	stdoutput.printf("\n");
 
-	stdoutput.printf("%s\n",column[16].name);
-	assertEquals(column[16].name,"testdatetime2");
-	assertEquals(column[16].datatype,CS_BIGDATETIME_TYPE);
-	assertEquals(column[16].format,CS_FMT_NULLTERM);
-	// FIXME: 16/7/7 direct, 64/0/0 via relay
-	//assertEquals(column[16].maxlength,16);
-	//assertEquals(column[16].precision,7);
-	//assertEquals(column[16].scale,7);
-	// FIXME: 48 direct, 0 via relay
-	//assertEquals(column[16].status,CS_UNUSED);
-	assertEquals(column[16].count,1);
-	assertEquals(column[16].usertype,CS_CHAR_TYPE);
-	stdoutput.printf("\n");
+	if (present[16]) {
+		stdoutput.printf("%s\n",column[16].name);
+		assertEquals(column[16].name,"testdatetime2");
+		assertEquals(column[16].datatype,CS_BIGDATETIME_TYPE);
+		assertEquals(column[16].format,CS_FMT_NULLTERM);
+		// FIXME: 16/7/7 direct, 64/0/0 via relay
+		//assertEquals(column[16].maxlength,16);
+		//assertEquals(column[16].precision,7);
+		//assertEquals(column[16].scale,7);
+		// FIXME: 48 direct, 0 via relay
+		//assertEquals(column[16].status,CS_UNUSED);
+		assertEquals(column[16].count,1);
+		assertEquals(column[16].usertype,CS_CHAR_TYPE);
+		stdoutput.printf("\n");
+	}
 
-	stdoutput.printf("%s\n",column[17].name);
-	assertEquals(column[17].name,"testdatetimeoffset");
-	assertEquals(column[17].datatype,CS_BIGDATETIME_TYPE);
-	assertEquals(column[17].format,CS_FMT_NULLTERM);
-	// FIXME: 16/7/7 direct, 64/0/0 via relay
-	//assertEquals(column[17].maxlength,16);
-	//assertEquals(column[17].precision,7);
-	//assertEquals(column[17].scale,7);
-	// FIXME: 48 direct, 0 via relay
-	//assertEquals(column[17].status,CS_UNUSED);
-	assertEquals(column[17].count,1);
-	assertEquals(column[17].usertype,CS_CHAR_TYPE);
-	stdoutput.printf("\n");
+	if (present[17]) {
+		stdoutput.printf("%s\n",column[17].name);
+		assertEquals(column[17].name,"testdatetimeoffset");
+		assertEquals(column[17].datatype,CS_BIGDATETIME_TYPE);
+		assertEquals(column[17].format,CS_FMT_NULLTERM);
+		// FIXME: 16/7/7 direct, 64/0/0 via relay
+		//assertEquals(column[17].maxlength,16);
+		//assertEquals(column[17].precision,7);
+		//assertEquals(column[17].scale,7);
+		// FIXME: 48 direct, 0 via relay
+		//assertEquals(column[17].status,CS_UNUSED);
+		assertEquals(column[17].count,1);
+		assertEquals(column[17].usertype,CS_CHAR_TYPE);
+		stdoutput.printf("\n");
+	}
 
 	stdoutput.printf("%s\n",column[18].name);
 	assertEquals(column[18].name,"testchar");
@@ -718,7 +853,7 @@ int	main(int argc, char **argv) {
 	// FIXME: 48 direct, 0 via relay
 	//assertEquals(column[18].status,CS_UNUSED);
 	assertEquals(column[18].count,1);
-	assertEquals(column[18].usertype,CS_CHAR_TYPE);
+	assertEquals(column[18].usertype,(issybase)?1:CS_CHAR_TYPE);
 	stdoutput.printf("\n");
 
 	stdoutput.printf("%s\n",column[19].name);
@@ -733,7 +868,7 @@ int	main(int argc, char **argv) {
 	// FIXME: 48 direct, 0 via relay
 	//assertEquals(column[19].status,CS_UNUSED);
 	assertEquals(column[19].count,1);
-	assertEquals(column[19].usertype,CS_CHAR_TYPE);
+	assertEquals(column[19].usertype,(issybase)?2:CS_CHAR_TYPE);
 	stdoutput.printf("\n");
 
 	stdoutput.printf("%s\n",column[20].name);
@@ -746,7 +881,7 @@ int	main(int argc, char **argv) {
 	// FIXME: 48 direct, 0 via relay
 	//assertEquals(column[20].status,CS_UNUSED);
 	assertEquals(column[20].count,1);
-	assertEquals(column[20].usertype,CS_CHAR_TYPE);
+	assertEquals(column[20].usertype,(issybase)?3:CS_CHAR_TYPE);
 	stdoutput.printf("\n");
 
 	stdoutput.printf("%s\n",column[21].name);
@@ -760,7 +895,7 @@ int	main(int argc, char **argv) {
 	// FIXME: 48 direct, 0 via relay
 	//assertEquals(column[21].status,CS_UNUSED);
 	assertEquals(column[21].count,1);
-	assertEquals(column[21].usertype,CS_CHAR_TYPE);
+	assertEquals(column[21].usertype,(issybase)?4:CS_CHAR_TYPE);
 	stdoutput.printf("\n");
 
 	stdoutput.printf("%s\n",column[22].name);
@@ -775,7 +910,7 @@ int	main(int argc, char **argv) {
 	// FIXME: 48 direct, 0 via relay
 	//assertEquals(column[22].status,CS_UNUSED);
 	assertEquals(column[22].count,1);
-	assertEquals(column[22].usertype,CS_CHAR_TYPE);
+	assertEquals(column[22].usertype,(issybase)?25:CS_CHAR_TYPE);
 	stdoutput.printf("\n");
 
 	stdoutput.printf("%s\n",column[23].name);
@@ -790,23 +925,26 @@ int	main(int argc, char **argv) {
 	// FIXME: 48 direct, 0 via relay
 	//assertEquals(column[23].status,CS_UNUSED);
 	assertEquals(column[23].count,1);
-	assertEquals(column[23].usertype,CS_CHAR_TYPE);
+	assertEquals(column[23].usertype,(issybase)?24:CS_CHAR_TYPE);
 	stdoutput.printf("\n");
 
-	stdoutput.printf("%s\n",column[24].name);
-	assertEquals(column[24].name,"testxml");
-	//assertEquals(column[24].datatype,CS_XML_TYPE);
-	assertEquals(column[24].datatype,CS_LONGCHAR_TYPE);
-	assertEquals(column[24].format,CS_FMT_NULLTERM);
-	// maxlength limited by maxfieldlength via relay, but not directly
-	//assertEquals(column[24].maxlength,131068);
-	assertEquals(column[24].precision,0);
-	assertEquals(column[24].scale,0);
-	// FIXME: 48 direct, 0 via relay
-	//assertEquals(column[24].status,CS_UNUSED);
-	assertEquals(column[24].count,1);
-	assertEquals(column[24].usertype,CS_CHAR_TYPE);
-	stdoutput.printf("\n");
+	if (present[24]) {
+		stdoutput.printf("%s\n",column[24].name);
+		assertEquals(column[24].name,"testxml");
+		//assertEquals(column[24].datatype,CS_XML_TYPE);
+		assertEquals(column[24].datatype,CS_LONGCHAR_TYPE);
+		assertEquals(column[24].format,CS_FMT_NULLTERM);
+		// maxlength limited by maxfieldlength via relay,
+		// but not directly
+		//assertEquals(column[24].maxlength,131068);
+		assertEquals(column[24].precision,0);
+		assertEquals(column[24].scale,0);
+		// FIXME: 48 direct, 0 via relay
+		//assertEquals(column[24].status,CS_UNUSED);
+		assertEquals(column[24].count,1);
+		assertEquals(column[24].usertype,CS_CHAR_TYPE);
+		stdoutput.printf("\n");
+	}
 
 	stdoutput.printf("%s\n",column[25].name);
 	assertEquals(column[25].name,"testtext");
@@ -819,7 +957,7 @@ int	main(int argc, char **argv) {
 	// FIXME: 48 direct, 0 via relay
 	//assertEquals(column[25].status,CS_UNUSED);
 	assertEquals(column[25].count,1);
-	assertEquals(column[25].usertype,CS_CHAR_TYPE);
+	assertEquals(column[25].usertype,(issybase)?19:CS_CHAR_TYPE);
 	stdoutput.printf("\n");
 
 	stdoutput.printf("%s\n",column[26].name);
@@ -833,22 +971,25 @@ int	main(int argc, char **argv) {
 	// FIXME: 48 direct, 0 via relay
 	//assertEquals(column[26].status,CS_UNUSED);
 	assertEquals(column[26].count,1);
-	assertEquals(column[26].usertype,CS_CHAR_TYPE);
+	assertEquals(column[26].usertype,(issybase)?20:CS_CHAR_TYPE);
 	stdoutput.printf("\n");
 
-	stdoutput.printf("%s\n",column[27].name);
-	assertEquals(column[27].name,"testntext");
-	assertEquals(column[27].datatype,CS_TEXT_TYPE);
-	assertEquals(column[27].format,CS_FMT_NULLTERM);
-	// maxlength limited by maxfieldlength via relay, but not directly
-	//assertEquals(column[27].maxlength,131068);
-	assertEquals(column[27].precision,0);
-	assertEquals(column[27].scale,0);
-	// FIXME: 48 direct, 0 via relay
-	//assertEquals(column[27].status,CS_UNUSED);
-	assertEquals(column[27].count,1);
-	assertEquals(column[27].usertype,CS_CHAR_TYPE);
-	stdoutput.printf("\n");
+	if (present[27]) {
+		stdoutput.printf("%s\n",column[27].name);
+		assertEquals(column[27].name,"testntext");
+		assertEquals(column[27].datatype,CS_TEXT_TYPE);
+		assertEquals(column[27].format,CS_FMT_NULLTERM);
+		// maxlength limited by maxfieldlength via relay,
+		// but not directly
+		//assertEquals(column[27].maxlength,131068);
+		assertEquals(column[27].precision,0);
+		assertEquals(column[27].scale,0);
+		// FIXME: 48 direct, 0 via relay
+		//assertEquals(column[27].status,CS_UNUSED);
+		assertEquals(column[27].count,1);
+		assertEquals(column[27].usertype,CS_CHAR_TYPE);
+		stdoutput.printf("\n");
+	}
 
 
 	stdoutput.printf("ct_fetch:\n");
@@ -893,9 +1034,12 @@ int	main(int argc, char **argv) {
 	assertEquals(data[10],"1");
 	assertEquals(*(datalength[10]),2);
 	assertEquals(*(nullindicator[10]),0);
-	assertEquals(data[11],"01020304-0102-0304-0102-030401020304");
-	assertEquals(*(datalength[11]),37);
-	assertEquals(*(nullindicator[11]),0);
+	if (present[11]) {
+		assertEquals(data[11],
+				"01020304-0102-0304-0102-030401020304");
+		assertEquals(*(datalength[11]),37);
+		assertEquals(*(nullindicator[11]),0);
+	}
 	assertEquals(data[12],"1.50");
 	assertEquals(*(datalength[12]),5);
 	assertEquals(*(nullindicator[12]),0);
@@ -925,18 +1069,22 @@ int	main(int argc, char **argv) {
 	assertEquals(data[23],"nchar1                                  ");
 	assertEquals(*(datalength[23]),41);
 	assertEquals(*(nullindicator[23]),0);
-	assertEquals(data[24],"xml1");
-	assertEquals(*(datalength[24]),5);
-	assertEquals(*(nullindicator[24]),0);
+	if (present[24]) {
+		assertEquals(data[24],"xml1");
+		assertEquals(*(datalength[24]),5);
+		assertEquals(*(nullindicator[24]),0);
+	}
 	assertEquals(data[25],"text1");
 	assertEquals(*(datalength[25]),6);
 	assertEquals(*(nullindicator[25]),0);
 	assertEquals(data[26],"696d61676531");
 	assertEquals(*(datalength[26]),13);
 	assertEquals(*(nullindicator[26]),0);
-	assertEquals(data[27],"ntext1");
-	assertEquals(*(datalength[27]),7);
-	assertEquals(*(nullindicator[27]),0);
+	if (present[27]) {
+		assertEquals(data[27],"ntext1");
+		assertEquals(*(datalength[27]),7);
+		assertEquals(*(nullindicator[27]),0);
+	}
 	stdoutput.printf("\n");
 
 
@@ -958,7 +1106,10 @@ int	main(int argc, char **argv) {
 	//assertEquals(data[8],"2.5");
 	//assertEquals(data[9],"2.50");
 	assertEquals(data[10],"2");
-	assertEquals(data[11],"01020304-0102-0304-0102-030401020304");
+	if (present[11]) {
+		assertEquals(data[11],
+				"01020304-0102-0304-0102-030401020304");
+	}
 	assertEquals(data[12],"2.50");
 	assertEquals(data[13],"2.50");
 	//assertEquals(data[14],"2002-02-02");		#4780
@@ -971,10 +1122,14 @@ int	main(int argc, char **argv) {
 	assertEquals(data[21],"76617262696e61727932");
 	assertEquals(data[22],"nvarchar2");
 	assertEquals(data[23],"nchar2                                  ");
-	assertEquals(data[24],"xml2");
+	if (present[24]) {
+		assertEquals(data[24],"xml2");
+	}
 	assertEquals(data[25],"text2");
 	assertEquals(data[26],"696d61676532");
-	assertEquals(data[27],"ntext2");
+	if (present[27]) {
+		assertEquals(data[27],"ntext2");
+	}
 	stdoutput.printf("\n");
 
 
@@ -1004,6 +1159,32 @@ int	main(int argc, char **argv) {
 	assertEquals(results,CS_END_RESULTS);
 	assertEquals(ct_cancel(NULL,cmd,CS_CANCEL_ALL),CS_SUCCEED);
 	stdoutput.printf("\n");
+
+
+	// The sections below are the coverage this test still owes, each
+	// tracked by its own ticket.  They are named here rather than left
+	// out so the gaps are visible in the output, the way
+	// test/protocol/mysql/mysql.cpp names its API sections.
+
+	stdoutput.printf("\n=============== Cursors ===============\n\n");
+	// #8790 - no ct_cursor coverage yet
+	stdoutput.printf("not covered yet - see trac #8790\n\n");
+
+	stdoutput.printf("\n============= RPC and Prepared ============\n\n");
+	// #8791 - no ct_dynamic or sp_prepare/sp_execute coverage yet
+	stdoutput.printf("not covered yet - see trac #8791\n\n");
+
+	stdoutput.printf("\n================ Binds ================\n\n");
+	// #8792 - no ct_param coverage yet
+	stdoutput.printf("not covered yet - see trac #8792\n\n");
+
+	stdoutput.printf("\n========= Charset and Collation ========\n\n");
+	// #8793 - no charset or collation coverage yet
+	stdoutput.printf("not covered yet - see trac #8793\n\n");
+
+	stdoutput.printf("\n============== Bulk Load ==============\n\n");
+	// #8794 - no blk_ coverage yet
+	stdoutput.printf("not covered yet - see trac #8794\n\n");
 
 	reportTestStatus();
 	return status;
