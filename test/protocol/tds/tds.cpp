@@ -1161,6 +1161,1331 @@ int	main(int argc, char **argv) {
 	stdoutput.printf("\n");
 
 
+	stdoutput.printf("\n========= Charset and Collation ========\n\n");
+
+
+	CS_CHAR	buf[1024];
+	CS_INT	outlen;
+	CS_INT	intval;
+
+
+	stdoutput.printf("cs_locale: get charset\n");
+	bytestring::zero(buf,sizeof(buf));
+	outlen=-1;
+	assertEquals(cs_locale(context,CS_GET,locale,CS_SYB_CHARSET,
+				(CS_VOID *)buf,(CS_INT)sizeof(buf),
+				&outlen),CS_SUCCEED);
+	assertEquals(buf,"utf-8");
+	stdoutput.printf("\n");
+
+
+	stdoutput.printf("cs_locale: get language\n");
+	bytestring::zero(buf,sizeof(buf));
+	outlen=-1;
+	assertEquals(cs_locale(context,CS_GET,locale,CS_SYB_LANG,
+				(CS_VOID *)buf,(CS_INT)sizeof(buf),
+				&outlen),CS_SUCCEED);
+	assertEquals(buf,"us_english");
+	stdoutput.printf("\n");
+
+
+	stdoutput.printf("cs_locale: get language and charset\n");
+	bytestring::zero(buf,sizeof(buf));
+	outlen=-1;
+	assertEquals(cs_locale(context,CS_GET,locale,CS_SYB_LANG_CHARSET,
+				(CS_VOID *)buf,(CS_INT)sizeof(buf),
+				&outlen),CS_SUCCEED);
+	assertEquals(buf,"us_english.utf-8");
+	stdoutput.printf("\n");
+
+
+	stdoutput.printf("cs_locale: get sort order\n");
+	bytestring::zero(buf,sizeof(buf));
+	outlen=-1;
+	assertEquals(cs_locale(context,CS_GET,locale,CS_SYB_SORTORDER,
+				(CS_VOID *)buf,(CS_INT)sizeof(buf),
+				&outlen),CS_SUCCEED);
+	assertEquals(buf,"");
+	stdoutput.printf("\n");
+
+
+	stdoutput.printf("cs_locale: get lc_all\n");
+	bytestring::zero(buf,sizeof(buf));
+	outlen=-1;
+	assertEquals(cs_locale(context,CS_GET,locale,CS_LC_ALL,
+				(CS_VOID *)buf,(CS_INT)sizeof(buf),
+				&outlen),CS_FAIL);
+	stdoutput.printf("\n");
+
+
+	// The charset set through cs_locale never reaches libtds' iconv
+	// layer, so the readback is empty.  Only a ct_con_props CS_SET of
+	// CS_CLIENTCHARSET takes.  This connection converts as ISO-8859-1,
+	// which passes bytes through unchanged.
+	stdoutput.printf("ct_con_props: get client charset\n");
+	bytestring::zero(buf,sizeof(buf));
+	outlen=-1;
+	assertEquals(ct_con_props(dbconn,CS_GET,CS_CLIENTCHARSET,
+				(CS_VOID *)buf,(CS_INT)sizeof(buf),
+				&outlen),CS_SUCCEED);
+	assertEquals(outlen,0);
+	assertEquals(buf,"");
+	stdoutput.printf("\n");
+
+
+	stdoutput.printf("ct_con_props: get locale\n");
+	CS_LOCALE	*conlocale=NULL;
+	assertEquals(cs_loc_alloc(context,&conlocale),CS_SUCCEED);
+	assertEquals(ct_con_props(dbconn,CS_GET,CS_LOC_PROP,
+				(CS_VOID *)conlocale,CS_UNUSED,
+				(CS_INT *)NULL),CS_SUCCEED);
+	bytestring::zero(buf,sizeof(buf));
+	outlen=-1;
+	assertEquals(cs_locale(context,CS_GET,conlocale,CS_SYB_CHARSET,
+				(CS_VOID *)buf,(CS_INT)sizeof(buf),
+				&outlen),CS_SUCCEED);
+	assertEquals(buf,"utf-8");
+	bytestring::zero(buf,sizeof(buf));
+	outlen=-1;
+	assertEquals(cs_locale(context,CS_GET,conlocale,CS_SYB_LANG,
+				(CS_VOID *)buf,(CS_INT)sizeof(buf),
+				&outlen),CS_SUCCEED);
+	assertEquals(buf,"us_english");
+	assertEquals(cs_loc_drop(context,conlocale),CS_SUCCEED);
+	stdoutput.printf("\n");
+
+
+	// the tds version decides whether the n-types travel as ucs-2 or
+	// as server-charset bytes
+	stdoutput.printf("ct_con_props: get tds version\n");
+	intval=-1;
+	assertEquals(ct_con_props(dbconn,CS_GET,CS_TDS_VERSION,
+				(CS_VOID *)&intval,CS_UNUSED,
+				(CS_INT *)NULL),CS_SUCCEED);
+	assertEquals(intval,(issybase)?CS_TDS_50:CS_TDS_74);
+	stdoutput.printf("\n");
+
+
+	stdoutput.printf("cs_locale: set bogus charset\n");
+	CS_LOCALE	*throwawaylocale=NULL;
+	assertEquals(cs_loc_alloc(context,&throwawaylocale),CS_SUCCEED);
+	assertEquals(cs_locale(context,CS_SET,throwawaylocale,CS_SYB_CHARSET,
+				(CS_VOID *)"nosuchcharset",CS_NULLTERM,
+				(CS_INT *)NULL),CS_SUCCEED);
+	bytestring::zero(buf,sizeof(buf));
+	outlen=-1;
+	assertEquals(cs_locale(context,CS_GET,throwawaylocale,CS_SYB_CHARSET,
+				(CS_VOID *)buf,(CS_INT)sizeof(buf),
+				&outlen),CS_SUCCEED);
+	assertEquals(buf,"nosuchcharset");
+	stdoutput.printf("\n");
+
+
+	stdoutput.printf("cs_locale: set sort order\n");
+	assertEquals(cs_locale(context,CS_SET,throwawaylocale,CS_SYB_SORTORDER,
+				(CS_VOID *)"nocase",CS_NULLTERM,
+				(CS_INT *)NULL),CS_FAIL);
+	stdoutput.printf("\n");
+
+
+	// outlen is the size the value needs, not the size copied
+	stdoutput.printf("cs_locale: get charset, short buffer\n");
+	bytestring::zero(buf,sizeof(buf));
+	outlen=-1;
+	assertEquals(cs_locale(context,CS_GET,throwawaylocale,CS_SYB_CHARSET,
+				(CS_VOID *)buf,(CS_INT)3,
+				&outlen),CS_FAIL);
+	assertEquals(outlen,14);
+	assertEquals(cs_loc_drop(context,throwawaylocale),CS_SUCCEED);
+	stdoutput.printf("\n");
+
+
+	// buffers for the charset and collation queries
+	CS_DATAFMT	csfmt[4];
+	char		*csdata[4];
+	CS_INT		csdatalength[4];
+	CS_SMALLINT	csnullindicator[4];
+	CS_INT		cscols;
+	for (CS_INT i=0; i<4; i++) {
+		csdata[i]=new char[1024];
+	}
+
+
+	stdoutput.printf("ct_command: select server charset\n");
+	if (issybase) {
+		// ase stores its charset as an id in sysconfigures, so the
+		// name has to come from a join to syscharsets
+		query="select c.name "
+			"from master..syscharsets c, "
+				"master..sysconfigures f "
+			"where f.name='default character set id' "
+			"and c.id=f.value";
+	} else {
+		query="select "
+			"convert(varchar(30),"
+				"serverproperty('SqlCharSetName')), "
+			"convert(varchar(30),"
+				"serverproperty('SqlSortOrderName')), "
+			"convert(varchar(60),"
+				"serverproperty('Collation')), "
+			"convert(varchar(60),"
+				"databasepropertyex(db_name(),'Collation'))";
+	}
+	assertEquals(ct_command(cmd,CS_LANG_CMD,
+					query,charstring::getLength(query),
+					CS_UNUSED),CS_SUCCEED);
+	assertEquals(ct_send(cmd),CS_SUCCEED);
+	results=ct_results(cmd,&resultstype);
+	assertEquals(results,CS_SUCCEED);
+	assertEquals(resultstype,CS_ROW_RESULT);
+	stdoutput.printf("\n");
+
+
+	stdoutput.printf("ct_res_info: col count\n");
+	cscols=(issybase)?1:4;
+	ncols=0;
+	assertEquals(ct_res_info(cmd,CS_NUMDATA,
+					(CS_VOID *)&ncols,CS_UNUSED,
+					(CS_INT *)NULL),CS_SUCCEED);
+	assertEquals(ncols,cscols);
+	stdoutput.printf("\n");
+
+
+	stdoutput.printf("ct_bind:\n");
+	for (CS_INT i=0; i<cscols; i++) {
+		bytestring::zero(csdata[i],1024);
+		csfmt[i].datatype=CS_CHAR_TYPE;
+		csfmt[i].format=CS_FMT_NULLTERM;
+		csfmt[i].maxlength=1024;
+		csfmt[i].scale=CS_UNUSED;
+		csfmt[i].precision=CS_UNUSED;
+		csfmt[i].status=CS_UNUSED;
+		csfmt[i].count=1;
+		csfmt[i].usertype=CS_UNUSED;
+		csfmt[i].locale=NULL;
+		assertEquals(ct_bind(cmd,i+1,&(csfmt[i]),
+						(CS_VOID *)csdata[i],
+						&(csdatalength[i]),
+						&(csnullindicator[i])),
+						CS_SUCCEED);
+	}
+	stdoutput.printf("\n");
+
+
+	stdoutput.printf("ct_describe:\n");
+	for (CS_INT i=0; i<cscols; i++) {
+		assertEquals(ct_describe(cmd,i+1,&(csfmt[i])),CS_SUCCEED);
+		assertEquals(csfmt[i].datatype,CS_CHAR_TYPE);
+	}
+	stdoutput.printf("\n");
+
+
+	stdoutput.printf("ct_fetch:\n");
+	assertEquals(ct_fetch(cmd,CS_UNUSED,CS_UNUSED,
+					CS_UNUSED,&rowsread),CS_SUCCEED);
+	assertEquals(rowsread,1);
+	stdoutput.printf("\n");
+
+
+	// both servers name their charset iso_1
+	stdoutput.printf("row data:\n");
+	assertEquals(csdata[0],"iso_1");
+	if (!issybase) {
+		assertEquals(csdata[1],"nocase_iso");
+		assertEquals(csdata[2],"SQL_Latin1_General_CP1_CI_AS");
+		assertEquals(csdata[3],"SQL_Latin1_General_CP1_CI_AS");
+	}
+	stdoutput.printf("\n");
+
+
+	stdoutput.printf("ct_results:\n");
+	results=ct_results(cmd,&resultstype);
+	assertEquals(results,CS_SUCCEED);
+	assertEquals(resultstype,CS_CMD_DONE);
+	results=ct_results(cmd,&resultstype);
+	assertEquals(results,CS_END_RESULTS);
+	assertEquals(ct_cancel(NULL,cmd,CS_CANCEL_ALL),CS_SUCCEED);
+	stdoutput.printf("\n");
+
+
+	if (issybase) {
+
+		stdoutput.printf("ct_command: select charset globals\n");
+		query="select @@char_convert, @@ncharsize, @@maxcharlen";
+		assertEquals(ct_command(cmd,CS_LANG_CMD,
+					query,charstring::getLength(query),
+					CS_UNUSED),CS_SUCCEED);
+		assertEquals(ct_send(cmd),CS_SUCCEED);
+		results=ct_results(cmd,&resultstype);
+		assertEquals(results,CS_SUCCEED);
+		assertEquals(resultstype,CS_ROW_RESULT);
+		stdoutput.printf("\n");
+
+
+		stdoutput.printf("ct_res_info: col count\n");
+		cscols=3;
+		ncols=0;
+		assertEquals(ct_res_info(cmd,CS_NUMDATA,
+					(CS_VOID *)&ncols,CS_UNUSED,
+					(CS_INT *)NULL),CS_SUCCEED);
+		assertEquals(ncols,cscols);
+		stdoutput.printf("\n");
+
+
+		stdoutput.printf("ct_bind:\n");
+		for (CS_INT i=0; i<cscols; i++) {
+			bytestring::zero(csdata[i],1024);
+			csfmt[i].datatype=CS_CHAR_TYPE;
+			csfmt[i].format=CS_FMT_NULLTERM;
+			csfmt[i].maxlength=1024;
+			csfmt[i].scale=CS_UNUSED;
+			csfmt[i].precision=CS_UNUSED;
+			csfmt[i].status=CS_UNUSED;
+			csfmt[i].count=1;
+			csfmt[i].usertype=CS_UNUSED;
+			csfmt[i].locale=NULL;
+			assertEquals(ct_bind(cmd,i+1,&(csfmt[i]),
+						(CS_VOID *)csdata[i],
+						&(csdatalength[i]),
+						&(csnullindicator[i])),
+						CS_SUCCEED);
+		}
+		stdoutput.printf("\n");
+
+
+		stdoutput.printf("ct_describe:\n");
+		for (CS_INT i=0; i<cscols; i++) {
+			assertEquals(ct_describe(cmd,i+1,&(csfmt[i])),
+								CS_SUCCEED);
+		}
+		stdoutput.printf("\n");
+
+
+		stdoutput.printf("ct_fetch:\n");
+		assertEquals(ct_fetch(cmd,CS_UNUSED,CS_UNUSED,
+					CS_UNUSED,&rowsread),CS_SUCCEED);
+		assertEquals(rowsread,1);
+		stdoutput.printf("\n");
+
+
+		stdoutput.printf("row data:\n");
+		assertEquals(csdata[0],"0");
+		assertEquals(csdata[1],"1");
+		assertEquals(csdata[2],"1");
+		stdoutput.printf("\n");
+
+
+		stdoutput.printf("ct_results:\n");
+		results=ct_results(cmd,&resultstype);
+		assertEquals(results,CS_SUCCEED);
+		assertEquals(resultstype,CS_CMD_DONE);
+		results=ct_results(cmd,&resultstype);
+		assertEquals(results,CS_END_RESULTS);
+		assertEquals(ct_cancel(NULL,cmd,CS_CANCEL_ALL),CS_SUCCEED);
+		stdoutput.printf("\n");
+	}
+
+
+	query="drop table charsettable";
+	ct_command(cmd,CS_LANG_CMD,query,charstring::getLength(query),CS_UNUSED);
+	ct_send(cmd);
+	while (ct_results(cmd,&resultstype)==CS_SUCCEED) {}
+	ct_cancel(NULL,cmd,CS_CANCEL_ALL);
+
+
+	stdoutput.printf("ct_command: create\n");
+	if (issybase) {
+		query="create table charsettable ("
+				"testid int, "
+				"testchar char(20), "
+				"testvarchar varchar(20), "
+				"testnchar nchar(20), "
+				"testnvarchar nvarchar(20), "
+				"testtext text"
+				") lock datarows";
+	} else {
+		query="create table charsettable ("
+				"testid int, "
+				"testchar char(20), "
+				"testvarchar varchar(20), "
+				"testnchar nchar(20), "
+				"testnvarchar nvarchar(20), "
+				"testtext text"
+				")";
+	}
+	assertEquals(ct_command(cmd,CS_LANG_CMD,
+					query,charstring::getLength(query),
+					CS_UNUSED),CS_SUCCEED);
+	assertEquals(ct_send(cmd),CS_SUCCEED);
+	results=ct_results(cmd,&resultstype);
+	assertEquals(results,CS_SUCCEED);
+	assertEquals(resultstype,CS_CMD_SUCCEED);
+	results=ct_results(cmd,&resultstype);
+	assertEquals(results,CS_SUCCEED);
+	assertEquals(resultstype,CS_CMD_DONE);
+	results=ct_results(cmd,&resultstype);
+	assertEquals(results,CS_END_RESULTS);
+	assertEquals(ct_cancel(NULL,cmd,CS_CANCEL_ALL),CS_SUCCEED);
+	stdoutput.printf("\n");
+
+
+	// U+00E9, U+20AC and U+65E5, one per row, in all five text columns,
+	// hex escaped to keep this file ascii
+	const char	*charsetinserts[3]={
+		"insert into charsettable values (1, "
+			"'a\xc3\xa9z', 'a\xc3\xa9z', "
+			"N'a\xc3\xa9z', N'a\xc3\xa9z', 'a\xc3\xa9z')",
+		"insert into charsettable values (2, "
+			"'a\xe2\x82\xacz', 'a\xe2\x82\xacz', "
+			"N'a\xe2\x82\xacz', N'a\xe2\x82\xacz', "
+			"'a\xe2\x82\xacz')",
+		"insert into charsettable values (3, "
+			"'a\xe6\x97\xa5z', 'a\xe6\x97\xa5z', "
+			"N'a\xe6\x97\xa5z', N'a\xe6\x97\xa5z', "
+			"'a\xe6\x97\xa5z')"
+	};
+
+
+	stdoutput.printf("ct_command: insert\n");
+	for (CS_INT i=0; i<3; i++) {
+		query=charsetinserts[i];
+		assertEquals(ct_command(cmd,CS_LANG_CMD,
+					query,charstring::getLength(query),
+					CS_UNUSED),CS_SUCCEED);
+		assertEquals(ct_send(cmd),CS_SUCCEED);
+		results=ct_results(cmd,&resultstype);
+		assertEquals(results,CS_SUCCEED);
+		assertEquals(resultstype,CS_CMD_SUCCEED);
+		assertEquals(ct_res_info(cmd,CS_ROW_COUNT,
+					(CS_VOID *)&affectedrows,CS_UNUSED,
+					(CS_INT *)NULL),CS_SUCCEED);
+		assertEquals(affectedrows,1);
+		results=ct_results(cmd,&resultstype);
+		assertEquals(results,CS_SUCCEED);
+		assertEquals(resultstype,CS_CMD_DONE);
+		results=ct_results(cmd,&resultstype);
+		assertEquals(results,CS_END_RESULTS);
+		assertEquals(ct_cancel(NULL,cmd,CS_CANCEL_ALL),CS_SUCCEED);
+	}
+	stdoutput.printf("\n");
+
+
+	stdoutput.printf("ct_command: select\n");
+	query="select testid, testchar, testvarchar, "
+		"testnchar, testnvarchar, testtext "
+		"from charsettable order by testid";
+	assertEquals(ct_command(cmd,CS_LANG_CMD,
+					query,charstring::getLength(query),
+					CS_UNUSED),CS_SUCCEED);
+	assertEquals(ct_send(cmd),CS_SUCCEED);
+	results=ct_results(cmd,&resultstype);
+	assertEquals(results,CS_SUCCEED);
+	assertEquals(resultstype,CS_ROW_RESULT);
+	stdoutput.printf("\n");
+
+
+	stdoutput.printf("ct_res_info: col count\n");
+	ncols=0;
+	assertEquals(ct_res_info(cmd,CS_NUMDATA,
+					(CS_VOID *)&ncols,CS_UNUSED,
+					(CS_INT *)NULL),CS_SUCCEED);
+	assertEquals(ncols,6);
+	stdoutput.printf("\n");
+
+
+	// buffers for the non-ascii round trip
+	CS_DATAFMT	nafmt[6];
+	char		*nadata[6];
+	CS_INT		nadatalength[6];
+	CS_SMALLINT	nanullindicator[6];
+
+
+	stdoutput.printf("ct_bind:\n");
+	for (CS_INT i=0; i<6; i++) {
+		nadata[i]=new char[1024];
+		bytestring::zero(nadata[i],1024);
+		nafmt[i].datatype=CS_CHAR_TYPE;
+		nafmt[i].format=CS_FMT_NULLTERM;
+		nafmt[i].maxlength=1024;
+		nafmt[i].scale=CS_UNUSED;
+		nafmt[i].precision=CS_UNUSED;
+		nafmt[i].status=CS_UNUSED;
+		nafmt[i].count=1;
+		nafmt[i].usertype=CS_UNUSED;
+		nafmt[i].locale=NULL;
+		assertEquals(ct_bind(cmd,i+1,&(nafmt[i]),
+						(CS_VOID *)nadata[i],
+						&(nadatalength[i]),
+						&(nanullindicator[i])),
+						CS_SUCCEED);
+	}
+	stdoutput.printf("\n");
+
+
+	// Freetds' CS_DATAFMT has no collation field, so locale is the only
+	// place per-column collation could surface.  Poisoning it first
+	// keeps the NULL assert below from passing vacuously.
+	stdoutput.printf("ct_describe:\n");
+	CS_LOCALE	*poisonlocale=NULL;
+	assertEquals(cs_loc_alloc(context,&poisonlocale),CS_SUCCEED);
+	for (CS_INT i=0; i<6; i++) {
+		nafmt[i].locale=poisonlocale;
+		assertEquals(ct_describe(cmd,i+1,&(nafmt[i])),CS_SUCCEED);
+		assertTrue(nafmt[i].locale==NULL);
+	}
+	assertEquals(cs_loc_drop(context,poisonlocale),CS_SUCCEED);
+	stdoutput.printf("\n");
+
+
+	stdoutput.printf("ct_fetch:\n");
+	assertEquals(ct_fetch(cmd,CS_UNUSED,CS_UNUSED,
+					CS_UNUSED,&rowsread),CS_SUCCEED);
+	assertEquals(rowsread,1);
+	stdoutput.printf("\n");
+
+
+	stdoutput.printf("row data:\n");
+	assertEquals(nadata[0],"1");
+	assertEquals(nadatalength[0],2);
+	assertEquals(nadata[1],"a\xc3\xa9z                ");
+	assertEquals(nadatalength[1],21);
+	assertEquals(nadata[2],"a\xc3\xa9z");
+	assertEquals(nadatalength[2],5);
+	assertEquals(nadata[3],"a\xc3\xa9z                ");
+	assertEquals(nadatalength[3],21);
+	assertEquals(nadata[4],"a\xc3\xa9z");
+	assertEquals(nadatalength[4],5);
+	assertEquals(nadata[5],"a\xc3\xa9z");
+	assertEquals(nadatalength[5],5);
+	stdoutput.printf("\n");
+
+
+	stdoutput.printf("ct_fetch:\n");
+	assertEquals(ct_fetch(cmd,CS_UNUSED,CS_UNUSED,
+					CS_UNUSED,&rowsread),CS_SUCCEED);
+	assertEquals(rowsread,1);
+	stdoutput.printf("\n");
+
+
+	// On tds 7 the query text goes out as ucs-2, so each raw byte widens
+	// to its own code point.  Narrowing back to cp1252 for the
+	// non-unicode columns loses U+0082 and U+0097 to '?'.  ASE converts
+	// nothing either way.
+	stdoutput.printf("row data:\n");
+	assertEquals(nadata[0],"2");
+	assertEquals(nadatalength[0],2);
+	assertEquals(nadata[1],(issybase)?
+				"a\xe2\x82\xacz               ":
+				"a\xe2?\xacz               ");
+	assertEquals(nadatalength[1],21);
+	assertEquals(nadata[2],(issybase)?"a\xe2\x82\xacz":"a\xe2?\xacz");
+	assertEquals(nadatalength[2],6);
+	assertEquals(nadata[3],"a\xe2\x82\xacz               ");
+	assertEquals(nadatalength[3],21);
+	assertEquals(nadata[4],"a\xe2\x82\xacz");
+	assertEquals(nadatalength[4],6);
+	assertEquals(nadata[5],(issybase)?"a\xe2\x82\xacz":"a\xe2?\xacz");
+	assertEquals(nadatalength[5],6);
+	stdoutput.printf("\n");
+
+
+	stdoutput.printf("ct_fetch:\n");
+	assertEquals(ct_fetch(cmd,CS_UNUSED,CS_UNUSED,
+					CS_UNUSED,&rowsread),CS_SUCCEED);
+	assertEquals(rowsread,1);
+	stdoutput.printf("\n");
+
+
+	stdoutput.printf("row data:\n");
+	assertEquals(nadata[0],"3");
+	assertEquals(nadatalength[0],2);
+	assertEquals(nadata[1],(issybase)?
+				"a\xe6\x97\xa5z               ":
+				"a\xe6?\xa5z               ");
+	assertEquals(nadatalength[1],21);
+	assertEquals(nadata[2],(issybase)?"a\xe6\x97\xa5z":"a\xe6?\xa5z");
+	assertEquals(nadatalength[2],6);
+	assertEquals(nadata[3],"a\xe6\x97\xa5z               ");
+	assertEquals(nadatalength[3],21);
+	assertEquals(nadata[4],"a\xe6\x97\xa5z");
+	assertEquals(nadatalength[4],6);
+	assertEquals(nadata[5],(issybase)?"a\xe6\x97\xa5z":"a\xe6?\xa5z");
+	assertEquals(nadatalength[5],6);
+	stdoutput.printf("\n");
+
+
+	stdoutput.printf("ct_results:\n");
+	results=ct_results(cmd,&resultstype);
+	assertEquals(results,CS_SUCCEED);
+	assertEquals(resultstype,CS_CMD_DONE);
+	results=ct_results(cmd,&resultstype);
+	assertEquals(results,CS_END_RESULTS);
+	assertEquals(ct_cancel(NULL,cmd,CS_CANCEL_ALL),CS_SUCCEED);
+	stdoutput.printf("\n");
+
+
+	// Converting a text column straight to varbinary errors on mssql,
+	// and on ASE it aborts the whole command with Msg 3621, hence the
+	// doubled convert on testtext.
+	stdoutput.printf("ct_command: select stored bytes\n");
+	query="select testid, "
+		"convert(varbinary(40),testchar), "
+		"convert(varbinary(40),testvarchar), "
+		"convert(varbinary(40),testnchar), "
+		"convert(varbinary(40),testnvarchar), "
+		"convert(varbinary(40),convert(varchar(40),testtext)) "
+		"from charsettable order by testid";
+	assertEquals(ct_command(cmd,CS_LANG_CMD,
+					query,charstring::getLength(query),
+					CS_UNUSED),CS_SUCCEED);
+	assertEquals(ct_send(cmd),CS_SUCCEED);
+	results=ct_results(cmd,&resultstype);
+	assertEquals(results,CS_SUCCEED);
+	assertEquals(resultstype,CS_ROW_RESULT);
+	stdoutput.printf("\n");
+
+
+	stdoutput.printf("ct_res_info: col count\n");
+	ncols=0;
+	assertEquals(ct_res_info(cmd,CS_NUMDATA,
+					(CS_VOID *)&ncols,CS_UNUSED,
+					(CS_INT *)NULL),CS_SUCCEED);
+	assertEquals(ncols,6);
+	stdoutput.printf("\n");
+
+
+	stdoutput.printf("ct_bind:\n");
+	for (CS_INT i=0; i<6; i++) {
+		bytestring::zero(nadata[i],1024);
+		nafmt[i].datatype=CS_CHAR_TYPE;
+		nafmt[i].format=CS_FMT_NULLTERM;
+		nafmt[i].maxlength=1024;
+		nafmt[i].scale=CS_UNUSED;
+		nafmt[i].precision=CS_UNUSED;
+		nafmt[i].status=CS_UNUSED;
+		nafmt[i].count=1;
+		nafmt[i].usertype=CS_UNUSED;
+		nafmt[i].locale=NULL;
+		assertEquals(ct_bind(cmd,i+1,&(nafmt[i]),
+						(CS_VOID *)nadata[i],
+						&(nadatalength[i]),
+						&(nanullindicator[i])),
+						CS_SUCCEED);
+	}
+	stdoutput.printf("\n");
+
+
+	stdoutput.printf("ct_fetch:\n");
+	assertEquals(ct_fetch(cmd,CS_UNUSED,CS_UNUSED,
+					CS_UNUSED,&rowsread),CS_SUCCEED);
+	assertEquals(rowsread,1);
+	stdoutput.printf("\n");
+
+
+	stdoutput.printf("row data:\n");
+	assertEquals(nadata[0],"1");
+	assertEquals(nadata[1],"61c3a97a"
+				"20202020202020202020202020202020");
+	assertEquals(nadata[2],"61c3a97a");
+	assertEquals(nadata[3],(issybase)?
+				"61c3a97a"
+				"20202020202020202020202020202020":
+				"6100c300a9007a00"
+				"20002000200020002000200020002000"
+				"20002000200020002000200020002000");
+	assertEquals(nadata[4],(issybase)?"61c3a97a":"6100c300a9007a00");
+	assertEquals(nadata[5],"61c3a97a");
+	stdoutput.printf("\n");
+
+
+	stdoutput.printf("ct_fetch:\n");
+	assertEquals(ct_fetch(cmd,CS_UNUSED,CS_UNUSED,
+					CS_UNUSED,&rowsread),CS_SUCCEED);
+	assertEquals(rowsread,1);
+	stdoutput.printf("\n");
+
+
+	// the 3f in the mssql non-unicode columns is a stored '?', so the
+	// loss happened on the way in, not on the way out
+	stdoutput.printf("row data:\n");
+	assertEquals(nadata[0],"2");
+	assertEquals(nadata[1],(issybase)?
+				"61e282ac7a"
+				"202020202020202020202020202020":
+				"61e23fac7a"
+				"202020202020202020202020202020");
+	assertEquals(nadata[2],(issybase)?"61e282ac7a":"61e23fac7a");
+	assertEquals(nadata[3],(issybase)?
+				"61e282ac7a"
+				"202020202020202020202020202020":
+				"6100e2008200ac007a00"
+				"20002000200020002000200020002000"
+				"2000200020002000200020002000");
+	assertEquals(nadata[4],(issybase)?
+				"61e282ac7a":
+				"6100e2008200ac007a00");
+	assertEquals(nadata[5],(issybase)?"61e282ac7a":"61e23fac7a");
+	stdoutput.printf("\n");
+
+
+	stdoutput.printf("ct_fetch:\n");
+	assertEquals(ct_fetch(cmd,CS_UNUSED,CS_UNUSED,
+					CS_UNUSED,&rowsread),CS_SUCCEED);
+	assertEquals(rowsread,1);
+	stdoutput.printf("\n");
+
+
+	stdoutput.printf("row data:\n");
+	assertEquals(nadata[0],"3");
+	assertEquals(nadata[1],(issybase)?
+				"61e697a57a"
+				"202020202020202020202020202020":
+				"61e63fa57a"
+				"202020202020202020202020202020");
+	assertEquals(nadata[2],(issybase)?"61e697a57a":"61e63fa57a");
+	assertEquals(nadata[3],(issybase)?
+				"61e697a57a"
+				"202020202020202020202020202020":
+				"6100e6009700a5007a00"
+				"20002000200020002000200020002000"
+				"2000200020002000200020002000");
+	assertEquals(nadata[4],(issybase)?
+				"61e697a57a":
+				"6100e6009700a5007a00");
+	assertEquals(nadata[5],(issybase)?"61e697a57a":"61e63fa57a");
+	stdoutput.printf("\n");
+
+
+	stdoutput.printf("ct_results:\n");
+	results=ct_results(cmd,&resultstype);
+	assertEquals(results,CS_SUCCEED);
+	assertEquals(resultstype,CS_CMD_DONE);
+	results=ct_results(cmd,&resultstype);
+	assertEquals(results,CS_END_RESULTS);
+	assertEquals(ct_cancel(NULL,cmd,CS_CANCEL_ALL),CS_SUCCEED);
+	stdoutput.printf("\n");
+
+
+	stdoutput.printf("ct_command: select datalength\n");
+	query="select testid, datalength(testchar), datalength(testvarchar), "
+		"datalength(testnchar), datalength(testnvarchar), "
+		"datalength(testtext) "
+		"from charsettable order by testid";
+	assertEquals(ct_command(cmd,CS_LANG_CMD,
+					query,charstring::getLength(query),
+					CS_UNUSED),CS_SUCCEED);
+	assertEquals(ct_send(cmd),CS_SUCCEED);
+	results=ct_results(cmd,&resultstype);
+	assertEquals(results,CS_SUCCEED);
+	assertEquals(resultstype,CS_ROW_RESULT);
+	stdoutput.printf("\n");
+
+
+	stdoutput.printf("ct_res_info: col count\n");
+	ncols=0;
+	assertEquals(ct_res_info(cmd,CS_NUMDATA,
+					(CS_VOID *)&ncols,CS_UNUSED,
+					(CS_INT *)NULL),CS_SUCCEED);
+	assertEquals(ncols,6);
+	stdoutput.printf("\n");
+
+
+	stdoutput.printf("ct_bind:\n");
+	for (CS_INT i=0; i<6; i++) {
+		bytestring::zero(nadata[i],1024);
+		nafmt[i].datatype=CS_CHAR_TYPE;
+		nafmt[i].format=CS_FMT_NULLTERM;
+		nafmt[i].maxlength=1024;
+		nafmt[i].scale=CS_UNUSED;
+		nafmt[i].precision=CS_UNUSED;
+		nafmt[i].status=CS_UNUSED;
+		nafmt[i].count=1;
+		nafmt[i].usertype=CS_UNUSED;
+		nafmt[i].locale=NULL;
+		assertEquals(ct_bind(cmd,i+1,&(nafmt[i]),
+						(CS_VOID *)nadata[i],
+						&(nadatalength[i]),
+						&(nanullindicator[i])),
+						CS_SUCCEED);
+	}
+	stdoutput.printf("\n");
+
+
+	stdoutput.printf("ct_fetch:\n");
+	assertEquals(ct_fetch(cmd,CS_UNUSED,CS_UNUSED,
+					CS_UNUSED,&rowsread),CS_SUCCEED);
+	assertEquals(rowsread,1);
+	stdoutput.printf("\n");
+
+
+	// mssql spends two bytes per character on the n-types, ase one
+	stdoutput.printf("row data:\n");
+	assertEquals(nadata[0],"1");
+	assertEquals(nadata[1],"20");
+	assertEquals(nadata[2],"4");
+	assertEquals(nadata[3],(issybase)?"20":"40");
+	assertEquals(nadata[4],(issybase)?"4":"8");
+	assertEquals(nadata[5],"4");
+	stdoutput.printf("\n");
+
+
+	stdoutput.printf("ct_fetch:\n");
+	assertEquals(ct_fetch(cmd,CS_UNUSED,CS_UNUSED,
+					CS_UNUSED,&rowsread),CS_SUCCEED);
+	assertEquals(rowsread,1);
+	stdoutput.printf("\n");
+
+
+	stdoutput.printf("row data:\n");
+	assertEquals(nadata[0],"2");
+	assertEquals(nadata[1],"20");
+	assertEquals(nadata[2],"5");
+	assertEquals(nadata[3],(issybase)?"20":"40");
+	assertEquals(nadata[4],(issybase)?"5":"10");
+	assertEquals(nadata[5],"5");
+	stdoutput.printf("\n");
+
+
+	stdoutput.printf("ct_fetch:\n");
+	assertEquals(ct_fetch(cmd,CS_UNUSED,CS_UNUSED,
+					CS_UNUSED,&rowsread),CS_SUCCEED);
+	assertEquals(rowsread,1);
+	stdoutput.printf("\n");
+
+
+	stdoutput.printf("row data:\n");
+	assertEquals(nadata[0],"3");
+	assertEquals(nadata[1],"20");
+	assertEquals(nadata[2],"5");
+	assertEquals(nadata[3],(issybase)?"20":"40");
+	assertEquals(nadata[4],(issybase)?"5":"10");
+	assertEquals(nadata[5],"5");
+	stdoutput.printf("\n");
+
+
+	stdoutput.printf("ct_results:\n");
+	results=ct_results(cmd,&resultstype);
+	assertEquals(results,CS_SUCCEED);
+	assertEquals(resultstype,CS_CMD_DONE);
+	results=ct_results(cmd,&resultstype);
+	assertEquals(results,CS_END_RESULTS);
+	assertEquals(ct_cancel(NULL,cmd,CS_CANCEL_ALL),CS_SUCCEED);
+	stdoutput.printf("\n");
+
+
+	stdoutput.printf("ct_command: drop\n");
+	query="drop table charsettable";
+	assertEquals(ct_command(cmd,CS_LANG_CMD,
+					query,charstring::getLength(query),
+					CS_UNUSED),CS_SUCCEED);
+	assertEquals(ct_send(cmd),CS_SUCCEED);
+	results=ct_results(cmd,&resultstype);
+	assertEquals(results,CS_SUCCEED);
+	assertEquals(resultstype,CS_CMD_SUCCEED);
+	results=ct_results(cmd,&resultstype);
+	assertEquals(results,CS_SUCCEED);
+	assertEquals(resultstype,CS_CMD_DONE);
+	results=ct_results(cmd,&resultstype);
+	assertEquals(results,CS_END_RESULTS);
+	assertEquals(ct_cancel(NULL,cmd,CS_CANCEL_ALL),CS_SUCCEED);
+	stdoutput.printf("\n");
+
+
+	// same ddl for both servers
+	const char	*collatecreate=
+			"create table collatetable ("
+				"testcollated varchar(20) "
+					"collate Latin1_General_BIN, "
+				"testdefault varchar(20))";
+
+	if (issybase) {
+
+		// ASE 16 has no per-column collate clause - its collation is a
+		// server-wide sort order - so this create is supposed to fail.
+		stdoutput.printf("ct_command: create collate\n");
+		query=collatecreate;
+		assertEquals(ct_command(cmd,CS_LANG_CMD,
+					query,charstring::getLength(query),
+					CS_UNUSED),CS_SUCCEED);
+		assertEquals(ct_send(cmd),CS_SUCCEED);
+		results=ct_results(cmd,&resultstype);
+		assertEquals(results,CS_SUCCEED);
+		assertEquals(resultstype,CS_CMD_FAIL);
+		results=ct_results(cmd,&resultstype);
+		assertEquals(results,CS_SUCCEED);
+		assertEquals(resultstype,CS_CMD_DONE);
+		results=ct_results(cmd,&resultstype);
+		assertEquals(results,CS_END_RESULTS);
+		assertEquals(ct_cancel(NULL,cmd,CS_CANCEL_ALL),CS_SUCCEED);
+		stdoutput.printf("\n");
+
+	} else {
+
+		query="drop table collatetable";
+		ct_command(cmd,CS_LANG_CMD,query,
+					charstring::getLength(query),
+					CS_UNUSED);
+		ct_send(cmd);
+		while (ct_results(cmd,&resultstype)==CS_SUCCEED) {}
+		ct_cancel(NULL,cmd,CS_CANCEL_ALL);
+
+
+		stdoutput.printf("ct_command: create collate\n");
+		query=collatecreate;
+		assertEquals(ct_command(cmd,CS_LANG_CMD,
+					query,charstring::getLength(query),
+					CS_UNUSED),CS_SUCCEED);
+		assertEquals(ct_send(cmd),CS_SUCCEED);
+		results=ct_results(cmd,&resultstype);
+		assertEquals(results,CS_SUCCEED);
+		assertEquals(resultstype,CS_CMD_SUCCEED);
+		results=ct_results(cmd,&resultstype);
+		assertEquals(results,CS_SUCCEED);
+		assertEquals(resultstype,CS_CMD_DONE);
+		results=ct_results(cmd,&resultstype);
+		assertEquals(results,CS_END_RESULTS);
+		assertEquals(ct_cancel(NULL,cmd,CS_CANCEL_ALL),CS_SUCCEED);
+		stdoutput.printf("\n");
+
+
+		stdoutput.printf("ct_command: select collation\n");
+		query="select c.name, c.collation_name from sys.columns c "
+			"where c.object_id=object_id('collatetable') "
+			"order by c.column_id";
+		assertEquals(ct_command(cmd,CS_LANG_CMD,
+					query,charstring::getLength(query),
+					CS_UNUSED),CS_SUCCEED);
+		assertEquals(ct_send(cmd),CS_SUCCEED);
+		results=ct_results(cmd,&resultstype);
+		assertEquals(results,CS_SUCCEED);
+		assertEquals(resultstype,CS_ROW_RESULT);
+		stdoutput.printf("\n");
+
+
+		stdoutput.printf("ct_res_info: col count\n");
+		cscols=2;
+		ncols=0;
+		assertEquals(ct_res_info(cmd,CS_NUMDATA,
+					(CS_VOID *)&ncols,CS_UNUSED,
+					(CS_INT *)NULL),CS_SUCCEED);
+		assertEquals(ncols,cscols);
+		stdoutput.printf("\n");
+
+
+		stdoutput.printf("ct_bind:\n");
+		for (CS_INT i=0; i<cscols; i++) {
+			bytestring::zero(csdata[i],1024);
+			csfmt[i].datatype=CS_CHAR_TYPE;
+			csfmt[i].format=CS_FMT_NULLTERM;
+			csfmt[i].maxlength=1024;
+			csfmt[i].scale=CS_UNUSED;
+			csfmt[i].precision=CS_UNUSED;
+			csfmt[i].status=CS_UNUSED;
+			csfmt[i].count=1;
+			csfmt[i].usertype=CS_UNUSED;
+			csfmt[i].locale=NULL;
+			assertEquals(ct_bind(cmd,i+1,&(csfmt[i]),
+							(CS_VOID *)csdata[i],
+							&(csdatalength[i]),
+							&(csnullindicator[i])),
+							CS_SUCCEED);
+		}
+		stdoutput.printf("\n");
+
+
+		stdoutput.printf("ct_fetch:\n");
+		assertEquals(ct_fetch(cmd,CS_UNUSED,CS_UNUSED,
+					CS_UNUSED,&rowsread),CS_SUCCEED);
+		assertEquals(rowsread,1);
+		stdoutput.printf("\n");
+
+
+		stdoutput.printf("row data:\n");
+		assertEquals(csdata[0],"testcollated");
+		assertEquals(csdata[1],"Latin1_General_BIN");
+		stdoutput.printf("\n");
+
+
+		stdoutput.printf("ct_fetch:\n");
+		assertEquals(ct_fetch(cmd,CS_UNUSED,CS_UNUSED,
+					CS_UNUSED,&rowsread),CS_SUCCEED);
+		assertEquals(rowsread,1);
+		stdoutput.printf("\n");
+
+
+		stdoutput.printf("row data:\n");
+		assertEquals(csdata[0],"testdefault");
+		assertEquals(csdata[1],"SQL_Latin1_General_CP1_CI_AS");
+		stdoutput.printf("\n");
+
+
+		stdoutput.printf("ct_results:\n");
+		results=ct_results(cmd,&resultstype);
+		assertEquals(results,CS_SUCCEED);
+		assertEquals(resultstype,CS_CMD_DONE);
+		results=ct_results(cmd,&resultstype);
+		assertEquals(results,CS_END_RESULTS);
+		assertEquals(ct_cancel(NULL,cmd,CS_CANCEL_ALL),CS_SUCCEED);
+		stdoutput.printf("\n");
+
+
+		stdoutput.printf("ct_command: select collated\n");
+		query="select testcollated from collatetable";
+		assertEquals(ct_command(cmd,CS_LANG_CMD,
+					query,charstring::getLength(query),
+					CS_UNUSED),CS_SUCCEED);
+		assertEquals(ct_send(cmd),CS_SUCCEED);
+		results=ct_results(cmd,&resultstype);
+		assertEquals(results,CS_SUCCEED);
+		assertEquals(resultstype,CS_ROW_RESULT);
+		stdoutput.printf("\n");
+
+
+		// an explicitly collated column reports no collation either -
+		// see the poisoned describe above
+		stdoutput.printf("ct_describe:\n");
+		poisonlocale=NULL;
+		assertEquals(cs_loc_alloc(context,&poisonlocale),CS_SUCCEED);
+		csfmt[0].locale=poisonlocale;
+		assertEquals(ct_describe(cmd,1,&(csfmt[0])),CS_SUCCEED);
+		assertTrue(csfmt[0].locale==NULL);
+		assertEquals(cs_loc_drop(context,poisonlocale),CS_SUCCEED);
+		stdoutput.printf("\n");
+
+
+		stdoutput.printf("ct_results:\n");
+		results=ct_results(cmd,&resultstype);
+		assertEquals(results,CS_SUCCEED);
+		assertEquals(resultstype,CS_CMD_DONE);
+		results=ct_results(cmd,&resultstype);
+		assertEquals(results,CS_END_RESULTS);
+		assertEquals(ct_cancel(NULL,cmd,CS_CANCEL_ALL),CS_SUCCEED);
+		stdoutput.printf("\n");
+
+
+		stdoutput.printf("ct_command: drop\n");
+		query="drop table collatetable";
+		assertEquals(ct_command(cmd,CS_LANG_CMD,
+					query,charstring::getLength(query),
+					CS_UNUSED),CS_SUCCEED);
+		assertEquals(ct_send(cmd),CS_SUCCEED);
+		results=ct_results(cmd,&resultstype);
+		assertEquals(results,CS_SUCCEED);
+		assertEquals(resultstype,CS_CMD_SUCCEED);
+		results=ct_results(cmd,&resultstype);
+		assertEquals(results,CS_SUCCEED);
+		assertEquals(resultstype,CS_CMD_DONE);
+		results=ct_results(cmd,&resultstype);
+		assertEquals(results,CS_END_RESULTS);
+		assertEquals(ct_cancel(NULL,cmd,CS_CANCEL_ALL),CS_SUCCEED);
+		stdoutput.printf("\n");
+	}
+
+
+	stdoutput.printf("cs_con_alloc: second connection\n");
+	CS_CONNECTION	*conn2=NULL;
+	assertEquals(ct_con_alloc(context,&conn2),CS_SUCCEED);
+	stdoutput.printf("\n");
+
+
+	stdoutput.printf("cs_con_props: second connection\n");
+	assertEquals(ct_con_props(conn2,CS_SET,
+				CS_USERNAME,(CS_VOID *)user,CS_NULLTERM,
+				(CS_INT *)NULL),CS_SUCCEED);
+	assertEquals(ct_con_props(conn2,CS_SET,
+				CS_PASSWORD,(CS_VOID *)password,CS_NULLTERM,
+				(CS_INT *)NULL),CS_SUCCEED);
+	assertEquals(ct_con_props(conn2,CS_SET,
+				CS_APPNAME,(CS_VOID *)"SQL Relay Test",
+				CS_NULLTERM,(CS_INT *)NULL),CS_SUCCEED);
+	assertEquals(ct_con_props(conn2,CS_SET,
+				CS_PACKETSIZE,(CS_VOID *)&ps,sizeof(ps),
+				(CS_INT *)NULL),CS_SUCCEED);
+	assertEquals(ct_con_props(conn2,CS_SET,
+				CS_CLIENTCHARSET,(CS_VOID *)"UTF-8",CS_NULLTERM,
+				(CS_INT *)NULL),CS_SUCCEED);
+	stdoutput.printf("\n");
+
+
+	stdoutput.printf("ct_connect: second connection\n");
+	CS_RETCODE	connected2=ct_connect(conn2,(CS_CHAR *)NULL,(CS_INT)0);
+	assertEquals(connected2,CS_SUCCEED);
+	stdoutput.printf("\n");
+
+
+	if (connected2==CS_SUCCEED) {
+
+		// set through ct_con_props, so this one reads back, unlike the
+		// primary connection above
+		stdoutput.printf("ct_con_props: get client charset\n");
+		bytestring::zero(buf,sizeof(buf));
+		outlen=-1;
+		assertEquals(ct_con_props(conn2,CS_GET,CS_CLIENTCHARSET,
+					(CS_VOID *)buf,(CS_INT)sizeof(buf),
+					&outlen),CS_SUCCEED);
+		assertEquals(outlen,5);
+		assertEquals(buf,"UTF-8");
+		stdoutput.printf("\n");
+
+
+		stdoutput.printf("ct_cmd_alloc: cmd2\n");
+		CS_COMMAND	*cmd2=NULL;
+		assertEquals(ct_cmd_alloc(conn2,&cmd2),CS_SUCCEED);
+		stdoutput.printf("\n");
+
+
+		stdoutput.printf("ct_command: use db\n");
+		stringbuffer	q2;
+		q2.append("use ")->append(db);
+		query=q2.getString();
+		assertEquals(ct_command(cmd2,CS_LANG_CMD,
+					query,charstring::getLength(query),
+					CS_UNUSED),CS_SUCCEED);
+		assertEquals(ct_send(cmd2),CS_SUCCEED);
+		results=ct_results(cmd2,&resultstype);
+		assertEquals(results,CS_SUCCEED);
+		assertEquals(resultstype,CS_CMD_SUCCEED);
+		results=ct_results(cmd2,&resultstype);
+		assertEquals(results,CS_SUCCEED);
+		assertEquals(resultstype,CS_CMD_DONE);
+		results=ct_results(cmd2,&resultstype);
+		assertEquals(results,CS_END_RESULTS);
+		assertEquals(ct_cancel(NULL,cmd2,CS_CANCEL_ALL),CS_SUCCEED);
+		stdoutput.printf("\n");
+
+
+		query="drop table charsettable2";
+		ct_command(cmd2,CS_LANG_CMD,query,
+					charstring::getLength(query),
+					CS_UNUSED);
+		ct_send(cmd2);
+		while (ct_results(cmd2,&resultstype)==CS_SUCCEED) {}
+		ct_cancel(NULL,cmd2,CS_CANCEL_ALL);
+
+
+		stdoutput.printf("ct_command: create\n");
+		if (issybase) {
+			query="create table charsettable2 ("
+					"testid int, "
+					"testvarchar varchar(20), "
+					"testnvarchar nvarchar(20)"
+					") lock datarows";
+		} else {
+			query="create table charsettable2 ("
+					"testid int, "
+					"testvarchar varchar(20), "
+					"testnvarchar nvarchar(20)"
+					")";
+		}
+		assertEquals(ct_command(cmd2,CS_LANG_CMD,
+					query,charstring::getLength(query),
+					CS_UNUSED),CS_SUCCEED);
+		assertEquals(ct_send(cmd2),CS_SUCCEED);
+		results=ct_results(cmd2,&resultstype);
+		assertEquals(results,CS_SUCCEED);
+		assertEquals(resultstype,CS_CMD_SUCCEED);
+		results=ct_results(cmd2,&resultstype);
+		assertEquals(results,CS_SUCCEED);
+		assertEquals(resultstype,CS_CMD_DONE);
+		results=ct_results(cmd2,&resultstype);
+		assertEquals(results,CS_END_RESULTS);
+		assertEquals(ct_cancel(NULL,cmd2,CS_CANCEL_ALL),CS_SUCCEED);
+		stdoutput.printf("\n");
+
+
+		// the same three characters as above, hex escaped
+		const char	*charsetinserts2[3]={
+			"insert into charsettable2 values (1, "
+				"'a\xc3\xa9z', N'a\xc3\xa9z')",
+			"insert into charsettable2 values (2, "
+				"'a\xe2\x82\xacz', N'a\xe2\x82\xacz')",
+			"insert into charsettable2 values (3, "
+				"'a\xe6\x97\xa5z', N'a\xe6\x97\xa5z')"
+		};
+
+
+		// ASE's server charset is iso_1, so freetds converts the utf-8
+		// client charset down to it and drops the two characters with
+		// no iso_1 form.  That leaves the quotes unbalanced, so the
+		// mangled statement still goes out and ASE rejects it - the
+		// conversion fails client-side, the command fails server-side.
+		// Nothing fails on mssql, which takes ucs-2 on tds 7.
+		stdoutput.printf("ct_command: insert\n");
+		for (CS_INT i=0; i<3; i++) {
+			query=charsetinserts2[i];
+			assertEquals(ct_command(cmd2,CS_LANG_CMD,
+					query,charstring::getLength(query),
+					CS_UNUSED),CS_SUCCEED);
+			assertEquals(ct_send(cmd2),CS_SUCCEED);
+			results=ct_results(cmd2,&resultstype);
+			assertEquals(results,CS_SUCCEED);
+			if (issybase && i>0) {
+				assertEquals(resultstype,CS_CMD_FAIL);
+			} else {
+				assertEquals(resultstype,CS_CMD_SUCCEED);
+				assertEquals(ct_res_info(cmd2,CS_ROW_COUNT,
+						(CS_VOID *)&affectedrows,
+						CS_UNUSED,
+						(CS_INT *)NULL),CS_SUCCEED);
+				assertEquals(affectedrows,1);
+			}
+			results=ct_results(cmd2,&resultstype);
+			assertEquals(results,CS_SUCCEED);
+			assertEquals(resultstype,CS_CMD_DONE);
+			results=ct_results(cmd2,&resultstype);
+			assertEquals(results,CS_END_RESULTS);
+			assertEquals(ct_cancel(NULL,cmd2,CS_CANCEL_ALL),
+								CS_SUCCEED);
+		}
+		stdoutput.printf("\n");
+
+
+		stdoutput.printf("ct_command: select\n");
+		query="select testid, testvarchar, testnvarchar "
+			"from charsettable2 order by testid";
+		assertEquals(ct_command(cmd2,CS_LANG_CMD,
+					query,charstring::getLength(query),
+					CS_UNUSED),CS_SUCCEED);
+		assertEquals(ct_send(cmd2),CS_SUCCEED);
+		results=ct_results(cmd2,&resultstype);
+		assertEquals(results,CS_SUCCEED);
+		assertEquals(resultstype,CS_ROW_RESULT);
+		stdoutput.printf("\n");
+
+
+		stdoutput.printf("ct_res_info: col count\n");
+		cscols=3;
+		ncols=0;
+		assertEquals(ct_res_info(cmd2,CS_NUMDATA,
+					(CS_VOID *)&ncols,CS_UNUSED,
+					(CS_INT *)NULL),CS_SUCCEED);
+		assertEquals(ncols,cscols);
+		stdoutput.printf("\n");
+
+
+		stdoutput.printf("ct_bind:\n");
+		for (CS_INT i=0; i<cscols; i++) {
+			bytestring::zero(csdata[i],1024);
+			csfmt[i].datatype=CS_CHAR_TYPE;
+			csfmt[i].format=CS_FMT_NULLTERM;
+			csfmt[i].maxlength=1024;
+			csfmt[i].scale=CS_UNUSED;
+			csfmt[i].precision=CS_UNUSED;
+			csfmt[i].status=CS_UNUSED;
+			csfmt[i].count=1;
+			csfmt[i].usertype=CS_UNUSED;
+			csfmt[i].locale=NULL;
+			assertEquals(ct_bind(cmd2,i+1,&(csfmt[i]),
+							(CS_VOID *)csdata[i],
+							&(csdatalength[i]),
+							&(csnullindicator[i])),
+							CS_SUCCEED);
+		}
+		stdoutput.printf("\n");
+
+
+		stdoutput.printf("ct_fetch:\n");
+		assertEquals(ct_fetch(cmd2,CS_UNUSED,CS_UNUSED,
+					CS_UNUSED,&rowsread),CS_SUCCEED);
+		assertEquals(rowsread,1);
+		stdoutput.printf("\n");
+
+
+		// both columns come back re-encoded as utf-8, so the bytes
+		// match what went in
+		stdoutput.printf("row data:\n");
+		assertEquals(csdata[0],"1");
+		assertEquals(csdatalength[0],2);
+		assertEquals(csdata[1],"a\xc3\xa9z");
+		assertEquals(csdatalength[1],5);
+		assertEquals(csdata[2],"a\xc3\xa9z");
+		assertEquals(csdatalength[2],5);
+		stdoutput.printf("\n");
+
+
+		if (!issybase) {
+
+			stdoutput.printf("ct_fetch:\n");
+			assertEquals(ct_fetch(cmd2,CS_UNUSED,CS_UNUSED,
+					CS_UNUSED,&rowsread),CS_SUCCEED);
+			assertEquals(rowsread,1);
+			stdoutput.printf("\n");
+
+
+			stdoutput.printf("row data:\n");
+			assertEquals(csdata[0],"2");
+			assertEquals(csdatalength[0],2);
+			assertEquals(csdata[1],"a\xe2\x82\xacz");
+			assertEquals(csdatalength[1],6);
+			assertEquals(csdata[2],"a\xe2\x82\xacz");
+			assertEquals(csdatalength[2],6);
+			stdoutput.printf("\n");
+
+
+			stdoutput.printf("ct_fetch:\n");
+			assertEquals(ct_fetch(cmd2,CS_UNUSED,CS_UNUSED,
+					CS_UNUSED,&rowsread),CS_SUCCEED);
+			assertEquals(rowsread,1);
+			stdoutput.printf("\n");
+
+
+			// cp1252 has no U+65E5, so the varchar copy was
+			// already a '?' when it was stored
+			stdoutput.printf("row data:\n");
+			assertEquals(csdata[0],"3");
+			assertEquals(csdatalength[0],2);
+			assertEquals(csdata[1],"a?z");
+			assertEquals(csdatalength[1],4);
+			assertEquals(csdata[2],"a\xe6\x97\xa5z");
+			assertEquals(csdatalength[2],6);
+			stdoutput.printf("\n");
+		}
+
+
+		stdoutput.printf("ct_results:\n");
+		results=ct_results(cmd2,&resultstype);
+		assertEquals(results,CS_SUCCEED);
+		assertEquals(resultstype,CS_CMD_DONE);
+		results=ct_results(cmd2,&resultstype);
+		assertEquals(results,CS_END_RESULTS);
+		assertEquals(ct_cancel(NULL,cmd2,CS_CANCEL_ALL),CS_SUCCEED);
+		stdoutput.printf("\n");
+
+
+		stdoutput.printf("ct_command: drop\n");
+		query="drop table charsettable2";
+		assertEquals(ct_command(cmd2,CS_LANG_CMD,
+					query,charstring::getLength(query),
+					CS_UNUSED),CS_SUCCEED);
+		assertEquals(ct_send(cmd2),CS_SUCCEED);
+		results=ct_results(cmd2,&resultstype);
+		assertEquals(results,CS_SUCCEED);
+		assertEquals(resultstype,CS_CMD_SUCCEED);
+		results=ct_results(cmd2,&resultstype);
+		assertEquals(results,CS_SUCCEED);
+		assertEquals(resultstype,CS_CMD_DONE);
+		results=ct_results(cmd2,&resultstype);
+		assertEquals(results,CS_END_RESULTS);
+		assertEquals(ct_cancel(NULL,cmd2,CS_CANCEL_ALL),CS_SUCCEED);
+		stdoutput.printf("\n");
+
+
+		stdoutput.printf("ct_cmd_drop: cmd2\n");
+		assertEquals(ct_cmd_drop(cmd2),CS_SUCCEED);
+		stdoutput.printf("\n");
+
+
+		stdoutput.printf("ct_close: second connection\n");
+		assertEquals(ct_close(conn2,CS_UNUSED),CS_SUCCEED);
+		stdoutput.printf("\n");
+
+
+		stdoutput.printf("ct_con_drop: second connection\n");
+		assertEquals(ct_con_drop(conn2),CS_SUCCEED);
+		stdoutput.printf("\n");
+	}
+
+
 	// The sections below are the coverage this test still owes, each
 	// tracked by its own ticket.  They are named here rather than left
 	// out so the gaps are visible in the output, the way
@@ -1177,10 +2502,6 @@ int	main(int argc, char **argv) {
 	stdoutput.printf("\n================ Binds ================\n\n");
 	// #8792 - no ct_param coverage yet
 	stdoutput.printf("not covered yet - see trac #8792\n\n");
-
-	stdoutput.printf("\n========= Charset and Collation ========\n\n");
-	// #8793 - no charset or collation coverage yet
-	stdoutput.printf("not covered yet - see trac #8793\n\n");
 
 	stdoutput.printf("\n============== Bulk Load ==============\n\n");
 	// #8794 - no blk_ coverage yet
