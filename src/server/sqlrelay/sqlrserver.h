@@ -727,8 +727,8 @@ class SQLRSERVER_DLLSPEC sqlrservercontroller : public sqlrserverbase {
 		 *  Returns SQLRTXMODEL_UNKNOWN if the string doesn't match any
 		 *  known transaction model.  "native" maps to
 		 *  SQLRTXMODEL_UNKNOWN here because resolving it requires the
-		 *  active connection's getNativeTransactionModel() — callers
-		 *  must handle that case themselves. */
+		 *  active connection's getNativeTransactionModel() -
+		 *  callers must handle that case themselves. */
 		static sqlrtxmodel_t	stringToTransactionModel(
 						const char *txmodel);
 
@@ -3425,7 +3425,7 @@ class SQLRSERVER_DLLSPEC sqlrserverconnection : public sqlrserverbase {
 		virtual const char	*getCurrentCatalogQuery();
 
 		/** Selects schema "schema".
-		 *  
+		 *
 		 *  Returns true if selection succeeded and false otherwise. */
 		virtual bool		selectSchema(const char *schema);
 
@@ -3719,7 +3719,7 @@ class SQLRSERVER_DLLSPEC sqlrserverconnection : public sqlrserverbase {
 							const char *procedure);
 
 		/** Returns a query that can be used to fetch the list of
-		 *  cagalog names that match the provided "catalog" pattern.
+		 *  catalog names that match the provided "catalog" pattern.
 		 *
 		 *  "catalog" can be a pattern that includes SQL wildcards
 		 *  like %.

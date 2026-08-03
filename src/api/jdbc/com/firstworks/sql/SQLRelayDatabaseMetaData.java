@@ -2020,9 +2020,8 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 	public
 	boolean supportsMultipleOpenResults() throws SQLException {
 		drv.debugFunction(this);
-		// SQL Relay doesn't currenlty support multiple open results,
-		// except via bind cursors, but I don't think that's what this
-		// refers to
+		// SQL Relay only supports multiple open results via bind
+		// cursors, which probably isn't what this refers to
 		boolean	result=false;
 		drv.debugPrintln("supports multiple open results: "+result);
 		drv.debugEnd();

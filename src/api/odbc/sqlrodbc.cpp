@@ -200,8 +200,8 @@ struct outputbind {
 	void	print() {}
 };
 
-// SQLBindParameter input descriptor — stashed so SQLExecute can re-read
-// the application buffer on each execute, as the ODBC spec requires.
+// SQLBindParameter input descriptor, stashed so SQLExecute can re-read
+// the application buffer on each execute
 struct inputbind {
 	SQLUSMALLINT	parameternumber;
 	SQLSMALLINT	valuetype;
@@ -893,9 +893,8 @@ static SQLRETURN SQLR_SQLCloseCursor(SQLHSTMT statementhandle) {
 		return SQL_INVALID_HANDLE;
 	}
 
-	// Per the ODBC spec, SQLCloseCursor (and SQLFreeStmt with SQL_CLOSE)
-	// closes the cursor and discards any pending result set but does not
-	// affect parameter or column bindings.  Don't reset params here.
+	// Per the ODBC spec, closing a cursor doesn't affect parameter or
+	// column bindings.  Don't reset params here.
 	stmt->cur->closeResultSet();
 
 	return SQL_SUCCESS;
@@ -2949,8 +2948,7 @@ static SQLRETURN SQLR_SQLConnect(SQLHDBC connectionhandle,
 
 	// ODBC wants the implicit transaction model.
 	//
-	// If this fails, we don't want the entire connection to fail.  Just
-	// set the error and return SUCCESS_WITH_INFO.
+	// If this fails, don't fail the entire connection.
 	if (conn->con->setTransactionModel("implicit")) {
 		debugPrintf("  Set Transaction Model Implicit: success\n");
 	} else {
@@ -2961,13 +2959,11 @@ static SQLRETURN SQLR_SQLConnect(SQLHDBC connectionhandle,
 		success=SQL_SUCCESS_WITH_INFO;
 	}
 
-	// Set autocommit on/off per the flag that was set when conn was
-	// created or by a call to SQLSetConnectAttr(autoconf-on/off)
-	// after creating a connection handle, but before calling this
+	// Set autocommit on/off per the flag that was set when the conn
+	// was created, or by a call to SQLSetConnectAttr before this
 	// function.
-	// 
-	// If this fails, we don't want the entire connection to fail.  Just
-	// set the error and return SUCCESS_WITH_INFO.
+	//
+	// If this fails, don't fail the entire connection.
 	if (conn->setautocommiton) {
 		if (conn->con->autoCommitOn()) {
 			debugPrintf("  Set Auto-Commit On: success\n");
@@ -3076,10 +3072,8 @@ SQLRETURN SQL_API SQLConnect(SQLHDBC connectionhandle,
 SQLRETURN SQL_API SQLCopyDesc(SQLHDESC SourceDescHandle,
 					SQLHDESC TargetDescHandle) {
 	debugFunction();
-	// descriptor field copy is not implemented;
-	// rowdesc/paramdesc don't actually track field state
-	// (would be HYC00, but descriptors don't carry
-	// diagnostics in this driver)
+	// descriptor field copy is not implemented
+	// (rowdesc/paramdesc don't actually track field state)
 	return SQL_ERROR;
 }
 
@@ -3586,9 +3580,8 @@ static void SQLR_FetchOutputBinds(SQLHSTMT statementhandle) {
 			case SQL_C_CHAR:
 				{
 				debugPrintf("  valuetype: SQL_C_CHAR\n");
-				// for LONGVARCHAR the server-side bind is a
-				// CLOB, so pull the value through the CLOB
-				// accessor instead of the string accessor
+				// for LONGVARCHAR the server-side bind is
+				// a CLOB, so use the CLOB accessor
 				const char	*str=
 					(ob->parametertype==SQL_LONGVARCHAR ||
 					 ob->parametertype==SQL_WLONGVARCHAR)?
@@ -4277,19 +4270,19 @@ static bool SQLR_KeywordAt(const SQLCHAR *text, uint32_t length,
 
 	uint32_t	kwlen=charstring::getLength(kw);
 
-	// not enough text left at `pos` to contain the keyword
+	// bail if there isn't enough text left
 	if (length-pos<kwlen) {
 		return false;
 	}
 
-	// case-insensitive keyword match at `pos` in `text[0..length)`
+	// case-insensitive keyword match
 	if (charstring::compareIgnoringCase(
 			(const char *)text+pos,kw,kwlen)) {
 		return false;
 	}
 
-	// the keyword runs up to the end of the text, so there is no
-	// trailing character that could extend it into a longer identifier
+	// nothing after the keyword, so it can't be part of a
+	// longer identifier
 	if (length-pos==kwlen) {
 		return true;
 	}
@@ -4302,7 +4295,7 @@ static bool SQLR_KeywordAt(const SQLCHAR *text, uint32_t length,
 
 static void SQLR_SkipWhitespace(const SQLCHAR *text, uint32_t length,
 							uint32_t *pos) {
-	// advance past SQL whitespace in `text[0..length)` starting at `*pos`.
+	// advance past whitespace
 	while (*pos<length) {
 		char	ch=text[*pos];
 		if (ch!=' ' && ch!='	' && ch!='\n' && ch!='\r') {
@@ -4409,8 +4402,7 @@ static void SQLR_Bind(STMT *stmt) {
 		inputbind	*ib=
 			stmt->inputbinds.getValue(node->getValue());
 
-		// skip binds whose position is past the new
-		// statement's parameter count
+		// skip binds past the query's bind count
 		if (ib->parameternumber>inquerybindcount) {
 			continue;
 		}
@@ -4444,8 +4436,7 @@ static void SQLR_Bind(STMT *stmt) {
 		outputbind	*ob=
 			stmt->outputbinds.getValue(node->getValue());
 
-		// skip binds whose position is past the new
-		// statement's parameter count
+		// skip binds past the query's bind count
 		if (ob->parameternumber>inquerybindcount) {
 			continue;
 		}
@@ -4471,8 +4462,7 @@ static void SQLR_Bind(STMT *stmt) {
 		outputbind	*ob=
 			stmt->inputoutputbinds.getValue(node->getValue());
 
-		// skip binds whose position is past the new
-		// statement's parameter count
+		// skip binds past the query's bind count
 		if (ob->parameternumber>inquerybindcount) {
 			continue;
 		}
@@ -4500,14 +4490,13 @@ static uint32_t SQLR_TrimQuery(SQLCHAR *statementtext, SQLINTEGER textlength) {
 		length=textlength;
 	}
 
-	// if the length is 0 then it's definitely already trimmed
+	// bail if the length is 0
 	if (!textlength) {
 		return 0;
 	}
 
-	// strip trailing whitespace; strip trailing ';' too, but only when
-	// the query isn't a procedural-SQL block — those need their
-	// terminating "end;" intact
+	// strip trailing whitespace, and the trailing ';' too, but not for
+	// procedural-SQL blocks, which need their terminating "end;"
 	bool	proceduralsql=SQLR_IsProceduralSQL(statementtext,length);
 	for (;;) {
 		char	ch=statementtext[length-1];
@@ -4549,7 +4538,7 @@ static SQLRETURN SQLR_SQLExecDirect(SQLHSTMT statementhandle,
 	stmt->cur->prepareQuery((const char *)statementtext,
 					statementtextlength);
 
-	// apply the stashed input/output/inputoutput binds before execute
+	// apply the stashed binds
 	SQLR_Bind(stmt);
 
 	// defer execution if there are any data-at-exec binds
@@ -4606,7 +4595,7 @@ static SQLRETURN SQLR_SQLExecute(SQLHSTMT statementhandle) {
 		return SQL_INVALID_HANDLE;
 	}
 
-	// apply the stashed input/output/inputoutput binds before execute
+	// apply the stashed binds
 	SQLR_Bind(stmt);
 
 	// defer execution if there are any data-at-exec binds
@@ -5507,10 +5496,8 @@ static SQLRETURN SQLR_SQLGetData(SQLHSTMT statementhandle,
 						stmt->cur->getColumnType(col));
 	}
 
-	// Fixed-length types (everything but the character and binary types,
-	// which can be fetched in successive chunks below) can only be fetched
-	// once.  A second SQLGetData() call for the same field must return
-	// SQL_NO_DATA rather than re-fetch the value.
+	// Fixed-length types can only be fetched once.  A second
+	// SQLGetData() call for the same field must return SQL_NO_DATA.
 	bool	fixedlength=(targettype!=SQL_C_CHAR
 				#ifdef SQL_C_WCHAR
 				&& targettype!=SQL_C_WCHAR
@@ -5561,11 +5548,9 @@ static SQLRETURN SQLR_SQLGetData(SQLHSTMT statementhandle,
 			} else if (!*offset) {
 				// Per the ODBC spec, the first call on a
 				// zero-length (but non-NULL) field should
-				// return SQL_SUCCESS with the indicator set to
-				// 0.  A subsequent call should return
-				// SQL_NO_DATA.  Bump *offset so the next call
-				// will fall through to the nodata=true branch
-				// below.
+				// return SQL_SUCCESS with the indicator set
+				// to 0.  A subsequent call should return
+				// SQL_NO_DATA.
 				*offset=1;
 				bytestocopy=0;
 			} else {
@@ -5735,11 +5720,9 @@ static SQLRETURN SQLR_SQLGetData(SQLHSTMT statementhandle,
 			} else if (!*offset) {
 				// Per the ODBC spec, the first call on a
 				// zero-length (but non-NULL) field should
-				// return SQL_SUCCESS with the indicator set to
-				// 0.  A subsequent call should return
-				// SQL_NO_DATA.  Bump *offset so the next call
-				// will fall through to the nodata=true branch
-				// below.
+				// return SQL_SUCCESS with the indicator set
+				// to 0.  A subsequent call should return
+				// SQL_NO_DATA.
 				*offset=1;
 				bytestocopy=0;
 			} else {
@@ -5834,8 +5817,8 @@ static SQLRETURN SQLR_SQLGetData(SQLHSTMT statementhandle,
 			return SQL_ERROR;
 	}
 
-	// mark fixed-length fields as fetched so the next call returns
-	// SQL_NO_DATA (variable-length types track this via *offset above)
+	// mark fixed-length fields as fetched, so the next call returns
+	// SQL_NO_DATA
 	if (fixedlength) {
 		*offset=1;
 	}
@@ -7223,9 +7206,7 @@ static SQLUINTEGER SQLR_CursorSensitivity(CONN *conn) {
 static SQLUINTEGER SQLR_AlterTable(CONN *conn) {
 	SQLUINTEGER	retval=0;
 
-	// ADD_COLUMN / DROP_COLUMN only imply the column add/drop flags;
-	// the set-default, collation, and constraint operations are distinct
-	// and are reported only when their own tokens are present
+	// report each operation only when its own token is present
 	if (SQLR_FeatureContains(conn,
 			"alter_table_operations","ADD_COLUMN")) {
 		#if (ODBCVER >= 0x0200)
@@ -11042,14 +11023,14 @@ SQLRETURN SQL_API SQLGetInfo(SQLHDBC connectionhandle,
 		case SQL_PARAM_ARRAY_ROW_COUNTS:
 			debugPrintf("  infotype: "
 					"SQL_PARAM_ARRAY_ROW_COUNTS\n");
-			// sqlrelay support bind arrays, but this driver doesn't
+			// sqlrelay supports bind arrays, but this driver doesn't
 			val.uintval=SQL_PARC_NO_BATCH;
 			type=1;
 			break;
 		case SQL_PARAM_ARRAY_SELECTS:
 			debugPrintf("  infotype: "
 					"SQL_PARAM_ARRAY_SELECTS\n");
-			// sqlrelay support bind arrays, but this driver doesn't
+			// sqlrelay supports bind arrays, but this driver doesn't
 			val.uintval=SQL_PAS_NO_SELECT;
 			type=1;
 			break;
@@ -11456,10 +11437,9 @@ static SQLRETURN SQLR_SQLGetStmtAttr(SQLHSTMT statementhandle,
 			debugPrintf("  attribute: "
 					"SQL_ATTR_ROW_NUMBER/"
 					"SQL_ROW_NUMBER\n");
-			// currentfetchrow is incremented past the just-fetched
-			// row, which makes it numerically equal to the 1-based
-			// row number of the current row; spec wants 0 if there
-			// is no current row (before first fetch or after EOF)
+			// currentfetchrow is already the 1-based row number
+			// of the current row, but the spec wants 0 if there
+			// is no current row
 			val.ulenval=(stmt->nodata)?0:stmt->currentfetchrow;
 			type=2;
 			break;
@@ -11930,9 +11910,7 @@ SQLRETURN SQL_API SQLParamData(SQLHSTMT statementhandle,
 						stmt->putdatabind);
 		debugPrintf("  parametername: %s\n",
 					parametername);
-		// dispatch on the type recorded by SQLBindParameter so binary
-		// data goes to inputBindBlob, LONGVARCHAR data to inputBindClob
-		// and other character data to inputBind
+		// dispatch on the type recorded by SQLBindParameter
 		inputbind	*ib=NULL;
 		stmt->inputbinds.getValue(stmt->putdatabind,&ib);
 		if (ib && ib->valuetype==SQL_C_BINARY) {
@@ -12005,18 +11983,15 @@ SQLRETURN SQL_API SQLParamData(SQLHSTMT statementhandle,
 	// (do this prior to execute to prevent looping forever)
 	// FIXME: also reset in SQLFreeStmt?
 	stmt->dataatexec=false;
-	// dataatexeckeys is the dictionary's internal keylist (returned by
-	// getKeys()), so we must not delete it — the dictionary owns it and
-	// will free it on destruction
+	// dataatexeckeys is the dictionary's internal keylist, which the
+	// dictionary owns and frees, so don't delete it here
 	stmt->dataatexeckeys=NULL;
 	stmt->putdatabind=0;
 	stmt->putdatabuffer.clear();
 
-	// exec/exec-direct will have been deferred until now.  In both cases
-	// the cursor was already prepared (by SQLPrepare or by the deferred
-	// SQLR_SQLExecDirect call above), so just execute it — re-preparing
-	// here would discard the data-at-exec binds that SQLPutData/SQLParamData
-	// just set on the cursor.
+	// The cursor was already prepared, so just execute it.  Re-preparing
+	// here would discard the data-at-exec binds that SQLPutData and
+	// SQLParamData just set on the cursor.
 	SQLRETURN	retval=SQL_ERROR;
 	{
 		debugPrintf("  exececuting...\n");
@@ -12240,12 +12215,8 @@ static SQLRETURN SQLR_SQLSetConnectAttr(SQLHDBC connectionhandle,
 			conn->attrtranslateoption=val.uintval;
 			return SQL_SUCCESS;
 		case SQL_TXN_ISOLATION:
-			// If the sqlrelay connection is valid then immediately
-			// set the isolation level.
-			//
-			// Otherwise set a flag in the CONN to that it will
-			// be set on/off when the sqlrelay connection becomes
-			// valid.
+			// set the isolation level now if connected, otherwise
+			// flag it to be set when the connection is made
 
 			debugPrintf("  attribute: SQL_TXN_ISOLATION\n");
 			debugPrintf("  val: %lld\n",(uint64_t)val.uintval);
@@ -12805,8 +12776,7 @@ static SQLRETURN SQLR_SQLSetStmtAttr(SQLHSTMT statementhandle,
 					"SQL_ATTR_FETCH_BOOKMARK_PTR\n");
 			debugPrintf("  val: %p\n",(SQLPOINTER)value);
 			// sqlrelay doesn't support bookmarks
-			// allow clearing a bookmark (NULL) is harmless,
-			// but fail when attempting to set a bookmark
+			// (clearing one is harmless, but setting one fails)
 			if (!value) {
 				return SQL_SUCCESS;
 			}
@@ -14805,9 +14775,7 @@ static SQLRETURN SQLR_SQLBindParameter(SQLHSTMT statementhandle,
 						"SQL_PARAM_INPUT\n");
 			{
 			// stash the descriptor so each SQLExecute can
-			// re-read the application buffer (ODBC semantics:
-			// bound values are read at execute time, not bind
-			// time)
+			// re-read the application buffer
 			inputbind	*ib;
 			if (!stmt->inputbinds.getValue(parameternumber,&ib)) {
 				ib=new inputbind;

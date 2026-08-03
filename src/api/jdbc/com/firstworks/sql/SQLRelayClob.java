@@ -13,12 +13,9 @@ import java.io.OutputStream;
 import java.io.Writer;
 import java.nio.charset.StandardCharsets;
 
-// A writable, growable Clob.
-//
 // Connection.createClob() must return an empty Clob that the app then fills
-// with setString(1,...).  SerialClob is fixed-size and can't grow, so
-// setString into an empty one throws on strict SerialClob (JDK 8u471+).  This
-// StringBuffer-backed Clob supports the create-empty-then-fill pattern.
+// with setString(1,...), but SerialClob is fixed-size, so that throws on
+// strict SerialClob (JDK 8u471+).  This Clob grows instead.
 public class SQLRelayClob implements Clob {
 
 	private StringBuffer	buf;

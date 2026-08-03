@@ -1370,7 +1370,7 @@ void	sqlrcur_prepareQueryWithLength(sqlrcur sqlrcurref,
 /** @ingroup sqlrclientwrapper
  *  Prepare to execute the contents
  *  of "path"/"filename".  Returns false if the
- * // file couldn't be opened. */
+ *  file couldn't be opened. */
 SQLRCLIENT_DLLSPEC
 void	sqlrcur_prepareFileQuery(sqlrcur sqlrcurref, 
 					const char *path, const char *filename);

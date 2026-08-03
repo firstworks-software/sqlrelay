@@ -1184,7 +1184,7 @@ class SQLRCLIENT_DLLSPEC sqlrcursor : public object {
 
 		/** Prepare to execute the contents 
 		 *  of "path"/"filename".  Returns false if the
-		 * // file couldn't be opened. */
+		 *  file couldn't be opened. */
 		bool	prepareFileQuery(const char *path,
 						const char *filename);
 

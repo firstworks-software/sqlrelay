@@ -24,13 +24,12 @@
 #define MAX_BIND_VARS 512
 #define MAX_LOB_CHUNK_SIZE 65535
 
-// isc_dsql_prepare's length parameter is an unsigned short, so firebird can't
-// prepare a statement of 65536 bytes or more; a larger length would wrap
+// isc_dsql_prepare's length parameter is an unsigned short, so a longer
+// query's length would wrap
 #define MAX_STATEMENT_SIZE 65535
 
-// fb_interpret (firebird 2.0+) supersedes the deprecated isc_interprete, whose
-// sizeless buffer walk can overflow msg and stack garbage after the real
-// error; configure sets HAVE_FB_INTERPRET when the client has it
+// fb_interpret (firebird 2.0+) supersedes the deprecated isc_interprete,
+// whose sizeless buffer walk can overflow msg
 static ISC_LONG fbInterpret(char *msg, unsigned int msgsize,
 					const ISC_STATUS **pvector) {
 #ifdef HAVE_FB_INTERPRET
@@ -1053,8 +1052,7 @@ void firebirdconnection::getError(char *errorbuffer,
 	ISC_LONG	sqlcode=isc_sqlcode(error);
 
 	// return the detailed status-vector message rather than the
-	// generic sqlcode text, which hides the real cause (e.g. -901);
-	// fall back to the sqlcode text if there was no detail
+	// generic sqlcode text, which hides the real cause (eg. -901)
 	if (errormsg.getStringLength()) {
 		charstring::safeCopy(errorbuffer,errorbuffersize,
 					errormsg.getString(),
@@ -2399,8 +2397,7 @@ void firebirdcursor::deallocateResultSetBuffers() {
 
 bool firebirdcursor::prepareQuery(const char *query, uint32_t size) {
 
-	// reject queries too large for isc_dsql_prepare's unsigned-short
-	// length rather than letting the length wrap and truncate the query
+	// reject queries too large for isc_dsql_prepare
 	querytoolarge=false;
 	if (size>MAX_STATEMENT_SIZE) {
 		querytoolarge=true;

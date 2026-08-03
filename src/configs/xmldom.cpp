@@ -1915,9 +1915,8 @@ void sqlrconfig_xmldom::normalizeTree() {
 	}
 
 	// handle protocols differently...
-	// We don't want to enable debug on the entire listeners tag, or the
-	// listener itself will also spew debug.  Rather, we need to enable
-	// debug for each individual listener tag of the listeners tag.
+	// (debug on the listeners tag would make the listener itself spew
+	// debug too, so set it on each listener tag)
 	if (hasDebug(d,"protocols")) {
 		for (domnode *listener=instance->
 					getFirstTagChild("listeners")->
@@ -1973,9 +1972,8 @@ void sqlrconfig_xmldom::normalizeTree() {
 		}
 	}
 
-	// if the instance has no transactionmodel attribute, but any
-	// connection's string attribute has faketransactionblocks=yes,
-	// then default the instance's transactionmodel to "explicit"
+	// default transactionmodel to "explicit" if any connection
+	// uses faketransactionblocks
 	if (instance->getAttribute("transactionmodel")->isNullNode()) {
 		for (domnode *conn=instance->getFirstTagChild("connections")->
 						getFirstTagChild("connection");

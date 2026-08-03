@@ -1135,7 +1135,7 @@ class SQLRCursor {
 
 		/** Prepare to execute the contents 
 		 *  of "path"/"filename".  Returns false if the
-		 * // file couldn't be opened. */
+		 *  file couldn't be opened. */
 		function prepareFileQuery(var path,
 						var filename);
 

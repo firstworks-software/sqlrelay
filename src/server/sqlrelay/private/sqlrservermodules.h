@@ -413,8 +413,6 @@ class SQLRSERVER_DLLSPEC sqlrtriggers : public sqlrservermodules {
 				sqlrservercursor *sqlrcur,
 				singlylinkedlist< sqlrmoduleplugin * > *list);
 
-		// blist/alist (inherited) are the execute-time lists.
-		// These two are the prepare-time lists.
 		singlylinkedlist< sqlrmoduleplugin * >	bplist;
 		singlylinkedlist< sqlrmoduleplugin * >	aplist;
 

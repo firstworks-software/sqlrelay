@@ -300,7 +300,7 @@ sqlrquerytype_t sqlrservercursor::determineQueryType(const char *query,
 							*(ptr+2)=='\0'))) {
 		return SQLRQUERYTYPE_COMMIT;
 	} else if (!charstring::compareIgnoringCase(ptr,"rollback",8)) {
-		// don't match "rollback to [savepoint] name")
+		// don't match "rollback to [savepoint] name"
 		const char	*after=
 			conn->cont->skipWhitespaceAndComments(ptr+8);
 		if (!charstring::compareIgnoringCase(after,"to",2) &&
@@ -1720,10 +1720,8 @@ bool sqlrservercursor::containsOnCommitPreserveRows(const char *query) {
 		return false;
 	}
 
-	// blank out string literals, delimited identifiers, and comments,
-	// so "on commit preserve rows" can't false-match inside one - eg. a
-	// column default like default 'on commit preserve rows', a quoted
-	// identifier, or a comment
+	// blank out string literals, delimited identifiers, and comments
+	// (so "on commit preserve rows" can't false-match inside one)
 	stringbuffer	stripped;
 	const char	*ptr=query;
 	const char	*end=query+charstring::getLength(query);

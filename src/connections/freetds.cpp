@@ -490,11 +490,11 @@ void freetdsconnection::initDatabaseFeatures() {
 		"false";
 
 	// the native odbc driver reports batch support, but sqlrelay runs
-	// one statement per query and returns one result set, so it can't
+	// one statement per query, so it reports none
 	databasefeatures[FEATURE_BATCH_OPERATIONS]=
 		"";
 
-	// sqlrelay returns no batch row counts (see batch_operations above)
+	// none, see batch_operations above
 	databasefeatures[FEATURE_BATCH_ROW_COUNTS]=
 		"";
 
@@ -981,7 +981,7 @@ CS_INT freetdsconnection::ctlibVersion(const char *version) {
 	return 0;
 }
 
-// maps a CS_VERSION_* constant back to its csversion label
+
 const char *freetdsconnection::ctlibVersionString(CS_INT version) {
 	#ifdef CS_VERSION_160
 	if (version==CS_VERSION_160) {
@@ -1057,8 +1057,7 @@ bool freetdsconnection::logIn(const char **error, const char **warning) {
 
 	// try client-library versions newest to oldest.  older versions
 	// support fewer features (eg. CS_VERSION_100 caps blobs at 255
-	// bytes), but the newer versions aren't supported by older client
-	// libraries, so fall back until one is accepted.
+	// bytes), but older client libraries reject the newer versions.
 	CS_INT		versions[8];
 	uint16_t	versioncount=0;
 	#ifdef CS_VERSION_160
@@ -1113,8 +1112,7 @@ bool freetdsconnection::logIn(const char **error, const char **warning) {
 	}
 
 	// warn if a numeric version was requested but isn't the one used.
-	// a non-numeric value (eg. "current") means "newest available",
-	// like leaving it unset, and never warns.
+	// a non-numeric value (eg. "current") means "newest available".
 	if (!charstring::isNullOrEmpty(csversion) &&
 			charstring::isInteger(csversion) &&
 			usedversion!=requested) {
@@ -3577,9 +3575,8 @@ const char *freetdsconnection::getCurrentSchemaQuery() {
 }
 
 const char *freetdsconnection::getCurrentUserQuery() {
-	// suser_sname() isn't available on all ASE versions; suser_name()
-	// is the older, universally-supported function and returns the
-	// current login name
+	// suser_sname() isn't available on all ASE versions, but
+	// suser_name() is
 	return "select suser_name()";
 }
 
@@ -4112,10 +4109,8 @@ bool freetdscursor::prepareQuery(const char *query, uint32_t size) {
 
 	} else if (query[0]=='{') {
 
-		// handle ODBC/JDBC procedure-call:
-		// {call proc(...)}
-		// or
-		// {?=call proc(...)}.
+		// handle ODBC/JDBC procedure-call syntax:
+		// {call proc(...)} or {?=call proc(...)}
 
 		// initiate an rpc command
 		cmd=languagecmd;
@@ -4204,8 +4199,7 @@ void freetdscursor::encodeBlob(stringbuffer *buffer,
 
 void freetdscursor::decodeBlob(char **data, uint32_t *datasize) {
 
-	// decodes *data of *datasize, in sybase encoded binary format,
-	// to raw binary, in place
+	// sybase encoded binary format is two hex characters per byte
 	// eg: 68656C6C6F -> hello
 
 	char	*write=*data;
@@ -4858,8 +4852,8 @@ bool freetdscursor::knowsAffectedRows() {
 }
 
 uint64_t freetdscursor::getAffectedRows() {
-        // freetds can set affectedrows to -1 when a DDL query is run
-        return (affectedrows>=0)?affectedrows:0;
+	// freetds can set affectedrows to -1 when a DDL query is run
+	return (affectedrows>=0)?affectedrows:0;
 }
 
 uint32_t freetdscursor::colCount() {
@@ -5172,7 +5166,7 @@ void freetdscursor::discardResults() {
 		} while (results==CS_SUCCEED);
 	}
 
-	// also clears a prepared-but-unsent command (e.g. a failed bind)
+	// also clears a prepared-but-unsent command (eg. a failed bind)
 	if (ct_cancel(NULL,cmd,CS_CANCEL_ALL)==CS_FAIL) {
 		freetdsconn->liveconnection=false;
 		// FIXME: call ct_close(CS_FORCE_CLOSE)?

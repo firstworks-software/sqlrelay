@@ -87,11 +87,8 @@ const char *sqlrquerytranslation_sequence_nextval::scanDottedPath(
 						const char *end,
 						const char **lastcomp) {
 
-	// scan a dotted object path: identifier ( "." identifier )*
-	// (single dots; the query is assumed already normalized).
-	// returns a pointer to the character after the path, or NULL if
-	// "ptr" doesn't begin with an identifier; "*lastcomp" is set to the
-	// start of the final component
+	// scan a dotted object path
+	// (single dots; the query is assumed already normalized)
 	const char	*p=ptr;
 	const char	*lc=ptr;
 	for (;;) {
@@ -134,8 +131,7 @@ bool sqlrquerytranslation_sequence_nextval::run(
 		return true;
 	}
 
-	// walk the query, copying to "translatedquery" and rewriting any
-	// sequence-nextval expression we encounter into the target style
+	// walk the query, translating any sequence-nextval expressions
 	const char	*start=query;
 	const char	*end=query+querylength;
 	const char	*ptr=query;
@@ -147,8 +143,7 @@ bool sqlrquerytranslation_sequence_nextval::run(
 			continue;
 		}
 
-		// try each input style; on a match, emit the target style
-		// for the captured sequence name and skip past the source
+		// try each input style
 		const char	*namestart;
 		const char	*nameend;
 		const char	*after=matchDotNextval(ptr,start,end,
@@ -190,8 +185,7 @@ const char *sqlrquerytranslation_sequence_nextval::matchDotNextval(
 						const char **namestart,
 						const char **nameend) {
 
-	// "ptr" must point at the start of an identifier (the sequence name),
-	// so the preceding character can't be part of an identifier
+	// "ptr" must point at the start of an identifier
 	if (ptr>start && isIdentChar(*(ptr-1))) {
 		return NULL;
 	}
@@ -203,9 +197,8 @@ const char *sqlrquerytranslation_sequence_nextval::matchDotNextval(
 		return NULL;
 	}
 
-	// the final component must be exactly "nextval" (so eg. ".nextvalue"
-	// doesn't match), with at least one component (the sequence name)
-	// before it
+	// the final component must be exactly "nextval"
+	// (so eg. ".nextvalue" doesn't match)
 	if (lastcomp==ptr ||
 		(size_t)(p-lastcomp)!=7 ||
 		charstring::compareIgnoringCase(lastcomp,"nextval",7)) {
@@ -281,8 +274,8 @@ const char *sqlrquerytranslation_sequence_nextval::matchNextValueFor(
 						const char **namestart,
 						const char **nameend) {
 
-	// require "next value for " as its own token, with a single space
-	// between words (the query is assumed already normalized)
+	// require "next value for " as its own token
+	// (single spaces; the query is assumed already normalized)
 	const size_t	marklen=sizeof(nextvalueformark)-1;
 	if (ptr>start && isIdentChar(*(ptr-1))) {
 		return NULL;

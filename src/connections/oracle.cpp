@@ -4407,8 +4407,8 @@ bool oraclecursor::inputBindGenericLob(const char *variable,
 		return false;
 	}
 
-	// write the value to it, unless the value is an empty string,
-	// then just leave it empty, attempts to write 0 bytes will fail
+	// write the value to it, unless it's empty
+	// (attempts to write 0 bytes will fail)
 	ub4	size=valuesize;
 	if (valuesize) {
 		if (OCILobWrite(oracleconn->svc,oracleconn->err,

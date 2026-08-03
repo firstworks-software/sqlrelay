@@ -1902,8 +1902,7 @@ void sqlrprotocol_sqlrclient::setTransactionModelCommand() {
 
 	debugWrite("transaction model: %.*s",txmodelsize,txmodelstr);
 
-	// map the string to an enum; "native" resolves to whatever the
-	// active backend reports as its native model
+	// map the string to an enum
 	sqlrtxmodel_t	txmodel;
 	if (!charstring::compare(txmodelstr,"native")) {
 		txmodel=cont->getNativeTransactionModel();
@@ -1912,7 +1911,7 @@ void sqlrprotocol_sqlrclient::setTransactionModelCommand() {
 								txmodelstr);
 	}
 
-	// reject unknown strings before calling the controller
+	// reject unknown transaction models
 	if (txmodel==SQLRTXMODEL_UNKNOWN) {
 		stringbuffer	errmsg;
 		errmsg.append("invalid transaction model: ");
@@ -1945,7 +1944,7 @@ void sqlrprotocol_sqlrclient::getTransactionModelCommand() {
 
 	debugStart("getting transaction model");
 
-	// get the transaction model and map it to its config string form
+	// get the transaction model
 	const char	*txmodel=sqlrservercontroller::transactionModelToString(
 						cont->getTransactionModel());
 
@@ -1965,7 +1964,7 @@ void sqlrprotocol_sqlrclient::getDefaultTransactionModelCommand() {
 
 	debugStart("getting default transaction model");
 
-	// the default is whatever the backend reports as its native model
+	// get the native transaction model
 	const char	*txmodel=sqlrservercontroller::transactionModelToString(
 					cont->getNativeTransactionModel());
 
@@ -4759,17 +4758,14 @@ bool sqlrprotocol_sqlrclient::getObjectList(sqlrservercursor *cursor,
 		// when fetching lists in mysql format...
 		switch (querytype) {
 			case SQLRCLIENTQUERYTYPE_CATALOG_LIST:
-				// when fetching the catalog list,
 				// fetch all catalogs
 				break;
 			case SQLRCLIENTQUERYTYPE_SCHEMA_LIST:
-				// when fetching the schema list, we only want
-				// to fetch for the current catalog
+				// only fetch for the current catalog
 				catalog=currentcatalog;
 				break;
 			default:
-				// when fetching other objects, we only want
-				// to fetch for the current catalog/schema
+				// only fetch for the current catalog/schema
 				catalog=currentcatalog;
 				schema=currentschema;
 				break;
@@ -4914,7 +4910,6 @@ bool sqlrprotocol_sqlrclient::getComponentListCommand(
 
 	debugWrite("component: %.*s",componentsize,component);
 
-	// read the object parameter into the buffer
 	char	*object=NULL;
 
 	// get size of object parameter

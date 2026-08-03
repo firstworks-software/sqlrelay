@@ -16,8 +16,8 @@
 	#define STR2CSTR(v) StringValuePtr(v)
 #endif
 
-// nil-tolerant C-string extractor: returns NULL for Qnil, else calls
-// StringValuePtr (which raises TypeError on non-string non-nil).
+// nil-tolerant version of STR2CSTR
+// (STR2CSTR raises TypeError on nil)
 #define STR2CSTR_NIL(v) (NIL_P(v)?(const char *)NULL:STR2CSTR(v))
 
 #include <rudiments/bytestring.h>
@@ -2509,7 +2509,7 @@ static void prepareFileQuery(params *p) {
  *
  *  Prepare to execute the contents
  *  of "path"/"filename".  Returns false if the
- * // file couldn't be opened. */
+ *  file couldn't be opened. */
 static VALUE sqlrcur_prepareFileQuery(VALUE self, VALUE path, VALUE filename) {
 	sqlrcursordata	*sqlrcurdata;
 	bool		result;

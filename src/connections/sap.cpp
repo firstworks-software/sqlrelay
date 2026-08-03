@@ -355,11 +355,11 @@ void sapconnection::initDatabaseFeatures() {
 		"false";
 
 	// the native odbc driver reports batch support, but sqlrelay runs
-	// one statement per query and returns one result set, so it can't
+	// one statement per query, so it reports none
 	databasefeatures[FEATURE_BATCH_OPERATIONS]=
 		"";
 
-	// sqlrelay returns no batch row counts (see batch_operations above)
+	// none, see batch_operations above
 	databasefeatures[FEATURE_BATCH_ROW_COUNTS]=
 		"";
 
@@ -469,7 +469,7 @@ void sapconnection::initDatabaseFeatures() {
 	databasefeatures[FEATURE_INDEX_KEYWORDS]=
 		"ASC,DESC";
 
-	// matches native odbc (the native sap driver; freetds reports 0)
+	// the native sap odbc driver reports these; freetds reports 0
 	databasefeatures[FEATURE_INFO_SCHEMA_VIEWS]=
 		"ASSERTIONS,CHARACTER_SETS";
 
@@ -842,7 +842,7 @@ CS_INT sapconnection::ctlibVersion(const char *version) {
 	return 0;
 }
 
-// maps a CS_VERSION_* constant back to its csversion label
+
 const char *sapconnection::ctlibVersionString(CS_INT version) {
 	#ifdef CS_VERSION_160
 	if (version==CS_VERSION_160) {
@@ -909,8 +909,7 @@ bool sapconnection::logIn(const char **error, const char **warning) {
 
 	// try client-library versions newest to oldest.  older versions
 	// support fewer features (eg. CS_VERSION_100 caps blobs at 255
-	// bytes), but the newer versions aren't supported by older client
-	// libraries, so fall back until one is accepted.
+	// bytes), but older client libraries reject the newer versions.
 	CS_INT		versions[8];
 	uint16_t	versioncount=0;
 	#ifdef CS_VERSION_160
@@ -965,8 +964,7 @@ bool sapconnection::logIn(const char **error, const char **warning) {
 	}
 
 	// warn if a numeric version was requested but isn't the one used.
-	// a non-numeric value (eg. "current") means "newest available",
-	// like leaving it unset, and never warns.
+	// a non-numeric value (eg. "current") means "newest available".
 	if (!charstring::isNullOrEmpty(csversion) &&
 			charstring::isInteger(csversion) &&
 			usedversion!=requested) {
@@ -2525,9 +2523,8 @@ const char *sapconnection::getCurrentSchemaQuery() {
 }
 
 const char *sapconnection::getCurrentUserQuery() {
-	// suser_sname() isn't available on all ASE versions; suser_name()
-	// is the older, universally-supported function and returns the
-	// current login name
+	// suser_sname() isn't available on all ASE versions, but
+	// suser_name() is
 	return "select suser_name()";
 }
 
@@ -2889,10 +2886,8 @@ bool sapcursor::prepareQuery(const char *query, uint32_t size) {
 
 	} else if (query[0]=='{') {
 
-		// handle ODBC/JDBC procedure-call:
-		// {call proc(...)}
-		// or
-		// {?=call proc(...)}.
+		// handle ODBC/JDBC procedure-call syntax:
+		// {call proc(...)} or {?=call proc(...)}
 
 		// find "call"
 		const char	*p=query+1;
@@ -2952,9 +2947,8 @@ void sapcursor::encodeBlob(stringbuffer *buffer,
 	// sybase wants each byte of blob data to be converted to two
 	// hex characters and the whole thing to start with 0x
 	// eg: hello - > 0x68656C6C6F
-        // just "0x" is illegal though, so for empty data, use 0x00, which
-        // technically is a single \0, not truly empty data, but that's the
-        // best that we can do
+	// just "0x" is illegal though, so use 0x00 for empty data, which
+	// is really a single \0 rather than truly empty data
 
 	buffer->append("0x");
 	if (!datasize) {
@@ -2968,8 +2962,7 @@ void sapcursor::encodeBlob(stringbuffer *buffer,
 
 void sapcursor::decodeBlob(char **data, uint32_t *datasize) {
 
-	// decodes *data of *datasize, in sybase encoded binary format,
-	// to raw binary, in place
+	// sybase encoded binary format is two hex characters per byte
 	// eg: 68656C6C6F -> hello
 
 	char	*write=*data;
@@ -3564,8 +3557,8 @@ bool sapcursor::executeQuery(const char *query, uint32_t size) {
 }
 
 uint64_t sapcursor::getAffectedRows() {
-        // sap can set affectedrows to -1 when a DDL query is run
-        return (affectedrows>=0)?affectedrows:0;
+	// sap can set affectedrows to -1 when a DDL query is run
+	return (affectedrows>=0)?affectedrows:0;
 }
 
 uint32_t sapcursor::colCount() {
@@ -3780,7 +3773,7 @@ void sapcursor::discardResults() {
 		} while (results==CS_SUCCEED);
 	}
 
-	// also clears a prepared-but-unsent command (e.g. a failed bind)
+	// also clears a prepared-but-unsent command (eg. a failed bind)
 	if (ct_cancel(NULL,cmd,CS_CANCEL_ALL)==CS_FAIL) {
 		sapconn->liveconnection=false;
 		// FIXME: call ct_close(CS_FORCE_CLOSE)?

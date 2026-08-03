@@ -100,7 +100,7 @@ const char	*confalgmodestr[]={
 	"CTR"
 };
 
-// confidentiality algorithm pading
+// confidentiality algorithm padding
 // see TdgssLibraryConfigFile.xml <LegalValues><Padding>
 #define	CONF_ALG_PADDING_NONE		0
 #define	CONF_ALG_PADDING_OAEP		1
@@ -122,7 +122,7 @@ const char	*confalgpaddingstr[]={
 #define MECHCONFIGFIELD_DEFAULT	16
 #define MECHCONFIGFIELD_RANK	17
 
-// Quality-of-Protections
+// quality-of-protections
 // see TdgssLibraryConfigFile.xml <GlobalQOPs>
 #define	QOP_NONE				0
 #define	QOP_GLOBAL_QOP_0			1
@@ -253,7 +253,7 @@ byte_t	jwtmechoid[]={
 
 
 // client config fields
-// see pachet.h
+// see parcel.h
 #define	CLIENTCONFIGFIELD_VERSION		1
 #define	CLIENTCONFIGFIELD_GSS_VERSION		2
 #define	CLIENTCONFIGFIELD_RECOVERABLE_PROTOCOL	3
@@ -264,7 +264,7 @@ byte_t	jwtmechoid[]={
 #define	CLIENTCONFIGFIELD_NEGOTIATE_MECH	11
 
 // gateway config fields
-// see pachet.h
+// see parcel.h
 #define	GWCONFIGFIELD_SSO			1
 #define	GWCONFIGFIELD_GSS_VERSION		2
 #define	GWCONFIGFIELD_UTF			3
@@ -1427,7 +1427,7 @@ bool sqlrprotocol_teradata::copKindCfg() {
 	}
 
 	// The config parcel is optional.  When we do receive it, it's
-	// generally empty.  Some clients (JDBC) just don't sent it at all.
+	// generally empty.  Some clients (JDBC) don't send it at all.
 	if (!noParcelFound(parcel,"config (42)")) {
 		if (!parseConfigParcel(parcel,&parcel)) {
 			debugEnd();
@@ -1447,8 +1447,8 @@ bool sqlrprotocol_teradata::copKindCfg() {
 	appendConfigResponseParcel();
 	appendGatewayConfigParcel();
 
-	// We send a set of supported mechs, here.  The
-	// client will choose one in SSO Request - trip 0.
+	// send a set of supported mechs
+	// (the client will choose one in sso request - trip 0)
 	if (td1enabled) {
 		appendTd1MechanismParcel();
 	}
@@ -1588,8 +1588,7 @@ bool sqlrprotocol_teradata::copKindConnect() {
 
 	// It looks like the first N bytes are obfuscated, somehow.
 	// FIXME: actually, they're not, we're just not using the right iv!
-	// Find the first "88", if we can.  That's the start of the first
-	// unobfuscated parcel.
+	// The first "88" is the start of the first unobfuscated parcel.
 	for (const byte_t *ptr=parcel; ptr!=end; ptr++) {
 		if (*ptr==88) {
 			// back up 1 byte if we're speaking big endian
@@ -1611,7 +1610,7 @@ bool sqlrprotocol_teradata::copKindConnect() {
 	debugHexDump(end,20);
 	end+=20;
 
-	// the last 16 bytes are the same as the iv that was appended to the 
+	// the last 16 bytes are the same as the iv that was appended to the
 	// encrypted data
 	debugWrite("iv:");
 	debugHexDump(end,16);
@@ -3310,9 +3309,9 @@ bool sqlrprotocol_teradata::parseSsoGssData(const byte_t *ptr,
 	read(ptr,&messagekind,&ptr);
 	read(ptr,&flag,&ptr);
 	readBE(ptr,&datasize,&ptr);
-	// For capabilities...
+	// for capabilities...
 	//
-	// In sso request parcel (trip 0), we get:
+	// in sso request parcel (trip 0), we get:
 	// td2:
 	// 00 00 00 15 from bteq
 	// 00 00 00 05 from jdbc
@@ -3321,11 +3320,11 @@ bool sqlrprotocol_teradata::parseSsoGssData(const byte_t *ptr,
 	// 00 00 00 0D from jdbc
 	// See notes in appendSsoGssData()
 	//
-	// In sso request parcel (trip 2), we get:
+	// in sso request parcel (trip 2), we get:
 	// 00 00 00 00 from bteq
 	// 00 00 00 00 from jdbc
 	read(ptr,capabilities,sizeof(capabilities),&ptr);
-	// More capabilities?
+	// more capabilities?
 	//
 	// in sso request parcel (trip 0 and 2), we get:
 	// 00 00 00 00 from bteq
@@ -3352,7 +3351,7 @@ bool sqlrprotocol_teradata::parseSsoGssData(const byte_t *ptr,
 		return false;
 	}
 
-	// bail if we got an unsupported class 
+	// bail if we got an unsupported class
 	if (messageclass!=SSO_GSS_CLASS_1 &&
 		messageclass!=SSO_GSS_CLASS_2 &&
 		messageclass!=SSO_GSS_CLASS_5) {
@@ -3770,10 +3769,8 @@ bool sqlrprotocol_teradata::parseSsoQops(const byte_t *ptr,
 						const byte_t **ptrout) {
 
 	// the next bit appears to be the supported qop algorithms...
-	//
-	// The client sends a set of supported qop algorithms here,
-	// we'll send a set of supported combinations of them in the
-	// SSO Response - trip 1.
+	// (we'll send a set of supported combinations of them
+	// in sso response - trip 1)
 
 	debugStart("supported qop algorithms");
 
@@ -3899,9 +3896,8 @@ bool sqlrprotocol_teradata::parseSsoMech(const byte_t *ptr,
 						const byte_t **ptrout) {
 
 	// the next bit appears to be the chosen mech...
-	//
-	// After the gateway config parcel, we sent a set of
-	// supported mechs.  The client will choose one here.
+	// (we sent a set of supported mechs after the gateway
+	// config parcel, the client chooses one here)
 
 	return parseMechField(ptr,ptrout);
 }
@@ -3918,7 +3914,7 @@ bool sqlrprotocol_teradata::parseSsoMechParameters(const byte_t *ptr,
 	//
 	// .logmech ldap (all platforms)
 	// 46  08  00  01  81  00  03  00
-	// 00  00  01  00  00  00  1E  01 
+	// 00  00  01  00  00  00  1E  01
 	//
 	// .logmech tdnego (all platforms)
 	// 00  00  00  00  15  01
@@ -6023,7 +6019,7 @@ void sqlrprotocol_teradata::appendConfigResponseTransactionSemantics() {
 
 	// see parcel.h - PclConfigRspType, PclCfgNDMFeatureType
 
-	// Transaction semantics
+	// transaction semantics
 	// 'T' - Teradata
 	// 'A' - ANSI
 	char	ts='T';
@@ -6050,7 +6046,7 @@ void sqlrprotocol_teradata::appendConfigResponseField7() {
 	// 2536 - maybe max bind count - error 5793 suggests this
 	//
 	// 191 was historically the default varchar length in some dbs
-	// because larger lengths caused perfomance to decline with their
+	// because larger lengths caused performance to decline with their
 	// indexing algorithms
 	//
 	// 38 is the max numeric column precision in some dbs
@@ -6996,7 +6992,7 @@ void sqlrprotocol_teradata::appendSsoGssData(byte_t mech) {
 	// size of data block sizes + data blocks
 	uint32_t	datasize=934;
 
-	// For capabilities...
+	// for capabilities...
 	//
 	// I'm not sure what 0x10 vs 0x00 means in capabilities[3], but we tend
 	// to get 0x10 from bteq and 0x00 from jdbc.  0x10 appears to indicate
@@ -7022,7 +7018,7 @@ void sqlrprotocol_teradata::appendSsoGssData(byte_t mech) {
 		0x00, 0x00, 0x00, 0x00
 	};
 
-	// It's not immediately clear what low bits mean in capabilites[3],
+	// It's not immediately clear what low bits mean in capabilities[3],
 	// but from the jdbc trace, when using TD2 mech, I can glean that:
 	//
 	// If I set it to D (1101) then:
@@ -7033,7 +7029,7 @@ void sqlrprotocol_teradata::appendSsoGssData(byte_t mech) {
 	// * generates hmac
 	// * iv:
 	//   03  07  04  00  00  00  02  b0  00  00  00  00  00  00  00  01
-	// 
+	//
 	// If I set it to 5 (0101) then:
 	// * jdbc hashes each of the first 4 lines of the shared key
 	// * the encrypted data is 676 bytes
@@ -7042,10 +7038,10 @@ void sqlrprotocol_teradata::appendSsoGssData(byte_t mech) {
 	// * generates hmac
 	// * iv:
 	//   03  07  04  00  00  00  02  b0  00  00  00  00  00  00  00  01
-	// 
+	//
 	// If I set it to 4 (0100) then:
 	// * jdbc throws an "Unknown peer capabilities" error
-	// 
+	//
 	// If I set it to 1 (0001) then:
 	// * jdbc hashes the entire shared key
 	// * the encrypted data is 676 bytes
@@ -7054,25 +7050,25 @@ void sqlrprotocol_teradata::appendSsoGssData(byte_t mech) {
 	// * generates hmac
 	// * iv:
 	//   03  07  04  00  00  00  02  b0  00  00  00  00  00  00  00  01
-	// 
+	//
 	// If I set it to 0 (0000) then:
 	// * jdbc doesn't generate any hash of the shared key
 	// * the encrypted data is 660 bytes
 	// * uses OFB block cipher mode (despite negotiating CBC)
 	// * key is the entire shared secret
-	// * doesn't generates hmac
+	// * doesn't generate hmac
 	// * iv:
 	//   01  03  02  00  00  00  02  a0  00  00  00  00  06  00  00  00
 	//
-	//  I'm guessing that D and 5 have the same behavior with TD2 because
-	//  whatever the 8's place indicates is just ignore for TD2.
+	// I'm guessing that D and 5 have the same behavior with TD2 because
+	// whatever the 8's place indicates is just ignored for TD2.
 	if (mech==MECH_TD2) {
 		capabilities[3]|=0x05;
 	} else {
 		capabilities[3]|=0x0d;
 	}
 
-	// More capabilities?
+	// more capabilities?
 	//
 	// See notes in parseSsoGssData().
 	byte_t		unknown[]={
@@ -9115,8 +9111,8 @@ bool sqlrprotocol_teradata::generateSharedSecretAndKey() {
 	debugHexDump(sharedkey,sharedkeysize);
 
 #if 0
-	// Generate hashes of the shared key, presumably for hmac, but it's not
-	// clear how these are used yet.
+	// generate hashes of the shared key
+	// (presumably for hmac, but it's not clear how these are used yet)
 	//
 	// (currently, we only support QOP_AES128_CBC_PKCS5_SHA1_DH2048,
 	// so we'll generate a sha1 hash)
@@ -9132,9 +9128,8 @@ bool sqlrprotocol_teradata::generateSharedSecretAndKey() {
 	// negotiated qops that we send back in the sso response parcel,
 	// trip1...)
 	//
-	// This code needs work because I originally assumed that SHA1 was the
-	// KDF so it uses those buffers, but it's not, so it needs its own
-	// buffers.
+	// FIXME: this code assumed SHA1 was the KDF, so it reuses those
+	// buffers, but it's not, so it needs its own buffers
 	bytestring::zero(sharedkey,sizeof(sharedkey));
 	debugWrite("kdf: sha1");
 	sha1		s1;

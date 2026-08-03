@@ -1399,7 +1399,7 @@ class sqlrcursor:
         """
         Prepare to execute the contents
         of "path"/"filename".  Returns false if the
-        // file couldn't be opened.
+        file couldn't be opened.
         """
         return CSQLRelay.prepareFileQuery(self.cursor, path, file)
 

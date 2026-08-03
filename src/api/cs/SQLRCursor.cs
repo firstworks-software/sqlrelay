@@ -418,7 +418,7 @@ public class SQLRCursor : IDisposable
     }
 
     /** Sends "query" (a byte array) with length "length" directly and
-     *  gets a result set.  This form is byte-safe — use it when the
+     *  gets a result set.  This form is byte-safe - use it when the
      *  query contains bytes outside the ASCII range or embedded NUL. */
     public Boolean sendQuery(Byte[] query, UInt32 length)
     {
@@ -1000,7 +1000,7 @@ public class SQLRCursor : IDisposable
             return "";
         }
 
-        // copy the field data and return as a string
+        // copy the field data
         Byte[] field = new Byte[size];
         Marshal.Copy(ptr, field, 0, size);
         return System.Text.Encoding.Default.GetString(field);
@@ -1399,10 +1399,7 @@ public class SQLRCursor : IDisposable
      *  result set. */
     public String[] getRow(UInt64 row)
     {
-        // The underlying C++ getRow() returns NULL past the end of
-        // the result set.  Check that first so callers can distinguish
-        // end-of-results from a valid row whose columns happen to be
-        // NULL.
+        // bail if past the end of the result set
         if (sqlrcur_getRow(sqlrcurref, row) == IntPtr.Zero)
         {
             return null;

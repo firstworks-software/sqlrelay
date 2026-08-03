@@ -2488,7 +2488,7 @@ const char *sqlrconnection::getIsolationLevel(
 		debugPreEnd();
 	}
 
-	// tell the server we want to set the isolation level
+	// tell the server we want to get the isolation level
 	pvt->_cs->write((uint16_t)GET_ISOLATION_LEVEL);
 
 	// send the format

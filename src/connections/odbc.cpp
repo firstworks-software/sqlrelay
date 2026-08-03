@@ -3073,8 +3073,7 @@ bool odbcconnection::getColumnList(sqlrservercursor *cursor,
 			(SQLCHAR *)column,SQL_NTS);
 	bool	retval=(erg==SQL_SUCCESS || erg==SQL_SUCCESS_WITH_INFO);
 
-	// parse the column information, then append the synthetic columns
-	// that bring the result up to the SQLColumns()+ format
+	// parse the column information
 	return (retval)?
 		(odbccur->handleColumns(true,true) &&
 		odbccur->appendColumnListColumns() &&
@@ -3236,9 +3235,8 @@ bool odbcconnection::getProcedureParameterList(
 	odbccur->initializeColCounts();
 	odbccur->initializeRowCounts();
 
-	// Unlike SQLColumns/SQLTables, SQLProcedureColumns wants NULL instead
-	// of "" for catalog/schema, to indicate the current catalog/schema.
-	// It interprets "" as meaning outside of any catalog/schema.
+	// Unlike SQLColumns/SQLTables, SQLProcedureColumns reads "" as
+	// meaning outside of any catalog/schema, so pass NULL instead.
 
 	// get the column list
 	erg=SQLProcedureColumns(odbccur->stmt,
@@ -3373,13 +3371,7 @@ const char *odbcconnection::mapIsolationLevel(
 		return isolevel;
 	}
 
-	// ODBC has 4 canonical isolation levels:
-	// * SQL_TXN_READ_UNCOMMITTED
-	// * SQL_TXN_READ_COMMITTED
-	// * SQL_TXN_REPEATABLE_READ
-	// * SQL_TXN_SERIALIZABLE
-
-	// Translate "isolevel" to one of those...
+	// translate "isolevel" to one of ODBC's 4 canonical levels...
 	SQLUINTEGER	level=0;
 	if (fromformat==SQLRSERVERISOLATIONLEVELFORMAT_JDBC) {
 		if (!charstring::compare(isolevel,
@@ -3395,8 +3387,8 @@ const char *odbcconnection::mapIsolationLevel(
 					"TRANSACTION_SERIALIZABLE") ||
 				!charstring::compare(isolevel,
 					"TRANSACTION_SNAPSHOT")) {
-			// fold FreeTDS (MSSQL) SERIALIZABLE into
-			// TRANSACTION_SNAPSHOT for now
+			// ODBC has no snapshot level, so fold
+			// snapshot into serializable
 			level=SQL_TXN_SERIALIZABLE;
 		}
 	} else {
@@ -3481,7 +3473,7 @@ const char *odbcconnection::mapIsolationLevel(
 		}
 	}
 
-	// bail if we somehow couldn't translate "level"
+	// bail if we couldn't translate "level"
 	return isolevel;
 }
 
@@ -3491,12 +3483,12 @@ bool odbcconnection::setIsolationLevel(const char *isolevel) {
 		return false;
 	}
 
-	// normalize whatever we got into the canonical SQL_TXN_* form
+	// normalize to the canonical SQL_TXN_* form
 	const char	*odbciso=mapIsolationLevel(isolevel,
 					SQLRSERVERISOLATIONLEVELFORMAT_NATIVE,
 					SQLRSERVERISOLATIONLEVELFORMAT_ODBC);
 
-	// decode it into the integer macro that the ODBC API wants
+	// decode it into the ODBC macro
 	SQLUINTEGER	level;
 	if (!charstring::compare(odbciso,"SQL_TXN_READ_UNCOMMITTED")) {
 		level=SQL_TXN_READ_UNCOMMITTED;
@@ -3507,7 +3499,7 @@ bool odbcconnection::setIsolationLevel(const char *isolevel) {
 	} else if (!charstring::compare(odbciso,"SQL_TXN_SERIALIZABLE")) {
 		level=SQL_TXN_SERIALIZABLE;
 	} else {
-		// unrecognized - couldn't map it to anything ODBC understands
+		// unrecognized
 		return false;
 	}
 
@@ -5105,9 +5097,8 @@ bool odbccursor::handleColumns(bool getcolumninfo, bool bindcolumns) {
 
 bool odbccursor::appendNullColumns(uint8_t count) {
 
-	// the various get*List() result sets need trailing NULL
-	// columns for the sqlrservercontroller to map unprovided
-	// columns to...
+	// the get*List() result sets need trailing NULL columns for
+	// the sqlrservercontroller to map unprovided columns to...
 
 	// grow the column buffers, if necessary...
 	if (ncols+count>columncount) {
@@ -5177,9 +5168,8 @@ bool odbccursor::appendNullColumn() {
 
 bool odbccursor::appendColumnListColumns() {
 
-	// the native SQLColumns() result lacks the numeric_precision,
-	// column_key, and is_autoincrement columns of the SQLColumns()+
-	// format; the odbc api can't supply them, so append them as nulls
+	// the odbc api can't supply the numeric_precision, column_key,
+	// and is_autoincrement columns of the SQLColumns()+ format
 	return appendNullColumns(3);
 }
 

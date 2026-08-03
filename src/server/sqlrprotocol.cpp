@@ -462,10 +462,8 @@ bool sqlrprotocol::readBerEncInt(const byte_t *rp, uint64_t *value,
 	// mask off the 0x80
 	byte_t	n=(*rp)&0x7f;
 
-	// technically we could have anything from 0x81 (indicating that the
-	// next 1 byte contains the number) to 0x7F (indicating that the next
-	// 127 bytes could contain the number) we only support numbers that
-	// will fit in a 64-bit integer (0x81 through 0x88), so bail if r > 8
+	// bail if the number won't fit in a 64-bit integer
+	// (BER allows up to 127 length bytes, we only support 8)
 	if (n>8) {
 		return false;
 	}

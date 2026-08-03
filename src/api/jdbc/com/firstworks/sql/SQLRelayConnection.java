@@ -216,7 +216,7 @@ public class SQLRelayConnection implements Connection {
 		throwExceptionIfClosed();
 		throwFeatureNotSupportedException();
 		// FIXME: we need an SQLRelayNClob implementation
-		// // to support this
+		// to support this
 		drv.debugEnd();
 		return null;
 	}
@@ -272,7 +272,7 @@ public class SQLRelayConnection implements Connection {
 
 		// catch unsupported options
 		// we only support:
-		// 	ResultSet.TYPE_FORWARD_ONLY
+		//	ResultSet.TYPE_FORWARD_ONLY
 		//	ResultSet.CONCUR_READ_ONLY
 		//	ResultSet.HOLD_CURSORS_OVER_COMMIT
 		throwResultSetFeatureNotSupportedException(
@@ -292,7 +292,7 @@ public class SQLRelayConnection implements Connection {
 		sqlrstmt.setSQLRConnection(sqlrcon);
 		sqlrstmt.setSQLRCursor(sqlrcur);
 
-		// set the default fetch size to 10 for forward-only result sets
+		// set the default fetch size
 		if (resultsettype==ResultSet.TYPE_FORWARD_ONLY) {
 			sqlrstmt.setFetchSize(10);
 		}
@@ -560,7 +560,7 @@ public class SQLRelayConnection implements Connection {
 
 		// catch unsupported options
 		// we only support:
-		// 	ResultSet.TYPE_FORWARD_ONLY
+		//	ResultSet.TYPE_FORWARD_ONLY
 		//	ResultSet.CONCUR_READ_ONLY
 		//	ResultSet.HOLD_CURSORS_OVER_COMMIT
 		throwResultSetFeatureNotSupportedException(
@@ -581,7 +581,7 @@ public class SQLRelayConnection implements Connection {
 		sqlrstmt.setSQLRConnection(sqlrcon);
 		sqlrstmt.setSQLRCursor(sqlrcur);
 
-		// set the default fetch size to 10 for forward-only result sets
+		// set the default fetch size
 		if (resultsettype==ResultSet.TYPE_FORWARD_ONLY) {
 			sqlrstmt.setFetchSize(10);
 		}
@@ -635,7 +635,7 @@ public class SQLRelayConnection implements Connection {
 
 		// catch unsupported options
 		// we only support:
-		// 	ResultSet.TYPE_FORWARD_ONLY
+		//	ResultSet.TYPE_FORWARD_ONLY
 		//	ResultSet.CONCUR_READ_ONLY
 		//	ResultSet.HOLD_CURSORS_OVER_COMMIT
 		throwResultSetFeatureNotSupportedException(
@@ -656,7 +656,7 @@ public class SQLRelayConnection implements Connection {
 		sqlrstmt.setSQLRConnection(sqlrcon);
 		sqlrstmt.setSQLRCursor(sqlrcur);
 
-		// set the default fetch size to 10 for forward-only result sets
+		// set the default fetch size
 		if (resultsettype==ResultSet.TYPE_FORWARD_ONLY) {
 			sqlrstmt.setFetchSize(10);
 		}

@@ -104,25 +104,16 @@ public class SQLRelayResultSet implements ResultSet {
 		drv.debugPrintln("row: "+row);
 
 		// Negative rows are offsets from one row past the end of the
-		// result set: -1 means go to the last row of the result set.
-		//
-		// Attempt to convert this to a positive row number.
-		//
-		// We can only handle a negative row if we know the total
-		// row count, and we only know that if we've already fetched
-		// all rows.
+		// result set: -1 means the last row.  Converting that to a
+		// positive row number needs the total row count, which we
+		// only know after fetching all rows.
 		if (row<0) {
 
-			// Implementing offset-from-after-the-last-row when the
-			// result set buffer size is non-zero is prohibitively
-			// difficult.  If the number of rows in the result set
-			// is an even multiple of the result set buffer size,
-			// then endOfResultSet() doesn't return true until you
-			// fetch past the end of the result set, making
-			// detection of whether we're on the last row or not
-			// unreliable.  We'd have to prefetch and buffer a row
-			// on the server side to implement this correctly.  The
-			// JDBC documentation for isLast() even alludes to this.
+			// If the row count is an even multiple of the result
+			// set buffer size then endOfResultSet() doesn't return
+			// true until we fetch past the end, so we can't tell
+			// whether we're on the last row.  Doing this correctly
+			// would require prefetching a row on the server side.
 			if (sqlrcur.getResultSetBufferSize()!=0) {
 				conn.throwFeatureNotSupportedException();
 			}
@@ -140,12 +131,11 @@ public class SQLRelayResultSet implements ResultSet {
 			drv.debugPrintln("normalized row: "+row);
 		}
 
-		// If row<=0 then we're trying to go "before first"
+		// if row<=0 then we're trying to go "before first"
 		if (row<=0) {
 
-			// we can't do that if the first row in the current
-			// block of rows isn't the first row of the entire
-			// result set, so bail if that's the case
+			// bail if the first row in the current block isn't the
+			// first row of the entire result set
 			if (sqlrcur.firstRowIndex()>0) {
 				conn.throwException("Row out of range.");
 			}
@@ -344,9 +334,7 @@ public class SQLRelayResultSet implements ResultSet {
 
 	private
 	String truncateField(String field) throws SQLException {
-		// we need to truncate "field" to maxfieldsize bytes, not
-		// characters, so we have to convert to byte[]s, truncate it,
-		// and convert it back
+		// maxfieldsize is in bytes, not characters
 		return new String(
 			truncateField(field.getBytes(StandardCharsets.UTF_8)),
 			StandardCharsets.UTF_8);
@@ -363,9 +351,7 @@ public class SQLRelayResultSet implements ResultSet {
 
 	private
 	char[] truncateField(char[] field) throws SQLException {
-		// we need to truncate "field" to maxfieldsize bytes, not
-		// characters, so we have to convert to byte[]s, truncate it,
-		// and convert it back
+		// maxfieldsize is in bytes, not characters
 		return (new String(
 			truncateField(
 				new String(field).getBytes(
@@ -1369,7 +1355,7 @@ public class SQLRelayResultSet implements ResultSet {
 		conn.throwFeatureNotSupportedException();
 		// FIXME: we could support this if the c++ api had
 		// getColumnDatabase() and getColumnSchema(), and if
-		// getColumnTable() was exposed.  We could them combine them,
+		// getColumnTable() was exposed.  We could then combine them,
 		// and return getObject(columnindex,map.get("..."));
 		drv.debugEnd();
 		return null;
@@ -1406,7 +1392,7 @@ public class SQLRelayResultSet implements ResultSet {
 		conn.throwFeatureNotSupportedException();
 		// FIXME: we could support this if the c++ api had
 		// getColumnDatabase() and getColumnSchema(), and if
-		// getColumnTable() was exposed.  We could them combine them,
+		// getColumnTable() was exposed.  We could then combine them,
 		// and return getObject(columnindex,map.get("..."));
 		drv.debugEnd();
 		return null;
@@ -2049,7 +2035,7 @@ public class SQLRelayResultSet implements ResultSet {
 	boolean isBeforeFirst() throws SQLException {
 		drv.debugFunction(this);
 		throwExceptionIfClosed();
-		// row is 1-based and rowcount is 0-based
+		// currentrow is 1-based, so 0 means before first
 		boolean	isbeforefirst=(currentrow==0);
 		drv.debugPrintln("before first: "+isbeforefirst);
 		drv.debugEnd();
@@ -2069,7 +2055,7 @@ public class SQLRelayResultSet implements ResultSet {
 	boolean isFirst() throws SQLException {
 		drv.debugFunction(this);
 		throwExceptionIfClosed();
-		// currentrow is 1-based and rowcount is 0-based
+		// currentrow is 1-based
 		boolean	isfirst=(currentrow==1);
 		drv.debugPrintln("is first: "+isfirst);
 		drv.debugEnd();
@@ -2081,15 +2067,11 @@ public class SQLRelayResultSet implements ResultSet {
 		drv.debugFunction(this);
 		throwExceptionIfClosed();
 
-		// Implementing isLast() when the result set buffer size is
-		// non-zero is prohibitively difficult.  If the number of rows
-		// in the result set is an even multiple of the result set
-		// buffer size, then endOfResultSet() doesn't return true until
-		// you fetch past the end of the result set, making detection
-		// of whether we're on the last row or not unreliable.  We'd
-		// have to prefetch and buffer a row on the server side to
-		// implement this correctly.  The JDBC documentation for
-		// isLast() even alludes to this.
+		// If the row count is an even multiple of the result set
+		// buffer size then endOfResultSet() doesn't return true until
+		// we fetch past the end, so we can't tell whether we're on
+		// the last row.  Doing this correctly would require
+		// prefetching a row on the server side.
 		if (sqlrcur.getResultSetBufferSize()!=0) {
 			conn.throwFeatureNotSupportedException();
 		}
@@ -2147,10 +2129,9 @@ public class SQLRelayResultSet implements ResultSet {
 	public
 	boolean previous() throws SQLException {
 		drv.debugFunction(this);
-		// Handle before first here...  Calling relative(-1) if we're
-		// on row 0 (the before-first row), will end up calling
-		// absolute(-1), which will put us 1 row prior to the END of
-		// the result set.  Don't let that happen.
+		// relative(-1) on row 0 (the before-first row) would call
+		// absolute(-1), which moves to one row before the end of the
+		// result set, so handle before-first here
 		if (isBeforeFirst()) {
 			return false;
 		}

@@ -207,18 +207,10 @@ bindFormat() -> call_port({bindFormat}).
 %% @doc <p>Returns a string representing the format of the sequence nextval command used in the database.  The format will contain a %s in place of the sequence name.  For example:</p> <ul><li>(nextval for %s)</li><li>next value for %s</li><li>nextval('%s')</li><li>%s.nextval</li></ul> <p>Returns an empty string if the database does not support sequences.</p>
 nextvalFormat() -> call_port({nextvalFormat}).
 
-%% @doc Sets the current database to "database".
-%% May set the current catalog or schema, depending on
-%% whether the backend database equates "database" with
-%% catalog or schema.
-%% See getDatabaseIsSchema().
+%% @doc Sets the current database to "database".  May set the current catalog or schema, depending on whether the backend database equates "database" with catalog or schema.  See getDatabaseIsSchema().
 selectDatabase(Database) when is_list(Database) -> call_port({selectDatabase, Database}).
 
-%% @doc Returns the database that is currently in use.
-%% May return the current catalog or schema, depending on
-%% whether the backend database equates "database" with
-%% catalog or schema.
-%% See getDatabaseIsSchema().
+%% @doc Returns the database that is currently in use.  May return the current catalog or schema, depending on whether the backend database equates "database" with catalog or schema.  See getDatabaseIsSchema().
 getCurrentDatabase() -> call_port({getCurrentDatabase}).
 
 %% @doc Returns true if the backend database equates "database" with "schema", and false if it equates "database" with "catalog".
@@ -332,203 +324,57 @@ getCacheFileName() ->  call_port({getCacheFileName}).
 %% @doc Sets query caching off.
 cacheOff() ->  call_port({cacheOff}).
 
-%% @doc Generates a result set containing
-%% databases that match the pattern "Databases".
-%%
-%% The result set will contain the following columns:
-%% Database
-%%
-%% If "Databases" is empty or nil then a result set containing
-%% all databases will be returned.
-%%
-%% May actually return a result set of catalogs or schemas,
-%% depending on whether the backend database equates
-%% "database" with catalog or schema.
-%%
-%% See getDatabaseIsSchema().
-%%
-%% If SQL Relay doesn't support getting a list of databases
-%% for the current database backend (or the database doesn't)
-%% then an empty result set will be returned.
+%% @doc <p>Generates a result set containing databases that match the pattern "Databases".</p> <p>The result set will contain the following columns:</p> <ul><li>Database</li></ul> <p>If "Databases" is empty or nil then a result set containing all databases will be returned.</p> <p>May actually return a result set of catalogs or schemas, depending on whether the backend database equates "database" with catalog or schema.  See getDatabaseIsSchema().</p> <p>If SQL Relay doesn't support getting a list of databases for the current database backend (or the database doesn't) then an empty result set will be returned.</p>
 getDatabaseList(Databases) when is_list(Databases) ->
 	put("cursor", "true"),
 	call_port({getDatabaseList, Databases}).
 
-%% @doc Generates a result set containing
-%% catalogs that match the pattern "Catalogs".
-%%
-%% The result set will contain the following columns:
-%% Database
-%%
-%% If "Catalogs" is empty or nil then a result set containing
-%% all catalogs will be returned.
-%%
-%% If SQL Relay doesn't support getting a list of catalogs
-%% for the current database backend (or the database doesn't)
-%% then an empty result set will be returned.
+%% @doc <p>Generates a result set containing catalogs that match the pattern "Catalogs".</p> <p>The result set will contain the following columns:</p> <ul><li>Database</li></ul> <p>If "Catalogs" is empty or nil then a result set containing all catalogs will be returned.</p> <p>If SQL Relay doesn't support getting a list of catalogs for the current database backend (or the database doesn't) then an empty result set will be returned.</p>
 getCatalogList(Catalogs) when is_list(Catalogs) ->
 	put("cursor", "true"),
 	call_port({getCatalogList, Catalogs}).
 
-%% @doc Generates a result set containing
-%% schemas that match the pattern "Schemas".
-%%
-%% The result set will contain the following columns:
-%% Database
-%%
-%% (The column name is a bit of a misnomer, the results are
-%% schemas, not databases.)
-%%
-%% If "Schemas" is empty or nil then a result set containing
-%% all schemas in the current database will be returned.
-%%
-%% If SQL Relay doesn't support getting a list of schemas
-%% for the current database backend (or the database doesn't)
-%% then an empty result set will be returned.
+%% @doc <p>Generates a result set containing schemas that match the pattern "Schemas".</p> <p>The result set will contain the following columns:</p> <ul><li>Database</li></ul> <p>(The column name is a bit of a misnomer, the results are schemas, not databases.)</p> <p>If "Schemas" is empty or nil then a result set containing all schemas in the current database will be returned.</p> <p>If SQL Relay doesn't support getting a list of schemas for the current database backend (or the database doesn't) then an empty result set will be returned.</p>
 getSchemaList(Schemas) when is_list(Schemas) ->
 	put("cursor", "true"),
 	call_port({getSchemaList, Schemas}).
 
-%% @doc Generates a result set containing
-%% supported table types.
-%%
-%% The result set will contain the following columns:
-%% table_type
-%%
-%% If SQL Relay doesn't support getting a list of table types
-%% for the current database backend (or the database doesn't)
-%% then an empty result set will be returned.
+%% @doc <p>Generates a result set containing supported table types.</p> <p>The result set will contain the following columns:</p> <ul><li>table_type</li></ul> <p>If SQL Relay doesn't support getting a list of table types for the current database backend (or the database doesn't) then an empty result set will be returned.</p>
 getTableTypeList() ->
 	put("cursor", "true"),
 	call_port({getTableTypeList}).
 
-%% @doc Generates a result set containing the
-%% tables in the current database and schema that match the
-%% pattern "Tables".
-%%
-%% The result set will contain the following columns:
-%% Tables_in_xxx
-%%
-%% If "Tables" is empty or nil then a result set containing
-%% all tables in the current database/schema will be returned.
-%%
-%% If SQL Relay doesn't support getting a list of tables
-%% for the current database backend (or the database doesn't)
-%% then an empty result set will be returned.
+%% @doc <p>Generates a result set containing the tables in the current database and schema that match the pattern "Tables".</p> <p>The result set will contain the following columns:</p> <ul><li>Tables_in_xxx</li></ul> <p>If "Tables" is empty or nil then a result set containing all tables in the current database/schema will be returned.</p> <p>If SQL Relay doesn't support getting a list of tables for the current database backend (or the database doesn't) then an empty result set will be returned.</p>
 getTableList(Tables) when is_list(Tables) ->
 	put("cursor", "true"),
 	call_port({getTableList, Tables}).
 
-%% @doc Generates a result set containing data
-%% type information for "Type".
-%%
-%% The result set will contain the following columns:
-%% type_name, data_type, precision, literal_prefix,
-%% literal_suffix, create_params, nullable, case_sensitive,
-%% searchable, unsigned_attribute, fixed_prec_scale,
-%% auto_increment, local_type_name, minumum_scale,
-%% maxiumm_scale, sql_data_type, sql_datetime_sub,
-%% num_prec_radix, interval_precision
-%%
-%% If "Type" is empty or nil then a result set containing
-%% all data types in the current database/schema will be
-%% returned.
-%%
-%% If SQL Relay doesn't support getting type info
-%% for the current database backend (or the database doesn't)
-%% then an empty result set will be returned.
+%% @doc <p>Generates a result set containing data type information for "Type".</p> <p>The result set will contain the following columns:</p> <ul><li>type_name, data_type, precision, literal_prefix, literal_suffix, create_params, nullable, case_sensitive, searchable, unsigned_attribute, fixed_prec_scale, auto_increment, local_type_name, minumum_scale, maxiumm_scale, sql_data_type, sql_datetime_sub, num_prec_radix, interval_precision</li></ul> <p>If "Type" is empty or nil then a result set containing all data types in the current database/schema will be returned.</p> <p>If SQL Relay doesn't support getting type info for the current database backend (or the database doesn't) then an empty result set will be returned.</p>
 getTypeInfoList(Type) when is_list(Type) ->
 	put("cursor", "true"),
 	call_port({getTypeInfoList, Type}).
 
-%% @doc Generates a result set containing the
-%% columns of "Table", which match the pattern "Columns".
-%%
-%% The result set will contain the following columns:
-%% column_name, data_type, character_maximum_length,
-%% numeric_precision, numeric_scale, is_nullable,
-%% column_key, column_default, extra
-%%
-%% If "Columns" is empty or nil then a list of all columns
-%% of "Table" will be returned.
-%%
-%% If SQL Relay doesn't support getting a list of columns
-%% for the current database backend (or the database doesn't)
-%% then an empty result set will be returned.
+%% @doc <p>Generates a result set containing the columns of "Table", which match the pattern "Columns".</p> <p>The result set will contain the following columns:</p> <ul><li>column_name, data_type, character_maximum_length, numeric_precision, numeric_scale, is_nullable, column_key, column_default, extra</li></ul> <p>If "Columns" is empty or nil then a list of all columns of "Table" will be returned.</p> <p>If SQL Relay doesn't support getting a list of columns for the current database backend (or the database doesn't) then an empty result set will be returned.</p>
 getColumnList(Table, Columns) when is_list(Table), is_list(Columns) ->
 	put("cursor", "true"),
 	call_port({getColumnList, Table, Columns}).
 
-%% @doc Generates a result set containing the
-%% primary keys of "Table", which match the pattern "Columns".
-%%
-%% The result set will contain the following columns:
-%% table, non_unique, key_name, seq_in_index, column_name,
-%% collation, cardinality, sub_part, packed, null,
-%% index_type, comment, index_comment
-%%
-%% If "Columns" is empty or nil then a result set containing
-%% all primary keys of "Table" will be returned.
-%%
-%% If SQL Relay doesn't support getting a list of primary keys
-%% for the current database backend (or the database doesn't)
-%% then an empty result set will be returned.
+%% @doc <p>Generates a result set containing the primary keys of "Table", which match the pattern "Columns".</p> <p>The result set will contain the following columns:</p> <ul><li>table, non_unique, key_name, seq_in_index, column_name, collation, cardinality, sub_part, packed, null, index_type, comment, index_comment</li></ul> <p>If "Columns" is empty or nil then a result set containing all primary keys of "Table" will be returned.</p> <p>If SQL Relay doesn't support getting a list of primary keys for the current database backend (or the database doesn't) then an empty result set will be returned.</p>
 getPrimaryKeysList(Table, Columns) when is_list(Table), is_list(Columns) ->
 	put("cursor", "true"),
 	call_port({getPrimaryKeysList, Table, Columns}).
 
-%% @doc Generates a result set containing the
-%% keys and indexes of "Table", which match the pattern
-%% "Qualifier".
-%%
-%% The result set will contain the following columns:
-%% table, non_unique, key_name, seq_in_index, column_name,
-%% collation, cardinality, sub_part, packed, null,
-%% index_type, comment, index_comment
-%%
-%% If "Qualifier" is empty or nil then a result set
-%% containing all keys and indexes of "Table" will be
-%% returned.
-%%
-%% If SQL Relay doesn't support getting a list of keys and
-%% indexes for the current database backend (or the database
-%% doesn't) then an empty result set will be returned.
+%% @doc <p>Generates a result set containing the keys and indexes of "Table", which match the pattern "Qualifier".</p> <p>The result set will contain the following columns:</p> <ul><li>table, non_unique, key_name, seq_in_index, column_name, collation, cardinality, sub_part, packed, null, index_type, comment, index_comment</li></ul> <p>If "Qualifier" is empty or nil then a result set containing all keys and indexes of "Table" will be returned.</p> <p>If SQL Relay doesn't support getting a list of keys and indexes for the current database backend (or the database doesn't) then an empty result set will be returned.</p>
 getKeyAndIndexList(Table, Qualifier) when is_list(Table), is_list(Qualifier) ->
 	put("cursor", "true"),
 	call_port({getKeyAndIndexList, Table, Qualifier}).
 
-%% @doc Generates a result set containing
-%% procedures that match the pattern "Procedures".
-%%
-%% The result set will contain the following columns:
-%% routine_catalog, routine_schema, routine_name, data_type
-%%
-%% If "Procedures" is empty or nil then a result set
-%% containing all procedures in the current database/schema
-%% will be returned.
-%%
-%% If SQL Relay doesn't support getting a list of procedures
-%% for the current database backend (or the database doesn't)
-%% then an empty result set will be returned.
+%% @doc <p>Generates a result set containing procedures that match the pattern "Procedures".</p> <p>The result set will contain the following columns:</p> <ul><li>routine_catalog, routine_schema, routine_name, data_type</li></ul> <p>If "Procedures" is empty or nil then a result set containing all procedures in the current database/schema will be returned.</p> <p>If SQL Relay doesn't support getting a list of procedures for the current database backend (or the database doesn't) then an empty result set will be returned.</p>
 getProcedureList(Procedures) when is_list(Procedures) ->
 	put("cursor", "true"),
 	call_port({getProcedureList, Procedures}).
 
-%% @doc Generates a result set containing the
-%% parameters of "Procedure", which match the pattern
-%% "Parameters".
-%%
-%% The result set will contain the following columns:
-%% parameter_name, parameter_mode, data_type,
-%% character_maximum_length, ordinal_position
-%%
-%% If "Parameters" is empty or nil then a result set
-%% containing all parameters of "Procedure" will be returned.
-%%
-%% If SQL Relay doesn't support getting a list of procedure
-%% parameters for the current database backend (or the
-%% database doesn't) then an empty result set will be
-%% returned.
+%% @doc <p>Generates a result set containing the parameters of "Procedure", which match the pattern "Parameters".</p> <p>The result set will contain the following columns:</p> <ul><li>parameter_name, parameter_mode, data_type, character_maximum_length, ordinal_position</li></ul> <p>If "Parameters" is empty or nil then a result set containing all parameters of "Procedure" will be returned.</p> <p>If SQL Relay doesn't support getting a list of procedure parameters for the current database backend (or the database doesn't) then an empty result set will be returned.</p>
 getProcedureParameterList(Procedure, Parameters) when is_list(Procedure), is_list(Parameters) ->
 	put("cursor", "true"),
 	call_port({getProcedureParameterList, Procedure, Parameters}).

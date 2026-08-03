@@ -157,9 +157,7 @@ static byte_t	mysqltypemap[]={
 	// "BIT"
 	(byte_t)MYSQL_TYPE_TINY,
 	// "REAL"
-	// (the mysql connection maps a result-set FIELD_TYPE_DOUBLE column to
-	// REAL_DATATYPE, and mysql has no separate real wire type, so report it
-	// as DOUBLE - matching native and the list_fields path)
+	// (mysql has no separate real wire type, so report REAL as DOUBLE)
 	(byte_t)MYSQL_TYPE_DOUBLE,
 	// "FLOAT"
 	(byte_t)MYSQL_TYPE_FLOAT,
@@ -221,8 +219,7 @@ static byte_t	mysqltypemap[]={
 	// "SET"
 	(byte_t)MYSQL_TYPE_SET,
 	// "TINYBLOB"
-	// (native mysql reports all blob/text subtypes as MYSQL_TYPE_BLOB in
-	// result-set metadata; the subtype is conveyed by length, not type)
+	// (native mysql reports all blob/text subtypes as MYSQL_TYPE_BLOB)
 	(byte_t)MYSQL_TYPE_BLOB,
 	// "MEDIUMBLOB"
 	(byte_t)MYSQL_TYPE_BLOB,
@@ -3099,9 +3096,8 @@ bool sqlrprotocol_mysql::sendColumnDefinition(sqlrservercursor *cursor,
 							columntypestring);
 	const char	*columntable=cont->getColumnTable(cursor,column);
 
-	// the backend reports the precision for numeric types and the byte
-	// length for everything else; translate that to the display width that
-	// native mysql sends on the wire
+	// translate the column size to the display width
+	// that native mysql sends
 	uint32_t	precision=cont->getColumnPrecision(cursor,column);
 	uint32_t	size=getColumnDisplaySize(columntype,precision,precision);
 
@@ -3293,11 +3289,8 @@ uint32_t sqlrprotocol_mysql::getColumnDisplaySize(byte_t columntype,
 							uint32_t precision,
 							uint32_t fallbacksize) {
 
-	// native mysql reports a display width (room for digits plus a sign,
-	// and for decimals a decimal point) rather than the raw precision the
-	// backend reports, so map the fixed-width numeric and temporal types to
-	// their native widths; variable-width types fall back to the backend
-	// size
+	// native mysql reports a display width rather than the raw
+	// precision that the backend reports
 	switch (columntype) {
 		case MYSQL_TYPE_DECIMAL:
 		case MYSQL_TYPE_NEWDECIMAL:

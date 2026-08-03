@@ -33,12 +33,10 @@
 class sqlrshbindvalue {
 	public:
 		// A union in C++98 can't hold anything with a constructor, so
-		// every member here is a plain type and the value that owns
-		// memory is freed by type, in deleteBindValue().
+		// every member here is a plain type.
 		union {
-			// string, blob and clob values all carry their own
-			// length, so a value with an embedded null isn't cut
-			// short by a strlen somewhere downstream
+			// string, blob and clob values carry their own
+			// length, so an embedded null isn't cut short
 			struct {
 				char		*value;
 				uint32_t	length;
@@ -67,8 +65,6 @@ class sqlrshbindvalue {
 		void	print() {}
 };
 
-// copies "length" bytes of "value" into a buffer of its own, with a null
-// after them so the copy can also be used as a string.  The caller owns it.
 static char *duplicateBytes(const char *value, uint32_t length) {
 
 	if (!value) {
@@ -81,7 +77,6 @@ static char *duplicateBytes(const char *value, uint32_t length) {
 	return copy;
 }
 
-// copies "length" bytes of "value", plus a null, into "pool"
 static char *poolCopy(memorypool *pool, const char *value, size_t length) {
 
 	char	*copy=(char *)pool->allocate(length+1);
@@ -90,15 +85,12 @@ static char *poolCopy(memorypool *pool, const char *value, size_t length) {
 	return copy;
 }
 
-// sets "bv" to a string value of exactly "length" bytes, taken from the
-// "valuelength" bytes of "value".  A value longer than "length" is cut off
-// and a shorter one is padded with nulls, which is how a value with an
-// embedded null is spelled in the shell.
 static void setStringValue(sqlrshbindvalue *bv,
 				const char *value,
 				uint32_t valuelength,
 				uint32_t length) {
 
+	// cut off or null-pad to fit
 	char		*buffer=new char[length+1];
 	uint32_t	copylength=(valuelength<length)?valuelength:length;
 	bytestring::copy(buffer,value,copylength);
@@ -112,9 +104,6 @@ static void setStringValue(sqlrshbindvalue *bv,
 	bv->stringval.length=length;
 }
 
-// frees whatever the value owns, then the value itself.  Every site that
-// replaces or discards a bind value goes through here, so a type that owns
-// memory can't be freed one way in one place and leaked in another.
 static void deleteBindValue(sqlrshbindvalue *bv) {
 
 	if (!bv) {
@@ -129,9 +118,6 @@ static void deleteBindValue(sqlrshbindvalue *bv) {
 	delete bv;
 }
 
-// These are part of the interface too.  Every site that acts on the format
-// switches on it, with no default label, so -Wswitch makes the compiler point
-// at each one of them when a format is added here.
 enum sqlrshformat {
 	SQLRSH_FORMAT_PLAIN=0,
 	SQLRSH_FORMAT_CSV,
@@ -139,8 +125,7 @@ enum sqlrshformat {
 	SQLRSH_FORMAT_JSONL
 };
 
-// the format names, in one place, so the format command and the -format
-// option can't drift apart
+// the format names, in one place
 struct sqlrshformatname {
 	const char	*name;
 	sqlrshformat	format;
@@ -154,8 +139,6 @@ static const sqlrshformatname	sqlrshformatnames[]={
 	{NULL,SQLRSH_FORMAT_PLAIN}
 };
 
-// looks "name" up in the list above, ignoring case.  Returns true and sets
-// "format" if it's a format name, or false if it isn't.
 static bool formatFromName(const char *name, sqlrshformat *format) {
 
 	if (charstring::isNullOrEmpty(name)) {
@@ -171,7 +154,6 @@ static bool formatFromName(const char *name, sqlrshformat *format) {
 	return false;
 }
 
-// writes "name isn't a format, here are the ones that are" to stderr
 static void badFormatName(const char *name) {
 
 	stderror.printf("unrecognized format \"%s\", expected ",
@@ -185,8 +167,6 @@ static void badFormatName(const char *name) {
 	stderror.write('\n');
 }
 
-// Returns the argument that follows a command word, trimmed, or NULL if the
-// command was given without one.  The caller owns the string.
 static char *commandArgument(const char *args) {
 
 	char	*arg=charstring::duplicate(args);
@@ -198,9 +178,7 @@ static char *commandArgument(const char *args) {
 	return arg;
 }
 
-// These are what a program driving sqlrsh non-interactively has to go on.
-// They are part of the interface, like the output formats are.  Add to them,
-// but don't renumber them and don't change what one means.
+// These are part of the interface.  Add to them, but don't renumber them.
 enum sqlrshexitcode {
 	SQLRSH_EXIT_SUCCESS=0,
 	SQLRSH_EXIT_USAGE=1,
@@ -231,10 +209,8 @@ class sqlrshenv {
 		dictionary<char *, sqlrshbindvalue *>	inputoutputbinds;
 		dictionary<char *, sqlrshbindvalue *>	substitutions;
 		// The cursor keeps the names and values it's handed rather
-		// than copying them, and there's no public call that clears
-		// its substitutions, so a substitution has to outlive the
-		// clearsubstitutions that dropped it.  They come out of this
-		// pool, which is only freed when the shell exits.
+		// than copying them, so a substitution has to outlive the
+		// clearsubstitutions that dropped it.
 		memorypool	subpool;
 		bool		validatebinds;
 		char		*cacheto;
@@ -953,8 +929,7 @@ int sqlrsh::commandType(const char *command) {
 		!charstring::compareIgnoringCase(ptr,"outputbind ",11) ||
 		!charstring::compareIgnoringCase(ptr,"inputoutputbind ",16) ||
 		// the bind commands take a trailing space above, so these
-		// catch the command word on its own, which would otherwise go
-		// to the database and come back as a syntax error
+		// catch the command word on its own
 		!charstring::compareIgnoringCase(ptr,"inputbind") ||
 		!charstring::compareIgnoringCase(ptr,"inputbindblob") ||
 		!charstring::compareIgnoringCase(ptr,"inputbindclob") ||
@@ -1143,9 +1118,6 @@ bool sqlrsh::internalCommand(sqlrconnection *sqlrcon, sqlrcursor *sqlrcur,
 					"defaultisolationlevel",
 					sqlrcon->getDefaultIsolationLevel());
 	} else if (!charstring::compareIgnoringCase(ptr,"suspendsession")) {
-		// Nothing is written on success, the way the use command
-		// writes nothing.  What the caller needs next is the port and
-		// the socket, and those are commands of their own.
 		if (!sqlrcon->suspendSession()) {
 			displayError(env,NULL,
 					sqlrcon->errorMessage(),
@@ -1190,9 +1162,6 @@ bool sqlrsh::internalCommand(sqlrconnection *sqlrcon, sqlrcursor *sqlrcur,
 	} else if (!charstring::compareIgnoringCase(ptr,"columncase",10)) {
 		return columncase(sqlrcur,env,ptr+10);
 	} else if (!charstring::compareIgnoringCase(ptr,"suspendresultset")) {
-		// Nothing is written on success, the way the use command
-		// writes nothing.  What the caller needs next is the id, and
-		// that's a command of its own.
 		sqlrcur->suspendResultSet();
 		return true;
 	} else if (!charstring::compareIgnoringCase(ptr,"resultsetid")) {
@@ -1210,9 +1179,8 @@ bool sqlrsh::internalCommand(sqlrconnection *sqlrcon, sqlrcursor *sqlrcur,
 		return true;
 	} else if (!charstring::compareIgnoringCase(ptr,"cacheoff")) {
 		// env->cacheto is deliberately left alone.  cacheOff() only
-		// clears the flag, so getCacheFileName() still hands back the
-		// pointer it was given, and the cachefilename command would
-		// read freed memory if this deleted it.
+		// clears the flag, so the cachefilename command would read
+		// freed memory if this deleted it.
 		sqlrcur->cacheOff();
 		return true;
 	} else if (!charstring::compareIgnoringCase(ptr,"cachefilename")) {
@@ -1281,9 +1249,7 @@ bool sqlrsh::internalCommand(sqlrconnection *sqlrcon, sqlrcursor *sqlrcur,
 	} else if (!charstring::compareIgnoringCase(
 						ptr,"inputoutputbind ",16)) {	
 		return inputoutputbind(sqlrcur,env,command);
-	// These five catch the command word on its own.  They come after the
-	// forms that take a trailing space, so a command with arguments never
-	// reaches them.
+	// these catch the command word on its own
 	} else if (!charstring::compareIgnoringCase(ptr,"inputbind")) {
 		return inputbind(sqlrcur,env,command);
 	} else if (!charstring::compareIgnoringCase(ptr,"inputbindblob")) {
@@ -1301,8 +1267,7 @@ bool sqlrsh::internalCommand(sqlrconnection *sqlrcon, sqlrcursor *sqlrcur,
 		return fetchfrombindcursor(sqlrcur,env,ptr+19);
 	} else if (!charstring::compareIgnoringCase(
 					ptr,"countbindvariables")) {
-		// this parses the query that was prepared last, so
-		// preparefilequery is what makes it useful
+		// this parses the query that was prepared last
 		writeScalarNumber(env,"countbindvariables",
 				(int64_t)sqlrcur->countBindVariables());
 		return true;
@@ -1334,9 +1299,7 @@ bool sqlrsh::internalCommand(sqlrconnection *sqlrcon, sqlrcursor *sqlrcur,
 				break;
 			case SQLRSH_FORMAT_JSON:
 			case SQLRSH_FORMAT_JSONL:
-				// one object, one line, with the three
-				// lists as members, each keyed by bind
-				// variable name
+				// one object, one line
 				stdoutput.write('{');
 				jsonPrintBinds("input",&env->inputbinds);
 				stdoutput.write(',');
@@ -1405,10 +1368,8 @@ bool sqlrsh::internalCommand(sqlrconnection *sqlrcon, sqlrcursor *sqlrcur,
 		sqlrcon->endSession();
 		return true;
 	} else if (!charstring::compareIgnoringCase(ptr,"querytree")) {
-		// plain and csv get the tree pretty printed as xml, the way
-		// they always have.  json and jsonl get the same xml, as a
-		// string, because a query tree isn't json and giving it a
-		// json shape of its own is a ticket in itself.
+		// json and jsonl get the xml as a string, because a query
+		// tree isn't json
 		switch (env->format) {
 			case SQLRSH_FORMAT_PLAIN:
 			case SQLRSH_FORMAT_CSV:
@@ -1486,10 +1447,9 @@ bool sqlrsh::internalCommand(sqlrconnection *sqlrcon, sqlrcursor *sqlrcur,
 	}
 
 	// handle format
-	// The name goes through the same list the -format option uses.  An
-	// unrecognized name used to quietly mean plain, so "format jsonl" on
-	// a build without jsonl looked like it had worked.  It's a failed
-	// command now, which a script stops on and exits SQLRSH_EXIT_QUERY.
+	// An unrecognized name used to quietly mean plain, so "format jsonl"
+	// on a build without jsonl looked like it had worked.  It's a failed
+	// command now.
 	if (cmdtype==10) {
 		char	*name=charstring::duplicate(ptr);
 		charstring::bothTrim(name);
@@ -1614,10 +1574,6 @@ bool sqlrsh::externalCommand(sqlrconnection *sqlrcon,
 		delete[] table;
 
 		// write the column names on one line
-		// One arm per format, for the reason displayHeader() gives.
-		// Names go through the format's own field writer, so one
-		// containing a comma or a double quote can't break the line
-		// apart.
 		uint64_t	namecount=sqlrcur->rowCount();
 		switch (env->format) {
 			case SQLRSH_FORMAT_PLAIN:
@@ -2383,9 +2339,8 @@ void sqlrsh::displayError(sqlrshenv *env,
 			break;
 		case SQLRSH_FORMAT_JSON:
 		case SQLRSH_FORMAT_JSONL:
-			// One object, one line, on stderr, where it can't
-			// corrupt the document on stdout.  jsonl reads it a
-			// line at a time like the rest of the stream.
+			// one object, one line, on stderr, where it can't
+			// corrupt the document on stdout
 			stderror.write("{\"error\":{");
 			if (!charstring::isNullOrEmpty(message)) {
 				stderror.write("\"context\":");
@@ -2404,10 +2359,7 @@ void sqlrsh::displayError(sqlrshenv *env,
 
 void sqlrsh::displayHeader(sqlrcursor *sqlrcur, sqlrshenv *env) {
 
-	// One arm per format, rather than one arm for plain and an else that
-	// silently means every other format.  There's no default label, so
-	// -Wswitch makes the compiler point right here when a format is
-	// added to the enum.
+	// no default label, so -Wswitch points here when a format is added
 	switch (env->format) {
 		case SQLRSH_FORMAT_PLAIN:
 			plainDisplayHeader(sqlrcur,env);
@@ -2424,11 +2376,8 @@ void sqlrsh::displayHeader(sqlrcursor *sqlrcur, sqlrshenv *env) {
 
 void sqlrsh::plainDisplayHeader(sqlrcursor *sqlrcur, sqlrshenv *env) {
 
-	// The headers toggle applies to the plain format.  There the column
-	// names are a convenience for the person reading the output, so they
-	// can be turned off.  Every other format is handed to a parser, and
-	// the names are the only way it can learn what the columns are, so
-	// they're part of the data there and always written.
+	// The headers toggle is plain format only.  Every other format is
+	// parsed, and the names are the only way a reader learns the columns.
 	if (!env->headers) {
 		return;
 	}
@@ -2466,9 +2415,6 @@ void sqlrsh::plainDisplayHeader(sqlrcursor *sqlrcur, sqlrshenv *env) {
 	stdoutput.printf("\n");
 
 	// display divider
-	// Only the plain format gets one.  It underlines the column names
-	// there.  Every other format is meant to be parsed, and a row of
-	// equals signs isn't part of any of them.
 	if (env->divider) {
 		for (uint32_t i=0; i<charcount; i++) {
 			stdoutput.printf("=");
@@ -2503,11 +2449,7 @@ void sqlrsh::jsonDisplayHeader(sqlrcursor *sqlrcur, sqlrshenv *env) {
 	bool	jsonl=(env->format==SQLRSH_FORMAT_JSONL);
 
 	// json opens the one document for this result set here, and
-	// jsonDisplayResultSet() closes it.  jsonl writes a standalone
-	// columns object and every later line stands alone too.
-	// A statement with no result set - an insert, say - still gets a
-	// document, with an empty column list, so a reader gets exactly one
-	// per statement and never has to guess whether another is coming.
+	// jsonDisplayResultSet() closes it
 	if (jsonl) {
 		stdoutput.write("{\"type\":\"columns\",\"columns\":[");
 	} else {
@@ -2603,11 +2545,8 @@ void sqlrsh::jsonWriteString(filedescriptor *fd,
 void sqlrsh::jsonEscapeString(filedescriptor *fd,
 				const char *str, uint32_t length) {
 
-	// Everything json doesn't require an escape for goes through
-	// unchanged, one run of bytes at a time, so utf-8 and every other
-	// high byte comes out the way it went in.  Note the unsigned char:
-	// with a plain char every utf-8 continuation byte is negative and
-	// would read as a control character.
+	// Note the unsigned char: with a plain char every utf-8 continuation
+	// byte is negative and would read as a control character.
 	uint32_t	start=0;
 	for (uint32_t index=0; index<length; index++) {
 
@@ -2659,10 +2598,8 @@ void sqlrsh::jsonEscapeString(filedescriptor *fd,
 	fd->write(str+start,(size_t)(length-start));
 }
 
-// Returns whether "field" is a number the way json defines one:
+// a json number:
 //	-? (0 | [1-9][0-9]*) (\.[0-9]+)? ([eE][-+]?[0-9]+)?
-// Anything else - inf, nan, a leading plus, a leading zero, a bare leading
-// dot - has to go out as a string instead, or the document won't parse.
 static bool jsonIsNumber(const char *field, uint32_t length) {
 
 	uint32_t	index=0;
@@ -2715,9 +2652,7 @@ static bool jsonIsNumber(const char *field, uint32_t length) {
 void sqlrsh::jsonWriteValue(filedescriptor *fd, const char *field,
 					uint32_t length, bool asnumber) {
 
-	// A database null is the json null literal.  json has a real one, so
-	// there's no reason to make a reader guess at an empty string, and no
-	// way to confuse it with the string "NULL" either.
+	// a database null is the json null literal
 	if (!field) {
 		fd->write("null");
 		return;
@@ -2779,7 +2714,6 @@ const char *sqlrsh::getFieldForDisplay(sqlrcursor *sqlrcur, sqlrshenv *env,
 
 void sqlrsh::displayResultSet(sqlrcursor *sqlrcur, sqlrshenv *env) {
 
-	// One arm per format, for the reason displayHeader() gives.
 	switch (env->format) {
 		case SQLRSH_FORMAT_PLAIN:
 			plainDisplayResultSet(sqlrcur,env);
@@ -2924,9 +2858,8 @@ void sqlrsh::jsonDisplayResultSet(sqlrcursor *sqlrcur, sqlrshenv *env) {
 
 	char		numberfieldbuffer[256];
 
-	// A statement with no result set has no rows to look for, and
-	// looking anyway would never reach the end-of-result-set test,
-	// because that lives in the column loop.
+	// A statement with no result set never reaches the end-of-result-set
+	// test, because that lives in the column loop.
 	bool		done=!colcount;
 	for (uint64_t row=0; !done; row++) {
 
@@ -2944,8 +2877,6 @@ void sqlrsh::jsonDisplayResultSet(sqlrcursor *sqlrcur, sqlrshenv *env) {
 			// check for end-of-result-set condition
 			// (since nullsasnulls might be set, we have to do
 			// a bit more than just check for a NULL)
-			// This runs before anything is written for the row,
-			// so the row that isn't there leaves no trace.
 			if (!col && !field &&
 				sqlrcur->endOfResultSet() &&
 				row==sqlrcur->rowCount()) {
@@ -2954,10 +2885,6 @@ void sqlrsh::jsonDisplayResultSet(sqlrcursor *sqlrcur, sqlrshenv *env) {
 			}
 
 			// open the row
-			// jsonl rows are objects, keyed by column name, so
-			// each line carries its own names and stands alone.
-			// json rows are arrays, since the names are already
-			// in the columns list at the top of the document.
 			if (!col) {
 				if (jsonl) {
 					stdoutput.write(
@@ -2995,8 +2922,7 @@ void sqlrsh::jsonDisplayResultSet(sqlrcursor *sqlrcur, sqlrshenv *env) {
 
 	// close the result set
 	// The stats go here rather than in displayStats(), because
-	// -nextresultset calls this once per result set and each one gets
-	// its own document, or its own group of lines.
+	// -nextresultset calls this once per result set.
 	if (jsonl) {
 		if (env->stats) {
 			stdoutput.write("{\"type\":\"stats\",");
@@ -3015,12 +2941,9 @@ void sqlrsh::jsonDisplayResultSet(sqlrcursor *sqlrcur, sqlrshenv *env) {
 
 void sqlrsh::displayStats(sqlrcursor *sqlrcur, sqlrshenv *env) {
 
-	// This block of tab indented labels is plain format only.  It's a
-	// note to the person who ran the query, and plain is the only format
-	// a person reads directly.  csv has no place for it.  json and jsonl
-	// carry the same numbers, but as part of the document, which
-	// jsonDisplayResultSet() writes, because with -nextresultset there
-	// is a set of them per result set and this runs once per statement.
+	// The stats block is plain format only.  json and jsonl carry the
+	// same numbers inside the document, which jsonDisplayResultSet()
+	// writes.
 	if (env->format==SQLRSH_FORMAT_PLAIN && env->stats) {
 
 		// calculate elapsed time
@@ -3122,7 +3045,6 @@ static const char * const sqlrshcolumninfokeys[]={
 
 void sqlrsh::columninfo(sqlrcursor *sqlrcur, sqlrshenv *env) {
 
-	// One arm per format, for the reason displayHeader() gives.
 	switch (env->format) {
 		case SQLRSH_FORMAT_PLAIN:
 			plainColumnInfo(sqlrcur,env);
@@ -3139,9 +3061,7 @@ void sqlrsh::columninfo(sqlrcursor *sqlrcur, sqlrshenv *env) {
 
 void sqlrsh::plainColumnInfo(sqlrcursor *sqlrcur, sqlrshenv *env) {
 
-	// A block of tab indented labels per column, the way displayStats()
-	// writes its block.  Thirteen values across a row would be too wide to
-	// read, and plain is the format a person reads directly.
+	// a block of tab indented labels per column
 	uint32_t	colcount=sqlrcur->colCount();
 	for (uint32_t col=0; col<colcount; col++) {
 
@@ -3180,9 +3100,7 @@ void sqlrsh::plainColumnInfo(sqlrcursor *sqlrcur, sqlrshenv *env) {
 
 void sqlrsh::csvColumnInfo(sqlrcursor *sqlrcur, sqlrshenv *env) {
 
-	// One row per column, with a header row, the way csvDisplayHeader()
-	// always writes one.  The names are the only way a csv reader can
-	// learn what the fields are, so they're data rather than decoration.
+	// one row per column, with a header row
 	for (const char * const *key=sqlrshcolumninfokeys; *key; key++) {
 		if (key!=sqlrshcolumninfokeys) {
 			stdoutput.write(',');
@@ -3191,10 +3109,6 @@ void sqlrsh::csvColumnInfo(sqlrcursor *sqlrcur, sqlrshenv *env) {
 	}
 	stdoutput.write('\n');
 
-	// The names and types go through csvWriteField(), so one containing a
-	// comma or a double quote can't break the row apart.  The numbers and
-	// the booleans are written bare, the way writeScalarNumber() and
-	// writeScalarBoolean() write them in csv.
 	uint32_t	colcount=sqlrcur->colCount();
 	for (uint32_t col=0; col<colcount; col++) {
 
@@ -3222,10 +3136,8 @@ void sqlrsh::csvColumnInfo(sqlrcursor *sqlrcur, sqlrshenv *env) {
 
 void sqlrsh::jsonColumnInfo(sqlrcursor *sqlrcur, sqlrshenv *env) {
 
-	// json and jsonl agree here.  A column list is one object on one line
-	// either way, so there's nothing to stream and nothing to differ
-	// about, the way the fields command already works.  The keys are the
-	// ones sqlrshcolumninfokeys lists.
+	// json and jsonl agree here.  A column list is one object on one
+	// line either way, so there's nothing to stream.
 	stdoutput.write("{\"columninfo\":[");
 
 	uint32_t	colcount=sqlrcur->colCount();
@@ -3284,11 +3196,7 @@ void sqlrsh::writeScalar(sqlrshenv *env,
 			break;
 		case SQLRSH_FORMAT_JSON:
 		case SQLRSH_FORMAT_JSONL:
-			// One object on one line, keyed by the command name,
-			// so a reader gets the same thing from every one of
-			// these commands and never has to know which it ran.
-			// json and jsonl agree here - there's nothing to
-			// stream, so there's nothing to differ about.
+			// one object, one line, keyed by the command name
 			stdoutput.write('{');
 			jsonWriteString(&stdoutput,name,
 					charstring::getLength(name));
@@ -3345,10 +3253,8 @@ void sqlrsh::writeScalarBoolean(sqlrshenv *env,
 void sqlrsh::writeTimeout(sqlrshenv *env, const char *name,
 					int32_t sec, int32_t usec) {
 
-	// Either half negative means the timeout is off, which is what
-	// setConnectTimeout() and setResponseTimeout() say a negative value
-	// does, so it goes out as a plain -1 rather than as arithmetic on two
-	// negative numbers.
+	// Either half negative means the timeout is off, so it goes out as a
+	// plain -1 rather than as arithmetic on two negative numbers.
 	char	value[64];
 	if (sec<0 || usec<0) {
 		charstring::copy(value,"-1");
@@ -3524,9 +3430,6 @@ bool sqlrsh::usecatalog(sqlrconnection *sqlrcon,
 
 	char	*catalog=commandArgument(args);
 	if (!catalog) {
-		// A command that needed an argument and didn't get one
-		// failed, the way a query with a syntax error failed, so it
-		// goes out as an error and exits SQLRSH_EXIT_QUERY.
 		displayError(env,NULL,"usecatalog needs a catalog name",0);
 		return false;
 	}
@@ -3578,8 +3481,7 @@ bool sqlrsh::resumesession(sqlrconnection *sqlrcon,
 
 	uint16_t	port=(uint16_t)charstring::convertToInteger(arg);
 
-	// The socket is the rest of the argument, and an inet session doesn't
-	// have one, so it's optional.
+	// the socket is the rest of the argument, and is optional
 	const char	*socket=arg;
 	while (*socket && !character::isWhitespace(*socket)) {
 		socket++;
@@ -3588,9 +3490,8 @@ bool sqlrsh::resumesession(sqlrconnection *sqlrcon,
 		socket++;
 	}
 
-	// The connection keeps this pointer rather than copying it, and
-	// getConnectionSocket() hands it back later, so env owns it for the
-	// rest of the run, the way env owns cacheto.
+	// The connection keeps this pointer rather than copying it, so env
+	// owns it for the rest of the run.
 	delete[] env->resumesocket;
 	env->resumesocket=charstring::duplicate(socket);
 	delete[] arg;
@@ -3619,8 +3520,7 @@ bool sqlrsh::bindvariabledelimiters(sqlrconnection *sqlrcon,
 
 	// Without one it reports them.  There's no
 	// getBindVariableDelimiters(), so the answer is assembled out of the
-	// four supported() methods, in the order the default "?:@$" lists
-	// them.
+	// four supported() methods.
 	char	current[5];
 	uint8_t	index=0;
 	if (sqlrcon->getBindVariableDelimiterQuestionMarkSupported()) {
@@ -3646,9 +3546,6 @@ bool sqlrsh::bindvariabledelimitersupported(sqlrconnection *sqlrcon,
 
 	char	*delimiter=commandArgument(args);
 
-	// This switch is on a delimiter, not on the output format, so it does
-	// have a default label - an unrecognized delimiter is a failed
-	// command.
 	bool	supported=false;
 	bool	valid=true;
 	switch ((delimiter)?delimiter[0]:'\0') {
@@ -3699,8 +3596,7 @@ bool sqlrsh::databasefeature(sqlrconnection *sqlrcon,
 	delete[] feature;
 
 	// A NULL means the fetch failed or the feature name wasn't one the
-	// database knows.  Either way the command failed, so it doesn't write
-	// a null the way a command that really can have one does.
+	// database knows.  Either way the command failed.
 	if (!value) {
 		if (sqlrcon->errorMessage()) {
 			displayError(env,NULL,
@@ -3721,18 +3617,16 @@ bool sqlrsh::databasefeature(sqlrconnection *sqlrcon,
 bool sqlrsh::columninfocommand(sqlrcursor *sqlrcur,
 				sqlrshenv *env, const char *args) {
 
-	// With an argument it turns column info on or off, without one it
-	// dumps the metadata, the way isolationlevel sets with an argument and
-	// reports without one.
+	// with an argument it turns column info on or off, without one it
+	// dumps the metadata
 	char	*arg=commandArgument(args);
 	if (!arg) {
 		columninfo(sqlrcur,env);
 		return true;
 	}
 
-	// The argument is validated rather than run through the loose test the
-	// older toggles use, where anything that isn't "on" quietly means off.
-	// A bad argument is a failed command here.
+	// A bad argument is a failed command here, rather than quietly
+	// meaning off, the way the older toggles read one.
 	bool	on=false;
 	bool	valid=false;
 	if (!charstring::compareIgnoringCase(arg,"on")) {
@@ -3785,8 +3679,7 @@ bool sqlrsh::columncase(sqlrcursor *sqlrcur,
 bool sqlrsh::resumeresultset(sqlrcursor *sqlrcur,
 				sqlrshenv *env, const char *args) {
 
-	// The id is optional.  Without one the cursor's own id is used, which
-	// is the one a suspendresultset in this same sqlrsh left behind.
+	// the id is optional - without one the cursor's own id is used
 	char	*arg=commandArgument(args);
 	if (arg && !character::isDigit(arg[0])) {
 		delete[] arg;
@@ -3810,9 +3703,6 @@ bool sqlrsh::resumeresultset(sqlrcursor *sqlrcur,
 		return false;
 	}
 
-	// The rows have been fetched by now, and sqlrsh has no command that
-	// writes the result set it's holding, so they go out here, the way the
-	// opencache command writes the result set it just opened.
 	displayCurrentResultSet(sqlrcur,env);
 	return true;
 }
@@ -3833,8 +3723,7 @@ bool sqlrsh::resumecachedresultset(sqlrcursor *sqlrcur,
 				(uint16_t)charstring::convertToInteger(arg):
 				sqlrcur->getResultSetId();
 
-	// The file name is the rest of the argument, and continuing to cache
-	// is optional, so the name is too.
+	// the file name is the rest of the argument, and is optional
 	char	*newcacheto=NULL;
 	if (arg) {
 		const char	*rest=arg;
@@ -3854,11 +3743,9 @@ bool sqlrsh::resumecachedresultset(sqlrcursor *sqlrcur,
 
 	bool	success=sqlrcur->resumeCachedResultSet(id,newcacheto);
 
-	// The cursor doesn't copy references, so whichever name it's holding
-	// now is the one that has to stay alive, and the other one is free to
-	// go.  Asking it is the only way to know: it hands the name to
-	// cacheToFile() on the way through, but it can also return before
-	// getting that far, and then it's still holding the old one.
+	// The cursor doesn't copy the name, so whichever one it's holding now
+	// has to stay alive.  Asking it is the only way to know - it can
+	// return before it gets as far as taking the new one.
 	if (sqlrcur->getCacheFileName()==newcacheto) {
 		delete[] env->cacheto;
 		env->cacheto=newcacheto;
@@ -3985,8 +3872,8 @@ bool sqlrsh::inputbind(sqlrcursor *sqlrcur,
 	// define the variable
 	bv=new sqlrshbindvalue;
 
-	// A value in quotes is a string.  It takes at least two characters to
-	// have both of them, or the one that's there is part of the value.
+	// a value in quotes is a string
+	// (it takes at least two characters to have both of them)
 	bool	quoted=(valuelen>=2 &&
 			((value[0]=='\'' && value[valuelen-1]=='\'') ||
 			(value[0]=='"' && value[valuelen-1]=='"')));
@@ -4059,8 +3946,8 @@ bool sqlrsh::inputbind(sqlrcursor *sqlrcur,
 	}
 
 	// put the bind variable in the list
-	// The list keeps the name it already has, so a redefinition has to
-	// free the name it just made or it goes nowhere.
+	// (the list keeps the name it already has, so a redefinition has to
+	// free the one it just made)
 	env->inputbinds.setValue(variable,bv);
 	if (predefined) {
 		delete[] variable;
@@ -4151,8 +4038,8 @@ bool sqlrsh::inputbindlob(sqlrcursor *sqlrcur,
 	}
 
 	// put the bind variable in the list
-	// The list keeps the name it already has, so a redefinition has to
-	// free the name it just made or it goes nowhere.
+	// (the list keeps the name it already has, so a redefinition has to
+	// free the one it just made)
 	env->inputbinds.setValue(variable,bv);
 	if (predefined) {
 		delete[] variable;
@@ -4244,9 +4131,7 @@ bool sqlrsh::outputbind(sqlrcursor *sqlrcur,
 		} else if (!charstring::compareIgnoringCase(
 						parts[2],"cursor") &&
 						partcount==3) {
-			// a cursor bind has no value of its own.  What comes
-			// back is a cursor, and fetchfrombindcursor is what
-			// reads it.
+			// a cursor bind has no value of its own
 			bv->type=SQLRCLIENTBINDVARTYPE_CURSOR;
 		} else {
 			delete bv;
@@ -4263,10 +4148,8 @@ bool sqlrsh::outputbind(sqlrcursor *sqlrcur,
 	}
 
 	// clean up
-	// The list takes parts[1] as its key and manages it from there, unless
-	// it already had one by that name, in which case it kept the one it
-	// had and this one has to go too.  The rest were only the type and its
-	// parameters.
+	// (the list takes parts[1] as its key, unless it already had one by
+	// that name, in which case this one has to go too)
 	if (sane) {
 		delete[] parts[0];
 		if (predefined) {
@@ -4401,10 +4284,8 @@ bool sqlrsh::inputoutputbind(sqlrcursor *sqlrcur,
 	}
 
 	// clean up
-	// The list takes parts[1] as its key and manages it from there, unless
-	// it already had one by that name, in which case it kept the one it
-	// had and this one has to go too.  The rest were only the type and its
-	// parameters.
+	// (the list takes parts[1] as its key, unless it already had one by
+	// that name, in which case this one has to go too)
 	if (sane) {
 		delete[] parts[0];
 		if (predefined) {
@@ -4425,9 +4306,6 @@ bool sqlrsh::inputoutputbind(sqlrcursor *sqlrcur,
 	return sane;
 }
 
-// writes a string bind value, exactly as many bytes as it has, so an embedded
-// null can't cut it short.  A value that hasn't come back from the database
-// yet is a null pointer, and prints the way printf() prints one.
 static void writeBindString(sqlrshbindvalue *bv) {
 
 	if (!bv->stringval.value) {
@@ -4437,10 +4315,6 @@ static void writeBindString(sqlrshbindvalue *bv) {
 	stdoutput.write(bv->stringval.value,(size_t)bv->stringval.length);
 }
 
-// writes a blob or clob bind value, with its non-printable bytes escaped.  A
-// value that hasn't come back from the database yet is a null pointer, and
-// writes what an unset string bind writes, rather than looking like an empty
-// lob.
 static void writeBindLob(sqlrshbindvalue *bv) {
 
 	if (!bv->stringval.value) {
@@ -4495,8 +4369,7 @@ void sqlrsh::printbinds(const char *type,
 			writeBindLob(bv);
 			stdoutput.printf("\n");
 		} else if (bv->type==SQLRCLIENTBINDVARTYPE_CURSOR) {
-			// a cursor bind has no value to write.
-			// fetchfrombindcursor is what reads one.
+			// a cursor bind has no value to write
 			stdoutput.printf("(CURSOR)\n");
 		} else if (bv->type==SQLRCLIENTBINDVARTYPE_NULL) {
 			stdoutput.printf("NULL\n");
@@ -4525,11 +4398,8 @@ void sqlrsh::jsonPrintBinds(const char *key,
 		jsonWriteString(&stdoutput,name,charstring::getLength(name));
 		stdoutput.write(':');
 
-		// The value carries its own type, so it goes out as the
-		// json type that matches: a number for a number, a string
-		// for a string, a date, a blob or a clob, and null for a
-		// null.  A cursor is a null too - it has no value json can
-		// carry, and fetchfrombindcursor is what reads one.
+		// the value goes out as the json type that matches
+		// (a cursor is a null - it has no value json can carry)
 		sqlrshbindvalue	*bv=binds->getValue(node->getValue());
 		if (bv->type==SQLRCLIENTBINDVARTYPE_STRING ||
 				bv->type==SQLRCLIENTBINDVARTYPE_BLOB ||
@@ -4580,8 +4450,7 @@ void sqlrsh::printbindlist(sqlrshenv *env,
 			break;
 		case SQLRSH_FORMAT_JSON:
 		case SQLRSH_FORMAT_JSONL:
-			// one object, one line, with the list as its only
-			// member, keyed the way printbinds keys it
+			// one object, one line
 			stdoutput.write('{');
 			jsonPrintBinds(key,binds);
 			stdoutput.write("}\n");
@@ -4598,8 +4467,7 @@ bool sqlrsh::fetchfrombindcursor(sqlrcursor *sqlrcur,
 				"usage: fetchfrombindcursor [variable]");
 	}
 
-	// The cursor comes back attached to the bind, and belongs to this
-	// method from there on.
+	// the cursor belongs to this method from here on
 	sqlrcursor	*bindcur=sqlrcur->getOutputBindCursor(variable);
 	delete[] variable;
 	if (!bindcur) {
@@ -4635,8 +4503,7 @@ bool sqlrsh::fetchfrombindcursor(sqlrcursor *sqlrcur,
 
 bool sqlrsh::validatebinds(sqlrshenv *env, const char *args) {
 
-	// Validating is what the command is for, so it takes on|off but no
-	// argument at all means on.
+	// no argument at all means on
 	bool	on=true;
 	char	*arg=commandArgument(args);
 	if (arg) {
@@ -4693,8 +4560,7 @@ bool sqlrsh::substitution(sqlrshenv *env, const char *args) {
 	charstring::bothTrim(value);
 	size_t	valuelen=charstring::getLength(value);
 
-	// The name and the value come out of the pool.  The cursor keeps
-	// references to both, and outlives a clearsubstitutions.
+	// the name comes out of the pool
 	char	*name=poolCopy(&env->subpool,arg,charstring::getLength(arg));
 	delete[] arg;
 
@@ -4708,9 +4574,8 @@ bool sqlrsh::substitution(sqlrshenv *env, const char *args) {
 	// define the variable
 	bv=new sqlrshbindvalue;
 
-	// A value in quotes is a string.  An unquoted one is a number if it
-	// looks like one, and a string if it doesn't.  There is no date or
-	// null substitution - the api has no call for either.
+	// There is no date or null substitution - the api has no call for
+	// either.
 	if (valuelen>=2 &&
 		((value[0]=='\'' && value[valuelen-1]=='\'') ||
 		(value[0]=='"' && value[valuelen-1]=='"'))) {
@@ -4791,8 +4656,7 @@ bool sqlrsh::filequery(sqlrconnection *sqlrcon, sqlrcursor *sqlrcur,
 	}
 	delete[] parts;
 
-	// preparefilequery stops here.  reexecute is what runs what it
-	// prepared.
+	// preparefilequery stops here
 	if (!prepared || !execute) {
 		return prepared;
 	}
@@ -4834,8 +4698,6 @@ void sqlrsh::delimiter(sqlrshenv *env) {
 		case SQLRSH_FORMAT_JSON:
 		case SQLRSH_FORMAT_JSONL:
 			{
-				// a one character string, because a
-				// delimiter is a character
 				char	value[2];
 				value[0]=env->delimiter;
 				value[1]='\0';
@@ -4860,10 +4722,6 @@ void sqlrsh::autocommit(sqlrshenv *env, bool on) {
 	}
 }
 
-// Parses a timeout the way the response timeout command has always spelled
-// one: whole seconds, then an optional dot and up to 4 more digits.  Those
-// digits are handed to the connection as microseconds, which is what this
-// command has always done.
 static void parseTimeout(const char *args, uint32_t *sec, uint32_t *msec) {
 
 	// skip to the timeout itself
@@ -4875,6 +4733,8 @@ static void parseTimeout(const char *args, uint32_t *sec, uint32_t *msec) {
 	*sec=charstring::convertToInteger(args);
 
 	// get milliseconds
+	// (handed to the connection as microseconds, which is what this
+	// command has always done)
 	char	msecbuf[5];
 	bytestring::set(msecbuf,'0',4);
 	msecbuf[4]='\0';
@@ -4907,8 +4767,7 @@ bool sqlrsh::connectTimeout(sqlrconnection *sqlrcon,
 	delete[] arg;
 
 	// This applies to the next connect, not to the session sqlrsh is
-	// already in, so it matters for a resumesession or for the reconnect
-	// that follows an endsession.
+	// already in.
 	sqlrcon->setConnectTimeout((int32_t)sec,(int32_t)msec);
 
 	writeTimeoutSet(env,"connecttimeout","Connect Timeout",sec,msec);
@@ -4969,9 +4828,7 @@ bool sqlrsh::cache(sqlrshenv *env, sqlrcursor *sqlrcur, const char *command) {
 		cachettl=charstring::convertToInteger(ptr);
 	}
 
-	// The banner is plain format only.  What this command really produces
-	// is the next result set, so in any other format the banner is two
-	// stray lines at the top of the stream.
+	// the banner is plain format only
 	if (env->format==SQLRSH_FORMAT_PLAIN) {
 		stdoutput.printf("	Caching To       : %s\n",env->cacheto);
 		stdoutput.printf("	Cache TTL Set To : %lld seconds\n\n",
@@ -5316,9 +5173,7 @@ void sqlrsh::displayHelp(sqlrshenv *env) {
 void sqlrsh::startupMessage(sqlrshenv *env, const char *host,
 					uint16_t port, const char *user) {
 
-	// The banner greets a person.  json and jsonl are handed to a
-	// parser, and a greeting isn't part of either, so it's left out of
-	// the stream entirely rather than written and hoped over.
+	// no banner for json or jsonl - a greeting isn't part of either
 	switch (env->format) {
 		case SQLRSH_FORMAT_PLAIN:
 		case SQLRSH_FORMAT_CSV:
@@ -5467,8 +5322,6 @@ int32_t sqlrsh::execute(int argc, const char **argv) {
 		charstring::isNullOrEmpty(host) &&
 		charstring::isNullOrEmpty(socket)) {
 
-		// The option list is spelled out once, under "options", so
-		// that the two connection forms don't drift apart.
 		stderror.printf("usage:\n"
 			" %ssh -host host [-port port]\n"
 			"        [-user user] [-password password]\n"
@@ -5604,8 +5457,8 @@ int32_t sqlrsh::execute(int argc, const char **argv) {
 	// set up an sqlrshenv
 	sqlrshenv	env;
 
-	// Quiet is shorthand for headers and stats.  It runs before them so
-	// that an explicit -headers or -stats wins over the shorthand.
+	// quiet runs before the others, so an explicit -headers or -stats
+	// wins over the shorthand
 	if (cmdline->isFound("quiet")) {
 		bool	quiet=onOffOption("quiet",false);
 		env.headers=!quiet;
@@ -5613,10 +5466,8 @@ int32_t sqlrsh::execute(int argc, const char **argv) {
 	}
 
 	// handle the result set format
-	// The name goes through the same list the format command uses.  An
-	// unrecognized name used to quietly fall back to plain, so
-	// "-format jsonl" on a build without jsonl emitted plain text and
-	// said nothing.  It's a usage error now.
+	// An unrecognized name used to quietly fall back to plain.  It's a
+	// usage error now.
 	if (cmdline->isFound("format")) {
 		const char	*formatname=cmdline->getValue("format");
 		if (!formatFromName(formatname,&env.format)) {
@@ -5656,8 +5507,7 @@ int32_t sqlrsh::execute(int argc, const char **argv) {
 	// check the connection
 	// sqlrconnection doesn't connect until something needs the server, so
 	// without this a bad host, port, or password would first show up as a
-	// failed command, and the caller couldn't tell it from a bad query.
-	// ping() opens the session, so this costs a round trip, not a session.
+	// failed command.
 	if (!sqlrcon.ping()) {
 		const char	*error=sqlrcon.errorMessage();
 		if (charstring::isNullOrEmpty(error)) {
@@ -5694,8 +5544,8 @@ int32_t sqlrsh::execute(int argc, const char **argv) {
 		}
 	} else {
 		// otherwise go into interactive mode
-		// An interactive session isn't a batch, so a failed query at
-		// the prompt isn't a failed run.  This always succeeds.
+		// (an interactive session isn't a batch, so a failed query at
+		// the prompt isn't a failed run)
 		startupMessage(&env,host,port,user);
 		interactWithUser(&sqlrcon,&sqlrcur,&env);
 	}

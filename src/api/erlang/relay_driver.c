@@ -42,14 +42,12 @@ int colCount();
 
 #define ENCODE_VOID 	if (ei_x_encode_atom(&result, "ok") || ei_x_encode_string(&result, "void")) { return ERR_ENCODING_ARGS; }
 
-// Encode a C string that may be NULL.  A NULL pointer becomes the
-// Erlang atom 'undefined' so callers can distinguish it from an empty
-// string (getNullsAsNulls vs getNullsAsEmptyStrings).
+// encode a string, or the atom 'undefined' if NULL
+// (so callers can tell a NULL from an empty string)
 #define ENCODE_STRING_OR_UNDEFINED(b, s) \
 	((s) ? ei_x_encode_string(b, s) : ei_x_encode_atom(b, "undefined"))
 
-// Length-aware variant: preserves embedded nulls so callers can receive
-// binary data (e.g. BLOB contents) without truncation at the first 0 byte.
+// length-aware variant, for binary data with embedded nulls
 #define ENCODE_BYTES_OR_UNDEFINED(b, s, len) \
 	((s) ? ei_x_encode_string_len(b, s, len) : ei_x_encode_atom(b, "undefined"))
 
@@ -58,11 +56,9 @@ int colCount();
  * Utility functions
  *----------------------------------------------------------------*/
 
-// check that the given row is within the limits of the cursor.
-// Only the lower bound is enforced — the upper bound depends on
-// the result set buffer size / streaming state and the client lib
-// scrolls the buffer forward automatically, returning NULL past the
-// actual end of results.
+// check that the given row is within the limits of the cursor
+// (only the lower bound is enforced; the client library scrolls the
+// result set buffer forward and returns NULL past the end)
 int checkRowLimitsOK(int row) {
 	if (row < 0) {
 		return FALSE;
@@ -94,11 +90,9 @@ long alloc(char *server, ulong port, char *socket, char *user, char *password, u
 		fprintf(stderr, "Processing alloc with arguments: %s, %ld, %s, %s, %s, %ld, %ld\n\r", server, port, socket, user, password, retrytime, tries);
 	}
 
-	// Use copyrefs=1 so the C++ library duplicates any string
-	// arguments we pass in later (e.g. enableTls cert/ca paths,
-	// inputBindString values).  Without this, the library stores
-	// raw pointers into the driver's stack buffers and they go
-	// stale on subsequent commands.
+	// Use copyrefs=1 so the library duplicates the string arguments
+	// we pass in later.  Without it, the library keeps pointers into
+	// the driver's stack buffers, which go stale on the next command.
 	con = sqlrcon_alloc_copyrefs(server, port, socket, user, password,
 	                             retrytime, tries, 1);
 
@@ -107,10 +101,8 @@ long alloc(char *server, ulong port, char *socket, char *user, char *password, u
 
 
 
-// Lazily allocate the cursor the first time it's needed, then reuse
-// it.  Allocating a fresh cursor on every send/prepare leaked the
-// previous cursor (and its server-side cursor handle), which exhausted
-// backend cursor pools after a small number of iterations.
+// Allocating a fresh cursor on every send/prepare leaked the previous
+// cursor and its server-side handle, exhausting backend cursor pools.
 static void ensureCursor() {
 	if (!cur) {
 		cur = sqlrcur_alloc_copyrefs(con, 1);
@@ -186,12 +178,12 @@ int main() {
   	if ((buf = (byte *) malloc(size)) == NULL) 
     		return -1;
    
-	// main loop 
+	// main loop
   	while (read_cmd(&buf, &size) > 0) {
-    		// Reset the index, so that ei functions can decode terms from the  beginning of the buffer 
+    		// Reset the index, so that ei functions can decode terms from the  beginning of the buffer
     		index = 0;
 
-    		// Ensure that we are receiving the binary term by reading and stripping the version byte 
+    		// Ensure that we are receiving the binary term by reading and stripping the version byte
     		if (ei_decode_version(buf, &index, &version)) {
 			return ERR_BINARY_TERM;
 		}
@@ -203,20 +195,20 @@ int main() {
 			--arity;	// remove the command name from the argument count
 		}
 
-		// Get the command  
+		// Get the command
     		if (ei_decode_atom(buf, &index, command)) {
 			return ERR_PROTOCOL;
 		}
  
-    		// Prepare the output buffer that will hold {ok, Result} or {error, Reason} 
+    		// Prepare the output buffer that will hold {ok, Result} or {error, Reason}
     		if (ei_x_new_with_version(&result) || ei_x_encode_tuple_header(&result, 2)) {
 			return ERR_PREPARING_RESULTS;
 		}
 
 
-		// 
+		//
 		// process command
-		//	
+		//
 		if (DEBUG) {
 			fprintf(stderr, "Received command %s, number of arguments is %d\n\r", command, arity);
    		}
@@ -257,10 +249,10 @@ int main() {
 				return ERR_DECODING_ARGS;
 			}
        
-			// call function 
+			// call function
 			c = alloc(server, port, socket, user, password, retrytime, tries);
      
-			// encode result 
+			// encode result
 			if (ei_x_encode_atom(&result, "ok") || 
 				ei_x_encode_long(&result, c)) {
 				return ERR_ENCODING_ARGS;
@@ -271,7 +263,7 @@ int main() {
 			// check number of arguments
 		    	if (arity != 0) return ERR_NUMBER_OF_ARGS;
 
-			// call function and encode result 
+			// call function and encode result
 			if (ei_x_encode_atom(&result, "ok") || 
 				ei_x_encode_long(&result, sqlrcon_ping(con))) {
 				return ERR_ENCODING_ARGS;
@@ -317,7 +309,7 @@ int main() {
 				return ERR_DECODING_ARGS;
 			}
 
-			// call function and encode result 
+			// call function and encode result
 			sqlrcon_setConnectTimeout(con,timeoutsec,timeoutusec);
 			ENCODE_VOID;   
 		}
@@ -405,7 +397,7 @@ int main() {
 			// check number of arguments
 		    	if (arity != 0) return ERR_NUMBER_OF_ARGS;
 
-			// call function and encode result 
+			// call function and encode result
 			if (ei_x_encode_atom(&result, "ok") || 
 				ei_x_encode_long(&result, sqlrcon_getBindVariableDelimiterQuestionMarkSupported(con))) {
 				return ERR_ENCODING_ARGS;
@@ -416,7 +408,7 @@ int main() {
 			// check number of arguments
 		    	if (arity != 0) return ERR_NUMBER_OF_ARGS;
 
-			// call function and encode result 
+			// call function and encode result
 			if (ei_x_encode_atom(&result, "ok") || 
 				ei_x_encode_long(&result, sqlrcon_getBindVariableDelimiterColonSupported(con))) {
 				return ERR_ENCODING_ARGS;
@@ -427,7 +419,7 @@ int main() {
 			// check number of arguments
 		    	if (arity != 0) return ERR_NUMBER_OF_ARGS;
 
-			// call function and encode result 
+			// call function and encode result
 			if (ei_x_encode_atom(&result, "ok") || 
 				ei_x_encode_long(&result, sqlrcon_getBindVariableDelimiterAtSignSupported(con))) {
 				return ERR_ENCODING_ARGS;
@@ -438,7 +430,7 @@ int main() {
 			// check number of arguments
 		    	if (arity != 0) return ERR_NUMBER_OF_ARGS;
 
-			// call function and encode result 
+			// call function and encode result
 			if (ei_x_encode_atom(&result, "ok") || 
 				ei_x_encode_long(&result, sqlrcon_getBindVariableDelimiterDollarSignSupported(con))) {
 				return ERR_ENCODING_ARGS;
@@ -464,8 +456,8 @@ int main() {
 				return ERR_DECODING_ARGS;
 			}
 
-			// Convert empty strings to NULL so the underlying C++
-			// library applies its "use defaults" behavior.
+			// convert empty strings to NULL, so the library
+			// applies its defaults
 			sqlrcon_enableKerberos(con,
 				service[0] ? service : NULL,
 				mech[0] ? mech : NULL,
@@ -508,9 +500,8 @@ int main() {
 				return ERR_DECODING_ARGS;
 			}
 
-			// Convert empty strings to NULL so the underlying C++
-			// library applies its "use defaults" behavior (matches
-			// how the cs binding passes (String)null).
+			// convert empty strings to NULL, so the library
+			// applies its defaults
 			sqlrcon_enableTls(con,
 				version[0] ? version : NULL,
 				cert[0] ? cert : NULL,
@@ -526,7 +517,7 @@ int main() {
 			// check number of arguments
 		    	if (arity != 0) return ERR_NUMBER_OF_ARGS;
 
-			// call function and encode result 
+			// call function and encode result
 			sqlrcon_disableEncryption(con);
 			ENCODE_VOID;   
 		}
@@ -558,7 +549,7 @@ int main() {
 			// check number of arguments
 		    	if (arity != 0) return ERR_NUMBER_OF_ARGS;
 
-			// call function and encode result 
+			// call function and encode result
 			if (ei_x_encode_atom(&result, "ok") || 
 				ei_x_encode_long(&result, sqlrcon_getConnectionPort(con))) {
 				return ERR_ENCODING_ARGS;
@@ -569,7 +560,7 @@ int main() {
 			// check number of arguments
 		    	if (arity != 0) return ERR_NUMBER_OF_ARGS;
 
-			// call function and encode result 
+			// call function and encode result
 			if (ei_x_encode_atom(&result, "ok") || 
 				ei_x_encode_string(&result, sqlrcon_getConnectionSocket(con))) {
 				return ERR_ENCODING_ARGS;
@@ -612,7 +603,7 @@ int main() {
 			// check number of arguments
 		    	if (arity != 0) return ERR_NUMBER_OF_ARGS;
 
-			// encode result 
+			// encode result
 			if (ei_x_encode_atom(&result, "ok") || 
 				ei_x_encode_string(&result, sqlrcon_identify(con) )) {
 				return ERR_ENCODING_ARGS;
@@ -623,7 +614,7 @@ int main() {
 			// check number of arguments
 		    	if (arity != 0) return ERR_NUMBER_OF_ARGS;
 
-			// encode result 
+			// encode result
 			if (ei_x_encode_atom(&result, "ok") || 
 				ei_x_encode_string(&result, sqlrcon_dbVersion(con))) {
 				return ERR_ENCODING_ARGS;
@@ -634,7 +625,7 @@ int main() {
 			// check number of arguments
 		    	if (arity != 0) return ERR_NUMBER_OF_ARGS;
 
-			// encode result 
+			// encode result
 			if (ei_x_encode_atom(&result, "ok") || 
 				ei_x_encode_string(&result, sqlrcon_dbHostName(con))) {
 				return ERR_ENCODING_ARGS;
@@ -645,7 +636,7 @@ int main() {
 			// check number of arguments
 		    	if (arity != 0) return ERR_NUMBER_OF_ARGS;
 
-			// encode result 
+			// encode result
 			if (ei_x_encode_atom(&result, "ok") || 
 				ei_x_encode_string(&result, sqlrcon_dbIpAddress(con))) {
 				return ERR_ENCODING_ARGS;
@@ -689,7 +680,7 @@ int main() {
 			// check number of arguments
 		    	if (arity != 0) return ERR_NUMBER_OF_ARGS;
 
-			// encode result 
+			// encode result
 			if (ei_x_encode_atom(&result, "ok") || 
 				ei_x_encode_string(&result, sqlrcon_nextvalFormat(con))) {
 				return ERR_ENCODING_ARGS;
@@ -707,7 +698,7 @@ int main() {
 				return ERR_DECODING_ARGS;
 			}
 
-			// call function and encode result 
+			// call function and encode result
 			sqlrcon_selectDatabase(con, database); 	
 			ENCODE_VOID;   
 		}
@@ -814,7 +805,7 @@ int main() {
 			// check number of arguments
 		    	if (arity != 0) return ERR_NUMBER_OF_ARGS;
 
-			// call function and encode result 
+			// call function and encode result
 			if (ei_x_encode_atom(&result, "ok") || 
 				ei_x_encode_long(&result, sqlrcon_autoCommitOn(con))) {
 				return ERR_ENCODING_ARGS;
@@ -847,7 +838,7 @@ int main() {
 			// check number of arguments
 		    	if (arity != 0) return ERR_NUMBER_OF_ARGS;
 
-			// call function and encode result 
+			// call function and encode result
 			if (ei_x_encode_atom(&result, "ok") || 
 				ei_x_encode_long(&result, sqlrcon_begin(con))) {
 				return ERR_ENCODING_ARGS;
@@ -858,7 +849,7 @@ int main() {
 			// check number of arguments
 		    	if (arity != 0) return ERR_NUMBER_OF_ARGS;
 
-			// call function and encode result 
+			// call function and encode result
 			if (ei_x_encode_atom(&result, "ok") || 
 				ei_x_encode_long(&result, sqlrcon_commit(con))) {
 				return ERR_ENCODING_ARGS;
@@ -988,7 +979,7 @@ int main() {
 			// check number of arguments
 		    	if (arity != 0) return ERR_NUMBER_OF_ARGS;
 
-			// encode result 
+			// encode result
 			if (ei_x_encode_atom(&result, "ok") || 
 				ei_x_encode_long(&result, sqlrcon_errorNumber(con) )) {
 				return ERR_ENCODING_ARGS;
@@ -999,7 +990,7 @@ int main() {
 			// check number of arguments
 		    	if (arity != 0) return ERR_NUMBER_OF_ARGS;
 
-			// call function and encode result 
+			// call function and encode result
 			sqlrcon_debugOn(con); 	
 			ENCODE_VOID;   
 		}
@@ -1008,7 +999,7 @@ int main() {
 			// check number of arguments
 		    	if (arity != 0) return ERR_NUMBER_OF_ARGS;
 
-			// call function and encode result 
+			// call function and encode result
 			sqlrcon_debugOff(con); 	
 			ENCODE_VOID;   
 		}
@@ -1017,7 +1008,7 @@ int main() {
 			// check number of arguments
 		    	if (arity != 0) return ERR_NUMBER_OF_ARGS;
 
-			// call function and encode result 
+			// call function and encode result
 			if (ei_x_encode_atom(&result, "ok") || 
 				ei_x_encode_long(&result, sqlrcon_getDebug(con))) {
 				return ERR_ENCODING_ARGS;
@@ -1035,7 +1026,7 @@ int main() {
 				return ERR_DECODING_ARGS;
 			}
 
-			// call function and encode result 
+			// call function and encode result
 			sqlrcon_setDebugFile(con, debugfile); 	
 			ENCODE_VOID;   
 		}
@@ -1051,7 +1042,7 @@ int main() {
 				return ERR_DECODING_ARGS;
 			}
 
-			// call function and encode result 
+			// call function and encode result
 			sqlrcon_setClientInfo(con, clientinfo); 	
 			ENCODE_VOID;   
 		}
@@ -1060,7 +1051,7 @@ int main() {
 			// check number of arguments
 		    	if (arity != 0) return ERR_NUMBER_OF_ARGS;
 
-			// encode result 
+			// encode result
 			if (ei_x_encode_atom(&result, "ok") || 
 				ei_x_encode_string(&result, sqlrcon_getClientInfo(con))) {
 				return ERR_ENCODING_ARGS;
@@ -1078,7 +1069,7 @@ int main() {
 				return ERR_DECODING_ARGS;
 			}
 
-			// call function and encode result 
+			// call function and encode result
 			sqlrcur_setResultSetBufferSize(cur, rows); 	
 			ENCODE_VOID;   
 		}
@@ -1087,7 +1078,7 @@ int main() {
 			// check number of arguments
 		    	if (arity != 0) return ERR_NUMBER_OF_ARGS;
 
-			// call function and encode result 
+			// call function and encode result
 			if (ei_x_encode_atom(&result, "ok") || 
 				ei_x_encode_long(&result, sqlrcur_getResultSetBufferSize(cur))) {
 				return ERR_ENCODING_ARGS;
@@ -1098,7 +1089,7 @@ int main() {
 			// check number of arguments
 		    	if (arity != 0) return ERR_NUMBER_OF_ARGS;
 
-			// call function and encode result 
+			// call function and encode result
 			sqlrcur_dontGetColumnInfo(cur); 	
 			ENCODE_VOID;   
 		}
@@ -1107,7 +1098,7 @@ int main() {
 			// check number of arguments
 		    	if (arity != 0) return ERR_NUMBER_OF_ARGS;
 
-			// call function and encode result 
+			// call function and encode result
 			sqlrcur_getColumnInfo(cur); 	
 			ENCODE_VOID;   
 		}
@@ -1116,7 +1107,7 @@ int main() {
 			// check number of arguments
 		    	if (arity != 0) return ERR_NUMBER_OF_ARGS;
 
-			// call function and encode result 
+			// call function and encode result
 			sqlrcur_mixedCaseColumnNames(cur); 	
 			ENCODE_VOID;   
 		}
@@ -1125,7 +1116,7 @@ int main() {
 			// check number of arguments
 		    	if (arity != 0) return ERR_NUMBER_OF_ARGS;
 
-			// call function and encode result 
+			// call function and encode result
 			sqlrcur_upperCaseColumnNames(cur); 	
 			ENCODE_VOID;   
 		}
@@ -1134,7 +1125,7 @@ int main() {
 			// check number of arguments
 		    	if (arity != 0) return ERR_NUMBER_OF_ARGS;
 
-			// call function and encode result 
+			// call function and encode result
 			sqlrcur_lowerCaseColumnNames(cur); 	
 			ENCODE_VOID;   
 		}
@@ -1150,7 +1141,7 @@ int main() {
 				return ERR_DECODING_ARGS;
 			}
 
-			// call function and encode result 
+			// call function and encode result
 			sqlrcur_cacheToFile(cur, filename); 	
 			ENCODE_VOID;   
 		}
@@ -1166,7 +1157,7 @@ int main() {
 				return ERR_DECODING_ARGS;
 			}
 
-			// call function and encode result 
+			// call function and encode result
 			sqlrcur_setCacheTtl(cur, ttl); 	
 			ENCODE_VOID;   
 		}
@@ -1175,7 +1166,7 @@ int main() {
 			// check number of arguments
 		    	if (arity != 0) return ERR_NUMBER_OF_ARGS;
 
-			// call function and encode result 
+			// call function and encode result
 			if (ei_x_encode_atom(&result, "ok") || 
 				ENCODE_STRING_OR_UNDEFINED(&result, sqlrcur_getCacheFileName(cur))) {
 				return ERR_ENCODING_ARGS;
@@ -1401,7 +1392,7 @@ int main() {
 			// check number of arguments
 		    	if (arity != 0) return ERR_NUMBER_OF_ARGS;
 
-			// call function and encode result 
+			// call function and encode result
 			sqlrcur_cacheOff(cur); 	
 			ENCODE_VOID;   
 		}
@@ -1413,9 +1404,7 @@ int main() {
 			// check number of arguments
 		    	if (arity != 1) return ERR_NUMBER_OF_ARGS;
 
-			// size the sql buffer from the incoming term so that
-			// queries longer than a fixed 2000-byte stack buffer
-			// don't overflow.
+			// size the sql buffer from the incoming term
 			if (ei_get_type(buf, &index, &sqltype, &sqlsize)) {
 				return ERR_DECODING_ARGS;
 			}
@@ -1482,7 +1471,7 @@ int main() {
 				return ERR_DECODING_ARGS;
 			}
 
-			// encode result 
+			// encode result
 			if (ei_x_encode_atom(&result, "ok") || 
 				ei_x_encode_long(&result, sendFileQuery(path, filename))) {
 				return ERR_ENCODING_ARGS;
@@ -1561,7 +1550,7 @@ int main() {
 				return ERR_DECODING_ARGS;
 			}
 
-			// encode result 
+			// encode result
 			if (ei_x_encode_atom(&result, "ok") || 
 				ei_x_encode_long(&result, prepareFileQuery(path, filename) )) {
 				return ERR_ENCODING_ARGS;
@@ -1584,7 +1573,7 @@ int main() {
 				return ERR_DECODING_ARGS;
 			}
 
-			// call function and encode result 
+			// call function and encode result
 			sqlrcur_subString(cur, variable, value); 	
 			ENCODE_VOID;
 		}
@@ -1605,7 +1594,7 @@ int main() {
 				return ERR_DECODING_ARGS;
 			}
 
-			// call function and encode result 
+			// call function and encode result
 			sqlrcur_subLong(cur, variable, value); 	
 			ENCODE_VOID;
 		}
@@ -1633,7 +1622,7 @@ int main() {
 				return ERR_DECODING_ARGS;
 			}
 
-			// call function and encode result 
+			// call function and encode result
 			sqlrcur_subDouble(cur, variable, value, precision, scale); 	
 			ENCODE_VOID;
 		}
@@ -1642,7 +1631,7 @@ int main() {
 			// check number of arguments
 		    	if (arity != 0) return ERR_NUMBER_OF_ARGS;
 
-			// call function and encode result 
+			// call function and encode result
 			sqlrcur_clearBinds(cur); 	
 			ENCODE_VOID;
 		}
@@ -1651,7 +1640,7 @@ int main() {
 			// check number of arguments
 		    	if (arity != 0) return ERR_NUMBER_OF_ARGS;
 
-			// encode result 
+			// encode result
 			if (ei_x_encode_atom(&result, "ok") || 
 				ei_x_encode_long(&result, sqlrcur_countBindVariables(cur) )) {
 				return ERR_ENCODING_ARGS;
@@ -1714,7 +1703,7 @@ int main() {
 				return ERR_DECODING_ARGS;
 			}
 
-			// call function and encode result 
+			// call function and encode result
 			sqlrcur_inputBindStringWithLength(cur, variable, value, length); 	
 			ENCODE_VOID;
 		}
@@ -1735,7 +1724,7 @@ int main() {
 				return ERR_DECODING_ARGS;
 			}
 
-			// call function and encode result 
+			// call function and encode result
 			sqlrcur_inputBindLong(cur, variable, value); 	
 			ENCODE_VOID;
 		}
@@ -1763,7 +1752,7 @@ int main() {
 				return ERR_DECODING_ARGS;
 			}
 
-			// call function and encode result 
+			// call function and encode result
 			sqlrcur_inputBindDouble(cur, variable, value, precision, scale); 	
 			ENCODE_VOID;
 		}
@@ -1780,9 +1769,7 @@ int main() {
 			if (ei_decode_string(buf, &index, &variable[0])) {
 				return ERR_DECODING_ARGS;
 			}
-			// size the value buffer from the incoming term so
-			// large blobs (e.g. 8 KB+) don't overflow a fixed
-			// 2000-byte stack array.
+			// size the value buffer from the incoming term
 			if (ei_get_type(buf, &index, &vtype, &vsize)) {
 				return ERR_DECODING_ARGS;
 			}
@@ -1905,7 +1892,7 @@ int main() {
 				return ERR_DECODING_ARGS;
 			}
 
-			// call function and encode result 
+			// call function and encode result
 			sqlrcur_defineOutputBindString(cur, variable, length); 	
 			ENCODE_VOID;
 		}
@@ -1921,7 +1908,7 @@ int main() {
 				return ERR_DECODING_ARGS;
 			}
 
-			// call function and encode result 
+			// call function and encode result
 			sqlrcur_defineOutputBindInteger(cur, variable); 	
 			ENCODE_VOID;
 		}
@@ -1937,7 +1924,7 @@ int main() {
 				return ERR_DECODING_ARGS;
 			}
 
-			// call function and encode result 
+			// call function and encode result
 			sqlrcur_defineOutputBindDouble(cur, variable); 	
 			ENCODE_VOID;
 		}
@@ -1985,7 +1972,7 @@ int main() {
 				return ERR_DECODING_ARGS;
 			}
 
-			// call function and encode result 
+			// call function and encode result
 			sqlrcur_defineOutputBindClob(cur, variable); 	
 			ENCODE_VOID;
 		}
@@ -2001,7 +1988,7 @@ int main() {
 				return ERR_DECODING_ARGS;
 			}
 
-			// call function and encode result 
+			// call function and encode result
 			sqlrcur_defineOutputBindCursor(cur, variable); 	
 			ENCODE_VOID;
 		}
@@ -2011,7 +1998,7 @@ int main() {
 			// check number of arguments
 		    	if (arity != 0) return ERR_NUMBER_OF_ARGS;
 
-			// call function and encode result 
+			// call function and encode result
 			sqlrcur_validateBinds(cur); 	
 			ENCODE_VOID;
 		}
@@ -2027,7 +2014,7 @@ int main() {
 				return ERR_DECODING_ARGS;
 			}
 
-			// call function and encode result 
+			// call function and encode result
 			if (ei_x_encode_atom(&result, "ok") || 
 				ei_x_encode_long(&result, sqlrcur_validBind(cur, variable) )) {
 				return ERR_ENCODING_ARGS;
@@ -2039,7 +2026,7 @@ int main() {
 			// check number of arguments
 		    	if (arity != 0) return ERR_NUMBER_OF_ARGS;
 
-			// call function and encode result 
+			// call function and encode result
 			if (ei_x_encode_atom(&result, "ok") || 
 				ei_x_encode_long(&result, sqlrcur_executeQuery(cur) )) {
 				return ERR_ENCODING_ARGS;
@@ -2050,7 +2037,7 @@ int main() {
 			// check number of arguments
 		    	if (arity != 0) return ERR_NUMBER_OF_ARGS;
 
-			// call function and encode result 
+			// call function and encode result
 			if (ei_x_encode_atom(&result, "ok") || 
 				ei_x_encode_long(&result, sqlrcur_fetchFromBindCursor(cur) )) {
 				return ERR_ENCODING_ARGS;
@@ -2068,7 +2055,7 @@ int main() {
 				return ERR_DECODING_ARGS;
 			}
 
-			// call function and encode result 
+			// call function and encode result
 			if (ei_x_encode_atom(&result, "ok") || 
 				ENCODE_STRING_OR_UNDEFINED(&result, sqlrcur_getOutputBindString(cur, variable))) {
 				return ERR_ENCODING_ARGS;
@@ -2130,7 +2117,7 @@ int main() {
 				return ERR_DECODING_ARGS;
 			}
 
-			// call function and encode result 
+			// call function and encode result
 			if (ei_x_encode_atom(&result, "ok") || 
 				ei_x_encode_long(&result, sqlrcur_getOutputBindInteger(cur, variable) )) {
 				return ERR_ENCODING_ARGS;
@@ -2148,7 +2135,7 @@ int main() {
 				return ERR_DECODING_ARGS;
 			}
 
-			// call function and encode result 
+			// call function and encode result
 			if (ei_x_encode_atom(&result, "ok") || 
 				ei_x_encode_double(&result, sqlrcur_getOutputBindDouble(cur, variable) )) {
 				return ERR_ENCODING_ARGS;
@@ -2346,7 +2333,7 @@ int main() {
 				return ERR_DECODING_ARGS;
 			}
 
-			// call function and encode result 
+			// call function and encode result
 			if (ei_x_encode_atom(&result, "ok") || 
 				ei_x_encode_long(&result, sqlrcur_openCachedResultSet(cur, filename) )) {
 				return ERR_ENCODING_ARGS;
@@ -2357,7 +2344,7 @@ int main() {
 			// check number of arguments
 		    	if (arity != 0) return ERR_NUMBER_OF_ARGS;
 
-			// encode result 
+			// encode result
 			if (ei_x_encode_atom(&result, "ok") || 
 				ei_x_encode_long(&result, colCount() )) {
 				return ERR_ENCODING_ARGS;
@@ -2368,7 +2355,7 @@ int main() {
 			// check number of arguments
 		    	if (arity != 0) return ERR_NUMBER_OF_ARGS;
 
-			// encode result 
+			// encode result
 			if (ei_x_encode_atom(&result, "ok") || 
 				ei_x_encode_long(&result, rowCount() )) {
 				return ERR_ENCODING_ARGS;
@@ -2379,7 +2366,7 @@ int main() {
 			// check number of arguments
 		    	if (arity != 0) return ERR_NUMBER_OF_ARGS;
 
-			// call function and encode result 
+			// call function and encode result
 			if (ei_x_encode_atom(&result, "ok") || 
 				ei_x_encode_long(&result, sqlrcur_totalRows(cur) )) {
 				return ERR_ENCODING_ARGS;
@@ -2390,7 +2377,7 @@ int main() {
 			// check number of arguments
 		    	if (arity != 0) return ERR_NUMBER_OF_ARGS;
 
-			// call function and encode result 
+			// call function and encode result
 			if (ei_x_encode_atom(&result, "ok") || 
 				ei_x_encode_long(&result, sqlrcur_affectedRows(cur) )) {
 				return ERR_ENCODING_ARGS;
@@ -2401,7 +2388,7 @@ int main() {
 			// check number of arguments
 		    	if (arity != 0) return ERR_NUMBER_OF_ARGS;
 
-			// call function and encode result 
+			// call function and encode result
 			if (ei_x_encode_atom(&result, "ok") || 
 				ei_x_encode_long(&result, sqlrcur_firstRowIndex(cur) )) {
 				return ERR_ENCODING_ARGS;
@@ -2447,7 +2434,7 @@ int main() {
 			// check number of arguments
 		    	if (arity != 0) return ERR_NUMBER_OF_ARGS;
 
-			// encode result 
+			// encode result
 			if (ei_x_encode_atom(&result, "ok") || 
 				ei_x_encode_long(&result, sqlrcur_errorNumber(cur) )) {
 				return ERR_ENCODING_ARGS;
@@ -2458,7 +2445,7 @@ int main() {
 			// check number of arguments
 		    	if (arity != 0) return ERR_NUMBER_OF_ARGS;
 
-			// call function and encode result 
+			// call function and encode result
 			sqlrcur_getNullsAsEmptyStrings(cur); 	
 			ENCODE_VOID;
 		}
@@ -2467,7 +2454,7 @@ int main() {
 			// check number of arguments
 		    	if (arity != 0) return ERR_NUMBER_OF_ARGS;
 
-			// call function and encode result 
+			// call function and encode result
 			sqlrcur_getNullsAsNulls(cur); 	
 			ENCODE_VOID;
 		}
@@ -2565,9 +2552,9 @@ int main() {
 			}
 
 			// encode result
-			// Note: no case-insensitive getFieldLength in the C wrapper,
-			// so fall back to the NUL-terminated encoder here.  Binary
-			// data with embedded NULs will be truncated via this path.
+			// NOTE: there is no case-insensitive getFieldLength in
+			// the C wrapper, so this path uses the NUL-terminated
+			// encoder and truncates binary data with embedded NULs.
 			if (err) {
 				signalError(&result, err);
 			} else {
@@ -2602,7 +2589,7 @@ int main() {
 				err = ERR_COL_OUT_OF_RANGE; 
 			}
 	
-			// encode result 
+			// encode result
 			if (err) {
 				signalError(&result, err); 
 			} else { 
@@ -2634,7 +2621,7 @@ int main() {
 				err = ERR_ROW_OUT_OF_RANGE; 
 			}
 	
-			// encode result 
+			// encode result
 			if (err) {
 				signalError(&result, err); 
 			} else { 
@@ -2701,7 +2688,7 @@ int main() {
 				err = ERR_COL_OUT_OF_RANGE; 
 			}
 	
-			// encode result 
+			// encode result
 			if (err) {
 				signalError(&result, err); 
 			} else { 
@@ -2733,7 +2720,7 @@ int main() {
 				err = ERR_ROW_OUT_OF_RANGE; 
 			}
 	
-			// encode result 
+			// encode result
 			if (err) {
 				signalError(&result, err); 
 			} else { 
@@ -4725,7 +4712,7 @@ int main() {
 				err = ERR_COL_OUT_OF_RANGE; 
 			}
 	
-			// encode result 
+			// encode result
 			if (err) {
 				signalError(&result, err); 
 			} else { 
@@ -4757,7 +4744,7 @@ int main() {
 				err = ERR_ROW_OUT_OF_RANGE; 
 			}
 	
-			// encode result 
+			// encode result
 			if (err) {
 				signalError(&result, err); 
 			} else { 
@@ -4930,7 +4917,7 @@ int main() {
 				err = ERR_COL_OUT_OF_RANGE; 
 			}
 	
-			// encode result 
+			// encode result
 			if (err) {
 				signalError(&result, err); 
 			} else { 
@@ -4959,7 +4946,7 @@ int main() {
 				err = ERR_COL_OUT_OF_RANGE; 
 			}
 	
-			// encode result 
+			// encode result
 			if (err) {
 				signalError(&result, err); 
 			} else { 
@@ -4981,7 +4968,7 @@ int main() {
 				return ERR_DECODING_ARGS;
 			}
 
-			// encode result 
+			// encode result
 			if (ei_x_encode_atom(&result, "ok") || 
 				ENCODE_STRING_OR_UNDEFINED(&result, sqlrcur_getColumnTypeByName(cur, col))) {
 				return ERR_ENCODING_ARGS;
@@ -5005,7 +4992,7 @@ int main() {
 				err = ERR_COL_OUT_OF_RANGE; 
 			}
 	
-			// encode result 
+			// encode result
 			if (err) {
 				signalError(&result, err); 
 			} else { 
@@ -5027,7 +5014,7 @@ int main() {
 				return ERR_DECODING_ARGS;
 			}
 
-			// encode result 
+			// encode result
 			if (ei_x_encode_atom(&result, "ok") || 
 				ei_x_encode_long(&result, sqlrcur_getColumnLengthByName(cur, col))) {
 				return ERR_ENCODING_ARGS;
@@ -5052,7 +5039,7 @@ int main() {
 				err = ERR_COL_OUT_OF_RANGE; 
 			}
 	
-			// encode result 
+			// encode result
 			if (err) {
 				signalError(&result, err); 
 			} else { 
@@ -5074,7 +5061,7 @@ int main() {
 				return ERR_DECODING_ARGS;
 			}
 
-			// encode result 
+			// encode result
 			if (ei_x_encode_atom(&result, "ok") || 
 				ei_x_encode_long(&result, sqlrcur_getColumnPrecisionByName(cur, col))) {
 				return ERR_ENCODING_ARGS;
@@ -5098,7 +5085,7 @@ int main() {
 				err = ERR_COL_OUT_OF_RANGE; 
 			}
 	
-			// encode result 
+			// encode result
 			if (err) {
 				signalError(&result, err); 
 			} else { 
@@ -5120,7 +5107,7 @@ int main() {
 				return ERR_DECODING_ARGS;
 			}
 
-			// encode result 
+			// encode result
 			if (ei_x_encode_atom(&result, "ok") || 
 				ei_x_encode_long(&result, sqlrcur_getColumnScaleByName(cur, col))) {
 				return ERR_ENCODING_ARGS;
@@ -5145,7 +5132,7 @@ int main() {
 				err = ERR_COL_OUT_OF_RANGE; 
 			}
 	
-			// encode result 
+			// encode result
 			if (err) {
 				signalError(&result, err); 
 			} else { 
@@ -5167,7 +5154,7 @@ int main() {
 				return ERR_DECODING_ARGS;
 			}
 
-			// encode result 
+			// encode result
 			if (ei_x_encode_atom(&result, "ok") || 
 				ei_x_encode_long(&result, sqlrcur_getColumnIsNullableByName(cur, col))) {
 				return ERR_ENCODING_ARGS;
@@ -5191,7 +5178,7 @@ int main() {
 				err = ERR_COL_OUT_OF_RANGE; 
 			}
 	
-			// encode result 
+			// encode result
 			if (err) {
 				signalError(&result, err); 
 			} else { 
@@ -5213,7 +5200,7 @@ int main() {
 				return ERR_DECODING_ARGS;
 			}
 
-			// encode result 
+			// encode result
 			if (ei_x_encode_atom(&result, "ok") || 
 				ei_x_encode_long(&result, sqlrcur_getColumnIsPrimaryKeyByName(cur, col))) {
 				return ERR_ENCODING_ARGS;
@@ -5237,7 +5224,7 @@ int main() {
 				err = ERR_COL_OUT_OF_RANGE; 
 			}
 	
-			// encode result 
+			// encode result
 			if (err) {
 				signalError(&result, err); 
 			} else { 
@@ -5259,7 +5246,7 @@ int main() {
 				return ERR_DECODING_ARGS;
 			}
 
-			// encode result 
+			// encode result
 			if (ei_x_encode_atom(&result, "ok") || 
 				ei_x_encode_long(&result, sqlrcur_getColumnIsUniqueByName(cur, col))) {
 				return ERR_ENCODING_ARGS;
@@ -5283,7 +5270,7 @@ int main() {
 				err = ERR_COL_OUT_OF_RANGE; 
 			}
 	
-			// encode result 
+			// encode result
 			if (err) {
 				signalError(&result, err); 
 			} else { 
@@ -5305,7 +5292,7 @@ int main() {
 				return ERR_DECODING_ARGS;
 			}
 
-			// encode result 
+			// encode result
 			if (ei_x_encode_atom(&result, "ok") || 
 				ei_x_encode_long(&result, sqlrcur_getColumnIsPartOfKeyByName(cur, col))) {
 				return ERR_ENCODING_ARGS;
@@ -5329,7 +5316,7 @@ int main() {
 				err = ERR_COL_OUT_OF_RANGE; 
 			}
 	
-			// encode result 
+			// encode result
 			if (err) {
 				signalError(&result, err); 
 			} else { 
@@ -5351,7 +5338,7 @@ int main() {
 				return ERR_DECODING_ARGS;
 			}
 
-			// encode result 
+			// encode result
 			if (ei_x_encode_atom(&result, "ok") || 
 				ei_x_encode_long(&result, sqlrcur_getColumnIsUnsignedByName(cur, col))) {
 				return ERR_ENCODING_ARGS;
@@ -5376,7 +5363,7 @@ int main() {
 				err = ERR_COL_OUT_OF_RANGE; 
 			}
 	
-			// encode result 
+			// encode result
 			if (err) {
 				signalError(&result, err); 
 			} else { 
@@ -5398,7 +5385,7 @@ int main() {
 				return ERR_DECODING_ARGS;
 			}
 
-			// encode result 
+			// encode result
 			if (ei_x_encode_atom(&result, "ok") || 
 				ei_x_encode_long(&result, sqlrcur_getColumnIsZeroFilledByName(cur, col))) {
 				return ERR_ENCODING_ARGS;
@@ -5424,7 +5411,7 @@ int main() {
 				err = ERR_COL_OUT_OF_RANGE; 
 			}
 	
-			// encode result 
+			// encode result
 			if (err) {
 				signalError(&result, err); 
 			} else { 
@@ -5446,7 +5433,7 @@ int main() {
 				return ERR_DECODING_ARGS;
 			}
 
-			// encode result 
+			// encode result
 			if (ei_x_encode_atom(&result, "ok") || 
 				ei_x_encode_long(&result, sqlrcur_getColumnIsBinaryByName(cur, col))) {
 				return ERR_ENCODING_ARGS;
@@ -5471,7 +5458,7 @@ int main() {
 				err = ERR_COL_OUT_OF_RANGE; 
 			}
 	
-			// encode result 
+			// encode result
 			if (err) {
 				signalError(&result, err); 
 			} else { 
@@ -5493,7 +5480,7 @@ int main() {
 				return ERR_DECODING_ARGS;
 			}
 
-			// encode result 
+			// encode result
 			if (ei_x_encode_atom(&result, "ok") || 
 				ei_x_encode_long(&result, sqlrcur_getColumnIsAutoIncrementByName(cur, col))) {
 				return ERR_ENCODING_ARGS;
@@ -5518,7 +5505,7 @@ int main() {
 				err = ERR_COL_OUT_OF_RANGE; 
 			}
 	
-			// encode result 
+			// encode result
 			if (err) {
 				signalError(&result, err); 
 			} else { 
@@ -5540,7 +5527,7 @@ int main() {
 				return ERR_DECODING_ARGS;
 			}
 
-			// encode result 
+			// encode result
 			if (ei_x_encode_atom(&result, "ok") || 
 				ei_x_encode_long(&result, sqlrcur_getLongestByName(cur, col))) {
 				return ERR_ENCODING_ARGS;
@@ -5551,7 +5538,7 @@ int main() {
 			// check number of arguments
 		    	if (arity != 0) return ERR_NUMBER_OF_ARGS;
 
-			// call function and encode result 
+			// call function and encode result
 			sqlrcur_suspendResultSet(cur); 	
 			ENCODE_VOID;   
 		}
@@ -5560,7 +5547,7 @@ int main() {
 			// check number of arguments
 		    	if (arity != 0) return ERR_NUMBER_OF_ARGS;
 
-			// call function and encode result 
+			// call function and encode result
 			if (ei_x_encode_atom(&result, "ok") || 
 				ei_x_encode_long(&result, sqlrcur_getResultSetId(cur))) {
 				return ERR_ENCODING_ARGS;
@@ -5578,7 +5565,7 @@ int main() {
 				return ERR_DECODING_ARGS;
 			}
 
-			// call function and encode result 
+			// call function and encode result
 			if (ei_x_encode_atom(&result, "ok") || 
 				ei_x_encode_long(&result, sqlrcur_resumeResultSet(cur, id))) {
 				return ERR_ENCODING_ARGS;
@@ -5600,7 +5587,7 @@ int main() {
 				return ERR_DECODING_ARGS;
 			}
 
-			// call function and encode result 
+			// call function and encode result
 			if (ei_x_encode_atom(&result, "ok") || 
 				ei_x_encode_long(&result, sqlrcur_resumeCachedResultSet(cur, id, filename))) {
 				return ERR_ENCODING_ARGS;
@@ -5611,15 +5598,15 @@ int main() {
 			// check number of arguments
 		    	if (arity != 0) return ERR_NUMBER_OF_ARGS;
 
-			// call function and encode result 
+			// call function and encode result
 			sqlrcur_closeResultSet(cur); 	
 			ENCODE_VOID;   
 		}
 
 
 
-		// write the result buffer back to the 
-		// calling Erlang program    	
+		// write the result buffer back to the
+		// calling Erlang program
 		write_cmd(&result);
 
 		// free memory structure

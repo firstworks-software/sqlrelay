@@ -99,9 +99,8 @@ extern "C" {
 		#define TSRMLS_DC
 		#define TSRMLS_CC
 		#define TSRMLS_FETCH()
-		// PHP 8.5 dropped the plain REGISTER_PDO_CLASS_CONST_LONG macro,
-		// leaving only deprecated variants, so define it here from the
-		// zend/pdo API that it still exposes.
+		// PHP 8.5 dropped the plain REGISTER_PDO_CLASS_CONST_LONG
+		// macro, leaving only deprecated variants, so define it here.
 		#ifndef REGISTER_PDO_CLASS_CONST_LONG
 			#define REGISTER_PDO_CLASS_CONST_LONG(const_name, value) \
 				zend_declare_class_constant_long(php_pdo_get_dbh_ce(), const_name, sizeof(const_name)-1, (zend_long)value);
@@ -2147,9 +2146,8 @@ static int sqlrelayHandleFactory(pdo_dbh_t *dbh,
 		sqlrdbh->sqlrcon->autoCommitOff();
 		dbh->auto_commit=0;
 	} else {
-		// initialize auto_commit to the lazyconnectautocommit option
-		// if we're doing lazyconnects (lazyconnectautocommit defaults
-		// to 1, since most backends autocommit by default)
+		// if we're lazy-connecting then we can't ask the server,
+		// so fall back to the lazyconnectautocommit option
 		if (!lazyconnect) {
 			dbh->auto_commit=sqlrdbh->sqlrcon->getAutoCommit();
 		} else {

@@ -7,18 +7,6 @@
 #include <rudiments/stringbuffer.h>
 #include <rudiments/dynamicarray.h>
 
-// Simulates global temporary tables in a database that only supports
-// session-local temporary tables.  For each configured table, watches for
-// inserts targeting that table at prepare-time and lazily issues the
-// configured create statement on the backend session the first time the
-// table is referenced.  Once created, the table persists for the life of
-// the backend session, which (for the sqlr-connection process model) means
-// it appears to behave like a global temporary table across all client
-// sessions multiplexed onto that backend session.
-//
-// The trigger is fired before prepare so that the create statement runs
-// before the database tries to parse a reference to a not-yet-created
-// table during prepare.
 
 class table_t {
 	public:

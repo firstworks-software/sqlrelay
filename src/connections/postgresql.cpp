@@ -339,11 +339,11 @@ void postgresqlconnection::initDatabaseFeatures() {
 		"false";
 
 	// the native odbc driver reports batch support, but sqlrelay runs
-	// one statement per query and returns one result set, so it can't
+	// one statement per query, so it reports none
 	databasefeatures[FEATURE_BATCH_OPERATIONS]=
 		"";
 
-	// sqlrelay returns no batch row counts (see batch_operations above)
+	// none, see batch_operations above
 	databasefeatures[FEATURE_BATCH_ROW_COUNTS]=
 		"";
 
@@ -2422,7 +2422,7 @@ bool postgresqlconnection::begin() {
 
 	// the query that sets the isolation level must be run as the first
 	// query in a new transaction, so run "begin" and
-	// "set transaction isolation level ..." quries directly through PQexec
+	// "set transaction isolation level ..." queries directly through PQexec
 	// to avoid running queries that check or deallocate the named
 	// statement...
 
@@ -2446,7 +2446,7 @@ bool postgresqlconnection::setIsolationLevel(const char *isolevel) {
 
 	// the query that sets the isolation level must be run as the first
 	// query in a new transaction, so run "begin" and
-	// "set transaction isolation level ..." quries directly through PQexec
+	// "set transaction isolation level ..." queries directly through PQexec
 	// to avoid running queries that check or deallocate the named
 	// statement...
 
@@ -2801,7 +2801,7 @@ bool postgresqlcursor::inputBind(const char *variable,
 		return true;
 	}
 
-	// if precision and scale were unspecified then format naturally
+	// convert the value to a string
 	if (!precision && !scale) {
 		bindvalues[pos]=charstring::parseNumber(*value);
 	} else {
@@ -2930,9 +2930,8 @@ void postgresqlcursor::encodeBlob(stringbuffer *buffer,
 
 void postgresqlcursor::decodeBlob(char **data, uint64_t *datasize) {
 
-	// decodes *data of *datasize, in postgresql bytea text format,
-	// to raw binary, in place
-	// handles both hex format (\xDEADBEEF) and escape format (\NNN octal)
+	// postgresql bytea text format is either hex (\xDEADBEEF)
+	// or escape format (\NNN octal)
 
 	char	*write=*data;
 	char	*read=*data;
@@ -3539,7 +3538,7 @@ uint16_t postgresqlcursor::getColumnIsNullable(uint32_t col) {
 	}
 
 	// If the column is an expression or literal, it's nullable.  PQftable
-	// ought to cath it, but if it doesn't then fall back to PQftablecol.
+	// ought to catch it, but if it doesn't then fall back to PQftablecol.
 	Oid	tableoid=PQftable(pgresult,col);
 	if (tableoid==InvalidOid) {
 		return 1;
@@ -3549,8 +3548,7 @@ uint16_t postgresqlcursor::getColumnIsNullable(uint32_t col) {
 		return 1;
 	}
 
-	// If the column isn't an expression or literal, then we have to
-	// query pg_attribute...
+	// query pg_attribute
 	char	query[128];
 	charstring::printf(query,sizeof(query),
 				"select attnotnull from pg_attribute "
@@ -3753,22 +3751,16 @@ void postgresqlcursor::closeResultSet() {
 		defined(HAVE_POSTGRESQL_PQSETSINGLEROWMODE))
 void postgresqlcursor::deallocateNamedStatement() {
 
-	// The "namedstmtallocated" flag tracks whether postgresql has a
-	// named prepared statement registered for this cursor's
-	// "cursorid".  It's used as a fast-path hint to skip DEALLOCATE
-	// when we know there's nothing to deallocate.  However, the flag
-	// can drift out of sync with the server across abnormal session
-	// termination paths, leaving us thinking a statement isn't
-	// registered when it actually is -- the next PQprepare on this
-	// cursor name then fails with "prepared statement already
+	// The "namedstmtallocated" flag can drift out of sync with the server
+	// across abnormal session termination paths, leaving us thinking a
+	// statement isn't registered when it actually is.  The next PQprepare
+	// on this cursor name then fails with "prepared statement already
 	// exists" and the cursor is wedged.
 	//
-	// To recover from drift without blindly calling DEALLOCATE
-	// (which raises an error if the statement doesn't actually
-	// exist, aborting any open transaction), probe
-	// pg_prepared_statements when the flag says "not allocated" to
-	// see if we're out of sync.  In the common case (flag true),
-	// this is a single DEALLOCATE round-trip exactly as before.
+	// We can't just always DEALLOCATE, because that raises an error if
+	// the statement doesn't actually exist, aborting any open
+	// transaction.  So, when the flag says "not allocated", probe
+	// pg_prepared_statements to see if we're out of sync.
 	bool		exists=namedstmtallocated;
 	if (!exists) {
 		stringbuffer	probe;

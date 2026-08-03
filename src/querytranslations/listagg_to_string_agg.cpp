@@ -77,8 +77,7 @@ void sqlrquerytranslation_listagg_to_string_agg::translateRange(
 					const char *end,
 					stringbuffer *out) {
 
-	// walk [ptr, end), copying to "out",
-	// translating any listagg() calls we encounter
+	// walk [ptr, end), translating any listagg() calls
 	const char	*start=ptr;
 	while (ptr<end) {
 
@@ -132,8 +131,7 @@ const char *sqlrquerytranslation_listagg_to_string_agg::translateListagg(
 		}
 	}
 
-	// find the end of EXPR: either the comma before SEP, or the
-	// closing ")" of the listagg(...) call when no separator is given
+	// find the end of EXPR
 	const char	*exprend=cont->findCommaOrCloseParen(exprstart,end,true);
 	if (!exprend) {
 		return NULL;
@@ -166,8 +164,7 @@ const char *sqlrquerytranslation_listagg_to_string_agg::translateListagg(
 	}
 	p+=withinmarklen;
 
-	// scan for the matching ")" of the "within group" clause,
-	// stepping past any top-level commas in the "order by" list
+	// scan for the matching ")" of the "within group" clause
 	const char	*ogstart=p;
 	const char	*ogend=ogstart;
 	for (;;) {

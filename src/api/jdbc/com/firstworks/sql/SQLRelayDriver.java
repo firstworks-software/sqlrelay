@@ -466,8 +466,8 @@ public class SQLRelayDriver implements Driver {
 		debugStart(Thread.currentThread().getId()+": "+
 						classname+"."+methodname);
 
-		// this was helpful when tracking down synchronzation problems
-		// with apps that shared Connections across threads
+		// this was helpful when tracking down synchronization
+		// problems with apps that shared Connections across threads
 		/*try {
 			int	code=0;
 			switch (obj.getClass().getSimpleName()) {

@@ -672,13 +672,11 @@ void sqlrcursor::cacheError() {
 	}
 
 	// The query errored before it sent a result set.  Cache an empty,
-	// error-free result set - the same bytes cacheNoError() and
-	// cacheColumnInfo() write for a query that returned no columns or
-	// rows - so openCachedResultSet() reads it back cleanly.  Writing
-	// only the column-info fields (as this used to) left out the leading
-	// error-status flag, so on read-back getErrorStatus() misread the
-	// first field as ERROR_OCCURRED and then blocked on the server
-	// socket trying to fetch error details that aren't in the cache.
+	// error-free result set so openCachedResultSet() reads it back
+	// cleanly.  Writing only the column-info fields left out the
+	// leading error-status flag, so on read-back getErrorStatus()
+	// misread the first field as ERROR_OCCURRED and blocked on the
+	// server socket fetching error details that aren't in the cache.
 
 	// no error
 	pvt->_cachedest->write((uint16_t)NO_ERROR_OCCURRED);

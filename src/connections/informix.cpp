@@ -2151,7 +2151,7 @@ const char *informixconnection::getPrimaryKeysListQuery(const char *catalog,
 
 	// The sys* tables only return info for tables in the current database,
 	// so we can't use the "catalog" parameter at all.  There aren't any
-	// sysmaster tables that return column info.
+	// sysmaster tables that return primary key info.
 
 	primarykeyslistquery.clear();
 
@@ -2255,7 +2255,7 @@ const char *informixconnection::getKeyAndIndexListQuery(const char *catalog,
 
 	// The sys* tables only return info for tables in the current database,
 	// so we can't use the "catalog" parameter at all.  There aren't any
-	// sysmaster tables that return column info.
+	// sysmaster tables that return key or index info.
 
 	keyandindexlistquery.clear();
 
@@ -3028,13 +3028,8 @@ bool informixcursor::inputBindBlob(const char *variable,
 
 	// Informix doesn't like it if you bind a string of size zero.
 	// It can actually cause SQLBindParameter to hang (at least with
-	// 12.10 client against 12.10 server).  So, if we're trying to bind an
-	// empty string (value="" and valuesize=0) then fudge things so that
-	// we're binding a known empty string and size (number of bytes, not
-	// string length) of 1 (empty strings actually have a size of 1,
-	// including the null terminator).  Setting value="" shouldnt' be
-	// strictly necessary, because well behaved protocol modules ought
-	// to null terminate "value", but we'll do this just in case.
+	// 12.10 client against 12.10 server).  So, bind a known empty
+	// string with a size of 1, which accounts for the null terminator.
 	if (!valuesize) {
 		value="";
 		valuesize=1;
@@ -3068,13 +3063,8 @@ bool informixcursor::inputBindClob(const char *variable,
 
 	// Informix doesn't like it if you bind a string of size zero.
 	// It can actually cause SQLBindParameter to hang (at least with
-	// 12.10 client against 12.10 server).  So, if we're trying to bind an
-	// empty string (value="" and valuesize=0) then fudge things so that
-	// we're binding a known empty string and size (number of bytes, not
-	// string length) of 1 (empty strings actually have a size of 1,
-	// including the null terminator).  Setting value="" shouldnt' be
-	// strictly necessary, because well behaved protocol modules ought
-	// to null terminate "value", but we'll do this just in case.
+	// 12.10 client against 12.10 server).  So, bind a known empty
+	// string with a size of 1, which accounts for the null terminator.
 	if (!valuesize) {
 		value="";
 		valuesize=1;

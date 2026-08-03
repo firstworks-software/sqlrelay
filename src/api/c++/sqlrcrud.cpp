@@ -755,7 +755,7 @@ bool sqlrcrud::buildJsonWhere(domnode *criteria,
 	return true;
 }
 
-// maps an xml criteria operator tag to its sql operator
+
 static const char *xmlOpToSql(const char *tag) {
 	if (!charstring::compare(tag,"and")) {
 		return "and";
@@ -788,10 +788,9 @@ bool sqlrcrud::buildXmlWhere(domnode *criteria,
 				stringbuffer *wherestr,
 				bool containspartial) {
 
-	// criteria mirrors the jsonlogic where clause, but as xml: operators
-	// are tag names (and, or, eq, ne, gt, lt, ge, le, in, isnull,
-	// isnotnull), variables are <v n="col"/>, and literals are
-	// <s v="str"/>, <n v="num"/>, <t/>, <f/>, <null/>
+	// criteria mirrors the jsonlogic where clause, but as xml:
+	// operators are tag names, variables are <v n="col"/>, and
+	// literals are <s v="str"/>, <n v="num"/>, <t/>, <f/>, <null/>
 
 	// handle degenerate case
 	if (criteria->isNullNode()) {

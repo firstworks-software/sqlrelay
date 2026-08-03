@@ -2263,10 +2263,9 @@ RET SQLRCursor::getOutputBindCursor(const ARGS &args) {
 
 	checkArgCount(args,1);
 
-	// Create a new SQLRCursor JS object (via the zero-arg constructor
-	// branch in SQLRCursor::New), then point its sqlrc at the bind
-	// cursor. This avoids clobbering the caller's wrapping, which
-	// matters when a stored procedure returns more than one cursor.
+	// wrap the bind cursor in a new SQLRCursor object, so we don't
+	// clobber the caller's when a stored procedure returns more than
+	// one cursor
 	Local<Function>	cons=newLocalFunction(constructor);
 	Local<Object>	instance=newInstance(0,NULL);
 	SQLRCursor	*obj=node::ObjectWrap::Unwrap<SQLRCursor>(instance);

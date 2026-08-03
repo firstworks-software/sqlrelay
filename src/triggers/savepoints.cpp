@@ -34,11 +34,8 @@ class SQLRSERVER_DLLSPEC sqlrtrigger_savepoints : public sqlrtrigger {
 		uint64_t	spcounter;
 		stringbuffer	spname;
 
-		// True between successful savepoint creation and its
-		// rollback/release.  Used both to decide whether to do
-		// cleanup and to skip redundant savepoint creation in
-		// runBeforeExecute when one is already live from
-		// runBeforePrepare.
+		// true between successful savepoint creation and its
+		// rollback/release
 		bool		spactive;
 
 		stringbuffer	spsql;
@@ -48,10 +45,7 @@ sqlrtrigger_savepoints::sqlrtrigger_savepoints(sqlrservercontroller *cont,
 					domnode *parameters) :
 					sqlrtrigger(cont,parameters) {
 
-	// SQL templates - "%s" is replaced with the savepoint name.
-	// Defaults are standard SQL (works for postgresql, mysql, oracle,
-	// db2, firebird, etc.).  For sap/sybase/mssql, configure as
-	// savepointquery="save tran %s" rollbackquery="rollback tran %s".
+	// sql templates - "%s" is replaced with the savepoint name
 	savepointquery=parameters->getAttributeValue("savepointquery");
 	if (charstring::isNullOrEmpty(savepointquery)) {
 		savepointquery="savepoint %s";
@@ -65,10 +59,7 @@ sqlrtrigger_savepoints::sqlrtrigger_savepoints(sqlrservercontroller *cont,
 		releasequery="release savepoint %s";
 	}
 
-	// whether to release the savepoint after a successful query.
-	// Keeps the savepoint stack from growing for long-running
-	// transactions.  Set release="no" for databases that don't
-	// support releasing savepoints (eg. sap/sybase/mssql).
+	// whether to release the savepoint after a successful query
 	const char	*r=parameters->getAttributeValue("release");
 	dorelease=charstring::isNullOrEmpty(r) || !charstring::isNo(r);
 
@@ -84,24 +75,21 @@ sqlrtrigger_savepoints::sqlrtrigger_savepoints(sqlrservercontroller *cont,
 
 bool sqlrtrigger_savepoints::shouldSkip(sqlrservercursor *sqlrcur) {
 
-	// nothing to do if the query was suppressed
+	// bail if the query was suppressed
 	if (cont->getQuerySuppressed(sqlrcur)) {
 		debugWrite("skip: query suppressed");
 		return true;
 	}
 
-	// savepoints only have meaning inside a transaction.  In
-	// autocommit mode each statement is its own transaction and any
-	// savepoint we create would be destroyed before runAfterExecute
-	// could roll back to it.
+	// savepoints only have meaning inside a transaction
+	// (in autocommit mode, any savepoint we create would be destroyed
+	// before runAfterExecute could roll back to it)
 	if (!cont->getInTransaction()) {
 		debugWrite("skip: not in a transaction");
 		return true;
 	}
 
-	// skip transaction-control queries.  Creating a savepoint inside
-	// a commit/rollback/autocommit-toggle is either nonsensical or
-	// would be wiped out by the user's query.
+	// skip transaction-control queries
 	sqlrquerytype_t	querytype=sqlrcur->getQueryType();
 	if (querytype==SQLRQUERYTYPE_BEGIN ||
 		querytype==SQLRQUERYTYPE_COMMIT ||
@@ -124,8 +112,7 @@ bool sqlrtrigger_savepoints::runBeforePrepare(sqlrserverconnection *sqlrcon,
 
 	debugStart("savepoints runBeforePrepare");
 
-	// Reset state.  If we bail or fail to create a savepoint,
-	// runAfterPrepare must not try to roll back or release.
+	// reset state
 	spactive=false;
 
 	if (shouldSkip(sqlrcur)) {
@@ -136,8 +123,7 @@ bool sqlrtrigger_savepoints::runBeforePrepare(sqlrserverconnection *sqlrcon,
 	// Take the savepoint before prepare.  Some databases (notably
 	// postgresql) parse and resolve references during prepare, so
 	// reference-related failures occur here rather than during
-	// execute.  Without a savepoint bracketing the prepare, those
-	// failures would poison the transaction.
+	// execute.
 	createSavepoint();
 
 	debugEnd();
@@ -148,7 +134,7 @@ bool sqlrtrigger_savepoints::runBeforePrepare(sqlrserverconnection *sqlrcon,
 bool sqlrtrigger_savepoints::runAfterPrepare(sqlrserverconnection *sqlrcon,
 					sqlrservercursor *sqlrcur) {
 
-	// nothing to do if we never created a savepoint for this prepare
+	// bail if we never created a savepoint
 	if (!spactive) {
 		return true;
 	}
@@ -157,9 +143,7 @@ bool sqlrtrigger_savepoints::runAfterPrepare(sqlrserverconnection *sqlrcon,
 	bool	error=(cont->getErrorSize(sqlrcur) ||
 				cont->getErrorNumber(sqlrcur));
 
-	// If the prepare succeeded, leave the savepoint in place so it
-	// can bracket the upcoming execute.  runAfterExecute will release
-	// it.
+	// leave the savepoint in place to bracket the execute
 	if (!error) {
 		return true;
 	}
@@ -175,17 +159,14 @@ bool sqlrtrigger_savepoints::runAfterPrepare(sqlrserverconnection *sqlrcon,
 bool sqlrtrigger_savepoints::runBeforeExecute(sqlrserverconnection *sqlrcon,
 					sqlrservercursor *sqlrcur) {
 
-	// If runBeforePrepare already created a savepoint for this query
-	// (the typical prepare-then-execute case), reuse it.
+	// reuse the savepoint created by runBeforePrepare
 	if (spactive) {
 		return true;
 	}
 
 	debugStart("savepoints runBeforeExecute");
 
-	// No savepoint live - we're in a re-execute of a previously
-	// prepared statement, or the prepare phase was skipped/intercepted.
-	// Create one now to bracket the execute.
+	// no savepoint live, create one to bracket the execute
 	if (shouldSkip(sqlrcur)) {
 		debugEnd();
 		return true;
@@ -216,22 +197,17 @@ bool sqlrtrigger_savepoints::runAfterExecute(sqlrserverconnection *sqlrcon,
 
 	debugEnd();
 
-	// preserve the user's error - returning true here doesn't clear
-	// it, the caller still sees the failure
+	// preserve the user's error
 	return true;
 }
 
 bool sqlrtrigger_savepoints::createSavepoint() {
 
-	// build a unique savepoint name for this query.  The counter is
-	// per-trigger-instance which means per-sqlr-connection, so there's
-	// no contention with other sessions.
+	// build a unique savepoint name
 	spname.clear();
 	spname.append(prefix)->append(spcounter++);
 
-	// If this fails, log it but let the user query run anyway - the
-	// only consequence is that we won't be able to roll back if the
-	// user query fails.
+	// if this fails, log it but let the user query run anyway
 	if (runQuery(savepointquery)) {
 		spactive=true;
 		return true;
@@ -252,9 +228,8 @@ void sqlrtrigger_savepoints::finishSavepoint(bool error) {
 							spname.getString());
 		}
 
-		// also release the savepoint after rolling back, so the
-		// stack doesn't grow.  Allowed by standard SQL after a
-		// "rollback to savepoint".
+		// release the savepoint after rolling back, so the stack
+		// doesn't grow
 		if (dorelease) {
 			if (!runQuery(releasequery)) {
 				debugWrite("failed to release savepoint %s",
@@ -264,8 +239,7 @@ void sqlrtrigger_savepoints::finishSavepoint(bool error) {
 
 	} else if (dorelease) {
 
-		// release the savepoint so the stack doesn't grow without
-		// bound across many queries in a long-running transaction
+		// release the savepoint so the stack doesn't grow
 		if (!runQuery(releasequery)) {
 			debugWrite("failed to release savepoint %s",
 							spname.getString());
@@ -276,8 +250,7 @@ void sqlrtrigger_savepoints::finishSavepoint(bool error) {
 void sqlrtrigger_savepoints::buildSavepointSql(const char *format,
 						stringbuffer *out) {
 
-	// replace the first occurrence of "%s" in format with the
-	// savepoint name
+	// replace "%s" with the savepoint name
 	const char	*pct=charstring::findFirst(format,"%s");
 	if (pct) {
 		out->append(format,pct-format);
@@ -295,8 +268,7 @@ bool sqlrtrigger_savepoints::runQuery(const char *format) {
 
 	debugWrite("%.*s",spsql.getSize(),spsql.getString());
 
-	// Use a dedicated cursor so we don't disturb the user cursor's
-	// query buffer, binds, result set, etc.
+	// use a dedicated cursor
 	sqlrservercursor	*spcur=cont->newCursor();
 	if (!spcur) {
 		return false;
@@ -306,10 +278,8 @@ bool sqlrtrigger_savepoints::runQuery(const char *format) {
 		return false;
 	}
 
-	// Run the savepoint query with directives, translations, filters,
-	// and triggers all disabled.  Disabling triggers in particular
-	// prevents this trigger from recursing into itself - both at
-	// prepare time and at execute time.
+	// run the query with directives, translations, filters, and
+	// triggers disabled, so this trigger doesn't recurse into itself
 	bool	success=cont->prepareQuery(spcur,
 					spsql.getString(),spsql.getSize(),
 					false,false,false,false) &&

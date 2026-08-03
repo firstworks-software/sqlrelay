@@ -385,11 +385,11 @@ void db2connection::initDatabaseFeatures() {
 		"false";
 
 	// the native odbc driver reports batch support, but sqlrelay runs
-	// one statement per query and returns one result set, so it can't
+	// one statement per query, so it reports none
 	databasefeatures[FEATURE_BATCH_OPERATIONS]=
 		"";
 
-	// sqlrelay returns no batch row counts (see batch_operations above)
+	// none, see batch_operations above
 	databasefeatures[FEATURE_BATCH_ROW_COUNTS]=
 		"";
 
@@ -3166,8 +3166,7 @@ void db2cursor::checkForTempTable(const char *query, uint32_t size) {
 	if (!charstring::compareIgnoringCase(start,"declare",7)) {
 
 		// db2 puts declared global temp tables in the SESSION schema,
-		// so the name must be qualified with session. for the drop
-		// to work
+		// so the drop must use a schema-qualified name
 		stringbuffer	droptable;
 		if (charstring::compareIgnoringCase(
 				tablename.getString(),"session.",8)) {

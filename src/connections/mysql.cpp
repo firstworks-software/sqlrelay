@@ -413,11 +413,11 @@ void mysqlconnection::initDatabaseFeatures() {
 		"false";
 
 	// the native odbc driver reports batch support, but sqlrelay runs
-	// one statement per query and returns one result set, so it can't
+	// one statement per query, so it reports none
 	databasefeatures[FEATURE_BATCH_OPERATIONS]=
 		"";
 
-	// sqlrelay returns no batch row counts (see batch_operations above)
+	// none, see batch_operations above
 	databasefeatures[FEATURE_BATCH_ROW_COUNTS]=
 		"";
 
@@ -3625,9 +3625,7 @@ uint16_t mysqlcursor::getColumnType(uint32_t col) {
 		// differentiate them. 
 		case FIELD_TYPE_BLOB:
 			{
-			// the size tier (tiny/64k/medium/long) is conveyed
-			// by the reported length, with thresholds that vary
-			// by server version
+			// the size tier thresholds vary by server version
 			unsigned long	length=mysqlfields[col]->length;
 			int		tier=1;
 			#if defined(MYSQL_VERSION_ID) && \
@@ -3706,10 +3704,8 @@ uint16_t mysqlcursor::getColumnType(uint32_t col) {
 				}
 			#endif
 
-			// text columns map to the TEXT datatypes and binary
-			// columns to the BLOB datatypes; representing text as a
-			// blob made the mysql protocol mark text columns binary
-			// (#8111)
+			// representing text as a blob made the mysql protocol
+			// mark text columns binary (#8111)
 			#ifdef BINARY_FLAG
 			if (!(mysqlfields[col]->flags&BINARY_FLAG)) {
 				switch (tier) {
@@ -3824,9 +3820,7 @@ uint32_t mysqlcursor::getColumnSize(uint32_t col) {
 
 uint32_t mysqlcursor::getColumnPrecision(uint32_t col) {
 
-	// the precision is the maximum number of decimal digits the column can
-	// hold; mysql reports a display width (which includes room for a sign
-	// and, for a decimal, a decimal point) rather than the precision, so
+	// mysql reports a display width rather than the precision, so
 	// derive the precision from the column type instead
 	bool	isunsigned=getColumnIsUnsigned(col);
 	switch (getColumnType(col)) {

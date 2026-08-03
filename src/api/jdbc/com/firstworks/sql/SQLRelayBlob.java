@@ -9,13 +9,9 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.ByteArrayInputStream;
 
-// A writable, growable Blob.
-//
 // Connection.createBlob() must return an empty Blob that the app then fills
-// with setBytes(1,...).  SerialBlob is fixed-size and can't grow, so setBytes
-// into an empty one throws on strict SerialBlob (JDK 8u471+).  Constructed
-// from a byte[], it also serves the result-set getBlob() path, where creating
-// a zero-length blob and setBytes(1,...) into it would hit the same problem.
+// with setBytes(1,...), but SerialBlob is fixed-size, so that throws on
+// strict SerialBlob (JDK 8u471+).  This Blob grows instead.
 public class SQLRelayBlob implements Blob {
 
 	private byte[]	data;

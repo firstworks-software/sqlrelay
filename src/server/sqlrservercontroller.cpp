@@ -1783,10 +1783,9 @@ void sqlrservercontroller::reLogIn(bool deadconnection) {
 
 	markDatabaseUnavailable();
 
-	// Only end the current session and capture its catalog/schema/
-	// isolation state when a dead connection prompted the relogin.  At
-	// startup the db was never up, and on load-balancer redistribution
-	// the session already ended - there's no live session to preserve.
+	// only preserve session state if a dead connection prompted the
+	// relogin (at startup the db was never up, and on load-balancer
+	// redistribution the session already ended)
 	char		*currentcatalog=NULL;
 	char		*currentschema=NULL;
 	const char	*isolevel=NULL;
@@ -2534,10 +2533,8 @@ bool sqlrservercontroller::setAutoCommitOn() {
 
 	// bail if the transaction model is "explicit-deferred" and the
 	// transaction was started by a begin rather than by autocommit-off
-	// (In "explicit-deferred" mode, autocommit-on only ends the current
-	// transaction if it was started by an autocommit-off.  If we're in a
-	// transaction (and we must be, if we're here), and _eotautocommit is
-	// true, then the transaction must have been started by a begin.)
+	// (in that mode, autocommit-on only ends a transaction that
+	// autocommit-off started)
 	if (pvt->_txmodel==SQLRTXMODEL_EXPLICIT_DEFERRED &&
 					pvt->_eotautocommit) {
 		return true;
@@ -2591,7 +2588,7 @@ bool sqlrservercontroller::setAutoCommitOn() {
 
 	// the db:
 	// * is transactional
-	// * doesn't support it's own method of enabling autocommit
+	// * doesn't support its own method of enabling autocommit
 	// * doesn't support explicit transactions
 	// * we're not faking explicit transactions
 	//
@@ -2681,7 +2678,7 @@ bool sqlrservercontroller::setAutoCommitOff() {
 
 	// the db:
 	// * is transactional
-	// * doesn't support it's own method of enabling autocommit
+	// * doesn't support its own method of disabling autocommit
 	// * doesn't support explicit transactions
 	// * we're not faking explicit transactions
 	//
@@ -2748,9 +2745,8 @@ bool sqlrservercontroller::begin() {
 		return false;
 	}
 
-	// faking-implicit mode bails at the top of this function
-	// (autocommit is always conceptually off, so the "autocommit is off"
-	// guard catches it -- begin is meaningless when we're always in a tx)
+	// faking-implicit mode already bailed at the "autocommit is off"
+	// guard at the top of this function
 
 	// native begin
 	if (!pvt->_conn->begin()) {
@@ -3104,10 +3100,9 @@ sqlrtxmodel_t sqlrservercontroller::getNativeTransactionModel() {
 sqlrtxmodel_t sqlrservercontroller::stringToTransactionModel(
 						const char *txmodel) {
 
-	// "native" is intentionally not mapped here; resolving it requires
-	// asking the active connection what its native model is, which a
-	// static helper can't do.  Callers handle that case before calling
-	// this function.
+	// "native" isn't mapped here
+	// (resolving it requires the active connection, so callers handle
+	// that case before calling this)
 	if (!charstring::compare(txmodel,"none")) {
 		return SQLRTXMODEL_NONE;
 	}
@@ -3674,9 +3669,7 @@ const char *sqlrservercontroller::copyStringLiteral(const char *ptr,
 							stringbuffer *out,
 							bool backslash) {
 
-	// "ptr" points at the opening delimiter; find the end of the
-	// literal, honoring doubled (and optionally backslash-escaped)
-	// delimiters
+	// find the end of the literal
 	const char	*literalend=charstring::findEndOfQuotedString(
 						ptr,end-ptr,*ptr,backslash,true);
 
@@ -3690,9 +3683,7 @@ const char *sqlrservercontroller::skipStringLiteral(const char *ptr,
 							const char *end,
 							bool backslash) {
 
-	// "ptr" points at the opening delimiter; find the end of the
-	// literal, honoring doubled (and optionally backslash-escaped)
-	// delimiters
+	// find the end of the literal
 	return charstring::findEndOfQuotedString(ptr,end-ptr,*ptr,
 							backslash,true);
 }
@@ -3701,10 +3692,7 @@ const char *sqlrservercontroller::findCommaOrCloseParen(const char *ptr,
 							const char *end,
 							bool backslash) {
 
-	// walk [ptr, end), tracking nested parens and skipping string
-	// literals, returning the next top-level "," or the ")" that
-	// closes the enclosing paren scope - or NULL if neither is
-	// found before "end"
+	// find the next top-level "," or ")"
 	int32_t		depth=0;
 	while (ptr<end) {
 
@@ -5700,11 +5688,7 @@ bool sqlrservercontroller::prepareQuery(sqlrservercursor *cursor,
 	dt.initFromSystemDateTime();
 	cursor->setQueryStart(dt.getSecond(),dt.getMicrosecond());
 
-	// handle before-prepare triggers.  Triggers like savepoints
-	// need to bracket the prepare itself because some databases
-	// (notably postgresql) parse and resolve references during
-	// prepare, so reference-related failures occur here rather
-	// than during execute.
+	// handle before-prepare triggers
 	if (enabletriggers && pvt->_sqlrtr) {
 		pvt->_sqlrtr->runBeforePrepareTriggers(pvt->_conn,cursor);
 	}
@@ -5712,14 +5696,12 @@ bool sqlrservercontroller::prepareQuery(sqlrservercursor *cursor,
 	// prepare the query
 	bool	success=cursor->prepareQuery(query,querysize);
 
-	// on failure, save the error before running after-prepare
-	// triggers - triggers may inspect getError* to decide what to do
+	// save the error before running after-prepare triggers
 	if (!success) {
 		saveError(cursor);
 	}
 
-	// handle after-prepare triggers.  Run on success AND failure;
-	// the trigger inspects getErrorNumber/getErrorSize to decide.
+	// handle after-prepare triggers (on success and failure)
 	if (enabletriggers && pvt->_sqlrtr) {
 		if (!pvt->_sqlrtr->runAfterPrepareTriggers(
 						pvt->_conn,cursor)) {
@@ -6188,10 +6170,8 @@ bool sqlrservercontroller::executeQuery(sqlrservercursor *cursor,
 
 	// special case intercepts...
 	// rather than actually intercepting these, we allow the db to run
-	// them and update state here.  This must run after commitOrRollback()
-	// so that endTransaction()'s _needscommitorrollback=false isn't
-	// immediately re-flipped to true by commitOrRollback() treating the
-	// SET as not-select DML.
+	// them and update state here.  This must run after
+	// commitOrRollback(), or it will re-set _needscommitorrollback.
 	if (success) {
 		if (cursor->getQueryType()==
 				SQLRQUERYTYPE_SET_INCLUDING_AUTOCOMMIT_ON) {
@@ -7143,7 +7123,7 @@ void sqlrservercontroller::buildToODBCColumnMaps() {
 	pvt->_odbckeyandindexcolumnnamemap.setValue(12,"FILTER_CONDITION");
 
 	// ODBC getProcedureList
-	// all backends return ODBC SQLProcedurs() format, so just map 1 to 1
+	// all backends return ODBC SQLProcedures() format, so just map 1 to 1
 	//
 	// PROCEDURE_CAT <- PROCEDURE_CAT
 	pvt->_odbcprocedurescolumnmap.setValue(0,0);
@@ -7397,7 +7377,7 @@ void sqlrservercontroller::buildToJDBCColumnMaps() {
 	pvt->_jdbccolumnscolumnmap.setValue(7,7);
 	// DECIMAL_DIGITS <- DECIMAL_DIGITS (smallint - scale)
 	pvt->_jdbccolumnscolumnmap.setValue(8,8);
-	// NUM_PREC_RADIX <- NUM_PREC_RADIX (smallint - precision)-
+	// NUM_PREC_RADIX <- NUM_PREC_RADIX (smallint - precision)
 	pvt->_jdbccolumnscolumnmap.setValue(9,9);
 	// NULLABLE <- NULLABLE
 	pvt->_jdbccolumnscolumnmap.setValue(10,10);
@@ -7826,8 +7806,7 @@ void sqlrservercontroller::endSession() {
 		pvt->_schemachanged=false;
 	}
 
-	// reset transaction model (commits any in-flight tx under the
-	// current model, then drives state to the initial model's baseline)
+	// reset transaction model
 	setTransactionModel(pvt->_initialtxmodel);
 
 	// reset initial autocommit behavior
@@ -10545,8 +10524,7 @@ void sqlrservercontroller::capDatabaseFeatures(const char **databasefeatures) {
 
 	for (uint16_t i=0; i<3; i++) {
 		uint16_t	feature=features[i];
-		// compute once from the db-reported value in the slot; the
-		// slot is overwritten with our owned string on the first call
+		// compute and cache the capped limit once
 		if (!pvt->_cappeddatabasefeatures[feature]) {
 			uint64_t	dblimit=charstring::
 				convertToUnsignedInteger(

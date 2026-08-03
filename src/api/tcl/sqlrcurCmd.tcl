@@ -322,7 +322,7 @@ proc prepareQuery {query length}
 
 # Prepare to execute the contents 
 # of "path"/"filename".  Returns false if the
-# // file couldn't be opened.
+# file couldn't be opened.
 proc prepareFileQuery {path filename} 
 
 

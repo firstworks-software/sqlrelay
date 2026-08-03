@@ -92,6 +92,11 @@
 		everything added in this release, and the four output formats,
 		the csv quoting and null rules, and the exit codes are all
 		written down now
+	cleaned up source code comments added since the 2.1.1 release -
+		de-versed narration back to step labels, trimmed
+		over-specified rationale, removed summaries from above
+		function definitions, and fixed typos, a few comments that
+		contradicted the code, and some stray non-ascii characters
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems

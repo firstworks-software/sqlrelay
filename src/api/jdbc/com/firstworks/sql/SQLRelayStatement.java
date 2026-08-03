@@ -136,13 +136,9 @@ public class SQLRelayStatement implements Statement {
 	void closeOnCompletion() throws SQLException {
 		drv.debugFunction(this);
 		throwExceptionIfClosed();
-		// I don't see how this can be used.  If it's set true then the
-		// last ResultSet's close() should close the Statement.
-		//
-		// However, we can't know if a ResultSet is the last result set
-		// until getMoreResults() returns false.  There's no guarantee
-		// that an app will call that, and even if it does, it's likely
-		// to call close() on the current ResultSet first.
+		// we can't know whether a ResultSet is the last one until
+		// getMoreResults() returns false, and an app isn't required
+		// to call it, so we track the flag but never act on it
 		closeoncompletion=true;
 		drv.debugEnd();
 	}
