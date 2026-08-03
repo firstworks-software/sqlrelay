@@ -4750,18 +4750,1311 @@ int	main(int argc, char **argv) {
 	stdoutput.printf("\n");
 
 
-	// The sections below are the coverage this test still owes, each
-	// tracked by its own ticket.  They are named here rather than left
-	// out so the gaps are visible in the output, the way
-	// test/protocol/mysql/mysql.cpp names its API sections.
+	// The section below is the coverage this test still owes.  It is
+	// named here rather than left out so the gap is visible in the
+	// output, the way test/protocol/mysql/mysql.cpp names its API
+	// sections.
 
 	stdoutput.printf("\n=============== Cursors ===============\n\n");
 	// #8790 - no ct_cursor coverage yet
 	stdoutput.printf("not covered yet - see trac #8790\n\n");
 
+
 	stdoutput.printf("\n================ Binds ================\n\n");
-	// #8792 - no ct_param coverage yet
-	stdoutput.printf("not covered yet - see trac #8792\n\n");
+
+
+	query="drop table bindtable";
+	ct_command(cmd,CS_LANG_CMD,query,charstring::getLength(query),CS_UNUSED);
+	ct_send(cmd);
+	while (ct_results(cmd,&resultstype)==CS_SUCCEED) {}
+	ct_cancel(NULL,cmd,CS_CANCEL_ALL);
+
+
+	// One column per type family, so every parameter goes into a
+	// column that matches it and nothing below depends on a
+	// server side conversion.  bit is the exception - ASE has no
+	// nullable bit, and every insert below names a single column, so
+	// it needs a default instead.
+	stdoutput.printf("ct_command: create\n");
+	if (issybase) {
+		query="create table bindtable ("
+				"bindchar varchar(40) null, "
+				"bindbinary varbinary(40) null, "
+				"bindtext text null, "
+				"bindimage image null, "
+				"bindunichar univarchar(40) null, "
+				"bindtinyint tinyint null, "
+				"bindsmallint smallint null, "
+				"bindint int null, "
+				"bindbigint bigint null, "
+				"bindreal real null, "
+				"bindfloat float null, "
+				"bindbit bit default 0 not null, "
+				"binddatetime datetime null, "
+				"bindsmalldatetime smalldatetime null, "
+				"bindmoney money null, "
+				"bindsmallmoney smallmoney null, "
+				"bindnumeric numeric(10,4) null, "
+				"binddate date null, "
+				"bindtime time null"
+				") lock datarows";
+	} else {
+		query="create table bindtable ("
+				"bindchar varchar(40) null, "
+				"bindbinary varbinary(40) null, "
+				"bindtext text null, "
+				"bindimage image null, "
+				"bindunichar nvarchar(40) null, "
+				"bindtinyint tinyint null, "
+				"bindsmallint smallint null, "
+				"bindint int null, "
+				"bindbigint bigint null, "
+				"bindreal real null, "
+				"bindfloat float null, "
+				"bindbit bit default 0 not null, "
+				"binddatetime datetime null, "
+				"bindsmalldatetime smalldatetime null, "
+				"bindmoney money null, "
+				"bindsmallmoney smallmoney null, "
+				"bindnumeric numeric(10,4) null, "
+				"binddate date null, "
+				"bindtime time null, "
+				"bindguid uniqueidentifier null"
+				")";
+	}
+	assertEquals(ct_command(cmd,CS_LANG_CMD,
+					query,charstring::getLength(query),
+					CS_UNUSED),CS_SUCCEED);
+	assertEquals(ct_send(cmd),CS_SUCCEED);
+	results=ct_results(cmd,&resultstype);
+	assertEquals(results,CS_SUCCEED);
+	assertEquals(resultstype,CS_CMD_SUCCEED);
+	results=ct_results(cmd,&resultstype);
+	assertEquals(results,CS_SUCCEED);
+	assertEquals(resultstype,CS_CMD_DONE);
+	results=ct_results(cmd,&resultstype);
+	assertEquals(results,CS_END_RESULTS);
+	assertEquals(ct_cancel(NULL,cmd,CS_CANCEL_ALL),CS_SUCCEED);
+	stdoutput.printf("\n");
+
+
+	char		bindcharvalue[64];
+	unsigned char	bindbinaryvalue[16];
+	unsigned char	binduniquevalue[16];
+	CS_VARCHAR	bindvarcharvalue;
+	CS_VARBINARY	bindvarbinaryvalue;
+	CS_TINYINT	bindtinyintvalue=7;
+	CS_SMALLINT	bindsmallintvalue=7;
+	CS_INT		bindintvalue=7;
+	CS_BIGINT	bindbigintvalue=7;
+	CS_LONG		bindlongvalue=7;
+	CS_USHORT	bindushortvalue=7;
+	CS_USMALLINT	bindusmallintvalue=7;
+	CS_UINT		binduintvalue=7;
+	CS_UBIGINT	bindubigintvalue=7;
+	CS_REAL		bindrealvalue=1.5;
+	CS_FLOAT	bindfloatvalue=1.5;
+	CS_BIT		bindbitvalue=1;
+	CS_DATETIME	binddatetimevalue;
+	CS_DATETIME4	binddatetime4value;
+	CS_BIGDATETIME	bindbigdatetimevalue;
+	CS_DATE		binddatevalue;
+	CS_TIME		bindtimevalue;
+	CS_BIGTIME	bindbigtimevalue;
+	CS_MONEY	bindmoneyvalue;
+	CS_MONEY4	bindmoney4value;
+	CS_NUMERIC	bindnumericvalue;
+	CS_NUMERIC	binddecimalvalue;
+
+
+	charstring::copy(bindcharvalue,"abc");
+	bindbinaryvalue[0]=0x01;
+	bindbinaryvalue[1]=0x02;
+	bindbinaryvalue[2]=0x03;
+	for (CS_INT i=0; i<16; i++) {
+		binduniquevalue[i]=(unsigned char)(i+1);
+	}
+	bytestring::zero(&bindvarcharvalue,sizeof(CS_VARCHAR));
+	bindvarcharvalue.len=3;
+	charstring::copy(bindvarcharvalue.str,"abc",3);
+	bytestring::zero(&bindvarbinaryvalue,sizeof(CS_VARBINARY));
+	bindvarbinaryvalue.len=3;
+	bindvarbinaryvalue.array[0]=0x01;
+	bindvarbinaryvalue.array[1]=0x02;
+	bindvarbinaryvalue.array[2]=0x03;
+
+
+	// The date, time, money and numeric values come from cs_convert
+	// rather than being built by hand, since CS_DATETIME's epoch and
+	// CS_NUMERIC's packed magnitude are not worth open coding just to
+	// get a parameter value.  cs_convert answers with the length it
+	// actually wrote, which is the whole destination for every type
+	// here except CS_NUMERIC and CS_DECIMAL, where it is the precision
+	// and scale bytes plus just enough magnitude for the declared
+	// precision.
+	struct bindconv {
+		const char	*source;
+		CS_INT		datatype;
+		CS_VOID		*dest;
+		CS_INT		destsize;
+		CS_INT		precision;
+		CS_INT		scale;
+		CS_INT		convlength;
+	};
+	bindconv	bindconvs[]={
+		{"2001-01-01 12:00:00",CS_DATETIME_TYPE,
+			(CS_VOID *)&binddatetimevalue,
+			(CS_INT)sizeof(CS_DATETIME),0,0,
+			(CS_INT)sizeof(CS_DATETIME)},
+		{"2001-01-01 12:00:00",CS_DATETIME4_TYPE,
+			(CS_VOID *)&binddatetime4value,
+			(CS_INT)sizeof(CS_DATETIME4),0,0,
+			(CS_INT)sizeof(CS_DATETIME4)},
+		{"2001-01-01 12:00:00",CS_BIGDATETIME_TYPE,
+			(CS_VOID *)&bindbigdatetimevalue,
+			(CS_INT)sizeof(CS_BIGDATETIME),0,0,
+			(CS_INT)sizeof(CS_BIGDATETIME)},
+		{"2001-01-01",CS_DATE_TYPE,
+			(CS_VOID *)&binddatevalue,
+			(CS_INT)sizeof(CS_DATE),0,0,
+			(CS_INT)sizeof(CS_DATE)},
+		{"12:00:00",CS_TIME_TYPE,
+			(CS_VOID *)&bindtimevalue,
+			(CS_INT)sizeof(CS_TIME),0,0,
+			(CS_INT)sizeof(CS_TIME)},
+		{"12:00:00",CS_BIGTIME_TYPE,
+			(CS_VOID *)&bindbigtimevalue,
+			(CS_INT)sizeof(CS_BIGTIME),0,0,
+			(CS_INT)sizeof(CS_BIGTIME)},
+		{"12.3400",CS_MONEY_TYPE,
+			(CS_VOID *)&bindmoneyvalue,
+			(CS_INT)sizeof(CS_MONEY),0,0,
+			(CS_INT)sizeof(CS_MONEY)},
+		{"12.3400",CS_MONEY4_TYPE,
+			(CS_VOID *)&bindmoney4value,
+			(CS_INT)sizeof(CS_MONEY4),0,0,
+			(CS_INT)sizeof(CS_MONEY4)},
+		{"123.4500",CS_NUMERIC_TYPE,
+			(CS_VOID *)&bindnumericvalue,
+			(CS_INT)sizeof(CS_NUMERIC),10,4,8},
+		{"123.4500",CS_DECIMAL_TYPE,
+			(CS_VOID *)&binddecimalvalue,
+			(CS_INT)sizeof(CS_NUMERIC),10,4,8}
+	};
+	CS_INT	bindconvcount=(CS_INT)(sizeof(bindconvs)/sizeof(bindconv));
+
+
+	stdoutput.printf("cs_convert: parameter values\n");
+	CS_DATAFMT	bindsrcfmt;
+	CS_DATAFMT	binddstfmt;
+	CS_INT		bindconvlen;
+	for (CS_INT i=0; i<bindconvcount; i++) {
+		bytestring::zero(&bindsrcfmt,sizeof(CS_DATAFMT));
+		bindsrcfmt.datatype=CS_CHAR_TYPE;
+		bindsrcfmt.maxlength=
+			charstring::getLength(bindconvs[i].source);
+		bytestring::zero(&binddstfmt,sizeof(CS_DATAFMT));
+		binddstfmt.datatype=bindconvs[i].datatype;
+		binddstfmt.maxlength=bindconvs[i].destsize;
+		binddstfmt.precision=bindconvs[i].precision;
+		binddstfmt.scale=bindconvs[i].scale;
+		bindconvlen=-1;
+		assertEquals(cs_convert(context,&bindsrcfmt,
+					(CS_VOID *)bindconvs[i].source,
+					&binddstfmt,bindconvs[i].dest,
+					&bindconvlen),CS_SUCCEED);
+		assertEquals(bindconvlen,bindconvs[i].convlength);
+	}
+	stdoutput.printf("\n");
+
+
+	// How far a parameter of each type gets on each backend.
+	const CS_INT	bindtakes=0;
+	const CS_INT	bindparamfails=1;
+	const CS_INT	bindprepfails=2;
+	const CS_INT	bindcmdfails=3;
+	const CS_INT	bindnocolumn=4;
+
+
+	// mssql pads a CS_CHAR_TYPE parameter out to CS_DATAFMT.maxlength
+	// with blanks before sending it.  ASE sends the real length.  No
+	// other type this section binds reads back differently between the
+	// two servers.
+	const char	*bindcharexpect=
+			(issybase)?"abc":"abc                                 ";
+	CS_INT		bindcharexpectlength=(issybase)?4:37;
+
+
+	// The same padding at maxlength 20, for the datalen cases below.
+	// bindterm is what a datalen of strlen+1 leaves behind: the
+	// terminator goes in as data, which mssql hides inside its own
+	// padding and ASE shows as one byte of extra length.  bindblank is
+	// what is left when the value is thrown away, which is blanks out
+	// to maxlength on mssql and a single blank on ASE.
+	const char	*bindpadexpect=(issybase)?"abc":"abc                 ";
+	CS_INT		bindpadlength=(issybase)?4:21;
+	CS_INT		bindtermlength=(issybase)?5:21;
+	const char	*bindblankexpect=(issybase)?" ":"                    ";
+	CS_INT		bindblanklength=(issybase)?2:21;
+
+
+	// One entry per type, bound as the single parameter of a prepared
+	// insert into the matching column, then read back through a
+	// CS_CHAR_TYPE ct_bind.
+	//
+	// Every type mssql refuses fails in one of three distinct ways.
+	// ct_param refuses seven of them outright, and refuses the same
+	// seven on ASE, so that set is freetds declining to encode them
+	// rather than a server declining to take them.  The three binary
+	// types get as far as the wire and die in the prepare, because
+	// freetds declares every prepared parameter as varchar(4000) and
+	// mssql will not implicitly convert varchar to varbinary - the
+	// same declaration shows up verbatim in the error text when a
+	// parameter is left unsupplied.  The last eight are tds 5 wire
+	// types mssql has never spoken, and it names the byte it did not
+	// recognize: 0x31 for date, 0x33 for time, 0x41 usmallint, 0x42
+	// uint, 0x43 long and ubigint, 0xBB bigdatetime, 0xBC bigtime.
+	//
+	// CS_UNIQUE_TYPE is mssql only.  ASE has no uniqueidentifier
+	// column, and binding one into a varbinary column instead does not
+	// merely fail - ASE answers with error 3811, "A wrong datastream
+	// has been sent to the server ... expecting token 1 but got the
+	// token 16", so it is not driven there at all.
+	struct bindcase {
+		const char	*label;
+		const char	*column;
+		CS_INT		datatype;
+		CS_VOID		*value;
+		CS_INT		datalen;
+		CS_INT		maxlength;
+		CS_INT		precision;
+		CS_INT		scale;
+		CS_INT		mssql;
+		CS_INT		sybase;
+		const char	*expect;
+		CS_INT		expectlength;
+		CS_INT		count;
+		CS_SMALLINT	indicator;
+		CS_SMALLINT	expectindicator;
+	};
+	bindcase	bindcases[]={
+		{"CS_CHAR_TYPE","bindchar",CS_CHAR_TYPE,
+			(CS_VOID *)bindcharvalue,3,36,0,0,
+			bindtakes,bindtakes,
+			bindcharexpect,bindcharexpectlength,1,0,0},
+		{"CS_LONGCHAR_TYPE","bindchar",CS_LONGCHAR_TYPE,
+			(CS_VOID *)bindcharvalue,3,36,0,0,
+			bindtakes,bindtakes,"abc",4,1,0,0},
+		{"CS_VARCHAR_TYPE","bindchar",CS_VARCHAR_TYPE,
+			(CS_VOID *)&bindvarcharvalue,
+			(CS_INT)sizeof(CS_VARCHAR),36,0,0,
+			bindtakes,bindtakes,"abc",4,1,0,0},
+		{"CS_TEXT_TYPE","bindtext",CS_TEXT_TYPE,
+			(CS_VOID *)bindcharvalue,3,36,0,0,
+			bindtakes,bindtakes,"abc",4,1,0,0},
+		{"CS_UNICHAR_TYPE","bindunichar",CS_UNICHAR_TYPE,
+			(CS_VOID *)bindcharvalue,3,36,0,0,
+			bindtakes,bindtakes,"abc",4,1,0,0},
+		{"CS_BINARY_TYPE","bindbinary",CS_BINARY_TYPE,
+			(CS_VOID *)bindbinaryvalue,3,36,0,0,
+			bindprepfails,bindtakes,"010203",7,1,0,0},
+		{"CS_LONGBINARY_TYPE","bindbinary",CS_LONGBINARY_TYPE,
+			(CS_VOID *)bindbinaryvalue,3,36,0,0,
+			bindprepfails,bindtakes,"010203",7,1,0,0},
+		{"CS_VARBINARY_TYPE","bindbinary",CS_VARBINARY_TYPE,
+			(CS_VOID *)&bindvarbinaryvalue,
+			(CS_INT)sizeof(CS_VARBINARY),36,0,0,
+			bindprepfails,bindtakes,"010203",7,1,0,0},
+		{"CS_IMAGE_TYPE","bindimage",CS_IMAGE_TYPE,
+			(CS_VOID *)bindbinaryvalue,3,36,0,0,
+			bindtakes,bindtakes,"010203",7,1,0,0},
+		{"CS_TINYINT_TYPE","bindtinyint",CS_TINYINT_TYPE,
+			(CS_VOID *)&bindtinyintvalue,
+			(CS_INT)sizeof(CS_TINYINT),1,0,0,
+			bindtakes,bindtakes,"7",2,1,0,0},
+		{"CS_SMALLINT_TYPE","bindsmallint",CS_SMALLINT_TYPE,
+			(CS_VOID *)&bindsmallintvalue,
+			(CS_INT)sizeof(CS_SMALLINT),2,0,0,
+			bindtakes,bindtakes,"7",2,1,0,0},
+		{"CS_INT_TYPE","bindint",CS_INT_TYPE,
+			(CS_VOID *)&bindintvalue,
+			(CS_INT)sizeof(CS_INT),4,0,0,
+			bindtakes,bindtakes,"7",2,1,0,0},
+		{"CS_BIGINT_TYPE","bindbigint",CS_BIGINT_TYPE,
+			(CS_VOID *)&bindbigintvalue,
+			(CS_INT)sizeof(CS_BIGINT),8,0,0,
+			bindtakes,bindtakes,"7",2,1,0,0},
+		{"CS_LONG_TYPE","bindbigint",CS_LONG_TYPE,
+			(CS_VOID *)&bindlongvalue,
+			(CS_INT)sizeof(CS_LONG),(CS_INT)sizeof(CS_LONG),0,0,
+			bindcmdfails,bindtakes,"7",2,1,0,0},
+		{"CS_USHORT_TYPE","bindint",CS_USHORT_TYPE,
+			(CS_VOID *)&bindushortvalue,
+			(CS_INT)sizeof(CS_USHORT),2,0,0,
+			bindparamfails,bindparamfails,"7",2,1,0,0},
+		{"CS_USMALLINT_TYPE","bindint",CS_USMALLINT_TYPE,
+			(CS_VOID *)&bindusmallintvalue,
+			(CS_INT)sizeof(CS_USMALLINT),2,0,0,
+			bindcmdfails,bindtakes,"7",2,1,0,0},
+		{"CS_UINT_TYPE","bindbigint",CS_UINT_TYPE,
+			(CS_VOID *)&binduintvalue,
+			(CS_INT)sizeof(CS_UINT),4,0,0,
+			bindcmdfails,bindtakes,"7",2,1,0,0},
+		{"CS_UBIGINT_TYPE","bindnumeric",CS_UBIGINT_TYPE,
+			(CS_VOID *)&bindubigintvalue,
+			(CS_INT)sizeof(CS_UBIGINT),8,0,0,
+			bindcmdfails,bindtakes,"7.0000",7,1,0,0},
+		{"CS_REAL_TYPE","bindreal",CS_REAL_TYPE,
+			(CS_VOID *)&bindrealvalue,
+			(CS_INT)sizeof(CS_REAL),4,0,0,
+			bindtakes,bindtakes,"1.5",4,1,0,0},
+		{"CS_FLOAT_TYPE","bindfloat",CS_FLOAT_TYPE,
+			(CS_VOID *)&bindfloatvalue,
+			(CS_INT)sizeof(CS_FLOAT),8,0,0,
+			bindtakes,bindtakes,"1.5",4,1,0,0},
+		{"CS_BIT_TYPE","bindbit",CS_BIT_TYPE,
+			(CS_VOID *)&bindbitvalue,
+			(CS_INT)sizeof(CS_BIT),1,0,0,
+			bindtakes,bindtakes,"1",2,1,0,0},
+		{"CS_DATETIME_TYPE","binddatetime",CS_DATETIME_TYPE,
+			(CS_VOID *)&binddatetimevalue,
+			(CS_INT)sizeof(CS_DATETIME),8,0,0,
+			bindtakes,bindtakes,
+			"Jan  1 2001 12:00:00:000PM",27,1,0,0},
+		{"CS_DATETIME4_TYPE","bindsmalldatetime",CS_DATETIME4_TYPE,
+			(CS_VOID *)&binddatetime4value,
+			(CS_INT)sizeof(CS_DATETIME4),4,0,0,
+			bindtakes,bindtakes,
+			"Jan  1 2001 12:00:00:000PM",27,1,0,0},
+		{"CS_BIGDATETIME_TYPE","binddatetime",CS_BIGDATETIME_TYPE,
+			(CS_VOID *)&bindbigdatetimevalue,
+			(CS_INT)sizeof(CS_BIGDATETIME),8,0,0,
+			bindcmdfails,bindtakes,
+			"Jan  1 2001 12:00:00:000PM",27,1,0,0},
+		{"CS_DATE_TYPE","binddate",CS_DATE_TYPE,
+			(CS_VOID *)&binddatevalue,
+			(CS_INT)sizeof(CS_DATE),4,0,0,
+			bindcmdfails,bindtakes,
+			"Jan  1 2001 12:00:00:000AM",27,1,0,0},
+		{"CS_TIME_TYPE","bindtime",CS_TIME_TYPE,
+			(CS_VOID *)&bindtimevalue,
+			(CS_INT)sizeof(CS_TIME),4,0,0,
+			bindcmdfails,bindtakes,
+			"Jan  1 1900 12:00:00:000PM",27,1,0,0},
+		{"CS_BIGTIME_TYPE","bindtime",CS_BIGTIME_TYPE,
+			(CS_VOID *)&bindbigtimevalue,
+			(CS_INT)sizeof(CS_BIGTIME),8,0,0,
+			bindcmdfails,bindtakes,
+			"Jan  1 1900 12:00:00:000PM",27,1,0,0},
+		{"CS_MONEY_TYPE","bindmoney",CS_MONEY_TYPE,
+			(CS_VOID *)&bindmoneyvalue,
+			(CS_INT)sizeof(CS_MONEY),8,0,0,
+			bindtakes,bindtakes,"12.3400",8,1,0,0},
+		{"CS_MONEY4_TYPE","bindsmallmoney",CS_MONEY4_TYPE,
+			(CS_VOID *)&bindmoney4value,
+			(CS_INT)sizeof(CS_MONEY4),4,0,0,
+			bindtakes,bindtakes,"12.3400",8,1,0,0},
+		{"CS_NUMERIC_TYPE","bindnumeric",CS_NUMERIC_TYPE,
+			(CS_VOID *)&bindnumericvalue,
+			(CS_INT)sizeof(CS_NUMERIC),
+			(CS_INT)sizeof(CS_NUMERIC),10,4,
+			bindtakes,bindtakes,"123.4500",9,1,0,0},
+		{"CS_DECIMAL_TYPE","bindnumeric",CS_DECIMAL_TYPE,
+			(CS_VOID *)&binddecimalvalue,
+			(CS_INT)sizeof(CS_NUMERIC),
+			(CS_INT)sizeof(CS_NUMERIC),10,4,
+			bindtakes,bindtakes,"123.4500",9,1,0,0},
+		{"CS_UNIQUE_TYPE","bindguid",CS_UNIQUE_TYPE,
+			(CS_VOID *)binduniquevalue,16,16,0,0,
+			bindtakes,bindnocolumn,
+			"04030201-0605-0807-090A-0B0C0D0E0F10",37,1,0,0},
+		{"CS_BLOB_TYPE","bindimage",CS_BLOB_TYPE,
+			(CS_VOID *)bindbinaryvalue,3,36,0,0,
+			bindparamfails,bindparamfails,"010203",7,1,0,0},
+		{"CS_UNITEXT_TYPE","bindunichar",CS_UNITEXT_TYPE,
+			(CS_VOID *)bindcharvalue,3,36,0,0,
+			bindparamfails,bindparamfails,"abc",4,1,0,0},
+		{"CS_XML_TYPE","bindchar",CS_XML_TYPE,
+			(CS_VOID *)bindcharvalue,3,36,0,0,
+			bindparamfails,bindparamfails,"abc",4,1,0,0},
+		{"CS_SENSITIVITY_TYPE","bindchar",CS_SENSITIVITY_TYPE,
+			(CS_VOID *)bindcharvalue,3,36,0,0,
+			bindparamfails,bindparamfails,"abc",4,1,0,0},
+		{"CS_BOUNDARY_TYPE","bindchar",CS_BOUNDARY_TYPE,
+			(CS_VOID *)bindcharvalue,3,36,0,0,
+			bindparamfails,bindparamfails,"abc",4,1,0,0},
+		{"CS_VOID_TYPE","bindchar",CS_VOID_TYPE,
+			(CS_VOID *)bindcharvalue,3,36,0,0,
+			bindparamfails,bindparamfails,"abc",4,1,0,0},
+
+		// The rest of the table is the conventions rather than the
+		// types: what datalen, maxlength, count and the indicator
+		// each mean.  Both servers agree on all of them.
+		//
+		// On a fixed length type datalen is ignored outright -
+		// freetds takes the length from the type, so a wrong one,
+		// a zero one and CS_UNUSED all store the same value.  On a
+		// character type it decides everything: an exact strlen
+		// and CS_NULLTERM both work, strlen+1 stores the
+		// terminator as data, and CS_UNUSED or 0 silently throw
+		// the value away.  mssql pads out to maxlength only when
+		// maxlength exceeds datalen; nothing is ever truncated.
+		{"datalen sizeof","bindint",CS_INT_TYPE,
+			(CS_VOID *)&bindintvalue,(CS_INT)sizeof(CS_INT),
+			4,0,0,bindtakes,bindtakes,"7",2,1,0,0},
+		{"datalen CS_UNUSED on a fixed length type","bindint",
+			CS_INT_TYPE,(CS_VOID *)&bindintvalue,CS_UNUSED,
+			4,0,0,bindtakes,bindtakes,"7",2,1,0,0},
+		{"datalen zero on a fixed length type","bindint",
+			CS_INT_TYPE,(CS_VOID *)&bindintvalue,0,
+			4,0,0,bindtakes,bindtakes,"7",2,1,0,0},
+		{"datalen shorter than the type","bindint",
+			CS_INT_TYPE,(CS_VOID *)&bindintvalue,1,
+			4,0,0,bindtakes,bindtakes,"7",2,1,0,0},
+		{"datalen strlen","bindchar",CS_CHAR_TYPE,
+			(CS_VOID *)bindcharvalue,3,20,0,0,
+			bindtakes,bindtakes,
+			bindpadexpect,bindpadlength,1,0,0},
+		{"datalen strlen plus one","bindchar",CS_CHAR_TYPE,
+			(CS_VOID *)bindcharvalue,4,20,0,0,
+			bindtakes,bindtakes,"abc",bindtermlength,1,0,0},
+		{"datalen CS_NULLTERM","bindchar",CS_CHAR_TYPE,
+			(CS_VOID *)bindcharvalue,CS_NULLTERM,20,0,0,
+			bindtakes,bindtakes,
+			bindpadexpect,bindpadlength,1,0,0},
+		{"datalen CS_UNUSED on a character type","bindchar",
+			CS_CHAR_TYPE,(CS_VOID *)bindcharvalue,CS_UNUSED,
+			20,0,0,bindtakes,bindtakes,
+			bindblankexpect,bindblanklength,1,0,0},
+		{"datalen zero on a character type","bindchar",
+			CS_CHAR_TYPE,(CS_VOID *)bindcharvalue,0,
+			20,0,0,bindtakes,bindtakes,
+			bindblankexpect,bindblanklength,1,0,0},
+		{"datalen over maxlength","bindchar",CS_CHAR_TYPE,
+			(CS_VOID *)bindcharvalue,3,2,0,0,
+			bindtakes,bindtakes,"abc",4,1,0,0},
+		{"maxlength zero","bindchar",CS_CHAR_TYPE,
+			(CS_VOID *)bindcharvalue,3,0,0,0,
+			bindtakes,bindtakes,"abc",4,1,0,0},
+		{"maxlength equal to datalen","bindchar",CS_CHAR_TYPE,
+			(CS_VOID *)bindcharvalue,3,3,0,0,
+			bindtakes,bindtakes,"abc",4,1,0,0},
+
+		// count is ignored on this path - 0, 2 and -1 all behave
+		// exactly like 1
+		{"count zero","bindint",CS_INT_TYPE,
+			(CS_VOID *)&bindintvalue,(CS_INT)sizeof(CS_INT),
+			4,0,0,bindtakes,bindtakes,"7",2,0,0,0},
+		{"count two","bindint",CS_INT_TYPE,
+			(CS_VOID *)&bindintvalue,(CS_INT)sizeof(CS_INT),
+			4,0,0,bindtakes,bindtakes,"7",2,2,0,0},
+		{"count negative","bindint",CS_INT_TYPE,
+			(CS_VOID *)&bindintvalue,(CS_INT)sizeof(CS_INT),
+			4,0,0,bindtakes,bindtakes,"7",2,-1,0,0},
+
+		// Only an indicator of exactly CS_NULLDATA means null.  A
+		// null value pointer with datalen 0 gets there too, but any
+		// other indicator is ignored and the value goes in
+		// normally.
+		{"null through the indicator, int","bindint",CS_INT_TYPE,
+			(CS_VOID *)&bindintvalue,(CS_INT)sizeof(CS_INT),
+			4,0,0,bindtakes,bindtakes,"",0,1,-1,-1},
+		{"null through the indicator, char","bindchar",CS_CHAR_TYPE,
+			(CS_VOID *)bindcharvalue,3,20,0,0,
+			bindtakes,bindtakes,"",0,1,-1,-1},
+		{"null through the indicator, float","bindfloat",
+			CS_FLOAT_TYPE,(CS_VOID *)&bindfloatvalue,
+			(CS_INT)sizeof(CS_FLOAT),8,0,0,
+			bindtakes,bindtakes,"",0,1,-1,-1},
+		{"null through a null value pointer","bindint",CS_INT_TYPE,
+			(CS_VOID *)NULL,0,4,0,0,
+			bindtakes,bindtakes,"",0,1,0,-1},
+		{"indicator one is not null","bindint",CS_INT_TYPE,
+			(CS_VOID *)&bindintvalue,(CS_INT)sizeof(CS_INT),
+			4,0,0,bindtakes,bindtakes,"7",2,1,1,0},
+		{"indicator minus two is not null","bindint",CS_INT_TYPE,
+			(CS_VOID *)&bindintvalue,(CS_INT)sizeof(CS_INT),
+			4,0,0,bindtakes,bindtakes,"7",2,1,-2,0}
+	};
+	CS_INT	bindcasecount=(CS_INT)(sizeof(bindcases)/sizeof(bindcase));
+
+
+	CS_DATAFMT	bindparamfmt;
+	CS_DATAFMT	bindreadfmt;
+	char		bindreaddata[1024];
+	CS_INT		bindreadlength;
+	CS_SMALLINT	bindreadindicator;
+
+	bytestring::zero(&bindreadfmt,sizeof(CS_DATAFMT));
+	bindreadfmt.datatype=CS_CHAR_TYPE;
+	bindreadfmt.format=CS_FMT_NULLTERM;
+	bindreadfmt.maxlength=(CS_INT)sizeof(bindreaddata);
+	bindreadfmt.count=1;
+
+
+	for (CS_INT i=0; i<bindcasecount; i++) {
+
+		bindcase	*bc=&(bindcases[i]);
+		CS_INT		howfar=(issybase)?bc->sybase:bc->mssql;
+
+		if (howfar==bindnocolumn) {
+			continue;
+		}
+
+		stdoutput.printf("ct_param: %s\n",bc->label);
+
+		// one row at a time, so the read back is unambiguous
+		query="delete from bindtable";
+		ct_command(cmd,CS_LANG_CMD,query,
+				charstring::getLength(query),CS_UNUSED);
+		ct_send(cmd);
+		while (ct_results(cmd,&resultstype)==CS_SUCCEED) {}
+		ct_cancel(NULL,cmd,CS_CANCEL_ALL);
+
+		// A prepare the server refuses still leaves the id live in
+		// freetds and it can never be prepared again, so every case
+		// gets an id of its own.
+		stringbuffer	bindidb;
+		bindidb.append("bind")->append((int32_t)i);
+		const char	*bindid=bindidb.getString();
+
+		stringbuffer	bindinsb;
+		bindinsb.append("insert into bindtable (")->
+				append(bc->column)->append(") values (?)");
+		query=bindinsb.getString();
+
+		assertEquals(ct_dynamic(cmd,CS_PREPARE,
+					(CS_CHAR *)bindid,CS_NULLTERM,
+					(CS_CHAR *)query,CS_NULLTERM),
+					CS_SUCCEED);
+		assertEquals(ct_send(cmd),CS_SUCCEED);
+		results=ct_results(cmd,&resultstype);
+		assertEquals(results,CS_SUCCEED);
+		assertEquals(resultstype,(howfar==bindprepfails)?
+						CS_CMD_FAIL:CS_CMD_SUCCEED);
+		while (ct_results(cmd,&resultstype)==CS_SUCCEED) {}
+		assertEquals(ct_cancel(NULL,cmd,CS_CANCEL_ALL),CS_SUCCEED);
+
+		assertEquals(ct_dynamic(cmd,CS_EXECUTE,
+					(CS_CHAR *)bindid,CS_NULLTERM,
+					(CS_CHAR *)NULL,CS_UNUSED),CS_SUCCEED);
+
+		bytestring::zero(&bindparamfmt,sizeof(CS_DATAFMT));
+		bindparamfmt.datatype=bc->datatype;
+		bindparamfmt.maxlength=bc->maxlength;
+		bindparamfmt.precision=bc->precision;
+		bindparamfmt.scale=bc->scale;
+		bindparamfmt.count=bc->count;
+		assertEquals(ct_param(cmd,&bindparamfmt,bc->value,
+					bc->datalen,bc->indicator),
+				(howfar==bindparamfails)?CS_FAIL:CS_SUCCEED);
+
+		if (howfar!=bindparamfails) {
+			assertEquals(ct_send(cmd),
+				(howfar==bindprepfails)?CS_FAIL:CS_SUCCEED);
+			if (howfar!=bindprepfails) {
+				results=ct_results(cmd,&resultstype);
+				assertEquals(results,CS_SUCCEED);
+				assertEquals(resultstype,
+					(howfar==bindcmdfails)?
+						CS_CMD_FAIL:CS_CMD_SUCCEED);
+				if (howfar==bindtakes) {
+					affectedrows=-1;
+					assertEquals(ct_res_info(cmd,
+						CS_ROW_COUNT,
+						(CS_VOID *)&affectedrows,
+						CS_UNUSED,(CS_INT *)NULL),
+						CS_SUCCEED);
+					assertEquals(affectedrows,1);
+				}
+				while (ct_results(cmd,&resultstype)==
+							CS_SUCCEED) {}
+			}
+		}
+		assertEquals(ct_cancel(NULL,cmd,CS_CANCEL_ALL),CS_SUCCEED);
+
+		ct_dynamic(cmd,CS_DEALLOC,(CS_CHAR *)bindid,CS_NULLTERM,
+						(CS_CHAR *)NULL,CS_UNUSED);
+		ct_send(cmd);
+		while (ct_results(cmd,&resultstype)==CS_SUCCEED) {}
+		ct_cancel(NULL,cmd,CS_CANCEL_ALL);
+
+		if (howfar==bindtakes) {
+
+			stringbuffer	bindselb;
+			bindselb.append("select ")->append(bc->column)->
+					append(" from bindtable");
+			query=bindselb.getString();
+			assertEquals(ct_command(cmd,CS_LANG_CMD,query,
+					charstring::getLength(query),
+					CS_UNUSED),CS_SUCCEED);
+			assertEquals(ct_send(cmd),CS_SUCCEED);
+			results=ct_results(cmd,&resultstype);
+			assertEquals(results,CS_SUCCEED);
+			assertEquals(resultstype,CS_ROW_RESULT);
+			bytestring::zero(bindreaddata,sizeof(bindreaddata));
+			bindreadlength=-1;
+			bindreadindicator=-99;
+			assertEquals(ct_bind(cmd,1,&bindreadfmt,
+					(CS_VOID *)bindreaddata,
+					&bindreadlength,
+					&bindreadindicator),CS_SUCCEED);
+			assertEquals(ct_fetch(cmd,CS_UNUSED,CS_UNUSED,
+					CS_UNUSED,&rowsread),CS_SUCCEED);
+			assertEquals(rowsread,1);
+			assertEquals(bindreaddata,bc->expect);
+			assertEquals(bindreadlength,bc->expectlength);
+			assertEquals(bindreadindicator,bc->expectindicator);
+			assertEquals(ct_fetch(cmd,CS_UNUSED,CS_UNUSED,
+					CS_UNUSED,&rowsread),CS_END_DATA);
+			results=ct_results(cmd,&resultstype);
+			assertEquals(results,CS_SUCCEED);
+			assertEquals(resultstype,CS_CMD_DONE);
+			results=ct_results(cmd,&resultstype);
+			assertEquals(results,CS_END_RESULTS);
+			assertEquals(ct_cancel(NULL,cmd,CS_CANCEL_ALL),
+								CS_SUCCEED);
+		}
+
+		stdoutput.printf("\n");
+	}
+
+
+	// #8791 drove one output parameter, an int.  These three carry the
+	// other shapes an output parameter can have - a character type
+	// with a maxlength, a float, and a datetime.  The numeric one is
+	// split off into its own procedure because mssql cannot take it.
+	query="drop procedure bindproc";
+	ct_command(cmd,CS_LANG_CMD,query,charstring::getLength(query),CS_UNUSED);
+	ct_send(cmd);
+	while (ct_results(cmd,&resultstype)==CS_SUCCEED) {}
+	ct_cancel(NULL,cmd,CS_CANCEL_ALL);
+
+	query="drop procedure bindnumproc";
+	ct_command(cmd,CS_LANG_CMD,query,charstring::getLength(query),CS_UNUSED);
+	ct_send(cmd);
+	while (ct_results(cmd,&resultstype)==CS_SUCCEED) {}
+	ct_cancel(NULL,cmd,CS_CANCEL_ALL);
+
+	query="drop procedure bindbinproc";
+	ct_command(cmd,CS_LANG_CMD,query,charstring::getLength(query),CS_UNUSED);
+	ct_send(cmd);
+	while (ct_results(cmd,&resultstype)==CS_SUCCEED) {}
+	ct_cancel(NULL,cmd,CS_CANCEL_ALL);
+
+
+	stdoutput.printf("ct_command: create procedures\n");
+	const char	*bindprocs[3]={
+		"create procedure bindproc "
+			"@pin int, @pchr varchar(20) output, "
+			"@pflt float output, @pdt datetime output as "
+			"select @pchr = 'out' + convert(varchar(10),@pin) "
+			"select @pflt = @pin * 1.5 "
+			"select @pdt = '2001-01-01 12:00:00' "
+			"return 9",
+		"create procedure bindnumproc "
+			"@pin int, @pnum numeric(10,4) output as "
+			"select @pnum = @pin * 1.25 "
+			"return 9",
+		"create procedure bindbinproc "
+			"@pbin varbinary(40) as "
+			"insert into bindtable (bindbinary) values (@pbin)"
+	};
+	for (CS_INT i=0; i<3; i++) {
+		assertEquals(ct_command(cmd,CS_LANG_CMD,bindprocs[i],
+					charstring::getLength(bindprocs[i]),
+					CS_UNUSED),CS_SUCCEED);
+		assertEquals(ct_send(cmd),CS_SUCCEED);
+		results=ct_results(cmd,&resultstype);
+		assertEquals(results,CS_SUCCEED);
+		assertEquals(resultstype,CS_CMD_SUCCEED);
+		results=ct_results(cmd,&resultstype);
+		assertEquals(results,CS_SUCCEED);
+		assertEquals(resultstype,CS_CMD_DONE);
+		results=ct_results(cmd,&resultstype);
+		assertEquals(results,CS_END_RESULTS);
+		assertEquals(ct_cancel(NULL,cmd,CS_CANCEL_ALL),CS_SUCCEED);
+	}
+	stdoutput.printf("\n");
+
+
+	CS_DATAFMT	bindoutfmt[4];
+	char		bindoutchar[64];
+	CS_FLOAT	bindoutfloat=0;
+	CS_DATETIME	bindoutdatetime;
+	CS_NUMERIC	bindoutnumeric;
+
+
+	stdoutput.printf("ct_command: rpc with typed output params\n");
+	assertEquals(ct_command(cmd,CS_RPC_CMD,(CS_CHAR *)"bindproc",
+				CS_NULLTERM,CS_UNUSED),CS_SUCCEED);
+	bindintvalue=4;
+	bytestring::zero(&(bindoutfmt[0]),sizeof(CS_DATAFMT));
+	bindoutfmt[0].datatype=CS_INT_TYPE;
+	bindoutfmt[0].maxlength=4;
+	bindoutfmt[0].count=1;
+	charstring::copy(bindoutfmt[0].name,"@pin");
+	bindoutfmt[0].namelen=4;
+	assertEquals(ct_param(cmd,&(bindoutfmt[0]),
+				(CS_VOID *)&bindintvalue,
+				sizeof(CS_INT),0),CS_SUCCEED);
+	bytestring::zero(bindoutchar,sizeof(bindoutchar));
+	bytestring::zero(&(bindoutfmt[1]),sizeof(CS_DATAFMT));
+	bindoutfmt[1].datatype=CS_CHAR_TYPE;
+	bindoutfmt[1].maxlength=20;
+	bindoutfmt[1].count=1;
+	bindoutfmt[1].status=CS_RETURN;
+	charstring::copy(bindoutfmt[1].name,"@pchr");
+	bindoutfmt[1].namelen=5;
+	assertEquals(ct_param(cmd,&(bindoutfmt[1]),
+				(CS_VOID *)bindoutchar,0,-1),CS_SUCCEED);
+	bytestring::zero(&(bindoutfmt[2]),sizeof(CS_DATAFMT));
+	bindoutfmt[2].datatype=CS_FLOAT_TYPE;
+	bindoutfmt[2].maxlength=8;
+	bindoutfmt[2].count=1;
+	bindoutfmt[2].status=CS_RETURN;
+	charstring::copy(bindoutfmt[2].name,"@pflt");
+	bindoutfmt[2].namelen=5;
+	assertEquals(ct_param(cmd,&(bindoutfmt[2]),
+				(CS_VOID *)&bindoutfloat,
+				sizeof(CS_FLOAT),0),CS_SUCCEED);
+	bytestring::zero(&bindoutdatetime,sizeof(CS_DATETIME));
+	bytestring::zero(&(bindoutfmt[3]),sizeof(CS_DATAFMT));
+	bindoutfmt[3].datatype=CS_DATETIME_TYPE;
+	bindoutfmt[3].maxlength=8;
+	bindoutfmt[3].count=1;
+	bindoutfmt[3].status=CS_RETURN;
+	charstring::copy(bindoutfmt[3].name,"@pdt");
+	bindoutfmt[3].namelen=4;
+	assertEquals(ct_param(cmd,&(bindoutfmt[3]),
+				(CS_VOID *)&bindoutdatetime,
+				sizeof(CS_DATETIME),0),CS_SUCCEED);
+	assertEquals(ct_send(cmd),CS_SUCCEED);
+	stdoutput.printf("\n");
+
+
+	stdoutput.printf("ct_results: rpc return status\n");
+	results=ct_results(cmd,&resultstype);
+	assertEquals(results,CS_SUCCEED);
+	assertEquals(resultstype,CS_STATUS_RESULT);
+	bytestring::zero(bindreaddata,sizeof(bindreaddata));
+	assertEquals(ct_bind(cmd,1,&bindreadfmt,
+				(CS_VOID *)bindreaddata,
+				&bindreadlength,
+				&bindreadindicator),CS_SUCCEED);
+	assertEquals(ct_fetch(cmd,CS_UNUSED,CS_UNUSED,
+					CS_UNUSED,&rowsread),CS_SUCCEED);
+	assertEquals(bindreaddata,"9");
+	assertEquals(ct_fetch(cmd,CS_UNUSED,CS_UNUSED,
+					CS_UNUSED,&rowsread),CS_END_DATA);
+	stdoutput.printf("\n");
+
+
+	// A char output parameter comes back blank padded to the
+	// maxlength that was given on the way in, on both servers, which
+	// is the one place the mssql only padding rule for input
+	// parameters does not hold.  usertype splits the usual way -
+	// mssql reports 0 and ASE reports its syscolumns ids.
+	stdoutput.printf("ct_results: rpc typed output params\n");
+	results=ct_results(cmd,&resultstype);
+	assertEquals(results,CS_SUCCEED);
+	assertEquals(resultstype,CS_PARAM_RESULT);
+	ncols=-1;
+	assertEquals(ct_res_info(cmd,CS_NUMDATA,
+					(CS_VOID *)&ncols,CS_UNUSED,
+					(CS_INT *)NULL),CS_SUCCEED);
+	assertEquals(ncols,3);
+	const char	*bindoutname[3]={"@pchr","@pflt","@pdt"};
+	CS_INT		bindoutnamelen[3]={5,5,4};
+	CS_INT		bindouttype[3]={
+				CS_CHAR_TYPE,CS_FLOAT_TYPE,CS_DATETIME_TYPE};
+	CS_INT		bindoutmaxlength[3]={20,8,8};
+	CS_INT		bindoutusertype[3]={0,0,0};
+	if (issybase) {
+		bindoutusertype[0]=1;
+		bindoutusertype[1]=8;
+		bindoutusertype[2]=12;
+	}
+	const char	*bindoutvalue[3]={
+				"out4                ","6",
+				"Jan  1 2001 12:00:00:000PM"};
+	CS_INT		bindoutvaluelen[3]={21,2,27};
+
+	// every output parameter is a column of the same single row, so
+	// they all get bound before the one fetch
+	char		bindoutdata[3][256];
+	CS_INT		bindoutdatalength[3];
+	CS_SMALLINT	bindoutdataindicator[3];
+	CS_DATAFMT	bindoutreadfmt;
+	bytestring::zero(&bindoutreadfmt,sizeof(CS_DATAFMT));
+	bindoutreadfmt.datatype=CS_CHAR_TYPE;
+	bindoutreadfmt.format=CS_FMT_NULLTERM;
+	bindoutreadfmt.maxlength=(CS_INT)sizeof(bindoutdata[0]);
+	bindoutreadfmt.count=1;
+
+	for (CS_INT i=0; i<3; i++) {
+		bytestring::zero(&(bindoutfmt[i]),sizeof(CS_DATAFMT));
+		assertEquals(ct_describe(cmd,i+1,&(bindoutfmt[i])),CS_SUCCEED);
+		assertEquals(bindoutfmt[i].name,bindoutname[i]);
+		assertEquals(bindoutfmt[i].namelen,bindoutnamelen[i]);
+		assertEquals(bindoutfmt[i].datatype,bindouttype[i]);
+		assertEquals(bindoutfmt[i].maxlength,bindoutmaxlength[i]);
+		assertEquals(bindoutfmt[i].precision,0);
+		assertEquals(bindoutfmt[i].scale,0);
+		assertEquals(bindoutfmt[i].status,0);
+		assertEquals(bindoutfmt[i].count,1);
+		assertEquals(bindoutfmt[i].usertype,bindoutusertype[i]);
+		bytestring::zero(bindoutdata[i],sizeof(bindoutdata[i]));
+		bindoutdatalength[i]=-1;
+		bindoutdataindicator[i]=-99;
+		assertEquals(ct_bind(cmd,i+1,&bindoutreadfmt,
+					(CS_VOID *)bindoutdata[i],
+					&(bindoutdatalength[i]),
+					&(bindoutdataindicator[i])),
+					CS_SUCCEED);
+	}
+	assertEquals(ct_fetch(cmd,CS_UNUSED,CS_UNUSED,
+					CS_UNUSED,&rowsread),CS_SUCCEED);
+	assertEquals(rowsread,1);
+	for (CS_INT i=0; i<3; i++) {
+		assertEquals(bindoutdata[i],bindoutvalue[i]);
+		assertEquals(bindoutdatalength[i],bindoutvaluelen[i]);
+		assertEquals(bindoutdataindicator[i],0);
+	}
+	assertEquals(ct_fetch(cmd,CS_UNUSED,CS_UNUSED,
+					CS_UNUSED,&rowsread),CS_END_DATA);
+	results=ct_results(cmd,&resultstype);
+	assertEquals(results,CS_SUCCEED);
+	assertEquals(resultstype,CS_CMD_SUCCEED);
+	results=ct_results(cmd,&resultstype);
+	assertEquals(results,CS_SUCCEED);
+	assertEquals(resultstype,CS_CMD_DONE);
+	results=ct_results(cmd,&resultstype);
+	assertEquals(results,CS_END_RESULTS);
+	assertEquals(ct_cancel(NULL,cmd,CS_CANCEL_ALL),CS_SUCCEED);
+	stdoutput.printf("\n");
+
+
+	// CS_NUMERIC_TYPE goes in as an input parameter on both servers,
+	// but mssql refuses it as an output parameter - 8016, 'Parameter 2
+	// ("@pnum"): Data type 0x6C has an invalid data length or metadata
+	// length'.
+	stdoutput.printf("ct_command: rpc with a numeric output param\n");
+	assertEquals(ct_command(cmd,CS_RPC_CMD,(CS_CHAR *)"bindnumproc",
+				CS_NULLTERM,CS_UNUSED),CS_SUCCEED);
+	bindintvalue=4;
+	bytestring::zero(&(bindoutfmt[0]),sizeof(CS_DATAFMT));
+	bindoutfmt[0].datatype=CS_INT_TYPE;
+	bindoutfmt[0].maxlength=4;
+	bindoutfmt[0].count=1;
+	charstring::copy(bindoutfmt[0].name,"@pin");
+	bindoutfmt[0].namelen=4;
+	assertEquals(ct_param(cmd,&(bindoutfmt[0]),
+				(CS_VOID *)&bindintvalue,
+				sizeof(CS_INT),0),CS_SUCCEED);
+	bytestring::zero(&bindoutnumeric,sizeof(CS_NUMERIC));
+	bytestring::zero(&(bindoutfmt[1]),sizeof(CS_DATAFMT));
+	bindoutfmt[1].datatype=CS_NUMERIC_TYPE;
+	bindoutfmt[1].maxlength=(CS_INT)sizeof(CS_NUMERIC);
+	bindoutfmt[1].precision=10;
+	bindoutfmt[1].scale=4;
+	bindoutfmt[1].count=1;
+	bindoutfmt[1].status=CS_RETURN;
+	charstring::copy(bindoutfmt[1].name,"@pnum");
+	bindoutfmt[1].namelen=5;
+	assertEquals(ct_param(cmd,&(bindoutfmt[1]),
+				(CS_VOID *)&bindoutnumeric,
+				sizeof(CS_NUMERIC),0),CS_SUCCEED);
+	assertEquals(ct_send(cmd),CS_SUCCEED);
+	if (issybase) {
+		results=ct_results(cmd,&resultstype);
+		assertEquals(results,CS_SUCCEED);
+		assertEquals(resultstype,CS_STATUS_RESULT);
+		bytestring::zero(bindreaddata,sizeof(bindreaddata));
+		assertEquals(ct_bind(cmd,1,&bindreadfmt,
+					(CS_VOID *)bindreaddata,
+					&bindreadlength,
+					&bindreadindicator),CS_SUCCEED);
+		assertEquals(ct_fetch(cmd,CS_UNUSED,CS_UNUSED,
+					CS_UNUSED,&rowsread),CS_SUCCEED);
+		assertEquals(bindreaddata,"9");
+		assertEquals(ct_fetch(cmd,CS_UNUSED,CS_UNUSED,
+					CS_UNUSED,&rowsread),CS_END_DATA);
+		results=ct_results(cmd,&resultstype);
+		assertEquals(results,CS_SUCCEED);
+		assertEquals(resultstype,CS_PARAM_RESULT);
+		bytestring::zero(&(bindoutfmt[0]),sizeof(CS_DATAFMT));
+		assertEquals(ct_describe(cmd,1,&(bindoutfmt[0])),CS_SUCCEED);
+		assertEquals(bindoutfmt[0].name,"@pnum");
+		assertEquals(bindoutfmt[0].datatype,CS_NUMERIC_TYPE);
+		assertEquals(bindoutfmt[0].maxlength,35);
+		assertEquals(bindoutfmt[0].precision,10);
+		assertEquals(bindoutfmt[0].scale,4);
+		assertEquals(bindoutfmt[0].usertype,28);
+		bytestring::zero(bindreaddata,sizeof(bindreaddata));
+		bindreadlength=-1;
+		assertEquals(ct_bind(cmd,1,&bindreadfmt,
+					(CS_VOID *)bindreaddata,
+					&bindreadlength,
+					&bindreadindicator),CS_SUCCEED);
+		assertEquals(ct_fetch(cmd,CS_UNUSED,CS_UNUSED,
+					CS_UNUSED,&rowsread),CS_SUCCEED);
+		assertEquals(bindreaddata,"5.0000");
+		assertEquals(bindreadlength,7);
+		assertEquals(ct_fetch(cmd,CS_UNUSED,CS_UNUSED,
+					CS_UNUSED,&rowsread),CS_END_DATA);
+		results=ct_results(cmd,&resultstype);
+		assertEquals(results,CS_SUCCEED);
+		assertEquals(resultstype,CS_CMD_SUCCEED);
+	} else {
+		results=ct_results(cmd,&resultstype);
+		assertEquals(results,CS_SUCCEED);
+		assertEquals(resultstype,CS_CMD_FAIL);
+	}
+	results=ct_results(cmd,&resultstype);
+	assertEquals(results,CS_SUCCEED);
+	assertEquals(resultstype,CS_CMD_DONE);
+	results=ct_results(cmd,&resultstype);
+	assertEquals(results,CS_END_RESULTS);
+	assertEquals(ct_cancel(NULL,cmd,CS_CANCEL_ALL),CS_SUCCEED);
+	stdoutput.printf("\n");
+
+
+	// The binary types mssql refuses on the prepared path go in fine
+	// as rpc parameters, so what it will not take is freetds'
+	// varchar(4000) declaration rather than the bytes.  CS_BINARY_TYPE
+	// is zero padded out to maxlength there, exactly the way
+	// CS_CHAR_TYPE is blank padded.  CS_LONGBINARY_TYPE is refused
+	// either way - 8009, data type 0xE1 unknown.
+	stdoutput.printf("ct_command: rpc with binary params\n");
+	CS_INT		bindrpcbintype[3]={
+				CS_BINARY_TYPE,CS_VARBINARY_TYPE,
+				CS_LONGBINARY_TYPE};
+	const char	*bindrpcbinexpect[3]={"010203","010203","010203"};
+	CS_INT		bindrpcbinlength[3]={7,7,7};
+	bool		bindrpcbinok[3]={true,true,!issybase?false:true};
+	if (!issybase) {
+		bindrpcbinexpect[0]="01020300000000000000"
+					"00000000000000000000";
+		bindrpcbinlength[0]=41;
+	}
+	for (CS_INT i=0; i<3; i++) {
+
+		query="delete from bindtable";
+		ct_command(cmd,CS_LANG_CMD,query,
+				charstring::getLength(query),CS_UNUSED);
+		ct_send(cmd);
+		while (ct_results(cmd,&resultstype)==CS_SUCCEED) {}
+		ct_cancel(NULL,cmd,CS_CANCEL_ALL);
+
+		assertEquals(ct_command(cmd,CS_RPC_CMD,
+					(CS_CHAR *)"bindbinproc",
+					CS_NULLTERM,CS_UNUSED),CS_SUCCEED);
+		bytestring::zero(&bindparamfmt,sizeof(CS_DATAFMT));
+		bindparamfmt.datatype=bindrpcbintype[i];
+		bindparamfmt.maxlength=20;
+		bindparamfmt.count=1;
+		if (bindrpcbintype[i]==CS_VARBINARY_TYPE) {
+			assertEquals(ct_param(cmd,&bindparamfmt,
+					(CS_VOID *)&bindvarbinaryvalue,
+					sizeof(CS_VARBINARY),0),CS_SUCCEED);
+		} else {
+			assertEquals(ct_param(cmd,&bindparamfmt,
+					(CS_VOID *)bindbinaryvalue,
+					3,0),CS_SUCCEED);
+		}
+		assertEquals(ct_send(cmd),CS_SUCCEED);
+
+		// a procedure with no return statement still answers with
+		// a status result, and it comes first
+		if (bindrpcbinok[i]) {
+			results=ct_results(cmd,&resultstype);
+			assertEquals(results,CS_SUCCEED);
+			assertEquals(resultstype,CS_STATUS_RESULT);
+			bytestring::zero(bindreaddata,sizeof(bindreaddata));
+			assertEquals(ct_bind(cmd,1,&bindreadfmt,
+					(CS_VOID *)bindreaddata,
+					&bindreadlength,
+					&bindreadindicator),CS_SUCCEED);
+			assertEquals(ct_fetch(cmd,CS_UNUSED,CS_UNUSED,
+					CS_UNUSED,&rowsread),CS_SUCCEED);
+			assertEquals(bindreaddata,"0");
+			assertEquals(ct_fetch(cmd,CS_UNUSED,CS_UNUSED,
+					CS_UNUSED,&rowsread),CS_END_DATA);
+		}
+		results=ct_results(cmd,&resultstype);
+		assertEquals(results,CS_SUCCEED);
+		assertEquals(resultstype,(bindrpcbinok[i])?
+					CS_CMD_SUCCEED:CS_CMD_FAIL);
+		results=ct_results(cmd,&resultstype);
+		assertEquals(results,CS_SUCCEED);
+		assertEquals(resultstype,CS_CMD_DONE);
+		results=ct_results(cmd,&resultstype);
+		assertEquals(results,CS_END_RESULTS);
+		assertEquals(ct_cancel(NULL,cmd,CS_CANCEL_ALL),CS_SUCCEED);
+
+		if (!bindrpcbinok[i]) {
+			continue;
+		}
+
+		query="select bindbinary from bindtable";
+		assertEquals(ct_command(cmd,CS_LANG_CMD,query,
+					charstring::getLength(query),
+					CS_UNUSED),CS_SUCCEED);
+		assertEquals(ct_send(cmd),CS_SUCCEED);
+		results=ct_results(cmd,&resultstype);
+		assertEquals(results,CS_SUCCEED);
+		assertEquals(resultstype,CS_ROW_RESULT);
+		bytestring::zero(bindreaddata,sizeof(bindreaddata));
+		bindreadlength=-1;
+		assertEquals(ct_bind(cmd,1,&bindreadfmt,
+					(CS_VOID *)bindreaddata,
+					&bindreadlength,
+					&bindreadindicator),CS_SUCCEED);
+		assertEquals(ct_fetch(cmd,CS_UNUSED,CS_UNUSED,
+					CS_UNUSED,&rowsread),CS_SUCCEED);
+		assertEquals(bindreaddata,bindrpcbinexpect[i]);
+		assertEquals(bindreadlength,bindrpcbinlength[i]);
+		assertEquals(ct_fetch(cmd,CS_UNUSED,CS_UNUSED,
+					CS_UNUSED,&rowsread),CS_END_DATA);
+		while (ct_results(cmd,&resultstype)==CS_SUCCEED) {}
+		assertEquals(ct_cancel(NULL,cmd,CS_CANCEL_ALL),CS_SUCCEED);
+	}
+	stdoutput.printf("\n");
+
+
+	// ct_setparam's length and indicator are taken by pointer, but the
+	// bindings do not survive the next ct_command(CS_RPC_CMD) any more
+	// than they survive the next ct_dynamic(CS_EXECUTE) that #8791
+	// covered.  The second send reaches the server with no parameters
+	// at all and both servers answer 201, "expects parameter @pin,
+	// which was not supplied".
+	stdoutput.printf("ct_setparam: bindings do not survive a second rpc\n");
+	CS_INT		bindsetlength[2];
+	CS_SMALLINT	bindsetindicator[2]={0,0};
+	for (CS_INT i=0; i<2; i++) {
+
+		assertEquals(ct_command(cmd,CS_RPC_CMD,(CS_CHAR *)"bindproc",
+					CS_NULLTERM,CS_UNUSED),CS_SUCCEED);
+
+		if (!i) {
+			bindintvalue=4;
+			bindsetlength[0]=sizeof(CS_INT);
+			bytestring::zero(&(bindoutfmt[0]),sizeof(CS_DATAFMT));
+			bindoutfmt[0].datatype=CS_INT_TYPE;
+			bindoutfmt[0].maxlength=4;
+			bindoutfmt[0].count=1;
+			charstring::copy(bindoutfmt[0].name,"@pin");
+			bindoutfmt[0].namelen=4;
+			assertEquals(ct_setparam(cmd,&(bindoutfmt[0]),
+					(CS_VOID *)&bindintvalue,
+					&(bindsetlength[0]),
+					&(bindsetindicator[0])),CS_SUCCEED);
+			bytestring::zero(bindoutchar,sizeof(bindoutchar));
+			bindsetlength[1]=0;
+			bindsetindicator[1]=-1;
+			bytestring::zero(&(bindoutfmt[1]),sizeof(CS_DATAFMT));
+			bindoutfmt[1].datatype=CS_CHAR_TYPE;
+			bindoutfmt[1].maxlength=20;
+			bindoutfmt[1].count=1;
+			bindoutfmt[1].status=CS_RETURN;
+			charstring::copy(bindoutfmt[1].name,"@pchr");
+			bindoutfmt[1].namelen=5;
+			assertEquals(ct_setparam(cmd,&(bindoutfmt[1]),
+					(CS_VOID *)bindoutchar,
+					&(bindsetlength[1]),
+					&(bindsetindicator[1])),CS_SUCCEED);
+			bytestring::zero(&(bindoutfmt[2]),sizeof(CS_DATAFMT));
+			bindoutfmt[2].datatype=CS_FLOAT_TYPE;
+			bindoutfmt[2].maxlength=8;
+			bindoutfmt[2].count=1;
+			bindoutfmt[2].status=CS_RETURN;
+			charstring::copy(bindoutfmt[2].name,"@pflt");
+			bindoutfmt[2].namelen=5;
+			assertEquals(ct_setparam(cmd,&(bindoutfmt[2]),
+					(CS_VOID *)&bindoutfloat,
+					&(bindsetlength[0]),
+					&(bindsetindicator[0])),CS_SUCCEED);
+			bytestring::zero(&(bindoutfmt[3]),sizeof(CS_DATAFMT));
+			bindoutfmt[3].datatype=CS_DATETIME_TYPE;
+			bindoutfmt[3].maxlength=8;
+			bindoutfmt[3].count=1;
+			bindoutfmt[3].status=CS_RETURN;
+			charstring::copy(bindoutfmt[3].name,"@pdt");
+			bindoutfmt[3].namelen=4;
+			assertEquals(ct_setparam(cmd,&(bindoutfmt[3]),
+					(CS_VOID *)&bindoutdatetime,
+					&(bindsetlength[0]),
+					&(bindsetindicator[0])),CS_SUCCEED);
+		}
+
+		assertEquals(ct_send(cmd),CS_SUCCEED);
+
+		// The failed second send still carries a status result on
+		// ASE and none at all on mssql.
+		if (!i || issybase) {
+			results=ct_results(cmd,&resultstype);
+			assertEquals(results,CS_SUCCEED);
+			assertEquals(resultstype,CS_STATUS_RESULT);
+			assertEquals(ct_cancel(NULL,cmd,CS_CANCEL_CURRENT),
+								CS_SUCCEED);
+		}
+		if (!i) {
+			results=ct_results(cmd,&resultstype);
+			assertEquals(results,CS_SUCCEED);
+			assertEquals(resultstype,CS_PARAM_RESULT);
+			assertEquals(ct_cancel(NULL,cmd,CS_CANCEL_CURRENT),
+								CS_SUCCEED);
+		}
+		results=ct_results(cmd,&resultstype);
+		assertEquals(results,CS_SUCCEED);
+		assertEquals(resultstype,(i)?CS_CMD_FAIL:CS_CMD_SUCCEED);
+		results=ct_results(cmd,&resultstype);
+		assertEquals(results,CS_SUCCEED);
+		assertEquals(resultstype,CS_CMD_DONE);
+		results=ct_results(cmd,&resultstype);
+		assertEquals(results,CS_END_RESULTS);
+		assertEquals(ct_cancel(NULL,cmd,CS_CANCEL_ALL),CS_SUCCEED);
+	}
+	stdoutput.printf("\n");
+
+
+	// These never reach the wire.  The ones that cannot be covered at
+	// all are ct_param with a null CS_DATAFMT and ct_setparam with a
+	// null length or indicator pointer, all of which segfault inside
+	// libct the same way the ct_dynamic negatives #8791 lists do.
+	stdoutput.printf("ct_param: negatives\n");
+	bytestring::zero(&bindparamfmt,sizeof(CS_DATAFMT));
+	bindparamfmt.datatype=CS_INT_TYPE;
+	bindparamfmt.maxlength=4;
+	bindparamfmt.count=1;
+	assertEquals(ct_param(cmd,&bindparamfmt,(CS_VOID *)&bindintvalue,
+				sizeof(CS_INT),0),CS_FAIL);
+	query="select 1";
+	assertEquals(ct_command(cmd,CS_LANG_CMD,query,
+				charstring::getLength(query),
+				CS_UNUSED),CS_SUCCEED);
+	assertEquals(ct_param(cmd,&bindparamfmt,(CS_VOID *)&bindintvalue,
+				sizeof(CS_INT),0),CS_FAIL);
+	assertEquals(ct_cancel(NULL,cmd,CS_CANCEL_ALL),CS_SUCCEED);
+	assertEquals(ct_command(cmd,CS_RPC_CMD,(CS_CHAR *)"bindbinproc",
+				CS_NULLTERM,CS_UNUSED),CS_SUCCEED);
+	bindparamfmt.datatype=999;
+	assertEquals(ct_param(cmd,&bindparamfmt,(CS_VOID *)&bindintvalue,
+				sizeof(CS_INT),0),CS_FAIL);
+	bindparamfmt.datatype=CS_ILLEGAL_TYPE;
+	assertEquals(ct_param(cmd,&bindparamfmt,(CS_VOID *)&bindintvalue,
+				sizeof(CS_INT),0),CS_FAIL);
+	assertEquals(ct_cancel(NULL,cmd,CS_CANCEL_ALL),CS_SUCCEED);
+	stdoutput.printf("\n");
+
+
+	// A parameter too few fails on both servers.  A parameter too many
+	// is the one place they disagree: mssql fails the command with
+	// 8144, "Procedure or function has too many arguments specified",
+	// while ASE silently ignores the extra one.  A ct_param issued
+	// after ct_send is accepted and has no effect at all.
+	stdoutput.printf("ct_param: parameter count mismatch\n");
+	query="insert into bindtable (bindint) values (?)";
+	assertEquals(ct_dynamic(cmd,CS_PREPARE,(CS_CHAR *)"bindmm",
+				CS_NULLTERM,(CS_CHAR *)query,CS_NULLTERM),
+				CS_SUCCEED);
+	assertEquals(ct_send(cmd),CS_SUCCEED);
+	while (ct_results(cmd,&resultstype)==CS_SUCCEED) {}
+	assertEquals(ct_cancel(NULL,cmd,CS_CANCEL_ALL),CS_SUCCEED);
+
+	bindintvalue=7;
+	bytestring::zero(&bindparamfmt,sizeof(CS_DATAFMT));
+	bindparamfmt.datatype=CS_INT_TYPE;
+	bindparamfmt.maxlength=4;
+	bindparamfmt.count=1;
+
+	assertEquals(ct_dynamic(cmd,CS_EXECUTE,(CS_CHAR *)"bindmm",
+				CS_NULLTERM,(CS_CHAR *)NULL,CS_UNUSED),
+				CS_SUCCEED);
+	assertEquals(ct_param(cmd,&bindparamfmt,(CS_VOID *)&bindintvalue,
+				sizeof(CS_INT),0),CS_SUCCEED);
+	assertEquals(ct_param(cmd,&bindparamfmt,(CS_VOID *)&bindintvalue,
+				sizeof(CS_INT),0),CS_SUCCEED);
+	assertEquals(ct_send(cmd),CS_SUCCEED);
+	results=ct_results(cmd,&resultstype);
+	assertEquals(results,CS_SUCCEED);
+	assertEquals(resultstype,(issybase)?CS_CMD_SUCCEED:CS_CMD_FAIL);
+	while (ct_results(cmd,&resultstype)==CS_SUCCEED) {}
+	assertEquals(ct_cancel(NULL,cmd,CS_CANCEL_ALL),CS_SUCCEED);
+
+	assertEquals(ct_dynamic(cmd,CS_EXECUTE,(CS_CHAR *)"bindmm",
+				CS_NULLTERM,(CS_CHAR *)NULL,CS_UNUSED),
+				CS_SUCCEED);
+	assertEquals(ct_send(cmd),CS_SUCCEED);
+	results=ct_results(cmd,&resultstype);
+	assertEquals(results,CS_SUCCEED);
+	assertEquals(resultstype,CS_CMD_FAIL);
+	while (ct_results(cmd,&resultstype)==CS_SUCCEED) {}
+	assertEquals(ct_cancel(NULL,cmd,CS_CANCEL_ALL),CS_SUCCEED);
+
+	assertEquals(ct_dynamic(cmd,CS_EXECUTE,(CS_CHAR *)"bindmm",
+				CS_NULLTERM,(CS_CHAR *)NULL,CS_UNUSED),
+				CS_SUCCEED);
+	assertEquals(ct_param(cmd,&bindparamfmt,(CS_VOID *)&bindintvalue,
+				sizeof(CS_INT),0),CS_SUCCEED);
+	assertEquals(ct_send(cmd),CS_SUCCEED);
+	assertEquals(ct_param(cmd,&bindparamfmt,(CS_VOID *)&bindintvalue,
+				sizeof(CS_INT),0),CS_SUCCEED);
+	results=ct_results(cmd,&resultstype);
+	assertEquals(results,CS_SUCCEED);
+	assertEquals(resultstype,CS_CMD_SUCCEED);
+	while (ct_results(cmd,&resultstype)==CS_SUCCEED) {}
+	assertEquals(ct_cancel(NULL,cmd,CS_CANCEL_ALL),CS_SUCCEED);
+
+	ct_dynamic(cmd,CS_DEALLOC,(CS_CHAR *)"bindmm",CS_NULLTERM,
+					(CS_CHAR *)NULL,CS_UNUSED);
+	ct_send(cmd);
+	while (ct_results(cmd,&resultstype)==CS_SUCCEED) {}
+	ct_cancel(NULL,cmd,CS_CANCEL_ALL);
+	stdoutput.printf("\n");
+
+
+	stdoutput.printf("ct_command: drop procedures\n");
+	const char	*binddrops[3]={
+				"drop procedure bindproc",
+				"drop procedure bindnumproc",
+				"drop procedure bindbinproc"};
+	for (CS_INT i=0; i<3; i++) {
+		assertEquals(ct_command(cmd,CS_LANG_CMD,binddrops[i],
+					charstring::getLength(binddrops[i]),
+					CS_UNUSED),CS_SUCCEED);
+		assertEquals(ct_send(cmd),CS_SUCCEED);
+		results=ct_results(cmd,&resultstype);
+		assertEquals(results,CS_SUCCEED);
+		assertEquals(resultstype,CS_CMD_SUCCEED);
+		results=ct_results(cmd,&resultstype);
+		assertEquals(results,CS_SUCCEED);
+		assertEquals(resultstype,CS_CMD_DONE);
+		results=ct_results(cmd,&resultstype);
+		assertEquals(results,CS_END_RESULTS);
+		assertEquals(ct_cancel(NULL,cmd,CS_CANCEL_ALL),CS_SUCCEED);
+	}
+	stdoutput.printf("\n");
+
+
+	stdoutput.printf("ct_command: drop\n");
+	query="drop table bindtable";
+	assertEquals(ct_command(cmd,CS_LANG_CMD,
+					query,charstring::getLength(query),
+					CS_UNUSED),CS_SUCCEED);
+	assertEquals(ct_send(cmd),CS_SUCCEED);
+	results=ct_results(cmd,&resultstype);
+	assertEquals(results,CS_SUCCEED);
+	assertEquals(resultstype,CS_CMD_SUCCEED);
+	results=ct_results(cmd,&resultstype);
+	assertEquals(results,CS_SUCCEED);
+	assertEquals(resultstype,CS_CMD_DONE);
+	results=ct_results(cmd,&resultstype);
+	assertEquals(results,CS_END_RESULTS);
+	assertEquals(ct_cancel(NULL,cmd,CS_CANCEL_ALL),CS_SUCCEED);
+	stdoutput.printf("\n");
+
 
 	reportTestStatus();
 	return status;
