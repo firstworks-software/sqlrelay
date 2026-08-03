@@ -2,7 +2,7 @@ top_builddir = ../..
 
 include ../../config.mk
 
-.SUFFIXES: .wt .html
+.SUFFIXES: .wt .html.in .html
 
 SRCS = connectionpooling.wt \
 	backends.wt \
@@ -18,11 +18,27 @@ SRCS = connectionpooling.wt \
 	throttling.wt \
 	triggers.wt
 
-OBJS = connectionpooling.html \
-	backends.html \
+INS = backends.html.in \
+	connectionpooling.html.in \
+	datatranslation.html.in \
+	dbabstractionlayers.html.in \
+	frontends.html.in \
+	header.html.in \
+	lbfoha.html.in \
+	nativeapi.html.in \
+	notifications.html.in \
+	platforms.html.in \
+	routing.html.in \
+	security.html.in \
+	throttling.html.in \
+	triggers.html.in
+
+OBJS = backends.html \
+	connectionpooling.html \
 	datatranslation.html \
 	dbabstractionlayers.html \
 	frontends.html \
+	header.html \
 	lbfoha.html \
 	nativeapi.html \
 	notifications.html \
@@ -32,11 +48,27 @@ OBJS = connectionpooling.html \
 	throttling.html \
 	triggers.html
 
-.wt.html:
+# fragments the pages here include; editing one rebuilds all of them
+FRAGMENTS = ../contentend.html \
+	../contentstart.html \
+	../title.html \
+	../tracker.html \
+	footer.html \
+	header.html.in \
+	projectheader.html
+
+.PRECIOUS: $(INS)
+
+.wt.html.in:
 	wt -i $< -o $@
+
+.html.in.html:
+	$(SSI) $<
 
 all: $(OBJS)
 	$(CHMOD) 755 *.html
+
+$(OBJS): $(FRAGMENTS)
 
 clean:
 	$(RM) $(OBJS)

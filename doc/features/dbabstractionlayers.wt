@@ -46,9 +46,9 @@ Programming guides with sample code and API references are available for each da
 {{{#!blockquote
 '''References:'''
 
-* [../api/ado.net.html/annotated.html ADO.NET]
-* [../api/perl/SQLRelay.html Perl DBI]
-* [../api/python/PySQLRDB.py.html Python DB-API]
+* [../api/ado.net/html/annotated.html ADO.NET]
+* [../api/perl/html/SQLRelay.html Perl DBI]
+* [../api/python/html/PySQLRDB.py.html Python DB-API]
 }}}
 }}}
 

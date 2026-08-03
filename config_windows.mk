@@ -103,6 +103,7 @@ CHMOD = echo
 MKINSTALLDIRS = cscript /nologo @top_builddir@\mkinstalldirs.vbs
 LTFINISH =
 REPLACE = cscript /nologo @top_builddir@\replace.vbs
+SSI = cscript /nologo @top_builddir@\ssi.vbs
 
 # banner substituted into make-generated files (see #8091)
 DONOTEDIT = DO NOT EDIT - this is a generated file; edit the corresponding .in template and rerun make in this directory

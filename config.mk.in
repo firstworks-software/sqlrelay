@@ -108,6 +108,7 @@ CHMOD = chmod
 MKINSTALLDIRS = $(top_builddir)/mkinstalldirs
 LTFINISH = $(LIBTOOL) --mode=finish
 REPLACE = $(top_builddir)/replace.sh
+SSI = $(top_builddir)/ssi.sh
 
 # banner substituted into make-generated files (see #8091)
 DONOTEDIT = DO NOT EDIT - this is a generated file; edit the corresponding .in template and rerun make in this directory

@@ -43,7 +43,7 @@ session.
 
 Sessions can also be encrypted and authenticated using Kerberos/Active Directory or TLS/SSL.  The enableKerberos() method is provided to enable Kerberos/Active Directory encryption and authentication and the enableTls() method is provided to enable TLS/SSL encryption and authentication.  The disableEncryption() method is provided to disable any previously enabled encryption.
 
-See the [../api/erlang/index.html Erlang API reference] for information about these methods and the SQL Relay Configuration Guide for more information about [../admin/configguide.html#krb Kerberos/Active Directory] and [../admin/configguide.html#tls TLS/SSL] configurations.  In particular, note that user and password are not typically used when using Kerberos/AD.
+See the [../api/erlang/html/index.html Erlang API reference] for information about these methods and the SQL Relay Configuration Guide for more information about [../admin/configguide.html#krb Kerberos/Active Directory] and [../admin/configguide.html#tls TLS/SSL] configurations.  In particular, note that user and password are not typically used when using Kerberos/AD.
 
 [=#query]
 == Executing Queries ==

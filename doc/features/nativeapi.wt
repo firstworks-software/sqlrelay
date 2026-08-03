@@ -129,10 +129,10 @@ Programming guides with sample code and API references are available for each la
 * [../api/cs/html/annotated.html C#]
 * [../api/perl/perl.html Perl]
 * [../api/php/html/group__sql__relay.html PHP]
-* [../api/python/PySQLRClient.py.html Python]
-* [../api/ruby/doc/index.html Ruby]
-* [../api/java/index.html Java]
-* [../api/tcl/index.html TCL]
+* [../api/python/html/PySQLRClient.py.html Python]
+* [../api/ruby/html/index.html Ruby]
+* [../api/java/html/index.html Java]
+* [../api/tcl/html/index.html TCL]
 * [../api/nodejs/html/annotated.html node.js]
 }}}
 }}}

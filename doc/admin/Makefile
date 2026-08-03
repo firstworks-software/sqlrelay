@@ -2,7 +2,7 @@ top_builddir = ../..
 
 include ../../config.mk
 
-.SUFFIXES: .wt .html
+.SUFFIXES: .wt .html.in .html
 
 SRCS = configguide.wt \
 	configreference.wt \
@@ -16,23 +16,53 @@ SRCS = configguide.wt \
 	tlsca.wt \
 	createtlscert.wt
 
+INS = configguide.html.in \
+	configreference.html.in \
+	createtlscert.html.in \
+	header.html.in \
+	installing.html.in \
+	installingpkg.html.in \
+	oraclentier.html.in \
+	prerequisites.html.in \
+	running.html.in \
+	tlsca.html.in \
+	tlscert.html.in \
+	tuning.html.in
+
 OBJS = configguide.html \
 	configreference.html \
+	createtlscert.html \
+	header.html \
 	installing.html \
 	installingpkg.html \
 	oraclentier.html \
 	prerequisites.html \
 	running.html \
-	tuning.html \
-	tlscert.html \
 	tlsca.html \
-	createtlscert.html
+	tlscert.html \
+	tuning.html
 
-.wt.html:
+# fragments the pages here include; editing one rebuilds all of them
+FRAGMENTS = ../contentend.html \
+	../contentstart.html \
+	../title.html \
+	../tracker.html \
+	footer.html \
+	header.html.in \
+	projectheader.html
+
+.PRECIOUS: $(INS)
+
+.wt.html.in:
 	wt -i $< -o $@
+
+.html.in.html:
+	$(SSI) $<
 
 all: $(OBJS)
 	$(CHMOD) 755 *.html
+
+$(OBJS): $(FRAGMENTS)
 
 clean:
 	$(RM) $(OBJS)

@@ -2,13 +2,70 @@ top_builddir = ..
 
 include ../config.mk
 
-.SUFFIXES: .wt .html
+.SUFFIXES: .wt .html.in .html
 
 SRCS = documentation.wt faq.wt
-OBJS = documentation.html faq.html
 
-.wt.html:
+INS = documentation.html.in \
+	download.html.in \
+	faq.html.in \
+	faststart.html.in \
+	header.html.in \
+	index.html.in \
+	license.html.in \
+	presentation.html.in \
+	slides.html.in \
+	successstories.html.in \
+	support.html.in
+
+OBJS = documentation.html \
+	download.html \
+	faq.html \
+	faststart.html \
+	header.html \
+	index.html \
+	license.html \
+	presentation.html \
+	slides.html \
+	successstories.html \
+	support.html
+
+# fragments the pages here include; editing one rebuilds all of them
+FRAGMENTS = contentend.html \
+	contentstart.html \
+	footer.html \
+	header.html.in \
+	news.html \
+	presentation.html.in \
+	presentation/backends.html \
+	presentation/connectionpooling.html \
+	presentation/datatranslation.html \
+	presentation/dbabstraction.html \
+	presentation/frontends.html \
+	presentation/lbfoha.html \
+	presentation/nativeapi.html \
+	presentation/notifications.html \
+	presentation/platforms.html \
+	presentation/routing.html \
+	presentation/security.html \
+	presentation/throttling.html \
+	presentation/title.html \
+	presentation/triggers.html \
+	projectheader.html \
+	slides.html.in \
+	slides/2point1.html \
+	slides/benchmarks.html \
+	slides/protocols.html \
+	title.html \
+	tracker.html
+
+.PRECIOUS: $(INS)
+
+.wt.html.in:
 	wt -i $< -o $@
+
+.html.in.html:
+	$(SSI) $<
 
 all: $(OBJS)
 	$(CHMOD) 755 $(OBJS)
@@ -17,10 +74,10 @@ all: $(OBJS)
 	cd features $(AND) $(MAKE)
 	cd programming $(AND) $(MAKE)
 
-install:
+$(OBJS): $(FRAGMENTS)
+
+install: all
 	$(MKINSTALLDIRS) $(docdir)
-	$(CP) .htaccess $(docdir)
-	$(CHMOD) 755 $(docdir)/.htaccess
 	$(CP) *.html $(docdir)
 	$(CHMOD) 755 $(docdir)/*.html
 	$(MKINSTALLDIRS) $(docdir)/css

@@ -67,8 +67,8 @@ SQL Relay provides drivers for several popular database abstraction layers.
 {{{#!td
  '''References''':[[br]]
  [api/ado.net/html/annotated.html ADO.NET][[br]]
- [api/perl/SQLRelay.html Perl DBI][[br]]
- [api/python/PySQLRDB.py.html Python DB-API][[br]]
+ [api/perl/html/SQLRelay.html Perl DBI][[br]]
+ [api/python/html/PySQLRDB.py.html Python DB-API][[br]]
 }}}
 {{{#!td
 [[Image(images/app-phppdo-sqlr-mysql.png,nolink,margin-left=160px)]]
@@ -104,10 +104,10 @@ The native SQL Relay client APIs provide advanced features like substitution and
  [api/cs/html/annotated.html C#][[br]]
  [api/perl/perl.html Perl][[br]]
  [api/php/html/group__sql__relay.html PHP][[br]]
- [api/python/PySQLRClient.py.html Python][[br]]
- [api/ruby/doc/index.html Ruby][[br]]
- [api/java/index.html Java][[br]]
- [api/tcl/index.html TCL][[br]]
+ [api/python/html/PySQLRClient.py.html Python][[br]]
+ [api/ruby/html/index.html Ruby][[br]]
+ [api/java/html/index.html Java][[br]]
+ [api/tcl/html/index.html TCL][[br]]
  [api/erlang/html/index.html Erlang][[br]]
  [api/nodejs/html/annotated.html node.js][[br]]
 }}}
