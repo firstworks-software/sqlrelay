@@ -3310,6 +3310,1446 @@ int	main(int argc, char **argv) {
 	stdoutput.printf("\n");
 
 
+	stdoutput.printf("\n============= RPC and Prepared ============\n\n");
+
+
+	query="drop procedure dynproc";
+	ct_command(cmd,CS_LANG_CMD,query,charstring::getLength(query),CS_UNUSED);
+	ct_send(cmd);
+	while (ct_results(cmd,&resultstype)==CS_SUCCEED) {}
+	ct_cancel(NULL,cmd,CS_CANCEL_ALL);
+
+	query="drop table dyntable";
+	ct_command(cmd,CS_LANG_CMD,query,charstring::getLength(query),CS_UNUSED);
+	ct_send(cmd);
+	while (ct_results(cmd,&resultstype)==CS_SUCCEED) {}
+	ct_cancel(NULL,cmd,CS_CANCEL_ALL);
+
+
+	// Every column is declared null explicitly.  ASE columns are not
+	// null by default, and the null-through-indicator execute below
+	// would then fail server-side while still reporting
+	// CS_CMD_SUCCEED.
+	stdoutput.printf("ct_command: create\n");
+	if (issybase) {
+		query="create table dyntable ("
+				"testid int null, "
+				"testchar char(20) null, "
+				"testvarchar varchar(20) null, "
+				"testint int null"
+				") lock datarows";
+	} else {
+		query="create table dyntable ("
+				"testid int null, "
+				"testchar char(20) null, "
+				"testvarchar varchar(20) null, "
+				"testint int null"
+				")";
+	}
+	assertEquals(ct_command(cmd,CS_LANG_CMD,
+					query,charstring::getLength(query),
+					CS_UNUSED),CS_SUCCEED);
+	assertEquals(ct_send(cmd),CS_SUCCEED);
+	results=ct_results(cmd,&resultstype);
+	assertEquals(results,CS_SUCCEED);
+	assertEquals(resultstype,CS_CMD_SUCCEED);
+	results=ct_results(cmd,&resultstype);
+	assertEquals(results,CS_SUCCEED);
+	assertEquals(resultstype,CS_CMD_DONE);
+	results=ct_results(cmd,&resultstype);
+	assertEquals(results,CS_END_RESULTS);
+	assertEquals(ct_cancel(NULL,cmd,CS_CANCEL_ALL),CS_SUCCEED);
+	stdoutput.printf("\n");
+
+
+	// same procedure text for both servers
+	stdoutput.printf("ct_command: create procedure\n");
+	query="create procedure dynproc "
+		"@inparam int, @outparam int output as "
+		"select @outparam = @inparam * 10 "
+		"select testid, testchar from dyntable "
+		"where testid <= @inparam order by testid "
+		"return 42";
+	assertEquals(ct_command(cmd,CS_LANG_CMD,
+					query,charstring::getLength(query),
+					CS_UNUSED),CS_SUCCEED);
+	assertEquals(ct_send(cmd),CS_SUCCEED);
+	results=ct_results(cmd,&resultstype);
+	assertEquals(results,CS_SUCCEED);
+	assertEquals(resultstype,CS_CMD_SUCCEED);
+	results=ct_results(cmd,&resultstype);
+	assertEquals(results,CS_SUCCEED);
+	assertEquals(resultstype,CS_CMD_DONE);
+	results=ct_results(cmd,&resultstype);
+	assertEquals(results,CS_END_RESULTS);
+	assertEquals(ct_cancel(NULL,cmd,CS_CANCEL_ALL),CS_SUCCEED);
+	stdoutput.printf("\n");
+
+
+	// The two backends do not share a wire path here.  On tds 7
+	// freetds turns ct_dynamic into the sp_ procs - sp_prepare and
+	// sp_unprepare by numeric proc id with procnamelen 0xffff, and
+	// sp_execute by name.  On tds 5 it uses ASE's native dynamic sql
+	// tokens and no sp_ proc is ever sent.  That is why the
+	// expectations below split per backend as often as they do.
+	const char	*dyninsertid="dynins";
+	const char	*dyninsert="insert into dyntable values (?,?,?,?)";
+	const char	*dynselectid="dynsel";
+	const char	*dynselect="select testid, testchar, testvarchar, "
+					"testint from dyntable "
+					"where testid = ?";
+
+
+	stdoutput.printf("ct_dynamic: prepare insert\n");
+	assertEquals(ct_dynamic(cmd,CS_PREPARE,
+				(CS_CHAR *)dyninsertid,CS_NULLTERM,
+				(CS_CHAR *)dyninsert,CS_NULLTERM),CS_SUCCEED);
+	assertEquals(ct_send(cmd),CS_SUCCEED);
+	results=ct_results(cmd,&resultstype);
+	assertEquals(results,CS_SUCCEED);
+	assertEquals(resultstype,CS_CMD_SUCCEED);
+	results=ct_results(cmd,&resultstype);
+	assertEquals(results,CS_SUCCEED);
+	assertEquals(resultstype,CS_CMD_DONE);
+	stdoutput.printf("\n");
+
+
+	// ASE ships the input parameter formats with the prepare ack, so
+	// it reports the placeholder count here.  MSSQL reports the
+	// prepared statement's output column count instead, which is
+	// zero for an insert.
+	stdoutput.printf("ct_res_info: after prepare\n");
+	ncols=-1;
+	assertEquals(ct_res_info(cmd,CS_NUMDATA,
+					(CS_VOID *)&ncols,CS_UNUSED,
+					(CS_INT *)NULL),CS_SUCCEED);
+	assertEquals(ncols,(issybase)?4:0);
+	results=ct_results(cmd,&resultstype);
+	assertEquals(results,CS_END_RESULTS);
+	assertEquals(ct_cancel(NULL,cmd,CS_CANCEL_ALL),CS_SUCCEED);
+	stdoutput.printf("\n");
+
+
+	CS_DATAFMT	dyndesc[4];
+
+
+	// Freetds answers both describes from cached metadata without
+	// going near the wire.  On tds 5 that metadata is real, because
+	// ASE sends it unsolicited with the prepare ack.  On tds 7 there
+	// is nothing to cache, so describe input reports zero parameters.
+	stdoutput.printf("ct_dynamic: describe input on insert\n");
+	assertEquals(ct_dynamic(cmd,CS_DESCRIBE_INPUT,
+				(CS_CHAR *)dyninsertid,CS_NULLTERM,
+				(CS_CHAR *)NULL,CS_UNUSED),CS_SUCCEED);
+	assertEquals(ct_send(cmd),CS_SUCCEED);
+	results=ct_results(cmd,&resultstype);
+	assertEquals(results,CS_SUCCEED);
+	assertEquals(resultstype,CS_DESCRIBE_RESULT);
+	ncols=-1;
+	assertEquals(ct_res_info(cmd,CS_NUMDATA,
+					(CS_VOID *)&ncols,CS_UNUSED,
+					(CS_INT *)NULL),CS_SUCCEED);
+	assertEquals(ncols,(issybase)?4:0);
+
+	// ct_describe on a result whose column count is zero segfaults
+	// inside libct, so the mssql side stops at the count above rather
+	// than describing nothing.
+	if (issybase) {
+		CS_INT	dyninfmttype[4]={
+				CS_INT_TYPE,CS_CHAR_TYPE,
+				CS_CHAR_TYPE,CS_INT_TYPE};
+		CS_INT	dyninfmtmaxlength[4]={4,20,20,4};
+		for (CS_INT i=0; i<4; i++) {
+			bytestring::zero(&(dyndesc[i]),sizeof(CS_DATAFMT));
+			assertEquals(ct_describe(cmd,i+1,&(dyndesc[i])),
+								CS_SUCCEED);
+			assertEquals(dyndesc[i].name,"");
+			assertEquals(dyndesc[i].namelen,0);
+			assertEquals(dyndesc[i].datatype,dyninfmttype[i]);
+			assertEquals(dyndesc[i].format,0);
+			assertEquals(dyndesc[i].maxlength,
+						dyninfmtmaxlength[i]);
+			assertEquals(dyndesc[i].precision,0);
+			assertEquals(dyndesc[i].scale,0);
+			assertEquals(dyndesc[i].status,0);
+			assertEquals(dyndesc[i].count,1);
+			assertEquals(dyndesc[i].usertype,0);
+			assertTrue(dyndesc[i].locale==NULL);
+		}
+	}
+
+	results=ct_results(cmd,&resultstype);
+	assertEquals(results,CS_SUCCEED);
+	assertEquals(resultstype,CS_CMD_DONE);
+	results=ct_results(cmd,&resultstype);
+	assertEquals(results,CS_END_RESULTS);
+	assertEquals(ct_cancel(NULL,cmd,CS_CANCEL_ALL),CS_SUCCEED);
+	stdoutput.printf("\n");
+
+
+	CS_DATAFMT	dynparam[4];
+	CS_INT		dynintvalue[4];
+	char		dyncharvalue[2][32];
+
+
+	// The datalen handed to ct_param is strlen exactly.  With
+	// strlen+1 both servers store the terminator as data.  Only
+	// datatype, maxlength and count have to be set - status
+	// CS_INPUTVALUE is not required, and the name is discarded on
+	// this path.
+	stdoutput.printf("ct_dynamic: execute insert\n");
+	const char	*dyncharinput[4]={"one","two","three","four"};
+	const char	*dynvarcharinput[4]={"uno","dos","tres","cuatro"};
+	for (CS_INT i=0; i<4; i++) {
+
+		assertEquals(ct_dynamic(cmd,CS_EXECUTE,
+				(CS_CHAR *)dyninsertid,CS_NULLTERM,
+				(CS_CHAR *)NULL,CS_UNUSED),CS_SUCCEED);
+
+		bytestring::zero(&(dynparam[0]),sizeof(CS_DATAFMT));
+		dynparam[0].datatype=CS_INT_TYPE;
+		dynparam[0].maxlength=4;
+		dynparam[0].count=1;
+		dynintvalue[0]=i+1;
+		assertEquals(ct_param(cmd,&(dynparam[0]),
+					(CS_VOID *)&(dynintvalue[0]),
+					sizeof(CS_INT),0),CS_SUCCEED);
+
+		bytestring::zero(&(dynparam[1]),sizeof(CS_DATAFMT));
+		dynparam[1].datatype=CS_CHAR_TYPE;
+		dynparam[1].maxlength=20;
+		dynparam[1].count=1;
+		charstring::copy(dyncharvalue[0],dyncharinput[i]);
+
+		bytestring::zero(&(dynparam[2]),sizeof(CS_DATAFMT));
+		dynparam[2].datatype=CS_CHAR_TYPE;
+		dynparam[2].maxlength=20;
+		dynparam[2].count=1;
+		charstring::copy(dyncharvalue[1],dynvarcharinput[i]);
+
+		// the last row sends both char columns null
+		CS_SMALLINT	dynind=(i==3)?-1:0;
+		assertEquals(ct_param(cmd,&(dynparam[1]),
+				(CS_VOID *)dyncharvalue[0],
+				charstring::getLength(dyncharvalue[0]),
+				dynind),CS_SUCCEED);
+		assertEquals(ct_param(cmd,&(dynparam[2]),
+				(CS_VOID *)dyncharvalue[1],
+				charstring::getLength(dyncharvalue[1]),
+				dynind),CS_SUCCEED);
+
+		bytestring::zero(&(dynparam[3]),sizeof(CS_DATAFMT));
+		dynparam[3].datatype=CS_INT_TYPE;
+		dynparam[3].maxlength=4;
+		dynparam[3].count=1;
+		dynintvalue[3]=101+i;
+		assertEquals(ct_param(cmd,&(dynparam[3]),
+					(CS_VOID *)&(dynintvalue[3]),
+					sizeof(CS_INT),0),CS_SUCCEED);
+
+		assertEquals(ct_send(cmd),CS_SUCCEED);
+		results=ct_results(cmd,&resultstype);
+		assertEquals(results,CS_SUCCEED);
+		assertEquals(resultstype,CS_CMD_SUCCEED);
+		assertEquals(ct_res_info(cmd,CS_ROW_COUNT,
+					(CS_VOID *)&affectedrows,CS_UNUSED,
+					(CS_INT *)NULL),CS_SUCCEED);
+		assertEquals(affectedrows,1);
+		results=ct_results(cmd,&resultstype);
+		assertEquals(results,CS_SUCCEED);
+		assertEquals(resultstype,CS_CMD_DONE);
+		results=ct_results(cmd,&resultstype);
+		assertEquals(results,CS_END_RESULTS);
+		assertEquals(ct_cancel(NULL,cmd,CS_CANCEL_ALL),CS_SUCCEED);
+	}
+	stdoutput.printf("\n");
+
+
+	CS_DATAFMT	dynfmt[4];
+	char		*dyndata[4];
+	CS_INT		dyndatalength[4];
+	CS_SMALLINT	dynnullindicator[4];
+
+
+	// Freetds sends CS_CHAR_TYPE as a bigchar sized at
+	// CS_DATAFMT.maxlength, so mssql receives a value already blank
+	// padded to 20 and keeps the padding even in the varchar column.
+	// ASE's tds 5 parameter carries the real length, and a nullable
+	// char is stored as a varchar, so nothing is padded there.
+	const char	*dyncharexpect[4]={"one","two","three",NULL};
+	const char	*dynvarcharexpect[4]={"uno","dos","tres",NULL};
+	CS_INT		dyncharlength[4]={4,4,6,0};
+	CS_INT		dynvarcharlength[4]={4,4,5,0};
+	if (!issybase) {
+		dyncharexpect[0]="one                 ";
+		dyncharexpect[1]="two                 ";
+		dyncharexpect[2]="three               ";
+		dynvarcharexpect[0]="uno                 ";
+		dynvarcharexpect[1]="dos                 ";
+		dynvarcharexpect[2]="tres                ";
+		dyncharlength[0]=21;
+		dyncharlength[1]=21;
+		dyncharlength[2]=21;
+		dynvarcharlength[0]=21;
+		dynvarcharlength[1]=21;
+		dynvarcharlength[2]=21;
+	}
+
+
+	stdoutput.printf("ct_command: select\n");
+	query="select testid, testchar, testvarchar, testint "
+		"from dyntable order by testid";
+	assertEquals(ct_command(cmd,CS_LANG_CMD,
+					query,charstring::getLength(query),
+					CS_UNUSED),CS_SUCCEED);
+	assertEquals(ct_send(cmd),CS_SUCCEED);
+	results=ct_results(cmd,&resultstype);
+	assertEquals(results,CS_SUCCEED);
+	assertEquals(resultstype,CS_ROW_RESULT);
+	for (CS_INT i=0; i<4; i++) {
+		dyndata[i]=new char[1024];
+		bytestring::zero(dyndata[i],1024);
+		bytestring::zero(&(dynfmt[i]),sizeof(CS_DATAFMT));
+		dynfmt[i].datatype=CS_CHAR_TYPE;
+		dynfmt[i].format=CS_FMT_NULLTERM;
+		dynfmt[i].maxlength=1024;
+		dynfmt[i].count=1;
+		assertEquals(ct_bind(cmd,i+1,&(dynfmt[i]),
+					(CS_VOID *)dyndata[i],
+					&(dyndatalength[i]),
+					&(dynnullindicator[i])),CS_SUCCEED);
+	}
+	stdoutput.printf("\n");
+
+
+	stdoutput.printf("ct_fetch:\n");
+	for (CS_INT i=0; i<4; i++) {
+
+		bytestring::zero(dyndata[1],1024);
+		bytestring::zero(dyndata[2],1024);
+
+		assertEquals(ct_fetch(cmd,CS_UNUSED,CS_UNUSED,
+					CS_UNUSED,&rowsread),CS_SUCCEED);
+		assertEquals(rowsread,1);
+
+		char	dynexpectedid[2];
+		dynexpectedid[0]='1'+(char)i;
+		dynexpectedid[1]='\0';
+		assertEquals(dyndata[0],dynexpectedid);
+		assertEquals(dyndatalength[0],2);
+		assertEquals(dynnullindicator[0],0);
+
+		if (i==3) {
+			assertEquals(dyndata[1],"");
+			assertEquals(dyndatalength[1],0);
+			assertEquals(dynnullindicator[1],-1);
+			assertEquals(dyndata[2],"");
+			assertEquals(dyndatalength[2],0);
+			assertEquals(dynnullindicator[2],-1);
+		} else {
+			assertEquals(dyndata[1],dyncharexpect[i]);
+			assertEquals(dyndatalength[1],dyncharlength[i]);
+			assertEquals(dynnullindicator[1],0);
+			assertEquals(dyndata[2],dynvarcharexpect[i]);
+			assertEquals(dyndatalength[2],dynvarcharlength[i]);
+			assertEquals(dynnullindicator[2],0);
+		}
+
+		char	dynexpectedint[4];
+		dynexpectedint[0]='1';
+		dynexpectedint[1]='0';
+		dynexpectedint[2]='1'+(char)i;
+		dynexpectedint[3]='\0';
+		assertEquals(dyndata[3],dynexpectedint);
+		assertEquals(dyndatalength[3],4);
+		assertEquals(dynnullindicator[3],0);
+	}
+	assertEquals(ct_fetch(cmd,CS_UNUSED,CS_UNUSED,
+					CS_UNUSED,&rowsread),CS_END_DATA);
+	results=ct_results(cmd,&resultstype);
+	assertEquals(results,CS_SUCCEED);
+	assertEquals(resultstype,CS_CMD_DONE);
+	results=ct_results(cmd,&resultstype);
+	assertEquals(results,CS_END_RESULTS);
+	assertEquals(ct_cancel(NULL,cmd,CS_CANCEL_ALL),CS_SUCCEED);
+	stdoutput.printf("\n");
+
+
+	stdoutput.printf("ct_dynamic: prepare select\n");
+	assertEquals(ct_dynamic(cmd,CS_PREPARE,
+				(CS_CHAR *)dynselectid,CS_NULLTERM,
+				(CS_CHAR *)dynselect,CS_NULLTERM),CS_SUCCEED);
+	assertEquals(ct_send(cmd),CS_SUCCEED);
+	results=ct_results(cmd,&resultstype);
+	assertEquals(results,CS_SUCCEED);
+	assertEquals(resultstype,CS_CMD_SUCCEED);
+	results=ct_results(cmd,&resultstype);
+	assertEquals(results,CS_SUCCEED);
+	assertEquals(resultstype,CS_CMD_DONE);
+	results=ct_results(cmd,&resultstype);
+	assertEquals(results,CS_END_RESULTS);
+	assertEquals(ct_cancel(NULL,cmd,CS_CANCEL_ALL),CS_SUCCEED);
+	stdoutput.printf("\n");
+
+
+	stdoutput.printf("ct_dynamic: describe input on select\n");
+	assertEquals(ct_dynamic(cmd,CS_DESCRIBE_INPUT,
+				(CS_CHAR *)dynselectid,CS_NULLTERM,
+				(CS_CHAR *)NULL,CS_UNUSED),CS_SUCCEED);
+	assertEquals(ct_send(cmd),CS_SUCCEED);
+	results=ct_results(cmd,&resultstype);
+	assertEquals(results,CS_SUCCEED);
+	assertEquals(resultstype,CS_DESCRIBE_RESULT);
+	ncols=-1;
+	assertEquals(ct_res_info(cmd,CS_NUMDATA,
+					(CS_VOID *)&ncols,CS_UNUSED,
+					(CS_INT *)NULL),CS_SUCCEED);
+	assertEquals(ncols,(issybase)?1:0);
+	if (issybase) {
+		bytestring::zero(&(dyndesc[0]),sizeof(CS_DATAFMT));
+		assertEquals(ct_describe(cmd,1,&(dyndesc[0])),CS_SUCCEED);
+		assertEquals(dyndesc[0].name,"");
+		assertEquals(dyndesc[0].namelen,0);
+		assertEquals(dyndesc[0].datatype,CS_INT_TYPE);
+		assertEquals(dyndesc[0].format,0);
+		assertEquals(dyndesc[0].maxlength,4);
+		assertEquals(dyndesc[0].precision,0);
+		assertEquals(dyndesc[0].scale,0);
+		assertEquals(dyndesc[0].status,0);
+		assertEquals(dyndesc[0].count,1);
+		assertEquals(dyndesc[0].usertype,0);
+		assertTrue(dyndesc[0].locale==NULL);
+	}
+	results=ct_results(cmd,&resultstype);
+	assertEquals(results,CS_SUCCEED);
+	assertEquals(resultstype,CS_CMD_DONE);
+	results=ct_results(cmd,&resultstype);
+	assertEquals(results,CS_END_RESULTS);
+	assertEquals(ct_cancel(NULL,cmd,CS_CANCEL_ALL),CS_SUCCEED);
+	stdoutput.printf("\n");
+
+
+	// The output describe is real on both backends.  Only usertype
+	// splits - mssql reports 0 for everything while ASE reports its
+	// syscolumns ids, the same split #8779 found for ct_describe.
+	const char	*dyncolname[4]={
+				"testid","testchar","testvarchar","testint"};
+	CS_INT		dyncolnamelen[4]={6,8,11,7};
+	CS_INT		dyncoltype[4]={
+				CS_INT_TYPE,CS_CHAR_TYPE,
+				CS_CHAR_TYPE,CS_INT_TYPE};
+	CS_INT		dyncolmaxlength[4]={4,20,20,4};
+	CS_INT		dyncolusertype[4]={0,0,0,0};
+	if (issybase) {
+		dyncolusertype[0]=7;
+		dyncolusertype[1]=1;
+		dyncolusertype[2]=2;
+		dyncolusertype[3]=7;
+	}
+
+
+	stdoutput.printf("ct_dynamic: describe output on select\n");
+	assertEquals(ct_dynamic(cmd,CS_DESCRIBE_OUTPUT,
+				(CS_CHAR *)dynselectid,CS_NULLTERM,
+				(CS_CHAR *)NULL,CS_UNUSED),CS_SUCCEED);
+	assertEquals(ct_send(cmd),CS_SUCCEED);
+	results=ct_results(cmd,&resultstype);
+	assertEquals(results,CS_SUCCEED);
+	assertEquals(resultstype,CS_DESCRIBE_RESULT);
+	ncols=-1;
+	assertEquals(ct_res_info(cmd,CS_NUMDATA,
+					(CS_VOID *)&ncols,CS_UNUSED,
+					(CS_INT *)NULL),CS_SUCCEED);
+	assertEquals(ncols,4);
+	for (CS_INT i=0; i<4; i++) {
+		bytestring::zero(&(dyndesc[i]),sizeof(CS_DATAFMT));
+		assertEquals(ct_describe(cmd,i+1,&(dyndesc[i])),CS_SUCCEED);
+		assertEquals(dyndesc[i].name,dyncolname[i]);
+		assertEquals(dyndesc[i].namelen,dyncolnamelen[i]);
+		assertEquals(dyndesc[i].datatype,dyncoltype[i]);
+		assertEquals(dyndesc[i].format,0);
+		assertEquals(dyndesc[i].maxlength,dyncolmaxlength[i]);
+		assertEquals(dyndesc[i].precision,0);
+		assertEquals(dyndesc[i].scale,0);
+		assertEquals(dyndesc[i].status,CS_UPDATABLE|CS_CANBENULL);
+		assertEquals(dyndesc[i].count,1);
+		assertEquals(dyndesc[i].usertype,dyncolusertype[i]);
+		assertTrue(dyndesc[i].locale==NULL);
+	}
+	results=ct_results(cmd,&resultstype);
+	assertEquals(results,CS_SUCCEED);
+	assertEquals(resultstype,CS_CMD_DONE);
+	results=ct_results(cmd,&resultstype);
+	assertEquals(results,CS_END_RESULTS);
+	assertEquals(ct_cancel(NULL,cmd,CS_CANCEL_ALL),CS_SUCCEED);
+	stdoutput.printf("\n");
+
+
+	// A prepared select carries an extra CS_CMD_SUCCEED and
+	// CS_CMD_DONE pair after the rows that a language select does
+	// not - on mssql that is sp_execute's own done, on ASE it is the
+	// dynamic exec's.
+	stdoutput.printf("ct_dynamic: execute select\n");
+	for (CS_INT i=0; i<2; i++) {
+
+		assertEquals(ct_dynamic(cmd,CS_EXECUTE,
+				(CS_CHAR *)dynselectid,CS_NULLTERM,
+				(CS_CHAR *)NULL,CS_UNUSED),CS_SUCCEED);
+
+		bytestring::zero(&(dynparam[0]),sizeof(CS_DATAFMT));
+		dynparam[0].datatype=CS_INT_TYPE;
+		dynparam[0].maxlength=4;
+		dynparam[0].count=1;
+		dynintvalue[0]=i+2;
+		assertEquals(ct_param(cmd,&(dynparam[0]),
+					(CS_VOID *)&(dynintvalue[0]),
+					sizeof(CS_INT),0),CS_SUCCEED);
+
+		assertEquals(ct_send(cmd),CS_SUCCEED);
+		results=ct_results(cmd,&resultstype);
+		assertEquals(results,CS_SUCCEED);
+		assertEquals(resultstype,CS_ROW_RESULT);
+
+		ncols=-1;
+		assertEquals(ct_res_info(cmd,CS_NUMDATA,
+					(CS_VOID *)&ncols,CS_UNUSED,
+					(CS_INT *)NULL),CS_SUCCEED);
+		assertEquals(ncols,4);
+
+		for (CS_INT j=0; j<4; j++) {
+			bytestring::zero(dyndata[j],1024);
+			assertEquals(ct_bind(cmd,j+1,&(dynfmt[j]),
+					(CS_VOID *)dyndata[j],
+					&(dyndatalength[j]),
+					&(dynnullindicator[j])),CS_SUCCEED);
+		}
+
+		assertEquals(ct_fetch(cmd,CS_UNUSED,CS_UNUSED,
+					CS_UNUSED,&rowsread),CS_SUCCEED);
+		assertEquals(rowsread,1);
+
+		char	dynexpectedid[2];
+		dynexpectedid[0]='2'+(char)i;
+		dynexpectedid[1]='\0';
+		assertEquals(dyndata[0],dynexpectedid);
+		assertEquals(dyndata[1],dyncharexpect[i+1]);
+		assertEquals(dyndatalength[1],dyncharlength[i+1]);
+		assertEquals(dyndata[2],dynvarcharexpect[i+1]);
+		assertEquals(dyndatalength[2],dynvarcharlength[i+1]);
+
+		assertEquals(ct_fetch(cmd,CS_UNUSED,CS_UNUSED,
+					CS_UNUSED,&rowsread),CS_END_DATA);
+		results=ct_results(cmd,&resultstype);
+		assertEquals(results,CS_SUCCEED);
+		assertEquals(resultstype,CS_CMD_DONE);
+		results=ct_results(cmd,&resultstype);
+		assertEquals(results,CS_SUCCEED);
+		assertEquals(resultstype,CS_CMD_SUCCEED);
+		results=ct_results(cmd,&resultstype);
+		assertEquals(results,CS_SUCCEED);
+		assertEquals(resultstype,CS_CMD_DONE);
+		results=ct_results(cmd,&resultstype);
+		assertEquals(results,CS_END_RESULTS);
+		assertEquals(ct_cancel(NULL,cmd,CS_CANCEL_ALL),CS_SUCCEED);
+	}
+	stdoutput.printf("\n");
+
+
+	// ct_setparam takes the length and indicator by pointer, but the
+	// bindings do not survive the next ct_dynamic(CS_EXECUTE), which
+	// calls param_clear, so they have to be re-issued for every
+	// execute anyway.
+	stdoutput.printf("ct_dynamic: execute insert with ct_setparam\n");
+	assertEquals(ct_dynamic(cmd,CS_EXECUTE,
+				(CS_CHAR *)dyninsertid,CS_NULLTERM,
+				(CS_CHAR *)NULL,CS_UNUSED),CS_SUCCEED);
+	CS_INT		dynsetlength[4];
+	CS_SMALLINT	dynsetindicator[4]={0,0,0,0};
+	dynintvalue[0]=5;
+	dynsetlength[0]=sizeof(CS_INT);
+	bytestring::zero(&(dynparam[0]),sizeof(CS_DATAFMT));
+	dynparam[0].datatype=CS_INT_TYPE;
+	dynparam[0].maxlength=4;
+	dynparam[0].count=1;
+	assertEquals(ct_setparam(cmd,&(dynparam[0]),
+				(CS_VOID *)&(dynintvalue[0]),
+				&(dynsetlength[0]),
+				&(dynsetindicator[0])),CS_SUCCEED);
+	charstring::copy(dyncharvalue[0],"five");
+	dynsetlength[1]=charstring::getLength(dyncharvalue[0]);
+	bytestring::zero(&(dynparam[1]),sizeof(CS_DATAFMT));
+	dynparam[1].datatype=CS_CHAR_TYPE;
+	dynparam[1].maxlength=20;
+	dynparam[1].count=1;
+	assertEquals(ct_setparam(cmd,&(dynparam[1]),
+				(CS_VOID *)dyncharvalue[0],
+				&(dynsetlength[1]),
+				&(dynsetindicator[1])),CS_SUCCEED);
+	charstring::copy(dyncharvalue[1],"cinco");
+	dynsetlength[2]=charstring::getLength(dyncharvalue[1]);
+	bytestring::zero(&(dynparam[2]),sizeof(CS_DATAFMT));
+	dynparam[2].datatype=CS_CHAR_TYPE;
+	dynparam[2].maxlength=20;
+	dynparam[2].count=1;
+	assertEquals(ct_setparam(cmd,&(dynparam[2]),
+				(CS_VOID *)dyncharvalue[1],
+				&(dynsetlength[2]),
+				&(dynsetindicator[2])),CS_SUCCEED);
+	dynintvalue[3]=105;
+	dynsetlength[3]=sizeof(CS_INT);
+	bytestring::zero(&(dynparam[3]),sizeof(CS_DATAFMT));
+	dynparam[3].datatype=CS_INT_TYPE;
+	dynparam[3].maxlength=4;
+	dynparam[3].count=1;
+	assertEquals(ct_setparam(cmd,&(dynparam[3]),
+				(CS_VOID *)&(dynintvalue[3]),
+				&(dynsetlength[3]),
+				&(dynsetindicator[3])),CS_SUCCEED);
+	assertEquals(ct_send(cmd),CS_SUCCEED);
+	results=ct_results(cmd,&resultstype);
+	assertEquals(results,CS_SUCCEED);
+	assertEquals(resultstype,CS_CMD_SUCCEED);
+	assertEquals(ct_res_info(cmd,CS_ROW_COUNT,
+				(CS_VOID *)&affectedrows,CS_UNUSED,
+				(CS_INT *)NULL),CS_SUCCEED);
+	assertEquals(affectedrows,1);
+	results=ct_results(cmd,&resultstype);
+	assertEquals(results,CS_SUCCEED);
+	assertEquals(resultstype,CS_CMD_DONE);
+	results=ct_results(cmd,&resultstype);
+	assertEquals(results,CS_END_RESULTS);
+	assertEquals(ct_cancel(NULL,cmd,CS_CANCEL_ALL),CS_SUCCEED);
+	stdoutput.printf("\n");
+
+
+	stdoutput.printf("ct_command: select setparam row\n");
+	query="select testchar, testvarchar from dyntable where testid = 5";
+	assertEquals(ct_command(cmd,CS_LANG_CMD,
+					query,charstring::getLength(query),
+					CS_UNUSED),CS_SUCCEED);
+	assertEquals(ct_send(cmd),CS_SUCCEED);
+	results=ct_results(cmd,&resultstype);
+	assertEquals(results,CS_SUCCEED);
+	assertEquals(resultstype,CS_ROW_RESULT);
+	for (CS_INT i=0; i<2; i++) {
+		bytestring::zero(dyndata[i],1024);
+		assertEquals(ct_bind(cmd,i+1,&(dynfmt[i]),
+					(CS_VOID *)dyndata[i],
+					&(dyndatalength[i]),
+					&(dynnullindicator[i])),CS_SUCCEED);
+	}
+	assertEquals(ct_fetch(cmd,CS_UNUSED,CS_UNUSED,
+					CS_UNUSED,&rowsread),CS_SUCCEED);
+	assertEquals(rowsread,1);
+	assertEquals(dyndata[0],(issybase)?"five":"five                ");
+	assertEquals(dyndatalength[0],(issybase)?5:21);
+	assertEquals(dyndata[1],(issybase)?"cinco":"cinco               ");
+	assertEquals(dyndatalength[1],(issybase)?6:21);
+	assertEquals(ct_fetch(cmd,CS_UNUSED,CS_UNUSED,
+					CS_UNUSED,&rowsread),CS_END_DATA);
+	results=ct_results(cmd,&resultstype);
+	assertEquals(results,CS_SUCCEED);
+	assertEquals(resultstype,CS_CMD_DONE);
+	results=ct_results(cmd,&resultstype);
+	assertEquals(results,CS_END_RESULTS);
+	assertEquals(ct_cancel(NULL,cmd,CS_CANCEL_ALL),CS_SUCCEED);
+	stdoutput.printf("\n");
+
+
+	// MSSQL answers sp_unprepare with only a return status and a
+	// done, so freetds reports no result sets at all.  ASE's dynamic
+	// dealloc gets the ordinary pair.
+	stdoutput.printf("ct_dynamic: dealloc select\n");
+	assertEquals(ct_dynamic(cmd,CS_DEALLOC,
+				(CS_CHAR *)dynselectid,CS_NULLTERM,
+				(CS_CHAR *)NULL,CS_UNUSED),CS_SUCCEED);
+	assertEquals(ct_send(cmd),CS_SUCCEED);
+	if (issybase) {
+		results=ct_results(cmd,&resultstype);
+		assertEquals(results,CS_SUCCEED);
+		assertEquals(resultstype,CS_CMD_SUCCEED);
+		results=ct_results(cmd,&resultstype);
+		assertEquals(results,CS_SUCCEED);
+		assertEquals(resultstype,CS_CMD_DONE);
+	}
+	results=ct_results(cmd,&resultstype);
+	assertEquals(results,CS_END_RESULTS);
+	assertEquals(ct_cancel(NULL,cmd,CS_CANCEL_ALL),CS_SUCCEED);
+	stdoutput.printf("\n");
+
+
+	stdoutput.printf("ct_dynamic: dealloc insert\n");
+	assertEquals(ct_dynamic(cmd,CS_DEALLOC,
+				(CS_CHAR *)dyninsertid,CS_NULLTERM,
+				(CS_CHAR *)NULL,CS_UNUSED),CS_SUCCEED);
+	assertEquals(ct_send(cmd),CS_SUCCEED);
+	if (issybase) {
+		results=ct_results(cmd,&resultstype);
+		assertEquals(results,CS_SUCCEED);
+		assertEquals(resultstype,CS_CMD_SUCCEED);
+		results=ct_results(cmd,&resultstype);
+		assertEquals(results,CS_SUCCEED);
+		assertEquals(resultstype,CS_CMD_DONE);
+	}
+	results=ct_results(cmd,&resultstype);
+	assertEquals(results,CS_END_RESULTS);
+	assertEquals(ct_cancel(NULL,cmd,CS_CANCEL_ALL),CS_SUCCEED);
+	stdoutput.printf("\n");
+
+
+	// These four never reach ct_send.  The ones that cannot be
+	// covered at all are ct_param with a null CS_DATAFMT,
+	// ct_setparam with a null length or indicator pointer,
+	// ct_dynamic with a null id and CS_NULLTERM, ct_command with a
+	// null rpc name, and ct_describe on a zero column result - every
+	// one of them segfaults inside libct.
+	stdoutput.printf("ct_dynamic: negatives\n");
+	assertEquals(ct_dynamic(cmd,CS_EXECUTE,
+				(CS_CHAR *)"dynnosuch",CS_NULLTERM,
+				(CS_CHAR *)NULL,CS_UNUSED),CS_FAIL);
+	assertEquals(ct_dynamic(cmd,CS_DEALLOC,
+				(CS_CHAR *)"dynnosuch",CS_NULLTERM,
+				(CS_CHAR *)NULL,CS_UNUSED),CS_FAIL);
+	assertEquals(ct_dynamic(cmd,CS_DESCRIBE_INPUT,
+				(CS_CHAR *)"dynnosuch",CS_NULLTERM,
+				(CS_CHAR *)NULL,CS_UNUSED),CS_FAIL);
+	assertEquals(ct_dynamic(cmd,999,
+				(CS_CHAR *)"dynnosuch",CS_NULLTERM,
+				(CS_CHAR *)NULL,CS_UNUSED),CS_FAIL);
+	stdoutput.printf("\n");
+
+
+	// Preparing an id that is already live fails at ct_send with no
+	// client message and no server message at all.  ct_results then
+	// returns CS_FAIL rather than a result type.  This block sits
+	// after everything that needs a healthy command, because leaving
+	// the failure neither drained nor cancelled desynchronizes every
+	// block after it.
+	stdoutput.printf("ct_dynamic: prepare a live id twice\n");
+	assertEquals(ct_dynamic(cmd,CS_PREPARE,
+				(CS_CHAR *)dyninsertid,CS_NULLTERM,
+				(CS_CHAR *)dyninsert,CS_NULLTERM),CS_SUCCEED);
+	assertEquals(ct_send(cmd),CS_SUCCEED);
+	results=ct_results(cmd,&resultstype);
+	assertEquals(results,CS_SUCCEED);
+	assertEquals(resultstype,CS_CMD_SUCCEED);
+	results=ct_results(cmd,&resultstype);
+	assertEquals(results,CS_SUCCEED);
+	assertEquals(resultstype,CS_CMD_DONE);
+	results=ct_results(cmd,&resultstype);
+	assertEquals(results,CS_END_RESULTS);
+	assertEquals(ct_cancel(NULL,cmd,CS_CANCEL_ALL),CS_SUCCEED);
+	assertEquals(ct_dynamic(cmd,CS_PREPARE,
+				(CS_CHAR *)dyninsertid,CS_NULLTERM,
+				(CS_CHAR *)dyninsert,CS_NULLTERM),CS_SUCCEED);
+	assertEquals(ct_send(cmd),CS_FAIL);
+	results=ct_results(cmd,&resultstype);
+	assertEquals(results,CS_FAIL);
+	assertEquals(ct_cancel(NULL,cmd,CS_CANCEL_ALL),CS_SUCCEED);
+	assertEquals(ct_dynamic(cmd,CS_DEALLOC,
+				(CS_CHAR *)dyninsertid,CS_NULLTERM,
+				(CS_CHAR *)NULL,CS_UNUSED),CS_SUCCEED);
+	assertEquals(ct_send(cmd),CS_SUCCEED);
+	if (issybase) {
+		results=ct_results(cmd,&resultstype);
+		assertEquals(results,CS_SUCCEED);
+		assertEquals(resultstype,CS_CMD_SUCCEED);
+		results=ct_results(cmd,&resultstype);
+		assertEquals(results,CS_SUCCEED);
+		assertEquals(resultstype,CS_CMD_DONE);
+	}
+	results=ct_results(cmd,&resultstype);
+	assertEquals(results,CS_END_RESULTS);
+	assertEquals(ct_cancel(NULL,cmd,CS_CANCEL_ALL),CS_SUCCEED);
+	stdoutput.printf("\n");
+
+
+	stdoutput.printf("ct_command: after dynamic\n");
+	query="select convert(varchar(20),count(*)) from dyntable";
+	assertEquals(ct_command(cmd,CS_LANG_CMD,
+					query,charstring::getLength(query),
+					CS_UNUSED),CS_SUCCEED);
+	assertEquals(ct_send(cmd),CS_SUCCEED);
+	results=ct_results(cmd,&resultstype);
+	assertEquals(results,CS_SUCCEED);
+	assertEquals(resultstype,CS_ROW_RESULT);
+	bytestring::zero(dyndata[0],1024);
+	assertEquals(ct_bind(cmd,1,&(dynfmt[0]),
+				(CS_VOID *)dyndata[0],
+				&(dyndatalength[0]),
+				&(dynnullindicator[0])),CS_SUCCEED);
+	assertEquals(ct_fetch(cmd,CS_UNUSED,CS_UNUSED,
+					CS_UNUSED,&rowsread),CS_SUCCEED);
+	assertEquals(rowsread,1);
+	assertEquals(dyndata[0],"5");
+	assertEquals(ct_fetch(cmd,CS_UNUSED,CS_UNUSED,
+					CS_UNUSED,&rowsread),CS_END_DATA);
+	results=ct_results(cmd,&resultstype);
+	assertEquals(results,CS_SUCCEED);
+	assertEquals(resultstype,CS_CMD_DONE);
+	results=ct_results(cmd,&resultstype);
+	assertEquals(results,CS_END_RESULTS);
+	assertEquals(ct_cancel(NULL,cmd,CS_CANCEL_ALL),CS_SUCCEED);
+	stdoutput.printf("\n");
+
+
+	// An output parameter's status must be exactly CS_RETURN.
+	// CS_INPUTVALUE|CS_RETURN silently does not mark it output,
+	// because freetds compares status for equality rather than by
+	// bit, and the parameter then never comes back.
+	stdoutput.printf("ct_command: rpc dynproc\n");
+	assertEquals(ct_command(cmd,CS_RPC_CMD,
+				(CS_CHAR *)"dynproc",CS_NULLTERM,
+				CS_UNUSED),CS_SUCCEED);
+	bytestring::zero(&(dynparam[0]),sizeof(CS_DATAFMT));
+	dynparam[0].datatype=CS_INT_TYPE;
+	dynparam[0].maxlength=4;
+	dynparam[0].count=1;
+	charstring::copy(dynparam[0].name,"@inparam");
+	dynparam[0].namelen=8;
+	dynintvalue[0]=2;
+	assertEquals(ct_param(cmd,&(dynparam[0]),
+				(CS_VOID *)&(dynintvalue[0]),
+				sizeof(CS_INT),0),CS_SUCCEED);
+	bytestring::zero(&(dynparam[1]),sizeof(CS_DATAFMT));
+	dynparam[1].datatype=CS_INT_TYPE;
+	dynparam[1].maxlength=4;
+	dynparam[1].count=1;
+	dynparam[1].status=CS_RETURN;
+	charstring::copy(dynparam[1].name,"@outparam");
+	dynparam[1].namelen=9;
+	dynintvalue[1]=0;
+	assertEquals(ct_param(cmd,&(dynparam[1]),
+				(CS_VOID *)&(dynintvalue[1]),
+				sizeof(CS_INT),0),CS_SUCCEED);
+	assertEquals(ct_send(cmd),CS_SUCCEED);
+	stdoutput.printf("\n");
+
+
+	stdoutput.printf("ct_results: rpc rows\n");
+	results=ct_results(cmd,&resultstype);
+	assertEquals(results,CS_SUCCEED);
+	assertEquals(resultstype,CS_ROW_RESULT);
+	ncols=-1;
+	assertEquals(ct_res_info(cmd,CS_NUMDATA,
+					(CS_VOID *)&ncols,CS_UNUSED,
+					(CS_INT *)NULL),CS_SUCCEED);
+	assertEquals(ncols,2);
+	for (CS_INT i=0; i<2; i++) {
+		bytestring::zero(dyndata[i],1024);
+		assertEquals(ct_bind(cmd,i+1,&(dynfmt[i]),
+					(CS_VOID *)dyndata[i],
+					&(dyndatalength[i]),
+					&(dynnullindicator[i])),CS_SUCCEED);
+	}
+	for (CS_INT i=0; i<2; i++) {
+		assertEquals(ct_fetch(cmd,CS_UNUSED,CS_UNUSED,
+					CS_UNUSED,&rowsread),CS_SUCCEED);
+		assertEquals(rowsread,1);
+		char	dynexpectedid[2];
+		dynexpectedid[0]='1'+(char)i;
+		dynexpectedid[1]='\0';
+		assertEquals(dyndata[0],dynexpectedid);
+		assertEquals(dyndata[1],dyncharexpect[i]);
+	}
+	assertEquals(ct_fetch(cmd,CS_UNUSED,CS_UNUSED,
+					CS_UNUSED,&rowsread),CS_END_DATA);
+	results=ct_results(cmd,&resultstype);
+	assertEquals(results,CS_SUCCEED);
+	assertEquals(resultstype,CS_CMD_DONE);
+	stdoutput.printf("\n");
+
+
+	// The return status arrives before the output parameters on both
+	// backends.
+	stdoutput.printf("ct_results: rpc return status\n");
+	results=ct_results(cmd,&resultstype);
+	assertEquals(results,CS_SUCCEED);
+	assertEquals(resultstype,CS_STATUS_RESULT);
+	ncols=-1;
+	assertEquals(ct_res_info(cmd,CS_NUMDATA,
+					(CS_VOID *)&ncols,CS_UNUSED,
+					(CS_INT *)NULL),CS_SUCCEED);
+	assertEquals(ncols,1);
+	bytestring::zero(&(dyndesc[0]),sizeof(CS_DATAFMT));
+	assertEquals(ct_describe(cmd,1,&(dyndesc[0])),CS_SUCCEED);
+	assertEquals(dyndesc[0].name,"");
+	assertEquals(dyndesc[0].namelen,0);
+	assertEquals(dyndesc[0].datatype,CS_INT_TYPE);
+	assertEquals(dyndesc[0].maxlength,4);
+	assertEquals(dyndesc[0].status,0);
+	assertEquals(dyndesc[0].count,1);
+	bytestring::zero(dyndata[0],1024);
+	assertEquals(ct_bind(cmd,1,&(dynfmt[0]),
+				(CS_VOID *)dyndata[0],
+				&(dyndatalength[0]),
+				&(dynnullindicator[0])),CS_SUCCEED);
+	assertEquals(ct_fetch(cmd,CS_UNUSED,CS_UNUSED,
+					CS_UNUSED,&rowsread),CS_SUCCEED);
+	assertEquals(rowsread,1);
+	assertEquals(dyndata[0],"42");
+	assertEquals(ct_fetch(cmd,CS_UNUSED,CS_UNUSED,
+					CS_UNUSED,&rowsread),CS_END_DATA);
+	stdoutput.printf("\n");
+
+
+	// The name comes back only because it was set on the way in.  The
+	// returned status is 0, not CS_RETURN, so an output parameter
+	// cannot be told from the describe - only from the result type.
+	stdoutput.printf("ct_results: rpc output params\n");
+	results=ct_results(cmd,&resultstype);
+	assertEquals(results,CS_SUCCEED);
+	assertEquals(resultstype,CS_PARAM_RESULT);
+	ncols=-1;
+	assertEquals(ct_res_info(cmd,CS_NUMDATA,
+					(CS_VOID *)&ncols,CS_UNUSED,
+					(CS_INT *)NULL),CS_SUCCEED);
+	assertEquals(ncols,1);
+	bytestring::zero(&(dyndesc[0]),sizeof(CS_DATAFMT));
+	assertEquals(ct_describe(cmd,1,&(dyndesc[0])),CS_SUCCEED);
+	assertEquals(dyndesc[0].name,"@outparam");
+	assertEquals(dyndesc[0].namelen,9);
+	assertEquals(dyndesc[0].datatype,CS_INT_TYPE);
+	assertEquals(dyndesc[0].maxlength,4);
+	assertEquals(dyndesc[0].status,0);
+	assertEquals(dyndesc[0].count,1);
+	assertEquals(dyndesc[0].usertype,(issybase)?7:0);
+	bytestring::zero(dyndata[0],1024);
+	assertEquals(ct_bind(cmd,1,&(dynfmt[0]),
+				(CS_VOID *)dyndata[0],
+				&(dyndatalength[0]),
+				&(dynnullindicator[0])),CS_SUCCEED);
+	assertEquals(ct_fetch(cmd,CS_UNUSED,CS_UNUSED,
+					CS_UNUSED,&rowsread),CS_SUCCEED);
+	assertEquals(rowsread,1);
+	assertEquals(dyndata[0],"20");
+	assertEquals(ct_fetch(cmd,CS_UNUSED,CS_UNUSED,
+					CS_UNUSED,&rowsread),CS_END_DATA);
+	results=ct_results(cmd,&resultstype);
+	assertEquals(results,CS_SUCCEED);
+	assertEquals(resultstype,CS_CMD_SUCCEED);
+	results=ct_results(cmd,&resultstype);
+	assertEquals(results,CS_SUCCEED);
+	assertEquals(resultstype,CS_CMD_DONE);
+	results=ct_results(cmd,&resultstype);
+	assertEquals(results,CS_END_RESULTS);
+	assertEquals(ct_cancel(NULL,cmd,CS_CANCEL_ALL),CS_SUCCEED);
+	stdoutput.printf("\n");
+
+	// The five procs this ticket names are tds 7 constructs.  ASE has
+	// none of them, and every call comes back not found with status
+	// -6.  On mssql three of them cannot be driven from ct-lib at all:
+	// sp_prepare, sp_prepexec and sp_executesql want
+	// ntext/nchar/nvarchar and no CS_DATAFMT.datatype in freetds 1.3.3
+	// produces one, so the server rejects the argument type with its
+	// own error number 214.
+	CS_INT		dynrpcstatus=(issybase)?-6:214;
+	const char	*dynrpcparams="@P1 int";
+	const char	*dynrpcstmt="select @P1 as dynval";
+
+
+	stdoutput.printf("ct_command: rpc sp_prepare and sp_prepexec\n");
+	for (CS_INT i=0; i<2; i++) {
+
+		assertEquals(ct_command(cmd,CS_RPC_CMD,
+				(CS_CHAR *)((i)?"sp_prepexec":"sp_prepare"),
+				CS_NULLTERM,CS_UNUSED),CS_SUCCEED);
+
+		bytestring::zero(&(dynparam[0]),sizeof(CS_DATAFMT));
+		dynparam[0].datatype=CS_INT_TYPE;
+		dynparam[0].maxlength=4;
+		dynparam[0].count=1;
+		dynparam[0].status=CS_RETURN;
+		dynintvalue[0]=0;
+		assertEquals(ct_param(cmd,&(dynparam[0]),
+					(CS_VOID *)&(dynintvalue[0]),
+					sizeof(CS_INT),0),CS_SUCCEED);
+
+		bytestring::zero(&(dynparam[1]),sizeof(CS_DATAFMT));
+		dynparam[1].datatype=CS_CHAR_TYPE;
+		dynparam[1].maxlength=64;
+		dynparam[1].count=1;
+		assertEquals(ct_param(cmd,&(dynparam[1]),
+				(CS_VOID *)dynrpcparams,
+				charstring::getLength(dynrpcparams),
+				0),CS_SUCCEED);
+		assertEquals(ct_param(cmd,&(dynparam[1]),
+				(CS_VOID *)dynrpcstmt,
+				charstring::getLength(dynrpcstmt),
+				0),CS_SUCCEED);
+
+		bytestring::zero(&(dynparam[2]),sizeof(CS_DATAFMT));
+		dynparam[2].datatype=CS_INT_TYPE;
+		dynparam[2].maxlength=4;
+		dynparam[2].count=1;
+		dynintvalue[2]=1;
+		assertEquals(ct_param(cmd,&(dynparam[2]),
+					(CS_VOID *)&(dynintvalue[2]),
+					sizeof(CS_INT),0),CS_SUCCEED);
+
+		assertEquals(ct_send(cmd),CS_SUCCEED);
+
+		results=ct_results(cmd,&resultstype);
+		assertEquals(results,CS_SUCCEED);
+		assertEquals(resultstype,CS_STATUS_RESULT);
+		bytestring::zero(dyndata[0],1024);
+		assertEquals(ct_bind(cmd,1,&(dynfmt[0]),
+					(CS_VOID *)dyndata[0],
+					&(dyndatalength[0]),
+					&(dynnullindicator[0])),CS_SUCCEED);
+		assertEquals(ct_fetch(cmd,CS_UNUSED,CS_UNUSED,
+					CS_UNUSED,&rowsread),CS_SUCCEED);
+		assertEquals((CS_INT)charstring::convertToInteger(dyndata[0]),
+							dynrpcstatus);
+		assertEquals(ct_fetch(cmd,CS_UNUSED,CS_UNUSED,
+					CS_UNUSED,&rowsread),CS_END_DATA);
+
+		// mssql got as far as running the procedure, so the
+		// output handle comes back, null.  ASE never found the
+		// procedure at all, so there is no parameter result.
+		if (!issybase) {
+			results=ct_results(cmd,&resultstype);
+			assertEquals(results,CS_SUCCEED);
+			assertEquals(resultstype,CS_PARAM_RESULT);
+			ncols=-1;
+			assertEquals(ct_res_info(cmd,CS_NUMDATA,
+					(CS_VOID *)&ncols,CS_UNUSED,
+					(CS_INT *)NULL),CS_SUCCEED);
+			assertEquals(ncols,1);
+			bytestring::zero(dyndata[0],1024);
+			assertEquals(ct_bind(cmd,1,&(dynfmt[0]),
+					(CS_VOID *)dyndata[0],
+					&(dyndatalength[0]),
+					&(dynnullindicator[0])),CS_SUCCEED);
+			assertEquals(ct_fetch(cmd,CS_UNUSED,CS_UNUSED,
+					CS_UNUSED,&rowsread),CS_SUCCEED);
+			assertEquals(dynnullindicator[0],-1);
+			assertEquals(dyndatalength[0],0);
+			assertEquals(ct_fetch(cmd,CS_UNUSED,CS_UNUSED,
+					CS_UNUSED,&rowsread),CS_END_DATA);
+		}
+
+		results=ct_results(cmd,&resultstype);
+		assertEquals(results,CS_SUCCEED);
+		assertEquals(resultstype,CS_CMD_FAIL);
+		results=ct_results(cmd,&resultstype);
+		assertEquals(results,CS_SUCCEED);
+		assertEquals(resultstype,CS_CMD_DONE);
+		results=ct_results(cmd,&resultstype);
+		assertEquals(results,CS_END_RESULTS);
+		assertEquals(ct_cancel(NULL,cmd,CS_CANCEL_ALL),CS_SUCCEED);
+	}
+	stdoutput.printf("\n");
+
+
+	// sp_executesql has no output parameter, so unlike the two above
+	// it yields no CS_PARAM_RESULT on mssql.
+	stdoutput.printf("ct_command: rpc sp_executesql\n");
+	assertEquals(ct_command(cmd,CS_RPC_CMD,
+				(CS_CHAR *)"sp_executesql",CS_NULLTERM,
+				CS_UNUSED),CS_SUCCEED);
+	bytestring::zero(&(dynparam[0]),sizeof(CS_DATAFMT));
+	dynparam[0].datatype=CS_CHAR_TYPE;
+	dynparam[0].maxlength=64;
+	dynparam[0].count=1;
+	assertEquals(ct_param(cmd,&(dynparam[0]),
+			(CS_VOID *)dynrpcstmt,
+			charstring::getLength(dynrpcstmt),0),CS_SUCCEED);
+	assertEquals(ct_param(cmd,&(dynparam[0]),
+			(CS_VOID *)dynrpcparams,
+			charstring::getLength(dynrpcparams),0),CS_SUCCEED);
+	bytestring::zero(&(dynparam[1]),sizeof(CS_DATAFMT));
+	dynparam[1].datatype=CS_INT_TYPE;
+	dynparam[1].maxlength=4;
+	dynparam[1].count=1;
+	dynintvalue[1]=1;
+	assertEquals(ct_param(cmd,&(dynparam[1]),
+				(CS_VOID *)&(dynintvalue[1]),
+				sizeof(CS_INT),0),CS_SUCCEED);
+	assertEquals(ct_send(cmd),CS_SUCCEED);
+	results=ct_results(cmd,&resultstype);
+	assertEquals(results,CS_SUCCEED);
+	assertEquals(resultstype,CS_STATUS_RESULT);
+	bytestring::zero(dyndata[0],1024);
+	assertEquals(ct_bind(cmd,1,&(dynfmt[0]),
+				(CS_VOID *)dyndata[0],
+				&(dyndatalength[0]),
+				&(dynnullindicator[0])),CS_SUCCEED);
+	assertEquals(ct_fetch(cmd,CS_UNUSED,CS_UNUSED,
+					CS_UNUSED,&rowsread),CS_SUCCEED);
+	assertEquals((CS_INT)charstring::convertToInteger(dyndata[0]),
+							dynrpcstatus);
+	assertEquals(ct_fetch(cmd,CS_UNUSED,CS_UNUSED,
+					CS_UNUSED,&rowsread),CS_END_DATA);
+	results=ct_results(cmd,&resultstype);
+	assertEquals(results,CS_SUCCEED);
+	assertEquals(resultstype,CS_CMD_FAIL);
+	results=ct_results(cmd,&resultstype);
+	assertEquals(results,CS_SUCCEED);
+	assertEquals(resultstype,CS_CMD_DONE);
+	results=ct_results(cmd,&resultstype);
+	assertEquals(results,CS_END_RESULTS);
+	assertEquals(ct_cancel(NULL,cmd,CS_CANCEL_ALL),CS_SUCCEED);
+	stdoutput.printf("\n");
+
+
+	if (issybase) {
+
+		// ASE has neither of these either
+		stdoutput.printf("ct_command: rpc sp_execute "
+						"and sp_unprepare\n");
+		for (CS_INT i=0; i<2; i++) {
+
+			assertEquals(ct_command(cmd,CS_RPC_CMD,
+				(CS_CHAR *)((i)?"sp_unprepare":"sp_execute"),
+				CS_NULLTERM,CS_UNUSED),CS_SUCCEED);
+
+			bytestring::zero(&(dynparam[0]),sizeof(CS_DATAFMT));
+			dynparam[0].datatype=CS_INT_TYPE;
+			dynparam[0].maxlength=4;
+			dynparam[0].count=1;
+			dynintvalue[0]=1;
+			assertEquals(ct_param(cmd,&(dynparam[0]),
+					(CS_VOID *)&(dynintvalue[0]),
+					sizeof(CS_INT),0),CS_SUCCEED);
+
+			assertEquals(ct_send(cmd),CS_SUCCEED);
+			results=ct_results(cmd,&resultstype);
+			assertEquals(results,CS_SUCCEED);
+			assertEquals(resultstype,CS_STATUS_RESULT);
+			bytestring::zero(dyndata[0],1024);
+			assertEquals(ct_bind(cmd,1,&(dynfmt[0]),
+					(CS_VOID *)dyndata[0],
+					&(dyndatalength[0]),
+					&(dynnullindicator[0])),CS_SUCCEED);
+			assertEquals(ct_fetch(cmd,CS_UNUSED,CS_UNUSED,
+					CS_UNUSED,&rowsread),CS_SUCCEED);
+			assertEquals(charstring::convertToInteger(
+							dyndata[0]),-6);
+			assertEquals(ct_fetch(cmd,CS_UNUSED,CS_UNUSED,
+					CS_UNUSED,&rowsread),CS_END_DATA);
+			results=ct_results(cmd,&resultstype);
+			assertEquals(results,CS_SUCCEED);
+			assertEquals(resultstype,CS_CMD_FAIL);
+			results=ct_results(cmd,&resultstype);
+			assertEquals(results,CS_SUCCEED);
+			assertEquals(resultstype,CS_CMD_DONE);
+			results=ct_results(cmd,&resultstype);
+			assertEquals(results,CS_END_RESULTS);
+			assertEquals(ct_cancel(NULL,cmd,CS_CANCEL_ALL),
+								CS_SUCCEED);
+		}
+		stdoutput.printf("\n");
+
+	} else {
+
+		// A language batch is the only way to get a real handle,
+		// since N'' literals are the only route to an nvarchar
+		// from this client.  Once there is one, sp_execute and
+		// sp_unprepare drive fine by name - they take plain ints.
+		stdoutput.printf("ct_command: sp_prepare in a "
+						"language batch\n");
+		query="declare @dynhandle int "
+			"exec sp_prepare @dynhandle output, "
+			"N'@P1 int', N'select @P1 as dynval', 1 "
+			"select convert(varchar(20),@dynhandle) as dynhandle";
+		assertEquals(ct_command(cmd,CS_LANG_CMD,
+					query,charstring::getLength(query),
+					CS_UNUSED),CS_SUCCEED);
+		assertEquals(ct_send(cmd),CS_SUCCEED);
+
+		// sp_prepare with options 1 answers with the prepared
+		// statement's column metadata as an empty result set
+		results=ct_results(cmd,&resultstype);
+		assertEquals(results,CS_SUCCEED);
+		assertEquals(resultstype,CS_ROW_RESULT);
+		ncols=-1;
+		assertEquals(ct_res_info(cmd,CS_NUMDATA,
+					(CS_VOID *)&ncols,CS_UNUSED,
+					(CS_INT *)NULL),CS_SUCCEED);
+		assertEquals(ncols,1);
+		bytestring::zero(&(dyndesc[0]),sizeof(CS_DATAFMT));
+		assertEquals(ct_describe(cmd,1,&(dyndesc[0])),CS_SUCCEED);
+		assertEquals(dyndesc[0].name,"dynval");
+		assertEquals(dyndesc[0].datatype,CS_INT_TYPE);
+		assertEquals(ct_fetch(cmd,CS_UNUSED,CS_UNUSED,
+					CS_UNUSED,&rowsread),CS_END_DATA);
+		results=ct_results(cmd,&resultstype);
+		assertEquals(results,CS_SUCCEED);
+		assertEquals(resultstype,CS_CMD_DONE);
+
+		// A failed rpc leaves its return status cached in
+		// freetds, and the next language batch reports that
+		// instead of its own.  The 214 asserted here belongs to
+		// the sp_executesql above; run after any other command
+		// this batch reports its own 0.  The handle below is not
+		// affected.
+		results=ct_results(cmd,&resultstype);
+		assertEquals(results,CS_SUCCEED);
+		assertEquals(resultstype,CS_STATUS_RESULT);
+		bytestring::zero(dyndata[0],1024);
+		assertEquals(ct_bind(cmd,1,&(dynfmt[0]),
+					(CS_VOID *)dyndata[0],
+					&(dyndatalength[0]),
+					&(dynnullindicator[0])),CS_SUCCEED);
+		assertEquals(ct_fetch(cmd,CS_UNUSED,CS_UNUSED,
+					CS_UNUSED,&rowsread),CS_SUCCEED);
+		assertEquals(dyndata[0],"214");
+		assertEquals(ct_fetch(cmd,CS_UNUSED,CS_UNUSED,
+					CS_UNUSED,&rowsread),CS_END_DATA);
+		results=ct_results(cmd,&resultstype);
+		assertEquals(results,CS_SUCCEED);
+		assertEquals(resultstype,CS_CMD_SUCCEED);
+		results=ct_results(cmd,&resultstype);
+		assertEquals(results,CS_SUCCEED);
+		assertEquals(resultstype,CS_CMD_DONE);
+
+		results=ct_results(cmd,&resultstype);
+		assertEquals(results,CS_SUCCEED);
+		assertEquals(resultstype,CS_ROW_RESULT);
+		bytestring::zero(dyndata[0],1024);
+		assertEquals(ct_bind(cmd,1,&(dynfmt[0]),
+					(CS_VOID *)dyndata[0],
+					&(dyndatalength[0]),
+					&(dynnullindicator[0])),CS_SUCCEED);
+		assertEquals(ct_fetch(cmd,CS_UNUSED,CS_UNUSED,
+					CS_UNUSED,&rowsread),CS_SUCCEED);
+		assertEquals(rowsread,1);
+
+		// The server picks the handle, so only that it is usable
+		// is asserted, never what it equals.
+		CS_INT	dynhandle=charstring::convertToInteger(dyndata[0]);
+		assertTrue(dynhandle>0);
+		assertEquals(dynnullindicator[0],0);
+		assertEquals(ct_fetch(cmd,CS_UNUSED,CS_UNUSED,
+					CS_UNUSED,&rowsread),CS_END_DATA);
+		results=ct_results(cmd,&resultstype);
+		assertEquals(results,CS_SUCCEED);
+		assertEquals(resultstype,CS_CMD_DONE);
+		results=ct_results(cmd,&resultstype);
+		assertEquals(results,CS_END_RESULTS);
+		assertEquals(ct_cancel(NULL,cmd,CS_CANCEL_ALL),CS_SUCCEED);
+		stdoutput.printf("\n");
+
+
+		stdoutput.printf("ct_command: rpc sp_execute\n");
+		for (CS_INT i=0; i<2; i++) {
+
+			assertEquals(ct_command(cmd,CS_RPC_CMD,
+					(CS_CHAR *)"sp_execute",CS_NULLTERM,
+					CS_UNUSED),CS_SUCCEED);
+
+			bytestring::zero(&(dynparam[0]),sizeof(CS_DATAFMT));
+			dynparam[0].datatype=CS_INT_TYPE;
+			dynparam[0].maxlength=4;
+			dynparam[0].count=1;
+			dynintvalue[0]=dynhandle;
+			assertEquals(ct_param(cmd,&(dynparam[0]),
+					(CS_VOID *)&(dynintvalue[0]),
+					sizeof(CS_INT),0),CS_SUCCEED);
+			dynintvalue[1]=77+i;
+			assertEquals(ct_param(cmd,&(dynparam[0]),
+					(CS_VOID *)&(dynintvalue[1]),
+					sizeof(CS_INT),0),CS_SUCCEED);
+
+			assertEquals(ct_send(cmd),CS_SUCCEED);
+			results=ct_results(cmd,&resultstype);
+			assertEquals(results,CS_SUCCEED);
+			assertEquals(resultstype,CS_ROW_RESULT);
+			bytestring::zero(dyndata[0],1024);
+			assertEquals(ct_bind(cmd,1,&(dynfmt[0]),
+					(CS_VOID *)dyndata[0],
+					&(dyndatalength[0]),
+					&(dynnullindicator[0])),CS_SUCCEED);
+			assertEquals(ct_fetch(cmd,CS_UNUSED,CS_UNUSED,
+					CS_UNUSED,&rowsread),CS_SUCCEED);
+			assertEquals(rowsread,1);
+			assertEquals(charstring::convertToInteger(
+						dyndata[0]),77+i);
+			assertEquals(ct_fetch(cmd,CS_UNUSED,CS_UNUSED,
+					CS_UNUSED,&rowsread),CS_END_DATA);
+			results=ct_results(cmd,&resultstype);
+			assertEquals(results,CS_SUCCEED);
+			assertEquals(resultstype,CS_CMD_DONE);
+			results=ct_results(cmd,&resultstype);
+			assertEquals(results,CS_SUCCEED);
+			assertEquals(resultstype,CS_STATUS_RESULT);
+			bytestring::zero(dyndata[0],1024);
+			assertEquals(ct_bind(cmd,1,&(dynfmt[0]),
+					(CS_VOID *)dyndata[0],
+					&(dyndatalength[0]),
+					&(dynnullindicator[0])),CS_SUCCEED);
+			assertEquals(ct_fetch(cmd,CS_UNUSED,CS_UNUSED,
+					CS_UNUSED,&rowsread),CS_SUCCEED);
+			assertEquals(dyndata[0],"0");
+			assertEquals(ct_fetch(cmd,CS_UNUSED,CS_UNUSED,
+					CS_UNUSED,&rowsread),CS_END_DATA);
+			results=ct_results(cmd,&resultstype);
+			assertEquals(results,CS_SUCCEED);
+			assertEquals(resultstype,CS_CMD_SUCCEED);
+			results=ct_results(cmd,&resultstype);
+			assertEquals(results,CS_SUCCEED);
+			assertEquals(resultstype,CS_CMD_DONE);
+			results=ct_results(cmd,&resultstype);
+			assertEquals(results,CS_END_RESULTS);
+			assertEquals(ct_cancel(NULL,cmd,CS_CANCEL_ALL),
+								CS_SUCCEED);
+		}
+		stdoutput.printf("\n");
+
+
+		stdoutput.printf("ct_command: rpc sp_unprepare\n");
+		assertEquals(ct_command(cmd,CS_RPC_CMD,
+				(CS_CHAR *)"sp_unprepare",CS_NULLTERM,
+				CS_UNUSED),CS_SUCCEED);
+		bytestring::zero(&(dynparam[0]),sizeof(CS_DATAFMT));
+		dynparam[0].datatype=CS_INT_TYPE;
+		dynparam[0].maxlength=4;
+		dynparam[0].count=1;
+		dynintvalue[0]=dynhandle;
+		assertEquals(ct_param(cmd,&(dynparam[0]),
+					(CS_VOID *)&(dynintvalue[0]),
+					sizeof(CS_INT),0),CS_SUCCEED);
+		assertEquals(ct_send(cmd),CS_SUCCEED);
+		results=ct_results(cmd,&resultstype);
+		assertEquals(results,CS_SUCCEED);
+		assertEquals(resultstype,CS_STATUS_RESULT);
+		bytestring::zero(dyndata[0],1024);
+		assertEquals(ct_bind(cmd,1,&(dynfmt[0]),
+					(CS_VOID *)dyndata[0],
+					&(dyndatalength[0]),
+					&(dynnullindicator[0])),CS_SUCCEED);
+		assertEquals(ct_fetch(cmd,CS_UNUSED,CS_UNUSED,
+					CS_UNUSED,&rowsread),CS_SUCCEED);
+		assertEquals(dyndata[0],"0");
+		assertEquals(ct_fetch(cmd,CS_UNUSED,CS_UNUSED,
+					CS_UNUSED,&rowsread),CS_END_DATA);
+		results=ct_results(cmd,&resultstype);
+		assertEquals(results,CS_SUCCEED);
+		assertEquals(resultstype,CS_CMD_SUCCEED);
+		results=ct_results(cmd,&resultstype);
+		assertEquals(results,CS_SUCCEED);
+		assertEquals(resultstype,CS_CMD_DONE);
+		results=ct_results(cmd,&resultstype);
+		assertEquals(results,CS_END_RESULTS);
+		assertEquals(ct_cancel(NULL,cmd,CS_CANCEL_ALL),CS_SUCCEED);
+		stdoutput.printf("\n");
+
+
+		// the handle is gone, so the call that worked twice above
+		// now returns the server's own error number
+		stdoutput.printf("ct_command: rpc sp_execute "
+						"after unprepare\n");
+		assertEquals(ct_command(cmd,CS_RPC_CMD,
+				(CS_CHAR *)"sp_execute",CS_NULLTERM,
+				CS_UNUSED),CS_SUCCEED);
+		bytestring::zero(&(dynparam[0]),sizeof(CS_DATAFMT));
+		dynparam[0].datatype=CS_INT_TYPE;
+		dynparam[0].maxlength=4;
+		dynparam[0].count=1;
+		dynintvalue[0]=dynhandle;
+		assertEquals(ct_param(cmd,&(dynparam[0]),
+					(CS_VOID *)&(dynintvalue[0]),
+					sizeof(CS_INT),0),CS_SUCCEED);
+		dynintvalue[1]=77;
+		assertEquals(ct_param(cmd,&(dynparam[0]),
+					(CS_VOID *)&(dynintvalue[1]),
+					sizeof(CS_INT),0),CS_SUCCEED);
+		assertEquals(ct_send(cmd),CS_SUCCEED);
+		results=ct_results(cmd,&resultstype);
+		assertEquals(results,CS_SUCCEED);
+		assertEquals(resultstype,CS_STATUS_RESULT);
+		bytestring::zero(dyndata[0],1024);
+		assertEquals(ct_bind(cmd,1,&(dynfmt[0]),
+					(CS_VOID *)dyndata[0],
+					&(dyndatalength[0]),
+					&(dynnullindicator[0])),CS_SUCCEED);
+		assertEquals(ct_fetch(cmd,CS_UNUSED,CS_UNUSED,
+					CS_UNUSED,&rowsread),CS_SUCCEED);
+		assertEquals(dyndata[0],"8179");
+		assertEquals(ct_fetch(cmd,CS_UNUSED,CS_UNUSED,
+					CS_UNUSED,&rowsread),CS_END_DATA);
+		results=ct_results(cmd,&resultstype);
+		assertEquals(results,CS_SUCCEED);
+		assertEquals(resultstype,CS_CMD_FAIL);
+		results=ct_results(cmd,&resultstype);
+		assertEquals(results,CS_SUCCEED);
+		assertEquals(resultstype,CS_CMD_DONE);
+		results=ct_results(cmd,&resultstype);
+		assertEquals(results,CS_END_RESULTS);
+		assertEquals(ct_cancel(NULL,cmd,CS_CANCEL_ALL),CS_SUCCEED);
+		stdoutput.printf("\n");
+	}
+
+
+	stdoutput.printf("ct_command: rpc no such procedure\n");
+	assertEquals(ct_command(cmd,CS_RPC_CMD,
+				(CS_CHAR *)"dynnosuchproc",CS_NULLTERM,
+				CS_UNUSED),CS_SUCCEED);
+	assertEquals(ct_send(cmd),CS_SUCCEED);
+	if (issybase) {
+		results=ct_results(cmd,&resultstype);
+		assertEquals(results,CS_SUCCEED);
+		assertEquals(resultstype,CS_STATUS_RESULT);
+		bytestring::zero(dyndata[0],1024);
+		assertEquals(ct_bind(cmd,1,&(dynfmt[0]),
+					(CS_VOID *)dyndata[0],
+					&(dyndatalength[0]),
+					&(dynnullindicator[0])),CS_SUCCEED);
+		assertEquals(ct_fetch(cmd,CS_UNUSED,CS_UNUSED,
+					CS_UNUSED,&rowsread),CS_SUCCEED);
+		assertEquals(dyndata[0],"-6");
+		assertEquals(ct_fetch(cmd,CS_UNUSED,CS_UNUSED,
+					CS_UNUSED,&rowsread),CS_END_DATA);
+	}
+	results=ct_results(cmd,&resultstype);
+	assertEquals(results,CS_SUCCEED);
+	assertEquals(resultstype,CS_CMD_FAIL);
+	results=ct_results(cmd,&resultstype);
+	assertEquals(results,CS_SUCCEED);
+	assertEquals(resultstype,CS_CMD_DONE);
+	results=ct_results(cmd,&resultstype);
+	assertEquals(results,CS_END_RESULTS);
+	assertEquals(ct_cancel(NULL,cmd,CS_CANCEL_ALL),CS_SUCCEED);
+	stdoutput.printf("\n");
+
+
+	stdoutput.printf("ct_command: drop procedure\n");
+	query="drop procedure dynproc";
+	assertEquals(ct_command(cmd,CS_LANG_CMD,
+					query,charstring::getLength(query),
+					CS_UNUSED),CS_SUCCEED);
+	assertEquals(ct_send(cmd),CS_SUCCEED);
+	results=ct_results(cmd,&resultstype);
+	assertEquals(results,CS_SUCCEED);
+	assertEquals(resultstype,CS_CMD_SUCCEED);
+	results=ct_results(cmd,&resultstype);
+	assertEquals(results,CS_SUCCEED);
+	assertEquals(resultstype,CS_CMD_DONE);
+	results=ct_results(cmd,&resultstype);
+	assertEquals(results,CS_END_RESULTS);
+	assertEquals(ct_cancel(NULL,cmd,CS_CANCEL_ALL),CS_SUCCEED);
+	stdoutput.printf("\n");
+
+
+	stdoutput.printf("ct_command: drop\n");
+	query="drop table dyntable";
+	assertEquals(ct_command(cmd,CS_LANG_CMD,
+					query,charstring::getLength(query),
+					CS_UNUSED),CS_SUCCEED);
+	assertEquals(ct_send(cmd),CS_SUCCEED);
+	results=ct_results(cmd,&resultstype);
+	assertEquals(results,CS_SUCCEED);
+	assertEquals(resultstype,CS_CMD_SUCCEED);
+	results=ct_results(cmd,&resultstype);
+	assertEquals(results,CS_SUCCEED);
+	assertEquals(resultstype,CS_CMD_DONE);
+	results=ct_results(cmd,&resultstype);
+	assertEquals(results,CS_END_RESULTS);
+	assertEquals(ct_cancel(NULL,cmd,CS_CANCEL_ALL),CS_SUCCEED);
+	stdoutput.printf("\n");
+
+
 	// The sections below are the coverage this test still owes, each
 	// tracked by its own ticket.  They are named here rather than left
 	// out so the gaps are visible in the output, the way
@@ -3318,10 +4758,6 @@ int	main(int argc, char **argv) {
 	stdoutput.printf("\n=============== Cursors ===============\n\n");
 	// #8790 - no ct_cursor coverage yet
 	stdoutput.printf("not covered yet - see trac #8790\n\n");
-
-	stdoutput.printf("\n============= RPC and Prepared ============\n\n");
-	// #8791 - no ct_dynamic or sp_prepare/sp_execute coverage yet
-	stdoutput.printf("not covered yet - see trac #8791\n\n");
 
 	stdoutput.printf("\n================ Binds ================\n\n");
 	// #8792 - no ct_param coverage yet
