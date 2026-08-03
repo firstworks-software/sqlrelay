@@ -4750,14 +4750,1510 @@ int	main(int argc, char **argv) {
 	stdoutput.printf("\n");
 
 
-	// The section below is the coverage this test still owes.  It is
-	// named here rather than left out so the gap is visible in the
-	// output, the way test/protocol/mysql/mysql.cpp names its API
-	// sections.
-
 	stdoutput.printf("\n=============== Cursors ===============\n\n");
-	// #8790 - no ct_cursor coverage yet
-	stdoutput.printf("not covered yet - see trac #8790\n\n");
+
+
+	query="drop table cursortable";
+	ct_command(cmd,CS_LANG_CMD,query,charstring::getLength(query),CS_UNUSED);
+	ct_send(cmd);
+	while (ct_results(cmd,&resultstype)==CS_SUCCEED) {}
+	ct_cancel(NULL,cmd,CS_CANCEL_ALL);
+
+
+	stdoutput.printf("ct_command: create\n");
+	if (issybase) {
+		query="create table cursortable ("
+				"cursid int null, "
+				"cursname varchar(20) null, "
+				"cursval int null"
+				") lock datarows";
+	} else {
+		query="create table cursortable ("
+				"cursid int null, "
+				"cursname varchar(20) null, "
+				"cursval int null"
+				")";
+	}
+	assertEquals(ct_command(cmd,CS_LANG_CMD,
+					query,charstring::getLength(query),
+					CS_UNUSED),CS_SUCCEED);
+	assertEquals(ct_send(cmd),CS_SUCCEED);
+	results=ct_results(cmd,&resultstype);
+	assertEquals(results,CS_SUCCEED);
+	assertEquals(resultstype,CS_CMD_SUCCEED);
+	results=ct_results(cmd,&resultstype);
+	assertEquals(results,CS_SUCCEED);
+	assertEquals(resultstype,CS_CMD_DONE);
+	results=ct_results(cmd,&resultstype);
+	assertEquals(results,CS_END_RESULTS);
+	assertEquals(ct_cancel(NULL,cmd,CS_CANCEL_ALL),CS_SUCCEED);
+	stdoutput.printf("\n");
+
+
+	// four rows, one per cursid, so every fetch below can be checked
+	// against a fixed value rather than against a count
+	stdoutput.printf("ct_command: insert\n");
+	const char	*cursinsert[4]={
+			"insert into cursortable values (1,'one',10)",
+			"insert into cursortable values (2,'two',20)",
+			"insert into cursortable values (3,'three',30)",
+			"insert into cursortable values (4,'four',40)"};
+	for (CS_INT i=0; i<4; i++) {
+		assertEquals(ct_command(cmd,CS_LANG_CMD,
+				(CS_CHAR *)cursinsert[i],
+				charstring::getLength(cursinsert[i]),
+				CS_UNUSED),CS_SUCCEED);
+		assertEquals(ct_send(cmd),CS_SUCCEED);
+		results=ct_results(cmd,&resultstype);
+		assertEquals(results,CS_SUCCEED);
+		assertEquals(resultstype,CS_CMD_SUCCEED);
+		assertEquals(ct_res_info(cmd,CS_ROW_COUNT,
+					(CS_VOID *)&affectedrows,CS_UNUSED,
+					(CS_INT *)NULL),CS_SUCCEED);
+		assertEquals(affectedrows,1);
+		results=ct_results(cmd,&resultstype);
+		assertEquals(results,CS_SUCCEED);
+		assertEquals(resultstype,CS_CMD_DONE);
+		results=ct_results(cmd,&resultstype);
+		assertEquals(results,CS_END_RESULTS);
+		assertEquals(ct_cancel(NULL,cmd,CS_CANCEL_ALL),CS_SUCCEED);
+	}
+	stdoutput.printf("\n");
+
+
+	const char	*cursid="curs1";
+	const char	*cursselect="select cursid, cursname, cursval "
+					"from cursortable order by cursid";
+	const char	*cursexpectid[4]={"1","2","3","4"};
+	const char	*cursexpectname[4]={"one","two","three","four"};
+	const char	*cursexpectval[4]={"10","20","30","40"};
+	CS_INT		cursexpectnamelen[4]={4,4,6,5};
+
+	CS_DATAFMT	cursdesc[3];
+	CS_DATAFMT	cursfmt[3];
+	char		*cursdata[3];
+	CS_INT		cursdatalength[3];
+	CS_SMALLINT	cursnullindicator[3];
+	for (CS_INT i=0; i<3; i++) {
+		cursdata[i]=new char[256];
+	}
+
+
+	// The three ct_cursor calls are batched and sent once, the way
+	// src/connections/freetds.cpp:4066, 4587 and 4594 do it.  The two
+	// backends split on where the traffic lands.  On tds 7 the declare
+	// and the rows are purely client side and produce no result sets
+	// at all - everything appears at the open.  On tds 5 each of the
+	// three round-trips, which is where sybase's two extra
+	// CS_CMD_SUCCEED and CS_CMD_DONE pairs come from.  Per-call
+	// ct_send works too, and gives the same split.
+	//
+	// CS_READ_ONLY and CS_UNUSED behave identically here on both
+	// backends, so freetds.cpp:4072 having CS_READ_ONLY commented out
+	// while src/connections/sap.cpp:2855 passes it costs nothing on
+	// the read path.
+	stdoutput.printf("ct_cursor: declare, rows, open\n");
+	assertEquals(ct_cursor(cmd,CS_CURSOR_DECLARE,
+				(CS_CHAR *)cursid,CS_NULLTERM,
+				(CS_CHAR *)cursselect,CS_NULLTERM,
+				CS_READ_ONLY),CS_SUCCEED);
+	assertEquals(ct_cursor(cmd,CS_CURSOR_ROWS,
+				(CS_CHAR *)NULL,CS_UNUSED,
+				(CS_CHAR *)NULL,CS_UNUSED,
+				(CS_INT)1),CS_SUCCEED);
+	assertEquals(ct_cursor(cmd,CS_CURSOR_OPEN,
+				(CS_CHAR *)NULL,CS_UNUSED,
+				(CS_CHAR *)NULL,CS_UNUSED,
+				CS_UNUSED),CS_SUCCEED);
+	assertEquals(ct_send(cmd),CS_SUCCEED);
+	if (issybase) {
+		for (CS_INT i=0; i<2; i++) {
+			results=ct_results(cmd,&resultstype);
+			assertEquals(results,CS_SUCCEED);
+			assertEquals(resultstype,CS_CMD_SUCCEED);
+			results=ct_results(cmd,&resultstype);
+			assertEquals(results,CS_SUCCEED);
+			assertEquals(resultstype,CS_CMD_DONE);
+		}
+	}
+	results=ct_results(cmd,&resultstype);
+	assertEquals(results,CS_SUCCEED);
+	// a cursor's rows arrive as CS_CURSOR_RESULT on both backends, not
+	// as the CS_ROW_RESULT a plain language select gives
+	assertEquals(resultstype,CS_CURSOR_RESULT);
+	stdoutput.printf("\n");
+
+
+	// Two splits in the cursor result's column metadata.  status is
+	// CS_UPDATABLE|CS_CANBENULL on mssql and CS_CANBENULL alone on
+	// ASE, so only mssql marks a read-only cursor's columns updatable.
+	// usertype is 0 on every mssql column and the ASE syscolumns id on
+	// sybase - int 7, varchar 2 - which is the same split #8779
+	// recorded for language commands.
+	stdoutput.printf("ct_describe: cursor result\n");
+	ncols=-1;
+	assertEquals(ct_res_info(cmd,CS_NUMDATA,
+					(CS_VOID *)&ncols,CS_UNUSED,
+					(CS_INT *)NULL),CS_SUCCEED);
+	assertEquals(ncols,3);
+	const char	*cursdescname[3]={"cursid","cursname","cursval"};
+	CS_INT		cursdescnamelen[3]={6,8,7};
+	CS_INT		cursdesctype[3]={CS_INT_TYPE,CS_CHAR_TYPE,CS_INT_TYPE};
+	CS_INT		cursdescmaxlength[3]={4,20,4};
+	CS_INT		cursdescusertype[3]={7,2,7};
+	for (CS_INT i=0; i<3; i++) {
+		bytestring::zero(&(cursdesc[i]),sizeof(CS_DATAFMT));
+		assertEquals(ct_describe(cmd,i+1,&(cursdesc[i])),CS_SUCCEED);
+		assertEquals(cursdesc[i].name,cursdescname[i]);
+		assertEquals(cursdesc[i].namelen,cursdescnamelen[i]);
+		assertEquals(cursdesc[i].datatype,cursdesctype[i]);
+		assertEquals(cursdesc[i].format,0);
+		assertEquals(cursdesc[i].maxlength,cursdescmaxlength[i]);
+		assertEquals(cursdesc[i].precision,0);
+		assertEquals(cursdesc[i].scale,0);
+		assertEquals(cursdesc[i].status,
+				(issybase)?CS_CANBENULL:
+					(CS_UPDATABLE|CS_CANBENULL));
+		assertEquals(cursdesc[i].count,1);
+		assertEquals(cursdesc[i].usertype,
+				(issybase)?cursdescusertype[i]:0);
+		assertTrue(cursdesc[i].locale==NULL);
+	}
+	stdoutput.printf("\n");
+
+
+	// CS_ROW_COUNT is not a row count on a cursor result.  mssql says
+	// 0 before the first fetch, ASE says -1, and both say 0 once the
+	// fetch loop has run out.  A plain language select gives -1
+	// throughout on both, so nothing here can be read as a count.
+	stdoutput.printf("ct_res_info: cursor row count before fetch\n");
+	affectedrows=-987654;
+	assertEquals(ct_res_info(cmd,CS_ROW_COUNT,
+					(CS_VOID *)&affectedrows,CS_UNUSED,
+					(CS_INT *)NULL),CS_SUCCEED);
+	assertEquals(affectedrows,(issybase)?-1:0);
+	stdoutput.printf("\n");
+
+
+	// The whole CS_CUR_ family - CS_CUR_STATUS 9126, CS_CUR_ID 9127,
+	// CS_CUR_NAME 9128 and CS_CUR_ROWCOUNT 9129 - is unimplemented in
+	// freetds 1.3.3.  ct_res_info falls through to its default case,
+	// writes "Unknown type in ct_res_info" to stderr and returns
+	// CS_FAIL without touching either the value buffer or the outlen,
+	// so the sentinels below survive.  Neither message callback fires.
+	// That leaves no cursor state introspection at all through ct-lib,
+	// and no CS_CURSTAT_ bit is ever observable.  Pinned rather than
+	// skipped, so a freetds that implements it shows up here.
+	stdoutput.printf("ct_res_info: CS_CUR_ family is unimplemented\n");
+	CS_INT	cursinfo[4]={CS_CUR_STATUS,CS_CUR_ID,
+					CS_CUR_NAME,CS_CUR_ROWCOUNT};
+	for (CS_INT i=0; i<4; i++) {
+		CS_INT	cursinfovalue=-987654;
+		CS_INT	cursinfolen=-987654;
+		assertEquals(ct_res_info(cmd,cursinfo[i],
+					(CS_VOID *)&cursinfovalue,CS_UNUSED,
+					&cursinfolen),CS_FAIL);
+		assertEquals(cursinfovalue,-987654);
+		assertEquals(cursinfolen,-987654);
+	}
+	stdoutput.printf("\n");
+
+
+	// CS_DATAFMT.count has to be at least the CS_CURSOR_ROWS count
+	// asked for above.  When it is not, ct_fetch returns CS_FAIL with
+	// rowsread 0 and no client or server message at all.
+	// src/connections/freetds.cpp:4590 and 3881 both take their number
+	// from getFetchAtOnce(), which is the only reason they agree.
+	stdoutput.printf("ct_bind\n");
+	for (CS_INT i=0; i<3; i++) {
+		bytestring::zero(&(cursfmt[i]),sizeof(CS_DATAFMT));
+		cursfmt[i].datatype=CS_CHAR_TYPE;
+		cursfmt[i].format=CS_FMT_NULLTERM;
+		cursfmt[i].maxlength=256;
+		cursfmt[i].count=1;
+		assertEquals(ct_bind(cmd,i+1,&(cursfmt[i]),
+					(CS_VOID *)cursdata[i],
+					&(cursdatalength[i]),
+					&(cursnullindicator[i])),CS_SUCCEED);
+	}
+	stdoutput.printf("\n");
+
+
+	// the datalengths include the terminator, since the binds are
+	// CS_FMT_NULLTERM
+	stdoutput.printf("ct_fetch\n");
+	for (CS_INT i=0; i<4; i++) {
+		bytestring::zero(cursdata[0],256);
+		bytestring::zero(cursdata[1],256);
+		bytestring::zero(cursdata[2],256);
+		assertEquals(ct_fetch(cmd,CS_UNUSED,CS_UNUSED,
+					CS_UNUSED,&rowsread),CS_SUCCEED);
+		assertEquals(rowsread,1);
+		assertEquals(cursdata[0],cursexpectid[i]);
+		assertEquals(cursdatalength[0],2);
+		assertEquals(cursnullindicator[0],0);
+		assertEquals(cursdata[1],cursexpectname[i]);
+		assertEquals(cursdatalength[1],cursexpectnamelen[i]);
+		assertEquals(cursnullindicator[1],0);
+		assertEquals(cursdata[2],cursexpectval[i]);
+		assertEquals(cursdatalength[2],3);
+		assertEquals(cursnullindicator[2],0);
+	}
+	assertEquals(ct_fetch(cmd,CS_UNUSED,CS_UNUSED,
+					CS_UNUSED,&rowsread),CS_END_DATA);
+	assertEquals(rowsread,0);
+	affectedrows=-987654;
+	assertEquals(ct_res_info(cmd,CS_ROW_COUNT,
+					(CS_VOID *)&affectedrows,CS_UNUSED,
+					(CS_INT *)NULL),CS_SUCCEED);
+	assertEquals(affectedrows,0);
+	results=ct_results(cmd,&resultstype);
+	assertEquals(results,CS_SUCCEED);
+	assertEquals(resultstype,CS_CMD_SUCCEED);
+	results=ct_results(cmd,&resultstype);
+	assertEquals(results,CS_SUCCEED);
+	assertEquals(resultstype,CS_CMD_DONE);
+	results=ct_results(cmd,&resultstype);
+	assertEquals(results,CS_END_RESULTS);
+	stdoutput.printf("\n");
+
+
+	// CS_DEALLOC as the option is the form
+	// src/connections/freetds.cpp:5193 uses.  It is load bearing on
+	// ASE - a close without it leaves the name declared, and a later
+	// declare of the same name draws server error 51.  MSSQL does not
+	// care.  The close itself produces no result sets at all on mssql.
+	stdoutput.printf("ct_cursor: close and dealloc\n");
+	assertEquals(ct_cursor(cmd,CS_CURSOR_CLOSE,
+				(CS_CHAR *)NULL,CS_UNUSED,
+				(CS_CHAR *)NULL,CS_UNUSED,
+				CS_DEALLOC),CS_SUCCEED);
+	assertEquals(ct_send(cmd),CS_SUCCEED);
+	if (issybase) {
+		results=ct_results(cmd,&resultstype);
+		assertEquals(results,CS_SUCCEED);
+		assertEquals(resultstype,CS_CMD_SUCCEED);
+		results=ct_results(cmd,&resultstype);
+		assertEquals(results,CS_SUCCEED);
+		assertEquals(resultstype,CS_CMD_DONE);
+	}
+	results=ct_results(cmd,&resultstype);
+	assertEquals(results,CS_END_RESULTS);
+	assertEquals(ct_cancel(NULL,cmd,CS_CANCEL_ALL),CS_SUCCEED);
+	stdoutput.printf("\n");
+
+
+	const char	*cursid2="curs2";
+	CS_DATAFMT	cursarrayfmt[3];
+	char		*cursarraydata[3];
+	CS_INT		cursarraylength[3][5];
+	CS_SMALLINT	cursarraynull[3][5];
+	for (CS_INT i=0; i<3; i++) {
+		cursarraydata[i]=new char[5*32];
+	}
+
+
+	// A CS_CURSOR_ROWS above 1 array-fetches.  One ct_fetch returns
+	// every row the cursor has, up to that count, and says how many in
+	// rowsread.  The buffer has to be maxlength times count, and the
+	// per-row lengths and null indicators come back as arrays.
+	stdoutput.printf("ct_cursor: array fetch\n");
+	assertEquals(ct_cursor(cmd,CS_CURSOR_DECLARE,
+				(CS_CHAR *)cursid2,CS_NULLTERM,
+				(CS_CHAR *)cursselect,CS_NULLTERM,
+				CS_READ_ONLY),CS_SUCCEED);
+	assertEquals(ct_cursor(cmd,CS_CURSOR_ROWS,
+				(CS_CHAR *)NULL,CS_UNUSED,
+				(CS_CHAR *)NULL,CS_UNUSED,
+				(CS_INT)5),CS_SUCCEED);
+	assertEquals(ct_cursor(cmd,CS_CURSOR_OPEN,
+				(CS_CHAR *)NULL,CS_UNUSED,
+				(CS_CHAR *)NULL,CS_UNUSED,
+				CS_UNUSED),CS_SUCCEED);
+	assertEquals(ct_send(cmd),CS_SUCCEED);
+	if (issybase) {
+		for (CS_INT i=0; i<2; i++) {
+			results=ct_results(cmd,&resultstype);
+			assertEquals(results,CS_SUCCEED);
+			assertEquals(resultstype,CS_CMD_SUCCEED);
+			results=ct_results(cmd,&resultstype);
+			assertEquals(results,CS_SUCCEED);
+			assertEquals(resultstype,CS_CMD_DONE);
+		}
+	}
+	results=ct_results(cmd,&resultstype);
+	assertEquals(results,CS_SUCCEED);
+	assertEquals(resultstype,CS_CURSOR_RESULT);
+	for (CS_INT i=0; i<3; i++) {
+		bytestring::zero(cursarraydata[i],5*32);
+		bytestring::zero(&(cursarrayfmt[i]),sizeof(CS_DATAFMT));
+		cursarrayfmt[i].datatype=CS_CHAR_TYPE;
+		cursarrayfmt[i].format=CS_FMT_NULLTERM;
+		cursarrayfmt[i].maxlength=32;
+		cursarrayfmt[i].count=5;
+		assertEquals(ct_bind(cmd,i+1,&(cursarrayfmt[i]),
+					(CS_VOID *)cursarraydata[i],
+					cursarraylength[i],
+					cursarraynull[i]),CS_SUCCEED);
+	}
+	assertEquals(ct_fetch(cmd,CS_UNUSED,CS_UNUSED,
+					CS_UNUSED,&rowsread),CS_SUCCEED);
+	assertEquals(rowsread,4);
+	for (CS_INT i=0; i<4; i++) {
+		assertEquals(cursarraydata[0]+i*32,cursexpectid[i]);
+		assertEquals(cursarraylength[0][i],2);
+		assertEquals(cursarraynull[0][i],0);
+		assertEquals(cursarraydata[1]+i*32,cursexpectname[i]);
+		assertEquals(cursarraylength[1][i],cursexpectnamelen[i]);
+		assertEquals(cursarraynull[1][i],0);
+		assertEquals(cursarraydata[2]+i*32,cursexpectval[i]);
+		assertEquals(cursarraylength[2][i],3);
+		assertEquals(cursarraynull[2][i],0);
+	}
+	assertEquals(ct_fetch(cmd,CS_UNUSED,CS_UNUSED,
+					CS_UNUSED,&rowsread),CS_END_DATA);
+	assertEquals(rowsread,0);
+	results=ct_results(cmd,&resultstype);
+	assertEquals(results,CS_SUCCEED);
+	assertEquals(resultstype,CS_CMD_SUCCEED);
+	results=ct_results(cmd,&resultstype);
+	assertEquals(results,CS_SUCCEED);
+	assertEquals(resultstype,CS_CMD_DONE);
+	results=ct_results(cmd,&resultstype);
+	assertEquals(results,CS_END_RESULTS);
+	stdoutput.printf("\n");
+
+
+	stdoutput.printf("ct_cursor: close and dealloc\n");
+	assertEquals(ct_cursor(cmd,CS_CURSOR_CLOSE,
+				(CS_CHAR *)NULL,CS_UNUSED,
+				(CS_CHAR *)NULL,CS_UNUSED,
+				CS_DEALLOC),CS_SUCCEED);
+	assertEquals(ct_send(cmd),CS_SUCCEED);
+	if (issybase) {
+		results=ct_results(cmd,&resultstype);
+		assertEquals(results,CS_SUCCEED);
+		assertEquals(resultstype,CS_CMD_SUCCEED);
+		results=ct_results(cmd,&resultstype);
+		assertEquals(results,CS_SUCCEED);
+		assertEquals(resultstype,CS_CMD_DONE);
+	}
+	results=ct_results(cmd,&resultstype);
+	assertEquals(results,CS_END_RESULTS);
+	assertEquals(ct_cancel(NULL,cmd,CS_CANCEL_ALL),CS_SUCCEED);
+	stdoutput.printf("\n");
+
+
+	// The same array fetch with the bind count left at 1.  ct_fetch
+	// refuses it, and refuses it silently - CS_FAIL, rowsread 0, no
+	// client message, no server message - and ct_results then goes
+	// straight to CS_END_RESULTS with the rows never delivered.  This
+	// is the trap behind the comment on the first ct_bind above, and
+	// it is pinned here so that a change to either number in
+	// src/connections/freetds.cpp shows up as a test failure.
+	stdoutput.printf("ct_cursor: rows count above the bind count\n");
+	const char	*cursid3="curs3";
+	assertEquals(ct_cursor(cmd,CS_CURSOR_DECLARE,
+				(CS_CHAR *)cursid3,CS_NULLTERM,
+				(CS_CHAR *)cursselect,CS_NULLTERM,
+				CS_READ_ONLY),CS_SUCCEED);
+	assertEquals(ct_cursor(cmd,CS_CURSOR_ROWS,
+				(CS_CHAR *)NULL,CS_UNUSED,
+				(CS_CHAR *)NULL,CS_UNUSED,
+				(CS_INT)5),CS_SUCCEED);
+	assertEquals(ct_cursor(cmd,CS_CURSOR_OPEN,
+				(CS_CHAR *)NULL,CS_UNUSED,
+				(CS_CHAR *)NULL,CS_UNUSED,
+				CS_UNUSED),CS_SUCCEED);
+	assertEquals(ct_send(cmd),CS_SUCCEED);
+	if (issybase) {
+		for (CS_INT i=0; i<2; i++) {
+			results=ct_results(cmd,&resultstype);
+			assertEquals(results,CS_SUCCEED);
+			assertEquals(resultstype,CS_CMD_SUCCEED);
+			results=ct_results(cmd,&resultstype);
+			assertEquals(results,CS_SUCCEED);
+			assertEquals(resultstype,CS_CMD_DONE);
+		}
+	}
+	results=ct_results(cmd,&resultstype);
+	assertEquals(results,CS_SUCCEED);
+	assertEquals(resultstype,CS_CURSOR_RESULT);
+	for (CS_INT i=0; i<3; i++) {
+		assertEquals(ct_bind(cmd,i+1,&(cursfmt[i]),
+					(CS_VOID *)cursdata[i],
+					&(cursdatalength[i]),
+					&(cursnullindicator[i])),CS_SUCCEED);
+	}
+	rowsread=-987654;
+	assertEquals(ct_fetch(cmd,CS_UNUSED,CS_UNUSED,
+					CS_UNUSED,&rowsread),CS_FAIL);
+	assertEquals(rowsread,0);
+	results=ct_results(cmd,&resultstype);
+	assertEquals(results,CS_END_RESULTS);
+	assertEquals(ct_cancel(NULL,cmd,CS_CANCEL_ALL),CS_SUCCEED);
+	stdoutput.printf("\n");
+
+
+	stdoutput.printf("ct_cursor: close and dealloc\n");
+	assertEquals(ct_cursor(cmd,CS_CURSOR_CLOSE,
+				(CS_CHAR *)NULL,CS_UNUSED,
+				(CS_CHAR *)NULL,CS_UNUSED,
+				CS_DEALLOC),CS_SUCCEED);
+	assertEquals(ct_send(cmd),CS_SUCCEED);
+	if (issybase) {
+		results=ct_results(cmd,&resultstype);
+		assertEquals(results,CS_SUCCEED);
+		assertEquals(resultstype,CS_CMD_SUCCEED);
+		results=ct_results(cmd,&resultstype);
+		assertEquals(results,CS_SUCCEED);
+		assertEquals(resultstype,CS_CMD_DONE);
+	}
+	results=ct_results(cmd,&resultstype);
+	assertEquals(results,CS_END_RESULTS);
+	assertEquals(ct_cancel(NULL,cmd,CS_CANCEL_ALL),CS_SUCCEED);
+	stdoutput.printf("\n");
+
+
+	// the same lifecycle again, but closed without CS_DEALLOC, so the
+	// two blocks after this one can pin what that leaves behind
+	stdoutput.printf("ct_cursor: close without dealloc\n");
+	const char	*cursid4="curs4";
+	assertEquals(ct_cursor(cmd,CS_CURSOR_DECLARE,
+				(CS_CHAR *)cursid4,CS_NULLTERM,
+				(CS_CHAR *)cursselect,CS_NULLTERM,
+				CS_READ_ONLY),CS_SUCCEED);
+	assertEquals(ct_cursor(cmd,CS_CURSOR_ROWS,
+				(CS_CHAR *)NULL,CS_UNUSED,
+				(CS_CHAR *)NULL,CS_UNUSED,
+				(CS_INT)1),CS_SUCCEED);
+	assertEquals(ct_cursor(cmd,CS_CURSOR_OPEN,
+				(CS_CHAR *)NULL,CS_UNUSED,
+				(CS_CHAR *)NULL,CS_UNUSED,
+				CS_UNUSED),CS_SUCCEED);
+	assertEquals(ct_send(cmd),CS_SUCCEED);
+	if (issybase) {
+		for (CS_INT i=0; i<2; i++) {
+			results=ct_results(cmd,&resultstype);
+			assertEquals(results,CS_SUCCEED);
+			assertEquals(resultstype,CS_CMD_SUCCEED);
+			results=ct_results(cmd,&resultstype);
+			assertEquals(results,CS_SUCCEED);
+			assertEquals(resultstype,CS_CMD_DONE);
+		}
+	}
+	results=ct_results(cmd,&resultstype);
+	assertEquals(results,CS_SUCCEED);
+	assertEquals(resultstype,CS_CURSOR_RESULT);
+	for (CS_INT i=0; i<3; i++) {
+		assertEquals(ct_bind(cmd,i+1,&(cursfmt[i]),
+					(CS_VOID *)cursdata[i],
+					&(cursdatalength[i]),
+					&(cursnullindicator[i])),CS_SUCCEED);
+	}
+	for (CS_INT i=0; i<4; i++) {
+		bytestring::zero(cursdata[0],256);
+		bytestring::zero(cursdata[1],256);
+		assertEquals(ct_fetch(cmd,CS_UNUSED,CS_UNUSED,
+					CS_UNUSED,&rowsread),CS_SUCCEED);
+		assertEquals(rowsread,1);
+		assertEquals(cursdata[0],cursexpectid[i]);
+		assertEquals(cursdata[1],cursexpectname[i]);
+	}
+	assertEquals(ct_fetch(cmd,CS_UNUSED,CS_UNUSED,
+					CS_UNUSED,&rowsread),CS_END_DATA);
+	results=ct_results(cmd,&resultstype);
+	assertEquals(results,CS_SUCCEED);
+	assertEquals(resultstype,CS_CMD_SUCCEED);
+	results=ct_results(cmd,&resultstype);
+	assertEquals(results,CS_SUCCEED);
+	assertEquals(resultstype,CS_CMD_DONE);
+	results=ct_results(cmd,&resultstype);
+	assertEquals(results,CS_END_RESULTS);
+	assertEquals(ct_cursor(cmd,CS_CURSOR_CLOSE,
+				(CS_CHAR *)NULL,CS_UNUSED,
+				(CS_CHAR *)NULL,CS_UNUSED,
+				CS_UNUSED),CS_SUCCEED);
+	assertEquals(ct_send(cmd),CS_SUCCEED);
+	if (issybase) {
+		results=ct_results(cmd,&resultstype);
+		assertEquals(results,CS_SUCCEED);
+		assertEquals(resultstype,CS_CMD_SUCCEED);
+		results=ct_results(cmd,&resultstype);
+		assertEquals(results,CS_SUCCEED);
+		assertEquals(resultstype,CS_CMD_DONE);
+	}
+	results=ct_results(cmd,&resultstype);
+	assertEquals(results,CS_END_RESULTS);
+	assertEquals(ct_cancel(NULL,cmd,CS_CANCEL_ALL),CS_SUCCEED);
+	stdoutput.printf("\n");
+
+
+	// A closed cursor cannot be re-opened.  ct_cursor takes the
+	// CS_CURSOR_OPEN and answers CS_SUCCEED, but queues nothing, so
+	// the command structure is still idle when ct_send is called and
+	// ct_send fails with client library error 155.  That is the
+	// CS_SUCCEED while doing nothing shape #8794 and #8791 both hit,
+	// in a third place.
+	//
+	// The fetch afterwards is the sharper half.  Freetds is still
+	// holding the closed cursor's id, so ct_fetch reaches the wire
+	// even though no send succeeded, and the server rejects it by
+	// name - mssql error 13 naming a stale sp_cursor id, ASE saying
+	// the cursor is not open.  ct_fetch reports CS_END_DATA either
+	// way, so a caller that only checks return codes sees an empty
+	// result rather than an error.
+	stdoutput.printf("ct_cursor: re-open without re-declaring\n");
+	assertEquals(ct_cursor(cmd,CS_CURSOR_OPEN,
+				(CS_CHAR *)NULL,CS_UNUSED,
+				(CS_CHAR *)NULL,CS_UNUSED,
+				CS_UNUSED),CS_SUCCEED);
+	assertEquals(ct_send(cmd),CS_FAIL);
+	results=ct_results(cmd,&resultstype);
+	assertEquals(results,CS_END_RESULTS);
+	rowsread=-987654;
+	assertEquals(ct_fetch(cmd,CS_UNUSED,CS_UNUSED,
+					CS_UNUSED,&rowsread),CS_END_DATA);
+	assertEquals(rowsread,0);
+	assertEquals(ct_cancel(NULL,cmd,CS_CANCEL_ALL),CS_SUCCEED);
+	stdoutput.printf("\n");
+
+
+	// Re-declaring the name is the only way back, and that is where
+	// the missing CS_DEALLOC shows up.  ASE still has the name and
+	// says so - server error 51, "There is already another cursor with
+	// the name", severity 2 - and delivers a CS_CMD_FAIL in the middle
+	// of the sequence, and then opens the already-declared cursor and
+	// hands over all four rows anyway.  MSSQL is silent.  Worth
+	// knowing beyond this test: a drain loop that treats any
+	// CS_CMD_FAIL as fatal throws away a result set that is right
+	// there, and src/connections/freetds.cpp:4627 does exactly that.
+	stdoutput.printf("ct_cursor: re-declare after a close with "
+							"no dealloc\n");
+	assertEquals(ct_cursor(cmd,CS_CURSOR_DECLARE,
+				(CS_CHAR *)cursid4,CS_NULLTERM,
+				(CS_CHAR *)cursselect,CS_NULLTERM,
+				CS_READ_ONLY),CS_SUCCEED);
+	assertEquals(ct_cursor(cmd,CS_CURSOR_ROWS,
+				(CS_CHAR *)NULL,CS_UNUSED,
+				(CS_CHAR *)NULL,CS_UNUSED,
+				(CS_INT)1),CS_SUCCEED);
+	assertEquals(ct_cursor(cmd,CS_CURSOR_OPEN,
+				(CS_CHAR *)NULL,CS_UNUSED,
+				(CS_CHAR *)NULL,CS_UNUSED,
+				CS_UNUSED),CS_SUCCEED);
+	assertEquals(ct_send(cmd),CS_SUCCEED);
+	if (issybase) {
+		results=ct_results(cmd,&resultstype);
+		assertEquals(results,CS_SUCCEED);
+		assertEquals(resultstype,CS_CMD_FAIL);
+		results=ct_results(cmd,&resultstype);
+		assertEquals(results,CS_SUCCEED);
+		assertEquals(resultstype,CS_CMD_DONE);
+		results=ct_results(cmd,&resultstype);
+		assertEquals(results,CS_SUCCEED);
+		assertEquals(resultstype,CS_CMD_SUCCEED);
+		results=ct_results(cmd,&resultstype);
+		assertEquals(results,CS_SUCCEED);
+		assertEquals(resultstype,CS_CMD_DONE);
+	}
+	results=ct_results(cmd,&resultstype);
+	assertEquals(results,CS_SUCCEED);
+	assertEquals(resultstype,CS_CURSOR_RESULT);
+	for (CS_INT i=0; i<3; i++) {
+		assertEquals(ct_bind(cmd,i+1,&(cursfmt[i]),
+					(CS_VOID *)cursdata[i],
+					&(cursdatalength[i]),
+					&(cursnullindicator[i])),CS_SUCCEED);
+	}
+	for (CS_INT i=0; i<4; i++) {
+		bytestring::zero(cursdata[0],256);
+		bytestring::zero(cursdata[1],256);
+		assertEquals(ct_fetch(cmd,CS_UNUSED,CS_UNUSED,
+					CS_UNUSED,&rowsread),CS_SUCCEED);
+		assertEquals(rowsread,1);
+		assertEquals(cursdata[0],cursexpectid[i]);
+		assertEquals(cursdata[1],cursexpectname[i]);
+	}
+	assertEquals(ct_fetch(cmd,CS_UNUSED,CS_UNUSED,
+					CS_UNUSED,&rowsread),CS_END_DATA);
+	results=ct_results(cmd,&resultstype);
+	assertEquals(results,CS_SUCCEED);
+	assertEquals(resultstype,CS_CMD_SUCCEED);
+	results=ct_results(cmd,&resultstype);
+	assertEquals(results,CS_SUCCEED);
+	assertEquals(resultstype,CS_CMD_DONE);
+	results=ct_results(cmd,&resultstype);
+	assertEquals(results,CS_END_RESULTS);
+	assertEquals(ct_cursor(cmd,CS_CURSOR_CLOSE,
+				(CS_CHAR *)NULL,CS_UNUSED,
+				(CS_CHAR *)NULL,CS_UNUSED,
+				CS_DEALLOC),CS_SUCCEED);
+	assertEquals(ct_send(cmd),CS_SUCCEED);
+	if (issybase) {
+		results=ct_results(cmd,&resultstype);
+		assertEquals(results,CS_SUCCEED);
+		assertEquals(resultstype,CS_CMD_SUCCEED);
+		results=ct_results(cmd,&resultstype);
+		assertEquals(results,CS_SUCCEED);
+		assertEquals(resultstype,CS_CMD_DONE);
+	}
+	results=ct_results(cmd,&resultstype);
+	assertEquals(results,CS_END_RESULTS);
+	assertEquals(ct_cancel(NULL,cmd,CS_CANCEL_ALL),CS_SUCCEED);
+	stdoutput.printf("\n");
+
+
+	// ct_cancel(CS_CANCEL_ALL) part way through a cursor's rows
+	// abandons the rest of them, but one cancel does not put the
+	// command back in a usable state - see the two blocks after this.
+	stdoutput.printf("ct_cursor: cancel mid-fetch\n");
+	const char	*cursid5="curs5";
+	assertEquals(ct_cursor(cmd,CS_CURSOR_DECLARE,
+				(CS_CHAR *)cursid5,CS_NULLTERM,
+				(CS_CHAR *)cursselect,CS_NULLTERM,
+				CS_READ_ONLY),CS_SUCCEED);
+	assertEquals(ct_cursor(cmd,CS_CURSOR_ROWS,
+				(CS_CHAR *)NULL,CS_UNUSED,
+				(CS_CHAR *)NULL,CS_UNUSED,
+				(CS_INT)1),CS_SUCCEED);
+	assertEquals(ct_cursor(cmd,CS_CURSOR_OPEN,
+				(CS_CHAR *)NULL,CS_UNUSED,
+				(CS_CHAR *)NULL,CS_UNUSED,
+				CS_UNUSED),CS_SUCCEED);
+	assertEquals(ct_send(cmd),CS_SUCCEED);
+	if (issybase) {
+		for (CS_INT i=0; i<2; i++) {
+			results=ct_results(cmd,&resultstype);
+			assertEquals(results,CS_SUCCEED);
+			assertEquals(resultstype,CS_CMD_SUCCEED);
+			results=ct_results(cmd,&resultstype);
+			assertEquals(results,CS_SUCCEED);
+			assertEquals(resultstype,CS_CMD_DONE);
+		}
+	}
+	results=ct_results(cmd,&resultstype);
+	assertEquals(results,CS_SUCCEED);
+	assertEquals(resultstype,CS_CURSOR_RESULT);
+	for (CS_INT i=0; i<3; i++) {
+		assertEquals(ct_bind(cmd,i+1,&(cursfmt[i]),
+					(CS_VOID *)cursdata[i],
+					&(cursdatalength[i]),
+					&(cursnullindicator[i])),CS_SUCCEED);
+	}
+	bytestring::zero(cursdata[0],256);
+	bytestring::zero(cursdata[1],256);
+	assertEquals(ct_fetch(cmd,CS_UNUSED,CS_UNUSED,
+					CS_UNUSED,&rowsread),CS_SUCCEED);
+	assertEquals(rowsread,1);
+	assertEquals(cursdata[0],"1");
+	assertEquals(cursdata[1],"one");
+	assertEquals(ct_cancel(NULL,cmd,CS_CANCEL_ALL),CS_SUCCEED);
+	stdoutput.printf("\n");
+
+
+	// One ct_cancel is not enough after a mid-fetch abandon.  It
+	// answers CS_SUCCEED, but the next command's ct_send comes back
+	// CS_CANCELED and ct_results then says CS_END_RESULTS, so the
+	// command looks like it ran and returned nothing.  A second
+	// ct_cancel is what actually clears it.  Left uncleared, a caller
+	// that goes on to ct_fetch blocks until the 60 second CS_TIMEOUT
+	// set at the top of this test, once per row - which is how this
+	// was found.
+	stdoutput.printf("ct_command: one cancel is not enough\n");
+	query="select count(*) from cursortable";
+	assertEquals(ct_command(cmd,CS_LANG_CMD,
+					query,charstring::getLength(query),
+					CS_UNUSED),CS_SUCCEED);
+	assertEquals(ct_send(cmd),CS_CANCELED);
+	results=ct_results(cmd,&resultstype);
+	assertEquals(results,CS_END_RESULTS);
+	assertEquals(ct_cancel(NULL,cmd,CS_CANCEL_ALL),CS_SUCCEED);
+	stdoutput.printf("\n");
+
+
+	stdoutput.printf("ct_command: after the second cancel\n");
+	assertEquals(ct_command(cmd,CS_LANG_CMD,
+					query,charstring::getLength(query),
+					CS_UNUSED),CS_SUCCEED);
+	assertEquals(ct_send(cmd),CS_SUCCEED);
+	results=ct_results(cmd,&resultstype);
+	assertEquals(results,CS_SUCCEED);
+	assertEquals(resultstype,CS_ROW_RESULT);
+	bytestring::zero(cursdata[0],256);
+	assertEquals(ct_bind(cmd,1,&(cursfmt[0]),
+				(CS_VOID *)cursdata[0],
+				&(cursdatalength[0]),
+				&(cursnullindicator[0])),CS_SUCCEED);
+	assertEquals(ct_fetch(cmd,CS_UNUSED,CS_UNUSED,
+					CS_UNUSED,&rowsread),CS_SUCCEED);
+	assertEquals(rowsread,1);
+	assertEquals(cursdata[0],"4");
+	assertEquals(ct_fetch(cmd,CS_UNUSED,CS_UNUSED,
+					CS_UNUSED,&rowsread),CS_END_DATA);
+	results=ct_results(cmd,&resultstype);
+	assertEquals(results,CS_SUCCEED);
+	assertEquals(resultstype,CS_CMD_DONE);
+	results=ct_results(cmd,&resultstype);
+	assertEquals(results,CS_END_RESULTS);
+	assertEquals(ct_cancel(NULL,cmd,CS_CANCEL_ALL),CS_SUCCEED);
+	stdoutput.printf("\n");
+
+
+	// A cursor cannot take parameters through ct-lib at all.  ct_param
+	// and ct_setparam both refuse a cursor command outright on both
+	// backends, in every arrangement - the placeholder-then-value flow
+	// src/connections/freetds.cpp:4261 and 4603 use on its own cursor
+	// path, a value on its own after the open, named and unnamed, and
+	// every datatype tried.  No message callback fires.
+	//
+	// The placeholder is then sent as text.  ct_send succeeds and the
+	// server is what rejects it - error 102 on both, "Incorrect syntax
+	// near '?'", and mssql adds error 49 saying the cursor was never
+	// declared.  Nothing parameter shaped reaches the wire, so
+	// #8792's finding that freetds declares every prepared parameter
+	// as varchar(4000) says nothing either way about this path.
+	stdoutput.printf("ct_cursor: parameters are refused\n");
+	const char	*cursid6="curs6";
+	const char	*cursparamselect="select cursid, cursname, cursval "
+					"from cursortable where cursid > ? "
+					"order by cursid";
+	CS_DATAFMT	cursparamfmt;
+	CS_INT		cursparamvalue=2;
+	CS_INT		cursparamlength=sizeof(CS_INT);
+	CS_SMALLINT	cursparamnull=0;
+	bytestring::zero(&cursparamfmt,sizeof(CS_DATAFMT));
+	cursparamfmt.datatype=CS_INT_TYPE;
+	cursparamfmt.maxlength=4;
+	cursparamfmt.count=1;
+	assertEquals(ct_cursor(cmd,CS_CURSOR_DECLARE,
+				(CS_CHAR *)cursid6,CS_NULLTERM,
+				(CS_CHAR *)cursparamselect,CS_NULLTERM,
+				CS_READ_ONLY),CS_SUCCEED);
+	assertEquals(ct_param(cmd,&cursparamfmt,
+				(CS_VOID *)&cursparamvalue,
+				sizeof(CS_INT),0),CS_FAIL);
+	assertEquals(ct_setparam(cmd,&cursparamfmt,
+				(CS_VOID *)&cursparamvalue,
+				&cursparamlength,&cursparamnull),CS_FAIL);
+	assertEquals(ct_cursor(cmd,CS_CURSOR_ROWS,
+				(CS_CHAR *)NULL,CS_UNUSED,
+				(CS_CHAR *)NULL,CS_UNUSED,
+				(CS_INT)1),CS_SUCCEED);
+	assertEquals(ct_cursor(cmd,CS_CURSOR_OPEN,
+				(CS_CHAR *)NULL,CS_UNUSED,
+				(CS_CHAR *)NULL,CS_UNUSED,
+				CS_UNUSED),CS_SUCCEED);
+	assertEquals(ct_param(cmd,&cursparamfmt,
+				(CS_VOID *)&cursparamvalue,
+				sizeof(CS_INT),0),CS_FAIL);
+	assertEquals(ct_send(cmd),CS_SUCCEED);
+	results=ct_results(cmd,&resultstype);
+	assertEquals(results,CS_SUCCEED);
+	assertEquals(resultstype,CS_CMD_FAIL);
+	results=ct_results(cmd,&resultstype);
+	assertEquals(results,CS_SUCCEED);
+	assertEquals(resultstype,CS_CMD_DONE);
+	results=ct_results(cmd,&resultstype);
+	assertEquals(results,CS_END_RESULTS);
+	assertEquals(ct_cancel(NULL,cmd,CS_CANCEL_ALL),CS_SUCCEED);
+	stdoutput.printf("\n");
+
+
+	// CS_CURSOR_UPDATE and CS_CURSOR_DELETE are not implemented in
+	// freetds 1.3.3.  Both return CS_FAIL immediately, client side, on
+	// both backends - libct's own trace calls it "Option not
+	// implemented".  Nothing goes on the wire, no ct_send is possible
+	// and no message callback fires, so there is no server behavior to
+	// record on either side.  CS_CURSOR_OPTION, type 725, sits in the
+	// same arm and is refused the same way.
+	//
+	// They are tried here with the cursor open and positioned on a
+	// row, which is the only state in which they would be legal, to
+	// show the refusal is not a state complaint.  Because they never
+	// reach the wire they leave the pending result untouched, so the
+	// remaining rows still fetch normally below.
+	stdoutput.printf("ct_cursor: update and delete are unimplemented\n");
+	const char	*cursid7="curs7";
+	const char	*cursupdate="update cursortable set cursval = 99";
+	assertEquals(ct_cursor(cmd,CS_CURSOR_DECLARE,
+				(CS_CHAR *)cursid7,CS_NULLTERM,
+				(CS_CHAR *)cursselect,CS_NULLTERM,
+				CS_FOR_UPDATE),CS_SUCCEED);
+	assertEquals(ct_cursor(cmd,CS_CURSOR_ROWS,
+				(CS_CHAR *)NULL,CS_UNUSED,
+				(CS_CHAR *)NULL,CS_UNUSED,
+				(CS_INT)1),CS_SUCCEED);
+	assertEquals(ct_cursor(cmd,CS_CURSOR_OPEN,
+				(CS_CHAR *)NULL,CS_UNUSED,
+				(CS_CHAR *)NULL,CS_UNUSED,
+				CS_UNUSED),CS_SUCCEED);
+	assertEquals(ct_send(cmd),CS_SUCCEED);
+	if (issybase) {
+		for (CS_INT i=0; i<2; i++) {
+			results=ct_results(cmd,&resultstype);
+			assertEquals(results,CS_SUCCEED);
+			assertEquals(resultstype,CS_CMD_SUCCEED);
+			results=ct_results(cmd,&resultstype);
+			assertEquals(results,CS_SUCCEED);
+			assertEquals(resultstype,CS_CMD_DONE);
+		}
+	}
+	results=ct_results(cmd,&resultstype);
+	assertEquals(results,CS_SUCCEED);
+	assertEquals(resultstype,CS_CURSOR_RESULT);
+	for (CS_INT i=0; i<3; i++) {
+		assertEquals(ct_bind(cmd,i+1,&(cursfmt[i]),
+					(CS_VOID *)cursdata[i],
+					&(cursdatalength[i]),
+					&(cursnullindicator[i])),CS_SUCCEED);
+	}
+	bytestring::zero(cursdata[0],256);
+	assertEquals(ct_fetch(cmd,CS_UNUSED,CS_UNUSED,
+					CS_UNUSED,&rowsread),CS_SUCCEED);
+	assertEquals(cursdata[0],"1");
+	assertEquals(ct_cursor(cmd,CS_CURSOR_UPDATE,
+			(CS_CHAR *)"cursortable",CS_NULLTERM,
+			(CS_CHAR *)cursupdate,CS_NULLTERM,CS_UNUSED),CS_FAIL);
+	assertEquals(ct_cursor(cmd,CS_CURSOR_DELETE,
+			(CS_CHAR *)"cursortable",CS_NULLTERM,
+			(CS_CHAR *)NULL,CS_UNUSED,CS_UNUSED),CS_FAIL);
+	assertEquals(ct_cursor(cmd,CS_CURSOR_OPTION,
+			(CS_CHAR *)NULL,CS_UNUSED,
+			(CS_CHAR *)NULL,CS_UNUSED,
+			CS_IMPLICIT_CURSOR),CS_FAIL);
+	for (CS_INT i=1; i<4; i++) {
+		bytestring::zero(cursdata[0],256);
+		assertEquals(ct_fetch(cmd,CS_UNUSED,CS_UNUSED,
+					CS_UNUSED,&rowsread),CS_SUCCEED);
+		assertEquals(cursdata[0],cursexpectid[i]);
+	}
+	assertEquals(ct_fetch(cmd,CS_UNUSED,CS_UNUSED,
+					CS_UNUSED,&rowsread),CS_END_DATA);
+	results=ct_results(cmd,&resultstype);
+	assertEquals(results,CS_SUCCEED);
+	assertEquals(resultstype,CS_CMD_SUCCEED);
+	results=ct_results(cmd,&resultstype);
+	assertEquals(results,CS_SUCCEED);
+	assertEquals(resultstype,CS_CMD_DONE);
+	results=ct_results(cmd,&resultstype);
+	assertEquals(results,CS_END_RESULTS);
+	assertEquals(ct_cursor(cmd,CS_CURSOR_CLOSE,
+				(CS_CHAR *)NULL,CS_UNUSED,
+				(CS_CHAR *)NULL,CS_UNUSED,
+				CS_DEALLOC),CS_SUCCEED);
+	assertEquals(ct_send(cmd),CS_SUCCEED);
+	if (issybase) {
+		results=ct_results(cmd,&resultstype);
+		assertEquals(results,CS_SUCCEED);
+		assertEquals(resultstype,CS_CMD_SUCCEED);
+		results=ct_results(cmd,&resultstype);
+		assertEquals(results,CS_SUCCEED);
+		assertEquals(resultstype,CS_CMD_DONE);
+	}
+	results=ct_results(cmd,&resultstype);
+	assertEquals(results,CS_END_RESULTS);
+	assertEquals(ct_cancel(NULL,cmd,CS_CANCEL_ALL),CS_SUCCEED);
+	stdoutput.printf("\n");
+
+
+	// CS_FOR_UPDATE as the declare option, used just above, is
+	// accepted and then discarded - the send packet is byte for byte
+	// identical to the CS_READ_ONLY one on both wire protocols, the
+	// mssql sp_cursoropen rpc and ASE's TDS_CURDECLARE token.  So the
+	// four rows the block above fetched are the proof that
+	// CS_FOR_UPDATE changes nothing, not just that it is tolerated.
+	// This language select is the other half of that block's proof -
+	// the table still has its seeded values, so neither the update nor
+	// the delete did anything.
+	stdoutput.printf("ct_command: the table is unchanged\n");
+	query="select count(*) from cursortable where cursval = 99";
+	assertEquals(ct_command(cmd,CS_LANG_CMD,
+					query,charstring::getLength(query),
+					CS_UNUSED),CS_SUCCEED);
+	assertEquals(ct_send(cmd),CS_SUCCEED);
+	results=ct_results(cmd,&resultstype);
+	assertEquals(results,CS_SUCCEED);
+	assertEquals(resultstype,CS_ROW_RESULT);
+	bytestring::zero(cursdata[0],256);
+	assertEquals(ct_bind(cmd,1,&(cursfmt[0]),
+				(CS_VOID *)cursdata[0],
+				&(cursdatalength[0]),
+				&(cursnullindicator[0])),CS_SUCCEED);
+	assertEquals(ct_fetch(cmd,CS_UNUSED,CS_UNUSED,
+					CS_UNUSED,&rowsread),CS_SUCCEED);
+	assertEquals(cursdata[0],"0");
+	assertEquals(ct_fetch(cmd,CS_UNUSED,CS_UNUSED,
+					CS_UNUSED,&rowsread),CS_END_DATA);
+	results=ct_results(cmd,&resultstype);
+	assertEquals(results,CS_SUCCEED);
+	assertEquals(resultstype,CS_CMD_DONE);
+	results=ct_results(cmd,&resultstype);
+	assertEquals(results,CS_END_RESULTS);
+	assertEquals(ct_cancel(NULL,cmd,CS_CANCEL_ALL),CS_SUCCEED);
+	stdoutput.printf("\n");
+
+
+	// Putting "for update of" in the declare text, rather than passing
+	// CS_FOR_UPDATE as the option, is where the two backends disagree
+	// about updatable cursors.  MSSQL accepts it - the cursor opens
+	// and reads exactly like a read-only one, which is what is driven
+	// below.
+	//
+	// ASE refuses it, and refusing it is not recoverable, which is why
+	// only mssql is driven here.  cursortable has no unique index, so
+	// ASE answers server error 45, "This cursor was found to be read
+	// only", then cannot find the cursor it just refused - error 45
+	// again and error 218, "The current batch of commands is being
+	// aborted.  This is an internal error." - giving two CS_CMD_FAIL
+	// and CS_CMD_DONE pairs.  From there the connection is finished,
+	// and not finished the same way twice: across two runs the close
+	// after it returned CS_FAIL from ct_send once and CS_SUCCEED the
+	// other time, and the second run went on to lose the connection
+	// entirely with client error 49, "Unexpected EOF from the server",
+	// and take the rest of the run down with it.  Asserting either
+	// outcome would be asserting a coin flip, so ASE is described here
+	// and left alone.  The row values are not asserted on mssql
+	// either, only the row count, since ASE will not take an order by
+	// together with for update and the text is shared.
+	if (!issybase) {
+
+		stdoutput.printf("ct_cursor: for update of in the "
+							"declare text\n");
+		const char	*cursid8="curs8";
+		const char	*cursforupdate="select cursid, cursname, "
+						"cursval from cursortable "
+						"for update of cursval";
+		assertEquals(ct_cursor(cmd,CS_CURSOR_DECLARE,
+					(CS_CHAR *)cursid8,CS_NULLTERM,
+					(CS_CHAR *)cursforupdate,CS_NULLTERM,
+					CS_FOR_UPDATE),CS_SUCCEED);
+		assertEquals(ct_cursor(cmd,CS_CURSOR_ROWS,
+					(CS_CHAR *)NULL,CS_UNUSED,
+					(CS_CHAR *)NULL,CS_UNUSED,
+					(CS_INT)1),CS_SUCCEED);
+		assertEquals(ct_cursor(cmd,CS_CURSOR_OPEN,
+					(CS_CHAR *)NULL,CS_UNUSED,
+					(CS_CHAR *)NULL,CS_UNUSED,
+					CS_UNUSED),CS_SUCCEED);
+		assertEquals(ct_send(cmd),CS_SUCCEED);
+		results=ct_results(cmd,&resultstype);
+		assertEquals(results,CS_SUCCEED);
+		assertEquals(resultstype,CS_CURSOR_RESULT);
+		for (CS_INT i=0; i<3; i++) {
+			assertEquals(ct_bind(cmd,i+1,&(cursfmt[i]),
+					(CS_VOID *)cursdata[i],
+					&(cursdatalength[i]),
+					&(cursnullindicator[i])),CS_SUCCEED);
+		}
+		for (CS_INT i=0; i<4; i++) {
+			assertEquals(ct_fetch(cmd,CS_UNUSED,CS_UNUSED,
+					CS_UNUSED,&rowsread),CS_SUCCEED);
+			assertEquals(rowsread,1);
+		}
+		assertEquals(ct_fetch(cmd,CS_UNUSED,CS_UNUSED,
+					CS_UNUSED,&rowsread),CS_END_DATA);
+		results=ct_results(cmd,&resultstype);
+		assertEquals(results,CS_SUCCEED);
+		assertEquals(resultstype,CS_CMD_SUCCEED);
+		results=ct_results(cmd,&resultstype);
+		assertEquals(results,CS_SUCCEED);
+		assertEquals(resultstype,CS_CMD_DONE);
+		results=ct_results(cmd,&resultstype);
+		assertEquals(results,CS_END_RESULTS);
+		assertEquals(ct_cursor(cmd,CS_CURSOR_CLOSE,
+					(CS_CHAR *)NULL,CS_UNUSED,
+					(CS_CHAR *)NULL,CS_UNUSED,
+					CS_DEALLOC),CS_SUCCEED);
+		assertEquals(ct_send(cmd),CS_SUCCEED);
+		results=ct_results(cmd,&resultstype);
+		assertEquals(results,CS_END_RESULTS);
+		assertEquals(ct_cancel(NULL,cmd,CS_CANCEL_ALL),CS_SUCCEED);
+		stdoutput.printf("\n");
+	}
+
+
+	// All of these fail inside libct with no wire traffic and no
+	// message callback, so they cost nothing and leave the command
+	// exactly as it was.  The last one is the safe spelling of a NULL
+	// text - see the block below it.
+	stdoutput.printf("ct_cursor: negatives\n");
+	const char	*cursid9="curs9";
+	assertEquals(ct_cursor(cmd,999,
+				(CS_CHAR *)NULL,CS_UNUSED,
+				(CS_CHAR *)NULL,CS_UNUSED,
+				CS_UNUSED),CS_FAIL);
+	assertEquals(ct_cursor(cmd,CS_CURSOR_ROWS,
+				(CS_CHAR *)NULL,CS_UNUSED,
+				(CS_CHAR *)NULL,CS_UNUSED,
+				(CS_INT)1),CS_FAIL);
+	assertEquals(ct_cursor(cmd,CS_CURSOR_OPEN,
+				(CS_CHAR *)NULL,CS_UNUSED,
+				(CS_CHAR *)NULL,CS_UNUSED,
+				CS_UNUSED),CS_FAIL);
+	assertEquals(ct_cursor(cmd,CS_CURSOR_CLOSE,
+				(CS_CHAR *)NULL,CS_UNUSED,
+				(CS_CHAR *)NULL,CS_UNUSED,
+				CS_UNUSED),CS_FAIL);
+	assertEquals(ct_cursor(cmd,CS_CURSOR_DEALLOC,
+				(CS_CHAR *)NULL,CS_UNUSED,
+				(CS_CHAR *)NULL,CS_UNUSED,
+				CS_UNUSED),CS_FAIL);
+	assertEquals(ct_cursor(cmd,CS_CURSOR_DECLARE,
+				(CS_CHAR *)cursid9,CS_NULLTERM,
+				(CS_CHAR *)NULL,CS_UNUSED,
+				CS_READ_ONLY),CS_FAIL);
+	stdoutput.printf("\n");
+
+
+	// Two more negatives are named rather than called, because they
+	// segfault inside libct on both backends.  Both are an strlen of a
+	// NULL in ct_cursor itself, with the stack ending in
+	// __strlen_avx2: a CS_CURSOR_DECLARE whose text is NULL with
+	// CS_NULLTERM given as the text length, and one whose name is NULL
+	// with CS_NULLTERM given as the namelen.  Passing CS_UNUSED as the
+	// length instead is safe and gives the clean CS_FAIL above.
+
+
+	// The second declare overwrites libct's per-command cursor slot,
+	// so the first one never reaches either server and neither
+	// complains.  The narrower text is the one that runs, which is
+	// what the two rows prove.  This is not the case that draws ASE
+	// error 51 - that one needs a close that did not dealloc.
+	stdoutput.printf("ct_cursor: declare twice without closing\n");
+	const char	*cursnarrow="select cursid, cursname, cursval "
+					"from cursortable where cursid > 2 "
+					"order by cursid";
+	assertEquals(ct_cursor(cmd,CS_CURSOR_DECLARE,
+				(CS_CHAR *)cursid9,CS_NULLTERM,
+				(CS_CHAR *)cursselect,CS_NULLTERM,
+				CS_READ_ONLY),CS_SUCCEED);
+	assertEquals(ct_cursor(cmd,CS_CURSOR_DECLARE,
+				(CS_CHAR *)cursid9,CS_NULLTERM,
+				(CS_CHAR *)cursnarrow,CS_NULLTERM,
+				CS_READ_ONLY),CS_SUCCEED);
+	assertEquals(ct_cursor(cmd,CS_CURSOR_ROWS,
+				(CS_CHAR *)NULL,CS_UNUSED,
+				(CS_CHAR *)NULL,CS_UNUSED,
+				(CS_INT)1),CS_SUCCEED);
+	assertEquals(ct_cursor(cmd,CS_CURSOR_OPEN,
+				(CS_CHAR *)NULL,CS_UNUSED,
+				(CS_CHAR *)NULL,CS_UNUSED,
+				CS_UNUSED),CS_SUCCEED);
+	assertEquals(ct_send(cmd),CS_SUCCEED);
+	if (issybase) {
+		for (CS_INT i=0; i<2; i++) {
+			results=ct_results(cmd,&resultstype);
+			assertEquals(results,CS_SUCCEED);
+			assertEquals(resultstype,CS_CMD_SUCCEED);
+			results=ct_results(cmd,&resultstype);
+			assertEquals(results,CS_SUCCEED);
+			assertEquals(resultstype,CS_CMD_DONE);
+		}
+	}
+	results=ct_results(cmd,&resultstype);
+	assertEquals(results,CS_SUCCEED);
+	assertEquals(resultstype,CS_CURSOR_RESULT);
+	for (CS_INT i=0; i<3; i++) {
+		assertEquals(ct_bind(cmd,i+1,&(cursfmt[i]),
+					(CS_VOID *)cursdata[i],
+					&(cursdatalength[i]),
+					&(cursnullindicator[i])),CS_SUCCEED);
+	}
+	for (CS_INT i=2; i<4; i++) {
+		bytestring::zero(cursdata[0],256);
+		assertEquals(ct_fetch(cmd,CS_UNUSED,CS_UNUSED,
+					CS_UNUSED,&rowsread),CS_SUCCEED);
+		assertEquals(cursdata[0],cursexpectid[i]);
+	}
+	assertEquals(ct_fetch(cmd,CS_UNUSED,CS_UNUSED,
+					CS_UNUSED,&rowsread),CS_END_DATA);
+	results=ct_results(cmd,&resultstype);
+	assertEquals(results,CS_SUCCEED);
+	assertEquals(resultstype,CS_CMD_SUCCEED);
+	results=ct_results(cmd,&resultstype);
+	assertEquals(results,CS_SUCCEED);
+	assertEquals(resultstype,CS_CMD_DONE);
+	results=ct_results(cmd,&resultstype);
+	assertEquals(results,CS_END_RESULTS);
+	assertEquals(ct_cursor(cmd,CS_CURSOR_CLOSE,
+				(CS_CHAR *)NULL,CS_UNUSED,
+				(CS_CHAR *)NULL,CS_UNUSED,
+				CS_DEALLOC),CS_SUCCEED);
+	assertEquals(ct_send(cmd),CS_SUCCEED);
+	if (issybase) {
+		results=ct_results(cmd,&resultstype);
+		assertEquals(results,CS_SUCCEED);
+		assertEquals(resultstype,CS_CMD_SUCCEED);
+		results=ct_results(cmd,&resultstype);
+		assertEquals(results,CS_SUCCEED);
+		assertEquals(resultstype,CS_CMD_DONE);
+	}
+	results=ct_results(cmd,&resultstype);
+	assertEquals(results,CS_END_RESULTS);
+	assertEquals(ct_cancel(NULL,cmd,CS_CANCEL_ALL),CS_SUCCEED);
+	stdoutput.printf("\n");
+
+
+	// A declare whose text is not a select is the one negative the
+	// client takes and the server refuses.  mssql answers error 42
+	// naming what a cursor statement may be, then error 49 saying the
+	// cursor was not declared.  ASE answers error 219, "neither a
+	// SELECT nor an EXECUTE".  Both then give CS_CMD_FAIL,
+	// CS_CMD_DONE, CS_END_RESULTS, and unlike the for update case
+	// above the command is left usable.  The update does not run,
+	// which the select after it checks.
+	stdoutput.printf("ct_cursor: declare a non-select\n");
+	const char	*cursid10="curs10";
+	assertEquals(ct_cursor(cmd,CS_CURSOR_DECLARE,
+				(CS_CHAR *)cursid10,CS_NULLTERM,
+				(CS_CHAR *)cursupdate,CS_NULLTERM,
+				CS_READ_ONLY),CS_SUCCEED);
+	assertEquals(ct_cursor(cmd,CS_CURSOR_ROWS,
+				(CS_CHAR *)NULL,CS_UNUSED,
+				(CS_CHAR *)NULL,CS_UNUSED,
+				(CS_INT)1),CS_SUCCEED);
+	assertEquals(ct_cursor(cmd,CS_CURSOR_OPEN,
+				(CS_CHAR *)NULL,CS_UNUSED,
+				(CS_CHAR *)NULL,CS_UNUSED,
+				CS_UNUSED),CS_SUCCEED);
+	assertEquals(ct_send(cmd),CS_SUCCEED);
+	results=ct_results(cmd,&resultstype);
+	assertEquals(results,CS_SUCCEED);
+	assertEquals(resultstype,CS_CMD_FAIL);
+	results=ct_results(cmd,&resultstype);
+	assertEquals(results,CS_SUCCEED);
+	assertEquals(resultstype,CS_CMD_DONE);
+	results=ct_results(cmd,&resultstype);
+	assertEquals(results,CS_END_RESULTS);
+	assertEquals(ct_cancel(NULL,cmd,CS_CANCEL_ALL),CS_SUCCEED);
+	stdoutput.printf("\n");
+
+
+	stdoutput.printf("ct_command: the table is still unchanged\n");
+	query="select count(*) from cursortable where cursval = 99";
+	assertEquals(ct_command(cmd,CS_LANG_CMD,
+					query,charstring::getLength(query),
+					CS_UNUSED),CS_SUCCEED);
+	assertEquals(ct_send(cmd),CS_SUCCEED);
+	results=ct_results(cmd,&resultstype);
+	assertEquals(results,CS_SUCCEED);
+	assertEquals(resultstype,CS_ROW_RESULT);
+	bytestring::zero(cursdata[0],256);
+	assertEquals(ct_bind(cmd,1,&(cursfmt[0]),
+				(CS_VOID *)cursdata[0],
+				&(cursdatalength[0]),
+				&(cursnullindicator[0])),CS_SUCCEED);
+	assertEquals(ct_fetch(cmd,CS_UNUSED,CS_UNUSED,
+					CS_UNUSED,&rowsread),CS_SUCCEED);
+	assertEquals(cursdata[0],"0");
+	assertEquals(ct_fetch(cmd,CS_UNUSED,CS_UNUSED,
+					CS_UNUSED,&rowsread),CS_END_DATA);
+	results=ct_results(cmd,&resultstype);
+	assertEquals(results,CS_SUCCEED);
+	assertEquals(resultstype,CS_CMD_DONE);
+	results=ct_results(cmd,&resultstype);
+	assertEquals(results,CS_END_RESULTS);
+	assertEquals(ct_cancel(NULL,cmd,CS_CANCEL_ALL),CS_SUCCEED);
+	stdoutput.printf("\n");
+
+
+	// Declaring a second cursor while the first is still open works on
+	// both backends, and silently abandons the first one's remaining
+	// rows - the second declare takes over libct's slot on the
+	// command, and the first cursor is left open server side with no
+	// way to reach it.
+	stdoutput.printf("ct_cursor: a second cursor while the "
+							"first is open\n");
+	const char	*cursid11="curs11";
+	const char	*cursid12="curs12";
+	assertEquals(ct_cursor(cmd,CS_CURSOR_DECLARE,
+				(CS_CHAR *)cursid11,CS_NULLTERM,
+				(CS_CHAR *)cursselect,CS_NULLTERM,
+				CS_READ_ONLY),CS_SUCCEED);
+	assertEquals(ct_cursor(cmd,CS_CURSOR_ROWS,
+				(CS_CHAR *)NULL,CS_UNUSED,
+				(CS_CHAR *)NULL,CS_UNUSED,
+				(CS_INT)1),CS_SUCCEED);
+	assertEquals(ct_cursor(cmd,CS_CURSOR_OPEN,
+				(CS_CHAR *)NULL,CS_UNUSED,
+				(CS_CHAR *)NULL,CS_UNUSED,
+				CS_UNUSED),CS_SUCCEED);
+	assertEquals(ct_send(cmd),CS_SUCCEED);
+	if (issybase) {
+		for (CS_INT i=0; i<2; i++) {
+			results=ct_results(cmd,&resultstype);
+			assertEquals(results,CS_SUCCEED);
+			assertEquals(resultstype,CS_CMD_SUCCEED);
+			results=ct_results(cmd,&resultstype);
+			assertEquals(results,CS_SUCCEED);
+			assertEquals(resultstype,CS_CMD_DONE);
+		}
+	}
+	results=ct_results(cmd,&resultstype);
+	assertEquals(results,CS_SUCCEED);
+	assertEquals(resultstype,CS_CURSOR_RESULT);
+	for (CS_INT i=0; i<3; i++) {
+		assertEquals(ct_bind(cmd,i+1,&(cursfmt[i]),
+					(CS_VOID *)cursdata[i],
+					&(cursdatalength[i]),
+					&(cursnullindicator[i])),CS_SUCCEED);
+	}
+	bytestring::zero(cursdata[0],256);
+	assertEquals(ct_fetch(cmd,CS_UNUSED,CS_UNUSED,
+					CS_UNUSED,&rowsread),CS_SUCCEED);
+	assertEquals(cursdata[0],"1");
+	assertEquals(ct_cursor(cmd,CS_CURSOR_DECLARE,
+				(CS_CHAR *)cursid12,CS_NULLTERM,
+				(CS_CHAR *)cursnarrow,CS_NULLTERM,
+				CS_READ_ONLY),CS_SUCCEED);
+	assertEquals(ct_cursor(cmd,CS_CURSOR_ROWS,
+				(CS_CHAR *)NULL,CS_UNUSED,
+				(CS_CHAR *)NULL,CS_UNUSED,
+				(CS_INT)1),CS_SUCCEED);
+	assertEquals(ct_cursor(cmd,CS_CURSOR_OPEN,
+				(CS_CHAR *)NULL,CS_UNUSED,
+				(CS_CHAR *)NULL,CS_UNUSED,
+				CS_UNUSED),CS_SUCCEED);
+	assertEquals(ct_send(cmd),CS_SUCCEED);
+	if (issybase) {
+		for (CS_INT i=0; i<2; i++) {
+			results=ct_results(cmd,&resultstype);
+			assertEquals(results,CS_SUCCEED);
+			assertEquals(resultstype,CS_CMD_SUCCEED);
+			results=ct_results(cmd,&resultstype);
+			assertEquals(results,CS_SUCCEED);
+			assertEquals(resultstype,CS_CMD_DONE);
+		}
+	}
+	results=ct_results(cmd,&resultstype);
+	assertEquals(results,CS_SUCCEED);
+	assertEquals(resultstype,CS_CURSOR_RESULT);
+	for (CS_INT i=0; i<3; i++) {
+		assertEquals(ct_bind(cmd,i+1,&(cursfmt[i]),
+					(CS_VOID *)cursdata[i],
+					&(cursdatalength[i]),
+					&(cursnullindicator[i])),CS_SUCCEED);
+	}
+	for (CS_INT i=2; i<4; i++) {
+		bytestring::zero(cursdata[0],256);
+		assertEquals(ct_fetch(cmd,CS_UNUSED,CS_UNUSED,
+					CS_UNUSED,&rowsread),CS_SUCCEED);
+		assertEquals(cursdata[0],cursexpectid[i]);
+	}
+	assertEquals(ct_fetch(cmd,CS_UNUSED,CS_UNUSED,
+					CS_UNUSED,&rowsread),CS_END_DATA);
+	results=ct_results(cmd,&resultstype);
+	assertEquals(results,CS_SUCCEED);
+	assertEquals(resultstype,CS_CMD_SUCCEED);
+	results=ct_results(cmd,&resultstype);
+	assertEquals(results,CS_SUCCEED);
+	assertEquals(resultstype,CS_CMD_DONE);
+	results=ct_results(cmd,&resultstype);
+	assertEquals(results,CS_END_RESULTS);
+	assertEquals(ct_cursor(cmd,CS_CURSOR_CLOSE,
+				(CS_CHAR *)NULL,CS_UNUSED,
+				(CS_CHAR *)NULL,CS_UNUSED,
+				CS_DEALLOC),CS_SUCCEED);
+	assertEquals(ct_send(cmd),CS_SUCCEED);
+	if (issybase) {
+		results=ct_results(cmd,&resultstype);
+		assertEquals(results,CS_SUCCEED);
+		assertEquals(resultstype,CS_CMD_SUCCEED);
+		results=ct_results(cmd,&resultstype);
+		assertEquals(results,CS_SUCCEED);
+		assertEquals(resultstype,CS_CMD_DONE);
+	}
+	results=ct_results(cmd,&resultstype);
+	assertEquals(results,CS_END_RESULTS);
+	assertEquals(ct_cancel(NULL,cmd,CS_CANCEL_ALL),CS_SUCCEED);
+	stdoutput.printf("\n");
+
+
+	stdoutput.printf("ct_cmd_alloc: a second command handle\n");
+	CS_COMMAND	*curscmd=NULL;
+	assertEquals(ct_cmd_alloc(dbconn,&curscmd),CS_SUCCEED);
+	stdoutput.printf("\n");
+
+
+	// Two cursors cannot be pending at once on one connection, even on
+	// separate command handles.  The second handle's declare, rows and
+	// open all return CS_SUCCEED and only its ct_send fails, with
+	// client error 51, results pending.  The first cursor is
+	// unaffected and the second handle is not wedged - it simply never
+	// opened, and works normally once nothing is pending.  That is the
+	// constraint src/connections/freetds.cpp lives under when it puts
+	// its cursor on a handle of its own.
+	stdoutput.printf("ct_cursor: a second cursor on another command\n");
+	const char	*cursid13="curs13";
+	const char	*cursid14="curs14";
+	assertEquals(ct_cursor(cmd,CS_CURSOR_DECLARE,
+				(CS_CHAR *)cursid13,CS_NULLTERM,
+				(CS_CHAR *)cursselect,CS_NULLTERM,
+				CS_READ_ONLY),CS_SUCCEED);
+	assertEquals(ct_cursor(cmd,CS_CURSOR_ROWS,
+				(CS_CHAR *)NULL,CS_UNUSED,
+				(CS_CHAR *)NULL,CS_UNUSED,
+				(CS_INT)1),CS_SUCCEED);
+	assertEquals(ct_cursor(cmd,CS_CURSOR_OPEN,
+				(CS_CHAR *)NULL,CS_UNUSED,
+				(CS_CHAR *)NULL,CS_UNUSED,
+				CS_UNUSED),CS_SUCCEED);
+	assertEquals(ct_send(cmd),CS_SUCCEED);
+	assertEquals(ct_cursor(curscmd,CS_CURSOR_DECLARE,
+				(CS_CHAR *)cursid14,CS_NULLTERM,
+				(CS_CHAR *)cursnarrow,CS_NULLTERM,
+				CS_READ_ONLY),CS_SUCCEED);
+	assertEquals(ct_cursor(curscmd,CS_CURSOR_ROWS,
+				(CS_CHAR *)NULL,CS_UNUSED,
+				(CS_CHAR *)NULL,CS_UNUSED,
+				(CS_INT)1),CS_SUCCEED);
+	assertEquals(ct_cursor(curscmd,CS_CURSOR_OPEN,
+				(CS_CHAR *)NULL,CS_UNUSED,
+				(CS_CHAR *)NULL,CS_UNUSED,
+				CS_UNUSED),CS_SUCCEED);
+	assertEquals(ct_send(curscmd),CS_FAIL);
+	if (issybase) {
+		for (CS_INT i=0; i<2; i++) {
+			results=ct_results(cmd,&resultstype);
+			assertEquals(results,CS_SUCCEED);
+			assertEquals(resultstype,CS_CMD_SUCCEED);
+			results=ct_results(cmd,&resultstype);
+			assertEquals(results,CS_SUCCEED);
+			assertEquals(resultstype,CS_CMD_DONE);
+		}
+	}
+	results=ct_results(cmd,&resultstype);
+	assertEquals(results,CS_SUCCEED);
+	assertEquals(resultstype,CS_CURSOR_RESULT);
+	for (CS_INT i=0; i<3; i++) {
+		assertEquals(ct_bind(cmd,i+1,&(cursfmt[i]),
+					(CS_VOID *)cursdata[i],
+					&(cursdatalength[i]),
+					&(cursnullindicator[i])),CS_SUCCEED);
+	}
+	for (CS_INT i=0; i<4; i++) {
+		bytestring::zero(cursdata[0],256);
+		assertEquals(ct_fetch(cmd,CS_UNUSED,CS_UNUSED,
+					CS_UNUSED,&rowsread),CS_SUCCEED);
+		assertEquals(cursdata[0],cursexpectid[i]);
+	}
+	assertEquals(ct_fetch(cmd,CS_UNUSED,CS_UNUSED,
+					CS_UNUSED,&rowsread),CS_END_DATA);
+	results=ct_results(cmd,&resultstype);
+	assertEquals(results,CS_SUCCEED);
+	assertEquals(resultstype,CS_CMD_SUCCEED);
+	results=ct_results(cmd,&resultstype);
+	assertEquals(results,CS_SUCCEED);
+	assertEquals(resultstype,CS_CMD_DONE);
+	results=ct_results(cmd,&resultstype);
+	assertEquals(results,CS_END_RESULTS);
+	assertEquals(ct_cursor(cmd,CS_CURSOR_CLOSE,
+				(CS_CHAR *)NULL,CS_UNUSED,
+				(CS_CHAR *)NULL,CS_UNUSED,
+				CS_DEALLOC),CS_SUCCEED);
+	assertEquals(ct_send(cmd),CS_SUCCEED);
+	if (issybase) {
+		results=ct_results(cmd,&resultstype);
+		assertEquals(results,CS_SUCCEED);
+		assertEquals(resultstype,CS_CMD_SUCCEED);
+		results=ct_results(cmd,&resultstype);
+		assertEquals(results,CS_SUCCEED);
+		assertEquals(resultstype,CS_CMD_DONE);
+	}
+	results=ct_results(cmd,&resultstype);
+	assertEquals(results,CS_END_RESULTS);
+	assertEquals(ct_cancel(NULL,cmd,CS_CANCEL_ALL),CS_SUCCEED);
+	stdoutput.printf("\n");
+
+
+	stdoutput.printf("ct_command: on the second handle\n");
+	query="select count(*) from cursortable";
+	assertEquals(ct_command(curscmd,CS_LANG_CMD,
+					query,charstring::getLength(query),
+					CS_UNUSED),CS_SUCCEED);
+	assertEquals(ct_send(curscmd),CS_SUCCEED);
+	results=ct_results(curscmd,&resultstype);
+	assertEquals(results,CS_SUCCEED);
+	assertEquals(resultstype,CS_ROW_RESULT);
+	bytestring::zero(cursdata[0],256);
+	assertEquals(ct_bind(curscmd,1,&(cursfmt[0]),
+				(CS_VOID *)cursdata[0],
+				&(cursdatalength[0]),
+				&(cursnullindicator[0])),CS_SUCCEED);
+	assertEquals(ct_fetch(curscmd,CS_UNUSED,CS_UNUSED,
+					CS_UNUSED,&rowsread),CS_SUCCEED);
+	assertEquals(cursdata[0],"4");
+	assertEquals(ct_fetch(curscmd,CS_UNUSED,CS_UNUSED,
+					CS_UNUSED,&rowsread),CS_END_DATA);
+	results=ct_results(curscmd,&resultstype);
+	assertEquals(results,CS_SUCCEED);
+	assertEquals(resultstype,CS_CMD_DONE);
+	results=ct_results(curscmd,&resultstype);
+	assertEquals(results,CS_END_RESULTS);
+	assertEquals(ct_cancel(NULL,curscmd,CS_CANCEL_ALL),CS_SUCCEED);
+	assertEquals(ct_cmd_drop(curscmd),CS_SUCCEED);
+	stdoutput.printf("\n");
+
+
+	// Two cursors above are deliberately left open - curs5 by the
+	// mid-fetch cancel, curs11 by the second declare taking over
+	// libct's slot - and neither can be reached through ct_cursor any
+	// more.  ASE counts them and refuses to drop the table underneath
+	// them, server error 118, "Cannot drop or replace the table
+	// because it is currently in use".  MSSQL does not care and drops
+	// it either way.  So the first drop is asserted per backend.
+	stdoutput.printf("ct_command: drop\n");
+	query="drop table cursortable";
+	assertEquals(ct_command(cmd,CS_LANG_CMD,
+					query,charstring::getLength(query),
+					CS_UNUSED),CS_SUCCEED);
+	assertEquals(ct_send(cmd),CS_SUCCEED);
+	results=ct_results(cmd,&resultstype);
+	assertEquals(results,CS_SUCCEED);
+	assertEquals(resultstype,(issybase)?CS_CMD_FAIL:CS_CMD_SUCCEED);
+	results=ct_results(cmd,&resultstype);
+	assertEquals(results,CS_SUCCEED);
+	assertEquals(resultstype,CS_CMD_DONE);
+	results=ct_results(cmd,&resultstype);
+	assertEquals(results,CS_END_RESULTS);
+	assertEquals(ct_cancel(NULL,cmd,CS_CANCEL_ALL),CS_SUCCEED);
+	stdoutput.printf("\n");
+
+
+	// so close the two orphans by name and drop it again.  These are
+	// unasserted because which cursors are still open is a detail of
+	// the blocks above, not something this teardown should pin.
+	if (issybase) {
+
+		const char	*cursdealloc[2]={
+					"deallocate cursor curs5",
+					"deallocate cursor curs11"};
+		for (CS_INT i=0; i<2; i++) {
+			ct_command(cmd,CS_LANG_CMD,(CS_CHAR *)cursdealloc[i],
+					charstring::getLength(cursdealloc[i]),
+					CS_UNUSED);
+			ct_send(cmd);
+			while (ct_results(cmd,&resultstype)==CS_SUCCEED) {}
+			ct_cancel(NULL,cmd,CS_CANCEL_ALL);
+		}
+
+		stdoutput.printf("ct_command: drop\n");
+		assertEquals(ct_command(cmd,CS_LANG_CMD,
+					query,charstring::getLength(query),
+					CS_UNUSED),CS_SUCCEED);
+		assertEquals(ct_send(cmd),CS_SUCCEED);
+		results=ct_results(cmd,&resultstype);
+		assertEquals(results,CS_SUCCEED);
+		assertEquals(resultstype,CS_CMD_SUCCEED);
+		results=ct_results(cmd,&resultstype);
+		assertEquals(results,CS_SUCCEED);
+		assertEquals(resultstype,CS_CMD_DONE);
+		results=ct_results(cmd,&resultstype);
+		assertEquals(results,CS_END_RESULTS);
+		assertEquals(ct_cancel(NULL,cmd,CS_CANCEL_ALL),CS_SUCCEED);
+		stdoutput.printf("\n");
+	}
 
 
 	stdoutput.printf("\n================ Binds ================\n\n");
