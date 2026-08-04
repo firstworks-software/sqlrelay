@@ -361,6 +361,12 @@
 		missingValueOption(), which knows the connection options that
 		every client tool takes, so sqlr-import and sqlr-export only
 		list their own
+	fixed sqlrsh show catalogs - the four show catalogs commands compared
+		one byte too many, which dragged the literal's terminating null
+		into the comparison, so only the bare forms matched and
+		show catalogs like 'pattern', and its mysql, odbc and jdbc
+		variants, fell through and were sent to the database as SQL,
+		failing with a syntax error
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems
