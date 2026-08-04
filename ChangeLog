@@ -170,6 +170,20 @@
 		write the number of failed statements to stderr at the end of
 		the run, and redefined exit code 4 as "at least one statement
 		failed", since it no longer means that sqlrsh stopped there
+	added the sqlrsh -final, -autocommit, -nullsasnulls, -debug,
+		-validatebinds and -bindvariabledelimiters options, so that
+		every setting that means something before the first query has
+		run is reachable as a command line option as well as a
+		command, and left cache, opencache and the per-query bind
+		commands as commands only, since a cache file belongs next to
+		the query it caches and a bind belongs to one query
+	fixed the sqlrsh lazyfetch, txqueries and continueonerror commands - a
+		bare one of them was matched with a trailing space, so it fell
+		through to the database as a query rather than turning the
+		setting off
+	fixed the sqlrsh nullsasnulls command - a bare one, or one with an
+		unrecognized value, did nothing at all, rather than turning
+		the setting off the way every other on|off command does
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems

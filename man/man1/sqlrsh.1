@@ -181,6 +181,18 @@ Defaults to off.
 \fB\-getasnumber\fR on|off
 Calls getFieldAs(Integer|Double) as appropriate.
 Defaults to off.
+.TP
+\fB\-nullsasnulls\fR on|off
+Get nulls as nulls, rather than as empty
+strings.  csv, json and jsonl can only tell the
+two apart while this is on.  Defaults to off.
+.TP
+\fB\-debug\fR on|off
+Write the client library debug messages to
+stdout.  Defaults to off.
+.TP
+\fB\-debug\fR filename
+Write them to the named file instead.
 .SS "Fetch options:"
 .TP
 \fB\-resultsetbuffersize\fR rows
@@ -200,6 +212,24 @@ than just the first.  Defaults to off.
 Send begin, commit and rollback to the database
 as queries, rather than running them as
 commands.  Defaults to off.
+.SS "Bind variable options:"
+.TP
+\fB\-validatebinds\fR on|off
+Ignore bind variables the query does not have,
+rather than failing.  Defaults to off.
+.TP
+\fB\-bindvariabledelimiters\fR delimiters
+Recognize the given bind variable delimiters,
+from the set ? : @ $.
+.SS "Session options:"
+.TP
+\fB\-final\fR on|off
+End the session after every query, so each one
+gets a session of its own.  Defaults to off.
+.TP
+\fB\-autocommit\fR on|off
+Commit after every query.  Without this the
+server decides, so there is no default here.
 .SS "Other options:"
 .TP
 \fB\-locale\fR env|locale_name
@@ -229,12 +259,16 @@ An on|off option with no value means on, so \fB\-headers\fR by itself turns
 headers on.  Any value that does not begin with "on" means off, and nothing is
 said about it, so \fB\-headers\fR garbage turns headers off.
 .PP
+\fB\-debug\fR is the exception.  A value that is neither on nor off is a file
+name, the same as it is for the debug command.
+.PP
 \fB\-quiet\fR is applied before the individual options, so
 "\fB\-quiet\fR \fB\-headers\fR on" gives headers on and stats off.
 .PP
 Every one of these settings is also a command, but a command with no value
 means off, not on, so "headers;" turns headers off.  Some settings are
-reachable as a command only.
+reachable as a command only, cache, opencache and the bind variable commands
+among them.
 .SH "OUTPUT FORMATS"
 .SS plain
 Columns are space padded, the column names go above the result set, a line of

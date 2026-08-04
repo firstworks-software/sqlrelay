@@ -1071,15 +1071,15 @@ int sqlrsh::commandType(const char *command) {
 					"setresultsetbuffersize ",23) ||
 		!charstring::compareIgnoringCase(ptr,
 					"getresultsetbuffersize") ||
-		!charstring::compareIgnoringCase(ptr,"lazyfetch ",10) ||
+		!charstring::compareIgnoringCase(ptr,"lazyfetch",9) ||
 		!charstring::compareIgnoringCase(ptr,"endsession") ||
 		!charstring::compareIgnoringCase(ptr,"querytree") ||
 		!charstring::compareIgnoringCase(ptr,"translatedquery") ||
 		!charstring::compareIgnoringCase(ptr,"response timeout",16) ||
 		!charstring::compareIgnoringCase(ptr,"cache ",6) ||
 		!charstring::compareIgnoringCase(ptr,"opencache ",10) ||
-		!charstring::compareIgnoringCase(ptr,"txqueries ",10) ||
-		!charstring::compareIgnoringCase(ptr,"continueonerror ",16)) {
+		!charstring::compareIgnoringCase(ptr,"txqueries",9) ||
+		!charstring::compareIgnoringCase(ptr,"continueonerror",15)) {
 
 		// return value of 1 is internal command
 		return 1;
@@ -1467,8 +1467,8 @@ bool sqlrsh::internalCommand(sqlrconnection *sqlrcon, sqlrcursor *sqlrcur,
 		ptr=ptr+23;
 		env->rsbs=charstring::convertToInteger(ptr);
 		return true;
-	} else if (!charstring::compareIgnoringCase(ptr,"lazyfetch ",10)) {
-		ptr=ptr+10;
+	} else if (!charstring::compareIgnoringCase(ptr,"lazyfetch",9)) {
+		ptr=ptr+9;
 		cmdtype=12;
 	} else if (!charstring::compareIgnoringCase(
 					ptr,"getresultsetbuffersize")) {
@@ -1511,12 +1511,12 @@ bool sqlrsh::internalCommand(sqlrconnection *sqlrcon, sqlrcursor *sqlrcur,
 		return cache(env,sqlrcur,command);
 	} else if (!charstring::compareIgnoringCase(ptr,"opencache ",10)) {
 		return openCache(env,sqlrcur,command);
-	} else if (!charstring::compareIgnoringCase(ptr,"txqueries ",10)) {
-		ptr=ptr+10;
+	} else if (!charstring::compareIgnoringCase(ptr,"txqueries",9)) {
+		ptr=ptr+9;
 		cmdtype=13;
 	} else if (!charstring::compareIgnoringCase(
-					ptr,"continueonerror ",16)) {
-		ptr=ptr+16;
+					ptr,"continueonerror",15)) {
+		ptr=ptr+15;
 		cmdtype=18;
 	} else {
 		return false;
@@ -1546,16 +1546,6 @@ bool sqlrsh::internalCommand(sqlrconnection *sqlrcon, sqlrcursor *sqlrcur,
 		} else {
 			sqlrcon->debugOn();
 			sqlrcon->setDebugFile(ptr);
-		}
-		return true;
-	}
-
-	// handle nullsasnulls
-	if (cmdtype==9) {
-		if (!charstring::compareIgnoringCase(ptr,"on",2)) {
-			sqlrcur->getNullsAsNulls();
-		} else if (!charstring::compareIgnoringCase(ptr,"off",3)) {
-			sqlrcur->getNullsAsEmptyStrings();
 		}
 		return true;
 	}
@@ -1618,7 +1608,15 @@ bool sqlrsh::internalCommand(sqlrconnection *sqlrcon, sqlrcursor *sqlrcur,
 					return false;
 				}
 			}
+			env->autocommit=toggle;
 			autocommit(env,toggle);
+			break;
+		case 9:
+			if (toggle) {
+				sqlrcur->getNullsAsNulls();
+			} else {
+				sqlrcur->getNullsAsEmptyStrings();
+			}
 			break;
 		case 12:
 			env->lazyfetch=toggle;
@@ -5492,8 +5490,8 @@ bool sqlrsh::onOffOption(const char *arg, bool defaultvalue) {
 }
 
 // the options that require a value, in one place
-// (the on/off options aren't here, and neither are -krb and -tls, because a
-// bare one of those is legal and means on)
+// (the on/off options aren't here, and neither are -krb, -tls and -debug,
+// because a bare one of those is legal and means on)
 static const char * const	valueoptions[]={
 	"config",
 	"id",
@@ -5512,6 +5510,7 @@ static const char * const	valueoptions[]={
 	"tlsvalidate",
 	"tlsca",
 	"tlsdepth",
+	"bindvariabledelimiters",
 	"script",
 	"command",
 	"delimiter",
@@ -5623,7 +5622,12 @@ int32_t sqlrsh::execute(int argc, const char **argv) {
 			"        [-getasnumber (on|off)] "
 			"[-nextresultset (on|off)]\n"
 			"        [-lazyfetch (on|off)] [-txqueries (on|off)]\n"
-			"        [-continueonerror (on|off)]\n"
+			"        [-continueonerror (on|off)] "
+			"[-nullsasnulls (on|off)]\n"
+			"        [-final (on|off)] [-autocommit (on|off)]\n"
+			"        [-validatebinds (on|off)]\n"
+			"        [-bindvariabledelimiters delimiters]\n"
+			"        [-debug (on|off|file)]\n"
 			"        [-resultsetbuffersize rows] "
 			"[-delimiter char]\n"
 			"        [-locale (env|name)] [-localstatedir dir]\n"
@@ -5732,6 +5736,33 @@ int32_t sqlrsh::execute(int argc, const char **argv) {
 						tlsvalidate,tlsca,tlsdepth);
 	}
 
+	// handle debug
+	// A bare -debug means on, and a value that is neither on nor off is a
+	// file to write to, the way the debug command takes one.  This runs
+	// before the connection is checked below, so a connection that fails
+	// can be debugged too.
+	if (cmdline->isFound("debug")) {
+		const char	*debugvalue=cmdline->getValue("debug");
+		if (charstring::isNullOrEmpty(debugvalue) ||
+			!charstring::compareIgnoringCase(debugvalue,"on",2)) {
+			sqlrcon.debugOn();
+			sqlrcon.setDebugFile(NULL);
+		} else if (!charstring::compareIgnoringCase(
+						debugvalue,"off",3)) {
+			sqlrcon.debugOff();
+			sqlrcon.setDebugFile(NULL);
+		} else {
+			sqlrcon.debugOn();
+			sqlrcon.setDebugFile(debugvalue);
+		}
+	}
+
+	// handle the bind variable delimiters
+	if (cmdline->isFound("bindvariabledelimiters")) {
+		sqlrcon.setBindVariableDelimiters(
+			cmdline->getValue("bindvariabledelimiters"));
+	}
+
 	// set up an sqlrshenv
 	sqlrshenv	env;
 
@@ -5772,6 +5803,19 @@ int32_t sqlrsh::execute(int argc, const char **argv) {
 	env.noelapsed=onOffOption("noelapsed",env.noelapsed);
 	env.nextresultset=onOffOption("nextresultset",env.nextresultset);
 	env.continueonerror=onOffOption("continueonerror",env.continueonerror);
+	env.final=onOffOption("final",env.final);
+	env.validatebinds=onOffOption("validatebinds",env.validatebinds);
+
+	// handle nullsasnulls
+	// (the client library hands back empty strings unless it's told
+	// otherwise, so only an explicit option changes it)
+	if (cmdline->isFound("nullsasnulls")) {
+		if (onOffOption("nullsasnulls",false)) {
+			sqlrcur.getNullsAsNulls();
+		} else {
+			sqlrcur.getNullsAsEmptyStrings();
+		}
+	}
 
 	// handle the delimiter
 	// The delimeter misspelling is accepted as an option because the
@@ -5797,6 +5841,22 @@ int32_t sqlrsh::execute(int argc, const char **argv) {
 		delete[] defaultpassword;
 		delete[] decryptedpassword;
 		return SQLRSH_EXIT_CONNECTION;
+	}
+
+	// handle autocommit
+	// The server decides it otherwise, so only an explicit option changes
+	// it.  Unlike the autocommit command, this doesn't write a banner.
+	if (cmdline->isFound("autocommit")) {
+		env.autocommit=onOffOption("autocommit",env.autocommit);
+		bool	success=(env.autocommit)?sqlrcon.autoCommitOn():
+						sqlrcon.autoCommitOff();
+		if (!success) {
+			displayError(&env,NULL,sqlrcon.errorMessage(),
+						sqlrcon.errorNumber());
+			delete[] defaultpassword;
+			delete[] decryptedpassword;
+			return SQLRSH_EXIT_CONNECTION;
+		}
 	}
 
 	// process RC files
@@ -5898,6 +5958,15 @@ static void helpmessage(const char *progname) {
 		"	-getasnumber on|off	calls getFieldAs(Integer|Double) as appropriate.\n"
 		"				Defaults to off.\n"
 		"\n"
+		"	-nullsasnulls on|off	Get nulls as nulls, rather than as empty\n"
+		"				strings.  csv, json and jsonl can only tell the\n"
+		"				two apart while this is on.  Defaults to off.\n"
+		"\n"
+		"	-debug on|off		Write the client library debug messages to\n"
+		"				stdout.  Defaults to off.\n"
+		"\n"
+		"	-debug filename		Write them to the named file instead.\n"
+		"\n"
 		"Fetch options:\n"
 		"	-resultsetbuffersize rows\n"
 		"				Fetch result sets using the specified number of\n"
@@ -5913,6 +5982,21 @@ static void helpmessage(const char *progname) {
 		"	-txqueries on|off	Send begin, commit and rollback to the database\n"
 		"				as queries, rather than running them as\n"
 		"				commands.  Defaults to off.\n"
+		"\n"
+		"Bind variable options:\n"
+		"	-validatebinds on|off	Ignore bind variables the query does not have,\n"
+		"				rather than failing.  Defaults to off.\n"
+		"\n"
+		"	-bindvariabledelimiters delimiters\n"
+		"				Recognize the given bind variable delimiters,\n"
+		"				from the set ? : @ $.\n"
+		"\n"
+		"Session options:\n"
+		"	-final on|off		End the session after every query, so each one\n"
+		"				gets a session of its own.  Defaults to off.\n"
+		"\n"
+		"	-autocommit on|off	Commit after every query.  Without this the\n"
+		"				server decides, so there is no default here.\n"
 		"\n"
 		"Other options:\n"
 		"	-locale env|locale_name	calls setlocale(LC_ALL, locale_name).\n"
@@ -5942,9 +6026,13 @@ static void helpmessage(const char *progname) {
 		"about it.  -quiet is applied before the others, so \"-quiet -headers on\" gives\n"
 		"headers on and stats off.\n"
 		"\n"
+		"-debug is the exception.  A value that is neither on nor off is a file name,\n"
+		"the same as it is for the debug command.\n"
+		"\n"
 		"Every one of these settings is also a command, but a command with no value\n"
 		"means off, not on, so \"headers;\" turns headers off.  Some settings are\n"
-		"commands only.  Run \"help;\" for the full list.\n"
+		"commands only, cache, opencache and the bind variable commands among them.\n"
+		"Run \"help;\" for the full list.\n"
 		"\n"
 		"Output formats:\n"
 		"\n"
