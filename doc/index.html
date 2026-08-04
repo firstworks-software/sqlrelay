@@ -1,0 +1,559 @@
+<html>
+<head>
+	<title>firstworks: SQL Relay - sqlrelay persistent database connection pool pooling proxy load balance balancing odbc oracle mysql msql postgresql sybase db2 interbase sqlite access c++ perl DBD DBI python php PDO ruby tcl java jni unix linux persistant</title>
+
+	<link rel="stylesheet" href="css/style.css"/>
+	<script type="text/javascript">
+
+  var _gaq = _gaq || [];
+  _gaq.push(['_setAccount', 'UA-23306117-3']);
+  _gaq.push(['_trackPageview']);
+
+  (function() {
+    var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+    ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+    var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+  })();
+
+</script>
+
+	<script language="Javascript" src="js/rotate.js"></script>
+	<script language="Javascript" src="js/backendsrotate.js"></script>
+	<script language="Javascript" src="js/button.js"></script>
+</head>
+<body onload="rotate(); backendsRotate(); setButton();">
+
+
+<div style="position: fixed; top: 0px; left: 0px; width: 100%; z-index: 100;">
+
+<span id="firstworks">a <b><a href="http://www.firstworks.com">firstworks</a></b> project</span>
+
+<div id="projectbox"><a href="index.html"><img src="images/sqlrelay-icon.png"/><span id="name">SQL Relay</span></a></div>
+
+<table id="projectbuttons">
+<tr>
+<td style="width: 50%;"></td>
+<td class="button nonlastbutton"><a id="button-about" href="index.html">About</a></td>
+<td class="button nonlastbutton"><a id="button-documentation" href="documentation.html">Documentation</a></td>
+<td class="button nonlastbutton"><a id="button-faq" href="faq.html">FAQ</a></td>
+<td class="button nonlastbutton"><a id="button-download" href="download.html">Download</a></td>
+<td class="button nonlastbutton"><a id="button-license" href="license.html">Licensing</a></td>
+<td class="button nonlastbutton"><a id="button-support" href="support.html">Support</a></td>
+<td class="button lastbutton"><a id="button-news" target="_blank" href="http://software.firstworks.com">News</a></td>
+<td style="width: 50%;"></td>
+</tr>
+</table>
+
+</div>
+
+<div style="position: absolute; top: 89px; width: 100%;">
+
+
+<div id="slidebuttons">
+
+<div class="centered">
+
+<a href="javascript: slide(0);"><img class="slidebutton" src="images/denimdot.png"/></a>
+<a href="javascript: slide(1);"><img class="slidebutton" src="images/graydenimdot.png"/></a>
+<a href="javascript: slide(2);"><img class="slidebutton" src="images/graydenimdot.png"/></a>
+
+</div>
+
+</div>
+
+<div class="slide" style="background-image: url('images/fair.jpg');">
+
+<div class="slidecontent" style="background-color: rgba(255,255,255,0.90);" onclick="location.href='download.html';" onmouseover="this.style.cursor='pointer';">
+
+<center>
+<br/>
+<br/>
+<p><span style="font-size: 24px;">SQL Relay 2.2.1</span></p>
+
+<table style="margin-top: 30px;">
+<tr>
+<td>
+<p style="font-size: 20px;">Featuring...</p>
+<p style="font-size: 17px;  margin-left: 10px; margin-right: 30px;">
+Native JDBC driver<br/>
+Configurable transaction models<br/>
+ODBC driver improvements<br/>
+Savepoints module<br/>
+</td>
+<td>
+<img src="images/sqlrelay.png"/>
+</td>
+</tr>
+</table>
+</center>
+
+</div> <!-- slidecontent -->
+
+</div> <!-- slide -->
+
+<div class="slide hidden" style="background-image: url('images/ocean.jpg');">
+
+<div class="slidecontent" onclick="location.href='features/nativeprotocol.html';" onmouseover="this.style.cursor='pointer';">
+
+<p><span style="margin-left: 49px;"></span><span style="font-size: 22px;">SQL Relay Speaks MySQL and PostgreSQL</span></p>
+
+<br/>
+
+<div style="margin-left: 100px;">
+<p>The <b>MySQL</b> and <b>PostgreSQL</b> protocol modules enable SQL Relay to speak the MySQL and PostgreSQL client-server protocols,<br/>making it a transparent, server-only proxy for MySQL and PostgreSQL databases.</p>
+
+<br/>
+<br/>
+
+<img style="margin-left: 50px;" src="images/sqlrelaymysqlprotocol.png"/>
+<img style="margin-left: 100px;" src="images/sqlrelaypostgresqlprotocol.png"/>
+
+<br/>
+<br/>
+</div>
+
+</div> <!-- slidecontent -->
+
+</div> <!-- slide -->
+
+<div class="slide hidden" style="background-image: url('images/contrails.jpg');">
+
+<div class="slidecontent" style="background-color: rgba(255,255,255,0.80);" onclick="location.href='http://software.firstworks.com/p/current-sql-relay-benchmarks.html';" onmouseover="this.style.cursor='pointer';">
+
+<img style="float: right; height: 220px; margin-top: 40px; margin-left: 20px; margin-right: 50px;" src="images/mysql-bench.png"/>
+
+<br/>
+
+<center>
+<p><span style="font-size: 18px;">How does SQL Relay compare to direct connections?</span></p>
+
+<br/>
+
+<p><span style="font-size: 14px;">SQL Relay maximizes throughput by eliminating the connection delay.</span></p>
+
+<br/>
+
+<img src="images/app-to-sqlr-to-db.png"/>
+
+<br/>
+
+<p><span style="font-size: 14px;"><u>See how much SQL Relay can speed up your database.</u></span></p>
+
+</center>
+
+</div> <!-- slidecontent -->
+
+</div> <!-- slide -->
+
+
+
+<div id="newsbox"><center><iframe src="http://trails.firstworks.com/firstworks/newsbox1.php" scrolling="no"></iframe></center></div>
+
+
+<table class="presentation">
+<tr>
+<td style="width: 30%"></td>
+<td style="width: 40%">
+
+<center>
+<p style="font-size: 18px;">Presenting <b>SQL Relay</b> - the database proxy and database connection management solution.</p>
+
+<img src="images/sqlrelay.png"/>
+
+<p style="font-size: 18px;">SQL Relay provides...</p>
+
+</center>
+
+
+</td>
+<td style="width: 30%"></td>
+</tr>
+</table>
+
+
+<hr style="clear: both;"/>
+
+
+<table class="presentation">
+<tr>
+<td style="width: 41%">
+
+<a href="features/connectionpooling.html">
+<div style="float: right;  margin-right: 20px;">
+<p><span class="title">Persistent Database Connection Pooling</span><br/>
+Improve performance and responsiveness of database-driven web-based applications.</p>
+
+<div style="margin-left: 25px;">
+<p style="margin-top: 25px; margin-left: 25px;">
+Without SQL Relay:<br/>
+<img style="margin-top: 10px;" src="images/app-to-db.png"/>
+</p>
+
+<p style="margin-left: 75px;">
+With SQL Relay:<br/>
+<img src="images/app-to-sqlr-to-db.png"/>
+</p>
+</div>
+
+</div>
+</a>
+
+</td>
+<td style="width: 1px; background-color: #F0F0F0; padding: 1px;"></td>
+<td style="width: 18%">
+
+<a href="features/throttling.html">
+<div style="float: right;  margin-right: 20px;">
+<p><span class="title">Throttling</span><br/>
+Limit the number of connections to a given database and queue clients rather than denying them access.</p>
+
+<img style="margin-top: 20px; margin-left: 30px;" src="images/app-to-sqlr-to-db-queued.png"/>
+
+</div>
+</a>
+
+</td>
+<td style="width: 1px; background-color: #F0F0F0; padding: 1px;"></td>
+<td style="width: 41%">
+
+<a href="features/lbfoha.html">
+<div style="float: left;  margin-left: 20px;">
+<p><span class="title">Load Balancing, Failover, and High Availability</span><br/>
+Distribute database traffic over clustered or replicated databases for scalability and failover.</p>
+
+<img style="margin-left: 20px; margin-bottom: 20px;" src="images/cluster.png"/>
+
+<img style="margin-lefT: 20px;" src="images/replicated.png"/>
+
+</div>
+</a>
+
+</td>
+</tr>
+</table>
+
+
+<hr style="clear: both;"/>
+
+
+<table class="presentation">
+<tr>
+<td style="width: 40%;">
+
+<a href="features/routing.html">
+<div style="float: right;  margin-right: 20px;">
+<p><span class="title">Query and Session Routing</span><br/>
+Route DML to masters and distribute selects over slaves.<br/>
+Route sessions by user, database, client ip and more.</p>
+
+<img style="margin-left: 50px;" src="images/router.png"/>
+
+</div>
+</a>
+
+</td>
+<td style="width: 1px; background-color: #F0F0F0; padding: 1px;"></td>
+<td style="width: 20%;">
+
+<a href="features/datatranslation.html">
+<div style="width: 300px;  margin: auto;">
+<p><span class="title">Data Translation</span><br/>
+Translate queries, result sets, and errors.</p>
+
+<img style="margin-top: 15px; margin-left: 5px;" src="images/translation-query.png"/>
+
+</div>
+</a>
+
+</td>
+<td style="width: 1px; background-color: #F0F0F0; padding: 1px;"></td>
+<td style="width: 40%;">
+
+<a href="features/triggers.html">
+<div style="float: left;  margin-left: 20px;">
+<p><span class="title">Triggers</span><br/>
+Trigger on DML or non-DML queries.<br/>
+Perform database or os-level tasks.</p>
+
+<img style="margin-top: 15px; margin-left: 50px;" src="images/triggers.png"/>
+
+</div>
+</a>
+
+</td>
+</tr>
+</table>
+
+
+<hr style="clear: both;"/>
+
+
+<table class="presentation">
+<tr>
+<td>
+
+<a href="features/security.html">
+<div style="float: right;  margin-right: 20px;">
+<p><span class="title">Enhanced Database Security</span><br/>
+Secure your database with TLS and Kerberos auth on front and<br/>
+back ends, IP filtering, Connection Schedules, and Query Filtering.</p>
+
+<img style="margin-top: 15px; margin-left: 25px;" src="images/secure.png"/>
+
+<br/>
+
+<img style="margin-top: 15px; margin-left: 50px;" src="images/query-rejected.png"/>
+
+</div>
+</a>
+
+</td>
+<td style="width: 1px; background-color: #F0F0F0; padding: 1px;"></td>
+<td>
+
+<a href="features/notifications.html">
+<div style="float: left;  margin-left: 20px;">
+<p><span class="title">Notifications</span><br/>
+Receive notifications when various events occur.</p>
+
+<img style="margin-top: 15px; margin-left: 50px;" src="images/notifications.png"/>
+
+</div>
+</a>
+
+</td>
+</tr>
+</table>
+
+
+<hr style="clear: both;"/>
+
+
+<table class="presentation">
+<tr>
+<td style="width: 40%;">
+
+<a href="features/frontends.html">
+<div style="float: right;  margin-right: 20px;">
+<p><span class="title">Front-End Compatiblity</span><br/>
+SQL Relay speaks MySQL, PostgreSQL, and its own<br/>
+SQLRClient front-end protocols.</p>
+
+<table>
+<tr>
+<td>
+<ul>
+<li><b>MySQL</b></li>
+<li><b>PostgreSQL</b></li>
+<li><b>SQLRClient</b></li>
+</ul>
+</td>
+<td>
+<img src="images/protocols.png">
+</td>
+</tr>
+</table>
+
+</div>
+</a>
+
+</td>
+<td style="width: 1px; background-color: #F0F0F0; padding: 1px;"></td>
+<td style="width: 20%;">
+
+<a href="features/backends.html">
+<div style="width: 420px;  margin: auto;">
+<p><span class="title">Back-End Compatiblity</span><br/>
+SQL Relay supports most popular commercial and open-source<br/>
+database back-ends.</p>
+
+<ul style="float: left;">
+<li><b>Oracle</b></li>
+<li><b>MS&nbsp;SQL&nbsp;Server</b></li>
+<li><b>SAP/Sybase</b></li>
+<li><b>IBM DB2</b></li>
+<li><b>MySQL</b></li>
+<li><b>PostgreSQL</b></li>
+<li><b>Firebird</b></li>
+<li><b>SQLite</b></li>
+<li><b>ODBC</b></li>
+</ul>
+
+<table style="border: 0px; margin: 0px; padding: 0px;">
+<tr style="border: 0px; margin: 0px; padding: 0px;">
+<td style="border: 0px; margin: 0px; padding: 0px;">
+<img style="margin-left: 20px; margin-right: 0px; border-right: 0px;" src="images/sqlrelay-bare.png"/>
+</td>
+<td style="border: 0px; margin: 0px; padding: 0px;">
+<img class="backend" style="vertical-align: top; margin-top: 46px; margin-left: 5px; margin-right: 0px; border-left: 0px; border-right: 0px;"  src="images/oracle.png"/>
+<img class="backend hidden" style="vertical-align: top; margin-top: 18px; margin-left: 5px; border-left: 0px;"  src="images/mssql.png"/>
+<img class="backend hidden" style="vertical-align: top; margin-top: 35px; margin-left: 5px; border-left: 0px;"  src="images/sap.png"/>
+<img class="backend hidden" style="vertical-align: top; margin-top: 25px; margin-left: 5px; border-left: 0px;"  src="images/db2.png"/>
+<img class="backend hidden" style="vertical-align: top; margin-top: 10px; margin-left: 5px; border-left: 0px;"  src="images/mysql.png"/>
+<img class="backend hidden" style="vertical-align: top; margin-top: 20px; margin-left: 5px; border-left: 0px;"  src="images/postgresql.png"/>
+<img class="backend hidden" style="vertical-align: top; margin-top: 28px; margin-left: 5px; border-left: 0px;"  src="images/firebird.png"/>
+<img class="backend hidden" style="vertical-align: top; margin-top: 33px; margin-left: 5px; border-left: 0px;"  src="images/sqlite.png"/>
+<img class="backend hidden" style="vertical-align: top; margin-top: 38px; margin-left: 5px; border-left: 0px;" src="images/odbc.png"/>
+</td>
+</tr>
+</table>
+
+</div>
+</a>
+
+</td>
+<td style="width: 1px; background-color: #F0F0F0; padding: 1px;"></td>
+<td style="width: 40%;">
+
+<a href="features/platforms.html">
+<div style="float: left;  margin-left: 20px;">
+<p><span class="title">Platform Compatibility</span><br/>
+SQL Relay supports Linux, Unix, and Windows platforms, independent of<br/>
+architecture and provides database access from platforms unsupported by<br/>
+the database vendor.</p>
+
+<table>
+<tr>
+<td>
+<ul>
+<li><b>Linux</b></li>
+<li><b>FreeBSD</b></li>
+<li><b>NetBSD</b></li>
+<li><b>OpenBSD</b></li>
+<li><b>Windows</b></li>
+<li><b>x86-64</b></li>
+<li><b>ARM</b></li>
+<li><b>MIPS</b></li>
+<li><b>PowerPC</b></li>
+</ul>
+</td>
+<td>
+<img src="images/proxying.png"/>
+</td>
+</tr>
+</table>
+
+</div>
+</a>
+
+</td>
+</tr>
+</table>
+
+
+<hr style="clear: both;"/>
+
+
+<table class="presentation">
+<tr>
+<td>
+
+<a href="features/dbabstractionlayers.html">
+<div style="float: right;  margin-right: 20px;">
+<p><span class="title">Database Abstraction Layers</span><br/>
+SQL Relay provides drivers for several popular database abstraction layers.</p>
+
+<table>
+<tr>
+<td>
+<ul>
+<li><b>PHP PDO</b></li>
+<li><b>Perl DBI</b></li>
+<li><b>Python DB</b></li>
+<li><b>ODBC</b></li>
+<li><b>JDBC</b></li>
+</ul>
+</td>
+<td>
+<img src="images/app-phppdo-sqlr-mysql.png"/><br/>
+<img src="images/app-perldbi-sqlr-mysql.png"/><br/>
+<img src="images/app-pythondb-sqlr-mysql.png"/><br/>
+<img src="images/app-odbc-sqlr-mysql.png"/><br/>
+<img src="images/app-jdbc-sqlr-mysql.png"/>
+</td>
+</tr>
+</table>
+
+</div>
+</a>
+
+</td>
+<td style="width: 1px; background-color: #F0F0F0; padding: 1px;"></td>
+<td>
+
+<a href="features/nativeapi.html">
+<div style="float: left;  margin-left: 20px;">
+<p><span class="title">Native APIs</span><br/>
+Develop new applications with clean and powerful native APIs for most popular programming languages.</p>
+
+<table>
+<tr>
+<td>
+<ul>
+<li><b>C</b></li>
+<li><b>C++</b></li>
+<li><b>C#</b></li>
+<li><b>Perl</b></li>
+<li><b>Python</b></li>
+<li><b>PHP</b></li>
+<li><b>Ruby</b></li>
+<li><b>Java</b></li>
+<li><b>TCL</b></li>
+<li><b>Erlang</b></li>
+<li><b>node.js</b></li>
+</ul>
+</td>
+<td>
+<div class="code" style="font-size: 9px;">
+<font face="monospace">
+<font color="#800080">#!/usr/bin/perl</font><br/>
+<br/>
+<font color="#a52a2a"><b>use&nbsp;</b></font>SQLRelay::Connection;<br/>
+<font color="#a52a2a"><b>use&nbsp;</b></font>SQLRelay::Cursor;<br/>
+<br/>
+<font color="#008b8b">$sqlrcon</font>=SQLRelay::Connection-&gt;new(<font color="#ff00ff">&quot;</font><font color="#ff00ff">examplehost</font><font color="#ff00ff">&quot;</font>,<font color="#ff00ff">9000</font>,<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#ff00ff">&quot;</font><font color="#ff00ff">/tmp/example.socket</font><font color="#ff00ff">&quot;</font>,<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#ff00ff">&quot;</font><font color="#ff00ff">exampleuser</font><font color="#ff00ff">&quot;</font>,<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#ff00ff">&quot;</font><font color="#ff00ff">examplepassword</font><font color="#ff00ff">&quot;</font>,<font color="#ff00ff">0</font>,<font color="#ff00ff">1</font>);<br/>
+<font color="#008b8b">$sqlrcur</font>=SQLRelay::Cursor-&gt;new(<font color="#008b8b">$sqlrcon</font>);<br/>
+<br/>
+<font color="#008b8b">$sqlrcur</font><font color="#008b8b">-&gt;sendQuery</font>(<font color="#ff00ff">&quot;</font><font color="#ff00ff">select * from exampletable</font><font color="#ff00ff">&quot;</font>);<br/>
+<font color="#a52a2a"><b>for</b></font>&nbsp;(<font color="#008b8b">$row</font>=<font color="#ff00ff">0</font>;&nbsp;<font color="#008b8b">$row</font>&lt;<font color="#008b8b">$sqlrcur</font><font color="#008b8b">-&gt;rowCount</font>();&nbsp;<font color="#008b8b">$row</font>++) {<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#a52a2a"><b>for</b></font>&nbsp;(<font color="#008b8b">$col</font>=<font color="#ff00ff">0</font>;&nbsp;<font color="#008b8b">$col</font>&lt;<font color="#008b8b">$sqlrcur</font><font color="#008b8b">-&gt;colCount</font>();&nbsp;<font color="#008b8b">$col</font>++) {<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#a52a2a"><b>print</b></font>(<font color="#008b8b">$sqlrcur</font><font color="#008b8b">-&gt;getField</font>(<font color="#008b8b">$row</font>,<font color="#008b8b">$col</font>).<font color="#ff00ff">&quot;</font><font color="#ff00ff">,</font><font color="#ff00ff">&quot;</font>);<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;}<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#a52a2a"><b>print</b></font>(<font color="#ff00ff">&quot;</font><font color="#6a5acd">\n</font><font color="#ff00ff">&quot;</font>);<br/>
+}
+</font>
+</div>
+</td>
+</tr>
+</table>
+
+</div>
+</a>
+
+</td>
+</tr>
+</table>
+
+
+<hr style="clear: both;"/>
+
+
+<br/>
+
+<center>But that's just an overview.  See the official <a href="documentation.html">documentation</a> for much more information, including comprehensive howto's, guides and references.</center>
+
+<br/>
+
+
+<div id="copyrightbox">
+Copyright 2024 - David Muse - <a href="mailto:david.muse@firstworks.com">Contact</a> <img style="margin-left: 5px; vertical-align: text-bottom;" title="native english speaker" src="images/us.png"/> <img style="vertical-align: text-bottom;" title="falo portugues tambem" src="images/br.png"/>
+</div> <!-- copyrightbox -->
+
+</div>
+
+</body>
+</html>
+

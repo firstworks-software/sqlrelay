@@ -1,0 +1,99 @@
+<html>
+<head>
+	<title>firstworks: SQL Relay - sqlrelay persistent database connection pool pooling proxy load balance balancing odbc oracle mysql msql postgresql sybase db2 interbase sqlite access c++ perl DBD DBI python php PDO ruby tcl java jni unix linux persistant</title>
+
+	<link rel="stylesheet" href="../css/style.css"/>
+	<script type="text/javascript">
+
+  var _gaq = _gaq || [];
+  _gaq.push(['_setAccount', 'UA-23306117-3']);
+  _gaq.push(['_trackPageview']);
+
+  (function() {
+    var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+    ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+    var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+  })();
+
+</script>
+
+	<script language="Javascript" src="../js/button.js"></script>
+</head>
+<body onload="setButton();">
+
+
+<div style="position: fixed; top: 0px; left: 0px; width: 100%; z-index: 100;">
+
+<span id="firstworks">a <b><a href="http://www.firstworks.com">firstworks</a></b> project</span>
+
+<div id="projectbox"><a href="index.html"><img src="../images/sqlrelay-icon.png"/><span id="name">SQL Relay</span></a></div>
+
+<table id="projectbuttons">
+<tr>
+<td style="width: 50%;"></td>
+<td class="button nonlastbutton"><a id="button-about" href="../index.html">About</a></td>
+<td class="button nonlastbutton"><a id="button-documentation" href="../documentation.html">Documentation</a></td>
+<td class="button nonlastbutton"><a id="button-faq" href="../faq.html">FAQ</a></td>
+<td class="button nonlastbutton"><a id="button-download" href="../download.html">Download</a></td>
+<td class="button nonlastbutton"><a id="button-license" href="../license.html">Licensing</a></td>
+<td class="button nonlastbutton"><a id="button-support" href="../support.html">Support</a></td>
+<td class="button lastbutton"><a id="button-news" target="_blank" href="http://software.firstworks.com">News</a></td>
+<td style="width: 50%;"></td>
+</tr>
+</table>
+
+</div>
+
+<div style="position: absolute; top: 89px; width: 100%;">
+
+
+<div id="content">
+
+
+<h1>Persistent Database Connection Pooling</h1>
+
+<p>A persistent database connection pool maintains a set of already-logged-in database connections, and hands them out to applications, on-demand.</p>
+
+<p>Web-based applications, and other transient apps, which connect directly to the database, run queries, and disconnect, often spend more time connecting than actually running queries.</p>
+
+<blockquote>
+<img src="../images/app-to-db.png"/>
+</blockquote>
+<p>This "connection delay" makes apps feel unresponsive and reduces throughput unless many queries are run per connection.</p>
+
+<p>Applications which connect to a pool, acquire an already-logged in database connection, run queries, and release the connection, generally perform better.</p>
+
+<blockquote>
+<img src="../images/app-to-sqlr-to-db.png"/>
+</blockquote>
+<p>Apps feel responsive and overall throughput doesn't depend nearly as much on the number of queries that are run per connection.</p>
+
+<blockquote>
+  <p><a href="../images/mysql-bench.png"><img style="width: 320; height: 240; " src="../images/mysql-bench.png"/></a>
+<a href="../images/oracle-bench.png"><img style="width: 320; height: 240; " src="../images/oracle-bench.png"/></a></p>
+
+(<a target="_blank" href="http://software.firstworks.com/p/current-sql-relay-benchmarks.html">Current Benchmarks</a>)
+</blockquote>
+<p>Many connection pools run within application servers or web servers, can only be used by applications running within that server, and can usually only by applications written in a particular language.  Idle database connections in one application's pool are not typically available to other applications.</p>
+
+<blockquote>
+<img src="../images/pool-inside.png"/>
+</blockquote>
+<p>Since SQL Relay runs as a standalone process, its database connections are available to all applications, even applications running on other machines, across the network.</p>
+
+<blockquote>
+<img src="../images/pool-outside.png"/>
+</blockquote>
+</div> <!-- content -->
+
+
+<div id="copyrightbox">
+Copyright 2024 - David Muse - <a href="mailto:david.muse@firstworks.com">Contact</a> <img style="margin-left: 5px; vertical-align: text-bottom;" title="native english speaker" src="../images/us.png"/> <img style="vertical-align: text-bottom;" title="falo português também" src="../images/br.png"/>
+</div> <!-- copyrightbox -->
+
+</div>
+
+</body>
+</html>
+
+

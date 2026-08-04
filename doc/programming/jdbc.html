@@ -1,0 +1,1949 @@
+<html>
+<head>
+	<title>firstworks: SQL Relay - sqlrelay persistent database connection pool pooling proxy load balance balancing odbc oracle mysql msql postgresql sybase db2 interbase sqlite access c++ perl DBD DBI python php PDO ruby tcl java jni unix linux persistant</title>
+
+	<link rel="stylesheet" href="../css/style.css"/>
+	<script type="text/javascript">
+
+  var _gaq = _gaq || [];
+  _gaq.push(['_setAccount', 'UA-23306117-3']);
+  _gaq.push(['_trackPageview']);
+
+  (function() {
+    var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+    ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+    var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+  })();
+
+</script>
+
+	<script language="Javascript" src="../js/button.js"></script>
+</head>
+<body onload="setButton();">
+
+
+<div style="position: fixed; top: 0px; left: 0px; width: 100%; z-index: 100;">
+
+<span id="firstworks">a <b><a href="http://www.firstworks.com">firstworks</a></b> project</span>
+
+<div id="projectbox"><a href="index.html"><img src="../images/sqlrelay-icon.png"/><span id="name">SQL Relay</span></a></div>
+
+<table id="projectbuttons">
+<tr>
+<td style="width: 50%;"></td>
+<td class="button nonlastbutton"><a id="button-about" href="../index.html">About</a></td>
+<td class="button nonlastbutton"><a id="button-documentation" href="../documentation.html">Documentation</a></td>
+<td class="button nonlastbutton"><a id="button-download" href="../download.html">Download</a></td>
+<td class="button nonlastbutton"><a id="button-license" href="../license.html">Licensing</a></td>
+<td class="button nonlastbutton"><a id="button-support" href="../support.html">Support</a></td>
+<td class="button lastbutton"><a id="button-news" target="_blank" href="http://software.firstworks.com">News</a></td>
+<td style="width: 50%;"></td>
+</tr>
+</table>
+
+</div>
+
+<div style="position: absolute; top: 89px; width: 100%;">
+
+
+<div id="content">
+
+
+<h1>Programming with SQL Relay using JDBC</h1>
+
+<p>The SQL Relay distribution provides a JDBC driver, enabling JDBC applications to access a database through SQL Relay.</p>
+
+<ul>
+  <li><a href="#driver">Configuring the Driver</a></li>
+  <li><a href="#compiling">Compiling a JDBC Program</a></li>
+  <li><a href="#session">Establishing a Session</a></li>
+  <li><a href="#query">Executing Queries</a></li>
+  <li><a href="#commit">Commits and Rollbacks</a></li>
+  <li><a href="#temptables">Temporary Tables</a></li>
+  <li><a href="#errors">Catching Errors</a></li>
+  <li><a href="#bindvars">Bind Variables</a></li>
+  <li><a href="#rebinding">Re-Binding and Re-Executing</a></li>
+  <li><a href="#fields">Accessing Fields in the Result Set</a></li>
+  <li><a href="#cursors">Cursors</a></li>
+  <li><a href="#columns">Getting Column Information</a></li>
+  <li><a href="#storedprocedures">Stored Procedures</a></li>
+</ul>
+
+<a name="driver"/><h2>Configuring the Driver</h2>
+
+<p>The SQL Relay JDBC driver is provided in two jar files: sqlrelay.jar and sqlrelayjdbc.jar.  Both must be in the classpath, along with the native SQL Relay client library.</p>
+
+<p>On Linux and Unix, the jar files are usually found under /usr/local/firstworks/java and the native library is usually found in /usr/local/firstworks/lib.</p>
+
+<p>On Windows, the jar files are usually found under C:\Program Files\Firstworks\java and the native library is usually found under C:\Program Files\Firstworks\bin.</p>
+
+<p>The JDBC URL format is:</p>
+
+<blockquote>
+  <pre>jdbc:sqlrelay://user:password@host:port:socket
+</pre>
+
+</blockquote>
+<p>For example:</p>
+
+<blockquote>
+  <pre>jdbc:sqlrelay://myuser:mypassword@sqlrserver:9000:/tmp/example.socket
+</pre>
+
+</blockquote>
+<p>The port defaults to 9000 if not specified.  The socket is optional.  User and password may also be passed as properties to DriverManager.getConnection() rather than being included in the URL.</p>
+
+<h3>Properties</h3>
+
+<p>Every URL field can also be supplied as a property passed to DriverManager.getConnection().  Properties always override values parsed out of the URL.  The driver recognizes the following property names:</p>
+
+<ul>
+  <li><b>Host</b> - Name of the host running SQL Relay.</li>
+  <li><b>Port</b> - The port that the SQL Relay server is listening on.  Defaults to 9000.</li>
+  <li><b>Socket</b> - The filename of the unix socket that the SQL Relay server is listening on.  Optional.</li>
+  <li><b>User</b> - The username to use when logging into SQL Relay.  Also accepted as <b>user</b>.</li>
+  <li><b>Password</b> - The password to use when logging into SQL Relay.  Also accepted as <b>password</b>.</li>
+  <li><b>Retry Time</b> - If a connection fails, wait this many seconds before trying again.  Defaults to 0.</li>
+  <li><b>Tries</b> - If a connection fails, retry this many times.  Defaults to 1.</li>
+  <li><b>DATE to TimeStamp</b> - If set to <b>yes</b>, <b>true</b>, <b>on</b>, <b>y</b>, <b>t</b>, or <b>1</b>, columns of type DATE are mapped to java.sql.Timestamp instead of java.sql.Date.  Defaults to <b>false</b>.</li>
+  <li><b>Output Parameter Buffer Size</b> - Buffer size, in bytes, to use for output parameters when the application calls a method that does not have a length parameter.  Defaults to 4096.</li>
+  <li><b>AutoCommit</b> - Controls whether the driver explicitly turns autocommit on or off after connecting.  May be set to <b>yes</b> (autocommit on), <b>no</b> (autocommit off), or <b>backend</b> (leave it up to the backend).  Defaults to <b>backend</b>.</li>
+</ul>
+
+<h3>Sample Session</h3>
+
+<p>A good program to test this with is <a target="_blank" href="https://github.com/neurolabs/henplus">HenPlus</a>, a JDBC command line client.  After downloading and installing <a href="HenPlus">HenPlus</a>, you can run it as follows:</p>
+
+<blockquote>
+<b>henplus jdbc:sqlrelay://exampleuser:examplepass@sqlrserver:9000:/tmp/example.socket</b>
+</blockquote>
+<p>Here is a sample henplus session:</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt><font color="#990000">[</font>dmuse@<font color="#008080">fedora</font> bin<font color="#990000">]</font>$ <font color="#990000">./</font><font color="#008080">henplus</font> jdbc<font color="#990000">:</font>sqlrelay<font color="#990000">:</font><i><font color="#9A1900">//exampleuser:examplepass@sqlrserver:9000:/tmp/example.socket</font></i>
+no <font color="#008080">readline</font> <b><font color="#000000">found</font></b> <font color="#990000">(</font>no JavaReadline <font color="#008080">in</font> java<font color="#990000">.</font>library<font color="#990000">.</font>path<font color="#990000">).</font> Using <font color="#008080">simple</font> stdin<font color="#990000">.</font>
+<b><font color="#0000FF">using</font></b> <font color="#008080">GNU</font> <b><font color="#000000">readline</font></b> <font color="#990000">(</font><font color="#008080">Brian</font> Fox<font color="#990000">,</font> <font color="#008080">Chet</font> Ramey<font color="#990000">),</font> Java wrapper by Bernhard Bablok
+henplus <font color="#008080">config</font> at <font color="#990000">/</font>home<font color="#990000">/</font>dmuse<font color="#990000">/.</font>henplus
+<font color="#990000">----------------------------------------------------------------------------</font>
+ HenPlus II <font color="#993399">0.9</font><font color="#990000">.</font><font color="#993399">8</font> <font color="#FF0000">"Yay Labor Day"</font>
+ <b><font color="#000000">Copyright</font></b><font color="#990000">(</font>C<font color="#990000">)</font> <font color="#993399">1997</font><font color="#990000">..</font><font color="#993399">2009</font> <font color="#008080">Henner</font> Zeller <font color="#990000">&lt;</font>H<font color="#990000">.</font>Zeller@acm<font color="#990000">.</font>org<font color="#990000">&gt;</font>
+ HenPlus is provided AS IS and comes with ABSOLUTELY NO WARRANTY
+ This is <font color="#008080">free</font> software<font color="#990000">,</font> and you are welcome to redistribute it under the
+ conditions of the GNU <font color="#008080">Public</font> License <font color="#990000">&lt;</font>http<font color="#990000">:</font><i><font color="#9A1900">//www.gnu.org/licenses/gpl2.txt&gt;</font></i>
+<font color="#990000">----------------------------------------------------------------------------</font>
+HenPlus II connecting
+ url <font color="#FF0000">'jdbc:sqlrelay://exampleuser:examplepass@sqlrserver:9000:/tmp/example.socket'</font>
+ driver version <font color="#993399">2.1</font>
+ oracle <font color="#990000">-</font> Oracle Database 11g Enterprise Edition Release <font color="#993399">11.2</font><font color="#990000">.</font><font color="#993399">0.1</font><font color="#990000">.</font><font color="#993399">0</font> <font color="#990000">-</font> Production
+With <font color="#008080">the</font> Partitioning<font color="#990000">,</font> OLAP<font color="#990000">,</font> Data Mining and Real Application Testing options
+@sqlrelay<font color="#990000">&gt;</font> create <font color="#008080">table</font> <b><font color="#000000">exampletable</font></b> <font color="#990000">(</font><font color="#008080">col1</font> <font color="#009900">int</font><font color="#990000">,</font> <font color="#008080">col2</font> <b><font color="#000000">varchar2</font></b><font color="#990000">(</font><font color="#993399">20</font><font color="#990000">));</font>
+affected <font color="#993399">0</font> <b><font color="#000000">rows</font></b> <font color="#990000">(</font><font color="#993399">301</font> msec<font color="#990000">)</font>
+@sqlrelay<font color="#990000">&gt;</font> insert into <font color="#008080">exampletable</font> <b><font color="#000000">values</font></b> <font color="#990000">(</font><font color="#993399">1</font><font color="#990000">,</font><font color="#FF0000">'hello'</font><font color="#990000">);</font>
+affected <font color="#993399">1</font> <b><font color="#000000">rows</font></b> <font color="#990000">(</font><font color="#993399">71</font> msec<font color="#990000">)</font>
+@sqlrelay<font color="#990000">&gt;</font> insert into <font color="#008080">exampletable</font> <b><font color="#000000">values</font></b> <font color="#990000">(</font><font color="#993399">2</font><font color="#990000">,</font><font color="#FF0000">'goodbye'</font><font color="#990000">);</font>
+affected <font color="#993399">1</font> <b><font color="#000000">rows</font></b> <font color="#990000">(</font><font color="#993399">1</font> msec<font color="#990000">)</font>
+@sqlrelay<font color="#990000">&gt;</font> select <font color="#990000">*</font> <font color="#008080">from</font> exampletable<font color="#990000">;</font>
+<font color="#990000">------+---------+</font>
+ COL1 <font color="#990000">|</font>  COL2   <font color="#990000">|</font>
+<font color="#990000">------+---------+</font>
+    <font color="#993399">1</font> <font color="#990000">|</font> hello   <font color="#990000">|</font>
+    <font color="#993399">2</font> <font color="#990000">|</font> goodbye <font color="#990000">|</font>
+<font color="#990000">------+---------+</font>
+<font color="#993399">2</font> rows <font color="#008080">in</font> <b><font color="#000000">result</font></b> <font color="#990000">(</font><font color="#008080">first</font> row<font color="#990000">:</font> <font color="#993399">56</font> msec<font color="#990000">;</font> total<font color="#990000">:</font> <font color="#993399">57</font> msec<font color="#990000">)</font>
+@sqlrelay<font color="#990000">&gt;</font> update exampletable <font color="#008080">set</font> col2<font color="#990000">=</font><font color="#FF0000">'bye'</font> <font color="#008080">where</font> col1<font color="#990000">=</font><font color="#993399">2</font><font color="#990000">;</font>
+affected <font color="#993399">1</font> <b><font color="#000000">rows</font></b> <font color="#990000">(</font><font color="#993399">2</font> msec<font color="#990000">)</font>
+@sqlrelay<font color="#990000">&gt;</font> select <font color="#990000">*</font> <font color="#008080">from</font> exampletable<font color="#990000">;</font>
+<font color="#990000">------+-------+</font>
+ COL1 <font color="#990000">|</font> COL2  <font color="#990000">|</font>
+<font color="#990000">------+-------+</font>
+    <font color="#993399">1</font> <font color="#990000">|</font> hello <font color="#990000">|</font>
+    <font color="#993399">2</font> <font color="#990000">|</font> bye   <font color="#990000">|</font>
+<font color="#990000">------+-------+</font>
+<font color="#993399">2</font> rows <font color="#008080">in</font> <b><font color="#000000">result</font></b> <font color="#990000">(</font><font color="#008080">first</font> row<font color="#990000">:</font> <font color="#993399">1</font> msec<font color="#990000">;</font> total<font color="#990000">:</font> <font color="#993399">2</font> msec<font color="#990000">)</font>
+@sqlrelay<font color="#990000">&gt;</font> <b><font color="#0000FF">delete</font></b> from exampletable <font color="#008080">where</font> col1<font color="#990000">=</font><font color="#993399">1</font><font color="#990000">;</font>
+affected <font color="#993399">1</font> <b><font color="#000000">rows</font></b> <font color="#990000">(</font><font color="#993399">2</font> msec<font color="#990000">)</font>
+@sqlrelay<font color="#990000">&gt;</font> select <font color="#990000">*</font> <font color="#008080">from</font> exampletable<font color="#990000">;</font>
+<font color="#990000">------+------+</font>
+ COL1 <font color="#990000">|</font> COL2 <font color="#990000">|</font>
+<font color="#990000">------+------+</font>
+    <font color="#993399">2</font> <font color="#990000">|</font> bye  <font color="#990000">|</font>
+<font color="#990000">------+------+</font>
+<font color="#993399">1</font> row <font color="#008080">in</font> <b><font color="#000000">result</font></b> <font color="#990000">(</font><font color="#008080">first</font> row<font color="#990000">:</font> <font color="#993399">1</font> msec<font color="#990000">;</font> total<font color="#990000">:</font> <font color="#993399">1</font> msec<font color="#990000">)</font>
+@sqlrelay<font color="#990000">&gt;</font> drop <font color="#008080">table</font> exampletable<font color="#990000">;</font>
+affected <font color="#993399">0</font> <b><font color="#000000">rows</font></b> <font color="#990000">(</font><font color="#993399">3.637</font> sec<font color="#990000">)</font>
+@sqlrelay<font color="#990000">&gt;</font> quit
+<font color="#008080">storing</font> settings<font color="#990000">..</font>
+<font color="#990000">[</font>dmuse@<font color="#008080">fedora</font> bin<font color="#990000">]</font>$</tt></pre>
+
+</blockquote>
+<br/><a name="compiling"/><h2>Compiling a JDBC Program</h2>
+
+<p>When writing a JDBC application, you need to import java.sql.</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt><font color="#008080">import</font> java<font color="#990000">.</font>sql<font color="#990000">.*;</font>
+</tt></pre>
+
+</blockquote>
+<p>You'll also need to include both jar files in your classpath.</p>
+
+<p>On Linux and Unix, the command to compile your .java file will look something like this:</p>
+
+<blockquote>
+  <pre>javac -classpath /usr/local/firstworks/java/sqlrelay.jar:/usr/local/firstworks/java/sqlrelayjdbc.jar:. myprogram.java
+</pre>
+
+</blockquote>
+<p>The command to run your program will look something like this:</p>
+
+<blockquote>
+  <pre>java -classpath /usr/local/firstworks/java/sqlrelay.jar:/usr/local/firstworks/java/sqlrelayjdbc.jar:. -Djava.library.path=/usr/local/firstworks/lib myprogram
+</pre>
+
+</blockquote>
+<br/><a name="session"/><h2>Establishing a Session</h2>
+
+<p>To use JDBC, you get a connection from the DriverManager using a JDBC URL.</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt><font color="#008080">import</font> java<font color="#990000">.</font>sql<font color="#990000">.*;</font>
+
+<b><font color="#0000FF">public</font></b> <b><font color="#0000FF">class</font></b> <font color="#008080">myclass</font> <font color="#FF0000">{</font>
+        <b><font color="#0000FF">public</font></b> <b><font color="#0000FF">static</font></b> <font color="#009900">void</font> <b><font color="#000000">main</font></b><font color="#990000">(</font>String<font color="#990000">[]</font> args<font color="#990000">)</font> <font color="#008080">throws</font> Exception <font color="#FF0000">{</font>
+
+                <font color="#008080">Connection</font> con<font color="#990000">=</font>DriverManager<font color="#990000">.</font><b><font color="#000000">getConnection</font></b><font color="#990000">(</font>
+                        <font color="#FF0000">"jdbc:sqlrelay://user:password@sqlrserver:9000:/tmp/example.socket"</font><font color="#990000">);</font>
+
+                <font color="#990000">...</font> execute <font color="#008080">some</font> queries <font color="#990000">...</font>
+
+                con<font color="#990000">.</font><b><font color="#000000">close</font></b><font color="#990000">();</font>
+        <font color="#FF0000">}</font>
+<font color="#FF0000">}</font>
+</tt></pre>
+
+</blockquote>
+<p>DriverManager.getConnection() connects to the SQL Relay server specified in the URL using the provided credentials.</p>
+
+<p>For the duration of the session, the client occupies one of the database connections, so care should be taken to minimize the length of a session.</p>
+
+<a name="query"/><h2>Executing Queries</h2>
+
+<p>Create a Statement, then call executeQuery() to run a select, or executeUpdate() to run an insert, update, delete, or DDL query.  The same Statement may be used for multiple queries.</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt><font color="#008080">import</font> java<font color="#990000">.</font>sql<font color="#990000">.*;</font>
+
+<b><font color="#0000FF">public</font></b> <b><font color="#0000FF">class</font></b> <font color="#008080">myclass</font> <font color="#FF0000">{</font>
+        <b><font color="#0000FF">public</font></b> <b><font color="#0000FF">static</font></b> <font color="#009900">void</font> <b><font color="#000000">main</font></b><font color="#990000">(</font>String<font color="#990000">[]</font> args<font color="#990000">)</font> <font color="#008080">throws</font> Exception <font color="#FF0000">{</font>
+
+                <font color="#008080">Connection</font> con<font color="#990000">=</font>DriverManager<font color="#990000">.</font><b><font color="#000000">getConnection</font></b><font color="#990000">(</font>
+                        <font color="#FF0000">"jdbc:sqlrelay://user:password@sqlrserver:9000:/tmp/example.socket"</font><font color="#990000">);</font>
+                <font color="#008080">Statement</font> stmt<font color="#990000">=</font>con<font color="#990000">.</font><b><font color="#000000">createStatement</font></b><font color="#990000">();</font>
+
+                stmt<font color="#990000">.</font><b><font color="#000000">executeQuery</font></b><font color="#990000">(</font><font color="#FF0000">"select * from my_table"</font><font color="#990000">);</font>
+
+                <font color="#990000">...</font> <b><font color="#0000FF">do</font></b> some stuff that takes a <font color="#008080">short</font> time <font color="#990000">...</font>
+
+                stmt<font color="#990000">.</font><b><font color="#000000">executeQuery</font></b><font color="#990000">(</font><font color="#FF0000">"select * from my_other_table"</font><font color="#990000">);</font>
+
+                <font color="#990000">...</font> process the <font color="#008080">result</font> set <font color="#990000">...</font>
+
+                stmt<font color="#990000">.</font><b><font color="#000000">close</font></b><font color="#990000">();</font>
+                con<font color="#990000">.</font><b><font color="#000000">close</font></b><font color="#990000">();</font>
+        <font color="#FF0000">}</font>
+<font color="#FF0000">}</font>
+</tt></pre>
+
+</blockquote>
+<br/><a name="commit"/><h2>Commits and Rollbacks</h2>
+
+<p>If you need to execute a commit or rollback, you should use the commit() and rollback() methods of the Connection class rather than sending a "commit" or "rollback" query.  There are two reasons for this.  First, it's much more efficient to call the methods.  Second, if you're writing code that can run on transactional or non-transactional databases, some non-transactional databases will throw errors if they receive a "commit" or "rollback" query, but by calling the commit() and rollback() methods you instruct the database connection daemon to call the commit and rollback API methods for that database rather than issuing them as queries.  If the API's have no commit or rollback methods, the calls do nothing and the database throws no error.</p>
+
+<p>You can also turn Autocommit on or off using setAutoCommit().  When Autocommit is on, the database performs a commit after each successful DML or DDL query.  When Autocommit is off, the database commits when the client instructs it to, or (by default) when a client disconnects.  For databases that don't support Autocommit, setAutoCommit() has no effect.</p>
+
+<p>You can also pass an <b>AutoCommit</b> property to DriverManager.getConnection() to control whether the driver explicitly turns autocommit on or off after connecting.  May be set to <b>yes</b> (autocommit on), <b>no</b> (autocommit off), or <b>backend</b> (leave it up to the backend).  Defaults to <b>backend</b>.</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt><font color="#008080">import</font> java<font color="#990000">.</font>sql<font color="#990000">.*;</font>
+
+<b><font color="#0000FF">public</font></b> <b><font color="#0000FF">class</font></b> <font color="#008080">myclass</font> <font color="#FF0000">{</font>
+        <b><font color="#0000FF">public</font></b> <b><font color="#0000FF">static</font></b> <font color="#009900">void</font> <b><font color="#000000">main</font></b><font color="#990000">(</font>String<font color="#990000">[]</font> args<font color="#990000">)</font> <font color="#008080">throws</font> Exception <font color="#FF0000">{</font>
+
+                <font color="#008080">Connection</font> con<font color="#990000">=</font>DriverManager<font color="#990000">.</font><b><font color="#000000">getConnection</font></b><font color="#990000">(</font>
+                        <font color="#FF0000">"jdbc:sqlrelay://user:password@sqlrserver:9000:/tmp/example.socket"</font><font color="#990000">);</font>
+
+                <i><font color="#9A1900">// turn off autocommit</font></i>
+                con<font color="#990000">.</font><b><font color="#000000">setAutoCommit</font></b><font color="#990000">(</font><b><font color="#0000FF">false</font></b><font color="#990000">);</font>
+
+                <font color="#008080">Statement</font> stmt<font color="#990000">=</font>con<font color="#990000">.</font><b><font color="#000000">createStatement</font></b><font color="#990000">();</font>
+
+                stmt<font color="#990000">.</font><b><font color="#000000">executeUpdate</font></b><font color="#990000">(</font><font color="#FF0000">"insert into my_table values (1,2,3)"</font><font color="#990000">);</font>
+
+                con<font color="#990000">.</font><b><font color="#000000">commit</font></b><font color="#990000">();</font>
+
+                stmt<font color="#990000">.</font><b><font color="#000000">executeUpdate</font></b><font color="#990000">(</font><font color="#FF0000">"insert into my_table values (4,5,6)"</font><font color="#990000">);</font>
+
+                con<font color="#990000">.</font><b><font color="#000000">rollback</font></b><font color="#990000">();</font>
+
+                <i><font color="#9A1900">// turn autocommit back on</font></i>
+                con<font color="#990000">.</font><b><font color="#000000">setAutoCommit</font></b><font color="#990000">(</font><b><font color="#0000FF">true</font></b><font color="#990000">);</font>
+
+                stmt<font color="#990000">.</font><b><font color="#000000">close</font></b><font color="#990000">();</font>
+                con<font color="#990000">.</font><b><font color="#000000">close</font></b><font color="#990000">();</font>
+        <font color="#FF0000">}</font>
+<font color="#FF0000">}</font>
+</tt></pre>
+
+</blockquote>
+<br/><a name="temptables"/><h2>Temporary Tables</h2>
+
+<p>Some databases support temporary tables.  That is, tables which are automatically dropped or truncated when an application closes its connection to the database or when a transaction is committed or rolled back.</p>
+
+<p>For databases which drop or truncate tables when a transaction is committed or rolled back, temporary tables work naturally.</p>
+
+<p>However, for databases which drop or truncate tables when an application closes its connection to the database, there is an issue.  Since SQL Relay maintains persistent database connections, when an application disconnects from SQL Relay, the connection between SQL Relay and the database remains, so the database does not know to drop or truncate the table.  To remedy this situation, SQL Relay parses each query to see if it created a temporary table, keeps a list of temporary tables and drops (or truncates them) when the application disconnects from SQL Relay.  Since each database has slightly different syntax for creating a temporary table, SQL Relay parses each query according to the rules for that database.</p>
+
+<p>In effect, temporary tables should work when an application connects to SQL Relay in the same manner that they would work if the application connected directly to the database.</p>
+
+<a name="errors"/><h2>Catching Errors</h2>
+
+<p>If a query fails, JDBC throws a SQLException.  You can catch it and call getMessage() to find out why the query failed.</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt><font color="#008080">import</font> java<font color="#990000">.</font>sql<font color="#990000">.*;</font>
+
+<b><font color="#0000FF">public</font></b> <b><font color="#0000FF">class</font></b> <font color="#008080">myclass</font> <font color="#FF0000">{</font>
+        <b><font color="#0000FF">public</font></b> <b><font color="#0000FF">static</font></b> <font color="#009900">void</font> <b><font color="#000000">main</font></b><font color="#990000">(</font>String<font color="#990000">[]</font> args<font color="#990000">)</font> <font color="#FF0000">{</font>
+
+                <b><font color="#0000FF">try</font></b> <font color="#FF0000">{</font>
+                        <font color="#008080">Connection</font> con<font color="#990000">=</font>DriverManager<font color="#990000">.</font><b><font color="#000000">getConnection</font></b><font color="#990000">(</font>
+                                <font color="#FF0000">"jdbc:sqlrelay://user:password@sqlrserver:9000:/tmp/example.socket"</font><font color="#990000">);</font>
+                        <font color="#008080">Statement</font> stmt<font color="#990000">=</font>con<font color="#990000">.</font><b><font color="#000000">createStatement</font></b><font color="#990000">();</font>
+
+                        stmt<font color="#990000">.</font><b><font color="#000000">executeQuery</font></b><font color="#990000">(</font>
+                                <font color="#FF0000">"select * from my_nonexistant_table"</font><font color="#990000">);</font>
+
+                        stmt<font color="#990000">.</font><b><font color="#000000">close</font></b><font color="#990000">();</font>
+                        con<font color="#990000">.</font><b><font color="#000000">close</font></b><font color="#990000">();</font>
+                <font color="#FF0000">}</font> <b><font color="#0000FF">catch</font></b> <font color="#990000">(</font><font color="#008080">SQLException</font> ex<font color="#990000">)</font> <font color="#FF0000">{</font>
+                        System<font color="#990000">.</font>out<font color="#990000">.</font><b><font color="#000000">println</font></b><font color="#990000">(</font><font color="#FF0000">"Error: "</font><font color="#990000">+</font>ex<font color="#990000">.</font><b><font color="#000000">getMessage</font></b><font color="#990000">());</font>
+                <font color="#FF0000">}</font>
+        <font color="#FF0000">}</font>
+<font color="#FF0000">}</font>
+</tt></pre>
+
+</blockquote>
+<a name="bindvars"/><h2>Bind Variables</h2>
+
+<p>Programs rarely execute fixed queries.  More often than not, some part of the query is dynamically generated.  The JDBC API provides means for using bind variables (also known as parameters) in those queries.</p>
+
+<p>For a detailed discussion of binds, see <a href="binds.html">this document</a>.</p>
+
+<p>JDBC provides PreparedStatement for binding values to parameter markers (?) in queries.  You call Connection.prepareStatement() to prepare the query, then setString(), setInt(), setDouble(), etc. to bind each parameter, and executeQuery() or executeUpdate() to execute the query.</p>
+
+<p>When passing a floating point number as a bind variable, you can use setDouble() or setFloat().  See <a href="precisionscale.html">this page</a> for a discussion of precision and scale.</p>
+
+<p>Note that JDBC requires question marks (?) as parameter markers, but most databases use other formats natively (eg. :name for Oracle, @name for Sybase/MSSQL, $1 for PostgreSQL).  For JDBC bind variables to work against those databases, SQL Relay must be configured to translate them by setting translatebindvariables="yes" in the sqlrelay.conf file for the instance you're using.  See the <a href="../admin/configreference.html">SQL Relay Configuration Reference</a> for more information on this parameter.</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt><font color="#008080">import</font> java<font color="#990000">.</font>sql<font color="#990000">.*;</font>
+
+<b><font color="#0000FF">public</font></b> <b><font color="#0000FF">class</font></b> <font color="#008080">myclass</font> <font color="#FF0000">{</font>
+        <b><font color="#0000FF">public</font></b> <b><font color="#0000FF">static</font></b> <font color="#009900">void</font> <b><font color="#000000">main</font></b><font color="#990000">(</font>String<font color="#990000">[]</font> args<font color="#990000">)</font> <font color="#008080">throws</font> Exception <font color="#FF0000">{</font>
+
+                <font color="#008080">Connection</font> con<font color="#990000">=</font>DriverManager<font color="#990000">.</font><b><font color="#000000">getConnection</font></b><font color="#990000">(</font>
+                        <font color="#FF0000">"jdbc:sqlrelay://user:password@sqlrserver:9000:/tmp/example.socket"</font><font color="#990000">);</font>
+
+                <font color="#008080">PreparedStatement</font> stmt<font color="#990000">=</font>con<font color="#990000">.</font><b><font color="#000000">prepareStatement</font></b><font color="#990000">(</font>
+                        <font color="#FF0000">"select * from mytable "</font>
+                        <font color="#990000">+</font><font color="#FF0000">"where stringcol=? "</font>
+                        <font color="#990000">+</font><font color="#FF0000">"and integercol&gt;? "</font>
+                        <font color="#990000">+</font><font color="#FF0000">"and floatcol&gt;?"</font><font color="#990000">);</font>
+                stmt<font color="#990000">.</font><b><font color="#000000">setString</font></b><font color="#990000">(</font><font color="#993399">1</font><font color="#990000">,</font><font color="#FF0000">"true"</font><font color="#990000">);</font>
+                stmt<font color="#990000">.</font><b><font color="#000000">setInt</font></b><font color="#990000">(</font><font color="#993399">2</font><font color="#990000">,</font><font color="#993399">10</font><font color="#990000">);</font>
+                stmt<font color="#990000">.</font><b><font color="#000000">setDouble</font></b><font color="#990000">(</font><font color="#993399">3</font><font color="#990000">,</font><font color="#993399">1.1</font><font color="#990000">);</font>
+                <font color="#008080">ResultSet</font> rs<font color="#990000">=</font>stmt<font color="#990000">.</font><b><font color="#000000">executeQuery</font></b><font color="#990000">();</font>
+
+                <font color="#990000">...</font> process the <font color="#008080">result</font> set <font color="#990000">...</font>
+
+                rs<font color="#990000">.</font><b><font color="#000000">close</font></b><font color="#990000">();</font>
+                stmt<font color="#990000">.</font><b><font color="#000000">close</font></b><font color="#990000">();</font>
+                con<font color="#990000">.</font><b><font color="#000000">close</font></b><font color="#990000">();</font>
+        <font color="#FF0000">}</font>
+<font color="#FF0000">}</font>
+</tt></pre>
+
+</blockquote>
+<p>JDBC also supports output bind variables via CallableStatement.  This is useful for retrieving data from stored procedure calls.  You call registerOutParameter() to define the output parameters, then getInt(), getDouble(), getString(), etc. to retrieve the values after execution.</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt><font color="#008080">import</font> java<font color="#990000">.</font>sql<font color="#990000">.*;</font>
+
+<b><font color="#0000FF">public</font></b> <b><font color="#0000FF">class</font></b> <font color="#008080">myclass</font> <font color="#FF0000">{</font>
+        <b><font color="#0000FF">public</font></b> <b><font color="#0000FF">static</font></b> <font color="#009900">void</font> <b><font color="#000000">main</font></b><font color="#990000">(</font>String<font color="#990000">[]</font> args<font color="#990000">)</font> <font color="#008080">throws</font> Exception <font color="#FF0000">{</font>
+
+                <font color="#008080">Connection</font> con<font color="#990000">=</font>DriverManager<font color="#990000">.</font><b><font color="#000000">getConnection</font></b><font color="#990000">(</font>
+                        <font color="#FF0000">"jdbc:sqlrelay://user:password@sqlrserver:9000:/tmp/example.socket"</font><font color="#990000">);</font>
+
+                <font color="#008080">CallableStatement</font> stmt<font color="#990000">=</font>con<font color="#990000">.</font><b><font color="#000000">prepareCall</font></b><font color="#990000">(</font>
+                        <font color="#FF0000">"{call addAndConvert(?,?,?,?,?,?,?,?)}"</font><font color="#990000">);</font>
+                stmt<font color="#990000">.</font><b><font color="#000000">setInt</font></b><font color="#990000">(</font><font color="#993399">1</font><font color="#990000">,</font><font color="#993399">10</font><font color="#990000">);</font>
+                stmt<font color="#990000">.</font><b><font color="#000000">setInt</font></b><font color="#990000">(</font><font color="#993399">2</font><font color="#990000">,</font><font color="#993399">20</font><font color="#990000">);</font>
+                stmt<font color="#990000">.</font><b><font color="#000000">setDouble</font></b><font color="#990000">(</font><font color="#993399">3</font><font color="#990000">,</font><font color="#993399">1.1</font><font color="#990000">);</font>
+                stmt<font color="#990000">.</font><b><font color="#000000">setDouble</font></b><font color="#990000">(</font><font color="#993399">4</font><font color="#990000">,</font><font color="#993399">2.2</font><font color="#990000">);</font>
+                stmt<font color="#990000">.</font><b><font color="#000000">setInt</font></b><font color="#990000">(</font><font color="#993399">5</font><font color="#990000">,</font><font color="#993399">30</font><font color="#990000">);</font>
+                stmt<font color="#990000">.</font><b><font color="#000000">registerOutParameter</font></b><font color="#990000">(</font><font color="#993399">6</font><font color="#990000">,</font>Types<font color="#990000">.</font>INTEGER<font color="#990000">);</font>
+                stmt<font color="#990000">.</font><b><font color="#000000">registerOutParameter</font></b><font color="#990000">(</font><font color="#993399">7</font><font color="#990000">,</font>Types<font color="#990000">.</font>DOUBLE<font color="#990000">);</font>
+                stmt<font color="#990000">.</font><b><font color="#000000">registerOutParameter</font></b><font color="#990000">(</font><font color="#993399">8</font><font color="#990000">,</font>Types<font color="#990000">.</font>VARCHAR<font color="#990000">);</font>
+                stmt<font color="#990000">.</font><b><font color="#000000">execute</font></b><font color="#990000">();</font>
+
+                <font color="#009900">int</font> result1<font color="#990000">=</font>stmt<font color="#990000">.</font><b><font color="#000000">getInt</font></b><font color="#990000">(</font><font color="#993399">6</font><font color="#990000">);</font>
+                <font color="#009900">double</font> result2<font color="#990000">=</font>stmt<font color="#990000">.</font><b><font color="#000000">getDouble</font></b><font color="#990000">(</font><font color="#993399">7</font><font color="#990000">);</font>
+                <font color="#008080">String</font> result3<font color="#990000">=</font>stmt<font color="#990000">.</font><b><font color="#000000">getString</font></b><font color="#990000">(</font><font color="#993399">8</font><font color="#990000">);</font>
+
+                <font color="#990000">...</font> <b><font color="#0000FF">do</font></b> something <font color="#008080">with</font> result1<font color="#990000">,</font> result2<font color="#990000">,</font> result3 <font color="#990000">...</font>
+
+                stmt<font color="#990000">.</font><b><font color="#000000">close</font></b><font color="#990000">();</font>
+                con<font color="#990000">.</font><b><font color="#000000">close</font></b><font color="#990000">();</font>
+        <font color="#FF0000">}</font>
+<font color="#FF0000">}</font>
+</tt></pre>
+
+</blockquote>
+<p>ResultSet.getString() returns a NULL value as null.  You can call wasNull() to check whether the last value retrieved was NULL.</p>
+
+<p>You can insert data into BLOB and CLOB columns using setBytes() for BLOBs and setString() for CLOBs.</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt><font color="#008080">import</font> java<font color="#990000">.</font>sql<font color="#990000">.*;</font>
+
+<b><font color="#0000FF">public</font></b> <b><font color="#0000FF">class</font></b> <font color="#008080">myclass</font> <font color="#FF0000">{</font>
+        <b><font color="#0000FF">public</font></b> <b><font color="#0000FF">static</font></b> <font color="#009900">void</font> <b><font color="#000000">main</font></b><font color="#990000">(</font>String<font color="#990000">[]</font> args<font color="#990000">)</font> <font color="#008080">throws</font> Exception <font color="#FF0000">{</font>
+
+                <font color="#008080">Connection</font> con<font color="#990000">=</font>DriverManager<font color="#990000">.</font><b><font color="#000000">getConnection</font></b><font color="#990000">(</font>
+                        <font color="#FF0000">"jdbc:sqlrelay://user:password@sqlrserver:9000:/tmp/example.socket"</font><font color="#990000">);</font>
+
+                <font color="#008080">Statement</font> stmt<font color="#990000">=</font>con<font color="#990000">.</font><b><font color="#000000">createStatement</font></b><font color="#990000">();</font>
+                stmt<font color="#990000">.</font><b><font color="#000000">executeUpdate</font></b><font color="#990000">(</font><font color="#FF0000">"create table images "</font>
+                        <font color="#990000">+</font><font color="#FF0000">"(image blob, description clob)"</font><font color="#990000">);</font>
+                stmt<font color="#990000">.</font><b><font color="#000000">close</font></b><font color="#990000">();</font>
+
+                byte<font color="#990000">[]</font> imagedata<font color="#990000">;</font>
+                <font color="#009900">long</font> imagelength<font color="#990000">;</font>
+
+                <font color="#990000">...</font> read an image from a file into imagedata and the length of the
+                        file <font color="#008080">into</font> imagelength <font color="#990000">...</font>
+
+                <font color="#008080">String</font> description<font color="#990000">;</font>
+                <font color="#009900">long</font> desclength<font color="#990000">;</font>
+
+                <font color="#990000">...</font> read a description from a file into description and the length of
+                        the file <font color="#008080">into</font> desclength <font color="#990000">...</font>
+
+                <font color="#008080">PreparedStatement</font> pstmt<font color="#990000">=</font>con<font color="#990000">.</font><b><font color="#000000">prepareStatement</font></b><font color="#990000">(</font>
+                        <font color="#FF0000">"insert into images values (?,?)"</font><font color="#990000">);</font>
+                pstmt<font color="#990000">.</font><b><font color="#000000">setBytes</font></b><font color="#990000">(</font><font color="#993399">1</font><font color="#990000">,</font>imagedata<font color="#990000">);</font>
+                pstmt<font color="#990000">.</font><b><font color="#000000">setString</font></b><font color="#990000">(</font><font color="#993399">2</font><font color="#990000">,</font>description<font color="#990000">);</font>
+                pstmt<font color="#990000">.</font><b><font color="#000000">executeUpdate</font></b><font color="#990000">();</font>
+
+                pstmt<font color="#990000">.</font><b><font color="#000000">close</font></b><font color="#990000">();</font>
+                con<font color="#990000">.</font><b><font color="#000000">close</font></b><font color="#990000">();</font>
+        <font color="#FF0000">}</font>
+<font color="#FF0000">}</font>
+</tt></pre>
+
+</blockquote>
+<p>Likewise, you can retrieve BLOB or CLOB data using getBytes() and getString().</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt><font color="#008080">import</font> java<font color="#990000">.</font>sql<font color="#990000">.*;</font>
+
+<b><font color="#0000FF">public</font></b> <b><font color="#0000FF">class</font></b> <font color="#008080">myclass</font> <font color="#FF0000">{</font>
+        <b><font color="#0000FF">public</font></b> <b><font color="#0000FF">static</font></b> <font color="#009900">void</font> <b><font color="#000000">main</font></b><font color="#990000">(</font>String<font color="#990000">[]</font> args<font color="#990000">)</font> <font color="#008080">throws</font> Exception <font color="#FF0000">{</font>
+
+                <font color="#008080">Connection</font> con<font color="#990000">=</font>DriverManager<font color="#990000">.</font><b><font color="#000000">getConnection</font></b><font color="#990000">(</font>
+                        <font color="#FF0000">"jdbc:sqlrelay://user:password@sqlrserver:9000:/tmp/example.socket"</font><font color="#990000">);</font>
+                <font color="#008080">Statement</font> stmt<font color="#990000">=</font>con<font color="#990000">.</font><b><font color="#000000">createStatement</font></b><font color="#990000">();</font>
+
+                <font color="#008080">ResultSet</font> rs<font color="#990000">=</font>stmt<font color="#990000">.</font><b><font color="#000000">executeQuery</font></b><font color="#990000">(</font>
+                        <font color="#FF0000">"select image, description from images"</font><font color="#990000">);</font>
+
+                <b><font color="#0000FF">while</font></b> <font color="#990000">(</font>rs<font color="#990000">.</font><b><font color="#000000">next</font></b><font color="#990000">())</font> <font color="#FF0000">{</font>
+                        byte<font color="#990000">[]</font> image<font color="#990000">=</font>rs<font color="#990000">.</font><b><font color="#000000">getBytes</font></b><font color="#990000">(</font><font color="#993399">1</font><font color="#990000">);</font>
+                        <font color="#008080">String</font> desc<font color="#990000">=</font>rs<font color="#990000">.</font><b><font color="#000000">getString</font></b><font color="#990000">(</font><font color="#993399">2</font><font color="#990000">);</font>
+
+                        <font color="#990000">...</font> <b><font color="#0000FF">do</font></b> something with image <font color="#008080">and</font> desc <font color="#990000">...</font>
+                <font color="#FF0000">}</font>
+
+                rs<font color="#990000">.</font><b><font color="#000000">close</font></b><font color="#990000">();</font>
+                stmt<font color="#990000">.</font><b><font color="#000000">close</font></b><font color="#990000">();</font>
+                con<font color="#990000">.</font><b><font color="#000000">close</font></b><font color="#990000">();</font>
+        <font color="#FF0000">}</font>
+<font color="#FF0000">}</font>
+</tt></pre>
+
+</blockquote>
+<br/><a name="rebinding"/><h2>Re-Binding and Re-Executing</h2>
+
+<p>Another feature of the prepare/bind/execute paradigm is the ability to prepare a query once, then re-execute the query over and over with different values without re-preparing it.  Just call the set methods with new values and call executeQuery() or executeUpdate() again.  If your back-end database natively supports this paradigm, you can reap a substantial performance improvement.</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt><font color="#008080">import</font> java<font color="#990000">.</font>sql<font color="#990000">.*;</font>
+
+<b><font color="#0000FF">public</font></b> <b><font color="#0000FF">class</font></b> <font color="#008080">myclass</font> <font color="#FF0000">{</font>
+        <b><font color="#0000FF">public</font></b> <b><font color="#0000FF">static</font></b> <font color="#009900">void</font> <b><font color="#000000">main</font></b><font color="#990000">(</font>String<font color="#990000">[]</font> args<font color="#990000">)</font> <font color="#008080">throws</font> Exception <font color="#FF0000">{</font>
+
+                <font color="#008080">Connection</font> con<font color="#990000">=</font>DriverManager<font color="#990000">.</font><b><font color="#000000">getConnection</font></b><font color="#990000">(</font>
+                        <font color="#FF0000">"jdbc:sqlrelay://user:password@sqlrserver:9000:/tmp/example.socket"</font><font color="#990000">);</font>
+
+                <font color="#008080">PreparedStatement</font> stmt<font color="#990000">=</font>con<font color="#990000">.</font><b><font color="#000000">prepareStatement</font></b><font color="#990000">(</font>
+                        <font color="#FF0000">"select * from mytable where mycolumn&gt;?"</font><font color="#990000">);</font>
+
+                stmt<font color="#990000">.</font><b><font color="#000000">setInt</font></b><font color="#990000">(</font><font color="#993399">1</font><font color="#990000">,</font><font color="#993399">1</font><font color="#990000">);</font>
+                <font color="#008080">ResultSet</font> rs<font color="#990000">=</font>stmt<font color="#990000">.</font><b><font color="#000000">executeQuery</font></b><font color="#990000">();</font>
+
+                <font color="#990000">...</font> process the <font color="#008080">result</font> set <font color="#990000">...</font>
+
+                rs<font color="#990000">.</font><b><font color="#000000">close</font></b><font color="#990000">();</font>
+                stmt<font color="#990000">.</font><b><font color="#000000">setInt</font></b><font color="#990000">(</font><font color="#993399">1</font><font color="#990000">,</font><font color="#993399">5</font><font color="#990000">);</font>
+                rs<font color="#990000">=</font>stmt<font color="#990000">.</font><b><font color="#000000">executeQuery</font></b><font color="#990000">();</font>
+
+                <font color="#990000">...</font> process the <font color="#008080">result</font> set <font color="#990000">...</font>
+
+                rs<font color="#990000">.</font><b><font color="#000000">close</font></b><font color="#990000">();</font>
+                stmt<font color="#990000">.</font><b><font color="#000000">setInt</font></b><font color="#990000">(</font><font color="#993399">1</font><font color="#990000">,</font><font color="#993399">10</font><font color="#990000">);</font>
+                rs<font color="#990000">=</font>stmt<font color="#990000">.</font><b><font color="#000000">executeQuery</font></b><font color="#990000">();</font>
+
+                <font color="#990000">...</font> process the <font color="#008080">result</font> set <font color="#990000">...</font>
+
+                rs<font color="#990000">.</font><b><font color="#000000">close</font></b><font color="#990000">();</font>
+                stmt<font color="#990000">.</font><b><font color="#000000">close</font></b><font color="#990000">();</font>
+                con<font color="#990000">.</font><b><font color="#000000">close</font></b><font color="#990000">();</font>
+        <font color="#FF0000">}</font>
+<font color="#FF0000">}</font>
+</tt></pre>
+
+</blockquote>
+<a name="fields"/><h2>Accessing Fields in the Result Set</h2>
+
+<p>ResultSet.next() and ResultSet.getString() (or getInt(), getDouble(), etc.) are useful for processing result sets.  You can get the number of columns using ResultSetMetaData.getColumnCount().</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt><font color="#008080">import</font> java<font color="#990000">.</font>sql<font color="#990000">.*;</font>
+
+<b><font color="#0000FF">public</font></b> <b><font color="#0000FF">class</font></b> <font color="#008080">myclass</font> <font color="#FF0000">{</font>
+        <b><font color="#0000FF">public</font></b> <b><font color="#0000FF">static</font></b> <font color="#009900">void</font> <b><font color="#000000">main</font></b><font color="#990000">(</font>String<font color="#990000">[]</font> args<font color="#990000">)</font> <font color="#008080">throws</font> Exception <font color="#FF0000">{</font>
+
+                <font color="#008080">Connection</font> con<font color="#990000">=</font>DriverManager<font color="#990000">.</font><b><font color="#000000">getConnection</font></b><font color="#990000">(</font>
+                        <font color="#FF0000">"jdbc:sqlrelay://user:password@sqlrserver:9000:/tmp/example.socket"</font><font color="#990000">);</font>
+                <font color="#008080">Statement</font> stmt<font color="#990000">=</font>con<font color="#990000">.</font><b><font color="#000000">createStatement</font></b><font color="#990000">();</font>
+
+                <font color="#008080">ResultSet</font> rs<font color="#990000">=</font>stmt<font color="#990000">.</font><b><font color="#000000">executeQuery</font></b><font color="#990000">(</font>
+                        <font color="#FF0000">"select * from my_table"</font><font color="#990000">);</font>
+
+                <font color="#008080">ResultSetMetaData</font> rsmd<font color="#990000">=</font>rs<font color="#990000">.</font><b><font color="#000000">getMetaData</font></b><font color="#990000">();</font>
+                <font color="#009900">int</font> cols<font color="#990000">=</font>rsmd<font color="#990000">.</font><b><font color="#000000">getColumnCount</font></b><font color="#990000">();</font>
+
+                <b><font color="#0000FF">while</font></b> <font color="#990000">(</font>rs<font color="#990000">.</font><b><font color="#000000">next</font></b><font color="#990000">())</font> <font color="#FF0000">{</font>
+                        <b><font color="#0000FF">for</font></b> <font color="#990000">(</font><font color="#009900">int</font> col<font color="#990000">=</font><font color="#993399">1</font><font color="#990000">;</font> col<font color="#990000">&lt;=</font>cols<font color="#990000">;</font> col<font color="#990000">++)</font> <font color="#FF0000">{</font>
+                                System<font color="#990000">.</font>out<font color="#990000">.</font><b><font color="#000000">print</font></b><font color="#990000">(</font>rs<font color="#990000">.</font><b><font color="#000000">getString</font></b><font color="#990000">(</font>col<font color="#990000">)+</font><font color="#FF0000">","</font><font color="#990000">);</font>
+                        <font color="#FF0000">}</font>
+                        System<font color="#990000">.</font>out<font color="#990000">.</font><b><font color="#000000">println</font></b><font color="#990000">();</font>
+                <font color="#FF0000">}</font>
+
+                rs<font color="#990000">.</font><b><font color="#000000">close</font></b><font color="#990000">();</font>
+                stmt<font color="#990000">.</font><b><font color="#000000">close</font></b><font color="#990000">();</font>
+                con<font color="#990000">.</font><b><font color="#000000">close</font></b><font color="#990000">();</font>
+        <font color="#FF0000">}</font>
+<font color="#FF0000">}</font>
+</tt></pre>
+
+</blockquote>
+<br/><a name="cursors"/><h2>Cursors</h2>
+
+<p>Cursors make it possible to execute queries while processing the result set of another query.  In JDBC, each Statement acts as a cursor.  You can create multiple Statements on the same Connection, allowing you to select rows from one table in one Statement, iterate through its result set, and insert rows into another table using a second Statement, all using a single database connection.</p>
+
+<p>For example:</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt><font color="#008080">import</font> java<font color="#990000">.</font>sql<font color="#990000">.*;</font>
+
+<b><font color="#0000FF">public</font></b> <b><font color="#0000FF">class</font></b> <font color="#008080">myclass</font> <font color="#FF0000">{</font>
+        <b><font color="#0000FF">public</font></b> <b><font color="#0000FF">static</font></b> <font color="#009900">void</font> <b><font color="#000000">main</font></b><font color="#990000">(</font>String<font color="#990000">[]</font> args<font color="#990000">)</font> <font color="#008080">throws</font> Exception <font color="#FF0000">{</font>
+
+                <font color="#008080">Connection</font> con<font color="#990000">=</font>DriverManager<font color="#990000">.</font><b><font color="#000000">getConnection</font></b><font color="#990000">(</font>
+                        <font color="#FF0000">"jdbc:sqlrelay://user:password@sqlrserver:9000:/tmp/example.socket"</font><font color="#990000">);</font>
+
+                <font color="#008080">Statement</font> stmt1<font color="#990000">=</font>con<font color="#990000">.</font><b><font color="#000000">createStatement</font></b><font color="#990000">();</font>
+                <font color="#008080">PreparedStatement</font> stmt2<font color="#990000">=</font>con<font color="#990000">.</font><b><font color="#000000">prepareStatement</font></b><font color="#990000">(</font>
+                        <font color="#FF0000">"insert into my_other_table values (?,?,?)"</font><font color="#990000">);</font>
+
+                <font color="#008080">ResultSet</font> rs<font color="#990000">=</font>stmt1<font color="#990000">.</font><b><font color="#000000">executeQuery</font></b><font color="#990000">(</font>
+                        <font color="#FF0000">"select * from my_huge_table"</font><font color="#990000">);</font>
+
+                <b><font color="#0000FF">while</font></b> <font color="#990000">(</font>rs<font color="#990000">.</font><b><font color="#000000">next</font></b><font color="#990000">())</font> <font color="#FF0000">{</font>
+                        stmt2<font color="#990000">.</font><b><font color="#000000">setString</font></b><font color="#990000">(</font><font color="#993399">1</font><font color="#990000">,</font>rs<font color="#990000">.</font><b><font color="#000000">getString</font></b><font color="#990000">(</font><font color="#993399">1</font><font color="#990000">));</font>
+                        stmt2<font color="#990000">.</font><b><font color="#000000">setString</font></b><font color="#990000">(</font><font color="#993399">2</font><font color="#990000">,</font>rs<font color="#990000">.</font><b><font color="#000000">getString</font></b><font color="#990000">(</font><font color="#993399">2</font><font color="#990000">));</font>
+                        stmt2<font color="#990000">.</font><b><font color="#000000">setString</font></b><font color="#990000">(</font><font color="#993399">3</font><font color="#990000">,</font>rs<font color="#990000">.</font><b><font color="#000000">getString</font></b><font color="#990000">(</font><font color="#993399">3</font><font color="#990000">));</font>
+                        stmt2<font color="#990000">.</font><b><font color="#000000">executeUpdate</font></b><font color="#990000">();</font>
+                <font color="#FF0000">}</font>
+
+                rs<font color="#990000">.</font><b><font color="#000000">close</font></b><font color="#990000">();</font>
+                stmt2<font color="#990000">.</font><b><font color="#000000">close</font></b><font color="#990000">();</font>
+                stmt1<font color="#990000">.</font><b><font color="#000000">close</font></b><font color="#990000">();</font>
+                con<font color="#990000">.</font><b><font color="#000000">close</font></b><font color="#990000">();</font>
+        <font color="#FF0000">}</font>
+<font color="#FF0000">}</font>
+</tt></pre>
+
+</blockquote>
+<br/><a name="columns"/><h2>Getting Column Information</h2>
+
+<p>For each column, the JDBC API supports getting the name, type name, display size, precision, scale, and nullability via ResultSetMetaData.  Additional attributes such as whether the column is auto-incrementing can also be retrieved.</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt><font color="#008080">import</font> java<font color="#990000">.</font>sql<font color="#990000">.*;</font>
+
+<b><font color="#0000FF">public</font></b> <b><font color="#0000FF">class</font></b> <font color="#008080">myclass</font> <font color="#FF0000">{</font>
+        <b><font color="#0000FF">public</font></b> <b><font color="#0000FF">static</font></b> <font color="#009900">void</font> <b><font color="#000000">main</font></b><font color="#990000">(</font>String<font color="#990000">[]</font> args<font color="#990000">)</font> <font color="#008080">throws</font> Exception <font color="#FF0000">{</font>
+
+                <font color="#008080">Connection</font> con<font color="#990000">=</font>DriverManager<font color="#990000">.</font><b><font color="#000000">getConnection</font></b><font color="#990000">(</font>
+                        <font color="#FF0000">"jdbc:sqlrelay://user:password@sqlrserver:9000:/tmp/example.socket"</font><font color="#990000">);</font>
+                <font color="#008080">Statement</font> stmt<font color="#990000">=</font>con<font color="#990000">.</font><b><font color="#000000">createStatement</font></b><font color="#990000">();</font>
+
+                <font color="#008080">ResultSet</font> rs<font color="#990000">=</font>stmt<font color="#990000">.</font><b><font color="#000000">executeQuery</font></b><font color="#990000">(</font>
+                        <font color="#FF0000">"select * from my_table"</font><font color="#990000">);</font>
+
+                <font color="#008080">ResultSetMetaData</font> rsmd<font color="#990000">=</font>rs<font color="#990000">.</font><b><font color="#000000">getMetaData</font></b><font color="#990000">();</font>
+                <font color="#009900">int</font> cols<font color="#990000">=</font>rsmd<font color="#990000">.</font><b><font color="#000000">getColumnCount</font></b><font color="#990000">();</font>
+
+                <b><font color="#0000FF">for</font></b> <font color="#990000">(</font><font color="#009900">int</font> i<font color="#990000">=</font><font color="#993399">1</font><font color="#990000">;</font> i<font color="#990000">&lt;=</font>cols<font color="#990000">;</font> i<font color="#990000">++)</font> <font color="#FF0000">{</font>
+                        System<font color="#990000">.</font>out<font color="#990000">.</font><b><font color="#000000">println</font></b><font color="#990000">(</font><font color="#FF0000">"Name:           "</font><font color="#990000">+</font>rsmd<font color="#990000">.</font><b><font color="#000000">getColumnName</font></b><font color="#990000">(</font>i<font color="#990000">));</font>
+                        System<font color="#990000">.</font>out<font color="#990000">.</font><b><font color="#000000">println</font></b><font color="#990000">(</font><font color="#FF0000">"Type:           "</font><font color="#990000">+</font>rsmd<font color="#990000">.</font><b><font color="#000000">getColumnTypeName</font></b><font color="#990000">(</font>i<font color="#990000">));</font>
+                        System<font color="#990000">.</font>out<font color="#990000">.</font><b><font color="#000000">println</font></b><font color="#990000">(</font><font color="#FF0000">"Display Size:   "</font><font color="#990000">+</font>rsmd<font color="#990000">.</font><b><font color="#000000">getColumnDisplaySize</font></b><font color="#990000">(</font>i<font color="#990000">));</font>
+                        System<font color="#990000">.</font>out<font color="#990000">.</font><b><font color="#000000">println</font></b><font color="#990000">(</font><font color="#FF0000">"Precision:      "</font><font color="#990000">+</font>rsmd<font color="#990000">.</font><b><font color="#000000">getPrecision</font></b><font color="#990000">(</font>i<font color="#990000">));</font>
+                        System<font color="#990000">.</font>out<font color="#990000">.</font><b><font color="#000000">println</font></b><font color="#990000">(</font><font color="#FF0000">"Scale:          "</font><font color="#990000">+</font>rsmd<font color="#990000">.</font><b><font color="#000000">getScale</font></b><font color="#990000">(</font>i<font color="#990000">));</font>
+                        System<font color="#990000">.</font>out<font color="#990000">.</font><b><font color="#000000">println</font></b><font color="#990000">(</font><font color="#FF0000">"Nullable:       "</font><font color="#990000">+</font>rsmd<font color="#990000">.</font><b><font color="#000000">isNullable</font></b><font color="#990000">(</font>i<font color="#990000">));</font>
+                        System<font color="#990000">.</font>out<font color="#990000">.</font><b><font color="#000000">println</font></b><font color="#990000">(</font><font color="#FF0000">"Auto Increment: "</font><font color="#990000">+</font>rsmd<font color="#990000">.</font><b><font color="#000000">isAutoIncrement</font></b><font color="#990000">(</font>i<font color="#990000">));</font>
+                        System<font color="#990000">.</font>out<font color="#990000">.</font><b><font color="#000000">println</font></b><font color="#990000">();</font>
+                <font color="#FF0000">}</font>
+
+                rs<font color="#990000">.</font><b><font color="#000000">close</font></b><font color="#990000">();</font>
+                stmt<font color="#990000">.</font><b><font color="#000000">close</font></b><font color="#990000">();</font>
+                con<font color="#990000">.</font><b><font color="#000000">close</font></b><font color="#990000">();</font>
+        <font color="#FF0000">}</font>
+<font color="#FF0000">}</font>
+</tt></pre>
+
+</blockquote>
+<br/><a name="storedprocedures"/><h2>Stored Procedures</h2>
+
+<p>Many databases support stored procedures.  Stored procedures are sets of queries and procedural code that are executed inside of the database itself.  For example, a stored procedure may select rows from one table, iterate through the result set and, based on the values in each row, insert, update or delete rows in other tables.  A client program could do this as well, but a stored procedure is generally more efficient because queries and result sets don't have to be sent back and forth between the client and database.  Also, stored procedures are generally stored in the database in a compiled state, while queries may have to be re-parsed and re-compiled each time they are sent.</p>
+
+<p>While many databases support stored procedures.  The syntax for creating and executing stored procedures varies greatly between databases.</p>
+
+<p>Stored procedures typically take input paramters from client programs through input bind variables and return values back to client programs either through bind variables or result sets.  Stored procedures can be broken down into several categories, based on the values that they return.  Some stored procedures don't return any values, some return a single value, some return multiple values and some return entire result sets.</p>
+
+<h3>No Values</h3>
+
+<p>Some stored procedures don't return any values.  Below are examples, illustrating how to create, execute and drop this kind of stored procedure for each database that SQL Relay supports.</p>
+
+<h4>Oracle</h4>
+
+<p>To create the stored procedure, run a query like the following.</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt>create <font color="#008080">procedure</font> <b><font color="#000000">exampleproc</font></b><font color="#990000">(</font>in1 <font color="#008080">in</font> number<font color="#990000">,</font> in2 <font color="#008080">in</font> number<font color="#990000">,</font> in3 <font color="#008080">in</font> varchar2<font color="#990000">)</font> is
+begin
+        insert into <font color="#008080">mytable</font> <b><font color="#000000">values</font></b> <font color="#990000">(</font>in1<font color="#990000">,</font>in2<font color="#990000">,</font>in3<font color="#990000">);</font>
+end<font color="#990000">;</font>
+</tt></pre>
+
+</blockquote>
+<p>To execute the stored procedure from an SQL Relay program, use code like the following.</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt><font color="#008080">PreparedStatement</font> stmt<font color="#990000">=</font>con<font color="#990000">.</font><b><font color="#000000">prepareStatement</font></b><font color="#990000">(</font><font color="#FF0000">"begin exampleproc(?,?,?); end;"</font><font color="#990000">);</font>
+stmt<font color="#990000">.</font><b><font color="#000000">setInt</font></b><font color="#990000">(</font><font color="#993399">1</font><font color="#990000">,</font><font color="#993399">1</font><font color="#990000">);</font>
+stmt<font color="#990000">.</font><b><font color="#000000">setDouble</font></b><font color="#990000">(</font><font color="#993399">2</font><font color="#990000">,</font><font color="#993399">1.1</font><font color="#990000">);</font>
+stmt<font color="#990000">.</font><b><font color="#000000">setString</font></b><font color="#990000">(</font><font color="#993399">3</font><font color="#990000">,</font><font color="#FF0000">"hello"</font><font color="#990000">);</font>
+stmt<font color="#990000">.</font><b><font color="#000000">executeUpdate</font></b><font color="#990000">();</font>
+stmt<font color="#990000">.</font><b><font color="#000000">close</font></b><font color="#990000">();</font>
+</tt></pre>
+
+</blockquote>
+<p>To drop the stored procedure, run a query like the following.</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt>drop procedure exampleproc
+</tt></pre>
+
+</blockquote>
+<br/><h4>Sybase and Microsoft SQL Server</h4>
+
+<p>To create the stored procedure, run a query like the following.</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt>create <font color="#008080">procedure</font> exampleproc @<font color="#008080">in1</font> <font color="#009900">int</font><font color="#990000">,</font> @<font color="#008080">in2</font> <font color="#009900">float</font><font color="#990000">,</font> @<font color="#008080">in3</font> <b><font color="#000000">varchar</font></b><font color="#990000">(</font><font color="#993399">20</font><font color="#990000">)</font> as
+        insert into <font color="#008080">mytable</font> <b><font color="#000000">values</font></b> <font color="#990000">(</font>@in1<font color="#990000">,</font>@in2<font color="#990000">,</font>@in3<font color="#990000">)</font>
+</tt></pre>
+
+</blockquote>
+<p>To execute the stored procedure from an SQL Relay program, use code like the following.</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt><font color="#008080">CallableStatement</font> stmt<font color="#990000">=</font>con<font color="#990000">.</font><b><font color="#000000">prepareCall</font></b><font color="#990000">(</font><font color="#FF0000">"{call exampleproc(?,?,?)}"</font><font color="#990000">);</font>
+stmt<font color="#990000">.</font><b><font color="#000000">setInt</font></b><font color="#990000">(</font><font color="#993399">1</font><font color="#990000">,</font><font color="#993399">1</font><font color="#990000">);</font>
+stmt<font color="#990000">.</font><b><font color="#000000">setDouble</font></b><font color="#990000">(</font><font color="#993399">2</font><font color="#990000">,</font><font color="#993399">1.1</font><font color="#990000">);</font>
+stmt<font color="#990000">.</font><b><font color="#000000">setString</font></b><font color="#990000">(</font><font color="#993399">3</font><font color="#990000">,</font><font color="#FF0000">"hello"</font><font color="#990000">);</font>
+stmt<font color="#990000">.</font><b><font color="#000000">execute</font></b><font color="#990000">();</font>
+stmt<font color="#990000">.</font><b><font color="#000000">close</font></b><font color="#990000">();</font>
+</tt></pre>
+
+</blockquote>
+<p>To drop the stored procedure, run a query like the following.</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt>drop procedure exampleproc
+</tt></pre>
+
+</blockquote>
+<h4>Firebird</h4>
+
+<p>To create the stored procedure, run a query like the following.</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt>create <font color="#008080">procedure</font> <b><font color="#000000">exampleproc</font></b><font color="#990000">(</font><font color="#008080">in1</font> integer<font color="#990000">,</font> <font color="#008080">in2</font> <font color="#009900">float</font><font color="#990000">,</font> <font color="#008080">in3</font> <b><font color="#000000">varchar</font></b><font color="#990000">(</font><font color="#993399">20</font><font color="#990000">))</font> as
+begin
+        insert into <font color="#008080">mytable</font> <b><font color="#000000">values</font></b> <font color="#990000">(</font>in1<font color="#990000">,</font>in2<font color="#990000">,</font>in3<font color="#990000">);</font>
+        suspend<font color="#990000">;</font>
+end<font color="#990000">;</font>
+</tt></pre>
+
+</blockquote>
+<p>To execute the stored procedure from an SQL Relay program, use code like the following.</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt><font color="#008080">PreparedStatement</font> stmt<font color="#990000">=</font>con<font color="#990000">.</font><b><font color="#000000">prepareStatement</font></b><font color="#990000">(</font><font color="#FF0000">"execute procedure exampleproc ?, ?, ?"</font><font color="#990000">);</font>
+stmt<font color="#990000">.</font><b><font color="#000000">setInt</font></b><font color="#990000">(</font><font color="#993399">1</font><font color="#990000">,</font><font color="#993399">1</font><font color="#990000">);</font>
+stmt<font color="#990000">.</font><b><font color="#000000">setDouble</font></b><font color="#990000">(</font><font color="#993399">2</font><font color="#990000">,</font><font color="#993399">1.1</font><font color="#990000">);</font>
+stmt<font color="#990000">.</font><b><font color="#000000">setString</font></b><font color="#990000">(</font><font color="#993399">3</font><font color="#990000">,</font><font color="#FF0000">"hello"</font><font color="#990000">);</font>
+stmt<font color="#990000">.</font><b><font color="#000000">executeUpdate</font></b><font color="#990000">();</font>
+stmt<font color="#990000">.</font><b><font color="#000000">close</font></b><font color="#990000">();</font>
+</tt></pre>
+
+</blockquote>
+<p>To drop the stored procedure, run a query like the following.</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt>drop procedure exampleproc
+</tt></pre>
+
+</blockquote>
+<h4>DB2</h4>
+
+<p>To create the stored procedure, run a query like the following.</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt>create <font color="#008080">procedure</font> <b><font color="#000000">exampleproc</font></b><font color="#990000">(</font>in <font color="#008080">in1</font> <font color="#009900">int</font><font color="#990000">,</font> in <font color="#008080">in2</font> <font color="#009900">double</font><font color="#990000">,</font> in <font color="#008080">in3</font> <b><font color="#000000">varchar</font></b><font color="#990000">(</font><font color="#993399">20</font><font color="#990000">))</font> language sql
+begin
+        insert into <font color="#008080">mytable</font> <b><font color="#000000">values</font></b> <font color="#990000">(</font>in1<font color="#990000">,</font>in2<font color="#990000">,</font>in3<font color="#990000">);</font>
+end<font color="#990000">;</font>
+</tt></pre>
+
+</blockquote>
+<p>To execute the stored procedure from an SQL Relay program, use code like the following.</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt><font color="#008080">CallableStatement</font> stmt<font color="#990000">=</font>con<font color="#990000">.</font><b><font color="#000000">prepareCall</font></b><font color="#990000">(</font><font color="#FF0000">"{call exampleproc(?,?,?)}"</font><font color="#990000">);</font>
+stmt<font color="#990000">.</font><b><font color="#000000">setInt</font></b><font color="#990000">(</font><font color="#993399">1</font><font color="#990000">,</font><font color="#993399">1</font><font color="#990000">);</font>
+stmt<font color="#990000">.</font><b><font color="#000000">setDouble</font></b><font color="#990000">(</font><font color="#993399">2</font><font color="#990000">,</font><font color="#993399">1.1</font><font color="#990000">);</font>
+stmt<font color="#990000">.</font><b><font color="#000000">setString</font></b><font color="#990000">(</font><font color="#993399">3</font><font color="#990000">,</font><font color="#FF0000">"hello"</font><font color="#990000">);</font>
+stmt<font color="#990000">.</font><b><font color="#000000">execute</font></b><font color="#990000">();</font>
+stmt<font color="#990000">.</font><b><font color="#000000">close</font></b><font color="#990000">();</font>
+</tt></pre>
+
+</blockquote>
+<p>To drop the stored procedure, run a query like the following.</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt>drop procedure exampleproc
+</tt></pre>
+
+</blockquote>
+<h4>Postgresql</h4>
+
+<p>To create the stored procedure, run a query like the following.</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt>create <font color="#008080">function</font> <b><font color="#000000">examplefunc</font></b><font color="#990000">(</font><font color="#009900">int</font><font color="#990000">,</font><font color="#009900">float</font><font color="#990000">,</font><b><font color="#000000">varchar</font></b><font color="#990000">(</font><font color="#993399">20</font><font color="#990000">))</font> returns <font color="#008080">void</font> as <font color="#FF0000">'</font>
+<font color="#FF0000">begin</font>
+<font color="#FF0000">        insert into mytable values ($1,$2,$3);</font>
+<font color="#FF0000">        return;</font>
+<font color="#FF0000">end;'</font> language plpgsql
+</tt></pre>
+
+</blockquote>
+<p>To execute the stored procedure from an SQL Relay program, use code like the following.</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt><font color="#008080">PreparedStatement</font> stmt<font color="#990000">=</font>con<font color="#990000">.</font><b><font color="#000000">prepareStatement</font></b><font color="#990000">(</font><font color="#FF0000">"select examplefunc(?,?,?)"</font><font color="#990000">);</font>
+stmt<font color="#990000">.</font><b><font color="#000000">setInt</font></b><font color="#990000">(</font><font color="#993399">1</font><font color="#990000">,</font><font color="#993399">1</font><font color="#990000">);</font>
+stmt<font color="#990000">.</font><b><font color="#000000">setDouble</font></b><font color="#990000">(</font><font color="#993399">2</font><font color="#990000">,</font><font color="#993399">1.1</font><font color="#990000">);</font>
+stmt<font color="#990000">.</font><b><font color="#000000">setString</font></b><font color="#990000">(</font><font color="#993399">3</font><font color="#990000">,</font><font color="#FF0000">"hello"</font><font color="#990000">);</font>
+stmt<font color="#990000">.</font><b><font color="#000000">executeQuery</font></b><font color="#990000">();</font>
+stmt<font color="#990000">.</font><b><font color="#000000">close</font></b><font color="#990000">();</font>
+</tt></pre>
+
+</blockquote>
+<p>To drop the stored procedure, run a query like the following.</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt>drop <font color="#008080">function</font> <b><font color="#000000">examplefunc</font></b><font color="#990000">(</font><font color="#009900">int</font><font color="#990000">,</font><font color="#009900">float</font><font color="#990000">,</font><b><font color="#000000">varchar</font></b><font color="#990000">(</font><font color="#993399">20</font><font color="#990000">))</font>
+</tt></pre>
+
+</blockquote>
+<h4>MySQL/MariaDB</h4>
+
+<p>To create the stored procedure, run a query like the following.</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt>create <font color="#008080">procedure</font> <b><font color="#000000">exampleproc</font></b><font color="#990000">(</font>in <font color="#008080">in1</font> <font color="#009900">int</font><font color="#990000">,</font> in <font color="#008080">in2</font> <font color="#009900">float</font><font color="#990000">,</font> in <font color="#008080">in3</font> <b><font color="#000000">varchar</font></b><font color="#990000">(</font><font color="#993399">20</font><font color="#990000">))</font>
+begin
+        insert into <font color="#008080">mytable</font> <b><font color="#000000">values</font></b> <font color="#990000">(</font>in1<font color="#990000">,</font>in2<font color="#990000">,</font>in3<font color="#990000">);</font>
+end<font color="#990000">;</font>
+</tt></pre>
+
+</blockquote>
+<p>To execute the stored procedure from an SQL Relay program, use code like the following.</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt><font color="#008080">CallableStatement</font> stmt<font color="#990000">=</font>con<font color="#990000">.</font><b><font color="#000000">prepareCall</font></b><font color="#990000">(</font><font color="#FF0000">"{call exampleproc(?,?,?)}"</font><font color="#990000">);</font>
+stmt<font color="#990000">.</font><b><font color="#000000">setInt</font></b><font color="#990000">(</font><font color="#993399">1</font><font color="#990000">,</font><font color="#993399">1</font><font color="#990000">);</font>
+stmt<font color="#990000">.</font><b><font color="#000000">setDouble</font></b><font color="#990000">(</font><font color="#993399">2</font><font color="#990000">,</font><font color="#993399">1.1</font><font color="#990000">);</font>
+stmt<font color="#990000">.</font><b><font color="#000000">setString</font></b><font color="#990000">(</font><font color="#993399">3</font><font color="#990000">,</font><font color="#FF0000">"hello"</font><font color="#990000">);</font>
+stmt<font color="#990000">.</font><b><font color="#000000">execute</font></b><font color="#990000">();</font>
+stmt<font color="#990000">.</font><b><font color="#000000">close</font></b><font color="#990000">();</font>
+</tt></pre>
+
+</blockquote>
+<p>To drop the stored procedure, run a query like the following.</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt>drop procedure exampleproc
+</tt></pre>
+
+</blockquote>
+<br/><h3>Single Values</h3>
+
+<p>Some stored procedures return single values.  Below are examples, illustrating how to create, execute and drop this kind of stored procedure for each database that SQL Relay supports.</p>
+
+<h4>Oracle</h4>
+
+<p>In Oracle, stored procedures can return values through output parameters or as return values of the procedure itself.</p>
+
+<p>Here is an example where the procedure itself returns a value.  Note that Oracle calls these functions.</p>
+
+<p>To create the stored procedure, run a query like the following.</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt>create <font color="#008080">function</font> <b><font color="#000000">exampleproc</font></b><font color="#990000">(</font>in1 <font color="#008080">in</font> number<font color="#990000">,</font> in2 <font color="#008080">in</font> number<font color="#990000">,</font> in3 <font color="#008080">in</font> varchar2<font color="#990000">)</font> returns number is
+begin
+        <b><font color="#0000FF">return</font></b> in1<font color="#990000">;</font>
+end<font color="#990000">;</font>
+</tt></pre>
+
+</blockquote>
+<p>To execute the stored procedure from an SQL Relay program, use code like the following.</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt><font color="#008080">PreparedStatement</font> stmt<font color="#990000">=</font>con<font color="#990000">.</font><b><font color="#000000">prepareStatement</font></b><font color="#990000">(</font><font color="#FF0000">"select exampleproc(?,?,?) from dual"</font><font color="#990000">);</font>
+stmt<font color="#990000">.</font><b><font color="#000000">setInt</font></b><font color="#990000">(</font><font color="#993399">1</font><font color="#990000">,</font><font color="#993399">1</font><font color="#990000">);</font>
+stmt<font color="#990000">.</font><b><font color="#000000">setDouble</font></b><font color="#990000">(</font><font color="#993399">2</font><font color="#990000">,</font><font color="#993399">1.1</font><font color="#990000">);</font>
+stmt<font color="#990000">.</font><b><font color="#000000">setString</font></b><font color="#990000">(</font><font color="#993399">3</font><font color="#990000">,</font><font color="#FF0000">"hello"</font><font color="#990000">);</font>
+<font color="#008080">ResultSet</font> rs<font color="#990000">=</font>stmt<font color="#990000">.</font><b><font color="#000000">executeQuery</font></b><font color="#990000">();</font>
+rs<font color="#990000">.</font><b><font color="#000000">next</font></b><font color="#990000">();</font>
+<font color="#008080">String</font> result<font color="#990000">=</font>rs<font color="#990000">.</font><b><font color="#000000">getString</font></b><font color="#990000">(</font><font color="#993399">1</font><font color="#990000">);</font>
+rs<font color="#990000">.</font><b><font color="#000000">close</font></b><font color="#990000">();</font>
+stmt<font color="#990000">.</font><b><font color="#000000">close</font></b><font color="#990000">();</font>
+</tt></pre>
+
+</blockquote>
+<p>To drop the stored procedure, run a query like the following.</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt>drop procedure exampleproc
+</tt></pre>
+
+</blockquote>
+<p>Here is an example where the value is returned through an output parameter.</p>
+
+<p>To create the stored procedure, run a query like the following.</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt>create <font color="#008080">procedure</font> <b><font color="#000000">exampleproc</font></b><font color="#990000">(</font>in1 <font color="#008080">in</font> number<font color="#990000">,</font> in2 <font color="#008080">in</font> number<font color="#990000">,</font> in3 <font color="#008080">in</font> varchar2<font color="#990000">,</font> out1 <font color="#008080">out</font> number<font color="#990000">)</font> as
+begin
+        out1<font color="#990000">:=</font>in1<font color="#990000">;</font>
+end<font color="#990000">;</font>
+</tt></pre>
+
+</blockquote>
+<p>To execute the stored procedure from an SQL Relay program, use code like the following.</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt><font color="#008080">CallableStatement</font> stmt<font color="#990000">=</font>con<font color="#990000">.</font><b><font color="#000000">prepareCall</font></b><font color="#990000">(</font><font color="#FF0000">"begin exampleproc(?,?,?,?); end;"</font><font color="#990000">);</font>
+stmt<font color="#990000">.</font><b><font color="#000000">setInt</font></b><font color="#990000">(</font><font color="#993399">1</font><font color="#990000">,</font><font color="#993399">1</font><font color="#990000">);</font>
+stmt<font color="#990000">.</font><b><font color="#000000">setDouble</font></b><font color="#990000">(</font><font color="#993399">2</font><font color="#990000">,</font><font color="#993399">1.1</font><font color="#990000">);</font>
+stmt<font color="#990000">.</font><b><font color="#000000">setString</font></b><font color="#990000">(</font><font color="#993399">3</font><font color="#990000">,</font><font color="#FF0000">"hello"</font><font color="#990000">);</font>
+stmt<font color="#990000">.</font><b><font color="#000000">registerOutParameter</font></b><font color="#990000">(</font><font color="#993399">4</font><font color="#990000">,</font>Types<font color="#990000">.</font>INTEGER<font color="#990000">);</font>
+stmt<font color="#990000">.</font><b><font color="#000000">execute</font></b><font color="#990000">();</font>
+<font color="#009900">int</font> result<font color="#990000">=</font>stmt<font color="#990000">.</font><b><font color="#000000">getInt</font></b><font color="#990000">(</font><font color="#993399">4</font><font color="#990000">);</font>
+stmt<font color="#990000">.</font><b><font color="#000000">close</font></b><font color="#990000">();</font>
+</tt></pre>
+
+</blockquote>
+<p>To drop the stored procedure, run a query like the following.</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt>drop procedure exampleproc
+</tt></pre>
+
+</blockquote>
+<br/><h4>Sybase and Microsoft SQL Server</h4>
+
+<p>In Sybase and Microsoft SQL Server, stored procedures return values through output parameters rather than as return values of the procedure itself.</p>
+
+<p>To create the stored procedure, run a query like the following.</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt>create <font color="#008080">procedure</font> exampleproc @<font color="#008080">in1</font> <font color="#009900">int</font><font color="#990000">,</font> @<font color="#008080">in2</font> <font color="#009900">float</font><font color="#990000">,</font> @<font color="#008080">in3</font> <b><font color="#000000">varchar</font></b><font color="#990000">(</font><font color="#993399">20</font><font color="#990000">),</font> @out1 <font color="#009900">int</font> output as
+        select @out1<font color="#990000">=</font><b><font color="#000000">convert</font></b><font color="#990000">(</font><b><font color="#000000">varchar</font></b><font color="#990000">(</font><font color="#993399">20</font><font color="#990000">),</font>@in1<font color="#990000">)</font>
+</tt></pre>
+
+</blockquote>
+<p>To execute the stored procedure from an SQL Relay program, use code like the following.</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt><font color="#008080">CallableStatement</font> stmt<font color="#990000">=</font>con<font color="#990000">.</font><b><font color="#000000">prepareCall</font></b><font color="#990000">(</font><font color="#FF0000">"{call exampleproc(?,?,?,?)}"</font><font color="#990000">);</font>
+stmt<font color="#990000">.</font><b><font color="#000000">setInt</font></b><font color="#990000">(</font><font color="#993399">1</font><font color="#990000">,</font><font color="#993399">1</font><font color="#990000">);</font>
+stmt<font color="#990000">.</font><b><font color="#000000">setDouble</font></b><font color="#990000">(</font><font color="#993399">2</font><font color="#990000">,</font><font color="#993399">1.1</font><font color="#990000">);</font>
+stmt<font color="#990000">.</font><b><font color="#000000">setString</font></b><font color="#990000">(</font><font color="#993399">3</font><font color="#990000">,</font><font color="#FF0000">"hello"</font><font color="#990000">);</font>
+stmt<font color="#990000">.</font><b><font color="#000000">registerOutParameter</font></b><font color="#990000">(</font><font color="#993399">4</font><font color="#990000">,</font>Types<font color="#990000">.</font>INTEGER<font color="#990000">);</font>
+stmt<font color="#990000">.</font><b><font color="#000000">execute</font></b><font color="#990000">();</font>
+<font color="#009900">int</font> result<font color="#990000">=</font>stmt<font color="#990000">.</font><b><font color="#000000">getInt</font></b><font color="#990000">(</font><font color="#993399">4</font><font color="#990000">);</font>
+stmt<font color="#990000">.</font><b><font color="#000000">close</font></b><font color="#990000">();</font>
+</tt></pre>
+
+</blockquote>
+<p>To drop the stored procedure, run a query like the following.</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt>drop procedure exampleproc
+</tt></pre>
+
+</blockquote>
+<br/><h4>Firebird</h4>
+
+<p>To create the stored procedure, run a query like the following.</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt>create <font color="#008080">procedure</font> <b><font color="#000000">exampleproc</font></b><font color="#990000">(</font><font color="#008080">in1</font> integer<font color="#990000">,</font> <font color="#008080">in2</font> <font color="#009900">float</font><font color="#990000">,</font> <font color="#008080">in3</font> <b><font color="#000000">varchar</font></b><font color="#990000">(</font><font color="#993399">20</font><font color="#990000">))</font> <b><font color="#000000">returns</font></b> <font color="#990000">(</font><font color="#008080">out1</font> integer<font color="#990000">)</font> as
+begin
+        out1<font color="#990000">=</font>in1<font color="#990000">;</font>
+        suspend<font color="#990000">;</font>
+end<font color="#990000">;</font>
+</tt></pre>
+
+</blockquote>
+<p>To execute the stored procedure from an SQL Relay program, use code like the following.</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt><font color="#008080">PreparedStatement</font> stmt<font color="#990000">=</font>con<font color="#990000">.</font><b><font color="#000000">prepareStatement</font></b><font color="#990000">(</font><font color="#FF0000">"select * from exampleproc(?, ?, ?)"</font><font color="#990000">);</font>
+stmt<font color="#990000">.</font><b><font color="#000000">setInt</font></b><font color="#990000">(</font><font color="#993399">1</font><font color="#990000">,</font><font color="#993399">1</font><font color="#990000">);</font>
+stmt<font color="#990000">.</font><b><font color="#000000">setDouble</font></b><font color="#990000">(</font><font color="#993399">2</font><font color="#990000">,</font><font color="#993399">1.1</font><font color="#990000">);</font>
+stmt<font color="#990000">.</font><b><font color="#000000">setString</font></b><font color="#990000">(</font><font color="#993399">3</font><font color="#990000">,</font><font color="#FF0000">"hello"</font><font color="#990000">);</font>
+<font color="#008080">ResultSet</font> rs<font color="#990000">=</font>stmt<font color="#990000">.</font><b><font color="#000000">executeQuery</font></b><font color="#990000">();</font>
+rs<font color="#990000">.</font><b><font color="#000000">next</font></b><font color="#990000">();</font>
+<font color="#008080">String</font> result<font color="#990000">=</font>rs<font color="#990000">.</font><b><font color="#000000">getString</font></b><font color="#990000">(</font><font color="#993399">1</font><font color="#990000">);</font>
+rs<font color="#990000">.</font><b><font color="#000000">close</font></b><font color="#990000">();</font>
+stmt<font color="#990000">.</font><b><font color="#000000">close</font></b><font color="#990000">();</font>
+</tt></pre>
+
+</blockquote>
+<p>To drop the stored procedure, run a query like the following.</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt>drop procedure exampleproc
+</tt></pre>
+
+</blockquote>
+<br/><h4>DB2</h4>
+
+<p>In DB2, stored procedures return values through output parameters rather than as return values of the procedure itself.</p>
+
+<p>To create the stored procedure, run a query like the following.</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt>create <font color="#008080">procedure</font> <b><font color="#000000">exampleproc</font></b><font color="#990000">(</font>in <font color="#008080">in1</font> <font color="#009900">int</font><font color="#990000">,</font> in <font color="#008080">in2</font> <font color="#009900">double</font><font color="#990000">,</font> in <font color="#008080">in3</font> <b><font color="#000000">varchar</font></b><font color="#990000">(</font><font color="#993399">20</font><font color="#990000">),</font> out <font color="#008080">out1</font> <font color="#009900">int</font><font color="#990000">)</font> language sql
+begin
+        <font color="#008080">set</font> out1 <font color="#990000">=</font> in1<font color="#990000">;</font>
+end
+</tt></pre>
+
+</blockquote>
+<p>To execute the stored procedure from an SQL Relay program, use code like the following.</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt><font color="#008080">CallableStatement</font> stmt<font color="#990000">=</font>con<font color="#990000">.</font><b><font color="#000000">prepareCall</font></b><font color="#990000">(</font><font color="#FF0000">"{call exampleproc(?,?,?,?)}"</font><font color="#990000">);</font>
+stmt<font color="#990000">.</font><b><font color="#000000">setInt</font></b><font color="#990000">(</font><font color="#993399">1</font><font color="#990000">,</font><font color="#993399">1</font><font color="#990000">);</font>
+stmt<font color="#990000">.</font><b><font color="#000000">setDouble</font></b><font color="#990000">(</font><font color="#993399">2</font><font color="#990000">,</font><font color="#993399">1.1</font><font color="#990000">);</font>
+stmt<font color="#990000">.</font><b><font color="#000000">setString</font></b><font color="#990000">(</font><font color="#993399">3</font><font color="#990000">,</font><font color="#FF0000">"hello"</font><font color="#990000">);</font>
+stmt<font color="#990000">.</font><b><font color="#000000">registerOutParameter</font></b><font color="#990000">(</font><font color="#993399">4</font><font color="#990000">,</font>Types<font color="#990000">.</font>INTEGER<font color="#990000">);</font>
+stmt<font color="#990000">.</font><b><font color="#000000">execute</font></b><font color="#990000">();</font>
+<font color="#009900">int</font> result<font color="#990000">=</font>stmt<font color="#990000">.</font><b><font color="#000000">getInt</font></b><font color="#990000">(</font><font color="#993399">4</font><font color="#990000">);</font>
+stmt<font color="#990000">.</font><b><font color="#000000">close</font></b><font color="#990000">();</font>
+</tt></pre>
+
+</blockquote>
+<p>To drop the stored procedure, run a query like the following.</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt>drop procedure exampleproc
+</tt></pre>
+
+</blockquote>
+<br/><h4>Postgresql</h4>
+
+<p>To create the stored procedure, run a query like the following.</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt>create <font color="#008080">function</font> <b><font color="#000000">examplefunc</font></b><font color="#990000">(</font><font color="#009900">int</font><font color="#990000">,</font><font color="#009900">float</font><font color="#990000">,</font><font color="#009900">char</font><font color="#990000">(</font><font color="#993399">20</font><font color="#990000">))</font> returns <font color="#008080">int</font> as <font color="#FF0000">'</font>
+<font color="#FF0000">declare</font>
+<font color="#FF0000">        in1 int;</font>
+<font color="#FF0000">        in2 float;</font>
+<font color="#FF0000">        in3 char(20);</font>
+<font color="#FF0000">begin</font>
+<font color="#FF0000">        in1:=$1;</font>
+<font color="#FF0000">        return;</font>
+<font color="#FF0000">end;</font>
+<font color="#FF0000">'</font> language plpgsql
+</tt></pre>
+
+</blockquote>
+<p>To execute the stored procedure from an SQL Relay program, use code like the following.</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt><font color="#008080">PreparedStatement</font> stmt<font color="#990000">=</font>con<font color="#990000">.</font><b><font color="#000000">prepareStatement</font></b><font color="#990000">(</font><font color="#FF0000">"select * from examplefunc(?,?,?)"</font><font color="#990000">);</font>
+stmt<font color="#990000">.</font><b><font color="#000000">setInt</font></b><font color="#990000">(</font><font color="#993399">1</font><font color="#990000">,</font><font color="#993399">1</font><font color="#990000">);</font>
+stmt<font color="#990000">.</font><b><font color="#000000">setDouble</font></b><font color="#990000">(</font><font color="#993399">2</font><font color="#990000">,</font><font color="#993399">1.1</font><font color="#990000">);</font>
+stmt<font color="#990000">.</font><b><font color="#000000">setString</font></b><font color="#990000">(</font><font color="#993399">3</font><font color="#990000">,</font><font color="#FF0000">"hello"</font><font color="#990000">);</font>
+<font color="#008080">ResultSet</font> rs<font color="#990000">=</font>stmt<font color="#990000">.</font><b><font color="#000000">executeQuery</font></b><font color="#990000">();</font>
+rs<font color="#990000">.</font><b><font color="#000000">next</font></b><font color="#990000">();</font>
+<font color="#008080">String</font> result<font color="#990000">=</font>rs<font color="#990000">.</font><b><font color="#000000">getString</font></b><font color="#990000">(</font><font color="#993399">1</font><font color="#990000">);</font>
+rs<font color="#990000">.</font><b><font color="#000000">close</font></b><font color="#990000">();</font>
+stmt<font color="#990000">.</font><b><font color="#000000">close</font></b><font color="#990000">();</font>
+</tt></pre>
+
+</blockquote>
+<p>To drop the stored procedure, run a query like the following.</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt>drop <font color="#008080">function</font> <b><font color="#000000">examplefunc</font></b><font color="#990000">(</font><font color="#009900">int</font><font color="#990000">,</font><font color="#009900">float</font><font color="#990000">,</font><font color="#009900">char</font><font color="#990000">(</font><font color="#993399">20</font><font color="#990000">))</font>
+</tt></pre>
+
+</blockquote>
+<h4>MySQL/MariaDB</h4>
+
+<p>A single value can be returned from a MySQL/MariaDB function.</p>
+
+<p>To create the function, run a query like the following.</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt>create <font color="#008080">function</font> <b><font color="#000000">examplefunc</font></b><font color="#990000">(</font>in <font color="#008080">in1</font> <font color="#009900">int</font><font color="#990000">,</font> in <font color="#008080">in2</font> <font color="#009900">float</font><font color="#990000">,</font> in <font color="#008080">in3</font> <b><font color="#000000">varchar</font></b><font color="#990000">(</font><font color="#993399">20</font><font color="#990000">))</font> returns <font color="#009900">int</font> <b><font color="#0000FF">return</font></b> in1<font color="#990000">;</font>
+</tt></pre>
+
+</blockquote>
+<p>To execute the function from an SQL Relay program, use code like the following.</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt><font color="#008080">PreparedStatement</font> stmt<font color="#990000">=</font>con<font color="#990000">.</font><b><font color="#000000">prepareStatement</font></b><font color="#990000">(</font><font color="#FF0000">"select examplefunc(?,?,?)"</font><font color="#990000">);</font>
+stmt<font color="#990000">.</font><b><font color="#000000">setInt</font></b><font color="#990000">(</font><font color="#993399">1</font><font color="#990000">,</font><font color="#993399">1</font><font color="#990000">);</font>
+stmt<font color="#990000">.</font><b><font color="#000000">setDouble</font></b><font color="#990000">(</font><font color="#993399">2</font><font color="#990000">,</font><font color="#993399">1.1</font><font color="#990000">);</font>
+stmt<font color="#990000">.</font><b><font color="#000000">setString</font></b><font color="#990000">(</font><font color="#993399">3</font><font color="#990000">,</font><font color="#FF0000">"hello"</font><font color="#990000">);</font>
+<font color="#008080">ResultSet</font> rs<font color="#990000">=</font>stmt<font color="#990000">.</font><b><font color="#000000">executeQuery</font></b><font color="#990000">();</font>
+rs<font color="#990000">.</font><b><font color="#000000">next</font></b><font color="#990000">();</font>
+<font color="#008080">String</font> result<font color="#990000">=</font>rs<font color="#990000">.</font><b><font color="#000000">getString</font></b><font color="#990000">(</font><font color="#993399">1</font><font color="#990000">);</font>
+rs<font color="#990000">.</font><b><font color="#000000">close</font></b><font color="#990000">();</font>
+stmt<font color="#990000">.</font><b><font color="#000000">close</font></b><font color="#990000">();</font>
+</tt></pre>
+
+</blockquote>
+<p>To drop the function, run a query like the following.</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt>drop procedure exampleproc
+</tt></pre>
+
+</blockquote>
+<p>A single value can be returned in the result set of a MySQL/MariaDB procedure.</p>
+
+<p>To create the procedure, run a query like the following.</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt>create <font color="#008080">procedure</font> <b><font color="#000000">exampleproc</font></b><font color="#990000">()</font> begin select <font color="#993399">1</font><font color="#990000">;</font> end<font color="#990000">;</font>
+</tt></pre>
+
+</blockquote>
+<p>To execute the procedure from an SQL Relay program, use code like the following.</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt><font color="#008080">Statement</font> stmt<font color="#990000">=</font>con<font color="#990000">.</font><b><font color="#000000">createStatement</font></b><font color="#990000">();</font>
+<font color="#008080">ResultSet</font> rs<font color="#990000">=</font>stmt<font color="#990000">.</font><b><font color="#000000">executeQuery</font></b><font color="#990000">(</font><font color="#FF0000">"{call exampleproc}"</font><font color="#990000">);</font>
+rs<font color="#990000">.</font><b><font color="#000000">next</font></b><font color="#990000">();</font>
+<font color="#008080">String</font> result<font color="#990000">=</font>rs<font color="#990000">.</font><b><font color="#000000">getString</font></b><font color="#990000">(</font><font color="#993399">1</font><font color="#990000">);</font>
+rs<font color="#990000">.</font><b><font color="#000000">close</font></b><font color="#990000">();</font>
+stmt<font color="#990000">.</font><b><font color="#000000">close</font></b><font color="#990000">();</font>
+</tt></pre>
+
+</blockquote>
+<p>To drop the procedure, run a query like the following.</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt>drop procedure exampleproc
+</tt></pre>
+
+</blockquote>
+<p>A single value can be returned using the output variable of a MySQL/MariaDB procedure.</p>
+
+<p>To create the procedure, run a query like the following.</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt>create <font color="#008080">procedure</font> <b><font color="#000000">exampleproc</font></b><font color="#990000">(</font>out <font color="#008080">out1</font> <font color="#009900">int</font><font color="#990000">)</font> begin select <font color="#993399">1</font> <font color="#008080">into</font> out1<font color="#990000">;</font> end<font color="#990000">;</font>
+</tt></pre>
+
+</blockquote>
+<p>To execute the procedure from an SQL Relay program, use code like the following.</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt><font color="#008080">CallableStatement</font> stmt<font color="#990000">=</font>con<font color="#990000">.</font><b><font color="#000000">prepareCall</font></b><font color="#990000">(</font><font color="#FF0000">"{call exampleproc(?)}"</font><font color="#990000">);</font>
+stmt<font color="#990000">.</font><b><font color="#000000">registerOutParameter</font></b><font color="#990000">(</font><font color="#993399">1</font><font color="#990000">,</font>Types<font color="#990000">.</font>INTEGER<font color="#990000">);</font>
+stmt<font color="#990000">.</font><b><font color="#000000">execute</font></b><font color="#990000">();</font>
+<font color="#009900">int</font> result<font color="#990000">=</font>stmt<font color="#990000">.</font><b><font color="#000000">getInt</font></b><font color="#990000">(</font><font color="#993399">1</font><font color="#990000">);</font>
+stmt<font color="#990000">.</font><b><font color="#000000">close</font></b><font color="#990000">();</font>
+</tt></pre>
+
+</blockquote>
+<p>To drop the procedure, run a query like the following.</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt>drop procedure exampleproc
+</tt></pre>
+
+</blockquote>
+<br/><h3>Multiple Values</h3>
+
+<p>Some stored procedures return multiple values.  Below are examples, illustrating how to create, execute and drop this kind of stored procedure for each database that SQL Relay supports.</p>
+
+<h4>Oracle</h4>
+
+<p>In Oracle, stored procedures can return values through output parameters or as return values of the procedure itself.  If a procedure needs to return multiple values, it can return one of them as the return value of the procedure itself, but the rest must be returned through output parameters.</p>
+
+<p>To create the stored procedure, run a query like the following.</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt>create <font color="#008080">procedure</font> <b><font color="#000000">exampleproc</font></b><font color="#990000">(</font>in1 <font color="#008080">in</font> number<font color="#990000">,</font> in2 <font color="#008080">in</font> number<font color="#990000">,</font> in3 <font color="#008080">in</font> varchar2<font color="#990000">,</font> out1 <font color="#008080">out</font> number<font color="#990000">,</font> out2 <font color="#008080">out</font> number<font color="#990000">,</font> out3 <font color="#008080">out</font> varchar2<font color="#990000">)</font> is
+begin
+        out1<font color="#990000">:=</font>in1<font color="#990000">;</font>
+        out2<font color="#990000">:=</font>in2<font color="#990000">;</font>
+        out3<font color="#990000">:=</font>in3<font color="#990000">;</font>
+end<font color="#990000">;</font>
+</tt></pre>
+
+</blockquote>
+<p>To execute the stored procedure from an SQL Relay program, use code like the following.</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt><font color="#008080">CallableStatement</font> stmt<font color="#990000">=</font>con<font color="#990000">.</font><b><font color="#000000">prepareCall</font></b><font color="#990000">(</font><font color="#FF0000">"begin exampleproc(?,?,?,?,?,?); end;"</font><font color="#990000">);</font>
+stmt<font color="#990000">.</font><b><font color="#000000">setInt</font></b><font color="#990000">(</font><font color="#993399">1</font><font color="#990000">,</font><font color="#993399">1</font><font color="#990000">);</font>
+stmt<font color="#990000">.</font><b><font color="#000000">setDouble</font></b><font color="#990000">(</font><font color="#993399">2</font><font color="#990000">,</font><font color="#993399">1.1</font><font color="#990000">);</font>
+stmt<font color="#990000">.</font><b><font color="#000000">setString</font></b><font color="#990000">(</font><font color="#993399">3</font><font color="#990000">,</font><font color="#FF0000">"hello"</font><font color="#990000">);</font>
+stmt<font color="#990000">.</font><b><font color="#000000">registerOutParameter</font></b><font color="#990000">(</font><font color="#993399">4</font><font color="#990000">,</font>Types<font color="#990000">.</font>INTEGER<font color="#990000">);</font>
+stmt<font color="#990000">.</font><b><font color="#000000">registerOutParameter</font></b><font color="#990000">(</font><font color="#993399">5</font><font color="#990000">,</font>Types<font color="#990000">.</font>DOUBLE<font color="#990000">);</font>
+stmt<font color="#990000">.</font><b><font color="#000000">registerOutParameter</font></b><font color="#990000">(</font><font color="#993399">6</font><font color="#990000">,</font>Types<font color="#990000">.</font>VARCHAR<font color="#990000">);</font>
+stmt<font color="#990000">.</font><b><font color="#000000">execute</font></b><font color="#990000">();</font>
+<font color="#009900">int</font> out1<font color="#990000">=</font>stmt<font color="#990000">.</font><b><font color="#000000">getInt</font></b><font color="#990000">(</font><font color="#993399">4</font><font color="#990000">);</font>
+<font color="#009900">double</font> out2<font color="#990000">=</font>stmt<font color="#990000">.</font><b><font color="#000000">getDouble</font></b><font color="#990000">(</font><font color="#993399">5</font><font color="#990000">);</font>
+<font color="#008080">String</font> out3<font color="#990000">=</font>stmt<font color="#990000">.</font><b><font color="#000000">getString</font></b><font color="#990000">(</font><font color="#993399">6</font><font color="#990000">);</font>
+stmt<font color="#990000">.</font><b><font color="#000000">close</font></b><font color="#990000">();</font>
+</tt></pre>
+
+</blockquote>
+<p>To drop the stored procedure, run a query like the following.</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt>drop procedure exampleproc
+</tt></pre>
+
+</blockquote>
+<br/><h4>Sybase and Microsoft SQL Server</h4>
+
+<p>To create the stored procedure, run a query like the following.</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt>create <font color="#008080">procedure</font> exampleproc @<font color="#008080">in1</font> <font color="#009900">int</font><font color="#990000">,</font> @<font color="#008080">in2</font> <font color="#009900">float</font><font color="#990000">,</font> @<font color="#008080">in3</font> <b><font color="#000000">varchar</font></b><font color="#990000">(</font><font color="#993399">20</font><font color="#990000">),</font> @out1 <font color="#008080">int</font> output<font color="#990000">,</font> @out2 <font color="#008080">int</font> output<font color="#990000">,</font> @out3 <font color="#009900">int</font> output as
+        select @out1<font color="#990000">=</font><b><font color="#000000">convert</font></b><font color="#990000">(</font><b><font color="#000000">varchar</font></b><font color="#990000">(</font><font color="#993399">20</font><font color="#990000">),</font>@in1<font color="#990000">),</font>
+                @out2<font color="#990000">=</font><b><font color="#000000">convert</font></b><font color="#990000">(</font><b><font color="#000000">varchar</font></b><font color="#990000">(</font><font color="#993399">20</font><font color="#990000">),</font>@in2<font color="#990000">),</font>
+                @out2<font color="#990000">=</font><b><font color="#000000">convert</font></b><font color="#990000">(</font><b><font color="#000000">varchar</font></b><font color="#990000">(</font><font color="#993399">20</font><font color="#990000">),</font>@in2<font color="#990000">)</font>
+</tt></pre>
+
+</blockquote>
+<p>To execute the stored procedure from an SQL Relay program, use code like the following.</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt><font color="#008080">CallableStatement</font> stmt<font color="#990000">=</font>con<font color="#990000">.</font><b><font color="#000000">prepareCall</font></b><font color="#990000">(</font><font color="#FF0000">"{call exampleproc(?,?,?,?,?,?)}"</font><font color="#990000">);</font>
+stmt<font color="#990000">.</font><b><font color="#000000">setInt</font></b><font color="#990000">(</font><font color="#993399">1</font><font color="#990000">,</font><font color="#993399">1</font><font color="#990000">);</font>
+stmt<font color="#990000">.</font><b><font color="#000000">setDouble</font></b><font color="#990000">(</font><font color="#993399">2</font><font color="#990000">,</font><font color="#993399">1.1</font><font color="#990000">);</font>
+stmt<font color="#990000">.</font><b><font color="#000000">setString</font></b><font color="#990000">(</font><font color="#993399">3</font><font color="#990000">,</font><font color="#FF0000">"hello"</font><font color="#990000">);</font>
+stmt<font color="#990000">.</font><b><font color="#000000">registerOutParameter</font></b><font color="#990000">(</font><font color="#993399">4</font><font color="#990000">,</font>Types<font color="#990000">.</font>INTEGER<font color="#990000">);</font>
+stmt<font color="#990000">.</font><b><font color="#000000">registerOutParameter</font></b><font color="#990000">(</font><font color="#993399">5</font><font color="#990000">,</font>Types<font color="#990000">.</font>DOUBLE<font color="#990000">);</font>
+stmt<font color="#990000">.</font><b><font color="#000000">registerOutParameter</font></b><font color="#990000">(</font><font color="#993399">6</font><font color="#990000">,</font>Types<font color="#990000">.</font>VARCHAR<font color="#990000">);</font>
+stmt<font color="#990000">.</font><b><font color="#000000">execute</font></b><font color="#990000">();</font>
+<font color="#009900">int</font> out1<font color="#990000">=</font>stmt<font color="#990000">.</font><b><font color="#000000">getInt</font></b><font color="#990000">(</font><font color="#993399">4</font><font color="#990000">);</font>
+<font color="#009900">double</font> out2<font color="#990000">=</font>stmt<font color="#990000">.</font><b><font color="#000000">getDouble</font></b><font color="#990000">(</font><font color="#993399">5</font><font color="#990000">);</font>
+<font color="#008080">String</font> out3<font color="#990000">=</font>stmt<font color="#990000">.</font><b><font color="#000000">getString</font></b><font color="#990000">(</font><font color="#993399">6</font><font color="#990000">);</font>
+stmt<font color="#990000">.</font><b><font color="#000000">close</font></b><font color="#990000">();</font>
+</tt></pre>
+
+</blockquote>
+<p>To drop the stored procedure, run a query like the following.</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt>drop procedure exampleproc
+</tt></pre>
+
+</blockquote>
+<br/><h4>Firebird</h4>
+
+<p>To create the stored procedure, run a query like the following.</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt>create <font color="#008080">procedure</font> <b><font color="#000000">exampleproc</font></b><font color="#990000">(</font><font color="#008080">in1</font> integer<font color="#990000">,</font> <font color="#008080">in2</font> <font color="#009900">float</font><font color="#990000">,</font> <font color="#008080">in3</font> <b><font color="#000000">varchar</font></b><font color="#990000">(</font><font color="#993399">20</font><font color="#990000">))</font> <b><font color="#000000">returns</font></b> <font color="#990000">(</font><font color="#008080">out1</font> integer<font color="#990000">,</font> <font color="#008080">out2</font> <font color="#009900">float</font><font color="#990000">,</font> <font color="#008080">out3</font> <b><font color="#000000">varchar</font></b><font color="#990000">(</font><font color="#993399">20</font><font color="#990000">))</font> as
+begin
+        out1<font color="#990000">=</font>in1<font color="#990000">;</font>
+        out2<font color="#990000">=</font>in2<font color="#990000">;</font>
+        out3<font color="#990000">=</font>in3<font color="#990000">;</font>
+        suspend<font color="#990000">;</font>
+end<font color="#990000">;</font>
+</tt></pre>
+
+</blockquote>
+<p>To execute the stored procedure from an SQL Relay program, use code like the following.</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt><font color="#008080">PreparedStatement</font> stmt<font color="#990000">=</font>con<font color="#990000">.</font><b><font color="#000000">prepareStatement</font></b><font color="#990000">(</font><font color="#FF0000">"select * from exampleproc(?, ?, ?)"</font><font color="#990000">);</font>
+stmt<font color="#990000">.</font><b><font color="#000000">setInt</font></b><font color="#990000">(</font><font color="#993399">1</font><font color="#990000">,</font><font color="#993399">1</font><font color="#990000">);</font>
+stmt<font color="#990000">.</font><b><font color="#000000">setDouble</font></b><font color="#990000">(</font><font color="#993399">2</font><font color="#990000">,</font><font color="#993399">1.1</font><font color="#990000">);</font>
+stmt<font color="#990000">.</font><b><font color="#000000">setString</font></b><font color="#990000">(</font><font color="#993399">3</font><font color="#990000">,</font><font color="#FF0000">"hello"</font><font color="#990000">);</font>
+<font color="#008080">ResultSet</font> rs<font color="#990000">=</font>stmt<font color="#990000">.</font><b><font color="#000000">executeQuery</font></b><font color="#990000">();</font>
+rs<font color="#990000">.</font><b><font color="#000000">next</font></b><font color="#990000">();</font>
+<font color="#008080">String</font> out1<font color="#990000">=</font>rs<font color="#990000">.</font><b><font color="#000000">getString</font></b><font color="#990000">(</font><font color="#993399">1</font><font color="#990000">);</font>
+<font color="#008080">String</font> out2<font color="#990000">=</font>rs<font color="#990000">.</font><b><font color="#000000">getString</font></b><font color="#990000">(</font><font color="#993399">2</font><font color="#990000">);</font>
+<font color="#008080">String</font> out3<font color="#990000">=</font>rs<font color="#990000">.</font><b><font color="#000000">getString</font></b><font color="#990000">(</font><font color="#993399">3</font><font color="#990000">);</font>
+rs<font color="#990000">.</font><b><font color="#000000">close</font></b><font color="#990000">();</font>
+stmt<font color="#990000">.</font><b><font color="#000000">close</font></b><font color="#990000">();</font>
+</tt></pre>
+
+</blockquote>
+<p>To drop the stored procedure, run a query like the following.</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt>drop procedure exampleproc
+</tt></pre>
+
+</blockquote>
+<br/><h4>DB2</h4>
+
+<p>To create the stored procedure, run a query like the following.</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt>create <font color="#008080">procedure</font> <b><font color="#000000">exampleproc</font></b><font color="#990000">(</font>in <font color="#008080">in1</font> <font color="#009900">int</font><font color="#990000">,</font> in <font color="#008080">in2</font> <font color="#009900">double</font><font color="#990000">,</font> in <font color="#008080">in3</font> <b><font color="#000000">varchar</font></b><font color="#990000">(</font><font color="#993399">20</font><font color="#990000">),</font> out <font color="#008080">out1</font> <font color="#009900">int</font><font color="#990000">,</font> out <font color="#008080">out2</font> <font color="#009900">double</font><font color="#990000">,</font> out <font color="#008080">out3</font> <b><font color="#000000">varchar</font></b><font color="#990000">(</font><font color="#993399">20</font><font color="#990000">))</font> language sql
+begin
+        <font color="#008080">set</font> out1 <font color="#990000">=</font> in1<font color="#990000">;</font>
+        <font color="#008080">set</font> out2 <font color="#990000">=</font> in2<font color="#990000">;</font>
+        <font color="#008080">set</font> out3 <font color="#990000">=</font> in3<font color="#990000">;</font>
+end
+</tt></pre>
+
+</blockquote>
+<p>To execute the stored procedure from an SQL Relay program, use code like the following.</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt><font color="#008080">CallableStatement</font> stmt<font color="#990000">=</font>con<font color="#990000">.</font><b><font color="#000000">prepareCall</font></b><font color="#990000">(</font><font color="#FF0000">"{call exampleproc(?,?,?,?,?,?)}"</font><font color="#990000">);</font>
+stmt<font color="#990000">.</font><b><font color="#000000">setInt</font></b><font color="#990000">(</font><font color="#993399">1</font><font color="#990000">,</font><font color="#993399">1</font><font color="#990000">);</font>
+stmt<font color="#990000">.</font><b><font color="#000000">setDouble</font></b><font color="#990000">(</font><font color="#993399">2</font><font color="#990000">,</font><font color="#993399">1.1</font><font color="#990000">);</font>
+stmt<font color="#990000">.</font><b><font color="#000000">setString</font></b><font color="#990000">(</font><font color="#993399">3</font><font color="#990000">,</font><font color="#FF0000">"hello"</font><font color="#990000">);</font>
+stmt<font color="#990000">.</font><b><font color="#000000">registerOutParameter</font></b><font color="#990000">(</font><font color="#993399">4</font><font color="#990000">,</font>Types<font color="#990000">.</font>INTEGER<font color="#990000">);</font>
+stmt<font color="#990000">.</font><b><font color="#000000">registerOutParameter</font></b><font color="#990000">(</font><font color="#993399">5</font><font color="#990000">,</font>Types<font color="#990000">.</font>DOUBLE<font color="#990000">);</font>
+stmt<font color="#990000">.</font><b><font color="#000000">registerOutParameter</font></b><font color="#990000">(</font><font color="#993399">6</font><font color="#990000">,</font>Types<font color="#990000">.</font>VARCHAR<font color="#990000">);</font>
+stmt<font color="#990000">.</font><b><font color="#000000">execute</font></b><font color="#990000">();</font>
+<font color="#009900">int</font> out1<font color="#990000">=</font>stmt<font color="#990000">.</font><b><font color="#000000">getInt</font></b><font color="#990000">(</font><font color="#993399">4</font><font color="#990000">);</font>
+<font color="#009900">double</font> out2<font color="#990000">=</font>stmt<font color="#990000">.</font><b><font color="#000000">getDouble</font></b><font color="#990000">(</font><font color="#993399">5</font><font color="#990000">);</font>
+<font color="#008080">String</font> out3<font color="#990000">=</font>stmt<font color="#990000">.</font><b><font color="#000000">getString</font></b><font color="#990000">(</font><font color="#993399">6</font><font color="#990000">);</font>
+stmt<font color="#990000">.</font><b><font color="#000000">close</font></b><font color="#990000">();</font>
+</tt></pre>
+
+</blockquote>
+<p>To drop the stored procedure, run a query like the following.</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt>drop procedure exampleproc
+</tt></pre>
+
+</blockquote>
+<br/><h4>Postgresql</h4>
+
+<p>To create the stored procedure, run a query like the following.</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt>create <font color="#008080">function</font> <b><font color="#000000">examplefunc</font></b><font color="#990000">(</font><font color="#009900">int</font><font color="#990000">,</font><font color="#009900">float</font><font color="#990000">,</font><font color="#009900">char</font><font color="#990000">(</font><font color="#993399">20</font><font color="#990000">))</font> returns <font color="#008080">record</font> as <font color="#FF0000">'</font>
+<font color="#FF0000">declare</font>
+<font color="#FF0000">        output record;</font>
+<font color="#FF0000">begin</font>
+<font color="#FF0000">        select $1,$2,$3 into output;</font>
+<font color="#FF0000">        return output;</font>
+<font color="#FF0000">end;</font>
+<font color="#FF0000">'</font> language plpgsql
+</tt></pre>
+
+</blockquote>
+<p>To execute the stored procedure from an SQL Relay program, use code like the following.</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt><font color="#008080">PreparedStatement</font> stmt<font color="#990000">=</font>con<font color="#990000">.</font><b><font color="#000000">prepareStatement</font></b><font color="#990000">(</font><font color="#FF0000">"select * from examplefunc(?,?,?) as (col1 int, col2 float, col3 char(20))"</font><font color="#990000">);</font>
+stmt<font color="#990000">.</font><b><font color="#000000">setInt</font></b><font color="#990000">(</font><font color="#993399">1</font><font color="#990000">,</font><font color="#993399">1</font><font color="#990000">);</font>
+stmt<font color="#990000">.</font><b><font color="#000000">setDouble</font></b><font color="#990000">(</font><font color="#993399">2</font><font color="#990000">,</font><font color="#993399">1.1</font><font color="#990000">);</font>
+stmt<font color="#990000">.</font><b><font color="#000000">setString</font></b><font color="#990000">(</font><font color="#993399">3</font><font color="#990000">,</font><font color="#FF0000">"hello"</font><font color="#990000">);</font>
+<font color="#008080">ResultSet</font> rs<font color="#990000">=</font>stmt<font color="#990000">.</font><b><font color="#000000">executeQuery</font></b><font color="#990000">();</font>
+rs<font color="#990000">.</font><b><font color="#000000">next</font></b><font color="#990000">();</font>
+<font color="#008080">String</font> out1<font color="#990000">=</font>rs<font color="#990000">.</font><b><font color="#000000">getString</font></b><font color="#990000">(</font><font color="#993399">1</font><font color="#990000">);</font>
+<font color="#008080">String</font> out2<font color="#990000">=</font>rs<font color="#990000">.</font><b><font color="#000000">getString</font></b><font color="#990000">(</font><font color="#993399">2</font><font color="#990000">);</font>
+<font color="#008080">String</font> out3<font color="#990000">=</font>rs<font color="#990000">.</font><b><font color="#000000">getString</font></b><font color="#990000">(</font><font color="#993399">3</font><font color="#990000">);</font>
+rs<font color="#990000">.</font><b><font color="#000000">close</font></b><font color="#990000">();</font>
+stmt<font color="#990000">.</font><b><font color="#000000">close</font></b><font color="#990000">();</font>
+</tt></pre>
+
+</blockquote>
+<p>To drop the stored procedure, run a query like the following.</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt>drop <font color="#008080">function</font> <b><font color="#000000">examplefunc</font></b><font color="#990000">(</font><font color="#009900">int</font><font color="#990000">,</font><font color="#009900">float</font><font color="#990000">,</font><font color="#009900">char</font><font color="#990000">(</font><font color="#993399">20</font><font color="#990000">))</font>
+</tt></pre>
+
+</blockquote>
+<h4>MySQL/MariaDB</h4>
+
+<p>Here's how you can get multiple values from the result set of a MySQL/MariaDB procedure.</p>
+
+<p>To create the stored procedure, run a query like the following.</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt>create <font color="#008080">procedure</font> <b><font color="#000000">exampleproc</font></b><font color="#990000">(</font>in <font color="#008080">in1</font> <font color="#009900">int</font><font color="#990000">,</font> in <font color="#008080">in2</font> <font color="#009900">float</font><font color="#990000">,</font> in <font color="#008080">in3</font> <b><font color="#000000">varchar</font></b><font color="#990000">(</font><font color="#993399">20</font><font color="#990000">))</font> begin <font color="#008080">select</font> in1<font color="#990000">,</font> in2<font color="#990000">,</font> in3<font color="#990000">;</font> end<font color="#990000">;</font>
+</tt></pre>
+
+</blockquote>
+<p>To execute the stored procedure from an SQL Relay program, use code like the following.</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt><font color="#008080">PreparedStatement</font> stmt<font color="#990000">=</font>con<font color="#990000">.</font><b><font color="#000000">prepareStatement</font></b><font color="#990000">(</font><font color="#FF0000">"{call exampleproc(?,?,?)}"</font><font color="#990000">);</font>
+stmt<font color="#990000">.</font><b><font color="#000000">setInt</font></b><font color="#990000">(</font><font color="#993399">1</font><font color="#990000">,</font><font color="#993399">1</font><font color="#990000">);</font>
+stmt<font color="#990000">.</font><b><font color="#000000">setDouble</font></b><font color="#990000">(</font><font color="#993399">2</font><font color="#990000">,</font><font color="#993399">1.1</font><font color="#990000">);</font>
+stmt<font color="#990000">.</font><b><font color="#000000">setString</font></b><font color="#990000">(</font><font color="#993399">3</font><font color="#990000">,</font><font color="#FF0000">"hello"</font><font color="#990000">);</font>
+<font color="#008080">ResultSet</font> rs<font color="#990000">=</font>stmt<font color="#990000">.</font><b><font color="#000000">executeQuery</font></b><font color="#990000">();</font>
+rs<font color="#990000">.</font><b><font color="#000000">next</font></b><font color="#990000">();</font>
+<font color="#008080">String</font> out1<font color="#990000">=</font>rs<font color="#990000">.</font><b><font color="#000000">getString</font></b><font color="#990000">(</font><font color="#993399">1</font><font color="#990000">);</font>
+<font color="#008080">String</font> out2<font color="#990000">=</font>rs<font color="#990000">.</font><b><font color="#000000">getString</font></b><font color="#990000">(</font><font color="#993399">2</font><font color="#990000">);</font>
+<font color="#008080">String</font> out3<font color="#990000">=</font>rs<font color="#990000">.</font><b><font color="#000000">getString</font></b><font color="#990000">(</font><font color="#993399">3</font><font color="#990000">);</font>
+rs<font color="#990000">.</font><b><font color="#000000">close</font></b><font color="#990000">();</font>
+stmt<font color="#990000">.</font><b><font color="#000000">close</font></b><font color="#990000">();</font>
+</tt></pre>
+
+</blockquote>
+<p>To drop the stored procedure, run a query like the following.</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt>drop procedure exampleproc
+</tt></pre>
+
+</blockquote>
+<p>Here's how you can get multiple values from the output variables of a MySQL/MariaDB procedure.</p>
+
+<p>To create the stored procedure, run a query like the following.</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt>create <font color="#008080">procedure</font> <b><font color="#000000">exampleproc</font></b><font color="#990000">(</font>out <font color="#008080">out1</font> <font color="#009900">int</font><font color="#990000">,</font> out <font color="#008080">out2</font> <font color="#009900">float</font><font color="#990000">,</font> out <font color="#008080">out3</font> <b><font color="#000000">varchar</font></b><font color="#990000">(</font><font color="#993399">20</font><font color="#990000">))</font> begin select <font color="#993399">1</font><font color="#990000">,</font><font color="#993399">1.1</font><font color="#990000">,</font><font color="#FF0000">'hello'</font> <font color="#008080">into</font> out1<font color="#990000">,</font> out2<font color="#990000">,</font> out3<font color="#990000">;</font> end<font color="#990000">;</font>
+</tt></pre>
+
+</blockquote>
+<p>To execute the stored procedure from an SQL Relay program, use code like the following.</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt><font color="#008080">CallableStatement</font> stmt<font color="#990000">=</font>con<font color="#990000">.</font><b><font color="#000000">prepareCall</font></b><font color="#990000">(</font><font color="#FF0000">"{call exampleproc(?,?,?)}"</font><font color="#990000">);</font>
+stmt<font color="#990000">.</font><b><font color="#000000">registerOutParameter</font></b><font color="#990000">(</font><font color="#993399">1</font><font color="#990000">,</font>Types<font color="#990000">.</font>INTEGER<font color="#990000">);</font>
+stmt<font color="#990000">.</font><b><font color="#000000">registerOutParameter</font></b><font color="#990000">(</font><font color="#993399">2</font><font color="#990000">,</font>Types<font color="#990000">.</font>DOUBLE<font color="#990000">);</font>
+stmt<font color="#990000">.</font><b><font color="#000000">registerOutParameter</font></b><font color="#990000">(</font><font color="#993399">3</font><font color="#990000">,</font>Types<font color="#990000">.</font>VARCHAR<font color="#990000">);</font>
+stmt<font color="#990000">.</font><b><font color="#000000">execute</font></b><font color="#990000">();</font>
+<font color="#009900">int</font> out1<font color="#990000">=</font>stmt<font color="#990000">.</font><b><font color="#000000">getInt</font></b><font color="#990000">(</font><font color="#993399">1</font><font color="#990000">);</font>
+<font color="#009900">double</font> out2<font color="#990000">=</font>stmt<font color="#990000">.</font><b><font color="#000000">getDouble</font></b><font color="#990000">(</font><font color="#993399">2</font><font color="#990000">);</font>
+<font color="#008080">String</font> out3<font color="#990000">=</font>stmt<font color="#990000">.</font><b><font color="#000000">getString</font></b><font color="#990000">(</font><font color="#993399">3</font><font color="#990000">);</font>
+stmt<font color="#990000">.</font><b><font color="#000000">close</font></b><font color="#990000">();</font>
+</tt></pre>
+
+</blockquote>
+<p>To drop the stored procedure, run a query like the following.</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt>drop procedure exampleproc
+</tt></pre>
+
+</blockquote>
+<br/><h3>Result Sets</h3>
+
+<p>Some stored procedures return entire result sets.  Below are examples, illustrating how to create, execute and drop this kind of stored procedure for each database that SQL Relay supports.</p>
+
+<h4>Oracle</h4>
+
+<p>To create the stored procedure, run a query like the following.</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt>create or replace package types as
+        type cursorType is <font color="#008080">ref</font> cursor<font color="#990000">;</font>
+end<font color="#990000">;</font>
+
+create function exampleproc <font color="#008080">return</font> types<font color="#990000">.</font>cursortype is
+        <font color="#008080">l_cursor</font>    types<font color="#990000">.</font>cursorType<font color="#990000">;</font>
+begin
+        <font color="#008080">open</font> l_cursor <font color="#008080">for</font> select <font color="#990000">*</font> <font color="#008080">from</font> mytable<font color="#990000">;</font>
+        <b><font color="#0000FF">return</font></b> l_cursor<font color="#990000">;</font>
+end<font color="#990000">;</font>
+</tt></pre>
+
+</blockquote>
+<p>To execute the stored procedure from an SQL Relay program, use code like the following.</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt><font color="#008080">Statement</font> stmt<font color="#990000">=</font>con<font color="#990000">.</font><b><font color="#000000">createStatement</font></b><font color="#990000">();</font>
+<font color="#008080">ResultSet</font> rs<font color="#990000">=</font>stmt<font color="#990000">.</font><b><font color="#000000">executeQuery</font></b><font color="#990000">(</font><font color="#FF0000">"begin open :curs for select * from mytable; end;"</font><font color="#990000">);</font>
+<b><font color="#0000FF">while</font></b> <font color="#990000">(</font>rs<font color="#990000">.</font><b><font color="#000000">next</font></b><font color="#990000">())</font> <font color="#FF0000">{</font>
+        <font color="#008080">String</font> col1<font color="#990000">=</font>rs<font color="#990000">.</font><b><font color="#000000">getString</font></b><font color="#990000">(</font><font color="#993399">1</font><font color="#990000">);</font>
+        <font color="#008080">String</font> col2<font color="#990000">=</font>rs<font color="#990000">.</font><b><font color="#000000">getString</font></b><font color="#990000">(</font><font color="#993399">2</font><font color="#990000">);</font>
+        <font color="#008080">String</font> col3<font color="#990000">=</font>rs<font color="#990000">.</font><b><font color="#000000">getString</font></b><font color="#990000">(</font><font color="#993399">3</font><font color="#990000">);</font>
+        <font color="#990000">...</font> <font color="#008080">process</font> col1<font color="#990000">,</font> col2<font color="#990000">,</font> col3 <font color="#990000">...</font>
+<font color="#FF0000">}</font>
+rs<font color="#990000">.</font><b><font color="#000000">close</font></b><font color="#990000">();</font>
+stmt<font color="#990000">.</font><b><font color="#000000">close</font></b><font color="#990000">();</font>
+</tt></pre>
+
+</blockquote>
+<p>To drop the stored procedure, run a query like the following.</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt>drop function exampleproc
+drop package types
+</tt></pre>
+
+</blockquote>
+<br/><h4>Sybase and Microsoft SQL Server</h4>
+
+<p>To create the stored procedure, run a query like the following.</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt>create procedure exampleproc <font color="#008080">as</font> select <font color="#990000">*</font> from exampletable
+</tt></pre>
+
+</blockquote>
+<p>To execute the stored procedure from an SQL Relay program, use code like the following.</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt><font color="#008080">Statement</font> stmt<font color="#990000">=</font>con<font color="#990000">.</font><b><font color="#000000">createStatement</font></b><font color="#990000">();</font>
+<font color="#008080">ResultSet</font> rs<font color="#990000">=</font>stmt<font color="#990000">.</font><b><font color="#000000">executeQuery</font></b><font color="#990000">(</font><font color="#FF0000">"{call exampleproc}"</font><font color="#990000">);</font>
+<b><font color="#0000FF">while</font></b> <font color="#990000">(</font>rs<font color="#990000">.</font><b><font color="#000000">next</font></b><font color="#990000">())</font> <font color="#FF0000">{</font>
+        <font color="#008080">String</font> col1<font color="#990000">=</font>rs<font color="#990000">.</font><b><font color="#000000">getString</font></b><font color="#990000">(</font><font color="#993399">1</font><font color="#990000">);</font>
+        <font color="#008080">String</font> col2<font color="#990000">=</font>rs<font color="#990000">.</font><b><font color="#000000">getString</font></b><font color="#990000">(</font><font color="#993399">2</font><font color="#990000">);</font>
+        <font color="#008080">String</font> col3<font color="#990000">=</font>rs<font color="#990000">.</font><b><font color="#000000">getString</font></b><font color="#990000">(</font><font color="#993399">3</font><font color="#990000">);</font>
+        <font color="#990000">...</font> <font color="#008080">process</font> col1<font color="#990000">,</font> col2<font color="#990000">,</font> col3 <font color="#990000">...</font>
+<font color="#FF0000">}</font>
+rs<font color="#990000">.</font><b><font color="#000000">close</font></b><font color="#990000">();</font>
+stmt<font color="#990000">.</font><b><font color="#000000">close</font></b><font color="#990000">();</font>
+</tt></pre>
+
+</blockquote>
+<p>To drop the stored procedure, run a query like the following.</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt>drop procedure exampleproc
+</tt></pre>
+
+</blockquote>
+<br/><h4>Firebird</h4>
+
+<p>Stored procedures in Firebird can return a result set if a select query in the procedure selects values into the output parameters and then issues a suspend command, however SQL Relay doesn't currently support stored procedures that return result sets.</p>
+
+<h4>DB2</h4>
+
+<p>Stored procedures in DB2 can return a result set if the procedure is declared to return one, however SQL Relay doesn't currently support stored procedures that return result sets.</p>
+
+<h4>Postgresql</h4>
+
+<p>To create the stored procedure, run a query like the following.</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt>create <font color="#008080">function</font> <b><font color="#000000">examplefunc</font></b><font color="#990000">()</font> returns setof <font color="#008080">record</font> as <font color="#FF0000">'</font>
+<font color="#FF0000">        declare output record;</font>
+<font color="#FF0000">begin</font>
+<font color="#FF0000">        for output in select * from mytable loop</font>
+<font color="#FF0000">                return next output;</font>
+<font color="#FF0000">        end loop;</font>
+<font color="#FF0000">        return;</font>
+<font color="#FF0000">end;</font>
+<font color="#FF0000">'</font> language plpgsql
+</tt></pre>
+
+</blockquote>
+<p>To execute the stored procedure from an SQL Relay program, use code like the following.</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt><font color="#008080">Statement</font> stmt<font color="#990000">=</font>con<font color="#990000">.</font><b><font color="#000000">createStatement</font></b><font color="#990000">();</font>
+<font color="#008080">ResultSet</font> rs<font color="#990000">=</font>stmt<font color="#990000">.</font><b><font color="#000000">executeQuery</font></b><font color="#990000">(</font><font color="#FF0000">"select * from examplefunc() as (col1 int, col2 float, col3 char(40))"</font><font color="#990000">);</font>
+<b><font color="#0000FF">while</font></b> <font color="#990000">(</font>rs<font color="#990000">.</font><b><font color="#000000">next</font></b><font color="#990000">())</font> <font color="#FF0000">{</font>
+        <font color="#008080">String</font> col1<font color="#990000">=</font>rs<font color="#990000">.</font><b><font color="#000000">getString</font></b><font color="#990000">(</font><font color="#993399">1</font><font color="#990000">);</font>
+        <font color="#008080">String</font> col2<font color="#990000">=</font>rs<font color="#990000">.</font><b><font color="#000000">getString</font></b><font color="#990000">(</font><font color="#993399">2</font><font color="#990000">);</font>
+        <font color="#008080">String</font> col3<font color="#990000">=</font>rs<font color="#990000">.</font><b><font color="#000000">getString</font></b><font color="#990000">(</font><font color="#993399">3</font><font color="#990000">);</font>
+        <font color="#990000">...</font> <font color="#008080">process</font> col1<font color="#990000">,</font> col2<font color="#990000">,</font> col3 <font color="#990000">...</font>
+<font color="#FF0000">}</font>
+rs<font color="#990000">.</font><b><font color="#000000">close</font></b><font color="#990000">();</font>
+stmt<font color="#990000">.</font><b><font color="#000000">close</font></b><font color="#990000">();</font>
+</tt></pre>
+
+</blockquote>
+<p>To drop the stored procedure, run a query like the following.</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt>drop function examplefunc
+</tt></pre>
+
+</blockquote>
+<h4>MySQL/MariaDB</h4>
+
+<p>The result sets of all select statements called within MySQL/MariaDB stored procedures (that aren't selected into variables) are returned from the procedure call.  Though MySQL/MariaDB stored procedures can return multiple result sets, currently SQL Relay can only fetch the first result set.</p>
+
+<p>To create the stored procedure which returns a result set, run a query like the following.</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt>create <font color="#008080">procedure</font> <b><font color="#000000">exampleproc</font></b><font color="#990000">()</font> <font color="#008080">begin</font> select <font color="#990000">*</font> <font color="#008080">from</font> mytable<font color="#990000">;</font> end<font color="#990000">;</font>
+</tt></pre>
+
+</blockquote>
+<p>To execute the stored procedure from an SQL Relay program, use code like the following.</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt><font color="#008080">Statement</font> stmt<font color="#990000">=</font>con<font color="#990000">.</font><b><font color="#000000">createStatement</font></b><font color="#990000">();</font>
+<font color="#008080">ResultSet</font> rs<font color="#990000">=</font>stmt<font color="#990000">.</font><b><font color="#000000">executeQuery</font></b><font color="#990000">(</font><font color="#FF0000">"{call exampleproc}"</font><font color="#990000">);</font>
+<b><font color="#0000FF">while</font></b> <font color="#990000">(</font>rs<font color="#990000">.</font><b><font color="#000000">next</font></b><font color="#990000">())</font> <font color="#FF0000">{</font>
+        <font color="#008080">String</font> col1<font color="#990000">=</font>rs<font color="#990000">.</font><b><font color="#000000">getString</font></b><font color="#990000">(</font><font color="#993399">1</font><font color="#990000">);</font>
+        <font color="#008080">String</font> col2<font color="#990000">=</font>rs<font color="#990000">.</font><b><font color="#000000">getString</font></b><font color="#990000">(</font><font color="#993399">2</font><font color="#990000">);</font>
+        <font color="#008080">String</font> col3<font color="#990000">=</font>rs<font color="#990000">.</font><b><font color="#000000">getString</font></b><font color="#990000">(</font><font color="#993399">3</font><font color="#990000">);</font>
+        <font color="#990000">...</font> <font color="#008080">process</font> col1<font color="#990000">,</font> col2<font color="#990000">,</font> col3 <font color="#990000">...</font>
+<font color="#FF0000">}</font>
+rs<font color="#990000">.</font><b><font color="#000000">close</font></b><font color="#990000">();</font>
+stmt<font color="#990000">.</font><b><font color="#000000">close</font></b><font color="#990000">();</font>
+</tt></pre>
+
+</blockquote>
+<p>To drop the stored procedure, run a query like the following.</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt>drop procedure exampleproc
+</tt></pre>
+
+</blockquote>
+<br/></div> <!-- content -->
+
+
+<div id="copyrightbox">
+Copyright 2024 - David Muse - <a href="mailto:david.muse@firstworks.com">Contact</a> <img style="margin-left: 5px; vertical-align: text-bottom;" title="native english speaker" src="../images/us.png"/> <img style="vertical-align: text-bottom;" title="falo português também" src="../images/br.png"/>
+</div> <!-- copyrightbox -->
+
+</div>
+
+</body>
+</html>
+
+

@@ -1,0 +1,108 @@
+<html>
+<head>
+	<title>firstworks: SQL Relay - sqlrelay persistent database connection pool pooling proxy load balance balancing odbc oracle mysql msql postgresql sybase db2 interbase sqlite access c++ perl DBD DBI python php PDO ruby tcl java jni unix linux persistant</title>
+
+	<link rel="stylesheet" href="../css/style.css"/>
+	<script type="text/javascript">
+
+  var _gaq = _gaq || [];
+  _gaq.push(['_setAccount', 'UA-23306117-3']);
+  _gaq.push(['_trackPageview']);
+
+  (function() {
+    var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+    ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+    var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+  })();
+
+</script>
+
+	<script language="Javascript" src="../js/button.js"></script>
+</head>
+<body onload="setButton();">
+
+
+<div style="position: fixed; top: 0px; left: 0px; width: 100%; z-index: 100;">
+
+<span id="firstworks">a <b><a href="http://www.firstworks.com">firstworks</a></b> project</span>
+
+<div id="projectbox"><a href="index.html"><img src="../images/sqlrelay-icon.png"/><span id="name">SQL Relay</span></a></div>
+
+<table id="projectbuttons">
+<tr>
+<td style="width: 50%;"></td>
+<td class="button nonlastbutton"><a id="button-about" href="../index.html">About</a></td>
+<td class="button nonlastbutton"><a id="button-documentation" href="../documentation.html">Documentation</a></td>
+<td class="button nonlastbutton"><a id="button-faq" href="../faq.html">FAQ</a></td>
+<td class="button nonlastbutton"><a id="button-download" href="../download.html">Download</a></td>
+<td class="button nonlastbutton"><a id="button-license" href="../license.html">Licensing</a></td>
+<td class="button nonlastbutton"><a id="button-support" href="../support.html">Support</a></td>
+<td class="button lastbutton"><a id="button-news" target="_blank" href="http://software.firstworks.com">News</a></td>
+<td style="width: 50%;"></td>
+</tr>
+</table>
+
+</div>
+
+<div style="position: absolute; top: 89px; width: 100%;">
+
+
+<div id="content">
+
+
+<h1>Throttling</h1>
+
+<p>Throttling limits the number of connections to a given database and queues connection requests rather than denying them access outright.  This can prevent database overload, maximize the value of a per-connection licensing scheme, and prevent an app from monopolizing the database</p>
+
+<h2>Database Overload</h2>
+
+<p>As the popularity of a web-baseed application grows, one day it may finally get enough traffic for a burst of activity to request more connections than the database can handle.</p>
+
+<blockquote>
+<img src="../images/app-to-db-too-many-connections.png"/>
+</blockquote>
+<p>If the app wasn't written to manage that particular error, it may just fail.</p>
+
+<blockquote>
+<img src="../images/toomanyconnections.png"/>
+</blockquote>
+<p>When an application reaches this point, it's likely that the database has already been as well tuned as it can be.  Since the app only gets busy enough to overload the database during bursts of activity, it would be ideal if the connection requests could be queued, rather than rejected.</p>
+
+<p>SQL Relay can be configured to maintain a certain number of database connections and open more, on-demand, up to a point.  If the app is so busy that it needs more connections than the maximum number configured, then connection requests will be queued.</p>
+
+<blockquote>
+<img src="../images/app-to-sqlr-to-db-queued.png"/>
+</blockquote>
+<p>Queued connection requests consume few system resources and may be configured to wait for a while before giving up, or wait indefinitely.</p>
+
+<h2>Per-Connection Licensing Schemes</h2>
+
+<p>Throttling is especially useful when using a cloud-service database with a per-connection licensing scheme.  SQL Relay can be configured to open the exact number of connections that you paid for and funnel all of your database traffic through them.  If you paid for 50 connections, but every now and then you get a burst of traffic and your app requests 60 connections, then 10 of them will be queued, rather than rejected.</p>
+
+<blockquote>
+<img src="../images/app-to-sqlr-to-cloud-db-queued.png"/>
+</blockquote>
+<h2>Database Monopolization</h2>
+
+<p>Multiple applications often use the same database.  Under the right set of circumstances, a lower priority app can monopolize the database with a large number of sessions or with long-running queries.  In some cases, this can be managed by dedicating a database user to each application and placing quotas on the users.  But not all databases support user quotas, and applications must often share database users.</p>
+
+<p>SQL Relay can be used to manage this problem.  Multiple instances of SQL Relay can be created, each instance can be dedicated to a set of apps, and the instances dedicated to lower priority apps can be configured to maintain a limited number of database connections.</p>
+
+<blockquote>
+<img src="../images/high-low-priority-apps.png"/>
+</blockquote>
+<p>As a result, the number of simultaneous sessions that the lower priority apps are able to maintain are also limited.</p>
+
+</div> <!-- content -->
+
+
+<div id="copyrightbox">
+Copyright 2024 - David Muse - <a href="mailto:david.muse@firstworks.com">Contact</a> <img style="margin-left: 5px; vertical-align: text-bottom;" title="native english speaker" src="../images/us.png"/> <img style="vertical-align: text-bottom;" title="falo português também" src="../images/br.png"/>
+</div> <!-- copyrightbox -->
+
+</div>
+
+</body>
+</html>
+
+

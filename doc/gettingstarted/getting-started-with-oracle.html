@@ -1,0 +1,1126 @@
+<html>
+<head>
+	<title>firstworks: SQL Relay - sqlrelay persistent database connection pool pooling proxy load balance balancing odbc oracle mysql msql postgresql sybase db2 interbase sqlite access c++ perl DBD DBI python php PDO ruby tcl java jni unix linux persistant</title>
+
+	<link rel="stylesheet" href="../css/style.css"/>
+	<script type="text/javascript">
+
+  var _gaq = _gaq || [];
+  _gaq.push(['_setAccount', 'UA-23306117-3']);
+  _gaq.push(['_trackPageview']);
+
+  (function() {
+    var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+    ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+    var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+  })();
+
+</script>
+
+	<script language="Javascript" src="../js/button.js"></script>
+</head>
+<body onload="setButton();">
+
+
+<div style="position: fixed; top: 0px; left: 0px; width: 100%; z-index: 100;">
+
+<span id="firstworks">a <b><a href="http://www.firstworks.com">firstworks</a></b> project</span>
+
+<div id="projectbox"><a href="index.html"><img src="../images/sqlrelay-icon.png"/><span id="name">SQL Relay</span></a></div>
+
+<table id="projectbuttons">
+<tr>
+<td style="width: 50%;"></td>
+<td class="button nonlastbutton"><a id="button-about" href="../index.html">About</a></td>
+<td class="button nonlastbutton"><a id="button-documentation" href="../documentation.html">Documentation</a></td>
+<td class="button nonlastbutton"><a id="button-faq" href="../faq.html">FAQ</a></td>
+<td class="button nonlastbutton"><a id="button-download" href="../download.html">Download</a></td>
+<td class="button nonlastbutton"><a id="button-license" href="../license.html">Licensing</a></td>
+<td class="button nonlastbutton"><a id="button-support" href="../support.html">Support</a></td>
+<td class="button lastbutton"><a id="button-news" target="_blank" href="http://software.firstworks.com">News</a></td>
+<td style="width: 50%;"></td>
+</tr>
+</table>
+
+</div>
+
+<div style="position: absolute; top: 89px; width: 100%;">
+
+
+<div id="content">
+
+
+<h1>Getting Started With Oracle</h1>
+
+<ul>
+  <li><a href="#installation">Installation</a></li>
+  <ul>
+    <li><a href="#memory">Make Sure You Have Enough Memory</a></li>
+    <li><a href="#development">Install the Development Software</a></li>
+    <li><a href="#users">Create Users, Groups and Directories</a></li>
+    <li><a href="#env">Set Up the Environment</a></li>
+    <li><a href="#oracle">Install Oracle</a></li>
+    <li><a href="#startingatboot">Starting the Database at Boot Time</a></li>
+  </ul>
+
+  <li><a href="#creating">Creating a Database</a></li>
+  <li><a href="#accessing">Accessing a Database</a></li>
+</ul>
+
+<a name="installation"/><h2>Installation</h2>
+
+<p>Oracle versions 8.0.5 through 12c have been or are currently available, free for development purposes, from <a target="_blank" href="http://oracle.com">oracle.com</a> and have been available on CD from various sources as well. I've successfully installed Oracle on Linux and Solaris.</p>
+
+<p>This article describes how to get started with Oracle on Linux but much of it could be applied to Solaris or other Unix systems as well.</p>
+
+<a name="memory"/><h2>Make Sure You Have Enough Memory</h2>
+
+<p>The number one reason that Oracle installations have failed for me is because I ran out of memory. Oracle really needs about 725mb of total ram/swap. If your system has less than that, then you can add 725mb of swap as follows.</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt><font color="#008080">dd</font> <b><font color="#0000FF">if</font></b><font color="#990000">=/</font>dev<font color="#990000">/</font><font color="#008080">zero</font> of<font color="#990000">=/</font><font color="#008080">extraswap</font> bs<font color="#990000">=</font>1<font color="#008080">k</font> count<font color="#990000">=</font><font color="#993399">742400</font>
+chmod <font color="#993399">600</font> <font color="#990000">/</font>extraswap
+<font color="#990000">/</font>sbin<font color="#990000">/</font>mkswap <font color="#990000">/</font>extraswap
+<font color="#990000">/</font>sbin<font color="#990000">/</font>swapon <font color="#990000">/</font>extraswap</tt></pre>
+
+</blockquote>
+<p>Oracle doesn't appear to need that much ram/swap to actually run though, so after the installation is finished, you can remove it as follows:</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt><font color="#990000">/</font>sbin<font color="#990000">/</font>swapoff <font color="#990000">/</font>extraswap
+rm <font color="#990000">/</font>extraswap</tt></pre>
+
+</blockquote>
+<a name="development"/><h2>Install the Development Software</h2>
+
+<p>The Oracle installer needs GNU make, the GNU C Compiler (gcc) and GNU Binutils (ar, as, ld, etc.) to compile and link several libraries at installation time. Make sure that these packages are installed.</p>
+
+<a name="users"/><h2>Create Users, Groups and Directories</h2>
+
+<p>Run the following commands as root to set up the appropriate users, groups and directories.</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt>groupadd oinstall
+groupadd dba
+groupadd oper
+useradd <font color="#990000">-</font><font color="#008080">m</font> oracle <font color="#990000">-</font><font color="#008080">g</font> oinstall <font color="#990000">-</font><font color="#008080">G</font> dba<font color="#990000">,</font>oper
+chown <font color="#990000">-</font><font color="#008080">R</font> oracle<font color="#990000">:</font>dba <font color="#990000">/</font>home<font color="#990000">/</font>oracle
+<font color="#008080">passwd</font> <b><font color="#000000">oracle</font></b>  <font color="#990000">(</font>assign the oracle user <font color="#008080">a</font> password<font color="#990000">)</font>
+mkdir <font color="#990000">/</font>u01
+<font color="#008080">chown</font> oracle<font color="#990000">:</font>dba <font color="#990000">/</font>u01
+chmod <font color="#993399">775</font> <font color="#990000">/</font>u01</tt></pre>
+
+</blockquote>
+<p>Edit /home/oracle/.bashrc and add the following command near the bottom.</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt>umask <font color="#993399">022</font></tt></pre>
+
+</blockquote>
+<a name="env"/><h2>Set Up the Environment</h2>
+
+<p>Add the following somewhere near the top of your /etc/profile (or create /etc/profile.d/oracle.sh if your system supports /etc/profile.d), replacing 12.1.0 in the ORACLE_VERSION environment variable with the version of Oracle that you are installing.</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt><b><font color="#0000FF">export</font></b> ORACLE_VERSION<font color="#990000">=</font><font color="#993399">12.1</font><font color="#990000">.</font><font color="#993399">0</font>
+<b><font color="#0000FF">export</font></b> ORACLE_BASE<font color="#990000">=/</font>u01<font color="#990000">/</font>app<font color="#990000">/</font>oracle
+<b><font color="#0000FF">export</font></b> ORACLE_HOME<font color="#990000">=</font>$ORACLE_BASE<font color="#990000">/</font>product<font color="#990000">/</font>$ORACLE_VERSION
+<b><font color="#0000FF">export</font></b> ORACLE_SID<font color="#990000">=</font>ora1
+<b><font color="#0000FF">export</font></b> PATH<font color="#990000">=</font>$PATH<font color="#990000">:</font>$ORACLE_HOME<font color="#990000">/</font>bin
+<b><font color="#0000FF">export</font></b> CLASSPATH<font color="#990000">=</font>$ORACLE_BASE<font color="#990000">/</font>jdbc<font color="#990000">/</font>lib<font color="#990000">/</font>classes111<font color="#990000">.</font>zip
+<b><font color="#0000FF">export</font></b> LD_LIBRARY_PATH<font color="#990000">=</font>$ORACLE_HOME<font color="#990000">/</font>lib
+<b><font color="#0000FF">export</font></b> ORA_NLS33<font color="#990000">=</font>$ORACLE_HOME<font color="#990000">/</font>ocommon<font color="#990000">/</font>nls<font color="#990000">/</font>admin<font color="#990000">/</font>data
+<b><font color="#0000FF">export</font></b> ORACLE_OWNER<font color="#990000">=</font>oracle
+<b><font color="#0000FF">export</font></b> ORACLE_TERM<font color="#990000">=</font><font color="#993399">386</font>
+<b><font color="#0000FF">export</font></b> NLS_LANG<font color="#990000">=</font>american</tt></pre>
+
+</blockquote>
+<p>If you want to use a language other than US English, consult the following table and replace <b>american</b> with the appropriate language string.</p>
+
+<table>
+  <tr>
+    <th> Language 
+</th>
+    <th> NLS_LANG value 
+</th>
+  </tr>
+  <tr>
+    <td>US English
+</td>
+    <td>american
+</td>
+  </tr>
+  <tr>
+    <td>Arabic
+</td>
+    <td>arabic
+</td>
+  </tr>
+  <tr>
+    <td>Brazilian Portugese
+</td>
+    <td>"brazilian portuguese"
+</td>
+  </tr>
+  <tr>
+    <td>Canadian French
+</td>
+    <td>frc
+</td>
+  </tr>
+  <tr>
+    <td>Czech
+</td>
+    <td>czech
+</td>
+  </tr>
+  <tr>
+    <td>Danish
+</td>
+    <td>danish
+</td>
+  </tr>
+  <tr>
+    <td>Dutch
+</td>
+    <td>dutch
+</td>
+  </tr>
+  <tr>
+    <td>Finnish
+</td>
+    <td>finnish
+</td>
+  </tr>
+  <tr>
+    <td>French
+</td>
+    <td>french
+</td>
+  </tr>
+  <tr>
+    <td>German
+</td>
+    <td>german
+</td>
+  </tr>
+  <tr>
+    <td>Hungarian
+</td>
+    <td>hungarian
+</td>
+  </tr>
+  <tr>
+    <td>Icelandic
+</td>
+    <td>is
+</td>
+  </tr>
+  <tr>
+    <td>Italian
+</td>
+    <td>italian
+</td>
+  </tr>
+  <tr>
+    <td>Japanese
+</td>
+    <td>japanese
+</td>
+  </tr>
+  <tr>
+    <td>Korean
+</td>
+    <td>korean
+</td>
+  </tr>
+  <tr>
+    <td>Lithuanian
+</td>
+    <td>lt
+</td>
+  </tr>
+  <tr>
+    <td>Mexican Spanish
+</td>
+    <td>esm
+</td>
+  </tr>
+  <tr>
+    <td>Norweigan
+</td>
+    <td>norweigan
+</td>
+  </tr>
+  <tr>
+    <td>Polish
+</td>
+    <td>polish
+</td>
+  </tr>
+  <tr>
+    <td>Portugese
+</td>
+    <td>portugese
+</td>
+  </tr>
+  <tr>
+    <td>Russian
+</td>
+    <td>russian
+</td>
+  </tr>
+  <tr>
+    <td>Simplified Chinese
+</td>
+    <td>"simplified chinese"
+</td>
+  </tr>
+  <tr>
+    <td>Slovak
+</td>
+    <td>slovak
+</td>
+  </tr>
+  <tr>
+    <td>Swedish
+</td>
+    <td>swedish
+</td>
+  </tr>
+  <tr>
+    <td>Thai
+</td>
+    <td>th
+</td>
+  </tr>
+  <tr>
+    <td>Traditional Chinese
+</td>
+    <td>"traditional chinese"
+</td>
+  </tr>
+  <tr>
+    <td>Turkish
+</td>
+    <td>turkish
+</td>
+  </tr>
+</table>
+
+<br/><a name="oracle"/><h2>Install Oracle</h2>
+
+<p>At this point, you should be ready to install Oracle.</p>
+
+<p>Each version has different installation procedures. Follow the links below for the version of Linux and Oracle that you are installing. Each "Yes" link indicates that I was able to get that version of Oracle to install and run on that version of Linux.</p>
+
+<table>
+  <tr>
+    <td/>
+    <th> 8.0.5 
+</th>
+    <th> 8.1.6 
+</th>
+    <th> 8.1.7 
+</th>
+    <th> 9.2.x 
+</th>
+    <th> 10.1.x 
+</th>
+    <th> 10.2.x 
+</th>
+    <th> 11.2.0 
+</th>
+    <th> 12.1.0 
+</th>
+  </tr>
+  <tr>
+    <th> Redhat 5.2 
+</th>
+    <td><a href="installing-oracle-805-on-redhat-52.html">Yes</a>
+</td>
+    <td>No
+</td>
+    <td>No
+</td>
+    <td>No
+</td>
+    <td>No
+</td>
+    <td>No
+</td>
+    <td>No
+</td>
+    <td>No
+</td>
+  </tr>
+  <tr>
+    <th> Redhat 6.x 
+</th>
+    <td>No
+</td>
+    <td><a href="installing-oracle-816-or-817-on-redhat_12.html">Yes</a>
+</td>
+    <td><a href="installing-oracle-816-or-817-on-redhat_12.html">Yes</a>
+</td>
+    <td>No
+</td>
+    <td>No
+</td>
+    <td>No
+</td>
+    <td>No
+</td>
+    <td>No
+</td>
+  </tr>
+  <tr>
+    <th> Redhat 7.x 
+</th>
+    <td>No
+</td>
+    <td><a href="installing-oracle-816-or-817-on-redhat.html">Yes</a>
+</td>
+    <td><a href="installing-oracle-816-or-817-on-redhat.html">Yes</a>
+</td>
+    <td>No
+</td>
+    <td>No
+</td>
+    <td>No
+</td>
+    <td>No
+</td>
+    <td>No
+</td>
+  </tr>
+  <tr>
+    <th> Redhat 8 
+</th>
+    <td>No
+</td>
+    <td>No
+</td>
+    <td>No
+</td>
+    <td><a href="installing-oracle-9ir2-on-redhat-8.html">Yes</a>
+</td>
+    <td>No
+</td>
+    <td>No
+</td>
+    <td>No
+</td>
+    <td>No
+</td>
+  </tr>
+  <tr>
+    <th> Redhat 9 
+</th>
+    <td>No
+</td>
+    <td>No
+</td>
+    <td>No
+</td>
+    <td><a href="installing-oracle-9ir2-on-redhat-9.html">Yes</a>
+</td>
+    <td>No
+</td>
+    <td>No
+</td>
+    <td>No
+</td>
+    <td>No
+</td>
+  </tr>
+  <tr>
+    <th> Fedora Core 1 
+</th>
+    <td>No
+</td>
+    <td>No
+</td>
+    <td>No
+</td>
+    <td><a href="installing-oracle-9ir2-on-fedora-core-1.html">Yes</a>
+</td>
+    <td><a href="installing-oracle-10g-on-fedora-core-1.html">Yes</a>
+</td>
+    <td>No
+</td>
+    <td>No
+</td>
+    <td>No
+</td>
+  </tr>
+  <tr>
+    <th> Fedora Core 2 
+</th>
+    <td>No
+</td>
+    <td>No
+</td>
+    <td>No
+</td>
+    <td>No
+</td>
+    <td><a href="installing-oracle-10g-on-fedora-core-2.html">Yes</a>
+</td>
+    <td>No
+</td>
+    <td>No
+</td>
+    <td>No
+</td>
+  </tr>
+  <tr>
+    <th> Fedora Core 3 
+</th>
+    <td>No
+</td>
+    <td>No
+</td>
+    <td>No
+</td>
+    <td>No
+</td>
+    <td><a href="installing-oracle-10g-on-fedora-core-3.html">Yes</a>
+</td>
+    <td>No
+</td>
+    <td>No
+</td>
+    <td>No
+</td>
+  </tr>
+  <tr>
+    <th> Fedora Core 4 
+</th>
+    <td>No
+</td>
+    <td>No
+</td>
+    <td>No
+</td>
+    <td>No
+</td>
+    <td><a href="installing-oracle-10g-on-fedora-core-3.html">Yes</a>
+</td>
+    <td>No
+</td>
+    <td>No
+</td>
+    <td>No
+</td>
+  </tr>
+  <tr>
+    <th> Fedora Core 5 
+</th>
+    <td>No
+</td>
+    <td>No
+</td>
+    <td>No
+</td>
+    <td>No
+</td>
+    <td>No
+</td>
+    <td><a href="installing-oracle-10g-on-fedora-core-5.html">Yes</a>
+</td>
+    <td>No
+</td>
+    <td>No
+</td>
+  </tr>
+  <tr>
+    <th> Fedora Core 12 
+</th>
+    <td>No
+</td>
+    <td>No
+</td>
+    <td>No
+</td>
+    <td>No
+</td>
+    <td>No
+</td>
+    <td>No
+</td>
+    <td><a href="installing-oracle-11g-on-fedora-12.html">Yes</a>
+</td>
+    <td>No
+</td>
+  </tr>
+  <tr>
+    <th> Fedora Core 13 
+</th>
+    <td>No
+</td>
+    <td>No
+</td>
+    <td>No
+</td>
+    <td>No
+</td>
+    <td>No
+</td>
+    <td>No
+</td>
+    <td><a href="installing-oracle-11g-on-fedora-13.html">Yes</a>
+</td>
+    <td>No
+</td>
+  </tr>
+  <tr>
+    <th> Fedora Core 14 
+</th>
+    <td>No
+</td>
+    <td>No
+</td>
+    <td>No
+</td>
+    <td>No
+</td>
+    <td>No
+</td>
+    <td>No
+</td>
+    <td><a href="installing-oracle-11g-on-fedora-13.html">Yes</a>
+</td>
+    <td>No
+</td>
+  </tr>
+  <tr>
+    <th> Fedora Core 15 
+</th>
+    <td>No
+</td>
+    <td>No
+</td>
+    <td>No
+</td>
+    <td>No
+</td>
+    <td>No
+</td>
+    <td>No
+</td>
+    <td><a href="installing-oracle-11g-on-fedora-13.html">Yes</a>
+</td>
+    <td>No
+</td>
+  </tr>
+  <tr>
+    <th> Fedora Core 16 
+</th>
+    <td>No
+</td>
+    <td>No
+</td>
+    <td>No
+</td>
+    <td>No
+</td>
+    <td>No
+</td>
+    <td>No
+</td>
+    <td><a href="installing-oracle-11g-on-fedora-13.html">Yes</a>
+</td>
+    <td>No
+</td>
+  </tr>
+  <tr>
+    <th> Fedora Core 17 
+</th>
+    <td>No
+</td>
+    <td>No
+</td>
+    <td>No
+</td>
+    <td>No
+</td>
+    <td>No
+</td>
+    <td>No
+</td>
+    <td><a href="installing-oracle-11g-on-fedora-13.html">Yes</a>
+</td>
+    <td>No
+</td>
+  </tr>
+  <tr>
+    <th> Fedora Core 18 
+</th>
+    <td>No
+</td>
+    <td>No
+</td>
+    <td>No
+</td>
+    <td>No
+</td>
+    <td>No
+</td>
+    <td>No
+</td>
+    <td><a href="installing-oracle-11g-on-fedora-13.html">Yes</a>
+</td>
+    <td>No
+</td>
+  </tr>
+  <tr>
+    <th> Fedora Core 19 
+</th>
+    <td>No
+</td>
+    <td>No
+</td>
+    <td>No
+</td>
+    <td>No
+</td>
+    <td>No
+</td>
+    <td>No
+</td>
+    <td>No
+</td>
+    <td><a href="installing-oracle-12c-on-fedora-19.html">Yes</a>
+</td>
+  </tr>
+  <tr>
+    <th> Fedora Core 20 
+</th>
+    <td>No
+</td>
+    <td>No
+</td>
+    <td>No
+</td>
+    <td>No
+</td>
+    <td>No
+</td>
+    <td>No
+</td>
+    <td>No
+</td>
+    <td><a href="installing-oracle-12c-on-fedora-19.html">Yes</a>
+</td>
+  </tr>
+</table>
+
+<br/><a name="startingatboot"/><h2>Starting the Database at Boot Time</h2>
+
+<p>For Oracle 11g or higher, use the following script to start/stop the database at boot/shutdown time instead. Replace /u01/app/oracle/product/12.1.0 with your $ORACLE_HOME</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt><i><font color="#9A1900">#!/bin/sh</font></i>
+
+<font color="#009900">ORACLE_HOME</font><font color="#990000">=</font>/u<font color="#993399">01</font>/app/oracle/product<font color="#990000">/</font><font color="#993399">12.1</font><font color="#990000">.</font><font color="#993399">0</font>
+
+<b><font color="#0000FF">case</font></b> <font color="#FF0000">"$1"</font> <b><font color="#0000FF">in</font></b>
+  start<font color="#990000">)</font>
+        su -l oracle -c <font color="#FF0000">"$ORACLE_HOME/bin/dbstart $ORACLE_HOME"</font>
+        <font color="#990000">;;</font>
+  stop<font color="#990000">)</font>
+        su -l oracle -c <font color="#FF0000">"$ORACLE_HOME/bin/dbshut $ORACLE_HOME"</font>
+        <font color="#990000">;;</font>
+  <font color="#990000">*)</font>
+        echo <font color="#009900">$"</font>Usage<font color="#990000">:</font> <font color="#009900">$0</font> {start<font color="#990000">|</font>stop}<font color="#FF0000">"</font>
+<font color="#FF0000">        exit 1</font>
+<font color="#FF0000">esac</font>
+
+<font color="#FF0000">exit 0</font></tt></pre>
+
+</blockquote>
+<p>For Oracle 10g or lower, use the following script to start/stop the database at boot/shutdown time instead. Replace /u01/app/oracle/product/10.2.0 with your $ORACLE_HOME</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt><i><font color="#9A1900">#!/bin/sh</font></i>
+
+<b><font color="#0000FF">case</font></b> <font color="#FF0000">"$1"</font> <b><font color="#0000FF">in</font></b>
+  start<font color="#990000">)</font>
+        su -l oracle -c <font color="#FF0000">"/u01/app/oracle/product/10.2.0/bin/dbstart"</font>
+        su -l oracle -c <font color="#FF0000">"/u01/app/oracle/product/10.2.0/bin/lsnrctl start"</font>
+        <font color="#990000">;;</font>
+  stop<font color="#990000">)</font>
+        su -l oracle -c <font color="#FF0000">"/u01/app/oracle/product/10.2.0/bin/dbshut"</font>
+        su -l oracle -c <font color="#FF0000">"/u01/app/oracle/product/10.2.0/bin/lsnrctl stop"</font>
+        <font color="#990000">;;</font>
+  <font color="#990000">*)</font>
+        echo <font color="#009900">$"</font>Usage<font color="#990000">:</font> <font color="#009900">$0</font> {start<font color="#990000">|</font>stop}<font color="#FF0000">"</font>
+<font color="#FF0000">        exit 1</font>
+<font color="#FF0000">esac</font>
+
+<font color="#FF0000">exit 0</font></tt></pre>
+
+</blockquote>
+<p>Install this script and run it with the "start" option to start up the database. Running it with the "stop" option shuts the database down. To access a database, it must be running.</p>
+
+<a name="creating"/><h2>Creating a Database</h2>
+
+<p>During the installation, you could have chosen to create a database instance. If you did not create one during installation, you can do so afterward. Log in as oracle and run $ORACLE_HOME/bin/dbassist for Oracle 8i or $ORACLE_HOME/bin/dbca for Oracle 9i or higher and follow the on-screen instructions.</p>
+
+<p>The dbassist/dbca program will ask you to provide an SID; a local identifier for the database. No two databases on the same machine can have the same SID. If you are using Oracle 8i or 9i you will also be asked to provide a Global Identifier. The Global Identifier should be unique among the Oracle databases on the local network.</p>
+
+<p>After creating the database, edit the file /etc/oratab and look for a line containing the SID of the database you just created. Change the N at the end of that line to Y. This configures the database to start when the dbstart command is issued.</p>
+
+<p>At this point, you can run the start/stop script to start up the database.</p>
+
+<p>To access the database, the file $ORACLE_HOME/network/admin/tnsnames.ora must also be configured. This file contains an entry for each database that the local system needs to know about. Here is an example of a tnsnames.ora entry, identifying the database <i>ORA1</i> on the local machine.</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt>ORA1<font color="#990000">.</font>LOCALDOMAIN <font color="#990000">=</font>
+  <font color="#990000">(</font>DESCRIPTION <font color="#990000">=</font>
+    <font color="#990000">(</font>ADDRESS_LIST <font color="#990000">=</font>
+      <font color="#990000">(</font>ADDRESS <font color="#990000">=</font> <font color="#990000">(</font>PROTOCOL <font color="#990000">=</font> TCP<font color="#990000">)(</font>HOST <font color="#990000">=</font> localhost<font color="#990000">)(</font>PORT <font color="#990000">=</font> <font color="#993399">1521</font><font color="#990000">))</font>
+    <font color="#990000">)</font>
+    <font color="#990000">(</font>CONNECT_DATA <font color="#990000">=</font>
+      <font color="#990000">(</font>SERVICE_NAME <font color="#990000">=</font> ora1<font color="#990000">)</font>
+    <font color="#990000">)</font>
+  <font color="#990000">)</font></tt></pre>
+
+</blockquote>
+<p>For Oracle 8i and higher, the format is SID.DOMAIN = (... parameters ...). For Oracle 7 and 8, the format is SID = (... parameters ...). In this example the SID is ORA1. The HOST parameter refers to the DNS name of the host that the database is running on. The SERVICE_NAME refers to the SID of the database as it is known on that host.</p>
+
+<p>When a database instance is created, two special administration users are created: SYS and SYSTEM. These users own the tables that contain privileges and other housekeeping information. For Oracle 9i and higher passwords must be set during the installation process. For versions of Oracle 8i and lower, the default password for the SYSTEM user is <i>manager</i>. The default password for the SYS user is <i>change_on_install</i>.</p>
+
+<p>Database tables are stored in a file or set of files collectively called a tablespace. The tables owned by the SYS and SYSTEM users are kept in their own tablespace. Though you could create your own tables there, it's not a good idea. You should create your own tablespace.</p>
+
+<p>For Oracle 12c or higher, the directory <i>/u01/app/oracle/oradata/cdbora1/ora1</i> must exist. If it does not, run the following command to create it:</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt>mkdir <font color="#990000">-</font>p <font color="#990000">/</font>u01<font color="#990000">/</font>app<font color="#990000">/</font>oracle<font color="#990000">/</font>oradata<font color="#990000">/</font>cdbora1<font color="#990000">/</font>ora1
+<font color="#008080">chown</font> oracle<font color="#990000">:</font>oinstall <font color="#990000">/</font>u01<font color="#990000">/</font>app<font color="#990000">/</font>oracle<font color="#990000">/</font>oradata<font color="#990000">/</font>cdbora1<font color="#990000">/</font>ora1</tt></pre>
+
+</blockquote>
+<p>For Oracle 11g or lower, the directory <i>/u01/app/oracle/oradata/ora1</i> must exist instead. If it does not, run the following command to create it:</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt>mkdir <font color="#990000">-</font>p <font color="#990000">/</font>u01<font color="#990000">/</font>app<font color="#990000">/</font>oracle<font color="#990000">/</font>oradata<font color="#990000">/</font>ora1
+<font color="#008080">chown</font> oracle<font color="#990000">:</font>oinstall <font color="#990000">/</font>u01<font color="#990000">/</font>app<font color="#990000">/</font>oracle<font color="#990000">/</font>oradata<font color="#990000">/</font>ora1</tt></pre>
+
+</blockquote>
+<p>Now, for Oracle 10g or higher, use the following command to log in, replacing <b><i>password</i></b> with the password you entered during installation:</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt><font color="#008080">sqlplus</font> sys<font color="#990000">/</font>password@ora1 as sysdba</tt></pre>
+
+</blockquote>
+<p>For Oracle 9i, use the following command to log in instead, replacing <b>password</b> with the password you entered during installation:</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt><font color="#008080">sqlplus</font> system<font color="#990000">/</font>password@ora1</tt></pre>
+
+</blockquote>
+<p>For Oracle 8i or lower, use the following command to log in instead:</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt><font color="#008080">sqlplus</font> system<font color="#990000">/</font>manager@ora1</tt></pre>
+
+</blockquote>
+<p>The following queries create a tablespace and temporary tablespace called <i>testtablespace</i> and <i>testtablespacetemp</i> with some minimal sizing parameters.</p>
+
+<p>For Oracle 12c or higher, run the following queries:</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt>ALTER PLUGGABLE DATABASE ora1 OPEN
+
+CREATE TABLESPACE testtablespace
+ DATAFILE <font color="#FF0000">'/u01/app/oracle/oradata/cdbora1/ora1/testtablespace01.dbf'</font> 
+ SIZE 1M REUSE
+ AUTOEXTEND ON NEXT 1M
+ MAXSIZE UNLIMITED
+ NOLOGGING<font color="#990000">;</font>
+
+CREATE TEMPORARY TABLESPACE testtablespacetemp
+ TEMPFILE <font color="#FF0000">'/u01/app/oracle/oradata/cdbora1/ora1/testtablespacetemp01.dbf'</font> 
+ SIZE 2M REUSE
+ AUTOEXTEND ON NEXT 1M
+ <font color="#008080">MAXSIZE</font> UNLIMITED<font color="#990000">;</font></tt></pre>
+
+</blockquote>
+<p>For Oracle 8i through 11g, run the following queries instead:</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt>CREATE TABLESPACE testtablespace
+ DATAFILE <font color="#FF0000">'/u01/app/oracle/oradata/ora1/testtablespace01.dbf'</font> 
+ SIZE 1M REUSE
+ AUTOEXTEND ON NEXT 1M
+ MAXSIZE UNLIMITED
+ NOLOGGING<font color="#990000">;</font>
+
+CREATE TEMPORARY TABLESPACE testtablespacetemp
+ TEMPFILE <font color="#FF0000">'/u01/app/oracle/oradata/ora1/testtablespacetemp01.dbf'</font> 
+ SIZE 2M REUSE
+ AUTOEXTEND ON NEXT 1M
+ <font color="#008080">MAXSIZE</font> UNLIMITED<font color="#990000">;</font></tt></pre>
+
+</blockquote>
+<p>For Oracle 8.0, run the following queries instead:</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt>CREATE TABLESPACE testtablespace
+ DATAFILE <font color="#FF0000">'/u01/app/oracle/oradata/ora1/testtablespace01.dbf'</font> 
+ SIZE 1M REUSE
+ AUTOEXTEND ON NEXT 1M
+ MAXSIZE UNLIMITED
+ NOLOGGING<font color="#990000">;</font>
+
+CREATE TABLESPACE testtablespacetemp
+ DATAFILE <font color="#FF0000">'/u01/app/oracle/oradata/ora1/testtablespacetemp01.dbf'</font> 
+ SIZE 2M REUSE
+ AUTOEXTEND ON NEXT 1M
+ <font color="#008080">MAXSIZE</font> UNLIMITED<font color="#990000">;</font></tt></pre>
+
+</blockquote>
+<p>The set of database objects (such as tables, indexes, stored procedures and triggers) owned by a particular user is called a schema. Though schemas may be distributed across tablespaces, they are more often confined to a single tablespace. The SYSTEM and SYS schemas contain tables used by internal systems and should not be used for application data. You can create a new user and schema by logging in as SYSTEM and running the following queries:</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt>CREATE USER testuser IDENTIFIED BY testpassword
+ DEFAULT TABLESPACE testtablespace 
+ TEMPORARY <font color="#008080">TABLESPACE</font> testtablespacetemp<font color="#990000">;</font>
+
+GRANT CREATE SESSION <font color="#008080">TO</font> testuser<font color="#990000">;</font>
+
+GRANT RESOURCE <font color="#008080">TO</font> testuser<font color="#990000">;</font></tt></pre>
+
+</blockquote>
+<p>On Oracle 12c and higher you also have to run:</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt>GRANT UNLIMITED TABLESPACE <font color="#008080">TO</font> testuser<font color="#990000">;</font></tt></pre>
+
+</blockquote>
+<p>Now you can exit and log in as the new user with the following command:</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt><font color="#008080">sqlplus</font> testuser<font color="#990000">/</font>testpassword@ora1</tt></pre>
+
+</blockquote>
+<p>To delete a user and everything owned by that user, log in as SYSTEM and run the following command:</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt>DROP USER <font color="#008080">testuser</font> CASCADE<font color="#990000">;</font></tt></pre>
+
+</blockquote>
+<p>To delete a tablespace, log in as SYSTEM and run the following command:</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt>DROP <font color="#008080">TABLESPACE</font> testtablespace<font color="#990000">;</font>
+
+DROP <font color="#008080">TABLESPACE</font> testtablespacetemp<font color="#990000">;</font></tt></pre>
+
+</blockquote>
+<p>This should be enough you get you started. To set up more complex configurations, consult the documentation that came with your Oracle distribution.</p>
+
+<a name="accessing"/><h2>Accessing a Database</h2>
+
+<p>Any user can access an Oracle database provided that the users environment is configured correctly. The ORACLE_HOME environment variable needs to be set to the same value that it was set for the oracle user during installation. The PATH varible must contain $ORACLE_HOME/bin and the LD_LIBRARY_PATH variable must contain $ORACLE_HOME/lib.</p>
+
+<p>The user must have read access to the $ORACLE_HOME/network/admin/tnsnames.ora file. Alternatively, an individual user can have a .tnsnames.ora file.</p>
+
+<p>The following command logs <i>testuser</i> with password <i>testpassword</i> into the database identified by the SID <i>ora1</i>.</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt><font color="#008080">sqlplus</font> testuser<font color="#990000">/</font>testpassword@ora1</tt></pre>
+
+</blockquote>
+<p>A sample session follows.</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt><font color="#990000">[</font>user@<font color="#008080">localhost</font> user<font color="#990000">]</font>$ <font color="#008080">sqlplus</font> testuser<font color="#990000">/</font>testpassword@ora1
+
+SQL<font color="#990000">*</font>Plus<font color="#990000">:</font> Release <font color="#993399">12.1</font><font color="#990000">.</font><font color="#993399">0.1</font><font color="#990000">.</font><font color="#993399">0</font> Production on Tue Jan <font color="#993399">27</font> <font color="#993399">21</font><font color="#990000">:</font><font color="#993399">21</font><font color="#990000">:</font><font color="#993399">34</font> <font color="#993399">2015</font>
+
+<b><font color="#000000">Copyright</font></b> <font color="#990000">(</font>c<font color="#990000">)</font> <font color="#993399">1982</font><font color="#990000">,</font> <font color="#993399">2013</font><font color="#990000">,</font> Oracle<font color="#990000">.</font>  All <font color="#008080">rights</font> reserved<font color="#990000">.</font>
+
+Last Successful <font color="#008080">login</font> time<font color="#990000">:</font> Mon Jan <font color="#993399">19</font> <font color="#993399">2015</font> <font color="#993399">03</font><font color="#990000">:</font><font color="#993399">41</font><font color="#990000">:</font><font color="#993399">15</font> <font color="#990000">-</font><font color="#993399">05</font><font color="#990000">:</font><font color="#993399">00</font>
+
+<font color="#008080">Connected</font> to<font color="#990000">:</font>
+Oracle Database 12c Enterprise Edition Release <font color="#993399">12.1</font><font color="#990000">.</font><font color="#993399">0.1</font><font color="#990000">.</font><font color="#993399">0</font> <font color="#990000">-</font> 64bit Production
+With <font color="#008080">the</font> Partitioning<font color="#990000">,</font> OLAP<font color="#990000">,</font> Advanced Analytics and Real Application Testing options
+
+
+SQL<font color="#990000">&gt;</font> create <font color="#008080">table</font> <b><font color="#000000">testtable</font></b> <font color="#990000">(</font>
+  <font color="#993399">2</font>  <font color="#008080">col1</font> <b><font color="#000000">varchar2</font></b><font color="#990000">(</font><font color="#993399">40</font><font color="#990000">),</font>
+  <font color="#993399">3</font>  col2 number
+  <font color="#993399">4</font>  <font color="#990000">);</font>
+
+<font color="#008080">Table</font> created<font color="#990000">.</font>
+
+SQL<font color="#990000">&gt;</font> <font color="#008080">select</font> table_name <font color="#008080">from</font> user_tables<font color="#990000">;</font>
+
+TABLE_NAME
+<font color="#990000">------------------------------</font>
+TESTTABLE
+
+SQL<font color="#990000">&gt;</font> <font color="#008080">describe</font> testtable<font color="#990000">;</font>
+ <font color="#008080">Name</font>                                      Null<font color="#990000">?</font>    Type
+ <font color="#990000">-----------------------------------------</font> <font color="#990000">--------</font> <font color="#990000">----------------------------</font>
+ <font color="#008080">COL1</font>                                               <b><font color="#000000">VARCHAR2</font></b><font color="#990000">(</font><font color="#993399">40</font><font color="#990000">)</font>
+ COL2                                               NUMBER
+
+SQL<font color="#990000">&gt;</font> insert into <font color="#008080">testtable</font> <b><font color="#000000">values</font></b> <font color="#990000">(</font><font color="#FF0000">'hello'</font><font color="#990000">,</font><font color="#993399">50</font><font color="#990000">);</font>
+
+<font color="#993399">1</font> <font color="#008080">row</font> created<font color="#990000">.</font>
+
+SQL<font color="#990000">&gt;</font> insert into <font color="#008080">testtable</font> <b><font color="#000000">values</font></b> <font color="#990000">(</font><font color="#FF0000">'hi'</font><font color="#990000">,</font><font color="#993399">60</font><font color="#990000">);</font>
+
+<font color="#993399">1</font> <font color="#008080">row</font> created<font color="#990000">.</font>
+
+SQL<font color="#990000">&gt;</font> insert into <font color="#008080">testtable</font> <b><font color="#000000">values</font></b> <font color="#990000">(</font><font color="#FF0000">'bye'</font><font color="#990000">,</font><font color="#993399">70</font><font color="#990000">);</font>
+
+<font color="#993399">1</font> <font color="#008080">row</font> created<font color="#990000">.</font>
+
+SQL<font color="#990000">&gt;</font> select <font color="#990000">*</font> <font color="#008080">from</font> testtable<font color="#990000">;</font>
+
+COL1                                           COL2
+<font color="#990000">----------------------------------------</font> <font color="#990000">----------</font>
+hello                                            <font color="#993399">50</font>
+hi                                               <font color="#993399">60</font>
+bye                                              <font color="#993399">70</font>
+
+SQL<font color="#990000">&gt;</font> <b><font color="#0000FF">delete</font></b> from testtable <font color="#008080">where</font> col2<font color="#990000">=</font><font color="#993399">50</font><font color="#990000">;</font>
+
+<font color="#993399">1</font> <font color="#008080">row</font> deleted<font color="#990000">.</font>
+
+SQL<font color="#990000">&gt;</font> select <font color="#990000">*</font> <font color="#008080">from</font> testtable<font color="#990000">;</font>
+
+COL1                                           COL2
+<font color="#990000">----------------------------------------</font> <font color="#990000">----------</font>
+hi                                               <font color="#993399">60</font>
+bye                                              <font color="#993399">70</font>
+
+SQL<font color="#990000">&gt;</font> update testtable <font color="#008080">set</font> col2<font color="#990000">=</font><font color="#993399">0</font> <font color="#008080">where</font> col1<font color="#990000">=</font><font color="#FF0000">'hi'</font><font color="#990000">;</font>
+
+<font color="#993399">1</font> <font color="#008080">row</font> updated<font color="#990000">.</font>
+
+SQL<font color="#990000">&gt;</font> select <font color="#990000">*</font> <font color="#008080">from</font> testtable<font color="#990000">;</font>
+
+COL1                                           COL2
+<font color="#990000">----------------------------------------</font> <font color="#990000">----------</font>
+hi                                                <font color="#993399">0</font>
+bye                                              <font color="#993399">70</font>
+
+SQL<font color="#990000">&gt;</font> drop <font color="#008080">table</font> testtable<font color="#990000">;</font>
+
+<font color="#008080">Table</font> dropped<font color="#990000">.</font>
+
+SQL<font color="#990000">&gt;</font> quit
+Disconnected from Oracle Database 12c Enterprise Edition Release <font color="#993399">12.1</font><font color="#990000">.</font><font color="#993399">0.1</font><font color="#990000">.</font><font color="#993399">0</font> <font color="#990000">-</font> 64bit Production
+With <font color="#008080">the</font> Partitioning<font color="#990000">,</font> OLAP<font color="#990000">,</font> Advanced Analytics and Real Application Testing options</tt></pre>
+
+</blockquote>
+</div> <!-- content -->
+
+
+<div id="copyrightbox">
+Copyright 2024 - David Muse - <a href="mailto:david.muse@firstworks.com">Contact</a> <img style="margin-left: 5px; vertical-align: text-bottom;" title="native english speaker" src="../images/us.png"/> <img style="vertical-align: text-bottom;" title="falo português também" src="../images/br.png"/>
+</div> <!-- copyrightbox -->
+
+</div>
+
+</body>
+</html>
+
+

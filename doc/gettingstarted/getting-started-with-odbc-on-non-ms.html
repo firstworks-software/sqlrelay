@@ -1,0 +1,229 @@
+<html>
+<head>
+	<title>firstworks: SQL Relay - sqlrelay persistent database connection pool pooling proxy load balance balancing odbc oracle mysql msql postgresql sybase db2 interbase sqlite access c++ perl DBD DBI python php PDO ruby tcl java jni unix linux persistant</title>
+
+	<link rel="stylesheet" href="../css/style.css"/>
+	<script type="text/javascript">
+
+  var _gaq = _gaq || [];
+  _gaq.push(['_setAccount', 'UA-23306117-3']);
+  _gaq.push(['_trackPageview']);
+
+  (function() {
+    var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+    ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+    var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+  })();
+
+</script>
+
+	<script language="Javascript" src="../js/button.js"></script>
+</head>
+<body onload="setButton();">
+
+
+<div style="position: fixed; top: 0px; left: 0px; width: 100%; z-index: 100;">
+
+<span id="firstworks">a <b><a href="http://www.firstworks.com">firstworks</a></b> project</span>
+
+<div id="projectbox"><a href="index.html"><img src="../images/sqlrelay-icon.png"/><span id="name">SQL Relay</span></a></div>
+
+<table id="projectbuttons">
+<tr>
+<td style="width: 50%;"></td>
+<td class="button nonlastbutton"><a id="button-about" href="../index.html">About</a></td>
+<td class="button nonlastbutton"><a id="button-documentation" href="../documentation.html">Documentation</a></td>
+<td class="button nonlastbutton"><a id="button-faq" href="../faq.html">FAQ</a></td>
+<td class="button nonlastbutton"><a id="button-download" href="../download.html">Download</a></td>
+<td class="button nonlastbutton"><a id="button-license" href="../license.html">Licensing</a></td>
+<td class="button nonlastbutton"><a id="button-support" href="../support.html">Support</a></td>
+<td class="button lastbutton"><a id="button-news" target="_blank" href="http://software.firstworks.com">News</a></td>
+<td style="width: 50%;"></td>
+</tr>
+</table>
+
+</div>
+
+<div style="position: absolute; top: 89px; width: 100%;">
+
+
+<div id="content">
+
+
+<h1>Getting Started With ODBC (on a non-MS platform)</h1>
+
+<ul>
+  <li><a href="#installation">Installation</a></li>
+  <li><a href="#accessing">Accessing a Database</a></li>
+  <li><a href="#quirks">ODBC Quirks</a></li>
+</ul>
+
+<a name="installation"/><h2>Installation</h2>
+
+<p>One or both of <a target="_blank" href="http://www.unixodbc.org/">unixODBC</a> and <a target="_blank" href="http://www.iodbc.org/">iODBC</a> are available for most Unix-like platforms.</p>
+
+<p>On modern Linux platforms, they can be installed via yum, apt-get or similar. On BSD systems, pkg_add or pkgin may be used to install one or the other. Modern versions of Solaris come with unixODBC pre-installed. I have also been able to build and install many versions of each from source on many different platforms.</p>
+
+<p>ODBC provides a common API for accessing different databases, but to access a database, you also need an ODBC driver for that database. ODBC drivers are generally available as shared object libraries from the database manufacturer. Most databases have ODBC drivers available for them, but not all drivers are available for Unix or Linux.</p>
+
+<p>ODBC drivers are generally installed in the <b>libdir</b> of the ODBC package - generally /usr/lib or /usr/local/lib, but they can really be installed anywhere.</p>
+
+<a name="accessing"/><h2>Accessing a Database</h2>
+
+<p>To access a database via ODBC, you have to add entries to two separate files.</p>
+
+<h2>odbcinst.ini</h2>
+
+<p>The file <i>odbcinst.ini</i> contains entries describing the database drivers. Specifically, they map a driver name (such as ODBC Driver 11 for SQL Server) to a user-friendly description of the driver and the driver files themselves.</p>
+
+<p>For example, lets say you're using the Linux ODBC Driver for Microsoft SQL Server to access a Microsoft SQL Server database from Linux. The following lines would need to be appended to <i>odbcinst.ini</i> to make the system aware of the driver.</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt><font color="#990000">[</font>ODBC Driver <font color="#993399">11</font> <b><font color="#0000FF">for</font></b> <font color="#008080">SQL</font> Server<font color="#990000">]</font> 
+Description<font color="#990000">=</font>Microsoft ODBC Driver <font color="#993399">11</font> <b><font color="#0000FF">for</font></b> SQL Server
+Driver<font color="#990000">=/</font>opt<font color="#990000">/</font>microsoft<font color="#990000">/</font>msodbcsql<font color="#990000">/</font>lib64<font color="#990000">/</font>libmsodbcsql<font color="#990000">-</font><font color="#993399">11.0</font><font color="#990000">.</font>so<font color="#990000">.</font><font color="#993399">2270.0</font>
+Threading<font color="#990000">=</font><font color="#993399">1</font> 
+UsageCount<font color="#990000">=</font><font color="#993399">1</font></tt></pre>
+
+</blockquote>
+<p>The <b>&#91;ODBC Driver 11 for SQL Server&#93;</b> line defines the name that will be used in other files when referring to this driver.</p>
+
+<p>The <b>Driver</b> argument is set to the full pathname of the driver.</p>
+
+<p>If you have both 32-bin and 64-bit drivers, then you can set the <b>Driver</b> argument to the full pathname of the 32-bit driver, and set a <b>Driver64</b> argument to the full pathname of the 64-bit driver. If you only have a 64-bit driver then you can use either argument.</p>
+
+<p>The <b>FileUsage</b> parameter is ambiguous. I've never been able to find a good description of it. It appears to always exist and always be set to 1.</p>
+
+<h2>odbc.ini</h2>
+
+<p>The file <i>odbc.ini</i> defines specific database connections, often called Data Source Names or DSN's for short.<br/>
+For example, lets say that you wanted to connect to a database on the machine <i>examplehost</i> on port <i>1433</i> using username <i>testuser</i> and password <i>testpassword</i> and then use database <i>testdb</i> once logged in. Your odbc.ini entry might look like:</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt><font color="#990000">[</font>exampledsn<font color="#990000">]</font>
+Description <font color="#990000">=</font> SQL Server
+Driver  <font color="#990000">=</font> ODBC Driver <font color="#993399">11</font> <b><font color="#0000FF">for</font></b> SQL Server
+Host  <font color="#990000">=</font> examplehost
+Port  <font color="#990000">=</font> <font color="#993399">1422</font>
+User <font color="#990000">=</font> testuser
+Password <font color="#990000">=</font> testpassword
+Database <font color="#990000">=</font> testdb</tt></pre>
+
+</blockquote>
+<p>The <b>&#91;exampledsn&#93;</b> line defines the name of this DSN to be <i>exampledsn</i>. Programs which use ODBC may use the name <i>exampledsn</i> to refer to this set of connection parameters.</p>
+
+<p>The <b>Description</b> parameter defines a user-friendly name for this DSN.</p>
+
+<p>The <b>Driver</b> parameter refers back to a driver definied the <i>odbcinst.ini</i> file. Applications which use this DSN will load that driver.</p>
+
+<p>The remaining parameters are specific to the driver, are given only as examples and might be different for other drivers. For example, another driver may not have the <b>Database</b> parameter at all, may refer to the <b>User</b> as <b>UserName</b> instead or may have additional parameters.</p>
+
+<p>That said, the <b>User</b> and <b>Password</b> parameters are fairly well standardized and many tools allow them to be overridden at connect-time. As such, they are often left blank in the <i>odbc.ini</i> file. To leave a parameter blank, include the line but place no value after the equals sign.</p>
+
+<h2>isql</h2>
+
+<p>The command line program <i>isql</i> can be used to test a DSN.</p>
+
+<p>Note that Firebird also comes with a command line program, also called <i>isql</i> and it is important to make sure you are using the ODBC program rather than the Firebird program. Running the <i>isql</i> command with no arguments should give you some indication of which one it is. The <i>isql</i> program that comes with unixODBC has output like the following:</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt><font color="#990000">**********************************************</font>
+<font color="#990000">*</font> unixODBC <font color="#990000">-</font> isql                            <font color="#990000">*</font>
+<font color="#990000">**********************************************</font>
+<font color="#990000">*</font> Syntax                                     <font color="#990000">*</font>
+<font color="#990000">*</font>                                            <font color="#990000">*</font>
+<font color="#990000">*</font>      <font color="#008080">isql</font> DSN <font color="#990000">[</font>UID <font color="#990000">[</font>PWD<font color="#990000">]]</font> <font color="#990000">[</font>options<font color="#990000">]</font>        <font color="#990000">*</font>
+<font color="#990000">*</font>                                            <font color="#990000">*</font>
+<font color="#990000">*</font> Options                                    <font color="#990000">*</font>
+<font color="#990000">*</font>                                            <font color="#990000">*</font>
+<font color="#990000">*</font> <font color="#990000">-</font><font color="#008080">b</font>         batch<font color="#990000">.(</font>no <font color="#008080">prompting</font> etc<font color="#990000">)</font>        <font color="#990000">*</font>
+<font color="#990000">*</font> <font color="#990000">-</font>dx        delimit columns <font color="#008080">with</font> x          <font color="#990000">*</font>
+<font color="#990000">*</font> <font color="#990000">-</font>x0xXX     delimit columns <font color="#008080">with</font> XX<font color="#990000">,</font> where  <font color="#990000">*</font>
+<font color="#990000">*</font>            x is <font color="#008080">in</font> hex<font color="#990000">,</font> ie <font color="#993399">0x09</font> <font color="#008080">is</font> tab     <font color="#990000">*</font>
+<font color="#990000">*</font> <font color="#990000">-</font>w         wrap results in an <font color="#008080">HTML</font> table   <font color="#990000">*</font>
+<font color="#990000">*</font> <font color="#990000">-</font>c         column names on <font color="#008080">first</font> row<font color="#990000">.</font>      <font color="#990000">*</font>
+<font color="#990000">*</font>            <font color="#990000">(</font>only <font color="#008080">used</font> when <font color="#990000">-</font>d<font color="#990000">)</font>             <font color="#990000">*</font>
+<font color="#990000">*</font> <font color="#990000">-</font>mn        limit column display width <font color="#008080">to</font> n <font color="#990000">*</font>
+<font color="#990000">*</font> <font color="#990000">-</font><font color="#008080">v</font>         verbose<font color="#990000">.</font>                        <font color="#990000">*</font>
+<font color="#990000">*</font> <font color="#990000">-</font>lx        set locale <font color="#008080">to</font> x                 <font color="#990000">*</font>
+<font color="#990000">*</font> <font color="#990000">-</font>q         wrap <font color="#009900">char</font> fields <font color="#008080">in</font> dquotes     <font color="#990000">*</font>
+<font color="#990000">*</font> <font color="#990000">-</font><font color="#993399">3</font>         Use ODBC <font color="#993399">3</font> calls                <font color="#990000">*</font>
+<font color="#990000">*</font> <font color="#990000">-</font>n         Use <b><font color="#0000FF">new</font></b> <font color="#008080">line</font> processing         <font color="#990000">*</font>
+<font color="#990000">*</font> <font color="#990000">--</font><font color="#008080">version</font>  version                         <font color="#990000">*</font>
+<font color="#990000">*</font>                                            <font color="#990000">*</font>
+<font color="#990000">*</font> Commands                                   <font color="#990000">*</font>
+<font color="#990000">*</font>                                            <font color="#990000">*</font>
+<font color="#990000">*</font> help <font color="#990000">-</font> <font color="#008080">list</font> tables                         <font color="#990000">*</font>
+<font color="#990000">*</font> <font color="#008080">help</font> table <font color="#990000">-</font> list columns <font color="#008080">in</font> table         <font color="#990000">*</font>
+<font color="#990000">*</font> <font color="#008080">help</font> help <font color="#990000">-</font> list all <font color="#008080">help</font> options          <font color="#990000">*</font>
+<font color="#990000">*</font>                                            <font color="#990000">*</font>
+<font color="#990000">*</font> Examples                                   <font color="#990000">*</font>
+<font color="#990000">*</font>                                            <font color="#990000">*</font>
+<font color="#990000">*</font>      isql WebDB <font color="#008080">MyID</font> MyPWD <font color="#990000">-</font>w <font color="#990000">&lt;</font> My<font color="#990000">.</font>sql     <font color="#990000">*</font>
+<font color="#990000">*</font>                                            <font color="#990000">*</font>
+<font color="#990000">*</font>      Each line <font color="#008080">in</font> My<font color="#990000">.</font>sql <font color="#008080">must</font> contain      <font color="#990000">*</font>
+<font color="#990000">*</font>      exactly <font color="#993399">1</font> SQL command except <font color="#008080">for</font> the  <font color="#990000">*</font>
+<font color="#990000">*</font>      last line which must <font color="#008080">be</font> <b><font color="#000000">blank</font></b> <font color="#990000">(</font>unless <font color="#990000">*</font>
+<font color="#990000">*</font>      <font color="#990000">-</font>n <font color="#008080">option</font> specified<font color="#990000">).</font>                 <font color="#990000">*</font>
+<font color="#990000">*</font>                                            <font color="#990000">*</font>
+<font color="#990000">*</font> <font color="#008080">Please</font> visit<font color="#990000">;</font>                              <font color="#990000">*</font>
+<font color="#990000">*</font>                                            <font color="#990000">*</font>
+<font color="#990000">*</font>      http<font color="#990000">:</font><i><font color="#9A1900">//www.unixodbc.org               *</font></i>
+<font color="#990000">*</font>      pharvey@codebydesign<font color="#990000">.</font>com              <font color="#990000">*</font>
+<font color="#990000">*</font>      nick@easysoft<font color="#990000">.</font>com                     <font color="#990000">*</font>
+<font color="#990000">**********************************************</font></tt></pre>
+
+</blockquote>
+<p>To connect to the database defined by the exampledsn DSN, run the following command:</p>
+
+<p><b>isql exampledsn</b></p>
+
+<p>or optionally...</p>
+
+<p><b>isql exampledsn testuser testpassword</b></p>
+
+<p>to override the user and password.</p>
+
+<p>You should now be presented with a session resembling the command line interfaces to other databases. You can run queries, view result sets, etc.</p>
+
+<a name="quirks"/><h2>ODBC Quirks</h2>
+
+<p>Many databases support named bind variables. For example, in Oracle, you can have a query like:</p>
+
+<p><b>select * from mytable where col1=:value1 and col2=:value2 </b></p>
+
+<p>In this query, <b>value1</b> and <b>value2</b> are the names of the bind variables.</p>
+
+<p>Oracle also supports bind-by-position. For example, you can also have a query like:</p>
+
+<p><b>select * from mytable where col1=:1 and col2=:2 </b></p>
+
+<p>In this query, <b>1</b> and <b>2</b> are the "names" of the bind variables.</p>
+
+<p>ODBC does not appear to support binding by name, even if the underlying database does, or if ODBC does support it, I can't figure out how. As such, if you use ODBC to connect to a database, then your client programs must bind by position (as in the second example), not by name (as in the first example), even if the underlying database supports binding by name.</p>
+
+</div> <!-- content -->
+
+
+<div id="copyrightbox">
+Copyright 2024 - David Muse - <a href="mailto:david.muse@firstworks.com">Contact</a> <img style="margin-left: 5px; vertical-align: text-bottom;" title="native english speaker" src="../images/us.png"/> <img style="vertical-align: text-bottom;" title="falo português também" src="../images/br.png"/>
+</div> <!-- copyrightbox -->
+
+</div>
+
+</body>
+</html>
+
+

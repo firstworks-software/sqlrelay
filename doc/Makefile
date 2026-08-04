@@ -18,6 +18,10 @@ INS = documentation.html.in \
 	successstories.html.in \
 	support.html.in
 
+# the subset of INS that wt generates from SRCS; the rest are checkout files
+WTOBJS = documentation.html.in \
+	faq.html.in
+
 OBJS = documentation.html \
 	download.html \
 	faq.html \
@@ -76,7 +80,10 @@ all: $(OBJS)
 
 $(OBJS): $(FRAGMENTS)
 
-install: all
+# The .html files are in version control, so install just copies them.  It
+# deliberately does not depend on all - building needs wt, which is not
+# installed everywhere (see #8838).  Run make here by hand to regenerate.
+install:
 	$(MKINSTALLDIRS) $(docdir)
 	$(CP) *.html $(docdir)
 	$(CHMOD) 644 $(docdir)/*.html
@@ -267,7 +274,7 @@ uninstall:
 	$(RMTREE) $(docdir)
 
 clean:
-	$(RM) $(OBJS)
+	$(RM) $(OBJS) $(WTOBJS)
 	cd admin $(AND) $(MAKE) clean
 	cd gettingstarted $(AND) $(MAKE) clean
 	cd features $(AND) $(MAKE) clean

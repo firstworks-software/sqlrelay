@@ -1,0 +1,123 @@
+<html>
+<head>
+	<title>firstworks: SQL Relay - sqlrelay persistent database connection pool pooling proxy load balance balancing odbc oracle mysql msql postgresql sybase db2 interbase sqlite access c++ perl DBD DBI python php PDO ruby tcl java jni unix linux persistant</title>
+
+	<link rel="stylesheet" href="../css/style.css"/>
+	<script type="text/javascript">
+
+  var _gaq = _gaq || [];
+  _gaq.push(['_setAccount', 'UA-23306117-3']);
+  _gaq.push(['_trackPageview']);
+
+  (function() {
+    var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+    ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+    var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+  })();
+
+</script>
+
+	<script language="Javascript" src="../js/button.js"></script>
+</head>
+<body onload="setButton();">
+
+
+<div style="position: fixed; top: 0px; left: 0px; width: 100%; z-index: 100;">
+
+<span id="firstworks">a <b><a href="http://www.firstworks.com">firstworks</a></b> project</span>
+
+<div id="projectbox"><a href="index.html"><img src="../images/sqlrelay-icon.png"/><span id="name">SQL Relay</span></a></div>
+
+<table id="projectbuttons">
+<tr>
+<td style="width: 50%;"></td>
+<td class="button nonlastbutton"><a id="button-about" href="../index.html">About</a></td>
+<td class="button nonlastbutton"><a id="button-documentation" href="../documentation.html">Documentation</a></td>
+<td class="button nonlastbutton"><a id="button-faq" href="../faq.html">FAQ</a></td>
+<td class="button nonlastbutton"><a id="button-download" href="../download.html">Download</a></td>
+<td class="button nonlastbutton"><a id="button-license" href="../license.html">Licensing</a></td>
+<td class="button nonlastbutton"><a id="button-support" href="../support.html">Support</a></td>
+<td class="button lastbutton"><a id="button-news" target="_blank" href="http://software.firstworks.com">News</a></td>
+<td style="width: 50%;"></td>
+</tr>
+</table>
+
+</div>
+
+<div style="position: absolute; top: 89px; width: 100%;">
+
+
+<div id="content">
+
+
+<h1>Enhanced Database Security</h1>
+
+<p>SQL Relay provides various database security enhancements such as TLS and Kerberos support on front and back ends, IP filtering, connection schedules, and query filtering.</p>
+
+<h2>TLS and Kerberos</h2>
+
+<p>The connection between the application and SQL Relay can be secured with TLS, in encryption-only, certificate validation, host name validation, and mutual authentication modes.</p>
+
+<p><img src="../images/secure-tls-unsecured.png"/></p>
+
+<p>The connection between the application and SQL Relay can also be secured with Kerberos and Active Directory encryption and authentication.</p>
+
+<p><img src="../images/secure-krb-unsecured.png"/></p>
+
+<p>If the back-end database supports TLS, the SQL Relay can secure the connection between itself and the back-end as well.</p>
+
+<p><img src="../images/secure-tls-tls.png"/></p>
+
+<p>It's even possible to secure the front-end with Kerberos and the back-end with TLS.</p>
+
+<p><img src="../images/secure-krb-tls.png"/></p>
+
+<h2>IP Filtering</h2>
+
+<p>IP filtering can be used to restrict the set of IP addresses that applications can connect to SQL Relay from.</p>
+
+<p>For example, clients from 192.168.1.* addresses can be allowed while clients from 172.16.*.* and 10.*.*.* addresses can be denied.</p>
+
+<p><img src="../images/ip-filtering.png"/></p>
+
+<h2>Connection Schedules</h2>
+
+<p>Connection schedules constrain database access to specified times.</p>
+
+<p>For example, only Bob and Sally may be allowed to access the database during the day shift.</p>
+
+<p><img src="../images/dayshift.png"/></p>
+
+<p>While only Joe and Mary may be allowed to access the database during the night shift.</p>
+
+<p><img src="../images/nightshift.png"/></p>
+
+<p>Database access can be constrained to any combination of years, months, days of the month, days of the week, and times of day.</p>
+
+<h2>Query Filtering</h2>
+
+<p>Query filtering prevents queries that match a certian pattern from being run at all.  There are often certain queries that will bring the entire database to its knees.  A common use for query filtering is to identify those queries and prevent them from being run.</p>
+
+<p>For example, <i>select * from hugetable where id=100</i> might be fine...</p>
+
+<p><img src="../images/query-allowed.png"/></p>
+
+<p>...but <i>select * from hugetable</i> without a where clause might crush the database.</p>
+
+<p><img src="../images/query-rejected.png"/></p>
+
+<p>SQL Relay can be configured to allow one and reject the other.</p>
+
+</div> <!-- content -->
+
+
+<div id="copyrightbox">
+Copyright 2024 - David Muse - <a href="mailto:david.muse@firstworks.com">Contact</a> <img style="margin-left: 5px; vertical-align: text-bottom;" title="native english speaker" src="../images/us.png"/> <img style="vertical-align: text-bottom;" title="falo português também" src="../images/br.png"/>
+</div> <!-- copyrightbox -->
+
+</div>
+
+</body>
+</html>
+
+

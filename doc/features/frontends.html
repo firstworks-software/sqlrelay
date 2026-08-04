@@ -1,0 +1,106 @@
+<html>
+<head>
+	<title>firstworks: SQL Relay - sqlrelay persistent database connection pool pooling proxy load balance balancing odbc oracle mysql msql postgresql sybase db2 interbase sqlite access c++ perl DBD DBI python php PDO ruby tcl java jni unix linux persistant</title>
+
+	<link rel="stylesheet" href="../css/style.css"/>
+	<script type="text/javascript">
+
+  var _gaq = _gaq || [];
+  _gaq.push(['_setAccount', 'UA-23306117-3']);
+  _gaq.push(['_trackPageview']);
+
+  (function() {
+    var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+    ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+    var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+  })();
+
+</script>
+
+	<script language="Javascript" src="../js/button.js"></script>
+</head>
+<body onload="setButton();">
+
+
+<div style="position: fixed; top: 0px; left: 0px; width: 100%; z-index: 100;">
+
+<span id="firstworks">a <b><a href="http://www.firstworks.com">firstworks</a></b> project</span>
+
+<div id="projectbox"><a href="index.html"><img src="../images/sqlrelay-icon.png"/><span id="name">SQL Relay</span></a></div>
+
+<table id="projectbuttons">
+<tr>
+<td style="width: 50%;"></td>
+<td class="button nonlastbutton"><a id="button-about" href="../index.html">About</a></td>
+<td class="button nonlastbutton"><a id="button-documentation" href="../documentation.html">Documentation</a></td>
+<td class="button nonlastbutton"><a id="button-faq" href="../faq.html">FAQ</a></td>
+<td class="button nonlastbutton"><a id="button-download" href="../download.html">Download</a></td>
+<td class="button nonlastbutton"><a id="button-license" href="../license.html">Licensing</a></td>
+<td class="button nonlastbutton"><a id="button-support" href="../support.html">Support</a></td>
+<td class="button lastbutton"><a id="button-news" target="_blank" href="http://software.firstworks.com">News</a></td>
+<td style="width: 50%;"></td>
+</tr>
+</table>
+
+</div>
+
+<div style="position: absolute; top: 89px; width: 100%;">
+
+
+<div id="content">
+
+
+<h1>Front-End Compatibility</h1>
+
+<p>Native database apps communicate with the database using native database client-server protocols.</p>
+
+<p>For example, MySQL/MariaDB apps communicate with the database using the MySQL/MariaDB client-server protocol:</p>
+
+<blockquote>
+<img src="../images/mysqlnativeprotocol.png"/>
+</blockquote>
+<p>...and PostgreSQL apps communicate with the database using the PostgreSQL client-server protocol:</p>
+
+<blockquote>
+<img src="../images/postgresqlnativeprotocol.png"/>
+</blockquote>
+<br/><p>Whether written using the native SQL Relay API or a connector of some sort, SQL Relay apps generally communicate with SQL Relay using the SQL Relay client-server protocol:</p>
+
+<blockquote>
+<img src="../images/sqlrelaynativeprotocol.png"/>
+</blockquote>
+<p>However, SQL Relay also supports the MySQL/MariaDB and PostgreSQL client-server protocols.  This allows apps written for those databases to communicate with SQL Relay, rather than directly with the native database, without modification.</p>
+
+<blockquote>
+<img src="../images/sqlrelaymysqlprotocol.png"/>
+<br/>
+<br/>
+<img src="../images/sqlrelaypostgresqlprotocol.png"/>
+</blockquote>
+<p>As such, SQL Relay can be used as a transparent proxy.  Native apps aimed at SQL Relay still think that they're talking to the database, but in fact, they are talking to SQL Relay, and can take advantage of SQL Relay's advanced features.</p>
+
+<br/><h2>Foreign Back-End</h2>
+
+<p>Since SQL Relay supports a variety of database back-ends, the app can also be redirected to any of these databases, instead of the database it was originally written to use.</p>
+
+<blockquote>
+<img src="../images/sqlrelay-mysql-frontend-mssql-backend.png"/>
+<br/>
+<br/>
+<img src="../images/sqlrelay-postgresql-frontend-oracle-backend.png"/>
+</blockquote>
+<p>Some queries may have to be modified to use the syntax of the new database and some code may need to be changed, but a full rewrite of the app should not be necessary.</p>
+
+</div> <!-- content -->
+
+
+<div id="copyrightbox">
+Copyright 2024 - David Muse - <a href="mailto:david.muse@firstworks.com">Contact</a> <img style="margin-left: 5px; vertical-align: text-bottom;" title="native english speaker" src="../images/us.png"/> <img style="vertical-align: text-bottom;" title="falo português também" src="../images/br.png"/>
+</div> <!-- copyrightbox -->
+
+</div>
+
+</body>
+</html>
+
+

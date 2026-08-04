@@ -1,0 +1,137 @@
+<html>
+<head>
+	<title>firstworks: SQL Relay - sqlrelay persistent database connection pool pooling proxy load balance balancing odbc oracle mysql msql postgresql sybase db2 interbase sqlite access c++ perl DBD DBI python php PDO ruby tcl java jni unix linux persistant</title>
+
+	<link rel="stylesheet" href="css/style.css"/>
+	<script type="text/javascript">
+
+  var _gaq = _gaq || [];
+  _gaq.push(['_setAccount', 'UA-23306117-3']);
+  _gaq.push(['_trackPageview']);
+
+  (function() {
+    var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+    ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+    var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+  })();
+
+</script>
+
+	<script language="Javascript" src="js/rotate.js"></script>
+	<script language="Javascript" src="js/backendsrotate.js"></script>
+	<script language="Javascript" src="js/button.js"></script>
+</head>
+<body onload="rotate(); backendsRotate(); setButton();">
+
+
+<div style="position: fixed; top: 0px; left: 0px; width: 100%; z-index: 100;">
+
+<span id="firstworks">a <b><a href="http://www.firstworks.com">firstworks</a></b> project</span>
+
+<div id="projectbox"><a href="index.html"><img src="images/sqlrelay-icon.png"/><span id="name">SQL Relay</span></a></div>
+
+<table id="projectbuttons">
+<tr>
+<td style="width: 50%;"></td>
+<td class="button nonlastbutton"><a id="button-about" href="index.html">About</a></td>
+<td class="button nonlastbutton"><a id="button-documentation" href="documentation.html">Documentation</a></td>
+<td class="button nonlastbutton"><a id="button-faq" href="faq.html">FAQ</a></td>
+<td class="button nonlastbutton"><a id="button-download" href="download.html">Download</a></td>
+<td class="button nonlastbutton"><a id="button-license" href="license.html">Licensing</a></td>
+<td class="button nonlastbutton"><a id="button-support" href="support.html">Support</a></td>
+<td class="button lastbutton"><a id="button-news" target="_blank" href="http://software.firstworks.com">News</a></td>
+<td style="width: 50%;"></td>
+</tr>
+</table>
+
+</div>
+
+<div style="position: absolute; top: 89px; width: 100%;">
+
+
+<div id="content">
+
+
+<h3>Source Distribution</h3>
+
+<blockquote>
+<p>The current release is <a target="_blank" href="http://downloads.sourceforge.net/sqlrelay/sqlrelay-2.2.1.tar.gz">sqlrelay-2.2.1.tar.gz</a> or <a target="_blank" href="http://downloads.sourceforge.net/sqlrelay/sqlrelay-2.2.1.zip">sqlrelay-2.2.1.zip</a>.  You will also need <a target="_blank" href="http://downloads.sourceforge.net/rudiments/rudiments-2.2.0.tar.gz">rudiments-2.2.0.tar.gz</a> or <a target="_blank" href="http://downloads.sourceforge.net/rudiments/rudiments-2.2.0.zip">rudiments-2.2.0.zip</a></p>
+
+<p>First <a target="_blank" href="http://rudiments.sourceforge.net/installing.html">build and install Rudiments</a>, then <a target="_blank" href="http://sqlrelay.sourceforge.net/admin/installing.html">build and install SQL Relay</a>.  Older releases of <a target="_blank" href="http://sourceforge.net/projects/sqlrelay/files/sqlrelay">SQL Relay</a> and <a target="_blank" href="http://sourceforge.net/projects/rudiments/files/rudiments">Rudiments</a> are also available.</p>
+</blockquote>
+
+<hr>
+
+<h3>Binary Distributions</h3>
+
+<blockquote>
+<p>The binary distribution for Linux includes x86_64 RPMs for SQL Relay and Rudiments for Fedora 44 and 43, and CentOS/RHEL 10 and 9.  It also includes DEBs for Ubuntu 26.04 and 24.04.<p/>
+
+<p>The binary distribution for Windows includes installers for x86 and x86_64 versions of SQL Relay and Rudiments.</p>
+
+<p>Download the <a target="_blank" href="http://sourceforge.net/projects/sqlrelay/files/sqlrelay/2.2.1/sqlrelay-binary-distribution-2.2.1.tar.gz/download">SQL Relay Binary Distribution for Linux</a> or the <a target="_blank" href="http://sourceforge.net/projects/sqlrelay/files/sqlrelay/2.2.1/sqlrelay-binary-distribution-2.2.1.zip/download">SQL Relay Binary Distribution for Windows</a>.</p>
+
+<p>Just extract the distribution and install the appropriate packages for your platform.  Or, see the enclosed README for detailed instructions.</p>
+</blockquote>
+
+<hr>
+
+<!--<h3>SQL Relay Enterprise Modules</h3>
+
+<blockquote>
+<p>SQL Relay Enterprise Modules add advanced features to the standard SQL Relay distribution.</p>
+
+<p>Download and install the <a target="_blank" href="http://sourceforge.net/projects/sqlrelay/files/sqlrelay/2.2.1/sqlrelay-binary-distribution-2.2.1.tar.gz/download">SQL Relay Binary Distribution for Linux</a>, then download the <a href="http://www.firstworks.com/sqlrenterprise/sqlrelay-enterprise-modules-2.2.1.tar.gz">SQL Relay Enterprise Modules</a>, then <a target="_blank" href="sqlrenterprise/modules/install_modules.html">install</a> and <a target="_blank" href="sqlrenterprise/modules/license_mysql_frontend.html">license</a> the modules. (30-day trial licenses available)</p>
+</blockquote>
+
+<hr>-->
+
+<h3>FreeBSD Port</h3>
+
+<blockquote>
+<p>SQL Relay is available as a <a href="http://www.freshports.org/databases/sqlrelay/">FreeBSD port</a>.  To install all available packages related to SQL Relay:</p>
+
+<p><code>pkg install sqlrelay py27-sqlrelay</code></p>
+</blockquote>
+
+<hr>
+
+<h3>NetBSD Package</h3>
+
+<blockquote>
+<p>SQL Relay is available as a <a href="http://ftp.netbsd.org/pub/pkgsrc/current/pkgsrc/databases/sqlrelay/README.html">NetBSD package</a>.  To install available all packages related to SQL Relay:</p>
+
+<p><code>pkgin install sqlrelay sqlrelay-sqlite sqlrelay-pgsql sqlrelay-odbc sqlrelay-nodejs sqlrelay-mysql sqlrelay-freetds ruby22-sqlrelay ruby21-sqlrelay ruby200-sqlrelay py27-sqlrelay php56-sqlrelay php55-sqlrelay p5-sqlrelay</code></p>
+</blockquote>
+
+<hr>
+
+<h3>Source Snapshots</h3>
+
+<blockquote>
+<p>To clone the SQL Relay GIT repo, run:</p>
+
+<p><code>git clone https://github.com/firstworks-software/sqlrelay.git</code></p>
+
+<p><b>Note:</b> you'll probably need to clone the Rudiments GIT repo too:</p>
+
+<p><code>git clone https://github.com/firstworks-software/rudiments.git</code></p>
+
+<p>Both repos are also mirrored on <a target="_blank" href="http://sourceforge.net/projects/sqlrelay">SourceForge</a>:</p>
+
+<p><code>git clone git://git.code.sf.net/p/sqlrelay/sqlrelay</code><br>
+<code>git clone git://git.code.sf.net/p/rudiments/rudiments</code></p>
+</blockquote>
+
+</div> <!-- content -->
+
+
+<div id="copyrightbox">
+Copyright 2024 - David Muse - <a href="mailto:david.muse@firstworks.com">Contact</a> <img style="margin-left: 5px; vertical-align: text-bottom;" title="native english speaker" src="images/us.png"/> <img style="vertical-align: text-bottom;" title="falo portugues tambem" src="images/br.png"/>
+</div> <!-- copyrightbox -->
+
+</div>
+
+</body>
+</html>
+

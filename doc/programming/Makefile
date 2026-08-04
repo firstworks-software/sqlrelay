@@ -45,6 +45,27 @@ INS = ado.net.html.in \
 	ruby.html.in \
 	tcl.html.in
 
+# the subset of INS that wt generates from SRCS; the rest are checkout files
+WTOBJS = ado.net.html.in \
+	binds.html.in \
+	c++.html.in \
+	c.html.in \
+	cs.html.in \
+	erlang.html.in \
+	java.html.in \
+	jdbc.html.in \
+	nodejs.html.in \
+	odbc.html.in \
+	perldbi.html.in \
+	perl.html.in \
+	php.html.in \
+	phppdo.html.in \
+	precisionscale.html.in \
+	pythondb.html.in \
+	python.html.in \
+	ruby.html.in \
+	tcl.html.in
+
 OBJS = ado.net.html \
 	binds.html \
 	c++.html \
@@ -89,4 +110,4 @@ all: $(OBJS)
 $(OBJS): $(FRAGMENTS)
 
 clean:
-	$(RM) $(OBJS)
+	$(RM) $(OBJS) $(WTOBJS)

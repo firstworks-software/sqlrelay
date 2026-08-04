@@ -29,6 +29,19 @@ INS = configguide.html.in \
 	tlscert.html.in \
 	tuning.html.in
 
+# the subset of INS that wt generates from SRCS; the rest are checkout files
+WTOBJS = configguide.html.in \
+	configreference.html.in \
+	createtlscert.html.in \
+	installing.html.in \
+	installingpkg.html.in \
+	oraclentier.html.in \
+	prerequisites.html.in \
+	running.html.in \
+	tlsca.html.in \
+	tlscert.html.in \
+	tuning.html.in
+
 OBJS = configguide.html \
 	configreference.html \
 	createtlscert.html \
@@ -65,4 +78,4 @@ all: $(OBJS)
 $(OBJS): $(FRAGMENTS)
 
 clean:
-	$(RM) $(OBJS)
+	$(RM) $(OBJS) $(WTOBJS)

@@ -143,6 +143,12 @@
 		name now clears just that variable, no name still clears the
 		whole list, and a name that is not in the list is a failed
 		command
+	fixed make install - it failed in doc/ on a host without the wt tool,
+		because installing the website built it first and the build
+		starts by running wt, the generated .html files are in version
+		control again and install just copies them, so regenerating
+		the site is a manual make in doc/, and make clean there now
+		removes everything the makefiles generate
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems

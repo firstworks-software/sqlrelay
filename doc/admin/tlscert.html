@@ -1,0 +1,152 @@
+<html>
+<head>
+	<title>firstworks: SQL Relay - sqlrelay persistent database connection pool pooling proxy load balance balancing odbc oracle mysql msql postgresql sybase db2 interbase sqlite access c++ perl DBD DBI python php PDO ruby tcl java jni unix linux persistant</title>
+
+	<link rel="stylesheet" href="../css/style.css"/>
+	<script type="text/javascript">
+
+  var _gaq = _gaq || [];
+  _gaq.push(['_setAccount', 'UA-23306117-3']);
+  _gaq.push(['_trackPageview']);
+
+  (function() {
+    var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+    ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+    var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+  })();
+
+</script>
+
+	<script language="Javascript" src="../js/button.js"></script>
+</head>
+<body onload="setButton();">
+
+
+<div style="position: fixed; top: 0px; left: 0px; width: 100%; z-index: 100;">
+
+<span id="firstworks">a <b><a href="http://www.firstworks.com">firstworks</a></b> project</span>
+
+<div id="projectbox"><a href="index.html"><img src="../images/sqlrelay-icon.png"/><span id="name">SQL Relay</span></a></div>
+
+<table id="projectbuttons">
+<tr>
+<td style="width: 50%;"></td>
+<td class="button nonlastbutton"><a id="button-about" href="../index.html">About</a></td>
+<td class="button nonlastbutton"><a id="button-documentation" href="../documentation.html">Documentation</a></td>
+<td class="button nonlastbutton"><a id="button-faq" href="../faq.html">FAQ</a></td>
+<td class="button nonlastbutton"><a id="button-download" href="../download.html">Download</a></td>
+<td class="button nonlastbutton"><a id="button-license" href="../license.html">Licensing</a></td>
+<td class="button nonlastbutton"><a id="button-support" href="../support.html">Support</a></td>
+<td class="button lastbutton"><a id="button-news" target="_blank" href="http://software.firstworks.com">News</a></td>
+<td style="width: 50%;"></td>
+</tr>
+</table>
+
+</div>
+
+<div style="position: absolute; top: 89px; width: 100%;">
+
+
+<div id="content">
+
+
+<h1>The tlscert Parameter</h1>
+
+<p>SQL Relay supports a <b>tlscert</b> parameter in the SQL Relay server's configuration file, and as an argument to the various command line client programs.  In either case, it specifies the TLS certificate chain to use.</p>
+
+<p>Instead of requiring a certificate chain, some applications allow you to just configure them with a public and private key.  This enables the application to perform TLS encryption, but not auth.  SQL Relay doesn't (currently) allow this.  You have to provide a certificate chain, even if you only want to use TLS encryption and not auth.</p>
+
+<p>On non-Windows platforms, you must specify a certificate chain file.  For example:</p>
+
+<blockquote>
+  <pre>/usr/local/firstworks/etc/sqlrserver.pem
+ or
+/usr/local/firstworks/etc/sqlrclient.pem
+</pre>
+
+</blockquote>
+<p>On Windows platforms you may specify a certificate chain file.  For example:</p>
+
+<blockquote>
+  <pre>C:\\Program Files\\Firstworks\\etc\\sqlrserver.pfx
+ or
+C:\\Program Files\\Firstworks\\etc\\sqlrclient.pfx
+</pre>
+
+</blockquote>
+<p>(note the double-backslashes)</p>
+
+<p>Or, you may specify a certificate in a Windows Certificate Store.  For example:</p>
+
+<blockquote>
+  <pre>CURRENT_USER:MY:sqlrserver
+ or
+MY:sqlrserver
+ or
+sqlrserver
+ or
+CURRENT_USER:MY:sqlrclient
+ or
+MY:sqlrclient
+ or
+sqlrclient
+</pre>
+
+</blockquote>
+<p>For actual files:</p>
+
+<ul>
+  <li>The file should contain the host's certificate, private key, and signing certificates, as appropriate (see <a href="createtlscert.html">Creating a TLS Certificate Chain File</a> for more information)</li>
+  <li>On non-Windows systems, a variety of file formats are supported.</li>
+  <li>On Windows systems it must be a .pfx file.</li>
+</ul>
+
+<p>For certificates in a Windows Certificate store:</p>
+
+<ul>
+  <li>The certificate should have an associated private key, and associated signing certificates, as appropriate.</li>
+  <li>The parameter must be formatted in one of the following ways:</li>
+  <ul>
+    <li>location:store:subject</li>
+    <li>store:subject</li>
+    <li>subject</li>
+  </ul>
+
+  <li>The location part must be one of the following:</li>
+  <ul>
+    <li>CURRENT_USER</li>
+    <li>LOCAL_MACHINE</li>
+    <li>CURRENT_SERVICE</li>
+    <li>SERVICES</li>
+    <li>USERS</li>
+    <li>CURRENT_USER_GROUP_POLICY</li>
+    <li>LOCAL_MACHINE_GROUP_POLICY</li>
+    <li>LOCAL_MACHINE_ENTERPRISE</li>
+    <li>(if omitted, it defaults to CURRENT_USER)</li>
+  </ul>
+
+  <li>The store part must be one of the following:</li>
+  <ul>
+    <li>MY</li>
+    <li>Root</li>
+    <li>Trust</li>
+    <li>CA</li>
+    <li>(if omitted, it defaults to MY)</li>
+  </ul>
+
+  <li>The subject part identifies the certificate.  The first certificate in the specified location/store who's Subject contains the specified subject (in a case-insensitive comparison) will be used.  Note that the order of the certificates in the store is not guaranteed, so the specified subject should contain enough information to uniquely identify a certificate.</li>
+</ul>
+
+</div> <!-- content -->
+
+
+<div id="copyrightbox">
+Copyright 2024 - David Muse - <a href="mailto:david.muse@firstworks.com">Contact</a> <img style="margin-left: 5px; vertical-align: text-bottom;" title="native english speaker" src="../images/us.png"/> <img style="vertical-align: text-bottom;" title="falo português também" src="../images/br.png"/>
+</div> <!-- copyrightbox -->
+
+</div>
+
+</body>
+</html>
+
+

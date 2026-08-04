@@ -33,6 +33,21 @@ INS = backends.html.in \
 	throttling.html.in \
 	triggers.html.in
 
+# the subset of INS that wt generates from SRCS; the rest are checkout files
+WTOBJS = backends.html.in \
+	connectionpooling.html.in \
+	datatranslation.html.in \
+	dbabstractionlayers.html.in \
+	frontends.html.in \
+	lbfoha.html.in \
+	nativeapi.html.in \
+	notifications.html.in \
+	platforms.html.in \
+	routing.html.in \
+	security.html.in \
+	throttling.html.in \
+	triggers.html.in
+
 OBJS = backends.html \
 	connectionpooling.html \
 	datatranslation.html \
@@ -71,4 +86,4 @@ all: $(OBJS)
 $(OBJS): $(FRAGMENTS)
 
 clean:
-	$(RM) $(OBJS)
+	$(RM) $(OBJS) $(WTOBJS)

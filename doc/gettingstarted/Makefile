@@ -81,6 +81,45 @@ INS = getting-started-with-firebird.html.in \
 	installing-oracle-9ir2-on-redhat-8.html.in \
 	installing-oracle-9ir2-on-redhat-9.html.in
 
+# the subset of INS that wt generates from SRCS; the rest are checkout files
+WTOBJS = getting-started-with-firebird.html.in \
+	getting-started-with-ibm-db2.html.in \
+	getting-started-with-mysql.html.in \
+	getting-started-with-odbc-on-non-ms.html.in \
+	getting-started-with-oracle.html.in \
+	getting-started-with-postgresql.html.in \
+	getting-started-with-sapsybase.html.in \
+	getting-started-with-sqlite.html.in \
+	initializing-sybase-ase-11033-on-linux.html.in \
+	initializing-sybase-ase-1192-on-linux.html.in \
+	initializing-sybase-ase-1251-on-linux.html.in \
+	initializing-sybase-ase-1252-on-linux.html.in \
+	initializing-sybase-ase-125-on-linux.html.in \
+	initializing-sybase-ase-1502-on-linux.html.in \
+	initializing-sybase-ase-155-on-linux.html.in \
+	initializing-sybase-ase-157-on-linux.html.in \
+	installing-ibm-db2-101-express-on-linux.html.in \
+	installing-ibm-db2-105-express-on-linux.html.in \
+	installing-ibm-db2-81-enterprise-on.html.in \
+	installing-ibm-db2-824-express-on-linux.html.in \
+	installing-ibm-db2-82-personal-on-linux.html.in \
+	installing-ibm-db2-91-express-on-linux.html.in \
+	installing-ibm-db2-971-express-on-linux.html.in \
+	installing-ibm-db2-enterprise-72-on.html.in \
+	installing-oracle-10g-on-fedora-core-1.html.in \
+	installing-oracle-10g-on-fedora-core-2.html.in \
+	installing-oracle-10g-on-fedora-core-3.html.in \
+	installing-oracle-10g-on-fedora-core-5.html.in \
+	installing-oracle-11g-on-fedora-12.html.in \
+	installing-oracle-11g-on-fedora-13.html.in \
+	installing-oracle-12c-on-fedora-19.html.in \
+	installing-oracle-805-on-redhat-52.html.in \
+	installing-oracle-816-or-817-on-redhat_12.html.in \
+	installing-oracle-816-or-817-on-redhat.html.in \
+	installing-oracle-9ir2-on-fedora-core-1.html.in \
+	installing-oracle-9ir2-on-redhat-8.html.in \
+	installing-oracle-9ir2-on-redhat-9.html.in
+
 OBJS = getting-started-with-firebird.html \
 	getting-started-with-ibm-db2.html \
 	getting-started-with-mysql.html \
@@ -143,4 +182,4 @@ all: $(OBJS)
 $(OBJS): $(FRAGMENTS)
 
 clean:
-	$(RM) $(OBJS)
+	$(RM) $(OBJS) $(WTOBJS)

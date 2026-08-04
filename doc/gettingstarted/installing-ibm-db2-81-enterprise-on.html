@@ -1,0 +1,219 @@
+<html>
+<head>
+	<title>firstworks: SQL Relay - sqlrelay persistent database connection pool pooling proxy load balance balancing odbc oracle mysql msql postgresql sybase db2 interbase sqlite access c++ perl DBD DBI python php PDO ruby tcl java jni unix linux persistant</title>
+
+	<link rel="stylesheet" href="../css/style.css"/>
+	<script type="text/javascript">
+
+  var _gaq = _gaq || [];
+  _gaq.push(['_setAccount', 'UA-23306117-3']);
+  _gaq.push(['_trackPageview']);
+
+  (function() {
+    var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+    ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+    var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+  })();
+
+</script>
+
+	<script language="Javascript" src="../js/button.js"></script>
+</head>
+<body onload="setButton();">
+
+
+<div style="position: fixed; top: 0px; left: 0px; width: 100%; z-index: 100;">
+
+<span id="firstworks">a <b><a href="http://www.firstworks.com">firstworks</a></b> project</span>
+
+<div id="projectbox"><a href="index.html"><img src="../images/sqlrelay-icon.png"/><span id="name">SQL Relay</span></a></div>
+
+<table id="projectbuttons">
+<tr>
+<td style="width: 50%;"></td>
+<td class="button nonlastbutton"><a id="button-about" href="../index.html">About</a></td>
+<td class="button nonlastbutton"><a id="button-documentation" href="../documentation.html">Documentation</a></td>
+<td class="button nonlastbutton"><a id="button-faq" href="../faq.html">FAQ</a></td>
+<td class="button nonlastbutton"><a id="button-download" href="../download.html">Download</a></td>
+<td class="button nonlastbutton"><a id="button-license" href="../license.html">Licensing</a></td>
+<td class="button nonlastbutton"><a id="button-support" href="../support.html">Support</a></td>
+<td class="button lastbutton"><a id="button-news" target="_blank" href="http://software.firstworks.com">News</a></td>
+<td style="width: 50%;"></td>
+</tr>
+</table>
+
+</div>
+
+<div style="position: absolute; top: 89px; width: 100%;">
+
+
+<div id="content">
+
+
+<h1>Installing IBM DB2 8.1 Enterprise on Linux</h1>
+
+<h2>Java Installation</h2>
+
+<p>The DB2 distribution comes with an RPM of the IBM Java SDK version 1.3.1. You can install it from the db2/linux/Java-1.3 directory of the distribution using rpm -i. It will install java into /opt/IBMJava2-131, so make sure to add /opt/IBMJava2-131/bin to your PATH environment variable if you want to use it.</p>
+
+<p>If you already have a different version of Java installed, it may or may not work properly.</p>
+
+<p>If you are running a kernel with Native Posix Threading Library support (such as on Redhat 9) and if you try to use a version of Sun's JRE or JDK older than version 1.3.1_09, you will need to run the following command first:</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt><b><font color="#0000FF">export</font></b> LD_ASSUME_KERNEL<font color="#990000">=</font><font color="#993399">2.4</font><font color="#990000">.</font><font color="#993399">1</font></tt></pre>
+
+</blockquote>
+<p>Note that Sun's JRE/JDK 1.3.1_09 and newer releases in the 1.3 series do not require this setting, but do not work either. I have been able to get Sun's JRE/JDK 1.4.2_04 to work and it does not require the setting.</p>
+
+<h2>DB2 Installation</h2>
+
+<p>IBM DB2 V8.1 was once available from the IBM website as a tarball. Extracting the tarball using <i>tar xf</i> creates a directory called 009_ESE_LNX_32_NLV. Change directories into that directory.</p>
+
+<p>On Debian Linux edit the db2/linux/db2_install script and modify the line:</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt>rpm <font color="#990000">-</font>ivh  $<font color="#FF0000">{</font>INSTDEV<font color="#990000">?</font><font color="#FF0000">}</font><font color="#990000">/</font>$<font color="#FF0000">{</font>pkg<font color="#990000">?</font><font color="#FF0000">}</font>$<font color="#FF0000">{</font>RPMEXTN<font color="#990000">?</font><font color="#FF0000">}</font> <font color="#993399">2</font><font color="#990000">&gt;&amp;</font><font color="#993399">1</font> <font color="#990000">\</font></tt></pre>
+
+</blockquote>
+<p>to read</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt>rpm <font color="#990000">-</font>ivh <font color="#990000">--</font>nodeps $<font color="#FF0000">{</font>INSTDEV<font color="#990000">?</font><font color="#FF0000">}</font><font color="#990000">/</font>$<font color="#FF0000">{</font>pkg<font color="#990000">?</font><font color="#FF0000">}</font>$<font color="#FF0000">{</font>RPMEXTN<font color="#990000">?</font><font color="#FF0000">}</font> <font color="#993399">2</font><font color="#990000">&gt;&amp;</font><font color="#993399">1</font> <font color="#990000">\</font></tt></pre>
+
+</blockquote>
+<p>Run the db2_install script.</p>
+
+<p>When prompted to specify a keyword, type DB2.ESE and press return.</p>
+
+<p>When the script completes, run <i>rpm -qa</i> and verify that the following RPM's were installed:</p>
+
+<p><b>IBM_db2icw81-8.1.0-0<br/>IBM_db2repl81-8.1.0-0<br/>IBM_db2dwcm81-8.1.0-0<br/>IBM_db2dj81-8.1.0-0<br/>IBM_db2icc81-8.1.0-0<br/>IBM_db2icuc81-8.1.0-0<br/>IBM_db2xmls81-8.1.0-0<br/>IBM_db2jdbc81-8.1.0-0<br/>IBM_db2djx81-8.1.0-0<br/>IBM_db2msen81-8.1.0-0<br/>IBM_db2conv81-8.1.0-0<br/>IBM_db2icut81-8.1.0-0<br/>IBM_db2chen81-8.1.0-0<br/>IBM_db2cj81-8.1.0-0<br/>IBM_db2inst81-8.1.0-0<br/>IBM_db2ca81-8.1.0-0<br/>IBM_db2crte81-8.1.0-0<br/>IBM_db2smpl81-8.1.0-0<br/>IBM_db2essg81-8.1.0-0<br/>IBM_db2cliv81-8.1.0-0<br/>IBM_db2secl81-8.1.0-0<br/>IBM_db2jhen81-8.1.0-0<br/>IBM_db2adt81-8.1.0-0<br/>IBM_db2dc81-8.1.0-0<br/>IBM_db2wbdb81-8.1.0-0<br/>IBM_db2conn81-8.1.0-0<br/>IBM_db2engn81-8.1.0-0<br/>IBM_db2pext81-8.1.0-0<br/>IBM_db2icms81-8.1.0-0<br/>IBM_db2sesm81-8.1.0-0<br/>IBM_db2adts81-8.1.0-0<br/>IBM_db2xml81-8.1.0-0<br/>IBM_db2rte81-8.1.0-0<br/>IBM_db2inx81-8.1.0-0<br/>IBM_db2cucs81-8.1.0-0<br/>IBM_db2sp81-8.1.0-0<br/>IBM_db2fs81-8.1.0-0<br/>IBM_db2das81-8.1.0-0<br/>IBM_db2cc81-8.1.0-0<br/></b></p>
+
+<h2>Creating an Instance</h2>
+
+<p>A DB2 installation consists of an administration server and one or more instances. Each instance contains one or more databases. The administration server coordinates the instances. The administration server is owned by an OS-level user. Each instance is owned by a seperate OS-level user as well.</p>
+
+<p>To create an instance and an administration server, run <i>/opt/IBM/db2/V8.1/instance/db2isetup</i>, a java-based installation program.</p>
+
+<p>On the screen titled <b>Welcome to the DB2 Instance Setup wizard</b>, click Next</p>
+
+<p>On the screen titled <b>Set user information for the DB2 Administration Server</b>, leave the defaults, enter a password into the Password and Confirm Password text boxes and click Next</p>
+
+<p>On the screen titled <b>Set up a DB2 instance</b>, leave the default radio button checked (Create a DB2 instance) and click Next</p>
+
+<p>On the screen titled <b>Select how the instance will be used</b>, leave the default radio button checked (Single-partition instance) and click Next</p>
+
+<p>On the screen titled <b>Set user information for the DB2 instance owner</b>, leave the defaults, enter a password into the Password and Confirm Password text boxes and click Next</p>
+
+<p>On the screen titled <b>Set user information for the DB2 fenced user</b>, leave the defaults, enter a password into the Password and Confirm Password text boxes and click Next</p>
+
+<p>On the screen titled <b>Configure DB2 instance TCP/IP communication</b>, leave the default radio button checked (Configure), leave the default Service name and Port number and click Next</p>
+
+<p>On the screen titled <b>Set instance properties</b>, leave the default Authentication type pulldown (Server), leave the default Startup box checked (Autostart the instance at system startup) and click Next</p>
+
+<p>On the screen titled <b>Prepare the DB2 tools catalog</b>, click the radio button next to "Use a local database" and click Next</p>
+
+<p>On the screen titled <b>Specify a local database to store the DB2 tools catalog</b>, leave the defaults then click Next</p>
+
+<p>On the screen titled <b>Set up the administration contact list</b>, leave the defaults and click Next. (You may have to check and then uncheck the "Enable notification" button before Next is enabled)</p>
+
+<p>A dialog will come up with a warning about not being able to send notifications until the smtp server has been specified. Click OK.</p>
+
+<p>On the screen titled <b>Specify a contact for health monitor notification</b>, enter your Name and Email address and click Next.</p>
+
+<p>On the screen titled <b>Set up Informix data source support</b>, click the check box next to "Defer this task until after installation is complete" and click Next.</p>
+
+<p>On the screen titled <b>Start copying files</b>, click Finish.</p>
+
+<p>A progress dialog will come up. When the process is finished, it will go away.</p>
+
+<p>On the screen titled <b>Setup is complete</b>, click Finish.</p>
+
+<p>Should you need to create additional DB2 instances, follow this procedure again using a different user name and skipping the steps pertaining to the Administration Server. The <i>/opt/IBM/db2/V8.1/instance/db2ilist</i> command lists all of the DB2 instances on the local computer.</p>
+
+<p>If you need to drop an instance, run <i>/opt/IBM/db2/V8.1/instance/db2idrop instancename</i>, substituting the name of the instance you want to drop for instancename.</p>
+
+<p>The <i>/opt/IBM/db2/V8.1/instance/daslist</i> command lists all of the DB2 administration servers on the local computer.</p>
+
+<p>If you need to drop an administration server, run <i>/opt/IBM/db2/V8.1/instance/dasdrop servername</i>, substituting the name of the administration server you want to drop for servername.</p>
+
+<h2>Creating a Sample Database</h2>
+
+<p>To create a sample database, run the command <i>/opt/ibm/db2/V8.1/bin/db2sampl</i>.</p>
+
+<h2>Starting the Database at Boot Time</h2>
+
+<p>You can use the following script to start/stop the database at boot/shutdown time.</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt><i><font color="#9A1900">#!/bin/sh</font></i>
+
+<b><font color="#0000FF">case</font></b> <font color="#FF0000">"$1"</font> <b><font color="#0000FF">in</font></b>
+        start<font color="#990000">)</font>
+                /opt/IBM/db<font color="#993399">2</font>/V<font color="#993399">8.1</font>/instance/db2istrt
+        <font color="#990000">;;</font>
+        stop<font color="#990000">)</font>
+                /opt/IBM/db<font color="#993399">2</font>/V<font color="#993399">8.1</font>/instance/db2ishut
+        <font color="#990000">;;</font>
+        <font color="#990000">*)</font>
+        echo <font color="#009900">$"</font>Usage<font color="#990000">:</font> <font color="#009900">$0</font> {start<font color="#990000">|</font>stop}<font color="#FF0000">"</font>
+<font color="#FF0000">        exit 1</font>
+<font color="#FF0000">esac</font>
+
+<font color="#FF0000">exit 0</font></tt></pre>
+
+</blockquote>
+<p>Install this script and run it with the "start" option to start up the database. Running it with the "stop" option shuts the database down. To access a database, it must be running.</p>
+
+<p>This script will start the Administration Server. During instance configuration, there's a check box indicating whether the instance will be configured to start at boot time. If you didn't check it, to get each instance to start at boot time, you need to run the following command as root for each instance.</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt><font color="#990000">/</font>opt<font color="#990000">/</font>IBM<font color="#990000">/</font>db2<font color="#990000">/</font>V8<font color="#990000">.</font><font color="#993399">1</font><font color="#990000">/</font>instance<font color="#990000">/</font>db2iauto <font color="#990000">-</font><font color="#008080">on</font> INSTANCE_USER</tt></pre>
+
+</blockquote>
+<p>Where INSTANCE_USER is replaced by the username of the user associated with the instance you want to start at boot time.</p>
+
+<p>If you want to disable instances from starting at boot time, you need to run the following command as root for each instance:</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt><font color="#990000">/</font>opt<font color="#990000">/</font>IBM<font color="#990000">/</font>db2<font color="#990000">/</font>V8<font color="#990000">.</font><font color="#993399">1</font><font color="#990000">/</font>instance<font color="#990000">/</font>db2iauto <font color="#990000">-</font><font color="#008080">off</font> INSTANCE_USER</tt></pre>
+
+</blockquote>
+</div> <!-- content -->
+
+
+<div id="copyrightbox">
+Copyright 2024 - David Muse - <a href="mailto:david.muse@firstworks.com">Contact</a> <img style="margin-left: 5px; vertical-align: text-bottom;" title="native english speaker" src="../images/us.png"/> <img style="vertical-align: text-bottom;" title="falo português também" src="../images/br.png"/>
+</div> <!-- copyrightbox -->
+
+</div>
+
+</body>
+</html>
+
+

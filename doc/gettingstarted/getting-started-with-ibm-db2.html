@@ -1,0 +1,491 @@
+<html>
+<head>
+	<title>firstworks: SQL Relay - sqlrelay persistent database connection pool pooling proxy load balance balancing odbc oracle mysql msql postgresql sybase db2 interbase sqlite access c++ perl DBD DBI python php PDO ruby tcl java jni unix linux persistant</title>
+
+	<link rel="stylesheet" href="../css/style.css"/>
+	<script type="text/javascript">
+
+  var _gaq = _gaq || [];
+  _gaq.push(['_setAccount', 'UA-23306117-3']);
+  _gaq.push(['_trackPageview']);
+
+  (function() {
+    var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+    ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+    var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+  })();
+
+</script>
+
+	<script language="Javascript" src="../js/button.js"></script>
+</head>
+<body onload="setButton();">
+
+
+<div style="position: fixed; top: 0px; left: 0px; width: 100%; z-index: 100;">
+
+<span id="firstworks">a <b><a href="http://www.firstworks.com">firstworks</a></b> project</span>
+
+<div id="projectbox"><a href="index.html"><img src="../images/sqlrelay-icon.png"/><span id="name">SQL Relay</span></a></div>
+
+<table id="projectbuttons">
+<tr>
+<td style="width: 50%;"></td>
+<td class="button nonlastbutton"><a id="button-about" href="../index.html">About</a></td>
+<td class="button nonlastbutton"><a id="button-documentation" href="../documentation.html">Documentation</a></td>
+<td class="button nonlastbutton"><a id="button-faq" href="../faq.html">FAQ</a></td>
+<td class="button nonlastbutton"><a id="button-download" href="../download.html">Download</a></td>
+<td class="button nonlastbutton"><a id="button-license" href="../license.html">Licensing</a></td>
+<td class="button nonlastbutton"><a id="button-support" href="../support.html">Support</a></td>
+<td class="button lastbutton"><a id="button-news" target="_blank" href="http://software.firstworks.com">News</a></td>
+<td style="width: 50%;"></td>
+</tr>
+</table>
+
+</div>
+
+<div style="position: absolute; top: 89px; width: 100%;">
+
+
+<div id="content">
+
+
+<h1>Getting Started With IBM DB2</h1>
+
+<ul>
+  <li><a href="#installation">Installation</a></li>
+  <ul>
+    <li><a href="#older">For Older Versions of DB2</a></li>
+    <ul>
+      <li><a href="#rpm">Install RPM</a></li>
+      <li><a href="#env">PATH Environment Variable</a></li>
+    </ul>
+
+    <li><a href="#db2">DB2 Installation</a></li>
+  </ul>
+
+  <li><a href="#creating">Creating a Database</a></li>
+  <li><a href="#accessing">Accessing a Database</a></li>
+  <ul>
+    <li><a href="#accessinglocal">Accessing a Local Database</a></li>
+    <li><a href="#accessingremote">Accessing a Remote Database</a></li>
+    <li><a href="#usingdb2">Using the DB2 Client Program</a></li>
+    <li><a href="#usingdb2icc">Using the DB2 Information and Control Centers</a></li>
+  </ul>
+
+</ul>
+
+<a name="installation"/><h2>Installation</h2>
+
+<p>I've sucessfully installed various versions of DB2 Enterprise Edition, DB2 Personal Edition and DB2 Express Edition on Linux and Solaris x86.</p>
+
+<a name="older"/><h2>For Older Versions of DB2</h2>
+
+<a name="rpm"/><h2>Install RPM</h2>
+
+<p>When installing versions of DB2 below 9.1, on non-RPM based systems, you'll need to install RPM.</p>
+
+<p>On Ubuntu and Debian, run <i>apt-get install rpm</i>. If your distribution came with RPM, you may be prompted to enter a CD. If not, it will be downloaded from the internet. Once RPM is installed, log in as root and run <i>rpm --initdb</i>.</p>
+
+<p>On systems where the <i>rpm</i> command resides in /usr/bin, you need to create a symbolic link between <i>/usr/bin/rpm</i> and <i>/bin/rpm</i> as follows.</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt>ln <font color="#990000">-</font>s <font color="#990000">/</font>usr<font color="#990000">/</font>bin<font color="#990000">/</font>rpm <font color="#990000">/</font>bin<font color="#990000">/</font>rpm</tt></pre>
+
+</blockquote>
+<a name="env"/><h2>PATH Environment Variable</h2>
+
+<p>For versions 7.2 through 8.2 (though apparently not for versions above 8.2), the DB2 installer tries to run some command line programs that are found in sbin and /usr/sbin. Make sure that these directories are in the root user's PATH.</p>
+
+<a name="db2"/><h2>DB2 Installation</h2>
+
+<p>Each version of DB2 has a slightly different installation procedure. Follow the links below for the version of DB2 that you are installing.</p>
+
+<p><a href="installing-ibm-db2-enterprise-72-on.html">Installing IBM DB2 Enterprise V7.2</a><br/><a href="installing-ibm-db2-81-enterprise-on.html">Installing IBM DB2 Enterprise V8.1</a><br/><a href="installing-ibm-db2-82-personal-on-linux.html">Installing IBM DB2 Personal V8.2</a><br/><a href="installing-ibm-db2-824-express-on-linux.html">Installing IBM DB2 Express V8.2.4</a><br/><a href="installing-ibm-db2-91-express-on-linux.html">Installing IBM DB2 Express V9.1</a><br/><a href="installing-ibm-db2-971-express-on-linux.html">Installing IBM DB2 Express V9.7.1</a><br/><a href="installing-ibm-db2-101-express-on-linux.html">Installing IBM DB2 Express V10.1</a><br/><a href="installing-ibm-db2-105-express-on-linux.html">Installing IBM DB2 Express V10.5</a></p>
+
+<a name="creating"/><h2>Creating a Database</h2>
+
+<p>Now that you have created an instance, you must create a database within the instance. Log in as db2inst1 and run the following command to create a database named <i>testdb</i>.</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt>db2 <font color="#FF0000">"create database testdb"</font></tt></pre>
+
+</blockquote>
+<p>(Note: Even in modern DB2, database names may only be 8 characters long, or less.)</p>
+
+<p>Should you need to drop a database, the following command drops a database named <i>testdb</i>.</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt>db2 <font color="#FF0000">"drop database testdb"</font></tt></pre>
+
+</blockquote>
+<a name="accessing"/><h2>Accessing a Database</h2>
+
+<a name="accessinglocal"/><h2>Accessing a Local Database</h2>
+
+<p>Accessing a local DB2 database using the db2 client tool is simple. For example, to access a database called <i>testdb</i> in the <i>db2inst1</i> instance, owned by the <i>db2inst1</i> user on the local machine, log in as <i>db2inst1</i> and run the <i>db2</i> command. Then use the CONNECT command to connect to a particular database.</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt><font color="#990000">[</font>db2inst1@<font color="#008080">localhost</font> db2inst1<font color="#990000">]</font>$ db2
+<b><font color="#000000">c</font></b><font color="#990000">(</font>c<font color="#990000">)</font> Copyright IBM Corporation <font color="#993399">1993</font><font color="#990000">,</font><font color="#993399">2001</font>
+Command Line Processor <b><font color="#0000FF">for</font></b> DB2 SDK <font color="#993399">7.2</font><font color="#990000">.</font><font color="#993399">0</font>
+
+You can issue database manager commands and SQL statements from the command 
+prompt<font color="#990000">.</font> <font color="#008080">For</font> example<font color="#990000">:</font>
+    db2 <font color="#990000">=&gt;</font> connect to sample
+    db2 <font color="#990000">=&gt;</font> <font color="#008080">bind</font> sample<font color="#990000">.</font>bnd
+
+For <font color="#008080">general</font> help<font color="#990000">,</font> type<font color="#990000">:</font> <font color="#990000">?.</font>
+For <font color="#008080">command</font> help<font color="#990000">,</font> type<font color="#990000">:</font> <font color="#990000">?</font> command<font color="#990000">,</font> where command can be
+the first few keywords of a database <font color="#008080">manager</font> command<font color="#990000">.</font> <font color="#008080">For</font> example<font color="#990000">:</font>
+ <font color="#990000">?</font> CATALOG DATABASE <b><font color="#0000FF">for</font></b> help on the CATALOG DATABASE command
+ <font color="#990000">?</font> CATALOG          <b><font color="#0000FF">for</font></b> help on all of the <font color="#008080">CATALOG</font> commands<font color="#990000">.</font>
+
+To exit db2 <font color="#008080">interactive</font> mode<font color="#990000">,</font> type QUIT at the <font color="#008080">command</font> prompt<font color="#990000">.</font> Outside 
+<font color="#008080">interactive</font> mode<font color="#990000">,</font> all commands must be <font color="#008080">prefixed</font> with <font color="#FF0000">'db2'</font><font color="#990000">.</font>
+To list the current command <font color="#008080">option</font> settings<font color="#990000">,</font> type LIST <font color="#008080">COMMAND</font> OPTIONS<font color="#990000">.</font>
+
+For more <font color="#008080">detailed</font> help<font color="#990000">,</font> refer to the Online <font color="#008080">Reference</font> Manual<font color="#990000">.</font>
+
+db2 <font color="#990000">=&gt;</font> connect to testdb
+
+   Database Connection Information
+
+ <font color="#008080">Database</font> server        <font color="#990000">=</font> DB2<font color="#990000">/</font>LINUX <font color="#993399">7.2</font><font color="#990000">.</font><font color="#993399">0</font>
+ SQL <font color="#008080">authorization</font> ID   <font color="#990000">=</font> DB2INST1
+ Local <font color="#008080">database</font> alias   <font color="#990000">=</font> TESTDB</tt></pre>
+
+</blockquote>
+<a name="accessingremote"/><h2>Accessing a Remote Database</h2>
+
+<p>If you want to access a database on a remote machine, the process is more complex. DB2 or "DB2 Connect" must be installed on the local and remote machines and a DB2 or "DB2 Connect" instance must be created on the local machine. "DB2 Connect" is a lightweight version of the DB2 database system whose instances cannot support a local database, and can only provide connectivity to a remote instance. In the instance on the local machine, use the CATALOG command to create aliases for the remote instance and database. Once these aliases are created, you can use the database alias to connect to the remote database.</p>
+
+<p>Take the following scenario:</p>
+
+<table>
+  <tr>
+    <td><b>local machine</b>
+</td>
+  </tr>
+  <tr>
+    <td>Hostname
+</td>
+    <td><i>localhost</i>
+</td>
+  </tr>
+  <tr>
+    <td>Instance
+</td>
+    <td><i>db2inst1</i>
+</td>
+  </tr>
+</table>
+
+<br/><table>
+  <tr>
+    <td><b>remote machine</b>
+</td>
+  </tr>
+  <tr>
+    <td>Hostname
+</td>
+    <td><i>remotehost</i>
+</td>
+  </tr>
+  <tr>
+    <td>Instance
+</td>
+    <td><i>testinst<br/><br/> owned by user testinst with password testpassword<br/> allows remote connections on port 50000<br/></i>
+</td>
+  </tr>
+  <tr>
+    <td>Database
+</td>
+    <td><i>testdb</i>
+</td>
+  </tr>
+</table>
+
+<br/><p>On <i>localhost</i>, in the <i>db2inst1</i> instance, to create an instance alias named <i>remote</i> referring to <i>testinst</i> on <i>remotehost</i>, and a database alias named <i>remotedb</i> referring to <i>testdb</i>, follow this procedure.</p>
+
+<p>log in as db2inst1 on localhost<br/>create the instance alias using the following commands:</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt>db2 <font color="#FF0000">"catalog tcpip node remote remote remotehost server</font>
+<font color="#FF0000">50000"</font>
+
+db2 <font color="#FF0000">"terminate"</font></tt></pre>
+
+</blockquote>
+<p>create the database alias using the following commands:</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt>db2 <font color="#FF0000">"catalog database testdb as remotedb at node </font>
+<font color="#FF0000">remote authentication server"</font>
+
+db2 <font color="#FF0000">"terminate"</font></tt></pre>
+
+</blockquote>
+<p>Now that the aliases have been created, you can connect to the database alias using the CONNECT comamnd. Note that you must supply the user name and password.</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt><font color="#990000">[</font>db2inst1@<font color="#008080">localhost</font> db2inst1<font color="#990000">]</font>$ db2
+<b><font color="#000000">c</font></b><font color="#990000">(</font>c<font color="#990000">)</font> Copyright IBM Corporation <font color="#993399">1993</font><font color="#990000">,</font><font color="#993399">2001</font>
+Command Line Processor <b><font color="#0000FF">for</font></b> DB2 SDK <font color="#993399">7.2</font><font color="#990000">.</font><font color="#993399">0</font>
+
+You can issue database manager commands and SQL statements from the command 
+prompt<font color="#990000">.</font> <font color="#008080">For</font> example<font color="#990000">:</font>
+    db2 <font color="#990000">=&gt;</font> connect to sample
+    db2 <font color="#990000">=&gt;</font> <font color="#008080">bind</font> sample<font color="#990000">.</font>bnd
+
+For <font color="#008080">general</font> help<font color="#990000">,</font> type<font color="#990000">:</font> <font color="#990000">?.</font>
+For <font color="#008080">command</font> help<font color="#990000">,</font> type<font color="#990000">:</font> <font color="#990000">?</font> command<font color="#990000">,</font> where command can be
+the first few keywords of a database <font color="#008080">manager</font> command<font color="#990000">.</font> <font color="#008080">For</font> example<font color="#990000">:</font>
+ <font color="#990000">?</font> CATALOG DATABASE <b><font color="#0000FF">for</font></b> help on the CATALOG DATABASE command
+ <font color="#990000">?</font> CATALOG          <b><font color="#0000FF">for</font></b> help on all of the <font color="#008080">CATALOG</font> commands<font color="#990000">.</font>
+
+To exit db2 <font color="#008080">interactive</font> mode<font color="#990000">,</font> type QUIT at the <font color="#008080">command</font> prompt<font color="#990000">.</font> Outside 
+<font color="#008080">interactive</font> mode<font color="#990000">,</font> all commands must be <font color="#008080">prefixed</font> with <font color="#FF0000">'db2'</font><font color="#990000">.</font>
+To list the current command <font color="#008080">option</font> settings<font color="#990000">,</font> type LIST <font color="#008080">COMMAND</font> OPTIONS<font color="#990000">.</font>
+
+For more <font color="#008080">detailed</font> help<font color="#990000">,</font> refer to the Online <font color="#008080">Reference</font> Manual<font color="#990000">.</font>
+
+db2 <font color="#990000">=&gt;</font> connect to remotedb user testinst <b><font color="#0000FF">using</font></b> testpassword
+
+   Database Connection Information
+
+ <font color="#008080">Database</font> server        <font color="#990000">=</font> DB2<font color="#990000">/</font>LINUX <font color="#993399">7.2</font><font color="#990000">.</font><font color="#993399">0</font>
+ SQL <font color="#008080">authorization</font> ID   <font color="#990000">=</font> TESTINST
+ Local <font color="#008080">database</font> alias   <font color="#990000">=</font> REMOTEDB</tt></pre>
+
+</blockquote>
+<p>If you need to get a list of instance aliases, you can use the LIST NODE DIRECTORY command as follows.</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt>db2 <font color="#FF0000">"list node directory"</font></tt></pre>
+
+</blockquote>
+<p>To list the database aliases, you can use the LIST DATABASE DIRECTORY command. Note that this command lists local databases as well as remote databases.</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt>db2 <font color="#FF0000">"list database directory"</font></tt></pre>
+
+</blockquote>
+<p>If you need to drop a database or instance alias, use the UNCATALOG command. The following commands remove the <i>remotedb</i> database alias and the <i>remote</i> instance alias.</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt>db2 <font color="#FF0000">"uncatalog database remotedb"</font>
+
+db2 <font color="#FF0000">"uncatalog node remote"</font>
+
+db2 <font color="#FF0000">"terminate"</font></tt></pre>
+
+</blockquote>
+<a name="usingdb2"/><h2>Using the DB2 Client Program</h2>
+
+<p>When run with no arguments, the <i>db2</i> client program provides an interactive shell, prompting you to enter commands or an SQL queries. Commands or queries must be entered on a single line and will run when the Enter or Return key is pressed. To exit, type quit.</p>
+
+<p>A sample <i>db2</i> session follows.</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt><font color="#990000">[</font>db2inst1@<font color="#008080">localhost</font> db2inst1<font color="#990000">]</font>$ db2
+<b><font color="#000000">c</font></b><font color="#990000">(</font>c<font color="#990000">)</font> Copyright IBM Corporation <font color="#993399">1993</font><font color="#990000">,</font><font color="#993399">2001</font>
+Command Line Processor <b><font color="#0000FF">for</font></b> DB2 SDK <font color="#993399">7.2</font><font color="#990000">.</font><font color="#993399">0</font>
+
+You can issue database manager commands and SQL statements from the command 
+prompt<font color="#990000">.</font> <font color="#008080">For</font> example<font color="#990000">:</font>
+    db2 <font color="#990000">=&gt;</font> connect to sample
+    db2 <font color="#990000">=&gt;</font> <font color="#008080">bind</font> sample<font color="#990000">.</font>bnd
+
+For <font color="#008080">general</font> help<font color="#990000">,</font> type<font color="#990000">:</font> <font color="#990000">?.</font>
+For <font color="#008080">command</font> help<font color="#990000">,</font> type<font color="#990000">:</font> <font color="#990000">?</font> command<font color="#990000">,</font> where command can be
+the first few keywords of a database <font color="#008080">manager</font> command<font color="#990000">.</font> <font color="#008080">For</font> example<font color="#990000">:</font>
+ <font color="#990000">?</font> CATALOG DATABASE <b><font color="#0000FF">for</font></b> help on the CATALOG DATABASE command
+ <font color="#990000">?</font> CATALOG          <b><font color="#0000FF">for</font></b> help on all of the <font color="#008080">CATALOG</font> commands<font color="#990000">.</font>
+
+To exit db2 <font color="#008080">interactive</font> mode<font color="#990000">,</font> type QUIT at the <font color="#008080">command</font> prompt<font color="#990000">.</font> Outside 
+<font color="#008080">interactive</font> mode<font color="#990000">,</font> all commands must be <font color="#008080">prefixed</font> with <font color="#FF0000">'db2'</font><font color="#990000">.</font>
+To list the current command <font color="#008080">option</font> settings<font color="#990000">,</font> type LIST <font color="#008080">COMMAND</font> OPTIONS<font color="#990000">.</font>
+
+For more <font color="#008080">detailed</font> help<font color="#990000">,</font> refer to the Online <font color="#008080">Reference</font> Manual<font color="#990000">.</font>
+
+db2 <font color="#990000">=&gt;</font> connect to testdb
+
+   Database Connection Information
+
+ <font color="#008080">Database</font> server        <font color="#990000">=</font> DB2<font color="#990000">/</font>LINUX <font color="#993399">7.2</font><font color="#990000">.</font><font color="#993399">0</font>
+ SQL <font color="#008080">authorization</font> ID   <font color="#990000">=</font> DB2INST1
+ Local <font color="#008080">database</font> alias   <font color="#990000">=</font> TESTDB
+
+db2 <font color="#990000">=&gt;</font> create <font color="#008080">table</font> <b><font color="#000000">testtable</font></b> <font color="#990000">(</font><font color="#008080">col1</font> <font color="#009900">char</font><font color="#990000">(</font><font color="#993399">40</font><font color="#990000">),</font> <font color="#008080">col2</font> <font color="#009900">int</font><font color="#990000">)</font>
+DB20000I  The SQL command <font color="#008080">completed</font> successfully<font color="#990000">.</font>
+db2 <font color="#990000">=&gt;</font> list tables
+
+Table<font color="#990000">/</font>View                      Schema          Type  Creation time
+<font color="#990000">-------------------------------</font> <font color="#990000">---------------</font> <font color="#990000">-----</font> <font color="#990000">--------------------------</font>
+TESTTABLE                       DB2INST1        T     <font color="#993399">2002</font><font color="#990000">-</font><font color="#993399">03</font><font color="#990000">-</font><font color="#993399">01</font><font color="#990000">-</font><font color="#993399">01.55</font><font color="#990000">.</font><font color="#993399">19.671629</font>
+
+  <font color="#993399">1</font> <b><font color="#000000">record</font></b><font color="#990000">(</font>s<font color="#990000">)</font> selected<font color="#990000">.</font>
+
+db2 <font color="#990000">=&gt;</font> insert into <font color="#008080">testtable</font> <b><font color="#000000">values</font></b> <font color="#990000">(</font><font color="#FF0000">'hello'</font><font color="#990000">,</font><font color="#993399">50</font><font color="#990000">)</font>
+DB20000I  The SQL command <font color="#008080">completed</font> successfully<font color="#990000">.</font>
+db2 <font color="#990000">=&gt;</font> insert into <font color="#008080">testtable</font> <b><font color="#000000">values</font></b> <font color="#990000">(</font><font color="#FF0000">'hi'</font><font color="#990000">,</font><font color="#993399">60</font><font color="#990000">)</font>
+DB20000I  The SQL command <font color="#008080">completed</font> successfully<font color="#990000">.</font>
+db2 <font color="#990000">=&gt;</font> insert into <font color="#008080">testtable</font> <b><font color="#000000">values</font></b> <font color="#990000">(</font><font color="#FF0000">'bye'</font><font color="#990000">,</font><font color="#993399">70</font><font color="#990000">)</font>
+DB20000I  The SQL command <font color="#008080">completed</font> successfully<font color="#990000">.</font>
+db2 <font color="#990000">=&gt;</font> select <font color="#990000">*</font> from testtable
+
+COL1                                     COL2       
+<font color="#990000">----------------------------------------</font> <font color="#990000">-----------</font>
+hello                                             <font color="#993399">50</font>
+hi                                                <font color="#993399">60</font>
+bye                                               <font color="#993399">70</font>
+
+  <font color="#993399">3</font> <b><font color="#000000">record</font></b><font color="#990000">(</font>s<font color="#990000">)</font> selected<font color="#990000">.</font>
+
+db2 <font color="#990000">=&gt;</font> update testtable <font color="#008080">set</font> col2<font color="#990000">=</font><font color="#993399">0</font> <font color="#008080">where</font> col1<font color="#990000">=</font><font color="#FF0000">'hi'</font>
+DB20000I  The SQL command <font color="#008080">completed</font> successfully<font color="#990000">.</font>
+db2 <font color="#990000">=&gt;</font> select <font color="#990000">*</font> from testtable
+
+COL1                                     COL2       
+<font color="#990000">----------------------------------------</font> <font color="#990000">-----------</font>
+hello                                             <font color="#993399">50</font>
+hi                                                 <font color="#993399">0</font>
+bye                                               <font color="#993399">70</font>
+
+  <font color="#993399">3</font> <b><font color="#000000">record</font></b><font color="#990000">(</font>s<font color="#990000">)</font> selected<font color="#990000">.</font>
+
+db2 <font color="#990000">=&gt;</font> <b><font color="#0000FF">delete</font></b> from testtable <font color="#008080">where</font> col2<font color="#990000">=</font><font color="#993399">50</font>
+DB20000I  The SQL command <font color="#008080">completed</font> successfully<font color="#990000">.</font>
+db2 <font color="#990000">=&gt;</font> select <font color="#990000">*</font> from testtable
+
+COL1                                     COL2       
+<font color="#990000">----------------------------------------</font> <font color="#990000">-----------</font>
+hi                                                 <font color="#993399">0</font>
+bye                                               <font color="#993399">70</font>
+
+  <font color="#993399">2</font> <b><font color="#000000">record</font></b><font color="#990000">(</font>s<font color="#990000">)</font> selected<font color="#990000">.</font>
+
+db2 <font color="#990000">=&gt;</font> drop table testtable
+DB20000I  The SQL command <font color="#008080">completed</font> successfully<font color="#990000">.</font>
+db2 <font color="#990000">=&gt;</font> quit
+DB20000I  The QUIT command <font color="#008080">completed</font> successfully<font color="#990000">.</font></tt></pre>
+
+</blockquote>
+<a name="usingdb2icc"/><h2>Using the DB2 Information and Control Centers</h2>
+
+<p>IBM DB2 comes with a set of graphical, Java-based utilities for browsing and configuring database instances.</p>
+
+<p>To run the DB2 Information Center or Control Center, you have to log in as a database instance or adminstrative server owner such as <i>db2as</i> or <i>db2inst1</i>.</p>
+
+<p>Modern versions of DB2 install a compatible JRE but very old versions of DB2 require that the Java Runtime Enviroment version 1.1.8 or higher be installed. Version 1.1.8 is hard to come by these days, but can currently be downloaded from <a target="_blank" href="http://ftp.vim.org/languages/java/jdk/JDK-1.1.8/i386/v3/">vim</a>. If you install a third party JRE, Make sure that the <i>jre</i> command is in the PATH environment variable for that user. If it isn't, modify that user's .bashrc to include it.</p>
+
+<p>If you are running an older JRE and a 2.4 Linux kernel that doesn't support the Native Posix Threading Library (such as on Redhat 8 or earlier), then add the following line to the user's .bashrc</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt><b><font color="#0000FF">export</font></b> LD_ASSUME_KERNEL<font color="#990000">=</font><font color="#993399">2.2</font><font color="#990000">.</font><font color="#993399">5</font></tt></pre>
+
+</blockquote>
+<p>If you are running an older JRE and a 2.4 Linux kernel that supports the Native Posix Threading Library (such as on Redhat 9), then add the following line to the user's .bashrc</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt><b><font color="#0000FF">export</font></b> LD_ASSUME_KERNEL<font color="#990000">=</font><font color="#993399">2.4</font><font color="#990000">.</font><font color="#993399">1</font></tt></pre>
+
+</blockquote>
+<p>To run the Information Center or Control Center, you first have to run the DB2 Java Server and give it a port number as follows.</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt>db2jstrt <font color="#993399">6720</font></tt></pre>
+
+</blockquote>
+<p>Once it's running, you can run the DB2 Information Center or Control Center, also supplying the port.</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt>db2ic <font color="#993399">6720</font></tt></pre>
+
+</blockquote>
+<p>or</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt>db2cc <font color="#993399">6720</font></tt></pre>
+
+</blockquote>
+<p>Both utilities will ask for the username and password of an instance owner. Once you supply these credentials, you can browse and/or configure the instance owned by that user.</p>
+
+</div> <!-- content -->
+
+
+<div id="copyrightbox">
+Copyright 2024 - David Muse - <a href="mailto:david.muse@firstworks.com">Contact</a> <img style="margin-left: 5px; vertical-align: text-bottom;" title="native english speaker" src="../images/us.png"/> <img style="vertical-align: text-bottom;" title="falo português também" src="../images/br.png"/>
+</div> <!-- copyrightbox -->
+
+</div>
+
+</body>
+</html>
+
+

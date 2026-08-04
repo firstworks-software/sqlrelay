@@ -1,0 +1,143 @@
+<html>
+<head>
+	<title>firstworks: SQL Relay - sqlrelay persistent database connection pool pooling proxy load balance balancing odbc oracle mysql msql postgresql sybase db2 interbase sqlite access c++ perl DBD DBI python php PDO ruby tcl java jni unix linux persistant</title>
+
+	<link rel="stylesheet" href="../css/style.css"/>
+	<script type="text/javascript">
+
+  var _gaq = _gaq || [];
+  _gaq.push(['_setAccount', 'UA-23306117-3']);
+  _gaq.push(['_trackPageview']);
+
+  (function() {
+    var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+    ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+    var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+  })();
+
+</script>
+
+	<script language="Javascript" src="../js/button.js"></script>
+</head>
+<body onload="setButton();">
+
+
+<div style="position: fixed; top: 0px; left: 0px; width: 100%; z-index: 100;">
+
+<span id="firstworks">a <b><a href="http://www.firstworks.com">firstworks</a></b> project</span>
+
+<div id="projectbox"><a href="index.html"><img src="../images/sqlrelay-icon.png"/><span id="name">SQL Relay</span></a></div>
+
+<table id="projectbuttons">
+<tr>
+<td style="width: 50%;"></td>
+<td class="button nonlastbutton"><a id="button-about" href="../index.html">About</a></td>
+<td class="button nonlastbutton"><a id="button-documentation" href="../documentation.html">Documentation</a></td>
+<td class="button nonlastbutton"><a id="button-faq" href="../faq.html">FAQ</a></td>
+<td class="button nonlastbutton"><a id="button-download" href="../download.html">Download</a></td>
+<td class="button nonlastbutton"><a id="button-license" href="../license.html">Licensing</a></td>
+<td class="button nonlastbutton"><a id="button-support" href="../support.html">Support</a></td>
+<td class="button lastbutton"><a id="button-news" target="_blank" href="http://software.firstworks.com">News</a></td>
+<td style="width: 50%;"></td>
+</tr>
+</table>
+
+</div>
+
+<div style="position: absolute; top: 89px; width: 100%;">
+
+
+<div id="content">
+
+
+<h1>The tlsca Parameter</h1>
+
+<p>SQL Relay supports a <b>tlsca</b> parameter in the SQL Relay server's configuration file, and as an argument to the various command line client programs.  In either case, it specifies the location of the certificate store that contains the TLS certificate of the certificate authority (CA cert) to use when validating the peer's certificate.</p>
+
+<p>On non-Windows platforms, it may specify a certificate store file.  For example:</p>
+
+<blockquote>
+  <pre>/usr/local/firstworks/etc/myca.pem
+</pre>
+
+</blockquote>
+<p>Or, it may specify a directory containing a set of certificate store files.  For example:</p>
+
+<blockquote>
+  <pre>/usr/local/firstworks/etc
+</pre>
+
+</blockquote>
+<p>On Windows platforms it may specify a certificate store file.  For example:</p>
+
+<blockquote>
+  <pre>C:\\Program Files\\Firstworks\\etc\\myca.pfx
+</pre>
+
+</blockquote>
+<p>(note the double-backslashes)</p>
+
+<p>Or, it may specify a Windows Certificate Store.  For example:</p>
+
+<blockquote>
+  <pre>CURRENT_USER:MY
+ or
+MY
+</pre>
+
+</blockquote>
+<p>For actual files, only that file will be used, though the file may contain multiple CA certs.  And...</p>
+
+<ul>
+  <li>On non-Windows systems, a variety of file formats are supported.</li>
+  <li>On Windows systems it must be a .pfx file.</li>
+</ul>
+
+<p>For directories, all certificate store files found in the directory will be used.</p>
+
+<p>For Windows Certificate store, all certificates in the store will be used. And...</p>
+
+<ul>
+  <li>The parameter must be formatted in one of the following ways:</li>
+  <ul>
+    <li>location:store</li>
+    <li>store</li>
+  </ul>
+
+  <li>The location part must be one of the following:</li>
+  <ul>
+    <li>CURRENT_USER</li>
+    <li>LOCAL_MACHINE</li>
+    <li>CURRENT_SERVICE</li>
+    <li>SERVICES</li>
+    <li>USERS</li>
+    <li>CURRENT_USER_GROUP_POLICY</li>
+    <li>LOCAL_MACHINE_GROUP_POLICY</li>
+    <li>LOCAL_MACHINE_ENTERPRISE</li>
+    <li>(if omitted, it defaults to CURRENT_USER)</li>
+  </ul>
+
+  <li>The store part must be one of the following:</li>
+  <ul>
+    <li>MY</li>
+    <li>Root</li>
+    <li>Trust</li>
+    <li>CA</li>
+    <li>(if omitted, it defaults to MY)</li>
+  </ul>
+
+</ul>
+
+</div> <!-- content -->
+
+
+<div id="copyrightbox">
+Copyright 2024 - David Muse - <a href="mailto:david.muse@firstworks.com">Contact</a> <img style="margin-left: 5px; vertical-align: text-bottom;" title="native english speaker" src="../images/us.png"/> <img style="vertical-align: text-bottom;" title="falo português também" src="../images/br.png"/>
+</div> <!-- copyrightbox -->
+
+</div>
+
+</body>
+</html>
+
+
