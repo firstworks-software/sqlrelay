@@ -522,7 +522,9 @@ static byte_t	mysqltypemap[]={
 	// "XML"
 	(byte_t)MYSQL_TYPE_BLOB,
 	// "DATETIMEOFFSET"
-	(byte_t)MYSQL_TYPE_DATETIME
+	(byte_t)MYSQL_TYPE_DATETIME,
+	// "LVARCHAR"
+	(byte_t)MYSQL_TYPE_VAR_STRING
 
 };
 

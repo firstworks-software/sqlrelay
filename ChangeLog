@@ -433,6 +433,11 @@
 		already documented, and -table is now documented in the help
 		text, the man page, and the admin docs, which had documented
 		the opposite
+	fixed an out-of-bounds read in the mysql protocol module - its type
+		map was one entry shorter than the datatype list it's indexed
+		by, so an informix LVARCHAR column read past the end of the
+		array and reported whatever byte followed it as the column
+		type
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems
