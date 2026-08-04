@@ -270,6 +270,74 @@
 		no longer claims that sqlrsh reads a system rc file, which it
 		never did - it reads .sqlrshrc in the user's home directory
 		and nothing else
+	fixed the tds protocol module - every request packet's data buffer was
+		allocated and never freed, so a session leaked memory in
+		proportion to the number of requests it handled, packets are
+		read into a reused memory pool now
+	fixed the tds protocol module - the send loop never advanced past the
+		data it had just sent, so a response larger than the
+		negotiated packet size sent its first chunk over and over,
+		and the data in each packet is sized from the negotiated
+		packet size minus the 8-byte header now, rather than being
+		the whole negotiated size
+	fixed the tds protocol module - the pre-login, login, attention, sspi,
+		federated authentication and transaction manager requests
+		each took a pooled cursor that they had no use for
+	fixed the tds protocol module - a request that arrived when no cursor
+		was available killed the session without telling the client,
+		an error is sent now
+	fixed the tds protocol module - the client session exit status was
+		always "error", so the log said nothing useful about how a
+		session ended
+	fixed the tds protocol module - a malformed remote procedure call's
+		error token was appended to whatever was already in the
+		response buffer and then never sent, so the client hung
+	fixed the tds protocol module - char and varchar bind values pointed
+		into the request buffer rather than being copied into the
+		bind pool, and a null value's 0xFFFF length was taken as a
+		real length
+	fixed the tds protocol module - about 35 response fields were
+		converted to little-endian twice, which is correct on a
+		little-endian host and wrong on a big-endian one
+	fixed the tds protocol module - the sql collation environment change
+		and the column metadata flags were sent big-endian, so the
+		client read a garbage collation and never saw a column's
+		nullable, updateable or identity flags
+	added tdsversion, packetsize and maxpacketsize parameters to the tds
+		protocol module - tdsversion overrides the version that the
+		module guesses from the backend's version string, for
+		backends whose version string it can't work it out from
+	fixed the tds protocol module - the login extension and change
+		password blobs were gated on flags that weren't decoded until
+		about 100 lines later, so they could never be read
+	fixed the tds protocol module - the server name and version were read
+		once when the module was created, so they went stale when the
+		backend reconnected
+	fixed the tds protocol module - the array of bind variable names was
+		never freed
+	fixed the tds protocol module - the tds 7.4 column metadata flags were
+		gated on a version test against 74 rather than 740, so they
+		were always sent, and three of them were shifted past the end
+		of the 16-bit field
+	fixed the tds protocol module - a date column's value added up the
+		days in the preceding months with an assignment where an
+		addition was meant, so it was wrong for every date, and it
+		was sent as 2 bytes rather than the 3 the protocol calls for
+	fixed the tds protocol module - a time column's value was always
+		midnight, and datetime2 and datetimeoffset values were sent
+		as a time and a date each carrying its own size, rather than
+		as one value under one size
+	fixed the tds protocol module - a column type reported by the backend
+		indexed the type map with no bounds check, and the map was
+		one entry short, so an informix lvarchar column read past the
+		end of it
+	fixed the tds protocol module - a system error was passed to the debug
+		output as a printf format string
+	cleaned up the tds protocol module - the info and error token builders
+		are named for what they do, there are error senders that
+		build and send in one call, init() and free() actually
+		initialize and release the session state, and the two
+		commented-out column encryption blocks are comments now
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems
