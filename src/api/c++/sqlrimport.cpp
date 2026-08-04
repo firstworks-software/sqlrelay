@@ -27,6 +27,7 @@ sqlrimport::sqlrimport() {
 	supportslimit=false;
 
 	objectname=NULL;
+	objectnameexplicit=false;
 
 	ignorecolumns=false;
 	lowercasecolumnnames=false;
@@ -155,12 +156,30 @@ const char *sqlrimport::getDbType() {
 }
 
 void sqlrimport::setObjectName(const char *objectname) {
+
+	// an empty name is the same as no name at all, otherwise it would
+	// neither be used nor allow a name to be derived from the import file
+	objectnameexplicit=!charstring::isNullOrEmpty(objectname);
+
 	delete[] this->objectname;
-	this->objectname=charstring::duplicate(objectname);
+	this->objectname=(objectnameexplicit)?
+				charstring::duplicate(objectname):NULL;
 }
 
 const char *sqlrimport::getObjectName() {
 	return objectname;
+}
+
+void sqlrimport::setDerivedObjectName(const char *objectname) {
+
+	// a name derived from the import file doesn't override
+	// a name that the caller set explicitly
+	if (objectnameexplicit) {
+		return;
+	}
+
+	delete[] this->objectname;
+	this->objectname=charstring::duplicate(objectname);
 }
 
 void sqlrimport::setIgnoreColumns(bool ignorecolumns) {

@@ -118,7 +118,12 @@ class SQLRCLIENT_DLLSPEC sqlrimport {
 		 *  data into is derived from the import file (eg. from the
 		 *  CSV file name, or from an XML tag inside of the file).
 		 *  This method may be used to explicitly override that name,
-		 *  or provide one if none can be derived. */
+		 *  or provide one if none can be derived.
+		 *
+		 *  A name set by this method wins.  Once it has been set, a
+		 *  name derived from the import file will not replace it.
+		 *  Passing NULL or an empty string is the same as never
+		 *  having called this method at all. */
 		void	setObjectName(const char *objectname);
 
 		/** Returns the object name as set by setObjectName(). */
@@ -857,6 +862,17 @@ class SQLRCLIENT_DLLSPEC sqlrimport {
 		 *  occurred and import should stop if this method return
 		 *  false. */
 		virtual bool	importEnd();
+
+		/** Sets the name of the table or sequence to import data into
+		 *  to "objectname", but only if the most recent call to
+		 *  setObjectName() didn't set a non-empty name.  A name
+		 *  derived from the import file never replaces one that the
+		 *  caller set explicitly.
+		 *
+		 *  Should be called instead of setObjectName() by
+		 *  implementations of importData(), and of the *Start/End()
+		 *  methods, that derive a name from the import file. */
+		void	setDerivedObjectName(const char *objectname);
 
 		/** Sets whether the current row will be excluded or not.
 		 *  Rows that are excluded are not imported.

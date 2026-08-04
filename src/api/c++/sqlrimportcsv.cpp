@@ -20,7 +20,9 @@ bool sqlrimportcsv::importData() {
 
 	// set the table name from the file name, if it wasn't already set
 	if (!getObjectName()) {
-		setObjectName(file::getBaseName(getFileName(),".csv"));
+		char	*objectname=file::getBaseName(getFileName(),".csv");
+		setDerivedObjectName(objectname);
+		delete[] objectname;
 	}
 
 	// NOTE: startProcessingImport() calls the import-start event

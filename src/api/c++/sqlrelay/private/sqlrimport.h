@@ -76,6 +76,7 @@
 		bool		supportslimit;
 
 		char		*objectname;
+		bool		objectnameexplicit;
 
 		bool		ignorecolumns;
 		bool		ignorecolumnswithemptynames;

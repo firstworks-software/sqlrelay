@@ -98,7 +98,7 @@
 <blockquote>
   <pre>sqlrsh -host HOST -port PORT -socket SOCKET -user USER -password PASSWORD [-script SCRIPT | -command COMMANDS] [-quiet on|off] [-format plain|csv|json|jsonl] [-resultsetbuffersize ROWS] [OPTIONS]
 sqlr-export -host HOST -port PORT -socket SOCKET -user USER -password PASSWORD (-table TABLE | -sequence SEQUENCE) &gt; exportfile.xml
-sqlr-import -host HOST -port PORT -socket SOCKET -user USER -password PASSWORD -file exportfile.xml
+sqlr-import -host HOST -port PORT -socket SOCKET -user USER -password PASSWORD -file exportfile.xml [-table TABLE]
 </pre>
 
 </blockquote>
@@ -107,7 +107,7 @@ sqlr-import -host HOST -port PORT -socket SOCKET -user USER -password PASSWORD -
 <blockquote>
   <pre>sqlrsh -id ID [-config CONFIGFILE] [-script SCRIPT | -command COMMANDS] [-quiet on|off] [-format plain|csv|json|jsonl] [-resultsetbuffersize ROWS] [OPTIONS]
 sqlr-export -id ID [-config CONFIGFILE] (-table TABLE | -sequence SEQUENCE) &gt; exportfile.xml
-sqlr-import -id ID [-config CONFIGFILE] -file exportfile.xml
+sqlr-import -id ID [-config CONFIGFILE] -file exportfile.xml [-table TABLE]
 </pre>
 
 </blockquote>
@@ -127,7 +127,7 @@ sqlr-import -id ID [-config CONFIGFILE] -file exportfile.xml
 
 <p>The <b>sqlr-export</b> command exports the specified table or sequence to a file from which <b>sqlr-import</b> can later re-import it.</p>
 
-<p>The <b>sqlr-import</b> command reads the specified file and imports the data contained in the file into the table or sequence specified in the file.  Note, that <b>sqlr-import</b> does not create tables or sequences, it just imports data into an already-existing table or sequence.</p>
+<p>The <b>sqlr-import</b> command reads the specified file and imports the data contained in the file into a table or sequence.  Give it -table to say which one.  Without -table, it uses the name recorded in the file, and if the file records no name, the file name with the .xml or .csv extension removed.  A -table on the command line wins over both.  Note, that <b>sqlr-import</b> does not create tables or sequences, it just imports data into an already-existing table or sequence.</p>
 
 <p><b>sqlr-export</b> and <b>sqlr-import</b> may be used to export data from one database and import it into another database, even if the databases are dissimilar (eg. one is <a href="PostgreSQL">PostgreSQL</a> and the other is <a href="MySQL">MySQL</a>), if the structures of the tables in both databases are compatible.</p>
 

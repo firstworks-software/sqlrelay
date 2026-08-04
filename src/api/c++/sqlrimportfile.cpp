@@ -77,7 +77,7 @@ bool sqlrimportfile::importData() {
 			return false;
 		}
 
-		setObjectName(objectname);
+		setDerivedObjectName(objectname);
 		delete[] objectname;
 	}
 

@@ -57,7 +57,7 @@ Several command line utilities are provided for use with SQL Relay.  The syntax 
 {{{
 sqlrsh -host HOST -port PORT -socket SOCKET -user USER -password PASSWORD [-script SCRIPT | -command COMMANDS] [-quiet on|off] [-format plain|csv|json|jsonl] [-resultsetbuffersize ROWS] [OPTIONS]
 sqlr-export -host HOST -port PORT -socket SOCKET -user USER -password PASSWORD (-table TABLE | -sequence SEQUENCE) &gt; exportfile.xml
-sqlr-import -host HOST -port PORT -socket SOCKET -user USER -password PASSWORD -file exportfile.xml
+sqlr-import -host HOST -port PORT -socket SOCKET -user USER -password PASSWORD -file exportfile.xml [-table TABLE]
 }}}
 }}}
 
@@ -67,7 +67,7 @@ or, if there's a configuration file that the client can read:
 {{{
 sqlrsh -id ID [-config CONFIGFILE] [-script SCRIPT | -command COMMANDS] [-quiet on|off] [-format plain|csv|json|jsonl] [-resultsetbuffersize ROWS] [OPTIONS]
 sqlr-export -id ID [-config CONFIGFILE] (-table TABLE | -sequence SEQUENCE) &gt; exportfile.xml
-sqlr-import -id ID [-config CONFIGFILE] -file exportfile.xml
+sqlr-import -id ID [-config CONFIGFILE] -file exportfile.xml [-table TABLE]
 }}}
 }}}
 
@@ -87,7 +87,7 @@ When sqlrsh starts up, it reads and runs one rc file, .sqlrshrc in your home dir
 
 The '''sqlr-export''' command exports the specified table or sequence to a file from which '''sqlr-import''' can later re-import it.
 
-The '''sqlr-import''' command reads the specified file and imports the data contained in the file into the table or sequence specified in the file.  Note, that '''sqlr-import''' does not create tables or sequences, it just imports data into an already-existing table or sequence.
+The '''sqlr-import''' command reads the specified file and imports the data contained in the file into a table or sequence.  Give it -table to say which one.  Without -table, it uses the name recorded in the file, and if the file records no name, the file name with the .xml or .csv extension removed.  A -table on the command line wins over both.  Note, that '''sqlr-import''' does not create tables or sequences, it just imports data into an already-existing table or sequence.
 
 '''sqlr-export''' and '''sqlr-import''' may be used to export data from one database and import it into another database, even if the databases are dissimilar (eg. one is PostgreSQL and the other is MySQL), if the structures of the tables in both databases are compatible.
 

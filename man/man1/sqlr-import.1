@@ -111,13 +111,20 @@ depth to the specified depth.
 .SS "Command options:"
 .TP
 \fB\-file\fR filename
-Import the specified file.  The name of the
-table or sequence to import into comes from
-the file itself, if the file provides one, and
-is otherwise derived from the file name, with
-the .xml or .csv extension removed if the file
-name has it.  A file name that leaves nothing
-behind, like .xml, is an error.
+Import the specified file.  If \fB\-table\fR is
+not given, the name of the table or sequence to
+import into comes from the file itself, if the
+file provides one, and is otherwise derived from
+the file name, with the .xml or .csv extension
+removed if the file name has it.  A file name
+that leaves nothing behind, like .xml, is then
+an error.
+.TP
+\fB\-table\fR name
+Import into the specified table or sequence,
+rather than the one the file names.  This option
+wins over the name recorded in the file and over
+the name derived from the file name.
 .TP
 \fB\-commitcount\fR rowcount
 Execute a commit each time the specified number

@@ -93,7 +93,7 @@ bool sqlrimportxml::attributeValue(const char *value) {
 	switch (currenttag) {
 		case TABLETAG:
 			if (!charstring::compare(currentattribute,"name")) {
-				setObjectName(value);
+				setDerivedObjectName(value);
 			}
 			break;
 		case COLUMNSTAG:
@@ -111,7 +111,7 @@ bool sqlrimportxml::attributeValue(const char *value) {
 			break;
 		case SEQUENCETAG:
 			if (!charstring::compare(currentattribute,"name")) {
-				setObjectName(value);
+				setDerivedObjectName(value);
 			}
 			if (!charstring::compare(currentattribute,"value")) {
 				delete[] sequencevalue;

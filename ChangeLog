@@ -425,6 +425,14 @@
 		matched case-insensitively like the importer choice, and a
 		file name that leaves no name behind, like .xml, is a
 		reported error rather than undefined behavior
+	fixed sqlr-import -table being silently ignored for xml imports - the
+		name recorded in the file always won, so rows landed in a table
+		the user never named, and exit status was 0 either way, while
+		csv honored -table, an explicitly set name now wins over any
+		name derived from the import file, which is what the c++ api
+		already documented, and -table is now documented in the help
+		text, the man page, and the admin docs, which had documented
+		the opposite
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems
