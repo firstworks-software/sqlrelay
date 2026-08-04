@@ -112,6 +112,9 @@
 		images were fixed while we were in there
 	removed insertparts.pl - the doc build replaced it with the wt tool in
 		2016 and nothing has referenced it since
+	added a README.md, for the github mirror at
+		github.com/firstworks-software/sqlrelay, which otherwise shows
+		a bare file listing as its front page
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems

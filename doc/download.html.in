@@ -63,11 +63,16 @@
 <blockquote>
 <p>To clone the SQL Relay GIT repo, run:</p>
 
-<p><code>git clone git://git.code.sf.net/p/sqlrelay/sqlrelay</code></p>
+<p><code>git clone https://github.com/firstworks-software/sqlrelay.git</code></p>
 
 <p><b>Note:</b> you'll probably need to clone the Rudiments GIT repo too:</p>
 
-<p><code>git clone git://git.code.sf.net/p/rudiments/rudiments</code></p>
+<p><code>git clone https://github.com/firstworks-software/rudiments.git</code></p>
+
+<p>Both repos are also mirrored on <a target="_blank" href="http://sourceforge.net/projects/sqlrelay">SourceForge</a>:</p>
+
+<p><code>git clone git://git.code.sf.net/p/sqlrelay/sqlrelay</code><br>
+<code>git clone git://git.code.sf.net/p/rudiments/rudiments</code></p>
 </blockquote>
 
 <!--#include virtual="contentend.html" -->
