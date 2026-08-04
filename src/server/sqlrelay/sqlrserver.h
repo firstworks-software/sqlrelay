@@ -5895,12 +5895,13 @@ class SQLRSERVER_DLLSPEC sqlrprotocol : public sqlrservermodule {
 					size_t size,
 					const byte_t **rpout);
 
-		/** Reads "size" ucs2_t characters from byte string "rp" into
-		 *  buffer "value" and sets "rpout" to the byte following the
-		 *  characters read. */
+		/** Reads "length" ucs2_t characters from byte string "rp"
+		 *  into buffer "value" and sets "rpout" to the byte following
+		 *  the characters read.  Note that "length" is a count of
+		 *  characters, not of bytes. */
 		void	read(const byte_t *rp,
 					ucs2_t *value,
-					size_t size,
+					size_t length,
 					const byte_t **rpout);
 
 		/** Reads a float from byte string "rp" into buffer "value" and
@@ -6139,10 +6140,11 @@ class SQLRSERVER_DLLSPEC sqlrprotocol : public sqlrservermodule {
 		void	write(bytebuffer *buffer, const byte_t *value,
 								size_t size);
 
-		/** Writes "size" characters of "value" to byte buffer
-		 *  "buffer". */
+		/** Writes "length" ucs2_t characters of "str" to byte buffer
+		 *  "buffer".  Note that "length" is a count of characters,
+		 *  not of bytes. */
 		void	write(bytebuffer *buffer, const ucs2_t *str,
-								size_t size);
+								size_t length);
 
 		/** Writes "value" to byte buffer "buffer". */
 		void	write(bytebuffer *buffer, float value);

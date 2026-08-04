@@ -37,6 +37,11 @@
 #define TOKEN_RETURNSTATUS		0x79
 #define TOKEN_RETURNVALUE		0xAC
 
+// packet header size, and the largest amount of data that can follow it,
+// given that the size on the wire is 16 bits and includes the header
+#define	PACKET_HEADER_SIZE		8
+#define	MAX_PACKET_DATA_SIZE		(65535-PACKET_HEADER_SIZE)
+
 // status bitmap
 #define	STATUS_NORMAL			0x00
 #define	STATUS_EOM			0x01
@@ -698,6 +703,7 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_tds : public sqlrprotocol {
 		bool	transactionManagerRequest();
 		bool	sspi();
 		void	unimplementedFeatureError();
+		bool	queryTooLargeError(size_t querysize);
 
 		bool	sqlBatch(sqlrservercursor *cursor);
 		void	allHeaders(const byte_t *rp,
@@ -722,6 +728,13 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_tds : public sqlrprotocol {
 		bool	isFixedLenType(byte_t tdstype);
 		bool	isVarLenType(byte_t tdstype);
 		bool	isPartLenType(byte_t tdstype);
+		// Maps a backend-reported column size onto one of the widths
+		// that "n" types (intn, bitn, fltn, moneyn, datetimn) are
+		// allowed to use.  Backends don't agree about what column
+		// size means for those types.  FreeTDS reports the storage
+		// width in bytes, but ODBC reports SQL_DESC_LENGTH, which is
+		// a digit count.
+		byte_t	nTypeSize(byte_t tdstype, uint32_t colsize);
 		uint64_t	rows(sqlrservercursor *cursor);
 		void	lobData(byte_t tdstype);
 		void	field(byte_t tdstype,
@@ -763,9 +776,9 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_tds : public sqlrprotocol {
 
 		void	envChange(byte_t type,
 					const wchar_t *newvalue,
-					size_t newvaluesize,
+					size_t newvaluelen,
 					const wchar_t *oldvalue,
-					size_t oldvaluesize);
+					size_t oldvaluelen);
 		void	info(uint32_t number,
 					byte_t state,
 					byte_t infoclass,
@@ -1010,15 +1023,14 @@ bool sqlrprotocol_tds::sendPacket() {
 		// set header parts
 		byte_t		packettype=TABULAR_RESULT;
 		byte_t		packetstatus=0;
-		uint16_t	packetsize=remaining;
-		if (packetsize>negotiatedpacketsize) {
-			packetsize=negotiatedpacketsize;
-		}
-		remaining-=packetsize;
+		uint32_t	datasize=(remaining>negotiatedpacketsize)?
+						negotiatedpacketsize:
+						(uint32_t)remaining;
+		remaining-=datasize;
 		if (!remaining) {
 			packetstatus|=STATUS_EOM;
 		}
-		packetsize+=8;
+		uint16_t	packetsize=datasize+PACKET_HEADER_SIZE;
 		uint16_t	spid=0;
 		byte_t		packetwindow=0;
 
@@ -1520,6 +1532,11 @@ bool sqlrprotocol_tds::preLogin() {
 		}
 	}
 
+	// the client may not have sent an instopt
+	if (!instvalidity) {
+		instvalidity=charstring::duplicate("");
+	}
+
 	debugWrite("sending...");
 
 
@@ -1825,7 +1842,7 @@ bool sqlrprotocol_tds::tds7Login() {
 							cchchangepassword);
 	}
 	uint32_t	sspisize=0;
-	if (sspisize<65535) {
+	if (cbsspi<65535) {
 		sspisize=cbsspi;
 	} else {
 		if (cbsspilong==0) {
@@ -2106,9 +2123,9 @@ void sqlrprotocol_tds::loginAck() {
 	uint32_t	tdsversion=
 			tdsVersionDecToHex(negotiatedtdsversion,true);
 	const char	*progname=dbversion;
-	byte_t		prognamesize=(byte_t)charstring::getLength(progname);
+	byte_t		prognamelength=(byte_t)charstring::getLength(progname);
 	ucs2_t		*progname16=ucs2charstring::duplicate(progname,
-							(size_t)prognamesize);
+							(size_t)prognamelength);
 	byte_t		majorver=0;
 	byte_t		minorver=0;
 	byte_t		buildnumhi=0;
@@ -2117,7 +2134,7 @@ void sqlrprotocol_tds::loginAck() {
 	uint16_t	tokensize=sizeof(byte_t)+
 					sizeof(uint32_t)+
 					sizeof(byte_t)+
-					prognamesize*sizeof(ucs2_t)+
+					prognamelength*sizeof(ucs2_t)+
 					sizeof(byte_t)+
 					sizeof(byte_t)+
 					sizeof(byte_t)+
@@ -2128,7 +2145,7 @@ void sqlrprotocol_tds::loginAck() {
 	debugWrite("tokensize: 0x%02x (%hd)",tokensize,tokensize);
 	debugWrite("interface: %d",iface);
 	debugWrite("tdsversion: 0x%08x (%d)",tdsversion,negotiatedtdsversion);
-	debugWrite("prognamesize: %d",prognamesize);
+	debugWrite("prognamelength: %d",prognamelength);
 	debugWrite("progname: %s",progname);
 	debugWrite("majorver: %d",majorver);
 	debugWrite("minorver: %d",minorver);
@@ -2140,8 +2157,8 @@ void sqlrprotocol_tds::loginAck() {
 	write(&resppacket,hostToLE(tokensize));
 	write(&resppacket,iface);
 	writeBE(&resppacket,tdsversion);
-	write(&resppacket,prognamesize);
-	write(&resppacket,progname16,prognamesize);
+	write(&resppacket,prognamelength);
+	write(&resppacket,progname16,prognamelength);
 	write(&resppacket,majorver);
 	write(&resppacket,minorver);
 	write(&resppacket,buildnumhi);
@@ -2343,7 +2360,8 @@ void sqlrprotocol_tds::negotiatePacketSize(uint32_t packetsize) {
 
 	bool	changepacketsizesuccess=true;
 	if (packetsize<=65536) {
-		negotiatedpacketsize=packetsize;
+		negotiatedpacketsize=(packetsize>MAX_PACKET_DATA_SIZE)?
+					MAX_PACKET_DATA_SIZE:packetsize;
 		// FIXME: reset read/write buffer sizes?
 	} else {
 		changepacketsizesuccess=false;
@@ -2351,6 +2369,7 @@ void sqlrprotocol_tds::negotiatePacketSize(uint32_t packetsize) {
 
 	debugStart("change packet size");
 	debugWrite("requested packetsize: %d",packetsize);
+	debugWrite("negotiated packetsize: %d",negotiatedpacketsize);
 	debugWrite((changepacketsizesuccess)?"success":"failed");
 	debugEnd();
 }
@@ -2358,16 +2377,16 @@ void sqlrprotocol_tds::negotiatePacketSize(uint32_t packetsize) {
 void sqlrprotocol_tds::envChangePacketSize() {
 
 	char		*npsize=charstring::parseNumber(negotiatedpacketsize);
-	uint32_t	npsizesize=charstring::getLength(npsize);
-	wchar_t		*npsize32=wcharstring::duplicate(npsize,npsizesize);
+	uint32_t	npsizelength=charstring::getLength(npsize);
+	wchar_t		*npsize32=wcharstring::duplicate(npsize,npsizelength);
 
 	char		*opsize=charstring::parseNumber(oldpacketsize);
-	uint32_t	opsizesize=charstring::getLength(opsize);
-	wchar_t		*opsize32=wcharstring::duplicate(opsize,opsizesize);
+	uint32_t	opsizelength=charstring::getLength(opsize);
+	wchar_t		*opsize32=wcharstring::duplicate(opsize,opsizelength);
 
 	envChange(ENV_CHANGE_PACKET_SIZE,
-				npsize32,npsizesize,
-				opsize32,opsizesize);
+				npsize32,npsizelength,
+				opsize32,opsizelength);
 
 	delete[] npsize32;
 	delete[] npsize;
@@ -2439,6 +2458,22 @@ void sqlrprotocol_tds::unimplementedFeatureError() {
 	error(0,1,10,"Unimplemented feature",srvname,NULL,1);
 }
 
+bool sqlrprotocol_tds::queryTooLargeError(size_t querysize) {
+
+	stringbuffer	err;
+	err.append("Query too large (");
+	err.append((uint64_t)querysize);
+	err.append('>');
+	err.append(maxquerysize);
+	err.append(')');
+
+	resppacket.clear();
+	// FIXME: is there a real error message/number/state/class for this?
+	error(0,1,16,err.getString(),srvname,NULL,1);
+	done(DONE_ERROR,0,0);
+	return sendPacket();
+}
+
 bool sqlrprotocol_tds::sqlBatch(sqlrservercursor *cursor) {
 
 	// FIXME: this works for DML/DDL, but not for select,
@@ -2456,22 +2491,29 @@ bool sqlrprotocol_tds::sqlBatch(sqlrservercursor *cursor) {
 
 	// get the sql
 	const ucs2_t	*sql=(const ucs2_t *)rp;
-	uint16_t	sqlsize=rpsize/sizeof(ucs2_t);
-	// FIXME: use maxquerysize here
+	size_t		sqllength=rpsize/sizeof(ucs2_t);
+
+	// bounds checking
+	if (sqllength>maxquerysize) {
+		debugWrite("query too large: %lld",(uint64_t)sqllength);
+		debugEnd();
+		return queryTooLargeError(sqllength);
+	}
 
 	// FIXME: Ideally we could just send the unconverted query, as long
 	// as we also send the proper size in bytes.  SQL Relay really
 	// appears to want ascii queries though, or at least it wants the
 	// query itself (other than embedded values) to be acsii.
-	char	*sql8=charstring::duplicateUcs2(sql,(size_t)sqlsize);
+	char	*sql8=charstring::duplicateUcs2(sql,sqllength);
 
 	debugWrite("sql: %s",sql8);
-	debugWrite("sqlsize: %d",sqlsize);
+	debugWrite("sqllength: %lld",(uint64_t)sqllength);
 	debugEnd();
 
 	// run the query
 	bool	success=
-		cont->prepareQuery(cursor,sql8,sqlsize,true,true,true,true) &&
+		cont->prepareQuery(cursor,sql8,(uint32_t)sqllength,
+						true,true,true,true) &&
 		cont->executeQuery(cursor,true,true,true,true);
 
 	// clean up
@@ -2504,6 +2546,12 @@ void sqlrprotocol_tds::allHeaders(const byte_t *rp,
 
 	debugWrite("all-headers size: %d",allheaderssize);
 
+	// skip the headers entirely if that size is bogus
+	if (allheaderssize<sizeof(allheaderssize) || allheaderssize>rpsize) {
+		debugWrite("invalid all-headers size: %d",allheaderssize);
+		allheaderssize=sizeof(allheaderssize);
+	}
+
 	// decrement remaining sizes
 	allheaderssize-=sizeof(allheaderssize);
 	rpsize-=sizeof(allheaderssize);
@@ -2511,6 +2559,7 @@ void sqlrprotocol_tds::allHeaders(const byte_t *rp,
 	while (allheaderssize) {
 
 		// get header size and type
+		const byte_t	*headerstart=rp;
 		uint32_t	headersize;
 		readLE(rp,&headersize,&rp);
 		uint16_t	headertype;
@@ -2519,22 +2568,37 @@ void sqlrprotocol_tds::allHeaders(const byte_t *rp,
 		debugWrite("header size: %d",headersize);
 		debugWrite("header type: 0x%04x",headertype);
 
+		// bail on a bogus header size, otherwise we'd loop forever
+		if (headersize<sizeof(headersize)+sizeof(headertype) ||
+					headersize>allheaderssize) {
+			debugWrite("invalid header size: %d",headersize);
+			break;
+		}
+
 		switch (headertype) {
 			case ALL_HEADERS_QUERY_NOTIFICATIONS:
 				{
-				uint16_t	notifyidlen;
+				// the sizes on the wire are in bytes,
+				// but read() wants characters
+				uint16_t	notifyidsize;
+				uint16_t	notifyidlength;
 				ucs2_t		*notifyid;
-				uint16_t	ssbdeploymentlen;
+				uint16_t	ssbdeploymentsize;
+				uint16_t	ssbdeploymentlength;
 				ucs2_t		*ssbdeployment;
 				uint32_t	notifytimeout;
 
-				readLE(rp,&notifyidlen,&rp);
-				notifyid=new ucs2_t[notifyidlen];
-				read(rp,notifyid,notifyidlen,&rp);
+				readLE(rp,&notifyidsize,&rp);
+				notifyidlength=notifyidsize/sizeof(ucs2_t);
+				notifyid=new ucs2_t[notifyidlength];
+				read(rp,notifyid,notifyidlength,&rp);
 
-				readLE(rp,&ssbdeploymentlen,&rp);
-				ssbdeployment=new ucs2_t[ssbdeploymentlen];
-				read(rp,ssbdeployment,ssbdeploymentlen,&rp);
+				readLE(rp,&ssbdeploymentsize,&rp);
+				ssbdeploymentlength=
+					ssbdeploymentsize/sizeof(ucs2_t);
+				ssbdeployment=new ucs2_t[ssbdeploymentlength];
+				read(rp,ssbdeployment,
+						ssbdeploymentlength,&rp);
 
 				readLE(rp,&notifytimeout,&rp);
 
@@ -2564,6 +2628,9 @@ void sqlrprotocol_tds::allHeaders(const byte_t *rp,
 				break;
 
 		}
+
+		// skip whatever part of the header wasn't parsed
+		rp=headerstart+headersize;
 
 		// decrement remaining sizes
 		allheaderssize-=headersize;
@@ -2811,9 +2878,7 @@ void sqlrprotocol_tds::typeInfo(sqlrservercursor *cursor,
 		switch (tdstype) {
 			case TDS_TYPE_SSVARIANT:
 			case TDS_TYPE_TEXT:
-			case TDS_TYPE_NTEXT:
 			case TDS_TYPE_IMAGE:
-			case TDS_TYPE_XML:
 				// limit the size to 2^31-1 because the
 				// client will interpret it as signed
 				if (size>2147483647) {
@@ -2822,10 +2887,19 @@ void sqlrprotocol_tds::typeInfo(sqlrservercursor *cursor,
 				write(&resppacket,hostToLE(size));
 				debugWrite("size: %d (32-bit)",size);
 				break;
+			case TDS_TYPE_NTEXT:
+			case TDS_TYPE_XML:
+				// the size must be sent in bytes, but the
+				// backend reports it in characters
+				if (size>1073741823) {
+					size=1073741823;
+				}
+				size*=sizeof(ucs2_t);
+				write(&resppacket,hostToLE(size));
+				debugWrite("size: %d (32-bit)",size);
+				break;
 			case TDS_TYPE_BIGCHAR:
 			case TDS_TYPE_BIGVARCHR:
-			case TDS_TYPE_NCHAR:
-			case TDS_TYPE_NVARCHAR:
 			case TDS_TYPE_BIGBINARY:
 			case TDS_TYPE_BIGVARBIN:
 				// limit the size to 2^15-1 because the
@@ -2833,6 +2907,17 @@ void sqlrprotocol_tds::typeInfo(sqlrservercursor *cursor,
 				if (size>32767) {
 					size=32767;
 				}
+				write(&resppacket,hostToLE((uint16_t)size));
+				debugWrite("size: %d (16-bit)",size);
+				break;
+			case TDS_TYPE_NCHAR:
+			case TDS_TYPE_NVARCHAR:
+				// the size must be sent in bytes, but the
+				// backend reports it in characters
+				if (size>16383) {
+					size=16383;
+				}
+				size*=sizeof(ucs2_t);
 				write(&resppacket,hostToLE((uint16_t)size));
 				debugWrite("size: %d (16-bit)",size);
 				break;
@@ -2845,12 +2930,13 @@ void sqlrprotocol_tds::typeInfo(sqlrservercursor *cursor,
 				// don't actually send a size for these types,
 				// we'll send a scale below instead
 				break;
+			case TDS_TYPE_INTN:
+			case TDS_TYPE_BITN:
+			case TDS_TYPE_FLTN:
+			case TDS_TYPE_MONEYN:
 			case TDS_TYPE_DATETIMN:
-				// valid sizes for these are 4 and 8,
-				// but sometimes size is reported as 0
-				if (size!=4 && size!=8) {
-					size=4;
-				}
+				// these only allow certain sizes
+				size=nTypeSize(tdstype,size);
 				write(&resppacket,(byte_t)size);
 				debugWrite("size: %d (8-bit)",size);
 				break;
@@ -3110,6 +3196,36 @@ bool sqlrprotocol_tds::isPartLenType(byte_t tdstype) {
 	}
 }
 
+byte_t sqlrprotocol_tds::nTypeSize(byte_t tdstype, uint32_t colsize) {
+
+	switch (tdstype) {
+		case TDS_TYPE_BITN:
+			return 1;
+		case TDS_TYPE_INTN:
+			// storage widths pass through
+			if (colsize==1 || colsize==2 ||
+					colsize==4 || colsize==8) {
+				return (byte_t)colsize;
+			}
+			// otherwise it's a digit count
+			if (colsize<=3) {
+				return 1;
+			} else if (colsize<=5) {
+				return 2;
+			} else if (colsize<=10) {
+				return 4;
+			}
+			return 8;
+		case TDS_TYPE_FLTN:
+		case TDS_TYPE_MONEYN:
+		case TDS_TYPE_DATETIMN:
+			// only 4 and 8 are valid, and column size is
+			// sometimes reported as 0
+			return (colsize==4)?4:8;
+	}
+	return (byte_t)colsize;
+}
+
 uint64_t sqlrprotocol_tds::rows(sqlrservercursor *cursor) {
 
 	// get col count and bail if there are no columns
@@ -3271,7 +3387,7 @@ void sqlrprotocol_tds::field(byte_t tdstype,
 	switch (tdstype) {
 		case TDS_TYPE_INTN:
 			{
-			byte_t	size=colsize;
+			byte_t	size=nTypeSize(tdstype,colsize);
 			write(&resppacket,size);
 			switch (size) {
 				case 1:
@@ -3295,7 +3411,7 @@ void sqlrprotocol_tds::field(byte_t tdstype,
 			break;
 		case TDS_TYPE_FLTN:
 			{
-			byte_t	size=colsize;
+			byte_t	size=nTypeSize(tdstype,colsize);
 			write(&resppacket,size);
 			switch (size) {
 				case 4:
@@ -3309,7 +3425,7 @@ void sqlrprotocol_tds::field(byte_t tdstype,
 			break;
 		case TDS_TYPE_MONEYN:
 			{
-			byte_t	size=colsize;
+			byte_t	size=nTypeSize(tdstype,colsize);
 			write(&resppacket,size);
 			switch (size) {
 				case 4:
@@ -3323,7 +3439,7 @@ void sqlrprotocol_tds::field(byte_t tdstype,
 			break;
 		case TDS_TYPE_DATETIMN:
 			{
-			byte_t	size=colsize;
+			byte_t	size=nTypeSize(tdstype,colsize);
 			write(&resppacket,size);
 			switch (size) {
 				case 4:
@@ -3564,8 +3680,6 @@ void sqlrprotocol_tds::field(byte_t tdstype,
 			break;
 		case TDS_TYPE_BIGCHAR:
 		case TDS_TYPE_BIGVARCHR:
-		case TDS_TYPE_NCHAR:
-		case TDS_TYPE_NVARCHAR:
 			{
 			write(&resppacket,hostToLE((uint16_t)fieldsize));
 			write(&resppacket,field,fieldsize);
@@ -3574,16 +3688,46 @@ void sqlrprotocol_tds::field(byte_t tdstype,
 			debugWrite("%.*s",fieldsize,field);
 			}
 			break;
+		case TDS_TYPE_NCHAR:
+		case TDS_TYPE_NVARCHAR:
+			{
+			// the data is ucs-2, and the size is in bytes
+			ucs2_t	*field16=ucs2charstring::duplicate(
+							field,fieldsize);
+			write(&resppacket,hostToLE(
+				(uint16_t)(fieldsize*sizeof(ucs2_t))));
+			write(&resppacket,field16,fieldsize);
+			delete[] field16;
+			debugWrite("size: %lld",
+				(uint64_t)(fieldsize*sizeof(ucs2_t)));
+			debugWrite("data: ");
+			debugWrite("%.*s",fieldsize,field);
+			}
+			break;
 		case TDS_TYPE_UDT:
 			// FIXME: ???
 			break;
-		case TDS_TYPE_XML:
 		case TDS_TYPE_TEXT:
-		case TDS_TYPE_NTEXT:
 			{
 			write(&resppacket,hostToLE((uint32_t)fieldsize));
 			write(&resppacket,field,fieldsize);
 			debugWrite("size: %d",fieldsize);
+			debugWrite("data: ");
+			debugWrite("%.*s",fieldsize,field);
+			}
+			break;
+		case TDS_TYPE_XML:
+		case TDS_TYPE_NTEXT:
+			{
+			// the data is ucs-2, and the size is in bytes
+			ucs2_t	*field16=ucs2charstring::duplicate(
+							field,fieldsize);
+			write(&resppacket,hostToLE(
+				(uint32_t)(fieldsize*sizeof(ucs2_t))));
+			write(&resppacket,field16,fieldsize);
+			delete[] field16;
+			debugWrite("size: %lld",
+				(uint64_t)(fieldsize*sizeof(ucs2_t)));
 			debugWrite("data: ");
 			debugWrite("%.*s",fieldsize,field);
 			}
@@ -4779,8 +4923,6 @@ bool sqlrprotocol_tds::param(sqlrservercursor *cursor,
 			break;
 		case TDS_TYPE_BIGCHAR:
 		case TDS_TYPE_BIGVARCHR:
-		case TDS_TYPE_NCHAR:
-		case TDS_TYPE_NVARCHAR:
 			{
 			uint16_t	size;
 			readLE(rp,&size,&rp);
@@ -4793,6 +4935,48 @@ bool sqlrprotocol_tds::param(sqlrservercursor *cursor,
 			}
 
 			if (bv) {
+				debugWrite("valuesize: %d",bv->valuesize);
+				debugWrite("value: %.*s",
+						bv->valuesize,
+						bv->value.stringval);
+			}
+
+			rp+=size;
+			}
+			break;
+		case TDS_TYPE_NCHAR:
+		case TDS_TYPE_NVARCHAR:
+			{
+			// the size is in bytes, but the data is ucs-2
+			uint16_t	size;
+			readLE(rp,&size,&rp);
+			uint16_t	length=size/sizeof(ucs2_t);
+
+			if (bv) {
+
+				// the data isn't necessarily aligned,
+				// so copy it out before converting it
+				const byte_t	*dummy;
+				ucs2_t		*value16=new ucs2_t[length];
+				read(rp,value16,length,&dummy);
+				char		*value=
+					charstring::duplicateUcs2(
+							value16,
+							(size_t)length);
+				delete[] value16;
+
+				bv->type=SQLRSERVERBINDVARTYPE_STRING;
+				bv->valuesize=length;
+				bv->value.stringval=(char *)
+					cont->getBindPool(cursor)->
+							allocate(length+1);
+				bytestring::copy(bv->value.stringval,
+							value,length);
+				bv->value.stringval[length]='\0';
+				bv->isnull=cont->getNonNullBindValue();
+
+				delete[] value;
+
 				debugWrite("valuesize: %d",bv->valuesize);
 				debugWrite("value: %.*s",
 						bv->valuesize,
@@ -4962,21 +5146,21 @@ void sqlrprotocol_tds::infoOrError(byte_t token,
 					const char *procname,
 					uint32_t linenumber) {
 
-	uint16_t	msgtextlen=charstring::getLength(msgtext);
-	ucs2_t		*msgtext16=ucs2charstring::duplicate(
-					msgtext,(size_t)msgtextlen);
-	byte_t		srvnamelen=charstring::getLength(srvname);
-	ucs2_t		*srvname16=ucs2charstring::duplicate(
-					srvname,(size_t)srvnamelen);
-	byte_t		procnamelen=charstring::getLength(procname);
-	ucs2_t		*procname16=ucs2charstring::duplicate(
-					procname,(size_t)procnamelen);
+	// the name lengths are sent as single bytes
+	size_t		srvnamelen=charstring::getLength(srvname);
+	if (srvnamelen>255) {
+		srvnamelen=255;
+	}
+	size_t		procnamelen=charstring::getLength(procname);
+	if (procnamelen>255) {
+		procnamelen=255;
+	}
 
-	uint16_t	tokensize=sizeof(uint32_t)+
+	// everything other than the message text
+	size_t		fixedsize=sizeof(uint32_t)+
 					sizeof(byte_t)+
 					sizeof(byte_t)+
 					sizeof(uint16_t)+
-					msgtextlen*sizeof(ucs2_t)+
 					sizeof(byte_t)+
 					srvnamelen*sizeof(ucs2_t)+
 					sizeof(byte_t)+
@@ -4984,6 +5168,23 @@ void sqlrprotocol_tds::infoOrError(byte_t token,
 					((negotiatedtdsversion<720)?
 						sizeof(uint16_t):
 						sizeof(uint32_t));
+
+	// truncate the message text so that the token size fits in 16 bits
+	size_t		msgtextlen=charstring::getLength(msgtext);
+	size_t		maxmsgtextlen=(65535-fixedsize)/sizeof(ucs2_t);
+	if (msgtextlen>maxmsgtextlen) {
+		msgtextlen=maxmsgtextlen;
+	}
+
+	ucs2_t		*msgtext16=ucs2charstring::duplicate(
+					msgtext,msgtextlen);
+	ucs2_t		*srvname16=ucs2charstring::duplicate(
+					srvname,srvnamelen);
+	ucs2_t		*procname16=ucs2charstring::duplicate(
+					procname,procnamelen);
+
+	uint16_t	tokensize=(uint16_t)
+				(fixedsize+msgtextlen*sizeof(ucs2_t));
 
 	debugStart((token==TOKEN_INFO)?"info":"error");
 	debugWrite("token: 0x%02x",token);
@@ -5004,9 +5205,9 @@ void sqlrprotocol_tds::infoOrError(byte_t token,
 	write(&resppacket,infoerrclass);
 	write(&resppacket,hostToLE((uint16_t)msgtextlen));
 	write(&resppacket,msgtext16,msgtextlen);
-	write(&resppacket,srvnamelen);
+	write(&resppacket,(byte_t)srvnamelen);
 	write(&resppacket,srvname16,srvnamelen);
-	write(&resppacket,procnamelen);
+	write(&resppacket,(byte_t)procnamelen);
 	write(&resppacket,procname16,procnamelen);
 	if (negotiatedtdsversion<720) {
 		write(&resppacket,hostToLE((uint16_t)linenumber));

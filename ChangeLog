@@ -218,6 +218,47 @@
 		field had, and made json and jsonl type a converted field, so
 		number gives a bare json number and boolean a bare json true
 		or false
+	fixed the tds protocol module - a query like "select 1" sent a row
+		value length of 10 with no value bytes after it, because the
+		odbc backend reports a column size of 10 for an int and intn
+		only allows 1, 2, 4 or 8, so the client read the done token as
+		row data and reported "Datastream processing out of sync" -
+		bitn, fltn, moneyn and datetimn had the same problem
+	fixed the tds protocol module - the notify id and service broker
+		deployment lengths in a query notification header are byte
+		counts, but they were read as character counts, which ran past
+		the end of the request buffer and desynced the rest of the
+		stream, and a header whose size was 0 looped forever
+	fixed the tds protocol module - nchar, nvarchar, ntext and xml row
+		values were sent as 8-bit data with a character count, they
+		are sent as ucs-2 with a byte count now
+	fixed the tds protocol module - nchar and nvarchar bind values were
+		handed to the database as ucs-2 bytes, so N'foo' arrived as
+		"f\0o\0o\0", they are converted now, and copied into the bind
+		pool rather than pointing into the request buffer
+	fixed the tds protocol module - the maximum length that column
+		metadata reports for an nchar, nvarchar, ntext or xml column
+		has to be in bytes, but the backend reports it in characters
+	fixed the tds protocol module - a response packet's size was computed
+		in 16 bits, so a negotiated packet size of 65536 truncated to
+		0 and the send loop wrote empty packets forever, the
+		negotiated size is capped at 65535 minus the 8-byte header now
+	fixed the tds protocol module - the info and error token size was
+		computed in 16 bits, so a message over about 32k characters
+		overflowed it, the message is truncated to fit now
+	fixed the tds protocol module - the pre-login response copied from a
+		null pointer when the client sent no instance name option
+	fixed the tds protocol module - the sspi buffer size test compared a
+		variable against itself rather than against the size the
+		client sent
+	fixed the tds protocol module - a sql batch's size was computed in 16
+		bits, so a batch over about 128k characters was truncated, and
+		maxquerysize was read from the configuration and never
+		enforced
+	renamed the misleading size/length variables in the tds protocol
+		module, and renamed the parameter of the ucs2 read() and
+		write() methods in sqlrprotocol from "size" to "length", since
+		it is a count of characters rather than of bytes
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems

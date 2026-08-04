@@ -241,10 +241,10 @@ void sqlrprotocol::read(const byte_t *rp, byte_t *value,
 }
 
 void sqlrprotocol::read(const byte_t *rp, ucs2_t *value,
-						size_t size,
+						size_t length,
 						const byte_t **rpout) {
-	bytestring::copy(value,rp,size*sizeof(ucs2_t));
-	*rpout=rp+size*sizeof(ucs2_t);
+	bytestring::copy(value,rp,length*sizeof(ucs2_t));
+	*rpout=rp+length*sizeof(ucs2_t);
 }
 
 void sqlrprotocol::read(const byte_t *rp, float *value,
@@ -502,8 +502,9 @@ void sqlrprotocol::write(bytebuffer *buffer, const byte_t *value, size_t size) {
 	buffer->append(value,size);
 }
 
-void sqlrprotocol::write(bytebuffer *buffer, const ucs2_t *str, size_t size) {
-	buffer->appendUcs2(str,size);
+void sqlrprotocol::write(bytebuffer *buffer, const ucs2_t *str,
+						size_t length) {
+	buffer->appendUcs2(str,length);
 }
 
 void sqlrprotocol::write(bytebuffer *buffer, float value) {
