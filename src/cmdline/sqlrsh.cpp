@@ -382,10 +382,6 @@ class	sqlrsh {
 		// "defaultvalue" if the option wasn't given.  An option given
 		// without a value means on.
 		bool	onOffOption(const char *arg, bool defaultvalue);
-		// returns the name of the first command line option that
-		// requires a value but was given without one, or NULL if
-		// there wasn't one
-		const char	*missingValueOption();
 		void	startupMessage(sqlrshenv *env,
 					const char *host,
 					uint16_t port,
@@ -5716,27 +5712,11 @@ bool sqlrsh::onOffOption(const char *arg, bool defaultvalue) {
 	return !charstring::compareIgnoringCase(value,"on",2);
 }
 
-// the options that require a value, in one place
+// the options that require a value, beyond the connection options that
+// sqlrcmdline already knows about
 // (the on/off options aren't here, and neither are -krb, -tls and -debug,
 // because a bare one of those is legal and means on)
 static const char * const	valueoptions[]={
-	"config",
-	"id",
-	"host",
-	"port",
-	"socket",
-	"user",
-	"password",
-	"krbservice",
-	"krbmech",
-	"krbflags",
-	"tlsversion",
-	"tlscert",
-	"tlspassword",
-	"tlsciphers",
-	"tlsvalidate",
-	"tlsca",
-	"tlsdepth",
 	"bindvariabledelimiters",
 	"script",
 	"command",
@@ -5746,24 +5726,8 @@ static const char * const	valueoptions[]={
 	"fieldsas",
 	"resultsetbuffersize",
 	"locale",
-	"localstatedir",
 	NULL
 };
-
-const char *sqlrsh::missingValueOption() {
-
-	// getValue() returns an empty string for an option with no value, for
-	// an option followed by another option, and for an option that isn't
-	// there at all, so isFound() is what decides presence, like it does in
-	// onOffOption() above
-	for (const char * const *o=valueoptions; *o; o++) {
-		if (cmdline->isFound(*o) &&
-			charstring::isNullOrEmpty(cmdline->getValue(*o))) {
-			return *o;
-		}
-	}
-	return NULL;
-}
 
 int32_t sqlrsh::execute(int argc, const char **argv) {
 
@@ -5773,7 +5737,7 @@ int32_t sqlrsh::execute(int argc, const char **argv) {
 	// A missing value used to come out empty, which meant 0 for the
 	// numeric options, so a trailing -resultsetbuffersize set the buffer
 	// size to 0.  It's a usage error now.
-	const char	*mvo=missingValueOption();
+	const char	*mvo=cmdline->missingValueOption(valueoptions);
 	if (mvo) {
 		stderror.printf("usage: -%s requires a value.  "
 				"Use --%s=value if the value "

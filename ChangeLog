@@ -367,6 +367,11 @@
 		show catalogs like 'pattern', and its mysql, odbc and jdbc
 		variants, fell through and were sent to the database as SQL,
 		failing with a syntax error
+	moved sqlrsh onto sqlrcmdline's missingValueOption() - it kept a
+		private copy of the same check, with a list that repeated
+		the 18 connection options sqlrcmdline already knows, so the
+		two lists could drift and a value-taking option added to one
+		would have been missed by the other
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems
