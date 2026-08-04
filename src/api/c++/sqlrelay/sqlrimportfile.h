@@ -20,7 +20,10 @@ class SQLRCLIENT_DLLSPEC sqlrimportfile : virtual public sqlrimport {
 
 		/** Sets the name of the file from which data will be imported.
 		 *  If "filename" is NULL the data will be imported from
-		 *  standard input.
+		 *  standard input.  In that case there is no file name to
+		 *  derive the name of the table or sequence from, so
+		 *  setObjectName() must be called too, or importData() will
+		 *  fail.
 		 *
 		 *  Not commonly called by implementations of importData() or
 		 *  of the *Start/End() methods. */
@@ -42,11 +45,21 @@ class SQLRCLIENT_DLLSPEC sqlrimportfile : virtual public sqlrimport {
 		 *  inserted.  No commit will be called if setCommitCount() was
 		 *  never called, or if setCommitCount(0) was called.
 		 *
+		 *  If setObjectName() was never called then the name of the
+		 *  table or sequence to import into is derived from the base
+		 *  name of the file, with the file extension of the format
+		 *  being imported removed, if the file name has it.  An error
+		 *  is reported, and false returned, if no name was set and
+		 *  none can be derived, either because the import is from
+		 *  standard input or because nothing is left of the base name
+		 *  once the extension is removed.
+		 *
 		 *  Returns true on success and false if an error occurred.
 		 *
-		 *  Note that the default implementation of this method just
-		 *  returns true. Child classes that support export to a file
-		 *  should override this method. */
+		 *  Note that the default implementation of this method only
+		 *  resolves the object name. Child classes that support
+		 *  import from a file should override this method and call
+		 *  this implementation first. */
 		bool	importData();
 
 	protected:
