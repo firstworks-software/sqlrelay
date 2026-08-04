@@ -465,6 +465,10 @@
 		truncated, and fields from numeric columns weren't quoted,
 		even when they contained a comma, quote, newline, or
 		carriage return
+	fixed the tds protocol module - the transaction descriptor header's
+		two fields were read in the opposite order from the one
+		ms-tds defines, the 8 byte transaction descriptor is read
+		before the 4 byte outstanding request count now
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems

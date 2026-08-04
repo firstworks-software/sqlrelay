@@ -2860,10 +2860,10 @@ void sqlrprotocol_tds::allHeaders(const byte_t *rp,
 
 			case ALL_HEADERS_TRANSACTION_DESCRIPTOR:
 				{
-				uint32_t	outstandingrequestcount;
 				uint64_t	transactiondescriptor;
-				readLE(rp,&outstandingrequestcount,&rp);
+				uint32_t	outstandingrequestcount;
 				readLE(rp,&transactiondescriptor,&rp);
+				readLE(rp,&outstandingrequestcount,&rp);
 				// FIXME: do something useful with this info
 				}
 				break;
