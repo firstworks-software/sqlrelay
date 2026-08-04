@@ -438,6 +438,10 @@
 		by, so an informix LVARCHAR column read past the end of the
 		array and reported whatever byte followed it as the column
 		type
+	fixed the c++ api sqlrconnection::getDatabaseFeature() - an unknown
+		feature name was printed to stdout even with debug off,
+		corrupting the calling program's output, and the message was
+		also missing its trailing newline
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems

@@ -2542,10 +2542,13 @@ const char *sqlrconnection::getDatabaseFeature(const char *feature) {
 	// look up the feature, bail on failure
 	char	*value;
 	if (!pvt->_dbfeatures.getValue(feature,&value)) {
-		debugPreStart();
-		debugPrint("Invalid feature requested: ");
-		debugPrint(feature);
-		debugPreEnd();
+		if (pvt->_debug) {
+			debugPreStart();
+			debugPrint("Invalid feature requested: ");
+			debugPrint(feature);
+			debugPrint("\n");
+			debugPreEnd();
+		}
 		return NULL;
 	}
 
