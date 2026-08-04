@@ -5112,10 +5112,10 @@ void sqlrsh::autocommit(sqlrshenv *env, bool on) {
 	}
 }
 
-// The part after the dot is a whole count of microseconds, not a decimal
-// fraction of a second, so 5.25 is 5 seconds and 25 microseconds.  The api
-// takes the two apart anyway, and printing the microseconds padded to 6 places
-// makes the printed form read correctly as decimal seconds either way.
+// The part after the dot is a decimal fraction of a second, so 5.25 is five
+// and a quarter seconds.  That matches the c++ api, which reads the
+// SQLR_CLIENT_*_TIMEOUT environment variables the same way, and it matches
+// what these commands print, since the microseconds are padded to 6 places.
 static bool parseTimeout(const char *args, uint32_t *sec, uint32_t *usec) {
 
 	// skip to the timeout itself
@@ -5142,19 +5142,39 @@ static bool parseTimeout(const char *args, uint32_t *sec, uint32_t *usec) {
 		args++;
 	}
 
-	// get microseconds
+	// get the fraction of a second, as microseconds
 	*usec=0;
 	if (*args=='.') {
 		args++;
 		if (!character::isDigit(*args)) {
 			return false;
 		}
+		uint32_t	scale=100000;
+		bool		rounded=false;
 		while (character::isDigit(*args)) {
-			*usec=(*usec)*10+(uint32_t)(*args-'0');
-			if (*usec>999999U) {
-				return false;
+			if (scale) {
+				*usec=(*usec)+
+					(uint32_t)(*args-'0')*scale;
+				scale=scale/10;
+			} else if (!rounded) {
+				// a seventh digit rounds the sixth rather
+				// than being dropped, and any digit past
+				// that can't change the result
+				if (*args>='5') {
+					(*usec)++;
+				}
+				rounded=true;
 			}
 			args++;
+		}
+
+		// rounding .9999995 or more up carries into the seconds
+		if (*usec>999999U) {
+			*usec=0;
+			(*sec)++;
+			if (*sec>2147483647U) {
+				return false;
+			}
 		}
 	}
 
@@ -5173,8 +5193,8 @@ bool sqlrsh::connectTimeout(sqlrconnection *sqlrcon,
 	if (!parseTimeout(args,&sec,&usec)) {
 		displayError(env,NULL,
 			"connect timeout needs a whole number of seconds, "
-			"optionally followed by a dot and a whole number "
-			"of microseconds",0);
+			"optionally followed by a dot and a decimal "
+			"fraction of a second",0);
 		return false;
 	}
 
@@ -5194,8 +5214,8 @@ bool sqlrsh::responseTimeout(sqlrconnection *sqlrcon,
 	if (!parseTimeout(args,&sec,&usec)) {
 		displayError(env,NULL,
 			"response timeout needs a whole number of seconds, "
-			"optionally followed by a dot and a whole number "
-			"of microseconds",0);
+			"optionally followed by a dot and a decimal "
+			"fraction of a second",0);
 		return false;
 	}
 
@@ -5497,23 +5517,23 @@ void sqlrsh::displayHelp(sqlrshenv *env) {
 "    resumesession [port]\n"
 "    resumesession [port] [socket]\n"
 "                            resumes a suspended session\n"
-"    connect timeout [seconds[.microseconds]]\n"
+"    connect timeout [seconds[.fraction]]\n"
 "                            the timeout for the next connect, which is\n"
 "                            what a resumesession or a reconnect after an\n"
 "                            endsession uses\n"
 "    getconnecttimeout       the connect timeout, or -1 when it is off\n"
-"    response timeout [seconds[.microseconds]]\n"
+"    response timeout [seconds[.fraction]]\n"
 "                            the timeout for a response from the server\n"
 "    getresponsetimeout      the response timeout, or -1 when it is off\n"
 "\n"
-"    The part after the dot in a timeout is microseconds, not a decimal\n"
-"    fraction of a second, so 5.25 sets 5 seconds and 25 microseconds,\n"
-"    not five and a quarter seconds.  Leave the dot out for a whole\n"
-"    number of seconds.  Both the setters and the get commands report a\n"
-"    timeout with the microseconds padded to 6 places - 5 seconds and 25\n"
-"    microseconds comes back as 5.000025 - so what they print reads\n"
-"    correctly as decimal seconds, and can be given straight back to the\n"
-"    setter unchanged.\n"
+"    A timeout is decimal seconds, so 5.25 sets five and a quarter\n"
+"    seconds and 0.5 sets half a second.  Leave the dot out for a whole\n"
+"    number of seconds.  The smallest unit is the microsecond, so a\n"
+"    seventh digit past the dot only rounds the sixth.  The get commands\n"
+"    report a timeout in the same form, padded to 6 places, so what they\n"
+"    print can be given straight back to the setter unchanged.  The\n"
+"    SQLR_CLIENT_CONNECT_TIMEOUT and SQLR_CLIENT_RESPONSE_TIMEOUT\n"
+"    environment variables use this same form.\n"
 "\n"
 "  Databases, catalogs and schemas:\n"
 "\n"

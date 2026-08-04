@@ -646,15 +646,17 @@ inputoutputbind [variable] [type] ... is null
   <li><b>connectionport</b> - the port of the suspended session</li>
   <li><b>connectionsocket</b> - the unix socket of the suspended session.  Both of these only mean anything after a suspendsession.</li>
   <li><b>resumesession</b> PORT, <b>resumesession</b> PORT SOCKET - resumes a suspended session.  An inet session has no socket, so the socket is optional.</li>
-  <li><b>connect timeout</b> SECONDS.MICROSECONDS - the timeout for the next connect, which is what a resumesession, or a reconnect after an endsession, uses.  It does not apply to the session sqlrsh is already in.</li>
+  <li><b>connect timeout</b> SECONDS.FRACTION - the timeout for the next connect, which is what a resumesession, or a reconnect after an endsession, uses.  It does not apply to the session sqlrsh is already in.</li>
   <li><b>getconnecttimeout</b> - the connect timeout, or -1 when it is off</li>
-  <li><b>response timeout</b> SECONDS.MICROSECONDS - the timeout for a response from the server</li>
+  <li><b>response timeout</b> SECONDS.FRACTION - the timeout for a response from the server</li>
   <li><b>getresponsetimeout</b> - the response timeout, or -1 when it is off</li>
 </ul>
 
-<p>The part after the dot in a timeout is microseconds, not a decimal fraction of a second.  So "connect timeout 5.25" sets 5 seconds and 25 microseconds, not five and a quarter seconds.  Leave the dot out for a whole number of seconds.</p>
+<p>A timeout is decimal seconds.  So "connect timeout 5.25" sets five and a quarter seconds, and "response timeout 0.5" sets half a second.  Leave the dot out for a whole number of seconds.  The smallest unit is the microsecond, so a seventh digit past the dot only rounds the sixth.</p>
 
-<p>Both the setters and the get commands report a timeout with the microseconds padded to 6 places, so 5 seconds and 25 microseconds comes back as 5.000025.  What they print reads correctly as decimal seconds, and can be given straight back to the setter unchanged.</p>
+<p>Both the setters and the get commands report a timeout in the same form, with the fraction padded to 6 places, so half a second comes back as 0.500000.  What they print can be given straight back to the setter unchanged.</p>
+
+<p>The <b>SQLR_CLIENT_CONNECT_TIMEOUT</b> and <b>SQLR_CLIENT_RESPONSE_TIMEOUT</b> environment variables set the same two timeouts, in the same form, for any program that links the client library, including sqlrsh itself.  A command given at the sqlrsh prompt overrides what they set.</p>
 
 <h3>Databases, Catalogs and Schemas</h3>
 

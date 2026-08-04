@@ -150,20 +150,22 @@
 		the site is a manual make in doc/, and make clean there now
 		removes everything the makefiles generate
 	fixed the sqlrsh connect timeout and response timeout commands - the
-		part after the dot has always gone to the api as microseconds,
-		but was echoed at four digits and documented as a fraction of
-		a second, so "connect timeout 5.25" claimed 5.25 seconds and
-		really set 5.0025, and only the first four characters of the
-		fraction were kept, so 5.000025 set no microseconds at all,
-		the part after the dot is now read as a whole number of
-		microseconds, echoed the way getconnecttimeout and
-		getresponsetimeout already report it, and documented as
-		microseconds rather than as a fraction of a second, so 5.25
-		sets and reports 5 seconds and 25 microseconds, and both
-		commands now reject a timeout that isn't a number or is out
-		of range instead of quietly setting 0 or wrapping around to a
-		negative, which turned the timeout off while claiming to set
-		it
+		part after the dot was echoed at four digits and only its
+		first four characters were kept, so 5.000025 set no
+		microseconds at all, and it went to the api as a whole number
+		of microseconds while being documented as a fraction of a
+		second, so "connect timeout 5.25" claimed 5.25 seconds and
+		really set 5.0025, the part after the dot is now read as a
+		decimal fraction of a second, which is what the c++ api and
+		the SQLR_CLIENT_CONNECT_TIMEOUT and
+		SQLR_CLIENT_RESPONSE_TIMEOUT environment variables have
+		always meant by it, echoed padded to 6 places the way
+		getconnecttimeout and getresponsetimeout already report it,
+		and documented that way, so 5.25 sets and reports five and a
+		quarter seconds, and both commands now reject a timeout that
+		isn't a number or is out of range instead of quietly setting
+		0 or wrapping around to a negative, which turned the timeout
+		off while claiming to set it
 	added the sqlrsh -continueonerror option and continueonerror command,
 		which make a script or a -command list run every statement
 		rather than stopping at the first one that failed, and which
@@ -452,6 +454,13 @@
 		wide value came back one byte longer than it really was, and
 		a maxfieldsize smaller than the terminator underflowed the
 		size
+	fixed the c++ api's parse of the SQLR_CLIENT_CONNECT_TIMEOUT and
+		SQLR_CLIENT_RESPONSE_TIMEOUT environment variables - the
+		fraction of a second was truncated rather than rounded, so
+		5.1 gave 5 seconds and 99999 microseconds instead of 100000,
+		and the timeout never read back as what was asked for, and
+		documented what format those variables take, which had never
+		been written down anywhere
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems

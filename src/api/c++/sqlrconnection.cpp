@@ -537,7 +537,24 @@ void sqlrconnection::setTimeoutFromEnv(const char *var,
 		*timeoutsec=charstring::convertToInteger(timeout);
 		long double	dbl=charstring::convertToFloatC(timeout);
 		dbl=dbl-(long double)(*timeoutsec);
-		*timeoutusec=(int32_t)(dbl*1000000.0);
+
+		// round rather than truncate, otherwise the binary
+		// representation of a value like 5.1 lands just under
+		// 100000 microseconds and reads back as 99999
+		*timeoutusec=(int32_t)(dbl*1000000.0+0.5);
+
+		// rounding .9999995 or more up carries into the seconds,
+		// but incrementing the largest int32_t would wrap it
+		// negative, which means no timeout at all, so pin the
+		// value to the largest timeout that can be expressed
+		if (*timeoutusec>999999) {
+			if (*timeoutsec==2147483647) {
+				*timeoutusec=999999;
+			} else {
+				*timeoutusec=0;
+				(*timeoutsec)++;
+			}
+		}
 	} else {
 		*timeoutsec=-1;
 		*timeoutusec=-1;

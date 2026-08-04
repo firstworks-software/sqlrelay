@@ -728,7 +728,7 @@ resumesession [port] [socket]
 Resumes a suspended session.  An inet session has no socket, so the socket is
 optional.
 .TP
-connect timeout [seconds[.microseconds]]
+connect timeout [seconds[.fraction]]
 The timeout for the next connect, which is what a resumesession or a reconnect
 after an endsession uses.  It does not apply to the session sqlrsh is already
 in.
@@ -736,19 +736,24 @@ in.
 getconnecttimeout
 The connect timeout, or \-1 when it is off.
 .TP
-response timeout [seconds[.microseconds]]
+response timeout [seconds[.fraction]]
 The timeout for a response from the server.
 .TP
 getresponsetimeout
 The response timeout, or \-1 when it is off.
 .PP
-The part after the dot in a timeout is microseconds, not a decimal fraction of
-a second, so 5.25 sets 5 seconds and 25 microseconds, not five and a quarter
-seconds.  Leave the dot out for a whole number of seconds.  Both the setters
-and the get commands report a timeout with the microseconds padded to 6
-places - 5 seconds and 25 microseconds comes back as 5.000025 - so what they
-print reads correctly as decimal seconds, and can be given straight back to
-the setter unchanged.
+A timeout is decimal seconds, so 5.25 sets five and a quarter seconds and 0.5
+sets half a second.  Leave the dot out for a whole number of seconds.  The
+smallest unit is the microsecond, so a seventh digit past the dot only rounds
+the sixth.  Both the setters and the get commands report a timeout in the same
+form, with the fraction padded to 6 places - half a second comes back as
+0.500000 - so what they print can be given straight back to the setter
+unchanged.
+.PP
+The SQLR_CLIENT_CONNECT_TIMEOUT and SQLR_CLIENT_RESPONSE_TIMEOUT environment
+variables set the same two timeouts, in the same form, for any program that
+links the client library, including sqlrsh itself.  A command given at the
+sqlrsh prompt overrides what they set.
 .SS "Databases, catalogs and schemas"
 .TP
 use [database]

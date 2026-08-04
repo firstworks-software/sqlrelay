@@ -40,7 +40,11 @@ class SQLRCLIENT_DLLSPEC sqlrconnection : public object {
 		/** Sets the server connect timeout in seconds and
 		 *  microseconds.  Setting either parameter to -1 disables the
 		 *  timeout.  You can also set this timeout using the
-		 *  SQLR_CLIENT_CONNECT_TIMEOUT environment variable. */
+		 *  SQLR_CLIENT_CONNECT_TIMEOUT environment variable, which
+		 *  takes decimal seconds rather than the two parts, so 5.25
+		 *  means five and a quarter seconds and 0.5 means half a
+		 *  second.  The smallest unit is the microsecond.  A value
+		 *  that isn't a number disables the timeout. */
 		void	setConnectTimeout(int32_t timeoutsec,
 						int32_t timeoutusec);
 
@@ -59,7 +63,11 @@ class SQLRCLIENT_DLLSPEC sqlrconnection : public object {
 		 *  pings, etc.) in seconds and microseconds.  Setting either
 		 *  parameter to -1 disables the timeout.  You can also set
 		 *  this timeout using the SQLR_CLIENT_RESPONSE_TIMEOUT
-		 *  environment variable. */
+		 *  environment variable, which takes decimal seconds rather
+		 *  than the two parts, so 5.25 means five and a quarter
+		 *  seconds and 0.5 means half a second.  The smallest unit is
+		 *  the microsecond.  A value that isn't a number disables the
+		 *  timeout. */
 		void	setResponseTimeout(int32_t timeoutsec,
 						int32_t timeoutusec);
 
