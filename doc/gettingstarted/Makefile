@@ -138,7 +138,7 @@ FRAGMENTS = ../contentend.html \
 	$(SSI) $<
 
 all: $(OBJS)
-	$(CHMOD) 755 *.html
+	$(CHMOD) 644 $(OBJS)
 
 $(OBJS): $(FRAGMENTS)
 

@@ -105,6 +105,11 @@
 	fixed 19 stale api documentation links in the website's .wt sources -
 		they'd been corrected in the generated html but never carried
 		back to the sources, so rebuilding the docs reverted them
+	the website's html files aren't executable anymore - the execute bit
+		was only there for apache's XBitHack, which went away with
+		the server-side includes, so they're installed 644 now like
+		the css and js already were, and a few stray executable
+		images were fixed while we were in there
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems

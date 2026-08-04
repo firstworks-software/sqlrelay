@@ -68,7 +68,7 @@ FRAGMENTS = contentend.html \
 	$(SSI) $<
 
 all: $(OBJS)
-	$(CHMOD) 755 $(OBJS)
+	$(CHMOD) 644 $(OBJS)
 	cd admin $(AND) $(MAKE)
 	cd gettingstarted $(AND) $(MAKE)
 	cd features $(AND) $(MAKE)
@@ -79,7 +79,7 @@ $(OBJS): $(FRAGMENTS)
 install: all
 	$(MKINSTALLDIRS) $(docdir)
 	$(CP) *.html $(docdir)
-	$(CHMOD) 755 $(docdir)/*.html
+	$(CHMOD) 644 $(docdir)/*.html
 	$(MKINSTALLDIRS) $(docdir)/css
 	$(CP) css/* $(docdir)/css
 	$(CHMOD) 644 $(docdir)/css/*
@@ -97,10 +97,10 @@ install: all
 	$(CHMOD) 644 $(docdir)/licenses/*
 	$(MKINSTALLDIRS) $(docdir)/presentation
 	$(CP) presentation/* $(docdir)/presentation
-	$(CHMOD) 755 $(docdir)/presentation/*
+	$(CHMOD) 644 $(docdir)/presentation/*
 	$(MKINSTALLDIRS) $(docdir)/slides
 	$(CP) slides/* $(docdir)/slides
-	$(CHMOD) 755 $(docdir)/slides/*
+	$(CHMOD) 644 $(docdir)/slides/*
 	$(MKINSTALLDIRS) $(docdir)/admin
 	$(MKINSTALLDIRS) $(docdir)/gettingstarted
 	$(MKINSTALLDIRS) $(docdir)/api
@@ -130,9 +130,9 @@ install: all
 	$(MKINSTALLDIRS) $(docdir)/css
 	$(MKINSTALLDIRS) $(docdir)/programming
 	$(CP) admin/*.html $(docdir)/admin
-	$(CHMOD) 755 $(docdir)/admin/*.html
+	$(CHMOD) 644 $(docdir)/admin/*.html
 	$(CP) gettingstarted/*.html $(docdir)/gettingstarted
-	$(CHMOD) 755 $(docdir)/gettingstarted/*.html
+	$(CHMOD) 644 $(docdir)/gettingstarted/*.html
 	$(CP) css/*.css $(docdir)/css
 	$(CHMOD) 644 $(docdir)/css/*.css
 	$(CP) api/ado.net/html/*.html $(docdir)/api/ado.net/html
@@ -250,7 +250,7 @@ install: all
 	$(CP) api/nodejs/html/*.js $(docdir)/api/nodejs/html
 	$(CHMOD) 644 $(docdir)/api/nodejs/html/*.js
 	$(CP) features/*.html $(docdir)/features
-	$(CHMOD) 755 $(docdir)/features/*.html
+	$(CHMOD) 644 $(docdir)/features/*.html
 	$(CP) images/*.png $(docdir)/images
 	$(CHMOD) 644 $(docdir)/images/*.png
 	$(CP) images/*.PNG $(docdir)/images
@@ -258,7 +258,7 @@ install: all
 	$(CP) js/*.js $(docdir)/js
 	$(CHMOD) 644 $(docdir)/js/*.js
 	$(CP) programming/*.html $(docdir)/programming
-	$(CHMOD) 755 $(docdir)/programming/*.html
+	$(CHMOD) 644 $(docdir)/programming/*.html
 	$(MKINSTALLDIRS) $(docdir)/support
 	$(CP) support/* $(docdir)/support
 	$(CHMOD) 644 $(docdir)/support/*
