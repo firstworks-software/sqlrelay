@@ -47,5 +47,6 @@
 		uint32_t		currentcol;
 		const char		*currentcolname;
 		const char		*currentfield;
+		uint32_t		currentfieldlength;
 		uint64_t		exportedrowcount;
 		dynamicarray<bool>	numericcolumn;

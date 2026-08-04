@@ -626,11 +626,23 @@ class SQLRCLIENT_DLLSPEC sqlrexport {
 		const char	*getCurrentColumnName();
 
 		/** Sets the value of the field that is currently being
-		 *  exported.
+		 *  exported.  The length of the field is derived from the
+		 *  null terminator, so this version should only be used for
+		 *  values that are known to be null-terminated.
 		 *
 		 *  Not commonly called by implementations of the *Start/End()
 		 *  methods. */
 		void	setCurrentField(const char *currentfield);
+
+		/** Sets the value of the field that is currently being
+		 *  exported, and its length in bytes.  Field data can contain
+		 *  embedded nulls, so the length must be passed in rather
+		 *  than derived from the value itself.
+		 *
+		 *  Not commonly called by implementations of the *Start/End()
+		 *  methods. */
+		void	setCurrentField(const char *currentfield,
+						uint32_t currentfieldlength);
 
 		/** Gets the value of the field that is currently being
 		 *  exported.
@@ -638,6 +650,15 @@ class SQLRCLIENT_DLLSPEC sqlrexport {
 		 *  May be called by implementations of the *Start/End()
 		 *  methods. */
 		const char	*getCurrentField();
+
+		/** Gets the length, in bytes, of the field that is currently
+		 *  being exported.  Field data can contain embedded nulls, so
+		 *  implementations should use this length rather than
+		 *  measuring the value returned by getCurrentField().
+		 *
+		 *  May be called by implementations of the *Start/End()
+		 *  methods. */
+		uint32_t	getCurrentFieldLength();
 
 		/** Sets whether the data type of the column in position
 		 *  "index" is a numeric type or not.  If "numeric" is true

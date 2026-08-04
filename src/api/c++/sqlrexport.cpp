@@ -237,10 +237,21 @@ const char *sqlrexport::getCurrentColumnName() {
 
 void sqlrexport::setCurrentField(const char *currentfield) {
 	this->currentfield=currentfield;
+	this->currentfieldlength=charstring::getLength(currentfield);
+}
+
+void sqlrexport::setCurrentField(const char *currentfield,
+					uint32_t currentfieldlength) {
+	this->currentfield=currentfield;
+	this->currentfieldlength=currentfieldlength;
 }
 
 const char *sqlrexport::getCurrentField() {
 	return currentfield;
+}
+
+uint32_t sqlrexport::getCurrentFieldLength() {
+	return currentfieldlength;
 }
 
 void sqlrexport::setIsNumericColumn(uint64_t index, bool value) {
@@ -356,6 +367,7 @@ void sqlrexport::clearFlagsAndCounts() {
 	currentcol=0;
 	currentcolname=NULL;
 	currentfield=NULL;
+	currentfieldlength=0;
 	exportedrowcount=0;
 	numericcolumn.clear();
 }
@@ -464,7 +476,8 @@ bool sqlrexport::startProcessingRows() {
 	// reset current column/field
 	setCurrentColumn(0);
 	setCurrentColumnName(sqlrcur->getColumnName(0));
-	setCurrentField(sqlrcur->getField(0,(uint32_t)0));
+	setCurrentField(sqlrcur->getField(0,(uint32_t)0),
+			sqlrcur->getFieldLength(0,(uint32_t)0));
 
 	// call the rows-start event
 	if (!rowsStart()) {
@@ -480,7 +493,8 @@ bool sqlrexport::startProcessingRow() {
 	setExcludeRow(false);
 	setCurrentColumn(0);
 	setCurrentColumnName(sqlrcur->getColumnName(0));
-	setCurrentField(sqlrcur->getField(getCurrentRow(),(uint32_t)0));
+	setCurrentField(sqlrcur->getField(getCurrentRow(),(uint32_t)0),
+			sqlrcur->getFieldLength(getCurrentRow(),(uint32_t)0));
 
 	// call the row-start event
 	if (!rowStart()) {
@@ -494,7 +508,10 @@ bool sqlrexport::startProcessingField() {
 
 	// set the current column and field
 	setCurrentColumnName(sqlrcur->getColumnName(getCurrentColumn()));
-	setCurrentField(sqlrcur->getField(getCurrentRow(),getCurrentColumn()));
+	setCurrentField(sqlrcur->getField(getCurrentRow(),
+						getCurrentColumn()),
+			sqlrcur->getFieldLength(getCurrentRow(),
+						getCurrentColumn()));
 
 	// FIXME: I'm not sure why we're doing this,
 	// I don't think it's possible for this to happen

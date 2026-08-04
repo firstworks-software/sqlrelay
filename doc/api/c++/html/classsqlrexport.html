@@ -157,8 +157,12 @@ Protected Member Functions</h2></td></tr>
 <tr class="separator:a0b8ef27d27ad66ed028a8773d55360d5"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ad04d61048fe0b31a60ece327af849dd2" id="r_ad04d61048fe0b31a60ece327af849dd2"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#ad04d61048fe0b31a60ece327af849dd2">setCurrentField</a> (const char *currentfield)</td></tr>
 <tr class="separator:ad04d61048fe0b31a60ece327af849dd2"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a0759fcc29c2b19e2768e068e6195b491" id="r_a0759fcc29c2b19e2768e068e6195b491"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#a0759fcc29c2b19e2768e068e6195b491">setCurrentField</a> (const char *currentfield, uint32_t currentfieldlength)</td></tr>
+<tr class="separator:a0759fcc29c2b19e2768e068e6195b491"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a9bda0a8e9a2bb29af83f9b81b4ac5f83" id="r_a9bda0a8e9a2bb29af83f9b81b4ac5f83"><td class="memItemLeft" align="right" valign="top">const char *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#a9bda0a8e9a2bb29af83f9b81b4ac5f83">getCurrentField</a> ()</td></tr>
 <tr class="separator:a9bda0a8e9a2bb29af83f9b81b4ac5f83"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a4e392467b259721a5bece745b929ef41" id="r_a4e392467b259721a5bece745b929ef41"><td class="memItemLeft" align="right" valign="top">uint32_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#a4e392467b259721a5bece745b929ef41">getCurrentFieldLength</a> ()</td></tr>
+<tr class="separator:a4e392467b259721a5bece745b929ef41"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a3e85addb8f1c9487bcda31a378824e2d" id="r_a3e85addb8f1c9487bcda31a378824e2d"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#a3e85addb8f1c9487bcda31a378824e2d">setIsNumericColumn</a> (uint64_t index, bool numeric)</td></tr>
 <tr class="separator:a3e85addb8f1c9487bcda31a378824e2d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a1b80b077c3037d95ef49a87b37464c36" id="r_a1b80b077c3037d95ef49a87b37464c36"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#a1b80b077c3037d95ef49a87b37464c36">getIsNumericColumn</a> (uint64_t index)</td></tr>
@@ -851,6 +855,33 @@ Protected Member Functions</h2></td></tr>
 
 </div>
 </div>
+<a id="a4e392467b259721a5bece745b929ef41" name="a4e392467b259721a5bece745b929ef41"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a4e392467b259721a5bece745b929ef41">&#9670;&#160;</a></span>getCurrentFieldLength()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">uint32_t sqlrexport::getCurrentFieldLength </td>
+          <td>(</td>
+          <td class="paramname"><span class="paramname"></span></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">protected</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+<p>Gets the length, in bytes, of the field that is currently being exported. Field data can contain embedded nulls, so implementations should use this length rather than measuring the value returned by <a class="el" href="#a9bda0a8e9a2bb29af83f9b81b4ac5f83">getCurrentField()</a>.</p>
+<p>May be called by implementations of the *Start/End() methods. </p>
+
+</div>
+</div>
 <a id="a2df82f469959fa1ad4c06373f7c489d0" name="a2df82f469959fa1ad4c06373f7c489d0"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a2df82f469959fa1ad4c06373f7c489d0">&#9670;&#160;</a></span>getCurrentRow()</h2>
 
@@ -1336,7 +1367,7 @@ Protected Member Functions</h2></td></tr>
 </div>
 </div>
 <a id="ad04d61048fe0b31a60ece327af849dd2" name="ad04d61048fe0b31a60ece327af849dd2"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ad04d61048fe0b31a60ece327af849dd2">&#9670;&#160;</a></span>setCurrentField()</h2>
+<h2 class="memtitle"><span class="permalink"><a href="#ad04d61048fe0b31a60ece327af849dd2">&#9670;&#160;</a></span>setCurrentField() <span class="overload">[1/2]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -1357,7 +1388,38 @@ Protected Member Functions</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
-<p>Sets the value of the field that is currently being exported.</p>
+<p>Sets the value of the field that is currently being exported. The length of the field is derived from the null terminator, so this version should only be used for values that are known to be null-terminated.</p>
+<p>Not commonly called by implementations of the *Start/End() methods. </p>
+
+</div>
+</div>
+<a id="a0759fcc29c2b19e2768e068e6195b491" name="a0759fcc29c2b19e2768e068e6195b491"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a0759fcc29c2b19e2768e068e6195b491">&#9670;&#160;</a></span>setCurrentField() <span class="overload">[2/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void sqlrexport::setCurrentField </td>
+          <td>(</td>
+          <td class="paramtype">const char *</td>          <td class="paramname"><span class="paramname"><em>currentfield</em>, </span></td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">uint32_t</td>          <td class="paramname"><span class="paramname"><em>currentfieldlength</em></span>&#160;)</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">protected</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+<p>Sets the value of the field that is currently being exported, and its length in bytes. Field data can contain embedded nulls, so the length must be passed in rather than derived from the value itself.</p>
 <p>Not commonly called by implementations of the *Start/End() methods. </p>
 
 </div>
@@ -1624,7 +1686,7 @@ Protected Member Functions</h2></td></tr>
 </div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
-Generated on Tue Aug 4 2026 11:41:46 for SQL Relay C++ API by&#160;<a href="https://www.doxygen.org/index.html"><img class="footer" src="doxygen.svg" width="104" height="31" alt="doxygen"/></a> 1.10.0
+Generated on Tue Aug 4 2026 11:41:54 for SQL Relay C++ API by&#160;<a href="https://www.doxygen.org/index.html"><img class="footer" src="doxygen.svg" width="104" height="31" alt="doxygen"/></a> 1.10.0
 </small></address>
 </body>
 </html>

@@ -164,27 +164,33 @@ $(function() { codefold.init(0); });
 <div class="line"><a id="l00620" name="l00620"></a><span class="lineno">  620</span> </div>
 <div class="line"><a id="l00626" name="l00626"></a><span class="lineno"><a class="line" href="classsqlrexport.html#a0b8ef27d27ad66ed028a8773d55360d5">  626</a></span>                <span class="keyword">const</span> <span class="keywordtype">char</span>      *<a class="code hl_function" href="classsqlrexport.html#a0b8ef27d27ad66ed028a8773d55360d5">getCurrentColumnName</a>();</div>
 <div class="line"><a id="l00627" name="l00627"></a><span class="lineno">  627</span> </div>
-<div class="line"><a id="l00633" name="l00633"></a><span class="lineno"><a class="line" href="classsqlrexport.html#ad04d61048fe0b31a60ece327af849dd2">  633</a></span>                <span class="keywordtype">void</span>    <a class="code hl_function" href="classsqlrexport.html#ad04d61048fe0b31a60ece327af849dd2">setCurrentField</a>(<span class="keyword">const</span> <span class="keywordtype">char</span> *currentfield);</div>
-<div class="line"><a id="l00634" name="l00634"></a><span class="lineno">  634</span> </div>
-<div class="line"><a id="l00640" name="l00640"></a><span class="lineno"><a class="line" href="classsqlrexport.html#a9bda0a8e9a2bb29af83f9b81b4ac5f83">  640</a></span>                <span class="keyword">const</span> <span class="keywordtype">char</span>      *<a class="code hl_function" href="classsqlrexport.html#a9bda0a8e9a2bb29af83f9b81b4ac5f83">getCurrentField</a>();</div>
-<div class="line"><a id="l00641" name="l00641"></a><span class="lineno">  641</span> </div>
-<div class="line"><a id="l00650" name="l00650"></a><span class="lineno"><a class="line" href="classsqlrexport.html#a3e85addb8f1c9487bcda31a378824e2d">  650</a></span>                <span class="keywordtype">void</span>    <a class="code hl_function" href="classsqlrexport.html#a3e85addb8f1c9487bcda31a378824e2d">setIsNumericColumn</a>(uint64_t index, <span class="keywordtype">bool</span> numeric);</div>
-<div class="line"><a id="l00651" name="l00651"></a><span class="lineno">  651</span> </div>
-<div class="line"><a id="l00657" name="l00657"></a><span class="lineno"><a class="line" href="classsqlrexport.html#a1b80b077c3037d95ef49a87b37464c36">  657</a></span>                <span class="keywordtype">bool</span>    <a class="code hl_function" href="classsqlrexport.html#a1b80b077c3037d95ef49a87b37464c36">getIsNumericColumn</a>(uint64_t index);</div>
-<div class="line"><a id="l00658" name="l00658"></a><span class="lineno">  658</span> </div>
-<div class="line"><a id="l00664" name="l00664"></a><span class="lineno"><a class="line" href="classsqlrexport.html#a8040b7dff8702aed9257da8ac34e1269">  664</a></span>                <span class="keywordtype">void</span>    <a class="code hl_function" href="classsqlrexport.html#a8040b7dff8702aed9257da8ac34e1269">clearAreNumericColumns</a>();</div>
-<div class="line"><a id="l00665" name="l00665"></a><span class="lineno">  665</span> </div>
-<div class="line"><a id="l00670" name="l00670"></a><span class="lineno"><a class="line" href="classsqlrexport.html#a21e868527ad64443b21099eca55d2872">  670</a></span>                <span class="keywordtype">void</span>    <a class="code hl_function" href="classsqlrexport.html#a21e868527ad64443b21099eca55d2872">setExportedRowCount</a>(uint64_t exportedrowcount);</div>
-<div class="line"><a id="l00671" name="l00671"></a><span class="lineno">  671</span> </div>
-<div class="line"><a id="l00672" name="l00672"></a><span class="lineno">  672</span><span class="preprocessor">        #include &lt;sqlrelay/private/sqlrexport.h&gt;</span></div>
-<div class="line"><a id="l00673" name="l00673"></a><span class="lineno">  673</span>};</div>
+<div class="line"><a id="l00635" name="l00635"></a><span class="lineno"><a class="line" href="classsqlrexport.html#ad04d61048fe0b31a60ece327af849dd2">  635</a></span>                <span class="keywordtype">void</span>    <a class="code hl_function" href="classsqlrexport.html#ad04d61048fe0b31a60ece327af849dd2">setCurrentField</a>(<span class="keyword">const</span> <span class="keywordtype">char</span> *currentfield);</div>
+<div class="line"><a id="l00636" name="l00636"></a><span class="lineno">  636</span> </div>
+<div class="line"><a id="l00644" name="l00644"></a><span class="lineno"><a class="line" href="classsqlrexport.html#a0759fcc29c2b19e2768e068e6195b491">  644</a></span>                <span class="keywordtype">void</span>    <a class="code hl_function" href="classsqlrexport.html#a0759fcc29c2b19e2768e068e6195b491">setCurrentField</a>(<span class="keyword">const</span> <span class="keywordtype">char</span> *currentfield,</div>
+<div class="line"><a id="l00645" name="l00645"></a><span class="lineno">  645</span>                                                uint32_t currentfieldlength);</div>
+<div class="line"><a id="l00646" name="l00646"></a><span class="lineno">  646</span> </div>
+<div class="line"><a id="l00652" name="l00652"></a><span class="lineno"><a class="line" href="classsqlrexport.html#a9bda0a8e9a2bb29af83f9b81b4ac5f83">  652</a></span>                <span class="keyword">const</span> <span class="keywordtype">char</span>      *<a class="code hl_function" href="classsqlrexport.html#a9bda0a8e9a2bb29af83f9b81b4ac5f83">getCurrentField</a>();</div>
+<div class="line"><a id="l00653" name="l00653"></a><span class="lineno">  653</span> </div>
+<div class="line"><a id="l00661" name="l00661"></a><span class="lineno"><a class="line" href="classsqlrexport.html#a4e392467b259721a5bece745b929ef41">  661</a></span>                uint32_t        <a class="code hl_function" href="classsqlrexport.html#a4e392467b259721a5bece745b929ef41">getCurrentFieldLength</a>();</div>
+<div class="line"><a id="l00662" name="l00662"></a><span class="lineno">  662</span> </div>
+<div class="line"><a id="l00671" name="l00671"></a><span class="lineno"><a class="line" href="classsqlrexport.html#a3e85addb8f1c9487bcda31a378824e2d">  671</a></span>                <span class="keywordtype">void</span>    <a class="code hl_function" href="classsqlrexport.html#a3e85addb8f1c9487bcda31a378824e2d">setIsNumericColumn</a>(uint64_t index, <span class="keywordtype">bool</span> numeric);</div>
+<div class="line"><a id="l00672" name="l00672"></a><span class="lineno">  672</span> </div>
+<div class="line"><a id="l00678" name="l00678"></a><span class="lineno"><a class="line" href="classsqlrexport.html#a1b80b077c3037d95ef49a87b37464c36">  678</a></span>                <span class="keywordtype">bool</span>    <a class="code hl_function" href="classsqlrexport.html#a1b80b077c3037d95ef49a87b37464c36">getIsNumericColumn</a>(uint64_t index);</div>
+<div class="line"><a id="l00679" name="l00679"></a><span class="lineno">  679</span> </div>
+<div class="line"><a id="l00685" name="l00685"></a><span class="lineno"><a class="line" href="classsqlrexport.html#a8040b7dff8702aed9257da8ac34e1269">  685</a></span>                <span class="keywordtype">void</span>    <a class="code hl_function" href="classsqlrexport.html#a8040b7dff8702aed9257da8ac34e1269">clearAreNumericColumns</a>();</div>
+<div class="line"><a id="l00686" name="l00686"></a><span class="lineno">  686</span> </div>
+<div class="line"><a id="l00691" name="l00691"></a><span class="lineno"><a class="line" href="classsqlrexport.html#a21e868527ad64443b21099eca55d2872">  691</a></span>                <span class="keywordtype">void</span>    <a class="code hl_function" href="classsqlrexport.html#a21e868527ad64443b21099eca55d2872">setExportedRowCount</a>(uint64_t exportedrowcount);</div>
+<div class="line"><a id="l00692" name="l00692"></a><span class="lineno">  692</span> </div>
+<div class="line"><a id="l00693" name="l00693"></a><span class="lineno">  693</span><span class="preprocessor">        #include &lt;sqlrelay/private/sqlrexport.h&gt;</span></div>
+<div class="line"><a id="l00694" name="l00694"></a><span class="lineno">  694</span>};</div>
 </div>
-<div class="line"><a id="l00674" name="l00674"></a><span class="lineno">  674</span> </div>
-<div class="line"><a id="l00675" name="l00675"></a><span class="lineno">  675</span><span class="preprocessor">#endif</span></div>
+<div class="line"><a id="l00695" name="l00695"></a><span class="lineno">  695</span> </div>
+<div class="line"><a id="l00696" name="l00696"></a><span class="lineno">  696</span><span class="preprocessor">#endif</span></div>
 <div class="ttc" id="aclasssqlrconnection_html"><div class="ttname"><a href="classsqlrconnection.html">sqlrconnection</a></div><div class="ttdef"><b>Definition</b> sqlrclient.h:9</div></div>
 <div class="ttc" id="aclasssqlrcursor_html"><div class="ttname"><a href="classsqlrcursor.html">sqlrcursor</a></div><div class="ttdef"><b>Definition</b> sqlrclient.h:869</div></div>
 <div class="ttc" id="aclasssqlrexport_html"><div class="ttname"><a href="classsqlrexport.html">sqlrexport</a></div><div class="ttdef"><b>Definition</b> sqlrexport.h:13</div></div>
 <div class="ttc" id="aclasssqlrexport_html_a02d2616f4a01a3be1da8a78039c58fe4"><div class="ttname"><a href="classsqlrexport.html#a02d2616f4a01a3be1da8a78039c58fe4">sqlrexport::getExcludeRow</a></div><div class="ttdeci">bool getExcludeRow()</div></div>
+<div class="ttc" id="aclasssqlrexport_html_a0759fcc29c2b19e2768e068e6195b491"><div class="ttname"><a href="classsqlrexport.html#a0759fcc29c2b19e2768e068e6195b491">sqlrexport::setCurrentField</a></div><div class="ttdeci">void setCurrentField(const char *currentfield, uint32_t currentfieldlength)</div></div>
 <div class="ttc" id="aclasssqlrexport_html_a0b8ef27d27ad66ed028a8773d55360d5"><div class="ttname"><a href="classsqlrexport.html#a0b8ef27d27ad66ed028a8773d55360d5">sqlrexport::getCurrentColumnName</a></div><div class="ttdeci">const char * getCurrentColumnName()</div></div>
 <div class="ttc" id="aclasssqlrexport_html_a0c2a6a1abc5f12c67c0d876e0c06699a"><div class="ttname"><a href="classsqlrexport.html#a0c2a6a1abc5f12c67c0d876e0c06699a">sqlrexport::setExcludeRow</a></div><div class="ttdeci">void setExcludeRow(bool excluderow)</div></div>
 <div class="ttc" id="aclasssqlrexport_html_a0cad8f036c260f0df7bbb56442027cf1"><div class="ttname"><a href="classsqlrexport.html#a0cad8f036c260f0df7bbb56442027cf1">sqlrexport::getCoarseLogLevel</a></div><div class="ttdeci">uint8_t getCoarseLogLevel()</div></div>
@@ -202,6 +208,7 @@ $(function() { codefold.init(0); });
 <div class="ttc" id="aclasssqlrexport_html_a3e85addb8f1c9487bcda31a378824e2d"><div class="ttname"><a href="classsqlrexport.html#a3e85addb8f1c9487bcda31a378824e2d">sqlrexport::setIsNumericColumn</a></div><div class="ttdeci">void setIsNumericColumn(uint64_t index, bool numeric)</div></div>
 <div class="ttc" id="aclasssqlrexport_html_a45365e192f45ceb4878057b40653abc0"><div class="ttname"><a href="classsqlrexport.html#a45365e192f45ceb4878057b40653abc0">sqlrexport::getExcludeColumns</a></div><div class="ttdeci">bool getExcludeColumns()</div></div>
 <div class="ttc" id="aclasssqlrexport_html_a4c5cf753bf46dcf44c76012eb3caa0ba"><div class="ttname"><a href="classsqlrexport.html#a4c5cf753bf46dcf44c76012eb3caa0ba">sqlrexport::getSqlrCursor</a></div><div class="ttdeci">sqlrcursor * getSqlrCursor()</div></div>
+<div class="ttc" id="aclasssqlrexport_html_a4e392467b259721a5bece745b929ef41"><div class="ttname"><a href="classsqlrexport.html#a4e392467b259721a5bece745b929ef41">sqlrexport::getCurrentFieldLength</a></div><div class="ttdeci">uint32_t getCurrentFieldLength()</div></div>
 <div class="ttc" id="aclasssqlrexport_html_a5562b6354d8be7606180c72e4ab87b4d"><div class="ttname"><a href="classsqlrexport.html#a5562b6354d8be7606180c72e4ab87b4d">sqlrexport::rowsStart</a></div><div class="ttdeci">virtual bool rowsStart()</div></div>
 <div class="ttc" id="aclasssqlrexport_html_a557959c3e0e7b36a09ddb38c0f7fed14"><div class="ttname"><a href="classsqlrexport.html#a557959c3e0e7b36a09ddb38c0f7fed14">sqlrexport::setColumnsToExclude</a></div><div class="ttdeci">void setColumnsToExclude(const char *const *columnstoexclude)</div></div>
 <div class="ttc" id="aclasssqlrexport_html_a568aded8d19a71c68e371d2a90a92fcc"><div class="ttname"><a href="classsqlrexport.html#a568aded8d19a71c68e371d2a90a92fcc">sqlrexport::exportEnd</a></div><div class="ttdeci">virtual bool exportEnd()</div></div>
@@ -242,7 +249,7 @@ $(function() { codefold.init(0); });
 </div><!-- fragment --></div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
-Generated on Tue Aug 4 2026 11:41:46 for SQL Relay C++ API by&#160;<a href="https://www.doxygen.org/index.html"><img class="footer" src="doxygen.svg" width="104" height="31" alt="doxygen"/></a> 1.10.0
+Generated on Tue Aug 4 2026 11:41:54 for SQL Relay C++ API by&#160;<a href="https://www.doxygen.org/index.html"><img class="footer" src="doxygen.svg" width="104" height="31" alt="doxygen"/></a> 1.10.0
 </small></address>
 </body>
 </html>
