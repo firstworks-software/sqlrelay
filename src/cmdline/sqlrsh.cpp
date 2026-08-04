@@ -1757,6 +1757,13 @@ bool sqlrsh::externalCommand(sqlrconnection *sqlrcon,
 					DB_OBJECT_TABLE);
 			delete[] wild;
 		} else if (!charstring::compareIgnoringCase(command,
+						"show only tables",16)) {
+			char	*wild=getWild(command);
+			sqlrcur->getTableList(wild,
+					SQLRCLIENTLISTFORMAT_MYSQL,
+					DB_OBJECT_TABLE);
+			delete[] wild;
+		} else if (!charstring::compareIgnoringCase(command,
 						"show only views mysql",21)) {
 			char	*wild=getWild(command);
 			sqlrcur->getTableList(wild,
@@ -1775,6 +1782,13 @@ bool sqlrsh::externalCommand(sqlrconnection *sqlrcon,
 			char	*wild=getWild(command);
 			sqlrcur->getTableList(wild,
 					SQLRCLIENTLISTFORMAT_JDBC,
+					DB_OBJECT_VIEW);
+			delete[] wild;
+		} else if (!charstring::compareIgnoringCase(command,
+						"show only views",15)) {
+			char	*wild=getWild(command);
+			sqlrcur->getTableList(wild,
+					SQLRCLIENTLISTFORMAT_MYSQL,
 					DB_OBJECT_VIEW);
 			delete[] wild;
 		} else if (!charstring::compareIgnoringCase(command,
@@ -1799,6 +1813,13 @@ bool sqlrsh::externalCommand(sqlrconnection *sqlrcon,
 					DB_OBJECT_ALIAS);
 			delete[] wild;
 		} else if (!charstring::compareIgnoringCase(command,
+						"show only aliases",17)) {
+			char	*wild=getWild(command);
+			sqlrcur->getTableList(wild,
+					SQLRCLIENTLISTFORMAT_MYSQL,
+					DB_OBJECT_ALIAS);
+			delete[] wild;
+		} else if (!charstring::compareIgnoringCase(command,
 					"show only synonyms mysql",24)) {
 			char	*wild=getWild(command);
 			sqlrcur->getTableList(wild,
@@ -1817,6 +1838,13 @@ bool sqlrsh::externalCommand(sqlrconnection *sqlrcon,
 			char	*wild=getWild(command);
 			sqlrcur->getTableList(wild,
 					SQLRCLIENTLISTFORMAT_JDBC,
+					DB_OBJECT_SYNONYM);
+			delete[] wild;
+		} else if (!charstring::compareIgnoringCase(command,
+						"show only synonyms",18)) {
+			char	*wild=getWild(command);
+			sqlrcur->getTableList(wild,
+					SQLRCLIENTLISTFORMAT_MYSQL,
 					DB_OBJECT_SYNONYM);
 			delete[] wild;
 		} else if (!charstring::compareIgnoringCase(command,
@@ -5133,10 +5161,10 @@ void sqlrsh::displayHelp(sqlrshenv *env) {
 "    show procedure parameters in [procedure] [like 'pattern']\n"
 "    show type info [for type]\n"
 "    show lastinsertid\n"
-"    show only tables mysql|odbc|jdbc [like 'pattern']\n"
-"    show only views mysql|odbc|jdbc [like 'pattern']\n"
-"    show only aliases mysql|odbc|jdbc [like 'pattern']\n"
-"    show only synonyms mysql|odbc|jdbc [like 'pattern']\n"
+"    show only tables [like 'pattern']\n"
+"    show only views [like 'pattern']\n"
+"    show only aliases [like 'pattern']\n"
+"    show only synonyms [like 'pattern']\n"
 "\n"
 "    describe writes the same column metadata that show columns does.\n"
 "    fields writes just the column names, on one line.\n"
@@ -5145,18 +5173,18 @@ void sqlrsh::displayHelp(sqlrshenv *env) {
 "    doubled.  The wildcards are the database's own, usually % and _.\n"
 "\n"
 "    databases, catalogs, schemas, tables, table types, columns,\n"
-"    procedures and type info each take an optional list format, right\n"
-"    after the category:\n"
+"    procedures, type info and the show only forms each take an\n"
+"    optional list format, right after the category:\n"
 "\n"
 "      show tables mysql\n"
 "      show tables odbc like 'a%'\n"
 "      show columns jdbc in mytable\n"
+"      show only views odbc\n"
 "\n"
 "    The list format decides the columns of the result set: mysql gives\n"
 "    what a MySQL client would see, odbc what an ODBC client would see,\n"
 "    and jdbc what a JDBC client would see.  Left out, the columns are\n"
-"    whatever the database itself returns.  The show only forms require\n"
-"    a list format.\n"
+"    whatever the database itself returns.\n"
 "\n"
 "  Notes:\n"
 "\n"

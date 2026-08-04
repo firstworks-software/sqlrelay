@@ -131,6 +131,12 @@
 		trailing -resultsetbuffersize quietly set the buffer size to 0
 		rather than being a usage error, and every other value-taking
 		option was quietly dropped
+	fixed the sqlrsh show only commands - only the twelve forms with a
+		mysql, odbc or jdbc list format suffix were recognized, so a
+		bare "show only tables;" and its views, aliases and synonyms
+		twins fell through to the database as sql and failed, the
+		bare forms now work and use the default list format, like
+		"show tables" does
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems

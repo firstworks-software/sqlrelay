@@ -709,12 +709,12 @@ A list of the known tables, views, aliases and synonyms.
 .TP
 show only
 .nf
-show only tables mysql|odbc|jdbc [like 'pattern']
-show only views mysql|odbc|jdbc [like 'pattern']
-show only aliases mysql|odbc|jdbc [like 'pattern']
-show only synonyms mysql|odbc|jdbc [like 'pattern']
+show only tables [like 'pattern']
+show only views [like 'pattern']
+show only aliases [like 'pattern']
+show only synonyms [like 'pattern']
 .fi
-A list of one kind of object only.  These forms require a list format.
+A list of one kind of object only.
 .TP
 show table types
 A list of the table types the database has.
@@ -749,13 +749,15 @@ The last insert id, as a result set.
 A pattern goes in single quotes, and a single quote inside one is doubled.  The
 wildcards are the database's own, usually % and _.
 .PP
-databases, catalogs, schemas, tables, table types, columns, procedures and type
-info each take an optional list format, right after the category:
+databases, catalogs, schemas, tables, table types, columns, procedures, type
+info and the show only forms each take an optional list format, right after the
+category:
 .RS
 .nf
 show tables mysql
 show tables odbc like 'a%'
 show columns jdbc in mytable
+show only views odbc
 .fi
 .RE
 .PP
