@@ -424,6 +424,12 @@ CONNECTIONSALLTARGETS = @ALLDB2@ @ALLFIREBIRD@ @ALLMYSQL@ @ALLODBC@ @ALLORACLE@ 
 CONNECTIONSINSTALLTARGETS = @INSTALLDB2@ @INSTALLFIREBIRD@ @INSTALLMYSQL@ @INSTALLODBC@ @INSTALLORACLE@ @INSTALLPOSTGRESQL@ @INSTALLSQLITE@ @INSTALLSYBASE@ @INSTALLINFORMIX@ @INSTALLROUTER@
 
 
+# protocols
+# the tds protocol module needs no db client library, so it's always built
+# (see #8785).  the other protocol modules are installed by installdll itself.
+PROTOCOLSINSTALLTARGETS = installdll-tds
+
+
 # tests
 TESTALLSUBDIRS = all-c all-cpp all-legacy all-extensions all-odbc all-cs all-adonet all-java all-jdbc all-protocol all-stress all-tcl all-crud
 # mysql (connector c) and postgresql (libpq) are always built on windows, so

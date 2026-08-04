@@ -170,6 +170,10 @@
 		write the number of failed statements to stderr at the end of
 		the run, and redefined exit code 4 as "at least one statement
 		failed", since it no longer means that sqlrsh stopped there
+	fixed make install - the tds protocol module was built but never
+		installed, because nothing referenced the
+		installsharedlib-tds target in src/protocols/Makefile, so
+		protocol="tds" couldn't be used from a normal install
 	added the sqlrsh -final, -autocommit, -nullsasnulls, -debug,
 		-validatebinds and -bindvariabledelimiters options, so that
 		every setting that means something before the first query has

@@ -802,6 +802,13 @@ CONNECTIONSINSTALLTARGETS += installsharedlib-router
 endif
 
 
+# protocols
+# the tds protocol module needs no db client library, so it's always built
+# (see #8785).  the other protocol modules are installed by installsharedlib
+# itself.
+PROTOCOLSINSTALLTARGETS = installsharedlib-tds
+
+
 # config scripts
 INSTALLCONFIG =
 ifneq ($(ENABLE_CPP),)

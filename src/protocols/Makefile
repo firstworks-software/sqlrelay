@@ -45,16 +45,20 @@ $(SQLR)protocol_teradata.$(LIBEXT): teradata.cpp teradata.$(OBJ)
 
 install: $(INSTALLLIB)
 
-installdll:
+installdll: $(PROTOCOLSINSTALLTARGETS)
 	$(MKINSTALLDIRS) $(libexecdir)
 	$(LTINSTALL) $(CP) $(SQLR)protocol_sqlrclient.$(LIBEXT) $(libexecdir)
 	$(LTINSTALL) $(CP) $(SQLR)protocol_mysql.$(LIBEXT) $(libexecdir)
 	$(LTINSTALL) $(CP) $(SQLR)protocol_postgresql.$(LIBEXT) $(libexecdir)
 	$(LTINSTALL) $(CP) $(SQLR)protocol_firebird.$(LIBEXT) $(libexecdir)
 
+installdll-tds:
+	$(MKINSTALLDIRS) $(libexecdir)
+	$(LTINSTALL) $(CP) $(SQLR)protocol_tds.$(LIBEXT) $(libexecdir)
+
 installlib: $(INSTALLSHAREDLIB)
 
-installsharedlib:
+installsharedlib: $(PROTOCOLSINSTALLTARGETS)
 	$(MKINSTALLDIRS) $(libexecdir)
 	$(LTINSTALL) $(CP) $(SQLR)protocol_sqlrclient.$(LIBEXT) $(libexecdir)
 	$(RM) $(libexecdir)/$(SQLR)protocol_sqlrclient.a
