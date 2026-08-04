@@ -55,7 +55,7 @@ Several command line utilities are provided for use with SQL Relay.  The syntax 
 
 {{{#!blockquote
 {{{
-sqlrsh -host HOST -port PORT -socket SOCKET -user USER -password PASSWORD [-script SCRIPT | -command COMMAND] [-quiet] [-format plain|csv] [-resultsetbuffersize rows]
+sqlrsh -host HOST -port PORT -socket SOCKET -user USER -password PASSWORD [-script SCRIPT | -command COMMANDS] [-quiet on|off] [-format plain|csv|json|jsonl] [-resultsetbuffersize ROWS] [OPTIONS]
 sqlr-export -host HOST -port PORT -socket SOCKET -user USER -password PASSWORD (-table TABLE | -sequence SEQUENCE) &gt; exportfile.xml
 sqlr-import -host HOST -port PORT -socket SOCKET -user USER -password PASSWORD -file exportfile.xml
 }}}
@@ -65,7 +65,7 @@ or, if there's a configuration file that the client can read:
 
 {{{#!blockquote
 {{{
-sqlrsh -id ID [-config CONFIGFILE] [-script SCRIPT | -command COMMAND] [-quiet] [-format plain|csv] [-resultsetbuffersize rows]
+sqlrsh -id ID [-config CONFIGFILE] [-script SCRIPT | -command COMMANDS] [-quiet on|off] [-format plain|csv|json|jsonl] [-resultsetbuffersize ROWS] [OPTIONS]
 sqlr-export -id ID [-config CONFIGFILE] (-table TABLE | -sequence SEQUENCE) &gt; exportfile.xml
 sqlr-import -id ID [-config CONFIGFILE] -file exportfile.xml
 }}}
@@ -77,7 +77,13 @@ The -id argument refers to an entry in a configuration file from which host, por
 
 The -config argument works the same way as described above for sqlr-start.
 
-'''sqlrsh''' is an interactive query tool similar to sqlplus, mysql, psql, isql and the like.  Run it and type help; at the prompt for detailed usage instructions.  When sqlrsh starts up, it reads and executes two rc files, the system rc file (most likely /usr/local/firstworks/etc/sqlrshrc) and a personal rc file .sqlrshrc in your home directory.  These files should contain sqlrsh commands, ending in semicolons, seperated by carraige returns.  Any sqlrsh commands may be used in the rc files, even queries.  If a SCRIPT is supplied with the -script option, then the script is run and sqlrsh exits.  The script can contain any sqlrsh commands, incluing queries.  If a COMMAND is supplied with the -command option, then the command is run and sqlrsh exits.  The command can be single sqlrsh command (or query) or a list of semicolon-delimited commands (or queries).
+'''sqlrsh''' is an interactive query tool similar to sqlplus, mysql, psql, isql and the like.  Run it with no -script and no -command and it writes a prompt and reads a query or a command.  Type help; at the prompt for the command reference.
+
+Give it a file with the -script option, or a string with the -command option, and it runs that instead and exits.  Either may hold any sqlrsh commands, queries included, each ending in the delimiter.  That is how a shell script, a cron job or an AI agent uses it.
+
+When sqlrsh starts up, it reads and runs one rc file, .sqlrshrc in your home directory.  It should hold sqlrsh commands, each ending in the delimiter.  Any command may be used, queries included.  A missing file is not an error, and a failing command in it does not change the exit code.
+
+[sqlrsh.html sqlrsh Reference] covers every option, every command, the four output formats, the exit codes and the rc file in full.
 
 The '''sqlr-export''' command exports the specified table or sequence to a file from which '''sqlr-import''' can later re-import it.
 

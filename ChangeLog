@@ -259,6 +259,17 @@
 		module, and renamed the parameter of the ucs2 read() and
 		write() methods in sqlrprotocol from "size" to "length", since
 		it is a count of characters rather than of bytes
+	added an sqlrsh reference to the website - the two synopsis lines on
+		the command line programs page were stale and the only other
+		thing that page said about sqlrsh was to run it and type
+		help;, so there is a new sqlrsh reference page covering every
+		command line option, every command in the groups the built-in
+		help uses, the four output formats with a sample of each, the
+		exit codes and the rc file, the command line programs page has
+		the real synopsis lines and a link to the new page now, and it
+		no longer claims that sqlrsh reads a system rc file, which it
+		never did - it reads .sqlrshrc in the user's home directory
+		and nothing else
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems

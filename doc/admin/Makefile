@@ -11,6 +11,7 @@ SRCS = configguide.wt \
 	oraclentier.wt \
 	prerequisites.wt \
 	running.wt \
+	sqlrsh.wt \
 	tuning.wt \
 	tlscert.wt \
 	tlsca.wt \
@@ -25,6 +26,7 @@ INS = configguide.html.in \
 	oraclentier.html.in \
 	prerequisites.html.in \
 	running.html.in \
+	sqlrsh.html.in \
 	tlsca.html.in \
 	tlscert.html.in \
 	tuning.html.in
@@ -38,6 +40,7 @@ WTOBJS = configguide.html.in \
 	oraclentier.html.in \
 	prerequisites.html.in \
 	running.html.in \
+	sqlrsh.html.in \
 	tlsca.html.in \
 	tlscert.html.in \
 	tuning.html.in
@@ -51,6 +54,7 @@ OBJS = configguide.html \
 	oraclentier.html \
 	prerequisites.html \
 	running.html \
+	sqlrsh.html \
 	tlsca.html \
 	tlscert.html \
 	tuning.html

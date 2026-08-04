@@ -1,0 +1,801 @@
+<html>
+<head>
+	<title>firstworks: SQL Relay - sqlrelay persistent database connection pool pooling proxy load balance balancing odbc oracle mysql msql postgresql sybase db2 interbase sqlite access c++ perl DBD DBI python php PDO ruby tcl java jni unix linux persistant</title>
+
+	<link rel="stylesheet" href="../css/style.css"/>
+	<script type="text/javascript">
+
+  var _gaq = _gaq || [];
+  _gaq.push(['_setAccount', 'UA-23306117-3']);
+  _gaq.push(['_trackPageview']);
+
+  (function() {
+    var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+    ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+    var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+  })();
+
+</script>
+
+	<script language="Javascript" src="../js/button.js"></script>
+</head>
+<body onload="setButton();">
+
+
+<div style="position: fixed; top: 0px; left: 0px; width: 100%; z-index: 100;">
+
+<span id="firstworks">a <b><a href="http://www.firstworks.com">firstworks</a></b> project</span>
+
+<div id="projectbox"><a href="index.html"><img src="../images/sqlrelay-icon.png"/><span id="name">SQL Relay</span></a></div>
+
+<table id="projectbuttons">
+<tr>
+<td style="width: 50%;"></td>
+<td class="button nonlastbutton"><a id="button-about" href="../index.html">About</a></td>
+<td class="button nonlastbutton"><a id="button-documentation" href="../documentation.html">Documentation</a></td>
+<td class="button nonlastbutton"><a id="button-faq" href="../faq.html">FAQ</a></td>
+<td class="button nonlastbutton"><a id="button-download" href="../download.html">Download</a></td>
+<td class="button nonlastbutton"><a id="button-license" href="../license.html">Licensing</a></td>
+<td class="button nonlastbutton"><a id="button-support" href="../support.html">Support</a></td>
+<td class="button lastbutton"><a id="button-news" target="_blank" href="http://software.firstworks.com">News</a></td>
+<td style="width: 50%;"></td>
+</tr>
+</table>
+
+</div>
+
+<div style="position: absolute; top: 89px; width: 100%;">
+
+
+<div id="content">
+
+
+<h1>sqlrsh Reference</h1>
+
+<ul>
+  <li><a href="#synopsis">Synopsis</a></li>
+  <li><a href="#interactive">Interactive Use</a></li>
+  <li><a href="#noninteractive">Non-Interactive Use</a></li>
+  <li><a href="#options">Command Line Options</a></li>
+  <li><a href="#optionvalues">Option Values, On and Off</a></li>
+  <li><a href="#formats">Output Formats</a></li>
+  <li><a href="#fieldsas">Fetching Fields As A Type</a></li>
+  <li><a href="#commands">Commands</a></li>
+  <li><a href="#exitcodes">Exit Codes</a></li>
+  <li><a href="#files">The RC File and the History File</a></li>
+</ul>
+
+<p><b>sqlrsh</b> is the SQL Relay command line database shell.  It is similar to sqlplus, mysql, psql and isql.</p>
+
+<p>It can be used interactively, at a prompt, or non-interactively, to run a query or a script of queries straight from the command line.</p>
+
+<a name="synopsis"/><h2>Synopsis</h2>
+
+<blockquote>
+  <pre>sqlrsh -host HOST [-port PORT] [OPTIONS]
+sqlrsh -socket SOCKET [OPTIONS]
+sqlrsh [-config CONFIGFILE] -id ID [OPTIONS]
+</pre>
+
+</blockquote>
+<p>At least one of -host, -socket or -id has to be given.  Without one of them, sqlrsh writes a usage message and exits 1.</p>
+
+<p>The options are:</p>
+
+<blockquote>
+  <pre>[-user USER] [-password PASSWORD]
+[-krb] [-krbservice SVC] [-krbmech MECH] [-krbflags FLAGS]
+[-tls] [-tlsversion VERSION] [-tlscert CERTFILE] [-tlspassword PASSWORD]
+[-tlsciphers CIPHERLIST] [-tlsvalidate (no|ca|ca+domain|ca+host)]
+[-tlsca CA] [-tlsdepth DEPTH]
+[-script SCRIPT | -command COMMANDS]
+[-format (plain|csv|json|jsonl)]
+[-quiet (on|off)] [-headers (on|off)] [-divider (on|off)]
+[-stats (on|off)] [-noelapsed (on|off)]
+[-fieldsas (raw|number|boolean|date)] [-getasnumber (on|off)]
+[-nextresultset (on|off)] [-lazyfetch (on|off)] [-txqueries (on|off)]
+[-continueonerror (on|off)] [-nullsasnulls (on|off)]
+[-final (on|off)] [-autocommit (on|off)]
+[-validatebinds (on|off)] [-bindvariabledelimiters DELIMITERS]
+[-debug (on|off|FILE)]
+[-resultsetbuffersize ROWS] [-delimiter CHAR]
+[-locale (env|NAME)] [-localstatedir DIR]
+</pre>
+
+</blockquote>
+<p>Two more options end the run right away, and each has to be the only option on the command line:</p>
+
+<ul>
+  <li><b>-help</b> - writes the option reference, the output formats and the exit codes, then exits</li>
+  <li><b>-version</b> - writes the version, then exits</li>
+</ul>
+
+<a name="interactive"/><h2>Interactive Use</h2>
+
+<p>Run sqlrsh with no -script and no -command and it writes a banner, then a prompt, and reads a query or a command.</p>
+
+<blockquote>
+  <pre>$ sqlrsh -id myinst
+sqlrsh - Version 2.2.1
+	Connected to: localhost:9000 as myuser
+
+	type help; for help.
+
+0> select * from example;
+
+id descr         price
+======================
+1  monkey wrench 10.5
+2  hammer        5.25
+3  NULL          1.0
+
+	Affected Rows   : 1
+	Rows Returned   : 3
+	Fields Returned : 9
+	Elapsed Time    : 0.000412 sec
+
+0> exit;
+</pre>
+
+</blockquote>
+<p>Everything ends with the delimiter, which is a semicolon unless -delimiter or the delimiter command changes it.  A query may be split over as many lines as it takes.  The prompt counts the lines, so a query that runs onto a second line is prompted with 1, a third with 2, and so on.</p>
+
+<p>Type help; at the prompt for the command reference, which is the same list as the <a href="#commands">Commands</a> section below.</p>
+
+<p>An interactive session always exits 0, even when a query at the prompt failed.  An interactive session is not a batch.</p>
+
+<a name="noninteractive"/><h2>Non-Interactive Use</h2>
+
+<p>This is how a script, a cron job or an AI agent uses sqlrsh.  There are two ways in:</p>
+
+<ul>
+  <li><b>-command</b> COMMANDS - runs the string and exits.  The string may hold one query or command, or a list of them, each ending in the delimiter.</li>
+  <li><b>-script</b> SCRIPT - runs the file and exits.  The file may hold any queries or commands, each ending in the delimiter.</li>
+</ul>
+
+<p>Both accept anything that could be typed at the prompt.  A query and a command are the same thing to sqlrsh.</p>
+
+<p>Four things make a non-interactive run predictable:</p>
+
+<ul>
+  <li><b>the exit code</b> - 0 means every statement worked.  See <a href="#exitcodes">Exit Codes</a> for the rest.</li>
+  <li><b>-quiet on</b> - turns off the column headers and the statistics block, leaving just the rows.</li>
+  <li><b>-format csv|json|jsonl</b> - gives output that another program can read.  json and jsonl also carry the column types, and write the banner and the prompt nowhere at all.</li>
+  <li><b>-continueonerror on</b> - runs every statement, rather than stopping at the first one that failed.</li>
+</ul>
+
+<p>Errors go to stderr and rows go to stdout, so the two can be redirected apart.</p>
+
+<p>Some examples.  Run one query and get csv on stdout:</p>
+
+<blockquote>
+  <pre>sqlrsh -id myinst -quiet on -format csv -command "select * from example;"
+</pre>
+
+</blockquote>
+<p>Run a script, and act on the exit code:</p>
+
+<blockquote>
+  <pre>sqlrsh -id myinst -script ./script.sql || echo "failed with $?"
+</pre>
+
+</blockquote>
+<p>Stream a large result set a line at a time into another program:</p>
+
+<blockquote>
+  <pre>sqlrsh -id myinst -format jsonl -command "select * from bigtable;" | myreader
+</pre>
+
+</blockquote>
+<p>Get one json document per command, with the nulls written as the json null literal:</p>
+
+<blockquote>
+  <pre>sqlrsh -id myinst -format json -nullsasnulls on -command "select * from example;"
+</pre>
+
+</blockquote>
+<p>Run every statement, and count what failed:</p>
+
+<blockquote>
+  <pre>sqlrsh -id myinst -continueonerror on -script ./script.sql 2&gt; errors.txt
+</pre>
+
+</blockquote>
+<a name="options"/><h2>Command Line Options</h2>
+
+<h3>Connection Options</h3>
+
+<ul>
+  <li><b>-host</b> HOST - the host name or IP address of the server to connect to</li>
+  <li><b>-port</b> PORT - the port to connect to</li>
+  <li><b>-socket</b> SOCKET - the unix socket file to connect to.  Can be used instead of a host and port when the server is on the same machine.</li>
+  <li><b>-user</b> USER - the user name to authenticate with</li>
+  <li><b>-password</b> PASSWORD - the password to authenticate with</li>
+</ul>
+
+<h3>Alternate Connection Options</h3>
+
+<ul>
+  <li><b>-config</b> CONFIG - overrides the default configuration with the given one.  This may be a file, a directory of files, a url, or a comma-separated list of any of those.  See <a href="configguide.html#specifying">Specifying Configuration Files</a> in the SQL Relay Configuration Guide.</li>
+  <li><b>-id</b> INSTANCEID - takes the host, port, socket, user and password from the named instance in the configuration, rather than from the command line</li>
+</ul>
+
+<p>An -id run also picks up the instance's kerberos and TLS settings from the configuration.  Anything given on the command line wins over the configuration.</p>
+
+<ul>
+  <li><b>-krb</b> - use Kerberos authentication and encryption</li>
+  <li><b>-krbservice</b> SVC - use the given kerberos service</li>
+  <li><b>-krbmech</b> MECH - use the given kerberos mechanism</li>
+  <li><b>-krbflags</b> FLAGS - use the given kerberos flags, comma-separated</li>
+  <li><b>-tls</b> - use TLS/SSL authentication and encryption</li>
+  <li><b>-tlsversion</b> VERSION - use the given TLS/SSL version</li>
+  <li><b>-tlscert</b> FILE - use the given certificate chain file.  It should hold the client's certificate, private key and signing certificates, as appropriate.  On Windows it has to be a .pfx file.  On other systems a variety of formats work.</li>
+  <li><b>-tlspassword</b> PWD - the password that unlocks the private key in the -tlscert file</li>
+  <li><b>-tlsciphers</b> LIST - allow only the given ciphers.  Quote the list and separate the ciphers with spaces.</li>
+  <li><b>-tlsvalidate</b> no|ca|ca+host|ca+domain - how much of the server's certificate to check.  Defaults to no.</li>
+  <ul>
+    <li><b>no</b> - do not validate the server's certificate</li>
+    <li><b>ca</b> - validate that a trusted certificate authority signed it</li>
+    <li><b>ca+host</b> - do the ca check, and also check that one of the subject alternate names, or the common name when there are none, matches the host.  Falls back to ca when a unix socket is used.</li>
+    <li><b>ca+domain</b> - do the ca check, and also check that the domain name of one of those names matches the domain name of the host.  Falls back to ca when a unix socket is used.</li>
+  </ul>
+
+  <li><b>-tlsca</b> FILE - the certificate authority file to validate the server's certificate against.  A directory means every certificate authority file in it.</li>
+  <li><b>-tlsdepth</b> DEPTH - the maximum certificate chain validation depth</li>
+</ul>
+
+<h3>Command Options</h3>
+
+<ul>
+  <li><b>-script</b> FILENAME - runs the given file, which holds commands or queries that could otherwise be run at the prompt</li>
+  <li><b>-command</b> COMMANDS - runs the given string, which holds commands or queries that could otherwise be run at the prompt</li>
+  <li><b>-delimiter</b> CHAR - end each command or query with the given character.  Defaults to a semicolon.  -delimeter is accepted as a spelling of it.  Unlike the delimiter command, the option does not echo the character back.</li>
+  <li><b>-continueonerror</b> on|off - carry on past a statement that failed, rather than stopping at the first one.  Defaults to off.</li>
+</ul>
+
+<h3>Output Options</h3>
+
+<ul>
+  <li><b>-format</b> plain|csv|json|jsonl - the output format.  Defaults to plain.  See <a href="#formats">Output Formats</a>.</li>
+  <li><b>-quiet</b> on|off - shorthand for -headers off -stats off.  Defaults to off.</li>
+  <li><b>-headers</b> on|off - write the column names above the result set.  plain format only.  Defaults to on.</li>
+  <li><b>-divider</b> on|off - write a line of = signs under the column names.  plain format only.  Defaults to on.</li>
+  <li><b>-stats</b> on|off - write the statistics after the result set.  plain writes a block of labels, json and jsonl carry the same numbers inside the document, and csv has no statistics at all.  Defaults to on.</li>
+  <li><b>-noelapsed</b> on|off - leave the elapsed time out of the statistics.  Defaults to off.</li>
+  <li><b>-fieldsas</b> raw|number|boolean|date - fetch each field with the matching getFieldAs method, where the column suits it.  Defaults to raw, the field as the database sent it.  See <a href="#fieldsas">Fetching Fields As A Type</a>.</li>
+  <li><b>-getasnumber</b> on|off - an alias.  on is -fieldsas number and off is -fieldsas raw.  Defaults to off.</li>
+  <li><b>-nullsasnulls</b> on|off - get nulls as nulls, rather than as empty strings.  csv, json and jsonl can only tell the two apart while this is on.  Defaults to off.</li>
+  <li><b>-debug</b> on|off - write the client library debug messages to stdout.  Defaults to off.</li>
+  <li><b>-debug</b> FILENAME - write them to the named file instead</li>
+</ul>
+
+<h3>Fetch Options</h3>
+
+<ul>
+  <li><b>-resultsetbuffersize</b> ROWS - fetch a result set the given number of rows at a time.  0 means fetch the whole thing at once.  Defaults to 100.</li>
+  <li><b>-lazyfetch</b> on|off - fetch rows as they are asked for, rather than when the query runs.  Defaults to off.</li>
+  <li><b>-nextresultset</b> on|off - fetch every result set the query returns, rather than just the first.  Defaults to off.</li>
+  <li><b>-txqueries</b> on|off - send begin, commit and rollback to the database as queries, rather than running them as commands.  Defaults to off.</li>
+</ul>
+
+<h3>Bind Variable Options</h3>
+
+<ul>
+  <li><b>-validatebinds</b> on|off - ignore bind variables the query does not have, rather than failing.  Defaults to off.</li>
+  <li><b>-bindvariabledelimiters</b> DELIMITERS - recognize the given bind variable delimiters, from the set ? : @ $</li>
+</ul>
+
+<h3>Session Options</h3>
+
+<ul>
+  <li><b>-final</b> on|off - end the session after every query, so each one gets a session of its own.  Defaults to off.</li>
+  <li><b>-autocommit</b> on|off - commit after every query.  Without this the server decides, so there is no default here.</li>
+</ul>
+
+<h3>Other Options</h3>
+
+<ul>
+  <li><b>-locale</b> env|NAME - calls setlocale(LC_ALL, NAME).  env means use the LC environment variables.  This matters when the locale changes how a number is written.</li>
+  <li><b>-localstatedir</b> DIR - overrides the default directory for working and stateful files, the result set cache among them</li>
+  <li><b>-help</b> - write the help and exit.  Has to be the only option on the command line.</li>
+  <li><b>-version</b> - write the version and exit.  Has to be the only option on the command line.</li>
+</ul>
+
+<a name="optionvalues"/><h2>Option Values, On and Off</h2>
+
+<p>An option that takes a value has to be given one.  A bare one is a usage error, so -resultsetbuffersize on its own exits 1, and so do -id, -format and -script on their own.</p>
+
+<p>A value that begins with a dash has to be given as --option=value, because "-option -value" reads the dash as the start of the next option.</p>
+
+<p>An on|off option with no value means on, so a bare -headers turns headers on.  Any value that does not begin with "on" means off, and nothing is said about it, so -headers garbage turns headers off.</p>
+
+<p>-debug is the exception.  A value that is neither on nor off is a file name, the same as it is for the debug command.</p>
+
+<p>-quiet is applied before the individual options, so "-quiet -headers on" gives headers on and stats off.</p>
+
+<h3>Options and Commands</h3>
+
+<p>Every setting that has an option also has a command of the same name, and the two reach the same state.  The one difference is the bare form: a bare option means on, and a bare command means off.  So "-headers" turns headers on and "headers;" turns headers off.</p>
+
+<p>Some settings are commands only.  That is deliberate, not a gap:</p>
+
+<ul>
+  <li><b>cache</b> and <b>opencache</b></li>
+  <ul>
+    <li>cache names a file for the next result set, so it belongs next to the query it caches.  As an option it would either cache only the first result set of a run, or overwrite one file once per query, and neither is useful.  It also carries a second value, the time to live, which an option would have to squeeze into one word.</li>
+    <li>opencache is not a setting at all.  It opens a cache file, writes the result set, and is done - an action with output, like a query.  A -command list can already run it, in the right place in the run.</li>
+  </ul>
+
+  <li><b>the per-query bind commands</b> - inputbind, inputbindblob, inputbindclob, outputbind, inputoutputbind, and the clearinputbind, clearoutputbind, clearinputoutputbind, clearbinds, printbinds, printinputbind, printoutputbind and printinputoutputbind forms</li>
+  <ul>
+    <li>a bind belongs to one query, and a run has many, so an option has no way to say which query it is for</li>
+    <li>their syntax is a small language of its own - "= value", "is null", "string length", the typed output bind forms - that does not survive being squeezed into an option value</li>
+  </ul>
+
+  <li><b>the bind commands that ask questions</b> - fetchfrombindcursor, countbindvariables, validbind, bindformat and bindvariabledelimitersupported</li>
+  <ul>
+    <li>these ask about the query that just ran, or about the database.  They are not settings, and there is no query that just ran before the first statement.</li>
+  </ul>
+
+</ul>
+
+<p>Other settings are commands only too, among them columninfo, columncase, isolationlevel, transactionmodel, the two timeouts, use, usecatalog, useschema, setclientinfo and substitution.</p>
+
+<a name="formats"/><h2>Output Formats</h2>
+
+<p>There is one format setting for the whole run, and all four formats are renderings of the same rows.  A format name is matched ignoring case.  An unrecognized name is an error: -format bogus exits 1, and "format bogus;" is a failed command.</p>
+
+<p>The samples below all come from the same three row result set, with a null in the last row.</p>
+
+<h3>plain</h3>
+
+<p>Columns are padded with spaces, the column names go above the result set, a line of = signs goes under the names, and a block of tab indented labels goes under the rows.</p>
+
+<blockquote>
+  <pre>id descr         price
+======================
+1  monkey wrench 10.5
+2  hammer        5.25
+3  NULL          1.0
+
+	Affected Rows   : 1
+	Rows Returned   : 3
+	Fields Returned : 9
+	Elapsed Time    : 0.000412 sec
+</pre>
+
+</blockquote>
+<p>A null is written as the word NULL, which cannot be told apart from the four character string NULL.  -headers, -divider and the statistics block are this format only.</p>
+
+<h3>csv</h3>
+
+<p>One header row of column names, then one row per row of the result set, and nothing else.</p>
+
+<blockquote>
+  <pre>"id","descr","price"
+1,"monkey wrench",10.5
+2,"hammer",5.25
+3,,1.0
+</pre>
+
+</blockquote>
+<p>The header row is always written, whatever -headers says, because it is the only way a reader learns what the columns are.</p>
+
+<p>A field is quoted when it holds a double quote, a comma, a newline, a carriage return, a tab or a null byte, and also when it is not a number, or is a number of 12 or more digits.  A double quote inside a field is doubled.  Every other byte passes through unchanged, so utf-8 survives.</p>
+
+<p>A database null is written as an unquoted empty field, and an empty string as a quoted empty field, that is, as two double quotes.</p>
+
+<h3>json</h3>
+
+<p>One compact document per command, all on one line, so a run of several commands is still readable a line at a time.  Wrapped here to fit the page, but written as one line:</p>
+
+<blockquote>
+  <pre>{"columns":[{"name":"id","type":"INTEGER"},
+{"name":"descr","type":"STRING"},{"name":"price","type":"FLOAT"}],
+"rows":[["1","monkey wrench","10.5"],["2","hammer","5.25"],
+["3",null,"1.0"]],"affectedrows":1,"rowsreturned":3,
+"fieldsreturned":9,"elapsed":0.000422}
+</pre>
+
+</blockquote>
+<p>Rows are arrays, since the names are already in the column list.  Best for a small result set, where the reader wants the whole thing.</p>
+
+<h3>jsonl</h3>
+
+<p>One json object per line, each typed by a "type" member.  The stats object is wrapped here too, and is really one line:</p>
+
+<blockquote>
+  <pre>{"type":"columns","columns":[{"name":"id","type":"INTEGER"},
+{"name":"descr","type":"STRING"},{"name":"price","type":"FLOAT"}]}
+{"type":"row","row":{"id":"1","descr":"monkey wrench","price":"10.5"}}
+{"type":"row","row":{"id":"2","descr":"hammer","price":"5.25"}}
+{"type":"row","row":{"id":"3","descr":null,"price":"1.0"}}
+{"type":"stats","affectedrows":1,"rowsreturned":3,
+"fieldsreturned":9,"elapsed":0.000462}
+</pre>
+
+</blockquote>
+<p>Rows are objects keyed by column name, so a line stands on its own.  Best for a large result set.  It streams, so head, grep and wc work on it, and a partial result set is still usable.</p>
+
+<h3>json and jsonl Together</h3>
+
+<p>Both carry the column types, which neither plain nor csv does.</p>
+
+<p>A database null is the json null literal, never "" and never "NULL".  A converted field is typed, so -fieldsas number gives a bare json number and -fieldsas boolean a bare json true or false.  Everything else, a converted date included, is a json string.  A value is never truncated.</p>
+
+<p>The column list is always written and no divider is written, for the same reason csv always writes its header row.  The statistics are part of the document, are left out when stats are off, and -noelapsed drops just the elapsed member.</p>
+
+<p>A statement with no result set still produces a document, with an empty column list, an empty row list, and the affected row count in the statistics.  With -nextresultset, json gives each result set its own document, and jsonl gives each its own columns, row and stats group.</p>
+
+<p>The startup banner and the prompt are not written at all.  An error is one object on one line on stderr, and stdout gets nothing:</p>
+
+<blockquote>
+  <pre>{"error":{"number":1,"message":"no such table: nosuchtable"}}
+</pre>
+
+</blockquote>
+<p>A command that produces a single value writes a one line object keyed by the command name, so a reader gets the same shape from every one of them:</p>
+
+<blockquote>
+  <pre>{"identify":"sqlite"}
+{"ping":true}
+{"getresultsetbuffersize":100}
+</pre>
+
+</blockquote>
+<p>printbinds writes one object holding the three bind lists, and querytree and translatedquery write their text as a json string.  The fields command writes the column names as an array:</p>
+
+<blockquote>
+  <pre>{"fields":["id","descr"]}
+</pre>
+
+</blockquote>
+<h3>Nulls in Every Format</h3>
+
+<p>csv, json and jsonl can only tell a null from an empty string while nullsasnulls is on.  With it off, which is the default, the client library hands back an empty string for a null, and sqlrsh cannot tell the two apart.</p>
+
+<a name="fieldsas"/><h2>Fetching Fields As A Type</h2>
+
+<p>-fieldsas, and the fieldsas command, choose which getFieldAs method every field of every result set is fetched with.  There is one setting, shared by all four formats.</p>
+
+<p>A mode only converts a field where the conversion means something, and writes the field unchanged where it does not, so a mode never turns a name column into a number, a true or a date.</p>
+
+<ul>
+  <li><b>raw</b> - the field as the database sent it.  The default.</li>
+  <li><b>number</b> - getFieldAsInteger or getFieldAsDouble, whichever the column type calls for, on a numeric or bit column.  Every other column passes through.</li>
+  <li><b>boolean</b> - getFieldAsBoolean, on a boolean, bit or numeric column.  Every other column passes through.  Numeric columns are included because a database with no boolean type stores a boolean as 0 or 1.  The result is the word true or false, and a bare json true or false in json and jsonl.</li>
+  <li><b>date</b> - getFieldAsDate, on any column whose value reads as a date.  A field it cannot read passes through, so no column type test is needed.</li>
+</ul>
+
+<p>A converted date is written in this shape:</p>
+
+<blockquote>
+  <pre>[-]YYYY-MM-DD HH:MM:SS[.uuuuuu]
+</pre>
+
+</blockquote>
+<p>It carries only the parts the field had, so a date column gives a date, a time column a time, and a timestamp both.  A fraction of a second is written only when it is not zero, since a fraction that was not there and one that was zero read back the same.  A zero month or day, which is how MySQL stores 0000-00-00, is not a date, so the whole field passes through.  The result is a json string, not an object of parts.</p>
+
+<p>getasnumber is an alias: on is fieldsas number, and off is fieldsas raw.  When -getasnumber and -fieldsas are both given, -fieldsas wins.</p>
+
+<p>A mode name is matched ignoring case.  An unrecognized one is an error: -fieldsas bogus exits 1, and "fieldsas bogus;" is a failed command.</p>
+
+<a name="commands"/><h2>Commands</h2>
+
+<p>To run a query, type it and end it with the delimiter.  Everything below is a command, and ends with the delimiter too.  The groups are the ones the built-in help uses, so help; at the prompt writes the same list.</p>
+
+<h3>Queries, Scripts and Files</h3>
+
+<ul>
+  <li><b>reexecute</b> - runs the previous query again</li>
+  <li><b>filequery</b> PATH FILE - runs the whole file as one query.  The path is optional, so one argument is a file name on its own, and it may be a full path.</li>
+  <li><b>preparefilequery</b> PATH FILE - prepares the whole file as one query, but does not run it.  reexecute runs it, and countbindvariables counts what is in it.</li>
+  <li><b>run</b> FILE - runs the sqlrsh commands in the file.  This is not the same as filequery, which runs a file as one query.</li>
+  <li><b>@</b> FILE - same as run</li>
+  <li><b>continueonerror</b> on|off - carries on past a statement that failed, rather than stopping at the first one</li>
+  <li><b>help</b> - writes the command reference</li>
+  <li><b>exit</b>, <b>quit</b> - exits</li>
+</ul>
+
+<h3>Output Settings</h3>
+
+<ul>
+  <li><b>format</b> plain|csv|json|jsonl - sets the output format</li>
+  <li><b>headers</b> on|off - the column names above the result set.  plain format only.</li>
+  <li><b>divider</b> on|off - the line of = signs under the column names.  plain format only.</li>
+  <li><b>stats</b> on|off - the statistics below the result set</li>
+  <li><b>quiet</b> on|off - shorthand.  quiet on turns headers and stats off, quiet off turns them back on.</li>
+  <li><b>noelapsed</b> on|off - leaves the elapsed time out of the statistics</li>
+  <li><b>fieldsas</b> raw|number|boolean|date - fetches fields with the matching getFieldAs method, where the column suits it</li>
+  <li><b>getasnumber</b> on|off - an alias.  on is fieldsas number, off is fieldsas raw.</li>
+  <li><b>nullsasnulls</b> on|off - gets nulls as nulls, rather than as empty strings</li>
+  <li><b>delimiter</b> CHARACTER - sets the delimiter, and echoes it back.  delimeter is accepted as a spelling of it.</li>
+  <li><b>debug</b> on|off - client library debug messages, to stdout</li>
+  <li><b>debug</b> FILE - client library debug messages, to the named file</li>
+  <li><b>getdebug</b> - whether debug is on</li>
+</ul>
+
+<h3>Result Sets</h3>
+
+<ul>
+  <li><b>setresultsetbuffersize</b> ROWS - fetches rows at a time, rather than all at once.  0 means all at once.  100 is a good place to start.</li>
+  <li><b>getresultsetbuffersize</b> - the number of rows fetched at a time</li>
+  <li><b>lazyfetch</b> on|off - fetches rows as they are asked for, rather than when the query runs</li>
+  <li><b>nextresultset</b> on|off - fetches every result set a query returns, rather than just the first</li>
+  <li><b>columninfo</b> - all of the column metadata of the current result set: name, type, length, precision, scale, nullable, primarykey, unique, partofkey, unsigned, zerofilled, binary and autoincrement</li>
+  <li><b>columninfo</b> on|off - whether column metadata is fetched at all.  off leaves the names and types empty.</li>
+  <li><b>columncase</b> mixed|upper|lower - the case of the column names</li>
+  <li><b>totalrows</b> - the total row count, if the database gives one, and 0 if it does not</li>
+  <li><b>firstrowindex</b> - the index of the first buffered row</li>
+  <li><b>endofresultset</b> - whether the whole result set has arrived</li>
+  <li><b>suspendresultset</b> - leaves the result set open for another session to resume</li>
+  <li><b>resultsetid</b> - the id of the suspended result set</li>
+  <li><b>resumeresultset</b> ID - resumes the result set and writes the rest of it.  No id means this cursor's own.</li>
+  <li><b>closeresultset</b> - closes the result set</li>
+  <li><b>querytree</b> - the parsed query, as xml</li>
+  <li><b>translatedquery</b> - the query, after translation</li>
+  <li><b>lastinsertid</b> - the value of the most recently updated auto-increment or identity column, if the database has one</li>
+</ul>
+
+<h3>Caching</h3>
+
+<ul>
+  <li><b>cache</b> FILE TTL - caches the next result set to the file, with a time to live of TTL seconds.  600 if left out.</li>
+  <li><b>cacheoff</b> - stops caching</li>
+  <li><b>cachefilename</b> - the file the result set is being cached to</li>
+  <li><b>opencache</b> FILE - opens a cached result set and writes it</li>
+  <li><b>resumecachedresultset</b> ID FILE - resumes a suspended result set and keeps caching it to the file.  A resume appends rather than truncating, so the name should be the one the original session was already caching to.</li>
+</ul>
+
+<p>A cache file name is taken relative to the cache directory, which lives under the directory -localstatedir names.</p>
+
+<h3>Bind Variables</h3>
+
+<p><b>inputbind</b> defines an input bind variable, in one of three forms:</p>
+
+<blockquote>
+  <pre>inputbind [variable] = [value]
+inputbind [variable] is null
+inputbind [variable] string [length] = [value]
+</pre>
+
+</blockquote>
+<p>A quoted value is a string.  An unquoted one is an integer or a decimal if it looks like one, and a date if it is MM/DD/YYYY HH24:MI:SS:uS TZN.  The string form binds exactly length bytes, cutting off or null padding to fit, which is the only way to spell a value with an embedded null.</p>
+
+<p><b>inputbindblob</b> and <b>inputbindclob</b> define a blob or clob input bind variable:</p>
+
+<blockquote>
+  <pre>inputbindblob [variable] = [value]
+inputbindblob [variable] is null
+inputbindclob [variable] = [value]
+inputbindclob [variable] is null
+</pre>
+
+</blockquote>
+<p>A value in quotes has them trimmed and what is between them unescaped.  An unquoted value is taken as it stands.</p>
+
+<p><b>outputbind</b> defines an output bind variable:</p>
+
+<blockquote>
+  <pre>outputbind [variable] string [length]
+outputbind [variable] integer
+outputbind [variable] double [precision] [scale]
+outputbind [variable] date
+outputbind [variable] blob
+outputbind [variable] clob
+outputbind [variable] cursor
+</pre>
+
+</blockquote>
+<p>A cursor bind has no value of its own.  fetchfrombindcursor is what reads one.</p>
+
+<p><b>inputoutputbind</b> defines an input/output bind variable:</p>
+
+<blockquote>
+  <pre>inputoutputbind [variable] string [length] = [value]
+inputoutputbind [variable] integer = [value]
+inputoutputbind [variable] double [precision] [scale] = [value]
+inputoutputbind [variable] date = [value]
+inputoutputbind [variable] [type] ... is null
+</pre>
+
+</blockquote>
+<p>The rest of the bind variable commands are:</p>
+
+<ul>
+  <li><b>fetchfrombindcursor</b> VARIABLE - writes the result set of a cursor output bind of the query that just ran, the way a query writes one.  Needs a database with ref cursors, so Oracle or DB2.</li>
+  <li><b>printbinds</b> - all three bind variable lists</li>
+  <li><b>printinputbind</b>, <b>printoutputbind</b>, <b>printinputoutputbind</b> - one of the three lists</li>
+  <li><b>clearinputbind</b> VARIABLE, <b>clearoutputbind</b> VARIABLE, <b>clearinputoutputbind</b> VARIABLE - clears one bind variable out of one of the three lists.  With no variable name, clears the whole list.  A variable name that is not in the list is an error, and the command fails.</li>
+  <li><b>clearbinds</b> - clears all three lists</li>
+  <li><b>countbindvariables</b> - the number of bind variables in the query that was prepared last.  Every way of running a query except preparefilequery also executes it, so preparefilequery is what makes this useful.</li>
+  <li><b>validatebinds</b> on|off - ignores bind variables the query does not have, rather than failing.  No value means on.</li>
+  <li><b>validbind</b> VARIABLE - whether the variable really was a bind variable of the query that just ran.  Only means anything after a query that ran with validatebinds on.</li>
+  <li><b>bindformat</b> - the bind variable format of the database</li>
+  <li><b>bindvariabledelimiters</b> - the bind variable delimiters in use</li>
+  <li><b>bindvariabledelimiters</b> DELIMITERS - sets them, from the set ? : @ $</li>
+  <li><b>bindvariabledelimitersupported</b> DELIMITER - whether one of ? : @ $ is supported</li>
+</ul>
+
+<h3>Substitutions</h3>
+
+<ul>
+  <li><b>substitution</b> VARIABLE = VALUE - replaces $(VARIABLE) in the query text when the query is prepared.  A substitution is not a bind variable.  The value is typed the way an input bind value is, except that there is no date and no null.</li>
+  <li><b>clearsubstitutions</b> - clears the substitution list</li>
+</ul>
+
+<h3>Session and Database Information</h3>
+
+<ul>
+  <li><b>ping</b> - pings the database</li>
+  <li><b>identify</b> - the type of database</li>
+  <li><b>dbversion</b> - the version of the database</li>
+  <li><b>dbhostname</b> - the host name of the database</li>
+  <li><b>dbipaddress</b> - the ip address of the database</li>
+  <li><b>clientversion</b> - the version of the client library</li>
+  <li><b>serverversion</b> - the version of the server</li>
+  <li><b>databasefeature</b> FEATURE - whether the database has the feature</li>
+  <li><b>nextvalformat</b> - the sequence next-value format of the database</li>
+  <li><b>setclientinfo</b> INFO - sets the client info string</li>
+  <li><b>getclientinfo</b> - the client info string</li>
+  <li><b>endsession</b> - ends the session.  The next command starts a new one.</li>
+  <li><b>final</b> on|off - one session per query</li>
+  <li><b>suspendsession</b> - leaves the session open for another client to resume</li>
+  <li><b>connectionport</b> - the port of the suspended session</li>
+  <li><b>connectionsocket</b> - the unix socket of the suspended session.  Both of these only mean anything after a suspendsession.</li>
+  <li><b>resumesession</b> PORT, <b>resumesession</b> PORT SOCKET - resumes a suspended session.  An inet session has no socket, so the socket is optional.</li>
+  <li><b>connect timeout</b> SECONDS.MICROSECONDS - the timeout for the next connect, which is what a resumesession, or a reconnect after an endsession, uses.  It does not apply to the session sqlrsh is already in.</li>
+  <li><b>getconnecttimeout</b> - the connect timeout, or -1 when it is off</li>
+  <li><b>response timeout</b> SECONDS.MICROSECONDS - the timeout for a response from the server</li>
+  <li><b>getresponsetimeout</b> - the response timeout, or -1 when it is off</li>
+</ul>
+
+<p>The part after the dot in a timeout is microseconds, not a decimal fraction of a second.  So "connect timeout 5.25" sets 5 seconds and 25 microseconds, not five and a quarter seconds.  Leave the dot out for a whole number of seconds.</p>
+
+<p>Both the setters and the get commands report a timeout with the microseconds padded to 6 places, so 5 seconds and 25 microseconds comes back as 5.000025.  What they print reads correctly as decimal seconds, and can be given straight back to the setter unchanged.</p>
+
+<h3>Databases, Catalogs and Schemas</h3>
+
+<ul>
+  <li><b>use</b> DATABASE - changes the current database or schema</li>
+  <li><b>currentdb</b> - the current database or schema</li>
+  <li><b>usecatalog</b> CATALOG - changes the current catalog</li>
+  <li><b>currentcatalog</b> - the current catalog</li>
+  <li><b>useschema</b> SCHEMA - changes the current schema</li>
+  <li><b>currentschema</b> - the current schema</li>
+  <li><b>currentuser</b> - the current user</li>
+  <li><b>databaseisschema</b> - whether the database is what other databases would call a schema</li>
+</ul>
+
+<h3>Transactions</h3>
+
+<ul>
+  <li><b>autocommit</b> on|off - commits after every query</li>
+  <li><b>getautocommit</b> - whether autocommit is on</li>
+  <li><b>begin</b>, <b>commit</b>, <b>rollback</b> - begins a transaction, commits, or rolls back</li>
+  <li><b>txqueries</b> on|off - sends begin, commit and rollback to the database as queries, rather than running them as commands</li>
+  <li><b>intransaction</b> - whether a transaction is open</li>
+  <li><b>isolationlevel</b> - the current isolation level</li>
+  <li><b>isolationlevel</b> LEVEL - sets it</li>
+  <li><b>defaultisolationlevel</b> - the isolation level the session starts with</li>
+  <li><b>transactionmodel</b> - the current transaction model</li>
+  <li><b>transactionmodel</b> MODEL - sets it</li>
+  <li><b>defaulttransactionmodel</b> - the transaction model the session starts with</li>
+</ul>
+
+<h3>Metadata</h3>
+
+<ul>
+  <li><b>show databases</b> - the known databases or schemas</li>
+  <li><b>show catalogs</b> - the known catalogs</li>
+  <li><b>show schemas</b> - the known schemas</li>
+  <li><b>show tables</b> - the known tables, views, aliases and synonyms</li>
+  <li><b>show only tables</b> - tables only</li>
+  <li><b>show only views</b> - views only</li>
+  <li><b>show only aliases</b> - aliases only</li>
+  <li><b>show only synonyms</b> - synonyms only</li>
+  <li><b>show table types</b> - the table types the database has</li>
+  <li><b>show columns in</b> TABLE - column metadata for the table</li>
+  <li><b>describe</b> TABLE - the same column metadata that show columns writes</li>
+  <li><b>fields</b> TABLE - the column names of the table, on one line</li>
+  <li><b>show primary keys in</b> TABLE - the primary keys of the table</li>
+  <li><b>show keys and indexes in</b> TABLE - the keys and indexes of the table</li>
+  <li><b>show procedures</b> - the known procedures</li>
+  <li><b>show procedure parameters in</b> PROCEDURE - the parameters of the procedure</li>
+  <li><b>show type info</b> - every type the database supports</li>
+  <li><b>show type info for</b> TYPE - just the one type</li>
+  <li><b>show lastinsertid</b> - the last insert id, as a result set</li>
+</ul>
+
+<p>Most of these take an optional like clause on the end, which filters the list.  show table types, show type info, show lastinsertid, describe and fields do not.</p>
+
+<blockquote>
+  <pre>show tables like 'a%'
+show columns in mytable like 'id%'
+show only views like 'v_%'
+</pre>
+
+</blockquote>
+<p>A pattern goes in single quotes, and a single quote inside one is doubled.  The wildcards are the database's own, usually % and _.</p>
+
+<p>databases, catalogs, schemas, tables, table types, columns, procedures, type info and the show only forms each take an optional list format, right after the category:</p>
+
+<blockquote>
+  <pre>show tables mysql
+show tables odbc like 'a%'
+show columns jdbc in mytable
+show only views odbc
+</pre>
+
+</blockquote>
+<p>The list format decides the columns of the result set.  mysql gives what a MySQL client would see, odbc what an ODBC client would see, and jdbc what a JDBC client would see.  Left out, the columns are whatever the database itself returns.</p>
+
+<h3>Notes</h3>
+
+<ul>
+  <li>an on|off command with no value means off, so "headers;" turns headers off.  Any value that does not begin with "on" also means off, and nothing is said about it.</li>
+  <li>a command that sets something writes nothing when it works</li>
+  <li>a command that fails writes to stderr and, in a script or a -command list, stops the run and exits 4</li>
+</ul>
+
+<a name="exitcodes"/><h2>Exit Codes</h2>
+
+<ul>
+  <li><b>0</b> - success.  An interactive session always exits 0, even if a query at the prompt failed.  An interactive session is not a batch.</li>
+  <li><b>1</b> - usage error.  A run with no -id, no -host and no -socket, an option that takes a value given without one, an unrecognized -format or -fieldsas name, or a -locale value that setlocale rejects.</li>
+  <li><b>2</b> - the file named by -script could not be opened.  A file that the run command could not open is a failed command in the outer script, so that is a 4, not a 2.</li>
+  <li><b>3</b> - connection or authentication failure.  The connection is checked at startup, so this is reported before any command runs, in every mode.</li>
+  <li><b>4</b> - at least one statement in a script or a -command list failed, not necessarily all of them.  Without -continueonerror the run stopped at that statement, and with it the run went on.</li>
+</ul>
+
+<h3>Continuing Past An Error</h3>
+
+<p>-continueonerror, and the continueonerror command, make a script or a -command list run every statement rather than stopping at the first one that failed.</p>
+
+<p>A statement rejected before it reached the database, such as a bad format name or a run of a file that could not be opened, and a statement the database rejected count the same.  Each failed statement still writes its own error.</p>
+
+<p>A failure that takes the session down with it stops the run anyway, because the rest of the statements have nothing left to run against.</p>
+
+<p>At the end of a run with anything failed, the number of failed statements is written to stderr, and the exit code is 4:</p>
+
+<blockquote>
+  <pre>statements failed: 3
+</pre>
+
+</blockquote>
+<p>With continueonerror off the run stopped at its first failure, so the count would always be 1, and none is written.</p>
+
+<a name="files"/><h2>The RC File and the History File</h2>
+
+<p>When sqlrsh starts up, it reads and runs one rc file: .sqlrshrc in your home directory.</p>
+
+<ul>
+  <li>it is read in every mode, interactive and not, before the -script file or the -command string</li>
+  <li>it should hold sqlrsh commands, each ending in the delimiter, one per line.  Any command may be used, queries included.</li>
+  <li>a missing file is not an error</li>
+  <li>a failing command in it is not counted and does not change the exit code</li>
+</ul>
+
+<p>It is the place for settings you want on every run.  For example:</p>
+
+<blockquote>
+  <pre>setresultsetbuffersize 100;
+columncase lower;
+</pre>
+
+</blockquote>
+<p>sqlrsh also keeps a history file, .sqlrsh_history in your home directory.  It holds the last 100 lines typed at the prompt.</p>
+
+</div> <!-- content -->
+
+
+<div id="copyrightbox">
+Copyright 2024 - David Muse - <a href="mailto:david.muse@firstworks.com">Contact</a> <img style="margin-left: 5px; vertical-align: text-bottom;" title="native english speaker" src="../images/us.png"/> <img style="vertical-align: text-bottom;" title="falo português também" src="../images/br.png"/>
+</div> <!-- copyrightbox -->
+
+</div>
+
+</body>
+</html>
+
+
