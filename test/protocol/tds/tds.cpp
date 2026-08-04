@@ -57,7 +57,12 @@ CS_RETCODE clientMessageCallback(CS_CONTEXT *ctxt,
 
 	stdoutput.printf("%s\n",errorstring.getString());
 
-	return CS_SUCCEED;
+	// A timeout is the only client library error that looks at this
+	// return code, and answering CS_SUCCEED there means "keep waiting".
+	// The timeouts set below are there so that a protocol module which
+	// stops answering fails this test rather than hanging it, and make
+	// tests along with it, so answer CS_FAIL and let ct-lib give up.
+	return CS_FAIL;
 }
 
 CS_RETCODE serverMessageCallback(CS_CONTEXT *ctxt, 
@@ -3761,7 +3766,11 @@ int	main(int argc, char **argv) {
 					(CS_VOID *)&ncols,CS_UNUSED,
 					(CS_INT *)NULL),CS_SUCCEED);
 	assertEquals(ncols,4);
-	for (CS_INT i=0; i<4; i++) {
+
+	// ct_describe on a result whose column count is zero segfaults
+	// inside libct, so the count above has to gate the loop rather than
+	// just be asserted, or a regression here ends the whole run
+	for (CS_INT i=0; i<ncols && i<4; i++) {
 		bytestring::zero(&(dyndesc[i]),sizeof(CS_DATAFMT));
 		assertEquals(ct_describe(cmd,i+1,&(dyndesc[i])),CS_SUCCEED);
 		assertEquals(dyndesc[i].name,dyncolname[i]);

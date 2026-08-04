@@ -6627,7 +6627,14 @@ void sqlrprotocol_tds::done(byte_t token,
 void sqlrprotocol_tds::doneInProc(uint16_t status,
 					uint16_t curcmd,
 					uint64_t donerowcount) {
-	done(TOKEN_DONEINPROC,status,curcmd,donerowcount);
+
+	// A done-in-proc is always followed by at least the done-proc that
+	// closes the rpc, so it is never the last done in a response, and
+	// sql server always sets DONE_MORE on one.  Without that bit freetds
+	// takes it for the last one, stops reading there, and leaves the rest
+	// of the response in its buffer, which puts every command after it
+	// one response behind.
+	done(TOKEN_DONEINPROC,status|DONE_MORE,curcmd,donerowcount);
 }
 
 void sqlrprotocol_tds::returnStatus(uint32_t value) {
