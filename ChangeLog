@@ -118,6 +118,19 @@
 	fixed a couple of memory leaks in sqlrsh - the default password taken
 		from the config file and the history file name were both
 		allocated and never freed
+	fixed an out-of-bounds read in the sqlrsh nullsasnulls command - the
+		command name was matched at 12 characters but the pointer was
+		advanced 13, so a bare "nullsasnulls;" read past the end of
+		the string
+	fixed the sqlrsh -id tlsciphers default - the guard tested getValue()
+		rather than isFound(), and getValue() returns an empty string
+		rather than a null for an option that wasn't given, so the
+		cipher list in the config file was never applied
+	fixed sqlrsh command line options that take a value - a missing value
+		came out empty, which meant 0 for the numeric options, so a
+		trailing -resultsetbuffersize quietly set the buffer size to 0
+		rather than being a usage error, and every other value-taking
+		option was quietly dropped
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems

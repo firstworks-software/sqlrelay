@@ -297,6 +297,10 @@ class	sqlrsh {
 		// "defaultvalue" if the option wasn't given.  An option given
 		// without a value means on.
 		bool	onOffOption(const char *arg, bool defaultvalue);
+		// returns the name of the first command line option that
+		// requires a value but was given without one, or NULL if
+		// there wasn't one
+		const char	*missingValueOption();
 		void	startupMessage(sqlrshenv *env,
 					const char *host,
 					uint16_t port,
@@ -1011,7 +1015,7 @@ bool sqlrsh::internalCommand(sqlrconnection *sqlrcon, sqlrcursor *sqlrcur,
 		ptr=ptr+5;
 		cmdtype=4;
 	} else if (!charstring::compareIgnoringCase(ptr,"nullsasnulls",12)) {	
-		ptr=ptr+13;
+		ptr=ptr+12;
 		cmdtype=9;
 	} else if (!charstring::compareIgnoringCase(ptr,"autocommit",10)) {	
 		ptr=ptr+10;
@@ -5278,9 +5282,69 @@ bool sqlrsh::onOffOption(const char *arg, bool defaultvalue) {
 	return !charstring::compareIgnoringCase(value,"on",2);
 }
 
+// the options that require a value, in one place
+// (the on/off options aren't here, and neither are -krb and -tls, because a
+// bare one of those is legal and means on)
+static const char * const	valueoptions[]={
+	"config",
+	"id",
+	"host",
+	"port",
+	"socket",
+	"user",
+	"password",
+	"krbservice",
+	"krbmech",
+	"krbflags",
+	"tlsversion",
+	"tlscert",
+	"tlspassword",
+	"tlsciphers",
+	"tlsvalidate",
+	"tlsca",
+	"tlsdepth",
+	"script",
+	"command",
+	"delimiter",
+	"delimeter",
+	"format",
+	"resultsetbuffersize",
+	"locale",
+	"localstatedir",
+	NULL
+};
+
+const char *sqlrsh::missingValueOption() {
+
+	// getValue() returns an empty string for an option with no value, for
+	// an option followed by another option, and for an option that isn't
+	// there at all, so isFound() is what decides presence, like it does in
+	// onOffOption() above
+	for (const char * const *o=valueoptions; *o; o++) {
+		if (cmdline->isFound(*o) &&
+			charstring::isNullOrEmpty(cmdline->getValue(*o))) {
+			return *o;
+		}
+	}
+	return NULL;
+}
+
 int32_t sqlrsh::execute(int argc, const char **argv) {
 
 	cmdline=new sqlrcmdline(argc,argv);
+
+	// an option that requires a value has to have one
+	// A missing value used to come out empty, which meant 0 for the
+	// numeric options, so a trailing -resultsetbuffersize set the buffer
+	// size to 0.  It's a usage error now.
+	const char	*mvo=missingValueOption();
+	if (mvo) {
+		stderror.printf("usage: -%s requires a value.  "
+				"Use --%s=value if the value "
+				"begins with a dash.\n",mvo,mvo);
+		return SQLRSH_EXIT_USAGE;
+	}
+
 	sqlrpth=new sqlrpaths(cmdline);
 	sqlrconfigs	sqlrcfgs(sqlrpth);
 	sqlrconfig	*cfg=NULL;
@@ -5396,7 +5460,7 @@ int32_t sqlrsh::execute(int argc, const char **argv) {
 			if (!cmdline->isFound("tls")) {
 				usetls=cfg->getDefaultTls();
 			}
-			if (!cmdline->getValue("tlsciphers")) {
+			if (!cmdline->isFound("tlsciphers")) {
 				tlsciphers=cfg->getDefaultTlsCiphers();
 			}
 			if (!cmdline->isFound("user")) {
@@ -5647,6 +5711,12 @@ static void helpmessage(const char *progname) {
 		"	-version		Show the version and exit.  Must be the only\n"
 		"				option.\n"
 		"\n"
+		"Option values:\n"
+		"\n"
+		"An option that takes a value has to be given one, so -resultsetbuffersize by\n"
+		"itself exits 1.  A value that begins with a dash has to be given as\n"
+		"--option=value, because \"-option -value\" reads the dash as the next option.\n"
+		"\n"
 		"On and off:\n"
 		"\n"
 		"An on|off option with no value means on, so -headers by itself turns headers\n"
@@ -5733,8 +5803,9 @@ static void helpmessage(const char *progname) {
 		"0	Success.  An interactive session always exits 0, even if a query at\n"
 		"	the prompt failed.  An interactive session is not a batch.\n"
 		"\n"
-		"1	Usage error.  A run with no -id, no -host and no -socket, an\n"
-		"	unrecognized -format name, or a -locale value that setlocale rejects.\n"
+		"1	Usage error.  A run with no -id, no -host and no -socket, an option\n"
+		"	that takes a value given without one, an unrecognized -format name,\n"
+		"	or a -locale value that setlocale rejects.\n"
 		"\n"
 		"2	The file named by -script could not be opened.  A file that the run\n"
 		"	command could not open is a failed command in the outer script, so\n"

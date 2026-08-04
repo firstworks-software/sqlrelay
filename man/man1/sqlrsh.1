@@ -213,6 +213,12 @@ option on the command line.
 \fB\-version\fR
 Write the version and exit.  Has to be the only
 option on the command line.
+.SH "OPTION VALUES"
+An option that takes a value has to be given one, so \fB\-resultsetbuffersize\fR
+by itself exits 1.
+.PP
+A value that begins with a dash has to be given as \fB\-\-option\fR=value,
+because "\fB\-option\fR \fB\-value\fR" reads the dash as the next option.
 .SH "ON AND OFF"
 An on|off option with no value means on, so \fB\-headers\fR by itself turns
 headers on.  Any value that does not begin with "on" means off, and nothing is
@@ -765,8 +771,8 @@ failed.  An interactive session is not a batch.
 .TP
 1
 Usage error.  A run with no \fB\-id\fR, no \fB\-host\fR and no \fB\-socket\fR,
-an unrecognized \fB\-format\fR name, or a \fB\-locale\fR value that setlocale
-rejects.
+an option that takes a value given without one, an unrecognized \fB\-format\fR
+name, or a \fB\-locale\fR value that setlocale rejects.
 .TP
 2
 The file named by \fB\-script\fR could not be opened.  A file that the run
