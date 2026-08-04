@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <instances>
 
-	<instance id="tdsprotocoltest" dbase="odbc">
+	<instance id="tdsprotocoltest" dbase="odbc" translatebindvariables="yes">
 		<listeners>
 			<listener protocol="tds" port="1433"/>
 		</listeners>

@@ -372,6 +372,52 @@
 		the 18 connection options sqlrcmdline already knows, so the
 		two lists could drift and a value-taking option added to one
 		would have been missed by the other
+	added rpc support to the tds protocol module - sp_executesql,
+		sp_prepare, sp_execute, sp_prepexec, sp_prepexecrpc,
+		sp_unprepare, sp_cursoropen, sp_cursorprepare,
+		sp_cursorexecute, sp_cursorprepexec, sp_cursorunprepare,
+		sp_cursorfetch, sp_cursoroption and sp_cursorclose were all
+		empty stubs that answered nothing, so a client that prepared
+		a statement or opened a server-side cursor - which is what
+		odbc and jdbc normally do - just hung, and each proc can now
+		be sent either by numeric proc id or by name, the way freetds
+		sends sp_execute
+	fixed the tds protocol module's rpc option flags - fNoMetaData and
+		fReuseMetaData were read from bits 2 and 3 rather than 1 and
+		2, so the no-metadata request that freetds sends on
+		sp_cursorfetch was read as something else
+	fixed the tds protocol module's rpc parameters - they were never
+		parsed at all on the numeric proc id path, the proc name was
+		used after it was freed, and a named procedure's result set
+		was never sent, so even exec someproc that selects returned
+		nothing
+	fixed the tds protocol module's rpc parameter collation - the five
+		collation bytes were read for char and text parameters
+		whatever the protocol version, but there is no collation
+		before tds 7.1, so every parameter after the first one on a
+		7.0 connection was read from the wrong offset, which read
+		past the end of the request packet
+	added text, ntext and xml rpc parameter values to the tds protocol
+		module - they were skipped, and that is how freetds sends the
+		statement and parameter declaration strings that sp_prepare
+		and sp_executesql take
+	added return values to the tds protocol module - returnValue() wrote
+		a token byte and nothing else, so the prepared statement
+		handle and cursor id that a client reads out of the first
+		return value never arrived
+	fixed the tds protocol module's attention signal packet type - it was
+		0x05 rather than the 0x06 that MS-TDS 2.2.3.1.1 gives, so
+		every client cancel was rejected as an invalid packet type
+		and ended the session, and an attention is now acknowledged
+		with a done that has the attention bit set
+	fixed the tds protocol module's bind variable count - a sql batch
+		left whatever bind count the last rpc on that cursor had set,
+		so the next batch was sent to the database with bind values
+		it had no bind variables for
+	fixed the tds protocol module's bulk load - it returned false, which
+		ended the session, so the client saw a dropped connection
+		rather than an error, it now reports that bulk load isn't
+		supported and keeps the session
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems

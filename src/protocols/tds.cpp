@@ -16,7 +16,7 @@
 #define PRE_TDS7_LOGIN			0x02
 #define RPC				0x03
 #define TABULAR_RESULT			0x04
-#define ATTENTION_SIGNAL		0x05
+#define ATTENTION_SIGNAL		0x06
 #define BULK_LOAD_DATA			0x07
 #define FEDERATED_AUTHENTICATION_TOKEN	0x08
 #define TRANSACTION_MANAGER_REQUEST	0x0E
@@ -625,6 +625,8 @@ static byte_t	tdstypemap[]={
 #define SP_PREP_EXEC_RPC	14 
 #define SP_UNPREPARE		15 
 
+#define SP_MAX_PROCID		15
+
 static const char *procids[]={
 	"",
 	"SP_CURSOR",
@@ -643,6 +645,69 @@ static const char *procids[]={
 	"SP_PREP_EXEC_RPC",
 	"SP_UNPREPARE"
 };
+
+// Clients may send any of the procs above by name instead of by id.  Freetds
+// always sends sp_execute by name, for example.  Indices match procids above.
+static const char *procnames[]={
+	"",
+	"sp_cursor",
+	"sp_cursoropen",
+	"sp_cursorprepare",
+	"sp_cursorexecute",
+	"sp_cursorprepexec",
+	"sp_cursorunprepare",
+	"sp_cursorfetch",
+	"sp_cursoroption",
+	"sp_cursorclose",
+	"sp_executesql",
+	"sp_prepare",
+	"sp_execute",
+	"sp_prepexec",
+	"sp_prepexecrpc",
+	"sp_unprepare"
+};
+
+// rpc option flags (MS-TDS 2.2.6.6)
+#define RPC_WITH_RECOMP		0x0001
+#define RPC_NO_META_DATA	0x0002
+#define RPC_REUSE_META_DATA	0x0004
+
+// rpc batch flags, which follow the parameters
+#define RPC_BATCH_FLAG		0x80
+#define RPC_NO_EXEC_FLAG	0xFF
+
+// sp_cursoropen scroll options
+#define CURSOR_SCROLLOPT_KEYSET		0x0001
+#define CURSOR_SCROLLOPT_DYNAMIC	0x0002
+#define CURSOR_SCROLLOPT_FORWARD_ONLY	0x0004
+#define CURSOR_SCROLLOPT_STATIC		0x0008
+#define CURSOR_SCROLLOPT_FAST_FORWARD	0x0010
+#define CURSOR_SCROLLOPT_PARAMETERIZED	0x1000
+
+// sp_cursoropen concurrency control options
+#define CURSOR_CCOPT_READ_ONLY		0x0001
+#define CURSOR_CCOPT_SCROLL_LOCKS	0x0002
+#define CURSOR_CCOPT_OPTIMISTIC		0x0004
+#define CURSOR_CCOPT_ALLOW_DIRECT	0x2000
+
+// sp_cursorfetch fetch types
+#define CURSOR_FETCH_FIRST	0x0001
+#define CURSOR_FETCH_NEXT	0x0002
+#define CURSOR_FETCH_PREV	0x0004
+#define CURSOR_FETCH_LAST	0x0008
+#define CURSOR_FETCH_ABSOLUTE	0x0010
+#define CURSOR_FETCH_RELATIVE	0x0020
+#define CURSOR_FETCH_REFRESH	0x0080
+#define CURSOR_FETCH_INFO	0x0100
+#define CURSOR_FETCH_PREV_NOADJUST	0x0200
+#define CURSOR_FETCH_SKIP_UPDATE_CNT	0x0400
+
+// the return status that all of these procs use for success
+#define RPC_STATUS_SUCCESS	0
+#define RPC_STATUS_FAILURE	1
+
+// close-all cursor id for sp_cursorclose
+#define CURSOR_CLOSE_ALL	0xFFFFFFFF
 
 
 // TDS protocol class
@@ -739,6 +804,8 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_tds : public sqlrprotocol {
 		// a digit count.
 		byte_t	nTypeSize(byte_t tdstype, uint32_t colsize);
 		uint64_t	rows(sqlrservercursor *cursor);
+		uint64_t	rows(sqlrservercursor *cursor,
+					uint64_t maxrows);
 		void	lobData(byte_t tdstype);
 		void	field(byte_t tdstype,
 					uint32_t colsize,
@@ -770,19 +837,72 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_tds : public sqlrprotocol {
 		bool	bulkLoad();
 
 		bool	remoteProcedureCall();
-		bool	params(sqlrservercursor *cursor,
-					const byte_t *rp,
+		bool	rpc(const byte_t **rpinout,
+					size_t *rpsizeinout,
+					bool *more);
+		uint16_t	procNameToProcId(const char *procname);
+		bool	params(const byte_t *rp,
 					size_t rpsize,
-					const byte_t **rpout);
-		bool	param(sqlrservercursor *cursor,
-					uint16_t *inbindcount,
-					uint16_t *outbindcount,
-					sqlrserverbindvar *inbinds,
-					sqlrserverbindvar *outbinds,
+					const byte_t **rpout,
+					size_t *rpsizeout);
+		bool	param(uint16_t param,
 					const byte_t *rp,
 					const byte_t **rpout,
-					bool exceededinbind,
-					bool exceededoutbind);
+					bool exceeded);
+		void	batchFlags(const byte_t *rp,
+					size_t rpsize,
+					const byte_t **rpout,
+					size_t *rpsizeout,
+					bool *more);
+
+		// rpc parameter accessors - "param" indexes the parameters
+		// as they arrived on the wire
+		bool		paramIsNull(uint16_t param);
+		int64_t		paramInteger(uint16_t param);
+		const char	*paramString(uint16_t param);
+
+		// binds params [first..rpcparamcount) to the cursor
+		void	bindParams(sqlrservercursor *cursor, uint16_t first);
+
+		// rpc handlers
+		bool	namedProc(const char *procname, bool nometadata);
+		bool	executeSql(bool nometadata);
+		bool	prepare(bool prepexec, bool rpcsyntax, bool nometadata);
+		bool	execute(bool nometadata);
+		bool	unprepare();
+		bool	cursorOpen(bool nometadata);
+		bool	cursorPrepare();
+		bool	cursorExecute(bool nometadata);
+		bool	cursorPrepExec(bool nometadata);
+		bool	cursorUnprepare();
+		bool	cursorFetch(bool nometadata);
+		bool	cursorOption();
+		bool	cursorClose();
+		bool	cursorUnsupported();
+
+		// rpc response builders
+		void	rpcResultSet(sqlrservercursor *cursor,
+					bool nometadata,
+					uint64_t maxrows);
+		void	rpcError(sqlrservercursor *cursor);
+		bool	rpcInvalidHandleError(const char *what,
+					uint32_t handle);
+
+		uint32_t	newHandle();
+		sqlrservercursor	*handleCursor(
+					dictionary<uint32_t,
+						sqlrservercursor *> *handles,
+					uint32_t handle);
+		bool	handlesContain(dictionary<uint32_t,
+						sqlrservercursor *> *handles,
+					sqlrservercursor *cursor);
+		void	releaseHandles(dictionary<uint32_t,
+						sqlrservercursor *> *handles,
+					dictionary<uint32_t,
+						sqlrservercursor *> *other);
+
+		// converts odbc {call p(?,?)} syntax to exec p ?,?
+		char	*callSyntaxToExec(const char *stmt);
 
 		void	envChange(byte_t type,
 					const wchar_t *newvalue,
@@ -839,10 +959,14 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_tds : public sqlrprotocol {
 		void	doneInProc(uint16_t status,
 					uint16_t curcmd,
 					uint64_t donerowcount);
-		void	returnStatus(sqlrservercursor *cursor);
+		void	returnStatus(uint32_t value);
 		void	returnValues(sqlrservercursor *cursor);
 		void	returnValue(sqlrservercursor *cursor,
 					uint16_t param);
+		void	returnValueInteger(uint16_t ordinal,
+					int32_t value,
+					bool isnull);
+		void	returnValueHeader(uint16_t ordinal);
 		void	doneProc(uint16_t status,
 					uint16_t curcmd,
 					uint64_t donerowcount);
@@ -878,6 +1002,28 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_tds : public sqlrprotocol {
 		uint32_t	negotiatedpacketsize;
 
 		bool		dbistds;
+
+		// rpc parameters, as they arrived on the wire.  The handlers
+		// decide which are the proc's own arguments and which are
+		// bind values for the statement it carries.
+		memorypool		rpcparampool;
+		sqlrserverbindvar	*rpcparams;
+		bool			*rpcparambyref;
+		char			**rpcparamnames;
+		uint16_t		*rpcparamnamesizes;
+		uint16_t		rpcparamcount;
+
+		// prepared statement and cursor handles.  These are handed
+		// out independently of each other and of the cursor id,
+		// because a client can hold a prepared handle and a cursor
+		// derived from it at the same time.  Handle 0 is invalid.
+		dictionary<uint32_t, sqlrservercursor *>	stmthandles;
+		dictionary<uint32_t, sqlrservercursor *>	cursorhandles;
+		uint32_t					nexthandle;
+
+		// false once a cursor has been executed, so that fetching
+		// more rows doesn't run the query again
+		dictionary<sqlrservercursor *, bool>		executeflag;
 };
 
 sqlrprotocol_tds::sqlrprotocol_tds(sqlrservercontroller *cont,
@@ -929,6 +1075,12 @@ sqlrprotocol_tds::sqlrprotocol_tds(sqlrservercontroller *cont,
 		bindvarnamesizes[i]=charstring::getLength(bindvarnames[i]);
 	}
 
+	rpcparams=new sqlrserverbindvar[maxbindcount];
+	rpcparambyref=new bool[maxbindcount];
+	rpcparamnames=new char *[maxbindcount];
+	rpcparamnamesizes=new uint16_t[maxbindcount];
+	rpcparamcount=0;
+
 	init();
 }
 
@@ -940,6 +1092,11 @@ sqlrprotocol_tds::~sqlrprotocol_tds() {
 	}
 	delete[] bindvarnames;
 	delete[] bindvarnamesizes;
+
+	delete[] rpcparams;
+	delete[] rpcparambyref;
+	delete[] rpcparamnames;
+	delete[] rpcparamnamesizes;
 }
 
 void sqlrprotocol_tds::init() {
@@ -957,12 +1114,25 @@ void sqlrprotocol_tds::init() {
 
 	oldpacketsize=configpacketsize;
 	negotiatedpacketsize=configpacketsize;
+
+	// handle 0 is invalid
+	nexthandle=1;
+
+	rpcparamcount=0;
 }
 
 void sqlrprotocol_tds::free() {
 	reqpacketpool.clear();
 	reqpacket.clear();
 	resppacket.clear();
+
+	rpcparampool.clear();
+
+	// the session's cursors get released with the session, so these
+	// just have to forget about them
+	stmthandles.clear();
+	cursorhandles.clear();
+	executeflag.clear();
 }
 
 void sqlrprotocol_tds::reInit() {
@@ -2497,14 +2667,16 @@ bool sqlrprotocol_tds::federatedAuthenticationToken() {
 
 bool sqlrprotocol_tds::attention() {
 
-	//const byte_t	*rp=reqpacket.getBuffer();
-
 	debugStart("attention");
 	debugEnd();
 
-	// FIXME: actually implement this
+	// The query has already run by the time the cancel arrives, so
+	// there's nothing to interrupt.  MS-TDS 2.2.1.6 says to acknowledge
+	// it with a done that has the attention bit set, either way.
 
-	return sendUnimplementedFeatureError();
+	resppacket.clear();
+	done(DONE_FINAL|DONE_ATTN,0,0);
+	return sendPacket();
 }
 
 bool sqlrprotocol_tds::transactionManagerRequest() {
@@ -2573,6 +2745,11 @@ bool sqlrprotocol_tds::sqlBatch() {
 	debugWrite("sql: %s",sql8);
 	debugWrite("sqllength: %lld",(uint64_t)sqllength);
 	debugEnd();
+
+	// A batch has no bind variables, and the cursor may have been left
+	// with some by an rpc that used it earlier.
+	cont->setInputBindCount(cursor,0);
+	cont->setOutputBindCount(cursor,0);
 
 	// run the query
 	bool	success=
@@ -3263,6 +3440,10 @@ byte_t sqlrprotocol_tds::nTypeSize(byte_t tdstype, uint32_t colsize) {
 }
 
 uint64_t sqlrprotocol_tds::rows(sqlrservercursor *cursor) {
+	return rows(cursor,0);
+}
+
+uint64_t sqlrprotocol_tds::rows(sqlrservercursor *cursor, uint64_t maxrows) {
 
 	// get col count and bail if there are no columns
 	uint32_t	colcount=cont->colCount(cursor);
@@ -3274,6 +3455,11 @@ uint64_t sqlrprotocol_tds::rows(sqlrservercursor *cursor) {
 	// for each row...
 	uint64_t	rowcount=0;
 	for (;;) {
+
+		// stop at the row the caller asked for, if it asked
+		if (maxrows && rowcount==maxrows) {
+			break;
+		}
 
 		// fetch a row
 		bool	error;
@@ -4273,35 +4459,63 @@ bool sqlrprotocol_tds::bulkLoad() {
 	debugStart("bulk load");
 	debugEnd();
 
-	// FIXME: actually implement this (see ticket #8778)
+	// FIXME: actually implement this
 
-	return false;
+	// Just report that this isn't supported.  Returning false would end
+	// the session, and the client can't tell that from a crash.
+	return sendUnimplementedFeatureError();
 }
 
 bool sqlrprotocol_tds::remoteProcedureCall() {
 
-	// get an available cursor
-	sqlrservercursor	*cursor=cont->getCursor();
-	if (!cursor) {
-		return sendNoCursorAvailableError();
-	}
-
 	const byte_t	*rp=reqpacket.getBuffer();
 	size_t		rpsize=reqpacket.getSize();
-	stringbuffer	query;
 
 	debugStart("rpc");
-
 
 	// get the headers
 	if (negotiatedtdsversion>=720) {
 		allHeaders(rp,rpsize,&rp,&rpsize);
 	}
 
+	// begin building the response packet
+	resppacket.clear();
+
+	// a single request packet can carry a batch of rpc's
+	bool	more=true;
+	while (more) {
+		if (!rpc(&rp,&rpsize,&more)) {
+			debugEnd();
+			// a protocol error means the request stream is
+			// out of sync, so end the session after reporting it
+			sendTdsProtocolError();
+			return false;
+		}
+	}
+
+	debugEnd();
+
+	// send the response packet
+	return sendPacket();
+}
+
+bool sqlrprotocol_tds::rpc(const byte_t **rpinout,
+					size_t *rpsizeinout,
+					bool *more) {
+
+	const byte_t	*rp=*rpinout;
+	size_t		rpsize=*rpsizeinout;
+
+	*more=false;
+
+	// nothing left to do
+	if (rpsize<sizeof(uint16_t)) {
+		return true;
+	}
+
 
 	// get proc name/id
 	uint16_t	procnamelen=0;
-	ucs2_t		*procname16=NULL;
 	char		*procname=NULL;
 	uint16_t	procid=0;
 
@@ -4315,28 +4529,33 @@ bool sqlrprotocol_tds::remoteProcedureCall() {
 		rpsize-=sizeof(procid);
 
 		debugWrite("procid: %hd (%s)",
-				procid,procids[(procid<=15)?procid:0]);
+				procid,procids[(procid<=SP_MAX_PROCID)?
+								procid:0]);
 
 	} else {
 
-		// FIXME: validate procnamelen against maxquerysize
+		// bounds checking
+		if (procnamelen*sizeof(ucs2_t)>rpsize ||
+					procnamelen>maxquerysize) {
+			debugWrite("invalid proc name length: %hd",procnamelen);
+			return false;
+		}
 
 		// get the procname
-		procname16=new ucs2_t[procnamelen];
+		ucs2_t	*procname16=new ucs2_t[procnamelen];
 		read(rp,procname16,procnamelen,&rp);
 		rpsize-=procnamelen*sizeof(ucs2_t);
 		procname=charstring::duplicateUcs2(procname16,
 							(size_t)procnamelen);
-
-		// build the query
-		query.append("exec ")->append(procname);
+		delete[] procname16;
 
 		debugWrite("procname: %s",procname);
-		debugWrite("query: %s",query.getString());
 
-		// clean up
-		delete[] procname16;
-		delete[] procname;
+		// a client can send any of the numbered procs by name
+		procid=procNameToProcId(procname);
+		if (procid) {
+			debugWrite("procid: %hd (%s)",procid,procids[procid]);
+		}
 	}
 
 
@@ -4346,9 +4565,9 @@ bool sqlrprotocol_tds::remoteProcedureCall() {
 	rpsize-=sizeof(optionflags);
 
 	// parse the flags
-	bool	withrecomp=(optionflags&0x0001);
-	bool	nometadata=(optionflags&(0x0001<<2))>>2;
-	bool	reusemetadata=(optionflags&(0x0001<<3))>>3;
+	bool	withrecomp=(optionflags&RPC_WITH_RECOMP);
+	bool	nometadata=(optionflags&RPC_NO_META_DATA);
+	bool	reusemetadata=(optionflags&RPC_REUSE_META_DATA);
 
 	if (getDebug()) {
 		stringbuffer	b;
@@ -4360,232 +4579,1071 @@ bool sqlrprotocol_tds::remoteProcedureCall() {
 	}
 
 
-	bool	retval=false;
-	if (procname) {
-		// prepare the query
-		retval=cont->prepareQuery(cursor,
-					query.getString(),query.getSize(),
-					true,true,true,true);
-	} else {
-		// do whatever the procid asked for
-		switch (procid) {
-			case SP_CURSOR:
-				// FIXME: actually implement this
-				break;
-			case SP_CURSOR_OPEN:
-				// FIXME: actually implement this
-				break;
-			case SP_CURSOR_PREPARE:
-				// FIXME: actually implement this
-				break;
-			case SP_CURSOR_EXECUTE:
-				// FIXME: actually implement this
-				break;
-			case SP_CURSOR_PREP_EXEC:
-				// FIXME: actually implement this
-				break;
-			case SP_CURSOR_UNPREPARE:
-				// FIXME: actually implement this
-				break;
-			case SP_CURSOR_FETCH:
-				// FIXME: actually implement this
-				break;
-			case SP_CURSOR_OPTION:
-				// FIXME: actually implement this
-				break;
-			case SP_CURSOR_CLOSE:
-				// FIXME: actually implement this
-				break;
-			case SP_EXECUTE_SQL:
-				// FIXME: actually implement this
-				break;
-			case SP_PREPARE:
-				// FIXME: actually implement this
-				break;
-			case SP_EXECUTE:
-				// FIXME: actually implement this
-				break;
-			case SP_PREP_EXEC:
-				// FIXME: actually implement this
-				break;
-			case SP_PREP_EXEC_RPC:
-				// FIXME: actually implement this
-				break;
-			case SP_UNPREPARE:
-				// FIXME: actually implement this
-				break;
-		}
+	// get the parameters
+	if (!params(rp,rpsize,&rp,&rpsize)) {
+		delete[] procname;
+		return false;
 	}
 
+	// get the trailing batch flags
+	batchFlags(rp,rpsize,&rp,&rpsize,more);
 
-	// apparently the packet can end here if there
-	// are no parameters or trailing flags
-	if (retval && rpsize) {
 
-		if (!params(cursor,rp,rpsize,&rp)) {
-
-			debugEnd();
-
-			cont->release(cursor);
-
-			// a protocol error means the request stream is
-			// out of sync, so end the session after reporting it
-			sendTdsProtocolError();
-			return false;
-		}
-
-		// FIXME:
-		// *((BatchFlag|NoExecFlag)RPCReqBatch)
-		// [BatchFlag|NoExecFlag]
+	// do whatever the proc asked for
+	bool	retval=true;
+	switch (procid) {
+		case SP_CURSOR:
+			retval=cursorUnsupported();
+			break;
+		case SP_CURSOR_OPEN:
+			retval=cursorOpen(nometadata);
+			break;
+		case SP_CURSOR_PREPARE:
+			retval=cursorPrepare();
+			break;
+		case SP_CURSOR_EXECUTE:
+			retval=cursorExecute(nometadata);
+			break;
+		case SP_CURSOR_PREP_EXEC:
+			retval=cursorPrepExec(nometadata);
+			break;
+		case SP_CURSOR_UNPREPARE:
+			retval=cursorUnprepare();
+			break;
+		case SP_CURSOR_FETCH:
+			retval=cursorFetch(nometadata);
+			break;
+		case SP_CURSOR_OPTION:
+			retval=cursorOption();
+			break;
+		case SP_CURSOR_CLOSE:
+			retval=cursorClose();
+			break;
+		case SP_EXECUTE_SQL:
+			retval=executeSql(nometadata);
+			break;
+		case SP_PREPARE:
+			retval=prepare(false,false,nometadata);
+			break;
+		case SP_EXECUTE:
+			retval=execute(nometadata);
+			break;
+		case SP_PREP_EXEC:
+			retval=prepare(true,false,nometadata);
+			break;
+		case SP_PREP_EXEC_RPC:
+			retval=prepare(true,true,nometadata);
+			break;
+		case SP_UNPREPARE:
+			retval=unprepare();
+			break;
+		default:
+			retval=namedProc(procname,nometadata);
+			break;
 	}
 
-	debugEnd();
+	// the done for a non-final rpc in a batch says so
+	doneProc((*more)?(DONE_MORE|DONE_RPCINBATCH):DONE_FINAL,0,0);
 
+	// clean up
+	delete[] procname;
 
-	if (retval) {
-
-		// begin building the response packet
-		resppacket.clear();
-
-		if (procname) {
-
-			// execute the query
-			bool	success=cont->executeQuery(cursor,
-						true,true,true,true);
-
-			// build the response packet
-			if (success) {
-				doneInProc(DONE_MORE|DONE_COUNT,0,
-						cont->getAffectedRows(cursor));
-				returnStatus(cursor);
-				returnValues(cursor);
-				doneProc(DONE_FINAL,0,0);
-			} else {
-				appendQueryError(cursor);
-				done();
-			}
-
-		} else {
-
-			// do whatever the procid asked for
-			switch (procid) {
-				case SP_CURSOR:
-					// FIXME: actually implement this
-					break;
-				case SP_CURSOR_OPEN:
-					// FIXME: actually implement this
-					break;
-				case SP_CURSOR_PREPARE:
-					// FIXME: actually implement this
-					break;
-				case SP_CURSOR_EXECUTE:
-					// FIXME: actually implement this
-					break;
-				case SP_CURSOR_PREP_EXEC:
-					// FIXME: actually implement this
-					break;
-				case SP_CURSOR_UNPREPARE:
-					// FIXME: actually implement this
-					break;
-				case SP_CURSOR_FETCH:
-					// FIXME: actually implement this
-					break;
-				case SP_CURSOR_OPTION:
-					// FIXME: actually implement this
-					break;
-				case SP_CURSOR_CLOSE:
-					// FIXME: actually implement this
-					break;
-				case SP_EXECUTE_SQL:
-					// FIXME: actually implement this
-					break;
-				case SP_PREPARE:
-					// FIXME: actually implement this
-					break;
-				case SP_EXECUTE:
-					// FIXME: actually implement this
-					break;
-				case SP_PREP_EXEC:
-					// FIXME: actually implement this
-					break;
-				case SP_PREP_EXEC_RPC:
-					// FIXME: actually implement this
-					break;
-				case SP_UNPREPARE:
-					// FIXME: actually implement this
-					break;
-			}
-		}
-
-		// send the response packet
-		retval=sendPacket();
-	}
-
-	// release the cursor
-	// FIXME: kludgy
-	cont->release(cursor);
+	// copy out pointer and size
+	*rpinout=rp;
+	*rpsizeinout=rpsize;
 
 	return retval;
 }
 
-bool sqlrprotocol_tds::params(sqlrservercursor *cursor,
-					const byte_t *rp,
+uint16_t sqlrprotocol_tds::procNameToProcId(const char *procname) {
+	for (uint16_t i=1; i<=SP_MAX_PROCID; i++) {
+		if (!charstring::compareIgnoringCase(procname,procnames[i])) {
+			return i;
+		}
+	}
+	return 0;
+}
+
+void sqlrprotocol_tds::batchFlags(const byte_t *rp,
 					size_t rpsize,
-					const byte_t **rpout) {
+					const byte_t **rpout,
+					size_t *rpsizeout,
+					bool *more) {
+
+	// the flags are optional, and only a batch flag means another
+	// rpc follows
+	while (rpsize) {
+
+		byte_t	flag;
+		read(rp,&flag,&rp);
+		rpsize--;
+
+		debugWrite("batch flag: 0x%02x",flag);
+
+		if (flag==RPC_BATCH_FLAG) {
+			*more=true;
+			break;
+		} else if (flag==RPC_NO_EXEC_FLAG) {
+			continue;
+		} else {
+			// not a flag at all, put it back
+			rp--;
+			rpsize++;
+			break;
+		}
+	}
+
+	// copy out pointer and size
+	*rpout=rp;
+	*rpsizeout=rpsize;
+}
+
+bool sqlrprotocol_tds::paramIsNull(uint16_t param) {
+	return (param>=rpcparamcount ||
+		rpcparams[param].type==SQLRSERVERBINDVARTYPE_NULL);
+}
+
+int64_t sqlrprotocol_tds::paramInteger(uint16_t param) {
+	if (paramIsNull(param)) {
+		return 0;
+	}
+	sqlrserverbindvar	*bv=&(rpcparams[param]);
+	if (bv->type==SQLRSERVERBINDVARTYPE_INTEGER) {
+		return bv->value.integerval;
+	}
+	if (bv->type==SQLRSERVERBINDVARTYPE_DOUBLE) {
+		return (int64_t)bv->value.doubleval.value;
+	}
+	if (bv->type==SQLRSERVERBINDVARTYPE_STRING) {
+		return charstring::convertToInteger(bv->value.stringval);
+	}
+	return 0;
+}
+
+const char *sqlrprotocol_tds::paramString(uint16_t param) {
+	if (paramIsNull(param) ||
+		rpcparams[param].type!=SQLRSERVERBINDVARTYPE_STRING) {
+		return NULL;
+	}
+	return rpcparams[param].value.stringval;
+}
+
+void sqlrprotocol_tds::bindParams(sqlrservercursor *cursor, uint16_t first) {
 
 	sqlrserverbindvar	*inbinds=cont->getInputBinds(cursor);
 	sqlrserverbindvar	*outbinds=cont->getOutputBinds(cursor);
 	uint16_t		inbindcount=0;
 	uint16_t		outbindcount=0;
 
-	// reset the pool that bind values get copied into
-	cont->getBindPool(cursor)->clear();
+	// values get copied out of the rpc parameter pool and into the
+	// cursor's own bind pool
+	memorypool	*bindpool=cont->getBindPool(cursor);
+	bindpool->clear();
 
-	bool		exceededinbind=false;
-	bool		exceededoutbind=false;
-	const byte_t	*newrp;
-	while (rpsize) {
+	for (uint16_t i=first; i<rpcparamcount; i++) {
 
-		if (!param(cursor,&inbindcount,&outbindcount,
-				inbinds,outbinds,rp,&newrp,
-				exceededinbind,exceededoutbind)) {
-			// protocol error
-			return false;
+		uint16_t	bindindex=i-first;
+		if (bindindex>=maxbindcount) {
+			break;
 		}
 
-		if (inbindcount==maxbindcount) {
-			exceededinbind=true;
-		}
-		if (outbindcount==maxbindcount) {
-			exceededoutbind=true;
+		sqlrserverbindvar	*bv=(rpcparambyref[i])?
+						&(outbinds[outbindcount]):
+						&(inbinds[inbindcount]);
+
+		*bv=rpcparams[i];
+
+		// Bind variables are named by position, not by whatever the
+		// client called them.  Backends work out which parameter a
+		// bind is from the number in its name - odbccursor::inputBind
+		// does exactly that - so a client's @P1 has to become @1.
+		// The names the client used in the statement itself are
+		// matched up by translatebindvariables, in order.
+		bv->variable=bindvarnames[bindindex];
+		bv->variablesize=bindvarnamesizes[bindindex];
+
+		// copy string values out of the rpc pool
+		if (bv->type==SQLRSERVERBINDVARTYPE_STRING &&
+						bv->value.stringval) {
+			char	*value=(char *)bindpool->allocate(
+							bv->valuesize+1);
+			bytestring::copy(value,bv->value.stringval,
+							bv->valuesize);
+			value[bv->valuesize]='\0';
+			bv->value.stringval=value;
 		}
 
-		rpsize-=newrp-rp;
-		rp=newrp;
-
-		// FIXME: It's not 100% clear how we know when there
-		// are no more parameters.  For now we're bailing when
-		// we've read all of the packet, but apparently some
-		// flags can follow it, so there must be some other way.
+		if (rpcparambyref[i]) {
+			outbindcount++;
+		} else {
+			inbindcount++;
+		}
 	}
 
 	cont->setInputBindCount(cursor,inbindcount);
 	cont->setOutputBindCount(cursor,outbindcount);
 
-	*rpout=rp;
+	debugWrite("input binds: %d",inbindcount);
+	debugWrite("output binds: %d",outbindcount);
+}
+
+uint32_t sqlrprotocol_tds::newHandle() {
+	// handle 0 is invalid, so skip it if the counter wraps
+	if (!nexthandle) {
+		nexthandle=1;
+	}
+	return nexthandle++;
+}
+
+sqlrservercursor *sqlrprotocol_tds::handleCursor(
+				dictionary<uint32_t,
+					sqlrservercursor *> *handles,
+				uint32_t handle) {
+	sqlrservercursor	*cursor=NULL;
+	if (!handle || !handles->getValue(handle,&cursor)) {
+		return NULL;
+	}
+	return cursor;
+}
+
+bool sqlrprotocol_tds::handlesContain(dictionary<uint32_t,
+					sqlrservercursor *> *handles,
+					sqlrservercursor *cursor) {
+
+	linkedlist<uint32_t>	*keys=handles->getKeys();
+	for (listnode<uint32_t> *node=keys->getFirst();
+					node; node=node->getNext()) {
+		sqlrservercursor	*c=NULL;
+		if (handles->getValue(node->getValue(),&c) && c==cursor) {
+			return true;
+		}
+	}
+	return false;
+}
+
+void sqlrprotocol_tds::releaseHandles(dictionary<uint32_t,
+					sqlrservercursor *> *handles,
+					dictionary<uint32_t,
+					sqlrservercursor *> *other) {
+
+	// a cursor can be referred to by a prepared statement handle and a
+	// cursor handle at the same time, so don't release one that the
+	// other dictionary still refers to
+	linkedlist<uint32_t>	*keys=handles->getKeys();
+	for (listnode<uint32_t> *node=keys->getFirst();
+					node; node=node->getNext()) {
+		sqlrservercursor	*cursor=NULL;
+		if (!handles->getValue(node->getValue(),&cursor) || !cursor) {
+			continue;
+		}
+		if (other && handlesContain(other,cursor)) {
+			continue;
+		}
+		executeflag.remove(cursor);
+		cont->release(cursor);
+	}
+	handles->clear();
+}
+
+char *sqlrprotocol_tds::callSyntaxToExec(const char *stmt) {
+
+	// sp_prepexecrpc gets its statement in odbc call syntax -
+	// {call procname(?,?)} or {? = call procname(?,?)} - rather than
+	// as plain sql
+
+	const char	*ptr=cont->skipWhitespaceAndComments(stmt);
+	if (*ptr!='{') {
+		return charstring::duplicate(stmt);
+	}
+	ptr++;
+
+	// skip a return value placeholder
+	const char	*eq=charstring::findFirst(ptr,'=');
+	const char	*call=charstring::findFirstIgnoringCase(ptr,"call");
+	if (!call) {
+		return charstring::duplicate(stmt);
+	}
+	if (eq && eq<call) {
+		ptr=eq+1;
+	}
+
+	call=charstring::findFirstIgnoringCase(ptr,"call");
+	ptr=call+4;
+
+	// the proc name runs up to the open paren, or to the closing brace
+	// if there are no arguments
+	const char	*open=charstring::findFirst(ptr,'(');
+	const char	*close=charstring::findLast(ptr,'}');
+	if (!close) {
+		return charstring::duplicate(stmt);
+	}
+
+	stringbuffer	query;
+	query.append("exec ");
+	if (open && open<close) {
+		query.append(ptr,open-ptr);
+		const char	*args=open+1;
+		const char	*closeparen=charstring::findLast(args,')');
+		if (closeparen) {
+			query.append(' ');
+			query.append(args,closeparen-args);
+		}
+	} else {
+		query.append(ptr,close-ptr);
+	}
+
+	return query.detachString();
+}
+
+bool sqlrprotocol_tds::rpcInvalidHandleError(const char *what,
+						uint32_t handle) {
+
+	stringbuffer	err;
+	err.append("Invalid ")->append(what)->append(' ')->append(handle);
+
+	debugWrite("%s",err.getString());
+
+	appendError(16950,1,16,err.getString(),srvname,NULL,1);
+	returnStatus(RPC_STATUS_FAILURE);
 
 	return true;
 }
 
-bool sqlrprotocol_tds::param(sqlrservercursor *cursor,
-					uint16_t *inbindcount,
-					uint16_t *outbindcount,
-					sqlrserverbindvar *inbinds,
-					sqlrserverbindvar *outbinds,
+void sqlrprotocol_tds::rpcError(sqlrservercursor *cursor) {
+	appendQueryError(cursor);
+	returnStatus(RPC_STATUS_FAILURE);
+}
+
+void sqlrprotocol_tds::rpcResultSet(sqlrservercursor *cursor,
+						bool nometadata,
+						uint64_t maxrows) {
+
+	// a statement that returns no columns still has to report how many
+	// rows it affected
+	if (!cont->colCount(cursor)) {
+		doneInProc(DONE_COUNT,0,cont->getAffectedRows(cursor));
+		return;
+	}
+
+	colMetaData(cursor,nometadata);
+	doneInProc(DONE_COUNT,0,rows(cursor,maxrows));
+}
+
+bool sqlrprotocol_tds::namedProc(const char *procname, bool nometadata) {
+
+	// this is an ordinary stored procedure call, rather than one of the
+	// numbered procs
+
+	if (!procname) {
+		return sendUnimplementedFeatureError();
+	}
+
+	// get an available cursor
+	sqlrservercursor	*cursor=cont->getCursor();
+	if (!cursor) {
+		return sendNoCursorAvailableError();
+	}
+
+	// build the query, naming a bind variable per parameter
+	stringbuffer	query;
+	query.append("exec ")->append(procname);
+	for (uint16_t i=0; i<rpcparamcount && i<maxbindcount; i++) {
+		query.append((i)?',':' ');
+		query.append(bindvarnames[i]);
+		if (rpcparambyref[i]) {
+			query.append(" output");
+		}
+	}
+
+	debugWrite("query: %s",query.getString());
+
+	// run the query
+	bool	success=cont->prepareQuery(cursor,
+					query.getString(),query.getSize(),
+					true,true,true,true);
+	if (success) {
+		bindParams(cursor,0);
+		success=cont->executeQuery(cursor,true,true,true,true);
+	}
+
+	// build the response
+	if (success) {
+		rpcResultSet(cursor,nometadata,0);
+		returnStatus(RPC_STATUS_SUCCESS);
+		returnValues(cursor);
+	} else {
+		rpcError(cursor);
+	}
+
+	// release the cursor
+	cont->release(cursor);
+
+	return true;
+}
+
+bool sqlrprotocol_tds::executeSql(bool nometadata) {
+
+	// sp_executesql @stmt, [@params, [values...]]
+
+	const char	*stmt=paramString(0);
+	if (!stmt) {
+		return rpcInvalidHandleError("statement",0);
+	}
+
+	debugWrite("stmt: %s",stmt);
+
+	// bounds checking
+	size_t	stmtlen=charstring::getLength(stmt);
+	if (stmtlen>maxquerysize) {
+		return sendQueryTooLargeError(stmtlen);
+	}
+
+	// get an available cursor
+	sqlrservercursor	*cursor=cont->getCursor();
+	if (!cursor) {
+		return sendNoCursorAvailableError();
+	}
+
+	// the parameter declaration string is only there if there are
+	// parameters, and the values follow it
+	bool	success=cont->prepareQuery(cursor,stmt,stmtlen,
+							true,true,true,true);
+	if (success) {
+		bindParams(cursor,(rpcparamcount>1)?2:1);
+		success=cont->executeQuery(cursor,true,true,true,true);
+	}
+
+	// build the response
+	if (success) {
+		rpcResultSet(cursor,nometadata,0);
+		returnStatus(RPC_STATUS_SUCCESS);
+	} else {
+		rpcError(cursor);
+	}
+
+	// release the cursor
+	cont->release(cursor);
+
+	return true;
+}
+
+bool sqlrprotocol_tds::prepare(bool prepexec,
+					bool rpcsyntax,
+					bool nometadata) {
+
+	// sp_prepare      @handle output, @params, @stmt, @options
+	// sp_prepexec     @handle output, @params, @stmt, [values...]
+	// sp_prepexecrpc  @handle output, @stmt, [values...]
+
+	// the statement follows the parameter declaration string, except
+	// for sp_prepexecrpc, which has no declaration string
+	uint16_t	stmtparam=(rpcsyntax)?1:2;
+	uint16_t	firstvalue=stmtparam+1;
+
+	const char	*stmt=paramString(stmtparam);
+	if (!stmt) {
+		return rpcInvalidHandleError("statement",0);
+	}
+
+	// sp_prepexecrpc sends odbc call syntax rather than plain sql
+	char	*query=(rpcsyntax)?
+			callSyntaxToExec(stmt):charstring::duplicate(stmt);
+
+	debugWrite("stmt: %s",stmt);
+	debugWrite("query: %s",query);
+
+	// bounds checking
+	size_t	querylen=charstring::getLength(query);
+	if (querylen>maxquerysize) {
+		delete[] query;
+		return sendQueryTooLargeError(querylen);
+	}
+
+	// reuse the handle the client sent, if it sent a live one
+	uint32_t		handle=(uint32_t)paramInteger(0);
+	sqlrservercursor	*cursor=handleCursor(&stmthandles,handle);
+	if (cursor) {
+		// re-preparing a live handle replaces its statement
+		stmthandles.remove(handle);
+		cont->release(cursor);
+	}
+
+	// get an available cursor
+	cursor=cont->getCursor();
+	if (!cursor) {
+		delete[] query;
+		return sendNoCursorAvailableError();
+	}
+
+	handle=newHandle();
+
+	// prepare the query
+	bool	success=cont->prepareQuery(cursor,query,querylen,
+							true,true,true,true);
+	delete[] query;
+
+	if (success) {
+		executeflag.setValue(cursor,true);
+		if (prepexec) {
+			bindParams(cursor,firstvalue);
+			success=cont->executeQuery(cursor,true,true,true,true);
+			executeflag.setValue(cursor,false);
+		}
+	}
+
+	if (!success) {
+		rpcError(cursor);
+		cont->release(cursor);
+		// the handle never became valid
+		returnValueInteger(1,0,true);
+		return true;
+	}
+
+	// hang on to the cursor - sp_execute will want it
+	stmthandles.setValue(handle,cursor);
+
+	debugWrite("prepared handle: %d",handle);
+
+	// build the response
+	if (prepexec) {
+		rpcResultSet(cursor,nometadata,0);
+	} else if (cont->colCount(cursor)) {
+		// sp_prepare with options 1 answers with the prepared
+		// statement's column metadata as an empty result set, but
+		// only a backend that can describe a statement without
+		// running it has anything to send
+		colMetaData(cursor,nometadata);
+		doneInProc(DONE_COUNT,0,0);
+	}
+	returnStatus(RPC_STATUS_SUCCESS);
+
+	// the client reads the handle out of the first return value
+	returnValueInteger(1,(int32_t)handle,false);
+
+	return true;
+}
+
+bool sqlrprotocol_tds::execute(bool nometadata) {
+
+	// sp_execute @handle, [values...]
+
+	uint32_t		handle=(uint32_t)paramInteger(0);
+	sqlrservercursor	*cursor=handleCursor(&stmthandles,handle);
+	if (!cursor) {
+		return rpcInvalidHandleError("prepared statement handle",
+								handle);
+	}
+
+	debugWrite("prepared handle: %d",handle);
+
+	// bind and run the prepared query
+	bindParams(cursor,1);
+	bool	success=cont->executeQuery(cursor,true,true,true,true);
+	executeflag.setValue(cursor,false);
+
+	// build the response
+	if (success) {
+		rpcResultSet(cursor,nometadata,0);
+		returnStatus(RPC_STATUS_SUCCESS);
+	} else {
+		rpcError(cursor);
+	}
+
+	return true;
+}
+
+bool sqlrprotocol_tds::unprepare() {
+
+	// sp_unprepare @handle
+
+	uint32_t		handle=(uint32_t)paramInteger(0);
+	sqlrservercursor	*cursor=handleCursor(&stmthandles,handle);
+	if (!cursor) {
+		return rpcInvalidHandleError("prepared statement handle",
+								handle);
+	}
+
+	debugWrite("prepared handle: %d",handle);
+
+	stmthandles.remove(handle);
+	executeflag.remove(cursor);
+	cont->release(cursor);
+
+	returnStatus(RPC_STATUS_SUCCESS);
+
+	return true;
+}
+
+bool sqlrprotocol_tds::cursorUnsupported() {
+
+	// sp_cursor does positioned update/delete, which needs
+	// "where current of".  SQL Relay has no equivalent, so just report
+	// that it didn't work.
+
+	debugWrite("positioned update/delete is not supported");
+
+	appendError(16957,1,16,"Positioned update/delete is not supported",
+						srvname,NULL,1);
+	returnStatus(RPC_STATUS_FAILURE);
+
+	return true;
+}
+
+bool sqlrprotocol_tds::cursorOpen(bool nometadata) {
+
+	// sp_cursoropen @cursor output, @stmt, [@scrollopt output,
+	//		[@ccopt output, [@rowcount output, [values...]]]]
+
+	const char	*stmt=paramString(1);
+	if (!stmt) {
+		return rpcInvalidHandleError("statement",0);
+	}
+
+	debugWrite("stmt: %s",stmt);
+
+	// bounds checking
+	size_t	stmtlen=charstring::getLength(stmt);
+	if (stmtlen>maxquerysize) {
+		return sendQueryTooLargeError(stmtlen);
+	}
+
+	// get an available cursor
+	sqlrservercursor	*cursor=cont->getCursor();
+	if (!cursor) {
+		return sendNoCursorAvailableError();
+	}
+
+	// a parameterized cursor sends a declaration string, then the values
+	bool	success=cont->prepareQuery(cursor,stmt,stmtlen,
+							true,true,true,true);
+	if (success) {
+		if (rpcparamcount>5) {
+			bindParams(cursor,6);
+		} else {
+			cont->setInputBindCount(cursor,0);
+			cont->setOutputBindCount(cursor,0);
+		}
+		success=cont->executeQuery(cursor,true,true,true,true);
+		executeflag.setValue(cursor,false);
+	}
+
+	if (!success) {
+		rpcError(cursor);
+		cont->release(cursor);
+		returnValueInteger(1,0,true);
+		return true;
+	}
+
+	uint32_t	handle=newHandle();
+	cursorhandles.setValue(handle,cursor);
+
+	debugWrite("cursor handle: %d",handle);
+
+	// the client needs the shape of the result set before it fetches
+	if (cont->colCount(cursor)) {
+		colMetaData(cursor,nometadata);
+		doneInProc(DONE_COUNT,0,0);
+	} else {
+		doneInProc(DONE_COUNT,0,cont->getAffectedRows(cursor));
+	}
+
+	returnStatus(RPC_STATUS_SUCCESS);
+
+	// the client reads the cursor id out of the first return value
+	returnValueInteger(1,(int32_t)handle,false);
+
+	// There is no scrollable cursor support in the server API - only
+	// forward-only skipRow/skipRows.  Both of these are in/out and the
+	// spec lets the server substitute what it can actually do.
+	returnValueInteger(2,CURSOR_SCROLLOPT_FORWARD_ONLY,false);
+	returnValueInteger(3,CURSOR_CCOPT_READ_ONLY,false);
+
+	// -1 means the row count isn't known yet, which is what a
+	// forward-only cursor reports
+	returnValueInteger(4,-1,false);
+
+	return true;
+}
+
+bool sqlrprotocol_tds::cursorPrepare() {
+
+	// sp_cursorprepare @handle output, @params, @stmt, @options
+	//			[, @scrollopt output [, @ccopt output]]
+
+	const char	*stmt=paramString(2);
+	if (!stmt) {
+		return rpcInvalidHandleError("statement",0);
+	}
+
+	debugWrite("stmt: %s",stmt);
+
+	// bounds checking
+	size_t	stmtlen=charstring::getLength(stmt);
+	if (stmtlen>maxquerysize) {
+		return sendQueryTooLargeError(stmtlen);
+	}
+
+	// get an available cursor
+	sqlrservercursor	*cursor=cont->getCursor();
+	if (!cursor) {
+		return sendNoCursorAvailableError();
+	}
+
+	bool	success=cont->prepareQuery(cursor,stmt,stmtlen,
+							true,true,true,true);
+	if (!success) {
+		rpcError(cursor);
+		cont->release(cursor);
+		returnValueInteger(1,0,true);
+		return true;
+	}
+
+	executeflag.setValue(cursor,true);
+
+	uint32_t	handle=newHandle();
+	stmthandles.setValue(handle,cursor);
+
+	debugWrite("prepared handle: %d",handle);
+
+	returnStatus(RPC_STATUS_SUCCESS);
+	returnValueInteger(1,(int32_t)handle,false);
+	returnValueInteger(2,CURSOR_SCROLLOPT_FORWARD_ONLY,false);
+	returnValueInteger(3,CURSOR_CCOPT_READ_ONLY,false);
+
+	return true;
+}
+
+bool sqlrprotocol_tds::cursorExecute(bool nometadata) {
+
+	// sp_cursorexecute @preparedhandle, @cursor output,
+	//			[@scrollopt output, [@ccopt output,
+	//			[@rowcount output, [values...]]]]
+
+	uint32_t		handle=(uint32_t)paramInteger(0);
+	sqlrservercursor	*cursor=handleCursor(&stmthandles,handle);
+	if (!cursor) {
+		return rpcInvalidHandleError("prepared statement handle",
+								handle);
+	}
+
+	debugWrite("prepared handle: %d",handle);
+
+	// bind and run the prepared query
+	if (rpcparamcount>5) {
+		bindParams(cursor,5);
+	}
+	bool	success=cont->executeQuery(cursor,true,true,true,true);
+	executeflag.setValue(cursor,false);
+
+	if (!success) {
+		rpcError(cursor);
+		returnValueInteger(1,0,true);
+		return true;
+	}
+
+	// the cursor gets its own handle, so that the prepared statement
+	// can outlive it
+	uint32_t	cursorhandle=newHandle();
+	cursorhandles.setValue(cursorhandle,cursor);
+
+	debugWrite("cursor handle: %d",cursorhandle);
+
+	if (cont->colCount(cursor)) {
+		colMetaData(cursor,nometadata);
+		doneInProc(DONE_COUNT,0,0);
+	} else {
+		doneInProc(DONE_COUNT,0,cont->getAffectedRows(cursor));
+	}
+
+	returnStatus(RPC_STATUS_SUCCESS);
+	returnValueInteger(1,(int32_t)cursorhandle,false);
+	returnValueInteger(2,CURSOR_SCROLLOPT_FORWARD_ONLY,false);
+	returnValueInteger(3,CURSOR_CCOPT_READ_ONLY,false);
+	returnValueInteger(4,-1,false);
+
+	return true;
+}
+
+bool sqlrprotocol_tds::cursorPrepExec(bool nometadata) {
+
+	// sp_cursorprepexec @handle output, @cursor output, @params, @stmt,
+	//			[@scrollopt output, [@ccopt output,
+	//			[@rowcount output, [values...]]]]
+
+	const char	*stmt=paramString(3);
+	if (!stmt) {
+		return rpcInvalidHandleError("statement",0);
+	}
+
+	debugWrite("stmt: %s",stmt);
+
+	// bounds checking
+	size_t	stmtlen=charstring::getLength(stmt);
+	if (stmtlen>maxquerysize) {
+		return sendQueryTooLargeError(stmtlen);
+	}
+
+	// get an available cursor
+	sqlrservercursor	*cursor=cont->getCursor();
+	if (!cursor) {
+		return sendNoCursorAvailableError();
+	}
+
+	bool	success=cont->prepareQuery(cursor,stmt,stmtlen,
+							true,true,true,true);
+	if (success) {
+		if (rpcparamcount>7) {
+			bindParams(cursor,7);
+		} else {
+			cont->setInputBindCount(cursor,0);
+			cont->setOutputBindCount(cursor,0);
+		}
+		success=cont->executeQuery(cursor,true,true,true,true);
+		executeflag.setValue(cursor,false);
+	}
+
+	if (!success) {
+		rpcError(cursor);
+		cont->release(cursor);
+		returnValueInteger(1,0,true);
+		returnValueInteger(2,0,true);
+		return true;
+	}
+
+	uint32_t	handle=newHandle();
+	stmthandles.setValue(handle,cursor);
+	uint32_t	cursorhandle=newHandle();
+	cursorhandles.setValue(cursorhandle,cursor);
+
+	debugWrite("prepared handle: %d",handle);
+	debugWrite("cursor handle: %d",cursorhandle);
+
+	if (cont->colCount(cursor)) {
+		colMetaData(cursor,nometadata);
+		doneInProc(DONE_COUNT,0,0);
+	} else {
+		doneInProc(DONE_COUNT,0,cont->getAffectedRows(cursor));
+	}
+
+	returnStatus(RPC_STATUS_SUCCESS);
+	returnValueInteger(1,(int32_t)handle,false);
+	returnValueInteger(2,(int32_t)cursorhandle,false);
+	returnValueInteger(3,CURSOR_SCROLLOPT_FORWARD_ONLY,false);
+	returnValueInteger(4,CURSOR_CCOPT_READ_ONLY,false);
+	returnValueInteger(5,-1,false);
+
+	return true;
+}
+
+bool sqlrprotocol_tds::cursorUnprepare() {
+
+	// sp_cursorunprepare @handle
+
+	uint32_t		handle=(uint32_t)paramInteger(0);
+	sqlrservercursor	*cursor=handleCursor(&stmthandles,handle);
+	if (!cursor) {
+		return rpcInvalidHandleError("prepared statement handle",
+								handle);
+	}
+
+	debugWrite("prepared handle: %d",handle);
+
+	stmthandles.remove(handle);
+
+	// the cursor may still be open against this statement
+	if (!handlesContain(&cursorhandles,cursor)) {
+		executeflag.remove(cursor);
+		cont->release(cursor);
+	}
+
+	returnStatus(RPC_STATUS_SUCCESS);
+
+	return true;
+}
+
+bool sqlrprotocol_tds::cursorFetch(bool nometadata) {
+
+	// sp_cursorfetch @cursor, [@fetchtype, [@rownum, [@nrows]]]
+
+	uint32_t		handle=(uint32_t)paramInteger(0);
+	sqlrservercursor	*cursor=handleCursor(&cursorhandles,handle);
+	if (!cursor) {
+		return rpcInvalidHandleError("cursor handle",handle);
+	}
+
+	uint16_t	fetchtype=(rpcparamcount>1)?
+				(uint16_t)paramInteger(1):CURSOR_FETCH_NEXT;
+	int32_t		rownum=(rpcparamcount>2)?
+				(int32_t)paramInteger(2):0;
+	int32_t		nrows=(rpcparamcount>3)?
+				(int32_t)paramInteger(3):1;
+
+	debugWrite("cursor handle: %d",handle);
+	debugWrite("fetchtype: 0x%04x",fetchtype);
+	debugWrite("rownum: %d",rownum);
+	debugWrite("nrows: %d",nrows);
+
+	// the query may not have run yet
+	if (executeflag.getValue(cursor)) {
+		if (!cont->executeQuery(cursor,true,true,true,true)) {
+			rpcError(cursor);
+			return true;
+		}
+		executeflag.setValue(cursor,false);
+	}
+
+	// Only forward-only fetching is possible.  Anything that would have
+	// to go backwards or jump is refused rather than silently answered
+	// with the wrong rows.
+	switch (fetchtype) {
+		case CURSOR_FETCH_FIRST:
+		case CURSOR_FETCH_NEXT:
+		case CURSOR_FETCH_INFO:
+			break;
+		case CURSOR_FETCH_RELATIVE:
+			// forward is just a skip
+			if (rownum>0) {
+				bool	error=false;
+				cont->skipRows(cursor,(uint64_t)rownum,&error);
+				break;
+			}
+			// fall through
+		default:
+			debugWrite("unsupported fetch type: 0x%04x",fetchtype);
+			appendError(16958,1,16,
+					"Only forward-only cursors "
+					"are supported",
+					srvname,NULL,1);
+			returnStatus(RPC_STATUS_FAILURE);
+			return true;
+	}
+
+	// fetch-info just reports what's known about the cursor
+	if (fetchtype==CURSOR_FETCH_INFO) {
+		doneInProc(DONE_COUNT,0,0);
+		returnStatus(RPC_STATUS_SUCCESS);
+		return true;
+	}
+
+	// send the rows
+	if (cont->colCount(cursor)) {
+		colMetaData(cursor,nometadata);
+		doneInProc(DONE_COUNT,0,
+			rows(cursor,(nrows>0)?(uint64_t)nrows:0));
+	} else {
+		doneInProc(DONE_COUNT,0,0);
+	}
+
+	returnStatus(RPC_STATUS_SUCCESS);
+
+	return true;
+}
+
+bool sqlrprotocol_tds::cursorOption() {
+
+	// sp_cursoroption @cursor, @code, @value
+
+	uint32_t		handle=(uint32_t)paramInteger(0);
+	sqlrservercursor	*cursor=handleCursor(&cursorhandles,handle);
+	if (!cursor) {
+		return rpcInvalidHandleError("cursor handle",handle);
+	}
+
+	debugWrite("cursor handle: %d",handle);
+	debugWrite("code: %lld",paramInteger(1));
+	debugWrite("value: %lld",paramInteger(2));
+
+	// None of the options - text pointers, scroll options, cursor name -
+	// change anything that this module can do, so just accept them.
+
+	returnStatus(RPC_STATUS_SUCCESS);
+
+	return true;
+}
+
+bool sqlrprotocol_tds::cursorClose() {
+
+	// sp_cursorclose @cursor
+
+	uint32_t	handle=(uint32_t)paramInteger(0);
+
+	debugWrite("cursor handle: %d",handle);
+
+	// -1 means close them all
+	if (handle==CURSOR_CLOSE_ALL) {
+		releaseHandles(&cursorhandles,&stmthandles);
+		returnStatus(RPC_STATUS_SUCCESS);
+		return true;
+	}
+
+	sqlrservercursor	*cursor=handleCursor(&cursorhandles,handle);
+	if (!cursor) {
+		return rpcInvalidHandleError("cursor handle",handle);
+	}
+
+	cursorhandles.remove(handle);
+
+	// the prepared statement it came from may still be live
+	if (!handlesContain(&stmthandles,cursor)) {
+		executeflag.remove(cursor);
+		cont->release(cursor);
+	}
+
+	returnStatus(RPC_STATUS_SUCCESS);
+
+	return true;
+}
+
+bool sqlrprotocol_tds::params(const byte_t *rp,
+					size_t rpsize,
+					const byte_t **rpout,
+					size_t *rpsizeout) {
+
+	// reset the pool that parameter values get copied into
+	rpcparampool.clear();
+	rpcparamcount=0;
+
+	bool		exceeded=false;
+	const byte_t	*newrp;
+	while (rpsize) {
+
+		// The batch flags follow the last parameter, and a parameter
+		// starts with its name length.  Nothing in the packet says
+		// which one comes next, but no client sends a parameter name
+		// anywhere near that long.
+		if (*rp==RPC_BATCH_FLAG || *rp==RPC_NO_EXEC_FLAG) {
+			break;
+		}
+
+		if (!param(rpcparamcount,rp,&newrp,exceeded)) {
+			// protocol error
+			return false;
+		}
+
+		if (!exceeded) {
+			rpcparamcount++;
+			if (rpcparamcount==maxbindcount) {
+				exceeded=true;
+			}
+		}
+
+		rpsize-=newrp-rp;
+		rp=newrp;
+	}
+
+	debugWrite("param count: %d",rpcparamcount);
+
+	// copy out pointer and size
+	*rpout=rp;
+	*rpsizeout=rpsize;
+
+	return true;
+}
+
+bool sqlrprotocol_tds::param(uint16_t param,
 					const byte_t *rp,
 					const byte_t **rpout,
-					bool exceededinbind,
-					bool exceededoutbind) {
+					bool exceeded) {
 
 	// param name
 	byte_t	pnamelen;
@@ -4613,16 +5671,28 @@ bool sqlrprotocol_tds::param(sqlrservercursor *cursor,
 	// FIXME: support encryption
 
 
-	// input or output bind...
-	uint16_t		param=0;
+	// The parameters are kept as they arrived, rather than being sorted
+	// into input and output binds here.  Which of them are bind values
+	// at all depends on which proc was called, and only the handler for
+	// that proc knows.
 	sqlrserverbindvar	*bv=NULL;
-	if (!exceededinbind) {
-		param=*inbindcount;
-		bv=&(inbinds[param]);
-	}
-	if (byrefvalue && !exceededoutbind) {
-		param=*outbindcount;
-		bv=&(outbinds[param]);
+	if (!exceeded) {
+
+		bv=&(rpcparams[param]);
+		bv->type=SQLRSERVERBINDVARTYPE_NULL;
+		bv->variable=NULL;
+		bv->variablesize=0;
+		bv->valuesize=0;
+		bv->value.stringval=NULL;
+		bv->isnull=cont->getNullBindValue();
+
+		rpcparambyref[param]=byrefvalue;
+		rpcparamnames[param]=(char *)rpcparampool.allocate(pnamelen+1);
+		if (pnamelen) {
+			charstring::copy(rpcparamnames[param],pname,pnamelen);
+		}
+		rpcparamnames[param][pnamelen]='\0';
+		rpcparamnamesizes[param]=pnamelen;
 	}
 
 
@@ -4721,20 +5791,13 @@ bool sqlrprotocol_tds::param(sqlrservercursor *cursor,
 		// FIXME: [ushortmaxlen] [collation] [xml_info] [utd_info]
 	} 
 
-	// FIXME: use pname/pnamelen if pnamelen>0
-	if (bv) {
-		bv->variable=bindvarnames[param];
-		bv->variablesize=bindvarnamesizes[param];
-	}
-
 	// param data...
-
-	// FIXME: how do I detect nulls?
 
 	// FIXME: handle output binds too
 
 	// handle variable size types by getting the size, then
-	// changing the type so the switch below will get the data
+	// changing the type so the switch below will get the data.
+	// a size of 0 means the value is null.
 	switch (tdstype) {
 		case TDS_TYPE_INTN:
 			{
@@ -4753,6 +5816,9 @@ bool sqlrprotocol_tds::param(sqlrservercursor *cursor,
 				case 8:
 					tdstype=TDS_TYPE_INT8;
 					break;
+				default:
+					tdstype=TDS_TYPE_NULL;
+					break;
 			}
 			}
 			break;
@@ -4760,7 +5826,7 @@ bool sqlrprotocol_tds::param(sqlrservercursor *cursor,
 			{
 			byte_t	size;
 			read(rp,&size,&rp);
-			tdstype=TDS_TYPE_BIT;
+			tdstype=(size)?TDS_TYPE_BIT:TDS_TYPE_NULL;
 			}
 			break;
 		case TDS_TYPE_FLTN:
@@ -4773,6 +5839,9 @@ bool sqlrprotocol_tds::param(sqlrservercursor *cursor,
 					break;
 				case 8:
 					tdstype=TDS_TYPE_FLT8;
+					break;
+				default:
+					tdstype=TDS_TYPE_NULL;
 					break;
 			}
 			}
@@ -4788,6 +5857,9 @@ bool sqlrprotocol_tds::param(sqlrservercursor *cursor,
 				case 8:
 					tdstype=TDS_TYPE_MONEY;
 					break;
+				default:
+					tdstype=TDS_TYPE_NULL;
+					break;
 			}
 			}
 			break;
@@ -4802,30 +5874,41 @@ bool sqlrprotocol_tds::param(sqlrservercursor *cursor,
 				case 8:
 					tdstype=TDS_TYPE_DATETIME;
 					break;
+				default:
+					tdstype=TDS_TYPE_NULL;
+					break;
 			}
 			}
 			break;
 	}
 
+	if (tdstype==TDS_TYPE_NULL) {
+		debugWrite("value: (null)");
+	}
+
 	// get the collation
-	switch (tdstype) {
-		case TDS_TYPE_BIGCHAR:
-		case TDS_TYPE_BIGVARCHR:
-		case TDS_TYPE_TEXT:
-		case TDS_TYPE_NTEXT:
-		case TDS_TYPE_NCHAR:
-		case TDS_TYPE_NVARCHAR:
-			{
-			// FIXME: do something with this
-			byte_t	coll[5];
-			read(rp,coll,sizeof(coll),&rp);
-			if (getDebug()) {
-				stringbuffer	b;
-				b.printBits(coll,sizeof(coll));
-				debugWrite("collation: %s",b.getString());
-			}
-			}
-			break;
+	// (7.0 has no collation at all - typeInfo() gates it the same way)
+	if (negotiatedtdsversion>=710) {
+		switch (tdstype) {
+			case TDS_TYPE_BIGCHAR:
+			case TDS_TYPE_BIGVARCHR:
+			case TDS_TYPE_TEXT:
+			case TDS_TYPE_NTEXT:
+			case TDS_TYPE_NCHAR:
+			case TDS_TYPE_NVARCHAR:
+				{
+				// FIXME: do something with this
+				byte_t	coll[5];
+				read(rp,coll,sizeof(coll),&rp);
+				if (getDebug()) {
+					stringbuffer	b;
+					b.printBits(coll,sizeof(coll));
+					debugWrite("collation: %s",
+								b.getString());
+				}
+				}
+				break;
+		}
 	}
 
 	// get the data
@@ -5116,13 +6199,11 @@ bool sqlrprotocol_tds::param(sqlrservercursor *cursor,
 
 			if (bv) {
 
-				// copy the value into the bind pool,
-				// rather than pointing into the request
+				// copy the value out of the request packet
 				bv->type=SQLRSERVERBINDVARTYPE_STRING;
 				bv->valuesize=size;
 				bv->value.stringval=(char *)
-					cont->getBindPool(cursor)->
-							allocate(size+1);
+					rpcparampool.allocate(size+1);
 				bytestring::copy(bv->value.stringval,rp,size);
 				bv->value.stringval[size]='\0';
 				bv->isnull=cont->getNonNullBindValue();
@@ -5171,8 +6252,7 @@ bool sqlrprotocol_tds::param(sqlrservercursor *cursor,
 				bv->type=SQLRSERVERBINDVARTYPE_STRING;
 				bv->valuesize=length;
 				bv->value.stringval=(char *)
-					cont->getBindPool(cursor)->
-							allocate(length+1);
+					rpcparampool.allocate(length+1);
 				bytestring::copy(bv->value.stringval,
 							value,length);
 				bv->value.stringval[length]='\0';
@@ -5196,9 +6276,65 @@ bool sqlrprotocol_tds::param(sqlrservercursor *cursor,
 		case TDS_TYPE_TEXT:
 		case TDS_TYPE_NTEXT:
 			{
+			// Freetds sends anything over 4000 characters this
+			// way, including the statement and parameter
+			// declaration strings that the sp_ procs take.
 			uint32_t	size;
 			readLE(rp,&size,&rp);
-			// FIXME: actually implement this
+
+			// 0xFFFFFFFF means null
+			if (size==0xFFFFFFFF) {
+				debugWrite("value: (null)");
+				break;
+			}
+
+			if (bv) {
+
+				bv->type=SQLRSERVERBINDVARTYPE_STRING;
+				bv->isnull=cont->getNonNullBindValue();
+
+				if (tdstype==TDS_TYPE_NTEXT) {
+
+					// the size is in bytes,
+					// but the data is ucs-2
+					uint32_t	length=
+						size/sizeof(ucs2_t);
+
+					// the data isn't necessarily aligned,
+					// so copy it out before converting it
+					const byte_t	*dummy;
+					ucs2_t	*value16=new ucs2_t[length];
+					read(rp,value16,length,&dummy);
+					char	*value=
+						charstring::duplicateUcs2(
+							value16,(size_t)length);
+					delete[] value16;
+
+					bv->valuesize=length;
+					bv->value.stringval=(char *)
+						rpcparampool.allocate(length+1);
+					bytestring::copy(bv->value.stringval,
+								value,length);
+					bv->value.stringval[length]='\0';
+
+					delete[] value;
+
+				} else {
+
+					bv->valuesize=size;
+					bv->value.stringval=(char *)
+						rpcparampool.allocate(size+1);
+					bytestring::copy(bv->value.stringval,
+								rp,size);
+					bv->value.stringval[size]='\0';
+				}
+
+				debugWrite("valuesize: %d",bv->valuesize);
+				debugWrite("value: %.*s",
+						bv->valuesize,
+						bv->value.stringval);
+			}
+
 			rp+=size;
 			}
 			break;
@@ -5248,13 +6384,6 @@ bool sqlrprotocol_tds::param(sqlrservercursor *cursor,
 
 	// copy out pointer
 	*rpout=rp;
-
-	// copy out param index
-	if (byrefvalue && bv) {
-		(*outbindcount)++;
-	} else {
-		(*inbindcount)++;
-	}
 
 	return true;
 }
@@ -5501,11 +6630,9 @@ void sqlrprotocol_tds::doneInProc(uint16_t status,
 	done(TOKEN_DONEINPROC,status,curcmd,donerowcount);
 }
 
-void sqlrprotocol_tds::returnStatus(sqlrservercursor *cursor) {
+void sqlrprotocol_tds::returnStatus(uint32_t value) {
 
 	byte_t		token=TOKEN_RETURNSTATUS;
-	// FIXME: SQL Relay doesn't know the return status
-	uint32_t	value=0;
 
 	write(&resppacket,token);
 	writeLE(&resppacket,value);
@@ -5525,23 +6652,110 @@ void sqlrprotocol_tds::returnValues(sqlrservercursor *cursor) {
 	}
 }
 
+void sqlrprotocol_tds::returnValueHeader(uint16_t ordinal) {
+
+	byte_t	token=TOKEN_RETURNVALUE;
+	write(&resppacket,token);
+
+	// param ordinal
+	writeLE(&resppacket,ordinal);
+
+	// param name - the client matches these up by ordinal, so there's
+	// no need to send one
+	write(&resppacket,(byte_t)0);
+
+	// status - 0x01 means it's an output parameter
+	write(&resppacket,(byte_t)0x01);
+
+	// user type
+	if (negotiatedtdsversion<720) {
+		writeLE(&resppacket,(uint16_t)0);
+	} else {
+		writeLE(&resppacket,(uint32_t)0);
+	}
+
+	// flags - nullable, and nothing else
+	writeLE(&resppacket,(uint16_t)0x0001);
+
+	debugWrite("ordinal: %d",ordinal);
+}
+
+void sqlrprotocol_tds::returnValueInteger(uint16_t ordinal,
+						int32_t value,
+						bool isnull) {
+
+	debugStart("return-value");
+
+	returnValueHeader(ordinal);
+
+	// type info - typeInfo() describes a column of a result set, so it
+	// can't be reused for a scalar like this
+	write(&resppacket,(byte_t)TDS_TYPE_INTN);
+	write(&resppacket,(byte_t)sizeof(int32_t));
+
+	// value - a length of 0 means null
+	if (isnull) {
+		write(&resppacket,(byte_t)0);
+		debugWrite("value: (null)");
+	} else {
+		write(&resppacket,(byte_t)sizeof(int32_t));
+		writeLE(&resppacket,(uint32_t)value);
+		debugWrite("value: %d",value);
+	}
+
+	debugEnd();
+}
+
 void sqlrprotocol_tds::returnValue(sqlrservercursor *cursor, uint16_t param) {
 
 	debugStart("return-value");
 
-	byte_t	token=TOKEN_RETURNVALUE;
+	sqlrserverbindvar	*bv=&(cont->getOutputBinds(cursor)[param]);
 
-	write(&resppacket,token);
+	returnValueHeader(param+1);
 
-	// FIXME: actually implement this
-
-	// param ordinal
-	// param name
-	// user type
-	// flags
-	// type info
-	// crypto meta data
-	// value
+	// SQL Relay hands back whatever the database put in the output bind.
+	// Only integers and strings can come back through this path.
+	switch (bv->type) {
+		case SQLRSERVERBINDVARTYPE_INTEGER:
+			write(&resppacket,(byte_t)TDS_TYPE_INTN);
+			write(&resppacket,(byte_t)sizeof(int64_t));
+			write(&resppacket,(byte_t)sizeof(int64_t));
+			writeLE(&resppacket,(uint64_t)bv->value.integerval);
+			debugWrite("value: %lld",bv->value.integerval);
+			break;
+		case SQLRSERVERBINDVARTYPE_DOUBLE:
+			write(&resppacket,(byte_t)TDS_TYPE_FLTN);
+			write(&resppacket,(byte_t)sizeof(double));
+			write(&resppacket,(byte_t)sizeof(double));
+			write(&resppacket,bv->value.doubleval.value);
+			debugWrite("value: %f",bv->value.doubleval.value);
+			break;
+		case SQLRSERVERBINDVARTYPE_STRING:
+			{
+			// limit the size to 2^15-1 because the client will
+			// interpret it as signed
+			uint16_t	size=(bv->valuesize>32767)?
+						32767:(uint16_t)bv->valuesize;
+			write(&resppacket,(byte_t)TDS_TYPE_BIGVARCHR);
+			writeLE(&resppacket,(uint16_t)32767);
+			if (negotiatedtdsversion>=710) {
+				byte_t	coll[5]={0,0,0,0,0};
+				write(&resppacket,coll,sizeof(coll));
+			}
+			writeLE(&resppacket,size);
+			write(&resppacket,(const byte_t *)bv->value.stringval,
+									size);
+			debugWrite("value: %.*s",size,bv->value.stringval);
+			}
+			break;
+		default:
+			write(&resppacket,(byte_t)TDS_TYPE_INTN);
+			write(&resppacket,(byte_t)sizeof(int32_t));
+			write(&resppacket,(byte_t)0);
+			debugWrite("value: (null)");
+			break;
+	}
 
 	debugEnd();
 }
