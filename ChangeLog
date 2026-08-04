@@ -149,6 +149,21 @@
 		control again and install just copies them, so regenerating
 		the site is a manual make in doc/, and make clean there now
 		removes everything the makefiles generate
+	fixed the sqlrsh connect timeout and response timeout commands - the
+		part after the dot has always gone to the api as microseconds,
+		but was echoed at four digits and documented as a fraction of
+		a second, so "connect timeout 5.25" claimed 5.25 seconds and
+		really set 5.0025, and only the first four characters of the
+		fraction were kept, so 5.000025 set no microseconds at all,
+		the part after the dot is now read as a whole number of
+		microseconds, echoed the way getconnecttimeout and
+		getresponsetimeout already report it, and documented as
+		microseconds rather than as a fraction of a second, so 5.25
+		sets and reports 5 seconds and 25 microseconds, and both
+		commands now reject a timeout that isn't a number or is out
+		of range instead of quietly setting 0 or wrapping around to a
+		negative, which turned the timeout off while claiming to set
+		it
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems

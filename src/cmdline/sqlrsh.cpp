@@ -459,13 +459,15 @@ class	sqlrsh {
 						const char *name,
 						int32_t sec,
 						int32_t usec);
-		// writes what a timeout-setting command produces.  "label"
-		// heads the plain sentence, "name" keys the json object.
+		// writes what a timeout-setting command produces, in the
+		// same seconds and microseconds form writeTimeout() uses.
+		// "label" heads the plain sentence, "name" keys the json
+		// object.
 		void	writeTimeoutSet(sqlrshenv *env,
 						const char *name,
 						const char *label,
 						uint32_t sec,
-						uint32_t msec);
+						uint32_t usec);
 		// writes the result of a command that asked the connection
 		// for a string.  A NULL with an error behind it is the
 		// error, a NULL without one is a null.
@@ -600,7 +602,7 @@ class	sqlrsh {
 		bool	connectTimeout(sqlrconnection *sqlrcon,
 						sqlrshenv *env,
 						const char *args);
-		void	responseTimeout(sqlrconnection *sqlrcon,
+		bool	responseTimeout(sqlrconnection *sqlrcon,
 						sqlrshenv *env,
 						const char *args);
 		bool	cache(sqlrshenv *env, sqlrcursor *sqlrcur,
@@ -1424,8 +1426,7 @@ bool sqlrsh::internalCommand(sqlrconnection *sqlrcon, sqlrcursor *sqlrcur,
 		return true;
 	} else if (!charstring::compareIgnoringCase(
 					ptr,"response timeout",16)) {
-		responseTimeout(sqlrcon,env,ptr+16);
-		return true;
+		return responseTimeout(sqlrcon,env,ptr+16);
 	} else if (!charstring::compareIgnoringCase(ptr,"cache ",6)) {
 		return cache(env,sqlrcur,command);
 	} else if (!charstring::compareIgnoringCase(ptr,"opencache ",10)) {
@@ -3324,22 +3325,22 @@ void sqlrsh::writeTimeout(sqlrshenv *env, const char *name,
 
 void sqlrsh::writeTimeoutSet(sqlrshenv *env, const char *name,
 					const char *label,
-					uint32_t sec, uint32_t msec) {
+					uint32_t sec, uint32_t usec) {
 
 	switch (env->format) {
 		case SQLRSH_FORMAT_PLAIN:
 		case SQLRSH_FORMAT_CSV:
-			stdoutput.printf("%s set to %d.%04d seconds\n",
-							label,sec,msec);
+			stdoutput.printf("%s set to %d.%06d seconds\n",
+							label,sec,usec);
 			break;
 		case SQLRSH_FORMAT_JSON:
 		case SQLRSH_FORMAT_JSONL:
 			{
-				// the value the command was given, echoed
-				// back the way the command spells one
+				// same seconds and microseconds form the
+				// matching get command reports
 				char	value[64];
 				charstring::printf(value,sizeof(value),
-							"%d.%04d",sec,msec);
+							"%d.%06d",sec,usec);
 				writeScalar(env,name,value);
 			}
 			break;
@@ -4808,7 +4809,11 @@ void sqlrsh::autocommit(sqlrshenv *env, bool on) {
 	}
 }
 
-static void parseTimeout(const char *args, uint32_t *sec, uint32_t *msec) {
+// The part after the dot is a whole count of microseconds, not a decimal
+// fraction of a second, so 5.25 is 5 seconds and 25 microseconds.  The api
+// takes the two apart anyway, and printing the microseconds padded to 6 places
+// makes the printed form read correctly as decimal seconds either way.
+static bool parseTimeout(const char *args, uint32_t *sec, uint32_t *usec) {
 
 	// skip to the timeout itself
 	while (character::isWhitespace(*args)) {
@@ -4816,60 +4821,85 @@ static void parseTimeout(const char *args, uint32_t *sec, uint32_t *msec) {
 	}
 
 	// get seconds
-	*sec=charstring::convertToInteger(args);
+	// The api takes these as an int32_t and treats a negative as no
+	// timeout at all, so a value past its max has to be refused rather
+	// than wrapped around into one.
+	if (!character::isDigit(*args)) {
+		return false;
+	}
+	*sec=0;
+	while (character::isDigit(*args)) {
+		if (*sec>214748364U) {
+			return false;
+		}
+		*sec=(*sec)*10+(uint32_t)(*args-'0');
+		if (*sec>2147483647U) {
+			return false;
+		}
+		args++;
+	}
 
-	// get milliseconds
-	// (handed to the connection as microseconds, which is what this
-	// command has always done)
-	char	msecbuf[5];
-	bytestring::set(msecbuf,'0',4);
-	msecbuf[4]='\0';
-	const char	*dot=charstring::findFirst(args,'.');
-	if (dot) {
-		args=dot+1;
-		for (uint8_t i=0; i<4 && *args; i++) {
-			msecbuf[i]=*args;
+	// get microseconds
+	*usec=0;
+	if (*args=='.') {
+		args++;
+		if (!character::isDigit(*args)) {
+			return false;
+		}
+		while (character::isDigit(*args)) {
+			*usec=(*usec)*10+(uint32_t)(*args-'0');
+			if (*usec>999999U) {
+				return false;
+			}
 			args++;
 		}
 	}
-	*msec=charstring::convertToInteger(msecbuf);
+
+	// nothing but trailing whitespace may follow
+	while (character::isWhitespace(*args)) {
+		args++;
+	}
+	return !(*args);
 }
 
 bool sqlrsh::connectTimeout(sqlrconnection *sqlrcon,
 				sqlrshenv *env, const char *args) {
 
-	char	*arg=commandArgument(args);
-	if (!arg || !character::isDigit(arg[0])) {
-		delete[] arg;
+	uint32_t	sec;
+	uint32_t	usec;
+	if (!parseTimeout(args,&sec,&usec)) {
 		displayError(env,NULL,
-			"connect timeout needs a timeout in seconds, "
-			"with an optional fraction",0);
+			"connect timeout needs a whole number of seconds, "
+			"optionally followed by a dot and a whole number "
+			"of microseconds",0);
 		return false;
 	}
 
-	uint32_t	sec;
-	uint32_t	msec;
-	parseTimeout(arg,&sec,&msec);
-	delete[] arg;
-
 	// This applies to the next connect, not to the session sqlrsh is
 	// already in.
-	sqlrcon->setConnectTimeout((int32_t)sec,(int32_t)msec);
+	sqlrcon->setConnectTimeout((int32_t)sec,(int32_t)usec);
 
-	writeTimeoutSet(env,"connecttimeout","Connect Timeout",sec,msec);
+	writeTimeoutSet(env,"connecttimeout","Connect Timeout",sec,usec);
 	return true;
 }
 
-void sqlrsh::responseTimeout(sqlrconnection *sqlrcon,
+bool sqlrsh::responseTimeout(sqlrconnection *sqlrcon,
 				sqlrshenv *env, const char *args) {
 
 	uint32_t	sec;
-	uint32_t	msec;
-	parseTimeout(args,&sec,&msec);
+	uint32_t	usec;
+	if (!parseTimeout(args,&sec,&usec)) {
+		displayError(env,NULL,
+			"response timeout needs a whole number of seconds, "
+			"optionally followed by a dot and a whole number "
+			"of microseconds",0);
+		return false;
+	}
 
-	sqlrcon->setResponseTimeout((int32_t)sec,(int32_t)msec);
+	sqlrcon->setResponseTimeout((int32_t)sec,(int32_t)usec);
 
-	writeTimeoutSet(env,"responsetimeout","Response Timeout",sec,msec);
+	writeTimeoutSet(env,"responsetimeout","Response Timeout",sec,usec);
+	return true;
 }
 
 bool sqlrsh::cache(sqlrshenv *env, sqlrcursor *sqlrcur, const char *command) {
@@ -5157,18 +5187,23 @@ void sqlrsh::displayHelp(sqlrshenv *env) {
 "    resumesession [port]\n"
 "    resumesession [port] [socket]\n"
 "                            resumes a suspended session\n"
-"    connect timeout [seconds]\n"
+"    connect timeout [seconds[.microseconds]]\n"
 "                            the timeout for the next connect, which is\n"
 "                            what a resumesession or a reconnect after an\n"
 "                            endsession uses\n"
 "    getconnecttimeout       the connect timeout, or -1 when it is off\n"
-"    response timeout [seconds]\n"
+"    response timeout [seconds[.microseconds]]\n"
 "                            the timeout for a response from the server\n"
 "    getresponsetimeout      the response timeout, or -1 when it is off\n"
 "\n"
-"    Give both timeouts a whole number of seconds.  How the fractional\n"
-"    part of a timeout is handled is an open question, so leave it out\n"
-"    for now.\n"
+"    The part after the dot in a timeout is microseconds, not a decimal\n"
+"    fraction of a second, so 5.25 sets 5 seconds and 25 microseconds,\n"
+"    not five and a quarter seconds.  Leave the dot out for a whole\n"
+"    number of seconds.  Both the setters and the get commands report a\n"
+"    timeout with the microseconds padded to 6 places - 5 seconds and 25\n"
+"    microseconds comes back as 5.000025 - so what they print reads\n"
+"    correctly as decimal seconds, and can be given straight back to the\n"
+"    setter unchanged.\n"
 "\n"
 "  Databases, catalogs and schemas:\n"
 "\n"
