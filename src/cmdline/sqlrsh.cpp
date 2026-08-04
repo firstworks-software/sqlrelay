@@ -5296,6 +5296,7 @@ int32_t sqlrsh::execute(int argc, const char **argv) {
 	const char	*user=cmdline->getValue("user");
 	const char	*password=cmdline->getValue("password");
 	const char	*passwordencryptionid=NULL;
+	char		*defaultpassword=NULL;
 	char		*decryptedpassword=NULL;
 	bool		usekrb=cmdline->isFound("krb");
 	const char	*krbservice=cmdline->getValue("krbservice");
@@ -5408,7 +5409,9 @@ int32_t sqlrsh::execute(int argc, const char **argv) {
 				sensitivevalue	passwordvalue;
 				passwordvalue.setPath(cfg->getPasswordPath());
 				passwordvalue.parse(cfg->getDefaultPassword());
-				password=passwordvalue.detachTextValue();
+				defaultpassword=
+					passwordvalue.detachTextValue();
+				password=defaultpassword;
 
 				// decrypt the password if necessary
 				passwordencryptionid=
@@ -5437,6 +5440,7 @@ int32_t sqlrsh::execute(int argc, const char **argv) {
 			(!charstring::compare(localeargument,"env"))?
 							"":localeargument)) {
 			stderror.printf("ERROR: set locale failed\n");
+			delete[] defaultpassword;
 			delete[] decryptedpassword;
 			return SQLRSH_EXIT_USAGE;
 		}
@@ -5472,6 +5476,7 @@ int32_t sqlrsh::execute(int argc, const char **argv) {
 		const char	*formatname=cmdline->getValue("format");
 		if (!formatFromName(formatname,&env.format)) {
 			badFormatName(formatname);
+			delete[] defaultpassword;
 			delete[] decryptedpassword;
 			return SQLRSH_EXIT_USAGE;
 		}
@@ -5514,6 +5519,7 @@ int32_t sqlrsh::execute(int argc, const char **argv) {
 			error="The database is down.";
 		}
 		displayError(&env,NULL,error,sqlrcon.errorNumber());
+		delete[] defaultpassword;
 		delete[] decryptedpassword;
 		return SQLRSH_EXIT_CONNECTION;
 	}
@@ -5530,6 +5536,7 @@ int32_t sqlrsh::execute(int argc, const char **argv) {
 		charstring::append(filename,"/.sqlrsh_history");
 		pr.setHistoryFile(filename);
 		pr.setMaxHistoryLines(100);
+		delete[] filename;
 	}
 
 	int32_t	exitcode=SQLRSH_EXIT_SUCCESS;
@@ -5552,6 +5559,7 @@ int32_t sqlrsh::execute(int argc, const char **argv) {
 
 	// clean up
 	pr.flushHistory();
+	delete[] defaultpassword;
 	delete[] decryptedpassword;
 
 	return exitcode;
