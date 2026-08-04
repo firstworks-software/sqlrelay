@@ -222,6 +222,8 @@ id descr         price
 
 <p>An -id run also picks up the instance's kerberos and TLS settings from the configuration.  Anything given on the command line wins over the configuration.</p>
 
+<p>If the instance's password is encrypted, sqlrsh decrypts it with the module named by the user's passwordencryptionid.  That only works for a two-way encryption.  A one-way encryption cannot decrypt anything, and a passwordencryptionid that no passwordencryption in the configuration matches has no module at all.  Either one is a usage error, reported by name, and sqlrsh exits 1.  Use -user and -password along with -id in that case.  See <a href="configguide.html#pwdenc">Password Encryptions</a> in the SQL Relay Configuration Guide.</p>
+
 <ul>
   <li><b>-krb</b> - use Kerberos authentication and encryption</li>
   <li><b>-krbservice</b> SVC - use the given kerberos service</li>
@@ -742,7 +744,7 @@ show only views odbc
 
 <ul>
   <li><b>0</b> - success.  An interactive session always exits 0, even if a query at the prompt failed.  An interactive session is not a batch.</li>
-  <li><b>1</b> - usage error.  A run with no -id, no -host and no -socket, an option that takes a value given without one, an unrecognized -format or -fieldsas name, or a -locale value that setlocale rejects.</li>
+  <li><b>1</b> - usage error.  A run with no -id, no -host and no -socket, an option that takes a value given without one, an unrecognized -format or -fieldsas name, a -locale value that setlocale rejects, or an -id whose configured password encryption is missing or one-way.</li>
   <li><b>2</b> - the file named by -script could not be opened.  A file that the run command could not open is a failed command in the outer script, so that is a 4, not a 2.</li>
   <li><b>3</b> - connection or authentication failure.  The connection is checked at startup, so this is reported before any command runs, in every mode.</li>
   <li><b>4</b> - at least one statement in a script or a -command list failed, not necessarily all of them.  Without -continueonerror the run stopped at that statement, and with it the run went on.</li>

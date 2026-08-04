@@ -176,6 +176,8 @@ sqlrsh -id myinst -continueonerror on -script ./script.sql 2&gt; errors.txt
 
 An -id run also picks up the instance's kerberos and TLS settings from the configuration.  Anything given on the command line wins over the configuration.
 
+If the instance's password is encrypted, sqlrsh decrypts it with the module named by the user's passwordencryptionid.  That only works for a two-way encryption.  A one-way encryption cannot decrypt anything, and a passwordencryptionid that no passwordencryption in the configuration matches has no module at all.  Either one is a usage error, reported by name, and sqlrsh exits 1.  Use -user and -password along with -id in that case.  See [configguide.html#pwdenc Password Encryptions] in the SQL Relay Configuration Guide.
+
 * '''-krb''' - use Kerberos authentication and encryption
 * '''-krbservice''' SVC - use the given kerberos service
 * '''-krbmech''' MECH - use the given kerberos mechanism
@@ -662,7 +664,7 @@ The list format decides the columns of the result set.  mysql gives what a !MySQ
 == Exit Codes ==
 
 * '''0''' - success.  An interactive session always exits 0, even if a query at the prompt failed.  An interactive session is not a batch.
-* '''1''' - usage error.  A run with no -id, no -host and no -socket, an option that takes a value given without one, an unrecognized -format or -fieldsas name, or a -locale value that setlocale rejects.
+* '''1''' - usage error.  A run with no -id, no -host and no -socket, an option that takes a value given without one, an unrecognized -format or -fieldsas name, a -locale value that setlocale rejects, or an -id whose configured password encryption is missing or one-way.
 * '''2''' - the file named by -script could not be opened.  A file that the run command could not open is a failed command in the outer script, so that is a 4, not a 2.
 * '''3''' - connection or authentication failure.  The connection is checked at startup, so this is reported before any command runs, in every mode.
 * '''4''' - at least one statement in a script or a -command list failed, not necessarily all of them.  Without -continueonerror the run stopped at that statement, and with it the run went on.

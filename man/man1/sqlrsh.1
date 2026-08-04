@@ -59,6 +59,16 @@ specified configuration.
 Derive connection info and credentials from the
 specified instance, as defined in the
 configuration.
+.RS
+.PP
+If the instance's password is encrypted, sqlrsh decrypts it with the module
+named by the user's passwordencryptionid.  That only works for a two-way
+encryption.  A one-way encryption cannot decrypt anything, and a
+passwordencryptionid that no passwordencryption in the configuration matches
+has no module at all.  Either one is a usage error, reported by name, and
+sqlrsh exits 1.  Use \fB\-user\fR and \fB\-password\fR along with \fB\-id\fR
+in that case.
+.RE
 .TP
 \fB\-krb\fR
 Use Kerberos authentication and encryption.
@@ -880,7 +890,8 @@ failed.  An interactive session is not a batch.
 1
 Usage error.  A run with no \fB\-id\fR, no \fB\-host\fR and no \fB\-socket\fR,
 an option that takes a value given without one, an unrecognized \fB\-format\fR
-or \fB\-fieldsas\fR name, or a \fB\-locale\fR value that setlocale rejects.
+or \fB\-fieldsas\fR name, a \fB\-locale\fR value that setlocale rejects, or an
+\fB\-id\fR whose configured password encryption is missing or one-way.
 .TP
 2
 The file named by \fB\-script\fR could not be opened.  A file that the run

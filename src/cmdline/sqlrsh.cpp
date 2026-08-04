@@ -5924,15 +5924,47 @@ int32_t sqlrsh::execute(int argc, const char **argv) {
 				passwordencryptionid=
 					cfg->getDefaultPasswordEncryptionId();
 				if (passwordencryptionid) {
+
+					// get the module
 					sqlrpwdencs	sqlrpe(
 						sqlrpth,false,
 						cfg->getPasswordEncryptions());
 					sqlrpe.load();
-					decryptedpassword=
+					sqlrpwdenc	*pe=
 						sqlrpe.
 						getPasswordEncryptionById(
-							passwordencryptionid)->
-							decrypt(password);
+							passwordencryptionid);
+					if (!pe) {
+						stderror.printf(
+							"password encryption "
+							"id %s not found\n",
+							passwordencryptionid);
+						delete[] defaultpassword;
+						delete[] decryptedpassword;
+						return SQLRSH_EXIT_USAGE;
+					}
+
+					// a one-way encryption can encrypt
+					// the password but not decrypt it
+					if (pe->oneWay()) {
+						stderror.printf(
+							"password encryption "
+							"%s is one-way, so the "
+							"password in the "
+							"configuration file "
+							"cannot be decrypted."
+							"\nUse -user and "
+							"-password along with "
+							"-id.\n",
+							passwordencryptionid);
+						delete[] defaultpassword;
+						delete[] decryptedpassword;
+						return SQLRSH_EXIT_USAGE;
+					}
+
+					// decrypt the password
+					decryptedpassword=
+						pe->decrypt(password);
 					password=decryptedpassword;
 				}
 			}
@@ -6403,7 +6435,8 @@ static void helpmessage(const char *progname) {
 		"\n"
 		"1	Usage error.  A run with no -id, no -host and no -socket, an option\n"
 		"	that takes a value given without one, an unrecognized -format or\n"
-		"	-fieldsas name, or a -locale value that setlocale rejects.\n"
+		"	-fieldsas name, a -locale value that setlocale rejects, or an -id\n"
+		"	whose configured password encryption is missing or one-way.\n"
 		"\n"
 		"2	The file named by -script could not be opened.  A file that the run\n"
 		"	command could not open is a failed command in the outer script, so\n"
