@@ -110,6 +110,8 @@
 		the server-side includes, so they're installed 644 now like
 		the css and js already were, and a few stray executable
 		images were fixed while we were in there
+	removed insertparts.pl - the doc build replaced it with the wt tool in
+		2016 and nothing has referenced it since
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems
