@@ -124,6 +124,12 @@ or to the screen if no file is specified.
 .TP
 \fB\-verbose\fR
 Display details about the import process.
+.PP
+Option values:
+.PP
+An option that takes a value has to be given one, so \fB\-commitcount\fR by itself
+exits 1.  A value that begins with a dash has to be given as \fB\-\-option\fR=\fI\,value\/\fR,
+because "\-option \fB\-value\fR" reads the dash as the next option.
 .SH EXAMPLES
 Import a table and sequence using the server at svr:9000 as usr/pwd.
 .IP

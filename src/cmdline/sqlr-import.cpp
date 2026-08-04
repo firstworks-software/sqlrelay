@@ -36,6 +36,12 @@ static void helpmessage(const char *progname) {
 		"\n"
 		"	-verbose		Display details about the import process.\n"
 		"\n"
+		"Option values:\n"
+		"\n"
+		"An option that takes a value has to be given one, so -commitcount by itself\n"
+		"exits 1.  A value that begins with a dash has to be given as --option=value,\n"
+		"because \"-option -value\" reads the dash as the next option.\n"
+		"\n"
 		"Examples:\n"
 		"\n"
 		"Import a table and sequence using the server at svr:9000 as usr/pwd.\n"
@@ -74,12 +80,39 @@ static void helpmessage(const char *progname) {
 		progname,progname,progname,progname);
 }
 
+// the options that require a value, beyond the connection options that
+// sqlrcmdline already knows about
+// (-debug isn't here, and neither is -verbose or -ignorecolumns, because a
+// bare one of those is legal)
+static const char * const	valueoptions[]={
+	"file",
+	"commitcount",
+	"table",
+	"primarykeyname",
+	"primarykeyposition",
+	"primarykeysequence",
+	NULL
+};
+
 int main(int argc, const char **argv) {
 
 	version(argc,argv);
 	help(argc,argv);
 
 	sqlrcmdline 	cmdline(argc,argv);
+
+	// an option that requires a value has to have one
+	// A missing value used to come out empty, which meant 0 for the
+	// numeric options, so a trailing -port quietly tried to connect to
+	// port 0.  It's a usage error now.
+	const char	*mvo=cmdline.missingValueOption(valueoptions);
+	if (mvo) {
+		stderror.printf("usage: -%s requires a value.  "
+				"Use --%s=value if the value "
+				"begins with a dash.\n",mvo,mvo);
+		process::exit(1);
+	}
+
 	sqlrpaths	sqlrpth(&cmdline);
 	sqlrconfigs	sqlrcfgs(&sqlrpth);
 
@@ -181,7 +214,7 @@ int main(int argc, const char **argv) {
 			if (!cmdline.isFound("tls")) {
 				usetls=cfg->getDefaultTls();
 			}
-			if (!cmdline.getValue("tlsciphers")) {
+			if (!cmdline.isFound("tlsciphers")) {
 				tlsciphers=cfg->getDefaultTlsCiphers();
 			}
 			if (!cmdline.isFound("user")) {

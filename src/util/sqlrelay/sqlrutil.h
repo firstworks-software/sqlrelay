@@ -12,6 +12,15 @@ class SQLRUTIL_DLLSPEC sqlrcmdline : public commandline {
 		sqlrcmdline(int argc, const char **argv);
 
 		const char	*getId() const;
+
+		// returns the name of the first command line option that
+		// requires a value but was given without one, or NULL if
+		// there wasn't one.  The connection options that every
+		// client tool takes are built in.  "extraoptions" is a
+		// NULL-terminated list of the tool's own options, or NULL
+		// if it doesn't have any.
+		const char	*missingValueOption(
+					const char * const *extraoptions);
 	private:
 		const char	*id;
 };

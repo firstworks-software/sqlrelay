@@ -344,6 +344,23 @@
 		segfaulted, and a one-way encryption silently produced a
 		null password and a misleading authentication error -
 		both are reported by name now and exit 1
+	fixed the sqlr-import and sqlr-export -id tlsciphers default - the
+		guard tested getValue() rather than isFound(), and getValue()
+		returns an empty string rather than a null for an option that
+		wasn't given, so the cipher list in the config file was never
+		applied
+	fixed sqlr-import and sqlr-export command line options that take a
+		value - a missing value came out empty, which meant 0 for the
+		numeric options, so a trailing -port quietly tried to connect
+		to port 0 rather than being a usage error, and every other
+		value-taking option was quietly dropped
+	fixed sqlr-export -krbservice - the value was read from the -krb
+		option rather than the -krbservice option, so the service name
+		given was ignored and the built-in default was used instead
+	moved the command line value-taking option check into sqlrcmdline, as
+		missingValueOption(), which knows the connection options that
+		every client tool takes, so sqlr-import and sqlr-export only
+		list their own
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems
