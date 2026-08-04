@@ -145,6 +145,11 @@ character.  Defaults to a semicolon.
 \fB\-delimeter\fR is accepted as a spelling of it.
 Unlike the delimiter command, this option does
 not echo the character back.
+.TP
+\fB\-continueonerror\fR on|off
+Carry on past a statement that failed, rather
+than stopping at the first one.  Defaults to
+off.  See CONTINUING PAST AN ERROR below.
 .SS "Output options:"
 .TP
 \fB\-format\fR plain|csv|json|jsonl
@@ -337,6 +342,10 @@ runs a file as one query.
 .TP
 @ [file]
 Same as run.
+.TP
+continueonerror on|off
+Carries on past a statement that failed, rather than stopping at the first one.
+See CONTINUING PAST AN ERROR below.
 .TP
 help
 Writes the command reference.
@@ -797,9 +806,29 @@ Connection or authentication failure.  The connection is checked at startup, so
 this is reported before any command runs, in every mode.
 .TP
 4
-Query or command error.  sqlrsh stops at the first failure in a script or a
-\fB\-command\fR list, so 4 means at least one statement failed, not that they
-all did.
+At least one statement in a script or a \fB\-command\fR list failed, not
+necessarily all of them.  Without \fB\-continueonerror\fR the run stopped at
+that statement, and with it the run went on.
+.SH "CONTINUING PAST AN ERROR"
+\fB\-continueonerror\fR, and the continueonerror command, make a script or a
+\fB\-command\fR list run every statement rather than stopping at the first one
+that failed.
+.PP
+A statement rejected before it reached the database, such as a bad
+\fBformat\fR name or a \fBrun\fR of a file that could not be opened, and a
+statement the database rejected count the same.  Each failed statement still
+writes its own error.
+.PP
+A failure that takes the session down with it stops the run anyway, because the
+rest of the statements have nothing left to run against.
+.PP
+At the end of a run with anything failed, the number of failed statements is
+written to stderr as "statements failed: N", and the exit code is 4.  With
+continueonerror off the run stopped at its first failure, so the count would
+always be 1 and none is written.
+.PP
+A failing command in ~/.sqlrshrc is not counted and does not change the exit
+code.
 .SH FILES
 .TP
 ~/.sqlrshrc

@@ -164,6 +164,12 @@
 		of range instead of quietly setting 0 or wrapping around to a
 		negative, which turned the timeout off while claiming to set
 		it
+	added the sqlrsh -continueonerror option and continueonerror command,
+		which make a script or a -command list run every statement
+		rather than stopping at the first one that failed, and which
+		write the number of failed statements to stderr at the end of
+		the run, and redefined exit code 4 as "at least one statement
+		failed", since it no longer means that sqlrsh stopped there
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems

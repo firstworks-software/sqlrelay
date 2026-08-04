@@ -228,6 +228,10 @@ class sqlrshenv {
 		bool		noelapsed;
 		bool		nextresultset;
 		bool		txqueries;
+		bool		continueonerror;
+		// the number of statements that failed in the script or the
+		// -command list, which is what the count on stderr reports
+		uint64_t	errorcount;
 };
 
 sqlrshenv::sqlrshenv() {
@@ -247,6 +251,8 @@ sqlrshenv::sqlrshenv() {
 	noelapsed=false;
 	nextresultset=false;
 	txqueries=false;
+	continueonerror=false;
+	errorcount=0;
 	inputbinds.setManageArrayKeys(true);
 	outputbinds.setManageArrayKeys(true);
 	inputoutputbinds.setManageArrayKeys(true);
@@ -326,6 +332,18 @@ class	sqlrsh {
 		void	userRcFile(sqlrconnection *sqlrcon, 
 					sqlrcursor *sqlrcur, 
 					sqlrshenv *env);
+		// counts a command that failed, unless a script nested
+		// inside it already counted what failed in there.
+		// "errorcount" is env's count from before the command ran.
+		void	countError(sqlrshenv *env, uint64_t errorcount);
+		// returns true if the run should carry on past a command
+		// that failed
+		bool	continueOnError(sqlrconnection *sqlrcon,
+					sqlrshenv *env);
+		// writes the number of failed statements to stderr, unless
+		// nothing failed or the run stopped at its first failure,
+		// and makes a run with any of them exit SQLRSH_EXIT_QUERY
+		void	reportErrorCount(sqlrshenv *env, int32_t *exitcode);
 		// returns SQLRSH_EXIT_SUCCESS, SQLRSH_EXIT_SCRIPT if the
 		// file couldn't be opened, or SQLRSH_EXIT_QUERY if one of
 		// the commands in it failed
@@ -648,8 +666,59 @@ void sqlrsh::userRcFile(sqlrconnection *sqlrcon, sqlrcursor *sqlrcur,
 	charstring::append(userrcfile,"/.sqlrshrc");
 
 	// process the file
+	// A failing command in the rc file doesn't change the exit status, so
+	// it doesn't count toward the failure count either.
+	uint64_t	errorcount=env->errorcount;
 	runScript(sqlrcon,sqlrcur,env,userrcfile,false);
+	env->errorcount=errorcount;
 	delete[] userrcfile;
+}
+
+void sqlrsh::countError(sqlrshenv *env, uint64_t errorcount) {
+
+	// The run command runs a script, and that script already counted
+	// whatever failed inside it.  Counting the run command itself here
+	// too would count those failures twice.
+	if (env->errorcount>errorcount) {
+		return;
+	}
+	env->errorcount++;
+}
+
+bool sqlrsh::continueOnError(sqlrconnection *sqlrcon, sqlrshenv *env) {
+
+	if (!env->continueonerror) {
+		return false;
+	}
+
+	// A statement that took the session down with it stops the run
+	// anyway.  Running the rest against a connection that isn't there
+	// just turns one failure into all of them.  ping() reopens the
+	// session, so a false here means the server is gone, not that the
+	// last statement closed the session.
+	return sqlrcon->ping();
+}
+
+void sqlrsh::reportErrorCount(sqlrshenv *env, int32_t *exitcode) {
+
+	if (!env->errorcount) {
+		return;
+	}
+
+	// A statement that failed is a failed run, whatever the loop that ran
+	// it handed back.  This is what makes 4 mean "at least one statement
+	// failed" even when the failures were all inside a nested script.
+	*exitcode=SQLRSH_EXIT_QUERY;
+
+	// A run that stopped at its first failure has a count of 1, which the
+	// exit code already said.  Anything else is worth the line: either
+	// continueonerror is on, or it was on earlier and the run carried on
+	// past a failure before something turned it off.
+	if (!env->continueonerror && env->errorcount<2) {
+		return;
+	}
+	stderror.printf("statements failed: %lld\n",
+				(long long)env->errorcount);
 }
 
 int32_t sqlrsh::runScript(sqlrconnection *sqlrcon, sqlrcursor *sqlrcur,
@@ -682,11 +751,15 @@ int32_t sqlrsh::runScript(sqlrconnection *sqlrcon, sqlrcursor *sqlrcur,
 			}
 
 			// run the command
+			uint64_t	errorcount=env->errorcount;
 			if (!runCommand(sqlrcon,sqlrcur,env,
 						command.getString(),
 						NULL)) {
 				exitcode=SQLRSH_EXIT_QUERY;
-				break;
+				countError(env,errorcount);
+				if (!continueOnError(sqlrcon,env)) {
+					break;
+				}
 			}
 		}
 
@@ -714,6 +787,7 @@ bool sqlrsh::runCommands(sqlrconnection *sqlrcon,
 				const char *commands,
 				bool *exitprogram) {
 
+	bool		retval=true;
 	const char	*nextcommand=commands;
 	for (;;) {
 		stringbuffer	command;
@@ -724,13 +798,18 @@ bool sqlrsh::runCommands(sqlrconnection *sqlrcon,
 						env)) {
 			break;
 		}
+		uint64_t	errorcount=env->errorcount;
 		if (!runCommand(sqlrcon,sqlrcur,env,
 					command.getString(),
 					exitprogram)) {
-			return false;
+			retval=false;
+			countError(env,errorcount);
+			if (!continueOnError(sqlrcon,env)) {
+				break;
+			}
 		}
 	}
-	return true;
+	return retval;
 }
 
 bool sqlrsh::getCommandFromFileOrString(file *fl,
@@ -999,7 +1078,8 @@ int sqlrsh::commandType(const char *command) {
 		!charstring::compareIgnoringCase(ptr,"response timeout",16) ||
 		!charstring::compareIgnoringCase(ptr,"cache ",6) ||
 		!charstring::compareIgnoringCase(ptr,"opencache ",10) ||
-		!charstring::compareIgnoringCase(ptr,"txqueries ",10)) {
+		!charstring::compareIgnoringCase(ptr,"txqueries ",10) ||
+		!charstring::compareIgnoringCase(ptr,"continueonerror ",16)) {
 
 		// return value of 1 is internal command
 		return 1;
@@ -1434,6 +1514,10 @@ bool sqlrsh::internalCommand(sqlrconnection *sqlrcon, sqlrcursor *sqlrcur,
 	} else if (!charstring::compareIgnoringCase(ptr,"txqueries ",10)) {
 		ptr=ptr+10;
 		cmdtype=13;
+	} else if (!charstring::compareIgnoringCase(
+					ptr,"continueonerror ",16)) {
+		ptr=ptr+16;
+		cmdtype=18;
 	} else {
 		return false;
 	}
@@ -1555,6 +1639,9 @@ bool sqlrsh::internalCommand(sqlrconnection *sqlrcon, sqlrcursor *sqlrcur,
 		case 17:
 			env->headers=!toggle;
 			env->stats=!toggle;
+			break;
+		case 18:
+			env->continueonerror=toggle;
 			break;
 	}
 	return true;
@@ -5022,6 +5109,8 @@ void sqlrsh::displayHelp(sqlrshenv *env) {
 "                            does not run it.  reexecute runs it\n"
 "    run [file]              runs the sqlrsh commands in the file\n"
 "    @ [file]                same as run\n"
+"    continueonerror on|off  carries on past a statement that failed,\n"
+"                            rather than stopping at the first one\n"
 "    help                    this text\n"
 "    exit                    exits\n"
 "    quit                    same as exit\n"
@@ -5534,6 +5623,7 @@ int32_t sqlrsh::execute(int argc, const char **argv) {
 			"        [-getasnumber (on|off)] "
 			"[-nextresultset (on|off)]\n"
 			"        [-lazyfetch (on|off)] [-txqueries (on|off)]\n"
+			"        [-continueonerror (on|off)]\n"
 			"        [-resultsetbuffersize rows] "
 			"[-delimiter char]\n"
 			"        [-locale (env|name)] [-localstatedir dir]\n"
@@ -5543,7 +5633,7 @@ int32_t sqlrsh::execute(int argc, const char **argv) {
 			"        1  usage error\n"
 			"        2  the -script file could not be opened\n"
 			"        3  connection or authentication failure\n"
-			"        4  query or command error\n"
+			"        4  at least one statement failed\n"
 			"\n"
 			" Run \"%ssh -help\" for the options in full, and "
 			"\"help;\" at the\n"
@@ -5681,6 +5771,7 @@ int32_t sqlrsh::execute(int argc, const char **argv) {
 	env.getasnumber=onOffOption("getasnumber",env.getasnumber);
 	env.noelapsed=onOffOption("noelapsed",env.noelapsed);
 	env.nextresultset=onOffOption("nextresultset",env.nextresultset);
+	env.continueonerror=onOffOption("continueonerror",env.continueonerror);
 
 	// handle the delimiter
 	// The delimeter misspelling is accepted as an option because the
@@ -5728,11 +5819,13 @@ int32_t sqlrsh::execute(int argc, const char **argv) {
 	if (!charstring::isNullOrEmpty(script)) {
 		// if a script was specified, run it
 		exitcode=runScript(&sqlrcon,&sqlrcur,&env,script,true);
+		reportErrorCount(&env,&exitcode);
 	} else if (!charstring::isNullOrEmpty(command)) {
 		// if a command was specified, run it
 		if (!runCommands(&sqlrcon,&sqlrcur,&env,command,NULL)) {
 			exitcode=SQLRSH_EXIT_QUERY;
 		}
+		reportErrorCount(&env,&exitcode);
 	} else {
 		// otherwise go into interactive mode
 		// (an interactive session isn't a batch, so a failed query at
@@ -5773,6 +5866,11 @@ static void helpmessage(const char *progname) {
 		"	-delimiter char		End each command or query with the specified\n"
 		"				character.  Defaults to a semicolon.\n"
 		"				-delimeter is accepted as a spelling of it.\n"
+		"\n"
+		"	-continueonerror on|off\n"
+		"				Carry on past a statement that failed, rather\n"
+		"				than stopping at the first one.  Defaults to\n"
+		"				off.  See Continuing past an error below.\n"
 		"\n"
 		"Output options:\n"
 		"	-format plain|csv|json|jsonl\n"
@@ -5934,9 +6032,26 @@ static void helpmessage(const char *progname) {
 		"3	Connection or authentication failure.  The connection is checked at\n"
 		"	startup, so this is reported before any command runs, in every mode.\n"
 		"\n"
-		"4	Query or command error.  %s stops at the first failure in a script\n"
-		"	or a -command list, so 4 means at least one statement failed, not\n"
-		"	that they all did.\n"
+		"4	At least one statement in a script or a -command list failed, not\n"
+		"	necessarily all of them.  Without -continueonerror the run stopped\n"
+		"	at that statement, and with it the run went on.\n"
+		"\n"
+		"Continuing past an error:\n"
+		"\n"
+		"-continueonerror, and the continueonerror command, make a script or a\n"
+		"-command list run every statement rather than stopping at the first one\n"
+		"that failed.  A statement rejected before it reached the database and one\n"
+		"the database rejected count the same, and each failed statement still\n"
+		"writes its own error.\n"
+		"\n"
+		"A failure that takes the session down with it stops the run anyway, because\n"
+		"the rest of the statements have nothing left to run against.\n"
+		"\n"
+		"At the end of a run with anything failed, the number of failed statements is\n"
+		"written to stderr as \"statements failed: N\", and the exit code is 4.  With\n"
+		"continueonerror off the run stopped at its first failure, so the count would\n"
+		"always be 1 and none is written.  A failing command in ~/.sqlrshrc is not\n"
+		"counted and does not change the exit code.\n"
 		"\n"
 		"Commands:\n"
 		"\n"
@@ -5991,7 +6106,7 @@ static void helpmessage(const char *progname) {
 		progname,SQL_RELAY,progname,progname,progname,
 		progname,progname,progname,progname,
 		progname,progname,progname,progname,progname,
-		progname,progname,progname,progname);
+		progname,progname,progname);
 }
 
 int main(int argc, const char **argv) {
