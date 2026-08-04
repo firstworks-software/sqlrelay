@@ -1116,10 +1116,14 @@ wchar_t *sqlrprotocol_tds::readPassword(const byte_t *rp,
 
 void sqlrprotocol_tds::getServerTdsVersion() {
 
-	servertdsversion=420;
+	// 0 means "couldn't tell"
+	servertdsversion=0;
 
 	// versions reported by FreeTDS...
-	if (charstring::contains(dbversion,"SQL Server 2016") ||
+	if (charstring::contains(dbversion,"SQL Server 2022") ||
+			charstring::contains(dbversion,"SQL Server 2019") ||
+			charstring::contains(dbversion,"SQL Server 2017") ||
+			charstring::contains(dbversion,"SQL Server 2016") ||
 			charstring::contains(dbversion,"SQL Server 2014") ||
 			charstring::contains(dbversion,"SQL Server 2012")) {
 		servertdsversion=740;
@@ -1142,9 +1146,13 @@ void sqlrprotocol_tds::getServerTdsVersion() {
 		servertdsversion=420;
 	}
 
-	// versions reported by ODBC...
+	// versions reported by ODBC as SQL_DBMS_VER, "##.##.####"...
 	// FIXME: other versions...
-	if (charstring::contains(dbversion,"12.00.2000")) {
+	if (charstring::contains(dbversion,"12.00.2000") ||
+			charstring::startsWith(dbversion,"13.") ||
+			charstring::startsWith(dbversion,"14.") ||
+			charstring::startsWith(dbversion,"15.") ||
+			charstring::startsWith(dbversion,"16.")) {
 		servertdsversion=740;
 	}
 
@@ -1276,13 +1284,21 @@ uint32_t sqlrprotocol_tds::tdsVersionDecToHex(uint32_t tdsversion,
 
 void sqlrprotocol_tds::negotiateTdsVersion() {
 
+	// If we couldn't work out the backend's tds version then go with
+	// whatever the client asked for.  Falling back to an old version
+	// hangs the client, because the width of some fields varies with the
+	// version, and clients don't necessarily reconsider the version they
+	// asked for.  FreeTDS, for example, sizes the done token's rowcount
+	// from the version it requested, not from the one we send back.
+	uint32_t	stv=(servertdsversion)?servertdsversion:
+					(clienttdsversion)?clienttdsversion:700;
+
 	negotiatedtdsversion=
-		(clienttdsversion<servertdsversion)?
-				clienttdsversion:servertdsversion;
+		(clienttdsversion<stv)?clienttdsversion:stv;
 
 	debugStart("negotiate tds version");
 	debugWrite("client: %d",clienttdsversion);
-	debugWrite("server: %d",servertdsversion);
+	debugWrite("server: %d",stv);
 	debugWrite("negotiated: %d",negotiatedtdsversion);
 	debugEnd();
 }
@@ -2032,10 +2048,12 @@ bool sqlrprotocol_tds::tds7Login() {
 	}
 
 	// done
-	done();
+	done((retval)?DONE_FINAL:DONE_ERROR,0,0);
 
-	// send the response packet
-	retval=sendPacket();
+	// send the response packet, without losing a login failure
+	if (!sendPacket()) {
+		retval=false;
+	}
 
 	// clean up
 	delete[] hostname;
@@ -2140,7 +2158,7 @@ void sqlrprotocol_tds::authError(const wchar_t *username,
 	err.append(username8);
 	err.append("'.");
 
-	error(18456,1,14,err.getString(),srvname,NULL,1);
+	error(18456,1,14,err.getString(),srvname,NULL,0);
 
 	delete[] username8;
 }

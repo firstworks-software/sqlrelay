@@ -21,6 +21,7 @@ all-base: $(SQLR)auth_sqlrclient_connectstrings.$(LIBEXT) \
 		$(SQLR)auth_mysql_database.$(LIBEXT) \
 		$(SQLR)auth_postgresql_connectstrings.$(LIBEXT) \
 		$(SQLR)auth_postgresql_userlist.$(LIBEXT) \
+		$(SQLR)auth_tds_connectstrings.$(LIBEXT) \
 		$(SQLR)auth_oracle_connectstrings.$(LIBEXT) \
 		$(SQLR)auth_oracle_userlist.$(LIBEXT) \
 		$(SQLR)auth_oracle_database.$(LIBEXT) \
@@ -62,6 +63,9 @@ $(SQLR)auth_postgresql_connectstrings.$(LIBEXT): postgresql_connectstrings.cpp p
 $(SQLR)auth_postgresql_userlist.$(LIBEXT): postgresql_userlist.cpp postgresql_userlist.$(OBJ)
 	$(LTLINK) $(LINK) $(OUT)$@ postgresql_userlist.$(OBJ) $(LDFLAGS) $(PLUGINLIBS) $(MODLINKFLAGS)
 
+$(SQLR)auth_tds_connectstrings.$(LIBEXT): tds_connectstrings.cpp tds_connectstrings.$(OBJ)
+	$(LTLINK) $(LINK) $(OUT)$@ tds_connectstrings.$(OBJ) $(LDFLAGS) $(PLUGINLIBS) $(MODLINKFLAGS)
+
 $(SQLR)auth_oracle_connectstrings.$(LIBEXT): oracle_connectstrings.cpp oracle_connectstrings.$(OBJ)
 	$(LTLINK) $(LINK) $(OUT)$@ oracle_connectstrings.$(OBJ) $(LDFLAGS) $(PLUGINLIBS) $(MODLINKFLAGS)
 
@@ -88,6 +92,7 @@ installdll:
 	$(LTINSTALL) $(CP) $(SQLR)auth_mysql_database.$(LIBEXT) $(libexecdir)
 	$(LTINSTALL) $(CP) $(SQLR)auth_postgresql_connectstrings.$(LIBEXT) $(libexecdir)
 	$(LTINSTALL) $(CP) $(SQLR)auth_postgresql_userlist.$(LIBEXT) $(libexecdir)
+	$(LTINSTALL) $(CP) $(SQLR)auth_tds_connectstrings.$(LIBEXT) $(libexecdir)
 
 installlib: $(INSTALLSHAREDLIB) $(AUTHINSTALLSHAREDLIBOPTIONALTARGETS)
 
@@ -129,6 +134,10 @@ installsharedlib:
 	$(RM) $(libexecdir)/$(SQLR)auth_postgresql_userlist.a
 	$(RM) $(libexecdir)/$(SQLR)auth_postgresql_userlist.$(LIBEXT)
 	$(MODULERENAME) $(libexecdir)/$(SQLR)auth_postgresql_userlist.so so $(MODULESUFFIX)
+	$(LTINSTALL) $(CP) $(SQLR)auth_tds_connectstrings.$(LIBEXT) $(libexecdir)
+	$(RM) $(libexecdir)/$(SQLR)auth_tds_connectstrings.a
+	$(RM) $(libexecdir)/$(SQLR)auth_tds_connectstrings.$(LIBEXT)
+	$(MODULERENAME) $(libexecdir)/$(SQLR)auth_tds_connectstrings.so so $(MODULESUFFIX)
 
 installsharedlib-sqlrelay:
 	$(MKINSTALLDIRS) $(libexecdir)
@@ -174,6 +183,7 @@ uninstall:
 		$(libexecdir)/$(SQLR)auth_mysql_database.* \
 		$(libexecdir)/$(SQLR)auth_postgresql_connectstrings.* \
 		$(libexecdir)/$(SQLR)auth_postgresql_userlist.* \
+		$(libexecdir)/$(SQLR)auth_tds_connectstrings.* \
 		$(libexecdir)/$(SQLR)auth_oracle_connectstrings.* \
 		$(libexecdir)/$(SQLR)auth_oracle_database.* \
 		$(libexecdir)/$(SQLR)auth_oracle_userlist.* \
