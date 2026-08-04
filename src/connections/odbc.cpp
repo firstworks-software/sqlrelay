@@ -5393,15 +5393,23 @@ bool odbccursor::fetchRow(bool *error) {
 						setConvCharError("fetch",err);
 						return false;
 					}
+					// clamp to the field buffer
+					size_t	nullsize=nullSize("UTF-8");
 					size_t	s=stringSize(u,"UTF-8");
-					if (s>=maxfieldsize) {
-						// FIXME: this could make s<0
-						s=maxfieldsize-
-							nullSize("UTF-8");
+					if (s>maxfieldsize) {
+						s=maxfieldsize;
 					}
-					bytestring::zero(field[i]+s,
-							nullSize("UTF-8"));
+
+					// stringSize() counts the null
+					// terminator, indicator[] must not
+					s=(s>nullsize)?s-nullsize:0;
+
+					// copy in and null-terminate
 					bytestring::copy(field[i],u,s);
+					if (s+nullsize<=maxfieldsize) {
+						bytestring::zero(field[i]+s,
+								nullsize);
+					}
 					indicator[i]=s;
 					delete[] u;
 				}

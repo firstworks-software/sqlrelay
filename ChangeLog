@@ -447,6 +447,11 @@
 		neither importer can read standard input, so a NULL or empty
 		file name is now a reported error, and the c++ api docs no
 		longer describe import from standard input as though it works
+	fixed the odbc connection module - the size reported for wchar and
+		wvarchar fields counted the utf-8 null terminator, so every
+		wide value came back one byte longer than it really was, and
+		a maxfieldsize smaller than the terminator underflowed the
+		size
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems
