@@ -178,9 +178,16 @@ csv has no statistics at all.  Defaults to on.
 Leave the elapsed time out of the statistics.
 Defaults to off.
 .TP
+\fB\-fieldsas\fR raw|number|boolean|date
+Fetch each field with the matching getFieldAs
+method, where the column suits it.  Defaults to
+raw, the field as the database sent it.  See
+FETCHING FIELDS AS A TYPE below.
+.TP
 \fB\-getasnumber\fR on|off
 Calls getFieldAs(Integer|Double) as appropriate.
-Defaults to off.
+An alias \- on is \fB\-fieldsas\fR number and off
+is \fB\-fieldsas\fR raw.  Defaults to off.
 .TP
 \fB\-nullsasnulls\fR on|off
 Get nulls as nulls, rather than as empty
@@ -319,9 +326,10 @@ large result set \- it streams, so head, grep and wc work on it, and a partial
 result set is still usable.
 .SS "json and jsonl together"
 Both carry the column types, which neither plain nor csv does.  A database null
-is the json null literal, never "" and never "NULL".  A numeric column is a
-bare json number when \fB\-getasnumber\fR is in effect, and a json string
-otherwise.  A value is never truncated.
+is the json null literal, never "" and never "NULL".  A converted field is
+typed, so \fB\-fieldsas\fR number gives a bare json number and \fB\-fieldsas\fR
+boolean a bare json true or false.  Everything else, a converted date included,
+is a json string.  A value is never truncated.
 .PP
 The column list is always written and no divider is written, for the same
 reason csv always writes its header row.  The statistics are part of the
@@ -352,6 +360,45 @@ hands back an empty string for a null and sqlrsh cannot tell the two apart.
 .SS "Choosing a format"
 A format name is matched ignoring case.  An unrecognized name is an error:
 "\fB\-format\fR bogus" exits 1, and "format bogus;" is a failed command.
+.SH "FETCHING FIELDS AS A TYPE"
+\fB\-fieldsas\fR, and the fieldsas command, choose which getFieldAs method
+every field of every result set is fetched with.  There is one setting, shared
+by all four formats, since all four are renderings of the same rows.
+.PP
+A mode only converts a field where the conversion means something, and writes
+the field unchanged where it does not, so a mode never turns a name column into
+a number, a true or a date.
+.TP
+raw
+The field as the database sent it.  The default.
+.TP
+number
+getFieldAsInteger or getFieldAsDouble, whichever the column type calls for, on
+a numeric or bit column.  Every other column passes through.
+.TP
+boolean
+getFieldAsBoolean, on a boolean, bit or numeric column.  Every other column
+passes through.  Numeric columns are included because a database with no
+boolean type stores a boolean as 0 or 1.  The result is the word true or false,
+and a bare json true or false in json and jsonl.
+.TP
+date
+getFieldAsDate, on any column whose value reads as a date.  A field it cannot
+read passes through, so no column type test is needed.  The result is
+[\-]YYYY\-MM\-DD HH:MM:SS[.uuuuuu], carrying only the parts the field had, so a
+date column gives a date, a time column a time, and a timestamp both.  A
+fraction of a second is written when it is not zero, since a fraction that was
+not there and one that was zero read back the same.  A zero month or day, which
+is how mysql stores 0000\-00\-00, is not a date, so the whole field passes
+through.  The result is a json string, not an object of parts.  The ddmm, yyyyddmm and date
+delimiter arguments of getFieldAsDate are not reachable from here; the plain
+overload is used.
+.PP
+getasnumber is an alias: on is fieldsas number and off is fieldsas raw.  When
+\fB\-getasnumber\fR and \fB\-fieldsas\fR are both given, \fB\-fieldsas\fR wins.
+.PP
+A mode name is matched ignoring case, and an unrecognized one is an error:
+"\fB\-fieldsas\fR bogus" exits 1, and "fieldsas bogus;" is a failed command.
 .SH COMMANDS
 Everything in this section is a command rather than a query, and ends with the
 delimiter like a query does.  A command that sets something writes nothing when
@@ -407,8 +454,13 @@ on.
 noelapsed on|off
 Leaves the elapsed time out of the statistics.
 .TP
+fieldsas raw|number|boolean|date
+Fetches fields with the matching getFieldAs method, where the column suits it.
+raw is the field as the database sent it.  See FETCHING FIELDS AS A TYPE above.
+.TP
 getasnumber on|off
-Fetches numeric fields as numbers.
+Fetches numeric fields as numbers.  An alias \- on is fieldsas number and off is
+fieldsas raw.
 .TP
 nullsasnulls on|off
 Gets nulls as nulls, rather than as empty strings.
@@ -828,7 +880,7 @@ failed.  An interactive session is not a batch.
 1
 Usage error.  A run with no \fB\-id\fR, no \fB\-host\fR and no \fB\-socket\fR,
 an option that takes a value given without one, an unrecognized \fB\-format\fR
-name, or a \fB\-locale\fR value that setlocale rejects.
+or \fB\-fieldsas\fR name, or a \fB\-locale\fR value that setlocale rejects.
 .TP
 2
 The file named by \fB\-script\fR could not be opened.  A file that the run

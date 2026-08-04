@@ -188,6 +188,20 @@
 	fixed the sqlrsh nullsasnulls command - a bare one, or one with an
 		unrecognized value, did nothing at all, rather than turning
 		the setting off the way every other on|off command does
+	added the sqlrsh -fieldsas option and fieldsas command, which choose
+		which getFieldAs method every field of a result set is fetched
+		with - raw, number, boolean or date - so that
+		getFieldAsBoolean() and getFieldAsDate(), neither of which
+		sqlrsh could reach before, are reachable now, made getasnumber
+		an alias for the number and raw modes so that -getasnumber and
+		the getasnumber command still behave exactly as documented,
+		guarded each mode so that a column the conversion means
+		nothing for is written unchanged rather than turned into a
+		number, a true or a date, wrote a converted date as
+		[-]YYYY-MM-DD HH:MM:SS[.uuuuuu] carrying only the parts the
+		field had, and made json and jsonl type a converted field, so
+		number gives a bare json number and boolean a bare json true
+		or false
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems

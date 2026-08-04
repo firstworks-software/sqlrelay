@@ -22,6 +22,7 @@
 #include <config.h>
 #include <defaults.h>
 #define NEED_IS_BIT_TYPE_CHAR 1
+#define NEED_IS_BOOL_TYPE_CHAR 1
 #define NEED_IS_NUMBER_TYPE_CHAR 1
 #define NEED_IS_FLOAT_TYPE_CHAR 1
 #define NEED_IS_NONSCALE_FLOAT_TYPE_CHAR 1
@@ -167,6 +168,63 @@ static void badFormatName(const char *name) {
 	stderror.write('\n');
 }
 
+// which getFieldAs...() method the result set is fetched with
+enum sqlrshfieldsas {
+	SQLRSH_FIELDSAS_RAW=0,
+	SQLRSH_FIELDSAS_NUMBER,
+	SQLRSH_FIELDSAS_BOOLEAN,
+	SQLRSH_FIELDSAS_DATE
+};
+
+// the mode names, in one place
+struct sqlrshfieldsasname {
+	const char	*name;
+	sqlrshfieldsas	fieldsas;
+};
+
+static const sqlrshfieldsasname	sqlrshfieldsasnames[]={
+	{"raw",SQLRSH_FIELDSAS_RAW},
+	{"number",SQLRSH_FIELDSAS_NUMBER},
+	{"boolean",SQLRSH_FIELDSAS_BOOLEAN},
+	{"date",SQLRSH_FIELDSAS_DATE},
+	{NULL,SQLRSH_FIELDSAS_RAW}
+};
+
+static bool fieldsAsFromName(const char *name, sqlrshfieldsas *fieldsas) {
+
+	if (charstring::isNullOrEmpty(name)) {
+		return false;
+	}
+
+	for (const sqlrshfieldsasname *fn=sqlrshfieldsasnames; fn->name; fn++) {
+		if (!charstring::compareIgnoringCase(name,fn->name)) {
+			*fieldsas=fn->fieldsas;
+			return true;
+		}
+	}
+	return false;
+}
+
+static void badFieldsAsName(const char *name) {
+
+	stderror.printf("unrecognized fieldsas mode \"%s\", expected ",
+						(name)?name:"");
+	for (const sqlrshfieldsasname *fn=sqlrshfieldsasnames; fn->name; fn++) {
+		if (fn!=sqlrshfieldsasnames) {
+			stderror.write('|');
+		}
+		stderror.write(fn->name);
+	}
+	stderror.write('\n');
+}
+
+// the json type a converted field goes out as
+enum sqlrshjsontype {
+	SQLRSH_JSONTYPE_STRING=0,
+	SQLRSH_JSONTYPE_NUMBER,
+	SQLRSH_JSONTYPE_BOOLEAN
+};
+
 static char *commandArgument(const char *args) {
 
 	char	*arg=charstring::duplicate(args);
@@ -224,7 +282,10 @@ class sqlrshenv {
 		// outlive the command that ran it.
 		char		*resumesocket;
 		sqlrshformat	format;
-		bool		getasnumber;
+		// which getFieldAs...() method the result set is fetched
+		// with.  getasnumber is an alias for the number mode, so
+		// there's no separate flag for it.
+		sqlrshfieldsas	fieldsas;
 		bool		noelapsed;
 		bool		nextresultset;
 		bool		txqueries;
@@ -247,7 +308,7 @@ sqlrshenv::sqlrshenv() {
 	cacheto=NULL;
 	resumesocket=NULL;
 	format=SQLRSH_FORMAT_PLAIN;
-	getasnumber=false;
+	fieldsas=SQLRSH_FIELDSAS_RAW;
 	noelapsed=false;
 	nextresultset=false;
 	txqueries=false;
@@ -411,25 +472,40 @@ class	sqlrsh {
 						uint32_t length);
 		// writes "field" as a json value.  A NULL "field" is a
 		// database null, and is written as the json null literal.
-		// "asnumber" asks for a bare json number, which it gets if
-		// it really looks like one, and a json string if it doesn't.
+		// SQLRSH_JSONTYPE_NUMBER asks for a bare json number, which
+		// it gets if it really looks like one, and a json string if
+		// it doesn't.
 		void	jsonWriteValue(filedescriptor *fd,
 						const char *field,
 						uint32_t length,
-						bool asnumber);
-		// fetches field "col" of row "row", applying the getasnumber
+						sqlrshjsontype jsontype);
+		// fetches field "col" of row "row", applying the fieldsas
 		// conversion.  Sets "*length" to the field's length and
-		// "*asnumber" to whether the conversion happened.  Returns
-		// NULL for a database null.  "numberbuffer" is scratch space
-		// the conversion writes into, so it has to outlive the
+		// "*jsontype" to the json type the result goes out as.
+		// Returns NULL for a database null.  "convbuffer" is scratch
+		// space the conversion writes into, so it has to outlive the
 		// returned pointer.
 		const char *getFieldForDisplay(sqlrcursor *sqlrcur,
 						sqlrshenv *env,
 						uint64_t row, uint32_t col,
 						uint32_t *length,
-						char *numberbuffer,
-						size_t numberbuffersize,
-						bool *asnumber);
+						char *convbuffer,
+						size_t convbuffersize,
+						sqlrshjsontype *jsontype);
+		// writes the broken-down date "getFieldAsDate" handed back
+		// into "buffer", as [-]YYYY-MM-DD HH:MM:SS[.uuuuuu], leaving
+		// out the parts the field didn't carry.  Returns false if it
+		// carried neither a date nor a time.
+		bool	formatFieldAsDate(char *buffer, size_t buffersize,
+						int16_t year, int16_t month,
+						int16_t day, int16_t hour,
+						int16_t minute, int16_t second,
+						int32_t microsecond,
+						bool isnegative);
+		// returns the width plain format pads column "col" to, which
+		// the header, the divider and the rows all have to agree on
+		uint32_t	plainColumnWidth(sqlrcursor *sqlrcur,
+						sqlrshenv *env, uint32_t col);
 		void	displayResultSet(sqlrcursor *sqlrcur,
 						sqlrshenv *env);
 		void	plainDisplayResultSet(sqlrcursor *sqlrcur,
@@ -974,6 +1050,7 @@ int sqlrsh::commandType(const char *command) {
 		!charstring::compareIgnoringCase(ptr,"autocommit",10) ||
 		!charstring::compareIgnoringCase(ptr,"final",5) ||
 		!charstring::compareIgnoringCase(ptr,"getasnumber",11) ||
+		!charstring::compareIgnoringCase(ptr,"fieldsas",8) ||
 		!charstring::compareIgnoringCase(ptr,"noelapsed",9) ||
 		!charstring::compareIgnoringCase(ptr,"nextresultset",13) ||
 		!charstring::compareIgnoringCase(ptr,"quiet",5) ||
@@ -1133,6 +1210,9 @@ bool sqlrsh::internalCommand(sqlrconnection *sqlrcon, sqlrcursor *sqlrcur,
 	} else if (!charstring::compareIgnoringCase(ptr,"getasnumber",11)) {
 		ptr=ptr+11;
 		cmdtype=14;
+	} else if (!charstring::compareIgnoringCase(ptr,"fieldsas",8)) {
+		ptr=ptr+8;
+		cmdtype=19;
 	} else if (!charstring::compareIgnoringCase(ptr,"noelapsed",9)) {
 		ptr=ptr+9;
 		cmdtype=15;
@@ -1568,6 +1648,23 @@ bool sqlrsh::internalCommand(sqlrconnection *sqlrcon, sqlrcursor *sqlrcur,
 		return valid;
 	}
 
+	// handle fieldsas
+	// It takes a value rather than on|off, so an unrecognized mode is a
+	// failed command, the way an unrecognized format name is.
+	if (cmdtype==19) {
+		char	*name=charstring::duplicate(ptr);
+		charstring::bothTrim(name);
+		sqlrshfieldsas	fieldsas;
+		bool		valid=fieldsAsFromName(name,&fieldsas);
+		if (valid) {
+			env->fieldsas=fieldsas;
+		} else {
+			badFieldsAsName(name);
+		}
+		delete[] name;
+		return valid;
+	}
+
 	// on or off?
 	bool	toggle=false;
 	if (!charstring::compareIgnoringCase(ptr,"on",2)) {
@@ -1624,8 +1721,10 @@ bool sqlrsh::internalCommand(sqlrconnection *sqlrcon, sqlrcursor *sqlrcur,
 		case 13:
 			env->txqueries=toggle;
 			break;
+		// getasnumber is an alias for two of the fieldsas modes
 		case 14:
-			env->getasnumber=toggle;
+			env->fieldsas=(toggle)?SQLRSH_FIELDSAS_NUMBER:
+						SQLRSH_FIELDSAS_RAW;
 			break;
 		case 15:
 			env->noelapsed=toggle;
@@ -2517,6 +2616,33 @@ void sqlrsh::displayHeader(sqlrcursor *sqlrcur, sqlrshenv *env) {
 	}
 }
 
+uint32_t sqlrsh::plainColumnWidth(sqlrcursor *sqlrcur, sqlrshenv *env,
+							uint32_t col) {
+
+	// getLongest() measures the raw fields, so a conversion that widens
+	// them runs past it.  A boolean is the one conversion whose width is
+	// known before the rows arrive - it is always true or false - so it
+	// is the one that can be padded for.
+	uint32_t	longest=sqlrcur->getLongest(col);
+	if (env->fieldsas==SQLRSH_FIELDSAS_BOOLEAN && longest<5) {
+		const char	*fieldtype=sqlrcur->getColumnType(col);
+		if (isBoolTypeChar(fieldtype) ||
+			isBitTypeChar(fieldtype) ||
+			isNumberTypeChar(fieldtype)) {
+			longest=5;
+		}
+	}
+
+	if (env->headers) {
+		uint32_t	namelen=charstring::getLength(
+						sqlrcur->getColumnName(col));
+		if (namelen>longest) {
+			longest=namelen;
+		}
+	}
+	return longest;
+}
+
 void sqlrsh::plainDisplayHeader(sqlrcursor *sqlrcur, sqlrshenv *env) {
 
 	// The headers toggle is plain format only.  Every other format is
@@ -2546,10 +2672,7 @@ void sqlrsh::plainDisplayHeader(sqlrcursor *sqlrcur, sqlrshenv *env) {
 		stdoutput.write(name);
 
 		// space-pad after the name, if necessary
-		uint32_t	longest=sqlrcur->getLongest(ci);
-		if (namelen>longest) {
-			longest=namelen;
-		}
+		uint32_t	longest=plainColumnWidth(sqlrcur,env,ci);
 		charcount=charcount+longest;
 		for (uint32_t j=namelen; j<longest; j++) {
 			stdoutput.write(' ');
@@ -2793,7 +2916,8 @@ static bool jsonIsNumber(const char *field, uint32_t length) {
 }
 
 void sqlrsh::jsonWriteValue(filedescriptor *fd, const char *field,
-					uint32_t length, bool asnumber) {
+					uint32_t length,
+					sqlrshjsontype jsontype) {
 
 	// a database null is the json null literal
 	if (!field) {
@@ -2803,7 +2927,13 @@ void sqlrsh::jsonWriteValue(filedescriptor *fd, const char *field,
 
 	// A number only goes out bare if it really is a json number.
 	// getFieldAsDouble() can hand back inf or nan, and neither is one.
-	if (asnumber && jsonIsNumber(field,length)) {
+	if (jsontype==SQLRSH_JSONTYPE_NUMBER && jsonIsNumber(field,length)) {
+		fd->write(field,(size_t)length);
+		return;
+	}
+
+	// a real json boolean, so a reader doesn't have to match a word
+	if (jsontype==SQLRSH_JSONTYPE_BOOLEAN) {
 		fd->write(field,(size_t)length);
 		return;
 	}
@@ -2811,22 +2941,80 @@ void sqlrsh::jsonWriteValue(filedescriptor *fd, const char *field,
 	jsonWriteString(fd,field,length);
 }
 
+bool sqlrsh::formatFieldAsDate(char *buffer, size_t buffersize,
+				int16_t year, int16_t month, int16_t day,
+				int16_t hour, int16_t minute, int16_t second,
+				int32_t microsecond, bool isnegative) {
+
+	// A month or a day that's there but zero is mysql's 0000-00-00, which
+	// parses to year 2000 with both at zero.  Rendering it would either
+	// invent a year the field never had or drop the date half of a
+	// datetime, so the whole field passes through instead.
+	if (!month || !day) {
+		return false;
+	}
+
+	// A time on its own comes back with the month and the day unset, but
+	// with the year adjusted to something, so the date part is decided on
+	// the month and the day rather than on the year.
+	bool	hasdate=(month>0 && day>0);
+	bool	hastime=(hour>=0);
+	if (!hasdate && !hastime) {
+		return false;
+	}
+
+	stringbuffer	date;
+	if (isnegative) {
+		date.append('-');
+	}
+	char	part[32];
+	if (hasdate) {
+		charstring::printf(part,sizeof(part),"%04d-%02d-%02d",
+					(int)year,(int)month,(int)day);
+		date.append(part);
+	}
+	if (hastime) {
+		if (hasdate) {
+			date.append(' ');
+		}
+		charstring::printf(part,sizeof(part),"%02d:%02d:%02d",
+					(int)hour,
+					(int)((minute>=0)?minute:0),
+					(int)((second>=0)?second:0));
+		date.append(part);
+		// The parse can't tell a fraction that wasn't there from one
+		// that was zero - both come back as 0 - so a zero one is
+		// left off rather than hung on every timestamp.
+		if (microsecond>0) {
+			charstring::printf(part,sizeof(part),".%06d",
+						(int)microsecond);
+			date.append(part);
+		}
+	}
+	charstring::printf(buffer,buffersize,"%s",date.getString());
+	return true;
+}
+
 const char *sqlrsh::getFieldForDisplay(sqlrcursor *sqlrcur, sqlrshenv *env,
 					uint64_t row, uint32_t col,
 					uint32_t *length,
-					char *numberbuffer,
-					size_t numberbuffersize,
-					bool *asnumber) {
+					char *convbuffer,
+					size_t convbuffersize,
+					sqlrshjsontype *jsontype) {
 
 	const char	*field=sqlrcur->getField(row,col);
 	const char	*fieldtype=sqlrcur->getColumnType(col);
 	*length=sqlrcur->getFieldLength(row,col);
-	*asnumber=false;
+	*jsontype=SQLRSH_JSONTYPE_STRING;
+
+	if (!field) {
+		return field;
+	}
 
 	// FIXME: move this down below the end-of-rs check?
 	// The purpose of this is to verify the functionality
 	// of the getFieldAsXXX() methods.
-	if (field && env->getasnumber &&
+	if (env->fieldsas==SQLRSH_FIELDSAS_NUMBER &&
 		(isBitTypeChar(fieldtype) ||
 			isNumberTypeChar(fieldtype))) {
 
@@ -2837,19 +3025,58 @@ const char *sqlrsh::getFieldForDisplay(sqlrcursor *sqlrcur, sqlrshenv *env,
 				// here precision is a number of bits, but printf %g wants digits.
 				// FIXME: precision should actually be the number of digits, not bits...
 				int32_t	digits=(int32_t)(ceil(precision/3.33));
-				charstring::printf(numberbuffer,numberbuffersize,"%.*g",digits,fd);
+				charstring::printf(convbuffer,convbuffersize,"%.*g",digits,fd);
 			} else {
 				int	scale=sqlrcur->getColumnScale(col);
 				// NOTE: we are not using the precision to format the number to a string.
-				charstring::printf(numberbuffer,numberbuffersize,"%.*f",scale,fd);
+				charstring::printf(convbuffer,convbuffersize,"%.*f",scale,fd);
 			}
 		} else {
 			int64_t fi = sqlrcur->getFieldAsInteger(row,col);
-			charstring::printf(numberbuffer, numberbuffersize, "%ld", fi);
+			charstring::printf(convbuffer, convbuffersize, "%ld", fi);
 		}
-		field=numberbuffer;
+		field=convbuffer;
 		*length=charstring::getLength(field);
-		*asnumber=true;
+		*jsontype=SQLRSH_JSONTYPE_NUMBER;
+
+	} else if (env->fieldsas==SQLRSH_FIELDSAS_BOOLEAN &&
+			(isBoolTypeChar(fieldtype) ||
+				isBitTypeChar(fieldtype) ||
+				isNumberTypeChar(fieldtype))) {
+
+		// getFieldAsBoolean() answers for a field of any type at all,
+		// so only the column type can say whether the answer means
+		// anything.  A name column falls through here unconverted.
+		field=(sqlrcur->getFieldAsBoolean(row,col))?"true":"false";
+		*length=charstring::getLength(field);
+		*jsontype=SQLRSH_JSONTYPE_BOOLEAN;
+
+	} else if (env->fieldsas==SQLRSH_FIELDSAS_DATE) {
+
+		// Unlike getFieldAsBoolean(), this one reports whether it
+		// could read the field, so its own answer is the guard and no
+		// column type test is needed.  That matters for a database
+		// that reports a storage class rather than a declared type -
+		// sqlite calls a date column STRING - where a type test would
+		// make the mode do nothing at all.
+		int16_t	year;
+		int16_t	month;
+		int16_t	day;
+		int16_t	hour;
+		int16_t	minute;
+		int16_t	second;
+		int32_t	microsecond;
+		bool	isnegative;
+		if (sqlrcur->getFieldAsDate(row,col,&year,&month,&day,
+						&hour,&minute,&second,
+						&microsecond,&isnegative) &&
+			formatFieldAsDate(convbuffer,convbuffersize,
+						year,month,day,
+						hour,minute,second,
+						microsecond,isnegative)) {
+			field=convbuffer;
+			*length=charstring::getLength(field);
+		}
 	}
 
 	return field;
@@ -2878,7 +3105,7 @@ void sqlrsh::plainDisplayResultSet(sqlrcursor *sqlrcur, sqlrshenv *env) {
 		return;
 	}
 
-	char		numberfieldbuffer[256];
+	char		convfieldbuffer[256];
 
 	bool		done=false;
 	for (uint64_t row=0; !done; row++) {
@@ -2896,12 +3123,12 @@ void sqlrsh::plainDisplayResultSet(sqlrcursor *sqlrcur, sqlrshenv *env) {
 
 			// get the field
 			uint32_t	fieldlength;
-			bool		asnumber;
+			sqlrshjsontype	jsontype;
 			const char	*field=getFieldForDisplay(sqlrcur,env,
 						row,col,&fieldlength,
-						numberfieldbuffer,
-						sizeof(numberfieldbuffer),
-						&asnumber);
+						convfieldbuffer,
+						sizeof(convfieldbuffer),
+						&jsontype);
 
 			// check for end-of-result-set condition
 			// (since nullsasnulls might be set, we have to do
@@ -2923,14 +3150,8 @@ void sqlrsh::plainDisplayResultSet(sqlrcursor *sqlrcur, sqlrshenv *env) {
 			stdoutput.write(field,fieldlength);
 
 			// space-pad after the field, if necessary
-			uint32_t	longest=sqlrcur->getLongest(col);
-			if (env->headers) {
-				uint32_t	namelen=charstring::getLength(
-						sqlrcur->getColumnName(col));
-				if (namelen>longest) {
-					longest=namelen;
-				}
-			}
+			uint32_t	longest=plainColumnWidth(
+							sqlrcur,env,col);
 			for (uint32_t i=fieldlength; i<longest; i++) {
 				stdoutput.write(' ');
 			}
@@ -2945,7 +3166,7 @@ void sqlrsh::csvDisplayResultSet(sqlrcursor *sqlrcur, sqlrshenv *env) {
 		return;
 	}
 
-	char		numberfieldbuffer[256];
+	char		convfieldbuffer[256];
 
 	bool		done=false;
 	for (uint64_t row=0; !done; row++) {
@@ -2963,12 +3184,12 @@ void sqlrsh::csvDisplayResultSet(sqlrcursor *sqlrcur, sqlrshenv *env) {
 
 			// get the field
 			uint32_t	fieldlength;
-			bool		asnumber;
+			sqlrshjsontype	jsontype;
 			const char	*field=getFieldForDisplay(sqlrcur,env,
 						row,col,&fieldlength,
-						numberfieldbuffer,
-						sizeof(numberfieldbuffer),
-						&asnumber);
+						convfieldbuffer,
+						sizeof(convfieldbuffer),
+						&jsontype);
 
 			// check for end-of-result-set condition
 			// (since nullsasnulls might be set, we have to do
@@ -2999,7 +3220,7 @@ void sqlrsh::jsonDisplayResultSet(sqlrcursor *sqlrcur, sqlrshenv *env) {
 
 	uint32_t	colcount=sqlrcur->colCount();
 
-	char		numberfieldbuffer[256];
+	char		convfieldbuffer[256];
 
 	// A statement with no result set never reaches the end-of-result-set
 	// test, because that lives in the column loop.
@@ -3010,12 +3231,12 @@ void sqlrsh::jsonDisplayResultSet(sqlrcursor *sqlrcur, sqlrshenv *env) {
 
 			// get the field
 			uint32_t	fieldlength;
-			bool		asnumber;
+			sqlrshjsontype	jsontype;
 			const char	*field=getFieldForDisplay(sqlrcur,env,
 						row,col,&fieldlength,
-						numberfieldbuffer,
-						sizeof(numberfieldbuffer),
-						&asnumber);
+						convfieldbuffer,
+						sizeof(convfieldbuffer),
+						&jsontype);
 
 			// check for end-of-result-set condition
 			// (since nullsasnulls might be set, we have to do
@@ -3050,7 +3271,7 @@ void sqlrsh::jsonDisplayResultSet(sqlrcursor *sqlrcur, sqlrshenv *env) {
 						charstring::getLength(name));
 				stdoutput.write(':');
 			}
-			jsonWriteValue(&stdoutput,field,fieldlength,asnumber);
+			jsonWriteValue(&stdoutput,field,fieldlength,jsontype);
 		}
 
 		// close the row
@@ -4558,7 +4779,8 @@ void sqlrsh::jsonPrintBinds(const char *key,
 						bv->doubleval.value);
 			charstring::bothTrim(buffer);
 			jsonWriteValue(&stdoutput,buffer,
-					charstring::getLength(buffer),true);
+					charstring::getLength(buffer),
+					SQLRSH_JSONTYPE_NUMBER);
 		} else if (bv->type==SQLRCLIENTBINDVARTYPE_DATE) {
 			charstring::printf(buffer,sizeof(buffer),
 					"%02d/%02d/%04d %s%02d:%02d:%02d.%06d %s",
@@ -5125,7 +5347,12 @@ void sqlrsh::displayHelp(sqlrshenv *env) {
 "    quiet on|off            shorthand - quiet on turns headers and stats\n"
 "                            off, quiet off turns them back on\n"
 "    noelapsed on|off        leaves the elapsed time out of the stats\n"
-"    getasnumber on|off      fetches numeric fields as numbers\n"
+"    fieldsas raw|number|boolean|date\n"
+"                            fetches fields with the matching getFieldAs\n"
+"                            method, where the column suits it.  raw is\n"
+"                            the field as the database sent it\n"
+"    getasnumber on|off      an alias - on is fieldsas number, off is\n"
+"                            fieldsas raw\n"
 "    nullsasnulls on|off     gets nulls as nulls, rather than as empty\n"
 "                            strings\n"
 "    delimiter [character]   sets the delimiter, and echoes it back.\n"
@@ -5516,6 +5743,7 @@ static const char * const	valueoptions[]={
 	"delimiter",
 	"delimeter",
 	"format",
+	"fieldsas",
 	"resultsetbuffersize",
 	"locale",
 	"localstatedir",
@@ -5619,6 +5847,7 @@ int32_t sqlrsh::execute(int argc, const char **argv) {
 			"        [-quiet (on|off)] [-headers (on|off)] "
 			"[-divider (on|off)]\n"
 			"        [-stats (on|off)] [-noelapsed (on|off)]\n"
+			"        [-fieldsas (raw|number|boolean|date)]\n"
 			"        [-getasnumber (on|off)] "
 			"[-nextresultset (on|off)]\n"
 			"        [-lazyfetch (on|off)] [-txqueries (on|off)]\n"
@@ -5787,6 +6016,26 @@ int32_t sqlrsh::execute(int argc, const char **argv) {
 		}
 	}
 
+	// handle the getFieldAs...() mode
+	// -getasnumber is an alias for two of the modes, and only an explicit
+	// one changes anything, so that -fieldsas isn't undone by a
+	// -getasnumber that isn't there.  -fieldsas runs after it, so the more
+	// specific of the two wins when both are given.
+	if (cmdline->isFound("getasnumber")) {
+		env.fieldsas=(onOffOption("getasnumber",false))?
+						SQLRSH_FIELDSAS_NUMBER:
+						SQLRSH_FIELDSAS_RAW;
+	}
+	if (cmdline->isFound("fieldsas")) {
+		const char	*fieldsasname=cmdline->getValue("fieldsas");
+		if (!fieldsAsFromName(fieldsasname,&env.fieldsas)) {
+			badFieldsAsName(fieldsasname);
+			delete[] defaultpassword;
+			delete[] decryptedpassword;
+			return SQLRSH_EXIT_USAGE;
+		}
+	}
+
 	// handle the result set buffer size
 	if (cmdline->isFound("resultsetbuffersize")) {
 		env.rsbs=charstring::convertToInteger(
@@ -5799,7 +6048,6 @@ int32_t sqlrsh::execute(int argc, const char **argv) {
 	env.stats=onOffOption("stats",env.stats);
 	env.lazyfetch=onOffOption("lazyfetch",env.lazyfetch);
 	env.txqueries=onOffOption("txqueries",env.txqueries);
-	env.getasnumber=onOffOption("getasnumber",env.getasnumber);
 	env.noelapsed=onOffOption("noelapsed",env.noelapsed);
 	env.nextresultset=onOffOption("nextresultset",env.nextresultset);
 	env.continueonerror=onOffOption("continueonerror",env.continueonerror);
@@ -5955,8 +6203,15 @@ static void helpmessage(const char *progname) {
 		"	-noelapsed on|off	Leave the elapsed time out of the statistics.\n"
 		"				Defaults to off.\n"
 		"\n"
+		"	-fieldsas raw|number|boolean|date\n"
+		"				Fetch each field with the matching getFieldAs\n"
+		"				method, where the column suits it.  Defaults to\n"
+		"				raw, the field as the database sent it.  See\n"
+		"				Fetching fields as a type below.\n"
+		"\n"
 		"	-getasnumber on|off	calls getFieldAs(Integer|Double) as appropriate.\n"
-		"				Defaults to off.\n"
+		"				An alias - on is -fieldsas number and off is\n"
+		"				-fieldsas raw.  Defaults to off.\n"
 		"\n"
 		"	-nullsasnulls on|off	Get nulls as nulls, rather than as empty\n"
 		"				strings.  csv, json and jsonl can only tell the\n"
@@ -6079,15 +6334,16 @@ static void helpmessage(const char *progname) {
 		"\n"
 		"json and jsonl both carry the column types, which neither plain nor csv does.\n"
 		"A database null is the json null literal, never \"\" and never \"NULL\".  A\n"
-		"numeric column is a bare json number when -getasnumber is in effect and a json\n"
-		"string otherwise.  A value is never truncated.  The column list is always\n"
-		"written and no divider is written, for the same reason csv always writes its\n"
-		"header row.  The statistics are part of the document and are left out when\n"
-		"stats are off, and -noelapsed drops just the elapsed member.  A statement with\n"
-		"no result set still produces a document, with an empty column list, an empty\n"
-		"row list, and the affected row count in the statistics.  The startup banner\n"
-		"and the prompt are not written.  An error is one object on one line on stderr,\n"
-		"and stdout gets nothing:\n"
+		"converted field is typed, so -fieldsas number gives a bare json number and\n"
+		"-fieldsas boolean a bare json true or false.  Everything else, a converted\n"
+		"date included, is a json string.  A value is never truncated.  The column\n"
+		"list is always written and no divider is written, for the same reason csv\n"
+		"always writes its header row.  The statistics are part of the document and\n"
+		"are left out when stats are off, and -noelapsed drops just the elapsed\n"
+		"member.  A statement with no result set still produces a document, with an\n"
+		"empty column list, an empty row list, and the affected row count in the\n"
+		"statistics.  The startup banner and the prompt are not written.  An error is\n"
+		"one object on one line on stderr, and stdout gets nothing:\n"
 		"\n"
 		"	{\"error\":{\"number\":1,\"message\":\"no such table: nosuchtable\"}}\n"
 		"\n"
@@ -6104,14 +6360,50 @@ static void helpmessage(const char *progname) {
 		"A format name is matched ignoring case.  An unrecognized name is an error:\n"
 		"-format bogus exits 1, and \"format bogus;\" is a failed command.\n"
 		"\n"
+		"Fetching fields as a type:\n"
+		"\n"
+		"-fieldsas, and the fieldsas command, choose which getFieldAs method every\n"
+		"field of every result set is fetched with.  There is one setting, shared by\n"
+		"all four formats, since all four are renderings of the same rows.  A mode\n"
+		"only converts a field where the conversion means something, and writes the\n"
+		"field unchanged where it doesn't, so a mode never turns a name column into\n"
+		"a number, a true or a date.\n"
+		"\n"
+		"raw	The field as the database sent it.  The default.\n"
+		"\n"
+		"number	getFieldAsInteger or getFieldAsDouble, whichever the column type\n"
+		"	calls for, on a numeric or bit column.  Every other column passes\n"
+		"	through.\n"
+		"\n"
+		"boolean	getFieldAsBoolean, on a boolean, bit or numeric column.  Every\n"
+		"	other column passes through.  Numeric columns are included because a\n"
+		"	database with no boolean type stores a boolean as 0 or 1.  The result\n"
+		"	is the word true or false, and a bare json true or false in json and\n"
+		"	jsonl.\n"
+		"\n"
+		"date	getFieldAsDate, on any column whose value reads as a date.  A field\n"
+		"	it cannot read passes through, so no column type test is needed.  The\n"
+		"	result is [-]YYYY-MM-DD HH:MM:SS[.uuuuuu], carrying only the parts the\n"
+		"	field had, so a date column gives a date, a time column a time, and a\n"
+		"	timestamp both.  A fraction of a second is written when it is not\n"
+		"	zero, since a fraction that was not there and one that was zero read\n"
+		"	back the same.  A zero month or day, which is how mysql stores\n"
+		"	0000-00-00, is not a date, so the whole field passes through.  The\n"
+		"	result is a json string, not an object of parts.\n"
+		"\n"
+		"getasnumber is an alias: on is fieldsas number and off is fieldsas raw.  When\n"
+		"-getasnumber and -fieldsas are both given, -fieldsas wins.  A mode name is\n"
+		"matched ignoring case, and an unrecognized one is an error: -fieldsas bogus\n"
+		"exits 1, and \"fieldsas bogus;\" is a failed command.\n"
+		"\n"
 		"Exit codes:\n"
 		"\n"
 		"0	Success.  An interactive session always exits 0, even if a query at\n"
 		"	the prompt failed.  An interactive session is not a batch.\n"
 		"\n"
 		"1	Usage error.  A run with no -id, no -host and no -socket, an option\n"
-		"	that takes a value given without one, an unrecognized -format name,\n"
-		"	or a -locale value that setlocale rejects.\n"
+		"	that takes a value given without one, an unrecognized -format or\n"
+		"	-fieldsas name, or a -locale value that setlocale rejects.\n"
 		"\n"
 		"2	The file named by -script could not be opened.  A file that the run\n"
 		"	command could not open is a failed command in the outer script, so\n"
