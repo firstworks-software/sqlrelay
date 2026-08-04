@@ -32,6 +32,14 @@ bool sqlrimportxml::importData() {
 		return false;
 	}
 
+	// this importer can only read a file
+	if (charstring::isNullOrEmpty(getFileName())) {
+		stderror.printf("the xml importer cannot import from "
+				"standard input, so a file name is "
+				"required\n");
+		return false;
+	}
+
 	// NOTE: startProcessingImport() calls the import-start event
 	// NOTE: endProcessingImport() calls the import-end event
 	return startProcessingImport() &&

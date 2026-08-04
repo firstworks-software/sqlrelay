@@ -4,6 +4,7 @@
 #include <sqlrelay/sqlrimportcsv.h>
 
 #include <rudiments/file.h>
+#include <rudiments/stdio.h>
 
 sqlrimportcsv::sqlrimportcsv() : sqlrimportfile(), csvsax() {
 	setExtension(".csv");
@@ -15,6 +16,14 @@ sqlrimportcsv::~sqlrimportcsv() {
 bool sqlrimportcsv::importData() {
 
 	if (!sqlrimportfile::importData()) {
+		return false;
+	}
+
+	// this importer can only read a file
+	if (charstring::isNullOrEmpty(getFileName())) {
+		stderror.printf("the csv importer cannot import from "
+				"standard input, so a file name is "
+				"required\n");
 		return false;
 	}
 

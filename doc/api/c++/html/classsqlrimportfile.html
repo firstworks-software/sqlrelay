@@ -237,6 +237,8 @@ Protected Member Functions</h2></td></tr>
 <tr class="separator:aea38cc1b0e364e0dcfe09445efaf762a inherit pro_methods_classsqlrimport"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a7fbf1d93d1be1df8562b09831a003907 inherit pro_methods_classsqlrimport" id="r_a7fbf1d93d1be1df8562b09831a003907"><td class="memItemLeft" align="right" valign="top">virtual bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classsqlrimport.html#a7fbf1d93d1be1df8562b09831a003907">importEnd</a> ()</td></tr>
 <tr class="separator:a7fbf1d93d1be1df8562b09831a003907 inherit pro_methods_classsqlrimport"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a88388473cfe7d1698fe6d74418172da2 inherit pro_methods_classsqlrimport" id="r_a88388473cfe7d1698fe6d74418172da2"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classsqlrimport.html#a88388473cfe7d1698fe6d74418172da2">setDerivedObjectName</a> (const char *objectname)</td></tr>
+<tr class="separator:a88388473cfe7d1698fe6d74418172da2 inherit pro_methods_classsqlrimport"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a7761f7479732298568886ae9513db199 inherit pro_methods_classsqlrimport" id="r_a7761f7479732298568886ae9513db199"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classsqlrimport.html#a7761f7479732298568886ae9513db199">setExcludeRow</a> (bool excluderow)</td></tr>
 <tr class="separator:a7761f7479732298568886ae9513db199 inherit pro_methods_classsqlrimport"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ae1fb34987b67a441a5182af429d27206 inherit pro_methods_classsqlrimport" id="r_ae1fb34987b67a441a5182af429d27206"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classsqlrimport.html#ae1fb34987b67a441a5182af429d27206">getExcludeRow</a> ()</td></tr>
@@ -388,10 +390,12 @@ Protected Member Functions</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
-<p>Imports data from the file set by the most recent call to <a class="el" href="#a8dcb1d1da14c12cb15edc2df26719ec4">setFileName()</a> or from standard input if <a class="el" href="#a8dcb1d1da14c12cb15edc2df26719ec4">setFileName()</a> was never called or setFileName(NULL) was called.</p>
+<p>Imports data from the file set by the most recent call to <a class="el" href="#a8dcb1d1da14c12cb15edc2df26719ec4">setFileName()</a>.</p>
 <p>If <a class="el" href="classsqlrimport.html#ab3fbf65fa640d16d550eb73c3fb79aed">setCommitCount()</a> was called with a non-zero value then a commit will be called after every "commitcount" rows is inserted. No commit will be called if <a class="el" href="classsqlrimport.html#ab3fbf65fa640d16d550eb73c3fb79aed">setCommitCount()</a> was never called, or if setCommitCount(0) was called.</p>
+<p>If <a class="el" href="classsqlrimport.html#adeef0a34309af1544cd56ebc0a98e47c">setObjectName()</a> was never called then the name of the table or sequence to import into is derived from the base name of the file, with the file extension of the format being imported removed, if the file name has it. An error is reported, and false returned, if no name was set and none can be derived, either because there is no file name to derive it from or because nothing is left of the base name once the extension is removed.</p>
 <p>Returns true on success and false if an error occurred.</p>
-<p>Note that the default implementation of this method just returns true. Child classes that support export to a file should override this method. </p>
+<p>Note that the default implementation of this method only resolves the object name. It does not read any data. Child classes that support import from a file should override this method and call this implementation first.</p>
+<p>Note also that this implementation accepts a NULL file name, since a NULL file name means import from standard input, but no child class that currently exists can do that. sqlrimportcsv and sqlrimportxml both reject a NULL or empty file name after calling this implementation. </p>
 
 <p>Reimplemented from <a class="el" href="classsqlrimport.html#a68b5f162015731355f86507efd99a2ca">sqlrimport</a>.</p>
 
@@ -440,7 +444,9 @@ Protected Member Functions</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
-<p>Sets the name of the file from which data will be imported. If "filename" is NULL the data will be imported from standard input.</p>
+<p>Sets the name of the file from which data will be imported.</p>
+<p>A NULL "filename" means import from standard input. In that case there is no file name to derive the name of the table or sequence from, so <a class="el" href="classsqlrimport.html#adeef0a34309af1544cd56ebc0a98e47c">setObjectName()</a> must be called too, or <a class="el" href="#a139fbf990374ac3beda8a9dc184c61a5">importData()</a> will fail.</p>
+<p>Note, however, that this class does not read any data itself, and no child class that currently exists can import from standard input. Both sqlrimportcsv and sqlrimportxml require a real file. Their <a class="el" href="#a139fbf990374ac3beda8a9dc184c61a5">importData()</a> methods report an error and return false if "filename" is NULL or empty.</p>
 <p>Not commonly called by implementations of <a class="el" href="#a139fbf990374ac3beda8a9dc184c61a5">importData()</a> or of the *Start/End() methods. </p>
 
 </div>
@@ -448,7 +454,7 @@ Protected Member Functions</h2></td></tr>
 </div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
-Generated on Thu Jul 16 2026 22:50:43 for SQL Relay C++ API by&#160;<a href="https://www.doxygen.org/index.html"><img class="footer" src="doxygen.svg" width="104" height="31" alt="doxygen"/></a> 1.10.0
+Generated on Tue Aug 4 2026 11:40:58 for SQL Relay C++ API by&#160;<a href="https://www.doxygen.org/index.html"><img class="footer" src="doxygen.svg" width="104" height="31" alt="doxygen"/></a> 1.10.0
 </small></address>
 </body>
 </html>

@@ -22,6 +22,11 @@ class SQLRCLIENT_DLLSPEC sqlrimportcsv : virtual public sqlrimportfile,
 		 *  into will be derived from the import file name, and may be
 		 *  overridden using setObjectName().
 		 *
+		 *  A file name is required.  This importer cannot import from
+		 *  standard input.  An error is reported, and false returned,
+		 *  if setFileName() was never called, or if it was called with
+		 *  a NULL or empty file name.
+		 *
 		 *  If setCommitCount() was called with a non-zero value then a
 		 *  commit will be called after every "commitcount" rows is
 		 *  inserted.  No commit will be called if setCommitCount() was

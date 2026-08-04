@@ -442,6 +442,11 @@
 		feature name was printed to stdout even with debug off,
 		corrupting the calling program's output, and the message was
 		also missing its trailing newline
+	fixed sqlrimportxml and sqlrimportcsv - importData() segfaulted when
+		setFileName(NULL) was called and an object name was set,
+		neither importer can read standard input, so a NULL or empty
+		file name is now a reported error, and the c++ api docs no
+		longer describe import from standard input as though it works
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems

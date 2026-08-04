@@ -19,11 +19,17 @@ class SQLRCLIENT_DLLSPEC sqlrimportfile : virtual public sqlrimport {
 		virtual ~sqlrimportfile();
 
 		/** Sets the name of the file from which data will be imported.
-		 *  If "filename" is NULL the data will be imported from
-		 *  standard input.  In that case there is no file name to
-		 *  derive the name of the table or sequence from, so
-		 *  setObjectName() must be called too, or importData() will
-		 *  fail.
+		 *
+		 *  A NULL "filename" means import from standard input.  In
+		 *  that case there is no file name to derive the name of the
+		 *  table or sequence from, so setObjectName() must be called
+		 *  too, or importData() will fail.
+		 *
+		 *  Note, however, that this class does not read any data
+		 *  itself, and no child class that currently exists can import
+		 *  from standard input.  Both sqlrimportcsv and sqlrimportxml
+		 *  require a real file.  Their importData() methods report an
+		 *  error and return false if "filename" is NULL or empty.
 		 *
 		 *  Not commonly called by implementations of importData() or
 		 *  of the *Start/End() methods. */
@@ -37,8 +43,7 @@ class SQLRCLIENT_DLLSPEC sqlrimportfile : virtual public sqlrimport {
 		const char	*getFileName();
 
 		/** Imports data from the file set by the most recent call to
-		 *  setFileName() or from standard input if setFileName() was
-		 *  never called or setFileName(NULL) was called.
+		 *  setFileName().
 		 *
 		 *  If setCommitCount() was called with a non-zero value then a
 		 *  commit will be called after every "commitcount" rows is
@@ -50,16 +55,22 @@ class SQLRCLIENT_DLLSPEC sqlrimportfile : virtual public sqlrimport {
 		 *  name of the file, with the file extension of the format
 		 *  being imported removed, if the file name has it.  An error
 		 *  is reported, and false returned, if no name was set and
-		 *  none can be derived, either because the import is from
-		 *  standard input or because nothing is left of the base name
-		 *  once the extension is removed.
+		 *  none can be derived, either because there is no file name
+		 *  to derive it from or because nothing is left of the base
+		 *  name once the extension is removed.
 		 *
 		 *  Returns true on success and false if an error occurred.
 		 *
 		 *  Note that the default implementation of this method only
-		 *  resolves the object name. Child classes that support
-		 *  import from a file should override this method and call
-		 *  this implementation first. */
+		 *  resolves the object name.  It does not read any data.
+		 *  Child classes that support import from a file should
+		 *  override this method and call this implementation first.
+		 *
+		 *  Note also that this implementation accepts a NULL file
+		 *  name, since a NULL file name means import from standard
+		 *  input, but no child class that currently exists can do
+		 *  that.  sqlrimportcsv and sqlrimportxml both reject a NULL
+		 *  or empty file name after calling this implementation. */
 		bool	importData();
 
 	protected:

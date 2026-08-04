@@ -240,6 +240,8 @@ Additional Inherited Members</h2></td></tr>
 <tr class="separator:aea38cc1b0e364e0dcfe09445efaf762a inherit pro_methods_classsqlrimport"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a7fbf1d93d1be1df8562b09831a003907 inherit pro_methods_classsqlrimport" id="r_a7fbf1d93d1be1df8562b09831a003907"><td class="memItemLeft" align="right" valign="top">virtual bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classsqlrimport.html#a7fbf1d93d1be1df8562b09831a003907">importEnd</a> ()</td></tr>
 <tr class="separator:a7fbf1d93d1be1df8562b09831a003907 inherit pro_methods_classsqlrimport"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a88388473cfe7d1698fe6d74418172da2 inherit pro_methods_classsqlrimport" id="r_a88388473cfe7d1698fe6d74418172da2"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classsqlrimport.html#a88388473cfe7d1698fe6d74418172da2">setDerivedObjectName</a> (const char *objectname)</td></tr>
+<tr class="separator:a88388473cfe7d1698fe6d74418172da2 inherit pro_methods_classsqlrimport"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a7761f7479732298568886ae9513db199 inherit pro_methods_classsqlrimport" id="r_a7761f7479732298568886ae9513db199"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classsqlrimport.html#a7761f7479732298568886ae9513db199">setExcludeRow</a> (bool excluderow)</td></tr>
 <tr class="separator:a7761f7479732298568886ae9513db199 inherit pro_methods_classsqlrimport"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ae1fb34987b67a441a5182af429d27206 inherit pro_methods_classsqlrimport" id="r_ae1fb34987b67a441a5182af429d27206"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classsqlrimport.html#ae1fb34987b67a441a5182af429d27206">getExcludeRow</a> ()</td></tr>
@@ -346,6 +348,7 @@ Additional Inherited Members</h2></td></tr>
 </table>
 </div><div class="memdoc">
 <p>Imports data from the file set by the most recent call to <a class="el" href="classsqlrimportfile.html#a8dcb1d1da14c12cb15edc2df26719ec4">setFileName()</a>. The table or sequence to import the data into will be deried from the name attribute of the table or sequence tag inside the file and may be overridden using <a class="el" href="classsqlrimport.html#adeef0a34309af1544cd56ebc0a98e47c">setObjectName()</a>.</p>
+<p>A file name is required. This importer cannot import from standard input. An error is reported, and false returned, if <a class="el" href="classsqlrimportfile.html#a8dcb1d1da14c12cb15edc2df26719ec4">setFileName()</a> was never called, or if it was called with a NULL or empty file name.</p>
 <p>The XML format is as follows.</p>
 <p>For a table: (This example is a table of US states, exported from PostgreSQL)</p>
 <p>&lt;?xml version="1.0"?&gt; </p><table name="states">
@@ -363,7 +366,7 @@ Additional Inherited Members</h2></td></tr>
 </div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
-Generated on Thu Jul 16 2026 22:50:43 for SQL Relay C++ API by&#160;<a href="https://www.doxygen.org/index.html"><img class="footer" src="doxygen.svg" width="104" height="31" alt="doxygen"/></a> 1.10.0
+Generated on Tue Aug 4 2026 11:40:58 for SQL Relay C++ API by&#160;<a href="https://www.doxygen.org/index.html"><img class="footer" src="doxygen.svg" width="104" height="31" alt="doxygen"/></a> 1.10.0
 </small></address>
 </body>
 </html>

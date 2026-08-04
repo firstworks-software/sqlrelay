@@ -221,6 +221,8 @@ Protected Member Functions</h2></td></tr>
 <tr class="separator:aea38cc1b0e364e0dcfe09445efaf762a"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a7fbf1d93d1be1df8562b09831a003907" id="r_a7fbf1d93d1be1df8562b09831a003907"><td class="memItemLeft" align="right" valign="top">virtual bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#a7fbf1d93d1be1df8562b09831a003907">importEnd</a> ()</td></tr>
 <tr class="separator:a7fbf1d93d1be1df8562b09831a003907"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a88388473cfe7d1698fe6d74418172da2" id="r_a88388473cfe7d1698fe6d74418172da2"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#a88388473cfe7d1698fe6d74418172da2">setDerivedObjectName</a> (const char *objectname)</td></tr>
+<tr class="separator:a88388473cfe7d1698fe6d74418172da2"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a7761f7479732298568886ae9513db199" id="r_a7761f7479732298568886ae9513db199"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#a7761f7479732298568886ae9513db199">setExcludeRow</a> (bool excluderow)</td></tr>
 <tr class="separator:a7761f7479732298568886ae9513db199"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ae1fb34987b67a441a5182af429d27206" id="r_ae1fb34987b67a441a5182af429d27206"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#ae1fb34987b67a441a5182af429d27206">getExcludeRow</a> ()</td></tr>
@@ -2148,6 +2150,33 @@ Protected Member Functions</h2></td></tr>
 
 </div>
 </div>
+<a id="a88388473cfe7d1698fe6d74418172da2" name="a88388473cfe7d1698fe6d74418172da2"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a88388473cfe7d1698fe6d74418172da2">&#9670;&#160;</a></span>setDerivedObjectName()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void sqlrimport::setDerivedObjectName </td>
+          <td>(</td>
+          <td class="paramtype">const char *</td>          <td class="paramname"><span class="paramname"><em>objectname</em></span></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">protected</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+<p>Sets the name of the table or sequence to import data into to "objectname", but only if the most recent call to <a class="el" href="#adeef0a34309af1544cd56ebc0a98e47c">setObjectName()</a> didn't set a non-empty name. A name derived from the import file never replaces one that the caller set explicitly.</p>
+<p>Should be called instead of <a class="el" href="#adeef0a34309af1544cd56ebc0a98e47c">setObjectName()</a> by implementations of <a class="el" href="#a68b5f162015731355f86507efd99a2ca">importData()</a>, and of the *Start/End() methods, that derive a name from the import file. </p>
+
+</div>
+</div>
 <a id="a7761f7479732298568886ae9513db199" name="a7761f7479732298568886ae9513db199"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a7761f7479732298568886ae9513db199">&#9670;&#160;</a></span>setExcludeRow()</h2>
 
@@ -2504,7 +2533,8 @@ Protected Member Functions</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
-<p>By default, the name of the table or sequence to import data into is derived from the import file (eg. from the CSV file name, or from an XML tag inside of the file). This method may be used to explicitly override that name, or provide one if none can be derived. </p>
+<p>By default, the name of the table or sequence to import data into is derived from the import file (eg. from the CSV file name, or from an XML tag inside of the file). This method may be used to explicitly override that name, or provide one if none can be derived.</p>
+<p>A name set by this method wins. Once it has been set, a name derived from the import file will not replace it. Passing NULL or an empty string is the same as never having called this method at all. </p>
 
 </div>
 </div>
@@ -2607,7 +2637,7 @@ Protected Member Functions</h2></td></tr>
 </div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
-Generated on Thu Jul 16 2026 22:50:43 for SQL Relay C++ API by&#160;<a href="https://www.doxygen.org/index.html"><img class="footer" src="doxygen.svg" width="104" height="31" alt="doxygen"/></a> 1.10.0
+Generated on Tue Aug 4 2026 11:40:58 for SQL Relay C++ API by&#160;<a href="https://www.doxygen.org/index.html"><img class="footer" src="doxygen.svg" width="104" height="31" alt="doxygen"/></a> 1.10.0
 </small></address>
 </body>
 </html>

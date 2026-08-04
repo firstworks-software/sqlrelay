@@ -23,6 +23,11 @@ class SQLRCLIENT_DLLSPEC sqlrimportxml : virtual public sqlrimportfile,
 		 *  sequence tag inside the file and may be overridden using
 		 *  setObjectName().
 		 *
+		 *  A file name is required.  This importer cannot import from
+		 *  standard input.  An error is reported, and false returned,
+		 *  if setFileName() was never called, or if it was called with
+		 *  a NULL or empty file name.
+		 *
 		 *  The XML format is as follows.
 		 *
 		 *  For a table:
