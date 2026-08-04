@@ -522,8 +522,14 @@ printinputbind, printoutputbind, printinputoutputbind
 One of the three bind variable lists.
 .TP
 clearinputbind, clearoutputbind, clearinputoutputbind
-Clears one of the three lists.  These clear the whole list; they do not take a
-variable name.
+.nf
+clearinputbind [variable]
+clearoutputbind [variable]
+clearinputoutputbind [variable]
+.fi
+Clears one bind variable out of one of the three lists.  With no variable name,
+clears the whole list.  A variable name that is not in the list is an error,
+and the command fails.
 .TP
 clearbinds
 Clears all three lists.

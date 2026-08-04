@@ -193,6 +193,11 @@ class sqlrshenv {
 			~sqlrshenv();
 		void	 clearbinds(
 			dictionary<char *, sqlrshbindvalue *> *binds);
+		// removes one bind variable.  Returns false if the list
+		// didn't have it.
+		bool	 clearbind(
+			dictionary<char *, sqlrshbindvalue *> *binds,
+			const char *variable);
 		void	 clearsubstitutions();
 
 		bool		headers;
@@ -264,6 +269,19 @@ void sqlrshenv::clearbinds(dictionary<char *, sqlrshbindvalue *> *binds) {
 	}
 	binds->clear();
 	inbindpool.clear();
+}
+
+bool sqlrshenv::clearbind(dictionary<char *, sqlrshbindvalue *> *binds,
+						const char *variable) {
+
+	sqlrshbindvalue	*bv=NULL;
+	if (!binds->getValue((char *)variable,&bv)) {
+		return false;
+	}
+
+	// the list frees the name, but not the value
+	deleteBindValue(bv);
+	return binds->remove((char *)variable);
 }
 
 void sqlrshenv::clearsubstitutions() {
@@ -566,6 +584,13 @@ class	sqlrsh {
 				dictionary<char *, sqlrshbindvalue *> *binds);
 		void	clearbinds(
 				dictionary<char *, sqlrshbindvalue *> *binds);
+		// clears the bind variable named in "args", or the whole
+		// list if "args" doesn't name one.  "name" is the command
+		// word, for the error message.
+		bool	clearbindcommand(sqlrshenv *env,
+				const char *name,
+				dictionary<char *, sqlrshbindvalue *> *binds,
+				const char *args);
 		void	setclientinfo(sqlrconnection *sqlrcon,
 						const char *command);
 		void	getclientinfo(sqlrconnection *sqlrcon,
@@ -1327,15 +1352,15 @@ bool sqlrsh::internalCommand(sqlrconnection *sqlrcon, sqlrcursor *sqlrcur,
 		printbindlist(env,"Output","output",&env->outputbinds);
 		return true;
 	} else if (!charstring::compareIgnoringCase(ptr,"clearinputbind",14)) {
-		env->clearbinds(&env->inputbinds);
-		return true;
+		return clearbindcommand(env,"clearinputbind",
+						&env->inputbinds,ptr+14);
 	} else if (!charstring::compareIgnoringCase(ptr,"clearoutputbind",15)) {
-		env->clearbinds(&env->outputbinds);
-		return true;
+		return clearbindcommand(env,"clearoutputbind",
+						&env->outputbinds,ptr+15);
 	} else if (!charstring::compareIgnoringCase(ptr,
 						"clearinputoutputbind",20)) {
-		env->clearbinds(&env->inputoutputbinds);
-		return true;
+		return clearbindcommand(env,"clearinputoutputbind",
+						&env->inputoutputbinds,ptr+20);
 	} else if (!charstring::compareIgnoringCase(ptr,"clearbinds")) {
 		env->clearbinds(&env->inputbinds);
 		env->clearbinds(&env->outputbinds);
@@ -4490,6 +4515,35 @@ void sqlrsh::printbindlist(sqlrshenv *env,
 	}
 }
 
+bool sqlrsh::clearbindcommand(sqlrshenv *env,
+			const char *name,
+			dictionary<char *, sqlrshbindvalue *> *binds,
+			const char *args) {
+
+	// no variable clears the whole list
+	char	*variable=commandArgument(args);
+	if (!variable) {
+		env->clearbinds(binds);
+		return true;
+	}
+
+	bool	cleared=env->clearbind(binds,variable);
+	delete[] variable;
+
+	// A variable that isn't in the list is a failed command, rather than
+	// a quiet no-op, the way a bad argument is elsewhere.
+	if (!cleared) {
+		char	error[128];
+		charstring::printf(error,sizeof(error),
+				"%s was given a variable "
+				"that isn't in the list",name);
+		displayError(env,NULL,error,0);
+		return false;
+	}
+
+	return true;
+}
+
 bool sqlrsh::fetchfrombindcursor(sqlrcursor *sqlrcur,
 				sqlrshenv *env, const char *args) {
 
@@ -5049,9 +5103,12 @@ void sqlrsh::displayHelp(sqlrshenv *env) {
 "    printinputbind          the input bind variable list\n"
 "    printoutputbind         the output bind variable list\n"
 "    printinputoutputbind    the input/output bind variable list\n"
-"    clearinputbind          clears the input bind variable list\n"
-"    clearoutputbind         clears the output bind variable list\n"
-"    clearinputoutputbind    clears the input/output bind variable list\n"
+"    clearinputbind [variable]\n"
+"    clearoutputbind [variable]\n"
+"    clearinputoutputbind [variable]\n"
+"                            clears one bind variable, or the whole list\n"
+"                            when no variable is given.  A variable that\n"
+"                            is not in the list is an error\n"
 "    clearbinds              clears all three lists\n"
 "    countbindvariables      the number of bind variables in the query\n"
 "                            that was prepared last\n"

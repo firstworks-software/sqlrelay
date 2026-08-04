@@ -137,6 +137,12 @@
 		twins fell through to the database as sql and failed, the
 		bare forms now work and use the default list format, like
 		"show tables" does
+	fixed the sqlrsh clearinputbind, clearoutputbind and
+		clearinputoutputbind commands - the variable name the help text
+		has always shown was ignored and the whole list was cleared, a
+		name now clears just that variable, no name still clears the
+		whole list, and a name that is not in the list is a failed
+		command
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems
