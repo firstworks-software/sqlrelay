@@ -391,8 +391,8 @@
 		"SMALLDATETIME");
 	assertEqStr(sqlrcur_getColumnType($cur,11),"CHAR");
 	assertEqStr(sqlrcur_getColumnType($cur,"testchar"),"CHAR");
-	assertEqStr(sqlrcur_getColumnType($cur,12),"CHAR");
-	assertEqStr(sqlrcur_getColumnType($cur,"testvarchar"),"CHAR");
+	assertEqStr(sqlrcur_getColumnType($cur,12),"VARCHAR");
+	assertEqStr(sqlrcur_getColumnType($cur,"testvarchar"),"VARCHAR");
 	assertEqStr(sqlrcur_getColumnType($cur,13),"BIT");
 	assertEqStr(sqlrcur_getColumnType($cur,"testbit"),"BIT");
 	echo("\n");

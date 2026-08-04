@@ -469,6 +469,11 @@
 		two fields were read in the opposite order from the one
 		ms-tds defines, the 8 byte transaction descriptor is read
 		before the 4 byte outstanding request count now
+	fixed the freetds connection module - varchar, nchar, and nvarchar
+		columns were all reported as char, because ctlib collapses
+		them into CS_CHAR_TYPE, the sybase usertype is used to tell
+		them apart now, ms sql server sends no usertype at all so
+		they still can't be told apart there
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems

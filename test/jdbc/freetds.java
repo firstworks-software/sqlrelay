@@ -1760,7 +1760,7 @@ class freetds extends sqlrtest {
 			assertEquals(rsmd.getColumnTypeName(12),"char");
 		}
 		if (issqlrelay) {
-			assertEquals(rsmd.getColumnTypeName(13),"CHAR");
+			assertEquals(rsmd.getColumnTypeName(13),"VARCHAR");
 		} else {
 			assertEquals(rsmd.getColumnTypeName(13),"varchar");
 		}
@@ -1770,7 +1770,7 @@ class freetds extends sqlrtest {
 			assertEquals(rsmd.getColumnTypeName(14),"bit");
 		}
 		if (issqlrelay) {
-			assertEquals(rsmd.getColumnTypeName(15),"CHAR");
+			assertEquals(rsmd.getColumnTypeName(15),"VARCHAR");
 		} else {
 			assertEquals(rsmd.getColumnTypeName(15),"varchar");
 		}

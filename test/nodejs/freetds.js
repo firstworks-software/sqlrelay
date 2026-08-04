@@ -420,8 +420,8 @@ assertEqStr(cur.getColumnType("testsmalldatetime"),
 	"SMALLDATETIME");
 assertEqStr(cur.getColumnType(11),"CHAR");
 assertEqStr(cur.getColumnType("testchar"),"CHAR");
-assertEqStr(cur.getColumnType(12),"CHAR");
-assertEqStr(cur.getColumnType("testvarchar"),"CHAR");
+assertEqStr(cur.getColumnType(12),"VARCHAR");
+assertEqStr(cur.getColumnType("testvarchar"),"VARCHAR");
 assertEqStr(cur.getColumnType(13),"BIT");
 assertEqStr(cur.getColumnType("testbit"),"BIT");
 console.log();

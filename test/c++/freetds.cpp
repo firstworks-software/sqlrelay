@@ -405,8 +405,8 @@ int main(int argc, char **argv) {
 	assertEquals(cur->getColumnType("testsmalldatetime"),"SMALLDATETIME");
 	assertEquals(cur->getColumnType(11),"CHAR");
 	assertEquals(cur->getColumnType("testchar"),"CHAR");
-	assertEquals(cur->getColumnType(12),"CHAR");
-	assertEquals(cur->getColumnType("testvarchar"),"CHAR");
+	assertEquals(cur->getColumnType(12),"VARCHAR");
+	assertEquals(cur->getColumnType("testvarchar"),"VARCHAR");
 	assertEquals(cur->getColumnType(13),"BIT");
 	assertEquals(cur->getColumnType("testbit"),"BIT");
 	stdoutput.printf("\n");
