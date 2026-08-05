@@ -27,9 +27,9 @@ expensive to license per connection.
   rewrite them on the way through.
 - **Result set caching.** Serve repeated queries from a cache instead of the
   database.
-- **Protocol emulation.** SQL Relay can speak the MySQL, PostgreSQL, TDS,
-  Oracle, Teradata, and Firebird wire protocols. Native clients for those
-  databases can point at SQL Relay without any code change.
+- **Protocol emulation.** SQL Relay can speak the MySQL and PostgreSQL wire
+  protocols. Native clients for those databases can point at SQL Relay
+  without any code change.
 
 ## Databases
 
