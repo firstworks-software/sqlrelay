@@ -2345,7 +2345,10 @@ sqlrservercursor *sqlrservercontroller::getCursor(uint16_t id) {
 	// get the specified cursor
 	for (uint16_t i=0; i<pvt->_cursorcount; i++) {
 		if (pvt->_cur[i]->getId()==id) {
-			incrementTimesCursorReused(); 
+			incrementTimesCursorReused();
+			// reset the bind variable translation veto
+			pvt->_cur[i]->
+				setTranslateBindVariablesForThisQuery(true);
 			return pvt->_cur[i];
 		}
 	}
@@ -2367,6 +2370,9 @@ sqlrservercursor *sqlrservercontroller::getCursor() {
 			debugWrite("available cursor: %hd",i);
 			pvt->_cur[i]->setState(SQLRCURSORSTATE_BUSY);
 			incrementTimesNewCursorUsed();
+			// reset the bind variable translation veto
+			pvt->_cur[i]->
+				setTranslateBindVariablesForThisQuery(true);
 			debugEnd();
 			return pvt->_cur[i];
 		}
@@ -2410,6 +2416,8 @@ sqlrservercursor *sqlrservercontroller::getCursor() {
 	// return the first new cursor that we created
 	pvt->_cur[firstnewcursor]->setState(SQLRCURSORSTATE_BUSY);
 	incrementTimesNewCursorUsed();
+	// reset the bind variable translation veto
+	pvt->_cur[firstnewcursor]->setTranslateBindVariablesForThisQuery(true);
 	debugEnd();
 	return pvt->_cur[firstnewcursor];
 }
@@ -4632,9 +4640,6 @@ bool sqlrservercontroller::translateQuery(sqlrservercursor *cursor) {
 
 void sqlrservercontroller::translateBindVariables(sqlrservercursor *cursor) {
 
-	// clear bind mappings
-	cursor->getBindMappings()->clear();
-
 	// get query buffer
 	char	*querybuffer=cursor->getQueryBuffer();
 
@@ -5571,6 +5576,10 @@ bool sqlrservercontroller::prepareQuery(sqlrservercursor *cursor,
 	// because translateQuery might use it
 	cursor->getBindMappingsPool()->clear();
 
+	// The mappings are allocated out of the pool above, so they have to
+	// be cleared here, whether or not translateBindVariables() runs below.
+	cursor->getBindMappings()->clear();
+
 	// before-filter query
 	if (enablefilters && pvt->_sqlrf) {
 		if (!filterQuery(cursor,true)) {
@@ -5615,7 +5624,8 @@ bool sqlrservercontroller::prepareQuery(sqlrservercursor *cursor,
 	}
 
 	// translate bind variables
-	if (pvt->_translatebinds) {
+	if (pvt->_translatebinds &&
+			cursor->getTranslateBindVariablesForThisQuery()) {
 		translateBindVariables(cursor);
 	}
 
@@ -5801,6 +5811,11 @@ bool sqlrservercontroller::executeQuery(sqlrservercursor *cursor,
 		// because translateQuery might use it
 		cursor->getBindMappingsPool()->clear();
 
+		// The mappings are allocated out of the pool above, so they
+		// have to be cleared here, whether or not
+		// translateBindVariables() runs below.
+		cursor->getBindMappings()->clear();
+
 		// before-filter query
 		if (enablefilters && pvt->_sqlrf) {
 			if (!filterQuery(cursor,true)) {
@@ -5847,7 +5862,9 @@ bool sqlrservercontroller::executeQuery(sqlrservercursor *cursor,
 		}
 
 		// translate bind variables
-		if (pvt->_translatebinds) {
+		if (pvt->_translatebinds &&
+				cursor->
+				getTranslateBindVariablesForThisQuery()) {
 			translateBindVariables(cursor);
 		}
 
@@ -12307,6 +12324,17 @@ void sqlrservercontroller::setFakeInputBindsForThisQuery(
 bool sqlrservercontroller::getFakeInputBindsForThisQuery(
 					sqlrservercursor *cursor) {
 	return cursor->getFakeInputBindsForThisQuery();
+}
+
+void sqlrservercontroller::setTranslateBindVariablesForThisQuery(
+					sqlrservercursor *cursor,
+					bool translate) {
+	cursor->setTranslateBindVariablesForThisQuery(translate);
+}
+
+bool sqlrservercontroller::getTranslateBindVariablesForThisQuery(
+					sqlrservercursor *cursor) {
+	return cursor->getTranslateBindVariablesForThisQuery();
 }
 
 void sqlrservercontroller::setInputBindCount(sqlrservercursor *cursor,

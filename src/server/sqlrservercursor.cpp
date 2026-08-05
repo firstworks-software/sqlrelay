@@ -81,6 +81,7 @@ class sqlrservercursorprivate {
 		bool	_querywasintercepted;
 		bool	_bindswerefaked;
 		bool	_fakeinputbindsforthisquery;
+		bool	_translatebindvariablesforthisquery;
 		sqlrquerytype_t	_querytype;
 
 		const char	**_columnnames;
@@ -196,6 +197,7 @@ sqlrservercursor::sqlrservercursor(sqlrserverconnection *conn, uint16_t id) :
 	pvt->_querywasintercepted=false;
 	pvt->_bindswerefaked=false;
 	pvt->_fakeinputbindsforthisquery=false;
+	pvt->_translatebindvariablesforthisquery=true;
 	pvt->_querytype=SQLRQUERYTYPE_ETC;
 
 	pvt->_columnnames=NULL;
@@ -1816,6 +1818,14 @@ void sqlrservercursor::setFakeInputBindsForThisQuery(bool fake) {
 
 bool sqlrservercursor::getFakeInputBindsForThisQuery() {
 	return pvt->_fakeinputbindsforthisquery;
+}
+
+void sqlrservercursor::setTranslateBindVariablesForThisQuery(bool translate) {
+	pvt->_translatebindvariablesforthisquery=translate;
+}
+
+bool sqlrservercursor::getTranslateBindVariablesForThisQuery() {
+	return pvt->_translatebindvariablesforthisquery;
 }
 
 void sqlrservercursor::setQueryType(sqlrquerytype_t querytype) {

@@ -1795,6 +1795,37 @@ class SQLRSERVER_DLLSPEC sqlrservercontroller : public sqlrserverbase {
 
 
 
+		// bind variable translation...
+
+		/** Sets whether to translate the bind variables in the current
+		 *  query of "cursor", from the format that they currently use
+		 *  to the format that the database requires, to "translate".
+		 *
+		 *  Bind variables are only translated at all if the value of
+		 *  the "translatebindvariables" attribute of the instance tag,
+		 *  in the config file, is "yes".  So, this method can turn
+		 *  translation off for a single query, but it cannot turn
+		 *  translation on.
+		 *
+		 *  Note that, unlike setFakeInputBindsForThisQuery(),
+		 *  prepareQuery() does not reset this.  It is reset to true
+		 *  each time "cursor" is returned by getCursor().  So, it must
+		 *  be called after getCursor() and before prepareQuery(), and
+		 *  it applies to every query run on "cursor" until "cursor" is
+		 *  returned by getCursor() again.
+		 */
+		void	setTranslateBindVariablesForThisQuery(
+						sqlrservercursor *cursor,
+						bool translate);
+
+		/** Returns whether or not the bind variables in the current
+		 *  query of "cursor" will be translated.  See
+		 *  setTranslateBindVariablesForThisQuery(). */
+		bool	getTranslateBindVariablesForThisQuery(
+						sqlrservercursor *cursor);
+
+
+
 		// input bind variables...
 
 		/** Sets the number of valid input binds in "cursor" to
@@ -5519,6 +5550,28 @@ class SQLRSERVER_DLLSPEC sqlrservercursor : public sqlrserverbase {
 		/** Returns whether or not input binds will be faked for the
 		 *  current query.  See setFakeInputBindsForThisQuery(). */
 		bool	getFakeInputBindsForThisQuery();
+
+		/** Sets whether to translate the bind variables in the current
+		 *  query, from the format that they currently use to the
+		 *  format that the database requires, to "translate".
+		 *
+		 *  Bind variables are only translated at all if the value of
+		 *  the "translatebindvariables" attribute of the instance tag,
+		 *  in the config file, is "yes".  So, this method can turn
+		 *  translation off for a single query, but it cannot turn
+		 *  translation on.
+		 *
+		 *  Note that, unlike setFakeInputBindsForThisQuery(),
+		 *  sqlrservercontroller::prepareQuery() does not reset this.
+		 *  It is reset to true each time this cursor is returned by
+		 *  sqlrservercontroller::getCursor().
+		 */
+		void	setTranslateBindVariablesForThisQuery(bool translate);
+
+		/** Returns whether or not the bind variables in the current
+		 *  query will be translated.  See
+		 *  setTranslateBindVariablesForThisQuery(). */
+		bool	getTranslateBindVariablesForThisQuery();
 
 		/** Sets the type of the current query to "querytype". */
 		void	setQueryType(sqlrquerytype_t querytype);

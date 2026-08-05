@@ -2863,9 +2863,12 @@ bool sqlrprotocol_tds::sqlBatch() {
 	}
 
 	// A batch has no bind variables, and the cursor may have been left
-	// with some by an rpc that used it earlier.
+	// with some by an rpc that used it earlier.  Nothing in the batch
+	// that looks like a bind variable is one either.  @name is a local
+	// variable or a parameter declaration, and @@name is a global.
 	cont->setInputBindCount(cursor,0);
 	cont->setOutputBindCount(cursor,0);
+	cont->setTranslateBindVariablesForThisQuery(cursor,false);
 
 	// run the query
 	bool	success=
