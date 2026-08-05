@@ -495,6 +495,12 @@
 	made the tds protocol module warn when a listener is configured with
 		tls="yes" - the module doesn't support tls, and used to
 		accept the attribute and silently ignore it
+	fixed the freetds connection module - date, time, datetime2 and
+		datetimeoffset columns were all reported as unknown, which
+		the tds protocol module sent as void with no data, they are
+		reported as date, time, timestamp and datetimeoffset now,
+		freetds prior to 1.4 sends no usertype for datetime2 or
+		datetimeoffset so they are both reported as timestamp there
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems

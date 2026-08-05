@@ -5003,6 +5003,34 @@ uint16_t freetdscursor::getColumnType(uint32_t col) {
 		case CS_UNIQUE_TYPE:
 			return UNIQUEIDENTIFIER_DATATYPE;
 		#endif
+		#ifdef CS_DATE_TYPE
+		case CS_DATE_TYPE:
+			return DATE_DATATYPE;
+		#endif
+		#ifdef CS_TIME_TYPE
+		case CS_TIME_TYPE:
+			return TIME_DATATYPE;
+		#endif
+		#ifdef CS_BIGTIME_TYPE
+		case CS_BIGTIME_TYPE:
+			// sybase bigtime and MS SQL Server time both land here
+			return TIME_DATATYPE;
+		#endif
+		#ifdef CS_BIGDATETIME_TYPE
+		case CS_BIGDATETIME_TYPE:
+			// ctlib reports sybase bigdatetime and MS SQL Server
+			// datetime2 and datetimeoffset all as
+			// CS_BIGDATETIME_TYPE.  Sybase sends its systypes
+			// usertype, 48 for bigdatetime, and freetds 1.4 and
+			// later synthesize a usertype for MS SQL Server, 42
+			// for datetime2 and 43 for datetimeoffset.  Prior to
+			// 1.4 it sends 0 for both of those, so there
+			// timestamp is the best we can do.
+			if (column[col].usertype==43) {
+				return DATETIMEOFFSET_DATATYPE;
+			}
+			return TIMESTAMP_DATATYPE;
+		#endif
 		default:
 			return UNKNOWN_DATATYPE;
 	}
@@ -5089,8 +5117,11 @@ bool freetdscursor::ignoreDateDdMmParameter(const char *data, uint32_t size) {
 	// columns as type CS_DATETIME_TYPE and formats them according to the
 	// rules defined in locales.conf for the locale of the SQL Relay server.
 	//
-	// However, FreeTDS recognizes MSSQL date columns as type CS_CHAR_TYPE
-	// and formats them in yyyy-mm-dd format universally.
+	// FreeTDS prior to 1.1 recognized MSSQL date columns as type
+	// CS_CHAR_TYPE and formatted them in yyyy-mm-dd format universally.
+	// 1.1 and later report them as CS_DATE_TYPE and format them like the
+	// other date/datetime columns, but string columns and string literals
+	// can still be in yyyy-xx-xx format, so this is still needed.
 	//
 	// The date conversion routines take any fields that look like a date
 	// and translate them to the specified format.  Unfortunately if you're
@@ -5100,12 +5131,12 @@ bool freetdscursor::ignoreDateDdMmParameter(const char *data, uint32_t size) {
 	// fetching date columns from MSSQL so we have to ignore dateddmm in
 	// that case.
 	//
-	// Ideally we'd only ignore dateddmm for MSSQL, on CS_DATETIME_TYPE
-	// columns that appeared to be in the yyyy-xx-xx format.  But, since
-	// date columns are returned as CS_CHAR_TYPE then we can't.  So, we
-	// end up ignoring dateddmm for everything in yyyy-xx-xx format, whether
-	// fetched from a date column or from a string column or from a
-	// string literal in the original query.
+	// Ideally we'd only ignore dateddmm for MSSQL, on date/datetime columns
+	// that appeared to be in the yyyy-xx-xx format.  But, this is called
+	// per-field, without the column type, so we end up ignoring dateddmm
+	// for everything in yyyy-xx-xx format, whether fetched from a date
+	// column or from a string column or from a string literal in the
+	// original query.
 	//
 	// That means that if date translation is in effect, if dates are stored
 	// in string fields in yyyy-xx-xx format, then they must be stored in
