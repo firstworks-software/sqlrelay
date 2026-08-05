@@ -880,7 +880,9 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_tds : public sqlrprotocol {
 		void	bulkDateTime(int32_t dayssince1900,
 					uint32_t threehundredths,
 					stringbuffer *strb);
-		void	bulkDate(uint32_t dayssince1, stringbuffer *strb);
+		void	bulkYmd(int32_t days,
+					int32_t startyear,
+					stringbuffer *strb);
 		void	bulkTime(uint64_t increments,
 					byte_t scale,
 					stringbuffer *strb);
@@ -4088,6 +4090,10 @@ void sqlrprotocol_tds::field(byte_t tdstype,
 
 static uint16_t mdays[]={31,28,31,30,31,30,31,31,30,31,30,31};
 
+static bool isLeapYear(int32_t year) {
+	return (!(year%4) && (year%100 || !(year%400)));
+}
+
 void sqlrprotocol_tds::dateTime(const char *datetime,
 					int32_t *dayssince1900,
 					uint32_t *threehundredths) {
@@ -4736,11 +4742,18 @@ bool sqlrprotocol_tds::bulkLoad() {
 	// prepare the insert that the rows will be loaded with
 	char	*query=bulkInsert(colcount);
 	debugWrite("query: %s",query);
+	size_t	querylen=charstring::getLength(query);
+	if (querylen>maxquerysize) {
+		delete[] query;
+		debugWrite("query too large: %lld",(uint64_t)querylen);
+		debugEnd();
+		cont->release(cursor);
+		return sendQueryTooLargeError(querylen);
+	}
 	cont->setOutputBindCount(cursor,0);
 	cont->setInputBindCount(cursor,colcount);
-	bool	success=cont->prepareQuery(cursor,query,
-					charstring::getLength(query),
-					true,true,true,true);
+	bool	success=cont->prepareQuery(cursor,query,querylen,
+						true,true,true,true);
 	delete[] query;
 
 	// run it once per row
@@ -4933,6 +4946,9 @@ bool sqlrprotocol_tds::bulkTypeInfo(const byte_t **rpinout,
 	const byte_t	*rp=*rpinout;
 	size_t		rpsize=*rpsizeinout;
 
+	if (!rpsize) {
+		return false;
+	}
 	byte_t	tdstype;
 	read(rp,&tdstype,&rp);
 	rpsize--;
@@ -5271,70 +5287,32 @@ void sqlrprotocol_tds::bulkMoney(int64_t tenthousandths, stringbuffer *strb) {
 	strb->append(fraction);
 }
 
-void sqlrprotocol_tds::bulkDateTime(int32_t dayssince1900,
-					uint32_t threehundredths,
+void sqlrprotocol_tds::bulkYmd(int32_t days,
+					int32_t startyear,
 					stringbuffer *strb) {
 
-	// the date, counted forward from 1900-01-01
-	int32_t	year=1900;
-	int32_t	days=dayssince1900;
-	for (;;) {
-		int32_t	yeardays=(!(year%4) && (year%100 || !(year%400)))?
-								366:365;
+	// A datetime counts from 1900-01-01 and can run backwards, since
+	// the range starts in 1753.  The year loops are bounded by the
+	// range the format itself allows, so a garbage day count can't
+	// spin here.
+	int32_t	year=startyear;
+	while (days<0 && year>1) {
+		year--;
+		days+=(isLeapYear(year))?366:365;
+	}
+	while (year<9999) {
+		int32_t	yeardays=(isLeapYear(year))?366:365;
 		if (days<yeardays) {
 			break;
 		}
 		days-=yeardays;
 		year++;
 	}
+
 	int32_t	month=1;
-	for (;;) {
-		int32_t	monthdays=mdays[month-1];
-		if (month==2 && !(year%4) && (year%100 || !(year%400))) {
-			monthdays++;
-		}
-		if (days<monthdays) {
-			break;
-		}
-		days-=monthdays;
-		month++;
-	}
-
-	// the time, counted in three-hundredths of a second since 12AM
-	uint32_t	seconds=threehundredths/300;
-	uint32_t	milliseconds=((threehundredths%300)*1000)/300;
-
-	char	buffer[32];
-	charstring::printf(buffer,sizeof(buffer),
-				"%04d-%02d-%02d %02d:%02d:%02d.%03d",
-				(int32_t)year,(int32_t)month,(int32_t)(days+1),
-				(int32_t)(seconds/3600),
-				(int32_t)((seconds/60)%60),
-				(int32_t)(seconds%60),
-				(int32_t)milliseconds);
-	strb->append(buffer);
-}
-
-void sqlrprotocol_tds::bulkDate(uint32_t dayssince1, stringbuffer *strb) {
-
-	// a date is counted forward from 0001-01-01
-	int32_t	year=1;
-	int32_t	days=(int32_t)dayssince1;
-	for (;;) {
-		int32_t	yeardays=(!(year%4) && (year%100 || !(year%400)))?
-								366:365;
-		if (days<yeardays) {
-			break;
-		}
-		days-=yeardays;
-		year++;
-	}
-	int32_t	month=1;
-	for (;;) {
-		int32_t	monthdays=mdays[month-1];
-		if (month==2 && !(year%4) && (year%100 || !(year%400))) {
-			monthdays++;
-		}
+	while (month<12) {
+		int32_t	monthdays=mdays[month-1]+
+					((month==2 && isLeapYear(year))?1:0);
 		if (days<monthdays) {
 			break;
 		}
@@ -5344,7 +5322,26 @@ void sqlrprotocol_tds::bulkDate(uint32_t dayssince1, stringbuffer *strb) {
 
 	char	buffer[16];
 	charstring::printf(buffer,sizeof(buffer),"%04d-%02d-%02d",
-				(int32_t)year,(int32_t)month,(int32_t)(days+1));
+				year,month,(days<0)?1:(days+1));
+	strb->append(buffer);
+}
+
+void sqlrprotocol_tds::bulkDateTime(int32_t dayssince1900,
+					uint32_t threehundredths,
+					stringbuffer *strb) {
+
+	bulkYmd(dayssince1900,1900,strb);
+
+	// the time, counted in three-hundredths of a second since 12AM
+	uint32_t	seconds=threehundredths/300;
+	uint32_t	milliseconds=((threehundredths%300)*1000)/300;
+
+	char	buffer[16];
+	charstring::printf(buffer,sizeof(buffer)," %02d:%02d:%02d.%03d",
+				(int32_t)(seconds/3600),
+				(int32_t)((seconds/60)%60),
+				(int32_t)(seconds%60),
+				(int32_t)milliseconds);
 	strb->append(buffer);
 }
 
@@ -5458,6 +5455,10 @@ bool sqlrprotocol_tds::bulkValue(const byte_t **rpinout,
 			byte_t	size;
 			read(rp,&size,&rp);
 			rpsize--;
+			if (!size) {
+				debugWrite("value: (null)");
+				return true;
+			}
 			switch (size) {
 				case 1:
 					tdstype=TDS_TYPE_INT1;
@@ -5472,8 +5473,8 @@ bool sqlrprotocol_tds::bulkValue(const byte_t **rpinout,
 					tdstype=TDS_TYPE_INT8;
 					break;
 				default:
-					debugWrite("value: (null)");
-					return true;
+					debugWrite("invalid size: %d",size);
+					return false;
 			}
 			}
 			break;
@@ -5489,6 +5490,10 @@ bool sqlrprotocol_tds::bulkValue(const byte_t **rpinout,
 				debugWrite("value: (null)");
 				return true;
 			}
+			if (size!=1) {
+				debugWrite("invalid size: %d",size);
+				return false;
+			}
 			tdstype=TDS_TYPE_BIT;
 			}
 			break;
@@ -5500,6 +5505,10 @@ bool sqlrprotocol_tds::bulkValue(const byte_t **rpinout,
 			byte_t	size;
 			read(rp,&size,&rp);
 			rpsize--;
+			if (!size) {
+				debugWrite("value: (null)");
+				return true;
+			}
 			switch (size) {
 				case 4:
 					tdstype=TDS_TYPE_FLT4;
@@ -5508,8 +5517,8 @@ bool sqlrprotocol_tds::bulkValue(const byte_t **rpinout,
 					tdstype=TDS_TYPE_FLT8;
 					break;
 				default:
-					debugWrite("value: (null)");
-					return true;
+					debugWrite("invalid size: %d",size);
+					return false;
 			}
 			}
 			break;
@@ -5521,6 +5530,10 @@ bool sqlrprotocol_tds::bulkValue(const byte_t **rpinout,
 			byte_t	size;
 			read(rp,&size,&rp);
 			rpsize--;
+			if (!size) {
+				debugWrite("value: (null)");
+				return true;
+			}
 			switch (size) {
 				case 4:
 					tdstype=TDS_TYPE_MONEY4;
@@ -5529,8 +5542,8 @@ bool sqlrprotocol_tds::bulkValue(const byte_t **rpinout,
 					tdstype=TDS_TYPE_MONEY;
 					break;
 				default:
-					debugWrite("value: (null)");
-					return true;
+					debugWrite("invalid size: %d",size);
+					return false;
 			}
 			}
 			break;
@@ -5542,6 +5555,10 @@ bool sqlrprotocol_tds::bulkValue(const byte_t **rpinout,
 			byte_t	size;
 			read(rp,&size,&rp);
 			rpsize--;
+			if (!size) {
+				debugWrite("value: (null)");
+				return true;
+			}
 			switch (size) {
 				case 4:
 					tdstype=TDS_TYPE_DATETIM4;
@@ -5550,8 +5567,8 @@ bool sqlrprotocol_tds::bulkValue(const byte_t **rpinout,
 					tdstype=TDS_TYPE_DATETIME;
 					break;
 				default:
-					debugWrite("value: (null)");
-					return true;
+					debugWrite("invalid size: %d",size);
+					return false;
 			}
 			}
 			break;
@@ -5776,13 +5793,13 @@ bool sqlrprotocol_tds::bulkValue(const byte_t **rpinout,
 				return false;
 			}
 			uint32_t	dayssince1=0;
-			for (byte_t i=0; i<size && i<4; i++) {
+			for (byte_t i=0; i<size && i<3; i++) {
 				dayssince1|=((uint32_t)rp[i])<<(i*8);
 			}
 			rp+=size;
 			rpsize-=size;
 			stringbuffer	strb;
-			bulkDate(dayssince1,&strb);
+			bulkYmd((int32_t)dayssince1,1,&strb);
 			bulkString(bv,bindpool,strb.getString(),
 						strb.getStringLength());
 			}
@@ -5821,7 +5838,7 @@ bool sqlrprotocol_tds::bulkValue(const byte_t **rpinout,
 						((uint32_t)rp[timesize])|
 						(((uint32_t)rp[timesize+1])<<8)|
 						(((uint32_t)rp[timesize+2])<<16);
-				bulkDate(dayssince1,&strb);
+				bulkYmd((int32_t)dayssince1,1,&strb);
 				strb.append(' ');
 			}
 			bulkTime(increments,scale,&strb);
