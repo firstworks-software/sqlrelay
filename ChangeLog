@@ -486,6 +486,12 @@
 		CS_BINARY_TYPE, the sybase usertype is used to tell them
 		apart now, ms sql server sends no usertype at all so they
 		still can't be told apart there
+	fixed the freetds connection module - character column sizes were
+		reported multiplied by the maximum bytes-per-character of
+		the client charset, 4 times too large under utf-8, the
+		login ping asks for a 1-character column now and uses the
+		size that comes back to scale them down, since ctlib
+		provides no way to find out what the client charset is
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems

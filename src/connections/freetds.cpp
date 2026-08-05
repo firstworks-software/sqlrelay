@@ -159,6 +159,10 @@ class SQLRSERVER_DLLSPEC freetdscursor : public sqlrservercursor {
 		uint32_t	colCount();
 		const char	*getColumnName(uint32_t col);
 		uint16_t	getColumnType(uint32_t col);
+		// undoes the multiplication that freetds applies to the
+		// size of character columns when the client charset is a
+		// multi-byte charset
+		void		deflateColumnSize(CS_INT index);
 		uint32_t	getColumnSize(uint32_t col);
 		uint32_t	getColumnPrecision(uint32_t col);
 		uint32_t	getColumnScale(uint32_t col);
@@ -413,6 +417,8 @@ class SQLRSERVER_DLLSPEC freetdsconnection : public sqlrserverconnection {
 
 		bool		sybasedb;
 
+		uint32_t	bytesperchar;
+
 		static	stringbuffer	errorstring;
 		static	int64_t		errorcode;
 		static	bool		liveconnection;
@@ -453,6 +459,7 @@ freetdsconnection::freetdsconnection(sqlrservercontroller *cont) :
 	dbused=false;
 	dbversion=NULL;
 	sybasedb=true;
+	bytesperchar=1;
 	initDatabaseFeatures();
 }
 
@@ -1259,14 +1266,24 @@ bool freetdsconnection::logIn(const char **error, const char **warning) {
 	// If the password has expired then the db may allow the login
 	// but every query will fail.  "ping" the db here to see if we get
 	// that error or not.
+	//
+	// The ping asks for a 1-character column because it doubles as a
+	// charset calibration.  freetds multiplies the size it reports for
+	// character columns by the client charset's maximum bytes per
+	// character, and no ctlib call reports what that charset is.
+	// CS_CLIENTCHARSET only reads back one that we set ourselves, and
+	// it's usually set in freetds.conf instead.  A 1-character column
+	// comes back already multiplied though, so its size is the factor.
 	bool	retval=true;
 	CS_COMMAND	*cmd;
 	if (ct_cmd_alloc(dbconn,&cmd)!=CS_SUCCEED) {
 		*error=logInError("Failed to allocate ping command",6);
 		return false;
 	}
-	if (ct_command(cmd,CS_LANG_CMD,(CS_CHAR *)"select 1",8,
-						CS_UNUSED)!=CS_SUCCEED) {
+	const char	*ping="select convert(varchar(1),'x')";
+	if (ct_command(cmd,CS_LANG_CMD,(CS_CHAR *)ping,
+					charstring::getLength(ping),
+					CS_UNUSED)!=CS_SUCCEED) {
 		*error=logInError("Failed to create ping command",6);
 		return false;
 	}
@@ -1278,6 +1295,12 @@ bool freetdsconnection::logIn(const char **error, const char **warning) {
 	if (ct_results(cmd,&resultstype)==CS_FAIL || resultstype==CS_CMD_FAIL) {
 		*error=logInError(NULL,6);
 		retval=false;
+	} else if (resultstype==CS_ROW_RESULT) {
+		CS_DATAFMT	fmt;
+		(CS_VOID)bytestring::zero(&fmt,sizeof(fmt));
+		if (ct_describe(cmd,1,&fmt)==CS_SUCCEED && fmt.maxlength>0) {
+			bytesperchar=(uint32_t)fmt.maxlength;
+		}
 	}
 	ct_cancel(NULL,cmd,CS_CANCEL_ALL);
 	ct_cmd_drop(cmd);
@@ -4766,6 +4789,7 @@ bool freetdscursor::executeQuery(const char *query, uint32_t size) {
 						&column[i])!=CS_SUCCEED) {
 					break;
 				}
+				deflateColumnSize(i);
 			}
 		}
 
@@ -4982,6 +5006,35 @@ uint16_t freetdscursor::getColumnType(uint32_t col) {
 		default:
 			return UNKNOWN_DATATYPE;
 	}
+}
+
+void freetdscursor::deflateColumnSize(CS_INT index) {
+
+	// bail if the client charset is a single-byte charset
+	if (freetdsconn->bytesperchar<2) {
+		return;
+	}
+
+	// only character columns are multiplied
+	switch (column[index].datatype) {
+		case CS_CHAR_TYPE:
+		case CS_LONGCHAR_TYPE:
+		case CS_VARCHAR_TYPE:
+		case CS_TEXT_TYPE:
+		case CS_UNICHAR_TYPE:
+			break;
+		default:
+			return;
+	}
+
+	// When the multiplied size would overflow, freetds clamps it to
+	// 2^31-1 rather than multiplying at all.  Every MS SQL Server lob
+	// reports that size, so leave it alone.
+	if (column[index].maxlength==2147483647) {
+		return;
+	}
+
+	column[index].maxlength/=freetdsconn->bytesperchar;
 }
 
 uint32_t freetdscursor::getColumnSize(uint32_t col) {
