@@ -517,6 +517,12 @@
 		sql batch containing @-prefixed names had them rewritten as
 		bind variables and was then run with no bind values, so
 		"create procedure someproc @a int as ..." failed
+	documented that the freetds connection reports column types and sizes
+		less accurately than the odbc connection does against ms sql
+		server, and that the odbc connection is the better choice
+		when an application needs accurate column metadata - the
+		freetds odbc driver works as well as the microsoft one, so
+		that needs no vendor software
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems

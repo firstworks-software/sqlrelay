@@ -475,7 +475,7 @@ http://www.gnu.org/software/src-highlite -->
 
 <br/><a name="db-mssql-odbc"/><h3>Microsoft SQL Server (via ODBC)</h3>
 
-<p>On Windows platforms, ODBC can be used to access a Microsoft SQL Server database.  There is also a <a target="_blank" href="https://msdn.microsoft.com/en-us/library/hh568451(v=sql.110).aspx">Microsoft-provided ODBC driver</a> for some versions of Linux.</p>
+<p>On Windows platforms, ODBC can be used to access a Microsoft SQL Server database.  There is also a <a target="_blank" href="https://msdn.microsoft.com/en-us/library/hh568451(v=sql.110).aspx">Microsoft-provided ODBC driver</a> for some versions of Linux.  On Linux and Unix platforms, the ODBC driver that comes with <a target="_blank" href="http://www.freetds.org">FreeTDS</a> can be used as well, and requires no vendor software.</p>
 
 <p>In this example, SQL Relay is configured to connect to a Microsoft SQL Server database via ODBC.</p>
 
@@ -573,6 +573,8 @@ http://www.gnu.org/software/src-highlite -->
 <p>( <b>NOTE:</b> The freetds.conf file must be readable by the user that the instance of SQL Relay runs as.)</p>
 
 <p>See the <a href="configreference.html#freetds">SQL Relay Configuration Reference</a> for other valid FreeTDS connect string options.</p>
+
+<p>( <b>NOTE:</b> The FreeTDS connection uses FreeTDS's ctlib API, which doesn't report everything that Microsoft SQL Server sends.  Varchar, nchar and nvarchar columns all come back as char, ntext columns come back as text, and character column sizes can be wrong when the client charset is a multi-byte charset, because ctlib doesn't report each column's collation.  If your application needs accurate column metadata, use the <a href="#db-mssql-odbc">ODBC connection</a> instead.  It reports the types and sizes correctly, with either the Microsoft ODBC driver or the ODBC driver that comes with FreeTDS.)</p>
 
 <br/><a name="db-sap"/><h3>SAP/Sybase (via the native SAP/Sybase library)</h3>
 

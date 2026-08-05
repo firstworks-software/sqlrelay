@@ -5039,6 +5039,12 @@ uint16_t freetdscursor::getColumnType(uint32_t col) {
 void freetdscursor::deflateColumnSize(CS_INT index) {
 
 	// bail if the client charset is a single-byte charset
+	//
+	// A factor of 1 doesn't prove that nothing was multiplied.  The ping
+	// measures a varchar, and freetds skips the multiply when the column's
+	// charset already matches the client charset, so if the database
+	// default collation charset is the client charset then the ping
+	// measures 1 while every nchar and nvarchar column is still multiplied.
 	if (freetdsconn->bytesperchar<2) {
 		return;
 	}
@@ -5063,9 +5069,12 @@ void freetdscursor::deflateColumnSize(CS_INT index) {
 	}
 
 	// A column whose own collation charset matches the client charset
-	// isn't multiplied either, but ctlib doesn't report collations, so
-	// that one gets scaled down anyway.  It takes a column collation
-	// that differs from the database default to hit it.
+	// isn't multiplied either, and gets scaled down anyway.  ct_describe
+	// reports the multiplied size and nothing else - not the collation,
+	// not the size the server sent - so there's no way to spot it.  MS SQL
+	// Server on TDS 7.1 and later only, since SAP/Sybase has one
+	// server-wide charset.  Use the odbc connection for those, it reports
+	// the size the server sent.
 	column[index].maxlength/=freetdsconn->bytesperchar;
 }
 

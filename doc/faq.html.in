@@ -448,7 +448,9 @@ Hopefully, one day, FreeTDS will support everything that the native SAP/Sybase l
 
 <p>The sqlrconnection_freetds module is compiled against FreeTDS, an open-source implementation of the TDS protocol and ctlib.</p>
 
-<p>Very old versions of Microsoft SQL Server are compatible with SAP/Sybase ctlib, but modern versions are not.  FreeTDS is compatible with all versions of SAP/Sybase Adaptive Server Enterprise and Microsoft SQL Server.  So, if you want to access a modern version of Microsoft SQL Server, you must use the FreeTDS connection.  You can also access all versions of SAP/Sybase with the FreeTDS connection.</p>
+<p>Very old versions of Microsoft SQL Server are compatible with SAP/Sybase ctlib, but modern versions are not.  FreeTDS is compatible with all versions of SAP/Sybase Adaptive Server Enterprise and Microsoft SQL Server.  So, if you want to access a modern version of Microsoft SQL Server, use the FreeTDS connection rather than the SAP/Sybase connection.  You can also access all versions of SAP/Sybase with the FreeTDS connection.</p>
+
+<p>For Microsoft SQL Server, the ODBC connection is another option, on Windows and on Linux and Unix alike, and it reports column types and sizes more accurately than the FreeTDS connection does.  See <a href="admin/configguide.html#db-mssql-odbc">Microsoft SQL Server (via ODBC)</a> in the configuration guide.</p>
 
 <br/><a name="postgresql"/><h3>How do I get data type names instead of numbers when using PostgreSQL?</h3>
 

@@ -313,7 +313,7 @@ See [http://software.firstworks.com/p/getting-started-with-oracle.html Getting S
 [[br]][=#db-mssql-odbc]
 === Microsoft SQL Server (via ODBC) ===
 
-On Windows platforms, ODBC can be used to access a Microsoft SQL Server database.  There is also a [https://msdn.microsoft.com/en-us/library/hh568451(v=sql.110).aspx Microsoft-provided ODBC driver] for some versions of Linux.
+On Windows platforms, ODBC can be used to access a Microsoft SQL Server database.  There is also a [https://msdn.microsoft.com/en-us/library/hh568451(v=sql.110).aspx Microsoft-provided ODBC driver] for some versions of Linux.  On Linux and Unix platforms, the ODBC driver that comes with [http://www.freetds.org FreeTDS] can be used as well, and requires no vendor software.
 
 In this example, SQL Relay is configured to connect to a Microsoft SQL Server database via ODBC.
 
@@ -386,6 +386,8 @@ The server option refers to an entry in the freetds.conf file (usually /etc/free
 ( '''NOTE:''' The freetds.conf file must be readable by the user that the instance of SQL Relay runs as.)
 
 See the [configreference.html#freetds SQL Relay Configuration Reference] for other valid !FreeTDS connect string options.
+
+( '''NOTE:''' The !FreeTDS connection uses !FreeTDS's ctlib API, which doesn't report everything that Microsoft SQL Server sends.  Varchar, nchar and nvarchar columns all come back as char, ntext columns come back as text, and character column sizes can be wrong when the client charset is a multi-byte charset, because ctlib doesn't report each column's collation.  If your application needs accurate column metadata, use the [#db-mssql-odbc ODBC connection] instead.  It reports the types and sizes correctly, with either the Microsoft ODBC driver or the ODBC driver that comes with !FreeTDS.)
 
 [[br]][=#db-sap]
 === SAP/Sybase (via the native SAP/Sybase library) ===
