@@ -3291,6 +3291,19 @@ void sqlrprotocol_tds::typeInfo(sqlrservercursor *cursor,
 				write(&resppacket,(byte_t)size);
 				debugWrite("size: %d (8-bit)",size);
 				break;
+			case TDS_TYPE_NUMERIC:
+			case TDS_TYPE_NUMERICN:
+			case TDS_TYPE_DECIMAL:
+			case TDS_TYPE_DECIMALN:
+				// for these, the size is the widest the value
+				// can be on the wire - 1 sign byte plus up to
+				// 16 bytes of magnitude - rather than the
+				// precision, and real servers just send the
+				// max, whatever the precision is
+				size=17;
+				write(&resppacket,(byte_t)size);
+				debugWrite("size: %d (8-bit)",size);
+				break;
 			default:
 				// limit the size to 2^7-1 because the
 				// client will interpret it as signed

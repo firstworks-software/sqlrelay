@@ -534,6 +534,10 @@
 		columns were reported as text, because ctlib collapses them
 		into CS_TEXT_TYPE, the sybase usertype is used to tell them
 		apart now and they're reported as nchar and nvarchar
+	fixed the tds protocol module - a decimal or numeric column's column
+		metadata size was the column's precision rather than the
+		widest the value can be on the wire, so a decimal(5,2) column
+		was described with a size of 5 instead of 17
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems
