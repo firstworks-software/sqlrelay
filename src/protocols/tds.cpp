@@ -1061,6 +1061,12 @@ sqlrprotocol_tds::sqlrprotocol_tds(sqlrservercontroller *cont,
 	debugWrite("maxpacketsize: %d",configmaxpacketsize);
 	debugEnd();
 
+	// tls="yes" would otherwise be accepted and silently ignored
+	if (useTls()) {
+		stderror.printf("Warning: TLS support requested but the tds "
+				"protocol module doesn't support TLS\n");
+	}
+
 	const char	*dbtype=cont->getDbType();
 	dbistds=(!charstring::compare(dbtype,"freetds") ||
 			!charstring::compare(dbtype,"sap"));
@@ -1834,6 +1840,11 @@ bool sqlrprotocol_tds::preLogin() {
 	ploptoff+=ploptsize;
 	writeBE(&resppacket,ploptsize);
 	// FIXME: implement encryption
+	// MS-TDS tunnels the TLS handshake inside TDS packets until the
+	// handshake completes, so the server has to wrap and unwrap TLS
+	// records between the TLS engine and the socket.  rudiments binds
+	// OpenSSL straight to the file descriptor, leaving nowhere to put
+	// that layer, so ENCRYPT_NOT_SUP is the only answer available.
 	encryption=ENCRYPT_NOT_SUP;
 	write(&packetdata,encryption);
 	debugWrite("pl_encryption");
