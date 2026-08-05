@@ -527,6 +527,9 @@
 		were all reported as char, because ctlib collapses them into
 		CS_CHAR_TYPE, the sybase usertype is used to tell them apart
 		now
+	fixed the tds protocol module - a long varbinary column was described
+		as varbinary, so an image column was reported as binary
+		rather than image
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems

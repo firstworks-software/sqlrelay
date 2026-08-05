@@ -331,7 +331,7 @@ static byte_t	tdstypemap[]={
 	// "INTEGER"
 	(byte_t)TDS_TYPE_INTN,
 	// "LONGVARBINARY"
-	(byte_t)TDS_TYPE_BIGVARBIN,
+	(byte_t)TDS_TYPE_IMAGE,
 	// "LONGVARCHAR"
 	(byte_t)TDS_TYPE_TEXT,
 	// added by db2
