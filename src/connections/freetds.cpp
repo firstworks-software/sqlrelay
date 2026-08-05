@@ -5034,6 +5034,10 @@ void freetdscursor::deflateColumnSize(CS_INT index) {
 		return;
 	}
 
+	// A column whose own collation charset matches the client charset
+	// isn't multiplied either, but ctlib doesn't report collations, so
+	// that one gets scaled down anyway.  It takes a column collation
+	// that differs from the database default to hit it.
 	column[index].maxlength/=freetdsconn->bytesperchar;
 }
 
