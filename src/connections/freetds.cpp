@@ -4905,6 +4905,17 @@ uint16_t freetdscursor::getColumnType(uint32_t col) {
 		case CS_IMAGE_TYPE:
 			return IMAGE_DATATYPE;
 		case CS_BINARY_TYPE:
+			// ctlib reports binary and varbinary both as
+			// CS_BINARY_TYPE.  Sybase also sends its systypes
+			// usertype, which does tell them apart - 3 binary,
+			// 4 varbinary - but MS SQL Server sends 0 for both,
+			// so there binary is the best we can do.  Sybase
+			// timestamp columns are binary(8) and come back with
+			// usertype 80, so they fall through to binary too.
+			if (freetdsconn->sybasedb &&
+					column[col].usertype==4) {
+				return VARBINARY_DATATYPE;
+			}
 			return BINARY_DATATYPE;
 		case CS_BIT_TYPE:
 			return BIT_DATATYPE;

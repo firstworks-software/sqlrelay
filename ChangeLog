@@ -481,6 +481,11 @@
 		done-proc in its buffer, putting every command after it one
 		response behind and losing the column metadata that
 		sp_prepare returns
+	fixed the freetds connection module - varbinary columns were reported
+		as binary, because ctlib collapses both into
+		CS_BINARY_TYPE, the sybase usertype is used to tell them
+		apart now, ms sql server sends no usertype at all so they
+		still can't be told apart there
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems
