@@ -530,6 +530,10 @@
 	fixed the tds protocol module - a long varbinary column was described
 		as varbinary, so an image column was reported as binary
 		rather than image
+	fixed the freetds connection module - sybase unichar and univarchar
+		columns were reported as text, because ctlib collapses them
+		into CS_TEXT_TYPE, the sybase usertype is used to tell them
+		apart now and they're reported as nchar and nvarchar
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems

@@ -4970,6 +4970,22 @@ uint16_t freetdscursor::getColumnType(uint32_t col) {
 			}
 			return FLOAT_DATATYPE;
 		case CS_TEXT_TYPE:
+			// ctlib reports text, unichar and univarchar all as
+			// CS_TEXT_TYPE.  Sybase also sends its systypes
+			// usertype, which does tell them apart - 19 text,
+			// 34 unichar, 35 univarchar - but MS SQL Server sends
+			// 0 for all of them, so there text is the best we can
+			// do.  unichar and univarchar are fixed- and
+			// variable-length utf-16, which is what nchar and
+			// nvarchar already mean here.
+			if (freetdsconn->sybasedb) {
+				switch (column[col].usertype) {
+					case 34:
+						return NCHAR_DATATYPE;
+					case 35:
+						return NVARCHAR_DATATYPE;
+				}
+			}
 			return TEXT_DATATYPE;
 		case CS_VARCHAR_TYPE:
 			return VARCHAR_DATATYPE;
