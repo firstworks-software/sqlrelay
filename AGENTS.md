@@ -54,7 +54,7 @@ Most of `src/` is discoverable by listing it (one directory per module type: aut
 
 ## Tests
 
-`make tests` runs everything enabled by configure. Tests live under `test/` and run against real databases via a live sqlr instance the harness starts and stops (no mocking) - see `test/AGENTS.md` for running subsets, fixtures, and test conventions.
+`make tests` runs everything enabled by configure. Tests live under `test/` and run against real databases via a live sqlr instance the harness starts and stops (no mocking).
 
 ## Conventions worth knowing
 
