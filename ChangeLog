@@ -501,6 +501,13 @@
 		reported as date, time, timestamp and datetimeoffset now,
 		freetds prior to 1.4 sends no usertype for datetime2 or
 		datetimeoffset so they are both reported as timestamp there
+	implemented bulk load in the tds protocol module - the "insert bulk"
+		statement that opens one is answered by the module instead
+		of being passed to the backend, and the bulk load packets
+		that follow it are read and loaded a row at a time
+	fixed the tds protocol module - a long varchar column was described
+		as varbinary, so a text column came back as binary data and
+		couldn't be bulk loaded at all
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems

@@ -2,6 +2,7 @@
 // See the file COPYING for more information
 
 #include <sqlrelay/sqlrserver.h>
+#include <rudiments/character.h>
 #include <rudiments/wcharstring.h>
 #include <rudiments/process.h>
 #include <rudiments/sys.h>
@@ -332,7 +333,7 @@ static byte_t	tdstypemap[]={
 	// "LONGVARBINARY"
 	(byte_t)TDS_TYPE_BIGVARBIN,
 	// "LONGVARCHAR"
-	(byte_t)TDS_TYPE_BIGVARBIN,
+	(byte_t)TDS_TYPE_TEXT,
 	// added by db2
 	// "GRAPHIC"
 	(byte_t)TDS_TYPE_BIGVARBIN,
@@ -834,7 +835,56 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_tds : public sqlrprotocol {
 		void	guid(const char *field, byte_t *g);
 		byte_t	charsToHex(const char *chars);
 
+		// Answers the "insert bulk" statement that opens a bulk
+		// load, rather than passing it to the backend, and returns
+		// false if the statement isn't one.
+		bool	insertBulk(const char *sql);
 		bool	bulkLoad();
+		bool	bulkColMetaData(const byte_t **rpinout,
+					size_t *rpsizeinout,
+					uint16_t *colcount);
+		bool	bulkTypeInfo(const byte_t **rpinout,
+					size_t *rpsizeinout,
+					uint16_t col);
+		char	*bulkInsert(uint16_t colcount);
+		bool	bulkRow(const byte_t **rpinout,
+					size_t *rpsizeinout,
+					uint16_t colcount,
+					sqlrservercursor *cursor);
+		bool	bulkField(const byte_t **rpinout,
+					size_t *rpsizeinout,
+					uint16_t col,
+					sqlrserverbindvar *bv,
+					memorypool *bindpool);
+		bool	bulkValue(const byte_t **rpinout,
+					size_t *rpsizeinout,
+					uint16_t col,
+					sqlrserverbindvar *bv,
+					memorypool *bindpool);
+		void	bulkString(sqlrserverbindvar *bv,
+					memorypool *bindpool,
+					const char *value,
+					size_t valuesize);
+		void	bulkBinary(sqlrserverbindvar *bv,
+					memorypool *bindpool,
+					const byte_t *value,
+					size_t valuesize);
+		bool	isBinaryType(byte_t tdstype);
+		void	bulkDouble(sqlrserverbindvar *bv, double value);
+		void	bulkDecimal(byte_t ispositive,
+					const byte_t *val,
+					byte_t size,
+					byte_t scale,
+					stringbuffer *strb);
+		void	bulkMoney(int64_t tenthousandths, stringbuffer *strb);
+		void	bulkDateTime(int32_t dayssince1900,
+					uint32_t threehundredths,
+					stringbuffer *strb);
+		void	bulkDate(uint32_t dayssince1, stringbuffer *strb);
+		void	bulkTime(uint64_t increments,
+					byte_t scale,
+					stringbuffer *strb);
+		void	bulkGuid(const byte_t *g, stringbuffer *strb);
 
 		bool	remoteProcedureCall();
 		bool	rpc(const byte_t **rpinout,
@@ -1013,6 +1063,18 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_tds : public sqlrprotocol {
 		uint16_t		*rpcparamnamesizes;
 		uint16_t		rpcparamcount;
 
+		// The table and columns that the "insert bulk" statement
+		// named, and the column metadata that the bulk load packet
+		// itself carries.  The two arrive in separate requests, so
+		// they have to be kept between them.
+		memorypool		bulkpool;
+		char			*bulktable;
+		char			**bulkcolumns;
+		uint16_t		bulkcolumncount;
+		byte_t			*bulktypes;
+		uint32_t		*bulksizes;
+		byte_t			*bulkscales;
+
 		// prepared statement and cursor handles.  These are handed
 		// out independently of each other and of the cursor id,
 		// because a client can hold a prepared handle and a cursor
@@ -1087,6 +1149,11 @@ sqlrprotocol_tds::sqlrprotocol_tds(sqlrservercontroller *cont,
 	rpcparamnamesizes=new uint16_t[maxbindcount];
 	rpcparamcount=0;
 
+	bulkcolumns=new char *[maxbindcount];
+	bulktypes=new byte_t[maxbindcount];
+	bulksizes=new uint32_t[maxbindcount];
+	bulkscales=new byte_t[maxbindcount];
+
 	init();
 }
 
@@ -1103,6 +1170,11 @@ sqlrprotocol_tds::~sqlrprotocol_tds() {
 	delete[] rpcparambyref;
 	delete[] rpcparamnames;
 	delete[] rpcparamnamesizes;
+
+	delete[] bulkcolumns;
+	delete[] bulktypes;
+	delete[] bulksizes;
+	delete[] bulkscales;
 }
 
 void sqlrprotocol_tds::init() {
@@ -1125,6 +1197,9 @@ void sqlrprotocol_tds::init() {
 	nexthandle=1;
 
 	rpcparamcount=0;
+
+	bulktable=NULL;
+	bulkcolumncount=0;
 }
 
 void sqlrprotocol_tds::free() {
@@ -1133,6 +1208,10 @@ void sqlrprotocol_tds::free() {
 	resppacket.clear();
 
 	rpcparampool.clear();
+
+	bulkpool.clear();
+	bulktable=NULL;
+	bulkcolumncount=0;
 
 	// the session's cursors get released with the session, so these
 	// just have to forget about them
@@ -2756,6 +2835,30 @@ bool sqlrprotocol_tds::sqlBatch() {
 	debugWrite("sql: %s",sql8);
 	debugWrite("sqllength: %lld",(uint64_t)sqllength);
 	debugEnd();
+
+	// A bulk load opens with an "insert bulk" statement.  Only the
+	// protocol module can answer that - passing it through would put
+	// the backend's own connection into bulk mode.
+	if (insertBulk(sql8)) {
+
+		delete[] sql8;
+		cont->release(cursor);
+
+		resppacket.clear();
+
+		if (!bulktable) {
+			appendError(0,1,16,"Malformed insert bulk statement",
+							srvname,NULL,1);
+			done(DONE_ERROR,0,0);
+			return sendPacket();
+		}
+
+		// The client won't leave its pending state, and so won't
+		// start sending bulk data, unless this done clears
+		// DONE_MORE.
+		done();
+		return sendPacket();
+	}
 
 	// A batch has no bind variables, and the cursor may have been left
 	// with some by an rpc that used it earlier.
@@ -4463,18 +4566,1428 @@ void sqlrprotocol_tds::appendQueryError(sqlrservercursor *cursor) {
 	delete[] errorbuffer;
 }
 
-bool sqlrprotocol_tds::bulkLoad() {
+bool sqlrprotocol_tds::insertBulk(const char *sql) {
 
-	//const byte_t	*rp=reqpacket.getBuffer();
+	// "insert bulk <table> (<column> <type>, ...)"
 
-	debugStart("bulk load");
+	const char	*ptr=cont->skipWhitespaceAndComments(sql);
+	if (charstring::compareIgnoringCase(ptr,"insert",6) ||
+			!character::isWhitespace(ptr[6])) {
+		return false;
+	}
+	ptr=cont->skipWhitespaceAndComments(ptr+6);
+	if (charstring::compareIgnoringCase(ptr,"bulk",4) ||
+			!character::isWhitespace(ptr[4])) {
+		return false;
+	}
+	ptr=cont->skipWhitespaceAndComments(ptr+4);
+
+	debugStart("insert bulk");
+
+	// forget whatever the previous bulk load left behind
+	bulkpool.clear();
+	bulktable=NULL;
+	bulkcolumncount=0;
+
+	// the table name, which freetds doesn't quote
+	const char	*start=ptr;
+	while (*ptr && !character::isWhitespace(*ptr) && *ptr!='(') {
+		ptr++;
+	}
+	size_t	length=ptr-start;
+	if (!length) {
+		debugWrite("no table name");
+		debugEnd();
+		return true;
+	}
+	bulktable=(char *)bulkpool.allocate(length+1);
+	bytestring::copy(bulktable,start,length);
+	bulktable[length]='\0';
+
+	debugWrite("table: %s",bulktable);
+
+	ptr=cont->skipWhitespaceAndComments(ptr);
+	if (*ptr!='(') {
+		debugWrite("no column list");
+		debugEnd();
+		bulktable=NULL;
+		return true;
+	}
+	ptr++;
+
+	// the column list, one "<column> <type>" per column
+	while (*ptr && *ptr!=')') {
+
+		ptr=cont->skipWhitespaceAndComments(ptr);
+
+		// The column name, which freetds bracket-quotes, doubling
+		// any bracket in the name itself.  It gets copied out
+		// verbatim, quoting and all, so that the insert below asks
+		// for the same column the client did.
+		start=ptr;
+		if (*ptr=='[') {
+			ptr++;
+			while (*ptr) {
+				if (*ptr==']') {
+					ptr++;
+					if (*ptr!=']') {
+						break;
+					}
+				}
+				ptr++;
+			}
+		} else {
+			while (*ptr && !character::isWhitespace(*ptr)) {
+				ptr++;
+			}
+		}
+		length=ptr-start;
+		if (!length || bulkcolumncount==maxbindcount) {
+			debugWrite("bad column list");
+			debugEnd();
+			bulktable=NULL;
+			return true;
+		}
+		char	*column=(char *)bulkpool.allocate(length+1);
+		bytestring::copy(column,start,length);
+		column[length]='\0';
+		bulkcolumns[bulkcolumncount]=column;
+		bulkcolumncount++;
+
+		debugWrite("column: %s",column);
+
+		// skip the declared type, which can have parentheses of
+		// its own, as decimal and numeric do
+		uint16_t	depth=0;
+		while (*ptr) {
+			if (*ptr=='(') {
+				depth++;
+			} else if (*ptr==')') {
+				if (!depth) {
+					break;
+				}
+				depth--;
+			} else if (*ptr==',' && !depth) {
+				break;
+			}
+			ptr++;
+		}
+		if (*ptr==',') {
+			ptr++;
+		}
+	}
+
+	if (!bulkcolumncount) {
+		debugWrite("no columns");
+		bulktable=NULL;
+	}
+
 	debugEnd();
 
-	// FIXME: actually implement this
+	return true;
+}
 
-	// Just report that this isn't supported.  Returning false would end
-	// the session, and the client can't tell that from a crash.
-	return sendUnimplementedFeatureError();
+bool sqlrprotocol_tds::bulkLoad() {
+
+	const byte_t	*rp=reqpacket.getBuffer();
+	size_t		rpsize=reqpacket.getSize();
+
+	debugStart("bulk load");
+
+	// bulk data without an insert bulk statement to go with it
+	if (!bulktable) {
+		debugWrite("no insert bulk statement");
+		debugEnd();
+		return sendError(0,1,16,
+				"Bulk load data without an insert bulk "
+				"statement",1);
+	}
+
+	// The packet opens with the client's own column metadata.  A bad
+	// one doesn't end the session, unlike a protocol error elsewhere -
+	// each request arrives as a whole packet, so dropping this one
+	// leaves the request stream in sync.
+	uint16_t	colcount=0;
+	if (!bulkColMetaData(&rp,&rpsize,&colcount)) {
+		debugEnd();
+		return sendError(0,1,16,
+				"Malformed bulk load column metadata",1);
+	}
+
+	// The insert bulk statement and the column metadata describe the
+	// same columns, in the same order.  If they disagree, there's no
+	// way to tell which column a value belongs to.
+	if (colcount!=bulkcolumncount) {
+		debugWrite("column count mismatch: %d != %d",
+					colcount,bulkcolumncount);
+		debugEnd();
+		return sendError(0,1,16,
+				"Bulk load column count doesn't match the "
+				"insert bulk statement",1);
+	}
+
+	// get an available cursor
+	sqlrservercursor	*cursor=cont->getCursor();
+	if (!cursor) {
+		debugEnd();
+		return sendNoCursorAvailableError();
+	}
+
+	// prepare the insert that the rows will be loaded with
+	char	*query=bulkInsert(colcount);
+	debugWrite("query: %s",query);
+	cont->setOutputBindCount(cursor,0);
+	cont->setInputBindCount(cursor,colcount);
+	bool	success=cont->prepareQuery(cursor,query,
+					charstring::getLength(query),
+					true,true,true,true);
+	delete[] query;
+
+	// run it once per row
+	uint64_t	rowcount=0;
+	bool		badrow=false;
+	while (success && rpsize) {
+		if (!bulkRow(&rp,&rpsize,colcount,cursor)) {
+			badrow=true;
+			break;
+		}
+		success=cont->executeQuery(cursor,true,true,true,true);
+		if (success) {
+			rowcount++;
+		}
+	}
+
+	debugWrite("rows: %lld",rowcount);
+	debugEnd();
+
+	if (badrow) {
+		cont->release(cursor);
+		return sendError(0,1,16,"Malformed bulk load row",1);
+	}
+
+	// begin building the response packet
+	resppacket.clear();
+
+	if (success) {
+		// blk_done reads its outrow from this row count, and only
+		// takes it if DONE_COUNT is set
+		done(DONE_FINAL|DONE_COUNT,0,rowcount);
+	} else {
+		appendQueryError(cursor);
+		done(DONE_ERROR,0,0);
+	}
+
+	// send the response packet
+	bool	retval=sendPacket();
+
+	// release the cursor
+	cont->release(cursor);
+
+	return retval;
+}
+
+bool sqlrprotocol_tds::bulkColMetaData(const byte_t **rpinout,
+					size_t *rpsizeinout,
+					uint16_t *colcount) {
+
+	const byte_t	*rp=*rpinout;
+	size_t		rpsize=*rpsizeinout;
+
+	debugStart("col meta data");
+
+	if (rpsize<sizeof(byte_t)+sizeof(uint16_t)) {
+		debugWrite("short packet");
+		debugEnd();
+		return false;
+	}
+
+	byte_t	token;
+	read(rp,&token,&rp);
+	rpsize--;
+	debugWrite("token: 0x%02x",token);
+	if (token!=TOKEN_COLMETADATA) {
+		debugEnd();
+		return false;
+	}
+
+	uint16_t	count;
+	readLE(rp,&count,&rp);
+	rpsize-=sizeof(uint16_t);
+	debugWrite("count: %d",count);
+	if (!count || count>maxbindcount) {
+		debugEnd();
+		return false;
+	}
+
+	for (uint16_t col=0; col<count; col++) {
+
+		debugStart("col %d",col);
+
+		// user type and flags
+		size_t	usertypesize=(negotiatedtdsversion>=720)?
+					sizeof(uint32_t):sizeof(uint16_t);
+		if (rpsize<usertypesize+sizeof(uint16_t)+sizeof(byte_t)) {
+			debugWrite("short packet");
+			debugEnd();
+			debugEnd();
+			return false;
+		}
+		if (negotiatedtdsversion>=720) {
+			uint32_t	usertype;
+			readLE(rp,&usertype,&rp);
+			debugWrite("usertype: %d",usertype);
+		} else {
+			uint16_t	usertype;
+			readLE(rp,&usertype,&rp);
+			debugWrite("usertype: %d",usertype);
+		}
+		rpsize-=usertypesize;
+
+		uint16_t	flags;
+		readLE(rp,&flags,&rp);
+		rpsize-=sizeof(uint16_t);
+		if (getDebug()) {
+			stringbuffer	b;
+			b.printBits(flags);
+			debugWrite("flags: %s",b.getString());
+		}
+
+		if (!bulkTypeInfo(&rp,&rpsize,col)) {
+			debugEnd();
+			debugEnd();
+			return false;
+		}
+
+		// A blob column carries the table name, but without the
+		// numparts byte that a server-to-client col meta data has.
+		byte_t	tdstype=bulktypes[col];
+		if (tdstype==TDS_TYPE_TEXT ||
+			tdstype==TDS_TYPE_NTEXT ||
+			tdstype==TDS_TYPE_IMAGE) {
+			if (rpsize<sizeof(uint16_t)) {
+				debugWrite("short packet");
+				debugEnd();
+				debugEnd();
+				return false;
+			}
+			uint16_t	tnamelen;
+			readLE(rp,&tnamelen,&rp);
+			rpsize-=sizeof(uint16_t);
+			size_t	tnamesize=tnamelen*sizeof(ucs2_t);
+			if (rpsize<tnamesize) {
+				debugWrite("short packet");
+				debugEnd();
+				debugEnd();
+				return false;
+			}
+			rp+=tnamesize;
+			rpsize-=tnamesize;
+		}
+
+		// column name
+		if (!rpsize) {
+			debugWrite("short packet");
+			debugEnd();
+			debugEnd();
+			return false;
+		}
+		byte_t	cnamelen;
+		read(rp,&cnamelen,&rp);
+		rpsize--;
+		size_t	cnamesize=cnamelen*sizeof(ucs2_t);
+		if (rpsize<cnamesize) {
+			debugWrite("short packet");
+			debugEnd();
+			debugEnd();
+			return false;
+		}
+		if (getDebug() && cnamelen) {
+			ucs2_t	*cname16=new ucs2_t[cnamelen];
+			const byte_t	*dummy;
+			read(rp,cname16,cnamelen,&dummy);
+			char	*cname=charstring::duplicateUcs2(
+						cname16,(size_t)cnamelen);
+			debugWrite("name: %s",cname);
+			delete[] cname;
+			delete[] cname16;
+		}
+		rp+=cnamesize;
+		rpsize-=cnamesize;
+
+		debugEnd();
+	}
+
+	debugEnd();
+
+	*rpinout=rp;
+	*rpsizeinout=rpsize;
+	*colcount=count;
+
+	return true;
+}
+
+bool sqlrprotocol_tds::bulkTypeInfo(const byte_t **rpinout,
+					size_t *rpsizeinout,
+					uint16_t col) {
+
+	const byte_t	*rp=*rpinout;
+	size_t		rpsize=*rpsizeinout;
+
+	byte_t	tdstype;
+	read(rp,&tdstype,&rp);
+	rpsize--;
+	debugWrite("tdstype: 0x%02x",tdstype);
+
+	bulktypes[col]=tdstype;
+	bulksizes[col]=0;
+	bulkscales[col]=0;
+
+	if (isFixedLenType(tdstype)) {
+
+		debugWrite("fixedlentype...");
+
+	} else if (isVarLenType(tdstype)) {
+
+		debugWrite("varlentype...");
+
+		// size, precision and scale
+		switch (tdstype) {
+			case TDS_TYPE_DECIMAL:
+			case TDS_TYPE_NUMERIC:
+			case TDS_TYPE_DECIMALN:
+			case TDS_TYPE_NUMERICN:
+				{
+				if (rpsize<3) {
+					return false;
+				}
+				byte_t	size;
+				byte_t	precision;
+				read(rp,&size,&rp);
+				read(rp,&precision,&rp);
+				read(rp,&(bulkscales[col]),&rp);
+				rpsize-=3;
+				bulksizes[col]=size;
+				debugWrite("size: %d",size);
+				debugWrite("precision: %d",precision);
+				debugWrite("scale: %d",bulkscales[col]);
+				}
+				break;
+			case TDS_TYPE_DATEN:
+				break;
+			case TDS_TYPE_TIMEN:
+			case TDS_TYPE_DATETIME2N:
+			case TDS_TYPE_DATETIMEOFFSETN:
+				if (!rpsize) {
+					return false;
+				}
+				read(rp,&(bulkscales[col]),&rp);
+				rpsize--;
+				debugWrite("scale: %d",bulkscales[col]);
+				break;
+			case TDS_TYPE_SSVARIANT:
+			case TDS_TYPE_TEXT:
+			case TDS_TYPE_NTEXT:
+			case TDS_TYPE_IMAGE:
+				{
+				if (rpsize<sizeof(uint32_t)) {
+					return false;
+				}
+				uint32_t	size;
+				readLE(rp,&size,&rp);
+				rpsize-=sizeof(uint32_t);
+				bulksizes[col]=size;
+				debugWrite("size: %d (32-bit)",size);
+				}
+				break;
+			case TDS_TYPE_BIGCHAR:
+			case TDS_TYPE_BIGVARCHR:
+			case TDS_TYPE_BIGBINARY:
+			case TDS_TYPE_BIGVARBIN:
+			case TDS_TYPE_NCHAR:
+			case TDS_TYPE_NVARCHAR:
+			case TDS_TYPE_XML:
+			case TDS_TYPE_UDT:
+				{
+				if (rpsize<sizeof(uint16_t)) {
+					return false;
+				}
+				uint16_t	size;
+				readLE(rp,&size,&rp);
+				rpsize-=sizeof(uint16_t);
+				bulksizes[col]=size;
+				debugWrite("size: %d (16-bit)",size);
+				}
+				break;
+			default:
+				{
+				if (!rpsize) {
+					return false;
+				}
+				byte_t	size;
+				read(rp,&size,&rp);
+				rpsize--;
+				bulksizes[col]=size;
+				debugWrite("size: %d (8-bit)",size);
+				}
+				break;
+		}
+
+		// collation
+		if (negotiatedtdsversion>=710) {
+			switch (tdstype) {
+				case TDS_TYPE_BIGCHAR:
+				case TDS_TYPE_BIGVARCHR:
+				case TDS_TYPE_TEXT:
+				case TDS_TYPE_NTEXT:
+				case TDS_TYPE_NCHAR:
+				case TDS_TYPE_NVARCHAR:
+					{
+					// FIXME: do something with this
+					if (rpsize<5) {
+						return false;
+					}
+					byte_t	coll[5];
+					read(rp,coll,sizeof(coll),&rp);
+					rpsize-=sizeof(coll);
+					if (getDebug()) {
+						stringbuffer	b;
+						b.printBits(coll,sizeof(coll));
+						debugWrite("collation: %s",
+								b.getString());
+					}
+					}
+					break;
+			}
+		}
+
+	} else {
+
+		// FIXME: [ushortmaxlen] [collation] [xml_info] [utd_info]
+		debugWrite("unsupported type");
+		return false;
+	}
+
+	*rpinout=rp;
+	*rpsizeinout=rpsize;
+
+	return true;
+}
+
+char *sqlrprotocol_tds::bulkInsert(uint16_t colcount) {
+
+	stringbuffer	query;
+	query.append("insert into ")->append(bulktable)->append(" (");
+	for (uint16_t col=0; col<colcount; col++) {
+		if (col) {
+			query.append(',');
+		}
+		query.append(bulkcolumns[col]);
+	}
+	query.append(") values (");
+	for (uint16_t col=0; col<colcount; col++) {
+		if (col) {
+			query.append(',');
+		}
+		if (isBinaryType(bulktypes[col])) {
+			// style 2 reads the string as hex digits without a
+			// leading 0x - see bulkBinary() for why the value
+			// arrives as hex in the first place
+			uint32_t	size=bulksizes[col];
+			query.append("convert(varbinary(");
+			query.append((size && size<=8000)?size:8000);
+			query.append("),")->append(bindvarnames[col]);
+			query.append(",2)");
+		} else {
+			query.append(bindvarnames[col]);
+		}
+	}
+	query.append(')');
+	return query.detachString();
+}
+
+bool sqlrprotocol_tds::bulkRow(const byte_t **rpinout,
+					size_t *rpsizeinout,
+					uint16_t colcount,
+					sqlrservercursor *cursor) {
+
+	const byte_t	*rp=*rpinout;
+	size_t		rpsize=*rpsizeinout;
+
+	debugStart("row");
+
+	if (!rpsize) {
+		debugWrite("short packet");
+		debugEnd();
+		return false;
+	}
+
+	byte_t	token;
+	read(rp,&token,&rp);
+	rpsize--;
+
+	debugWrite("token: 0x%02x",token);
+
+	if (token!=TOKEN_ROW) {
+		debugWrite("unexpected token");
+		debugEnd();
+		return false;
+	}
+
+	// values get copied out of the request packet and into the
+	// cursor's own bind pool
+	memorypool	*bindpool=cont->getBindPool(cursor);
+	bindpool->clear();
+
+	sqlrserverbindvar	*inbinds=cont->getInputBinds(cursor);
+
+	for (uint16_t col=0; col<colcount; col++) {
+		sqlrserverbindvar	*bv=&(inbinds[col]);
+		bv->variable=bindvarnames[col];
+		bv->variablesize=bindvarnamesizes[col];
+		if (!bulkField(&rp,&rpsize,col,bv,bindpool)) {
+			debugWrite("short packet");
+			debugEnd();
+			return false;
+		}
+	}
+
+	debugEnd();
+
+	*rpinout=rp;
+	*rpsizeinout=rpsize;
+
+	return true;
+}
+
+void sqlrprotocol_tds::bulkString(sqlrserverbindvar *bv,
+					memorypool *bindpool,
+					const char *value,
+					size_t valuesize) {
+	bv->type=SQLRSERVERBINDVARTYPE_STRING;
+	bv->valuesize=(uint32_t)valuesize;
+	bv->value.stringval=(char *)bindpool->allocate(valuesize+1);
+	bytestring::copy(bv->value.stringval,value,valuesize);
+	bv->value.stringval[valuesize]='\0';
+	bv->isnull=cont->getNonNullBindValue();
+	debugWrite("value: %.*s",(int32_t)valuesize,bv->value.stringval);
+}
+
+bool sqlrprotocol_tds::isBinaryType(byte_t tdstype) {
+
+	switch (tdstype) {
+		case TDS_TYPE_BINARY:
+		case TDS_TYPE_VARBINARY:
+		case TDS_TYPE_BIGBINARY:
+		case TDS_TYPE_BIGVARBIN:
+		case TDS_TYPE_IMAGE:
+			return true;
+		default:
+			return false;
+	}
+}
+
+void sqlrprotocol_tds::bulkBinary(sqlrserverbindvar *bv,
+					memorypool *bindpool,
+					const byte_t *value,
+					size_t valuesize) {
+
+	// Binary values are bound as hex, and converted back to bytes by
+	// the insert that bulkInsert() builds.  A blob bind would be the
+	// obvious way to do this, but the odbc connection module binds a
+	// blob as a character string, and character strings get charset
+	// converted, which raw bytes don't survive.
+
+	stringbuffer	hex;
+	for (size_t i=0; i<valuesize; i++) {
+		hex.append(cont->asciiToHex(value[i]));
+	}
+	bulkString(bv,bindpool,hex.getString(),hex.getStringLength());
+}
+
+void sqlrprotocol_tds::bulkDouble(sqlrserverbindvar *bv, double value) {
+
+	bv->type=SQLRSERVERBINDVARTYPE_DOUBLE;
+	bv->isnull=cont->getNonNullBindValue();
+	bv->value.doubleval.value=value;
+
+	// FIXME: kludgy
+	char	*num=charstring::parseNumber(value);
+	size_t	size=charstring::getLength(num);
+	bv->value.doubleval.precision=size-
+			(charstring::contains(num,'-')?1:0)-
+			(charstring::contains(num,'.')?1:0);
+	bv->value.doubleval.scale=
+			(num+size)-charstring::findFirstOrEnd(num,'.')-1;
+	debugWrite("value: %s",num);
+	delete[] num;
+}
+
+void sqlrprotocol_tds::bulkDecimal(byte_t ispositive,
+					const byte_t *val,
+					byte_t size,
+					byte_t scale,
+					stringbuffer *strb) {
+
+	// the magnitude is little-endian, and the sign is 1 for positive,
+	// the opposite of what the sql standard uses
+	uint64_t	magnitude=0;
+	for (byte_t i=0; i<size; i++) {
+		magnitude|=((uint64_t)val[i])<<(i*8);
+	}
+
+	if (!ispositive) {
+		strb->append('-');
+	}
+
+	// the digits, with a decimal point "scale" places from the right
+	char	digits[24];
+	charstring::printf(digits,sizeof(digits),"%lld",magnitude);
+	size_t	digitcount=charstring::getLength(digits);
+	if (!scale) {
+		strb->append(digits);
+		return;
+	}
+	if (digitcount>scale) {
+		strb->append(digits,digitcount-scale);
+	} else {
+		strb->append('0');
+	}
+	strb->append('.');
+	for (size_t i=digitcount; i<scale; i++) {
+		strb->append('0');
+	}
+	strb->append(digits+((digitcount>scale)?digitcount-scale:0));
+}
+
+void sqlrprotocol_tds::bulkMoney(int64_t tenthousandths, stringbuffer *strb) {
+	if (tenthousandths<0) {
+		strb->append('-');
+		tenthousandths=-tenthousandths;
+	}
+	strb->append((uint64_t)(tenthousandths/10000))->append('.');
+	char	fraction[8];
+	charstring::printf(fraction,sizeof(fraction),"%04lld",
+					(uint64_t)(tenthousandths%10000));
+	strb->append(fraction);
+}
+
+void sqlrprotocol_tds::bulkDateTime(int32_t dayssince1900,
+					uint32_t threehundredths,
+					stringbuffer *strb) {
+
+	// the date, counted forward from 1900-01-01
+	int32_t	year=1900;
+	int32_t	days=dayssince1900;
+	for (;;) {
+		int32_t	yeardays=(!(year%4) && (year%100 || !(year%400)))?
+								366:365;
+		if (days<yeardays) {
+			break;
+		}
+		days-=yeardays;
+		year++;
+	}
+	int32_t	month=1;
+	for (;;) {
+		int32_t	monthdays=mdays[month-1];
+		if (month==2 && !(year%4) && (year%100 || !(year%400))) {
+			monthdays++;
+		}
+		if (days<monthdays) {
+			break;
+		}
+		days-=monthdays;
+		month++;
+	}
+
+	// the time, counted in three-hundredths of a second since 12AM
+	uint32_t	seconds=threehundredths/300;
+	uint32_t	milliseconds=((threehundredths%300)*1000)/300;
+
+	char	buffer[32];
+	charstring::printf(buffer,sizeof(buffer),
+				"%04d-%02d-%02d %02d:%02d:%02d.%03d",
+				(int32_t)year,(int32_t)month,(int32_t)(days+1),
+				(int32_t)(seconds/3600),
+				(int32_t)((seconds/60)%60),
+				(int32_t)(seconds%60),
+				(int32_t)milliseconds);
+	strb->append(buffer);
+}
+
+void sqlrprotocol_tds::bulkDate(uint32_t dayssince1, stringbuffer *strb) {
+
+	// a date is counted forward from 0001-01-01
+	int32_t	year=1;
+	int32_t	days=(int32_t)dayssince1;
+	for (;;) {
+		int32_t	yeardays=(!(year%4) && (year%100 || !(year%400)))?
+								366:365;
+		if (days<yeardays) {
+			break;
+		}
+		days-=yeardays;
+		year++;
+	}
+	int32_t	month=1;
+	for (;;) {
+		int32_t	monthdays=mdays[month-1];
+		if (month==2 && !(year%4) && (year%100 || !(year%400))) {
+			monthdays++;
+		}
+		if (days<monthdays) {
+			break;
+		}
+		days-=monthdays;
+		month++;
+	}
+
+	char	buffer[16];
+	charstring::printf(buffer,sizeof(buffer),"%04d-%02d-%02d",
+				(int32_t)year,(int32_t)month,(int32_t)(days+1));
+	strb->append(buffer);
+}
+
+void sqlrprotocol_tds::bulkTime(uint64_t increments,
+					byte_t scale,
+					stringbuffer *strb) {
+
+	// the increments are 10^-scale seconds since 12AM
+	uint64_t	units=1;
+	for (byte_t i=0; i<scale; i++) {
+		units*=10;
+	}
+	uint64_t	seconds=increments/units;
+	uint64_t	fraction=increments%units;
+
+	char	buffer[24];
+	charstring::printf(buffer,sizeof(buffer),"%02lld:%02lld:%02lld",
+					seconds/3600,(seconds/60)%60,
+					seconds%60);
+	strb->append(buffer);
+
+	if (scale) {
+		strb->append('.');
+		charstring::printf(buffer,sizeof(buffer),"%lld",fraction);
+		size_t	digitcount=charstring::getLength(buffer);
+		for (size_t i=digitcount; i<scale; i++) {
+			strb->append('0');
+		}
+		strb->append(buffer);
+	}
+}
+
+void sqlrprotocol_tds::bulkGuid(const byte_t *g, stringbuffer *strb) {
+
+	// the first three groups are little-endian, the rest big-endian
+	char	buffer[40];
+	charstring::printf(buffer,sizeof(buffer),
+		"%02X%02X%02X%02X-%02X%02X-%02X%02X-"
+		"%02X%02X-%02X%02X%02X%02X%02X%02X",
+		g[3],g[2],g[1],g[0],g[5],g[4],g[7],g[6],
+		g[8],g[9],g[10],g[11],g[12],g[13],g[14],g[15]);
+	strb->append(buffer);
+}
+
+bool sqlrprotocol_tds::bulkField(const byte_t **rpinout,
+					size_t *rpsizeinout,
+					uint16_t col,
+					sqlrserverbindvar *bv,
+					memorypool *bindpool) {
+
+	debugStart("col %d",col);
+	debugWrite("tdstype: 0x%02x",bulktypes[col]);
+
+	// until proven otherwise
+	bv->type=SQLRSERVERBINDVARTYPE_NULL;
+	bv->valuesize=0;
+	bv->value.stringval=NULL;
+	bv->isnull=cont->getNullBindValue();
+
+	bool	retval=bulkValue(rpinout,rpsizeinout,col,bv,bindpool);
+
+	debugEnd();
+
+	return retval;
+}
+
+bool sqlrprotocol_tds::bulkValue(const byte_t **rpinout,
+					size_t *rpsizeinout,
+					uint16_t col,
+					sqlrserverbindvar *bv,
+					memorypool *bindpool) {
+
+	const byte_t	*&rp=*rpinout;
+	size_t		&rpsize=*rpsizeinout;
+
+	byte_t		tdstype=bulktypes[col];
+	byte_t		scale=bulkscales[col];
+
+	// A text, ntext or image value arrives behind a text pointer and
+	// timestamp, both of which a bulk load fills with 0xFF.  A single
+	// zero length in place of the pointer means null.
+	if (tdstype==TDS_TYPE_TEXT ||
+		tdstype==TDS_TYPE_NTEXT ||
+		tdstype==TDS_TYPE_IMAGE) {
+		if (!rpsize) {
+			return false;
+		}
+		byte_t	ptrsize;
+		read(rp,&ptrsize,&rp);
+		rpsize--;
+		if (!ptrsize) {
+			debugWrite("value: (null)");
+			return true;
+		}
+		size_t	prefixsize=(size_t)ptrsize+sizeof(uint64_t);
+		if (rpsize<prefixsize) {
+			return false;
+		}
+		rp+=prefixsize;
+		rpsize-=prefixsize;
+	}
+
+	// The "n" types carry a size that also says which concrete type
+	// the value is, and a size of zero means null.
+	switch (tdstype) {
+		case TDS_TYPE_INTN:
+			{
+			if (!rpsize) {
+				return false;
+			}
+			byte_t	size;
+			read(rp,&size,&rp);
+			rpsize--;
+			switch (size) {
+				case 1:
+					tdstype=TDS_TYPE_INT1;
+					break;
+				case 2:
+					tdstype=TDS_TYPE_INT2;
+					break;
+				case 4:
+					tdstype=TDS_TYPE_INT4;
+					break;
+				case 8:
+					tdstype=TDS_TYPE_INT8;
+					break;
+				default:
+					debugWrite("value: (null)");
+					return true;
+			}
+			}
+			break;
+		case TDS_TYPE_BITN:
+			{
+			if (!rpsize) {
+				return false;
+			}
+			byte_t	size;
+			read(rp,&size,&rp);
+			rpsize--;
+			if (!size) {
+				debugWrite("value: (null)");
+				return true;
+			}
+			tdstype=TDS_TYPE_BIT;
+			}
+			break;
+		case TDS_TYPE_FLTN:
+			{
+			if (!rpsize) {
+				return false;
+			}
+			byte_t	size;
+			read(rp,&size,&rp);
+			rpsize--;
+			switch (size) {
+				case 4:
+					tdstype=TDS_TYPE_FLT4;
+					break;
+				case 8:
+					tdstype=TDS_TYPE_FLT8;
+					break;
+				default:
+					debugWrite("value: (null)");
+					return true;
+			}
+			}
+			break;
+		case TDS_TYPE_MONEYN:
+			{
+			if (!rpsize) {
+				return false;
+			}
+			byte_t	size;
+			read(rp,&size,&rp);
+			rpsize--;
+			switch (size) {
+				case 4:
+					tdstype=TDS_TYPE_MONEY4;
+					break;
+				case 8:
+					tdstype=TDS_TYPE_MONEY;
+					break;
+				default:
+					debugWrite("value: (null)");
+					return true;
+			}
+			}
+			break;
+		case TDS_TYPE_DATETIMN:
+			{
+			if (!rpsize) {
+				return false;
+			}
+			byte_t	size;
+			read(rp,&size,&rp);
+			rpsize--;
+			switch (size) {
+				case 4:
+					tdstype=TDS_TYPE_DATETIM4;
+					break;
+				case 8:
+					tdstype=TDS_TYPE_DATETIME;
+					break;
+				default:
+					debugWrite("value: (null)");
+					return true;
+			}
+			}
+			break;
+	}
+
+	// the value itself
+	switch (tdstype) {
+		case TDS_TYPE_INT1:
+		case TDS_TYPE_BIT:
+			{
+			if (!rpsize) {
+				return false;
+			}
+			byte_t	val;
+			read(rp,&val,&rp);
+			rpsize--;
+			bv->type=SQLRSERVERBINDVARTYPE_INTEGER;
+			bv->valuesize=1;
+			bv->isnull=cont->getNonNullBindValue();
+			bv->value.integerval=val;
+			debugWrite("value: %lld",bv->value.integerval);
+			}
+			break;
+		case TDS_TYPE_INT2:
+			{
+			if (rpsize<sizeof(uint16_t)) {
+				return false;
+			}
+			int16_t	val;
+			readLE(rp,(uint16_t *)&val,&rp);
+			rpsize-=sizeof(uint16_t);
+			bv->type=SQLRSERVERBINDVARTYPE_INTEGER;
+			bv->valuesize=2;
+			bv->isnull=cont->getNonNullBindValue();
+			bv->value.integerval=val;
+			debugWrite("value: %lld",bv->value.integerval);
+			}
+			break;
+		case TDS_TYPE_INT4:
+			{
+			if (rpsize<sizeof(uint32_t)) {
+				return false;
+			}
+			int32_t	val;
+			readLE(rp,(uint32_t *)&val,&rp);
+			rpsize-=sizeof(uint32_t);
+			bv->type=SQLRSERVERBINDVARTYPE_INTEGER;
+			bv->valuesize=4;
+			bv->isnull=cont->getNonNullBindValue();
+			bv->value.integerval=val;
+			debugWrite("value: %lld",bv->value.integerval);
+			}
+			break;
+		case TDS_TYPE_INT8:
+			{
+			if (rpsize<sizeof(uint64_t)) {
+				return false;
+			}
+			int64_t	val;
+			readLE(rp,(uint64_t *)&val,&rp);
+			rpsize-=sizeof(uint64_t);
+			bv->type=SQLRSERVERBINDVARTYPE_INTEGER;
+			bv->valuesize=8;
+			bv->isnull=cont->getNonNullBindValue();
+			bv->value.integerval=val;
+			debugWrite("value: %lld",bv->value.integerval);
+			}
+			break;
+		case TDS_TYPE_FLT4:
+			{
+			if (rpsize<sizeof(float)) {
+				return false;
+			}
+			float	val;
+			read(rp,&val,&rp);
+			rpsize-=sizeof(float);
+			bulkDouble(bv,val);
+			}
+			break;
+		case TDS_TYPE_FLT8:
+			{
+			if (rpsize<sizeof(double)) {
+				return false;
+			}
+			double	val;
+			read(rp,&val,&rp);
+			rpsize-=sizeof(double);
+			bulkDouble(bv,val);
+			}
+			break;
+		case TDS_TYPE_MONEY:
+			{
+			if (rpsize<2*sizeof(uint32_t)) {
+				return false;
+			}
+			uint32_t	high;
+			uint32_t	low;
+			readLE(rp,&high,&rp);
+			readLE(rp,&low,&rp);
+			rpsize-=2*sizeof(uint32_t);
+			stringbuffer	strb;
+			bulkMoney((int64_t)((((uint64_t)high)<<32)|low),&strb);
+			bulkString(bv,bindpool,strb.getString(),
+						strb.getStringLength());
+			}
+			break;
+		case TDS_TYPE_MONEY4:
+			{
+			if (rpsize<sizeof(uint32_t)) {
+				return false;
+			}
+			int32_t	val;
+			readLE(rp,(uint32_t *)&val,&rp);
+			rpsize-=sizeof(uint32_t);
+			stringbuffer	strb;
+			bulkMoney(val,&strb);
+			bulkString(bv,bindpool,strb.getString(),
+						strb.getStringLength());
+			}
+			break;
+		case TDS_TYPE_DATETIM4:
+			{
+			if (rpsize<2*sizeof(uint16_t)) {
+				return false;
+			}
+			uint16_t	days;
+			uint16_t	minutes;
+			readLE(rp,&days,&rp);
+			readLE(rp,&minutes,&rp);
+			rpsize-=2*sizeof(uint16_t);
+			stringbuffer	strb;
+			bulkDateTime((int32_t)days,
+					((uint32_t)minutes)*60*300,&strb);
+			bulkString(bv,bindpool,strb.getString(),
+						strb.getStringLength());
+			}
+			break;
+		case TDS_TYPE_DATETIME:
+			{
+			if (rpsize<2*sizeof(uint32_t)) {
+				return false;
+			}
+			int32_t		dayssince1900;
+			uint32_t	threehundredths;
+			readLE(rp,(uint32_t *)&dayssince1900,&rp);
+			readLE(rp,&threehundredths,&rp);
+			rpsize-=2*sizeof(uint32_t);
+			stringbuffer	strb;
+			bulkDateTime(dayssince1900,threehundredths,&strb);
+			bulkString(bv,bindpool,strb.getString(),
+						strb.getStringLength());
+			}
+			break;
+		case TDS_TYPE_GUID:
+			{
+			if (!rpsize) {
+				return false;
+			}
+			byte_t	size;
+			read(rp,&size,&rp);
+			rpsize--;
+			if (rpsize<size) {
+				return false;
+			}
+			if (size==16) {
+				stringbuffer	strb;
+				bulkGuid(rp,&strb);
+				bulkString(bv,bindpool,strb.getString(),
+						strb.getStringLength());
+			} else {
+				debugWrite("value: (null)");
+			}
+			rp+=size;
+			rpsize-=size;
+			}
+			break;
+		case TDS_TYPE_DECIMAL:
+		case TDS_TYPE_NUMERIC:
+		case TDS_TYPE_DECIMALN:
+		case TDS_TYPE_NUMERICN:
+			{
+			// the length counts the sign byte too
+			if (!rpsize) {
+				return false;
+			}
+			byte_t	size;
+			read(rp,&size,&rp);
+			rpsize--;
+			if (!size) {
+				debugWrite("value: (null)");
+				return true;
+			}
+			if (rpsize<size) {
+				return false;
+			}
+			byte_t	ispositive;
+			read(rp,&ispositive,&rp);
+			size--;
+			rpsize--;
+			// FIXME: anything wider than 8 bytes overflows
+			stringbuffer	strb;
+			bulkDecimal(ispositive,rp,(size>8)?8:size,scale,&strb);
+			rp+=size;
+			rpsize-=size;
+			bulkString(bv,bindpool,strb.getString(),
+						strb.getStringLength());
+			}
+			break;
+		case TDS_TYPE_DATEN:
+			{
+			if (!rpsize) {
+				return false;
+			}
+			byte_t	size;
+			read(rp,&size,&rp);
+			rpsize--;
+			if (!size) {
+				debugWrite("value: (null)");
+				return true;
+			}
+			if (rpsize<size) {
+				return false;
+			}
+			uint32_t	dayssince1=0;
+			for (byte_t i=0; i<size && i<4; i++) {
+				dayssince1|=((uint32_t)rp[i])<<(i*8);
+			}
+			rp+=size;
+			rpsize-=size;
+			stringbuffer	strb;
+			bulkDate(dayssince1,&strb);
+			bulkString(bv,bindpool,strb.getString(),
+						strb.getStringLength());
+			}
+			break;
+		case TDS_TYPE_TIMEN:
+		case TDS_TYPE_DATETIME2N:
+		case TDS_TYPE_DATETIMEOFFSETN:
+			{
+			if (!rpsize) {
+				return false;
+			}
+			byte_t	size;
+			read(rp,&size,&rp);
+			rpsize--;
+			if (!size) {
+				debugWrite("value: (null)");
+				return true;
+			}
+			if (rpsize<size) {
+				return false;
+			}
+			// a datetime2 is a time followed by a date, and a
+			// datetimeoffset is a datetime2 followed by an
+			// offset, all under a single size
+			byte_t	timesize=timeSize(scale);
+			if (timesize>size) {
+				timesize=size;
+			}
+			uint64_t	increments=0;
+			for (byte_t i=0; i<timesize; i++) {
+				increments|=((uint64_t)rp[i])<<(i*8);
+			}
+			stringbuffer	strb;
+			if (tdstype!=TDS_TYPE_TIMEN && size>=timesize+3) {
+				uint32_t	dayssince1=
+						((uint32_t)rp[timesize])|
+						(((uint32_t)rp[timesize+1])<<8)|
+						(((uint32_t)rp[timesize+2])<<16);
+				bulkDate(dayssince1,&strb);
+				strb.append(' ');
+			}
+			bulkTime(increments,scale,&strb);
+			rp+=size;
+			rpsize-=size;
+			bulkString(bv,bindpool,strb.getString(),
+						strb.getStringLength());
+			}
+			break;
+		case TDS_TYPE_CHAR:
+		case TDS_TYPE_VARCHAR:
+			{
+			if (!rpsize) {
+				return false;
+			}
+			byte_t	size;
+			read(rp,&size,&rp);
+			rpsize--;
+			if (rpsize<size) {
+				return false;
+			}
+			bulkString(bv,bindpool,(const char *)rp,size);
+			rp+=size;
+			rpsize-=size;
+			}
+			break;
+		case TDS_TYPE_BINARY:
+		case TDS_TYPE_VARBINARY:
+			{
+			if (!rpsize) {
+				return false;
+			}
+			byte_t	size;
+			read(rp,&size,&rp);
+			rpsize--;
+			if (rpsize<size) {
+				return false;
+			}
+			bulkBinary(bv,bindpool,rp,size);
+			rp+=size;
+			rpsize-=size;
+			}
+			break;
+		case TDS_TYPE_BIGCHAR:
+		case TDS_TYPE_BIGVARCHR:
+			{
+			if (rpsize<sizeof(uint16_t)) {
+				return false;
+			}
+			uint16_t	size;
+			readLE(rp,&size,&rp);
+			rpsize-=sizeof(uint16_t);
+			if (size==0xFFFF) {
+				debugWrite("value: (null)");
+				return true;
+			}
+			if (rpsize<size) {
+				return false;
+			}
+			bulkString(bv,bindpool,(const char *)rp,size);
+			rp+=size;
+			rpsize-=size;
+			}
+			break;
+		case TDS_TYPE_BIGBINARY:
+		case TDS_TYPE_BIGVARBIN:
+			{
+			if (rpsize<sizeof(uint16_t)) {
+				return false;
+			}
+			uint16_t	size;
+			readLE(rp,&size,&rp);
+			rpsize-=sizeof(uint16_t);
+			if (size==0xFFFF) {
+				debugWrite("value: (null)");
+				return true;
+			}
+			if (rpsize<size) {
+				return false;
+			}
+			bulkBinary(bv,bindpool,rp,size);
+			rp+=size;
+			rpsize-=size;
+			}
+			break;
+		case TDS_TYPE_NCHAR:
+		case TDS_TYPE_NVARCHAR:
+			{
+			// the size is in bytes, but the data is ucs-2
+			if (rpsize<sizeof(uint16_t)) {
+				return false;
+			}
+			uint16_t	size;
+			readLE(rp,&size,&rp);
+			rpsize-=sizeof(uint16_t);
+			if (size==0xFFFF) {
+				debugWrite("value: (null)");
+				return true;
+			}
+			if (rpsize<size) {
+				return false;
+			}
+			uint16_t	length=size/sizeof(ucs2_t);
+			// the data isn't necessarily aligned, so copy it
+			// out before converting it
+			const byte_t	*dummy;
+			ucs2_t		*value16=new ucs2_t[length];
+			read(rp,value16,length,&dummy);
+			char		*value=charstring::duplicateUcs2(
+						value16,(size_t)length);
+			delete[] value16;
+			bulkString(bv,bindpool,value,length);
+			delete[] value;
+			rp+=size;
+			rpsize-=size;
+			}
+			break;
+		case TDS_TYPE_TEXT:
+		case TDS_TYPE_NTEXT:
+		case TDS_TYPE_IMAGE:
+		case TDS_TYPE_SSVARIANT:
+			{
+			if (rpsize<sizeof(uint32_t)) {
+				return false;
+			}
+			uint32_t	size;
+			readLE(rp,&size,&rp);
+			rpsize-=sizeof(uint32_t);
+			if (size==0xFFFFFFFF) {
+				debugWrite("value: (null)");
+				return true;
+			}
+			if (rpsize<size) {
+				return false;
+			}
+			if (tdstype==TDS_TYPE_NTEXT) {
+				// the size is in bytes,
+				// but the data is ucs-2
+				uint32_t	length=size/sizeof(ucs2_t);
+				const byte_t	*dummy;
+				ucs2_t		*value16=new ucs2_t[length];
+				read(rp,value16,length,&dummy);
+				char		*value=
+					charstring::duplicateUcs2(
+						value16,(size_t)length);
+				delete[] value16;
+				bulkString(bv,bindpool,value,length);
+				delete[] value;
+			} else if (tdstype==TDS_TYPE_IMAGE) {
+				bulkBinary(bv,bindpool,rp,size);
+			} else {
+				bulkString(bv,bindpool,(const char *)rp,size);
+			}
+			rp+=size;
+			rpsize-=size;
+			}
+			break;
+		default:
+			// FIXME: partlen types arrive as a 64-bit length
+			// followed by chunks, which nothing sends yet
+			// because typeInfo() never declares one
+			debugWrite("unsupported type");
+			return false;
+	}
+
+	return true;
 }
 
 bool sqlrprotocol_tds::remoteProcedureCall() {
