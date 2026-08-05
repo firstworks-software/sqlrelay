@@ -543,6 +543,27 @@
 		than blank padded out to its declared size, so a char(20)
 		parameter carrying "one" was bound as 3 characters where a
 		real sql server would have padded it to 20
+	fixed the tds protocol module - date, time, datetime2 and
+		datetimeoffset columns were sent to a client that negotiated
+		a tds version older than 7.3, which is where those types were
+		introduced, a real sql server converts them to strings
+		server-side and sends nvarchar in the iso/odbc rendering
+		instead and the module does that now
+	fixed the tds protocol module - a date-only or time-only string left
+		the components it didn't supply at -1 and they were fed
+		straight into the writers' unsigned arithmetic, so a date
+		column went out with -1098300 three-hundredths of a second
+	fixed the tds protocol module - datetime::parse's return value was
+		ignored, so a string it couldn't parse was written from
+		whatever it happened to leave behind
+	fixed the tds protocol module - a datetimeoffset string's trailing
+		"+hh:mm" was read as a third date/time part, which made the
+		whole string unparseable, it's split off and parsed now
+	fixed the tds protocol module - a datetimeoffset was written with a
+		hardcoded zero timezone offset and with the local wall time
+		rather than the utc instant, both are written correctly now
+	fixed the odbc connection module - a SQL_TYPE_DATE column was
+		reported as a datetime rather than a date
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems

@@ -789,7 +789,13 @@ int	main(int argc, char **argv) {
 
 	stdoutput.printf("%s\n",column[14].name);
 	assertEquals(column[14].name,"testdate");
-	assertEquals(column[14].datatype,CS_DATE_TYPE);
+	// date, time, datetime2 and datetimeoffset were introduced in tds 7.3.
+	// [sqlrelay] pins 7.0 and [mssql] takes 7.4, and below 7.3 a real sql
+	// server converts these to strings server-side and sends nvarchar, so
+	// ct-lib sees a character column on the relay run and the real type on
+	// the native one
+	assertEquals(column[14].datatype,
+			(issqlrelay)?CS_CHAR_TYPE:CS_DATE_TYPE);
 	assertEquals(column[14].format,CS_FMT_NULLTERM);
 	// FIXME: 64 direct, 16 via relay
 	//assertEquals(column[14].maxlength,64);
@@ -804,6 +810,7 @@ int	main(int argc, char **argv) {
 	stdoutput.printf("%s\n",column[15].name);
 	assertEquals(column[15].name,"testtime");
 	assertEquals(column[15].datatype,
+			(issqlrelay)?CS_CHAR_TYPE:
 			(issybase)?CS_TIME_TYPE:CS_BIGTIME_TYPE);
 	assertEquals(column[15].format,CS_FMT_NULLTERM);
 	// FIXME: 16/7/7 direct, 64/0/0 via relay
@@ -819,7 +826,11 @@ int	main(int argc, char **argv) {
 	if (present[16]) {
 		stdoutput.printf("%s\n",column[16].name);
 		assertEquals(column[16].name,"testdatetime2");
-		assertEquals(column[16].datatype,CS_BIGDATETIME_TYPE);
+		// on the relay run this is a datetime, not a datetime2 - the
+		// odbc backend can't tell them apart	#8925
+		assertEquals(column[16].datatype,
+				(issqlrelay)?CS_DATETIME_TYPE:
+						CS_BIGDATETIME_TYPE);
 		assertEquals(column[16].format,CS_FMT_NULLTERM);
 		// FIXME: 16/7/7 direct, 64/0/0 via relay
 		//assertEquals(column[16].maxlength,16);
@@ -835,7 +846,9 @@ int	main(int argc, char **argv) {
 	if (present[17]) {
 		stdoutput.printf("%s\n",column[17].name);
 		assertEquals(column[17].name,"testdatetimeoffset");
-		assertEquals(column[17].datatype,CS_BIGDATETIME_TYPE);
+		assertEquals(column[17].datatype,
+				(issqlrelay)?CS_CHAR_TYPE:
+						CS_BIGDATETIME_TYPE);
 		assertEquals(column[17].format,CS_FMT_NULLTERM);
 		// FIXME: 16/7/7 direct, 64/0/0 via relay
 		//assertEquals(column[17].maxlength,16);
@@ -1052,11 +1065,39 @@ int	main(int argc, char **argv) {
 	assertEquals(data[13],"1.50");
 	assertEquals(*(datalength[13]),5);
 	assertEquals(*(nullindicator[13]),0);
-	// FIXME: #4780 date, time, datetime2, datetimeoffset types
-	//assertEquals(data[14],"2001-01-01");
-	//assertEquals(data[15],"13:01:01.0000000");
-	//assertEquals(data[16],"2001-01-01 13:01:01.0000000");
-	//assertEquals(data[17],"2001-01-01 13:01:01.0000000 +00:00");
+	// The two runs negotiate different tds versions - [sqlrelay] pins 7.0
+	// and [mssql] takes 7.4 - and date, time, datetime2 and datetimeoffset
+	// were introduced in 7.3.  Below 7.3 a real sql server converts them to
+	// strings server-side and sends nvarchar in the iso/odbc rendering, so
+	// the two renderings below are both what a real server produces, each
+	// at its own version.
+	if (issqlrelay) {
+		assertEquals(data[14],"2001-01-01");
+		assertEquals(*(datalength[14]),11);
+		assertEquals(*(nullindicator[14]),0);
+		assertEquals(data[15],"13:01:01.0000000");
+		assertEquals(*(datalength[15]),17);
+		assertEquals(*(nullindicator[15]),0);
+		// datetime2 comes through as a datetime, and renders like one,
+		// because the odbc backend can't tell them apart - the driver
+		// reports both with SQL_DESC_TYPE 9 and SQL_DESC_CONCISE_TYPE
+		// 93, and only the type name distinguishes them	#8925
+		assertEquals(data[16],"Jan  1 2001 01:01:01:000PM");
+		assertEquals(data[17],"2001-01-01 13:01:01.0000000 +00:00");
+		assertEquals(*(datalength[17]),35);
+		assertEquals(*(nullindicator[17]),0);
+	} else {
+		assertEquals(data[14],"Jan  1 2001 12:00:00:000AM");
+		assertEquals(*(datalength[14]),27);
+		assertEquals(*(nullindicator[14]),0);
+		assertEquals(data[15],"Jan  1 1900 01:01:01:000000PM");
+		assertEquals(*(datalength[15]),30);
+		assertEquals(*(nullindicator[15]),0);
+		assertEquals(data[16],"Jan  1 2001 01:01:01:000000PM");
+		assertEquals(data[17],"Jan  1 2001 01:01:01:000000PM");
+		assertEquals(*(datalength[17]),30);
+		assertEquals(*(nullindicator[17]),0);
+	}
 	assertEquals(data[18],"char1                                   ");
 	assertEquals(*(datalength[18]),41);
 	assertEquals(*(nullindicator[18]),0);
@@ -1118,10 +1159,17 @@ int	main(int argc, char **argv) {
 	}
 	assertEquals(data[12],"2.50");
 	assertEquals(data[13],"2.50");
-	//assertEquals(data[14],"2002-02-02");		#4780
-	//assertEquals(data[15],"14:02:02.0000000");	#4780
-	//assertEquals(data[16],"2002-02-02 14:02:02.0000000");		#4780
-	//assertEquals(data[17],"2002-02-02 14:02:02.0000000 +00:00");	#4780
+	if (issqlrelay) {
+		assertEquals(data[14],"2002-02-02");
+		assertEquals(data[15],"14:02:02.0000000");
+		assertEquals(data[16],"Feb  2 2002 02:02:02:000PM");	// #8925
+		assertEquals(data[17],"2002-02-02 14:02:02.0000000 +00:00");
+	} else {
+		assertEquals(data[14],"Feb  2 2002 12:00:00:000AM");
+		assertEquals(data[15],"Jan  1 1900 02:02:02:000000PM");
+		assertEquals(data[16],"Feb  2 2002 02:02:02:000000PM");
+		assertEquals(data[17],"Feb  2 2002 02:02:02:000000PM");
+	}
 	assertEquals(data[18],"char2                                   ");
 	assertEquals(data[19],"varchar2");
 	assertEquals(data[20],"62696e61727932000000000000000000000000000000000000000000000000000000000000000000");

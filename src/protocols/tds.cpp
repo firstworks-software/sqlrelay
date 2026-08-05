@@ -814,9 +814,26 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_tds : public sqlrprotocol {
 					const char *field,
 					uint64_t fieldsize,
 					bool null);
+		bool	parseDateTime(const char *datetime,
+					int16_t *year,
+					int16_t *month,
+					int16_t *day,
+					int16_t *hour,
+					int16_t *minute,
+					int16_t *second,
+					int32_t *usec,
+					int16_t *tzoffset);
 		void	dateTime(const char *datetime,
 					int32_t *dayssince1900,
 					uint32_t *threehundredths);
+		uint32_t	daysSince1(int16_t year,
+						int16_t month,
+						int16_t day);
+		uint64_t	incrementsSince12AM(int16_t hour,
+						int16_t minute,
+						int16_t second,
+						int32_t usec,
+						byte_t scale);
 		void	date(const char *datetime, uint32_t *dayssince1);
 		void	time(const char *datetime,
 					byte_t scale,
@@ -3077,16 +3094,17 @@ byte_t sqlrprotocol_tds::mapType(uint16_t type) {
 	if (negotiatedtdsversion<730) {
 		switch (tdstype) {
 			case TDS_TYPE_DATEN:
-				// FIXME: do something...
-				break;
 			case TDS_TYPE_TIMEN:
-				// FIXME: do something...
-				break;
 			case TDS_TYPE_DATETIME2N:
-				tdstype=TDS_TYPE_DATETIMN;
-				break;
 			case TDS_TYPE_DATETIMEOFFSETN:
-				// FIXME: do something...
+				// These four were introduced in TDS 7.3.  A real
+				// sql server doesn't downgrade them to an older
+				// date/time type for an older client - it
+				// converts them to strings server-side and
+				// sends nvarchar in the iso/odbc rendering.
+				// The backends hand us that same rendering, so
+				// just pass it through.
+				tdstype=TDS_TYPE_NVARCHAR;
 				break;
 		}
 	}
@@ -4110,6 +4128,87 @@ static bool isLeapYear(int32_t year) {
 	return (!(year%4) && (year%100 || !(year%400)));
 }
 
+// Rudiments' datetime::parse takes a trailing "+hh:mm" for a third date/time
+// part and fails, and for a string that supplies only a date or only a time it
+// leaves the rest at -1.  Neither survives the writers' unsigned arithmetic, so
+// split the offset off first and floor whatever the string didn't supply.
+bool sqlrprotocol_tds::parseDateTime(const char *datetime,
+					int16_t *year,
+					int16_t *month,
+					int16_t *day,
+					int16_t *hour,
+					int16_t *minute,
+					int16_t *second,
+					int32_t *usec,
+					int16_t *tzoffset) {
+
+	*tzoffset=0;
+
+	// split off a trailing "+hh:mm" or "-hh:mm"
+	char	*copy=NULL;
+	const char	*str=datetime;
+	const char	*sp=charstring::findLast(datetime,' ');
+	if (sp && (sp[1]=='+' || sp[1]=='-') &&
+			character::isDigit(sp[2]) &&
+			character::isDigit(sp[3]) &&
+			sp[4]==':' &&
+			character::isDigit(sp[5]) &&
+			character::isDigit(sp[6]) &&
+			!sp[7]) {
+		int16_t	offhour=(sp[2]-'0')*10+(sp[3]-'0');
+		int16_t	offminute=(sp[5]-'0')*10+(sp[6]-'0');
+		*tzoffset=offhour*60+offminute;
+		if (sp[1]=='-') {
+			*tzoffset=-(*tzoffset);
+		}
+		copy=charstring::duplicate(datetime,sp-datetime);
+		str=copy;
+	}
+
+	// FIXME: set ddmm and yyyyddmm somehow
+	bool	isnegative;
+	bool	success=datetime::parse(str,false,false,"/-.:",
+					year,month,day,
+					hour,minute,second,
+					usec,&isnegative);
+
+	delete[] copy;
+
+	// floor whatever the string didn't supply
+	if (!success) {
+		*year=1;
+		*month=1;
+		*day=1;
+		*hour=0;
+		*minute=0;
+		*second=0;
+		*usec=0;
+		return false;
+	}
+	if (*year<1) {
+		*year=1;
+	}
+	if (*month<1) {
+		*month=1;
+	}
+	if (*day<1) {
+		*day=1;
+	}
+	if (*hour<0) {
+		*hour=0;
+	}
+	if (*minute<0) {
+		*minute=0;
+	}
+	if (*second<0) {
+		*second=0;
+	}
+	if (*usec<0) {
+		*usec=0;
+	}
+	return true;
+}
+
 void sqlrprotocol_tds::dateTime(const char *datetime,
 					int32_t *dayssince1900,
 					uint32_t *threehundredths) {
@@ -4122,12 +4221,19 @@ void sqlrprotocol_tds::dateTime(const char *datetime,
 	int16_t	minute;
 	int16_t	second;
 	int32_t	usec;
-	bool	isnegative;
-	// FIXME: set ddmm and yyyyddmm somehow
-	datetime::parse(datetime,false,false,"/-.:",
+	int16_t	tzoffset;
+	bool	parsed=parseDateTime(datetime,
 				&year,&month,&day,
 				&hour,&minute,&second,
-				&usec,&isnegative);
+				&usec,&tzoffset);
+
+	// send the type's own epoch for a string we couldn't parse
+	if (!parsed) {
+		*dayssince1900=0;
+		*threehundredths=0;
+		debugWrite("unparseable datetime: %s",datetime);
+		return;
+	}
 
 	// calculate days since 1900
 	*dayssince1900=((year-1900)*365);
@@ -4203,7 +4309,6 @@ void sqlrprotocol_tds::dateTime(const char *datetime,
 	debugWrite("minute: %d",minute);
 	debugWrite("second: %d",second);
 	debugWrite("usec: %d",usec);
-	debugWrite("isnegative: %d",isnegative);
 	debugWrite("days since 1900: %d",*dayssince1900);
 	debugWrite("300ths since 12AM: %d",*threehundredths);
 	debugEnd();
@@ -4222,6 +4327,62 @@ static bool isLeapYear(int16_t year) {
 	return !(year%400);
 }
 
+uint32_t sqlrprotocol_tds::daysSince1(int16_t year, int16_t month, int16_t day) {
+
+	// days in the years before this one
+	int32_t	prevyears=year-1;
+	if (prevyears<0) {
+		prevyears=0;
+	}
+	uint32_t	dayssince1=prevyears*365+
+					prevyears/4-
+					prevyears/100+
+					prevyears/400;
+
+	// days in the months before this one
+	for (int16_t i=0; i<month-1 && i<12; i++) {
+		dayssince1+=mdays[i];
+	}
+	if (month>2 && isLeapYear(year)) {
+		dayssince1++;
+	}
+
+	// days in this month
+	if (day>0) {
+		dayssince1+=day-1;
+	}
+
+	return dayssince1;
+}
+
+uint64_t sqlrprotocol_tds::incrementsSince12AM(int16_t hour,
+						int16_t minute,
+						int16_t second,
+						int32_t usec,
+						byte_t scale) {
+
+	// whole seconds since 12 am, in 10^-scale increments
+	uint64_t	units=1;
+	for (byte_t i=0; i<scale; i++) {
+		units*=10;
+	}
+	uint64_t	increments=
+			((uint64_t)(hour*3600+minute*60+second))*units;
+
+	// the fraction, converted from microseconds
+	if (scale>6) {
+		increments+=(uint64_t)usec*10;
+	} else {
+		uint32_t	divisor=1;
+		for (byte_t i=0; i<6-scale; i++) {
+			divisor*=10;
+		}
+		increments+=(uint64_t)usec/divisor;
+	}
+
+	return increments;
+}
+
 void sqlrprotocol_tds::date(const char *datetime, uint32_t *dayssince1) {
 
 	// parse the date/time
@@ -4232,35 +4393,17 @@ void sqlrprotocol_tds::date(const char *datetime, uint32_t *dayssince1) {
 	int16_t	minute;
 	int16_t	second;
 	int32_t	usec;
-	bool	isnegative;
-	// FIXME: set ddmm and yyyyddmm somehow
-	datetime::parse(datetime,false,false,"/-.:",
+	int16_t	tzoffset;
+	if (!parseDateTime(datetime,
 				&year,&month,&day,
 				&hour,&minute,&second,
-				&usec,&isnegative);
-
-	// days in the years before this one
-	int32_t	prevyears=year-1;
-	if (prevyears<0) {
-		prevyears=0;
-	}
-	*dayssince1=prevyears*365+
-			prevyears/4-
-			prevyears/100+
-			prevyears/400;
-
-	// days in the months before this one
-	for (int16_t i=0; i<month-1 && i<12; i++) {
-		(*dayssince1)+=mdays[i];
-	}
-	if (month>2 && isLeapYear(year)) {
-		(*dayssince1)++;
+				&usec,&tzoffset)) {
+		*dayssince1=0;
+		debugWrite("unparseable date: %s",datetime);
+		return;
 	}
 
-	// days in this month
-	if (day>0) {
-		(*dayssince1)+=day-1;
-	}
+	*dayssince1=daysSince1(year,month,day);
 
 	debugStart("date");
 	debugWrite("string: %s",datetime);
@@ -4271,7 +4414,6 @@ void sqlrprotocol_tds::date(const char *datetime, uint32_t *dayssince1) {
 	debugWrite("minute: %d",minute);
 	debugWrite("second: %d",second);
 	debugWrite("usec: %d",usec);
-	debugWrite("isnegative: %d",isnegative);
 	debugWrite("days since 1: %d",*dayssince1);
 	debugEnd();
 }
@@ -4288,33 +4430,17 @@ void sqlrprotocol_tds::time(const char *datetime,
 	int16_t	minute;
 	int16_t	second;
 	int32_t	usec;
-	bool	isnegative;
-	// FIXME: set ddmm and yyyyddmm somehow
-	datetime::parse(datetime,false,false,"/-.:",
+	int16_t	tzoffset;
+	if (!parseDateTime(datetime,
 				&year,&month,&day,
 				&hour,&minute,&second,
-				&usec,&isnegative);
-	if (usec<0) {
-		usec=0;
+				&usec,&tzoffset)) {
+		*increments=0;
+		debugWrite("unparseable time: %s",datetime);
+		return;
 	}
 
-	// whole seconds since 12 am, in 10^-scale increments
-	uint64_t	units=1;
-	for (byte_t i=0; i<scale; i++) {
-		units*=10;
-	}
-	*increments=((uint64_t)(hour*3600+minute*60+second))*units;
-
-	// the fraction, converted from microseconds
-	if (scale>6) {
-		*increments+=(uint64_t)usec*10;
-	} else {
-		uint32_t	divisor=1;
-		for (byte_t i=0; i<6-scale; i++) {
-			divisor*=10;
-		}
-		*increments+=(uint64_t)usec/divisor;
-	}
+	*increments=incrementsSince12AM(hour,minute,second,usec,scale);
 
 	debugStart("time");
 	debugWrite("string: %s",datetime);
@@ -4390,18 +4516,63 @@ void sqlrprotocol_tds::datetimeoffsetn(const char *field, byte_t scale) {
 
 	// a datetimeoffset is a datetime2 followed by a timezone
 	// offset, under a single size
-	uint64_t	increments;
-	time(field,scale,&increments);
-	uint32_t	dayssince1;
-	date(field,&dayssince1);
+
+	int16_t	year;
+	int16_t	month;
+	int16_t	day;
+	int16_t	hour;
+	int16_t	minute;
+	int16_t	second;
+	int32_t	usec;
+	int16_t	tzoffset;
+	bool	parsed=parseDateTime(field,
+				&year,&month,&day,
+				&hour,&minute,&second,
+				&usec,&tzoffset);
+
+	uint32_t	dayssince1=0;
+	uint64_t	increments=0;
+	if (parsed) {
+
+		// The date and time parts of a datetimeoffset are the utc
+		// instant, not the local wall time - the offset is carried
+		// alongside so the client can render it back.  Shift by the
+		// offset, borrowing or carrying a day if it crosses midnight.
+		dayssince1=daysSince1(year,month,day);
+		int32_t	secssince12am=hour*3600+minute*60+second-tzoffset*60;
+		while (secssince12am<0) {
+			secssince12am+=86400;
+			if (dayssince1) {
+				dayssince1--;
+			}
+		}
+		while (secssince12am>=86400) {
+			secssince12am-=86400;
+			dayssince1++;
+		}
+		increments=incrementsSince12AM(secssince12am/3600,
+						(secssince12am%3600)/60,
+						secssince12am%60,
+						usec,scale);
+	} else {
+		debugWrite("unparseable datetimeoffset: %s",field);
+	}
+
+	// the offset is minutes from utc, between -840 and 840,
+	// sent as a signed 16-bit value
+	if (tzoffset<-840) {
+		tzoffset=-840;
+	} else if (tzoffset>840) {
+		tzoffset=840;
+	}
 
 	byte_t	size=timeSize(scale);
 	write(&resppacket,(byte_t)(size+3+sizeof(uint16_t)));
 	appendTime(increments,size);
 	appendDate(dayssince1);
-	// FIXME: send the actual offset - minutes from utc,
-	// between -840 and 840
-	writeLE(&resppacket,(uint16_t)0);
+	writeLE(&resppacket,(uint16_t)tzoffset);
+
+	debugWrite("utc offset in minutes: %d",tzoffset);
 }
 
 void sqlrprotocol_tds::decimal(const char *field,

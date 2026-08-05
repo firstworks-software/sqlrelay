@@ -5281,11 +5281,7 @@ uint16_t odbccursor::getColumnType(uint32_t i) {
 		case SQL_LONGVARBINARY:
 			return LONGVARBINARY_DATATYPE;
 		case SQL_TYPE_DATE:
-			// FIXME: need parameter indicating whether
-			// to map this to date or datetime.  MySQL, for example,
-			// may use SQL_TYPE_DATE for dates and
-			// SQL_TYPE_TIMESTAMP for datetimes.
-			return DATETIME_DATATYPE;
+			return DATE_DATATYPE;
 		case SQL_TYPE_TIME:
 			return TIME_DATATYPE;
 		case SQL_TYPE_TIMESTAMP:
