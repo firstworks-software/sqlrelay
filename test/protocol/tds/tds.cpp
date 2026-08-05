@@ -3576,9 +3576,10 @@ int	main(int argc, char **argv) {
 	CS_SMALLINT	dynnullindicator[4];
 
 
-	// Freetds sends CS_CHAR_TYPE as a bigchar sized at
-	// CS_DATAFMT.maxlength, so mssql receives a value already blank
-	// padded to 20 and keeps the padding even in the varchar column.
+	// Freetds declares a CS_CHAR_TYPE parameter as a bigchar sized at
+	// CS_DATAFMT.maxlength but sends the real, shorter value.  Mssql
+	// blank pads it out to the declared 20 - that is what char(n)
+	// means - and the padding then lands in the varchar column too.
 	// ASE's tds 5 parameter carries the real length, and a nullable
 	// char is stored as a varchar, so nothing is padded there.
 	const char	*dyncharexpect[4]={"one","two","three",NULL};

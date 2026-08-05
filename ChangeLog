@@ -538,6 +538,11 @@
 		metadata size was the column's precision rather than the
 		widest the value can be on the wire, so a decimal(5,2) column
 		was described with a size of 5 instead of 17
+	fixed the tds protocol module - an rpc parameter declared char or nchar
+		was passed along at the length that came over the wire rather
+		than blank padded out to its declared size, so a char(20)
+		parameter carrying "one" was bound as 3 characters where a
+		real sql server would have padded it to 20
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems

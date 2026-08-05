@@ -7754,15 +7754,26 @@ bool sqlrprotocol_tds::param(uint16_t param,
 				break;
 			}
 
+			// a char is blank padded out to its declared
+			// size, like a real sql server does.  a varchar
+			// isn't.
+			uint32_t	valuesize=size;
+			if (tdstype==TDS_TYPE_BIGCHAR && maxsize>size) {
+				valuesize=maxsize;
+			}
+
 			if (bv) {
 
-				// copy the value out of the request packet
+				// copy the value out of the request packet,
+				// blank filling the rest
 				bv->type=SQLRSERVERBINDVARTYPE_STRING;
-				bv->valuesize=size;
+				bv->valuesize=valuesize;
 				bv->value.stringval=(char *)
-					rpcparampool.allocate(size+1);
+					rpcparampool.allocate(valuesize+1);
 				bytestring::copy(bv->value.stringval,rp,size);
-				bv->value.stringval[size]='\0';
+				bytestring::set(bv->value.stringval+size,
+							' ',valuesize-size);
+				bv->value.stringval[valuesize]='\0';
 				bv->isnull=cont->getNonNullBindValue();
 
 				debugWrite("valuesize: %d",bv->valuesize);
@@ -7793,6 +7804,15 @@ bool sqlrprotocol_tds::param(uint16_t param,
 
 			uint16_t	length=size/sizeof(ucs2_t);
 
+			// an nchar is blank padded out to its declared
+			// size, like a real sql server does.  an nvarchar
+			// isn't.  the declared size is in bytes too.
+			uint32_t	maxlength=maxsize/sizeof(ucs2_t);
+			uint32_t	valuelength=length;
+			if (tdstype==TDS_TYPE_NCHAR && maxlength>length) {
+				valuelength=maxlength;
+			}
+
 			if (bv) {
 
 				// the data isn't necessarily aligned,
@@ -7807,12 +7827,14 @@ bool sqlrprotocol_tds::param(uint16_t param,
 				delete[] value16;
 
 				bv->type=SQLRSERVERBINDVARTYPE_STRING;
-				bv->valuesize=length;
+				bv->valuesize=valuelength;
 				bv->value.stringval=(char *)
-					rpcparampool.allocate(length+1);
+					rpcparampool.allocate(valuelength+1);
 				bytestring::copy(bv->value.stringval,
 							value,length);
-				bv->value.stringval[length]='\0';
+				bytestring::set(bv->value.stringval+length,
+						' ',valuelength-length);
+				bv->value.stringval[valuelength]='\0';
 				bv->isnull=cont->getNonNullBindValue();
 
 				delete[] value;
