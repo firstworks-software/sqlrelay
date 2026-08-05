@@ -49,7 +49,7 @@ Most of `src/` is discoverable by listing it (one directory per module type: aut
 - `src/connections/` - one `.cpp` per database backend, extending `sqlrserverconnection`; `router` is a pseudo-backend.
 - `src/protocols/` - wire-protocol frontends; `sqlrclient.cpp` is the native protocol, the others (mysql, postgresql, tds, oracle, teradata, firebird) let those DBs' native clients talk to sqlr-listener directly.
 - `src/util/` - `libsqlrutil` (shared config parsing, paths, password encryption framework).
-- `doc/` - the project website; not generated from source comments (see `doc/AGENTS.md`).
+- `doc/` - the project website; not generated from source comments.
 - `init/`, `bin/` - configure-generated (systemd/rc/launchd files; pkg-config-style helper scripts).
 
 ## Tests
