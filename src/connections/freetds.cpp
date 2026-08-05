@@ -5042,9 +5042,10 @@ void freetdscursor::deflateColumnSize(CS_INT index) {
 	//
 	// A factor of 1 doesn't prove that nothing was multiplied.  The ping
 	// measures a varchar, and freetds skips the multiply when the column's
-	// charset already matches the client charset, so if the database
-	// default collation charset is the client charset then the ping
-	// measures 1 while every nchar and nvarchar column is still multiplied.
+	// charset already matches the client charset, so if the server's
+	// charset is the client charset then the ping measures 1 while the
+	// unicode columns are still multiplied - those convert through utf-16,
+	// which never matches.
 	if (freetdsconn->bytesperchar<2) {
 		return;
 	}
