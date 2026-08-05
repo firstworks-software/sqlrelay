@@ -6227,12 +6227,7 @@ int main(int argc, char **argv) {
 	assertSuccessStmt(stmt,erg);
 	assertEqualStmt(stmt,(const char *)colname,"testvarchar");
 	assertEqualStmt(stmt,(int)colnamelen,11);
-	if (issqlrelay) {
-		// the SQL Relay ODBC driver reports varchar columns as SQL_CHAR
-		assertEqualStmt(stmt,(int)datatype,SQL_CHAR);
-	} else {
-		assertEqualStmt(stmt,(int)datatype,SQL_VARCHAR);
-	}
+	assertEqualStmt(stmt,(int)datatype,SQL_VARCHAR);
 	assertEqualStmt(stmt,(int)colsize,40);
 	assertEqualStmt(stmt,(int)decdigits,0);
 	assertEqualStmt(stmt,(int)nullable,SQL_NULLABLE);

@@ -454,8 +454,8 @@ int main(int argc, char **argv) {
 		"SMALLDATETIME");
 	assertEqStr(sqlrcur_getColumnTypeByIndex(cur,11),"CHAR");
 	assertEqStr(sqlrcur_getColumnTypeByName(cur,"testchar"),"CHAR");
-	assertEqStr(sqlrcur_getColumnTypeByIndex(cur,12),"CHAR");
-	assertEqStr(sqlrcur_getColumnTypeByName(cur,"testvarchar"),"CHAR");
+	assertEqStr(sqlrcur_getColumnTypeByIndex(cur,12),"VARCHAR");
+	assertEqStr(sqlrcur_getColumnTypeByName(cur,"testvarchar"),"VARCHAR");
 	assertEqStr(sqlrcur_getColumnTypeByIndex(cur,13),"BIT");
 	assertEqStr(sqlrcur_getColumnTypeByName(cur,"testbit"),"BIT");
 	printf("\n");

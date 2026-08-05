@@ -3572,6 +3572,21 @@ const char *sapcursor::getColumnName(uint32_t col) {
 uint16_t sapcursor::getColumnType(uint32_t col) {
 	switch (column[col].datatype) {
 		case CS_CHAR_TYPE:
+			// ctlib reports char, varchar, nchar and nvarchar all
+			// as CS_CHAR_TYPE.  Sybase also sends its systypes
+			// usertype, which does tell them apart - 1 char,
+			// 2 varchar, 24 nchar, 25 nvarchar.  sysname and
+			// longsysname send 18 and 42, and a type created with
+			// sp_addtype sends 100 or higher, so all of those fall
+			// through to char.
+			switch (column[col].usertype) {
+				case 2:
+					return VARCHAR_DATATYPE;
+				case 24:
+					return NCHAR_DATATYPE;
+				case 25:
+					return NVARCHAR_DATATYPE;
+			}
 			return CHAR_DATATYPE;
 		case CS_INT_TYPE:
 			return INT_DATATYPE;

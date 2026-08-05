@@ -1755,7 +1755,7 @@ class sap extends sqlrtest {
 			assertEquals(rsmd.getColumnTypeName(12),"char");
 		}
 		if (issqlrelay) {
-			assertEquals(rsmd.getColumnTypeName(13),"CHAR");
+			assertEquals(rsmd.getColumnTypeName(13),"VARCHAR");
 		} else {
 			assertEquals(rsmd.getColumnTypeName(13),"varchar");
 		}
@@ -1770,7 +1770,7 @@ class sap extends sqlrtest {
 			assertEquals(rsmd.getColumnTypeName(15),"text");
 		}
 		if (issqlrelay) {
-			assertEquals(rsmd.getColumnTypeName(16),"CHAR");
+			assertEquals(rsmd.getColumnTypeName(16),"VARCHAR");
 		} else {
 			assertEquals(rsmd.getColumnTypeName(16),"varchar");
 		}
