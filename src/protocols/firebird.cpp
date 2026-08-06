@@ -743,7 +743,22 @@
 #define isc_arg_sql_state	19
 
 // gds error codes
+#define isc_infunk	335544341
 #define isc_login	335544472
+
+// what the module answers isc_database_info with
+// (connect() caps protocol negotiation at 12, so the module presents itself
+// as a firebird 2.5-era server - see MAX_PROTOCOL_VERSION)
+#define FIREBIRD_PAGE_SIZE		4096
+#define FIREBIRD_NUM_BUFFERS		75
+#define FIREBIRD_ODS_VERSION		11
+#define FIREBIRD_ODS_MINOR_VERSION	2
+#define FIREBIRD_SQL_DIALECT		3
+#define FIREBIRD_SWEEP_INTERVAL		20000
+// classic access - one server process per attachment, like sqlr-connection
+#define FIREBIRD_DB_CLASS		13
+// isc_info_db_code_firebird
+#define FIREBIRD_DB_PROVIDER		4
 
 // authentication methods
 // (which dpb item the password came out of - see attach())
@@ -871,6 +886,16 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_firebird : public sqlrprotocol {
 					const char *name,
 					uint32_t *byteswritten);
 
+		bool	appendInfoItem(byte_t item,
+					const byte_t *value,
+					uint16_t valuelen);
+		bool	appendInfoInt(byte_t item, uint32_t value);
+		bool	appendInfoByte(byte_t item, byte_t value);
+		bool	appendInfoStrings(byte_t item,
+					const char * const *values,
+					byte_t valuecount);
+		bool	appendInfoError(byte_t item);
+
 		void	debugSystemError();
 		void	debugOpCode(const char *name, uint32_t opcode);
 		void	debugArchType(uint32_t archtype);
@@ -910,6 +935,9 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_firebird : public sqlrprotocol {
 		uint8_t		statusvectorlen;
 
 		bytebuffer	respbuffer;
+
+		// how big a response buffer the client is willing to accept
+		uint32_t	respbufferlen;
 };
 
 
@@ -940,6 +968,7 @@ void sqlrprotocol_firebird::init() {
 	authmethod=NULL;
 	wd=NULL;
 	dbhandle=0;
+	respbufferlen=0;
 }
 
 void sqlrprotocol_firebird::free() {
@@ -2139,6 +2168,85 @@ bool sqlrprotocol_firebird::dropDatabase() {
 	return false;
 }
 
+bool sqlrprotocol_firebird::appendInfoItem(byte_t item,
+					const byte_t *value,
+					uint16_t valuelen) {
+
+	// A response buffer isn't filled to the brim.  The 4 is the item byte,
+	// the 2 length bytes, and 1 more held back for the trailing
+	// isc_info_end.  When the cluster doesn't fit, a bare isc_info_truncated
+	// takes its place, the reply gets no isc_info_end, and the status vector
+	// still says success - the marker in the buffer is the only signal.
+	// See INF_put_item.
+	if (respbuffer.getSize()+valuelen+4>=respbufferlen) {
+		if (respbuffer.getSize()<respbufferlen) {
+			write(&respbuffer,(byte_t)isc_info_truncated);
+		}
+		if (getDebug()) {
+			stdoutput.printf("	truncated\n");
+		}
+		return false;
+	}
+
+	// item, 2 byte little-endian length, value
+	write(&respbuffer,item);
+	writeLE(&respbuffer,valuelen);
+	if (valuelen) {
+		write(&respbuffer,value,valuelen);
+	}
+	return true;
+}
+
+bool sqlrprotocol_firebird::appendInfoInt(byte_t item, uint32_t value) {
+	byte_t	val[4];
+	val[0]=(byte_t)(value&0xff);
+	val[1]=(byte_t)((value>>8)&0xff);
+	val[2]=(byte_t)((value>>16)&0xff);
+	val[3]=(byte_t)((value>>24)&0xff);
+	return appendInfoItem(item,val,sizeof(val));
+}
+
+bool sqlrprotocol_firebird::appendInfoByte(byte_t item, byte_t value) {
+	return appendInfoItem(item,&value,1);
+}
+
+bool sqlrprotocol_firebird::appendInfoStrings(byte_t item,
+					const char * const *values,
+					byte_t valuecount) {
+
+	// a count byte, then each string as a length byte and that many bytes
+	byte_t		val[256];
+	uint16_t	vallen=0;
+	val[vallen++]=valuecount;
+	for (byte_t i=0; i<valuecount; i++) {
+		size_t	len=charstring::getLength(values[i]);
+		if (len>255) {
+			len=255;
+		}
+		if (vallen+1+len>sizeof(val)) {
+			break;
+		}
+		val[vallen++]=(byte_t)len;
+		if (len) {
+			bytestring::copy(val+vallen,values[i],len);
+		}
+		vallen+=len;
+	}
+	return appendInfoItem(item,val,vallen);
+}
+
+bool sqlrprotocol_firebird::appendInfoError(byte_t item) {
+
+	// the item the client asked for, then isc_infunk, little-endian
+	byte_t	val[5];
+	val[0]=item;
+	val[1]=(byte_t)(isc_infunk&0xff);
+	val[2]=(byte_t)((isc_infunk>>8)&0xff);
+	val[3]=(byte_t)((isc_infunk>>16)&0xff);
+	val[4]=(byte_t)((isc_infunk>>24)&0xff);
+	return appendInfoItem(isc_info_error,val,sizeof(val));
+}
+
 bool sqlrprotocol_firebird::infoDatabase() {
 
 	// request packet data structure:
@@ -2176,8 +2284,8 @@ bool sqlrprotocol_firebird::infoDatabase() {
 	}
 
 	// get response buffer length
-	uint32_t	respbufferlen;
 	if (!readInt(&respbufferlen,"response buffer length",&bytesread)) {
+		delete[] dbinfo;
 		return false;
 	}
 
@@ -2185,335 +2293,141 @@ bool sqlrprotocol_firebird::infoDatabase() {
 	const byte_t	*dbinfoptr=dbinfo;
 	const byte_t	*dbinfoendptr=dbinfo+dbinfolen;
 
-	// build response buffer...
+	// build the response buffer...
+	// (info items are bare bytes in the request, but each value in the
+	// response is a cluster - item byte, 2 byte little-endian length, value)
 	respbuffer.clear();
-	while (dbinfoptr!=dbinfoendptr) {
-		
-		// get the requetted db info item
+	bool	end=false;
+	bool	fits=true;
+	while (dbinfoptr<dbinfoendptr && !end && fits) {
+
+		// get the requested db info item
 		byte_t	dbinfoitem;
 		read(dbinfoptr,&dbinfoitem,&dbinfoptr);
 		debugDbInfoItem(dbinfoitem);
 
-		// append the db info item
-		respbuffer.append(dbinfoitem);
-
 		switch (dbinfoitem) {
 			case isc_info_end:
 				// there might be multiple of these, but if we
-				// hit one of them then just append one and bail
-				dbinfoptr=dbinfoendptr;
+				// hit one of them then just bail
+				end=true;
 				break;
 
 			case isc_info_db_id:
-				// FIXME: do something
-				break;
-
-			case isc_info_reads:
-				// FIXME: do something
-				break;
-
-			case isc_info_writes:
-				// FIXME: do something
-				break;
-
-			case isc_info_fetches:
-				// FIXME: do something
-				break;
-
-			case isc_info_marks:
-				// FIXME: do something
+				{
+				// the database file, then the host it's on,
+				// twice - the .NET provider reads 3 entries
+				// unconditionally
+				const char	*dbid[3]={
+						(db)?db:"",
+						cont->getDbHostName(),
+						cont->getDbHostName()};
+				fits=appendInfoStrings(dbinfoitem,dbid,3);
+				}
 				break;
 
 			case isc_info_implementation:
-				// FIXME: do something
+				{
+				// a count, then one (implementation, class)
+				// pair per entry.  what a linux firebird 2.5
+				// server sends.
+				static const byte_t	impl[]=
+						{2,0x42,1,0x42,4};
+				fits=appendInfoItem(dbinfoitem,
+							impl,sizeof(impl));
+				}
 				break;
 
 			case isc_info_isc_version:
-				// FIXME: do something
+			case isc_info_firebird_version:
+				{
+				const char	*ver[1]={cont->getDbVersion()};
+				fits=appendInfoStrings(dbinfoitem,ver,1);
+				}
 				break;
 
 			case isc_info_base_level:
-				// FIXME: do something
+				{
+				// a count, then the engine's base level and
+				// the remote server's own.  the client merges
+				// its own in on top of this.
+				static const byte_t	baselevel[]={2,6,1};
+				fits=appendInfoItem(dbinfoitem,baselevel,
+							sizeof(baselevel));
+				}
 				break;
 
 			case isc_info_page_size:
-				// FIXME: do something
+				fits=appendInfoInt(dbinfoitem,
+						FIREBIRD_PAGE_SIZE);
 				break;
 
 			case isc_info_num_buffers:
-				// FIXME: do something
-				break;
-
-			case isc_info_limbo:
-				// FIXME: do something
-				break;
-
-			case isc_info_current_memory:
-				// FIXME: do something
-				break;
-
-			case isc_info_max_memory:
-				// FIXME: do something
-				break;
-
-			case isc_info_window_turns:
-				// FIXME: do something
-				break;
-
-			case isc_info_license:
-				// FIXME: do something
-				break;
-
-			case isc_info_allocation:
-				// FIXME: do something
+				fits=appendInfoInt(dbinfoitem,
+						FIREBIRD_NUM_BUFFERS);
 				break;
 
 			case isc_info_attachment_id:
-				// FIXME: do something
-				break;
-
-			case isc_info_read_seq_count:
-				// FIXME: do something
-				break;
-
-			case isc_info_read_idx_count:
-				// FIXME: do something
-				break;
-
-			case isc_info_insert_count:
-				// FIXME: do something
-				break;
-
-			case isc_info_update_count:
-				// FIXME: do something
-				break;
-
-			case isc_info_delete_count:
-				// FIXME: do something
-				break;
-
-			case isc_info_backout_count:
-				// FIXME: do something
-				break;
-
-			case isc_info_purge_count:
-				// FIXME: do something
-				break;
-
-			case isc_info_expunge_count:
-				// FIXME: do something
+				fits=appendInfoInt(dbinfoitem,dbhandle);
 				break;
 
 			case isc_info_sweep_interval:
-				// FIXME: do something
+				fits=appendInfoInt(dbinfoitem,
+						FIREBIRD_SWEEP_INTERVAL);
 				break;
 
 			case isc_info_ods_version:
-				respbuffer.append((byte_t)4);
-				// FIXME: ???
-				respbuffer.append((byte_t)0);
-				// FIXME: ???
-				respbuffer.append((byte_t)0x0c);
-				respbuffer.append((byte_t)0);
-				respbuffer.append((byte_t)0);
-				respbuffer.append((byte_t)0);
+				fits=appendInfoInt(dbinfoitem,
+						FIREBIRD_ODS_VERSION);
 				break;
 
 			case isc_info_ods_minor_version:
-				respbuffer.append((byte_t)4);
-				// FIXME: ???
-				respbuffer.append((byte_t)0);
-				// FIXME: ???
-				respbuffer.append((byte_t)0);
-				respbuffer.append((byte_t)0);
-				respbuffer.append((byte_t)0);
-				respbuffer.append((byte_t)0);
+				fits=appendInfoInt(dbinfoitem,
+						FIREBIRD_ODS_MINOR_VERSION);
 				break;
 
 			case isc_info_no_reserve:
-				// FIXME: do something
-				break;
-
-			case isc_info_logfile:
-				// FIXME: do something
-				break;
-
-			case isc_info_cur_logfile_name:
-				// FIXME: do something
-				break;
-
-			case isc_info_cur_log_part_offset:
-				// FIXME: do something
-				break;
-
-			case isc_info_num_wal_buffers:
-				// FIXME: do something
-				break;
-
-			case isc_info_wal_buffer_size:
-				// FIXME: do something
-				break;
-
-			case isc_info_wal_ckpt_length:
-				// FIXME: do something
-				break;
-
-			case isc_info_wal_cur_ckpt_interval:
-				// FIXME: do something
-				break;
-
-			case isc_info_wal_prv_ckpt_fname:
-				// FIXME: do something
-				break;
-
-			case isc_info_wal_prv_ckpt_poffset:
-				// FIXME: do something
-				break;
-
-			case isc_info_wal_recv_ckpt_fname:
-				// FIXME: do something
-				break;
-
-			case isc_info_wal_recv_ckpt_poffset:
-				// FIXME: do something
-				break;
-
-			case isc_info_wal_grpc_wait_usecs:
-				// FIXME: do something
-				break;
-
-			case isc_info_wal_num_io:
-				// FIXME: do something
-				break;
-
-			case isc_info_wal_avg_io_size:
-				// FIXME: do something
-				break;
-
-			case isc_info_wal_num_commits:
-				// FIXME: do something
-				break;
-
-			case isc_info_wal_avg_grpc_size:
-				// FIXME: do something
+				fits=appendInfoByte(dbinfoitem,0);
 				break;
 
 			case isc_info_forced_writes:
-				// FIXME: do something
-				break;
-
-			case isc_info_user_names:
-				// FIXME: do something
-				break;
-
-			case isc_info_page_errors:
-				// FIXME: do something
-				break;
-
-			case isc_info_record_errors:
-				// FIXME: do something
-				break;
-
-			case isc_info_bpage_errors:
-				// FIXME: do something
-				break;
-
-			case isc_info_dpage_errors:
-				// FIXME: do something
-				break;
-
-			case isc_info_ipage_errors:
-				// FIXME: do something
-				break;
-
-			case isc_info_ppage_errors:
-				// FIXME: do something
-				break;
-
-			case isc_info_tpage_errors:
-				// FIXME: do something
-				break;
-
-			case isc_info_set_page_buffers:
-				// FIXME: do something
+				fits=appendInfoByte(dbinfoitem,1);
 				break;
 
 			case isc_info_db_sql_dialect:
-				respbuffer.append((byte_t)1);
-				// FIXME: ???
-				respbuffer.append((byte_t)0);
-				// FIXME: ???
-				respbuffer.append((byte_t)3);
+				fits=appendInfoByte(dbinfoitem,
+						FIREBIRD_SQL_DIALECT);
 				break;
 
 			case isc_info_db_read_only:
-				// FIXME: do something
-				break;
-
-			case isc_info_db_size_in_pages:
-				// FIXME: do something
-				break;
-
-			case frb_info_att_charset:
-				// FIXME: do something
+				fits=appendInfoByte(dbinfoitem,0);
 				break;
 
 			case isc_info_db_class:
-				// FIXME: do something
-				break;
-
-			case isc_info_firebird_version:
-				// FIXME: do something
-				break;
-
-			case isc_info_oldest_transaction:
-				// FIXME: do something
-				break;
-
-			case isc_info_oldest_active:
-				// FIXME: do something
-				break;
-
-			case isc_info_oldest_snapshot:
-				// FIXME: do something
-				break;
-
-			case isc_info_next_transaction:
-				// FIXME: do something
+				fits=appendInfoInt(dbinfoitem,
+						FIREBIRD_DB_CLASS);
 				break;
 
 			case isc_info_db_provider:
-				// FIXME: do something
-				break;
-
-			case isc_info_active_transactions:
-				// FIXME: do something
-				break;
-
-			case isc_info_active_tran_count:
-				// FIXME: do something
-				break;
-
-			case isc_info_creation_date:
-				// FIXME: do something
-				break;
-
-			case isc_info_db_file_size:
-				// FIXME: do something
-				break;
-
-			case fb_info_page_contents:
-				// FIXME: do something
+				fits=appendInfoInt(dbinfoitem,
+						FIREBIRD_DB_PROVIDER);
 				break;
 
 			default:
-				// FIXME: do something
+				// FIXME: answer more of these - #7231.  Until
+				// then, an item the module can't answer gets
+				// isc_info_error, which is what a real server
+				// sends for an item it doesn't recognize.
+				fits=appendInfoError(dbinfoitem);
 				break;
 		}
 	}
 
-	// FIXME: handle cases where
-	// respbuffer.getSize() > response buffer length
+	// a reply that wasn't truncated ends with a bare isc_info_end
+	// (the truncation check holds a byte back for it)
+	if (fits && respbuffer.getSize()<respbufferlen) {
+		write(&respbuffer,(byte_t)isc_info_end);
+	}
 
 	debugEnd();
 

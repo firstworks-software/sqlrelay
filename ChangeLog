@@ -689,6 +689,19 @@
 		the auth framework, and a failed login is answered with the
 		same isc_login response a real firebird server sends, rather
 		than being let through
+	fixed the firebird protocol module - an isc_database_info reply was a
+		run of bare item bytes with no lengths and no values, so a
+		client read the item bodies that followed one item as its
+		length and refused the whole buffer as a malformed clumplet -
+		each value is a real cluster now, item byte, 2 byte
+		little-endian length and value, an item the module can't
+		answer gets isc_info_error rather than a bare byte, seventeen
+		items it can answer are answered in the shapes a real
+		firebird sends on the wire, the response buffer length the
+		client asks for is honored and a reply that would exceed it
+		is cut short with isc_info_truncated, and the item walk's
+		loop test counts the bytes left rather than comparing
+		pointers for inequality
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems
