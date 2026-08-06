@@ -651,6 +651,11 @@
 		was asked for, the same defect the c++ api had before this
 		release, and a fraction that rounds up now carries into the
 		seconds without wrapping them negative
+	fixed an out-of-bounds read in the oracle protocol module - its type
+		map was one entry shorter than the datatype list it's indexed
+		by, so an informix LVARCHAR column read past the end of the
+		array and reported whatever followed it as the column type,
+		and the index is bounds-checked now as well
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems

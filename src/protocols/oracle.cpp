@@ -544,7 +544,9 @@ static uint16_t	oracletypemap[]={
 	// "XML"
 	(uint16_t)ORACLE_TYPE_BLOB,
 	// "DATETIMEOFFSET"
-	(uint16_t)ORACLE_TYPE_TIMESTAMP
+	(uint16_t)ORACLE_TYPE_TIMESTAMP,
+	// "LVARCHAR"
+	(uint16_t)ORACLE_TYPE_VARCHAR
 };
 
 enum oraclelisttype_t {
@@ -4538,6 +4540,17 @@ uint16_t sqlrprotocol_oracle::getColumnType(const char *columntypestring,
 					columntypestring,
 					columntypesize) &&
 				datatypestring[index][columntypesize]=='\0') {
+
+			// bail on a type that the map doesn't cover.
+			// dataTypeStrings() and oracletypemap[] are
+			// maintained separately, so a type added to one
+			// and not the other would index past the end.
+			if (index>=sizeof(oracletypemap)/
+					sizeof(oracletypemap[0])) {
+				debugWrite("invalid column type: %s",
+							columntypestring);
+				return ORACLE_TYPE_VARCHAR;
+			}
 
 			uint16_t	retval=oracletypemap[index];
 
