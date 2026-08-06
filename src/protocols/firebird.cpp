@@ -11,6 +11,16 @@
 
 #include <datatypes.h>
 
+// NOTE:
+// Firebird Wire Protocol refers to:
+// Carlos Guzman Alvarez, Mark Rotteveel, version 0.18, 18 May 2025
+// https://firebirdsql.org/file/documentation/html/en/firebirddocs/wireprotocol/firebird-wire-protocol.html
+//
+// It only covers protocol version 10 and up, and 11 and up only partially.
+// An archived copy of 0.18, an op code coverage matrix, an audit of the
+// constants below, and a list of what the document leaves out are at:
+// http://trac.firstworks.com/trac/wiki/Firebird%20Wire%20Protocol
+
 // operation codes
 #define op_connect		1
 #define op_attach		19
