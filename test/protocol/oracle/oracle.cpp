@@ -12,50 +12,180 @@ extern "C" {
 	#include <oci.h>
 }
 
-OCIError	*err;
+OCIError	*err=NULL;
+OCIEnv		*env=NULL;
+OCIServer	*srv=NULL;
+OCISvcCtx	*svc=NULL;
+OCISession	*session=NULL;
+OCITrans	*trans=NULL;
+
+const char	*sid=NULL;
+const char	*badsid=NULL;
+const char	*user="testuser";
+const char	*password="testpassword";
+
+// put a username and password on a session handle
+static void setCredentials(OCISession *sess, const char *u, const char *p) {
+	assertEquals(
+		OCIAttrSet(sess,OCI_HTYPE_SESSION,
+				(void *)u,charstring::getLength(u),
+				OCI_ATTR_USERNAME,err),
+		OCI_SUCCESS);
+	assertEquals(
+		OCIAttrSet(sess,OCI_HTYPE_SESSION,
+				(void *)p,charstring::getLength(p),
+				OCI_ATTR_PASSWORD,err),
+		OCI_SUCCESS);
+}
+
+// run a statement, discarding whatever it returns
+static sword execImmediate(const char *query) {
+
+	OCIStmt	*stmt=NULL;
+	if (OCIHandleAlloc(env,(void **)&stmt,
+				OCI_HTYPE_STMT,0,NULL)!=OCI_SUCCESS) {
+		return OCI_ERROR;
+	}
+
+	sword	result=OCIStmtPrepare(stmt,err,
+					(text *)query,
+					charstring::getLength(query),
+					OCI_NTV_SYNTAX,OCI_DEFAULT);
+	if (result==OCI_SUCCESS) {
+		result=OCIStmtExecute(svc,stmt,err,1,0,NULL,NULL,OCI_DEFAULT);
+	}
+
+	OCIHandleFree(stmt,OCI_HTYPE_STMT);
+
+	return result;
+}
+
+// count the rows in a table, so a commit or rollback can be shown to have
+// taken
+static int countRows(const char *table) {
+
+	char	query[256];
+	charstring::printf(query,sizeof(query),
+				"select count(*) from %s",table);
+
+	OCIStmt	*stmt=NULL;
+	if (OCIHandleAlloc(env,(void **)&stmt,
+				OCI_HTYPE_STMT,0,NULL)!=OCI_SUCCESS) {
+		return -1;
+	}
+
+	int	count=-1;
+	if (OCIStmtPrepare(stmt,err,(text *)query,
+				charstring::getLength(query),
+				OCI_NTV_SYNTAX,OCI_DEFAULT)==OCI_SUCCESS) {
+
+		// the define has to be in place before the execute, which
+		// fetches the single row into it
+		OCIDefine	*def=NULL;
+		sb4		countbuffer=0;
+		if (OCIDefineByPos(stmt,&def,err,1,
+					&countbuffer,sizeof(countbuffer),
+					SQLT_INT,NULL,NULL,NULL,
+					OCI_DEFAULT)==OCI_SUCCESS &&
+			OCIStmtExecute(svc,stmt,err,1,0,NULL,NULL,
+					OCI_DEFAULT)==OCI_SUCCESS) {
+			count=(int)countbuffer;
+		}
+	}
+
+	OCIHandleFree(stmt,OCI_HTYPE_STMT);
+
+	return count;
+}
+
+// the error code of the most recent failure
+static sb4 errorCode() {
+	text	message[1024];
+	bytestring::zero(message,sizeof(message));
+	sb4	errcode=0;
+	OCIErrorGet(err,1,NULL,&errcode,
+			message,sizeof(message),OCI_HTYPE_ERROR);
+	return errcode;
+}
+
+// pin a result set column's metadata
+static void assertColumn(OCIStmt *stmt, ub4 pos, const char *name,
+					int type, int size,
+					int precision, int scale) {
+
+	OCIParam	*param=NULL;
+	assertEquals(OCIParamGet(stmt,OCI_HTYPE_STMT,err,
+					(void **)&param,pos),OCI_SUCCESS);
+
+	// OCI_ATTR_NAME hands back a pointer into oracle's own buffer, with an
+	// explicit length and no null terminator, so it has to be copied out
+	// before it can be compared as a string
+	text	*colname=NULL;
+	ub4	colnamelen=0;
+	assertEquals(OCIAttrGet(param,OCI_DTYPE_PARAM,
+					&colname,&colnamelen,
+					OCI_ATTR_NAME,err),OCI_SUCCESS);
+	char	colnamebuf[128];
+	bytestring::zero(colnamebuf,sizeof(colnamebuf));
+	if (colnamelen<sizeof(colnamebuf)) {
+		bytestring::copy(colnamebuf,colname,colnamelen);
+	}
+	assertEquals((const char *)colnamebuf,name);
+	assertEquals((int)colnamelen,(int)charstring::getLength(name));
+
+	ub2	coltype=0;
+	assertEquals(OCIAttrGet(param,OCI_DTYPE_PARAM,
+					&coltype,NULL,
+					OCI_ATTR_DATA_TYPE,err),OCI_SUCCESS);
+	assertEquals((int)coltype,type);
+
+	ub2	colsize=0;
+	assertEquals(OCIAttrGet(param,OCI_DTYPE_PARAM,
+					&colsize,NULL,
+					OCI_ATTR_DATA_SIZE,err),OCI_SUCCESS);
+	assertEquals((int)colsize,size);
+
+	// OCI_ATTR_PRECISION and OCI_ATTR_SCALE are documented as ub1 and sb1
+	// for an implicit describe, and ub2/sb2 only for an explicit one.  This
+	// is a describe off an executed statement, so implicit, but oracle
+	// writes 2 bytes anyway.  Reading them into a ub1 and an sb1 smashes
+	// whatever is next on the stack - it is what made the data size above
+	// read back as 0 while this was being written.
+	ub2	colprecision=0;
+	assertEquals(OCIAttrGet(param,OCI_DTYPE_PARAM,
+					&colprecision,NULL,
+					OCI_ATTR_PRECISION,err),OCI_SUCCESS);
+	assertEquals((int)colprecision,precision);
+
+	sb2	colscale=0;
+	assertEquals(OCIAttrGet(param,OCI_DTYPE_PARAM,
+					&colscale,NULL,
+					OCI_ATTR_SCALE,err),OCI_SUCCESS);
+	assertEquals((int)colscale,scale);
+
+	OCIDescriptorFree(param,OCI_DTYPE_PARAM);
+}
 
 int	main(int argc, char **argv) {
-
-	const char	*sid;
-	const char	*user;
-	const char	*password;
-
-	OCIEnv		*env;
-	OCIServer	*srv;
-	OCISvcCtx	*svc;
-	OCISession	*session;
-	OCITrans	*trans;
-	OCIStmt		*stmt;
-	const char	*query;
-	ub2		stmttype;
-	sword		ncols;
-	OCIParam	*param;
-	text		*colname;
-	ub4		colnamelen;
-	OCIDefine	*def;
-	ub1		field[1024];
-	ub2		indp;
-	ub2		retlen;
-	ub2		retcode;
-	ub4		currentrow;
-
 
 	// pass "native" to test a real oracle instance instead of
 	// sqlrelay's oracle protocol
 	bool	issqlrelay=!(argc==2 && !charstring::compare(argv[1],"native"));
 	sid=(issqlrelay)?"sqlrelay":"ora1";
-	user="scott";
-	password="tiger";
+	badsid=(issqlrelay)?"sqlrelaybad":"ora1bad";
 
 	environment::setValue("ORACLE_SID",sid);
 	environment::setValue("TWO_TASK",sid);
 
-	stdoutput.printf("\n================ Connect ==============\n");
-	#ifdef HAVE_OREACLE_8i
+
+	stdoutput.printf("\n=============== Connect ==============\n\n");
+
+	stdoutput.printf("OCIEnvCreate\n");
+	#ifdef HAVE_ORACLE_8i
 		assertEquals(
 			OCIEnvCreate((OCIEnv **)&env,
 					OCI_DEFAULT|OCI_OBJECT,
-					NULL,NULL,NULL,NULL,0),
+					NULL,NULL,NULL,NULL,0,NULL),
 			OCI_SUCCESS);
 	#else
 		assertEquals(
@@ -65,6 +195,11 @@ int	main(int argc, char **argv) {
 			OCIEnvInit((OCIEnv **)&env,OCI_DEFAULT,0,NULL),
 			OCI_SUCCESS);
 	#endif
+	assertTrue(env!=NULL);
+	stdoutput.printf("\n\n");
+
+
+	stdoutput.printf("OCIHandleAlloc\n");
 	assertEquals(
 		OCIHandleAlloc(env,(void **)&err,OCI_HTYPE_ERROR,0,NULL),
 		OCI_SUCCESS);
@@ -75,30 +210,47 @@ int	main(int argc, char **argv) {
 		OCIHandleAlloc(env,(void **)&svc,OCI_HTYPE_SVCCTX,0,NULL),
 		OCI_SUCCESS);
 	assertEquals(
-		OCIServerAttach(srv,err,(text *)sid,charstring::getLength(sid),0),
+		OCIHandleAlloc(env,(void **)&session,OCI_HTYPE_SESSION,0,NULL),
 		OCI_SUCCESS);
+	stdoutput.printf("\n\n");
+
+
+	stdoutput.printf("OCIServerAttach\n");
+	sword	attached=OCIServerAttach(srv,err,(text *)sid,
+					charstring::getLength(sid),0);
+	assertEquals(attached,OCI_SUCCESS);
 	assertEquals(
 		OCIAttrSet(svc,OCI_HTYPE_SVCCTX,srv,0,OCI_ATTR_SERVER,err),
 		OCI_SUCCESS);
-	assertEquals(
-		OCIHandleAlloc(env,(void **)&session,OCI_HTYPE_SESSION,0,NULL),
-		OCI_SUCCESS);
-	assertEquals(
-		OCIAttrSet(session,OCI_HTYPE_SESSION,
-				(void *)user,charstring::getLength(user),
-				OCI_ATTR_USERNAME,err),
-		OCI_SUCCESS);
-	assertEquals(
-		OCIAttrSet(session,OCI_HTYPE_SESSION,
-				(void *)password,charstring::getLength(password),
-				OCI_ATTR_PASSWORD,err),
-		OCI_SUCCESS);
-	assertEquals(
-		OCISessionBegin(svc,err,session,OCI_CRED_RDBMS,OCI_DEFAULT),
-		OCI_SUCCESS);
+	stdoutput.printf("\n\n");
+
+	// Nothing below here can work without an attachment.  Running on anyway
+	// gets ORA-01012 from every call, and eventually a segfault inside OCI.
+	if (attached!=OCI_SUCCESS) {
+		reportTestStatus();
+		return status;
+	}
+
+
+	stdoutput.printf("OCISessionBegin\n");
+	setCredentials(session,user,password);
+	sword	loggedin=OCISessionBegin(svc,err,session,
+					OCI_CRED_RDBMS,OCI_DEFAULT);
+	assertEquals(loggedin,OCI_SUCCESS);
 	assertEquals(
 		OCIAttrSet(svc,OCI_HTYPE_SVCCTX,session,0,OCI_ATTR_SESSION,err),
 		OCI_SUCCESS);
+	stdoutput.printf("\n\n");
+
+	// same again - a session that never began leaves every statement
+	// below failing with ORA-01012
+	if (loggedin!=OCI_SUCCESS) {
+		reportTestStatus();
+		return status;
+	}
+
+
+	stdoutput.printf("OCIAttrSet - transaction handle\n");
 	assertEquals(
 		OCIHandleAlloc(env,(void **)&trans,OCI_HTYPE_TRANS,0,NULL),
 		OCI_SUCCESS);
@@ -108,36 +260,250 @@ int	main(int argc, char **argv) {
 	stdoutput.printf("\n\n");
 
 
-	stdoutput.printf("\n================ Server Version =======\n");
+
+	stdoutput.printf("\n=========== Authentication ===========\n\n");
+
+	// a handle set of its own, so a failed login here cannot disturb the
+	// session the rest of the test runs on
+	OCIServer	*authsrv=NULL;
+	OCISvcCtx	*authsvc=NULL;
+	OCISession	*authsession=NULL;
+	assertEquals(
+		OCIHandleAlloc(env,(void **)&authsrv,OCI_HTYPE_SERVER,0,NULL),
+		OCI_SUCCESS);
+	assertEquals(
+		OCIHandleAlloc(env,(void **)&authsvc,OCI_HTYPE_SVCCTX,0,NULL),
+		OCI_SUCCESS);
+	assertEquals(
+		OCIHandleAlloc(env,(void **)&authsession,
+					OCI_HTYPE_SESSION,0,NULL),
+		OCI_SUCCESS);
+
+
+	stdoutput.printf("OCIServerAttach - no such service\n");
+	OCIServer	*badsrv=NULL;
+	assertEquals(
+		OCIHandleAlloc(env,(void **)&badsrv,OCI_HTYPE_SERVER,0,NULL),
+		OCI_SUCCESS);
+	assertEquals(
+		OCIServerAttach(badsrv,err,(text *)badsid,
+				charstring::getLength(badsid),0),
+		OCI_ERROR);
+	// ORA-12514, the listener does not know the service being asked for.
+	// This one has to come back as a refusal from the far end - a dropped
+	// socket gives ORA-12537 or ORA-03113 instead.
+	assertEquals((int)errorCode(),12514);
+	assertEquals(OCIHandleFree(badsrv,OCI_HTYPE_SERVER),OCI_SUCCESS);
+	stdoutput.printf("\n\n");
+
+
+	stdoutput.printf("OCIServerAttach - no such alias\n");
+	OCIServer	*noaliassrv=NULL;
+	assertEquals(
+		OCIHandleAlloc(env,(void **)&noaliassrv,
+					OCI_HTYPE_SERVER,0,NULL),
+		OCI_SUCCESS);
+	const char	*noalias="nosuchalias";
+	assertEquals(
+		OCIServerAttach(noaliassrv,err,(text *)noalias,
+				charstring::getLength(noalias),0),
+		OCI_ERROR);
+	// ORA-12154, resolved client side out of tnsnames.ora, so nothing
+	// leaves the machine for this one
+	assertEquals((int)errorCode(),12154);
+	assertEquals(OCIHandleFree(noaliassrv,OCI_HTYPE_SERVER),OCI_SUCCESS);
+	stdoutput.printf("\n\n");
+
+
+	stdoutput.printf("OCIServerAttach - for the login cases\n");
+	assertEquals(
+		OCIServerAttach(authsrv,err,(text *)sid,
+				charstring::getLength(sid),0),
+		OCI_SUCCESS);
+	assertEquals(
+		OCIAttrSet(authsvc,OCI_HTYPE_SVCCTX,authsrv,0,
+				OCI_ATTR_SERVER,err),
+		OCI_SUCCESS);
+	stdoutput.printf("\n\n");
+
+
+	stdoutput.printf("OCISessionBegin - wrong password\n");
+	setCredentials(authsession,user,"wrongpassword");
+	assertEquals(
+		OCISessionBegin(authsvc,err,authsession,
+				OCI_CRED_RDBMS,OCI_DEFAULT),
+		OCI_ERROR);
+	// ORA-01017, invalid username/password.  The attach above succeeded,
+	// so this is the login being refused, not the connection failing.
+	assertEquals((int)errorCode(),1017);
+	stdoutput.printf("\n\n");
+
+
+	stdoutput.printf("OCISessionBegin - unknown user\n");
+	setCredentials(authsession,"nosuchuser","nosuchpassword");
+	assertEquals(
+		OCISessionBegin(authsvc,err,authsession,
+				OCI_CRED_RDBMS,OCI_DEFAULT),
+		OCI_ERROR);
+	// ORA-01017 again.  Oracle gives the same error for an unknown user as
+	// for a wrong password on purpose, so a client cannot tell which half
+	// it got wrong.
+	assertEquals((int)errorCode(),1017);
+	stdoutput.printf("\n\n");
+
+
+	stdoutput.printf("OCISessionBegin - empty password\n");
+	setCredentials(authsession,user,"");
+	assertEquals(
+		OCISessionBegin(authsvc,err,authsession,
+				OCI_CRED_RDBMS,OCI_DEFAULT),
+		OCI_ERROR);
+	// ORA-01005, login denied due to invalid password - a different error
+	// from ORA-01017, and one the client raises before anything is sent
+	assertEquals((int)errorCode(),1005);
+	stdoutput.printf("\n\n");
+
+
+	stdoutput.printf("OCISessionBegin - correct password, after the failures\n");
+	setCredentials(authsession,user,password);
+	assertEquals(
+		OCISessionBegin(authsvc,err,authsession,
+				OCI_CRED_RDBMS,OCI_DEFAULT),
+		OCI_SUCCESS);
+	assertEquals(
+		OCIAttrSet(authsvc,OCI_HTYPE_SVCCTX,authsession,0,
+				OCI_ATTR_SESSION,err),
+		OCI_SUCCESS);
+	stdoutput.printf("\n\n");
+
+
+	stdoutput.printf("OCIStmtExecute - through the recovered session\n");
+	// a login that succeeds has to be usable, not just accepted
+	OCIStmt		*authstmt=NULL;
+	assertEquals(
+		OCIHandleAlloc(env,(void **)&authstmt,OCI_HTYPE_STMT,0,NULL),
+		OCI_SUCCESS);
+	const char	*authquery="select 'authenticated' from dual";
+	assertEquals(
+		OCIStmtPrepare(authstmt,err,(text *)authquery,
+				charstring::getLength(authquery),
+				OCI_NTV_SYNTAX,OCI_DEFAULT),
+		OCI_SUCCESS);
+	assertEquals(
+		OCIStmtExecute(authsvc,authstmt,err,0,0,NULL,NULL,OCI_DEFAULT),
+		OCI_SUCCESS);
+	OCIDefine	*authdef=NULL;
+	char		authfield[64];
+	sb2		authind=0;
+	bytestring::zero(authfield,sizeof(authfield));
+	assertEquals(
+		OCIDefineByPos(authstmt,&authdef,err,1,
+				authfield,sizeof(authfield),SQLT_STR,
+				&authind,NULL,NULL,OCI_DEFAULT),
+		OCI_SUCCESS);
+	assertEquals(
+		OCIStmtFetch2(authstmt,err,1,OCI_FETCH_NEXT,0,OCI_DEFAULT),
+		OCI_SUCCESS);
+	assertEquals((const char *)authfield,"authenticated");
+	stdoutput.printf("\n\n");
+
+
+	stdoutput.printf("OCISessionEnd\n");
+	assertEquals(OCIHandleFree(authstmt,OCI_HTYPE_STMT),OCI_SUCCESS);
+	assertEquals(
+		OCISessionEnd(authsvc,err,authsession,OCI_DEFAULT),OCI_SUCCESS);
+	assertEquals(OCIServerDetach(authsrv,err,OCI_DEFAULT),OCI_SUCCESS);
+	assertEquals(OCIHandleFree(authsession,OCI_HTYPE_SESSION),OCI_SUCCESS);
+	assertEquals(OCIHandleFree(authsvc,OCI_HTYPE_SVCCTX),OCI_SUCCESS);
+	assertEquals(OCIHandleFree(authsrv,OCI_HTYPE_SERVER),OCI_SUCCESS);
+	stdoutput.printf("\n\n");
+
+
+
+	stdoutput.printf("\n============ Server Version ==========\n\n");
+
+	stdoutput.printf("OCIServerVersion\n");
 	char	versionbuf[512];
+	bytestring::zero(versionbuf,sizeof(versionbuf));
 	assertEquals(
 		OCIServerVersion(svc,err,
 				(text *)versionbuf,sizeof(versionbuf),
 				OCI_HTYPE_SVCCTX),
 		OCI_SUCCESS);
+	assertTrue(charstring::getLength(versionbuf)>0);
+	assertTrue(charstring::contains(versionbuf,"Oracle"));
 	stdoutput.printf("\n%s\n",versionbuf);
-	stdoutput.printf("\n");
-
-
-	stdoutput.printf("\n================ Open Cursor ==========\n");
-	assertEquals(
-		OCIHandleAlloc(env,(void **)&stmt,OCI_HTYPE_STMT,0,NULL),
-		OCI_SUCCESS);
 	stdoutput.printf("\n\n");
 
 
-	stdoutput.printf("\n================ Prepare ==============\n");
-	query="select 'hello' as hello from dual";
+
+	stdoutput.printf("\n=============== Schema ===============\n\n");
+
+	// unchecked - the tables may not be there yet
+	execImmediate("drop table protocoltesttable");
+	execImmediate("drop table protocoltesttran");
+
+	stdoutput.printf("create table\n");
+	assertEquals(
+		execImmediate("create table protocoltesttable ("
+				"testnumber number(10),"
+				"testchar char(20),"
+				"testvarchar varchar2(40),"
+				"testdate date)"),
+		OCI_SUCCESS);
+	assertEquals(
+		execImmediate("create table protocoltesttran ("
+				"testnumber number(10))"),
+		OCI_SUCCESS);
+	assertEquals(countRows("protocoltesttable"),0);
+	assertEquals(countRows("protocoltesttran"),0);
+	stdoutput.printf("\n\n");
+
+
+	stdoutput.printf("insert\n");
+	assertEquals(
+		execImmediate("insert into protocoltesttable values "
+				"(1,'char1','varchar1',"
+				"to_date('2001-01-01 01:01:01',"
+					"'YYYY-MM-DD HH24:MI:SS'))"),
+		OCI_SUCCESS);
+	assertEquals(
+		execImmediate("insert into protocoltesttable values "
+				"(2,'char2','varchar2',"
+				"to_date('2002-02-02 02:02:02',"
+					"'YYYY-MM-DD HH24:MI:SS'))"),
+		OCI_SUCCESS);
+	assertEquals(
+		execImmediate("insert into protocoltesttable values "
+				"(3,NULL,NULL,NULL)"),
+		OCI_SUCCESS);
+	assertEquals(execImmediate("commit"),OCI_SUCCESS);
+	assertEquals(countRows("protocoltesttable"),3);
+	stdoutput.printf("\n\n");
+
+
+
+	stdoutput.printf("\n============= Statements =============\n\n");
+
+	OCIStmt	*stmt=NULL;
+
+	stdoutput.printf("OCIHandleAlloc - statement\n");
+	assertEquals(
+		OCIHandleAlloc(env,(void **)&stmt,OCI_HTYPE_STMT,0,NULL),
+		OCI_SUCCESS);
+	assertTrue(stmt!=NULL);
+	stdoutput.printf("\n\n");
+
+
+	stdoutput.printf("OCIStmtPrepare - select\n");
+	const char	*query="select * from protocoltesttable "
+					"order by testnumber";
 	assertEquals(
 		OCIStmtPrepare(stmt,err,
 				(text *)query,charstring::getLength(query),
-				OCI_NTV_SYNTAX,
-				//OCI_V7_SYNTAX,
-				OCI_DEFAULT),
+				OCI_NTV_SYNTAX,OCI_DEFAULT),
 		OCI_SUCCESS);
-	assertEquals(
-		OCIStmtExecute(svc,stmt,err,0,0,NULL,NULL,OCI_PARSE_ONLY),
-		OCI_SUCCESS);
+	ub2	stmttype=0;
 	assertEquals(
 		OCIAttrGet(stmt,OCI_HTYPE_STMT,
 				&stmttype,NULL,OCI_ATTR_STMT_TYPE,err),
@@ -146,59 +512,1736 @@ int	main(int argc, char **argv) {
 	stdoutput.printf("\n\n");
 
 
-	stdoutput.printf("\n================ Describe =============\n");
+	stdoutput.printf("OCIStmtExecute - parse only\n");
 	assertEquals(
-		OCIStmtExecute(svc,stmt,err,0,0,NULL,NULL,OCI_DESCRIBE_ONLY),
+		OCIStmtExecute(svc,stmt,err,0,0,NULL,NULL,OCI_PARSE_ONLY),
 		OCI_SUCCESS);
-	assertEquals(
-		OCIAttrGet(stmt,OCI_HTYPE_STMT,
-				&ncols,NULL,
-				OCI_ATTR_PARAM_COUNT,err),
-		OCI_SUCCESS);
-	assertEquals(ncols,1);
-	assertEquals(
-		OCIParamGet(stmt,OCI_HTYPE_STMT,err,(void **)&param,1),
-		OCI_SUCCESS);
-	assertEquals(
-		OCIAttrGet(param,OCI_DTYPE_PARAM,
-				&colname,&colnamelen,
-				OCI_ATTR_NAME,err),
-		OCI_SUCCESS);
-	assertEquals((const char *)colname,"HELLO");
-	assertEquals(colnamelen,5);
 	stdoutput.printf("\n\n");
 
 
-	stdoutput.printf("\n================ Execute ==============\n");
+	stdoutput.printf("OCIAttrGet - statement type\n");
+	OCIStmt	*typestmt=NULL;
+	assertEquals(
+		OCIHandleAlloc(env,(void **)&typestmt,OCI_HTYPE_STMT,0,NULL),
+		OCI_SUCCESS);
+	const char	*insertquery="insert into protocoltesttran values (0)";
+	assertEquals(
+		OCIStmtPrepare(typestmt,err,(text *)insertquery,
+				charstring::getLength(insertquery),
+				OCI_NTV_SYNTAX,OCI_DEFAULT),
+		OCI_SUCCESS);
+	stmttype=0;
+	assertEquals(
+		OCIAttrGet(typestmt,OCI_HTYPE_STMT,
+				&stmttype,NULL,OCI_ATTR_STMT_TYPE,err),
+		OCI_SUCCESS);
+	assertEquals(stmttype,OCI_STMT_INSERT);
+	const char	*updatequery="update protocoltesttran set testnumber=1";
+	assertEquals(
+		OCIStmtPrepare(typestmt,err,(text *)updatequery,
+				charstring::getLength(updatequery),
+				OCI_NTV_SYNTAX,OCI_DEFAULT),
+		OCI_SUCCESS);
+	stmttype=0;
+	assertEquals(
+		OCIAttrGet(typestmt,OCI_HTYPE_STMT,
+				&stmttype,NULL,OCI_ATTR_STMT_TYPE,err),
+		OCI_SUCCESS);
+	assertEquals(stmttype,OCI_STMT_UPDATE);
+	const char	*deletequery="delete from protocoltesttran";
+	assertEquals(
+		OCIStmtPrepare(typestmt,err,(text *)deletequery,
+				charstring::getLength(deletequery),
+				OCI_NTV_SYNTAX,OCI_DEFAULT),
+		OCI_SUCCESS);
+	stmttype=0;
+	assertEquals(
+		OCIAttrGet(typestmt,OCI_HTYPE_STMT,
+				&stmttype,NULL,OCI_ATTR_STMT_TYPE,err),
+		OCI_SUCCESS);
+	assertEquals(stmttype,OCI_STMT_DELETE);
+	stdoutput.printf("\n\n");
+
+
+	stdoutput.printf("OCIAttrGet - affected row count\n");
+	assertEquals(
+		OCIStmtPrepare(typestmt,err,(text *)insertquery,
+				charstring::getLength(insertquery),
+				OCI_NTV_SYNTAX,OCI_DEFAULT),
+		OCI_SUCCESS);
+	assertEquals(
+		OCIStmtExecute(svc,typestmt,err,1,0,NULL,NULL,OCI_DEFAULT),
+		OCI_SUCCESS);
+	ub4	affectedrows=0;
+	assertEquals(
+		OCIAttrGet(typestmt,OCI_HTYPE_STMT,
+				&affectedrows,NULL,OCI_ATTR_ROW_COUNT,err),
+		OCI_SUCCESS);
+	assertEquals((int)affectedrows,1);
+	assertEquals(
+		OCIStmtPrepare(typestmt,err,(text *)deletequery,
+				charstring::getLength(deletequery),
+				OCI_NTV_SYNTAX,OCI_DEFAULT),
+		OCI_SUCCESS);
+	assertEquals(
+		OCIStmtExecute(svc,typestmt,err,1,0,NULL,NULL,OCI_DEFAULT),
+		OCI_SUCCESS);
+	affectedrows=0;
+	assertEquals(
+		OCIAttrGet(typestmt,OCI_HTYPE_STMT,
+				&affectedrows,NULL,OCI_ATTR_ROW_COUNT,err),
+		OCI_SUCCESS);
+	assertEquals((int)affectedrows,1);
+	assertEquals(execImmediate("commit"),OCI_SUCCESS);
+	stdoutput.printf("\n\n");
+
+
+	stdoutput.printf("OCIHandleFree - statement\n");
+	assertEquals(OCIHandleFree(typestmt,OCI_HTYPE_STMT),OCI_SUCCESS);
+	stdoutput.printf("\n\n");
+
+
+
+	stdoutput.printf("\n============== Metadata ==============\n\n");
+
+	stdoutput.printf("OCIStmtExecute - describe only\n");
+	assertEquals(
+		OCIStmtExecute(svc,stmt,err,0,0,NULL,NULL,OCI_DESCRIBE_ONLY),
+		OCI_SUCCESS);
+	ub4	ncols=0;
+	assertEquals(
+		OCIAttrGet(stmt,OCI_HTYPE_STMT,
+				&ncols,NULL,OCI_ATTR_PARAM_COUNT,err),
+		OCI_SUCCESS);
+	assertEquals((int)ncols,4);
+	stdoutput.printf("\n\n");
+
+
+	stdoutput.printf("OCIParamGet - every column\n");
+	assertColumn(stmt,1,"TESTNUMBER",SQLT_NUM,22,10,0);
+	assertColumn(stmt,2,"TESTCHAR",SQLT_AFC,20,0,0);
+	assertColumn(stmt,3,"TESTVARCHAR",SQLT_CHR,40,0,0);
+	assertColumn(stmt,4,"TESTDATE",SQLT_DAT,7,0,0);
+	stdoutput.printf("\n\n");
+
+
+	stdoutput.printf("OCIParamGet - past the last column\n");
+	OCIParam	*noparam=NULL;
+	assertEquals(
+		OCIParamGet(stmt,OCI_HTYPE_STMT,err,(void **)&noparam,5),
+		OCI_ERROR);
+	stdoutput.printf("\n\n");
+
+
+
+	stdoutput.printf("\n=============== Fetch ================\n\n");
+
+	stdoutput.printf("OCIStmtExecute\n");
 	assertEquals(
 		OCIStmtExecute(svc,stmt,err,0,0,NULL,NULL,OCI_DEFAULT),
 		OCI_SUCCESS);
 	stdoutput.printf("\n\n");
 
 
-	stdoutput.printf("\n================ Define ===============\n");
+	stdoutput.printf("OCIDefineByPos - every column\n");
+	OCIDefine	*def[4];
+	char		number[64];
+	char		charfield[64];
+	char		varcharfield[64];
+	char		datefield[64];
+	sb2		ind[4];
+	ub2		retlen[4];
+	ub2		retcode[4];
+	bytestring::zero(def,sizeof(def));
+	bytestring::zero(ind,sizeof(ind));
+	bytestring::zero(retlen,sizeof(retlen));
+	bytestring::zero(retcode,sizeof(retcode));
 	assertEquals(
-		OCIDefineByPos(stmt,&def,err,1,
-				field,sizeof(field),
-				SQLT_STR,
-				&indp,&retlen,&retcode,
-				OCI_DEFAULT),
+		OCIDefineByPos(stmt,&def[0],err,1,
+				number,sizeof(number),SQLT_STR,
+				&ind[0],&retlen[0],&retcode[0],OCI_DEFAULT),
+		OCI_SUCCESS);
+	assertEquals(
+		OCIDefineByPos(stmt,&def[1],err,2,
+				charfield,sizeof(charfield),SQLT_STR,
+				&ind[1],&retlen[1],&retcode[1],OCI_DEFAULT),
+		OCI_SUCCESS);
+	assertEquals(
+		OCIDefineByPos(stmt,&def[2],err,3,
+				varcharfield,sizeof(varcharfield),SQLT_STR,
+				&ind[2],&retlen[2],&retcode[2],OCI_DEFAULT),
+		OCI_SUCCESS);
+	assertEquals(
+		OCIDefineByPos(stmt,&def[3],err,4,
+				datefield,sizeof(datefield),SQLT_STR,
+				&ind[3],&retlen[3],&retcode[3],OCI_DEFAULT),
 		OCI_SUCCESS);
 	stdoutput.printf("\n\n");
 
 
-	stdoutput.printf("\n================ Fetch ================\n");
+	stdoutput.printf("OCIStmtFetch2 - first row\n");
 	assertEquals(
-		OCIStmtFetch(stmt,err,1,OCI_FETCH_NEXT,OCI_DEFAULT),
+		OCIStmtFetch2(stmt,err,1,OCI_FETCH_NEXT,0,OCI_DEFAULT),
 		OCI_SUCCESS);
+	assertEquals((const char *)number,"1");
+	// char columns come back blank padded to their declared width
+	assertEquals((const char *)charfield,"char1               ");
+	assertEquals((const char *)varcharfield,"varchar1");
+	assertEquals((int)ind[0],0);
+	assertEquals((int)ind[1],0);
+	assertEquals((int)ind[2],0);
+	assertEquals((int)ind[3],0);
+	ub4	currentrow=0;
 	assertEquals(
 		OCIAttrGet(stmt,OCI_HTYPE_STMT,
-				&currentrow,NULL,
-				OCI_ATTR_ROW_COUNT,err),
+				&currentrow,NULL,OCI_ATTR_ROW_COUNT,err),
 		OCI_SUCCESS);
-	assertEquals(currentrow,1);
-	assertEquals((const char *)field,"hello");
+	assertEquals((int)currentrow,1);
 	stdoutput.printf("\n\n");
+
+
+	stdoutput.printf("OCIStmtFetch2 - second row\n");
+	assertEquals(
+		OCIStmtFetch2(stmt,err,1,OCI_FETCH_NEXT,0,OCI_DEFAULT),
+		OCI_SUCCESS);
+	assertEquals((const char *)number,"2");
+	assertEquals((const char *)charfield,"char2               ");
+	assertEquals((const char *)varcharfield,"varchar2");
+	currentrow=0;
+	assertEquals(
+		OCIAttrGet(stmt,OCI_HTYPE_STMT,
+				&currentrow,NULL,OCI_ATTR_ROW_COUNT,err),
+		OCI_SUCCESS);
+	assertEquals((int)currentrow,2);
+	stdoutput.printf("\n\n");
+
+
+	stdoutput.printf("OCIStmtFetch2 - nulls\n");
+	assertEquals(
+		OCIStmtFetch2(stmt,err,1,OCI_FETCH_NEXT,0,OCI_DEFAULT),
+		OCI_SUCCESS);
+	assertEquals((const char *)number,"3");
+	// -1 is OCI_IND_NULL
+	assertEquals((int)ind[0],0);
+	assertEquals((int)ind[1],-1);
+	assertEquals((int)ind[2],-1);
+	assertEquals((int)ind[3],-1);
+	assertEquals((int)retlen[1],0);
+	assertEquals((int)retlen[2],0);
+	assertEquals((int)retlen[3],0);
+	stdoutput.printf("\n\n");
+
+
+	stdoutput.printf("OCIStmtFetch2 - past the last row\n");
+	assertEquals(
+		OCIStmtFetch2(stmt,err,1,OCI_FETCH_NEXT,0,OCI_DEFAULT),
+		OCI_NO_DATA);
+	currentrow=0;
+	assertEquals(
+		OCIAttrGet(stmt,OCI_HTYPE_STMT,
+				&currentrow,NULL,OCI_ATTR_ROW_COUNT,err),
+		OCI_SUCCESS);
+	assertEquals((int)currentrow,3);
+	stdoutput.printf("\n\n");
+
+
+	stdoutput.printf("OCIStmtFetch2 - date, as a string\n");
+	const char	*datequery="select "
+				"to_char(testdate,'YYYY-MM-DD HH24:MI:SS') "
+				"from protocoltesttable "
+				"where testnumber=1";
+	assertEquals(
+		OCIStmtPrepare(stmt,err,(text *)datequery,
+				charstring::getLength(datequery),
+				OCI_NTV_SYNTAX,OCI_DEFAULT),
+		OCI_SUCCESS);
+	assertEquals(
+		OCIStmtExecute(svc,stmt,err,0,0,NULL,NULL,OCI_DEFAULT),
+		OCI_SUCCESS);
+	bytestring::zero(datefield,sizeof(datefield));
+	assertEquals(
+		OCIDefineByPos(stmt,&def[0],err,1,
+				datefield,sizeof(datefield),SQLT_STR,
+				&ind[0],&retlen[0],&retcode[0],OCI_DEFAULT),
+		OCI_SUCCESS);
+	assertEquals(
+		OCIStmtFetch2(stmt,err,1,OCI_FETCH_NEXT,0,OCI_DEFAULT),
+		OCI_SUCCESS);
+	assertEquals((const char *)datefield,"2001-01-01 01:01:01");
+	assertEquals((int)retlen[0],19);
+	stdoutput.printf("\n\n");
+
+
+
+	stdoutput.printf("\n=============== Binds ================\n\n");
+
+	OCIStmt	*bindstmt=NULL;
+	assertEquals(
+		OCIHandleAlloc(env,(void **)&bindstmt,OCI_HTYPE_STMT,0,NULL),
+		OCI_SUCCESS);
+
+	// a table of its own, so the fetch section's fixed three rows stay
+	// where they are
+	execImmediate("drop table protocoltestbind");
+	assertEquals(
+		execImmediate("create table protocoltestbind ("
+				"testnumber number(10),"
+				"testchar char(20),"
+				"testvarchar varchar2(40))"),
+		OCI_SUCCESS);
+
+	const char	*bindinsert="insert into protocoltestbind "
+					"(testnumber,testchar,testvarchar) "
+					"values (:num,:chr,:vchr)";
+	OCIBind		*bnd[3];
+	sb4		bindnumber=0;
+	char		bindchar[32];
+	char		bindvarchar[64];
+	sb2		bindind[3];
+	bytestring::zero(bnd,sizeof(bnd));
+	bytestring::zero(bindind,sizeof(bindind));
+
+
+	stdoutput.printf("OCIBindByName\n");
+	assertEquals(
+		OCIStmtPrepare(bindstmt,err,(text *)bindinsert,
+				charstring::getLength(bindinsert),
+				OCI_NTV_SYNTAX,OCI_DEFAULT),
+		OCI_SUCCESS);
+	bindnumber=10;
+	charstring::copy(bindchar,"bindchar");
+	charstring::copy(bindvarchar,"bindvarchar");
+	assertEquals(
+		OCIBindByName(bindstmt,&bnd[0],err,(text *)":num",4,
+				&bindnumber,sizeof(bindnumber),SQLT_INT,
+				&bindind[0],NULL,NULL,0,NULL,OCI_DEFAULT),
+		OCI_SUCCESS);
+	assertEquals(
+		OCIBindByName(bindstmt,&bnd[1],err,(text *)":chr",4,
+				bindchar,sizeof(bindchar),SQLT_STR,
+				&bindind[1],NULL,NULL,0,NULL,OCI_DEFAULT),
+		OCI_SUCCESS);
+	assertEquals(
+		OCIBindByName(bindstmt,&bnd[2],err,(text *)":vchr",5,
+				bindvarchar,sizeof(bindvarchar),SQLT_STR,
+				&bindind[2],NULL,NULL,0,NULL,OCI_DEFAULT),
+		OCI_SUCCESS);
+	assertEquals(
+		OCIStmtExecute(svc,bindstmt,err,1,0,NULL,NULL,OCI_DEFAULT),
+		OCI_SUCCESS);
+	assertEquals(countRows("protocoltestbind"),1);
+	assertEquals(
+		countRows("protocoltestbind where testnumber=10 and "
+				"testvarchar='bindvarchar'"),1);
+	stdoutput.printf("\n\n");
+
+
+	stdoutput.printf("OCIBindByPos\n");
+	assertEquals(
+		OCIStmtPrepare(bindstmt,err,(text *)bindinsert,
+				charstring::getLength(bindinsert),
+				OCI_NTV_SYNTAX,OCI_DEFAULT),
+		OCI_SUCCESS);
+	bindnumber=20;
+	charstring::copy(bindchar,"poschar");
+	charstring::copy(bindvarchar,"posvarchar");
+	assertEquals(
+		OCIBindByPos(bindstmt,&bnd[0],err,1,
+				&bindnumber,sizeof(bindnumber),SQLT_INT,
+				&bindind[0],NULL,NULL,0,NULL,OCI_DEFAULT),
+		OCI_SUCCESS);
+	assertEquals(
+		OCIBindByPos(bindstmt,&bnd[1],err,2,
+				bindchar,sizeof(bindchar),SQLT_STR,
+				&bindind[1],NULL,NULL,0,NULL,OCI_DEFAULT),
+		OCI_SUCCESS);
+	assertEquals(
+		OCIBindByPos(bindstmt,&bnd[2],err,3,
+				bindvarchar,sizeof(bindvarchar),SQLT_STR,
+				&bindind[2],NULL,NULL,0,NULL,OCI_DEFAULT),
+		OCI_SUCCESS);
+	assertEquals(
+		OCIStmtExecute(svc,bindstmt,err,1,0,NULL,NULL,OCI_DEFAULT),
+		OCI_SUCCESS);
+	assertEquals(
+		countRows("protocoltestbind where testnumber=20 and "
+				"testvarchar='posvarchar'"),1);
+	stdoutput.printf("\n\n");
+
+
+	stdoutput.printf("OCIBindByName - null binds\n");
+	assertEquals(
+		OCIStmtPrepare(bindstmt,err,(text *)bindinsert,
+				charstring::getLength(bindinsert),
+				OCI_NTV_SYNTAX,OCI_DEFAULT),
+		OCI_SUCCESS);
+	bindnumber=30;
+	// the buffers still hold the values from the case above, so a null
+	// really has to come from the indicator, not from an empty buffer
+	assertEquals(
+		OCIBindByName(bindstmt,&bnd[0],err,(text *)":num",4,
+				&bindnumber,sizeof(bindnumber),SQLT_INT,
+				&bindind[0],NULL,NULL,0,NULL,OCI_DEFAULT),
+		OCI_SUCCESS);
+	assertEquals(
+		OCIBindByName(bindstmt,&bnd[1],err,(text *)":chr",4,
+				bindchar,sizeof(bindchar),SQLT_STR,
+				&bindind[1],NULL,NULL,0,NULL,OCI_DEFAULT),
+		OCI_SUCCESS);
+	assertEquals(
+		OCIBindByName(bindstmt,&bnd[2],err,(text *)":vchr",5,
+				bindvarchar,sizeof(bindvarchar),SQLT_STR,
+				&bindind[2],NULL,NULL,0,NULL,OCI_DEFAULT),
+		OCI_SUCCESS);
+	bindind[1]=OCI_IND_NULL;
+	bindind[2]=OCI_IND_NULL;
+	assertEquals(
+		OCIStmtExecute(svc,bindstmt,err,1,0,NULL,NULL,OCI_DEFAULT),
+		OCI_SUCCESS);
+	assertEquals(
+		countRows("protocoltestbind where testnumber=30 and "
+				"testchar is null and testvarchar is null"),1);
+	bindind[1]=OCI_IND_NOTNULL;
+	bindind[2]=OCI_IND_NOTNULL;
+	stdoutput.printf("\n\n");
+
+
+	stdoutput.printf("OCIStmtExecute - bind once, execute many\n");
+	assertEquals(
+		OCIStmtPrepare(bindstmt,err,(text *)bindinsert,
+				charstring::getLength(bindinsert),
+				OCI_NTV_SYNTAX,OCI_DEFAULT),
+		OCI_SUCCESS);
+	charstring::copy(bindchar,"manychar");
+	charstring::copy(bindvarchar,"manyvarchar");
+	assertEquals(
+		OCIBindByName(bindstmt,&bnd[0],err,(text *)":num",4,
+				&bindnumber,sizeof(bindnumber),SQLT_INT,
+				&bindind[0],NULL,NULL,0,NULL,OCI_DEFAULT),
+		OCI_SUCCESS);
+	assertEquals(
+		OCIBindByName(bindstmt,&bnd[1],err,(text *)":chr",4,
+				bindchar,sizeof(bindchar),SQLT_STR,
+				&bindind[1],NULL,NULL,0,NULL,OCI_DEFAULT),
+		OCI_SUCCESS);
+	assertEquals(
+		OCIBindByName(bindstmt,&bnd[2],err,(text *)":vchr",5,
+				bindvarchar,sizeof(bindvarchar),SQLT_STR,
+				&bindind[2],NULL,NULL,0,NULL,OCI_DEFAULT),
+		OCI_SUCCESS);
+	// the binds stay put, only the buffer changes between executes
+	for (sb4 i=0; i<3; i++) {
+		bindnumber=40+i;
+		assertEquals(
+			OCIStmtExecute(svc,bindstmt,err,1,0,NULL,NULL,
+					OCI_DEFAULT),
+			OCI_SUCCESS);
+	}
+	assertEquals(
+		countRows("protocoltestbind where testnumber between 40 and 42"),
+		3);
+	stdoutput.printf("\n\n");
+
+
+	stdoutput.printf("OCIStmtExecute - array bind\n");
+	assertEquals(
+		OCIStmtPrepare(bindstmt,err,(text *)bindinsert,
+				charstring::getLength(bindinsert),
+				OCI_NTV_SYNTAX,OCI_DEFAULT),
+		OCI_SUCCESS);
+	sb4	arrnumber[3];
+	char	arrchar[3][32];
+	char	arrvarchar[3][64];
+	sb2	arrind[3][3];
+	bytestring::zero(arrind,sizeof(arrind));
+	for (int i=0; i<3; i++) {
+		arrnumber[i]=50+i;
+		charstring::printf(arrchar[i],sizeof(arrchar[i]),
+					"arrchar%d",i);
+		charstring::printf(arrvarchar[i],sizeof(arrvarchar[i]),
+					"arrvarchar%d",i);
+	}
+	// value_sz is the size of one element - oracle strides the array by it
+	assertEquals(
+		OCIBindByName(bindstmt,&bnd[0],err,(text *)":num",4,
+				arrnumber,sizeof(arrnumber[0]),SQLT_INT,
+				&arrind[0][0],NULL,NULL,0,NULL,OCI_DEFAULT),
+		OCI_SUCCESS);
+	assertEquals(
+		OCIBindByName(bindstmt,&bnd[1],err,(text *)":chr",4,
+				arrchar,sizeof(arrchar[0]),SQLT_STR,
+				&arrind[1][0],NULL,NULL,0,NULL,OCI_DEFAULT),
+		OCI_SUCCESS);
+	assertEquals(
+		OCIBindByName(bindstmt,&bnd[2],err,(text *)":vchr",5,
+				arrvarchar,sizeof(arrvarchar[0]),SQLT_STR,
+				&arrind[2][0],NULL,NULL,0,NULL,OCI_DEFAULT),
+		OCI_SUCCESS);
+	assertEquals(
+		OCIStmtExecute(svc,bindstmt,err,3,0,NULL,NULL,OCI_DEFAULT),
+		OCI_SUCCESS);
+	ub4	arrayrows=0;
+	assertEquals(
+		OCIAttrGet(bindstmt,OCI_HTYPE_STMT,
+				&arrayrows,NULL,OCI_ATTR_ROW_COUNT,err),
+		OCI_SUCCESS);
+	assertEquals((int)arrayrows,3);
+	assertEquals(
+		countRows("protocoltestbind where testnumber between 50 and 52"),
+		3);
+	assertEquals(
+		countRows("protocoltestbind where testvarchar='arrvarchar1'"),1);
+	stdoutput.printf("\n\n");
+
+
+	stdoutput.printf("OCIBindByName - output bind\n");
+	const char	*outblock="begin select count(*) into :cnt "
+					"from protocoltestbind; end;";
+	assertEquals(
+		OCIStmtPrepare(bindstmt,err,(text *)outblock,
+				charstring::getLength(outblock),
+				OCI_NTV_SYNTAX,OCI_DEFAULT),
+		OCI_SUCCESS);
+	stmttype=0;
+	assertEquals(
+		OCIAttrGet(bindstmt,OCI_HTYPE_STMT,
+				&stmttype,NULL,OCI_ATTR_STMT_TYPE,err),
+		OCI_SUCCESS);
+	assertEquals(stmttype,OCI_STMT_BEGIN);
+	sb4	outcount=0;
+	sb2	outind=0;
+	assertEquals(
+		OCIBindByName(bindstmt,&bnd[0],err,(text *)":cnt",4,
+				&outcount,sizeof(outcount),SQLT_INT,
+				&outind,NULL,NULL,0,NULL,OCI_DEFAULT),
+		OCI_SUCCESS);
+	assertEquals(
+		OCIStmtExecute(svc,bindstmt,err,1,0,NULL,NULL,OCI_DEFAULT),
+		OCI_SUCCESS);
+	assertEquals((int)outcount,countRows("protocoltestbind"));
+	assertEquals((int)outind,OCI_IND_NOTNULL);
+	stdoutput.printf("\n\n");
+
+
+	stdoutput.printf("OCIBindByName - in-out bind\n");
+	const char	*inoutblock="begin :v := :v * 2; end;";
+	assertEquals(
+		OCIStmtPrepare(bindstmt,err,(text *)inoutblock,
+				charstring::getLength(inoutblock),
+				OCI_NTV_SYNTAX,OCI_DEFAULT),
+		OCI_SUCCESS);
+	sb4	inoutvalue=21;
+	sb2	inoutind=0;
+	assertEquals(
+		OCIBindByName(bindstmt,&bnd[0],err,(text *)":v",2,
+				&inoutvalue,sizeof(inoutvalue),SQLT_INT,
+				&inoutind,NULL,NULL,0,NULL,OCI_DEFAULT),
+		OCI_SUCCESS);
+	assertEquals(
+		OCIStmtExecute(svc,bindstmt,err,1,0,NULL,NULL,OCI_DEFAULT),
+		OCI_SUCCESS);
+	assertEquals((int)inoutvalue,42);
+	stdoutput.printf("\n\n");
+
+
+	stdoutput.printf("OCIBindByName - output bind, null\n");
+	const char	*nulloutblock="begin :v := NULL; end;";
+	assertEquals(
+		OCIStmtPrepare(bindstmt,err,(text *)nulloutblock,
+				charstring::getLength(nulloutblock),
+				OCI_NTV_SYNTAX,OCI_DEFAULT),
+		OCI_SUCCESS);
+	inoutvalue=99;
+	inoutind=OCI_IND_NOTNULL;
+	assertEquals(
+		OCIBindByName(bindstmt,&bnd[0],err,(text *)":v",2,
+				&inoutvalue,sizeof(inoutvalue),SQLT_INT,
+				&inoutind,NULL,NULL,0,NULL,OCI_DEFAULT),
+		OCI_SUCCESS);
+	assertEquals(
+		OCIStmtExecute(svc,bindstmt,err,1,0,NULL,NULL,OCI_DEFAULT),
+		OCI_SUCCESS);
+	assertEquals((int)inoutind,OCI_IND_NULL);
+	stdoutput.printf("\n\n");
+
+
+	stdoutput.printf("OCIStmtExecute - no such placeholder\n");
+	assertEquals(
+		OCIStmtPrepare(bindstmt,err,(text *)bindinsert,
+				charstring::getLength(bindinsert),
+				OCI_NTV_SYNTAX,OCI_DEFAULT),
+		OCI_SUCCESS);
+	// OCIStmtPrepare parses the placeholders client side, so the bind is
+	// what catches this, not the execute
+	assertEquals(
+		OCIBindByName(bindstmt,&bnd[0],err,(text *)":nosuchbind",11,
+				&bindnumber,sizeof(bindnumber),SQLT_INT,
+				&bindind[0],NULL,NULL,0,NULL,OCI_DEFAULT),
+		OCI_ERROR);
+	// ORA-01036, illegal variable name/number
+	assertEquals((int)errorCode(),1036);
+	// and with nothing bound, the execute cannot go either
+	assertEquals(
+		OCIStmtExecute(svc,bindstmt,err,1,0,NULL,NULL,OCI_DEFAULT),
+		OCI_ERROR);
+	// ORA-01008, not all variables bound
+	assertEquals((int)errorCode(),1008);
+	stdoutput.printf("\n\n");
+
+
+	stdoutput.printf("OCIHandleFree - statement\n");
+	assertEquals(execImmediate("commit"),OCI_SUCCESS);
+	assertEquals(OCIHandleFree(bindstmt,OCI_HTYPE_STMT),OCI_SUCCESS);
+	stdoutput.printf("\n\n");
+
+
+
+	stdoutput.printf("\n============= Datatypes ==============\n\n");
+
+	OCIStmt	*typestmt2=NULL;
+	assertEquals(
+		OCIHandleAlloc(env,(void **)&typestmt2,OCI_HTYPE_STMT,0,NULL),
+		OCI_SUCCESS);
+
+	stdoutput.printf("create table - one column per type\n");
+	execImmediate("drop table protocoltesttypes");
+	execImmediate("drop table protocoltestlong");
+	execImmediate("drop table protocoltestlongraw");
+	assertEquals(
+		execImmediate("create table protocoltesttypes ("
+				"testvarchar varchar2(40),"
+				"testnumber number(10,2),"
+				"testdate date,"
+				"testraw raw(20),"
+				"testchar char(20),"
+				"testrowid rowid,"
+				"testtimestamp timestamp,"
+				"testtimestamptz timestamp with time zone,"
+				"testintervalym interval year to month,"
+				"testintervalds interval day to second)"),
+		OCI_SUCCESS);
+	// only one LONG column is allowed per table, so those get their own
+	assertEquals(
+		execImmediate("create table protocoltestlong "
+				"(testlong long)"),
+		OCI_SUCCESS);
+	assertEquals(
+		execImmediate("create table protocoltestlongraw "
+				"(testlongraw long raw)"),
+		OCI_SUCCESS);
+	stdoutput.printf("\n\n");
+
+
+	stdoutput.printf("insert - one row of every type\n");
+	assertEquals(
+		execImmediate("insert into protocoltesttypes values ("
+			"'varchar value',"
+			"123.45,"
+			"to_date('2003-03-03 03:03:03',"
+				"'YYYY-MM-DD HH24:MI:SS'),"
+			"hextoraw('0102030405'),"
+			"'char value',"
+			"NULL,"
+			"to_timestamp('2004-04-04 04:04:04.444444',"
+				"'YYYY-MM-DD HH24:MI:SS.FF'),"
+			"to_timestamp_tz('2005-05-05 05:05:05.555555 -05:00',"
+				"'YYYY-MM-DD HH24:MI:SS.FF TZH:TZM'),"
+			"to_yminterval('01-02'),"
+			"to_dsinterval('3 04:05:06.777777'))"),
+		OCI_SUCCESS);
+	// a rowid has to come from somewhere real, so borrow one
+	assertEquals(
+		execImmediate("update protocoltesttypes set testrowid="
+				"(select max(rowid) from protocoltesttable)"),
+		OCI_SUCCESS);
+	assertEquals(
+		execImmediate("insert into protocoltestlong values "
+				"('long value')"),
+		OCI_SUCCESS);
+	assertEquals(
+		execImmediate("insert into protocoltestlongraw values "
+				"(hextoraw('0a0b0c0d0e'))"),
+		OCI_SUCCESS);
+	assertEquals(execImmediate("commit"),OCI_SUCCESS);
+	stdoutput.printf("\n\n");
+
+
+	stdoutput.printf("OCIStmtExecute - describe every type\n");
+	const char	*typequery="select * from protocoltesttypes";
+	assertEquals(
+		OCIStmtPrepare(typestmt2,err,(text *)typequery,
+				charstring::getLength(typequery),
+				OCI_NTV_SYNTAX,OCI_DEFAULT),
+		OCI_SUCCESS);
+	assertEquals(
+		OCIStmtExecute(svc,typestmt2,err,0,0,NULL,NULL,
+				OCI_DESCRIBE_ONLY),
+		OCI_SUCCESS);
+	ub4	typecols=0;
+	assertEquals(
+		OCIAttrGet(typestmt2,OCI_HTYPE_STMT,
+				&typecols,NULL,OCI_ATTR_PARAM_COUNT,err),
+		OCI_SUCCESS);
+	assertEquals((int)typecols,10);
+	assertColumn(typestmt2,1,"TESTVARCHAR",SQLT_CHR,40,0,0);
+	assertColumn(typestmt2,2,"TESTNUMBER",SQLT_NUM,22,10,2);
+	assertColumn(typestmt2,3,"TESTDATE",SQLT_DAT,7,0,0);
+	assertColumn(typestmt2,4,"TESTRAW",SQLT_BIN,20,0,0);
+	assertColumn(typestmt2,5,"TESTCHAR",SQLT_AFC,20,0,0);
+	assertColumn(typestmt2,6,"TESTROWID",SQLT_RDD,8,0,0);
+	// The module calls these 180 through 183, at
+	// src/protocols/oracle.cpp:145-148, and that is right on the wire.  By
+	// the time a describe reaches the client, OCI has already mapped them
+	// to the SQLT_ codes below.
+	assertColumn(typestmt2,7,"TESTTIMESTAMP",SQLT_TIMESTAMP,11,0,6);
+	assertColumn(typestmt2,8,"TESTTIMESTAMPTZ",SQLT_TIMESTAMP_TZ,13,0,6);
+	assertColumn(typestmt2,9,"TESTINTERVALYM",SQLT_INTERVAL_YM,5,2,0);
+	assertColumn(typestmt2,10,"TESTINTERVALDS",SQLT_INTERVAL_DS,11,2,6);
+	stdoutput.printf("\n\n");
+
+
+	stdoutput.printf("OCIDefineByPos - every type, matching SQLT code\n");
+	assertEquals(
+		OCIStmtExecute(svc,typestmt2,err,0,0,NULL,NULL,OCI_DEFAULT),
+		OCI_SUCCESS);
+
+	OCIDefine	*typedef_[10];
+	sb2		typeind[10];
+	ub2		typelen[10];
+	char		typevarchar[64];
+	OCINumber	typenumber;
+	ub1		typedate[7];
+	ub1		typeraw[32];
+	char		typechar[64];
+	OCIRowid	*typerowid=NULL;
+	OCIDateTime	*typetimestamp=NULL;
+	OCIDateTime	*typetimestamptz=NULL;
+	OCIInterval	*typeintervalym=NULL;
+	OCIInterval	*typeintervalds=NULL;
+	bytestring::zero(typedef_,sizeof(typedef_));
+	bytestring::zero(typeind,sizeof(typeind));
+	bytestring::zero(typelen,sizeof(typelen));
+	bytestring::zero(typevarchar,sizeof(typevarchar));
+	bytestring::zero(&typenumber,sizeof(typenumber));
+	bytestring::zero(typedate,sizeof(typedate));
+	bytestring::zero(typeraw,sizeof(typeraw));
+	bytestring::zero(typechar,sizeof(typechar));
+
+	// the descriptor types each need allocating before they can be
+	// defined into
+	assertEquals(
+		OCIDescriptorAlloc(env,(void **)&typerowid,
+					OCI_DTYPE_ROWID,0,NULL),
+		OCI_SUCCESS);
+	assertEquals(
+		OCIDescriptorAlloc(env,(void **)&typetimestamp,
+					OCI_DTYPE_TIMESTAMP,0,NULL),
+		OCI_SUCCESS);
+	assertEquals(
+		OCIDescriptorAlloc(env,(void **)&typetimestamptz,
+					OCI_DTYPE_TIMESTAMP_TZ,0,NULL),
+		OCI_SUCCESS);
+	assertEquals(
+		OCIDescriptorAlloc(env,(void **)&typeintervalym,
+					OCI_DTYPE_INTERVAL_YM,0,NULL),
+		OCI_SUCCESS);
+	assertEquals(
+		OCIDescriptorAlloc(env,(void **)&typeintervalds,
+					OCI_DTYPE_INTERVAL_DS,0,NULL),
+		OCI_SUCCESS);
+
+	assertEquals(
+		OCIDefineByPos(typestmt2,&typedef_[0],err,1,
+				typevarchar,sizeof(typevarchar),SQLT_CHR,
+				&typeind[0],&typelen[0],NULL,OCI_DEFAULT),
+		OCI_SUCCESS);
+	assertEquals(
+		OCIDefineByPos(typestmt2,&typedef_[1],err,2,
+				&typenumber,sizeof(typenumber),SQLT_VNU,
+				&typeind[1],&typelen[1],NULL,OCI_DEFAULT),
+		OCI_SUCCESS);
+	assertEquals(
+		OCIDefineByPos(typestmt2,&typedef_[2],err,3,
+				typedate,sizeof(typedate),SQLT_DAT,
+				&typeind[2],&typelen[2],NULL,OCI_DEFAULT),
+		OCI_SUCCESS);
+	assertEquals(
+		OCIDefineByPos(typestmt2,&typedef_[3],err,4,
+				typeraw,sizeof(typeraw),SQLT_BIN,
+				&typeind[3],&typelen[3],NULL,OCI_DEFAULT),
+		OCI_SUCCESS);
+	assertEquals(
+		OCIDefineByPos(typestmt2,&typedef_[4],err,5,
+				typechar,sizeof(typechar),SQLT_AFC,
+				&typeind[4],&typelen[4],NULL,OCI_DEFAULT),
+		OCI_SUCCESS);
+	assertEquals(
+		OCIDefineByPos(typestmt2,&typedef_[5],err,6,
+				&typerowid,0,SQLT_RDD,
+				&typeind[5],&typelen[5],NULL,OCI_DEFAULT),
+		OCI_SUCCESS);
+	assertEquals(
+		OCIDefineByPos(typestmt2,&typedef_[6],err,7,
+				&typetimestamp,0,SQLT_TIMESTAMP,
+				&typeind[6],&typelen[6],NULL,OCI_DEFAULT),
+		OCI_SUCCESS);
+	assertEquals(
+		OCIDefineByPos(typestmt2,&typedef_[7],err,8,
+				&typetimestamptz,0,SQLT_TIMESTAMP_TZ,
+				&typeind[7],&typelen[7],NULL,OCI_DEFAULT),
+		OCI_SUCCESS);
+	assertEquals(
+		OCIDefineByPos(typestmt2,&typedef_[8],err,9,
+				&typeintervalym,0,SQLT_INTERVAL_YM,
+				&typeind[8],&typelen[8],NULL,OCI_DEFAULT),
+		OCI_SUCCESS);
+	assertEquals(
+		OCIDefineByPos(typestmt2,&typedef_[9],err,10,
+				&typeintervalds,0,SQLT_INTERVAL_DS,
+				&typeind[9],&typelen[9],NULL,OCI_DEFAULT),
+		OCI_SUCCESS);
+	stdoutput.printf("\n\n");
+
+
+	stdoutput.printf("OCIStmtFetch2 - every type\n");
+	assertEquals(
+		OCIStmtFetch2(typestmt2,err,1,OCI_FETCH_NEXT,0,OCI_DEFAULT),
+		OCI_SUCCESS);
+	for (int i=0; i<10; i++) {
+		assertEquals((int)typeind[i],OCI_IND_NOTNULL);
+	}
+	stdoutput.printf("\n\n");
+
+
+	stdoutput.printf("varchar, number, date, raw, char\n");
+	// SQLT_CHR does not null terminate, so the length is what says where
+	// the value stops
+	assertEquals((int)typelen[0],13);
+	assertEquals((const char *)typevarchar,"varchar value");
+	// an oracle number only becomes a C number through OCINumberToReal
+	double	numbervalue=0.0;
+	assertEquals(
+		OCINumberToReal(err,&typenumber,sizeof(numbervalue),
+				&numbervalue),
+		OCI_SUCCESS);
+	assertEquals((int)(numbervalue*100),12345);
+	// the 7 byte oracle date - excess-100 century and year, then month,
+	// day, and excess-1 hour, minute and second
+	assertEquals((int)typelen[2],7);
+	assertEquals((int)typedate[0],120);
+	assertEquals((int)typedate[1],103);
+	assertEquals((int)typedate[2],3);
+	assertEquals((int)typedate[3],3);
+	assertEquals((int)typedate[4],4);
+	assertEquals((int)typedate[5],4);
+	assertEquals((int)typedate[6],4);
+	assertEquals((int)typelen[3],5);
+	assertEquals((int)typeraw[0],1);
+	assertEquals((int)typeraw[1],2);
+	assertEquals((int)typeraw[2],3);
+	assertEquals((int)typeraw[3],4);
+	assertEquals((int)typeraw[4],5);
+	// char comes back blank padded to the declared width
+	assertEquals((int)typelen[4],20);
+	assertEquals((const char *)typechar,"char value          ");
+	stdoutput.printf("\n\n");
+
+
+	stdoutput.printf("rowid\n");
+	char	rowidbuf[64];
+	ub2	rowidlen=sizeof(rowidbuf);
+	bytestring::zero(rowidbuf,sizeof(rowidbuf));
+	assertEquals(
+		OCIRowidToChar(typerowid,(text *)rowidbuf,&rowidlen,err),
+		OCI_SUCCESS);
+	// the base 64 external form of a rowid is always 18 characters
+	assertEquals((int)rowidlen,18);
+	assertEquals((int)charstring::getLength(rowidbuf),18);
+	stdoutput.printf("\n\n");
+
+
+	stdoutput.printf("timestamp\n");
+	sb2	tsyear=0;
+	ub1	tsmonth=0;
+	ub1	tsday=0;
+	ub1	tshour=0;
+	ub1	tsminute=0;
+	ub1	tssecond=0;
+	ub4	tsfsecond=0;
+	assertEquals(
+		OCIDateTimeGetDate(env,err,typetimestamp,
+					&tsyear,&tsmonth,&tsday),
+		OCI_SUCCESS);
+	assertEquals(
+		OCIDateTimeGetTime(env,err,typetimestamp,
+					&tshour,&tsminute,&tssecond,&tsfsecond),
+		OCI_SUCCESS);
+	assertEquals((int)tsyear,2004);
+	assertEquals((int)tsmonth,4);
+	assertEquals((int)tsday,4);
+	assertEquals((int)tshour,4);
+	assertEquals((int)tsminute,4);
+	assertEquals((int)tssecond,4);
+	assertEquals((int)tsfsecond,444444000);
+	stdoutput.printf("\n\n");
+
+
+	stdoutput.printf("timestamp with time zone\n");
+	sb2	tzyear=0;
+	ub1	tzmonth=0;
+	ub1	tzday=0;
+	sb1	tzhouroffset=0;
+	sb1	tzminuteoffset=0;
+	assertEquals(
+		OCIDateTimeGetDate(env,err,typetimestamptz,
+					&tzyear,&tzmonth,&tzday),
+		OCI_SUCCESS);
+	assertEquals(
+		OCIDateTimeGetTimeZoneOffset(env,err,typetimestamptz,
+					&tzhouroffset,&tzminuteoffset),
+		OCI_SUCCESS);
+	assertEquals((int)tzyear,2005);
+	assertEquals((int)tzmonth,5);
+	assertEquals((int)tzday,5);
+	assertEquals((int)tzhouroffset,-5);
+	assertEquals((int)tzminuteoffset,0);
+	stdoutput.printf("\n\n");
+
+
+	stdoutput.printf("interval year to month\n");
+	sb4	ymyear=0;
+	sb4	ymmonth=0;
+	assertEquals(
+		OCIIntervalGetYearMonth(env,err,&ymyear,&ymmonth,
+					typeintervalym),
+		OCI_SUCCESS);
+	assertEquals((int)ymyear,1);
+	assertEquals((int)ymmonth,2);
+	stdoutput.printf("\n\n");
+
+
+	stdoutput.printf("interval day to second\n");
+	sb4	dsday=0;
+	sb4	dshour=0;
+	sb4	dsminute=0;
+	sb4	dssecond=0;
+	sb4	dsfsecond=0;
+	assertEquals(
+		OCIIntervalGetDaySecond(env,err,&dsday,&dshour,
+					&dsminute,&dssecond,&dsfsecond,
+					typeintervalds),
+		OCI_SUCCESS);
+	assertEquals((int)dsday,3);
+	assertEquals((int)dshour,4);
+	assertEquals((int)dsminute,5);
+	assertEquals((int)dssecond,6);
+	assertEquals((int)dsfsecond,777777000);
+	stdoutput.printf("\n\n");
+
+
+	stdoutput.printf("long\n");
+	const char	*longquery="select testlong from protocoltestlong";
+	assertEquals(
+		OCIStmtPrepare(typestmt2,err,(text *)longquery,
+				charstring::getLength(longquery),
+				OCI_NTV_SYNTAX,OCI_DEFAULT),
+		OCI_SUCCESS);
+	assertEquals(
+		OCIStmtExecute(svc,typestmt2,err,0,0,NULL,NULL,
+				OCI_DESCRIBE_ONLY),
+		OCI_SUCCESS);
+	// a long has no declared width, so the describe reports size 0
+	assertColumn(typestmt2,1,"TESTLONG",SQLT_LNG,0,0,0);
+	assertEquals(
+		OCIStmtExecute(svc,typestmt2,err,0,0,NULL,NULL,OCI_DEFAULT),
+		OCI_SUCCESS);
+	char	longvalue[4096];
+	sb2	longind=0;
+	ub2	longlen=0;
+	OCIDefine	*longdef=NULL;
+	bytestring::zero(longvalue,sizeof(longvalue));
+	assertEquals(
+		OCIDefineByPos(typestmt2,&longdef,err,1,
+				longvalue,sizeof(longvalue),SQLT_LNG,
+				&longind,&longlen,NULL,OCI_DEFAULT),
+		OCI_SUCCESS);
+	assertEquals(
+		OCIStmtFetch2(typestmt2,err,1,OCI_FETCH_NEXT,0,OCI_DEFAULT),
+		OCI_SUCCESS);
+	assertEquals((int)longind,OCI_IND_NOTNULL);
+	assertEquals((int)longlen,10);
+	assertEquals((const char *)longvalue,"long value");
+	stdoutput.printf("\n\n");
+
+
+	stdoutput.printf("long raw\n");
+	const char	*longrawquery="select testlongraw "
+					"from protocoltestlongraw";
+	assertEquals(
+		OCIStmtPrepare(typestmt2,err,(text *)longrawquery,
+				charstring::getLength(longrawquery),
+				OCI_NTV_SYNTAX,OCI_DEFAULT),
+		OCI_SUCCESS);
+	assertEquals(
+		OCIStmtExecute(svc,typestmt2,err,0,0,NULL,NULL,
+				OCI_DESCRIBE_ONLY),
+		OCI_SUCCESS);
+	assertColumn(typestmt2,1,"TESTLONGRAW",SQLT_LBI,0,0,0);
+	assertEquals(
+		OCIStmtExecute(svc,typestmt2,err,0,0,NULL,NULL,OCI_DEFAULT),
+		OCI_SUCCESS);
+	ub1	longrawvalue[4096];
+	sb2	longrawind=0;
+	ub2	longrawlen=0;
+	OCIDefine	*longrawdef=NULL;
+	bytestring::zero(longrawvalue,sizeof(longrawvalue));
+	assertEquals(
+		OCIDefineByPos(typestmt2,&longrawdef,err,1,
+				longrawvalue,sizeof(longrawvalue),SQLT_LBI,
+				&longrawind,&longrawlen,NULL,OCI_DEFAULT),
+		OCI_SUCCESS);
+	assertEquals(
+		OCIStmtFetch2(typestmt2,err,1,OCI_FETCH_NEXT,0,OCI_DEFAULT),
+		OCI_SUCCESS);
+	assertEquals((int)longrawind,OCI_IND_NOTNULL);
+	assertEquals((int)longrawlen,5);
+	assertEquals((int)longrawvalue[0],10);
+	assertEquals((int)longrawvalue[1],11);
+	assertEquals((int)longrawvalue[2],12);
+	assertEquals((int)longrawvalue[3],13);
+	assertEquals((int)longrawvalue[4],14);
+	stdoutput.printf("\n\n");
+
+
+	stdoutput.printf("nulls, every type\n");
+	assertEquals(
+		execImmediate("delete from protocoltesttypes"),OCI_SUCCESS);
+	assertEquals(
+		execImmediate("insert into protocoltesttypes "
+				"(testvarchar) values (NULL)"),
+		OCI_SUCCESS);
+	assertEquals(execImmediate("commit"),OCI_SUCCESS);
+	assertEquals(
+		OCIStmtPrepare(typestmt2,err,(text *)typequery,
+				charstring::getLength(typequery),
+				OCI_NTV_SYNTAX,OCI_DEFAULT),
+		OCI_SUCCESS);
+	assertEquals(
+		OCIStmtExecute(svc,typestmt2,err,0,0,NULL,NULL,OCI_DEFAULT),
+		OCI_SUCCESS);
+	bytestring::zero(typeind,sizeof(typeind));
+	bytestring::zero(typelen,sizeof(typelen));
+	assertEquals(
+		OCIDefineByPos(typestmt2,&typedef_[0],err,1,
+				typevarchar,sizeof(typevarchar),SQLT_CHR,
+				&typeind[0],&typelen[0],NULL,OCI_DEFAULT),
+		OCI_SUCCESS);
+	assertEquals(
+		OCIDefineByPos(typestmt2,&typedef_[1],err,2,
+				&typenumber,sizeof(typenumber),SQLT_VNU,
+				&typeind[1],&typelen[1],NULL,OCI_DEFAULT),
+		OCI_SUCCESS);
+	assertEquals(
+		OCIDefineByPos(typestmt2,&typedef_[2],err,3,
+				typedate,sizeof(typedate),SQLT_DAT,
+				&typeind[2],&typelen[2],NULL,OCI_DEFAULT),
+		OCI_SUCCESS);
+	assertEquals(
+		OCIDefineByPos(typestmt2,&typedef_[6],err,7,
+				&typetimestamp,0,SQLT_TIMESTAMP,
+				&typeind[6],&typelen[6],NULL,OCI_DEFAULT),
+		OCI_SUCCESS);
+	assertEquals(
+		OCIStmtFetch2(typestmt2,err,1,OCI_FETCH_NEXT,0,OCI_DEFAULT),
+		OCI_SUCCESS);
+	assertEquals((int)typeind[0],OCI_IND_NULL);
+	assertEquals((int)typeind[1],OCI_IND_NULL);
+	assertEquals((int)typeind[2],OCI_IND_NULL);
+	assertEquals((int)typeind[6],OCI_IND_NULL);
+	assertEquals((int)typelen[0],0);
+	stdoutput.printf("\n\n");
+
+
+	stdoutput.printf("OCIDescriptorFree\n");
+	assertEquals(
+		OCIDescriptorFree(typerowid,OCI_DTYPE_ROWID),OCI_SUCCESS);
+	assertEquals(
+		OCIDescriptorFree(typetimestamp,OCI_DTYPE_TIMESTAMP),
+		OCI_SUCCESS);
+	assertEquals(
+		OCIDescriptorFree(typetimestamptz,OCI_DTYPE_TIMESTAMP_TZ),
+		OCI_SUCCESS);
+	assertEquals(
+		OCIDescriptorFree(typeintervalym,OCI_DTYPE_INTERVAL_YM),
+		OCI_SUCCESS);
+	assertEquals(
+		OCIDescriptorFree(typeintervalds,OCI_DTYPE_INTERVAL_DS),
+		OCI_SUCCESS);
+	assertEquals(OCIHandleFree(typestmt2,OCI_HTYPE_STMT),OCI_SUCCESS);
+	stdoutput.printf("\n\n");
+
+
+
+	stdoutput.printf("\n================ Lobs ================\n\n");
+
+	OCIStmt	*lobstmt=NULL;
+	assertEquals(
+		OCIHandleAlloc(env,(void **)&lobstmt,OCI_HTYPE_STMT,0,NULL),
+		OCI_SUCCESS);
+
+	stdoutput.printf("create table\n");
+	execImmediate("drop table protocoltestlob");
+	assertEquals(
+		execImmediate("create table protocoltestlob ("
+				"testclob clob,"
+				"testblob blob,"
+				"testbfile bfile)"),
+		OCI_SUCCESS);
+	// DMP_DIR is the one directory object testuser can see on the native
+	// instance.  Creating another needs CREATE ANY DIRECTORY, which it
+	// does not have.
+	assertEquals(
+		execImmediate("insert into protocoltestlob values "
+				"(empty_clob(),empty_blob(),"
+				"bfilename('DMP_DIR','protocoltest.txt'))"),
+		OCI_SUCCESS);
+	assertEquals(execImmediate("commit"),OCI_SUCCESS);
+	stdoutput.printf("\n\n");
+
+
+	stdoutput.printf("OCIStmtExecute - describe the lob columns\n");
+	const char	*lobquery="select testclob,testblob,testbfile "
+					"from protocoltestlob for update";
+	assertEquals(
+		OCIStmtPrepare(lobstmt,err,(text *)lobquery,
+				charstring::getLength(lobquery),
+				OCI_NTV_SYNTAX,OCI_DEFAULT),
+		OCI_SUCCESS);
+	assertEquals(
+		OCIStmtExecute(svc,lobstmt,err,0,0,NULL,NULL,OCI_DESCRIBE_ONLY),
+		OCI_SUCCESS);
+	assertColumn(lobstmt,1,"TESTCLOB",SQLT_CLOB,4000,0,0);
+	assertColumn(lobstmt,2,"TESTBLOB",SQLT_BLOB,4000,0,0);
+	assertColumn(lobstmt,3,"TESTBFILE",SQLT_BFILEE,530,0,0);
+	stdoutput.printf("\n\n");
+
+
+	stdoutput.printf("OCIDefineByPos - lob locators\n");
+	OCILobLocator	*cloblocator=NULL;
+	OCILobLocator	*bloblocator=NULL;
+	OCILobLocator	*bfilelocator=NULL;
+	OCIDefine	*lobdef[3];
+	sb2		lobind[3];
+	bytestring::zero(lobdef,sizeof(lobdef));
+	bytestring::zero(lobind,sizeof(lobind));
+	// a clob and a blob take an OCI_DTYPE_LOB locator, a bfile takes an
+	// OCI_DTYPE_FILE one
+	assertEquals(
+		OCIDescriptorAlloc(env,(void **)&cloblocator,
+					OCI_DTYPE_LOB,0,NULL),
+		OCI_SUCCESS);
+	assertEquals(
+		OCIDescriptorAlloc(env,(void **)&bloblocator,
+					OCI_DTYPE_LOB,0,NULL),
+		OCI_SUCCESS);
+	assertEquals(
+		OCIDescriptorAlloc(env,(void **)&bfilelocator,
+					OCI_DTYPE_FILE,0,NULL),
+		OCI_SUCCESS);
+	assertEquals(
+		OCIStmtExecute(svc,lobstmt,err,0,0,NULL,NULL,OCI_DEFAULT),
+		OCI_SUCCESS);
+	assertEquals(
+		OCIDefineByPos(lobstmt,&lobdef[0],err,1,
+				&cloblocator,0,SQLT_CLOB,
+				&lobind[0],NULL,NULL,OCI_DEFAULT),
+		OCI_SUCCESS);
+	assertEquals(
+		OCIDefineByPos(lobstmt,&lobdef[1],err,2,
+				&bloblocator,0,SQLT_BLOB,
+				&lobind[1],NULL,NULL,OCI_DEFAULT),
+		OCI_SUCCESS);
+	assertEquals(
+		OCIDefineByPos(lobstmt,&lobdef[2],err,3,
+				&bfilelocator,0,SQLT_BFILEE,
+				&lobind[2],NULL,NULL,OCI_DEFAULT),
+		OCI_SUCCESS);
+	assertEquals(
+		OCIStmtFetch2(lobstmt,err,1,OCI_FETCH_NEXT,0,OCI_DEFAULT),
+		OCI_SUCCESS);
+	assertEquals((int)lobind[0],OCI_IND_NOTNULL);
+	assertEquals((int)lobind[1],OCI_IND_NOTNULL);
+	assertEquals((int)lobind[2],OCI_IND_NOTNULL);
+	stdoutput.printf("\n\n");
+
+
+	stdoutput.printf("OCILobWrite - clob, one round trip\n");
+	ub4	loblength=0;
+	assertEquals(
+		OCILobGetLength(svc,err,cloblocator,&loblength),OCI_SUCCESS);
+	// empty_clob() is a locator with nothing in it, not a null
+	assertEquals((int)loblength,0);
+	const char	*clobvalue="the quick brown fox jumps over the lazy dog";
+	ub4		clobamount=charstring::getLength(clobvalue);
+	assertEquals(
+		OCILobWrite(svc,err,cloblocator,&clobamount,1,
+				(void *)clobvalue,
+				charstring::getLength(clobvalue),
+				OCI_ONE_PIECE,NULL,NULL,0,SQLCS_IMPLICIT),
+		OCI_SUCCESS);
+	assertEquals((int)clobamount,43);
+	assertEquals(
+		OCILobGetLength(svc,err,cloblocator,&loblength),OCI_SUCCESS);
+	assertEquals((int)loblength,43);
+	stdoutput.printf("\n\n");
+
+
+	stdoutput.printf("OCILobRead - clob, one round trip\n");
+	char	clobbuffer[256];
+	bytestring::zero(clobbuffer,sizeof(clobbuffer));
+	clobamount=sizeof(clobbuffer)-1;
+	assertEquals(
+		OCILobRead(svc,err,cloblocator,&clobamount,1,
+				clobbuffer,sizeof(clobbuffer)-1,
+				NULL,NULL,0,SQLCS_IMPLICIT),
+		OCI_SUCCESS);
+	assertEquals((int)clobamount,43);
+	assertEquals((const char *)clobbuffer,clobvalue);
+	stdoutput.printf("\n\n");
+
+
+	stdoutput.printf("OCILobWrite - clob, more than one round trip\n");
+	// 100k is well past what fits in a single network round trip, so this
+	// is the chunked path rather than the single-buffer one
+	const ub4	biglength=100000;
+	char		*bigvalue=new char[biglength+1];
+	for (ub4 i=0; i<biglength; i++) {
+		bigvalue[i]=(char)('a'+(i%26));
+	}
+	bigvalue[biglength]='\0';
+	assertEquals(OCILobTrim(svc,err,cloblocator,0),OCI_SUCCESS);
+	assertEquals(
+		OCILobGetLength(svc,err,cloblocator,&loblength),OCI_SUCCESS);
+	assertEquals((int)loblength,0);
+	clobamount=biglength;
+	assertEquals(
+		OCILobWrite(svc,err,cloblocator,&clobamount,1,
+				bigvalue,biglength,
+				OCI_ONE_PIECE,NULL,NULL,0,SQLCS_IMPLICIT),
+		OCI_SUCCESS);
+	assertEquals((int)clobamount,(int)biglength);
+	assertEquals(
+		OCILobGetLength(svc,err,cloblocator,&loblength),OCI_SUCCESS);
+	assertEquals((int)loblength,(int)biglength);
+	stdoutput.printf("\n\n");
+
+
+	stdoutput.printf("OCILobRead - clob, in pieces\n");
+	// read it back in two halves, so the offset and amount arithmetic gets
+	// exercised rather than one whole-lob read
+	char	*bigbuffer=new char[biglength+1];
+	bytestring::zero(bigbuffer,biglength+1);
+	clobamount=biglength/2;
+	assertEquals(
+		OCILobRead(svc,err,cloblocator,&clobamount,1,
+				bigbuffer,biglength/2,
+				NULL,NULL,0,SQLCS_IMPLICIT),
+		OCI_SUCCESS);
+	assertEquals((int)clobamount,(int)(biglength/2));
+	clobamount=biglength/2;
+	assertEquals(
+		OCILobRead(svc,err,cloblocator,&clobamount,biglength/2+1,
+				bigbuffer+biglength/2,biglength/2,
+				NULL,NULL,0,SQLCS_IMPLICIT),
+		OCI_SUCCESS);
+	assertEquals((int)clobamount,(int)(biglength/2));
+	assertEquals((const char *)bigbuffer,(const char *)bigvalue);
+	stdoutput.printf("\n\n");
+
+
+	stdoutput.printf("OCILobWrite - blob\n");
+	ub1	blobvalue[512];
+	for (int i=0; i<512; i++) {
+		blobvalue[i]=(ub1)(i%256);
+	}
+	ub4	blobamount=sizeof(blobvalue);
+	assertEquals(
+		OCILobGetLength(svc,err,bloblocator,&loblength),OCI_SUCCESS);
+	assertEquals((int)loblength,0);
+	assertEquals(
+		OCILobWrite(svc,err,bloblocator,&blobamount,1,
+				blobvalue,sizeof(blobvalue),
+				OCI_ONE_PIECE,NULL,NULL,0,0),
+		OCI_SUCCESS);
+	assertEquals((int)blobamount,512);
+	assertEquals(
+		OCILobGetLength(svc,err,bloblocator,&loblength),OCI_SUCCESS);
+	assertEquals((int)loblength,512);
+	stdoutput.printf("\n\n");
+
+
+	stdoutput.printf("OCILobRead - blob\n");
+	ub1	blobbuffer[512];
+	bytestring::zero(blobbuffer,sizeof(blobbuffer));
+	blobamount=sizeof(blobbuffer);
+	assertEquals(
+		OCILobRead(svc,err,bloblocator,&blobamount,1,
+				blobbuffer,sizeof(blobbuffer),
+				NULL,NULL,0,0),
+		OCI_SUCCESS);
+	assertEquals((int)blobamount,512);
+	assertTrue(!bytestring::compare(blobbuffer,blobvalue,
+						sizeof(blobvalue)));
+	stdoutput.printf("\n\n");
+
+
+	stdoutput.printf("OCILobFileGetName - bfile\n");
+	char	bfiledir[64];
+	char	bfilename[256];
+	ub2	bfiledirlen=sizeof(bfiledir);
+	ub2	bfilenamelen=sizeof(bfilename);
+	bytestring::zero(bfiledir,sizeof(bfiledir));
+	bytestring::zero(bfilename,sizeof(bfilename));
+	assertEquals(
+		OCILobFileGetName(env,err,bfilelocator,
+					(text *)bfiledir,&bfiledirlen,
+					(text *)bfilename,&bfilenamelen),
+		OCI_SUCCESS);
+	assertEquals((const char *)bfiledir,"DMP_DIR");
+	assertEquals((int)bfiledirlen,7);
+	assertEquals((const char *)bfilename,"protocoltest.txt");
+	assertEquals((int)bfilenamelen,16);
+	stdoutput.printf("\n\n");
+
+
+	stdoutput.printf("OCILobFileExists - bfile\n");
+	// nothing was put in DMP_DIR, so the locator names a file that is not
+	// there.  What matters is that the call reaches the server and comes
+	// back with an answer, not which answer it is.
+	boolean	bfileexists=1;
+	assertEquals(
+		OCILobFileExists(svc,err,bfilelocator,&bfileexists),
+		OCI_SUCCESS);
+	assertEquals((int)bfileexists,0);
+	stdoutput.printf("\n\n");
+
+
+	stdoutput.printf("OCITransCommit - the lob writes\n");
+	assertEquals(OCITransCommit(svc,err,OCI_DEFAULT),OCI_SUCCESS);
+	assertEquals(
+		countRows("protocoltestlob where "
+				"dbms_lob.getlength(testclob)=100000"),1);
+	assertEquals(
+		countRows("protocoltestlob where "
+				"dbms_lob.getlength(testblob)=512"),1);
+	stdoutput.printf("\n\n");
+
+
+	stdoutput.printf("OCIDescriptorFree - lob locators\n");
+	delete[] bigvalue;
+	delete[] bigbuffer;
+	assertEquals(
+		OCIDescriptorFree(cloblocator,OCI_DTYPE_LOB),OCI_SUCCESS);
+	assertEquals(
+		OCIDescriptorFree(bloblocator,OCI_DTYPE_LOB),OCI_SUCCESS);
+	assertEquals(
+		OCIDescriptorFree(bfilelocator,OCI_DTYPE_FILE),OCI_SUCCESS);
+	assertEquals(OCIHandleFree(lobstmt,OCI_HTYPE_STMT),OCI_SUCCESS);
+	stdoutput.printf("\n\n");
+
+
+
+	stdoutput.printf("\n============== Cursors ===============\n\n");
+
+	OCIStmt	*curstmt=NULL;
+	assertEquals(
+		OCIHandleAlloc(env,(void **)&curstmt,OCI_HTYPE_STMT,0,NULL),
+		OCI_SUCCESS);
+
+	stdoutput.printf("create table - ten rows to fetch\n");
+	execImmediate("drop table protocoltestarray");
+	assertEquals(
+		execImmediate("create table protocoltestarray ("
+				"testnumber number(10),"
+				"testvarchar varchar2(40))"),
+		OCI_SUCCESS);
+	assertEquals(
+		execImmediate("insert into protocoltestarray "
+				"select level,'row'||level from dual "
+				"connect by level<=10"),
+		OCI_SUCCESS);
+	assertEquals(execImmediate("commit"),OCI_SUCCESS);
+	assertEquals(countRows("protocoltestarray"),10);
+	stdoutput.printf("\n\n");
+
+
+	stdoutput.printf("OCIBindByName - ref cursor\n");
+	// the nested handle the ref cursor comes back through
+	OCIStmt	*refcursor=NULL;
+	assertEquals(
+		OCIHandleAlloc(env,(void **)&refcursor,OCI_HTYPE_STMT,0,NULL),
+		OCI_SUCCESS);
+	const char	*refblock="begin open :rc for "
+					"select testnumber,testvarchar "
+					"from protocoltestarray "
+					"order by testnumber; end;";
+	assertEquals(
+		OCIStmtPrepare(curstmt,err,(text *)refblock,
+				charstring::getLength(refblock),
+				OCI_NTV_SYNTAX,OCI_DEFAULT),
+		OCI_SUCCESS);
+	OCIBind	*refbnd=NULL;
+	assertEquals(
+		OCIBindByName(curstmt,&refbnd,err,(text *)":rc",3,
+				&refcursor,0,SQLT_RSET,
+				NULL,NULL,NULL,0,NULL,OCI_DEFAULT),
+		OCI_SUCCESS);
+	assertEquals(
+		OCIStmtExecute(svc,curstmt,err,1,0,NULL,NULL,OCI_DEFAULT),
+		OCI_SUCCESS);
+	stdoutput.printf("\n\n");
+
+
+	stdoutput.printf("OCIParamGet - through the ref cursor\n");
+	// the nested handle describes and fetches like any other statement,
+	// without ever being prepared or executed itself
+	ub4	refcols=0;
+	assertEquals(
+		OCIAttrGet(refcursor,OCI_HTYPE_STMT,
+				&refcols,NULL,OCI_ATTR_PARAM_COUNT,err),
+		OCI_SUCCESS);
+	assertEquals((int)refcols,2);
+	assertColumn(refcursor,1,"TESTNUMBER",SQLT_NUM,22,10,0);
+	assertColumn(refcursor,2,"TESTVARCHAR",SQLT_CHR,40,0,0);
+	stdoutput.printf("\n\n");
+
+
+	stdoutput.printf("OCIStmtFetch2 - through the ref cursor\n");
+	OCIDefine	*refdef[2];
+	char		refnumber[32];
+	char		refvarchar[64];
+	sb2		refind[2];
+	bytestring::zero(refdef,sizeof(refdef));
+	bytestring::zero(refind,sizeof(refind));
+	assertEquals(
+		OCIDefineByPos(refcursor,&refdef[0],err,1,
+				refnumber,sizeof(refnumber),SQLT_STR,
+				&refind[0],NULL,NULL,OCI_DEFAULT),
+		OCI_SUCCESS);
+	assertEquals(
+		OCIDefineByPos(refcursor,&refdef[1],err,2,
+				refvarchar,sizeof(refvarchar),SQLT_STR,
+				&refind[1],NULL,NULL,OCI_DEFAULT),
+		OCI_SUCCESS);
+	for (int i=1; i<=10; i++) {
+		assertEquals(
+			OCIStmtFetch2(refcursor,err,1,OCI_FETCH_NEXT,0,
+					OCI_DEFAULT),
+			OCI_SUCCESS);
+	}
+	assertEquals((const char *)refnumber,"10");
+	assertEquals((const char *)refvarchar,"row10");
+	assertEquals(
+		OCIStmtFetch2(refcursor,err,1,OCI_FETCH_NEXT,0,OCI_DEFAULT),
+		OCI_NO_DATA);
+	ub4	refrows=0;
+	assertEquals(
+		OCIAttrGet(refcursor,OCI_HTYPE_STMT,
+				&refrows,NULL,OCI_ATTR_ROW_COUNT,err),
+		OCI_SUCCESS);
+	assertEquals((int)refrows,10);
+	assertEquals(OCIHandleFree(refcursor,OCI_HTYPE_STMT),OCI_SUCCESS);
+	stdoutput.printf("\n\n");
+
+
+	stdoutput.printf("OCI_ATTR_PREFETCH_ROWS\n");
+	const char	*arrayquery="select testnumber,testvarchar "
+					"from protocoltestarray "
+					"order by testnumber";
+	assertEquals(
+		OCIStmtPrepare(curstmt,err,(text *)arrayquery,
+				charstring::getLength(arrayquery),
+				OCI_NTV_SYNTAX,OCI_DEFAULT),
+		OCI_SUCCESS);
+	ub4	prefetch=5;
+	assertEquals(
+		OCIAttrSet(curstmt,OCI_HTYPE_STMT,
+				&prefetch,0,OCI_ATTR_PREFETCH_ROWS,err),
+		OCI_SUCCESS);
+	prefetch=0;
+	assertEquals(
+		OCIAttrGet(curstmt,OCI_HTYPE_STMT,
+				&prefetch,NULL,OCI_ATTR_PREFETCH_ROWS,err),
+		OCI_SUCCESS);
+	assertEquals((int)prefetch,5);
+	stdoutput.printf("\n\n");
+
+
+	stdoutput.printf("OCIStmtFetch2 - array fetch\n");
+	// buffers wide enough for 4 rows at a time, so oracle returns them in
+	// one compressed batch rather than a row per round trip
+	OCIDefine	*arrdef[2];
+	char		arrnumbers[4][32];
+	char		arrvarchars[4][64];
+	sb2		arrinds[2][4];
+	ub2		arrlens[2][4];
+	bytestring::zero(arrdef,sizeof(arrdef));
+	bytestring::zero(arrnumbers,sizeof(arrnumbers));
+	bytestring::zero(arrvarchars,sizeof(arrvarchars));
+	bytestring::zero(arrinds,sizeof(arrinds));
+	bytestring::zero(arrlens,sizeof(arrlens));
+	assertEquals(
+		OCIStmtExecute(svc,curstmt,err,0,0,NULL,NULL,OCI_DEFAULT),
+		OCI_SUCCESS);
+	assertEquals(
+		OCIDefineByPos(curstmt,&arrdef[0],err,1,
+				arrnumbers,sizeof(arrnumbers[0]),SQLT_STR,
+				&arrinds[0][0],&arrlens[0][0],NULL,OCI_DEFAULT),
+		OCI_SUCCESS);
+	assertEquals(
+		OCIDefineByPos(curstmt,&arrdef[1],err,2,
+				arrvarchars,sizeof(arrvarchars[0]),SQLT_STR,
+				&arrinds[1][0],&arrlens[1][0],NULL,OCI_DEFAULT),
+		OCI_SUCCESS);
+
+	// 10 rows, 4 at a time - two full batches, then a short one
+	assertEquals(
+		OCIStmtFetch2(curstmt,err,4,OCI_FETCH_NEXT,0,OCI_DEFAULT),
+		OCI_SUCCESS);
+	assertEquals((const char *)arrnumbers[0],"1");
+	assertEquals((const char *)arrnumbers[3],"4");
+	assertEquals((const char *)arrvarchars[0],"row1");
+	assertEquals((const char *)arrvarchars[3],"row4");
+	ub4	arrfetched=0;
+	assertEquals(
+		OCIAttrGet(curstmt,OCI_HTYPE_STMT,
+				&arrfetched,NULL,OCI_ATTR_ROW_COUNT,err),
+		OCI_SUCCESS);
+	assertEquals((int)arrfetched,4);
+
+	assertEquals(
+		OCIStmtFetch2(curstmt,err,4,OCI_FETCH_NEXT,0,OCI_DEFAULT),
+		OCI_SUCCESS);
+	assertEquals((const char *)arrnumbers[0],"5");
+	assertEquals((const char *)arrnumbers[3],"8");
+	assertEquals(
+		OCIAttrGet(curstmt,OCI_HTYPE_STMT,
+				&arrfetched,NULL,OCI_ATTR_ROW_COUNT,err),
+		OCI_SUCCESS);
+	assertEquals((int)arrfetched,8);
+
+	// only 2 rows left, so this batch comes up short and says so
+	assertEquals(
+		OCIStmtFetch2(curstmt,err,4,OCI_FETCH_NEXT,0,OCI_DEFAULT),
+		OCI_NO_DATA);
+	assertEquals((const char *)arrnumbers[0],"9");
+	assertEquals((const char *)arrnumbers[1],"10");
+	assertEquals(
+		OCIAttrGet(curstmt,OCI_HTYPE_STMT,
+				&arrfetched,NULL,OCI_ATTR_ROW_COUNT,err),
+		OCI_SUCCESS);
+	assertEquals((int)arrfetched,10);
+	stdoutput.printf("\n\n");
+
+
+	stdoutput.printf("OCIHandleFree - statement\n");
+	assertEquals(OCIHandleFree(curstmt,OCI_HTYPE_STMT),OCI_SUCCESS);
+	stdoutput.printf("\n\n");
+
+
+
+	stdoutput.printf("\n============ Transactions ============\n\n");
+
+	stdoutput.printf("OCITransRollback\n");
+	assertEquals(
+		execImmediate("insert into protocoltesttran values (1)"),
+		OCI_SUCCESS);
+	assertEquals(countRows("protocoltesttran"),1);
+	assertEquals(OCITransRollback(svc,err,OCI_DEFAULT),OCI_SUCCESS);
+	assertEquals(countRows("protocoltesttran"),0);
+	stdoutput.printf("\n\n");
+
+
+	stdoutput.printf("OCITransCommit\n");
+	assertEquals(
+		execImmediate("insert into protocoltesttran values (2)"),
+		OCI_SUCCESS);
+	assertEquals(OCITransCommit(svc,err,OCI_DEFAULT),OCI_SUCCESS);
+	// the commit took, so the rollback after it loses nothing
+	assertEquals(OCITransRollback(svc,err,OCI_DEFAULT),OCI_SUCCESS);
+	assertEquals(countRows("protocoltesttran"),1);
+	stdoutput.printf("\n\n");
+
+
+	stdoutput.printf("OCIStmtExecute - commit on success\n");
+	OCIStmt		*tranmt=NULL;
+	assertEquals(
+		OCIHandleAlloc(env,(void **)&tranmt,OCI_HTYPE_STMT,0,NULL),
+		OCI_SUCCESS);
+	const char	*traninsert="insert into protocoltesttran values (3)";
+	assertEquals(
+		OCIStmtPrepare(tranmt,err,(text *)traninsert,
+				charstring::getLength(traninsert),
+				OCI_NTV_SYNTAX,OCI_DEFAULT),
+		OCI_SUCCESS);
+	assertEquals(
+		OCIStmtExecute(svc,tranmt,err,1,0,NULL,NULL,
+				OCI_COMMIT_ON_SUCCESS),
+		OCI_SUCCESS);
+	// autocommit committed the insert, so the rollback loses nothing
+	assertEquals(OCITransRollback(svc,err,OCI_DEFAULT),OCI_SUCCESS);
+	assertEquals(countRows("protocoltesttran"),2);
+	stdoutput.printf("\n\n");
+
+
+	stdoutput.printf("OCIStmtExecute - autocommit off\n");
+	const char	*tranin4="insert into protocoltesttran values (4)";
+	assertEquals(
+		OCIStmtPrepare(tranmt,err,(text *)tranin4,
+				charstring::getLength(tranin4),
+				OCI_NTV_SYNTAX,OCI_DEFAULT),
+		OCI_SUCCESS);
+	assertEquals(
+		OCIStmtExecute(svc,tranmt,err,1,0,NULL,NULL,OCI_DEFAULT),
+		OCI_SUCCESS);
+	assertEquals(countRows("protocoltesttran"),3);
+	assertEquals(OCITransRollback(svc,err,OCI_DEFAULT),OCI_SUCCESS);
+	assertEquals(countRows("protocoltesttran"),2);
+	assertEquals(OCIHandleFree(tranmt,OCI_HTYPE_STMT),OCI_SUCCESS);
+	stdoutput.printf("\n\n");
+
+
+
+	stdoutput.printf("\n=============== Errors ===============\n\n");
+
+	OCIStmt	*errstmt=NULL;
+	assertEquals(
+		OCIHandleAlloc(env,(void **)&errstmt,OCI_HTYPE_STMT,0,NULL),
+		OCI_SUCCESS);
+
+	stdoutput.printf("OCIStmtExecute - no such table\n");
+	const char	*badtable="select * from nosuchtable";
+	assertEquals(
+		OCIStmtPrepare(errstmt,err,(text *)badtable,
+				charstring::getLength(badtable),
+				OCI_NTV_SYNTAX,OCI_DEFAULT),
+		OCI_SUCCESS);
+	assertEquals(
+		OCIStmtExecute(svc,errstmt,err,0,0,NULL,NULL,OCI_DEFAULT),
+		OCI_ERROR);
+	// ORA-00942, table or view does not exist
+	assertEquals((int)errorCode(),942);
+	stdoutput.printf("\n\n");
+
+
+	stdoutput.printf("OCIStmtExecute - no such column\n");
+	const char	*badcolumn="select nosuchcolumn from protocoltesttable";
+	assertEquals(
+		OCIStmtPrepare(errstmt,err,(text *)badcolumn,
+				charstring::getLength(badcolumn),
+				OCI_NTV_SYNTAX,OCI_DEFAULT),
+		OCI_SUCCESS);
+	assertEquals(
+		OCIStmtExecute(svc,errstmt,err,0,0,NULL,NULL,OCI_DEFAULT),
+		OCI_ERROR);
+	// ORA-00904, invalid identifier
+	assertEquals((int)errorCode(),904);
+	stdoutput.printf("\n\n");
+
+
+	stdoutput.printf("OCIStmtExecute - bad syntax\n");
+	const char	*badsyntax="selectt 1 from dual";
+	assertEquals(
+		OCIStmtPrepare(errstmt,err,(text *)badsyntax,
+				charstring::getLength(badsyntax),
+				OCI_NTV_SYNTAX,OCI_DEFAULT),
+		OCI_SUCCESS);
+	assertEquals(
+		OCIStmtExecute(svc,errstmt,err,1,0,NULL,NULL,OCI_DEFAULT),
+		OCI_ERROR);
+	// ORA-00900, invalid SQL statement
+	assertEquals((int)errorCode(),900);
+	stdoutput.printf("\n\n");
+
+
+	stdoutput.printf("OCIStmtExecute - value too wide for the column\n");
+	const char	*toowide="insert into protocoltesttable (testvarchar) "
+				"values ('123456789012345678901234567890"
+					"12345678901234567890')";
+	assertEquals(
+		OCIStmtPrepare(errstmt,err,(text *)toowide,
+				charstring::getLength(toowide),
+				OCI_NTV_SYNTAX,OCI_DEFAULT),
+		OCI_SUCCESS);
+	assertEquals(
+		OCIStmtExecute(svc,errstmt,err,1,0,NULL,NULL,OCI_DEFAULT),
+		OCI_ERROR);
+	// ORA-12899, value too large for column
+	assertEquals((int)errorCode(),12899);
+	stdoutput.printf("\n\n");
+
+
+	stdoutput.printf("OCIStmtFetch2 - statement never executed\n");
+	const char	*neverrun="select 1 from dual";
+	assertEquals(
+		OCIStmtPrepare(errstmt,err,(text *)neverrun,
+				charstring::getLength(neverrun),
+				OCI_NTV_SYNTAX,OCI_DEFAULT),
+		OCI_SUCCESS);
+	assertEquals(
+		OCIStmtFetch2(errstmt,err,1,OCI_FETCH_NEXT,0,OCI_DEFAULT),
+		OCI_ERROR);
+	// ORA-24374, define not done before fetch or execute and fetch.
+	// The missing define is caught client side, ahead of the missing
+	// execute that would otherwise give ORA-24338.
+	assertEquals((int)errorCode(),24374);
+	stdoutput.printf("\n\n");
+
+
+	stdoutput.printf("OCIHandleFree - statement\n");
+	assertEquals(OCIHandleFree(errstmt,OCI_HTYPE_STMT),OCI_SUCCESS);
+	stdoutput.printf("\n\n");
+
+
+
+	stdoutput.printf("\n============== Teardown ==============\n\n");
+
+	stdoutput.printf("drop table\n");
+	assertEquals(execImmediate("drop table protocoltesttable"),OCI_SUCCESS);
+	assertEquals(execImmediate("drop table protocoltesttran"),OCI_SUCCESS);
+	assertEquals(execImmediate("drop table protocoltestbind"),OCI_SUCCESS);
+	assertEquals(execImmediate("drop table protocoltesttypes"),OCI_SUCCESS);
+	assertEquals(execImmediate("drop table protocoltestlong"),OCI_SUCCESS);
+	assertEquals(
+		execImmediate("drop table protocoltestlongraw"),OCI_SUCCESS);
+	assertEquals(execImmediate("drop table protocoltestlob"),OCI_SUCCESS);
+	assertEquals(execImmediate("drop table protocoltestarray"),OCI_SUCCESS);
+	stdoutput.printf("\n\n");
+
+
+	stdoutput.printf("OCIHandleFree - statement\n");
+	assertEquals(OCIHandleFree(stmt,OCI_HTYPE_STMT),OCI_SUCCESS);
+	stdoutput.printf("\n\n");
+
+
+	stdoutput.printf("OCISessionEnd\n");
+	assertEquals(OCISessionEnd(svc,err,session,OCI_DEFAULT),OCI_SUCCESS);
+	stdoutput.printf("\n\n");
+
+
+	stdoutput.printf("OCIServerDetach\n");
+	assertEquals(OCIServerDetach(srv,err,OCI_DEFAULT),OCI_SUCCESS);
+	stdoutput.printf("\n\n");
+
+
+	stdoutput.printf("OCIHandleFree\n");
+	assertEquals(OCIHandleFree(trans,OCI_HTYPE_TRANS),OCI_SUCCESS);
+	assertEquals(OCIHandleFree(session,OCI_HTYPE_SESSION),OCI_SUCCESS);
+	assertEquals(OCIHandleFree(svc,OCI_HTYPE_SVCCTX),OCI_SUCCESS);
+	assertEquals(OCIHandleFree(srv,OCI_HTYPE_SERVER),OCI_SUCCESS);
+	assertEquals(OCIHandleFree(err,OCI_HTYPE_ERROR),OCI_SUCCESS);
+	stdoutput.printf("\n\n");
+
 
 	reportTestStatus();
 	return status;
