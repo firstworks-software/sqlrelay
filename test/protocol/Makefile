@@ -15,6 +15,9 @@ all-postgresql:
 all-tds:
 	cd tds $(AND) $(MAKE) all
 
+all-firebird:
+	cd firebird $(AND) $(MAKE) all
+
 all-oracle:
 	cd oracle $(AND) $(MAKE) all
 
@@ -25,5 +28,6 @@ clean:
 	cd mysql $(AND) $(MAKE) clean
 	cd postgresql $(AND) $(MAKE) clean
 	cd tds $(AND) $(MAKE) clean
+	cd firebird $(AND) $(MAKE) clean
 	cd oracle $(AND) $(MAKE) clean
 	cd teradata $(AND) $(MAKE) clean

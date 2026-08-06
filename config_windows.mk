@@ -434,10 +434,11 @@ PROTOCOLSINSTALLTARGETS = installdll-tds
 TESTALLSUBDIRS = all-c all-cpp all-legacy all-extensions all-odbc all-cs all-adonet all-java all-jdbc all-protocol all-stress all-tcl all-crud
 # mysql (connector c) and postgresql (libpq) are always built on windows, so
 # always build their wire-protocol tests; unix sets this conditionally in
-# config.mk.in from MYSQLLIBS/POSTGRESQLLIBS.  all-tds is not listed here
-# because the tds protocol test needs freetds ct-lib, which windows doesn't
-# build
-TESTPROTOCOLSUBDIRS = all-mysql all-postgresql
+# config.mk.in from MYSQLLIBS/POSTGRESQLLIBS.  firebird is conditional, so it
+# reuses @ALLFIREBIRD@, which configure.vbs sets to all-firebird when it finds
+# ibase.h and fbclient_ms.lib.  all-tds is not listed here because the tds
+# protocol test needs freetds ct-lib, which windows doesn't build
+TESTPROTOCOLSUBDIRS = all-mysql all-postgresql @ALLFIREBIRD@
 
 CPPTESTCPPFLAGS = $(BASECPPFLAGS) /I $(includedir) $(RUDIMENTSINCLUDES) /I $(top_builddir)
 CPPTESTLIBS = /LIBPATH:$(libdir) lib$(SQLR)client.lib $(RUDIMENTSLIBS)

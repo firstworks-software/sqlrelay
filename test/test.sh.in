@@ -61,6 +61,9 @@ db_applicable() {
 		tdsprotocol)
 			MODULE=odbc
 			;;
+		firebirdprotocol)
+			MODULE=firebird
+			;;
 	esac
 
 	# skip if that module was not built
@@ -162,6 +165,13 @@ ping_instance() {
 		then
 			PING="0: Couldn't connect to the listener."
 			if ( test -n "`netstat -an 2> /dev/null | grep LISTEN | grep 1433`" )
+			then
+				PING="The database is up."
+			fi
+		elif ( test "$db" = "firebirdprotocol" )
+		then
+			PING="0: Couldn't connect to the listener."
+			if ( test -n "`netstat -an 2> /dev/null | grep LISTEN | grep 3050`" )
 			then
 				PING="The database is up."
 			fi
@@ -437,6 +447,9 @@ run_protocol_test() {
 		tdsprotocol)
 			dir="protocol/tds"
 			;;
+		firebirdprotocol)
+			dir="protocol/firebird"
+			;;
 		oracleprotocol)
 			dir="protocol/oracle"
 			;;
@@ -494,7 +507,7 @@ run_db_tests() {
 	echo
 
 	case "$db" in
-		mysqlprotocol|postgresqlprotocol|tdsprotocol|oracleprotocol|teradataprotocol)
+		mysqlprotocol|postgresqlprotocol|tdsprotocol|firebirdprotocol|oracleprotocol|teradataprotocol)
 			run_protocol_test "$db"
 			failures=`expr $failures + $?`
 			;;

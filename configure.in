@@ -1142,6 +1142,9 @@ fi
 if ( test -n "$FREETDSLIBS" ); then
 	TESTDBS="$TESTDBS tdsprotocol"
 fi
+if ( test -n "$FIREBIRDLIBS" ); then
+	TESTDBS="$TESTDBS firebirdprotocol"
+fi
 AC_SUBST(TESTDBS)
 
 

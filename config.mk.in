@@ -850,6 +850,9 @@ endif
 ifneq ($(strip $(FREETDSLIBS)),)
 TESTPROTOCOLSUBDIRS += all-tds
 endif
+ifneq ($(strip $(FIREBIRDLIBS)),)
+TESTPROTOCOLSUBDIRS += all-firebird
+endif
 ifneq ($(strip $(APACHELINKFLAGS)),)
 MODMVCCRUD=mod_mvccrud.$(LIBEXT)
 endif
