@@ -790,7 +790,8 @@ static bool isDateTimeTypeInt(int16_t type) {
 		type==DATE_DATATYPE ||
 		type==TIME_DATATYPE ||
 		type==TIMESTAMP_DATATYPE ||
-		type==NEWDATE_DATATYPE);
+		type==NEWDATE_DATATYPE ||
+		type==DATETIMEOFFSET_DATATYPE);
 }
 #endif
 

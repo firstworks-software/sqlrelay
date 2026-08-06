@@ -745,6 +745,14 @@
 		file name, isc_io_open_err, and the errno text - which also
 		meant teaching the status vector builder and the response
 		writer to carry string arguments, since neither could before
+	fixed the two isDateTimeType overloads disagreeing about
+		DATETIMEOFFSET - the one that takes a type name counted it as
+		a date/time type and the one that takes a type id did not, so
+		the same column was a date/time type or not depending on
+		which one the caller happened to use, and a datetimeoffset
+		column now binds as a date rather than a string in a bulk
+		load, which keeps its offset in the bind's timezone field
+		instead of leaving it in an opaque string
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems
