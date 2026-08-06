@@ -129,17 +129,44 @@ const char *sqlrauth_postgresql_connectstrings::auth(sqlrcredentials *cred) {
 					return NULL;
 				}
 
-				// The way the postgresql_md5 encryption
-				// works, one-way passwords won't work.  For
-				// two-way encryption, decrypt the password
-				// from the configuration and compare it to the
-				// password that was passed in...
-
-				// FIXME: one-way encryption does work with
-				// the postgresql_cleartext method.
-
 				bool	retval=false;
-				if (!pe->oneWay()) {
+				if (pe->oneWay()) {
+
+					// One-way encryption can't be used
+					// with postgresql_md5.  The md5
+					// response can only be derived from
+					// the password itself, and a one-way
+					// module can't recover it from the
+					// configuration.  Since a client
+					// configured for md5 always sends the
+					// md5 response, a listener whose
+					// connect string combines the two
+					// can't authenticate anyone at all.
+					if (charstring::compare(method,
+						"postgresql_cleartext")) {
+						if (getDebug()) {
+							debugStart("auth");
+							debugWrite(
+							"one-way password "
+							"encryption can't be "
+							"used with the %s "
+							"method",method);
+							debugEnd();
+						}
+						return NULL;
+					}
+
+					// postgresql_cleartext sends the
+					// password itself, so encrypt what
+					// was passed in and compare it to the
+					// encrypted password from the
+					// configuration
+					char	*pwd=pe->encrypt(password);
+					retval=!charstring::compare(pwd,
+								passwords[i]);
+					delete[] pwd;
+
+				} else {
 
 					// decrypt the password
 					// from the configuration

@@ -677,6 +677,18 @@
 		concatenated - and since des truncates at 8 characters, after
 		one successful login with a password of 8 or more characters,
 		any password at all authenticated on that connection
+	fixed the postgresql_connectstrings auth module - a one-way
+		passwordencryption rejected everyone, even on a listener
+		configured with passwords="cleartext", where the client sends
+		the password itself and a one-way module can check it, and
+		the combination that genuinely cannot work, a one-way
+		encryption with the md5 challenge/response method, now says
+		so in the debug output instead of failing every login
+		silently
+	documented that a one-way passwordencryption can't be used with a
+		challenge/response method, which covers the postgresql
+		protocol's default md5 and the firebird protocol's legacy
+		hash
 	added a firebird_connectstrings auth module, along with a
 		sqlrfirebirdcredentials class - it handles both the cleartext
 		password that isc_dpb_password carries and the legacy_auth
