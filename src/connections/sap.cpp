@@ -3609,6 +3609,15 @@ uint16_t sapcursor::getColumnType(uint32_t col) {
 		case CS_IMAGE_TYPE:
 			return IMAGE_DATATYPE;
 		case CS_BINARY_TYPE:
+			// ctlib reports binary and varbinary both as
+			// CS_BINARY_TYPE.  Sybase also sends its systypes
+			// usertype, which does tell them apart - 3 binary,
+			// 4 varbinary.  timestamp is binary(8) with usertype
+			// 80, so it falls through to binary, the same way it
+			// does in the freetds module.
+			if (column[col].usertype==4) {
+				return VARBINARY_DATATYPE;
+			}
 			return BINARY_DATATYPE;
 		case CS_BIT_TYPE:
 			return BIT_DATATYPE;
