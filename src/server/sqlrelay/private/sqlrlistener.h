@@ -29,6 +29,7 @@
 		bool	listenOnHandoffSocket(const char *id);
 		bool	listenOnDeregistrationSocket(const char *id);
 		bool	listenOnFixupSocket(const char *id);
+		void	unixSocketListenFailed(const char *sockname);
 		filedescriptor	*waitForTraffic();
 		bool	handleTraffic(filedescriptor *fd);
 		bool	registerHandoff(filedescriptor *sock);

@@ -24,6 +24,11 @@
 #include <rudiments/inetsocketserver.h>
 #include <rudiments/listener.h>
 
+// for the sun_path limit, to say how long a unix socket name may be
+#ifndef _WIN32
+	#include <sys/un.h>
+#endif
+
 #include <config.h>
 #include <defaults.h>
 #include <defines.h>
@@ -947,6 +952,50 @@ bool sqlrlistener::listenOnClientSocket(uint16_t protocolindex,
 	return listening;
 }
 
+void sqlrlistener::unixSocketListenFailed(const char *sockname) {
+
+	// An over-long socket file name fails with ENAMETOOLONG, which has
+	// nothing to do with permissions.  Blaming the directory sends the
+	// reader to check the one thing that isn't wrong, so say which of
+	// the two it was.
+	if (error::getErrorNumber()==ENAMETOOLONG) {
+		#ifndef _WIN32
+			struct sockaddr_un	sun;
+			stderror.printf(
+				"Could not listen on unix socket: %s\n"
+				"The socket file name is too long.  It is "
+				"%d bytes and the limit is %d.\n"
+				"Shorten the instance id, or set a shorter "
+				"localstatedir.\n\n",
+				sockname,
+				(int)charstring::getLength(sockname),
+				(int)sizeof(sun.sun_path));
+		#else
+			stderror.printf(
+				"Could not listen on unix socket: %s\n"
+				"The socket file name is too long.  It is "
+				"%d bytes, which is over this system's "
+				"limit.\n"
+				"Shorten the instance id, or set a shorter "
+				"localstatedir.\n\n",
+				sockname,
+				(int)charstring::getLength(sockname));
+		#endif
+		return;
+	}
+
+	char	*currentuser=userentry::getName(
+					process::getEffectiveUserId());
+	char	*currentgroup=groupentry::getName(
+					process::getEffectiveGroupId());
+	stderror.printf("Could not listen on unix socket: %s\n"
+			"Make sure that the directory is "
+			"writable by %s:%s.\n\n",
+			sockname,currentuser,currentgroup);
+	delete[] currentuser;
+	delete[] currentgroup;
+}
+
 bool sqlrlistener::listenOnHandoffSocket(const char *id) {
 
 	// the handoff socket
@@ -965,16 +1014,7 @@ bool sqlrlistener::listenOnHandoffSocket(const char *id) {
 			"failed to listen on handoff socket: %s",
 			pvt->_handoffsockname);
 
-		char	*currentuser=userentry::getName(
-						process::getEffectiveUserId());
-		char	*currentgroup=groupentry::getName(
-						process::getEffectiveGroupId());
-		stderror.printf("Could not listen on unix socket: %s\n"
-				"Make sure that the directory is "
-				"writable by %s:%s.\n\n",
-				pvt->_handoffsockname,currentuser,currentgroup);
-		delete[] currentuser;
-		delete[] currentgroup;
+		unixSocketListenFailed(pvt->_handoffsockname);
 	}
 
 	return success;
@@ -998,17 +1038,7 @@ bool sqlrlistener::listenOnDeregistrationSocket(const char *id) {
 			"failed to listen on deregistration socket: %s",
 			pvt->_removehandoffsockname);
 
-		char	*currentuser=userentry::getName(
-						process::getEffectiveUserId());
-		char	*currentgroup=groupentry::getName(
-						process::getEffectiveGroupId());
-		stderror.printf("Could not listen on unix socket: %s\n"
-				"Make sure that the directory is "
-				"writable by %s:%s.\n\n",
-				pvt->_removehandoffsockname,
-				currentuser,currentgroup);
-		delete[] currentuser;
-		delete[] currentgroup;
+		unixSocketListenFailed(pvt->_removehandoffsockname);
 	}
 
 	return success;
@@ -1031,17 +1061,7 @@ bool sqlrlistener::listenOnFixupSocket(const char *id) {
 			"failed to listen on fixup socket: %s",
 			pvt->_fixupsockname);
 
-		char	*currentuser=userentry::getName(
-						process::getEffectiveUserId());
-		char	*currentgroup=groupentry::getName(
-						process::getEffectiveGroupId());
-		stderror.printf("Could not listen on unix socket: %s\n"
-				"Make sure that the directory is "
-				"writable by %s:%s.\n\n",
-				pvt->_fixupsockname,
-				currentuser,currentgroup);
-		delete[] currentuser;
-		delete[] currentgroup;
+		unixSocketListenFailed(pvt->_fixupsockname);
 	}
 
 	return success;

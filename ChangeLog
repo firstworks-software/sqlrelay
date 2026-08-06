@@ -666,6 +666,10 @@
 		Convert.ToBoolean(), which throws on anything but "True" or
 		"False", so the 1 informix sends and the t postgresql sends
 		were both errors rather than values
+	fixed sqlr-listener blaming directory permissions when a unix socket
+		name is simply too long - it now says the name is too long,
+		how long it is, and what the limit is, and points at the
+		instance id and localstatedir, which are what to shorten
 	added a firebird_connectstrings auth module, along with a
 		sqlrfirebirdcredentials class - it handles both the cleartext
 		password that isc_dpb_password carries and the legacy_auth
