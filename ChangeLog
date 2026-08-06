@@ -712,8 +712,8 @@
 		firebird sends on the wire, the response buffer length the
 		client asks for is honored and a reply that would exceed it
 		is cut short with isc_info_truncated, and the item walk's
-		loop test counts the bytes left rather than comparing
-		pointers for inequality
+		loop test is bounded rather than comparing pointers for
+		inequality
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems

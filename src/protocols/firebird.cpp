@@ -2216,8 +2216,8 @@ bool sqlrprotocol_firebird::appendInfoStrings(byte_t item,
 
 	// a count byte, then each string as a length byte and that many bytes
 	byte_t		val[256];
-	uint16_t	vallen=0;
-	val[vallen++]=valuecount;
+	uint16_t	vallen=1;
+	byte_t		valswritten=0;
 	for (byte_t i=0; i<valuecount; i++) {
 		size_t	len=charstring::getLength(values[i]);
 		if (len>255) {
@@ -2231,7 +2231,13 @@ bool sqlrprotocol_firebird::appendInfoStrings(byte_t item,
 			bytestring::copy(val+vallen,values[i],len);
 		}
 		vallen+=len;
+		valswritten++;
 	}
+
+	// the count has to be what actually fit, not what was asked for, or
+	// a client counting entries walks off the end of the value
+	val[0]=valswritten;
+
 	return appendInfoItem(item,val,vallen);
 }
 
