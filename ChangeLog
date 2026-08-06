@@ -564,6 +564,12 @@
 		rather than the utc instant, both are written correctly now
 	fixed the odbc connection module - a SQL_TYPE_DATE column was
 		reported as a datetime rather than a date
+	fixed the tds protocol module - a stored procedure call with an
+		output parameter appended the t-sql "output" keyword after
+		the parameter's bind marker, and sql server rejects that
+		outright, the direction is already carried by the bind
+		itself - SQL_PARAM_OUTPUT in the odbc module and CS_RETURN in
+		the freetds and sap ones
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems

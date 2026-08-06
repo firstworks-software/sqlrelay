@@ -6672,15 +6672,16 @@ bool sqlrprotocol_tds::namedProc(const char *procname, bool nometadata) {
 		return sendNoCursorAvailableError();
 	}
 
-	// build the query, naming a bind variable per parameter
+	// Build the query, naming a bind variable per parameter.  A by-ref
+	// parameter gets no T-SQL "output" keyword after it.  The direction
+	// is already carried by the bind itself - SQL_PARAM_OUTPUT in the
+	// odbc module, CS_RETURN in the freetds and sap ones - and sql
+	// server rejects "output" after a parameter marker outright.
 	stringbuffer	query;
 	query.append("exec ")->append(procname);
 	for (uint16_t i=0; i<rpcparamcount && i<maxbindcount; i++) {
 		query.append((i)?',':' ');
 		query.append(bindvarnames[i]);
-		if (rpcparambyref[i]) {
-			query.append(" output");
-		}
 	}
 
 	debugWrite("query: %s",query.getString());
