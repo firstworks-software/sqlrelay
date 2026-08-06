@@ -2055,7 +2055,25 @@ static int sqlrelayHandleFactory(pdo_dbh_t *dbh,
 		long double	dbl=
 				charstring::convertToFloatC(connecttime)-
 							(long double)timeoutsec;
-		int32_t		timeoutusec=(int32_t)(dbl*1000000.0);
+
+		// round rather than truncate, otherwise the binary
+		// representation of a value like 5.1 lands just under
+		// 100000 microseconds and reads back as 99999
+		int32_t		timeoutusec=(int32_t)(dbl*1000000.0+0.5);
+
+		// rounding .9999995 or more up carries into the seconds,
+		// but incrementing the largest int32_t would wrap it
+		// negative, which means no timeout at all, so pin the
+		// value to the largest timeout that can be expressed
+		if (timeoutusec>999999) {
+			if (timeoutsec==2147483647) {
+				timeoutusec=999999;
+			} else {
+				timeoutusec=0;
+				timeoutsec++;
+			}
+		}
+
 		if (timeoutsec>=0) {
 			sqlrdbh->sqlrcon->setConnectTimeout(
 						timeoutsec,timeoutusec);

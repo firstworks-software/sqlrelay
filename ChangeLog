@@ -645,6 +645,12 @@
 		output parameter handed back the bind's initial value rather
 		than what the procedure set - the rows are buffered now, and
 		the result sets drained, before the output binds are read
+	fixed the php pdo connecttime option - the fraction of a second was
+		truncated rather than rounded, so connecttime=5.1 set 5
+		seconds and 99999 microseconds and never read back as what
+		was asked for, the same defect the c++ api had before this
+		release, and a fraction that rounds up now carries into the
+		seconds without wrapping them negative
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems
