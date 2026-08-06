@@ -155,6 +155,10 @@
 #define DONE_RPCINBATCH	0x0080
 #define DONE_SRVERROR	0x0100
 
+// marks the output bind that carries a procedure's return value rather
+// than one of the client's parameters
+#define RPC_RETURN_VALUE_PARAM	0xFFFF
+
 // stream headers
 #define ALL_HEADERS_QUERY_NOTIFICATIONS		0x0001
 #define ALL_HEADERS_TRANSACTION_DESCRIPTOR	0x0002
@@ -931,7 +935,8 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_tds : public sqlrprotocol {
 		const char	*paramString(uint16_t param);
 
 		// binds params [first..rpcparamcount) to the cursor
-		void	bindParams(sqlrservercursor *cursor, uint16_t first);
+		void	bindParams(sqlrservercursor *cursor, uint16_t first,
+						bool returnvalue=false);
 
 		// rpc handlers
 		bool	namedProc(const char *procname, bool nometadata);
@@ -1029,9 +1034,11 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_tds : public sqlrprotocol {
 					uint16_t curcmd,
 					uint64_t donerowcount);
 		void	returnStatus(uint32_t value);
+		uint32_t	procReturnValue(sqlrservercursor *cursor);
 		void	returnValues(sqlrservercursor *cursor);
 		void	returnValue(sqlrservercursor *cursor,
-					uint16_t param);
+					uint16_t param,
+					uint16_t ordinal);
 		void	returnValueInteger(uint16_t ordinal,
 					int32_t value,
 					bool isnull);
@@ -6468,7 +6475,8 @@ const char *sqlrprotocol_tds::paramString(uint16_t param) {
 	return rpcparams[param].value.stringval;
 }
 
-void sqlrprotocol_tds::bindParams(sqlrservercursor *cursor, uint16_t first) {
+void sqlrprotocol_tds::bindParams(sqlrservercursor *cursor, uint16_t first,
+							bool returnvalue) {
 
 	sqlrserverbindvar	*inbinds=cont->getInputBinds(cursor);
 	sqlrserverbindvar	*outbinds=cont->getOutputBinds(cursor);
@@ -6480,9 +6488,24 @@ void sqlrprotocol_tds::bindParams(sqlrservercursor *cursor, uint16_t first) {
 	memorypool	*bindpool=cont->getBindPool(cursor);
 	bindpool->clear();
 
+	// odbc call syntax carries a procedure's return value as its first
+	// parameter, so reserve the first output bind and the first bind
+	// variable name for it, and shift the client's parameters up one
+	if (returnvalue) {
+		sqlrserverbindvar	*rv=&(outbinds[0]);
+		rv->variable=bindvarnames[0];
+		rv->variablesize=bindvarnamesizes[0];
+		rv->type=SQLRSERVERBINDVARTYPE_INTEGER;
+		rv->value.integerval=0;
+		rv->valuesize=sizeof(int64_t);
+		rv->isnull=cont->getNullBindValue();
+		outbindparams[0]=RPC_RETURN_VALUE_PARAM;
+		outbindcount=1;
+	}
+
 	for (uint16_t i=first; i<rpcparamcount; i++) {
 
-		uint16_t	bindindex=i-first;
+		uint16_t	bindindex=i-first+((returnvalue)?1:0);
 		if (bindindex>=maxbindcount) {
 			break;
 		}
@@ -6692,12 +6715,27 @@ bool sqlrprotocol_tds::namedProc(const char *procname, bool nometadata) {
 	// is already carried by the bind itself - SQL_PARAM_OUTPUT in the
 	// odbc module, CS_RETURN in the freetds and sap ones - and sql
 	// server rejects "output" after a parameter marker outright.
+	//
+	// This is odbc call syntax rather than "exec procname ...", because
+	// that has nowhere to put the procedure's return value and the
+	// client expects one in the RETURNSTATUS token.  The bind variable
+	// before "=call" is the return value, which is why the client's
+	// parameters start at bindvarnames[1].
+	//
+	// The space after the brace is load-bearing: beforeBindVariable()
+	// in src/common/bindvariables.h does not treat '{' as something a
+	// bind variable can follow, so without it the return value's marker
+	// is never translated to the backend's bind format.
 	stringbuffer	query;
-	query.append("exec ")->append(procname);
-	for (uint16_t i=0; i<rpcparamcount && i<maxbindcount; i++) {
-		query.append((i)?',':' ');
-		query.append(bindvarnames[i]);
+	query.append("{ ")->append(bindvarnames[0])->append("=call ");
+	query.append(procname)->append('(');
+	for (uint16_t i=0; i<rpcparamcount && i+1<maxbindcount; i++) {
+		if (i) {
+			query.append(',');
+		}
+		query.append(bindvarnames[i+1]);
 	}
+	query.append(")}");
 
 	debugWrite("query: %s",query.getString());
 
@@ -6706,14 +6744,14 @@ bool sqlrprotocol_tds::namedProc(const char *procname, bool nometadata) {
 					query.getString(),query.getSize(),
 					true,true,true,true);
 	if (success) {
-		bindParams(cursor,0);
+		bindParams(cursor,0,true);
 		success=cont->executeQuery(cursor,true,true,true,true);
 	}
 
 	// build the response
 	if (success) {
 		rpcResultSet(cursor,nometadata,0);
-		returnStatus(RPC_STATUS_SUCCESS);
+		returnStatus(procReturnValue(cursor));
 		returnValues(cursor);
 	} else {
 		rpcError(cursor);
@@ -8442,12 +8480,37 @@ void sqlrprotocol_tds::returnStatus(uint32_t value) {
 	debugEnd();
 }
 
+uint32_t sqlrprotocol_tds::procReturnValue(sqlrservercursor *cursor) {
+
+	// the return value rides in the output bind that bindParams()
+	// reserved for it
+	if (!cont->getOutputBindCount(cursor) ||
+			outbindparams[0]!=RPC_RETURN_VALUE_PARAM) {
+		return RPC_STATUS_SUCCESS;
+	}
+
+	sqlrserverbindvar	*rv=&(cont->getOutputBinds(cursor)[0]);
+	if (rv->type!=SQLRSERVERBINDVARTYPE_INTEGER) {
+		return RPC_STATUS_SUCCESS;
+	}
+	return (uint32_t)rv->value.integerval;
+}
+
 void sqlrprotocol_tds::returnValues(sqlrservercursor *cursor) {
 
 	// for each output bind...
 	uint16_t	outbindcount=cont->getOutputBindCount(cursor);
+	uint16_t	ordinal=1;
 	for (uint16_t i=0; i<outbindcount; i++) {
-		returnValue(cursor,i);
+
+		// the return value went out in the RETURNSTATUS token, so it
+		// isn't one of these, and it doesn't take up an ordinal
+		if (outbindparams[i]==RPC_RETURN_VALUE_PARAM) {
+			continue;
+		}
+
+		returnValue(cursor,i,ordinal);
+		ordinal++;
 	}
 }
 
@@ -8533,7 +8596,9 @@ void sqlrprotocol_tds::writeIntN(int64_t value, byte_t size) {
 	}
 }
 
-void sqlrprotocol_tds::returnValue(sqlrservercursor *cursor, uint16_t param) {
+void sqlrprotocol_tds::returnValue(sqlrservercursor *cursor,
+						uint16_t param,
+						uint16_t ordinal) {
 
 	debugStart("return-value");
 
@@ -8543,7 +8608,7 @@ void sqlrprotocol_tds::returnValue(sqlrservercursor *cursor, uint16_t param) {
 	// the type the client declared
 	uint16_t	rpcparam=outbindparams[param];
 
-	returnValueHeader(param+1,rpcparamnames[rpcparam],
+	returnValueHeader(ordinal,rpcparamnames[rpcparam],
 					rpcparamnamesizes[rpcparam]);
 
 	// SQL Relay hands back whatever the database put in the output bind.

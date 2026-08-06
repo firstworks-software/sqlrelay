@@ -590,6 +590,11 @@
 		integer whatever width the client declared, so a client that
 		read the name got an empty one and ct_describe reported
 		CS_LONG_TYPE for what was sent as a CS_INT_TYPE
+	fixed the tds protocol module - a stored procedure's return value was
+		never sent, the RETURNSTATUS token carried a hardcoded 0
+		where a real sql server sends what the procedure returned -
+		a named procedure is called through odbc call syntax now,
+		which gives the return value a bind of its own
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems
