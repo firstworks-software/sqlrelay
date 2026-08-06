@@ -33,39 +33,78 @@ $(SQLR)querytranslation_sequence_nextval.$(LIBEXT): sequence_nextval.cpp sequenc
 
 install: $(INSTALLLIB)
 
-installdll:
+installdll: installdll-normalize \
+		installdll-patterns \
+		installdll-listagg_to_string_agg \
+		installdll-sequence_nextval
+
+installdll-normalize:
 	$(MKINSTALLDIRS) $(libexecdir)
 	$(LTINSTALL) $(CP) $(SQLR)querytranslation_normalize.$(LIBEXT) $(libexecdir)
+
+installdll-patterns:
+	$(MKINSTALLDIRS) $(libexecdir)
 	$(LTINSTALL) $(CP) $(SQLR)querytranslation_patterns.$(LIBEXT) $(libexecdir)
+
+installdll-listagg_to_string_agg:
+	$(MKINSTALLDIRS) $(libexecdir)
 	$(LTINSTALL) $(CP) $(SQLR)querytranslation_listagg_to_string_agg.$(LIBEXT) $(libexecdir)
+
+installdll-sequence_nextval:
+	$(MKINSTALLDIRS) $(libexecdir)
 	$(LTINSTALL) $(CP) $(SQLR)querytranslation_sequence_nextval.$(LIBEXT) $(libexecdir)
 
 installlib: $(INSTALLSHAREDLIB)
 
-installsharedlib:
+installsharedlib: installsharedlib-normalize \
+		installsharedlib-patterns \
+		installsharedlib-listagg_to_string_agg \
+		installsharedlib-sequence_nextval
+
+installsharedlib-normalize:
 	$(MKINSTALLDIRS) $(libexecdir)
 	$(LTINSTALL) $(CP) $(SQLR)querytranslation_normalize.$(LIBEXT) $(libexecdir)
 	$(RM) $(libexecdir)/$(SQLR)querytranslation_normalize.a
 	$(RM) $(libexecdir)/$(SQLR)querytranslation_normalize.$(LIBEXT)
 	$(MODULERENAME) $(libexecdir)/$(SQLR)querytranslation_normalize.so so $(MODULESUFFIX)
+
+installsharedlib-patterns:
+	$(MKINSTALLDIRS) $(libexecdir)
 	$(LTINSTALL) $(CP) $(SQLR)querytranslation_patterns.$(LIBEXT) $(libexecdir)
 	$(RM) $(libexecdir)/$(SQLR)querytranslation_patterns.a
 	$(RM) $(libexecdir)/$(SQLR)querytranslation_patterns.$(LIBEXT)
 	$(MODULERENAME) $(libexecdir)/$(SQLR)querytranslation_patterns.so so $(MODULESUFFIX)
+
+installsharedlib-listagg_to_string_agg:
+	$(MKINSTALLDIRS) $(libexecdir)
 	$(LTINSTALL) $(CP) $(SQLR)querytranslation_listagg_to_string_agg.$(LIBEXT) $(libexecdir)
 	$(RM) $(libexecdir)/$(SQLR)querytranslation_listagg_to_string_agg.a
 	$(RM) $(libexecdir)/$(SQLR)querytranslation_listagg_to_string_agg.$(LIBEXT)
 	$(MODULERENAME) $(libexecdir)/$(SQLR)querytranslation_listagg_to_string_agg.so so $(MODULESUFFIX)
+
+installsharedlib-sequence_nextval:
+	$(MKINSTALLDIRS) $(libexecdir)
 	$(LTINSTALL) $(CP) $(SQLR)querytranslation_sequence_nextval.$(LIBEXT) $(libexecdir)
 	$(RM) $(libexecdir)/$(SQLR)querytranslation_sequence_nextval.a
 	$(RM) $(libexecdir)/$(SQLR)querytranslation_sequence_nextval.$(LIBEXT)
 	$(MODULERENAME) $(libexecdir)/$(SQLR)querytranslation_sequence_nextval.so so $(MODULESUFFIX)
 
-uninstall:
-	$(RM) $(libexecdir)/$(SQLR)querytranslation_normalize.* \
-		$(libexecdir)/$(SQLR)querytranslation_patterns.* \
-		$(libexecdir)/$(SQLR)querytranslation_listagg_to_string_agg.* \
-		$(libexecdir)/$(SQLR)querytranslation_sequence_nextval.* \
-		$(libexecdir)/$(SQLR)translation_normalize.* \
+uninstall: uninstall-normalize \
+		uninstall-patterns \
+		uninstall-listagg_to_string_agg \
+		uninstall-sequence_nextval
+	$(RM) $(libexecdir)/$(SQLR)translation_normalize.* \
 		$(libexecdir)/$(SQLR)translation_patterns.* \
 		$(libexecdir)/sqlrtranslation_normalize.*
+
+uninstall-normalize:
+	$(RM) $(libexecdir)/$(SQLR)querytranslation_normalize.*
+
+uninstall-patterns:
+	$(RM) $(libexecdir)/$(SQLR)querytranslation_patterns.*
+
+uninstall-listagg_to_string_agg:
+	$(RM) $(libexecdir)/$(SQLR)querytranslation_listagg_to_string_agg.*
+
+uninstall-sequence_nextval:
+	$(RM) $(libexecdir)/$(SQLR)querytranslation_sequence_nextval.*

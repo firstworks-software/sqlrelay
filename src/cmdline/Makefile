@@ -31,19 +31,32 @@ $(SQLR)-import$(EXE): sqlr-import.cpp sqlr-import.$(OBJ)
 $(SQLR)-pwdenc$(EXE): sqlr-pwdenc.cpp sqlr-pwdenc.$(OBJ)
 	$(LTLINK) $(LINK) $(LDFLAGS) $(OUT)$@ sqlr-pwdenc.$(OBJ) $(CMDLINELIBS)
 
-install:
+install: install-sh \
+		install-export \
+		install-import \
+		install-pwdenc
+
+install-sh:
 	$(MKINSTALLDIRS) $(bindir)
 	$(LTINSTALL) $(CP) $(SQLR)sh$(EXE) $(bindir)
+
+install-export:
+	$(MKINSTALLDIRS) $(bindir)
 	$(LTINSTALL) $(CP) $(SQLR)-export$(EXE) $(bindir)
+
+install-import:
+	$(MKINSTALLDIRS) $(bindir)
 	$(LTINSTALL) $(CP) $(SQLR)-import$(EXE) $(bindir)
+
+install-pwdenc:
+	$(MKINSTALLDIRS) $(bindir)
 	$(LTINSTALL) $(CP) $(SQLR)-pwdenc$(EXE) $(bindir)
 
-uninstall:
-	$(RM) $(bindir)/$(SQLR)sh$(EXE) \
-		$(bindir)/$(SQLR)-export$(EXE) \
-		$(bindir)/$(SQLR)-import$(EXE) \
-		$(bindir)/$(SQLR)-pwdenc$(EXE) \
-		$(bindir)/sqlrsh$(EXE) \
+uninstall: uninstall-sh \
+		uninstall-export \
+		uninstall-import \
+		uninstall-pwdenc
+	$(RM) $(bindir)/sqlrsh$(EXE) \
 		$(bindir)/sqlr-export$(EXE) \
 		$(bindir)/sqlr-import$(EXE) \
 		$(bindir)/sqlr-pwdenc$(EXE) \
@@ -53,3 +66,15 @@ uninstall:
 		$(bindir)/sqlr-fields$(EXE) \
 		$(bindir)/fields$(EXE) \
 		$(bindir)/query$(EXE)
+
+uninstall-sh:
+	$(RM) $(bindir)/$(SQLR)sh$(EXE)
+
+uninstall-export:
+	$(RM) $(bindir)/$(SQLR)-export$(EXE)
+
+uninstall-import:
+	$(RM) $(bindir)/$(SQLR)-import$(EXE)
+
+uninstall-pwdenc:
+	$(RM) $(bindir)/$(SQLR)-pwdenc$(EXE)

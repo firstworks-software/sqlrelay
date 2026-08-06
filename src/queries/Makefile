@@ -25,26 +25,43 @@ $(SQLR)query_sqlrcmdcstat.$(LIBEXT): sqlrcmdcstat.cpp sqlrcmdcstat.$(OBJ)
 
 install: $(INSTALLLIB)
 
-installdll:
+installdll: installdll-sqlrcmdgstat \
+		installdll-sqlrcmdcstat
+
+installdll-sqlrcmdgstat:
 	$(MKINSTALLDIRS) $(libexecdir)
 	$(LTINSTALL) $(CP) $(SQLR)query_sqlrcmdgstat.$(LIBEXT) $(libexecdir)
+
+installdll-sqlrcmdcstat:
+	$(MKINSTALLDIRS) $(libexecdir)
 	$(LTINSTALL) $(CP) $(SQLR)query_sqlrcmdcstat.$(LIBEXT) $(libexecdir)
 
 installlib: $(INSTALLSHAREDLIB)
 
-installsharedlib:
+installsharedlib: installsharedlib-sqlrcmdgstat \
+		installsharedlib-sqlrcmdcstat
+
+installsharedlib-sqlrcmdgstat:
 	$(MKINSTALLDIRS) $(libexecdir)
 	$(LTINSTALL) $(CP) $(SQLR)query_sqlrcmdgstat.$(LIBEXT) $(libexecdir)
 	$(RM) $(libexecdir)/$(SQLR)query_sqlrcmdgstat.a
 	$(RM) $(libexecdir)/$(SQLR)query_sqlrcmdgstat.$(LIBEXT)
 	$(MODULERENAME) $(libexecdir)/$(SQLR)query_sqlrcmdgstat.so so $(MODULESUFFIX)
+
+installsharedlib-sqlrcmdcstat:
+	$(MKINSTALLDIRS) $(libexecdir)
 	$(LTINSTALL) $(CP) $(SQLR)query_sqlrcmdcstat.$(LIBEXT) $(libexecdir)
 	$(RM) $(libexecdir)/$(SQLR)query_sqlrcmdcstat.a
 	$(RM) $(libexecdir)/$(SQLR)query_sqlrcmdcstat.$(LIBEXT)
 	$(MODULERENAME) $(libexecdir)/$(SQLR)query_sqlrcmdcstat.so so $(MODULESUFFIX)
 
-uninstall:
-	$(RM) $(libexecdir)/$(SQLR)query_sqlrcmdgstat.* \
-		$(libexecdir)/$(SQLR)query_sqlrcmdcstat.* \
-		$(libexecdir)/sqlrquery_sqlrcmdgstat.* \
+uninstall: uninstall-sqlrcmdgstat \
+		uninstall-sqlrcmdcstat
+	$(RM) $(libexecdir)/sqlrquery_sqlrcmdgstat.* \
 		$(libexecdir)/sqlrquery_sqlrcmdcstat.*
+
+uninstall-sqlrcmdgstat:
+	$(RM) $(libexecdir)/$(SQLR)query_sqlrcmdgstat.*
+
+uninstall-sqlrcmdcstat:
+	$(RM) $(libexecdir)/$(SQLR)query_sqlrcmdcstat.*

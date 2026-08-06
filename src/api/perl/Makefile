@@ -29,30 +29,38 @@ Cursor.$(LIBEXT): Cursor.xs Cursor.cpp Cursor.$(OBJ)
 
 install: $(INSTALLLIB) installmod $(PERLINSTALLMAN)
 
-installdll:
+installdll: installdll-connection installdll-cursor
 	$(MKINSTALLDIRS) $(PERLSITEARCH_LOCAL)/SQLRelay
-	$(MKINSTALLDIRS) $(PERLSITEARCH_LOCAL)/auto/SQLRelay/Connection
-	$(MKINSTALLDIRS) $(PERLSITEARCH_LOCAL)/auto/SQLRelay/Cursor
 	$(MKINSTALLDIRS) $(PERLSITEARCH_LOCAL)/auto/DBD/SQLRelay
+
+installdll-connection:
+	$(MKINSTALLDIRS) $(PERLSITEARCH_LOCAL)/auto/SQLRelay/Connection
 	$(LTINSTALL) $(CP) Connection.$(LIBEXT) $(PERLSITEARCH_LOCAL)/auto/SQLRelay/Connection/Connection.$(MODULESUFFIX)
 	$(CHMOD) 755 $(PERLSITEARCH_LOCAL)/auto/SQLRelay/Connection/Connection.$(MODULESUFFIX)
+
+installdll-cursor:
+	$(MKINSTALLDIRS) $(PERLSITEARCH_LOCAL)/auto/SQLRelay/Cursor
 	$(LTINSTALL) $(CP) Cursor.$(LIBEXT) $(PERLSITEARCH_LOCAL)/auto/SQLRelay/Cursor/Cursor.$(MODULESUFFIX)
 	$(CHMOD) 755 $(PERLSITEARCH_LOCAL)/auto/SQLRelay/Cursor/Cursor.$(MODULESUFFIX)
 
-installlib:
+installlib: installlib-connection installlib-cursor
 	$(MKINSTALLDIRS) $(PERLSITEARCH_LOCAL)/SQLRelay
-	$(MKINSTALLDIRS) $(PERLSITEARCH_LOCAL)/auto/SQLRelay/Connection
-	$(MKINSTALLDIRS) $(PERLSITEARCH_LOCAL)/auto/SQLRelay/Cursor
 	$(MKINSTALLDIRS) $(PERLSITEARCH_LOCAL)/auto/DBD/SQLRelay
+
+installlib-connection:
+	$(MKINSTALLDIRS) $(PERLSITEARCH_LOCAL)/auto/SQLRelay/Connection
 	$(LTINSTALL) $(CP) Connection.$(LIBEXT) $(PERLSITEARCH_LOCAL)/auto/SQLRelay/Connection
 	$(CHMOD) 755 $(PERLSITEARCH_LOCAL)/auto/SQLRelay/Connection/Connection.$(LIBEXT)
-	$(LTINSTALL) $(CP) Cursor.$(LIBEXT) $(PERLSITEARCH_LOCAL)/auto/SQLRelay/Cursor
-	$(CHMOD) 755 $(PERLSITEARCH_LOCAL)/auto/SQLRelay/Cursor/Cursor.$(LIBEXT)
 	$(RM) $(PERLSITEARCH_LOCAL)/auto/SQLRelay/Connection/Connection.a
 	$(RM) $(PERLSITEARCH_LOCAL)/auto/SQLRelay/Connection/Connection.$(LIBEXT)
+	$(MODULERENAME) $(PERLSITEARCH_LOCAL)/auto/SQLRelay/Connection/Connection.so so $(MODULESUFFIX)
+
+installlib-cursor:
+	$(MKINSTALLDIRS) $(PERLSITEARCH_LOCAL)/auto/SQLRelay/Cursor
+	$(LTINSTALL) $(CP) Cursor.$(LIBEXT) $(PERLSITEARCH_LOCAL)/auto/SQLRelay/Cursor
+	$(CHMOD) 755 $(PERLSITEARCH_LOCAL)/auto/SQLRelay/Cursor/Cursor.$(LIBEXT)
 	$(RM) $(PERLSITEARCH_LOCAL)/auto/SQLRelay/Cursor/Cursor.a
 	$(RM) $(PERLSITEARCH_LOCAL)/auto/SQLRelay/Cursor/Cursor.$(LIBEXT)
-	$(MODULERENAME) $(PERLSITEARCH_LOCAL)/auto/SQLRelay/Connection/Connection.so so $(MODULESUFFIX)
 	$(MODULERENAME) $(PERLSITEARCH_LOCAL)/auto/SQLRelay/Cursor/Cursor.so so $(MODULESUFFIX)
 
 installmod:
@@ -99,10 +107,16 @@ installman:
 	$(CP) Cursor.packlist $(PERLSITEARCH_LOCAL)/auto/SQLRelay/Cursor/.packlist
 	$(CP) SQLRelay.packlist $(PERLSITEARCH_LOCAL)/auto/DBD/SQLRelay/.packlist
 
-uninstall:
+uninstall: uninstall-connection uninstall-cursor
 	$(RMTREE) $(PERLSITEARCH_LOCAL)/auto/SQLRelay
 	$(RMTREE) $(PERLSITEARCH_LOCAL)/auto/DBD/SQLRelay
 	$(RMTREE) $(PERLSITEARCH_LOCAL)/SQLRelay
 	$(RM) $(PERLSITELIB_LOCAL)/DBD/SQLRelay.pm
 	$(RM) $(PERLSITEARCH_LOCAL)/SQLRelay
 	$(RM) $(PERLINSTALLMAN3DIR_LOCAL)/*SQLRelay*.$(PERLMAN3EXT_LOCAL)
+
+uninstall-connection:
+	$(RMTREE) $(PERLSITEARCH_LOCAL)/auto/SQLRelay/Connection
+
+uninstall-cursor:
+	$(RMTREE) $(PERLSITEARCH_LOCAL)/auto/SQLRelay/Cursor

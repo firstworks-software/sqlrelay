@@ -756,6 +756,19 @@
 	fixed the sap connection module - varbinary columns were reported as
 		binary, because ctlib reports both as CS_BINARY_TYPE, and the
 		systypes usertype that tells them apart wasn't consulted
+	added per-module install and uninstall targets for the rest of the
+		modules and executables that installed as a group - the
+		directive, errortranslation, filter, logger, pwdenc, query,
+		querytranslation, router, and trigger modules, the sqlr-start,
+		sqlr-stop, sqlr-listener, sqlr-connection, sqlr-scaler,
+		sqlr-cachemanager, and sqlr-status executables, the sqlrsh,
+		sqlr-export, sqlr-import, and sqlr-pwdenc executables, and the
+		java and perl connection and cursor libraries, so installing
+		one reinstalled all of them, each now has its own install and
+		uninstall target and the group targets just depend on those,
+		which also fixes the pwdenc uninstall target leaving the sha1
+		and sha256 modules behind when built with a non-default module
+		name prefix
 	now requires rudiments 2.3.0 or newer
 
 2.2.0 - added some install targets for unfinished modules

@@ -36,22 +36,40 @@ install: $(INSTALLLIB)
 	$(CP) sqlrelay.jar $(javadir)
 	$(CHMOD) 644 $(javadir)/sqlrelay.jar
 
-installdll:
+installdll: installdll-connection installdll-cursor
+
+installdll-connection:
 	$(MKINSTALLDIRS) $(javadir)/com/firstworks/sqlrelay
 	$(LTINSTALL) $(CP) libSQLRConnection.$(LIBEXT) $(javadir)/com/firstworks/sqlrelay/SQLRConnection.$(JNISUFFIX)
+
+installdll-cursor:
+	$(MKINSTALLDIRS) $(javadir)/com/firstworks/sqlrelay
 	$(LTINSTALL) $(CP) libSQLRCursor.$(LIBEXT) $(javadir)/com/firstworks/sqlrelay/SQLRCursor.$(JNISUFFIX)
 
-installlib:
+installlib: installlib-connection installlib-cursor
+
+installlib-connection:
 	$(MKINSTALLDIRS) $(javadir)/com/firstworks/sqlrelay
 	$(LTINSTALL) $(CP) libSQLRConnection.$(LIBEXT) $(javadir)/com/firstworks/sqlrelay
 	$(RM) $(javadir)/com/firstworks/sqlrelay/libSQLRConnection.a
 	$(RM) $(javadir)/com/firstworks/sqlrelay/libSQLRConnection.$(LIBEXT)
 	$(MODULERENAME) $(javadir)/com/firstworks/sqlrelay/libSQLRConnection.so so $(JNISUFFIX)
+
+installlib-cursor:
+	$(MKINSTALLDIRS) $(javadir)/com/firstworks/sqlrelay
 	$(LTINSTALL) $(CP) libSQLRCursor.la $(javadir)/com/firstworks/sqlrelay
 	$(RM) $(javadir)/com/firstworks/sqlrelay/libSQLRCursor.a
 	$(RM) $(javadir)/com/firstworks/sqlrelay/libSQLRCursor.$(LIBEXT)
 	$(MODULERENAME) $(javadir)/com/firstworks/sqlrelay/libSQLRCursor.so so $(JNISUFFIX)
 
-uninstall:
+uninstall: uninstall-connection uninstall-cursor
 	$(RMTREE) $(javadir)/com/firstworks/sqlrelay
 	$(RM) $(javadir)/sqlrelay.jar
+
+uninstall-connection:
+	$(RM) $(javadir)/com/firstworks/sqlrelay/SQLRConnection.$(JNISUFFIX) \
+		$(javadir)/com/firstworks/sqlrelay/libSQLRConnection.*
+
+uninstall-cursor:
+	$(RM) $(javadir)/com/firstworks/sqlrelay/SQLRCursor.$(JNISUFFIX) \
+		$(javadir)/com/firstworks/sqlrelay/libSQLRCursor.*

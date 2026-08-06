@@ -37,43 +37,93 @@ $(SQLR)trigger_globaltemptables.$(LIBEXT): globaltemptables.cpp globaltemptables
 
 install: $(INSTALLLIB)
 
-installdll:
+installdll: installdll-replay \
+		installdll-upsert \
+		installdll-splitmultiinsert \
+		installdll-savepoints \
+		installdll-globaltemptables
+
+installdll-replay:
 	$(MKINSTALLDIRS) $(libexecdir)
 	$(LTINSTALL) $(CP) $(SQLR)trigger_replay.$(LIBEXT) $(libexecdir)
+
+installdll-upsert:
+	$(MKINSTALLDIRS) $(libexecdir)
 	$(LTINSTALL) $(CP) $(SQLR)trigger_upsert.$(LIBEXT) $(libexecdir)
+
+installdll-splitmultiinsert:
+	$(MKINSTALLDIRS) $(libexecdir)
 	$(LTINSTALL) $(CP) $(SQLR)trigger_splitmultiinsert.$(LIBEXT) $(libexecdir)
+
+installdll-savepoints:
+	$(MKINSTALLDIRS) $(libexecdir)
 	$(LTINSTALL) $(CP) $(SQLR)trigger_savepoints.$(LIBEXT) $(libexecdir)
+
+installdll-globaltemptables:
+	$(MKINSTALLDIRS) $(libexecdir)
 	$(LTINSTALL) $(CP) $(SQLR)trigger_globaltemptables.$(LIBEXT) $(libexecdir)
 
 installlib: $(INSTALLSHAREDLIB)
 
-installsharedlib:
+installsharedlib: installsharedlib-replay \
+		installsharedlib-upsert \
+		installsharedlib-splitmultiinsert \
+		installsharedlib-savepoints \
+		installsharedlib-globaltemptables
+
+installsharedlib-replay:
 	$(MKINSTALLDIRS) $(libexecdir)
 	$(LTINSTALL) $(CP) $(SQLR)trigger_replay.$(LIBEXT) $(libexecdir)
 	$(RM) $(libexecdir)/$(SQLR)trigger_replay.a
 	$(RM) $(libexecdir)/$(SQLR)trigger_replay.$(LIBEXT)
 	$(MODULERENAME) $(libexecdir)/$(SQLR)trigger_replay.so so $(MODULESUFFIX)
+
+installsharedlib-upsert:
+	$(MKINSTALLDIRS) $(libexecdir)
 	$(LTINSTALL) $(CP) $(SQLR)trigger_upsert.$(LIBEXT) $(libexecdir)
 	$(RM) $(libexecdir)/$(SQLR)trigger_upsert.a
 	$(RM) $(libexecdir)/$(SQLR)trigger_upsert.$(LIBEXT)
 	$(MODULERENAME) $(libexecdir)/$(SQLR)trigger_upsert.so so $(MODULESUFFIX)
+
+installsharedlib-splitmultiinsert:
+	$(MKINSTALLDIRS) $(libexecdir)
 	$(LTINSTALL) $(CP) $(SQLR)trigger_splitmultiinsert.$(LIBEXT) $(libexecdir)
 	$(RM) $(libexecdir)/$(SQLR)trigger_splitmultiinsert.a
 	$(RM) $(libexecdir)/$(SQLR)trigger_splitmultiinsert.$(LIBEXT)
 	$(MODULERENAME) $(libexecdir)/$(SQLR)trigger_splitmultiinsert.so so $(MODULESUFFIX)
+
+installsharedlib-savepoints:
+	$(MKINSTALLDIRS) $(libexecdir)
 	$(LTINSTALL) $(CP) $(SQLR)trigger_savepoints.$(LIBEXT) $(libexecdir)
 	$(RM) $(libexecdir)/$(SQLR)trigger_savepoints.a
 	$(RM) $(libexecdir)/$(SQLR)trigger_savepoints.$(LIBEXT)
 	$(MODULERENAME) $(libexecdir)/$(SQLR)trigger_savepoints.so so $(MODULESUFFIX)
+
+installsharedlib-globaltemptables:
+	$(MKINSTALLDIRS) $(libexecdir)
 	$(LTINSTALL) $(CP) $(SQLR)trigger_globaltemptables.$(LIBEXT) $(libexecdir)
 	$(RM) $(libexecdir)/$(SQLR)trigger_globaltemptables.a
 	$(RM) $(libexecdir)/$(SQLR)trigger_globaltemptables.$(LIBEXT)
 	$(MODULERENAME) $(libexecdir)/$(SQLR)trigger_globaltemptables.so so $(MODULESUFFIX)
 
-uninstall:
-	$(RM) $(libexecdir)/$(SQLR)trigger_replay.*
+uninstall: uninstall-replay \
+		uninstall-upsert \
+		uninstall-splitmultiinsert \
+		uninstall-savepoints \
+		uninstall-globaltemptables
 	$(RM) $(libexecdir)/$(SQLR)trigger_deadlock_replay.*
+
+uninstall-replay:
+	$(RM) $(libexecdir)/$(SQLR)trigger_replay.*
+
+uninstall-upsert:
 	$(RM) $(libexecdir)/$(SQLR)trigger_upsert.*
+
+uninstall-splitmultiinsert:
 	$(RM) $(libexecdir)/$(SQLR)trigger_splitmultiinsert.*
+
+uninstall-savepoints:
 	$(RM) $(libexecdir)/$(SQLR)trigger_savepoints.*
+
+uninstall-globaltemptables:
 	$(RM) $(libexecdir)/$(SQLR)trigger_globaltemptables.*

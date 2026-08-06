@@ -29,30 +29,58 @@ $(SQLR)directive_singlestep.$(LIBEXT): singlestep.cpp singlestep.$(OBJ)
 
 install: $(INSTALLLIB)
 
-installdll:
+installdll: installdll-custom_wf \
+		installdll-crash \
+		installdll-singlestep
+
+installdll-custom_wf:
 	$(MKINSTALLDIRS) $(libexecdir)
 	$(LTINSTALL) $(CP) $(SQLR)directive_custom_wf.$(LIBEXT) $(libexecdir)
+
+installdll-crash:
+	$(MKINSTALLDIRS) $(libexecdir)
 	$(LTINSTALL) $(CP) $(SQLR)directive_crash.$(LIBEXT) $(libexecdir)
+
+installdll-singlestep:
+	$(MKINSTALLDIRS) $(libexecdir)
 	$(LTINSTALL) $(CP) $(SQLR)directive_singlestep.$(LIBEXT) $(libexecdir)
 
 installlib: $(INSTALLSHAREDLIB)
 
-installsharedlib:
+installsharedlib: installsharedlib-custom_wf \
+		installsharedlib-crash \
+		installsharedlib-singlestep
+
+installsharedlib-custom_wf:
 	$(MKINSTALLDIRS) $(libexecdir)
 	$(LTINSTALL) $(CP) $(SQLR)directive_custom_wf.$(LIBEXT) $(libexecdir)
 	$(RM) $(libexecdir)/$(SQLR)directive_custom_wf.a
 	$(RM) $(libexecdir)/$(SQLR)directive_custom_wf.$(LIBEXT)
 	$(MODULERENAME) $(libexecdir)/$(SQLR)directive_custom_wf.so so $(MODULESUFFIX)
+
+installsharedlib-crash:
+	$(MKINSTALLDIRS) $(libexecdir)
 	$(LTINSTALL) $(CP) $(SQLR)directive_crash.$(LIBEXT) $(libexecdir)
 	$(RM) $(libexecdir)/$(SQLR)directive_crash.a
 	$(RM) $(libexecdir)/$(SQLR)directive_crash.$(LIBEXT)
 	$(MODULERENAME) $(libexecdir)/$(SQLR)directive_crash.so so $(MODULESUFFIX)
+
+installsharedlib-singlestep:
+	$(MKINSTALLDIRS) $(libexecdir)
 	$(LTINSTALL) $(CP) $(SQLR)directive_singlestep.$(LIBEXT) $(libexecdir)
 	$(RM) $(libexecdir)/$(SQLR)directive_singlestep.a
 	$(RM) $(libexecdir)/$(SQLR)directive_singlestep.$(LIBEXT)
 	$(MODULERENAME) $(libexecdir)/$(SQLR)directive_singlestep.so so $(MODULESUFFIX)
 
-uninstall:
+uninstall: uninstall-custom_wf \
+		uninstall-crash \
+		uninstall-singlestep
+
+uninstall-custom_wf:
 	$(RM) $(libexecdir)/$(SQLR)directive_custom_wf.*
+
+uninstall-crash:
 	$(RM) $(libexecdir)/$(SQLR)directive_crash.*
+
+uninstall-singlestep:
 	$(RM) $(libexecdir)/$(SQLR)directive_singlestep.*

@@ -25,24 +25,41 @@ $(SQLR)errortranslation_renumber.$(LIBEXT): renumber.cpp renumber.$(OBJ)
 
 install: $(INSTALLLIB)
 
-installdll:
+installdll: installdll-patterns \
+		installdll-renumber
+
+installdll-patterns:
 	$(MKINSTALLDIRS) $(libexecdir)
 	$(LTINSTALL) $(CP) $(SQLR)errortranslation_patterns.$(LIBEXT) $(libexecdir)
+
+installdll-renumber:
+	$(MKINSTALLDIRS) $(libexecdir)
 	$(LTINSTALL) $(CP) $(SQLR)errortranslation_renumber.$(LIBEXT) $(libexecdir)
 
 installlib: $(INSTALLSHAREDLIB)
 
-installsharedlib:
+installsharedlib: installsharedlib-patterns \
+		installsharedlib-renumber
+
+installsharedlib-patterns:
 	$(MKINSTALLDIRS) $(libexecdir)
 	$(LTINSTALL) $(CP) $(SQLR)errortranslation_patterns.$(LIBEXT) $(libexecdir)
 	$(RM) $(libexecdir)/$(SQLR)errortranslation_patterns.a
 	$(RM) $(libexecdir)/$(SQLR)errortranslation_patterns.$(LIBEXT)
 	$(MODULERENAME) $(libexecdir)/$(SQLR)errortranslation_patterns.so so $(MODULESUFFIX)
+
+installsharedlib-renumber:
+	$(MKINSTALLDIRS) $(libexecdir)
 	$(LTINSTALL) $(CP) $(SQLR)errortranslation_renumber.$(LIBEXT) $(libexecdir)
 	$(RM) $(libexecdir)/$(SQLR)errortranslation_renumber.a
 	$(RM) $(libexecdir)/$(SQLR)errortranslation_renumber.$(LIBEXT)
 	$(MODULERENAME) $(libexecdir)/$(SQLR)errortranslation_renumber.so so $(MODULESUFFIX)
 
-uninstall:
-	$(RM) $(libexecdir)/$(SQLR)errortranslation_patterns.* \
-		$(libexecdir)/$(SQLR)errortranslation_renumber.*
+uninstall: uninstall-patterns \
+		uninstall-renumber
+
+uninstall-patterns:
+	$(RM) $(libexecdir)/$(SQLR)errortranslation_patterns.*
+
+uninstall-renumber:
+	$(RM) $(libexecdir)/$(SQLR)errortranslation_renumber.*

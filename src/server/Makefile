@@ -463,15 +463,14 @@ sqlrmoduledataassignments.cpp: sqlrmoduledataassignments.cpp.in
 		sed -e "s|@module@|$$module|g" $< >> $@; \
 	done
 
-install: $(INSTALLLIB)
-	$(MKINSTALLDIRS) $(bindir)
-	$(LTINSTALL) $(CP) $(SQLR)-start$(EXE) $(bindir)
-	$(LTINSTALL) $(CP) $(SQLR)-stop$(EXE) $(bindir)
-	$(LTINSTALL) $(CP) $(SQLR)-listener$(EXE) $(bindir)
-	$(LTINSTALL) $(CP) $(SQLR)-connection$(EXE) $(bindir)
-	$(LTINSTALL) $(CP) $(SQLR)-scaler$(EXE) $(bindir)
-	$(LTINSTALL) $(CP) $(SQLR)-cachemanager$(EXE) $(bindir)
-	$(LTINSTALL) $(CP) $(SQLR)-status$(EXE) $(bindir)
+install: $(INSTALLLIB) \
+		install-start \
+		install-stop \
+		install-listener \
+		install-connection \
+		install-scaler \
+		install-cachemanager \
+		install-status
 	$(MKINSTALLDIRS) $(includedir)/sqlrelay
 	$(CP) sqlrelay/sqlrserver.h $(includedir)/sqlrelay
 	$(CHMOD) 644 $(includedir)/sqlrelay/sqlrserver.h
@@ -562,6 +561,34 @@ install: $(INSTALLLIB)
 	$(MKINSTALLDIRS) $(debugdir)
 	$(CHMOD) 777 $(debugdir)
 
+install-start:
+	$(MKINSTALLDIRS) $(bindir)
+	$(LTINSTALL) $(CP) $(SQLR)-start$(EXE) $(bindir)
+
+install-stop:
+	$(MKINSTALLDIRS) $(bindir)
+	$(LTINSTALL) $(CP) $(SQLR)-stop$(EXE) $(bindir)
+
+install-listener:
+	$(MKINSTALLDIRS) $(bindir)
+	$(LTINSTALL) $(CP) $(SQLR)-listener$(EXE) $(bindir)
+
+install-connection:
+	$(MKINSTALLDIRS) $(bindir)
+	$(LTINSTALL) $(CP) $(SQLR)-connection$(EXE) $(bindir)
+
+install-scaler:
+	$(MKINSTALLDIRS) $(bindir)
+	$(LTINSTALL) $(CP) $(SQLR)-scaler$(EXE) $(bindir)
+
+install-cachemanager:
+	$(MKINSTALLDIRS) $(bindir)
+	$(LTINSTALL) $(CP) $(SQLR)-cachemanager$(EXE) $(bindir)
+
+install-status:
+	$(MKINSTALLDIRS) $(bindir)
+	$(LTINSTALL) $(CP) $(SQLR)-status$(EXE) $(bindir)
+
 installdll:
 	$(MKINSTALLDIRS) $(bindir)
 	$(LTINSTALL) $(CP) lib$(SQLR)server.$(LIBEXT) $(bindir)
@@ -573,7 +600,14 @@ installlib:
 	$(LTINSTALL) $(CP) lib$(SQLR)server.$(LIBEXT) $(libdir)
 	$(LTFINISH) $(libdir)
 
-uninstall: $(UNINSTALLLIB)
+uninstall: $(UNINSTALLLIB) \
+		uninstall-start \
+		uninstall-stop \
+		uninstall-listener \
+		uninstall-connection \
+		uninstall-scaler \
+		uninstall-cachemanager \
+		uninstall-status
 	$(RM) $(includedir)/sqlrelay/sqlrserver.h \
 		$(includedir)/sqlrelay/private/sqlrserverbase.h \
 		$(includedir)/sqlrelay/private/sqlrservermodule.h \
@@ -629,13 +663,6 @@ uninstall: $(UNINSTALLLIB)
 		$(includedir)/sqlrelay/private/sqlroraclecredentials.h \
 		$(includedir)/sqlrelay/private/sqlrfirebirdcredentials.h \
 		$(includedir)/sqlrelay/private/sqlrteradatacredentials.h \
-		$(bindir)/$(SQLR)-start$(EXE) \
-		$(bindir)/$(SQLR)-stop$(EXE) \
-		$(bindir)/$(SQLR)-listener$(EXE) \
-		$(bindir)/$(SQLR)-connection$(EXE) \
-		$(bindir)/$(SQLR)-scaler$(EXE) \
-		$(bindir)/$(SQLR)-cachemanager$(EXE) \
-		$(bindir)/$(SQLR)-status$(EXE) \
 		$(bindir)/sqlr-start$(EXE) \
 		$(bindir)/sqlr-stop$(EXE) \
 		$(bindir)/sqlr-listener$(EXE) \
@@ -649,6 +676,27 @@ uninstall: $(UNINSTALLLIB)
 		$(prefix)/lib/sqlrelay/tmp \
 		$(localstatedir)/$(SQLRELAY) \
 		$(localstatedir)/sqlrelay
+
+uninstall-start:
+	$(RM) $(bindir)/$(SQLR)-start$(EXE)
+
+uninstall-stop:
+	$(RM) $(bindir)/$(SQLR)-stop$(EXE)
+
+uninstall-listener:
+	$(RM) $(bindir)/$(SQLR)-listener$(EXE)
+
+uninstall-connection:
+	$(RM) $(bindir)/$(SQLR)-connection$(EXE)
+
+uninstall-scaler:
+	$(RM) $(bindir)/$(SQLR)-scaler$(EXE)
+
+uninstall-cachemanager:
+	$(RM) $(bindir)/$(SQLR)-cachemanager$(EXE)
+
+uninstall-status:
+	$(RM) $(bindir)/$(SQLR)-status$(EXE)
 
 uninstalldll:
 	$(RM) $(bindir)/lib$(SQLR)server.$(LIBEXT) \
