@@ -2227,15 +2227,12 @@ bool sqlrprotocol_firebird::validateDatabase() {
 	// step over any host prefix
 	// (the client uses the "host:" or "host/port:" on the front of the
 	// path to pick the server and strips it before sending, so it's in
-	// the configured value but never on the wire.  A single character
+	// the configured value but never on the wire.  Only one character
 	// before the colon is a windows drive letter rather than a host, and
-	// a slash before it means the colon is inside the path.)
+	// a value that starts with a slash is a path whose colon is its own.)
 	const char	*colon=charstring::findFirst(condb,':');
-	const char	*slash=charstring::findFirst(condb,'/');
-	const char	*backslash=charstring::findFirst(condb,'\\');
 	if (colon && colon-condb>1 &&
-			(!slash || slash>colon) &&
-			(!backslash || backslash>colon)) {
+			condb[0]!='/' && condb[0]!='\\') {
 		condb=colon+1;
 	}
 
