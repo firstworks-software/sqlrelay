@@ -670,6 +670,13 @@
 		name is simply too long - it now says the name is too long,
 		how long it is, and what the limit is, and points at the
 		instance id and localstatedir, which are what to shorten
+	fixed an authentication hole in the des password encryption module -
+		it kept one des instance for the life of the process and
+		never cleared it, and des appends rather than replaces, so
+		each encryption hashed every password the process had seen,
+		concatenated - and since des truncates at 8 characters, after
+		one successful login with a password of 8 or more characters,
+		any password at all authenticated on that connection
 	added a firebird_connectstrings auth module, along with a
 		sqlrfirebirdcredentials class - it handles both the cleartext
 		password that isc_dpb_password carries and the legacy_auth

@@ -10,8 +10,6 @@ class SQLRUTIL_DLLSPEC sqlrpwdenc_des : public sqlrpwdenc {
 		sqlrpwdenc_des(domnode *parameters, bool debug);
 		bool	oneWay();
 		char	*encrypt(const char *value);
-
-		class des	d;
 };
 
 sqlrpwdenc_des::sqlrpwdenc_des(domnode *parameters, bool debug) :
@@ -23,6 +21,15 @@ bool sqlrpwdenc_des::oneWay() {
 }
 
 char *sqlrpwdenc_des::encrypt(const char *value) {
+
+	// The hasher has to be local to this call.  des::append() accumulates,
+	// and getHash() hashes everything accumulated so far without clearing
+	// it, so a hasher kept across calls hashes every value it has ever
+	// been given, concatenated.  des also truncates at 8 characters, so
+	// once 8 have accumulated every later call returns the same hash no
+	// matter what it was passed - which, on the one-way comparison path,
+	// means any password matches.
+	des	d;
 
 	size_t	saltsize=d.getRequiredSaltSize();
 
