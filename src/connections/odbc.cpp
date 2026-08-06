@@ -216,6 +216,10 @@ class SQLRSERVER_DLLSPEC odbccursor : public sqlrservercursor {
 		const char	*getColumnTable(uint32_t i);
 		uint16_t	getColumnTableSize(uint32_t i);
 		bool		noRowsToReturn();
+		bool		cacheRowsAndDrainResultSets();
+		bool		cacheCurrentRow(uint64_t *cachedbytes);
+		void		fetchCachedRow();
+		void		clearCachedRows();
 		bool		fetchRow(bool *error);
 		void		getField(uint32_t col,
 					const char **field,
@@ -287,6 +291,10 @@ class SQLRSERVER_DLLSPEC odbccursor : public sqlrservercursor {
 		uint32_t	row;
 		uint32_t	maxrow;
 		uint32_t	totalrows;
+
+		singlylinkedlist< unsigned char * >	cachedrows;
+		listnode< unsigned char * >		*currentcachedrow;
+		bool					cachedrowsarecomplete;
 
 		stringbuffer	errormsg;
 
@@ -3555,6 +3563,9 @@ odbccursor::odbccursor(sqlrserverconnection *conn, uint16_t id) :
 	}
 	sqlnulldata=SQL_NULL_DATA;
 	bindformaterror=false;
+	cachedrows.setManageArrayValues(true);
+	currentcachedrow=NULL;
+	cachedrowsarecomplete=false;
 	#ifdef HAVE_SQLCONNECTW
 	ucsinbindstrings.setManageArrayValues(true);
 	#endif
@@ -3564,6 +3575,7 @@ odbccursor::odbccursor(sqlrserverconnection *conn, uint16_t id) :
 }
 
 odbccursor::~odbccursor() {
+	clearCachedRows();
 	delete[] indatebind;
 	delete[] intimebind;
 	delete[] intsbind;
@@ -4604,11 +4616,13 @@ bool odbccursor::executeQuery(const char *query, uint32_t size) {
 		return false;
 	}
 
-	// FIXME:
 	// Data isn't written to the output bind buffers (at least with the
-	// Microsoft ODBC Driver) until SQLMoreResults() returns SQL_NO_DATA. 
-	// So if there are any output results pending, this work is being done
-	// too soon.
+	// Microsoft ODBC Driver) until SQLMoreResults() returns SQL_NO_DATA.
+	// If the query returned rows, then they have to be buffered before
+	// the result sets can be drained, or draining would throw them away.
+	if (!cacheRowsAndDrainResultSets()) {
+		return false;
+	}
 
 	// convert date output binds and copy out isnulls
 	//for (uint16_t i=0; i<getOutputBindCount(); i++) {
@@ -4730,6 +4744,7 @@ void odbccursor::initializeRowCounts() {
 	maxrow=0;
 	totalrows=0;
 	affectedrows=-1;
+	clearCachedRows();
 }
 
 bool odbccursor::handleColumns(bool getcolumninfo, bool bindcolumns) {
@@ -5359,9 +5374,168 @@ bool odbccursor::noRowsToReturn() {
 	return (!ncols);
 }
 
+// Cap on how much of a result set will be buffered to get at the output binds
+// behind it.  A result set larger than this keeps all of its rows - the ones
+// that were buffered are just served from the buffer first - but the output
+// binds are left unwritten, because the result sets can't be drained without
+// losing the rest of the rows.
+#define MAXOUTPUTBINDROWCACHESIZE (16*1024*1024)
+
+bool odbccursor::cacheRowsAndDrainResultSets() {
+
+	// At least with the Microsoft ODBC Driver, a stored procedure's output
+	// parameters and return status don't reach the bind buffers until
+	// SQLMoreResults() has returned SQL_NO_DATA.  They arrive at the end of
+	// the wire protocol's token stream, after the rows, so no driver can
+	// hand them over any earlier.
+	//
+	// The protocol modules send the output bind values as part of the
+	// result set header, ahead of the rows, so the values have to be in
+	// hand by the time this method returns.  That means the rows have to be
+	// buffered here, and the result sets drained, before the caller copies
+	// the output binds out.
+
+	// nothing to drain if the query has no output binds
+	if (!getOutputBindCount() && !getInputOutputBindCount()) {
+		return true;
+	}
+
+	// If the query didn't return any rows then there's nothing to buffer,
+	// and the driver has already written the bind buffers.  This is the
+	// case for a plain rpc, and it worked before any of this existed.
+	if (!ncols) {
+		return true;
+	}
+
+	// Lob fields are read from the live statement with SQLGetData, so they
+	// can't be buffered.  Leave the result set alone rather than lose them,
+	// and let the output binds go unwritten.
+	for (SQLSMALLINT i=0; i<ncols; i++) {
+		if (isLob(column[i].type)) {
+			return true;
+		}
+	}
+
+	// buffer the rows
+	uint64_t	cachedbytes=0;
+	for (;;) {
+
+		bool	error=false;
+		if (!fetchRow(&error)) {
+			if (error) {
+				return false;
+			}
+			break;
+		}
+
+		// If the result set is too big to buffer then stop here.  The
+		// rows that were buffered are still served from the buffer,
+		// and the rest still come from the statement, so no row is
+		// lost.  The result sets just don't get drained, so the output
+		// binds keep whatever they were initialized to.
+		if (!cacheCurrentRow(&cachedbytes)) {
+			currentcachedrow=cachedrows.getFirst();
+			cachedrowsarecomplete=false;
+			return true;
+		}
+	}
+
+	// drain the rest of the result sets, which is what finally makes the
+	// driver write the output bind buffers
+	for (;;) {
+		erg=SQLMoreResults(stmt);
+		#if defined(SQL_NO_DATA)
+		if (erg==SQL_NO_DATA) {
+			break;
+		}
+		#elif defined(SQL_NO_DATA_FOUND)
+		if (erg==SQL_NO_DATA_FOUND) {
+			break;
+		}
+		#endif
+		if (erg!=SQL_SUCCESS && erg!=SQL_SUCCESS_WITH_INFO) {
+			return false;
+		}
+	}
+
+	currentcachedrow=cachedrows.getFirst();
+	cachedrowsarecomplete=true;
+
+	return true;
+}
+
+bool odbccursor::cacheCurrentRow(uint64_t *cachedbytes) {
+
+	// A buffered row is the indicator and data of each column, in column
+	// order, packed one after another.  A null or empty field contributes
+	// its indicator and no data.
+	uint64_t	rowsize=0;
+	for (SQLSMALLINT i=0; i<ncols; i++) {
+		rowsize=rowsize+sizeof(indicator[i]);
+		if (indicator[i]>0) {
+			rowsize=rowsize+indicator[i];
+		}
+	}
+
+	// bail if buffering this row would run past the cap
+	if (*cachedbytes+rowsize>MAXOUTPUTBINDROWCACHESIZE) {
+		return false;
+	}
+
+	unsigned char	*cachedrow=new unsigned char[rowsize];
+	unsigned char	*ptr=cachedrow;
+	for (SQLSMALLINT i=0; i<ncols; i++) {
+		bytestring::copy(ptr,&(indicator[i]),sizeof(indicator[i]));
+		ptr=ptr+sizeof(indicator[i]);
+		if (indicator[i]>0) {
+			bytestring::copy(ptr,field[i],indicator[i]);
+			ptr=ptr+indicator[i];
+		}
+	}
+	cachedrows.append(cachedrow);
+
+	*cachedbytes=*cachedbytes+rowsize;
+
+	return true;
+}
+
+void odbccursor::fetchCachedRow() {
+
+	unsigned char	*ptr=currentcachedrow->getValue();
+	for (SQLSMALLINT i=0; i<ncols; i++) {
+		bytestring::copy(&(indicator[i]),ptr,sizeof(indicator[i]));
+		ptr=ptr+sizeof(indicator[i]);
+		if (indicator[i]>0) {
+			bytestring::copy(field[i],ptr,indicator[i]);
+			ptr=ptr+indicator[i];
+		}
+	}
+
+	currentcachedrow=currentcachedrow->getNext();
+}
+
+void odbccursor::clearCachedRows() {
+	cachedrows.clear();
+	currentcachedrow=NULL;
+	cachedrowsarecomplete=false;
+}
+
 bool odbccursor::fetchRow(bool *error) {
 
 	*error=false;
+
+	// If the rows were buffered up front, to get at the output binds behind
+	// them, then serve them from the buffer.  When the buffer runs out,
+	// either the result set is done, or the buffer hit its cap and the rest
+	// of the rows still have to come from the statement.
+	if (currentcachedrow) {
+		fetchCachedRow();
+		return true;
+	}
+	if (cachedrowsarecomplete) {
+		return false;
+	}
+
 	erg=SQLFetch(stmt);
 	if (erg==SQL_ERROR) {
 		*error=true;
@@ -5528,6 +5702,8 @@ bool odbccursor::nextResultSet(bool *nextresultsetavailable) {
 }
 
 void odbccursor::closeResultSet() {
+
+	clearCachedRows();
 
 	if (stmt) {
 		SQLCloseCursor(stmt);

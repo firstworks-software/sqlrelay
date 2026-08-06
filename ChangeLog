@@ -639,6 +639,12 @@
 		handshake, so a client that offers no protocol the module can
 		speak gets a rejection it can report rather than an accept it
 		can't use
+	fixed the odbc connection module - a stored procedure's output
+		parameters and return status were read before the result sets
+		were drained, so a procedure that returned rows as well as an
+		output parameter handed back the bind's initial value rather
+		than what the procedure set - the rows are buffered now, and
+		the result sets drained, before the output binds are read
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems
