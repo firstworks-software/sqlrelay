@@ -51,6 +51,19 @@ do
 	COUNT=`expr $COUNT + 1`
 done
 
+# An interrupted run would otherwise leave its temporary behind in the
+# install directory, so clean it up on the way out.  CURRENTTEMP is empty
+# except while a copy is actually in progress.
+CURRENTTEMP=""
+cleanup() {
+	if ( test -n "$CURRENTTEMP" )
+	then
+		rm -f "$CURRENTTEMP"
+	fi
+	exit 1
+}
+trap cleanup HUP INT QUIT TERM
+
 # copy one file, through a temporary in the target's own directory so the
 # rename is within one file system and is therefore atomic
 copyone() {
@@ -60,21 +73,25 @@ copyone() {
 
 	TARGETDIR="`dirname \"$TARGET\"`"
 	TEMP="$TARGETDIR/.safecp$$.`basename \"$TARGET\"`"
+	CURRENTTEMP="$TEMP"
 
 	if ( cp "$SOURCE" "$TEMP" )
 	then
 		:
 	else
 		rm -f "$TEMP"
+		CURRENTTEMP=""
 		return 1
 	fi
 
 	if ( mv "$TEMP" "$TARGET" )
 	then
+		CURRENTTEMP=""
 		return 0
 	fi
 
 	rm -f "$TEMP"
+	CURRENTTEMP=""
 	return 1
 }
 
