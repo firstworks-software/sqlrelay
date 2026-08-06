@@ -56,7 +56,8 @@ static short buildDpb(char *buffer, const char *dpbuser,
 	// the database's default charset.  The metadata section asserts
 	// sqllen 50 and sqlsubtype 0, which hold only for a single-byte
 	// database.  A UTF8 database gives sqllen 200 and a non-zero
-	// subtype.  Recheck against a real server under #8954.
+	// subtype.  The test databases are single-byte - checked against
+	// firebird 2.5, 3.0 and 4.0 under #8954.
 	*dpbptr=isc_dpb_lc_ctype;
 	dpbptr++;
 	*dpbptr=4;
@@ -304,8 +305,11 @@ static void printSqlType(XSQLVAR *var) {
 int	main(int argc, char **argv) {
 
 	// pass "native" to test a real firebird instance instead of
-	// sqlrelay's firebird protocol.  a second argument picks which
-	// one - "firebird" (the default), "firebird2" or "firebird3".
+	// sqlrelay's firebird protocol.  a second argument names which one,
+	// as a host name or dns alias.  the aliases are not versioned the way
+	// they read - "firebird" and "firebird3" are both the 3.0 server and
+	// "firebird2" is the 2.5 server, with no alias for 4.0 - so prefer
+	// the full host name.
 	bool		issqlrelay=!(argc>=2 &&
 					!charstring::compare(argv[1],"native"));
 	const char	*server="127.0.0.1";
@@ -422,8 +426,15 @@ int	main(int argc, char **argv) {
 				assertTrue(dbinfoptr[1]>0);
 				break;
 			case isc_info_base_level:
-				// count byte, then the level, always 6
-				assertEquals((int)dbinfoptr[0],1);
+				// count byte, then the level, always 6.
+				// The count is 3, not the 1 the server sent.
+				// fbclient merges its own entry into the
+				// caller's buffer after the response arrives,
+				// so the count the caller sees is one more
+				// than the wire carried.  Measured as 3 on
+				// firebird 2.5, 3.0 and 4.0 and on sqlrelay
+				// under #8954.
+				assertEquals((int)dbinfoptr[0],3);
 				assertEquals((int)dbinfoptr[1],6);
 				break;
 			default:
@@ -714,8 +725,13 @@ int	main(int argc, char **argv) {
 	stdoutput.printf("\n\n");
 
 
+	// DSQL_close on a statement with no open cursor is an error, not a
+	// no-op.  This is an insert, so executing it never opened one.
+	// Measured identically on firebird 2.5, 3.0 and 4.0 under #8954.
 	stdoutput.printf("isc_dsql_free_statement - DSQL_close\n");
-	assertEquals((int)isc_dsql_free_statement(fbstatus,&stmt,DSQL_close),0);
+	assertEquals((int)isc_dsql_free_statement(fbstatus,&stmt,DSQL_close),
+						isc_dsql_cursor_close_err);
+	assertEquals((int)isc_sqlcode(fbstatus),-501);
 	assertTrue(stmt!=0);
 	stdoutput.printf("\n\n");
 
@@ -816,7 +832,8 @@ int	main(int argc, char **argv) {
 	assertColumn(&sqlda->sqlvar[6],"TESTDATE",SQL_TYPE_DATE,4,0,0);
 	assertColumn(&sqlda->sqlvar[7],"TESTTIME",SQL_TYPE_TIME,4,0,0);
 	// for SQL_TEXT and SQL_VARYING, sqlsubtype is the column's character
-	// set id, and 0 is NONE
+	// set id, and 0 is NONE.  sqllen 50 and sqlsubtype 0 confirmed against
+	// firebird 2.5, 3.0 and 4.0 under #8954.
 	assertColumn(&sqlda->sqlvar[8],"TESTCHAR",SQL_TEXT,50,0,0);
 	assertColumn(&sqlda->sqlvar[9],"TESTVARCHAR",SQL_VARYING,50,0,0);
 	assertColumn(&sqlda->sqlvar[10],"TESTTIMESTAMP",SQL_TIMESTAMP,8,0,0);
@@ -1234,12 +1251,17 @@ int	main(int argc, char **argv) {
 
 
 	// isc_dsql_insert is the legacy interbase insert-through-a-cursor
-	// entry point, op_insert on the wire.  Whether a modern firebird
-	// server accepts it against a plain prepared insert is untested -
-	// recheck under #8954.
+	// entry point, op_insert on the wire.  fbclient 3.0 and up refuses it
+	// outright with isc_feature_removed, so nothing reaches the server and
+	// nothing reaches a protocol module either.  Measured identically
+	// against firebird 2.5, 3.0 and 4.0 under #8954, and 2.5 servers do
+	// still implement op_insert, which is what places the refusal in the
+	// client.
 	stdoutput.printf("isc_dsql_insert\n");
 	assertEquals((int)isc_dsql_insert(fbstatus,&stmt,
-					SQL_DIALECT_V6,insqlda),0);
+					SQL_DIALECT_V6,insqlda),
+					isc_feature_removed);
+	assertEquals((int)isc_sqlcode(fbstatus),-901);
 	stdoutput.printf("\n\n");
 
 
@@ -1477,6 +1499,8 @@ int	main(int argc, char **argv) {
 	isc_start_transaction(fbstatus,&tr,1,&db,
 					(unsigned short)sizeof(tpb),tpb);
 
+	// the sqlstates below are fb_sqlstate's mapping, confirmed against
+	// firebird 2.5, 3.0 and 4.0 under #8954
 	char	errmsg[512];
 	char	sqlstate[6];
 
