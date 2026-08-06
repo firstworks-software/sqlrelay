@@ -570,6 +570,21 @@
 		outright, the direction is already carried by the bind
 		itself - SQL_PARAM_OUTPUT in the odbc module and CS_RETURN in
 		the freetds and sap ones
+	fixed the firebird protocol module - the database parameter buffer
+		walk left the length and value of any item it had no use
+		for in the buffer, so a single unhandled item threw the
+		walk out of step, and its loop test compared pointers for
+		inequality rather than counting the bytes left, so an
+		out-of-step walk stepped over the end of the buffer and
+		spun forever - every item is framed and skipped by its
+		length now, the walk is bounded, and the dpb version byte
+		selects the item encoding
+	fixed the tds protocol module - an sp_executesql or sp_cursoropen
+		that supplied no bind values still had its statement run
+		through bind variable translation, so a single-@ local
+		variable or parameter declaration in it was rewritten as a
+		bind marker and then run with nothing bound, the same defect
+		that was fixed for a plain sql batch
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems

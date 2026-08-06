@@ -6735,10 +6735,19 @@ bool sqlrprotocol_tds::executeSql(bool nometadata) {
 
 	// the parameter declaration string is only there if there are
 	// parameters, and the values follow it
+	uint16_t	firstvalue=(rpcparamcount>1)?2:1;
+
+	// A statement that comes with no values has no bind variables in
+	// it.  A single-@ name in one is a local variable or a parameter
+	// declaration.
+	if (rpcparamcount<=firstvalue) {
+		cont->setTranslateBindVariablesForThisQuery(cursor,false);
+	}
+
 	bool	success=cont->prepareQuery(cursor,stmt,stmtlen,
 							true,true,true,true);
 	if (success) {
-		bindParams(cursor,(rpcparamcount>1)?2:1);
+		bindParams(cursor,firstvalue);
 		success=cont->executeQuery(cursor,true,true,true,true);
 	}
 
@@ -6943,11 +6952,20 @@ bool sqlrprotocol_tds::cursorOpen(bool nometadata) {
 	}
 
 	// a parameterized cursor sends a declaration string, then the values
+	uint16_t	firstvalue=6;
+
+	// A statement that comes with no values has no bind variables in
+	// it.  A single-@ name in one is a local variable or a parameter
+	// declaration.
+	if (rpcparamcount<=firstvalue) {
+		cont->setTranslateBindVariablesForThisQuery(cursor,false);
+	}
+
 	bool	success=cont->prepareQuery(cursor,stmt,stmtlen,
 							true,true,true,true);
 	if (success) {
-		if (rpcparamcount>5) {
-			bindParams(cursor,6);
+		if (rpcparamcount>firstvalue) {
+			bindParams(cursor,firstvalue);
 		} else {
 			cont->setInputBindCount(cursor,0);
 			cont->setOutputBindCount(cursor,0);
