@@ -7,7 +7,7 @@
 <h3>Source Distribution</h3>
 
 <blockquote>
-<p>The current release is <a target="_blank" href="http://downloads.sourceforge.net/sqlrelay/sqlrelay-2.3.0.tar.gz">sqlrelay-2.3.0.tar.gz</a> or <a target="_blank" href="http://downloads.sourceforge.net/sqlrelay/sqlrelay-2.3.0.zip">sqlrelay-2.3.0.zip</a>.  You will also need <a target="_blank" href="http://downloads.sourceforge.net/rudiments/rudiments-2.2.0.tar.gz">rudiments-2.2.0.tar.gz</a> or <a target="_blank" href="http://downloads.sourceforge.net/rudiments/rudiments-2.2.0.zip">rudiments-2.2.0.zip</a></p>
+<p>The current release is <a target="_blank" href="http://downloads.sourceforge.net/sqlrelay/sqlrelay-2.3.0.tar.gz">sqlrelay-2.3.0.tar.gz</a> or <a target="_blank" href="http://downloads.sourceforge.net/sqlrelay/sqlrelay-2.3.0.zip">sqlrelay-2.3.0.zip</a>.  You will also need <a target="_blank" href="http://downloads.sourceforge.net/rudiments/rudiments-2.3.0.tar.gz">rudiments-2.3.0.tar.gz</a> or <a target="_blank" href="http://downloads.sourceforge.net/rudiments/rudiments-2.3.0.zip">rudiments-2.3.0.zip</a></p>
 
 <p>First <a target="_blank" href="http://rudiments.sourceforge.net/installing.html">build and install Rudiments</a>, then <a target="_blank" href="http://sqlrelay.sourceforge.net/admin/installing.html">build and install SQL Relay</a>.  Older releases of <a target="_blank" href="http://sourceforge.net/projects/sqlrelay/files/sqlrelay">SQL Relay</a> and <a target="_blank" href="http://sourceforge.net/projects/rudiments/files/rudiments">Rudiments</a> are also available.</p>
 </blockquote>

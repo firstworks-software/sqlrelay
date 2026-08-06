@@ -20665,7 +20665,7 @@ fi
 
 NAME="Rudiments"
 VERSION="$RUDIMENTSVERSION"
-TESTVERSION="2.2.0"
+TESTVERSION="2.3.0"
 
 { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for $NAME >= $TESTVERSION" >&5
 printf %s "checking for $NAME >= $TESTVERSION... " >&6; }
