@@ -84,120 +84,221 @@ $(SQLR)auth_teradata_sidechannel.$(LIBEXT): teradata_sidechannel.cpp teradata_si
 
 install: $(INSTALLLIB)
 
-installdll:
+installdll: installdll-sqlrclient_connectstrings \
+		installdll-sqlrclient_userlist \
+		installdll-sqlrclient_database \
+		installdll-sqlrclient_proxied \
+		installdll-sqlrclient_sqlrelay \
+		installdll-mysql_connectstrings \
+		installdll-mysql_userlist \
+		installdll-mysql_database \
+		installdll-postgresql_connectstrings \
+		installdll-postgresql_userlist \
+		installdll-tds_connectstrings \
+		installdll-firebird_connectstrings
+
+installdll-sqlrclient_connectstrings:
 	$(MKINSTALLDIRS) $(libexecdir)
 	$(LTINSTALL) $(CP) $(SQLR)auth_sqlrclient_connectstrings.$(LIBEXT) $(libexecdir)
+
+installdll-sqlrclient_userlist:
+	$(MKINSTALLDIRS) $(libexecdir)
 	$(LTINSTALL) $(CP) $(SQLR)auth_sqlrclient_userlist.$(LIBEXT) $(libexecdir)
+
+installdll-sqlrclient_database:
+	$(MKINSTALLDIRS) $(libexecdir)
 	$(LTINSTALL) $(CP) $(SQLR)auth_sqlrclient_database.$(LIBEXT) $(libexecdir)
+
+installdll-sqlrclient_proxied:
+	$(MKINSTALLDIRS) $(libexecdir)
 	$(LTINSTALL) $(CP) $(SQLR)auth_sqlrclient_proxied.$(LIBEXT) $(libexecdir)
+
+installdll-sqlrclient_sqlrelay:
+	$(MKINSTALLDIRS) $(libexecdir)
 	$(LTINSTALL) $(CP) $(SQLR)auth_sqlrclient_sqlrelay.$(LIBEXT) $(libexecdir)
+
+installdll-mysql_connectstrings:
+	$(MKINSTALLDIRS) $(libexecdir)
 	$(LTINSTALL) $(CP) $(SQLR)auth_mysql_connectstrings.$(LIBEXT) $(libexecdir)
+
+installdll-mysql_userlist:
+	$(MKINSTALLDIRS) $(libexecdir)
 	$(LTINSTALL) $(CP) $(SQLR)auth_mysql_userlist.$(LIBEXT) $(libexecdir)
+
+installdll-mysql_database:
+	$(MKINSTALLDIRS) $(libexecdir)
 	$(LTINSTALL) $(CP) $(SQLR)auth_mysql_database.$(LIBEXT) $(libexecdir)
+
+installdll-postgresql_connectstrings:
+	$(MKINSTALLDIRS) $(libexecdir)
 	$(LTINSTALL) $(CP) $(SQLR)auth_postgresql_connectstrings.$(LIBEXT) $(libexecdir)
+
+installdll-postgresql_userlist:
+	$(MKINSTALLDIRS) $(libexecdir)
 	$(LTINSTALL) $(CP) $(SQLR)auth_postgresql_userlist.$(LIBEXT) $(libexecdir)
+
+installdll-tds_connectstrings:
+	$(MKINSTALLDIRS) $(libexecdir)
 	$(LTINSTALL) $(CP) $(SQLR)auth_tds_connectstrings.$(LIBEXT) $(libexecdir)
+
+installdll-firebird_connectstrings:
+	$(MKINSTALLDIRS) $(libexecdir)
 	$(LTINSTALL) $(CP) $(SQLR)auth_firebird_connectstrings.$(LIBEXT) $(libexecdir)
 
 installlib: $(INSTALLSHAREDLIB) $(AUTHINSTALLSHAREDLIBOPTIONALTARGETS)
 
-installsharedlib:
+installsharedlib: installsharedlib-sqlrclient_connectstrings \
+		installsharedlib-sqlrclient_userlist \
+		installsharedlib-sqlrclient_database \
+		installsharedlib-sqlrclient_proxied \
+		installsharedlib-mysql_connectstrings \
+		installsharedlib-mysql_userlist \
+		installsharedlib-mysql_database \
+		installsharedlib-postgresql_connectstrings \
+		installsharedlib-postgresql_userlist \
+		installsharedlib-tds_connectstrings \
+		installsharedlib-firebird_connectstrings
+
+installsharedlib-sqlrclient_connectstrings:
 	$(MKINSTALLDIRS) $(libexecdir)
 	$(LTINSTALL) $(CP) $(SQLR)auth_sqlrclient_connectstrings.$(LIBEXT) $(libexecdir)
 	$(RM) $(libexecdir)/$(SQLR)auth_sqlrclient_connectstrings.a
 	$(RM) $(libexecdir)/$(SQLR)auth_sqlrclient_connectstrings.$(LIBEXT)
 	$(MODULERENAME) $(libexecdir)/$(SQLR)auth_sqlrclient_connectstrings.so so $(MODULESUFFIX)
+
+installsharedlib-sqlrclient_userlist:
+	$(MKINSTALLDIRS) $(libexecdir)
 	$(LTINSTALL) $(CP) $(SQLR)auth_sqlrclient_userlist.$(LIBEXT) $(libexecdir)
 	$(RM) $(libexecdir)/$(SQLR)auth_sqlrclient_userlist.a
 	$(RM) $(libexecdir)/$(SQLR)auth_sqlrclient_userlist.$(LIBEXT)
 	$(MODULERENAME) $(libexecdir)/$(SQLR)auth_sqlrclient_userlist.so so $(MODULESUFFIX)
+
+installsharedlib-sqlrclient_database:
+	$(MKINSTALLDIRS) $(libexecdir)
 	$(LTINSTALL) $(CP) $(SQLR)auth_sqlrclient_database.$(LIBEXT) $(libexecdir)
 	$(RM) $(libexecdir)/$(SQLR)auth_sqlrclient_database.a
 	$(RM) $(libexecdir)/$(SQLR)auth_sqlrclient_database.$(LIBEXT)
 	$(MODULERENAME) $(libexecdir)/$(SQLR)auth_sqlrclient_database.so so $(MODULESUFFIX)
+
+installsharedlib-sqlrclient_proxied:
+	$(MKINSTALLDIRS) $(libexecdir)
 	$(LTINSTALL) $(CP) $(SQLR)auth_sqlrclient_proxied.$(LIBEXT) $(libexecdir)
 	$(RM) $(libexecdir)/$(SQLR)auth_sqlrclient_proxied.a
 	$(RM) $(libexecdir)/$(SQLR)auth_sqlrclient_proxied.$(LIBEXT)
 	$(MODULERENAME) $(libexecdir)/$(SQLR)auth_sqlrclient_proxied.so so $(MODULESUFFIX)
+
+installsharedlib-mysql_connectstrings:
+	$(MKINSTALLDIRS) $(libexecdir)
 	$(LTINSTALL) $(CP) $(SQLR)auth_mysql_connectstrings.$(LIBEXT) $(libexecdir)
 	$(RM) $(libexecdir)/$(SQLR)auth_mysql_connectstrings.a
 	$(RM) $(libexecdir)/$(SQLR)auth_mysql_connectstrings.$(LIBEXT)
 	$(MODULERENAME) $(libexecdir)/$(SQLR)auth_mysql_connectstrings.so so $(MODULESUFFIX)
+
+installsharedlib-mysql_userlist:
+	$(MKINSTALLDIRS) $(libexecdir)
 	$(LTINSTALL) $(CP) $(SQLR)auth_mysql_userlist.$(LIBEXT) $(libexecdir)
 	$(RM) $(libexecdir)/$(SQLR)auth_mysql_userlist.a
 	$(RM) $(libexecdir)/$(SQLR)auth_mysql_userlist.$(LIBEXT)
 	$(MODULERENAME) $(libexecdir)/$(SQLR)auth_mysql_userlist.so so $(MODULESUFFIX)
+
+installsharedlib-mysql_database:
+	$(MKINSTALLDIRS) $(libexecdir)
 	$(LTINSTALL) $(CP) $(SQLR)auth_mysql_database.$(LIBEXT) $(libexecdir)
 	$(RM) $(libexecdir)/$(SQLR)auth_mysql_database.a
 	$(RM) $(libexecdir)/$(SQLR)auth_mysql_database.$(LIBEXT)
 	$(MODULERENAME) $(libexecdir)/$(SQLR)auth_mysql_database.so so $(MODULESUFFIX)
+
+installsharedlib-postgresql_connectstrings:
+	$(MKINSTALLDIRS) $(libexecdir)
 	$(LTINSTALL) $(CP) $(SQLR)auth_postgresql_connectstrings.$(LIBEXT) $(libexecdir)
 	$(RM) $(libexecdir)/$(SQLR)auth_postgresql_connectstrings.a
 	$(RM) $(libexecdir)/$(SQLR)auth_postgresql_connectstrings.$(LIBEXT)
 	$(MODULERENAME) $(libexecdir)/$(SQLR)auth_postgresql_connectstrings.so so $(MODULESUFFIX)
+
+installsharedlib-postgresql_userlist:
+	$(MKINSTALLDIRS) $(libexecdir)
 	$(LTINSTALL) $(CP) $(SQLR)auth_postgresql_userlist.$(LIBEXT) $(libexecdir)
 	$(RM) $(libexecdir)/$(SQLR)auth_postgresql_userlist.a
 	$(RM) $(libexecdir)/$(SQLR)auth_postgresql_userlist.$(LIBEXT)
 	$(MODULERENAME) $(libexecdir)/$(SQLR)auth_postgresql_userlist.so so $(MODULESUFFIX)
+
+installsharedlib-tds_connectstrings:
+	$(MKINSTALLDIRS) $(libexecdir)
 	$(LTINSTALL) $(CP) $(SQLR)auth_tds_connectstrings.$(LIBEXT) $(libexecdir)
 	$(RM) $(libexecdir)/$(SQLR)auth_tds_connectstrings.a
 	$(RM) $(libexecdir)/$(SQLR)auth_tds_connectstrings.$(LIBEXT)
 	$(MODULERENAME) $(libexecdir)/$(SQLR)auth_tds_connectstrings.so so $(MODULESUFFIX)
+
+installsharedlib-firebird_connectstrings:
+	$(MKINSTALLDIRS) $(libexecdir)
 	$(LTINSTALL) $(CP) $(SQLR)auth_firebird_connectstrings.$(LIBEXT) $(libexecdir)
 	$(RM) $(libexecdir)/$(SQLR)auth_firebird_connectstrings.a
 	$(RM) $(libexecdir)/$(SQLR)auth_firebird_connectstrings.$(LIBEXT)
 	$(MODULERENAME) $(libexecdir)/$(SQLR)auth_firebird_connectstrings.so so $(MODULESUFFIX)
 
-installsharedlib-sqlrelay:
+installsharedlib-sqlrclient_sqlrelay:
 	$(MKINSTALLDIRS) $(libexecdir)
 	$(LTINSTALL) $(CP) $(SQLR)auth_sqlrclient_sqlrelay.$(LIBEXT) $(libexecdir)
 	$(RM) $(libexecdir)/$(SQLR)auth_sqlrclient_sqlrelay.a
 	$(RM) $(libexecdir)/$(SQLR)auth_sqlrclient_sqlrelay.$(LIBEXT)
 	$(MODULERENAME) $(libexecdir)/$(SQLR)auth_sqlrclient_sqlrelay.so so $(MODULESUFFIX)
 
-installsharedlib-oracle:
+installsharedlib-sqlrelay: installsharedlib-sqlrclient_sqlrelay
+
+installsharedlib-oracle_connectstrings:
 	$(MKINSTALLDIRS) $(libexecdir)
 	$(LTINSTALL) $(CP) $(SQLR)auth_oracle_connectstrings.$(LIBEXT) $(libexecdir)
 	$(RM) $(libexecdir)/$(SQLR)auth_oracle_connectstrings.a
 	$(RM) $(libexecdir)/$(SQLR)auth_oracle_connectstrings.$(LIBEXT)
 	$(MODULERENAME) $(libexecdir)/$(SQLR)auth_oracle_connectstrings.so so $(MODULESUFFIX)
+
+installsharedlib-oracle_database:
+	$(MKINSTALLDIRS) $(libexecdir)
 	$(LTINSTALL) $(CP) $(SQLR)auth_oracle_database.$(LIBEXT) $(libexecdir)
 	$(RM) $(libexecdir)/$(SQLR)auth_oracle_database.a
 	$(RM) $(libexecdir)/$(SQLR)auth_oracle_database.$(LIBEXT)
 	$(MODULERENAME) $(libexecdir)/$(SQLR)auth_oracle_database.so so $(MODULESUFFIX)
+
+installsharedlib-oracle_userlist:
+	$(MKINSTALLDIRS) $(libexecdir)
 	$(LTINSTALL) $(CP) $(SQLR)auth_oracle_userlist.$(LIBEXT) $(libexecdir)
 	$(RM) $(libexecdir)/$(SQLR)auth_oracle_userlist.a
 	$(RM) $(libexecdir)/$(SQLR)auth_oracle_userlist.$(LIBEXT)
 	$(MODULERENAME) $(libexecdir)/$(SQLR)auth_oracle_userlist.so so $(MODULESUFFIX)
 
-installsharedlib-teradata:
+installsharedlib-oracle: installsharedlib-oracle_connectstrings \
+		installsharedlib-oracle_database \
+		installsharedlib-oracle_userlist
+
+installsharedlib-teradata_sidechannel:
 	$(MKINSTALLDIRS) $(libexecdir)
 	$(LTINSTALL) $(CP) $(SQLR)auth_teradata_sidechannel.$(LIBEXT) $(libexecdir)
 	$(RM) $(libexecdir)/$(SQLR)auth_teradata_sidechannel.a
 	$(RM) $(libexecdir)/$(SQLR)auth_teradata_sidechannel.$(LIBEXT)
 	$(MODULERENAME) $(libexecdir)/$(SQLR)auth_teradata_sidechannel.so so $(MODULESUFFIX)
 
-uninstall:
+installsharedlib-teradata: installsharedlib-teradata_sidechannel
+
+uninstall: uninstall-sqlrclient_connectstrings \
+		uninstall-sqlrclient_userlist \
+		uninstall-sqlrclient_database \
+		uninstall-sqlrclient_proxied \
+		uninstall-mysql_connectstrings \
+		uninstall-mysql_userlist \
+		uninstall-mysql_database \
+		uninstall-postgresql_connectstrings \
+		uninstall-postgresql_userlist \
+		uninstall-tds_connectstrings \
+		uninstall-firebird_connectstrings \
+		uninstall-sqlrclient_sqlrelay \
+		uninstall-oracle_connectstrings \
+		uninstall-oracle_database \
+		uninstall-oracle_userlist \
+		uninstall-teradata_sidechannel
 	$(RM) $(libexecdir)/$(SQLR)auth_default.* \
-		$(libexecdir)/$(SQLR)auth_sqlrclient_connectstrings.* \
-		$(libexecdir)/$(SQLR)auth_sqlrclient_userlist.* \
-		$(libexecdir)/$(SQLR)auth_sqlrclient_database.* \
-		$(libexecdir)/$(SQLR)auth_sqlrclient_proxied.* \
-		$(libexecdir)/$(SQLR)auth_sqlrclient_sqlrelay.* \
 		$(libexecdir)/$(SQLR)auth_krb_userlist.* \
 		$(libexecdir)/$(SQLR)auth_tls_userlist.* \
 		$(libexecdir)/$(SQLR)auth_kerberos_userlist.* \
-		$(libexecdir)/$(SQLR)auth_mysql_connectstrings.* \
-		$(libexecdir)/$(SQLR)auth_mysql_userlist.* \
-		$(libexecdir)/$(SQLR)auth_mysql_database.* \
-		$(libexecdir)/$(SQLR)auth_postgresql_connectstrings.* \
-		$(libexecdir)/$(SQLR)auth_postgresql_userlist.* \
-		$(libexecdir)/$(SQLR)auth_tds_connectstrings.* \
-		$(libexecdir)/$(SQLR)auth_firebird_connectstrings.* \
-		$(libexecdir)/$(SQLR)auth_oracle_connectstrings.* \
-		$(libexecdir)/$(SQLR)auth_oracle_database.* \
-		$(libexecdir)/$(SQLR)auth_oracle_userlist.* \
-		$(libexecdir)/$(SQLR)auth_teradata_sidechannel.* \
 		$(libexecdir)/$(SQLR)auth_connectstrings.* \
 		$(libexecdir)/$(SQLR)auth_userlist.* \
 		$(libexecdir)/$(SQLR)auth_database.* \
@@ -210,3 +311,51 @@ uninstall:
 		$(libexecdir)/sqlrauth_krb_userlist.* \
 		$(libexecdir)/sqlrauth_kerberos_userlist.* \
 		$(libexecdir)/sqlrauth_sqlrelay.*
+
+uninstall-sqlrclient_connectstrings:
+	$(RM) $(libexecdir)/$(SQLR)auth_sqlrclient_connectstrings.*
+
+uninstall-sqlrclient_userlist:
+	$(RM) $(libexecdir)/$(SQLR)auth_sqlrclient_userlist.*
+
+uninstall-sqlrclient_database:
+	$(RM) $(libexecdir)/$(SQLR)auth_sqlrclient_database.*
+
+uninstall-sqlrclient_proxied:
+	$(RM) $(libexecdir)/$(SQLR)auth_sqlrclient_proxied.*
+
+uninstall-mysql_connectstrings:
+	$(RM) $(libexecdir)/$(SQLR)auth_mysql_connectstrings.*
+
+uninstall-mysql_userlist:
+	$(RM) $(libexecdir)/$(SQLR)auth_mysql_userlist.*
+
+uninstall-mysql_database:
+	$(RM) $(libexecdir)/$(SQLR)auth_mysql_database.*
+
+uninstall-postgresql_connectstrings:
+	$(RM) $(libexecdir)/$(SQLR)auth_postgresql_connectstrings.*
+
+uninstall-postgresql_userlist:
+	$(RM) $(libexecdir)/$(SQLR)auth_postgresql_userlist.*
+
+uninstall-tds_connectstrings:
+	$(RM) $(libexecdir)/$(SQLR)auth_tds_connectstrings.*
+
+uninstall-firebird_connectstrings:
+	$(RM) $(libexecdir)/$(SQLR)auth_firebird_connectstrings.*
+
+uninstall-sqlrclient_sqlrelay:
+	$(RM) $(libexecdir)/$(SQLR)auth_sqlrclient_sqlrelay.*
+
+uninstall-oracle_connectstrings:
+	$(RM) $(libexecdir)/$(SQLR)auth_oracle_connectstrings.*
+
+uninstall-oracle_database:
+	$(RM) $(libexecdir)/$(SQLR)auth_oracle_database.*
+
+uninstall-oracle_userlist:
+	$(RM) $(libexecdir)/$(SQLR)auth_oracle_userlist.*
+
+uninstall-teradata_sidechannel:
+	$(RM) $(libexecdir)/$(SQLR)auth_teradata_sidechannel.*

@@ -45,11 +45,26 @@ $(SQLR)protocol_teradata.$(LIBEXT): teradata.cpp teradata.$(OBJ)
 
 install: $(INSTALLLIB)
 
-installdll: $(PROTOCOLSINSTALLTARGETS)
+installdll: $(PROTOCOLSINSTALLTARGETS) \
+		installdll-sqlrclient \
+		installdll-mysql \
+		installdll-postgresql \
+		installdll-firebird
+
+installdll-sqlrclient:
 	$(MKINSTALLDIRS) $(libexecdir)
 	$(LTINSTALL) $(CP) $(SQLR)protocol_sqlrclient.$(LIBEXT) $(libexecdir)
+
+installdll-mysql:
+	$(MKINSTALLDIRS) $(libexecdir)
 	$(LTINSTALL) $(CP) $(SQLR)protocol_mysql.$(LIBEXT) $(libexecdir)
+
+installdll-postgresql:
+	$(MKINSTALLDIRS) $(libexecdir)
 	$(LTINSTALL) $(CP) $(SQLR)protocol_postgresql.$(LIBEXT) $(libexecdir)
+
+installdll-firebird:
+	$(MKINSTALLDIRS) $(libexecdir)
 	$(LTINSTALL) $(CP) $(SQLR)protocol_firebird.$(LIBEXT) $(libexecdir)
 
 installdll-tds:
@@ -58,20 +73,35 @@ installdll-tds:
 
 installlib: $(INSTALLSHAREDLIB)
 
-installsharedlib: $(PROTOCOLSINSTALLTARGETS)
+installsharedlib: $(PROTOCOLSINSTALLTARGETS) \
+		installsharedlib-sqlrclient \
+		installsharedlib-mysql \
+		installsharedlib-postgresql \
+		installsharedlib-firebird
+
+installsharedlib-sqlrclient:
 	$(MKINSTALLDIRS) $(libexecdir)
 	$(LTINSTALL) $(CP) $(SQLR)protocol_sqlrclient.$(LIBEXT) $(libexecdir)
 	$(RM) $(libexecdir)/$(SQLR)protocol_sqlrclient.a
 	$(RM) $(libexecdir)/$(SQLR)protocol_sqlrclient.$(LIBEXT)
 	$(MODULERENAME) $(libexecdir)/$(SQLR)protocol_sqlrclient.so so $(MODULESUFFIX)
+
+installsharedlib-mysql:
+	$(MKINSTALLDIRS) $(libexecdir)
 	$(LTINSTALL) $(CP) $(SQLR)protocol_mysql.$(LIBEXT) $(libexecdir)
 	$(RM) $(libexecdir)/$(SQLR)protocol_mysql.a
 	$(RM) $(libexecdir)/$(SQLR)protocol_mysql.$(LIBEXT)
 	$(MODULERENAME) $(libexecdir)/$(SQLR)protocol_mysql.so so $(MODULESUFFIX)
+
+installsharedlib-postgresql:
+	$(MKINSTALLDIRS) $(libexecdir)
 	$(LTINSTALL) $(CP) $(SQLR)protocol_postgresql.$(LIBEXT) $(libexecdir)
 	$(RM) $(libexecdir)/$(SQLR)protocol_postgresql.a
 	$(RM) $(libexecdir)/$(SQLR)protocol_postgresql.$(LIBEXT)
 	$(MODULERENAME) $(libexecdir)/$(SQLR)protocol_postgresql.so so $(MODULESUFFIX)
+
+installsharedlib-firebird:
+	$(MKINSTALLDIRS) $(libexecdir)
 	$(LTINSTALL) $(CP) $(SQLR)protocol_firebird.$(LIBEXT) $(libexecdir)
 	$(RM) $(libexecdir)/$(SQLR)protocol_firebird.a
 	$(RM) $(libexecdir)/$(SQLR)protocol_firebird.$(LIBEXT)
@@ -98,12 +128,38 @@ installsharedlib-teradata:
 	$(RM) $(libexecdir)/$(SQLR)protocol_teradata.$(LIBEXT)
 	$(MODULERENAME) $(libexecdir)/$(SQLR)protocol_teradata.so so $(MODULESUFFIX)
 
-uninstall:
-	$(RM) $(libexecdir)/$(SQLR)protocol_sqlrclient.* \
-		$(libexecdir)/sqlrprotocol_sqlrclient.* \
+uninstall: uninstall-sqlrclient \
+		uninstall-mysql \
+		uninstall-postgresql \
+		uninstall-firebird \
+		uninstall-oracle \
+		uninstall-tds \
+		uninstall-teradata
+	$(RM) $(libexecdir)/sqlrprotocol_sqlrclient.* \
 		$(libexecdir)/sqlrprotocol_mysql.* \
 		$(libexecdir)/sqlrprotocol_postgresql.* \
 		$(libexecdir)/sqlrprotocol_firebird.* \
 		$(libexecdir)/sqlrprotocol_oracle.* \
 		$(libexecdir)/sqlrprotocol_tds.* \
 		$(libexecdir)/sqlrprotocol_teradata.*
+
+uninstall-sqlrclient:
+	$(RM) $(libexecdir)/$(SQLR)protocol_sqlrclient.*
+
+uninstall-mysql:
+	$(RM) $(libexecdir)/$(SQLR)protocol_mysql.*
+
+uninstall-postgresql:
+	$(RM) $(libexecdir)/$(SQLR)protocol_postgresql.*
+
+uninstall-firebird:
+	$(RM) $(libexecdir)/$(SQLR)protocol_firebird.*
+
+uninstall-oracle:
+	$(RM) $(libexecdir)/$(SQLR)protocol_oracle.*
+
+uninstall-tds:
+	$(RM) $(libexecdir)/$(SQLR)protocol_tds.*
+
+uninstall-teradata:
+	$(RM) $(libexecdir)/$(SQLR)protocol_teradata.*

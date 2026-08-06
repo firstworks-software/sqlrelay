@@ -724,6 +724,15 @@
 		keep the file they already have, and an install that fails
 		part way leaves the previous version in place rather than
 		no file at all
+	added per-module install and uninstall targets for the protocol and
+		auth modules - src/protocols and src/auths installed their
+		base modules from a single group target, so installing one
+		module reinstalled all of them, each module now has its own
+		installsharedlib, installdll, and uninstall target and the
+		group targets just depend on those, which also fixes the
+		protocol uninstall target leaving the mysql, postgresql,
+		firebird, oracle, tds, and teradata modules behind when built
+		with a non-default module name prefix
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems
