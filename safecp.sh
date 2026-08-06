@@ -7,9 +7,18 @@
 # sqlr-connection with a module dlopen'd, for instance - therefore sees its
 # text pages change underneath it, faults, and spins.  See trac #8852.
 #
-# Removing the destination first gives the new file a new inode.  Processes
-# holding the old one keep it until they exit, and the next process to start
-# picks up the new one, which is what every package manager does.
+# So copy to a temporary name in the destination's own directory and rename
+# it over the target.  rename() is atomic, and gives the destination the
+# temporary file's inode, so:
+#
+#	* processes holding the old file keep it until they exit, and the
+#	  next process to start picks up the new one
+#	* a copy that fails part way - disk full, permissions, interrupted -
+#	  leaves the previous version in place, because nothing has replaced
+#	  it yet
+#
+# Removing the destination first would get the first property but not the
+# second.  This is what package managers do, and why #8852 listed it first.
 #
 # Usage is cp's, in the two forms the makefiles use:
 #	safecp.sh SOURCE DEST
@@ -42,19 +51,43 @@ do
 	COUNT=`expr $COUNT + 1`
 done
 
+# copy one file, through a temporary in the target's own directory so the
+# rename is within one file system and is therefore atomic
+copyone() {
+
+	SOURCE="$1"
+	TARGET="$2"
+
+	TARGETDIR="`dirname \"$TARGET\"`"
+	TEMP="$TARGETDIR/.safecp$$.`basename \"$TARGET\"`"
+
+	if ( cp "$SOURCE" "$TEMP" )
+	then
+		:
+	else
+		rm -f "$TEMP"
+		return 1
+	fi
+
+	if ( mv "$TEMP" "$TARGET" )
+	then
+		return 0
+	fi
+
+	rm -f "$TEMP"
+	return 1
+}
+
 if ( test -d "$DEST" )
 then
-	# SOURCE... DIRECTORY - remove each file's counterpart in the
-	# directory, then copy it in
+	# SOURCE... DIRECTORY
 	for SOURCE in $SOURCES
 	do
-		rm -f "$DEST/`basename \"$SOURCE\"`"
-		cp "$SOURCE" "$DEST" || exit $?
+		copyone "$SOURCE" "$DEST/`basename \"$SOURCE\"`" || exit 1
 	done
 else
-	# SOURCE DEST - remove the destination, then copy onto it
-	rm -f "$DEST"
-	cp $SOURCES "$DEST" || exit $?
+	# SOURCE DEST
+	copyone $SOURCES "$DEST" || exit 1
 fi
 
 exit 0
