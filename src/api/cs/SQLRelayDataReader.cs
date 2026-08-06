@@ -1094,6 +1094,59 @@ namespace SQLRClient
             {
                 return typeof(Boolean);
             }
+            // also added by mysql
+            else if (type == "JSON")
+            {
+                return typeof(String);
+            }
+            else if (type == "GEOMETRY")
+            {
+                return typeof(Byte[]);
+            }
+            // also added by oracle
+            else if (type == "SDO_GEOMETRY")
+            {
+                return typeof(Byte[]);
+            }
+            // added by mssql
+            else if (type == "NCHAR")
+            {
+                return typeof(String);
+            }
+            else if (type == "NVARCHAR")
+            {
+                return typeof(String);
+            }
+            else if (type == "NTEXT")
+            {
+                return typeof(String);
+            }
+            else if (type == "XML")
+            {
+                return typeof(String);
+            }
+            else if (type == "DATETIMEOFFSET")
+            {
+                return typeof(DateTimeOffset);
+            }
+            // these sit among the types above rather than at the end of
+            // the list, but had no case either
+            else if (type == "SHORT")
+            {
+                return typeof(Int16);
+            }
+            else if (type == "TINY")
+            {
+                return typeof(SByte);
+            }
+            else if (type == "BOOL")
+            {
+                return typeof(Boolean);
+            }
+            else if (type == "BOOL_ARRAY")
+            {
+                return typeof(Byte[]);
+            }
 
             // unrecognized type
             return typeof(Byte[]);
@@ -1119,6 +1172,20 @@ namespace SQLRClient
 
             // return the value
             return retval;
+        }
+
+        /** Converts a boolean field to a Boolean.  Backends don't agree on
+         *  how they spell one - informix sends 1 and 0, postgresql sends t
+         *  and f - and Convert.ToBoolean() accepts neither, it throws on
+         *  anything but "True" or "False". */
+        private static Boolean convertBoolean(Byte[] field)
+        {
+            String value = System.Text.Encoding.Default.GetString(field).Trim();
+            return (value == "1" ||
+                    String.Compare(value, "t", true) == 0 ||
+                    String.Compare(value, "true", true) == 0 ||
+                    String.Compare(value, "y", true) == 0 ||
+                    String.Compare(value, "yes", true) == 0);
         }
 
         public static Object convertField(Byte[] field, String type, UInt32 precision, UInt32 scale)
@@ -1871,6 +1938,81 @@ namespace SQLRClient
                 return field;
             }
             // none added by sqlite
+            // added by sqlserver
+            else if (type == "UBIGINT")
+            {
+                return Convert.ToUInt64(System.Text.Encoding.Default.GetString(field));
+            }
+            else if (type == "UNIQUEIDENTIFIER")
+            {
+                return field;
+            }
+            // added by informix
+            else if (type == "SMALLFLOAT")
+            {
+                return Convert.ToSingle(System.Text.Encoding.Default.GetString(field));
+            }
+            else if (type == "BYTE")
+            {
+                return field;
+            }
+            else if (type == "BOOLEAN")
+            {
+                return convertBoolean(field);
+            }
+            // also added by mysql
+            else if (type == "JSON")
+            {
+                return System.Text.Encoding.Default.GetString(field);
+            }
+            else if (type == "GEOMETRY")
+            {
+                return field;
+            }
+            // also added by oracle
+            else if (type == "SDO_GEOMETRY")
+            {
+                return field;
+            }
+            // added by mssql
+            else if (type == "NCHAR")
+            {
+                return System.Text.Encoding.Default.GetString(field);
+            }
+            else if (type == "NVARCHAR")
+            {
+                return System.Text.Encoding.Default.GetString(field);
+            }
+            else if (type == "NTEXT")
+            {
+                return System.Text.Encoding.Default.GetString(field);
+            }
+            else if (type == "XML")
+            {
+                return System.Text.Encoding.Default.GetString(field);
+            }
+            else if (type == "DATETIMEOFFSET")
+            {
+                return DateTimeOffset.Parse(System.Text.Encoding.Default.GetString(field));
+            }
+            // these sit among the types above rather than at the end of
+            // the list, but had no case either
+            else if (type == "SHORT")
+            {
+                return Convert.ToInt16(System.Text.Encoding.Default.GetString(field));
+            }
+            else if (type == "TINY")
+            {
+                return Convert.ToSByte(System.Text.Encoding.Default.GetString(field));
+            }
+            else if (type == "BOOL")
+            {
+                return convertBoolean(field);
+            }
+            else if (type == "BOOL_ARRAY")
+            {
+                return field;
+            }
 
             // unrecognized type
             return field;

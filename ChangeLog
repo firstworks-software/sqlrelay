@@ -656,6 +656,16 @@
 		by, so an informix LVARCHAR column read past the end of the
 		array and reported whatever followed it as the column type,
 		and the index is bounds-checked now as well
+	fixed the cs api data reader - seventeen datatype names had no case
+		in one or both of its name-to-type chains, so an nvarchar or
+		xml column read back as a byte array and a smallfloat column
+		read back as bytes while it reported itself as a Single, and
+		all 192 datatype names are now handled in both chains, with
+		datetimeoffset reading back as a DateTimeOffset
+	fixed the cs api data reader - a boolean field was converted with
+		Convert.ToBoolean(), which throws on anything but "True" or
+		"False", so the 1 informix sends and the t postgresql sends
+		were both errors rather than values
 	added a firebird_connectstrings auth module, along with a
 		sqlrfirebirdcredentials class - it handles both the cleartext
 		password that isc_dpb_password carries and the legacy_auth
