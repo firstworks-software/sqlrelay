@@ -3,7 +3,6 @@
 
 #include <sqlrelay/sqlrimportcsv.h>
 
-#include <rudiments/file.h>
 #include <rudiments/stdio.h>
 
 sqlrimportcsv::sqlrimportcsv() : sqlrimportfile(), csvsax() {
@@ -25,13 +24,6 @@ bool sqlrimportcsv::importData() {
 				"standard input, so a file name is "
 				"required\n");
 		return false;
-	}
-
-	// set the table name from the file name, if it wasn't already set
-	if (!getObjectName()) {
-		char	*objectname=file::getBaseName(getFileName(),".csv");
-		setDerivedObjectName(objectname);
-		delete[] objectname;
 	}
 
 	// NOTE: startProcessingImport() calls the import-start event
