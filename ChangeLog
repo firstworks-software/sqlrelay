@@ -718,9 +718,12 @@
 		file over the installed one, which keeps the same inode and
 		so rewrites the memory-mapped pages of any process that has
 		the file open, leaving sqlr-listener and sqlr-connection
-		faulting and spinning until killed by hand - the destination
-		is removed first now, so the new file gets a new inode and
-		running processes keep the one they already have
+		faulting and spinning until killed by hand - each file is
+		now written under a temporary name and renamed over the
+		installed one, so it gets a new inode and running processes
+		keep the file they already have, and an install that fails
+		part way leaves the previous version in place rather than
+		no file at all
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems
