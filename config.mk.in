@@ -103,7 +103,11 @@ APACHELINKFLAGS = @APACHELINKFLAGS@
 # install commands
 LTINSTALL = $(LIBTOOL) --mode=install
 MV = mv
-CP = cp
+# not plain cp - cp rewrites an existing destination in place, keeping its
+# inode, which changes the text pages of any running process that has the
+# file mmap'd.  safecp.sh removes the destination first, so the new file
+# gets a new inode.  See trac #8852.
+CP = $(top_builddir)/safecp.sh
 CHMOD = chmod
 MKINSTALLDIRS = $(top_builddir)/mkinstalldirs
 LTFINISH = $(LIBTOOL) --mode=finish
