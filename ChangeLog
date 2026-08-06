@@ -1,4 +1,4 @@
-2.2.1 - bumped the version to 2.2.1
+2.3.0 - bumped the version to 2.3.0
 	fixed sqlrsh csv output - non-ascii bytes, newlines, carriage returns,
 		tabs, and nulls were dropped, and fields containing them
 		weren't quoted

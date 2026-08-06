@@ -71,7 +71,7 @@ Run sqlrsh with no -script and no -command and it writes a banner, then a prompt
 {{{#!blockquote
 {{{
 $ sqlrsh -id myinst
-sqlrsh - Version 2.2.1
+sqlrsh - Version 2.3.0
 	Connected to: localhost:9000 as myuser
 
 	type help; for help.
