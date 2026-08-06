@@ -595,6 +595,50 @@
 		where a real sql server sends what the procedure returned -
 		a named procedure is called through odbc call syntax now,
 		which gives the return value a bind of its own
+	fixed the firebird protocol module - every status vector element in
+		an op_response was written 64 bits wide rather than 32, the
+		low word of the response's blob id was never written, and no
+		vector was terminated with isc_arg_end, three faults that
+		cancelled each other out and left the attach and transaction
+		responses correct by accident - the elements are 32 bits
+		now, the whole blob id is written, and every vector ends
+		with isc_arg_end
+	fixed the firebird protocol module - a buffer written into a
+		response was never padded to a 4-byte boundary, and the info
+		database response made up for it with a hand-written trailer
+		that was only correct when the response buffer length was a
+		multiple of 4 plus 3 - buffers are padded now, and that
+		response is built like every other one
+	fixed the firebird protocol module - the op code, arch, protocol
+		version, ptype, dpb, tpb, and info item tables didn't match
+		firebird's own headers, PROTOCOL_VERSION2 didn't exist at all,
+		and 15 was called isc_arg_mach where firebird calls it
+		isc_arg_next_mach - the tables match firebird now, and every
+		debug decoder covers all of them
+	added the firebird protocol module's missing constant families -
+		CONNECT_VERSION, the CNCT_ user id tags, ptype_MASK and the
+		pflag_ bits, the dpb sub-namespaces, isc_info_tra_,
+		isc_info_blob_, isc_bpb_, fb_cancel_, the isc_info_sql_stmt_
+		statement types, P_FETCH, and the object handle, statement
+		flag, and cursor flag constants
+	added firebird protocol module debug output for the connect version
+		and for the tags inside the connect block's user id, both of
+		which were read and then thrown away
+	added the op codes firebird defines to the firebird protocol module's
+		dispatch switch, so one it knows about but hasn't implemented
+		is distinguishable from one nobody defines
+	fixed the firebird protocol module's connect handshake - it answered
+		every client with a hardcoded PROTOCOL_VERSION10, arch_generic,
+		ptype_rpc accept and threw away the protocol list the client
+		offered - the offered tuples are negotiated now, the way
+		firebird's own accept_connection() does it, capped at
+		PROTOCOL_VERSION12 and ptype_batch_send, which is as far as the
+		module can speak until it can drive the protocol 13 and up
+		authentication handshake
+	added an op_reject response to the firebird protocol module's connect
+		handshake, so a client that offers no protocol the module can
+		speak gets a rejection it can report rather than an accept it
+		can't use
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems

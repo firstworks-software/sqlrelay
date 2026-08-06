@@ -22,74 +22,152 @@
 // http://trac.firstworks.com/trac/wiki/Firebird%20Wire%20Protocol
 
 // operation codes
+// (firebird's P_OP, in numeric order.  the gaps are numbers firebird
+// keeps reserved for operations it no longer defines)
+#define op_void			0
 #define op_connect		1
-#define op_attach		19
-#define op_detach		21
-#define op_create		20
-#define op_drop_database	81
-#define op_info_database	40
+#define op_exit			2
+#define op_accept		3
+#define op_reject		4
+// 5 op_protocol - obsolete
 #define op_disconnect		6
+// 7 op_credit, 8 op_continuation - obsolete
+#define op_response		9
+// 10-18 page server operations - obsolete
+#define op_attach		19
+#define op_create		20
+#define op_detach		21
+#define op_compile		22
+#define op_start		23
+#define op_start_and_send	24
+#define op_send			25
+#define op_receive		26
+#define op_unwind		27
+#define op_release		28
 #define op_transaction		29
 #define op_commit		30
 #define op_rollback		31
-#define op_commit_retaining	50
 #define op_prepare		32
-#define op_prepare2		51
-#define op_transaction_info	42
-#define op_allocate_statement	62
-#define op_free_statement	67
-#define op_prepare_statement	68
-#define op_execute		63	// for DDL/DML
-#define op_execute2		76	// for Stored procedures
-#define op_fetch		65
-#define op_set_cursor		69
-#define op_info_sql		70
+#define op_reconnect		33
 #define op_create_blob		34
-#define op_create_blob2		57
 #define op_open_blob		35
-#define op_open_blob2		56
 #define op_get_segment		36
-#define op_batch_segment	44
-#define op_seek_blob		61
+#define op_put_segment		37
 #define op_cancel_blob		38
 #define op_close_blob		39
+#define op_info_database	40
+#define op_info_request		41
+#define op_info_transaction	42
+#define op_info_blob		43
+#define op_batch_segments	44
+// 45-47 server manager operations - obsolete
+#define op_que_events		48
+#define op_cancel_events	49
+#define op_commit_retaining	50
+#define op_prepare2		51
+#define op_event		52
+#define op_connect_request	53
+#define op_aux_connect		54
+#define op_ddl			55
+#define op_open_blob2		56
+#define op_create_blob2		57
 #define op_get_slice		58
 #define op_put_slice		59
+#define op_slice		60
+#define op_seek_blob		61
+#define op_allocate_statement	62
+#define op_execute		63	// for DDL/DML
+#define op_exec_immediate	64
+#define op_fetch		65
+#define op_fetch_response	66
+#define op_free_statement	67
+#define op_prepare_statement	68
+#define op_set_cursor		69
+#define op_info_sql		70
+#define op_dummy		71
+#define op_response_piggyback	72
+#define op_start_and_receive	73
+#define op_start_send_and_receive	74
+#define op_exec_immediate2	75
+#define op_execute2		76	// for Stored procedures
+#define op_insert		77
+#define op_sql_response		78
+#define op_transact		79
+#define op_transact_response	80
+#define op_drop_database	81
+#define op_service_attach	82
+#define op_service_detach	83
+#define op_service_info		84
+#define op_service_start	85
+#define op_rollback_retaining	86
+#define op_update_account_info	87
+#define op_authenticate_user	88
+#define op_partial		89
+#define op_trusted_auth		90
 #define op_cancel		91
+#define op_cont_auth		92
+#define op_ping			93
+#define op_accept_data		94
+#define op_abort_aux_connection	95
+#define op_crypt		96
+#define op_crypt_key_callback	97
+#define op_cond_accept		98
 #define op_batch_create		99
 #define op_batch_msg		100
 #define op_batch_exec		101
 #define op_batch_rls		102
-#define op_batch_cancel		109
-#define op_batch_sync		110
-#define op_batch_set_bpb	106
+#define op_batch_cs		103
 #define op_batch_regblob	104
 #define op_batch_blob_stream	105
-#define op_service_attach	82
-#define op_service_detach	83
-#define op_service_start	85
-#define op_service_info		84
-#define op_connect_request	53
-#define op_que_events		48
-#define op_cancel_events	49
-
-// response codes
-#define op_accept		3
-#define op_response		9
-#define op_sql_response		78
-#define op_fetch_response	66
-#define op_slice		60
-
-
-
+#define op_batch_set_bpb	106
+#define op_repl_data		107
+#define op_repl_req		108
+#define op_batch_cancel		109
+#define op_batch_sync		110
+#define op_info_batch		111
+#define op_fetch_scroll		112
+#define op_info_cursor		113
+#define op_inline_blob		114
+#define op_max			115
 // arch codes
+// (firebird's P_ARCH, plus the pre-firebird InterBase values it has
+// dropped but old clients can still send.  9 is arch_sun386 in
+// InterBase, but the firebird name is kept here)
 #define arch_generic		1
+#define arch_apollo		2
 #define arch_sun		3
+#define arch_vms		4
+#define arch_ultrix		5
+#define arch_alliant		6
+#define arch_msdos		7
 #define arch_sun4		8
 #define arch_sunx86		9
 #define arch_hpux		10
+#define arch_hpmpexl		11
+#define arch_mac		12
+#define arch_macaux		13
 #define arch_rt			14
+#define arch_mips_ultrix	15
+#define arch_hpux_68k		16
+#define arch_xenix		17
+#define arch_aviion		18
+#define arch_sgi		19
+#define arch_apollo_dn10k	20
+#define arch_cray		21
+#define arch_imp		22
+#define arch_delta		23
+#define arch_sco		24
+#define arch_next		25
+#define arch_next_386		26
+#define arch_m88k		27
+#define arch_unixware		28
 #define arch_intel_32		29
+#define arch_epson		30
+#define arch_decosf		31
+#define arch_ncr3000		32
+#define arch_nt_ppc		33
+#define arch_dg_x86		34
+#define arch_sco_ev		35
 #define arch_linux		36
 #define arch_freebsd		37
 #define arch_netbsd		38
@@ -98,9 +176,10 @@
 #define arch_darwin_x64		41
 #define arch_darwin_ppc64	42
 #define arch_arm		43
+#define arch_winnt_arm64	44
+#define arch_max		45
 
 // protocol versions
-#define PROTOCOL_VERSION2	2
 #define PROTOCOL_VERSION3	3
 // 4 supports server management functions
 #define PROTOCOL_VERSION4	4
@@ -118,6 +197,20 @@
 #define PROTOCOL_VERSION9	9
 // 10 supports warnings, removes requirement for encoding/decoding status codes
 #define PROTOCOL_VERSION10	10
+
+// 11 and up set the high bit, to separate firebird from Borland InterBase
+#define FB_PROTOCOL_FLAG	0x8000
+#define FB_PROTOCOL_MASK	0x7fff
+
+// Firebird holds versions 11 and up in a USHORT as (FB_PROTOCOL_FLAG|n), so
+// 11 is 0x800b.  But remote/protocol.cpp marshals p_cnct_version and
+// p_acpt_version with xdr_short, which is signed, so 0x800b arrives
+// sign-extended as 0xffff800b.  Those fields are read here into a uint32_t,
+// so 0xffff8000|n is the right constant to compare against and the
+// wrong-looking high bits are correct.  Do not extend this to the type
+// fields.  p_cnct_min_type and p_cnct_max_type are marshalled with
+// xdr_u_short, not signed, so pflag_compress arrives as plain 0x00000100.
+
 // 11 supports user-auth-related operations
 #define PROTOCOL_VERSION11	(0xffff8000|11)
 // 12 supports asynchronous calls
@@ -130,14 +223,83 @@
 #define PROTOCOL_VERSION15	(0xffff8000|15)
 // 16 supports statement timeouts
 #define PROTOCOL_VERSION16	(0xffff8000|16)
-// 17 supports op_batch_sync, op_batch_info
+// 17 supports op_batch_sync, op_info_batch
 #define PROTOCOL_VERSION17	(0xffff8000|17)
+// 18 supports op_fetch_scroll
+#define PROTOCOL_VERSION18	(0xffff8000|18)
+// 19 supports op_inline_blob
+#define PROTOCOL_VERSION19	(0xffff8000|19)
+// 20 supports prepare flags
+#define PROTOCOL_VERSION20	(0xffff8000|20)
+
+// the highest version the module can negotiate
+// (13 and up must answer op_accept_data or op_cond_accept and drive the auth
+// plugin handshake, which the module doesn't implement - see #8947)
+#define MAX_PROTOCOL_VERSION	PROTOCOL_VERSION12
+
+// how many offered protocols the connect block can carry
+// (10 before firebird 6; anything past this count is ignored)
+#define MAX_CNCT_VERSIONS	11
+
+// connect versions
+// (InterBase 6 through firebird 2.5 send 2, firebird 3.0 and up send 3.
+// 3 says the user id is UTF-8; 2 leaves its encoding undefined)
+#define CONNECT_VERSION2	2
+#define CONNECT_VERSION3	3
 
 // ptype codes
+#define ptype_page		1
 #define ptype_rpc		2
 #define ptype_batch_send	3
 #define ptype_out_of_band	4
 #define ptype_lazy_send		5
+#define ptype_MASK		0xff
+
+// the highest type the module can negotiate
+// (ptype_out_of_band lets the client send out-of-band data, and
+// ptype_lazy_send lets it defer op_allocate_statement, op_create_blob and
+// op_open_blob, neither of which the module implements)
+#define MAX_PROTOCOL_TYPE	ptype_batch_send
+
+// ptype flags
+// (the upper byte of the type fields, which must be masked off with
+// ptype_MASK before the type itself can be compared)
+#define pflag_compress		0x100
+#define pflag_win_sspi_nego	0x200
+
+// connect block user id tags
+// (1 through 6 are InterBase's.  firebird marks 3 obsolete, but an InterBase
+// client can still send it.  7, 8, 10 and 11 arrived with protocol 13)
+#define CNCT_user		1
+#define CNCT_passwd		2
+#define CNCT_ppo		3
+#define CNCT_host		4
+#define CNCT_group		5
+#define CNCT_user_verification	6
+#define CNCT_specific_data	7
+#define CNCT_plugin_name	8
+#define CNCT_login		9
+#define CNCT_plugin_list	10
+#define CNCT_client_crypt	11
+
+// object handles
+#define INVALID_OBJECT		0xffff
+#define MAX_OBJCT_HANDLES	65000
+
+// statement flags
+#define STMT_NO_BATCH		2
+#define STMT_DEFER_EXECUTE	4
+
+// fetch operations
+#define fetch_next		0
+#define fetch_prior		1
+#define fetch_first		2
+#define fetch_last		3
+#define fetch_absolute		4
+#define fetch_relative		5
+
+// cursor flags
+#define CURSOR_TYPE_SCROLLABLE	0x01
 
 // database parameters
 #define isc_dpb_version1		1
@@ -239,6 +401,52 @@
 #define isc_dpb_decfloat_round		94
 #define isc_dpb_decfloat_traps		95
 #define isc_dpb_clear_map		96
+#define isc_dpb_upgrade_db		97
+#define isc_dpb_parallel_workers	100
+#define isc_dpb_worker_attach		101
+#define isc_dpb_owner			102
+#define isc_dpb_max_blob_cache_size	103
+#define isc_dpb_max_inline_blob_size	104
+#define isc_dpb_search_path		105
+#define isc_dpb_blr_request_search_path	106
+#define isc_dpb_gbak_restore_has_schema	107
+
+// tags inside an isc_dpb_address_path value
+#define isc_dpb_address			1
+#define isc_dpb_addr_protocol		1
+#define isc_dpb_addr_endpoint		2
+#define isc_dpb_addr_flags		3
+#define isc_dpb_addr_crypt		4
+
+// bits in an isc_dpb_addr_flags value
+#define isc_dpb_addr_flag_conn_compressed	0x01
+#define isc_dpb_addr_flag_conn_encrypted	0x02
+
+// bits in an isc_dpb_verify value
+#define isc_dpb_pages			1
+#define isc_dpb_records			2
+#define isc_dpb_indices			4
+#define isc_dpb_transactions		8
+#define isc_dpb_no_update		16
+#define isc_dpb_repair			32
+#define isc_dpb_ignore			64
+
+// bits in an isc_dpb_shutdown value
+#define isc_dpb_shut_cache		0x1
+#define isc_dpb_shut_attachment		0x2
+#define isc_dpb_shut_transaction	0x4
+#define isc_dpb_shut_force		0x8
+#define isc_dpb_shut_mode_mask		0x70
+#define isc_dpb_shut_default		0x0
+#define isc_dpb_shut_normal		0x10
+#define isc_dpb_shut_multi		0x20
+#define isc_dpb_shut_single		0x30
+#define isc_dpb_shut_full		0x40
+
+// values of an isc_dpb_set_db_replica value
+#define isc_dpb_replica_none		0
+#define isc_dpb_replica_read_only	1
+#define isc_dpb_replica_read_write	2
 
 // common structural codes
 #define isc_info_end			1
@@ -320,6 +528,86 @@
 #define isc_info_creation_date		111
 #define isc_info_db_file_size		112
 #define fb_info_page_contents		113
+#define fb_info_implementation		114
+#define fb_info_page_warns		115
+#define fb_info_record_warns		116
+#define fb_info_bpage_warns		117
+#define fb_info_dpage_warns		118
+#define fb_info_ipage_warns		119
+#define fb_info_ppage_warns		120
+#define fb_info_tpage_warns		121
+#define fb_info_pip_errors		122
+#define fb_info_pip_warns		123
+#define fb_info_pages_used		124
+#define fb_info_pages_free		125
+// 126 and 127 are the structural codes above, so no db info item uses them
+#define fb_info_ses_idle_timeout_db	129
+#define fb_info_ses_idle_timeout_att	130
+#define fb_info_ses_idle_timeout_run	131
+#define fb_info_conn_flags		132
+#define fb_info_crypt_key		133
+#define fb_info_crypt_state		134
+#define fb_info_statement_timeout_db	135
+#define fb_info_statement_timeout_att	136
+// 137 is how a client asks which protocol the server settled on.  it reports
+// the bare version, not the 0x8000-flagged one the handshake carries.
+#define fb_info_protocol_version	137
+#define fb_info_crypt_plugin		138
+#define fb_info_creation_timestamp_tz	139
+#define fb_info_wire_crypt		140
+#define fb_info_features		141
+#define fb_info_next_attachment		142
+#define fb_info_next_statement		143
+#define fb_info_db_guid			144
+#define fb_info_db_file_id		145
+#define fb_info_replica_mode		146
+#define fb_info_username		147
+#define fb_info_sqlrole			148
+#define fb_info_parallel_workers	149
+#define fb_info_wire_out_packets	150
+#define fb_info_wire_in_packets		151
+#define fb_info_wire_out_bytes		152
+#define fb_info_wire_in_bytes		153
+#define fb_info_wire_snd_packets	154
+#define fb_info_wire_rcv_packets	155
+#define fb_info_wire_snd_bytes		156
+#define fb_info_wire_rcv_bytes		157
+#define fb_info_wire_roundtrips		158
+#define fb_info_max_blob_cache_size	159
+#define fb_info_max_inline_blob_size	160
+#define fb_info_counts_scope_att	161
+#define fb_info_counts_scope_db		162
+
+// transaction information items
+#define isc_info_tra_id			4
+#define isc_info_tra_oldest_interesting	5
+#define isc_info_tra_oldest_snapshot	6
+#define isc_info_tra_oldest_active	7
+#define isc_info_tra_isolation		8
+#define isc_info_tra_access		9
+#define isc_info_tra_lock_timeout	10
+#define fb_info_tra_dbpath		11
+#define fb_info_tra_snapshot_number	12
+
+// isc_info_tra_isolation responses
+#define isc_info_tra_consistency	1
+#define isc_info_tra_concurrency	2
+#define isc_info_tra_read_committed	3
+
+// isc_info_tra_read_committed options
+#define isc_info_tra_no_rec_version	0
+#define isc_info_tra_rec_version	1
+#define isc_info_tra_read_consistency	2
+
+// isc_info_tra_access responses
+#define isc_info_tra_readonly		0
+#define isc_info_tra_readwrite		1
+
+// blob information items
+#define isc_info_blob_num_segments	4
+#define isc_info_blob_max_segment	5
+#define isc_info_blob_total_length	6
+#define isc_info_blob_type		7
 
 // transaction parameters
 #define isc_tpb_version1                  1
@@ -345,10 +633,45 @@
 #define isc_tpb_restart_requests          19
 #define isc_tpb_no_auto_undo              20
 #define isc_tpb_lock_timeout              21
+#define isc_tpb_read_consistency          22
+#define isc_tpb_at_snapshot_number        23
+#define isc_tpb_auto_release_temp_blobid  24
+#define isc_tpb_lock_table_schema         25
+
+// blob parameters
+#define isc_bpb_version1		1
+#define isc_bpb_source_type		1
+#define isc_bpb_target_type		2
+#define isc_bpb_type			3
+#define isc_bpb_source_interp		4
+#define isc_bpb_target_interp		5
+#define isc_bpb_filter_parameter	6
+#define isc_bpb_storage			7
+
+// values of an isc_bpb_type value
+#define isc_bpb_type_segmented		0x0
+#define isc_bpb_type_stream		0x1
+
+// values of an isc_bpb_storage value
+#define isc_bpb_storage_main		0x0
+#define isc_bpb_storage_temp		0x2
+
+// event parameters
+#define EPB_version1			1
 
 // free statement flags
+// (flag bits, not an enum)
 #define DSQL_close	1
 #define DSQL_drop	2
+#define DSQL_unprepare	4
+
+// cancel kinds
+// (the p_co_kind of op_cancel.  a client must never send fb_cancel_abort;
+// it just closes the socket instead)
+#define fb_cancel_disable	1
+#define fb_cancel_enable	2
+#define fb_cancel_raise		3
+#define fb_cancel_abort		4
 
 // sql information items
 #define isc_info_sql_select			4
@@ -380,6 +703,25 @@
 #define isc_info_sql_stmt_blob_align		30
 #define isc_info_sql_exec_path_blr_bytes	31
 #define isc_info_sql_exec_path_blr_text		32
+#define isc_info_sql_relation_schema		33
+
+// sql statement types
+// (a separate value space that happens to share the prefix.  these are the
+// values isc_info_sql_stmt_type returns, not items that can be asked for)
+#define isc_info_sql_stmt_select		1
+#define isc_info_sql_stmt_insert		2
+#define isc_info_sql_stmt_update		3
+#define isc_info_sql_stmt_delete		4
+#define isc_info_sql_stmt_ddl			5
+#define isc_info_sql_stmt_get_segment		6
+#define isc_info_sql_stmt_put_segment		7
+#define isc_info_sql_stmt_exec_procedure	8
+#define isc_info_sql_stmt_start_trans		9
+#define isc_info_sql_stmt_commit		10
+#define isc_info_sql_stmt_rollback		11
+#define isc_info_sql_stmt_select_for_upd	12
+#define isc_info_sql_stmt_set_generator		13
+#define isc_info_sql_stmt_savepoint		14
 
 // status vector items
 #define isc_arg_end		0
@@ -394,7 +736,7 @@
 #define isc_arg_dos		9
 #define isc_arg_mpexl		10
 #define isc_arg_mpexl_ipc	11
-#define isc_arg_mach		15
+#define isc_arg_next_mach	15
 #define isc_arg_netware		16
 #define isc_arg_win32		17
 #define isc_arg_warning		18
@@ -420,22 +762,15 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_firebird : public sqlrprotocol {
 		bool	connect();
 		bool	attach();
 
+		void	successStatusVector();
 		bool	genericResponse(const char *title,
 						uint32_t objecthandle,
 						uint32_t objectid,
 						const byte_t *buffer,
 						uint32_t bufferlen,
-						uint64_t *sv,
+						uint32_t *sv,
 						uint8_t svlen);
-		bool	genericResponse(const char *title,
-						uint32_t objecthandle,
-						uint32_t objectid,
-						bool padding,
-						const byte_t *buffer,
-						uint32_t bufferlen,
-						uint64_t *sv,
-						uint8_t svlen);
-	
+
 		bool	authenticate();
 
 		bool	getOpCode();
@@ -492,9 +827,9 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_firebird : public sqlrprotocol {
 		void	keepReading(int32_t sec, int32_t usec);
 
 		void	readStringFromBuffer(const byte_t *in,
+						uint32_t len,
 						const char *name,
-						char **buf,
-						const byte_t **out);
+						char **buf);
 
 		bool	readInt(uint32_t *val,
 					const char *name,
@@ -530,15 +865,18 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_firebird : public sqlrprotocol {
 		void	debugSystemError();
 		void	debugOpCode(const char *name, uint32_t opcode);
 		void	debugArchType(uint32_t archtype);
+		void	debugConnectVersion(uint32_t connectversion);
 		void	debugProtocolVersion(uint32_t protoversion);
 		void	debugProtocolType(const char *title,
 						uint32_t protocoltype);
+		void	debugUserId(const byte_t *userid,
+						uint32_t useridlen);
 		void	debugDpbVersion(byte_t dpbversion);
 		void	debugDpbParam(byte_t dpbparam);
 		void	debugDbInfoItem(byte_t dbinfoitem);
 		void	debugTpbVersion(byte_t tpbversion);
 		void	debugTpbParam(byte_t tpbparam);
-		void	debugStatusVector(uint64_t *sv, uint8_t svlen);
+		void	debugStatusVector(uint32_t *sv, uint8_t svlen);
 
 		uint32_t	maxquerysize;
 		uint16_t	maxbindcount;
@@ -547,13 +885,16 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_firebird : public sqlrprotocol {
 
 		uint32_t	opcode;
 
+		// what connect() negotiated (see MAX_PROTOCOL_VERSION)
+		uint32_t	protocolversion;
+
 		char		*db;
 		char		*username;
 		char		*password;
 		char		*wd;
 		uint32_t	dbhandle;
 
-		uint64_t	statusvector[20];
+		uint32_t	statusvector[20];
 		uint8_t		statusvectorlen;
 
 		bytebuffer	respbuffer;
@@ -580,6 +921,7 @@ sqlrprotocol_firebird::~sqlrprotocol_firebird() {
 }
 
 void sqlrprotocol_firebird::init() {
+	protocolversion=0;
 	db=NULL;
 	username=NULL;
 	password=NULL;
@@ -664,7 +1006,7 @@ clientsessionexitstatus_t sqlrprotocol_firebird::clientSession(
 				case op_prepare2:
 					loop=prepare2();
 					break;
-				case op_transaction_info:
+				case op_info_transaction:
 					loop=transactionInfo();
 					break;
 				case op_allocate_statement:
@@ -706,7 +1048,7 @@ clientsessionexitstatus_t sqlrprotocol_firebird::clientSession(
 				case op_get_segment:
 					loop=getSegment();
 					break;
-				case op_batch_segment:
+				case op_batch_segments:
 					loop=batchSegment();
 					break;
 				case op_seek_blob:
@@ -775,7 +1117,54 @@ clientsessionexitstatus_t sqlrprotocol_firebird::clientSession(
 				case op_cancel_events:
 					loop=cancelEvents();
 					break;
+
+				// known, but not implemented yet
+				case op_exit:
+				case op_compile:
+				case op_start:
+				case op_start_and_send:
+				case op_send:
+				case op_receive:
+				case op_unwind:
+				case op_release:
+				case op_reconnect:
+				case op_put_segment:
+				case op_info_request:
+				case op_info_blob:
+				case op_aux_connect:
+				case op_ddl:
+				case op_exec_immediate:
+				case op_dummy:
+				case op_start_and_receive:
+				case op_start_send_and_receive:
+				case op_exec_immediate2:
+				case op_insert:
+				case op_transact:
+				case op_rollback_retaining:
+				case op_update_account_info:
+				case op_authenticate_user:
+				case op_partial:
+				case op_trusted_auth:
+				case op_cont_auth:
+				case op_ping:
+				case op_abort_aux_connection:
+				case op_crypt:
+				case op_crypt_key_callback:
+				case op_repl_data:
+				case op_repl_req:
+				case op_info_batch:
+				case op_fetch_scroll:
+				case op_info_cursor:
+					loop=sendNotImplementedError();
+					break;
+
 				default:
+					if (getDebug()) {
+						stdoutput.printf(
+							"unrecognized "
+							"op code: 0x%02x\n",
+							opcode);
+					}
 					loop=sendNotImplementedError();
 					break;
 			}
@@ -844,6 +1233,7 @@ bool sqlrprotocol_firebird::connect() {
 	if (!readInt(&connectversion,"connect version",&bytesread)) {
 		return false;
 	}
+	debugConnectVersion(connectversion);
 
 	// get arch type
 	uint32_t	archtype=0;
@@ -864,16 +1254,27 @@ bool sqlrprotocol_firebird::connect() {
 	}
 
 	// get user identification
-	byte_t	*userid;
-	if (!readBuffer(&userid,"user id",&bytesread)) {
+	uint32_t	useridlen=0;
+	byte_t		*userid=NULL;
+	if (!readBuffer(&userid,&useridlen,"user id",&bytesread)) {
+		delete[] userid;
 		return false;
 	}
-	// FIXME: parse userid
+	debugUserId(userid,useridlen);
+	// FIXME: do something with the user id
+	delete[] userid;
 
-	// get protocols...
+	// get protocols, keeping the best one we can speak
+	bool		accepted=false;
+	uint32_t	acptversion=0;
+	uint32_t	acptarchtype=arch_generic;
+	uint32_t	acpttype=0;
+	uint32_t	acptweight=0;
 	for (uint32_t i=0; i<protocount; i++) {
 
-		stdoutput.printf("	protocol %d...\n",i);
+		if (getDebug()) {
+			stdoutput.printf("	protocol %d...\n",i);
+		}
 
 		// get protocol version
 		uint32_t	protoversion=0;
@@ -883,11 +1284,11 @@ bool sqlrprotocol_firebird::connect() {
 		debugProtocolVersion(protoversion);
 
 		// get arch type
-		uint32_t	archtype=0;
-		if (!readInt(&archtype,"arch type",&bytesread)) {
+		uint32_t	protoarchtype=0;
+		if (!readInt(&protoarchtype,"arch type",&bytesread)) {
 			return false;
 		}
-		debugArchType(archtype);
+		debugArchType(protoarchtype);
 
 		// get minimum type
 		uint32_t	mintype=0;
@@ -908,52 +1309,112 @@ bool sqlrprotocol_firebird::connect() {
 		if (!readInt(&prefwt,"preference weight",&bytesread)) {
 			return false;
 		}
+
+		// Only the first MAX_CNCT_VERSIONS offered protocols count, but
+		// every one the client sent still has to be read, or the rest
+		// of them would be misread as the next packet.  Firebird does
+		// the same - it reads p_cnct_count tuples and then clamps
+		// p_cnct_count.  See FB25 src/remote/protocol.cpp:294.
+		if (i>=MAX_CNCT_VERSIONS) {
+			continue;
+		}
+
+		// skip versions we can't speak
+		if (protoversion!=PROTOCOL_VERSION10 &&
+			(protoversion<PROTOCOL_VERSION11 ||
+			protoversion>MAX_PROTOCOL_VERSION)) {
+			continue;
+		}
+
+		// skip architectures we can't speak
+		// (anything but arch_generic tells the client that our byte
+		// order and alignment match its own, and takes it off of xdr)
+		if (protoarchtype!=arch_generic) {
+			continue;
+		}
+
+		// skip anything the client prefers less than what we have
+		// (>= rather than >, so the last of equal weights wins,
+		// matching firebird)
+		if (accepted && prefwt<acptweight) {
+			continue;
+		}
+
+		accepted=true;
+		acptweight=prefwt;
+		acptversion=protoversion;
+		acptarchtype=protoarchtype;
+
+		// take the client's maximum type, capped at ours
+		// (the minimum type is read and ignored, as firebird does)
+		acpttype=maxtype&ptype_MASK;
+		if (acpttype>MAX_PROTOCOL_TYPE) {
+			acpttype=MAX_PROTOCOL_TYPE;
+		}
+
+		// pflag_compress is deliberately not carried over from
+		// maxtype.  The client turns on zlib framing for every byte
+		// after the accept the moment it sees that bit.
 	}
 
 	debugEnd();
-
-	// FIXME: decide whether to accept to connection or not...
-
-	// FIXME: decide which protocol to use...
 
 	// response packet data structure:
 	//
 	// data {
 	// 	int32_t		op_accept
-	// 	int32_t		arch type
-	// 	int32_t		minimum type
+	// 	int32_t		p_acpt_version
+	// 	int32_t		p_acpt_architecture
+	// 	int32_t		p_acpt_type
+	// }
+	//
+	// or, if nothing offered could be spoken:
+	//
+	// data {
+	// 	int32_t		op_reject
 	// }
 
 	debugStart("connect response");
 
 	uint32_t	byteswritten=0;
 
+	// reject if nothing offered could be spoken
+	if (!accepted) {
+		opcode=op_reject;
+		if (!writeInt(opcode,"reject op code",&byteswritten)) {
+			return false;
+		}
+		debugOpCode("reject op code",opcode);
+		debugEnd();
+		clientsock->flushWriteBuffer(-1,-1);
+		return false;
+	}
+
+	protocolversion=acptversion;
+
+	// FIXME: PROTOCOL_VERSION13 and up must answer op_accept_data or
+	// op_cond_accept here, and drive the auth plugin handshake (see #8947).
+	// MAX_PROTOCOL_VERSION keeps the negotiation below 13 until they can.
 	opcode=op_accept;
 	if (!writeInt(opcode,"accept op code",&byteswritten)) {
 		return false;
 	}
 	debugOpCode("accept op code",opcode);
 
-	// FIXME: determine this somehow
-	uint32_t	protoversion=PROTOCOL_VERSION10;
-	if (!writeInt(protoversion,"protocol version",&byteswritten)) {
+	if (!writeInt(acptversion,"protocol version",&byteswritten)) {
 		return false;
 	}
-	debugProtocolVersion(protoversion);
+	debugProtocolVersion(acptversion);
 
-	// FIXME: determine this somehow
-	archtype=arch_generic;
-	if (!writeInt(archtype,"arch type",&byteswritten)) {
+	if (!writeInt(acptarchtype,"arch type",&byteswritten)) {
 		return false;
 	}
-	debugArchType(archtype);
+	debugArchType(acptarchtype);
 
-	// FIXME: determine this somehow
-	uint32_t	mintype=ptype_rpc;
-	if (!writeInt(mintype,"min type",&byteswritten)) {
+	if (!writeInt(acpttype,"accept type",&byteswritten)) {
 		return false;
 	}
-	debugProtocolType("min type",mintype);
+	debugProtocolType("accept type",acpttype);
 
 	debugEnd();
 
@@ -1010,20 +1471,63 @@ bool sqlrprotocol_firebird::attach() {
 	const byte_t	*dpbendptr=dpb+dpblen;
 
 	// get the dpb version
-	if (dpbptr) {
-		byte_t		dpbversion;
+	byte_t	dpbversion=0;
+	if (dpbptr!=dpbendptr) {
 		read(dpbptr,&dpbversion,&dpbptr);
 		debugDpbVersion(dpbversion);
-		// FIXME: do something with this...
+	}
+
+	// The version byte selects the item encoding.  isc_dpb_version1 gives
+	// each item a 1-byte value length, isc_dpb_version2 (the "wide"
+	// variant, which firebird sends only at protocol 13 and up) a 4-byte
+	// little-endian one.  Any other version byte leaves the framing
+	// unknown, so the walk below is skipped rather than guessed at.
+	uint32_t	dpblensize=0;
+	if (dpbversion==isc_dpb_version1) {
+		dpblensize=1;
+	} else if (dpbversion==isc_dpb_version2) {
+		dpblensize=4;
+	} else {
+		dpbptr=dpbendptr;
 	}
 
 	// get each parameter...
-	while (dpbptr!=dpbendptr) {
-		
+	// (every dpb item is a parameter byte, a value length, and that many
+	// value bytes, without exception, so an item that no case below
+	// consumes is skipped by its length)
+	while ((size_t)(dpbendptr-dpbptr)>dpblensize) {
+
 		// get the parameter
 		byte_t	dpbparam;
 		read(dpbptr,&dpbparam,&dpbptr);
 		debugDpbParam(dpbparam);
+
+		// get the value length
+		uint32_t	dpbvaluelen=0;
+		if (dpblensize==4) {
+			readLE(dpbptr,&dpbvaluelen,&dpbptr);
+		} else {
+			byte_t	len;
+			read(dpbptr,&len,&dpbptr);
+			dpbvaluelen=len;
+		}
+		if (getDebug()) {
+			stdoutput.printf("	dpb value length: %d\n",
+							dpbvaluelen);
+		}
+
+		// bail if the value runs past the end of the buffer
+		if (dpbvaluelen>(size_t)(dpbendptr-dpbptr)) {
+			if (getDebug()) {
+				stdoutput.write("	dpb value runs past "
+						"the end of the buffer\n");
+			}
+			break;
+		}
+
+		// step over the value
+		const byte_t	*dpbvalue=dpbptr;
+		dpbptr+=dpbvaluelen;
 
 		// process the parameter...
 		switch (dpbparam) {
@@ -1136,8 +1640,8 @@ bool sqlrprotocol_firebird::attach() {
 				break;
 
 			case isc_dpb_user_name:
-				readStringFromBuffer(
-					dpbptr,"user name",&username,&dpbptr);
+				readStringFromBuffer(dpbvalue,dpbvaluelen,
+							"user name",&username);
 				break;
 
 			case isc_dpb_password:
@@ -1145,8 +1649,8 @@ bool sqlrprotocol_firebird::attach() {
 				break;
 
 			case isc_dpb_password_enc:
-				readStringFromBuffer(
-					dpbptr,"password",&password,&dpbptr);
+				readStringFromBuffer(dpbvalue,dpbvaluelen,
+							"password",&password);
 				break;
 
 
@@ -1259,10 +1763,7 @@ bool sqlrprotocol_firebird::attach() {
 				break;
 
 			case isc_dpb_dummy_packet_interval:
-				char	*val;
-				readStringFromBuffer(
-					dpbptr,"val",&val,&dpbptr);
-				delete[] val;
+				// FIXME: do something...
 				break;
 
 			case isc_dpb_gbak_attach:
@@ -1278,8 +1779,8 @@ bool sqlrprotocol_firebird::attach() {
 				break;
 
 			case isc_dpb_working_directory:
-				readStringFromBuffer(
-					dpbptr,"working directory",&wd,&dpbptr);
+				readStringFromBuffer(dpbvalue,dpbvaluelen,
+						"working directory",&wd);
 				break;
 
 			case isc_dpb_sql_dialect:
@@ -1419,7 +1920,7 @@ bool sqlrprotocol_firebird::attach() {
 				break;
 
 			default:
-				// FIXME: do something...
+				// unknown items are skipped by their length
 				break;
 		}
 	}
@@ -1437,12 +1938,7 @@ bool sqlrprotocol_firebird::attach() {
 	uint32_t	objectid=0;
 
 	// status vector...
-	bytestring::zero(statusvector,sizeof(statusvector));
-	// interbase error...
-	statusvector[0]=isc_arg_gds;
-	// no error...
-	statusvector[1]=0;
-	statusvectorlen=2;
+	successStatusVector();
 
 	return genericResponse("attach response",
 				objecthandle,objectid,
@@ -1450,24 +1946,25 @@ bool sqlrprotocol_firebird::attach() {
 				statusvector,statusvectorlen);
 }
 
-bool sqlrprotocol_firebird::genericResponse(const char *title,
-						uint32_t objecthandle,
-						uint32_t objectid,
-						const byte_t *buffer,
-						uint32_t bufferlen,
-						uint64_t *sv,
-						uint8_t svlen) {
-	return genericResponse(title,objecthandle,objectid,false,
-						buffer,bufferlen,sv,svlen);
+void sqlrprotocol_firebird::successStatusVector() {
+	bytestring::zero(statusvector,sizeof(statusvector));
+	// interbase error...
+	statusvector[0]=isc_arg_gds;
+	// no error...
+	statusvector[1]=0;
+	// end of vector...
+	// (a client reads elements until it sees isc_arg_end, so the
+	// terminator isn't optional)
+	statusvector[2]=isc_arg_end;
+	statusvectorlen=3;
 }
 
 bool sqlrprotocol_firebird::genericResponse(const char *title,
 						uint32_t objecthandle,
 						uint32_t objectid,
-						bool padding,
 						const byte_t *buffer,
 						uint32_t bufferlen,
-						uint64_t *sv,
+						uint32_t *sv,
 						uint8_t svlen) {
 
 	// response packet data structure:
@@ -1475,11 +1972,12 @@ bool sqlrprotocol_firebird::genericResponse(const char *title,
 	// data {
 	// 	int32_t		op_response
 	// 	int32_t		object handle
-	// 	int32_t		object id
-	// 	int32_t		padding sometimes???
+	// 	int32_t		object id (blob id, high word)
+	// 	int32_t		blob id, low word
 	// 	int32_t		buffer length
 	// 	byte_t[]	buffer
-	// 	byte_t[]	status vector
+	// 	byte_t[]	buffer padding
+	// 	int32_t[]	status vector
 	// }
 
 	debugStart(title);
@@ -1503,10 +2001,12 @@ bool sqlrprotocol_firebird::genericResponse(const char *title,
 		return false;
 	}
 
-	if (padding) {
-		if (!writeInt(0,"padding",&byteswritten)) {
-			return false;
-		}
+	// write the low word of the blob id
+	// (an 8-byte blob id is always on the wire, even in a response that
+	// has nothing to do with blobs, and the object id above is its high
+	// word)
+	if (!writeInt(0,"blob id low word",&byteswritten)) {
+		return false;
 	}
 
 	// write the buffer
@@ -1516,7 +2016,7 @@ bool sqlrprotocol_firebird::genericResponse(const char *title,
 
 	// write the status vector
 	for (uint8_t i=0; i<svlen; i++) {
-		if (clientsock->write(sv[i])!=sizeof(uint64_t)) {
+		if (clientsock->write(sv[i])!=sizeof(uint32_t)) {
 			if (getDebug()) {
 				stdoutput.printf("	write status "
 						"vector [%d] failed\n",i);
@@ -1525,12 +2025,11 @@ bool sqlrprotocol_firebird::genericResponse(const char *title,
 			}
 			return false;
 		}
-		byteswritten+=sizeof(uint64_t);
+		byteswritten+=sizeof(uint32_t);
 	}
 	if (getDebug()) {
 		debugStatusVector(sv,svlen);
 	}
-	// FIXME: write padding?
 
 	debugEnd();
 
@@ -1984,75 +2483,14 @@ bool sqlrprotocol_firebird::infoDatabase() {
 	// clean up
 	delete[] dbinfo;
 
-	// response packet data structure:
-	//
-	// data {
-	// 	int32_t		op_response
-	// 	int32_t		object handle
-	// 	int32_t		object id
-	// 	int32_t		padding???
-	// 	int32_t		response buffer length
-	// 	byte_t[]	response buffer
-	// 	byte_t		1 ???
-	// 	int32_t		0 ???
-	// 	byte_t		1 ???
-	// 	int32_t		0 ???
-	// }
+	// status vector...
+	successStatusVector();
 
-	debugStart("info database response");
-
-	uint32_t	byteswritten=0;
-
-	// write the opcode
-	opcode=op_response;
-	if (!writeInt(opcode,"response op code",&byteswritten)) {
-		return false;
-	}
-	debugOpCode("response op code",opcode);
-
-	// write the db handle
-	if (!writeInt(dbhandle,"db handle",&byteswritten)) {
-		return false;
-	}
-
-	// write the object id
-	if (!writeInt(objectid,"object id",&byteswritten)) {
-		return false;
-	}
-
-	// write the padding, or whatever this is
-	if (!writeInt(0,"padding",&byteswritten)) {
-		return false;
-	}
-
-	// write the response buffer
-	if (!writeBuffer(respbuffer.getBuffer(),
+	return genericResponse("info database response",
+				dbhandle,objectid,
+				respbuffer.getBuffer(),
 				respbuffer.getSize(),
-				"response buffer",
-				&byteswritten)) {
-		return false;
-	}
-
-	// write whatever this is
-	byte_t	trailer[]={0,0,0,0,1,0,0,0,0,0,0,0,0};
-	if (!clientsock->write(trailer,sizeof(trailer))) {
-		if (getDebug()) {
-			stdoutput.write("	write trailer failed\n");
-			debugSystemError();
-			debugEnd();
-		}
-		return false;
-	}
-	if (getDebug()) {
-		stdoutput.write("	trailer:\n");
-		stdoutput.printHex(trailer,sizeof(trailer));
-	}
-
-	debugEnd();
-
-	clientsock->flushWriteBuffer(-1,-1);
-
-	return true;
+				statusvector,statusvectorlen);
 }
 
 bool sqlrprotocol_firebird::disconnect() {
@@ -2217,12 +2655,7 @@ bool sqlrprotocol_firebird::transaction() {
 	uint32_t	objectid=0;
 
 	// status vector...
-	bytestring::zero(statusvector,sizeof(statusvector));
-	// interbase error...
-	statusvector[0]=isc_arg_gds;
-	// no error...
-	statusvector[1]=0;
-	statusvectorlen=2;
+	successStatusVector();
 
 	return genericResponse("transaction response",
 				dbhandle,objectid,
@@ -2417,17 +2850,15 @@ void sqlrprotocol_firebird::keepReading(int32_t sec, int32_t usec) {
 }
 
 void sqlrprotocol_firebird::readStringFromBuffer(const byte_t *in,
+						uint32_t len,
 						const char *name,
-						char **buf,
-						const byte_t **out) {
+						char **buf) {
 
-	// get the length
-	byte_t	len;
-	read(in,&len,out);
+	// a dpb item may repeat, and the last one wins
+	delete[] *buf;
 
-	// get the value
 	*buf=new char[len+1];
-	read(*out,*buf,len,out);
+	bytestring::copy(*buf,in,len);
 	(*buf)[len]='\0';
 	if (getDebug()) {
 		stdoutput.printf("	%s: %s\n",name,*buf);
@@ -2652,6 +3083,7 @@ bool sqlrprotocol_firebird::writeBuffer(const byte_t *val,
 					uint32_t *byteswritten) {
 
 	// write length
+	// (the length on the wire is the length without the padding below)
 	if (clientsock->write(len)!=sizeof(uint32_t)) {
 		if (getDebug()) {
 			stdoutput.printf("	write %s length failed\n",name);
@@ -2663,6 +3095,7 @@ bool sqlrprotocol_firebird::writeBuffer(const byte_t *val,
 	if (getDebug()) {
 		stdoutput.printf("	%s len: %d\n",name,len);
 	}
+	(*byteswritten)+=sizeof(uint32_t);
 
 	// write buffer
 	if (clientsock->write(val,len)!=(ssize_t)len) {
@@ -2677,8 +3110,24 @@ bool sqlrprotocol_firebird::writeBuffer(const byte_t *val,
 		stdoutput.printf("	%s:\n",name);
 		stdoutput.printHex(val,len);
 	}
+	(*byteswritten)+=len;
 
-	// FIXME: write padding?
+	// write padding
+	// (pad to a 4-byte boundary)
+	uint32_t	pad=(4-len)&3;
+	byte_t		zero[3]={0,0,0};
+	if (pad && clientsock->write(zero,pad)!=(ssize_t)pad) {
+		if (getDebug()) {
+			stdoutput.printf("	write %s padding failed\n",name);
+			debugSystemError();
+			debugEnd();
+		}
+		return false;
+	}
+	(*byteswritten)+=pad;
+	if (getDebug()) {
+		stdoutput.printf("	(%d bytes of padding)\n",pad);
+	}
 	return true;
 }
 
@@ -2697,26 +3146,56 @@ void sqlrprotocol_firebird::debugOpCode(const char *name, uint32_t opcode) {
 	}
 	const char	*opcodestr=NULL;
 	switch (opcode) {
+		case op_void:
+			opcodestr="op_void";
+			break;
 		case op_connect:
 			opcodestr="op_connect";
+			break;
+		case op_exit:
+			opcodestr="op_exit";
+			break;
+		case op_accept:
+			opcodestr="op_accept";
+			break;
+		case op_reject:
+			opcodestr="op_reject";
+			break;
+		case op_disconnect:
+			opcodestr="op_disconnect";
+			break;
+		case op_response:
+			opcodestr="op_response";
 			break;
 		case op_attach:
 			opcodestr="op_attach";
 			break;
-		case op_detach:
-			opcodestr="op_detach";
-			break;
 		case op_create:
 			opcodestr="op_create";
 			break;
-		case op_drop_database:
-			opcodestr="op_drop_database";
+		case op_detach:
+			opcodestr="op_detach";
 			break;
-		case op_info_database:
-			opcodestr="op_info_database";
+		case op_compile:
+			opcodestr="op_compile";
 			break;
-		case op_disconnect:
-			opcodestr="op_disconnect";
+		case op_start:
+			opcodestr="op_start";
+			break;
+		case op_start_and_send:
+			opcodestr="op_start_and_send";
+			break;
+		case op_send:
+			opcodestr="op_send";
+			break;
+		case op_receive:
+			opcodestr="op_receive";
+			break;
+		case op_unwind:
+			opcodestr="op_unwind";
+			break;
+		case op_release:
+			opcodestr="op_release";
 			break;
 		case op_transaction:
 			opcodestr="op_transaction";
@@ -2727,62 +3206,23 @@ void sqlrprotocol_firebird::debugOpCode(const char *name, uint32_t opcode) {
 		case op_rollback:
 			opcodestr="op_rollback";
 			break;
-		case op_commit_retaining:
-			opcodestr="op_commit_retaining";
-			break;
 		case op_prepare:
 			opcodestr="op_prepare";
 			break;
-		case op_prepare2:
-			opcodestr="op_prepare2";
-			break;
-		case op_transaction_info:
-			opcodestr="op_transaction_info";
-			break;
-		case op_allocate_statement:
-			opcodestr="op_allocate_statement";
-			break;
-		case op_free_statement:
-			opcodestr="op_free_statement";
-			break;
-		case op_prepare_statement:
-			opcodestr="op_prepare_statement";
-			break;
-		case op_execute:
-			opcodestr="op_execute";
-			break;
-		case op_execute2:
-			opcodestr="op_execute2";
-			break;
-		case op_fetch:
-			opcodestr="op_fetch";
-			break;
-		case op_set_cursor:
-			opcodestr="op_set_cursor";
-			break;
-		case op_info_sql:
-			opcodestr="op_info_sql";
+		case op_reconnect:
+			opcodestr="op_reconnect";
 			break;
 		case op_create_blob:
 			opcodestr="op_create_blob";
 			break;
-		case op_create_blob2:
-			opcodestr="op_create_blob2";
-			break;
 		case op_open_blob:
 			opcodestr="op_open_blob";
-			break;
-		case op_open_blob2:
-			opcodestr="op_open_blob2";
 			break;
 		case op_get_segment:
 			opcodestr="op_get_segment";
 			break;
-		case op_batch_segment:
-			opcodestr="op_batch_segment";
-			break;
-		case op_seek_blob:
-			opcodestr="op_seek_blob";
+		case op_put_segment:
+			opcodestr="op_put_segment";
 			break;
 		case op_cancel_blob:
 			opcodestr="op_cancel_blob";
@@ -2790,14 +3230,173 @@ void sqlrprotocol_firebird::debugOpCode(const char *name, uint32_t opcode) {
 		case op_close_blob:
 			opcodestr="op_close_blob";
 			break;
+		case op_info_database:
+			opcodestr="op_info_database";
+			break;
+		case op_info_request:
+			opcodestr="op_info_request";
+			break;
+		case op_info_transaction:
+			opcodestr="op_info_transaction";
+			break;
+		case op_info_blob:
+			opcodestr="op_info_blob";
+			break;
+		case op_batch_segments:
+			opcodestr="op_batch_segments";
+			break;
+		case op_que_events:
+			opcodestr="op_que_events";
+			break;
+		case op_cancel_events:
+			opcodestr="op_cancel_events";
+			break;
+		case op_commit_retaining:
+			opcodestr="op_commit_retaining";
+			break;
+		case op_prepare2:
+			opcodestr="op_prepare2";
+			break;
+		case op_event:
+			opcodestr="op_event";
+			break;
+		case op_connect_request:
+			opcodestr="op_connect_request";
+			break;
+		case op_aux_connect:
+			opcodestr="op_aux_connect";
+			break;
+		case op_ddl:
+			opcodestr="op_ddl";
+			break;
+		case op_open_blob2:
+			opcodestr="op_open_blob2";
+			break;
+		case op_create_blob2:
+			opcodestr="op_create_blob2";
+			break;
 		case op_get_slice:
 			opcodestr="op_get_slice";
 			break;
 		case op_put_slice:
 			opcodestr="op_put_slice";
 			break;
+		case op_slice:
+			opcodestr="op_slice";
+			break;
+		case op_seek_blob:
+			opcodestr="op_seek_blob";
+			break;
+		case op_allocate_statement:
+			opcodestr="op_allocate_statement";
+			break;
+		case op_execute:
+			opcodestr="op_execute";
+			break;
+		case op_exec_immediate:
+			opcodestr="op_exec_immediate";
+			break;
+		case op_fetch:
+			opcodestr="op_fetch";
+			break;
+		case op_fetch_response:
+			opcodestr="op_fetch_response";
+			break;
+		case op_free_statement:
+			opcodestr="op_free_statement";
+			break;
+		case op_prepare_statement:
+			opcodestr="op_prepare_statement";
+			break;
+		case op_set_cursor:
+			opcodestr="op_set_cursor";
+			break;
+		case op_info_sql:
+			opcodestr="op_info_sql";
+			break;
+		case op_dummy:
+			opcodestr="op_dummy";
+			break;
+		case op_response_piggyback:
+			opcodestr="op_response_piggyback";
+			break;
+		case op_start_and_receive:
+			opcodestr="op_start_and_receive";
+			break;
+		case op_start_send_and_receive:
+			opcodestr="op_start_send_and_receive";
+			break;
+		case op_exec_immediate2:
+			opcodestr="op_exec_immediate2";
+			break;
+		case op_execute2:
+			opcodestr="op_execute2";
+			break;
+		case op_insert:
+			opcodestr="op_insert";
+			break;
+		case op_sql_response:
+			opcodestr="op_sql_response";
+			break;
+		case op_transact:
+			opcodestr="op_transact";
+			break;
+		case op_transact_response:
+			opcodestr="op_transact_response";
+			break;
+		case op_drop_database:
+			opcodestr="op_drop_database";
+			break;
+		case op_service_attach:
+			opcodestr="op_service_attach";
+			break;
+		case op_service_detach:
+			opcodestr="op_service_detach";
+			break;
+		case op_service_info:
+			opcodestr="op_service_info";
+			break;
+		case op_service_start:
+			opcodestr="op_service_start";
+			break;
+		case op_rollback_retaining:
+			opcodestr="op_rollback_retaining";
+			break;
+		case op_update_account_info:
+			opcodestr="op_update_account_info";
+			break;
+		case op_authenticate_user:
+			opcodestr="op_authenticate_user";
+			break;
+		case op_partial:
+			opcodestr="op_partial";
+			break;
+		case op_trusted_auth:
+			opcodestr="op_trusted_auth";
+			break;
 		case op_cancel:
 			opcodestr="op_cancel";
+			break;
+		case op_cont_auth:
+			opcodestr="op_cont_auth";
+			break;
+		case op_ping:
+			opcodestr="op_ping";
+			break;
+		case op_accept_data:
+			opcodestr="op_accept_data";
+			break;
+		case op_abort_aux_connection:
+			opcodestr="op_abort_aux_connection";
+			break;
+		case op_crypt:
+			opcodestr="op_crypt";
+			break;
+		case op_crypt_key_callback:
+			opcodestr="op_crypt_key_callback";
+			break;
+		case op_cond_accept:
+			opcodestr="op_cond_accept";
 			break;
 		case op_batch_create:
 			opcodestr="op_batch_create";
@@ -2811,14 +3410,8 @@ void sqlrprotocol_firebird::debugOpCode(const char *name, uint32_t opcode) {
 		case op_batch_rls:
 			opcodestr="op_batch_rls";
 			break;
-		case op_batch_cancel:
-			opcodestr="op_batch_cancel";
-			break;
-		case op_batch_sync:
-			opcodestr="op_batch_sync";
-			break;
-		case op_batch_set_bpb:
-			opcodestr="op_batch_set_bpb";
+		case op_batch_cs:
+			opcodestr="op_batch_cs";
 			break;
 		case op_batch_regblob:
 			opcodestr="op_batch_regblob";
@@ -2826,41 +3419,32 @@ void sqlrprotocol_firebird::debugOpCode(const char *name, uint32_t opcode) {
 		case op_batch_blob_stream:
 			opcodestr="op_batch_blob_stream";
 			break;
-		case op_service_attach:
-			opcodestr="op_service_attach";
+		case op_batch_set_bpb:
+			opcodestr="op_batch_set_bpb";
 			break;
-		case op_service_detach:
-			opcodestr="op_service_detach";
+		case op_repl_data:
+			opcodestr="op_repl_data";
 			break;
-		case op_service_start:
-			opcodestr="op_service_start";
+		case op_repl_req:
+			opcodestr="op_repl_req";
 			break;
-		case op_service_info:
-			opcodestr="op_service_info";
+		case op_batch_cancel:
+			opcodestr="op_batch_cancel";
 			break;
-		case op_connect_request:
-			opcodestr="op_connect_request";
+		case op_batch_sync:
+			opcodestr="op_batch_sync";
 			break;
-		case op_que_events:
-			opcodestr="op_que_events";
+		case op_info_batch:
+			opcodestr="op_info_batch";
 			break;
-		case op_cancel_events:
-			opcodestr="op_cancel_events";
+		case op_fetch_scroll:
+			opcodestr="op_fetch_scroll";
 			break;
-		case op_accept:
-			opcodestr="op_accept";
+		case op_info_cursor:
+			opcodestr="op_info_cursor";
 			break;
-		case op_response:
-			opcodestr="op_response";
-			break;
-		case op_sql_response:
-			opcodestr="op_sql_response";
-			break;
-		case op_fetch_response:
-			opcodestr="op_fetch_response";
-			break;
-		case op_slice:
-			opcodestr="op_slice";
+		case op_inline_blob:
+			opcodestr="op_inline_blob";
 			break;
 		default:
 			opcodestr="unknown";
@@ -2878,8 +3462,23 @@ void sqlrprotocol_firebird::debugArchType(uint32_t archtype) {
 		case arch_generic:
 			archtypestr="arch_generic";
 			break;
+		case arch_apollo:
+			archtypestr="arch_apollo";
+			break;
 		case arch_sun:
 			archtypestr="arch_sun";
+			break;
+		case arch_vms:
+			archtypestr="arch_vms";
+			break;
+		case arch_ultrix:
+			archtypestr="arch_ultrix";
+			break;
+		case arch_alliant:
+			archtypestr="arch_alliant";
+			break;
+		case arch_msdos:
+			archtypestr="arch_msdos";
 			break;
 		case arch_sun4:
 			archtypestr="arch_sun4";
@@ -2890,11 +3489,80 @@ void sqlrprotocol_firebird::debugArchType(uint32_t archtype) {
 		case arch_hpux:
 			archtypestr="arch_hpux";
 			break;
+		case arch_hpmpexl:
+			archtypestr="arch_hpmpexl";
+			break;
+		case arch_mac:
+			archtypestr="arch_mac";
+			break;
+		case arch_macaux:
+			archtypestr="arch_macaux";
+			break;
 		case arch_rt:
 			archtypestr="arch_rt";
 			break;
+		case arch_mips_ultrix:
+			archtypestr="arch_mips_ultrix";
+			break;
+		case arch_hpux_68k:
+			archtypestr="arch_hpux_68k";
+			break;
+		case arch_xenix:
+			archtypestr="arch_xenix";
+			break;
+		case arch_aviion:
+			archtypestr="arch_aviion";
+			break;
+		case arch_sgi:
+			archtypestr="arch_sgi";
+			break;
+		case arch_apollo_dn10k:
+			archtypestr="arch_apollo_dn10k";
+			break;
+		case arch_cray:
+			archtypestr="arch_cray";
+			break;
+		case arch_imp:
+			archtypestr="arch_imp";
+			break;
+		case arch_delta:
+			archtypestr="arch_delta";
+			break;
+		case arch_sco:
+			archtypestr="arch_sco";
+			break;
+		case arch_next:
+			archtypestr="arch_next";
+			break;
+		case arch_next_386:
+			archtypestr="arch_next_386";
+			break;
+		case arch_m88k:
+			archtypestr="arch_m88k";
+			break;
+		case arch_unixware:
+			archtypestr="arch_unixware";
+			break;
 		case arch_intel_32:
 			archtypestr="arch_intel_32";
+			break;
+		case arch_epson:
+			archtypestr="arch_epson";
+			break;
+		case arch_decosf:
+			archtypestr="arch_decosf";
+			break;
+		case arch_ncr3000:
+			archtypestr="arch_ncr3000";
+			break;
+		case arch_nt_ppc:
+			archtypestr="arch_nt_ppc";
+			break;
+		case arch_dg_x86:
+			archtypestr="arch_dg_x86";
+			break;
+		case arch_sco_ev:
+			archtypestr="arch_sco_ev";
 			break;
 		case arch_linux:
 			archtypestr="arch_linux";
@@ -2920,6 +3588,9 @@ void sqlrprotocol_firebird::debugArchType(uint32_t archtype) {
 		case arch_arm:
 			archtypestr="arch_arm";
 			break;
+		case arch_winnt_arm64:
+			archtypestr="arch_winnt_arm64";
+			break;
 		default:
 			archtypestr="unknown";
 			break;
@@ -2933,9 +3604,6 @@ void sqlrprotocol_firebird::debugProtocolVersion(uint32_t protoversion) {
 	}
 	const char	*protoversionstr=NULL;
 	switch (protoversion) {
-		case PROTOCOL_VERSION2:
-			protoversionstr="PROTOCOL_VERSION2";
-			break;
 		case PROTOCOL_VERSION3:
 			protoversionstr="PROTOCOL_VERSION3";
 			break;
@@ -2981,6 +3649,15 @@ void sqlrprotocol_firebird::debugProtocolVersion(uint32_t protoversion) {
 		case PROTOCOL_VERSION17:
 			protoversionstr="PROTOCOL_VERSION17";
 			break;
+		case PROTOCOL_VERSION18:
+			protoversionstr="PROTOCOL_VERSION18";
+			break;
+		case PROTOCOL_VERSION19:
+			protoversionstr="PROTOCOL_VERSION19";
+			break;
+		case PROTOCOL_VERSION20:
+			protoversionstr="PROTOCOL_VERSION20";
+			break;
 		default:
 			protoversionstr="unknown";
 			break;
@@ -2994,8 +3671,12 @@ void sqlrprotocol_firebird::debugProtocolType(const char *title,
 	if (!getDebug()) {
 		return;
 	}
+	// the type is the low byte, the flags are the upper byte
 	const char	*protocoltypestr=NULL;
-	switch (protocoltype) {
+	switch (protocoltype&ptype_MASK) {
+		case ptype_page:
+			protocoltypestr="ptype_page";
+			break;
 		case ptype_rpc:
 			protocoltypestr="ptype_rpc";
 			break;
@@ -3014,6 +3695,113 @@ void sqlrprotocol_firebird::debugProtocolType(const char *title,
 	}
 	stdoutput.printf("	%s: %s\n",
 				title,protocoltypestr);
+
+	// flags
+	if (protocoltype&pflag_compress) {
+		stdoutput.write("		pflag_compress\n");
+	}
+	if (protocoltype&pflag_win_sspi_nego) {
+		stdoutput.write("		pflag_win_sspi_nego\n");
+	}
+}
+
+void sqlrprotocol_firebird::debugConnectVersion(uint32_t connectversion) {
+	if (!getDebug()) {
+		return;
+	}
+	const char	*connectversionstr=NULL;
+	switch (connectversion) {
+		case CONNECT_VERSION2:
+			connectversionstr="CONNECT_VERSION2";
+			break;
+		case CONNECT_VERSION3:
+			connectversionstr="CONNECT_VERSION3";
+			break;
+		default:
+			connectversionstr="unknown";
+			break;
+	}
+	stdoutput.printf("	connect version: %d (%s)\n",
+				connectversion,connectversionstr);
+}
+
+void sqlrprotocol_firebird::debugUserId(const byte_t *userid,
+						uint32_t useridlen) {
+	if (!getDebug()) {
+		return;
+	}
+
+	// get each tag...
+	// (every tag is a type byte, a 1-byte value length, and that many
+	// value bytes)
+	const byte_t	*ptr=userid;
+	const byte_t	*endptr=userid+useridlen;
+	while ((size_t)(endptr-ptr)>1) {
+
+		// get the type
+		byte_t	tag=0;
+		read(ptr,&tag,&ptr);
+
+		const char	*tagstr=NULL;
+		switch (tag) {
+			case CNCT_user:
+				tagstr="CNCT_user";
+				break;
+			case CNCT_passwd:
+				tagstr="CNCT_passwd";
+				break;
+			case CNCT_ppo:
+				tagstr="CNCT_ppo";
+				break;
+			case CNCT_host:
+				tagstr="CNCT_host";
+				break;
+			case CNCT_group:
+				tagstr="CNCT_group";
+				break;
+			case CNCT_user_verification:
+				tagstr="CNCT_user_verification";
+				break;
+			case CNCT_specific_data:
+				tagstr="CNCT_specific_data";
+				break;
+			case CNCT_plugin_name:
+				tagstr="CNCT_plugin_name";
+				break;
+			case CNCT_login:
+				tagstr="CNCT_login";
+				break;
+			case CNCT_plugin_list:
+				tagstr="CNCT_plugin_list";
+				break;
+			case CNCT_client_crypt:
+				tagstr="CNCT_client_crypt";
+				break;
+			default:
+				tagstr="unknown";
+				break;
+		}
+		stdoutput.printf("	user id tag: %d (0x%02x) (%s)\n",
+							tag,tag,tagstr);
+
+		// get the value length
+		byte_t	valuelen=0;
+		read(ptr,&valuelen,&ptr);
+		stdoutput.printf("	user id value length: %d\n",valuelen);
+
+		// bail if the value runs past the end of the buffer
+		if ((size_t)valuelen>(size_t)(endptr-ptr)) {
+			stdoutput.write("	user id value runs past "
+					"the end of the buffer\n");
+			break;
+		}
+
+		// step over the value
+		if (valuelen) {
+			stdoutput.printHex(ptr,valuelen);
+		}
+		ptr+=valuelen;
+	}
 }
 
 void sqlrprotocol_firebird::debugDpbVersion(byte_t dpbversion) {
@@ -3330,6 +4118,33 @@ void sqlrprotocol_firebird::debugDpbParam(byte_t dpbparam) {
 		case isc_dpb_clear_map:
 			dpbparamstr="isc_dpb_clear_map";
 			break;
+		case isc_dpb_upgrade_db:
+			dpbparamstr="isc_dpb_upgrade_db";
+			break;
+		case isc_dpb_parallel_workers:
+			dpbparamstr="isc_dpb_parallel_workers";
+			break;
+		case isc_dpb_worker_attach:
+			dpbparamstr="isc_dpb_worker_attach";
+			break;
+		case isc_dpb_owner:
+			dpbparamstr="isc_dpb_owner";
+			break;
+		case isc_dpb_max_blob_cache_size:
+			dpbparamstr="isc_dpb_max_blob_cache_size";
+			break;
+		case isc_dpb_max_inline_blob_size:
+			dpbparamstr="isc_dpb_max_inline_blob_size";
+			break;
+		case isc_dpb_search_path:
+			dpbparamstr="isc_dpb_search_path";
+			break;
+		case isc_dpb_blr_request_search_path:
+			dpbparamstr="isc_dpb_blr_request_search_path";
+			break;
+		case isc_dpb_gbak_restore_has_schema:
+			dpbparamstr="isc_dpb_gbak_restore_has_schema";
+			break;
 		default:
 			dpbparamstr="unknown";
 			break;
@@ -3560,6 +4375,144 @@ void sqlrprotocol_firebird::debugDbInfoItem(byte_t dbinfoitem) {
 		case fb_info_page_contents:
 			dbinfoitemstr="fb_info_page_contents";
 			break;
+		case fb_info_implementation:
+			dbinfoitemstr="fb_info_implementation";
+			break;
+		case fb_info_page_warns:
+			dbinfoitemstr="fb_info_page_warns";
+			break;
+		case fb_info_record_warns:
+			dbinfoitemstr="fb_info_record_warns";
+			break;
+		case fb_info_bpage_warns:
+			dbinfoitemstr="fb_info_bpage_warns";
+			break;
+		case fb_info_dpage_warns:
+			dbinfoitemstr="fb_info_dpage_warns";
+			break;
+		case fb_info_ipage_warns:
+			dbinfoitemstr="fb_info_ipage_warns";
+			break;
+		case fb_info_ppage_warns:
+			dbinfoitemstr="fb_info_ppage_warns";
+			break;
+		case fb_info_tpage_warns:
+			dbinfoitemstr="fb_info_tpage_warns";
+			break;
+		case fb_info_pip_errors:
+			dbinfoitemstr="fb_info_pip_errors";
+			break;
+		case fb_info_pip_warns:
+			dbinfoitemstr="fb_info_pip_warns";
+			break;
+		case fb_info_pages_used:
+			dbinfoitemstr="fb_info_pages_used";
+			break;
+		case fb_info_pages_free:
+			dbinfoitemstr="fb_info_pages_free";
+			break;
+		case fb_info_ses_idle_timeout_db:
+			dbinfoitemstr="fb_info_ses_idle_timeout_db";
+			break;
+		case fb_info_ses_idle_timeout_att:
+			dbinfoitemstr="fb_info_ses_idle_timeout_att";
+			break;
+		case fb_info_ses_idle_timeout_run:
+			dbinfoitemstr="fb_info_ses_idle_timeout_run";
+			break;
+		case fb_info_conn_flags:
+			dbinfoitemstr="fb_info_conn_flags";
+			break;
+		case fb_info_crypt_key:
+			dbinfoitemstr="fb_info_crypt_key";
+			break;
+		case fb_info_crypt_state:
+			dbinfoitemstr="fb_info_crypt_state";
+			break;
+		case fb_info_statement_timeout_db:
+			dbinfoitemstr="fb_info_statement_timeout_db";
+			break;
+		case fb_info_statement_timeout_att:
+			dbinfoitemstr="fb_info_statement_timeout_att";
+			break;
+		case fb_info_protocol_version:
+			dbinfoitemstr="fb_info_protocol_version";
+			break;
+		case fb_info_crypt_plugin:
+			dbinfoitemstr="fb_info_crypt_plugin";
+			break;
+		case fb_info_creation_timestamp_tz:
+			dbinfoitemstr="fb_info_creation_timestamp_tz";
+			break;
+		case fb_info_wire_crypt:
+			dbinfoitemstr="fb_info_wire_crypt";
+			break;
+		case fb_info_features:
+			dbinfoitemstr="fb_info_features";
+			break;
+		case fb_info_next_attachment:
+			dbinfoitemstr="fb_info_next_attachment";
+			break;
+		case fb_info_next_statement:
+			dbinfoitemstr="fb_info_next_statement";
+			break;
+		case fb_info_db_guid:
+			dbinfoitemstr="fb_info_db_guid";
+			break;
+		case fb_info_db_file_id:
+			dbinfoitemstr="fb_info_db_file_id";
+			break;
+		case fb_info_replica_mode:
+			dbinfoitemstr="fb_info_replica_mode";
+			break;
+		case fb_info_username:
+			dbinfoitemstr="fb_info_username";
+			break;
+		case fb_info_sqlrole:
+			dbinfoitemstr="fb_info_sqlrole";
+			break;
+		case fb_info_parallel_workers:
+			dbinfoitemstr="fb_info_parallel_workers";
+			break;
+		case fb_info_wire_out_packets:
+			dbinfoitemstr="fb_info_wire_out_packets";
+			break;
+		case fb_info_wire_in_packets:
+			dbinfoitemstr="fb_info_wire_in_packets";
+			break;
+		case fb_info_wire_out_bytes:
+			dbinfoitemstr="fb_info_wire_out_bytes";
+			break;
+		case fb_info_wire_in_bytes:
+			dbinfoitemstr="fb_info_wire_in_bytes";
+			break;
+		case fb_info_wire_snd_packets:
+			dbinfoitemstr="fb_info_wire_snd_packets";
+			break;
+		case fb_info_wire_rcv_packets:
+			dbinfoitemstr="fb_info_wire_rcv_packets";
+			break;
+		case fb_info_wire_snd_bytes:
+			dbinfoitemstr="fb_info_wire_snd_bytes";
+			break;
+		case fb_info_wire_rcv_bytes:
+			dbinfoitemstr="fb_info_wire_rcv_bytes";
+			break;
+		case fb_info_wire_roundtrips:
+			dbinfoitemstr="fb_info_wire_roundtrips";
+			break;
+		case fb_info_max_blob_cache_size:
+			dbinfoitemstr="fb_info_max_blob_cache_size";
+			break;
+		case fb_info_max_inline_blob_size:
+			dbinfoitemstr="fb_info_max_inline_blob_size";
+			break;
+		case fb_info_counts_scope_att:
+			dbinfoitemstr="fb_info_counts_scope_att";
+			break;
+		case fb_info_counts_scope_db:
+			dbinfoitemstr="fb_info_counts_scope_db";
+			break;
 		default:
 			dbinfoitemstr="unknown";
 			break;
@@ -3657,6 +4610,18 @@ void sqlrprotocol_firebird::debugTpbParam(byte_t tpbparam) {
 		case isc_tpb_lock_timeout:
 			tpbparamstr="isc_tpb_lock_timeout";
 			break;
+		case isc_tpb_read_consistency:
+			tpbparamstr="isc_tpb_read_consistency";
+			break;
+		case isc_tpb_at_snapshot_number:
+			tpbparamstr="isc_tpb_at_snapshot_number";
+			break;
+		case isc_tpb_auto_release_temp_blobid:
+			tpbparamstr="isc_tpb_auto_release_temp_blobid";
+			break;
+		case isc_tpb_lock_table_schema:
+			tpbparamstr="isc_tpb_lock_table_schema";
+			break;
 		default:
 			tpbparamstr="unknown";
 			break;
@@ -3665,7 +4630,7 @@ void sqlrprotocol_firebird::debugTpbParam(byte_t tpbparam) {
 				tpbparam,tpbparam,tpbparamstr);
 }
 
-void sqlrprotocol_firebird::debugStatusVector(uint64_t *sv, uint8_t svlen) {
+void sqlrprotocol_firebird::debugStatusVector(uint32_t *sv, uint8_t svlen) {
 	if (!getDebug()) {
 		return;
 	}
@@ -3685,7 +4650,7 @@ void sqlrprotocol_firebird::debugStatusVector(uint64_t *sv, uint8_t svlen) {
 						"code: isc_arg_gds\n");
 				i++;
 				stdoutput.printf("			"
-						"error: %lld\n",sv[i]);
+						"error: %d\n",sv[i]);
 				i++;
 				break;
 			case isc_arg_string:
@@ -3693,7 +4658,7 @@ void sqlrprotocol_firebird::debugStatusVector(uint64_t *sv, uint8_t svlen) {
 						"code: isc_arg_string\n");
 				i++;
 				stdoutput.printf("			"
-						"address: %lld\n",sv[i]);
+						"address: %d\n",sv[i]);
 				i++;
 				break;
 			case isc_arg_cstring:
@@ -3701,10 +4666,10 @@ void sqlrprotocol_firebird::debugStatusVector(uint64_t *sv, uint8_t svlen) {
 						"code: isc_arg_cstring\n");
 				i++;
 				stdoutput.printf("			"
-						"length: %lld\n",sv[i]);
+						"length: %d\n",sv[i]);
 				i++;
 				stdoutput.printf("			"
-						"address: %lld\n",sv[i]);
+						"address: %d\n",sv[i]);
 				i++;
 				break;
 			case isc_arg_number:
@@ -3712,7 +4677,7 @@ void sqlrprotocol_firebird::debugStatusVector(uint64_t *sv, uint8_t svlen) {
 						"code: isc_arg_number\n");
 				i++;
 				stdoutput.printf("			"
-						"number: %lld\n",sv[i]);
+						"number: %d\n",sv[i]);
 				i++;
 				break;
 			case isc_arg_interpreted:
@@ -3720,7 +4685,7 @@ void sqlrprotocol_firebird::debugStatusVector(uint64_t *sv, uint8_t svlen) {
 						"code: isc_arg_interpreted\n");
 				i++;
 				stdoutput.printf("			"
-						"address: %lld\n",sv[i]);
+						"address: %d\n",sv[i]);
 				i++;
 				break;
 			case isc_arg_vms:
@@ -3728,7 +4693,7 @@ void sqlrprotocol_firebird::debugStatusVector(uint64_t *sv, uint8_t svlen) {
 						"code: isc_arg_vms\n");
 				i++;
 				stdoutput.printf("			"
-						"error: %lld\n",sv[i]);
+						"error: %d\n",sv[i]);
 				i++;
 				break;
 			case isc_arg_unix:
@@ -3736,7 +4701,7 @@ void sqlrprotocol_firebird::debugStatusVector(uint64_t *sv, uint8_t svlen) {
 						"code: isc_arg_unix\n");
 				i++;
 				stdoutput.printf("			"
-						"error: %lld\n",sv[i]);
+						"error: %d\n",sv[i]);
 				i++;
 				break;
 			case isc_arg_domain:
@@ -3744,7 +4709,7 @@ void sqlrprotocol_firebird::debugStatusVector(uint64_t *sv, uint8_t svlen) {
 						"code: isc_arg_domain\n");
 				i++;
 				stdoutput.printf("			"
-						"error: %lld\n",sv[i]);
+						"error: %d\n",sv[i]);
 				i++;
 				break;
 			case isc_arg_dos:
@@ -3752,7 +4717,7 @@ void sqlrprotocol_firebird::debugStatusVector(uint64_t *sv, uint8_t svlen) {
 						"code: isc_arg_dos\n");
 				i++;
 				stdoutput.printf("			"
-						"error: %lld\n",sv[i]);
+						"error: %d\n",sv[i]);
 				i++;
 				break;
 			case isc_arg_mpexl:
@@ -3760,7 +4725,7 @@ void sqlrprotocol_firebird::debugStatusVector(uint64_t *sv, uint8_t svlen) {
 						"code: isc_arg_mpexl\n");
 				i++;
 				stdoutput.printf("			"
-						"error: %lld\n",sv[i]);
+						"error: %d\n",sv[i]);
 				i++;
 				break;
 			case isc_arg_mpexl_ipc:
@@ -3768,15 +4733,15 @@ void sqlrprotocol_firebird::debugStatusVector(uint64_t *sv, uint8_t svlen) {
 						"code: isc_arg_mpexl_ipc\n");
 				i++;
 				stdoutput.printf("			"
-						"error: %lld\n",sv[i]);
+						"error: %d\n",sv[i]);
 				i++;
 				break;
-			case isc_arg_mach:
+			case isc_arg_next_mach:
 				stdoutput.write("			"
-						"code: isc_arg_mach\n");
+						"code: isc_arg_next_mach\n");
 				i++;
 				stdoutput.printf("			"
-						"error: %lld\n",sv[i]);
+						"error: %d\n",sv[i]);
 				i++;
 				break;
 			case isc_arg_netware:
@@ -3784,7 +4749,7 @@ void sqlrprotocol_firebird::debugStatusVector(uint64_t *sv, uint8_t svlen) {
 						"code: isc_arg_netware\n");
 				i++;
 				stdoutput.printf("			"
-						"error: %lld\n",sv[i]);
+						"error: %d\n",sv[i]);
 				i++;
 				break;
 			case isc_arg_win32:
@@ -3792,7 +4757,7 @@ void sqlrprotocol_firebird::debugStatusVector(uint64_t *sv, uint8_t svlen) {
 						"code: isc_arg_win32\n");
 				i++;
 				stdoutput.printf("			"
-						"error: %lld\n",sv[i]);
+						"error: %d\n",sv[i]);
 				i++;
 				break;
 			case isc_arg_warning:
@@ -3800,7 +4765,7 @@ void sqlrprotocol_firebird::debugStatusVector(uint64_t *sv, uint8_t svlen) {
 						"code: isc_arg_warning\n");
 				i++;
 				stdoutput.printf("			"
-						"warning: %lld\n",sv[i]);
+						"warning: %d\n",sv[i]);
 				i++;
 				break;
 			case isc_arg_sql_state:
@@ -3808,7 +4773,7 @@ void sqlrprotocol_firebird::debugStatusVector(uint64_t *sv, uint8_t svlen) {
 						"code: isc_arg_sql_state\n");
 				i++;
 				stdoutput.printf("			"
-						"sql state: %lld\n",sv[i]);
+						"sql state: %d\n",sv[i]);
 				i++;
 				break;
 			default:
@@ -3816,7 +4781,7 @@ void sqlrprotocol_firebird::debugStatusVector(uint64_t *sv, uint8_t svlen) {
 						"code: unknown\n");
 				i++;
 				stdoutput.printf("			"
-						"error: %lld\n",sv[i]);
+						"error: %d\n",sv[i]);
 				i++;
 				break;
 		}
