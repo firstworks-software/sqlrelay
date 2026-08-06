@@ -1035,7 +1035,10 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_tds : public sqlrprotocol {
 		void	returnValueInteger(uint16_t ordinal,
 					int32_t value,
 					bool isnull);
-		void	returnValueHeader(uint16_t ordinal);
+		void	returnValueHeader(uint16_t ordinal,
+						const char *name,
+						uint16_t namesize);
+		void	writeIntN(int64_t value, byte_t size);
 		void	doneProc(uint16_t status,
 					uint16_t curcmd,
 					uint64_t donerowcount);
@@ -1080,6 +1083,9 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_tds : public sqlrprotocol {
 		bool			*rpcparambyref;
 		char			**rpcparamnames;
 		uint16_t		*rpcparamnamesizes;
+		byte_t			*rpcparamtdstypes;
+		uint32_t		*rpcparammaxsizes;
+		uint16_t		*outbindparams;
 		uint16_t		rpcparamcount;
 
 		// The table and columns that the "insert bulk" statement
@@ -1166,6 +1172,9 @@ sqlrprotocol_tds::sqlrprotocol_tds(sqlrservercontroller *cont,
 	rpcparambyref=new bool[maxbindcount];
 	rpcparamnames=new char *[maxbindcount];
 	rpcparamnamesizes=new uint16_t[maxbindcount];
+	rpcparamtdstypes=new byte_t[maxbindcount];
+	rpcparammaxsizes=new uint32_t[maxbindcount];
+	outbindparams=new uint16_t[maxbindcount];
 	rpcparamcount=0;
 
 	bulkcolumns=new char *[maxbindcount];
@@ -1189,6 +1198,9 @@ sqlrprotocol_tds::~sqlrprotocol_tds() {
 	delete[] rpcparambyref;
 	delete[] rpcparamnames;
 	delete[] rpcparamnamesizes;
+	delete[] rpcparamtdstypes;
+	delete[] rpcparammaxsizes;
+	delete[] outbindparams;
 
 	delete[] bulkcolumns;
 	delete[] bulktypes;
@@ -6502,6 +6514,9 @@ void sqlrprotocol_tds::bindParams(sqlrservercursor *cursor, uint16_t first) {
 		}
 
 		if (rpcparambyref[i]) {
+			// remember which rpc parameter each output bind came
+			// from, so its name and type can be sent back with it
+			outbindparams[outbindcount]=i;
 			outbindcount++;
 		} else {
 			inbindcount++;
@@ -7536,7 +7551,15 @@ bool sqlrprotocol_tds::param(uint16_t param,
 		debugWrite("partlentype...");
 
 		// FIXME: [ushortmaxlen] [collation] [xml_info] [utd_info]
-	} 
+	}
+
+	// An output parameter is sent back as the type the client declared
+	// it, so keep that.  tdstype is rewritten just below, to read the
+	// value, so it has to be recorded here.
+	if (!exceeded) {
+		rpcparamtdstypes[param]=tdstype;
+		rpcparammaxsizes[param]=maxsize;
+	}
 
 	// param data...
 
@@ -8428,7 +8451,9 @@ void sqlrprotocol_tds::returnValues(sqlrservercursor *cursor) {
 	}
 }
 
-void sqlrprotocol_tds::returnValueHeader(uint16_t ordinal) {
+void sqlrprotocol_tds::returnValueHeader(uint16_t ordinal,
+						const char *name,
+						uint16_t namesize) {
 
 	byte_t	token=TOKEN_RETURNVALUE;
 	write(&resppacket,token);
@@ -8436,9 +8461,18 @@ void sqlrprotocol_tds::returnValueHeader(uint16_t ordinal) {
 	// param ordinal
 	writeLE(&resppacket,ordinal);
 
-	// param name - the client matches these up by ordinal, so there's
-	// no need to send one
-	write(&resppacket,(byte_t)0);
+	// param name - a client that looks at it, rather than matching by
+	// ordinal, gets an empty name from ct_describe otherwise
+	if (name && namesize) {
+		ucs2_t	*name16=ucs2charstring::duplicate(name,
+							(size_t)namesize);
+		write(&resppacket,(byte_t)namesize);
+		write(&resppacket,name16,namesize);
+		delete[] name16;
+		debugWrite("name: %s",name);
+	} else {
+		write(&resppacket,(byte_t)0);
+	}
 
 	// status - 0x01 means it's an output parameter
 	write(&resppacket,(byte_t)0x01);
@@ -8462,7 +8496,7 @@ void sqlrprotocol_tds::returnValueInteger(uint16_t ordinal,
 
 	debugStart("return-value");
 
-	returnValueHeader(ordinal);
+	returnValueHeader(ordinal,NULL,0);
 
 	// type info - typeInfo() describes a column of a result set, so it
 	// can't be reused for a scalar like this
@@ -8482,23 +8516,56 @@ void sqlrprotocol_tds::returnValueInteger(uint16_t ordinal,
 	debugEnd();
 }
 
+void sqlrprotocol_tds::writeIntN(int64_t value, byte_t size) {
+	switch (size) {
+		case 1:
+			write(&resppacket,(byte_t)value);
+			break;
+		case 2:
+			writeLE(&resppacket,(uint16_t)value);
+			break;
+		case 4:
+			writeLE(&resppacket,(uint32_t)value);
+			break;
+		default:
+			writeLE(&resppacket,(uint64_t)value);
+			break;
+	}
+}
+
 void sqlrprotocol_tds::returnValue(sqlrservercursor *cursor, uint16_t param) {
 
 	debugStart("return-value");
 
 	sqlrserverbindvar	*bv=&(cont->getOutputBinds(cursor)[param]);
 
-	returnValueHeader(param+1);
+	// the rpc parameter this output bind came from carries the name and
+	// the type the client declared
+	uint16_t	rpcparam=outbindparams[param];
+
+	returnValueHeader(param+1,rpcparamnames[rpcparam],
+					rpcparamnamesizes[rpcparam]);
 
 	// SQL Relay hands back whatever the database put in the output bind.
 	// Only integers and strings can come back through this path.
 	switch (bv->type) {
 		case SQLRSERVERBINDVARTYPE_INTEGER:
+			{
+			// An integer goes back at the width the client
+			// declared, the way a real sql server echoes it.
+			// Sending it as an 8 byte INTN instead makes
+			// ct_describe report CS_LONG_TYPE for what the client
+			// sent as a CS_INT_TYPE.
+			byte_t	size=(byte_t)rpcparammaxsizes[rpcparam];
+			if (size!=1 && size!=2 && size!=4 && size!=8) {
+				size=sizeof(int64_t);
+			}
 			write(&resppacket,(byte_t)TDS_TYPE_INTN);
-			write(&resppacket,(byte_t)sizeof(int64_t));
-			write(&resppacket,(byte_t)sizeof(int64_t));
-			writeLE(&resppacket,(uint64_t)bv->value.integerval);
+			write(&resppacket,size);
+			write(&resppacket,size);
+			writeIntN(bv->value.integerval,size);
 			debugWrite("value: %lld",bv->value.integerval);
+			}
 			break;
 		case SQLRSERVERBINDVARTYPE_DOUBLE:
 			write(&resppacket,(byte_t)TDS_TYPE_FLTN);

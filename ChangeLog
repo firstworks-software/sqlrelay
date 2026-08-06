@@ -585,6 +585,11 @@
 		variable or parameter declaration in it was rewritten as a
 		bind marker and then run with nothing bound, the same defect
 		that was fixed for a plain sql batch
+	fixed the tds protocol module - a stored procedure's output
+		parameter was sent back without its name, and as an 8 byte
+		integer whatever width the client declared, so a client that
+		read the name got an empty one and ct_describe reported
+		CS_LONG_TYPE for what was sent as a CS_INT_TYPE
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems
