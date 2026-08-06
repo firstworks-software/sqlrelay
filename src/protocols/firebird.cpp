@@ -744,7 +744,9 @@
 
 // gds error codes
 #define isc_infunk	335544341
+#define isc_io_error	335544344
 #define isc_login	335544472
+#define isc_io_open_err	335544734
 
 // what the module answers isc_database_info with
 // (connect() caps protocol negotiation at 12, so the module presents itself
@@ -787,15 +789,23 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_firebird : public sqlrprotocol {
 
 		void	successStatusVector();
 		void	errorStatusVector(uint32_t gdscode);
+		// Builds the status vector a real firebird sends when it
+		// can't open the database file.  2.5, 3.0 and 4.0 all send
+		// it byte-for-byte, and the "open" and "No such file or
+		// directory" arguments below are theirs, captured off the
+		// wire.
+		void	openErrorStatusVector(const char *file);
 		bool	genericResponse(const char *title,
 						uint32_t objecthandle,
 						uint32_t objectid,
 						const byte_t *buffer,
 						uint32_t bufferlen,
 						uint32_t *sv,
+						const char **svstr,
 						uint8_t svlen);
 
 		bool	authenticate();
+		bool	validateDatabase();
 
 		bool	getOpCode();
 		bool	detach();
@@ -910,7 +920,9 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_firebird : public sqlrprotocol {
 		void	debugDbInfoItem(byte_t dbinfoitem);
 		void	debugTpbVersion(byte_t tpbversion);
 		void	debugTpbParam(byte_t tpbparam);
-		void	debugStatusVector(uint32_t *sv, uint8_t svlen);
+		void	debugStatusVector(uint32_t *sv,
+						const char **svstr,
+						uint8_t svlen);
 
 		uint32_t	maxquerysize;
 		uint16_t	maxbindcount;
@@ -932,6 +944,12 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_firebird : public sqlrprotocol {
 		uint32_t	dbhandle;
 
 		uint32_t	statusvector[20];
+		// the values of the vector's string arguments, indexed
+		// alongside it - a non-null entry means that element is a
+		// string rather than an int
+		// (string literals or session-lifetime buffers - not owned,
+		// and not freed)
+		const char	*statusvectorstr[20];
 		uint8_t		statusvectorlen;
 
 		bytebuffer	respbuffer;
@@ -1987,6 +2005,14 @@ bool sqlrprotocol_firebird::attach() {
 		return false;
 	}
 
+	// validate the database
+	// (after authenticating, not before - a real firebird checks the
+	// credentials first and the database file second, and answers a bad
+	// password even when the file is missing too)
+	if (!validateDatabase()) {
+		return false;
+	}
+
 	// FIXME: object handle should be the database handle ???
 	// FIXME: no idea what the database handle is
 	uint32_t	objecthandle=0;
@@ -2000,11 +2026,13 @@ bool sqlrprotocol_firebird::attach() {
 	return genericResponse("attach response",
 				objecthandle,objectid,
 				NULL,0,
-				statusvector,statusvectorlen);
+				statusvector,statusvectorstr,
+				statusvectorlen);
 }
 
 void sqlrprotocol_firebird::successStatusVector() {
 	bytestring::zero(statusvector,sizeof(statusvector));
+	bytestring::zero(statusvectorstr,sizeof(statusvectorstr));
 	// interbase error...
 	statusvector[0]=isc_arg_gds;
 	// no error...
@@ -2018,6 +2046,7 @@ void sqlrprotocol_firebird::successStatusVector() {
 
 void sqlrprotocol_firebird::errorStatusVector(uint32_t gdscode) {
 	bytestring::zero(statusvector,sizeof(statusvector));
+	bytestring::zero(statusvectorstr,sizeof(statusvectorstr));
 	// interbase error...
 	statusvector[0]=isc_arg_gds;
 	// the error...
@@ -2027,12 +2056,37 @@ void sqlrprotocol_firebird::errorStatusVector(uint32_t gdscode) {
 	statusvectorlen=3;
 }
 
+void sqlrprotocol_firebird::openErrorStatusVector(const char *file) {
+	bytestring::zero(statusvector,sizeof(statusvector));
+	bytestring::zero(statusvectorstr,sizeof(statusvectorstr));
+	// the outer error...
+	statusvector[0]=isc_arg_gds;
+	statusvector[1]=isc_io_error;
+	// what failed, and what it failed on...
+	statusvector[2]=isc_arg_string;
+	statusvectorstr[3]="open";
+	statusvector[4]=isc_arg_string;
+	statusvectorstr[5]=file;
+	// the inner error...
+	statusvector[6]=isc_arg_gds;
+	statusvector[7]=isc_io_open_err;
+	// the errno text, already rendered
+	// (which is what isc_arg_interpreted means, as opposed to
+	// isc_arg_string, which the client renders itself)
+	statusvector[8]=isc_arg_interpreted;
+	statusvectorstr[9]="No such file or directory";
+	// end of vector...
+	statusvector[10]=isc_arg_end;
+	statusvectorlen=11;
+}
+
 bool sqlrprotocol_firebird::genericResponse(const char *title,
 						uint32_t objecthandle,
 						uint32_t objectid,
 						const byte_t *buffer,
 						uint32_t bufferlen,
 						uint32_t *sv,
+						const char **svstr,
 						uint8_t svlen) {
 
 	// response packet data structure:
@@ -2083,7 +2137,18 @@ bool sqlrprotocol_firebird::genericResponse(const char *title,
 	}
 
 	// write the status vector
+	// (an argument string is written the same way any other buffer is -
+	// a length, the bytes, and padding to a 4-byte boundary)
 	for (uint8_t i=0; i<svlen; i++) {
+		if (svstr[i]) {
+			if (!writeBuffer((const byte_t *)svstr[i],
+					charstring::getLength(svstr[i]),
+					"status vector string",
+					&byteswritten)) {
+				return false;
+			}
+			continue;
+		}
 		if (clientsock->write(sv[i])!=sizeof(uint32_t)) {
 			if (getDebug()) {
 				stdoutput.printf("	write status "
@@ -2096,7 +2161,7 @@ bool sqlrprotocol_firebird::genericResponse(const char *title,
 		byteswritten+=sizeof(uint32_t);
 	}
 	if (getDebug()) {
-		debugStatusVector(sv,svlen);
+		debugStatusVector(sv,svstr,svlen);
 	}
 
 	debugEnd();
@@ -2138,7 +2203,70 @@ bool sqlrprotocol_firebird::authenticate() {
 	genericResponse("attach failure response",
 				0,0,
 				NULL,0,
-				statusvector,statusvectorlen);
+				statusvector,statusvectorstr,
+				statusvectorlen);
+	return false;
+}
+
+bool sqlrprotocol_firebird::validateDatabase() {
+
+	// which database the instance fronts
+	// ("db" with a "database" fallback, the way the firebird connection
+	// module's handleConnectString() reads it)
+	const char	*condb=cont->getConnectStringValue("db");
+	if (charstring::isNullOrEmpty(condb)) {
+		condb=cont->getConnectStringValue("database");
+	}
+
+	// nothing to compare
+	if (charstring::isNullOrEmpty(condb) ||
+			charstring::isNullOrEmpty(db)) {
+		return true;
+	}
+
+	// step over any host prefix
+	// (the client uses the "host:" or "host/port:" on the front of the
+	// path to pick the server and strips it before sending, so it's in
+	// the configured value but never on the wire.  A single character
+	// before the colon is a windows drive letter rather than a host, and
+	// a slash before it means the colon is inside the path.)
+	const char	*colon=charstring::findFirst(condb,':');
+	const char	*slash=charstring::findFirst(condb,'/');
+	const char	*backslash=charstring::findFirst(condb,'\\');
+	if (colon && colon-condb>1 &&
+			(!slash || slash>colon) &&
+			(!backslash || backslash>colon)) {
+		condb=colon+1;
+	}
+
+	// A real firebird resolves the path on its own filesystem and looks
+	// up aliases.  Neither is available here - the file belongs to the
+	// database the connection module attached to, on whatever machine
+	// that is - so the comparison is of the strings, exactly.
+	bool	valid=!charstring::compare(condb,db);
+
+	if (getDebug()) {
+		debugStart("validate database");
+		stdoutput.printf("	requested: %s\n",db);
+		stdoutput.printf("	available: %s\n",condb);
+		stdoutput.printf("	database %s\n",
+					(valid)?"valid":"invalid");
+		debugEnd();
+	}
+
+	// success
+	if (valid) {
+		return true;
+	}
+
+	openErrorStatusVector(db);
+
+	// the response is sent, but the session still ends
+	genericResponse("attach failure response",
+				0,0,
+				NULL,0,
+				statusvector,statusvectorstr,
+				statusvectorlen);
 	return false;
 }
 
@@ -2447,7 +2575,8 @@ bool sqlrprotocol_firebird::infoDatabase() {
 				dbhandle,objectid,
 				respbuffer.getBuffer(),
 				respbuffer.getSize(),
-				statusvector,statusvectorlen);
+				statusvector,statusvectorstr,
+				statusvectorlen);
 }
 
 bool sqlrprotocol_firebird::disconnect() {
@@ -2617,7 +2746,8 @@ bool sqlrprotocol_firebird::transaction() {
 	return genericResponse("transaction response",
 				dbhandle,objectid,
 				NULL,0,
-				statusvector,statusvectorlen);
+				statusvector,statusvectorstr,
+				statusvectorlen);
 }
 
 bool sqlrprotocol_firebird::commit() {
@@ -4587,7 +4717,9 @@ void sqlrprotocol_firebird::debugTpbParam(byte_t tpbparam) {
 				tpbparam,tpbparam,tpbparamstr);
 }
 
-void sqlrprotocol_firebird::debugStatusVector(uint32_t *sv, uint8_t svlen) {
+void sqlrprotocol_firebird::debugStatusVector(uint32_t *sv,
+						const char **svstr,
+						uint8_t svlen) {
 	if (!getDebug()) {
 		return;
 	}
@@ -4615,7 +4747,8 @@ void sqlrprotocol_firebird::debugStatusVector(uint32_t *sv, uint8_t svlen) {
 						"code: isc_arg_string\n");
 				i++;
 				stdoutput.printf("			"
-						"address: %d\n",sv[i]);
+						"string: %s\n",
+						(svstr[i])?svstr[i]:"");
 				i++;
 				break;
 			case isc_arg_cstring:
@@ -4642,7 +4775,8 @@ void sqlrprotocol_firebird::debugStatusVector(uint32_t *sv, uint8_t svlen) {
 						"code: isc_arg_interpreted\n");
 				i++;
 				stdoutput.printf("			"
-						"address: %d\n",sv[i]);
+						"string: %s\n",
+						(svstr[i])?svstr[i]:"");
 				i++;
 				break;
 			case isc_arg_vms:

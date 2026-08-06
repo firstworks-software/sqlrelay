@@ -733,6 +733,18 @@
 		protocol uninstall target leaving the mysql, postgresql,
 		firebird, oracle, tds, and teradata modules behind when built
 		with a non-default module name prefix
+	fixed the firebird protocol module's attach() accepting any database -
+		the path the client sends was read and then never looked at,
+		so an attach naming a database that doesn't exist succeeded,
+		where a real firebird fails it - the path is now compared,
+		after authenticating rather than before, since a real firebird
+		checks the credentials first and the file second, against the
+		database the instance is configured for, and a mismatch is
+		answered with the status vector a real firebird sends for a
+		file it can't open - isc_io_error, the failed operation, the
+		file name, isc_io_open_err, and the errno text - which also
+		meant teaching the status vector builder and the response
+		writer to carry string arguments, since neither could before
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems
