@@ -5,6 +5,7 @@ usr/include/sqlrelay/private/sqlrbindvariabletranslation.h
 usr/include/sqlrelay/private/sqlrdirective.h
 usr/include/sqlrelay/private/sqlrerrortranslation.h
 usr/include/sqlrelay/private/sqlrfilter.h
+usr/include/sqlrelay/private/sqlrfirebirdcredentials.h
 usr/include/sqlrelay/private/sqlrgsscredentials.h
 usr/include/sqlrelay/private/sqlrlistener.h
 usr/include/sqlrelay/private/sqlrlogger.h

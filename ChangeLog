@@ -656,6 +656,18 @@
 		by, so an informix LVARCHAR column read past the end of the
 		array and reported whatever followed it as the column type,
 		and the index is bounds-checked now as well
+	added a firebird_connectstrings auth module, along with a
+		sqlrfirebirdcredentials class - it handles both the cleartext
+		password that isc_dpb_password carries and the legacy_auth
+		des hash that isc_dpb_password_enc carries, and the
+		credentials tell it which of the two it was given
+	fixed the firebird protocol module - its authenticate() was entirely
+		inside an #if 0 and nothing called it, so every user name and
+		password was accepted and the password read out of the db
+		parameter buffer was discarded - credentials now go through
+		the auth framework, and a failed login is answered with the
+		same isc_login response a real firebird server sends, rather
+		than being let through
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems

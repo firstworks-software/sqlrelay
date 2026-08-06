@@ -742,6 +742,14 @@
 #define isc_arg_warning		18
 #define isc_arg_sql_state	19
 
+// gds error codes
+#define isc_login	335544472
+
+// authentication methods
+// (which dpb item the password came out of - see attach())
+#define FIREBIRD_CLEARTEXT	"firebird_cleartext"
+#define FIREBIRD_LEGACY		"firebird_legacy"
+
 // connection type
 #define P_REQ_async	1
 
@@ -763,6 +771,7 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_firebird : public sqlrprotocol {
 		bool	attach();
 
 		void	successStatusVector();
+		void	errorStatusVector(uint32_t gdscode);
 		bool	genericResponse(const char *title,
 						uint32_t objecthandle,
 						uint32_t objectid,
@@ -891,6 +900,9 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_firebird : public sqlrprotocol {
 		char		*db;
 		char		*username;
 		char		*password;
+		// which dpb item the password came out of
+		// (a string literal - not owned, and not freed)
+		const char	*authmethod;
 		char		*wd;
 		uint32_t	dbhandle;
 
@@ -925,6 +937,7 @@ void sqlrprotocol_firebird::init() {
 	db=NULL;
 	username=NULL;
 	password=NULL;
+	authmethod=NULL;
 	wd=NULL;
 	dbhandle=0;
 }
@@ -1644,13 +1657,22 @@ bool sqlrprotocol_firebird::attach() {
 							"user name",&username);
 				break;
 
+			// The password arrives one of two ways.  isc_dpb_password
+			// is the password itself, and isc_dpb_password_enc is
+			// firebird's legacy_auth hash of it.  fbclient rewrites
+			// the former into the latter, so a real firebird client
+			// always sends the hash; only clients that build the
+			// dpb themselves send the password.
 			case isc_dpb_password:
-				// FIXME: do something...
+				readStringFromBuffer(dpbvalue,dpbvaluelen,
+							"password",&password);
+				authmethod=FIREBIRD_CLEARTEXT;
 				break;
 
 			case isc_dpb_password_enc:
 				readStringFromBuffer(dpbvalue,dpbvaluelen,
 							"password",&password);
+				authmethod=FIREBIRD_LEGACY;
 				break;
 
 
@@ -1930,6 +1952,12 @@ bool sqlrprotocol_firebird::attach() {
 	// clean up
 	delete[] dpb;
 
+	// authenticate
+	// (the credentials came out of the dpb above)
+	if (!authenticate()) {
+		return false;
+	}
+
 	// FIXME: object handle should be the database handle ???
 	// FIXME: no idea what the database handle is
 	uint32_t	objecthandle=0;
@@ -1955,6 +1983,17 @@ void sqlrprotocol_firebird::successStatusVector() {
 	// end of vector...
 	// (a client reads elements until it sees isc_arg_end, so the
 	// terminator isn't optional)
+	statusvector[2]=isc_arg_end;
+	statusvectorlen=3;
+}
+
+void sqlrprotocol_firebird::errorStatusVector(uint32_t gdscode) {
+	bytestring::zero(statusvector,sizeof(statusvector));
+	// interbase error...
+	statusvector[0]=isc_arg_gds;
+	// the error...
+	statusvector[1]=gdscode;
+	// end of vector...
 	statusvector[2]=isc_arg_end;
 	statusvectorlen=3;
 }
@@ -2040,39 +2079,37 @@ bool sqlrprotocol_firebird::genericResponse(const char *title,
 
 bool sqlrprotocol_firebird::authenticate() {
 
-#if 0
 	// build auth credentials
 	sqlrfirebirdcredentials	cred;
-	cred.setUser(user);
+	cred.setUser(username);
 	cred.setPassword(password);
 	cred.setPasswordSize(charstring::getLength(password));
 	cred.setMethod(authmethod);
-	cred.setSalt(salt);
 
 	// authenticate
 	bool	retval=cont->auth(&cred);
 
-	// debug
 	if (getDebug()) {
 		debugStart("authenticate");
-		stdoutput.printf("	auth %s\n",(retvale?"success":"failed");
+		stdoutput.printf("	auth %s\n",(retval)?"success":"failed");
 		debugEnd();
 	}
 
-	// error
-	if (!retval) {
-		stringbuffer	err;
-		err.append("password authentication failed for user \"");
-		err.append(user);
-		err.append("\"");
-		sendErrorResponse("FATAL","28P01",
-					err.getString(),err.getSize());
-		return false;
+	// success
+	if (retval) {
+		return true;
 	}
 
-	// success
-	return sendAuthenticationOk();
-#endif
+	// A failed login is answered with an op_response carrying nothing but
+	// isc_login, and no message text.  That is what a real firebird server
+	// sends, and the client renders the text from the code itself.
+	errorStatusVector(isc_login);
+
+	// the response is sent, but the session still ends
+	genericResponse("attach failure response",
+				0,0,
+				NULL,0,
+				statusvector,statusvectorlen);
 	return false;
 }
 

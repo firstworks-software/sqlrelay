@@ -282,6 +282,52 @@ const char *sqlroraclecredentials::getExtra() {
 	return extra;
 }
 
+sqlrfirebirdcredentials::sqlrfirebirdcredentials() : sqlrcredentials() {
+	user=NULL;
+	password=NULL;
+	passwordsize=0;
+	method=NULL;
+}
+
+sqlrfirebirdcredentials::~sqlrfirebirdcredentials() {
+}
+
+const char *sqlrfirebirdcredentials::getType() {
+	return "firebird";
+}
+
+void sqlrfirebirdcredentials::setUser(const char *user) {
+	this->user=user;
+}
+
+void sqlrfirebirdcredentials::setPassword(const char *password) {
+	this->password=password;
+}
+
+void sqlrfirebirdcredentials::setPasswordSize(uint64_t passwordsize) {
+	this->passwordsize=passwordsize;
+}
+
+void sqlrfirebirdcredentials::setMethod(const char *method) {
+	this->method=method;
+}
+
+const char *sqlrfirebirdcredentials::getUser() {
+	return user;
+}
+
+const char *sqlrfirebirdcredentials::getPassword() {
+	return password;
+}
+
+uint64_t sqlrfirebirdcredentials::getPasswordSize() {
+	return passwordsize;
+}
+
+const char *sqlrfirebirdcredentials::getMethod() {
+	return method;
+}
+
 sqlrteradatacredentials::sqlrteradatacredentials() : sqlrcredentials() {
 	fd=NULL;
 }

@@ -6575,6 +6575,46 @@ class SQLRSERVER_DLLSPEC sqlroraclecredentials : public sqlrcredentials {
 	#include <sqlrelay/private/sqlroraclecredentials.h>
 };
 
+class SQLRSERVER_DLLSPEC sqlrfirebirdcredentials : public sqlrcredentials {
+	public:
+		/** Creates an instance of sqlrfirebirdcredentials. */
+		sqlrfirebirdcredentials();
+
+		/** Deletes this instance of sqlrfirebirdcredentials. */
+		~sqlrfirebirdcredentials();
+
+		/** Returns "firebird". */
+		const char	*getType();
+
+		/** Sets the user to "user". */
+		void	setUser(const char *user);
+
+		/** Sets the password to "password". */
+		void	setPassword(const char *password);
+
+		/** Sets the number of bytes in the password to
+		 *  "passwordsize". */
+		void	setPasswordSize(uint64_t passwordsize);
+
+		/** Sets the authentication method (eg. firebird_cleartext,
+		 *  firebird_legacy, etc.) to "method". */
+		void	setMethod(const char *method);
+
+		/** Returns the user. */
+		const char	*getUser();
+
+		/** Returns the password. */
+		const char	*getPassword();
+
+		/** Returns the number of bytes in the password. */
+		uint64_t	getPasswordSize();
+
+		/** Returns the authentication method. */
+		const char	*getMethod();
+
+	#include <sqlrelay/private/sqlrfirebirdcredentials.h>
+};
+
 class SQLRSERVER_DLLSPEC sqlrteradatacredentials : public sqlrcredentials {
 	public:
 		/** Creates an instance of sqlrteradatacredentials. */
