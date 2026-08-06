@@ -56,7 +56,7 @@ static short buildDpb(char *buffer, const char *dpbuser,
 	// the database's default charset.  The metadata section asserts
 	// sqllen 50 and sqlsubtype 0, which hold only for a single-byte
 	// database.  A UTF8 database gives sqllen 200 and a non-zero
-	// subtype.  Recheck against a real server under #8945.
+	// subtype.  Recheck against a real server under #8954.
 	*dpbptr=isc_dpb_lc_ctype;
 	dpbptr++;
 	*dpbptr=4;
@@ -1236,7 +1236,7 @@ int	main(int argc, char **argv) {
 	// isc_dsql_insert is the legacy interbase insert-through-a-cursor
 	// entry point, op_insert on the wire.  Whether a modern firebird
 	// server accepts it against a plain prepared insert is untested -
-	// recheck under #8945.
+	// recheck under #8954.
 	stdoutput.printf("isc_dsql_insert\n");
 	assertEquals((int)isc_dsql_insert(fbstatus,&stmt,
 					SQL_DIALECT_V6,insqlda),0);
