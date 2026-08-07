@@ -1032,6 +1032,14 @@
 	removed an unreachable test from the firebird protocol module's
 		readPadding() - the degenerate case guard above it already
 		returns for the only case in which the padding size can be 0
+	fixed the odbc api's column type mapping for the SHORT and TINY
+		datatypes - the two comparisons spelled the names the way the
+		datatype enum in datatypes.h spells them, "SHORT_DATATYPE"
+		and "TINY_DATATYPE", but the string they're compared against
+		comes from datatypestring[], which spells them "SHORT" and
+		"TINY", so neither branch could ever be taken and a column of
+		either type ran off the end of the chain and was reported as
+		SQL_CHAR rather than SQL_SMALLINT or SQL_TINYINT
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems

@@ -1142,10 +1142,10 @@ static SQLSMALLINT SQLR_MapColumnType(CONN *conn,
 	if (!charstring::compareIgnoringCase(ctype,"USER_DEFINED_TYPE")) {
 		return SQL_BINARY;
 	}
-	if (!charstring::compareIgnoringCase(ctype,"SHORT_DATATYPE")) {
+	if (!charstring::compareIgnoringCase(ctype,"SHORT")) {
 		return SQL_SMALLINT;
 	}
-	if (!charstring::compareIgnoringCase(ctype,"TINY_DATATYPE")) {
+	if (!charstring::compareIgnoringCase(ctype,"TINY")) {
 		return SQL_TINYINT;
 	}
 
