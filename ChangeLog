@@ -841,6 +841,20 @@
 		longvargraphic columns were described as oid 705, unknown,
 		rather than as text, they're double-byte character types even
 		though datatypes.h groups them with the blobs
+	fixed the odbc connection module - a string output bind of 4000 bytes
+		or more against sql server stored a bind buffer size of 0, so
+		subtracting the null terminator from it wrapped to SIZE_MAX,
+		which corrupted the heap, returned a truncated value, and
+		killed the connection
+	fixed the odbc connection module - an empty or zero-length
+		input-output string bind wrote its null terminator one byte
+		before the start of the bind buffer
+	fixed the odbc connection module - the input-output bind conversion
+		counted the null terminator twice, which truncated values
+		whose converted form exactly filled the bind buffer
+	fixed the odbc connection module's stringSize() - its fallback branch
+		didn't count the null terminator, though its other three
+		branches did, and its comment said it did
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems

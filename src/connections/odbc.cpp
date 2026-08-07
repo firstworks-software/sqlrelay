@@ -471,7 +471,8 @@ size_t isUtf8(const char *encoding) {
 			charstring::contains(encoding,"UTF-8"));
 }
 
-// returns number of characters in the (null-terminated) string
+// returns number of characters in the string, not counting any byte-order
+// mark or the null terminator
 size_t len(const byte_t *str, const char *encoding) {
 
 	const byte_t	*ptr=str;
@@ -514,7 +515,8 @@ size_t len(const byte_t *str, const char *encoding) {
 	return res;
 }
 
-// returns number of bytes in the (null-terminated) string
+// returns number of bytes in the string, including any byte-order mark
+// and the null terminator
 size_t stringSize(const byte_t *str, const char *encoding) {
 
 	const byte_t	*ptr=str;
@@ -555,7 +557,7 @@ size_t stringSize(const byte_t *str, const char *encoding) {
 		res+=utf8charstring::getSize((utf8_t *)ptr);
 		
 	} else {
-		res=charstring::getLength((const char *)str);
+		res=charstring::getSize((const char *)str);
 	}
 	return res;
 }
@@ -4144,7 +4146,10 @@ bool odbccursor::outputBind(const char *variable,
 
 	charbind	*cb=new charbind;
 	cb->value=value;
-	cb->valuesize=valuesize;
+	// This has to be buffersize.  The reduction above turns valuesize into
+	// a column size in characters, but the post-execute conversion needs
+	// the size of the buffer in bytes.
+	cb->valuesize=(uint32_t)buffersize;
 
 	outdatebind[pos-1]=NULL;
 	outcharbind[pos-1]=cb;
@@ -4328,14 +4333,20 @@ bool odbccursor::inputOutputBind(const char *variable,
 			setConvCharError("input-output bind",err);
 			return false;
 		}
-		size_t	sizetocopy=stringSize(valueucs,encoding)+
-							nullSize(encoding);
+		// stringSize() already counts the null terminator
+		size_t	nullsize=nullSize(encoding);
+		size_t	sizetocopy=stringSize(valueucs,encoding);
 		if (sizetocopy<=valuesize) {
 			bytestring::copy(value,valueucs,sizetocopy);
 		} else {
+			// truncate, and null-terminate if there's room
 			bytestring::copy(value,valueucs,valuesize);
-			bytestring::zero(value+valuesize-nullSize(encoding),
-							nullSize(encoding));
+			if (valuesize>=nullsize) {
+				bytestring::zero(value+valuesize-nullsize,
+								nullsize);
+			} else {
+				bytestring::zero(value,valuesize);
+			}
 		}
 		delete[] valueucs;
 		valtype=SQL_C_WCHAR;
@@ -4654,13 +4665,21 @@ bool odbccursor::executeQuery(const char *query, uint32_t size) {
 				setConvCharError("output bind",err);
 				return false;
 			}
+			// clamp to the bind buffer
+			size_t	nullsize=nullSize("UTF-8");
 			size_t	s=stringSize(u,"UTF-8");
-			if (s>=valuesize) {
-				// FIXME: this could make s<0
-				s=valuesize-nullSize("UTF-8");
+			if (s>valuesize) {
+				s=valuesize;
 			}
-			bytestring::zero(value+s,nullSize("UTF-8"));
+
+			// stringSize() counts the null terminator
+			s=(s>nullsize)?s-nullsize:0;
+
+			// copy in and null-terminate
 			bytestring::copy(value,u,s);
+			if (s+nullsize<=valuesize) {
+				bytestring::zero(value+s,nullsize);
+			}
 			delete[] u;
 		}
 		#endif
@@ -4716,13 +4735,21 @@ bool odbccursor::executeQuery(const char *query, uint32_t size) {
 				setConvCharError("input-output bind",err);
 				return false;
 			}
+			// clamp to the bind buffer
+			size_t	nullsize=nullSize("UTF-8");
 			size_t	s=stringSize(u,"UTF-8");
-			if (s>=valuesize) {
-				// FIXME: this could make s<0
-				s=valuesize-nullSize("UTF-8");
+			if (s>valuesize) {
+				s=valuesize;
 			}
-			bytestring::zero(value+s,nullSize("UTF-8"));
+
+			// stringSize() counts the null terminator
+			s=(s>nullsize)?s-nullsize:0;
+
+			// copy in and null-terminate
 			bytestring::copy(value,u,s);
+			if (s+nullsize<=valuesize) {
+				bytestring::zero(value+s,nullsize);
+			}
 			delete[] u;
 		}
 		#endif
