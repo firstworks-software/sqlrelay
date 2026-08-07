@@ -953,6 +953,11 @@
 		printed the length they read with %d, so a hostile 0xffffffff
 		logged as -1 rather than the value an operator would be
 		looking for
+	fixed the odbc connection module - a ms sql server datetime2 column
+		was reported as datetime, because the driver reports both with
+		the same sql type, length, precision and scale; the column's
+		type name is now read at describe time and used to tell them
+		apart
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems

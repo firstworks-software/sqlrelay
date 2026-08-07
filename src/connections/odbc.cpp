@@ -46,6 +46,7 @@
 struct odbccolumn {
 	char		name[4096];
 	uint16_t	namesize;
+	char		dbtypename[64];
 #if (ODBCVER >= 0x0300) && defined(SQLCOLATTRIBUTE_SQLLEN)
 	SQLLEN		type;
 	SQLLEN		size;
@@ -4855,6 +4856,23 @@ bool odbccursor::handleColumns(bool getcolumninfo, bool bindcolumns) {
 					return false;
 				}
 
+				// column type name
+				// MS SQL Server reports datetime and datetime2
+				// identically - SQL_DESC_TYPE SQL_DATETIME,
+				// SQL_DESC_CONCISE_TYPE SQL_TYPE_TIMESTAMP,
+				// and a datetime2(3) even has the same length,
+				// precision and scale as a datetime.  The type
+				// name is the only way to tell them apart.
+				SQLSMALLINT	dbtypenamesize;
+				erg=SQLColAttribute(stmt,i+1,SQL_DESC_TYPE_NAME,
+						column[i].dbtypename,
+						sizeof(column[i].dbtypename),
+						&dbtypenamesize,NULL);
+				if (erg!=SQL_SUCCESS &&
+					erg!=SQL_SUCCESS_WITH_INFO) {
+					return false;
+				}
+
 				// column precision
 				erg=SQLColAttribute(stmt,i+1,SQL_DESC_PRECISION,
 						NULL,0,NULL,
@@ -4981,6 +4999,20 @@ bool odbccursor::handleColumns(bool getcolumninfo, bool bindcolumns) {
 						SQL_COLUMN_TYPE,
 						NULL,0,NULL,
 						&(column[i].type));
+				if (erg!=SQL_SUCCESS &&
+					erg!=SQL_SUCCESS_WITH_INFO) {
+					return false;
+				}
+
+				// column type name
+				// (see the comment on the odbc 3 version
+				// of this call above)
+				SQLSMALLINT	dbtypenamesize;
+				erg=SQLColAttributes(stmt,i+1,
+						SQL_COLUMN_TYPE_NAME,
+						column[i].dbtypename,
+						sizeof(column[i].dbtypename),
+						&dbtypenamesize,NULL);
 				if (erg!=SQL_SUCCESS &&
 					erg!=SQL_SUCCESS_WITH_INFO) {
 					return false;
@@ -5188,6 +5220,7 @@ bool odbccursor::appendNullColumns(uint8_t count) {
 	for (uint8_t i=0; i<count; i++) {
 		column[ncols].name[0]='\0';
 		column[ncols].namesize=0;
+		column[ncols].dbtypename[0]='\0';
 		column[ncols].type=SQL_CHAR;
 		column[ncols].size=0;
 		column[ncols].precision=0;
@@ -5299,6 +5332,14 @@ uint16_t odbccursor::getColumnType(uint32_t i) {
 		case SQL_DATE:
 		//case SQL_DATETIME:
 		//	(odbc 3 dup of SQL_DATE)
+			// MS SQL Server reports datetime and datetime2 the
+			// same way here, so go by the type name.  datetime2
+			// carries more fractional second digits than datetime,
+			// which matters to clients that render it themselves.
+			if (!charstring::compareIgnoringCase(
+					column[i].dbtypename,"datetime2")) {
+				return TIMESTAMP_DATATYPE;
+			}
 			// FIXME: need parameter indicating whether
 			// to map this to date or datetime.  MySQL, for example,
 			// may use SQL_DATE for dates and SQL_TIMESTAMP for
