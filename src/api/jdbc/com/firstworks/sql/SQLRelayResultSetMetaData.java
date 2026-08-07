@@ -748,7 +748,13 @@ public class SQLRelayResultSetMetaData implements ResultSetMetaData {
 	int getColumnType(int column) throws SQLException {
 		drv.debugFunction(this);
 		drv.debugPrintln("column: "+column);
-		int	retval=0;
+		// Types.OTHER rather than 0, which is Types.NULL.  A name
+		// with no case below is a type this driver cannot classify,
+		// which is what jdbc defines Types.OTHER for, and what the
+		// "UNKNOWN" case below already answers.  Backends do send
+		// such names - postgresql sends its own type names, or bare
+		// oids, depending on typemangling.
+		int	retval=Types.OTHER;
 		String	ctype=normalizeTypeName(
 					sqlrcur.getColumnType(column-1));
 		drv.debugPrintln("ctype: "+ctype);

@@ -1145,6 +1145,14 @@
 		do/while so a packet with no fields parses none instead of
 		one, and the header, the user name and every read in the loop
 		are checked against the end of the packet
+	fixed the jdbc api - result set metadata getColumnType() returned
+		java.sql.Types.NULL, which means "the sql NULL type", for a
+		datatype name it has no case for, rather than Types.OTHER,
+		which is what jdbc defines for a type the driver cannot
+		classify - and postgresql reports either its own type names
+		or bare oids depending on typemangling, so in the default
+		configuration every column of every postgresql result set
+		came back as Types.NULL
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems
