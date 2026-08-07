@@ -978,6 +978,17 @@
 		to find the end of the value and truncated any value
 		containing a 0 byte, and it ignored the null indicator, so a
 		null blob bind bound garbage
+	added positioned update, delete and insert to the tds protocol module -
+		sp_cursor answered with an error and return status 16957
+		before, because a positioned update needs "where current of"
+		and the server api has no equivalent; the statement is
+		synthesized instead, from the table name the rpc carries, the
+		values it names by column, and the primary key values of the
+		row the last sp_cursorfetch landed on, which is what an odbc
+		driver does for an optimistic cursor; a cursor over a table
+		with no primary key, or one that didn't select the key
+		columns, is still refused, and so are the operations that
+		need a scrollable cursor
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems

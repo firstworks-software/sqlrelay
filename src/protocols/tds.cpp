@@ -707,18 +707,138 @@ static const char *procnames[]={
 #define CURSOR_FETCH_PREV_NOADJUST	0x0200
 #define CURSOR_FETCH_SKIP_UPDATE_CNT	0x0400
 
+// sp_cursor operation types
+#define CURSOR_OP_UPDATE	0x0001
+#define CURSOR_OP_DELETE	0x0002
+#define CURSOR_OP_INSERT	0x0004
+#define CURSOR_OP_REFRESH	0x0008
+#define CURSOR_OP_LOCK		0x0010
+#define CURSOR_OP_SETPOSITION	0x0020
+#define CURSOR_OP_ABSOLUTE	0x0040
+
+// the most rows of a fetch that are kept for sp_cursor to position on.
+// A client that fetches more than this can still update the ones inside
+// the window, which covers every rowset size an odbc driver actually uses.
+#define CURSOR_MAX_POSITION_ROWS	1024
+
 // the return status that all of these procs use for success
 #define RPC_STATUS_SUCCESS	0
 #define RPC_STATUS_FAILURE	1
 
 // sql server error numbers that these procs answer with, which a failed one
 // also sends back as its return status
+#define RPC_INVALID_COLUMN	207
 #define RPC_WRONG_PARAM_TYPE	214
 #define RPC_NO_SUCH_STMT	8179
+#define RPC_CURSOR_READ_ONLY	16929
+#define RPC_NO_ROWS_AFFECTED	16947
 #define RPC_NO_SUCH_CURSOR	16950
+#define RPC_NO_SUCH_ROW		16955
+#define RPC_OP_UNSUPPORTED	16957
+#define RPC_FETCH_UNSUPPORTED	16958
 
 // close-all cursor id for sp_cursorclose
 #define CURSOR_CLOSE_ALL	0xFFFFFFFF
+
+
+// A row of a result set, copied out of it while it was being sent.  A null
+// field has a NULL value.
+class tdsrow {
+	public:
+		char		**values;
+		uint64_t	*sizes;
+};
+
+// The rows that the most recent sp_cursorfetch returned for one cursor.
+//
+// sp_cursor arrives as a request of its own, after the fetch that positioned
+// the cursor.  By then sqlrservercontroller's field pointers have been
+// re-aimed at whichever cursor fetched last - and looking the table's primary
+// key up fetches on another cursor in between - so the values a positioned
+// update needs in its where clause have to be copied while the row is being
+// read for the ROW token, not read back later.
+class tdsrows {
+	public:
+				tdsrows();
+
+		// discards the rows and starts over with "colcount" columns
+		void		reset(uint32_t colcount);
+
+		// appends an empty row and returns it, or NULL if the
+		// window is full
+		tdsrow		*newRow();
+		void		setField(tdsrow *row,
+						uint32_t col,
+						const char *value,
+						uint64_t size,
+						bool null);
+
+		// rownum is 1-based, the way sp_cursor numbers rows.
+		// Returns NULL if there is no such row.
+		tdsrow		*getRow(uint64_t rownum);
+
+		uint32_t	getColCount();
+	private:
+		memorypool		pool;
+		linkedlist<tdsrow *>	rows;
+		uint32_t		colcount;
+};
+
+tdsrows::tdsrows() {
+	colcount=0;
+}
+
+void tdsrows::reset(uint32_t cc) {
+	rows.clear();
+	pool.clear();
+	colcount=cc;
+}
+
+tdsrow *tdsrows::newRow() {
+
+	if (!colcount || rows.getCount()>=CURSOR_MAX_POSITION_ROWS) {
+		return NULL;
+	}
+
+	tdsrow	*row=(tdsrow *)pool.allocate(sizeof(tdsrow));
+	row->values=(char **)pool.allocate(sizeof(char *)*colcount);
+	row->sizes=(uint64_t *)pool.allocate(sizeof(uint64_t)*colcount);
+	for (uint32_t i=0; i<colcount; i++) {
+		row->values[i]=NULL;
+		row->sizes[i]=0;
+	}
+	rows.append(row);
+	return row;
+}
+
+void tdsrows::setField(tdsrow *row, uint32_t col,
+				const char *value, uint64_t size, bool null) {
+
+	if (!row || col>=colcount || null || !value) {
+		return;
+	}
+
+	char	*copy=(char *)pool.allocate(size+1);
+	bytestring::copy(copy,value,size);
+	copy[size]='\0';
+	row->values[col]=copy;
+	row->sizes[col]=size;
+}
+
+tdsrow *tdsrows::getRow(uint64_t rownum) {
+	if (!rownum || rownum>rows.getCount()) {
+		return NULL;
+	}
+	listnode<tdsrow *>	*node=rows.getFirst();
+	for (uint64_t i=1; node && i<rownum; i++) {
+		node=node->getNext();
+	}
+	return (node)?node->getValue():NULL;
+}
+
+uint32_t tdsrows::getColCount() {
+	return colcount;
+}
 
 
 // TDS protocol class
@@ -820,8 +940,12 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_tds : public sqlrprotocol {
 		// a digit count.
 		byte_t	nTypeSize(byte_t tdstype, uint32_t colsize);
 		uint64_t	rows(sqlrservercursor *cursor);
+		// "position" is where sp_cursor gets the row values that
+		// a positioned update matches on, so only sp_cursorfetch
+		// passes one
 		uint64_t	rows(sqlrservercursor *cursor,
-					uint64_t maxrows);
+					uint64_t maxrows,
+					tdsrows *position=NULL);
 		void	lobData(byte_t tdstype);
 		void	field(byte_t tdstype,
 					uint32_t colsize,
@@ -963,7 +1087,52 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_tds : public sqlrprotocol {
 		bool	cursorFetch(bool nometadata);
 		bool	cursorOption();
 		bool	cursorClose();
-		bool	cursorUnsupported();
+		bool	cursorPositioned();
+
+		// sp_cursor helpers
+		bool	positionedUpdate(sqlrservercursor *cursor,
+						const char *table,
+						tdsrow *row);
+		bool	positionedDelete(sqlrservercursor *cursor,
+						const char *table,
+						tdsrow *row);
+		bool	positionedInsert(sqlrservercursor *cursor,
+						const char *table);
+		bool	positionedExecute(sqlrservercursor *cursor,
+						const char *query,
+						size_t querysize,
+						uint16_t bindcount);
+
+		// appends "value=@n" or "value is null" for each of the
+		// cursor's primary key columns, and the binds to go with
+		// them.  Returns false if the table has no usable key.
+		bool	positionedWhere(sqlrservercursor *cursor,
+						const char *table,
+						tdsrow *row,
+						stringbuffer *query,
+						memorypool *bindpool,
+						sqlrserverbindvar *binds,
+						uint16_t *bindcount);
+
+		// matches an sp_cursor value parameter's name to a column of
+		// the cursor's result set, with one leading @ stripped
+		const char	*positionedColumn(sqlrservercursor *cursor,
+							uint16_t param);
+		void	positionedBind(sqlrserverbindvar *bv,
+						uint16_t bindindex,
+						memorypool *bindpool,
+						const char *value,
+						uint64_t valuesize);
+		void	positionedParamBind(sqlrserverbindvar *bv,
+						uint16_t bindindex,
+						memorypool *bindpool,
+						uint16_t param);
+
+		// the rows that the most recent sp_cursorfetch returned
+		// for "cursor"
+		tdsrows	*positionRows(sqlrservercursor *cursor, bool create);
+		void	releasePositionRows(sqlrservercursor *cursor);
+		void	releaseAllPositionRows();
 
 		// rpc response builders
 		void	rpcResultSet(sqlrservercursor *cursor,
@@ -974,6 +1143,9 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_tds : public sqlrprotocol {
 		bool	rpcInvalidHandleError(uint32_t number,
 					const char *what,
 					uint32_t handle);
+		bool	rpcNumberedError(uint32_t number,
+					const char *msgtext);
+		bool	rpcInvalidColumnError(uint16_t param);
 		bool	rpcParamTypeError(const char *procname,
 					const char *param);
 		bool	paramIsUnicode(uint16_t param);
@@ -1138,6 +1310,10 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_tds : public sqlrprotocol {
 		// false once a cursor has been executed, so that fetching
 		// more rows doesn't run the query again
 		dictionary<sqlrservercursor *, bool>		executeflag;
+
+		// the rows that the most recent sp_cursorfetch returned for
+		// each open cursor, which is what sp_cursor positions on
+		dictionary<sqlrservercursor *, tdsrows *>	positionrows;
 };
 
 sqlrprotocol_tds::sqlrprotocol_tds(sqlrservercontroller *cont,
@@ -1277,6 +1453,7 @@ void sqlrprotocol_tds::free() {
 	stmthandles.clear();
 	cursorhandles.clear();
 	executeflag.clear();
+	releaseAllPositionRows();
 }
 
 void sqlrprotocol_tds::reInit() {
@@ -3782,13 +3959,18 @@ uint64_t sqlrprotocol_tds::rows(sqlrservercursor *cursor) {
 	return rows(cursor,0);
 }
 
-uint64_t sqlrprotocol_tds::rows(sqlrservercursor *cursor, uint64_t maxrows) {
+uint64_t sqlrprotocol_tds::rows(sqlrservercursor *cursor, uint64_t maxrows,
+							tdsrows *position) {
 
 	// get col count and bail if there are no columns
 	uint32_t	colcount=cont->colCount(cursor);
 	if (!colcount) {
 		// return the affected row count though
 		return cont->getAffectedRows(cursor);
+	}
+
+	if (position) {
+		position->reset(colcount);
 	}
 
 	// for each row...
@@ -3815,6 +3997,8 @@ uint64_t sqlrprotocol_tds::rows(sqlrservercursor *cursor, uint64_t maxrows) {
 
 		debugStart("row");
 		debugWrite("token: 0x%02x",token);
+
+		tdsrow	*positionrow=(position)?position->newRow():NULL;
 
 		// append the fields to the packet
 		for (uint32_t col=0; col<colcount; col++) {
@@ -3846,6 +4030,13 @@ uint64_t sqlrprotocol_tds::rows(sqlrservercursor *cursor, uint64_t maxrows) {
 				cont->getColumnSize(cursor,col),
 				cont->getColumnScale(cursor,col),
 				fld,fldsize,null);
+
+			// keep the value for a positioned update to
+			// match on, while it's still readable
+			if (positionrow) {
+				position->setField(positionrow,col,
+							fld,fldsize,null);
+			}
 
 			debugEnd();
 		}
@@ -6522,7 +6713,7 @@ bool sqlrprotocol_tds::rpc(const byte_t **rpinout,
 	rpcfailed=false;
 	switch (procid) {
 		case SP_CURSOR:
-			retval=cursorUnsupported();
+			retval=cursorPositioned();
 			break;
 		case SP_CURSOR_OPEN:
 			retval=cursorOpen(nometadata);
@@ -6796,6 +6987,7 @@ void sqlrprotocol_tds::releaseHandles(dictionary<uint32_t,
 			continue;
 		}
 		executeflag.remove(cursor);
+		releasePositionRows(cursor);
 		cont->release(cursor);
 	}
 	handles->clear();
@@ -7214,6 +7406,7 @@ bool sqlrprotocol_tds::unprepare() {
 
 	stmthandles.remove(handle);
 	executeflag.remove(cursor);
+	releasePositionRows(cursor);
 	cont->release(cursor);
 
 	returnStatus(RPC_STATUS_SUCCESS);
@@ -7221,20 +7414,476 @@ bool sqlrprotocol_tds::unprepare() {
 	return true;
 }
 
-bool sqlrprotocol_tds::cursorUnsupported() {
+bool sqlrprotocol_tds::cursorPositioned() {
 
-	// sp_cursor does positioned update/delete, which needs
-	// "where current of".  SQL Relay has no equivalent, so just report
-	// that it didn't work.
+	// sp_cursor @cursor, @optype, @rownum, @table [, @column...]
+	//
+	// This is the positioned update/delete/insert proc.  A real sql
+	// server does it with "where current of", which the server API has
+	// no equivalent for, so the statement is synthesized instead - the
+	// row's primary key values were kept when sp_cursorfetch sent it,
+	// and they become the where clause.  That is what an odbc driver
+	// does for an optimistic cursor.
+	//
+	// The values to set arrive as one parameter per column, named for
+	// the column with a leading @.  A real server rejects any other
+	// form, so anything that doesn't name a column of the result set
+	// is an error here too.
 
-	debugWrite("positioned update/delete is not supported");
+	uint32_t		handle=(uint32_t)paramInteger(0);
+	sqlrservercursor	*cursor=handleCursor(&cursorhandles,handle);
+	if (!cursor) {
+		return rpcInvalidHandleError(RPC_NO_SUCH_CURSOR,
+						"cursor handle",handle);
+	}
 
-	appendError(16957,1,16,"Positioned update/delete is not supported",
-						srvname,NULL,1);
-	returnStatus(16957);
+	uint16_t	optype=(uint16_t)paramInteger(1);
+	int32_t		rownum=(int32_t)paramInteger(2);
+	const char	*table=paramString(3);
+
+	debugWrite("cursor handle: %d",handle);
+	debugWrite("optype: 0x%04x",optype);
+	debugWrite("rownum: %d",rownum);
+	debugWrite("table: %s",(table)?table:"(none)");
+
+	if (charstring::isNullOrEmpty(table)) {
+		return rpcNumberedError(RPC_WRONG_PARAM_TYPE,
+					"sp_cursor requires a table name");
+	}
+
+	// an insert doesn't position on anything, the rest do
+	tdsrow	*row=NULL;
+	if (optype!=CURSOR_OP_INSERT) {
+		tdsrows	*position=positionRows(cursor,false);
+		row=(position)?position->getRow((uint64_t)rownum):NULL;
+		if (!row) {
+			return rpcNumberedError(RPC_NO_SUCH_ROW,
+					"The cursor is not on a row that "
+					"can be updated");
+		}
+	}
+
+	switch (optype) {
+		case CURSOR_OP_UPDATE:
+			return positionedUpdate(cursor,table,row);
+		case CURSOR_OP_DELETE:
+			return positionedDelete(cursor,table,row);
+		case CURSOR_OP_INSERT:
+			return positionedInsert(cursor,table);
+	}
+
+	debugWrite("unsupported optype: 0x%04x",optype);
+
+	return rpcNumberedError(RPC_OP_UNSUPPORTED,
+			"Only positioned update, delete and insert "
+			"are supported");
+}
+
+bool sqlrprotocol_tds::rpcNumberedError(uint32_t number,
+					const char *msgtext) {
+
+	debugWrite("%s",msgtext);
+
+	appendError(number,1,16,msgtext,srvname,NULL,1);
+	returnStatus(number);
 	rpcfailed=true;
 
 	return true;
+}
+
+const char *sqlrprotocol_tds::positionedColumn(sqlrservercursor *cursor,
+							uint16_t param) {
+
+	// a real server strips exactly one leading character off the
+	// parameter name, whether or not it's an @, so a name that doesn't
+	// start with one names the wrong column there and nothing here
+	const char	*name=rpcparamnames[param];
+	if (charstring::isNullOrEmpty(name) || *name!='@') {
+		return NULL;
+	}
+	name++;
+
+	// the column has to be one of the ones the cursor selected
+	for (uint32_t col=0; col<cont->colCount(cursor); col++) {
+		const char	*colname=cont->getColumnName(cursor,col);
+		if (!charstring::compareIgnoringCase(colname,name)) {
+			return colname;
+		}
+	}
+	return NULL;
+}
+
+void sqlrprotocol_tds::positionedBind(sqlrserverbindvar *bv,
+					uint16_t bindindex,
+					memorypool *bindpool,
+					const char *value,
+					uint64_t valuesize) {
+	bv->variable=bindvarnames[bindindex];
+	bv->variablesize=bindvarnamesizes[bindindex];
+	bulkString(bv,bindpool,value,(size_t)valuesize);
+}
+
+void sqlrprotocol_tds::positionedParamBind(sqlrserverbindvar *bv,
+					uint16_t bindindex,
+					memorypool *bindpool,
+					uint16_t param) {
+
+	*bv=rpcparams[param];
+	bv->variable=bindvarnames[bindindex];
+	bv->variablesize=bindvarnamesizes[bindindex];
+
+	// the value has to outlive the rpc parameter pool
+	if (bv->type==SQLRSERVERBINDVARTYPE_STRING && bv->value.stringval) {
+		char	*value=(char *)bindpool->allocate(bv->valuesize+1);
+		bytestring::copy(value,bv->value.stringval,bv->valuesize);
+		value[bv->valuesize]='\0';
+		bv->value.stringval=value;
+	}
+}
+
+bool sqlrprotocol_tds::positionedWhere(sqlrservercursor *cursor,
+					const char *table,
+					tdsrow *row,
+					stringbuffer *query,
+					memorypool *bindpool,
+					sqlrserverbindvar *binds,
+					uint16_t *bindcount) {
+
+	// Split the table name the client sent into the parts that
+	// getPrimaryKeysList() wants.  It matches on the schema exactly, so
+	// an unqualified table has to be filled out with the current one
+	// rather than left empty - empty means "tables with no schema", and
+	// matches nothing.
+	char		*currentcatalog=cont->getCurrentCatalog();
+	char		*currentschema=cont->getCurrentSchema();
+	const char	*catalog=NULL;
+	const char	*schema=NULL;
+	const char	*object=NULL;
+	cont->splitObjectName(currentcatalog,currentschema,"table",table,
+					&catalog,&schema,&object);
+
+	debugWrite("catalog: %s",(catalog)?catalog:"(null)");
+	debugWrite("schema: %s",(schema)?schema:"(null)");
+	debugWrite("object: %s",(object)?object:"(null)");
+
+	sqlrservercursor	*pkcursor=cont->getCursor();
+	if (!pkcursor) {
+		delete[] currentcatalog;
+		delete[] currentschema;
+		return false;
+	}
+
+	// COLUMN_NAME is column 3 of an odbc SQLPrimaryKeys() result set.
+	// The names are collected null-separated so that one buffer holds
+	// them all, and walked the same way below.
+	stringbuffer	keycols;
+	uint16_t	keycolcount=0;
+	if (cont->getPrimaryKeysList(pkcursor,catalog,schema,object)) {
+		bool	error=false;
+		while (cont->fetchRow(pkcursor,&error)) {
+			const char	*fld=NULL;
+			uint64_t	fldsize=0;
+			bool		lob=false;
+			bool		null=false;
+			if (cont->getField(pkcursor,3,
+					&fld,&fldsize,&lob,&null) &&
+					!null && fld && fldsize) {
+				if (keycolcount) {
+					keycols.append('\0');
+				}
+				keycols.append(fld,(size_t)fldsize);
+				keycolcount++;
+			}
+			cont->nextRow(pkcursor);
+		}
+	}
+	cont->release(pkcursor);
+
+	delete[] currentcatalog;
+	delete[] currentschema;
+
+	debugWrite("key columns: %d",keycolcount);
+
+	if (!keycolcount) {
+		debugWrite("no primary key on %s",table);
+		return false;
+	}
+
+	// match each key column back to a column of the cursor, so its
+	// value can be taken from the row that was fetched
+	const char	*keycol=keycols.getString();
+	uint32_t	colcount=cont->colCount(cursor);
+	bool		first=true;
+	for (uint16_t i=0; i<keycolcount; i++) {
+
+		uint32_t	col=0;
+		while (col<colcount &&
+			charstring::compareIgnoringCase(
+				cont->getColumnName(cursor,col),keycol)) {
+			col++;
+		}
+		if (col==colcount) {
+			debugWrite("key column %s isn't in the result set",
+								keycol);
+			return false;
+		}
+
+		query->append((first)?" where ":" and ");
+		query->append(keycol);
+		first=false;
+
+		// a null never compares equal, so it has to be matched
+		// with "is null" rather than bound
+		if (!row->values[col]) {
+			query->append(" is null");
+		} else if (*bindcount>=maxbindcount) {
+			debugWrite("out of bind variables");
+			return false;
+		} else {
+			query->append('=');
+			query->append(bindvarnames[*bindcount]);
+			positionedBind(&(binds[*bindcount]),*bindcount,
+						bindpool,
+						row->values[col],
+						row->sizes[col]);
+			(*bindcount)++;
+		}
+
+		keycol+=charstring::getLength(keycol)+1;
+	}
+
+	return true;
+}
+
+bool sqlrprotocol_tds::positionedUpdate(sqlrservercursor *cursor,
+					const char *table,
+					tdsrow *row) {
+
+	// update <table> set <col>=@n, ... where <key>=@n and ...
+
+	// The statement runs on a cursor of its own.  Holding it from here
+	// also keeps the primary key lookup from taking it, since getCursor()
+	// only hands out cursors that aren't busy.
+	sqlrservercursor	*dmlcursor=cont->getCursor();
+	if (!dmlcursor) {
+		return sendNoCursorAvailableError();
+	}
+
+	memorypool		*bindpool=cont->getBindPool(dmlcursor);
+	bindpool->clear();
+	sqlrserverbindvar	*binds=cont->getInputBinds(dmlcursor);
+	uint16_t		bindcount=0;
+
+	stringbuffer	query;
+	query.append("update ")->append(table)->append(" set ");
+
+	for (uint16_t i=4; i<rpcparamcount && bindcount<maxbindcount; i++) {
+
+		const char	*colname=positionedColumn(cursor,i);
+		if (!colname) {
+			cont->release(dmlcursor);
+			return rpcInvalidColumnError(i);
+		}
+
+		if (bindcount) {
+			query.append(',');
+		}
+		query.append(colname)->append('=');
+		query.append(bindvarnames[bindcount]);
+		positionedParamBind(&(binds[bindcount]),bindcount,bindpool,i);
+		bindcount++;
+	}
+
+	if (!bindcount) {
+		cont->release(dmlcursor);
+		return rpcNumberedError(RPC_WRONG_PARAM_TYPE,
+				"sp_cursor update requires a column to set");
+	}
+
+	if (!positionedWhere(cursor,table,row,&query,
+					bindpool,binds,&bindcount)) {
+		cont->release(dmlcursor);
+		return rpcNumberedError(RPC_CURSOR_READ_ONLY,
+				"The cursor is read only - a positioned "
+				"update needs a primary key that the "
+				"cursor selected");
+	}
+
+	return positionedExecute(dmlcursor,query.getString(),
+					query.getStringLength(),bindcount);
+}
+
+bool sqlrprotocol_tds::positionedDelete(sqlrservercursor *cursor,
+					const char *table,
+					tdsrow *row) {
+
+	// delete from <table> where <key>=@n and ...
+
+	sqlrservercursor	*dmlcursor=cont->getCursor();
+	if (!dmlcursor) {
+		return sendNoCursorAvailableError();
+	}
+
+	memorypool		*bindpool=cont->getBindPool(dmlcursor);
+	bindpool->clear();
+	sqlrserverbindvar	*binds=cont->getInputBinds(dmlcursor);
+	uint16_t		bindcount=0;
+
+	stringbuffer	query;
+	query.append("delete from ")->append(table);
+
+	if (!positionedWhere(cursor,table,row,&query,
+					bindpool,binds,&bindcount)) {
+		cont->release(dmlcursor);
+		return rpcNumberedError(RPC_CURSOR_READ_ONLY,
+				"The cursor is read only - a positioned "
+				"delete needs a primary key that the "
+				"cursor selected");
+	}
+
+	return positionedExecute(dmlcursor,query.getString(),
+					query.getStringLength(),bindcount);
+}
+
+bool sqlrprotocol_tds::positionedInsert(sqlrservercursor *cursor,
+					const char *table) {
+
+	// insert into <table> (<col>, ...) values (@n, ...)
+	//
+	// An insert isn't positioned on anything, so the cursor is only
+	// used to work out which columns the client is allowed to name.
+
+	sqlrservercursor	*dmlcursor=cont->getCursor();
+	if (!dmlcursor) {
+		return sendNoCursorAvailableError();
+	}
+
+	memorypool		*bindpool=cont->getBindPool(dmlcursor);
+	bindpool->clear();
+	sqlrserverbindvar	*binds=cont->getInputBinds(dmlcursor);
+	uint16_t		bindcount=0;
+
+	stringbuffer	cols;
+	stringbuffer	values;
+
+	for (uint16_t i=4; i<rpcparamcount && bindcount<maxbindcount; i++) {
+
+		const char	*colname=positionedColumn(cursor,i);
+		if (!colname) {
+			cont->release(dmlcursor);
+			return rpcInvalidColumnError(i);
+		}
+
+		if (bindcount) {
+			cols.append(',');
+			values.append(',');
+		}
+		cols.append(colname);
+		values.append(bindvarnames[bindcount]);
+		positionedParamBind(&(binds[bindcount]),bindcount,bindpool,i);
+		bindcount++;
+	}
+
+	if (!bindcount) {
+		cont->release(dmlcursor);
+		return rpcNumberedError(RPC_WRONG_PARAM_TYPE,
+				"sp_cursor insert requires a column value");
+	}
+
+	stringbuffer	query;
+	query.append("insert into ")->append(table);
+	query.append(" (")->append(cols.getString())->append(')');
+	query.append(" values (")->append(values.getString())->append(')');
+
+	return positionedExecute(dmlcursor,query.getString(),
+					query.getStringLength(),bindcount);
+}
+
+bool sqlrprotocol_tds::rpcInvalidColumnError(uint16_t param) {
+	stringbuffer	msg;
+	msg.append("Invalid column name '");
+	msg.append((rpcparamnames[param])?rpcparamnames[param]:"");
+	msg.append('\'');
+	return rpcNumberedError(RPC_INVALID_COLUMN,msg.getString());
+}
+
+bool sqlrprotocol_tds::positionedExecute(sqlrservercursor *cursor,
+					const char *query,
+					size_t querysize,
+					uint16_t bindcount) {
+
+	debugWrite("query: %s",query);
+	debugWrite("binds: %d",bindcount);
+
+	if (querysize>maxquerysize) {
+		cont->release(cursor);
+		return sendQueryTooLargeError(querysize);
+	}
+
+	cont->setInputBindCount(cursor,bindcount);
+	cont->setOutputBindCount(cursor,0);
+
+	bool	success=cont->prepareQuery(cursor,query,querysize,
+						true,true,true,true) &&
+			cont->executeQuery(cursor,true,true,true,true);
+
+	if (!success) {
+		rpcError(cursor);
+		cont->release(cursor);
+		return true;
+	}
+
+	uint64_t	affectedrows=cont->getAffectedRows(cursor);
+
+	cont->release(cursor);
+
+	debugWrite("affected rows: %lld",affectedrows);
+
+	// a positioned operation that matched nothing means the row is
+	// gone, which is a failure rather than a no-op
+	if (!affectedrows) {
+		return rpcNumberedError(RPC_NO_ROWS_AFFECTED,
+					"No rows were updated or deleted");
+	}
+
+	doneInProc(DONE_COUNT,0,affectedrows);
+	returnStatus(RPC_STATUS_SUCCESS);
+
+	return true;
+}
+
+tdsrows *sqlrprotocol_tds::positionRows(sqlrservercursor *cursor,
+							bool create) {
+	tdsrows	*position=NULL;
+	if (positionrows.getValue(cursor,&position) && position) {
+		return position;
+	}
+	if (!create) {
+		return NULL;
+	}
+	position=new tdsrows();
+	positionrows.setValue(cursor,position);
+	return position;
+}
+
+void sqlrprotocol_tds::releasePositionRows(sqlrservercursor *cursor) {
+	tdsrows	*position=NULL;
+	if (positionrows.getValue(cursor,&position)) {
+		delete position;
+		positionrows.remove(cursor);
+	}
+}
+
+void sqlrprotocol_tds::releaseAllPositionRows() {
+	linkedlist<sqlrservercursor *>	*keys=positionrows.getKeys();
+	for (listnode<sqlrservercursor *> *node=keys->getFirst();
+					node; node=node->getNext()) {
+		tdsrows	*position=NULL;
+		if (positionrows.getValue(node->getValue(),&position)) {
+			delete position;
+		}
+	}
+	positionrows.clear();
 }
 
 bool sqlrprotocol_tds::cursorOpen(bool nometadata) {
@@ -7512,6 +8161,7 @@ bool sqlrprotocol_tds::cursorUnprepare() {
 	// the cursor may still be open against this statement
 	if (!handlesContain(&cursorhandles,cursor)) {
 		executeflag.remove(cursor);
+		releasePositionRows(cursor);
 		cont->release(cursor);
 	}
 
@@ -7570,13 +8220,9 @@ bool sqlrprotocol_tds::cursorFetch(bool nometadata) {
 			// fall through
 		default:
 			debugWrite("unsupported fetch type: 0x%04x",fetchtype);
-			appendError(16958,1,16,
+			return rpcNumberedError(RPC_FETCH_UNSUPPORTED,
 					"Only forward-only cursors "
-					"are supported",
-					srvname,NULL,1);
-			returnStatus(16958);
-			rpcfailed=true;
-			return true;
+					"are supported");
 	}
 
 	// fetch-info just reports what's known about the cursor
@@ -7586,11 +8232,13 @@ bool sqlrprotocol_tds::cursorFetch(bool nometadata) {
 		return true;
 	}
 
-	// send the rows
+	// send the rows, keeping their values so that an sp_cursor that
+	// follows can build a where clause out of the row it lands on
 	if (cont->colCount(cursor)) {
 		colMetaData(cursor,nometadata);
 		doneInProc(DONE_COUNT,0,
-			rows(cursor,(nrows>0)?(uint64_t)nrows:0));
+			rows(cursor,(nrows>0)?(uint64_t)nrows:0,
+					positionRows(cursor,true)));
 	} else {
 		doneInProc(DONE_COUNT,0,0);
 	}
@@ -7649,6 +8297,7 @@ bool sqlrprotocol_tds::cursorClose() {
 	// the prepared statement it came from may still be live
 	if (!handlesContain(&stmthandles,cursor)) {
 		executeflag.remove(cursor);
+		releasePositionRows(cursor);
 		cont->release(cursor);
 	}
 
