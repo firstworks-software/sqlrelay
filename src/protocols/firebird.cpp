@@ -3784,12 +3784,13 @@ bool sqlrprotocol_firebird::setCursor() {
 	}
 
 	// The name is kept but never handed to the backend - see #9087.  SQL
-	// Relay has no way to name a backend cursor, and firebird only takes a
-	// name between prepare and execute, so naming one here would be too
-	// late anyway: runPreparedQuery() has already run a select with no
-	// binds and opened the backend's cursor.  Naming and fetching works;
-	// "where current of" fails at the backend with the -504 a real server
-	// sends for a cursor that doesn't exist.
+	// Relay has no way to name a backend cursor.  Firebird only takes a
+	// name between prepare and execute, and against a backend that can't
+	// describe a prepared statement it would be too late here anyway,
+	// since runPreparedQuery() has already run a select with no binds and
+	// opened the backend's cursor.  Naming and fetching works; "where
+	// current of" fails at the backend with the -504 a real server sends
+	// for a cursor that doesn't exist.
 	delete[] stmt->cursorname;
 	stmt->cursorname=cursorname;
 
@@ -3983,14 +3984,17 @@ bool sqlrprotocol_firebird::runPreparedQuery(bool execimmediate,
 	}
 
 	// A firebird client expects op_prepare_statement to answer with the
-	// shape of the result set, but SQL Relay only knows a query's columns
-	// after it runs.  So a select with nothing to bind is run here, and
+	// shape of the result set.  A backend that can describe a prepared
+	// statement has already filled the column info in, and there is
+	// nothing more to do.  One that can't only knows a query's columns
+	// after it runs, so a select with nothing to bind is run here and
 	// execute() knows not to run it a second time.  A select with binds
-	// can't be, and describes as no columns.
+	// can't be, and describes as no columns - see #9144.
 	bool	executed=false;
 	if (execimmediate ||
 		((stmttype==isc_info_sql_stmt_select ||
 			stmttype==isc_info_sql_stmt_select_for_upd) &&
+			!cont->columnInfoIsValidAfterPrepare(cursor) &&
 			!cont->countBindVariables(querybuffer,querylen))) {
 
 		if (!cont->executeQuery(cursor,true,true,true,true)) {

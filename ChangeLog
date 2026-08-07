@@ -1391,6 +1391,23 @@
 		client asks for, and it reads the rest of the request:
 		both client capability arrays, the negotiated field
 		version, and the client's own type list
+	fixed the sap connection module - a char, varchar, nchar or nvarchar
+		column reported LONGCHAR, and a binary or varbinary column
+		reported LONGBINARY, whenever the column was wider than 255
+		bytes, or whenever charset= was one that expands - the client
+		library reports those as its long types, and the module read
+		only the type, not the systypes usertype that comes with it
+		and says what the column really is - so charset=utf8, which
+		is what the documentation tells people to set, turned every
+		character column into a clob to jdbc and into varbinary to a
+		tds client - the long arms split on the usertype now, the
+		same way the short ones already did
+	fixed the firebird protocol module - it ran a select at prepare time to
+		find out what columns the result set had, even against a backend that
+		had already told it, so a client that prepared a select and never
+		executed it ran the query anyway and the backend's cursor opened too
+		early - it only runs the select now when the backend can't describe a
+		prepared statement
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems
