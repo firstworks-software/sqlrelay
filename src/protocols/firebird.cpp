@@ -3077,9 +3077,13 @@ bool sqlrprotocol_firebird::infoDatabase() {
 			case isc_info_user_names:
 				// one cluster per attached user, and the
 				// module has one session per attachment, like
-				// a classic-mode server
+				// a classic-mode server.  A real server always
+				// names someone, so an attach that carried no
+				// user name in its dpb stands in the same one
+				// describeColumns() does.
 				fits=appendInfoCountedString(dbinfoitem,
-								username);
+					(charstring::isNullOrEmpty(username))?
+							"SYSDBA":username);
 				break;
 
 			default:
