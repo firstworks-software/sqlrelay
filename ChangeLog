@@ -1271,8 +1271,8 @@
 		arrived sign-extended from a 16 bit field was folded back down at
 		two of the five requests that carry one and not at the other
 		three, so a client that asked for 32768 bytes got a 65535 byte
-		ceiling at three of them - firebird folds it at all five, and now
-		so does this, in the same helper that caps it
+		ceiling at three of them - firebird folds it wherever the field
+		appears, and now so does this, in the same helper that caps it
 	fixed the firebird protocol module - the response buffer length on an
 		op_exec_immediate2 request was kept in the session, but that
 		request's reply is an sql response rather than an info response, so

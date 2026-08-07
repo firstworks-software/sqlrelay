@@ -5312,13 +5312,15 @@ void sqlrprotocol_firebird::fixupRespBufferLen() {
 		respbufferlen&=0xffff;
 	}
 
-	// The length never sizes an allocation - it's only the ceiling that
-	// truncates the response - but a client that declares a huge one never
-	// truncates, so the response buffer grows to whatever the requested
-	// items produce.  Firebird's api types this length as a short, so a
-	// cap costs a real client nothing, and clamping rather than failing
-	// leaves the protocol's own truncation as the answer to too large an
-	// ask.
+	// The length never sizes an allocation here - it's only the ceiling
+	// that truncates the response - but a client that declares a huge one
+	// never truncates, so the response buffer grows to whatever the
+	// requested items produce.  Firebird's api types this length as a
+	// short, so a cap costs a real client nothing, and clamping rather
+	// than failing leaves the protocol's own truncation as the answer to
+	// too large an ask.  (Firebird itself allocates whatever the client
+	// declares, twice for op_info_database, with no ceiling - see
+	// rem_port::info() in its src/remote/server/server.cpp.)
 	if (respbufferlen<=MAX_CSTRING_LENGTH) {
 		return;
 	}
