@@ -1550,11 +1550,12 @@ bool sqlrprotocol_tds::recvPacket(byte_t *packettype) {
 			return false;
 		}
 
-		// sanity checks
+		// sanity checks.  TABULAR_RESULT is deliberately not in this
+		// list - it's the type sendPacket() frames every response as,
+		// so a client never sends it.
 		if (*packettype!=SQL_BATCH &&
 			*packettype!=PRE_TDS7_LOGIN &&
 			*packettype!=RPC &&
-			*packettype!=TABULAR_RESULT &&
 			*packettype!=ATTENTION_SIGNAL &&
 			*packettype!=BULK_LOAD_DATA &&
 			*packettype!=FEDERATED_AUTHENTICATION_TOKEN &&

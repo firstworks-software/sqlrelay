@@ -1408,6 +1408,12 @@
 		executed it ran the query anyway and the backend's cursor opened too
 		early - it only runs the select now when the backend can't describe a
 		prepared statement
+	fixed the tds protocol module - the list of packet types a client is
+		allowed to send included the one type only a server sends, so
+		the list said something untrue about the protocol - a client
+		that sent it got no further either way, but the next person
+		reasoning about which types can reach a parser had to work
+		out for themselves that it was a mistake
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems
