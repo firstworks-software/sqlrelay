@@ -1090,6 +1090,8 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_oracle : public sqlrprotocol {
 
 		// occa
 		bool	occa(const byte_t *rp, const byte_t **rpout);
+		bool	switchSession(const byte_t *rp,
+						const byte_t **rpout);
 
 		// logon unknown
 		bool	logonUnknown(const byte_t *rp);
@@ -1144,6 +1146,11 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_oracle : public sqlrprotocol {
 		// whether the client marshals the authentication exchange in
 		// its own memory layout rather than portably
 		bool		nativeencoding;
+
+		// the ttc code the last tti function came in under.  One
+		// function code means two different things depending on it -
+		// see TTI_SWITCH_SESSION in clientSession().
+		byte_t		lastttccode;
 
 		uint16_t	clientcharsetin;
 		uint16_t	clientcharsetout;
@@ -1409,6 +1416,7 @@ void sqlrprotocol_oracle::init() {
 	fabricatedchallenge=false;
 
 	nativeencoding=false;
+	lastttccode=0;
 }
 
 void sqlrprotocol_oracle::free() {
@@ -1584,10 +1592,20 @@ clientsessionexitstatus_t sqlrprotocol_oracle::clientSession(
 					loop=false;
 					break;
 				case TTI_SWITCH_SESSION:
-					// FIXME: 8.0.5 uses this to get the
-					// server version for some reason...
-					loop=version(rp);
-					rp=NULL;
+					// One function code, two meanings,
+					// told apart by the ttc code it came
+					// in under.  As a piggyback it names
+					// the session the call behind it is
+					// for; as an ordinary call it is an
+					// 8.0.5 client asking for the server
+					// version.
+					if (lastttccode==
+						TTC_EXTENDED_TTI_FUNCTION) {
+						loop=switchSession(rp,&rp);
+					} else {
+						loop=version(rp);
+						rp=NULL;
+					}
 					break;
 				case TTI_OSCID:
 					loop=false;
@@ -5476,6 +5494,7 @@ bool sqlrprotocol_oracle::getTtiFunction(const byte_t *rp,
 		return false;
 	}
 	read(rp,ttifunction,&rp);
+	lastttccode=ttccode;
 	*rpout=rp;
 
 	if (getDebug()) {
@@ -6300,7 +6319,25 @@ bool sqlrprotocol_oracle::getQuery3Request(const byte_t *rp,
 			return false;
 		}
 
-		if (rp<end && *querysize<=MAX_SHORT_LENGTH &&
+		// A length byte in front of the text.  Two clients write one
+		// and they declare the size differently: python-oracledb's
+		// declared size is the byte count and matches it, and OCI's is
+		// a buffer size - the character count times the bytes per
+		// character of its charset - so an 18 character query in
+		// AL32UTF8 arrives declared as 54 with a length byte of 18.
+		// That is the same thing OCI does with the user name in the
+		// login, see #9156, and the length byte is the one to believe
+		// either way.  OCI's case is only taken when the declared size
+		// is more than the packet has left, which is what makes it
+		// unambiguous.
+		if (rp<end && *rp && (uint32_t)(*rp)<*querysize &&
+			(size_t)(end-rp)<(size_t)*querysize &&
+			(*querysize==(uint32_t)(*rp)*2 ||
+				*querysize==(uint32_t)(*rp)*3 ||
+				*querysize==(uint32_t)(*rp)*4)) {
+			*querysize=*rp;
+			rp++;
+		} else if (rp<end && *querysize<=MAX_SHORT_LENGTH &&
 					(uint32_t)(*rp)==*querysize) {
 			rp++;
 		}
@@ -8043,6 +8080,48 @@ bool sqlrprotocol_oracle::occa(const byte_t *rp, const byte_t **rpout) {
 		cont->release(cursor);
 	}
 
+	debugEnd();
+
+	*rpout=rp;
+
+	return true;
+}
+
+// The session switch piggyback.  An OCI client sends one in front of every
+// call, naming the session the call is for - the session id and the serial
+// number the authentication response handed out, and a third ub4 that is 1 in
+// every capture.  Like the close-cursors piggyback it is packed in front of a
+// real call rather than sent on its own, so the read has to stop exactly where
+// the body ends or the call behind it is lost.  There is no response.
+//
+// SQL Relay has one session per connection, so there is nothing to switch to.
+// The fields are read to stay in step and to be seen in the log.
+bool sqlrprotocol_oracle::switchSession(const byte_t *rp,
+						const byte_t **rpout) {
+
+	const byte_t	*end=resppacket+resppacketsize;
+
+	byte_t		seqnumber=0;
+	uint32_t	sessionid=0;
+	uint32_t	serialnumber=0;
+	uint32_t	unknown=0;
+
+	if (end-rp<1) {
+		debugWrite("truncated switch session sequence number");
+		return false;
+	}
+	read(rp,&seqnumber,&rp);
+
+	if (!getUb4(rp,end,&sessionid,&rp) ||
+		!getUb4(rp,end,&serialnumber,&rp) ||
+		!getUb4(rp,end,&unknown,&rp)) {
+		return false;
+	}
+
+	debugStart("switch session");
+	debugWrite("seq number: %d",seqnumber);
+	debugWrite("session id: %d",sessionid);
+	debugWrite("serial number: %d",serialnumber);
 	debugEnd();
 
 	*rpout=rp;

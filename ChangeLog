@@ -1601,6 +1601,14 @@
 		with it, and no one version serves every client, since
 		python-oracledb and node-oracledb need 12.1 or later and an oci
 		client reads the 11.2 shape only
+	fixed the oracle protocol module - an oci client packs a session switch
+		piggyback in front of every call, and the module answered it
+		with a server version string and lost the call behind it, so an
+		oci client's first query was never read
+	fixed the oracle protocol module - an oci client declares the size of
+		its query text as a buffer size rather than a byte count, the
+		same way it does for the user name in the login, so its query
+		text read as truncated
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems
