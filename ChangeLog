@@ -900,6 +900,18 @@
 		spelling instead, and postgresql's are lowercase, so nothing
 		ever matched and every column read back as a byte array, even
 		a plain integer one
+	documented that the freetds connection's charset connect string
+		variable doesn't set the character set that data coming out of
+		the database is translated into - the faq had said it did, but
+		it sets the character set that freetds asks the server to use,
+		which is a different thing, and the one that matters comes
+		from the client charset setting in the freetds.conf file
+	documented that the sap connection's lang connect string variable
+		also selects the character set that data is translated into,
+		by way of the locale it names, that charset overrides it, that
+		charset takes the client library's own spellings, like utf8
+		and iso_1 rather than utf-8 and iso-8859-1, and that an
+		unrecognized name fails the login
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems

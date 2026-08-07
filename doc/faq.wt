@@ -534,7 +534,11 @@ If the character set used by the SQL Relay server process is missing characters 
 
 Configuring the character set used by the SQL Relay process is different for each database.
 
-When using !MySQL/MariaDB, !PostgreSQL, !FreeTDS, SAP/Sybase and Firebird databases, the character set can be set by setting the '''charset''' variable in the connect string of the configuration file.
+When using !MySQL/MariaDB, !PostgreSQL, SAP/Sybase and Firebird databases, the character set can be set by setting the '''charset''' variable in the connect string of the configuration file.
+
+When using SAP/Sybase, the '''lang''' variable in the connect string sets it too, indirectly.  That variable sets the '''LANG''' environment variable, and the SAP/Sybase client library takes the character set from the locale it names - lang=en_US.UTF-8 gets utf8, and lang=en_US gets iso_1.  If '''charset''' is set as well, then it wins.  If neither is set, then whatever '''LANG''' the SQL Relay server process inherited decides the character set.
+
+When using !FreeTDS, the connect string's '''charset''' variable does '''not''' set it.  That variable sets the character set that !FreeTDS asks the //server// to use, which is a different thing.  The character set that the SQL Relay server process sees data in comes from the '''client charset''' setting in the freetds.conf file instead.  See [admin/configguide.html#db-mssql-freetds Microsoft SQL Server (via FreeTDS)] in the configuration guide for an example.
 
 When using Oracle, the character set can be set by setting the '''nls_lang''' variable in the connect string.
 

@@ -572,6 +572,8 @@ http://www.gnu.org/software/src-highlite -->
 </blockquote>
 <p>( <b>NOTE:</b> The freetds.conf file must be readable by the user that the instance of SQL Relay runs as.)</p>
 
+<p>( <b>NOTE:</b> The "client charset" setting decides the character set that data coming out of the database is translated into, before SQL Relay ever sees it.  For a FreeTDS connection it is the only way to set that.  The connect string's <b>charset</b> variable sets the character set that FreeTDS asks the server to use, which is a different thing.)</p>
+
 <p>See the <a href="configreference.html#freetds">SQL Relay Configuration Reference</a> for other valid FreeTDS connect string options.</p>
 
 <p>( <b>NOTE:</b> The FreeTDS connection uses FreeTDS's ctlib API, which doesn't report everything that Microsoft SQL Server sends.  Varchar, nchar and nvarchar columns all come back as char, ntext columns come back as text, and character column sizes can be wrong when the client charset is a multi-byte charset, because ctlib doesn't report each column's collation.  If your application needs accurate column metadata, use the <a href="#db-mssql-odbc">ODBC connection</a> instead.  It reports the types and sizes correctly, with either the Microsoft ODBC driver or the ODBC driver that comes with FreeTDS.)</p>
@@ -662,10 +664,13 @@ http://www.gnu.org/software/src-highlite -->
 <pre><tt><font color="#990000">[</font>FREETDSSERVER<font color="#990000">]</font>
 	host <font color="#990000">=</font> examplehost
 	port <font color="#990000">=</font> <font color="#993399">5000</font>
-	<font color="#008080">tds</font> version <font color="#990000">=</font> <font color="#993399">5.0</font></tt></pre>
+	<font color="#008080">tds</font> version <font color="#990000">=</font> <font color="#993399">5.0</font>
+	<font color="#008080">client</font> charset <font color="#990000">=</font> UTF<font color="#990000">-</font><font color="#993399">8</font></tt></pre>
 
 </blockquote>
 <p>( <b>NOTE:</b> The freetds.conf file must be readable by the user that the instance of SQL Relay runs as.)</p>
+
+<p>( <b>NOTE:</b> See <a href="#db-mssql-freetds">Microsoft SQL Server (via FreeTDS)</a> for what the "client charset" setting does and why the connect string's <b>charset</b> variable is not a substitute for it.)</p>
 
 <p>See the <a href="configreference.html#freetds">SQL Relay Configuration Reference</a> for other valid FreeTDS connect string options.</p>
 

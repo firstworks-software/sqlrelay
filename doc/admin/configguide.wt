@@ -385,6 +385,8 @@ The server option refers to an entry in the freetds.conf file (usually /etc/free
 
 ( '''NOTE:''' The freetds.conf file must be readable by the user that the instance of SQL Relay runs as.)
 
+( '''NOTE:''' The "client charset" setting decides the character set that data coming out of the database is translated into, before SQL Relay ever sees it.  For a !FreeTDS connection it is the only way to set that.  The connect string's '''charset''' variable sets the character set that !FreeTDS asks the server to use, which is a different thing.)
+
 See the [configreference.html#freetds SQL Relay Configuration Reference] for other valid !FreeTDS connect string options.
 
 ( '''NOTE:''' The !FreeTDS connection uses !FreeTDS's ctlib API, which doesn't report everything that Microsoft SQL Server sends.  Varchar, nchar and nvarchar columns all come back as char, ntext columns come back as text, and character column sizes can be wrong when the client charset is a multi-byte charset, because ctlib doesn't report each column's collation.  If your application needs accurate column metadata, use the [#db-mssql-odbc ODBC connection] instead.  It reports the types and sizes correctly, with either the Microsoft ODBC driver or the ODBC driver that comes with !FreeTDS.)
@@ -451,10 +453,13 @@ The server option refers to an entry in the freetds.conf file (usually /etc/free
 	host = examplehost
 	port = 5000
 	tds version = 5.0
+	client charset = UTF-8
 }}}
 }}}
 
 ( '''NOTE:''' The freetds.conf file must be readable by the user that the instance of SQL Relay runs as.)
+
+( '''NOTE:''' See [#db-mssql-freetds Microsoft SQL Server (via FreeTDS)] for what the "client charset" setting does and why the connect string's '''charset''' variable is not a substitute for it.)
 
 See the [configreference.html#freetds SQL Relay Configuration Reference] for other valid !FreeTDS connect string options.
 
