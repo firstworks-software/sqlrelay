@@ -2789,10 +2789,17 @@ void sqlrprotocol_oracle::putTtiResponse(byte_t version,
 
 
 	// capabilities, each prefixed with a 1-byte length
-	write(&reqpacket,compilecapssize);
-	reqpacket.append(compilecaps,compilecapssize);
-	write(&reqpacket,runtimecapssize);
-	reqpacket.append(runtimecaps,runtimecapssize);
+	//
+	// The arrays are a version 6 field.  A real 11.2 server made to
+	// negotiate version 5 ends its response at the fdo block, with no
+	// length byte for either array rather than a zero one, so callers that
+	// pass none get neither length byte.
+	if (compilecapssize) {
+		write(&reqpacket,compilecapssize);
+		reqpacket.append(compilecaps,compilecapssize);
+		write(&reqpacket,runtimecapssize);
+		reqpacket.append(runtimecaps,runtimecapssize);
+	}
 
 	if (getDebug()) {
 		debugStart("tti response");
@@ -2823,44 +2830,13 @@ void sqlrprotocol_oracle::putTti6Response() {
 void sqlrprotocol_oracle::putTti5Response() {
 
 	// oracle 8.0 supports TTI 5 (and lower)
-
-	// server compile-time capabilities, captured from a live oracle 11.2
-	// server, which reports CCAP_FIELD_VERSION_11_2, with three changes.
 	//
-	// CCAP_TTC1 and CCAP_OCI1 are 0 rather than 0x7f and 0xff.  go-ora
-	// reads bit 0x01 of each as end-of-call-status and
-	// fast-session-propagate, and then reads an extra field for each off
-	// the front of every summary object.  This module sends neither
-	// field, so advertising either bit would desynchronize the client on
-	// the first error or ok footer.
-	//
-	// The array is 42 bytes rather than the 39 a real 11.2 server sends,
-	// because python-oracledb reads CCAP_TTC4 with bounds checking
-	// disabled and no length guard.  Zero there is also the value we
-	// want: it leaves CCAP_END_OF_RESPONSE and CCAP_EXPLICIT_BOUNDARY
-	// clear, so the client uses the older framing.
-	static const byte_t	compilecaps[]={
-		0x06, 0x01, 0x01, 0x01, 0x0d, 0x01, 0x01, 0x06,
-		0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x00,
-		0x00, 0x03, 0x0a, 0x03, 0x03, 0x01, 0x00, 0x7f,
-		0x01, 0x7f, 0xff, 0x01, 0x05, 0x01, 0x01, 0x3f,
-		0x01, 0x03, 0x06, 0x00, 0x01, 0x03, 0x01, 0x00,
-		0x00, 0x00
-	};
-
-	// server runtime capabilities, from the same server
-	//
-	// RCAP_TTC is RCAP_TTC_ZERO_COPY plus one unnamed bit.  It leaves
-	// RCAP_TTC_32K clear, since this module doesn't support 32k
-	// varchars, and RCAP_TTC_SESSION_STATE_OPS clear, since it doesn't
-	// support request boundaries either.
-	static const byte_t	runtimecaps[]={
-		0x02, 0x01, 0x00, 0x01, 0x18, 0x00, 0x03
-	};
-
-	putTtiResponse(ttiversion,
-			compilecaps,(byte_t)sizeof(compilecaps),
-			runtimecaps,(byte_t)sizeof(runtimecaps));
+	// No capability arrays.  They are a version 6 field, and sending them
+	// anyway is not merely redundant: a real 11.2 server made to negotiate
+	// version 5 serves OCI 23.26 end to end, and the same negotiation with
+	// these arrays appended gets ORA-28547 from it and ORA-17401 from
+	// ojdbc 23.26.
+	putTtiResponse(ttiversion,NULL,0,NULL,0);
 }
 
 void sqlrprotocol_oracle::putTti4Response() {
