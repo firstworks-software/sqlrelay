@@ -208,6 +208,10 @@
 #define RCAP_TTC_32K			0x04
 #define RCAP_TTC_SESSION_STATE_OPS	0x10
 
+// datatype request encoding flags
+#define ENCODING_MULTI_BYTE		0x01
+#define ENCODING_CONV_LENGTH		0x02
+
 // character set ids
 #define CHARSET_US7ASCII		1
 #define CHARSET_WE8MSWIN1252		178
@@ -690,9 +694,6 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_oracle : public sqlrprotocol {
 		void	readHost(const byte_t *rp,
 					uint32_t *value,
 					const byte_t **rpout);
-		bool	readMarker8(const byte_t *rp,
-					byte_t expected,
-					const byte_t **rpout);
 		bool	readMarker16(const byte_t *rp,
 					uint16_t expected,
 					const byte_t **rpout);
@@ -993,6 +994,10 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_oracle : public sqlrprotocol {
 		uint16_t	nationalcharset;
 		uint32_t	verifiertype;
 
+		uint16_t	clientcharset;
+		uint16_t	clientnationalcharset;
+		byte_t		encodingflags;
+
 		const byte_t	*datatypes;
 		uint16_t	datatypessize;
 
@@ -1158,6 +1163,10 @@ void sqlrprotocol_oracle::init() {
 
 	clientstring=NULL;
 	serverstring=NULL;
+
+	clientcharset=0;
+	clientnationalcharset=0;
+	encodingflags=0;
 
 	datatypes=NULL;
 	datatypessize=0;
@@ -1534,13 +1543,6 @@ void sqlrprotocol_oracle::readHost(const byte_t *rp,
 					const byte_t **rpout) {
 	bytestring::copy(value,rp,sizeof(uint32_t));
 	*rpout=rp+sizeof(uint32_t);
-}
-
-bool sqlrprotocol_oracle::readMarker8(const byte_t *rp,
-					byte_t expected,
-					const byte_t **rpout) {
-	byte_t	marker;
-	return read(rp,&marker,"marker",expected,rpout);
 }
 
 bool sqlrprotocol_oracle::readMarker16(const byte_t *rp,
@@ -3049,18 +3051,31 @@ bool sqlrprotocol_oracle::recvDataTypeRequest() {
 	uint16_t	dataflags;
 	byte_t		ttccode;
 
-	readBE(rp,&dataflags,&rp);
-	if (!read(rp,&ttccode,"ttccode",TTC_DATATYPE_NEGOTIATION,&rp) ||
-		!readMarker16(rp,0x0100,&rp) ||
-		!readMarker16(rp,0x0100,&rp)) {
-		return false;
-	} 
-
-	// 9i sends 0x02, all others send 0x00
-	if (!readMarker8(rp,0x00,&rp) &&
-		!readMarker8(rp,0x02,&rp)) {
+	// data flags, ttc code, 2 character sets and the encoding flags
+	if (end-rp<8) {
+		debugWrite("truncated datatype request header");
 		return false;
 	}
+
+	readBE(rp,&dataflags,&rp);
+	if (!read(rp,&ttccode,"ttccode",TTC_DATATYPE_NEGOTIATION,&rp)) {
+		return false;
+	}
+
+	// The client's character sets, in host order.  These used to be
+	// asserted against a marker of 0x0100 each, read big endian.  They
+	// aren't markers.  An 8.0.5 client sends 1, US7ASCII, twice, which is
+	// 01 00 01 00 on the wire, which is 0x0100 twice read the wrong way
+	// round - and that is where the constants came from.  A modern client
+	// echoes back whatever the tti response announced, so it sends 873,
+	// AL32UTF8, and the assertion refuses every one of them.
+	readLE(rp,&clientcharset,&rp);
+	readLE(rp,&clientnationalcharset,&rp);
+
+	// A bit field, not a marker.  8.0.5 sends none of it, 9i and OCI 23.26
+	// send CONV_LENGTH alone, ojdbc 23.26 sends MULTI_BYTE alone, and
+	// python-oracledb sends both.
+	read(rp,&encodingflags,&rp);
 
 	// NOTE: When talking to the db directly, 8.0.5 sends/recieves almost
 	// nothing, but when talking to relay it sends/receives a ton of stuff.
@@ -3072,9 +3087,29 @@ bool sqlrprotocol_oracle::recvDataTypeRequest() {
 		debugStart("datatype request");
 		debugWrite("data flags: 0x%04x",dataflags);
 		debugTtcCode(ttccode);
+		debugWrite("client charset: %d",clientcharset);
+		debugWrite("client national charset: %d",
+						clientnationalcharset);
+		debugWrite("encoding flags: 0x%02x%s%s",encodingflags,
+			(encodingflags&ENCODING_MULTI_BYTE)?" multibyte":"",
+			(encodingflags&ENCODING_CONV_LENGTH)?" convlength":"");
+		debugWrite("using charset: %d, national charset: %d "
+				"(the listener's)",charset,nationalcharset);
 		debugWrite("data types:");
 		debugHexDump(datatypes,datatypessize);
 		debugEnd();
+	}
+
+	// The client states what it will send here rather than asking for
+	// anything.  python-oracledb writes utf8 whatever the server said, so
+	// this is not a negotiation the module can lose, but a client that
+	// disagrees with the listener is worth saying out loud.
+	if (clientcharset!=charset ||
+		clientnationalcharset!=nationalcharset) {
+		debugWrite("client charsets %d/%d differ from the "
+				"listener's %d/%d, using the listener's",
+				clientcharset,clientnationalcharset,
+				charset,nationalcharset);
 	}
 
 	return true;

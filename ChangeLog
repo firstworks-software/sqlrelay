@@ -1350,6 +1350,13 @@
 		exist - it fabricates a challenge for a user no auth module
 		knows now, runs the whole exchange, and answers ORA-01017,
 		which is what a real server does
+	fixed the oracle protocol module - it refused every modern client's
+		datatype negotiation request: the two 16 bit values after
+		the ttc code are the client's character sets, in host byte
+		order, not the markers an 8.0.5 client happened to make
+		them look like, and the byte after them is a bit field of
+		encoding flags rather than a third marker - all three are
+		read as what they are now
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems
