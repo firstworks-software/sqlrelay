@@ -3984,17 +3984,24 @@ bool sqlrprotocol_firebird::runPreparedQuery(bool execimmediate,
 	}
 
 	// A firebird client expects op_prepare_statement to answer with the
-	// shape of the result set.  A backend that can describe a prepared
-	// statement has already filled the column info in, and there is
-	// nothing more to do.  One that can't only knows a query's columns
-	// after it runs, so a select with nothing to bind is run here and
+	// shape of the result set.  When the columns are already known - a
+	// backend that describes a prepared statement has just filled them in
+	// - there is nothing more to do.  Otherwise they only arrive when the
+	// query runs, so a select with nothing to bind is run here and
 	// execute() knows not to run it a second time.  A select with binds
 	// can't be, and describes as no columns - see #9144.
+	//
+	// The test is colCount() rather than columnInfoIsValidAfterPrepare().
+	// That one answers what the backend's cursor class can do, not what
+	// this prepare did, and prepareQuery() has three paths - faked binds,
+	// per-query faked binds, and a query needing intercept - that skip the
+	// describe on a backend whose class says it describes.  colCount()
+	// answers 0 in exactly those cases, which is the question being asked.
 	bool	executed=false;
 	if (execimmediate ||
 		((stmttype==isc_info_sql_stmt_select ||
 			stmttype==isc_info_sql_stmt_select_for_upd) &&
-			!cont->columnInfoIsValidAfterPrepare(cursor) &&
+			!cont->colCount(cursor) &&
 			!cont->countBindVariables(querybuffer,querylen))) {
 
 		if (!cont->executeQuery(cursor,true,true,true,true)) {

@@ -1402,12 +1402,12 @@
 		character column into a clob to jdbc and into varbinary to a
 		tds client - the long arms split on the usertype now, the
 		same way the short ones already did
-	fixed the firebird protocol module - it ran a select at prepare time to
-		find out what columns the result set had, even against a backend that
-		had already told it, so a client that prepared a select and never
-		executed it ran the query anyway and the backend's cursor opened too
-		early - it only runs the select now when the backend can't describe a
-		prepared statement
+	fixed the firebird protocol module - it ran a select at prepare time
+		to find out what columns the result set had, even when the
+		backend had just told it, so a client that prepared a select
+		and never executed it ran the query anyway and the backend's
+		cursor opened too early - it only runs the select now when
+		the columns aren't already known
 	fixed the tds protocol module - the list of packet types a client is
 		allowed to send included the one type only a server sends, so
 		the list said something untrue about the protocol - a client
