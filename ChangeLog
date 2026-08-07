@@ -1546,6 +1546,13 @@
 		and ask isc_blob_info how long it is, where every one of those
 		answered "feature is not supported" and dropped the connection
 		before
+	added the second wire encoding for the oracle protocol module's
+		authentication exchange - a client whose platform matches the
+		one the module names in its tti protocol response marshals the
+		request in its own memory layout, with 8 byte pointer
+		sentinels, little endian counts and a length prefixed user
+		name, rather than portably, and an oci client got ORA-03113 at
+		the first authentication packet because of it
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems

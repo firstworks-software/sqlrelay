@@ -909,6 +909,15 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_oracle : public sqlrprotocol {
 						const byte_t *end,
 						byte_t *value,
 						const byte_t **rpout);
+		bool	getAuthPointer(const byte_t *rp,
+						const byte_t *end,
+						const byte_t **rpout);
+		bool	getAuthCount(const byte_t *rp,
+						const byte_t *end,
+						uint32_t *value,
+						byte_t nativesize,
+						const byte_t **rpout);
+		void	putAuthCount(uint32_t value, byte_t nativesize);
 		void	putUb4(uint32_t value);
 		void	putSb4(int32_t value);
 		void	putLenString(const char *string, uint32_t size);
@@ -919,6 +928,9 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_oracle : public sqlrprotocol {
 						const char *field,
 						uint32_t flags);
 		void	putAuthField(const char *fieldname, const char *field);
+		void	putAuthTrailer(const byte_t *portable,
+						size_t portablesize,
+						bool secondphase);
 		void	putAuthExtra(stringbuffer *extra, bool secondphase);
 		bool	recvAuthenticationRequest(bool secondphase);
 		bool	sendAuthenticationChallenge();
@@ -1101,6 +1113,10 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_oracle : public sqlrprotocol {
 		uint16_t	charset;
 		uint16_t	nationalcharset;
 		uint32_t	verifiertype;
+
+		// whether the client marshals the authentication exchange in
+		// its own memory layout rather than portably
+		bool		nativeencoding;
 
 		uint16_t	clientcharsetin;
 		uint16_t	clientcharsetout;
@@ -1324,6 +1340,8 @@ void sqlrprotocol_oracle::init() {
 	authpassword=NULL;
 	gotauthpassword=false;
 	fabricatedchallenge=false;
+
+	nativeencoding=false;
 }
 
 void sqlrprotocol_oracle::free() {
@@ -3969,12 +3987,83 @@ bool sqlrprotocol_oracle::getLenString(const byte_t *rp,
 	return true;
 }
 
-// A key/value pair: ub4 name size, name, ub4 value size, value, ub4 flags -
-// with the value and its length byte both omitted when the value size is 0.
-// The omission is the thing that's easiest to get wrong; a client sends it
-// whenever it refuses to send an AUTH_PASSWORD.  flags is a ub4 too, not one
-// byte - the client's AUTH_SESSKEY carries 1, and a server's AUTH_VFR_DATA
-// carries the verifier type.
+// The counts in the authentication exchange are ub4s in the portable encoding
+// and fixed width little endian integers in the native one.  The native widths
+// are not all the same - a size or a flags word is 4 bytes, a request's pair
+// count is 8 - so the caller names the one it wants.  Only the low 4 bytes of
+// a wide one ever carry anything.
+bool sqlrprotocol_oracle::getAuthCount(const byte_t *rp,
+					const byte_t *end,
+					uint32_t *value,
+					byte_t nativesize,
+					const byte_t **rpout) {
+
+	if (!nativeencoding) {
+		return getUb4(rp,end,value,rpout);
+	}
+
+	*value=0;
+
+	if ((size_t)(end-rp)<(size_t)nativesize) {
+		debugWrite("truncated count");
+		return false;
+	}
+
+	for (byte_t i=0; i<nativesize; i++) {
+		byte_t	b;
+		read(rp,&b,&rp);
+		if (i<sizeof(uint32_t)) {
+			*value|=((uint32_t)b)<<(8*i);
+		}
+	}
+
+	*rpout=rp;
+
+	return true;
+}
+
+// One raw byte in the portable encoding, an 8 byte sentinel in the native one.
+// Nothing follows either; they're read only to stay in step.
+bool sqlrprotocol_oracle::getAuthPointer(const byte_t *rp,
+					const byte_t *end,
+					const byte_t **rpout) {
+
+	byte_t	size=(nativeencoding)?8:1;
+
+	if ((size_t)(end-rp)<(size_t)size) {
+		debugWrite("truncated pointer");
+		return false;
+	}
+
+	*rpout=rp+size;
+
+	return true;
+}
+
+void sqlrprotocol_oracle::putAuthCount(uint32_t value, byte_t nativesize) {
+
+	if (!nativeencoding) {
+		putUb4(value);
+		return;
+	}
+
+	for (byte_t i=0; i<nativesize; i++) {
+		write(&reqpacket,(byte_t)((i<sizeof(uint32_t))?
+					((value>>(8*i))&0xff):0));
+	}
+}
+
+// A key/value pair: name size, name, value size, value, flags - with the value
+// and its length byte both omitted when the value size is 0.  The omission is
+// the thing that's easiest to get wrong; a client sends it whenever it refuses
+// to send an AUTH_PASSWORD.  flags is a count too, not one byte - the client's
+// AUTH_SESSKEY carries 1, and a server's AUTH_VFR_DATA carries the verifier
+// type.
+//
+// A native encoding client's sizes are buffer sizes rather than byte counts -
+// the character count times the bytes per character of its charset, so three
+// times the length for AL32UTF8 - and the length that matters is the string's
+// own length byte either way.
 bool sqlrprotocol_oracle::getAuthField(const byte_t *rp,
 					const byte_t *end,
 					char **fieldname,
@@ -3990,9 +4079,9 @@ bool sqlrprotocol_oracle::getAuthField(const byte_t *rp,
 
 	uint32_t	fieldnamesize=0;
 	uint32_t	namesize=0;
-	if (!getUb4(rp,end,&fieldnamesize,&rp) ||
+	if (!getAuthCount(rp,end,&fieldnamesize,4,&rp) ||
 		!getLenString(rp,end,fieldname,&namesize,&rp) ||
-		!getUb4(rp,end,fieldsize,&rp)) {
+		!getAuthCount(rp,end,fieldsize,4,&rp)) {
 		return false;
 	}
 
@@ -4001,7 +4090,7 @@ bool sqlrprotocol_oracle::getAuthField(const byte_t *rp,
 		return false;
 	}
 
-	if (!getUb4(rp,end,flags,&rp)) {
+	if (!getAuthCount(rp,end,flags,4,&rp)) {
 		return false;
 	}
 
@@ -4137,13 +4226,13 @@ void sqlrprotocol_oracle::putAuthField(const char *fieldname,
 	uint32_t	fieldnamesize=charstring::getLength(fieldname);
 	uint32_t	fieldsize=charstring::getLength(field);
 
-	putUb4(fieldnamesize);
+	putAuthCount(fieldnamesize,4);
 	putLenString(fieldname,fieldnamesize);
-	putUb4(fieldsize);
+	putAuthCount(fieldsize,4);
 	if (fieldsize) {
 		putLenString(field,fieldsize);
 	}
-	putUb4(flags);
+	putAuthCount(flags,4);
 
 	debugWrite("%s: %s (flags 0x%04x)",
 			fieldname,(field)?field:"",flags);
@@ -4204,7 +4293,6 @@ bool sqlrprotocol_oracle::recvAuthenticationRequest(bool secondphase) {
 	byte_t		ttccode;
 	byte_t		ttifunction;
 	byte_t		seqnumber;
-	byte_t		pointer;
 
 	// data flags, ttc code, tti function, sequence number.
 	// the two tti function reads share one byte - read() rewinds the
@@ -4235,58 +4323,65 @@ bool sqlrprotocol_oracle::recvAuthenticationRequest(bool secondphase) {
 	}
 	read(rp,&seqnumber,&rp);
 
+	// There are two wire encodings for this request, and which one a client
+	// sends is decided by the platform banner the module answered the tti
+	// protocol negotiation with.  A client whose own platform doesn't match
+	// it marshals portably - ub4 counts, one byte pointer fields, the user
+	// name written raw.  A client whose platform does match sends its own
+	// memory layout instead: 8 byte pointer sentinels, fixed width little
+	// endian counts, and a length prefixed user name.  It is not something
+	// the module provokes - an OCI client sends the same bytes to a real
+	// oracle server, and it is what a real server answers with in turn.
+	//
+	// The first pointer field tells them apart, 0x01 against the first byte
+	// of the sentinel, 0xfe.  Phase two keeps whatever phase one decided.
+	if (!secondphase) {
+		nativeencoding=(end-rp>=1 && *rp==0xfe);
+	}
+
 	debugStart("authentication request (phase %d)",(secondphase)?2:1);
 	debugWrite("data flags: 0x%04x",dataflags);
 	debugTtcCode(ttccode);
 	debugTtiFunction(ttifunction);
 	debugWrite("seq number: %d",seqnumber);
+	debugWrite("encoding: %s",(nativeencoding)?"native":"portable");
 
-	// The 4 pointer fields are single raw bytes, not ub4s.  Reading them
-	// as ub4s shifts everything after them.
 	uint32_t	usersize=0;
 	uint32_t	authmode=0;
 	uint32_t	fieldcount=0;
-	if (end-rp<1) {
-		debugWrite("truncated authusr pointer");
+	if (!getAuthPointer(rp,end,&rp) ||
+		!getAuthCount(rp,end,&usersize,4,&rp) ||
+		!getAuthCount(rp,end,&authmode,4,&rp) ||
+		!getAuthPointer(rp,end,&rp) ||
+		!getAuthCount(rp,end,&fieldcount,8,&rp) ||
+		!getAuthPointer(rp,end,&rp) ||
+		!getAuthPointer(rp,end,&rp)) {
 		debugEnd();
 		return false;
 	}
-	read(rp,&pointer,&rp);
-	if (!getUb4(rp,end,&usersize,&rp) ||
-		!getUb4(rp,end,&authmode,&rp)) {
-		debugEnd();
-		return false;
-	}
-	if (end-rp<1) {
-		debugWrite("truncated authivl pointer");
-		debugEnd();
-		return false;
-	}
-	read(rp,&pointer,&rp);
-	if (!getUb4(rp,end,&fieldcount,&rp)) {
-		debugEnd();
-		return false;
-	}
-	if (end-rp<2) {
-		debugWrite("truncated authovl pointers");
-		debugEnd();
-		return false;
-	}
-	read(rp,&pointer,&rp);
-	read(rp,&pointer,&rp);
 
 	debugWrite("auth mode: 0x%08x",authmode);
 	debugWrite("field count: %d",fieldcount);
 
-	// the user name is written raw, with no length prefix, its length
-	// taken from the ub4 above
-	if ((size_t)(end-rp)<(size_t)usersize) {
-		debugWrite("bad user size: %d",usersize);
-		debugEnd();
-		return false;
-	}
 	char	*user=NULL;
-	getString(rp,&user,usersize,&rp);
+	if (nativeencoding) {
+
+		// length prefixed, and the count above is a buffer size
+		uint32_t	realusersize=0;
+		if (!getLenString(rp,end,&user,&realusersize,&rp)) {
+			debugEnd();
+			return false;
+		}
+	} else {
+
+		// written raw, its length taken from the count above
+		if ((size_t)(end-rp)<(size_t)usersize) {
+			debugWrite("bad user size: %d",usersize);
+			debugEnd();
+			return false;
+		}
+		getString(rp,&user,usersize,&rp);
+	}
 	debugWrite("user: %s",user);
 	if (secondphase) {
 		// phase two names the user again.  Refuse a phase two that
@@ -4420,7 +4515,9 @@ bool sqlrprotocol_oracle::sendAuthenticationChallenge() {
 	debugWrite("data flags: 0x%04x",dataflags);
 	debugTtcCode(ttccode);
 
-	putUb4((pbkdf2)?6:3);
+	// a request's pair count is 8 bytes in the native encoding, a
+	// response's is 2
+	putAuthCount((pbkdf2)?6:3,2);
 
 	// AUTH_SESSKEY is 48 bytes for an 11g verifier and 32 for a 12c one.
 	// The client picks its code path from that length, not from the
@@ -4442,11 +4539,55 @@ bool sqlrprotocol_oracle::sendAuthenticationChallenge() {
 	putAuthField("AUTH_GLOBALLY_UNIQUE_DBID",
 			"00000000000000000000000000000000");
 
-	reqpacket.append(trailer,sizeof(trailer));
+	putAuthTrailer(trailer,sizeof(trailer),false);
 
 	debugEnd();
 
 	return sendPacket(true);
+}
+
+// The trailer a real server sends after the last pair, which differs by
+// encoding as well as by phase.  The native one is 136 bytes where the
+// portable one is 31, and it is a marshalled struct rather than a field
+// stream: the 11.2 captures it came from carry a live pointer value in it,
+// which is zeroed here.
+void sqlrprotocol_oracle::putAuthTrailer(const byte_t *portable,
+						size_t portablesize,
+						bool secondphase) {
+
+	if (!nativeencoding) {
+		reqpacket.append(portable,portablesize);
+		return;
+	}
+
+	static const byte_t	nativetrailer[]={
+		0x04, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01,
+		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+		0x36, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
+	};
+
+	// the two bytes that differ between the phases
+	byte_t	phase=(secondphase)?3:2;
+
+	reqpacket.append(nativetrailer,5);
+	write(&reqpacket,phase);
+	reqpacket.append(nativetrailer+6,43);
+	write(&reqpacket,phase);
+	reqpacket.append(nativetrailer+50,sizeof(nativetrailer)-50);
 }
 
 bool sqlrprotocol_oracle::sendAuthenticationResponse() {
@@ -4533,7 +4674,7 @@ bool sqlrprotocol_oracle::sendAuthenticationResponse() {
 
 	// A real server sends 39 to 44 pairs here, mostly nls settings.  Only
 	// AUTH_SVR_RESPONSE is known to be required.  See #8979 for the rest.
-	putUb4(9);
+	putAuthCount(9,2);
 
 	putAuthField("AUTH_VERSION_STRING","- Production");
 	putAuthField("AUTH_VERSION_SQL","12");
@@ -4554,7 +4695,7 @@ bool sqlrprotocol_oracle::sendAuthenticationResponse() {
 	putAuthField("AUTH_SERIAL_NUM","1981");
 	putAuthField("AUTH_SVR_RESPONSE",svrresponse.getString());
 
-	reqpacket.append(trailer,sizeof(trailer));
+	putAuthTrailer(trailer,sizeof(trailer),true);
 
 	debugEnd();
 
@@ -4603,11 +4744,44 @@ bool sqlrprotocol_oracle::sendErrorPacket(const char *what,
 		0x00, 0x00, 0x00, 0x00
 	};
 
+	// The same packet in the native encoding, from the same 11.2 server
+	// answering an OCI client's wrong password.  It is a marshalled struct
+	// too, and the only field in it that is identifiable is the ora
+	// number, at offset 11 as a little endian uint32.  The live pointer
+	// value the capture carried is zeroed.
+	static const byte_t	nativeprefix[]={
+		0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x00,
+		0x00, 0x00, 0x00
+	};
+	static const byte_t	nativesuffix[]={
+		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+		0x00, 0x03, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+		0x36, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
+	};
+
 	writeBE(&reqpacket,dataflags);
 	write(&reqpacket,ttccode);
-	reqpacket.append(prefix,sizeof(prefix));
-	putUb4(oranum);
-	reqpacket.append(suffix,sizeof(suffix));
+	if (nativeencoding) {
+		reqpacket.append(nativeprefix,sizeof(nativeprefix));
+		putAuthCount(oranum,4);
+		reqpacket.append(nativesuffix,sizeof(nativesuffix));
+	} else {
+		reqpacket.append(prefix,sizeof(prefix));
+		putUb4(oranum);
+		reqpacket.append(suffix,sizeof(suffix));
+	}
 	putLenString(message,charstring::getLength(message));
 
 	debugStart(what);
