@@ -99,12 +99,14 @@ static bool waitForExit(linkedlist< targetprocess * > *targets,
 	}
 	return false;
 }
+
 static void collectTargets(directory *dir,
 				const char *piddir,
 				const char *id,
 				size_t idlen,
 				const char **programs,
 				const char **suffixes,
+				linkedlist< uint64_t > *seen,
 				linkedlist< targetprocess * > *targets) {
 
 	// some useful string buffers
@@ -174,6 +176,16 @@ static void collectTargets(directory *dir,
 					charstring::convertToInteger(pidstr);
 
 			if (pid) {
+
+				// Skip the process if an earlier sweep already
+				// dealt with it.  A process that couldn't be
+				// killed still has its pid file, and must not
+				// be signalled and reported a second time.
+				if (seen->find(pid)) {
+					delete[] pidstr;
+					continue;
+				}
+				seen->append(pid);
 
 				// remember the process for later
 				targetprocess	*tp=new targetprocess;
@@ -290,6 +302,7 @@ static void helpmessage(const char *progname) {
 		progname,progname,SQLR,SQLR,SQLR,
 		progname,progname,progname,progname,progname);
 }
+
 int main(int argc, const char **argv) {
 
 	version(argc,argv);
@@ -320,20 +333,23 @@ int main(int argc, const char **argv) {
 	// while it is still running just makes it replace them.  A connection
 	// spawned after the pid directory had been scanned would never be
 	// signalled, and would be orphaned onto init when the scaler exited.
+	linkedlist< uint64_t >		seen;
 	linkedlist< targetprocess * >	scaler;
 	collectTargets(&dir,sqlrpth.getPidDir(),id,idlen,
-				scalerprograms,scalersuffixes,&scaler);
+				scalerprograms,scalersuffixes,&seen,&scaler);
 	stopTargets(&scaler);
 	bool	allstopped=reportAndCleanUp(&scaler);
 
 	// Now stop everything else.  Sweep twice, because a connection that
 	// the scaler spawned just before it exited might not have created its
-	// pid file yet when the first sweep read the pid directory.
+	// pid file yet when the first sweep read the pid directory.  The seen
+	// list keeps the second sweep from signalling and reporting anything
+	// that the first sweep already dealt with.
 	for (uint16_t sweep=0; sweep<2; sweep++) {
 
 		linkedlist< targetprocess * >	targets;
 		collectTargets(&dir,sqlrpth.getPidDir(),id,idlen,
-				otherprograms,othersuffixes,&targets);
+				otherprograms,othersuffixes,&seen,&targets);
 		stopTargets(&targets);
 		if (!reportAndCleanUp(&targets)) {
 			allstopped=false;
