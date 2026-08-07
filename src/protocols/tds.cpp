@@ -748,6 +748,11 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_tds : public sqlrprotocol {
 		void		negotiateTdsVersion();
 
 		bool	preLogin();
+		// whether optsize bytes at ploptoff bytes from the start
+		// of the packet are still inside a packetsize-byte packet
+		bool	preLoginOptionFits(uint16_t ploptoff,
+						size_t optsize,
+						size_t packetsize);
 
 		bool	preTds7Login();
 
@@ -1825,6 +1830,8 @@ bool sqlrprotocol_tds::preLogin() {
 
 	const byte_t		*rp=reqpacket.getBuffer();
 	const byte_t		*startrp=rp;
+	size_t			rpsize=reqpacket.getSize();
+	size_t			packetsize=rpsize;
 
 	debugStart("pre-login");
 	debugWrite("receiving...");
@@ -1834,25 +1841,46 @@ bool sqlrprotocol_tds::preLogin() {
 	uint16_t	ploptoff;
 	uint16_t	ploptsize;
 
+	bool	badpacket=false;
+
 	for (;;) {
 
 		// get the option token
+		if (!rpsize) {
+			debugWrite("ran out of packet before the terminator");
+			badpacket=true;
+			break;
+		}
 		read(rp,&plopttok,&rp);
+		rpsize--;
 		debugWrite("token: 0x%02x",plopttok);
 		if (plopttok==PL_TERMINATOR) {
 			break;
 		}
 
-		// get the option offset
+		// get the option offset and size
+		if (rpsize<sizeof(ploptoff)+sizeof(ploptsize)) {
+			debugWrite("truncated option header");
+			badpacket=true;
+			break;
+		}
 		readBE(rp,&ploptoff,&rp);
+		rpsize-=sizeof(ploptoff);
 		debugWrite("offset: %hd",ploptoff);
-
-		// get the option size
 		readBE(rp,&ploptsize,&rp);
+		rpsize-=sizeof(ploptsize);
 		debugWrite("size: %hd",ploptsize);
 
-		// FIXME: verify that the packet is as long
-		// as the sum of the option sizes claim
+		// the data the option claims has to be inside the packet
+		if (!preLoginOptionFits(ploptoff,ploptsize,packetsize)) {
+			debugWrite("option data lies outside of the packet");
+			badpacket=true;
+			break;
+		}
+
+		// The cases below read a fixed size, whatever ploptsize
+		// says, so each one needs its own bound.  Only PL_INSTOPT
+		// reads exactly ploptsize, which the check above covers.
 
 		// get the option data
 		const byte_t		*dummy;
@@ -1860,6 +1888,12 @@ bool sqlrprotocol_tds::preLogin() {
 
 			case PL_VERSION:
 				// FIXME: bail if this isn't the first option
+				if (!preLoginOptionFits(ploptoff,
+						sizeof(version)+
+						sizeof(subbuild),packetsize)) {
+					badpacket=true;
+					break;
+				}
 				readLE(startrp+ploptoff,&version,&dummy);
 				readLE(startrp+ploptoff+sizeof(version),
 							&subbuild,&dummy);
@@ -1869,12 +1903,19 @@ bool sqlrprotocol_tds::preLogin() {
 				break;
 
 			case PL_ENCRYPTION:
+				if (!preLoginOptionFits(ploptoff,
+						sizeof(encryption),packetsize)) {
+					badpacket=true;
+					break;
+				}
 				read(startrp+ploptoff,&encryption,&dummy);
 				debugWrite("pl_encryption");
 				debugWrite("encryption:	0x%02x",encryption);
 				break;
 
 			case PL_INSTOPT:
+				// a client can send more than one of these
+				delete[] instvalidity;
 				instvalidity=new char[ploptsize+1];
 				read(startrp+ploptoff,
 					instvalidity,ploptsize,&dummy);
@@ -1884,18 +1925,34 @@ bool sqlrprotocol_tds::preLogin() {
 				break;
 
 			case PL_THREADID:
+				if (!preLoginOptionFits(ploptoff,
+						sizeof(threadid),packetsize)) {
+					badpacket=true;
+					break;
+				}
 				readLE(startrp+ploptoff,&threadid,&dummy);
 				debugWrite("pl_threadid");
 				debugWrite("threadid: %d",threadid);
 				break;
 
 			case PL_MARS:
+				if (!preLoginOptionFits(ploptoff,
+						sizeof(mars),packetsize)) {
+					badpacket=true;
+					break;
+				}
 				read(startrp+ploptoff,&mars,&dummy);
 				debugWrite("mars");
 				debugWrite("mars: %d",mars);
 				break;
 
 			case PL_TRACEID:
+				if (!preLoginOptionFits(ploptoff,
+						sizeof(connid)+
+						sizeof(activityid),packetsize)) {
+					badpacket=true;
+					break;
+				}
 				read(startrp+ploptoff,
 						connid,sizeof(connid),
 						&dummy);
@@ -1910,6 +1967,12 @@ bool sqlrprotocol_tds::preLogin() {
 				break;
 
 			case PL_FEDAUTHREQUIRED:
+				if (!preLoginOptionFits(ploptoff,
+						sizeof(fedauthrequired),
+						packetsize)) {
+					badpacket=true;
+					break;
+				}
 				read(startrp+ploptoff,
 						&fedauthrequired,
 						&dummy);
@@ -1919,6 +1982,11 @@ bool sqlrprotocol_tds::preLogin() {
 				break;
 
 			case PL_NONCEOPT:
+				if (!preLoginOptionFits(ploptoff,
+						sizeof(nonce),packetsize)) {
+					badpacket=true;
+					break;
+				}
 				read(startrp+ploptoff,
 						nonce,sizeof(nonce),
 						&dummy);
@@ -1926,6 +1994,20 @@ bool sqlrprotocol_tds::preLogin() {
 				debugWrite("nonce: %.*s",sizeof(nonce),nonce);
 				break;
 		}
+
+		if (badpacket) {
+			debugWrite("option data runs past "
+					"the end of the packet");
+			break;
+		}
+	}
+
+	// a malformed pre-login is a protocol error, and there is nothing
+	// sensible to answer it with
+	if (badpacket) {
+		debugEnd();
+		delete[] instvalidity;
+		return false;
 	}
 
 	// the client may not have sent an instopt
@@ -2035,6 +2117,12 @@ bool sqlrprotocol_tds::preLogin() {
 	delete[] instvalidity;
 
 	return retval;
+}
+
+bool sqlrprotocol_tds::preLoginOptionFits(uint16_t ploptoff,
+						size_t optsize,
+						size_t packetsize) {
+	return ((size_t)ploptoff+optsize<=packetsize);
 }
 
 bool sqlrprotocol_tds::preTds7Login() {
@@ -2960,8 +3048,19 @@ void sqlrprotocol_tds::allHeaders(const byte_t *rp,
 					const byte_t **rpout,
 					size_t *rpsizeout) {
 
-	// get the size of all headers
+	// skip the headers entirely if the packet is too short to hold
+	// even the size of them
 	uint32_t	allheaderssize;
+	if (rpsize<sizeof(allheaderssize)) {
+		debugWrite("truncated all-headers size");
+		*rpout=rp;
+		if (rpsizeout) {
+			*rpsizeout=rpsize;
+		}
+		return;
+	}
+
+	// get the size of all headers
 	readLE(rp,&allheaderssize,&rp);
 
 	debugWrite("all-headers size: %d",allheaderssize);
@@ -2981,8 +3080,17 @@ void sqlrprotocol_tds::allHeaders(const byte_t *rp,
 		// get header size and type
 		const byte_t	*headerstart=rp;
 		uint32_t	headersize;
-		readLE(rp,&headersize,&rp);
 		uint16_t	headertype;
+
+		// The clamp above keeps allheaderssize no larger than
+		// rpsize, and both drop by the same amount each pass, so
+		// this also keeps the two reads below inside the packet.
+		if (allheaderssize<sizeof(headersize)+sizeof(headertype)) {
+			debugWrite("truncated header");
+			break;
+		}
+
+		readLE(rp,&headersize,&rp);
 		readLE(rp,&headertype,&rp);
 
 		debugWrite("header size: %d",headersize);
@@ -2994,6 +3102,10 @@ void sqlrprotocol_tds::allHeaders(const byte_t *rp,
 			debugWrite("invalid header size: %d",headersize);
 			break;
 		}
+
+		// what's left of this header, after its size and type
+		size_t	hsize=headersize-
+				(sizeof(headersize)+sizeof(headertype));
 
 		switch (headertype) {
 			case ALL_HEADERS_QUERY_NOTIFICATIONS:
@@ -3008,19 +3120,46 @@ void sqlrprotocol_tds::allHeaders(const byte_t *rp,
 				ucs2_t		*ssbdeployment;
 				uint32_t	notifytimeout;
 
+				if (hsize<sizeof(notifyidsize)) {
+					debugWrite("truncated notify id size");
+					break;
+				}
 				readLE(rp,&notifyidsize,&rp);
+				hsize-=sizeof(notifyidsize);
+
+				if (hsize<notifyidsize) {
+					debugWrite("truncated notify id");
+					break;
+				}
 				notifyidlength=notifyidsize/sizeof(ucs2_t);
 				notifyid=new ucs2_t[notifyidlength];
 				read(rp,notifyid,notifyidlength,&rp);
+				hsize-=notifyidsize;
 
+				if (hsize<sizeof(ssbdeploymentsize)) {
+					debugWrite("truncated ssb "
+						"deployment size");
+					delete[] notifyid;
+					break;
+				}
 				readLE(rp,&ssbdeploymentsize,&rp);
+				hsize-=sizeof(ssbdeploymentsize);
+
+				if (hsize<ssbdeploymentsize) {
+					debugWrite("truncated ssb deployment");
+					delete[] notifyid;
+					break;
+				}
 				ssbdeploymentlength=
 					ssbdeploymentsize/sizeof(ucs2_t);
 				ssbdeployment=new ucs2_t[ssbdeploymentlength];
 				read(rp,ssbdeployment,
 						ssbdeploymentlength,&rp);
+				hsize-=ssbdeploymentsize;
 
-				readLE(rp,&notifytimeout,&rp);
+				if (hsize>=sizeof(notifytimeout)) {
+					readLE(rp,&notifytimeout,&rp);
+				}
 
 				// FIXME: do something useful with this info
 
@@ -3033,6 +3172,12 @@ void sqlrprotocol_tds::allHeaders(const byte_t *rp,
 				{
 				uint64_t	transactiondescriptor;
 				uint32_t	outstandingrequestcount;
+				if (hsize<sizeof(transactiondescriptor)+
+					sizeof(outstandingrequestcount)) {
+					debugWrite("truncated transaction "
+							"descriptor");
+					break;
+				}
 				readLE(rp,&transactiondescriptor,&rp);
 				readLE(rp,&outstandingrequestcount,&rp);
 				// FIXME: do something useful with this info
@@ -3042,6 +3187,10 @@ void sqlrprotocol_tds::allHeaders(const byte_t *rp,
 			case ALL_HEADERS_TRACE_ACTIVITY:
 				{
 				byte_t	activityid[20];
+				if (hsize<sizeof(activityid)) {
+					debugWrite("truncated activity id");
+					break;
+				}
 				read(rp,activityid,sizeof(activityid),&rp);
 				// FIXME: do something useful with this info
 				}
@@ -6290,6 +6439,10 @@ bool sqlrprotocol_tds::rpc(const byte_t **rpinout,
 	if (procnamelen==0xFFFF) {
 
 		// get the proc id
+		if (rpsize<sizeof(procid)) {
+			debugWrite("truncated proc id");
+			return false;
+		}
 		readLE(rp,&procid,&rp);
 		rpsize-=sizeof(procid);
 
@@ -6326,6 +6479,11 @@ bool sqlrprotocol_tds::rpc(const byte_t **rpinout,
 
 	// get option flags
 	uint16_t	optionflags=0;
+	if (rpsize<sizeof(optionflags)) {
+		debugWrite("truncated option flags");
+		delete[] procname;
+		return false;
+	}
 	readLE(rp,&optionflags,&rp);
 	rpsize-=sizeof(optionflags);
 
@@ -7527,7 +7685,18 @@ bool sqlrprotocol_tds::params(const byte_t *rp,
 			}
 		}
 
-		rpsize-=newrp-rp;
+		// param() carries no remaining-size of its own, so it can
+		// run past the end of the packet on a malformed parameter.
+		// Without this the subtraction underflows, and the loop
+		// above then walks the heap until it segfaults.
+		size_t	consumed=newrp-rp;
+		if (consumed>rpsize) {
+			debugWrite("parameter ran past "
+					"the end of the packet");
+			return false;
+		}
+
+		rpsize-=consumed;
 		rp=newrp;
 	}
 

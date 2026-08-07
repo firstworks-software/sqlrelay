@@ -958,6 +958,16 @@
 		the same sql type, length, precision and scale; the column's
 		type name is now read at describe time and used to tell them
 		apart
+	fixed the tds protocol module - preLogin() had no bounds checking at
+		all, so a pre-login packet with no terminator walked off the
+		end of the request buffer, and an option offset or size was
+		used as a copy source without being checked against the packet
+		length; a repeated instopt option also leaked its buffer
+	fixed the tds protocol module - allHeaders(), rpc() and params()
+		each decremented the remaining packet size without first
+		checking that there was that much left, so a short request
+		underflowed the count to a huge value and the parse ran on
+		past the end of the packet
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems
