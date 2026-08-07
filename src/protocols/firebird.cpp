@@ -1651,7 +1651,7 @@ bool sqlrprotocol_firebird::connect() {
 	for (uint32_t i=0; i<protocount; i++) {
 
 		if (getDebug()) {
-			stdoutput.printf("	protocol %d...\n",i);
+			stdoutput.printf("	protocol %u...\n",i);
 		}
 
 		// get protocol version
@@ -1890,7 +1890,7 @@ bool sqlrprotocol_firebird::attach() {
 			dpbvaluelen=len;
 		}
 		if (getDebug()) {
-			stdoutput.printf("	dpb value length: %d\n",
+			stdoutput.printf("	dpb value length: %u\n",
 							dpbvaluelen);
 		}
 
@@ -2470,7 +2470,7 @@ bool sqlrprotocol_firebird::genericResponse(const char *title,
 		if (clientsock->write(sv[i])!=sizeof(uint32_t)) {
 			if (getDebug()) {
 				stdoutput.printf("	write status "
-						"vector [%d] failed\n",i);
+						"vector [%u] failed\n",i);
 				debugSystemError();
 				debugEnd();
 			}
@@ -3084,7 +3084,7 @@ bool sqlrprotocol_firebird::transaction() {
 	trhandle++;
 
 	if (getDebug()) {
-		stdoutput.printf("	transaction handle: %d\n",trhandle);
+		stdoutput.printf("	transaction handle: %u\n",trhandle);
 		stdoutput.printf("	read only: %s\n",(readonly)?"yes":"no");
 		stdoutput.printf("	autocommit: %s\n",(autocommit)?"yes":"no");
 	}
@@ -3435,7 +3435,7 @@ bool sqlrprotocol_firebird::allocateStatement() {
 	stmt->outfieldcount=0;
 
 	if (getDebug()) {
-		stdoutput.printf("	statement handle: %d\n",stmthandle);
+		stdoutput.printf("	statement handle: %u\n",stmthandle);
 	}
 
 	debugEnd();
@@ -4256,7 +4256,7 @@ bool sqlrprotocol_firebird::sendFetchResponse(sqlrservercursor *cursor,
 	}
 
 	if (getDebug()) {
-		stdoutput.printf("	rows sent: %d\n",sent);
+		stdoutput.printf("	rows sent: %u\n",sent);
 	}
 
 	debugEnd();
@@ -4825,7 +4825,7 @@ bool sqlrprotocol_firebird::readInt(uint32_t *val,
 	}
 	(*bytesread)+=sizeof(uint32_t);
 	if (getDebug()) {
-		stdoutput.printf("	%s: %d\n",name,*val);
+		stdoutput.printf("	%s: %u\n",name,*val);
 	}
 	return true;
 }
@@ -4841,7 +4841,7 @@ bool sqlrprotocol_firebird::readInt(uint32_t *val,
 	if (*val!=expected) {
 		if (getDebug()) {
 			stdoutput.printf("	invalid %s - "
-						"got %d, expected %d\n",
+						"got %u, expected %u\n",
 						name,*val,expected);
 			debugEnd();
 		}
@@ -5033,11 +5033,6 @@ bool sqlrprotocol_firebird::readPadding(uint32_t *bytesread) {
 	// (pad to a 4-byte boundary)
 	uint32_t	pad=((((*bytesread)/4)+1)*4)-(*bytesread);
 
-	// bail if we don't need to read any padding
-	if (!pad) {
-		return true;
-	}
-
 	// read the padding
 	byte_t		dummy;
 	for (uint32_t i=0; i<pad; i++) {
@@ -5052,7 +5047,7 @@ bool sqlrprotocol_firebird::readPadding(uint32_t *bytesread) {
 		(*bytesread)++;
 	}
 	if (getDebug()) {
-		stdoutput.printf("	(%d bytes of padding)\n",pad);
+		stdoutput.printf("	(%u bytes of padding)\n",pad);
 	}
 	return true;
 }
@@ -5071,7 +5066,7 @@ bool sqlrprotocol_firebird::writeInt(uint32_t val,
 	}
 	(*byteswritten)+=sizeof(uint32_t);
 	if (getDebug()) {
-		stdoutput.printf("	%s: %d\n",name,val);
+		stdoutput.printf("	%s: %u\n",name,val);
 	}
 	return true;
 }
@@ -5092,7 +5087,7 @@ bool sqlrprotocol_firebird::writeBuffer(const byte_t *val,
 		return false;
 	}
 	if (getDebug()) {
-		stdoutput.printf("	%s len: %d\n",name,len);
+		stdoutput.printf("	%s len: %u\n",name,len);
 	}
 	(*byteswritten)+=sizeof(uint32_t);
 
@@ -5125,7 +5120,7 @@ bool sqlrprotocol_firebird::writeBuffer(const byte_t *val,
 	}
 	(*byteswritten)+=pad;
 	if (getDebug()) {
-		stdoutput.printf("	(%d bytes of padding)\n",pad);
+		stdoutput.printf("	(%u bytes of padding)\n",pad);
 	}
 	return true;
 }
@@ -5279,7 +5274,7 @@ bool sqlrprotocol_firebird::parseBlr(const byte_t *blr,
 	p++;
 	if (version!=blr_version4 && version!=blr_version5) {
 		if (getDebug()) {
-			stdoutput.printf("	invalid blr version: %d\n",
+			stdoutput.printf("	invalid blr version: %u\n",
 								version);
 		}
 		return false;
@@ -5303,7 +5298,7 @@ bool sqlrprotocol_firebird::parseBlr(const byte_t *blr,
 	// leave the last item writing past its end.
 	if (itemcount%2) {
 		if (getDebug()) {
-			stdoutput.printf("	odd blr item count: %d\n",
+			stdoutput.printf("	odd blr item count: %u\n",
 								itemcount);
 		}
 		return false;
@@ -5390,7 +5385,7 @@ bool sqlrprotocol_firebird::parseBlr(const byte_t *blr,
 			default:
 				if (getDebug()) {
 					stdoutput.printf("	unrecognized "
-							"blr item: %d\n",
+							"blr item: %u\n",
 							fld.blrtype);
 				}
 				delete[] f;
@@ -5408,7 +5403,7 @@ bool sqlrprotocol_firebird::parseBlr(const byte_t *blr,
 	*fieldcount=count;
 
 	if (getDebug()) {
-		stdoutput.printf("	blr describes %d field(s)\n",count);
+		stdoutput.printf("	blr describes %u field(s)\n",count);
 	}
 
 	return true;
@@ -5668,7 +5663,7 @@ bool sqlrprotocol_firebird::readMessage(sqlrservercursor *cursor,
 	if (cursor) {
 		cont->setInputBindCount(cursor,bindcount);
 		if (getDebug()) {
-			stdoutput.printf("	bound %d parameter(s)\n",
+			stdoutput.printf("	bound %u parameter(s)\n",
 								bindcount);
 		}
 	}
@@ -7069,7 +7064,7 @@ void sqlrprotocol_firebird::debugConnectVersion(uint32_t connectversion) {
 			connectversionstr="unknown";
 			break;
 	}
-	stdoutput.printf("	connect version: %d (%s)\n",
+	stdoutput.printf("	connect version: %u (%s)\n",
 				connectversion,connectversionstr);
 }
 
@@ -7129,13 +7124,13 @@ void sqlrprotocol_firebird::debugUserId(const byte_t *userid,
 				tagstr="unknown";
 				break;
 		}
-		stdoutput.printf("	user id tag: %d (0x%02x) (%s)\n",
+		stdoutput.printf("	user id tag: %u (0x%02x) (%s)\n",
 							tag,tag,tagstr);
 
 		// get the value length
 		byte_t	valuelen=0;
 		read(ptr,&valuelen,&ptr);
-		stdoutput.printf("	user id value length: %d\n",valuelen);
+		stdoutput.printf("	user id value length: %u\n",valuelen);
 
 		// bail if the value runs past the end of the buffer
 		if ((size_t)valuelen>(size_t)(endptr-ptr)) {
@@ -7168,7 +7163,7 @@ void sqlrprotocol_firebird::debugDpbVersion(byte_t dpbversion) {
 			dpbversionstr="unknown";
 			break;
 	}
-	stdoutput.printf("	dpb version: %d (%s)\n",
+	stdoutput.printf("	dpb version: %u (%s)\n",
 				dpbversion,dpbversionstr);
 }
 
@@ -7497,7 +7492,7 @@ void sqlrprotocol_firebird::debugDpbParam(byte_t dpbparam) {
 			dpbparamstr="unknown";
 			break;
 	}
-	stdoutput.printf("	dpb param: %d (0x%02x) (%s)\n",
+	stdoutput.printf("	dpb param: %u (0x%02x) (%s)\n",
 				dpbparam,dpbparam,dpbparamstr);
 }
 
@@ -7865,7 +7860,7 @@ void sqlrprotocol_firebird::debugDbInfoItem(byte_t dbinfoitem) {
 			dbinfoitemstr="unknown";
 			break;
 	}
-	stdoutput.printf("	info item: %d (0x%02x) (%s)\n",
+	stdoutput.printf("	info item: %u (0x%02x) (%s)\n",
 				dbinfoitem,dbinfoitem,dbinfoitemstr);
 }
 
@@ -7885,7 +7880,7 @@ void sqlrprotocol_firebird::debugTpbVersion(byte_t tpbversion) {
 			tpbversionstr="unknown";
 			break;
 	}
-	stdoutput.printf("	tpb version: %d (%s)\n",
+	stdoutput.printf("	tpb version: %u (%s)\n",
 				tpbversion,tpbversionstr);
 }
 
@@ -7974,7 +7969,7 @@ void sqlrprotocol_firebird::debugTpbParam(byte_t tpbparam) {
 			tpbparamstr="unknown";
 			break;
 	}
-	stdoutput.printf("	tpb param: %d (0x%02x) (%s)\n",
+	stdoutput.printf("	tpb param: %u (0x%02x) (%s)\n",
 				tpbparam,tpbparam,tpbparamstr);
 }
 
@@ -7988,7 +7983,7 @@ void sqlrprotocol_firebird::debugStatusVector(uint32_t *sv,
 	uint32_t	cluster=1;
 	uint8_t		i=0;
 	while (i<svlen) {
-		stdoutput.printf("		cluster %d:\n",cluster);
+		stdoutput.printf("		cluster %u:\n",cluster);
 		switch (sv[i]) {
 			case isc_arg_end:
 				stdoutput.write("			"
@@ -8000,7 +7995,7 @@ void sqlrprotocol_firebird::debugStatusVector(uint32_t *sv,
 						"code: isc_arg_gds\n");
 				i++;
 				stdoutput.printf("			"
-						"error: %d\n",sv[i]);
+						"error: %u\n",sv[i]);
 				i++;
 				break;
 			case isc_arg_string:
@@ -8017,10 +8012,10 @@ void sqlrprotocol_firebird::debugStatusVector(uint32_t *sv,
 						"code: isc_arg_cstring\n");
 				i++;
 				stdoutput.printf("			"
-						"length: %d\n",sv[i]);
+						"length: %u\n",sv[i]);
 				i++;
 				stdoutput.printf("			"
-						"address: %d\n",sv[i]);
+						"address: %u\n",sv[i]);
 				i++;
 				break;
 			case isc_arg_number:
@@ -8028,7 +8023,7 @@ void sqlrprotocol_firebird::debugStatusVector(uint32_t *sv,
 						"code: isc_arg_number\n");
 				i++;
 				stdoutput.printf("			"
-						"number: %d\n",sv[i]);
+						"number: %u\n",sv[i]);
 				i++;
 				break;
 			case isc_arg_interpreted:
@@ -8045,7 +8040,7 @@ void sqlrprotocol_firebird::debugStatusVector(uint32_t *sv,
 						"code: isc_arg_vms\n");
 				i++;
 				stdoutput.printf("			"
-						"error: %d\n",sv[i]);
+						"error: %u\n",sv[i]);
 				i++;
 				break;
 			case isc_arg_unix:
@@ -8053,7 +8048,7 @@ void sqlrprotocol_firebird::debugStatusVector(uint32_t *sv,
 						"code: isc_arg_unix\n");
 				i++;
 				stdoutput.printf("			"
-						"error: %d\n",sv[i]);
+						"error: %u\n",sv[i]);
 				i++;
 				break;
 			case isc_arg_domain:
@@ -8061,7 +8056,7 @@ void sqlrprotocol_firebird::debugStatusVector(uint32_t *sv,
 						"code: isc_arg_domain\n");
 				i++;
 				stdoutput.printf("			"
-						"error: %d\n",sv[i]);
+						"error: %u\n",sv[i]);
 				i++;
 				break;
 			case isc_arg_dos:
@@ -8069,7 +8064,7 @@ void sqlrprotocol_firebird::debugStatusVector(uint32_t *sv,
 						"code: isc_arg_dos\n");
 				i++;
 				stdoutput.printf("			"
-						"error: %d\n",sv[i]);
+						"error: %u\n",sv[i]);
 				i++;
 				break;
 			case isc_arg_mpexl:
@@ -8077,7 +8072,7 @@ void sqlrprotocol_firebird::debugStatusVector(uint32_t *sv,
 						"code: isc_arg_mpexl\n");
 				i++;
 				stdoutput.printf("			"
-						"error: %d\n",sv[i]);
+						"error: %u\n",sv[i]);
 				i++;
 				break;
 			case isc_arg_mpexl_ipc:
@@ -8085,7 +8080,7 @@ void sqlrprotocol_firebird::debugStatusVector(uint32_t *sv,
 						"code: isc_arg_mpexl_ipc\n");
 				i++;
 				stdoutput.printf("			"
-						"error: %d\n",sv[i]);
+						"error: %u\n",sv[i]);
 				i++;
 				break;
 			case isc_arg_next_mach:
@@ -8093,7 +8088,7 @@ void sqlrprotocol_firebird::debugStatusVector(uint32_t *sv,
 						"code: isc_arg_next_mach\n");
 				i++;
 				stdoutput.printf("			"
-						"error: %d\n",sv[i]);
+						"error: %u\n",sv[i]);
 				i++;
 				break;
 			case isc_arg_netware:
@@ -8101,7 +8096,7 @@ void sqlrprotocol_firebird::debugStatusVector(uint32_t *sv,
 						"code: isc_arg_netware\n");
 				i++;
 				stdoutput.printf("			"
-						"error: %d\n",sv[i]);
+						"error: %u\n",sv[i]);
 				i++;
 				break;
 			case isc_arg_win32:
@@ -8109,7 +8104,7 @@ void sqlrprotocol_firebird::debugStatusVector(uint32_t *sv,
 						"code: isc_arg_win32\n");
 				i++;
 				stdoutput.printf("			"
-						"error: %d\n",sv[i]);
+						"error: %u\n",sv[i]);
 				i++;
 				break;
 			case isc_arg_warning:
@@ -8117,7 +8112,7 @@ void sqlrprotocol_firebird::debugStatusVector(uint32_t *sv,
 						"code: isc_arg_warning\n");
 				i++;
 				stdoutput.printf("			"
-						"warning: %d\n",sv[i]);
+						"warning: %u\n",sv[i]);
 				i++;
 				break;
 			case isc_arg_sql_state:
@@ -8125,7 +8120,7 @@ void sqlrprotocol_firebird::debugStatusVector(uint32_t *sv,
 						"code: isc_arg_sql_state\n");
 				i++;
 				stdoutput.printf("			"
-						"sql state: %d\n",sv[i]);
+						"sql state: %u\n",sv[i]);
 				i++;
 				break;
 			default:
@@ -8133,7 +8128,7 @@ void sqlrprotocol_firebird::debugStatusVector(uint32_t *sv,
 						"code: unknown\n");
 				i++;
 				stdoutput.printf("			"
-						"error: %d\n",sv[i]);
+						"error: %u\n",sv[i]);
 				i++;
 				break;
 		}

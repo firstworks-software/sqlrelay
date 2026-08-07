@@ -1024,6 +1024,14 @@
 		isc_info_error for any item but isc_info_firebird_version as
 		proof it's talking to a pre-interbase-6 server and resets its
 		sql dialect to 1
+	fixed the firebird protocol module's debug output - lengths, handles,
+		counts and status vector values are all unsigned, but they
+		were printed with %d, so any of them at or above 2147483648
+		printed as a negative number - exactly the value an operator
+		would be hunting for, misprinted
+	removed an unreachable test from the firebird protocol module's
+		readPadding() - the degenerate case guard above it already
+		returns for the only case in which the padding size can be 0
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems
