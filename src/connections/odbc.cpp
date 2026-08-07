@@ -4159,7 +4159,7 @@ bool odbccursor::inputBindBlob(const char *variable,
 					SQL_LONGVARBINARY:SQL_VARBINARY;
 
 	// a ColumnSize of 0 is invalid here - see "see #975" in inputBind()
-	SQLULEN		columnsize=(valuesize)?valuesize:1;
+	uint32_t	columnsize=(valuesize)?valuesize:1;
 
 	erg=SQLBindParameter(stmt,
 				pos,
@@ -5859,6 +5859,7 @@ void odbccursor::closeResultSet() {
 		inoutcharbind[i]=NULL;
 		inoutisnullptr[i]=NULL;
 		inoutisnull[i]=0;
+		inbindlength[i]=0;
 	}
 
 	if (!conn->cont->getMaxColumnCount()) {
