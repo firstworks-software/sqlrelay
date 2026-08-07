@@ -1540,6 +1540,12 @@
 		was already gone - the buffers are kept across a close now,
 		and the describe grows them itself, which also stops the
 		column names the server caches from dangling
+	added the blob operations to the firebird protocol module - a client
+		can create a blob, fill it with segments, close it, bind its id
+		into an insert, select it back, open it, read it, seek in it,
+		and ask isc_blob_info how long it is, where every one of those
+		answered "feature is not supported" and dropped the connection
+		before
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems

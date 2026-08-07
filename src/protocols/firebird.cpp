@@ -791,6 +791,39 @@
 // overflowed)
 #define MAX_FIREBIRD_DATE	5373484
 
+// how much of a blob to read from the backend at a time
+// (65535 is the largest segment firebird can store, since isc_put_segment's
+// length is a USHORT.  the firebird backend's read loop stops short when a
+// stored segment ends, so asking for exactly this many gets back exactly one
+// stored segment per call - see getLobFieldSegment() in the firebird
+// connection module.)
+#define BLOB_SEGMENT_SIZE	65535
+
+// how many bytes one character can take
+#define MAX_BYTES_PER_CHAR	4
+
+// how many bytes of fetched blob a session will hold at once
+// (a fetched blob has to be buffered whole - see bufferBlob() - and a client
+// is free to fetch a great many rows before it opens any of the ids it got
+// back, so without a ceiling a select of a million rows with a blob column is
+// an out-of-memory.  the oldest blobs nothing is reading are dropped to stay
+// under this, and their ids stop resolving.)
+#define MAX_BLOB_BUFFER		(64*1024*1024)
+
+// the states of an op_get_segment response
+// (a bare 0, 1 or 2 in the response's object handle.  isc_segment and
+// isc_segstr_eof never go on the wire - firebird's client raises those itself,
+// from these.)
+#define BLOB_MORE		0
+#define BLOB_PARTIAL_SEGMENT	1
+#define BLOB_EOF		2
+
+// the seek modes of op_seek_blob
+// (bare numbers - firebird defines no isc_seek_* constants)
+#define BLOB_SEEK_START		0
+#define BLOB_SEEK_RELATIVE	1
+#define BLOB_SEEK_END		2
+
 // how wide a bind variable says it is
 // (SQL Relay only knows a bind's position, never its type, so a bind
 // describes as a string, and this is the width it claims - big enough for
@@ -819,6 +852,8 @@
 
 // gds error codes
 #define isc_arith_except		335544321
+#define isc_bad_segstr_handle		335544328
+#define isc_bad_segstr_id		335544329
 #define isc_bad_trans_handle		335544332
 #define isc_convert_error		335544334
 #define isc_infunk			335544341
@@ -826,6 +861,7 @@
 #define isc_no_dup			335544349
 #define isc_read_only_trans		335544361
 #define isc_wish_list			335544378
+#define isc_imp_exc			335544381
 #define isc_random			335544382
 #define isc_sqlerr			335544436
 #define isc_login			335544472
@@ -920,6 +956,33 @@ struct sqlrfirebirdstatement {
 	bool			bindsdescribed;
 };
 
+// a blob the session is holding - either one the client built with
+// op_create_blob and will bind, or one a fetched column handed out an id for
+struct sqlrfirebirdblob {
+	// unique within the session, non-zero, and the low word of the
+	// ISC_QUAD the client sees - see newBlob()
+	uint32_t	id;
+	// non-zero only between an open and the close that ends it
+	uint32_t	handle;
+	// the client built this one and may still bind it
+	bool		iswrite;
+	// the bytes, and the lengths of the segments they arrived in
+	bytebuffer	data;
+	bytebuffer	seglengths;
+	uint32_t	segcount;
+	uint32_t	maxseglength;
+	// how far a read has got - the byte it will read next, which segment
+	// that byte is in, and where in the data that segment starts
+	uint64_t	readpos;
+	uint32_t	readseg;
+	uint64_t	readsegstart;
+	// what the bpb asked for, answered back as isc_info_blob_type
+	// (the sub type the bpb carries isn't kept - what decides whether a
+	// bound blob goes as a blob or a clob is the sub type the client's
+	// blr declares for that parameter, not the one the bpb asked for)
+	bool		isstream;
+};
+
 class SQLRSERVER_DLLSPEC sqlrprotocol_firebird : public sqlrprotocol {
 	public:
 		sqlrprotocol_firebird(sqlrservercontroller *cont,
@@ -945,9 +1008,11 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_firebird : public sqlrprotocol {
 		// directory" arguments below are theirs, captured off the
 		// wire.
 		void	openErrorStatusVector(const char *file);
+		// "blobid" is the whole 8-byte id, whose high word is what
+		// firebird calls the response's object id
 		bool	genericResponse(const char *title,
 						uint32_t objecthandle,
-						uint32_t objectid,
+						uint64_t blobid,
 						const byte_t *buffer,
 						uint32_t bufferlen,
 						uint32_t *sv,
@@ -983,13 +1048,18 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_firebird : public sqlrprotocol {
 		bool	infoSql();
 		bool	createBlob();
 		bool	createBlob2();
+		bool	createBlobCommon(const char *title, bool hasbpb);
 		bool	openBlob();
 		bool	openBlob2();
+		bool	openBlobCommon(const char *title, bool hasbpb);
 		bool	getSegment();
+		bool	putSegment();
 		bool	batchSegment();
+		bool	putSegmentCommon(const char *title, bool batch);
 		bool	seekBlob();
 		bool	cancelBlob();
 		bool	closeBlob();
+		bool	infoBlob();
 		bool	getSlice();
 		bool	putSlice();
 		bool	cancel();
@@ -1027,6 +1097,28 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_firebird : public sqlrprotocol {
 						sqlrservercursor **cursor);
 		void	clearStatement(uint16_t cursorid);
 		void	clearStatements();
+
+		sqlrfirebirdblob	*newBlob();
+		uint32_t	newBlobHandle();
+		sqlrfirebirdblob	*getBlobById(uint32_t high, uint32_t low);
+		sqlrfirebirdblob	*getBlobByHandle(uint32_t blobhandle);
+		void	removeBlob(sqlrfirebirdblob *blob);
+		void	clearBlobs();
+		void	trimBlobs();
+		void	parseBpb(const byte_t *bpb,
+					uint32_t bpblen,
+					sqlrfirebirdblob *blob);
+		void	appendBlobSegment(sqlrfirebirdblob *blob,
+					const byte_t *value,
+					uint32_t valuelen);
+		void	rewindBlob(sqlrfirebirdblob *blob, uint64_t position);
+		void	bufferBlob(sqlrservercursor *cursor,
+					uint32_t col,
+					const char *value,
+					uint64_t valuesize,
+					bool lob,
+					uint32_t *id);
+
 		uint32_t	statementType(const char *query);
 		bool	isTransactionStatement(uint32_t stmttype);
 		bool	isWriteStatement(uint32_t stmttype);
@@ -1069,9 +1161,12 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_firebird : public sqlrprotocol {
 					sqlrfirebirdfield *fields,
 					uint16_t fieldcount,
 					uint32_t *byteswritten);
-		bool	writeField(const sqlrfirebirdfield *fld,
+		bool	writeField(sqlrservercursor *cursor,
+					uint32_t col,
+					const sqlrfirebirdfield *fld,
 					const char *value,
 					uint64_t valuesize,
+					bool lob,
 					bool null,
 					uint32_t *byteswritten);
 		bool	writeOpaque(const byte_t *val,
@@ -1267,11 +1362,24 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_firebird : public sqlrprotocol {
 		char		**bindvarnames;
 		int16_t		*bindvarnamesizes;
 
-		// A fetched blob is answered with an id rather than the data,
-		// and the id has to be unique within the session and non-zero.
-		// The backend's own id isn't reachable through the server API,
-		// so the module counts its own - see writeField().
-		uint32_t	blobid;
+		// The blobs the session is holding, oldest first, and how many
+		// bytes they add up to.  A blob id has to be unique within the
+		// session and non-zero, and the backend's own isn't reachable
+		// through the server API, so the module counts its own.
+		linkedlist< sqlrfirebirdblob * >	blobs;
+		uint64_t	blobbytes;
+		uint32_t	nextblobid;
+		uint32_t	nextblobhandle;
+
+		// staging buffer for reading a blob out of the backend, big
+		// enough that BLOB_SEGMENT_SIZE characters fit however wide a
+		// character is.  allocated on the first blob a session
+		// fetches, since most sessions fetch none.
+		char		*lobbuffer;
+
+		// a bind parameter named a blob the session doesn't have -
+		// see readMessage()
+		bool		badblobid;
 
 		// where errorResponse() keeps the text it was handed, since
 		// statusvectorstr doesn't own what it points at
@@ -1308,6 +1416,8 @@ sqlrprotocol_firebird::sqlrprotocol_firebird(sqlrservercontroller *cont,
 		statements[i].bindsdescribed=false;
 	}
 
+	lobbuffer=NULL;
+
 	// the wire format binds by position, so the names are the positions
 	bindvarnames=new char *[maxbindcount];
 	bindvarnamesizes=new int16_t[maxbindcount];
@@ -1321,6 +1431,7 @@ sqlrprotocol_firebird::sqlrprotocol_firebird(sqlrservercontroller *cont,
 
 sqlrprotocol_firebird::~sqlrprotocol_firebird() {
 	free();
+	delete[] lobbuffer;
 	delete[] statements;
 	for (uint16_t i=0; i<maxbindcount; i++) {
 		delete[] bindvarnames[i];
@@ -1341,7 +1452,10 @@ void sqlrprotocol_firebird::init() {
 	intransaction=false;
 	trautocommit=false;
 	trreadonly=false;
-	blobid=0;
+	blobbytes=0;
+	nextblobid=0;
+	nextblobhandle=0;
+	badblobid=false;
 	errorsqlstate[0]='\0';
 	respbufferlen=0;
 	for (uint16_t i=0; i<maxcursorcount; i++) {
@@ -1364,6 +1478,7 @@ void sqlrprotocol_firebird::free() {
 	delete[] password;
 	delete[] wd;
 	clearStatements();
+	clearBlobs();
 }
 
 clientsessionexitstatus_t sqlrprotocol_firebird::clientSession(
@@ -1487,8 +1602,14 @@ clientsessionexitstatus_t sqlrprotocol_firebird::clientSession(
 				case op_get_segment:
 					loop=getSegment();
 					break;
+				case op_put_segment:
+					loop=putSegment();
+					break;
 				case op_batch_segments:
 					loop=batchSegment();
+					break;
+				case op_info_blob:
+					loop=infoBlob();
 					break;
 				case op_seek_blob:
 					loop=seekBlob();
@@ -1567,9 +1688,7 @@ clientsessionexitstatus_t sqlrprotocol_firebird::clientSession(
 				case op_unwind:
 				case op_release:
 				case op_reconnect:
-				case op_put_segment:
 				case op_info_request:
-				case op_info_blob:
 				case op_aux_connect:
 				case op_ddl:
 				case op_dummy:
@@ -2400,7 +2519,7 @@ bool sqlrprotocol_firebird::attach() {
 	successStatusVector();
 
 	return genericResponse("attach response",
-				objecthandle,objectid,
+				objecthandle,((uint64_t)objectid)<<32,
 				NULL,0,
 				statusvector,statusvectorstr,
 				statusvectorlen);
@@ -2458,7 +2577,7 @@ void sqlrprotocol_firebird::openErrorStatusVector(const char *file) {
 
 bool sqlrprotocol_firebird::genericResponse(const char *title,
 						uint32_t objecthandle,
-						uint32_t objectid,
+						uint64_t blobid,
 						const byte_t *buffer,
 						uint32_t bufferlen,
 						uint32_t *sv,
@@ -2494,16 +2613,14 @@ bool sqlrprotocol_firebird::genericResponse(const char *title,
 		return false;
 	}
 
-	// write the object id
-	if (!writeInt(objectid,"object id",&byteswritten)) {
-		return false;
-	}
-
-	// write the low word of the blob id
+	// write the blob id
 	// (an 8-byte blob id is always on the wire, even in a response that
-	// has nothing to do with blobs, and the object id above is its high
-	// word)
-	if (!writeInt(0,"blob id low word",&byteswritten)) {
+	// has nothing to do with blobs, and its high word is what firebird
+	// calls the response's object id)
+	if (!writeInt((uint32_t)(blobid>>32),
+				"object id",&byteswritten) ||
+		!writeInt((uint32_t)(blobid&0xffffffff),
+				"blob id low word",&byteswritten)) {
 		return false;
 	}
 
@@ -2680,6 +2797,7 @@ bool sqlrprotocol_firebird::detach() {
 	// with a live transaction, but SQL Relay's session teardown rolls one
 	// back on its own, so there's nothing to gain by refusing here.
 	clearStatements();
+	clearBlobs();
 	if (intransaction) {
 		cont->rollback();
 		intransaction=false;
@@ -3151,7 +3269,7 @@ bool sqlrprotocol_firebird::infoDatabase() {
 	successStatusVector();
 
 	return genericResponse("info database response",
-				dbhandle,objectid,
+				dbhandle,((uint64_t)objectid)<<32,
 				respbuffer.getBuffer(),
 				respbuffer.getSize(),
 				statusvector,statusvectorstr,
@@ -3352,6 +3470,9 @@ bool sqlrprotocol_firebird::commit() {
 	// the statements a transaction opened cursors for are done with
 	clearStatements();
 
+	// a blob id lives until the transaction that made it ends
+	clearBlobs();
+
 	intransaction=false;
 	trautocommit=false;
 	trreadonly=false;
@@ -3398,6 +3519,9 @@ bool sqlrprotocol_firebird::rollback() {
 	}
 
 	clearStatements();
+
+	// a blob id lives until the transaction that made it ends
+	clearBlobs();
 
 	intransaction=false;
 	trautocommit=false;
@@ -4115,8 +4239,21 @@ bool sqlrprotocol_firebird::executeStatement(bool isexecute2) {
 	sqlrservercursor	*cursor=NULL;
 	sqlrfirebirdstatement	*stmt=getStatement(stmthandle,&cursor);
 
+	// readMessage() sets this, and only runs when there is a message
+	badblobid=false;
+
 	bool	messageread=true;
 	if (inmsgcount && infieldcount) {
+		// The binds are about to be refilled from the message, so
+		// whatever the last execute allocated can go.  Without this a
+		// statement executed in a loop grows the pool every time, and
+		// a blob parameter makes each round a big one.  Clearing here
+		// rather than before the "if" is deliberate - nothing refills
+		// the binds when there is no message, and the backend is still
+		// pointing at them.
+		if (cursor) {
+			cont->getBindPool(cursor)->clear();
+		}
 		messageread=readMessage(cursor,infields,infieldcount,
 								&bytesread);
 	}
@@ -4148,6 +4285,11 @@ bool sqlrprotocol_firebird::executeStatement(bool isexecute2) {
 	if (!stmt || !stmt->prepared) {
 		delete[] outfields;
 		return errorResponse(title,isc_bad_stmt_handle);
+	}
+
+	if (badblobid) {
+		delete[] outfields;
+		return errorResponse(title,isc_bad_segstr_id);
 	}
 
 	// refuse a write in a read-only transaction - see runPreparedQuery()
@@ -4293,6 +4435,9 @@ bool sqlrprotocol_firebird::execImmediate2() {
 	cont->getBindPool(cursor)->clear();
 	cont->setInputBindCount(cursor,0);
 
+	// readMessage() sets this, and only runs when there is a message
+	badblobid=false;
+
 	bool	messageread=true;
 	if (inmsgcount && infieldcount) {
 		messageread=readMessage(cursor,infields,infieldcount,
@@ -4349,7 +4494,10 @@ bool sqlrprotocol_firebird::execImmediate2() {
 
 	debugEnd();
 
-	bool	retval=runOnCursor(cursor,"exec immediate2 response",
+	bool	retval=(badblobid)?
+			errorResponse("exec immediate2 response",
+						isc_bad_segstr_id):
+			runOnCursor(cursor,"exec immediate2 response",
 					query,querylen,
 					outfields,outfieldcount);
 
@@ -4606,40 +4754,819 @@ bool sqlrprotocol_firebird::infoSql() {
 				statusvectorlen);
 }
 
+sqlrfirebirdblob *sqlrprotocol_firebird::newBlob() {
+
+	// an id of 0 means "no blob", so the counter skips it on a wrap
+	nextblobid++;
+	if (!nextblobid) {
+		nextblobid++;
+	}
+
+	sqlrfirebirdblob	*blob=new sqlrfirebirdblob;
+	blob->id=nextblobid;
+	blob->handle=0;
+	blob->iswrite=false;
+	blob->segcount=0;
+	blob->maxseglength=0;
+	blob->readpos=0;
+	blob->readseg=0;
+	blob->readsegstart=0;
+	blob->isstream=false;
+	blobs.append(blob);
+	return blob;
+}
+
+uint32_t sqlrprotocol_firebird::newBlobHandle() {
+
+	// A response carries the handle in a 16-bit field that firebird writes
+	// with xdr_short, which sign extends.  So a handle with the top bit
+	// set goes out fine and comes back as 0xffff8000 or higher, and stops
+	// matching.  Staying under 0x8000 is what keeps a handle able to make
+	// the round trip.  0 means "no blob", and a handle an open blob is
+	// using can't be handed out twice.
+	for (uint32_t i=0; i<0x7fff; i++) {
+		nextblobhandle=(nextblobhandle+1)&0x7fff;
+		if (!nextblobhandle) {
+			nextblobhandle=1;
+		}
+		if (!getBlobByHandle(nextblobhandle)) {
+			return nextblobhandle;
+		}
+	}
+	return 0;
+}
+
+sqlrfirebirdblob *sqlrprotocol_firebird::getBlobById(uint32_t high,
+							uint32_t low) {
+
+	// the ids the module hands out all have a zero high word - see
+	// newBlob()
+	if (high || !low) {
+		return NULL;
+	}
+	for (listnode< sqlrfirebirdblob * > *node=blobs.getFirst();
+						node; node=node->getNext()) {
+		if (node->getValue()->id==low) {
+			return node->getValue();
+		}
+	}
+	return NULL;
+}
+
+sqlrfirebirdblob *sqlrprotocol_firebird::getBlobByHandle(
+						uint32_t blobhandle) {
+	if (!blobhandle) {
+		return NULL;
+	}
+	for (listnode< sqlrfirebirdblob * > *node=blobs.getFirst();
+						node; node=node->getNext()) {
+		if (node->getValue()->handle==blobhandle) {
+			return node->getValue();
+		}
+	}
+	return NULL;
+}
+
+void sqlrprotocol_firebird::removeBlob(sqlrfirebirdblob *blob) {
+	for (listnode< sqlrfirebirdblob * > *node=blobs.getFirst();
+						node; node=node->getNext()) {
+		if (node->getValue()==blob) {
+			blobbytes=blobbytes-blob->data.getSize();
+			delete blob;
+			blobs.remove(node);
+			return;
+		}
+	}
+}
+
+void sqlrprotocol_firebird::clearBlobs() {
+	for (listnode< sqlrfirebirdblob * > *node=blobs.getFirst();
+						node; node=node->getNext()) {
+		delete node->getValue();
+	}
+	blobs.clear();
+	blobbytes=0;
+}
+
+void sqlrprotocol_firebird::trimBlobs() {
+
+	// Drop the oldest blobs nothing is reading and nothing can still bind,
+	// until the session is back under budget.  Their ids stop resolving,
+	// so a client that fetches more than MAX_BLOB_BUFFER of blob before
+	// opening any of the ids it got gets an error rather than an
+	// out-of-memory.  A single blob bigger than the budget is still served
+	// whole - the ceiling is on how many pile up, not on how big one is.
+	listnode< sqlrfirebirdblob * >	*node=blobs.getFirst();
+	while (node && blobbytes>MAX_BLOB_BUFFER) {
+		listnode< sqlrfirebirdblob * >	*next=node->getNext();
+		sqlrfirebirdblob		*blob=node->getValue();
+		if (!blob->handle && !blob->iswrite) {
+			blobbytes=blobbytes-blob->data.getSize();
+			delete blob;
+			blobs.remove(node);
+		}
+		node=next;
+	}
+}
+
+void sqlrprotocol_firebird::parseBpb(const byte_t *bpb,
+					uint32_t bpblen,
+					sqlrfirebirdblob *blob) {
+
+	// a version byte, then items of an item byte, a length byte and that
+	// many value bytes, little-endian
+	// (isc_bpb_version1 and isc_bpb_source_type are both 1, so the walk
+	// starts after the version byte rather than at it)
+	if (!bpb || bpblen<2) {
+		return;
+	}
+
+	const byte_t	*p=bpb+1;
+	const byte_t	*end=bpb+bpblen;
+	while (p+2<=end) {
+
+		byte_t	item=*p;
+		p++;
+
+		byte_t	len=*p;
+		p++;
+
+		if (p+len>end) {
+			break;
+		}
+
+		uint32_t	value=0;
+		for (byte_t i=0; i<len && i<4; i++) {
+			value=value|(((uint32_t)p[i])<<(8*i));
+		}
+
+		switch (item) {
+			case isc_bpb_type:
+				blob->isstream=
+					((value&isc_bpb_type_stream)!=0);
+				break;
+			default:
+				break;
+		}
+
+		p=p+len;
+	}
+}
+
+void sqlrprotocol_firebird::appendBlobSegment(sqlrfirebirdblob *blob,
+						const byte_t *value,
+						uint32_t valuelen) {
+	if (!value || !valuelen) {
+		return;
+	}
+	blob->data.append(value,valuelen);
+	blob->seglengths.append((const byte_t *)&valuelen,sizeof(valuelen));
+	blob->segcount++;
+	if (valuelen>blob->maxseglength) {
+		blob->maxseglength=valuelen;
+	}
+	blobbytes=blobbytes+valuelen;
+}
+
+void sqlrprotocol_firebird::rewindBlob(sqlrfirebirdblob *blob,
+						uint64_t position) {
+
+	// turn a byte position into the segment it lands in and where that
+	// segment starts
+	const uint32_t	*seglengths=
+			(const uint32_t *)blob->seglengths.getBuffer();
+
+	blob->readpos=position;
+	blob->readseg=blob->segcount;
+	blob->readsegstart=blob->data.getSize();
+
+	uint64_t	start=0;
+	for (uint32_t i=0; i<blob->segcount; i++) {
+		if (position<start+seglengths[i]) {
+			blob->readseg=i;
+			blob->readsegstart=start;
+			return;
+		}
+		start=start+seglengths[i];
+	}
+}
+
+void sqlrprotocol_firebird::bufferBlob(sqlrservercursor *cursor,
+					uint32_t col,
+					const char *value,
+					uint64_t valuesize,
+					bool lob,
+					uint32_t *id) {
+
+	trimBlobs();
+
+	sqlrfirebirdblob	*blob=newBlob();
+	*id=blob->id;
+
+	// a column the backend handed back whole is one segment
+	if (!lob) {
+		appendBlobSegment(blob,(const byte_t *)value,
+			(valuesize>0xffffffffULL)?0xffffffffU:
+						(uint32_t)valuesize);
+		return;
+	}
+
+	if (!lobbuffer) {
+		lobbuffer=new char[BLOB_SEGMENT_SIZE*MAX_BYTES_PER_CHAR];
+	}
+
+	// getLobFieldLength() is what opens the lob, so it has to be called
+	// even though the length it answers isn't used
+	uint64_t	loblength=0;
+	cont->getLobFieldLength(cursor,col,&loblength);
+
+	// Each read comes back at a segment boundary, because the firebird
+	// backend's read loop stops short when a stored segment ends.  So the
+	// client reads a blob back segmented the way the backend stored it,
+	// rather than the way the module happened to ask for it.
+	uint64_t	offset=0;
+	for (;;) {
+		uint64_t	charsread=0;
+		if (!cont->getLobFieldSegment(cursor,col,lobbuffer,
+					BLOB_SEGMENT_SIZE*MAX_BYTES_PER_CHAR,
+					offset,BLOB_SEGMENT_SIZE,&charsread) ||
+					!charsread) {
+			break;
+		}
+		if (charsread>BLOB_SEGMENT_SIZE*MAX_BYTES_PER_CHAR) {
+			charsread=BLOB_SEGMENT_SIZE*MAX_BYTES_PER_CHAR;
+		}
+		appendBlobSegment(blob,(const byte_t *)lobbuffer,
+						(uint32_t)charsread);
+		offset=offset+charsread;
+	}
+
+	cont->closeLobField(cursor,col);
+}
+
 bool sqlrprotocol_firebird::createBlob() {
-	return sendNotImplementedError();
+	return createBlobCommon("create blob",false);
 }
 
 bool sqlrprotocol_firebird::createBlob2() {
-	return sendNotImplementedError();
+	return createBlobCommon("create blob2",true);
+}
+
+bool sqlrprotocol_firebird::createBlobCommon(const char *title, bool hasbpb) {
+
+	// request packet data structure:
+	//
+	// data {
+	// 	int32_t		bpb length		(op_create_blob2 only)
+	// 	byte_t[]	bpb			(op_create_blob2 only)
+	// 	byte_t[]	bpb padding		(op_create_blob2 only)
+	// 	int32_t		transaction handle
+	// 	int32_t		blob id, high word
+	// 	int32_t		blob id, low word
+	// }
+	//
+	// (the bpb comes in front of the transaction handle, not after it)
+
+	debugStart(title);
+
+	uint32_t	bytesread=0;
+
+	uint32_t	bpblen=0;
+	byte_t		*bpb=NULL;
+	if (hasbpb && !readBuffer(&bpb,&bpblen,"bpb",&bytesread)) {
+		return false;
+	}
+
+	uint32_t	clienttrhandle;
+	uint32_t	high;
+	uint32_t	low;
+	if (!readInt(&clienttrhandle,"transaction handle",&bytesread) ||
+		!readInt(&high,"blob id high word",&bytesread) ||
+		!readInt(&low,"blob id low word",&bytesread)) {
+		delete[] bpb;
+		return false;
+	}
+
+	debugEnd();
+
+	uint32_t	blobhandle=newBlobHandle();
+	if (!blobhandle) {
+		delete[] bpb;
+		return errorResponse(title,isc_bad_segstr_handle);
+	}
+
+	// the id the client sent is only meaningful to an open - a create
+	// answers one of the module's own
+	trimBlobs();
+	sqlrfirebirdblob	*blob=newBlob();
+	blob->iswrite=true;
+	blob->handle=blobhandle;
+	parseBpb(bpb,bpblen,blob);
+
+	delete[] bpb;
+
+	successStatusVector();
+
+	return genericResponse(title,
+				blob->handle,(uint64_t)blob->id,
+				NULL,0,
+				statusvector,statusvectorstr,
+				statusvectorlen);
 }
 
 bool sqlrprotocol_firebird::openBlob() {
-	return sendNotImplementedError();
+	return openBlobCommon("open blob",false);
 }
 
 bool sqlrprotocol_firebird::openBlob2() {
-	return sendNotImplementedError();
+	return openBlobCommon("open blob2",true);
+}
+
+bool sqlrprotocol_firebird::openBlobCommon(const char *title, bool hasbpb) {
+
+	// request packet data structure:
+	//
+	// data {
+	// 	int32_t		bpb length		(op_open_blob2 only)
+	// 	byte_t[]	bpb			(op_open_blob2 only)
+	// 	byte_t[]	bpb padding		(op_open_blob2 only)
+	// 	int32_t		transaction handle
+	// 	int32_t		blob id, high word
+	// 	int32_t		blob id, low word
+	// }
+
+	debugStart(title);
+
+	uint32_t	bytesread=0;
+
+	uint32_t	bpblen=0;
+	byte_t		*bpb=NULL;
+	if (hasbpb && !readBuffer(&bpb,&bpblen,"bpb",&bytesread)) {
+		return false;
+	}
+
+	uint32_t	clienttrhandle;
+	uint32_t	high;
+	uint32_t	low;
+	if (!readInt(&clienttrhandle,"transaction handle",&bytesread) ||
+		!readInt(&high,"blob id high word",&bytesread) ||
+		!readInt(&low,"blob id low word",&bytesread)) {
+		delete[] bpb;
+		return false;
+	}
+
+	debugEnd();
+
+	delete[] bpb;
+
+	sqlrfirebirdblob	*blob=getBlobById(high,low);
+	if (!blob) {
+		return errorResponse(title,isc_bad_segstr_id);
+	}
+
+	// Opening a blob that is already open keeps the handle it already has
+	// rather than taking a second one.  Abandoning the first would put its
+	// number back in the pool, and a client still holding it would then
+	// reach whichever blob got it next instead of getting an error.
+	uint32_t	blobhandle=blob->handle;
+	if (!blobhandle) {
+		blobhandle=newBlobHandle();
+		if (!blobhandle) {
+			return errorResponse(title,isc_bad_segstr_handle);
+		}
+	}
+
+	// reading starts over at the front
+	blob->handle=blobhandle;
+	rewindBlob(blob,0);
+
+	successStatusVector();
+
+	return genericResponse(title,
+				blob->handle,0,
+				NULL,0,
+				statusvector,statusvectorstr,
+				statusvectorlen);
 }
 
 bool sqlrprotocol_firebird::getSegment() {
-	return sendNotImplementedError();
+
+	// request packet data structure:
+	//
+	// data {
+	// 	int32_t		blob handle
+	// 	int32_t		how many bytes the client will take
+	// 	int32_t		segment buffer length	(always 0 here)
+	// 	byte_t[]	segment buffer		(always empty here)
+	// }
+
+	debugStart("get segment");
+
+	uint32_t	bytesread=0;
+
+	uint32_t	blobhandle;
+	uint32_t	buflen;
+	if (!readInt(&blobhandle,"blob handle",&bytesread) ||
+		!readInt(&buflen,"buffer length",&bytesread)) {
+		return false;
+	}
+
+	uint32_t	seglen=0;
+	byte_t		*seg=NULL;
+	if (!readBuffer(&seg,&seglen,"segment buffer",&bytesread)) {
+		return false;
+	}
+	delete[] seg;
+
+	debugEnd();
+
+	// The length is a USHORT that went over the wire sign-extended, and
+	// firebird's own length fixup doesn't run on this one, so a client
+	// asking for 32768 or more arrives negative.
+	buflen=buflen&0xffff;
+
+	sqlrfirebirdblob	*blob=getBlobByHandle(blobhandle);
+	if (!blob) {
+		return errorResponse("get segment response",
+					isc_bad_segstr_handle);
+	}
+
+	// Pack whole segments into the client's buffer, each behind a 2-byte
+	// little-endian length, until the buffer fills or the blob runs out.
+	// A segment only part of which fit says so, and the client renders
+	// that as isc_segment.
+	const byte_t	*data=blob->data.getBuffer();
+	const uint32_t	*seglengths=
+			(const uint32_t *)blob->seglengths.getBuffer();
+
+	respbuffer.clear();
+
+	uint32_t	written=0;
+	uint32_t	state=BLOB_MORE;
+	for (;;) {
+
+		if (blob->readseg>=blob->segcount) {
+			state=BLOB_EOF;
+			break;
+		}
+
+		// 2 for the length word, and at least 1 byte of segment
+		if (written+3>buflen) {
+			break;
+		}
+
+		uint32_t	available=seglengths[blob->readseg]-
+			(uint32_t)(blob->readpos-blob->readsegstart);
+		uint32_t	space=buflen-written-2;
+		uint32_t	count=(available<space)?available:space;
+
+		writeLE(&respbuffer,(uint16_t)count);
+		write(&respbuffer,data+blob->readpos,count);
+		written=written+2+count;
+
+		blob->readpos=blob->readpos+count;
+
+		if (count<available) {
+			state=BLOB_PARTIAL_SEGMENT;
+			break;
+		}
+
+		blob->readsegstart=blob->readsegstart+
+					seglengths[blob->readseg];
+		blob->readseg++;
+	}
+
+	successStatusVector();
+
+	return genericResponse("get segment response",
+				state,0,
+				respbuffer.getBuffer(),
+				respbuffer.getSize(),
+				statusvector,statusvectorstr,
+				statusvectorlen);
+}
+
+bool sqlrprotocol_firebird::putSegment() {
+	return putSegmentCommon("put segment",false);
 }
 
 bool sqlrprotocol_firebird::batchSegment() {
-	return sendNotImplementedError();
+	return putSegmentCommon("batch segment",true);
+}
+
+bool sqlrprotocol_firebird::putSegmentCommon(const char *title, bool batch) {
+
+	// request packet data structure:
+	//
+	// data {
+	// 	int32_t		blob handle
+	// 	int32_t		segment length
+	// 	int32_t		segment buffer length
+	// 	byte_t[]	segment buffer
+	// 	byte_t[]	segment buffer padding
+	// }
+	//
+	// op_put_segment's buffer is one segment's raw bytes.
+	// op_batch_segments packs several, each behind a 2-byte little-endian
+	// length, with no padding between them.
+
+	debugStart(title);
+
+	uint32_t	bytesread=0;
+
+	uint32_t	blobhandle;
+	uint32_t	seglen;
+	if (!readInt(&blobhandle,"blob handle",&bytesread) ||
+		!readInt(&seglen,"segment length",&bytesread)) {
+		return false;
+	}
+
+	uint32_t	buflen=0;
+	byte_t		*buf=NULL;
+	if (!readBuffer(&buf,&buflen,"segment buffer",&bytesread)) {
+		return false;
+	}
+
+	debugEnd();
+
+	sqlrfirebirdblob	*blob=getBlobByHandle(blobhandle);
+	if (!blob) {
+		delete[] buf;
+		return errorResponse(title,isc_bad_segstr_handle);
+	}
+
+	// A blob the client is building can't be trimmed - it exists precisely
+	// so its id can still be bound - so trimBlobs() will never reclaim it
+	// and the ceiling has to be enforced here instead.  Refusing the write
+	// is what keeps a client that puts segments in a loop from growing the
+	// connection process without limit.
+	trimBlobs();
+	if (blobbytes>MAX_BLOB_BUFFER) {
+		delete[] buf;
+		return errorResponse(title,isc_imp_exc,"54000",-904,
+					"Blob buffer limit exceeded",26);
+	}
+
+	if (batch) {
+		uint32_t	pos=0;
+		while (pos+2<=buflen) {
+			uint32_t	len=buf[pos]|(((uint32_t)buf[pos+1])<<8);
+			pos=pos+2;
+			if (pos+len>buflen) {
+				break;
+			}
+			appendBlobSegment(blob,buf+pos,len);
+			pos=pos+len;
+		}
+	} else {
+		appendBlobSegment(blob,buf,buflen);
+	}
+
+	delete[] buf;
+
+	successStatusVector();
+
+	return genericResponse(title,
+				0,0,
+				NULL,0,
+				statusvector,statusvectorstr,
+				statusvectorlen);
 }
 
 bool sqlrprotocol_firebird::seekBlob() {
-	return sendNotImplementedError();
+
+	// request packet data structure:
+	//
+	// data {
+	// 	int32_t		blob handle
+	// 	int32_t		mode
+	// 	int32_t		offset
+	// }
+
+	debugStart("seek blob");
+
+	uint32_t	bytesread=0;
+
+	uint32_t	blobhandle;
+	uint32_t	mode;
+	uint32_t	offset;
+	if (!readInt(&blobhandle,"blob handle",&bytesread) ||
+		!readInt(&mode,"mode",&bytesread) ||
+		!readInt(&offset,"offset",&bytesread)) {
+		return false;
+	}
+
+	debugEnd();
+
+	sqlrfirebirdblob	*blob=getBlobByHandle(blobhandle);
+	if (!blob) {
+		return errorResponse("seek blob response",
+					isc_bad_segstr_handle);
+	}
+
+	// Firebird refuses a seek on a segmented blob, but the module holds
+	// every blob whole, so it can serve one either way and there is
+	// nothing to gain by refusing.
+	int64_t	total=(int64_t)blob->data.getSize();
+	int64_t	position=(int32_t)offset;
+	if (mode==BLOB_SEEK_END) {
+		position=total+position;
+	} else if (mode==BLOB_SEEK_RELATIVE) {
+		position=(int64_t)blob->readpos+position;
+	}
+	if (position<0) {
+		position=0;
+	}
+	if (position>total) {
+		position=total;
+	}
+
+	rewindBlob(blob,(uint64_t)position);
+
+	successStatusVector();
+
+	// the new position goes in the low word of the blob id, not in the
+	// object handle - the published wire document has this wrong
+	return genericResponse("seek blob response",
+				0,(uint64_t)position,
+				NULL,0,
+				statusvector,statusvectorstr,
+				statusvectorlen);
 }
 
 bool sqlrprotocol_firebird::cancelBlob() {
-	return sendNotImplementedError();
+
+	// request packet data structure:
+	//
+	// data {
+	// 	int32_t		blob handle
+	// }
+
+	debugStart("cancel blob");
+
+	uint32_t	bytesread=0;
+
+	uint32_t	blobhandle;
+	if (!readInt(&blobhandle,"blob handle",&bytesread)) {
+		return false;
+	}
+
+	debugEnd();
+
+	sqlrfirebirdblob	*blob=getBlobByHandle(blobhandle);
+	if (!blob) {
+		return errorResponse("cancel blob response",
+					isc_bad_segstr_handle);
+	}
+
+	// a cancelled blob is discarded, id and all
+	removeBlob(blob);
+
+	successStatusVector();
+
+	return genericResponse("cancel blob response",
+				0,0,
+				NULL,0,
+				statusvector,statusvectorstr,
+				statusvectorlen);
 }
 
 bool sqlrprotocol_firebird::closeBlob() {
-	return sendNotImplementedError();
+
+	// request packet data structure:
+	//
+	// data {
+	// 	int32_t		blob handle
+	// }
+
+	debugStart("close blob");
+
+	uint32_t	bytesread=0;
+
+	uint32_t	blobhandle;
+	if (!readInt(&blobhandle,"blob handle",&bytesread)) {
+		return false;
+	}
+
+	debugEnd();
+
+	sqlrfirebirdblob	*blob=getBlobByHandle(blobhandle);
+	if (!blob) {
+		return errorResponse("close blob response",
+					isc_bad_segstr_handle);
+	}
+
+	// The bytes outlive the handle.  A client creates a blob, fills it,
+	// closes it, and only then binds its id into an insert - and a blob id
+	// stays good until the transaction that made it ends.
+	blob->handle=0;
+	rewindBlob(blob,0);
+
+	successStatusVector();
+
+	return genericResponse("close blob response",
+				0,0,
+				NULL,0,
+				statusvector,statusvectorstr,
+				statusvectorlen);
+}
+
+bool sqlrprotocol_firebird::infoBlob() {
+
+	// request packet data structure:
+	//
+	// data {
+	// 	int32_t		blob handle
+	// 	int32_t		incarnation
+	// 	int32_t		requested blob info items length
+	// 	byte_t[]	requested blob info items
+	// 	int32_t		response buffer length
+	// }
+
+	debugStart("info blob");
+
+	uint32_t	bytesread=0;
+
+	uint32_t	blobhandle;
+	uint32_t	incarnation;
+	if (!readInt(&blobhandle,"blob handle",&bytesread) ||
+		!readInt(&incarnation,"incarnation",&bytesread)) {
+		return false;
+	}
+
+	uint32_t	itemslen;
+	byte_t		*items;
+	if (!readBuffer(&items,&itemslen,
+			"requested blob info items",&bytesread)) {
+		return false;
+	}
+
+	if (!readInt(&respbufferlen,"response buffer length",&bytesread)) {
+		delete[] items;
+		return false;
+	}
+	fixupRespBufferLen();
+
+	debugEnd();
+
+	sqlrfirebirdblob	*blob=getBlobByHandle(blobhandle);
+	if (!blob) {
+		delete[] items;
+		return errorResponse("info blob response",
+					isc_bad_segstr_handle);
+	}
+
+	respbuffer.clear();
+
+	bool	fits=true;
+	for (uint32_t i=0; i<itemslen && fits; i++) {
+
+		byte_t	item=items[i];
+
+		if (getDebug()) {
+			stdoutput.printf("	item: %d\n",item);
+		}
+
+		if (item==isc_info_end) {
+			break;
+		}
+
+		switch (item) {
+			case isc_info_blob_num_segments:
+				fits=appendInfoInt(item,blob->segcount);
+				break;
+			case isc_info_blob_max_segment:
+				fits=appendInfoInt(item,blob->maxseglength);
+				break;
+			case isc_info_blob_total_length:
+				fits=appendInfoInt(item,
+					(uint32_t)blob->data.getSize());
+				break;
+			case isc_info_blob_type:
+				fits=appendInfoByte(item,
+						(byte_t)
+						((blob->isstream)?1:0));
+				break;
+			default:
+				fits=appendInfoError(item);
+				break;
+		}
+	}
+
+	delete[] items;
+
+	if (fits && respbuffer.getSize()<respbufferlen) {
+		write(&respbuffer,(byte_t)isc_info_end);
+	}
+
+	successStatusVector();
+
+	return genericResponse("info blob response",
+				blobhandle,0,
+				respbuffer.getBuffer(),
+				respbuffer.getSize(),
+				statusvector,statusvectorstr,
+				statusvectorlen);
 }
 
 bool sqlrprotocol_firebird::getSlice() {
@@ -5951,6 +6878,8 @@ bool sqlrprotocol_firebird::readMessage(sqlrservercursor *cursor,
 
 	uint16_t	bindcount=0;
 
+	badblobid=false;
+
 	for (uint16_t i=0; i<fieldcount; i++) {
 
 		const sqlrfirebirdfield	*fld=&fields[i];
@@ -5964,6 +6893,9 @@ bool sqlrprotocol_firebird::readMessage(sqlrservercursor *cursor,
 		uint32_t	strvallen=0;
 		bool		isdate=false;
 		bool		istime=false;
+		bool		isblob=false;
+		uint32_t	blobhigh=0;
+		uint32_t	bloblow=0;
 
 		switch (fld->blrtype) {
 
@@ -5990,14 +6922,16 @@ bool sqlrprotocol_firebird::readMessage(sqlrservercursor *cursor,
 
 			case blr_quad:
 			case blr_blob2:
-				{
-				uint32_t	high=0;
-				uint32_t	low=0;
-				if (!readInt(&high,"parameter",bytesread) ||
-					!readInt(&low,"parameter",bytesread)) {
+				// a blob parameter is an id naming a blob the
+				// client built with op_create_blob and filled
+				// with op_put_segment
+				if (!readInt(&blobhigh,"parameter",
+							bytesread) ||
+					!readInt(&bloblow,"parameter",
+							bytesread)) {
 					return false;
 				}
-				}
+				isblob=true;
 				break;
 
 			case blr_float:
@@ -6120,6 +7054,35 @@ bool sqlrprotocol_firebird::readMessage(sqlrservercursor *cursor,
 		if (isnull) {
 			bv->type=SQLRSERVERBINDVARTYPE_NULL;
 			bv->isnull=cont->getNullBindValue();
+		} else if (isblob) {
+			sqlrfirebirdblob	*blob=
+					getBlobById(blobhigh,bloblow);
+			if (!blob) {
+				badblobid=true;
+				bv->type=SQLRSERVERBINDVARTYPE_NULL;
+				bv->isnull=cont->getNullBindValue();
+			} else {
+				// what gets bound is the bytes, since the
+				// backend's blob id is its own and the
+				// module's means nothing to it
+				uint64_t	size=blob->data.getSize();
+				if (size>0xffffffffULL) {
+					size=0xffffffffULL;
+				}
+				bv->type=(fld->subtype==1)?
+					SQLRSERVERBINDVARTYPE_CLOB:
+					SQLRSERVERBINDVARTYPE_BLOB;
+				bv->valuesize=(uint32_t)size;
+				bv->value.stringval=
+					(char *)bindpool->allocate(size+1);
+				if (size) {
+					bytestring::copy(bv->value.stringval,
+							blob->data.getBuffer(),
+							size);
+				}
+				bv->value.stringval[size]='\0';
+				bv->isnull=cont->getNonNullBindValue();
+			}
 		} else if (strval) {
 			bv->type=SQLRSERVERBINDVARTYPE_STRING;
 			bv->valuesize=strvallen;
@@ -6215,8 +7178,8 @@ bool sqlrprotocol_firebird::writeMessage(sqlrservercursor *cursor,
 			return false;
 		}
 
-		if (!writeField(&fields[i],field,fieldsize,
-					null,byteswritten)) {
+		if (!writeField(cursor,i,&fields[i],field,fieldsize,
+					lob,null,byteswritten)) {
 			return false;
 		}
 
@@ -6231,9 +7194,12 @@ bool sqlrprotocol_firebird::writeMessage(sqlrservercursor *cursor,
 	return true;
 }
 
-bool sqlrprotocol_firebird::writeField(const sqlrfirebirdfield *fld,
+bool sqlrprotocol_firebird::writeField(sqlrservercursor *cursor,
+					uint32_t col,
+					const sqlrfirebirdfield *fld,
 					const char *value,
 					uint64_t valuesize,
+					bool lob,
 					bool null,
 					uint32_t *byteswritten) {
 
@@ -6314,12 +7280,14 @@ bool sqlrprotocol_firebird::writeField(const sqlrfirebirdfield *fld,
 			// A fetched blob is answered with an id rather than
 			// the data, and the backend's own id isn't reachable
 			// through the server API, so the module hands out one
-			// of its own.  Nothing can be fetched with it yet -
-			// the blob ops are still unimplemented.
+			// of its own.  The bytes have to be read here rather
+			// than when the client asks for them, because the
+			// fetch loop has moved on to the next row by then -
+			// see bufferBlob().
 			uint32_t	low=0;
 			if (!null) {
-				blobid++;
-				low=blobid;
+				bufferBlob(cursor,col,value,
+						valuesize,lob,&low);
 			}
 			return writeInt(0,"field",byteswritten) &&
 				writeInt(low,"field",byteswritten);

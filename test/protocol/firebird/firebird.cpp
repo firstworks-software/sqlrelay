@@ -1651,7 +1651,18 @@ int	main(int argc, char **argv) {
 		blobinfocount++;
 	}
 	assertEquals(bloblength,blobsize);
-	assertEquals(blobsegments,blobsegmentcount);
+	// SQL Relay's server api carries a blob as a flat buffer, so the
+	// module has nothing to write the client's segment boundaries down
+	// with, and the firebird backend stores what it is given in chunks of
+	// its own - see #9151.  So the segments the module reports are the
+	// backend's, not the five the client wrote, and how many that is
+	// depends on how the backend chunks.  All the module promises is that
+	// the blob has segments at all.
+	if (issqlrelay) {
+		assertTrue(blobsegments>=1);
+	} else {
+		assertEquals(blobsegments,blobsegmentcount);
+	}
 	stdoutput.printf("\n\n");
 
 
