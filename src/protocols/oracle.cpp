@@ -100,6 +100,10 @@
 #define TTC_EXTPROC1			0x20
 #define TTC_EXTPROC2			0x44
 
+// data flags.  one pair of bytes at the front of a data packet, describing the
+// packet rather than any one message in it.
+#define DATA_FLAGS_EOF			0x0040
+
 // o5logon verifier types, and the corresponding session key sizes, which are
 // what a client tells the two verifier types apart by
 #define VERIFIER_TYPE_11G_1	0xb152
@@ -4682,8 +4686,23 @@ void sqlrprotocol_oracle::debugTtcCode(byte_t ttccode) {
 		case TTC_ERROR:
 			code="TTC_ERROR";
 			break;
+		case TTC_ROW_HEADER:
+			code="TTC_ROW_HEADER";
+			break;
+		case TTC_ROW_DATA:
+			code="TTC_ROW_DATA";
+			break;
 		case TTC_OK:
 			code="TTC_OK";
+			break;
+		case TTC_STATUS:
+			code="TTC_STATUS";
+			break;
+		case TTC_DESCRIBE_INFO:
+			code="TTC_DESCRIBE_INFO";
+			break;
+		case TTC_BIT_VECTOR:
+			code="TTC_BIT_VECTOR";
 			break;
 		case TTC_EXTENDED_TTI_FUNCTION:
 			code="TTC_EXTENDED_TTI_FUNCTION";
@@ -4995,11 +5014,22 @@ void sqlrprotocol_oracle::debugSystemError() {
 	delete[] err;
 }
 
+// The data flags belong to the packet, not to the message.  A client can pack
+// more than one tti message into one packet, and only the first of them
+// follows the flags - ojdbc sends a close-cursors piggyback and a logoff
+// together, and reading two more bytes of flags in front of the logoff loses
+// it.  So the flags are read exactly when a packet is read, and every message
+// after the first starts at its ttc code.
 bool sqlrprotocol_oracle::getTtiFunction(const byte_t *rp,
 						byte_t *ttifunction,
 						const byte_t **rpout) {
 
-	if (!rp) {
+	// a read pointer that has reached the end of the packet it was in has
+	// nothing left to hand back, so get another packet
+	bool	newpacket=(!rp || !resppacket ||
+					rp>=resppacket+resppacketsize);
+
+	if (newpacket) {
 		if (!recvPacket()) {
 			return false;
 		}
@@ -5014,11 +5044,37 @@ bool sqlrprotocol_oracle::getTtiFunction(const byte_t *rp,
 	}
 
 	const byte_t	*rpin=rp;
+	const byte_t	*end=resppacket+resppacketsize;
 
-	uint16_t	dataflags;
+	uint16_t	dataflags=0;
 	byte_t		ttccode;
 
-	readBE(rp,&dataflags,&rp);
+	if (newpacket) {
+		if (end-rp<2) {
+			debugWrite("truncated data flags");
+			*rpout=rpin;
+			return false;
+		}
+		readBE(rp,&dataflags,&rp);
+
+		// a client's last packet is the flags and nothing else
+		if (rp==end) {
+			debugStart("get tti function");
+			debugWrite("data flags: 0x%04x",dataflags);
+			debugWrite("%s",(dataflags&DATA_FLAGS_EOF)?
+						"end of file":"empty packet");
+			debugEnd();
+			*rpout=rpin;
+			return false;
+		}
+	}
+
+	if (end-rp<2) {
+		debugWrite("truncated tti message");
+		*rpout=rpin;
+		return false;
+	}
+
 	if (!read(rp,&ttccode,"ttccode",TTC_TTI_FUNCTION,&rp) &&
 		!read(rp,&ttccode,"ttccode",TTC_EXTENDED_TTI_FUNCTION,&rp)) {
 		*rpout=rpin;
@@ -5029,12 +5085,14 @@ bool sqlrprotocol_oracle::getTtiFunction(const byte_t *rp,
 
 	if (getDebug()) {
 		debugStart("get tti function");
-		debugWrite("data flags: 0x%04x",dataflags);
+		if (newpacket) {
+			debugWrite("data flags: 0x%04x",dataflags);
+		}
 		debugTtcCode(ttccode);
 		debugTtiFunction(*ttifunction);
 		debugEnd();
 	}
-	
+
 	return true;
 }
 
@@ -7422,37 +7480,42 @@ bool sqlrprotocol_oracle::sendCloseResponse(sqlrservercursor *cursor) {
 
 bool sqlrprotocol_oracle::disconnect(const byte_t *rp) {
 
-	// no idea
-	byte_t	unknown;
-	read(rp,&unknown,&rp);
+	byte_t	seqnumber=0;
+	read(rp,&seqnumber,&rp);
 
 	debugStart("disconnect request");
-	debugWrite("unknown: 0x%02x",unknown);
+	debugWrite("seq number: %d",seqnumber);
 	debugEnd();
-
-#if 0
-	// FIXME: do something?
-	uint16_t	cursorid=hackcursorid;
-	hackcursorid=65535;
-#endif
 
 	return sendDisconnectResponse();
 }
 
+// A logoff is answered with a status message, and a status message is a ub4
+// call status and a ub2 end-to-end sequence number - python-oracledb reads
+// them in _process_message() in impl/thin/messages/base.pyx.  Sending the ttc
+// code and stopping, which is what this used to do, is a truncated one, and a
+// client that reads past it gets nothing and reports ORA-03113 for a logoff
+// that actually succeeded.  The values are a live oracle 11.2 server's answer
+// to ojdbc 23.26's logoff, which is 14 bytes on the wire.
 bool sqlrprotocol_oracle::sendDisconnectResponse() {
 
 	resetSendPacketBuffer(PACKET_DATA);
 
 	uint16_t	dataflags=0;
-	// FIXME: not a valid ttccode type...
-	byte_t		ttccode=9;
+	byte_t		ttccode=TTC_STATUS;
+	uint32_t	callstatus=1;
+	uint32_t	endtoendseqnumber=0;
 
 	writeBE(&reqpacket,dataflags);
 	write(&reqpacket,ttccode);
+	putUb4(callstatus);
+	putUb4(endtoendseqnumber);
 
 	debugStart("disconnect response");
 	debugWrite("data flags: 0x%04x",dataflags);
 	debugTtcCode(ttccode);
+	debugWrite("call status: %d",callstatus);
+	debugWrite("end to end seq number: %d",endtoendseqnumber);
 	debugEnd();
 
 	return sendPacket(true);
@@ -7504,22 +7567,63 @@ bool sqlrprotocol_oracle::sendVersionResponse() {
 	return sendPacket(true);
 }
 
+// The close-cursors piggyback.  A client sends it in front of another call
+// rather than on its own - ojdbc packs one in front of its logoff - so the
+// read has to stop exactly where the body ends, or the message behind it is
+// misread.  The body is not a fixed width: it grows by one ub4 per cursor.
+// The layout is python-oracledb's _write_close_cursors_piggyback() in
+// impl/thin/messages/base.pyx.  There is no response.
 bool sqlrprotocol_oracle::occa(const byte_t *rp, const byte_t **rpout) {
 
-	// no idea what this is at all,
-	// and it doesn't appear to have a response
-	
-	// FIXME: decode this...
-	byte_t	unknown[11];
-	for (uint16_t i=0; i<sizeof(unknown); i++) {
-		read(rp,&(unknown[i]),&rp);
+	const byte_t	*end=resppacket+resppacketsize;
+
+	byte_t		seqnumber=0;
+	byte_t		pointer=0;
+	uint32_t	cursorcount=0;
+
+	if (end-rp<1) {
+		debugWrite("truncated occa sequence number");
+		return false;
+	}
+	read(rp,&seqnumber,&rp);
+
+	if (!getPointer(rp,end,&pointer,&rp) ||
+		!getUb4(rp,end,&cursorcount,&rp)) {
+		return false;
 	}
 
-	*rpout=rp;
-
 	debugStart("occa");
-	debugHexDump(unknown,sizeof(unknown));
+	debugWrite("seq number: %d",seqnumber);
+	debugWrite("cursor count: %d",cursorcount);
+
+	for (uint32_t i=0; i<cursorcount; i++) {
+
+		uint32_t	cursorid=0;
+		if (!getUb4(rp,end,&cursorid,&rp)) {
+			debugEnd();
+			return false;
+		}
+		debugWrite("cursor id: %d",cursorid);
+
+		// the ids on the wire are the controller's plus 1
+		if (!cursorid) {
+			continue;
+		}
+		sqlrservercursor	*cursor=
+				cont->getCursor((uint16_t)(cursorid-1));
+		if (!cursor) {
+			debugWrite("cursor id %d not found",cursorid);
+			continue;
+		}
+		clearParams(cursor);
+		pcounts[cont->getId(cursor)]=0;
+		cont->abort(cursor);
+		cont->release(cursor);
+	}
+
 	debugEnd();
+
+	*rpout=rp;
 
 	return true;
 }

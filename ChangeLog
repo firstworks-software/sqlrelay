@@ -1510,6 +1510,19 @@
 		which had no caller and whose body is a connect string
 		pointing at another listener, which sql relay has no use
 		for
+	fixed the oracle protocol module - it read the tns data flags in front
+		of every tti message, but they belong to the packet, so a
+		packet carrying more than one message desynced, and a client
+		that packs a close-cursors piggyback in front of its logoff
+		got no answer to the logoff and reported ORA-03113
+	decoded the oracle protocol module's close-cursors piggyback, which
+		was read as a fixed 11 bytes with no bounds check, and it now
+		reads the sequence number, pointer, cursor count and cursor
+		ids, and releases each cursor named
+	fixed the oracle protocol module's logoff response - it sent a
+		truncated status message, and it now sends the call status
+		and end-to-end sequence number a real server sends, so a
+		client's disconnect completes cleanly
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems
