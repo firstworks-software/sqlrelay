@@ -1495,6 +1495,21 @@
 	added a debug dump of an ano array field the oracle protocol module
 		can't recognize, so the shape gets captured rather than
 		silently ignored
+	fixed the oracle protocol module's refuse packet - it carried no body
+		at all, so a client that couldn't agree a protocol version
+		got a refusal with no reason in it, and it now carries the
+		two reason bytes, the length and the connect-string-shaped
+		message a real listener sends, with ORA-12564 in it, which
+		ojdbc reports as "TNS:connection refused"
+	fixed the oracle protocol module's tti version negotiation - it
+		dropped the connection without answering when it couldn't
+		agree a version, and it now sends an ORA-03134 error packet,
+		which is what a server can send after the accept - a refuse
+		packet is only valid before it
+	removed the oracle protocol module's unimplemented redirect packet,
+		which had no caller and whose body is a connect string
+		pointing at another listener, which sql relay has no use
+		for
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems

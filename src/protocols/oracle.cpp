@@ -125,6 +125,23 @@
 #define ORA_NO_DATA_FOUND		1403
 #define ORA_NO_DATA_FOUND_MESSAGE	"ORA-01403: no data found\n"
 
+// the two ways the handshake can say no.  A refuse packet carries a tns error
+// number, which is what a listener reports; an error packet after the accept
+// carries an oracle error number, which is what a server reports.
+#define TNS_CONNECTION_REFUSED		12564
+#define ORA_VERSION_NOT_SUPPORTED	3134
+#define ORA_VERSION_NOT_SUPPORTED_MESSAGE \
+	"ORA-03134: Connections to this server version are no longer " \
+	"supported.\n"
+
+// the version the module reports as its own - oracle 11.2.0.1.0, 0x0b200100,
+// which is the version the rest of it answers as.  See #9147.
+#define SERVER_VERSION_NUMBER		"186646784"
+
+// what a live 11.2 listener puts in the two reason bytes of a refuse
+#define REFUSE_REASON_USER		0x22
+#define REFUSE_REASON_SYSTEM		0x00
+
 // two task interface (tti) functions
 #define TTI_OPEN		0x02
 #define TTI_QUERY		0x03
@@ -765,8 +782,7 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_oracle : public sqlrprotocol {
 		bool	sendAccept();
 		bool	sendAccept(const byte_t *data, uint16_t datasize);
 		bool	sendResend();
-		bool	sendRedirect();
-		bool	sendRefuse();
+		bool	sendRefuse(uint32_t tnserror);
 
 		bool	anoNegotiation();
 		bool	recvAnoRequest();
@@ -903,6 +919,9 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_oracle : public sqlrprotocol {
 		bool	recvAuthenticationRequest(bool secondphase);
 		bool	sendAuthenticationChallenge();
 		bool	sendAuthenticationResponse();
+		bool	sendErrorPacket(const char *what,
+						uint32_t oranum,
+						const char *message);
 		bool	sendAuthenticationError(uint32_t oranum,
 						const char *message);
 
@@ -1893,7 +1912,7 @@ bool sqlrprotocol_oracle::sendConnectResponse() {
 		connectversion=PROTOCOL_VERSION_8;
 	} else {
 		debugWrite("no supported connect protocol version found");
-		sendRefuse();
+		sendRefuse(TNS_CONNECTION_REFUSED);
 		return false;
 	}
 
@@ -1956,28 +1975,43 @@ bool sqlrprotocol_oracle::sendResend() {
 	return sendPacket(true);
 }
 
-bool sqlrprotocol_oracle::sendRedirect() {
+// A refuse packet's body is two reason bytes, a big endian uint16 length and
+// a connect-string-shaped message, and the message is where the reason
+// actually is: the client digs the ERR= out of it and reports that.  A body
+// of no bytes at all, which is what this used to send, is the one case
+// python-oracledb calls out by name - "the listener refused the connection but
+// an unexpected error format was returned" - and it leaves the user with no
+// reason at all.
+//
+// The shape and the two reason bytes are a live oracle 11.2 listener's,
+// captured by asking it for a service name it doesn't have.  The error number
+// appears twice, once as ERR= and once as CODE= inside an ERROR_STACK, and
+// EMFI is 4 in every capture.
+bool sqlrprotocol_oracle::sendRefuse(uint32_t tnserror) {
 
-	// debug
-	debugStart("redirect");
-	debugEnd();
+	stringbuffer	message;
+	message.append("(DESCRIPTION=(TMP=)(VSNNUM=");
+	message.append(SERVER_VERSION_NUMBER);
+	message.append(")(ERR=");
+	message.append(tnserror);
+	message.append(")(ERROR_STACK=(ERROR=(CODE=");
+	message.append(tnserror);
+	message.append(")(EMFI=4))))");
 
-	// build packet
-	resetSendPacketBuffer(PACKET_REDIRECT);
-	// FIXME: implement this...
-
-	return sendPacket(true);
-}
-
-bool sqlrprotocol_oracle::sendRefuse() {
+	uint16_t	messagesize=(uint16_t)message.getStringLength();
 
 	// debug
 	debugStart("refuse");
+	debugWrite("error: %d",tnserror);
+	debugWrite("message: %s",message.getString());
 	debugEnd();
 
 	// build packet
 	resetSendPacketBuffer(PACKET_REFUSE);
-	// FIXME: implement this...
+	write(&reqpacket,(byte_t)REFUSE_REASON_USER);
+	write(&reqpacket,(byte_t)REFUSE_REASON_SYSTEM);
+	writeBE(&reqpacket,messagesize);
+	write(&reqpacket,message.getString(),(size_t)messagesize);
 
 	return sendPacket(true);
 }
@@ -2876,8 +2910,16 @@ bool sqlrprotocol_oracle::sendTtiResponse() {
 	}
 	if (!ttiversion) {
 		debugWrite("no supported tti protocol version found");
-		// FIXME: send refuse?
-		return false;
+
+		// Not a refuse packet, whatever the shape of the failure -
+		// the accept has already gone out and a refuse is only valid
+		// before it.  An error packet is how a server says no from
+		// here on.  There's no client on this host that offers no
+		// supported tti version, so this path is argued from the
+		// layer the packet belongs to rather than from a run.
+		return sendErrorPacket("tti version error",
+					ORA_VERSION_NOT_SUPPORTED,
+					ORA_VERSION_NOT_SUPPORTED_MESSAGE);
 	}
 
 	resetSendPacketBuffer(PACKET_DATA);
@@ -4524,6 +4566,16 @@ bool sqlrprotocol_oracle::sendAuthenticationResponse() {
 // matches neither of the two captures this was written from.
 bool sqlrprotocol_oracle::sendAuthenticationError(uint32_t oranum,
 						const char *message) {
+	return sendErrorPacket("authentication error",oranum,message);
+}
+
+// The same packet, for anything after the accept that has to say no.  A
+// refuse packet can't be used there: it's an ns layer packet type and it's
+// only valid before the accept, so a client that has already been accepted
+// reads one as a data packet and desyncs.
+bool sqlrprotocol_oracle::sendErrorPacket(const char *what,
+						uint32_t oranum,
+						const char *message) {
 
 	resetSendPacketBuffer(PACKET_DATA);
 
@@ -4554,7 +4606,7 @@ bool sqlrprotocol_oracle::sendAuthenticationError(uint32_t oranum,
 	reqpacket.append(suffix,sizeof(suffix));
 	putLenString(message,charstring::getLength(message));
 
-	debugStart("authentication error");
+	debugStart(what);
 	debugWrite("data flags: 0x%04x",dataflags);
 	debugTtcCode(ttccode);
 	debugWrite("error: %d",oranum);
