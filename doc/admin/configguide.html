@@ -145,6 +145,8 @@
 
     <li><a href="#oracleprotocol">Oracle Protocol</a></li>
     <ul>
+      <li><a href="#oracleserverversion">Server Version</a></li>
+      <li><a href="#oracleverifiertype">Password Verifier Type</a></li>
       <li><a href="#oraclecharsets">Character Set Options</a></li>
       <li><a href="#oraclelimitations">Limitations</a></li>
     </ul>
@@ -3527,8 +3529,113 @@ http://www.gnu.org/software/src-highlite -->
 
 <p>If an instance speaks the Oracle client-server protocol, then any client that wishes to use it must also speak the Oracle client-server protocol.  This means that most software written using the Oracle API, or written using a database abstraction layer which loads a driver for Oracle can access this instance.  However, it also means that SQL Relay's standard sqlrsh client program and client programs for other databases (eg. the psql, and mysql command line programs, MySQL Workbench, SQL Server Management Studio, etc.) cannot access this instance.</p>
 
-<p>The Oracle protocol module is still under development, and most of its configuration isn't documented here yet.  The character set options below are the exception, as they can decide whether a client is able to read a result set at all.</p>
+<p>The Oracle protocol module is still under development, and most of its configuration isn't documented here yet.  The options below are the exception.  They decide which clients can connect to the instance at all, and whether a client that connects is able to read a result set.</p>
 
+<a name="oracleserverversion"/><h3>Server Version</h3>
+
+<p>An Oracle client works out how to read the server's answers from the version of server it believes it is talking to.  Several parts of the protocol changed at Oracle 12.1, and a client that is told one version and then sent another version's bytes doesn't recover.  It either waits for fields that never arrive, or reads the next message a few bytes out of position.</p>
+
+<p>So the Oracle protocol module imitates one Oracle version, consistently, and the <i>serverversion</i> option chooses which one.  It accepts 11.2 or 12.1, and defaults to 12.1.  Any other value, including a misspelled one, is the same as leaving it out.</p>
+
+<p>The setting moves everything a client picks a reader from, all at once: the TTC field version the module negotiates, the shape of the summary object that ends every response, the server version and SQL version the module reports while authenticating, and the default password verifier type described below.  Both settings describe a server that could really exist.  There is no setting that mixes them.</p>
+
+<p><b>This option decides which clients can use the instance at all.</b>  As of SQL Relay 2.3.0, measured against the module:</p>
+
+<table>
+  <tr>
+    <th> Client 
+</th>
+    <th> serverversion="12.1" (the default) 
+</th>
+    <th> serverversion="11.2" 
+</th>
+  </tr>
+  <tr>
+    <td> Oracle JDBC driver (ojdbc) 23.26 
+</td>
+    <td> logs in, runs queries, reads result sets 
+</td>
+    <td> logs in, runs queries, reads result sets 
+</td>
+  </tr>
+  <tr>
+    <td> python-oracledb 4.0.2, thin mode 
+</td>
+    <td> logs in, runs queries, reads result sets 
+</td>
+    <td> stops responding partway through the login 
+</td>
+  </tr>
+  <tr>
+    <td> node-oracledb 7.0.1, thin mode 
+</td>
+    <td> logs in, runs queries, reads result sets 
+</td>
+    <td> stops responding partway through the login 
+</td>
+  </tr>
+  <tr>
+    <td> Oracle OCI 23.26 
+</td>
+    <td> login fails with ORA-03113 
+</td>
+    <td> logs in, but every query fails with ORA-03113 
+</td>
+  </tr>
+</table>
+
+<br/><p>The default serves the three drivers that don't use Oracle's OCI library, so it's the one to leave alone unless a client fails to get through the login.  If it does, note the symptom.  python-oracledb and node-oracledb don't support Oracle servers older than 12.1 at all, and against one they wait for data that never comes, rather than reporting an error, so the client simply hangs.  Setting <i>serverversion</i> to 11.2 makes SQL Relay a server they refuse to talk to, and setting it back to 12.1 is the fix.</p>
+
+<p>Neither setting lets a client built on Oracle's OCI library read a query's answer, and no combination of the options on this page changes that.  See the limitations below.</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt><b><font color="#000080">&lt;?xml</font></b> <font color="#009900">version</font><font color="#990000">=</font><font color="#FF0000">"1.0"</font><b><font color="#000080">?&gt;</font></b>
+<b><font color="#0000FF">&lt;instances&gt;</font></b>
+	<b><font color="#0000FF">&lt;instance</font></b> <font color="#009900">id</font><font color="#990000">=</font><font color="#FF0000">"example"</font> <font color="#009900">dbase</font><font color="#990000">=</font><font color="#FF0000">"oracle"</font><b><font color="#0000FF">&gt;</font></b>
+		<b><font color="#0000FF">&lt;listeners&gt;</font></b>
+			<b><font color="#0000FF">&lt;listener</font></b> <font color="#009900">protocol</font><font color="#990000">=</font><font color="#FF0000">"oracle"</font> <font color="#009900">port</font><font color="#990000">=</font><font color="#FF0000">"1521"</font> <font color="#009900">serverversion</font><font color="#990000">=</font><font color="#FF0000">"11.2"</font><b><font color="#0000FF">/&gt;</font></b>
+		<b><font color="#0000FF">&lt;/listeners&gt;</font></b>
+		<b><font color="#0000FF">&lt;connections&gt;</font></b>
+			<b><font color="#0000FF">&lt;connection</font></b> <font color="#009900">string</font><font color="#990000">=</font><font color="#FF0000">"user=scott;password=tiger;oracle_home=/u01/app/oracle/product/12.1.0;oracle_sid=ora1"</font><b><font color="#0000FF">/&gt;</font></b>
+		<b><font color="#0000FF">&lt;/connections&gt;</font></b>
+	<b><font color="#0000FF">&lt;/instance&gt;</font></b>
+<b><font color="#0000FF">&lt;/instances&gt;</font></b>
+</tt></pre>
+
+</blockquote>
+<a name="oracleverifiertype"/><h3>Password Verifier Type</h3>
+
+<p>Oracle authenticates with a challenge and response exchange called O5LOGON.  The server tells the client which kind of stored password verifier it has, and the client picks its cryptography and its session key size to match.  Oracle 11g databases have one kind of verifier, and Oracle 12c databases added a second, stronger one.</p>
+
+<p>The <i>verifiertype</i> option chooses which of the two the module offers.  It accepts 11g or 12c.  Rather than having a fixed default, it follows <i>serverversion</i>: 12c when <i>serverversion</i> is 12.1, and 11g when <i>serverversion</i> is 11.2.  That's because a 12c verifier arrived with Oracle 12.1 and can't exist on an 11.2 database, and a client that is offered a combination no real server could have may refuse the login.  Setting <i>verifiertype</i> to something the module doesn't recognize is the same as leaving it out.</p>
+
+<p>There is normally no reason to set it.  The default already matches the version the module reports, and none of the clients tested against SQL Relay 2.3.0 needed it changed.  Where one of them can't log in, it's the <i>serverversion</i> setting that decides it, not this one.  The option is there so the 11g path stays reachable, for testing and for a client old enough to require it.</p>
+
+<p>Note that this is not a setting about the back-end database.  It describes only the challenge SQL Relay itself issues to its own clients, which SQL Relay's own authentication modules answer.  It has no effect on how SQL Relay logs in to the back-end database.</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt><b><font color="#000080">&lt;?xml</font></b> <font color="#009900">version</font><font color="#990000">=</font><font color="#FF0000">"1.0"</font><b><font color="#000080">?&gt;</font></b>
+<b><font color="#0000FF">&lt;instances&gt;</font></b>
+	<b><font color="#0000FF">&lt;instance</font></b> <font color="#009900">id</font><font color="#990000">=</font><font color="#FF0000">"example"</font> <font color="#009900">dbase</font><font color="#990000">=</font><font color="#FF0000">"oracle"</font><b><font color="#0000FF">&gt;</font></b>
+		<b><font color="#0000FF">&lt;listeners&gt;</font></b>
+			<b><font color="#0000FF">&lt;listener</font></b> <font color="#009900">protocol</font><font color="#990000">=</font><font color="#FF0000">"oracle"</font> <font color="#009900">port</font><font color="#990000">=</font><font color="#FF0000">"1521"</font> <font color="#009900">verifiertype</font><font color="#990000">=</font><font color="#FF0000">"11g"</font><b><font color="#0000FF">/&gt;</font></b>
+		<b><font color="#0000FF">&lt;/listeners&gt;</font></b>
+		<b><font color="#0000FF">&lt;connections&gt;</font></b>
+			<b><font color="#0000FF">&lt;connection</font></b> <font color="#009900">string</font><font color="#990000">=</font><font color="#FF0000">"user=scott;password=tiger;oracle_home=/u01/app/oracle/product/12.1.0;oracle_sid=ora1"</font><b><font color="#0000FF">/&gt;</font></b>
+		<b><font color="#0000FF">&lt;/connections&gt;</font></b>
+	<b><font color="#0000FF">&lt;/instance&gt;</font></b>
+<b><font color="#0000FF">&lt;/instances&gt;</font></b>
+</tt></pre>
+
+</blockquote>
 <a name="oraclecharsets"/><h3>Character Set Options</h3>
 
 <p>While negotiating the protocol, the Oracle protocol module tells the client which character sets to expect.  Oracle identifies character sets by number, and the client uses those numbers to choose the codec it decodes the data with.</p>
@@ -3582,6 +3689,7 @@ where <font color="#008080">parameter</font> <b><font color="#000000">in</font><
 
 <ul>
   <li>Oracle native network encryption and crypto-checksumming (the Advanced Networking Option) are not supported.  SQL Relay negotiates them off.  Clients work normally with SQLNET.ENCRYPTION_CLIENT and SQLNET.CRYPTO_CHECKSUM_CLIENT set to ACCEPTED (the default), REQUESTED or REJECTED.  A client with either set to REQUIRED will fail to connect, with ORA-12660.</li>
+  <li>Clients built on Oracle's OCI library, which includes sqlplus, can't read a query's answer.  With <i>serverversion</i> set to 11.2, such a client logs in and its queries run, but it rejects the result set and reports ORA-03113.  With the default <i>serverversion</i> of 12.1, it doesn't get through the login, also with ORA-03113.  No setting serves it.  The drivers that don't use the OCI library - Oracle's JDBC driver, python-oracledb and node-oracledb - are unaffected.</li>
 </ul>
 
 <br/><a name="multipleprotocols"/><h2>Multiple Protocols</h2>

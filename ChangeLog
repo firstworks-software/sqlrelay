@@ -1614,6 +1614,15 @@
 		converted length encoding in its data type request reads it as a
 		single signed byte, which left python-oracledb, node-oracledb and
 		oci clients one byte out for the rest of the query answer
+	documented the oracle protocol module's serverversion and verifiertype
+		listener attributes in the config guide - what each setting
+		moves, that either one is a server that could really exist, and
+		which clients each serverversion setting serves: 12.1, the
+		default, serves the ojdbc, python-oracledb and node-oracledb
+		drivers, and 11.2 serves ojdbc and lets an oci client log in,
+		while the two thin drivers hang rather than reporting an error
+		against it - plus a limitations note that no setting lets an
+		oci client read a query's answer
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems
