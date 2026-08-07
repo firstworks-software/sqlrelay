@@ -1111,6 +1111,16 @@
 		than the CHAR_ARRAY and VARCHAR_ARRAY names the server sends -
 		both spellings are accepted now, since with typemangling=lookup
 		postgresql sends its own _char and _varchar instead
+	fixed an unbounded allocation in the oracle protocol module -
+		getAnoArrayField() read an array count off the wire and
+		allocated that many uint16_t's without checking it against
+		anything, so a count of 0xffffffff asked for 8gb, and since
+		nothing in the module catches std::bad_alloc, a failed
+		allocation aborted the connection process - the ano parse now
+		carries the end of the packet, the field size is checked
+		against the bytes left in the packet, the array count is
+		checked against the bytes left in the field, and a count that
+		doesn't fit fails the negotiation instead of allocating
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems

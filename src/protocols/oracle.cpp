@@ -632,15 +632,18 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_oracle : public sqlrprotocol {
 						uint16_t *fieldcount,
 						const byte_t **rpout);
 		bool	getSupervisorService(const byte_t *rp,
+						const byte_t *end,
 						uint16_t fieldcount,
 						const byte_t **rpout);
 		bool	getAuthenticationService(const byte_t *rp,
 						uint16_t fieldcount,
 						const byte_t **rpout);
 		bool	getEncryptionService(const byte_t *rp,
+						const byte_t *end,
 						uint16_t fieldcount,
 						const byte_t **rpout);
 		bool	getCryptoChecksummingService(const byte_t *rp,
+						const byte_t *end,
 						uint16_t fieldcount,
 						const byte_t **rpout);
 		bool	getAnoVersionField(const byte_t *rp,
@@ -651,6 +654,7 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_oracle : public sqlrprotocol {
 						uint32_t *connectiontype,
 						const byte_t **rpout);
 		bool	getAnoArrayField(const byte_t *rp,
+						const byte_t *end,
 						uint16_t **array,
 						uint32_t *arraycount,
 						const byte_t **rpout);
@@ -1643,7 +1647,7 @@ bool sqlrprotocol_oracle::recvAnoRequest() {
 	}
 
 	const byte_t	*rp=resppacket;
-	//const byte_t	*end=rp+resppacketsize;
+	const byte_t	*end=rp+resppacketsize;
 
 	// ano request header...
 	uint16_t	dataflags;
@@ -1683,7 +1687,7 @@ bool sqlrprotocol_oracle::recvAnoRequest() {
 		switch (service) {
 			case 4:
 				success=getSupervisorService(
-							rp,fieldcount,&rp);
+							rp,end,fieldcount,&rp);
 				break;
 			case 1:
 				success=getAuthenticationService(
@@ -1691,11 +1695,11 @@ bool sqlrprotocol_oracle::recvAnoRequest() {
 				break;
 			case 2:
 				success=getEncryptionService(
-							rp,fieldcount,&rp);
+							rp,end,fieldcount,&rp);
 				break;
 			case 3:
 				success=getCryptoChecksummingService(
-							rp,fieldcount,&rp);
+							rp,end,fieldcount,&rp);
 				break;
 			default:
 				debugWrite("bad ano service: %d",service);
@@ -1739,6 +1743,7 @@ bool sqlrprotocol_oracle::getAnoServiceHeader(const byte_t *rp,
 
 
 bool sqlrprotocol_oracle::getSupervisorService(const byte_t *rp,
+						const byte_t *end,
 						uint16_t fieldcount,
 						const byte_t **rpout) {
 
@@ -1750,7 +1755,7 @@ bool sqlrprotocol_oracle::getSupervisorService(const byte_t *rp,
 	uint32_t	drivercount;
 	if (!getAnoVersionField(rp,&supervisorversion,&rp) ||
 		!getAnoConnectionInfoField(rp,&pid,&connectiontype,&rp) ||
-		!getAnoArrayField(rp,&drivers,&drivercount,&rp)) {
+		!getAnoArrayField(rp,end,&drivers,&drivercount,&rp)) {
 		delete[] drivers;
 		debugEnd();
 		return false;
@@ -1788,6 +1793,7 @@ bool sqlrprotocol_oracle::getAuthenticationService(const byte_t *rp,
 }
 
 bool sqlrprotocol_oracle::getEncryptionService(const byte_t *rp,
+						const byte_t *end,
 						uint16_t fieldcount,
 						const byte_t **rpout) {
 
@@ -1797,7 +1803,7 @@ bool sqlrprotocol_oracle::getEncryptionService(const byte_t *rp,
 	uint32_t	drivercount;
 	byte_t		constant;
 	if (!getAnoVersionField(rp,&encryptionversion,&rp) ||
-		!getAnoArrayField(rp,&drivers,&drivercount,&rp)) {
+		!getAnoArrayField(rp,end,&drivers,&drivercount,&rp)) {
 		delete[] drivers;
 		debugEnd();
 		return false;
@@ -1821,6 +1827,7 @@ bool sqlrprotocol_oracle::getEncryptionService(const byte_t *rp,
 
 bool sqlrprotocol_oracle::getCryptoChecksummingService(
 						const byte_t *rp,
+						const byte_t *end,
 						uint16_t fieldcount,
 						const byte_t **rpout) {
 
@@ -1829,7 +1836,7 @@ bool sqlrprotocol_oracle::getCryptoChecksummingService(
 	uint16_t	*drivers=NULL;
 	uint32_t	drivercount;
 	if (!getAnoVersionField(rp,&cryptochecksummingversion,&rp) ||
-		!getAnoArrayField(rp,&drivers,&drivercount,&rp)) {
+		!getAnoArrayField(rp,end,&drivers,&drivercount,&rp)) {
 		delete[] drivers;
 		debugEnd();
 		return false;
@@ -1894,12 +1901,19 @@ bool sqlrprotocol_oracle::getAnoConnectionInfoField(
 }
 
 bool sqlrprotocol_oracle::getAnoArrayField(const byte_t *rp,
+						const byte_t *end,
 						uint16_t **array,
 						uint32_t *arraycount,
 						const byte_t **rpout) {
 
 	*array=NULL;
 	*arraycount=0;
+
+	// bounds-check the size and type
+	if (end-rp<4) {
+		debugWrite("bad array field, truncated header");
+		return false;
+	}
 
 	// get the total field size
 	uint16_t	size;
@@ -1911,15 +1925,29 @@ bool sqlrprotocol_oracle::getAnoArrayField(const byte_t *rp,
 		return false;
 	}
 
+	// the size counts the bytes after the size and type, and they all
+	// have to be in the packet
+	if ((size_t)(end-rp)<(size_t)size) {
+		debugWrite("bad array field size: %d",size);
+		return false;
+	}
+
+	// the end of this field.  measured here, before anything has read
+	// past the header, because readMarker32/16 only rewind the read
+	// pointer when they fail, so past this point rp may have moved.
+	const byte_t	*fieldend=rp+size;
+
 	// if size was 1, then there is just a null terminator
 	// skip it and bail
 	if (size==1) {
-		*rpout=rp+1;
+		*rpout=fieldend;
 		return true;
 	}
 
-	// look for a deadbeef marker, followed by an array marker
-	if (!readMarker32(rp,0xdeadbeef,&rp) ||
+	// look for a deadbeef marker, followed by an array marker.
+	// 10 bytes for the two markers and the array count.
+	if (size<10 ||
+		!readMarker32(rp,0xdeadbeef,&rp) ||
 		!readMarker16(rp,0x0003,&rp)) {
 
 		// FIXME: Sometimes there's no deadbeef marker, just an array
@@ -1930,16 +1958,20 @@ bool sqlrprotocol_oracle::getAnoArrayField(const byte_t *rp,
 		// idea how to interpret it.
 		//
 		// For now, we'll just return NULL/0 but we won't fail outright.
-		*rpout=rp+size;
+		*rpout=fieldend;
 		return true;
 	}
-	
+
 	// get the array count
 	readBE(rp,arraycount,&rp);
 
 	debugWrite("array count: %d",*arraycount);
 
-	// FIXME: sanity check on array count
+	// the members have to fit in what's left of the field
+	if (*arraycount>(uint32_t)(fieldend-rp)/sizeof(uint16_t)) {
+		debugWrite("bad array count: %d",*arraycount);
+		return false;
+	}
 
 	// get the array members
 	if (*arraycount) {
