@@ -89,10 +89,29 @@
 #define TTC_PROTOCOL_NEGOTIATION	0x01
 #define TTC_DATATYPE_NEGOTIATION	0x02
 #define TTC_TTI_FUNCTION		0x03
+#define TTC_ERROR			0x04
 #define TTC_OK				0x08
 #define TTC_EXTENDED_TTI_FUNCTION	0x11
 #define TTC_EXTPROC1			0x20
 #define TTC_EXTPROC2			0x44
+
+// o5logon verifier types, and the corresponding session key sizes, which are
+// what a client tells the two verifier types apart by
+#define VERIFIER_TYPE_11G_1	0xb152
+#define VERIFIER_TYPE_11G_2	0x1b25
+#define VERIFIER_TYPE_12C	0x4815
+#define VFR_DATA_SIZE_11G	10
+#define VFR_DATA_SIZE_12C	16
+
+// what real oracle sends for the 12c pbkdf2 parameters.  the auth module uses
+// whatever it's handed, but matching oracle is safer for a real client.
+#define PBKDF2_CSK_SALT_SIZE	16
+#define PBKDF2_VGEN_COUNT	"4096"
+#define PBKDF2_SDER_COUNT	"3"
+
+// oracle errors the authentication exchange can end in
+#define ORA_INVALID_USERNAME_PASSWORD	1017
+#define ORA_NULL_PASSWORD		1005
 
 // two task interface (tti) functions
 #define TTI_OPEN		0x02
@@ -170,6 +189,7 @@
 #define CCAP_RPC_SIG_VALUE		3
 #define CCAP_DBF_VERSION_MAX		1
 #define CCAP_O5LOGON			0x08
+#define CCAP_O7LOGON			0x20
 #define CCAP_END_OF_CALL_STATUS		0x01
 #define CCAP_FAST_SESSION_PROPAGATE	0x10
 #define CCAP_END_OF_RESPONSE		0x20
@@ -694,7 +714,7 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_oracle : public sqlrprotocol {
 		void	writeHost(bytebuffer *buffer, uint16_t value);
 		void	writeHost(bytebuffer *buffer, uint32_t value);
 
-		void	generateAuthSessionKey(uint16_t bytes);
+		char	*generateHex(uint16_t bytes);
 
 
 		// handshake...
@@ -802,10 +822,34 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_oracle : public sqlrprotocol {
 		bool	sendDataTypeResponse();
 
 		bool	authenticate();
+		bool	getUb4(const byte_t *rp,
+						const byte_t *end,
+						uint32_t *value,
+						const byte_t **rpout);
+		bool	getLenString(const byte_t *rp,
+						const byte_t *end,
+						char **string,
+						uint32_t *size,
+						const byte_t **rpout);
+		bool	getAuthField(const byte_t *rp,
+						const byte_t *end,
+						char **fieldname,
+						char **field,
+						uint32_t *fieldsize,
+						uint32_t *flags,
+						const byte_t **rpout);
+		void	putUb4(uint32_t value);
+		void	putLenString(const char *string, uint32_t size);
+		void	putAuthField(const char *fieldname,
+						const char *field,
+						uint32_t flags);
+		void	putAuthField(const char *fieldname, const char *field);
+		void	putAuthExtra(stringbuffer *extra, bool secondphase);
 		bool	recvAuthenticationRequest(bool secondphase);
 		bool	sendAuthenticationChallenge();
-		void	putAuthField(const char *fieldname, const char *field);
 		bool	sendAuthenticationResponse();
+		bool	sendAuthenticationError(uint32_t oranum,
+						const char *message);
 
 		void	debugTtcCode(byte_t ttccode);
 		void	debugTtiFunction(byte_t ttifunction);
@@ -945,6 +989,7 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_oracle : public sqlrprotocol {
 
 		uint16_t	charset;
 		uint16_t	nationalcharset;
+		uint32_t	verifiertype;
 
 		const byte_t	*datatypes;
 		uint16_t	datatypessize;
@@ -963,9 +1008,16 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_oracle : public sqlrprotocol {
 		//uint32_t	seed;
 
 		char		*username;
-		char		*authsessionkey;
 		char		*response;
 		//uint64_t	responsesize;
+
+		// o5logon...
+		char		*authvfrdata;
+		char		*authpbkdf2csksalt;
+		char		*serverauthsesskey;
+		char		*clientauthsesskey;
+		char		*authpassword;
+		bool		gotauthpassword;
 
 		uint16_t	maxcursorcount;
 		uint32_t	maxquerysize;
@@ -1000,10 +1052,29 @@ sqlrprotocol_oracle::sqlrprotocol_oracle(sqlrservercontroller *cont,
 		nationalcharset=CHARSET_AL16UTF16;
 	}
 
+	// which o5logon verifier type to offer.  a modern client expects 12c,
+	// which is what a 12.2 server sends, but the 11g path has to stay
+	// reachable for testing, and for a client old enough to need it.
+	const char	*vt=parameters->getAttributeValue("verifiertype");
+	if (!charstring::compare(vt,"11g")) {
+		verifiertype=VERIFIER_TYPE_11G_2;
+	} else if (!charstring::compare(vt,"12c") ||
+			charstring::isNullOrEmpty(vt)) {
+		verifiertype=VERIFIER_TYPE_12C;
+	} else {
+		verifiertype=(uint32_t)charstring::convertToUnsignedInteger(vt);
+		if (verifiertype!=VERIFIER_TYPE_11G_1 &&
+			verifiertype!=VERIFIER_TYPE_11G_2 &&
+			verifiertype!=VERIFIER_TYPE_12C) {
+			verifiertype=VERIFIER_TYPE_12C;
+		}
+	}
+
 	if (getDebug()) {
 		debugStart("parameters");
 		debugWrite("charset: %d",charset);
 		debugWrite("nationalcharset: %d",nationalcharset);
+		debugWrite("verifiertype: 0x%04x",verifiertype);
 		debugEnd();
 	}
 
@@ -1091,8 +1162,14 @@ void sqlrprotocol_oracle::init() {
 	resppacket=NULL;
 	resppacketsize=0;
 	username=NULL;
-	authsessionkey=NULL;
 	response=NULL;
+
+	authvfrdata=NULL;
+	authpbkdf2csksalt=NULL;
+	serverauthsesskey=NULL;
+	clientauthsesskey=NULL;
+	authpassword=NULL;
+	gotauthpassword=false;
 }
 
 void sqlrprotocol_oracle::free() {
@@ -1106,8 +1183,14 @@ void sqlrprotocol_oracle::free() {
 	ttiversions=NULL;
 
 	delete[] username;
-	delete[] authsessionkey;
 	delete[] response;
+
+	delete[] authvfrdata;
+	delete[] authpbkdf2csksalt;
+	delete[] serverauthsesskey;
+	delete[] clientauthsesskey;
+	delete[] authpassword;
+
 	resppacketpool->clear();
 
 	delete[] clientstring;
@@ -1567,18 +1650,16 @@ void sqlrprotocol_oracle::writeHost(bytebuffer *buffer, uint32_t value) {
 	buffer->append(value);
 }
 
-void sqlrprotocol_oracle::generateAuthSessionKey(uint16_t bytes) {
+char *sqlrprotocol_oracle::generateHex(uint16_t bytes) {
 
-	// random bytes
 	stringbuffer	str;
 	uint32_t	number;
-	for (uint16_t i=0; i<bytes; i++) {
+	for (uint16_t i=0; i<bytes*2; i++) {
 		r.generate(&number);
-		int32_t	scalednumber=randomnumber::scale(number,0,16);
-		str.append((char)(scalednumber+((scalednumber<10)?'0':'A'-10)));
+		int32_t	nibble=randomnumber::scale(number,0,15);
+		str.append((char)(nibble+((nibble<10)?'0':'A'-10)));
 	}
-	delete[] authsessionkey;
-	authsessionkey=str.detachString();
+	return str.detachString();
 }
 
 bool sqlrprotocol_oracle::initialHandshake() {
@@ -2886,9 +2967,22 @@ void sqlrprotocol_oracle::putTti6Response() {
 	// servers both answer version 6 with exactly this layout, and the same
 	// 11.2 server made to negotiate version 5 answers the same bytes minus
 	// the arrays.
+	//
+	// CCAP_LOGON_TYPES has to track the verifier type the challenge is
+	// going to carry.  ojdbc 23.26 sends an empty AUTH_PASSWORD - and no
+	// AUTH_PBKDF2_SPEEDY_KEY - for a 12c verifier unless CCAP_O7LOGON is
+	// set, and does the same for an 11g verifier when it is set.  It picks
+	// its logon code path from the bit and its crypto from the verifier
+	// type, and refuses the login when they disagree.
+	byte_t	compilecaps[sizeof(ttiservercompilecaps)];
+	bytestring::copy(compilecaps,ttiservercompilecaps,
+					sizeof(ttiservercompilecaps));
+	if (verifiertype==VERIFIER_TYPE_12C) {
+		compilecaps[CCAP_LOGON_TYPES]|=CCAP_O7LOGON;
+	}
+
 	putTtiResponse(ttiversion,
-			ttiservercompilecaps,
-			(byte_t)sizeof(ttiservercompilecaps),
+			compilecaps,(byte_t)sizeof(compilecaps),
 			ttiserverruntimecaps,
 			(byte_t)sizeof(ttiserverruntimecaps));
 }
@@ -3016,8 +3110,198 @@ bool sqlrprotocol_oracle::authenticate() {
 		sendAuthenticationResponse();
 }
 
+// A ub4 is a count byte, then that many bytes of the value, big endian.  A
+// count of 0 means the value is 0 and nothing follows.
+bool sqlrprotocol_oracle::getUb4(const byte_t *rp,
+					const byte_t *end,
+					uint32_t *value,
+					const byte_t **rpout) {
+
+	*value=0;
+
+	if (end-rp<1) {
+		debugWrite("truncated ub4");
+		return false;
+	}
+
+	byte_t	count;
+	read(rp,&count,&rp);
+
+	if (count>sizeof(uint32_t)) {
+		debugWrite("bad ub4 size: %d",count);
+		return false;
+	}
+	if ((size_t)(end-rp)<(size_t)count) {
+		debugWrite("truncated ub4");
+		return false;
+	}
+
+	for (byte_t i=0; i<count; i++) {
+		byte_t	b;
+		read(rp,&b,&rp);
+		*value=((*value)<<8)|b;
+	}
+
+	*rpout=rp;
+
+	return true;
+}
+
+// A length byte, then that many bytes.  0xfe introduces a chunked long form
+// that nothing in the authentication exchange uses, so bail on it rather than
+// desync.
+bool sqlrprotocol_oracle::getLenString(const byte_t *rp,
+					const byte_t *end,
+					char **string,
+					uint32_t *size,
+					const byte_t **rpout) {
+
+	*string=NULL;
+	*size=0;
+
+	if (end-rp<1) {
+		debugWrite("truncated string size");
+		return false;
+	}
+
+	byte_t	length;
+	read(rp,&length,&rp);
+
+	if (length==0xfe) {
+		debugWrite("chunked string, not supported");
+		return false;
+	}
+	if ((size_t)(end-rp)<(size_t)length) {
+		debugWrite("truncated string");
+		return false;
+	}
+
+	*size=length;
+	getString(rp,string,length,&rp);
+
+	*rpout=rp;
+
+	return true;
+}
+
+// A key/value pair: ub4 name size, name, ub4 value size, value, ub4 flags -
+// with the value and its length byte both omitted when the value size is 0.
+// The omission is the thing that's easiest to get wrong; a client sends it
+// whenever it refuses to send an AUTH_PASSWORD.  flags is a ub4 too, not one
+// byte - the client's AUTH_SESSKEY carries 1, and a server's AUTH_VFR_DATA
+// carries the verifier type.
+bool sqlrprotocol_oracle::getAuthField(const byte_t *rp,
+					const byte_t *end,
+					char **fieldname,
+					char **field,
+					uint32_t *fieldsize,
+					uint32_t *flags,
+					const byte_t **rpout) {
+
+	*fieldname=NULL;
+	*field=NULL;
+	*fieldsize=0;
+	*flags=0;
+
+	uint32_t	fieldnamesize=0;
+	uint32_t	namesize=0;
+	if (!getUb4(rp,end,&fieldnamesize,&rp) ||
+		!getLenString(rp,end,fieldname,&namesize,&rp) ||
+		!getUb4(rp,end,fieldsize,&rp)) {
+		return false;
+	}
+
+	uint32_t	valuesize=0;
+	if (*fieldsize && !getLenString(rp,end,field,&valuesize,&rp)) {
+		return false;
+	}
+
+	if (!getUb4(rp,end,flags,&rp)) {
+		return false;
+	}
+
+	*rpout=rp;
+
+	return true;
+}
+
+void sqlrprotocol_oracle::putUb4(uint32_t value) {
+	if (!value) {
+		write(&reqpacket,(byte_t)0);
+	} else if (value<=0xff) {
+		write(&reqpacket,(byte_t)1);
+		write(&reqpacket,(byte_t)value);
+	} else if (value<=0xffff) {
+		write(&reqpacket,(byte_t)2);
+		writeBE(&reqpacket,(uint16_t)value);
+	} else {
+		write(&reqpacket,(byte_t)4);
+		writeBE(&reqpacket,value);
+	}
+}
+
+void sqlrprotocol_oracle::putLenString(const char *string, uint32_t size) {
+	write(&reqpacket,(byte_t)size);
+	write(&reqpacket,string,(size_t)size);
+}
+
+void sqlrprotocol_oracle::putAuthField(const char *fieldname,
+						const char *field,
+						uint32_t flags) {
+
+	uint32_t	fieldnamesize=charstring::getLength(fieldname);
+	uint32_t	fieldsize=charstring::getLength(field);
+
+	putUb4(fieldnamesize);
+	putLenString(fieldname,fieldnamesize);
+	putUb4(fieldsize);
+	if (fieldsize) {
+		putLenString(field,fieldsize);
+	}
+	putUb4(flags);
+
+	debugWrite("%s: %s (flags 0x%04x)",
+			fieldname,(field)?field:"",flags);
+}
+
+void sqlrprotocol_oracle::putAuthField(const char *fieldname,
+						const char *field) {
+	putAuthField(fieldname,field,0);
+}
+
+// The o5logon inputs, as a rudiments parameterstring.  They ride in the
+// credentials' "extra" field because sqlroraclecredentials has 5 fields and
+// o5logon needs 8 inputs.  The contract is documented at the top of
+// src/auths/oracle_userlist.cpp.
+void sqlrprotocol_oracle::putAuthExtra(stringbuffer *extra, bool secondphase) {
+
+	bool	pbkdf2=(verifiertype==VERIFIER_TYPE_12C);
+
+	extra->append("verifiertype=")->append(verifiertype);
+	extra->append(";authvfrdata=")->append(authvfrdata);
+	if (pbkdf2) {
+		extra->append(";authpbkdf2vgencount=")->
+						append(PBKDF2_VGEN_COUNT);
+	}
+
+	if (!secondphase) {
+		return;
+	}
+
+	// serverauthsesskey is the module's own challenge, handed straight
+	// back.  challenge() keeps no state, so decrypting what it produced is
+	// the only way the auth module can recover session key part A.
+	extra->append(";serverauthsesskey=")->append(serverauthsesskey);
+	extra->append(";clientauthsesskey=")->append(clientauthsesskey);
+	if (pbkdf2) {
+		extra->append(";authpbkdf2csksalt=")->append(authpbkdf2csksalt);
+		extra->append(";authpbkdf2sdercount=")->
+						append(PBKDF2_SDER_COUNT);
+	}
+}
+
 bool sqlrprotocol_oracle::recvAuthenticationRequest(bool secondphase) {
-	
+
 	if (!recvPacket()) {
 		return false;
 	}
@@ -3035,7 +3319,7 @@ bool sqlrprotocol_oracle::recvAuthenticationRequest(bool secondphase) {
 	byte_t		ttccode;
 	byte_t		ttifunction;
 	byte_t		seqnumber;
-	byte_t		unknown;
+	byte_t		pointer;
 
 	// data flags, ttc code, tti function, sequence number.
 	// the two tti function reads share one byte - read() rewinds the
@@ -3066,60 +3350,79 @@ bool sqlrprotocol_oracle::recvAuthenticationRequest(bool secondphase) {
 	}
 	read(rp,&seqnumber,&rp);
 
-	// FIXME: This protocol appears to vary, depending on whether the
-	// clientstring/serverstring match.  I suspect that it's not really
-	// based on that though, but rather, on derived capabilities of the
-	// different versions, or something...
-	bool	stringsmatch=!charstring::compare(clientstring,serverstring);
-
-	byte_t	usersize;
-	char	*user=NULL;
-
-	// the unknown bytes on either side of the user size, and the
-	// user size itself
-	if (end-rp<((stringsmatch)?(4+1+23):(2+1+7))) {
-		debugWrite("bad authentication request, truncated user size");
-		return false;
-	}
-
-	// no idea...
-	for (uint16_t i=0; i<((stringsmatch)?4:2); i++) {
-		read(rp,&unknown,&rp);
-	}
-
-	// user size...
-	read(rp,&usersize,&rp);
-
-	// no idea...
-	for (uint16_t i=0; i<((stringsmatch)?23:7); i++) {
-		read(rp,&unknown,&rp);
-	}
-
-	// user name...
-	if ((size_t)(end-rp)<(size_t)usersize) {
-		debugWrite("bad user size: %d",usersize);
-		return false;
-	}
-	getString(rp,&user,usersize,&rp);
-
 	debugStart("authentication request (phase %d)",(secondphase)?2:1);
 	debugWrite("data flags: 0x%04x",dataflags);
 	debugTtcCode(ttccode);
 	debugTtiFunction(ttifunction);
 	debugWrite("seq number: %d",seqnumber);
+
+	// The 4 pointer fields are single raw bytes, not ub4s.  Reading them
+	// as ub4s shifts everything after them.
+	uint32_t	usersize=0;
+	uint32_t	authmode=0;
+	uint32_t	fieldcount=0;
+	if (end-rp<1) {
+		debugWrite("truncated authusr pointer");
+		debugEnd();
+		return false;
+	}
+	read(rp,&pointer,&rp);
+	if (!getUb4(rp,end,&usersize,&rp) ||
+		!getUb4(rp,end,&authmode,&rp)) {
+		debugEnd();
+		return false;
+	}
+	if (end-rp<1) {
+		debugWrite("truncated authivl pointer");
+		debugEnd();
+		return false;
+	}
+	read(rp,&pointer,&rp);
+	if (!getUb4(rp,end,&fieldcount,&rp)) {
+		debugEnd();
+		return false;
+	}
+	if (end-rp<2) {
+		debugWrite("truncated authovl pointers");
+		debugEnd();
+		return false;
+	}
+	read(rp,&pointer,&rp);
+	read(rp,&pointer,&rp);
+
+	debugWrite("auth mode: 0x%08x",authmode);
+	debugWrite("field count: %d",fieldcount);
+
+	// the user name is written raw, with no length prefix, its length
+	// taken from the ub4 above
+	if ((size_t)(end-rp)<(size_t)usersize) {
+		debugWrite("bad user size: %d",usersize);
+		debugEnd();
+		return false;
+	}
+	char	*user=NULL;
+	getString(rp,&user,usersize,&rp);
 	debugWrite("user: %s",user);
-
-	// a size, and the bytes around it
-	int32_t	sizebytes=(stringsmatch)?(1+4):(1+1+1);
-
-	// the unknown bytes that follow each field
-	int32_t	trailerbytes=(stringsmatch)?4:1;
+	if (secondphase) {
+		// phase two names the user again.  Refuse a phase two that
+		// answers a challenge built for somebody else.
+		bool	sameuser=!charstring::compare(user,username);
+		delete[] user;
+		if (!sameuser) {
+			debugWrite("user changed between phases");
+			debugEnd();
+			return false;
+		}
+	} else {
+		delete[] username;
+		username=user;
+	}
 
 	// declared out here so every exit from the loop frees them
 	char	*fieldname=NULL;
 	char	*field=NULL;
 
-	while (rp<end) {
+	for (uint32_t i=0; i<fieldcount && rp<end; i++) {
 
 		// free what the previous pass allocated
 		delete[] fieldname;
@@ -3127,79 +3430,37 @@ bool sqlrprotocol_oracle::recvAuthenticationRequest(bool secondphase) {
 		delete[] field;
 		field=NULL;
 
-		byte_t		fieldnamesize;
-		uint32_t	fieldnamesizelong=0;
-		byte_t		fieldsize;
-		uint32_t	fieldsizelong=0;
-
-		// field name...
-		if (end-rp<sizebytes) {
-			debugWrite("truncated field name size");
+		uint32_t	fieldsize=0;
+		uint32_t	flags=0;
+		if (!getAuthField(rp,end,&fieldname,&field,
+						&fieldsize,&flags,&rp)) {
 			break;
 		}
-		if (!stringsmatch) {
-			read(rp,&unknown,&rp);
-		}
-		read(rp,&fieldnamesize,&rp);
-		if (!stringsmatch) {
-			read(rp,&fieldnamesize,&rp);
-		} else {
-			readBE(rp,&fieldnamesizelong,&rp);
-		}
-		if ((size_t)(end-rp)<(size_t)fieldnamesize) {
-			debugWrite("truncated field name");
-			break;
-		}
-		getString(rp,&fieldname,fieldnamesize,&rp);
 
-		// field...
-		if (end-rp<sizebytes) {
-			debugWrite("truncated field size");
-			break;
-		}
-		if (!stringsmatch) {
-			read(rp,&unknown,&rp);
-		}
-		read(rp,&fieldsize,&rp);
-		if (!stringsmatch) {
-			read(rp,&fieldsize,&rp);
-		} else {
-			readBE(rp,&fieldsizelong,&rp);
-		}
-		if ((size_t)(end-rp)<(size_t)fieldsize) {
-			debugWrite("truncated field");
-			break;
-		}
-		getString(rp,&field,fieldsize,&rp);
+		debugWrite("%s: %s (flags 0x%04x)",
+				fieldname,(field)?field:"",flags);
 
-		// no idea...
-		if (end-rp<trailerbytes) {
-			debugWrite("truncated field trailer");
-			break;
-		}
-		for (int32_t i=0; i<trailerbytes; i++) {
-			read(rp,&unknown,&rp);
+		if (!secondphase) {
+			continue;
 		}
 
-		debugWrite("%s: %s",fieldname,field);
-
-		// the long sizes are read but not identified, and the
-		// one-byte size is what's used.  write them out so whoever
-		// works #8977 with a real capture can see what the client
-		// puts there.
-		if (stringsmatch) {
-			debugWrite("field name size (long): %d",
-							fieldnamesizelong);
-			debugWrite("field size (long): %d",fieldsizelong);
+		// AUTH_PASSWORD and the client's AUTH_SESSKEY are the only two
+		// the auth module needs.  A zero length AUTH_PASSWORD is a
+		// normal thing to receive - it's what a client sends when it
+		// couldn't validate the padding in the challenge - so record
+		// that it arrived separately from what it held.
+		if (!charstring::compare(fieldname,"AUTH_PASSWORD")) {
+			gotauthpassword=true;
+			delete[] authpassword;
+			authpassword=charstring::duplicate(field);
+		} else if (!charstring::compare(fieldname,"AUTH_SESSKEY")) {
+			delete[] clientauthsesskey;
+			clientauthsesskey=charstring::duplicate(field);
 		}
-
-		// FIXME: do something with these...
-
 	}
 
 	delete[] fieldname;
 	delete[] field;
-	delete[] user;
 
 	debugEnd();
 
@@ -3208,35 +3469,55 @@ bool sqlrprotocol_oracle::recvAuthenticationRequest(bool secondphase) {
 
 bool sqlrprotocol_oracle::sendAuthenticationChallenge() {
 
-	resetSendPacketBuffer(PACKET_DATA);
+	bool	pbkdf2=(verifiertype==VERIFIER_TYPE_12C);
 
-	// FIXME: actually do auth, and send some
-	// different response if auth failed
+	// A real server's AUTH_VFR_DATA is the user's stored verifier salt and
+	// is identical for every login of that user.  SQL Relay has no stored
+	// verifier, so it generates a fresh one per login.  That's a real
+	// difference from oracle, but not one a client can act on.
+	delete[] authvfrdata;
+	authvfrdata=generateHex((pbkdf2)?VFR_DATA_SIZE_12C:VFR_DATA_SIZE_11G);
+	delete[] authpbkdf2csksalt;
+	authpbkdf2csksalt=(pbkdf2)?generateHex(PBKDF2_CSK_SALT_SIZE):NULL;
+
+	// let an auth module build session key part A
+	stringbuffer	extra;
+	putAuthExtra(&extra,false);
+
+	sqlroraclecredentials	cred;
+	cred.setUser(username);
+	cred.setMethod("O5LOGON");
+	cred.setExtra(extra.getString());
+
+	stringbuffer	challenge;
+	if (!cont->challenge(&cred,&challenge)) {
+		debugWrite("challenge failed");
+		return sendAuthenticationError(
+				ORA_INVALID_USERNAME_PASSWORD,
+				"ORA-01017: invalid username/password; "
+				"logon denied\n");
+	}
+
+	delete[] serverauthsesskey;
+	serverauthsesskey=challenge.detachString();
+
+	resetSendPacketBuffer(PACKET_DATA);
 
 	uint16_t	dataflags=0;
 	byte_t		ttccode=TTC_OK;
-	byte_t		unknown1[]={
-		0x04,
 
-		// varies, sometimes 0x01
-		0x00,
-
+	// Trailer after the last pair, from an 11.2 capture.  Not identified.
+	// A 12.2 server sends the same thing with 2 more zero ub4s on the end,
+	// but ojdbc 23.26 gives up on the login when it gets those, for either
+	// verifier type, so the shorter form is the one to send.
+	static const byte_t	trailer[]={
+		0x04, 0x01, 0x01, 0x01, 0x02,
 		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
 		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-
-		// varies, sometimes 0x40
-		0x00,
-
-		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-		0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-
-		// varies, sometimes 0x02, 0x00
-		0x00, 0x02,
-
+		0x00, 0x00, 0x00,
+		0x01,
 		0x00, 0x00, 0x00, 0x00, 0x00, 0x00
 	};
-
 
 	writeBE(&reqpacket,dataflags);
 	write(&reqpacket,ttccode);
@@ -3245,76 +3526,107 @@ bool sqlrprotocol_oracle::sendAuthenticationChallenge() {
 	debugWrite("data flags: 0x%04x",dataflags);
 	debugTtcCode(ttccode);
 
-	// no idea
-	write(&reqpacket,(byte_t)1);
-	write(&reqpacket,(byte_t)0);
+	putUb4((pbkdf2)?6:3);
 
-	// session key...
-	generateAuthSessionKey(16);
-authsessionkey=charstring::duplicate("64760F3160DCEF82");
-	putAuthField("AUTH_SESSKEY",authsessionkey);
+	// AUTH_SESSKEY is 48 bytes for an 11g verifier and 32 for a 12c one.
+	// The client picks its code path from that length, not from the
+	// verifier type it was told, so it's load bearing.  The auth module
+	// gets it right; nothing here has to.
+	putAuthField("AUTH_SESSKEY",serverauthsesskey);
 
-	// no idea
-	reqpacket.append(unknown1,sizeof(unknown1));
+	// the verifier type travels in AUTH_VFR_DATA's flags ub4, and nowhere
+	// else
+	putAuthField("AUTH_VFR_DATA",authvfrdata,verifiertype);
 
-	putGenericFooter();
+	if (pbkdf2) {
+		putAuthField("AUTH_PBKDF2_CSK_SALT",authpbkdf2csksalt);
+		putAuthField("AUTH_PBKDF2_VGEN_COUNT",PBKDF2_VGEN_COUNT);
+		putAuthField("AUTH_PBKDF2_SDER_COUNT",PBKDF2_SDER_COUNT);
+	}
+
+	// constant per database on a real server, and only informational
+	putAuthField("AUTH_GLOBALLY_UNIQUE_DBID",
+			"00000000000000000000000000000000");
+
+	reqpacket.append(trailer,sizeof(trailer));
 
 	debugEnd();
 
 	return sendPacket(true);
 }
 
-void sqlrprotocol_oracle::putAuthField(const char *fieldname,
-						const char *field) {
-
-	byte_t	fieldnamesize=charstring::getLength(fieldname);
-	byte_t	fieldsize=charstring::getLength(field);
-
-	// field name...
-	write(&reqpacket,fieldnamesize);
-	// no idea...
-	write(&reqpacket,(byte_t)0);
-	write(&reqpacket,(byte_t)0);
-	write(&reqpacket,(byte_t)0);
-	// again...
-	write(&reqpacket,fieldnamesize);
-	write(&reqpacket,fieldname,fieldnamesize);
-
-	// field...
-	write(&reqpacket,fieldsize);
-	// no idea...
-	write(&reqpacket,(byte_t)0);
-	write(&reqpacket,(byte_t)0);
-	write(&reqpacket,(byte_t)0);
-	// again...
-	if (fieldsize) {
-		write(&reqpacket,fieldsize);
-		write(&reqpacket,field,fieldsize);
-	}
-	// no idea...
-	write(&reqpacket,(byte_t)0);
-	write(&reqpacket,(byte_t)0);
-	write(&reqpacket,(byte_t)0);
-	write(&reqpacket,(byte_t)0);
-
-	debugWrite("%s: %s",fieldname,field);
-}
-
 bool sqlrprotocol_oracle::sendAuthenticationResponse() {
+
+	// A zero length AUTH_PASSWORD is what a client sends when it couldn't
+	// validate the padding in the challenge, which is what a wrong
+	// password looks like to an 11g client.  It gets its own error, which
+	// is what a real server answers too.
+	if (!gotauthpassword || charstring::isNullOrEmpty(authpassword)) {
+		debugWrite("no auth password");
+		return sendAuthenticationError(ORA_NULL_PASSWORD,
+				"ORA-01005: null password given; "
+				"logon denied\n");
+	}
+
+	stringbuffer	extra;
+	putAuthExtra(&extra,true);
+
+	sqlroraclecredentials	cred;
+	cred.setUser(username);
+	cred.setPassword(authpassword);
+	cred.setPasswordSize(charstring::getLength(authpassword));
+	cred.setMethod("O5LOGON");
+	cred.setExtra(extra.getString());
+
+	if (!cont->auth(&cred)) {
+		debugWrite("auth failed");
+		return sendAuthenticationError(
+				ORA_INVALID_USERNAME_PASSWORD,
+				"ORA-01017: invalid username/password; "
+				"logon denied\n");
+	}
+
+	// AUTH_SVR_RESPONSE proves to the client that the server knew the
+	// password too, and a real client refuses the login without it.  The
+	// combo key it's built from lives in the auth module, and auth()
+	// returns only the user name, so it comes back through challenge()
+	// under a second method name.
+	cred.setMethod("O5LOGON-SERVER-RESPONSE");
+	stringbuffer	svrresponse;
+	if (!cont->challenge(&cred,&svrresponse)) {
+		debugWrite("server response failed");
+		return sendAuthenticationError(
+				ORA_INVALID_USERNAME_PASSWORD,
+				"ORA-01017: invalid username/password; "
+				"logon denied\n");
+	}
 
 	resetSendPacketBuffer(PACKET_DATA);
 
-	// FIXME: actually do auth, and send some
-	// different response if auth failed
-
 	uint16_t	dataflags=0;
+	byte_t		ttccode=TTC_OK;
+
+	// The phase two trailer, from an 11.2 capture, and not identified
+	// either.  It differs from the phase one trailer in two bytes.
+	static const byte_t	trailer[]={
+		0x04, 0x01, 0x01, 0x01, 0x03,
+		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+		0x00, 0x00, 0x00,
+		0x02,
+		0x00, 0x00, 0x00, 0x00, 0x00, 0x00
+	};
 
 	writeBE(&reqpacket,dataflags);
+	write(&reqpacket,ttccode);
 
-	byte_t	unknownheader[]={
-		0x08, 0x08, 0x00
-	};
-	reqpacket.append(unknownheader,sizeof(unknownheader));
+	debugStart("authentication response");
+	debugWrite("data flags: 0x%04x",dataflags);
+	debugTtcCode(ttccode);
+
+	// A real server sends 39 to 44 pairs here, mostly nls settings.  Only
+	// AUTH_SVR_RESPONSE is known to be required.  See #8979 for the rest.
+	putUb4(9);
 
 	putAuthField("AUTH_VERSION_STRING","- Production");
 	putAuthField("AUTH_VERSION_SQL","12");
@@ -3324,27 +3636,66 @@ bool sqlrprotocol_oracle::sendAuthenticationResponse() {
 	putAuthField("AUTH_CAPABILITY_TABLE","");
 	putAuthField("AUTH_SESSION_ID","9");
 	putAuthField("AUTH_SERIAL_NUM","1981");
+	putAuthField("AUTH_SVR_RESPONSE",svrresponse.getString());
 
-	byte_t	unknownfooter[]={
-		0x04, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-		0x00, 0x00, 0x03, 0x00, 0x00, 0x00, 0x00, 0x00,
-		0x00
-	};
-	reqpacket.append(unknownfooter,sizeof(unknownfooter));
+	reqpacket.append(trailer,sizeof(trailer));
 
-	putGenericFooter();
-
-	debugStart("authentication response");
-	debugWrite("data flags: 0x%04x",dataflags);
 	debugEnd();
 
 	return sendPacket(true);
 }
 
+// A real server answers a failed login with a ttc 0x04 packet carrying an ora
+// number and its message, and lets the client disconnect itself.  Returning
+// false without writing one reads to the client as a dropped socket - it gets
+// ORA-03113 or ORA-12537 - rather than as a refusal.
+//
+// putError() can't be reused: its layout doesn't parse as a ub4 stream and
+// matches neither of the two captures this was written from.
+bool sqlrprotocol_oracle::sendAuthenticationError(uint32_t oranum,
+						const char *message) {
+
+	resetSendPacketBuffer(PACKET_DATA);
+
+	uint16_t	dataflags=0;
+	byte_t		ttccode=TTC_ERROR;
+
+	// A ub4 stream: a 1, two zeros, the ora number, then a run of zero
+	// ub4s, then the message.  Reproduced byte for byte from an 11.2
+	// server rather than reconstructed, since what the client's parser
+	// keys off isn't known.  A 12.2 server sends 4 more bytes: one more
+	// zero ub4 near the front, and the ora number again just before the
+	// message.
+	static const byte_t	prefix[]={
+		0x01, 0x01, 0x00, 0x00
+	};
+	static const byte_t	suffix[]={
+		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+		0x00,
+		0x02, 0x00, 0x00,
+		0x00, 0x00, 0x00, 0x00
+	};
+
+	writeBE(&reqpacket,dataflags);
+	write(&reqpacket,ttccode);
+	reqpacket.append(prefix,sizeof(prefix));
+	putUb4(oranum);
+	reqpacket.append(suffix,sizeof(suffix));
+	putLenString(message,charstring::getLength(message));
+
+	debugStart("authentication error");
+	debugWrite("data flags: 0x%04x",dataflags);
+	debugTtcCode(ttccode);
+	debugWrite("error: %d",oranum);
+	debugWrite("message: %s",message);
+	debugEnd();
+
+	sendPacket(true);
+
+	// the error is sent, but the session still ends
+	return false;
+}
 bool sqlrprotocol_oracle::open(const byte_t *rp) {
 
 	// sqlplus 8.0.5, 8i, 9i
@@ -3405,6 +3756,9 @@ void sqlrprotocol_oracle::debugTtcCode(byte_t ttccode) {
 			break;
 		case TTC_TTI_FUNCTION:
 			code="TTC_TTI_FUNCTION";
+			break;
+		case TTC_ERROR:
+			code="TTC_ERROR";
 			break;
 		case TTC_OK:
 			code="TTC_OK";

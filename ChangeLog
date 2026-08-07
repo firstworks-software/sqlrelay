@@ -1334,6 +1334,16 @@
 		nothing in the function bounded, so a large count truncated
 		and the decode read past the copy - it bounds the count
 		itself now and computes in a size_t
+	fixed the oracle protocol module - it authenticated nobody and
+		refused nobody: the session key it sent was a hardcoded
+		literal and cont->auth() was never called, so any password
+		was accepted - it runs the real o5logon exchange now, with
+		generated verifier data, a session key from an auth module,
+		AUTH_SVR_RESPONSE, and a real ORA-01017 or ORA-01005 on
+		failure, and the request parser was rewritten on the real
+		wire layout
+	added a verifiertype attribute to the oracle protocol module's
+		listener tag, 11g or 12c, defaulting to 12c
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems
