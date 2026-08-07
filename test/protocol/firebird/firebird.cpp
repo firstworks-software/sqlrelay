@@ -777,6 +777,12 @@ int	main(int argc, char **argv) {
 					"delete from testtran",
 					SQL_DIALECT_V6,NULL)!=0);
 	assertEquals((int)isc_sqlcode(fbstatus),-817);
+	// a write against a table that doesn't exist still fails at prepare,
+	// with the backend's own error rather than the read-only one
+	assertTrue(isc_dsql_execute_immediate(fbstatus,&db,&tr,0,
+					"insert into nosuchtable values (1)",
+					SQL_DIALECT_V6,NULL)!=0);
+	assertEquals((int)isc_sqlcode(fbstatus),-204);
 	// reads still work, and nothing was written
 	assertEquals(countRows("testtran"),1);
 	// isc_info_tra_access says read only

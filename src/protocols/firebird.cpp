@@ -3884,19 +3884,6 @@ bool sqlrprotocol_firebird::runPreparedQuery(bool execimmediate,
 					statusvectorlen);
 	}
 
-	// A read-only tpb gets a read-write transaction from SQL Relay, which
-	// has no way to ask a backend for a read-only one, so the write is
-	// refused here instead.  A real server refuses at execute rather than
-	// at prepare, hence the execimmediate test, and it sends nothing but a
-	// bare isc_read_only_trans - the client turns that one code into
-	// sqlcode -817, sqlstate 42000 and "attempted update during read-only
-	// transaction" out of its own tables.  It refuses at the moment a
-	// record is actually modified, so an update or delete matching no rows
-	// succeeds there and is refused here.
-	if (execimmediate && trreadonly && isWriteStatement(stmttype)) {
-		return errorResponse(title,isc_read_only_trans);
-	}
-
 	// get the cursor
 	sqlrservercursor	*cursor=NULL;
 	sqlrfirebirdstatement	*stmt=NULL;
@@ -3946,6 +3933,23 @@ bool sqlrprotocol_firebird::runPreparedQuery(bool execimmediate,
 			cont->release(cursor);
 		}
 		return retval;
+	}
+
+	// A read-only tpb gets a read-write transaction from SQL Relay, which
+	// has no way to ask a backend for a read-only one, so the write is
+	// refused here instead.  This sits after the prepare, and only runs for
+	// exec immediate, because that's where a real server refuses - a
+	// prepare in a read-only transaction succeeds, and one against a table
+	// that doesn't exist still has to fail with the backend's own error
+	// rather than this one.  A real server sends nothing but a bare
+	// isc_read_only_trans, and the client turns that one code into sqlcode
+	// -817, sqlstate 42000 and "attempted update during read-only
+	// transaction" out of its own tables.  It refuses at the moment a
+	// record is actually modified, so an update or delete matching no rows
+	// succeeds there and is refused here.
+	if (execimmediate && trreadonly && isWriteStatement(stmttype)) {
+		cont->release(cursor);
+		return errorResponse(title,isc_read_only_trans);
 	}
 
 	// A firebird client expects op_prepare_statement to answer with the
@@ -4318,11 +4322,6 @@ bool sqlrprotocol_firebird::runOnCursor(sqlrservercursor *cursor,
 					"Query is too large",18);
 	}
 
-	// refuse a write in a read-only transaction - see runPreparedQuery()
-	if (trreadonly && isWriteStatement(statementType(query))) {
-		return errorResponse(title,isc_read_only_trans);
-	}
-
 	char	*querybuffer=cont->getQueryBuffer(cursor);
 	bytestring::copy(querybuffer,query,querylen);
 	querybuffer[querylen]='\0';
@@ -4331,6 +4330,11 @@ bool sqlrprotocol_firebird::runOnCursor(sqlrservercursor *cursor,
 	if (!cont->prepareQuery(cursor,querybuffer,querylen,
 					true,true,true,true)) {
 		return sendCursorError(title,cursor,true);
+	}
+
+	// refuse a write in a read-only transaction - see runPreparedQuery()
+	if (trreadonly && isWriteStatement(statementType(query))) {
+		return errorResponse(title,isc_read_only_trans);
 	}
 
 	if (!cont->executeQuery(cursor,true,true,true,true)) {
