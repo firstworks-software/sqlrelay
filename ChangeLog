@@ -1478,6 +1478,11 @@
 		table and field version already answer as - ojdbc picks its
 		result set reader from that number, and told 8.0.5 it read an
 		11.2 shaped describe with an 8.0 era reader
+	fixed the oracle protocol module's ano debug output - the encryption
+		service opened its block with a plain write rather than a
+		start, so it closed a block it never opened and everything
+		after it, including the whole ano response, was indented one
+		level too far left
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems

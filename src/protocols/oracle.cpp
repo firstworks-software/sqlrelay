@@ -2259,7 +2259,7 @@ bool sqlrprotocol_oracle::getEncryptionService(const byte_t *rp,
 						uint16_t fieldcount,
 						const byte_t **rpout) {
 
-	debugWrite("encryption");
+	debugStart("encryption");
 
 	uint16_t	*drivers=NULL;
 	uint32_t	drivercount;
