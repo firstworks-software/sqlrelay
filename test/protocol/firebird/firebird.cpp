@@ -753,10 +753,55 @@ int	main(int argc, char **argv) {
 	assertEquals((int)isc_start_transaction(fbstatus,&tr,1,&db,
 					(unsigned short)sizeof(tpbro),tpbro),0);
 	assertTrue(tr!=0);
-	// a write in a read-only transaction has to fail
+	// A write in a read-only transaction has to fail.  A real server sends
+	// nothing but a bare isc_read_only_trans, and the client turns that one
+	// code into the sqlcode, the sqlstate and the message below, so these
+	// assertions hold against the module and a real server alike.
+	char	roerrmsg[512];
+	char	rosqlstate[6];
 	assertTrue(isc_dsql_execute_immediate(fbstatus,&db,&tr,0,
 					"insert into testtran values (4)",
 					SQL_DIALECT_V6,NULL)!=0);
+	firstErrorMessage(roerrmsg,sizeof(roerrmsg));
+	assertEquals(roerrmsg,
+			"attempted update during read-only transaction");
+	assertEquals((int)isc_sqlcode(fbstatus),-817);
+	fb_sqlstate(rosqlstate,fbstatus);
+	assertEquals(rosqlstate,"42000");
+	// an update and a delete that match rows have to fail the same way
+	assertTrue(isc_dsql_execute_immediate(fbstatus,&db,&tr,0,
+					"update testtran set testinteger=99",
+					SQL_DIALECT_V6,NULL)!=0);
+	assertEquals((int)isc_sqlcode(fbstatus),-817);
+	assertTrue(isc_dsql_execute_immediate(fbstatus,&db,&tr,0,
+					"delete from testtran",
+					SQL_DIALECT_V6,NULL)!=0);
+	assertEquals((int)isc_sqlcode(fbstatus),-817);
+	// reads still work, and nothing was written
+	assertEquals(countRows("testtran"),1);
+	// isc_info_tra_access says read only
+	char	roinfoitems[]={
+			isc_info_tra_access,
+			isc_info_end
+			};
+	char	roinfobuffer[64];
+	bytestring::zero(roinfobuffer,sizeof(roinfobuffer));
+	assertEquals((int)isc_transaction_info(fbstatus,&tr,
+				(short)sizeof(roinfoitems),roinfoitems,
+				(short)sizeof(roinfobuffer),roinfobuffer),0);
+	assertEquals((int)roinfobuffer[0],(int)isc_info_tra_access);
+	assertEquals((int)isc_vax_integer(roinfobuffer+1,2),1);
+	assertEquals((int)roinfobuffer[3],(int)isc_info_tra_readonly);
+	assertEquals((int)isc_rollback_transaction(fbstatus,&tr),0);
+	// and read write for a normal tpb
+	tr=0;
+	assertEquals((int)isc_start_transaction(fbstatus,&tr,1,&db,
+					(unsigned short)sizeof(tpb),tpb),0);
+	bytestring::zero(roinfobuffer,sizeof(roinfobuffer));
+	assertEquals((int)isc_transaction_info(fbstatus,&tr,
+				(short)sizeof(roinfoitems),roinfoitems,
+				(short)sizeof(roinfobuffer),roinfobuffer),0);
+	assertEquals((int)roinfobuffer[3],(int)isc_info_tra_readwrite);
 	assertEquals((int)isc_rollback_transaction(fbstatus,&tr),0);
 	stdoutput.printf("\n\n");
 

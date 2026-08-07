@@ -13,9 +13,6 @@
 
 #include <ibase.h>
 
-// for pow()
-#include <math.h>
-
 // for struct tm
 #include <time.h>
 
@@ -3601,7 +3598,14 @@ void firebirdcursor::getField(uint32_t col,
 		ISC_INT64	v=field[col].int64buffer;
 		if (outsqlda->sqlvar[col].sqlscale) {
 			ISC_SHORT	scale=-outsqlda->sqlvar[col].sqlscale;
-			int		p=(int)pow(10.0,(double)scale);
+
+			// Firebird allows 18 digits of scale, and 10^10
+			// already overflows an int, so the divisor is built
+			// with integer math rather than with pow().
+			ISC_INT64	p=1;
+			for (ISC_SHORT i=0; i<scale; i++) {
+				p*=10;
+			}
 
 			// Integer division truncates toward zero and the
 			// remainder carries the sign, so formatting the halves

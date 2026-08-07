@@ -824,6 +824,7 @@
 #define isc_infunk			335544341
 #define isc_io_error			335544344
 #define isc_no_dup			335544349
+#define isc_read_only_trans		335544361
 #define isc_wish_list			335544378
 #define isc_random			335544382
 #define isc_sqlerr			335544436
@@ -1016,6 +1017,7 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_firebird : public sqlrprotocol {
 		void	clearStatements();
 		uint32_t	statementType(const char *query);
 		bool	isTransactionStatement(uint32_t stmttype);
+		bool	isWriteStatement(uint32_t stmttype);
 		bool	runTransactionStatement(uint32_t stmttype);
 
 		bool	prepareOrExecImmediate(bool execimmediate);
@@ -1227,6 +1229,11 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_firebird : public sqlrprotocol {
 		// the tpb asked for autocommit, so the commit or rollback
 		// that ends this transaction has nothing left to do
 		bool		trautocommit;
+		// The tpb asked for a read-only transaction.  SQL Relay has no
+		// way to ask a backend for one, so the transaction underneath
+		// is read-write and the module refuses writes itself - see
+		// isWriteStatement().
+		bool		trreadonly;
 
 		// how many statements the module can hold at once, and their
 		// state, indexed by cursor id
@@ -1308,6 +1315,7 @@ void sqlrprotocol_firebird::init() {
 	trhandle=0;
 	intransaction=false;
 	trautocommit=false;
+	trreadonly=false;
 	blobid=0;
 	errorsqlstate[0]='\0';
 	respbufferlen=0;
@@ -2647,6 +2655,8 @@ bool sqlrprotocol_firebird::detach() {
 	if (intransaction) {
 		cont->rollback();
 		intransaction=false;
+		trautocommit=false;
+		trreadonly=false;
 		trhandle=0;
 	}
 
@@ -3252,6 +3262,7 @@ bool sqlrprotocol_firebird::transaction() {
 
 		intransaction=true;
 		trautocommit=autocommit;
+		trreadonly=readonly;
 	}
 
 	// A handle is only ever compared against 0 by the client, but making
@@ -3315,6 +3326,7 @@ bool sqlrprotocol_firebird::commit() {
 
 	intransaction=false;
 	trautocommit=false;
+	trreadonly=false;
 
 	successStatusVector();
 
@@ -3361,6 +3373,7 @@ bool sqlrprotocol_firebird::rollback() {
 
 	intransaction=false;
 	trautocommit=false;
+	trreadonly=false;
 
 	successStatusVector();
 
@@ -3536,6 +3549,8 @@ bool sqlrprotocol_firebird::transactionInfo() {
 
 			case isc_info_tra_access:
 				fits=appendInfoByte(trinfoitem,
+						(trreadonly)?
+						isc_info_tra_readonly:
 						isc_info_tra_readwrite);
 				break;
 
@@ -3869,6 +3884,19 @@ bool sqlrprotocol_firebird::runPreparedQuery(bool execimmediate,
 					statusvectorlen);
 	}
 
+	// A read-only tpb gets a read-write transaction from SQL Relay, which
+	// has no way to ask a backend for a read-only one, so the write is
+	// refused here instead.  A real server refuses at execute rather than
+	// at prepare, hence the execimmediate test, and it sends nothing but a
+	// bare isc_read_only_trans - the client turns that one code into
+	// sqlcode -817, sqlstate 42000 and "attempted update during read-only
+	// transaction" out of its own tables.  It refuses at the moment a
+	// record is actually modified, so an update or delete matching no rows
+	// succeeds there and is refused here.
+	if (execimmediate && trreadonly && isWriteStatement(stmttype)) {
+		return errorResponse(title,isc_read_only_trans);
+	}
+
 	// get the cursor
 	sqlrservercursor	*cursor=NULL;
 	sqlrfirebirdstatement	*stmt=NULL;
@@ -4072,6 +4100,12 @@ bool sqlrprotocol_firebird::executeStatement(bool isexecute2) {
 	if (!stmt || !stmt->prepared) {
 		delete[] outfields;
 		return errorResponse(title,isc_bad_stmt_handle);
+	}
+
+	// refuse a write in a read-only transaction - see runPreparedQuery()
+	if (trreadonly && isWriteStatement(stmt->stmttype)) {
+		delete[] outfields;
+		return errorResponse(title,isc_read_only_trans);
 	}
 
 	// run it, unless prepareStatement() already did
@@ -4282,6 +4316,11 @@ bool sqlrprotocol_firebird::runOnCursor(sqlrservercursor *cursor,
 	if (querylen>maxquerysize) {
 		return errorResponse(title,isc_dsql_error,"54001",-901,
 					"Query is too large",18);
+	}
+
+	// refuse a write in a read-only transaction - see runPreparedQuery()
+	if (trreadonly && isWriteStatement(statementType(query))) {
+		return errorResponse(title,isc_read_only_trans);
 	}
 
 	char	*querybuffer=cont->getQueryBuffer(cursor);
@@ -4913,6 +4952,19 @@ bool sqlrprotocol_firebird::isTransactionStatement(uint32_t stmttype) {
 		stmttype==isc_info_sql_stmt_rollback);
 }
 
+bool sqlrprotocol_firebird::isWriteStatement(uint32_t stmttype) {
+
+	// Only these three, and deliberately not the ddl type.  statementType()
+	// uses ddl as its catch-all, so "execute block" lands there, and a real
+	// server runs a read-only "execute block" that only selects.  Real ddl
+	// is refused by a real server, but with a compound reply carrying a dyn
+	// code per verb and the object name - see #9107.  "set generator" is
+	// allowed too, since generators are outside transaction control.
+	return (stmttype==isc_info_sql_stmt_insert ||
+		stmttype==isc_info_sql_stmt_update ||
+		stmttype==isc_info_sql_stmt_delete);
+}
+
 bool sqlrprotocol_firebird::runTransactionStatement(uint32_t stmttype) {
 
 	// A client can ask for a transaction in sql rather than with
@@ -4932,6 +4984,7 @@ bool sqlrprotocol_firebird::runTransactionStatement(uint32_t stmttype) {
 			}
 			intransaction=true;
 			trautocommit=false;
+			trreadonly=false;
 			trhandle++;
 			return true;
 
@@ -4945,6 +4998,7 @@ bool sqlrprotocol_firebird::runTransactionStatement(uint32_t stmttype) {
 			clearStatements();
 			intransaction=false;
 			trautocommit=false;
+			trreadonly=false;
 			return true;
 
 		case isc_info_sql_stmt_rollback:
@@ -4957,6 +5011,7 @@ bool sqlrprotocol_firebird::runTransactionStatement(uint32_t stmttype) {
 			clearStatements();
 			intransaction=false;
 			trautocommit=false;
+			trreadonly=false;
 			return true;
 
 		default:

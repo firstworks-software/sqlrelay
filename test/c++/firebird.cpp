@@ -1849,6 +1849,44 @@ int main(int argc, char **argv) {
 	stdoutput.printf("\n");
 
 
+	// wide decimals
+	// Firebird allows 18 digits of scale, but the divisor 10^scale used
+	// to be computed as an int, and 10^10 overflows one.  From scale 10
+	// up, any value of magnitude 2147483648 or more divided out to
+	// garbage.
+	stdoutput.printf("WIDE DECIMALS: \n");
+	assertTrue(cur->sendQuery(
+		"select "
+		"	cast(1.5 as decimal(18,9)), "
+		"	cast(1.5 as decimal(18,10)), "
+		"	cast(-1.5 as decimal(18,10)), "
+		"	cast(1.5 as decimal(18,11)), "
+		"	cast(12345678.1234567890 as decimal(18,10)) "
+		"from "
+		"	rdb$database"));
+	assertEquals(cur->getField(0,(uint32_t)0),"1.500000000");
+	assertEquals(cur->getField(0,1),"1.5000000000");
+	assertEquals(cur->getField(0,2),"-1.5000000000");
+	assertEquals(cur->getField(0,3),"1.50000000000");
+	assertEquals(cur->getField(0,4),"12345678.1234567890");
+	stdoutput.printf("\n");
+	// Scale 18 is the widest firebird allows.  The first two values have
+	// a magnitude above the overflow threshold, so they exercise the
+	// bug.  The third stays below it and rendered correctly even before
+	// the fix - it is here as a control.
+	assertTrue(cur->sendQuery(
+		"select "
+		"	cast(0.123456789012345678 as numeric(18,18)), "
+		"	cast(-0.123456789012345678 as numeric(18,18)), "
+		"	cast(0.000000000000000001 as numeric(18,18)) "
+		"from "
+		"	rdb$database"));
+	assertEquals(cur->getField(0,(uint32_t)0),"0.123456789012345678");
+	assertEquals(cur->getField(0,1),"-0.123456789012345678");
+	assertEquals(cur->getField(0,2),"0.000000000000000001");
+	stdoutput.printf("\n");
+
+
 	// error buffer reuse
 	// The error buffer belongs to the pooled connection rather than to the
 	// session, and is never cleared, so a short error following a longer

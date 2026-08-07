@@ -109,6 +109,64 @@
 #define TTI_OSCID		0x87
 #define TTI_OSKEYVAL		0x9A
 
+// server compile-time capability array indices
+// (python-oracledb's TNS_CCAP_* with the TNS_ prefix dropped, since this
+// file has no common prefix of its own)
+#define CCAP_SQL_VERSION		0
+#define CCAP_LOGON_TYPES		4
+#define CCAP_FEATURE_BACKPORT		5
+#define CCAP_FIELD_VERSION		7
+#define CCAP_SERVER_DEFINE_CONV		8
+#define CCAP_DEQUEUE_WITH_SELECTOR	9
+#define CCAP_TTC1			15
+#define CCAP_OCI1			16
+#define CCAP_TDS_VERSION		17
+#define CCAP_RPC_VERSION		18
+#define CCAP_RPC_SIG			19
+#define CCAP_DBF_VERSION		21
+#define CCAP_LOB			23
+#define CCAP_TTC2			26
+#define CCAP_UB2_DTY			27
+#define CCAP_OCI2			31
+#define CCAP_CLIENT_FN			34
+#define CCAP_OCI3			35
+#define CCAP_TTC3			37
+#define CCAP_SESS_SIGNATURE_VERSION	39
+#define CCAP_TTC4			40
+#define CCAP_MAX			55
+
+// server compile-time capability values
+#define CCAP_SQL_VERSION_MAX		6
+#define CCAP_FIELD_VERSION_11_2		6
+#define CCAP_FIELD_VERSION_12_1		7
+#define CCAP_FIELD_VERSION_12_2		8
+#define CCAP_FIELD_VERSION_12_2_EXT1	9
+#define CCAP_TDS_VERSION_MAX		3
+#define CCAP_RPC_SIG_VALUE		3
+#define CCAP_DBF_VERSION_MAX		1
+#define CCAP_O5LOGON			0x08
+#define CCAP_END_OF_CALL_STATUS		0x01
+#define CCAP_FAST_SESSION_PROPAGATE	0x10
+#define CCAP_END_OF_RESPONSE		0x20
+#define CCAP_EXPLICIT_BOUNDARY		0x40
+
+// server runtime capability array indices
+#define RCAP_COMPAT			0
+#define RCAP_TTC			6
+#define RCAP_MAX			11
+
+// server runtime capability values
+#define RCAP_COMPAT_81			2
+#define RCAP_TTC_ZERO_COPY		0x01
+#define RCAP_TTC_32K			0x04
+#define RCAP_TTC_SESSION_STATE_OPS	0x10
+
+// character set ids
+#define CHARSET_US7ASCII		1
+#define CHARSET_WE8MSWIN1252		178
+#define CHARSET_AL32UTF8		873
+#define CHARSET_AL16UTF16		2000
+
 // options
 #define OPTION_PARSE		(1<<0) // 1
 #define OPTION_BIND		(1<<3) // 8
@@ -685,6 +743,11 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_oracle : public sqlrprotocol {
 		bool	ttiNegotiation();
 		bool	recvTtiRequest();
 		bool	sendTtiResponse();
+		void	putTtiResponse(byte_t version,
+						const byte_t *compilecaps,
+						byte_t compilecapssize,
+						const byte_t *runtimecaps,
+						byte_t runtimecapssize);
 		void	putTti6Response();
 		void	putTti5Response();
 		void	putTti4Response();
@@ -833,6 +896,9 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_oracle : public sqlrprotocol {
 		char		*clientstring;
 		const char	*serverstring;
 
+		uint16_t	charset;
+		uint16_t	nationalcharset;
+
 		const byte_t	*datatypes;
 		uint16_t	datatypessize;
 
@@ -874,8 +940,23 @@ sqlrprotocol_oracle::sqlrprotocol_oracle(sqlrservercontroller *cont,
 
 	clientsock=NULL;
 
+	charset=charstring::convertToInteger(
+				parameters->getAttributeValue("charset"));
+	if (!charset) {
+		charset=CHARSET_AL32UTF8;
+	}
+
+	nationalcharset=charstring::convertToInteger(
+				parameters->getAttributeValue(
+						"nationalcharset"));
+	if (!nationalcharset) {
+		nationalcharset=CHARSET_AL16UTF16;
+	}
+
 	if (getDebug()) {
 		debugStart("parameters");
+		debugWrite("charset: %d",charset);
+		debugWrite("nationalcharset: %d",nationalcharset);
 		debugEnd();
 	}
 
@@ -2327,15 +2408,21 @@ bool sqlrprotocol_oracle::sendTtiResponse() {
 	return sendPacket(true);
 }
 
-void sqlrprotocol_oracle::putTti6Response() {
-
-	// oracle 8i+ supports TTI 6 (and lower)
-	// FIXME: implement this...
-}
-
-void sqlrprotocol_oracle::putTti5Response() {
-
-	// oracle 8.0 supports TTI 5 (and lower)
+// The layout of this response - the field order, and the ix=6+fdo[5]+fdo[6]
+// rule for finding the character set ids inside the fdo block - follows
+// python-oracledb, src/oracledb/impl/thin/messages/protocol.pyx,
+// _process_protocol_info(), and the capability array index names follow its
+// src/oracledb/impl/thin/constants.pxi.
+//
+// Copyright (c) 2020, 2026, Oracle and/or its affiliates.
+// Taken under the Universal Permissive License 1.0 only, not under
+// python-oracledb's Apache 2.0 option.  See https://oss.oracle.com/licenses/upl
+// and COPYING.
+void sqlrprotocol_oracle::putTtiResponse(byte_t version,
+					const byte_t *compilecaps,
+					byte_t compilecapssize,
+					const byte_t *runtimecaps,
+					byte_t runtimecapssize) {
 
 	uint16_t	dataflags=0;
 	byte_t		ttccode=TTC_PROTOCOL_NEGOTIATION;
@@ -2343,7 +2430,7 @@ void sqlrprotocol_oracle::putTti5Response() {
 	writeBE(&reqpacket,dataflags);
 	write(&reqpacket,ttccode);
 
-	// protocol version and server flags...
+	// protocol version and server banner...
 	//
 	// sent by:
 	// * 8.0.5 server on redhat 5.2 x86
@@ -2360,34 +2447,49 @@ void sqlrprotocol_oracle::putTti5Response() {
 	//
 	// sent by:
 	// * 12c on fedora 19 x64
+	// * 12.2 on centos 7 x64
+	// * 11.2 on centos 5 x64
 	//serverstring="x86_64/Linux 2.4.xx";
 	//
 	// NOTE: No datatype negotiation is sent if the client's string is
 	// echoed.
 	serverstring=clientstring;
 
-	write(&reqpacket,ttiversion);
+	write(&reqpacket,version);
 	write(&reqpacket,(byte_t)0);
 	write(&reqpacket,serverstring);
 	write(&reqpacket,'\0');
 
 
-	// charset...
-	// FIXME: no idea what charset=1 means...
-	uint16_t	charset=1;
-	// FIXME: other charsets might have graph elements...
+	// database charset
+	writeLE(&reqpacket,charset);
+
+
+	// server flags
+	//
+	// Real 11.2 and 12.2 servers send 1 here, and neither python-oracledb
+	// nor go-ora reads it.  The 8.0-era client this module was originally
+	// developed against saw 0, so if that path regresses, this is the
+	// first byte to put back.
+	write(&reqpacket,(byte_t)1);
+
+
+	// charset graph elements
+	//
+	// A real 11.2 server sends none.  A 12.2 server with an AL32UTF8
+	// database sends 10, of 5 bytes each, but both python-oracledb and
+	// go-ora skip the list without reading it, so sending none is safe.
 	uint16_t	charsetgraphelementcount=0;
 
-	writeLE(&reqpacket,charset);
-	write(&reqpacket,(byte_t)0);
 	writeLE(&reqpacket,charsetgraphelementcount);
-	// FIXME: each charset graph element consists of 5 bytes...
 
 
 	// fdo... (whatever that is)
 	uint16_t	fdosize=100;
 	uint32_t	fdodatasize=fdosize-4;
-	// no idea what this means...
+	// Nothing in python-oracledb or go-ora reads part1 or part2, so what
+	// they mean is still unknown.  Only their sizes matter; the client
+	// adds them up to find the charsets that follow them.
 	byte_t	part1[]={
 		0x05, 0x0b, 0x0c, 0x03, 0x0c, 0x0c, 0x05, 0x04,
 		0x05, 0x0d, 0x06, 0x09, 0x07, 0x08, 0x05, 0x0e,
@@ -2395,12 +2497,15 @@ void sqlrprotocol_oracle::putTti5Response() {
 		0x05, 0x0a, 0x05, 0x05, 0x05, 0x05, 0x05
 	};
 	byte_t	part1size=sizeof(part1);
-	// no idea what this means...
 	byte_t	part2[]={
 		0x08, 0x23, 0x43, 0x23, 0x23, 0x08, 0x11, 0x23,
 		0x08, 0x11, 0x41, 0xb0, 0x23, 0x00, 0x83
 	};
 	byte_t	part2size=sizeof(part2);
+
+	// 4 bytes of fdodatasize, 3 more of the 1, part1size and part2size,
+	// the two parts themselves, then 2+2+1 of charsets and trailer
+	uint16_t	fdopadsize=(uint16_t)(fdosize-12-part1size-part2size);
 
 	writeBE(&reqpacket,fdosize);
 	writeBE(&reqpacket,fdodatasize);
@@ -2411,28 +2516,93 @@ void sqlrprotocol_oracle::putTti5Response() {
 	reqpacket.append(part2,part2size);
 
 
-	// some charset related thing, or something...
-	byte_t	charsetthing[]={
-		0x00, 0x01, 0x00,
-		0x01, 0x03,
-		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
-	};
-	
-	reqpacket.append(charsetthing,sizeof(charsetthing));
+	// charsets, which the client looks for at 6+part1size+part2size
+	// bytes into the fdo block
+	writeBE(&reqpacket,charset);
+	writeBE(&reqpacket,nationalcharset);
+
+	// meaning unknown, but real servers send 0x03 here too
+	write(&reqpacket,(byte_t)0x03);
+
+	// pad the fdo block out to fdosize
+	for (uint16_t i=0; i<fdopadsize; i++) {
+		write(&reqpacket,(byte_t)0);
+	}
+
+
+	// capabilities, each prefixed with a 1-byte length
+	write(&reqpacket,compilecapssize);
+	reqpacket.append(compilecaps,compilecapssize);
+	write(&reqpacket,runtimecapssize);
+	reqpacket.append(runtimecaps,runtimecapssize);
 
 	if (getDebug()) {
 		debugStart("tti response");
 		debugWrite("data flags: 0x%04x",dataflags);
 		debugTtcCode(ttccode);
-		debugWrite("version: %d",ttiversion);
+		debugWrite("version: %d",version);
 		debugWrite("server string: \"%s\"",serverstring);
-		debugWrite("charset: 0x%02x",charset);
+		debugWrite("charset: %d",charset);
+		debugWrite("national charset: %d",nationalcharset);
+		debugWrite("charset graph elements: %d",
+					charsetgraphelementcount);
+		debugWrite("fdo size: %d",fdosize);
+		debugWrite("compile caps size: %d",compilecapssize);
+		debugWrite("field version: %d",
+			(compilecapssize>CCAP_FIELD_VERSION)?
+				compilecaps[CCAP_FIELD_VERSION]:0);
+		debugWrite("runtime caps size: %d",runtimecapssize);
 		debugEnd();
 	}
+}
+
+void sqlrprotocol_oracle::putTti6Response() {
+
+	// oracle 8i+ supports TTI 6 (and lower)
+	// FIXME: implement this...
+}
+
+void sqlrprotocol_oracle::putTti5Response() {
+
+	// oracle 8.0 supports TTI 5 (and lower)
+
+	// server compile-time capabilities, captured from a live oracle 11.2
+	// server, which reports CCAP_FIELD_VERSION_11_2, with three changes.
+	//
+	// CCAP_TTC1 and CCAP_OCI1 are 0 rather than 0x7f and 0xff.  go-ora
+	// reads bit 0x01 of each as end-of-call-status and
+	// fast-session-propagate, and then reads an extra field for each off
+	// the front of every summary object.  This module sends neither
+	// field, so advertising either bit would desynchronize the client on
+	// the first error or ok footer.
+	//
+	// The array is 42 bytes rather than the 39 a real 11.2 server sends,
+	// because python-oracledb reads CCAP_TTC4 with bounds checking
+	// disabled and no length guard.  Zero there is also the value we
+	// want: it leaves CCAP_END_OF_RESPONSE and CCAP_EXPLICIT_BOUNDARY
+	// clear, so the client uses the older framing.
+	static const byte_t	compilecaps[]={
+		0x06, 0x01, 0x01, 0x01, 0x0d, 0x01, 0x01, 0x06,
+		0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x00,
+		0x00, 0x03, 0x0a, 0x03, 0x03, 0x01, 0x00, 0x7f,
+		0x01, 0x7f, 0xff, 0x01, 0x05, 0x01, 0x01, 0x3f,
+		0x01, 0x03, 0x06, 0x00, 0x01, 0x03, 0x01, 0x00,
+		0x00, 0x00
+	};
+
+	// server runtime capabilities, from the same server
+	//
+	// RCAP_TTC is RCAP_TTC_ZERO_COPY plus one unnamed bit.  It leaves
+	// RCAP_TTC_32K clear, since this module doesn't support 32k
+	// varchars, and RCAP_TTC_SESSION_STATE_OPS clear, since it doesn't
+	// support request boundaries either.
+	static const byte_t	runtimecaps[]={
+		0x02, 0x01, 0x00, 0x01, 0x18, 0x00, 0x03
+	};
+
+	putTtiResponse(ttiversion,
+			compilecaps,(byte_t)sizeof(compilecaps),
+			runtimecaps,(byte_t)sizeof(runtimecaps));
 }
 
 void sqlrprotocol_oracle::putTti4Response() {

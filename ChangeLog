@@ -1177,6 +1177,16 @@
 		configuration as an indirect value, such as a file reference,
 		had no base path to resolve against, although the same
 		password did in the mysql userlist module
+	fixed the firebird connection module - a decimal or numeric column's
+		scale divisor was computed as (int)pow(10.0,scale), and
+		firebird allows 18 digits of scale, so from scale 10 up the
+		divisor overflowed an int and every value of magnitude
+		2147483648 or more rendered as garbage - decimal(18,10)
+		holding 1.5 came back as 6.2115098112 - the divisor is now
+		accumulated by integer multiplication into a 64-bit integer,
+		which is exact at every scale firebird allows and also drops
+		the floating point round trip that could otherwise give a
+		divisor one less than a power of ten
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems
