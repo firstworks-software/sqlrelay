@@ -102,6 +102,8 @@
 #define VERIFIER_TYPE_12C	0x4815
 #define VFR_DATA_SIZE_11G	10
 #define VFR_DATA_SIZE_12C	16
+#define SESSION_KEY_SIZE_11G	48
+#define SESSION_KEY_SIZE_12C	32
 
 // what real oracle sends for the 12c pbkdf2 parameters.  the auth module uses
 // whatever it's handed, but matching oracle is safer for a real client.
@@ -1018,6 +1020,7 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_oracle : public sqlrprotocol {
 		char		*clientauthsesskey;
 		char		*authpassword;
 		bool		gotauthpassword;
+		bool		fabricatedchallenge;
 
 		uint16_t	maxcursorcount;
 		uint32_t	maxquerysize;
@@ -1170,6 +1173,7 @@ void sqlrprotocol_oracle::init() {
 	clientauthsesskey=NULL;
 	authpassword=NULL;
 	gotauthpassword=false;
+	fabricatedchallenge=false;
 }
 
 void sqlrprotocol_oracle::free() {
@@ -3489,13 +3493,22 @@ bool sqlrprotocol_oracle::sendAuthenticationChallenge() {
 	cred.setMethod("O5LOGON");
 	cred.setExtra(extra.getString());
 
+	// A false return means no auth module knows the user, or has its
+	// password under a one-way encryption, or supports the method.
+	// Answering the error here would end the exchange a round trip early
+	// and tell a client which user names exist.  Real oracle fabricates a
+	// verifier for a user it doesn't have and runs the whole exchange
+	// anyway, so an unknown user looks exactly like a wrong password.
+	// See #9130.
 	stringbuffer	challenge;
-	if (!cont->challenge(&cred,&challenge)) {
-		debugWrite("challenge failed");
-		return sendAuthenticationError(
-				ORA_INVALID_USERNAME_PASSWORD,
-				"ORA-01017: invalid username/password; "
-				"logon denied\n");
+	fabricatedchallenge=!cont->challenge(&cred,&challenge);
+	if (fabricatedchallenge) {
+		debugWrite("challenge failed, fabricating one");
+		char	*fake=generateHex((pbkdf2)?
+					SESSION_KEY_SIZE_12C:
+					SESSION_KEY_SIZE_11G);
+		challenge.append(fake);
+		delete[] fake;
 	}
 
 	delete[] serverauthsesskey;
@@ -3556,6 +3569,19 @@ bool sqlrprotocol_oracle::sendAuthenticationChallenge() {
 }
 
 bool sqlrprotocol_oracle::sendAuthenticationResponse() {
+
+	// The unknown-user answer comes first, ahead of the empty-password
+	// one, because that's the order a real server uses: its answer to an
+	// unknown user with an empty AUTH_PASSWORD is ORA-01017, where a known
+	// user with an empty one gets ORA-01005.  Checking the other way round
+	// would hand back the distinction #9130 is about.
+	if (fabricatedchallenge) {
+		debugWrite("fabricated challenge, refusing");
+		return sendAuthenticationError(
+				ORA_INVALID_USERNAME_PASSWORD,
+				"ORA-01017: invalid username/password; "
+				"logon denied\n");
+	}
 
 	// A zero length AUTH_PASSWORD is what a client sends when it couldn't
 	// validate the padding in the challenge, which is what a wrong

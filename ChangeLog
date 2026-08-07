@@ -1344,6 +1344,12 @@
 		wire layout
 	added a verifiertype attribute to the oracle protocol module's
 		listener tag, 11g or 12c, defaulting to 12c
+	fixed the oracle protocol module - an unknown user was refused a
+		round trip earlier than a wrong password, and with a
+		different error, so a client could tell which user names
+		exist - it fabricates a challenge for a user no auth module
+		knows now, runs the whole exchange, and answers ORA-01017,
+		which is what a real server does
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems
