@@ -1257,6 +1257,16 @@
 		size now and always terminates, so a byte of the buffer holds
 		the terminator rather than the byte past it, which isn't the
 		module's to write
+	the oracle protocol module now warns when a client asks for oracle
+		native network encryption or crypto-checksumming, which it
+		declines - the offered algorithm lists were read and thrown away
+		unread, so the decline was silent and an administrator whose
+		client failed got nothing from the server side - the module also
+		reads those lists correctly now, as one byte per algorithm id,
+		which is what the encryption and crypto-checksumming services
+		actually send - only SQLNET.ENCRYPTION_CLIENT=REQUIRED or
+		SQLNET.CRYPTO_CHECKSUM_CLIENT=REQUIRED fails, with ORA-12660,
+		and the limitation is documented in the config guide
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems

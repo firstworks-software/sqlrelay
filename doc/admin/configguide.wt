@@ -68,6 +68,8 @@
    * [#postgresqltls TLS/SSL Encryption and Authentication]
   * [#postgresqlforeignbackend Foreign Backend]
   * [#postgresqllimitations Limitations]
+ * [#oracleprotocol Oracle Protocol]
+  * [#oraclelimitations Limitations]
  * [#multipleprotocols Multiple Protocols]
   * [#multiprotocolconfiguration Basic Configuration]
   * [#multiprotocollistener Listener Options]
@@ -2449,6 +2451,22 @@ The implementation of the !PostgreSQL protocol is likely sufficient for most app
 
 * Kerberos authentication and encryption are not supported.
 * Multi-statement queries are not supported.
+
+[[br]][=#oracleprotocol]
+== Oracle Protocol ==
+
+SQL Relay can be configured to speak the native Oracle protocol, enabling client programs for Oracle (eg. the sqlplus command line program) to access SQL Relay directly.
+
+If an instance speaks the Oracle client-server protocol, then any client that wishes to use it must also speak the Oracle client-server protocol.  This means that most software written using the Oracle API, or written using a database abstraction layer which loads a driver for Oracle can access this instance.  However, it also means that SQL Relay's standard sqlrsh client program and client programs for other databases (eg. the psql, and mysql command line programs, !MySQL Workbench, SQL Server Management Studio, etc.) cannot access this instance.
+
+The Oracle protocol module is still under development, and its configuration isn't documented here yet.
+
+[=#oraclelimitations]
+=== Limitations ===
+
+The implementation of the Oracle protocol isn't 100% complete.  Some notable limitations follow:
+
+* Oracle native network encryption and crypto-checksumming (the Advanced Networking Option) are not supported.  SQL Relay negotiates them off.  Clients work normally with SQLNET.ENCRYPTION_CLIENT and SQLNET.CRYPTO_CHECKSUM_CLIENT set to ACCEPTED (the default), REQUESTED or REJECTED.  A client with either set to REQUIRED will fail to connect, with ORA-12660.
 
 [[br]][=#multipleprotocols]
 == Multiple Protocols ==

@@ -59,7 +59,7 @@
 // RADIUS
 // don't know the id's for each though
 
-// encryption types (from 8i trace)
+// encryption types (1-12 from an 8i trace, the aes ids from go-ora)
 #define ENC_NONE	0
 #define ENC_RC4_40	1
 #define ENC_RC4_56	8
@@ -69,11 +69,17 @@
 #define ENC_RC4_128	10
 #define ENC_3DES168	12
 #define ENC_3DES112	11
+#define ENC_AES128	15
+#define ENC_AES192	16
+#define ENC_AES256	17
 
-// checksumming types (from 8i trace)
+// checksumming types (1-3 from an 8i trace, the rest from go-ora)
 #define	CS_NONE		0
 #define	CS_SHA1		3
 #define CS_MD5		1
+#define CS_SHA512	4
+#define CS_SHA256	5
+#define CS_SHA384	6
 
 // two task common (ttc) types
 #define TTC_PROTOCOL_NEGOTIATION	0x01
@@ -739,6 +745,11 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_oracle : public sqlrprotocol {
 						uint16_t **array,
 						uint32_t *arraycount,
 						const byte_t **rpout);
+		bool	getAnoDriverListField(const byte_t *rp,
+						const byte_t *end,
+						uint16_t **drivers,
+						uint32_t *drivercount,
+						const byte_t **rpout);
 		bool	getAnoConstantField(const byte_t *rp,
 						const byte_t *end,
 						uint16_t *constant,
@@ -751,6 +762,9 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_oracle : public sqlrprotocol {
 						const byte_t *end,
 						uint16_t *status,
 						const byte_t **rpout);
+		void		warnAnoDeclined();
+		uint32_t	anoDriversOffered(uint16_t *drivers,
+							uint32_t drivercount);
 		bool		sendAnoResponse();
 		uint16_t	putSupervisorService();
 		uint16_t	putAuthenticationService();
@@ -913,6 +927,11 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_oracle : public sqlrprotocol {
 		uint32_t	encryptionversion;
 		uint32_t	cryptochecksummingversion;
 
+		uint16_t	*encryptiondrivers;
+		uint32_t	encryptiondrivercount;
+		uint16_t	*cryptochecksummingdrivers;
+		uint32_t	cryptochecksummingdrivercount;
+
 		byte_t		*ttiversions;
 		uint32_t	ttiversioncount;
 		byte_t		ttiversion;
@@ -1050,6 +1069,11 @@ void sqlrprotocol_oracle::init() {
 	encryptionversion=0;
 	cryptochecksummingversion=0;
 
+	encryptiondrivers=NULL;
+	encryptiondrivercount=0;
+	cryptochecksummingdrivers=NULL;
+	cryptochecksummingdrivercount=0;
+
 	ttiversions=NULL;
 	ttiversioncount=0;
 	ttiversion=0;
@@ -1068,6 +1092,11 @@ void sqlrprotocol_oracle::init() {
 }
 
 void sqlrprotocol_oracle::free() {
+
+	delete[] encryptiondrivers;
+	encryptiondrivers=NULL;
+	delete[] cryptochecksummingdrivers;
+	cryptochecksummingdrivers=NULL;
 
 	delete[] ttiversions;
 	ttiversions=NULL;
@@ -1758,7 +1787,61 @@ bool sqlrprotocol_oracle::anoNegotiation() {
 		return true;
 	}
 
-	return recvAnoRequest() && sendAnoResponse();
+	if (!recvAnoRequest()) {
+		return false;
+	}
+
+	warnAnoDeclined();
+
+	return sendAnoResponse();
+}
+
+void sqlrprotocol_oracle::warnAnoDeclined() {
+
+	// this goes through the logger modules rather than stderror.printf(),
+	// which is what tds uses for its tls warning, because that one fires
+	// once at module construction and this one fires per connection.
+	// there's no cursor during the handshake.
+	uint32_t	encdrivers=anoDriversOffered(encryptiondrivers,
+							encryptiondrivercount);
+	if (encdrivers) {
+		cont->raiseInternalWarningEvent(NULL,
+			"client requested oracle native network encryption "
+			"(%d algorithms).  this module doesn't implement it "
+			"and has declined it.  a client with "
+			"SQLNET.ENCRYPTION_CLIENT=REQUIRED will fail with "
+			"ORA-12660; use ACCEPTED, REQUESTED or REJECTED.",
+			encdrivers);
+	}
+
+	uint32_t	csdrivers=anoDriversOffered(
+						cryptochecksummingdrivers,
+						cryptochecksummingdrivercount);
+	if (csdrivers) {
+		cont->raiseInternalWarningEvent(NULL,
+			"client requested oracle crypto-checksumming "
+			"(%d algorithms).  this module doesn't implement it "
+			"and has declined it.  a client with "
+			"SQLNET.CRYPTO_CHECKSUM_CLIENT=REQUIRED will fail "
+			"with ORA-12660; use ACCEPTED, REQUESTED or "
+			"REJECTED.",
+			csdrivers);
+	}
+}
+
+uint32_t sqlrprotocol_oracle::anoDriversOffered(uint16_t *drivers,
+						uint32_t drivercount) {
+
+	// algorithm 0 is "none", and every client sends it whether it wants
+	// encryption or not - node-oracledb sends that one byte and nothing
+	// else - so it isn't an offer of anything.
+	uint32_t	offered=0;
+	for (uint32_t i=0; i<drivercount; i++) {
+		if (drivers[i]) {
+			offered++;
+		}
+	}
+	return offered;
 }
 
 bool sqlrprotocol_oracle::recvAnoRequest() {
@@ -1964,7 +2047,7 @@ bool sqlrprotocol_oracle::getEncryptionService(const byte_t *rp,
 	uint32_t	drivercount;
 	byte_t		constant;
 	if (!getAnoVersionField(rp,end,&encryptionversion,&rp) ||
-		!getAnoArrayField(rp,end,&drivers,&drivercount,&rp)) {
+		!getAnoDriverListField(rp,end,&drivers,&drivercount,&rp)) {
 		delete[] drivers;
 		debugEnd();
 		return false;
@@ -1974,10 +2057,14 @@ bool sqlrprotocol_oracle::getEncryptionService(const byte_t *rp,
 			delete[] drivers;
 			debugEnd();
 			return false;
-		} 
+		}
 	}
 
-	delete[] drivers;
+	// keep the offer rather than dropping it, so warnAnoDeclined() can
+	// report what was turned down.  a session can negotiate twice.
+	delete[] encryptiondrivers;
+	encryptiondrivers=drivers;
+	encryptiondrivercount=drivercount;
 
 	debugEnd();
 
@@ -1997,13 +2084,16 @@ bool sqlrprotocol_oracle::getCryptoChecksummingService(
 	uint16_t	*drivers=NULL;
 	uint32_t	drivercount;
 	if (!getAnoVersionField(rp,end,&cryptochecksummingversion,&rp) ||
-		!getAnoArrayField(rp,end,&drivers,&drivercount,&rp)) {
+		!getAnoDriverListField(rp,end,&drivers,&drivercount,&rp)) {
 		delete[] drivers;
 		debugEnd();
 		return false;
 	}
 
-	delete[] drivers;
+	// see getEncryptionService()
+	delete[] cryptochecksummingdrivers;
+	cryptochecksummingdrivers=drivers;
+	cryptochecksummingdrivercount=drivercount;
 
 	debugEnd();
 
@@ -2158,6 +2248,69 @@ bool sqlrprotocol_oracle::getAnoArrayField(const byte_t *rp,
 	return true;
 }
 
+// The encryption and crypto-checksumming services send their algorithm list
+// as one byte per algorithm id, not as the ub2 array getAnoArrayField()
+// reads, even though the field header is identical - same size, same type 1.
+// Nothing in the field says which shape it is; only the service does.
+//
+// Three sources agree on the byte form.  Redfern's 8i capture on the Oracle
+// Protocol wiki page sends "00 01 00 01 00" for the encryption service, one
+// byte, annotated "AlgID (0=none)".  node-oracledb's EncryptionService and
+// DataIntegrityService both send that same single byte through sendRaw(),
+// which writes a size, a type of 1, and then raw bytes.  And ojdbc8 sends
+// "00 04 00 01 00 0f 10 11", which is none, aes128, aes192 and aes256.
+bool sqlrprotocol_oracle::getAnoDriverListField(const byte_t *rp,
+						const byte_t *end,
+						uint16_t **drivers,
+						uint32_t *drivercount,
+						const byte_t **rpout) {
+
+	*drivers=NULL;
+	*drivercount=0;
+
+	if (!anoBoundsCheck(rp,end,4,"driver list field")) {
+		return false;
+	}
+
+	uint16_t	size;
+	readBE(rp,&size,&rp);
+
+	uint16_t	type;
+	if (!readBE(rp,&type,"type",1,&rp)) {
+		return false;
+	}
+
+	// the size counts the bytes after the size and type
+	if (!anoBoundsCheck(rp,end,size,"driver list field")) {
+		return false;
+	}
+
+	// a field of this shape could carry the ub2 array instead, which
+	// starts with a deadbeef marker.  no client seen sends one here, and
+	// reading one as bytes would report nonsense, so skip it rather than
+	// guess.  see the FIXME in getAnoArrayField().
+	if (size>=4 && rp[0]==0xde && rp[1]==0xad &&
+					rp[2]==0xbe && rp[3]==0xef) {
+		debugWrite("driver list is a ub2 array, not decoded");
+		*rpout=rp+size;
+		return true;
+	}
+
+	*drivercount=size;
+	if (size) {
+		*drivers=new uint16_t[size];
+		for (uint16_t i=0; i<size; i++) {
+			byte_t	driver;
+			read(rp,&driver,&rp);
+			(*drivers)[i]=driver;
+			debugWrite("driver[%d]: %d",i,driver);
+		}
+	}
+
+	*rpout=rp;
+
+	return true;
+}
 
 bool sqlrprotocol_oracle::getAnoConstantField(const byte_t *rp,
 						const byte_t *end,
@@ -2311,9 +2464,21 @@ uint16_t sqlrprotocol_oracle::putEncryptionService() {
 
 	debugStart("encryption");
 
+	// oracle's native network encryption is a diffie-hellman key
+	// agreement whose shared secret keys aes, rc4 or 3des for every tns
+	// packet after the handshake, with a separate sha or md5 mac.  the
+	// ciphers a client that enforces it actually asks for - aes256 above
+	// all - aren't in rudiments, which has aes128 and nothing above it,
+	// and there's no server-side implementation anywhere to work from:
+	// go-ora has only the client half, and the thin drivers don't
+	// implement ano at all because it's a thick-mode feature.
+	// ENC_NONE is the documented way to decline, and it's what redfern's
+	// captured canned response sends.  a client only fails on it if
+	// SQLNET.ENCRYPTION_CLIENT is REQUIRED, which raises ORA-12660 on the
+	// client; REJECTED, ACCEPTED and REQUESTED all connect unencrypted.
 	uint16_t	size=putAnoServiceHeader(2,2)+
 				putAnoVersionField(encryptionversion)+
-				putAnoConstant((byte_t)0);
+				putAnoConstant((byte_t)ENC_NONE);
 
 	debugEnd();
 	return size;
@@ -2323,9 +2488,10 @@ uint16_t sqlrprotocol_oracle::putCryptoChecksummingService() {
 
 	debugStart("crypto-checksumming");
 
+	// declined for the reasons in putEncryptionService()
 	uint16_t	size=putAnoServiceHeader(3,2)+
 				putAnoVersionField(cryptochecksummingversion)+
-				putAnoConstant((byte_t)0);
+				putAnoConstant((byte_t)CS_NONE);
 
 	debugEnd();
 	return size;
