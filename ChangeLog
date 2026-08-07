@@ -1582,6 +1582,13 @@
 		user name and declares a buffer size for it in the portable
 		encoding too, not only in the native one, so its login was
 		refused once it was in the portable encoding
+	fixed the oracle protocol module - a 12c verifier was offered with only
+		one of the two logon type capability bits it takes, so an oci
+		client answered the challenge with 12c crypto and an 11g sized
+		session key and its login was refused with the right password
+	changed the oracle protocol module to report oracle 12.1.0.2.0 rather
+		than 11.2.0.1.0, since the verifier type it offers by default
+		arrived with 12.1 and cannot exist on an 11.2 database
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems

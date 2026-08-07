@@ -221,6 +221,7 @@
 #define CCAP_TDS_VERSION_MAX		3
 #define CCAP_RPC_SIG_VALUE		3
 #define CCAP_DBF_VERSION_MAX		1
+#define CCAP_O5LOGON_NP			0x02
 #define CCAP_O5LOGON			0x08
 #define CCAP_O7LOGON			0x20
 #define CCAP_END_OF_CALL_STATUS		0x01
@@ -3306,11 +3307,20 @@ void sqlrprotocol_oracle::putTti6Response() {
 	// set, and does the same for an 11g verifier when it is set.  It picks
 	// its logon code path from the bit and its crypto from the verifier
 	// type, and refuses the login when they disagree.
+	//
+	// It takes two bits, not one.  OCI 23.26 reads CCAP_O5LOGON_NP as well,
+	// and with only one of the two set it takes the 11g path for the
+	// session key size while taking the 12c path for the crypto - it
+	// answers a 32 byte challenge with a 48 byte key and an
+	// AUTH_PBKDF2_SPEEDY_KEY, which no auth module can verify.  Measured
+	// one bit at a time: 0x2d and 0x0f both give ORA-01017 for a password
+	// that is right, and 0x2f logs in.  A live 12.2 server sets both, and a
+	// live 11.2 server sets neither.  See #9158.
 	byte_t	compilecaps[sizeof(ttiservercompilecaps)];
 	bytestring::copy(compilecaps,ttiservercompilecaps,
 					sizeof(ttiservercompilecaps));
 	if (verifiertype==VERIFIER_TYPE_12C) {
-		compilecaps[CCAP_LOGON_TYPES]|=CCAP_O7LOGON;
+		compilecaps[CCAP_LOGON_TYPES]|=CCAP_O7LOGON|CCAP_O5LOGON_NP;
 	}
 
 	putTtiResponse(ttiversion,
@@ -4817,19 +4827,31 @@ bool sqlrprotocol_oracle::sendAuthenticationResponse() {
 	// AUTH_SVR_RESPONSE is known to be required.  See #8979 for the rest.
 	putAuthCount(9,2);
 
-	putAuthField("AUTH_VERSION_STRING","- Production");
-	putAuthField("AUTH_VERSION_SQL","12");
+	// what both live servers send here
+	putAuthField("AUTH_VERSION_STRING","- 64bit Production");
+
+	// a live 11.2 server sends 22 and a live 12.2 server sends 24
+	putAuthField("AUTH_VERSION_SQL","23");
+
 	putAuthField("AUTH_XACTION_TRAITS","3");
 
-	// 186646784 is 0x0b200100, oracle 11.2.0.1.0, which is what the live
-	// server every byte string in this module was captured from reports.
-	// It used to be 0x08005000, 8.0.5, and that is not cosmetic: ojdbc
-	// 23.26 picks its result set reader from this number, and told 8.0.5
-	// it read the 11.2 shaped describe with an 8.0 era reader and threw
-	// ORA-17401 on the first query.  It has to move with the capability
-	// array, the data type table and the field version, all of which came
-	// from that same 11.2 server.  See #9147.
-	putAuthField("AUTH_VERSION_NO","186646784");
+	// 202375680 is 0x0c100200, oracle 12.1.0.2.0.  The nibbles are the
+	// version: a live 11.2 server reports 0x0b200100 and a live 12.2 server
+	// reports 0x0c200100.
+	//
+	// This is the version a client reports as the server's, and it is not
+	// cosmetic.  It was 0x08005000, 8.0.5, until #9147: ojdbc 23.26 picks
+	// its result set reader from it, and told 8.0.5 it read the module's
+	// 11.2 shaped describe with an 8.0 era reader and threw ORA-17401 on
+	// the first query.  #9147 moved it to the 11.2 server every byte string
+	// in this module was captured from.
+	//
+	// It is 12.1 now because that is what the rest of the module claims:
+	// the verifier type it offers by default arrived with 12.1 and cannot
+	// exist on an 11.2 database, and the summary objects it writes are the
+	// 12.1 shape.  A client that is told 11.2 and answered as 12.1 is the
+	// defect this and #9158 and #9171 are all one symptom of.
+	putAuthField("AUTH_VERSION_NO","202375680");
 	putAuthField("AUTH_VERSION_STATUS","0");
 	putAuthField("AUTH_CAPABILITY_TABLE","");
 	putAuthField("AUTH_SESSION_ID","9");
