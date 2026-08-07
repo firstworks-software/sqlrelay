@@ -2689,9 +2689,10 @@ bool sqlrprotocol_tds::tds7Login() {
 							cchchangepassword);
 	}
 	// cbsspilong is only consulted when cbsspi is saturated, and it only
-	// exists from tds 7.2 up - below that it's still 0 from its
-	// initializer, so the old ladder took the "long is zero" arm and
-	// asked for 65535 bytes out of a packet that can't be that long
+	// exists from tds 7.2 up.  The version test is documentation rather
+	// than a behaviour change - below 7.2 cbsspilong is still 0 from its
+	// initializer, so the test it guards would fail anyway.  Nothing here
+	// bounds anything; the checks below are what do that.
 	uint32_t	sspisize=cbsspi;
 	if (clienttdsversion>=720 && cbsspi==65535 && cbsspilong) {
 		sspisize=cbsspilong;
@@ -2705,7 +2706,7 @@ bool sqlrprotocol_tds::tds7Login() {
 	// whether or not there's a buffer at the other end.
 	if (sspisize>MAX_LOGIN_SSPI_BYTES) {
 		debugStart("tds7 login");
-		debugWrite("sspi: %d exceeds the %d maximum, "
+		debugWrite("sspi: %u exceeds the %d maximum, "
 					"dropping the field",
 					sspisize,MAX_LOGIN_SSPI_BYTES);
 		debugEnd();

@@ -1362,10 +1362,9 @@
 		client asking for the whole range got a 4 gigabyte allocation
 		followed by a 4 gigabyte read out of a packet a few hundred
 		bytes long - the allocation succeeded and the copy then took
-		the connection down - it's bounded now, and the sentinel that
-		selects the long length is gated on the version that has it,
-		which a tds 7.0 client could previously use to ask for 64k it
-		never sent
+		the connection down - it's bounded now, and bounded against
+		the packet as well, which also stops a tds 7.0 client asking
+		for 64k it never sent
 	fixed the tds protocol module - nothing checked that a login field's
 		offset was inside the packet, only that its length was within
 		its maximum, so an offset near the top of its 16 bit range
