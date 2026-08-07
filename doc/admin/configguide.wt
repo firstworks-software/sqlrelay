@@ -69,6 +69,7 @@
   * [#postgresqlforeignbackend Foreign Backend]
   * [#postgresqllimitations Limitations]
  * [#oracleprotocol Oracle Protocol]
+  * [#oraclecharsets Character Set Options]
   * [#oraclelimitations Limitations]
  * [#multipleprotocols Multiple Protocols]
   * [#multiprotocolconfiguration Basic Configuration]
@@ -2459,7 +2460,40 @@ SQL Relay can be configured to speak the native Oracle protocol, enabling client
 
 If an instance speaks the Oracle client-server protocol, then any client that wishes to use it must also speak the Oracle client-server protocol.  This means that most software written using the Oracle API, or written using a database abstraction layer which loads a driver for Oracle can access this instance.  However, it also means that SQL Relay's standard sqlrsh client program and client programs for other databases (eg. the psql, and mysql command line programs, !MySQL Workbench, SQL Server Management Studio, etc.) cannot access this instance.
 
-The Oracle protocol module is still under development, and its configuration isn't documented here yet.
+The Oracle protocol module is still under development, and most of its configuration isn't documented here yet.  The character set options below are the exception, as they can decide whether a client is able to read a result set at all.
+
+[=#oraclecharsets]
+=== Character Set Options ===
+
+While negotiating the protocol, the Oracle protocol module tells the client which character sets to expect.  Oracle identifies character sets by number, and the client uses those numbers to choose the codec it decodes the data with.
+
+Note that the module only advertises the character sets.  It doesn't convert anything.  The bytes a client receives are the bytes the back-end database returned, so these options should be set to match what the back-end database actually sends, or the client will decode correct data with the wrong codec.
+
+The //charset// option sets the database character set id.  It defaults to 873, which is AL32UTF8.
+
+The //nationalcharset// option sets the national character set id.  It defaults to 2000, which is AL16UTF16.  That is the only national character set modern Oracle databases use, so there is rarely a reason to set it at all.
+
+Prior to version 2.3.0, SQL Relay always reported character set 1, which is US7ASCII, and some clients take that literally.  python-oracledb, for example, maps character set 1 to Python's ascii codec, which raises an exception on any byte of 0x80 or higher.  Such a client cannot read a result set containing any non-ASCII data at all.
+
+If a client still fails to decode a result set, try setting //charset// to 178, which is WE8MSWIN1252.  Every byte value decodes under cp1252, so decoding never fails, though bytes that aren't really cp1252 will decode to the wrong characters.
+
+{{{#!blockquote
+{{{#!code
+@parts/sqlrelay-oraclefecharset.conf@
+}}}
+}}}
+
+Any Oracle character set id may be used.  Ids are listed in the Oracle Database Globalization Support Guide, and the id for a given character set name can be looked up in a running Oracle database with the NLS_CHARSET_ID() function.  For example, to get the ids matching a database's own character sets:
+
+{{{#!blockquote
+{{{#!code
+select parameter,value,nls_charset_id(value)
+from nls_database_parameters
+where parameter in ('NLS_CHARACTERSET','NLS_NCHAR_CHARACTERSET');
+}}}
+}}}
+
+Setting either option to 0, or to something that isn't a number, is the same as leaving it out, and the default is used.
 
 [=#oraclelimitations]
 === Limitations ===

@@ -97,6 +97,12 @@
       <li><a href="#postgresqllimitations">Limitations</a></li>
     </ul>
 
+    <li><a href="#oracleprotocol">Oracle Protocol</a></li>
+    <ul>
+      <li><a href="#oraclecharsets">Character Set Options</a></li>
+      <li><a href="#oraclelimitations">Limitations</a></li>
+    </ul>
+
     <li><a href="#multipleprotocols">Multiple Protocols</a></li>
     <ul>
       <li><a href="#multiprotocolconfiguration">Basic Configuration</a></li>
@@ -3467,6 +3473,69 @@ http://www.gnu.org/software/src-highlite -->
 <ul>
   <li>Kerberos authentication and encryption are not supported.</li>
   <li>Multi-statement queries are not supported.</li>
+</ul>
+
+<br/><a name="oracleprotocol"/><h2>Oracle Protocol</h2>
+
+<p>SQL Relay can be configured to speak the native Oracle protocol, enabling client programs for Oracle (eg. the sqlplus command line program) to access SQL Relay directly.</p>
+
+<p>If an instance speaks the Oracle client-server protocol, then any client that wishes to use it must also speak the Oracle client-server protocol.  This means that most software written using the Oracle API, or written using a database abstraction layer which loads a driver for Oracle can access this instance.  However, it also means that SQL Relay's standard sqlrsh client program and client programs for other databases (eg. the psql, and mysql command line programs, MySQL Workbench, SQL Server Management Studio, etc.) cannot access this instance.</p>
+
+<p>The Oracle protocol module is still under development, and most of its configuration isn't documented here yet.  The character set options below are the exception, as they can decide whether a client is able to read a result set at all.</p>
+
+<a name="oraclecharsets"/><h3>Character Set Options</h3>
+
+<p>While negotiating the protocol, the Oracle protocol module tells the client which character sets to expect.  Oracle identifies character sets by number, and the client uses those numbers to choose the codec it decodes the data with.</p>
+
+<p>Note that the module only advertises the character sets.  It doesn't convert anything.  The bytes a client receives are the bytes the back-end database returned, so these options should be set to match what the back-end database actually sends, or the client will decode correct data with the wrong codec.</p>
+
+<p>The <i>charset</i> option sets the database character set id.  It defaults to 873, which is AL32UTF8.</p>
+
+<p>The <i>nationalcharset</i> option sets the national character set id.  It defaults to 2000, which is AL16UTF16.  That is the only national character set modern Oracle databases use, so there is rarely a reason to set it at all.</p>
+
+<p>Prior to version 2.3.0, SQL Relay always reported character set 1, which is US7ASCII, and some clients take that literally.  python-oracledb, for example, maps character set 1 to Python's ascii codec, which raises an exception on any byte of 0x80 or higher.  Such a client cannot read a result set containing any non-ASCII data at all.</p>
+
+<p>If a client still fails to decode a result set, try setting <i>charset</i> to 178, which is WE8MSWIN1252.  Every byte value decodes under cp1252, so decoding never fails, though bytes that aren't really cp1252 will decode to the wrong characters.</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt><b><font color="#000080">&lt;?xml</font></b> <font color="#009900">version</font><font color="#990000">=</font><font color="#FF0000">"1.0"</font><b><font color="#000080">?&gt;</font></b>
+<b><font color="#0000FF">&lt;instances&gt;</font></b>
+	<b><font color="#0000FF">&lt;instance</font></b> <font color="#009900">id</font><font color="#990000">=</font><font color="#FF0000">"example"</font> <font color="#009900">dbase</font><font color="#990000">=</font><font color="#FF0000">"oracle"</font><b><font color="#0000FF">&gt;</font></b>
+		<b><font color="#0000FF">&lt;listeners&gt;</font></b>
+			<b><font color="#0000FF">&lt;listener</font></b> <font color="#009900">protocol</font><font color="#990000">=</font><font color="#FF0000">"oracle"</font> <font color="#009900">port</font><font color="#990000">=</font><font color="#FF0000">"1521"</font> <font color="#009900">charset</font><font color="#990000">=</font><font color="#FF0000">"178"</font> <font color="#009900">nationalcharset</font><font color="#990000">=</font><font color="#FF0000">"2000"</font><b><font color="#0000FF">/&gt;</font></b>
+		<b><font color="#0000FF">&lt;/listeners&gt;</font></b>
+		<b><font color="#0000FF">&lt;connections&gt;</font></b>
+			<b><font color="#0000FF">&lt;connection</font></b> <font color="#009900">string</font><font color="#990000">=</font><font color="#FF0000">"user=scott;password=tiger;oracle_home=/u01/app/oracle/product/12.1.0;oracle_sid=ora1"</font><b><font color="#0000FF">/&gt;</font></b>
+		<b><font color="#0000FF">&lt;/connections&gt;</font></b>
+	<b><font color="#0000FF">&lt;/instance&gt;</font></b>
+<b><font color="#0000FF">&lt;/instances&gt;</font></b>
+</tt></pre>
+
+</blockquote>
+<p>Any Oracle character set id may be used.  Ids are listed in the Oracle Database Globalization Support Guide, and the id for a given character set name can be looked up in a running Oracle database with the NLS_CHARSET_ID() function.  For example, to get the ids matching a database's own character sets:</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt><font color="#008080">select</font> parameter<font color="#990000">,</font>value<font color="#990000">,</font><b><font color="#000000">nls_charset_id</font></b><font color="#990000">(</font>value<font color="#990000">)</font>
+<font color="#008080">from</font> nls_database_parameters
+where <font color="#008080">parameter</font> <b><font color="#000000">in</font></b> <font color="#990000">(</font><font color="#FF0000">'NLS_CHARACTERSET'</font><font color="#990000">,</font><font color="#FF0000">'NLS_NCHAR_CHARACTERSET'</font><font color="#990000">);</font></tt></pre>
+
+</blockquote>
+<p>Setting either option to 0, or to something that isn't a number, is the same as leaving it out, and the default is used.</p>
+
+<a name="oraclelimitations"/><h3>Limitations</h3>
+
+<p>The implementation of the Oracle protocol isn't 100% complete.  Some notable limitations follow:</p>
+
+<ul>
+  <li>Oracle native network encryption and crypto-checksumming (the Advanced Networking Option) are not supported.  SQL Relay negotiates them off.  Clients work normally with SQLNET.ENCRYPTION_CLIENT and SQLNET.CRYPTO_CHECKSUM_CLIENT set to ACCEPTED (the default), REQUESTED or REJECTED.  A client with either set to REQUIRED will fail to connect, with ORA-12660.</li>
 </ul>
 
 <br/><a name="multipleprotocols"/><h2>Multiple Protocols</h2>

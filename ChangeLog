@@ -1278,6 +1278,13 @@
 		request's reply is an sql response rather than an info response, so
 		the length governs nothing - firebird's own server ignores it and
 		its client sends zero - it's read and dropped now
+	documented the oracle protocol module's charset and nationalcharset
+		listener attributes in the config guide - what each one
+		advertises, the al32utf8 and al16utf16 defaults, that the module
+		advertises the character set ids rather than converting anything,
+		so they have to match what the back-end actually returns, and
+		that 178, we8mswin1252, is the fallback for a client that can't
+		decode a result set, since every byte decodes under cp1252
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems
