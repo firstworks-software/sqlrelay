@@ -885,6 +885,10 @@
 		descriptor didn't sleep before returning, though its comment
 		said it did, so a connection whose listener had died looped
 		over the failure at full speed
+	fixed the sap connection module - unichar, univarchar and unitext
+		columns were all reported as unknown, because ctlib's
+		CS_UNICHAR_TYPE and CS_UNITEXT_TYPE had no cases, they report
+		nchar, nvarchar and ntext now
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems

@@ -3588,6 +3588,17 @@ uint16_t sapcursor::getColumnType(uint32_t col) {
 					return NVARCHAR_DATATYPE;
 			}
 			return CHAR_DATATYPE;
+		#ifdef CS_UNICHAR_TYPE
+		case CS_UNICHAR_TYPE:
+			// ctlib reports unichar and univarchar both as
+			// CS_UNICHAR_TYPE.  Sybase also sends its systypes
+			// usertype, which does tell them apart - 34 unichar,
+			// 35 univarchar.
+			if (column[col].usertype==35) {
+				return NVARCHAR_DATATYPE;
+			}
+			return NCHAR_DATATYPE;
+		#endif
 		case CS_INT_TYPE:
 			return INT_DATATYPE;
 		case CS_SMALLINT_TYPE:
@@ -3627,6 +3638,14 @@ uint16_t sapcursor::getColumnType(uint32_t col) {
 			return FLOAT_DATATYPE;
 		case CS_TEXT_TYPE:
 			return TEXT_DATATYPE;
+		#ifdef CS_UNITEXT_TYPE
+		case CS_UNITEXT_TYPE:
+			// Open Client only asks for unitext as
+			// CS_UNITEXT_TYPE at the newer context versions.  At
+			// CS_VERSION_100 it reports unitext as CS_IMAGE_TYPE
+			// instead, so there it falls through to image.
+			return NTEXT_DATATYPE;
+		#endif
 		case CS_VARCHAR_TYPE:
 			return VARCHAR_DATATYPE;
 		case CS_VARBINARY_TYPE:
