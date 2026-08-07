@@ -55,6 +55,10 @@
 #define	MAX_LOGIN_CHARS			128
 #define	MAX_LOGIN_EXTENSION_BYTES	255
 #define	MAX_LOGIN_ATCHDBFILE_CHARS	260
+// FIXME: cbsspilong exists for kerberos tickets larger than this, which is
+// exactly what this module can't service yet - revisit when sspi is
+// implemented
+#define	MAX_LOGIN_SSPI_BYTES		65535
 
 // status bitmap
 #define	STATUS_NORMAL			0x00
@@ -879,20 +883,24 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_tds : public sqlrprotocol {
 		void		negotiateTdsVersion();
 
 		bool	preLogin();
-		// whether optsize bytes at ploptoff bytes from the start
-		// of the packet are still inside a packetsize-byte packet
-		bool	preLoginOptionFits(uint16_t ploptoff,
-						size_t optsize,
+		// whether size bytes at offset bytes from the start of the
+		// packet are still inside a packetsize-byte packet
+		bool	fitsInPacket(uint16_t offset,
+						size_t size,
 						size_t packetsize);
 
 		bool	preTds7Login();
 
 		bool	tds7Login();
-		// whether a login7 field is within its maximum, dropping the
-		// length along with the field when it isn't
+		// whether a login7 field is within its maximum and still
+		// inside the packet, dropping the length along with the
+		// field when it isn't
 		bool	loginFieldFits(const char *name,
+						uint16_t ib,
 						uint16_t *cch,
-						uint16_t max);
+						uint16_t max,
+						size_t charsize,
+						size_t rpsize);
 		bool	auth(const wchar_t *username,
 						size_t usernamelen,
 						const wchar_t *password,
@@ -2111,7 +2119,7 @@ bool sqlrprotocol_tds::preLogin() {
 		debugWrite("size: %hd",ploptsize);
 
 		// the data the option claims has to be inside the packet
-		if (!preLoginOptionFits(ploptoff,ploptsize,packetsize)) {
+		if (!fitsInPacket(ploptoff,ploptsize,packetsize)) {
 			debugWrite("option data lies outside of the packet");
 			badpacket=true;
 			break;
@@ -2127,7 +2135,7 @@ bool sqlrprotocol_tds::preLogin() {
 
 			case PL_VERSION:
 				// FIXME: bail if this isn't the first option
-				if (!preLoginOptionFits(ploptoff,
+				if (!fitsInPacket(ploptoff,
 						sizeof(version)+
 						sizeof(subbuild),packetsize)) {
 					badpacket=true;
@@ -2142,7 +2150,7 @@ bool sqlrprotocol_tds::preLogin() {
 				break;
 
 			case PL_ENCRYPTION:
-				if (!preLoginOptionFits(ploptoff,
+				if (!fitsInPacket(ploptoff,
 						sizeof(encryption),packetsize)) {
 					badpacket=true;
 					break;
@@ -2164,7 +2172,7 @@ bool sqlrprotocol_tds::preLogin() {
 				break;
 
 			case PL_THREADID:
-				if (!preLoginOptionFits(ploptoff,
+				if (!fitsInPacket(ploptoff,
 						sizeof(threadid),packetsize)) {
 					badpacket=true;
 					break;
@@ -2175,7 +2183,7 @@ bool sqlrprotocol_tds::preLogin() {
 				break;
 
 			case PL_MARS:
-				if (!preLoginOptionFits(ploptoff,
+				if (!fitsInPacket(ploptoff,
 						sizeof(mars),packetsize)) {
 					badpacket=true;
 					break;
@@ -2186,7 +2194,7 @@ bool sqlrprotocol_tds::preLogin() {
 				break;
 
 			case PL_TRACEID:
-				if (!preLoginOptionFits(ploptoff,
+				if (!fitsInPacket(ploptoff,
 						sizeof(connid)+
 						sizeof(activityid),packetsize)) {
 					badpacket=true;
@@ -2206,7 +2214,7 @@ bool sqlrprotocol_tds::preLogin() {
 				break;
 
 			case PL_FEDAUTHREQUIRED:
-				if (!preLoginOptionFits(ploptoff,
+				if (!fitsInPacket(ploptoff,
 						sizeof(fedauthrequired),
 						packetsize)) {
 					badpacket=true;
@@ -2221,7 +2229,7 @@ bool sqlrprotocol_tds::preLogin() {
 				break;
 
 			case PL_NONCEOPT:
-				if (!preLoginOptionFits(ploptoff,
+				if (!fitsInPacket(ploptoff,
 						sizeof(nonce),packetsize)) {
 					badpacket=true;
 					break;
@@ -2358,28 +2366,53 @@ bool sqlrprotocol_tds::preLogin() {
 	return retval;
 }
 
-bool sqlrprotocol_tds::preLoginOptionFits(uint16_t ploptoff,
-						size_t optsize,
+bool sqlrprotocol_tds::fitsInPacket(uint16_t offset,
+						size_t size,
 						size_t packetsize) {
-	return ((size_t)ploptoff+optsize<=packetsize);
+	// Subtraction rather than offset+size<=packetsize, which can wrap.
+	// Both of preLogin()'s operands are 16 bits, but the sspi block's
+	// size is 32, and on a 32-bit build that sum overflows.
+	return (offset<=packetsize && size<=packetsize-offset);
 }
 
-// A field that exceeds its maximum is dropped, leaving its pointer NULL.
+// A field that fails either test is dropped, leaving its pointer NULL.
 // The length has to be dropped with it - the two travel together into the
 // debug block, auth(), changeDatabase() and changeLanguage(), and neither
 // safePrint() nor envChange() survives a NULL pointer with a nonzero length.
 bool sqlrprotocol_tds::loginFieldFits(const char *name,
+						uint16_t ib,
 						uint16_t *cch,
-						uint16_t max) {
-	if (*cch<=max) {
+						uint16_t max,
+						size_t charsize,
+						size_t rpsize) {
+
+	// An empty field reads nothing, so where it points doesn't matter.
+	// Checking it anyway would turn an empty username or password from
+	// "" into NULL going into auth(), for clients that leave the offset
+	// of a field they don't use pointing anywhere at all.
+	if (!*cch) {
 		return true;
 	}
-	debugStart("tds7 login");
-	debugWrite("%s: %hd exceeds the %hd maximum, dropping the field",
-							name,*cch,max);
-	debugEnd();
-	*cch=0;
-	return false;
+
+	if (*cch>max) {
+		debugStart("tds7 login");
+		debugWrite("%s: %hd exceeds the %hd maximum, "
+				"dropping the field",name,*cch,max);
+		debugEnd();
+		*cch=0;
+		return false;
+	}
+
+	if (!fitsInPacket(ib,(size_t)*cch*charsize,rpsize)) {
+		debugStart("tds7 login");
+		debugWrite("%s: (%hd,%hd) lies outside of the packet, "
+				"dropping the field",name,ib,*cch);
+		debugEnd();
+		*cch=0;
+		return false;
+	}
+
+	return true;
 }
 
 bool sqlrprotocol_tds::preTds7Login() {
@@ -2586,74 +2619,105 @@ bool sqlrprotocol_tds::tds7Login() {
 		}
 		readLE(rp,&cbsspilong,&rp);
 	}
-	if (loginFieldFits("hostname",&cchhostname,MAX_LOGIN_CHARS)) {
+	if (loginFieldFits("hostname",ibhostname,&cchhostname,
+				MAX_LOGIN_CHARS,sizeof(ucs2_t),rpsize)) {
 		hostname=wcharstring::duplicateUcs2(
 					(ucs2_t *)(startrp+ibhostname),
 					(size_t)cchhostname);
 	}
-	if (loginFieldFits("username",&cchusername,MAX_LOGIN_CHARS)) {
+	if (loginFieldFits("username",ibusername,&cchusername,
+				MAX_LOGIN_CHARS,sizeof(ucs2_t),rpsize)) {
 		username=wcharstring::duplicateUcs2(
 					(ucs2_t *)(startrp+ibusername),
 					(size_t)cchusername);
 	}
-	if (loginFieldFits("password",&cchpassword,MAX_LOGIN_CHARS)) {
+	if (loginFieldFits("password",ibpassword,&cchpassword,
+				MAX_LOGIN_CHARS,sizeof(ucs2_t),rpsize)) {
 		password=readPassword(startrp+ibpassword,cchpassword);
 	}
-	if (loginFieldFits("appname",&cchappname,MAX_LOGIN_CHARS)) {
+	if (loginFieldFits("appname",ibappname,&cchappname,
+				MAX_LOGIN_CHARS,sizeof(ucs2_t),rpsize)) {
 		appname=wcharstring::duplicateUcs2(
 					(ucs2_t *)(startrp+ibappname),
 					(size_t)cchappname);
 	}
-	if (loginFieldFits("servername",&cchservername,MAX_LOGIN_CHARS)) {
+	if (loginFieldFits("servername",ibservername,&cchservername,
+				MAX_LOGIN_CHARS,sizeof(ucs2_t),rpsize)) {
 		servername=wcharstring::duplicateUcs2(
 					(ucs2_t *)(startrp+ibservername),
 					(size_t)cchservername);
 	}
 	if (clienttdsversion>=740 &&
-		loginFieldFits("extension",&cbextension,
-					MAX_LOGIN_EXTENSION_BYTES)) {
+		loginFieldFits("extension",ibextension,&cbextension,
+					MAX_LOGIN_EXTENSION_BYTES,
+					sizeof(byte_t),rpsize)) {
 		extension=(byte_t *)bytestring::duplicate(
 						startrp+ibextension,
 						cbextension);
 		// FIXME: decode this...
 	}
-	if (loginFieldFits("cltintname",&cchcltintname,MAX_LOGIN_CHARS)) {
+	if (loginFieldFits("cltintname",ibcltintname,&cchcltintname,
+				MAX_LOGIN_CHARS,sizeof(ucs2_t),rpsize)) {
 		cltintname=wcharstring::duplicateUcs2(
 					(ucs2_t *)(startrp+ibcltintname),
 					(size_t)cchcltintname);
 	}
-	if (loginFieldFits("language",&cchlanguage,MAX_LOGIN_CHARS)) {
+	if (loginFieldFits("language",iblanguage,&cchlanguage,
+				MAX_LOGIN_CHARS,sizeof(ucs2_t),rpsize)) {
 		language=wcharstring::duplicateUcs2(
 					(ucs2_t *)(startrp+iblanguage),
 					(size_t)cchlanguage);
 	}
-	if (loginFieldFits("database",&cchdatabase,MAX_LOGIN_CHARS)) {
+	if (loginFieldFits("database",ibdatabase,&cchdatabase,
+				MAX_LOGIN_CHARS,sizeof(ucs2_t),rpsize)) {
 		database=wcharstring::duplicateUcs2(
 					(ucs2_t *)(startrp+ibdatabase),
 					(size_t)cchdatabase);
 	}
-	if (loginFieldFits("atchdbfile",&cchatchdbfile,
-					MAX_LOGIN_ATCHDBFILE_CHARS)) {
+	if (loginFieldFits("atchdbfile",ibatchdbfile,&cchatchdbfile,
+				MAX_LOGIN_ATCHDBFILE_CHARS,
+				sizeof(ucs2_t),rpsize)) {
 		atchdbfile=wcharstring::duplicateUcs2(
 					(ucs2_t *)(startrp+ibatchdbfile),
 					(size_t)cchatchdbfile);
 	}
 	if (clienttdsversion>=720 &&
-		loginFieldFits("changepassword",&cchchangepassword,
-						MAX_LOGIN_CHARS)) {
+		loginFieldFits("changepassword",ibchangepassword,
+					&cchchangepassword,MAX_LOGIN_CHARS,
+					sizeof(ucs2_t),rpsize)) {
 		changepassword=readPassword(startrp+ibchangepassword,
 							cchchangepassword);
 	}
-	uint32_t	sspisize=0;
-	if (cbsspi<65535) {
-		sspisize=cbsspi;
-	} else {
-		if (cbsspilong==0) {
-			sspisize=65535;
-		} else {
-			sspisize=cbsspilong;
-		}
+	// cbsspilong is only consulted when cbsspi is saturated, and it only
+	// exists from tds 7.2 up - below that it's still 0 from its
+	// initializer, so the old ladder took the "long is zero" arm and
+	// asked for 65535 bytes out of a packet that can't be that long
+	uint32_t	sspisize=cbsspi;
+	if (clienttdsversion>=720 && cbsspi==65535 && cbsspilong) {
+		sspisize=cbsspilong;
 	}
+
+	// This one isn't bounded by the packet on its own.  recvPacket()
+	// appends every packet of a multi-packet request into reqpacket
+	// with no cap (see #9138), so rpsize can be arbitrarily large, and
+	// the maximum has to come first.  The size has to be dropped along
+	// with the pointer, because the hex dump below walks the length
+	// whether or not there's a buffer at the other end.
+	if (sspisize>MAX_LOGIN_SSPI_BYTES) {
+		debugStart("tds7 login");
+		debugWrite("sspi: %d exceeds the %d maximum, "
+					"dropping the field",
+					sspisize,MAX_LOGIN_SSPI_BYTES);
+		debugEnd();
+		sspisize=0;
+	} else if (sspisize && !fitsInPacket(ibsspi,sspisize,rpsize)) {
+		debugStart("tds7 login");
+		debugWrite("sspi: (%hd,%d) lies outside of the packet, "
+					"dropping the field",ibsspi,sspisize);
+		debugEnd();
+		sspisize=0;
+	}
+
 	sspi=(byte_t *)bytestring::duplicate(startrp+ibsspi,sspisize);
 
 	if (fodbc==ODBC_ON || foledb==OLEDB_ON) {

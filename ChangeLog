@@ -1357,6 +1357,23 @@
 		them look like, and the byte after them is a bit field of
 		encoding flags rather than a third marker - all three are
 		read as what they are now
+	fixed the tds protocol module - the login's sspi block was the one
+		field with no maximum, and its length can be 32 bits, so a
+		client asking for the whole range got a 4 gigabyte allocation
+		followed by a 4 gigabyte read out of a packet a few hundred
+		bytes long - the allocation succeeded and the copy then took
+		the connection down - it's bounded now, and the sentinel that
+		selects the long length is gated on the version that has it,
+		which a tds 7.0 client could previously use to ask for 64k it
+		never sent
+	fixed the tds protocol module - nothing checked that a login field's
+		offset was inside the packet, only that its length was within
+		its maximum, so an offset near the top of its 16 bit range
+		read up to 64k past the request, and whatever it found became
+		a user name, a database name or a line in the debug log -
+		every field's offset is checked now, sspi included, and a
+		field that doesn't fit is dropped the same way an over-long
+		one is
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems
