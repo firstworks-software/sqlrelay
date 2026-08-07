@@ -38,6 +38,10 @@
 #define PROTOCOL_VERSION_11		0x013A
 #define PROTOCOL_VERSION_12		0x013B
 
+// tti protocol versions that this module implements
+#define TTI_VERSION_MIN			5
+#define TTI_VERSION_MAX			6
+
 // ns layer nsi flags.  the pair of flag bytes the client sends in the connect
 // packet, and the server sends back in the accept.  "na" is oracle's name for
 // the native services layer, which is what carries ano.  names and values
@@ -1669,9 +1673,18 @@ bool sqlrprotocol_oracle::recvConnectRequest() {
 
 bool sqlrprotocol_oracle::sendConnectResponse() {
 
-	// look for a protocol version that we support
-	// FIXME: we currently only support PROTOCOL_VERSION_8
-	if (connectlowestversion<=PROTOCOL_VERSION_8) {
+	// answer with the highest protocol version we support that the client
+	// can speak
+	//
+	// PROTOCOL_VERSION_12 and above switch the tns packet header from a
+	// 16-bit length plus checksum to a 32-bit length, and grow the accept
+	// packet from 32 to 41 bytes, which sendPacket(), recvPacket() and
+	// sendAccept() don't implement, so 11 is the ceiling.  A real oracle
+	// 11.2 server answers 11 too.  Going past it is #9114.
+	if (connectlowestversion<=PROTOCOL_VERSION_11 &&
+			connectversion>=PROTOCOL_VERSION_11) {
+		connectversion=PROTOCOL_VERSION_11;
+	} else if (connectlowestversion<=PROTOCOL_VERSION_8) {
 		connectversion=PROTOCOL_VERSION_8;
 	} else {
 		debugWrite("no supported connect protocol version found");
@@ -2625,13 +2638,19 @@ bool sqlrprotocol_oracle::recvTtiRequest() {
 
 bool sqlrprotocol_oracle::sendTtiResponse() {
 
-	// look for a ttiversion that we support
-	// FIXME: we currently only support TTI 5
+	// pick the highest version the client offers that we implement
+	//
+	// Clients send the list in descending order, but nothing in the
+	// protocol requires that, so don't just take the first supported one.
+	// Anything below TTI_VERSION_MIN is skipped rather than accepted,
+	// because putTti4Response() and below are empty stubs and would send
+	// an empty data packet.
 	ttiversion=0;
 	for (uint32_t i=0; i<ttiversioncount; i++) {
-		if (ttiversions[i]==5) {
+		if (ttiversions[i]>=TTI_VERSION_MIN &&
+			ttiversions[i]<=TTI_VERSION_MAX &&
+			ttiversions[i]>ttiversion) {
 			ttiversion=ttiversions[i];
-			break;
 		}
 	}
 	if (!ttiversion) {
@@ -2665,6 +2684,43 @@ bool sqlrprotocol_oracle::sendTtiResponse() {
 
 	return sendPacket(true);
 }
+
+// server compile-time capabilities, captured from a live oracle 11.2 server,
+// which reports CCAP_FIELD_VERSION_11_2, with three changes.
+//
+// CCAP_TTC1 and CCAP_OCI1 are 0 rather than 0x7f and 0xff.  go-ora reads bit
+// 0x01 of each as end-of-call-status and fast-session-propagate, and then
+// reads an extra field for each off the front of every summary object.  This
+// module sends neither field, so advertising either bit would desynchronize
+// the client on the first error or ok footer.
+//
+// The array is 42 bytes rather than the 39 a real 11.2 server sends, because
+// python-oracledb reads CCAP_TTC4 with bounds checking disabled and no length
+// guard.  Zero there is also the value we want: it leaves CCAP_END_OF_RESPONSE
+// and CCAP_EXPLICIT_BOUNDARY clear, so the client uses the older framing.
+//
+// CCAP_FIELD_VERSION is negotiated as a minimum rather than as a request, so
+// this is a ceiling on what any client will ask of the module, not a promise
+// to it.  Raising it past CCAP_FIELD_VERSION_12_1 would oblige an oaccolid in
+// every describe-info column and five more fields in every execute.
+static const byte_t	ttiservercompilecaps[]={
+	0x06, 0x01, 0x01, 0x01, 0x0d, 0x01, 0x01, 0x06,
+	0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x00,
+	0x00, 0x03, 0x0a, 0x03, 0x03, 0x01, 0x00, 0x7f,
+	0x01, 0x7f, 0xff, 0x01, 0x05, 0x01, 0x01, 0x3f,
+	0x01, 0x03, 0x06, 0x00, 0x01, 0x03, 0x01, 0x00,
+	0x00, 0x00
+};
+
+// server runtime capabilities, from the same server
+//
+// RCAP_TTC is RCAP_TTC_ZERO_COPY plus one unnamed bit.  It leaves RCAP_TTC_32K
+// clear, since this module doesn't support 32k varchars, and
+// RCAP_TTC_SESSION_STATE_OPS clear, since it doesn't support request
+// boundaries either.
+static const byte_t	ttiserverruntimecaps[]={
+	0x02, 0x01, 0x00, 0x01, 0x18, 0x00, 0x03
+};
 
 // The layout of this response - the field order, and the ix=6+fdo[5]+fdo[6]
 // rule for finding the character set ids inside the fdo block - follows
@@ -2824,7 +2880,17 @@ void sqlrprotocol_oracle::putTtiResponse(byte_t version,
 void sqlrprotocol_oracle::putTti6Response() {
 
 	// oracle 8i+ supports TTI 6 (and lower)
-	// FIXME: implement this...
+	//
+	// The same response as TTI 5, with a different version byte and the
+	// capability arrays that only version 6 carries.  Real 11.2 and 12.2
+	// servers both answer version 6 with exactly this layout, and the same
+	// 11.2 server made to negotiate version 5 answers the same bytes minus
+	// the arrays.
+	putTtiResponse(ttiversion,
+			ttiservercompilecaps,
+			(byte_t)sizeof(ttiservercompilecaps),
+			ttiserverruntimecaps,
+			(byte_t)sizeof(ttiserverruntimecaps));
 }
 
 void sqlrprotocol_oracle::putTti5Response() {

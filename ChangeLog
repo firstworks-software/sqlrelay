@@ -1285,6 +1285,16 @@
 		so they have to match what the back-end actually returns, and
 		that 178, we8mswin1252, is the fallback for a client that can't
 		decode a result set, since every byte decodes under cp1252
+	fixed the oracle protocol module - it only ever answered tti
+		protocol version 5, which no modern client can use - ojdbc
+		requires the server capability arrays, which only exist at
+		version 6, and python-oracledb offers version 6 alone, so
+		the module dropped its connection without answering - the
+		module now selects the highest version the client offers
+		that it implements, up to 6, sends the capability arrays
+		only at version 6, where a real server sends them, and
+		answers connect protocol version 11 (314) rather than 8
+		(310)
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems
