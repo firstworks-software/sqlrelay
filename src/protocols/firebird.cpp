@@ -770,6 +770,12 @@
 // connection type
 #define P_REQ_async	1
 
+// the largest counted string or buffer the module will read
+// (firebird's api types every length these carry as a short - see
+// isc_attach_database and isc_database_info in ibase.h - and firebird's own
+// decoder folds a sign-extended 0xffffffff back down to 0xffff)
+#define MAX_CSTRING_LENGTH	65535
+
 class SQLRSERVER_DLLSPEC sqlrprotocol_firebird : public sqlrprotocol {
 	public:
 		sqlrprotocol_firebird(sqlrservercontroller *cont,
@@ -2999,6 +3005,13 @@ bool sqlrprotocol_firebird::readString(char **val,
 					const char *name,
 					uint32_t *bytesread) {
 
+	// init buffer up front, so a failure below never leaves the caller
+	// the pointer it had before (attach() delete[]'s db before this call)
+	*val=NULL;
+	if (len) {
+		*len=0;
+	}
+
 	// read length
 	uint32_t	vallen=0;
 	if (clientsock->read(&vallen)!=sizeof(uint32_t)) {
@@ -3010,12 +3023,22 @@ bool sqlrprotocol_firebird::readString(char **val,
 		return false;
 	}
 	if (getDebug()) {
-		stdoutput.printf("	%s length: %d\n",name,vallen);
+		stdoutput.printf("	%s length: %u\n",name,vallen);
 	}
 	(*bytesread)+=sizeof(uint32_t);
 
-	// init buffer
-	*val=NULL;
+	// reject an out-of-bounds length, before it can size an allocation
+	// (vallen+1 would also wrap to 0 at 0xffffffff)
+	if (vallen>MAX_CSTRING_LENGTH) {
+		if (getDebug()) {
+			stdoutput.printf("	invalid %s length - "
+						"got %u, max %u\n",
+						name,vallen,
+						(uint32_t)MAX_CSTRING_LENGTH);
+			debugEnd();
+		}
+		return false;
+	}
 
 	if (vallen) {
 
@@ -3029,6 +3052,8 @@ bool sqlrprotocol_firebird::readString(char **val,
 				debugSystemError();
 				debugEnd();
 			}
+			delete[] *val;
+			*val=NULL;
 			return false;
 		}
 		(*val)[vallen]='\0';
@@ -3043,7 +3068,15 @@ bool sqlrprotocol_firebird::readString(char **val,
 	}
 
 	// read padding
-	return readPadding(bytesread);
+	if (!readPadding(bytesread)) {
+		delete[] *val;
+		*val=NULL;
+		if (len) {
+			*len=0;
+		}
+		return false;
+	}
+	return true;
 }
 
 bool sqlrprotocol_firebird::readBuffer(byte_t **val,
@@ -3057,6 +3090,13 @@ bool sqlrprotocol_firebird::readBuffer(byte_t **val,
 					const char *name,
 					uint32_t *bytesread) {
 
+	// init buffer up front, so a failure below never leaves the caller
+	// the pointer it had before
+	*val=NULL;
+	if (len) {
+		*len=0;
+	}
+
 	// read length
 	uint32_t	vallen=0;
 	if (clientsock->read(&vallen)!=sizeof(uint32_t)) {
@@ -3068,12 +3108,21 @@ bool sqlrprotocol_firebird::readBuffer(byte_t **val,
 		return false;
 	}
 	if (getDebug()) {
-		stdoutput.printf("	%s length: %d\n",name,vallen);
+		stdoutput.printf("	%s length: %u\n",name,vallen);
 	}
 	(*bytesread)+=sizeof(uint32_t);
 
-	// init buffer
-	*val=NULL;
+	// reject an out-of-bounds length, before it can size an allocation
+	if (vallen>MAX_CSTRING_LENGTH) {
+		if (getDebug()) {
+			stdoutput.printf("	invalid %s length - "
+						"got %u, max %u\n",
+						name,vallen,
+						(uint32_t)MAX_CSTRING_LENGTH);
+			debugEnd();
+		}
+		return false;
+	}
 
 	if (vallen) {
 
@@ -3087,6 +3136,8 @@ bool sqlrprotocol_firebird::readBuffer(byte_t **val,
 				debugSystemError();
 				debugEnd();
 			}
+			delete[] *val;
+			*val=NULL;
 			return false;
 		}
 		if (getDebug()) {
@@ -3101,7 +3152,15 @@ bool sqlrprotocol_firebird::readBuffer(byte_t **val,
 	}
 
 	// read padding
-	return readPadding(bytesread);
+	if (!readPadding(bytesread)) {
+		delete[] *val;
+		*val=NULL;
+		if (len) {
+			*len=0;
+		}
+		return false;
+	}
+	return true;
 }
 
 bool sqlrprotocol_firebird::readPadding(uint32_t *bytesread) {

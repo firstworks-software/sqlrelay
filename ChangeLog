@@ -931,6 +931,28 @@
 		name, parameters included, and skipped exactly one whitespace
 		character after the keyword, so only a bare exec with a single
 		space came out right
+	fixed the firebird protocol module - readString() and readBuffer()
+		allocated a client-supplied 32 bit length with no upper
+		bound, so four bytes bought a 4gb allocation before the
+		client had authenticated, and readString's length+1 wrapped
+		to zero at 0xffffffff and read the body into an empty block;
+		the length is now capped at 65535, which is what firebird's
+		own api types these lengths as, and rejected before anything
+		is allocated
+	fixed the firebird protocol module - readString() and readBuffer()
+		returned false without freeing the buffer they had just
+		allocated, and no caller frees on a false return, so every
+		truncated packet leaked whatever the client asked for
+	fixed the firebird protocol module - readString() and readBuffer()
+		nulled the caller's pointer only after reading the length, so
+		a short read of the length left it holding whatever it had
+		before; attach() deletes db just before reading it, so a
+		truncated attach packet left db dangling and it was deleted a
+		second time when the session ended
+	fixed the firebird protocol module - readString() and readBuffer()
+		printed the length they read with %d, so a hostile 0xffffffff
+		logged as -1 rather than the value an operator would be
+		looking for
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems
