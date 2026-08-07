@@ -1208,6 +1208,8 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_tds : public sqlrprotocol {
 		bool	sendTdsProtocolError();
 		bool	sendQueryTooLargeError(size_t querysize);
 		bool	sendNoCursorAvailableError();
+		bool	sendLoginRequiredError();
+		bool	sendAlreadyLoggedInError();
 
 		void	done();
 		void	done(uint16_t status,
@@ -1268,6 +1270,11 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_tds : public sqlrprotocol {
 		uint32_t	negotiatedpacketsize;
 
 		bool		dbistds;
+
+		// whether the session has logged in.  The listener only
+		// authenticates for the sqlrclient protocol, so nothing but
+		// this stands between a client's first packet and the parsers.
+		bool		loggedin;
 
 		// rpc parameters, as they arrived on the wire.  The handlers
 		// decide which are the proc's own arguments and which are
@@ -1425,6 +1432,10 @@ void sqlrprotocol_tds::init() {
 
 	oldpacketsize=configpacketsize;
 	negotiatedpacketsize=configpacketsize;
+
+	// the module instance outlives the session, so a client that gets
+	// this connection next must not inherit the previous client's login
+	loggedin=false;
 
 	// handle 0 is invalid
 	nexthandle=1;
@@ -1913,6 +1924,29 @@ clientsessionexitstatus_t sqlrprotocol_tds::clientSession(
 		if (!recvPacket(&packettype)) {
 			status=CLIENTSESSIONEXITSTATUS_CLOSED_CONNECTION;
 			break;
+		}
+
+		// exactly one set of requests is legal in each state, so
+		// reject the mismatch in both directions.  A login-phase
+		// request that arrives a second time is as bad as a query
+		// that arrives before the first one - it re-auths the session
+		// under the modules and renegotiates the wire format, while
+		// the previous user's cursors are still open.
+		bool	loginrequest=(packettype==PRE_LOGIN ||
+					packettype==PRE_TDS7_LOGIN ||
+					packettype==TDS7_LOGIN ||
+					packettype==FEDERATED_AUTHENTICATION_TOKEN ||
+					packettype==SSPI);
+		if (loggedin) {
+			if (loginrequest) {
+				sendAlreadyLoggedInError();
+				break;
+			}
+		} else {
+			if (!loginrequest) {
+				sendLoginRequiredError();
+				break;
+			}
 		}
 
 		// some requests don't need a cursor...
@@ -2649,6 +2683,7 @@ bool sqlrprotocol_tds::tds7Login() {
 	// auth the user...
 	if (retval) {
 		if (auth(username,cchusername,password,cchpassword)) {
+			loggedin=true;
 			loginAck();
 		} else {
 			authError(username,cchusername);
@@ -9307,6 +9342,16 @@ bool sqlrprotocol_tds::sendQueryTooLargeError(size_t querysize) {
 bool sqlrprotocol_tds::sendNoCursorAvailableError() {
 	// FIXME: is there a real error message/number/state/class for this?
 	return sendError(0,1,16,"No cursor available",1);
+}
+
+bool sqlrprotocol_tds::sendLoginRequiredError() {
+	// FIXME: is there a real error message/number/state/class for this?
+	return sendError(0,1,16,"Login required",1);
+}
+
+bool sqlrprotocol_tds::sendAlreadyLoggedInError() {
+	// FIXME: is there a real error message/number/state/class for this?
+	return sendError(0,1,16,"Already logged in",1);
 }
 
 void sqlrprotocol_tds::done() {
