@@ -826,10 +826,8 @@ int	main(int argc, char **argv) {
 	if (present[16]) {
 		stdoutput.printf("%s\n",column[16].name);
 		assertEquals(column[16].name,"testdatetime2");
-		// on the relay run this is a datetime, not a datetime2 - the
-		// odbc backend can't tell them apart	#8925
 		assertEquals(column[16].datatype,
-				(issqlrelay)?CS_DATETIME_TYPE:
+				(issqlrelay)?CS_CHAR_TYPE:
 						CS_BIGDATETIME_TYPE);
 		assertEquals(column[16].format,CS_FMT_NULLTERM);
 		// FIXME: 16/7/7 direct, 64/0/0 via relay
@@ -1078,11 +1076,7 @@ int	main(int argc, char **argv) {
 		assertEquals(data[15],"13:01:01.0000000");
 		assertEquals(*(datalength[15]),17);
 		assertEquals(*(nullindicator[15]),0);
-		// datetime2 comes through as a datetime, and renders like one,
-		// because the odbc backend can't tell them apart - the driver
-		// reports both with SQL_DESC_TYPE 9 and SQL_DESC_CONCISE_TYPE
-		// 93, and only the type name distinguishes them	#8925
-		assertEquals(data[16],"Jan  1 2001 01:01:01:000PM");
+		assertEquals(data[16],"2001-01-01 13:01:01.0000000");
 		assertEquals(data[17],"2001-01-01 13:01:01.0000000 +00:00");
 		assertEquals(*(datalength[17]),35);
 		assertEquals(*(nullindicator[17]),0);
@@ -1162,7 +1156,7 @@ int	main(int argc, char **argv) {
 	if (issqlrelay) {
 		assertEquals(data[14],"2002-02-02");
 		assertEquals(data[15],"14:02:02.0000000");
-		assertEquals(data[16],"Feb  2 2002 02:02:02:000PM");	// #8925
+		assertEquals(data[16],"2002-02-02 14:02:02.0000000");
 		assertEquals(data[17],"2002-02-02 14:02:02.0000000 +00:00");
 	} else {
 		assertEquals(data[14],"Feb  2 2002 12:00:00:000AM");
