@@ -289,6 +289,13 @@ class SQLRSERVER_DLLSPEC odbccursor : public sqlrservercursor {
 		SQLINTEGER		sqlnulldata;
 		#endif
 
+		// whether the driver said this parameter is aimed at a
+		// binary column, cached so a bulk load asks once per
+		// position per prepare rather than once per row
+		bool			*nullbindisbinary;
+		bool			*nullbinddescribed;
+		bool	nullBindIsBinary(uint16_t pos);
+
 		bool		bindformaterror;
 
 		uint32_t	row;
@@ -442,6 +449,8 @@ class SQLRSERVER_DLLSPEC odbcconnection : public sqlrserverconnection {
 
 		const char	*begintxquery;
 		bool		usecharforlobbind;
+		bool		describenullbinds;
+		bool		hasdescribeparam;
 		SQLSMALLINT	fractionscale;
 		bool		supportsfraction;
 		bool		timestampfortime;
@@ -920,6 +929,15 @@ bool odbcconnection::logIn(const char **error, const char **warning) {
 	// set some default params
 	begintxquery=sqlrserverconnection::beginTransactionQuery();
 	usecharforlobbind=true;
+	describenullbinds=false;
+
+	// Whether the driver implements SQLDescribeParam at all.  SQL Relay's
+	// own odbc driver doesn't, and answers this honestly, so an
+	// odbc-module-to-sqlrelay chain has to fall back rather than fail.
+	SQLUSMALLINT	describeparamsupported=0;
+	hasdescribeparam=(SQLGetFunctions(dbc,SQL_API_SQLDESCRIBEPARAM,
+					&describeparamsupported)==SQL_SUCCESS &&
+					describeparamsupported);
 	// When binding dates using SQLBindParameter, the "decimal
 	// digits" parameter refers to the number of digits in the
 	// "fraction" part of the date.  Since that is in nanoseconds
@@ -1029,6 +1047,13 @@ bool odbcconnection::logIn(const char **error, const char **warning) {
 		// binary instead.  (The trade is that a blob bind can no
 		// longer reach a text or ntext column.)
 		usecharforlobbind=false;
+
+		// The same conversion rule applies to a null bind, which
+		// can't be a blob bind because the client api flattens a
+		// null lob into a plain null.  Ask the driver what the
+		// parameter is aimed at, for nulls only.  (See the null arm
+		// of odbccursor::inputBind().)
+		describenullbinds=true;
 	}
 
 	return true;
@@ -3566,6 +3591,8 @@ odbccursor::odbccursor(sqlrserverconnection *conn, uint16_t id) :
 	inoutisnull=new SQLINTEGER[maxbindcount];
 	inbindlength=new SQLINTEGER[maxbindcount];
 	#endif
+	nullbindisbinary=new bool[maxbindcount];
+	nullbinddescribed=new bool[maxbindcount];
 	for (uint16_t i=0; i<maxbindcount; i++) {
 		outdatebind[i]=NULL;
 		outcharbind[i]=NULL;
@@ -3576,6 +3603,8 @@ odbccursor::odbccursor(sqlrserverconnection *conn, uint16_t id) :
 		inoutisnullptr[i]=NULL;
 		inoutisnull[i]=0;
 		inbindlength[i]=0;
+		nullbindisbinary[i]=false;
+		nullbinddescribed[i]=false;
 	}
 	sqlnulldata=SQL_NULL_DATA;
 	bindformaterror=false;
@@ -3604,6 +3633,8 @@ odbccursor::~odbccursor() {
 	delete[] inoutisnullptr;
 	delete[] inoutisnull;
 	delete[] inbindlength;
+	delete[] nullbindisbinary;
+	delete[] nullbinddescribed;
 	#ifdef HAVE_SQLCONNECTW
 	ucsinbindstrings.clear();
 	#endif
@@ -3676,6 +3707,13 @@ bool odbccursor::prepareQuery(const char *query, uint32_t size) {
 		SQLSetStmtAttr(stmt,SQL_ATTR_CURSOR_TYPE,
 				(SQLPOINTER)SQL_CURSOR_STATIC,
 				SQL_IS_INTEGER);
+	}
+
+	// a new statement means new parameters, so what the driver said
+	// about the old ones doesn't apply
+	for (uint16_t i=0; i<maxbindcount; i++) {
+		nullbindisbinary[i]=false;
+		nullbinddescribed[i]=false;
 	}
 
 	// prepare the query...
@@ -3785,6 +3823,52 @@ bool odbccursor::allocateStatementHandle() {
 	return (erg==SQL_SUCCESS || erg==SQL_SUCCESS_WITH_INFO);
 }
 
+// Whether the parameter at pos is aimed at a binary column.  Only a null
+// bind needs to ask - every other bind knows its own type - and only on a
+// back end that won't implicitly convert a character parameter to a binary
+// one.  Answering false is always safe: it keeps the character bind that has
+// been the only behaviour up to now.
+bool odbccursor::nullBindIsBinary(uint16_t pos) {
+
+	if (!odbcconn->describenullbinds || !odbcconn->hasdescribeparam) {
+		return false;
+	}
+
+	// SQLDescribeParam needs a prepared statement, and execute-direct
+	// never prepares one
+	if (getExecuteDirect()) {
+		return false;
+	}
+
+	if (nullbinddescribed[pos-1]) {
+		return nullbindisbinary[pos-1];
+	}
+
+	// A failed describe is the ordinary case for a parameter whose type
+	// the back end can't deduce - "select ?" is the obvious one - so it
+	// isn't an error, just an answer of "no".  The diagnostic it leaves
+	// on stmt is cleared by the SQLBindParameter that follows.
+	SQLSMALLINT	datatype=0;
+	#ifdef SQLBINDPARAMETER_SQLLEN
+	SQLULEN		parametersize=0;
+	#else
+	SQLUINTEGER	parametersize=0;
+	#endif
+	SQLSMALLINT	decimaldigits=0;
+	SQLSMALLINT	nullable=0;
+	SQLRETURN	erg=SQLDescribeParam(stmt,pos,&datatype,&parametersize,
+						&decimaldigits,&nullable);
+
+	nullbinddescribed[pos-1]=true;
+	nullbindisbinary[pos-1]=((erg==SQL_SUCCESS ||
+					erg==SQL_SUCCESS_WITH_INFO) &&
+				(datatype==SQL_BINARY ||
+					datatype==SQL_VARBINARY ||
+					datatype==SQL_LONGVARBINARY));
+
+	return nullbindisbinary[pos-1];
+}
+
 bool odbccursor::inputBind(const char *variable,
 				uint16_t variablesize,
 				const char *value,
@@ -3798,6 +3882,24 @@ bool odbccursor::inputBind(const char *variable,
 	}
 
 	if (*isnull==SQL_NULL_DATA) {
+
+		// A null bind is generic - one SQLBindParameter call serves
+		// every bind type and every column type, because the client
+		// api flattens a null lob bind into a plain null bind before
+		// it reaches the wire.  So the only way to tell whether this
+		// one is aimed at a binary column is to ask the driver.
+		SQLSMALLINT	paramtype=SQL_VARCHAR;
+		if (nullBindIsBinary(pos)) {
+
+			// SQL_VARBINARY rather than whatever the driver
+			// actually said - a ColumnSize of 0 is allowed with
+			// SQL_VARBINARY but not SQL_LONGVARBINARY (see #975),
+			// and this is the same call that
+			// odbccursor::inputBindBlob()'s null arm already
+			// makes, which is known to reach binary, varbinary
+			// and image alike.
+			paramtype=SQL_VARBINARY;
+		}
 
 		// We used to do something like this to bind a NULL:
 		//
@@ -3869,7 +3971,7 @@ bool odbccursor::inputBind(const char *variable,
 				pos,
 				SQL_PARAM_INPUT,
 				SQL_C_BINARY,
-				SQL_VARCHAR,
+				paramtype,
 				0,		// in characters
 				0,
 				NULL,
@@ -5860,6 +5962,8 @@ void odbccursor::closeResultSet() {
 		inoutisnullptr[i]=NULL;
 		inoutisnull[i]=0;
 		inbindlength[i]=0;
+		nullbindisbinary[i]=false;
+		nullbinddescribed[i]=false;
 	}
 
 	if (!conn->cont->getMaxColumnCount()) {

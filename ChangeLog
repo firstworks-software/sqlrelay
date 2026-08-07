@@ -1420,6 +1420,16 @@
 		ORA-01017 saw a client-side exception instead - the footers
 		are captures of an 11.2 server that sets both bits, so the
 		module sets them too now, and a modern client can log in
+	fixed the odbc connection module - a null bind couldn't reach a sql
+		server binary or varbinary column at all, because the client
+		api flattens a null blob bind into a plain null bind and the
+		null bind is generic - one call serves every bind type and
+		every column type, and it bound a character parameter, which
+		sql server won't implicitly convert to binary - it asks the
+		driver what the parameter is aimed at now, for null binds
+		only, and binds binary only when the driver says binary, so
+		a parameter the driver can't describe keeps the character
+		bind it has always had
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems
