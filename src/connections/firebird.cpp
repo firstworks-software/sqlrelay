@@ -79,7 +79,7 @@ class SQLRSERVER_DLLSPEC firebirdcursor : public sqlrservercursor {
 		firebirdcursor(sqlrserverconnection *conn, uint16_t id);
 		~firebirdcursor();
 		void		allocateResultSetBuffers(int32_t columncount);
-		void		deallocateResultSetBuffers();
+		void		freeResultSetBuffers();
 		bool		prepareQuery(const char *query,
 						uint32_t size);
 		bool		inputBind(const char *variable, 
@@ -163,6 +163,7 @@ class SQLRSERVER_DLLSPEC firebirdcursor : public sqlrservercursor {
 		void		closeLobOutputBind(uint16_t index);
 		bool		executeQuery(const char *query,
 						uint32_t size);
+		bool		describeResultSet();
 		void		getError(char *errorbuffer,
 						uint32_t errorbuffersize,
 						uint32_t *errorsize,
@@ -198,6 +199,7 @@ class SQLRSERVER_DLLSPEC firebirdcursor : public sqlrservercursor {
 					uint64_t *charsread);
 		void		closeLobField(uint32_t col);
 		void		closeResultSet();
+		bool		columnInfoIsValidAfterPrepare();
 
 
 		isc_stmt_handle	stmt;
@@ -219,6 +221,7 @@ class SQLRSERVER_DLLSPEC firebirdcursor : public sqlrservercursor {
 		XSQLDA	ISC_FAR	*outsqlda;
 		byte_t		*outsqldabuffer;
 		fieldstruct	*field;
+		int32_t		fieldcount;
 
 		ISC_LONG	querytype;
 
@@ -227,6 +230,7 @@ class SQLRSERVER_DLLSPEC firebirdcursor : public sqlrservercursor {
 		bool	queryisexecsp;
 		bool	bindformaterror;
 		bool	querytoolarge;
+		bool	resultsetdescribed;
 
 		regularexpression	executeprocedure;
 };
@@ -2324,6 +2328,8 @@ firebirdcursor::firebirdcursor(sqlrserverconnection *conn, uint16_t id) :
 
 	outsqlda=NULL;
 	outsqldabuffer=NULL;
+	field=NULL;
+	fieldcount=0;
 	allocateResultSetBuffers(conn->cont->getMaxColumnCount());
 
 	maxbindcount=conn->cont->getConfig()->getMaxBindCount();
@@ -2353,6 +2359,7 @@ firebirdcursor::firebirdcursor(sqlrserverconnection *conn, uint16_t id) :
 	queryisexecsp=false;
 	bindformaterror=false;
 	querytoolarge=false;
+	resultsetdescribed=false;
 
 	setCreateTempTablePattern("(create|CREATE)[ 	\n\r]+(global|GLOBAL)[ 	\n\r]+(temporary|TEMPORARY)[ 	\n\r]+(table|TABLE)[ 	\n\r]+");
 	executeprocedure.setPattern("(execute|EXECUTE)[ 	\n\r]+(procedure|PROCEDURE)");
@@ -2371,13 +2378,12 @@ firebirdcursor::~firebirdcursor() {
 	delete[] outbindblobisopen;
 	delete[] outdatebind;
 
-	delete[] outsqldabuffer;
-	delete[] field;
+	freeResultSetBuffers();
 }
 
 void firebirdcursor::allocateResultSetBuffers(int32_t columncount) {
 
-	delete[] outsqldabuffer;
+	freeResultSetBuffers();
 
 	if (!columncount) {
 		outsqldabuffer=new byte_t[XSQLDA_LENGTH(1)];
@@ -2385,7 +2391,6 @@ void firebirdcursor::allocateResultSetBuffers(int32_t columncount) {
 		outsqlda=(XSQLDA ISC_FAR *)outsqldabuffer;
 		outsqlda->version=SQLDA_VERSION1;
 		outsqlda->sqln=1;
-		field=NULL;
 	} else {
 		outsqldabuffer=new byte_t[XSQLDA_LENGTH(columncount)];
 		bytestring::zero(outsqldabuffer,XSQLDA_LENGTH(columncount));
@@ -2397,23 +2402,27 @@ void firebirdcursor::allocateResultSetBuffers(int32_t columncount) {
 			field[i].textbuffer=new char[
 					conn->cont->getMaxFieldSize()+1];
 		}
+		fieldcount=columncount;
 	}
 }
 
-void firebirdcursor::deallocateResultSetBuffers() {
+void firebirdcursor::freeResultSetBuffers() {
 
 	delete[] outsqldabuffer;
-	outsqldabuffer=new byte_t[XSQLDA_LENGTH(1)];
-	bytestring::zero(outsqldabuffer,XSQLDA_LENGTH(1));
-	outsqlda=(XSQLDA ISC_FAR *)outsqldabuffer;
-	outsqlda->version=SQLDA_VERSION1;
-	outsqlda->sqln=1;
+	outsqldabuffer=NULL;
+	outsqlda=NULL;
 
+	for (int32_t i=0; i<fieldcount; i++) {
+		delete[] field[i].textbuffer;
+	}
 	delete[] field;
 	field=NULL;
+	fieldcount=0;
 }
 
 bool firebirdcursor::prepareQuery(const char *query, uint32_t size) {
+
+	resultsetdescribed=false;
 
 	// reject queries too large for isc_dsql_prepare
 	querytoolarge=false;
@@ -2481,6 +2490,18 @@ bool firebirdcursor::prepareQuery(const char *query, uint32_t size) {
 		return false;
 	}
 	inbindsqlda->sqln=inbindsqlda->sqld;
+
+	// Describe the result set now, so that the column info is valid
+	// straight after the prepare.  Skip the statement types that
+	// executeQuery() returns early for - commit and rollback go through
+	// the api rather than the statement, and an exec-procedure statement's
+	// output lands in outbindsqlda rather than outsqlda.
+	if (!queryIsCommitOrRollback() && !queryisexecsp) {
+		if (!describeResultSet()) {
+			return false;
+		}
+		resultsetdescribed=true;
+	}
 
 	return true;
 }
@@ -3088,16 +3109,30 @@ bool firebirdcursor::executeQuery(const char *query, uint32_t size) {
 
 	// handle non-stored procedures...
 
-	// get the max column count and field size
-	uint32_t	maxcolumncount=conn->cont->getMaxColumnCount();
-	uint32_t	maxfieldsize=conn->cont->getMaxFieldSize();
-
 	// check for create temp table query
 	if (querytype==isc_info_sql_stmt_ddl) {
 		checkForTempTable(query,size);
 	}
 
-	if (!maxcolumncount) {
+	// describe the result set, unless the prepare already did
+	if (!resultsetdescribed && !describeResultSet()) {
+		return false;
+	}
+
+	// Execute the query
+	return !isc_dsql_execute(firebirdconn->error,&firebirdconn->tr,
+							&stmt,1,inbindsqlda);
+}
+
+bool firebirdcursor::describeResultSet() {
+
+	// get the max column count and field size
+	uint32_t	maxcolumncount=conn->cont->getMaxColumnCount();
+	uint32_t	maxfieldsize=conn->cont->getMaxFieldSize();
+
+	// when the column count isn't capped, grow the buffers to the count
+	// isc_dsql_prepare reported
+	if (!maxcolumncount && outsqlda->sqld>fieldcount) {
 		allocateResultSetBuffers(outsqlda->sqld);
 	}
 
@@ -3105,8 +3140,22 @@ bool firebirdcursor::executeQuery(const char *query, uint32_t size) {
 	if (isc_dsql_describe(firebirdconn->error,&stmt,1,outsqlda)) {
 		return false;
 	}
-	if (maxcolumncount && (uint32_t)outsqlda->sqld>maxcolumncount) {
-		outsqlda->sqld=maxcolumncount;
+
+	// A describe into an sqlda with too few slots fills in the column
+	// count and nothing else, so if the count came back higher than the
+	// buffers hold, grow them and describe again.  It only happens if
+	// isc_dsql_prepare didn't report the count above.
+	if (!maxcolumncount && outsqlda->sqld>fieldcount) {
+		allocateResultSetBuffers(outsqlda->sqld);
+		if (isc_dsql_describe(firebirdconn->error,&stmt,1,outsqlda)) {
+			return false;
+		}
+	}
+
+	// don't return more columns than the buffers hold - fieldcount is
+	// maxcolumncount when the count is capped, so this is the cap too
+	if (outsqlda->sqld>fieldcount) {
+		outsqlda->sqld=fieldcount;
 	}
 
 	for (uint16_t i=0; i<outsqlda->sqld; i++) {
@@ -3232,9 +3281,7 @@ bool firebirdcursor::executeQuery(const char *query, uint32_t size) {
 		}
 	}
 
-	// Execute the query
-	return !isc_dsql_execute(firebirdconn->error,&firebirdconn->tr,
-							&stmt,1,inbindsqlda);
+	return true;
 }
 
 void firebirdcursor::getError(char *errorbuffer,
@@ -3860,14 +3907,23 @@ void firebirdcursor::closeLobField(uint32_t col) {
 	}
 }
 
+// The result set buffers are deliberately left alone here.  The controller
+// caches the column names it got from this cursor, which for firebird are
+// pointers into outsqldabuffer, and doesn't refresh them when a query is
+// re-executed without being re-prepared.  Freeing the buffers here would
+// leave those pointers dangling.  describeResultSet() grows them when a
+// query needs more columns, so nothing is held beyond the widest result set
+// this cursor has returned.
 void firebirdcursor::closeResultSet() {
 	outbindcount=0;
+	resultsetdescribed=false;
 	if (stmt) {
 		isc_dsql_free_statement(firebirdconn->error,&stmt,DSQL_close);
 	}
-	if (!conn->cont->getMaxColumnCount()) {
-		deallocateResultSetBuffers();
-	}
+}
+
+bool firebirdcursor::columnInfoIsValidAfterPrepare() {
+	return true;
 }
 
 extern "C" {

@@ -1523,6 +1523,23 @@
 		truncated status message, and it now sends the call status
 		and end-to-end sequence number a real server sends, so a
 		client's disconnect completes cleanly
+	the firebird connection module describes a query's result set when the
+		query is prepared now, rather than when it runs, and reports
+		its column info as valid after the prepare - so a select's
+		columns are known without running it, which is what the
+		firebird protocol module needs to answer op_prepare_statement
+		for a select with bind variables
+	fixed a memory leak in the firebird connection module - the per-column
+		text buffers were never freed, so a connect string setting
+		maxcolumncount=0 leaked one maxfieldsize+1 byte buffer per
+		column per query
+	fixed a crash in the firebird connection module - with maxcolumncount=0
+		in the connect string, re-executing a select walked a null
+		field array, because closing the result set freed the buffers
+		and the describe then sized itself from a column count that
+		was already gone - the buffers are kept across a close now,
+		and the describe grows them itself, which also stops the
+		column names the server caches from dangling
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems
