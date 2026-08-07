@@ -1087,6 +1087,17 @@
 		case to fall back on such a column reported a null class name and
 		java.sql.Types.NULL instead of java.lang.Short and Types.SMALLINT
 		or Types.TINYINT
+	answered more of the firebird protocol module's isc_database_info items -
+		it answered 18 of them and sent isc_info_error for the rest, and
+		an isc_info_error isn't harmless: isql treats one for any item
+		other than isc_info_firebird_version as proof it's talking to a
+		pre-interbase-6 server and resets its sql dialect to 1 - the
+		page, record and transaction counters, the size and memory
+		items, the creation date and the user names are all answered
+		now, in the shapes a real server sends them in, and the only
+		two items left getting an isc_info_error are
+		isc_info_window_turns and isc_info_license, which is what a
+		real server sends for those two as well
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems

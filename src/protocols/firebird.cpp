@@ -856,6 +856,17 @@
 #define FIREBIRD_DB_CLASS		13
 // isc_info_db_code_firebird
 #define FIREBIRD_DB_PROVIDER		4
+// pages allocated, which is also the database size in pages, so a client that
+// multiplies either one by the page size above gets the same file size
+#define FIREBIRD_DB_SIZE_IN_PAGES	512
+#define FIREBIRD_CURRENT_MEMORY		1048576
+#define FIREBIRD_MAX_MEMORY		2097152
+// SQL Relay can't ask the backend when its database was created, and a client
+// that shows the date needs a real one rather than day zero of the modified
+// julian day epoch
+#define FIREBIRD_CREATION_YEAR		2000
+#define FIREBIRD_CREATION_MONTH		1
+#define FIREBIRD_CREATION_DAY		1
 
 // authentication methods
 // (which dpb item the password came out of - see attach())
@@ -1150,6 +1161,15 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_firebird : public sqlrprotocol {
 		bool	appendInfoStrings(byte_t item,
 					const char * const *values,
 					byte_t valuecount);
+		bool	appendInfoCountedString(byte_t item,
+					const char *value);
+		bool	appendInfoTimestamp(byte_t item,
+					int32_t year,
+					int32_t month,
+					int32_t day,
+					int32_t hour,
+					int32_t minute,
+					int32_t second);
 		bool	appendInfoError(byte_t item);
 
 		void	debugSystemError();
@@ -2723,6 +2743,49 @@ bool sqlrprotocol_firebird::appendInfoStrings(byte_t item,
 	return appendInfoItem(item,val,vallen);
 }
 
+bool sqlrprotocol_firebird::appendInfoCountedString(byte_t item,
+						const char *value) {
+
+	// a length byte, then that many bytes.  Unlike appendInfoStrings()
+	// there's no count in front - a real server repeats the whole cluster
+	// when there's more than one string.
+	byte_t	val[256];
+	size_t	len=charstring::getLength(value);
+	if (len>sizeof(val)-1) {
+		len=sizeof(val)-1;
+	}
+	val[0]=(byte_t)len;
+	if (len) {
+		bytestring::copy(val+1,value,len);
+	}
+
+	return appendInfoItem(item,val,(uint16_t)(len+1));
+}
+
+bool sqlrprotocol_firebird::appendInfoTimestamp(byte_t item,
+						int32_t year,
+						int32_t month,
+						int32_t day,
+						int32_t hour,
+						int32_t minute,
+						int32_t second) {
+
+	// an ISC_TIMESTAMP - an ISC_DATE then an ISC_TIME, each little-endian
+	uint32_t	date=encodeDate(year,month,day);
+	uint32_t	time=encodeTime(hour,minute,second,0);
+	byte_t		val[8];
+	val[0]=(byte_t)(date&0xff);
+	val[1]=(byte_t)((date>>8)&0xff);
+	val[2]=(byte_t)((date>>16)&0xff);
+	val[3]=(byte_t)((date>>24)&0xff);
+	val[4]=(byte_t)(time&0xff);
+	val[5]=(byte_t)((time>>8)&0xff);
+	val[6]=(byte_t)((time>>16)&0xff);
+	val[7]=(byte_t)((time>>24)&0xff);
+
+	return appendInfoItem(item,val,sizeof(val));
+}
+
 bool sqlrprotocol_firebird::appendInfoError(byte_t item) {
 
 	// the item the client asked for, then isc_infunk, little-endian
@@ -2915,11 +2978,117 @@ bool sqlrprotocol_firebird::infoDatabase() {
 						FIREBIRD_CHARACTER_SET);
 				break;
 
+			case isc_info_reads:
+			case isc_info_writes:
+			case isc_info_fetches:
+			case isc_info_marks:
+			case isc_info_page_errors:
+			case isc_info_record_errors:
+			case isc_info_bpage_errors:
+			case isc_info_dpage_errors:
+			case isc_info_ipage_errors:
+			case isc_info_ppage_errors:
+			case isc_info_tpage_errors:
+				// counters SQL Relay doesn't keep
+				fits=appendInfoInt(dbinfoitem,0);
+				break;
+
+			case isc_info_read_seq_count:
+			case isc_info_read_idx_count:
+			case isc_info_insert_count:
+			case isc_info_update_count:
+			case isc_info_delete_count:
+			case isc_info_backout_count:
+			case isc_info_purge_count:
+			case isc_info_expunge_count:
+				// per-relation counters - a real server sends
+				// a vector of (2 byte relation id, 4 byte
+				// count) pairs in one cluster, and an empty
+				// one for relations it hasn't touched
+				fits=appendInfoItem(dbinfoitem,NULL,0);
+				break;
+
+			case isc_info_allocation:
+			case isc_info_db_size_in_pages:
+				fits=appendInfoInt(dbinfoitem,
+						FIREBIRD_DB_SIZE_IN_PAGES);
+				break;
+
+			case isc_info_current_memory:
+				fits=appendInfoInt(dbinfoitem,
+						FIREBIRD_CURRENT_MEMORY);
+				break;
+
+			case isc_info_max_memory:
+				fits=appendInfoInt(dbinfoitem,
+						FIREBIRD_MAX_MEMORY);
+				break;
+
+			case isc_info_set_page_buffers:
+			case isc_info_db_file_size:
+				// what a real server sends for these on a
+				// plain read request
+				fits=appendInfoInt(dbinfoitem,0);
+				break;
+
+			case isc_info_oldest_transaction:
+			case isc_info_oldest_active:
+			case isc_info_oldest_snapshot:
+				// one transaction per session, so one handle
+				// answers all three - the same source
+				// infoTransaction() answers the isc_info_tra_*
+				// items from, so the two can't disagree
+				fits=appendInfoInt(dbinfoitem,trhandle);
+				break;
+
+			case isc_info_next_transaction:
+				// transaction() hands out handles by
+				// incrementing this one
+				fits=appendInfoInt(dbinfoitem,trhandle+1);
+				break;
+
+			case isc_info_active_tran_count:
+				fits=appendInfoInt(dbinfoitem,
+							(intransaction)?1:0);
+				break;
+
+			case isc_info_active_transactions:
+				// one cluster per active transaction
+				if (intransaction) {
+					fits=appendInfoInt(dbinfoitem,
+								trhandle);
+				}
+				break;
+
+			case isc_info_limbo:
+				// one cluster per transaction in limbo.  A
+				// real server with none sends no cluster at
+				// all rather than an empty one.
+				break;
+
+			case isc_info_creation_date:
+				fits=appendInfoTimestamp(dbinfoitem,
+						FIREBIRD_CREATION_YEAR,
+						FIREBIRD_CREATION_MONTH,
+						FIREBIRD_CREATION_DAY,
+						0,0,0);
+				break;
+
+			case isc_info_user_names:
+				// one cluster per attached user, and the
+				// module has one session per attachment, like
+				// a classic-mode server
+				fits=appendInfoCountedString(dbinfoitem,
+								username);
+				break;
+
 			default:
-				// FIXME: answer more of these - #7231.  Until
-				// then, an item the module can't answer gets
-				// isc_info_error, which is what a real server
-				// sends for an item it doesn't recognize.
+				// an item a real server wouldn't answer
+				// either - isc_info_window_turns,
+				// isc_info_license, and the wal and log-file
+				// families that predate firebird.  Nothing
+				// else lands here, on purpose - see the isql
+				// note on frb_info_att_charset above.
 				fits=appendInfoError(dbinfoitem);
 				break;
 		}

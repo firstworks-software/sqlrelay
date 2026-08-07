@@ -456,6 +456,174 @@ int	main(int argc, char **argv) {
 	stdoutput.printf("\n\n");
 
 
+	stdoutput.printf("isc_database_info - counters, sizes and dates\n");
+	char	countinfoitems[]={
+			isc_info_reads,
+			isc_info_writes,
+			isc_info_fetches,
+			isc_info_marks,
+			isc_info_allocation,
+			isc_info_current_memory,
+			isc_info_max_memory,
+			isc_info_page_errors,
+			isc_info_record_errors,
+			isc_info_bpage_errors,
+			isc_info_dpage_errors,
+			isc_info_ipage_errors,
+			isc_info_ppage_errors,
+			isc_info_tpage_errors,
+			isc_info_set_page_buffers,
+			isc_info_db_size_in_pages,
+			isc_info_db_file_size,
+			isc_info_oldest_transaction,
+			isc_info_oldest_active,
+			isc_info_oldest_snapshot,
+			isc_info_next_transaction,
+			isc_info_active_tran_count,
+			isc_info_read_seq_count,
+			isc_info_read_idx_count,
+			isc_info_insert_count,
+			isc_info_update_count,
+			isc_info_delete_count,
+			isc_info_backout_count,
+			isc_info_purge_count,
+			isc_info_expunge_count,
+			isc_info_creation_date,
+			isc_info_end
+			};
+	char	countinfobuffer[2048];
+	bytestring::zero(countinfobuffer,sizeof(countinfobuffer));
+	assertEquals((int)isc_database_info(fbstatus,&db,
+				(short)sizeof(countinfoitems),countinfoitems,
+				(short)sizeof(countinfobuffer),countinfobuffer),0);
+
+	// These are shape assertions rather than value assertions, on purpose.
+	// The same code runs against a real server in native mode, where the
+	// counters are whatever that server has been doing.
+	const char	*countinfoptr=countinfobuffer;
+	const char	*countinfoendptr=countinfobuffer+sizeof(countinfobuffer);
+	int		countinfocount=0;
+	while (countinfoptr<countinfoendptr &&
+			*countinfoptr!=(char)isc_info_end &&
+			*countinfoptr!=(char)isc_info_truncated) {
+
+		char	countinfoitem=*countinfoptr;
+		countinfoptr++;
+		short	countinfolen=(short)isc_vax_integer(countinfoptr,2);
+		countinfoptr+=2;
+
+		switch (countinfoitem) {
+			case isc_info_read_seq_count:
+			case isc_info_read_idx_count:
+			case isc_info_insert_count:
+			case isc_info_update_count:
+			case isc_info_delete_count:
+			case isc_info_backout_count:
+			case isc_info_purge_count:
+			case isc_info_expunge_count:
+				// a vector of (2-byte relation id, 4-byte
+				// count) pairs, empty for relations the
+				// server hasn't touched
+				assertEquals((int)(countinfolen%6),0);
+				break;
+			case isc_info_creation_date:
+				// an ISC_DATE then an ISC_TIME.  The date has
+				// to be a real one - a zero decodes to 17
+				// November 1858, the modified julian day
+				// epoch, which is what a client shows when the
+				// server has nothing to say.
+				assertEquals((int)countinfolen,8);
+				assertTrue(isc_vax_integer(countinfoptr,4)>0);
+				break;
+			default:
+				// everything else is a plain counter
+				assertEquals((int)countinfolen,4);
+				break;
+		}
+
+		countinfoptr+=countinfolen;
+		countinfocount++;
+	}
+	assertEquals(countinfocount,31);
+	assertEquals((int)*countinfoptr,(int)isc_info_end);
+	stdoutput.printf("\n\n");
+
+
+	stdoutput.printf("isc_database_info - repeating and refused items\n");
+	char	repinfoitems[]={
+			isc_info_user_names,
+			isc_info_limbo,
+			isc_info_active_transactions,
+			isc_info_window_turns,
+			isc_info_license,
+			isc_info_end
+			};
+	char	repinfobuffer[2048];
+	bytestring::zero(repinfobuffer,sizeof(repinfobuffer));
+	assertEquals((int)isc_database_info(fbstatus,&db,
+				(short)sizeof(repinfoitems),repinfoitems,
+				(short)sizeof(repinfobuffer),repinfobuffer),0);
+
+	const char	*repinfoptr=repinfobuffer;
+	const char	*repinfoendptr=repinfobuffer+sizeof(repinfobuffer);
+	int		usernamecount=0;
+	int		limbocount=0;
+	int		errorcount=0;
+	while (repinfoptr<repinfoendptr &&
+			*repinfoptr!=(char)isc_info_end &&
+			*repinfoptr!=(char)isc_info_truncated) {
+
+		char	repinfoitem=*repinfoptr;
+		repinfoptr++;
+		short	repinfolen=(short)isc_vax_integer(repinfoptr,2);
+		repinfoptr+=2;
+
+		switch (repinfoitem) {
+			case isc_info_user_names:
+				// a counted string, and the whole cluster is
+				// repeated per attached user - there's no
+				// count at the front
+				assertEquals((int)repinfolen,
+						(int)repinfoptr[0]+1);
+				assertTrue(repinfoptr[0]>0);
+				usernamecount++;
+				break;
+			case isc_info_limbo:
+				limbocount++;
+				break;
+			case isc_info_active_transactions:
+				// one transaction id per cluster
+				assertEquals((int)repinfolen,4);
+				break;
+			case isc_info_error:
+				// a real server refuses these two, and only
+				// these two, with isc_infunk
+				assertEquals((int)repinfolen,5);
+				assertTrue(repinfoptr[0]==
+						(char)isc_info_window_turns ||
+					repinfoptr[0]==(char)isc_info_license);
+				assertEquals((int)isc_vax_integer(
+							repinfoptr+1,4),
+							335544341);
+				errorcount++;
+				break;
+			default:
+				stdoutput.printf("unexpected db info item %d\n",
+							(int)repinfoitem);
+				break;
+		}
+
+		repinfoptr+=repinfolen;
+	}
+	assertTrue(usernamecount>=1);
+	// a server with nothing in limbo sends no cluster at all rather than
+	// an empty one
+	assertEquals(limbocount,0);
+	assertEquals(errorcount,2);
+	assertEquals((int)*repinfoptr,(int)isc_info_end);
+	stdoutput.printf("\n\n");
+
+
 	stdoutput.printf("isc_detach_database\n");
 	assertEquals((int)isc_detach_database(fbstatus,&db),0);
 	assertTrue(db==0);
