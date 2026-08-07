@@ -818,6 +818,12 @@
 		config.status carries them, and each of those files can
 		also be named individually on the config.status command
 		line now
+	fixed a dangling pointer in the server's list-api calls - the calls
+		that fake a prepare and execute (getCatalogList, getTableList,
+		etc.) cleared the bind variable mappings pool without clearing
+		the mappings themselves, and the mappings are allocated out of
+		that pool, so re-executing the query on that cursor afterward
+		read freed memory
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems

@@ -3196,6 +3196,8 @@ bool sqlrservercontroller::fakePrepareAndExecuteForApiCall(
 					sqlrservercursor *cursor) {
 	cursor->setResultSetHeaderHasBeenHandled(false);
 	cursor->getBindMappingsPool()->clear();
+	// the mappings are allocated out of the pool above
+	cursor->getBindMappings()->clear();
 	cursor->setQuerySize(0);
 	cursor->getQueryBuffer()[0]='\0';
 	if (pvt->_sqlrt && !translateQuery(cursor)) {
