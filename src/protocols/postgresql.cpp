@@ -1491,7 +1491,19 @@ uint32_t sqlrprotocol_postgresql::getColumnTypeOid(uint16_t coltype) {
 			return 23; //int4
 		case REGPROC_DATATYPE:
 			return 24; //regproc
+		// Postgresql has no distinct character-lob types.  Its text
+		// type is unbounded, so every character lob maps onto it.
 		case TEXT_DATATYPE:
+		case LONGCHAR_DATATYPE:
+		case LONGVARCHAR_DATATYPE:
+		case CLOB_DATATYPE:
+		case DBCLOB_DATATYPE:
+		case TINYTEXT_DATATYPE:
+		case MEDIUMTEXT_DATATYPE:
+		case LONGTEXT_DATATYPE:
+		case NTEXT_DATATYPE:
+		case JSON_DATATYPE:
+		case XML_DATATYPE:
 			return 25; //text
 		case OID_DATATYPE:
 			return 26; //oid

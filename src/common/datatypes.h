@@ -668,6 +668,9 @@ static bool isBlobTypeInt(int16_t type) {
 }
 #endif
 
+// TEXT is intentionally omitted from both of these.  The postgresql backend
+// returns TEXT_DATATYPE for postgresql's text type, which is an ordinary
+// unbounded string rather than a lob.
 #ifdef NEED_IS_CLOB_TYPE_CHAR
 static bool isClobTypeChar(const char *type) {
 	return (!charstring::compareIgnoringCase(type,"LONGCHAR") ||
