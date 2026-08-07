@@ -1199,6 +1199,13 @@
 		read-write - what it still doesn't do: the transaction
 		underneath is read-write (#9109), ddl isn't refused (#9107), and
 		the tpb's isolation level is still dropped (#9108)
+	fixed the oracle protocol module - the protocol negotiation response
+		was incomplete, it never sent the server compile-time or
+		runtime capability arrays at all, and it hardcoded the
+		database and national character sets to us7ascii - the
+		response now carries capability arrays captured from a live
+		oracle 11.2 server, defaults to al32utf8 and al16utf16, and
+		takes charset and nationalcharset module parameters
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems
