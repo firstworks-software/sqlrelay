@@ -6,7 +6,7 @@
 			<listener protocol="tds" port="1433"/>
 		</listeners>
 		<connections>
-			<connection string="dsn=mssqlodbc;user=testuser;password=testpassword"/>
+			<connection string="dsn=mssqlodbc;user=testuser;password=testpassword;mars=yes"/>
 		</connections>
 	</instance>
 
