@@ -247,6 +247,16 @@
 // platform on purpose - see putTtiResponse().
 #define SERVER_BANNER			"SQLRelay/PortableTTC"
 
+// The two oracle versions the module can imitate, as the listener's
+// serverversion attribute selects them.  AUTH_VERSION_NO's nibbles are the
+// version: a live 11.2 server reports 0x0b200100 and a live 12.2 server
+// reports 0x0c200100, so 0x0c100200 is 12.1.0.2.0.  AUTH_VERSION_SQL is 22 on
+// that 11.2 server and 24 on that 12.2 one.
+#define SERVER_VERSION_NO_11_2		"186646784"
+#define SERVER_VERSION_SQL_11_2		"22"
+#define SERVER_VERSION_NO_12_1		"202375680"
+#define SERVER_VERSION_SQL_12_1		"23"
+
 // datatype request encoding flags
 #define ENCODING_MULTI_BYTE		0x01
 #define ENCODING_CONV_LENGTH		0x02
@@ -1003,6 +1013,8 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_oracle : public sqlrprotocol {
 							uint32_t oranum,
 							uint32_t rowcount,
 							const char *message);
+		void	putSummaryExtension(uint32_t oranum,
+							uint32_t rowcount);
 		void	putNumberField(const char *field,
 							uint32_t fieldsize);
 
@@ -1123,6 +1135,12 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_oracle : public sqlrprotocol {
 		uint16_t	nationalcharset;
 		uint32_t	verifiertype;
 
+		// the oracle version the module imitates - every field a
+		// client picks a reader from moves together
+		byte_t		serverfieldversion;
+		const char	*serverversionno;
+		const char	*serverversionsql;
+
 		// whether the client marshals the authentication exchange in
 		// its own memory layout rather than portably
 		bool		nativeencoding;
@@ -1212,21 +1230,53 @@ sqlrprotocol_oracle::sqlrprotocol_oracle(sqlrservercontroller *cont,
 		nationalcharset=CHARSET_AL16UTF16;
 	}
 
-	// which o5logon verifier type to offer.  a modern client expects 12c,
-	// which is what a 12.2 server sends, but the 11g path has to stay
-	// reachable for testing, and for a client old enough to need it.
+	// Which oracle version the module imitates.  Everything a client picks
+	// a reader from moves with it: the capability field version, the shape
+	// of every summary object, the version the module reports, and the
+	// default verifier type.  Answering one client as one version and
+	// another as another is what #9156, #9158 and #9171 were all one
+	// symptom of.
+	//
+	// It is a choice because no one version serves every client.  A 12.1
+	// summary object carries two more fields than an 11.2 one, and
+	// python-oracledb and node-oracledb read them unconditionally - they do
+	// not support a server older than 12.1 at all - while OCI 23.26 in the
+	// portable encoding reads the 11.2 shape and nothing else.  ojdbc 23.26
+	// reads whichever the field version implies and works either way.  So
+	// 12.1 serves three of the four clients and is the default, and 11.2 is
+	// there for a deployment whose clients are OCI.  See #9171.
+	const char	*sv=parameters->getAttributeValue("serverversion");
+	if (!charstring::compare(sv,"11.2")) {
+		serverfieldversion=CCAP_FIELD_VERSION_11_2;
+		serverversionno=SERVER_VERSION_NO_11_2;
+		serverversionsql=SERVER_VERSION_SQL_11_2;
+	} else {
+		serverfieldversion=CCAP_FIELD_VERSION_12_1;
+		serverversionno=SERVER_VERSION_NO_12_1;
+		serverversionsql=SERVER_VERSION_SQL_12_1;
+	}
+
+	// which o5logon verifier type to offer.  A 12c verifier arrived with
+	// 12.1 and cannot exist on an 11.2 database, so the default follows the
+	// version the module reports rather than being fixed, and an explicit
+	// setting still wins - the 11g path has to stay reachable for testing,
+	// and for a client old enough to need it.
+	uint32_t	defaultverifiertype=
+			(serverfieldversion<CCAP_FIELD_VERSION_12_1)?
+					VERIFIER_TYPE_11G_2:VERIFIER_TYPE_12C;
 	const char	*vt=parameters->getAttributeValue("verifiertype");
 	if (!charstring::compare(vt,"11g")) {
 		verifiertype=VERIFIER_TYPE_11G_2;
-	} else if (!charstring::compare(vt,"12c") ||
-			charstring::isNullOrEmpty(vt)) {
+	} else if (!charstring::compare(vt,"12c")) {
 		verifiertype=VERIFIER_TYPE_12C;
+	} else if (charstring::isNullOrEmpty(vt)) {
+		verifiertype=defaultverifiertype;
 	} else {
 		verifiertype=(uint32_t)charstring::convertToUnsignedInteger(vt);
 		if (verifiertype!=VERIFIER_TYPE_11G_1 &&
 			verifiertype!=VERIFIER_TYPE_11G_2 &&
 			verifiertype!=VERIFIER_TYPE_12C) {
-			verifiertype=VERIFIER_TYPE_12C;
+			verifiertype=defaultverifiertype;
 		}
 	}
 
@@ -1235,6 +1285,8 @@ sqlrprotocol_oracle::sqlrprotocol_oracle(sqlrservercontroller *cont,
 		debugWrite("charset: %d",charset);
 		debugWrite("nationalcharset: %d",nationalcharset);
 		debugWrite("verifiertype: 0x%04x",verifiertype);
+		debugWrite("server version: %s",serverversionno);
+		debugWrite("server field version: %d",serverfieldversion);
 		debugEnd();
 	}
 
@@ -1326,7 +1378,12 @@ void sqlrprotocol_oracle::init() {
 	clientnationalcharset=0;
 	encodingflags=0;
 	clientfieldversion=0;
-	fieldversion=0;
+
+	// the module's own, until a data type negotiation lowers it to a
+	// client's.  It decides the shape of every summary object the module
+	// writes, and the authentication exchange writes two of them, so it
+	// can't start at zero for a client that never negotiates.
+	fieldversion=serverfieldversion;
 	clientwantsdbtimezone=false;
 	clientwantstzversion=false;
 	clienttzversion=0;
@@ -3109,11 +3166,16 @@ bool sqlrprotocol_oracle::sendTtiResponse() {
 // and CCAP_EXPLICIT_BOUNDARY clear, so the client uses the older framing.
 //
 // CCAP_FIELD_VERSION is negotiated as a minimum rather than as a request, so
-// this is a ceiling on what any client will ask of the module, not a promise
-// to it.  Raising it past CCAP_FIELD_VERSION_12_1 would oblige an oaccolid in
-// every describe-info column and five more fields in every execute.
+// it is a ceiling on what any client will ask of the module, not a promise to
+// it.  The value here is the 11.2 server's; putTti6Response() overwrites it
+// with the version the listener is configured to imitate, since it is what a
+// client picks its summary object reader from.  Nothing above
+// CCAP_FIELD_VERSION_12_1 is offered: it would oblige an oaccolid in every
+// describe-info column and five more fields in every execute, and it is
+// measured to break ojdbc 23.26, which logs in at 8 or 9 and then fails in
+// the describe with ORA-17401.
 static const byte_t	ttiservercompilecaps[]={
-	0x06, 0x01, 0x01, 0x01, 0x0d, 0x01, 0x01, 0x06,
+	0x06, 0x01, 0x01, 0x01, 0x0d, 0x01, 0x01, CCAP_FIELD_VERSION_11_2,
 	0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x7f,
 	0xff, 0x03, 0x0a, 0x03, 0x03, 0x01, 0x00, 0x7f,
 	0x01, 0x7f, 0xff, 0x01, 0x05, 0x01, 0x01, 0x3f,
@@ -3322,6 +3384,7 @@ void sqlrprotocol_oracle::putTti6Response() {
 	if (verifiertype==VERIFIER_TYPE_12C) {
 		compilecaps[CCAP_LOGON_TYPES]|=CCAP_O7LOGON|CCAP_O5LOGON_NP;
 	}
+	compilecaps[CCAP_FIELD_VERSION]=serverfieldversion;
 
 	putTtiResponse(ttiversion,
 			compilecaps,(byte_t)sizeof(compilecaps),
@@ -3525,13 +3588,13 @@ bool sqlrprotocol_oracle::recvDataTypeRequest() {
 		return false;
 	}
 
-	// The field version is negotiated as the lower of the two.  The
-	// module's is CCAP_FIELD_VERSION_11_2 and a modern client's is far
-	// higher, so the module's is what wins in practice, but a client old
-	// enough to ask for less has to get less.
+	// The field version is negotiated as the lower of the two.  A modern
+	// client asks for far more than the module offers, so the module's is
+	// what wins in practice, but a client old enough to ask for less has to
+	// get less.
 	clientfieldversion=(compilecapssize>CCAP_FIELD_VERSION)?
 				compilecaps[CCAP_FIELD_VERSION]:0;
-	fieldversion=ttiservercompilecaps[CCAP_FIELD_VERSION];
+	fieldversion=serverfieldversion;
 	if (clientfieldversion<fieldversion) {
 		fieldversion=clientfieldversion;
 	}
@@ -4644,12 +4707,10 @@ bool sqlrprotocol_oracle::sendAuthenticationChallenge() {
 	uint16_t	dataflags=0;
 	byte_t		ttccode=TTC_OK;
 
-	// Trailer after the last pair, from an 11.2 capture.  Not identified.
-	// A 12.2 server sends the same thing with 2 more zero ub4s on the end,
-	// but ojdbc 23.26 gives up on the login when it gets those, for either
-	// verifier type and at either connect protocol version, so the shorter
-	// form is the one to send.  python-oracledb needs the longer one and
-	// blocks on the socket without it, which is #9171.
+	// Trailer after the last pair, from an 11.2 capture.  It is a summary
+	// object, so putAuthTrailer() adds the two fields a 12.1 server puts on
+	// the end of one, which is what makes it the 33 bytes a live 12.2
+	// server sends.
 	static const byte_t	trailer[]={
 		0x04, 0x01, 0x01, 0x01, 0x02,
 		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
@@ -4702,12 +4763,19 @@ bool sqlrprotocol_oracle::sendAuthenticationChallenge() {
 // portable one is 31, and it is a marshalled struct rather than a field
 // stream: the 11.2 captures it came from carry a live pointer value in it,
 // which is zeroed here.
+//
+// The portable one is a summary object, so it owes the two fields a 12.1
+// server adds - which is what takes it from 31 bytes to the 33 a live 12.2
+// server sends.  The native one is not a field stream at all and gets
+// nothing; no client reaches it now that #9156 answers a banner none of them
+// match, and it is kept only as the fallback if one ever does.
 void sqlrprotocol_oracle::putAuthTrailer(const byte_t *portable,
 						size_t portablesize,
 						bool secondphase) {
 
 	if (!nativeencoding) {
 		reqpacket.append(portable,portablesize);
+		putSummaryExtension(0,0);
 		return;
 	}
 
@@ -4830,28 +4898,17 @@ bool sqlrprotocol_oracle::sendAuthenticationResponse() {
 	// what both live servers send here
 	putAuthField("AUTH_VERSION_STRING","- 64bit Production");
 
-	// a live 11.2 server sends 22 and a live 12.2 server sends 24
-	putAuthField("AUTH_VERSION_SQL","23");
-
+	putAuthField("AUTH_VERSION_SQL",serverversionsql);
 	putAuthField("AUTH_XACTION_TRAITS","3");
 
-	// 202375680 is 0x0c100200, oracle 12.1.0.2.0.  The nibbles are the
-	// version: a live 11.2 server reports 0x0b200100 and a live 12.2 server
-	// reports 0x0c200100.
-	//
-	// This is the version a client reports as the server's, and it is not
-	// cosmetic.  It was 0x08005000, 8.0.5, until #9147: ojdbc 23.26 picks
-	// its result set reader from it, and told 8.0.5 it read the module's
-	// 11.2 shaped describe with an 8.0 era reader and threw ORA-17401 on
-	// the first query.  #9147 moved it to the 11.2 server every byte string
-	// in this module was captured from.
-	//
-	// It is 12.1 now because that is what the rest of the module claims:
-	// the verifier type it offers by default arrived with 12.1 and cannot
-	// exist on an 11.2 database, and the summary objects it writes are the
-	// 12.1 shape.  A client that is told 11.2 and answered as 12.1 is the
-	// defect this and #9158 and #9171 are all one symptom of.
-	putAuthField("AUTH_VERSION_NO","202375680");
+	// The version a client reports as the server's, and it is not cosmetic.
+	// It was 0x08005000, 8.0.5, until #9147: ojdbc 23.26 picks its result
+	// set reader from it, and told 8.0.5 it read the module's 11.2 shaped
+	// describe with an 8.0 era reader and threw ORA-17401 on the first
+	// query.  It moves with the field version and the verifier type, since
+	// a client that is told one version and answered as another is what
+	// #9156, #9158 and #9171 were all one symptom of.
+	putAuthField("AUTH_VERSION_NO",serverversionno);
 	putAuthField("AUTH_VERSION_STATUS","0");
 	putAuthField("AUTH_CAPABILITY_TABLE","");
 	putAuthField("AUTH_SESSION_ID","9");
@@ -4944,6 +5001,7 @@ bool sqlrprotocol_oracle::sendErrorPacket(const char *what,
 		reqpacket.append(prefix,sizeof(prefix));
 		putUb4(oranum);
 		reqpacket.append(suffix,sizeof(suffix));
+		putSummaryExtension(oranum,0);
 	}
 	putLenString(message,charstring::getLength(message));
 
@@ -6580,15 +6638,40 @@ void sqlrprotocol_oracle::putReturnParameters() {
 	putUb4(0);
 }
 
+// The two fields a summary object grew at oracle 12.1: the error number
+// again, as a ub4, and a ub8 row count, immediately before the message.  A
+// client picks its reader from the negotiated field version - ojdbc 23.26
+// uses T4CTTIoer19 from 12.1 up and an older reader below it - and
+// python-oracledb reads both unconditionally, in _process_error_info() in
+// impl/thin/messages/base.pyx, which is the same fact as its refusal to talk
+// to a server older than 12.1.
+//
+// Told the wrong shape a client does not recover.  Given two bytes it does
+// not expect ojdbc reads the next message two bytes out and reports
+// ORA-17401; denied two it does expect, python-oracledb and node-oracledb ask
+// the socket for them and block forever.  So this is not optional and it owes
+// every ttc 0x04 the module writes, which is both authentication trailers,
+// the error packet and putSummary().  See #9171.
+//
+// Checked against both live servers, which differ here and nowhere else in
+// the object: 11.2 ends at the message, and 12.2 puts 02 05 7b 01 01 in front
+// of it for an ORA-01403 after one row, and 02 03 f9 00 for an ORA-01017.
+void sqlrprotocol_oracle::putSummaryExtension(uint32_t oranum,
+						uint32_t rowcount) {
+
+	if (fieldversion<CCAP_FIELD_VERSION_12_1) {
+		return;
+	}
+
+	putUb4(oranum);
+	putUb4(rowcount);
+}
+
 // The summary object that ends every answer.  It's the same field sequence
 // sendAuthenticationError() emits - which was captured whole from a live 11.2
 // server - written out one field at a time.  The end of call status and the
 // ecid sequence at the front are the two fields CCAP_TTC1 and CCAP_OCI1 bit
 // 0x01 promise, and #9134 is why the module has to send them.
-//
-// A 12.2 server repeats the error number as a ub4 and adds a ub8 row count
-// just before the message.  The module answers CCAP_FIELD_VERSION_11_2, so it
-// sends the 11.2 shape, which stops at the message.
 void sqlrprotocol_oracle::putSummary(uint32_t cursorid,
 						uint32_t oranum,
 						uint32_t rowcount,
@@ -6639,6 +6722,8 @@ void sqlrprotocol_oracle::putSummary(uint32_t cursorid,
 	putUb4(0);
 	putUb4(0);
 	putUb4(0);
+
+	putSummaryExtension(oranum,rowcount);
 
 	if (oranum) {
 		putLenBytes(message,charstring::getLength(message));

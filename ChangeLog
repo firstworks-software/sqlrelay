@@ -1589,6 +1589,18 @@
 	changed the oracle protocol module to report oracle 12.1.0.2.0 rather
 		than 11.2.0.1.0, since the verifier type it offers by default
 		arrived with 12.1 and cannot exist on an 11.2 database
+	fixed the oracle protocol module - the summary object that ends every
+		answer was always the oracle 11.2 shape, which stops two fields
+		short of the 12.1 one, so python-oracledb and node-oracledb
+		blocked on the socket waiting for them and never got past the
+		authentication challenge
+	added a serverversion attribute to the oracle protocol module's
+		listener, 11.2 or 12.1, defaulting to 12.1 - the capability
+		field version, the shape of every summary object, the version
+		reported to the client and the default verifier type all move
+		with it, and no one version serves every client, since
+		python-oracledb and node-oracledb need 12.1 or later and an oci
+		client reads the 11.2 shape only
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems
