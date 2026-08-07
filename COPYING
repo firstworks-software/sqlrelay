@@ -143,6 +143,29 @@ their choice whether to do so. The GNU General Public License gives permission
 to release a modified version without this exception; this exception also makes
 it possible to release a modified version which carries forward this exception. 
 
+Third-party material in the oracle protocol module.
+
+The Oracle client/server wire protocol has never been specified publicly, so
+src/protocols/oracle.cpp is developed against other open source implementations
+of it. The module is part of The SQLRelay Server and carries the license above.
+Where it takes material from one of those implementations, it takes it under
+these terms:
+
+* python-oracledb, Copyright (c) 2016, 2026 Oracle and/or its affiliates, which
+  is dual-licensed under the Universal Permissive License 1.0 and the Apache
+  License 2.0. Material from it is taken under the Universal Permissive License
+  1.0 only. That license is lax and non-copyleft, and the Free Software
+  Foundation lists it as compatible with the GNU GPL, so it combines with the
+  license above without disturbing the "or any later version" clause. The
+  Apache License 2.0 is not compatible with version 2 of the GNU GPL and is not
+  used here.
+
+* go-ora, Copyright (c) 2020 Samy Sultan, which is licensed under the MIT
+  license.
+
+Where such material is present, the source file carrying it names its origin
+and its license, and the full license text is attached below.
+
 --------------------------------------------------------------------------------
 
 The SQLRelay Command-Line Clients

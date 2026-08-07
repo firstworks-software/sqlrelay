@@ -1,6 +1,12 @@
 // Copyright (c) 2017  David Muse
 // See the file COPYING for more information
 
+// The Oracle wire protocol is unspecified, so this module is developed against
+// other open source implementations. Material may be taken from python-oracledb
+// under the Universal Permissive License 1.0, or from go-ora under MIT. Do not
+// take python-oracledb's Apache 2.0 option; it is incompatible with GPLv2.
+// Anything taken must carry its origin and license notice here. See COPYING.
+
 #include <sqlrelay/sqlrserver.h>
 #include <rudiments/bytebuffer.h>
 #include <rudiments/character.h>

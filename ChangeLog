@@ -770,6 +770,11 @@
 		and sha256 modules behind when built with a non-default module
 		name prefix
 	now requires rudiments 2.3.0 or newer
+	documented the license the oracle protocol module carries - it's
+		part of the sql relay server, under the gpl version 2 or
+		later, and material taken from python-oracledb goes under
+		the universal permissive license 1.0 rather than its apache
+		2.0 option, which isn't gpl version 2 compatible
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems
