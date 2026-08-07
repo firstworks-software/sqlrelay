@@ -1153,6 +1153,30 @@
 		or bare oids depending on typemangling, so in the default
 		configuration every column of every postgresql result set
 		came back as Types.NULL
+	rewrote the oracle userlist auth module, which was a copy of the
+		mysql userlist module with the names changed - its
+		oracle_native_password method computed mysql's sha1-xor
+		scramble, which oracle doesn't do at any version, and its
+		supported method list still named mysql's
+		authentication_windows_client - it implements oracle's real
+		o5logon verifier exchange now, for both the 11g and the 12c
+		verifier types, using the challenge path that was just added
+		to the auth modules, and the method is called o5logon rather
+		than oracle_native_password
+	fixed the oracle userlist auth module - a password stored under a
+		one-way password encryption module never authenticated,
+		because the module only ever tried to decrypt the configured
+		password, which a one-way module can't do - it encrypts the
+		password that was passed in and compares now, the way the
+		sqlrclient userlist module already did, for the
+		oracle_clear_password method - one-way encryption still can't
+		work with o5logon, which derives its challenge from the
+		password and so needs the cleartext
+	fixed the oracle userlist auth module - it never set the password
+		path on the value parser, so a password written in the
+		configuration as an indirect value, such as a file reference,
+		had no base path to resolve against, although the same
+		password did in the mysql userlist module
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems

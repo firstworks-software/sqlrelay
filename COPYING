@@ -143,13 +143,13 @@ their choice whether to do so. The GNU General Public License gives permission
 to release a modified version without this exception; this exception also makes
 it possible to release a modified version which carries forward this exception. 
 
-Third-party material in the oracle protocol module.
+Third-party material in the oracle protocol and auth modules.
 
 The Oracle client/server wire protocol has never been specified publicly, so
-src/protocols/oracle.cpp is developed against other open source implementations
-of it. The module is part of The SQLRelay Server and carries the license above.
-Where it takes material from one of those implementations, it takes it under
-these terms:
+src/protocols/oracle.cpp and src/auths/oracle_userlist.cpp are developed
+against other open source implementations of it. Those modules are part of The
+SQLRelay Server and carry the license above. Where they take material from one
+of those implementations, they take it under these terms:
 
 * python-oracledb, Copyright (c) 2016, 2026 Oracle and/or its affiliates, which
   is dual-licensed under the Universal Permissive License 1.0 and the Apache
