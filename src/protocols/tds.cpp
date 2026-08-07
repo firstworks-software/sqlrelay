@@ -1271,9 +1271,10 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_tds : public sqlrprotocol {
 
 		bool		dbistds;
 
-		// whether the session has logged in.  The listener only
-		// authenticates for the sqlrclient protocol, so nothing but
-		// this stands between a client's first packet and the parsers.
+		// whether the session has logged in.  The listener doesn't
+		// authenticate - every protocol module owns that - so nothing
+		// but this stands between a client's first packet and the
+		// parsers.
 		bool		loggedin;
 
 		// rpc parameters, as they arrived on the wire.  The handlers
