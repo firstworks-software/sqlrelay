@@ -3633,7 +3633,9 @@ uint16_t sapcursor::getColumnType(uint32_t col) {
 			// ctlib reports unichar and univarchar both as
 			// CS_UNICHAR_TYPE.  Sybase also sends its systypes
 			// usertype, which does tell them apart - 34 unichar,
-			// 35 univarchar.
+			// 35 univarchar.  These don't move to a long type
+			// under a multi-byte charset, the way the
+			// CS_CHAR_TYPE ones do - they're already ucs-2.
 			if (column[col].usertype==35) {
 				return NVARCHAR_DATATYPE;
 			}
@@ -3691,9 +3693,33 @@ uint16_t sapcursor::getColumnType(uint32_t col) {
 		case CS_VARBINARY_TYPE:
 			return VARBINARY_DATATYPE;
 		case CS_LONGCHAR_TYPE:
-			return LONGCHAR_DATATYPE;
+			// Open Client reports char, varchar, nchar, nvarchar
+			// and sysname as CS_LONGCHAR_TYPE rather than
+			// CS_CHAR_TYPE once the column is wider than 255
+			// bytes, or once @@client_csexpansion is above 1,
+			// which any multi-byte charset= makes it.  The
+			// usertype is the same either way, so this splits
+			// them the same way the CS_CHAR_TYPE arm does.  Every
+			// usertype that can arrive here was measured arriving
+			// as CS_CHAR_TYPE too, so nothing needs to fall
+			// through to LONGCHAR - a char(1000) is still a char.
+			switch (column[col].usertype) {
+				case 2:
+					return VARCHAR_DATATYPE;
+				case 24:
+					return NCHAR_DATATYPE;
+				case 25:
+					return NVARCHAR_DATATYPE;
+			}
+			return CHAR_DATATYPE;
 		case CS_LONGBINARY_TYPE:
-			return LONGBINARY_DATATYPE;
+			// and binary and varbinary the same way, past 255
+			// bytes - 3 binary, 4 varbinary, as in the
+			// CS_BINARY_TYPE arm
+			if (column[col].usertype==4) {
+				return VARBINARY_DATATYPE;
+			}
+			return BINARY_DATATYPE;
 		case CS_LONG_TYPE:
 			return LONG_DATATYPE;
 		case CS_ILLEGAL_TYPE:
