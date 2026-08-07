@@ -1232,6 +1232,14 @@
 		still comes back non-zero in that state, so both threw a
 		NullPointerException rather than the SQLException jdbc
 		requires
+	fixed the oracle protocol module - the ano negotiation ran on every
+		connection, but ano is optional, and oracle's own thin drivers
+		don't negotiate it - python-oracledb and node-oracledb send the
+		protocol negotiation as their first data packet, which the
+		module read as an ano request, failed on the missing 0xdeadbeef
+		marker, and dropped the connection - the connect packet's nsi
+		flags say whether the client wants ano, and the negotiation
+		only runs when they do
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems

@@ -160,6 +160,11 @@ of those implementations, they take it under these terms:
   Apache License 2.0 is not compatible with version 2 of the GNU GPL and is not
   used here.
 
+* node-oracledb, Copyright (c) 2015, 2026 Oracle and/or its affiliates, which
+  is dual-licensed on the same terms as python-oracledb above. Material from it
+  is taken under the Universal Permissive License 1.0 only, for the same
+  reasons, and the Apache License 2.0 is not used here either.
+
 * go-ora, Copyright (c) 2020 Samy Sultan, which is licensed under the MIT
   license.
 

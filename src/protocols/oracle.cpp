@@ -3,9 +3,10 @@
 
 // The Oracle wire protocol is unspecified, so this module is developed against
 // other open source implementations. Material may be taken from python-oracledb
-// under the Universal Permissive License 1.0, or from go-ora under MIT. Do not
-// take python-oracledb's Apache 2.0 option; it is incompatible with GPLv2.
-// Anything taken must carry its origin and license notice here. See COPYING.
+// or node-oracledb under the Universal Permissive License 1.0, or from go-ora
+// under MIT. Do not take the Apache 2.0 option that python-oracledb and
+// node-oracledb also offer; it is incompatible with GPLv2. Anything taken must
+// carry its origin and license notice here. See COPYING.
 
 #include <sqlrelay/sqlrserver.h>
 #include <rudiments/bytebuffer.h>
@@ -36,6 +37,20 @@
 #define PROTOCOL_VERSION_10		0x0139
 #define PROTOCOL_VERSION_11		0x013A
 #define PROTOCOL_VERSION_12		0x013B
+
+// ns layer nsi flags.  the pair of flag bytes the client sends in the connect
+// packet, and the server sends back in the accept.  "na" is oracle's name for
+// the native services layer, which is what carries ano.  names and values
+// from node-oracledb's lib/thin/sqlnet/constants.js; python-oracledb has
+// NSI_NA_REQUIRED, NSI_NA_DISABLED and NSI_SUP_SEC_RENEG under its own names,
+// with the same values.
+#define NSI_NA_WANTED		0x01
+#define NSI_NA_INTERCHANGE	0x02
+#define NSI_NA_DISABLED		0x04
+#define NSI_NA_NO_SERVICES	0x08
+#define NSI_NA_REQUIRED		0x10
+#define NSI_NA_AUTH_WANTED	0x20
+#define NSI_SUP_SEC_RENEG	0x80
 
 // authentication adapter table "nautab" supports:
 // SECURID
@@ -1721,6 +1736,28 @@ bool sqlrprotocol_oracle::sendRefuse() {
 }
 
 bool sqlrprotocol_oracle::anoNegotiation() {
+
+	// ano is optional, and the connect packet's nsi flags say whether the
+	// client means to negotiate it.  only a client that set NSI_NA_WANTED
+	// sends an ano request; oracle's own thin drivers don't - captured
+	// against an oracle 12.2 server, python-oracledb sends 0x84,
+	// NSI_SUP_SEC_RENEG|NSI_NA_DISABLED, and node-oracledb sends 0x08,
+	// NSI_NA_NO_SERVICES, and both go straight to the tti negotiation.
+	// waiting for an ano request they'll never send means reading their
+	// ttipro as one, failing on the missing 0xdeadbeef, and killing the
+	// handshake.  the two flag bytes are written identically by every
+	// client seen, but check both anyway.
+	// the accept echoes these flags back, which is what makes this work
+	// from the client's side too: the client decides whether to send an
+	// ano request from the flags in the accept, so echoing means both
+	// ends reach the same decision from the same bits.
+	if (!(((anoflags>>8)|anoflags)&NSI_NA_WANTED)) {
+		debugStart("ano");
+		debugWrite("client didn't ask for ano, skipping it");
+		debugEnd();
+		return true;
+	}
+
 	return recvAnoRequest() && sendAnoResponse();
 }
 
