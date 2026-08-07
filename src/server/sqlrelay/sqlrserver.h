@@ -334,6 +334,18 @@ class SQLRSERVER_DLLSPEC sqlrservercontroller : public sqlrserverbase {
 		 *  otherwise. */
 		bool	auth(sqlrcredentials *cred);
 
+		/** Builds the challenge for "cred" and stores it in
+		 *  "challenge", for authentication methods whose challenge
+		 *  is derived from the password.
+		 *
+		 *  Returns true if an auth module built the challenge and
+		 *  false if none of them could.
+		 *
+		 *  This doesn't authenticate anything.  Call auth() with the
+		 *  client's response afterward. */
+		bool	challenge(sqlrcredentials *cred,
+					stringbuffer *challenge);
+
 		/** Logs out of the database and back in as "newuser",
 		 *  authenticated using password "newpassword".
 		 *
@@ -6668,6 +6680,33 @@ class SQLRSERVER_DLLSPEC sqlrauth : public sqlrservermodule {
 		 *  users, the database itself, or some other authentication
 		 *  system. */
 		virtual	const char	*auth(sqlrcredentials *cred);
+
+		/** Builds the challenge that must be sent to the client
+		 *  before the client can compute its response, for
+		 *  authentication methods whose challenge is derived from
+		 *  the password, and stores it in "challenge".
+		 *
+		 *  The entity to build the challenge for, and whatever the
+		 *  method needs to build it (eg. verifier data/salt), are
+		 *  passed in "cred".  The protocol module generates that
+		 *  data, not the auth module.
+		 *
+		 *  Returns true if the challenge was built and false if it
+		 *  wasn't.  False also covers the cases where the entity is
+		 *  unknown to this backend, or where the method isn't
+		 *  supported by this backend.
+		 *
+		 *  Note that the challenge is derived from the password, so
+		 *  the backend must be able to produce the cleartext
+		 *  password.  A password stored under a one-way password
+		 *  encryption module (eg. md5, sha1, sha256) can't be used
+		 *  here, and a child class must return false for one.
+		 *
+		 *  This implementation just returns false, but may be
+		 *  overridden by a child class that supports a
+		 *  password-derived challenge. */
+		virtual	bool	challenge(sqlrcredentials *cred,
+						stringbuffer *challenge);
 
 	#include <sqlrelay/private/sqlrauth.h>
 };

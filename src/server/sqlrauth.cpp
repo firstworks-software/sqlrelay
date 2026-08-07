@@ -22,3 +22,7 @@ sqlrauth::~sqlrauth() {
 const char *sqlrauth::auth(sqlrcredentials *cred) {
 	return NULL;
 }
+
+bool sqlrauth::challenge(sqlrcredentials *cred, stringbuffer *challenge) {
+	return false;
+}

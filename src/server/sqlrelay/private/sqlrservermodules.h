@@ -61,6 +61,8 @@ class SQLRSERVER_DLLSPEC sqlrauths : public sqlrservermodules {
 
 		bool	load();
 		const char	*auth(sqlrcredentials *cred);
+		bool		challenge(sqlrcredentials *cred,
+						stringbuffer *challenge);
 
 	private:
 		void	loadModule(domnode *parameters);

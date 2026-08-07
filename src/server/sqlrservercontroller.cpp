@@ -2458,6 +2458,23 @@ bool sqlrservercontroller::auth(sqlrcredentials *cred) {
 	return false;
 }
 
+bool sqlrservercontroller::challenge(sqlrcredentials *cred,
+					stringbuffer *challenge) {
+
+	debugStart("auth challenge");
+
+	// no authenticated-user or connection-schedule work here, a challenge
+	// isn't an authentication, the auth() that follows it does that
+	bool	retval=false;
+	if (pvt->_sqlra) {
+		retval=pvt->_sqlra->challenge(cred,challenge);
+	}
+
+	debugWrite("challenge %s",(retval)?"success":"failed");
+	debugEnd();
+	return retval;
+}
+
 bool sqlrservercontroller::changeUser(const char *newuser,
 					const char *newpassword) {
 	debugStart("change user");

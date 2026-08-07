@@ -1121,6 +1121,20 @@
 		against the bytes left in the packet, the array count is
 		checked against the bytes left in the field, and a count that
 		doesn't fit fails the negotiation instead of allocating
+	added a challenge path to the sqlrauth module api - auth() was verify-
+		only, so a protocol whose challenge is derived from the
+		password, like oracle's o5logon, couldn't be implemented,
+		since only an auth module may see passwords - the new
+		challenge() takes the credentials and a buffer, and returns
+		true if it built the challenge, and it's exposed on
+		sqlrservercontroller for protocol modules to call - the
+		protocol module generates the verifier data and passes it in,
+		matching what the mysql protocol module already does with its
+		nonce, so the auth modules stay stateless - the default
+		implementation returns false, so no existing auth module
+		changes, and a password stored under a one-way password
+		encryption module can't be used, since building the challenge
+		requires the cleartext password
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems

@@ -132,3 +132,25 @@ const char *sqlrauths::auth(sqlrcredentials *cred) {
 	}
 	return NULL;
 }
+
+bool sqlrauths::challenge(sqlrcredentials *cred, stringbuffer *challenge) {
+	if (!cred || !challenge) {
+		return false;
+	}
+	for (listnode< sqlrmoduleplugin * > *node=blist.getFirst();
+						node; node=node->getNext()) {
+
+		debugWrite("running auth challenge: %s...",
+					node->getValue()->module);
+
+		sqlrauth	*m=(sqlrauth *)node->getValue()->m;
+		if (m->challenge(cred,challenge)) {
+			return true;
+		}
+
+		// a module that doesn't support the method, or doesn't know
+		// the entity, may still have appended to the buffer
+		challenge->clear();
+	}
+	return false;
+}
