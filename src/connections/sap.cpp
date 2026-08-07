@@ -3674,6 +3674,30 @@ uint16_t sapcursor::getColumnType(uint32_t col) {
 		case CS_UBIGINT_TYPE:
 			return UBIGINT_DATATYPE;
 		#endif
+		#ifdef CS_DATE_TYPE
+		case CS_DATE_TYPE:
+			return DATE_DATATYPE;
+		#endif
+		#ifdef CS_TIME_TYPE
+		case CS_TIME_TYPE:
+			return TIME_DATATYPE;
+		#endif
+		#ifdef CS_BIGTIME_TYPE
+		case CS_BIGTIME_TYPE:
+			return TIME_DATATYPE;
+		#endif
+		#ifdef CS_BIGDATETIME_TYPE
+		case CS_BIGDATETIME_TYPE:
+			// usertype 43 is datetimeoffset, which only freetds
+			// synthesizes.  Sybase sends 48 for bigdatetime, and
+			// its systypes 43 is bigint, which can't arrive as
+			// CS_BIGDATETIME_TYPE, so this test is inert here.
+			// It's kept so the two modules read the same.
+			if (column[col].usertype==43) {
+				return DATETIMEOFFSET_DATATYPE;
+			}
+			return TIMESTAMP_DATATYPE;
+		#endif
 		default:
 			return UNKNOWN_DATATYPE;
 	}

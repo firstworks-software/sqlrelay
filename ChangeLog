@@ -889,6 +889,11 @@
 		columns were all reported as unknown, because ctlib's
 		CS_UNICHAR_TYPE and CS_UNITEXT_TYPE had no cases, they report
 		nchar, nvarchar and ntext now
+	fixed the sap connection module - date, time, bigtime and bigdatetime
+		columns were all reported as unknown, because ctlib's
+		CS_DATE_TYPE, CS_TIME_TYPE, CS_BIGTIME_TYPE and
+		CS_BIGDATETIME_TYPE had no cases, they report date, time, time
+		and timestamp now
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems
