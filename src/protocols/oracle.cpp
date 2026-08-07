@@ -90,8 +90,13 @@
 #define TTC_DATATYPE_NEGOTIATION	0x02
 #define TTC_TTI_FUNCTION		0x03
 #define TTC_ERROR			0x04
+#define TTC_ROW_HEADER			0x06
+#define TTC_ROW_DATA			0x07
 #define TTC_OK				0x08
+#define TTC_STATUS			0x09
+#define TTC_DESCRIBE_INFO		0x10
 #define TTC_EXTENDED_TTI_FUNCTION	0x11
+#define TTC_BIT_VECTOR			0x15
 #define TTC_EXTPROC1			0x20
 #define TTC_EXTPROC2			0x44
 
@@ -114,6 +119,11 @@
 // oracle errors the authentication exchange can end in
 #define ORA_INVALID_USERNAME_PASSWORD	1017
 #define ORA_NULL_PASSWORD		1005
+
+// the oracle error that ends a fetch, which a client reads as "no more rows"
+// rather than as a failure
+#define ORA_NO_DATA_FOUND		1403
+#define ORA_NO_DATA_FOUND_MESSAGE	"ORA-01403: no data found\n"
 
 // two task interface (tti) functions
 #define TTI_OPEN		0x02
@@ -214,6 +224,30 @@
 // datatype request encoding flags
 #define ENCODING_MULTI_BYTE		0x01
 #define ENCODING_CONV_LENGTH		0x02
+
+// A length byte over 252 isn't a length.  0xfe introduces the chunked long
+// form and 0xff marks a null.
+#define MAX_SHORT_LENGTH		252
+#define LONG_LENGTH_INDICATOR		0xfe
+#define CHUNK_SIZE			32767
+
+// describe info constants.  The last three are advisory - a client is free to
+// ignore them - and these are what a live 11.2 server sends.
+#define AL8O4_COUNT			6
+#define DCB_MAX_DATA_BLOCK_SIZE		8168
+#define DCB_MIN_PREFETCH		2
+#define DCB_MAX_PREFETCH		2
+
+// an oracle number is an exponent byte and up to 20 base 100 digits, and a
+// column of them is described as 22 bytes wide
+#define MAX_NUMBER_MANTISSA		20
+#define MAX_NUMBER_SIZE			22
+#define MAX_NUMBER_DIGITS		128
+#define MIN_NUMBER_EXPONENT		(-193)
+#define MAX_NUMBER_EXPONENT		62
+
+// what a column with no size of its own is described as
+#define MAX_VARCHAR_SIZE		4000
 
 // character set ids
 #define CHARSET_US7ASCII		1
@@ -851,8 +885,16 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_oracle : public sqlrprotocol {
 						uint32_t *fieldsize,
 						uint32_t *flags,
 						const byte_t **rpout);
+		bool	getPointer(const byte_t *rp,
+						const byte_t *end,
+						byte_t *value,
+						const byte_t **rpout);
 		void	putUb4(uint32_t value);
+		void	putSb4(int32_t value);
 		void	putLenString(const char *string, uint32_t size);
+		void	putLenBytes(const char *bytes, uint32_t size);
+		void	putBytesWithLength(const char *bytes, uint32_t size);
+		void	putOracleDate(byte_t *out);
 		void	putAuthField(const char *fieldname,
 						const char *field,
 						uint32_t flags);
@@ -892,8 +934,37 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_oracle : public sqlrprotocol {
 							uint16_t pcount,
 							uint16_t *ptypes);
 		bool	query3(const byte_t *rp);
+		bool	getQuery3Request(const byte_t *rp,
+							const byte_t *end,
+							uint32_t *options,
+							uint32_t *cursorid,
+							uint32_t *prefetchrows,
+							const char **query,
+							uint32_t *querysize);
 		bool	sendQuery3Response(sqlrservercursor *cursor,
-							uint16_t options);
+							uint32_t options,
+							uint32_t cursorid,
+							uint32_t prefetchrows);
+		void	putDescribeInfo(sqlrservercursor *cursor,
+							uint32_t colcount);
+		void	putColumnMetadata(sqlrservercursor *cursor,
+							uint32_t column);
+		uint16_t	getWireColumnType(uint16_t columntype);
+		uint32_t	getWireColumnSize(sqlrservercursor *cursor,
+							uint32_t column,
+							uint16_t wiretype);
+		void	putRowHeader(byte_t flags,
+							uint32_t colcount,
+							uint32_t prefetchrows);
+		void	putRowData(sqlrservercursor *cursor,
+							uint32_t colcount);
+		void	putReturnParameters();
+		void	putSummary(uint32_t cursorid,
+							uint32_t oranum,
+							uint32_t rowcount,
+							const char *message);
+		void	putNumberField(const char *field,
+							uint32_t fieldsize);
 
 		// execute...
 		bool	execute(const byte_t *rp);
@@ -901,6 +972,10 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_oracle : public sqlrprotocol {
 
 		// fetch...
 		bool	fetch(const byte_t *rp);
+		bool	fetch3(const byte_t *rp);
+		bool	sendFetch3Response(sqlrservercursor *cursor,
+							uint32_t cursorid,
+							uint32_t rowstofetch);
 		bool	sendFetchResponse(sqlrservercursor *cursor,
 							bool parse,
 							bool define,
@@ -1056,6 +1131,18 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_oracle : public sqlrprotocol {
 		uint16_t	**ptypes;
 		bool		*columntypescached;
 		uint16_t	**columntypes;
+
+		// how many rows of each cursor's result set have gone out.  A
+		// client counts rows for the whole result set rather than for
+		// the batch it just got, so a fetch's summary has to carry the
+		// running total.
+		uint32_t	*rowssent;
+
+		// the sequence number of the request being answered, which
+		// the summary object has to echo back
+		byte_t		callnumber;
+
+		bool		query3session;
 };
 
 sqlrprotocol_oracle::sqlrprotocol_oracle(sqlrservercontroller *cont,
@@ -1120,10 +1207,12 @@ sqlrprotocol_oracle::sqlrprotocol_oracle(sqlrservercontroller *cont,
 	ptypes=new uint16_t *[maxcursorcount];
 	columntypescached=new bool[maxcursorcount];
 	columntypes=new uint16_t *[maxcursorcount];
+	rowssent=new uint32_t[maxcursorcount];
 	for (uint16_t i=0; i<maxcursorcount; i++) {
 		pcounts[i]=0;
 		ptypes[i]=new uint16_t[maxbindcount];
 		columntypescached[i]=false;
+		rowssent[i]=0;
 		if (cont->getMaxColumnCount()) {
 			columntypes[i]=new uint16_t[cont->getMaxColumnCount()];
 		} else {
@@ -1148,7 +1237,9 @@ sqlrprotocol_oracle::~sqlrprotocol_oracle() {
 	}
 	delete[] pcounts;
 	delete[] ptypes;
+	delete[] columntypescached;
 	delete[] columntypes;
+	delete[] rowssent;
 
 	delete resppacketpool;
 }
@@ -1194,6 +1285,9 @@ void sqlrprotocol_oracle::init() {
 	datatypes=NULL;
 	datatypessize=0;
 	datatypecount=0;
+
+	query3session=false;
+	callnumber=0;
 
 	resppacket=NULL;
 	resppacketsize=0;
@@ -3854,6 +3948,28 @@ bool sqlrprotocol_oracle::getAuthField(const byte_t *rp,
 	return true;
 }
 
+// A pointer field is one raw byte: 1 when the client is sending the thing it
+// points at, 0 when it isn't.  Nothing in the module follows one; they're read
+// only to stay in step.
+bool sqlrprotocol_oracle::getPointer(const byte_t *rp,
+					const byte_t *end,
+					byte_t *value,
+					const byte_t **rpout) {
+
+	*value=0;
+
+	if (end-rp<1) {
+		debugWrite("truncated pointer");
+		return false;
+	}
+
+	read(rp,value,&rp);
+
+	*rpout=rp;
+
+	return true;
+}
+
 void sqlrprotocol_oracle::putUb4(uint32_t value) {
 	if (!value) {
 		write(&reqpacket,(byte_t)0);
@@ -3869,9 +3985,87 @@ void sqlrprotocol_oracle::putUb4(uint32_t value) {
 	}
 }
 
+// A signed integer sets bit 0x80 of the count byte and sends the magnitude.
+// A column's scale is the only place the module needs one - a real server
+// reports -127 for a number with no declared scale.
+void sqlrprotocol_oracle::putSb4(int32_t value) {
+	if (value>=0) {
+		putUb4((uint32_t)value);
+		return;
+	}
+	uint32_t	magnitude=(uint32_t)(-value);
+	if (magnitude<=0xff) {
+		write(&reqpacket,(byte_t)0x81);
+		write(&reqpacket,(byte_t)magnitude);
+	} else if (magnitude<=0xffff) {
+		write(&reqpacket,(byte_t)0x82);
+		writeBE(&reqpacket,(uint16_t)magnitude);
+	} else {
+		write(&reqpacket,(byte_t)0x84);
+		writeBE(&reqpacket,magnitude);
+	}
+}
+
 void sqlrprotocol_oracle::putLenString(const char *string, uint32_t size) {
 	write(&reqpacket,(byte_t)size);
 	write(&reqpacket,string,(size_t)size);
+}
+
+// The same length-then-bytes as putLenString(), but with the long form for
+// anything over 252 bytes: a 0xfe marker, then a ub4 length and that many
+// bytes per chunk, then a zero length.  A row value needs it and an
+// authentication field never did, which is why putLenString() doesn't have it.
+void sqlrprotocol_oracle::putLenBytes(const char *bytes, uint32_t size) {
+
+	if (size<=MAX_SHORT_LENGTH) {
+		write(&reqpacket,(byte_t)size);
+		if (size) {
+			write(&reqpacket,bytes,(size_t)size);
+		}
+		return;
+	}
+
+	write(&reqpacket,(byte_t)LONG_LENGTH_INDICATOR);
+	uint32_t	offset=0;
+	while (offset<size) {
+		uint32_t	chunk=size-offset;
+		if (chunk>CHUNK_SIZE) {
+			chunk=CHUNK_SIZE;
+		}
+		putUb4(chunk);
+		write(&reqpacket,bytes+offset,(size_t)chunk);
+		offset+=chunk;
+	}
+	putUb4(0);
+}
+
+// A ub4 size, then the bytes with their own length in front of them again -
+// and nothing at all when the size is 0.  Column names, the current date and
+// the describe's query cache key are all this shape.
+void sqlrprotocol_oracle::putBytesWithLength(const char *bytes,
+							uint32_t size) {
+	putUb4(size);
+	if (size) {
+		putLenBytes(bytes,size);
+	}
+}
+
+// The 7 byte date a server puts in a describe: century and year both biased
+// by 100, then month and day, then hour, minute and second each biased by 1.
+void sqlrprotocol_oracle::putOracleDate(byte_t *out) {
+
+	datetime	dt;
+	dt.initFromSystemDateTime();
+
+	int32_t	year=dt.getYear();
+
+	out[0]=(byte_t)(year/100+100);
+	out[1]=(byte_t)(year%100+100);
+	out[2]=(byte_t)dt.getMonth();
+	out[3]=(byte_t)dt.getDayOfMonth();
+	out[4]=(byte_t)(dt.getHour()+1);
+	out[5]=(byte_t)(dt.getMinute()+1);
+	out[6]=(byte_t)(dt.getSecond()+1);
 }
 
 void sqlrprotocol_oracle::putAuthField(const char *fieldname,
@@ -4282,7 +4476,16 @@ bool sqlrprotocol_oracle::sendAuthenticationResponse() {
 	putAuthField("AUTH_VERSION_STRING","- Production");
 	putAuthField("AUTH_VERSION_SQL","12");
 	putAuthField("AUTH_XACTION_TRAITS","3");
-	putAuthField("AUTH_VERSION_NO","134238208");
+
+	// 186646784 is 0x0b200100, oracle 11.2.0.1.0, which is what the live
+	// server every byte string in this module was captured from reports.
+	// It used to be 0x08005000, 8.0.5, and that is not cosmetic: ojdbc
+	// 23.26 picks its result set reader from this number, and told 8.0.5
+	// it read the 11.2 shaped describe with an 8.0 era reader and threw
+	// ORA-17401 on the first query.  It has to move with the capability
+	// array, the data type table and the field version, all of which came
+	// from that same 11.2 server.  See #9147.
+	putAuthField("AUTH_VERSION_NO","186646784");
 	putAuthField("AUTH_VERSION_STATUS","0");
 	putAuthField("AUTH_CAPABILITY_TABLE","");
 	putAuthField("AUTH_SESSION_ID","9");
@@ -5395,64 +5598,54 @@ bool sqlrprotocol_oracle::query3(const byte_t *rp) {
 	// can apparently be used for fetch too
 
 	// parse the request...
-	uint16_t	options;
-	uint16_t	moreoptions;
-	uint16_t	cursorid;
-	uint32_t	querysize;
-	const char	*query;
+	uint32_t	options=0;
+	uint32_t	cursorid=0;
+	uint32_t	prefetchrows=0;
+	uint32_t	querysize=0;
+	const char	*query=NULL;
 
-	readBE(rp,&options,&rp);
-	readBE(rp,&moreoptions,&rp);
-cursorid=hackcursorid;
-	// no idea...
-	for (uint16_t i=0; i<9; i++) {
-		byte_t	unknown;
-		read(rp,&unknown,&rp);
+	if (!getQuery3Request(rp,resppacket+resppacketsize,
+					&options,&cursorid,&prefetchrows,
+					&query,&querysize)) {
+		return false;
 	}
-	readLE(rp,&querysize,&rp);
-	// no idea...
-	for (uint16_t i=0; i<56; i++) {
-		byte_t	unknown;
-		read(rp,&unknown,&rp);
-	}
-	query=(char *)rp;
-	rp+=querysize;
-	// no idea...
 
-	if (getDebug()) {
-		debugStart("query3 request");
-		debugOptions(options,moreoptions);
-		debugWrite("cursor id: %d",cursorid);
-		debugWrite("query size: %dn",querysize);
-		debugWrite("query: \"%*s\"",querysize,query);
-		debugEnd();
-	}
+	// which layout a fetch that follows this is in
+	query3session=true;
 
 	// get the requested cursor
+	//
+	// Cursor id 0 means "open one for me".  The ids on the wire are the
+	// controller's plus 1, since the controller's start at 0 and 0 is
+	// spoken for.
 	sqlrservercursor	*cursor;
-	if (cursorid==65535) {
+	if (!cursorid) {
 		cursor=cont->getCursor();
 		if (!cursor) {
 			debugWrite("couldn't get cursor");
 			return sendCursorNotOpenError();
 		}
-		cursorid=cont->getId(cursor);
-hackcursorid=cursorid;
+		hackcursorid=cont->getId(cursor);
+		cursorid=hackcursorid+1;
 		debugStart("open request");
 		debugWrite("cursor id: %d",cursorid);
 		debugEnd();
 	} else {
-		cursor=cont->getCursor(cursorid);
+		cursor=cont->getCursor((uint16_t)(cursorid-1));
 		if (!cursor) {
 			debugWrite("cursor id %d not found",cursorid);
 			return sendCursorNotOpenError();
 		}
+		hackcursorid=cursorid-1;
 	}
 
 	if (options&OPTION_PARSE) {
 
 		// reset column type cache flag
 		columntypescached[cont->getId(cursor)]=false;
+
+		// re-start the running row count
+		rowssent[cont->getId(cursor)]=0;
 
 		// bounds checking
 		if (querysize>maxquerysize) {
@@ -5466,7 +5659,7 @@ hackcursorid=cursorid;
 		bytestring::copy(querybuffer,query,querysize);
 		querybuffer[querysize]='\0';
 		cont->setQuerySize(cursor,querysize);
-	
+
 		// prepare the query
 		if (!cont->prepareQuery(cursor,
 					cont->getQueryBuffer(cursor),
@@ -5490,11 +5683,148 @@ hackcursorid=cursorid;
 		// FIXME: commit...
 	}
 
-	return sendQuery3Response(cursor,options);
+	return sendQuery3Response(cursor,options,cursorid,prefetchrows);
 }
 
+// The execute request a 10g-or-later client sends.  Its layout is
+// python-oracledb's ExecuteMessage - _write_execute_message() in
+// src/oracledb/impl/thin/messages/execute.pyx - and every field in it is
+// either a ub4 or a single raw byte, so nothing in it sits at a fixed offset.
+//
+// Three things this got wrong before, each enough to desync the parse on its
+// own:
+//
+//  - a one byte sequence number follows the tti function code, and
+//    getTtiFunction() doesn't consume it.
+//  - options is one ub4, not two big endian ub2s.  What the module used to
+//    print as "options" was the sequence number and the ub4's count byte read
+//    together, and what it printed as "moreoptions" was the real options word.
+//  - the query size is a ub4 six fields in, not a little endian uint32 at a
+//    guessed offset.  The old offset landed on the prefetch buffer size,
+//    which is where "query size: -252n" came from.
+//
+// The tail between the registration id and the query text is not fixed.  It
+// grows with the field version negotiated in #8980: ojdbc sends nothing there
+// against an 11.2 server and ten more bytes against a 12.2 one, and
+// python-oracledb sends those ten and then a length byte for the query.  All
+// of them are zero for a query with no binds, so they're skipped as a run of
+// zeros rather than counted - a query's text never starts with a zero byte.
+// The length byte is taken only when it matches the size already declared up
+// front, because ojdbc never writes one, at any query length, and
+// python-oracledb always does.
+bool sqlrprotocol_oracle::getQuery3Request(const byte_t *rp,
+						const byte_t *end,
+						uint32_t *options,
+						uint32_t *cursorid,
+						uint32_t *prefetchrows,
+						const char **query,
+						uint32_t *querysize) {
+
+	*options=0;
+	*cursorid=0;
+	*prefetchrows=0;
+	*query=NULL;
+	*querysize=0;
+
+	byte_t		sequence=0;
+	byte_t		pointer=0;
+	uint32_t	vectorsize=0;
+	uint32_t	prefetchbuffersize=0;
+	uint32_t	maxlongsize=0;
+	uint32_t	bindcount=0;
+	uint32_t	definecount=0;
+	uint32_t	unused=0;
+
+	if (!getPointer(rp,end,&sequence,&rp) ||
+		!getUb4(rp,end,options,&rp) ||
+		!getUb4(rp,end,cursorid,&rp) ||
+		!getPointer(rp,end,&pointer,&rp) ||
+		!getUb4(rp,end,querysize,&rp) ||
+		!getPointer(rp,end,&pointer,&rp) ||
+		!getUb4(rp,end,&vectorsize,&rp) ||
+		!getPointer(rp,end,&pointer,&rp) ||
+		!getPointer(rp,end,&pointer,&rp) ||
+		!getUb4(rp,end,&prefetchbuffersize,&rp) ||
+		!getUb4(rp,end,prefetchrows,&rp) ||
+		!getUb4(rp,end,&maxlongsize,&rp) ||
+		!getPointer(rp,end,&pointer,&rp) ||
+		!getUb4(rp,end,&bindcount,&rp) ||
+		!getPointer(rp,end,&pointer,&rp) ||
+		!getPointer(rp,end,&pointer,&rp) ||
+		!getPointer(rp,end,&pointer,&rp) ||
+		!getPointer(rp,end,&pointer,&rp) ||
+		!getPointer(rp,end,&pointer,&rp) ||
+		!getPointer(rp,end,&pointer,&rp) ||
+		!getUb4(rp,end,&definecount,&rp) ||
+		!getUb4(rp,end,&unused,&rp) ||
+		!getPointer(rp,end,&pointer,&rp) ||
+		!getPointer(rp,end,&pointer,&rp) ||
+		!getPointer(rp,end,&pointer,&rp) ||
+		!getUb4(rp,end,&unused,&rp) ||
+		!getPointer(rp,end,&pointer,&rp) ||
+		!getUb4(rp,end,&unused,&rp) ||
+		!getUb4(rp,end,&unused,&rp)) {
+		debugWrite("truncated query3 request");
+		return false;
+	}
+
+	if (*querysize) {
+
+		while (rp<end && !(*rp)) {
+			rp++;
+		}
+
+		if (rp<end && *rp==LONG_LENGTH_INDICATOR) {
+			debugWrite("chunked query text, not supported");
+			return false;
+		}
+
+		if (rp<end && *querysize<=MAX_SHORT_LENGTH &&
+					(uint32_t)(*rp)==*querysize) {
+			rp++;
+		}
+
+		if ((size_t)(end-rp)<(size_t)*querysize) {
+			debugWrite("truncated query text");
+			return false;
+		}
+
+		*query=(const char *)rp;
+		rp+=*querysize;
+	}
+
+	// the summary object has to echo this back
+	callnumber=sequence;
+
+	if (getDebug()) {
+		debugStart("query3 request");
+		debugWrite("sequence: %d",sequence);
+		debugWrite("options: 0x%08x",*options);
+		debugOptions((uint16_t)*options);
+		debugWrite("cursor id: %d",*cursorid);
+		debugWrite("prefetch rows: %d",*prefetchrows);
+		debugWrite("bind count: %d",bindcount);
+		debugWrite("define count: %d",definecount);
+		debugWrite("query size: %d",*querysize);
+		if (*query) {
+			debugWrite("query: \"%.*s\"",(int)*querysize,*query);
+		}
+		debugEnd();
+	}
+
+	// FIXME: bind variables and defines are still ignored
+	return true;
+}
+
+// What a live 11.2 server answers a select with, in order: a describe, a row
+// header, one row data message per row, a return parameters block, and a
+// summary object.  Each is its own ttc code inside the one packet.  The 8i
+// era byte strings this used to append are gone, along with the bare TTC_OK
+// they ended in - #9147 has the whole 470 byte answer decoded field by field.
 bool sqlrprotocol_oracle::sendQuery3Response(sqlrservercursor *cursor,
-							uint16_t options) {
+						uint32_t options,
+						uint32_t cursorid,
+						uint32_t prefetchrows) {
 
 	resetSendPacketBuffer(PACKET_DATA);
 
@@ -5502,133 +5832,472 @@ bool sqlrprotocol_oracle::sendQuery3Response(sqlrservercursor *cursor,
 	cacheColumnDefinitions(cursor,colcount);
 
 	uint16_t	dataflags=0;
-	byte_t		ttccode;
+	writeBE(&reqpacket,dataflags);
 
-	bool	putfooter=true;
+	uint32_t	rowsfetched=0;
+	bool		endofrows=false;
 
 	if (colcount) {
 
+		// the describe, which the client needs before it can make
+		// sense of a row
 		if (options&OPTION_PARSE) {
-
-			dataflags=0;
-			// FIXME: not a valid ttccode type...
-			ttccode=16;
-
-			writeBE(&reqpacket,dataflags);
-			write(&reqpacket,ttccode);
-
-			putColumnDefinitions(cursor,colcount,true);
-
-			putIov();
-
-			const byte_t	unknown3[]={
-				0x06, 0x02, 0x8C
-			};
-			reqpacket.append(unknown3,sizeof(unknown3));
-
-			// column count
-			write(&reqpacket,(byte_t)colcount);
-
-			// no idea
-			writeBE(&reqpacket,(uint32_t)1);
-			writeBE(&reqpacket,(uint32_t)7);
+			putDescribeInfo(cursor,colcount);
 		}
 
-		if (options&OPTION_FETCH) {
+		// The rows.  A modern client doesn't set OPTION_FETCH on the
+		// first execute of a query - it asks the server to prefetch,
+		// through the row count in the request, and a real server
+		// sends rows for that whether OPTION_FETCH is set or not.
+		// Gating on OPTION_FETCH is why no row ever came back even
+		// once the request parsed.
+		uint32_t	rowstofetch=prefetchrows;
+		if (!rowstofetch && (options&OPTION_FETCH)) {
+			rowstofetch=1;
+		}
 
-			// FIXME: get this from the client somehow
-			uint32_t rowstofetch=1;
+		if (rowstofetch) {
 
-			// for each row...
-			uint32_t rowsfetched=0;
-			do {
+			putRowHeader(0x22,colcount,rowstofetch);
 
-				// fetch a row
-				bool	error;
+			while (rowsfetched<rowstofetch) {
+
+				bool	error=false;
 				if (!cont->fetchRow(cursor,&error)) {
 					if (error) {
 						// FIXME: handle error
 					}
+					endofrows=true;
 					break;
 				}
 
 				debugStart("query3 response row");
-
-				putRow(cursor,colcount,true);
-
+				putRowData(cursor,colcount);
 				debugEnd();
 
 				// FIXME: kludgy
 				cont->nextRow(cursor);
 
 				rowsfetched++;
-
-			} while (rowsfetched<rowstofetch);
-
-			if (!rowsfetched) {
-
-				// if we hit the end of the result set then we
-				// need to send ORA-01403; no data found
-				putError("ORA-01403: no data found");
-				putfooter=false;
 			}
 		}
 	}
 
-	if (putfooter) {
+	putReturnParameters();
 
-		dataflags=0;
-		ttccode=TTC_OK;
+	rowssent[cont->getId(cursor)]+=rowsfetched;
 
-		writeBE(&reqpacket,dataflags);
-		write(&reqpacket,ttccode);
+	// A prefetch that ran out of rows ends in ORA-01403, which the client
+	// reads as "no more rows" rather than as a failure.  A query that
+	// filled the prefetch ends with no error, and the client asks for
+	// more.
+	if (endofrows) {
+		putSummary(cursorid,ORA_NO_DATA_FOUND,
+					rowssent[cont->getId(cursor)],
+					ORA_NO_DATA_FOUND_MESSAGE);
+	} else {
+		putSummary(cursorid,0,rowssent[cont->getId(cursor)],NULL);
+	}
 
-		const byte_t	unknown1[]={
-			0x04, 0x00, 0x01, 0x5D, 0x16,
-			0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00,
-			0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-			0x00, 0x04, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00,
-			0x00, 0x00, 0x00, 0x00, 0x01, 0x00,
-
-			// varies
-			0x00,
-
-			0x00
-		};
-		reqpacket.append(unknown1,sizeof(unknown1));
-
-		// ???
-		write(&reqpacket,(byte_t)((colcount)?3:47));
-
-		const byte_t	unknown2[]={
-			0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-			0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-			0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-			0x00, 0x00, 0x00,
-
-			// varies (sequence?)
-			0x1A,
-
-			0x00, 0x00, 0x01, 0x00, 0x00, 0x00
-		};
-		reqpacket.append(unknown2,sizeof(unknown2));
-
-		if (!colcount) {
-			const byte_t	unknown3[]={
-				0x00, 0x00, 0x00, 0x00, 0x00, 0x00
-			};
-			reqpacket.append(unknown3,sizeof(unknown3));
-		}
-
-		if (getDebug()) {
-			debugStart("query3 response (footer)");
-			debugWrite("data flags: 0x%04x",dataflags);
-			debugTtcCode(ttccode);
-			debugEnd();
-		}
+	if (getDebug()) {
+		debugStart("query3 response");
+		debugWrite("data flags: 0x%04x",dataflags);
+		debugWrite("column count: %d",colcount);
+		debugWrite("rows: %d",rowsfetched);
+		debugWrite("end of rows: %s",(endofrows)?"true":"false");
+		debugEnd();
 	}
 
 	return sendPacket(true);
+}
+
+void sqlrprotocol_oracle::putDescribeInfo(sqlrservercursor *cursor,
+						uint32_t colcount) {
+
+	write(&reqpacket,(byte_t)TTC_DESCRIBE_INFO);
+
+	// A block the client skips whole.  A live server puts 16 bytes of
+	// query hash and a 7 byte date in it; the module has no hash to
+	// report and the client never looks, so the hash is zeros.
+	byte_t	prologue[23];
+	bytestring::zero(prologue,sizeof(prologue));
+	putOracleDate(prologue+16);
+	putLenBytes((const char *)prologue,sizeof(prologue));
+
+	uint32_t	maxrowsize=0;
+	for (uint32_t i=0; i<colcount; i++) {
+		maxrowsize+=getWireColumnSize(cursor,i,
+			getWireColumnType(columntypes[cont->getId(cursor)][i]));
+	}
+
+	putUb4(maxrowsize);
+	putUb4(colcount);
+	if (colcount) {
+		write(&reqpacket,(byte_t)0x51);
+	}
+
+	debugStart("describe info");
+	debugWrite("max row size: %d",maxrowsize);
+	debugWrite("column count: %d",colcount);
+
+	for (uint32_t i=0; i<colcount; i++) {
+		putColumnMetadata(cursor,i);
+	}
+
+	debugEnd();
+
+	byte_t	date[7];
+	putOracleDate(date);
+	putBytesWithLength((const char *)date,sizeof(date));
+
+	putUb4(0);
+	putUb4(DCB_MAX_DATA_BLOCK_SIZE);
+	putUb4(DCB_MIN_PREFETCH);
+	putUb4(DCB_MAX_PREFETCH);
+	putUb4(0);
+}
+
+void sqlrprotocol_oracle::putColumnMetadata(sqlrservercursor *cursor,
+						uint32_t column) {
+
+	uint16_t	curid=cont->getId(cursor);
+	const char	*columntypestring=
+				cont->getColumnTypeName(cursor,column);
+	uint16_t	wiretype=getWireColumnType(columntypes[curid][column]);
+	uint32_t	size=getWireColumnSize(cursor,column,wiretype);
+
+	bool	character=(wiretype!=ORACLE_TYPE_NUMBER);
+
+	const char	*name=cont->getColumnName(cursor,column);
+	uint32_t	namesize=cont->getColumnNameSize(cursor,column);
+
+	write(&reqpacket,(byte_t)wiretype);
+	write(&reqpacket,(byte_t)((character)?0x80:0x00));
+	putUb4(0);
+
+	// A real server reports scale -127 for a number with no declared
+	// scale, which tells the client to take the value as it comes rather
+	// than rescale it.
+	if (character) {
+		putUb4(0);
+	} else {
+		putSb4(-127);
+	}
+
+	// A buffer size of 0 means "this column is null by describe", so it
+	// can never be sent as 0 for a column that has values.
+	putUb4(size);
+
+	putUb4(0);
+	putUb4(0);
+	putUb4(0);
+	putUb4(0);
+	putUb4((character)?charset:0);
+	write(&reqpacket,(byte_t)((character)?1:0));
+	putUb4((character)?size:0);
+	write(&reqpacket,(byte_t)1);
+	write(&reqpacket,(byte_t)namesize);
+	putBytesWithLength(name,namesize);
+	putUb4(0);
+	putUb4(0);
+	putUb4(column);
+	putUb4(0);
+
+	debugStart("column %d",column);
+	debugColumnType(columntypestring,wiretype);
+	debugWrite("size: %d",size);
+	debugWrite("name: %.*s",(int)namesize,name);
+	debugEnd();
+}
+
+// Only the types the module can encode are described as themselves.
+// Everything else is described as a varchar2 and sent as the text the back
+// end handed over, which at least stays in step - a column described as a
+// date and then sent as text desyncs the client for the rest of the result
+// set.
+uint16_t sqlrprotocol_oracle::getWireColumnType(uint16_t columntype) {
+	switch (columntype) {
+		case ORACLE_TYPE_NUMBER:
+		case ORACLE_TYPE_VARNUM:
+			return ORACLE_TYPE_NUMBER;
+		case ORACLE_TYPE_CHAR:
+		case ORACLE_TYPE_FIXED_CHAR:
+			return ORACLE_TYPE_CHAR;
+		default:
+			return ORACLE_TYPE_VARCHAR;
+	}
+}
+
+uint32_t sqlrprotocol_oracle::getWireColumnSize(sqlrservercursor *cursor,
+						uint32_t column,
+						uint16_t wiretype) {
+
+	if (wiretype==ORACLE_TYPE_NUMBER) {
+		return MAX_NUMBER_SIZE;
+	}
+
+	uint32_t	size=cont->getColumnSize(cursor,column);
+	if (!size || size>MAX_VARCHAR_SIZE) {
+		size=MAX_VARCHAR_SIZE;
+	}
+	return size;
+}
+
+// flags is 0x22 in the answer to an execute and 0x02 in the answer to a
+// fetch, which is what a live 11.2 server sends in each.
+void sqlrprotocol_oracle::putRowHeader(byte_t flags,
+						uint32_t colcount,
+						uint32_t prefetchrows) {
+
+	write(&reqpacket,(byte_t)TTC_ROW_HEADER);
+
+	write(&reqpacket,flags);
+	putUb4(colcount);
+	putUb4(0);
+	putUb4(prefetchrows);
+	putUb4(0);
+
+	// No bit vector.  A real server sends one to say which columns
+	// repeat the previous row's value; without one every column is sent
+	// in full, which is what the module does.
+	putUb4(0);
+
+	putUb4(0);
+}
+
+void sqlrprotocol_oracle::putRowData(sqlrservercursor *cursor,
+						uint32_t colcount) {
+
+	write(&reqpacket,(byte_t)TTC_ROW_DATA);
+
+	uint16_t	*ct=columntypes[cont->getId(cursor)];
+
+	for (uint32_t i=0; i<colcount; i++) {
+
+		const char	*field=NULL;
+		uint64_t	fieldsize=0;
+		bool		lob=false;
+		bool		null=false;
+		if (!cont->getField(cursor,i,&field,&fieldsize,&lob,&null)) {
+			null=true;
+		}
+
+		debugStart("col %d",i);
+
+		// FIXME: lobs are sent as null
+		if (null || lob || !field) {
+			debugWrite("null");
+			write(&reqpacket,(byte_t)0);
+		} else if (getWireColumnType(ct[i])==ORACLE_TYPE_NUMBER) {
+			debugWrite("number: %.*s",(int)fieldsize,field);
+			putNumberField(field,(uint32_t)fieldsize);
+		} else {
+			debugWrite("\"%.*s\"",(int)fieldsize,field);
+			putLenBytes(field,(uint32_t)fieldsize);
+		}
+
+		debugEnd();
+	}
+}
+
+// The block a real server sends between the rows and the summary.  Nothing
+// in it is load bearing: a live 11.2 server puts 19 session state key/value
+// pairs here and a live 12.2 server puts none, for the same query.
+void sqlrprotocol_oracle::putReturnParameters() {
+
+	write(&reqpacket,(byte_t)TTC_OK);
+
+	putUb4(AL8O4_COUNT);
+	for (uint16_t i=0; i<AL8O4_COUNT; i++) {
+		putUb4(0);
+	}
+
+	putUb4(0);
+	putUb4(0);
+	putUb4(0);
+}
+
+// The summary object that ends every answer.  It's the same field sequence
+// sendAuthenticationError() emits - which was captured whole from a live 11.2
+// server - written out one field at a time.  The end of call status and the
+// ecid sequence at the front are the two fields CCAP_TTC1 and CCAP_OCI1 bit
+// 0x01 promise, and #9134 is why the module has to send them.
+//
+// A 12.2 server repeats the error number as a ub4 and adds a ub8 row count
+// just before the message.  The module answers CCAP_FIELD_VERSION_11_2, so it
+// sends the 11.2 shape, which stops at the message.
+void sqlrprotocol_oracle::putSummary(uint32_t cursorid,
+						uint32_t oranum,
+						uint32_t rowcount,
+						const char *message) {
+
+	write(&reqpacket,(byte_t)TTC_ERROR);
+
+	putUb4(1);
+	putUb4(0);
+	putUb4(rowcount);
+	putUb4(oranum);
+	putUb4(0);
+	putUb4(0);
+	putUb4(cursorid);
+	putUb4(0);
+	write(&reqpacket,(byte_t)3);
+	write(&reqpacket,(byte_t)0);
+	write(&reqpacket,(byte_t)0);
+	write(&reqpacket,(byte_t)0);
+	write(&reqpacket,(byte_t)0);
+	write(&reqpacket,(byte_t)0);
+
+	// rowid: a ub4, a ub2, one raw byte, a ub4 and a ub2
+	putUb4(0);
+	putUb4(0);
+	write(&reqpacket,(byte_t)0);
+	putUb4(0);
+	putUb4(0);
+
+	putUb4(0);
+	write(&reqpacket,(byte_t)0);
+
+	// The call number.  It has to be the sequence number of the request
+	// being answered - a client matches the answer to the call it made
+	// with it.  A constant here is what made ojdbc 23.26 throw an
+	// SQLException with no message at its first fetch: the execute
+	// happened to carry the same number, so only the fetches broke.
+	write(&reqpacket,callnumber);
+
+	putUb4(0);
+
+	// success iterations, which is one execution rather than one row -
+	// a live server sends 1 for a fetch of 10 rows and for a fetch of
+	// none
+	putUb4(1);
+
+	putUb4(0);
+	putUb4(0);
+	putUb4(0);
+	putUb4(0);
+
+	if (oranum) {
+		putLenBytes(message,charstring::getLength(message));
+	}
+
+	debugStart("summary");
+	debugWrite("cursor id: %d",cursorid);
+	debugWrite("call number: %d",callnumber);
+	debugWrite("row count: %d",rowcount);
+	debugWrite("error: %d",oranum);
+	if (oranum) {
+		debugWrite("message: %s",message);
+	}
+	debugEnd();
+}
+
+// Oracle's number format: an exponent byte, then up to 20 base 100 mantissa
+// digits.  A positive number's exponent byte is 193+e and its digits are each
+// digit+1.  A negative number's is 62-e, its digits are each 101-digit, and a
+// 0x66 terminator follows unless the mantissa already fills 20 bytes.  Zero is
+// a single 0x80.  e is the base 100 exponent of the leading digit.
+//
+// Checked against a live 11.2 server, which answers 1 with c1 02, -7 with
+// 3e 5e 66 and 12345.678 with c3 02 18 2e 44 51.
+void sqlrprotocol_oracle::putNumberField(const char *field,
+						uint32_t fieldsize) {
+
+	// the sign, the digits, and how many of them are in front of the
+	// decimal point once any exponent has been applied
+	bool		negative=false;
+	byte_t		digits[MAX_NUMBER_DIGITS];
+	uint16_t	digitcount=0;
+	int32_t		point=0;
+	bool		afterpoint=false;
+	bool		inexponent=false;
+	bool		exponentnegative=false;
+	int32_t		exponent=0;
+
+	for (uint32_t i=0; i<fieldsize; i++) {
+		char	c=field[i];
+		if (inexponent) {
+			if (c=='-') {
+				exponentnegative=true;
+			} else if (c>='0' && c<='9') {
+				exponent=exponent*10+(c-'0');
+			}
+		} else if (c=='-') {
+			negative=true;
+		} else if (c=='.') {
+			afterpoint=true;
+		} else if (c=='e' || c=='E') {
+			inexponent=true;
+		} else if (c>='0' && c<='9') {
+			if (digitcount<MAX_NUMBER_DIGITS) {
+				digits[digitcount++]=(byte_t)(c-'0');
+			}
+			if (!afterpoint) {
+				point++;
+			}
+		}
+	}
+	point+=(exponentnegative)?-exponent:exponent;
+
+	// leading zeros move the point rather than the value, trailing ones
+	// aren't sent at all
+	uint16_t	first=0;
+	while (first<digitcount && !digits[first]) {
+		first++;
+		point--;
+	}
+	while (digitcount>first && !digits[digitcount-1]) {
+		digitcount--;
+	}
+
+	if (first==digitcount) {
+		write(&reqpacket,(byte_t)1);
+		write(&reqpacket,(byte_t)0x80);
+		return;
+	}
+
+	// The base 100 digits straddle the decimal point, so the count of
+	// digits in front of it has to be even, and the whole run has to be
+	// an even length.
+	byte_t		padded[MAX_NUMBER_DIGITS+2];
+	uint16_t	paddedcount=0;
+	if (point%2) {
+		padded[paddedcount++]=0;
+		point++;
+	}
+	for (uint16_t i=first; i<digitcount; i++) {
+		padded[paddedcount++]=digits[i];
+	}
+	if (paddedcount%2) {
+		padded[paddedcount++]=0;
+	}
+
+	int32_t	e=point/2-1;
+	if (e<MIN_NUMBER_EXPONENT || e>MAX_NUMBER_EXPONENT) {
+		debugWrite("number out of range: %.*s",(int)fieldsize,field);
+		write(&reqpacket,(byte_t)1);
+		write(&reqpacket,(byte_t)0x80);
+		return;
+	}
+
+	byte_t		out[MAX_NUMBER_SIZE];
+	uint16_t	outcount=0;
+	uint16_t	mantissacount=0;
+
+	out[outcount++]=(byte_t)((negative)?62-e:193+e);
+
+	for (uint16_t i=0; i<paddedcount && mantissacount<MAX_NUMBER_MANTISSA;
+								i+=2) {
+		byte_t	d=(byte_t)(padded[i]*10+padded[i+1]);
+		out[outcount++]=(byte_t)((negative)?101-d:d+1);
+		mantissacount++;
+	}
+
+	if (negative && mantissacount<MAX_NUMBER_MANTISSA) {
+		out[outcount++]=0x66;
+	}
+
+	putLenBytes((const char *)out,outcount);
 }
 
 bool sqlrprotocol_oracle::execute(const byte_t *rp) {
@@ -5701,11 +6370,132 @@ bool sqlrprotocol_oracle::sendExecuteResponse(sqlrservercursor *cursor) {
 	return sendPacket(true);
 }
 
+// A 10g-or-later client's fetch request is much smaller than its execute: a
+// sequence number, the cursor id and how many rows it wants, all ub4s.  It
+// asks for one whenever a result set outruns the prefetch it asked for in the
+// execute, so a select of more rows than that never worked before.
+bool sqlrprotocol_oracle::fetch3(const byte_t *rp) {
+
+	const byte_t	*end=resppacket+resppacketsize;
+
+	byte_t		sequence=0;
+	uint32_t	cursorid=0;
+	uint32_t	rowstofetch=0;
+
+	if (!getPointer(rp,end,&sequence,&rp) ||
+		!getUb4(rp,end,&cursorid,&rp) ||
+		!getUb4(rp,end,&rowstofetch,&rp)) {
+		debugWrite("truncated fetch request");
+		return false;
+	}
+
+	// the summary object has to echo this back
+	callnumber=sequence;
+
+	if (getDebug()) {
+		debugStart("fetch request");
+		debugWrite("sequence: %d",sequence);
+		debugWrite("cursor id: %d",cursorid);
+		debugWrite("rows to fetch: %d",rowstofetch);
+		debugEnd();
+	}
+
+	if (!cursorid) {
+		debugWrite("no cursor id");
+		return sendCursorNotOpenError();
+	}
+
+	sqlrservercursor	*cursor=cont->getCursor((uint16_t)(cursorid-1));
+	if (!cursor) {
+		debugWrite("cursor id %d not found",cursorid);
+		return sendCursorNotOpenError();
+	}
+
+	return sendFetch3Response(cursor,cursorid,rowstofetch);
+}
+
+// A real server answers a fetch with the same three parts as an execute,
+// minus the describe and the return parameters: a row header, the rows, and a
+// summary object which carries ORA-01403 once the rows run out.
+bool sqlrprotocol_oracle::sendFetch3Response(sqlrservercursor *cursor,
+						uint32_t cursorid,
+						uint32_t rowstofetch) {
+
+	resetSendPacketBuffer(PACKET_DATA);
+
+	uint32_t	colcount=cont->colCount(cursor);
+
+	uint16_t	dataflags=0;
+	writeBE(&reqpacket,dataflags);
+
+	uint32_t	rowsfetched=0;
+	bool		endofrows=true;
+
+	if (colcount && rowstofetch) {
+
+		endofrows=false;
+
+		while (rowsfetched<rowstofetch) {
+
+			bool	error=false;
+			if (!cont->fetchRow(cursor,&error)) {
+				if (error) {
+					// FIXME: handle error
+				}
+				endofrows=true;
+				break;
+			}
+
+			// A fetch that has no rows left is answered with the
+			// summary object alone - a real server sends no row
+			// header at all in that case, and the header is only
+			// written once the first row is in hand for that
+			// reason.
+			if (!rowsfetched) {
+				putRowHeader(0x02,colcount,rowstofetch);
+			}
+
+			debugStart("fetch response row");
+			putRowData(cursor,colcount);
+			debugEnd();
+
+			// FIXME: kludgy
+			cont->nextRow(cursor);
+
+			rowsfetched++;
+		}
+	}
+
+	rowssent[cont->getId(cursor)]+=rowsfetched;
+
+	if (endofrows) {
+		putSummary(cursorid,ORA_NO_DATA_FOUND,
+					rowssent[cont->getId(cursor)],
+					ORA_NO_DATA_FOUND_MESSAGE);
+	} else {
+		putSummary(cursorid,0,rowssent[cont->getId(cursor)],NULL);
+	}
+
+	if (getDebug()) {
+		debugStart("fetch response");
+		debugWrite("data flags: 0x%04x",dataflags);
+		debugWrite("rows: %d",rowsfetched);
+		debugWrite("end of rows: %s",(endofrows)?"true":"false");
+		debugEnd();
+	}
+
+	return sendPacket(true);
+}
+
 bool sqlrprotocol_oracle::fetch(const byte_t *rp) {
 
 	// all versions call this to fetch
 
 	// fetches the specified number of rows
+
+	if (query3session) {
+		return fetch3(rp);
+	}
 
 	// parse the request...
 	uint16_t	options;
@@ -6706,6 +7496,18 @@ bool sqlrprotocol_oracle::sendLogonUnknownResponse() {
 }
 
 
+// #9134 left this as the one footer it couldn't check, on the grounds that
+// nothing had ever reached the query path.  Something has now, and the answer
+// is that this is not on it: a 10g-or-later client's query goes through
+// query3() and fetch3(), which build a summary object field by field, and
+// none of the three functions that append this - sendQueryResponse(),
+// sendQuery2Response() and sendFetchResponse() - is reachable from one.  So
+// CCAP_TTC1 and CCAP_OCI1 bit 0x01 do not apply to it either way.  The two
+// fields those bits promise live at the front of a summary object, and this
+// is not a summary object - it parses as no field sequence any client reads,
+// and two of its bytes look like an 8i server's pointers.  It stays as it is,
+// for the 8.0.5 and 8i paths, which have no client on this host to check it
+// against.
 void sqlrprotocol_oracle::putGenericFooter() {
 
 	// no idea...

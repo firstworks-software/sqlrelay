@@ -1457,6 +1457,27 @@
 		statement to have results pending unless mars is on, so any
 		instance running more than one cursor at a time against it
 		wants mars=yes
+	fixed the oracle protocol module's query3 request parse - the sequence
+		number after the tti function code was never consumed, the
+		options word was read as two big endian shorts rather than
+		one ub4, and the query size was read as a little endian int
+		at a guessed offset, so a modern client's query size came out
+		as -252 and no query ran at all
+	rewrote the oracle protocol module's query3 and fetch responses - a
+		describe, a row header, the rows, a return parameters block
+		and a summary object, built field by field in the shape a
+		live oracle 11.2 server sends, in place of the 8i era byte
+		strings and the bare ok footer that a modern client can't
+		parse, with rows sent for the prefetch count the request asks
+		for rather than only when the fetch option is set, a fetch
+		request parser so a result set bigger than one prefetch
+		works, and an oracle number encoder so a numeric column can
+		be returned at all
+	changed the oracle protocol module's AUTH_VERSION_NO from 8.0.5 to
+		11.2.0.1.0, which is what its capability array, data type
+		table and field version already answer as - ojdbc picks its
+		result set reader from that number, and told 8.0.5 it read an
+		11.2 shaped describe with an 8.0 era reader
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems
