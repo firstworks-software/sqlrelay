@@ -644,7 +644,12 @@ static byte_t	tdstypemap[]={
 #define SP_PREPARE		11 
 #define SP_EXECUTE		12 
 #define SP_PREP_EXEC		13 
-#define SP_PREP_EXEC_RPC	14 
+#define SP_PREP_EXEC_RPC	14
+
+// the widest a decimal or numeric can be on the wire - 1 sign byte plus up
+// to 16 bytes of magnitude.  typeInfo() declares it and paramValue() has to
+// accept exactly it, so they share the constant rather than two literals.
+#define TDS_DECIMAL_MAX_SIZE	17 
 #define SP_UNPREPARE		15 
 
 #define SP_MAX_PROCID		15
@@ -3884,7 +3889,7 @@ void sqlrprotocol_tds::typeInfo(sqlrservercursor *cursor,
 				// 16 bytes of magnitude - rather than the
 				// precision, and real servers just send the
 				// max, whatever the precision is
-				size=17;
+				size=TDS_DECIMAL_MAX_SIZE;
 				write(&resppacket,(byte_t)size);
 				debugWrite("size: %d (8-bit)",size);
 				break;
@@ -9100,11 +9105,27 @@ bool sqlrprotocol_tds::paramValue(uint16_t param,
 		case TDS_TYPE_NUMERICN:
 			{
 			byte_t	ispositive;
-			byte_t	val[16];
+			byte_t	val[TDS_DECIMAL_MAX_SIZE-1];
 			if (tdstype==TDS_TYPE_DECIMALN ||
 				tdstype==TDS_TYPE_NUMERICN) {
 				byte_t	size;
 				read(rp,&size,&rp);
+				// A length of 0 is how the protocol says
+				// null, so it isn't an error - but size-1
+				// below would be -1, and the size_t it
+				// converts to is enormous.
+				if (!size) {
+					debugWrite("value: (null)");
+					break;
+				}
+				// Without this, a size the client chose
+				// writes up to 254 bytes over a 16 byte
+				// stack array - and over the saved registers
+				// and return address behind it.
+				if (size>sizeof(val)+1) {
+					debugWrite("invalid size: %d",size);
+					return false;
+				}
 				read(rp,&ispositive,&rp);
 				read(rp,val,size-1,&rp);
 			} else {

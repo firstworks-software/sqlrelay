@@ -1483,6 +1483,15 @@
 		start, so it closed a block it never opened and everything
 		after it, including the whole ano response, was indented one
 		level too far left
+	fixed the tds protocol module - a decimal or numeric rpc parameter
+		carried a one byte length that nothing checked, and the
+		value was read into a 16 byte array on the stack, so a
+		client could write up to 254 bytes of its own choosing over
+		that array and over the saved registers and return address
+		behind it - a length of 0 was worse still, because the
+		length minus one became -1 and then a copy of the whole
+		address space - the length is bounded now, and 0 is read as
+		the null the protocol says it is
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems
