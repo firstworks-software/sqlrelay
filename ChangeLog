@@ -1430,6 +1430,27 @@
 		only, and binds binary only when the driver says binary, so
 		a parameter the driver can't describe keeps the character
 		bind it has always had
+	fixed the odbc connection module - smalldatetime, money and smallmoney
+		were reported as datetime and decimal, because sql server
+		reports each pair the same way and only the type name tells
+		them apart - they're distinguished by name now, the way
+		datetime2 already was
+	fixed the tds protocol module - it described smalldatetime, real,
+		money, smallmoney and uniqueidentifier columns wrongly on an
+		ordinary select: the narrow types got the wide type's width
+		because the only thing separating them is the column's type
+		and the module was going by the column's size, which is a
+		digit count on some back ends and a printed width on others -
+		money and smallmoney also carried a precision and scale that
+		a real server doesn't send, and a uniqueidentifier was
+		described as 36 bytes, the width of its printed form, rather
+		than the 16 it actually occupies
+	fixed the tds protocol module - it wrote a money value by removing the
+		decimal point and multiplying by a fixed 100, which is only
+		right when the back end renders exactly two decimal places -
+		mssql renders four, so the value went out a hundred times too
+		large - the fraction is padded or truncated to the four
+		places the protocol wants now, whatever the back end sent
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems

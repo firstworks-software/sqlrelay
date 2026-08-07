@@ -5467,6 +5467,19 @@ uint16_t odbccursor::getColumnType(uint32_t i) {
 		case SQL_WLONGVARCHAR:
 			return NTEXT_DATATYPE;
 		case SQL_DECIMAL:
+			// MS SQL Server reports money, smallmoney and
+			// decimal the same way here, so go by the type name.
+			// They aren't decimals - they're fixed scale-4 types
+			// with their own wire format, and a client that
+			// describes the column can tell.
+			if (!charstring::compareIgnoringCase(
+					column[i].dbtypename,"money")) {
+				return MONEY_DATATYPE;
+			}
+			if (!charstring::compareIgnoringCase(
+					column[i].dbtypename,"smallmoney")) {
+				return SMALLMONEY_DATATYPE;
+			}
 			return DECIMAL_DATATYPE;
 		case SQL_NUMERIC:
 			return NUMERIC_DATATYPE;
@@ -5490,6 +5503,12 @@ uint16_t odbccursor::getColumnType(uint32_t i) {
 			if (!charstring::compareIgnoringCase(
 					column[i].dbtypename,"datetime2")) {
 				return TIMESTAMP_DATATYPE;
+			}
+			// and smalldatetime the same way - it's half the
+			// width of a datetime on the wire
+			if (!charstring::compareIgnoringCase(
+					column[i].dbtypename,"smalldatetime")) {
+				return SMALLDATETIME_DATATYPE;
 			}
 			// FIXME: need parameter indicating whether
 			// to map this to date or datetime.  MySQL, for example,

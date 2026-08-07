@@ -9,6 +9,8 @@
 #include <rudiments/datetime.h>
 #include <rudiments/error.h>
 
+#include <datatypes.h>
+
 
 // TDS protocol definitions
 
@@ -948,6 +950,7 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_tds : public sqlrprotocol {
 					byte_t tdstype);
 		void	typeInfo(sqlrservercursor *cursor,
 					uint16_t col,
+					uint16_t coltype,
 					byte_t tdstype);
 		void	tableName(byte_t tdstype);
 		void	cryptoMetaData();
@@ -962,7 +965,10 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_tds : public sqlrprotocol {
 		// size means for those types.  FreeTDS reports the storage
 		// width in bytes, but ODBC reports SQL_DESC_LENGTH, which is
 		// a digit count.
-		byte_t	nTypeSize(byte_t tdstype, uint32_t colsize);
+		byte_t	nTypeSize(uint16_t coltype,
+					byte_t tdstype,
+					uint32_t colsize);
+		int64_t	moneyValue(const char *field);
 		uint64_t	rows(sqlrservercursor *cursor);
 		// "position" is where sp_cursor gets the row values that
 		// a positioned update matches on, so only sp_cursorfetch
@@ -971,7 +977,8 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_tds : public sqlrprotocol {
 					uint64_t maxrows,
 					tdsrows *position=NULL);
 		void	lobData(byte_t tdstype);
-		void	field(byte_t tdstype,
+		void	field(uint16_t coltype,
+					byte_t tdstype,
 					uint32_t colsize,
 					uint32_t colscale,
 					const char *field,
@@ -3675,11 +3682,12 @@ void sqlrprotocol_tds::colData(sqlrservercursor *cursor, uint16_t col) {
 
 	debugStart("col %d",col);
 
-	byte_t	tdstype=mapType(cont->getColumnType(cursor,col));
+	uint16_t	coltype=cont->getColumnType(cursor,col);
+	byte_t		tdstype=mapType(coltype);
 
 	userType(tdstype);
 	colFlags(cursor,col,tdstype);
-	typeInfo(cursor,col,tdstype);
+	typeInfo(cursor,col,coltype,tdstype);
 	tableName(tdstype);
 	cryptoMetaData();
 	colName(cursor,col);
@@ -3769,6 +3777,7 @@ void sqlrprotocol_tds::colFlags(sqlrservercursor *cursor,
 
 void sqlrprotocol_tds::typeInfo(sqlrservercursor *cursor,
 						uint16_t col,
+						uint16_t coltype,
 						byte_t tdstype) {
 
 	write(&resppacket,tdstype);
@@ -3834,6 +3843,15 @@ void sqlrprotocol_tds::typeInfo(sqlrservercursor *cursor,
 				writeLE(&resppacket,(uint16_t)size);
 				debugWrite("size: %d (16-bit)",size);
 				break;
+			case TDS_TYPE_GUID:
+				// a guid is always 16 bytes on the wire.
+				// The back end reports the width of its
+				// printed form, 36, which is a different
+				// thing - and the row writer below already
+				// writes 16.
+				write(&resppacket,(byte_t)16);
+				debugWrite("size: 16 (8-bit)");
+				break;
 			case TDS_TYPE_DATEN:
 				// don't actually send a size for this type
 				break;
@@ -3849,7 +3867,7 @@ void sqlrprotocol_tds::typeInfo(sqlrservercursor *cursor,
 			case TDS_TYPE_MONEYN:
 			case TDS_TYPE_DATETIMN:
 				// these only allow certain sizes
-				size=nTypeSize(tdstype,size);
+				size=nTypeSize(coltype,tdstype,size);
 				write(&resppacket,(byte_t)size);
 				debugWrite("size: %d (8-bit)",size);
 				break;
@@ -4103,7 +4121,52 @@ bool sqlrprotocol_tds::isPartLenType(byte_t tdstype) {
 	}
 }
 
-byte_t sqlrprotocol_tds::nTypeSize(byte_t tdstype, uint32_t colsize) {
+// TDS carries money as the value times 10^4, in a signed integer.  The back
+// end renders it as a decimal string, but with as many places as it likes -
+// mssql through odbc gives four, others give two - so the fraction has to be
+// padded or truncated rather than assumed.  Scaling a digit-stripped string
+// by a fixed factor, which is what this used to do, is only right for one of
+// those renderings and is out by a factor of 100 for the other.
+int64_t sqlrprotocol_tds::moneyValue(const char *field) {
+
+	if (charstring::isNullOrEmpty(field)) {
+		return 0;
+	}
+
+	const char	*ch=field;
+	bool		negative=false;
+	if (*ch=='-') {
+		negative=true;
+		ch++;
+	} else if (*ch=='+') {
+		ch++;
+	}
+
+	int64_t	value=0;
+	for (; character::isDigit(*ch); ch++) {
+		value=value*10+(*ch-'0');
+	}
+
+	// exactly four fractional digits, however many the back end sent
+	uint16_t	places=0;
+	if (*ch=='.') {
+		ch++;
+		for (; character::isDigit(*ch) && places<4; ch++) {
+			value=value*10+(*ch-'0');
+			places++;
+		}
+	}
+	while (places<4) {
+		value=value*10;
+		places++;
+	}
+
+	return (negative)?-value:value;
+}
+
+byte_t sqlrprotocol_tds::nTypeSize(uint16_t coltype,
+					byte_t tdstype,
+					uint32_t colsize) {
 
 	switch (tdstype) {
 		case TDS_TYPE_BITN:
@@ -4126,8 +4189,26 @@ byte_t sqlrprotocol_tds::nTypeSize(byte_t tdstype, uint32_t colsize) {
 		case TDS_TYPE_FLTN:
 		case TDS_TYPE_MONEYN:
 		case TDS_TYPE_DATETIMN:
-			// only 4 and 8 are valid, and column size is
-			// sometimes reported as 0
+			// Only 4 and 8 are valid.  Each of these three
+			// covers a narrow type and a wide one, and the
+			// column type is the only thing that says which -
+			// the column size can't, because a back end that
+			// reports a digit count rather than a storage width
+			// gives 24 for a real and 19 for a money.
+			switch (coltype) {
+				case SMALLDATETIME_DATATYPE:
+				case REAL_DATATYPE:
+				case SMALLMONEY_DATATYPE:
+					return 4;
+				case DATETIME_DATATYPE:
+				case FLOAT_DATATYPE:
+				case DOUBLE_DATATYPE:
+				case MONEY_DATATYPE:
+					return 8;
+			}
+			// fall back on the storage width for a back end
+			// that does report one, and for the types this
+			// doesn't cover
 			return (colsize==4)?4:8;
 	}
 	return (byte_t)colsize;
@@ -4183,8 +4264,9 @@ uint64_t sqlrprotocol_tds::rows(sqlrservercursor *cursor, uint64_t maxrows,
 
 			// get/map the column type
 			// FIXME: cache this earlier and just look it up here
-			byte_t	tdstype=
-				mapType(cont->getColumnType(cursor,col));
+			uint16_t	coltype=
+					cont->getColumnType(cursor,col);
+			byte_t		tdstype=mapType(coltype);
 
 			debugStart("col %d",col);
 			debugWrite("tdstype: 0x%02x",tdstype);
@@ -4202,7 +4284,7 @@ uint64_t sqlrprotocol_tds::rows(sqlrservercursor *cursor, uint64_t maxrows,
 			}
 
 			// send the field
-			field(tdstype,
+			field(coltype,tdstype,
 				// FIXME: cache these earlier and
 				// just look them up here
 				cont->getColumnSize(cursor,col),
@@ -4257,7 +4339,8 @@ void sqlrprotocol_tds::lobData(byte_t tdstype) {
 	debugWrite("ts: %s",ts);
 }
 
-void sqlrprotocol_tds::field(byte_t tdstype,
+void sqlrprotocol_tds::field(uint16_t coltype,
+				byte_t tdstype,
 				uint32_t colsize,
 				uint32_t colscale,
 				const char *field,
@@ -4322,7 +4405,8 @@ void sqlrprotocol_tds::field(byte_t tdstype,
 	switch (tdstype) {
 		case TDS_TYPE_INTN:
 			{
-			byte_t	size=nTypeSize(tdstype,colsize);
+			byte_t	size=nTypeSize(coltype,tdstype,
+								colsize);
 			write(&resppacket,size);
 			switch (size) {
 				case 1:
@@ -4346,7 +4430,8 @@ void sqlrprotocol_tds::field(byte_t tdstype,
 			break;
 		case TDS_TYPE_FLTN:
 			{
-			byte_t	size=nTypeSize(tdstype,colsize);
+			byte_t	size=nTypeSize(coltype,tdstype,
+								colsize);
 			write(&resppacket,size);
 			switch (size) {
 				case 4:
@@ -4360,7 +4445,8 @@ void sqlrprotocol_tds::field(byte_t tdstype,
 			break;
 		case TDS_TYPE_MONEYN:
 			{
-			byte_t	size=nTypeSize(tdstype,colsize);
+			byte_t	size=nTypeSize(coltype,tdstype,
+								colsize);
 			write(&resppacket,size);
 			switch (size) {
 				case 4:
@@ -4374,7 +4460,8 @@ void sqlrprotocol_tds::field(byte_t tdstype,
 			break;
 		case TDS_TYPE_DATETIMN:
 			{
-			byte_t	size=nTypeSize(tdstype,colsize);
+			byte_t	size=nTypeSize(coltype,tdstype,
+								colsize);
 			write(&resppacket,size);
 			switch (size) {
 				case 4:
@@ -4439,10 +4526,7 @@ void sqlrprotocol_tds::field(byte_t tdstype,
 			break;
 		case TDS_TYPE_MONEY:
 			{
-			char	*copy=charstring::duplicate(field);
-			charstring::strip(copy,'.');
-			int64_t	data=charstring::convertToInteger(copy)*100;
-			delete[] copy;
+			int64_t	data=moneyValue(field);
 			writeLE(&resppacket,
 				(uint32_t)((data&0xFFFFFFFF00000000LL)>>32));
 			writeLE(&resppacket,
@@ -4475,10 +4559,7 @@ void sqlrprotocol_tds::field(byte_t tdstype,
 			break;
 		case TDS_TYPE_MONEY4:
 			{
-			char	*copy=charstring::duplicate(field);
-			charstring::strip(copy,'.');
-			int32_t	data=charstring::convertToInteger(copy)*100;
-			delete[] copy;
+			int32_t	data=(int32_t)moneyValue(field);
 			writeLE(&resppacket,(uint32_t)data);
 			debugWrite("data: ");
 			debugWrite("%lld (%s)",data,field);
