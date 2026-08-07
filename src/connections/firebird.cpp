@@ -1054,15 +1054,33 @@ void firebirdconnection::getError(char *errorbuffer,
 	// return the detailed status-vector message rather than the
 	// generic sqlcode text, which hides the real cause (eg. -901)
 	if (errormsg.getStringLength()) {
+
+		// The error buffer is reused for the life of the process and
+		// safeCopy leaves it unterminated, so the size has to come from
+		// the source string.  Measuring the buffer instead would run
+		// off the end of a short message into the previous, longer one.
+		*errorsize=errormsg.getStringLength();
+		if (*errorsize>errorbuffersize) {
+			*errorsize=errorbuffersize;
+		}
 		charstring::safeCopy(errorbuffer,errorbuffersize,
-					errormsg.getString(),
-					errormsg.getStringLength());
+					errormsg.getString(),*errorsize);
+		if (*errorsize<errorbuffersize) {
+			errorbuffer[*errorsize]='\0';
+		}
+
 	} else {
+
+		// isc_sql_interprete writes nothing at all for an unrecognized
+		// sqlcode, so clear the buffer first rather than measuring
+		// whatever was left in it
+		bytestring::zero(errorbuffer,errorbuffersize);
 		isc_sql_interprete(sqlcode,errorbuffer,errorbuffersize);
+		errorbuffer[errorbuffersize-1]='\0';
+		*errorsize=charstring::getLength(errorbuffer);
 	}
 
 	// set return values
-	*errorsize=charstring::getLength(errorbuffer);
 	*errorcode=sqlcode;
 	*liveconnection=!(charstring::contains(
 				errormsg.getString(),
@@ -3584,11 +3602,27 @@ void firebirdcursor::getField(uint32_t col,
 		if (outsqlda->sqlvar[col].sqlscale) {
 			ISC_SHORT	scale=-outsqlda->sqlvar[col].sqlscale;
 			int		p=(int)pow(10.0,(double)scale);
+
+			// Integer division truncates toward zero and the
+			// remainder carries the sign, so formatting the halves
+			// separately would put a sign on each of them - and
+			// lose it entirely when the integer part is zero.
+			// Render the sign once, from the whole value.
+			ISC_INT64	whole=v/p;
+			ISC_INT64	frac=v%p;
+			const char	*sign=(v<0)?"-":"";
+			if (whole<0) {
+				whole=-whole;
+			}
+			if (frac<0) {
+				frac=-frac;
+			}
 			*fldsize=charstring::printf(
 					field[col].textbuffer,
 					conn->cont->getMaxFieldSize(),
-					"%lld.%0*lld",
-					(int64_t)(v/p),scale,(int64_t)(v%p));
+					"%s%lld.%0*lld",
+					sign,(int64_t)whole,
+					scale,(int64_t)frac);
 		} else {
 			*fldsize=charstring::printf(
 					field[col].textbuffer,
@@ -3662,7 +3696,7 @@ void firebirdcursor::getField(uint32_t col,
 		// build a string of "yyyy-mm-dd" format
 		*fldsize=charstring::printf(field[col].textbuffer,
 					conn->cont->getMaxFieldSize(),
-					"%d:%02d:%02d",
+					"%d-%02d-%02d",
 					entry_date.tm_year+1900,
 					entry_date.tm_mon+1,
 					entry_date.tm_mday);

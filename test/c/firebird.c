@@ -451,7 +451,7 @@ int main(int argc, char **argv) {
 	assertEqStr(sqlrcur_getFieldByIndex(cur,0,3),"1.50");
 	assertEqStr(sqlrcur_getFieldByIndex(cur,0,4),"1.5000");
 	assertEqStr(sqlrcur_getFieldByIndex(cur,0,5),"1.5000");
-	assertEqStr(sqlrcur_getFieldByIndex(cur,0,6),"2001:01:01");
+	assertEqStr(sqlrcur_getFieldByIndex(cur,0,6),"2001-01-01");
 	assertEqStr(sqlrcur_getFieldByIndex(cur,0,7),"01:00:00");
 	assertEqStr(sqlrcur_getFieldByIndex(cur,0,8),"testchar1"
 		"                                         ");
@@ -464,7 +464,7 @@ int main(int argc, char **argv) {
 	assertEqStr(sqlrcur_getFieldByIndex(cur,7,3),"8.50");
 	assertEqStr(sqlrcur_getFieldByIndex(cur,7,4),"8.5000");
 	assertEqStr(sqlrcur_getFieldByIndex(cur,7,5),"8.5000");
-	assertEqStr(sqlrcur_getFieldByIndex(cur,7,6),"2008:01:01");
+	assertEqStr(sqlrcur_getFieldByIndex(cur,7,6),"2008-01-01");
 	assertEqStr(sqlrcur_getFieldByIndex(cur,7,7),"08:00:00");
 	assertEqStr(sqlrcur_getFieldByIndex(cur,7,8),"testchar8"
 		"                                         ");
@@ -507,7 +507,7 @@ int main(int argc, char **argv) {
 	assertEqStr(sqlrcur_getFieldByName(cur,0,"TESTNUMERIC"),"1.50");
 	assertEqStr(sqlrcur_getFieldByName(cur,0,"TESTFLOAT"),"1.5000");
 	assertEqStr(sqlrcur_getFieldByName(cur,0,"TESTDOUBLE"),"1.5000");
-	assertEqStr(sqlrcur_getFieldByName(cur,0,"TESTDATE"),"2001:01:01");
+	assertEqStr(sqlrcur_getFieldByName(cur,0,"TESTDATE"),"2001-01-01");
 	assertEqStr(sqlrcur_getFieldByName(cur,0,"TESTTIME"),"01:00:00");
 	assertEqStr(sqlrcur_getFieldByName(cur,0,"TESTCHAR"),"testchar1"
 		"                                         ");
@@ -520,7 +520,7 @@ int main(int argc, char **argv) {
 	assertEqStr(sqlrcur_getFieldByName(cur,7,"TESTNUMERIC"),"8.50");
 	assertEqStr(sqlrcur_getFieldByName(cur,7,"TESTFLOAT"),"8.5000");
 	assertEqStr(sqlrcur_getFieldByName(cur,7,"TESTDOUBLE"),"8.5000");
-	assertEqStr(sqlrcur_getFieldByName(cur,7,"TESTDATE"),"2008:01:01");
+	assertEqStr(sqlrcur_getFieldByName(cur,7,"TESTDATE"),"2008-01-01");
 	assertEqStr(sqlrcur_getFieldByName(cur,7,"TESTTIME"),"08:00:00");
 	assertEqStr(sqlrcur_getFieldByName(cur,7,"TESTCHAR"),"testchar8"
 		"                                         ");
@@ -564,7 +564,7 @@ int main(int argc, char **argv) {
 	assertEqStr(fields[3],"1.50");
 	assertEqStr(fields[4],"1.5000");
 	assertEqStr(fields[5],"1.5000");
-	assertEqStr(fields[6],"2001:01:01");
+	assertEqStr(fields[6],"2001-01-01");
 	assertEqStr(fields[7],"01:00:00");
 	assertEqStr(fields[8],"testchar1"
 		"                                         ");

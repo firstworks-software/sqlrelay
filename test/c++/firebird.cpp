@@ -414,7 +414,7 @@ int main(int argc, char **argv) {
 	assertEquals(cur->getField(0,3),"1.50");
 	assertEquals(cur->getField(0,4),"1.5000");
 	assertEquals(cur->getField(0,5),"1.5000");
-	assertEquals(cur->getField(0,6),"2001:01:01");
+	assertEquals(cur->getField(0,6),"2001-01-01");
 	assertEquals(cur->getField(0,7),"01:00:00");
 	assertEquals(cur->getField(0,8),"testchar1                                         ");
 	assertEquals(cur->getField(0,9),"testvarchar1");
@@ -426,7 +426,7 @@ int main(int argc, char **argv) {
 	assertEquals(cur->getField(7,3),"8.50");
 	assertEquals(cur->getField(7,4),"8.5000");
 	assertEquals(cur->getField(7,5),"8.5000");
-	assertEquals(cur->getField(7,6),"2008:01:01");
+	assertEquals(cur->getField(7,6),"2008-01-01");
 	assertEquals(cur->getField(7,7),"08:00:00");
 	assertEquals(cur->getField(7,8),"testchar8                                         ");
 	assertEquals(cur->getField(7,9),"testvarchar8");
@@ -468,7 +468,7 @@ int main(int argc, char **argv) {
 	assertEquals(cur->getField(0,"TESTNUMERIC"),"1.50");
 	assertEquals(cur->getField(0,"TESTFLOAT"),"1.5000");
 	assertEquals(cur->getField(0,"TESTDOUBLE"),"1.5000");
-	assertEquals(cur->getField(0,"TESTDATE"),"2001:01:01");
+	assertEquals(cur->getField(0,"TESTDATE"),"2001-01-01");
 	assertEquals(cur->getField(0,"TESTTIME"),"01:00:00");
 	assertEquals(cur->getField(0,"TESTCHAR"),"testchar1                                         ");
 	assertEquals(cur->getField(0,"TESTVARCHAR"),"testvarchar1");
@@ -480,7 +480,7 @@ int main(int argc, char **argv) {
 	assertEquals(cur->getField(7,"TESTNUMERIC"),"8.50");
 	assertEquals(cur->getField(7,"TESTFLOAT"),"8.5000");
 	assertEquals(cur->getField(7,"TESTDOUBLE"),"8.5000");
-	assertEquals(cur->getField(7,"TESTDATE"),"2008:01:01");
+	assertEquals(cur->getField(7,"TESTDATE"),"2008-01-01");
 	assertEquals(cur->getField(7,"TESTTIME"),"08:00:00");
 	assertEquals(cur->getField(7,"TESTCHAR"),"testchar8                                         ");
 	assertEquals(cur->getField(7,"TESTVARCHAR"),"testvarchar8");
@@ -523,7 +523,7 @@ int main(int argc, char **argv) {
 	assertEquals(fields[3],"1.50");
 	assertEquals(fields[4],"1.5000");
 	assertEquals(fields[5],"1.5000");
-	assertEquals(fields[6],"2001:01:01");
+	assertEquals(fields[6],"2001-01-01");
 	assertEquals(fields[7],"01:00:00");
 	assertEquals(fields[8],"testchar1                                         ");
 	assertEquals(fields[9],"testvarchar1");
@@ -1825,6 +1825,59 @@ int main(int argc, char **argv) {
 	assertFalse(cur->sendQuery("create table testtable"));
 	assertFalse(cur->sendQuery("create table testtable"));
 	assertFalse(cur->sendQuery("create table testtable"));
+	stdoutput.printf("\n");
+
+
+	// negative decimals
+	// A scaled value with a zero integer part is the case that regresses:
+	// the sign has nowhere to live but the fractional part.
+	stdoutput.printf("NEGATIVE DECIMALS: \n");
+	assertTrue(cur->sendQuery(
+		"select "
+		"	cast(-1.50 as decimal(10,2)), "
+		"	cast(-0.50 as decimal(10,2)), "
+		"	cast(-0.000001 as numeric(18,6)), "
+		"	cast(1.50 as decimal(10,2)), "
+		"	cast(0.00 as decimal(10,2)) "
+		"from "
+		"	rdb$database"));
+	assertEquals(cur->getField(0,(uint32_t)0),"-1.50");
+	assertEquals(cur->getField(0,1),"-0.50");
+	assertEquals(cur->getField(0,2),"-0.000001");
+	assertEquals(cur->getField(0,3),"1.50");
+	assertEquals(cur->getField(0,4),"0.00");
+	stdoutput.printf("\n");
+
+
+	// error buffer reuse
+	// The error buffer belongs to the pooled connection rather than to the
+	// session, and is never cleared, so a short error following a longer
+	// one used to come back with the tail of the longer one attached.  A
+	// short error has to read the same whether or not a longer one
+	// preceded it - within a session, and across sessions.
+	stdoutput.printf("ERROR BUFFER REUSE: \n");
+	assertFalse(cur->sendQuery("select * from x"));
+	char	*shorterror=charstring::duplicate(cur->errorMessage());
+	assertFalse(cur->sendQuery("drop table nosuchtable9070"));
+	assertFalse(cur->sendQuery("select * from x"));
+	assertEquals(cur->errorMessage(),shorterror);
+	stdoutput.printf("\n");
+	secondcon=new sqlrconnection("sqlrelay",9009,"/tmp/firebirdtest.socket",
+						"testuser","testpassword",0,1);
+	secondcur=new sqlrcursor(secondcon);
+	assertFalse(secondcur->sendQuery("drop table nosuchtable9070"));
+	delete secondcur;
+	delete secondcon;
+	secondcon=new sqlrconnection("sqlrelay",9009,"/tmp/firebirdtest.socket",
+						"testuser","testpassword",0,1);
+	secondcur=new sqlrcursor(secondcon);
+	assertFalse(secondcur->sendQuery("select * from x"));
+	assertEquals(secondcur->errorMessage(),shorterror);
+	delete secondcur;
+	delete secondcon;
+	secondcur=NULL;
+	secondcon=NULL;
+	delete[] shorterror;
 	stdoutput.printf("\n");
 
 	reportTestStatus();

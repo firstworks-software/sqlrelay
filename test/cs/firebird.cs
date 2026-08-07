@@ -411,7 +411,7 @@ namespace SQLRClientTest
             assertEquals(cur.getField((UInt64)0,(UInt32)3),"1.50");
             assertEquals(cur.getField((UInt64)0,(UInt32)4),"1.5000");
             assertEquals(cur.getField((UInt64)0,(UInt32)5),"1.5000");
-            assertEquals(cur.getField((UInt64)0,(UInt32)6),"2001:01:01");
+            assertEquals(cur.getField((UInt64)0,(UInt32)6),"2001-01-01");
             assertEquals(cur.getField((UInt64)0,(UInt32)7),"01:00:00");
             assertEquals(cur.getField((UInt64)0,(UInt32)8),"testchar1                                         ");
             assertEquals(cur.getField((UInt64)0,(UInt32)9),"testvarchar1");
@@ -423,7 +423,7 @@ namespace SQLRClientTest
             assertEquals(cur.getField((UInt64)7,(UInt32)3),"8.50");
             assertEquals(cur.getField((UInt64)7,(UInt32)4),"8.5000");
             assertEquals(cur.getField((UInt64)7,(UInt32)5),"8.5000");
-            assertEquals(cur.getField((UInt64)7,(UInt32)6),"2008:01:01");
+            assertEquals(cur.getField((UInt64)7,(UInt32)6),"2008-01-01");
             assertEquals(cur.getField((UInt64)7,(UInt32)7),"08:00:00");
             assertEquals(cur.getField((UInt64)7,(UInt32)8),"testchar8                                         ");
             assertEquals(cur.getField((UInt64)7,(UInt32)9),"testvarchar8");
@@ -465,7 +465,7 @@ namespace SQLRClientTest
             assertEquals(cur.getField((UInt64)0,"TESTNUMERIC"),"1.50");
             assertEquals(cur.getField((UInt64)0,"TESTFLOAT"),"1.5000");
             assertEquals(cur.getField((UInt64)0,"TESTDOUBLE"),"1.5000");
-            assertEquals(cur.getField((UInt64)0,"TESTDATE"),"2001:01:01");
+            assertEquals(cur.getField((UInt64)0,"TESTDATE"),"2001-01-01");
             assertEquals(cur.getField((UInt64)0,"TESTTIME"),"01:00:00");
             assertEquals(cur.getField((UInt64)0,"TESTCHAR"),"testchar1                                         ");
             assertEquals(cur.getField((UInt64)0,"TESTVARCHAR"),"testvarchar1");
@@ -477,7 +477,7 @@ namespace SQLRClientTest
             assertEquals(cur.getField((UInt64)7,"TESTNUMERIC"),"8.50");
             assertEquals(cur.getField((UInt64)7,"TESTFLOAT"),"8.5000");
             assertEquals(cur.getField((UInt64)7,"TESTDOUBLE"),"8.5000");
-            assertEquals(cur.getField((UInt64)7,"TESTDATE"),"2008:01:01");
+            assertEquals(cur.getField((UInt64)7,"TESTDATE"),"2008-01-01");
             assertEquals(cur.getField((UInt64)7,"TESTTIME"),"08:00:00");
             assertEquals(cur.getField((UInt64)7,"TESTCHAR"),"testchar8                                         ");
             assertEquals(cur.getField((UInt64)7,"TESTVARCHAR"),"testvarchar8");
@@ -520,7 +520,7 @@ namespace SQLRClientTest
             assertEquals(fields[3],"1.50");
             assertEquals(fields[4],"1.5000");
             assertEquals(fields[5],"1.5000");
-            assertEquals(fields[6],"2001:01:01");
+            assertEquals(fields[6],"2001-01-01");
             assertEquals(fields[7],"01:00:00");
             assertEquals(fields[8],"testchar1                                         ");
             assertEquals(fields[9],"testvarchar1");

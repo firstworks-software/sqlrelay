@@ -421,7 +421,7 @@ assertEqStr(cur.getField(0,2),"1.50");
 assertEqStr(cur.getField(0,3),"1.50");
 assertEqStr(cur.getField(0,4),"1.5000");
 assertEqStr(cur.getField(0,5),"1.5000");
-assertEqStr(cur.getField(0,6),"2001:01:01");
+assertEqStr(cur.getField(0,6),"2001-01-01");
 assertEqStr(cur.getField(0,7),"01:00:00");
 assertEqStr(cur.getField(0,8),"testchar1"+
 	"                                         ");
@@ -434,7 +434,7 @@ assertEqStr(cur.getField(7,2),"8.50");
 assertEqStr(cur.getField(7,3),"8.50");
 assertEqStr(cur.getField(7,4),"8.5000");
 assertEqStr(cur.getField(7,5),"8.5000");
-assertEqStr(cur.getField(7,6),"2008:01:01");
+assertEqStr(cur.getField(7,6),"2008-01-01");
 assertEqStr(cur.getField(7,7),"08:00:00");
 assertEqStr(cur.getField(7,8),"testchar8"+
 	"                                         ");
@@ -477,7 +477,7 @@ assertEqStr(cur.getField(0,"TESTDECIMAL"),"1.50");
 assertEqStr(cur.getField(0,"TESTNUMERIC"),"1.50");
 assertEqStr(cur.getField(0,"TESTFLOAT"),"1.5000");
 assertEqStr(cur.getField(0,"TESTDOUBLE"),"1.5000");
-assertEqStr(cur.getField(0,"TESTDATE"),"2001:01:01");
+assertEqStr(cur.getField(0,"TESTDATE"),"2001-01-01");
 assertEqStr(cur.getField(0,"TESTTIME"),"01:00:00");
 assertEqStr(cur.getField(0,"TESTCHAR"),"testchar1"+
 	"                                         ");
@@ -490,7 +490,7 @@ assertEqStr(cur.getField(7,"TESTDECIMAL"),"8.50");
 assertEqStr(cur.getField(7,"TESTNUMERIC"),"8.50");
 assertEqStr(cur.getField(7,"TESTFLOAT"),"8.5000");
 assertEqStr(cur.getField(7,"TESTDOUBLE"),"8.5000");
-assertEqStr(cur.getField(7,"TESTDATE"),"2008:01:01");
+assertEqStr(cur.getField(7,"TESTDATE"),"2008-01-01");
 assertEqStr(cur.getField(7,"TESTTIME"),"08:00:00");
 assertEqStr(cur.getField(7,"TESTCHAR"),"testchar8"+
 	"                                         ");
@@ -534,7 +534,7 @@ assertEqStr(fields[2],"1.50");
 assertEqStr(fields[3],"1.50");
 assertEqStr(fields[4],"1.5000");
 assertEqStr(fields[5],"1.5000");
-assertEqStr(fields[6],"2001:01:01");
+assertEqStr(fields[6],"2001-01-01");
 assertEqStr(fields[7],"01:00:00");
 assertEqStr(fields[8],"testchar1"+
 	"                                         ");
