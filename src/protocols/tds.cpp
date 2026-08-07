@@ -3100,6 +3100,11 @@ void sqlrprotocol_tds::allHeaders(const byte_t *rp,
 		if (headersize<sizeof(headersize)+sizeof(headertype) ||
 					headersize>allheaderssize) {
 			debugWrite("invalid header size: %d",headersize);
+			// rpsize is only decremented at the bottom of the
+			// loop, so put rp back where this header started
+			// rather than leaving it 6 bytes ahead of the size
+			// we hand back
+			rp=headerstart;
 			break;
 		}
 
