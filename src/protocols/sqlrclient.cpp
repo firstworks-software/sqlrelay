@@ -2245,6 +2245,21 @@ bool sqlrprotocol_sqlrclient::processQueryOrBindCursor(
 				cont->raiseDbErrorEvent(cursor,
 						cont->getErrorBuffer(cursor));
 
+				// Bail out if we're shutting down.
+				// reLogIn() logs out and returns
+				// without logging back in once the
+				// shutdown flag is set, and this loop
+				// has no shutdown flag check of its
+				// own, so looping back would retry the
+				// query against a logged-out
+				// connection over and over, spinning
+				// until the process is killed with
+				// signal 9.
+				if (waitfordowndb &&
+					process::getShutDownFlag()) {
+					return false;
+				}
+
 				cont->reLogIn(true);
 
 				// if we're waiting for down databases then

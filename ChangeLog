@@ -855,6 +855,36 @@
 	fixed the odbc connection module's stringSize() - its fallback branch
 		didn't count the null terminator, though its other three
 		branches did, and its comment said it did
+	fixed sqlr-stop - it reported success as soon as it sent SIGTERM,
+		without waiting for the process to exit, so processes that
+		ignored or were too slow to handle the signal survived a
+		successful-looking stop, and their pid files were left behind
+		- sqlr-stop now signals every process at once, waits up to 3
+		seconds for them to exit, sends SIGKILL to whatever is left,
+		waits about another second, and reports success only for the
+		processes it saw exit, removing their pid files
+	added a nonzero sqlr-stop exit code - it now exits 1 when any process
+		is still running after SIGKILL, so init scripts can tell a
+		failed stop from a successful one
+	fixed sqlr-stop - it stopped the connections before the scaler, whose
+		job is to replace connections, so a connection spawned after
+		the pid directory had been scanned was never signalled and was
+		orphaned when the scaler exited - the scaler is now stopped
+		and confirmed dead first, and the sweep for everything else
+		runs twice, to catch a connection that hadn't created its pid
+		file yet when the first sweep ran
+	fixed the sqlr-connection shut down - a connection whose database went
+		down while it was running a query would spin at full cpu
+		forever, never exiting, after it was sent SIGTERM, because
+		reLogIn() logs the connection out and then returns without
+		logging back in when the shutdown flag is set, while the loop
+		that called it had no shutdown flag check of its own and just
+		retried the query against the logged-out connection over and
+		over
+	fixed sqlr-connection - the handoff path that receives the client file
+		descriptor didn't sleep before returning, though its comment
+		said it did, so a connection whose listener had died looped
+		over the failure at full speed
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems

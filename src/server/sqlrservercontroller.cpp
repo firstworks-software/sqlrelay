@@ -2109,9 +2109,10 @@ int32_t sqlrservercontroller::waitForClient() {
 				// of this process as well, but for now we'll
 				// just wait to be shut down manually.
 				// Unfortunatley, that means looping over and
-				// over, with that read above failing every
-				// time, thus the  sleep so as not to slam the
-				// machine while we loop.
+				// over, with this failing every time.
+				// We'll sleep so as not to slam the machine
+				// while we loop.
+				snooze::microsnooze(0,100000);
 				return -1;
 			}
 
