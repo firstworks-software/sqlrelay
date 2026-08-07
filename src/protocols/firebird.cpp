@@ -5028,7 +5028,8 @@ void sqlrprotocol_firebird::keepReading(int32_t sec, int32_t usec) {
 		byte_t	buffer[1024];
 		ssize_t	r=clientsock->read(&buffer,1024,sec,usec);
 		if (getDebug()) {
-			stdoutput.printf("read %d more bytes...\n",r);
+			stdoutput.printf("read %lld more bytes...\n",
+								(int64_t)r);
 		}
 		if (r<1) {
 			break;

@@ -1240,6 +1240,12 @@
 		marker, and dropped the connection - the connect packet's nsi
 		flags say whether the client wants ano, and the negotiation
 		only runs when they do
+	fixed the firebird protocol module - a debug line printed an ssize_t
+		with %d, which reads 4 bytes of an 8 byte argument, so the
+		byte count it showed dropped the high half on a little-endian
+		machine and was wrong outright on a big-endian one - it prints
+		with %lld and an explicit 64 bit cast now, which is what the
+		rest of the tree already does with the same value
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems
