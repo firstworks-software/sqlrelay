@@ -1304,6 +1304,8 @@ sqlrprotocol_firebird::sqlrprotocol_firebird(sqlrservercontroller *cont,
 		statements[i].cursorname=NULL;
 		statements[i].outfields=NULL;
 		statements[i].binds=NULL;
+		statements[i].bindcount=0;
+		statements[i].bindsdescribed=false;
 	}
 
 	// the wire format binds by position, so the names are the positions
@@ -3651,6 +3653,10 @@ bool sqlrprotocol_firebird::allocateStatement() {
 	delete[] stmt->outfields;
 	stmt->outfields=NULL;
 	stmt->outfieldcount=0;
+	delete[] stmt->binds;
+	stmt->binds=NULL;
+	stmt->bindcount=0;
+	stmt->bindsdescribed=false;
 
 	if (getDebug()) {
 		stdoutput.printf("	statement handle: %u\n",stmthandle);
@@ -4930,9 +4936,24 @@ void sqlrprotocol_firebird::describeBinds(sqlrservercursor *cursor,
 		return;
 	}
 
+	const char	*probequery=probe.getString();
+	uint32_t	probequerylen=(uint32_t)probe.getSize();
+
 	if (getDebug()) {
 		stdoutput.printf("	bind describe probe: \"%s\"\n",
-						probe.getString());
+							probequery);
+	}
+
+	// The probe is built from the table's own column names, not from the
+	// client's query, so a wide table makes it longer than the query that
+	// asked for it.  The cursor's buffer is maxquerysize+1.
+	if (probequerylen>maxquerysize) {
+		if (getDebug()) {
+			stdoutput.printf("	bind describe probe too "
+						"large - got %u, max %u\n",
+						probequerylen,maxquerysize);
+		}
+		return;
 	}
 
 	// run it on a cursor of its own
@@ -4941,8 +4962,10 @@ void sqlrprotocol_firebird::describeBinds(sqlrservercursor *cursor,
 		return;
 	}
 
-	const char	*probequery=probe.getString();
-	uint32_t	probequerylen=(uint32_t)probe.getSize();
+	// a pooled cursor comes back with whatever binds its last user left
+	// on it, and nothing between release() and prepare clears them
+	cont->getBindPool(probecursor)->clear();
+	cont->setInputBindCount(probecursor,0);
 
 	char	*querybuffer=cont->getQueryBuffer(probecursor);
 	bytestring::copy(querybuffer,probequery,probequerylen);
