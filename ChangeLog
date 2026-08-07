@@ -1065,6 +1065,13 @@
 		following a longer one was reported with the tail of the
 		longer one stuck to the end of it, even when the two errors
 		belonged to different clients
+	capped the response buffer length the firebird protocol module takes
+		off the wire - the length a client declares is the ceiling
+		that truncates the response, and nothing bounded it, so a
+		client that declared a huge one never truncated and the
+		response buffer grew to whatever the requested items
+		produced - it's capped at 65535 now, which is the ceiling
+		firebird's own api implies
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems

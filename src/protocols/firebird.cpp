@@ -1132,6 +1132,8 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_firebird : public sqlrprotocol {
 					uint32_t *bytesread);
 		bool	readPadding(uint32_t *bytesread);
 
+		void	capRespBufferLen();
+
 		bool	writeInt(uint32_t val,
 					const char *name,
 					uint32_t *byteswritten);
@@ -2774,6 +2776,7 @@ bool sqlrprotocol_firebird::infoDatabase() {
 		delete[] dbinfo;
 		return false;
 	}
+	capRespBufferLen();
 
 	// process requested db info items
 	const byte_t	*dbinfoptr=dbinfo;
@@ -3327,6 +3330,7 @@ bool sqlrprotocol_firebird::transactionInfo() {
 		delete[] trinfo;
 		return false;
 	}
+	capRespBufferLen();
 
 	// process requested tx info items
 	const byte_t	*trinfoptr=trinfo;
@@ -3635,13 +3639,14 @@ bool sqlrprotocol_firebird::prepareOrExecImmediate(bool execimmediate) {
 		return false;
 	}
 
-	debugEnd();
-
 	// the length arrives sign-extended from a short often enough that
 	// firebird's own decoder folds it back down
 	if ((respbufferlen&0xffff0000)==0xffff0000) {
 		respbufferlen&=0xffff;
 	}
+	capRespBufferLen();
+
+	debugEnd();
 
 	bool	retval=runPreparedQuery(execimmediate,stmthandle,
 					query,querylen,items,itemslen);
@@ -4075,6 +4080,7 @@ bool sqlrprotocol_firebird::execImmediate2() {
 		cont->release(cursor);
 		return false;
 	}
+	capRespBufferLen();
 
 	debugEnd();
 
@@ -4304,11 +4310,12 @@ bool sqlrprotocol_firebird::infoSql() {
 		return false;
 	}
 
-	debugEnd();
-
 	if ((respbufferlen&0xffff0000)==0xffff0000) {
 		respbufferlen&=0xffff;
 	}
+	capRespBufferLen();
+
+	debugEnd();
 
 	sqlrservercursor	*cursor=NULL;
 	sqlrfirebirdstatement	*stmt=getStatement(stmthandle,&cursor);
@@ -5050,6 +5057,29 @@ bool sqlrprotocol_firebird::readPadding(uint32_t *bytesread) {
 		stdoutput.printf("	(%u bytes of padding)\n",pad);
 	}
 	return true;
+}
+
+void sqlrprotocol_firebird::capRespBufferLen() {
+
+	// The length never sizes an allocation - it's only the ceiling that
+	// truncates the response - but a client that declares a huge one never
+	// truncates, so the response buffer grows to whatever the requested
+	// items produce.  Firebird's api types this length as a short, so a
+	// cap costs a real client nothing, and clamping rather than failing
+	// leaves the protocol's own truncation as the answer to too large an
+	// ask.
+	if (respbufferlen<=MAX_CSTRING_LENGTH) {
+		return;
+	}
+
+	if (getDebug()) {
+		stdoutput.printf("	capped response buffer length - "
+					"got %u, max %u\n",
+					respbufferlen,
+					(uint32_t)MAX_CSTRING_LENGTH);
+	}
+
+	respbufferlen=MAX_CSTRING_LENGTH;
 }
 
 bool sqlrprotocol_firebird::writeInt(uint32_t val,
