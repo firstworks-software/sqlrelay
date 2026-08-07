@@ -32,7 +32,7 @@ var dumptran="dump tran "+hostname+" with truncate_only";
 
 
 // instantiation
-var con=new sqlrelay.SQLRConnection("sqlrelay",9000,"/tmp/test.socket",
+var con=new sqlrelay.SQLRConnection("sqlrelay",9006,"/tmp/saptest.socket",
 		"testuser","testpassword",0,1);
 setConnection(con);
 var cur=new sqlrelay.SQLRCursor(con);
@@ -808,12 +808,12 @@ console.log();
 
 // cached result set
 console.log("CACHED RESULT SET: ");
-cur.cacheToFile("cachefile1");
+cur.cacheToFile("cachefile1-sap");
 cur.setCacheTtl(200);
 assertTrue(cur.sendQuery("select * from testtable "+
 	"order by testint"));
 var filename=cur.getCacheFileName();
-assertEqStr(filename,"cachefile1");
+assertEqStr(filename,"cachefile1-sap");
 cur.cacheOff();
 assertTrue(cur.openCachedResultSet(filename));
 assertEqStr(cur.getField(7,0),"8");
@@ -864,12 +864,12 @@ console.log();
 // buffer size
 console.log("CACHED RESULT SET WITH "+"RESULT SET BUFFER SIZE: ");
 cur.setResultSetBufferSize(2);
-cur.cacheToFile("cachefile1");
+cur.cacheToFile("cachefile1-sap");
 cur.setCacheTtl(200);
 assertTrue(cur.sendQuery("select * from testtable "+
 	"order by testint"));
 filename=cur.getCacheFileName();
-assertEqStr(filename,"cachefile1");
+assertEqStr(filename,"cachefile1-sap");
 cur.cacheOff();
 assertTrue(cur.openCachedResultSet(filename));
 assertEqStr(cur.getField(7,0),"8");
@@ -880,10 +880,10 @@ console.log();
 
 // from one cache file to another
 console.log("FROM ONE CACHE FILE "+"TO ANOTHER: ");
-cur.cacheToFile("cachefile2");
-assertTrue(cur.openCachedResultSet("cachefile1"));
+cur.cacheToFile("cachefile2-sap");
+assertTrue(cur.openCachedResultSet("cachefile1-sap"));
 cur.cacheOff();
-assertTrue(cur.openCachedResultSet("cachefile2"));
+assertTrue(cur.openCachedResultSet("cachefile2-sap"));
 assertEqStr(cur.getField(7,0),"8");
 assertEqStr(cur.getField(8,0),null);
 console.log();
@@ -894,10 +894,10 @@ console.log();
 console.log("FROM ONE CACHE FILE TO ANOTHER "+"WITH RESULT SET "+
 	"BUFFER SIZE: ");
 cur.setResultSetBufferSize(2);
-cur.cacheToFile("cachefile2");
-assertTrue(cur.openCachedResultSet("cachefile1"));
+cur.cacheToFile("cachefile2-sap");
+assertTrue(cur.openCachedResultSet("cachefile1-sap"));
 cur.cacheOff();
-assertTrue(cur.openCachedResultSet("cachefile2"));
+assertTrue(cur.openCachedResultSet("cachefile2-sap"));
 assertEqStr(cur.getField(7,0),"8");
 assertEqStr(cur.getField(8,0),null);
 cur.setResultSetBufferSize(0);
@@ -909,13 +909,13 @@ console.log();
 console.log("CACHED RESULT SET "+"WITH SUSPEND "+"AND RESULT SET "+
 	"BUFFER SIZE: ");
 cur.setResultSetBufferSize(2);
-cur.cacheToFile("cachefile1");
+cur.cacheToFile("cachefile1-sap");
 cur.setCacheTtl(200);
 assertTrue(cur.sendQuery("select * from testtable "+
 	"order by testint"));
 assertEqStr(cur.getField(2,0),"3");
 filename=cur.getCacheFileName();
-assertEqStr(filename,"cachefile1");
+assertEqStr(filename,"cachefile1-sap");
 id=cur.getResultSetId();
 cur.suspendResultSet();
 assertTrue(con.suspendSession());
@@ -1007,7 +1007,7 @@ assertTrue(cur.sendQuery(
 	"create table testtable (col1 integer) lock datarows"));
 assertTrue(con.setTransactionModel("implicit"));
 assertEqStr(con.getTransactionModel(),"implicit");
-var secondcon=new sqlrelay.SQLRConnection("sqlrelay",9000,"/tmp/test.socket",
+var secondcon=new sqlrelay.SQLRConnection("sqlrelay",9006,"/tmp/saptest.socket",
 	"testuser","testpassword",0,1);
 setSecondConnection(secondcon);
 var secondcur=new sqlrelay.SQLRCursor(secondcon);

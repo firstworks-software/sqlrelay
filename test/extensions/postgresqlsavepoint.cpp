@@ -20,7 +20,7 @@ sqlrcursor	*secondcur=NULL;
 int main(int argc, char **argv) {
 
 	stdoutput.printf("SAVEPOINT:\n");
-	con=new sqlrconnection("sqlrelay",9000,"/tmp/test.socket",
+	con=new sqlrconnection("sqlrelay",9021,"/tmp/postgresqlsavepointtest.socket",
 						"testuser","testpassword",0,1);
 	cur=new sqlrcursor(con);
 

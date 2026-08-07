@@ -3,7 +3,7 @@
 
 	<instance id="postgresqlglobaltemptablestest" dbase="postgresql">
 		<listeners>
-			<listener port="9000" socket="/tmp/test.socket"/>
+			<listener port="9022" socket="/tmp/postgresqlglobaltemptablestest.socket"/>
 		</listeners>
 		<translations>
 			<translation module="normalize"/>

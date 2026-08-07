@@ -3,7 +3,7 @@
 
 	<instance id="mysqlsplitmultiinserttest" dbase="mysql">
 		<listeners>
-			<listener port="9000" socket="/tmp/test.socket"/>
+			<listener port="9018" socket="/tmp/mysqlsplitmultiinserttest.socket"/>
 		</listeners>
                 <translations>
                         <translation module="normalize"/>

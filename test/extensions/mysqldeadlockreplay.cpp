@@ -93,7 +93,7 @@ int main(int argc, char **argv) {
 	// deadlock replay needs a transactional storage engine, which the
 	// mysql 3.23 backend lacks; skip on mysql before 5
 	{
-		sqlrconnection	versioncon("sqlrelay",9000,"/tmp/test.socket",
+		sqlrconnection	versioncon("sqlrelay",9017,"/tmp/mysqldeadlockreplaytest.socket",
 					"testuser","testpassword",0,1);
 		const char	*dbversion=versioncon.dbVersion();
 		uint32_t	majorversion=dbversion[0]-'0';
@@ -139,8 +139,8 @@ int main(int argc, char **argv) {
 		}
 
 		// connect to relay
-		sqlrconnection	sqlrcon("sqlrelay",9000,
-			"/tmp/test.socket","testuser","testpassword",0,1);
+		sqlrconnection	sqlrcon("sqlrelay",9017,
+			"/tmp/mysqldeadlockreplaytest.socket","testuser","testpassword",0,1);
 		sqlrcursor	sqlrcur(&sqlrcon);
 
 		stdoutput.printf("SESSION 1...\n");
@@ -199,8 +199,8 @@ int main(int argc, char **argv) {
 		}
 
 		// connect to relay
-		sqlrconnection	sqlrcon("sqlrelay",9000,
-			"/tmp/test.socket","testuser","testpassword",0,1);
+		sqlrconnection	sqlrcon("sqlrelay",9017,
+			"/tmp/mysqldeadlockreplaytest.socket","testuser","testpassword",0,1);
 		sqlrcursor	sqlrcur(&sqlrcon);
 
 		// wait for the first session to let us go
@@ -239,8 +239,8 @@ int main(int argc, char **argv) {
 	stdoutput.printf("\n");
 
 	// connect to relay
-	sqlrconnection	sqlrcon("sqlrelay",9000,
-			"/tmp/test.socket","testuser","testpassword",0,1);
+	sqlrconnection	sqlrcon("sqlrelay",9017,
+			"/tmp/mysqldeadlockreplaytest.socket","testuser","testpassword",0,1);
 	sqlrcursor	sqlrcur(&sqlrcon);
 
 

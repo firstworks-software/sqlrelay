@@ -2,7 +2,8 @@ top_builddir = ..
 
 include ../config.mk
 
-all: $(TESTALLSUBDIRS) $(TESTSCRIPTS) 
+all: $(TESTALLSUBDIRS) $(TESTSCRIPTS)
+	$(MKINSTALLDIRS) log/extensionstest
 
 all-c:
 	cd c $(AND) $(MAKE) all
@@ -67,7 +68,8 @@ clean:
 	cd legacy $(AND) $(MAKE) clean
 	cd protocol $(AND) $(MAKE) clean
 	cd stress $(AND) $(MAKE) clean
-	$(RM) sqlr-*.*.bt sybinit.err sqlrelay.conf.d/sqlite/sqlite.db temp1 temp2 temp3 testexitstatus.tmp $(TESTSCRIPTS) *.out1 *.out2
+	$(RM) sqlr-*.*.bt sybinit.err sqlrelay.conf.d/sqlite/sqlite.db temp1 temp2 temp3 testexitstatus-*.tmp $(TESTSCRIPTS) *.out1 *.out2
+	$(RMTREE) log
 
 tests: all
 	$(SCRIPTINT) $(THISDIR)test$(SCRIPTEXT)

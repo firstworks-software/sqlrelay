@@ -3,7 +3,7 @@
 
 	<instance id="mysqldeadlockreplaytest" dbase="mysql" connections="2">
 		<listeners>
-			<listener port="9000" socket="/tmp/test.socket"/>
+			<listener port="9017" socket="/tmp/mysqldeadlockreplaytest.socket"/>
 		</listeners>
                 <translations>
                         <translation module="normalize"/>

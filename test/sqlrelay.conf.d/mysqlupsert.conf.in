@@ -3,7 +3,7 @@
 
 	<instance id="mysqlupserttest" dbase="mysql">
 		<listeners>
-			<listener port="9000" socket="/tmp/test.socket"/>
+			<listener port="9016" socket="/tmp/mysqlupserttest.socket"/>
 		</listeners>
 		<translations>
 			<translation module="normalize"/>

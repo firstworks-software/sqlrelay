@@ -5,8 +5,8 @@
 	include("asserts.php");
 
 	$host="sqlrelay";
-	$port=9000;
-	$socket="/tmp/test.socket";
+	$port=9013;
+	$socket="/tmp/krbtest.socket";
 	$user="";
 	$password="";
 	$dsn = "sqlrelay:host=$host;port=$port;socket=$socket;tries=0;retrytime=1;krb=yes;debug=0";

@@ -38,7 +38,7 @@ $hostname=~s/\..*//;
 
 
 # instantiation
-$con=SQLRelay::Connection->new("sqlrelay",9000,"/tmp/test.socket",
+$con=SQLRelay::Connection->new("sqlrelay",9012,"/tmp/tlstest.socket",
 						undef,undef,0,1);
 $cur=SQLRelay::Cursor->new($con);
 $con->enableTls(undef,$cert,undef,undef,"ca",$ca,0);
@@ -628,7 +628,7 @@ print("\n");
 
 # cached result set
 print("CACHED RESULT SET: \n");
-$cur->cacheToFile("cachefile1");
+$cur->cacheToFile("cachefile1-tls");
 $cur->setCacheTtl(200);
 assertTrue($cur->sendQuery(
 	"select ".
@@ -638,7 +638,7 @@ assertTrue($cur->sendQuery(
 	"order by ".
 	"	testnumber"));
 $filename=$cur->getCacheFileName();
-assertEquals($filename,"cachefile1");
+assertEquals($filename,"cachefile1-tls");
 $cur->cacheOff();
 assertTrue($cur->openCachedResultSet($filename));
 assertEquals($cur->getField(7,0),"8");
@@ -674,7 +674,7 @@ print("\n");
 # cached result set with result set buffer size
 print("CACHED RESULT SET WITH RESULT SET BUFFER SIZE: \n");
 $cur->setResultSetBufferSize(2);
-$cur->cacheToFile("cachefile1");
+$cur->cacheToFile("cachefile1-tls");
 $cur->setCacheTtl(200);
 assertTrue($cur->sendQuery(
 	"select ".
@@ -684,7 +684,7 @@ assertTrue($cur->sendQuery(
 	"order by ".
 	"	testnumber"));
 $filename=$cur->getCacheFileName();
-assertEquals($filename,"cachefile1");
+assertEquals($filename,"cachefile1-tls");
 $cur->cacheOff();
 assertTrue($cur->openCachedResultSet($filename));
 assertEquals($cur->getField(7,0),"8");
@@ -695,10 +695,10 @@ print("\n");
 
 # from one cache file to another
 print("FROM ONE CACHE FILE TO ANOTHER: \n");
-$cur->cacheToFile("cachefile2");
-assertTrue($cur->openCachedResultSet("cachefile1"));
+$cur->cacheToFile("cachefile2-tls");
+assertTrue($cur->openCachedResultSet("cachefile1-tls"));
 $cur->cacheOff();
-assertTrue($cur->openCachedResultSet("cachefile2"));
+assertTrue($cur->openCachedResultSet("cachefile2-tls"));
 assertEquals($cur->getField(7,0),"8");
 assertUndef($cur->getField(8,0));
 print("\n");
@@ -708,10 +708,10 @@ print("\n");
 print("FROM ONE CACHE FILE TO ANOTHER ".
 	"WITH RESULT SET BUFFER SIZE: \n");
 $cur->setResultSetBufferSize(2);
-$cur->cacheToFile("cachefile2");
-assertTrue($cur->openCachedResultSet("cachefile1"));
+$cur->cacheToFile("cachefile2-tls");
+assertTrue($cur->openCachedResultSet("cachefile1-tls"));
 $cur->cacheOff();
-assertTrue($cur->openCachedResultSet("cachefile2"));
+assertTrue($cur->openCachedResultSet("cachefile2-tls"));
 assertEquals($cur->getField(7,0),"8");
 assertUndef($cur->getField(8,0));
 $cur->setResultSetBufferSize(0);
@@ -722,7 +722,7 @@ print("\n");
 print("CACHED RESULT SET WITH SUSPEND ".
 	"AND RESULT SET BUFFER SIZE: \n");
 $cur->setResultSetBufferSize(2);
-$cur->cacheToFile("cachefile1");
+$cur->cacheToFile("cachefile1-tls");
 $cur->setCacheTtl(200);
 assertTrue($cur->sendQuery(
 	"select ".
@@ -733,7 +733,7 @@ assertTrue($cur->sendQuery(
 	"	testnumber"));
 assertEquals($cur->getField(2,0),"3");
 $filename=$cur->getCacheFileName();
-assertEquals($filename,"cachefile1");
+assertEquals($filename,"cachefile1-tls");
 $id=$cur->getResultSetId();
 $cur->suspendResultSet();
 assertTrue($con->suspendSession());
@@ -822,7 +822,7 @@ print("TRANSACTION BEHAVIOR - implicit: \n");
 assertTrue($con->setTransactionModel("implicit"));
 assertEquals($con->getTransactionModel(),"implicit");
 assertTrue($cur->sendQuery("create table testtable (col1 integer)"));
-$secondcon=SQLRelay::Connection->new("sqlrelay",9000,"/tmp/test.socket",
+$secondcon=SQLRelay::Connection->new("sqlrelay",9012,"/tmp/tlstest.socket",
 						undef,undef,0,1);
 $secondcur=SQLRelay::Cursor->new($secondcon);
 $secondcon->enableTls(undef,$cert,undef,undef,"ca",$ca,0);

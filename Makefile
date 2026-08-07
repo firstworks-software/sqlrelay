@@ -111,8 +111,8 @@ distclean: clean
 		doc/installingpkg.wt \
 		configure.lineno \
 		configure~ \
-		test/testresults.log \
-		test/testdetails.log \
+		test/testresults-*.log \
+		test/testdetails-*.log \
 		test/bench/benchall.sh
 	$(RMTREE) autom4te.cache \
 		autom4te-*.cache \

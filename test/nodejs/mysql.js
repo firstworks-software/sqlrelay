@@ -22,7 +22,7 @@ if (dot>-1) {
 
 
 	// instantiation
-	var con=new sqlrelay.SQLRConnection("sqlrelay",9000,"/tmp/test.socket",
+	var con=new sqlrelay.SQLRConnection("sqlrelay",9002,"/tmp/mysqltest.socket",
 			"testuser","testpassword",0,1);
 	var cur=new sqlrelay.SQLRCursor(con);
 	setConnection(con);
@@ -1115,7 +1115,7 @@ if (dot>-1) {
 
 	// cached result set
 	console.log("CACHED RESULT SET: ");
-	cur.cacheToFile("cachefile1");
+	cur.cacheToFile("cachefile1-mysql");
 	cur.setCacheTtl(200);
 	assertTrue(cur.sendQuery(
 		"select "+
@@ -1125,7 +1125,7 @@ if (dot>-1) {
 		"order by "+
 		"	testtinyint "));
 	var filename=cur.getCacheFileName();
-	assertEqStr(filename,"cachefile1");
+	assertEqStr(filename,"cachefile1-mysql");
 	cur.cacheOff();
 	assertTrue(cur.openCachedResultSet(filename));
 	assertEqStr(cur.getField(7,0),"8");
@@ -1192,7 +1192,7 @@ if (dot>-1) {
 	// buffer size
 	console.log("CACHED RESULT SET WITH RESULT SET BUFFER SIZE: ");
 	cur.setResultSetBufferSize(2);
-	cur.cacheToFile("cachefile1");
+	cur.cacheToFile("cachefile1-mysql");
 	cur.setCacheTtl(200);
 	assertTrue(cur.sendQuery(
 		"select "+
@@ -1202,7 +1202,7 @@ if (dot>-1) {
 		"order by "+
 		"	testtinyint "));
 	filename=cur.getCacheFileName();
-	assertEqStr(filename,"cachefile1");
+	assertEqStr(filename,"cachefile1-mysql");
 	cur.cacheOff();
 	assertTrue(cur.openCachedResultSet(filename));
 	assertEqStr(cur.getField(7,0),"8");
@@ -1213,10 +1213,10 @@ if (dot>-1) {
 
 	// from one cache file to another
 	console.log("FROM ONE CACHE FILE TO ANOTHER: ");
-	cur.cacheToFile("cachefile2");
-	assertTrue(cur.openCachedResultSet("cachefile1"));
+	cur.cacheToFile("cachefile2-mysql");
+	assertTrue(cur.openCachedResultSet("cachefile1-mysql"));
 	cur.cacheOff();
-	assertTrue(cur.openCachedResultSet("cachefile2"));
+	assertTrue(cur.openCachedResultSet("cachefile2-mysql"));
 	assertEqStr(cur.getField(7,0),"8");
 	assertEqStr(cur.getField(8,0),null);
 	console.log("");
@@ -1227,10 +1227,10 @@ if (dot>-1) {
 	console.log("FROM ONE CACHE FILE TO ANOTHER WITH RESULT "+
 		"SET BUFFER SIZE: ");
 	cur.setResultSetBufferSize(2);
-	cur.cacheToFile("cachefile2");
-	assertTrue(cur.openCachedResultSet("cachefile1"));
+	cur.cacheToFile("cachefile2-mysql");
+	assertTrue(cur.openCachedResultSet("cachefile1-mysql"));
 	cur.cacheOff();
-	assertTrue(cur.openCachedResultSet("cachefile2"));
+	assertTrue(cur.openCachedResultSet("cachefile2-mysql"));
 	assertEqStr(cur.getField(7,0),"8");
 	assertEqStr(cur.getField(8,0),null);
 	cur.setResultSetBufferSize(0);
@@ -1242,7 +1242,7 @@ if (dot>-1) {
 	console.log("CACHED RESULT SET WITH SUSPEND AND RESULT SET "+
 		"BUFFER SIZE: ");
 	cur.setResultSetBufferSize(2);
-	cur.cacheToFile("cachefile1");
+	cur.cacheToFile("cachefile1-mysql");
 	cur.setCacheTtl(200);
 	assertTrue(cur.sendQuery(
 		"select "+
@@ -1253,7 +1253,7 @@ if (dot>-1) {
 		"	testtinyint "));
 	assertEqStr(cur.getField(2,0),"3");
 	filename=cur.getCacheFileName();
-	assertEqStr(filename,"cachefile1");
+	assertEqStr(filename,"cachefile1-mysql");
 	id=cur.getResultSetId();
 	cur.suspendResultSet();
 	assertTrue(con.suspendSession());
@@ -1341,7 +1341,7 @@ if (dot>-1) {
 		assertTrue(con.setTransactionModel("implicit"));
 		assertEqStr(con.getTransactionModel(),"implicit");
 		assertTrue(cur.sendQuery("create table testtable (col1 integer)"));
-		var secondcon=new sqlrelay.SQLRConnection("sqlrelay",9000,"/tmp/test.socket",
+		var secondcon=new sqlrelay.SQLRConnection("sqlrelay",9002,"/tmp/mysqltest.socket",
 			"testuser","testpassword",0,1);
 		var secondcur=new sqlrelay.SQLRCursor(secondcon);
 		setSecondConnection(secondcon);

@@ -23,7 +23,7 @@ hostname=Socket.gethostname.split('.')[0].downcase
 
 
 # instantiation
-con=SQLRConnection.new("sqlrelay",9000,"/tmp/test.socket","","",0,1)
+con=SQLRConnection.new("sqlrelay",9013,"/tmp/krbtest.socket","","",0,1)
 cur=SQLRCursor.new(con)
 con.enableKerberos(service,nil,nil)
 setConnection(con)
@@ -569,11 +569,11 @@ print "\n"
 
 # cached result set
 print "CACHED RESULT SET: \n"
-cur.cacheToFile("cachefile1")
+cur.cacheToFile("cachefile1-krb")
 cur.setCacheTtl(200)
 assertTrue(cur.sendQuery("select * from testtable order by testnumber"))
 filename=cur.getCacheFileName()
-assertEqual(filename,"cachefile1")
+assertEqual(filename,"cachefile1-krb")
 cur.cacheOff()
 assertTrue(cur.openCachedResultSet(filename))
 assertEqual(cur.getField(7,0),"8")
@@ -609,11 +609,11 @@ print "\n"
 # cached result set with result set buffer size
 print "CACHED RESULT SET WITH RESULT SET BUFFER SIZE: \n"
 cur.setResultSetBufferSize(2)
-cur.cacheToFile("cachefile1")
+cur.cacheToFile("cachefile1-krb")
 cur.setCacheTtl(200)
 assertTrue(cur.sendQuery("select * from testtable order by testnumber"))
 filename=cur.getCacheFileName()
-assertEqual(filename,"cachefile1")
+assertEqual(filename,"cachefile1-krb")
 cur.cacheOff()
 assertTrue(cur.openCachedResultSet(filename))
 assertEqual(cur.getField(7,0),"8")
@@ -624,10 +624,10 @@ print "\n"
 
 # from one cache file to another
 print "FROM ONE CACHE FILE TO ANOTHER: \n"
-cur.cacheToFile("cachefile2")
-assertTrue(cur.openCachedResultSet("cachefile1"))
+cur.cacheToFile("cachefile2-krb")
+assertTrue(cur.openCachedResultSet("cachefile1-krb"))
 cur.cacheOff()
-assertTrue(cur.openCachedResultSet("cachefile2"))
+assertTrue(cur.openCachedResultSet("cachefile2-krb"))
 assertEqual(cur.getField(7,0),"8")
 assertEqual(cur.getField(8,0),nil)
 print "\n"
@@ -637,10 +637,10 @@ print "\n"
 print "FROM ONE CACHE FILE TO ANOTHER "+
 	"WITH RESULT SET BUFFER SIZE: \n"
 cur.setResultSetBufferSize(2)
-cur.cacheToFile("cachefile2")
-assertTrue(cur.openCachedResultSet("cachefile1"))
+cur.cacheToFile("cachefile2-krb")
+assertTrue(cur.openCachedResultSet("cachefile1-krb"))
 cur.cacheOff()
-assertTrue(cur.openCachedResultSet("cachefile2"))
+assertTrue(cur.openCachedResultSet("cachefile2-krb"))
 assertEqual(cur.getField(7,0),"8")
 assertEqual(cur.getField(8,0),nil)
 cur.setResultSetBufferSize(0)
@@ -651,12 +651,12 @@ print "\n"
 print "CACHED RESULT SET WITH SUSPEND "+
 	"AND RESULT SET BUFFER SIZE: \n"
 cur.setResultSetBufferSize(2)
-cur.cacheToFile("cachefile1")
+cur.cacheToFile("cachefile1-krb")
 cur.setCacheTtl(200)
 assertTrue(cur.sendQuery("select * from testtable order by testnumber"))
 assertEqual(cur.getField(2,0),"3")
 filename=cur.getCacheFileName()
-assertEqual(filename,"cachefile1")
+assertEqual(filename,"cachefile1-krb")
 id=cur.getResultSetId()
 cur.suspendResultSet()
 assertTrue(con.suspendSession())
@@ -739,7 +739,7 @@ print "TRANSACTION BEHAVIOR - implicit: \n"
 assertTrue(con.setTransactionModel("implicit"))
 assertEqual(con.getTransactionModel(),"implicit")
 assertTrue(cur.sendQuery("create table testtable (col1 integer)"))
-secondcon=SQLRConnection.new("sqlrelay",9000,"/tmp/test.socket","","",0,1)
+secondcon=SQLRConnection.new("sqlrelay",9013,"/tmp/krbtest.socket","","",0,1)
 secondcur=SQLRCursor.new(secondcon)
 secondcon.enableKerberos(service,nil,nil)
 setSecondConnection(secondcon)

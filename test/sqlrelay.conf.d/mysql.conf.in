@@ -3,7 +3,7 @@
 
 	<instance id="mysqltest" dbase="mysql">
 		<listeners>
-			<listener port="9000" socket="/tmp/test.socket"/>
+			<listener port="9002" socket="/tmp/mysqltest.socket"/>
 		</listeners>
 		<connections>
 			<connection string="host=mysql;user=testuser;password=testpassword;db=@HOSTNAME@;charset=latin1;foundrows=yes"/>
@@ -12,7 +12,7 @@
 
 	<instance id="mysql8test" dbase="mysql">
 		<listeners>
-			<listener port="9000" socket="/tmp/test.socket"/>
+			<listener port="9002" socket="/tmp/mysqltest.socket"/>
 		</listeners>
 		<connections>
 			<connection string="host=mysql8;user=testuser;password=testpassword;db=@HOSTNAME@;charset=latin1;foundrows=yes"/>
@@ -21,7 +21,7 @@
 
 	<instance id="mysql5test" dbase="mysql">
 		<listeners>
-			<listener port="9000" socket="/tmp/test.socket"/>
+			<listener port="9002" socket="/tmp/mysqltest.socket"/>
 		</listeners>
 		<connections>
 			<connection string="host=mysql5;user=testuser;password=testpassword;db=@HOSTNAME@;charset=latin1;foundrows=yes"/>
@@ -30,7 +30,7 @@
 
 	<instance id="mysql3test" dbase="mysql">
 		<listeners>
-			<listener port="9000" socket="/tmp/test.socket"/>
+			<listener port="9002" socket="/tmp/mysqltest.socket"/>
 		</listeners>
 		<connections>
 			<connection string="host=mysql3;user=testuser;password=testpassword;db=@HOSTNAME@;charset=latin1;foundrows=yes"/>
@@ -39,7 +39,7 @@
 
 	<instance id="mariadb10test" dbase="mysql">
 		<listeners>
-			<listener port="9000" socket="/tmp/test.socket"/>
+			<listener port="9002" socket="/tmp/mysqltest.socket"/>
 		</listeners>
 		<connections>
 			<connection string="host=mariadb10;user=testuser;password=testpassword;db=@HOSTNAME@;charset=latin1;foundrows=yes"/>

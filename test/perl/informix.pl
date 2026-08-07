@@ -38,7 +38,7 @@ $hostname=~s/\..*//;
 
 
 # instantiation
-$con=SQLRelay::Connection->new("sqlrelay",9000,"/tmp/test.socket",
+$con=SQLRelay::Connection->new("sqlrelay",9010,"/tmp/informixtest.socket",
 						"testuser","testpassword",0,1);
 $cur=SQLRelay::Cursor->new($con);
 
@@ -939,7 +939,7 @@ print("\n");
 
 # cached result set
 print("CACHED RESULT SET: \n");
-$cur->cacheToFile("cachefile1");
+$cur->cacheToFile("cachefile1-informix");
 $cur->setCacheTtl(200);
 assertTrue($cur->sendQuery(
 	"select ".
@@ -949,7 +949,7 @@ assertTrue($cur->sendQuery(
 	"order by ".
 	"	testsmallint "));
 $filename=$cur->getCacheFileName();
-assertEquals($filename,"cachefile1");
+assertEquals($filename,"cachefile1-informix");
 $cur->cacheOff();
 assertTrue($cur->openCachedResultSet($filename));
 assertEquals($cur->getField(7,1),"8");
@@ -1007,7 +1007,7 @@ print("\n");
 # cached result set with result set buffer size
 print("CACHED RESULT SET WITH RESULT SET BUFFER SIZE: \n");
 $cur->setResultSetBufferSize(2);
-$cur->cacheToFile("cachefile1");
+$cur->cacheToFile("cachefile1-informix");
 $cur->setCacheTtl(200);
 assertTrue($cur->sendQuery(
 	"select ".
@@ -1017,7 +1017,7 @@ assertTrue($cur->sendQuery(
 	"order by ".
 	"	testsmallint "));
 $filename=$cur->getCacheFileName();
-assertEquals($filename,"cachefile1");
+assertEquals($filename,"cachefile1-informix");
 $cur->cacheOff();
 assertTrue($cur->openCachedResultSet($filename));
 assertEquals($cur->getField(7,1),"8");
@@ -1028,10 +1028,10 @@ print("\n");
 
 # from one cache file to another
 print("FROM ONE CACHE FILE TO ANOTHER: \n");
-$cur->cacheToFile("cachefile2");
-assertTrue($cur->openCachedResultSet("cachefile1"));
+$cur->cacheToFile("cachefile2-informix");
+assertTrue($cur->openCachedResultSet("cachefile1-informix"));
 $cur->cacheOff();
-assertTrue($cur->openCachedResultSet("cachefile2"));
+assertTrue($cur->openCachedResultSet("cachefile2-informix"));
 assertEquals($cur->getField(7,1),"8");
 assertUndef($cur->getField(8,1));
 print("\n");
@@ -1041,10 +1041,10 @@ print("\n");
 print("FROM ONE CACHE FILE TO ANOTHER ".
 			"WITH RESULT SET BUFFER SIZE: \n");
 $cur->setResultSetBufferSize(2);
-$cur->cacheToFile("cachefile2");
-assertTrue($cur->openCachedResultSet("cachefile1"));
+$cur->cacheToFile("cachefile2-informix");
+assertTrue($cur->openCachedResultSet("cachefile1-informix"));
 $cur->cacheOff();
-assertTrue($cur->openCachedResultSet("cachefile2"));
+assertTrue($cur->openCachedResultSet("cachefile2-informix"));
 assertEquals($cur->getField(7,1),"8");
 assertUndef($cur->getField(8,1));
 $cur->setResultSetBufferSize(0);
@@ -1055,7 +1055,7 @@ print("\n");
 print("CACHED RESULT SET WITH SUSPEND ".
 			"AND RESULT SET BUFFER SIZE: \n");
 $cur->setResultSetBufferSize(2);
-$cur->cacheToFile("cachefile1");
+$cur->cacheToFile("cachefile1-informix");
 $cur->setCacheTtl(200);
 assertTrue($cur->sendQuery(
 	"select ".
@@ -1066,7 +1066,7 @@ assertTrue($cur->sendQuery(
 	"	testsmallint "));
 assertEquals($cur->getField(2,1),"3");
 $filename=$cur->getCacheFileName();
-assertEquals($filename,"cachefile1");
+assertEquals($filename,"cachefile1-informix");
 $id=$cur->getResultSetId();
 $cur->suspendResultSet();
 assertTrue($con->suspendSession());
@@ -1157,7 +1157,7 @@ assertTrue($cur->sendQuery("create table testtable (col1 integer)"));
 # is visible to the second connection (commit implicitly starts a
 # new tx)
 assertTrue($con->commit());
-$secondcon=SQLRelay::Connection->new("sqlrelay",9000,"/tmp/test.socket",
+$secondcon=SQLRelay::Connection->new("sqlrelay",9010,"/tmp/informixtest.socket",
 						"testuser","testpassword",0,1);
 $secondcur=SQLRelay::Cursor->new($secondcon);
 # Informix has no MVCC; under default committed-read isolation,

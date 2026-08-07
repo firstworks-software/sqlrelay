@@ -8,9 +8,13 @@ then
 fi
 URL=http://localhost/mvccrud.$EXT
 
+# mvccrud.cpp connects to oracletest, so target that instance here too
+CONFIG=../sqlrelay.conf.d/oracle.conf
+ID=oracletest
 
-sqlrsh -host localhost -user testuser -password testpassword -command "drop table testtable"
-sqlrsh -host localhost -user testuser -password testpassword -command "create table testtable (col1 varchar(128), col2 varchar(128), col3 varchar(128))"
+
+sqlrsh -config $CONFIG -id $ID -user testuser -password testpassword -command "drop table testtable"
+sqlrsh -config $CONFIG -id $ID -user testuser -password testpassword -command "create table testtable (col1 varchar(128), col2 varchar(128), col3 varchar(128))"
 
 
 # create test
@@ -137,4 +141,4 @@ EOF
 echo
 
 echo "======================================================================"
-sqlrsh -host localhost -user testuser -password testpassword -command "drop table testtable"
+sqlrsh -config $CONFIG -id $ID -user testuser -password testpassword -command "drop table testtable"

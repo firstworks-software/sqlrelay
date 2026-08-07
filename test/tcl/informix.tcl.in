@@ -21,7 +21,7 @@ if {$dot > 0} {
 
 
 # instantiation
-set con [sqlrcon -server "sqlrelay" -port 9000 -socket "/tmp/test.socket" -user "testuser" -password "testpassword" -retrytime 0 -tries 1]
+set con [sqlrcon -server "sqlrelay" -port 9010 -socket "/tmp/informixtest.socket" -user "testuser" -password "testpassword" -retrytime 0 -tries 1]
 set cur [$con sqlrcur]
 setConnection $con
 setCursor $cur
@@ -794,11 +794,11 @@ puts ""
 
 # cached result set
 puts "CACHED RESULT SET: "
-$cur cacheToFile "cachefile1"
+$cur cacheToFile "cachefile1-informix"
 $cur setCacheTtl 200
 assertTrue [$cur sendQuery "select * from testtable order by testsmallint"]
 set filename [$cur getCacheFileName]
-assertEqual $filename "cachefile1"
+assertEqual $filename "cachefile1-informix"
 $cur cacheOff
 assertTrue [$cur openCachedResultSet $filename]
 assertEqual [$cur getFieldByIndex 7 1] "8"
@@ -856,11 +856,11 @@ puts ""
 # cached result set with result set buffer size
 puts "CACHED RESULT SET WITH RESULT SET BUFFER SIZE: "
 $cur setResultSetBufferSize 2
-$cur cacheToFile "cachefile1"
+$cur cacheToFile "cachefile1-informix"
 $cur setCacheTtl 200
 assertTrue [$cur sendQuery "select * from testtable order by testsmallint"]
 set filename [$cur getCacheFileName]
-assertEqual $filename "cachefile1"
+assertEqual $filename "cachefile1-informix"
 $cur cacheOff
 assertTrue [$cur openCachedResultSet $filename]
 assertEqual [$cur getFieldByIndex 7 1] "8"
@@ -871,10 +871,10 @@ puts ""
 
 # from one cache file to another
 puts "FROM ONE CACHE FILE TO ANOTHER: "
-$cur cacheToFile "cachefile2"
-assertTrue [$cur openCachedResultSet "cachefile1"]
+$cur cacheToFile "cachefile2-informix"
+assertTrue [$cur openCachedResultSet "cachefile1-informix"]
 $cur cacheOff
-assertTrue [$cur openCachedResultSet "cachefile2"]
+assertTrue [$cur openCachedResultSet "cachefile2-informix"]
 assertEqual [$cur getFieldByIndex 7 1] "8"
 assertUndef [$cur getFieldByIndex 8 1]
 puts ""
@@ -883,10 +883,10 @@ puts ""
 # from one cache file to another with result set buffer size
 puts "FROM ONE CACHE FILE TO ANOTHER WITH RESULT SET BUFFER SIZE: "
 $cur setResultSetBufferSize 2
-$cur cacheToFile "cachefile2"
-assertTrue [$cur openCachedResultSet "cachefile1"]
+$cur cacheToFile "cachefile2-informix"
+assertTrue [$cur openCachedResultSet "cachefile1-informix"]
 $cur cacheOff
-assertTrue [$cur openCachedResultSet "cachefile2"]
+assertTrue [$cur openCachedResultSet "cachefile2-informix"]
 assertEqual [$cur getFieldByIndex 7 1] "8"
 assertUndef [$cur getFieldByIndex 8 1]
 $cur setResultSetBufferSize 0
@@ -896,12 +896,12 @@ puts ""
 # cached result set with suspend and result set buffer size
 puts "CACHED RESULT SET WITH SUSPEND AND RESULT SET BUFFER SIZE: "
 $cur setResultSetBufferSize 2
-$cur cacheToFile "cachefile1"
+$cur cacheToFile "cachefile1-informix"
 $cur setCacheTtl 200
 assertTrue [$cur sendQuery "select * from testtable order by testsmallint"]
 assertEqual [$cur getFieldByIndex 2 1] "3"
 set filename [$cur getCacheFileName]
-assertEqual $filename "cachefile1"
+assertEqual $filename "cachefile1-informix"
 set id [$cur getResultSetId]
 $cur suspendResultSet
 assertTrue [$con suspendSession]
@@ -996,7 +996,7 @@ assertTrue [$cur sendQuery "create table testtable (col1 integer)"]
 # is visible to the second connection (commit implicitly starts a
 # new tx)
 assertTrue [$con commit]
-set secondcon [sqlrcon -server "sqlrelay" -port 9000 -socket "/tmp/test.socket" -user "testuser" -password "testpassword" -retrytime 0 -tries 1]
+set secondcon [sqlrcon -server "sqlrelay" -port 9010 -socket "/tmp/informixtest.socket" -user "testuser" -password "testpassword" -retrytime 0 -tries 1]
 set secondcur [$secondcon sqlrcur]
 setSecondConnection $secondcon
 setSecondCursor $secondcur

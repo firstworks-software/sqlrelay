@@ -15,7 +15,7 @@ include("./asserts.php");
 
 
 	# instantiation
-	$con=sqlrcon_alloc("sqlrelay",9000,"/tmp/test.socket",
+	$con=sqlrcon_alloc("sqlrelay",9004,"/tmp/sqlitetest.socket",
 			"testuser","testpassword",0,1);
 	$cur=sqlrcur_alloc($con);
 
@@ -534,12 +534,12 @@ include("./asserts.php");
 
 	# cached result set
 	echo("CACHED RESULT SET: \n");
-	sqlrcur_cacheToFile($cur,"cachefile1");
+	sqlrcur_cacheToFile($cur,"cachefile1-sqlite");
 	sqlrcur_setCacheTtl($cur,200);
 	assertTrue(sqlrcur_sendQuery($cur,"select * from testtable ".
 		"order by testint"));
 	$filename=sqlrcur_getCacheFileName($cur);
-	assertEqStr($filename,"cachefile1");
+	assertEqStr($filename,"cachefile1-sqlite");
 	sqlrcur_cacheOff($cur);
 	assertTrue(sqlrcur_openCachedResultSet($cur,$filename));
 	assertEqStr(sqlrcur_getField($cur,7,0),"8");
@@ -574,12 +574,12 @@ include("./asserts.php");
 	# buffer size
 	echo("CACHED RESULT SET WITH RESULT SET BUFFER SIZE: \n");
 	sqlrcur_setResultSetBufferSize($cur,2);
-	sqlrcur_cacheToFile($cur,"cachefile1");
+	sqlrcur_cacheToFile($cur,"cachefile1-sqlite");
 	sqlrcur_setCacheTtl($cur,200);
 	assertTrue(sqlrcur_sendQuery($cur,"select * from testtable ".
 		"order by testint"));
 	$filename=sqlrcur_getCacheFileName($cur);
-	assertEqStr($filename,"cachefile1");
+	assertEqStr($filename,"cachefile1-sqlite");
 	sqlrcur_cacheOff($cur);
 	assertTrue(sqlrcur_openCachedResultSet($cur,$filename));
 	assertEqStr(sqlrcur_getField($cur,7,0),"8");
@@ -590,10 +590,10 @@ include("./asserts.php");
 
 	# from one cache file to another
 	echo("FROM ONE CACHE FILE TO ANOTHER: \n");
-	sqlrcur_cacheToFile($cur,"cachefile2");
-	assertTrue(sqlrcur_openCachedResultSet($cur,"cachefile1"));
+	sqlrcur_cacheToFile($cur,"cachefile2-sqlite");
+	assertTrue(sqlrcur_openCachedResultSet($cur,"cachefile1-sqlite"));
 	sqlrcur_cacheOff($cur);
-	assertTrue(sqlrcur_openCachedResultSet($cur,"cachefile2"));
+	assertTrue(sqlrcur_openCachedResultSet($cur,"cachefile2-sqlite"));
 	assertEqStr(sqlrcur_getField($cur,7,0),"8");
 	assertEqStr(sqlrcur_getField($cur,8,0),NULL);
 	echo("\n");
@@ -603,10 +603,10 @@ include("./asserts.php");
 	# with result set buffer size
 	echo("FROM ONE CACHE FILE TO ANOTHER WITH RESULT SET BUFFER SIZE: \n");
 	sqlrcur_setResultSetBufferSize($cur,2);
-	sqlrcur_cacheToFile($cur,"cachefile2");
-	assertTrue(sqlrcur_openCachedResultSet($cur,"cachefile1"));
+	sqlrcur_cacheToFile($cur,"cachefile2-sqlite");
+	assertTrue(sqlrcur_openCachedResultSet($cur,"cachefile1-sqlite"));
 	sqlrcur_cacheOff($cur);
-	assertTrue(sqlrcur_openCachedResultSet($cur,"cachefile2"));
+	assertTrue(sqlrcur_openCachedResultSet($cur,"cachefile2-sqlite"));
 	assertEqStr(sqlrcur_getField($cur,7,0),"8");
 	assertEqStr(sqlrcur_getField($cur,8,0),NULL);
 	sqlrcur_setResultSetBufferSize($cur,0);
@@ -617,13 +617,13 @@ include("./asserts.php");
 	# and result set buffer size
 	echo("CACHED RESULT SET WITH SUSPEND AND RESULT SET BUFFER SIZE: \n");
 	sqlrcur_setResultSetBufferSize($cur,2);
-	sqlrcur_cacheToFile($cur,"cachefile1");
+	sqlrcur_cacheToFile($cur,"cachefile1-sqlite");
 	sqlrcur_setCacheTtl($cur,200);
 	assertTrue(sqlrcur_sendQuery($cur,"select * from testtable ".
 		"order by testint"));
 	assertEqStr(sqlrcur_getField($cur,2,0),"3");
 	$filename=sqlrcur_getCacheFileName($cur);
-	assertEqStr($filename,"cachefile1");
+	assertEqStr($filename,"cachefile1-sqlite");
 	$id=sqlrcur_getResultSetId($cur);
 	sqlrcur_suspendResultSet($cur);
 	assertTrue(sqlrcon_suspendSession($con));
@@ -708,7 +708,7 @@ include("./asserts.php");
 	# sqlite DDL is transactional; commit so the table is visible
 	# to the second connection (the commit implicitly starts a new tx)
 	assertTrue(sqlrcon_commit($con));
-	$secondcon=sqlrcon_alloc("sqlrelay",9000,"/tmp/test.socket",
+	$secondcon=sqlrcon_alloc("sqlrelay",9004,"/tmp/sqlitetest.socket",
 						"testuser","testpassword",0,1);
 	$secondcur=sqlrcur_alloc($secondcon);
 	# session is in a transaction; insert is not visible until commit

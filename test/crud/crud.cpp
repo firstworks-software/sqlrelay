@@ -15,7 +15,7 @@ int main(int argc, char **argv) {
 
 
 	// init connection/cursor
-	con=new sqlrconnection("sqlrelay",9000,"/tmp/test.socket",
+	con=new sqlrconnection("sqlrelay",9001,"/tmp/oracletest.socket",
 						"testuser","testpassword",0,1);
 	cur=new sqlrcursor(con);
 

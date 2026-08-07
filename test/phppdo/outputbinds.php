@@ -3,8 +3,8 @@
 	# See the file COPYING for more information.
 
 	$host="sqlrelay";
-	$port=9000;
-	$socket="/tmp/test.socket";
+	$port=9007;
+	$socket="/tmp/mssqltest.socket";
 	$user="testuser";
 	$password="testpassword";
 	$dsn = "sqlrelay:host=$host;port=$port;socket=$socket;tries=0;retrytime=1;debug=1";

@@ -96,7 +96,7 @@ int main(int argc, char **argv) {
 
 
 	// instantiation
-	con=sqlrcon_alloc("sqlrelay",9000,"/tmp/test.socket",
+	con=sqlrcon_alloc("sqlrelay",9010,"/tmp/informixtest.socket",
 						"testuser","testpassword",0,1);
 	cur=sqlrcur_alloc(con);
 
@@ -1023,7 +1023,7 @@ int main(int argc, char **argv) {
 
 	// cached result set
 	printf("CACHED RESULT SET: \n");
-	sqlrcur_cacheToFile(cur,"cachefile1");
+	sqlrcur_cacheToFile(cur,"cachefile1-informix");
 	sqlrcur_setCacheTtl(cur,200);
 	assertTrue(sqlrcur_sendQuery(cur,
 		"select "
@@ -1033,7 +1033,7 @@ int main(int argc, char **argv) {
 		"order by "
 		"	testsmallint "));
 	filename=strdup(sqlrcur_getCacheFileName(cur));
-	assertEqStr(filename,"cachefile1");
+	assertEqStr(filename,"cachefile1-informix");
 	sqlrcur_cacheOff(cur);
 	assertTrue(sqlrcur_openCachedResultSet(cur,filename));
 	assertEqStr(sqlrcur_getFieldByIndex(cur,7,1),"8");
@@ -1092,7 +1092,7 @@ int main(int argc, char **argv) {
 	// cached result set with result set buffer size
 	printf("CACHED RESULT SET WITH RESULT SET BUFFER SIZE: \n");
 	sqlrcur_setResultSetBufferSize(cur,2);
-	sqlrcur_cacheToFile(cur,"cachefile1");
+	sqlrcur_cacheToFile(cur,"cachefile1-informix");
 	sqlrcur_setCacheTtl(cur,200);
 	assertTrue(sqlrcur_sendQuery(cur,
 		"select "
@@ -1102,7 +1102,7 @@ int main(int argc, char **argv) {
 		"order by "
 		"	testsmallint "));
 	filename=strdup(sqlrcur_getCacheFileName(cur));
-	assertEqStr(filename,"cachefile1");
+	assertEqStr(filename,"cachefile1-informix");
 	sqlrcur_cacheOff(cur);
 	assertTrue(sqlrcur_openCachedResultSet(cur,filename));
 	assertEqStr(sqlrcur_getFieldByIndex(cur,7,1),"8");
@@ -1114,10 +1114,10 @@ int main(int argc, char **argv) {
 
 	// from one cache file to another
 	printf("FROM ONE CACHE FILE TO ANOTHER: \n");
-	sqlrcur_cacheToFile(cur,"cachefile2");
-	assertTrue(sqlrcur_openCachedResultSet(cur,"cachefile1"));
+	sqlrcur_cacheToFile(cur,"cachefile2-informix");
+	assertTrue(sqlrcur_openCachedResultSet(cur,"cachefile1-informix"));
 	sqlrcur_cacheOff(cur);
-	assertTrue(sqlrcur_openCachedResultSet(cur,"cachefile2"));
+	assertTrue(sqlrcur_openCachedResultSet(cur,"cachefile2-informix"));
 	assertEqStr(sqlrcur_getFieldByIndex(cur,7,1),"8");
 	assertEqStr(sqlrcur_getFieldByIndex(cur,8,1),NULL);
 	printf("\n");
@@ -1127,10 +1127,10 @@ int main(int argc, char **argv) {
 	printf("FROM ONE CACHE FILE TO ANOTHER "
 				"WITH RESULT SET BUFFER SIZE: \n");
 	sqlrcur_setResultSetBufferSize(cur,2);
-	sqlrcur_cacheToFile(cur,"cachefile2");
-	assertTrue(sqlrcur_openCachedResultSet(cur,"cachefile1"));
+	sqlrcur_cacheToFile(cur,"cachefile2-informix");
+	assertTrue(sqlrcur_openCachedResultSet(cur,"cachefile1-informix"));
 	sqlrcur_cacheOff(cur);
-	assertTrue(sqlrcur_openCachedResultSet(cur,"cachefile2"));
+	assertTrue(sqlrcur_openCachedResultSet(cur,"cachefile2-informix"));
 	assertEqStr(sqlrcur_getFieldByIndex(cur,7,1),"8");
 	assertEqStr(sqlrcur_getFieldByIndex(cur,8,1),NULL);
 	sqlrcur_setResultSetBufferSize(cur,0);
@@ -1141,7 +1141,7 @@ int main(int argc, char **argv) {
 	printf("CACHED RESULT SET WITH SUSPEND "
 				"AND RESULT SET BUFFER SIZE: \n");
 	sqlrcur_setResultSetBufferSize(cur,2);
-	sqlrcur_cacheToFile(cur,"cachefile1");
+	sqlrcur_cacheToFile(cur,"cachefile1-informix");
 	sqlrcur_setCacheTtl(cur,200);
 	assertTrue(sqlrcur_sendQuery(cur,
 		"select "
@@ -1152,7 +1152,7 @@ int main(int argc, char **argv) {
 		"	testsmallint "));
 	assertEqStr(sqlrcur_getFieldByIndex(cur,2,1),"3");
 	filename=strdup(sqlrcur_getCacheFileName(cur));
-	assertEqStr(filename,"cachefile1");
+	assertEqStr(filename,"cachefile1-informix");
 	id=sqlrcur_getResultSetId(cur);
 	sqlrcur_suspendResultSet(cur);
 	assertTrue(sqlrcon_suspendSession(con));
@@ -1246,7 +1246,7 @@ int main(int argc, char **argv) {
 	// is visible to the second connection (commit implicitly starts a
 	// new tx)
 	assertTrue(sqlrcon_commit(con));
-	secondcon=sqlrcon_alloc("sqlrelay",9000,"/tmp/test.socket",
+	secondcon=sqlrcon_alloc("sqlrelay",9010,"/tmp/informixtest.socket",
 						"testuser","testpassword",0,1);
 	secondcur=sqlrcur_alloc(secondcon);
 	// Informix has no MVCC; under default committed-read isolation,

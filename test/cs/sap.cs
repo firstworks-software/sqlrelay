@@ -49,7 +49,7 @@ namespace SQLRClientTest
 
 
             // instantiation
-            con = new SQLRConnection("sqlrelay", 9000, "/tmp/test.socket",
+            con = new SQLRConnection("sqlrelay", 9006, "/tmp/saptest.socket",
                                     "testuser", "testpassword", 0, 1);
             cur = new SQLRCursor(con);
 
@@ -803,11 +803,11 @@ namespace SQLRClientTest
 
             // cached result set
             Console.WriteLine("CACHED RESULT SET: ");
-            cur.cacheToFile("cachefile1");
+            cur.cacheToFile("cachefile1-sap");
             cur.setCacheTtl(200);
             assertTrue(cur.sendQuery("select * from testtable order by testint"));
             filename = cur.getCacheFileName();
-            assertEquals(filename, "cachefile1");
+            assertEquals(filename, "cachefile1-sap");
             cur.cacheOff();
             assertTrue(cur.openCachedResultSet(filename));
             assertEquals(cur.getField((UInt64)7, (UInt32)0), "8");
@@ -857,11 +857,11 @@ namespace SQLRClientTest
             // cached result set with result set buffer size
             Console.WriteLine("CACHED RESULT SET WITH RESULT SET BUFFER SIZE: ");
             cur.setResultSetBufferSize(2);
-            cur.cacheToFile("cachefile1");
+            cur.cacheToFile("cachefile1-sap");
             cur.setCacheTtl(200);
             assertTrue(cur.sendQuery("select * from testtable order by testint"));
             filename = cur.getCacheFileName();
-            assertEquals(filename, "cachefile1");
+            assertEquals(filename, "cachefile1-sap");
             cur.cacheOff();
             assertTrue(cur.openCachedResultSet(filename));
             assertEquals(cur.getField((UInt64)7, (UInt32)0), "8");
@@ -872,10 +872,10 @@ namespace SQLRClientTest
 
             // from one cache file to another
             Console.WriteLine("FROM ONE CACHE FILE TO ANOTHER: ");
-            cur.cacheToFile("cachefile2");
-            assertTrue(cur.openCachedResultSet("cachefile1"));
+            cur.cacheToFile("cachefile2-sap");
+            assertTrue(cur.openCachedResultSet("cachefile1-sap"));
             cur.cacheOff();
-            assertTrue(cur.openCachedResultSet("cachefile2"));
+            assertTrue(cur.openCachedResultSet("cachefile2-sap"));
             assertEquals(cur.getField((UInt64)7, (UInt32)0), "8");
             assertEquals(cur.getField((UInt64)8, (UInt32)0), (String)null);
             Console.WriteLine("");
@@ -885,10 +885,10 @@ namespace SQLRClientTest
             Console.WriteLine("FROM ONE CACHE FILE TO ANOTHER " +
                         "WITH RESULT SET BUFFER SIZE: ");
             cur.setResultSetBufferSize(2);
-            cur.cacheToFile("cachefile2");
-            assertTrue(cur.openCachedResultSet("cachefile1"));
+            cur.cacheToFile("cachefile2-sap");
+            assertTrue(cur.openCachedResultSet("cachefile1-sap"));
             cur.cacheOff();
-            assertTrue(cur.openCachedResultSet("cachefile2"));
+            assertTrue(cur.openCachedResultSet("cachefile2-sap"));
             assertEquals(cur.getField((UInt64)7, (UInt32)0), "8");
             assertEquals(cur.getField((UInt64)8, (UInt32)0), (String)null);
             cur.setResultSetBufferSize(0);
@@ -899,12 +899,12 @@ namespace SQLRClientTest
             Console.WriteLine("CACHED RESULT SET WITH SUSPEND " +
                         "AND RESULT SET BUFFER SIZE: ");
             cur.setResultSetBufferSize(2);
-            cur.cacheToFile("cachefile1");
+            cur.cacheToFile("cachefile1-sap");
             cur.setCacheTtl(200);
             assertTrue(cur.sendQuery("select * from testtable order by testint"));
             assertEquals(cur.getField((UInt64)2, (UInt32)0), "3");
             filename = cur.getCacheFileName();
-            assertEquals(filename, "cachefile1");
+            assertEquals(filename, "cachefile1-sap");
             id = cur.getResultSetId();
             cur.suspendResultSet();
             assertTrue(con.suspendSession());
@@ -997,7 +997,7 @@ namespace SQLRClientTest
                 "create table testtable (col1 integer) lock datarows"));
             assertTrue(con.setTransactionModel("implicit"));
             assertEquals(con.getTransactionModel(), "implicit");
-            secondcon = new SQLRConnection("sqlrelay", 9000, "/tmp/test.socket",
+            secondcon = new SQLRConnection("sqlrelay", 9006, "/tmp/saptest.socket",
                                 "testuser", "testpassword", 0, 1);
             secondcur = new SQLRCursor(secondcon);
             // session is in a transaction; insert is not visible until commit

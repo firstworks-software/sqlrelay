@@ -16,27 +16,42 @@ usage() {
 	echo "    -n         do not manage instances; assume each is already running"
 	echo "               and just run the tests against it"
 	echo "    -h         show this help and exit"
+	echo
+	echo "  Runs against different backend servers can go on at the same time,"
+	echo "  on one host.  But concurrency is per backend server, not per test."
+	echo "  Every instance connects to a database named after the host, so tests"
+	echo "  that share a backend share a schema and the same testtable, and still"
+	echo "  have to run one at a time relative to each other:"
+	echo
+	echo "    mysql, mysqlupsert, mysqldeadlockreplay, mysqlsplitmultiinsert,"
+	echo "    mysqlimportexport and mysqlprotocol all hit the mysql server"
+	echo "    the postgresql family likewise"
+	echo "    oracle, tls, krb, extensions, crud and oracleprotocol all hit oracle"
 }
 
-# stop any instances left running from a previous run
+# stop any instances left running from a previous run.  only the instances
+# this run is about - another run against a different backend may be going on
+# at the same time, and must not be torn down.
 stop_instances() {
 
-	# ask them to stop
-	$PREFIX/bin/sqlr-stop
-	sleep 2
+	for _db in $TESTDBS
+	do
 
-	# really kill them
-	ps aux > /dev/null 2> /dev/null
-	if ( test "$?" = "0" )
-	then
-		kill `ps aux | grep sqlr-connection | grep -v grep | cut -c10-15` 2> /dev/null
-		kill `ps aux | grep sqlr-scaler | grep -v grep | cut -c10-15` 2> /dev/null
-		kill `ps aux | grep sqlr-listener | grep -v grep | cut -c10-15` 2> /dev/null
-	else
-		kill `ps -efa | grep sqlr-connection | grep -v grep | cut -c10-15` 2> /dev/null
-		kill `ps -efa | grep sqlr-scaler | grep -v grep | cut -c10-15` 2> /dev/null
-		kill `ps -efa | grep sqlr-listener | grep -v grep | cut -c10-15` 2> /dev/null
-	fi
+		# skip databases that have no config file of their own
+		if ( test ! -r "$CONFDIR/${_db}.conf" )
+		then
+			continue
+		fi
+
+		# the router test also has master/slave instances
+		if ( test "$_db" = "router" )
+		then
+			$PREFIX/bin/sqlr-stop -config $CONFDIR/${_db}.conf -id routermaster
+			$PREFIX/bin/sqlr-stop -config $CONFDIR/${_db}.conf -id routerslave
+		fi
+
+		$PREFIX/bin/sqlr-stop -config $CONFDIR/${_db}.conf -id ${_db}test
+	done
 	sleep 2
 }
 
@@ -130,6 +145,22 @@ stop_instance() {
 	sleep 2
 }
 
+# whether anything is listening on a tcp port.  netstat output differs across
+# platforms - the local address is the 4th column on linux and the bsds but
+# the 1st on solaris, and the port follows a : on linux and a . elsewhere - so
+# require the port to follow one of those separators and to be followed by
+# whitespace.  a bare number matches the queue counts and the addresses too.
+port_listening() {
+
+	_pattern="[.:]$1 "
+	_listening=`netstat -an 2> /dev/null | grep LISTEN | grep "$_pattern"`
+	if ( test -n "$_listening" )
+	then
+		return 0
+	fi
+	return 1
+}
+
 # wait for an instance to answer; sets PING and BYPASS and returns 0 if up
 ping_instance() {
 
@@ -143,53 +174,60 @@ ping_instance() {
 		echo "pinging $db..."
 		if ( test "$db" = "tls" )
 		then
-			PING=`$PREFIX/bin/sqlrsh -host localhost -tls -tlscert $CONFDIR/tls/client.pem -tlsca $CONFDIR/tls/ca.pem -tlsvalidate ca -command ping 2>&1`
-		elif ( test "$db" = "extensions" )
-		then
-			PING=`$PREFIX/bin/sqlrsh -host localhost -user test -password test -command ping 2>&1`
+
+			# -config/-id would pick the port up on its own, but
+			# it would also pick up the config's default user, and
+			# authCommand() in src/protocols/sqlrclient.cpp only
+			# authenticates by client certificate when the user is
+			# empty, so pass the port instead
+			PING=`$PREFIX/bin/sqlrsh -host localhost -port 9012 -tls -tlscert $CONFDIR/tls/client.pem -tlsca $CONFDIR/tls/ca.pem -tlsvalidate ca -command ping 2>&1`
 		elif ( test "$db" = "mysqlprotocol" )
 		then
 			PING="0: Couldn't connect to the listener."
-			if ( test -n "`netstat -an 2> /dev/null | grep LISTEN | grep 3306`" )
+			if port_listening 3306
 			then
 				PING="The database is up."
 			fi
 		elif ( test "$db" = "postgresqlprotocol" )
 		then
 			PING="0: Couldn't connect to the listener."
-			if ( test -n "`netstat -an 2> /dev/null | grep LISTEN | grep 5432`" )
+			if port_listening 5432
 			then
 				PING="The database is up."
 			fi
 		elif ( test "$db" = "tdsprotocol" )
 		then
 			PING="0: Couldn't connect to the listener."
-			if ( test -n "`netstat -an 2> /dev/null | grep LISTEN | grep 1433`" )
+			if port_listening 1433
 			then
 				PING="The database is up."
 			fi
 		elif ( test "$db" = "firebirdprotocol" )
 		then
 			PING="0: Couldn't connect to the listener."
-			if ( test -n "`netstat -an 2> /dev/null | grep LISTEN | grep 3050`" )
+			if port_listening 3050
 			then
 				PING="The database is up."
 			fi
 		elif ( test "$db" = "oracleprotocol" )
 		then
 			PING="0: Couldn't connect to the listener."
-			if ( test -n "`netstat -an 2> /dev/null | grep LISTEN | grep 1521`" )
+			if port_listening 1521
 			then
 				PING="The database is up."
 			fi
 		elif ( test "$db" = "teradataprotocol" )
 		then
 			PING="0: Couldn't connect to the listener."
-			if ( test -n "`netstat -an 2> /dev/null | grep LISTEN | grep 1025`" )
+			if port_listening 1025
 			then
 				PING="The database is up."
 			fi
 		else
+
+			# extensions comes through here too - -config/-id
+			# picks up its port, socket, user and password from
+			# extensions.conf
 			PING=`$PREFIX/bin/sqlrsh -config $CONFDIR/${db}.conf -id ${db}test -command ping 2>&1`
 		fi
 
@@ -397,12 +435,12 @@ run_api_test() {
 			echo
 			echo "$db failed in $api"
 			echo
-			printf "    % 8s: failed\n" "$api" >> ../testresults.log
+			printf "    % 8s: failed\n" "$api" >> "$RESULTSLOG"
 			STATUS=1
 		else
 			echo
 			echo "test complete"
-			printf "    % 8s: success\n" "$api" >> ../testresults.log
+			printf "    % 8s: success\n" "$api" >> "$RESULTSLOG"
 		fi
 	else
 		echo "no test found for $db in $api"
@@ -464,11 +502,11 @@ run_protocol_test() {
 	./$prog
 	if ( test "$?" = "0" )
 	then
-		printf "    % 8s: success\n" "protocol" >> ../../testresults.log
+		printf "    % 8s: success\n" "protocol" >> "$RESULTSLOG"
 		cd ../..
 		return 0
 	fi
-	printf "    % 8s: failed\n" "protocol" >> ../../testresults.log
+	printf "    % 8s: failed\n" "protocol" >> "$RESULTSLOG"
 	cd ../..
 	return 1
 }
@@ -480,11 +518,11 @@ run_crud_test() {
 	./crud
 	if ( test "$?" = "0" )
 	then
-		printf "    % 8s: success\n" "crud" >> ../testresults.log
+		printf "    % 8s: success\n" "crud" >> "$RESULTSLOG"
 		cd ..
 		return 0
 	fi
-	printf "    % 8s: failed\n" "crud" >> ../testresults.log
+	printf "    % 8s: failed\n" "crud" >> "$RESULTSLOG"
 	cd ..
 	return 1
 }
@@ -528,6 +566,7 @@ run_db_tests() {
 
 # paths
 PREFIX=@prefix@
+TESTDIR=@abs_top_builddir@/test
 CONFDIR=@abs_top_builddir@/test/sqlrelay.conf.d
 BACKTRACEDIR=@abs_top_builddir@/test
 
@@ -556,11 +595,16 @@ do
 	esac
 done
 
-# determine the set of databases to test
+# determine the set of databases to test, and a tag naming that set, so that
+# runs against different backends don't write each other's output files
 TESTDBS="@TESTDBS@"
+TAG="all"
 if ( test -n "$1" )
 then
 	TESTDBS="$1"
+
+	# (the unquoted $1 collapses whitespace)
+	TAG=`echo $1 | tr ' ' '-'`
 fi
 
 # determine the set of apis to test
@@ -570,20 +614,26 @@ then
 	TESTAPIS="$2"
 fi
 
+# this run's output files.  they're absolute, because the tests are run from
+# the api directories, one and two levels down.
+RESULTSLOG=$TESTDIR/testresults-$TAG.log
+DETAILSLOG=$TESTDIR/testdetails-$TAG.log
+EXITSTATUSFILE=$TESTDIR/testexitstatus-$TAG.tmp
 
-# tee output to testdetails.log, preserving the child's exit status
+
+# tee output to the details log, preserving the child's exit status
 if ( test "$CHILD" != "1" )
 then
-	{ CHILD=1 $0 $nflag "$@"; echo $? > testexitstatus.tmp; } 2>&1 | tee testdetails.log
-	childstatus=`cat testexitstatus.tmp 2> /dev/null`
-	rm -f testexitstatus.tmp
+	{ CHILD=1 $0 $nflag "$@"; echo $? > "$EXITSTATUSFILE"; } 2>&1 | tee "$DETAILSLOG"
+	childstatus=`cat "$EXITSTATUSFILE" 2> /dev/null`
+	rm -f "$EXITSTATUSFILE"
 	exit ${childstatus:-0}
 fi
 
 
 
-echo "SQL Relay test results:" > testresults.log
-echo >> testresults.log
+echo "SQL Relay test results:" > "$RESULTSLOG"
+echo >> "$RESULTSLOG"
 
 # count of failures (instances that wouldn't start + tests that failed); the
 # script exits non-zero if any, and never blocks waiting for input, so it can
@@ -614,7 +664,7 @@ do
 
 	# testing...
 	echo "testing $db (from `hostname`)..."
-	echo "$db..." >> testresults.log
+	echo "$db..." >> "$RESULTSLOG"
 
 	# start the instance and wait for it to come up
 	up="yes"
@@ -642,7 +692,7 @@ do
 			echo
 			echo "failed to start ${db}test"
 			echo
-			echo "     connect: failed" >> testresults.log
+			echo "     connect: failed" >> "$RESULTSLOG"
 			failures=`expr $failures + 1`
 		fi
 	fi
@@ -659,7 +709,7 @@ do
 done
 
 # report and exit with a status the caller can check
-cat testresults.log
+cat "$RESULTSLOG"
 echo
 if ( test "$failures" -gt 0 )
 then

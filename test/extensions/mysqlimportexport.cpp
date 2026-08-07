@@ -1350,7 +1350,7 @@ void generateTable(const char *option,
 	stdoutput.printf("%sGENERATE TABLE:\n",option);
 
 	// connect to db
-	sqlrconnection	econ("sqlrelay",9000,"/tmp/test.socket",
+	sqlrconnection	econ("sqlrelay",9019,"/tmp/mysqlimportexporttest.socket",
 					"testuser","testpassword",0,1);
 	sqlrcursor	ecur(&econ);
 
@@ -1463,7 +1463,7 @@ void diffFiles(const char *filename1, const char *filename2) {
 void diffTables(const char *table1, const char *table2) {
 
 	// select from table 1
-	sqlrconnection	con1("sqlrelay",9000,"/tmp/test.socket",
+	sqlrconnection	con1("sqlrelay",9019,"/tmp/mysqlimportexporttest.socket",
 						"testuser","testpassword",0,1);
 	sqlrcursor	cur1(&con1);
 	stringbuffer	q1;
@@ -1474,7 +1474,7 @@ void diffTables(const char *table1, const char *table2) {
 	cur1.sendQuery(q1.getString());
 
 	// select from table 2
-	sqlrconnection	con2("sqlrelay",9000,"/tmp/test.socket",
+	sqlrconnection	con2("sqlrelay",9019,"/tmp/mysqlimportexporttest.socket",
 						"testuser","testpassword",0,1);
 	sqlrcursor	cur2(&con2);
 	stringbuffer	q2;
@@ -1530,10 +1530,10 @@ void exportTests() {
 	cur->sendQuery("drop table testtable");
 	cur->sendQuery("drop table testtable_export");
 	cur->sendQuery("drop table testtable_comparison");
-	file::remove("testtable.csv");
-	file::remove("testtable-comparison.csv");
-	file::remove("testtable.xml");
-	file::remove("testtable-comparison.xml");
+	file::remove("testtable-mysqlimportexport.csv");
+	file::remove("testtable-comparison-mysqlimportexport.csv");
+	file::remove("testtable-mysqlimportexport.xml");
+	file::remove("testtable-comparison-mysqlimportexport.xml");
 
 
 	// create testtable
@@ -1712,13 +1712,13 @@ void exportTests() {
 			if (fiter==0) {
 				e=&tsec;
 				format="CSV";
-				exp="testtable.csv";
-				comp="testtable-comparison.csv";
+				exp="testtable-mysqlimportexport.csv";
+				comp="testtable-comparison-mysqlimportexport.csv";
 			} else if (fiter==1) {
 				e=&tsex;
 				format="XML";
-				exp="testtable.xml";
-				comp="testtable-comparison.xml";
+				exp="testtable-mysqlimportexport.xml";
+				comp="testtable-comparison-mysqlimportexport.xml";
 			} else if (fiter==2) {
 				e=&tset;
 				format="TABLE";
@@ -1763,8 +1763,8 @@ void exportTests() {
 				tsex.setTestFileName(exp);
 				assertTrue(tsex.exportData());
 			} else if (fiter==2) {
-				sqlrconnection	econ("sqlrelay",9000,
-							"/tmp/test.socket",
+				sqlrconnection	econ("sqlrelay",9019,
+							"/tmp/mysqlimportexporttest.socket",
 							"testuser",
 							"testpassword",0,1);
 				sqlrcursor	ecur(&econ);
@@ -1807,8 +1807,8 @@ void exportTests() {
 
 			// clean up
 			if (fiter==2) {
-				sqlrconnection	ccon("sqlrelay",9000,
-							"/tmp/test.socket",
+				sqlrconnection	ccon("sqlrelay",9019,
+							"/tmp/mysqlimportexporttest.socket",
 							"testuser",
 							"testpassword",0,1);
 				sqlrcursor	ccur(&ccon);
@@ -1848,8 +1848,8 @@ void importTests() {
 	// clean up
 	cur->sendQuery("drop table testtable");
 	cur->sendQuery("drop table testtable_comparison");
-	file::remove("testtable.csv");
-	file::remove("testtable.xml");
+	file::remove("testtable-mysqlimportexport.csv");
+	file::remove("testtable-mysqlimportexport.xml");
 
 
 	// create testtable
@@ -1936,7 +1936,7 @@ void importTests() {
 			if (fiter==0) {
 				im=&tsic;
 				format="CSV";
-				imp="testtable.csv";
+				imp="testtable-mysqlimportexport.csv";
 				generateCsv(option,imp,
 						false,NULL,NULL,NULL,
 						&emptyrows);
@@ -1945,7 +1945,7 @@ void importTests() {
 			} else if (fiter==1) {
 				im=&tsix;
 				format="XML";
-				imp="testtable.xml";
+				imp="testtable-mysqlimportexport.xml";
 				generateXml(option,imp,colcount,
 						false,NULL,NULL,NULL,
 						&emptyrows);
@@ -1973,8 +1973,8 @@ void importTests() {
 			stdoutput.printf("\n");
 
 			// clean up
-			sqlrconnection	ccon("sqlrelay",9000,
-						"/tmp/test.socket",
+			sqlrconnection	ccon("sqlrelay",9019,
+						"/tmp/mysqlimportexporttest.socket",
 						"testuser",
 						"testpassword",0,1);
 			sqlrcursor	ccur(&ccon);
@@ -1998,7 +1998,7 @@ void importTests() {
 
 int main(int argc, char **argv) {
 
-	con=new sqlrconnection("sqlrelay",9000,"/tmp/test.socket",
+	con=new sqlrconnection("sqlrelay",9019,"/tmp/mysqlimportexporttest.socket",
 						"testuser","testpassword",0,1);
 	cur=new sqlrcursor(con);
 

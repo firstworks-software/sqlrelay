@@ -58,8 +58,8 @@ class informix extends sqlrtest {
 
 
 		// instantiation
-		SQLRConnection con=new SQLRConnection("sqlrelay",(short)9000,
-						"/tmp/test.socket","testuser",
+		SQLRConnection con=new SQLRConnection("sqlrelay",(short)9010,
+						"/tmp/informixtest.socket","testuser",
 						"testpassword",0,1);
 		SQLRCursor cur=new SQLRCursor(con);
 
@@ -1003,7 +1003,7 @@ class informix extends sqlrtest {
 
 		// cached result set
 		System.out.println("CACHED RESULT SET: ");
-		cur.cacheToFile("cachefile1");
+		cur.cacheToFile("cachefile1-informix");
 		cur.setCacheTtl(200);
 		assertTrue(cur.sendQuery(
 			"select "+
@@ -1013,7 +1013,7 @@ class informix extends sqlrtest {
 			"order by "+
 			"	testsmallint "));
 		filename=cur.getCacheFileName();
-		assertEquals(filename,"cachefile1");
+		assertEquals(filename,"cachefile1-informix");
 		cur.cacheOff();
 		assertTrue(cur.openCachedResultSet(filename));
 		assertEquals(cur.getField(7,1),"8");
@@ -1072,7 +1072,7 @@ class informix extends sqlrtest {
 		System.out.println("CACHED RESULT SET WITH RESULT SET BUFFER "+
 					"SIZE: ");
 		cur.setResultSetBufferSize(2);
-		cur.cacheToFile("cachefile1");
+		cur.cacheToFile("cachefile1-informix");
 		cur.setCacheTtl(200);
 		assertTrue(cur.sendQuery(
 			"select "+
@@ -1082,7 +1082,7 @@ class informix extends sqlrtest {
 			"order by "+
 			"	testsmallint "));
 		filename=cur.getCacheFileName();
-		assertEquals(filename,"cachefile1");
+		assertEquals(filename,"cachefile1-informix");
 		cur.cacheOff();
 		assertTrue(cur.openCachedResultSet(filename));
 		assertEquals(cur.getField(7,1),"8");
@@ -1093,10 +1093,10 @@ class informix extends sqlrtest {
 
 		// from one cache file to another
 		System.out.println("FROM ONE CACHE FILE TO ANOTHER: ");
-		cur.cacheToFile("cachefile2");
-		assertTrue(cur.openCachedResultSet("cachefile1"));
+		cur.cacheToFile("cachefile2-informix");
+		assertTrue(cur.openCachedResultSet("cachefile1-informix"));
 		cur.cacheOff();
-		assertTrue(cur.openCachedResultSet("cachefile2"));
+		assertTrue(cur.openCachedResultSet("cachefile2-informix"));
 		assertEquals(cur.getField(7,1),"8");
 		assertEquals(cur.getField(8,1),null);
 		System.out.println();
@@ -1106,10 +1106,10 @@ class informix extends sqlrtest {
 		System.out.println("FROM ONE CACHE FILE TO ANOTHER WITH "+
 					"RESULT SET BUFFER SIZE: ");
 		cur.setResultSetBufferSize(2);
-		cur.cacheToFile("cachefile2");
-		assertTrue(cur.openCachedResultSet("cachefile1"));
+		cur.cacheToFile("cachefile2-informix");
+		assertTrue(cur.openCachedResultSet("cachefile1-informix"));
 		cur.cacheOff();
-		assertTrue(cur.openCachedResultSet("cachefile2"));
+		assertTrue(cur.openCachedResultSet("cachefile2-informix"));
 		assertEquals(cur.getField(7,1),"8");
 		assertEquals(cur.getField(8,1),null);
 		cur.setResultSetBufferSize(0);
@@ -1120,7 +1120,7 @@ class informix extends sqlrtest {
 		System.out.println("CACHED RESULT SET WITH SUSPEND AND RESULT "+
 					"SET BUFFER SIZE: ");
 		cur.setResultSetBufferSize(2);
-		cur.cacheToFile("cachefile1");
+		cur.cacheToFile("cachefile1-informix");
 		cur.setCacheTtl(200);
 		assertTrue(cur.sendQuery(
 			"select "+
@@ -1131,7 +1131,7 @@ class informix extends sqlrtest {
 			"	testsmallint "));
 		assertEquals(cur.getField(2,1),"3");
 		filename=cur.getCacheFileName();
-		assertEquals(filename,"cachefile1");
+		assertEquals(filename,"cachefile1-informix");
 		id=cur.getResultSetId();
 		cur.suspendResultSet();
 		assertTrue(con.suspendSession());
@@ -1223,7 +1223,7 @@ class informix extends sqlrtest {
 		// new tx)
 		assertTrue(con.commit());
 		SQLRConnection secondcon=new SQLRConnection("sqlrelay",
-				(short)9000,"/tmp/test.socket","testuser",
+				(short)9010,"/tmp/informixtest.socket","testuser",
 				"testpassword",0,1);
 		SQLRCursor secondcur=new SQLRCursor(secondcon);
 		// Informix has no MVCC; under default committed-read isolation,

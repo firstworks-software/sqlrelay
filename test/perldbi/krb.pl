@@ -14,8 +14,8 @@ require "./asserts.pl";
 my $prefix="DBI:SQLRelay(AutoCommit=>0,PrintError=>0):";
 my $connectstring=
 	"host=sqlrelay;".
-	"port=9000;".
-	"socket=/tmp/test.socket;".
+	"port=9013;".
+	"socket=/tmp/krbtest.socket;".
 	"debug=0;".
 	"krb=yes";
 my $dsn=$prefix.$connectstring;

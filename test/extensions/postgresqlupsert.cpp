@@ -21,7 +21,7 @@ int main(int argc, char **argv) {
 
 	// upsert
 	stdoutput.printf("UPSERT:\n");
-	con=new sqlrconnection("sqlrelay",9000,"/tmp/test.socket",
+	con=new sqlrconnection("sqlrelay",9020,"/tmp/postgresqlupserttest.socket",
 						"testuser","testpassword",0,1);
 	cur=new sqlrcursor(con);
 	secondcur=new sqlrcursor(con);

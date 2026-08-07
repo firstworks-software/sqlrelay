@@ -91,7 +91,7 @@ int main(int argc, char **argv) {
 
 
 	// instantiation
-	con=sqlrcon_alloc("sqlrelay",9000,"/tmp/test.socket",
+	con=sqlrcon_alloc("sqlrelay",9002,"/tmp/mysqltest.socket",
 			"testuser","testpassword",0,1);
 	cur=sqlrcur_alloc(con);
 
@@ -1183,7 +1183,7 @@ int main(int argc, char **argv) {
 
 	// cached result set
 	printf("CACHED RESULT SET: \n");
-	sqlrcur_cacheToFile(cur,"cachefile1");
+	sqlrcur_cacheToFile(cur,"cachefile1-mysql");
 	sqlrcur_setCacheTtl(cur,200);
 	assertTrue(sqlrcur_sendQuery(cur,
 		"select "
@@ -1193,7 +1193,7 @@ int main(int argc, char **argv) {
 		"order by "
 		"	testtinyint "));
 	filename=strdup(sqlrcur_getCacheFileName(cur));
-	assertEqStr(filename,"cachefile1");
+	assertEqStr(filename,"cachefile1-mysql");
 	sqlrcur_cacheOff(cur);
 	assertTrue(sqlrcur_openCachedResultSet(cur,filename));
 	assertEqStr(sqlrcur_getFieldByIndex(cur,7,0),"8");
@@ -1261,7 +1261,7 @@ int main(int argc, char **argv) {
 	// buffer size
 	printf("CACHED RESULT SET WITH ""RESULT SET ""BUFFER SIZE: \n");
 	sqlrcur_setResultSetBufferSize(cur,2);
-	sqlrcur_cacheToFile(cur,"cachefile1");
+	sqlrcur_cacheToFile(cur,"cachefile1-mysql");
 	sqlrcur_setCacheTtl(cur,200);
 	assertTrue(sqlrcur_sendQuery(cur,
 		"select "
@@ -1271,7 +1271,7 @@ int main(int argc, char **argv) {
 		"order by "
 		"	testtinyint "));
 	filename=strdup(sqlrcur_getCacheFileName(cur));
-	assertEqStr(filename,"cachefile1");
+	assertEqStr(filename,"cachefile1-mysql");
 	sqlrcur_cacheOff(cur);
 	assertTrue(sqlrcur_openCachedResultSet(cur,filename));
 	assertEqStr(sqlrcur_getFieldByIndex(cur,7,0),"8");
@@ -1283,10 +1283,10 @@ int main(int argc, char **argv) {
 
 	// from one cache file to another
 	printf("FROM ONE CACHE FILE ""TO ANOTHER: \n");
-	sqlrcur_cacheToFile(cur,"cachefile2");
-	assertTrue(sqlrcur_openCachedResultSet(cur,"cachefile1"));
+	sqlrcur_cacheToFile(cur,"cachefile2-mysql");
+	assertTrue(sqlrcur_openCachedResultSet(cur,"cachefile1-mysql"));
 	sqlrcur_cacheOff(cur);
-	assertTrue(sqlrcur_openCachedResultSet(cur,"cachefile2"));
+	assertTrue(sqlrcur_openCachedResultSet(cur,"cachefile2-mysql"));
 	assertEqStr(sqlrcur_getFieldByIndex(cur,7,0),"8");
 	assertEqStr(sqlrcur_getFieldByIndex(cur,8,0),NULL);
 	printf("\n");
@@ -1297,10 +1297,10 @@ int main(int argc, char **argv) {
 	printf("FROM ONE CACHE FILE ""TO ANOTHER WITH RESULT "
 		"SET BUFFER SIZE: \n");
 	sqlrcur_setResultSetBufferSize(cur,2);
-	sqlrcur_cacheToFile(cur,"cachefile2");
-	assertTrue(sqlrcur_openCachedResultSet(cur,"cachefile1"));
+	sqlrcur_cacheToFile(cur,"cachefile2-mysql");
+	assertTrue(sqlrcur_openCachedResultSet(cur,"cachefile1-mysql"));
 	sqlrcur_cacheOff(cur);
-	assertTrue(sqlrcur_openCachedResultSet(cur,"cachefile2"));
+	assertTrue(sqlrcur_openCachedResultSet(cur,"cachefile2-mysql"));
 	assertEqStr(sqlrcur_getFieldByIndex(cur,7,0),"8");
 	assertEqStr(sqlrcur_getFieldByIndex(cur,8,0),NULL);
 	sqlrcur_setResultSetBufferSize(cur,0);
@@ -1312,7 +1312,7 @@ int main(int argc, char **argv) {
 	printf("CACHED RESULT SET WITH ""SUSPEND AND RESULT SET "
 		"BUFFER SIZE: \n");
 	sqlrcur_setResultSetBufferSize(cur,2);
-	sqlrcur_cacheToFile(cur,"cachefile1");
+	sqlrcur_cacheToFile(cur,"cachefile1-mysql");
 	sqlrcur_setCacheTtl(cur,200);
 	assertTrue(sqlrcur_sendQuery(cur,
 		"select "
@@ -1323,7 +1323,7 @@ int main(int argc, char **argv) {
 		"	testtinyint "));
 	assertEqStr(sqlrcur_getFieldByIndex(cur,2,0),"3");
 	filename=strdup(sqlrcur_getCacheFileName(cur));
-	assertEqStr(filename,"cachefile1");
+	assertEqStr(filename,"cachefile1-mysql");
 	id=sqlrcur_getResultSetId(cur);
 	sqlrcur_suspendResultSet(cur);
 	assertTrue(sqlrcon_suspendSession(con));
@@ -1412,7 +1412,7 @@ int main(int argc, char **argv) {
 		assertTrue(sqlrcon_setTransactionModel(con,"implicit"));
 		assertEqStr(sqlrcon_getTransactionModel(con),"implicit");
 		assertTrue(sqlrcur_sendQuery(cur,"create table testtable (col1 integer)"));
-		secondcon=sqlrcon_alloc("sqlrelay",9000,"/tmp/test.socket",
+		secondcon=sqlrcon_alloc("sqlrelay",9002,"/tmp/mysqltest.socket",
 							"testuser","testpassword",0,1);
 		secondcur=sqlrcur_alloc(secondcon);
 		// session is in a transaction; insert is not visible until commit

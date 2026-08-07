@@ -21,7 +21,7 @@ if (dot>0) {
 
 
 // instantiation
-var con=new sqlrelay.SQLRConnection("sqlrelay",9000,"/tmp/test.socket",
+var con=new sqlrelay.SQLRConnection("sqlrelay",9001,"/tmp/oracletest.socket",
 					"testuser","testpassword",0,1);
 setConnection(con);
 var cur=new sqlrelay.SQLRCursor(con);
@@ -623,7 +623,7 @@ console.log("");
 
 // cached result set
 console.log("CACHED RESULT SET: ");
-cur.cacheToFile("cachefile1");
+cur.cacheToFile("cachefile1-oracle");
 cur.setCacheTtl(200);
 assertTrue(cur.sendQuery(
 	"select "+
@@ -633,7 +633,7 @@ assertTrue(cur.sendQuery(
 	"order by "+
 	"	testnumber"));
 var filename=cur.getCacheFileName();
-assertEqStr(filename,"cachefile1");
+assertEqStr(filename,"cachefile1-oracle");
 cur.cacheOff();
 assertTrue(cur.openCachedResultSet(filename));
 assertEqStr(cur.getField(7,0),"8");
@@ -669,7 +669,7 @@ console.log("");
 // cached result set with result set buffer size
 console.log("CACHED RESULT SET WITH RESULT SET BUFFER SIZE: ");
 cur.setResultSetBufferSize(2);
-cur.cacheToFile("cachefile1");
+cur.cacheToFile("cachefile1-oracle");
 cur.setCacheTtl(200);
 assertTrue(cur.sendQuery(
 	"select "+
@@ -679,7 +679,7 @@ assertTrue(cur.sendQuery(
 	"order by "+
 	"	testnumber"));
 filename=cur.getCacheFileName();
-assertEqStr(filename,"cachefile1");
+assertEqStr(filename,"cachefile1-oracle");
 cur.cacheOff();
 assertTrue(cur.openCachedResultSet(filename));
 assertEqStr(cur.getField(7,0),"8");
@@ -690,10 +690,10 @@ console.log("");
 
 // from one cache file to another
 console.log("FROM ONE CACHE FILE TO ANOTHER: ");
-cur.cacheToFile("cachefile2");
-assertTrue(cur.openCachedResultSet("cachefile1"));
+cur.cacheToFile("cachefile2-oracle");
+assertTrue(cur.openCachedResultSet("cachefile1-oracle"));
 cur.cacheOff();
-assertTrue(cur.openCachedResultSet("cachefile2"));
+assertTrue(cur.openCachedResultSet("cachefile2-oracle"));
 assertEqStr(cur.getField(7,0),"8");
 assertEqStr(cur.getField(8,0),null);
 console.log("");
@@ -703,10 +703,10 @@ console.log("");
 console.log("FROM ONE CACHE FILE TO ANOTHER "+
 			"WITH RESULT SET BUFFER SIZE: ");
 cur.setResultSetBufferSize(2);
-cur.cacheToFile("cachefile2");
-assertTrue(cur.openCachedResultSet("cachefile1"));
+cur.cacheToFile("cachefile2-oracle");
+assertTrue(cur.openCachedResultSet("cachefile1-oracle"));
 cur.cacheOff();
-assertTrue(cur.openCachedResultSet("cachefile2"));
+assertTrue(cur.openCachedResultSet("cachefile2-oracle"));
 assertEqStr(cur.getField(7,0),"8");
 assertEqStr(cur.getField(8,0),null);
 cur.setResultSetBufferSize(0);
@@ -717,7 +717,7 @@ console.log("");
 console.log("CACHED RESULT SET WITH SUSPEND "+
 			"AND RESULT SET BUFFER SIZE: ");
 cur.setResultSetBufferSize(2);
-cur.cacheToFile("cachefile1");
+cur.cacheToFile("cachefile1-oracle");
 cur.setCacheTtl(200);
 assertTrue(cur.sendQuery(
 	"select "+
@@ -728,7 +728,7 @@ assertTrue(cur.sendQuery(
 	"	testnumber"));
 assertEqStr(cur.getField(2,0),"3");
 filename=cur.getCacheFileName();
-assertEqStr(filename,"cachefile1");
+assertEqStr(filename,"cachefile1-oracle");
 id=cur.getResultSetId();
 cur.suspendResultSet();
 assertTrue(con.suspendSession());
@@ -817,7 +817,7 @@ console.log("TRANSACTION BEHAVIOR - implicit: ");
 assertTrue(con.setTransactionModel("implicit"));
 assertEqStr(con.getTransactionModel(),"implicit");
 assertTrue(cur.sendQuery("create table testtable (col1 integer)"));
-var secondcon=new sqlrelay.SQLRConnection("sqlrelay",9000,"/tmp/test.socket",
+var secondcon=new sqlrelay.SQLRConnection("sqlrelay",9001,"/tmp/oracletest.socket",
 					"testuser","testpassword",0,1);
 setSecondConnection(secondcon);
 var secondcur=new sqlrelay.SQLRCursor(secondcon);

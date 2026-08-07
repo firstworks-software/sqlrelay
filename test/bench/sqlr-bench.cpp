@@ -15,6 +15,31 @@
 
 #define ORACLE_SID "(DESCRIPTION = (ADDRESS = (PROTOCOL = TCP)(HOST = oracle)(PORT = 1521)) (CONNECT_DATA = (SERVER = DEDICATED) (SERVICE_NAME = ora1)))"
 
+// the sqlrelay instance that each database is tested against
+// (see test/sqlrelay.conf.d/*.conf.in - the socket is /tmp/<id>.socket)
+struct dbinstance {
+	const char	*db;
+	const char	*id;
+	uint16_t	port;
+};
+
+static const dbinstance	dbinstances[]={
+	{"oracle","oracletest",9001},
+	{"oracle8","oracletest",9001},
+	{"mysql","mysqltest",9002},
+	{"mysqlssl","mysqltest",9002},
+	{"postgresql","postgresqltest",9003},
+	{"postgresqlssl","postgresqltest",9003},
+	{"sqlite","sqlitetest",9004},
+	{"freetds","freetdstest",9005},
+	{"sap","saptest",9006},
+	{"sybase","saptest",9006},
+	{"db2","db2test",9008},
+	{"firebird","firebirdtest",9009},
+	{"informix","informixtest",9010},
+	{NULL,NULL,0}
+};
+
 void shutDown(int32_t signum);
 void graphStats(const char *graph, const char *db,
 		dictionary< float, linkedlist< float > *> *stats);
@@ -179,21 +204,43 @@ int main(int argc, const char **argv) {
 	dynamiclib	dbdl;
 	dynamiclib	*dl;
 
+	// find the sqlrelay instance that this database is tested against
+	const char	*sqlrid=NULL;
+	uint16_t	sqlrport=0;
+	for (const dbinstance *dbi=dbinstances; dbi->db; dbi++) {
+		if (!charstring::compare(db,dbi->db)) {
+			sqlrid=dbi->id;
+			sqlrport=dbi->port;
+			break;
+		}
+	}
+	if (benchsqlrelay && !sqlrconnectstring && !sqlrid) {
+		stdoutput.printf("no sqlrelay instance is defined for "
+					"database %s, "
+					"use -sqlrconnectstring\n",db);
+		process::exit(1);
+	}
+
 	// default sqlrelay connect string
 	stringbuffer	sqlrc;
-	if (!charstring::compare(sqlr,"local")) {
-		sqlrc.append("socket=/tmp/test.socket;");
-	} else if (!charstring::compare(sqlr,"remote")) {
-		sqlrc.append("host=sqlrelay;port=9000;");
-	} else if (!charstring::compare(sqlr,"db")) {
-		sqlrc.append("host=")->append(db)->append(";port=9000;");
+	if (sqlrid) {
+		if (!charstring::compare(sqlr,"local")) {
+			sqlrc.append("socket=/tmp/")->append(sqlrid);
+			sqlrc.append(".socket;");
+		} else if (!charstring::compare(sqlr,"remote")) {
+			sqlrc.append("host=sqlrelay;port=");
+			sqlrc.append(sqlrport)->append(";");
+		} else if (!charstring::compare(sqlr,"db")) {
+			sqlrc.append("host=")->append(db)->append(";port=");
+			sqlrc.append(sqlrport)->append(";");
+		}
+		if (!charstring::compare(db,"db2")) {
+			sqlrc.append("user=db2inst1;");
+		} else {
+			sqlrc.append("user=testuser;");
+		}
+		sqlrc.append("password=testpassword;debug=no");
 	}
-	if (!charstring::compare(db,"db2")) {
-		sqlrc.append("user=db2inst1;");
-	} else {
-		sqlrc.append("user=testuser;");
-	}
-	sqlrc.append("password=testpassword;debug=no");
 
 	// first sqlrelay, then proxy, then direct
 	for (uint16_t i=0; i<3; i++) {

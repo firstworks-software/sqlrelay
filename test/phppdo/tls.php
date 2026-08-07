@@ -5,8 +5,8 @@
 	include("asserts.php");
 
 	$host="sqlrelay";
-	$port=9000;
-	$socket="/tmp/test.socket";
+	$port=9012;
+	$socket="/tmp/tlstest.socket";
 	$user="";
 	$password="";
 	$tlscert="../sqlrelay.conf.d/tls/client.pem";

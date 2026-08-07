@@ -25,7 +25,7 @@ if {$dot > 0} {
 
 
 # instantiation
-set con [sqlrcon -server "sqlrelay" -port 9000 -socket "/tmp/test.socket" -user "" -password "" -retrytime 0 -tries 1]
+set con [sqlrcon -server "sqlrelay" -port 9012 -socket "/tmp/tlstest.socket" -user "" -password "" -retrytime 0 -tries 1]
 set cur [$con sqlrcur]
 $con enableTls "" $cert "" "" "ca" $ca 0
 setConnection $con
@@ -542,11 +542,11 @@ puts ""
 
 # cached result set
 puts "CACHED RESULT SET: "
-$cur cacheToFile "cachefile1"
+$cur cacheToFile "cachefile1-tls"
 $cur setCacheTtl 200
 assertTrue [$cur sendQuery "select * from testtable order by testnumber"]
 set filename [$cur getCacheFileName]
-assertEqual $filename "cachefile1"
+assertEqual $filename "cachefile1-tls"
 $cur cacheOff
 assertTrue [$cur openCachedResultSet $filename]
 assertEqual [$cur getFieldByIndex 7 0] "8"
@@ -582,11 +582,11 @@ puts ""
 # cached result set with result set buffer size
 puts "CACHED RESULT SET WITH RESULT SET BUFFER SIZE: "
 $cur setResultSetBufferSize 2
-$cur cacheToFile "cachefile1"
+$cur cacheToFile "cachefile1-tls"
 $cur setCacheTtl 200
 assertTrue [$cur sendQuery "select * from testtable order by testnumber"]
 set filename [$cur getCacheFileName]
-assertEqual $filename "cachefile1"
+assertEqual $filename "cachefile1-tls"
 $cur cacheOff
 assertTrue [$cur openCachedResultSet $filename]
 assertEqual [$cur getFieldByIndex 7 0] "8"
@@ -597,10 +597,10 @@ puts ""
 
 # from one cache file to another
 puts "FROM ONE CACHE FILE TO ANOTHER: "
-$cur cacheToFile "cachefile2"
-assertTrue [$cur openCachedResultSet "cachefile1"]
+$cur cacheToFile "cachefile2-tls"
+assertTrue [$cur openCachedResultSet "cachefile1-tls"]
 $cur cacheOff
-assertTrue [$cur openCachedResultSet "cachefile2"]
+assertTrue [$cur openCachedResultSet "cachefile2-tls"]
 assertEqual [$cur getFieldByIndex 7 0] "8"
 assertUndef [$cur getFieldByIndex 8 0]
 puts ""
@@ -609,10 +609,10 @@ puts ""
 # from one cache file to another with result set buffer size
 puts "FROM ONE CACHE FILE TO ANOTHER WITH RESULT SET BUFFER SIZE: "
 $cur setResultSetBufferSize 2
-$cur cacheToFile "cachefile2"
-assertTrue [$cur openCachedResultSet "cachefile1"]
+$cur cacheToFile "cachefile2-tls"
+assertTrue [$cur openCachedResultSet "cachefile1-tls"]
 $cur cacheOff
-assertTrue [$cur openCachedResultSet "cachefile2"]
+assertTrue [$cur openCachedResultSet "cachefile2-tls"]
 assertEqual [$cur getFieldByIndex 7 0] "8"
 assertUndef [$cur getFieldByIndex 8 0]
 $cur setResultSetBufferSize 0
@@ -622,12 +622,12 @@ puts ""
 # cached result set with suspend and result set buffer size
 puts "CACHED RESULT SET WITH SUSPEND AND RESULT SET BUFFER SIZE: "
 $cur setResultSetBufferSize 2
-$cur cacheToFile "cachefile1"
+$cur cacheToFile "cachefile1-tls"
 $cur setCacheTtl 200
 assertTrue [$cur sendQuery "select * from testtable order by testnumber"]
 assertEqual [$cur getFieldByIndex 2 0] "3"
 set filename [$cur getCacheFileName]
-assertEqual $filename "cachefile1"
+assertEqual $filename "cachefile1-tls"
 set id [$cur getResultSetId]
 $cur suspendResultSet
 assertTrue [$con suspendSession]
@@ -710,7 +710,7 @@ puts "TRANSACTION BEHAVIOR - implicit: "
 assertTrue [$con setTransactionModel "implicit"]
 assertEqual [$con getTransactionModel] "implicit"
 assertTrue [$cur sendQuery "create table testtable (col1 integer)"]
-set secondcon [sqlrcon -server "sqlrelay" -port 9000 -socket "/tmp/test.socket" -user "" -password "" -retrytime 0 -tries 1]
+set secondcon [sqlrcon -server "sqlrelay" -port 9012 -socket "/tmp/tlstest.socket" -user "" -password "" -retrytime 0 -tries 1]
 set secondcur [$secondcon sqlrcur]
 $secondcon enableTls "" $cert "" "" "ca" $ca 0
 setSecondConnection $secondcon

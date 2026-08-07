@@ -23,8 +23,8 @@ def main():
 	# instantiation
 	print("INSTANTIATION")
 	con=PySQLRDB.connect(
-		"sqlrelay",9000,
-		"/tmp/test.socket",
+		"sqlrelay",9012,
+		"/tmp/tlstest.socket",
 		"","",0,1,tls='yes',
 		tlscert=tlscert,
 		tlsvalidate='ca',

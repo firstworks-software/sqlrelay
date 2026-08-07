@@ -62,7 +62,7 @@ int main(int argc, char **argv) {
 
 
 	// instantiation
-	con=new sqlrconnection("sqlrelay",9000,"/tmp/test.socket",
+	con=new sqlrconnection("sqlrelay",9010,"/tmp/informixtest.socket",
 						"testuser","testpassword",0,1);
 	cur=new sqlrcursor(con);
 
@@ -967,7 +967,7 @@ int main(int argc, char **argv) {
 
 	// cached result set
 	stdoutput.printf("CACHED RESULT SET: \n");
-	cur->cacheToFile("cachefile1");
+	cur->cacheToFile("cachefile1-informix");
 	cur->setCacheTtl(200);
 	assertTrue(cur->sendQuery(
 		"select "
@@ -977,7 +977,7 @@ int main(int argc, char **argv) {
 		"order by "
 		"	testsmallint "));
 	filename=charstring::duplicate(cur->getCacheFileName());
-	assertEquals(filename,"cachefile1");
+	assertEquals(filename,"cachefile1-informix");
 	cur->cacheOff();
 	assertTrue(cur->openCachedResultSet(filename));
 	assertEquals(cur->getField(7,(uint32_t)1),"8");
@@ -1036,7 +1036,7 @@ int main(int argc, char **argv) {
 	// cached result set with result set buffer size
 	stdoutput.printf("CACHED RESULT SET WITH RESULT SET BUFFER SIZE: \n");
 	cur->setResultSetBufferSize(2);
-	cur->cacheToFile("cachefile1");
+	cur->cacheToFile("cachefile1-informix");
 	cur->setCacheTtl(200);
 	assertTrue(cur->sendQuery(
 		"select "
@@ -1046,7 +1046,7 @@ int main(int argc, char **argv) {
 		"order by "
 		"	testsmallint "));
 	filename=charstring::duplicate(cur->getCacheFileName());
-	assertEquals(filename,"cachefile1");
+	assertEquals(filename,"cachefile1-informix");
 	cur->cacheOff();
 	assertTrue(cur->openCachedResultSet(filename));
 	assertEquals(cur->getField(7,(uint32_t)1),"8");
@@ -1058,10 +1058,10 @@ int main(int argc, char **argv) {
 
 	// from one cache file to another
 	stdoutput.printf("FROM ONE CACHE FILE TO ANOTHER: \n");
-	cur->cacheToFile("cachefile2");
-	assertTrue(cur->openCachedResultSet("cachefile1"));
+	cur->cacheToFile("cachefile2-informix");
+	assertTrue(cur->openCachedResultSet("cachefile1-informix"));
 	cur->cacheOff();
-	assertTrue(cur->openCachedResultSet("cachefile2"));
+	assertTrue(cur->openCachedResultSet("cachefile2-informix"));
 	assertEquals(cur->getField(7,(uint32_t)1),"8");
 	assertEquals(cur->getField(8,(uint32_t)1),NULL);
 	stdoutput.printf("\n");
@@ -1071,10 +1071,10 @@ int main(int argc, char **argv) {
 	stdoutput.printf("FROM ONE CACHE FILE TO ANOTHER "
 				"WITH RESULT SET BUFFER SIZE: \n");
 	cur->setResultSetBufferSize(2);
-	cur->cacheToFile("cachefile2");
-	assertTrue(cur->openCachedResultSet("cachefile1"));
+	cur->cacheToFile("cachefile2-informix");
+	assertTrue(cur->openCachedResultSet("cachefile1-informix"));
 	cur->cacheOff();
-	assertTrue(cur->openCachedResultSet("cachefile2"));
+	assertTrue(cur->openCachedResultSet("cachefile2-informix"));
 	assertEquals(cur->getField(7,(uint32_t)1),"8");
 	assertEquals(cur->getField(8,(uint32_t)1),NULL);
 	cur->setResultSetBufferSize(0);
@@ -1085,7 +1085,7 @@ int main(int argc, char **argv) {
 	stdoutput.printf("CACHED RESULT SET WITH SUSPEND "
 				"AND RESULT SET BUFFER SIZE: \n");
 	cur->setResultSetBufferSize(2);
-	cur->cacheToFile("cachefile1");
+	cur->cacheToFile("cachefile1-informix");
 	cur->setCacheTtl(200);
 	assertTrue(cur->sendQuery(
 		"select "
@@ -1096,7 +1096,7 @@ int main(int argc, char **argv) {
 		"	testsmallint "));
 	assertEquals(cur->getField(2,(uint32_t)1),"3");
 	filename=charstring::duplicate(cur->getCacheFileName());
-	assertEquals(filename,"cachefile1");
+	assertEquals(filename,"cachefile1-informix");
 	id=cur->getResultSetId();
 	cur->suspendResultSet();
 	assertTrue(con->suspendSession());
@@ -1189,7 +1189,7 @@ int main(int argc, char **argv) {
 	// is visible to the second connection (commit implicitly starts a
 	// new tx)
 	assertTrue(con->commit());
-	secondcon=new sqlrconnection("sqlrelay",9000,"/tmp/test.socket",
+	secondcon=new sqlrconnection("sqlrelay",9010,"/tmp/informixtest.socket",
 						"testuser","testpassword",0,1);
 	secondcur=new sqlrcursor(secondcon);
 	// Informix has no MVCC; under default committed-read isolation,
@@ -1240,7 +1240,7 @@ int main(int argc, char **argv) {
 	assertTrue(con->setTransactionModel("explicit"));
 	assertEquals(con->getTransactionModel(),"explicit");
 	assertTrue(cur->sendQuery("create table testtable (col1 integer)"));
-	secondcon=new sqlrconnection("sqlrelay",9000,"/tmp/test.socket",
+	secondcon=new sqlrconnection("sqlrelay",9010,"/tmp/informixtest.socket",
 						"testuser","testpassword",0,1);
 	secondcur=new sqlrcursor(secondcon);
 	// see note above re: informix dirty-read workaround
@@ -1290,7 +1290,7 @@ int main(int argc, char **argv) {
 	assertTrue(con->autoCommitOn());
 	assertTrue(con->getAutoCommit());
 	assertTrue(cur->sendQuery("create table testtable (col1 integer)"));
-	secondcon=new sqlrconnection("sqlrelay",9000,"/tmp/test.socket",
+	secondcon=new sqlrconnection("sqlrelay",9010,"/tmp/informixtest.socket",
 						"testuser","testpassword",0,1);
 	secondcur=new sqlrcursor(secondcon);
 	// see note in - implicit section re: informix dirty-read workaround
@@ -1381,7 +1381,7 @@ int main(int argc, char **argv) {
 	assertTrue(con->setTransactionModel("explicit-error"));
 	assertEquals(con->getTransactionModel(),"explicit-error");
 	assertTrue(cur->sendQuery("create table testtable (col1 integer)"));
-	secondcon=new sqlrconnection("sqlrelay",9000,"/tmp/test.socket",
+	secondcon=new sqlrconnection("sqlrelay",9010,"/tmp/informixtest.socket",
 						"testuser","testpassword",0,1);
 	secondcur=new sqlrcursor(secondcon);
 	// begin, insert, commit
@@ -1425,7 +1425,7 @@ int main(int argc, char **argv) {
 	assertTrue(con->setTransactionModel("none"));
 	assertEquals(con->getTransactionModel(),"none");
 	assertTrue(cur->sendQuery("create table testtable (col1 integer)"));
-	secondcon=new sqlrconnection("sqlrelay",9000,"/tmp/test.socket",
+	secondcon=new sqlrconnection("sqlrelay",9010,"/tmp/informixtest.socket",
 						"testuser","testpassword",0,1);
 	secondcur=new sqlrcursor(secondcon);
 	// no transactions; everything is visible immediately

@@ -1,10 +1,26 @@
+// Copyright (c) David Muse
+// See the file COPYING for more information.
+
 #include <rudiments/inetsocketclient.h>
+#include <rudiments/commandline.h>
+#include <rudiments/charstring.h>
 #include <rudiments/stdio.h>
 
-int main() {
+int main(int argc, const char **argv) {
 
+	commandline	cmdl(argc,argv);
+
+	// default to the oracletest instance
 	const char	*host="sqlrelay";
-	uint16_t	port=9000;
+	uint16_t	port=9001;
+
+	if (cmdl.isFound("host")) {
+		host=cmdl.getValue("host");
+	}
+	if (cmdl.isFound("port")) {
+		port=charstring::convertToUnsignedInteger(
+						cmdl.getValue("port"));
+	}
 
 	inetsocketclient	cl;
 	cl.setHost(host);

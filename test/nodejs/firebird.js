@@ -39,7 +39,7 @@ var	found;
 
 
 // instantiation
-var	con=new sqlrelay.SQLRConnection("sqlrelay",9000,"/tmp/test.socket",
+var	con=new sqlrelay.SQLRConnection("sqlrelay",9009,"/tmp/firebirdtest.socket",
 			"testuser","testpassword",0,1);
 var	cur=new sqlrelay.SQLRCursor(con);
 setConnection(con);
@@ -732,7 +732,7 @@ console.log();
 
 // cached result set
 console.log("CACHED RESULT SET: ");
-cur.cacheToFile("cachefile1");
+cur.cacheToFile("cachefile1-firebird");
 cur.setCacheTtl(200);
 assertTrue(cur.sendQuery(
 	"select "+
@@ -742,7 +742,7 @@ assertTrue(cur.sendQuery(
 	"order by "+
 	"	testinteger "));
 filename=cur.getCacheFileName();
-assertEqStr(filename,"cachefile1");
+assertEqStr(filename,"cachefile1-firebird");
 cur.cacheOff();
 assertTrue(cur.openCachedResultSet(filename));
 assertEqStr(cur.getField(7,0),"8");
@@ -788,7 +788,7 @@ console.log();
 // cached result set with result set buffer size
 console.log("CACHED RESULT SET WITH RESULT SET BUFFER SIZE: ");
 cur.setResultSetBufferSize(2);
-cur.cacheToFile("cachefile1");
+cur.cacheToFile("cachefile1-firebird");
 cur.setCacheTtl(200);
 assertTrue(cur.sendQuery(
 	"select "+
@@ -798,7 +798,7 @@ assertTrue(cur.sendQuery(
 	"order by "+
 	"	testinteger "));
 filename=cur.getCacheFileName();
-assertEqStr(filename,"cachefile1");
+assertEqStr(filename,"cachefile1-firebird");
 cur.cacheOff();
 assertTrue(cur.openCachedResultSet(filename));
 assertEqStr(cur.getField(7,0),"8");
@@ -809,10 +809,10 @@ console.log();
 
 // from one cache file to another
 console.log("FROM ONE CACHE FILE TO ANOTHER: ");
-cur.cacheToFile("cachefile2");
-assertTrue(cur.openCachedResultSet("cachefile1"));
+cur.cacheToFile("cachefile2-firebird");
+assertTrue(cur.openCachedResultSet("cachefile1-firebird"));
 cur.cacheOff();
-assertTrue(cur.openCachedResultSet("cachefile2"));
+assertTrue(cur.openCachedResultSet("cachefile2-firebird"));
 assertEqStr(cur.getField(7,0),"8");
 assertEqStr(cur.getField(8,0),null);
 console.log();
@@ -823,10 +823,10 @@ console.log();
 console.log("FROM ONE CACHE FILE TO ANOTHER WITH RESULT SET "+
 		"BUFFER SIZE: ");
 cur.setResultSetBufferSize(2);
-cur.cacheToFile("cachefile2");
-assertTrue(cur.openCachedResultSet("cachefile1"));
+cur.cacheToFile("cachefile2-firebird");
+assertTrue(cur.openCachedResultSet("cachefile1-firebird"));
 cur.cacheOff();
-assertTrue(cur.openCachedResultSet("cachefile2"));
+assertTrue(cur.openCachedResultSet("cachefile2-firebird"));
 assertEqStr(cur.getField(7,0),"8");
 assertEqStr(cur.getField(8,0),null);
 cur.setResultSetBufferSize(0);
@@ -838,7 +838,7 @@ console.log();
 console.log("CACHED RESULT SET WITH SUSPEND AND RESULT SET "+
 		"BUFFER SIZE: ");
 cur.setResultSetBufferSize(2);
-cur.cacheToFile("cachefile1");
+cur.cacheToFile("cachefile1-firebird");
 cur.setCacheTtl(200);
 assertTrue(cur.sendQuery(
 	"select "+
@@ -849,7 +849,7 @@ assertTrue(cur.sendQuery(
 	"	testinteger "));
 assertEqStr(cur.getField(2,0),"3");
 filename=cur.getCacheFileName();
-assertEqStr(filename,"cachefile1");
+assertEqStr(filename,"cachefile1-firebird");
 id=cur.getResultSetId();
 cur.suspendResultSet();
 assertTrue(con.suspendSession());
@@ -945,7 +945,7 @@ assertTrue(cur.sendQuery("delete from testtable"));
 // commit so the truncation is visible to the second connection
 // (the commit implicitly starts a new tx)
 assertTrue(con.commit());
-var	secondcon=new sqlrelay.SQLRConnection("sqlrelay",9000,"/tmp/test.socket",
+var	secondcon=new sqlrelay.SQLRConnection("sqlrelay",9009,"/tmp/firebirdtest.socket",
 			"testuser","testpassword",0,1);
 var	secondcur=new sqlrelay.SQLRCursor(secondcon);
 setSecondConnection(secondcon);

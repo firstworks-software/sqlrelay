@@ -362,8 +362,8 @@ bool httpModuleInit(httpserverapi *sapi) {
 	// set up properties (normally these would be in a file)
 	prop.parseString(
 		"sqlr.host=localhost\n"
-		"sqlr.port=9000\n"
-		"sqlr.socket=\n"
+		"sqlr.port=9001\n"
+		"sqlr.socket=/tmp/oracletest.socket\n"
 		"sqlr.user=testuser\n"
 		"sqlr.password=testpassword\n"
 		"table=testtable\n"

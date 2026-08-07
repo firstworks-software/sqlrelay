@@ -26,9 +26,9 @@
 			isolationlevel="read committed"
 			passwordpath="@abs_top_builddir@/test/sqlrelay.conf.d/pwdenc">
 		<listeners>
-			<listener port="9000"
+			<listener port="9014"
 				addresses="0.0.0.0"
-				socket="/tmp/test.socket"/>
+				socket="/tmp/extensionstest.socket"/>
 		</listeners>
 		<auths>
 			<auth module="sqlrclient_userlist">
@@ -171,22 +171,24 @@
 		<loggers>
 			<logger module="debug"/>
 			<logger module="custom_nw"/>
+			<!-- no path, so this one exercises the
+			     default log directory -->
 			<logger module="custom_sc"/>
 			<logger module="custom_sc"
-				path="@abs_top_builddir@/test/log"/>
+				path="@abs_top_builddir@/test/log/extensionstest"/>
 			<logger module="custom_sc"
-				path="@abs_top_builddir@/test/log"
+				path="@abs_top_builddir@/test/log/extensionstest"
 				name="sc.log"/>
 			<logger module="custom_sc"
-				path="@abs_top_builddir@/test/log"
+				path="@abs_top_builddir@/test/log/extensionstest"
 				name="sc-info.log"
 				loglevel="info"/>
 			<logger module="custom_sc"
-				path="@abs_top_builddir@/test/log"
+				path="@abs_top_builddir@/test/log/extensionstest"
 				name="sc-warning.log"
 				loglevel="warning"/>
 			<logger module="custom_sc"
-				path="@abs_top_builddir@/test/log"
+				path="@abs_top_builddir@/test/log/extensionstest"
 				name="sc-error.log"
 				loglevel="error"/>
 			<logger module="slowqueries"/>

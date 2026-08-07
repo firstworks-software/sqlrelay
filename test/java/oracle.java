@@ -65,8 +65,8 @@ class oracle extends sqlrtest {
 
 
 		// instantiation
-		SQLRConnection con=new SQLRConnection("sqlrelay",(short)9000,
-						"/tmp/test.socket","testuser",
+		SQLRConnection con=new SQLRConnection("sqlrelay",(short)9001,
+						"/tmp/oracletest.socket","testuser",
 						"testpassword",0,1);
 		SQLRCursor cur=new SQLRCursor(con);
 
@@ -670,7 +670,7 @@ class oracle extends sqlrtest {
 
 		// cached result set
 		System.out.println("CACHED RESULT SET: ");
-		cur.cacheToFile("cachefile1");
+		cur.cacheToFile("cachefile1-oracle");
 		cur.setCacheTtl(200);
 		assertTrue(cur.sendQuery(
 			"select "+
@@ -680,7 +680,7 @@ class oracle extends sqlrtest {
 			"order by "+
 			"	testnumber"));
 		filename=cur.getCacheFileName();
-		assertEquals(filename,"cachefile1");
+		assertEquals(filename,"cachefile1-oracle");
 		cur.cacheOff();
 		assertTrue(cur.openCachedResultSet(filename));
 		assertEquals(cur.getField(7,0),"8");
@@ -717,7 +717,7 @@ class oracle extends sqlrtest {
 		System.out.println("CACHED RESULT SET WITH RESULT SET BUFFER "+
 					"SIZE: ");
 		cur.setResultSetBufferSize(2);
-		cur.cacheToFile("cachefile1");
+		cur.cacheToFile("cachefile1-oracle");
 		cur.setCacheTtl(200);
 		assertTrue(cur.sendQuery(
 			"select "+
@@ -727,7 +727,7 @@ class oracle extends sqlrtest {
 			"order by "+
 			"	testnumber"));
 		filename=cur.getCacheFileName();
-		assertEquals(filename,"cachefile1");
+		assertEquals(filename,"cachefile1-oracle");
 		cur.cacheOff();
 		assertTrue(cur.openCachedResultSet(filename));
 		assertEquals(cur.getField(7,0),"8");
@@ -738,10 +738,10 @@ class oracle extends sqlrtest {
 
 		// from one cache file to another
 		System.out.println("FROM ONE CACHE FILE TO ANOTHER: ");
-		cur.cacheToFile("cachefile2");
-		assertTrue(cur.openCachedResultSet("cachefile1"));
+		cur.cacheToFile("cachefile2-oracle");
+		assertTrue(cur.openCachedResultSet("cachefile1-oracle"));
 		cur.cacheOff();
-		assertTrue(cur.openCachedResultSet("cachefile2"));
+		assertTrue(cur.openCachedResultSet("cachefile2-oracle"));
 		assertEquals(cur.getField(7,0),"8");
 		assertEquals(cur.getField(8,0),null);
 		System.out.println();
@@ -751,10 +751,10 @@ class oracle extends sqlrtest {
 		System.out.println("FROM ONE CACHE FILE TO ANOTHER WITH "+
 					"RESULT SET BUFFER SIZE: ");
 		cur.setResultSetBufferSize(2);
-		cur.cacheToFile("cachefile2");
-		assertTrue(cur.openCachedResultSet("cachefile1"));
+		cur.cacheToFile("cachefile2-oracle");
+		assertTrue(cur.openCachedResultSet("cachefile1-oracle"));
 		cur.cacheOff();
-		assertTrue(cur.openCachedResultSet("cachefile2"));
+		assertTrue(cur.openCachedResultSet("cachefile2-oracle"));
 		assertEquals(cur.getField(7,0),"8");
 		assertEquals(cur.getField(8,0),null);
 		cur.setResultSetBufferSize(0);
@@ -765,7 +765,7 @@ class oracle extends sqlrtest {
 		System.out.println("CACHED RESULT SET WITH SUSPEND AND RESULT "+
 					"SET BUFFER SIZE: ");
 		cur.setResultSetBufferSize(2);
-		cur.cacheToFile("cachefile1");
+		cur.cacheToFile("cachefile1-oracle");
 		cur.setCacheTtl(200);
 		assertTrue(cur.sendQuery(
 			"select "+
@@ -776,7 +776,7 @@ class oracle extends sqlrtest {
 			"	testnumber"));
 		assertEquals(cur.getField(2,0),"3");
 		filename=cur.getCacheFileName();
-		assertEquals(filename,"cachefile1");
+		assertEquals(filename,"cachefile1-oracle");
 		id=cur.getResultSetId();
 		cur.suspendResultSet();
 		assertTrue(con.suspendSession());
@@ -865,7 +865,7 @@ class oracle extends sqlrtest {
 		assertEquals(con.getTransactionModel(),"implicit");
 		assertTrue(cur.sendQuery("create table testtable (col1 integer)"));
 		SQLRConnection secondcon=new SQLRConnection("sqlrelay",
-				(short)9000,"/tmp/test.socket","testuser",
+				(short)9001,"/tmp/oracletest.socket","testuser",
 				"testpassword",0,1);
 		SQLRCursor secondcur=new SQLRCursor(secondcon);
 		// session is in a transaction; insert is not visible until commit

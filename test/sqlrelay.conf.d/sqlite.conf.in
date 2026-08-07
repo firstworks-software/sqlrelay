@@ -3,7 +3,7 @@
 
 	<instance id="sqlitetest" dbase="sqlite">
 		<listeners>
-			<listener port="9000" socket="/tmp/test.socket"/>
+			<listener port="9004" socket="/tmp/sqlitetest.socket"/>
 		</listeners>
 		<connections>
 			<connection string="db=@abs_top_builddir@/test/sqlrelay.conf.d/sqlite/sqlite.db;user=testuser;password=testpassword"/>

@@ -24,7 +24,7 @@ var {
 
 
 	// instantiation
-	var	con=new sqlrelay.SQLRConnection("sqlrelay",9000,"/tmp/test.socket",
+	var	con=new sqlrelay.SQLRConnection("sqlrelay",9004,"/tmp/sqlitetest.socket",
 			"testuser","testpassword",0,1);
 	setConnection(con);
 	var	cur=new sqlrelay.SQLRCursor(con);
@@ -546,12 +546,12 @@ var {
 
 	// cached result set
 	console.log("CACHED RESULT SET: ");
-	cur.cacheToFile("cachefile1");
+	cur.cacheToFile("cachefile1-sqlite");
 	cur.setCacheTtl(200);
 	assertTrue(cur.sendQuery("select * from testtable "+
 		"order by testint"));
 	var filename=cur.getCacheFileName();
-	assertEqStr(filename,"cachefile1");
+	assertEqStr(filename,"cachefile1-sqlite");
 	cur.cacheOff();
 	assertTrue(cur.openCachedResultSet(filename));
 	assertEqStr(cur.getField(7,0),"8");
@@ -586,12 +586,12 @@ var {
 	// buffer size
 	console.log("CACHED RESULT SET WITH RESULT SET BUFFER SIZE: ");
 	cur.setResultSetBufferSize(2);
-	cur.cacheToFile("cachefile1");
+	cur.cacheToFile("cachefile1-sqlite");
 	cur.setCacheTtl(200);
 	assertTrue(cur.sendQuery("select * from testtable "+
 		"order by testint"));
 	filename=cur.getCacheFileName();
-	assertEqStr(filename,"cachefile1");
+	assertEqStr(filename,"cachefile1-sqlite");
 	cur.cacheOff();
 	assertTrue(cur.openCachedResultSet(filename));
 	assertEqStr(cur.getField(7,0),"8");
@@ -602,10 +602,10 @@ var {
 
 	// from one cache file to another
 	console.log("FROM ONE CACHE FILE TO ANOTHER: ");
-	cur.cacheToFile("cachefile2");
-	assertTrue(cur.openCachedResultSet("cachefile1"));
+	cur.cacheToFile("cachefile2-sqlite");
+	assertTrue(cur.openCachedResultSet("cachefile1-sqlite"));
 	cur.cacheOff();
-	assertTrue(cur.openCachedResultSet("cachefile2"));
+	assertTrue(cur.openCachedResultSet("cachefile2-sqlite"));
 	assertEqStr(cur.getField(7,0),"8");
 	assertEqStr(cur.getField(8,0),null);
 	console.log("");
@@ -615,10 +615,10 @@ var {
 	// with result set buffer size
 	console.log("FROM ONE CACHE FILE TO ANOTHER WITH RESULT SET BUFFER SIZE: ");
 	cur.setResultSetBufferSize(2);
-	cur.cacheToFile("cachefile2");
-	assertTrue(cur.openCachedResultSet("cachefile1"));
+	cur.cacheToFile("cachefile2-sqlite");
+	assertTrue(cur.openCachedResultSet("cachefile1-sqlite"));
 	cur.cacheOff();
-	assertTrue(cur.openCachedResultSet("cachefile2"));
+	assertTrue(cur.openCachedResultSet("cachefile2-sqlite"));
 	assertEqStr(cur.getField(7,0),"8");
 	assertEqStr(cur.getField(8,0),null);
 	cur.setResultSetBufferSize(0);
@@ -629,13 +629,13 @@ var {
 	// and result set buffer size
 	console.log("CACHED RESULT SET WITH SUSPEND AND RESULT SET BUFFER SIZE: ");
 	cur.setResultSetBufferSize(2);
-	cur.cacheToFile("cachefile1");
+	cur.cacheToFile("cachefile1-sqlite");
 	cur.setCacheTtl(200);
 	assertTrue(cur.sendQuery("select * from testtable "+
 		"order by testint"));
 	assertEqStr(cur.getField(2,0),"3");
 	filename=cur.getCacheFileName();
-	assertEqStr(filename,"cachefile1");
+	assertEqStr(filename,"cachefile1-sqlite");
 	id=cur.getResultSetId();
 	cur.suspendResultSet();
 	assertTrue(con.suspendSession());
@@ -723,7 +723,7 @@ var {
 	// sqlite DDL is transactional; commit so the table is visible
 	// to the second connection (the commit implicitly starts a new tx)
 	assertTrue(con.commit());
-	var	secondcon=new sqlrelay.SQLRConnection("sqlrelay",9000,"/tmp/test.socket",
+	var	secondcon=new sqlrelay.SQLRConnection("sqlrelay",9004,"/tmp/sqlitetest.socket",
 			"testuser","testpassword",0,1);
 	setSecondConnection(secondcon);
 	var	secondcur=new sqlrelay.SQLRCursor(secondcon);

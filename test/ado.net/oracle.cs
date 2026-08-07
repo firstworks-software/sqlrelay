@@ -21,7 +21,7 @@ namespace SQLRClientTest
             SQLRelayConnection sqlrcon =
                 new SQLRelayConnection(
                 "Data Source=sqlrelay:" +
-                "9000:/tmp/test.socket;" +
+                "9001:/tmp/oracletest.socket;" +
                 "User ID=testuser;" +
                 "Password=testpassword;" +
                 "Retry Time=0;" +
@@ -512,7 +512,7 @@ namespace SQLRClientTest
             SQLRelayConnection sqlrcon2 =
                 new SQLRelayConnection(
                 "Data Source=sqlrelay:" +
-                "9000:/tmp/test.socket;" +
+                "9001:/tmp/oracletest.socket;" +
                 "User ID=testuser;" +
                 "Password=testpassword;" +
                 "Retry Time=0;" +

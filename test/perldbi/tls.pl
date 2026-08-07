@@ -22,8 +22,8 @@ if ($^O eq "MSWin32") {
 my $prefix="DBI:SQLRelay(AutoCommit=>0,PrintError=>0):";
 my $connectstring=
 	"host=sqlrelay;".
-	"port=9000;".
-	"socket=/tmp/test.socket;".
+	"port=9012;".
+	"socket=/tmp/tlstest.socket;".
 	"debug=0;".
 	"tls=yes;".
 	"tlscert=$tlscert;".

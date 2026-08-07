@@ -65,7 +65,7 @@ for (uint16_t a=0; a<50; a++) {
 
 
 	// instantiation
-	con=new sqlrconnection("sqlrelay",9000,"/tmp/test.socket",
+	con=new sqlrconnection("sqlrelay",9002,"/tmp/mysqltest.socket",
 						"testuser","testpassword",0,1);
 	cur=new sqlrcursor(con);
 
@@ -1136,7 +1136,7 @@ for (uint16_t a=0; a<50; a++) {
 
 	// cached result set
 	stdoutput.printf("CACHED RESULT SET: \n");
-	cur->cacheToFile("cachefile1");
+	cur->cacheToFile("cachefile1-mysql");
 	cur->setCacheTtl(200);
 	assertTrue(cur->sendQuery(
 		"select "
@@ -1146,7 +1146,7 @@ for (uint16_t a=0; a<50; a++) {
 		"order by "
 		"	testtinyint "));
 	filename=charstring::duplicate(cur->getCacheFileName());
-	assertEquals(filename,"cachefile1");
+	assertEquals(filename,"cachefile1-mysql");
 	cur->cacheOff();
 	assertTrue(cur->openCachedResultSet(filename));
 	assertEquals(cur->getField(7,(uint32_t)0),"8");
@@ -1213,7 +1213,7 @@ for (uint16_t a=0; a<50; a++) {
 	// cached result set with result set buffer size
 	stdoutput.printf("CACHED RESULT SET WITH RESULT SET BUFFER SIZE: \n");
 	cur->setResultSetBufferSize(2);
-	cur->cacheToFile("cachefile1");
+	cur->cacheToFile("cachefile1-mysql");
 	cur->setCacheTtl(200);
 	assertTrue(cur->sendQuery(
 		"select "
@@ -1223,7 +1223,7 @@ for (uint16_t a=0; a<50; a++) {
 		"order by "
 		"	testtinyint "));
 	filename=charstring::duplicate(cur->getCacheFileName());
-	assertEquals(filename,"cachefile1");
+	assertEquals(filename,"cachefile1-mysql");
 	cur->cacheOff();
 	assertTrue(cur->openCachedResultSet(filename));
 	assertEquals(cur->getField(7,(uint32_t)0),"8");
@@ -1235,10 +1235,10 @@ for (uint16_t a=0; a<50; a++) {
 
 	// from one cache file to another
 	stdoutput.printf("FROM ONE CACHE FILE TO ANOTHER: \n");
-	cur->cacheToFile("cachefile2");
-	assertTrue(cur->openCachedResultSet("cachefile1"));
+	cur->cacheToFile("cachefile2-mysql");
+	assertTrue(cur->openCachedResultSet("cachefile1-mysql"));
 	cur->cacheOff();
-	assertTrue(cur->openCachedResultSet("cachefile2"));
+	assertTrue(cur->openCachedResultSet("cachefile2-mysql"));
 	assertEquals(cur->getField(7,(uint32_t)0),"8");
 	assertEquals(cur->getField(8,(uint32_t)0),NULL);
 	stdoutput.printf("\n");
@@ -1248,10 +1248,10 @@ for (uint16_t a=0; a<50; a++) {
 	stdoutput.printf("FROM ONE CACHE FILE TO ANOTHER "
 				"WITH RESULT SET BUFFER SIZE: \n");
 	cur->setResultSetBufferSize(2);
-	cur->cacheToFile("cachefile2");
-	assertTrue(cur->openCachedResultSet("cachefile1"));
+	cur->cacheToFile("cachefile2-mysql");
+	assertTrue(cur->openCachedResultSet("cachefile1-mysql"));
 	cur->cacheOff();
-	assertTrue(cur->openCachedResultSet("cachefile2"));
+	assertTrue(cur->openCachedResultSet("cachefile2-mysql"));
 	assertEquals(cur->getField(7,(uint32_t)0),"8");
 	assertEquals(cur->getField(8,(uint32_t)0),NULL);
 	cur->setResultSetBufferSize(0);
@@ -1262,7 +1262,7 @@ for (uint16_t a=0; a<50; a++) {
 	stdoutput.printf("CACHED RESULT SET WITH SUSPEND "
 				"AND RESULT SET BUFFER SIZE: \n");
 	cur->setResultSetBufferSize(2);
-	cur->cacheToFile("cachefile1");
+	cur->cacheToFile("cachefile1-mysql");
 	cur->setCacheTtl(200);
 	assertTrue(cur->sendQuery(
 		"select "
@@ -1273,7 +1273,7 @@ for (uint16_t a=0; a<50; a++) {
 		"	testtinyint "));
 	assertEquals(cur->getField(2,(uint32_t)0),"3");
 	filename=charstring::duplicate(cur->getCacheFileName());
-	assertEquals(filename,"cachefile1");
+	assertEquals(filename,"cachefile1-mysql");
 	id=cur->getResultSetId();
 	cur->suspendResultSet();
 	assertTrue(con->suspendSession());
@@ -1361,7 +1361,7 @@ for (uint16_t a=0; a<50; a++) {
 		assertTrue(con->setTransactionModel("implicit"));
 		assertEquals(con->getTransactionModel(),"implicit");
 		assertTrue(cur->sendQuery("create table testtable (col1 integer)"));
-		secondcon=new sqlrconnection("sqlrelay",9000,"/tmp/test.socket",
+		secondcon=new sqlrconnection("sqlrelay",9002,"/tmp/mysqltest.socket",
 							"testuser","testpassword",0,1);
 		secondcur=new sqlrcursor(secondcon);
 		// session is in a transaction; insert is not visible until commit
@@ -1405,7 +1405,7 @@ for (uint16_t a=0; a<50; a++) {
 		assertTrue(con->setTransactionModel("explicit"));
 		assertEquals(con->getTransactionModel(),"explicit");
 		assertTrue(cur->sendQuery("create table testtable (col1 integer)"));
-		secondcon=new sqlrconnection("sqlrelay",9000,"/tmp/test.socket",
+		secondcon=new sqlrconnection("sqlrelay",9002,"/tmp/mysqltest.socket",
 							"testuser","testpassword",0,1);
 		secondcur=new sqlrcursor(secondcon);
 		// begin starts a new transaction; insert is not visible until commit
@@ -1453,7 +1453,7 @@ for (uint16_t a=0; a<50; a++) {
 		assertTrue(con->autoCommitOn());
 		assertTrue(con->getAutoCommit());
 		assertTrue(cur->sendQuery("create table testtable (col1 integer)"));
-		secondcon=new sqlrconnection("sqlrelay",9000,"/tmp/test.socket",
+		secondcon=new sqlrconnection("sqlrelay",9002,"/tmp/mysqltest.socket",
 							"testuser","testpassword",0,1);
 		secondcur=new sqlrcursor(secondcon);
 		// begin starts a transaction; commit makes it visible
@@ -1540,7 +1540,7 @@ for (uint16_t a=0; a<50; a++) {
 		assertTrue(con->setTransactionModel("explicit-error"));
 		assertEquals(con->getTransactionModel(),"explicit-error");
 		assertTrue(cur->sendQuery("create table testtable (col1 integer)"));
-		secondcon=new sqlrconnection("sqlrelay",9000,"/tmp/test.socket",
+		secondcon=new sqlrconnection("sqlrelay",9002,"/tmp/mysqltest.socket",
 							"testuser","testpassword",0,1);
 		secondcur=new sqlrcursor(secondcon);
 		// begin, insert, commit
@@ -1584,7 +1584,7 @@ for (uint16_t a=0; a<50; a++) {
 		assertTrue(con->setTransactionModel("none"));
 		assertEquals(con->getTransactionModel(),"none");
 		assertTrue(cur->sendQuery("create table testtable (col1 integer)"));
-		secondcon=new sqlrconnection("sqlrelay",9000,"/tmp/test.socket",
+		secondcon=new sqlrconnection("sqlrelay",9002,"/tmp/mysqltest.socket",
 							"testuser","testpassword",0,1);
 		secondcur=new sqlrcursor(secondcon);
 		// no transactions; everything is visible immediately

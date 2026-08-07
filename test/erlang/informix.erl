@@ -25,7 +25,7 @@ setIsolationLevels([Il | Rest]) ->
 main() ->
     sqlrelay:start(),
     waitForPort(50),
-    {ok, _} = sqlrelay:alloc("sqlrelay", 9000, "/tmp/test.socket",
+    {ok, _} = sqlrelay:alloc("sqlrelay", 9010, "/tmp/informixtest.socket",
                              "testuser", "testpassword", 0, 1),
 
     Hostname = shortHostname(),
@@ -924,7 +924,7 @@ main() ->
 
     %% CACHED RESULT SET
     io:format("CACHED RESULT SET: ~n"),
-    sqlrelay:cacheToFile("cachefile1"),
+    sqlrelay:cacheToFile("cachefile1-informix"),
     sqlrelay:setCacheTtl(200),
     assertTrue(sqlrelay:sendQuery(
         "select "
@@ -934,7 +934,7 @@ main() ->
         "order by "
         "	testsmallint ")),
     {ok, Filename1} = sqlrelay:getCacheFileName(),
-    assertEqualsString(Filename1, "cachefile1"),
+    assertEqualsString(Filename1, "cachefile1-informix"),
     sqlrelay:cacheOff(),
     assertTrue(sqlrelay:openCachedResultSet(Filename1)),
     assertEqualsString(sqlrelay:getFieldByIndex(7, 1), "8"),
@@ -989,7 +989,7 @@ main() ->
     %% CACHED RESULT SET WITH RESULT SET BUFFER SIZE
     io:format("CACHED RESULT SET WITH RESULT SET BUFFER SIZE: ~n"),
     sqlrelay:setResultSetBufferSize(2),
-    sqlrelay:cacheToFile("cachefile1"),
+    sqlrelay:cacheToFile("cachefile1-informix"),
     sqlrelay:setCacheTtl(200),
     assertTrue(sqlrelay:sendQuery(
         "select "
@@ -999,7 +999,7 @@ main() ->
         "order by "
         "	testsmallint ")),
     {ok, Filename2} = sqlrelay:getCacheFileName(),
-    assertEqualsString(Filename2, "cachefile1"),
+    assertEqualsString(Filename2, "cachefile1-informix"),
     sqlrelay:cacheOff(),
     assertTrue(sqlrelay:openCachedResultSet(Filename2)),
     assertEqualsString(sqlrelay:getFieldByIndex(7, 1), "8"),
@@ -1009,10 +1009,10 @@ main() ->
 
     %% FROM ONE CACHE FILE TO ANOTHER
     io:format("FROM ONE CACHE FILE TO ANOTHER: ~n"),
-    sqlrelay:cacheToFile("cachefile2"),
-    assertTrue(sqlrelay:openCachedResultSet("cachefile1")),
+    sqlrelay:cacheToFile("cachefile2-informix"),
+    assertTrue(sqlrelay:openCachedResultSet("cachefile1-informix")),
     sqlrelay:cacheOff(),
-    assertTrue(sqlrelay:openCachedResultSet("cachefile2")),
+    assertTrue(sqlrelay:openCachedResultSet("cachefile2-informix")),
     assertEqualsString(sqlrelay:getFieldByIndex(7, 1), "8"),
     assertEqualsString(sqlrelay:getFieldByIndex(8, 1), null),
     io:format("~n"),
@@ -1020,10 +1020,10 @@ main() ->
     %% FROM ONE CACHE FILE TO ANOTHER WITH RESULT SET BUFFER SIZE
     io:format("FROM ONE CACHE FILE TO ANOTHER WITH RESULT SET BUFFER SIZE: ~n"),
     sqlrelay:setResultSetBufferSize(2),
-    sqlrelay:cacheToFile("cachefile2"),
-    assertTrue(sqlrelay:openCachedResultSet("cachefile1")),
+    sqlrelay:cacheToFile("cachefile2-informix"),
+    assertTrue(sqlrelay:openCachedResultSet("cachefile1-informix")),
     sqlrelay:cacheOff(),
-    assertTrue(sqlrelay:openCachedResultSet("cachefile2")),
+    assertTrue(sqlrelay:openCachedResultSet("cachefile2-informix")),
     assertEqualsString(sqlrelay:getFieldByIndex(7, 1), "8"),
     assertEqualsString(sqlrelay:getFieldByIndex(8, 1), null),
     sqlrelay:setResultSetBufferSize(0),
@@ -1032,7 +1032,7 @@ main() ->
     %% CACHED RESULT SET WITH SUSPEND AND RESULT SET BUFFER SIZE
     io:format("CACHED RESULT SET WITH SUSPEND AND RESULT SET BUFFER SIZE: ~n"),
     sqlrelay:setResultSetBufferSize(2),
-    sqlrelay:cacheToFile("cachefile1"),
+    sqlrelay:cacheToFile("cachefile1-informix"),
     sqlrelay:setCacheTtl(200),
     assertTrue(sqlrelay:sendQuery(
         "select "
@@ -1043,7 +1043,7 @@ main() ->
         "	testsmallint ")),
     assertEqualsString(sqlrelay:getFieldByIndex(2, 1), "3"),
     {ok, Filename3} = sqlrelay:getCacheFileName(),
-    assertEqualsString(Filename3, "cachefile1"),
+    assertEqualsString(Filename3, "cachefile1-informix"),
     {ok, Id2} = sqlrelay:getResultSetId(),
     sqlrelay:suspendResultSet(),
     assertTrue(sqlrelay:suspendSession()),

@@ -60,7 +60,7 @@ int main(int argc, char **argv) {
 
 
 	// instantiation
-	con=new sqlrconnection("sqlrelay",9000,"/tmp/test.socket",
+	con=new sqlrconnection("sqlrelay",9008,"/tmp/db2test.socket",
 						"db2inst1","testpassword",0,1);
 	cur=new sqlrcursor(con);
 
@@ -753,7 +753,7 @@ int main(int argc, char **argv) {
 
 	// cached result set
 	stdoutput.printf("CACHED RESULT SET: \n");
-	cur->cacheToFile("cachefile1");
+	cur->cacheToFile("cachefile1-db2");
 	cur->setCacheTtl(200);
 	assertTrue(cur->sendQuery(
 		"select "
@@ -763,7 +763,7 @@ int main(int argc, char **argv) {
 		"order by "
 		"	testsmallint "));
 	filename=charstring::duplicate(cur->getCacheFileName());
-	assertEquals(filename,"cachefile1");
+	assertEquals(filename,"cachefile1-db2");
 	cur->cacheOff();
 	assertTrue(cur->openCachedResultSet(filename));
 	assertEquals(cur->getField(7,(uint32_t)0),"8");
@@ -808,7 +808,7 @@ int main(int argc, char **argv) {
 	// cached result set with result set buffer size
 	stdoutput.printf("CACHED RESULT SET WITH RESULT SET BUFFER SIZE: \n");
 	cur->setResultSetBufferSize(2);
-	cur->cacheToFile("cachefile1");
+	cur->cacheToFile("cachefile1-db2");
 	cur->setCacheTtl(200);
 	assertTrue(cur->sendQuery(
 		"select "
@@ -818,7 +818,7 @@ int main(int argc, char **argv) {
 		"order by "
 		"	testsmallint "));
 	filename=charstring::duplicate(cur->getCacheFileName());
-	assertEquals(filename,"cachefile1");
+	assertEquals(filename,"cachefile1-db2");
 	cur->cacheOff();
 	assertTrue(cur->openCachedResultSet(filename));
 	assertEquals(cur->getField(7,(uint32_t)0),"8");
@@ -830,10 +830,10 @@ int main(int argc, char **argv) {
 
 	// from one cache file to another
 	stdoutput.printf("FROM ONE CACHE FILE TO ANOTHER: \n");
-	cur->cacheToFile("cachefile2");
-	assertTrue(cur->openCachedResultSet("cachefile1"));
+	cur->cacheToFile("cachefile2-db2");
+	assertTrue(cur->openCachedResultSet("cachefile1-db2"));
 	cur->cacheOff();
-	assertTrue(cur->openCachedResultSet("cachefile2"));
+	assertTrue(cur->openCachedResultSet("cachefile2-db2"));
 	assertEquals(cur->getField(7,(uint32_t)0),"8");
 	assertEquals(cur->getField(8,(uint32_t)0),NULL);
 	stdoutput.printf("\n");
@@ -843,10 +843,10 @@ int main(int argc, char **argv) {
 	stdoutput.printf("FROM ONE CACHE FILE TO ANOTHER "
 				"WITH RESULT SET BUFFER SIZE: \n");
 	cur->setResultSetBufferSize(2);
-	cur->cacheToFile("cachefile2");
-	assertTrue(cur->openCachedResultSet("cachefile1"));
+	cur->cacheToFile("cachefile2-db2");
+	assertTrue(cur->openCachedResultSet("cachefile1-db2"));
 	cur->cacheOff();
-	assertTrue(cur->openCachedResultSet("cachefile2"));
+	assertTrue(cur->openCachedResultSet("cachefile2-db2"));
 	assertEquals(cur->getField(7,(uint32_t)0),"8");
 	assertEquals(cur->getField(8,(uint32_t)0),NULL);
 	cur->setResultSetBufferSize(0);
@@ -857,7 +857,7 @@ int main(int argc, char **argv) {
 	stdoutput.printf("CACHED RESULT SET WITH SUSPEND "
 				"AND RESULT SET BUFFER SIZE: \n");
 	cur->setResultSetBufferSize(2);
-	cur->cacheToFile("cachefile1");
+	cur->cacheToFile("cachefile1-db2");
 	cur->setCacheTtl(200);
 	assertTrue(cur->sendQuery(
 		"select "
@@ -868,7 +868,7 @@ int main(int argc, char **argv) {
 		"	testsmallint "));
 	assertEquals(cur->getField(2,(uint32_t)0),"3");
 	filename=charstring::duplicate(cur->getCacheFileName());
-	assertEquals(filename,"cachefile1");
+	assertEquals(filename,"cachefile1-db2");
 	id=cur->getResultSetId();
 	cur->suspendResultSet();
 	assertTrue(con->suspendSession());
@@ -962,7 +962,7 @@ int main(int argc, char **argv) {
 	// db2 DDL is transactional; commit so the table is visible to the
 	// second connection (the commit implicitly starts a new tx)
 	assertTrue(con->commit());
-	secondcon=new sqlrconnection("sqlrelay",9000,"/tmp/test.socket",
+	secondcon=new sqlrconnection("sqlrelay",9008,"/tmp/db2test.socket",
 						"db2inst1","testpassword",0,1);
 	secondcur=new sqlrcursor(secondcon);
 	// session is in a transaction; insert is not visible until commit
@@ -1006,7 +1006,7 @@ int main(int argc, char **argv) {
 	assertTrue(con->setTransactionModel("explicit"));
 	assertEquals(con->getTransactionModel(),"explicit");
 	assertTrue(cur->sendQuery("create table testtable (col1 integer)"));
-	secondcon=new sqlrconnection("sqlrelay",9000,"/tmp/test.socket",
+	secondcon=new sqlrconnection("sqlrelay",9008,"/tmp/db2test.socket",
 						"db2inst1","testpassword",0,1);
 	secondcur=new sqlrcursor(secondcon);
 	// begin starts a new transaction; insert is not visible until commit
@@ -1054,7 +1054,7 @@ int main(int argc, char **argv) {
 	assertTrue(con->autoCommitOn());
 	assertTrue(con->getAutoCommit());
 	assertTrue(cur->sendQuery("create table testtable (col1 integer)"));
-	secondcon=new sqlrconnection("sqlrelay",9000,"/tmp/test.socket",
+	secondcon=new sqlrconnection("sqlrelay",9008,"/tmp/db2test.socket",
 						"db2inst1","testpassword",0,1);
 	secondcur=new sqlrcursor(secondcon);
 	// begin starts a transaction; commit makes it visible
@@ -1141,7 +1141,7 @@ int main(int argc, char **argv) {
 	assertTrue(con->setTransactionModel("explicit-error"));
 	assertEquals(con->getTransactionModel(),"explicit-error");
 	assertTrue(cur->sendQuery("create table testtable (col1 integer)"));
-	secondcon=new sqlrconnection("sqlrelay",9000,"/tmp/test.socket",
+	secondcon=new sqlrconnection("sqlrelay",9008,"/tmp/db2test.socket",
 						"db2inst1","testpassword",0,1);
 	secondcur=new sqlrcursor(secondcon);
 	// begin, insert, commit
@@ -1185,7 +1185,7 @@ int main(int argc, char **argv) {
 	assertTrue(con->setTransactionModel("none"));
 	assertEquals(con->getTransactionModel(),"none");
 	assertTrue(cur->sendQuery("create table testtable (col1 integer)"));
-	secondcon=new sqlrconnection("sqlrelay",9000,"/tmp/test.socket",
+	secondcon=new sqlrconnection("sqlrelay",9008,"/tmp/db2test.socket",
 						"db2inst1","testpassword",0,1);
 	secondcur=new sqlrcursor(secondcon);
 	// no transactions; everything is visible immediately

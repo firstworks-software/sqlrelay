@@ -3,7 +3,7 @@
 
 	<instance id="mssqltest" dbase="odbc">
 		<listeners>
-			<listener port="9000" socket="/tmp/test.socket"/>
+			<listener port="9007" socket="/tmp/mssqltest.socket"/>
 		</listeners>
 		<connections>
 			<connection string="dsn=mssqlodbc;user=testuser;password=testpassword;lastinsertidquery=select @@identity"/>
@@ -12,7 +12,7 @@
 
 	<instance id="emojitest" dbase="odbc" translatebindvariables="yes">
 		<listeners>
-			<listener port="9000" socket="/tmp/test.socket"/>
+			<listener port="9025" socket="/tmp/emojitest.socket"/>
 		</listeners>
 		<connections>
 			<connection string="dsn=mssqlodbc;user=testuser;password=testpassword;lastinsertidquery=select @@identity;ncharencoding=UTF-16"/>

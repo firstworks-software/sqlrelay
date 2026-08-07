@@ -1,5 +1,11 @@
-sqlrsh -host localhost -user testuser -password testpassword -command "drop table testtable"
-sqlrsh -host localhost -user testuser -password testpassword -command "create table testtable (colstr varchar(128), colint int, coltrue boolean, colfalse boolean, colnull varchar(128))"
+#!/bin/sh
+
+# mvccrud.cpp connects to oracletest, so target that instance here too
+CONFIG=../sqlrelay.conf.d/oracle.conf
+ID=oracletest
+
+sqlrsh -config $CONFIG -id $ID -user testuser -password testpassword -command "drop table testtable"
+sqlrsh -config $CONFIG -id $ID -user testuser -password testpassword -command "create table testtable (colstr varchar(128), colint int, coltrue boolean, colfalse boolean, colnull varchar(128))"
 
 
 
@@ -162,4 +168,4 @@ EOF
 echo
 
 echo "======================================================================"
-sqlrsh -host localhost -user testuser -password testpassword -command "drop table testtable"
+sqlrsh -config $CONFIG -id $ID -user testuser -password testpassword -command "drop table testtable"

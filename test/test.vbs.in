@@ -19,6 +19,17 @@ sub usage()
 	WScript.Echo("    -n         do not manage instances; assume each is already running")
 	WScript.Echo("               and just run the tests against it")
 	WScript.Echo("    -h         show this help and exit")
+	WScript.Echo("")
+	WScript.Echo("  Runs against different backend servers can go on at the same time,")
+	WScript.Echo("  on one host.  But concurrency is per backend server, not per test.")
+	WScript.Echo("  Every instance connects to a database named after the host, so tests")
+	WScript.Echo("  that share a backend share a schema and the same testtable, and still")
+	WScript.Echo("  have to run one at a time relative to each other:")
+	WScript.Echo("")
+	WScript.Echo("    mysql, mysqlupsert, mysqldeadlockreplay, mysqlsplitmultiinsert,")
+	WScript.Echo("    mysqlimportexport and mysqlprotocol all hit the mysql server")
+	WScript.Echo("    the postgresql family likewise")
+	WScript.Echo("    oracle, tls, krb, extensions, crud and oracleprotocol all hit oracle")
 end sub
 
 ' start or stop a sqlrelay daemon so its spawned listener/connection outlive
@@ -29,22 +40,106 @@ sub daemon(prog, args)
 	WshShell.Run Chr(34) & PREFIX & "\bin\" & prog & Chr(34) & " " & args, 0, false
 end sub
 
-' all test instances listen on port 9000, so only one runs at a time.  make
-' sure the previous db's instance is fully gone and no stale pid files remain
-' before starting the next - sqlr-stop is asynchronous and was sometimes too
-' slow, leaving the next instance unable to come up ("failed to start").  #8484
-sub cleanslate()
-	WshShell.Run "taskkill /F /IM sqlr-listener.exe", 0, true
-	WshShell.Run "taskkill /F /IM sqlr-connection.exe", 0, true
+' whether a pid file belongs to instance id.  sqlr-stop -id matches
+' sqlr-listener-<id>.pid and sqlr-scaler-<id>.pid by full name, and
+' sqlr-connection-<id>. by prefix (src/server/sqlr-stop.cpp:88-129)
+function pidfilematches(name, id)
+	dim connprefix
+	connprefix="sqlr-connection-" & id & "."
+	pidfilematches=(name="sqlr-listener-" & id & ".pid") or _
+			(name="sqlr-scaler-" & id & ".pid") or _
+			(Left(name,Len(connprefix))=connprefix)
+end function
+
+' instance id's pid files, as a tab-separated list of full paths.  collected
+' in one pass, because deleting from the Files collection while iterating it
+' is not safe.
+function pidfiles(id)
+
+	dim piddir, f, list
+
+	pidfiles=""
+
+	piddir=PREFIX & "\var\run\sqlrelay\"
+	if not fso.FolderExists(piddir) then
+		exit function
+	end if
+
+	list=""
+	for each f in fso.GetFolder(piddir).Files
+		if pidfilematches(f.Name,id) then
+			list=list & f.Path & vbTab
+		end if
+	next
+	pidfiles=list
+end function
+
+' make sure instance id is fully gone and no stale pid file of its own
+' remains before starting it again - sqlr-stop is asynchronous and was
+' sometimes too slow, leaving the next instance unable to come up ("failed to
+' start").  #8484
+'
+' every instance has its own port and socket now, so runs against different
+' backends can go on at the same time, and this must not tear another run's
+' instances down.  that rules out taskkill /IM and a blanket delete of the pid
+' directory, which would take every sqlr-listener.exe and every pid file on
+' the host.  kill what this instance's own pid files name instead.
+sub cleanslate(id)
+
+	dim files, path, ts, pid
+
+	files=Split(pidfiles(id),vbTab)
+
+	' kill whatever each pid file names.  the tests are nested rather than
+	' anded, because VBScript's and evaluates both sides.
+	for each path in files
+		if path<>"" then
+			if fso.FileExists(path) then
+				pid=""
+				set ts=fso.OpenTextFile(path,1)
+				if not ts.AtEndOfStream then
+					pid=Trim(ts.ReadLine())
+				end if
+				ts.Close
+				if IsNumeric(pid) then
+					WshShell.Run "taskkill /F /PID " & pid, 0, true
+				end if
+			end if
+		end if
+	next
 	WScript.Sleep 500
-	WshShell.Run "cmd /c del /q " & Chr(34) & PREFIX & "\var\run\sqlrelay\*" & Chr(34), 0, true
+
+	' then remove the files themselves
+	for each path in files
+		if path<>"" then
+			if fso.FileExists(path) then
+				fso.DeleteFile path, true
+			end if
+		end if
+	next
 end sub
 
-' stop any instances left running from a previous run
+' stop any instances left running from a previous run.  only the instances
+' this run is about - another run against a different backend may be going on
+' at the same time, and must not be torn down.
 sub stopinstances()
 
-	' ask them to stop (cleanslate does the forced per-db kill)
-	daemon "sqlr-stop", ""
+	dim db
+
+	for each db in testdbs
+
+		' skip databases that have no config file of their own
+		if fso.FileExists(CONFDIR & "\" & db & ".conf") then
+
+			' the router test also has master/slave instances
+			if db="router" then
+				daemon "sqlr-stop", "-config " & CONFDIR & "\" & db & ".conf -id routermaster"
+				daemon "sqlr-stop", "-config " & CONFDIR & "\" & db & ".conf -id routerslave"
+			end if
+
+			daemon "sqlr-stop", "-config " & CONFDIR & "\" & db & ".conf -id " & db & "test"
+		end if
+	next
 	WScript.Sleep(2000)
 end sub
 
@@ -58,8 +153,12 @@ end function
 ' start the instance(s) for a database
 sub startinstance(db)
 
-	' make sure the previous db's instance is fully gone first
-	cleanslate()
+	' make sure this db's own instance(s) are fully gone first
+	if db="router" then
+		cleanslate "routermaster"
+		cleanslate "routerslave"
+	end if
+	cleanslate db & "test"
 
 	' for the router test, start the master/slave instances
 	if db="router" then
@@ -112,14 +211,19 @@ function execoutput(cmd)
 	execoutput=collapsews(s)
 end function
 
-' whether something is listening on a tcp port
+' whether something is listening on a tcp port.  netstat writes the local
+' address as 0.0.0.0:3306 or [::]:3306, so require the port to follow the
+' address's : and to be followed by whitespace.  a bare number matches the
+' foreign address and the other columns too.
 function portlistening(port)
-	dim c, line
+	dim c, line, re
 	portlistening=False
+	set re=new RegExp
+	re.Pattern="[.:]" & port & "\s"
 	set c=WshShell.Exec("netstat -an")
 	do until c.StdOut.AtEndOfStream
 		line=c.StdOut.ReadLine()
-		if instr(line,"LISTENING")>0 and instr(line,port)>0 then
+		if instr(line,"LISTENING")>0 and re.Test(line) then
 			portlistening=True
 		end if
 	loop
@@ -135,9 +239,13 @@ function pinginstance(db)
 		WScript.Echo("")
 		WScript.Echo("pinging " & db & "...")
 		if db="tls" then
-			PING=execoutput(PREFIX & "\bin\sqlrsh -host localhost -tls -tlscert " & CONFDIR & "\tls\client.pem -tlsca " & CONFDIR & "\tls\ca.pem -tlsvalidate ca -command ping")
-		elseif db="extensions" then
-			PING=execoutput(PREFIX & "\bin\sqlrsh -host localhost -user test -password test -command ping")
+
+			' -config/-id would pick the port up on its own, but
+			' it would also pick up the config's default user, and
+			' authCommand() in src/protocols/sqlrclient.cpp only
+			' authenticates by client certificate when the user is
+			' empty, so pass the port instead
+			PING=execoutput(PREFIX & "\bin\sqlrsh -host localhost -port 9012 -tls -tlscert " & CONFDIR & "\tls\client.pem -tlsca " & CONFDIR & "\tls\ca.pem -tlsvalidate ca -command ping")
 		elseif db="mysqlprotocol" then
 			if portlistening("3306") then
 				PING="The database is up."
@@ -169,6 +277,10 @@ function pinginstance(db)
 				PING="0: Couldn't connect to the listener."
 			end if
 		else
+
+			' extensions comes through here too - -config/-id
+			' picks up its port, socket, user and password from
+			' extensions.conf
 			PING=execoutput(PREFIX & "\bin\sqlrsh -config " & CONFDIR & "\" & db & ".conf -id " & db & "test -command ping")
 		end if
 

@@ -3,7 +3,7 @@
 
 	<instance id="postgresqlsavepointtest" dbase="postgresql">
 		<listeners>
-			<listener port="9000" socket="/tmp/test.socket"/>
+			<listener port="9021" socket="/tmp/postgresqlsavepointtest.socket"/>
 		</listeners>
 		<translations>
 			<translation module="normalize"/>

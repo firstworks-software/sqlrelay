@@ -3,7 +3,7 @@
 
 	<instance id="postgresqlsequencenextvaltest" dbase="postgresql">
 		<listeners>
-			<listener port="9000" socket="/tmp/test.socket"/>
+			<listener port="9024" socket="/tmp/postgresqlsequencenextvaltest.socket"/>
 		</listeners>
 		<translations>
 			<translation module="normalize"/>

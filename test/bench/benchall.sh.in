@@ -1,10 +1,16 @@
 #!/bin/sh
 
-sqlr-stop
+#DBS="firebird freetds informix mysql oracle postgresql sap sqlite db2"
+DBS="informix mysql oracle postgresql sap sqlite db2"
+
+# stop only our own instances, so a concurrent test run isn't torn down
+for DB in $DBS
+do
+	sqlr-stop -config @abs_top_builddir@/test/sqlrelay.conf.d/${DB}.conf -id ${DB}test
+done
 sleep 2
 
-#for DB in firebird freetds informix mysql oracle postgresql sap sqlite db2
-for DB in informix mysql oracle postgresql sap sqlite db2
+for DB in $DBS
 do
 
 	echo "benching $DB..."

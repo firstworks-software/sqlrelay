@@ -60,7 +60,7 @@ int main(int argc, char **argv) {
 
 
 	// instantiation
-	con=new sqlrconnection("sqlrelay",9000,"/tmp/test.socket",
+	con=new sqlrconnection("sqlrelay",9008,"/tmp/db2test.socket",
 						"db2inst1","testpassword",0,1);
 	cur=new sqlrcursor(con);
 
@@ -744,7 +744,7 @@ int main(int argc, char **argv) {
 
 	// cached result set
 	stdoutput.printf("CACHED RESULT SET: \n");
-	cur->cacheToFile("cachefile1");
+	cur->cacheToFile("cachefile1-db27");
 	cur->setCacheTtl(200);
 	assertTrue(cur->sendQuery(
 		"select "
@@ -754,7 +754,7 @@ int main(int argc, char **argv) {
 		"order by "
 		"	testsmallint "));
 	filename=charstring::duplicate(cur->getCacheFileName());
-	assertEquals(filename,"cachefile1");
+	assertEquals(filename,"cachefile1-db27");
 	cur->cacheOff();
 	assertTrue(cur->openCachedResultSet(filename));
 	assertEquals(cur->getField(7,(uint32_t)0),"8");
@@ -799,7 +799,7 @@ int main(int argc, char **argv) {
 	// cached result set with result set buffer size
 	stdoutput.printf("CACHED RESULT SET WITH RESULT SET BUFFER SIZE: \n");
 	cur->setResultSetBufferSize(2);
-	cur->cacheToFile("cachefile1");
+	cur->cacheToFile("cachefile1-db27");
 	cur->setCacheTtl(200);
 	assertTrue(cur->sendQuery(
 		"select "
@@ -809,7 +809,7 @@ int main(int argc, char **argv) {
 		"order by "
 		"	testsmallint "));
 	filename=charstring::duplicate(cur->getCacheFileName());
-	assertEquals(filename,"cachefile1");
+	assertEquals(filename,"cachefile1-db27");
 	cur->cacheOff();
 	assertTrue(cur->openCachedResultSet(filename));
 	assertEquals(cur->getField(7,(uint32_t)0),"8");
@@ -821,10 +821,10 @@ int main(int argc, char **argv) {
 
 	// from one cache file to another
 	stdoutput.printf("FROM ONE CACHE FILE TO ANOTHER: \n");
-	cur->cacheToFile("cachefile2");
-	assertTrue(cur->openCachedResultSet("cachefile1"));
+	cur->cacheToFile("cachefile2-db27");
+	assertTrue(cur->openCachedResultSet("cachefile1-db27"));
 	cur->cacheOff();
-	assertTrue(cur->openCachedResultSet("cachefile2"));
+	assertTrue(cur->openCachedResultSet("cachefile2-db27"));
 	assertEquals(cur->getField(7,(uint32_t)0),"8");
 	assertEquals(cur->getField(8,(uint32_t)0),NULL);
 	stdoutput.printf("\n");
@@ -834,10 +834,10 @@ int main(int argc, char **argv) {
 	stdoutput.printf("FROM ONE CACHE FILE TO ANOTHER "
 				"WITH RESULT SET BUFFER SIZE: \n");
 	cur->setResultSetBufferSize(2);
-	cur->cacheToFile("cachefile2");
-	assertTrue(cur->openCachedResultSet("cachefile1"));
+	cur->cacheToFile("cachefile2-db27");
+	assertTrue(cur->openCachedResultSet("cachefile1-db27"));
 	cur->cacheOff();
-	assertTrue(cur->openCachedResultSet("cachefile2"));
+	assertTrue(cur->openCachedResultSet("cachefile2-db27"));
 	assertEquals(cur->getField(7,(uint32_t)0),"8");
 	assertEquals(cur->getField(8,(uint32_t)0),NULL);
 	cur->setResultSetBufferSize(0);
@@ -848,7 +848,7 @@ int main(int argc, char **argv) {
 	stdoutput.printf("CACHED RESULT SET WITH SUSPEND "
 				"AND RESULT SET BUFFER SIZE: \n");
 	cur->setResultSetBufferSize(2);
-	cur->cacheToFile("cachefile1");
+	cur->cacheToFile("cachefile1-db27");
 	cur->setCacheTtl(200);
 	assertTrue(cur->sendQuery(
 		"select "
@@ -859,7 +859,7 @@ int main(int argc, char **argv) {
 		"	testsmallint "));
 	assertEquals(cur->getField(2,(uint32_t)0),"3");
 	filename=charstring::duplicate(cur->getCacheFileName());
-	assertEquals(filename,"cachefile1");
+	assertEquals(filename,"cachefile1-db27");
 	id=cur->getResultSetId();
 	cur->suspendResultSet();
 	assertTrue(con->suspendSession());
@@ -932,7 +932,7 @@ int main(int argc, char **argv) {
 
 	// commit and rollback
 	stdoutput.printf("COMMIT AND ROLLBACK: \n");
-	secondcon=new sqlrconnection("sqlrelay",9000,"/tmp/test.socket",
+	secondcon=new sqlrconnection("sqlrelay",9008,"/tmp/db2test.socket",
 						"db2inst1","testpassword",0,1);
 	secondcur=new sqlrcursor(secondcon);
 	assertTrue(secondcur->sendQuery("select count(*) from testtable"));

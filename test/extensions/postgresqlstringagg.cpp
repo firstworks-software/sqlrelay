@@ -18,7 +18,7 @@ int main(int argc, char **argv) {
 
 	stdoutput.printf("LISTAGG TO STRING_AGG:\n");
 
-	con=new sqlrconnection("sqlrelay",9000,"/tmp/test.socket",
+	con=new sqlrconnection("sqlrelay",9023,"/tmp/postgresqlstringaggtest.socket",
 						"testuser","testpassword",0,1);
 	cur=new sqlrcursor(con);
 

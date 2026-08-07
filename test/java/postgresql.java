@@ -42,8 +42,8 @@ class postgresql extends sqlrtest {
 
 
 		// instantiation
-		SQLRConnection con=new SQLRConnection("sqlrelay",(short)9000,
-						"/tmp/test.socket","testuser",
+		SQLRConnection con=new SQLRConnection("sqlrelay",(short)9003,
+						"/tmp/postgresqltest.socket","testuser",
 						"testpassword",0,1);
 		SQLRCursor cur=new SQLRCursor(con);
 
@@ -748,7 +748,7 @@ class postgresql extends sqlrtest {
 
 		// cached result set
 		System.out.println("CACHED RESULT SET: ");
-		cur.cacheToFile("cachefile1");
+		cur.cacheToFile("cachefile1-postgresql");
 		cur.setCacheTtl(200);
 		assertTrue(cur.sendQuery(
 			"select "+
@@ -758,7 +758,7 @@ class postgresql extends sqlrtest {
 			"order by "+
 			"	testint "));
 		filename=cur.getCacheFileName();
-		assertEquals(filename,"cachefile1");
+		assertEquals(filename,"cachefile1-postgresql");
 		cur.cacheOff();
 		assertTrue(cur.openCachedResultSet(filename));
 		assertEquals(cur.getField(7,0),"8");
@@ -799,7 +799,7 @@ class postgresql extends sqlrtest {
 		System.out.println("CACHED RESULT SET WITH RESULT SET BUFFER "+
 					"SIZE: ");
 		cur.setResultSetBufferSize(2);
-		cur.cacheToFile("cachefile1");
+		cur.cacheToFile("cachefile1-postgresql");
 		cur.setCacheTtl(200);
 		assertTrue(cur.sendQuery(
 			"select "+
@@ -809,7 +809,7 @@ class postgresql extends sqlrtest {
 			"order by "+
 			"	testint "));
 		filename=cur.getCacheFileName();
-		assertEquals(filename,"cachefile1");
+		assertEquals(filename,"cachefile1-postgresql");
 		cur.cacheOff();
 		assertTrue(cur.openCachedResultSet(filename));
 		assertEquals(cur.getField(7,0),"8");
@@ -820,10 +820,10 @@ class postgresql extends sqlrtest {
 
 		// from one cache file to another
 		System.out.println("FROM ONE CACHE FILE TO ANOTHER: ");
-		cur.cacheToFile("cachefile2");
-		assertTrue(cur.openCachedResultSet("cachefile1"));
+		cur.cacheToFile("cachefile2-postgresql");
+		assertTrue(cur.openCachedResultSet("cachefile1-postgresql"));
 		cur.cacheOff();
-		assertTrue(cur.openCachedResultSet("cachefile2"));
+		assertTrue(cur.openCachedResultSet("cachefile2-postgresql"));
 		assertEquals(cur.getField(7,0),"8");
 		assertEquals(cur.getField(8,0),null);
 		System.out.println();
@@ -833,10 +833,10 @@ class postgresql extends sqlrtest {
 		System.out.println("FROM ONE CACHE FILE TO ANOTHER WITH "+
 					"RESULT SET BUFFER SIZE: ");
 		cur.setResultSetBufferSize(2);
-		cur.cacheToFile("cachefile2");
-		assertTrue(cur.openCachedResultSet("cachefile1"));
+		cur.cacheToFile("cachefile2-postgresql");
+		assertTrue(cur.openCachedResultSet("cachefile1-postgresql"));
 		cur.cacheOff();
-		assertTrue(cur.openCachedResultSet("cachefile2"));
+		assertTrue(cur.openCachedResultSet("cachefile2-postgresql"));
 		assertEquals(cur.getField(7,0),"8");
 		assertEquals(cur.getField(8,0),null);
 		cur.setResultSetBufferSize(0);
@@ -847,7 +847,7 @@ class postgresql extends sqlrtest {
 		System.out.println("CACHED RESULT SET WITH SUSPEND AND RESULT "+
 					"SET BUFFER SIZE: ");
 		cur.setResultSetBufferSize(2);
-		cur.cacheToFile("cachefile1");
+		cur.cacheToFile("cachefile1-postgresql");
 		cur.setCacheTtl(200);
 		assertTrue(cur.sendQuery(
 			"select "+
@@ -858,7 +858,7 @@ class postgresql extends sqlrtest {
 			"	testint "));
 		assertEquals(cur.getField(2,0),"3");
 		filename=cur.getCacheFileName();
-		assertEquals(filename,"cachefile1");
+		assertEquals(filename,"cachefile1-postgresql");
 		id=cur.getResultSetId();
 		cur.suspendResultSet();
 		assertTrue(con.suspendSession());
@@ -953,7 +953,7 @@ class postgresql extends sqlrtest {
 		// to the second connection (the commit implicitly starts a new tx)
 		assertTrue(con.commit());
 		SQLRConnection secondcon=new SQLRConnection("sqlrelay",
-				(short)9000,"/tmp/test.socket","testuser",
+				(short)9003,"/tmp/postgresqltest.socket","testuser",
 				"testpassword",0,1);
 		SQLRCursor secondcur=new SQLRCursor(secondcon);
 		// session is in a transaction; insert is not visible until commit

@@ -30,7 +30,7 @@ def main():
 
 
 	# instantiation
-	con=PySQLRClient.sqlrconnection("sqlrelay",9000,"/tmp/test.socket",
+	con=PySQLRClient.sqlrconnection("sqlrelay",9008,"/tmp/db2test.socket",
 						"db2inst1","testpassword",0,1)
 	cur=PySQLRClient.sqlrcursor(con)
 	asserts.setConnection(con)
@@ -720,7 +720,7 @@ def main():
 
 	# cached result set
 	output("CACHED RESULT SET: ")
-	cur.cacheToFile("cachefile1")
+	cur.cacheToFile("cachefile1-db2")
 	cur.setCacheTtl(200)
 	assertTrue(cur.sendQuery(
 		"select "
@@ -730,7 +730,7 @@ def main():
 		"order by "
 		"	testsmallint "))
 	filename=cur.getCacheFileName()
-	assertEquals(filename,"cachefile1")
+	assertEquals(filename,"cachefile1-db2")
 	cur.cacheOff()
 	assertTrue(cur.openCachedResultSet(filename))
 	assertEquals(cur.getField(7,0),"8")
@@ -774,7 +774,7 @@ def main():
 	# cached result set with result set buffer size
 	output("CACHED RESULT SET WITH RESULT SET BUFFER SIZE: ")
 	cur.setResultSetBufferSize(2)
-	cur.cacheToFile("cachefile1")
+	cur.cacheToFile("cachefile1-db2")
 	cur.setCacheTtl(200)
 	assertTrue(cur.sendQuery(
 		"select "
@@ -784,7 +784,7 @@ def main():
 		"order by "
 		"	testsmallint "))
 	filename=cur.getCacheFileName()
-	assertEquals(filename,"cachefile1")
+	assertEquals(filename,"cachefile1-db2")
 	cur.cacheOff()
 	assertTrue(cur.openCachedResultSet(filename))
 	assertEquals(cur.getField(7,0),"8")
@@ -795,10 +795,10 @@ def main():
 
 	# from one cache file to another
 	output("FROM ONE CACHE FILE TO ANOTHER: ")
-	cur.cacheToFile("cachefile2")
-	assertTrue(cur.openCachedResultSet("cachefile1"))
+	cur.cacheToFile("cachefile2-db2")
+	assertTrue(cur.openCachedResultSet("cachefile1-db2"))
 	cur.cacheOff()
-	assertTrue(cur.openCachedResultSet("cachefile2"))
+	assertTrue(cur.openCachedResultSet("cachefile2-db2"))
 	assertEquals(cur.getField(7,0),"8")
 	assertNone(cur.getField(8,0))
 	output()
@@ -808,10 +808,10 @@ def main():
 	output("FROM ONE CACHE FILE TO ANOTHER "
 				"WITH RESULT SET BUFFER SIZE: ")
 	cur.setResultSetBufferSize(2)
-	cur.cacheToFile("cachefile2")
-	assertTrue(cur.openCachedResultSet("cachefile1"))
+	cur.cacheToFile("cachefile2-db2")
+	assertTrue(cur.openCachedResultSet("cachefile1-db2"))
 	cur.cacheOff()
-	assertTrue(cur.openCachedResultSet("cachefile2"))
+	assertTrue(cur.openCachedResultSet("cachefile2-db2"))
 	assertEquals(cur.getField(7,0),"8")
 	assertNone(cur.getField(8,0))
 	cur.setResultSetBufferSize(0)
@@ -822,7 +822,7 @@ def main():
 	output("CACHED RESULT SET WITH SUSPEND "
 				"AND RESULT SET BUFFER SIZE: ")
 	cur.setResultSetBufferSize(2)
-	cur.cacheToFile("cachefile1")
+	cur.cacheToFile("cachefile1-db2")
 	cur.setCacheTtl(200)
 	assertTrue(cur.sendQuery(
 		"select "
@@ -833,7 +833,7 @@ def main():
 		"	testsmallint "))
 	assertEquals(cur.getField(2,0),"3")
 	filename=cur.getCacheFileName()
-	assertEquals(filename,"cachefile1")
+	assertEquals(filename,"cachefile1-db2")
 	id=cur.getResultSetId()
 	cur.suspendResultSet()
 	assertTrue(con.suspendSession())
@@ -927,7 +927,7 @@ def main():
 	# db2 DDL is transactional; commit so the table is visible to the
 	# second connection (the commit implicitly starts a new tx)
 	assertTrue(con.commit())
-	secondcon=PySQLRClient.sqlrconnection("sqlrelay",9000,"/tmp/test.socket",
+	secondcon=PySQLRClient.sqlrconnection("sqlrelay",9008,"/tmp/db2test.socket",
 						"db2inst1","testpassword",0,1)
 	secondcur=PySQLRClient.sqlrcursor(secondcon)
 	asserts.setSecondConnection(secondcon)

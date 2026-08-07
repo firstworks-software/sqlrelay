@@ -32,7 +32,7 @@ namespace SQLRClientTest
             SQLRelayConnection sqlrcon =
                 new SQLRelayConnection(
                 "Data Source=sqlrelay:" +
-                "9000:/tmp/test.socket;" +
+                "9012:/tmp/tlstest.socket;" +
                 "Retry Time=0;" +
                 "Tries=1;" +
                 "Tls=yes;" +
@@ -525,7 +525,7 @@ namespace SQLRClientTest
             SQLRelayConnection sqlrcon2 =
                 new SQLRelayConnection(
                 "Data Source=sqlrelay:" +
-                "9000:/tmp/test.socket;" +
+                "9012:/tmp/tlstest.socket;" +
                 "Retry Time=0;" +
                 "Tries=1;" +
                 "Tls=yes;" +

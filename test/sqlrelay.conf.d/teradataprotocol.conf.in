@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <instances>
 
-	<instance id="teradatatest" dbase="odbc" translatebindvariables="yes">
+	<instance id="teradataprotocoltest" dbase="odbc" translatebindvariables="yes">
 		<listeners>
 			<listener protocol="teradata" port="1025" debug="yes"/>
 		</listeners>
@@ -13,6 +13,9 @@
 		</connections>
 	</instance>
 
+	<!-- the two instances in this file are mutually exclusive by design.
+	     one has passthrough enabled, the other disabled, so they share
+	     port 1025 and only one is started at a time. -->
 	<instance id="teradataauthtest" dbase="odbc" translatebindvariables="yes" connections="1">
 		<listeners>
 			<listener protocol="teradata" port="1025" passthrough="disabled" debug="yes"/>

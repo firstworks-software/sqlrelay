@@ -57,7 +57,7 @@ namespace SQLRClientTest
 
 
             // instantiation
-            con = new SQLRConnection("sqlrelay", 9000, "/tmp/test.socket",
+            con = new SQLRConnection("sqlrelay", 9010, "/tmp/informixtest.socket",
                                     "testuser", "testpassword", 0, 1);
             cur = new SQLRCursor(con);
 
@@ -959,7 +959,7 @@ namespace SQLRClientTest
 
             // cached result set
             Console.WriteLine("CACHED RESULT SET: ");
-            cur.cacheToFile("cachefile1");
+            cur.cacheToFile("cachefile1-informix");
             cur.setCacheTtl((UInt32)200);
             assertTrue(cur.sendQuery(
                 "select " +
@@ -969,7 +969,7 @@ namespace SQLRClientTest
                 "order by " +
                 "	testsmallint "));
             filename = cur.getCacheFileName();
-            assertEquals(filename, "cachefile1");
+            assertEquals(filename, "cachefile1-informix");
             cur.cacheOff();
             assertTrue(cur.openCachedResultSet(filename));
             assertEquals(cur.getField((UInt64)7, (UInt32)1), "8");
@@ -1027,7 +1027,7 @@ namespace SQLRClientTest
             // cached result set with result set buffer size
             Console.WriteLine("CACHED RESULT SET WITH RESULT SET BUFFER SIZE: ");
             cur.setResultSetBufferSize((UInt64)2);
-            cur.cacheToFile("cachefile1");
+            cur.cacheToFile("cachefile1-informix");
             cur.setCacheTtl((UInt32)200);
             assertTrue(cur.sendQuery(
                 "select " +
@@ -1037,7 +1037,7 @@ namespace SQLRClientTest
                 "order by " +
                 "	testsmallint "));
             filename = cur.getCacheFileName();
-            assertEquals(filename, "cachefile1");
+            assertEquals(filename, "cachefile1-informix");
             cur.cacheOff();
             assertTrue(cur.openCachedResultSet(filename));
             assertEquals(cur.getField((UInt64)7, (UInt32)1), "8");
@@ -1048,10 +1048,10 @@ namespace SQLRClientTest
 
             // from one cache file to another
             Console.WriteLine("FROM ONE CACHE FILE TO ANOTHER: ");
-            cur.cacheToFile("cachefile2");
-            assertTrue(cur.openCachedResultSet("cachefile1"));
+            cur.cacheToFile("cachefile2-informix");
+            assertTrue(cur.openCachedResultSet("cachefile1-informix"));
             cur.cacheOff();
-            assertTrue(cur.openCachedResultSet("cachefile2"));
+            assertTrue(cur.openCachedResultSet("cachefile2-informix"));
             assertEquals(cur.getField((UInt64)7, (UInt32)1), "8");
             assertEquals(cur.getField((UInt64)8, (UInt32)1), (String)null);
             Console.WriteLine("");
@@ -1061,10 +1061,10 @@ namespace SQLRClientTest
             Console.WriteLine("FROM ONE CACHE FILE TO ANOTHER " +
                         "WITH RESULT SET BUFFER SIZE: ");
             cur.setResultSetBufferSize((UInt64)2);
-            cur.cacheToFile("cachefile2");
-            assertTrue(cur.openCachedResultSet("cachefile1"));
+            cur.cacheToFile("cachefile2-informix");
+            assertTrue(cur.openCachedResultSet("cachefile1-informix"));
             cur.cacheOff();
-            assertTrue(cur.openCachedResultSet("cachefile2"));
+            assertTrue(cur.openCachedResultSet("cachefile2-informix"));
             assertEquals(cur.getField((UInt64)7, (UInt32)1), "8");
             assertEquals(cur.getField((UInt64)8, (UInt32)1), (String)null);
             cur.setResultSetBufferSize((UInt64)0);
@@ -1075,7 +1075,7 @@ namespace SQLRClientTest
             Console.WriteLine("CACHED RESULT SET WITH SUSPEND " +
                         "AND RESULT SET BUFFER SIZE: ");
             cur.setResultSetBufferSize((UInt64)2);
-            cur.cacheToFile("cachefile1");
+            cur.cacheToFile("cachefile1-informix");
             cur.setCacheTtl((UInt32)200);
             assertTrue(cur.sendQuery(
                 "select " +
@@ -1086,7 +1086,7 @@ namespace SQLRClientTest
                 "	testsmallint "));
             assertEquals(cur.getField((UInt64)2, (UInt32)1), "3");
             filename = cur.getCacheFileName();
-            assertEquals(filename, "cachefile1");
+            assertEquals(filename, "cachefile1-informix");
             id = cur.getResultSetId();
             cur.suspendResultSet();
             assertTrue(con.suspendSession());
@@ -1180,7 +1180,7 @@ namespace SQLRClientTest
             // is visible to the second connection (commit implicitly starts a
             // new tx)
             assertTrue(con.commit());
-            secondcon = new SQLRConnection("sqlrelay", 9000, "/tmp/test.socket",
+            secondcon = new SQLRConnection("sqlrelay", 9010, "/tmp/informixtest.socket",
                                         "testuser", "testpassword", 0, 1);
             secondcur = new SQLRCursor(secondcon);
             // Informix has no MVCC; under default committed-read isolation,

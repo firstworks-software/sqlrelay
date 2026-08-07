@@ -3,7 +3,7 @@
 
 	<instance id="mysqlimportexporttest" dbase="mysql">
 		<listeners>
-			<listener port="9000" socket="/tmp/test.socket"/>
+			<listener port="9019" socket="/tmp/mysqlimportexporttest.socket"/>
 		</listeners>
 		<connections>
 			<connection string="host=mysql;user=testuser;password=testpassword;db=@HOSTNAME@;foundrows=yes"/>

@@ -32,7 +32,7 @@
 
 
 	# instantiation
-	$con=sqlrcon_alloc("sqlrelay",9000,"/tmp/test.socket",
+	$con=sqlrcon_alloc("sqlrelay",9010,"/tmp/informixtest.socket",
 						"testuser","testpassword",0,1);
 	$cur=sqlrcur_alloc($con);
 
@@ -955,7 +955,7 @@
 
 	# cached result set
 	echo("CACHED RESULT SET: \n");
-	sqlrcur_cacheToFile($cur,"cachefile1");
+	sqlrcur_cacheToFile($cur,"cachefile1-informix");
 	sqlrcur_setCacheTtl($cur,200);
 	assertTrue(sqlrcur_sendQuery($cur,
 		"select ".
@@ -965,7 +965,7 @@
 		"order by ".
 		"	testsmallint "));
 	$filename=sqlrcur_getCacheFileName($cur);
-	assertEqStr($filename,"cachefile1");
+	assertEqStr($filename,"cachefile1-informix");
 	sqlrcur_cacheOff($cur);
 	assertTrue(sqlrcur_openCachedResultSet($cur,$filename));
 	assertEqStr(sqlrcur_getField($cur,7,1),"8");
@@ -1023,7 +1023,7 @@
 	# cached result set with result set buffer size
 	echo("CACHED RESULT SET WITH RESULT SET BUFFER SIZE: \n");
 	sqlrcur_setResultSetBufferSize($cur,2);
-	sqlrcur_cacheToFile($cur,"cachefile1");
+	sqlrcur_cacheToFile($cur,"cachefile1-informix");
 	sqlrcur_setCacheTtl($cur,200);
 	assertTrue(sqlrcur_sendQuery($cur,
 		"select ".
@@ -1033,7 +1033,7 @@
 		"order by ".
 		"	testsmallint "));
 	$filename=sqlrcur_getCacheFileName($cur);
-	assertEqStr($filename,"cachefile1");
+	assertEqStr($filename,"cachefile1-informix");
 	sqlrcur_cacheOff($cur);
 	assertTrue(sqlrcur_openCachedResultSet($cur,$filename));
 	assertEqStr(sqlrcur_getField($cur,7,1),"8");
@@ -1044,10 +1044,10 @@
 
 	# from one cache file to another
 	echo("FROM ONE CACHE FILE TO ANOTHER: \n");
-	sqlrcur_cacheToFile($cur,"cachefile2");
-	assertTrue(sqlrcur_openCachedResultSet($cur,"cachefile1"));
+	sqlrcur_cacheToFile($cur,"cachefile2-informix");
+	assertTrue(sqlrcur_openCachedResultSet($cur,"cachefile1-informix"));
 	sqlrcur_cacheOff($cur);
-	assertTrue(sqlrcur_openCachedResultSet($cur,"cachefile2"));
+	assertTrue(sqlrcur_openCachedResultSet($cur,"cachefile2-informix"));
 	assertEqStr(sqlrcur_getField($cur,7,1),"8");
 	assertEqStr(sqlrcur_getField($cur,8,1),NULL);
 	echo("\n");
@@ -1057,10 +1057,10 @@
 	echo("FROM ONE CACHE FILE TO ANOTHER ".
 				"WITH RESULT SET BUFFER SIZE: \n");
 	sqlrcur_setResultSetBufferSize($cur,2);
-	sqlrcur_cacheToFile($cur,"cachefile2");
-	assertTrue(sqlrcur_openCachedResultSet($cur,"cachefile1"));
+	sqlrcur_cacheToFile($cur,"cachefile2-informix");
+	assertTrue(sqlrcur_openCachedResultSet($cur,"cachefile1-informix"));
 	sqlrcur_cacheOff($cur);
-	assertTrue(sqlrcur_openCachedResultSet($cur,"cachefile2"));
+	assertTrue(sqlrcur_openCachedResultSet($cur,"cachefile2-informix"));
 	assertEqStr(sqlrcur_getField($cur,7,1),"8");
 	assertEqStr(sqlrcur_getField($cur,8,1),NULL);
 	sqlrcur_setResultSetBufferSize($cur,0);
@@ -1071,7 +1071,7 @@
 	echo("CACHED RESULT SET WITH SUSPEND ".
 				"AND RESULT SET BUFFER SIZE: \n");
 	sqlrcur_setResultSetBufferSize($cur,2);
-	sqlrcur_cacheToFile($cur,"cachefile1");
+	sqlrcur_cacheToFile($cur,"cachefile1-informix");
 	sqlrcur_setCacheTtl($cur,200);
 	assertTrue(sqlrcur_sendQuery($cur,
 		"select ".
@@ -1082,7 +1082,7 @@
 		"	testsmallint "));
 	assertEqStr(sqlrcur_getField($cur,2,1),"3");
 	$filename=sqlrcur_getCacheFileName($cur);
-	assertEqStr($filename,"cachefile1");
+	assertEqStr($filename,"cachefile1-informix");
 	$id=sqlrcur_getResultSetId($cur);
 	sqlrcur_suspendResultSet($cur);
 	assertTrue(sqlrcon_suspendSession($con));
@@ -1173,7 +1173,7 @@
 	# is visible to the second connection (commit implicitly starts a
 	# new tx)
 	assertTrue(sqlrcon_commit($con));
-	$secondcon=sqlrcon_alloc("sqlrelay",9000,"/tmp/test.socket",
+	$secondcon=sqlrcon_alloc("sqlrelay",9010,"/tmp/informixtest.socket",
 						"testuser","testpassword",0,1);
 	$secondcur=sqlrcur_alloc($secondcon);
 	# Informix has no MVCC; under default committed-read isolation,

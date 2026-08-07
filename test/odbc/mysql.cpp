@@ -334,8 +334,8 @@ int main(int argc, char **argv) {
 	if (issqlrelay) {
 		incstr.append(
 			"Driver={SQL Relay};"
-			"Server=sqlrelay;Port=9000;"
-			"Socket=/tmp/test.socket;"
+			"Server=sqlrelay;Port=9002;"
+			"Socket=/tmp/mysqltest.socket;"
 			"User=testuser;Password=testpassword;"
 			"NullsAsNulls=yes;"
 			// for ODBC spec compliance
@@ -860,12 +860,12 @@ int main(int argc, char **argv) {
 	// driver manager rejects an empty restore value; don't restore
 	stdoutput.printf("  SQL_ATTR_TRACEFILE\n");
 	erg=SQLSetConnectAttr(dbc,SQL_ATTR_TRACEFILE,
-			(SQLPOINTER)"/tmp/odbctrace.log",SQL_NTS);
+			(SQLPOINTER)"/tmp/odbctrace-mysql.log",SQL_NTS);
 	assertSuccessDbc(dbc,erg);
 	erg=SQLGetConnectAttr(dbc,SQL_ATTR_TRACEFILE,
 			(SQLPOINTER)dbcstrval,sizeof(dbcstrval),&dbcstrlen);
 	assertSuccessDbc(dbc,erg);
-	assertEqualDbc(dbc,(const char *)dbcstrval,"/tmp/odbctrace.log");
+	assertEqualDbc(dbc,(const char *)dbcstrval,"/tmp/odbctrace-mysql.log");
 	stdoutput.printf("\n");
 
 

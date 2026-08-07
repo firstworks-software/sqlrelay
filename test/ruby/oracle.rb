@@ -18,7 +18,7 @@ hostname=Socket.gethostname.split(".")[0].downcase
 
 
 # instantiation
-con=SQLRConnection.new("sqlrelay",9000,"/tmp/test.socket",
+con=SQLRConnection.new("sqlrelay",9001,"/tmp/oracletest.socket",
 						"testuser","testpassword",0,1)
 cur=SQLRCursor.new(con)
 setConnection(con)
@@ -612,7 +612,7 @@ print "\n"
 
 # cached result set
 print "CACHED RESULT SET: \n"
-cur.cacheToFile("cachefile1")
+cur.cacheToFile("cachefile1-oracle")
 cur.setCacheTtl(200)
 assertTrue(cur.sendQuery(
 	"select "+
@@ -622,7 +622,7 @@ assertTrue(cur.sendQuery(
 	"order by "+
 	"	testnumber"))
 filename=cur.getCacheFileName()
-assertEqual(filename,"cachefile1")
+assertEqual(filename,"cachefile1-oracle")
 cur.cacheOff()
 assertTrue(cur.openCachedResultSet(filename))
 assertEqual(cur.getField(7,0),"8")
@@ -658,7 +658,7 @@ print "\n"
 # cached result set with result set buffer size
 print "CACHED RESULT SET WITH RESULT SET BUFFER SIZE: \n"
 cur.setResultSetBufferSize(2)
-cur.cacheToFile("cachefile1")
+cur.cacheToFile("cachefile1-oracle")
 cur.setCacheTtl(200)
 assertTrue(cur.sendQuery(
 	"select "+
@@ -668,7 +668,7 @@ assertTrue(cur.sendQuery(
 	"order by "+
 	"	testnumber"))
 filename=cur.getCacheFileName()
-assertEqual(filename,"cachefile1")
+assertEqual(filename,"cachefile1-oracle")
 cur.cacheOff()
 assertTrue(cur.openCachedResultSet(filename))
 assertEqual(cur.getField(7,0),"8")
@@ -679,10 +679,10 @@ print "\n"
 
 # from one cache file to another
 print "FROM ONE CACHE FILE TO ANOTHER: \n"
-cur.cacheToFile("cachefile2")
-assertTrue(cur.openCachedResultSet("cachefile1"))
+cur.cacheToFile("cachefile2-oracle")
+assertTrue(cur.openCachedResultSet("cachefile1-oracle"))
 cur.cacheOff()
-assertTrue(cur.openCachedResultSet("cachefile2"))
+assertTrue(cur.openCachedResultSet("cachefile2-oracle"))
 assertEqual(cur.getField(7,0),"8")
 assertEqual(cur.getField(8,0),nil)
 print "\n"
@@ -692,10 +692,10 @@ print "\n"
 print "FROM ONE CACHE FILE TO ANOTHER "+
 	"WITH RESULT SET BUFFER SIZE: \n"
 cur.setResultSetBufferSize(2)
-cur.cacheToFile("cachefile2")
-assertTrue(cur.openCachedResultSet("cachefile1"))
+cur.cacheToFile("cachefile2-oracle")
+assertTrue(cur.openCachedResultSet("cachefile1-oracle"))
 cur.cacheOff()
-assertTrue(cur.openCachedResultSet("cachefile2"))
+assertTrue(cur.openCachedResultSet("cachefile2-oracle"))
 assertEqual(cur.getField(7,0),"8")
 assertEqual(cur.getField(8,0),nil)
 cur.setResultSetBufferSize(0)
@@ -706,7 +706,7 @@ print "\n"
 print "CACHED RESULT SET WITH SUSPEND "+
 	"AND RESULT SET BUFFER SIZE: \n"
 cur.setResultSetBufferSize(2)
-cur.cacheToFile("cachefile1")
+cur.cacheToFile("cachefile1-oracle")
 cur.setCacheTtl(200)
 assertTrue(cur.sendQuery(
 	"select "+
@@ -717,7 +717,7 @@ assertTrue(cur.sendQuery(
 	"	testnumber"))
 assertEqual(cur.getField(2,0),"3")
 filename=cur.getCacheFileName()
-assertEqual(filename,"cachefile1")
+assertEqual(filename,"cachefile1-oracle")
 id=cur.getResultSetId()
 cur.suspendResultSet()
 assertTrue(con.suspendSession())
@@ -806,7 +806,7 @@ print "TRANSACTION BEHAVIOR - implicit: \n"
 assertTrue(con.setTransactionModel("implicit"))
 assertEqual(con.getTransactionModel(),"implicit")
 assertTrue(cur.sendQuery("create table testtable (col1 integer)"))
-secondcon=SQLRConnection.new("sqlrelay",9000,"/tmp/test.socket",
+secondcon=SQLRConnection.new("sqlrelay",9001,"/tmp/oracletest.socket",
 					"testuser","testpassword",0,1)
 secondcur=SQLRCursor.new(secondcon)
 setSecondConnection(secondcon)

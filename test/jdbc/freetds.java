@@ -31,7 +31,7 @@ class freetds extends sqlrtest {
 		if (classpath.contains("sqlrelayjdbc.jar")) {
 			driver="com.firstworks.sql.SQLRelayDriver";
 			host="localhost";
-			port=9000;
+			port=9005;
 			socket=null;
 			url="jdbc:sqlrelay://"+host+":"+port;
 			user="testuser";
