@@ -1187,6 +1187,18 @@
 		which is exact at every scale firebird allows and also drops
 		the floating point round trip that could otherwise give a
 		divisor one less than a power of ten
+	made the firebird protocol module honor a read-only transaction - a tpb
+		asking for one got a read-write transaction, because SQL Relay
+		has no way to ask a backend for a read-only one, so a write
+		inside it succeeded when it should have failed - an insert,
+		update or delete is refused by the module now, with the bare
+		isc_read_only_trans a real server sends, which the client turns
+		into sqlcode -817, sqlstate 42000 and "attempted update during
+		read-only transaction" - isc_info_tra_access answers read-only
+		for such a transaction too, rather than always answering
+		read-write - what it still doesn't do: the transaction
+		underneath is read-write (#9109), ddl isn't refused (#9107), and
+		the tpb's isolation level is still dropped (#9108)
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems
