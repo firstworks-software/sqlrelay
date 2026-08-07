@@ -3126,6 +3126,10 @@ class SQLRSERVER_DLLSPEC sqlrservercontroller : public sqlrserverbase {
 		 *  If "value" is determined to be a time then it is converted
 		 *  to the format specified by "timeformat".
 		 *
+		 *  If the format that applies is NULL or empty then "value"
+		 *  is left alone, "newvalue" and "newvaluesize" are not
+		 *  written to, and false is returned.
+		 *
 		 *  The reformatted "value" is written to "newvalue" and
 		 *  "newvaluesize" is set to the number of bytes that were
 		 *  written to "newvalue", not including the NULL terminator.
@@ -3133,7 +3137,8 @@ class SQLRSERVER_DLLSPEC sqlrservercontroller : public sqlrserverbase {
 		 *  be overwritten by the next call to reformatDateTimes().
 		 *
 		 *  Returns true if the date/time was successfully parsed and
-		 *  false if it failed to parse the date/time. */
+		 *  reformatted, and false if it failed to parse the date/time
+		 *  or if no format was specified for it. */
 		bool	reformatDateTime(const char *value,
 						uint64_t valuesize,
 						const char **newvalue,

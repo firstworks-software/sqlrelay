@@ -56,7 +56,15 @@ sqlrresultsettranslation_reformatdatetime::
 
 	datetimeformat=parameters->getAttributeValue("datetimeformat");
 	dateformat=parameters->getAttributeValue("dateformat");
+	if (charstring::getLength(datetimeformat) &&
+		!charstring::getLength(dateformat)) {
+		dateformat=datetimeformat;
+	}
 	timeformat=parameters->getAttributeValue("timeformat");
+	if (charstring::getLength(datetimeformat) &&
+		!charstring::getLength(timeformat)) {
+		timeformat=datetimeformat;
+	}
 
 }
 

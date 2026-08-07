@@ -4235,6 +4235,11 @@ bool sqlrservercontroller::reformatDateTime(const char *value,
 		format=timeformat;
 	}
 
+	// leave the value alone if no format was specified
+	if (!charstring::getLength(format)) {
+		return false;
+	}
+
 	// convert to the specified format
 	delete[] pvt->_reformattedvalue;
 	pvt->_reformattedvalue=datetime::formatAs(format,

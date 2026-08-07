@@ -824,6 +824,14 @@
 		the mappings themselves, and the mappings are allocated out of
 		that pool, so re-executing the query on that cursor afterward
 		read freed memory
+	fixed the reformatdatetime result set translation - the dateformat
+		and timeformat attributes didn't fall back to datetimeformat,
+		as the docs say they do, so with only datetimeformat
+		configured, a date-only or time-only field came back to the
+		client as an empty string
+	fixed the server's date/time reformatting - a field that had no
+		format configured for it was replaced with an empty string,
+		rather than being left alone
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems
