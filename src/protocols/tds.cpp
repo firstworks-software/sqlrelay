@@ -8011,6 +8011,11 @@ bool sqlrprotocol_tds::cursorExecute(bool nometadata) {
 	bool	success=cont->executeQuery(cursor,true,true,true,true);
 	executeflag.setValue(cursor,false);
 
+	// re-running the statement leaves the cursor sitting on nothing, so
+	// the rows the last fetch positioned on have to go with it, or an
+	// sp_cursor before the next fetch would update the wrong row
+	releasePositionRows(cursor);
+
 	if (!success) {
 		rpcError(cursor);
 		returnValueInteger(1,0,true);
