@@ -281,10 +281,10 @@ public class SQLRelayResultSetMetaData implements ResultSetMetaData {
 			case "USER_DEFINED_TYPE":
 				retval="java.lang.Byte";
 				break;
-			case "SHORT_DATATYPE":
+			case "SHORT":
 				retval="java.lang.Short";
 				break;
-			case "TINY_DATATYPE":
+			case "TINY":
 				retval="java.lang.Short";
 				break;
 	
@@ -790,12 +790,12 @@ public class SQLRelayResultSetMetaData implements ResultSetMetaData {
 			case "SMALLINT":
 			case "USHORT":
 			case "YEAR":
-			case "SHORT_DATATYPE":
+			case "SHORT":
 			case "INT2":
 				retval=Types.SMALLINT;
 				break;
 			case "TINYINT":
-			case "TINY_DATATYPE":
+			case "TINY":
 				retval=Types.TINYINT;
 				break;
 			case "DATETIME":

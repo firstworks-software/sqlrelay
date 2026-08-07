@@ -1079,6 +1079,14 @@
 		getColumnClassName(), getColumnDisplaySize(), getColumnType(),
 		getPrecision() or isCurrency() rather than falling through the
 		way the rest of the driver does
+	fixed the jdbc api's result set metadata for columns whose datatype is
+		named SHORT or TINY - two case labels in each of the class name
+		and jdbc type chains spelled the identifier in the datatype enum,
+		SHORT_DATATYPE and TINY_DATATYPE, rather than the name the server
+		sends, so neither could ever match, and with no bare SHORT or TINY
+		case to fall back on such a column reported a null class name and
+		java.sql.Types.NULL instead of java.lang.Short and Types.SMALLINT
+		or Types.TINYINT
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems
