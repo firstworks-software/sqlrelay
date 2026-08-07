@@ -15,6 +15,7 @@ import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.Arrays;
 import java.util.Calendar;
+import java.util.Locale;
 import java.util.Map;
 import java.util.GregorianCalendar;
 import java.net.URL;
@@ -296,7 +297,11 @@ public class SQLRelayResultSet implements ResultSet {
 		if (type==null) {
 			return false;
 		}
-		switch (type.toUpperCase()) {
+		// Uppercase with Locale.ROOT rather than the jvm's default
+		// locale.  In a turkish locale, "image" uppercases to a dotted
+		// capital I followed by MAGE, which matches none of the cases
+		// below.
+		switch (type.toUpperCase(Locale.ROOT)) {
 			case "CHAR":
 			case "_CHAR":
 			case "LONGCHAR":

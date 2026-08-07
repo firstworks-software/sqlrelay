@@ -1040,6 +1040,14 @@
 		"TINY", so neither branch could ever be taken and a column of
 		either type ran off the end of the chain and was reported as
 		SQL_CHAR rather than SQL_SMALLINT or SQL_TINYINT
+	fixed the jdbc api - it uppercased a column's datatype name with no
+		locale before matching it against the names in the datatype
+		list, so on a jvm running in a turkish locale "int4"
+		uppercased to a dotted capital I followed by NT4 and matched
+		nothing, and every postgresql column whose type name had an i
+		in it came back from the result set metadata with no type, no
+		class name, and the raw column length for its display size and
+		precision
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems

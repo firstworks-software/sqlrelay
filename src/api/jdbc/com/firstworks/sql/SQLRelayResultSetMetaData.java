@@ -4,6 +4,8 @@ package com.firstworks.sql;
 
 import java.sql.*;
 
+import java.util.Locale;
+
 import com.firstworks.sqlrelay.*;
 
 public class SQLRelayResultSetMetaData implements ResultSetMetaData {
@@ -50,7 +52,12 @@ public class SQLRelayResultSetMetaData implements ResultSetMetaData {
 		drv.debugFunction(this);
 		drv.debugPrintln("column: "+column);
 		String	retval=null;
-		String	ctype=sqlrcur.getColumnType(column-1).toUpperCase();
+		// Uppercase with Locale.ROOT rather than the jvm's default
+		// locale.  In a turkish locale, "int4" uppercases to a dotted
+		// capital I followed by NT4, which matches none of the cases
+		// below.
+		String	ctype=sqlrcur.getColumnType(column-1)
+						.toUpperCase(Locale.ROOT);
 		drv.debugPrintln("ctype: "+ctype);
 		switch (ctype) {
 			case "UNKNOWN":
@@ -680,7 +687,8 @@ public class SQLRelayResultSetMetaData implements ResultSetMetaData {
 	int getColumnDisplaySize(int column) {
 		drv.debugFunction(this);
 		drv.debugPrintln("column: "+column);
-		String	ctype=sqlrcur.getColumnType(column-1).toUpperCase();
+		String	ctype=sqlrcur.getColumnType(column-1)
+						.toUpperCase(Locale.ROOT);
 		drv.debugPrintln("ctype: "+ctype);
 		int	size=0;
 		if (sqlrcur.isNumberType(ctype)) {
@@ -734,7 +742,8 @@ public class SQLRelayResultSetMetaData implements ResultSetMetaData {
 		drv.debugFunction(this);
 		drv.debugPrintln("column: "+column);
 		int	retval=0;
-		String	ctype=sqlrcur.getColumnType(column-1).toUpperCase();
+		String	ctype=sqlrcur.getColumnType(column-1)
+						.toUpperCase(Locale.ROOT);
 		drv.debugPrintln("ctype: "+ctype);
 		switch (ctype) {
 			case "UNKNOWN":
@@ -1015,7 +1024,8 @@ public class SQLRelayResultSetMetaData implements ResultSetMetaData {
 	int getPrecision(int column) {
 		drv.debugFunction(this);
 		drv.debugPrintln("column: "+column);
-		String	ctype=sqlrcur.getColumnType(column-1).toUpperCase();
+		String	ctype=sqlrcur.getColumnType(column-1)
+						.toUpperCase(Locale.ROOT);
 		drv.debugPrintln("ctype: "+ctype);
 		int	precision=0;
 		if (sqlrcur.isNumberType(ctype)) {
@@ -1097,7 +1107,8 @@ public class SQLRelayResultSetMetaData implements ResultSetMetaData {
 	public
 	boolean isCurrency(int column) {
 		drv.debugFunction(this);
-		String	ctype=sqlrcur.getColumnType(column-1).toUpperCase();
+		String	ctype=sqlrcur.getColumnType(column-1)
+						.toUpperCase(Locale.ROOT);
 		boolean	iscurrency=ctype.equals("MONEY") ||
 					ctype.equals("SMALLMONEY") ||
 					ctype.equals("MONEY_ARRAY");
