@@ -837,6 +837,10 @@
 		dbclob, longchar, longvarchar, tinytext, mediumtext, longtext,
 		json and xml columns were all described to the client as oid
 		705, unknown, rather than as text
+	fixed the postgresql protocol module - db2's graphic, vargraphic and
+		longvargraphic columns were described as oid 705, unknown,
+		rather than as text, they're double-byte character types even
+		though datatypes.h groups them with the blobs
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems

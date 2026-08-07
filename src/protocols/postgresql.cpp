@@ -1493,6 +1493,8 @@ uint32_t sqlrprotocol_postgresql::getColumnTypeOid(uint16_t coltype) {
 			return 24; //regproc
 		// Postgresql has no distinct character-lob types.  Its text
 		// type is unbounded, so every character lob maps onto it.
+		// The graphic types are db2's double-byte character types,
+		// despite being grouped with the blobs in datatypes.h.
 		case TEXT_DATATYPE:
 		case LONGCHAR_DATATYPE:
 		case LONGVARCHAR_DATATYPE:
@@ -1504,6 +1506,9 @@ uint32_t sqlrprotocol_postgresql::getColumnTypeOid(uint16_t coltype) {
 		case NTEXT_DATATYPE:
 		case JSON_DATATYPE:
 		case XML_DATATYPE:
+		case GRAPHIC_DATATYPE:
+		case VARGRAPHIC_DATATYPE:
+		case LONGVARGRAPHIC_DATATYPE:
 			return 25; //text
 		case OID_DATATYPE:
 			return 26; //oid
