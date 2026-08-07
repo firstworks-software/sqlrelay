@@ -989,6 +989,12 @@
 		with no primary key, or one that didn't select the key
 		columns, is still refused, and so are the operations that
 		need a scrollable cursor
+	removed the hex workaround from the tds protocol module's bulk load -
+		a binary value was sent as hex digits and converted back by
+		the insert, because a blob bind couldn't reach sql server;
+		the value is bound as a blob now, which halves the bytes sent
+		and lifts the varbinary(8000) cap that kept an image column
+		from being loaded at its full width
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems

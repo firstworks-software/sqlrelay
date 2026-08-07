@@ -1025,7 +1025,6 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_tds : public sqlrprotocol {
 					memorypool *bindpool,
 					const byte_t *value,
 					size_t valuesize);
-		bool	isBinaryType(byte_t tdstype);
 		void	bulkDouble(sqlrserverbindvar *bv, double value);
 		void	bulkDecimal(byte_t ispositive,
 					const byte_t *val,
@@ -5673,18 +5672,7 @@ char *sqlrprotocol_tds::bulkInsert(uint16_t colcount) {
 		if (col) {
 			query.append(',');
 		}
-		if (isBinaryType(bulktypes[col])) {
-			// style 2 reads the string as hex digits without a
-			// leading 0x - see bulkBinary() for why the value
-			// arrives as hex in the first place
-			uint32_t	size=bulksizes[col];
-			query.append("convert(varbinary(");
-			query.append((size && size<=8000)?size:8000);
-			query.append("),")->append(bindvarnames[col]);
-			query.append(",2)");
-		} else {
-			query.append(bindvarnames[col]);
-		}
+		query.append(bindvarnames[col]);
 	}
 	query.append(')');
 	return query.detachString();
@@ -5757,36 +5745,17 @@ void sqlrprotocol_tds::bulkString(sqlrserverbindvar *bv,
 	debugWrite("value: %.*s",(int32_t)valuesize,bv->value.stringval);
 }
 
-bool sqlrprotocol_tds::isBinaryType(byte_t tdstype) {
-
-	switch (tdstype) {
-		case TDS_TYPE_BINARY:
-		case TDS_TYPE_VARBINARY:
-		case TDS_TYPE_BIGBINARY:
-		case TDS_TYPE_BIGVARBIN:
-		case TDS_TYPE_IMAGE:
-			return true;
-		default:
-			return false;
-	}
-}
-
 void sqlrprotocol_tds::bulkBinary(sqlrserverbindvar *bv,
 					memorypool *bindpool,
 					const byte_t *value,
 					size_t valuesize) {
-
-	// Binary values are bound as hex, and converted back to bytes by
-	// the insert that bulkInsert() builds.  A blob bind would be the
-	// obvious way to do this, but the odbc connection module binds a
-	// blob as a character string, and character strings get charset
-	// converted, which raw bytes don't survive.
-
-	stringbuffer	hex;
-	for (size_t i=0; i<valuesize; i++) {
-		hex.append(cont->asciiToHex(value[i]));
-	}
-	bulkString(bv,bindpool,hex.getString(),hex.getStringLength());
+	bv->type=SQLRSERVERBINDVARTYPE_BLOB;
+	bv->valuesize=(uint32_t)valuesize;
+	bv->value.stringval=(char *)bindpool->allocate(valuesize+1);
+	bytestring::copy(bv->value.stringval,value,valuesize);
+	bv->value.stringval[valuesize]='\0';
+	bv->isnull=cont->getNonNullBindValue();
+	debugWrite("value: %d bytes of binary",(int32_t)valuesize);
 }
 
 void sqlrprotocol_tds::bulkDouble(sqlrserverbindvar *bv, double value) {
