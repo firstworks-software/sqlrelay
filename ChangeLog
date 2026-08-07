@@ -1414,6 +1414,12 @@
 		that sent it got no further either way, but the next person
 		reasoning about which types can reach a parser had to work
 		out for themselves that it was a mistake
+	fixed the oracle protocol module - it cleared two capability bits
+		that its own footers depend on, so a client that logged in
+		successfully hung forever and one that got the module's
+		ORA-01017 saw a client-side exception instead - the footers
+		are captures of an 11.2 server that sets both bits, so the
+		module sets them too now, and a modern client can log in
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems

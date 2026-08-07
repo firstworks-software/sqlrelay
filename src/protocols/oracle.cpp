@@ -2797,13 +2797,28 @@ bool sqlrprotocol_oracle::sendTtiResponse() {
 }
 
 // server compile-time capabilities, captured from a live oracle 11.2 server,
-// which reports CCAP_FIELD_VERSION_11_2, with three changes.
+// which reports CCAP_FIELD_VERSION_11_2, with one change.
 //
-// CCAP_TTC1 and CCAP_OCI1 are 0 rather than 0x7f and 0xff.  go-ora reads bit
-// 0x01 of each as end-of-call-status and fast-session-propagate, and then
-// reads an extra field for each off the front of every summary object.  This
-// module sends neither field, so advertising either bit would desynchronize
-// the client on the first error or ok footer.
+// CCAP_TTC1 bit 0x01 and CCAP_OCI1 bit 0x01 are that server's, 0x7f and 0xff,
+// and they have to stay that way.  go-ora reads them as end-of-call-status and
+// fast-session-propagate, and then reads an extra field for each off the front
+// of every summary object.  #8978 cleared them on the grounds that this module
+// sends neither field, and that was wrong: the module doesn't build its
+// footers field by field, it appends byte strings captured from that same
+// server, so both fields are in them, unnamed.  Its authentication ok trailer
+// and its authentication error packet are byte for byte that server's, and its
+// error packet decodes only one way - with the bits set, the summary object's
+// return code lands on the ora number in the message that follows it, and with
+// them clear it lands on a zero length integer, reads 0, and a return code of
+// 0 means there is no message to read at all.  Measured, with the bits clear:
+// ojdbc 23.26 hangs forever on a correct login and reports the module's
+// ORA-01017 as an ArrayIndexOutOfBoundsException.
+//
+// The two move together.  Sending a footer without the fields means clearing
+// both bits in the same change, and clearing either bit means taking the
+// fields out of every footer.  putGenericFooter() is the one that isn't
+// covered by this - it came from an 8i server rather than the 11.2 one, and
+// it's on the query path, which no client has reached yet.
 //
 // The array is 42 bytes rather than the 39 a real 11.2 server sends, because
 // python-oracledb reads CCAP_TTC4 with bounds checking disabled and no length
@@ -2816,8 +2831,8 @@ bool sqlrprotocol_oracle::sendTtiResponse() {
 // every describe-info column and five more fields in every execute.
 static const byte_t	ttiservercompilecaps[]={
 	0x06, 0x01, 0x01, 0x01, 0x0d, 0x01, 0x01, 0x06,
-	0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x00,
-	0x00, 0x03, 0x0a, 0x03, 0x03, 0x01, 0x00, 0x7f,
+	0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x7f,
+	0xff, 0x03, 0x0a, 0x03, 0x03, 0x01, 0x00, 0x7f,
 	0x01, 0x7f, 0xff, 0x01, 0x05, 0x01, 0x01, 0x3f,
 	0x01, 0x03, 0x06, 0x00, 0x01, 0x03, 0x01, 0x00,
 	0x00, 0x00
