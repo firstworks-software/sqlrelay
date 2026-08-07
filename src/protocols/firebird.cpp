@@ -3736,10 +3736,13 @@ bool sqlrprotocol_firebird::setCursor() {
 					isc_bad_stmt_handle);
 	}
 
-	// The name is kept but never handed to the backend.  SQL Relay has no
-	// way to name a backend cursor, so "where current of" against this
-	// name can only work if the backend happens to have given its own
-	// cursor the same one.
+	// The name is kept but never handed to the backend - see #9087.  SQL
+	// Relay has no way to name a backend cursor, and firebird only takes a
+	// name between prepare and execute, so naming one here would be too
+	// late anyway: runPreparedQuery() has already run a select with no
+	// binds and opened the backend's cursor.  Naming and fetching works;
+	// "where current of" fails at the backend with the -504 a real server
+	// sends for a cursor that doesn't exist.
 	delete[] stmt->cursorname;
 	stmt->cursorname=cursorname;
 
