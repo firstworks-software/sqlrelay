@@ -891,6 +891,13 @@ struct sqlrfirebirdfield {
 	uint16_t	length;
 };
 
+// what one bind variable describes as, when describeBinds() could work it out
+struct sqlrfirebirdbind {
+	uint16_t	coltype;
+	uint32_t	colsize;
+	uint32_t	colscale;
+};
+
 // what the module knows about a statement the client allocated
 // (the statement handle is the cursor id plus one, so a handle is never 0,
 // and no separate handle-to-cursor map is needed - see getStatement())
@@ -906,6 +913,11 @@ struct sqlrfirebirdstatement {
 	// only sends the blr on the first fetch of a cursor
 	sqlrfirebirdfield	*outfields;
 	uint16_t		outfieldcount;
+	// what each bind variable describes as, or NULL when the module
+	// couldn't work it out - see describeBinds()
+	sqlrfirebirdbind	*binds;
+	uint16_t		bindcount;
+	bool			bindsdescribed;
 };
 
 class SQLRSERVER_DLLSPEC sqlrprotocol_firebird : public sqlrprotocol {
@@ -1083,6 +1095,7 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_firebird : public sqlrprotocol {
 
 		bool	appendInfoBare(byte_t item);
 		bool	appendInfoDescribe(sqlrservercursor *cursor,
+					sqlrfirebirdstatement *stmt,
 					bool bind,
 					uint32_t start,
 					const byte_t *items,
@@ -1144,6 +1157,15 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_firebird : public sqlrprotocol {
 					const char *name,
 					uint32_t *bytesread);
 		bool	readPadding(uint32_t *bytesread);
+
+		void	describeBinds(sqlrservercursor *cursor,
+					sqlrfirebirdstatement *stmt,
+					const byte_t *items,
+					uint32_t itemslen);
+		bool	buildBindProbe(sqlrservercursor *cursor,
+					stringbuffer *probe,
+					uint16_t *bindcount);
+		bool	isBindMarker(const char *value);
 
 		void	fixupRespBufferLen();
 
@@ -1281,6 +1303,7 @@ sqlrprotocol_firebird::sqlrprotocol_firebird(sqlrservercontroller *cont,
 	for (uint16_t i=0; i<maxcursorcount; i++) {
 		statements[i].cursorname=NULL;
 		statements[i].outfields=NULL;
+		statements[i].binds=NULL;
 	}
 
 	// the wire format binds by position, so the names are the positions
@@ -1327,6 +1350,9 @@ void sqlrprotocol_firebird::init() {
 		statements[i].cursorname=NULL;
 		statements[i].outfields=NULL;
 		statements[i].outfieldcount=0;
+		statements[i].binds=NULL;
+		statements[i].bindcount=0;
+		statements[i].bindsdescribed=false;
 	}
 }
 
@@ -3901,6 +3927,10 @@ bool sqlrprotocol_firebird::runPreparedQuery(bool execimmediate,
 		delete[] stmt->outfields;
 		stmt->outfields=NULL;
 		stmt->outfieldcount=0;
+		delete[] stmt->binds;
+		stmt->binds=NULL;
+		stmt->bindcount=0;
+		stmt->bindsdescribed=false;
 	}
 
 	// copy the query into the cursor's own buffer
@@ -3977,6 +4007,9 @@ bool sqlrprotocol_firebird::runPreparedQuery(bool execimmediate,
 	// build the reply the requested info items ask for
 	respbuffer.clear();
 	if (!execimmediate && itemslen) {
+		if (stmt) {
+			describeBinds(cursor,stmt,items,itemslen);
+		}
 		buildSqlInfo(cursor,stmt,items,itemslen);
 	}
 
@@ -4541,6 +4574,7 @@ bool sqlrprotocol_firebird::infoSql() {
 	}
 
 	respbuffer.clear();
+	describeBinds(cursor,stmt,items,itemslen);
 	buildSqlInfo(cursor,stmt,items,itemslen);
 
 	delete[] items;
@@ -4862,6 +4896,176 @@ const char *sqlrprotocol_firebird::sqlStateForSqlCode(int32_t sqlcode) {
 	}
 }
 
+// A firebird client expects isc_dsql_describe_bind to answer with each
+// parameter's type, and SQL Relay exposes a bind's position and nothing else -
+// see #9140 for the server api addition that would settle this properly.  For
+// an insert the module can derive the same answer the backend would give,
+// because the type of a value going into a column is the column's type: parse
+// the insert, run a select of the columns the binds feed that returns no rows,
+// and describe each bind as its column.  Anything that doesn't parse, or
+// doesn't line up, leaves binds NULL and describes as it always did.
+void sqlrprotocol_firebird::describeBinds(sqlrservercursor *cursor,
+					sqlrfirebirdstatement *stmt,
+					const byte_t *items,
+					uint32_t itemslen) {
+
+	// the probe below costs a query, so it only runs when the client
+	// actually asked for the bind describe, and only once per prepare
+	if (stmt->bindsdescribed) {
+		return;
+	}
+	bool	asked=false;
+	for (uint32_t i=0; i<itemslen && !asked; i++) {
+		asked=(items[i]==isc_info_sql_bind);
+	}
+	if (!asked) {
+		return;
+	}
+	stmt->bindsdescribed=true;
+
+	// build the probe query
+	stringbuffer	probe;
+	uint16_t	bindcount=0;
+	if (!buildBindProbe(cursor,&probe,&bindcount)) {
+		return;
+	}
+
+	if (getDebug()) {
+		stdoutput.printf("	bind describe probe: \"%s\"\n",
+						probe.getString());
+	}
+
+	// run it on a cursor of its own
+	sqlrservercursor	*probecursor=cont->getCursor();
+	if (!probecursor) {
+		return;
+	}
+
+	const char	*probequery=probe.getString();
+	uint32_t	probequerylen=(uint32_t)probe.getSize();
+
+	char	*querybuffer=cont->getQueryBuffer(probecursor);
+	bytestring::copy(querybuffer,probequery,probequerylen);
+	querybuffer[probequerylen]='\0';
+	cont->setQuerySize(probecursor,probequerylen);
+
+	if (cont->prepareQuery(probecursor,querybuffer,probequerylen,
+					true,true,true,true) &&
+		cont->executeQuery(probecursor,true,true,true,true) &&
+		cont->colCount(probecursor)==bindcount) {
+
+		stmt->binds=new sqlrfirebirdbind[bindcount];
+		stmt->bindcount=bindcount;
+		for (uint16_t i=0; i<bindcount; i++) {
+			stmt->binds[i].coltype=
+				cont->getColumnType(probecursor,i);
+			stmt->binds[i].colsize=
+				cont->getColumnSize(probecursor,i);
+			stmt->binds[i].colscale=
+				cont->getColumnScale(probecursor,i);
+		}
+
+	} else if (getDebug()) {
+		stdoutput.printf("	bind describe probe failed\n");
+	}
+
+	cont->closeResultSet(probecursor);
+	cont->release(probecursor);
+}
+
+// Builds the select that describeBinds() runs, and answers how many binds it
+// covers.  False means the query isn't a shape the module can resolve, which
+// is every shape but an insert whose bind variables are whole values.
+bool sqlrprotocol_firebird::buildBindProbe(sqlrservercursor *cursor,
+						stringbuffer *probe,
+						uint16_t *bindcount) {
+
+	const char	*query=cont->getQueryBuffer(cursor);
+	uint32_t	querylen=cont->getQuerySize(cursor);
+
+	*bindcount=cont->countBindVariables(query,querylen);
+	if (!*bindcount) {
+		return false;
+	}
+
+	sqlrquerytype_t		querytype=SQLRQUERYTYPE_ETC;
+	char			*table=NULL;
+	linkedlist<char *>	*columns=NULL;
+	linkedlist<char *>	*values=NULL;
+	bool	parsed=cont->parseInsert(query,querylen,&querytype,&table,
+					&columns,NULL,NULL,NULL,NULL,NULL,
+					&values,NULL);
+
+	// a multi-insert or insert-select describes no binds of its own
+	bool	usable=parsed && querytype==SQLRQUERYTYPE_INSERT &&
+			table && columns && values &&
+			columns->getCount()==values->getCount();
+
+	// pair each value that is a bind marker with its column
+	uint16_t	found=0;
+	if (usable) {
+		probe->append("select ");
+		listnode<char *>	*cnode=columns->getFirst();
+		listnode<char *>	*vnode=values->getFirst();
+		for (; cnode && vnode;
+			cnode=cnode->getNext(), vnode=vnode->getNext()) {
+
+			if (!isBindMarker(vnode->getValue())) {
+				continue;
+			}
+			if (found) {
+				probe->append(',');
+			}
+			probe->append(cnode->getValue());
+			found++;
+		}
+		probe->append(" from ")->append(table);
+		probe->append(" where 1=0");
+	}
+
+	delete[] table;
+	delete columns;
+	delete values;
+
+	// A bind that isn't a whole value - "values (?+1)" - leaves the count
+	// short, and there is no way to tell which column it belonged to, so
+	// the whole statement falls back rather than describing some of it.
+	return usable && found==*bindcount;
+}
+
+// Which marker styles are in play is the backend's business, and a protocol
+// module can't see the flags countBindVariables() consults, so this takes any
+// of the four SQL Relay knows.  No literal, identifier or function call in a
+// value list starts with one of them.
+bool sqlrprotocol_firebird::isBindMarker(const char *value) {
+
+	if (!value) {
+		return false;
+	}
+
+	// parseInsert() doesn't trim the values it splits out
+	const char	*p=value;
+	while (character::isWhitespace(*p)) {
+		p++;
+	}
+
+	if (*p!='?' && *p!=':' && *p!='@' && *p!='$') {
+		return false;
+	}
+	p++;
+
+	// The marker has to be the whole value.  A bind inside an expression -
+	// "values (?+1)" - feeds no column on its own, and describing it as
+	// one would be a guess.
+	while (character::isAlphanumeric(*p) || *p=='_') {
+		p++;
+	}
+	while (character::isWhitespace(*p)) {
+		p++;
+	}
+	return !*p;
+}
+
 sqlrfirebirdstatement *sqlrprotocol_firebird::getStatement(
 						uint32_t stmthandle,
 						sqlrservercursor **cursor) {
@@ -4894,6 +5098,10 @@ void sqlrprotocol_firebird::clearStatement(uint16_t cursorid) {
 	delete[] stmt->outfields;
 	stmt->outfields=NULL;
 	stmt->outfieldcount=0;
+	delete[] stmt->binds;
+	stmt->binds=NULL;
+	stmt->bindcount=0;
+	stmt->bindsdescribed=false;
 }
 
 void sqlrprotocol_firebird::clearStatements() {
@@ -6349,6 +6557,7 @@ bool sqlrprotocol_firebird::appendInfoRecords(sqlrservercursor *cursor,
 }
 
 bool sqlrprotocol_firebird::appendInfoDescribe(sqlrservercursor *cursor,
+						sqlrfirebirdstatement *stmt,
 						bool bind,
 						uint32_t start,
 						const byte_t *items,
@@ -6386,17 +6595,28 @@ bool sqlrprotocol_firebird::appendInfoDescribe(sqlrservercursor *cursor,
 			return false;
 		}
 
-		// SQL Relay only knows a bind's position, never its type, so
-		// a bind describes as a nullable string of a generous width -
-		// the one shape every backend can convert from.
-		uint16_t	coltype=(bind)?UNKNOWN_DATATYPE:
-					cont->getColumnType(cursor,col);
+		// SQL Relay only knows a bind's position, never its type.
+		// describeBinds() works the types out for an insert; for
+		// anything else a bind describes as a nullable string of a
+		// generous width - the one shape every backend can convert
+		// from.
+		bool	described=bind && stmt && stmt->binds &&
+					col<stmt->bindcount;
+		uint16_t	coltype=(!bind)?
+					cont->getColumnType(cursor,col):
+					(described)?stmt->binds[col].coltype:
+					UNKNOWN_DATATYPE;
 		uint16_t	sqltype=sqlType(coltype);
-		uint32_t	colsize=(bind)?FIREBIRD_BIND_LENGTH:
-					cont->getColumnSize(cursor,col);
-		int32_t		colscale=(bind)?0:
+		uint32_t	colsize=(!bind)?
+					cont->getColumnSize(cursor,col):
+					(described)?stmt->binds[col].colsize:
+					FIREBIRD_BIND_LENGTH;
+		int32_t		colscale=(!bind)?
 					-((int32_t)
-					cont->getColumnScale(cursor,col));
+					cont->getColumnScale(cursor,col)):
+					(described)?
+					-((int32_t)stmt->binds[col].colscale):
+					0;
 		const char	*colname=(bind)?"":
 					cont->getColumnName(cursor,col);
 		const char	*coltable=(bind)?"":
@@ -6553,7 +6773,7 @@ bool sqlrprotocol_firebird::buildSqlInfo(sqlrservercursor *cursor,
 					p++;
 				}
 				fits=appendInfoBare(item) &&
-					appendInfoDescribe(cursor,
+					appendInfoDescribe(cursor,stmt,
 						item==isc_info_sql_bind,
 						sqldastart,tmpl,tmpllen);
 				}

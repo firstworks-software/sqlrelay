@@ -1306,6 +1306,13 @@
 		arriving a second time would re-auth the session under the
 		modules and renegotiate the wire format with the previous
 		user's cursors still open
+	fixed the firebird protocol module - a client that prepared a statement
+		and asked what its bind variables were got told every one of them
+		was a nullable string 4000 bytes wide, so a client that filled a
+		typed buffer from the answer sent the wrong bytes and the insert
+		failed - for an insert the module now works the types out from the
+		columns the binds feed, which is the same answer the backend would
+		give, and anything it can't resolve still describes as a string
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems
