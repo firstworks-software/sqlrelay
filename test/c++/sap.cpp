@@ -1707,6 +1707,37 @@ int main(int argc, char **argv) {
 	stdoutput.printf("\n");
 
 
+	// stored procedure with the parameters written into the query
+	// The other stored procedure tests all use a bare "exec testproc",
+	// which is the one form the rpc procedure name walk can't get wrong.
+	// These cover the walk.
+	stdoutput.printf("STORED PROCEDURE WITH PARAMETERS IN THE QUERY: \n");
+	cur->sendQuery("drop procedure testproc");
+	assertTrue(cur->sendQuery(
+		"create procedure testproc @in1 int, "
+		"	@in2 int, "
+		"	@out1 int output as "
+		"select @out1=@in1+@in2"));
+	const char	*execqueries[]={
+		"exec testproc @in1,@in2,@out1 output",
+		"execute testproc @in1,@in2,@out1 output",
+		"exec testproc(@in1,@in2,@out1 output)",
+		"exec  testproc",
+		"execute  testproc",
+		NULL
+	};
+	for (uint16_t i=0; execqueries[i]; i++) {
+		cur->prepareQuery(execqueries[i]);
+		cur->inputBind("in1",1);
+		cur->inputBind("in2",2);
+		cur->defineOutputBindInteger("out1");
+		assertTrue(cur->executeQuery());
+		assertEquals(cur->getOutputBindInteger("out1"),3);
+	}
+	assertTrue(cur->sendQuery("drop procedure testproc"));
+	stdoutput.printf("\n");
+
+
 	// stored procedure returning result set
 	stdoutput.printf("STORED PROCEDURE RETURNING RESULT SET: \n");
 	cur->sendQuery("drop procedure testselectproc");

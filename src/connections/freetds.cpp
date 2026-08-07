@@ -4105,10 +4105,19 @@ bool freetdscursor::prepareQuery(const char *query, uint32_t size) {
 		// initiate an rpc command
 		cmd=languagecmd;
 		#ifdef FREETDS_SUPPORTS_CURSORS
+
+		// get the procedure name
+		const char	*p=conn->cont->skipWhitespace(query+4);
+		const char	*namestart=p;
+		while (*p && *p!='(' && *p!='}' &&
+				!character::isWhitespace(*p)) {
+			p++;
+		}
+
 		if (ct_command(languagecmd,
 				CS_RPC_CMD,
-				(CS_CHAR *)query+5,
-				size-5,
+				(CS_CHAR *)namestart,
+				(CS_INT)(p-namestart),
 				CS_UNUSED)!=CS_SUCCEED) {
 			return false;
 		}
@@ -4121,10 +4130,19 @@ bool freetdscursor::prepareQuery(const char *query, uint32_t size) {
 		// initiate an rpc command
 		cmd=languagecmd;
 		#ifdef FREETDS_SUPPORTS_CURSORS
+
+		// get the procedure name
+		const char	*p=conn->cont->skipWhitespace(query+7);
+		const char	*namestart=p;
+		while (*p && *p!='(' && *p!='}' &&
+				!character::isWhitespace(*p)) {
+			p++;
+		}
+
 		if (ct_command(languagecmd,
 				CS_RPC_CMD,
-				(CS_CHAR *)query+8,
-				size-8,
+				(CS_CHAR *)namestart,
+				(CS_INT)(p-namestart),
 				CS_UNUSED)!=CS_SUCCEED) {
 			return false;
 		}
