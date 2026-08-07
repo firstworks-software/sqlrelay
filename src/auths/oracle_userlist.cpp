@@ -47,6 +47,9 @@
 #define SESSION_KEY_SIZE_11G	48
 #define SESSION_KEY_SIZE_12C	32
 
+// how much of the 11g session key is pkcs#7 padding rather than key material
+#define SESSION_KEY_PAD_SIZE_11G	8
+
 // The O5LOGON inputs ride in the credentials' "extra" field, as a rudiments
 // parameterstring.  sqlroraclecredentials has 5 fields and O5LOGON needs 8
 // inputs on the verify side, and widening it means relinking libsqlrserver.
@@ -363,9 +366,18 @@ static bool o5logonChallenge(const char *password,
 		return false;
 	}
 
+	// For an 11g verifier the plaintext isn't 48 random bytes.  Real oracle
+	// sends 40 bytes of key material plus 8 bytes of 0x08 - pkcs#7 padding
+	// up to the 48 byte boundary - and the client rejects the login if the
+	// padding isn't there.  A 12c verifier has no padding.  See #9118.
+	size_t	padsize=(sesskeysize==SESSION_KEY_SIZE_11G)?
+					SESSION_KEY_PAD_SIZE_11G:0;
+	size_t	materialsize=sesskeysize-padsize;
+
 	byte_t	sesskey[SESSION_KEY_SIZE_11G];
 	byte_t	encsesskey[SESSION_KEY_SIZE_11G];
-	bool	retval=(RAND_bytes(sesskey,(int)sesskeysize)==1 &&
+	bytestring::set(sesskey+materialsize,(byte_t)padsize,padsize);
+	bool	retval=(RAND_bytes(sesskey,(int)materialsize)==1 &&
 			aesCbc(true,passwordhash,passwordhashsize,
 					sesskey,sesskeysize,encsesskey));
 	if (retval) {
