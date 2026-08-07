@@ -1726,13 +1726,18 @@ int main(int argc, char **argv) {
 		"execute  testproc",
 		NULL
 	};
+	// distinct values per query, so a stale output bind left by the
+	// previous iteration can't satisfy this one
+	const int	execin1[]={1,10,100,1000,10000};
+	const int	execin2[]={2,20,200,2000,20000};
 	for (uint16_t i=0; execqueries[i]; i++) {
 		cur->prepareQuery(execqueries[i]);
-		cur->inputBind("in1",1);
-		cur->inputBind("in2",2);
+		cur->inputBind("in1",(int64_t)execin1[i]);
+		cur->inputBind("in2",(int64_t)execin2[i]);
 		cur->defineOutputBindInteger("out1");
 		assertTrue(cur->executeQuery());
-		assertEquals(cur->getOutputBindInteger("out1"),3);
+		assertEquals(cur->getOutputBindInteger("out1"),
+						execin1[i]+execin2[i]);
 	}
 	assertTrue(cur->sendQuery("drop procedure testproc"));
 	stdoutput.printf("\n");
