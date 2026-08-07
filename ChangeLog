@@ -1313,6 +1313,27 @@
 		failed - for an insert the module now works the types out from the
 		columns the binds feed, which is the same answer the backend would
 		give, and anything it can't resolve still describes as a string
+	fixed the tds protocol module - tds7Login() read 86 bytes of fixed
+		header, or 94 from tds 7.2 up, without ever checking that the
+		packet was that long, so a truncated login read past the end
+		of the buffer before any of the offset arithmetic began - the
+		request size is carried into the function now and checked
+		before the header reads, and again inside the 7.2 branch,
+		whose extra 8 bytes can't be checked with the rest because
+		the version that selects them comes off the wire
+	fixed the tds protocol module - a login field that exceeded its
+		maximum was dropped, but its length was kept, and the null
+		pointer and the nonzero length then travelled downstream
+		together - a language field longer than 128 characters killed
+		the connection in the environment-change response, and with
+		debug on an extension field longer than 255 bytes killed it
+		before the client had authenticated - the length is dropped
+		along with the field now
+	fixed the tds protocol module - readPassword() computed its byte
+		count into a 16 bit variable, from a character count that
+		nothing in the function bounded, so a large count truncated
+		and the decode read past the copy - it bounds the count
+		itself now and computes in a size_t
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems

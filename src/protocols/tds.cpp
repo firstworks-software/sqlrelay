@@ -45,6 +45,17 @@
 #define	DEFAULT_PACKET_SIZE		4096
 #define	MAX_PACKET_SIZE			65535
 
+// login7's fixed header, before the variable length fields it points into.
+// tds 7.2 and up add ibchangepassword, cchchangepassword and cbsspilong.
+#define	LOGIN7_HEADER_SIZE		86
+#define	LOGIN7_HEADER_SIZE_72		94
+
+// the longest each login7 field may be, in characters for the ucs-2 fields
+// and in bytes for the rest
+#define	MAX_LOGIN_CHARS			128
+#define	MAX_LOGIN_EXTENSION_BYTES	255
+#define	MAX_LOGIN_ATCHDBFILE_CHARS	260
+
 // status bitmap
 #define	STATUS_NORMAL			0x00
 #define	STATUS_EOM			0x01
@@ -877,6 +888,11 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_tds : public sqlrprotocol {
 		bool	preTds7Login();
 
 		bool	tds7Login();
+		// whether a login7 field is within its maximum, dropping the
+		// length along with the field when it isn't
+		bool	loginFieldFits(const char *name,
+						uint16_t *cch,
+						uint16_t max);
 		bool	auth(const wchar_t *username,
 						size_t usernamelen,
 						const wchar_t *password,
@@ -1690,10 +1706,22 @@ bool sqlrprotocol_tds::sendPacket() {
 
 wchar_t *sqlrprotocol_tds::readPassword(const byte_t *rp,
 						size_t charcount) {
-	uint16_t	size=charcount*sizeof(uint16_t);
-	byte_t		*temp=(byte_t *)bytestring::duplicate(rp,size);
-	byte_t		*ch=temp;
-	for (uint16_t i=0; i<size; i++) {
+
+	// The callers cap this too, but they're far enough away that this
+	// has to stand on its own.  size and i both have to be size_t's -
+	// a 16-bit size truncates and over-reads the copy, and a 16-bit i
+	// with a 64-bit size never terminates.
+	if (charcount>MAX_LOGIN_CHARS) {
+		return NULL;
+	}
+
+	size_t	size=charcount*sizeof(uint16_t);
+	byte_t	*temp=(byte_t *)bytestring::duplicate(rp,size);
+	if (!temp) {
+		return NULL;
+	}
+	byte_t	*ch=temp;
+	for (size_t i=0; i<size; i++) {
 		*ch=*ch^0xA5;
 		*ch=((*ch&0x0F)<<4)|((*ch&0xF0)>>4);
 		ch++;
@@ -2336,6 +2364,24 @@ bool sqlrprotocol_tds::preLoginOptionFits(uint16_t ploptoff,
 	return ((size_t)ploptoff+optsize<=packetsize);
 }
 
+// A field that exceeds its maximum is dropped, leaving its pointer NULL.
+// The length has to be dropped with it - the two travel together into the
+// debug block, auth(), changeDatabase() and changeLanguage(), and neither
+// safePrint() nor envChange() survives a NULL pointer with a nonzero length.
+bool sqlrprotocol_tds::loginFieldFits(const char *name,
+						uint16_t *cch,
+						uint16_t max) {
+	if (*cch<=max) {
+		return true;
+	}
+	debugStart("tds7 login");
+	debugWrite("%s: %hd exceeds the %hd maximum, dropping the field",
+							name,*cch,max);
+	debugEnd();
+	*cch=0;
+	return false;
+}
+
 bool sqlrprotocol_tds::preTds7Login() {
 
 	debugStart("pre-tds7 login");
@@ -2351,6 +2397,21 @@ bool sqlrprotocol_tds::tds7Login() {
 
 	const byte_t	*rp=reqpacket.getBuffer();
 	const byte_t	*startrp=rp;
+
+	// the whole request, in bytes.  Not decremented as the header is
+	// read - the header is read straight through, and the fields after
+	// it are indexed off startrp rather than walked.
+	size_t		rpsize=reqpacket.getSize();
+
+	// the fixed header is read straight through below, so it has to be
+	// there.  Nothing has been allocated yet, so there's nothing to free.
+	if (rpsize<LOGIN7_HEADER_SIZE) {
+		debugStart("tds7 login");
+		debugWrite("truncated login7: %lld<%d",
+					(uint64_t)rpsize,LOGIN7_HEADER_SIZE);
+		debugEnd();
+		return false;
+	}
 
 	// initialize values...
 	uint32_t	size=0;
@@ -2506,6 +2567,17 @@ bool sqlrprotocol_tds::tds7Login() {
 	readLE(rp,&ibatchdbfile,&rp);
 	readLE(rp,&cchatchdbfile,&rp);
 	if (clienttdsversion>=720) {
+
+		// the version came off the wire, so this part of the header
+		// couldn't be checked with the rest of it
+		if (rpsize<LOGIN7_HEADER_SIZE_72) {
+			debugStart("tds7 login");
+			debugWrite("truncated login7: %lld<%d",
+					(uint64_t)rpsize,LOGIN7_HEADER_SIZE_72);
+			debugEnd();
+			return false;
+		}
+
 		readLE(rp,&ibchangepassword,&rp);
 		readLE(rp,&cchchangepassword,&rp);
 		if (!fchangepassword) {
@@ -2514,56 +2586,61 @@ bool sqlrprotocol_tds::tds7Login() {
 		}
 		readLE(rp,&cbsspilong,&rp);
 	}
-	if (cchhostname<=128) {
+	if (loginFieldFits("hostname",&cchhostname,MAX_LOGIN_CHARS)) {
 		hostname=wcharstring::duplicateUcs2(
 					(ucs2_t *)(startrp+ibhostname),
 					(size_t)cchhostname);
 	}
-	if (cchusername<=128) {
+	if (loginFieldFits("username",&cchusername,MAX_LOGIN_CHARS)) {
 		username=wcharstring::duplicateUcs2(
 					(ucs2_t *)(startrp+ibusername),
 					(size_t)cchusername);
 	}
-	if (cchpassword<=128) {
+	if (loginFieldFits("password",&cchpassword,MAX_LOGIN_CHARS)) {
 		password=readPassword(startrp+ibpassword,cchpassword);
 	}
-	if (cchappname<=128) {
+	if (loginFieldFits("appname",&cchappname,MAX_LOGIN_CHARS)) {
 		appname=wcharstring::duplicateUcs2(
 					(ucs2_t *)(startrp+ibappname),
 					(size_t)cchappname);
 	}
-	if (cchservername<=128) {
+	if (loginFieldFits("servername",&cchservername,MAX_LOGIN_CHARS)) {
 		servername=wcharstring::duplicateUcs2(
 					(ucs2_t *)(startrp+ibservername),
 					(size_t)cchservername);
 	}
-	if (clienttdsversion>=740 && cbextension<=255) {
+	if (clienttdsversion>=740 &&
+		loginFieldFits("extension",&cbextension,
+					MAX_LOGIN_EXTENSION_BYTES)) {
 		extension=(byte_t *)bytestring::duplicate(
 						startrp+ibextension,
 						cbextension);
 		// FIXME: decode this...
 	}
-	if (cchcltintname<=128) {
+	if (loginFieldFits("cltintname",&cchcltintname,MAX_LOGIN_CHARS)) {
 		cltintname=wcharstring::duplicateUcs2(
 					(ucs2_t *)(startrp+ibcltintname),
 					(size_t)cchcltintname);
 	}
-	if (cchlanguage<=128) {
+	if (loginFieldFits("language",&cchlanguage,MAX_LOGIN_CHARS)) {
 		language=wcharstring::duplicateUcs2(
 					(ucs2_t *)(startrp+iblanguage),
 					(size_t)cchlanguage);
 	}
-	if (cchdatabase<=128) {
+	if (loginFieldFits("database",&cchdatabase,MAX_LOGIN_CHARS)) {
 		database=wcharstring::duplicateUcs2(
 					(ucs2_t *)(startrp+ibdatabase),
 					(size_t)cchdatabase);
 	}
-	if (cchatchdbfile<=260) {
+	if (loginFieldFits("atchdbfile",&cchatchdbfile,
+					MAX_LOGIN_ATCHDBFILE_CHARS)) {
 		atchdbfile=wcharstring::duplicateUcs2(
 					(ucs2_t *)(startrp+ibatchdbfile),
 					(size_t)cchatchdbfile);
 	}
-	if (clienttdsversion>=720 && cchchangepassword<=128) {
+	if (clienttdsversion>=720 &&
+		loginFieldFits("changepassword",&cchchangepassword,
+						MAX_LOGIN_CHARS)) {
 		changepassword=readPassword(startrp+ibchangepassword,
 							cchchangepassword);
 	}
