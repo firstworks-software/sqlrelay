@@ -1215,6 +1215,15 @@
 		what a real column returns - they all throw an "invalid
 		column index" SQLException now, the way the result set class
 		already did
+	fixed the oracle protocol module - the ano request header and six of
+		the fixed-size ano field getters had no bounds checks, so a
+		short packet read past the end of the buffer, before
+		authentication - an 8-byte data packet left a zero-byte buffer
+		to read a 15-byte header out of - the header, the service
+		count and every fixed-size field are bounded against the end
+		of the packet now, and getAnoUnknownField(), which was dead
+		code that advanced the read pointer by a length taken off the
+		wire, is gone
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems
