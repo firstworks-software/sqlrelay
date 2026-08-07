@@ -37,9 +37,24 @@ public class SQLRelayResultSetMetaData implements ResultSetMetaData {
 		return sqlrcur;
 	}
 
+	// jdbc's ResultSetMetaData only promises to throw on a database
+	// access error, not on an invalid column, but every reference
+	// driver throws here, and so does sql relay's own odbc api.
+	// Reaches the connection through the result set, the way
+	// getDateToTimestamp() does, since this class has no connection
+	// field of its own.
+	private
+	void validateColumn(int column) throws SQLException {
+		if (column<1 || column>sqlrcur.colCount()) {
+			resultset.getStatement().getConnection().
+				throwException("invalid column index");
+		}
+	}
+
 	public
-	String getCatalogName(int column) {
+	String getCatalogName(int column) throws SQLException {
 		drv.debugFunction(this);
+		validateColumn(column);
 		String	catalogname="";
 		drv.debugPrintln("column: "+column);
 		drv.debugPrintln("catalog name: "+catalogname);
@@ -61,6 +76,7 @@ public class SQLRelayResultSetMetaData implements ResultSetMetaData {
 	public
 	String getColumnClassName(int column) throws SQLException {
 		drv.debugFunction(this);
+		validateColumn(column);
 		drv.debugPrintln("column: "+column);
 		String	retval=null;
 		String	ctype=normalizeTypeName(
@@ -691,8 +707,9 @@ public class SQLRelayResultSetMetaData implements ResultSetMetaData {
 	}
 
 	public
-	int getColumnDisplaySize(int column) {
+	int getColumnDisplaySize(int column) throws SQLException {
 		drv.debugFunction(this);
+		validateColumn(column);
 		drv.debugPrintln("column: "+column);
 		String	ctype=normalizeTypeName(
 					sqlrcur.getColumnType(column-1));
@@ -725,8 +742,9 @@ public class SQLRelayResultSetMetaData implements ResultSetMetaData {
 	}
 
 	public
-	String getColumnLabel(int column) {
+	String getColumnLabel(int column) throws SQLException {
 		drv.debugFunction(this);
+		validateColumn(column);
 		String	label=sqlrcur.getColumnName(column-1);
 		drv.debugPrintln("column: "+column);
 		drv.debugPrintln("label: "+label);
@@ -735,8 +753,9 @@ public class SQLRelayResultSetMetaData implements ResultSetMetaData {
 	}
 
 	public
-	String getColumnName(int column) {
+	String getColumnName(int column) throws SQLException {
 		drv.debugFunction(this);
+		validateColumn(column);
 		String	columnname=sqlrcur.getColumnName(column-1);
 		drv.debugPrintln("column: "+column);
 		drv.debugPrintln("column name: "+columnname);
@@ -747,6 +766,7 @@ public class SQLRelayResultSetMetaData implements ResultSetMetaData {
 	public
 	int getColumnType(int column) throws SQLException {
 		drv.debugFunction(this);
+		validateColumn(column);
 		drv.debugPrintln("column: "+column);
 		// Types.OTHER rather than 0, which is Types.NULL.  A name
 		// with no case below is a type this driver cannot classify,
@@ -1024,8 +1044,9 @@ public class SQLRelayResultSetMetaData implements ResultSetMetaData {
 	}
 
 	public
-	String getColumnTypeName(int column) {
+	String getColumnTypeName(int column) throws SQLException {
 		drv.debugFunction(this);
+		validateColumn(column);
 		String	typename=sqlrcur.getColumnType(column-1);
 		drv.debugPrintln("column: "+column);
 		drv.debugPrintln("type name: "+typename);
@@ -1034,8 +1055,9 @@ public class SQLRelayResultSetMetaData implements ResultSetMetaData {
 	}
 
 	public
-	int getPrecision(int column) {
+	int getPrecision(int column) throws SQLException {
 		drv.debugFunction(this);
+		validateColumn(column);
 		drv.debugPrintln("column: "+column);
 		String	ctype=normalizeTypeName(
 					sqlrcur.getColumnType(column-1));
@@ -1065,8 +1087,9 @@ public class SQLRelayResultSetMetaData implements ResultSetMetaData {
 	}
 
 	public
-	int getScale(int column) {
+	int getScale(int column) throws SQLException {
 		drv.debugFunction(this);
+		validateColumn(column);
 		int	scale=(int)sqlrcur.getColumnScale(column-1);
 		drv.debugPrintln("column: "+column);
 		drv.debugPrintln("scale: "+scale);
@@ -1075,8 +1098,9 @@ public class SQLRelayResultSetMetaData implements ResultSetMetaData {
 	}
 
 	public
-	String getSchemaName(int column) {
+	String getSchemaName(int column) throws SQLException {
 		drv.debugFunction(this);
+		validateColumn(column);
 		String	schemaname="";
 		drv.debugPrintln("column: "+column);
 		drv.debugPrintln("schema name: "+schemaname);
@@ -1085,8 +1109,9 @@ public class SQLRelayResultSetMetaData implements ResultSetMetaData {
 	}
 
 	public
-	String getTableName(int column) {
+	String getTableName(int column) throws SQLException {
 		drv.debugFunction(this);
+		validateColumn(column);
 		String	tablename="";
 		drv.debugPrintln("column: "+column);
 		drv.debugPrintln("table name: "+tablename);
@@ -1097,8 +1122,9 @@ public class SQLRelayResultSetMetaData implements ResultSetMetaData {
 	}
 
 	public
-	boolean isAutoIncrement(int column) {
+	boolean isAutoIncrement(int column) throws SQLException {
 		drv.debugFunction(this);
+		validateColumn(column);
 		boolean	isautoinc=sqlrcur.getColumnIsAutoIncrement(column-1);
 		drv.debugPrintln("column: "+column);
 		drv.debugPrintln("is auto increment: "+isautoinc);
@@ -1107,8 +1133,9 @@ public class SQLRelayResultSetMetaData implements ResultSetMetaData {
 	}
 
 	public
-	boolean isCaseSensitive(int column) {
+	boolean isCaseSensitive(int column) throws SQLException {
 		drv.debugFunction(this);
+		validateColumn(column);
 		// FIXME: can db type tell us this?
 		boolean	iscasesensitive=false;
 		drv.debugPrintln("column: "+column);
@@ -1118,8 +1145,9 @@ public class SQLRelayResultSetMetaData implements ResultSetMetaData {
 	}
 
 	public
-	boolean isCurrency(int column) {
+	boolean isCurrency(int column) throws SQLException {
 		drv.debugFunction(this);
+		validateColumn(column);
 		String	ctype=normalizeTypeName(
 					sqlrcur.getColumnType(column-1));
 		boolean	iscurrency=ctype.equals("MONEY") ||
@@ -1133,8 +1161,9 @@ public class SQLRelayResultSetMetaData implements ResultSetMetaData {
 	}
 
 	public
-	boolean isDefinitelyWritable(int column) {
+	boolean isDefinitelyWritable(int column) throws SQLException {
 		drv.debugFunction(this);
+		validateColumn(column);
 		boolean	isdefinitelywriteable=false;
 		drv.debugPrintln("column: "+column);
 		drv.debugPrintln("is definitely writeable: "+
@@ -1144,8 +1173,9 @@ public class SQLRelayResultSetMetaData implements ResultSetMetaData {
 	}
 
 	public
-	int isNullable(int column) {
+	int isNullable(int column) throws SQLException {
 		drv.debugFunction(this);
+		validateColumn(column);
 		int	isnullable=(sqlrcur.getColumnIsNullable(column-1))?
 						columnNullable:columnNoNulls;
 		drv.debugPrintln("column: "+column);
@@ -1155,8 +1185,9 @@ public class SQLRelayResultSetMetaData implements ResultSetMetaData {
 	}
 
 	public
-	boolean isReadOnly(int column) {
+	boolean isReadOnly(int column) throws SQLException {
 		drv.debugFunction(this);
+		validateColumn(column);
 		boolean	isreadonly=false;
 		drv.debugPrintln("column: "+column);
 		drv.debugPrintln("is read-only: "+isreadonly);
@@ -1165,8 +1196,9 @@ public class SQLRelayResultSetMetaData implements ResultSetMetaData {
 	}
 
 	public
-	boolean isSearchable(int column) {
+	boolean isSearchable(int column) throws SQLException {
 		drv.debugFunction(this);
+		validateColumn(column);
 		boolean	issearchable=true;
 		drv.debugPrintln("column: "+column);
 		drv.debugPrintln("is searchable: "+issearchable);
@@ -1175,8 +1207,9 @@ public class SQLRelayResultSetMetaData implements ResultSetMetaData {
 	}
 
 	public
-	boolean isSigned(int column) {
+	boolean isSigned(int column) throws SQLException {
 		drv.debugFunction(this);
+		validateColumn(column);
 		boolean	issigned=!sqlrcur.getColumnIsUnsigned(column-1);
 		drv.debugPrintln("column: "+column);
 		drv.debugPrintln("is signed: "+issigned);
@@ -1185,8 +1218,9 @@ public class SQLRelayResultSetMetaData implements ResultSetMetaData {
 	}
 
 	public
-	boolean isWritable(int column) {
+	boolean isWritable(int column) throws SQLException {
 		drv.debugFunction(this);
+		validateColumn(column);
 		boolean	iswriteable=true;
 		drv.debugPrintln("column: "+column);
 		drv.debugPrintln("is writeable: "+iswriteable);

@@ -1206,6 +1206,15 @@
 		response now carries capability arrays captured from a live
 		oracle 11.2 server, defaults to al32utf8 and al16utf16, and
 		takes charset and nationalcharset module parameters
+	fixed the jdbc api - the result set metadata class never validated
+		the column number, so all twenty of its accessors that take
+		one answered for a column that doesn't exist rather than
+		throwing - and answered plausibly, with isSearchable(),
+		isSigned() and isWritable() reporting true, isNullable()
+		reporting columnNoNulls, and eight others returning exactly
+		what a real column returns - they all throw an "invalid
+		column index" SQLException now, the way the result set class
+		already did
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems
