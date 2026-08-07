@@ -1553,6 +1553,12 @@
 		sentinels, little endian counts and a length prefixed user
 		name, rather than portably, and an oci client got ORA-03113 at
 		the first authentication packet because of it
+	fixed the firebird protocol module's attach - it demanded op_attach and
+		dropped the socket with no response on anything else, so a client
+		reaching the service manager, creating a database, or dropping one
+		got a lost connection rather than a firebird error, since that
+		runs ahead of the session loop that answers every other
+		unimplemented op
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems

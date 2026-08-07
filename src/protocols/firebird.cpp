@@ -1997,10 +1997,20 @@ bool sqlrprotocol_firebird::attach() {
 	uint32_t	bytesread=0;
 
 	// get op_attach
-	if (!readInt(&opcode,"attach op code",op_attach,&bytesread)) {
+	if (!readInt(&opcode,"attach op code",&bytesread)) {
 		return false;
 	}
 	debugOpCode("attach op code",opcode);
+
+	// A client that means to create a database, drop one, or reach the
+	// service manager sends its own op here instead of op_attach, and the
+	// session loop never sees it, because this runs ahead of the loop.
+	// None of those are implemented, but the client gets told that rather
+	// than losing the connection with nothing to report.
+	if (opcode!=op_attach) {
+		debugEnd();
+		return sendNotImplementedError();
+	}
 
 	// get db object id
 	uint32_t	dbobjectid=0;
