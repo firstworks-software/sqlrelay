@@ -995,6 +995,35 @@
 		the value is bound as a blob now, which halves the bytes sent
 		and lifts the varbinary(8000) cap that kept an image column
 		from being loaded at its full width
+	added the statement lifecycle to the firebird protocol module - a
+		firebird client can now connect, prepare, execute and fetch;
+		op_detach, op_commit, op_rollback, op_commit_retaining,
+		op_rollback_retaining, op_info_transaction,
+		op_allocate_statement, op_free_statement, op_set_cursor,
+		op_prepare_statement, op_info_sql, op_execute, op_execute2,
+		op_exec_immediate, op_exec_immediate2, op_fetch and op_cancel
+		all went from a bare "return false;" to real implementations,
+		with a sql relay datatype to firebird SQL_* type map, a blr
+		message parser and writer, and bind variable handling
+	fixed the firebird protocol module's response to an op it doesn't
+		implement - sendNotImplementedError() returned false, which
+		the session loop reads as "stop looping", so the socket closed
+		with no response packet ever written and the client reported a
+		lost connection rather than a firebird error
+	fixed the firebird protocol module's tpb walk - the loop test was
+		exact-equality against the end pointer, so an item whose
+		length walked past the end ran the loop off the buffer, and
+		the items that carry a length and a value were read as bare
+		bytes
+	fixed the firebird protocol module's error messages - the message from
+		the server api is a buffer with a size, and it was read as a
+		string, so an error a client printed ran off the end of the
+		text into whatever the buffer still held
+	added frb_info_att_charset to what the firebird protocol module
+		answers isc_database_info with - isql treats an
+		isc_info_error for any item but isc_info_firebird_version as
+		proof it's talking to a pre-interbase-6 server and resets its
+		sql dialect to 1
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems

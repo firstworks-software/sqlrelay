@@ -310,11 +310,16 @@ int	main(int argc, char **argv) {
 	// they read - "firebird" and "firebird3" are both the 3.0 server and
 	// "firebird2" is the 2.5 server, with no alias for 4.0 - so prefer
 	// the full host name.
+	// in sqlrelay mode, an argument names the listener, in firebird's
+	// "host" or "host/port" form, so an instance on a port other than 3050
+	// can be reached.
 	bool		issqlrelay=!(argc>=2 &&
 					!charstring::compare(argv[1],"native"));
 	const char	*server="127.0.0.1";
 	if (!issqlrelay) {
 		server=(argc>=3)?argv[2]:"firebird";
+	} else if (argc>=2) {
+		server=argv[1];
 	}
 
 	// short hostname, matching the db the native odbc tests use

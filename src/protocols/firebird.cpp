@@ -723,6 +723,81 @@
 #define isc_info_sql_stmt_set_generator		13
 #define isc_info_sql_stmt_savepoint		14
 
+// isc_info_sql_stmt_flags bits
+#define FB_STMT_HAS_CURSOR	0x1
+#define FB_STMT_REPEAT_EXECUTE	0x2
+
+// isc_info_sql_records sub-items
+// (a separate value space again - these appear inside the
+// isc_info_sql_records value, not at the top level of a reply)
+#define isc_info_req_select_count	13
+#define isc_info_req_insert_count	14
+#define isc_info_req_update_count	15
+#define isc_info_req_delete_count	16
+
+// sql data types
+// (ibase.h's SQL_*, which the module can't include.  the low bit means the
+// value carries a null indicator, so every type here is even.)
+#define SQL_VARYING	448
+#define SQL_TEXT	452
+#define SQL_DOUBLE	480
+#define SQL_FLOAT	482
+#define SQL_LONG	496
+#define SQL_SHORT	500
+#define SQL_TIMESTAMP	510
+#define SQL_BLOB	520
+#define SQL_D_FLOAT	530
+#define SQL_ARRAY	540
+#define SQL_QUAD	550
+#define SQL_TYPE_TIME	560
+#define SQL_TYPE_DATE	570
+#define SQL_INT64	580
+#define SQL_BOOLEAN	32764
+
+// blr
+// (only the message-format subset.  the module never sends or receives a
+// request blr, just the message blr that describes a row or a parameter set.)
+#define blr_begin	2
+#define blr_message	4
+#define blr_version4	4
+#define blr_version5	5
+#define blr_short	7
+#define blr_long	8
+#define blr_quad	9
+#define blr_float	10
+#define blr_d_float	11
+#define blr_sql_date	12
+#define blr_sql_time	13
+#define blr_text	14
+#define blr_text2	15
+#define blr_int64	16
+#define blr_blob2	17
+#define blr_bool	23
+#define blr_double	27
+#define blr_timestamp	35
+#define blr_varying	37
+#define blr_varying2	38
+#define blr_cstring	40
+#define blr_cstring2	41
+#define blr_eoc		76
+#define blr_end		255
+
+// how many 1/10000ths of a second an ISC_TIME counts to the second
+#define FIREBIRD_TIME_PRECISION	10000
+
+// the largest day count decodeDate() will take
+// (firebird's own ceiling is 31 December 9999, and its decode multiplies the
+// count by four, so anything past that has to be refused rather than
+// overflowed)
+#define MAX_FIREBIRD_DATE	5373484
+
+// how wide a bind variable says it is
+// (SQL Relay only knows a bind's position, never its type, so a bind
+// describes as a string, and this is the width it claims - big enough for
+// anything a client is likely to send, small enough that a client sizing a
+// buffer per parameter doesn't notice)
+#define FIREBIRD_BIND_LENGTH	4000
+
 // status vector items
 #define isc_arg_end		0
 #define isc_arg_gds		1
@@ -743,10 +818,28 @@
 #define isc_arg_sql_state	19
 
 // gds error codes
-#define isc_infunk	335544341
-#define isc_io_error	335544344
-#define isc_login	335544472
-#define isc_io_open_err	335544734
+#define isc_arith_except		335544321
+#define isc_bad_trans_handle		335544332
+#define isc_convert_error		335544334
+#define isc_infunk			335544341
+#define isc_io_error			335544344
+#define isc_no_dup			335544349
+#define isc_wish_list			335544378
+#define isc_random			335544382
+#define isc_sqlerr			335544436
+#define isc_login			335544472
+#define isc_bad_stmt_handle		335544485
+#define isc_dsql_error			335544569
+#define isc_dsql_command_err		335544570
+#define isc_dsql_cursor_err		335544572
+#define isc_dsql_datatype_err		335544573
+#define isc_dsql_cursor_close_err	335544577
+#define isc_dsql_field_err		335544578
+#define isc_dsql_relation_err		335544580
+#define isc_dsql_sqlda_err		335544583
+#define isc_dsql_token_unk_err		335544634
+#define isc_unique_key_violation	335544665
+#define isc_io_open_err			335544734
 
 // what the module answers isc_database_info with
 // (connect() caps protocol negotiation at 12, so the module presents itself
@@ -756,6 +849,8 @@
 #define FIREBIRD_ODS_VERSION		11
 #define FIREBIRD_ODS_MINOR_VERSION	2
 #define FIREBIRD_SQL_DIALECT		3
+// NONE - no transliteration
+#define FIREBIRD_CHARACTER_SET		0
 #define FIREBIRD_SWEEP_INTERVAL		20000
 // classic access - one server process per attachment, like sqlr-connection
 #define FIREBIRD_DB_CLASS		13
@@ -775,6 +870,31 @@
 // isc_attach_database and isc_database_info in ibase.h - and firebird's own
 // decoder folds a sign-extended 0xffffffff back down to 0xffff)
 #define MAX_CSTRING_LENGTH	65535
+
+// one field of a message, as the blr that came with it describes it
+struct sqlrfirebirdfield {
+	byte_t		blrtype;
+	int16_t		scale;
+	uint16_t	subtype;
+	uint16_t	length;
+};
+
+// what the module knows about a statement the client allocated
+// (the statement handle is the cursor id plus one, so a handle is never 0,
+// and no separate handle-to-cursor map is needed - see getStatement())
+struct sqlrfirebirdstatement {
+	uint32_t		stmttype;
+	bool			prepared;
+	// the result set was opened by prepareStatement(), so execute()
+	// must not open it a second time - see prepareStatement()
+	bool			preexecuted;
+	bool			cursoropen;
+	char			*cursorname;
+	// the message format of the last op_fetch, kept because the client
+	// only sends the blr on the first fetch of a cursor
+	sqlrfirebirdfield	*outfields;
+	uint16_t		outfieldcount;
+};
 
 class SQLRSERVER_DLLSPEC sqlrprotocol_firebird : public sqlrprotocol {
 	public:
@@ -823,6 +943,9 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_firebird : public sqlrprotocol {
 		bool	commit();
 		bool	rollback();
 		bool	commitRetaining();
+		bool	rollbackRetaining();
+		bool	execImmediate();
+		bool	execImmediate2();
 		bool	prepare();
 		bool	prepare2();
 		bool	transactionInfo();
@@ -863,6 +986,121 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_firebird : public sqlrprotocol {
 		bool	queEvents();
 		bool	cancelEvents();
 		bool	sendNotImplementedError();
+
+		bool	errorResponse(const char *title, uint32_t gdscode);
+		bool	errorResponse(const char *title,
+					uint32_t gdscode,
+					const char *sqlstate,
+					int32_t sqlcode,
+					const char *message,
+					uint32_t messagesize);
+		bool	sendCursorError(const char *title,
+					sqlrservercursor *cursor,
+					bool preparing);
+		const char	*sqlStateForSqlCode(int32_t sqlcode);
+
+		sqlrfirebirdstatement	*getStatement(uint32_t stmthandle,
+						sqlrservercursor **cursor);
+		void	clearStatement(uint16_t cursorid);
+		void	clearStatements();
+		uint32_t	statementType(const char *query);
+		bool	isTransactionStatement(uint32_t stmttype);
+		bool	runTransactionStatement(uint32_t stmttype);
+
+		bool	prepareOrExecImmediate(bool execimmediate);
+		bool	runPreparedQuery(bool execimmediate,
+					uint32_t stmthandle,
+					const char *query,
+					uint32_t querylen,
+					const byte_t *items,
+					uint32_t itemslen);
+		bool	executeStatement(bool isexecute2);
+		bool	runOnCursor(sqlrservercursor *cursor,
+					const char *title,
+					const char *query,
+					uint32_t querylen,
+					sqlrfirebirdfield *outfields,
+					uint16_t outfieldcount);
+		bool	sendSqlResponse(sqlrservercursor *cursor,
+					sqlrfirebirdfield *fields,
+					uint16_t fieldcount);
+		bool	sendFetchResponse(sqlrservercursor *cursor,
+					sqlrfirebirdstatement *stmt,
+					uint32_t msgcount);
+
+		bool	readBlr(sqlrfirebirdfield **fields,
+					uint16_t *fieldcount,
+					const char *name,
+					uint32_t *bytesread);
+		bool	parseBlr(const byte_t *blr,
+					uint32_t blrlen,
+					sqlrfirebirdfield **fields,
+					uint16_t *fieldcount);
+		bool	readMessage(sqlrservercursor *cursor,
+					sqlrfirebirdfield *fields,
+					uint16_t fieldcount,
+					uint32_t *bytesread);
+		bool	writeMessage(sqlrservercursor *cursor,
+					sqlrfirebirdfield *fields,
+					uint16_t fieldcount,
+					uint32_t *byteswritten);
+		bool	writeField(const sqlrfirebirdfield *fld,
+					const char *value,
+					uint64_t valuesize,
+					bool null,
+					uint32_t *byteswritten);
+		bool	writeOpaque(const byte_t *val,
+					uint32_t len,
+					const char *name,
+					uint32_t *byteswritten);
+		bool	writeInt64(uint64_t val,
+					const char *name,
+					uint32_t *byteswritten);
+		bool	readInt64(uint64_t *val,
+					const char *name,
+					uint32_t *bytesread);
+		bool	readOpaque(byte_t *val,
+					uint32_t len,
+					const char *name,
+					uint32_t *bytesread);
+
+		uint16_t	sqlType(uint16_t coltype);
+		uint16_t	sqlLength(uint16_t sqltype, uint32_t colsize);
+		int16_t		sqlSubType(uint16_t coltype);
+
+		bool	appendInfoBare(byte_t item);
+		bool	appendInfoDescribe(sqlrservercursor *cursor,
+					bool bind,
+					uint32_t start,
+					const byte_t *items,
+					uint32_t itemslen);
+		bool	appendInfoRecords(sqlrservercursor *cursor,
+					uint32_t stmttype);
+		bool	buildSqlInfo(sqlrservercursor *cursor,
+					sqlrfirebirdstatement *stmt,
+					const byte_t *items,
+					uint32_t itemslen);
+
+		int64_t		scaledInteger(const char *value, int16_t scale);
+		uint16_t	splitNumbers(const char *value,
+						int32_t *parts,
+						uint16_t maxparts);
+		uint32_t	encodeDate(int32_t year,
+						int32_t month,
+						int32_t day);
+		uint32_t	encodeTime(int32_t hour,
+						int32_t minute,
+						int32_t second,
+						int32_t fraction);
+		void	decodeDate(uint32_t date,
+					int16_t *year,
+					int16_t *month,
+					int16_t *day);
+		void	decodeTime(uint32_t time,
+					int16_t *hour,
+					int16_t *minute,
+					int16_t *second,
+					int32_t *microsecond);
 
 		void	keepReading(int32_t sec, int32_t usec);
 
@@ -958,6 +1196,37 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_firebird : public sqlrprotocol {
 		const char	*statusvectorstr[20];
 		uint8_t		statusvectorlen;
 
+		// the transaction handle handed to the client
+		// (SQL Relay has one transaction per session, so there is one
+		// handle, and it is only valid between op_transaction and the
+		// commit or rollback that ends it)
+		uint32_t	trhandle;
+		bool		intransaction;
+		// the tpb asked for autocommit, so the commit or rollback
+		// that ends this transaction has nothing left to do
+		bool		trautocommit;
+
+		// how many statements the module can hold at once, and their
+		// state, indexed by cursor id
+		uint16_t	maxcursorcount;
+		sqlrfirebirdstatement	*statements;
+
+		// "?1", "?2", ... - what a bind variable is called when the
+		// wire format only gives its position
+		char		**bindvarnames;
+		int16_t		*bindvarnamesizes;
+
+		// A fetched blob is answered with an id rather than the data,
+		// and the id has to be unique within the session and non-zero.
+		// The backend's own id isn't reachable through the server API,
+		// so the module counts its own - see writeField().
+		uint32_t	blobid;
+
+		// where errorResponse() keeps the text it was handed, since
+		// statusvectorstr doesn't own what it points at
+		stringbuffer	errormessage;
+		char		errorsqlstate[6];
+
 		bytebuffer	respbuffer;
 
 		// how big a response buffer the client is willing to accept
@@ -976,12 +1245,34 @@ sqlrprotocol_firebird::sqlrprotocol_firebird(sqlrservercontroller *cont,
 
 	maxquerysize=cont->getConfig()->getMaxQuerySize();
 	maxbindcount=cont->getConfig()->getMaxBindCount();
+	maxcursorcount=cont->getConfig()->getMaxCursors();
+
+	// per-statement state, indexed by cursor id
+	statements=new sqlrfirebirdstatement[maxcursorcount];
+	for (uint16_t i=0; i<maxcursorcount; i++) {
+		statements[i].cursorname=NULL;
+		statements[i].outfields=NULL;
+	}
+
+	// the wire format binds by position, so the names are the positions
+	bindvarnames=new char *[maxbindcount];
+	bindvarnamesizes=new int16_t[maxbindcount];
+	for (uint16_t i=0; i<maxbindcount; i++) {
+		charstring::printf(&bindvarnames[i],"?%d",i+1);
+		bindvarnamesizes[i]=charstring::getLength(bindvarnames[i]);
+	}
 
 	init();
 }
 
 sqlrprotocol_firebird::~sqlrprotocol_firebird() {
 	free();
+	delete[] statements;
+	for (uint16_t i=0; i<maxbindcount; i++) {
+		delete[] bindvarnames[i];
+	}
+	delete[] bindvarnames;
+	delete[] bindvarnamesizes;
 }
 
 void sqlrprotocol_firebird::init() {
@@ -992,7 +1283,21 @@ void sqlrprotocol_firebird::init() {
 	authmethod=NULL;
 	wd=NULL;
 	dbhandle=0;
+	trhandle=0;
+	intransaction=false;
+	trautocommit=false;
+	blobid=0;
+	errorsqlstate[0]='\0';
 	respbufferlen=0;
+	for (uint16_t i=0; i<maxcursorcount; i++) {
+		statements[i].stmttype=0;
+		statements[i].prepared=false;
+		statements[i].preexecuted=false;
+		statements[i].cursoropen=false;
+		statements[i].cursorname=NULL;
+		statements[i].outfields=NULL;
+		statements[i].outfieldcount=0;
+	}
 }
 
 void sqlrprotocol_firebird::free() {
@@ -1000,6 +1305,7 @@ void sqlrprotocol_firebird::free() {
 	delete[] username;
 	delete[] password;
 	delete[] wd;
+	clearStatements();
 }
 
 clientsessionexitstatus_t sqlrprotocol_firebird::clientSession(
@@ -1065,6 +1371,15 @@ clientsessionexitstatus_t sqlrprotocol_firebird::clientSession(
 					break;
 				case op_commit_retaining:
 					loop=commitRetaining();
+					break;
+				case op_rollback_retaining:
+					loop=rollbackRetaining();
+					break;
+				case op_exec_immediate:
+					loop=execImmediate();
+					break;
+				case op_exec_immediate2:
+					loop=execImmediate2();
 					break;
 				case op_prepare:
 					loop=prepare();
@@ -1199,14 +1514,11 @@ clientsessionexitstatus_t sqlrprotocol_firebird::clientSession(
 				case op_info_blob:
 				case op_aux_connect:
 				case op_ddl:
-				case op_exec_immediate:
 				case op_dummy:
 				case op_start_and_receive:
 				case op_start_send_and_receive:
-				case op_exec_immediate2:
 				case op_insert:
 				case op_transact:
-				case op_rollback_retaining:
 				case op_update_account_info:
 				case op_authenticate_user:
 				case op_partial:
@@ -2288,15 +2600,52 @@ bool sqlrprotocol_firebird::getOpCode() {
 }
 
 bool sqlrprotocol_firebird::detach() {
-	return false;
+
+	// request packet data structure:
+	//
+	// data {
+	// 	int32_t		db handle
+	// }
+
+	debugStart("detach");
+
+	uint32_t	bytesread=0;
+
+	uint32_t	clientdbhandle;
+	if (!readInt(&clientdbhandle,"db handle",&bytesread)) {
+		return false;
+	}
+
+	debugEnd();
+
+	// A detach ends whatever is still open.  Firebird rejects a detach
+	// with a live transaction, but SQL Relay's session teardown rolls one
+	// back on its own, so there's nothing to gain by refusing here.
+	clearStatements();
+	if (intransaction) {
+		cont->rollback();
+		intransaction=false;
+		trhandle=0;
+	}
+
+	successStatusVector();
+
+	// The client sends op_disconnect straight after this and then closes
+	// the socket, so the session ends either way.  Answering the detach
+	// and staying in the loop is what lets it.
+	return genericResponse("detach response",
+				0,0,
+				NULL,0,
+				statusvector,statusvectorstr,
+				statusvectorlen);
 }
 
 bool sqlrprotocol_firebird::create() {
-	return false;
+	return sendNotImplementedError();
 }
 
 bool sqlrprotocol_firebird::dropDatabase() {
-	return false;
+	return sendNotImplementedError();
 }
 
 bool sqlrprotocol_firebird::appendInfoItem(byte_t item,
@@ -2550,6 +2899,19 @@ bool sqlrprotocol_firebird::infoDatabase() {
 						FIREBIRD_DB_PROVIDER);
 				break;
 
+			case frb_info_att_charset:
+				// The module hands bytes through without
+				// transliterating them, so the attachment's
+				// character set is NONE.  Answering this one
+				// matters more than it looks: isql treats an
+				// isc_info_error for any item other than
+				// isc_info_firebird_version as proof it is
+				// talking to a pre-interbase-6 server, and
+				// resets its sql dialect to 1.
+				fits=appendInfoInt(dbinfoitem,
+						FIREBIRD_CHARACTER_SET);
+				break;
+
 			default:
 				// FIXME: answer more of these - #7231.  Until
 				// then, an item the module can't answer gets
@@ -2629,12 +2991,18 @@ bool sqlrprotocol_firebird::transaction() {
 		byte_t		tpbversion;
 		read(tpbptr,&tpbversion,&tpbptr);
 		debugTpbVersion(tpbversion);
-		// FIXME: do something with this...
 	}
 
+	// what the tpb asked for
+	bool	readonly=false;
+	bool	autocommit=false;
+
 	// get each parameter...
-	while (tpbptr!=tpbendptr) {
-		
+	// (the test is < rather than != because an item whose length walks
+	// past the end would otherwise never land on the end pointer, and the
+	// loop would run off the buffer - the bug #8967 fixed in the dpb walk)
+	while (tpbptr<tpbendptr) {
+
 		// get the parameter
 		byte_t	tpbparam;
 		read(tpbptr,&tpbparam,&tpbptr);
@@ -2642,92 +3010,42 @@ bool sqlrprotocol_firebird::transaction() {
 
 		// process the parameter...
 		switch (tpbparam) {
-			case isc_tpb_consistency:
-				// FIXME: do something
-				break;
-
-			case isc_tpb_concurrency:
-				// FIXME: do something
-				break;
-
-			case isc_tpb_shared:
-				// FIXME: do something
-				break;
-
-			case isc_tpb_protected:
-				// FIXME: do something
-				break;
-
-			case isc_tpb_exclusive:
-				// FIXME: do something
-				break;
-
-			case isc_tpb_wait:
-				// FIXME: do something
-				break;
-
-			case isc_tpb_nowait:
-				// FIXME: do something
-				break;
-
 			case isc_tpb_read:
-				// FIXME: do something
+				readonly=true;
 				break;
 
 			case isc_tpb_write:
-				// FIXME: do something
-				break;
-
-			case isc_tpb_lock_read:
-				// FIXME: do something
-				break;
-
-			case isc_tpb_lock_write:
-				// FIXME: do something
-				break;
-
-			case isc_tpb_verb_time:
-				// FIXME: do something
-				break;
-
-			case isc_tpb_commit_time:
-				// FIXME: do something
-				break;
-
-			case isc_tpb_ignore_limbo:
-				// FIXME: do something
-				break;
-
-			case isc_tpb_read_committed:
-				// FIXME: do something
+				readonly=false;
 				break;
 
 			case isc_tpb_autocommit:
-				// FIXME: do something
+				autocommit=true;
 				break;
 
-			case isc_tpb_rec_version:
-				// FIXME: do something
-				break;
-
-			case isc_tpb_no_rec_version:
-				// FIXME: do something
-				break;
-
-			case isc_tpb_restart_requests:
-				// FIXME: do something
-				break;
-
-			case isc_tpb_no_auto_undo:
-				// FIXME: do something
-				break;
-
+			case isc_tpb_lock_read:
+			case isc_tpb_lock_write:
 			case isc_tpb_lock_timeout:
-				// FIXME: do something
+			case isc_tpb_at_snapshot_number:
+			case isc_tpb_lock_table_schema:
+				{
+				// these carry a 1-byte length and that many
+				// bytes of value, and have to be skipped by
+				// length or the walk desynchronizes
+				if (tpbptr>=tpbendptr) {
+					break;
+				}
+				byte_t	tpbvaluelen;
+				read(tpbptr,&tpbvaluelen,&tpbptr);
+				tpbptr+=tpbvaluelen;
+				}
 				break;
 
 			default:
-				// FIXME: do something
+				// isc_tpb_consistency, isc_tpb_concurrency,
+				// isc_tpb_read_committed and the rest are bare
+				// bytes.  SQL Relay has no way to ask the
+				// backend for a particular isolation level per
+				// transaction, so they are read and dropped.
 				break;
 		}
 	}
@@ -2737,192 +3055,1730 @@ bool sqlrprotocol_firebird::transaction() {
 	// clean up
 	delete[] tpb;
 
-	// increment the dbhandle, apparently???
-	dbhandle++;
+	// SQL Relay has one transaction per session, and a client is free to
+	// ask for several - isql asks for one in sql and then asks again with
+	// this op.  Rather than refuse, every handle it asks for names the
+	// same underlying transaction, and whichever one it commits or rolls
+	// back ends it.
+	if (!intransaction) {
 
-	// FIXME: object id should be the transaction handle???
-	uint32_t	objectid=0;
+		// Autocommit and an explicit transaction are alternatives.  A
+		// tpb that asks for autocommit turns the connection's
+		// autocommit on and begins nothing, and the commit or
+		// rollback that ends it has nothing left to do.
+		bool	started=(autocommit)?
+				cont->setAutoCommitOn():
+				(cont->setAutoCommitOff() && cont->begin());
+		if (!started) {
+			return sendCursorError("transaction response",
+								NULL,false);
+		}
+
+		intransaction=true;
+		trautocommit=autocommit;
+	}
+
+	// A handle is only ever compared against 0 by the client, but making
+	// each one distinct keeps a stale handle from looking live in a debug
+	// log.
+	trhandle++;
+
+	if (getDebug()) {
+		stdoutput.printf("	transaction handle: %d\n",trhandle);
+		stdoutput.printf("	read only: %s\n",(readonly)?"yes":"no");
+		stdoutput.printf("	autocommit: %s\n",(autocommit)?"yes":"no");
+	}
 
 	// status vector...
 	successStatusVector();
 
 	return genericResponse("transaction response",
-				dbhandle,objectid,
+				trhandle,0,
 				NULL,0,
 				statusvector,statusvectorstr,
 				statusvectorlen);
 }
 
 bool sqlrprotocol_firebird::commit() {
-	return false;
+
+	// request packet data structure:
+	//
+	// data {
+	// 	int32_t		transaction handle
+	// }
+
+	debugStart("commit");
+
+	uint32_t	bytesread=0;
+
+	uint32_t	clienttrhandle;
+	if (!readInt(&clienttrhandle,"transaction handle",&bytesread)) {
+		return false;
+	}
+
+	debugEnd();
+
+	// A commit with nothing open is a no-op rather than an error.  The
+	// client may hold a handle from a transaction something else already
+	// ended - see transaction().
+	if (!intransaction) {
+		successStatusVector();
+		return genericResponse("commit response",
+					0,0,
+					NULL,0,
+					statusvector,statusvectorstr,
+					statusvectorlen);
+	}
+
+	if (!trautocommit && !cont->commit()) {
+		return sendCursorError("commit response",NULL,false);
+	}
+
+	// the statements a transaction opened cursors for are done with
+	clearStatements();
+
+	intransaction=false;
+	trautocommit=false;
+
+	successStatusVector();
+
+	return genericResponse("commit response",
+				0,0,
+				NULL,0,
+				statusvector,statusvectorstr,
+				statusvectorlen);
 }
 
 bool sqlrprotocol_firebird::rollback() {
-	return false;
+
+	// request packet data structure:
+	//
+	// data {
+	// 	int32_t		transaction handle
+	// }
+
+	debugStart("rollback");
+
+	uint32_t	bytesread=0;
+
+	uint32_t	clienttrhandle;
+	if (!readInt(&clienttrhandle,"transaction handle",&bytesread)) {
+		return false;
+	}
+
+	debugEnd();
+
+	if (!intransaction) {
+		successStatusVector();
+		return genericResponse("rollback response",
+					0,0,
+					NULL,0,
+					statusvector,statusvectorstr,
+					statusvectorlen);
+	}
+
+	if (!trautocommit && !cont->rollback()) {
+		return sendCursorError("rollback response",NULL,false);
+	}
+
+	clearStatements();
+
+	intransaction=false;
+	trautocommit=false;
+
+	successStatusVector();
+
+	return genericResponse("rollback response",
+				0,0,
+				NULL,0,
+				statusvector,statusvectorstr,
+				statusvectorlen);
 }
 
 bool sqlrprotocol_firebird::commitRetaining() {
-	return false;
+
+	// request packet data structure:
+	//
+	// data {
+	// 	int32_t		transaction handle
+	// }
+
+	debugStart("commit retaining");
+
+	uint32_t	bytesread=0;
+
+	uint32_t	clienttrhandle;
+	if (!readInt(&clienttrhandle,"transaction handle",&bytesread)) {
+		return false;
+	}
+
+	debugEnd();
+
+	if (!intransaction) {
+		successStatusVector();
+		return genericResponse("commit retaining response",
+					0,0,
+					NULL,0,
+					statusvector,statusvectorstr,
+					statusvectorlen);
+	}
+
+	// commit, then start another - the handle the client holds stays live
+	if (!trautocommit && !(cont->commit() && cont->begin())) {
+		return sendCursorError("commit retaining response",NULL,false);
+	}
+
+	clearStatements();
+
+	successStatusVector();
+
+	return genericResponse("commit retaining response",
+				0,0,
+				NULL,0,
+				statusvector,statusvectorstr,
+				statusvectorlen);
+}
+
+bool sqlrprotocol_firebird::rollbackRetaining() {
+
+	// request packet data structure:
+	//
+	// data {
+	// 	int32_t		transaction handle
+	// }
+
+	debugStart("rollback retaining");
+
+	uint32_t	bytesread=0;
+
+	uint32_t	clienttrhandle;
+	if (!readInt(&clienttrhandle,"transaction handle",&bytesread)) {
+		return false;
+	}
+
+	debugEnd();
+
+	if (!intransaction) {
+		successStatusVector();
+		return genericResponse("rollback retaining response",
+					0,0,
+					NULL,0,
+					statusvector,statusvectorstr,
+					statusvectorlen);
+	}
+
+	if (!trautocommit && !(cont->rollback() && cont->begin())) {
+		return sendCursorError("rollback retaining response",NULL,false);
+	}
+
+	clearStatements();
+
+	successStatusVector();
+
+	return genericResponse("rollback retaining response",
+				0,0,
+				NULL,0,
+				statusvector,statusvectorstr,
+				statusvectorlen);
 }
 
 bool sqlrprotocol_firebird::prepare() {
-	return false;
+	return sendNotImplementedError();
 }
 
 bool sqlrprotocol_firebird::prepare2() {
-	return false;
+	return sendNotImplementedError();
 }
 
 bool sqlrprotocol_firebird::transactionInfo() {
-	return false;
+
+	// request packet data structure:
+	//
+	// data {
+	// 	int32_t		transaction handle
+	// 	int32_t		incarnation
+	// 	int32_t		requested tx info items length
+	// 	byte_t[]	requested tx info items
+	// 	int32_t		response buffer length
+	// }
+
+	debugStart("info transaction");
+
+	uint32_t	bytesread=0;
+
+	uint32_t	clienttrhandle;
+	if (!readInt(&clienttrhandle,"transaction handle",&bytesread)) {
+		return false;
+	}
+
+	uint32_t	incarnation;
+	if (!readInt(&incarnation,"incarnation",&bytesread)) {
+		return false;
+	}
+
+	uint32_t	trinfolen;
+	byte_t		*trinfo;
+	if (!readBuffer(&trinfo,&trinfolen,
+			"requested tx info items",&bytesread)) {
+		return false;
+	}
+
+	if (!readInt(&respbufferlen,"response buffer length",&bytesread)) {
+		delete[] trinfo;
+		return false;
+	}
+
+	// process requested tx info items
+	const byte_t	*trinfoptr=trinfo;
+	const byte_t	*trinfoendptr=trinfo+trinfolen;
+
+	respbuffer.clear();
+	bool	end=false;
+	bool	fits=true;
+	while (trinfoptr<trinfoendptr && !end && fits) {
+
+		byte_t	trinfoitem;
+		read(trinfoptr,&trinfoitem,&trinfoptr);
+
+		switch (trinfoitem) {
+			case isc_info_end:
+				end=true;
+				break;
+
+			case isc_info_tra_id:
+			case isc_info_tra_oldest_interesting:
+			case isc_info_tra_oldest_snapshot:
+			case isc_info_tra_oldest_active:
+				fits=appendInfoInt(trinfoitem,trhandle);
+				break;
+
+			case isc_info_tra_isolation:
+				fits=appendInfoByte(trinfoitem,
+						isc_info_tra_read_committed);
+				break;
+
+			case isc_info_tra_access:
+				fits=appendInfoByte(trinfoitem,
+						isc_info_tra_readwrite);
+				break;
+
+			case isc_info_tra_lock_timeout:
+				fits=appendInfoInt(trinfoitem,0);
+				break;
+
+			default:
+				fits=appendInfoError(trinfoitem);
+				break;
+		}
+	}
+
+	if (fits && respbuffer.getSize()<respbufferlen) {
+		write(&respbuffer,(byte_t)isc_info_end);
+	}
+
+	debugEnd();
+
+	// clean up
+	delete[] trinfo;
+
+	successStatusVector();
+
+	return genericResponse("info transaction response",
+				clienttrhandle,0,
+				respbuffer.getBuffer(),
+				respbuffer.getSize(),
+				statusvector,statusvectorstr,
+				statusvectorlen);
 }
 
 bool sqlrprotocol_firebird::allocateStatement() {
-	return false;
+
+	// request packet data structure:
+	//
+	// data {
+	// 	int32_t		db handle
+	// }
+
+	debugStart("allocate statement");
+
+	uint32_t	bytesread=0;
+
+	uint32_t	clientdbhandle;
+	if (!readInt(&clientdbhandle,"db handle",&bytesread)) {
+		return false;
+	}
+
+	// get an available cursor
+	sqlrservercursor	*cursor=cont->getCursor();
+	if (!cursor) {
+		debugEnd();
+		return errorResponse("allocate statement response",
+					isc_dsql_error,"HY000",-901,
+					"Out of cursors",14);
+	}
+
+	uint16_t	cursorid=cont->getId(cursor);
+
+	// the handle is the cursor id plus one, so it is never 0 - the client
+	// treats a 0 handle as unallocated
+	uint32_t	stmthandle=cursorid+1;
+
+	sqlrfirebirdstatement	*stmt=&statements[cursorid];
+	stmt->stmttype=0;
+	stmt->prepared=false;
+	stmt->preexecuted=false;
+	stmt->cursoropen=false;
+	delete[] stmt->cursorname;
+	stmt->cursorname=NULL;
+	delete[] stmt->outfields;
+	stmt->outfields=NULL;
+	stmt->outfieldcount=0;
+
+	if (getDebug()) {
+		stdoutput.printf("	statement handle: %d\n",stmthandle);
+	}
+
+	debugEnd();
+
+	successStatusVector();
+
+	return genericResponse("allocate statement response",
+				stmthandle,0,
+				NULL,0,
+				statusvector,statusvectorstr,
+				statusvectorlen);
 }
 
 bool sqlrprotocol_firebird::freeStatement() {
-	return false;
-}
 
-bool sqlrprotocol_firebird::prepareStatement() {
-	return false;
-}
+	// request packet data structure:
+	//
+	// data {
+	// 	int32_t		statement handle
+	// 	int32_t		option flags
+	// }
 
-bool sqlrprotocol_firebird::execute() {
-	return false;
-}
+	debugStart("free statement");
 
-bool sqlrprotocol_firebird::execute2() {
-	return false;
-}
+	uint32_t	bytesread=0;
 
-bool sqlrprotocol_firebird::fetch() {
-	return false;
+	uint32_t	stmthandle;
+	if (!readInt(&stmthandle,"statement handle",&bytesread)) {
+		return false;
+	}
+
+	uint32_t	option;
+	if (!readInt(&option,"option",&bytesread)) {
+		return false;
+	}
+
+	debugEnd();
+
+	sqlrservercursor	*cursor=NULL;
+	sqlrfirebirdstatement	*stmt=getStatement(stmthandle,&cursor);
+	if (!stmt) {
+		return errorResponse("free statement response",
+					isc_bad_stmt_handle);
+	}
+
+	// DSQL_close on a statement with no open cursor is an error rather
+	// than a no-op, which is what a real firebird answers
+	if ((option&DSQL_close) && !(option&DSQL_drop) && !stmt->cursoropen) {
+		return errorResponse("free statement response",
+					isc_dsql_cursor_close_err);
+	}
+
+	if (option&DSQL_close) {
+		cont->closeResultSet(cursor);
+		stmt->cursoropen=false;
+		stmt->preexecuted=false;
+	}
+
+	if (option&DSQL_unprepare) {
+		cont->closeResultSet(cursor);
+		stmt->cursoropen=false;
+		stmt->preexecuted=false;
+		stmt->prepared=false;
+	}
+
+	uint32_t	objecthandle=stmthandle;
+	if (option&DSQL_drop) {
+		clearStatement(cont->getId(cursor));
+		cont->abort(cursor);
+		cont->release(cursor);
+		// what a real firebird answers for a dropped statement
+		objecthandle=0xffff;
+	}
+
+	successStatusVector();
+
+	return genericResponse("free statement response",
+				objecthandle,0,
+				NULL,0,
+				statusvector,statusvectorstr,
+				statusvectorlen);
 }
 
 bool sqlrprotocol_firebird::setCursor() {
-	return false;
+
+	// request packet data structure:
+	//
+	// data {
+	// 	int32_t		statement handle
+	// 	char[]		cursor name
+	// 	int32_t		type
+	// }
+
+	debugStart("set cursor");
+
+	uint32_t	bytesread=0;
+
+	uint32_t	stmthandle;
+	if (!readInt(&stmthandle,"statement handle",&bytesread)) {
+		return false;
+	}
+
+	char	*cursorname=NULL;
+	if (!readString(&cursorname,"cursor name",&bytesread)) {
+		return false;
+	}
+
+	uint32_t	type;
+	if (!readInt(&type,"type",&bytesread)) {
+		delete[] cursorname;
+		return false;
+	}
+
+	debugEnd();
+
+	sqlrservercursor	*cursor=NULL;
+	sqlrfirebirdstatement	*stmt=getStatement(stmthandle,&cursor);
+	if (!stmt) {
+		delete[] cursorname;
+		return errorResponse("set cursor response",
+					isc_bad_stmt_handle);
+	}
+
+	// The name is kept but never handed to the backend.  SQL Relay has no
+	// way to name a backend cursor, so "where current of" against this
+	// name can only work if the backend happens to have given its own
+	// cursor the same one.
+	delete[] stmt->cursorname;
+	stmt->cursorname=cursorname;
+
+	successStatusVector();
+
+	return genericResponse("set cursor response",
+				0,0,
+				NULL,0,
+				statusvector,statusvectorstr,
+				statusvectorlen);
+}
+
+bool sqlrprotocol_firebird::prepareStatement() {
+	return prepareOrExecImmediate(false);
+}
+
+bool sqlrprotocol_firebird::execImmediate() {
+	return prepareOrExecImmediate(true);
+}
+
+bool sqlrprotocol_firebird::prepareOrExecImmediate(bool execimmediate) {
+
+	// request packet data structure:
+	//
+	// data {
+	// 	int32_t		transaction handle
+	// 	int32_t		statement handle
+	// 	int32_t		sql dialect
+	// 	char[]		sql text
+	// 	byte_t[]	requested sql info items
+	// 	int32_t		response buffer length
+	// }
+
+	debugStart((execimmediate)?"exec immediate":"prepare statement");
+
+	uint32_t	bytesread=0;
+
+	uint32_t	clienttrhandle;
+	if (!readInt(&clienttrhandle,"transaction handle",&bytesread)) {
+		return false;
+	}
+
+	uint32_t	stmthandle;
+	if (!readInt(&stmthandle,"statement handle",&bytesread)) {
+		return false;
+	}
+
+	uint32_t	dialect;
+	if (!readInt(&dialect,"dialect",&bytesread)) {
+		return false;
+	}
+
+	char		*query=NULL;
+	uint32_t	querylen=0;
+	if (!readString(&query,&querylen,"query",&bytesread)) {
+		return false;
+	}
+
+	uint32_t	itemslen=0;
+	byte_t		*items=NULL;
+	if (!readBuffer(&items,&itemslen,
+			"requested sql info items",&bytesread)) {
+		delete[] query;
+		return false;
+	}
+
+	if (!readInt(&respbufferlen,"response buffer length",&bytesread)) {
+		delete[] query;
+		delete[] items;
+		return false;
+	}
+
+	debugEnd();
+
+	// the length arrives sign-extended from a short often enough that
+	// firebird's own decoder folds it back down
+	if ((respbufferlen&0xffff0000)==0xffff0000) {
+		respbufferlen&=0xffff;
+	}
+
+	bool	retval=runPreparedQuery(execimmediate,stmthandle,
+					query,querylen,items,itemslen);
+
+	delete[] query;
+	delete[] items;
+
+	return retval;
+}
+
+bool sqlrprotocol_firebird::runPreparedQuery(bool execimmediate,
+						uint32_t stmthandle,
+						const char *query,
+						uint32_t querylen,
+						const byte_t *items,
+						uint32_t itemslen) {
+
+	const char	*title=(execimmediate)?
+				"exec immediate response":
+				"prepare statement response";
+
+	// bounds check, before the query can size anything
+	if (querylen>maxquerysize) {
+		return errorResponse(title,isc_dsql_error,"54001",-901,
+					"Query is too large",18);
+	}
+
+	uint32_t	stmttype=statementType(query);
+
+	// a transaction asked for in sql needs no cursor and never reaches
+	// the backend
+	if (execimmediate && isTransactionStatement(stmttype)) {
+
+		if (!runTransactionStatement(stmttype)) {
+			return sendCursorError(title,NULL,false);
+		}
+
+		successStatusVector();
+
+		return genericResponse(title,
+					trhandle,0,
+					NULL,0,
+					statusvector,statusvectorstr,
+					statusvectorlen);
+	}
+
+	// get the cursor
+	sqlrservercursor	*cursor=NULL;
+	sqlrfirebirdstatement	*stmt=NULL;
+	if (execimmediate) {
+		// op_exec_immediate carries no statement handle, so it runs on
+		// a cursor of its own that goes back to the pool below
+		cursor=cont->getCursor();
+		if (!cursor) {
+			return errorResponse(title,isc_dsql_error,"HY000",-901,
+						"Out of cursors",14);
+		}
+	} else {
+		stmt=getStatement(stmthandle,&cursor);
+		if (!stmt) {
+			return errorResponse(title,isc_bad_stmt_handle);
+		}
+		cont->closeResultSet(cursor);
+		stmt->cursoropen=false;
+		stmt->preexecuted=false;
+		stmt->prepared=false;
+		delete[] stmt->outfields;
+		stmt->outfields=NULL;
+		stmt->outfieldcount=0;
+	}
+
+	// copy the query into the cursor's own buffer
+	char	*querybuffer=cont->getQueryBuffer(cursor);
+	bytestring::copy(querybuffer,query,querylen);
+	querybuffer[querylen]='\0';
+	cont->setQuerySize(cursor,querylen);
+
+	// op_exec_immediate2 filled the binds before the query arrived, so
+	// only clear them when nothing did
+	if (!cont->getInputBindCount(cursor)) {
+		cont->getBindPool(cursor)->clear();
+		cont->setInputBindCount(cursor,0);
+	}
+
+	// prepare
+	// (a transaction asked for in sql is driven through the controller by
+	// execute(), so there is nothing here for the backend to prepare)
+	if (!isTransactionStatement(stmttype) &&
+		!cont->prepareQuery(cursor,querybuffer,querylen,
+					true,true,true,true)) {
+		bool	retval=sendCursorError(title,cursor,true);
+		if (execimmediate) {
+			cont->release(cursor);
+		}
+		return retval;
+	}
+
+	// A firebird client expects op_prepare_statement to answer with the
+	// shape of the result set, but SQL Relay only knows a query's columns
+	// after it runs.  So a select with nothing to bind is run here, and
+	// execute() knows not to run it a second time.  A select with binds
+	// can't be, and describes as no columns.
+	bool	executed=false;
+	if (execimmediate ||
+		((stmttype==isc_info_sql_stmt_select ||
+			stmttype==isc_info_sql_stmt_select_for_upd) &&
+			!cont->countBindVariables(querybuffer,querylen))) {
+
+		if (!cont->executeQuery(cursor,true,true,true,true)) {
+			bool	retval=sendCursorError(title,cursor,false);
+			if (execimmediate) {
+				cont->release(cursor);
+			}
+			return retval;
+		}
+		executed=true;
+	}
+
+	if (stmt) {
+		stmt->stmttype=stmttype;
+		stmt->prepared=true;
+		stmt->preexecuted=executed;
+		stmt->cursoropen=executed && cont->colCount(cursor)>0;
+	}
+
+	// build the reply the requested info items ask for
+	respbuffer.clear();
+	if (!execimmediate && itemslen) {
+		buildSqlInfo(cursor,stmt,items,itemslen);
+	}
+
+	if (execimmediate) {
+		cont->release(cursor);
+	}
+
+	successStatusVector();
+
+	// op_exec_immediate answers with the transaction handle, and
+	// op_prepare_statement with a statement flag mask
+	uint32_t	objecthandle=trhandle;
+	if (!execimmediate) {
+		objecthandle=FB_STMT_REPEAT_EXECUTE;
+		if (stmttype==isc_info_sql_stmt_select ||
+			stmttype==isc_info_sql_stmt_select_for_upd) {
+			objecthandle|=FB_STMT_HAS_CURSOR;
+		}
+	}
+
+	return genericResponse(title,
+				objecthandle,0,
+				respbuffer.getBuffer(),
+				respbuffer.getSize(),
+				statusvector,statusvectorstr,
+				statusvectorlen);
+}
+
+bool sqlrprotocol_firebird::execute() {
+	return executeStatement(false);
+}
+
+bool sqlrprotocol_firebird::execute2() {
+	return executeStatement(true);
+}
+
+bool sqlrprotocol_firebird::executeStatement(bool isexecute2) {
+
+	// request packet data structure:
+	//
+	// data {
+	// 	int32_t		statement handle
+	// 	int32_t		transaction handle
+	// 	byte_t[]	input message blr
+	// 	int32_t		input message number
+	// 	int32_t		input message count
+	// 	byte_t[]	input message	(only if the count is non-zero)
+	// 	byte_t[]	output message blr	(op_execute2 only)
+	// 	int32_t		output message number	(op_execute2 only)
+	// }
+
+	debugStart((isexecute2)?"execute2":"execute");
+
+	uint32_t	bytesread=0;
+
+	uint32_t	stmthandle;
+	if (!readInt(&stmthandle,"statement handle",&bytesread)) {
+		return false;
+	}
+
+	uint32_t	clienttrhandle;
+	if (!readInt(&clienttrhandle,"transaction handle",&bytesread)) {
+		return false;
+	}
+
+	sqlrfirebirdfield	*infields=NULL;
+	uint16_t		infieldcount=0;
+	if (!readBlr(&infields,&infieldcount,"input blr",&bytesread)) {
+		return false;
+	}
+
+	uint32_t	inmsgnumber;
+	if (!readInt(&inmsgnumber,"input message number",&bytesread)) {
+		delete[] infields;
+		return false;
+	}
+
+	uint32_t	inmsgcount;
+	if (!readInt(&inmsgcount,"input message count",&bytesread)) {
+		delete[] infields;
+		return false;
+	}
+
+	// find the statement before the message, so a bad handle doesn't
+	// leave the message on the socket
+	sqlrservercursor	*cursor=NULL;
+	sqlrfirebirdstatement	*stmt=getStatement(stmthandle,&cursor);
+
+	bool	messageread=true;
+	if (inmsgcount && infieldcount) {
+		messageread=readMessage(cursor,infields,infieldcount,
+								&bytesread);
+	}
+	delete[] infields;
+	if (!messageread) {
+		return false;
+	}
+
+	sqlrfirebirdfield	*outfields=NULL;
+	uint16_t		outfieldcount=0;
+	if (isexecute2) {
+		if (!readBlr(&outfields,&outfieldcount,
+					"output blr",&bytesread)) {
+			return false;
+		}
+		uint32_t	outmsgnumber;
+		if (!readInt(&outmsgnumber,
+				"output message number",&bytesread)) {
+			delete[] outfields;
+			return false;
+		}
+	}
+
+	debugEnd();
+
+	const char	*title=(isexecute2)?"execute2 response":
+						"execute response";
+
+	if (!stmt || !stmt->prepared) {
+		delete[] outfields;
+		return errorResponse(title,isc_bad_stmt_handle);
+	}
+
+	// run it, unless prepareStatement() already did
+	if (stmt->preexecuted) {
+		stmt->preexecuted=false;
+	} else if (isTransactionStatement(stmt->stmttype)) {
+		if (!runTransactionStatement(stmt->stmttype)) {
+			delete[] outfields;
+			return sendCursorError(title,NULL,false);
+		}
+	} else if (!cont->executeQuery(cursor,true,true,true,true)) {
+		delete[] outfields;
+		return sendCursorError(title,cursor,false);
+	}
+
+	stmt->cursoropen=(cont->colCount(cursor)>0);
+
+	// op_execute2 answers the singleton output row ahead of the response
+	if (isexecute2) {
+		bool	sent=sendSqlResponse(cursor,outfields,outfieldcount);
+		delete[] outfields;
+		if (!sent) {
+			return false;
+		}
+	}
+
+	successStatusVector();
+
+	return genericResponse(title,
+				trhandle,0,
+				NULL,0,
+				statusvector,statusvectorstr,
+				statusvectorlen);
+}
+
+bool sqlrprotocol_firebird::sendSqlResponse(sqlrservercursor *cursor,
+						sqlrfirebirdfield *fields,
+						uint16_t fieldcount) {
+
+	// response packet data structure:
+	//
+	// data {
+	// 	int32_t		op_sql_response
+	// 	int32_t		message count
+	// 	byte_t[]	message		(only if the count is non-zero)
+	// }
+
+	debugStart("sql response");
+
+	uint32_t	byteswritten=0;
+
+	bool	error=false;
+	bool	haverow=fieldcount && cont->colCount(cursor) &&
+					cont->fetchRow(cursor,&error);
+
+	opcode=op_sql_response;
+	if (!writeInt(opcode,"response op code",&byteswritten)) {
+		return false;
+	}
+	debugOpCode("response op code",opcode);
+
+	if (!writeInt((haverow)?1:0,"message count",&byteswritten)) {
+		return false;
+	}
+
+	if (haverow) {
+		if (!writeMessage(cursor,fields,fieldcount,&byteswritten)) {
+			return false;
+		}
+		cont->nextRow(cursor);
+	}
+
+	debugEnd();
+
+	clientsock->flushWriteBuffer(-1,-1);
+
+	return true;
+}
+
+bool sqlrprotocol_firebird::execImmediate2() {
+
+	// request packet data structure:
+	//
+	// data {
+	// 	byte_t[]	input message blr
+	// 	int32_t		input message number
+	// 	int32_t		input message count
+	// 	byte_t[]	input message	(only if the count is non-zero)
+	// 	byte_t[]	output message blr
+	// 	int32_t		output message number
+	// 	int32_t		transaction handle
+	// 	int32_t		statement handle
+	// 	int32_t		sql dialect
+	// 	char[]		sql text
+	// 	byte_t[]	requested sql info items
+	// 	int32_t		response buffer length
+	// }
+	//
+	// (the message fields come first and the rest is op_exec_immediate's
+	// request, which is how firebird's own decoder reads it - the case
+	// falls through)
+
+	debugStart("exec immediate2");
+
+	uint32_t	bytesread=0;
+
+	sqlrfirebirdfield	*infields=NULL;
+	uint16_t		infieldcount=0;
+	if (!readBlr(&infields,&infieldcount,"input blr",&bytesread)) {
+		return false;
+	}
+
+	uint32_t	inmsgnumber;
+	if (!readInt(&inmsgnumber,"input message number",&bytesread)) {
+		delete[] infields;
+		return false;
+	}
+
+	uint32_t	inmsgcount;
+	if (!readInt(&inmsgcount,"input message count",&bytesread)) {
+		delete[] infields;
+		return false;
+	}
+
+	// The message arrives ahead of the query it belongs to, so it has to
+	// be bound to a cursor before there is anything to run on it.  Binds
+	// live on the cursor rather than on the query, so filling them first
+	// and preparing after works, as long as nothing clears them in
+	// between - see runPreparedQuery().
+	sqlrservercursor	*cursor=cont->getCursor();
+	if (!cursor) {
+		delete[] infields;
+		return errorResponse("exec immediate2 response",
+					isc_dsql_error,"HY000",-901,
+					"Out of cursors",14);
+	}
+	cont->getBindPool(cursor)->clear();
+	cont->setInputBindCount(cursor,0);
+
+	bool	messageread=true;
+	if (inmsgcount && infieldcount) {
+		messageread=readMessage(cursor,infields,infieldcount,
+								&bytesread);
+	}
+	delete[] infields;
+	if (!messageread) {
+		cont->release(cursor);
+		return false;
+	}
+
+	sqlrfirebirdfield	*outfields=NULL;
+	uint16_t		outfieldcount=0;
+	if (!readBlr(&outfields,&outfieldcount,"output blr",&bytesread)) {
+		cont->release(cursor);
+		return false;
+	}
+
+	uint32_t	outmsgnumber;
+	if (!readInt(&outmsgnumber,"output message number",&bytesread)) {
+		delete[] outfields;
+		cont->release(cursor);
+		return false;
+	}
+
+	uint32_t	clienttrhandle;
+	uint32_t	stmthandle;
+	uint32_t	dialect;
+	char		*query=NULL;
+	uint32_t	querylen=0;
+	uint32_t	itemslen=0;
+	byte_t		*items=NULL;
+	if (!readInt(&clienttrhandle,"transaction handle",&bytesread) ||
+		!readInt(&stmthandle,"statement handle",&bytesread) ||
+		!readInt(&dialect,"dialect",&bytesread) ||
+		!readString(&query,&querylen,"query",&bytesread) ||
+		!readBuffer(&items,&itemslen,
+				"requested sql info items",&bytesread) ||
+		!readInt(&respbufferlen,"response buffer length",&bytesread)) {
+		delete[] query;
+		delete[] items;
+		delete[] outfields;
+		cont->release(cursor);
+		return false;
+	}
+
+	debugEnd();
+
+	bool	retval=runOnCursor(cursor,"exec immediate2 response",
+					query,querylen,
+					outfields,outfieldcount);
+
+	delete[] query;
+	delete[] items;
+	delete[] outfields;
+	cont->release(cursor);
+
+	return retval;
+}
+
+bool sqlrprotocol_firebird::runOnCursor(sqlrservercursor *cursor,
+					const char *title,
+					const char *query,
+					uint32_t querylen,
+					sqlrfirebirdfield *outfields,
+					uint16_t outfieldcount) {
+
+	if (querylen>maxquerysize) {
+		return errorResponse(title,isc_dsql_error,"54001",-901,
+					"Query is too large",18);
+	}
+
+	char	*querybuffer=cont->getQueryBuffer(cursor);
+	bytestring::copy(querybuffer,query,querylen);
+	querybuffer[querylen]='\0';
+	cont->setQuerySize(cursor,querylen);
+
+	if (!cont->prepareQuery(cursor,querybuffer,querylen,
+					true,true,true,true)) {
+		return sendCursorError(title,cursor,true);
+	}
+
+	if (!cont->executeQuery(cursor,true,true,true,true)) {
+		return sendCursorError(title,cursor,false);
+	}
+
+	if (outfieldcount &&
+		!sendSqlResponse(cursor,outfields,outfieldcount)) {
+		return false;
+	}
+
+	successStatusVector();
+
+	return genericResponse(title,
+				trhandle,0,
+				NULL,0,
+				statusvector,statusvectorstr,
+				statusvectorlen);
+}
+
+bool sqlrprotocol_firebird::fetch() {
+
+	// request packet data structure:
+	//
+	// data {
+	// 	int32_t		statement handle
+	// 	byte_t[]	output message blr	(first fetch only)
+	// 	int32_t		message number
+	// 	int32_t		how many messages to send
+	// }
+
+	debugStart("fetch");
+
+	uint32_t	bytesread=0;
+
+	uint32_t	stmthandle;
+	if (!readInt(&stmthandle,"statement handle",&bytesread)) {
+		return false;
+	}
+
+	sqlrfirebirdfield	*fields=NULL;
+	uint16_t		fieldcount=0;
+	if (!readBlr(&fields,&fieldcount,"output blr",&bytesread)) {
+		return false;
+	}
+
+	uint32_t	msgnumber;
+	if (!readInt(&msgnumber,"message number",&bytesread)) {
+		delete[] fields;
+		return false;
+	}
+
+	uint32_t	msgcount;
+	if (!readInt(&msgcount,"message count",&bytesread)) {
+		delete[] fields;
+		return false;
+	}
+
+	debugEnd();
+
+	sqlrservercursor	*cursor=NULL;
+	sqlrfirebirdstatement	*stmt=getStatement(stmthandle,&cursor);
+	if (!stmt || !stmt->prepared) {
+		delete[] fields;
+		return errorResponse("fetch response",isc_bad_stmt_handle);
+	}
+
+	// the blr only comes with the first fetch of a cursor, so the format
+	// it describes has to outlive the packet that carried it
+	if (fieldcount) {
+		delete[] stmt->outfields;
+		stmt->outfields=fields;
+		stmt->outfieldcount=fieldcount;
+	} else {
+		delete[] fields;
+	}
+
+	if (!stmt->outfieldcount) {
+		return errorResponse("fetch response",isc_dsql_cursor_err);
+	}
+
+	if (!stmt->cursoropen) {
+		return errorResponse("fetch response",isc_dsql_cursor_err);
+	}
+
+	return sendFetchResponse(cursor,stmt,msgcount);
+}
+
+bool sqlrprotocol_firebird::sendFetchResponse(sqlrservercursor *cursor,
+						sqlrfirebirdstatement *stmt,
+						uint32_t msgcount) {
+
+	// response packet data structure, repeated:
+	//
+	// data {
+	// 	int32_t		op_fetch_response
+	// 	int32_t		status	(0 for a row, 100 at the end)
+	// 	int32_t		message count
+	// 	byte_t[]	message		(only if the count is non-zero)
+	// }
+
+	debugStart("fetch response");
+
+	uint32_t	byteswritten=0;
+	uint32_t	sent=0;
+
+	for (;;) {
+
+		bool	error=false;
+		if (!cont->fetchRow(cursor,&error)) {
+			if (error) {
+				debugEnd();
+				return sendCursorError("fetch response",cursor,false);
+			}
+			break;
+		}
+
+		opcode=op_fetch_response;
+		if (!writeInt(opcode,"response op code",&byteswritten) ||
+			!writeInt(0,"status",&byteswritten) ||
+			!writeInt(1,"message count",&byteswritten) ||
+			!writeMessage(cursor,stmt->outfields,
+					stmt->outfieldcount,&byteswritten)) {
+			return false;
+		}
+
+		// FIXME: kludgy
+		cont->nextRow(cursor);
+
+		sent++;
+		if (msgcount && sent==msgcount) {
+			break;
+		}
+	}
+
+	// A batch that stopped because it filled up ends with status 0 and no
+	// message, and one that ran out of rows ends with 100.
+	opcode=op_fetch_response;
+	if (!writeInt(opcode,"response op code",&byteswritten) ||
+		!writeInt((msgcount && sent==msgcount)?0:100,
+						"status",&byteswritten) ||
+		!writeInt(0,"message count",&byteswritten)) {
+		return false;
+	}
+
+	if (getDebug()) {
+		stdoutput.printf("	rows sent: %d\n",sent);
+	}
+
+	debugEnd();
+
+	clientsock->flushWriteBuffer(-1,-1);
+
+	return true;
 }
 
 bool sqlrprotocol_firebird::infoSql() {
-	return false;
+
+	// request packet data structure:
+	//
+	// data {
+	// 	int32_t		statement handle
+	// 	int32_t		incarnation
+	// 	int32_t		requested sql info items length
+	// 	byte_t[]	requested sql info items
+	// 	int32_t		response buffer length
+	// }
+
+	debugStart("info sql");
+
+	uint32_t	bytesread=0;
+
+	uint32_t	stmthandle;
+	if (!readInt(&stmthandle,"statement handle",&bytesread)) {
+		return false;
+	}
+
+	uint32_t	incarnation;
+	if (!readInt(&incarnation,"incarnation",&bytesread)) {
+		return false;
+	}
+
+	uint32_t	itemslen;
+	byte_t		*items;
+	if (!readBuffer(&items,&itemslen,
+			"requested sql info items",&bytesread)) {
+		return false;
+	}
+
+	if (!readInt(&respbufferlen,"response buffer length",&bytesread)) {
+		delete[] items;
+		return false;
+	}
+
+	debugEnd();
+
+	if ((respbufferlen&0xffff0000)==0xffff0000) {
+		respbufferlen&=0xffff;
+	}
+
+	sqlrservercursor	*cursor=NULL;
+	sqlrfirebirdstatement	*stmt=getStatement(stmthandle,&cursor);
+	if (!stmt || !stmt->prepared) {
+		delete[] items;
+		return errorResponse("info sql response",isc_bad_stmt_handle);
+	}
+
+	respbuffer.clear();
+	buildSqlInfo(cursor,stmt,items,itemslen);
+
+	delete[] items;
+
+	successStatusVector();
+
+	return genericResponse("info sql response",
+				stmthandle,0,
+				respbuffer.getBuffer(),
+				respbuffer.getSize(),
+				statusvector,statusvectorstr,
+				statusvectorlen);
 }
 
 bool sqlrprotocol_firebird::createBlob() {
-	return false;
+	return sendNotImplementedError();
 }
 
 bool sqlrprotocol_firebird::createBlob2() {
-	return false;
+	return sendNotImplementedError();
 }
 
 bool sqlrprotocol_firebird::openBlob() {
-	return false;
+	return sendNotImplementedError();
 }
 
 bool sqlrprotocol_firebird::openBlob2() {
-	return false;
+	return sendNotImplementedError();
 }
 
 bool sqlrprotocol_firebird::getSegment() {
-	return false;
+	return sendNotImplementedError();
 }
 
 bool sqlrprotocol_firebird::batchSegment() {
-	return false;
+	return sendNotImplementedError();
 }
 
 bool sqlrprotocol_firebird::seekBlob() {
-	return false;
+	return sendNotImplementedError();
 }
 
 bool sqlrprotocol_firebird::cancelBlob() {
-	return false;
+	return sendNotImplementedError();
 }
 
 bool sqlrprotocol_firebird::closeBlob() {
-	return false;
+	return sendNotImplementedError();
 }
 
 bool sqlrprotocol_firebird::getSlice() {
-	return false;
+	return sendNotImplementedError();
 }
 
 bool sqlrprotocol_firebird::putSlice() {
-	return false;
+	return sendNotImplementedError();
 }
 
 bool sqlrprotocol_firebird::cancel() {
-	return false;
+
+	// request packet data structure:
+	//
+	// data {
+	// 	int32_t		kind
+	// }
+
+	debugStart("cancel");
+
+	uint32_t	bytesread=0;
+
+	uint32_t	kind;
+	if (!readInt(&kind,"kind",&bytesread)) {
+		return false;
+	}
+
+	debugEnd();
+
+	// A client sends this unsolicited, right after attach and again
+	// mid-session, and reads no reply.  Answering it desynchronizes the
+	// connection.  There is nothing to cancel either - the module never
+	// has a query in flight while it is reading a request.
+	return true;
 }
 
 bool sqlrprotocol_firebird::batchCreate() {
-	return false;
+	return sendNotImplementedError();
 }
 
 bool sqlrprotocol_firebird::batchMsg() {
-	return false;
+	return sendNotImplementedError();
 }
 
 bool sqlrprotocol_firebird::batchExec() {
-	return false;
+	return sendNotImplementedError();
 }
 
 bool sqlrprotocol_firebird::batchRls() {
-	return false;
+	return sendNotImplementedError();
 }
 
 bool sqlrprotocol_firebird::batchCancel() {
-	return false;
+	return sendNotImplementedError();
 }
 
 bool sqlrprotocol_firebird::batchSync() {
-	return false;
+	return sendNotImplementedError();
 }
 
 bool sqlrprotocol_firebird::batchSetBpb() {
-	return false;
+	return sendNotImplementedError();
 }
 
 bool sqlrprotocol_firebird::batchRegBlob() {
-	return false;
+	return sendNotImplementedError();
 }
 
 bool sqlrprotocol_firebird::batchBlobStream() {
-	return false;
+	return sendNotImplementedError();
 }
 
 bool sqlrprotocol_firebird::serviceAttach() {
-	return false;
+	return sendNotImplementedError();
 }
 
 bool sqlrprotocol_firebird::serviceDetach() {
-	return false;
+	return sendNotImplementedError();
 }
 
 bool sqlrprotocol_firebird::serviceStart() {
-	return false;
+	return sendNotImplementedError();
 }
 
 bool sqlrprotocol_firebird::serviceInfo() {
-	return false;
+	return sendNotImplementedError();
 }
 
 bool sqlrprotocol_firebird::connectRequest() {
-	return false;
+	return sendNotImplementedError();
 }
 
 bool sqlrprotocol_firebird::queEvents() {
-	return false;
+	return sendNotImplementedError();
 }
 
 bool sqlrprotocol_firebird::cancelEvents() {
-	return false;
+	return sendNotImplementedError();
 }
 
 bool sqlrprotocol_firebird::sendNotImplementedError() {
+
+	// An op the module doesn't implement still has its request sitting on
+	// the socket, unread, so the connection can't be reused.  The session
+	// ends either way - but it ends after the client has been told what
+	// went wrong, rather than with a socket that just closed.
+	errorResponse("not implemented response",
+			isc_wish_list,"0A000",-901,
+			"Feature is not supported",24);
 	return false;
+}
+
+bool sqlrprotocol_firebird::errorResponse(const char *title,
+						uint32_t gdscode) {
+	bytestring::zero(statusvector,sizeof(statusvector));
+	bytestring::zero(statusvectorstr,sizeof(statusvectorstr));
+	statusvector[0]=isc_arg_gds;
+	statusvector[1]=gdscode;
+	statusvector[2]=isc_arg_end;
+	statusvectorlen=3;
+	return genericResponse(title,
+				0,0,
+				NULL,0,
+				statusvector,statusvectorstr,
+				statusvectorlen);
+}
+
+bool sqlrprotocol_firebird::errorResponse(const char *title,
+						uint32_t gdscode,
+						const char *sqlstate,
+						int32_t sqlcode,
+						const char *message,
+						uint32_t messagesize) {
+
+	// The buffers the vector points into have to outlive this call, since
+	// genericResponse() writes from them.  The message is copied by its
+	// length rather than as a string - what the server API hands back is
+	// a buffer with a size, and reading it as a string runs off the end
+	// of the text into whatever the buffer still held.
+	errormessage.clear();
+	if (message && messagesize) {
+		errormessage.append(message,messagesize);
+	} else {
+		errormessage.append("error");
+	}
+	charstring::copy(errorsqlstate,
+			(charstring::isNullOrEmpty(sqlstate))?"42000":sqlstate,
+			sizeof(errorsqlstate)-1);
+	errorsqlstate[sizeof(errorsqlstate)-1]='\0';
+
+	bytestring::zero(statusvector,sizeof(statusvector));
+	bytestring::zero(statusvectorstr,sizeof(statusvectorstr));
+
+	// The leading code is what the client renders as the first message and
+	// what it looks the sql state up under.  An isc_arg_sql_state element
+	// overrides the lookup, and the isc_sqlerr/isc_arg_number pair
+	// overrides the sql code the same way, so the backend's own code
+	// survives rather than being flattened to the leading code's.
+	uint8_t	i=0;
+	statusvector[i++]=isc_arg_gds;
+	statusvector[i++]=gdscode;
+
+	// isc_random's whole message template is "@1", so a message written as
+	// its argument becomes the message the client renders.  Every other
+	// leading code has a template of its own, and the backend's text
+	// trails it, already rendered - which is what isc_arg_interpreted
+	// means, as opposed to isc_arg_string.
+	if (gdscode==isc_random) {
+		statusvector[i++]=isc_arg_string;
+		statusvectorstr[i++]=errormessage.getString();
+	}
+
+	statusvector[i++]=isc_arg_sql_state;
+	statusvectorstr[i++]=errorsqlstate;
+	statusvector[i++]=isc_arg_gds;
+	statusvector[i++]=isc_sqlerr;
+	statusvector[i++]=isc_arg_number;
+	statusvector[i++]=(uint32_t)sqlcode;
+
+	if (gdscode!=isc_random) {
+		statusvector[i++]=isc_arg_interpreted;
+		statusvectorstr[i++]=errormessage.getString();
+	}
+
+	statusvector[i++]=isc_arg_end;
+	statusvectorlen=i;
+
+	return genericResponse(title,
+				0,0,
+				NULL,0,
+				statusvector,statusvectorstr,
+				statusvectorlen);
+}
+
+bool sqlrprotocol_firebird::sendCursorError(const char *title,
+						sqlrservercursor *cursor,
+						bool preparing) {
+
+	const char	*errorstring=NULL;
+	uint32_t	errorsize=0;
+	int64_t		errnum=0;
+	bool		liveconnection=true;
+	if (cursor) {
+		cont->getError(cursor,&errorstring,&errorsize,
+					&errnum,&liveconnection);
+	} else {
+		cont->getError(&errorstring,&errorsize,
+					&errnum,&liveconnection);
+	}
+
+	// The firebird backend reports the sql code, negative, which is what
+	// a firebird client expects to read back out of the vector.  Any other
+	// backend reports whatever it reports, and a positive number isn't a
+	// sql code at all, so it gets the generic one.
+	int32_t	sqlcode=(int32_t)errnum;
+	if (sqlcode>=0) {
+		sqlcode=-901;
+	}
+
+	// A real firebird leads an error from preparing a statement with
+	// isc_dsql_error, which renders as "Dynamic SQL Error", and an error
+	// from running one with whatever the failure itself was.  The module
+	// can't reach for the individual runtime codes, so the second case
+	// leads with isc_random and lets the backend's own text stand as the
+	// message.
+	return errorResponse(title,
+				(preparing)?isc_dsql_error:isc_random,
+				sqlStateForSqlCode(sqlcode),
+				sqlcode,errorstring,errorsize);
+}
+
+const char *sqlrprotocol_firebird::sqlStateForSqlCode(int32_t sqlcode) {
+
+	// what firebird's own gds-code-to-sql-state table answers for the
+	// gds code each of these sql codes comes from
+	switch (sqlcode) {
+		case -104:
+			return "42000";
+		case -204:
+			return "42S02";
+		case -206:
+			return "42S22";
+		case -401:
+		case -402:
+		case -413:
+			return "22018";
+		case -501:
+		case -502:
+		case -504:
+			return "24000";
+		case -530:
+		case -531:
+		case -532:
+			return "23000";
+		case -551:
+		case -552:
+			return "28000";
+		case -625:
+		case -803:
+			return "23000";
+		case -802:
+			return "22003";
+		case -804:
+			return "07002";
+		case -901:
+			return "HY000";
+		case -913:
+			return "40001";
+		default:
+			return "42000";
+	}
+}
+
+sqlrfirebirdstatement *sqlrprotocol_firebird::getStatement(
+						uint32_t stmthandle,
+						sqlrservercursor **cursor) {
+
+	*cursor=NULL;
+
+	// the handle is the cursor id plus one - see allocateStatement()
+	if (!stmthandle || stmthandle>maxcursorcount) {
+		return NULL;
+	}
+
+	uint16_t	cursorid=(uint16_t)(stmthandle-1);
+
+	*cursor=cont->getCursor(cursorid);
+	if (!*cursor) {
+		return NULL;
+	}
+
+	return &statements[cursorid];
+}
+
+void sqlrprotocol_firebird::clearStatement(uint16_t cursorid) {
+	sqlrfirebirdstatement	*stmt=&statements[cursorid];
+	stmt->stmttype=0;
+	stmt->prepared=false;
+	stmt->preexecuted=false;
+	stmt->cursoropen=false;
+	delete[] stmt->cursorname;
+	stmt->cursorname=NULL;
+	delete[] stmt->outfields;
+	stmt->outfields=NULL;
+	stmt->outfieldcount=0;
+}
+
+void sqlrprotocol_firebird::clearStatements() {
+	for (uint16_t i=0; i<maxcursorcount; i++) {
+		clearStatement(i);
+	}
+}
+
+uint32_t sqlrprotocol_firebird::statementType(const char *query) {
+
+	const char	*q=cont->skipWhitespaceAndComments(query);
+
+	if (!charstring::compareIgnoringCase(q,"select",6)) {
+		// a "for update" select is a different statement type, and a
+		// client uses it to decide whether the cursor is updatable
+		return (charstring::containsIgnoringCase(q," for update"))?
+				isc_info_sql_stmt_select_for_upd:
+				isc_info_sql_stmt_select;
+	}
+	if (!charstring::compareIgnoringCase(q,"insert",6)) {
+		return isc_info_sql_stmt_insert;
+	}
+	if (!charstring::compareIgnoringCase(q,"update",6)) {
+		return isc_info_sql_stmt_update;
+	}
+	if (!charstring::compareIgnoringCase(q,"delete",6)) {
+		return isc_info_sql_stmt_delete;
+	}
+	if (!charstring::compareIgnoringCase(q,"execute procedure",17) ||
+		!charstring::compareIgnoringCase(q,"exec ",5) ||
+		!charstring::compareIgnoringCase(q,"call ",5)) {
+		return isc_info_sql_stmt_exec_procedure;
+	}
+	if (!charstring::compareIgnoringCase(q,"commit",6)) {
+		return isc_info_sql_stmt_commit;
+	}
+	if (!charstring::compareIgnoringCase(q,"rollback",8)) {
+		return isc_info_sql_stmt_rollback;
+	}
+	if (!charstring::compareIgnoringCase(q,"set transaction",15)) {
+		return isc_info_sql_stmt_start_trans;
+	}
+	if (!charstring::compareIgnoringCase(q,"savepoint",9)) {
+		return isc_info_sql_stmt_savepoint;
+	}
+	if (!charstring::compareIgnoringCase(q,"set generator",13)) {
+		return isc_info_sql_stmt_set_generator;
+	}
+
+	// create, alter, drop, grant, revoke and the rest
+	return isc_info_sql_stmt_ddl;
+}
+
+bool sqlrprotocol_firebird::isTransactionStatement(uint32_t stmttype) {
+	return (stmttype==isc_info_sql_stmt_start_trans ||
+		stmttype==isc_info_sql_stmt_commit ||
+		stmttype==isc_info_sql_stmt_rollback);
+}
+
+bool sqlrprotocol_firebird::runTransactionStatement(uint32_t stmttype) {
+
+	// A client can ask for a transaction in sql rather than with
+	// op_transaction, and isql does - it sends "set transaction" as its
+	// first statement and reads the new handle out of the response.
+	// These never reach the backend.  SQL Relay drives its transaction
+	// through the controller, and the sql itself would only fail on a
+	// backend with no such statement.
+	switch (stmttype) {
+
+		case isc_info_sql_stmt_start_trans:
+			if (intransaction) {
+				return true;
+			}
+			if (!cont->setAutoCommitOff() || !cont->begin()) {
+				return false;
+			}
+			intransaction=true;
+			trautocommit=false;
+			trhandle++;
+			return true;
+
+		case isc_info_sql_stmt_commit:
+			if (!intransaction) {
+				return true;
+			}
+			if (!trautocommit && !cont->commit()) {
+				return false;
+			}
+			clearStatements();
+			intransaction=false;
+			trautocommit=false;
+			return true;
+
+		case isc_info_sql_stmt_rollback:
+			if (!intransaction) {
+				return true;
+			}
+			if (!trautocommit && !cont->rollback()) {
+				return false;
+			}
+			clearStatements();
+			intransaction=false;
+			trautocommit=false;
+			return true;
+
+		default:
+			return true;
+	}
 }
 
 void sqlrprotocol_firebird::keepReading(int32_t sec, int32_t usec) {
@@ -3272,6 +5128,1355 @@ bool sqlrprotocol_firebird::writeBuffer(const byte_t *val,
 		stdoutput.printf("	(%d bytes of padding)\n",pad);
 	}
 	return true;
+}
+
+bool sqlrprotocol_firebird::writeInt64(uint64_t val,
+					const char *name,
+					uint32_t *byteswritten) {
+
+	if (clientsock->write(val)!=sizeof(uint64_t)) {
+		if (getDebug()) {
+			stdoutput.printf("	write %s failed\n",name);
+			debugSystemError();
+			debugEnd();
+		}
+		return false;
+	}
+	(*byteswritten)+=sizeof(uint64_t);
+	return true;
+}
+
+bool sqlrprotocol_firebird::readInt64(uint64_t *val,
+					const char *name,
+					uint32_t *bytesread) {
+
+	if (clientsock->read(val)!=sizeof(uint64_t)) {
+		if (getDebug()) {
+			stdoutput.printf("	read %s failed\n",name);
+			debugSystemError();
+			debugEnd();
+		}
+		return false;
+	}
+	(*bytesread)+=sizeof(uint64_t);
+	return true;
+}
+
+bool sqlrprotocol_firebird::writeOpaque(const byte_t *val,
+					uint32_t len,
+					const char *name,
+					uint32_t *byteswritten) {
+
+	// a message field carries no length of its own - the blr already said
+	// how long it is - but it is still padded to a 4-byte boundary
+	if (len && clientsock->write(val,len)!=(ssize_t)len) {
+		if (getDebug()) {
+			stdoutput.printf("	write %s failed\n",name);
+			debugSystemError();
+			debugEnd();
+		}
+		return false;
+	}
+	(*byteswritten)+=len;
+
+	uint32_t	pad=(4-len)&3;
+	byte_t		zero[3]={0,0,0};
+	if (pad && clientsock->write(zero,pad)!=(ssize_t)pad) {
+		if (getDebug()) {
+			stdoutput.printf("	write %s padding failed\n",name);
+			debugSystemError();
+			debugEnd();
+		}
+		return false;
+	}
+	(*byteswritten)+=pad;
+	return true;
+}
+
+bool sqlrprotocol_firebird::readOpaque(byte_t *val,
+					uint32_t len,
+					const char *name,
+					uint32_t *bytesread) {
+
+	if (len && clientsock->read(val,len)!=(ssize_t)len) {
+		if (getDebug()) {
+			stdoutput.printf("	read %s failed\n",name);
+			debugSystemError();
+			debugEnd();
+		}
+		return false;
+	}
+	(*bytesread)+=len;
+
+	uint32_t	pad=(4-len)&3;
+	byte_t		dummy[3];
+	if (pad && clientsock->read(dummy,pad)!=(ssize_t)pad) {
+		if (getDebug()) {
+			stdoutput.printf("	read %s padding failed\n",name);
+			debugSystemError();
+			debugEnd();
+		}
+		return false;
+	}
+	(*bytesread)+=pad;
+	return true;
+}
+
+bool sqlrprotocol_firebird::readBlr(sqlrfirebirdfield **fields,
+					uint16_t *fieldcount,
+					const char *name,
+					uint32_t *bytesread) {
+
+	*fields=NULL;
+	*fieldcount=0;
+
+	uint32_t	blrlen=0;
+	byte_t		*blr=NULL;
+	if (!readBuffer(&blr,&blrlen,name,bytesread)) {
+		return false;
+	}
+
+	bool	retval=parseBlr(blr,blrlen,fields,fieldcount);
+
+	delete[] blr;
+
+	return retval;
+}
+
+bool sqlrprotocol_firebird::parseBlr(const byte_t *blr,
+					uint32_t blrlen,
+					sqlrfirebirdfield **fields,
+					uint16_t *fieldcount) {
+
+	// blr data structure:
+	//
+	// data {
+	// 	byte_t		blr version
+	// 	byte_t		blr_begin
+	// 	byte_t		blr_message
+	// 	byte_t		message number
+	// 	uint16_t	item count, little-endian
+	// 	byte_t[]	items
+	// 	byte_t		blr_end
+	// 	byte_t		blr_eoc
+	// }
+	//
+	// Each column contributes two items - the value and a null indicator -
+	// so the item count is twice the column count.
+
+	*fields=NULL;
+	*fieldcount=0;
+
+	// an empty blr just means the client had nothing to describe
+	if (!blr || blrlen<6) {
+		return true;
+	}
+
+	const byte_t	*p=blr;
+	const byte_t	*end=blr+blrlen;
+
+	byte_t	version=*p;
+	p++;
+	if (version!=blr_version4 && version!=blr_version5) {
+		if (getDebug()) {
+			stdoutput.printf("	invalid blr version: %d\n",
+								version);
+		}
+		return false;
+	}
+	if (*p!=blr_begin || *(p+1)!=blr_message) {
+		if (getDebug()) {
+			stdoutput.write("	invalid blr message header\n");
+		}
+		return false;
+	}
+	p+=2;
+
+	// message number
+	p++;
+
+	uint16_t	itemcount=(uint16_t)(p[0]|(p[1]<<8));
+	p+=2;
+
+	// Each column is a value item and a null indicator, so the count is
+	// always even.  An odd one off the wire would round the array down and
+	// leave the last item writing past its end.
+	if (itemcount%2) {
+		if (getDebug()) {
+			stdoutput.printf("	odd blr item count: %d\n",
+								itemcount);
+		}
+		return false;
+	}
+
+	uint16_t	count=itemcount/2;
+	if (!count) {
+		return true;
+	}
+
+	sqlrfirebirdfield	*f=new sqlrfirebirdfield[count];
+
+	for (uint16_t i=0; i<itemcount; i++) {
+
+		if (p>=end) {
+			delete[] f;
+			return false;
+		}
+
+		sqlrfirebirdfield	fld;
+		fld.blrtype=*p;
+		fld.scale=0;
+		fld.subtype=0;
+		fld.length=0;
+		p++;
+
+		switch (fld.blrtype) {
+			case blr_text:
+			case blr_varying:
+			case blr_cstring:
+				if (p+2>end) {
+					delete[] f;
+					return false;
+				}
+				fld.length=(uint16_t)(p[0]|(p[1]<<8));
+				p+=2;
+				break;
+
+			case blr_text2:
+			case blr_varying2:
+			case blr_cstring2:
+				if (p+4>end) {
+					delete[] f;
+					return false;
+				}
+				fld.subtype=(uint16_t)(p[0]|(p[1]<<8));
+				fld.length=(uint16_t)(p[2]|(p[3]<<8));
+				p+=4;
+				break;
+
+			case blr_blob2:
+				// a blob's two words are its sub type and its
+				// scale, not a length
+				if (p+4>end) {
+					delete[] f;
+					return false;
+				}
+				fld.subtype=(uint16_t)(p[0]|(p[1]<<8));
+				fld.scale=(int16_t)(p[2]|(p[3]<<8));
+				p+=4;
+				break;
+
+			case blr_short:
+			case blr_long:
+			case blr_quad:
+			case blr_int64:
+				if (p>=end) {
+					delete[] f;
+					return false;
+				}
+				fld.scale=(int16_t)((int8_t)*p);
+				p++;
+				break;
+
+			case blr_float:
+			case blr_double:
+			case blr_d_float:
+			case blr_sql_date:
+			case blr_sql_time:
+			case blr_timestamp:
+			case blr_bool:
+				break;
+
+			default:
+				if (getDebug()) {
+					stdoutput.printf("	unrecognized "
+							"blr item: %d\n",
+							fld.blrtype);
+				}
+				delete[] f;
+				return false;
+		}
+
+		// the odd items are the null indicators, which are always a
+		// blr_short, and carry nothing the module needs
+		if (!(i%2)) {
+			f[i/2]=fld;
+		}
+	}
+
+	*fields=f;
+	*fieldcount=count;
+
+	if (getDebug()) {
+		stdoutput.printf("	blr describes %d field(s)\n",count);
+	}
+
+	return true;
+}
+
+bool sqlrprotocol_firebird::readMessage(sqlrservercursor *cursor,
+					sqlrfirebirdfield *fields,
+					uint16_t fieldcount,
+					uint32_t *bytesread) {
+
+	// Everything the blr describes has to come off the socket, cursor or
+	// no cursor, or the connection desynchronizes.  Only the binding is
+	// conditional.
+	memorypool		*bindpool=NULL;
+	sqlrserverbindvar	*inbinds=NULL;
+	if (cursor) {
+		bindpool=cont->getBindPool(cursor);
+		inbinds=cont->getInputBinds(cursor);
+	}
+
+	uint16_t	bindcount=0;
+
+	for (uint16_t i=0; i<fieldcount; i++) {
+
+		const sqlrfirebirdfield	*fld=&fields[i];
+
+		// what came off the wire, in whichever of these the type uses
+		int64_t		intval=0;
+		double		dblval=0.0;
+		uint32_t	dateval=0;
+		uint32_t	timeval=0;
+		char		*strval=NULL;
+		uint32_t	strvallen=0;
+		bool		isdate=false;
+		bool		istime=false;
+
+		switch (fld->blrtype) {
+
+			case blr_short:
+			case blr_long:
+				{
+				uint32_t	val=0;
+				if (!readInt(&val,"parameter",bytesread)) {
+					return false;
+				}
+				intval=(int32_t)val;
+				}
+				break;
+
+			case blr_int64:
+				{
+				uint64_t	val=0;
+				if (!readInt64(&val,"parameter",bytesread)) {
+					return false;
+				}
+				intval=(int64_t)val;
+				}
+				break;
+
+			case blr_quad:
+			case blr_blob2:
+				{
+				uint32_t	high=0;
+				uint32_t	low=0;
+				if (!readInt(&high,"parameter",bytesread) ||
+					!readInt(&low,"parameter",bytesread)) {
+					return false;
+				}
+				}
+				break;
+
+			case blr_float:
+				{
+				uint32_t	val=0;
+				if (!readInt(&val,"parameter",bytesread)) {
+					return false;
+				}
+				float	f=0.0;
+				bytestring::copy(&f,&val,sizeof(f));
+				dblval=f;
+				}
+				break;
+
+			case blr_double:
+			case blr_d_float:
+				{
+				uint64_t	val=0;
+				if (!readInt64(&val,"parameter",bytesread)) {
+					return false;
+				}
+				bytestring::copy(&dblval,&val,sizeof(dblval));
+				}
+				break;
+
+			case blr_sql_date:
+				if (!readInt(&dateval,"parameter",bytesread)) {
+					return false;
+				}
+				isdate=true;
+				break;
+
+			case blr_sql_time:
+				if (!readInt(&timeval,"parameter",bytesread)) {
+					return false;
+				}
+				istime=true;
+				break;
+
+			case blr_timestamp:
+				if (!readInt(&dateval,"parameter",bytesread) ||
+					!readInt(&timeval,
+						"parameter",bytesread)) {
+					return false;
+				}
+				isdate=true;
+				istime=true;
+				break;
+
+			case blr_bool:
+				{
+				byte_t	val=0;
+				if (!readOpaque(&val,1,
+						"parameter",bytesread)) {
+					return false;
+				}
+				intval=val;
+				}
+				break;
+
+			case blr_text:
+			case blr_text2:
+			case blr_cstring:
+			case blr_cstring2:
+				strvallen=fld->length;
+				strval=new char[strvallen+1];
+				if (!readOpaque((byte_t *)strval,strvallen,
+						"parameter",bytesread)) {
+					delete[] strval;
+					return false;
+				}
+				strval[strvallen]='\0';
+				break;
+
+			case blr_varying:
+			case blr_varying2:
+				{
+				uint32_t	len=0;
+				if (!readInt(&len,
+						"parameter length",bytesread)) {
+					return false;
+				}
+				if (len>fld->length) {
+					len=fld->length;
+				}
+				strvallen=len;
+				strval=new char[strvallen+1];
+				if (!readOpaque((byte_t *)strval,strvallen,
+						"parameter",bytesread)) {
+					delete[] strval;
+					return false;
+				}
+				strval[strvallen]='\0';
+				}
+				break;
+
+			default:
+				// parseBlr() rejects anything else, so this
+				// can't be reached
+				return false;
+		}
+
+		// null indicator
+		uint32_t	indicator=0;
+		if (!readInt(&indicator,"null indicator",bytesread)) {
+			delete[] strval;
+			return false;
+		}
+		bool	isnull=((int32_t)indicator<0);
+
+		if (!inbinds || bindcount>=maxbindcount) {
+			delete[] strval;
+			continue;
+		}
+
+		sqlrserverbindvar	*bv=&(inbinds[bindcount]);
+		bv->variable=bindvarnames[bindcount];
+		bv->variablesize=bindvarnamesizes[bindcount];
+
+		if (isnull) {
+			bv->type=SQLRSERVERBINDVARTYPE_NULL;
+			bv->isnull=cont->getNullBindValue();
+		} else if (strval) {
+			bv->type=SQLRSERVERBINDVARTYPE_STRING;
+			bv->valuesize=strvallen;
+			bv->value.stringval=
+				(char *)bindpool->allocate(strvallen+1);
+			bytestring::copy(bv->value.stringval,
+						strval,strvallen);
+			bv->value.stringval[strvallen]='\0';
+			bv->isnull=cont->getNonNullBindValue();
+		} else if (isdate || istime) {
+			bv->type=SQLRSERVERBINDVARTYPE_DATE;
+			bv->value.dateval.year=1;
+			bv->value.dateval.month=1;
+			bv->value.dateval.day=1;
+			bv->value.dateval.hour=0;
+			bv->value.dateval.minute=0;
+			bv->value.dateval.second=0;
+			bv->value.dateval.microsecond=0;
+			bv->value.dateval.tz=NULL;
+			bv->value.dateval.isnegative=false;
+			if (isdate) {
+				decodeDate(dateval,
+						&bv->value.dateval.year,
+						&bv->value.dateval.month,
+						&bv->value.dateval.day);
+			}
+			if (istime) {
+				decodeTime(timeval,
+						&bv->value.dateval.hour,
+						&bv->value.dateval.minute,
+						&bv->value.dateval.second,
+						&bv->value.dateval.microsecond);
+			}
+			bv->isnull=cont->getNonNullBindValue();
+		} else if (fld->blrtype==blr_float ||
+				fld->blrtype==blr_double ||
+				fld->blrtype==blr_d_float) {
+			bv->type=SQLRSERVERBINDVARTYPE_DOUBLE;
+			bv->value.doubleval.value=dblval;
+			bv->value.doubleval.precision=0;
+			bv->value.doubleval.scale=0;
+			bv->isnull=cont->getNonNullBindValue();
+		} else if (fld->scale) {
+			// a scaled integer is a decimal whose point the wire
+			// format leaves out
+			bv->type=SQLRSERVERBINDVARTYPE_DOUBLE;
+			double	divisor=1.0;
+			for (int16_t s=fld->scale; s<0; s++) {
+				divisor*=10.0;
+			}
+			bv->value.doubleval.value=(double)intval/divisor;
+			bv->value.doubleval.precision=18;
+			bv->value.doubleval.scale=-fld->scale;
+			bv->isnull=cont->getNonNullBindValue();
+		} else {
+			bv->type=SQLRSERVERBINDVARTYPE_INTEGER;
+			bv->value.integerval=intval;
+			bv->isnull=cont->getNonNullBindValue();
+		}
+
+		delete[] strval;
+
+		bindcount++;
+	}
+
+	if (cursor) {
+		cont->setInputBindCount(cursor,bindcount);
+		if (getDebug()) {
+			stdoutput.printf("	bound %d parameter(s)\n",
+								bindcount);
+		}
+	}
+
+	return true;
+}
+
+bool sqlrprotocol_firebird::writeMessage(sqlrservercursor *cursor,
+					sqlrfirebirdfield *fields,
+					uint16_t fieldcount,
+					uint32_t *byteswritten) {
+
+	uint32_t	colcount=cont->colCount(cursor);
+
+	for (uint16_t i=0; i<fieldcount; i++) {
+
+		const char	*field=NULL;
+		uint64_t	fieldsize=0;
+		bool		lob=false;
+		bool		null=true;
+
+		if (i<colcount && !cont->getField(cursor,i,&field,
+						&fieldsize,&lob,&null)) {
+			return false;
+		}
+
+		if (!writeField(&fields[i],field,fieldsize,
+					null,byteswritten)) {
+			return false;
+		}
+
+		// A null value still occupies its full width above - this is
+		// what actually says it is null.
+		if (!writeInt((null)?0xffffffff:0,
+					"null indicator",byteswritten)) {
+			return false;
+		}
+	}
+
+	return true;
+}
+
+bool sqlrprotocol_firebird::writeField(const sqlrfirebirdfield *fld,
+					const char *value,
+					uint64_t valuesize,
+					bool null,
+					uint32_t *byteswritten) {
+
+	const char	*v=(null || !value)?"":value;
+	uint32_t	vlen=(null || !value)?0:(uint32_t)valuesize;
+
+	switch (fld->blrtype) {
+
+		case blr_short:
+		case blr_long:
+			return writeInt((uint32_t)(int32_t)
+					scaledInteger(v,fld->scale),
+					"field",byteswritten);
+
+		case blr_int64:
+			return writeInt64((uint64_t)
+					scaledInteger(v,fld->scale),
+					"field",byteswritten);
+
+		case blr_float:
+			{
+			float		f=(float)charstring::convertToFloat(v);
+			uint32_t	bits=0;
+			bytestring::copy(&bits,&f,sizeof(bits));
+			return writeInt(bits,"field",byteswritten);
+			}
+
+		case blr_double:
+		case blr_d_float:
+			{
+			double		d=(double)charstring::convertToFloat(v);
+			uint64_t	bits=0;
+			bytestring::copy(&bits,&d,sizeof(bits));
+			return writeInt64(bits,"field",byteswritten);
+			}
+
+		case blr_sql_date:
+			{
+			int32_t		parts[3]={1,1,1};
+			splitNumbers(v,parts,3);
+			return writeInt(encodeDate(parts[0],parts[1],parts[2]),
+					"field",byteswritten);
+			}
+
+		case blr_sql_time:
+			{
+			int32_t		parts[4]={0,0,0,0};
+			splitNumbers(v,parts,4);
+			return writeInt(encodeTime(parts[0],parts[1],
+							parts[2],parts[3]),
+					"field",byteswritten);
+			}
+
+		case blr_timestamp:
+			{
+			int32_t		parts[7]={1,1,1,0,0,0,0};
+			splitNumbers(v,parts,7);
+			return writeInt(encodeDate(parts[0],parts[1],parts[2]),
+					"field",byteswritten) &&
+				writeInt(encodeTime(parts[3],parts[4],
+							parts[5],parts[6]),
+					"field",byteswritten);
+			}
+
+		case blr_bool:
+			{
+			byte_t	b=(!charstring::compare(v,"1") ||
+					!charstring::compareIgnoringCase(
+								v,"t") ||
+					!charstring::compareIgnoringCase(
+								v,"true"))?1:0;
+			return writeOpaque(&b,1,"field",byteswritten);
+			}
+
+		case blr_quad:
+		case blr_blob2:
+			{
+			// A fetched blob is answered with an id rather than
+			// the data, and the backend's own id isn't reachable
+			// through the server API, so the module hands out one
+			// of its own.  Nothing can be fetched with it yet -
+			// the blob ops are still unimplemented.
+			uint32_t	low=0;
+			if (!null) {
+				blobid++;
+				low=blobid;
+			}
+			return writeInt(0,"field",byteswritten) &&
+				writeInt(low,"field",byteswritten);
+			}
+
+		case blr_text:
+		case blr_text2:
+			{
+			// a fixed-width field is blank padded out to its
+			// declared width
+			byte_t	*buf=new byte_t[(fld->length)?fld->length:1];
+			uint32_t	len=(vlen<fld->length)?
+						vlen:fld->length;
+			bytestring::copy(buf,v,len);
+			if (len<fld->length) {
+				bytestring::set(buf+len,' ',fld->length-len);
+			}
+			bool	retval=writeOpaque(buf,fld->length,
+							"field",byteswritten);
+			delete[] buf;
+			return retval;
+			}
+
+		case blr_cstring:
+		case blr_cstring2:
+			{
+			// the width includes the terminator, so a declared
+			// width of 0 leaves no room for any value at all
+			uint32_t	width=fld->length;
+			uint32_t	max=(width)?width-1:0;
+			byte_t		*buf=new byte_t[(width)?width:1];
+			uint32_t	len=(vlen<max)?vlen:max;
+			bytestring::zero(buf,(width)?width:1);
+			bytestring::copy(buf,v,len);
+			bool	retval=writeOpaque(buf,width,
+							"field",byteswritten);
+			delete[] buf;
+			return retval;
+			}
+
+		case blr_varying:
+		case blr_varying2:
+			{
+			uint32_t	len=(vlen<fld->length)?
+						vlen:fld->length;
+			return writeInt(len,"field length",byteswritten) &&
+				writeOpaque((const byte_t *)v,len,
+						"field",byteswritten);
+			}
+
+		default:
+			return false;
+	}
+}
+
+uint16_t sqlrprotocol_firebird::sqlType(uint16_t coltype) {
+
+	// (the low bit means the value carries a null indicator, so every
+	// type answered here is even, and the describe turns the bit on)
+	switch (coltype) {
+
+		case SMALLINT_DATATYPE:
+		case TINYINT_DATATYPE:
+		case SHORT_DATATYPE:
+		case USHORT_DATATYPE:
+		case YEAR_DATATYPE:
+		case BIT_DATATYPE:
+		case BOOL_DATATYPE:
+		case INT2_DATATYPE:
+			return SQL_SHORT;
+
+		case INT_DATATYPE:
+		case INTEGER_DATATYPE:
+		case MEDIUMINT_DATATYPE:
+		case UINT_DATATYPE:
+		case LONG_DATATYPE:
+		case INT4_DATATYPE:
+			return SQL_LONG;
+
+		case BIGINT_DATATYPE:
+		case LONGLONG_DATATYPE:
+		case INT64_DATATYPE:
+		case INT8_DATATYPE:
+		case DECIMAL_DATATYPE:
+		case NUMERIC_DATATYPE:
+		case NUMBER_DATATYPE:
+		case MONEY_DATATYPE:
+		case SMALLMONEY_DATATYPE:
+			return SQL_INT64;
+
+		case FLOAT_DATATYPE:
+		case REAL_DATATYPE:
+		case FLOAT4_DATATYPE:
+			return SQL_FLOAT;
+
+		case DOUBLE_DATATYPE:
+		case DOUBLE_PRECISION_DATATYPE:
+		case FLOAT8_DATATYPE:
+			return SQL_DOUBLE;
+
+		case D_FLOAT_DATATYPE:
+			return SQL_D_FLOAT;
+
+		case DATE_DATATYPE:
+		case NEWDATE_DATATYPE:
+			return SQL_TYPE_DATE;
+
+		case TIME_DATATYPE:
+			return SQL_TYPE_TIME;
+
+		case TIMESTAMP_DATATYPE:
+		case DATETIME_DATATYPE:
+		case SMALLDATETIME_DATATYPE:
+			return SQL_TIMESTAMP;
+
+		case CHAR_DATATYPE:
+		case _CHAR_DATATYPE:
+			return SQL_TEXT;
+
+		// Firebird has one lob type for everything, distinguished by
+		// its sub type, so every character and binary lob maps onto
+		// it.
+		case BLOB_DATATYPE:
+		case CLOB_DATATYPE:
+		case DBCLOB_DATATYPE:
+		case TINY_BLOB_DATATYPE:
+		case MEDIUM_BLOB_DATATYPE:
+		case LONG_BLOB_DATATYPE:
+		case IMAGE_DATATYPE:
+		case TEXT_DATATYPE:
+		case LONGVARCHAR_DATATYPE:
+		case LONGVARBINARY_DATATYPE:
+		case LONGCHAR_DATATYPE:
+		case LONGBINARY_DATATYPE:
+		case LONG_RAW_DATATYPE:
+		case BYTEA_DATATYPE:
+			return SQL_BLOB;
+
+		case ARRAY_DATATYPE:
+			return SQL_ARRAY;
+
+		case QUAD_DATATYPE:
+			return SQL_QUAD;
+
+		// varchar, and anything the module has no better answer for -
+		// a string is the one thing every backend can render
+		default:
+			return SQL_VARYING;
+	}
+}
+
+uint16_t sqlrprotocol_firebird::sqlLength(uint16_t sqltype,
+						uint32_t colsize) {
+
+	switch (sqltype) {
+		case SQL_SHORT:
+			return 2;
+		case SQL_LONG:
+		case SQL_FLOAT:
+		case SQL_TYPE_DATE:
+		case SQL_TYPE_TIME:
+			return 4;
+		case SQL_INT64:
+		case SQL_DOUBLE:
+		case SQL_D_FLOAT:
+		case SQL_TIMESTAMP:
+			return 8;
+		case SQL_BLOB:
+		case SQL_ARRAY:
+		case SQL_QUAD:
+			// the width of the id, not of the data
+			return 8;
+		case SQL_BOOLEAN:
+			return 1;
+		default:
+			// text and varying, whose length is the column's
+			return (colsize>MAX_CSTRING_LENGTH)?
+					(uint16_t)MAX_CSTRING_LENGTH:
+					(uint16_t)colsize;
+	}
+}
+
+int16_t sqlrprotocol_firebird::sqlSubType(uint16_t coltype) {
+
+	// For a number, the sub type is what tells decimal from numeric -
+	// firebird stores both as a scaled integer and has nothing else to
+	// tell them apart with.  For text it is the character set id, and for
+	// a lob it is 0 for binary and 1 for text.
+	switch (coltype) {
+		case NUMERIC_DATATYPE:
+			return 1;
+		case DECIMAL_DATATYPE:
+		case MONEY_DATATYPE:
+		case SMALLMONEY_DATATYPE:
+			return 2;
+		case CLOB_DATATYPE:
+		case DBCLOB_DATATYPE:
+		case TEXT_DATATYPE:
+		case LONGVARCHAR_DATATYPE:
+		case LONGCHAR_DATATYPE:
+			return 1;
+		default:
+			return 0;
+	}
+}
+
+bool sqlrprotocol_firebird::appendInfoBare(byte_t item) {
+
+	// a bare item is one byte, with no length and no value.  the 1 held
+	// back is for the trailing isc_info_end.
+	if (respbuffer.getSize()+1>=respbufferlen) {
+		if (respbuffer.getSize()<respbufferlen) {
+			write(&respbuffer,(byte_t)isc_info_truncated);
+		}
+		if (getDebug()) {
+			stdoutput.write("	truncated\n");
+		}
+		return false;
+	}
+	write(&respbuffer,item);
+	return true;
+}
+
+bool sqlrprotocol_firebird::appendInfoRecords(sqlrservercursor *cursor,
+						uint32_t stmttype) {
+
+	uint32_t	affected=(cont->knowsAffectedRows(cursor))?
+					(uint32_t)cont->getAffectedRows(cursor):0;
+
+	uint32_t	counts[4]={0,0,0,0};
+	switch (stmttype) {
+		case isc_info_sql_stmt_insert:
+			counts[3]=affected;
+			break;
+		case isc_info_sql_stmt_update:
+			counts[0]=affected;
+			break;
+		case isc_info_sql_stmt_delete:
+			counts[1]=affected;
+			break;
+		case isc_info_sql_stmt_select:
+		case isc_info_sql_stmt_select_for_upd:
+			counts[2]=(uint32_t)cont->getTotalRowsFetched(cursor);
+			break;
+		default:
+			break;
+	}
+
+	// the value is an info buffer of its own, sub-clusters and a trailing
+	// isc_info_end, in the order firebird itself writes them
+	static const byte_t	items[4]={isc_info_req_update_count,
+						isc_info_req_delete_count,
+						isc_info_req_select_count,
+						isc_info_req_insert_count};
+	byte_t		val[29];
+	uint16_t	vallen=0;
+	for (uint8_t i=0; i<4; i++) {
+		val[vallen++]=items[i];
+		val[vallen++]=4;
+		val[vallen++]=0;
+		val[vallen++]=(byte_t)(counts[i]&0xff);
+		val[vallen++]=(byte_t)((counts[i]>>8)&0xff);
+		val[vallen++]=(byte_t)((counts[i]>>16)&0xff);
+		val[vallen++]=(byte_t)((counts[i]>>24)&0xff);
+	}
+	val[vallen++]=isc_info_end;
+
+	return appendInfoItem(isc_info_sql_records,val,vallen);
+}
+
+bool sqlrprotocol_firebird::appendInfoDescribe(sqlrservercursor *cursor,
+						bool bind,
+						uint32_t start,
+						const byte_t *items,
+						uint32_t itemslen) {
+
+	// how many columns the result set has, or how many parameters the
+	// query binds
+	uint32_t	count=(bind)?
+			cont->countBindVariables(cont->getQueryBuffer(cursor),
+						cont->getQuerySize(cursor)):
+			cont->colCount(cursor);
+
+	// the count is always the whole set, even when the groups below start
+	// part way into it
+	if (!appendInfoInt(isc_info_sql_describe_vars,count)) {
+		return false;
+	}
+
+	// isc_info_sql_sqlda_start names the first column to describe, 1
+	// based.  a client that had to ask twice asks the second time from
+	// where the first reply left off.
+	uint32_t	first=(start)?start-1:0;
+
+	// SQL Relay carries no owner for a column, and the value is only ever
+	// displayed, so the session's user stands in for it
+	const char	*owner=(charstring::isNullOrEmpty(username))?
+					"SYSDBA":username;
+
+	for (uint32_t col=first; col<count; col++) {
+
+		// The sequence has to lead each group.  It is what says which
+		// column the items after it describe, and a client that sees
+		// it late rejects the whole reply.
+		if (!appendInfoInt(isc_info_sql_sqlda_seq,col+1)) {
+			return false;
+		}
+
+		// SQL Relay only knows a bind's position, never its type, so
+		// a bind describes as a nullable string of a generous width -
+		// the one shape every backend can convert from.
+		uint16_t	coltype=(bind)?UNKNOWN_DATATYPE:
+					cont->getColumnType(cursor,col);
+		uint16_t	sqltype=sqlType(coltype);
+		uint32_t	colsize=(bind)?FIREBIRD_BIND_LENGTH:
+					cont->getColumnSize(cursor,col);
+		int32_t		colscale=(bind)?0:
+					-((int32_t)
+					cont->getColumnScale(cursor,col));
+		const char	*colname=(bind)?"":
+					cont->getColumnName(cursor,col);
+		const char	*coltable=(bind)?"":
+					cont->getColumnTable(cursor,col);
+		if (!colname) {
+			colname="";
+		}
+		if (!coltable) {
+			coltable="";
+		}
+
+		bool	fits=true;
+		for (const byte_t *p=items; p<items+itemslen && fits; p++) {
+
+			switch (*p) {
+
+				case isc_info_sql_sqlda_seq:
+				case isc_info_sql_describe_vars:
+				case isc_info_sql_describe_end:
+					// the group's own frame - written
+					// around the loop rather than in it
+					break;
+
+				case isc_info_sql_type:
+					// the low bit says the value carries a
+					// null indicator, and every column the
+					// module answers does
+					fits=appendInfoInt(*p,sqltype+1);
+					break;
+
+				case isc_info_sql_sub_type:
+					fits=appendInfoInt(*p,(uint32_t)
+						(int32_t)sqlSubType(coltype));
+					break;
+
+				case isc_info_sql_scale:
+					fits=appendInfoInt(*p,
+							(uint32_t)colscale);
+					break;
+
+				case isc_info_sql_length:
+					fits=appendInfoInt(*p,
+						sqlLength(sqltype,colsize));
+					break;
+
+				case isc_info_sql_null_ind:
+					fits=appendInfoInt(*p,1);
+					break;
+
+				case isc_info_sql_field:
+				case isc_info_sql_alias:
+					fits=appendInfoItem(*p,
+						(const byte_t *)colname,
+						charstring::getLength(colname));
+					break;
+
+				case isc_info_sql_relation:
+				case isc_info_sql_relation_alias:
+					fits=appendInfoItem(*p,
+						(const byte_t *)coltable,
+						charstring::getLength(
+								coltable));
+					break;
+
+				case isc_info_sql_owner:
+					fits=appendInfoItem(*p,
+						(const byte_t *)owner,
+						charstring::getLength(owner));
+					break;
+
+				default:
+					fits=appendInfoError(*p);
+					break;
+			}
+		}
+
+		if (!fits || !appendInfoBare(isc_info_sql_describe_end)) {
+			return false;
+		}
+	}
+
+	return true;
+}
+
+bool sqlrprotocol_firebird::buildSqlInfo(sqlrservercursor *cursor,
+					sqlrfirebirdstatement *stmt,
+					const byte_t *items,
+					uint32_t itemslen) {
+
+	const byte_t	*p=items;
+	const byte_t	*end=items+itemslen;
+
+	uint32_t	stmttype=(stmt)?stmt->stmttype:0;
+
+	// which column a describe starts at, until isc_info_sql_sqlda_start
+	// says otherwise
+	uint32_t	sqldastart=1;
+
+	bool	fits=true;
+	while (p<end && fits) {
+
+		byte_t	item=*p;
+		p++;
+
+		switch (item) {
+
+			case isc_info_end:
+				p=end;
+				break;
+
+			case isc_info_sql_stmt_type:
+				fits=appendInfoInt(item,stmttype);
+				break;
+
+			case isc_info_sql_stmt_flags:
+				{
+				uint32_t	flags=FB_STMT_REPEAT_EXECUTE;
+				if (stmttype==isc_info_sql_stmt_select ||
+					stmttype==
+					isc_info_sql_stmt_select_for_upd) {
+					flags|=FB_STMT_HAS_CURSOR;
+				}
+				fits=appendInfoInt(item,flags);
+				}
+				break;
+
+			case isc_info_sql_records:
+				fits=appendInfoRecords(cursor,stmttype);
+				break;
+
+			case isc_info_sql_bind:
+			case isc_info_sql_select:
+				{
+				// everything up to isc_info_sql_describe_end
+				// is the template each column's group repeats
+				const byte_t	*tmpl=p;
+				while (p<end &&
+					*p!=isc_info_sql_describe_end) {
+					// isc_info_sql_sqlda_start carries a
+					// one-byte inline length - the only
+					// item in the protocol that does, and
+					// skipping it as a bare byte
+					// desynchronizes the walk
+					if (*p==isc_info_sql_sqlda_start &&
+								p+1<end) {
+						uint32_t	skip=2+p[1];
+						p=(p+skip>end)?end:p+skip;
+						continue;
+					}
+					p++;
+				}
+				uint32_t	tmpllen=p-tmpl;
+				if (p<end) {
+					p++;
+				}
+				fits=appendInfoBare(item) &&
+					appendInfoDescribe(cursor,
+						item==isc_info_sql_bind,
+						sqldastart,tmpl,tmpllen);
+				}
+				break;
+
+			case isc_info_sql_sqlda_start:
+				{
+				// a one-byte inline length, then a
+				// little-endian value - the only item in the
+				// protocol shaped this way
+				if (p>=end) {
+					break;
+				}
+				byte_t	len=*p;
+				p++;
+				sqldastart=0;
+				for (byte_t i=0; i<len && p<end; i++) {
+					// anything past the fourth byte would
+					// shift a 32 bit value off its own end
+					if (i<sizeof(uint32_t)) {
+						sqldastart|=
+							((uint32_t)*p)<<(8*i);
+					}
+					p++;
+				}
+				}
+				break;
+
+			default:
+				fits=appendInfoError(item);
+				break;
+		}
+	}
+
+	// a reply that wasn't truncated ends with a bare isc_info_end
+	if (fits && respbuffer.getSize()<respbufferlen) {
+		write(&respbuffer,(byte_t)isc_info_end);
+	}
+
+	return fits;
+}
+
+int64_t sqlrprotocol_firebird::scaledInteger(const char *value,
+						int16_t scale) {
+
+	// A scaled number goes on the wire as an integer with the decimal
+	// point left out - 1.5 at scale -2 is 150 - so the digits have to be
+	// shifted rather than the value divided, or the last digit rounds
+	// away.
+	if (charstring::isNullOrEmpty(value)) {
+		return 0;
+	}
+
+	const char	*p=value;
+	while (character::isWhitespace(*p)) {
+		p++;
+	}
+
+	bool	negative=false;
+	if (*p=='-') {
+		negative=true;
+		p++;
+	} else if (*p=='+') {
+		p++;
+	}
+
+	int64_t	result=0;
+	while (character::isDigit(*p)) {
+		result=result*10+(*p-'0');
+		p++;
+	}
+
+	int32_t	digits=(scale<0)?-scale:0;
+	if (*p=='.') {
+		p++;
+		while (digits && character::isDigit(*p)) {
+			result=result*10+(*p-'0');
+			p++;
+			digits--;
+		}
+	}
+	while (digits) {
+		result*=10;
+		digits--;
+	}
+
+	// a positive scale means the value is stored shifted the other way
+	for (int16_t i=0; i<scale; i++) {
+		result/=10;
+	}
+
+	return (negative)?-result:result;
+}
+
+uint16_t sqlrprotocol_firebird::splitNumbers(const char *value,
+						int32_t *parts,
+						uint16_t maxparts) {
+
+	// The firebird connection module renders a date as yyyy:mm:dd, a time
+	// as hh:mm:ss and a timestamp as "yyyy-mm-dd hh:mm:ss", so what
+	// separates the numbers varies but their order never does.  Pulling
+	// the numbers out in order sidesteps the ambiguity that a delimiter-
+	// driven parse runs into with a colon-delimited date.
+	uint16_t	count=0;
+	const char	*p=value;
+	while (p && *p && count<maxparts) {
+		if (!character::isDigit(*p)) {
+			p++;
+			continue;
+		}
+		int32_t	val=0;
+		while (character::isDigit(*p)) {
+			val=val*10+(*p-'0');
+			p++;
+		}
+		parts[count]=val;
+		count++;
+	}
+	return count;
+}
+
+uint32_t sqlrprotocol_firebird::encodeDate(int32_t year,
+						int32_t month,
+						int32_t day) {
+
+	// firebird counts days from 17 November 1858, the modified julian day
+	// epoch.  this is its own encode_date, digit for digit.
+	int32_t	y=year;
+	int32_t	m=month;
+	if (m>2) {
+		m-=3;
+	} else {
+		m+=9;
+		y--;
+	}
+	int32_t	c=y/100;
+	int32_t	ya=y-100*c;
+	return (uint32_t)((146097*c)/4+(1461*ya)/4+
+				(153*m+2)/5+day+1721119-2400001);
+}
+
+uint32_t sqlrprotocol_firebird::encodeTime(int32_t hour,
+						int32_t minute,
+						int32_t second,
+						int32_t fraction) {
+
+	// an ISC_TIME counts ten-thousandths of a second since midnight
+	return (uint32_t)((((hour*60)+minute)*60+second)*
+				FIREBIRD_TIME_PRECISION+fraction);
+}
+
+void sqlrprotocol_firebird::decodeDate(uint32_t date,
+					int16_t *year,
+					int16_t *month,
+					int16_t *day) {
+
+	// firebird's own decode_date, digit for digit.  The day count comes
+	// off the wire, and the arithmetic below multiplies it by four, so a
+	// value near the top of the range has to be refused rather than
+	// overflowed into a garbage date.
+	if (date>MAX_FIREBIRD_DATE) {
+		*year=1;
+		*month=1;
+		*day=1;
+		return;
+	}
+	int32_t	nday=(int32_t)date+2400001-1721119;
+	int32_t	century=(4*nday-1)/146097;
+	nday=4*nday-1-146097*century;
+	int32_t	d=nday/4;
+	nday=(4*d+3)/1461;
+	d=4*d+3-1461*nday;
+	d=(d+4)/4;
+	int32_t	m=(5*d-3)/153;
+	d=5*d-3-153*m;
+	d=(d+5)/5;
+	int32_t	y=100*century+nday;
+	if (m<10) {
+		m+=3;
+	} else {
+		m-=9;
+		y++;
+	}
+	*year=(int16_t)y;
+	*month=(int16_t)m;
+	*day=(int16_t)d;
+}
+
+void sqlrprotocol_firebird::decodeTime(uint32_t time,
+					int16_t *hour,
+					int16_t *minute,
+					int16_t *second,
+					int32_t *microsecond) {
+
+	uint32_t	t=time;
+	*hour=(int16_t)(t/(FIREBIRD_TIME_PRECISION*3600));
+	t%=(FIREBIRD_TIME_PRECISION*3600);
+	*minute=(int16_t)(t/(FIREBIRD_TIME_PRECISION*60));
+	t%=(FIREBIRD_TIME_PRECISION*60);
+	*second=(int16_t)(t/FIREBIRD_TIME_PRECISION);
+	*microsecond=(int32_t)((t%FIREBIRD_TIME_PRECISION)*100);
 }
 
 void sqlrprotocol_firebird::debugSystemError() {
