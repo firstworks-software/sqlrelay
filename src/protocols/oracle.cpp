@@ -242,6 +242,10 @@
 #define RCAP_TTC_32K			0x04
 #define RCAP_TTC_SESSION_STATE_OPS	0x10
 
+// The platform banner in the tti protocol negotiation response.  It names no
+// platform on purpose - see putTtiResponse().
+#define SERVER_BANNER			"SQLRelay/PortableTTC"
+
 // datatype request encoding flags
 #define ENCODING_MULTI_BYTE		0x01
 #define ENCODING_CONV_LENGTH		0x02
@@ -3150,28 +3154,33 @@ void sqlrprotocol_oracle::putTtiResponse(byte_t version,
 
 	// protocol version and server banner...
 	//
-	// sent by:
-	// * 8.0.5 server on redhat 5.2 x86
-	//serverstring="Linuxi386/Linux-2.0.34 ";
-	// NOTE: Without the space at the end, the client sends a marker after
-	// the first phase of authentication.
+	// This is the server's platform, and it is what an OCI client picks its
+	// wire encoding from: one whose own platform matches marshals every
+	// request in its own memory layout - 8 byte pointer sentinels, fixed
+	// width little endian counts, buffer sizes rather than byte counts -
+	// and one whose platform doesn't marshals portably, for the whole
+	// session.  This module implements the portable encoding everywhere, so
+	// the string it sends has to be one that can never match.
 	//
-	// sent by:
-	// * 8i server on redhat 6.2 x86
-	// * 9i server on redhat 9 x86
-	// * 10g server on fedora 5 x86
-	// * 11g server on fedora 12 x86
-	//serverstring="Linuxi386/Linux-2.0.34-8.1.0";
+	// It used to be the client's own string, echoed, which made the module
+	// answer every client with a match.  See #9156.
 	//
-	// sent by:
-	// * 12c on fedora 19 x64
-	// * 12.2 on centos 7 x64
-	// * 11.2 on centos 5 x64
-	//serverstring="x86_64/Linux 2.4.xx";
+	// A real server's is its platform - a live 11.2 on centos 5 x64 and a
+	// live 12.2 on centos 7 x64 both send "x86_64/Linux 2.4.xx", an 8i, 9i,
+	// 10g or 11g on x86 sends "Linuxi386/Linux-2.0.34-8.1.0", and an 8.0.5
+	// sends "Linuxi386/Linux-2.0.34 ", where dropping the trailing space
+	// makes the client send a marker after the first phase of
+	// authentication.  Sending any of them brings the problem back for a
+	// client on the same platform, which on a typical deployment is most of
+	// them, and naming a platform SQL Relay merely isn't - solaris, say -
+	// is a promise SQL Relay can't keep, since it builds there.
 	//
-	// NOTE: No datatype negotiation is sent if the client's string is
-	// echoed.
-	serverstring=clientstring;
+	// A client compares this string; it doesn't parse it.  Measured:
+	// OCI 23.26 goes portable for "Solaris64/SunOS 5.9", for "SQLRelay" and
+	// for "SQL Relay 2.3.0" alike, and the other three clients have been
+	// answered with their own non-platform strings all along by the echo -
+	// "Java_TTC-8.2.0", "python-oracledb", "node-oracledb".
+	serverstring=SERVER_BANNER;
 
 	write(&reqpacket,version);
 	write(&reqpacket,(byte_t)0);
@@ -4469,16 +4478,36 @@ bool sqlrprotocol_oracle::recvAuthenticationRequest(bool secondphase) {
 
 	// Whether the user name is length prefixed is a client difference, not
 	// an encoding one.  A native encoding client always prefixes it.  Of
-	// the portable ones, python-oracledb and node-oracledb prefix it and
-	// ojdbc writes it raw, taking its length from the count above.  So the
-	// prefix is taken when the next byte is one, which is when it equals
-	// the count and the bytes are there for it.  A raw name would have to
-	// start with a character whose value is its own length to be mistaken
-	// for one, and no user name a client sends does - the shortest such
-	// name is 32 characters starting with a space.
+	// the portable ones, python-oracledb, node-oracledb and OCI prefix it
+	// and ojdbc writes it raw, taking its length from the count above.
+	//
+	// Nor is the count the same thing for all of them.  For the first three
+	// it is the name's byte count.  For OCI it is a buffer size - the
+	// character count times the bytes per character of its charset - so an
+	// 8 character name in AL32UTF8 is declared as 24.  #9142 found both of
+	// those in the native encoding and took them for native properties;
+	// they are OCI properties, and OCI does them in the portable encoding
+	// too, which is where every client ends up now that the module answers
+	// a banner none of them match.  See #9156.
+	//
+	// So the prefix is taken when the next byte can be one: when the bytes
+	// are there for it, and either it is below a space - no user name
+	// starts with a control character - or the count in front of it is that
+	// byte times the 1, 2, 3 or 4 bytes per character a charset can have,
+	// which is all a buffer size ever is.
+	bool	lengthprefixed=nativeencoding;
+	if (!lengthprefixed && rp<end && (size_t)(end-rp)>(size_t)*rp) {
+		uint32_t	prefix=*rp;
+		lengthprefixed=(prefix<' ' ||
+				(prefix &&
+					(usersize==prefix ||
+					usersize==prefix*2 ||
+					usersize==prefix*3 ||
+					usersize==prefix*4)));
+	}
+
 	char	*user=NULL;
-	if (nativeencoding ||
-		((size_t)(end-rp)>(size_t)usersize && *rp==(byte_t)usersize)) {
+	if (lengthprefixed) {
 		uint32_t	realusersize=0;
 		if (!getLenString(rp,end,&user,&realusersize,&rp)) {
 			debugEnd();

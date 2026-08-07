@@ -1571,6 +1571,17 @@
 		packet was never read, so the resend desynced and the session
 		ended before the accept, which is what stopped every thin
 		driver
+	fixed the oracle protocol module - the tti protocol negotiation echoed
+		the client's platform banner back as the server's, and that is
+		what an oci client picks its wire encoding from, so every
+		client saw a server on its own platform and marshalled
+		natively; a fixed banner naming no platform is sent now, which
+		puts every client in the portable encoding the module
+		implements
+	fixed the oracle protocol module - an oci client length prefixes the
+		user name and declares a buffer size for it in the portable
+		encoding too, not only in the native one, so its login was
+		refused once it was in the portable encoding
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems
