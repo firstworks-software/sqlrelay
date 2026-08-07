@@ -1113,8 +1113,27 @@ bool freetdsconnection::logIn(const char **error, const char **warning) {
 		break;
 	}
 	if (!usedversion) {
-		*error=logInError(
-			"Failed to allocate/initialize a context structure",2);
+
+		// An unrecognized locale fails here rather than at cs_locale,
+		// and the client library's own diagnostic - the locale name
+		// and the locales.dat it isn't in - goes to stderr before
+		// CS_MESSAGE_CB exists, so it can't be captured.  Naming the
+		// locale is all that can be done from here.
+		stringbuffer	ctxerror;
+		ctxerror.append("Failed to allocate/initialize "
+						"a context structure");
+		const char	*locname=cont->getConnectStringValue("lang");
+		if (charstring::isNullOrEmpty(locname)) {
+			locname=environment::getValue("LANG");
+		}
+		if (!charstring::isNullOrEmpty(locname)) {
+			ctxerror.append(" (the locale ")->append(locname)->
+				append(" may not be one the client library "
+					"knows - it wrote the details to "
+					"stderr)");
+		}
+
+		*error=logInError(ctxerror.getString(),2);
 		return false;
 	}
 
@@ -1312,9 +1331,12 @@ const char *freetdsconnection::logInError(const char *error, uint16_t stage) {
 
 	loginerror.clear();
 	if (error) {
-		loginerror.append(error)->append(": ");
+		loginerror.append(error);
 	}
 	if (errorstring.getSize()) {
+		if (error) {
+			loginerror.append(": ");
+		}
 		loginerror.append(errorstring.getString(),
 					errorstring.getSize());
 	}

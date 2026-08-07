@@ -1374,6 +1374,16 @@
 		every field's offset is checked now, sspi included, and a
 		field that doesn't fit is dropped the same way an over-long
 		one is
+	fixed the sap and freetds connection modules - a lang= the client
+		library doesn't recognize fails the login inside
+		cs_ctx_alloc, which is before the message callback exists, so
+		the library's own explanation went to stderr and all the log
+		said was that a context structure couldn't be allocated,
+		which reads like a memory or client library problem rather
+		than a typo in the connect string - the error names the
+		locale now, and says the details went to stderr
+	fixed the sap and freetds connection modules - a login error the
+		client library had no text for ended in a dangling colon
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems
