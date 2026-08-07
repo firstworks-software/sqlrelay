@@ -850,8 +850,8 @@
 		input-output string bind wrote its null terminator one byte
 		before the start of the bind buffer
 	fixed the odbc connection module - the input-output bind conversion
-		counted the null terminator twice, which truncated values
-		whose converted form exactly filled the bind buffer
+		counted the null terminator twice, so the copy into the bind
+		buffer ran two bytes past the end of the converted string
 	fixed the odbc connection module's stringSize() - its fallback branch
 		didn't count the null terminator, though its other three
 		branches did, and its comment said it did
