@@ -2567,6 +2567,14 @@ bool sqlrprotocol_oracle::recvAuthenticationRequest(bool secondphase) {
 	byte_t		seqnumber;
 	byte_t		unknown;
 
+	// data flags, ttc code, tti function, sequence number.
+	// the two tti function reads share one byte - read() rewinds the
+	// read pointer when the value doesn't match.
+	if (end-rp<5) {
+		debugWrite("bad authentication request, truncated header");
+		return false;
+	}
+
 	readBE(rp,&dataflags,&rp);
 	if (!read(rp,&ttccode,"ttccode",TTC_TTI_FUNCTION,&rp)) {
 		return false;
@@ -2595,7 +2603,14 @@ bool sqlrprotocol_oracle::recvAuthenticationRequest(bool secondphase) {
 	bool	stringsmatch=!charstring::compare(clientstring,serverstring);
 
 	byte_t	usersize;
-	char	*user;
+	char	*user=NULL;
+
+	// the unknown bytes on either side of the user size, and the
+	// user size itself
+	if (end-rp<((stringsmatch)?(4+1+23):(2+1+7))) {
+		debugWrite("bad authentication request, truncated user size");
+		return false;
+	}
 
 	// no idea...
 	for (uint16_t i=0; i<((stringsmatch)?4:2); i++) {
@@ -2611,6 +2626,10 @@ bool sqlrprotocol_oracle::recvAuthenticationRequest(bool secondphase) {
 	}
 
 	// user name...
+	if ((size_t)(end-rp)<(size_t)usersize) {
+		debugWrite("bad user size: %d",usersize);
+		return false;
+	}
 	getString(rp,&user,usersize,&rp);
 
 	debugStart("authentication request (phase %d)",(secondphase)?2:1);
@@ -2620,16 +2639,34 @@ bool sqlrprotocol_oracle::recvAuthenticationRequest(bool secondphase) {
 	debugWrite("seq number: %d",seqnumber);
 	debugWrite("user: %s",user);
 
-	do {
+	// a size, and the bytes around it
+	int32_t	sizebytes=(stringsmatch)?(1+4):(1+1+1);
+
+	// the unknown bytes that follow each field
+	int32_t	trailerbytes=(stringsmatch)?4:1;
+
+	// declared out here so every exit from the loop frees them
+	char	*fieldname=NULL;
+	char	*field=NULL;
+
+	while (rp<end) {
+
+		// free what the previous pass allocated
+		delete[] fieldname;
+		fieldname=NULL;
+		delete[] field;
+		field=NULL;
 
 		byte_t		fieldnamesize;
-		uint32_t	fieldnamesizelong;
-		char		*fieldname;
+		uint32_t	fieldnamesizelong=0;
 		byte_t		fieldsize;
-		uint32_t	fieldsizelong;
-		char		*field;
+		uint32_t	fieldsizelong=0;
 
 		// field name...
+		if (end-rp<sizebytes) {
+			debugWrite("truncated field name size");
+			break;
+		}
 		if (!stringsmatch) {
 			read(rp,&unknown,&rp);
 		}
@@ -2639,9 +2676,17 @@ bool sqlrprotocol_oracle::recvAuthenticationRequest(bool secondphase) {
 		} else {
 			readBE(rp,&fieldnamesizelong,&rp);
 		}
+		if ((size_t)(end-rp)<(size_t)fieldnamesize) {
+			debugWrite("truncated field name");
+			break;
+		}
 		getString(rp,&fieldname,fieldnamesize,&rp);
 
 		// field...
+		if (end-rp<sizebytes) {
+			debugWrite("truncated field size");
+			break;
+		}
 		if (!stringsmatch) {
 			read(rp,&unknown,&rp);
 		}
@@ -2651,23 +2696,40 @@ bool sqlrprotocol_oracle::recvAuthenticationRequest(bool secondphase) {
 		} else {
 			readBE(rp,&fieldsizelong,&rp);
 		}
+		if ((size_t)(end-rp)<(size_t)fieldsize) {
+			debugWrite("truncated field");
+			break;
+		}
 		getString(rp,&field,fieldsize,&rp);
 
 		// no idea...
-		if (!stringsmatch) {
-			read(rp,&unknown,&rp);
-		} else {
-			read(rp,&unknown,&rp);
-			read(rp,&unknown,&rp);
-			read(rp,&unknown,&rp);
+		if (end-rp<trailerbytes) {
+			debugWrite("truncated field trailer");
+			break;
+		}
+		for (int32_t i=0; i<trailerbytes; i++) {
 			read(rp,&unknown,&rp);
 		}
 
 		debugWrite("%s: %s",fieldname,field);
 
+		// the long sizes are read but not identified, and the
+		// one-byte size is what's used.  write them out so whoever
+		// works #8977 with a real capture can see what the client
+		// puts there.
+		if (stringsmatch) {
+			debugWrite("field name size (long): %d",
+							fieldnamesizelong);
+			debugWrite("field size (long): %d",fieldsizelong);
+		}
+
 		// FIXME: do something with these...
 
-	} while (rp<end);
+	}
+
+	delete[] fieldname;
+	delete[] field;
+	delete[] user;
 
 	debugEnd();
 
