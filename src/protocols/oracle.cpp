@@ -196,14 +196,17 @@
 #define CCAP_FAST_SESSION_PROPAGATE	0x10
 #define CCAP_END_OF_RESPONSE		0x20
 #define CCAP_EXPLICIT_BOUNDARY		0x40
+#define CCAP_TTC3_TZ_VERSION		0x02
 
 // server runtime capability array indices
 #define RCAP_COMPAT			0
+#define RCAP_DB_TIMEZONE		1
 #define RCAP_TTC			6
 #define RCAP_MAX			11
 
 // server runtime capability values
 #define RCAP_COMPAT_81			2
+#define RCAP_DB_TIMEZONE_REQUESTED	0x01
 #define RCAP_TTC_ZERO_COPY		0x01
 #define RCAP_TTC_32K			0x04
 #define RCAP_TTC_SESSION_STATE_OPS	0x10
@@ -822,6 +825,13 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_oracle : public sqlrprotocol {
 
 		bool	dataTypeNegotiation();
 		bool	recvDataTypeRequest();
+		bool	getCapabilities(const byte_t *rp,
+						const byte_t *end,
+						const byte_t **caps,
+						byte_t *capssize,
+						const byte_t **rpout);
+		uint16_t	countDataTypes(const byte_t *rp,
+						const byte_t *end);
 		bool	sendDataTypeResponse();
 
 		bool	authenticate();
@@ -994,12 +1004,19 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_oracle : public sqlrprotocol {
 		uint16_t	nationalcharset;
 		uint32_t	verifiertype;
 
-		uint16_t	clientcharset;
+		uint16_t	clientcharsetin;
+		uint16_t	clientcharsetout;
 		uint16_t	clientnationalcharset;
 		byte_t		encodingflags;
+		byte_t		clientfieldversion;
+		byte_t		fieldversion;
+		bool		clientwantsdbtimezone;
+		bool		clientwantstzversion;
+		uint32_t	clienttzversion;
 
 		const byte_t	*datatypes;
 		uint16_t	datatypessize;
+		uint16_t	datatypecount;
 
 		filedescriptor	*clientsock;
 
@@ -1164,12 +1181,19 @@ void sqlrprotocol_oracle::init() {
 	clientstring=NULL;
 	serverstring=NULL;
 
-	clientcharset=0;
+	clientcharsetin=0;
+	clientcharsetout=0;
 	clientnationalcharset=0;
 	encodingflags=0;
+	clientfieldversion=0;
+	fieldversion=0;
+	clientwantsdbtimezone=false;
+	clientwantstzversion=false;
+	clienttzversion=0;
 
 	datatypes=NULL;
 	datatypessize=0;
+	datatypecount=0;
 
 	resppacket=NULL;
 	resppacketsize=0;
@@ -3029,8 +3053,106 @@ void sqlrprotocol_oracle::putTti1Response() {
 	// FIXME: implement this...
 }
 
+// The layout of this exchange - the request header, the two length-prefixed
+// capability arrays, and the type list, where an entry is a uint16 type and a
+// uint16 conversion type, followed by a uint16 representation and a uint16 0
+// only when the conversion type is not 0, and the list ends at a type of 0 -
+// follows python-oracledb, src/oracledb/impl/thin/messages/data_types.pyx,
+// DataTypesMessage._write_message() and _process_message().
+//
+// Copyright (c) 2021, 2025, Oracle and/or its affiliates.
+// Taken under the Universal Permissive License 1.0 only, not under
+// python-oracledb's Apache 2.0 option.  See https://oss.oracle.com/licenses/upl
+// and COPYING.
+//
+// The db time zone group is not in python-oracledb, which leaves the runtime
+// capability that asks for it clear and so never sees it.  go-ora,
+// v2/data_type_nego.go, reads it, and OCI 23.26 asks for it, so it is measured
+// as well as read: OCI's whole 102 byte request is accounted for only with it,
+// and a real 11.2 server answers OCI with 26 bytes that are nothing else.
+
+// The db time zone, byte for byte as both a live 11.2 and a live 12.2 server
+// send it.  go-ora reads bytes 4, 5 and 6 as hours, minutes and seconds biased
+// by 60, so three 0x3c is an offset of +00:00.  The module has no db time zone
+// of its own to report, and both servers captured were on UTC anyway.
+static const byte_t	dbtimezone[]={
+	0x80, 0x00, 0x00, 0x00, 0x3c, 0x3c, 0x3c, 0x80,
+	0x00, 0x00, 0x00
+};
+
+// The time zone data file version.  A live 11.2 server sends 11 and a live
+// 12.2 server sends 26.  The module answers CCAP_FIELD_VERSION_11_2 elsewhere,
+// and the lower version claims fewer time zone regions, so 11 it is.
+#define DB_TIMEZONE_VERSION	11
+
 bool sqlrprotocol_oracle::dataTypeNegotiation() {
 	return recvDataTypeRequest() && sendDataTypeResponse();
+}
+
+// A length byte, then that many bytes of capabilities.  Points into the
+// response packet rather than copying it - nothing reads another packet
+// between here and the response.
+bool sqlrprotocol_oracle::getCapabilities(const byte_t *rp,
+					const byte_t *end,
+					const byte_t **caps,
+					byte_t *capssize,
+					const byte_t **rpout) {
+
+	*caps=NULL;
+	*capssize=0;
+
+	if (end-rp<1) {
+		debugWrite("truncated capability array size");
+		return false;
+	}
+
+	byte_t	size;
+	read(rp,&size,&rp);
+
+	if ((size_t)(end-rp)<(size_t)size) {
+		debugWrite("truncated capability array");
+		return false;
+	}
+
+	*caps=rp;
+	*capssize=size;
+
+	*rpout=rp+size;
+
+	return true;
+}
+
+uint16_t sqlrprotocol_oracle::countDataTypes(const byte_t *rp,
+						const byte_t *end) {
+
+	uint16_t	count=0;
+	for (;;) {
+
+		if (end-rp<2) {
+			return count;
+		}
+
+		uint16_t	datatype;
+		readBE(rp,&datatype,&rp);
+		if (!datatype) {
+			return count;
+		}
+
+		if (end-rp<2) {
+			return count;
+		}
+
+		uint16_t	convdatatype;
+		readBE(rp,&convdatatype,&rp);
+		if (convdatatype) {
+			if (end-rp<4) {
+				return count;
+			}
+			rp+=4;
+		}
+
+		count++;
+	}
 }
 
 bool sqlrprotocol_oracle::recvDataTypeRequest() {
@@ -3062,41 +3184,112 @@ bool sqlrprotocol_oracle::recvDataTypeRequest() {
 		return false;
 	}
 
-	// The client's character sets, in host order.  These used to be
+	// The client's character set, twice, in host order.  These used to be
 	// asserted against a marker of 0x0100 each, read big endian.  They
 	// aren't markers.  An 8.0.5 client sends 1, US7ASCII, twice, which is
 	// 01 00 01 00 on the wire, which is 0x0100 twice read the wrong way
 	// round - and that is where the constants came from.  A modern client
-	// echoes back whatever the tti response announced, so it sends 873,
-	// AL32UTF8, and the assertion refuses every one of them.
-	readLE(rp,&clientcharset,&rp);
-	readLE(rp,&clientnationalcharset,&rp);
+	// echoes back whatever the tti response announced.
+	//
+	// Neither of them is the national character set, which is a separate
+	// field further down, inside the db time zone group.  go-ora calls
+	// these two the client's remote-in and remote-out character sets and
+	// writes the same value in both, and so does every client measured.
+	readLE(rp,&clientcharsetin,&rp);
+	readLE(rp,&clientcharsetout,&rp);
 
 	// A bit field, not a marker.  8.0.5 sends none of it, 9i and OCI 23.26
 	// send CONV_LENGTH alone, ojdbc 23.26 sends MULTI_BYTE alone, and
 	// python-oracledb sends both.
 	read(rp,&encodingflags,&rp);
 
+	// the client's capability arrays
+	const byte_t	*compilecaps=NULL;
+	byte_t		compilecapssize=0;
+	const byte_t	*runtimecaps=NULL;
+	byte_t		runtimecapssize=0;
+	if (!getCapabilities(rp,end,&compilecaps,&compilecapssize,&rp) ||
+		!getCapabilities(rp,end,&runtimecaps,&runtimecapssize,&rp)) {
+		return false;
+	}
+
+	// The field version is negotiated as the lower of the two.  The
+	// module's is CCAP_FIELD_VERSION_11_2 and a modern client's is far
+	// higher, so the module's is what wins in practice, but a client old
+	// enough to ask for less has to get less.
+	clientfieldversion=(compilecapssize>CCAP_FIELD_VERSION)?
+				compilecaps[CCAP_FIELD_VERSION]:0;
+	fieldversion=ttiservercompilecaps[CCAP_FIELD_VERSION];
+	if (clientfieldversion<fieldversion) {
+		fieldversion=clientfieldversion;
+	}
+
+	// The db time zone group, which is there only if the client asked for
+	// it.  Of the clients on this host only OCI 23.26 does.
+	clientwantsdbtimezone=(runtimecapssize>RCAP_DB_TIMEZONE &&
+				(runtimecaps[RCAP_DB_TIMEZONE]&
+					RCAP_DB_TIMEZONE_REQUESTED)!=0);
+	clientwantstzversion=(compilecapssize>CCAP_TTC3 &&
+				(compilecaps[CCAP_TTC3]&
+					CCAP_TTC3_TZ_VERSION)!=0);
+	if (clientwantsdbtimezone) {
+
+		size_t	groupsize=sizeof(dbtimezone)+sizeof(uint16_t)+
+			((clientwantstzversion)?sizeof(uint32_t):0);
+		if ((size_t)(end-rp)<groupsize) {
+			debugWrite("truncated db time zone group");
+			return false;
+		}
+
+		rp+=sizeof(dbtimezone);
+		if (clientwantstzversion) {
+			readBE(rp,&clienttzversion,&rp);
+		}
+		readLE(rp,&clientnationalcharset,&rp);
+	}
+
+	// The client's data type list, which nothing in the response depends
+	// on - a real server answers every client with its own table.  So a
+	// list that runs out early is counted and reported rather than
+	// refused, and an empty one is not an error at all: OCI 23.26 sends no
+	// list, not even the terminator, and a real server answers it with
+	// none either.
+	//
 	// NOTE: When talking to the db directly, 8.0.5 sends/recieves almost
 	// nothing, but when talking to relay it sends/receives a ton of stuff.
 	// It's not exctly clear what triggers this.
 	datatypes=rp;
 	datatypessize=end-rp;
+	datatypecount=countDataTypes(rp,end);
 
 	if (getDebug()) {
 		debugStart("datatype request");
 		debugWrite("data flags: 0x%04x",dataflags);
 		debugTtcCode(ttccode);
-		debugWrite("client charset: %d",clientcharset);
-		debugWrite("client national charset: %d",
-						clientnationalcharset);
+		debugWrite("client charset in: %d",clientcharsetin);
+		debugWrite("client charset out: %d",clientcharsetout);
 		debugWrite("encoding flags: 0x%02x%s%s",encodingflags,
 			(encodingflags&ENCODING_MULTI_BYTE)?" multibyte":"",
 			(encodingflags&ENCODING_CONV_LENGTH)?" convlength":"");
+		debugWrite("client compile caps size: %d",compilecapssize);
+		debugHexDump(compilecaps,compilecapssize);
+		debugWrite("client runtime caps size: %d",runtimecapssize);
+		debugHexDump(runtimecaps,runtimecapssize);
+		debugWrite("client field version: %d",clientfieldversion);
+		debugWrite("negotiated field version: %d",fieldversion);
+		if (clientwantsdbtimezone) {
+			debugWrite("client wants the db time zone");
+			if (clientwantstzversion) {
+				debugWrite("client time zone version: %d",
+							clienttzversion);
+			}
+			debugWrite("client national charset: %d",
+						clientnationalcharset);
+		}
+		debugWrite("data types: %d",datatypecount);
+		debugHexDump(datatypes,datatypessize);
 		debugWrite("using charset: %d, national charset: %d "
 				"(the listener's)",charset,nationalcharset);
-		debugWrite("data types:");
-		debugHexDump(datatypes,datatypessize);
 		debugEnd();
 	}
 
@@ -3104,21 +3297,372 @@ bool sqlrprotocol_oracle::recvDataTypeRequest() {
 	// anything.  python-oracledb writes utf8 whatever the server said, so
 	// this is not a negotiation the module can lose, but a client that
 	// disagrees with the listener is worth saying out loud.
-	if (clientcharset!=charset ||
-		clientnationalcharset!=nationalcharset) {
+	if (clientcharsetin!=charset || clientcharsetout!=charset) {
 		debugWrite("client charsets %d/%d differ from the "
-				"listener's %d/%d, using the listener's",
-				clientcharset,clientnationalcharset,
-				charset,nationalcharset);
+				"listener's %d, using the listener's",
+				clientcharsetin,clientcharsetout,charset);
 	}
 
 	return true;
 }
 
-bool sqlrprotocol_oracle::sendDataTypeResponse() {
+// The data types the module supports, captured from a live oracle 11.2 server
+// - the same server #8978's capability arrays came from, and the version the
+// module answers as.  Each row is the type, the type it converts to, and the
+// representation of that type, 1 universal or 10 native.  A conversion type of
+// 0 means the type is not exchanged, and its row is 4 bytes on the wire rather
+// than 8.
+//
+// A 12.2 server sends 50 more types than this and disagrees about 11 of them,
+// and python-oracledb's client-side table is different again, so this is one
+// server's answer rather than a canonical list.  It covers every column type
+// the module names.
+static const uint16_t	ttidatatypes[][3]={
+	// VARCHAR
+	{1,1,1},
+	// NUMBER
+	{2,2,10},
+	// LONG
+	{8,8,1},
+	// DATE
+	{12,12,10},
+	// RAW
+	{23,23,1},
+	// LONG_RAW
+	{24,24,1},
+	{25,25,1},
+	{26,26,1},
+	{27,27,1},
+	{28,28,1},
+	{29,29,1},
+	{30,30,1},
+	{31,31,1},
+	{32,32,1},
+	{33,33,1},
+	{10,10,1},
+	// ROWID_DEPRECATED
+	{11,11,1},
+	{40,40,1},
+	{41,41,1},
+	{117,117,1},
+	{120,120,1},
+	{290,290,1},
+	{291,291,1},
+	{292,292,1},
+	{293,293,1},
+	{294,294,1},
+	{298,298,1},
+	{299,299,1},
+	{300,300,1},
+	{301,301,1},
+	{302,302,1},
+	{303,303,1},
+	{304,304,1},
+	{305,305,1},
+	{306,306,1},
+	{307,307,1},
+	{308,308,1},
+	{309,309,1},
+	{310,310,1},
+	{311,311,1},
+	{312,312,1},
+	{313,313,1},
+	{315,315,1},
+	{316,316,1},
+	{317,317,1},
+	{318,318,1},
+	{319,319,1},
+	{320,320,1},
+	{321,321,1},
+	{322,322,1},
+	{323,323,1},
+	{327,327,1},
+	{328,328,1},
+	{329,329,1},
+	{331,331,1},
+	{333,333,1},
+	{334,334,1},
+	{335,335,1},
+	{336,336,1},
+	{337,337,1},
+	{338,338,1},
+	{339,339,1},
+	{340,340,1},
+	{341,341,1},
+	{342,342,1},
+	{343,343,1},
+	{344,344,1},
+	{345,345,1},
+	{346,346,1},
+	{348,348,1},
+	{349,349,1},
+	{354,354,1},
+	{355,355,1},
+	{359,359,1},
+	{363,363,1},
+	{380,380,1},
+	{381,381,1},
+	{382,382,1},
+	{383,383,1},
+	{384,384,1},
+	{385,385,1},
+	{386,386,1},
+	{387,387,1},
+	{388,388,1},
+	{389,389,1},
+	{390,390,1},
+	{391,391,1},
+	{393,393,1},
+	{394,394,1},
+	{395,395,1},
+	{396,396,1},
+	{397,397,1},
+	{398,398,1},
+	{399,399,1},
+	{400,400,1},
+	{401,401,1},
+	{404,404,1},
+	{405,405,1},
+	{406,406,1},
+	{407,407,1},
+	{413,413,1},
+	{414,414,1},
+	{415,415,1},
+	{416,416,1},
+	{417,417,1},
+	{418,418,1},
+	{419,419,1},
+	{420,420,1},
+	{421,421,1},
+	{422,422,1},
+	{423,423,1},
+	{424,424,1},
+	{425,425,1},
+	{426,426,1},
+	{427,427,1},
+	{429,429,1},
+	{430,430,1},
+	{431,431,1},
+	{432,432,1},
+	{433,433,1},
+	{449,449,1},
+	{450,450,1},
+	{454,454,1},
+	{455,455,1},
+	{456,456,1},
+	{457,457,1},
+	{458,458,1},
+	{459,459,1},
+	{460,460,1},
+	{461,461,1},
+	{462,462,1},
+	{463,463,1},
+	{466,466,1},
+	{467,467,1},
+	{468,468,1},
+	{469,469,1},
+	{470,470,1},
+	{471,471,1},
+	{472,472,1},
+	{473,473,1},
+	{474,474,1},
+	{475,475,1},
+	{476,476,1},
+	{477,477,1},
+	{478,478,1},
+	{479,479,1},
+	{480,480,1},
+	{481,481,1},
+	{482,482,1},
+	{483,483,1},
+	{484,484,1},
+	{485,485,1},
+	{486,486,1},
+	{490,490,1},
+	{491,491,1},
+	{492,492,1},
+	{493,493,1},
+	{494,494,1},
+	{495,495,1},
+	{496,496,1},
+	{498,498,1},
+	{499,499,1},
+	{500,500,1},
+	{501,501,1},
+	{502,502,1},
+	{509,509,1},
+	{510,510,1},
+	{513,513,1},
+	{514,514,1},
+	{516,516,1},
+	{517,517,1},
+	{518,518,1},
+	{519,519,1},
+	{520,520,1},
+	{521,521,1},
+	{522,522,1},
+	{523,523,1},
+	{524,524,1},
+	{525,525,1},
+	{526,526,1},
+	{527,527,1},
+	{528,528,1},
+	{529,529,1},
+	{530,530,1},
+	{531,531,1},
+	{532,532,1},
+	{533,533,1},
+	{534,534,1},
+	{535,535,1},
+	{536,536,1},
+	{537,537,1},
+	{538,538,1},
+	{539,539,1},
+	{540,540,1},
+	{541,541,1},
+	{542,542,1},
+	{543,543,1},
+	{544,0,0},
+	{545,0,0},
+	{546,0,0},
+	{547,0,0},
+	{548,0,0},
+	{549,0,0},
+	{550,0,0},
+	{551,0,0},
+	{552,0,0},
+	{553,0,0},
+	{554,0,0},
+	{555,0,0},
+	{556,0,0},
+	{557,0,0},
+	{558,0,0},
+	{559,0,0},
+	{560,560,1},
+	{561,0,0},
+	{562,0,0},
+	{563,563,1},
+	{564,564,1},
+	{565,565,1},
+	{566,0,0},
+	{567,0,0},
+	{568,0,0},
+	{569,0,0},
+	{570,0,0},
+	{571,0,0},
+	{572,572,1},
+	{573,573,1},
+	{574,574,1},
+	{575,575,1},
+	{576,576,1},
+	{577,0,0},
+	{578,578,1},
+	{579,579,1},
+	{580,580,1},
+	{581,581,1},
+	{582,582,1},
+	{583,583,1},
+	{584,584,1},
+	{585,585,1},
+	{3,2,10},
+	{4,2,10},
+	{5,1,1},
+	// VARNUM
+	{6,2,10},
+	{7,2,10},
+	{9,1,1},
+	{13,0,0},
+	{14,0,0},
+	{15,23,1},
+	{16,0,0},
+	{17,0,0},
+	{18,0,0},
+	{19,0,0},
+	{20,0,0},
+	{21,0,0},
+	{22,0,0},
+	{39,0,0},
+	{58,0,0},
+	{68,2,10},
+	{69,0,0},
+	{70,0,0},
+	{74,0,0},
+	{76,0,0},
+	{91,2,10},
+	{94,1,1},
+	{95,23,1},
+	// CHAR
+	{96,96,1},
+	{97,96,1},
+	{100,100,1},
+	{101,101,1},
+	// RESULT_SET
+	{102,102,1},
+	// ROWID
+	{104,0,0},
+	{105,0,0},
+	{106,106,1},
+	{108,109,1},
+	// NAMED_TYPE
+	{109,109,1},
+	{110,111,1},
+	// REF_TYPE
+	{111,111,1},
+	// CLOB
+	{112,112,1},
+	// BLOB
+	{113,113,1},
+	// BFILE
+	{114,114,1},
+	{115,115,1},
+	{116,102,1},
+	{118,0,0},
+	{119,0,0},
+	{121,0,0},
+	{122,0,0},
+	{123,0,0},
+	{136,0,0},
+	{146,146,1},
+	{147,0,0},
+	{152,2,10},
+	{153,2,10},
+	{154,2,10},
+	{155,1,1},
+	{156,12,10},
+	{172,2,10},
+	{178,178,1},
+	{179,179,1},
+	// TIMESTAMP
+	{180,180,1},
+	// TIMESTAMPTZ
+	{181,181,1},
+	// INTERVALYM
+	{182,182,1},
+	// INTERVALDS
+	{183,183,1},
+	{184,12,10},
+	{185,0,0},
+	{186,0,0},
+	{187,0,0},
+	{188,0,0},
+	{189,0,0},
+	{190,0,0},
+	{191,0,0},
+	{192,0,0},
+	{195,112,1},
+	{196,113,1},
+	{197,114,1},
+	{208,208,1},
+	{209,0,0},
+	// TIMESTAMPLTZ
+	{231,231,1},
+	{232,231,1},
+	{233,233,1},
+	{241,109,1},
+	{515,0,0}
+};
 
-	// FIXME: 9i appears to want more than we send here
-	// might have to do with the 0x02 in the request...
+bool sqlrprotocol_oracle::sendDataTypeResponse() {
 
 	resetSendPacketBuffer(PACKET_DATA);
 
@@ -3127,15 +3671,46 @@ bool sqlrprotocol_oracle::sendDataTypeResponse() {
 
 	writeBE(&reqpacket,dataflags);
 	write(&reqpacket,ttccode);
-	// for now echo the requested data types
-	reqpacket.append(datatypes,datatypessize);
+
+	// the db time zone, if the client asked for it
+	if (clientwantsdbtimezone) {
+		reqpacket.append(dbtimezone,sizeof(dbtimezone));
+		if (clientwantstzversion) {
+			writeBE(&reqpacket,(uint32_t)DB_TIMEZONE_VERSION);
+		}
+	}
+
+	// The data types, if the client sent a list of its own.  It never sent
+	// one of the module's own before this - the whole request, capability
+	// arrays and all, was echoed back - which parses as 6 types and leaves
+	// the rest in the client's buffer to be read as the next message.
+	uint16_t	count=0;
+	if (datatypessize) {
+		count=sizeof(ttidatatypes)/sizeof(ttidatatypes[0]);
+		for (uint16_t i=0; i<count; i++) {
+			writeBE(&reqpacket,ttidatatypes[i][0]);
+			writeBE(&reqpacket,ttidatatypes[i][1]);
+			if (ttidatatypes[i][1]) {
+				writeBE(&reqpacket,ttidatatypes[i][2]);
+				writeBE(&reqpacket,(uint16_t)0);
+			}
+		}
+		writeBE(&reqpacket,(uint16_t)0);
+	}
 
 	if (getDebug()) {
 		debugStart("datatype response");
 		debugWrite("data flags: 0x%04x",dataflags);
 		debugTtcCode(ttccode);
-		debugWrite("data types:");
-		debugHexDump(datatypes,datatypessize);
+		if (clientwantsdbtimezone) {
+			debugWrite("db time zone:");
+			debugHexDump(dbtimezone,sizeof(dbtimezone));
+			if (clientwantstzversion) {
+				debugWrite("db time zone version: %d",
+						DB_TIMEZONE_VERSION);
+			}
+		}
+		debugWrite("data types: %d",count);
 		debugEnd();
 	}
 

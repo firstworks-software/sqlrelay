@@ -1384,6 +1384,14 @@
 		locale now, and says the details went to stderr
 	fixed the sap and freetds connection modules - a login error the
 		client library had no text for ended in a dangling colon
+	implemented data type negotiation in the oracle protocol module -
+		it echoed the client's request back, capability arrays and
+		all, which no client can read - it sends the data types a
+		real oracle 11.2 server sends now, and the db time zone,
+		time zone version and national character set that an oci
+		client asks for, and it reads the rest of the request:
+		both client capability arrays, the negotiated field
+		version, and the client's own type list
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems
