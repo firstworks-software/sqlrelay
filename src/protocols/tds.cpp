@@ -1087,6 +1087,10 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_tds : public sqlrprotocol {
 					const byte_t *rp,
 					const byte_t **rpout,
 					bool exceeded);
+		bool	paramValue(uint16_t param,
+					const byte_t *rp,
+					const byte_t **rpout,
+					sqlrserverbindvar *bv);
 		void	batchFlags(const byte_t *rp,
 					size_t rpsize,
 					const byte_t **rpout,
@@ -8666,6 +8670,28 @@ bool sqlrprotocol_tds::param(uint16_t param,
 		debugWrite("encrypted: %d",encrypted);
 	}
 
+	bool	retval=paramValue(param,rp,&rp,bv);
+
+	debugEnd();
+
+	// clean up
+	delete[] pname16;
+	delete[] pname;
+
+	// copy out pointer
+	*rpout=rp;
+
+	return retval;
+}
+
+// The value half of param().  Split out so that its many early returns
+// don't have to remember to free the parameter name or to close the debug
+// block - param() owns both.  bulkField() and bulkValue() are split for
+// the same reason.
+bool sqlrprotocol_tds::paramValue(uint16_t param,
+					const byte_t *rp,
+					const byte_t **rpout,
+					sqlrserverbindvar *bv) {
 
 	// type info...
 	byte_t	tdstype;
@@ -8751,7 +8777,7 @@ bool sqlrprotocol_tds::param(uint16_t param,
 	// An output parameter is sent back as the type the client declared
 	// it, so keep that.  tdstype is rewritten just below, to read the
 	// value, so it has to be recorded here.
-	if (!exceeded) {
+	if (bv) {
 		rpcparamtdstypes[param]=tdstype;
 		rpcparammaxsizes[param]=maxsize;
 	}
@@ -9362,12 +9388,6 @@ bool sqlrprotocol_tds::param(uint16_t param,
 		//   	CekHash - ???           (tds 7.4+)
 		//   	NormVersion - byte      (tds 7.4+)
 	}
-
-	debugEnd();
-
-	// clean up
-	delete[] pname16;
-	delete[] pname;
 
 	// copy out pointer
 	*rpout=rp;
