@@ -912,6 +912,20 @@
 		charset takes the client library's own spellings, like utf8
 		and iso_1 rather than utf-8 and iso-8859-1, and that an
 		unrecognized name fails the login
+	fixed the tds protocol module - a failed rpc reported success, its
+		done never set the error bit, so the client read the response
+		one result out of step and eventually killed the connection
+	fixed the tds protocol module - a failed rpc sent 1 as its return
+		status where a real sql server sends the error's own number,
+		and sent one at all for a procedure that was never found,
+		where a real sql server sends none
+	fixed the tds protocol module - sp_prepare, sp_prepexec and
+		sp_executesql accepted a non-unicode statement or parameter
+		declaration argument, a real sql server rejects one with
+		error 214
+	fixed the tds protocol module - an rpc output parameter's return
+		value carried a nullable flag, which made the ct-lib client
+		report 65536 rather than 0 for the parameter's user type
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems

@@ -711,6 +711,12 @@ static const char *procnames[]={
 #define RPC_STATUS_SUCCESS	0
 #define RPC_STATUS_FAILURE	1
 
+// sql server error numbers that these procs answer with, which a failed one
+// also sends back as its return status
+#define RPC_WRONG_PARAM_TYPE	214
+#define RPC_NO_SUCH_STMT	8179
+#define RPC_NO_SUCH_CURSOR	16950
+
 // close-all cursor id for sp_cursorclose
 #define CURSOR_CLOSE_ALL	0xFFFFFFFF
 
@@ -958,9 +964,14 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_tds : public sqlrprotocol {
 		void	rpcResultSet(sqlrservercursor *cursor,
 					bool nometadata,
 					uint64_t maxrows);
-		void	rpcError(sqlrservercursor *cursor);
-		bool	rpcInvalidHandleError(const char *what,
+		void	rpcError(sqlrservercursor *cursor,
+					bool returnstatus=true);
+		bool	rpcInvalidHandleError(uint32_t number,
+					const char *what,
 					uint32_t handle);
+		bool	rpcParamTypeError(const char *procname,
+					const char *param);
+		bool	paramIsUnicode(uint16_t param);
 
 		uint32_t	newHandle();
 		sqlrservercursor	*handleCursor(
@@ -1008,7 +1019,7 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_tds : public sqlrprotocol {
 					const char *servername,
 					const char *procname,
 					uint32_t linenumber);
-		void	appendQueryError(sqlrservercursor *cursor);
+		uint32_t	appendQueryError(sqlrservercursor *cursor);
 
 		// error senders - these clear the response packet, append
 		// the error, append a done, and send it
@@ -1094,6 +1105,10 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_tds : public sqlrprotocol {
 		uint32_t		*rpcparammaxsizes;
 		uint16_t		*outbindparams;
 		uint16_t		rpcparamcount;
+
+		// whether the rpc currently being handled failed, so that
+		// the done that closes it can say so
+		bool			rpcfailed;
 
 		// The table and columns that the "insert bulk" statement
 		// named, and the column metadata that the bulk load packet
@@ -1235,6 +1250,7 @@ void sqlrprotocol_tds::init() {
 	nexthandle=1;
 
 	rpcparamcount=0;
+	rpcfailed=false;
 
 	bulktable=NULL;
 	bulkcolumncount=0;
@@ -4700,7 +4716,7 @@ byte_t sqlrprotocol_tds::charsToHex(const char *chars) {
 	return sixteens*16+ones;
 }
 
-void sqlrprotocol_tds::appendQueryError(sqlrservercursor *cursor) {
+uint32_t sqlrprotocol_tds::appendQueryError(sqlrservercursor *cursor) {
 
 	// get the error
 	const char	*errorstring;
@@ -4776,6 +4792,8 @@ void sqlrprotocol_tds::appendQueryError(sqlrservercursor *cursor) {
 	delete[] srvn;
 	delete[] procn;
 	delete[] errorbuffer;
+
+	return (uint32_t)errorcode;
 }
 
 bool sqlrprotocol_tds::insertBulk(const char *sql) {
@@ -6338,6 +6356,7 @@ bool sqlrprotocol_tds::rpc(const byte_t **rpinout,
 
 	// do whatever the proc asked for
 	bool	retval=true;
+	rpcfailed=false;
 	switch (procid) {
 		case SP_CURSOR:
 			retval=cursorUnsupported();
@@ -6389,8 +6408,16 @@ bool sqlrprotocol_tds::rpc(const byte_t **rpinout,
 			break;
 	}
 
-	// the done for a non-final rpc in a batch says so
-	doneProc((*more)?(DONE_MORE|DONE_RPCINBATCH):DONE_FINAL,0,0);
+	// The done for a non-final rpc in a batch says so.  A failed one has to
+	// set DONE_ERROR - the ct-lib client reports CS_CMD_FAIL for a done
+	// that carries it and CS_CMD_SUCCEED for one that doesn't, so without
+	// it a failed rpc reports success and the client's ct_results walk
+	// falls one result out of step with the response.
+	uint16_t	donestatus=(*more)?(DONE_MORE|DONE_RPCINBATCH):DONE_FINAL;
+	if (rpcfailed) {
+		donestatus|=DONE_ERROR;
+	}
+	doneProc(donestatus,0,0);
 
 	// clean up
 	delete[] procname;
@@ -6661,7 +6688,8 @@ char *sqlrprotocol_tds::callSyntaxToExec(const char *stmt) {
 	return query.detachString();
 }
 
-bool sqlrprotocol_tds::rpcInvalidHandleError(const char *what,
+bool sqlrprotocol_tds::rpcInvalidHandleError(uint32_t number,
+						const char *what,
 						uint32_t handle) {
 
 	stringbuffer	err;
@@ -6669,15 +6697,53 @@ bool sqlrprotocol_tds::rpcInvalidHandleError(const char *what,
 
 	debugWrite("%s",err.getString());
 
-	appendError(16950,1,16,err.getString(),srvname,NULL,1);
-	returnStatus(RPC_STATUS_FAILURE);
+	appendError(number,1,16,err.getString(),srvname,NULL,1);
+
+	// a system stored procedure that ran and failed answers with the
+	// error's own number as its return status
+	returnStatus(number);
+	rpcfailed=true;
 
 	return true;
 }
 
-void sqlrprotocol_tds::rpcError(sqlrservercursor *cursor) {
-	appendQueryError(cursor);
-	returnStatus(RPC_STATUS_FAILURE);
+bool sqlrprotocol_tds::rpcParamTypeError(const char *procname,
+						const char *param) {
+
+	// sp_prepare, sp_prepexec and sp_executesql declare their statement
+	// and parameter-declaration arguments nvarchar, and sql server rejects
+	// anything else outright rather than converting it
+
+	stringbuffer	err;
+	err.append("Procedure expects parameter '")->append(param);
+	err.append("' of type 'ntext/nchar/nvarchar'.");
+
+	debugWrite("%s",err.getString());
+
+	appendError(RPC_WRONG_PARAM_TYPE,3,16,
+			err.getString(),srvname,procname,1);
+	returnStatus(RPC_WRONG_PARAM_TYPE);
+	rpcfailed=true;
+
+	return true;
+}
+
+bool sqlrprotocol_tds::paramIsUnicode(uint16_t param) {
+	if (param>=rpcparamcount) {
+		return false;
+	}
+	byte_t	tdstype=rpcparamtdstypes[param];
+	return (tdstype==TDS_TYPE_NVARCHAR ||
+		tdstype==TDS_TYPE_NCHAR ||
+		tdstype==TDS_TYPE_NTEXT);
+}
+
+void sqlrprotocol_tds::rpcError(sqlrservercursor *cursor, bool returnstatus) {
+	uint32_t	number=appendQueryError(cursor);
+	if (returnstatus) {
+		returnStatus(number);
+	}
+	rpcfailed=true;
 }
 
 void sqlrprotocol_tds::rpcResultSet(sqlrservercursor *cursor,
@@ -6748,13 +6814,15 @@ bool sqlrprotocol_tds::namedProc(const char *procname, bool nometadata) {
 		success=cont->executeQuery(cursor,true,true,true,true);
 	}
 
-	// build the response
+	// build the response.  An ordinary procedure that never ran - because
+	// there is no such procedure, say - sends no return status at all,
+	// unlike the numbered procs, which send the error's own number.
 	if (success) {
 		rpcResultSet(cursor,nometadata,0);
 		returnStatus(procReturnValue(cursor));
 		returnValues(cursor);
 	} else {
-		rpcError(cursor);
+		rpcError(cursor,false);
 	}
 
 	// release the cursor
@@ -6769,7 +6837,15 @@ bool sqlrprotocol_tds::executeSql(bool nometadata) {
 
 	const char	*stmt=paramString(0);
 	if (!stmt) {
-		return rpcInvalidHandleError("statement",0);
+		return rpcInvalidHandleError(RPC_NO_SUCH_STMT,"statement",0);
+	}
+
+	// these two arguments are declared nvarchar
+	if (!paramIsUnicode(0)) {
+		return rpcParamTypeError("sp_executesql","@statement");
+	}
+	if (rpcparamcount>1 && !paramIsUnicode(1)) {
+		return rpcParamTypeError("sp_executesql","@params");
 	}
 
 	debugWrite("stmt: %s",stmt);
@@ -6833,7 +6909,22 @@ bool sqlrprotocol_tds::prepare(bool prepexec,
 
 	const char	*stmt=paramString(stmtparam);
 	if (!stmt) {
-		return rpcInvalidHandleError("statement",0);
+		return rpcInvalidHandleError(RPC_NO_SUCH_STMT,"statement",0);
+	}
+
+	// these arguments are declared nvarchar.  A rejected call leaves the
+	// handle invalid, which the client reads out of a null return value.
+	const char	*pn=(rpcsyntax)?"sp_prepexecrpc":
+				((prepexec)?"sp_prepexec":"sp_prepare");
+	if (!rpcsyntax && !paramIsUnicode(1)) {
+		rpcParamTypeError(pn,"params");
+		returnValueInteger(1,0,true);
+		return true;
+	}
+	if (!paramIsUnicode(stmtparam)) {
+		rpcParamTypeError(pn,"stmt");
+		returnValueInteger(1,0,true);
+		return true;
 	}
 
 	// sp_prepexecrpc sends odbc call syntax rather than plain sql
@@ -6921,7 +7012,8 @@ bool sqlrprotocol_tds::execute(bool nometadata) {
 	uint32_t		handle=(uint32_t)paramInteger(0);
 	sqlrservercursor	*cursor=handleCursor(&stmthandles,handle);
 	if (!cursor) {
-		return rpcInvalidHandleError("prepared statement handle",
+		return rpcInvalidHandleError(RPC_NO_SUCH_STMT,
+					"prepared statement handle",
 								handle);
 	}
 
@@ -6950,7 +7042,8 @@ bool sqlrprotocol_tds::unprepare() {
 	uint32_t		handle=(uint32_t)paramInteger(0);
 	sqlrservercursor	*cursor=handleCursor(&stmthandles,handle);
 	if (!cursor) {
-		return rpcInvalidHandleError("prepared statement handle",
+		return rpcInvalidHandleError(RPC_NO_SUCH_STMT,
+					"prepared statement handle",
 								handle);
 	}
 
@@ -6975,7 +7068,8 @@ bool sqlrprotocol_tds::cursorUnsupported() {
 
 	appendError(16957,1,16,"Positioned update/delete is not supported",
 						srvname,NULL,1);
-	returnStatus(RPC_STATUS_FAILURE);
+	returnStatus(16957);
+	rpcfailed=true;
 
 	return true;
 }
@@ -6987,7 +7081,7 @@ bool sqlrprotocol_tds::cursorOpen(bool nometadata) {
 
 	const char	*stmt=paramString(1);
 	if (!stmt) {
-		return rpcInvalidHandleError("statement",0);
+		return rpcInvalidHandleError(RPC_NO_SUCH_STMT,"statement",0);
 	}
 
 	debugWrite("stmt: %s",stmt);
@@ -7072,7 +7166,7 @@ bool sqlrprotocol_tds::cursorPrepare() {
 
 	const char	*stmt=paramString(2);
 	if (!stmt) {
-		return rpcInvalidHandleError("statement",0);
+		return rpcInvalidHandleError(RPC_NO_SUCH_STMT,"statement",0);
 	}
 
 	debugWrite("stmt: %s",stmt);
@@ -7122,7 +7216,8 @@ bool sqlrprotocol_tds::cursorExecute(bool nometadata) {
 	uint32_t		handle=(uint32_t)paramInteger(0);
 	sqlrservercursor	*cursor=handleCursor(&stmthandles,handle);
 	if (!cursor) {
-		return rpcInvalidHandleError("prepared statement handle",
+		return rpcInvalidHandleError(RPC_NO_SUCH_STMT,
+					"prepared statement handle",
 								handle);
 	}
 
@@ -7172,7 +7267,7 @@ bool sqlrprotocol_tds::cursorPrepExec(bool nometadata) {
 
 	const char	*stmt=paramString(3);
 	if (!stmt) {
-		return rpcInvalidHandleError("statement",0);
+		return rpcInvalidHandleError(RPC_NO_SUCH_STMT,"statement",0);
 	}
 
 	debugWrite("stmt: %s",stmt);
@@ -7242,7 +7337,8 @@ bool sqlrprotocol_tds::cursorUnprepare() {
 	uint32_t		handle=(uint32_t)paramInteger(0);
 	sqlrservercursor	*cursor=handleCursor(&stmthandles,handle);
 	if (!cursor) {
-		return rpcInvalidHandleError("prepared statement handle",
+		return rpcInvalidHandleError(RPC_NO_SUCH_STMT,
+					"prepared statement handle",
 								handle);
 	}
 
@@ -7268,7 +7364,8 @@ bool sqlrprotocol_tds::cursorFetch(bool nometadata) {
 	uint32_t		handle=(uint32_t)paramInteger(0);
 	sqlrservercursor	*cursor=handleCursor(&cursorhandles,handle);
 	if (!cursor) {
-		return rpcInvalidHandleError("cursor handle",handle);
+		return rpcInvalidHandleError(RPC_NO_SUCH_CURSOR,
+						"cursor handle",handle);
 	}
 
 	uint16_t	fetchtype=(rpcparamcount>1)?
@@ -7314,7 +7411,8 @@ bool sqlrprotocol_tds::cursorFetch(bool nometadata) {
 					"Only forward-only cursors "
 					"are supported",
 					srvname,NULL,1);
-			returnStatus(RPC_STATUS_FAILURE);
+			returnStatus(16958);
+			rpcfailed=true;
 			return true;
 	}
 
@@ -7346,7 +7444,8 @@ bool sqlrprotocol_tds::cursorOption() {
 	uint32_t		handle=(uint32_t)paramInteger(0);
 	sqlrservercursor	*cursor=handleCursor(&cursorhandles,handle);
 	if (!cursor) {
-		return rpcInvalidHandleError("cursor handle",handle);
+		return rpcInvalidHandleError(RPC_NO_SUCH_CURSOR,
+						"cursor handle",handle);
 	}
 
 	debugWrite("cursor handle: %d",handle);
@@ -7378,7 +7477,8 @@ bool sqlrprotocol_tds::cursorClose() {
 
 	sqlrservercursor	*cursor=handleCursor(&cursorhandles,handle);
 	if (!cursor) {
-		return rpcInvalidHandleError("cursor handle",handle);
+		return rpcInvalidHandleError(RPC_NO_SUCH_CURSOR,
+						"cursor handle",handle);
 	}
 
 	cursorhandles.remove(handle);
@@ -8547,8 +8647,12 @@ void sqlrprotocol_tds::returnValueHeader(uint16_t ordinal,
 		writeLE(&resppacket,(uint32_t)0);
 	}
 
-	// flags - nullable, and nothing else
-	writeLE(&resppacket,(uint16_t)0x0001);
+	// Flags.  A real sql server sends none set here, and it matters more
+	// than the spec suggests: the ct-lib client reads a return value's
+	// user type as 4 bytes whatever the tds version, so it swallows these
+	// two as well, and ct_describe reports 65536 rather than 0 for a flags
+	// word of 0x0001.
+	writeLE(&resppacket,(uint16_t)0x0000);
 
 	debugWrite("ordinal: %d",ordinal);
 }
