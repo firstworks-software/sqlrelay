@@ -28,4 +28,18 @@
 		</connections>
 	</instance>
 
+	<!-- maxerrorsize is the error buffer size the connection module is
+	     handed, and 32 is smaller than any real firebird error message,
+	     so every error from this instance comes back truncated.  it is on
+	     its own port because the instances above all share 9009 and only
+	     one of them runs at a time. -->
+	<instance id="firebirdmaxerrorsize" dbase="firebird" maxerrorsize="32">
+		<listeners>
+			<listener port="9029" socket="/tmp/firebirdmaxerrorsize.socket"/>
+		</listeners>
+		<connections>
+			<connection string="user=testuser;password=testpassword;db=firebird:/u02/@HOSTNAME@.gdb;dialect=3"/>
+		</connections>
+	</instance>
+
 </instances>

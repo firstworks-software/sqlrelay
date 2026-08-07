@@ -50,6 +50,12 @@ stop_instances() {
 			$PREFIX/bin/sqlr-stop -config $CONFDIR/${_db}.conf -id routerslave
 		fi
 
+		# the firebird test also has a small-maxerrorsize instance
+		if ( test "$_db" = "firebird" )
+		then
+			$PREFIX/bin/sqlr-stop -config $CONFDIR/${_db}.conf -id firebirdmaxerrorsize
+		fi
+
 		$PREFIX/bin/sqlr-stop -config $CONFDIR/${_db}.conf -id ${_db}test
 	done
 	sleep 2
@@ -123,6 +129,14 @@ start_instance() {
 		sleep 2
 	fi
 
+	# the firebird test needs a second instance, with a small
+	# maxerrorsize, to exercise truncated error messages
+	if ( test "$db" = "firebird" )
+	then
+		$PREFIX/bin/sqlr-start -config $CONFDIR/${db}.conf -id firebirdmaxerrorsize -backtrace $BACKTRACEDIR
+		sleep 2
+	fi
+
 	# start the instance
 	$PREFIX/bin/sqlr-start -config $CONFDIR/${db}.conf -id ${db}test -backtrace $BACKTRACEDIR
 	sleep 2
@@ -139,6 +153,11 @@ stop_instance() {
 		$PREFIX/bin/sqlr-stop -config $CONFDIR/${db}.conf -id routermaster
 		sleep 2
 		$PREFIX/bin/sqlr-stop -config $CONFDIR/${db}.conf -id routerslave
+	fi
+	if ( test "$db" = "firebird" )
+	then
+		sleep 2
+		$PREFIX/bin/sqlr-stop -config $CONFDIR/${db}.conf -id firebirdmaxerrorsize
 	fi
 	sleep 2
 	$PREFIX/bin/sqlr-stop -config $CONFDIR/${db}.conf -id ${db}test

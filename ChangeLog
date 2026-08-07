@@ -1246,6 +1246,17 @@
 		machine and was wrong outright on a big-endian one - it prints
 		with %lld and an explicit 64 bit cast now, which is what the
 		rest of the tree already does with the same value
+	fixed the firebird connection module - getError() left the error buffer
+		unterminated when the message was as long as the buffer or
+		longer, because it clamped the size to the buffer size, filled
+		the buffer to the brim, and then correctly declined to write a
+		terminator one byte past the end - a truncated message was
+		therefore not a c string, and the readers that walk it to a
+		terminator, such as the one that hands it to printf as a format
+		string, read past it - it clamps to one less than the buffer
+		size now and always terminates, so a byte of the buffer holds
+		the terminator rather than the byte past it, which isn't the
+		module's to write
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems

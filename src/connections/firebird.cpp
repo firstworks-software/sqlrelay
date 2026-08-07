@@ -1056,13 +1056,16 @@ void firebirdconnection::getError(char *errorbuffer,
 		// safeCopy leaves it unterminated, so the size has to come from
 		// the source string.  Measuring the buffer instead would run
 		// off the end of a short message into the previous, longer one.
+		// A byte of the buffer is kept for the terminator, rather than
+		// the byte past it, which isn't ours to write however much the
+		// caller happens to have allocated.
 		*errorsize=errormsg.getStringLength();
-		if (*errorsize>errorbuffersize) {
-			*errorsize=errorbuffersize;
+		if (*errorsize>=errorbuffersize) {
+			*errorsize=(errorbuffersize)?errorbuffersize-1:0;
 		}
 		charstring::safeCopy(errorbuffer,errorbuffersize,
 					errormsg.getString(),*errorsize);
-		if (*errorsize<errorbuffersize) {
+		if (errorbuffersize) {
 			errorbuffer[*errorsize]='\0';
 		}
 

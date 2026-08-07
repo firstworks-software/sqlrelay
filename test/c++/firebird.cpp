@@ -1918,6 +1918,36 @@ int main(int argc, char **argv) {
 	delete[] shorterror;
 	stdoutput.printf("\n");
 
+
+	// error truncation
+	// The connection module is handed maxerrorsize as its error buffer
+	// size, and a message that long or longer used to fill the buffer
+	// completely, leaving nowhere for the terminator.  The terminator
+	// never goes over the wire - the client is sent a length and that
+	// many bytes - so what a client can see of the fix is the length:
+	// one byte shorter than the buffer.  The firebirdmaxerrorsize
+	// instance sets maxerrorsize="32", so a truncated message comes back
+	// 31 bytes long, and those 31 bytes have to be the front of the
+	// message the untruncated instance returns.
+	stdoutput.printf("ERROR TRUNCATION: \n");
+	assertFalse(cur->sendQuery("select * from x"));
+	char	*fullerror=charstring::duplicate(cur->errorMessage());
+	assertTrue(charstring::getLength(fullerror)>31);
+	secondcon=new sqlrconnection("sqlrelay",9029,
+					"/tmp/firebirdmaxerrorsize.socket",
+					"testuser","testpassword",0,1);
+	secondcur=new sqlrcursor(secondcon);
+	assertFalse(secondcur->sendQuery("select * from x"));
+	assertEquals((uint32_t)charstring::getLength(
+					secondcur->errorMessage()),31);
+	assertEquals(secondcur->errorMessage(),fullerror,31);
+	delete secondcur;
+	delete secondcon;
+	secondcur=NULL;
+	secondcon=NULL;
+	delete[] fullerror;
+	stdoutput.printf("\n");
+
 	reportTestStatus();
 
 	return status;
