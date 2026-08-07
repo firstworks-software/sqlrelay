@@ -50,6 +50,12 @@
 // how much of the 11g session key is pkcs#7 padding rather than key material
 #define SESSION_KEY_PAD_SIZE_11G	8
 
+// AUTH_SVR_RESPONSE - a 16-byte salt, then this, then a whole block of number
+// padding, because 16+16 is already block aligned.  48 bytes for both verifier
+// types.
+#define SERVER_RESPONSE_PAYLOAD		"SERVER_TO_CLIENT"
+#define SERVER_RESPONSE_SIZE		48
+
 // The O5LOGON inputs ride in the credentials' "extra" field, as a rudiments
 // parameterstring.  sqlroraclecredentials has 5 fields and O5LOGON needs 8
 // inputs on the verify side, and widening it means relinking libsqlrserver.
@@ -71,10 +77,22 @@
 //		authpbkdf2csksalt	AUTH_PBKDF2_CSK_SALT, hex, 12c only
 //		authpbkdf2sdercount	AUTH_PBKDF2_SDER_COUNT, 12c only
 //
+//	challenge(), with method "O5LOGON-SERVER-RESPONSE":
+//		the same 8 inputs auth() was given, minus password
+//	  out:	the AUTH_SVR_RESPONSE to send, uppercase hex, 96 characters
+//		for both verifier types
+//
 // serverauthsesskey is the one that's easy to miss.  challenge() generates
 // session key part A and keeps no state, so the only way to get part A back at
 // verify time is to decrypt the challenge it produced.  The protocol module
 // has to hand its own AUTH_SESSKEY back.
+//
+// AUTH_SVR_RESPONSE proves to the client that the server also knew the
+// password, and a real client refuses the login without it.  It rides on
+// challenge() rather than on auth() because auth() returns only the
+// authenticated user name, and giving it an out parameter means widening
+// sqlrcredentials, which relinks libsqlrserver.  Call it after auth() has
+// succeeded.
 
 class SQLRSERVER_DLLSPEC sqlrauth_oracle_userlist : public sqlrauth {
 	public:
@@ -457,6 +475,49 @@ static bool o5logonComboKey(uint32_t verifiertype,
 	return retval;
 }
 
+// Rebuilds the combo key from the two session keys in "p".  Both phase-two
+// paths need it - the one that verifies AUTH_PASSWORD and the one that builds
+// AUTH_SVR_RESPONSE.
+static bool o5logonComboKeyFromExtra(const char *password,
+					parameterstring *p,
+					byte_t *combokey,
+					size_t *combokeysize) {
+
+	uint32_t	verifiertype=0;
+	byte_t		passwordhash[32];
+	size_t		passwordhashsize=0;
+	size_t		sesskeysize=0;
+	if (!o5logonParameters(password,p,&verifiertype,
+				passwordhash,&passwordhashsize,&sesskeysize)) {
+		return false;
+	}
+
+	// Session key part A comes back by decrypting the challenge that
+	// challenge() produced, and part B by decrypting the client's
+	// AUTH_SESSKEY.  Both are encrypted under the password hash.
+	byte_t	encsesskey[SESSION_KEY_SIZE_11G];
+	byte_t	parta[SESSION_KEY_SIZE_11G];
+	byte_t	partb[SESSION_KEY_SIZE_11G];
+	bool	ok=(hexDecodeExactly(p->getValue("serverauthsesskey"),
+					sesskeysize,encsesskey) &&
+		aesCbc(false,passwordhash,passwordhashsize,
+					encsesskey,sesskeysize,parta) &&
+		hexDecodeExactly(p->getValue("clientauthsesskey"),
+					sesskeysize,encsesskey) &&
+		aesCbc(false,passwordhash,passwordhashsize,
+					encsesskey,sesskeysize,partb));
+
+	bytestring::zero(passwordhash,sizeof(passwordhash));
+
+	ok=(ok && o5logonComboKey(verifiertype,p,parta,partb,
+						combokey,combokeysize));
+
+	bytestring::zero(parta,sizeof(parta));
+	bytestring::zero(partb,sizeof(partb));
+
+	return ok;
+}
+
 // Verifies AUTH_PASSWORD against "password".  If "supplied" isn't NULL then
 // the password the client actually sent is appended to it, for the debug
 // output that the caller does.
@@ -468,41 +529,9 @@ static bool o5logonVerify(const char *authpassword,
 	parameterstring	p;
 	p.parse(extra);
 
-	uint32_t	verifiertype=0;
-	byte_t		passwordhash[32];
-	size_t		passwordhashsize=0;
-	size_t		sesskeysize=0;
-	if (!o5logonParameters(password,&p,&verifiertype,
-				passwordhash,&passwordhashsize,&sesskeysize)) {
-		return false;
-	}
-
-	// Session key part A comes back by decrypting the challenge that
-	// challenge() produced, and part B by decrypting the client's
-	// AUTH_SESSKEY.  Both are encrypted under the password hash.
-	byte_t	encsesskey[SESSION_KEY_SIZE_11G];
-	byte_t	parta[SESSION_KEY_SIZE_11G];
-	byte_t	partb[SESSION_KEY_SIZE_11G];
-	bool	ok=(hexDecodeExactly(p.getValue("serverauthsesskey"),
-					sesskeysize,encsesskey) &&
-		aesCbc(false,passwordhash,passwordhashsize,
-					encsesskey,sesskeysize,parta) &&
-		hexDecodeExactly(p.getValue("clientauthsesskey"),
-					sesskeysize,encsesskey) &&
-		aesCbc(false,passwordhash,passwordhashsize,
-					encsesskey,sesskeysize,partb));
-
-	bytestring::zero(passwordhash,sizeof(passwordhash));
-
 	byte_t	combokey[32];
 	size_t	combokeysize=0;
-	ok=(ok && o5logonComboKey(verifiertype,&p,parta,partb,
-						combokey,&combokeysize));
-
-	bytestring::zero(parta,sizeof(parta));
-	bytestring::zero(partb,sizeof(partb));
-
-	if (!ok) {
+	if (!o5logonComboKeyFromExtra(password,&p,combokey,&combokeysize)) {
 		return false;
 	}
 
@@ -513,7 +542,7 @@ static bool o5logonVerify(const char *authpassword,
 				charstring::getLength(authpassword),
 				&encpassword,&encpasswordsize);
 	byte_t	*decpassword=new byte_t[encpasswordsize+1];
-	ok=(encpasswordsize>16 && !(encpasswordsize%16) &&
+	bool	ok=(encpasswordsize>16 && !(encpasswordsize%16) &&
 		aesCbc(false,combokey,combokeysize,
 			encpassword,encpasswordsize,decpassword));
 
@@ -549,6 +578,41 @@ static bool o5logonVerify(const char *authpassword,
 	delete[] decpassword;
 
 	return ok;
+}
+
+// AUTH_SVR_RESPONSE - the server's proof to the client that it knew the
+// password too.  The same shape as AUTH_PASSWORD in the other direction: a
+// 16-byte random salt, the payload, then number padding.
+static bool o5logonServerResponse(const char *password,
+					const char *extra,
+					stringbuffer *response) {
+
+	parameterstring	p;
+	p.parse(extra);
+
+	byte_t	combokey[32];
+	size_t	combokeysize=0;
+	if (!o5logonComboKeyFromExtra(password,&p,combokey,&combokeysize)) {
+		return false;
+	}
+
+	byte_t	plaintext[SERVER_RESPONSE_SIZE];
+	byte_t	encresponse[SERVER_RESPONSE_SIZE];
+	bytestring::copy(plaintext+16,SERVER_RESPONSE_PAYLOAD,16);
+	bytestring::set(plaintext+32,16,16);
+	bool	retval=(RAND_bytes(plaintext,16)==1 &&
+			aesCbc(true,combokey,combokeysize,
+				plaintext,sizeof(plaintext),encresponse));
+	if (retval) {
+		char	*hex=hexEncodeUpper(encresponse,sizeof(encresponse));
+		response->append(hex);
+		delete[] hex;
+	}
+
+	bytestring::zero(plaintext,sizeof(plaintext));
+	bytestring::zero(combokey,sizeof(combokey));
+
+	return retval;
 }
 
 #endif
@@ -734,16 +798,22 @@ bool sqlrauth_oracle_userlist::challenge(sqlrcredentials *cred,
 		debugEnd();
 	}
 
-	// O5LOGON is the only method whose challenge comes from the password
-	if (charstring::compare(method,"O5LOGON")) {
+	// the two O5LOGON phases are the only things this builds
+	bool	serverresponse=
+			!charstring::compare(method,"O5LOGON-SERVER-RESPONSE");
+	if (charstring::compare(method,"O5LOGON") && !serverresponse) {
 		return false;
 	}
 
-	// the challenge is derived from the password, so the cleartext
+	// both phases are derived from the password, so the cleartext
 	// password is required
 	char	*validpassword=getClearTextPassword(user);
-	bool	retval=(validpassword &&
-			o5logonChallenge(validpassword,extra,challenge));
+	bool	retval=false;
+	if (validpassword) {
+		retval=(serverresponse)?
+			o5logonServerResponse(validpassword,extra,challenge):
+			o5logonChallenge(validpassword,extra,challenge);
+	}
 	delete[] validpassword;
 
 	return retval;
