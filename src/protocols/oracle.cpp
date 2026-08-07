@@ -1089,8 +1089,12 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_oracle : public sqlrprotocol {
 		uint16_t	gso;
 		uint16_t	anoflags;
 
-		uint16_t	sdu;
-		uint16_t	tdu;
+		uint32_t	sdu;
+		uint32_t	tdu;
+
+		// whether the tns packet header carries a 32-bit length
+		// instead of a 16-bit length and a checksum
+		bool		largeheader;
 
 		uint32_t	anorequestversion;
 		uint32_t	supervisorversion;
@@ -1139,7 +1143,7 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_oracle : public sqlrprotocol {
 
 		memorypool	*resppacketpool;
 		byte_t		*resppacket;
-		uint16_t	resppacketsize;
+		uint32_t	resppacketsize;
 		byte_t		resppackettype;
 
 		randomnumber	r;
@@ -1287,6 +1291,7 @@ void sqlrprotocol_oracle::init() {
 
 	sdu=4086;
 	tdu=32767;
+	largeheader=false;
 
 	connectversion=0;
 	connectlowestversion=0;
@@ -1562,17 +1567,31 @@ bool sqlrprotocol_oracle::sendPacket() {
 	return sendPacket(false);
 }
 
+// The tns packet header is 8 bytes either way, but what the first 4 of them
+// hold changes with the connect protocol version.  Below PROTOCOL_VERSION_12
+// they are a 16-bit length and a 16-bit packet checksum; at 12 and above they
+// are a 32-bit length, which is what lets a packet be bigger than 64k.  See
+// python-oracledb's src/oracledb/impl/thin/packet.pyx, which switches on
+// TNS_VERSION_MIN_LARGE_SDU, 315.
+//
+// The switch happens after the accept, not with it: the accept itself still
+// carries the 16-bit header, and getting that backwards makes a client read a
+// zero length and drop the connection.
 bool sqlrprotocol_oracle::sendPacket(bool flush) {
 
-	uint16_t	reqpacketsize=(uint16_t)reqpacket.getSize();
+	uint32_t	reqpacketsize=(uint32_t)reqpacket.getSize();
 	uint16_t	packetchecksum=0;
 	byte_t		packetflags=0;
 	uint16_t	headerchecksum=0;
 
 	// overwrite the first 8 bytes of the reqpacket with the packet header
 	reqpacket.setPositionRelativeToBeginning(0);
-	reqpacket.write(hostToBE(reqpacketsize));
-	reqpacket.write(hostToBE(packetchecksum));
+	if (largeheader) {
+		reqpacket.write(hostToBE(reqpacketsize));
+	} else {
+		reqpacket.write(hostToBE((uint16_t)reqpacketsize));
+		reqpacket.write(hostToBE(packetchecksum));
+	}
 	reqpacket.write(reqpackettype);
 	reqpacket.write(packetflags);
 	reqpacket.write(hostToBE(headerchecksum));
@@ -1580,7 +1599,9 @@ bool sqlrprotocol_oracle::sendPacket(bool flush) {
 	if (getDebug()) {
 		debugStart("send");
 		debugWrite("packet size: %d",reqpacketsize);
-		debugWrite("packet checksum: %d",packetchecksum);
+		if (!largeheader) {
+			debugWrite("packet checksum: %d",packetchecksum);
+		}
 		debugWrite("packet type: %d",reqpackettype);
 		debugWrite("packet flags: 0x%04x",packetflags);
 		debugWrite("header checksum: %d",headerchecksum);
@@ -1609,14 +1630,40 @@ bool sqlrprotocol_oracle::sendPacket(bool flush) {
 
 bool sqlrprotocol_oracle::recvPacket() {
 
-	// size
-	// 2 bytes (big endian)
-	if (clientsock->read(&resppacketsize)!=sizeof(uint16_t)) {
-		debugWrite("read packet size failed");
-		debugSystemError();
-		return false;
+	uint16_t	packetchecksum=0;
+
+	if (largeheader) {
+
+		// size
+		// 4 bytes (big endian)
+		if (clientsock->read(&resppacketsize)!=sizeof(uint32_t)) {
+			debugWrite("read packet size failed");
+			debugSystemError();
+			return false;
+		}
+		resppacketsize=beToHost(resppacketsize);
+
+	} else {
+
+		// size
+		// 2 bytes (big endian)
+		uint16_t	smallsize;
+		if (clientsock->read(&smallsize)!=sizeof(uint16_t)) {
+			debugWrite("read packet size failed");
+			debugSystemError();
+			return false;
+		}
+		resppacketsize=beToHost(smallsize);
+
+		// packet checksum
+		// 2 bytes (big endian) (always 0)
+		if (clientsock->read(&packetchecksum)!=sizeof(uint16_t)) {
+			debugWrite("read packet checksum failed");
+			debugSystemError();
+			return false;
+		}
+		packetchecksum=beToHost(packetchecksum);
 	}
-	resppacketsize=beToHost(resppacketsize);
 
 	// sanity check
 	if (resppacketsize<8 || resppacketsize>sdu) {
@@ -1624,16 +1671,6 @@ bool sqlrprotocol_oracle::recvPacket() {
 		debugSystemError();
 		return false;
 	}
-
-	// packet checksum
-	// 2 bytes (big endian) (always 0)
-	uint16_t	packetchecksum;
-	if (clientsock->read(&packetchecksum)!=sizeof(uint16_t)) {
-		debugWrite("read packet checksum failed");
-		debugSystemError();
-		return false;
-	}
-	packetchecksum=beToHost(packetchecksum);
 
 	// packet type
 	// 1 byte
@@ -1670,7 +1707,8 @@ bool sqlrprotocol_oracle::recvPacket() {
 	resppacket=resppacketpool->allocate(resppacketsize);
 
 	// packet
-	if (clientsock->read(resppacket,resppacketsize)!=resppacketsize) {
+	if (clientsock->read(resppacket,resppacketsize)!=
+					(ssize_t)resppacketsize) {
 		debugWrite("read packet failed");
 		debugSystemError();
 		return false;
@@ -1679,7 +1717,9 @@ bool sqlrprotocol_oracle::recvPacket() {
 	if (getDebug()) {
 		debugStart("recv");
 		debugWrite("packet size: %d",resppacketsize+8);
-		debugWrite("packet checksum: %d",packetchecksum);
+		if (!largeheader) {
+			debugWrite("packet checksum: %d",packetchecksum);
+		}
 		debugWrite("packet type: %d",resppackettype);
 		debugWrite("packet flags: %d",packetflags);
 		debugWrite("header checksum: %d",headerchecksum);
@@ -1857,6 +1897,12 @@ bool sqlrprotocol_oracle::recvConnectRequest() {
 
 	const byte_t	*rp=resppacket;
 
+	// the fixed part, up to and including the trace connection ids
+	if (resppacketsize<50) {
+		debugWrite("truncated connect packet: %d",resppacketsize);
+		return false;
+	}
+
 	uint16_t	protocolcharacteristics;
 	uint16_t	maxpacketsbeforeack;
 	uint16_t	one;
@@ -1867,12 +1913,14 @@ bool sqlrprotocol_oracle::recvConnectRequest() {
 	uint32_t	tracecrossfacilityitem2;
 	uint64_t	traceuniqueconnectionid1;
 	uint64_t	traceuniqueconnectionid2;
+	uint16_t	smallsdu;
+	uint16_t	smalltdu;
 
 	readBE(rp,&connectversion,&rp);
 	readBE(rp,&connectlowestversion,&rp);
 	readBE(rp,&gso,&rp);
-	readBE(rp,&sdu,&rp);
-	readBE(rp,&tdu,&rp);
+	readBE(rp,&smallsdu,&rp);
+	readBE(rp,&smalltdu,&rp);
 	readBE(rp,&protocolcharacteristics,&rp);
 	readBE(rp,&maxpacketsbeforeack,&rp);
 	readHost(rp,&one,&rp);
@@ -1885,9 +1933,41 @@ bool sqlrprotocol_oracle::recvConnectRequest() {
 	readBE(rp,&traceuniqueconnectionid1,&rp);
 	readBE(rp,&traceuniqueconnectionid2,&rp);
 
+	sdu=smallsdu;
+	tdu=smalltdu;
+
+	// A client offering PROTOCOL_VERSION_12 or higher repeats the sdu and
+	// the tdu as 32-bit values behind the trace ids, and those are the
+	// ones it means - the 16-bit pair in front of them can't carry what it
+	// is asking for.
+	if (connectversion>=PROTOCOL_VERSION_12 && resppacketsize>=58) {
+		readBE(rp,&sdu,&rp);
+		readBE(rp,&tdu,&rp);
+	}
+
 	// connect data
-	const char	*connectdata=
-			(const char *)resppacket+(connectdataoffset-8);
+	//
+	// A connect string too long for the connect packet travels in a data
+	// packet right behind it, and the offset then points at the end of the
+	// connect packet rather than into it.  python-oracledb does that for
+	// any connect string over 230 bytes, which is most of them, and the
+	// packet it sends is the two data flag bytes and then the string.
+	// Leaving it unread desyncs everything after it.
+	const char	*connectdata=NULL;
+	uint32_t	dataoffset=(connectdataoffset>=8)?
+					(uint32_t)connectdataoffset-8:0;
+	if ((uint64_t)dataoffset+connectdatasize<=(uint64_t)resppacketsize) {
+		connectdata=(const char *)resppacket+dataoffset;
+	} else if (recvPacket() && resppackettype==PACKET_DATA &&
+						resppacketsize>=2) {
+		connectdata=(const char *)resppacket+2;
+		if ((uint64_t)connectdatasize>(uint64_t)resppacketsize-2) {
+			connectdatasize=(uint16_t)(resppacketsize-2);
+		}
+	} else {
+		debugWrite("couldn't read connect data");
+		return false;
+	}
 
 	debugStart("connect");
 	debugWrite("version: 0x%04x",connectversion);
@@ -1922,12 +2002,15 @@ bool sqlrprotocol_oracle::sendConnectResponse() {
 	// answer with the highest protocol version we support that the client
 	// can speak
 	//
-	// PROTOCOL_VERSION_12 and above switch the tns packet header from a
-	// 16-bit length plus checksum to a 32-bit length, and grow the accept
-	// packet from 32 to 41 bytes, which sendPacket(), recvPacket() and
-	// sendAccept() don't implement, so 11 is the ceiling.  A real oracle
-	// 11.2 server answers 11 too.  Going past it is #9114.
-	if (connectlowestversion<=PROTOCOL_VERSION_11 &&
+	// A real oracle 11.2 server answers PROTOCOL_VERSION_11 and a 12.2 one
+	// answers higher.  python-oracledb and node-oracledb refuse anything
+	// under PROTOCOL_VERSION_12 outright - it's a literal source check in
+	// python-oracledb's impl/thin/messages/connect.pyx - so 12 is what
+	// makes them connect at all.
+	if (connectlowestversion<=PROTOCOL_VERSION_12 &&
+			connectversion>=PROTOCOL_VERSION_12) {
+		connectversion=PROTOCOL_VERSION_12;
+	} else if (connectlowestversion<=PROTOCOL_VERSION_11 &&
 			connectversion>=PROTOCOL_VERSION_11) {
 		connectversion=PROTOCOL_VERSION_11;
 	} else if (connectlowestversion<=PROTOCOL_VERSION_8) {
@@ -1945,13 +2028,23 @@ bool sqlrprotocol_oracle::sendAccept() {
 	return sendAccept(NULL,0);
 }
 
+// The accept grows with the version it announces.  Below PROTOCOL_VERSION_12
+// its body is 24 bytes and the packet is 32; at 12 and above a 32-bit sdu, a
+// 32-bit tdu and one trailing byte go on the end, making the body 33 and the
+// packet 41.  python-oracledb reads the 32-bit sdu unconditionally once the
+// version is 12 or more.
+//
+// The accept itself keeps the 16-bit packet header whatever version it
+// announces.  Only the packets after it switch.
 bool sqlrprotocol_oracle::sendAccept(const byte_t *data, uint16_t datasize) {
+
+	bool	large=(connectversion>=PROTOCOL_VERSION_12);
 
 	// data offset:
 	// (8 bytes for the header +
 	//  16 bytes of this stuff +
-	//  8 bytes of padding)
-	uint16_t	dataoffset=32;
+	//  8 bytes of padding, and 9 more for the large form)
+	uint16_t	dataoffset=(large)?41:32;
 	// NOTE: 0x0801 returned by 8.0 server
 	//gso=0x0801;
 	uint64_t	padding=0;
@@ -1972,17 +2065,28 @@ bool sqlrprotocol_oracle::sendAccept(const byte_t *data, uint16_t datasize) {
 	resetSendPacketBuffer(PACKET_ACCEPT);
 	writeBE(&reqpacket,connectversion);
 	writeBE(&reqpacket,gso);
-	writeBE(&reqpacket,sdu);
-	writeBE(&reqpacket,tdu);
+	writeBE(&reqpacket,(uint16_t)((sdu>0xffff)?0xffff:sdu));
+	writeBE(&reqpacket,(uint16_t)((tdu>0xffff)?0xffff:tdu));
 	// writeLE?
 	writeHost(&reqpacket,(uint16_t)1);
 	writeBE(&reqpacket,datasize);
 	writeBE(&reqpacket,dataoffset);
 	writeBE(&reqpacket,anoflags);
 	writeBE(&reqpacket,padding);
+	if (large) {
+		writeBE(&reqpacket,sdu);
+		writeBE(&reqpacket,tdu);
+		write(&reqpacket,(byte_t)0);
+	}
 	reqpacket.append(data,datasize);
 
-	return sendPacket(true);
+	if (!sendPacket(true)) {
+		return false;
+	}
+
+	largeheader=large;
+
+	return true;
 }
 
 bool sqlrprotocol_oracle::sendResend() {
@@ -4363,18 +4467,24 @@ bool sqlrprotocol_oracle::recvAuthenticationRequest(bool secondphase) {
 	debugWrite("auth mode: 0x%08x",authmode);
 	debugWrite("field count: %d",fieldcount);
 
+	// Whether the user name is length prefixed is a client difference, not
+	// an encoding one.  A native encoding client always prefixes it.  Of
+	// the portable ones, python-oracledb and node-oracledb prefix it and
+	// ojdbc writes it raw, taking its length from the count above.  So the
+	// prefix is taken when the next byte is one, which is when it equals
+	// the count and the bytes are there for it.  A raw name would have to
+	// start with a character whose value is its own length to be mistaken
+	// for one, and no user name a client sends does - the shortest such
+	// name is 32 characters starting with a space.
 	char	*user=NULL;
-	if (nativeencoding) {
-
-		// length prefixed, and the count above is a buffer size
+	if (nativeencoding ||
+		((size_t)(end-rp)>(size_t)usersize && *rp==(byte_t)usersize)) {
 		uint32_t	realusersize=0;
 		if (!getLenString(rp,end,&user,&realusersize,&rp)) {
 			debugEnd();
 			return false;
 		}
 	} else {
-
-		// written raw, its length taken from the count above
 		if ((size_t)(end-rp)<(size_t)usersize) {
 			debugWrite("bad user size: %d",usersize);
 			debugEnd();
@@ -4498,7 +4608,9 @@ bool sqlrprotocol_oracle::sendAuthenticationChallenge() {
 	// Trailer after the last pair, from an 11.2 capture.  Not identified.
 	// A 12.2 server sends the same thing with 2 more zero ub4s on the end,
 	// but ojdbc 23.26 gives up on the login when it gets those, for either
-	// verifier type, so the shorter form is the one to send.
+	// verifier type and at either connect protocol version, so the shorter
+	// form is the one to send.  python-oracledb needs the longer one and
+	// blocks on the socket without it, which is #9171.
 	static const byte_t	trailer[]={
 		0x04, 0x01, 0x01, 0x01, 0x02,
 		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,

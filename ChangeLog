@@ -1559,6 +1559,18 @@
 		got a lost connection rather than a firebird error, since that
 		runs ahead of the session loop that answers every other
 		unimplemented op
+	added connect protocol version 12 and the 32-bit tns packet header to
+		the oracle protocol module - at version 12 and above the
+		packet header carries a 32-bit length in place of the 16-bit
+		length and packet checksum, and the accept grows from 32 to 41
+		bytes with a 32-bit sdu and tdu, and python-oracledb and
+		node-oracledb refuse anything lower, so neither could connect
+		at all before
+	fixed the oracle protocol module - a connect string too long for the
+		connect packet arrives in a data packet behind it, and that
+		packet was never read, so the resend desynced and the session
+		ended before the accept, which is what stopped every thin
+		driver
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems
