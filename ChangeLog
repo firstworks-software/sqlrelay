@@ -1609,6 +1609,11 @@
 		its query text as a buffer size rather than a byte count, the
 		same way it does for the user name in the login, so its query
 		text read as truncated
+	fixed the oracle protocol module - a column's scale was always written
+		as a count prefixed integer, but a client that asks for the
+		converted length encoding in its data type request reads it as a
+		single signed byte, which left python-oracledb, node-oracledb and
+		oci clients one byte out for the rest of the query answer
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems

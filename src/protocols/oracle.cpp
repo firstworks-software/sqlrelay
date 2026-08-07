@@ -999,6 +999,8 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_oracle : public sqlrprotocol {
 							uint32_t colcount);
 		void	putColumnMetadata(sqlrservercursor *cursor,
 							uint32_t column);
+		void	putColumnPrecisionScale(int8_t precision,
+							int8_t scale);
 		uint16_t	getWireColumnType(uint16_t columntype);
 		uint32_t	getWireColumnSize(sqlrservercursor *cursor,
 							uint32_t column,
@@ -6531,16 +6533,11 @@ void sqlrprotocol_oracle::putColumnMetadata(sqlrservercursor *cursor,
 
 	write(&reqpacket,(byte_t)wiretype);
 	write(&reqpacket,(byte_t)((character)?0x80:0x00));
-	putUb4(0);
 
 	// A real server reports scale -127 for a number with no declared
 	// scale, which tells the client to take the value as it comes rather
 	// than rescale it.
-	if (character) {
-		putUb4(0);
-	} else {
-		putSb4(-127);
-	}
+	putColumnPrecisionScale(0,(character)?0:-127);
 
 	// A buffer size of 0 means "this column is null by describe", so it
 	// can never be sent as 0 for a column that has values.
@@ -6566,6 +6563,36 @@ void sqlrprotocol_oracle::putColumnMetadata(sqlrservercursor *cursor,
 	debugWrite("size: %d",size);
 	debugWrite("name: %.*s",(int)namesize,name);
 	debugEnd();
+}
+
+// A column's precision and scale are the two signed one byte fields in the
+// answer, and the scale is the one place the two integer encodings a client
+// can ask for differ.  A client that sets ENCODING_CONV_LENGTH in its data
+// type request reads it as a raw signed byte; one that does not reads it as a
+// count prefixed integer.  The precision is a raw signed byte to both.
+//
+// Measured against a live 12.2 server through a proxy that rewrote only that
+// flag in the client's request: it answers the scale of a number(10,2) with
+// 02 when the flag is set and 01 02 when it is not, and the precision with 0a
+// either way.  Nothing else moves it - not the negotiated field version, which
+// was 9 in both.
+//
+// Of the four clients on this host only ojdbc 23.26 leaves the flag clear, so
+// writing the count prefixed form unconditionally served ojdbc and no one
+// else.  Given the form it did not ask for a client is one byte out for the
+// rest of the packet: node-oracledb reports "read integer of length 127 when
+// expecting integer of no more than length 4", and python-oracledb and OCI
+// answer with a marker packet and close.  See #9172.
+void sqlrprotocol_oracle::putColumnPrecisionScale(int8_t precision,
+							int8_t scale) {
+
+	write(&reqpacket,(byte_t)precision);
+
+	if (encodingflags&ENCODING_CONV_LENGTH) {
+		write(&reqpacket,(byte_t)scale);
+	} else {
+		putSb4(scale);
+	}
 }
 
 // Only the types the module can encode are described as themselves.
