@@ -324,11 +324,24 @@ namespace SQLRClient
             return _sqlrcur.getColumnType((UInt32)i);
         }
 
+        /** Uppercases a datatype name for comparison against the names in
+         *  datatypestring[].  Those are spelled uppercase, but a connection
+         *  module is free to report the database's own spelling instead -
+         *  postgresql, with the default typemangling, reports lowercase
+         *  names - and without this every column would fall through the
+         *  name-to-type chains below.  ToUpperInvariant() rather than
+         *  ToUpper(), since in a Turkish locale "int4" uppercases to a
+         *  dotted capital I and matches nothing. */
+        private static String normalizeTypeName(String type)
+        {
+            return (type == null) ? null : type.ToUpperInvariant();
+        }
+
         /** Gets the Type information corresponding to the type of Object that
          *  would be returned from GetValue. */
         public Type GetFieldType(Int32 i)
         {
-            String type = GetDataTypeName(i);
+            String type = normalizeTypeName(GetDataTypeName(i));
 
             if (type == "UNKNOWN")
             {
@@ -1194,6 +1207,8 @@ namespace SQLRClient
             {
                 return null;
             }
+
+            type = normalizeTypeName(type);
 
             // convert the field to a native type...
 

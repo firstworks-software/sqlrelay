@@ -894,6 +894,12 @@
 		CS_DATE_TYPE, CS_TIME_TYPE, CS_BIGTIME_TYPE and
 		CS_BIGDATETIME_TYPE had no cases, they report date, time, time
 		and timestamp now
+	fixed the cs api data reader - it compared datatype names
+		case-sensitively against the uppercase names in the datatype
+		list, but a connection module may report the database's own
+		spelling instead, and postgresql's are lowercase, so nothing
+		ever matched and every column read back as a byte array, even
+		a plain integer one
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems
