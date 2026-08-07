@@ -1224,6 +1224,14 @@
 		of the packet now, and getAnoUnknownField(), which was dead
 		code that advanced the read pointer by a length taken off the
 		wire, is gone
+	fixed the jdbc api - result set findColumn() and the by-label
+		accessors called equalsIgnoreCase() on column names without
+		checking for null, and the names are null when the server
+		was told not to send column info, which an application can
+		do through unwrap().dontGetColumnInfo() - the column count
+		still comes back non-zero in that state, so both threw a
+		NullPointerException rather than the SQLException jdbc
+		requires
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems

@@ -262,9 +262,17 @@ public class SQLRelayResultSet implements ResultSet {
 		drv.debugFunction(this);
 		throwExceptionIfClosed();
 		drv.debugPrintln("column label: "+columnlabel);
+		// A column name is null when the server was told not to
+		// send column info.  The driver never asks for that, but an
+		// app can, through unwrap().dontGetColumnInfo(), and the
+		// flag sticks for the life of the cursor.  colCount() still
+		// reports the real count in that state, so this loop runs.
+		// A null name matches nothing - fall through to the
+		// not-found exception below rather than throwing a
+		// NullPointerException out of equalsIgnoreCase().
 		for (int i=0; i<sqlrcur.colCount(); i++) {
-			if (sqlrcur.getColumnName(i).
-					equalsIgnoreCase(columnlabel)) {
+			String	name=sqlrcur.getColumnName(i);
+			if (name!=null && name.equalsIgnoreCase(columnlabel)) {
 				drv.debugPrintln("column: "+(i+1));
 				drv.debugEnd();
 				return i+1;
@@ -3018,10 +3026,17 @@ public class SQLRelayResultSet implements ResultSet {
 
 	private
 	void validateColumn(String columnlabel) throws SQLException {
+		// The array itself is null when the server was told not to
+		// send column info - see findColumn() - and an element
+		// would be null for a name the server did send as null.
+		// Neither matches, so fall through to the exception below.
 		String[] cols=sqlrcur.getColumnNames();
-		for (int i=0; i<cols.length; i++) {
-			if (cols[i].equalsIgnoreCase(columnlabel)) {
-				return;
+		if (cols!=null) {
+			for (int i=0; i<cols.length; i++) {
+				if (cols[i]!=null &&
+					cols[i].equalsIgnoreCase(columnlabel)) {
+					return;
+				}
 			}
 		}
 		conn.throwException("invalid column label");
