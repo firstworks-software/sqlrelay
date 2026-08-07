@@ -12,6 +12,7 @@ public class SQLRelayResultSetMetaData implements ResultSetMetaData {
 
 	private	SQLRelayDriver		drv;
 	private	SQLRelayResultSet	resultset;
+	private	SQLRelayConnection	conn;
 
 	private	SQLRCursor		sqlrcur;
 
@@ -22,6 +23,7 @@ public class SQLRelayResultSetMetaData implements ResultSetMetaData {
 		drv.debugFunction(this);
 		sqlrcur=null;
 		resultset=null;
+		conn=null;
 		drv.debugEnd();
 	}
 
@@ -29,8 +31,17 @@ public class SQLRelayResultSetMetaData implements ResultSetMetaData {
 		this.sqlrcur=sqlrcur;
 	}
 
-	void setResultSet(SQLRelayResultSet resultset) {
+	void setResultSet(SQLRelayResultSet resultset)
+						throws SQLException {
 		this.resultset=resultset;
+		// Capture the connection now rather than walking
+		// resultset.getStatement().getConnection() on demand.
+		// SQLRelayResultSet.reset() nulls its statement when the
+		// result set or the statement is closed, and a metadata
+		// object outlives both, so the walk gets a
+		// NullPointerException from a metadata object that is
+		// otherwise still perfectly usable.
+		this.conn=resultset.getStatement().getConnection();
 	}
 
 	SQLRCursor getSQLRCursor() {
@@ -40,14 +51,10 @@ public class SQLRelayResultSetMetaData implements ResultSetMetaData {
 	// jdbc's ResultSetMetaData only promises to throw on a database
 	// access error, not on an invalid column, but every reference
 	// driver throws here, and so does sql relay's own odbc api.
-	// Reaches the connection through the result set, the way
-	// getDateToTimestamp() does, since this class has no connection
-	// field of its own.
 	private
 	void validateColumn(int column) throws SQLException {
 		if (column<1 || column>sqlrcur.colCount()) {
-			resultset.getStatement().getConnection().
-				throwException("invalid column index");
+			conn.throwException("invalid column index");
 		}
 	}
 
