@@ -21,18 +21,24 @@ $(SQLR)moduledata_tag.$(LIBEXT): tag.cpp tag.$(OBJ)
 
 install: $(INSTALLLIB)
 
-installdll:
+installdll: installdll-tag
+
+installdll-tag:
 	$(MKINSTALLDIRS) $(libexecdir)
 	$(LTINSTALL) $(CP) $(SQLR)moduledata_tag.$(LIBEXT) $(libexecdir)
 
 installlib: $(INSTALLSHAREDLIB)
 
-installsharedlib:
+installsharedlib: installsharedlib-tag
+
+installsharedlib-tag:
 	$(MKINSTALLDIRS) $(libexecdir)
 	$(LTINSTALL) $(CP) $(SQLR)moduledata_tag.$(LIBEXT) $(libexecdir)
 	$(RM) $(libexecdir)/$(SQLR)moduledata_tag.a
 	$(RM) $(libexecdir)/$(SQLR)moduledata_tag.$(LIBEXT)
 	$(MODULERENAME) $(libexecdir)/$(SQLR)moduledata_tag.so so $(MODULESUFFIX)
 
-uninstall:
+uninstall: uninstall-tag
+
+uninstall-tag:
 	$(RM) $(libexecdir)/$(SQLR)moduledata_tag.*

@@ -21,18 +21,24 @@ $(SQLR)schedule_cron_userlist.$(LIBEXT): cron_userlist.cpp cron_userlist.$(OBJ)
 
 install: $(INSTALLLIB)
 
-installdll:
+installdll: installdll-cron_userlist
+
+installdll-cron_userlist:
 	$(MKINSTALLDIRS) $(libexecdir)
 	$(LTINSTALL) $(CP) $(SQLR)schedule_cron_userlist.$(LIBEXT) $(libexecdir)
 
 installlib: $(INSTALLSHAREDLIB)
 
-installsharedlib:
+installsharedlib: installsharedlib-cron_userlist
+
+installsharedlib-cron_userlist:
 	$(MKINSTALLDIRS) $(libexecdir)
 	$(LTINSTALL) $(CP) $(SQLR)schedule_cron_userlist.$(LIBEXT) $(libexecdir)
 	$(RM) $(libexecdir)/$(SQLR)schedule_cron_userlist.a
 	$(RM) $(libexecdir)/$(SQLR)schedule_cron_userlist.$(LIBEXT)
 	$(MODULERENAME) $(libexecdir)/$(SQLR)schedule_cron_userlist.so so $(MODULESUFFIX)
 
-uninstall:
+uninstall: uninstall-cron_userlist
+
+uninstall-cron_userlist:
 	$(RM) $(libexecdir)/$(SQLR)schedule_cron_userlist.*

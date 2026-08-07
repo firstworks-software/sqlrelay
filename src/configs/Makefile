@@ -21,20 +21,26 @@ $(SQLR)config_xmldom.$(LIBEXT): xmldom.cpp xmldom.$(OBJ)
 
 install: $(INSTALLLIB)
 
-installdll:
+installdll: installdll-xmldom
+
+installdll-xmldom:
 	$(MKINSTALLDIRS) $(libexecdir)
 	$(LTINSTALL) $(CP) $(SQLR)config_xmldom.$(LIBEXT) $(libexecdir)
 
 installlib: $(INSTALLSHAREDLIB)
 
-installsharedlib:
+installsharedlib: installsharedlib-xmldom
+
+installsharedlib-xmldom:
 	$(MKINSTALLDIRS) $(libexecdir)
-	$(MODULERENAME) $(libexecdir)/$(SQLR)config_xml.so so $(MODULESUFFIX)
 	$(LTINSTALL) $(CP) $(SQLR)config_xmldom.$(LIBEXT) $(libexecdir)
 	$(RM) $(libexecdir)/$(SQLR)config_xmldom.a
 	$(RM) $(libexecdir)/$(SQLR)config_xmldom.$(LIBEXT)
 	$(MODULERENAME) $(libexecdir)/$(SQLR)config_xmldom.so so $(MODULESUFFIX)
 
-uninstall:
-	$(RM) $(libexecdir)/$(SQLR)config_xmldom.* $(libexecdir)/sqlrconfig_xmldom.*
+uninstall: uninstall-xmldom
+	$(RM) $(libexecdir)/sqlrconfig_xmldom.*
 	$(RM) $(libexecdir)/$(SQLR)config_xml.* $(libexecdir)/sqlrconfig_xml.*
+
+uninstall-xmldom:
+	$(RM) $(libexecdir)/$(SQLR)config_xmldom.*

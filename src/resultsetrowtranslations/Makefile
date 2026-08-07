@@ -21,19 +21,25 @@ $(SQLR)resultsetrowtranslation_test.$(LIBEXT): test.cpp test.$(OBJ)
 
 install: $(INSTALLLIB)
 
-installdll:
+installdll: installdll-test
+
+installdll-test:
 	$(MKINSTALLDIRS) $(libexecdir)
 	$(LTINSTALL) $(CP) $(SQLR)resultsetrowtranslation_test.$(LIBEXT) $(libexecdir)
 
 installlib: $(INSTALLSHAREDLIB)
 
-installsharedlib:
+installsharedlib: installsharedlib-test
+
+installsharedlib-test:
 	$(MKINSTALLDIRS) $(libexecdir)
 	$(LTINSTALL) $(CP) $(SQLR)resultsetrowtranslation_test.$(LIBEXT) $(libexecdir)
 	$(RM) $(libexecdir)/$(SQLR)resultsetrowtranslation_test.a
 	$(RM) $(libexecdir)/$(SQLR)resultsetrowtranslation_test.$(LIBEXT)
 	$(MODULERENAME) $(libexecdir)/$(SQLR)resultsetrowtranslation_test.so so $(MODULESUFFIX)
 
-uninstall:
-	$(RM) $(libexecdir)/$(SQLR)resultsetrowtranslation_test.* \
-		$(libexecdir)/sqlrresultsetrowtranslation_test.*
+uninstall: uninstall-test
+	$(RM) $(libexecdir)/sqlrresultsetrowtranslation_test.*
+
+uninstall-test:
+	$(RM) $(libexecdir)/$(SQLR)resultsetrowtranslation_test.*

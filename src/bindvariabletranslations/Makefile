@@ -21,19 +21,25 @@ $(SQLR)bindvariabletranslation_test.$(LIBEXT): test.cpp test.$(OBJ)
 
 install: $(INSTALLLIB)
 
-installdll:
+installdll: installdll-test
+
+installdll-test:
 	$(MKINSTALLDIRS) $(libexecdir)
 	$(LTINSTALL) $(CP) $(SQLR)bindvariabletranslation_test.$(LIBEXT) $(libexecdir)
 
 installlib: $(INSTALLSHAREDLIB)
 
-installsharedlib:
+installsharedlib: installsharedlib-test
+
+installsharedlib-test:
 	$(MKINSTALLDIRS) $(libexecdir)
 	$(LTINSTALL) $(CP) $(SQLR)bindvariabletranslation_test.$(LIBEXT) $(libexecdir)
 	$(RM) $(libexecdir)/$(SQLR)bindvariabletranslation_test.a
 	$(RM) $(libexecdir)/$(SQLR)bindvariabletranslation_test.$(LIBEXT)
 	$(MODULERENAME) $(libexecdir)/$(SQLR)bindvariabletranslation_test.so so $(MODULESUFFIX)
 
-uninstall:
-	$(RM) $(libexecdir)/$(SQLR)bindvariabletranslation_test.* \
-		$(libexecdir)/sqlrbindvariabletranslation_test.*
+uninstall: uninstall-test
+	$(RM) $(libexecdir)/sqlrbindvariabletranslation_test.*
+
+uninstall-test:
+	$(RM) $(libexecdir)/$(SQLR)bindvariabletranslation_test.*

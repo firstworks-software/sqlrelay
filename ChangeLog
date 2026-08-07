@@ -795,6 +795,20 @@
 		later, and material taken from python-oracledb goes under
 		the universal permissive license 1.0 rather than its apache
 		2.0 option, which isn't gpl version 2 compatible
+	added per-module install and uninstall targets to the directories
+		that build a single module - the bindvariabletranslation,
+		config, moduledata, notification, parser,
+		resultsetheadertranslation, resultsetrowblocktranslation,
+		resultsetrowtranslation, resultsettranslation, and schedule
+		modules installed straight from a group target with no
+		per-module target behind it, so they now follow the same
+		pattern as the rest of the tree and there's a block to copy
+		when a second module is added to one of them
+	removed a stale module rename from the config module install - it
+		renamed an installed sqlrconfig_xml module to the platform
+		module suffix, but that module was removed years ago, and on
+		a platform whose module suffix isn't .so it could rename a
+		leftover copy back into a name the server would load
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems

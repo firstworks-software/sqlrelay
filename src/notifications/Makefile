@@ -21,18 +21,24 @@ $(SQLR)notification_events.$(LIBEXT): events.cpp events.$(OBJ)
 
 install: $(INSTALLLIB)
 
-installdll:
+installdll: installdll-events
+
+installdll-events:
 	$(MKINSTALLDIRS) $(libexecdir)
 	$(LTINSTALL) $(CP) $(SQLR)notification_events.$(LIBEXT) $(libexecdir)
 
 installlib: $(INSTALLSHAREDLIB)
 
-installsharedlib:
+installsharedlib: installsharedlib-events
+
+installsharedlib-events:
 	$(MKINSTALLDIRS) $(libexecdir)
 	$(LTINSTALL) $(CP) $(SQLR)notification_events.$(LIBEXT) $(libexecdir)
 	$(RM) $(libexecdir)/$(SQLR)notification_events.a
 	$(RM) $(libexecdir)/$(SQLR)notification_events.$(LIBEXT)
 	$(MODULERENAME) $(libexecdir)/$(SQLR)notification_events.so so $(MODULESUFFIX)
 
-uninstall:
+uninstall: uninstall-events
+
+uninstall-events:
 	$(RM) $(libexecdir)/$(SQLR)notification_events.*

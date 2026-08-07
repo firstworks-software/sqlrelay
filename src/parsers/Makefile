@@ -21,19 +21,25 @@ $(SQLR)parser_default.$(LIBEXT): default.cpp default.$(OBJ)
 
 install: $(INSTALLLIB)
 
-installdll:
+installdll: installdll-default
+
+installdll-default:
 	$(MKINSTALLDIRS) $(libexecdir)
 	$(LTINSTALL) $(CP) $(SQLR)parser_default.$(LIBEXT) $(libexecdir)
 
 installlib: $(INSTALLSHAREDLIB)
 
-installsharedlib:
+installsharedlib: installsharedlib-default
+
+installsharedlib-default:
 	$(MKINSTALLDIRS) $(libexecdir)
 	$(LTINSTALL) $(CP) $(SQLR)parser_default.$(LIBEXT) $(libexecdir)
 	$(RM) $(libexecdir)/$(SQLR)parser_default.a
 	$(RM) $(libexecdir)/$(SQLR)parser_default.$(LIBEXT)
 	$(MODULERENAME) $(libexecdir)/$(SQLR)parser_default.so so $(MODULESUFFIX)
 
-uninstall:
-	$(RM) $(libexecdir)/$(SQLR)parser_default.* \
-		$(libexecdir)/sqlrparser_default.*
+uninstall: uninstall-default
+	$(RM) $(libexecdir)/sqlrparser_default.*
+
+uninstall-default:
+	$(RM) $(libexecdir)/$(SQLR)parser_default.*

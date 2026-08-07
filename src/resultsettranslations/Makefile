@@ -21,19 +21,25 @@ $(SQLR)resultsettranslation_reformatdatetime.$(LIBEXT): reformatdatetime.cpp ref
 
 install: $(INSTALLLIB)
 
-installdll:
+installdll: installdll-reformatdatetime
+
+installdll-reformatdatetime:
 	$(MKINSTALLDIRS) $(libexecdir)
 	$(LTINSTALL) $(CP) $(SQLR)resultsettranslation_reformatdatetime.$(LIBEXT) $(libexecdir)
 
 installlib: $(INSTALLSHAREDLIB)
 
-installsharedlib:
+installsharedlib: installsharedlib-reformatdatetime
+
+installsharedlib-reformatdatetime:
 	$(MKINSTALLDIRS) $(libexecdir)
 	$(LTINSTALL) $(CP) $(SQLR)resultsettranslation_reformatdatetime.$(LIBEXT) $(libexecdir)
 	$(RM) $(libexecdir)/$(SQLR)resultsettranslation_reformatdatetime.a
 	$(RM) $(libexecdir)/$(SQLR)resultsettranslation_reformatdatetime.$(LIBEXT)
 	$(MODULERENAME) $(libexecdir)/$(SQLR)resultsettranslation_reformatdatetime.so so $(MODULESUFFIX)
 
-uninstall:
-	$(RM) $(libexecdir)/$(SQLR)resultsettranslation_reformatdatetime.* \
-		$(libexecdir)/sqlrresultsettranslation_reformatdatetime.*
+uninstall: uninstall-reformatdatetime
+	$(RM) $(libexecdir)/sqlrresultsettranslation_reformatdatetime.*
+
+uninstall-reformatdatetime:
+	$(RM) $(libexecdir)/$(SQLR)resultsettranslation_reformatdatetime.*
