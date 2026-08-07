@@ -1098,6 +1098,13 @@
 		two items left getting an isc_info_error are
 		isc_info_window_turns and isc_info_license, which is what a
 		real server sends for those two as well
+	fixed two off-by-one reads in the oracle protocol module - the count
+		loops in getNullTerminatedArray() and getString() dereferenced
+		the read pointer before comparing it to the end of the packet,
+		so a packet with no null terminator read one byte past the end
+		of the buffer, and if that byte happened to be zero then the
+		malformed packet was accepted and the read pointer was left
+		past the end of the buffer for the next parse
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems

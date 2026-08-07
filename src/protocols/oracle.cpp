@@ -1339,13 +1339,13 @@ bool sqlrprotocol_oracle::getNullTerminatedArray(const byte_t *rp,
 	// count the array items
 	const byte_t	*start=rp;
 	for (;;) {
-		if (!(*rp)) {
-			break;
-		}
-		if (rp==end) {
+		if (rp>=end) {
 			debugWrite("bad null terminated array, "
 					"no null terminator found");
 			return false;
+		}
+		if (!(*rp)) {
+			break;
 		}
 		(*arraycount)++;
 		rp++;
@@ -1378,13 +1378,13 @@ bool sqlrprotocol_oracle::getString(const byte_t *rp,
 	// count the bytes
 	const byte_t	*start=rp;
 	for (;;) {
-		if (!(*rp)) {
-			break;
-		}
-		if (rp==end) {
+		if (rp>=end) {
 			debugWrite("bad string, "
 					"no null terminator found");
 			return false;
+		}
+		if (!(*rp)) {
+			break;
 		}
 		stringsize++;
 		rp++;
