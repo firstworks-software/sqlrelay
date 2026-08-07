@@ -232,6 +232,14 @@ byte_t	jwtmechoid[]={
 
 #define LAN_HEADER_SIZE	52
 
+// In an encrypted message, the lan header stops after the session number and
+// everything past that is ciphertext.  The fields that would have followed -
+// request auth, request number, gateway byte, host character set, and spare -
+// are encrypted along with the parcels, and turn up at the front of the
+// plaintext.  So the values read out of the lan header itself are garbage, and
+// have to be re-read after decrypting.  See parseEncryptedLanHeader().
+#define ENCRYPTED_LAN_HEADER_SIZE	24
+
 
 // kinds of messages
 // see Teradata CLIv2 Debug Facility and Wire Protocol
@@ -309,6 +317,17 @@ byte_t	jwtmechoid[]={
 #define	SSORESP_NEGOTIATED_QOP2	0xE5
 #define	SSORESP_NEGOTIATED_QOP3	0xE6
 #define	SSORESP_NEGOTIATED_QOP4	0xE7
+#define	SSORESP_NEGOTIATED_QOP_COUNT	4
+
+// td2 token header
+// (the last 16 bytes of the encrypted data - see decrypt())
+//
+// no known reference, this came out of the jdbc driver's
+// com.teradata.tdgss.jgssp2td2.Td2Token class
+#define	TD2TOKEN_VERSION_3	3
+#define	TD2TOKEN_TYPE_WRAP	7
+#define	TD2TOKEN_TYPE_MIC	8
+#define	TD2TOKEN_FLAG_PRIVACY	0x04
 
 #define CONF_ALG		0xD0
 #define INT_ALG			0xD1
@@ -996,9 +1015,14 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_teradata : public sqlrprotocol {
 		void	debugExtStart(const char *extname);
 		void	debugExtEnd();
 		void	debugMech(const byte_t *oid, size_t size);
+		void	debugSessionOption(const char *name, char value);
+
+		bool	parseEncryptedLanHeader(const byte_t *ptr,
+						const byte_t **ptrout);
 
 		bool	generateEphemeralKeys();
-		bool	generateSharedSecretAndKey();
+		bool	generateSharedSecret();
+		bool	setSharedKey(byte_t qopindex);
 		bool	decrypt(const byte_t *encdata,
 					uint64_t encdatasize,
 					bytebuffer *decdata);
@@ -1089,6 +1113,8 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_teradata : public sqlrprotocol {
 		byte_t		salt[16];
 		byte_t		sharedkey[32];
 		uint32_t	sharedkeysize;
+		byte_t		hsharedkey[64];
+		uint32_t	hsharedkeysize;
 };
 
 sqlrprotocol_teradata::sqlrprotocol_teradata(sqlrservercontroller *cont,
@@ -1272,6 +1298,9 @@ sqlrprotocol_teradata::sqlrprotocol_teradata(sqlrservercontroller *cont,
 	sharedsecret=NULL;
 	sharedsecretsize=0;
 	bytestring::zero(sharedkey,sizeof(sharedkey));
+	sharedkeysize=0;
+	bytestring::zero(hsharedkey,sizeof(hsharedkey));
+	hsharedkeysize=0;
 
 	init();
 }
@@ -1575,46 +1604,36 @@ bool sqlrprotocol_teradata::copKindConnect() {
 	// parse request
 	debugStart("copkind_connect");
 
+	// the ciphertext starts inside the lan header
+	// (see ENCRYPTED_LAN_HEADER_SIZE)
+	bytebuffer	encdata;
+	encdata.append(clientreqheader+ENCRYPTED_LAN_HEADER_SIZE,
+			LAN_HEADER_SIZE-ENCRYPTED_LAN_HEADER_SIZE);
+	encdata.append(clientreqdata,clientreqdatasize);
+
 	// decrypt the request
 	bytebuffer	decdata;
-	if (!decrypt(clientreqdata,clientreqdatasize,&decdata)) {
+	if (!decrypt(encdata.getBuffer(),encdata.getSize(),&decdata)) {
 		debugEnd();
 		return false;
 	}
-	
+
 	// parse decrypted request
+	// (decrypt() has already stripped the mic and the copy of the
+	// td2 token header off of the end)
 	const byte_t	*parcel=decdata.getBuffer();
 	const byte_t	*end=parcel+decdata.getSize();
 
-	// It looks like the first N bytes are obfuscated, somehow.
-	// FIXME: actually, they're not, we're just not using the right iv!
-	// The first "88" is the start of the first unobfuscated parcel.
-	for (const byte_t *ptr=parcel; ptr!=end; ptr++) {
-		if (*ptr==88) {
-			// back up 1 byte if we're speaking big endian
-			if (getProtocolIsBigEndian()) {
-				ptr--;
-			}
-			debugWrite("\"header\":");
-			debugHexDump(parcel,ptr-parcel);
-			parcel=ptr;
-			break;
-		}
+	// the rest of the lan header comes first
+	if (decdata.getSize()<LAN_HEADER_SIZE-ENCRYPTED_LAN_HEADER_SIZE) {
+		debugWrite("decrypted data too small");
+		debugEnd();
+		return false;
 	}
-
-	// it looks like the last 36 bytes are also special
-	// the first 20 bytes of that look obfuscated
-	// FIXME: actually, they're not, we're just not using the right iv!
-	end-=36;
-	debugWrite("\"footer\":");
-	debugHexDump(end,20);
-	end+=20;
-
-	// the last 16 bytes are the same as the iv that was appended to the
-	// encrypted data
-	debugWrite("iv:");
-	debugHexDump(end,16);
-	end-=36;
+	if (!parseEncryptedLanHeader(parcel,&parcel)) {
+		debugEnd();
+		return false;
+	}
 
 	// parse parcels (in whatever order they occur)
 	for (;;) {
@@ -1624,14 +1643,12 @@ bool sqlrprotocol_teradata::copKindConnect() {
 		uint16_t	flavor=getParcelFlavor(parcel);
 		switch (flavor) {
 			case 36:
-				// we don't seem to get this
 				if (!parseLogonParcel(parcel,&parcel)) {
 					debugEnd();
 					return false;
 				}
 				break;
 			case 114:
-				// we don't seem to get this
 				if (!parseSessionOptionParcel(
 							parcel,&parcel)) {
 					debugEnd();
@@ -1639,21 +1656,18 @@ bool sqlrprotocol_teradata::copKindConnect() {
 				}
 				break;
 			case 88:
-				// we do get this
 				if (!parseConnectParcel(parcel,&parcel)) {
 					debugEnd();
 					return false;
 				}
 				break;
 			case 3:
-				// we do get this
 				if (!parseConnectDataParcel(parcel,&parcel)) {
 					debugEnd();
 					return false;
 				}
 				break;
 			case 189:
-				// we do get this
 				if (!parseClientAttributeParcel(
 							parcel,&parcel)) {
 					debugEnd();
@@ -1661,7 +1675,6 @@ bool sqlrprotocol_teradata::copKindConnect() {
 				}
 				break;
 			case 136:
-				// we don't seem to get this
 				if (!parseSsoUsernameRequestParcel(
 							parcel,&parcel)) {
 					debugEnd();
@@ -2521,6 +2534,35 @@ bool sqlrprotocol_teradata::recvRequestFromClient() {
 	return true;
 }
 
+bool sqlrprotocol_teradata::parseEncryptedLanHeader(const byte_t *ptr,
+							const byte_t **ptrout) {
+
+	// see ENCRYPTED_LAN_HEADER_SIZE
+
+	debugStart("encrypted lan header");
+
+	byte_t	spare[14];
+	read(ptr,(byte_t *)requestauth,sizeof(requestauth),&ptr);
+	readBE(ptr,&requestno,&ptr);
+	read(ptr,&gtwbyte,&ptr);
+	read(ptr,&hostcharset,&ptr);
+	read(ptr,(byte_t *)spare,sizeof(spare),&ptr);
+
+	debugWrite("request auth: %02x.%02x.%02x.%02x.%02x.%02x.%02x.%02x",
+					requestauth[0],requestauth[1],
+					requestauth[2],requestauth[3],
+					requestauth[4],requestauth[5],
+					requestauth[6],requestauth[7]);
+	debugWrite("request no: %d",(int)requestno);
+	debugWrite("gateway byte: %d",(int)gtwbyte);
+	debugWrite("host charset: %d",(int)hostcharset);
+
+	debugEnd();
+
+	*ptrout=ptr;
+	return true;
+}
+
 bool sqlrprotocol_teradata::sendResponseToClient() {
 
 	// lan header fields
@@ -3271,7 +3313,7 @@ bool sqlrprotocol_teradata::parseSsoRequestParcel(const byte_t *parcel,
 
 		// now that we have the client public key,
 		// we can generate the shared secret
-		if (!generateSharedSecretAndKey()) {
+		if (!generateSharedSecret()) {
 			*parcelout=parceldata+parceldatasize;
 			debugParcelEnd(parceldata,parceldatasize);
 			return false;
@@ -3953,8 +3995,87 @@ bool sqlrprotocol_teradata::parseLogonParcel(
 
 	debugParcelStart("recv","logon",parcelflavor,parceldatasize);
 
-debugWrite("parcel:");
-debugHexDump(parceldata,parceldatasize);
+	// parse parcel data
+	// FIXME: do something with these...
+	//
+	// the parcel data is the logon string:
+	//   [tdpid/]username[@mech][,password[,'account']]
+	// it isn't null-terminated, so scan it by hand
+	const char	*ptr=(const char *)parceldata;
+	const char	*end=ptr+parceldatasize;
+
+	// tdpid - only present if there's a slash before the first comma
+	const char	*tdpid=NULL;
+	uint32_t	tdpidsize=0;
+	for (const char *p=ptr; p<end && *p!=','; p++) {
+		if (*p=='/') {
+			tdpid=ptr;
+			tdpidsize=p-ptr;
+			ptr=p+1;
+			break;
+		}
+	}
+
+	// username - up to the first comma
+	const char	*username=ptr;
+	while (ptr<end && *ptr!=',') {
+		ptr++;
+	}
+	uint32_t	usernamesize=ptr-username;
+
+	// mech - the client can append one to the username, instead of
+	// setting logmech, and it comes across in here when it does
+	const char	*mech=NULL;
+	uint32_t	mechsize=0;
+	for (uint32_t i=0; i<usernamesize; i++) {
+		if (username[i]=='@') {
+			mech=username+i+1;
+			mechsize=usernamesize-i-1;
+			usernamesize=i;
+			break;
+		}
+	}
+
+	// password - up to the next comma
+	const char	*password=NULL;
+	uint32_t	passwordsize=0;
+	if (ptr<end) {
+		ptr++;
+		password=ptr;
+		while (ptr<end && *ptr!=',') {
+			ptr++;
+		}
+		passwordsize=ptr-password;
+	}
+
+	// account - the rest, single-quoted
+	const char	*account=NULL;
+	uint32_t	accountsize=0;
+	if (ptr<end) {
+		ptr++;
+		account=ptr;
+		accountsize=end-account;
+		if (accountsize>1 && *account=='\'' &&
+				account[accountsize-1]=='\'') {
+			account++;
+			accountsize-=2;
+		}
+	}
+
+	// debug
+	if (tdpid) {
+		debugWrite("tdpid: %.*s",tdpidsize,tdpid);
+	}
+	debugWrite("username: %.*s",usernamesize,username);
+	if (mech) {
+		debugWrite("mech: %.*s",mechsize,mech);
+	}
+	if (password) {
+		debugWrite("password: %.*s",passwordsize,password);
+	}
+	if (account) {
+		debugWrite("account: %.*s",accountsize,account);
+	}
 
 	// return next parcel
 	*parcelout=parceldata+parceldatasize;
@@ -3985,10 +4106,50 @@ bool sqlrprotocol_teradata::parseSessionOptionParcel(
 
 	debugParcelStart("recv","sesion option",parcelflavor,parceldatasize);
 
-debugWrite("parcel:");
-debugHexDump(parceldata,parceldatasize);
+	// parse parcel data
+	// FIXME: do something with these...
+	//
+	// (see parcel.h - PclSessOptListType)
+	//
+	// each option is a single character:
+	//   ansi transaction semantics - 'D' server default,
+	//                                'T' teradata, 'A' ansi
+	//   2pc mode                   - 'Y' or 'N'
+	//   fips flag                  - 'N' none,
+	//                                '2' fips127-2, '3' fips127-3
+	//   date form                  - 'D' server default,
+	//                                'I' integer, 'A' ansi
+	//
+	// a client that predates one of these options just leaves it off
+	// the end of the parcel, so default anything that isn't there to 0
+	char	options[10];
+	bytestring::zero(options,sizeof(options));
+	bytestring::copy(options,parceldata,
+				(parceldatasize<sizeof(options))?
+					parceldatasize:sizeof(options));
 
-	// FIXME: parse parcel data
+	char	ansitran=options[0];
+	char	tpcoption=options[1];
+	char	fipsflag=options[2];
+	char	dateform=options[3];
+	char	essflag=options[4];
+	char	utilityworkload=options[5];
+	char	redrive=options[6];
+	char	extendedloadusage=options[7];
+	char	rfu9=options[8];
+	char	rfu10=options[9];
+
+	// debug
+	debugSessionOption("ansi transaction semantics",ansitran);
+	debugSessionOption("2pc mode",tpcoption);
+	debugSessionOption("fips flag",fipsflag);
+	debugSessionOption("date form",dateform);
+	debugSessionOption("ess flag",essflag);
+	debugSessionOption("utility workload",utilityworkload);
+	debugSessionOption("redrive",redrive);
+	debugSessionOption("extended load usage",extendedloadusage);
+	debugSessionOption("rfu 9",rfu9);
+	debugSessionOption("rfu 10",rfu10);
 
 	// return next parcel
 	*parcelout=parceldata+parceldatasize;
@@ -4234,10 +4395,21 @@ bool sqlrprotocol_teradata::parseSsoUsernameRequestParcel(
 	debugParcelStart("recv","sso username request",
 					parcelflavor,parceldatasize);
 
-debugWrite("parcel:");
-debugHexDump(parceldata,parceldatasize);
+	// parse parcel data
+	// FIXME: do something with this...
+	//
+	// (see parcel.h - pclusernamereq_t and pclusernamereqEON_t)
+	//
+	// the original parcel is just a header, the eon variant added
+	// a single byte to it
+	byte_t	eonresponse=0;
+	if (parceldatasize) {
+		const byte_t	*ptr=parceldata;
+		read(ptr,&eonresponse,&ptr);
+	}
 
-	// FIXME: parse parcel data
+	// debug
+	debugWrite("eon response: %d",eonresponse);
 
 	// return next parcel
 	*parcelout=parceldata+parceldatasize;
@@ -6994,74 +7166,34 @@ void sqlrprotocol_teradata::appendSsoGssData(byte_t mech) {
 
 	// for capabilities...
 	//
-	// I'm not sure what 0x10 vs 0x00 means in capabilities[3], but we tend
-	// to get 0x10 from bteq and 0x00 from jdbc.  0x10 appears to indicate
-	// something that we don't know how to do.  If we send 0x10 to bteq
-	// then it sends us data that we can't decrypt.  If we send 0x00 to
-	// bteq, it recognizes that we don't support whatever it means, and
-	// sends us data we can decrypt.  It doesn't matter what we send to
-	// jdbc - it doesn't support whatever 0x10 means, never does it, and
-	// always sends us data that we can decrypt.
+	// The low bits of capabilities[3] tell the client which flavor of
+	// wrap/unwrap to use.  From the jdbc driver's
+	// com.teradata.tdgss.jgssp2td2 classes:
 	//
-	// ...actually it looks like the 0x00/0x10 may have something to do
-	// with the iv.  When set to 0x00, the client appends an obvious iv to
-	// the encrypted data, that appears to have been derived from the lan
-	// header.  When set to 0x10, I don't see any obvious iv appended to
-	// the encrypted data.  It may be that it's derived some other way if
-	// it's set to 0x10.
+	// * 0x01 - the client wraps the way decrypt() expects: it hashes
+	//   the shared key and puts a mic inside the ciphertext.  If this
+	//   is clear, it uses an older format with no mic, and the key is
+	//   the entire shared secret rather than a slice of it.
+	// * 0x04 - the client makes one key per qop that we send back,
+	//   by cutting the shared secret into consecutive slices.  See
+	//   setSharedKey().  If this is clear, the key is the entire
+	//   shared secret.
+	// * 0x10 - the client uses newWrap()/newUnWrap() instead, which
+	//   use an hmac rather than a plain hash, and wrap the token in
+	//   ASN.1 DER.  We don't implement that, so we never set it.
+	//   bteq sends us 0x10, but takes 0x00 for an answer.
+	// * 0x08 - unknown.  We get 0x0d with mechs other than TD2, and
+	//   0x05 with TD2, and it makes no difference to the jdbc driver
+	//   either way, so we just send back what we get.
 	//
-	// I'm not sure what 0x05 vs 0x0d means, but we tend to get 0x05 with
-	// TD2 and 0x0d with other mechs, so we'll go ahead and return it too.
+	// Note that 0x04 without 0x01 makes the jdbc driver throw an
+	// "Unknown peer capabilities" error.
 	//
 	// See notes in parseSsoGssData().
 	byte_t		capabilities[]={
 		0x00, 0x00, 0x00, 0x00
 	};
 
-	// It's not immediately clear what low bits mean in capabilities[3],
-	// but from the jdbc trace, when using TD2 mech, I can glean that:
-	//
-	// If I set it to D (1101) then:
-	// * jdbc hashes each of the first 4 lines of the shared key
-	// * the encrypted data is 676 bytes
-	// * uses negotiated block cipher mode
-	// * key is first 16 bytes of the shared secret
-	// * generates hmac
-	// * iv:
-	//   03  07  04  00  00  00  02  b0  00  00  00  00  00  00  00  01
-	//
-	// If I set it to 5 (0101) then:
-	// * jdbc hashes each of the first 4 lines of the shared key
-	// * the encrypted data is 676 bytes
-	// * uses negotiated block cipher mode
-	// * key is first 16 bytes of the shared secret
-	// * generates hmac
-	// * iv:
-	//   03  07  04  00  00  00  02  b0  00  00  00  00  00  00  00  01
-	//
-	// If I set it to 4 (0100) then:
-	// * jdbc throws an "Unknown peer capabilities" error
-	//
-	// If I set it to 1 (0001) then:
-	// * jdbc hashes the entire shared key
-	// * the encrypted data is 676 bytes
-	// * uses OFB block cipher mode (despite negotiating CBC)
-	// * key is the entire shared secret
-	// * generates hmac
-	// * iv:
-	//   03  07  04  00  00  00  02  b0  00  00  00  00  00  00  00  01
-	//
-	// If I set it to 0 (0000) then:
-	// * jdbc doesn't generate any hash of the shared key
-	// * the encrypted data is 660 bytes
-	// * uses OFB block cipher mode (despite negotiating CBC)
-	// * key is the entire shared secret
-	// * doesn't generate hmac
-	// * iv:
-	//   01  03  02  00  00  00  02  a0  00  00  00  00  06  00  00  00
-	//
-	// I'm guessing that D and 5 have the same behavior with TD2 because
-	// whatever the 8's place indicates is just ignored for TD2.
 	if (mech==MECH_TD2) {
 		capabilities[3]|=0x05;
 	} else {
@@ -7181,19 +7313,14 @@ void sqlrprotocol_teradata::appendSsoGssQops() {
 
 	debugStart("negotiated qops");
 
-	// the server sends 4 qops, and for some
-	// reason all 4 are the same...
-	//
 	// The client sent a set of supported qop algorithms in the
 	// SSO Request - trip 0, we'll send a set of supported
 	// combinations of them in them here.
 	//
-	// Presumably the client has to select one, but it's not clea
-	// where that happens, if that's even how it works.
-	//
-	// Maybe it doens't work that way?  Maybe we choose the qop,
-	// this IS the chosen qop, and we just send it 4 times, for
-	// some reason?
+	// The server always sends 4, and they're all the same here
+	// because we only support one qop.  They're really 4 key
+	// slots though - the client cuts the shared secret into one
+	// slice per qop, and picks one by index.  See setSharedKey().
 	byte_t	qops[]={
 		SSORESP_NEGOTIATED_QOP1,
 		SSORESP_NEGOTIATED_QOP2,
@@ -9007,6 +9134,15 @@ void sqlrprotocol_teradata::debugMech(const byte_t *oid, size_t size) {
 	}
 }
 
+void sqlrprotocol_teradata::debugSessionOption(const char *name, char value) {
+	// unset options come across as 0
+	if (character::isPrintable(value)) {
+		debugWrite("%s: %c",name,value);
+	} else {
+		debugWrite("%s: 0x%02x",name,(byte_t)value);
+	}
+}
+
 bool sqlrprotocol_teradata::generateEphemeralKeys() {
 
 	// Diffie-Hellman Key Exchange...
@@ -9070,12 +9206,12 @@ bool sqlrprotocol_teradata::generateEphemeralKeys() {
 	return true;
 }
 
-bool sqlrprotocol_teradata::generateSharedSecretAndKey() {
+bool sqlrprotocol_teradata::generateSharedSecret() {
 
 	// See generateEphemeralKeys() for an explanation of
 	// Diffie-Hellman Key Exchange
 
-	debugStart("generate shared secret and key");
+	debugStart("generate shared secret");
 
 	// set the client public key
 	// FIXME: is the key guaranteed to be sizeof(clientpubkey) bytes,
@@ -9100,40 +9236,66 @@ bool sqlrprotocol_teradata::generateSharedSecretAndKey() {
 	debugWrite("shared secret (%d bytes):",sharedsecretsize);
 	debugHexDump(sharedsecret,sharedsecretsize);
 
-	// determine the shared key size
-	// (currently, we only support QOP_AES128_CBC_PKCS5_SHA1_DH2048,
-	// so the shared key size is always 16)
-	sharedkeysize=16;
+	debugEnd();
+	return true;
+}
 
-	// get the shared key (first N bytes of the shared secret)
-	bytestring::copy(sharedkey,sharedsecret,sharedkeysize);
-	debugWrite("shared key (%d bytes):",sharedkeysize);
+bool sqlrprotocol_teradata::setSharedKey(byte_t qopindex) {
+
+	debugStart("set shared key (qop %d)",(int)qopindex);
+
+	// There's no key derivation function.  The client cuts the shared
+	// secret into consecutive slices, one per qop that we sent back in
+	// the sso response parcel (trip 1), each one as long as that qop's
+	// key, and uses the slice itself as the key.  The qop index in the
+	// td2 token header says which slice to use.
+	//
+	// We send back SSORESP_NEGOTIATED_QOP_COUNT qops and they're all the
+	// negotiated qop, so all of the slices are the same size.
+	//
+	// (this is what the client is doing when it generates one hash per
+	// slice of the shared secret - one hashed key per qop, see below)
+	//
+	// (if we didn't set the 0x04 bit in the capabilities that we send
+	// then the client would use the entire shared secret as the key)
+
+	if (!sharedsecret) {
+		debugWrite("no shared secret");
+		debugEnd();
+		return false;
+	}
+	if (qopindex>=SSORESP_NEGOTIATED_QOP_COUNT) {
+		debugWrite("invalid qop index");
+		debugEnd();
+		return false;
+	}
+
+	sharedkeysize=qopsharedkeysize[negotiatedqop];
+	if (!sharedkeysize) {
+		debugWrite("no negotiated qop");
+		debugEnd();
+		return false;
+	}
+
+	uint32_t	offset=qopindex*sharedkeysize;
+	if (offset+sharedkeysize>sharedsecretsize) {
+		debugWrite("shared secret too small");
+		debugEnd();
+		return false;
+	}
+
+	bytestring::copy(sharedkey,sharedsecret+offset,sharedkeysize);
+	debugWrite("shared key (%d bytes, offset %d):",sharedkeysize,offset);
 	debugHexDump(sharedkey,sharedkeysize);
 
-#if 0
-	// generate hashes of the shared key
-	// (presumably for hmac, but it's not clear how these are used yet)
+	// hash the shared key using the negotiated integrity algorithm
+	// (the mic that comes along with the encrypted data is computed over
+	// this hash, rather than over the key itself)
 	//
 	// (currently, we only support QOP_AES128_CBC_PKCS5_SHA1_DH2048,
-	// so we'll generate a sha1 hash)
-	//
-	// It looks like only the first 16 bytes of the shared secret are
-	// hashed (when using SHA1 at least), and it looks like the client
-	// (jdbc at least) generates 4 hashes, one each of the 1st, 2nd, 3rd,
-	// and 4th set of 16 bytes of the shared secret.  It only appears to
-	// use the first one and it's not clear what it does with the other 3,
-	// if anything, so we'll just generate the first one.
-	//
-	// (I wonder if the four hashes have something to do with the 4
-	// negotiated qops that we send back in the sso response parcel,
-	// trip1...)
-	//
-	// FIXME: this code assumed SHA1 was the KDF, so it reuses those
-	// buffers, but it's not, so it needs its own buffers
-	bytestring::zero(sharedkey,sizeof(sharedkey));
-	debugWrite("kdf: sha1");
-	sha1		s1;
-	if (!s1.append(sharedsecret,16)) {
+	// so the integrity algorithm is always sha1)
+	sha1	s1;
+	if (!s1.append(sharedkey,sharedkeysize)) {
 		debugWrite("s1.append() failed");
 		debugEnd();
 		return false;
@@ -9144,12 +9306,11 @@ bool sqlrprotocol_teradata::generateSharedSecretAndKey() {
 		debugEnd();
 		return false;
 	}
-	sharedkeysize=s1.getHashSize();
-	bytestring::copy(sharedkey,hash,sharedkeysize);
+	hsharedkeysize=s1.getHashSize();
+	bytestring::copy(hsharedkey,hash,hsharedkeysize);
 
-	debugWrite("shared key (%d bytes):",sharedkeysize);
-	debugHexDump(sharedkey,sharedkeysize);
-#endif
+	debugWrite("hashed shared key (%d bytes):",hsharedkeysize);
+	debugHexDump(hsharedkey,hsharedkeysize);
 
 	debugEnd();
 	return true;
@@ -9159,8 +9320,27 @@ bool sqlrprotocol_teradata::decrypt(const byte_t *encdata,
 						uint64_t encdatasize,
 						bytebuffer *decdata) {
 
-	// from bteq - 375 bytes
-	// from jdbc - 676 bytes
+	// The encrypted data is:
+	//
+	//   ciphertext, then a 16-byte td2 token header
+	//
+	// and the token header doubles as the initialization vector.
+	//
+	// Decrypting the ciphertext gets us:
+	//
+	//   the data, then a mic, then a copy of the token header
+	//
+	// So the mic is a trailer, inside the ciphertext, not a header
+	// outside of it, and the initialization vector is repeated at the
+	// end of the plaintext so that we can tell that it wasn't tampered
+	// with.
+	//
+	// For the connect message, the data is the tail of the lan header
+	// followed by the parcels.  See ENCRYPTED_LAN_HEADER_SIZE.
+	//
+	// no known reference, this came out of the jdbc driver's
+	// com.teradata.tdgss.jgssp2td2.Td2Crypto.unwrap() method
+
 	debugStart("decrypt (%lld bytes)",encdatasize);
 
 	// create the decryptor
@@ -9172,52 +9352,94 @@ bool sqlrprotocol_teradata::decrypt(const byte_t *encdata,
 	size_t	ivsize=a.getIvSize();
 
 	// validate the encdata
-	if (encdatasize<ivsize) {
+	if (encdatasize<=ivsize) {
 		debugWrite("encdata too small");
 		debugEnd();
 		return false;
 	}
 
-	// validate the key
+	// the last N bytes of the encdata are the td2 token header
+	const byte_t	*token=encdata+encdatasize-ivsize;
+
+	// parse the token header
+	const byte_t	*ptr=token;
+	byte_t		version;
+	byte_t		msgtype;
+	byte_t		flags;
+	byte_t		qopindex;
+	uint32_t	msglength;
+	uint64_t	seqnum;
+	read(ptr,&version,&ptr);
+	read(ptr,&msgtype,&ptr);
+	read(ptr,&flags,&ptr);
+	read(ptr,&qopindex,&ptr);
+	readBE(ptr,&msglength,&ptr);
+	readBE(ptr,&seqnum,&ptr);
+
+	debugStart("td2 token header");
+	debugWrite("version: %d",(int)version);
+	debugWrite("message type: %d",(int)msgtype);
+	debugWrite("flags: 0x%02x",(int)flags);
+	debugWrite("qop index: %d",(int)qopindex);
+	debugWrite("message length: %d",(int)msglength);
+	debugWrite("sequence number: %lld",seqnum);
+	debugHexDump(token,ivsize);
+	debugEnd();
+
+	// we only know how to decrypt version-3 wrap
+	// tokens with the privacy flag set
+	if (version!=TD2TOKEN_VERSION_3 || msgtype!=TD2TOKEN_TYPE_WRAP ||
+				!(flags&TD2TOKEN_FLAG_PRIVACY)) {
+		debugWrite("unsupported td2 token");
+		debugEnd();
+		return false;
+	}
+
+	// The message length is the number of bytes of ciphertext
+	// immediately preceding the token header.
+	//
+	// The jdbc driver just treats everything up to the token header as
+	// ciphertext, rather than trusting this length.  We use the length
+	// so that if there ever is anything in front of the ciphertext, it
+	// shows up below instead of quietly corrupting the first block.
+	if (msglength>encdatasize-ivsize) {
+		debugWrite("invalid td2 token message length");
+		debugEnd();
+		return false;
+	}
+	const byte_t	*ciphertext=token-msglength;
+
+	uint64_t	prefixsize=encdatasize-ivsize-msglength;
+	if (prefixsize) {
+		debugWrite("unexpected %lld bytes before "
+				"the ciphertext:",prefixsize);
+		debugHexDump(encdata,prefixsize);
+	}
+
+	// determine the shared key for the qop that the client chose
+	if (!setSharedKey(qopindex)) {
+		debugEnd();
+		return false;
+	}
 	if (sharedkeysize<a.getKeySize()) {
 		debugWrite("shared key too small");
 		debugEnd();
 		return false;
 	}
 
-	// the last N bytes of the encdata are the initialization vector
-	const byte_t	*iv=encdata+encdatasize-ivsize;
-	a.setIv(iv,ivsize);
-	encdatasize-=ivsize;
-
-	// set the key
-	// sharedkeysize might be larger than a.getKeySize()
-	// (eg. SHA1 generates a 20 byte hash, but AES 128 only needs a 16 byte
-	// key) so we'll use a.getKeySize() here, rather than sharedkeysize
+	a.setIv(token,ivsize);
 	a.setKey(sharedkey,a.getKeySize());
-
-	// the first N bytes of the encdata are the hmac (hash of the data and
-	// something else, maybe the shared key, or one or more hashes of it)
-	// (currently, we only support QOP_AES128_CBC_PKCS5_SHA1_DH2048,
-	// so the hmac size is always 20)
-	const byte_t	*hmac=encdata;
-	size_t		hmacsize=20;
-	encdata+=hmacsize;
-	encdatasize-=hmacsize;
 
 	debugWrite("qop: %s",qopstr[negotiatedqop]);
 	debugWrite("iv (%d bytes):",ivsize);
-	debugHexDump(iv,ivsize);
-	debugWrite("key (%d/%d bytes):",a.getKeySize(),sharedkeysize);
+	debugHexDump(token,ivsize);
+	debugWrite("key (%d bytes):",a.getKeySize());
 	debugHexDump(sharedkey,a.getKeySize());
-	debugWrite("hmac size: %d",hmacsize);
-	debugWrite("hmac:");
-	debugHexDump(hmac,hmacsize);
-	debugWrite("encrypted data (%d bytes):",encdatasize);
-	debugHexDump(encdata,encdatasize);
+	debugWrite("ciphertext (%d bytes):",msglength);
+	debugHexDump(ciphertext,msglength);
 
 	// set the data to decrypt
-	if (!a.append(encdata,encdatasize)) {
+	if (!a.append(ciphertext,msglength)) {
 		debugWrite("append failed: %d",a.getError());
 		debugEnd();
 		return false;
@@ -9232,12 +9454,60 @@ bool sqlrprotocol_teradata::decrypt(const byte_t *encdata,
 		return false;
 	}
 
-	// copy out the decrypted data
-	decdata->append(ddata,ddatasize);
+	debugWrite("plaintext (%lld bytes):",ddatasize);
+	debugHexDump(ddata,ddatasize);
 
-	// FIXME: hmac the decrypted data (not sure what to hash, yet)
+	// split the plaintext into parcels, mic, and token header copy
+	if (ddatasize<hsharedkeysize+ivsize) {
+		debugWrite("plaintext too small");
+		debugEnd();
+		return false;
+	}
+	uint64_t	datasize=ddatasize-hsharedkeysize-ivsize;
+	const byte_t	*mic=ddata+datasize;
+	const byte_t	*tokencopy=mic+hsharedkeysize;
 
-	debugWrite("decrypted data (%d bytes)",ddatasize);
+	debugWrite("mic (%d bytes):",hsharedkeysize);
+	debugHexDump(mic,hsharedkeysize);
+
+	// the copy of the token header must match the one we decrypted with
+	if (bytestring::compare(tokencopy,token,ivsize)) {
+		debugWrite("td2 token header mismatch:");
+		debugHexDump(tokencopy,ivsize);
+		debugEnd();
+		return false;
+	}
+
+	// verify the mic
+	// (it's a hash of the parcels, the hashed shared key, and the
+	// token header - the hashed shared key stands in for the mic
+	// itself, which occupies those bytes on the wire)
+	sha1	s1;
+	if (!s1.append(ddata,(uint32_t)datasize) ||
+			!s1.append(hsharedkey,hsharedkeysize) ||
+			!s1.append(tokencopy,(uint32_t)ivsize)) {
+		debugWrite("s1.append() failed");
+		debugEnd();
+		return false;
+	}
+	const byte_t	*hash=s1.getHash();
+	if (!hash) {
+		debugWrite("s1.getHash() failed");
+		debugEnd();
+		return false;
+	}
+	if (s1.getHashSize()!=hsharedkeysize ||
+			bytestring::compare(hash,mic,hsharedkeysize)) {
+		debugWrite("mic mismatch:");
+		debugHexDump(hash,s1.getHashSize());
+		debugEnd();
+		return false;
+	}
+
+	// copy out the parcels
+	decdata->append(ddata,datasize);
+
+	debugWrite("decrypted data (%lld bytes)",datasize);
 	debugHexDump(decdata->getBuffer(),decdata->getSize());
 
 	debugEnd();
@@ -9251,11 +9521,12 @@ bool sqlrprotocol_teradata::encrypt(const byte_t *decdata,
 
 	// FIXME: implement this
 
-	// presumably this should be formatted the same
-	// way as the encrypted data that we received:
-	// * the first 20 bytes should be the hmac (not what to hash, yet)
-	// * the next N bytes should be encrypted using the shared key
-	// * the last 16 bytes should be the iv
+	// this should be formatted the same way as the
+	// encrypted data that we receive (see decrypt()):
+	// * encrypt the parcels, a mic, and a copy of the td2 token
+	//   header, using the shared key, with the token header as
+	//   the initialization vector
+	// * append a copy of the token header to the ciphertext
 
 	return true;
 }

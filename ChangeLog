@@ -770,6 +770,26 @@
 		and sha256 modules behind when built with a non-default module
 		name prefix
 	now requires rudiments 2.3.0 or newer
+	fixed the teradata protocol module's decryption of the connect
+		message - the first 20 bytes of the encrypted data were being
+		skipped as an hmac, but there is no hmac there, the mic is a
+		trailer inside the ciphertext instead, so the first block came
+		out as garbage and the login parcels were never found
+	fixed the teradata protocol module's shared key - the key is a slice
+		of the shared secret, chosen by the qop index in the token
+		header that the client appends, rather than always the first
+		16 bytes
+	added mic and token header verification to the teradata protocol
+		module's decryption of the connect message
+	fixed the teradata protocol module's framing of the encrypted connect
+		message - in an encrypted message the lan header stops after
+		the session number and the last 28 bytes of it are the first
+		bytes of the ciphertext, so decryption started 28 bytes too
+		late and the request auth, request number, gateway byte, and
+		host character set were read as ciphertext instead of being
+		decrypted
+	added parsing and debug for the teradata protocol module's logon,
+		session option, and sso username request parcels
 	documented the license the oracle protocol module carries - it's
 		part of the sql relay server, under the gpl version 2 or
 		later, and material taken from python-oracledb goes under
