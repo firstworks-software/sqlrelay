@@ -2429,14 +2429,30 @@ bool sqlrprotocol_oracle::getAnoArrayField(const byte_t *rp,
 		!readMarker32(rp,0xdeadbeef,&rp) ||
 		!readMarker16(rp,0x0003,&rp)) {
 
-		// FIXME: Sometimes there's no deadbeef marker, just an array
-		// marker, and the next 4 bytes are definitely NOT the array
-		// size.  Other times there's no deadbeef marker, and no
-		// array marker anywhere in the rest of the field.  In both
-		// cases, the rest of the field contains data, but I have no
-		// idea how to interpret it.
+		// A long standing FIXME here said that a field sometimes has
+		// an array marker and no deadbeef, and sometimes neither, and
+		// that in both cases the rest of it was uninterpretable.
+		// Both shapes were the encryption and crypto-checksumming
+		// services' driver lists, which are one byte per algorithm id
+		// with a field header identical to this one - and #8981 gave
+		// those their own reader, so neither reaches this function
+		// any more.  The difference between the two shapes was only
+		// whether the first two algorithm ids happened to spell the
+		// array marker: ojdbc 23.26 offers 0, 3, 4, 5 and 6 for
+		// crypto-checksumming, and the first two of those are the
+		// bytes 00 03.
 		//
-		// For now, we'll just return NULL/0 but we won't fail outright.
+		// The one caller left is getSupervisorService(), and both
+		// clients that reach ano here send a real deadbeef ub2 array
+		// in that field.  So this is a guard rather than a decoder,
+		// and what nobody has is a capture of it firing - hence the
+		// dump.  Returning NULL/0 without failing is deliberate: the
+		// service parses either way and a supervisor list nobody can
+		// read is not worth refusing a connection over.
+		debugStart("unrecognized array field");
+		debugHexDump(fieldend-size,size);
+		debugEnd();
+
 		*rpout=fieldend;
 		return true;
 	}

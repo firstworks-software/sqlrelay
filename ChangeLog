@@ -1492,6 +1492,9 @@
 		length minus one became -1 and then a copy of the whole
 		address space - the length is bounded now, and 0 is read as
 		the null the protocol says it is
+	added a debug dump of an ano array field the oracle protocol module
+		can't recognize, so the shape gets captured rather than
+		silently ignored
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems
