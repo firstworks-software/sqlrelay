@@ -41578,8 +41578,16 @@ sed -e "s|^centos|co|" \
 
 
 
-MAKELIST="config.mk src/common/defines.h src/server/sqlrelay/private/sqlrshm.h bin/sqlrclient-config bin/sqlrclientwrapper-config bin/sqlrserver-config init/rc.sqlrelay init/rc.sqlrcachemanager init/com.firstworks.sqlrelay.plist init/com.firstworks.sqlrcachemanager.plist sqlrelay-c++.pc sqlrelay-c.pc test/erlang/run test/sqlrelay.conf.d/db2.conf test/sqlrelay.conf.d/firebird.conf test/sqlrelay.conf.d/freetds.conf test/sqlrelay.conf.d/informix.conf test/sqlrelay.conf.d/mssql.conf test/sqlrelay.conf.d/mysql.conf test/sqlrelay.conf.d/oracle.conf test/sqlrelay.conf.d/postgresql.conf test/sqlrelay.conf.d/router.conf test/sqlrelay.conf.d/sap.conf test/sqlrelay.conf.d/sqlite.conf test/sqlrelay.conf.d/teradata.conf test/sqlrelay.conf.d/tls.conf test/sqlrelay.conf.d/extensions.conf test/sqlrelay.conf.d/mysqlprotocol.conf test/sqlrelay.conf.d/oracleprotocol.conf test/sqlrelay.conf.d/postgresqlprotocol.conf test/sqlrelay.conf.d/firebirdprotocol.conf test/sqlrelay.conf.d/tdsprotocol.conf test/sqlrelay.conf.d/teradataprotocol.conf test/sqlrelay.conf.d/postgresqlupsert.conf test/sqlrelay.conf.d/postgresqlsavepoint.conf test/sqlrelay.conf.d/postgresqlglobaltemptables.conf test/sqlrelay.conf.d/postgresqlstringagg.conf test/sqlrelay.conf.d/postgresqlsequencenextval.conf test/sqlrelay.conf.d/mysqlupsert.conf test/sqlrelay.conf.d/mysqldeadlockreplay.conf test/sqlrelay.conf.d/mysqlsplitmultiinsert.conf test/sqlrelay.conf.d/mysqlimportexport.conf test/sqlrelay.conf.d/multiprotocol.conf test/bench/benchall.sh doc/admin/installingpkg.wt"
+MAKELIST="config.mk src/common/defines.h src/server/sqlrelay/private/sqlrshm.h sqlrelay-c++.pc sqlrelay-c.pc test/sqlrelay.conf.d/db2.conf test/sqlrelay.conf.d/firebird.conf test/sqlrelay.conf.d/freetds.conf test/sqlrelay.conf.d/informix.conf test/sqlrelay.conf.d/mssql.conf test/sqlrelay.conf.d/mysql.conf test/sqlrelay.conf.d/oracle.conf test/sqlrelay.conf.d/postgresql.conf test/sqlrelay.conf.d/router.conf test/sqlrelay.conf.d/sap.conf test/sqlrelay.conf.d/sqlite.conf test/sqlrelay.conf.d/teradata.conf test/sqlrelay.conf.d/tls.conf test/sqlrelay.conf.d/extensions.conf test/sqlrelay.conf.d/mysqlprotocol.conf test/sqlrelay.conf.d/oracleprotocol.conf test/sqlrelay.conf.d/postgresqlprotocol.conf test/sqlrelay.conf.d/firebirdprotocol.conf test/sqlrelay.conf.d/tdsprotocol.conf test/sqlrelay.conf.d/teradataprotocol.conf test/sqlrelay.conf.d/postgresqlupsert.conf test/sqlrelay.conf.d/postgresqlsavepoint.conf test/sqlrelay.conf.d/postgresqlglobaltemptables.conf test/sqlrelay.conf.d/postgresqlstringagg.conf test/sqlrelay.conf.d/postgresqlsequencenextval.conf test/sqlrelay.conf.d/mysqlupsert.conf test/sqlrelay.conf.d/mysqldeadlockreplay.conf test/sqlrelay.conf.d/mysqlsplitmultiinsert.conf test/sqlrelay.conf.d/mysqlimportexport.conf test/sqlrelay.conf.d/multiprotocol.conf doc/admin/installingpkg.wt"
 ac_config_files="$ac_config_files $MAKELIST"
+
+
+
+ac_config_files="$ac_config_files bin/sqlrclient-config bin/sqlrclientwrapper-config bin/sqlrserver-config init/rc.sqlrelay init/rc.sqlrcachemanager test/bench/benchall.sh test/erlang/run"
+
+
+ac_config_files="$ac_config_files init/com.firstworks.sqlrelay.plist init/com.firstworks.sqlrcachemanager.plist"
+
 
 cat >confcache <<\_ACEOF
 # This file is a shell script that caches the results of configure
@@ -42663,6 +42671,15 @@ do
     "libtool") CONFIG_COMMANDS="$CONFIG_COMMANDS libtool" ;;
     "config.h") CONFIG_HEADERS="$CONFIG_HEADERS config.h" ;;
     "$MAKELIST") CONFIG_FILES="$CONFIG_FILES $MAKELIST" ;;
+    "bin/sqlrclient-config") CONFIG_FILES="$CONFIG_FILES bin/sqlrclient-config" ;;
+    "bin/sqlrclientwrapper-config") CONFIG_FILES="$CONFIG_FILES bin/sqlrclientwrapper-config" ;;
+    "bin/sqlrserver-config") CONFIG_FILES="$CONFIG_FILES bin/sqlrserver-config" ;;
+    "init/rc.sqlrelay") CONFIG_FILES="$CONFIG_FILES init/rc.sqlrelay" ;;
+    "init/rc.sqlrcachemanager") CONFIG_FILES="$CONFIG_FILES init/rc.sqlrcachemanager" ;;
+    "test/bench/benchall.sh") CONFIG_FILES="$CONFIG_FILES test/bench/benchall.sh" ;;
+    "test/erlang/run") CONFIG_FILES="$CONFIG_FILES test/erlang/run" ;;
+    "init/com.firstworks.sqlrelay.plist") CONFIG_FILES="$CONFIG_FILES init/com.firstworks.sqlrelay.plist" ;;
+    "init/com.firstworks.sqlrcachemanager.plist") CONFIG_FILES="$CONFIG_FILES init/com.firstworks.sqlrcachemanager.plist" ;;
 
   *) as_fn_error $? "invalid argument: \`$ac_config_target'" "$LINENO" 5;;
   esac
@@ -43938,6 +43955,17 @@ compiler_lib_search_path=$lt_compiler_lib_search_path_CXX
 _LT_EOF
 
  ;;
+    "bin/sqlrclient-config":F) chmod 755 "$ac_file" ;;
+    "bin/sqlrclientwrapper-config":F) chmod 755 "$ac_file" ;;
+    "bin/sqlrserver-config":F) chmod 755 "$ac_file" ;;
+    "init/rc.sqlrelay":F) chmod 755 "$ac_file" ;;
+    "init/rc.sqlrcachemanager":F) chmod 755 "$ac_file" ;;
+    "test/bench/benchall.sh":F) chmod 755 "$ac_file" ;;
+    "test/erlang/run":F) chmod 755 "$ac_file" ;;
+    "init/com.firstworks.sqlrelay.plist":F) sed -e "s|\${DESTDIR}||g" "$ac_file" > "$ac_file".new
+		mv "$ac_file".new "$ac_file" ;;
+    "init/com.firstworks.sqlrcachemanager.plist":F) sed -e "s|\${DESTDIR}||g" "$ac_file" > "$ac_file".new
+		mv "$ac_file".new "$ac_file" ;;
 
   esac
 done # for ac_tag
@@ -43976,17 +44004,6 @@ if test -n "$ac_unrecognized_opts" && test "$enable_option_checking" != no; then
 printf "%s\n" "$as_me: WARNING: unrecognized options: $ac_unrecognized_opts" >&2;}
 fi
 
-chmod 755 bin/sqlrclient-config
-chmod 755 bin/sqlrclientwrapper-config
-chmod 755 bin/sqlrserver-config
-chmod 755 init/rc.sqlrelay
-chmod 755 init/rc.sqlrcachemanager
-chmod 755 test/bench/benchall.sh
-chmod 755 test/erlang/run
-sed -e "s|\${DESTDIR}||g" init/com.firstworks.sqlrcachemanager.plist > init/com.firstworks.sqlrcachemanager.plist.new
-mv init/com.firstworks.sqlrcachemanager.plist.new init/com.firstworks.sqlrcachemanager.plist
-sed -e "s|\${DESTDIR}||g" init/com.firstworks.sqlrelay.plist > init/com.firstworks.sqlrelay.plist.new
-mv init/com.firstworks.sqlrelay.plist.new init/com.firstworks.sqlrelay.plist
 
 
 

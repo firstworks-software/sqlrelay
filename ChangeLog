@@ -809,6 +809,15 @@
 		module suffix, but that module was removed years ago, and on
 		a platform whose module suffix isn't .so it could rename a
 		leftover copy back into a name the server would load
+	fixed configure - the chmods and plist fixups that followed AC_OUTPUT
+		weren't part of config.status, so regenerating with
+		config.status alone left the generated scripts
+		non-executable and left ${DESTDIR} in the launchd plists,
+		which pointed launchd at a path that doesn't exist - the
+		fixups are attached to the files themselves now, so
+		config.status carries them, and each of those files can
+		also be named individually on the config.status command
+		line now
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems
