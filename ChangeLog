@@ -968,6 +968,16 @@
 		checking that there was that much left, so a short request
 		underflowed the count to a huge value and the parse ran on
 		past the end of the packet
+	fixed the odbc connection module - a blob bind couldn't reach a ms
+		sql server binary, varbinary or image column at all, because
+		blobs were bound as characters there, and sql server won't
+		convert a character parameter to a binary one; blobs are now
+		bound as binary for sql server
+	fixed the odbc connection module - the binary blob bind passed no
+		StrLen_or_IndPtr, so the driver looked for a null terminator
+		to find the end of the value and truncated any value
+		containing a 0 byte, and it ignored the null indicator, so a
+		null blob bind bound garbage
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems

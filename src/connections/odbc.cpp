@@ -280,10 +280,12 @@ class SQLRSERVER_DLLSPEC odbccursor : public sqlrservercursor {
 		#ifdef SQLBINDPARAMETER_SQLLEN
 		SQLLEN			*outisnull;
 		SQLLEN			*inoutisnull;
+		SQLLEN			*inbindlength;
 		SQLLEN			sqlnulldata;
 		#else
 		SQLINTEGER		*outisnull;
 		SQLINTEGER		*inoutisnull;
+		SQLINTEGER		*inbindlength;
 		SQLINTEGER		sqlnulldata;
 		#endif
 
@@ -1019,6 +1021,14 @@ bool odbcconnection::logIn(const char **error, const char **warning) {
 
 		// SQL Server likes "BEGIN TRANSACTION" to begin transactions.
 		begintxquery="BEGIN TRANSACTION";
+
+		// SQL Server won't implicitly convert a character parameter
+		// to binary, varbinary or image, so the character bind can't
+		// reach those columns at all.  It also charset-converts the
+		// value, which raw bytes don't survive.  Bind blobs as
+		// binary instead.  (The trade is that a blob bind can no
+		// longer reach a text or ntext column.)
+		usecharforlobbind=false;
 	}
 
 	return true;
@@ -3550,9 +3560,11 @@ odbccursor::odbccursor(sqlrserverconnection *conn, uint16_t id) :
 	#ifdef SQLBINDPARAMETER_SQLLEN
 	outisnull=new SQLLEN[maxbindcount];
 	inoutisnull=new SQLLEN[maxbindcount];
+	inbindlength=new SQLLEN[maxbindcount];
 	#else
 	outisnull=new SQLINTEGER[maxbindcount];
 	inoutisnull=new SQLINTEGER[maxbindcount];
+	inbindlength=new SQLINTEGER[maxbindcount];
 	#endif
 	for (uint16_t i=0; i<maxbindcount; i++) {
 		outdatebind[i]=NULL;
@@ -3563,6 +3575,7 @@ odbccursor::odbccursor(sqlrserverconnection *conn, uint16_t id) :
 		inoutcharbind[i]=NULL;
 		inoutisnullptr[i]=NULL;
 		inoutisnull[i]=0;
+		inbindlength[i]=0;
 	}
 	sqlnulldata=SQL_NULL_DATA;
 	bindformaterror=false;
@@ -3590,6 +3603,7 @@ odbccursor::~odbccursor() {
 	delete[] inoutcharbind;
 	delete[] inoutisnullptr;
 	delete[] inoutisnull;
+	delete[] inbindlength;
 	#ifdef HAVE_SQLCONNECTW
 	ucsinbindstrings.clear();
 	#endif
@@ -4094,7 +4108,8 @@ bool odbccursor::inputBindBlob(const char *variable,
 						uint32_t valuesize,
 						int16_t *isnull) {
 
-	// FIXME: This code is known to work with SQL Server...
+	// fall back to the character bind for databases whose drivers
+	// can't take a binary bind
 	if (odbcconn->usecharforlobbind) {
 		return sqlrservercursor::inputBindBlob(
 						variable,
@@ -4104,24 +4119,58 @@ bool odbccursor::inputBindBlob(const char *variable,
 						isnull);
 	}
 
-	// FIXME: This code is known to work with Teradata...
-	// (Ideally we should get one body of code working for all dbs)
 	uint16_t	pos=charstring::convertToInteger(variable+1);
 	if (!pos || pos>maxbindcount) {
 		bindformaterror=true;
 		return false;
 	}
 
+	if (*isnull==SQL_NULL_DATA) {
+
+		// see the "see #6232" comment in inputBind() for why a
+		// ColumnSize of 0 works here
+		inbindlength[pos-1]=SQL_NULL_DATA;
+
+		erg=SQLBindParameter(stmt,
+					pos,
+					SQL_PARAM_INPUT,
+					SQL_C_BINARY,
+					SQL_VARBINARY,
+					0,		// in bytes
+					0,
+					NULL,
+					0,		// in bytes
+					&(inbindlength[pos-1]));
+
+		return (erg==SQL_SUCCESS || erg==SQL_SUCCESS_WITH_INFO);
+	}
+
+	// StrLen_or_IndPtr has to be passed for a binary bind.  If it's
+	// NULL then the driver looks for a null terminator to find the end
+	// of the value, and a binary value can contain nulls of its own.
+	// (Passing NULL here used to truncate any value containing a 0
+	// byte at the first one.)
+	inbindlength[pos-1]=valuesize;
+
+	// SQL Server rejects a ColumnSize over 8000 for a SQL_VARBINARY,
+	// and Teradata rejects a SQL_LONGVARBINARY for a byte column
+	// that's part of an index, so use the narrower type where it fits.
+	SQLSMALLINT	paramtype=(valuesize>8000)?
+					SQL_LONGVARBINARY:SQL_VARBINARY;
+
+	// a ColumnSize of 0 is invalid here - see "see #975" in inputBind()
+	SQLULEN		columnsize=(valuesize)?valuesize:1;
+
 	erg=SQLBindParameter(stmt,
 				pos,
 				SQL_PARAM_INPUT,
 				SQL_C_BINARY,
-				SQL_BINARY,
-				valuesize,
+				paramtype,
+				columnsize,	// in bytes
 				0,
 				(SQLPOINTER)value,
-				0,
-				NULL);
+				valuesize,	// in bytes
+				&(inbindlength[pos-1]));
 	return (erg==SQL_SUCCESS || erg==SQL_SUCCESS_WITH_INFO);
 }
 
