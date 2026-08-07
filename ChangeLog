@@ -1105,6 +1105,12 @@
 		of the buffer, and if that byte happened to be zero then the
 		malformed packet was accepted and the read pointer was left
 		past the end of the buffer for the next parse
+	fixed the jdbc api - maxFieldSize never truncated a postgresql char
+		array or varchar array column, because the two case labels for
+		those types spelled the identifiers in the datatype enum rather
+		than the CHAR_ARRAY and VARCHAR_ARRAY names the server sends -
+		both spellings are accepted now, since with typemangling=lookup
+		postgresql sends its own _char and _varchar instead
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems

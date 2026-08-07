@@ -301,11 +301,17 @@ public class SQLRelayResultSet implements ResultSet {
 		// locale.  In a turkish locale, "image" uppercases to a dotted
 		// capital I followed by MAGE, which matches none of the cases
 		// below.
+		// The array types have two spellings each.  A backend that
+		// reports the datatype list's own names sends CHAR_ARRAY and
+		// VARCHAR_ARRAY, but postgresql with typemangling=lookup
+		// sends its own, _char and _varchar.
 		switch (type.toUpperCase(Locale.ROOT)) {
 			case "CHAR":
+			case "CHAR_ARRAY":
 			case "_CHAR":
 			case "LONGCHAR":
 			case "VARCHAR":
+			case "VARCHAR_ARRAY":
 			case "_VARCHAR":
 			case "VARCHAR2":
 			case "LONGVARCHAR":
