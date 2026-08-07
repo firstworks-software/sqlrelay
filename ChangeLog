@@ -1267,6 +1267,17 @@
 		actually send - only SQLNET.ENCRYPTION_CLIENT=REQUIRED or
 		SQLNET.CRYPTO_CHECKSUM_CLIENT=REQUIRED fails, with ORA-12660,
 		and the limitation is documented in the config guide
+	fixed the firebird protocol module - a response buffer length that
+		arrived sign-extended from a 16 bit field was folded back down at
+		two of the five requests that carry one and not at the other
+		three, so a client that asked for 32768 bytes got a 65535 byte
+		ceiling at three of them - firebird folds it at all five, and now
+		so does this, in the same helper that caps it
+	fixed the firebird protocol module - the response buffer length on an
+		op_exec_immediate2 request was kept in the session, but that
+		request's reply is an sql response rather than an info response, so
+		the length governs nothing - firebird's own server ignores it and
+		its client sends zero - it's read and dropped now
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems

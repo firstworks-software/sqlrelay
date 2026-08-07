@@ -1145,7 +1145,7 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_firebird : public sqlrprotocol {
 					uint32_t *bytesread);
 		bool	readPadding(uint32_t *bytesread);
 
-		void	capRespBufferLen();
+		void	fixupRespBufferLen();
 
 		bool	writeInt(uint32_t val,
 					const char *name,
@@ -2849,7 +2849,7 @@ bool sqlrprotocol_firebird::infoDatabase() {
 		delete[] dbinfo;
 		return false;
 	}
-	capRespBufferLen();
+	fixupRespBufferLen();
 
 	// process requested db info items
 	const byte_t	*dbinfoptr=dbinfo;
@@ -3516,7 +3516,7 @@ bool sqlrprotocol_firebird::transactionInfo() {
 		delete[] trinfo;
 		return false;
 	}
-	capRespBufferLen();
+	fixupRespBufferLen();
 
 	// process requested tx info items
 	const byte_t	*trinfoptr=trinfo;
@@ -3829,13 +3829,7 @@ bool sqlrprotocol_firebird::prepareOrExecImmediate(bool execimmediate) {
 		delete[] items;
 		return false;
 	}
-
-	// the length arrives sign-extended from a short often enough that
-	// firebird's own decoder folds it back down
-	if ((respbufferlen&0xffff0000)==0xffff0000) {
-		respbufferlen&=0xffff;
-	}
-	capRespBufferLen();
+	fixupRespBufferLen();
 
 	debugEnd();
 
@@ -4274,6 +4268,12 @@ bool sqlrprotocol_firebird::execImmediate2() {
 		return false;
 	}
 
+	// This op shares a struct with op_prepare_statement, so it carries
+	// requested info items and a response buffer length that govern
+	// nothing here - its reply is an sql response, not an info response.
+	// Firebird's own server ignores both and its client sends zeros.  They
+	// still have to come off the socket, but the length goes into a local
+	// rather than the member, which only an info response reads.
 	uint32_t	clienttrhandle;
 	uint32_t	stmthandle;
 	uint32_t	dialect;
@@ -4281,20 +4281,21 @@ bool sqlrprotocol_firebird::execImmediate2() {
 	uint32_t	querylen=0;
 	uint32_t	itemslen=0;
 	byte_t		*items=NULL;
+	uint32_t	unusedrespbufferlen=0;
 	if (!readInt(&clienttrhandle,"transaction handle",&bytesread) ||
 		!readInt(&stmthandle,"statement handle",&bytesread) ||
 		!readInt(&dialect,"dialect",&bytesread) ||
 		!readString(&query,&querylen,"query",&bytesread) ||
 		!readBuffer(&items,&itemslen,
 				"requested sql info items",&bytesread) ||
-		!readInt(&respbufferlen,"response buffer length",&bytesread)) {
+		!readInt(&unusedrespbufferlen,
+				"response buffer length",&bytesread)) {
 		delete[] query;
 		delete[] items;
 		delete[] outfields;
 		cont->release(cursor);
 		return false;
 	}
-	capRespBufferLen();
 
 	debugEnd();
 
@@ -4528,11 +4529,7 @@ bool sqlrprotocol_firebird::infoSql() {
 		delete[] items;
 		return false;
 	}
-
-	if ((respbufferlen&0xffff0000)==0xffff0000) {
-		respbufferlen&=0xffff;
-	}
-	capRespBufferLen();
+	fixupRespBufferLen();
 
 	debugEnd();
 
@@ -5295,7 +5292,25 @@ bool sqlrprotocol_firebird::readPadding(uint32_t *bytesread) {
 	return true;
 }
 
-void sqlrprotocol_firebird::capRespBufferLen() {
+void sqlrprotocol_firebird::fixupRespBufferLen() {
+
+	// This field was a 16 bit short in older versions of the protocol, so
+	// an older client sends a length of 32768 or more sign-extended into
+	// the 32 bit field.  Firebird folds that back down wherever the field
+	// appears - fixupLength() in its src/remote/protocol.cpp - so this
+	// does too.  It has to run before the cap below, because 0xffff8000
+	// means 32768, and capping first would hand that client a 65535
+	// ceiling.
+	if ((respbufferlen&0xffff0000)==0xffff0000) {
+		if (getDebug()) {
+			stdoutput.printf("	folded sign-extended response "
+						"buffer length - got %u, "
+						"folded to %u\n",
+						respbufferlen,
+						respbufferlen&0xffff);
+		}
+		respbufferlen&=0xffff;
+	}
 
 	// The length never sizes an allocation - it's only the ceiling that
 	// truncates the response - but a client that declares a huge one never
