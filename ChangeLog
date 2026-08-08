@@ -1739,6 +1739,23 @@
 		character or datetime output parameter now goes back as the
 		type the client declared, the way a real sql server echoes one,
 		and a character one is blank padded to its declared width
+	fixed the tds protocol module - query text, procedure and parameter
+		names, and bulk load and rpc string values arrived as ucs-2
+		and were narrowed one byte per character, so every character
+		outside latin-1 became a '?' before the backend ever saw it;
+		all of those are now decoded to utf-8
+	fixed the tds protocol module - character values in a result set
+		went back to the client unconverted, so a char, varchar or
+		text value carried raw backend utf-8 while the wire declared
+		it cp1252, and an nchar, nvarchar, ntext or xml value was
+		widened a byte at a time rather than decoded; the non-unicode
+		types are now converted to cp1252, substituting '?' the way a
+		real sql server does, and the unicode types to ucs-2
+	fixed the tds protocol module - the login env change echoed the
+		client's own lcid back with no sort id, and every character
+		column's type info carried five zero bytes for its collation;
+		both now send the SQL_Latin1_General_CP1_CI_AS collation that
+		matches the cp1252 the character values are converted to
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems

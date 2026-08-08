@@ -1325,14 +1325,17 @@ int	main(int argc, char **argv) {
 	stdoutput.printf("\n");
 
 
-	// the tds version decides whether the n-types travel as ucs-2 or
-	// as server-charset bytes
+	// The tds version decides whether the n-types travel as ucs-2 or
+	// as server-charset bytes.  As above, [sqlrelay] pins 7.0 and
+	// [mssql] takes 7.4, and a real sql server acks back whatever
+	// version its client asked for.
 	stdoutput.printf("ct_con_props: get tds version\n");
 	intval=-1;
 	assertEquals(ct_con_props(dbconn,CS_GET,CS_TDS_VERSION,
 				(CS_VOID *)&intval,CS_UNUSED,
 				(CS_INT *)NULL),CS_SUCCEED);
-	assertEquals(intval,(issybase)?CS_TDS_50:CS_TDS_74);
+	assertEquals(intval,(issybase)?CS_TDS_50:
+				(issqlrelay)?CS_TDS_70:CS_TDS_74);
 	stdoutput.printf("\n");
 
 

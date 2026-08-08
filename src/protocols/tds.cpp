@@ -4,6 +4,7 @@
 #include <sqlrelay/sqlrserver.h>
 #include <rudiments/character.h>
 #include <rudiments/wcharstring.h>
+#include <rudiments/iconvert.h>
 #include <rudiments/process.h>
 #include <rudiments/sys.h>
 #include <rudiments/datetime.h>
@@ -152,6 +153,29 @@
 // oledb
 #define OLEDB_OFF	0x00
 #define OLEDB_ON	0x01
+
+// The collation a real sql server running SQL_Latin1_General_CP1_CI_AS
+// sends, both in the login env change and in every character column's
+// type info: lcid 0x0409 (en-US), flags 0x0d (ignore case, width and
+// kana) and sort id 0x34 (52).  It is not derived from the back end - no
+// back end reports a sql server collation, and most aren't sql server at
+// all - but it does have to agree with TDS_NONUNICODE_CHARSET below,
+// which is the encoding it tells the client the non-unicode character
+// columns are in.
+#define TDS_COLLATION_LCID	0x00D00409
+#define TDS_COLLATION_SORTID	0x34
+
+// character encodings used when moving character data between the client
+// and the back end
+//
+// The n-types are ucs-2 in the tds spec, but real clients send utf-16
+// surrogate pairs for characters outside the bmp, and utf-16le decodes
+// those correctly and ucs-2 identically otherwise.  //TRANSLIT makes
+// iconv substitute a '?' for a character cp1252 has no form for, which is
+// what a real sql server stores in a non-unicode column in that case.
+#define TDS_UNICODE_CHARSET	"UTF-16LE"
+#define TDS_NONUNICODE_CHARSET	"CP1252//TRANSLIT"
+#define TDS_BACKEND_CHARSET	"UTF-8"
 
 // envchange types
 #define ENV_CHANGE_DATABASE					1
@@ -908,6 +932,37 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_tds : public sqlrprotocol {
 		void	free();
 		void	reInit();
 
+		// Converts "insize" bytes at "inbuf" from character
+		// encoding "inenc" to "outenc".  Returns a newly
+		// allocated, null-terminated buffer and sets "outsize" to
+		// the size of the converted data in bytes, or returns NULL
+		// if the conversion isn't supported or the data can't be
+		// converted.
+		byte_t	*convertCharset(const byte_t *inbuf,
+					size_t insize,
+					const char *inenc,
+					const char *outenc,
+					size_t *outsize);
+		// Converts "chars" characters of the client's ucs-2 to the
+		// utf-8 that the back end takes query text and string
+		// values in.  Sets "size" to the result's length in bytes.
+		char	*ucs2ToUtf8(const ucs2_t *str,
+					size_t chars,
+					size_t *size);
+		// Converts "size" bytes of the back end's utf-8 to ucs-2,
+		// for the client's unicode column types.  Sets "chars" to
+		// the result's length in characters.
+		ucs2_t	*utf8ToUcs2(const char *str,
+					size_t size,
+					size_t *chars);
+		// Converts "size" bytes of the back end's utf-8 to the
+		// cp1252 that the collation declares for the client's
+		// non-unicode column types.  Sets "outsize" to the
+		// result's length in bytes.
+		char	*utf8ToCp1252(const char *str,
+					size_t size,
+					size_t *outsize);
+
 		bool	recvPacket(byte_t *packettype);
 		bool	sendPacket();
 
@@ -996,6 +1051,7 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_tds : public sqlrprotocol {
 					uint16_t col,
 					uint16_t coltype,
 					byte_t tdstype);
+		void	writeCollation();
 		void	tableName(byte_t tdstype);
 		void	cryptoMetaData();
 		void	colName(sqlrservercursor *cursor, uint16_t col);
@@ -1570,6 +1626,101 @@ void sqlrprotocol_tds::free() {
 void sqlrprotocol_tds::reInit() {
 	free();
 	init();
+}
+
+byte_t *sqlrprotocol_tds::convertCharset(const byte_t *inbuf,
+						size_t insize,
+						const char *inenc,
+						const char *outenc,
+						size_t *outsize) {
+
+	// size the output buffer.  4 bytes per input byte covers every
+	// conversion done here, and 2 more leave room to null-terminate
+	// the result whether it's 1 or 2 bytes per character.
+	size_t	outbufsize=insize*4+2;
+	byte_t	*outbuf=new byte_t[outbufsize];
+
+	// convert
+	// FIXME: reuse the converter rather than re-creating it over and over
+	iconvert	ic;
+	ic.setFromEncoding(inenc);
+	ic.setFromBuffer(inbuf);
+	ic.setFromBufferSize(insize);
+	ic.setToEncoding(outenc);
+	ic.setToBuffer(outbuf);
+	ic.setToBufferSize(outbufsize);
+	if (!ic.convert()) {
+		debugWrite("charset conversion from %s to %s failed",
+							inenc,outenc);
+		delete[] outbuf;
+		return NULL;
+	}
+
+	*outsize=(size_t)(ic.getToBufferPosition()-outbuf);
+
+	// null-terminate
+	outbuf[*outsize]='\0';
+	outbuf[(*outsize)+1]='\0';
+
+	return outbuf;
+}
+
+char *sqlrprotocol_tds::ucs2ToUtf8(const ucs2_t *str,
+					size_t chars,
+					size_t *size) {
+
+	char	*out=(char *)convertCharset((const byte_t *)str,
+						chars*sizeof(ucs2_t),
+						TDS_UNICODE_CHARSET,
+						TDS_BACKEND_CHARSET,
+						size);
+	if (out) {
+		return out;
+	}
+
+	// fall back to a narrowing copy, which is lossy but keeps the
+	// ascii that most statements are made of
+	out=charstring::duplicateUcs2(str,chars);
+	*size=charstring::getLength(out);
+	return out;
+}
+
+ucs2_t *sqlrprotocol_tds::utf8ToUcs2(const char *str,
+					size_t size,
+					size_t *chars) {
+
+	size_t	outsize;
+	ucs2_t	*out=(ucs2_t *)convertCharset((const byte_t *)str,size,
+						TDS_BACKEND_CHARSET,
+						TDS_UNICODE_CHARSET,
+						&outsize);
+	if (out) {
+		*chars=outsize/sizeof(ucs2_t);
+		return out;
+	}
+
+	// fall back to a widening copy
+	out=ucs2charstring::duplicate(str,size);
+	*chars=size;
+	return out;
+}
+
+char *sqlrprotocol_tds::utf8ToCp1252(const char *str,
+					size_t size,
+					size_t *outsize) {
+
+	char	*out=(char *)convertCharset((const byte_t *)str,size,
+						TDS_BACKEND_CHARSET,
+						TDS_NONUNICODE_CHARSET,
+						outsize);
+	if (out) {
+		return out;
+	}
+
+	// fall back to passing the bytes through
+	out=charstring::duplicate(str,size);
+	*outsize=size;
+	return out;
 }
 
 bool sqlrprotocol_tds::recvPacket(byte_t *packettype) {
@@ -2971,9 +3122,13 @@ bool sqlrprotocol_tds::tds7Login() {
 	}
 
 	// change collation...
+	// A real sql server answers with the collation it actually uses
+	// rather than echoing the client's lcid back, and the client sizes
+	// its charset conversions from that.
 	if (retval) {
 		if (changeCollation(clientlcid)) {
-			envChangeSqlCollation(clientlcid,0);
+			envChangeSqlCollation(TDS_COLLATION_LCID,
+						TDS_COLLATION_SORTID);
 		}
 	}
 
@@ -3190,8 +3345,10 @@ bool sqlrprotocol_tds::changeCollation(uint32_t lcid) {
 	bool		lcidbinary2=(lcid&(0x01<<5))>>5;
 	byte_t		lcidversion=(lcid&(0x0F<<8))>>8;
 
-	// FIXME: actually implement this
-
+	// The lcid in a login is a request, not a setting.  There is no
+	// per-session collation to switch here - the back end's own is
+	// whatever it is - so any lcid is accepted, and the caller sends
+	// the collation the server really uses back to the client.
 	bool	changecollationsuccess=true;
 
 	if (getDebug()) {
@@ -3423,15 +3580,22 @@ bool sqlrprotocol_tds::sqlBatch() {
 		return sendQueryTooLargeError(sqllength);
 	}
 
-	// FIXME: Ideally we could just send the unconverted query, as long
-	// as we also send the proper size in bytes.  SQL Relay really
-	// appears to want ascii queries though, or at least it wants the
-	// query itself (other than embedded values) to be acsii.
-	char	*sql8=charstring::duplicateUcs2(sql,sqllength);
+	// decode the query
+	size_t	sql8size;
+	char	*sql8=ucs2ToUtf8(sql,sqllength,&sql8size);
 
 	debugWrite("sql: %s",sql8);
-	debugWrite("sqllength: %lld",(uint64_t)sqllength);
+	debugWrite("sqllength: %lld",(uint64_t)sql8size);
 	debugEnd();
+
+	// bounds checking again - utf-8 needs up to 3 bytes for a character
+	// that took 2 on the wire, and prepareQuery silently truncates
+	// rather than failing
+	if (sql8size>maxquerysize) {
+		delete[] sql8;
+		cont->release(cursor);
+		return sendQueryTooLargeError(sql8size);
+	}
 
 	// A bulk load opens with an "insert bulk" statement.  Only the
 	// protocol module can answer that - passing it through would put
@@ -3473,7 +3637,7 @@ bool sqlrprotocol_tds::sqlBatch() {
 
 	// run the query
 	bool	success=
-		cont->prepareQuery(cursor,sql8,(uint32_t)sqllength,
+		cont->prepareQuery(cursor,sql8,(uint32_t)sql8size,
 						true,true,true,true) &&
 		cont->executeQuery(cursor,true,true,true,true);
 
@@ -4205,20 +4369,7 @@ void sqlrprotocol_tds::typeInfo(sqlrservercursor *cursor,
 				case TDS_TYPE_NTEXT:
 				case TDS_TYPE_NCHAR:
 				case TDS_TYPE_NVARCHAR:
-					{
-					// FIXME: collation...
-					// send negotiated lcid?
-					// for now, send "raw" collation
-					byte_t	coll[5]={0,0,0,0,0};
-					write(&resppacket,coll,sizeof(coll));
-					if (getDebug()) {
-						stringbuffer	b;
-						b.printBits(coll,sizeof(coll));
-						debugWrite(
-							"collation: %s",
-							b.getString());
-					}
-					}
+					writeCollation();
 					break;
 			}
 		}
@@ -4253,6 +4404,21 @@ void sqlrprotocol_tds::typeInfo(sqlrservercursor *cursor,
 		debugWrite("partlentype...");
 
 		// FIXME: [ushortmaxlen] [collation] [xml_info] [utd_info]
+	}
+}
+
+void sqlrprotocol_tds::writeCollation() {
+
+	// a collation is a little-endian 32-bit lcid/flags/version bitmap
+	// followed by a sort id
+	writeLE(&resppacket,(uint32_t)TDS_COLLATION_LCID);
+	write(&resppacket,(byte_t)TDS_COLLATION_SORTID);
+
+	if (getDebug()) {
+		stringbuffer	b;
+		b.printBits((uint32_t)TDS_COLLATION_LCID);
+		debugWrite("collation: %s %d",
+				b.getString(),TDS_COLLATION_SORTID);
 	}
 }
 
@@ -5007,9 +5173,14 @@ void sqlrprotocol_tds::field(uint16_t coltype,
 		case TDS_TYPE_BIGCHAR:
 		case TDS_TYPE_BIGVARCHR:
 			{
-			writeLE(&resppacket,(uint16_t)fieldsize);
-			write(&resppacket,field,fieldsize);
-			debugWrite("size: %d",fieldsize);
+			// the collation declares these cp1252
+			size_t	field8size;
+			char	*field8=utf8ToCp1252(field,fieldsize,
+							&field8size);
+			writeLE(&resppacket,(uint16_t)field8size);
+			write(&resppacket,field8,field8size);
+			delete[] field8;
+			debugWrite("size: %lld",(uint64_t)field8size);
 			debugWrite("data: ");
 			debugWrite("%.*s",fieldsize,field);
 			}
@@ -5018,14 +5189,15 @@ void sqlrprotocol_tds::field(uint16_t coltype,
 		case TDS_TYPE_NVARCHAR:
 			{
 			// the data is ucs-2, and the size is in bytes
-			ucs2_t	*field16=ucs2charstring::duplicate(
-							field,fieldsize);
+			size_t	field16length;
+			ucs2_t	*field16=utf8ToUcs2(field,fieldsize,
+							&field16length);
 			writeLE(&resppacket,
-				(uint16_t)(fieldsize*sizeof(ucs2_t)));
-			write(&resppacket,field16,fieldsize);
+				(uint16_t)(field16length*sizeof(ucs2_t)));
+			write(&resppacket,field16,field16length);
 			delete[] field16;
 			debugWrite("size: %lld",
-				(uint64_t)(fieldsize*sizeof(ucs2_t)));
+				(uint64_t)(field16length*sizeof(ucs2_t)));
 			debugWrite("data: ");
 			debugWrite("%.*s",fieldsize,field);
 			}
@@ -5035,9 +5207,14 @@ void sqlrprotocol_tds::field(uint16_t coltype,
 			break;
 		case TDS_TYPE_TEXT:
 			{
-			writeLE(&resppacket,(uint32_t)fieldsize);
-			write(&resppacket,field,fieldsize);
-			debugWrite("size: %d",fieldsize);
+			// the collation declares this cp1252
+			size_t	field8size;
+			char	*field8=utf8ToCp1252(field,fieldsize,
+							&field8size);
+			writeLE(&resppacket,(uint32_t)field8size);
+			write(&resppacket,field8,field8size);
+			delete[] field8;
+			debugWrite("size: %lld",(uint64_t)field8size);
 			debugWrite("data: ");
 			debugWrite("%.*s",fieldsize,field);
 			}
@@ -5046,14 +5223,15 @@ void sqlrprotocol_tds::field(uint16_t coltype,
 		case TDS_TYPE_NTEXT:
 			{
 			// the data is ucs-2, and the size is in bytes
-			ucs2_t	*field16=ucs2charstring::duplicate(
-							field,fieldsize);
+			size_t	field16length;
+			ucs2_t	*field16=utf8ToUcs2(field,fieldsize,
+							&field16length);
 			writeLE(&resppacket,
-				(uint32_t)(fieldsize*sizeof(ucs2_t)));
-			write(&resppacket,field16,fieldsize);
+				(uint32_t)(field16length*sizeof(ucs2_t)));
+			write(&resppacket,field16,field16length);
 			delete[] field16;
 			debugWrite("size: %lld",
-				(uint64_t)(fieldsize*sizeof(ucs2_t)));
+				(uint64_t)(field16length*sizeof(ucs2_t)));
 			debugWrite("data: ");
 			debugWrite("%.*s",fieldsize,field);
 			}
@@ -7106,10 +7284,11 @@ bool sqlrprotocol_tds::bulkValue(const byte_t **rpinout,
 			const byte_t	*dummy;
 			ucs2_t		*value16=new ucs2_t[length];
 			read(rp,value16,length,&dummy);
-			char		*value=charstring::duplicateUcs2(
-						value16,(size_t)length);
+			size_t		valuesize;
+			char		*value=ucs2ToUtf8(value16,
+						(size_t)length,&valuesize);
 			delete[] value16;
-			bulkString(bv,bindpool,value,length);
+			bulkString(bv,bindpool,value,valuesize);
 			delete[] value;
 			rp+=size;
 			rpsize-=size;
@@ -7140,11 +7319,11 @@ bool sqlrprotocol_tds::bulkValue(const byte_t **rpinout,
 				const byte_t	*dummy;
 				ucs2_t		*value16=new ucs2_t[length];
 				read(rp,value16,length,&dummy);
-				char		*value=
-					charstring::duplicateUcs2(
-						value16,(size_t)length);
+				size_t		valuesize;
+				char		*value=ucs2ToUtf8(value16,
+						(size_t)length,&valuesize);
 				delete[] value16;
-				bulkString(bv,bindpool,value,length);
+				bulkString(bv,bindpool,value,valuesize);
 				delete[] value;
 			} else if (tdstype==TDS_TYPE_IMAGE) {
 				bulkBinary(bv,bindpool,rp,size);
@@ -7249,8 +7428,9 @@ bool sqlrprotocol_tds::rpc(const byte_t **rpinout,
 		ucs2_t	*procname16=new ucs2_t[procnamelen];
 		read(rp,procname16,procnamelen,&rp);
 		rpsize-=procnamelen*sizeof(ucs2_t);
-		procname=charstring::duplicateUcs2(procname16,
-							(size_t)procnamelen);
+		size_t	procnamesize;
+		procname=ucs2ToUtf8(procname16,(size_t)procnamelen,
+							&procnamesize);
 		delete[] procname16;
 
 		debugWrite("procname: %s",procname);
@@ -9099,7 +9279,8 @@ bool sqlrprotocol_tds::param(uint16_t param,
 		pname16=new ucs2_t[pnamelen];
 		read(rp,pname16,pnamelen,&rp);
 		rpsize-=pnamesize;
-		pname=charstring::duplicateUcs2(pname16,(size_t)pnamelen);
+		size_t	pname8size;
+		pname=ucs2ToUtf8(pname16,(size_t)pnamelen,&pname8size);
 	}
 
 
@@ -9982,21 +10163,25 @@ bool sqlrprotocol_tds::paramValue(uint16_t param,
 				const byte_t	*dummy;
 				ucs2_t		*value16=new ucs2_t[length];
 				read(rp,value16,length,&dummy);
-				char		*value=
-					charstring::duplicateUcs2(
-							value16,
-							(size_t)length);
+				size_t		valuesize;
+				char		*value=ucs2ToUtf8(value16,
+							(size_t)length,
+							&valuesize);
 				delete[] value16;
 
+				// the pad is ascii spaces, one byte each,
+				// however wide the value itself decoded
+				uint32_t	padlength=valuelength-length;
+
 				bv->type=SQLRSERVERBINDVARTYPE_STRING;
-				bv->valuesize=valuelength;
+				bv->valuesize=(uint32_t)(valuesize+padlength);
 				bv->value.stringval=(char *)
-					rpcparampool.allocate(valuelength+1);
+					rpcparampool.allocate(bv->valuesize+1);
 				bytestring::copy(bv->value.stringval,
-							value,length);
-				bytestring::set(bv->value.stringval+length,
-						' ',valuelength-length);
-				bv->value.stringval[valuelength]='\0';
+							value,valuesize);
+				bytestring::set(bv->value.stringval+valuesize,
+							' ',padlength);
+				bv->value.stringval[bv->valuesize]='\0';
 				bv->isnull=cont->getNonNullBindValue();
 
 				delete[] value;
@@ -10056,17 +10241,19 @@ bool sqlrprotocol_tds::paramValue(uint16_t param,
 					const byte_t	*dummy;
 					ucs2_t	*value16=new ucs2_t[length];
 					read(rp,value16,length,&dummy);
-					char	*value=
-						charstring::duplicateUcs2(
-							value16,(size_t)length);
+					size_t	valuesize;
+					char	*value=ucs2ToUtf8(value16,
+							(size_t)length,
+							&valuesize);
 					delete[] value16;
 
-					bv->valuesize=length;
+					bv->valuesize=(uint32_t)valuesize;
 					bv->value.stringval=(char *)
-						rpcparampool.allocate(length+1);
+						rpcparampool.allocate(
+								valuesize+1);
 					bytestring::copy(bv->value.stringval,
-								value,length);
-					bv->value.stringval[length]='\0';
+								value,valuesize);
+					bv->value.stringval[valuesize]='\0';
 
 					delete[] value;
 
@@ -10563,11 +10750,22 @@ void sqlrprotocol_tds::returnValueChar(sqlrserverbindvar *bv,
 				!bv->value.stringval ||
 				cont->getBindValueIsNull(bv->isnull));
 
-	// the value is whatever the backend put in the buffer, blank padded
-	// out to the declared size if the client declared a fixed-width type
+	// the value is whatever the backend put in the buffer, decoded out
+	// of its utf-8 into what the client's declared type takes, and then
+	// blank padded out to the declared size if that type is fixed-width
 	const char	*value=(isnull)?NULL:bv->value.stringval;
-	uint16_t	valuesize=(isnull)?0:
-				(uint16_t)charstring::getLength(value);
+	size_t		valuelength=(isnull)?0:charstring::getLength(value);
+	char		*value8=NULL;
+	ucs2_t		*value16=NULL;
+	size_t		converted=0;
+	if (!isnull) {
+		if (unicode) {
+			value16=utf8ToUcs2(value,valuelength,&converted);
+		} else {
+			value8=utf8ToCp1252(value,valuelength,&converted);
+		}
+	}
+	uint16_t	valuesize=(uint16_t)converted;
 	if (valuesize>maxsize) {
 		valuesize=(uint16_t)maxsize;
 	}
@@ -10578,8 +10776,7 @@ void sqlrprotocol_tds::returnValueChar(sqlrserverbindvar *bv,
 	write(&resppacket,outtype);
 	writeLE(&resppacket,(uint16_t)((unicode)?maxsize*2:maxsize));
 	if (negotiatedtdsversion>=710) {
-		byte_t	coll[5]={0,0,0,0,0};
-		write(&resppacket,coll,sizeof(coll));
+		writeCollation();
 	}
 
 	// value - 0xFFFF means null
@@ -10590,8 +10787,6 @@ void sqlrprotocol_tds::returnValueChar(sqlrserverbindvar *bv,
 	}
 
 	if (unicode) {
-		ucs2_t	*value16=ucs2charstring::duplicate(value,
-						(size_t)valuesize);
 		writeLE(&resppacket,(uint16_t)((valuesize+padsize)*2));
 		write(&resppacket,value16,valuesize);
 		delete[] value16;
@@ -10600,13 +10795,14 @@ void sqlrprotocol_tds::returnValueChar(sqlrserverbindvar *bv,
 		}
 	} else {
 		writeLE(&resppacket,(uint16_t)(valuesize+padsize));
-		write(&resppacket,(const byte_t *)value,valuesize);
+		write(&resppacket,(const byte_t *)value8,valuesize);
+		delete[] value8;
 		for (uint16_t i=0; i<padsize; i++) {
 			write(&resppacket,(byte_t)' ');
 		}
 	}
 
-	debugWrite("value: %.*s",valuesize,value);
+	debugWrite("value: %.*s",(int32_t)valuelength,value);
 }
 
 void sqlrprotocol_tds::returnValueDateTime(sqlrserverbindvar *bv,
