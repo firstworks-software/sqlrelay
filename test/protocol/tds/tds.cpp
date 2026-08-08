@@ -6338,6 +6338,811 @@ int	main(int argc, char **argv) {
 	}
 
 
+	// sp_cursor is the positioned update/delete/insert proc, and it is
+	// driven here as a hand-built rpc rather than through ct_cursor().
+	// freetds cannot emit CS_CURSOR_UPDATE or CS_CURSOR_DELETE at all -
+	// both fail inside libct before anything reaches the wire - and its
+	// declare/open path never hands the numeric cursor id back to the
+	// caller, which sp_cursor needs.  So the cursor is opened and
+	// fetched by name too, with sp_cursoropen and sp_cursorfetch, the
+	// way an odbc driver drives them.  ASE has none of these procs.
+	//
+	// Three things differ from a real server by design and are not
+	// asserted here: the cursor id, sp_cursoropen's output parameter
+	// values, and the key bit in the cursor result's column status.
+	if (!issybase) {
+
+		// The positioned dml builds its where clause out of the
+		// table's primary key, so this needs a table of its own -
+		// cursortable has no key, and adding one would move the
+		// column metadata that the blocks above assert.
+		query="drop table poscursortable";
+		ct_command(cmd,CS_LANG_CMD,query,
+				charstring::getLength(query),CS_UNUSED);
+		ct_send(cmd);
+		while (ct_results(cmd,&resultstype)==CS_SUCCEED) {}
+		ct_cancel(NULL,cmd,CS_CANCEL_ALL);
+
+
+		stdoutput.printf("ct_command: create\n");
+		query="create table poscursortable ("
+				"posid int not null primary key, "
+				"posname varchar(20) null, "
+				"posval int null"
+				")";
+		assertEquals(ct_command(cmd,CS_LANG_CMD,
+					query,charstring::getLength(query),
+					CS_UNUSED),CS_SUCCEED);
+		assertEquals(ct_send(cmd),CS_SUCCEED);
+		results=ct_results(cmd,&resultstype);
+		assertEquals(results,CS_SUCCEED);
+		assertEquals(resultstype,CS_CMD_SUCCEED);
+		results=ct_results(cmd,&resultstype);
+		assertEquals(results,CS_SUCCEED);
+		assertEquals(resultstype,CS_CMD_DONE);
+		results=ct_results(cmd,&resultstype);
+		assertEquals(results,CS_END_RESULTS);
+		assertEquals(ct_cancel(NULL,cmd,CS_CANCEL_ALL),CS_SUCCEED);
+		stdoutput.printf("\n");
+
+
+		stdoutput.printf("ct_command: insert\n");
+		const char	*posinsert[3]={
+			"insert into poscursortable values (1,'one',10)",
+			"insert into poscursortable values (2,'two',20)",
+			"insert into poscursortable values (3,'three',30)"};
+		for (CS_INT i=0; i<3; i++) {
+			assertEquals(ct_command(cmd,CS_LANG_CMD,
+					(CS_CHAR *)posinsert[i],
+					charstring::getLength(posinsert[i]),
+					CS_UNUSED),CS_SUCCEED);
+			assertEquals(ct_send(cmd),CS_SUCCEED);
+			results=ct_results(cmd,&resultstype);
+			assertEquals(results,CS_SUCCEED);
+			assertEquals(resultstype,CS_CMD_SUCCEED);
+			assertEquals(ct_res_info(cmd,CS_ROW_COUNT,
+					(CS_VOID *)&affectedrows,CS_UNUSED,
+					(CS_INT *)NULL),CS_SUCCEED);
+			assertEquals(affectedrows,1);
+			results=ct_results(cmd,&resultstype);
+			assertEquals(results,CS_SUCCEED);
+			assertEquals(resultstype,CS_CMD_DONE);
+			results=ct_results(cmd,&resultstype);
+			assertEquals(results,CS_END_RESULTS);
+			assertEquals(ct_cancel(NULL,cmd,CS_CANCEL_ALL),
+								CS_SUCCEED);
+		}
+		stdoutput.printf("\n");
+
+
+		CS_DATAFMT	posparam[7];
+		CS_INT		posintvalue[7];
+		CS_INT		poscursorid=0;
+		CS_DATAFMT	posdesc[3];
+		const char	*postable="poscursortable";
+		const char	*posselect="select posid, posname, posval "
+					"from poscursortable order by posid";
+		const char	*posexpectid[3];
+		const char	*posexpectname[3];
+		const char	*posexpectval[3];
+		CS_INT		posexpectrows=0;
+
+		// A char parameter's maxlength is the width that goes on the
+		// wire, and the value is padded out to it, so every one of
+		// them below is the exact length of what it carries.  A
+		// padded table name would not name the table.
+		CS_INT		postablelen=charstring::getLength(postable);
+
+
+		// sp_cursoropen @cursor out, @stmt, @scrollopt out,
+		//		@ccopt out, @rowcount out
+		stdoutput.printf("ct_command: rpc sp_cursoropen\n");
+		assertEquals(ct_command(cmd,CS_RPC_CMD,
+					(CS_CHAR *)"sp_cursoropen",
+					CS_NULLTERM,CS_UNUSED),CS_SUCCEED);
+		bytestring::zero(&(posparam[0]),sizeof(CS_DATAFMT));
+		posparam[0].datatype=CS_INT_TYPE;
+		posparam[0].maxlength=4;
+		posparam[0].count=1;
+		posparam[0].status=CS_RETURN;
+		posintvalue[0]=0;
+		assertEquals(ct_param(cmd,&(posparam[0]),
+					(CS_VOID *)&(posintvalue[0]),
+					sizeof(CS_INT),0),CS_SUCCEED);
+		bytestring::zero(&(posparam[1]),sizeof(CS_DATAFMT));
+		posparam[1].datatype=CS_CHAR_TYPE;
+		posparam[1].maxlength=charstring::getLength(posselect);
+		posparam[1].count=1;
+		assertEquals(ct_param(cmd,&(posparam[1]),
+					(CS_VOID *)posselect,
+					charstring::getLength(posselect),
+					0),CS_SUCCEED);
+		// keyset and optimistic are what an updatable cursor asks
+		// for; the server answers with what it can actually do
+		for (CS_INT i=2; i<5; i++) {
+			bytestring::zero(&(posparam[i]),sizeof(CS_DATAFMT));
+			posparam[i].datatype=CS_INT_TYPE;
+			posparam[i].maxlength=4;
+			posparam[i].count=1;
+			posparam[i].status=CS_RETURN;
+			posintvalue[i]=(i==2)?1:((i==3)?4:0);
+			assertEquals(ct_param(cmd,&(posparam[i]),
+					(CS_VOID *)&(posintvalue[i]),
+					sizeof(CS_INT),0),CS_SUCCEED);
+		}
+		assertEquals(ct_send(cmd),CS_SUCCEED);
+
+		// the shape of the cursor's result set arrives first, with
+		// no rows - the fetch below is what produces those
+		results=ct_results(cmd,&resultstype);
+		assertEquals(results,CS_SUCCEED);
+		assertEquals(resultstype,CS_ROW_RESULT);
+		ncols=-1;
+		assertEquals(ct_res_info(cmd,CS_NUMDATA,
+					(CS_VOID *)&ncols,CS_UNUSED,
+					(CS_INT *)NULL),CS_SUCCEED);
+		assertEquals(ncols,3);
+		bytestring::zero(&(posdesc[0]),sizeof(CS_DATAFMT));
+		assertEquals(ct_describe(cmd,1,&(posdesc[0])),CS_SUCCEED);
+		assertEquals(posdesc[0].name,"posid");
+		assertEquals(posdesc[0].datatype,CS_INT_TYPE);
+		assertEquals(posdesc[0].maxlength,4);
+		bytestring::zero(&(posdesc[1]),sizeof(CS_DATAFMT));
+		assertEquals(ct_describe(cmd,2,&(posdesc[1])),CS_SUCCEED);
+		assertEquals(posdesc[1].name,"posname");
+		assertEquals(posdesc[1].datatype,CS_CHAR_TYPE);
+		assertEquals(posdesc[1].maxlength,20);
+		bytestring::zero(&(posdesc[2]),sizeof(CS_DATAFMT));
+		assertEquals(ct_describe(cmd,3,&(posdesc[2])),CS_SUCCEED);
+		assertEquals(posdesc[2].name,"posval");
+		assertEquals(posdesc[2].datatype,CS_INT_TYPE);
+		assertEquals(posdesc[2].maxlength,4);
+		assertEquals(ct_fetch(cmd,CS_UNUSED,CS_UNUSED,
+					CS_UNUSED,&rowsread),CS_END_DATA);
+		results=ct_results(cmd,&resultstype);
+		assertEquals(results,CS_SUCCEED);
+		assertEquals(resultstype,CS_CMD_DONE);
+
+		results=ct_results(cmd,&resultstype);
+		assertEquals(results,CS_SUCCEED);
+		assertEquals(resultstype,CS_STATUS_RESULT);
+		bytestring::zero(dyndata[0],1024);
+		assertEquals(ct_bind(cmd,1,&(dynfmt[0]),
+					(CS_VOID *)dyndata[0],
+					&(dyndatalength[0]),
+					&(dynnullindicator[0])),CS_SUCCEED);
+		assertEquals(ct_fetch(cmd,CS_UNUSED,CS_UNUSED,
+					CS_UNUSED,&rowsread),CS_SUCCEED);
+		assertEquals(dyndata[0],"0");
+		assertEquals(ct_fetch(cmd,CS_UNUSED,CS_UNUSED,
+					CS_UNUSED,&rowsread),CS_END_DATA);
+
+		// The cursor id is the first of the four output parameters.
+		// Its value, and the other three, are the server's to pick,
+		// so only the shape is asserted.
+		results=ct_results(cmd,&resultstype);
+		assertEquals(results,CS_SUCCEED);
+		assertEquals(resultstype,CS_PARAM_RESULT);
+		ncols=-1;
+		assertEquals(ct_res_info(cmd,CS_NUMDATA,
+					(CS_VOID *)&ncols,CS_UNUSED,
+					(CS_INT *)NULL),CS_SUCCEED);
+		assertEquals(ncols,4);
+		bytestring::zero(dyndata[0],1024);
+		assertEquals(ct_bind(cmd,1,&(dynfmt[0]),
+					(CS_VOID *)dyndata[0],
+					&(dyndatalength[0]),
+					&(dynnullindicator[0])),CS_SUCCEED);
+		assertEquals(ct_fetch(cmd,CS_UNUSED,CS_UNUSED,
+					CS_UNUSED,&rowsread),CS_SUCCEED);
+		assertEquals(rowsread,1);
+		poscursorid=(CS_INT)charstring::convertToInteger(dyndata[0]);
+		assertEquals(ct_fetch(cmd,CS_UNUSED,CS_UNUSED,
+					CS_UNUSED,&rowsread),CS_END_DATA);
+		results=ct_results(cmd,&resultstype);
+		assertEquals(results,CS_SUCCEED);
+		assertEquals(resultstype,CS_CMD_SUCCEED);
+		results=ct_results(cmd,&resultstype);
+		assertEquals(results,CS_SUCCEED);
+		assertEquals(resultstype,CS_CMD_DONE);
+		results=ct_results(cmd,&resultstype);
+		assertEquals(results,CS_END_RESULTS);
+		assertEquals(ct_cancel(NULL,cmd,CS_CANCEL_ALL),CS_SUCCEED);
+		stdoutput.printf("\n");
+
+
+		// sp_cursorfetch @cursor, @fetchtype, @rownum, @nrows -
+		// fetch type 2 is NEXT, and one row at a time is what makes
+		// "the current row" a single row for sp_cursor to land on
+		stdoutput.printf("ct_command: rpc sp_cursorfetch\n");
+		assertEquals(ct_command(cmd,CS_RPC_CMD,
+					(CS_CHAR *)"sp_cursorfetch",
+					CS_NULLTERM,CS_UNUSED),CS_SUCCEED);
+		for (CS_INT i=0; i<4; i++) {
+			bytestring::zero(&(posparam[i]),sizeof(CS_DATAFMT));
+			posparam[i].datatype=CS_INT_TYPE;
+			posparam[i].maxlength=4;
+			posparam[i].count=1;
+			posintvalue[i]=(i==0)?poscursorid:((i==1)?2:1);
+			assertEquals(ct_param(cmd,&(posparam[i]),
+					(CS_VOID *)&(posintvalue[i]),
+					sizeof(CS_INT),0),CS_SUCCEED);
+		}
+		assertEquals(ct_send(cmd),CS_SUCCEED);
+		results=ct_results(cmd,&resultstype);
+		assertEquals(results,CS_SUCCEED);
+		assertEquals(resultstype,CS_ROW_RESULT);
+		for (CS_INT i=0; i<3; i++) {
+			bytestring::zero(cursdata[i],256);
+			assertEquals(ct_bind(cmd,i+1,&(cursfmt[i]),
+					(CS_VOID *)cursdata[i],
+					&(cursdatalength[i]),
+					&(cursnullindicator[i])),CS_SUCCEED);
+		}
+		assertEquals(ct_fetch(cmd,CS_UNUSED,CS_UNUSED,
+					CS_UNUSED,&rowsread),CS_SUCCEED);
+		assertEquals(rowsread,1);
+		assertEquals(cursdata[0],"1");
+		assertEquals(cursdata[1],"one");
+		assertEquals(cursdata[2],"10");
+		assertEquals(ct_fetch(cmd,CS_UNUSED,CS_UNUSED,
+					CS_UNUSED,&rowsread),CS_END_DATA);
+		results=ct_results(cmd,&resultstype);
+		assertEquals(results,CS_SUCCEED);
+		assertEquals(resultstype,CS_CMD_DONE);
+		assertEquals(ct_res_info(cmd,CS_ROW_COUNT,
+					(CS_VOID *)&affectedrows,CS_UNUSED,
+					(CS_INT *)NULL),CS_SUCCEED);
+		assertEquals(affectedrows,1);
+		results=ct_results(cmd,&resultstype);
+		assertEquals(results,CS_SUCCEED);
+		assertEquals(resultstype,CS_STATUS_RESULT);
+		bytestring::zero(dyndata[0],1024);
+		assertEquals(ct_bind(cmd,1,&(dynfmt[0]),
+					(CS_VOID *)dyndata[0],
+					&(dyndatalength[0]),
+					&(dynnullindicator[0])),CS_SUCCEED);
+		assertEquals(ct_fetch(cmd,CS_UNUSED,CS_UNUSED,
+					CS_UNUSED,&rowsread),CS_SUCCEED);
+		assertEquals(dyndata[0],"0");
+		assertEquals(ct_fetch(cmd,CS_UNUSED,CS_UNUSED,
+					CS_UNUSED,&rowsread),CS_END_DATA);
+		results=ct_results(cmd,&resultstype);
+		assertEquals(results,CS_SUCCEED);
+		assertEquals(resultstype,CS_CMD_SUCCEED);
+		results=ct_results(cmd,&resultstype);
+		assertEquals(results,CS_SUCCEED);
+		assertEquals(resultstype,CS_CMD_DONE);
+		results=ct_results(cmd,&resultstype);
+		assertEquals(results,CS_END_RESULTS);
+		assertEquals(ct_cancel(NULL,cmd,CS_CANCEL_ALL),CS_SUCCEED);
+		stdoutput.printf("\n");
+
+
+		// sp_cursor @cursor, @optype, @rownum, @table, then one
+		// parameter per column to set, named for the column with a
+		// leading @.  Optype 1 is update.
+		stdoutput.printf("ct_command: rpc sp_cursor update\n");
+		assertEquals(ct_command(cmd,CS_RPC_CMD,
+					(CS_CHAR *)"sp_cursor",
+					CS_NULLTERM,CS_UNUSED),CS_SUCCEED);
+		for (CS_INT i=0; i<3; i++) {
+			bytestring::zero(&(posparam[i]),sizeof(CS_DATAFMT));
+			posparam[i].datatype=CS_INT_TYPE;
+			posparam[i].maxlength=4;
+			posparam[i].count=1;
+			posintvalue[i]=(i==0)?poscursorid:1;
+			assertEquals(ct_param(cmd,&(posparam[i]),
+					(CS_VOID *)&(posintvalue[i]),
+					sizeof(CS_INT),0),CS_SUCCEED);
+		}
+		bytestring::zero(&(posparam[3]),sizeof(CS_DATAFMT));
+		posparam[3].datatype=CS_CHAR_TYPE;
+		posparam[3].maxlength=postablelen;
+		posparam[3].count=1;
+		assertEquals(ct_param(cmd,&(posparam[3]),
+				(CS_VOID *)postable,postablelen,0),CS_SUCCEED);
+		bytestring::zero(&(posparam[4]),sizeof(CS_DATAFMT));
+		posparam[4].datatype=CS_CHAR_TYPE;
+		posparam[4].maxlength=3;
+		posparam[4].count=1;
+		charstring::copy(posparam[4].name,"@posname");
+		posparam[4].namelen=8;
+		assertEquals(ct_param(cmd,&(posparam[4]),
+				(CS_VOID *)"ONE",3,0),CS_SUCCEED);
+		bytestring::zero(&(posparam[5]),sizeof(CS_DATAFMT));
+		posparam[5].datatype=CS_INT_TYPE;
+		posparam[5].maxlength=4;
+		posparam[5].count=1;
+		charstring::copy(posparam[5].name,"@posval");
+		posparam[5].namelen=7;
+		posintvalue[5]=11;
+		assertEquals(ct_param(cmd,&(posparam[5]),
+					(CS_VOID *)&(posintvalue[5]),
+					sizeof(CS_INT),0),CS_SUCCEED);
+		assertEquals(ct_send(cmd),CS_SUCCEED);
+		results=ct_results(cmd,&resultstype);
+		assertEquals(results,CS_SUCCEED);
+		assertEquals(resultstype,CS_STATUS_RESULT);
+		bytestring::zero(dyndata[0],1024);
+		assertEquals(ct_bind(cmd,1,&(dynfmt[0]),
+					(CS_VOID *)dyndata[0],
+					&(dyndatalength[0]),
+					&(dynnullindicator[0])),CS_SUCCEED);
+		assertEquals(ct_fetch(cmd,CS_UNUSED,CS_UNUSED,
+					CS_UNUSED,&rowsread),CS_SUCCEED);
+		assertEquals(dyndata[0],"0");
+		assertEquals(ct_fetch(cmd,CS_UNUSED,CS_UNUSED,
+					CS_UNUSED,&rowsread),CS_END_DATA);
+		results=ct_results(cmd,&resultstype);
+		assertEquals(results,CS_SUCCEED);
+		assertEquals(resultstype,CS_CMD_SUCCEED);
+		assertEquals(ct_res_info(cmd,CS_ROW_COUNT,
+					(CS_VOID *)&affectedrows,CS_UNUSED,
+					(CS_INT *)NULL),CS_SUCCEED);
+		assertEquals(affectedrows,1);
+		results=ct_results(cmd,&resultstype);
+		assertEquals(results,CS_SUCCEED);
+		assertEquals(resultstype,CS_CMD_DONE);
+		results=ct_results(cmd,&resultstype);
+		assertEquals(results,CS_END_RESULTS);
+		assertEquals(ct_cancel(NULL,cmd,CS_CANCEL_ALL),CS_SUCCEED);
+		stdoutput.printf("\n");
+
+
+		stdoutput.printf("ct_command: the update landed\n");
+		posexpectid[0]="1";	posexpectname[0]="ONE";
+		posexpectval[0]="11";
+		posexpectid[1]="2";	posexpectname[1]="two";
+		posexpectval[1]="20";
+		posexpectid[2]="3";	posexpectname[2]="three";
+		posexpectval[2]="30";
+		posexpectrows=3;
+		assertEquals(ct_command(cmd,CS_LANG_CMD,
+					(CS_CHAR *)posselect,
+					charstring::getLength(posselect),
+					CS_UNUSED),CS_SUCCEED);
+		assertEquals(ct_send(cmd),CS_SUCCEED);
+		results=ct_results(cmd,&resultstype);
+		assertEquals(results,CS_SUCCEED);
+		assertEquals(resultstype,CS_ROW_RESULT);
+		for (CS_INT i=0; i<3; i++) {
+			bytestring::zero(cursdata[i],256);
+			assertEquals(ct_bind(cmd,i+1,&(cursfmt[i]),
+					(CS_VOID *)cursdata[i],
+					&(cursdatalength[i]),
+					&(cursnullindicator[i])),CS_SUCCEED);
+		}
+		for (CS_INT i=0; i<posexpectrows; i++) {
+			assertEquals(ct_fetch(cmd,CS_UNUSED,CS_UNUSED,
+					CS_UNUSED,&rowsread),CS_SUCCEED);
+			assertEquals(rowsread,1);
+			assertEquals(cursdata[0],posexpectid[i]);
+			assertEquals(cursdata[1],posexpectname[i]);
+			assertEquals(cursdata[2],posexpectval[i]);
+		}
+		assertEquals(ct_fetch(cmd,CS_UNUSED,CS_UNUSED,
+					CS_UNUSED,&rowsread),CS_END_DATA);
+		results=ct_results(cmd,&resultstype);
+		assertEquals(results,CS_SUCCEED);
+		assertEquals(resultstype,CS_CMD_DONE);
+		results=ct_results(cmd,&resultstype);
+		assertEquals(results,CS_END_RESULTS);
+		assertEquals(ct_cancel(NULL,cmd,CS_CANCEL_ALL),CS_SUCCEED);
+		stdoutput.printf("\n");
+
+
+		// move to the second row, which is what the delete below
+		// positions on
+		stdoutput.printf("ct_command: rpc sp_cursorfetch next\n");
+		assertEquals(ct_command(cmd,CS_RPC_CMD,
+					(CS_CHAR *)"sp_cursorfetch",
+					CS_NULLTERM,CS_UNUSED),CS_SUCCEED);
+		for (CS_INT i=0; i<4; i++) {
+			bytestring::zero(&(posparam[i]),sizeof(CS_DATAFMT));
+			posparam[i].datatype=CS_INT_TYPE;
+			posparam[i].maxlength=4;
+			posparam[i].count=1;
+			posintvalue[i]=(i==0)?poscursorid:((i==1)?2:1);
+			assertEquals(ct_param(cmd,&(posparam[i]),
+					(CS_VOID *)&(posintvalue[i]),
+					sizeof(CS_INT),0),CS_SUCCEED);
+		}
+		assertEquals(ct_send(cmd),CS_SUCCEED);
+		results=ct_results(cmd,&resultstype);
+		assertEquals(results,CS_SUCCEED);
+		assertEquals(resultstype,CS_ROW_RESULT);
+		for (CS_INT i=0; i<3; i++) {
+			bytestring::zero(cursdata[i],256);
+			assertEquals(ct_bind(cmd,i+1,&(cursfmt[i]),
+					(CS_VOID *)cursdata[i],
+					&(cursdatalength[i]),
+					&(cursnullindicator[i])),CS_SUCCEED);
+		}
+		assertEquals(ct_fetch(cmd,CS_UNUSED,CS_UNUSED,
+					CS_UNUSED,&rowsread),CS_SUCCEED);
+		assertEquals(rowsread,1);
+		assertEquals(cursdata[0],"2");
+		assertEquals(cursdata[1],"two");
+		assertEquals(cursdata[2],"20");
+		assertEquals(ct_fetch(cmd,CS_UNUSED,CS_UNUSED,
+					CS_UNUSED,&rowsread),CS_END_DATA);
+		results=ct_results(cmd,&resultstype);
+		assertEquals(results,CS_SUCCEED);
+		assertEquals(resultstype,CS_CMD_DONE);
+		results=ct_results(cmd,&resultstype);
+		assertEquals(results,CS_SUCCEED);
+		assertEquals(resultstype,CS_STATUS_RESULT);
+		bytestring::zero(dyndata[0],1024);
+		assertEquals(ct_bind(cmd,1,&(dynfmt[0]),
+					(CS_VOID *)dyndata[0],
+					&(dyndatalength[0]),
+					&(dynnullindicator[0])),CS_SUCCEED);
+		assertEquals(ct_fetch(cmd,CS_UNUSED,CS_UNUSED,
+					CS_UNUSED,&rowsread),CS_SUCCEED);
+		assertEquals(dyndata[0],"0");
+		assertEquals(ct_fetch(cmd,CS_UNUSED,CS_UNUSED,
+					CS_UNUSED,&rowsread),CS_END_DATA);
+		results=ct_results(cmd,&resultstype);
+		assertEquals(results,CS_SUCCEED);
+		assertEquals(resultstype,CS_CMD_SUCCEED);
+		results=ct_results(cmd,&resultstype);
+		assertEquals(results,CS_SUCCEED);
+		assertEquals(resultstype,CS_CMD_DONE);
+		results=ct_results(cmd,&resultstype);
+		assertEquals(results,CS_END_RESULTS);
+		assertEquals(ct_cancel(NULL,cmd,CS_CANCEL_ALL),CS_SUCCEED);
+		stdoutput.printf("\n");
+
+
+		// optype 2 is delete, and it takes no value parameters
+		stdoutput.printf("ct_command: rpc sp_cursor delete\n");
+		assertEquals(ct_command(cmd,CS_RPC_CMD,
+					(CS_CHAR *)"sp_cursor",
+					CS_NULLTERM,CS_UNUSED),CS_SUCCEED);
+		for (CS_INT i=0; i<3; i++) {
+			bytestring::zero(&(posparam[i]),sizeof(CS_DATAFMT));
+			posparam[i].datatype=CS_INT_TYPE;
+			posparam[i].maxlength=4;
+			posparam[i].count=1;
+			posintvalue[i]=(i==0)?poscursorid:((i==1)?2:1);
+			assertEquals(ct_param(cmd,&(posparam[i]),
+					(CS_VOID *)&(posintvalue[i]),
+					sizeof(CS_INT),0),CS_SUCCEED);
+		}
+		bytestring::zero(&(posparam[3]),sizeof(CS_DATAFMT));
+		posparam[3].datatype=CS_CHAR_TYPE;
+		posparam[3].maxlength=postablelen;
+		posparam[3].count=1;
+		assertEquals(ct_param(cmd,&(posparam[3]),
+				(CS_VOID *)postable,postablelen,0),CS_SUCCEED);
+		assertEquals(ct_send(cmd),CS_SUCCEED);
+		results=ct_results(cmd,&resultstype);
+		assertEquals(results,CS_SUCCEED);
+		assertEquals(resultstype,CS_STATUS_RESULT);
+		bytestring::zero(dyndata[0],1024);
+		assertEquals(ct_bind(cmd,1,&(dynfmt[0]),
+					(CS_VOID *)dyndata[0],
+					&(dyndatalength[0]),
+					&(dynnullindicator[0])),CS_SUCCEED);
+		assertEquals(ct_fetch(cmd,CS_UNUSED,CS_UNUSED,
+					CS_UNUSED,&rowsread),CS_SUCCEED);
+		assertEquals(dyndata[0],"0");
+		assertEquals(ct_fetch(cmd,CS_UNUSED,CS_UNUSED,
+					CS_UNUSED,&rowsread),CS_END_DATA);
+		results=ct_results(cmd,&resultstype);
+		assertEquals(results,CS_SUCCEED);
+		assertEquals(resultstype,CS_CMD_SUCCEED);
+		assertEquals(ct_res_info(cmd,CS_ROW_COUNT,
+					(CS_VOID *)&affectedrows,CS_UNUSED,
+					(CS_INT *)NULL),CS_SUCCEED);
+		assertEquals(affectedrows,1);
+		results=ct_results(cmd,&resultstype);
+		assertEquals(results,CS_SUCCEED);
+		assertEquals(resultstype,CS_CMD_DONE);
+		results=ct_results(cmd,&resultstype);
+		assertEquals(results,CS_END_RESULTS);
+		assertEquals(ct_cancel(NULL,cmd,CS_CANCEL_ALL),CS_SUCCEED);
+		stdoutput.printf("\n");
+
+
+		stdoutput.printf("ct_command: the delete landed\n");
+		posexpectid[0]="1";	posexpectname[0]="ONE";
+		posexpectval[0]="11";
+		posexpectid[1]="3";	posexpectname[1]="three";
+		posexpectval[1]="30";
+		posexpectrows=2;
+		assertEquals(ct_command(cmd,CS_LANG_CMD,
+					(CS_CHAR *)posselect,
+					charstring::getLength(posselect),
+					CS_UNUSED),CS_SUCCEED);
+		assertEquals(ct_send(cmd),CS_SUCCEED);
+		results=ct_results(cmd,&resultstype);
+		assertEquals(results,CS_SUCCEED);
+		assertEquals(resultstype,CS_ROW_RESULT);
+		for (CS_INT i=0; i<3; i++) {
+			bytestring::zero(cursdata[i],256);
+			assertEquals(ct_bind(cmd,i+1,&(cursfmt[i]),
+					(CS_VOID *)cursdata[i],
+					&(cursdatalength[i]),
+					&(cursnullindicator[i])),CS_SUCCEED);
+		}
+		for (CS_INT i=0; i<posexpectrows; i++) {
+			assertEquals(ct_fetch(cmd,CS_UNUSED,CS_UNUSED,
+					CS_UNUSED,&rowsread),CS_SUCCEED);
+			assertEquals(rowsread,1);
+			assertEquals(cursdata[0],posexpectid[i]);
+			assertEquals(cursdata[1],posexpectname[i]);
+			assertEquals(cursdata[2],posexpectval[i]);
+		}
+		assertEquals(ct_fetch(cmd,CS_UNUSED,CS_UNUSED,
+					CS_UNUSED,&rowsread),CS_END_DATA);
+		results=ct_results(cmd,&resultstype);
+		assertEquals(results,CS_SUCCEED);
+		assertEquals(resultstype,CS_CMD_DONE);
+		results=ct_results(cmd,&resultstype);
+		assertEquals(results,CS_END_RESULTS);
+		assertEquals(ct_cancel(NULL,cmd,CS_CANCEL_ALL),CS_SUCCEED);
+		stdoutput.printf("\n");
+
+
+		// optype 4 is insert, which is positioned on nothing - the
+		// cursor only says which column names are legal
+		stdoutput.printf("ct_command: rpc sp_cursor insert\n");
+		assertEquals(ct_command(cmd,CS_RPC_CMD,
+					(CS_CHAR *)"sp_cursor",
+					CS_NULLTERM,CS_UNUSED),CS_SUCCEED);
+		for (CS_INT i=0; i<3; i++) {
+			bytestring::zero(&(posparam[i]),sizeof(CS_DATAFMT));
+			posparam[i].datatype=CS_INT_TYPE;
+			posparam[i].maxlength=4;
+			posparam[i].count=1;
+			posintvalue[i]=(i==0)?poscursorid:((i==1)?4:1);
+			assertEquals(ct_param(cmd,&(posparam[i]),
+					(CS_VOID *)&(posintvalue[i]),
+					sizeof(CS_INT),0),CS_SUCCEED);
+		}
+		bytestring::zero(&(posparam[3]),sizeof(CS_DATAFMT));
+		posparam[3].datatype=CS_CHAR_TYPE;
+		posparam[3].maxlength=postablelen;
+		posparam[3].count=1;
+		assertEquals(ct_param(cmd,&(posparam[3]),
+				(CS_VOID *)postable,postablelen,0),CS_SUCCEED);
+		bytestring::zero(&(posparam[4]),sizeof(CS_DATAFMT));
+		posparam[4].datatype=CS_INT_TYPE;
+		posparam[4].maxlength=4;
+		posparam[4].count=1;
+		charstring::copy(posparam[4].name,"@posid");
+		posparam[4].namelen=6;
+		posintvalue[4]=4;
+		assertEquals(ct_param(cmd,&(posparam[4]),
+					(CS_VOID *)&(posintvalue[4]),
+					sizeof(CS_INT),0),CS_SUCCEED);
+		bytestring::zero(&(posparam[5]),sizeof(CS_DATAFMT));
+		posparam[5].datatype=CS_CHAR_TYPE;
+		posparam[5].maxlength=4;
+		posparam[5].count=1;
+		charstring::copy(posparam[5].name,"@posname");
+		posparam[5].namelen=8;
+		assertEquals(ct_param(cmd,&(posparam[5]),
+				(CS_VOID *)"four",4,0),CS_SUCCEED);
+		bytestring::zero(&(posparam[6]),sizeof(CS_DATAFMT));
+		posparam[6].datatype=CS_INT_TYPE;
+		posparam[6].maxlength=4;
+		posparam[6].count=1;
+		charstring::copy(posparam[6].name,"@posval");
+		posparam[6].namelen=7;
+		posintvalue[6]=40;
+		assertEquals(ct_param(cmd,&(posparam[6]),
+					(CS_VOID *)&(posintvalue[6]),
+					sizeof(CS_INT),0),CS_SUCCEED);
+		assertEquals(ct_send(cmd),CS_SUCCEED);
+		results=ct_results(cmd,&resultstype);
+		assertEquals(results,CS_SUCCEED);
+		assertEquals(resultstype,CS_STATUS_RESULT);
+		bytestring::zero(dyndata[0],1024);
+		assertEquals(ct_bind(cmd,1,&(dynfmt[0]),
+					(CS_VOID *)dyndata[0],
+					&(dyndatalength[0]),
+					&(dynnullindicator[0])),CS_SUCCEED);
+		assertEquals(ct_fetch(cmd,CS_UNUSED,CS_UNUSED,
+					CS_UNUSED,&rowsread),CS_SUCCEED);
+		assertEquals(dyndata[0],"0");
+		assertEquals(ct_fetch(cmd,CS_UNUSED,CS_UNUSED,
+					CS_UNUSED,&rowsread),CS_END_DATA);
+		results=ct_results(cmd,&resultstype);
+		assertEquals(results,CS_SUCCEED);
+		assertEquals(resultstype,CS_CMD_SUCCEED);
+		assertEquals(ct_res_info(cmd,CS_ROW_COUNT,
+					(CS_VOID *)&affectedrows,CS_UNUSED,
+					(CS_INT *)NULL),CS_SUCCEED);
+		assertEquals(affectedrows,1);
+		results=ct_results(cmd,&resultstype);
+		assertEquals(results,CS_SUCCEED);
+		assertEquals(resultstype,CS_CMD_DONE);
+		results=ct_results(cmd,&resultstype);
+		assertEquals(results,CS_END_RESULTS);
+		assertEquals(ct_cancel(NULL,cmd,CS_CANCEL_ALL),CS_SUCCEED);
+		stdoutput.printf("\n");
+
+
+		stdoutput.printf("ct_command: the insert landed\n");
+		posexpectid[0]="1";	posexpectname[0]="ONE";
+		posexpectval[0]="11";
+		posexpectid[1]="3";	posexpectname[1]="three";
+		posexpectval[1]="30";
+		posexpectid[2]="4";	posexpectname[2]="four";
+		posexpectval[2]="40";
+		posexpectrows=3;
+		assertEquals(ct_command(cmd,CS_LANG_CMD,
+					(CS_CHAR *)posselect,
+					charstring::getLength(posselect),
+					CS_UNUSED),CS_SUCCEED);
+		assertEquals(ct_send(cmd),CS_SUCCEED);
+		results=ct_results(cmd,&resultstype);
+		assertEquals(results,CS_SUCCEED);
+		assertEquals(resultstype,CS_ROW_RESULT);
+		for (CS_INT i=0; i<3; i++) {
+			bytestring::zero(cursdata[i],256);
+			assertEquals(ct_bind(cmd,i+1,&(cursfmt[i]),
+					(CS_VOID *)cursdata[i],
+					&(cursdatalength[i]),
+					&(cursnullindicator[i])),CS_SUCCEED);
+		}
+		for (CS_INT i=0; i<posexpectrows; i++) {
+			assertEquals(ct_fetch(cmd,CS_UNUSED,CS_UNUSED,
+					CS_UNUSED,&rowsread),CS_SUCCEED);
+			assertEquals(rowsread,1);
+			assertEquals(cursdata[0],posexpectid[i]);
+			assertEquals(cursdata[1],posexpectname[i]);
+			assertEquals(cursdata[2],posexpectval[i]);
+		}
+		assertEquals(ct_fetch(cmd,CS_UNUSED,CS_UNUSED,
+					CS_UNUSED,&rowsread),CS_END_DATA);
+		results=ct_results(cmd,&resultstype);
+		assertEquals(results,CS_SUCCEED);
+		assertEquals(resultstype,CS_CMD_DONE);
+		results=ct_results(cmd,&resultstype);
+		assertEquals(results,CS_END_RESULTS);
+		assertEquals(ct_cancel(NULL,cmd,CS_CANCEL_ALL),CS_SUCCEED);
+		stdoutput.printf("\n");
+
+
+		// The leading @ on a value parameter is mandatory.  The
+		// server strips exactly one leading character, whatever it
+		// is, so "posval" names column "osval" and the whole call is
+		// rejected.  The error number differs between the backends,
+		// so only the effect is asserted - the results are drained
+		// and the table is checked below.
+		stdoutput.printf("ct_command: rpc sp_cursor "
+					"without a leading @\n");
+		assertEquals(ct_command(cmd,CS_RPC_CMD,
+					(CS_CHAR *)"sp_cursor",
+					CS_NULLTERM,CS_UNUSED),CS_SUCCEED);
+		for (CS_INT i=0; i<3; i++) {
+			bytestring::zero(&(posparam[i]),sizeof(CS_DATAFMT));
+			posparam[i].datatype=CS_INT_TYPE;
+			posparam[i].maxlength=4;
+			posparam[i].count=1;
+			posintvalue[i]=(i==0)?poscursorid:1;
+			assertEquals(ct_param(cmd,&(posparam[i]),
+					(CS_VOID *)&(posintvalue[i]),
+					sizeof(CS_INT),0),CS_SUCCEED);
+		}
+		bytestring::zero(&(posparam[3]),sizeof(CS_DATAFMT));
+		posparam[3].datatype=CS_CHAR_TYPE;
+		posparam[3].maxlength=postablelen;
+		posparam[3].count=1;
+		assertEquals(ct_param(cmd,&(posparam[3]),
+				(CS_VOID *)postable,postablelen,0),CS_SUCCEED);
+		bytestring::zero(&(posparam[4]),sizeof(CS_DATAFMT));
+		posparam[4].datatype=CS_INT_TYPE;
+		posparam[4].maxlength=4;
+		posparam[4].count=1;
+		charstring::copy(posparam[4].name,"posval");
+		posparam[4].namelen=6;
+		posintvalue[4]=99;
+		assertEquals(ct_param(cmd,&(posparam[4]),
+					(CS_VOID *)&(posintvalue[4]),
+					sizeof(CS_INT),0),CS_SUCCEED);
+		assertEquals(ct_send(cmd),CS_SUCCEED);
+		while (ct_results(cmd,&resultstype)==CS_SUCCEED) {}
+		assertEquals(ct_cancel(NULL,cmd,CS_CANCEL_ALL),CS_SUCCEED);
+		stdoutput.printf("\n");
+
+
+		stdoutput.printf("ct_command: the table is unchanged\n");
+		assertEquals(ct_command(cmd,CS_LANG_CMD,
+					(CS_CHAR *)posselect,
+					charstring::getLength(posselect),
+					CS_UNUSED),CS_SUCCEED);
+		assertEquals(ct_send(cmd),CS_SUCCEED);
+		results=ct_results(cmd,&resultstype);
+		assertEquals(results,CS_SUCCEED);
+		assertEquals(resultstype,CS_ROW_RESULT);
+		for (CS_INT i=0; i<3; i++) {
+			bytestring::zero(cursdata[i],256);
+			assertEquals(ct_bind(cmd,i+1,&(cursfmt[i]),
+					(CS_VOID *)cursdata[i],
+					&(cursdatalength[i]),
+					&(cursnullindicator[i])),CS_SUCCEED);
+		}
+		for (CS_INT i=0; i<posexpectrows; i++) {
+			assertEquals(ct_fetch(cmd,CS_UNUSED,CS_UNUSED,
+					CS_UNUSED,&rowsread),CS_SUCCEED);
+			assertEquals(rowsread,1);
+			assertEquals(cursdata[0],posexpectid[i]);
+			assertEquals(cursdata[1],posexpectname[i]);
+			assertEquals(cursdata[2],posexpectval[i]);
+		}
+		assertEquals(ct_fetch(cmd,CS_UNUSED,CS_UNUSED,
+					CS_UNUSED,&rowsread),CS_END_DATA);
+		results=ct_results(cmd,&resultstype);
+		assertEquals(results,CS_SUCCEED);
+		assertEquals(resultstype,CS_CMD_DONE);
+		results=ct_results(cmd,&resultstype);
+		assertEquals(results,CS_END_RESULTS);
+		assertEquals(ct_cancel(NULL,cmd,CS_CANCEL_ALL),CS_SUCCEED);
+		stdoutput.printf("\n");
+
+
+		stdoutput.printf("ct_command: rpc sp_cursorclose\n");
+		assertEquals(ct_command(cmd,CS_RPC_CMD,
+					(CS_CHAR *)"sp_cursorclose",
+					CS_NULLTERM,CS_UNUSED),CS_SUCCEED);
+		bytestring::zero(&(posparam[0]),sizeof(CS_DATAFMT));
+		posparam[0].datatype=CS_INT_TYPE;
+		posparam[0].maxlength=4;
+		posparam[0].count=1;
+		posintvalue[0]=poscursorid;
+		assertEquals(ct_param(cmd,&(posparam[0]),
+					(CS_VOID *)&(posintvalue[0]),
+					sizeof(CS_INT),0),CS_SUCCEED);
+		assertEquals(ct_send(cmd),CS_SUCCEED);
+		results=ct_results(cmd,&resultstype);
+		assertEquals(results,CS_SUCCEED);
+		assertEquals(resultstype,CS_STATUS_RESULT);
+		bytestring::zero(dyndata[0],1024);
+		assertEquals(ct_bind(cmd,1,&(dynfmt[0]),
+					(CS_VOID *)dyndata[0],
+					&(dyndatalength[0]),
+					&(dynnullindicator[0])),CS_SUCCEED);
+		assertEquals(ct_fetch(cmd,CS_UNUSED,CS_UNUSED,
+					CS_UNUSED,&rowsread),CS_SUCCEED);
+		assertEquals(dyndata[0],"0");
+		assertEquals(ct_fetch(cmd,CS_UNUSED,CS_UNUSED,
+					CS_UNUSED,&rowsread),CS_END_DATA);
+		results=ct_results(cmd,&resultstype);
+		assertEquals(results,CS_SUCCEED);
+		assertEquals(resultstype,CS_CMD_SUCCEED);
+		results=ct_results(cmd,&resultstype);
+		assertEquals(results,CS_SUCCEED);
+		assertEquals(resultstype,CS_CMD_DONE);
+		results=ct_results(cmd,&resultstype);
+		assertEquals(results,CS_END_RESULTS);
+		assertEquals(ct_cancel(NULL,cmd,CS_CANCEL_ALL),CS_SUCCEED);
+		stdoutput.printf("\n");
+
+
+		stdoutput.printf("ct_command: drop\n");
+		query="drop table poscursortable";
+		assertEquals(ct_command(cmd,CS_LANG_CMD,
+					query,charstring::getLength(query),
+					CS_UNUSED),CS_SUCCEED);
+		assertEquals(ct_send(cmd),CS_SUCCEED);
+		results=ct_results(cmd,&resultstype);
+		assertEquals(results,CS_SUCCEED);
+		assertEquals(resultstype,CS_CMD_SUCCEED);
+		results=ct_results(cmd,&resultstype);
+		assertEquals(results,CS_SUCCEED);
+		assertEquals(resultstype,CS_CMD_DONE);
+		results=ct_results(cmd,&resultstype);
+		assertEquals(results,CS_END_RESULTS);
+		assertEquals(ct_cancel(NULL,cmd,CS_CANCEL_ALL),CS_SUCCEED);
+		stdoutput.printf("\n");
+	}
+
+
 	stdoutput.printf("\n================ Binds ================\n\n");
 
 
