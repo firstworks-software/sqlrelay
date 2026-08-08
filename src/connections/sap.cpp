@@ -118,6 +118,10 @@ class SQLRSERVER_DLLSPEC sapconnection : public sqlrserverconnection {
 
 		bool		dbused;
 
+		// the client charset's expansion factor, from the server's
+		// charset to the client's - see sapcursor::deflateColumnSize()
+		uint32_t	csexpansion;
+
 		char		*dbversion;
 
 		static	stringbuffer	errorstring;
@@ -265,6 +269,7 @@ class SQLRSERVER_DLLSPEC sapcursor : public sqlrservercursor {
 		bool		inputBind(CS_VOID *value,
 						CS_INT valuesize,
 						CS_SMALLINT indicator);
+		void		deflateColumnSize(CS_INT index);
 
 		CS_COMMAND	*languagecmd;
 		CS_COMMAND	*cursorcmd;
@@ -319,6 +324,7 @@ bool		sapconnection::liveconnection;
 sapconnection::sapconnection(sqlrservercontroller *cont) :
 					sqlrserverconnection(cont) {
 	dbused=false;
+	csexpansion=1;
 	dbversion=NULL;
 	initDatabaseFeatures();
 }
@@ -1135,14 +1141,25 @@ bool sapconnection::logIn(const char **error, const char **warning) {
 	// If the password has expired then the db may allow the login
 	// but every query will fail.  "ping" the db here to see if we get
 	// that error or not.
+	//
+	// The ping asks for a 1-character column because it doubles as a
+	// charset calibration.  Once @@client_csexpansion is above 1, Open
+	// Client reports char/varchar/nchar/nvarchar/sysname/text columns at
+	// their byte width rather than their declared width, and no ctlib
+	// call reports @@client_csexpansion directly.  A 1-character column
+	// comes back already multiplied though, so its size is the factor -
+	// see sapcursor::deflateColumnSize().  This mirrors freetdsconnection
+	// ::logIn()'s identical calibration.
 	bool	retval=true;
 	CS_COMMAND	*cmd;
 	if (ct_cmd_alloc(dbconn,&cmd)!=CS_SUCCEED) {
 		*error=logInError("Failed to allocate ping command",6);
 		return false;
 	}
-	if (ct_command(cmd,CS_LANG_CMD,(CS_CHAR *)"select 1",8,
-						CS_UNUSED)!=CS_SUCCEED) {
+	const char	*ping="select convert(varchar(1),'x')";
+	if (ct_command(cmd,CS_LANG_CMD,(CS_CHAR *)ping,
+					charstring::getLength(ping),
+					CS_UNUSED)!=CS_SUCCEED) {
 		*error=logInError("Failed to create ping command",6);
 		return false;
 	}
@@ -1154,6 +1171,12 @@ bool sapconnection::logIn(const char **error, const char **warning) {
 	if (ct_results(cmd,&resultstype)==CS_FAIL || resultstype==CS_CMD_FAIL) {
 		*error=logInError(NULL,6);
 		retval=false;
+	} else if (resultstype==CS_ROW_RESULT) {
+		CS_DATAFMT	fmt;
+		(CS_VOID)bytestring::zero(&fmt,sizeof(fmt));
+		if (ct_describe(cmd,1,&fmt)==CS_SUCCEED && fmt.maxlength>0) {
+			csexpansion=(uint32_t)fmt.maxlength;
+		}
 	}
 	ct_cancel(NULL,cmd,CS_CANCEL_ALL);
 	ct_cmd_drop(cmd);
@@ -3528,6 +3551,7 @@ bool sapcursor::executeQuery(const char *query, uint32_t size) {
 						&column[i])!=CS_SUCCEED) {
 					break;
 				}
+				deflateColumnSize(i);
 			}
 		}
 
@@ -3767,6 +3791,33 @@ uint16_t sapcursor::getColumnType(uint32_t col) {
 		default:
 			return UNKNOWN_DATATYPE;
 	}
+}
+
+void sapcursor::deflateColumnSize(CS_INT index) {
+
+	// bail if the client charset isn't expanding - most connections
+	// don't set an expanding charset=, and @@client_csexpansion is 1
+	if (sapconn->csexpansion<2) {
+		return;
+	}
+
+	// Only some character types are reported at their byte width once
+	// @@client_csexpansion is above 1 - measured directly against a live
+	// ASE, per ticket #9145.  CS_UNICHAR_TYPE (unichar/univarchar) is
+	// already ucs-2 and isn't multiplied - see the comment in
+	// getColumnType() above.  Binary types and CS_UNITEXT_TYPE/
+	// CS_IMAGE_TYPE aren't character data and aren't multiplied either.
+	switch (column[index].datatype) {
+		case CS_CHAR_TYPE:
+		case CS_LONGCHAR_TYPE:
+		case CS_VARCHAR_TYPE:
+		case CS_TEXT_TYPE:
+			break;
+		default:
+			return;
+	}
+
+	column[index].maxlength/=sapconn->csexpansion;
 }
 
 uint32_t sapcursor::getColumnSize(uint32_t col) {

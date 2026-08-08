@@ -1646,6 +1646,17 @@
 		could separately spin the reassembly loop with no memory
 		growth at all by sending header-only, zero-payload packets;
 		both shapes now close the connection instead
+	fixed the sap connection module - char, varchar, nchar, nvarchar,
+		sysname and text columns were reported at their byte width
+		rather than their declared width whenever charset= was one
+		that expands, because Open Client's ct_describe() reports
+		those types multiplied by @@client_csexpansion once it's
+		above 1; a char(20) came back as 40 under charset=utf8, for
+		example - a 1-character calibration query at login now
+		measures the expansion factor, mirroring how the freetds
+		module already does it, and the factor is divided back out
+		of just those types, since unichar, univarchar and the binary
+		types are never multiplied
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems
