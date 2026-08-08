@@ -1003,6 +1003,7 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_tds : public sqlrprotocol {
 		bool	isFixedLenType(byte_t tdstype);
 		bool	isVarLenType(byte_t tdstype);
 		bool	isPartLenType(byte_t tdstype);
+		bool	isCharType(byte_t tdstype);
 		// Maps a backend-reported column size onto one of the widths
 		// that "n" types (intn, bitn, fltn, moneyn, datetimn) are
 		// allowed to use.  Backends don't agree about what column
@@ -1040,6 +1041,9 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_tds : public sqlrprotocol {
 		void	dateTime(const char *datetime,
 					int32_t *dayssince1900,
 					uint32_t *threehundredths);
+		void	dateTimeValue(int32_t dayssince1900,
+					uint32_t threehundredths,
+					sqlrserverbindvar *bv);
 		uint32_t	daysSince1(int16_t year,
 						int16_t month,
 						int16_t day);
@@ -1312,6 +1316,12 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_tds : public sqlrprotocol {
 		void	returnValue(sqlrservercursor *cursor,
 					uint16_t param,
 					uint16_t ordinal);
+		void	returnValueChar(sqlrserverbindvar *bv,
+					byte_t tdstype,
+					uint32_t maxsize);
+		void	returnValueDateTime(sqlrserverbindvar *bv,
+					byte_t tdstype,
+					uint32_t maxsize);
 		void	returnValueInteger(uint16_t ordinal,
 					int32_t value,
 					bool isnull);
@@ -4412,6 +4422,23 @@ bool sqlrprotocol_tds::isPartLenType(byte_t tdstype) {
 	}
 }
 
+bool sqlrprotocol_tds::isCharType(byte_t tdstype) {
+
+	switch (tdstype) {
+		case TDS_TYPE_CHAR:
+		case TDS_TYPE_VARCHAR:
+		case TDS_TYPE_BIGCHAR:
+		case TDS_TYPE_BIGVARCHR:
+		case TDS_TYPE_NCHAR:
+		case TDS_TYPE_NVARCHAR:
+		case TDS_TYPE_TEXT:
+		case TDS_TYPE_NTEXT:
+			return true;
+		default:
+			return false;
+	}
+}
+
 // TDS carries money as the value times 10^4, in a signed integer.  The back
 // end renders it as a decimal string, but with as many places as it likes -
 // mssql through odbc gives four, others give two - so the fraction has to be
@@ -5242,6 +5269,49 @@ void sqlrprotocol_tds::dateTime(const char *datetime,
 	debugWrite("days since 1900: %d",*dayssince1900);
 	debugWrite("300ths since 12AM: %d",*threehundredths);
 	debugEnd();
+}
+
+// The reverse of dateTime().  bulkDateTime() already renders the wire format
+// as a string, and parseDateTime() already takes that string apart into the
+// fields a date bind needs, so this just chains the two rather than repeating
+// the leap-year arithmetic a third time.
+void sqlrprotocol_tds::dateTimeValue(int32_t dayssince1900,
+					uint32_t threehundredths,
+					sqlrserverbindvar *bv) {
+
+	stringbuffer	strb;
+	bulkDateTime(dayssince1900,threehundredths,&strb);
+
+	int16_t	year;
+	int16_t	month;
+	int16_t	day;
+	int16_t	hour;
+	int16_t	minute;
+	int16_t	second;
+	int32_t	usec;
+	int16_t	tzoffset;
+	if (!parseDateTime(strb.getString(),
+				&year,&month,&day,
+				&hour,&minute,&second,
+				&usec,&tzoffset)) {
+		debugWrite("unparseable datetime: %s",strb.getString());
+		return;
+	}
+
+	bv->type=SQLRSERVERBINDVARTYPE_DATE;
+	bv->value.dateval.year=year;
+	bv->value.dateval.month=month;
+	bv->value.dateval.day=day;
+	bv->value.dateval.hour=hour;
+	bv->value.dateval.minute=minute;
+	bv->value.dateval.second=second;
+	bv->value.dateval.microsecond=usec;
+	bv->value.dateval.tz=NULL;
+	bv->value.dateval.isnegative=false;
+	bv->valuesize=sizeof(bv->value.dateval);
+	bv->isnull=cont->getNonNullBindValue();
+
+	debugWrite("value: %s",strb.getString());
 }
 
 static bool isLeapYear(int16_t year) {
@@ -7426,8 +7496,28 @@ void sqlrprotocol_tds::bindParams(sqlrservercursor *cursor, uint16_t first,
 		bv->variable=bindvarnames[bindindex];
 		bv->variablesize=bindvarnamesizes[bindindex];
 
+		// An output parameter of a character type needs a buffer the
+		// size the client declared it, not the size of whatever value
+		// came in with it.  An output-only parameter arrives null,
+		// with no value and no type at all, so without this it gets
+		// no bind - and then the backend rejects the query for a
+		// parameter it was never given.
+		if (rpcparambyref[i] && isCharType(rpcparamtdstypes[i]) &&
+					rpcparammaxsizes[i]>bv->valuesize) {
+			char	*value=(char *)bindpool->allocate(
+						rpcparammaxsizes[i]+1);
+			bytestring::set(value,0,rpcparammaxsizes[i]+1);
+			if (bv->type==SQLRSERVERBINDVARTYPE_STRING &&
+						bv->value.stringval) {
+				bytestring::copy(value,bv->value.stringval,
+							bv->valuesize);
+			}
+			bv->type=SQLRSERVERBINDVARTYPE_STRING;
+			bv->value.stringval=value;
+			bv->valuesize=rpcparammaxsizes[i];
+
 		// copy string values out of the rpc pool
-		if (bv->type==SQLRSERVERBINDVARTYPE_STRING &&
+		} else if (bv->type==SQLRSERVERBINDVARTYPE_STRING &&
 						bv->value.stringval) {
 			char	*value=(char *)bindpool->allocate(
 							bv->valuesize+1);
@@ -9462,7 +9552,10 @@ bool sqlrprotocol_tds::paramValue(uint16_t param,
 			readLE(rp,&days,&rp);
 			readLE(rp,&minutes,&rp);
 			rpsize-=2*sizeof(uint16_t);
-			// FIXME: actually implement this
+
+			if (bv) {
+				dateTimeValue(days,minutes*60*300,bv);
+			}
 			}
 			break;
 		case TDS_TYPE_FLT4:
@@ -9528,7 +9621,11 @@ bool sqlrprotocol_tds::paramValue(uint16_t param,
 			readLE(rp,(uint32_t *)&dayssince1900,&rp);
 			readLE(rp,&threehundredths,&rp);
 			rpsize-=2*sizeof(uint32_t);
-			// FIXME: actually implement this
+
+			if (bv) {
+				dateTimeValue(dayssince1900,
+						threehundredths,bv);
+			}
 			}
 			break;
 		case TDS_TYPE_FLT8:
@@ -10437,6 +10534,131 @@ void sqlrprotocol_tds::writeIntN(int64_t value, byte_t size) {
 	}
 }
 
+void sqlrprotocol_tds::returnValueChar(sqlrserverbindvar *bv,
+					byte_t tdstype,
+					uint32_t maxsize) {
+
+	// unicode types go back as ucs-2, everything else as the "big"
+	// (2-byte-length) form of what the client declared.  the legacy
+	// 1-byte-length char/varchar are only sent by pre-7.0 clients, which
+	// can't get this far, and text/ntext have a different shape
+	// altogether, so both fall back to the closest "big" type.
+	bool	unicode=(tdstype==TDS_TYPE_NCHAR ||
+				tdstype==TDS_TYPE_NVARCHAR ||
+				tdstype==TDS_TYPE_NTEXT);
+	bool	blankpad=(tdstype==TDS_TYPE_CHAR ||
+				tdstype==TDS_TYPE_BIGCHAR ||
+				tdstype==TDS_TYPE_NCHAR);
+	byte_t	outtype=(unicode)?
+			((blankpad)?TDS_TYPE_NCHAR:TDS_TYPE_NVARCHAR):
+			((blankpad)?TDS_TYPE_BIGCHAR:TDS_TYPE_BIGVARCHR);
+
+	// the client will read the declared size as signed, and a text or
+	// varchar(max) parameter declares more than that fits
+	if (maxsize>32767) {
+		maxsize=32767;
+	}
+
+	bool	isnull=(bv->type!=SQLRSERVERBINDVARTYPE_STRING ||
+				!bv->value.stringval ||
+				cont->getBindValueIsNull(bv->isnull));
+
+	// the value is whatever the backend put in the buffer, blank padded
+	// out to the declared size if the client declared a fixed-width type
+	const char	*value=(isnull)?NULL:bv->value.stringval;
+	uint16_t	valuesize=(isnull)?0:
+				(uint16_t)charstring::getLength(value);
+	if (valuesize>maxsize) {
+		valuesize=(uint16_t)maxsize;
+	}
+	uint16_t	padsize=(!isnull && blankpad && maxsize>valuesize)?
+					(uint16_t)(maxsize-valuesize):0;
+
+	// type info
+	write(&resppacket,outtype);
+	writeLE(&resppacket,(uint16_t)((unicode)?maxsize*2:maxsize));
+	if (negotiatedtdsversion>=710) {
+		byte_t	coll[5]={0,0,0,0,0};
+		write(&resppacket,coll,sizeof(coll));
+	}
+
+	// value - 0xFFFF means null
+	if (isnull) {
+		writeLE(&resppacket,(uint16_t)0xFFFF);
+		debugWrite("value: (null)");
+		return;
+	}
+
+	if (unicode) {
+		ucs2_t	*value16=ucs2charstring::duplicate(value,
+						(size_t)valuesize);
+		writeLE(&resppacket,(uint16_t)((valuesize+padsize)*2));
+		write(&resppacket,value16,valuesize);
+		delete[] value16;
+		for (uint16_t i=0; i<padsize; i++) {
+			writeLE(&resppacket,(uint16_t)' ');
+		}
+	} else {
+		writeLE(&resppacket,(uint16_t)(valuesize+padsize));
+		write(&resppacket,(const byte_t *)value,valuesize);
+		for (uint16_t i=0; i<padsize; i++) {
+			write(&resppacket,(byte_t)' ');
+		}
+	}
+
+	debugWrite("value: %.*s",valuesize,value);
+}
+
+void sqlrprotocol_tds::returnValueDateTime(sqlrserverbindvar *bv,
+						byte_t tdstype,
+						uint32_t maxsize) {
+
+	// a client that declared smalldatetime gets 4 bytes back, one that
+	// declared datetime gets 8 - the same widths datetimn allows.  the
+	// fixed length types carry no maxsize, so they go by type alone.
+	byte_t	size=(tdstype==TDS_TYPE_DATETIM4 || maxsize==4)?4:8;
+
+	// type info
+	write(&resppacket,(byte_t)TDS_TYPE_DATETIMN);
+	write(&resppacket,size);
+
+	// value - a length of 0 means null
+	if (bv->type!=SQLRSERVERBINDVARTYPE_DATE ||
+			cont->getBindValueIsNull(bv->isnull)) {
+		write(&resppacket,(byte_t)0);
+		debugWrite("value: (null)");
+		return;
+	}
+
+	// dateTime() works from a string, so render one for it to take apart
+	char	datetime[40];
+	charstring::printf(datetime,sizeof(datetime),
+				"%04d-%02d-%02d %02d:%02d:%02d.%06d",
+				(int32_t)bv->value.dateval.year,
+				(int32_t)bv->value.dateval.month,
+				(int32_t)bv->value.dateval.day,
+				(int32_t)bv->value.dateval.hour,
+				(int32_t)bv->value.dateval.minute,
+				(int32_t)bv->value.dateval.second,
+				(int32_t)bv->value.dateval.microsecond);
+
+	int32_t		dayssince1900;
+	uint32_t	threehundredths;
+	dateTime(datetime,&dayssince1900,&threehundredths);
+
+	write(&resppacket,size);
+	if (size==4) {
+		writeLE(&resppacket,(uint16_t)((dayssince1900>0)?
+						dayssince1900:0));
+		writeLE(&resppacket,(uint16_t)(threehundredths/300/60));
+	} else {
+		writeLE(&resppacket,(uint32_t)dayssince1900);
+		writeLE(&resppacket,threehundredths);
+	}
+
+	debugWrite("value: %s",datetime);
+}
+
 void sqlrprotocol_tds::returnValue(sqlrservercursor *cursor,
 						uint16_t param,
 						uint16_t ordinal) {
@@ -10451,6 +10673,27 @@ void sqlrprotocol_tds::returnValue(sqlrservercursor *cursor,
 
 	returnValueHeader(ordinal,rpcparamnames[rpcparam],
 					rpcparamnamesizes[rpcparam]);
+
+	// A character or datetime output parameter goes back as the type the
+	// client declared it, the way a real sql server echoes one.  SQL
+	// Relay's own bind type doesn't carry enough to work that out - a
+	// char(20) and a varchar(max) are both just strings to it - and
+	// ct_describe() reports whatever type arrives, so getting it from the
+	// bind type instead makes the client see something it never asked for.
+	byte_t		declaredtype=rpcparamtdstypes[rpcparam];
+	uint32_t	declaredmaxsize=rpcparammaxsizes[rpcparam];
+	if (isCharType(declaredtype)) {
+		returnValueChar(bv,declaredtype,declaredmaxsize);
+		debugEnd();
+		return;
+	}
+	if (declaredtype==TDS_TYPE_DATETIME ||
+			declaredtype==TDS_TYPE_DATETIM4 ||
+			declaredtype==TDS_TYPE_DATETIMN) {
+		returnValueDateTime(bv,declaredtype,declaredmaxsize);
+		debugEnd();
+		return;
+	}
 
 	// SQL Relay hands back whatever the database put in the output bind.
 	// Only integers and strings can come back through this path.

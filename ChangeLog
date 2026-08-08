@@ -1724,6 +1724,21 @@
 		exec, and it just ran as an ordinary query instead of being
 		refused the way a real server refuses it; sp_cursoropen now
 		checks the statement's first keyword before running it
+	fixed the tds protocol module - a stored procedure's character and
+		datetime output parameters never got bound at all, since an
+		output-only parameter arrives null and a datetime parameter
+		wasn't decoded, so both were left with no bind type and the
+		backend rejected the call for parameters it was never given;
+		a character output parameter now gets a buffer the size the
+		client declared, and a datetime parameter is decoded into a
+		date bind
+	fixed the tds protocol module - an output parameter was sent back as
+		whatever SQL Relay's own bind type happened to be, rather than
+		as the type the client declared it, so a char(20) came back as
+		a varchar of 32767 and a datetime came back as a null int; a
+		character or datetime output parameter now goes back as the
+		type the client declared, the way a real sql server echoes one,
+		and a character one is blank padded to its declared width
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems
