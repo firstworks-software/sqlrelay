@@ -47,6 +47,18 @@
 #define	DEFAULT_PACKET_SIZE		4096
 #define	MAX_PACKET_SIZE			65535
 
+// recvPacket() reassembles a request out of one or more of the packets
+// above, with no size of its own on the wire - a multi-packet request
+// just keeps arriving until one arrives with STATUS_EOM set.  maxquerysize
+// bounds the query text itself further downstream (in ucs2 characters, so
+// 2 bytes/char, plus each request's ALL_HEADERS block and, for rpc and
+// bulk load, the parameter/row data on top of that), so it isn't a safe
+// byte-for-byte cap on the raw reassembled request - a legitimate
+// maxquerysize-sized batch alone is already ~2x that many bytes.  This is
+// a coarse, generous ceiling meant only to bound worst-case memory use;
+// the maxquerysize checks downstream remain the real, user-facing limits.
+#define	MIN_MAX_REQUEST_SIZE		(16*1024*1024)
+
 // login7's fixed header, before the variable length fields it points into.
 // tds 7.2 and up add ibchangepassword, cchchangepassword and cbsspilong.
 #define	LOGIN7_HEADER_SIZE		86
@@ -1288,6 +1300,7 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_tds : public sqlrprotocol {
 		uint32_t	configmaxpacketsize;
 
 		uint32_t	maxquerysize;
+		uint64_t	maxrequestsize;
 		uint16_t	maxbindcount;
 
 		char		**bindvarnames;
@@ -1409,6 +1422,10 @@ sqlrprotocol_tds::sqlrprotocol_tds(sqlrservercontroller *cont,
 			!charstring::compare(dbtype,"sap"));
 
 	maxquerysize=cont->getConfig()->getMaxQuerySize();
+	maxrequestsize=(uint64_t)maxquerysize*16;
+	if (maxrequestsize<MIN_MAX_REQUEST_SIZE) {
+		maxrequestsize=MIN_MAX_REQUEST_SIZE;
+	}
 	maxbindcount=cont->getConfig()->getMaxBindCount();
 
 	bindvarnames=new char *[maxbindcount];
@@ -1591,6 +1608,32 @@ bool sqlrprotocol_tds::recvPacket(byte_t *packettype) {
 
 		// bump the packet size down
 		packetsize-=PACKET_HEADER_SIZE;
+
+		// a zero-byte payload is only legal on the last packet of a
+		// request (eg. ATTENTION_SIGNAL, which is always a single,
+		// empty, eom packet) - anywhere else it's a client sending
+		// header-only packets to spin this loop forever without
+		// ever growing reqpacket
+		if (!packetsize && !(packetstatus&STATUS_EOM)) {
+			debugWrite("empty non-eom packet");
+			debugSystemError();
+			return false;
+		}
+
+		// cap the total size of the reassembled request - nothing
+		// upstream of this loop knows the packet count or total size
+		// in advance, and STATUS_EOM is entirely up to the client, so
+		// without this a client can grow reqpacket without bound by
+		// just never setting it.  Checked before the read below so a
+		// packet that would exceed the cap doesn't get its payload
+		// read (and allocated) at all.
+		if ((uint64_t)reqpacket.getSize()+(uint64_t)packetsize>
+							maxrequestsize) {
+			debugWrite("request too large: %lld",
+				(uint64_t)reqpacket.getSize()+packetsize);
+			debugSystemError();
+			return false;
+		}
 
 		// get the packet data
 		// (read into a reused memorypool - it's fast, minimizes
@@ -2716,11 +2759,12 @@ bool sqlrprotocol_tds::tds7Login() {
 	}
 
 	// This one isn't bounded by the packet on its own.  recvPacket()
-	// appends every packet of a multi-packet request into reqpacket
-	// with no cap (see #9138), so rpsize can be arbitrarily large, and
-	// the maximum has to come first.  The size has to be dropped along
-	// with the pointer, because the hex dump below walks the length
-	// whether or not there's a buffer at the other end.
+	// only caps the total request at maxrequestsize (#9138), which is
+	// far looser than MAX_LOGIN_SSPI_BYTES, so rpsize can still be much
+	// larger than this field is allowed to be, and the maximum has to
+	// come first.  The size has to be dropped along with the pointer,
+	// because the hex dump below walks the length whether or not
+	// there's a buffer at the other end.
 	if (sspisize>MAX_LOGIN_SSPI_BYTES) {
 		debugStart("tds7 login");
 		debugWrite("sspi: %u exceeds the %d maximum, "

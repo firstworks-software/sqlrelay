@@ -1630,6 +1630,22 @@
 		optionflags3 skipped a bit, shifting fsendyukonbinaryxml,
 		funknowncollationhandling and fextension off by one; all three
 		bytes now match ms-tds 2.2.6.4
+	documented the tds protocol module in the config guide - a basic
+		configuration on port 1433, the tdsversion attribute and how
+		the version is auto-detected from the backend's version
+		string, that a client like freetds only sends a pre-login
+		packet, where encryption is negotiated, on tds 7.1 and later,
+		the packetsize and maxpacketsize attributes, that tls isn't
+		supported at all and the tls* attributes parse but do nothing,
+		and that an odbc backed instance needs mars=yes for cursors
+		and positioned updates
+	fixed the tds protocol module - recvPacket() reassembled a
+		multi-packet request with no cap on the total size, so a
+		pre-authentication client could grow the receive buffer
+		without bound just by never setting the eom status bit, and
+		could separately spin the reassembly loop with no memory
+		growth at all by sending header-only, zero-payload packets;
+		both shapes now close the connection instead
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems
