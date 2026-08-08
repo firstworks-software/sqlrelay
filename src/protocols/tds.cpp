@@ -188,6 +188,18 @@
 // than one of the client's parameters
 #define RPC_RETURN_VALUE_PARAM	0xFFFF
 
+// base for handles that sqlrelay mints itself for rpc-issued sp_prepare
+// statements (see newHandle()).  a client may instead get a handle
+// straight from the real backend by running "exec sp_prepare ..." in a
+// raw batch; those handles are small sequential integers starting near 1
+// that sqlrelay never records.  starting sqlrelay's own handles well
+// above that range keeps the two spaces disjoint, so a stmthandles
+// lookup miss can be trusted to mean "not one of ours, pass it through"
+// rather than a coin-flip on numeric collision.  chosen low enough that
+// the counter, which must fit a T-SQL int (signed 32-bit) on the wire,
+// can climb from here to INT32_MAX before wrapping.
+#define SQLRELAY_HANDLE_BASE	0x40000000
+
 // stream headers
 #define ALL_HEADERS_QUERY_NOTIFICATIONS		0x0001
 #define ALL_HEADERS_TRANSACTION_DESCRIPTOR	0x0002
@@ -1141,6 +1153,10 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_tds : public sqlrprotocol {
 
 		// rpc handlers
 		bool	namedProc(const char *procname, bool nometadata);
+		bool	backendHandleProc(const char *procname,
+					uint32_t handle,
+					bool resultset,
+					bool nometadata);
 		bool	executeSql(bool nometadata);
 		bool	prepare(bool prepexec, bool rpcsyntax, bool nometadata);
 		bool	execute(bool nometadata);
@@ -1510,8 +1526,9 @@ void sqlrprotocol_tds::init() {
 	// this connection next must not inherit the previous client's login
 	loggedin=false;
 
-	// handle 0 is invalid
-	nexthandle=1;
+	// handle 0 is invalid; start above SQLRELAY_HANDLE_BASE to stay
+	// disjoint from real-backend-issued handles (see newHandle())
+	nexthandle=SQLRELAY_HANDLE_BASE;
 
 	rpcparamcount=0;
 	rpcfailed=false;
@@ -7430,9 +7447,11 @@ void sqlrprotocol_tds::bindParams(sqlrservercursor *cursor, uint16_t first,
 }
 
 uint32_t sqlrprotocol_tds::newHandle() {
-	// handle 0 is invalid, so skip it if the counter wraps
-	if (!nexthandle) {
-		nexthandle=1;
+	// handle 0 is invalid, and a handle must stay positive when read
+	// back as a T-SQL int (signed 32-bit), so wrap back to the base
+	// rather than either extreme
+	if (!nexthandle || nexthandle>0x7FFFFFFF) {
+		nexthandle=SQLRELAY_HANDLE_BASE;
 	}
 	return nexthandle++;
 }
@@ -7681,6 +7700,65 @@ bool sqlrprotocol_tds::namedProc(const char *procname, bool nometadata) {
 	return true;
 }
 
+bool sqlrprotocol_tds::backendHandleProc(const char *procname,
+						uint32_t handle,
+						bool resultset,
+						bool nometadata) {
+
+	// Runs "exec <procname> <handle> [,values...]" against the backend,
+	// for a handle the backend minted itself - one the client got by
+	// running "exec sp_prepare ..." inside a raw batch, which sqlBatch()
+	// passes straight through, so it was never recorded in stmthandles.
+	//
+	// Only the handle has to be a literal.  The trailing values go
+	// through the normal bound-parameter path, the same way namedProc()
+	// passes an ordinary proc's parameters through.
+	//
+	// This assumes the backend really has sp_execute/sp_unprepare, which
+	// sql server and sybase - the backends the tds protocol module is
+	// for - do.  One that doesn't just errors cleanly.
+
+	// get an available cursor
+	sqlrservercursor	*cursor=cont->getCursor();
+	if (!cursor) {
+		return sendNoCursorAvailableError();
+	}
+
+	// build the query, naming a bind variable per remaining parameter
+	stringbuffer	query;
+	query.append("exec ")->append(procname)->append(' ')->append(handle);
+	for (uint16_t i=1; i<rpcparamcount && i-1<maxbindcount; i++) {
+		query.append(',')->append(bindvarnames[i-1]);
+	}
+
+	debugWrite("query: %s",query.getString());
+
+	// run the query
+	bool	success=cont->prepareQuery(cursor,
+					query.getString(),query.getSize(),
+					true,true,true,true);
+	if (success) {
+		bindParams(cursor,1);
+		success=cont->executeQuery(cursor,true,true,true,true);
+	}
+
+	// build the response.  A bad handle gets the backend's own error -
+	// sql server error 8179 - rather than one synthesized here.
+	if (success) {
+		if (resultset) {
+			rpcResultSet(cursor,nometadata,0);
+		}
+		returnStatus(RPC_STATUS_SUCCESS);
+	} else {
+		rpcError(cursor);
+	}
+
+	// release the cursor
+	cont->release(cursor);
+
+	return true;
+}
+
 bool sqlrprotocol_tds::executeSql(bool nometadata) {
 
 	// sp_executesql @stmt, [@params, [values...]]
@@ -7791,7 +7869,9 @@ bool sqlrprotocol_tds::prepare(bool prepexec,
 		return sendQueryTooLargeError(querylen);
 	}
 
-	// reuse the handle the client sent, if it sent a live one
+	// reuse the handle the client sent, if it sent a live one.
+	// A backend-owned handle here is not re-prepared on the backend -
+	// this just mints a new one instead (out of scope, see #9203).
 	uint32_t		handle=(uint32_t)paramInteger(0);
 	sqlrservercursor	*cursor=handleCursor(&stmthandles,handle);
 	if (cursor) {
@@ -7862,6 +7942,12 @@ bool sqlrprotocol_tds::execute(bool nometadata) {
 	uint32_t		handle=(uint32_t)paramInteger(0);
 	sqlrservercursor	*cursor=handleCursor(&stmthandles,handle);
 	if (!cursor) {
+		// a handle below the base is the backend's own, from an
+		// sp_prepare inside a raw batch - run it there
+		if (handle && handle<SQLRELAY_HANDLE_BASE) {
+			return backendHandleProc("sp_execute",handle,
+							true,nometadata);
+		}
 		return rpcInvalidHandleError(RPC_NO_SUCH_STMT,
 					"prepared statement handle",
 								handle);
@@ -7892,6 +7978,13 @@ bool sqlrprotocol_tds::unprepare() {
 	uint32_t		handle=(uint32_t)paramInteger(0);
 	sqlrservercursor	*cursor=handleCursor(&stmthandles,handle);
 	if (!cursor) {
+		// a handle below the base is the backend's own, from an
+		// sp_prepare inside a raw batch - unprepare it there.
+		// Nothing to track afterward, since it was never one of ours.
+		if (handle && handle<SQLRELAY_HANDLE_BASE) {
+			return backendHandleProc("sp_unprepare",handle,
+							false,false);
+		}
 		return rpcInvalidHandleError(RPC_NO_SUCH_STMT,
 					"prepared statement handle",
 								handle);

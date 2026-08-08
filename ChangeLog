@@ -1704,6 +1704,14 @@
 		waiting on a response that was never coming, until the
 		connection timed out; each exec statement in a batch now gets
 		a synthesized return status
+	fixed the tds protocol module - a prepared statement handle obtained
+		from an exec sp_prepare inside a language batch was rejected
+		by a later, separate sp_execute or sp_unprepare rpc, because
+		the rpc path tracked handles in its own namespace and never
+		learned about ones the backend minted itself; sqlrelay-issued
+		handles now come from a disjoint range, and a handle it
+		doesn't own is passed through to the backend instead of
+		rejected
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems
