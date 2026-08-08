@@ -1084,13 +1084,24 @@ int	main(int argc, char **argv) {
 		assertEquals(data[14],"Jan  1 2001 12:00:00:000AM");
 		assertEquals(*(datalength[14]),27);
 		assertEquals(*(nullindicator[14]),0);
-		assertEquals(data[15],"Jan  1 1900 01:01:01:000000PM");
-		assertEquals(*(datalength[15]),30);
+		// sybase renders time fractional seconds to millisecond
+		// precision ("000PM"), mssql to microsecond ("000000PM")
+		assertEquals(data[15],(issybase)?
+				"Jan  1 1900 01:01:01:000PM":
+				"Jan  1 1900 01:01:01:000000PM");
+		assertEquals(*(datalength[15]),(issybase)?27:30);
 		assertEquals(*(nullindicator[15]),0);
-		assertEquals(data[16],"Jan  1 2001 01:01:01:000000PM");
-		assertEquals(data[17],"Jan  1 2001 01:01:01:000000PM");
-		assertEquals(*(datalength[17]),30);
-		assertEquals(*(nullindicator[17]),0);
+		// sybase has no datetime2/datetimeoffset - present[16] and
+		// present[17] are cleared for it, and data[16]/data[17] are
+		// never populated
+		if (present[16]) {
+			assertEquals(data[16],"Jan  1 2001 01:01:01:000000PM");
+		}
+		if (present[17]) {
+			assertEquals(data[17],"Jan  1 2001 01:01:01:000000PM");
+			assertEquals(*(datalength[17]),30);
+			assertEquals(*(nullindicator[17]),0);
+		}
 	}
 	assertEquals(data[18],"char1                                   ");
 	assertEquals(*(datalength[18]),41);
@@ -1160,9 +1171,20 @@ int	main(int argc, char **argv) {
 		assertEquals(data[17],"2002-02-02 14:02:02.0000000 +00:00");
 	} else {
 		assertEquals(data[14],"Feb  2 2002 12:00:00:000AM");
-		assertEquals(data[15],"Jan  1 1900 02:02:02:000000PM");
-		assertEquals(data[16],"Feb  2 2002 02:02:02:000000PM");
-		assertEquals(data[17],"Feb  2 2002 02:02:02:000000PM");
+		// sybase renders time fractional seconds to millisecond
+		// precision ("000PM"), mssql to microsecond ("000000PM")
+		assertEquals(data[15],(issybase)?
+				"Jan  1 1900 02:02:02:000PM":
+				"Jan  1 1900 02:02:02:000000PM");
+		// sybase has no datetime2/datetimeoffset - present[16] and
+		// present[17] are cleared for it, and data[16]/data[17] are
+		// never populated
+		if (present[16]) {
+			assertEquals(data[16],"Feb  2 2002 02:02:02:000000PM");
+		}
+		if (present[17]) {
+			assertEquals(data[17],"Feb  2 2002 02:02:02:000000PM");
+		}
 	}
 	assertEquals(data[18],"char2                                   ");
 	assertEquals(data[19],"varchar2");
