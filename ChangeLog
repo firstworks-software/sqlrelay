@@ -1657,6 +1657,37 @@
 		module already does it, and the factor is divided back out
 		of just those types, since unichar, univarchar and the binary
 		types are never multiplied
+	fixed the tds protocol module - an rpc parameter was parsed with
+		almost no bounds checking, so a short or malformed parameter
+		read past the end of the request packet; the parameter name,
+		the type info, and every value type are now checked against
+		the remaining packet size before being read, the way the bulk
+		load path already does it - the worst of it was a text, ntext,
+		xml, image or sql_variant value, whose 32 bit length was
+		allocated and copied without being checked against what
+		actually arrived, so a 4gb length in a few bytes of packet
+		was enough
+	fixed the tds protocol module - a char or nchar rpc parameter was
+		blank padded out to the size the client declared, which
+		nothing bounded, so a tiny value with a huge declared size
+		drove an oversized allocation; the padding is capped at the
+		widest a char or nchar can really be
+	fixed the tds protocol module - a date rpc parameter read a fixed 2
+		bytes rather than the 3 its length says, and time, datetime2
+		and datetimeoffset parameters consumed nothing at all, so
+		every parameter after one of those was read from the wrong
+		offset
+	fixed the tds protocol module - an rpc parameter carrying a type
+		nothing parses, like a udt or a table valued parameter,
+		consumed nothing and the parse ran on over its body; those
+		are protocol errors now
+	fixed the tds protocol module - an rpc parameter's type info was
+		read as though a maxsize byte preceded the scale for a time,
+		datetime2 or datetimeoffset parameter, and preceded nothing
+		at all for a date parameter, when the wire never sends one
+		for any of the four; that byte was actually the next field,
+		so every one of those parameters, and everything after it,
+		was read from the wrong offset
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems

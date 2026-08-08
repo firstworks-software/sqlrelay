@@ -666,6 +666,9 @@ static byte_t	tdstypemap[]={
 
 #define SP_MAX_PROCID		15
 
+// the widest a bigchar or nchar value can be padded out to
+#define TDS_MAX_CHAR_SIZE	8000
+
 static const char *procids[]={
 	"",
 	"SP_CURSOR",
@@ -1101,12 +1104,12 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_tds : public sqlrprotocol {
 					const byte_t **rpout,
 					size_t *rpsizeout);
 		bool	param(uint16_t param,
-					const byte_t *rp,
-					const byte_t **rpout,
+					const byte_t **rpinout,
+					size_t *rpsizeinout,
 					bool exceeded);
 		bool	paramValue(uint16_t param,
-					const byte_t *rp,
-					const byte_t **rpout,
+					const byte_t **rpinout,
+					size_t *rpsizeinout,
 					sqlrserverbindvar *bv);
 		void	batchFlags(const byte_t *rp,
 					size_t rpsize,
@@ -8603,7 +8606,6 @@ bool sqlrprotocol_tds::params(const byte_t *rp,
 	rpcparamcount=0;
 
 	bool		exceeded=false;
-	const byte_t	*newrp;
 	while (rpsize) {
 
 		// The batch flags follow the last parameter, and a parameter
@@ -8614,7 +8616,9 @@ bool sqlrprotocol_tds::params(const byte_t *rp,
 			break;
 		}
 
-		if (!param(rpcparamcount,rp,&newrp,exceeded)) {
+		size_t	oldrpsize=rpsize;
+
+		if (!param(rpcparamcount,&rp,&rpsize,exceeded)) {
 			// protocol error
 			return false;
 		}
@@ -8626,19 +8630,13 @@ bool sqlrprotocol_tds::params(const byte_t *rp,
 			}
 		}
 
-		// param() carries no remaining-size of its own, so it can
-		// run past the end of the packet on a malformed parameter.
-		// Without this the subtraction underflows, and the loop
-		// above then walks the heap until it segfaults.
-		size_t	consumed=newrp-rp;
-		if (consumed>rpsize) {
-			debugWrite("parameter ran past "
-					"the end of the packet");
+		// param() only ever shrinks rpsize, so a parameter that
+		// consumed nothing is the one way this loop could spin
+		// forever
+		if (rpsize>=oldrpsize) {
+			debugWrite("parameter consumed nothing");
 			return false;
 		}
-
-		rpsize-=consumed;
-		rp=newrp;
 	}
 
 	debugWrite("param count: %d",rpcparamcount);
@@ -8651,25 +8649,44 @@ bool sqlrprotocol_tds::params(const byte_t *rp,
 }
 
 bool sqlrprotocol_tds::param(uint16_t param,
-					const byte_t *rp,
-					const byte_t **rpout,
+					const byte_t **rpinout,
+					size_t *rpsizeinout,
 					bool exceeded) {
 
+	const byte_t	*&rp=*rpinout;
+	size_t		&rpsize=*rpsizeinout;
+
 	// param name
+	if (!rpsize) {
+		return false;
+	}
 	byte_t	pnamelen;
 	read(rp,&pnamelen,&rp);
+	rpsize--;
 	ucs2_t	*pname16=NULL;
 	char	*pname=NULL;
 	if (pnamelen) {
+		// the name length is in characters, but the data is ucs-2
+		size_t	pnamesize=((size_t)pnamelen)*sizeof(ucs2_t);
+		if (rpsize<pnamesize) {
+			return false;
+		}
 		pname16=new ucs2_t[pnamelen];
 		read(rp,pname16,pnamelen,&rp);
+		rpsize-=pnamesize;
 		pname=charstring::duplicateUcs2(pname16,(size_t)pnamelen);
 	}
 
 
 	// status flags
+	if (!rpsize) {
+		delete[] pname16;
+		delete[] pname;
+		return false;
+	}
 	byte_t	statusflags=0;
 	read(rp,&statusflags,&rp);
+	rpsize--;
 	bool	byrefvalue=(statusflags&0x01);
 	bool	defaultvalue=(statusflags&(0x01<<1))>>1;
 	// this bit is reserved
@@ -8719,16 +8736,13 @@ bool sqlrprotocol_tds::param(uint16_t param,
 		debugWrite("encrypted: %d",encrypted);
 	}
 
-	bool	retval=paramValue(param,rp,&rp,bv);
+	bool	retval=paramValue(param,&rp,&rpsize,bv);
 
 	debugEnd();
 
 	// clean up
 	delete[] pname16;
 	delete[] pname;
-
-	// copy out pointer
-	*rpout=rp;
 
 	return retval;
 }
@@ -8738,13 +8752,20 @@ bool sqlrprotocol_tds::param(uint16_t param,
 // block - param() owns both.  bulkField() and bulkValue() are split for
 // the same reason.
 bool sqlrprotocol_tds::paramValue(uint16_t param,
-					const byte_t *rp,
-					const byte_t **rpout,
+					const byte_t **rpinout,
+					size_t *rpsizeinout,
 					sqlrserverbindvar *bv) {
 
+	const byte_t	*&rp=*rpinout;
+	size_t		&rpsize=*rpsizeinout;
+
 	// type info...
+	if (!rpsize) {
+		return false;
+	}
 	byte_t	tdstype;
 	read(rp,&tdstype,&rp);
+	rpsize--;
 	debugWrite("tdstype: 0x%02x",tdstype);
 
 	uint32_t	maxsize=0;
@@ -8765,7 +8786,11 @@ bool sqlrprotocol_tds::paramValue(uint16_t param,
 			case TDS_TYPE_TEXT:
 			case TDS_TYPE_NTEXT:
 			case TDS_TYPE_IMAGE:
+				if (rpsize<sizeof(uint32_t)) {
+					return false;
+				}
 				readLE(rp,&maxsize,&rp);
+				rpsize-=sizeof(uint32_t);
 				debugWrite("maxsize: %d",maxsize);
 				break;
 			case TDS_TYPE_BIGCHAR:
@@ -8775,16 +8800,31 @@ bool sqlrprotocol_tds::paramValue(uint16_t param,
 			case TDS_TYPE_BIGBINARY:
 			case TDS_TYPE_BIGVARBIN:
 				{
+				if (rpsize<sizeof(uint16_t)) {
+					return false;
+				}
 				uint16_t	size;
 				readLE(rp,&size,&rp);
+				rpsize-=sizeof(uint16_t);
 				maxsize=size;
 				debugWrite("maxsize: %d",maxsize);
 				}
 				break;
+			case TDS_TYPE_DATEN:
+			case TDS_TYPE_TIMEN:
+			case TDS_TYPE_DATETIME2N:
+			case TDS_TYPE_DATETIMEOFFSETN:
+				// typeInfo() never sends a maxsize for these,
+				// so don't read one here either
+				break;
 			default:
 				{
+				if (!rpsize) {
+					return false;
+				}
 				byte_t	size;
 				read(rp,&size,&rp);
+				rpsize--;
 				maxsize=size;
 				debugWrite("maxsize: %d",maxsize);
 				}
@@ -8797,7 +8837,11 @@ bool sqlrprotocol_tds::paramValue(uint16_t param,
 			case TDS_TYPE_NUMERICN:
 			case TDS_TYPE_DECIMAL:
 			case TDS_TYPE_DECIMALN:
+				if (!rpsize) {
+					return false;
+				}
 				read(rp,&precision,&rp);
+				rpsize--;
 				debugWrite("precision: %d",precision);
 				break;
 		}
@@ -8811,7 +8855,11 @@ bool sqlrprotocol_tds::paramValue(uint16_t param,
 			case TDS_TYPE_TIMEN:
 			case TDS_TYPE_DATETIME2N:
 			case TDS_TYPE_DATETIMEOFFSETN:
+				if (!rpsize) {
+					return false;
+				}
 				read(rp,&scale,&rp);
+				rpsize--;
 				debugWrite("scale: %d",scale);
 				break;
 		}
@@ -8821,6 +8869,8 @@ bool sqlrprotocol_tds::paramValue(uint16_t param,
 		debugWrite("partlentype...");
 
 		// FIXME: [ushortmaxlen] [collation] [xml_info] [utd_info]
+		debugWrite("unsupported partlentype");
+		return false;
 	}
 
 	// An output parameter is sent back as the type the client declared
@@ -8841,9 +8891,16 @@ bool sqlrprotocol_tds::paramValue(uint16_t param,
 	switch (tdstype) {
 		case TDS_TYPE_INTN:
 			{
+			if (!rpsize) {
+				return false;
+			}
 			byte_t	size;
 			read(rp,&size,&rp);
+			rpsize--;
 			switch (size) {
+				case 0:
+					tdstype=TDS_TYPE_NULL;
+					break;
 				case 1:
 					tdstype=TDS_TYPE_INT1;
 					break;
@@ -8857,23 +8914,41 @@ bool sqlrprotocol_tds::paramValue(uint16_t param,
 					tdstype=TDS_TYPE_INT8;
 					break;
 				default:
-					tdstype=TDS_TYPE_NULL;
-					break;
+					debugWrite("invalid size: %d",size);
+					return false;
 			}
 			}
 			break;
 		case TDS_TYPE_BITN:
 			{
+			if (!rpsize) {
+				return false;
+			}
 			byte_t	size;
 			read(rp,&size,&rp);
-			tdstype=(size)?TDS_TYPE_BIT:TDS_TYPE_NULL;
+			rpsize--;
+			if (!size) {
+				tdstype=TDS_TYPE_NULL;
+			} else if (size==1) {
+				tdstype=TDS_TYPE_BIT;
+			} else {
+				debugWrite("invalid size: %d",size);
+				return false;
+			}
 			}
 			break;
 		case TDS_TYPE_FLTN:
 			{
+			if (!rpsize) {
+				return false;
+			}
 			byte_t	size;
 			read(rp,&size,&rp);
+			rpsize--;
 			switch (size) {
+				case 0:
+					tdstype=TDS_TYPE_NULL;
+					break;
 				case 4:
 					tdstype=TDS_TYPE_FLT4;
 					break;
@@ -8881,16 +8956,23 @@ bool sqlrprotocol_tds::paramValue(uint16_t param,
 					tdstype=TDS_TYPE_FLT8;
 					break;
 				default:
-					tdstype=TDS_TYPE_NULL;
-					break;
+					debugWrite("invalid size: %d",size);
+					return false;
 			}
 			}
 			break;
 		case TDS_TYPE_MONEYN:
 			{
+			if (!rpsize) {
+				return false;
+			}
 			byte_t	size;
 			read(rp,&size,&rp);
+			rpsize--;
 			switch (size) {
+				case 0:
+					tdstype=TDS_TYPE_NULL;
+					break;
 				case 4:
 					tdstype=TDS_TYPE_MONEY4;
 					break;
@@ -8898,16 +8980,23 @@ bool sqlrprotocol_tds::paramValue(uint16_t param,
 					tdstype=TDS_TYPE_MONEY;
 					break;
 				default:
-					tdstype=TDS_TYPE_NULL;
-					break;
+					debugWrite("invalid size: %d",size);
+					return false;
 			}
 			}
 			break;
 		case TDS_TYPE_DATETIMN:
 			{
+			if (!rpsize) {
+				return false;
+			}
 			byte_t	size;
 			read(rp,&size,&rp);
+			rpsize--;
 			switch (size) {
+				case 0:
+					tdstype=TDS_TYPE_NULL;
+					break;
 				case 4:
 					tdstype=TDS_TYPE_DATETIM4;
 					break;
@@ -8915,8 +9004,8 @@ bool sqlrprotocol_tds::paramValue(uint16_t param,
 					tdstype=TDS_TYPE_DATETIME;
 					break;
 				default:
-					tdstype=TDS_TYPE_NULL;
-					break;
+					debugWrite("invalid size: %d",size);
+					return false;
 			}
 			}
 			break;
@@ -8938,8 +9027,12 @@ bool sqlrprotocol_tds::paramValue(uint16_t param,
 			case TDS_TYPE_NVARCHAR:
 				{
 				// FIXME: do something with this
+				if (rpsize<5) {
+					return false;
+				}
 				byte_t	coll[5];
 				read(rp,coll,sizeof(coll),&rp);
+				rpsize-=sizeof(coll);
 				if (getDebug()) {
 					stringbuffer	b;
 					b.printBits(coll,sizeof(coll));
@@ -8953,11 +9046,17 @@ bool sqlrprotocol_tds::paramValue(uint16_t param,
 
 	// get the data
 	switch (tdstype) {
+		case TDS_TYPE_NULL:
+			break;
 		case TDS_TYPE_INT1:
 		case TDS_TYPE_BIT:
 			{
+			if (!rpsize) {
+				return false;
+			}
 			char	val;
 			read(rp,(byte_t *)&val,&rp);
+			rpsize--;
 
 			if (bv) {
 				bv->type=SQLRSERVERBINDVARTYPE_INTEGER;
@@ -8975,8 +9074,12 @@ bool sqlrprotocol_tds::paramValue(uint16_t param,
 		case TDS_TYPE_INT2:
 			{
 
+			if (rpsize<sizeof(uint16_t)) {
+				return false;
+			}
 			int16_t	val;
 			readLE(rp,(uint16_t *)&val,&rp);
+			rpsize-=sizeof(uint16_t);
 
 			if (bv) {
 				bv->type=SQLRSERVERBINDVARTYPE_INTEGER;
@@ -8994,8 +9097,12 @@ bool sqlrprotocol_tds::paramValue(uint16_t param,
 		case TDS_TYPE_INT4:
 			{
 
+			if (rpsize<sizeof(uint32_t)) {
+				return false;
+			}
 			int32_t	val;
 			readLE(rp,(uint32_t *)&val,&rp);
+			rpsize-=sizeof(uint32_t);
 
 			if (bv) {
 				bv->type=SQLRSERVERBINDVARTYPE_INTEGER;
@@ -9012,18 +9119,26 @@ bool sqlrprotocol_tds::paramValue(uint16_t param,
 			break;
 		case TDS_TYPE_DATETIM4:
 			{
+			if (rpsize<2*sizeof(uint16_t)) {
+				return false;
+			}
 			uint16_t	days;
 			uint16_t	minutes;
 			readLE(rp,&days,&rp);
 			readLE(rp,&minutes,&rp);
+			rpsize-=2*sizeof(uint16_t);
 			// FIXME: actually implement this
 			}
 			break;
 		case TDS_TYPE_FLT4:
 			{
 
+			if (rpsize<sizeof(float)) {
+				return false;
+			}
 			float	val;
 			read(rp,(float *)&val,&rp);
+			rpsize-=sizeof(float);
 
 			if (bv) {
 				bv->type=SQLRSERVERBINDVARTYPE_DOUBLE;
@@ -9057,27 +9172,39 @@ bool sqlrprotocol_tds::paramValue(uint16_t param,
 			break;
 		case TDS_TYPE_MONEY:
 			{
+			if (rpsize<2*sizeof(uint32_t)) {
+				return false;
+			}
 			uint32_t	high;
 			uint32_t	low;
 			readLE(rp,&high,&rp);
 			readLE(rp,&low,&rp);
+			rpsize-=2*sizeof(uint32_t);
 			// FIXME: actually implement this
 			}
 			break;
 		case TDS_TYPE_DATETIME:
 			{
+			if (rpsize<2*sizeof(uint32_t)) {
+				return false;
+			}
 			int32_t		dayssince1900;
 			uint32_t	threehundredths;
 			readLE(rp,(uint32_t *)&dayssince1900,&rp);
 			readLE(rp,&threehundredths,&rp);
+			rpsize-=2*sizeof(uint32_t);
 			// FIXME: actually implement this
 			}
 			break;
 		case TDS_TYPE_FLT8:
 			{
 
+			if (rpsize<sizeof(double)) {
+				return false;
+			}
 			double	val;
 			read(rp,(double *)&val,&rp);
+			rpsize-=sizeof(double);
 
 			if (bv) {
 				bv->type=SQLRSERVERBINDVARTYPE_DOUBLE;
@@ -9111,16 +9238,24 @@ bool sqlrprotocol_tds::paramValue(uint16_t param,
 			break;
 		case TDS_TYPE_MONEY4:
 			{
+			if (rpsize<sizeof(uint32_t)) {
+				return false;
+			}
 			int32_t	val;
 			readLE(rp,(uint32_t *)&val,&rp);
+			rpsize-=sizeof(uint32_t);
 			// FIXME: actually implement this
 			}
 			break;
 		case TDS_TYPE_INT8:
 			{
 
+			if (rpsize<sizeof(uint64_t)) {
+				return false;
+			}
 			int64_t	val;
 			readLE(rp,(uint64_t *)&val,&rp);
+			rpsize-=sizeof(uint64_t);
 
 			if (bv) {
 				bv->type=SQLRSERVERBINDVARTYPE_INTEGER;
@@ -9137,10 +9272,18 @@ bool sqlrprotocol_tds::paramValue(uint16_t param,
 			break;
 		case TDS_TYPE_GUID:
 			{
+			if (!rpsize) {
+				return false;
+			}
 			byte_t	size;
 			read(rp,&size,&rp);
+			rpsize--;
+			if (rpsize<size) {
+				return false;
+			}
 			// FIXME: actually implement this
 			rp+=size;
+			rpsize-=size;
 			}
 			break;
 		case TDS_TYPE_DECIMAL:
@@ -9152,8 +9295,12 @@ bool sqlrprotocol_tds::paramValue(uint16_t param,
 			byte_t	val[TDS_DECIMAL_MAX_SIZE-1];
 			if (tdstype==TDS_TYPE_DECIMALN ||
 				tdstype==TDS_TYPE_NUMERICN) {
+				if (!rpsize) {
+					return false;
+				}
 				byte_t	size;
 				read(rp,&size,&rp);
+				rpsize--;
 				// A length of 0 is how the protocol says
 				// null, so it isn't an error - but size-1
 				// below would be -1, and the size_t it
@@ -9170,78 +9317,144 @@ bool sqlrprotocol_tds::paramValue(uint16_t param,
 					debugWrite("invalid size: %d",size);
 					return false;
 				}
+				if (rpsize<size) {
+					return false;
+				}
 				read(rp,&ispositive,&rp);
 				read(rp,val,size-1,&rp);
+				rpsize-=size;
 			} else {
+				if (rpsize<1+sizeof(val)) {
+					return false;
+				}
 				read(rp,&ispositive,&rp);
 				read(rp,val,sizeof(val),&rp);
+				rpsize-=1+sizeof(val);
 			}
 			// FIXME: actually implement this
 			}
 			break;
 		case TDS_TYPE_DATEN:
 			{
+			if (!rpsize) {
+				return false;
+			}
 			byte_t	size;
-			uint16_t	dayssince1;
 			read(rp,&size,&rp);
-			readLE(rp,&dayssince1,&rp);
+			rpsize--;
+			if (!size) {
+				debugWrite("value: (null)");
+				break;
+			}
+			if (rpsize<size) {
+				return false;
+			}
+			uint32_t	dayssince1=0;
+			for (byte_t i=0; i<size && i<3; i++) {
+				dayssince1|=((uint32_t)rp[i])<<(i*8);
+			}
+			rp+=size;
+			rpsize-=size;
 			// FIXME: actually implement this
 			}
 			break;
 		case TDS_TYPE_TIMEN:
+		case TDS_TYPE_DATETIME2N:
+		case TDS_TYPE_DATETIMEOFFSETN:
+			{
 			// FIXME:
-			// 1 unsigned integer - number of 10^-n second
-			// 			increments since 12 am
+			// timen is 1 unsigned integer - number of 10^-n
+			// 			second increments since 12 am
 			// 			within a day.
 			// 3 bytes if 0 <= n <= 2
 			// 4 bytes if 3 <= n <= 4
 			// 5 bytes if 5 <= n <= 7
-			// FIXME: actually implement this
-			break;
-		case TDS_TYPE_DATETIME2N:
-			// FIXME:
-			// concat of timen and daten
-			// FIXME: actually implement this
-			break;
-		case TDS_TYPE_DATETIMEOFFSETN:
-			// FIXME:
-			// concat of datetime2n and
+			// datetime2n is a concat of timen and daten
+			// datetimeoffsetn is a concat of datetime2n and
 			// int16_t - timezone offset - minutes from utc
 			// 				(between -840 and 840)
+			if (!rpsize) {
+				return false;
+			}
+			byte_t	size;
+			read(rp,&size,&rp);
+			rpsize--;
+			if (!size) {
+				debugWrite("value: (null)");
+				break;
+			}
+			if (rpsize<size) {
+				return false;
+			}
+			rp+=size;
+			rpsize-=size;
 			// FIXME: actually implement this
+			}
 			break;
 		case TDS_TYPE_CHAR:
 		case TDS_TYPE_VARCHAR:
 			{
+			if (!rpsize) {
+				return false;
+			}
 			byte_t	size;
 			read(rp,&size,&rp);
+			rpsize--;
+			if (rpsize<size) {
+				return false;
+			}
 			// FIXME: actually implement this
 			rp+=size;
+			rpsize-=size;
 			}
 			break;
 		case TDS_TYPE_BINARY:
 		case TDS_TYPE_VARBINARY:
 			{
+			if (!rpsize) {
+				return false;
+			}
 			byte_t	size;
 			read(rp,&size,&rp);
+			rpsize--;
+			if (rpsize<size) {
+				return false;
+			}
 			// FIXME: actually implement this
 			rp+=size;
+			rpsize-=size;
 			}
 			break;
 		case TDS_TYPE_BIGBINARY:
 		case TDS_TYPE_BIGVARBIN:
 			{
+			if (rpsize<sizeof(uint16_t)) {
+				return false;
+			}
 			uint16_t	size;
 			readLE(rp,&size,&rp);
+			rpsize-=sizeof(uint16_t);
+			if (size==0xFFFF) {
+				debugWrite("value: (null)");
+				break;
+			}
+			if (rpsize<size) {
+				return false;
+			}
 			// FIXME: actually implement this
 			rp+=size;
+			rpsize-=size;
 			}
 			break;
 		case TDS_TYPE_BIGCHAR:
 		case TDS_TYPE_BIGVARCHR:
 			{
+			if (rpsize<sizeof(uint16_t)) {
+				return false;
+			}
 			uint16_t	size;
 			readLE(rp,&size,&rp);
+			rpsize-=sizeof(uint16_t);
 
 			// 0xFFFF means null
 			if (size==0xFFFF) {
@@ -9253,11 +9466,17 @@ bool sqlrprotocol_tds::paramValue(uint16_t param,
 				break;
 			}
 
-			// a char is blank padded out to its declared
-			// size, like a real sql server does.  a varchar
-			// isn't.
+			if (rpsize<size) {
+				return false;
+			}
+
+			// a char is blank padded out to its declared size,
+			// like a real sql server does - a varchar isn't.
+			// the declared size is client-chosen, not a count of
+			// bytes that arrived, so cap the pad at TDS_MAX_CHAR_SIZE
 			uint32_t	valuesize=size;
-			if (tdstype==TDS_TYPE_BIGCHAR && maxsize>size) {
+			if (tdstype==TDS_TYPE_BIGCHAR && maxsize>size &&
+					maxsize<=TDS_MAX_CHAR_SIZE) {
 				valuesize=maxsize;
 			}
 
@@ -9282,14 +9501,19 @@ bool sqlrprotocol_tds::paramValue(uint16_t param,
 			}
 
 			rp+=size;
+			rpsize-=size;
 			}
 			break;
 		case TDS_TYPE_NCHAR:
 		case TDS_TYPE_NVARCHAR:
 			{
 			// the size is in bytes, but the data is ucs-2
+			if (rpsize<sizeof(uint16_t)) {
+				return false;
+			}
 			uint16_t	size;
 			readLE(rp,&size,&rp);
+			rpsize-=sizeof(uint16_t);
 
 			// 0xFFFF means null
 			if (size==0xFFFF) {
@@ -9301,14 +9525,21 @@ bool sqlrprotocol_tds::paramValue(uint16_t param,
 				break;
 			}
 
+			if (rpsize<size) {
+				return false;
+			}
+
 			uint16_t	length=size/sizeof(ucs2_t);
 
-			// an nchar is blank padded out to its declared
-			// size, like a real sql server does.  an nvarchar
-			// isn't.  the declared size is in bytes too.
+			// an nchar is blank padded out to its declared size,
+			// like a real sql server does - an nvarchar isn't;
+			// the declared size is in bytes too.  it's client-chosen,
+			// not a count of bytes that arrived, so cap the pad at
+			// TDS_MAX_CHAR_SIZE
 			uint32_t	maxlength=maxsize/sizeof(ucs2_t);
 			uint32_t	valuelength=length;
-			if (tdstype==TDS_TYPE_NCHAR && maxlength>length) {
+			if (tdstype==TDS_TYPE_NCHAR && maxlength>length &&
+					maxsize<=TDS_MAX_CHAR_SIZE) {
 				valuelength=maxlength;
 			}
 
@@ -9345,11 +9576,13 @@ bool sqlrprotocol_tds::paramValue(uint16_t param,
 			}
 
 			rp+=size;
+			rpsize-=size;
 			}
 			break;
 		case TDS_TYPE_UDT:
-			// FIXME: actually implement this
-			break;
+			// FIXME: nothing parses a udt body yet
+			debugWrite("unsupported type");
+			return false;
 		case TDS_TYPE_XML:
 		case TDS_TYPE_TEXT:
 		case TDS_TYPE_NTEXT:
@@ -9357,13 +9590,21 @@ bool sqlrprotocol_tds::paramValue(uint16_t param,
 			// Freetds sends anything over 4000 characters this
 			// way, including the statement and parameter
 			// declaration strings that the sp_ procs take.
+			if (rpsize<sizeof(uint32_t)) {
+				return false;
+			}
 			uint32_t	size;
 			readLE(rp,&size,&rp);
+			rpsize-=sizeof(uint32_t);
 
 			// 0xFFFFFFFF means null
 			if (size==0xFFFFFFFF) {
 				debugWrite("value: (null)");
 				break;
+			}
+
+			if (rpsize<size) {
+				return false;
 			}
 
 			if (bv) {
@@ -9414,33 +9655,45 @@ bool sqlrprotocol_tds::paramValue(uint16_t param,
 			}
 
 			rp+=size;
+			rpsize-=size;
 			}
 			break;
 		case TDS_TYPE_IMAGE:
 		case TDS_TYPE_SSVARIANT:
 			{
+			if (rpsize<sizeof(uint32_t)) {
+				return false;
+			}
 			uint32_t	size;
 			readLE(rp,&size,&rp);
+			rpsize-=sizeof(uint32_t);
+			if (size==0xFFFFFFFF) {
+				debugWrite("value: (null)");
+				break;
+			}
+			if (rpsize<size) {
+				return false;
+			}
 			// FIXME: actually implement this
 			rp+=size;
+			rpsize-=size;
 			}
 			break;
 		case TDS_TYPE_TVP:
-			if (negotiatedtdsversion>=730) {
-				// FIXME:
-				// TVP_TYPENAME
-				// TVP_COLMETADATA
-				// [TVP_ORDER_UNIQUE]
-				// [TVP_COLUMN_ORDERING]
-				// TVP_END_TOKEN
-				// *TVP_ROW
-				// TVP_END_TOKEN
-				// FIXME: actually implement this
-			} else {
-				// protocol error
-				return false;
-			}
-			break;
+			// FIXME:
+			// TVP_TYPENAME
+			// TVP_COLMETADATA
+			// [TVP_ORDER_UNIQUE]
+			// [TVP_COLUMN_ORDERING]
+			// TVP_END_TOKEN
+			// *TVP_ROW
+			// TVP_END_TOKEN
+			// FIXME: nothing parses a tvp body yet
+			debugWrite("unsupported type");
+			return false;
+		default:
+			debugWrite("unsupported type");
+			return false;
 	}
 
 	if (negotiatedtdsversion>=740) {
@@ -9453,9 +9706,6 @@ bool sqlrprotocol_tds::paramValue(uint16_t param,
 		//   	CekHash - ???           (tds 7.4+)
 		//   	NormVersion - byte      (tds 7.4+)
 	}
-
-	// copy out pointer
-	*rpout=rp;
 
 	return true;
 }
