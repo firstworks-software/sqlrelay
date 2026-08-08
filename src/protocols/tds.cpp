@@ -758,6 +758,10 @@ static const char *procnames[]={
 // the window, which covers every rowset size an odbc driver actually uses.
 #define CURSOR_MAX_POSITION_ROWS	1024
 
+// the most exec statements in one batch that get a synthesized return
+// status.  A batch with more than this just goes without one for the extras.
+#define BATCH_MAX_EXECS		32
+
 // the return status that all of these procs use for success
 #define RPC_STATUS_SUCCESS	0
 #define RPC_STATUS_FAILURE	1
@@ -956,6 +960,14 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_tds : public sqlrprotocol {
 		bool	sspi();
 
 		bool	sqlBatch();
+		// Finds the exec/execute statements in a batch and, for
+		// each one, records the 1-based index of the result set
+		// that its return status has to follow.  Returns how many
+		// were recorded.
+		uint16_t	batchExecResultSets(const char *sql,
+						uint16_t *rsindex,
+						uint16_t maxcount);
+		bool	isSqlWordChar(char ch);
 		void	allHeaders(const byte_t *rp,
 					size_t rpsize,
 					const byte_t **rpout,
@@ -3426,6 +3438,11 @@ bool sqlrprotocol_tds::sqlBatch() {
 	cont->setInputOutputBindCount(cursor,0);
 	cont->setTranslateBindVariablesForThisQuery(cursor,false);
 
+	// find the exec statements, before the sql goes away
+	uint16_t	execrs[BATCH_MAX_EXECS];
+	uint16_t	execcount=batchExecResultSets(sql8,execrs,
+							BATCH_MAX_EXECS);
+
 	// run the query
 	bool	success=
 		cont->prepareQuery(cursor,sql8,(uint32_t)sqllength,
@@ -3445,7 +3462,10 @@ bool sqlrprotocol_tds::sqlBatch() {
 		// client walks the result sets one at a time, so send one
 		// result set per result set that the batch produced, with
 		// DONE_MORE set on all but the last one
+		uint16_t	rsindex=0;
 		for (;;) {
+
+			rsindex++;
 
 			if (cont->colCount(cursor)) {
 				colMetaData(cursor,false);
@@ -3459,9 +3479,30 @@ bool sqlrprotocol_tds::sqlBatch() {
 				break;
 			}
 
-			done((avail)?
+			// how many exec return statuses follow this one
+			uint16_t	pairs=0;
+			for (uint16_t i=0; i<execcount; i++) {
+				if (execrs[i]==rsindex) {
+					pairs++;
+				}
+			}
+
+			done((avail || pairs)?
 				(DONE_MORE|DONE_COUNT):
 				(DONE_FINAL|DONE_COUNT),0,rowcount);
+
+			// Odbc gives no way to see the return status of an
+			// exec inside a batch, but native sql server sends
+			// one, and clients count on it being there.  A
+			// success status stands in for it.  FreeTDS throws
+			// away a return-status that anything other than a
+			// done-proc follows, so the two tokens have to stay
+			// adjacent.
+			for (uint16_t i=0; i<pairs; i++) {
+				returnStatus(RPC_STATUS_SUCCESS);
+				doneProc((avail || i+1<pairs)?
+						DONE_MORE:DONE_FINAL,0,0);
+			}
 
 			if (!avail) {
 				break;
@@ -3483,6 +3524,151 @@ bool sqlrprotocol_tds::sqlBatch() {
 	cont->release(cursor);
 
 	return retval;
+}
+
+bool sqlrprotocol_tds::isSqlWordChar(char ch) {
+	return (character::isAlphanumeric(ch) ||
+			ch=='_' || ch=='@' || ch=='#' || ch=='$');
+}
+
+uint16_t sqlrprotocol_tds::batchExecResultSets(const char *sql,
+						uint16_t *rsindex,
+						uint16_t maxcount) {
+
+	uint16_t	count=0;
+	uint16_t	rscount=0;
+	uint32_t	depth=0;
+
+	for (const char *ptr=sql; *ptr;) {
+
+		// skip string literals and double-quoted identifiers,
+		// either of which doubles its quote to embed one
+		if (*ptr=='\'' || *ptr=='"') {
+			char	quote=*ptr;
+			ptr++;
+			while (*ptr) {
+				if (*ptr==quote) {
+					ptr++;
+					if (*ptr!=quote) {
+						break;
+					}
+				}
+				ptr++;
+			}
+			continue;
+		}
+
+		// skip bracket-quoted identifiers
+		if (*ptr=='[') {
+			ptr++;
+			while (*ptr) {
+				if (*ptr==']') {
+					ptr++;
+					if (*ptr!=']') {
+						break;
+					}
+				}
+				ptr++;
+			}
+			continue;
+		}
+
+		// skip line comments
+		if (*ptr=='-' && ptr[1]=='-') {
+			ptr+=2;
+			while (*ptr && *ptr!='\n') {
+				ptr++;
+			}
+			continue;
+		}
+
+		// skip block comments, which nest in t-sql
+		if (*ptr=='/' && ptr[1]=='*') {
+			uint32_t	commentdepth=1;
+			ptr+=2;
+			while (*ptr && commentdepth) {
+				if (*ptr=='/' && ptr[1]=='*') {
+					commentdepth++;
+					ptr+=2;
+				} else if (*ptr=='*' && ptr[1]=='/') {
+					commentdepth--;
+					ptr+=2;
+				} else {
+					ptr++;
+				}
+			}
+			continue;
+		}
+
+		// track parenthesis depth
+		if (*ptr=='(') {
+			depth++;
+			ptr++;
+			continue;
+		}
+		if (*ptr==')') {
+			if (depth) {
+				depth--;
+			}
+			ptr++;
+			continue;
+		}
+
+		if (!isSqlWordChar(*ptr)) {
+			ptr++;
+			continue;
+		}
+
+		// get the next word
+		const char	*word=ptr;
+		while (isSqlWordChar(*ptr)) {
+			ptr++;
+		}
+		size_t		wordlen=ptr-word;
+
+		// only top-level keywords matter, and a word that leads
+		// with a digit or a sigil is a number, a variable, or a
+		// temp table rather than a keyword
+		if (depth || character::isDigit(*word) ||
+				*word=='@' || *word=='#' || *word=='$') {
+			continue;
+		}
+
+		if ((wordlen==4 &&
+			!charstring::compareIgnoringCase(word,"exec",4)) ||
+			(wordlen==7 &&
+			!charstring::compareIgnoringCase(word,"execute",7))) {
+
+			// "execute as ..." switches context, it doesn't
+			// call anything, and it makes no result set
+			const char	*next=
+				cont->skipWhitespaceAndComments(ptr);
+			if (!charstring::compareIgnoringCase(next,"as",2) &&
+					!isSqlWordChar(next[2])) {
+				continue;
+			}
+
+			if (count<maxcount) {
+				rsindex[count]=rscount+1;
+				count++;
+			}
+			rscount++;
+			continue;
+		}
+
+		// the other statements that make a result set of their own
+		if ((wordlen==6 &&
+			(!charstring::compareIgnoringCase(word,"select",6) ||
+			!charstring::compareIgnoringCase(word,"insert",6) ||
+			!charstring::compareIgnoringCase(word,"update",6) ||
+			!charstring::compareIgnoringCase(word,"delete",6))) ||
+			(wordlen==5 &&
+			!charstring::compareIgnoringCase(word,"merge",5))) {
+			rscount++;
+		}
+	}
+
+	return count;
 }
 
 void sqlrprotocol_tds::allHeaders(const byte_t *rp,

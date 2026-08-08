@@ -1697,6 +1697,13 @@
 	implemented nextResultSet() in the odbc connection module - it was a
 		stub that always reported that no more result sets were
 		available
+	fixed the tds protocol module - a language batch containing an exec
+		statement never sent the return-status/done-proc pair that a
+		real server sends for it, so a ct-lib client's ct_results()
+		walk ran out of step and eventually blocked in ct_fetch(),
+		waiting on a response that was never coming, until the
+		connection timed out; each exec statement in a batch now gets
+		a synthesized return status
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems
