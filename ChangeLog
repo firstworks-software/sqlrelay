@@ -1623,6 +1623,13 @@
 		while the two thin drivers hang rather than reporting an error
 		against it - plus a limitations note that no setting lets an
 		oci client read a query's answer
+	fixed the tds protocol module - the login7 option flag bits overlapped
+		in optionflags1 and optionflags2, so fdumpload, fusedbwarn,
+		fusedbfatal, fsetlangwarn and fintsecurity were decoded from
+		the wrong bit and some read their neighbours' bits, and
+		optionflags3 skipped a bit, shifting fsendyukonbinaryxml,
+		funknowncollationhandling and fextension off by one; all three
+		bytes now match ms-tds 2.2.6.4
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems

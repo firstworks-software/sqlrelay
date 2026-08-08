@@ -2560,27 +2560,27 @@ bool sqlrprotocol_tds::tds7Login() {
 	fbyteorder=(optionflags1&(0x01));
 	fcharset=(optionflags1&(0x01<<1))>>1;
 	ffloattype=(optionflags1&(0x03<<2))>>2;
-	fdumpload=(optionflags1&(0x01<<3))>>3;
-	fusedbwarn=(optionflags1&(0x01<<4))>>4;
-	fusedbfatal=(optionflags1&(0x01<<5))>>5;
-	fsetlangwarn=(optionflags1&(0x01<<6))>>6;
+	fdumpload=(optionflags1&(0x01<<4))>>4;
+	fusedbwarn=(optionflags1&(0x01<<5))>>5;
+	fusedbfatal=(optionflags1&(0x01<<6))>>6;
+	fsetlangwarn=(optionflags1&(0x01<<7))>>7;
 
 	fsetlangfatal=(optionflags2&(0x01));
 	fodbc=(optionflags2&(0x01<<1))>>1;
 	ftranboundary=(optionflags2&(0x01<<2))>>2;
 	fcachecontent=(optionflags2&(0x01<<3))>>3;
 	fusertype=(optionflags2&(0x07<<4))>>4;
-	fintsecurity=(optionflags2&(0x01<<5))>>5;
+	fintsecurity=(optionflags2&(0x01<<7))>>7;
 
 	fsqltype=(typeflags&(0x0F));
 	foledb=(typeflags&(0x01<<4))>>4;
 	freadonlyintent=(typeflags&(0x01<<3))>>3;
 
 	fchangepassword=(optionflags3&(0x01));
+	fsendyukonbinaryxml=(optionflags3&(0x01<<1))>>1;
 	fuserinstance=(optionflags3&(0x01<<2))>>2;
-	fsendyukonbinaryxml=(optionflags3&(0x01<<3))>>3;
-	funknowncollationhandling=(optionflags3&(0x01<<4))>>4;
-	fextension=(optionflags3&(0x01<<5))>>5;
+	funknowncollationhandling=(optionflags3&(0x01<<3))>>3;
+	fextension=(optionflags3&(0x01<<4))>>4;
 
 	readLE(rp,&clienttimzone,&rp);
 	readLE(rp,&clientlcid,&rp);
