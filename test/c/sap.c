@@ -169,7 +169,16 @@ int main(int argc, char **argv) {
 		"	testchar char(40), "
 		"	testvarchar varchar(40), "
 		"	testbit bit, "
-		"	testtext text) ""lock datarows"));
+		"	testtext text, "
+		"	testbinary binary(20), "
+		"	testvarbinary varbinary(20), "
+		"	testunichar unichar(20), "
+		"	testunivarchar univarchar(20), "
+		"	testunitext unitext, "
+		"	testdate date, "
+		"	testtime time, "
+		"	testbigtime bigtime, "
+		"	testbigdatetime bigdatetime) ""lock datarows"));
 	printf("\n");
 
 
@@ -194,7 +203,16 @@ int main(int argc, char **argv) {
 		"	'testchar1', "
 		"	'testvarchar1', "
 		"	1, "
-		"	'testtext1')"));
+		"	'testtext1', "
+		"	0x01, "
+		"	0x01, "
+		"	'testunichar1', "
+		"	'testunivarchar1', "
+		"	'testunitext1', "
+		"	'01-Jan-2001', "
+		"	'01:00:00', "
+		"	'01:00:00.000000', "
+		"	'01-Jan-2001 01:00:00.000000')"));
 	printf("\n");
 
 
@@ -224,8 +242,17 @@ int main(int argc, char **argv) {
 		"	@var12, "
 		"	@var13, "
 		"	@var14, "
-		"	@var15)");
-	assertEqInt(sqlrcur_countBindVariables(cur),15);
+		"	@var15, "
+		"	@var16, "
+		"	@var17, "
+		"	@var18, "
+		"	@var19, "
+		"	@var20, "
+		"	@var21, "
+		"	@var22, "
+		"	@var23, "
+		"	@var24)");
+	assertEqInt(sqlrcur_countBindVariables(cur),24);
 	sqlrcur_inputBindLong(cur,"1",2);
 	sqlrcur_inputBindLong(cur,"2",2);
 	sqlrcur_inputBindLong(cur,"3",2);
@@ -241,6 +268,15 @@ int main(int argc, char **argv) {
 	sqlrcur_inputBindString(cur,"13","testvarchar2");
 	sqlrcur_inputBindLong(cur,"14",1);
 	sqlrcur_inputBindClob(cur,"15","testtext2",9);
+	sqlrcur_inputBindBlob(cur,"16","\x02",1);
+	sqlrcur_inputBindBlob(cur,"17","\x02",1);
+	sqlrcur_inputBindString(cur,"18","testunichar2");
+	sqlrcur_inputBindString(cur,"19","testunivarchar2");
+	sqlrcur_inputBindClob(cur,"20","testunitext2",12);
+	sqlrcur_inputBindString(cur,"21","01-Jan-2002");
+	sqlrcur_inputBindString(cur,"22","02:00:00");
+	sqlrcur_inputBindString(cur,"23","02:00:00.000000");
+	sqlrcur_inputBindString(cur,"24","01-Jan-2002 02:00:00.000000");
 	assertTrue(sqlrcur_executeQuery(cur));
 	sqlrcur_clearBinds(cur);
 	sqlrcur_inputBindLong(cur,"1",3);
@@ -258,6 +294,15 @@ int main(int argc, char **argv) {
 	sqlrcur_inputBindString(cur,"13","testvarchar3");
 	sqlrcur_inputBindLong(cur,"14",1);
 	sqlrcur_inputBindClob(cur,"15","testtext3",9);
+	sqlrcur_inputBindBlob(cur,"16","\x03",1);
+	sqlrcur_inputBindBlob(cur,"17","\x03",1);
+	sqlrcur_inputBindString(cur,"18","testunichar3");
+	sqlrcur_inputBindString(cur,"19","testunivarchar3");
+	sqlrcur_inputBindClob(cur,"20","testunitext3",12);
+	sqlrcur_inputBindString(cur,"21","01-Jan-2003");
+	sqlrcur_inputBindString(cur,"22","03:00:00");
+	sqlrcur_inputBindString(cur,"23","03:00:00.000000");
+	sqlrcur_inputBindString(cur,"24","01-Jan-2003 03:00:00.000000");
 	assertTrue(sqlrcur_executeQuery(cur));
 	printf("\n");
 
@@ -287,6 +332,15 @@ int main(int argc, char **argv) {
 	sqlrcur_inputBindString(cur,"13","testvarchar4");
 	sqlrcur_inputBindLong(cur,"14",1);
 	sqlrcur_inputBindClob(cur,"15","testtext4",9);
+	sqlrcur_inputBindBlob(cur,"16","\x04",1);
+	sqlrcur_inputBindBlob(cur,"17","\x04",1);
+	sqlrcur_inputBindString(cur,"18","testunichar4");
+	sqlrcur_inputBindString(cur,"19","testunivarchar4");
+	sqlrcur_inputBindClob(cur,"20","testunitext4",12);
+	sqlrcur_inputBindString(cur,"21","01-Jan-2004");
+	sqlrcur_inputBindString(cur,"22","04:00:00");
+	sqlrcur_inputBindString(cur,"23","04:00:00.000000");
+	sqlrcur_inputBindString(cur,"24","01-Jan-2004 04:00:00.000000");
 	sqlrcur_validateBinds(cur);
 	assertTrue(sqlrcur_executeQuery(cur));
 	printf("\n");
@@ -310,6 +364,15 @@ int main(int argc, char **argv) {
 	sqlrcur_inputBindString(cur,"var13","testvarchar5");
 	sqlrcur_inputBindLong(cur,"var14",1);
 	sqlrcur_inputBindClob(cur,"var15","testtext5",9);
+	sqlrcur_inputBindBlob(cur,"var16","\x05",1);
+	sqlrcur_inputBindBlob(cur,"var17","\x05",1);
+	sqlrcur_inputBindString(cur,"var18","testunichar5");
+	sqlrcur_inputBindString(cur,"var19","testunivarchar5");
+	sqlrcur_inputBindClob(cur,"var20","testunitext5",12);
+	sqlrcur_inputBindString(cur,"var21","01-Jan-2005");
+	sqlrcur_inputBindString(cur,"var22","05:00:00");
+	sqlrcur_inputBindString(cur,"var23","05:00:00.000000");
+	sqlrcur_inputBindString(cur,"var24","01-Jan-2005 05:00:00.000000");
 	assertTrue(sqlrcur_executeQuery(cur));
 	sqlrcur_clearBinds(cur);
 	sqlrcur_inputBindLong(cur,"var1",6);
@@ -327,6 +390,15 @@ int main(int argc, char **argv) {
 	sqlrcur_inputBindString(cur,"var13","testvarchar6");
 	sqlrcur_inputBindLong(cur,"var14",1);
 	sqlrcur_inputBindClob(cur,"var15","testtext6",9);
+	sqlrcur_inputBindBlob(cur,"var16","\x06",1);
+	sqlrcur_inputBindBlob(cur,"var17","\x06",1);
+	sqlrcur_inputBindString(cur,"var18","testunichar6");
+	sqlrcur_inputBindString(cur,"var19","testunivarchar6");
+	sqlrcur_inputBindClob(cur,"var20","testunitext6",12);
+	sqlrcur_inputBindString(cur,"var21","01-Jan-2006");
+	sqlrcur_inputBindString(cur,"var22","06:00:00");
+	sqlrcur_inputBindString(cur,"var23","06:00:00.000000");
+	sqlrcur_inputBindString(cur,"var24","01-Jan-2006 06:00:00.000000");
 	assertTrue(sqlrcur_executeQuery(cur));
 	sqlrcur_clearBinds(cur);
 	sqlrcur_inputBindLong(cur,"var1",7);
@@ -344,6 +416,15 @@ int main(int argc, char **argv) {
 	sqlrcur_inputBindString(cur,"var13","testvarchar7");
 	sqlrcur_inputBindLong(cur,"var14",1);
 	sqlrcur_inputBindClob(cur,"var15","testtext7",9);
+	sqlrcur_inputBindBlob(cur,"var16","\x07",1);
+	sqlrcur_inputBindBlob(cur,"var17","\x07",1);
+	sqlrcur_inputBindString(cur,"var18","testunichar7");
+	sqlrcur_inputBindString(cur,"var19","testunivarchar7");
+	sqlrcur_inputBindClob(cur,"var20","testunitext7",12);
+	sqlrcur_inputBindString(cur,"var21","01-Jan-2007");
+	sqlrcur_inputBindString(cur,"var22","07:00:00");
+	sqlrcur_inputBindString(cur,"var23","07:00:00.000000");
+	sqlrcur_inputBindString(cur,"var24","01-Jan-2007 07:00:00.000000");
 	assertTrue(sqlrcur_executeQuery(cur));
 	printf("\n");
 
@@ -373,7 +454,16 @@ int main(int argc, char **argv) {
 	sqlrcur_inputBindString(cur,"var13","testvarchar8");
 	sqlrcur_inputBindLong(cur,"var14",1);
 	sqlrcur_inputBindClob(cur,"var15","testtext8",9);
-	sqlrcur_inputBindString(cur,"var16","junkvalue");
+	sqlrcur_inputBindBlob(cur,"var16","\x08",1);
+	sqlrcur_inputBindBlob(cur,"var17","\x08",1);
+	sqlrcur_inputBindString(cur,"var18","testunichar8");
+	sqlrcur_inputBindString(cur,"var19","testunivarchar8");
+	sqlrcur_inputBindClob(cur,"var20","testunitext8",12);
+	sqlrcur_inputBindString(cur,"var21","01-Jan-2008");
+	sqlrcur_inputBindString(cur,"var22","08:00:00");
+	sqlrcur_inputBindString(cur,"var23","08:00:00.000000");
+	sqlrcur_inputBindString(cur,"var24","01-Jan-2008 08:00:00.000000");
+	sqlrcur_inputBindString(cur,"var25","junkvalue");
 	sqlrcur_validateBinds(cur);
 	assertTrue(sqlrcur_executeQuery(cur));
 	printf("\n");
@@ -388,7 +478,7 @@ int main(int argc, char **argv) {
 
 	// column count
 	printf("COLUMN COUNT: \n");
-	assertEqInt(sqlrcur_colCount(cur),15);
+	assertEqInt(sqlrcur_colCount(cur),24);
 	printf("\n");
 
 
@@ -408,6 +498,15 @@ int main(int argc, char **argv) {
 	assertEqStr(sqlrcur_getColumnName(cur,11),"testchar");
 	assertEqStr(sqlrcur_getColumnName(cur,12),"testvarchar");
 	assertEqStr(sqlrcur_getColumnName(cur,13),"testbit");
+	assertEqStr(sqlrcur_getColumnName(cur,15),"testbinary");
+	assertEqStr(sqlrcur_getColumnName(cur,16),"testvarbinary");
+	assertEqStr(sqlrcur_getColumnName(cur,17),"testunichar");
+	assertEqStr(sqlrcur_getColumnName(cur,18),"testunivarchar");
+	assertEqStr(sqlrcur_getColumnName(cur,19),"testunitext");
+	assertEqStr(sqlrcur_getColumnName(cur,20),"testdate");
+	assertEqStr(sqlrcur_getColumnName(cur,21),"testtime");
+	assertEqStr(sqlrcur_getColumnName(cur,22),"testbigtime");
+	assertEqStr(sqlrcur_getColumnName(cur,23),"testbigdatetime");
 	cols=sqlrcur_getColumnNames(cur);
 	assertEqStr(cols[0],"testint");
 	assertEqStr(cols[1],"testsmallint");
@@ -423,6 +522,15 @@ int main(int argc, char **argv) {
 	assertEqStr(cols[11],"testchar");
 	assertEqStr(cols[12],"testvarchar");
 	assertEqStr(cols[13],"testbit");
+	assertEqStr(cols[15],"testbinary");
+	assertEqStr(cols[16],"testvarbinary");
+	assertEqStr(cols[17],"testunichar");
+	assertEqStr(cols[18],"testunivarchar");
+	assertEqStr(cols[19],"testunitext");
+	assertEqStr(cols[20],"testdate");
+	assertEqStr(cols[21],"testtime");
+	assertEqStr(cols[22],"testbigtime");
+	assertEqStr(cols[23],"testbigdatetime");
 	printf("\n");
 
 
@@ -458,6 +566,24 @@ int main(int argc, char **argv) {
 	assertEqStr(sqlrcur_getColumnTypeByName(cur,"testvarchar"),"VARCHAR");
 	assertEqStr(sqlrcur_getColumnTypeByIndex(cur,13),"BIT");
 	assertEqStr(sqlrcur_getColumnTypeByName(cur,"testbit"),"BIT");
+	assertEqStr(sqlrcur_getColumnTypeByIndex(cur,15),"BINARY");
+	assertEqStr(sqlrcur_getColumnTypeByName(cur,"testbinary"),"BINARY");
+	assertEqStr(sqlrcur_getColumnTypeByIndex(cur,16),"VARBINARY");
+	assertEqStr(sqlrcur_getColumnTypeByName(cur,"testvarbinary"),"VARBINARY");
+	assertEqStr(sqlrcur_getColumnTypeByIndex(cur,17),"NCHAR");
+	assertEqStr(sqlrcur_getColumnTypeByName(cur,"testunichar"),"NCHAR");
+	assertEqStr(sqlrcur_getColumnTypeByIndex(cur,18),"NVARCHAR");
+	assertEqStr(sqlrcur_getColumnTypeByName(cur,"testunivarchar"),"NVARCHAR");
+	assertEqStr(sqlrcur_getColumnTypeByIndex(cur,19),"NTEXT");
+	assertEqStr(sqlrcur_getColumnTypeByName(cur,"testunitext"),"NTEXT");
+	assertEqStr(sqlrcur_getColumnTypeByIndex(cur,20),"DATE");
+	assertEqStr(sqlrcur_getColumnTypeByName(cur,"testdate"),"DATE");
+	assertEqStr(sqlrcur_getColumnTypeByIndex(cur,21),"TIME");
+	assertEqStr(sqlrcur_getColumnTypeByName(cur,"testtime"),"TIME");
+	assertEqStr(sqlrcur_getColumnTypeByIndex(cur,22),"TIME");
+	assertEqStr(sqlrcur_getColumnTypeByName(cur,"testbigtime"),"TIME");
+	assertEqStr(sqlrcur_getColumnTypeByIndex(cur,23),"TIMESTAMP");
+	assertEqStr(sqlrcur_getColumnTypeByName(cur,"testbigdatetime"),"TIMESTAMP");
 	printf("\n");
 
 
@@ -491,6 +617,24 @@ int main(int argc, char **argv) {
 	assertEqInt(sqlrcur_getColumnLengthByName(cur,"testvarchar"),40);
 	assertEqInt(sqlrcur_getColumnLengthByIndex(cur,13),1);
 	assertEqInt(sqlrcur_getColumnLengthByName(cur,"testbit"),1);
+	assertEqInt(sqlrcur_getColumnLengthByIndex(cur,15),20);
+	assertEqInt(sqlrcur_getColumnLengthByName(cur,"testbinary"),20);
+	assertEqInt(sqlrcur_getColumnLengthByIndex(cur,16),20);
+	assertEqInt(sqlrcur_getColumnLengthByName(cur,"testvarbinary"),20);
+	assertEqInt(sqlrcur_getColumnLengthByIndex(cur,17),40);
+	assertEqInt(sqlrcur_getColumnLengthByName(cur,"testunichar"),40);
+	assertEqInt(sqlrcur_getColumnLengthByIndex(cur,18),40);
+	assertEqInt(sqlrcur_getColumnLengthByName(cur,"testunivarchar"),40);
+	assertEqInt(sqlrcur_getColumnLengthByIndex(cur,19),32768);
+	assertEqInt(sqlrcur_getColumnLengthByName(cur,"testunitext"),32768);
+	assertEqInt(sqlrcur_getColumnLengthByIndex(cur,20),4);
+	assertEqInt(sqlrcur_getColumnLengthByName(cur,"testdate"),4);
+	assertEqInt(sqlrcur_getColumnLengthByIndex(cur,21),4);
+	assertEqInt(sqlrcur_getColumnLengthByName(cur,"testtime"),4);
+	assertEqInt(sqlrcur_getColumnLengthByIndex(cur,22),8);
+	assertEqInt(sqlrcur_getColumnLengthByName(cur,"testbigtime"),8);
+	assertEqInt(sqlrcur_getColumnLengthByIndex(cur,23),8);
+	assertEqInt(sqlrcur_getColumnLengthByName(cur,"testbigdatetime"),8);
 	printf("\n");
 
 
@@ -524,6 +668,24 @@ int main(int argc, char **argv) {
 	assertEqInt(sqlrcur_getLongestByName(cur,"testvarchar"),12);
 	assertEqInt(sqlrcur_getLongestByIndex(cur,13),1);
 	assertEqInt(sqlrcur_getLongestByName(cur,"testbit"),1);
+	assertEqInt(sqlrcur_getLongestByIndex(cur,15),40);
+	assertEqInt(sqlrcur_getLongestByName(cur,"testbinary"),40);
+	assertEqInt(sqlrcur_getLongestByIndex(cur,16),2);
+	assertEqInt(sqlrcur_getLongestByName(cur,"testvarbinary"),2);
+	assertEqInt(sqlrcur_getLongestByIndex(cur,17),20);
+	assertEqInt(sqlrcur_getLongestByName(cur,"testunichar"),20);
+	assertEqInt(sqlrcur_getLongestByIndex(cur,18),15);
+	assertEqInt(sqlrcur_getLongestByName(cur,"testunivarchar"),15);
+	assertEqInt(sqlrcur_getLongestByIndex(cur,19),12);
+	assertEqInt(sqlrcur_getLongestByName(cur,"testunitext"),12);
+	assertEqInt(sqlrcur_getLongestByIndex(cur,20),11);
+	assertEqInt(sqlrcur_getLongestByName(cur,"testdate"),11);
+	assertEqInt(sqlrcur_getLongestByIndex(cur,21),7);
+	assertEqInt(sqlrcur_getLongestByName(cur,"testtime"),7);
+	assertEqInt(sqlrcur_getLongestByIndex(cur,22),7);
+	assertEqInt(sqlrcur_getLongestByName(cur,"testbigtime"),7);
+	assertEqInt(sqlrcur_getLongestByIndex(cur,23),19);
+	assertEqInt(sqlrcur_getLongestByName(cur,"testbigdatetime"),19);
 	printf("\n");
 
 
@@ -568,6 +730,16 @@ int main(int argc, char **argv) {
 		"                               ");
 	assertEqStr(sqlrcur_getFieldByIndex(cur,0,12),"testvarchar1");
 	assertEqStr(sqlrcur_getFieldByIndex(cur,0,13),"1");
+	assertEqStr(sqlrcur_getFieldByIndex(cur,0,15),
+		"0100000000000000000000000000000000000000");
+	assertEqStr(sqlrcur_getFieldByIndex(cur,0,16),"01");
+	assertEqStr(sqlrcur_getFieldByIndex(cur,0,17),"testunichar1        ");
+	assertEqStr(sqlrcur_getFieldByIndex(cur,0,18),"testunivarchar1");
+	assertEqStr(sqlrcur_getFieldByIndex(cur,0,19),"testunitext1");
+	assertEqStr(sqlrcur_getFieldByIndex(cur,0,20),"Jan  1 2001");
+	assertEqStr(sqlrcur_getFieldByIndex(cur,0,21)," 1:00AM");
+	assertEqStr(sqlrcur_getFieldByIndex(cur,0,22)," 1:00AM");
+	assertEqStr(sqlrcur_getFieldByIndex(cur,0,23),"Jan  1 2001  1:00AM");
 	printf("\n");
 	assertEqStr(sqlrcur_getFieldByIndex(cur,7,0),"8");
 	assertEqStr(sqlrcur_getFieldByIndex(cur,7,1),"8");
@@ -584,6 +756,16 @@ int main(int argc, char **argv) {
 		"                               ");
 	assertEqStr(sqlrcur_getFieldByIndex(cur,7,12),"testvarchar8");
 	assertEqStr(sqlrcur_getFieldByIndex(cur,7,13),"1");
+	assertEqStr(sqlrcur_getFieldByIndex(cur,7,15),
+		"0800000000000000000000000000000000000000");
+	assertEqStr(sqlrcur_getFieldByIndex(cur,7,16),"08");
+	assertEqStr(sqlrcur_getFieldByIndex(cur,7,17),"testunichar8        ");
+	assertEqStr(sqlrcur_getFieldByIndex(cur,7,18),"testunivarchar8");
+	assertEqStr(sqlrcur_getFieldByIndex(cur,7,19),"testunitext8");
+	assertEqStr(sqlrcur_getFieldByIndex(cur,7,20),"Jan  1 2008");
+	assertEqStr(sqlrcur_getFieldByIndex(cur,7,21)," 8:00AM");
+	assertEqStr(sqlrcur_getFieldByIndex(cur,7,22)," 8:00AM");
+	assertEqStr(sqlrcur_getFieldByIndex(cur,7,23),"Jan  1 2008  8:00AM");
 	printf("\n");
 
 
@@ -603,6 +785,15 @@ int main(int argc, char **argv) {
 	assertEqInt(sqlrcur_getFieldLengthByIndex(cur,0,11),40);
 	assertEqInt(sqlrcur_getFieldLengthByIndex(cur,0,12),12);
 	assertEqInt(sqlrcur_getFieldLengthByIndex(cur,0,13),1);
+	assertEqInt(sqlrcur_getFieldLengthByIndex(cur,0,15),40);
+	assertEqInt(sqlrcur_getFieldLengthByIndex(cur,0,16),2);
+	assertEqInt(sqlrcur_getFieldLengthByIndex(cur,0,17),20);
+	assertEqInt(sqlrcur_getFieldLengthByIndex(cur,0,18),15);
+	assertEqInt(sqlrcur_getFieldLengthByIndex(cur,0,19),12);
+	assertEqInt(sqlrcur_getFieldLengthByIndex(cur,0,20),11);
+	assertEqInt(sqlrcur_getFieldLengthByIndex(cur,0,21),7);
+	assertEqInt(sqlrcur_getFieldLengthByIndex(cur,0,22),7);
+	assertEqInt(sqlrcur_getFieldLengthByIndex(cur,0,23),19);
 	printf("\n");
 	assertEqInt(sqlrcur_getFieldLengthByIndex(cur,7,0),1);
 	assertEqInt(sqlrcur_getFieldLengthByIndex(cur,7,1),1);
@@ -618,6 +809,15 @@ int main(int argc, char **argv) {
 	assertEqInt(sqlrcur_getFieldLengthByIndex(cur,7,11),40);
 	assertEqInt(sqlrcur_getFieldLengthByIndex(cur,7,12),12);
 	assertEqInt(sqlrcur_getFieldLengthByIndex(cur,7,13),1);
+	assertEqInt(sqlrcur_getFieldLengthByIndex(cur,7,15),40);
+	assertEqInt(sqlrcur_getFieldLengthByIndex(cur,7,16),2);
+	assertEqInt(sqlrcur_getFieldLengthByIndex(cur,7,17),20);
+	assertEqInt(sqlrcur_getFieldLengthByIndex(cur,7,18),15);
+	assertEqInt(sqlrcur_getFieldLengthByIndex(cur,7,19),12);
+	assertEqInt(sqlrcur_getFieldLengthByIndex(cur,7,20),11);
+	assertEqInt(sqlrcur_getFieldLengthByIndex(cur,7,21),7);
+	assertEqInt(sqlrcur_getFieldLengthByIndex(cur,7,22),7);
+	assertEqInt(sqlrcur_getFieldLengthByIndex(cur,7,23),19);
 	printf("\n");
 
 
@@ -640,6 +840,19 @@ int main(int argc, char **argv) {
 		"                               ");
 	assertEqStr(sqlrcur_getFieldByName(cur,0,"testvarchar"),"testvarchar1");
 	assertEqStr(sqlrcur_getFieldByName(cur,0,"testbit"),"1");
+	assertEqStr(sqlrcur_getFieldByName(cur,0,"testbinary"),
+		"0100000000000000000000000000000000000000");
+	assertEqStr(sqlrcur_getFieldByName(cur,0,"testvarbinary"),"01");
+	assertEqStr(sqlrcur_getFieldByName(cur,0,"testunichar"),
+		"testunichar1        ");
+	assertEqStr(sqlrcur_getFieldByName(cur,0,"testunivarchar"),
+		"testunivarchar1");
+	assertEqStr(sqlrcur_getFieldByName(cur,0,"testunitext"),"testunitext1");
+	assertEqStr(sqlrcur_getFieldByName(cur,0,"testdate"),"Jan  1 2001");
+	assertEqStr(sqlrcur_getFieldByName(cur,0,"testtime")," 1:00AM");
+	assertEqStr(sqlrcur_getFieldByName(cur,0,"testbigtime")," 1:00AM");
+	assertEqStr(sqlrcur_getFieldByName(cur,0,"testbigdatetime"),
+		"Jan  1 2001  1:00AM");
 	printf("\n");
 	assertEqStr(sqlrcur_getFieldByName(cur,7,"testint"),"8");
 	assertEqStr(sqlrcur_getFieldByName(cur,7,"testsmallint"),"8");
@@ -658,6 +871,19 @@ int main(int argc, char **argv) {
 		"                               ");
 	assertEqStr(sqlrcur_getFieldByName(cur,7,"testvarchar"),"testvarchar8");
 	assertEqStr(sqlrcur_getFieldByName(cur,7,"testbit"),"1");
+	assertEqStr(sqlrcur_getFieldByName(cur,7,"testbinary"),
+		"0800000000000000000000000000000000000000");
+	assertEqStr(sqlrcur_getFieldByName(cur,7,"testvarbinary"),"08");
+	assertEqStr(sqlrcur_getFieldByName(cur,7,"testunichar"),
+		"testunichar8        ");
+	assertEqStr(sqlrcur_getFieldByName(cur,7,"testunivarchar"),
+		"testunivarchar8");
+	assertEqStr(sqlrcur_getFieldByName(cur,7,"testunitext"),"testunitext8");
+	assertEqStr(sqlrcur_getFieldByName(cur,7,"testdate"),"Jan  1 2008");
+	assertEqStr(sqlrcur_getFieldByName(cur,7,"testtime")," 8:00AM");
+	assertEqStr(sqlrcur_getFieldByName(cur,7,"testbigtime")," 8:00AM");
+	assertEqStr(sqlrcur_getFieldByName(cur,7,"testbigdatetime"),
+		"Jan  1 2008  8:00AM");
 	printf("\n");
 
 
@@ -677,6 +903,15 @@ int main(int argc, char **argv) {
 	assertEqInt(sqlrcur_getFieldLengthByName(cur,0,"testchar"),40);
 	assertEqInt(sqlrcur_getFieldLengthByName(cur,0,"testvarchar"),12);
 	assertEqInt(sqlrcur_getFieldLengthByName(cur,0,"testbit"),1);
+	assertEqInt(sqlrcur_getFieldLengthByName(cur,0,"testbinary"),40);
+	assertEqInt(sqlrcur_getFieldLengthByName(cur,0,"testvarbinary"),2);
+	assertEqInt(sqlrcur_getFieldLengthByName(cur,0,"testunichar"),20);
+	assertEqInt(sqlrcur_getFieldLengthByName(cur,0,"testunivarchar"),15);
+	assertEqInt(sqlrcur_getFieldLengthByName(cur,0,"testunitext"),12);
+	assertEqInt(sqlrcur_getFieldLengthByName(cur,0,"testdate"),11);
+	assertEqInt(sqlrcur_getFieldLengthByName(cur,0,"testtime"),7);
+	assertEqInt(sqlrcur_getFieldLengthByName(cur,0,"testbigtime"),7);
+	assertEqInt(sqlrcur_getFieldLengthByName(cur,0,"testbigdatetime"),19);
 	printf("\n");
 	assertEqInt(sqlrcur_getFieldLengthByName(cur,7,"testint"),1);
 	assertEqInt(sqlrcur_getFieldLengthByName(cur,7,"testsmallint"),1);
@@ -692,6 +927,15 @@ int main(int argc, char **argv) {
 	assertEqInt(sqlrcur_getFieldLengthByName(cur,7,"testchar"),40);
 	assertEqInt(sqlrcur_getFieldLengthByName(cur,7,"testvarchar"),12);
 	assertEqInt(sqlrcur_getFieldLengthByName(cur,7,"testbit"),1);
+	assertEqInt(sqlrcur_getFieldLengthByName(cur,7,"testbinary"),40);
+	assertEqInt(sqlrcur_getFieldLengthByName(cur,7,"testvarbinary"),2);
+	assertEqInt(sqlrcur_getFieldLengthByName(cur,7,"testunichar"),20);
+	assertEqInt(sqlrcur_getFieldLengthByName(cur,7,"testunivarchar"),15);
+	assertEqInt(sqlrcur_getFieldLengthByName(cur,7,"testunitext"),12);
+	assertEqInt(sqlrcur_getFieldLengthByName(cur,7,"testdate"),11);
+	assertEqInt(sqlrcur_getFieldLengthByName(cur,7,"testtime"),7);
+	assertEqInt(sqlrcur_getFieldLengthByName(cur,7,"testbigtime"),7);
+	assertEqInt(sqlrcur_getFieldLengthByName(cur,7,"testbigdatetime"),19);
 	printf("\n");
 
 
@@ -712,6 +956,15 @@ int main(int argc, char **argv) {
 	assertEqStr(fields[11],"testchar1""                               ");
 	assertEqStr(fields[12],"testvarchar1");
 	assertEqStr(fields[13],"1");
+	assertEqStr(fields[15],"0100000000000000000000000000000000000000");
+	assertEqStr(fields[16],"01");
+	assertEqStr(fields[17],"testunichar1        ");
+	assertEqStr(fields[18],"testunivarchar1");
+	assertEqStr(fields[19],"testunitext1");
+	assertEqStr(fields[20],"Jan  1 2001");
+	assertEqStr(fields[21]," 1:00AM");
+	assertEqStr(fields[22]," 1:00AM");
+	assertEqStr(fields[23],"Jan  1 2001  1:00AM");
 	printf("\n");
 
 
@@ -732,6 +985,15 @@ int main(int argc, char **argv) {
 	assertEqInt(fieldlens[11],40);
 	assertEqInt(fieldlens[12],12);
 	assertEqInt(fieldlens[13],1);
+	assertEqInt(fieldlens[15],40);
+	assertEqInt(fieldlens[16],2);
+	assertEqInt(fieldlens[17],20);
+	assertEqInt(fieldlens[18],15);
+	assertEqInt(fieldlens[19],12);
+	assertEqInt(fieldlens[20],11);
+	assertEqInt(fieldlens[21],7);
+	assertEqInt(fieldlens[22],7);
+	assertEqInt(fieldlens[23],19);
 	printf("\n");
 
 
@@ -891,7 +1153,7 @@ int main(int argc, char **argv) {
 
 	// column count for cached result set
 	printf("COLUMN COUNT FOR ""CACHED RESULT SET: \n");
-	assertEqInt(sqlrcur_colCount(cur),15);
+	assertEqInt(sqlrcur_colCount(cur),24);
 	printf("\n");
 
 
@@ -911,6 +1173,15 @@ int main(int argc, char **argv) {
 	assertEqStr(sqlrcur_getColumnName(cur,11),"testchar");
 	assertEqStr(sqlrcur_getColumnName(cur,12),"testvarchar");
 	assertEqStr(sqlrcur_getColumnName(cur,13),"testbit");
+	assertEqStr(sqlrcur_getColumnName(cur,15),"testbinary");
+	assertEqStr(sqlrcur_getColumnName(cur,16),"testvarbinary");
+	assertEqStr(sqlrcur_getColumnName(cur,17),"testunichar");
+	assertEqStr(sqlrcur_getColumnName(cur,18),"testunivarchar");
+	assertEqStr(sqlrcur_getColumnName(cur,19),"testunitext");
+	assertEqStr(sqlrcur_getColumnName(cur,20),"testdate");
+	assertEqStr(sqlrcur_getColumnName(cur,21),"testtime");
+	assertEqStr(sqlrcur_getColumnName(cur,22),"testbigtime");
+	assertEqStr(sqlrcur_getColumnName(cur,23),"testbigdatetime");
 	cols=sqlrcur_getColumnNames(cur);
 	assertEqStr(cols[0],"testint");
 	assertEqStr(cols[1],"testsmallint");
@@ -926,6 +1197,15 @@ int main(int argc, char **argv) {
 	assertEqStr(cols[11],"testchar");
 	assertEqStr(cols[12],"testvarchar");
 	assertEqStr(cols[13],"testbit");
+	assertEqStr(cols[15],"testbinary");
+	assertEqStr(cols[16],"testvarbinary");
+	assertEqStr(cols[17],"testunichar");
+	assertEqStr(cols[18],"testunivarchar");
+	assertEqStr(cols[19],"testunitext");
+	assertEqStr(cols[20],"testdate");
+	assertEqStr(cols[21],"testtime");
+	assertEqStr(cols[22],"testbigtime");
+	assertEqStr(cols[23],"testbigdatetime");
 	printf("\n");
 
 

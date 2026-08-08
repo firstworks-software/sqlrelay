@@ -71,6 +71,7 @@ class sap extends sqlrtest {
 		boolean			found;
 		int			counter;
 		java.sql.Date		datevar;
+		Time			timevar;
 		Timestamp		tsvar;
 		Calendar		cal=Calendar.getInstance();
 
@@ -1518,7 +1519,16 @@ class sap extends sqlrtest {
 			"	testvarchar varchar(40), "+
 			"	testbit bit, "+
 			"	testtext text, "+
-			"	testurl varchar(60)) "+
+			"	testurl varchar(60), "+
+			"	testbinary binary(20), "+
+			"	testvarbinary varbinary(20), "+
+			"	testunichar unichar(20), "+
+			"	testunivarchar univarchar(20), "+
+			"	testunitext unitext, "+
+			"	testdate date, "+
+			"	testtime time, "+
+			"	testbigtime bigtime, "+
+			"	testbigdatetime bigdatetime) "+
 			"lock datarows"),0);
 		con.setAutoCommit(false);
 		System.out.println();
@@ -1545,7 +1555,16 @@ class sap extends sqlrtest {
 			"	'varchar1', "+
 			"	1, "+
 			"	'text1', "+
-			"	'http://www.firstworks.com:8080/testurl1')"));
+			"	'http://www.firstworks.com:8080/testurl1', "+
+			"	0x01, "+
+			"	0x01, "+
+			"	'testunichar1', "+
+			"	'testunivarchar1', "+
+			"	'testunitext1', "+
+			"	'2001-01-01', "+
+			"	'01:00:00', "+
+			"	'01:00:00.000000', "+
+			"	'2001-01-01 01:00:00.000000')"));
 		assertEquals(stmt.getUpdateCount(),1);
 		stmt.close();
 		assertTrue(stmt.isClosed());
@@ -1574,12 +1593,28 @@ class sap extends sqlrtest {
 				"	@var13, "+
 				"	@var14, "+
 				"	@var15, "+
-				"	@var16)");
+				"	@var16, "+
+				"	@var17, "+
+				"	@var18, "+
+				"	@var19, "+
+				"	@var20, "+
+				"	@var21, "+
+				"	@var22, "+
+				"	@var23, "+
+				"	@var24, "+
+				"	@var25)");
 		} else {
 			pstmt=con.prepareStatement(
 				"insert into "+
 				"	testtable "+
 				"values ("+
+				"	?, "+
+				"	?, "+
+				"	?, "+
+				"	?, "+
+				"	?, "+
+				"	?, "+
+				"	?, "+
 				"	?, "+
 				"	?, "+
 				"	?, "+
@@ -1636,6 +1671,39 @@ class sap extends sqlrtest {
 			pstmt.setString(16,
 				"http://www.firstworks.com:8080/"+
 				"testurl"+i);
+			pstmt.setBytes(17,new byte[]{(byte)i});
+			pstmt.setBytes(18,new byte[]{(byte)i});
+			pstmt.setString(19,"testunichar"+i);
+			pstmt.setString(20,"testunivarchar"+i);
+			pstmt.setString(21,"testunitext"+i);
+
+			cal.set(Calendar.YEAR,2000+i);
+			cal.set(Calendar.MONTH,Calendar.JANUARY);
+			cal.set(Calendar.DAY_OF_MONTH,1);
+			cal.set(Calendar.HOUR_OF_DAY,0);
+			cal.set(Calendar.MINUTE,0);
+			cal.set(Calendar.SECOND,0);
+			cal.set(Calendar.MILLISECOND,0);
+			pstmt.setDate(22,new java.sql.Date(
+						cal.getTimeInMillis()));
+
+			// NOTE: SQLRelayPreparedStatement's Time bind case
+			// sends year/month/day as 0, which SAP ASE's TIME
+			// type rejects ("Arithmetic overflow ... to a TIME
+			// field"). Bind as a plain string instead, matching
+			// test/c++/sap.cpp's inputBind("22","02:00:00").
+			pstmt.setString(23,"0"+i+":00:00");
+			pstmt.setString(24,"0"+i+":00:00.000000");
+
+			cal.set(Calendar.YEAR,2000+i);
+			cal.set(Calendar.MONTH,Calendar.JANUARY);
+			cal.set(Calendar.DAY_OF_MONTH,1);
+			cal.set(Calendar.HOUR_OF_DAY,i);
+			cal.set(Calendar.MINUTE,0);
+			cal.set(Calendar.SECOND,0);
+			cal.set(Calendar.MILLISECOND,0);
+			pstmt.setTimestamp(25,new Timestamp(
+						cal.getTimeInMillis()));
 			assertEquals(pstmt.executeUpdate(),1);
 			System.out.println();
 		}
@@ -1667,7 +1735,7 @@ class sap extends sqlrtest {
 
 		// column count
 		System.out.println("COLUMN COUNT:");
-		assertEquals(rsmd.getColumnCount(),16);
+		assertEquals(rsmd.getColumnCount(),25);
 		System.out.println();
 
 
@@ -1689,6 +1757,15 @@ class sap extends sqlrtest {
 		assertEquals(rsmd.getColumnName(14),"testbit");
 		assertEquals(rsmd.getColumnName(15),"testtext");
 		assertEquals(rsmd.getColumnName(16),"testurl");
+		assertEquals(rsmd.getColumnName(17),"testbinary");
+		assertEquals(rsmd.getColumnName(18),"testvarbinary");
+		assertEquals(rsmd.getColumnName(19),"testunichar");
+		assertEquals(rsmd.getColumnName(20),"testunivarchar");
+		assertEquals(rsmd.getColumnName(21),"testunitext");
+		assertEquals(rsmd.getColumnName(22),"testdate");
+		assertEquals(rsmd.getColumnName(23),"testtime");
+		assertEquals(rsmd.getColumnName(24),"testbigtime");
+		assertEquals(rsmd.getColumnName(25),"testbigdatetime");
 		System.out.println();
 
 
@@ -1774,6 +1851,51 @@ class sap extends sqlrtest {
 		} else {
 			assertEquals(rsmd.getColumnTypeName(16),"varchar");
 		}
+		if (issqlrelay) {
+			assertEquals(rsmd.getColumnTypeName(17),"BINARY");
+		} else {
+			assertEquals(rsmd.getColumnTypeName(17),"binary");
+		}
+		if (issqlrelay) {
+			assertEquals(rsmd.getColumnTypeName(18),"VARBINARY");
+		} else {
+			assertEquals(rsmd.getColumnTypeName(18),"varbinary");
+		}
+		if (issqlrelay) {
+			assertEquals(rsmd.getColumnTypeName(19),"NCHAR");
+		} else {
+			assertEquals(rsmd.getColumnTypeName(19),"unichar");
+		}
+		if (issqlrelay) {
+			assertEquals(rsmd.getColumnTypeName(20),"NVARCHAR");
+		} else {
+			assertEquals(rsmd.getColumnTypeName(20),"univarchar");
+		}
+		if (issqlrelay) {
+			assertEquals(rsmd.getColumnTypeName(21),"NTEXT");
+		} else {
+			assertEquals(rsmd.getColumnTypeName(21),"unitext");
+		}
+		if (issqlrelay) {
+			assertEquals(rsmd.getColumnTypeName(22),"DATE");
+		} else {
+			assertEquals(rsmd.getColumnTypeName(22),"date");
+		}
+		if (issqlrelay) {
+			assertEquals(rsmd.getColumnTypeName(23),"TIME");
+		} else {
+			assertEquals(rsmd.getColumnTypeName(23),"time");
+		}
+		if (issqlrelay) {
+			assertEquals(rsmd.getColumnTypeName(24),"TIME");
+		} else {
+			assertEquals(rsmd.getColumnTypeName(24),"bigtime");
+		}
+		if (issqlrelay) {
+			assertEquals(rsmd.getColumnTypeName(25),"TIMESTAMP");
+		} else {
+			assertEquals(rsmd.getColumnTypeName(25),"bigdatetime");
+		}
 		System.out.println();
 
 
@@ -1850,6 +1972,51 @@ class sap extends sqlrtest {
 			assertEquals(rsmd.getPrecision(16),60);
 		} else {
 			assertEquals(rsmd.getPrecision(16),0);
+		}
+		if (issqlrelay) {
+			assertEquals(rsmd.getPrecision(17),-1);
+		} else {
+			assertEquals(rsmd.getPrecision(17),0);
+		}
+		if (issqlrelay) {
+			assertEquals(rsmd.getPrecision(18),-1);
+		} else {
+			assertEquals(rsmd.getPrecision(18),0);
+		}
+		if (issqlrelay) {
+			assertEquals(rsmd.getPrecision(19),40);
+		} else {
+			assertEquals(rsmd.getPrecision(19),0);
+		}
+		if (issqlrelay) {
+			assertEquals(rsmd.getPrecision(20),40);
+		} else {
+			assertEquals(rsmd.getPrecision(20),0);
+		}
+		if (issqlrelay) {
+			assertEquals(rsmd.getPrecision(21),-1);
+		} else {
+			assertEquals(rsmd.getPrecision(21),0);
+		}
+		if (issqlrelay) {
+			assertEquals(rsmd.getPrecision(22),7);
+		} else {
+			assertEquals(rsmd.getPrecision(22),0);
+		}
+		if (issqlrelay) {
+			assertEquals(rsmd.getPrecision(23),7);
+		} else {
+			assertEquals(rsmd.getPrecision(23),0);
+		}
+		if (issqlrelay) {
+			assertEquals(rsmd.getPrecision(24),7);
+		} else {
+			assertEquals(rsmd.getPrecision(24),0);
+		}
+		if (issqlrelay) {
+			assertEquals(rsmd.getPrecision(25),7);
+		} else {
+			assertEquals(rsmd.getPrecision(25),0);
 		}
 		System.out.println();
 
@@ -1999,6 +2166,79 @@ class sap extends sqlrtest {
 				assertEquals(urlvar.getPath(),"/testurl"+i);
 				assertFalse(rs.wasNull());
 			}
+			System.out.println();
+
+			// binary
+			// (sqlrelay renders binary/varbinary fields as hex
+			// strings, same as test/c++/sap.cpp's getField())
+			System.out.println("  row "+i+" - binary");
+			assertEquals(rs.getString(17),
+				String.format("%02x",i)+
+				"00000000000000000000000000000000000000");
+			assertFalse(rs.wasNull());
+			System.out.println();
+
+			// varbinary
+			System.out.println("  row "+i+" - varbinary");
+			assertEquals(rs.getString(18),String.format("%02x",i));
+			assertFalse(rs.wasNull());
+			System.out.println();
+
+			// unichar as string
+			System.out.println("  row "+i+" - unichar as string");
+			assertEquals(rs.getString(19),"testunichar"+i+
+					"        ");
+			assertFalse(rs.wasNull());
+			System.out.println();
+
+			// univarchar as string
+			System.out.println("  row "+i+
+					" - univarchar as string");
+			assertEquals(rs.getString(20),"testunivarchar"+i);
+			assertFalse(rs.wasNull());
+			System.out.println();
+
+			// unitext as string
+			System.out.println("  row "+i+" - unitext as string");
+			assertEquals(rs.getString(21),"testunitext"+i);
+			assertFalse(rs.wasNull());
+			System.out.println();
+
+			// date
+			System.out.println("  row "+i+" - date");
+			datevar=rs.getDate(22);
+			cal.setTime(datevar);
+			assertEquals(cal.get(Calendar.YEAR),2000+i);
+			assertEquals(cal.get(Calendar.MONTH),Calendar.JANUARY);
+			assertEquals(cal.get(Calendar.DAY_OF_MONTH),1);
+			assertFalse(rs.wasNull());
+			System.out.println();
+
+			// time
+			System.out.println("  row "+i+" - time");
+			timevar=rs.getTime(23);
+			cal.setTime(timevar);
+			assertEquals(cal.get(Calendar.HOUR_OF_DAY),i);
+			assertFalse(rs.wasNull());
+			System.out.println();
+
+			// bigtime
+			System.out.println("  row "+i+" - bigtime");
+			timevar=rs.getTime(24);
+			cal.setTime(timevar);
+			assertEquals(cal.get(Calendar.HOUR_OF_DAY),i);
+			assertFalse(rs.wasNull());
+			System.out.println();
+
+			// bigdatetime
+			System.out.println("  row "+i+" - bigdatetime");
+			tsvar=rs.getTimestamp(25);
+			cal.setTime(tsvar);
+			assertEquals(cal.get(Calendar.YEAR),2000+i);
+			assertEquals(cal.get(Calendar.MONTH),Calendar.JANUARY);
+			assertEquals(cal.get(Calendar.DAY_OF_MONTH),1);
+			assertEquals(cal.get(Calendar.HOUR_OF_DAY),i);
+			assertFalse(rs.wasNull());
 			System.out.println();
 		}
 		rs.close();
@@ -2161,6 +2401,82 @@ class sap extends sqlrtest {
 				assertFalse(rs.wasNull());
 			}
 			System.out.println();
+
+			// binary
+			// (sqlrelay renders binary/varbinary fields as hex
+			// strings, same as test/c++/sap.cpp's getField())
+			System.out.println("  row "+i+" - binary");
+			assertEquals(rs.getString("testbinary"),
+				String.format("%02x",i)+
+				"00000000000000000000000000000000000000");
+			assertFalse(rs.wasNull());
+			System.out.println();
+
+			// varbinary
+			System.out.println("  row "+i+" - varbinary");
+			assertEquals(rs.getString("testvarbinary"),
+					String.format("%02x",i));
+			assertFalse(rs.wasNull());
+			System.out.println();
+
+			// unichar as string
+			System.out.println("  row "+i+" - unichar as string");
+			assertEquals(rs.getString("testunichar"),
+					"testunichar"+i+"        ");
+			assertFalse(rs.wasNull());
+			System.out.println();
+
+			// univarchar as string
+			System.out.println("  row "+i+
+					" - univarchar as string");
+			assertEquals(rs.getString("testunivarchar"),
+					"testunivarchar"+i);
+			assertFalse(rs.wasNull());
+			System.out.println();
+
+			// unitext as string
+			System.out.println("  row "+i+" - unitext as string");
+			assertEquals(rs.getString("testunitext"),
+					"testunitext"+i);
+			assertFalse(rs.wasNull());
+			System.out.println();
+
+			// date
+			System.out.println("  row "+i+" - date");
+			datevar=rs.getDate("testdate");
+			cal.setTime(datevar);
+			assertEquals(cal.get(Calendar.YEAR),2000+i);
+			assertEquals(cal.get(Calendar.MONTH),Calendar.JANUARY);
+			assertEquals(cal.get(Calendar.DAY_OF_MONTH),1);
+			assertFalse(rs.wasNull());
+			System.out.println();
+
+			// time
+			System.out.println("  row "+i+" - time");
+			timevar=rs.getTime("testtime");
+			cal.setTime(timevar);
+			assertEquals(cal.get(Calendar.HOUR_OF_DAY),i);
+			assertFalse(rs.wasNull());
+			System.out.println();
+
+			// bigtime
+			System.out.println("  row "+i+" - bigtime");
+			timevar=rs.getTime("testbigtime");
+			cal.setTime(timevar);
+			assertEquals(cal.get(Calendar.HOUR_OF_DAY),i);
+			assertFalse(rs.wasNull());
+			System.out.println();
+
+			// bigdatetime
+			System.out.println("  row "+i+" - bigdatetime");
+			tsvar=rs.getTimestamp("testbigdatetime");
+			cal.setTime(tsvar);
+			assertEquals(cal.get(Calendar.YEAR),2000+i);
+			assertEquals(cal.get(Calendar.MONTH),Calendar.JANUARY);
+			assertEquals(cal.get(Calendar.DAY_OF_MONTH),1);
+			assertEquals(cal.get(Calendar.HOUR_OF_DAY),i);
+			assertFalse(rs.wasNull());
+			System.out.println();
 		}
 
 
@@ -2227,7 +2543,16 @@ class sap extends sqlrtest {
 			"	'varchar10', "+
 			"	1, "+
 			"	'text10', "+
-			"	'http://www.firstworks.com:8080/testurl10')"),1);
+			"	'http://www.firstworks.com:8080/testurl10', "+
+			"	0x0a, "+
+			"	0x0a, "+
+			"	'testunichar10', "+
+			"	'testunivarchar10', "+
+			"	'testunitext10', "+
+			"	'2010-01-01', "+
+			"	'10:00:00', "+
+			"	'10:00:00.000000', "+
+			"	'2010-01-01 10:00:00.000000')"),1);
 
 		// rollback on con
 		con.rollback();
@@ -2263,7 +2588,16 @@ class sap extends sqlrtest {
 			"	'varchar10', "+
 			"	1, "+
 			"	'text10', "+
-			"	'http://www.firstworks.com:8080/testurl10')"),1);
+			"	'http://www.firstworks.com:8080/testurl10', "+
+			"	0x0a, "+
+			"	0x0a, "+
+			"	'testunichar10', "+
+			"	'testunivarchar10', "+
+			"	'testunitext10', "+
+			"	'2010-01-01', "+
+			"	'10:00:00', "+
+			"	'10:00:00.000000', "+
+			"	'2010-01-01 10:00:00.000000')"),1);
 
 		// from secondcon: row count should be 5
 		secondrs=secondstmt.executeQuery(

@@ -88,7 +88,16 @@ main() ->
         "	testchar char(40), "
         "	testvarchar varchar(40), "
         "	testbit bit, "
-        "	testtext text) lock datarows")),
+        "	testtext text, "
+        "	testbinary binary(20), "
+        "	testvarbinary varbinary(20), "
+        "	testunichar unichar(20), "
+        "	testunivarchar univarchar(20), "
+        "	testunitext unitext, "
+        "	testdate date, "
+        "	testtime time, "
+        "	testbigtime bigtime, "
+        "	testbigdatetime bigdatetime) lock datarows")),
     io:format("~n"),
 
     %% INSERT
@@ -112,7 +121,16 @@ main() ->
         "	'testchar1', "
         "	'testvarchar1', "
         "	1, "
-        "	'testtext1')")),
+        "	'testtext1', "
+        "	0x01, "
+        "	0x01, "
+        "	'testunichar1', "
+        "	'testunivarchar1', "
+        "	'testunitext1', "
+        "	'01-Jan-2001', "
+        "	'01:00:00', "
+        "	'01:00:00.000000', "
+        "	'01-Jan-2001 01:00:00.000000')")),
     io:format("~n"),
 
     %% AFFECTED ROWS
@@ -140,8 +158,17 @@ main() ->
         "	@var12, "
         "	@var13, "
         "	@var14, "
-        "	@var15)"),
-    assertEqualsInt(sqlrelay:countBindVariables(), 15),
+        "	@var15, "
+        "	@var16, "
+        "	@var17, "
+        "	@var18, "
+        "	@var19, "
+        "	@var20, "
+        "	@var21, "
+        "	@var22, "
+        "	@var23, "
+        "	@var24)"),
+    assertEqualsInt(sqlrelay:countBindVariables(), 24),
     sqlrelay:inputBindLong("1", 2),
     sqlrelay:inputBindLong("2", 2),
     sqlrelay:inputBindLong("3", 2),
@@ -157,6 +184,15 @@ main() ->
     sqlrelay:inputBindString("13", "testvarchar2"),
     sqlrelay:inputBindLong("14", 1),
     sqlrelay:inputBindClob("15", "testtext2", 9),
+    sqlrelay:inputBindBlob("16", "\x02", 1),
+    sqlrelay:inputBindBlob("17", "\x02", 1),
+    sqlrelay:inputBindString("18", "testunichar2"),
+    sqlrelay:inputBindString("19", "testunivarchar2"),
+    sqlrelay:inputBindClob("20", "testunitext2", 12),
+    sqlrelay:inputBindString("21", "01-Jan-2002"),
+    sqlrelay:inputBindString("22", "02:00:00"),
+    sqlrelay:inputBindString("23", "02:00:00.000000"),
+    sqlrelay:inputBindString("24", "01-Jan-2002 02:00:00.000000"),
     assertTrue(sqlrelay:executeQuery()),
     sqlrelay:clearBinds(),
     sqlrelay:inputBindLong("1", 3),
@@ -174,6 +210,15 @@ main() ->
     sqlrelay:inputBindString("13", "testvarchar3"),
     sqlrelay:inputBindLong("14", 1),
     sqlrelay:inputBindClob("15", "testtext3", 9),
+    sqlrelay:inputBindBlob("16", "\x03", 1),
+    sqlrelay:inputBindBlob("17", "\x03", 1),
+    sqlrelay:inputBindString("18", "testunichar3"),
+    sqlrelay:inputBindString("19", "testunivarchar3"),
+    sqlrelay:inputBindClob("20", "testunitext3", 12),
+    sqlrelay:inputBindString("21", "01-Jan-2003"),
+    sqlrelay:inputBindString("22", "03:00:00"),
+    sqlrelay:inputBindString("23", "03:00:00.000000"),
+    sqlrelay:inputBindString("24", "01-Jan-2003 03:00:00.000000"),
     assertTrue(sqlrelay:executeQuery()),
     io:format("~n"),
 
@@ -200,6 +245,15 @@ main() ->
     sqlrelay:inputBindString("13", "testvarchar4"),
     sqlrelay:inputBindLong("14", 1),
     sqlrelay:inputBindClob("15", "testtext4", 9),
+    sqlrelay:inputBindBlob("16", "\x04", 1),
+    sqlrelay:inputBindBlob("17", "\x04", 1),
+    sqlrelay:inputBindString("18", "testunichar4"),
+    sqlrelay:inputBindString("19", "testunivarchar4"),
+    sqlrelay:inputBindClob("20", "testunitext4", 12),
+    sqlrelay:inputBindString("21", "01-Jan-2004"),
+    sqlrelay:inputBindString("22", "04:00:00"),
+    sqlrelay:inputBindString("23", "04:00:00.000000"),
+    sqlrelay:inputBindString("24", "01-Jan-2004 04:00:00.000000"),
     sqlrelay:validateBinds(),
     assertTrue(sqlrelay:executeQuery()),
     io:format("~n"),
@@ -222,6 +276,15 @@ main() ->
     sqlrelay:inputBindString("var13", "testvarchar5"),
     sqlrelay:inputBindLong("var14", 1),
     sqlrelay:inputBindClob("var15", "testtext5", 9),
+    sqlrelay:inputBindBlob("var16", "\x05", 1),
+    sqlrelay:inputBindBlob("var17", "\x05", 1),
+    sqlrelay:inputBindString("var18", "testunichar5"),
+    sqlrelay:inputBindString("var19", "testunivarchar5"),
+    sqlrelay:inputBindClob("var20", "testunitext5", 12),
+    sqlrelay:inputBindString("var21", "01-Jan-2005"),
+    sqlrelay:inputBindString("var22", "05:00:00"),
+    sqlrelay:inputBindString("var23", "05:00:00.000000"),
+    sqlrelay:inputBindString("var24", "01-Jan-2005 05:00:00.000000"),
     assertTrue(sqlrelay:executeQuery()),
     sqlrelay:clearBinds(),
     sqlrelay:inputBindLong("var1", 6),
@@ -239,6 +302,15 @@ main() ->
     sqlrelay:inputBindString("var13", "testvarchar6"),
     sqlrelay:inputBindLong("var14", 1),
     sqlrelay:inputBindClob("var15", "testtext6", 9),
+    sqlrelay:inputBindBlob("var16", "\x06", 1),
+    sqlrelay:inputBindBlob("var17", "\x06", 1),
+    sqlrelay:inputBindString("var18", "testunichar6"),
+    sqlrelay:inputBindString("var19", "testunivarchar6"),
+    sqlrelay:inputBindClob("var20", "testunitext6", 12),
+    sqlrelay:inputBindString("var21", "01-Jan-2006"),
+    sqlrelay:inputBindString("var22", "06:00:00"),
+    sqlrelay:inputBindString("var23", "06:00:00.000000"),
+    sqlrelay:inputBindString("var24", "01-Jan-2006 06:00:00.000000"),
     assertTrue(sqlrelay:executeQuery()),
     sqlrelay:clearBinds(),
     sqlrelay:inputBindLong("var1", 7),
@@ -256,6 +328,15 @@ main() ->
     sqlrelay:inputBindString("var13", "testvarchar7"),
     sqlrelay:inputBindLong("var14", 1),
     sqlrelay:inputBindClob("var15", "testtext7", 9),
+    sqlrelay:inputBindBlob("var16", "\x07", 1),
+    sqlrelay:inputBindBlob("var17", "\x07", 1),
+    sqlrelay:inputBindString("var18", "testunichar7"),
+    sqlrelay:inputBindString("var19", "testunivarchar7"),
+    sqlrelay:inputBindClob("var20", "testunitext7", 12),
+    sqlrelay:inputBindString("var21", "01-Jan-2007"),
+    sqlrelay:inputBindString("var22", "07:00:00"),
+    sqlrelay:inputBindString("var23", "07:00:00.000000"),
+    sqlrelay:inputBindString("var24", "01-Jan-2007 07:00:00.000000"),
     assertTrue(sqlrelay:executeQuery()),
     io:format("~n"),
 
@@ -282,7 +363,16 @@ main() ->
     sqlrelay:inputBindString("var13", "testvarchar8"),
     sqlrelay:inputBindLong("var14", 1),
     sqlrelay:inputBindClob("var15", "testtext8", 9),
-    sqlrelay:inputBindString("var16", "junkvalue"),
+    sqlrelay:inputBindBlob("var16", "\x08", 1),
+    sqlrelay:inputBindBlob("var17", "\x08", 1),
+    sqlrelay:inputBindString("var18", "testunichar8"),
+    sqlrelay:inputBindString("var19", "testunivarchar8"),
+    sqlrelay:inputBindClob("var20", "testunitext8", 12),
+    sqlrelay:inputBindString("var21", "01-Jan-2008"),
+    sqlrelay:inputBindString("var22", "08:00:00"),
+    sqlrelay:inputBindString("var23", "08:00:00.000000"),
+    sqlrelay:inputBindString("var24", "01-Jan-2008 08:00:00.000000"),
+    sqlrelay:inputBindString("var25", "junkvalue"),
     sqlrelay:validateBinds(),
     assertTrue(sqlrelay:executeQuery()),
     io:format("~n"),
@@ -295,7 +385,7 @@ main() ->
 
     %% COLUMN COUNT
     io:format("COLUMN COUNT: ~n"),
-    assertEqualsInt(sqlrelay:colCount(), 15),
+    assertEqualsInt(sqlrelay:colCount(), 24),
     io:format("~n"),
 
     %% COLUMN NAMES
@@ -314,6 +404,15 @@ main() ->
     assertEqualsString(sqlrelay:getColumnName(11), "testchar"),
     assertEqualsString(sqlrelay:getColumnName(12), "testvarchar"),
     assertEqualsString(sqlrelay:getColumnName(13), "testbit"),
+    assertEqualsString(sqlrelay:getColumnName(15), "testbinary"),
+    assertEqualsString(sqlrelay:getColumnName(16), "testvarbinary"),
+    assertEqualsString(sqlrelay:getColumnName(17), "testunichar"),
+    assertEqualsString(sqlrelay:getColumnName(18), "testunivarchar"),
+    assertEqualsString(sqlrelay:getColumnName(19), "testunitext"),
+    assertEqualsString(sqlrelay:getColumnName(20), "testdate"),
+    assertEqualsString(sqlrelay:getColumnName(21), "testtime"),
+    assertEqualsString(sqlrelay:getColumnName(22), "testbigtime"),
+    assertEqualsString(sqlrelay:getColumnName(23), "testbigdatetime"),
     {ok, Cols1} = sqlrelay:getColumnNames(),
     assertEqualsString(lists:nth(1, Cols1), "testint"),
     assertEqualsString(lists:nth(2, Cols1), "testsmallint"),
@@ -329,6 +428,15 @@ main() ->
     assertEqualsString(lists:nth(12, Cols1), "testchar"),
     assertEqualsString(lists:nth(13, Cols1), "testvarchar"),
     assertEqualsString(lists:nth(14, Cols1), "testbit"),
+    assertEqualsString(lists:nth(16, Cols1), "testbinary"),
+    assertEqualsString(lists:nth(17, Cols1), "testvarbinary"),
+    assertEqualsString(lists:nth(18, Cols1), "testunichar"),
+    assertEqualsString(lists:nth(19, Cols1), "testunivarchar"),
+    assertEqualsString(lists:nth(20, Cols1), "testunitext"),
+    assertEqualsString(lists:nth(21, Cols1), "testdate"),
+    assertEqualsString(lists:nth(22, Cols1), "testtime"),
+    assertEqualsString(lists:nth(23, Cols1), "testbigtime"),
+    assertEqualsString(lists:nth(24, Cols1), "testbigdatetime"),
     io:format("~n"),
 
     %% COLUMN TYPES
@@ -361,6 +469,24 @@ main() ->
     assertEqualsString(sqlrelay:getColumnTypeByName("testvarchar"), "VARCHAR"),
     assertEqualsString(sqlrelay:getColumnTypeByIndex(13), "BIT"),
     assertEqualsString(sqlrelay:getColumnTypeByName("testbit"), "BIT"),
+    assertEqualsString(sqlrelay:getColumnTypeByIndex(15), "BINARY"),
+    assertEqualsString(sqlrelay:getColumnTypeByName("testbinary"), "BINARY"),
+    assertEqualsString(sqlrelay:getColumnTypeByIndex(16), "VARBINARY"),
+    assertEqualsString(sqlrelay:getColumnTypeByName("testvarbinary"), "VARBINARY"),
+    assertEqualsString(sqlrelay:getColumnTypeByIndex(17), "NCHAR"),
+    assertEqualsString(sqlrelay:getColumnTypeByName("testunichar"), "NCHAR"),
+    assertEqualsString(sqlrelay:getColumnTypeByIndex(18), "NVARCHAR"),
+    assertEqualsString(sqlrelay:getColumnTypeByName("testunivarchar"), "NVARCHAR"),
+    assertEqualsString(sqlrelay:getColumnTypeByIndex(19), "NTEXT"),
+    assertEqualsString(sqlrelay:getColumnTypeByName("testunitext"), "NTEXT"),
+    assertEqualsString(sqlrelay:getColumnTypeByIndex(20), "DATE"),
+    assertEqualsString(sqlrelay:getColumnTypeByName("testdate"), "DATE"),
+    assertEqualsString(sqlrelay:getColumnTypeByIndex(21), "TIME"),
+    assertEqualsString(sqlrelay:getColumnTypeByName("testtime"), "TIME"),
+    assertEqualsString(sqlrelay:getColumnTypeByIndex(22), "TIME"),
+    assertEqualsString(sqlrelay:getColumnTypeByName("testbigtime"), "TIME"),
+    assertEqualsString(sqlrelay:getColumnTypeByIndex(23), "TIMESTAMP"),
+    assertEqualsString(sqlrelay:getColumnTypeByName("testbigdatetime"), "TIMESTAMP"),
     io:format("~n"),
 
     %% COLUMN LENGTH
@@ -393,6 +519,24 @@ main() ->
     assertEqualsInt(sqlrelay:getColumnLengthByName("testvarchar"), 40),
     assertEqualsInt(sqlrelay:getColumnLengthByIndex(13), 1),
     assertEqualsInt(sqlrelay:getColumnLengthByName("testbit"), 1),
+    assertEqualsInt(sqlrelay:getColumnLengthByIndex(15), 20),
+    assertEqualsInt(sqlrelay:getColumnLengthByName("testbinary"), 20),
+    assertEqualsInt(sqlrelay:getColumnLengthByIndex(16), 20),
+    assertEqualsInt(sqlrelay:getColumnLengthByName("testvarbinary"), 20),
+    assertEqualsInt(sqlrelay:getColumnLengthByIndex(17), 40),
+    assertEqualsInt(sqlrelay:getColumnLengthByName("testunichar"), 40),
+    assertEqualsInt(sqlrelay:getColumnLengthByIndex(18), 40),
+    assertEqualsInt(sqlrelay:getColumnLengthByName("testunivarchar"), 40),
+    assertEqualsInt(sqlrelay:getColumnLengthByIndex(19), 32768),
+    assertEqualsInt(sqlrelay:getColumnLengthByName("testunitext"), 32768),
+    assertEqualsInt(sqlrelay:getColumnLengthByIndex(20), 4),
+    assertEqualsInt(sqlrelay:getColumnLengthByName("testdate"), 4),
+    assertEqualsInt(sqlrelay:getColumnLengthByIndex(21), 4),
+    assertEqualsInt(sqlrelay:getColumnLengthByName("testtime"), 4),
+    assertEqualsInt(sqlrelay:getColumnLengthByIndex(22), 8),
+    assertEqualsInt(sqlrelay:getColumnLengthByName("testbigtime"), 8),
+    assertEqualsInt(sqlrelay:getColumnLengthByIndex(23), 8),
+    assertEqualsInt(sqlrelay:getColumnLengthByName("testbigdatetime"), 8),
     io:format("~n"),
 
     %% LONGEST COLUMN
@@ -425,6 +569,24 @@ main() ->
     assertEqualsInt(sqlrelay:getLongestByName("testvarchar"), 12),
     assertEqualsInt(sqlrelay:getLongestByIndex(13), 1),
     assertEqualsInt(sqlrelay:getLongestByName("testbit"), 1),
+    assertEqualsInt(sqlrelay:getLongestByIndex(15), 40),
+    assertEqualsInt(sqlrelay:getLongestByName("testbinary"), 40),
+    assertEqualsInt(sqlrelay:getLongestByIndex(16), 2),
+    assertEqualsInt(sqlrelay:getLongestByName("testvarbinary"), 2),
+    assertEqualsInt(sqlrelay:getLongestByIndex(17), 20),
+    assertEqualsInt(sqlrelay:getLongestByName("testunichar"), 20),
+    assertEqualsInt(sqlrelay:getLongestByIndex(18), 15),
+    assertEqualsInt(sqlrelay:getLongestByName("testunivarchar"), 15),
+    assertEqualsInt(sqlrelay:getLongestByIndex(19), 12),
+    assertEqualsInt(sqlrelay:getLongestByName("testunitext"), 12),
+    assertEqualsInt(sqlrelay:getLongestByIndex(20), 11),
+    assertEqualsInt(sqlrelay:getLongestByName("testdate"), 11),
+    assertEqualsInt(sqlrelay:getLongestByIndex(21), 7),
+    assertEqualsInt(sqlrelay:getLongestByName("testtime"), 7),
+    assertEqualsInt(sqlrelay:getLongestByIndex(22), 7),
+    assertEqualsInt(sqlrelay:getLongestByName("testbigtime"), 7),
+    assertEqualsInt(sqlrelay:getLongestByIndex(23), 19),
+    assertEqualsInt(sqlrelay:getLongestByName("testbigdatetime"), 19),
     io:format("~n"),
 
     %% ROW COUNT
@@ -464,6 +626,17 @@ main() ->
                        "testchar1                               "),
     assertEqualsString(sqlrelay:getFieldByIndex(0, 12), "testvarchar1"),
     assertEqualsString(sqlrelay:getFieldByIndex(0, 13), "1"),
+    assertEqualsString(sqlrelay:getFieldByIndex(0, 15),
+                       "0100000000000000000000000000000000000000"),
+    assertEqualsString(sqlrelay:getFieldByIndex(0, 16), "01"),
+    assertEqualsString(sqlrelay:getFieldByIndex(0, 17),
+                       "testunichar1        "),
+    assertEqualsString(sqlrelay:getFieldByIndex(0, 18), "testunivarchar1"),
+    assertEqualsString(sqlrelay:getFieldByIndex(0, 19), "testunitext1"),
+    assertEqualsString(sqlrelay:getFieldByIndex(0, 20), "Jan  1 2001"),
+    assertEqualsString(sqlrelay:getFieldByIndex(0, 21), " 1:00AM"),
+    assertEqualsString(sqlrelay:getFieldByIndex(0, 22), " 1:00AM"),
+    assertEqualsString(sqlrelay:getFieldByIndex(0, 23), "Jan  1 2001  1:00AM"),
     io:format("~n"),
     assertEqualsString(sqlrelay:getFieldByIndex(7, 0), "8"),
     assertEqualsString(sqlrelay:getFieldByIndex(7, 1), "8"),
@@ -480,6 +653,17 @@ main() ->
                        "testchar8                               "),
     assertEqualsString(sqlrelay:getFieldByIndex(7, 12), "testvarchar8"),
     assertEqualsString(sqlrelay:getFieldByIndex(7, 13), "1"),
+    assertEqualsString(sqlrelay:getFieldByIndex(7, 15),
+                       "0800000000000000000000000000000000000000"),
+    assertEqualsString(sqlrelay:getFieldByIndex(7, 16), "08"),
+    assertEqualsString(sqlrelay:getFieldByIndex(7, 17),
+                       "testunichar8        "),
+    assertEqualsString(sqlrelay:getFieldByIndex(7, 18), "testunivarchar8"),
+    assertEqualsString(sqlrelay:getFieldByIndex(7, 19), "testunitext8"),
+    assertEqualsString(sqlrelay:getFieldByIndex(7, 20), "Jan  1 2008"),
+    assertEqualsString(sqlrelay:getFieldByIndex(7, 21), " 8:00AM"),
+    assertEqualsString(sqlrelay:getFieldByIndex(7, 22), " 8:00AM"),
+    assertEqualsString(sqlrelay:getFieldByIndex(7, 23), "Jan  1 2008  8:00AM"),
     io:format("~n"),
 
     %% FIELD LENGTHS BY INDEX
@@ -498,6 +682,15 @@ main() ->
     assertEqualsInt(sqlrelay:getFieldLengthByIndex(0, 11), 40),
     assertEqualsInt(sqlrelay:getFieldLengthByIndex(0, 12), 12),
     assertEqualsInt(sqlrelay:getFieldLengthByIndex(0, 13), 1),
+    assertEqualsInt(sqlrelay:getFieldLengthByIndex(0, 15), 40),
+    assertEqualsInt(sqlrelay:getFieldLengthByIndex(0, 16), 2),
+    assertEqualsInt(sqlrelay:getFieldLengthByIndex(0, 17), 20),
+    assertEqualsInt(sqlrelay:getFieldLengthByIndex(0, 18), 15),
+    assertEqualsInt(sqlrelay:getFieldLengthByIndex(0, 19), 12),
+    assertEqualsInt(sqlrelay:getFieldLengthByIndex(0, 20), 11),
+    assertEqualsInt(sqlrelay:getFieldLengthByIndex(0, 21), 7),
+    assertEqualsInt(sqlrelay:getFieldLengthByIndex(0, 22), 7),
+    assertEqualsInt(sqlrelay:getFieldLengthByIndex(0, 23), 19),
     io:format("~n"),
     assertEqualsInt(sqlrelay:getFieldLengthByIndex(7, 0), 1),
     assertEqualsInt(sqlrelay:getFieldLengthByIndex(7, 1), 1),
@@ -513,6 +706,15 @@ main() ->
     assertEqualsInt(sqlrelay:getFieldLengthByIndex(7, 11), 40),
     assertEqualsInt(sqlrelay:getFieldLengthByIndex(7, 12), 12),
     assertEqualsInt(sqlrelay:getFieldLengthByIndex(7, 13), 1),
+    assertEqualsInt(sqlrelay:getFieldLengthByIndex(7, 15), 40),
+    assertEqualsInt(sqlrelay:getFieldLengthByIndex(7, 16), 2),
+    assertEqualsInt(sqlrelay:getFieldLengthByIndex(7, 17), 20),
+    assertEqualsInt(sqlrelay:getFieldLengthByIndex(7, 18), 15),
+    assertEqualsInt(sqlrelay:getFieldLengthByIndex(7, 19), 12),
+    assertEqualsInt(sqlrelay:getFieldLengthByIndex(7, 20), 11),
+    assertEqualsInt(sqlrelay:getFieldLengthByIndex(7, 21), 7),
+    assertEqualsInt(sqlrelay:getFieldLengthByIndex(7, 22), 7),
+    assertEqualsInt(sqlrelay:getFieldLengthByIndex(7, 23), 19),
     io:format("~n"),
 
     %% FIELDS BY NAME
@@ -535,6 +737,20 @@ main() ->
     assertEqualsString(sqlrelay:getFieldByName(0, "testvarchar"),
                        "testvarchar1"),
     assertEqualsString(sqlrelay:getFieldByName(0, "testbit"), "1"),
+    assertEqualsString(sqlrelay:getFieldByName(0, "testbinary"),
+                       "0100000000000000000000000000000000000000"),
+    assertEqualsString(sqlrelay:getFieldByName(0, "testvarbinary"), "01"),
+    assertEqualsString(sqlrelay:getFieldByName(0, "testunichar"),
+                       "testunichar1        "),
+    assertEqualsString(sqlrelay:getFieldByName(0, "testunivarchar"),
+                       "testunivarchar1"),
+    assertEqualsString(sqlrelay:getFieldByName(0, "testunitext"),
+                       "testunitext1"),
+    assertEqualsString(sqlrelay:getFieldByName(0, "testdate"), "Jan  1 2001"),
+    assertEqualsString(sqlrelay:getFieldByName(0, "testtime"), " 1:00AM"),
+    assertEqualsString(sqlrelay:getFieldByName(0, "testbigtime"), " 1:00AM"),
+    assertEqualsString(sqlrelay:getFieldByName(0, "testbigdatetime"),
+                       "Jan  1 2001  1:00AM"),
     io:format("~n"),
     assertEqualsString(sqlrelay:getFieldByName(7, "testint"), "8"),
     assertEqualsString(sqlrelay:getFieldByName(7, "testsmallint"), "8"),
@@ -554,6 +770,20 @@ main() ->
     assertEqualsString(sqlrelay:getFieldByName(7, "testvarchar"),
                        "testvarchar8"),
     assertEqualsString(sqlrelay:getFieldByName(7, "testbit"), "1"),
+    assertEqualsString(sqlrelay:getFieldByName(7, "testbinary"),
+                       "0800000000000000000000000000000000000000"),
+    assertEqualsString(sqlrelay:getFieldByName(7, "testvarbinary"), "08"),
+    assertEqualsString(sqlrelay:getFieldByName(7, "testunichar"),
+                       "testunichar8        "),
+    assertEqualsString(sqlrelay:getFieldByName(7, "testunivarchar"),
+                       "testunivarchar8"),
+    assertEqualsString(sqlrelay:getFieldByName(7, "testunitext"),
+                       "testunitext8"),
+    assertEqualsString(sqlrelay:getFieldByName(7, "testdate"), "Jan  1 2008"),
+    assertEqualsString(sqlrelay:getFieldByName(7, "testtime"), " 8:00AM"),
+    assertEqualsString(sqlrelay:getFieldByName(7, "testbigtime"), " 8:00AM"),
+    assertEqualsString(sqlrelay:getFieldByName(7, "testbigdatetime"),
+                       "Jan  1 2008  8:00AM"),
     io:format("~n"),
 
     %% FIELD LENGTHS BY NAME
@@ -572,6 +802,15 @@ main() ->
     assertEqualsInt(sqlrelay:getFieldLengthByName(0, "testchar"), 40),
     assertEqualsInt(sqlrelay:getFieldLengthByName(0, "testvarchar"), 12),
     assertEqualsInt(sqlrelay:getFieldLengthByName(0, "testbit"), 1),
+    assertEqualsInt(sqlrelay:getFieldLengthByName(0, "testbinary"), 40),
+    assertEqualsInt(sqlrelay:getFieldLengthByName(0, "testvarbinary"), 2),
+    assertEqualsInt(sqlrelay:getFieldLengthByName(0, "testunichar"), 20),
+    assertEqualsInt(sqlrelay:getFieldLengthByName(0, "testunivarchar"), 15),
+    assertEqualsInt(sqlrelay:getFieldLengthByName(0, "testunitext"), 12),
+    assertEqualsInt(sqlrelay:getFieldLengthByName(0, "testdate"), 11),
+    assertEqualsInt(sqlrelay:getFieldLengthByName(0, "testtime"), 7),
+    assertEqualsInt(sqlrelay:getFieldLengthByName(0, "testbigtime"), 7),
+    assertEqualsInt(sqlrelay:getFieldLengthByName(0, "testbigdatetime"), 19),
     io:format("~n"),
     assertEqualsInt(sqlrelay:getFieldLengthByName(7, "testint"), 1),
     assertEqualsInt(sqlrelay:getFieldLengthByName(7, "testsmallint"), 1),
@@ -587,6 +826,15 @@ main() ->
     assertEqualsInt(sqlrelay:getFieldLengthByName(7, "testchar"), 40),
     assertEqualsInt(sqlrelay:getFieldLengthByName(7, "testvarchar"), 12),
     assertEqualsInt(sqlrelay:getFieldLengthByName(7, "testbit"), 1),
+    assertEqualsInt(sqlrelay:getFieldLengthByName(7, "testbinary"), 40),
+    assertEqualsInt(sqlrelay:getFieldLengthByName(7, "testvarbinary"), 2),
+    assertEqualsInt(sqlrelay:getFieldLengthByName(7, "testunichar"), 20),
+    assertEqualsInt(sqlrelay:getFieldLengthByName(7, "testunivarchar"), 15),
+    assertEqualsInt(sqlrelay:getFieldLengthByName(7, "testunitext"), 12),
+    assertEqualsInt(sqlrelay:getFieldLengthByName(7, "testdate"), 11),
+    assertEqualsInt(sqlrelay:getFieldLengthByName(7, "testtime"), 7),
+    assertEqualsInt(sqlrelay:getFieldLengthByName(7, "testbigtime"), 7),
+    assertEqualsInt(sqlrelay:getFieldLengthByName(7, "testbigdatetime"), 19),
     io:format("~n"),
 
     %% FIELDS BY ARRAY
@@ -607,6 +855,16 @@ main() ->
                        "testchar1                               "),
     assertEqualsString(lists:nth(13, Row0), "testvarchar1"),
     assertEqualsString(lists:nth(14, Row0), "1"),
+    assertEqualsString(lists:nth(16, Row0),
+                       "0100000000000000000000000000000000000000"),
+    assertEqualsString(lists:nth(17, Row0), "01"),
+    assertEqualsString(lists:nth(18, Row0), "testunichar1        "),
+    assertEqualsString(lists:nth(19, Row0), "testunivarchar1"),
+    assertEqualsString(lists:nth(20, Row0), "testunitext1"),
+    assertEqualsString(lists:nth(21, Row0), "Jan  1 2001"),
+    assertEqualsString(lists:nth(22, Row0), " 1:00AM"),
+    assertEqualsString(lists:nth(23, Row0), " 1:00AM"),
+    assertEqualsString(lists:nth(24, Row0), "Jan  1 2001  1:00AM"),
     io:format("~n"),
 
     %% FIELD LENGTHS BY ARRAY
@@ -626,6 +884,15 @@ main() ->
     assertEqualsInt(lists:nth(12, Rowlens0), 40),
     assertEqualsInt(lists:nth(13, Rowlens0), 12),
     assertEqualsInt(lists:nth(14, Rowlens0), 1),
+    assertEqualsInt(lists:nth(16, Rowlens0), 40),
+    assertEqualsInt(lists:nth(17, Rowlens0), 2),
+    assertEqualsInt(lists:nth(18, Rowlens0), 20),
+    assertEqualsInt(lists:nth(19, Rowlens0), 15),
+    assertEqualsInt(lists:nth(20, Rowlens0), 12),
+    assertEqualsInt(lists:nth(21, Rowlens0), 11),
+    assertEqualsInt(lists:nth(22, Rowlens0), 7),
+    assertEqualsInt(lists:nth(23, Rowlens0), 7),
+    assertEqualsInt(lists:nth(24, Rowlens0), 19),
     io:format("~n"),
 
     %% RESULT SET BUFFER SIZE
@@ -774,7 +1041,7 @@ main() ->
 
     %% COLUMN COUNT FOR CACHED RESULT SET
     io:format("COLUMN COUNT FOR CACHED RESULT SET: ~n"),
-    assertEqualsInt(sqlrelay:colCount(), 15),
+    assertEqualsInt(sqlrelay:colCount(), 24),
     io:format("~n"),
 
     %% COLUMN NAMES FOR CACHED RESULT SET
@@ -793,6 +1060,15 @@ main() ->
     assertEqualsString(sqlrelay:getColumnName(11), "testchar"),
     assertEqualsString(sqlrelay:getColumnName(12), "testvarchar"),
     assertEqualsString(sqlrelay:getColumnName(13), "testbit"),
+    assertEqualsString(sqlrelay:getColumnName(15), "testbinary"),
+    assertEqualsString(sqlrelay:getColumnName(16), "testvarbinary"),
+    assertEqualsString(sqlrelay:getColumnName(17), "testunichar"),
+    assertEqualsString(sqlrelay:getColumnName(18), "testunivarchar"),
+    assertEqualsString(sqlrelay:getColumnName(19), "testunitext"),
+    assertEqualsString(sqlrelay:getColumnName(20), "testdate"),
+    assertEqualsString(sqlrelay:getColumnName(21), "testtime"),
+    assertEqualsString(sqlrelay:getColumnName(22), "testbigtime"),
+    assertEqualsString(sqlrelay:getColumnName(23), "testbigdatetime"),
     {ok, Cols2} = sqlrelay:getColumnNames(),
     assertEqualsString(lists:nth(1, Cols2), "testint"),
     assertEqualsString(lists:nth(2, Cols2), "testsmallint"),
@@ -808,6 +1084,15 @@ main() ->
     assertEqualsString(lists:nth(12, Cols2), "testchar"),
     assertEqualsString(lists:nth(13, Cols2), "testvarchar"),
     assertEqualsString(lists:nth(14, Cols2), "testbit"),
+    assertEqualsString(lists:nth(16, Cols2), "testbinary"),
+    assertEqualsString(lists:nth(17, Cols2), "testvarbinary"),
+    assertEqualsString(lists:nth(18, Cols2), "testunichar"),
+    assertEqualsString(lists:nth(19, Cols2), "testunivarchar"),
+    assertEqualsString(lists:nth(20, Cols2), "testunitext"),
+    assertEqualsString(lists:nth(21, Cols2), "testdate"),
+    assertEqualsString(lists:nth(22, Cols2), "testtime"),
+    assertEqualsString(lists:nth(23, Cols2), "testbigtime"),
+    assertEqualsString(lists:nth(24, Cols2), "testbigdatetime"),
     io:format("~n"),
 
     %% CACHED RESULT SET WITH RESULT SET BUFFER SIZE

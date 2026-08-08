@@ -128,7 +128,16 @@ class sap extends sqlrtest {
 			"	testchar char(40), "+
 			"	testvarchar varchar(40), "+
 			"	testbit bit, "+
-			"	testtext text) "+
+			"	testtext text, "+
+			"	testbinary binary(20), "+
+			"	testvarbinary varbinary(20), "+
+			"	testunichar unichar(20), "+
+			"	testunivarchar univarchar(20), "+
+			"	testunitext unitext, "+
+			"	testdate date, "+
+			"	testtime time, "+
+			"	testbigtime bigtime, "+
+			"	testbigdatetime bigdatetime) "+
 			"lock datarows"));
 		System.out.println();
 
@@ -154,7 +163,16 @@ class sap extends sqlrtest {
 			"	'testchar1', "+
 			"	'testvarchar1', "+
 			"	1, "+
-			"	'testtext1')"));
+			"	'testtext1', "+
+			"	0x01, "+
+			"	0x01, "+
+			"	'testunichar1', "+
+			"	'testunivarchar1', "+
+			"	'testunitext1', "+
+			"	'01-Jan-2001', "+
+			"	'01:00:00', "+
+			"	'01:00:00.000000', "+
+			"	'01-Jan-2001 01:00:00.000000')"));
 		System.out.println();
 
 
@@ -184,8 +202,17 @@ class sap extends sqlrtest {
 			"	@var12, "+
 			"	@var13, "+
 			"	@var14, "+
-			"	@var15)");
-		assertEquals(cur.countBindVariables(),15);
+			"	@var15, "+
+			"	@var16, "+
+			"	@var17, "+
+			"	@var18, "+
+			"	@var19, "+
+			"	@var20, "+
+			"	@var21, "+
+			"	@var22, "+
+			"	@var23, "+
+			"	@var24)");
+		assertEquals(cur.countBindVariables(),24);
 		cur.inputBind("1",2);
 		cur.inputBind("2",2);
 		cur.inputBind("3",2);
@@ -201,6 +228,15 @@ class sap extends sqlrtest {
 		cur.inputBind("13","testvarchar2");
 		cur.inputBind("14",1);
 		cur.inputBindClob("15","testtext2",9);
+		cur.inputBindBlob("16",new byte[]{0x02},1);
+		cur.inputBindBlob("17",new byte[]{0x02},1);
+		cur.inputBind("18","testunichar2");
+		cur.inputBind("19","testunivarchar2");
+		cur.inputBindClob("20","testunitext2",12);
+		cur.inputBind("21","01-Jan-2002");
+		cur.inputBind("22","02:00:00");
+		cur.inputBind("23","02:00:00.000000");
+		cur.inputBind("24","01-Jan-2002 02:00:00.000000");
 		assertTrue(cur.executeQuery());
 		cur.clearBinds();
 		cur.inputBind("1",3);
@@ -218,6 +254,15 @@ class sap extends sqlrtest {
 		cur.inputBind("13","testvarchar3");
 		cur.inputBind("14",1);
 		cur.inputBindClob("15","testtext3",9);
+		cur.inputBindBlob("16",new byte[]{0x03},1);
+		cur.inputBindBlob("17",new byte[]{0x03},1);
+		cur.inputBind("18","testunichar3");
+		cur.inputBind("19","testunivarchar3");
+		cur.inputBindClob("20","testunitext3",12);
+		cur.inputBind("21","01-Jan-2003");
+		cur.inputBind("22","03:00:00");
+		cur.inputBind("23","03:00:00.000000");
+		cur.inputBind("24","01-Jan-2003 03:00:00.000000");
 		assertTrue(cur.executeQuery());
 		System.out.println();
 
@@ -247,6 +292,15 @@ class sap extends sqlrtest {
 		cur.inputBind("13","testvarchar4");
 		cur.inputBind("14",1);
 		cur.inputBindClob("15","testtext4",9);
+		cur.inputBindBlob("16",new byte[]{0x04},1);
+		cur.inputBindBlob("17",new byte[]{0x04},1);
+		cur.inputBind("18","testunichar4");
+		cur.inputBind("19","testunivarchar4");
+		cur.inputBindClob("20","testunitext4",12);
+		cur.inputBind("21","01-Jan-2004");
+		cur.inputBind("22","04:00:00");
+		cur.inputBind("23","04:00:00.000000");
+		cur.inputBind("24","01-Jan-2004 04:00:00.000000");
 		cur.validateBinds();
 		assertTrue(cur.executeQuery());
 		System.out.println();
@@ -270,6 +324,15 @@ class sap extends sqlrtest {
 		cur.inputBind("var13","testvarchar5");
 		cur.inputBind("var14",1);
 		cur.inputBindClob("var15","testtext5",9);
+		cur.inputBindBlob("var16",new byte[]{0x05},1);
+		cur.inputBindBlob("var17",new byte[]{0x05},1);
+		cur.inputBind("var18","testunichar5");
+		cur.inputBind("var19","testunivarchar5");
+		cur.inputBindClob("var20","testunitext5",12);
+		cur.inputBind("var21","01-Jan-2005");
+		cur.inputBind("var22","05:00:00");
+		cur.inputBind("var23","05:00:00.000000");
+		cur.inputBind("var24","01-Jan-2005 05:00:00.000000");
 		assertTrue(cur.executeQuery());
 		cur.clearBinds();
 		cur.inputBind("var1",6);
@@ -287,6 +350,15 @@ class sap extends sqlrtest {
 		cur.inputBind("var13","testvarchar6");
 		cur.inputBind("var14",1);
 		cur.inputBindClob("var15","testtext6",9);
+		cur.inputBindBlob("var16",new byte[]{0x06},1);
+		cur.inputBindBlob("var17",new byte[]{0x06},1);
+		cur.inputBind("var18","testunichar6");
+		cur.inputBind("var19","testunivarchar6");
+		cur.inputBindClob("var20","testunitext6",12);
+		cur.inputBind("var21","01-Jan-2006");
+		cur.inputBind("var22","06:00:00");
+		cur.inputBind("var23","06:00:00.000000");
+		cur.inputBind("var24","01-Jan-2006 06:00:00.000000");
 		assertTrue(cur.executeQuery());
 		cur.clearBinds();
 		cur.inputBind("var1",7);
@@ -304,6 +376,15 @@ class sap extends sqlrtest {
 		cur.inputBind("var13","testvarchar7");
 		cur.inputBind("var14",1);
 		cur.inputBindClob("var15","testtext7",9);
+		cur.inputBindBlob("var16",new byte[]{0x07},1);
+		cur.inputBindBlob("var17",new byte[]{0x07},1);
+		cur.inputBind("var18","testunichar7");
+		cur.inputBind("var19","testunivarchar7");
+		cur.inputBindClob("var20","testunitext7",12);
+		cur.inputBind("var21","01-Jan-2007");
+		cur.inputBind("var22","07:00:00");
+		cur.inputBind("var23","07:00:00.000000");
+		cur.inputBind("var24","01-Jan-2007 07:00:00.000000");
 		assertTrue(cur.executeQuery());
 		System.out.println();
 
@@ -333,7 +414,16 @@ class sap extends sqlrtest {
 		cur.inputBind("var13","testvarchar8");
 		cur.inputBind("var14",1);
 		cur.inputBindClob("var15","testtext8",9);
-		cur.inputBind("var16","junkvalue");
+		cur.inputBindBlob("var16",new byte[]{0x08},1);
+		cur.inputBindBlob("var17",new byte[]{0x08},1);
+		cur.inputBind("var18","testunichar8");
+		cur.inputBind("var19","testunivarchar8");
+		cur.inputBindClob("var20","testunitext8",12);
+		cur.inputBind("var21","01-Jan-2008");
+		cur.inputBind("var22","08:00:00");
+		cur.inputBind("var23","08:00:00.000000");
+		cur.inputBind("var24","01-Jan-2008 08:00:00.000000");
+		cur.inputBind("var25","junkvalue");
 		cur.validateBinds();
 		assertTrue(cur.executeQuery());
 		System.out.println();
@@ -353,7 +443,7 @@ class sap extends sqlrtest {
 
 		// column count
 		System.out.println("COLUMN COUNT: ");
-		assertEquals(cur.colCount(),15);
+		assertEquals(cur.colCount(),24);
 		System.out.println();
 
 
@@ -373,6 +463,15 @@ class sap extends sqlrtest {
 		assertEquals(cur.getColumnName(11),"testchar");
 		assertEquals(cur.getColumnName(12),"testvarchar");
 		assertEquals(cur.getColumnName(13),"testbit");
+		assertEquals(cur.getColumnName(15),"testbinary");
+		assertEquals(cur.getColumnName(16),"testvarbinary");
+		assertEquals(cur.getColumnName(17),"testunichar");
+		assertEquals(cur.getColumnName(18),"testunivarchar");
+		assertEquals(cur.getColumnName(19),"testunitext");
+		assertEquals(cur.getColumnName(20),"testdate");
+		assertEquals(cur.getColumnName(21),"testtime");
+		assertEquals(cur.getColumnName(22),"testbigtime");
+		assertEquals(cur.getColumnName(23),"testbigdatetime");
 		cols=cur.getColumnNames();
 		assertEquals(cols[0],"testint");
 		assertEquals(cols[1],"testsmallint");
@@ -388,6 +487,15 @@ class sap extends sqlrtest {
 		assertEquals(cols[11],"testchar");
 		assertEquals(cols[12],"testvarchar");
 		assertEquals(cols[13],"testbit");
+		assertEquals(cols[15],"testbinary");
+		assertEquals(cols[16],"testvarbinary");
+		assertEquals(cols[17],"testunichar");
+		assertEquals(cols[18],"testunivarchar");
+		assertEquals(cols[19],"testunitext");
+		assertEquals(cols[20],"testdate");
+		assertEquals(cols[21],"testtime");
+		assertEquals(cols[22],"testbigtime");
+		assertEquals(cols[23],"testbigdatetime");
 		System.out.println();
 
 
@@ -422,6 +530,24 @@ class sap extends sqlrtest {
 		assertEquals(cur.getColumnType("testvarchar"),"VARCHAR");
 		assertEquals(cur.getColumnType(13),"BIT");
 		assertEquals(cur.getColumnType("testbit"),"BIT");
+		assertEquals(cur.getColumnType(15),"BINARY");
+		assertEquals(cur.getColumnType("testbinary"),"BINARY");
+		assertEquals(cur.getColumnType(16),"VARBINARY");
+		assertEquals(cur.getColumnType("testvarbinary"),"VARBINARY");
+		assertEquals(cur.getColumnType(17),"NCHAR");
+		assertEquals(cur.getColumnType("testunichar"),"NCHAR");
+		assertEquals(cur.getColumnType(18),"NVARCHAR");
+		assertEquals(cur.getColumnType("testunivarchar"),"NVARCHAR");
+		assertEquals(cur.getColumnType(19),"NTEXT");
+		assertEquals(cur.getColumnType("testunitext"),"NTEXT");
+		assertEquals(cur.getColumnType(20),"DATE");
+		assertEquals(cur.getColumnType("testdate"),"DATE");
+		assertEquals(cur.getColumnType(21),"TIME");
+		assertEquals(cur.getColumnType("testtime"),"TIME");
+		assertEquals(cur.getColumnType(22),"TIME");
+		assertEquals(cur.getColumnType("testbigtime"),"TIME");
+		assertEquals(cur.getColumnType(23),"TIMESTAMP");
+		assertEquals(cur.getColumnType("testbigdatetime"),"TIMESTAMP");
 		System.out.println();
 
 
@@ -455,6 +581,24 @@ class sap extends sqlrtest {
 		assertEquals(cur.getColumnLength("testvarchar"),40);
 		assertEquals(cur.getColumnLength(13),1);
 		assertEquals(cur.getColumnLength("testbit"),1);
+		assertEquals(cur.getColumnLength(15),20);
+		assertEquals(cur.getColumnLength("testbinary"),20);
+		assertEquals(cur.getColumnLength(16),20);
+		assertEquals(cur.getColumnLength("testvarbinary"),20);
+		assertEquals(cur.getColumnLength(17),40);
+		assertEquals(cur.getColumnLength("testunichar"),40);
+		assertEquals(cur.getColumnLength(18),40);
+		assertEquals(cur.getColumnLength("testunivarchar"),40);
+		assertEquals(cur.getColumnLength(19),32768);
+		assertEquals(cur.getColumnLength("testunitext"),32768);
+		assertEquals(cur.getColumnLength(20),4);
+		assertEquals(cur.getColumnLength("testdate"),4);
+		assertEquals(cur.getColumnLength(21),4);
+		assertEquals(cur.getColumnLength("testtime"),4);
+		assertEquals(cur.getColumnLength(22),8);
+		assertEquals(cur.getColumnLength("testbigtime"),8);
+		assertEquals(cur.getColumnLength(23),8);
+		assertEquals(cur.getColumnLength("testbigdatetime"),8);
 		System.out.println();
 
 
@@ -488,6 +632,24 @@ class sap extends sqlrtest {
 		assertEquals(cur.getLongest("testvarchar"),12);
 		assertEquals(cur.getLongest(13),1);
 		assertEquals(cur.getLongest("testbit"),1);
+		assertEquals(cur.getLongest(15),40);
+		assertEquals(cur.getLongest("testbinary"),40);
+		assertEquals(cur.getLongest(16),2);
+		assertEquals(cur.getLongest("testvarbinary"),2);
+		assertEquals(cur.getLongest(17),20);
+		assertEquals(cur.getLongest("testunichar"),20);
+		assertEquals(cur.getLongest(18),15);
+		assertEquals(cur.getLongest("testunivarchar"),15);
+		assertEquals(cur.getLongest(19),12);
+		assertEquals(cur.getLongest("testunitext"),12);
+		assertEquals(cur.getLongest(20),11);
+		assertEquals(cur.getLongest("testdate"),11);
+		assertEquals(cur.getLongest(21),7);
+		assertEquals(cur.getLongest("testtime"),7);
+		assertEquals(cur.getLongest(22),7);
+		assertEquals(cur.getLongest("testbigtime"),7);
+		assertEquals(cur.getLongest(23),19);
+		assertEquals(cur.getLongest("testbigdatetime"),19);
 		System.out.println();
 
 
@@ -532,6 +694,15 @@ class sap extends sqlrtest {
 					"                               ");
 		assertEquals(cur.getField(0,12),"testvarchar1");
 		assertEquals(cur.getField(0,13),"1");
+		assertEquals(cur.getField(0,15),"0100000000000000000000000000000000000000");
+		assertEquals(cur.getField(0,16),"01");
+		assertEquals(cur.getField(0,17),"testunichar1        ");
+		assertEquals(cur.getField(0,18),"testunivarchar1");
+		assertEquals(cur.getField(0,19),"testunitext1");
+		assertEquals(cur.getField(0,20),"Jan  1 2001");
+		assertEquals(cur.getField(0,21)," 1:00AM");
+		assertEquals(cur.getField(0,22)," 1:00AM");
+		assertEquals(cur.getField(0,23),"Jan  1 2001  1:00AM");
 		System.out.println();
 		assertEquals(cur.getField(7,0),"8");
 		assertEquals(cur.getField(7,1),"8");
@@ -548,6 +719,15 @@ class sap extends sqlrtest {
 					"                               ");
 		assertEquals(cur.getField(7,12),"testvarchar8");
 		assertEquals(cur.getField(7,13),"1");
+		assertEquals(cur.getField(7,15),"0800000000000000000000000000000000000000");
+		assertEquals(cur.getField(7,16),"08");
+		assertEquals(cur.getField(7,17),"testunichar8        ");
+		assertEquals(cur.getField(7,18),"testunivarchar8");
+		assertEquals(cur.getField(7,19),"testunitext8");
+		assertEquals(cur.getField(7,20),"Jan  1 2008");
+		assertEquals(cur.getField(7,21)," 8:00AM");
+		assertEquals(cur.getField(7,22)," 8:00AM");
+		assertEquals(cur.getField(7,23),"Jan  1 2008  8:00AM");
 		System.out.println();
 
 
@@ -567,6 +747,15 @@ class sap extends sqlrtest {
 		assertEquals(cur.getFieldLength(0,11),40);
 		assertEquals(cur.getFieldLength(0,12),12);
 		assertEquals(cur.getFieldLength(0,13),1);
+		assertEquals(cur.getFieldLength(0,15),40);
+		assertEquals(cur.getFieldLength(0,16),2);
+		assertEquals(cur.getFieldLength(0,17),20);
+		assertEquals(cur.getFieldLength(0,18),15);
+		assertEquals(cur.getFieldLength(0,19),12);
+		assertEquals(cur.getFieldLength(0,20),11);
+		assertEquals(cur.getFieldLength(0,21),7);
+		assertEquals(cur.getFieldLength(0,22),7);
+		assertEquals(cur.getFieldLength(0,23),19);
 		System.out.println();
 		assertEquals(cur.getFieldLength(7,0),1);
 		assertEquals(cur.getFieldLength(7,1),1);
@@ -582,6 +771,15 @@ class sap extends sqlrtest {
 		assertEquals(cur.getFieldLength(7,11),40);
 		assertEquals(cur.getFieldLength(7,12),12);
 		assertEquals(cur.getFieldLength(7,13),1);
+		assertEquals(cur.getFieldLength(7,15),40);
+		assertEquals(cur.getFieldLength(7,16),2);
+		assertEquals(cur.getFieldLength(7,17),20);
+		assertEquals(cur.getFieldLength(7,18),15);
+		assertEquals(cur.getFieldLength(7,19),12);
+		assertEquals(cur.getFieldLength(7,20),11);
+		assertEquals(cur.getFieldLength(7,21),7);
+		assertEquals(cur.getFieldLength(7,22),7);
+		assertEquals(cur.getFieldLength(7,23),19);
 		System.out.println();
 
 
@@ -604,6 +802,15 @@ class sap extends sqlrtest {
 					"                               ");
 		assertEquals(cur.getField(0,"testvarchar"),"testvarchar1");
 		assertEquals(cur.getField(0,"testbit"),"1");
+		assertEquals(cur.getField(0,"testbinary"),"0100000000000000000000000000000000000000");
+		assertEquals(cur.getField(0,"testvarbinary"),"01");
+		assertEquals(cur.getField(0,"testunichar"),"testunichar1        ");
+		assertEquals(cur.getField(0,"testunivarchar"),"testunivarchar1");
+		assertEquals(cur.getField(0,"testunitext"),"testunitext1");
+		assertEquals(cur.getField(0,"testdate"),"Jan  1 2001");
+		assertEquals(cur.getField(0,"testtime")," 1:00AM");
+		assertEquals(cur.getField(0,"testbigtime")," 1:00AM");
+		assertEquals(cur.getField(0,"testbigdatetime"),"Jan  1 2001  1:00AM");
 		System.out.println();
 		assertEquals(cur.getField(7,"testint"),"8");
 		assertEquals(cur.getField(7,"testsmallint"),"8");
@@ -622,6 +829,15 @@ class sap extends sqlrtest {
 					"                               ");
 		assertEquals(cur.getField(7,"testvarchar"),"testvarchar8");
 		assertEquals(cur.getField(7,"testbit"),"1");
+		assertEquals(cur.getField(7,"testbinary"),"0800000000000000000000000000000000000000");
+		assertEquals(cur.getField(7,"testvarbinary"),"08");
+		assertEquals(cur.getField(7,"testunichar"),"testunichar8        ");
+		assertEquals(cur.getField(7,"testunivarchar"),"testunivarchar8");
+		assertEquals(cur.getField(7,"testunitext"),"testunitext8");
+		assertEquals(cur.getField(7,"testdate"),"Jan  1 2008");
+		assertEquals(cur.getField(7,"testtime")," 8:00AM");
+		assertEquals(cur.getField(7,"testbigtime")," 8:00AM");
+		assertEquals(cur.getField(7,"testbigdatetime"),"Jan  1 2008  8:00AM");
 		System.out.println();
 
 
@@ -641,6 +857,15 @@ class sap extends sqlrtest {
 		assertEquals(cur.getFieldLength(0,"testchar"),40);
 		assertEquals(cur.getFieldLength(0,"testvarchar"),12);
 		assertEquals(cur.getFieldLength(0,"testbit"),1);
+		assertEquals(cur.getFieldLength(0,"testbinary"),40);
+		assertEquals(cur.getFieldLength(0,"testvarbinary"),2);
+		assertEquals(cur.getFieldLength(0,"testunichar"),20);
+		assertEquals(cur.getFieldLength(0,"testunivarchar"),15);
+		assertEquals(cur.getFieldLength(0,"testunitext"),12);
+		assertEquals(cur.getFieldLength(0,"testdate"),11);
+		assertEquals(cur.getFieldLength(0,"testtime"),7);
+		assertEquals(cur.getFieldLength(0,"testbigtime"),7);
+		assertEquals(cur.getFieldLength(0,"testbigdatetime"),19);
 		System.out.println();
 		assertEquals(cur.getFieldLength(7,"testint"),1);
 		assertEquals(cur.getFieldLength(7,"testsmallint"),1);
@@ -656,6 +881,15 @@ class sap extends sqlrtest {
 		assertEquals(cur.getFieldLength(7,"testchar"),40);
 		assertEquals(cur.getFieldLength(7,"testvarchar"),12);
 		assertEquals(cur.getFieldLength(7,"testbit"),1);
+		assertEquals(cur.getFieldLength(7,"testbinary"),40);
+		assertEquals(cur.getFieldLength(7,"testvarbinary"),2);
+		assertEquals(cur.getFieldLength(7,"testunichar"),20);
+		assertEquals(cur.getFieldLength(7,"testunivarchar"),15);
+		assertEquals(cur.getFieldLength(7,"testunitext"),12);
+		assertEquals(cur.getFieldLength(7,"testdate"),11);
+		assertEquals(cur.getFieldLength(7,"testtime"),7);
+		assertEquals(cur.getFieldLength(7,"testbigtime"),7);
+		assertEquals(cur.getFieldLength(7,"testbigdatetime"),19);
 		System.out.println();
 
 
@@ -677,6 +911,15 @@ class sap extends sqlrtest {
 					"                               ");
 		assertEquals(fields[12],"testvarchar1");
 		assertEquals(fields[13],"1");
+		assertEquals(fields[15],"0100000000000000000000000000000000000000");
+		assertEquals(fields[16],"01");
+		assertEquals(fields[17],"testunichar1        ");
+		assertEquals(fields[18],"testunivarchar1");
+		assertEquals(fields[19],"testunitext1");
+		assertEquals(fields[20],"Jan  1 2001");
+		assertEquals(fields[21]," 1:00AM");
+		assertEquals(fields[22]," 1:00AM");
+		assertEquals(fields[23],"Jan  1 2001  1:00AM");
 		System.out.println();
 
 
@@ -697,6 +940,15 @@ class sap extends sqlrtest {
 		assertEquals(fieldlens[11],40);
 		assertEquals(fieldlens[12],12);
 		assertEquals(fieldlens[13],1);
+		assertEquals(fieldlens[15],40);
+		assertEquals(fieldlens[16],2);
+		assertEquals(fieldlens[17],20);
+		assertEquals(fieldlens[18],15);
+		assertEquals(fieldlens[19],12);
+		assertEquals(fieldlens[20],11);
+		assertEquals(fieldlens[21],7);
+		assertEquals(fieldlens[22],7);
+		assertEquals(fieldlens[23],19);
 		System.out.println();
 
 
@@ -891,7 +1143,7 @@ class sap extends sqlrtest {
 
 		// column count for cached result set
 		System.out.println("COLUMN COUNT FOR CACHED RESULT SET: ");
-		assertEquals(cur.colCount(),15);
+		assertEquals(cur.colCount(),24);
 		System.out.println();
 
 
@@ -911,6 +1163,15 @@ class sap extends sqlrtest {
 		assertEquals(cur.getColumnName(11),"testchar");
 		assertEquals(cur.getColumnName(12),"testvarchar");
 		assertEquals(cur.getColumnName(13),"testbit");
+		assertEquals(cur.getColumnName(15),"testbinary");
+		assertEquals(cur.getColumnName(16),"testvarbinary");
+		assertEquals(cur.getColumnName(17),"testunichar");
+		assertEquals(cur.getColumnName(18),"testunivarchar");
+		assertEquals(cur.getColumnName(19),"testunitext");
+		assertEquals(cur.getColumnName(20),"testdate");
+		assertEquals(cur.getColumnName(21),"testtime");
+		assertEquals(cur.getColumnName(22),"testbigtime");
+		assertEquals(cur.getColumnName(23),"testbigdatetime");
 		cols=cur.getColumnNames();
 		assertEquals(cols[0],"testint");
 		assertEquals(cols[1],"testsmallint");
@@ -926,6 +1187,15 @@ class sap extends sqlrtest {
 		assertEquals(cols[11],"testchar");
 		assertEquals(cols[12],"testvarchar");
 		assertEquals(cols[13],"testbit");
+		assertEquals(cols[15],"testbinary");
+		assertEquals(cols[16],"testvarbinary");
+		assertEquals(cols[17],"testunichar");
+		assertEquals(cols[18],"testunivarchar");
+		assertEquals(cols[19],"testunitext");
+		assertEquals(cols[20],"testdate");
+		assertEquals(cols[21],"testtime");
+		assertEquals(cols[22],"testbigtime");
+		assertEquals(cols[23],"testbigdatetime");
 		System.out.println();
 
 

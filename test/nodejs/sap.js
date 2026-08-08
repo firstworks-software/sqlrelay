@@ -105,7 +105,16 @@ assertTrue(cur.sendQuery(
 	"	testchar char(40), "+
 	"	testvarchar varchar(40), "+
 	"	testbit bit, "+
-	"	testtext text) "+"lock datarows"));
+	"	testtext text, "+
+	"	testbinary binary(20), "+
+	"	testvarbinary varbinary(20), "+
+	"	testunichar unichar(20), "+
+	"	testunivarchar univarchar(20), "+
+	"	testunitext unitext, "+
+	"	testdate date, "+
+	"	testtime time, "+
+	"	testbigtime bigtime, "+
+	"	testbigdatetime bigdatetime) "+"lock datarows"));
 console.log();
 
 
@@ -130,7 +139,16 @@ assertTrue(cur.sendQuery(
 	"	'testchar1', "+
 	"	'testvarchar1', "+
 	"	1, "+
-	"	'testtext1')"));
+	"	'testtext1', "+
+	"	0x01, "+
+	"	0x01, "+
+	"	'testunichar1', "+
+	"	'testunivarchar1', "+
+	"	'testunitext1', "+
+	"	'01-Jan-2001', "+
+	"	'01:00:00', "+
+	"	'01:00:00.000000', "+
+	"	'01-Jan-2001 01:00:00.000000')"));
 console.log();
 
 
@@ -160,8 +178,17 @@ cur.prepareQuery(
 	"	@var12, "+
 	"	@var13, "+
 	"	@var14, "+
-	"	@var15)");
-assertEqInt(cur.countBindVariables(),15);
+	"	@var15, "+
+	"	@var16, "+
+	"	@var17, "+
+	"	@var18, "+
+	"	@var19, "+
+	"	@var20, "+
+	"	@var21, "+
+	"	@var22, "+
+	"	@var23, "+
+	"	@var24)");
+assertEqInt(cur.countBindVariables(),24);
 cur.inputBind("1",2);
 cur.inputBind("2",2);
 cur.inputBind("3",2);
@@ -177,6 +204,15 @@ cur.inputBind("12","testchar2");
 cur.inputBind("13","testvarchar2");
 cur.inputBind("14",1);
 cur.inputBindClob("15","testtext2","testtext2".length);
+cur.inputBindBlob("16","\x02","\x02".length);
+cur.inputBindBlob("17","\x02","\x02".length);
+cur.inputBind("18","testunichar2");
+cur.inputBind("19","testunivarchar2");
+cur.inputBindClob("20","testunitext2","testunitext2".length);
+cur.inputBind("21","01-Jan-2002");
+cur.inputBind("22","02:00:00");
+cur.inputBind("23","02:00:00.000000");
+cur.inputBind("24","01-Jan-2002 02:00:00.000000");
 assertTrue(cur.executeQuery());
 cur.clearBinds();
 cur.inputBind("1",3);
@@ -194,6 +230,15 @@ cur.inputBind("12","testchar3");
 cur.inputBind("13","testvarchar3");
 cur.inputBind("14",1);
 cur.inputBindClob("15","testtext3","testtext3".length);
+cur.inputBindBlob("16","\x03","\x03".length);
+cur.inputBindBlob("17","\x03","\x03".length);
+cur.inputBind("18","testunichar3");
+cur.inputBind("19","testunivarchar3");
+cur.inputBindClob("20","testunitext3","testunitext3".length);
+cur.inputBind("21","01-Jan-2003");
+cur.inputBind("22","03:00:00");
+cur.inputBind("23","03:00:00.000000");
+cur.inputBind("24","01-Jan-2003 03:00:00.000000");
 assertTrue(cur.executeQuery());
 console.log();
 
@@ -223,6 +268,15 @@ cur.inputBind("12","testchar4");
 cur.inputBind("13","testvarchar4");
 cur.inputBind("14",1);
 cur.inputBindClob("15","testtext4","testtext4".length);
+cur.inputBindBlob("16","\x04","\x04".length);
+cur.inputBindBlob("17","\x04","\x04".length);
+cur.inputBind("18","testunichar4");
+cur.inputBind("19","testunivarchar4");
+cur.inputBindClob("20","testunitext4","testunitext4".length);
+cur.inputBind("21","01-Jan-2004");
+cur.inputBind("22","04:00:00");
+cur.inputBind("23","04:00:00.000000");
+cur.inputBind("24","01-Jan-2004 04:00:00.000000");
 cur.validateBinds();
 assertTrue(cur.executeQuery());
 console.log();
@@ -246,6 +300,15 @@ cur.inputBind("var12","testchar5");
 cur.inputBind("var13","testvarchar5");
 cur.inputBind("var14",1);
 cur.inputBindClob("var15","testtext5","testtext5".length);
+cur.inputBindBlob("var16","\x05","\x05".length);
+cur.inputBindBlob("var17","\x05","\x05".length);
+cur.inputBind("var18","testunichar5");
+cur.inputBind("var19","testunivarchar5");
+cur.inputBindClob("var20","testunitext5","testunitext5".length);
+cur.inputBind("var21","01-Jan-2005");
+cur.inputBind("var22","05:00:00");
+cur.inputBind("var23","05:00:00.000000");
+cur.inputBind("var24","01-Jan-2005 05:00:00.000000");
 assertTrue(cur.executeQuery());
 cur.clearBinds();
 cur.inputBind("var1",6);
@@ -263,6 +326,15 @@ cur.inputBind("var12","testchar6");
 cur.inputBind("var13","testvarchar6");
 cur.inputBind("var14",1);
 cur.inputBindClob("var15","testtext6","testtext6".length);
+cur.inputBindBlob("var16","\x06","\x06".length);
+cur.inputBindBlob("var17","\x06","\x06".length);
+cur.inputBind("var18","testunichar6");
+cur.inputBind("var19","testunivarchar6");
+cur.inputBindClob("var20","testunitext6","testunitext6".length);
+cur.inputBind("var21","01-Jan-2006");
+cur.inputBind("var22","06:00:00");
+cur.inputBind("var23","06:00:00.000000");
+cur.inputBind("var24","01-Jan-2006 06:00:00.000000");
 assertTrue(cur.executeQuery());
 cur.clearBinds();
 cur.inputBind("var1",7);
@@ -280,6 +352,15 @@ cur.inputBind("var12","testchar7");
 cur.inputBind("var13","testvarchar7");
 cur.inputBind("var14",1);
 cur.inputBindClob("var15","testtext7","testtext7".length);
+cur.inputBindBlob("var16","\x07","\x07".length);
+cur.inputBindBlob("var17","\x07","\x07".length);
+cur.inputBind("var18","testunichar7");
+cur.inputBind("var19","testunivarchar7");
+cur.inputBindClob("var20","testunitext7","testunitext7".length);
+cur.inputBind("var21","01-Jan-2007");
+cur.inputBind("var22","07:00:00");
+cur.inputBind("var23","07:00:00.000000");
+cur.inputBind("var24","01-Jan-2007 07:00:00.000000");
 assertTrue(cur.executeQuery());
 console.log();
 
@@ -309,7 +390,16 @@ cur.inputBind("var12","testchar8");
 cur.inputBind("var13","testvarchar8");
 cur.inputBind("var14",1);
 cur.inputBindClob("var15","testtext8","testtext8".length);
-cur.inputBind("var16","junkvalue");
+cur.inputBindBlob("var16","\x08","\x08".length);
+cur.inputBindBlob("var17","\x08","\x08".length);
+cur.inputBind("var18","testunichar8");
+cur.inputBind("var19","testunivarchar8");
+cur.inputBindClob("var20","testunitext8","testunitext8".length);
+cur.inputBind("var21","01-Jan-2008");
+cur.inputBind("var22","08:00:00");
+cur.inputBind("var23","08:00:00.000000");
+cur.inputBind("var24","01-Jan-2008 08:00:00.000000");
+cur.inputBind("var25","junkvalue");
 cur.validateBinds();
 assertTrue(cur.executeQuery());
 console.log();
@@ -324,7 +414,7 @@ console.log();
 
 // column count
 console.log("COLUMN COUNT: ");
-assertEqInt(cur.colCount(),15);
+assertEqInt(cur.colCount(),24);
 console.log();
 
 
@@ -344,6 +434,15 @@ assertEqStr(cur.getColumnName(10),"testsmalldatetime");
 assertEqStr(cur.getColumnName(11),"testchar");
 assertEqStr(cur.getColumnName(12),"testvarchar");
 assertEqStr(cur.getColumnName(13),"testbit");
+assertEqStr(cur.getColumnName(15),"testbinary");
+assertEqStr(cur.getColumnName(16),"testvarbinary");
+assertEqStr(cur.getColumnName(17),"testunichar");
+assertEqStr(cur.getColumnName(18),"testunivarchar");
+assertEqStr(cur.getColumnName(19),"testunitext");
+assertEqStr(cur.getColumnName(20),"testdate");
+assertEqStr(cur.getColumnName(21),"testtime");
+assertEqStr(cur.getColumnName(22),"testbigtime");
+assertEqStr(cur.getColumnName(23),"testbigdatetime");
 var cols=cur.getColumnNames();
 assertEqStr(cols[0],"testint");
 assertEqStr(cols[1],"testsmallint");
@@ -359,6 +458,15 @@ assertEqStr(cols[10],"testsmalldatetime");
 assertEqStr(cols[11],"testchar");
 assertEqStr(cols[12],"testvarchar");
 assertEqStr(cols[13],"testbit");
+assertEqStr(cols[15],"testbinary");
+assertEqStr(cols[16],"testvarbinary");
+assertEqStr(cols[17],"testunichar");
+assertEqStr(cols[18],"testunivarchar");
+assertEqStr(cols[19],"testunitext");
+assertEqStr(cols[20],"testdate");
+assertEqStr(cols[21],"testtime");
+assertEqStr(cols[22],"testbigtime");
+assertEqStr(cols[23],"testbigdatetime");
 console.log();
 
 
@@ -394,6 +502,24 @@ assertEqStr(cur.getColumnType(12),"VARCHAR");
 assertEqStr(cur.getColumnType("testvarchar"),"VARCHAR");
 assertEqStr(cur.getColumnType(13),"BIT");
 assertEqStr(cur.getColumnType("testbit"),"BIT");
+assertEqStr(cur.getColumnType(15),"BINARY");
+assertEqStr(cur.getColumnType("testbinary"),"BINARY");
+assertEqStr(cur.getColumnType(16),"VARBINARY");
+assertEqStr(cur.getColumnType("testvarbinary"),"VARBINARY");
+assertEqStr(cur.getColumnType(17),"NCHAR");
+assertEqStr(cur.getColumnType("testunichar"),"NCHAR");
+assertEqStr(cur.getColumnType(18),"NVARCHAR");
+assertEqStr(cur.getColumnType("testunivarchar"),"NVARCHAR");
+assertEqStr(cur.getColumnType(19),"NTEXT");
+assertEqStr(cur.getColumnType("testunitext"),"NTEXT");
+assertEqStr(cur.getColumnType(20),"DATE");
+assertEqStr(cur.getColumnType("testdate"),"DATE");
+assertEqStr(cur.getColumnType(21),"TIME");
+assertEqStr(cur.getColumnType("testtime"),"TIME");
+assertEqStr(cur.getColumnType(22),"TIME");
+assertEqStr(cur.getColumnType("testbigtime"),"TIME");
+assertEqStr(cur.getColumnType(23),"TIMESTAMP");
+assertEqStr(cur.getColumnType("testbigdatetime"),"TIMESTAMP");
 console.log();
 
 
@@ -427,6 +553,24 @@ assertEqInt(cur.getColumnLength(12),40);
 assertEqInt(cur.getColumnLength("testvarchar"),40);
 assertEqInt(cur.getColumnLength(13),1);
 assertEqInt(cur.getColumnLength("testbit"),1);
+assertEqInt(cur.getColumnLength(15),20);
+assertEqInt(cur.getColumnLength("testbinary"),20);
+assertEqInt(cur.getColumnLength(16),20);
+assertEqInt(cur.getColumnLength("testvarbinary"),20);
+assertEqInt(cur.getColumnLength(17),40);
+assertEqInt(cur.getColumnLength("testunichar"),40);
+assertEqInt(cur.getColumnLength(18),40);
+assertEqInt(cur.getColumnLength("testunivarchar"),40);
+assertEqInt(cur.getColumnLength(19),32768);
+assertEqInt(cur.getColumnLength("testunitext"),32768);
+assertEqInt(cur.getColumnLength(20),4);
+assertEqInt(cur.getColumnLength("testdate"),4);
+assertEqInt(cur.getColumnLength(21),4);
+assertEqInt(cur.getColumnLength("testtime"),4);
+assertEqInt(cur.getColumnLength(22),8);
+assertEqInt(cur.getColumnLength("testbigtime"),8);
+assertEqInt(cur.getColumnLength(23),8);
+assertEqInt(cur.getColumnLength("testbigdatetime"),8);
 console.log();
 
 
@@ -460,6 +604,24 @@ assertEqInt(cur.getLongest(12),12);
 assertEqInt(cur.getLongest("testvarchar"),12);
 assertEqInt(cur.getLongest(13),1);
 assertEqInt(cur.getLongest("testbit"),1);
+assertEqInt(cur.getLongest(15),40);
+assertEqInt(cur.getLongest("testbinary"),40);
+assertEqInt(cur.getLongest(16),2);
+assertEqInt(cur.getLongest("testvarbinary"),2);
+assertEqInt(cur.getLongest(17),20);
+assertEqInt(cur.getLongest("testunichar"),20);
+assertEqInt(cur.getLongest(18),15);
+assertEqInt(cur.getLongest("testunivarchar"),15);
+assertEqInt(cur.getLongest(19),12);
+assertEqInt(cur.getLongest("testunitext"),12);
+assertEqInt(cur.getLongest(20),11);
+assertEqInt(cur.getLongest("testdate"),11);
+assertEqInt(cur.getLongest(21),7);
+assertEqInt(cur.getLongest("testtime"),7);
+assertEqInt(cur.getLongest(22),7);
+assertEqInt(cur.getLongest("testbigtime"),7);
+assertEqInt(cur.getLongest(23),19);
+assertEqInt(cur.getLongest("testbigdatetime"),19);
 console.log();
 
 
@@ -504,6 +666,16 @@ assertEqStr(cur.getField(0,11),"testchar1"+
 	"                               ");
 assertEqStr(cur.getField(0,12),"testvarchar1");
 assertEqStr(cur.getField(0,13),"1");
+assertEqStr(cur.getField(0,15),"0100000000000000000000000000000000000000");
+assertEqStr(cur.getField(0,16),"01");
+assertEqStr(cur.getField(0,17),"testunichar1"+
+	"        ");
+assertEqStr(cur.getField(0,18),"testunivarchar1");
+assertEqStr(cur.getField(0,19),"testunitext1");
+assertEqStr(cur.getField(0,20),"Jan  1 2001");
+assertEqStr(cur.getField(0,21)," 1:00AM");
+assertEqStr(cur.getField(0,22)," 1:00AM");
+assertEqStr(cur.getField(0,23),"Jan  1 2001  1:00AM");
 console.log();
 assertEqStr(cur.getField(7,0),"8");
 assertEqStr(cur.getField(7,1),"8");
@@ -520,6 +692,16 @@ assertEqStr(cur.getField(7,11),"testchar8"+
 	"                               ");
 assertEqStr(cur.getField(7,12),"testvarchar8");
 assertEqStr(cur.getField(7,13),"1");
+assertEqStr(cur.getField(7,15),"0800000000000000000000000000000000000000");
+assertEqStr(cur.getField(7,16),"08");
+assertEqStr(cur.getField(7,17),"testunichar8"+
+	"        ");
+assertEqStr(cur.getField(7,18),"testunivarchar8");
+assertEqStr(cur.getField(7,19),"testunitext8");
+assertEqStr(cur.getField(7,20),"Jan  1 2008");
+assertEqStr(cur.getField(7,21)," 8:00AM");
+assertEqStr(cur.getField(7,22)," 8:00AM");
+assertEqStr(cur.getField(7,23),"Jan  1 2008  8:00AM");
 console.log();
 
 
@@ -539,6 +721,15 @@ assertEqInt(cur.getFieldLength(0,10),19);
 assertEqInt(cur.getFieldLength(0,11),40);
 assertEqInt(cur.getFieldLength(0,12),12);
 assertEqInt(cur.getFieldLength(0,13),1);
+assertEqInt(cur.getFieldLength(0,15),40);
+assertEqInt(cur.getFieldLength(0,16),2);
+assertEqInt(cur.getFieldLength(0,17),20);
+assertEqInt(cur.getFieldLength(0,18),15);
+assertEqInt(cur.getFieldLength(0,19),12);
+assertEqInt(cur.getFieldLength(0,20),11);
+assertEqInt(cur.getFieldLength(0,21),7);
+assertEqInt(cur.getFieldLength(0,22),7);
+assertEqInt(cur.getFieldLength(0,23),19);
 console.log();
 assertEqInt(cur.getFieldLength(7,0),1);
 assertEqInt(cur.getFieldLength(7,1),1);
@@ -554,6 +745,15 @@ assertEqInt(cur.getFieldLength(7,10),19);
 assertEqInt(cur.getFieldLength(7,11),40);
 assertEqInt(cur.getFieldLength(7,12),12);
 assertEqInt(cur.getFieldLength(7,13),1);
+assertEqInt(cur.getFieldLength(7,15),40);
+assertEqInt(cur.getFieldLength(7,16),2);
+assertEqInt(cur.getFieldLength(7,17),20);
+assertEqInt(cur.getFieldLength(7,18),15);
+assertEqInt(cur.getFieldLength(7,19),12);
+assertEqInt(cur.getFieldLength(7,20),11);
+assertEqInt(cur.getFieldLength(7,21),7);
+assertEqInt(cur.getFieldLength(7,22),7);
+assertEqInt(cur.getFieldLength(7,23),19);
 console.log();
 
 
@@ -576,6 +776,17 @@ assertEqStr(cur.getField(0,"testchar"),"testchar1"+
 	"                               ");
 assertEqStr(cur.getField(0,"testvarchar"),"testvarchar1");
 assertEqStr(cur.getField(0,"testbit"),"1");
+assertEqStr(cur.getField(0,"testbinary"),
+	"0100000000000000000000000000000000000000");
+assertEqStr(cur.getField(0,"testvarbinary"),"01");
+assertEqStr(cur.getField(0,"testunichar"),"testunichar1"+
+	"        ");
+assertEqStr(cur.getField(0,"testunivarchar"),"testunivarchar1");
+assertEqStr(cur.getField(0,"testunitext"),"testunitext1");
+assertEqStr(cur.getField(0,"testdate"),"Jan  1 2001");
+assertEqStr(cur.getField(0,"testtime")," 1:00AM");
+assertEqStr(cur.getField(0,"testbigtime")," 1:00AM");
+assertEqStr(cur.getField(0,"testbigdatetime"),"Jan  1 2001  1:00AM");
 console.log();
 assertEqStr(cur.getField(7,"testint"),"8");
 assertEqStr(cur.getField(7,"testsmallint"),"8");
@@ -594,6 +805,17 @@ assertEqStr(cur.getField(7,"testchar"),"testchar8"+
 	"                               ");
 assertEqStr(cur.getField(7,"testvarchar"),"testvarchar8");
 assertEqStr(cur.getField(7,"testbit"),"1");
+assertEqStr(cur.getField(7,"testbinary"),
+	"0800000000000000000000000000000000000000");
+assertEqStr(cur.getField(7,"testvarbinary"),"08");
+assertEqStr(cur.getField(7,"testunichar"),"testunichar8"+
+	"        ");
+assertEqStr(cur.getField(7,"testunivarchar"),"testunivarchar8");
+assertEqStr(cur.getField(7,"testunitext"),"testunitext8");
+assertEqStr(cur.getField(7,"testdate"),"Jan  1 2008");
+assertEqStr(cur.getField(7,"testtime")," 8:00AM");
+assertEqStr(cur.getField(7,"testbigtime")," 8:00AM");
+assertEqStr(cur.getField(7,"testbigdatetime"),"Jan  1 2008  8:00AM");
 console.log();
 
 
@@ -613,6 +835,15 @@ assertEqInt(cur.getFieldLength(0,"testsmalldatetime"),19);
 assertEqInt(cur.getFieldLength(0,"testchar"),40);
 assertEqInt(cur.getFieldLength(0,"testvarchar"),12);
 assertEqInt(cur.getFieldLength(0,"testbit"),1);
+assertEqInt(cur.getFieldLength(0,"testbinary"),40);
+assertEqInt(cur.getFieldLength(0,"testvarbinary"),2);
+assertEqInt(cur.getFieldLength(0,"testunichar"),20);
+assertEqInt(cur.getFieldLength(0,"testunivarchar"),15);
+assertEqInt(cur.getFieldLength(0,"testunitext"),12);
+assertEqInt(cur.getFieldLength(0,"testdate"),11);
+assertEqInt(cur.getFieldLength(0,"testtime"),7);
+assertEqInt(cur.getFieldLength(0,"testbigtime"),7);
+assertEqInt(cur.getFieldLength(0,"testbigdatetime"),19);
 console.log();
 assertEqInt(cur.getFieldLength(7,"testint"),1);
 assertEqInt(cur.getFieldLength(7,"testsmallint"),1);
@@ -628,6 +859,15 @@ assertEqInt(cur.getFieldLength(7,"testsmalldatetime"),19);
 assertEqInt(cur.getFieldLength(7,"testchar"),40);
 assertEqInt(cur.getFieldLength(7,"testvarchar"),12);
 assertEqInt(cur.getFieldLength(7,"testbit"),1);
+assertEqInt(cur.getFieldLength(7,"testbinary"),40);
+assertEqInt(cur.getFieldLength(7,"testvarbinary"),2);
+assertEqInt(cur.getFieldLength(7,"testunichar"),20);
+assertEqInt(cur.getFieldLength(7,"testunivarchar"),15);
+assertEqInt(cur.getFieldLength(7,"testunitext"),12);
+assertEqInt(cur.getFieldLength(7,"testdate"),11);
+assertEqInt(cur.getFieldLength(7,"testtime"),7);
+assertEqInt(cur.getFieldLength(7,"testbigtime"),7);
+assertEqInt(cur.getFieldLength(7,"testbigdatetime"),19);
 console.log();
 
 
@@ -648,6 +888,15 @@ assertEqStr(fields[10],"Jan  1 2001  1:00AM");
 assertEqStr(fields[11],"testchar1"+"                               ");
 assertEqStr(fields[12],"testvarchar1");
 assertEqStr(fields[13],"1");
+assertEqStr(fields[15],"0100000000000000000000000000000000000000");
+assertEqStr(fields[16],"01");
+assertEqStr(fields[17],"testunichar1"+"        ");
+assertEqStr(fields[18],"testunivarchar1");
+assertEqStr(fields[19],"testunitext1");
+assertEqStr(fields[20],"Jan  1 2001");
+assertEqStr(fields[21]," 1:00AM");
+assertEqStr(fields[22]," 1:00AM");
+assertEqStr(fields[23],"Jan  1 2001  1:00AM");
 console.log();
 
 
@@ -668,6 +917,15 @@ assertEqInt(fieldlens[10],19);
 assertEqInt(fieldlens[11],40);
 assertEqInt(fieldlens[12],12);
 assertEqInt(fieldlens[13],1);
+assertEqInt(fieldlens[15],40);
+assertEqInt(fieldlens[16],2);
+assertEqInt(fieldlens[17],20);
+assertEqInt(fieldlens[18],15);
+assertEqInt(fieldlens[19],12);
+assertEqInt(fieldlens[20],11);
+assertEqInt(fieldlens[21],7);
+assertEqInt(fieldlens[22],7);
+assertEqInt(fieldlens[23],19);
 console.log();
 
 
@@ -822,7 +1080,7 @@ console.log();
 
 // column count for cached result set
 console.log("COLUMN COUNT FOR "+"CACHED RESULT SET: ");
-assertEqInt(cur.colCount(),15);
+assertEqInt(cur.colCount(),24);
 console.log();
 
 
@@ -842,6 +1100,15 @@ assertEqStr(cur.getColumnName(10),"testsmalldatetime");
 assertEqStr(cur.getColumnName(11),"testchar");
 assertEqStr(cur.getColumnName(12),"testvarchar");
 assertEqStr(cur.getColumnName(13),"testbit");
+assertEqStr(cur.getColumnName(15),"testbinary");
+assertEqStr(cur.getColumnName(16),"testvarbinary");
+assertEqStr(cur.getColumnName(17),"testunichar");
+assertEqStr(cur.getColumnName(18),"testunivarchar");
+assertEqStr(cur.getColumnName(19),"testunitext");
+assertEqStr(cur.getColumnName(20),"testdate");
+assertEqStr(cur.getColumnName(21),"testtime");
+assertEqStr(cur.getColumnName(22),"testbigtime");
+assertEqStr(cur.getColumnName(23),"testbigdatetime");
 cols=cur.getColumnNames();
 assertEqStr(cols[0],"testint");
 assertEqStr(cols[1],"testsmallint");
@@ -857,6 +1124,15 @@ assertEqStr(cols[10],"testsmalldatetime");
 assertEqStr(cols[11],"testchar");
 assertEqStr(cols[12],"testvarchar");
 assertEqStr(cols[13],"testbit");
+assertEqStr(cols[15],"testbinary");
+assertEqStr(cols[16],"testvarbinary");
+assertEqStr(cols[17],"testunichar");
+assertEqStr(cols[18],"testunivarchar");
+assertEqStr(cols[19],"testunitext");
+assertEqStr(cols[20],"testdate");
+assertEqStr(cols[21],"testtime");
+assertEqStr(cols[22],"testbigtime");
+assertEqStr(cols[23],"testbigdatetime");
 console.log();
 
 
