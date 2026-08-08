@@ -11458,6 +11458,23 @@ bool sqlrservercontroller::nextResultSet(sqlrservercursor *cursor,
 
 	bool	success=cursor->nextResultSet(nextresultsetavailable);
 
+	// a new result set means new column metadata, a new affected-row
+	// count and a fresh row-fetch position.  Without this, colCount()/
+	// getColumnName()/etc keep answering from handleResultSetHeader()'s
+	// snapshot of the *previous* result set - stale at best, and reading
+	// off a pointer the "db"cursor may have already freed and reused at
+	// worst, since it's re-describing its own buffers underneath us.
+	if (success && *nextresultsetavailable) {
+		cursor->clearTotalRowsFetched();
+		if (!pvt->_overrideaffectedrows.getValue(cursor)) {
+			pvt->_affectedrows.setValue(
+					cursor,cursor->getAffectedRows());
+		}
+		cursor->setColumnInfoIsValid(false);
+		cursor->setResultSetHeaderHasBeenHandled(false);
+		success=handleResultSetHeader(cursor);
+	}
+
 	// on failure get the error (unless it's already been set)
 	if (!success && !cursor->getErrorNumber()) {
 		uint32_t	errorsize;

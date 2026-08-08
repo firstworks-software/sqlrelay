@@ -3355,9 +3355,6 @@ bool sqlrprotocol_tds::sspi() {
 
 bool sqlrprotocol_tds::sqlBatch() {
 
-	// FIXME: this works for DML/DDL, but not for select,
-	// ct_results() returns CS_FAIL
-
 	// get an available cursor
 	sqlrservercursor	*cursor=cont->getCursor();
 	if (!cursor) {
@@ -3426,6 +3423,7 @@ bool sqlrprotocol_tds::sqlBatch() {
 	// variable or a parameter declaration, and @@name is a global.
 	cont->setInputBindCount(cursor,0);
 	cont->setOutputBindCount(cursor,0);
+	cont->setInputOutputBindCount(cursor,0);
 	cont->setTranslateBindVariablesForThisQuery(cursor,false);
 
 	// run the query
@@ -3442,8 +3440,34 @@ bool sqlrprotocol_tds::sqlBatch() {
 	resppacket.clear();
 
 	if (success) {
-		colMetaData(cursor,false);
-		done(DONE_FINAL|DONE_COUNT,0,rows(cursor));
+
+		// a batch can contain any number of statements, and the
+		// client walks the result sets one at a time, so send one
+		// result set per result set that the batch produced, with
+		// DONE_MORE set on all but the last one
+		for (;;) {
+
+			if (cont->colCount(cursor)) {
+				colMetaData(cursor,false);
+			}
+			uint64_t	rowcount=rows(cursor);
+
+			bool	avail=false;
+			if (!cont->nextResultSet(cursor,&avail)) {
+				appendQueryError(cursor);
+				done(DONE_FINAL|DONE_COUNT,0,rowcount);
+				break;
+			}
+
+			done((avail)?
+				(DONE_MORE|DONE_COUNT):
+				(DONE_FINAL|DONE_COUNT),0,rowcount);
+
+			if (!avail) {
+				break;
+			}
+		}
+
 	} else {
 		appendQueryError(cursor);
 		// FIXME: this ought to be DONE_ERROR, but the ct-lib

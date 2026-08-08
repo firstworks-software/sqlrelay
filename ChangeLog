@@ -1688,6 +1688,15 @@
 		for any of the four; that byte was actually the next field,
 		so every one of those parameters, and everything after it,
 		was read from the wrong offset
+	fixed the tds protocol module - a multi-statement sql batch ran as one
+		query and sent exactly one result set with one final done, no
+		matter how many statements it contained, so a ct-lib client
+		walking the results with ct_results() ran out early and hung
+		in ct_fetch(); the batch now sends one result set per
+		statement, with done_more set on all but the last
+	implemented nextResultSet() in the odbc connection module - it was a
+		stub that always reported that no more result sets were
+		available
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems

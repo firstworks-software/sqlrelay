@@ -306,6 +306,8 @@ class SQLRSERVER_DLLSPEC odbccursor : public sqlrservercursor {
 		listnode< unsigned char * >		*currentcachedrow;
 		bool					cachedrowsarecomplete;
 
+		bool		resultsetsdrained;
+
 		stringbuffer	errormsg;
 
 		#ifdef HAVE_SQLCONNECTW
@@ -3611,6 +3613,7 @@ odbccursor::odbccursor(sqlrserverconnection *conn, uint16_t id) :
 	cachedrows.setManageArrayValues(true);
 	currentcachedrow=NULL;
 	cachedrowsarecomplete=false;
+	resultsetsdrained=false;
 	#ifdef HAVE_SQLCONNECTW
 	ucsinbindstrings.setManageArrayValues(true);
 	#endif
@@ -4923,6 +4926,7 @@ void odbccursor::initializeRowCounts() {
 	maxrow=0;
 	totalrows=0;
 	affectedrows=-1;
+	resultsetsdrained=false;
 	clearCachedRows();
 }
 
@@ -4968,6 +4972,9 @@ bool odbccursor::handleColumns(bool getcolumninfo, bool bindcolumns) {
 
 		// allocate buffers if necessary
 		if (!maxcolumncount) {
+			// free any buffers left over from a previous result
+			// set of this same query (see nextResultSet())
+			deallocateResultSetBuffers();
 			allocateResultSetBuffers(ncols);
 		}
 
@@ -5698,6 +5705,7 @@ bool odbccursor::cacheRowsAndDrainResultSets() {
 
 	currentcachedrow=cachedrows.getFirst();
 	cachedrowsarecomplete=true;
+	resultsetsdrained=true;
 
 	return true;
 }
@@ -5935,13 +5943,70 @@ bool odbccursor::getLobFieldSegment(uint32_t col,
 }
 
 bool odbccursor::nextResultSet(bool *nextresultsetavailable) {
+
 	*nextresultsetavailable=false;
+
+	if (!stmt) {
+		return true;
+	}
+
+	// once cacheRowsAndDrainResultSets() has walked off of the end of the
+	// result sets, there's nothing left to advance to
+	if (resultsetsdrained) {
+		return true;
+	}
+
+	// advance to the next result set
+	erg=SQLMoreResults(stmt);
+	#if defined(SQL_NO_DATA)
+	if (erg==SQL_NO_DATA) {
+		resultsetsdrained=true;
+		ncols=0;
+		return true;
+	}
+	#elif defined(SQL_NO_DATA_FOUND)
+	if (erg==SQL_NO_DATA_FOUND) {
+		resultsetsdrained=true;
+		ncols=0;
+		return true;
+	}
+	#endif
+	if (erg!=SQL_SUCCESS && erg!=SQL_SUCCESS_WITH_INFO) {
+		return false;
+	}
+
+	// Column bindings persist by ordinal across SQLMoreResults(), and a
+	// stale binding for an ordinal that the new result set doesn't have is
+	// left alone rather than cleared.  So the new result set has to be
+	// described and bound from scratch, exactly like the first one.
+	initializeRowCounts();
+	if (!handleColumns(true,true)) {
+		// handleColumns() may have already freed and reallocated the
+		// column buffers for the new result set before failing, so
+		// ncols has to be zeroed here too - otherwise the caller's
+		// cached column-header snapshot (which it only refreshes on
+		// success) is left describing a result set whose backing
+		// buffers are gone.
+		ncols=0;
+		return false;
+	}
+
+	// get the row count
+	erg=SQLRowCount(stmt,&affectedrows);
+	if (erg!=SQL_SUCCESS && erg!=SQL_SUCCESS_WITH_INFO) {
+		ncols=0;
+		return false;
+	}
+
+	*nextresultsetavailable=true;
+
 	return true;
 }
 
 void odbccursor::closeResultSet() {
 
 	clearCachedRows();
+	resultsetsdrained=false;
 
 	if (stmt) {
 		SQLCloseCursor(stmt);
