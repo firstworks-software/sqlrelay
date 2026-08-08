@@ -1170,6 +1170,7 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_tds : public sqlrprotocol {
 		bool	cursorOption();
 		bool	cursorClose();
 		bool	cursorPositioned();
+		bool	isCursorStatement(const char *stmt);
 
 		// sp_cursor helpers
 		bool	positionedUpdate(sqlrservercursor *cursor,
@@ -3874,18 +3875,25 @@ void sqlrprotocol_tds::colMetaData(sqlrservercursor *cursor, bool nometadata) {
 	byte_t	token=TOKEN_COLMETADATA;
 
 	write(&resppacket,token);
-	writeLE(&resppacket,count);
 
 	debugStart("col meta data");
 	debugWrite("token: 0x%02x",token);
-	debugWrite("count: %d",count);
 
-	cekTable();
-
+	// Count doubles as the "no metadata" signal - 0xFFFF alone, with
+	// nothing else in the token, rather than the real count followed by
+	// 0xFFFF.  A client that set RPC_NO_META_DATA (freetds does this on
+	// every sp_cursorfetch, since it already has the shape from the
+	// declare/open) reads Count first and stops right there if it's
+	// 0xFFFF; sending the real count ahead of it left every column that
+	// followed - and everything after it in the packet - misread as
+	// column metadata.
 	if (nometadata) {
 		writeLE(&resppacket,(uint16_t)0xFFFF);
 		debugWrite("no metadata");
 	} else {
+		writeLE(&resppacket,count);
+		debugWrite("count: %d",count);
+		cekTable();
 		for (uint16_t col=0; col<count; col++) {
 			colData(cursor,col);
 		}
@@ -8474,6 +8482,19 @@ void sqlrprotocol_tds::releaseAllPositionRows() {
 	positionrows.clear();
 }
 
+bool sqlrprotocol_tds::isCursorStatement(const char *stmt) {
+
+	// skip leading whitespace, the way a real parser would before
+	// looking at the first keyword
+	while (character::isWhitespace(*stmt)) {
+		stmt++;
+	}
+
+	return !charstring::compareIgnoringCase(stmt,"select",6) ||
+		!charstring::compareIgnoringCase(stmt,"exec",4) ||
+		!charstring::compareIgnoringCase(stmt,"execute",7);
+}
+
 bool sqlrprotocol_tds::cursorOpen(bool nometadata) {
 
 	// sp_cursoropen @cursor output, @stmt, [@scrollopt output,
@@ -8490,6 +8511,17 @@ bool sqlrprotocol_tds::cursorOpen(bool nometadata) {
 	size_t	stmtlen=charstring::getLength(stmt);
 	if (stmtlen>maxquerysize) {
 		return sendQueryTooLargeError(stmtlen);
+	}
+
+	// A real server only accepts a select or an exec/execute as a
+	// cursor statement - anything else (an update, say) is refused
+	// without ever reaching the backend.  Without this check, the text
+	// just runs as an ordinary query via cont->prepareQuery() below,
+	// which silently turns a cursor declare into a live write.
+	if (!isCursorStatement(stmt)) {
+		return rpcNumberedError(RPC_OP_UNSUPPORTED,
+				"A cursor may only be declared for a select "
+				"or an exec statement");
 	}
 
 	// get an available cursor

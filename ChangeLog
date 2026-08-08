@@ -1712,6 +1712,18 @@
 		handles now come from a disjoint range, and a handle it
 		doesn't own is passed through to the backend instead of
 		rejected
+	fixed the tds protocol module - a column metadata token written with
+		the "no metadata" flag set (freetds sets this on every
+		sp_cursorfetch rpc) wrote the real column count ahead of the
+		0xFFFF "no metadata" sentinel instead of in place of it,
+		leaving every byte from there on misread as column metadata;
+		a ct-lib client following a cursor's declare/open with a fetch
+		desynced immediately and the connection died
+	fixed the tds protocol module - a cursor could be declared against
+		any statement text, including one that wasn't a select or an
+		exec, and it just ran as an ordinary query instead of being
+		refused the way a real server refuses it; sp_cursoropen now
+		checks the statement's first keyword before running it
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems
