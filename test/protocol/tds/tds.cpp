@@ -4552,12 +4552,17 @@ int	main(int argc, char **argv) {
 		assertEquals(results,CS_SUCCEED);
 		assertEquals(resultstype,CS_CMD_DONE);
 
-		// A failed rpc leaves its return status cached in
-		// freetds, and the next language batch reports that
-		// instead of its own.  The 214 asserted here belongs to
-		// the sp_executesql above; run after any other command
-		// this batch reports its own 0.  The handle below is not
-		// affected.
+		// A failed rpc leaves mssql's own return status sticky
+		// across the next language batch, which reports that
+		// instead of its own - confirmed on the wire, not a
+		// ct-lib artifact: the server itself sends 214 here, the
+		// sp_executesql failure above.  Run after any other
+		// command this batch reports its own 0, and that is what
+		// sqlrelay reports too - its sqlBatch() synthesizes this
+		// token from ODBC, which has no way to see mssql's session-
+		// level stickiness, so it always reports the batch's own
+		// real 0 rather than replicating the quirk.  The handle
+		// below is not affected either way.
 		results=ct_results(cmd,&resultstype);
 		assertEquals(results,CS_SUCCEED);
 		assertEquals(resultstype,CS_STATUS_RESULT);
@@ -4568,7 +4573,7 @@ int	main(int argc, char **argv) {
 					&(dynnullindicator[0])),CS_SUCCEED);
 		assertEquals(ct_fetch(cmd,CS_UNUSED,CS_UNUSED,
 					CS_UNUSED,&rowsread),CS_SUCCEED);
-		assertEquals(dyndata[0],"214");
+		assertEquals(dyndata[0],(issqlrelay)?"0":"214");
 		assertEquals(ct_fetch(cmd,CS_UNUSED,CS_UNUSED,
 					CS_UNUSED,&rowsread),CS_END_DATA);
 		results=ct_results(cmd,&resultstype);
