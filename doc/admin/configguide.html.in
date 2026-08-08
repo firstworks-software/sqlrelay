@@ -97,6 +97,15 @@
       <li><a href="#postgresqllimitations">Limitations</a></li>
     </ul>
 
+    <li><a href="#tdsprotocol">TDS Protocol</a></li>
+    <ul>
+      <li><a href="#tdsconfiguration">Basic Configuration</a></li>
+      <li><a href="#tdsversion">TDS Version</a></li>
+      <li><a href="#tdspacketsize">Packet Size</a></li>
+      <li><a href="#tdstls">TLS/SSL Encryption and Authentication</a></li>
+      <li><a href="#tdslimitations">Limitations</a></li>
+    </ul>
+
     <li><a href="#oracleprotocol">Oracle Protocol</a></li>
     <ul>
       <li><a href="#oracleserverversion">Server Version</a></li>
@@ -1659,7 +1668,7 @@ sqlrelay_flags=""
 <blockquote>
 <img src="../images/sqlrelaynativeprotocol.png"/>
 </blockquote>
-<p>However, SQL Relay also supports the MySQL and PostgreSQL client-server protocols.  When SQL Relay is configured to use one of these, it allows MySQL/MariaDB and PostgreSQL apps to communicate directly with SQL Relay without modification, without having to install any software on the client.</p>
+<p>However, SQL Relay also supports the MySQL, PostgreSQL, TDS (Microsoft SQL Server and SAP/Sybase), and Oracle client-server protocols.  When SQL Relay is configured to use one of these, it allows MySQL/MariaDB, PostgreSQL, Microsoft SQL Server/SAP/Sybase, and Oracle apps to communicate directly with SQL Relay without modification, without having to install any software on the client.</p>
 
 <blockquote>
 <img src="../images/sqlrelaymysqlprotocol.png"/>
@@ -3477,6 +3486,167 @@ http://www.gnu.org/software/src-highlite -->
   <li>Multi-statement queries are not supported.</li>
 </ul>
 
+<br/><a name="tdsprotocol"/><h2>TDS Protocol</h2>
+
+<p>SQL Relay can be configured to speak the native TDS protocol, enabling client programs for Microsoft SQL Server and SAP/Sybase (eg. the tsql command line program) to access SQL Relay directly.</p>
+
+<p>If an instance speaks the TDS client-server protocol, then any client that wishes to use it must also speak the TDS client-server protocol.  This means that most software written using the FreeTDS or Microsoft SQL Server APIs, or written using a database abstraction layer which loads a driver for Microsoft SQL Server or SAP/Sybase can access this instance.  However, it also means that SQL Relay's standard sqlrsh client program and client programs for other databases (eg. the mysql, psql, and sqlplus command line programs, MySQL Workbench, Oracle SQL Developer, etc.) cannot access this instance.</p>
+
+<p>Unlike the Oracle protocol module, the TDS protocol module is complete for query execution.  Clients log in, run queries, and read result sets.  TLS/SSL is the one piece that isn't supported, and most of the module's remaining configuration doesn't need documenting because the defaults work.  The options below are the exception.  They tune the version and packet size that the module negotiates, which is what compatibility with a particular client usually turns on.</p>
+
+<p>Compatibility has been verified in SQL Relay's own test suite against FreeTDS, using both its ct-lib API and its tsql command line program.  Since TDS is a standard protocol, other MS-TDS-speaking clients and drivers - isql, sqlcmd, jTDS, and similar - should also work, but they haven't been tested in-tree.</p>
+
+<a name="tdsconfiguration"/><h3>Basic Configuration</h3>
+
+<p>To enable SQL Relay to speak the TDS protocol, add the appropriate listener tag:</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt><b><font color="#000080">&lt;?xml</font></b> <font color="#009900">version</font><font color="#990000">=</font><font color="#FF0000">"1.0"</font><b><font color="#000080">?&gt;</font></b>
+<b><font color="#0000FF">&lt;instances&gt;</font></b>
+	<b><font color="#0000FF">&lt;instance</font></b> <font color="#009900">id</font><font color="#990000">=</font><font color="#FF0000">"example"</font> <font color="#009900">dbase</font><font color="#990000">=</font><font color="#FF0000">"odbc"</font><b><font color="#0000FF">&gt;</font></b>
+		<b><font color="#0000FF">&lt;listeners&gt;</font></b>
+			<b><font color="#0000FF">&lt;listener</font></b> <font color="#009900">protocol</font><font color="#990000">=</font><font color="#FF0000">"tds"</font> <font color="#009900">port</font><font color="#990000">=</font><font color="#FF0000">"1433"</font><b><font color="#0000FF">/&gt;</font></b>
+		<b><font color="#0000FF">&lt;/listeners&gt;</font></b>
+		<b><font color="#0000FF">&lt;connections&gt;</font></b>
+			<b><font color="#0000FF">&lt;connection</font></b> <font color="#009900">string</font><font color="#990000">=</font><font color="#FF0000">"dsn=mssqlodbc;user=example;password=example;mars=yes"</font><b><font color="#0000FF">/&gt;</font></b>
+		<b><font color="#0000FF">&lt;/connections&gt;</font></b>
+	<b><font color="#0000FF">&lt;/instance&gt;</font></b>
+<b><font color="#0000FF">&lt;/instances&gt;</font></b>
+</tt></pre>
+
+</blockquote>
+<p>In this configuration:</p>
+
+<ul>
+  <li>The listener tag instructs SQL Relay to load the <i>tds</i> protocol module, and listen on port 1433, which is the standard Microsoft SQL Server port.</li>
+  <li>The connection tag instructs the instance to log in to the <i>mssqlodbc</i> ODBC data source as user <i>example</i> with password <i>example</i>.</li>
+</ul>
+
+<p>Note the mars=yes parameter in the connect string.  See the <a href="configreference.html#odbc">SQL Relay Configuration Reference</a> for the <i>mars</i> option, which instances using the tds protocol typically need.</p>
+
+<p>The instance can be started using:</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt>sqlr<font color="#990000">-</font>start <font color="#990000">-</font>id example</tt></pre>
+
+</blockquote>
+<p>and accessed from the local machine using:</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt>tsql <font color="#990000">-</font><font color="#008080">H</font> localhost <font color="#990000">-</font>p <font color="#993399">1433</font> <font color="#990000">-</font><font color="#008080">U</font> example <font color="#990000">-</font>P example</tt></pre>
+
+</blockquote>
+<p>The instance can be stopped using:</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt>sqlr<font color="#990000">-</font>stop <font color="#990000">-</font>id example</tt></pre>
+
+</blockquote>
+<a name="tdsversion"/><h3>TDS Version</h3>
+
+<p>A TDS client works out how to read the server's answers from the version of the protocol it believes is in use.  Field widths and message layouts vary between versions, so client and server have to agree.</p>
+
+<p>By default, SQL Relay guesses the version from the back-end database's version string.  "SQL Server 2012" and later map to TDS 7.4, "SQL Server 2008 R2" to TDS 7.31, and so on down to "SQL Server 6." at TDS 4.2.  When the version string can't be mapped - which happens with a back-end that isn't Microsoft SQL Server at all, or one whose version string the module doesn't recognize - SQL Relay falls back to whatever version the connecting client itself requests, rather than to a fixed default.  Falling back to an old version instead can hang some clients, because they don't always reconsider the field widths they asked for.</p>
+
+<p>The <i>tdsversion</i> attribute on the listener tag overrides the guess.  It accepts a TDS version number as a plain decimal integer, in the form the protocol uses internally: 420 (TDS 4.2), 500 (5.0), 700 (7.0), 710 (7.1), 711 (7.1 SP1), 720 (7.2), 730 (7.3), 731 (7.31), or 740 (7.4).  Leaving it out, or setting it to 0, means auto-detect.</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt><b><font color="#000080">&lt;?xml</font></b> <font color="#009900">version</font><font color="#990000">=</font><font color="#FF0000">"1.0"</font><b><font color="#000080">?&gt;</font></b>
+<b><font color="#0000FF">&lt;instances&gt;</font></b>
+	<b><font color="#0000FF">&lt;instance</font></b> <font color="#009900">id</font><font color="#990000">=</font><font color="#FF0000">"example"</font> <font color="#009900">dbase</font><font color="#990000">=</font><font color="#FF0000">"odbc"</font><b><font color="#0000FF">&gt;</font></b>
+		<b><font color="#0000FF">&lt;listeners&gt;</font></b>
+			<b><font color="#0000FF">&lt;listener</font></b> <font color="#009900">protocol</font><font color="#990000">=</font><font color="#FF0000">"tds"</font> <font color="#009900">port</font><font color="#990000">=</font><font color="#FF0000">"1433"</font> <font color="#009900">tdsversion</font><font color="#990000">=</font><font color="#FF0000">"740"</font><b><font color="#0000FF">/&gt;</font></b>
+		<b><font color="#0000FF">&lt;/listeners&gt;</font></b>
+		<b><font color="#0000FF">&lt;connections&gt;</font></b>
+			<b><font color="#0000FF">&lt;connection</font></b> <font color="#009900">string</font><font color="#990000">=</font><font color="#FF0000">"dsn=mssqlodbc;user=example;password=example;mars=yes"</font><b><font color="#0000FF">/&gt;</font></b>
+		<b><font color="#0000FF">&lt;/connections&gt;</font></b>
+	<b><font color="#0000FF">&lt;/instance&gt;</font></b>
+<b><font color="#0000FF">&lt;/instances&gt;</font></b>
+</tt></pre>
+
+</blockquote>
+<p>The version matters for more than field widths.  <b>Clients such as FreeTDS only send a PRELOGIN packet - the packet where encryption is negotiated - when using TDS 7.1 or later.</b>  Below that, the client skips straight to the login packet, and any encryption settings configured on the client are silently never applied.  That is a property of the client, not of SQL Relay.</p>
+
+<p>So if the back-end's version string can't be mapped, and the client's own default version is low, no PRELOGIN negotiation happens at all.  Setting <i>tdsversion</i> to 710 or higher is what makes it happen.  Note, though, that SQL Relay doesn't support TLS on tds listeners regardless of the version - see below.</p>
+
+<a name="tdspacketsize"/><h3>Packet Size</h3>
+
+<p>TDS sends data in packets of a fixed size, which the client and server negotiate during login.  Larger packets mean fewer round trips for large result sets, and smaller packets can suit a constrained network or a client that can't handle large ones.</p>
+
+<p>The <i>packetsize</i> attribute on the listener tag sets the packet size, in bytes, that SQL Relay uses until a connecting client negotiates a different size.  It defaults to 4096.  It must not exceed <i>maxpacketsize</i>; if it does, SQL Relay clamps it.</p>
+
+<p>The <i>maxpacketsize</i> attribute sets the largest packet size, in bytes, that a connecting client is allowed to negotiate.  It defaults to 65535, which is also the largest value allowed.  Setting it to 0, or to anything above 65535, is the same as setting it to 65535.</p>
+
+<p>A client that asks to negotiate a packet size below 512 bytes is refused; the connection keeps using whatever packet size was already negotiated.</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt><b><font color="#000080">&lt;?xml</font></b> <font color="#009900">version</font><font color="#990000">=</font><font color="#FF0000">"1.0"</font><b><font color="#000080">?&gt;</font></b>
+<b><font color="#0000FF">&lt;instances&gt;</font></b>
+	<b><font color="#0000FF">&lt;instance</font></b> <font color="#009900">id</font><font color="#990000">=</font><font color="#FF0000">"example"</font> <font color="#009900">dbase</font><font color="#990000">=</font><font color="#FF0000">"odbc"</font><b><font color="#0000FF">&gt;</font></b>
+		<b><font color="#0000FF">&lt;listeners&gt;</font></b>
+			<b><font color="#0000FF">&lt;listener</font></b> <font color="#009900">protocol</font><font color="#990000">=</font><font color="#FF0000">"tds"</font> <font color="#009900">port</font><font color="#990000">=</font><font color="#FF0000">"1433"</font> <font color="#009900">packetsize</font><font color="#990000">=</font><font color="#FF0000">"2048"</font> <font color="#009900">maxpacketsize</font><font color="#990000">=</font><font color="#FF0000">"32767"</font><b><font color="#0000FF">/&gt;</font></b>
+		<b><font color="#0000FF">&lt;/listeners&gt;</font></b>
+		<b><font color="#0000FF">&lt;connections&gt;</font></b>
+			<b><font color="#0000FF">&lt;connection</font></b> <font color="#009900">string</font><font color="#990000">=</font><font color="#FF0000">"dsn=mssqlodbc;user=example;password=example;mars=yes"</font><b><font color="#0000FF">/&gt;</font></b>
+		<b><font color="#0000FF">&lt;/connections&gt;</font></b>
+	<b><font color="#0000FF">&lt;/instance&gt;</font></b>
+<b><font color="#0000FF">&lt;/instances&gt;</font></b>
+</tt></pre>
+
+</blockquote>
+<a name="tdstls"/><h3>TLS/SSL Encryption and Authentication</h3>
+
+<p><b>The TDS protocol module does not support TLS/SSL.</b></p>
+
+<p>TDS negotiates encryption in the PRELOGIN exchange, and the module answers the encryption option with ENCRYPT_NOT_SUP every time.  A client that is merely willing to encrypt continues without encryption.  A client configured to require encryption gives up on its own when it sees ENCRYPT_NOT_SUP - SQL Relay never actively refuses the connection.</p>
+
+<p>Setting tls="yes" on a tds listener prints a warning to standard error when the instance starts:</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt>Warning<font color="#990000">:</font> TLS support requested but the tds protocol <font color="#008080">module</font> doesn<font color="#FF0000">'t support TLS</font></tt></pre>
+
+</blockquote>
+<p>The other tls* attributes documented for the other protocols - tlscert, tlskey, tlsca, tlsvalidate, and so on - still parse without error on a tds listener, and the certificate is still loaded.  They simply have no effect.  Don't spend time debugging a certificate path or a certificate authority when the real answer is that tds sessions are never encrypted.  This is a known limitation.</p>
+
+<p>If the connection between the client and SQL Relay has to be encrypted, use a general-purpose tunnel (such as an SSH tunnel or a VPN) between the client and the SQL Relay server, or use one of the protocols that does support TLS/SSL.</p>
+
+<a name="tdslimitations"/><h3>Limitations</h3>
+
+<p>The implementation of the TDS protocol is likely sufficient for most applications, but it isn't 100% complete.  Some notable limitations follow:</p>
+
+<ul>
+  <li>TLS/SSL encryption and authentication are not supported.  See <a href="#tdstls">TLS/SSL Encryption and Authentication</a> above.</li>
+  <li>For odbc-backed instances, the connect string needs mars=yes for cursors and positioned updates to work.  Without it, a query sent while another cursor still has rows pending fails with "Connection is busy with results for another command".  See the <a href="configreference.html#odbc">SQL Relay Configuration Reference</a> for the <i>mars</i> option.</li>
+</ul>
+
 <br/><a name="oracleprotocol"/><h2>Oracle Protocol</h2>
 
 <p>SQL Relay can be configured to speak the native Oracle protocol, enabling client programs for Oracle (eg. the sqlplus command line program) to access SQL Relay directly.</p>
@@ -4145,6 +4315,10 @@ http://www.gnu.org/software/src-highlite -->
 <p>When configured to use the SQLRClient protocol (the default), SQL Relay supports <a href="#sqlrclientkrb">Kerberos and Active Directory Encryption and Authentication</a> and <a href="#sqlrclienttls">TLS/SSL Encryption and Authentication</a> between the SQL Relay client and SQL Relay server.</p>
 
 <p>When configured to use the MySQL or PostgreSQL protocols, SQL Relay supports TLS/SSL encryption and authentication between the SQL Relay client and SQL Relay server.  See <a href="#mysqltls">MySQL TLS/SSL Encryption and Authentication</a> and <a href="#postgresqltls">PostgreSQL TLS/SSL Encryption and Authentication</a> for details.</p>
+
+<p>When configured to use the TDS protocol, SQL Relay does not support TLS/SSL encryption or authentication between the SQL Relay client and SQL Relay server at all.  See <a href="#tdstls">TLS/SSL Encryption and Authentication</a> for details.</p>
+
+<p>When configured to use the Oracle protocol, SQL Relay likewise does not support TLS/SSL encryption or authentication between the SQL Relay client and SQL Relay server.  (Oracle's own native network encryption and crypto-checksumming, a separate feature negotiated within the Oracle protocol itself, is a different matter - see <a href="#oraclelimitations">Limitations</a> under Oracle Protocol.)</p>
 
 <br/><a name="backendencryption"/><h2>Back-End Encryption and Secure Authentication</h2>
 
