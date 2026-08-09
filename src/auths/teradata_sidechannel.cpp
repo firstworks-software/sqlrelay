@@ -272,11 +272,11 @@ bool sqlrauth_teradata_sidechannel::recvMessageFromClient() {
 		stringbuffer	b;
 		b.append("res for expan: ");
 		b.safePrint((byte_t *)resforexpan,sizeof(resforexpan));
-		debugWrite(b.getString());
+		debugWrite("%s",b.getString());
 		b.clear();
 		b.write("correleation tag: ");
 		b.safePrint((byte_t *)corrtag,sizeof(corrtag));
-		debugWrite(b.getString());
+		debugWrite("%s",b.getString());
 		debugWrite("session no: %d",(int)sessionno);
 		debugWrite("request auth: "
 					"%03d.%03d.%03d.%03d."

@@ -2093,7 +2093,7 @@ bool sqlrprotocol_postgresql::bind() {
 		for (uint16_t i=0; i<paramformatcodecount; i++) {
 			b.append(paramformatcodes[i]);
 		}
-		debugWrite(b.getString());
+		debugWrite("%s",b.getString());
 	}
 
 	// param values...
@@ -2212,7 +2212,7 @@ bool sqlrprotocol_postgresql::bind() {
 		for (uint16_t i=0; i<resultformatcodecount; i++) {
 			b.append(resultformatcodes[i]);
 		}
-		debugWrite(b.getString());
+		debugWrite("%s",b.getString());
 	}
 	debugEnd();
 

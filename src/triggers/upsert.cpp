@@ -595,7 +595,7 @@ bool sqlrtrigger_upsert::convertInsertToUpdate(
 	}
 
 	debugWrite("update query:\n");
-	debugWrite(query->getString());
+	debugWrite("%s",query->getString());
 	debugEnd();
 	
 	return retval;

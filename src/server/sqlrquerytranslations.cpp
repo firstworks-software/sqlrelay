@@ -171,7 +171,7 @@ bool sqlrquerytranslations::run(sqlrserverconnection *sqlrcon,
 
 	if (!translatedquery) {
 		pvt->_error="buffer for translated query was null";
-		debugWrite(pvt->_error);
+		debugWrite("%s",pvt->_error);
 		return false;
 	}
 
@@ -194,7 +194,7 @@ bool sqlrquerytranslations::run(sqlrserverconnection *sqlrcon,
 			if (!sqlrp) {
 				pvt->_error="query translation requires query "
 						"tree but no parser available";
-				debugWrite(pvt->_error);
+				debugWrite("%s",pvt->_error);
 				return false;
 			}
 
@@ -215,13 +215,13 @@ bool sqlrquerytranslations::run(sqlrserverconnection *sqlrcon,
 					stringbuffer	b;
 					pvt->_tree->getRootNode()->
 							write(&b,true);
-					debugWrite(b.getString());
+					debugWrite("%s",b.getString());
 				}
 			}
 
 			if (!tr->run(sqlrcon,sqlrcur,pvt->_tree)) {
 				pvt->_error=tr->getError();
-				debugWrite(pvt->_error);
+				debugWrite("%s",pvt->_error);
 				return false;
 			}
 
@@ -231,7 +231,7 @@ bool sqlrquerytranslations::run(sqlrserverconnection *sqlrcon,
 			if (pvt->_tree) {
 				if (!sqlrp->write(tempquerystr)) {
 					pvt->_error="write-query failed";
-					debugWrite(pvt->_error);
+					debugWrite("%s",pvt->_error);
 					return false;
 				}
 				pvt->_tree=NULL;
@@ -244,7 +244,7 @@ bool sqlrquerytranslations::run(sqlrserverconnection *sqlrcon,
 			if (!tr->run(sqlrcon,sqlrcur,
 					query,querysize,tempquerystr)) {
 				pvt->_error=tr->getError();
-				debugWrite(pvt->_error);
+				debugWrite("%s",pvt->_error);
 				return false;
 			}
 
@@ -264,8 +264,8 @@ bool sqlrquerytranslations::run(sqlrserverconnection *sqlrcon,
 				stringbuffer	b;
 				pvt->_tree->getRootNode()->
 						write(&b,true);
-				debugWrite(b.getString());
-				debugWrite(pvt->_error);
+				debugWrite("%s",b.getString());
+				debugWrite("%s",pvt->_error);
 			}
 			return false;
 		}
@@ -285,7 +285,7 @@ bool sqlrquerytranslations::run(sqlrserverconnection *sqlrcon,
 		if (pvt->_tree) {
 			stringbuffer	b;
 			pvt->_tree->getRootNode()->write(&b,true);
-			debugWrite(b.getString());
+			debugWrite("%s",b.getString());
 		}
 	}
 

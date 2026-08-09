@@ -2212,7 +2212,7 @@ bool sqlrprotocol_mysql::authenticate() {
 	if (database) {
 		retval=cont->selectDatabase(database);
 		debugStart("select database");
-		debugWrite(database,"%s",(retval)?"success":"failed");
+		debugWrite("%s: %s",database,(retval)?"success":"failed");
 		debugEnd();
 		if (!retval) {
 			return sendError();

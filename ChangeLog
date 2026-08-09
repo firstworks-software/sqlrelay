@@ -2044,6 +2044,22 @@
 			resolve a real name from the type id, which
 			getColumnType() already maps correctly regardless of
 			typemangling (#9090)
+		fixed a format-string injection risk in debugWrite()/
+			debugStart() calls across the auth, protocol, trigger,
+			and server-side translation modules - a number of
+			sites passed non-literal, data-derived text (passwords,
+			challenge/response values, query text, bind variable
+			names and values, error strings) directly as the
+			format argument instead of as a %s value, so a literal
+			'%' character in that data would be interpreted as a
+			conversion specifier; a different bug class than the
+			conversion-width mismatches fixed by #9115/#9220,
+			whose SQLR_PRINTF_FORMAT annotations catch a
+			conversion/argument mismatch but not a non-literal
+			format argument itself; fixed every site found by an
+			audit of every debugWrite()/debugStart() call under
+			src/ by passing the data as a %s argument instead
+			(#9221)
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems

@@ -100,7 +100,7 @@ const char *sqlrauth_postgresql_userlist::auth(sqlrcredentials *cred) {
 		b.append("password: \"");
 		b.safePrint(password,passwordsize);
 		b.append("\"");
-		debugWrite(b.getString());
+		debugWrite("%s",b.getString());
 		debugWrite("method: \"%s\"",method);
 		debugWrite("salt: \"%u\"",salt);
 		debugEnd();
@@ -239,11 +239,11 @@ bool sqlrauth_postgresql_userlist::compare(const char *suppliedresponse,
 		b.append("expected response: ");
 		b.safePrint(expectedresponse.getBuffer(),
 					expectedresponse.getSize());
-		debugWrite(b.getString());
+		debugWrite("%s",b.getString());
 		b.clear();
 		b.append("supplied response: ");
 		b.safePrint(suppliedresponse,suppliedresponsesize);
-		debugWrite(b.getString());
+		debugWrite("%s",b.getString());
 		debugEnd();
 	}
 

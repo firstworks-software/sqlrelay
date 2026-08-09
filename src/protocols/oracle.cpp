@@ -5273,7 +5273,7 @@ void sqlrprotocol_oracle::debugOptions(uint16_t options,
 	debugWrite("0x%04x",options);
 	stringbuffer	b;
 	b.printBits(hostToBE(options));
-	debugWrite(b.getString());
+	debugWrite("%s",b.getString());
 	debugOptions(options);
 	debugEnd();
 
@@ -5281,7 +5281,7 @@ void sqlrprotocol_oracle::debugOptions(uint16_t options,
 	debugWrite("0x%04x",moreoptions);
 	b.clear();
 	b.printBits(hostToBE(moreoptions));
-	debugWrite(b.getString());
+	debugWrite("%s",b.getString());
 	debugOptions(moreoptions);
 	debugEnd();
 }
@@ -5334,7 +5334,7 @@ void sqlrprotocol_oracle::debugStatusFlags(uint16_t statusflags) {
 	debugWrite("0x%04x",statusflags);
 	stringbuffer	b;
 	b.printBits(statusflags);
-	debugWrite(b.getString());
+	debugWrite("%s",b.getString());
 	/*if (statusflags&SERVER_STATUS_IN_TRANS) {
 		debugWrite("SERVER_STATUS_IN_TRANS");
 	}*/
@@ -5429,7 +5429,7 @@ void sqlrprotocol_oracle::debugColumnType(uint16_t columntype) {
 
 void sqlrprotocol_oracle::debugSystemError() {
 	char	*err=error::getErrorString();
-	debugWrite(err);
+	debugWrite("%s",err);
 	delete[] err;
 }
 

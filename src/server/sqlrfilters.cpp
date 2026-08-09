@@ -190,7 +190,7 @@ bool sqlrfilters::run(sqlrserverconnection *sqlrcon,
 					debugWrite("query tree:");
 					stringbuffer	b;
 					tree->getRootNode()->write(&b,true);
-					debugWrite(b.getString());
+					debugWrite("%s",b.getString());
 				}
 			}
 

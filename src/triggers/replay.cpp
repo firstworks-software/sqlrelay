@@ -360,7 +360,7 @@ void sqlrtrigger_replay::logQuery(sqlrservercursor *sqlrcur) {
 	debugWrite("-----------------------");
 	for (listnode<querydetails *> *node=log.getFirst();
 					node; node=node->getNext()) {
-		debugWrite(node->getValue()->query);
+		debugWrite("%s",node->getValue()->query);
 	}
 	debugWrite("-----------------------\n");
 #endif
@@ -1047,7 +1047,7 @@ void sqlrtrigger_replay::writeToLogFile(const char *logfile,
 		if (getDebug()) {
 			char	*err=error::getErrorString();
 			debugWrite("failed to open %s",logfile);
-			debugWrite(logfile,err);
+			debugWrite("%s",err);
 			delete[] err;
 			return;
 		}

@@ -97,7 +97,7 @@ const char *sqlrauth_oracle_connectstrings::auth(sqlrcredentials *cred) {
 		b.append("password: \"");
 		b.safePrint(password,passwordsize);
 		b.append("\"");
-		debugWrite(b.getString());
+		debugWrite("%s",b.getString());
 		debugWrite("method: \"%s\"",method);
 		debugWrite("extra: \"%s\"",extra);
 		debugEnd();
@@ -184,11 +184,11 @@ bool sqlrauth_oracle_connectstrings::compare(const char *suppliedresponse,
 			stringbuffer	b;
 			b.append("expected response: ");
 			b.safePrint(validpassword);
-			debugWrite(b.getString());
+			debugWrite("%s",b.getString());
 			b.clear();
 			b.append("supplied response: ");
 			b.safePrint(suppliedresponse,suppliedresponsesize);
-			debugWrite(b.getString());
+			debugWrite("%s",b.getString());
 			debugEnd();
 		}
 		return !charstring::compare(suppliedresponse,validpassword);
@@ -237,11 +237,11 @@ bool sqlrauth_oracle_connectstrings::compare(const char *suppliedresponse,
 		b.append("expected response: ");
 		b.safePrint(expectedresponse.getBuffer(),
 					expectedresponse.getSize());
-		debugWrite(b.getString());
+		debugWrite("%s",b.getString());
 		b.clear();
 		b.append("supplied response: ");
 		b.safePrint(suppliedresponse,suppliedresponsesize);
-		debugWrite(b.getString());
+		debugWrite("%s",b.getString());
 		debugEnd();
 	}
 

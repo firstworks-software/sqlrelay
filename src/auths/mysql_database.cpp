@@ -44,7 +44,7 @@ const char *sqlrauth_mysql_database::auth(sqlrcredentials *cred) {
 		b.append("password: \"");
 		b.safePrint(password,passwordsize);
 		b.append("\"");
-		debugWrite(b.getString());
+		debugWrite("%s",b.getString());
 		debugWrite("method: \"%s\"",method);
 		debugWrite("extra: \"%s\"",extra);
 		debugEnd();

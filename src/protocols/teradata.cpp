@@ -5700,7 +5700,7 @@ bool sqlrprotocol_teradata::parseMultipartIndicDataParcel(
 		stringbuffer	b;
 		for (uint16_t i=0; i<nisize; i++) {
 			b.printBits(*(ptr+i));
-			debugWrite(b.getString());
+			debugWrite("%s",b.getString());
 			b.clear();
 			debugWrite(" (%02x)",*(ptr+i));
 		}
@@ -8610,7 +8610,7 @@ void sqlrprotocol_teradata::appendRecordParcel() {
 			stringbuffer	b;
 			for (uint16_t i=0; i<req->nibuffer.getCount(); i++) {
 				b.printBits(req->nibuffer[i]);
-				debugWrite(b.getString());
+				debugWrite("%s",b.getString());
 				b.clear();
 				debugWrite(" (%02x)",req->nibuffer[i]);
 			}

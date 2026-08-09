@@ -4693,7 +4693,7 @@ void sqlrservercontroller::translateBindVariables(sqlrservercursor *cursor) {
 	if (getLoggingEnabled()) {
 		debugStart("translating bind variables");
 		debugWrite("original:");
-		debugWrite(querybuffer);
+		debugWrite("%s",querybuffer);
 	}
 
 	// convert queries from whatever bind variable format they currently
@@ -4871,7 +4871,7 @@ void sqlrservercontroller::translateBindVariables(sqlrservercursor *cursor) {
 	}
 	if (getLoggingEnabled()) {
 		debugWrite("translated:");
-		debugWrite(querybuffer);
+		debugWrite("%s",querybuffer);
 	}
 	debugEnd();
 }
@@ -5034,19 +5034,19 @@ void sqlrservercontroller::translateBindVariablesFromMappings(
 	if (getLoggingEnabled()) {
 		debugStart("input binds");
 		for (i=0; i<cursor->getInputBindCount(); i++) {
-			debugWrite(
+			debugWrite("%s",
 				cursor->getInputBinds()[i].variable);
 		}
 		debugEnd();
 		debugStart("output binds");
 		for (i=0; i<cursor->getOutputBindCount(); i++) {
-			debugWrite(
+			debugWrite("%s",
 				cursor->getOutputBinds()[i].variable);
 		}
 		debugEnd();
 		debugStart("input/output binds");
 		for (i=0; i<cursor->getInputOutputBindCount(); i++) {
-			debugWrite(
+			debugWrite("%s",
 				cursor->getInputOutputBinds()[i].variable);
 		}
 		debugEnd();
@@ -5119,19 +5119,19 @@ void sqlrservercontroller::translateBindVariablesFromMappings(
 	if (getLoggingEnabled()) {
 		debugStart("remapped input binds");
 		for (i=0; i<cursor->getInputBindCount(); i++) {
-			debugWrite(
+			debugWrite("%s",
 				cursor->getInputBinds()[i].variable);
 		}
 		debugEnd();
 		debugStart("remapped output binds");
 		for (i=0; i<cursor->getOutputBindCount(); i++) {
-			debugWrite(
+			debugWrite("%s",
 				cursor->getOutputBinds()[i].variable);
 		}
 		debugEnd();
 		debugStart("remapped input/output binds");
 		for (i=0; i<cursor->getInputOutputBindCount(); i++) {
-			debugWrite(
+			debugWrite("%s",
 				cursor->getInputOutputBinds()[i].variable);
 		}
 		debugEnd();
@@ -5147,7 +5147,7 @@ void sqlrservercontroller::translateBeginTransaction(sqlrservercursor *cursor) {
 	// debug
 	debugStart("translating begin tx query...");
 	debugWrite("original:");
-	debugWrite(querybuffer);
+	debugWrite("%s",querybuffer);
 
 	// translate query
 	const char	*beginquery=pvt->_conn->beginTransactionQuery();
@@ -5158,7 +5158,7 @@ void sqlrservercontroller::translateBeginTransaction(sqlrservercursor *cursor) {
 
 	// debug
 	debugWrite("converted:");
-	debugWrite(querybuffer);
+	debugWrite("%s",querybuffer);
 	debugEnd();
 }
 

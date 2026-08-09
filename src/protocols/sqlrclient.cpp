@@ -3031,7 +3031,7 @@ bool sqlrprotocol_sqlrclient::getBindVarName(sqlrservercursor *cursor,
 	}
 	bv->variable[bindnamesize+1]='\0';
 
-	debugWrite(bv->variable);
+	debugWrite("%s",bv->variable);
 
 	return true;
 }
@@ -3138,7 +3138,7 @@ bool sqlrprotocol_sqlrclient::getStringBind(sqlrservercursor *cursor,
 
 	bv->isnull=cont->getNonNullBindValue();
 
-	debugWrite(bv->value.stringval);
+	debugWrite("%s",bv->value.stringval);
 
 	return true;
 }
@@ -3816,7 +3816,7 @@ void sqlrprotocol_sqlrclient::returnOutputBindValues(sqlrservercursor *cursor) {
 
 		if (cont->getLoggingEnabled() ||
 				cont->getNotificationsEnabled()) {
-			debugWrite(debugstr.getString());
+			debugWrite("%s",debugstr.getString());
 		}
 	}
 
@@ -4040,7 +4040,7 @@ void sqlrprotocol_sqlrclient::returnInputOutputBindValues(
 
 		if (cont->getLoggingEnabled() ||
 				cont->getNotificationsEnabled()) {
-			debugWrite(debugstr.getString());
+			debugWrite("%s",debugstr.getString());
 		}
 	}
 
@@ -4291,7 +4291,7 @@ void sqlrprotocol_sqlrclient::returnRow(sqlrservercursor *cursor) {
 	}
 
 	if (cont->getLoggingEnabled() || cont->getNotificationsEnabled()) {
-		debugWrite(debugstr.getString());
+		debugWrite("%s",debugstr.getString());
 	}
 }
 

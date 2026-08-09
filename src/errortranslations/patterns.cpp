@@ -186,7 +186,7 @@ bool sqlrerrortranslation_patterns::run(sqlrserverconnection *sqlrcon,
 		b.append('"');
 		b.safePrint(error,errorlength);
 		b.append('"');
-		debugWrite(b.getString());
+		debugWrite("%s",b.getString());
 	}
 
 	applyPatterns(error,patterns,patterncount,translatederror);
