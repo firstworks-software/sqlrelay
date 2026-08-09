@@ -4490,7 +4490,7 @@ bool sqlrprotocol_mysql::comStmtExecute() {
 			debugStart("null bitmap");
 			stringbuffer	b;
 			b.printBits(nullbitmap,(pcount+7)/8);
-			debugWrite("%s");
+			debugWrite("%s",b.getString());
 			debugEnd();
 			debugWrite("new params bound: %d",newparamsbound);
 		}

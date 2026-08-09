@@ -9769,7 +9769,7 @@ bool sqlrprotocol_tds::paramValue(uint16_t param,
 
 			if (bv) {
 				debugWrite("valuesize: %d",bv->valuesize);
-				debugWrite("value: %f",bv->value.doubleval);
+				debugWrite("value: %f",bv->value.doubleval.value);
 				debugWrite("precision: %d",
 						bv->value.doubleval.
 						precision);
@@ -9839,7 +9839,7 @@ bool sqlrprotocol_tds::paramValue(uint16_t param,
 
 			if (bv) {
 				debugWrite("valuesize: %d",bv->valuesize);
-				debugWrite("value: %f",bv->value.doubleval);
+				debugWrite("value: %f",bv->value.doubleval.value);
 				debugWrite("precision: %d",
 						bv->value.doubleval.
 						precision);

@@ -7968,7 +7968,7 @@ void sqlrprotocol_teradata::appendQueryExtension(uint16_t col) {
 		debugStart("col %d",col);
 
 		if (req->function!='E') {
-			debugWrite("PBTIFDB - db name: %.s",
+			debugWrite("PBTIFDB - db name: %.*s",
 					pbtifdblen,pbtifdb);
 			debugWrite("PBTIFTB - table name: %.*s",
 					pbtiftblen,pbtiftb);

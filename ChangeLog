@@ -1943,6 +1943,15 @@
 		for the life of the sqlr-connection process because its
 		linked lists never called setManageValues(true), so deleting
 		the log never reached the bind variables underneath it (#9022)
+	fixed four debugWrite() calls in the mysql, tds, and teradata
+		protocol modules whose arguments didn't match their format
+		strings - the mysql module's null bitmap dump passed no
+		argument for its %s, reading whatever followed on the stack;
+		the tds module's bind value dump passed the doubleval struct
+		by value where %f expects a double, it now passes
+		doubleval.value; and the teradata module's PBTIFDB dump used
+		%.s instead of %.*s, dropping the db name argument and
+		consuming its length as the pointer instead (#9116)
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems
