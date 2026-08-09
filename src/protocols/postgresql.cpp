@@ -2469,10 +2469,19 @@ bool sqlrprotocol_postgresql::bind() {
 
 	// result format codes...
 	// FIXME: do something with these...
+	if (rp>rpend || (uint32_t)(rpend-rp)<sizeof(uint16_t)) {
+		return sendErrorResponse("ERROR","22003",
+					"Invalid result format code count");
+	}
 	uint16_t	resultformatcodecount;
 	readBE(rp,&resultformatcodecount,&rp);
 	uint16_t	*resultformatcodes=NULL;
 	if (resultformatcodecount) {
+		if ((uint32_t)(resultformatcodecount*sizeof(uint16_t))>
+					(uint32_t)(rpend-rp)) {
+			return sendErrorResponse("ERROR","22003",
+					"Invalid result format codes");
+		}
 		resultformatcodes=new uint16_t[resultformatcodecount];
 		for (uint16_t i=0; i<resultformatcodecount; i++) {
 			readBE(rp,&(resultformatcodes[i]),&rp);

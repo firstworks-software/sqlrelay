@@ -2085,6 +2085,14 @@
 			returns it for character data while sap/freetds return it for
 			binary data, and it can't be told apart without splitting the
 			datatype (#9017)
+		fixed the postgresql protocol module's bind() - after the per-
+			parameter loop, it read the result format code count and
+			then that many result format codes with no bounds checks,
+			so a Bind message whose body legitimately ended right
+			after the last parameter drove those reads past the end
+			of the request packet buffer; added the same rp/rpend
+			bounds checks used earlier in bind() for the parameter
+			loop (#9219)
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems
