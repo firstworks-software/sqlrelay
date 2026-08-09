@@ -6,7 +6,7 @@
 #include <rudiments/sys.h>
 #include <rudiments/process.h>
 #include <rudiments/bytestring.h>
-#include <rudiments/randomnumber.h>
+#include <rudiments/prng.h>
 #include <rudiments/stdio.h>
 
 //#define PROFILING 1
@@ -2161,8 +2161,8 @@ for (uint16_t a=0; a<50; a++) {
 	cur->sendQuery("drop table testtable");
 	assertTrue(cur->sendQuery("create table testtable "
 					"(col1 varchar(255))"));
-	randomnumber	r1;
-	randomnumber	r2;
+	prng	r1;
+	prng	r2;
 	r1.setSeed(r1.getSeed());
 	r2.setSeed(r2.getSeed());
 	byte_t	buffer[255];

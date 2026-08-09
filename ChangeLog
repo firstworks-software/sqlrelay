@@ -1,4 +1,12 @@
 2.3.0 - bumped the version to 2.3.0
+	updated for rudiments' randomnumber -> prng rename (rudiments #9211,
+		which also renamed csrandomnumber to csprng and added an rng
+		base class both implement) - a mechanical rename across the
+		mysql, postgresql and oracle protocol modules, sqlr-scaler,
+		sqlrservercontroller, the oracle userlist auth module's
+		comment, and the bench/stress test harness; also removed a
+		dead #include <rudiments/randomnumber.h> from the firebird
+		protocol module, which never used the class
 	fixed sqlrsh csv output - non-ascii bytes, newlines, carriage returns,
 		tabs, and nulls were dropped, and fields containing them
 		weren't quoted

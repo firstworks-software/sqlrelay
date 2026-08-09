@@ -11,7 +11,7 @@
 #include <sqlrelay/sqlrserver.h>
 #include <rudiments/bytebuffer.h>
 #include <rudiments/character.h>
-#include <rudiments/randomnumber.h>
+#include <rudiments/prng.h>
 #include <rudiments/datetime.h>
 #include <rudiments/process.h>
 #include <rudiments/error.h>
@@ -1178,7 +1178,7 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_oracle : public sqlrprotocol {
 		uint32_t	resppacketsize;
 		byte_t		resppackettype;
 
-		randomnumber	r;
+		prng	r;
 		//uint32_t	seed;
 
 		char		*username;
@@ -1299,7 +1299,7 @@ sqlrprotocol_oracle::sqlrprotocol_oracle(sqlrservercontroller *cont,
 		debugEnd();
 	}
 
-	r.setSeed(randomnumber::getSeed());
+	r.setSeed(prng::getSeed());
 
 	resppacketpool=new memorypool(1024,1024,10240);
 
@@ -1943,7 +1943,7 @@ char *sqlrprotocol_oracle::generateHex(uint16_t bytes) {
 	uint32_t	number;
 	for (uint16_t i=0; i<bytes*2; i++) {
 		r.generate(&number);
-		int32_t	nibble=randomnumber::scale(number,0,15);
+		int32_t	nibble=prng::scale(number,0,15);
 		str.append((char)(nibble+((nibble<10)?'0':'A'-10)));
 	}
 	return str.detachString();

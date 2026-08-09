@@ -4,7 +4,7 @@
 #include <sqlrelay/sqlrserver.h>
 #include <rudiments/bytebuffer.h>
 #include <rudiments/character.h>
-#include <rudiments/randomnumber.h>
+#include <rudiments/prng.h>
 #include <rudiments/process.h>
 #include <rudiments/datetime.h>
 #include <rudiments/file.h>
@@ -859,7 +859,7 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_mysql : public sqlrprotocol {
 		uint64_t	reqpacketsize;
 		bytebuffer	longreqpacketbuffer;
 
-		randomnumber	r;
+		prng	r;
 		uint32_t	seed;
 
 		uint32_t	servercapabilityflags;
@@ -954,7 +954,7 @@ sqlrprotocol_mysql::sqlrprotocol_mysql(sqlrservercontroller *cont,
 	}
 	debugEnd();
 
-	r.setSeed(randomnumber::getSeed());
+	r.setSeed(prng::getSeed());
 
 	maxcursorcount=cont->getConfig()->getMaxCursors();
 	maxquerysize=cont->getConfig()->getMaxQuerySize();
@@ -1459,7 +1459,7 @@ void sqlrprotocol_mysql::generateChallenge() {
 	uint32_t	number;
 	for (uint16_t i=0; i<bytes; i++) {
 		r.generate(&number);
-		str.append((char)randomnumber::scale(number,' ','~'));
+		str.append((char)prng::scale(number,' ','~'));
 	}
 	delete[] challenge;
 	challenge=str.detachString();

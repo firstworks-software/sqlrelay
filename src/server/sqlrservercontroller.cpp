@@ -15,7 +15,7 @@
 #include <rudiments/error.h>
 #include <rudiments/character.h>
 #include <rudiments/charstring.h>
-#include <rudiments/randomnumber.h>
+#include <rudiments/prng.h>
 #include <rudiments/sys.h>
 #include <rudiments/environment.h>
 #include <rudiments/stdio.h>
@@ -1350,16 +1350,16 @@ bool sqlrservercontroller::logIn(bool printerrors) {
 		datetime	dt;
 		if (dt.initFromSystemDateTime()) {
 			if (!pvt->_reloginseed) {
-				// Ideally we'd use randomnumber:getSeed for
+				// Ideally we'd use prng::getSeed for
 				// this, but on some platforms that's generated
 				// from the epoch and could end up being the
 				// same for all sqlr-connections.  The process
 				// id is guaranteed unique.
 				pvt->_reloginseed=process::getProcessId();
 			}
-			pvt->_reloginseed=randomnumber::generate(
+			pvt->_reloginseed=prng::generate(
 							pvt->_reloginseed);
-			int32_t	seconds=randomnumber::scale(
+			int32_t	seconds=prng::scale(
 							pvt->_reloginseed,
 							600,900);
 			pvt->_relogintime=dt.getEpoch()+seconds;

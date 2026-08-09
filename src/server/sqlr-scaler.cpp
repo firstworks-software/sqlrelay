@@ -14,7 +14,7 @@
 #include <rudiments/process.h>
 #include <rudiments/datetime.h>
 #include <rudiments/error.h>
-#include <rudiments/randomnumber.h>
+#include <rudiments/prng.h>
 #include <rudiments/charstring.h>
 #include <rudiments/sys.h>
 #include <rudiments/stdio.h>
@@ -694,8 +694,8 @@ void scaler::killConnection(pid_t connpid) {
 void scaler::getRandomConnectionId() {
 
 	// get a scaled random number
-	currentseed=randomnumber::generate(currentseed);
-	int32_t	scalednum=randomnumber::scale(currentseed,0,metrictotal);
+	currentseed=prng::generate(currentseed);
+	int32_t	scalednum=prng::scale(currentseed,0,metrictotal);
 
 	// run through list, decrementing scalednum by the metric
 	// for each, when scalednum is 0, pick that connection id

@@ -3,7 +3,7 @@
 
 #include <sqlrelay/sqlrclient.h>
 #include <rudiments/commandline.h>
-#include <rudiments/randomnumber.h>
+#include <rudiments/prng.h>
 #include <rudiments/charstring.h>
 #include <rudiments/stdio.h>
 #include <rudiments/process.h>
@@ -70,7 +70,7 @@ int main(int argc, const char **argv) {
 	}
 
 	// populate it with a random number of rows
-	uint32_t	seed=randomnumber::getSeed();
+	uint32_t	seed=prng::getSeed();
 	stdoutput.printf("populating with %d rows\n",rowcount);
 	for (int32_t i=0; i<rowcount; i++) {
 		query.clear();
@@ -78,11 +78,11 @@ int main(int argc, const char **argv) {
 		query.append(table);
 		query.append(" values (");
 		for (int32_t j=0; j<colcount; j++) {
-			seed=randomnumber::generate(seed);
+			seed=prng::generate(seed);
 			if (j) {
 				query.append(", ");
 			}
-			query.append(randomnumber::scale(seed,1,100000));
+			query.append(prng::scale(seed,1,100000));
 		}
 		query.append(")");
 		if (!sqlrcur.sendQuery(query.getString())) {

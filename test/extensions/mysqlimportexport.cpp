@@ -15,7 +15,7 @@
 #include <rudiments/filesystem.h>
 #include <rudiments/permissions.h>
 #include <rudiments/dictionary.h>
-#include <rudiments/randomnumber.h>
+#include <rudiments/prng.h>
 #include <rudiments/dynamicarray.h>
 #include <rudiments/stdio.h>
 
@@ -1635,8 +1635,8 @@ void exportTests() {
 		} else if (oiter>=22 && oiter<=32) {
 			// for iterations 22-32, exclude random sets of
 			// columns, possibly with repetitions
-			randomnumber	r;
-			r.setSeed(randomnumber::getSeed());
+			prng	r;
+			r.setSeed(prng::getSeed());
 			opt.append("IGNORE ");
 			columnstoexclude=new const char *[11];
 			uint32_t	rn;
@@ -1658,8 +1658,8 @@ void exportTests() {
 		} else if (oiter==33) {
 			// for iteration 33, don't export various rows
 			opt.append("IGNORE ");
-			randomnumber	r;
-			r.setSeed(randomnumber::getSeed());
+			prng	r;
+			r.setSeed(prng::getSeed());
 			uint32_t	rn;
 			uint64_t	ircount=0;
 			for (uint64_t row=0; row<ROWS; row++) {
@@ -1677,8 +1677,8 @@ void exportTests() {
 		} else if (oiter>=34 && oiter<=44) {
 			// for iterations 34-44, modify random sets of
 			// columns and fields, possibly with repetitions
-			randomnumber	r;
-			r.setSeed(randomnumber::getSeed());
+			prng	r;
+			r.setSeed(prng::getSeed());
 			opt.append("MODIFY ");
 			columnstomodify=new const char *[11];
 			uint32_t	rn;
@@ -1902,7 +1902,7 @@ void importTests() {
 			// for iterations 2-12, randomly replace
 			// rows with empty rows, and ignore them
 			opt.append("IGNORE EMPTY ROWS - ");
-			randomnumber	r;
+			prng	r;
 			r.setSeed(r.getSeed());
 			uint64_t	emptycount=0;
 			for (uint64_t i=0; i<ROWS; i++) {

@@ -5,7 +5,7 @@
 #include <rudiments/character.h>
 #include <rudiments/bytebuffer.h>
 #include <rudiments/process.h>
-#include <rudiments/randomnumber.h>
+#include <rudiments/prng.h>
 #include <rudiments/file.h>
 #include <rudiments/error.h>
 
@@ -196,7 +196,7 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_postgresql : public sqlrprotocol {
 		dictionary<char *, char *>	options;
 
 		const char	*authmethod;
-		randomnumber	rand;
+		prng	rand;
 		uint32_t	salt;
 		uint32_t	secretkey;
 
@@ -271,7 +271,7 @@ sqlrprotocol_postgresql::sqlrprotocol_postgresql(sqlrservercontroller *cont,
 	reqpacket=NULL;
 	reqtype=MESSAGE_NULL;
 
-	rand.setSeed(randomnumber::getSeed());
+	rand.setSeed(prng::getSeed());
 
 	maxquerysize=cont->getConfig()->getMaxQuerySize();
 	maxbindcount=cont->getConfig()->getMaxBindCount();

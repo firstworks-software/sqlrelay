@@ -31,7 +31,7 @@ sqlrbench::sqlrbench(const char *connectstring,
 
 	issqlrelay=false;
 
-	rnd.setSeed(randomnumber::getSeed());
+	rnd.setSeed(prng::getSeed());
 
 	shutdown=false;
 }

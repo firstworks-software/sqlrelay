@@ -3,7 +3,7 @@
 
 #include <sqlrelay/sqlrclient.h>
 #include <rudiments/commandline.h>
-#include <rudiments/randomnumber.h>
+#include <rudiments/prng.h>
 #include <rudiments/thread.h>
 #include <rudiments/charstring.h>
 #include <rudiments/stdio.h>
@@ -55,16 +55,16 @@ void queriesTest(void *id) {
 			}
 		}
 
-		seed=randomnumber::generate(seed);
+		seed=prng::generate(seed);
 
-		int32_t	loopcount=randomnumber::scale(seed,1,20);
+		int32_t	loopcount=prng::scale(seed,1,20);
 		stdoutput.printf("%lld: looping %d times\n",threadid,loopcount);
 
 		for (int32_t l=0; l<loopcount; l++) {
 
 			// create a table with a random number of fields
-			seed=randomnumber::generate(seed);
-			colcount=randomnumber::scale(seed,1,15);
+			seed=prng::generate(seed);
+			colcount=prng::scale(seed,1,15);
 			stdoutput.printf("%lld: creating table with %d cols\n",
 							threadid,colcount);
 			query.clear();
@@ -84,13 +84,13 @@ void queriesTest(void *id) {
 			}
 
 			// populate it with a random number of rows
-			seed=randomnumber::generate(seed);
-			rowcount=randomnumber::scale(seed,1,100);
+			seed=prng::generate(seed);
+			rowcount=prng::scale(seed,1,100);
 			stdoutput.printf("%lld: populating with %d rows\n",
 							threadid,rowcount);
 			for (int32_t i=0; i<rowcount; i++) {
-				seed=randomnumber::generate(seed);
-				value=randomnumber::scale(seed,1,100000);
+				seed=prng::generate(seed);
+				value=prng::scale(seed,1,100000);
 				query.clear();
 				query.append("insert into test");
 				query.append(threadid)->append(" values (");
@@ -110,8 +110,8 @@ void queriesTest(void *id) {
 
 			// select those rows a random number of times,
 			// use a new cursor for each time
-			seed=randomnumber::generate(seed);
-			times=randomnumber::scale(seed,1,4);
+			seed=prng::generate(seed);
+			times=prng::scale(seed,1,4);
 			stdoutput.printf("%lld: selecting %d times with "
 					"%lld nested cursors\n",
 					threadid,times,curcount);
@@ -171,14 +171,14 @@ void heartbeatTest(void *id) {
 
 			if (garbage) {
 
-				seed=randomnumber::generate(seed);
+				seed=prng::generate(seed);
 				int32_t	garbagesize=
-					randomnumber::scale(seed,1,garbage);
+					prng::scale(seed,1,garbage);
 
 				char	*gbg=new char[garbagesize];
 				for (int32_t i=0; i<garbagesize; i++) {
-					seed=randomnumber::generate(seed);
-					gbg[i]=randomnumber::scale(seed,0,255);
+					seed=prng::generate(seed);
+					gbg[i]=prng::scale(seed,0,255);
 				}
 
 				stdoutput.printf("%lld: sending %d "

@@ -5,7 +5,7 @@
 
 #include <rudiments/parameterstring.h>
 #include <rudiments/stringbuffer.h>
-#include <rudiments/randomnumber.h>
+#include <rudiments/prng.h>
 #include <rudiments/dictionary.h>
 #include <rudiments/linkedlist.h>
 
@@ -61,7 +61,7 @@ class sqlrbench {
 		uint64_t	rsbs;
 		bool		debug;
 
-		randomnumber	rnd;
+		prng	rnd;
 
 		bool		shutdown;
 };
