@@ -309,10 +309,11 @@ public class SQLRelayResultSet implements ResultSet {
 		// locale.  In a turkish locale, "image" uppercases to a dotted
 		// capital I followed by MAGE, which matches none of the cases
 		// below.
-		// The array types have two spellings each.  A backend that
-		// reports the datatype list's own names sends CHAR_ARRAY and
-		// VARCHAR_ARRAY, but postgresql with typemangling=lookup
-		// sends its own, _char and _varchar.
+		// Several of these have two spellings each.  A backend that
+		// reports the datatype list's own names sends CHAR_ARRAY,
+		// VARCHAR_ARRAY, BPCHAR, BYTEA, etc., but postgresql with
+		// typemangling=lookup sends pg_type.typname spellings instead,
+		// like _char, _varchar, _bpchar and _bytea.
 		switch (type.toUpperCase(Locale.ROOT)) {
 			case "CHAR":
 			case "CHAR_ARRAY":
@@ -323,19 +324,47 @@ public class SQLRelayResultSet implements ResultSet {
 			case "_VARCHAR":
 			case "VARCHAR2":
 			case "LONGVARCHAR":
+			case "BPCHAR":
+			case "BPCHAR_ARRAY":
+			case "_BPCHAR":
+			case "TEXT":
+			case "TEXT_ARRAY":
+			case "TINYTEXT":
+			case "MEDIUMTEXT":
+			case "LONGTEXT":
+			case "NTEXT":
+			case "NAME":
+			case "NAME_ARRAY":
+			case "CSTRING":
+			case "LVARCHAR":
+			case "STRING":
+			case "VARSTRING":
+			case "CLOB":
+			case "DBCLOB":
+			case "XML":
+			case "JSON":
+			case "UNIQUEIDENTIFIER":
 			case "BINARY":
 			case "LONGBINARY":
 			case "VARBINARY":
 			case "LONGVARBINARY":
-			case "STRING":
-			case "VARSTRING":
+			case "BYTEA":
+			case "BYTEA_ARRAY":
+			case "BLOB":
+			case "TINYBLOB":
+			case "MEDIUMBLOB":
+			case "LONGBLOB":
+			case "RAW":
+			case "LONG_RAW":
+			case "LONG":
+			case "BFILE":
+			case "BYTE":
 			case "IMAGE":
 			case "GRAPHIC":
 			case "VARGRAPHIC":
 			case "LONGVARGRAPHIC":
 			case "NCHAR":
 			case "NVARCHAR":
-			case "LONGNVARCHAR":
 				return true;
 			default:
 				return false;

@@ -1889,6 +1889,13 @@
 		Boolean rename. All 8 were unreachable; each chain already
 		had correct, reachable SHORT, TINY, BOOL, and BOOL_ARRAY
 		branches further down (#9074)
+	fixed jdbc api's SQLRelayResultSet.isCharBinaryType() - it recognized
+		far fewer char and binary datatype names than datatypestring[]
+		actually has, so setMaxFieldSize silently didn't apply to
+		columns of the missing types (BPCHAR, TEXT, the BLOB family,
+		and about two dozen others); also replaced a "LONGNVARCHAR"
+		case, which matched no datatypestring[] entry, with "NTEXT",
+		which is the entry that type actually uses (#9089)
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems
