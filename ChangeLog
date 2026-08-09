@@ -2221,6 +2221,16 @@
 		isc_tpb_write, so a read-only transaction gets the backend's
 		benefits (no sweep pressure on firebird) instead of just the
 		protocol module's client-visible refusal of writes (#9109)
+	fixed the odbc connection module's inputBindBlob() - the binary
+		bind added for SAP ASE, DB2 and Informix by #9062 sent the
+		whole value in one SQLBindParameter/SQLExecute pair, which
+		SAP ASE's own driver and FreeTDS (fronting ASE for the tds
+		protocol module) cap at 32768 bytes, truncating anything
+		longer instead of erroring; a bind over that size is now
+		deferred with SQL_LEN_DATA_AT_EXEC and sent in pieces via
+		SQLParamData/SQLPutData in executeQuery(), verified live
+		against a real ASE via both the native driver and FreeTDS
+		(#9226)
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems

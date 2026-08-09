@@ -43,6 +43,15 @@
 
 #define MAX_LOB_CHUNK_SIZE	2147483647
 
+// SAP ASE's own driver, and FreeTDS (which fronts ASE for the tds
+// protocol module), truncate a single-shot binary input bind at
+// exactly this size - a value any longer comes back cut off rather
+// than erroring.  Above this size, odbccursor::inputBindBlob() defers
+// the bind with SQL_LEN_DATA_AT_EXEC and odbccursor::executeQuery()
+// sends the value in pieces via SQLPutData instead.
+#define BLOB_BIND_CHUNK_THRESHOLD	32768
+#define BLOB_BIND_CHUNK_SIZE		32000
+
 struct odbccolumn {
 	char		name[4096];
 	uint16_t	namesize;
@@ -112,6 +121,17 @@ struct charbind {
 	// scratch buffer used for unicode input-output string binds;
 	// NULL unless inputOutputBind(...,char *,...) allocated one
 	byte_t		*ucsvalue;
+};
+
+// large binary blob input binds are sent via SQLPutData rather than in
+// one shot (see odbccursor::inputBindBlob()); this carries the value
+// across from the bind call to the SQLParamData/SQLPutData loop in
+// odbccursor::executeQuery()
+struct blobbind {
+	blobbind() : value(NULL), valuesize(0), pos(0) {}
+	const char	*value;
+	uint32_t	valuesize;
+	uint16_t	pos;
 };
 
 struct flagtoname {
@@ -314,6 +334,7 @@ class SQLRSERVER_DLLSPEC odbccursor : public sqlrservercursor {
 		datebind		**inoutdatebind;
 		charbind		**inoutcharbind;
 		int16_t			**inoutisnullptr;
+		blobbind		**inblobbind;
 		#ifdef SQLBINDPARAMETER_SQLLEN
 		SQLLEN			*outisnull;
 		SQLLEN			*inoutisnull;
@@ -3679,6 +3700,7 @@ odbccursor::odbccursor(sqlrserverconnection *conn, uint16_t id) :
 	inoutdatebind=new datebind *[maxbindcount];
 	inoutcharbind=new charbind *[maxbindcount];
 	inoutisnullptr=new int16_t *[maxbindcount];
+	inblobbind=new blobbind *[maxbindcount];
 	#ifdef SQLBINDPARAMETER_SQLLEN
 	outisnull=new SQLLEN[maxbindcount];
 	inoutisnull=new SQLLEN[maxbindcount];
@@ -3702,6 +3724,7 @@ odbccursor::odbccursor(sqlrserverconnection *conn, uint16_t id) :
 		inbindlength[i]=0;
 		nullbindisbinary[i]=false;
 		nullbinddescribed[i]=false;
+		inblobbind[i]=NULL;
 	}
 	sqlnulldata=SQL_NULL_DATA;
 	bindformaterror=false;
@@ -3734,6 +3757,10 @@ odbccursor::~odbccursor() {
 	delete[] inbindlength;
 	delete[] nullbindisbinary;
 	delete[] nullbinddescribed;
+	for (uint16_t i=0; i<maxbindcount; i++) {
+		delete inblobbind[i];
+	}
+	delete[] inblobbind;
 	#ifdef HAVE_SQLCONNECTW
 	ucsinbindstrings.clear();
 	#endif
@@ -4362,6 +4389,37 @@ bool odbccursor::inputBindBlob(const char *variable,
 	// a ColumnSize of 0 is invalid here - see "see #975" in inputBind()
 	uint32_t	columnsize=(valuesize)?valuesize:1;
 
+	// values over the threshold get sent in pieces via SQLPutData,
+	// deferred until executeQuery() calls SQLParamData - see the
+	// BLOB_BIND_CHUNK_THRESHOLD comment above
+	if (valuesize>BLOB_BIND_CHUNK_THRESHOLD) {
+
+		delete inblobbind[pos-1];
+		blobbind	*bb=new blobbind;
+		bb->value=value;
+		bb->valuesize=valuesize;
+		bb->pos=pos;
+		inblobbind[pos-1]=bb;
+
+		inbindlength[pos-1]=SQL_LEN_DATA_AT_EXEC(valuesize);
+
+		erg=SQLBindParameter(stmt,
+					pos,
+					SQL_PARAM_INPUT,
+					SQL_C_BINARY,
+					paramtype,
+					columnsize,	// in bytes
+					0,
+					// token handed back by SQLParamData
+					// in executeQuery(), identifying
+					// which blobbind to pull the value
+					// from
+					(SQLPOINTER)bb,
+					0,		// in bytes
+					&(inbindlength[pos-1]));
+		return (erg==SQL_SUCCESS || erg==SQL_SUCCESS_WITH_INFO);
+	}
+
 	erg=SQLBindParameter(stmt,
 				pos,
 				SQL_PARAM_INPUT,
@@ -4865,6 +4923,39 @@ bool odbccursor::executeQuery(const char *query, uint32_t size) {
 		#endif
 	} else {
 		erg=SQLExecute(stmt);
+	}
+
+	// any binary blob bind that inputBindBlob() deferred with
+	// SQL_LEN_DATA_AT_EXEC (see BLOB_BIND_CHUNK_THRESHOLD) leaves the
+	// execute above returning SQL_NEED_DATA; SQLParamData hands back
+	// the blobbind token for each one in turn, and the value is sent
+	// piecewise via SQLPutData until SQLParamData reports there's
+	// nothing left to send
+	if (erg==SQL_NEED_DATA) {
+		SQLPOINTER	token=NULL;
+		while ((erg=SQLParamData(stmt,&token))==SQL_NEED_DATA) {
+			blobbind	*bb=(blobbind *)token;
+			const char	*ptr=bb->value;
+			uint32_t	remaining=bb->valuesize;
+			while (remaining) {
+				uint32_t	chunk=
+					(remaining>BLOB_BIND_CHUNK_SIZE)?
+					BLOB_BIND_CHUNK_SIZE:remaining;
+				erg=SQLPutData(stmt,(SQLPOINTER)ptr,
+							(SQLLEN)chunk);
+				if (erg!=SQL_SUCCESS &&
+						erg!=SQL_SUCCESS_WITH_INFO) {
+					break;
+				}
+				ptr+=chunk;
+				remaining-=chunk;
+			}
+			inblobbind[bb->pos-1]=NULL;
+			delete bb;
+			if (erg!=SQL_SUCCESS && erg!=SQL_SUCCESS_WITH_INFO) {
+				break;
+			}
+		}
 	}
 
 	#ifdef HAVE_SQLCONNECTW
