@@ -2145,6 +2145,23 @@
 		site can opt any other, untested odbc driver into the same
 		binary bind rather than waiting on a built-in default for it
 		(#9062)
+	fixed the sap and freetds connection modules' rpc procedure name walk
+		- a delimited name (eg. "my proc" or [my proc]) was truncated at
+			the first embedded space rather than run to its matching
+			close delimiter, so it never resolved; the walk now
+			recognizes both delimiter styles and strips them
+		- literal parameters written straight into the query text (eg.
+			"exec someproc 1,2") were silently dropped instead of being
+			sent with the rpc, so the procedure ran with defaults
+			instead of the given values, or errored if the parameters
+			were required; they're now parsed and ct_param()'d, typed as
+			int, float or char to match the literal; a trailing
+			"@variable" reference still disables this parsing, since
+			those are bound by the client's own inputBind() calls,
+			matched by name
+		- a trailing ";" was left as part of the name; the walk now
+			stops there too
+		verified live against a real ASE via both sap and freetds (#9053)
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems

@@ -269,6 +269,7 @@ class SQLRSERVER_DLLSPEC sapcursor : public sqlrservercursor {
 		bool		inputBind(CS_VOID *value,
 						CS_INT valuesize,
 						CS_SMALLINT indicator);
+		bool		parseRpcParams(const char *p);
 		void		deflateColumnSize(CS_INT index);
 
 		CS_COMMAND	*languagecmd;
@@ -2870,6 +2871,36 @@ bool sapcursor::close() {
 	return retval;
 }
 
+// walk an rpc procedure name.  The name may be a bare token, or delimited
+// with double-quotes (the ASE spelling, under quoted_identifier) or square
+// brackets (the T-SQL/MS SQL Server spelling); either delimiter may contain
+// whitespace.  A bare name ends at "(", "}", ";" or whitespace.  Returns
+// the position just past the name (or its closing delimiter); *namestart
+// and *namelen give the name itself, with any delimiters stripped.
+static const char *getRpcName(const char *p, const char **namestart,
+							CS_INT *namelen) {
+	if (*p=='"' || *p=='[') {
+		char	closing=(*p=='[')?']':'"';
+		p++;
+		*namestart=p;
+		while (*p && *p!=closing) {
+			p++;
+		}
+		*namelen=(CS_INT)(p-*namestart);
+		if (*p==closing) {
+			p++;
+		}
+	} else {
+		*namestart=p;
+		while (*p && *p!='(' && *p!='}' && *p!=';' &&
+				!character::isWhitespace(*p)) {
+			p++;
+		}
+		*namelen=(CS_INT)(p-*namestart);
+	}
+	return p;
+}
+
 bool sapcursor::prepareQuery(const char *query, uint32_t size) {
 
 	// initialize column count
@@ -2910,17 +2941,23 @@ bool sapcursor::prepareQuery(const char *query, uint32_t size) {
 
 		// get the procedure name
 		const char	*p=conn->cont->skipWhitespace(query+4);
-		const char	*namestart=p;
-		while (*p && *p!='(' && *p!='}' &&
-				!character::isWhitespace(*p)) {
-			p++;
-		}
+		const char	*namestart;
+		CS_INT		namelen;
+		p=getRpcName(p,&namestart,&namelen);
 
 		if (ct_command(languagecmd,
 				CS_RPC_CMD,
 				(CS_CHAR *)namestart,
-				(CS_INT)(p-namestart),
+				namelen,
 				CS_UNUSED)!=CS_SUCCEED) {
+			return false;
+		}
+
+		// literal parameters written directly into the query
+		// (eg. "exec someproc 1,2") aren't bound by the client -
+		// ct_param() them here or the rpc would silently run
+		// without them
+		if (!parseRpcParams(p)) {
 			return false;
 		}
 
@@ -2933,17 +2970,23 @@ bool sapcursor::prepareQuery(const char *query, uint32_t size) {
 
 		// get the procedure name
 		const char	*p=conn->cont->skipWhitespace(query+7);
-		const char	*namestart=p;
-		while (*p && *p!='(' && *p!='}' &&
-				!character::isWhitespace(*p)) {
-			p++;
-		}
+		const char	*namestart;
+		CS_INT		namelen;
+		p=getRpcName(p,&namestart,&namelen);
 
 		if (ct_command(languagecmd,
 				CS_RPC_CMD,
 				(CS_CHAR *)namestart,
-				(CS_INT)(p-namestart),
+				namelen,
 				CS_UNUSED)!=CS_SUCCEED) {
+			return false;
+		}
+
+		// literal parameters written directly into the query
+		// (eg. "execute someproc 1,2") aren't bound by the client -
+		// ct_param() them here or the rpc would silently run
+		// without them
+		if (!parseRpcParams(p)) {
 			return false;
 		}
 
@@ -2970,18 +3013,16 @@ bool sapcursor::prepareQuery(const char *query, uint32_t size) {
 		p=conn->cont->skipWhitespace(p);
 
 		// get the procedure name
-		const char	*namestart=p;
-		while (*p && *p!='(' && *p!='}' &&
-				!character::isWhitespace(*p)) {
-			p++;
-		}
+		const char	*namestart;
+		CS_INT		namelen;
+		p=getRpcName(p,&namestart,&namelen);
 
 		// initiate a language command
 		cmd=languagecmd;
 		if (ct_command(languagecmd,
 				CS_RPC_CMD,
 				(CS_CHAR *)namestart,
-				(CS_INT)(p-namestart),
+				namelen,
 				CS_UNUSED)!=CS_SUCCEED) {
 			return false;
 		}
@@ -3050,6 +3091,98 @@ void sapcursor::checkRePrepare() {
 	if (!prepared) {
 		prepareQuery(query,size);
 	}
+}
+
+// ct_param() a comma-separated list of literal rpc parameters (eg. the
+// "1,2" in "exec someproc 1,2"); quoted literals have their quotes
+// stripped.  p points just past the procedure name; stops at end of
+// string or a statement-terminating ";".
+bool sapcursor::parseRpcParams(const char *p) {
+
+	p=conn->cont->skipWhitespace(p);
+
+	// bind-variable references (eg. "exec testproc @in1,@in2 output")
+	// are supplied by the client's own inputBind() calls, matched by
+	// name - this text is just documentation and must be left alone.
+	// Only parse it here when it's nothing but literal values, since
+	// there's no way to tell, from here, that the client is about to
+	// bind by name.
+	for (const char *s=p; *s && *s!=';'; s++) {
+		if (*s=='@') {
+			return true;
+		}
+	}
+
+	while (*p && *p!=';') {
+
+		const char	*valstart=p;
+		const char	*valend;
+		bool	quoted=false;
+		if (*p=='\'' || *p=='"') {
+			quoted=true;
+			char	quote=*p;
+			p++;
+			valstart=p;
+			while (*p && *p!=quote) {
+				p++;
+			}
+			valend=p;
+			if (*p==quote) {
+				p++;
+			}
+		} else {
+			while (*p && *p!=',' && *p!=';' &&
+					!character::isWhitespace(*p)) {
+				p++;
+			}
+			valend=p;
+		}
+		CS_INT	vallen=(CS_INT)(valend-valstart);
+
+		bytestring::zero(&parameter[paramindex],
+					sizeof(parameter[paramindex]));
+		parameter[paramindex].name[0]='\0';
+		parameter[paramindex].namelen=0;
+		parameter[paramindex].maxlength=CS_UNUSED;
+		parameter[paramindex].status=CS_INPUTVALUE;
+		parameter[paramindex].locale=NULL;
+
+		// an rpc parameter has to match the target parameter's type
+		// on the wire - ASE won't implicitly convert a char value
+		// to int/float the way it would a literal in ordinary SQL
+		// text, so figure out a type for unquoted numeric literals
+		CS_RETCODE	rc;
+		if (!quoted && charstring::isInteger(valstart,vallen)) {
+			int64_t	intval=charstring::convertToInteger(valstart);
+			parameter[paramindex].datatype=CS_INT_TYPE;
+			rc=ct_param(languagecmd,&parameter[paramindex],
+					(CS_VOID *)&intval,
+					sizeof(intval),0);
+		} else if (!quoted && charstring::isNumber(valstart,vallen)) {
+			double	floatval=(double)
+					charstring::convertToFloat(valstart);
+			parameter[paramindex].datatype=CS_FLOAT_TYPE;
+			rc=ct_param(languagecmd,&parameter[paramindex],
+					(CS_VOID *)&floatval,
+					sizeof(floatval),0);
+		} else {
+			parameter[paramindex].datatype=CS_CHAR_TYPE;
+			rc=ct_param(languagecmd,&parameter[paramindex],
+					(CS_VOID *)valstart,vallen,0);
+		}
+		if (rc!=CS_SUCCEED) {
+			return false;
+		}
+		paramindex++;
+
+		p=conn->cont->skipWhitespace(p);
+		if (*p==',') {
+			p=conn->cont->skipWhitespace(p+1);
+		} else {
+			break;
+		}
+	}
+	return true;
 }
 
 bool sapcursor::inputBind(CS_VOID *value, CS_INT valuesize,
