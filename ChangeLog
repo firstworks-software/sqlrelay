@@ -2093,6 +2093,13 @@
 			of the request packet buffer; added the same rp/rpend
 			bounds checks used earlier in bind() for the parameter
 			loop (#9219)
+		fixed the freetds connection module's char inputBind() - it
+			took an isnull argument but never read it, always
+			passing ct-lib a not-null indicator, so a null bind
+			went through as an empty string instead of null; it
+			now passes -1 when isnull is set, matching the sap
+			module, which binds through the same ct-lib call
+			(#9148)
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems

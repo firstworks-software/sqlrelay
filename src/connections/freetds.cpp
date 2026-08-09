@@ -4351,7 +4351,8 @@ bool freetdscursor::inputBind(const char *variable,
 	parameter[paramindex].maxlength=CS_UNUSED;
 	parameter[paramindex].status=CS_INPUTVALUE;
 	parameter[paramindex].locale=NULL;
-	if (!inputBind((CS_VOID *)value,valuesize,0)) {
+	if (!inputBind((CS_VOID *)value,valuesize,
+		(*isnull==conn->cont->getNullBindValue())?-1:0)) {
 		return false;
 	}
 	paramindex++;
